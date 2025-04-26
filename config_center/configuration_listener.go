@@ -34,7 +34,7 @@ type ConfigurationListener interface {
 // ConfigChangeEvent for changing listener's event
 type ConfigChangeEvent struct {
 	Key        string
-	Value      interface{}
+	Value      any
 	ConfigType remoting.EventType
 }
 

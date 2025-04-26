@@ -35,11 +35,11 @@ type Invocation interface {
 	// ParameterValues gets invocation parameter values.
 	ParameterValues() []reflect.Value
 	// ParameterRawValues gets raw invocation parameter values.
-	ParameterRawValues() []interface{}
+	ParameterRawValues() []any
 	// Arguments gets arguments.
-	Arguments() []interface{}
+	Arguments() []any
 	// Reply gets response of request
-	Reply() interface{}
+	Reply() any
 	// Attachments gets all attachments
 
 	// Invoker gets the invoker in current context.
@@ -47,10 +47,10 @@ type Invocation interface {
 	// IsGenericInvocation gets if this is a generic invocation
 	IsGenericInvocation() bool
 
-	Attachments() map[string]interface{}
-	SetAttachment(key string, value interface{})
+	Attachments() map[string]any
+	SetAttachment(key string, value any)
 	GetAttachment(key string) (string, bool)
-	GetAttachmentInterface(string) interface{}
+	GetAttachmentInterface(string) any
 	GetAttachmentWithDefaultValue(key string, defaultValue string) string
 	GetAttachmentAsContext() context.Context
 	MergeAttachmentFromContext(ctx context.Context)
@@ -58,8 +58,8 @@ type Invocation interface {
 	// Attributes firstly introduced on dubbo-java 2.7.6. It is
 	// used in internal invocation, that is, it's not passed between
 	// server and client.
-	Attributes() map[string]interface{}
-	SetAttribute(key string, value interface{})
-	GetAttribute(key string) (interface{}, bool)
-	GetAttributeWithDefaultValue(key string, defaultValue interface{}) interface{}
+	Attributes() map[string]any
+	SetAttribute(key string, value any)
+	GetAttribute(key string) (any, bool)
+	GetAttributeWithDefaultValue(key string, defaultValue any) any
 }

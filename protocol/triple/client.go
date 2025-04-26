@@ -60,7 +60,7 @@ func (cm *clientManager) getClient(method string) (*tri.Client, error) {
 	return triClient, nil
 }
 
-func (cm *clientManager) callUnary(ctx context.Context, method string, req, resp interface{}) error {
+func (cm *clientManager) callUnary(ctx context.Context, method string, req, resp any) error {
 	triClient, err := cm.getClient(method)
 	if err != nil {
 		return err
@@ -84,7 +84,7 @@ func (cm *clientManager) callUnary(ctx context.Context, method string, req, resp
 	return nil
 }
 
-func (cm *clientManager) callClientStream(ctx context.Context, method string) (interface{}, error) {
+func (cm *clientManager) callClientStream(ctx context.Context, method string) (any, error) {
 	triClient, err := cm.getClient(method)
 	if err != nil {
 		return nil, err
@@ -96,7 +96,7 @@ func (cm *clientManager) callClientStream(ctx context.Context, method string) (i
 	return stream, nil
 }
 
-func (cm *clientManager) callServerStream(ctx context.Context, method string, req interface{}) (interface{}, error) {
+func (cm *clientManager) callServerStream(ctx context.Context, method string, req any) (any, error) {
 	triClient, err := cm.getClient(method)
 	if err != nil {
 		return nil, err
@@ -109,7 +109,7 @@ func (cm *clientManager) callServerStream(ctx context.Context, method string, re
 	return stream, nil
 }
 
-func (cm *clientManager) callBidiStream(ctx context.Context, method string) (interface{}, error) {
+func (cm *clientManager) callBidiStream(ctx context.Context, method string) (any, error) {
 	triClient, err := cm.getClient(method)
 	if err != nil {
 		return nil, err

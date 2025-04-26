@@ -169,7 +169,7 @@ func (c *clientImpl) securityConfigUpdateValidator(sc *resource.SecurityConfig) 
 	return nil
 }
 
-func (c *clientImpl) updateValidator(u interface{}) error {
+func (c *clientImpl) updateValidator(u any) error {
 	switch update := u.(type) {
 	case resource.ListenerUpdate:
 		if update.InboundListenerCfg == nil || update.InboundListenerCfg.FilterChains == nil {

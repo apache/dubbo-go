@@ -187,7 +187,7 @@ func file_api_samples_api_proto_rawDescGZIP() []byte {
 }
 
 var file_api_samples_api_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
-var file_api_samples_api_proto_goTypes = []interface{}{
+var file_api_samples_api_proto_goTypes = []any{
 	(*HelloRequest)(nil), // 0: api.HelloRequest
 	(*User)(nil),         // 1: api.User
 }
@@ -209,7 +209,7 @@ func file_api_samples_api_proto_init() {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_api_samples_api_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_api_samples_api_proto_msgTypes[0].Exporter = func(v any, i int) any {
 			switch v := v.(*HelloRequest); i {
 			case 0:
 				return &v.state
@@ -221,7 +221,7 @@ func file_api_samples_api_proto_init() {
 				return nil
 			}
 		}
-		file_api_samples_api_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_api_samples_api_proto_msgTypes[1].Exporter = func(v any, i int) any {
 			switch v := v.(*User); i {
 			case 0:
 				return &v.state

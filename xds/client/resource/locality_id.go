@@ -55,7 +55,7 @@ func (l LocalityID) ToString() (string, error) {
 }
 
 // Equal allows the values to be compared by Attributes.Equal.
-func (l LocalityID) Equal(o interface{}) bool {
+func (l LocalityID) Equal(o any) bool {
 	ol, ok := o.(LocalityID)
 	if !ok {
 		return false

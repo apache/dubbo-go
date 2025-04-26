@@ -232,8 +232,8 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 				procedure,
 				m.ReqInitFunc,
 				func(ctx context.Context, req *tri.Request) (*tri.Response, error) {
-					var args []interface{}
-					if argsRaw, ok := req.Msg.([]interface{}); ok {
+					var args []any
+					if argsRaw, ok := req.Msg.([]any); ok {
 						// non-idl mode, req.Msg consists of many arguments
 						for _, argRaw := range argsRaw {
 							// refer to createServiceInfoWithReflection, in ReqInitFunc, argRaw is a pointer to real arg.
@@ -264,6 +264,9 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 						// please refer to proxy/proxy_factory/ProxyInvoker.Invoke
 						triResp = tri.NewResponse([]interface{}{res.Result()})
 					}
+          
+					// please refer to proxy/proxy_factory/ProxyInvoker.Invoke
+					triResp := tri.NewResponse([]any{res.Result()})
 
 					for k, v := range res.Attachments() {
 						switch val := v.(type) {
@@ -286,7 +289,7 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 			_ = s.triServer.RegisterClientStreamHandler(
 				procedure,
 				func(ctx context.Context, stream *tri.ClientStream) (*tri.Response, error) {
-					var args []interface{}
+					var args []any
 					args = append(args, m.StreamInitFunc(stream))
 					attachments := generateAttachments(stream.RequestHeader())
 					// inject attachments
@@ -297,7 +300,7 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 						return triResp, res.Error()
 					}
 					// please refer to proxy/proxy_factory/ProxyInvoker.Invoke
-					triResp := tri.NewResponse([]interface{}{res.Result()})
+					triResp := tri.NewResponse([]any{res.Result()})
 					return triResp, res.Error()
 				},
 				opts...,
@@ -307,7 +310,7 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 				procedure,
 				m.ReqInitFunc,
 				func(ctx context.Context, req *tri.Request, stream *tri.ServerStream) error {
-					var args []interface{}
+					var args []any
 					args = append(args, req.Msg, m.StreamInitFunc(stream))
 					attachments := generateAttachments(req.Header())
 					// inject attachments
@@ -322,7 +325,7 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 			_ = s.triServer.RegisterBidiStreamHandler(
 				procedure,
 				func(ctx context.Context, stream *tri.BidiStream) error {
-					var args []interface{}
+					var args []any
 					args = append(args, m.StreamInitFunc(stream))
 					attachments := generateAttachments(stream.RequestHeader())
 					// inject attachments
@@ -443,8 +446,8 @@ func createServiceInfoWithReflection(svc common.RPCService) *common.ServiceInfo 
 			Name: methodType.Name,
 			// only support Unary invocation now
 			Type: constant.CallUnary,
-			ReqInitFunc: func() interface{} {
-				params := make([]interface{}, len(paramsTypes))
+			ReqInitFunc: func() any {
+				params := make([]any, len(paramsTypes))
 				for k, paramType := range paramsTypes {
 					params[k] = reflect.New(paramType).Interface()
 				}
@@ -458,8 +461,8 @@ func createServiceInfoWithReflection(svc common.RPCService) *common.ServiceInfo 
 	genericMethodInfo := common.MethodInfo{
 		Name: "$invoke",
 		Type: constant.CallUnary,
-		ReqInitFunc: func() interface{} {
-			params := make([]interface{}, 3)
+		ReqInitFunc: func() any {
+			params := make([]any, 3)
 			// params must be pointer
 			params[0] = func(s string) *string { return &s }("methodName") // methodName *string
 			params[1] = &[]string{}                                        // argv type  *[]string
@@ -475,9 +478,9 @@ func createServiceInfoWithReflection(svc common.RPCService) *common.ServiceInfo 
 	return &info
 }
 
-// generateAttachments transfer http.Header to map[string]interface{} and make all keys lowercase
-func generateAttachments(header http.Header) map[string]interface{} {
-	attachments := make(map[string]interface{}, len(header))
+// generateAttachments transfer http.Header to map[string]any and make all keys lowercase
+func generateAttachments(header http.Header) map[string]any {
+	attachments := make(map[string]any, len(header))
 	for key, val := range header {
 		lowerKey := strings.ToLower(key)
 		attachments[lowerKey] = val

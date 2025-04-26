@@ -209,7 +209,7 @@ func file_interop_triple_wrapper_proto_rawDescGZIP() []byte {
 }
 
 var file_interop_triple_wrapper_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
-var file_interop_triple_wrapper_proto_goTypes = []interface{}{
+var file_interop_triple_wrapper_proto_goTypes = []any{
 	(*TripleRequestWrapper)(nil),  // 0: interoperability.TripleRequestWrapper
 	(*TripleResponseWrapper)(nil), // 1: interoperability.TripleResponseWrapper
 }
@@ -227,7 +227,7 @@ func file_interop_triple_wrapper_proto_init() {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_interop_triple_wrapper_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_interop_triple_wrapper_proto_msgTypes[0].Exporter = func(v any, i int) any {
 			switch v := v.(*TripleRequestWrapper); i {
 			case 0:
 				return &v.state
@@ -239,7 +239,7 @@ func file_interop_triple_wrapper_proto_init() {
 				return nil
 			}
 		}
-		file_interop_triple_wrapper_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_interop_triple_wrapper_proto_msgTypes[1].Exporter = func(v any, i int) any {
 			switch v := v.(*TripleResponseWrapper); i {
 			case 0:
 				return &v.state

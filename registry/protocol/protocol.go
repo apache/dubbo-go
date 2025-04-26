@@ -133,7 +133,7 @@ func (proto *registryProtocol) initConfigurationListeners() {
 // nolint
 func (proto *registryProtocol) GetRegistries() []registry.Registry {
 	var rs []registry.Registry
-	proto.registries.Range(func(_, v interface{}) bool {
+	proto.registries.Range(func(_, v any) bool {
 		if r, ok := v.(registry.Registry); ok {
 			rs = append(rs, r)
 		}
@@ -406,7 +406,7 @@ func getSubscribedOverrideUrl(providerUrl *common.URL) *common.URL {
 
 // Destroy registry protocol
 func (proto *registryProtocol) Destroy() {
-	proto.bounds.Range(func(key, value interface{}) bool {
+	proto.bounds.Range(func(key, value any) bool {
 		// protocol holds the exporters actually, instead, registry holds them in order to avoid export repeatedly, so
 		// the work for unexport should be finished in protocol.UnExport(), see also config.destroyProviderProtocols().
 		exporter := value.(*exporterChangeableWrapper)
@@ -428,7 +428,7 @@ func (proto *registryProtocol) Destroy() {
 		return true
 	})
 
-	proto.registries.Range(func(key, value interface{}) bool {
+	proto.registries.Range(func(key, value any) bool {
 		proto.registries.Delete(key)
 		return true
 	})
@@ -529,7 +529,7 @@ func newProviderConfigurationListener(overrideListeners *sync.Map) *providerConf
 // Process notified once there's any change happens on the provider config
 func (listener *providerConfigurationListener) Process(event *config_center.ConfigChangeEvent) {
 	listener.BaseConfigurationListener.Process(event)
-	listener.overrideListeners.Range(func(key, value interface{}) bool {
+	listener.overrideListeners.Range(func(key, value any) bool {
 		value.(*overrideSubscribeListener).doOverrideIfNecessary()
 		return true
 	})

@@ -57,7 +57,7 @@ func (ri *RestInvoker) Invoke(ctx context.Context, invocation protocol.Invocatio
 	methodConfig := ri.restMethodConfigMap[inv.MethodName()]
 	var (
 		result      protocol.RPCResult
-		body        interface{}
+		body        any
 		pathParams  map[string]string
 		queryParams map[string]string
 		header      http.Header
@@ -99,7 +99,7 @@ func (ri *RestInvoker) Invoke(ctx context.Context, invocation protocol.Invocatio
 }
 
 // restStringMapTransform is used to transform rest map
-func restStringMapTransform(paramsMap map[int]string, args []interface{}) (map[string]string, error) {
+func restStringMapTransform(paramsMap map[int]string, args []any) (map[string]string, error) {
 	resMap := make(map[string]string, len(paramsMap))
 	for k, v := range paramsMap {
 		if k >= len(args) || k < 0 {
@@ -111,7 +111,7 @@ func restStringMapTransform(paramsMap map[int]string, args []interface{}) (map[s
 }
 
 // nolint
-func getRestHttpHeader(methodConfig *config.RestMethodConfig, args []interface{}) (http.Header, error) {
+func getRestHttpHeader(methodConfig *config.RestMethodConfig, args []any) (http.Header, error) {
 	header := http.Header{}
 	headersMap := methodConfig.HeadersMap
 	header.Set("Content-Type", methodConfig.Consumes)

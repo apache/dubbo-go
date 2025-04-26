@@ -92,7 +92,7 @@ func (h *RpcClientHandler) OnClose(session getty.Session) {
 }
 
 // OnMessage get response from getty server, and update the session to the getty client session list
-func (h *RpcClientHandler) OnMessage(session getty.Session, pkg interface{}) {
+func (h *RpcClientHandler) OnMessage(session getty.Session, pkg any) {
 	result, ok := pkg.(*remoting.DecodeResult)
 	if !ok || result == ((*remoting.DecodeResult)(nil)) {
 		logger.Errorf("[RpcClientHandler.OnMessage] getty client gets an unexpected rpc result: %#v", result)
@@ -224,7 +224,7 @@ func (h *RpcServerHandler) OnClose(session getty.Session) {
 }
 
 // OnMessage get request from getty client, update the session reqNum and reply response to client
-func (h *RpcServerHandler) OnMessage(session getty.Session, pkg interface{}) {
+func (h *RpcServerHandler) OnMessage(session getty.Session, pkg any) {
 	h.rwlock.Lock()
 	if _, ok := h.sessionMap[session]; ok {
 		h.sessionMap[session].reqNum++

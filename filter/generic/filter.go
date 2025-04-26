@@ -89,7 +89,7 @@ func (f *genericFilter) Invoke(ctx context.Context, invoker protocol.Invoker, in
 		}
 
 		// construct a new invocation for generic call
-		newargs := []interface{}{
+		newargs := []any{
 			mtdname,
 			types,
 			args,

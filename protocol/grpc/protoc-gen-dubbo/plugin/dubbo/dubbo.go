@@ -76,7 +76,7 @@ func (g *dubboGrpc) typeName(str string) string {
 }
 
 // P forwards to g.gen.P.
-func (g *dubboGrpc) P(args ...interface{}) { g.gen.P(args...) }
+func (g *dubboGrpc) P(args ...any) { g.gen.P(args...) }
 
 // Generate generates code for the services in the given file.
 // be consistent with grpc plugin
@@ -265,7 +265,7 @@ func (g *dubboGrpc) generateServerMethod(servName, fullServName string, method *
 	inType := g.typeName(method.GetInputType())
 
 	if !method.GetServerStreaming() && !method.GetClientStreaming() {
-		g.P("func ", hname, "(srv interface{}, ctx ", contextPkg, ".Context, dec func(interface{}) error, interceptor ", grpcPkg, ".UnaryServerInterceptor) (interface{}, error) {")
+		g.P("func ", hname, "(srv any, ctx ", contextPkg, ".Context, dec func(any) error, interceptor ", grpcPkg, ".UnaryServerInterceptor) (any, error) {")
 		g.P("in := new(", inType, ")")
 		g.P("if err := dec(in); err != nil { return nil, err }")
 		g.P(`// DubboGrpcService is gRPC service
@@ -278,7 +278,7 @@ type DubboGrpcService interface {
 	ServiceDesc() *grpc.ServiceDesc
 }`)
 		g.P("base := srv.(DubboGrpcService)")
-		g.P("args := []interface{}{}")
+		g.P("args := []any{}")
 		g.P("args = append(args, in)")
 		g.P(`invo := invocation.NewRPCInvocation("`, methName, `", args, nil)`)
 
@@ -292,7 +292,7 @@ type DubboGrpcService interface {
 		g.P("FullMethod: ", strconv.Quote(fmt.Sprintf("/%s/%s", fullServName, methName)), ",")
 		g.P("}")
 
-		g.P("handler := func(ctx ", contextPkg, ".Context, req interface{}) (interface{}, error) {")
+		g.P("handler := func(ctx ", contextPkg, ".Context, req any) (any, error) {")
 		g.P("result := base.GetProxyImpl().Invoke(ctx, invo)")
 		g.P("return result.Result(), result.Error()")
 		g.P("}")
@@ -303,7 +303,7 @@ type DubboGrpcService interface {
 		return hname
 	}
 	streamType := unexport(servName) + methName + "Server"
-	g.P("func ", hname, "(srv interface{}, stream ", grpcPkg, ".ServerStream) error {")
+	g.P("func ", hname, "(srv any, stream ", grpcPkg, ".ServerStream) error {")
 	g.P(`// DubboGrpcService is gRPC service
 type DubboGrpcService interface {
 	// SetProxyImpl sets proxy.

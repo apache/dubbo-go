@@ -218,7 +218,7 @@ func file_api_api_proto_rawDescGZIP() []byte {
 }
 
 var file_api_api_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
-var file_api_api_proto_goTypes = []interface{}{
+var file_api_api_proto_goTypes = []any{
 	(*HelloRequest)(nil), // 0: api.HelloRequest
 	(*User)(nil),         // 1: api.User
 }
@@ -240,7 +240,7 @@ func file_api_api_proto_init() {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_api_api_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_api_api_proto_msgTypes[0].Exporter = func(v any, i int) any {
 			switch v := v.(*HelloRequest); i {
 			case 0:
 				return &v.state
@@ -252,7 +252,7 @@ func file_api_api_proto_init() {
 				return nil
 			}
 		}
-		file_api_api_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_api_api_proto_msgTypes[1].Exporter = func(v any, i int) any {
 			switch v := v.(*User); i {
 			case 0:
 				return &v.state
@@ -437,16 +437,16 @@ func RegisterGreeterServer(s grpc_go.ServiceRegistrar, srv GreeterServer) {
 	s.RegisterService(&Greeter_ServiceDesc, srv)
 }
 
-func _Greeter_SayHello_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc_go.UnaryServerInterceptor) (interface{}, error) {
+func _Greeter_SayHello_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc_go.UnaryServerInterceptor) (any, error) {
 	in := new(HelloRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	base := srv.(dubbo3.Dubbo3GrpcService)
-	args := []interface{}{}
+	args := []any{}
 	args = append(args, in)
 	md, _ := metadata.FromIncomingContext(ctx)
-	invAttachment := make(map[string]interface{}, len(md))
+	invAttachment := make(map[string]any, len(md))
 	for k, v := range md {
 		invAttachment[k] = v
 	}
@@ -459,18 +459,18 @@ func _Greeter_SayHello_Handler(srv interface{}, ctx context.Context, dec func(in
 		Server:     srv,
 		FullMethod: ctx.Value("XXX_TRIPLE_GO_INTERFACE_NAME").(string),
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		result := base.XXX_GetProxyImpl().Invoke(ctx, invo)
 		return result, result.Error()
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Greeter_SayHelloStream_Handler(srv interface{}, stream grpc_go.ServerStream) error {
+func _Greeter_SayHelloStream_Handler(srv any, stream grpc_go.ServerStream) error {
 	_, ok := srv.(dubbo3.Dubbo3GrpcService)
 	ctx := stream.Context()
 	md, _ := metadata.FromIncomingContext(ctx)
-	invAttachment := make(map[string]interface{}, len(md))
+	invAttachment := make(map[string]any, len(md))
 	for k, v := range md {
 		invAttachment[k] = v
 	}

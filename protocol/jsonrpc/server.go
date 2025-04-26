@@ -341,7 +341,7 @@ func serveRequest(ctx context.Context, header map[string]string, body []byte, co
 	}
 
 	// read body
-	var args []interface{}
+	var args []any
 	if err = codec.ReadBody(&args); err != nil {
 		return perrors.WithStack(err)
 	}
@@ -351,7 +351,7 @@ func serveRequest(ctx context.Context, header map[string]string, body []byte, co
 	exporter, _ := jsonrpcProtocol.ExporterMap().Load(path)
 	invoker := exporter.(*JsonrpcExporter).GetInvoker()
 	if invoker != nil {
-		result := invoker.Invoke(ctx, invocation.NewRPCInvocation(methodName, args, map[string]interface{}{
+		result := invoker.Invoke(ctx, invocation.NewRPCInvocation(methodName, args, map[string]any{
 			constant.PathKey:    path,
 			constant.VersionKey: codec.req.Version,
 		}))

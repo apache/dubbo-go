@@ -110,7 +110,7 @@ func MaxBytesHandler(h http.Handler, n int64) http.Handler {
 	})
 }
 
-func asMaxBytesError(err error, tmpl string, args ...interface{}) *Error {
+func asMaxBytesError(err error, tmpl string, args ...any) *Error {
 	var maxBytesErr *maxBytesError
 	if ok := errors.As(err, &maxBytesErr); !ok {
 		return nil

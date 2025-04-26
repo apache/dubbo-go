@@ -86,7 +86,7 @@ func TestServiceFilter_Invoke(t *testing.T) {
 	mockInvoker.EXPECT().Invoke(gomock.Any(), gomock.Eq(invocation2))
 	_ = filter.Invoke(context.Background(), mockInvoker, invocation2)
 	// the number of arguments is not 3
-	invocation3 := invocation.NewRPCInvocation(constant.Generic, []interface{}{"hello"}, nil)
+	invocation3 := invocation.NewRPCInvocation(constant.Generic, []any{"hello"}, nil)
 	mockInvoker.EXPECT().Invoke(gomock.Any(), gomock.Eq(invocation3))
 	_ = filter.Invoke(context.Background(), mockInvoker, invocation3)
 
@@ -111,38 +111,38 @@ func TestServiceFilter_Invoke(t *testing.T) {
 
 	// invoke a method without errors using default generalization
 	invocation4 := invocation.NewRPCInvocation(constant.Generic,
-		[]interface{}{
+		[]any{
 			"Hello",
 			[]string{"java.lang.String"},
 			[]hessian.Object{"world"},
-		}, map[string]interface{}{
+		}, map[string]any{
 			constant.GenericKey: "true",
 		})
 	// invoke a non-existed method
 	invocation5 := invocation.NewRPCInvocation(constant.Generic,
-		[]interface{}{
+		[]any{
 			"hello11",
 			[]string{"java.lang.String"},
 			[]hessian.Object{"world"},
-		}, map[string]interface{}{
+		}, map[string]any{
 			constant.GenericKey: "true",
 		})
 	// invoke a method with incorrect arguments
 	invocation6 := invocation.NewRPCInvocation(constant.Generic,
-		[]interface{}{
+		[]any{
 			"Hello",
 			[]string{"java.lang.String", "java.lang.String"},
 			[]hessian.Object{"world", "haha"},
-		}, map[string]interface{}{
+		}, map[string]any{
 			constant.GenericKey: "true",
 		})
 	// invoke a method without errors using protobuf-json generalization
 	//invocation7 := invocation.NewRPCInvocation(constant.Generic,
-	//	[]interface{}{
+	//	[]any{
 	//		"HelloPB",
 	//		[]string{},
 	//		[]hessian.Object{"{\"id\":1}"},
-	//	}, map[string]interface{}{
+	//	}, map[string]any{
 	//		constant.GenericKey: constant.GenericSerializationProtobuf,
 	//	})
 
@@ -197,11 +197,11 @@ func TestServiceFilter_OnResponse(t *testing.T) {
 
 	// invoke a method without errors
 	invocation1 := invocation.NewRPCInvocation(constant.Generic,
-		[]interface{}{
+		[]any{
 			"hello",
-			[]interface{}{"java.lang.String"},
-			[]interface{}{"world"},
-		}, map[string]interface{}{
+			[]any{"java.lang.String"},
+			[]any{"world"},
+		}, map[string]any{
 			constant.GenericKey: "true",
 		})
 

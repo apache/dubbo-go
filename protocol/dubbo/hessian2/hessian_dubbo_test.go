@@ -60,7 +60,7 @@ func (c Case) JavaClassName() string {
 	return "com.test.case"
 }
 
-func doTestHessianEncodeHeader(t *testing.T, packageType PackageType, responseStatus byte, body interface{}) ([]byte, error) {
+func doTestHessianEncodeHeader(t *testing.T, packageType PackageType, responseStatus byte, body any) ([]byte, error) {
 	hessian.RegisterPOJO(&Case{})
 	codecW := NewHessianCodec(nil)
 	resp, err := codecW.Write(Service{
@@ -79,7 +79,7 @@ func doTestHessianEncodeHeader(t *testing.T, packageType PackageType, responseSt
 	return resp, err
 }
 
-func doTestResponse(t *testing.T, packageType PackageType, responseStatus byte, body interface{}, decodedResponse *DubboResponse, assertFunc func()) {
+func doTestResponse(t *testing.T, packageType PackageType, responseStatus byte, body any, decodedResponse *DubboResponse, assertFunc func()) {
 	resp, err := doTestHessianEncodeHeader(t, packageType, responseStatus, body)
 	assert.NoError(t, err)
 
@@ -157,7 +157,7 @@ func TestResponse(t *testing.T) {
 	decodedResponse.Exception = nil
 	mapObj := map[string][]*Case{"key": {&caseObj}}
 	doTestResponse(t, PackageResponse, Response_OK, mapObj, decodedResponse, func() {
-		mapRes, ok := decodedResponse.RspObj.(map[interface{}]interface{})
+		mapRes, ok := decodedResponse.RspObj.(map[any]any)
 		if !ok {
 			t.Errorf("expect map[string][]*Case, but get %s", reflect.TypeOf(decodedResponse.RspObj).String())
 			return
@@ -176,7 +176,7 @@ func TestResponse(t *testing.T) {
 	})
 }
 
-func doTestRequest(t *testing.T, packageType PackageType, responseStatus byte, body interface{}) {
+func doTestRequest(t *testing.T, packageType PackageType, responseStatus byte, body any) {
 	resp, err := doTestHessianEncodeHeader(t, packageType, responseStatus, body)
 	assert.NoError(t, err)
 
@@ -190,22 +190,22 @@ func doTestRequest(t *testing.T, packageType PackageType, responseStatus byte, b
 	assert.Equal(t, int64(1), h.ID)
 	assert.Equal(t, responseStatus, h.ResponseStatus)
 
-	c := make([]interface{}, 7)
+	c := make([]any, 7)
 	err = codecR.ReadBody(c)
 	assert.Nil(t, err)
 	t.Log(c)
-	assert.True(t, len(body.([]interface{})) == len(c[5].([]interface{})))
+	assert.True(t, len(body.([]any)) == len(c[5].([]any)))
 }
 
 func TestRequest(t *testing.T) {
-	doTestRequest(t, PackageRequest, Zero, []interface{}{"a"})
-	doTestRequest(t, PackageRequest, Zero, []interface{}{"a", 3})
-	doTestRequest(t, PackageRequest, Zero, []interface{}{"a", true})
-	doTestRequest(t, PackageRequest, Zero, []interface{}{"a", 3, true})
-	doTestRequest(t, PackageRequest, Zero, []interface{}{3.2, true})
-	doTestRequest(t, PackageRequest, Zero, []interface{}{"a", 3, true, &Case{A: "a", B: 3}})
-	doTestRequest(t, PackageRequest, Zero, []interface{}{"a", 3, true, []*Case{{A: "a", B: 3}}})
-	doTestRequest(t, PackageRequest, Zero, []interface{}{map[string][]*Case{"key": {{A: "a", B: 3}}}})
+	doTestRequest(t, PackageRequest, Zero, []any{"a"})
+	doTestRequest(t, PackageRequest, Zero, []any{"a", 3})
+	doTestRequest(t, PackageRequest, Zero, []any{"a", true})
+	doTestRequest(t, PackageRequest, Zero, []any{"a", 3, true})
+	doTestRequest(t, PackageRequest, Zero, []any{3.2, true})
+	doTestRequest(t, PackageRequest, Zero, []any{"a", 3, true, &Case{A: "a", B: 3}})
+	doTestRequest(t, PackageRequest, Zero, []any{"a", 3, true, []*Case{{A: "a", B: 3}}})
+	doTestRequest(t, PackageRequest, Zero, []any{map[string][]*Case{"key": {{A: "a", B: 3}}}})
 }
 
 func TestHessianCodec_ReadAttachments(t *testing.T) {
@@ -213,7 +213,7 @@ func TestHessianCodec_ReadAttachments(t *testing.T) {
 	body := &DubboResponse{
 		RspObj:      &CaseB{A: "A", B: CaseA{A: "a", B: 1, C: Case{A: "c", B: 2}}},
 		Exception:   nil,
-		Attachments: map[string]interface{}{DUBBO_VERSION_KEY: "2.6.4", "att": AttachTestObject{ID: 23, Name: "haha"}},
+		Attachments: map[string]any{DUBBO_VERSION_KEY: "2.6.4", "att": AttachTestObject{ID: 23, Name: "haha"}},
 	}
 	resp, err := doTestHessianEncodeHeader(t, PackageResponse, Response_OK, body)
 	assert.NoError(t, err)

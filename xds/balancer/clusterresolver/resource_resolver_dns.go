@@ -70,7 +70,7 @@ func newDNSResolver(target string, topLevelResolver *resourceResolver) *dnsDisco
 	return ret
 }
 
-func (dr *dnsDiscoveryMechanism) lastUpdate() (interface{}, bool) {
+func (dr *dnsDiscoveryMechanism) lastUpdate() (any, bool) {
 	if !dr.updateReceived {
 		return nil, false
 	}

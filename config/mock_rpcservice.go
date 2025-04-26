@@ -30,11 +30,11 @@ func (*MockService) Reference() string {
 }
 
 // GetUser mocks the GetUser method
-func (*MockService) GetUser(ctx context.Context, itf []interface{}, str *struct{}) error {
+func (*MockService) GetUser(ctx context.Context, itf []any, str *struct{}) error {
 	return nil
 }
 
 // GetUser1 mocks the GetUser1 method
-func (*MockService) GetUser1(ctx context.Context, itf []interface{}, str *struct{}) error {
+func (*MockService) GetUser1(ctx context.Context, itf []any, str *struct{}) error {
 	return nil
 }

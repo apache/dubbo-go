@@ -44,7 +44,7 @@ func TestProviderAuthFilter_Invoke(t *testing.T) {
 	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=gg&version=2.6.0")
 	url.SetParam(constant.AccessKeyIDKey, access)
 	url.SetParam(constant.SecretAccessKeyKey, secret)
-	parmas := []interface{}{
+	parmas := []any{
 		"OK",
 		struct {
 			Name string
@@ -55,7 +55,7 @@ func TestProviderAuthFilter_Invoke(t *testing.T) {
 	requestTime := strconv.Itoa(int(time.Now().Unix() * 1000))
 	signature, _ := getSignature(url, inv, secret, requestTime)
 
-	inv = invocation.NewRPCInvocation("test", []interface{}{"OK"}, map[string]interface{}{
+	inv = invocation.NewRPCInvocation("test", []any{"OK"}, map[string]any{
 		constant.RequestSignatureKey: signature,
 		constant.Consumer:            "test",
 		constant.RequestTimestampKey: requestTime,

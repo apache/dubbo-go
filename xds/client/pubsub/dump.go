@@ -31,7 +31,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/xds/client/resource"
 )
 
-func rawFromCache(s string, cache interface{}) *anypb.Any {
+func rawFromCache(s string, cache any) *anypb.Any {
 	switch c := cache.(type) {
 	case map[string]resource.ListenerUpdate:
 		if v, ok := c[s]; ok {
@@ -65,7 +65,7 @@ func (pb *Pubsub) Dump(t resource.ResourceType) map[string]resource.UpdateWithMD
 
 	var (
 		md    map[string]resource.UpdateMetadata
-		cache interface{}
+		cache any
 	)
 	switch t {
 	case resource.ListenerResource:

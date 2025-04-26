@@ -99,7 +99,7 @@ func (f *genericServiceFilter) Invoke(ctx context.Context, invoker protocol.Invo
 	}
 
 	// realize
-	newargs := make([]interface{}, len(argsType))
+	newargs := make([]any, len(argsType))
 	for i := 0; i < len(argsType); i++ {
 		newarg, err := g.Realize(args[i], argsType[i])
 		if err != nil {

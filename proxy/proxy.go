@@ -44,7 +44,7 @@ import (
 type Proxy struct {
 	rpc         common.RPCService
 	invoke      protocol.Invoker
-	callback    interface{}
+	callback    any
 	attachments map[string]string
 	implement   ImplementFunc
 	once        sync.Once
@@ -60,13 +60,13 @@ type (
 var typError = reflect.Zero(reflect.TypeOf((*error)(nil)).Elem()).Type()
 
 // NewProxy create service proxy.
-func NewProxy(invoke protocol.Invoker, callback interface{}, attachments map[string]string) *Proxy {
+func NewProxy(invoke protocol.Invoker, callback any, attachments map[string]string) *Proxy {
 	return NewProxyWithOptions(invoke, callback, attachments,
 		WithProxyImplementFunc(DefaultProxyImplementFunc))
 }
 
 // NewProxyWithOptions create service proxy with options.
-func NewProxyWithOptions(invoke protocol.Invoker, callback interface{}, attachments map[string]string, opts ...ProxyOption) *Proxy {
+func NewProxyWithOptions(invoke protocol.Invoker, callback any, attachments map[string]string, opts ...ProxyOption) *Proxy {
 	p := &Proxy{
 		invoke:      invoke,
 		callback:    callback,
@@ -90,7 +90,7 @@ func WithProxyImplementFunc(f ImplementFunc) ProxyOption {
 // In consumer, RPCService like:
 //
 //			type XxxProvider struct {
-//	 		Yyy func(ctx context.Context, args []interface{}, rsp *Zzz) error
+//	 		Yyy func(ctx context.Context, args []any, rsp *Zzz) error
 //			}
 func (p *Proxy) Implement(v common.RPCService) {
 	p.once.Do(func() {
@@ -105,7 +105,7 @@ func (p *Proxy) Get() common.RPCService {
 }
 
 // GetCallback gets callback.
-func (p *Proxy) GetCallback() interface{} {
+func (p *Proxy) GetCallback() any {
 	return p.callback
 }
 
@@ -126,7 +126,7 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 			var (
 				err            error
 				inv            *invocation_impl.RPCInvocation
-				inIArr         []interface{}
+				inIArr         []any
 				inVArr         []reflect.Value
 				reply          reflect.Value
 				replyEmptyFlag bool
@@ -160,13 +160,13 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 			}
 
 			if end-start <= 0 {
-				inIArr = []interface{}{}
+				inIArr = []any{}
 				inVArr = []reflect.Value{}
-			} else if v, ok := in[start].Interface().([]interface{}); ok && end-start == 1 {
+			} else if v, ok := in[start].Interface().([]any); ok && end-start == 1 {
 				inIArr = v
 				inVArr = []reflect.Value{in[start]}
 			} else {
-				inIArr = make([]interface{}, end-start)
+				inIArr = make([]any, end-start)
 				inVArr = make([]reflect.Value, end-start)
 				index := 0
 				for i := start; i < end; i++ {
@@ -193,8 +193,8 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 				for k, value := range m {
 					inv.SetAttachment(k, value)
 				}
-			} else if m2, ok2 := atm.(map[string]interface{}); ok2 {
-				// it is support to transfer map[string]interface{}. It refers to dubbo-java 2.7.
+			} else if m2, ok2 := atm.(map[string]any); ok2 {
+				// it is support to transfer map[string]any. It refers to dubbo-java 2.7.
 				for k, value := range m2 {
 					inv.SetAttachment(k, value)
 				}

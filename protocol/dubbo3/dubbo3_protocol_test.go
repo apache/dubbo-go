@@ -133,7 +133,7 @@ func TestDubbo3UnaryService_GetReqParamsInterfaces(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(paramsInterfaces))
 	subTest(t, val, paramsInterfaces)
-	args := make([]interface{}, 0, 1)
+	args := make([]any, 0, 1)
 	for _, v := range paramsInterfaces {
 		tempParamObj := reflect.ValueOf(v).Elem().Interface()
 		args = append(args, tempParamObj)
@@ -142,8 +142,8 @@ func TestDubbo3UnaryService_GetReqParamsInterfaces(t *testing.T) {
 	assert.Equal(t, "laurence", args[1].(*MockUser).Name)
 }
 
-func subTest(t *testing.T, val, paramsInterfaces interface{}) {
-	list := paramsInterfaces.([]interface{})
+func subTest(t *testing.T, val, paramsInterfaces any) {
+	list := paramsInterfaces.([]any)
 	for k := range list {
 		err := hessian.ReflectResponse(val, list[k])
 		assert.Nil(t, err)

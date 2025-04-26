@@ -169,6 +169,6 @@ func (grra *GoRestfulRequestAdapter) HeaderParameter(name string) string {
 }
 
 // ReadEntity a adapter func of server.RestServerRequest's ReadEntity
-func (grra *GoRestfulRequestAdapter) ReadEntity(entityPointer interface{}) error {
+func (grra *GoRestfulRequestAdapter) ReadEntity(entityPointer any) error {
 	return grra.request.ReadEntity(entityPointer)
 }

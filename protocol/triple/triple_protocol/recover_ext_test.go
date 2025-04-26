@@ -31,7 +31,7 @@ import (
 
 type panicPingServer struct {
 	pingv1triple.UnimplementedPingServiceHandler
-	panicWith interface{}
+	panicWith any
 }
 
 func (s *panicPingServer) Ping(
@@ -54,7 +54,7 @@ func (s *panicPingServer) CountUp(
 
 func TestWithRecover(t *testing.T) {
 	t.Parallel()
-	handle := func(_ context.Context, _ triple_protocol.Spec, _ http.Header, r interface{}) error {
+	handle := func(_ context.Context, _ triple_protocol.Spec, _ http.Header, r any) error {
 		return triple_protocol.NewError(triple_protocol.CodeFailedPrecondition, fmt.Errorf("panic: %v", r))
 	}
 	assertHandled := func(err error) {
@@ -87,7 +87,7 @@ func TestWithRecover(t *testing.T) {
 		server.URL,
 	)
 
-	for _, panicWith := range []interface{}{42, nil} {
+	for _, panicWith := range []any{42, nil} {
 		pinger.panicWith = panicWith
 
 		err := client.Ping(context.Background(), triple_protocol.NewRequest(&pingv1.PingRequest{}), triple_protocol.NewResponse(&pingv1.PingResponse{}))

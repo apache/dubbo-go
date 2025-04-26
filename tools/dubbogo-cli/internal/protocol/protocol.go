@@ -22,7 +22,7 @@ import (
 )
 
 type Protocol interface {
-	Read([]byte, *sync.Map) (interface{}, int, error)
+	Read([]byte, *sync.Map) (any, int, error)
 	Write(*Request) ([]byte, error)
 }
 
@@ -32,5 +32,5 @@ type Request struct {
 	Version     string
 	Group       string
 	Method      string
-	Params      interface{}
+	Params      any
 }

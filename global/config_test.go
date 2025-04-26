@@ -173,7 +173,7 @@ func TestCloneConfig(t *testing.T) {
 	})
 }
 
-func InitCheckCompleteInequality(t *testing.T, origin interface{}) {
+func InitCheckCompleteInequality(t *testing.T, origin any) {
 	if origin == nil {
 		t.Errorf("Invalid parameters")
 		return
@@ -221,7 +221,7 @@ func InitCheckCompleteInequality(t *testing.T, origin interface{}) {
 	}
 }
 
-func CheckCompleteInequality(t *testing.T, origin interface{}, clone interface{}) {
+func CheckCompleteInequality(t *testing.T, origin any, clone any) {
 	if origin == nil || clone == nil {
 		t.Errorf("Invalid parameters")
 		return

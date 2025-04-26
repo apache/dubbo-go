@@ -107,7 +107,7 @@ func (bp *BaseProtocol) Destroy() {
 	bp.invokers = []Invoker{}
 
 	// un export exporters
-	bp.exporterMap.Range(func(key, exporter interface{}) bool {
+	bp.exporterMap.Range(func(key, exporter any) bool {
 		if exporter != nil {
 			exporter.(Exporter).UnExport()
 		} else {

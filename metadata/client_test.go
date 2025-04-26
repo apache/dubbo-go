@@ -90,7 +90,7 @@ func TestGetMetadataFromRpc(t *testing.T) {
 	})
 
 	result := &protocol.RPCResult{
-		Attrs: map[string]interface{}{},
+		Attrs: map[string]any{},
 		Err:   nil,
 		Rest:  metadataInfo,
 	}
@@ -110,7 +110,7 @@ func TestGetMetadataFromRpc(t *testing.T) {
 	t.Run("invoke timeout", func(t *testing.T) {
 		mockProtocol.On("Refer").Return(mockInvoker).Once()
 		mockInvoker.On("Invoke").Return(&protocol.RPCResult{
-			Attrs: map[string]interface{}{},
+			Attrs: map[string]any{},
 			Err:   errors.New("timeout error"),
 			Rest:  metadataInfo,
 		}).Once()

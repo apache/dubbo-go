@@ -93,7 +93,7 @@ func RegisterIstioCertificateServiceServer(s grpc.ServiceRegistrar, srv IstioCer
 	s.RegisterService(&IstioCertificateService_ServiceDesc, srv)
 }
 
-func _IstioCertificateService_CreateCertificate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _IstioCertificateService_CreateCertificate_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(IstioCertificateRequest)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -105,7 +105,7 @@ func _IstioCertificateService_CreateCertificate_Handler(srv interface{}, ctx con
 		Server:     srv,
 		FullMethod: "/istio.v1.auth.IstioCertificateService/CreateCertificate",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(IstioCertificateServiceServer).CreateCertificate(ctx, req.(*IstioCertificateRequest))
 	}
 	return interceptor(ctx, in, info, handler)

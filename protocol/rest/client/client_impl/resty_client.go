@@ -66,7 +66,7 @@ func NewRestyClient(restOption *client.RestOptions) client.RestClient {
 }
 
 // Do send request by RestyClient
-func (rc *RestyClient) Do(restRequest *client.RestClientRequest, res interface{}) error {
+func (rc *RestyClient) Do(restRequest *client.RestClientRequest, res any) error {
 	req := rc.client.R()
 	req.Header = restRequest.Header
 	resp, err := req.

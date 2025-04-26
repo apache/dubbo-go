@@ -70,20 +70,6 @@ func (tp *TripleProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	return exporter
 }
 
-// *Important*. This function is only for testing. When server package is finished, remove this function
-// and modify related tests.
-func (tp *TripleProtocol) exportForTest(invoker protocol.Invoker, info *common.ServiceInfo) protocol.Exporter {
-	url := invoker.GetURL()
-	serviceKey := url.ServiceKey()
-	// todo: retrieve this info from url
-	exporter := NewTripleExporter(serviceKey, invoker, tp.ExporterMap())
-	tp.SetExporterMap(serviceKey, exporter)
-	logger.Infof("[TRIPLE Protocol] Export service: %s", url.String())
-	tp.openServer(invoker, info)
-	internal.HealthSetServingStatusServing(url.Service())
-	return exporter
-}
-
 func (tp *TripleProtocol) openServer(invoker protocol.Invoker, info *common.ServiceInfo) {
 	url := invoker.GetURL()
 	tp.serverLock.Lock()
@@ -154,16 +140,16 @@ func GetProtocol() protocol.Protocol {
 
 type ServiceInfo struct {
 	InterfaceName string
-	ServiceType   interface{}
+	ServiceType   any
 	Methods       []MethodInfo
-	Meta          map[string]interface{}
+	Meta          map[string]any
 }
 
 type MethodInfo struct {
 	Name           string
 	Type           string
-	ReqInitFunc    func() interface{}
-	StreamInitFunc func(baseStream interface{}) interface{}
-	MethodFunc     func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error)
-	Meta           map[string]interface{}
+	ReqInitFunc    func() any
+	StreamInitFunc func(baseStream any) any
+	MethodFunc     func(ctx context.Context, args []any, handler any) (any, error)
+	Meta           map[string]any
 }
