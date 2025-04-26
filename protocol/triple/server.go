@@ -19,6 +19,7 @@ package triple
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"reflect"
@@ -83,7 +84,29 @@ func (s *Server) Start(invoker protocol.Invoker, info *common.ServiceInfo) {
 	}
 	// todo: support opentracing interceptor
 
-	// todo(DMwangnima): think about a more elegant way to configure tls
+	var cfg *tls.Config
+	var err error
+	// handle tls config
+	// TODO: think about a more elegant way to configure tls,
+	// Maybe we can try to create a ServerOptions for unified settings,
+	// after this function becomes bloated.
+
+	// TODO: Once the global replacement of the config is completed,
+	// replace config with global.
+	tlsConfig := config.GetRootConfig().TLSConfig
+	if tlsConfig != nil {
+		cfg, err = config.GetServerTlsConfig(&config.TLSConfig{
+			CACertFile:    tlsConfig.CACertFile,
+			TLSCertFile:   tlsConfig.TLSCertFile,
+			TLSKeyFile:    tlsConfig.TLSKeyFile,
+			TLSServerName: tlsConfig.TLSServerName,
+		})
+		if err != nil {
+			return
+		}
+		s.triServer.SetTLSConfig(cfg)
+		logger.Infof("TRIPLE Server initialized the TLSConfig configuration")
+	}
 
 	// todo:// move tls config to handleService
 
