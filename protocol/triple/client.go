@@ -75,7 +75,10 @@ func (cm *clientManager) callUnary(ctx context.Context, method string, req, resp
 		return nil
 	}
 
-	for k, v := range triResp.Header() {
+	for k, v := range triResp.Trailer() {
+		if ok := isFilterHeader(k); ok {
+			continue
+		}
 		if len(v) > 0 {
 			serverAttachments[k] = v[0]
 		}
@@ -229,4 +232,16 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		isIDL:      isIDL,
 		triClients: triClients,
 	}, nil
+}
+
+func isFilterHeader(key string) bool {
+	if key != "" && key[0] == ':' {
+		return true
+	}
+	switch key {
+	case constant.GrpcHeaderMessage, constant.GrpcHeaderStatus:
+		return true
+	default:
+		return false
+	}
 }

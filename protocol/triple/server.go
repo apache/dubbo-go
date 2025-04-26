@@ -251,9 +251,6 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 					ctx = context.WithValue(ctx, constant.AttachmentServerKey, capturedAttachments)
 					invo := invocation.NewRPCInvocation(m.Name, args, attachments)
 					res := invoker.Invoke(ctx, invo)
-					for k, v := range capturedAttachments {
-						res.AddAttachment(k, v)
-					}
 
 					// todo(DMwangnima): modify InfoInvoker to get a unified processing logic
 					// please refer to server/InfoInvoker.Invoke()
@@ -271,10 +268,10 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 					for k, v := range res.Attachments() {
 						switch val := v.(type) {
 						case string:
-							triResp.Header().Set(k, val)
+							triResp.Trailer().Set(k, val)
 						case []string:
 							if len(val) > 0 {
-								triResp.Header().Set(k, val[0])
+								triResp.Trailer().Set(k, val[0])
 							}
 						default:
 							triResp.Header().Set(k, fmt.Sprintf("%v", val))

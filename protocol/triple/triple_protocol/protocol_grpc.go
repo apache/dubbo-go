@@ -17,6 +17,7 @@ package triple_protocol
 import (
 	"bufio"
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"errors"
 	"fmt"
 	"io"
@@ -39,8 +40,6 @@ const (
 	grpcHeaderCompression       = "Grpc-Encoding"
 	grpcHeaderAcceptCompression = "Grpc-Accept-Encoding"
 	grpcHeaderTimeout           = "Grpc-Timeout"
-	grpcHeaderStatus            = "Grpc-Status"
-	grpcHeaderMessage           = "Grpc-Message"
 	grpcHeaderDetails           = "Grpc-Status-Details-Bin"
 
 	grpcFlagEnvelopeTrailer = 0b10000000
@@ -68,7 +67,7 @@ var (
 	grpcAllowedMethods    = map[string]struct{}{
 		http.MethodPost: {},
 	}
-	errTrailersWithoutGRPCStatus = fmt.Errorf("gRPC protocol error: no %s trailer", grpcHeaderStatus)
+	errTrailersWithoutGRPCStatus = fmt.Errorf("gRPC protocol error: no %s trailer", constant.GrpcHeaderStatus)
 
 	// defaultGrpcUserAgent follows
 	// https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#user-agents:
@@ -365,7 +364,7 @@ func (cc *grpcClientConn) Receive(msg any) error {
 	if err == nil {
 		return nil
 	}
-	if getHeaderCanonical(cc.responseHeader, grpcHeaderStatus) != "" {
+	if getHeaderCanonical(cc.responseHeader, constant.GrpcHeaderStatus) != "" {
 		// We got what gRPC calls a trailers-only response, which puts the trailing
 		// metadata (including errors) into HTTP headers. validateResponse has
 		// already extracted the error.
@@ -781,7 +780,7 @@ func grpcHTTPToCode(httpCode int) Code {
 // use a different codec. Consequently, this function needs a Protobuf codec to
 // unmarshal error information in the headers.
 func grpcErrorFromTrailer(bufferPool *bufferPool, protobuf Codec, trailer http.Header) *Error {
-	codeHeader := getHeaderCanonical(trailer, grpcHeaderStatus)
+	codeHeader := getHeaderCanonical(trailer, constant.GrpcHeaderStatus)
 	if codeHeader == "" {
 		return NewError(CodeInternal, errTrailersWithoutGRPCStatus)
 	}
@@ -793,7 +792,7 @@ func grpcErrorFromTrailer(bufferPool *bufferPool, protobuf Codec, trailer http.H
 	if err != nil {
 		return errorf(CodeInternal, "gRPC protocol error: invalid error code %q", codeHeader)
 	}
-	message := grpcPercentDecode(bufferPool, getHeaderCanonical(trailer, grpcHeaderMessage))
+	message := grpcPercentDecode(bufferPool, getHeaderCanonical(trailer, constant.GrpcHeaderMessage))
 	retErr := NewWireError(Code(code), errors.New(message))
 
 	detailsBinaryEncoded := getHeaderCanonical(trailer, grpcHeaderDetails)
@@ -870,8 +869,8 @@ func grpcContentTypeFromCodecName(name string) string {
 
 func grpcErrorToTrailer(bufferPool *bufferPool, trailer http.Header, protobuf Codec, err error) {
 	if err == nil {
-		setHeaderCanonical(trailer, grpcHeaderStatus, "0") // zero is the gRPC OK status
-		setHeaderCanonical(trailer, grpcHeaderMessage, "")
+		setHeaderCanonical(trailer, constant.GrpcHeaderStatus, "0") // zero is the gRPC OK status
+		setHeaderCanonical(trailer, constant.GrpcHeaderMessage, "")
 		return
 	}
 	status := grpcStatusFromError(err)
@@ -880,12 +879,12 @@ func grpcErrorToTrailer(bufferPool *bufferPool, trailer http.Header, protobuf Co
 	if binErr != nil {
 		setHeaderCanonical(
 			trailer,
-			grpcHeaderStatus,
+			constant.GrpcHeaderStatus,
 			strconv.FormatInt(int64(CodeInternal), 10 /* base */),
 		)
 		setHeaderCanonical(
 			trailer,
-			grpcHeaderMessage,
+			constant.GrpcHeaderMessage,
 			grpcPercentEncode(
 				bufferPool,
 				fmt.Sprintf("marshal protobuf status: %v", binErr),
@@ -896,8 +895,8 @@ func grpcErrorToTrailer(bufferPool *bufferPool, trailer http.Header, protobuf Co
 	if tripleErr, ok := asError(err); ok {
 		mergeHeaders(trailer, tripleErr.meta)
 	}
-	setHeaderCanonical(trailer, grpcHeaderStatus, code)
-	setHeaderCanonical(trailer, grpcHeaderMessage, grpcPercentEncode(bufferPool, status.Message))
+	setHeaderCanonical(trailer, constant.GrpcHeaderStatus, code)
+	setHeaderCanonical(trailer, constant.GrpcHeaderMessage, grpcPercentEncode(bufferPool, status.Message))
 	setHeaderCanonical(trailer, grpcHeaderDetails, EncodeBinaryHeader(bin))
 }
 

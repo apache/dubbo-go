@@ -105,6 +105,7 @@ const (
 	XdsCircuitBreakerKey                 = "xds_circuit_reaker"
 	OTELServerTraceKey                   = "otelServerTrace"
 	OTELClientTraceKey                   = "otelClientTrace"
+	ContextFilterKey                     = "context"
 )
 
 const (
@@ -475,4 +476,9 @@ const (
 	DefaultNacosWeight = 1.0     // Default weight if not specified or invalid
 	MinNacosWeight     = 0.0     // Minimum allowed weight (Nacos range starts at 0)
 	MaxNacosWeight     = 10000.0 // Maximum allowed weight (Nacos range ends at 10000)
+)
+
+const (
+	GrpcHeaderStatus  = "Grpc-Status"
+	GrpcHeaderMessage = "Grpc-Message"
 )
