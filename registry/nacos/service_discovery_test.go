@@ -143,6 +143,7 @@ func newMockNacosServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, e
 		namingClient:        client,
 		descriptor:          descriptor,
 		registryInstances:   []registry.ServiceInstance{},
+		registryURL:         url,
 		instanceListenerMap: make(map[string]*gxset.HashSet),
 	}
 	return newInstance, nil

@@ -20,6 +20,7 @@ package nacos
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"sync"
 )
 
@@ -64,6 +65,9 @@ type nacosServiceDiscovery struct {
 	namingClient *nacosClient.NacosNamingClient
 	// cache registry instances
 	registryInstances []registry.ServiceInstance
+
+	// registryURL stores the URL used for registration, used to fetch dynamic config like weight
+	registryURL *common.URL
 
 	instanceListenerMap map[string]*gxset.HashSet
 	listenerLock        sync.Mutex
@@ -310,6 +314,17 @@ func (n *nacosServiceDiscovery) toRegisterInstance(instance registry.ServiceInst
 	if metadata == nil {
 		metadata = make(map[string]string, 1)
 	}
+
+	weightStr := n.registryURL.GetParam(constant.RegistryKey+"."+constant.WeightKey, "1.0")
+	weight, err := strconv.ParseFloat(weightStr, 64)
+	if err != nil || weight <= constant.MinNacosWeight {
+		logger.Warnf("Invalid weight value %q, using default 1.0. err: %v", weightStr, err)
+		weight = constant.DefaultNacosWeight
+	} else if weight > constant.MaxNacosWeight {
+		logger.Warnf("Weight %f exceeds Nacos maximum 10000, setting to 10000", weight)
+		weight = constant.MaxNacosWeight
+	}
+
 	metadata[idKey] = instance.GetID()
 	return vo.RegisterInstanceParam{
 		ServiceName: instance.GetServiceName(),
@@ -317,7 +332,7 @@ func (n *nacosServiceDiscovery) toRegisterInstance(instance registry.ServiceInst
 		Port:        uint64(instance.GetPort()),
 		Metadata:    metadata,
 		// We must specify the weight since Java nacos namingClient will ignore the instance whose weight is 0
-		Weight:    1,
+		Weight:    weight,
 		Enable:    instance.IsEnable(),
 		Healthy:   instance.IsHealthy(),
 		GroupName: n.group,
@@ -364,6 +379,7 @@ func newNacosServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error
 		namingClient:        client,
 		descriptor:          descriptor,
 		registryInstances:   []registry.ServiceInstance{},
+		registryURL:         url,
 		instanceListenerMap: make(map[string]*gxset.HashSet),
 	}
 	return newInstance, nil
