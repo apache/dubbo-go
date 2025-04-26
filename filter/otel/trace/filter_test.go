@@ -131,9 +131,9 @@ func (mr *MockInvocationMockRecorder) ParameterValues() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ParameterValues", reflect.TypeOf((*MockInvocation)(nil).ParameterValues))
 }
 
-func (m *MockInvocation) ParameterRawValues() []interface{} {
+func (m *MockInvocation) ParameterRawValues() []any {
 	ret := m.ctrl.Call(m, "ParameterRawValues")
-	ret0, _ := ret[0].([]interface{})
+	ret0, _ := ret[0].([]any)
 	return ret0
 }
 
@@ -143,9 +143,9 @@ func (mr *MockInvocationMockRecorder) ParameterRawValues() *gomock.Call {
 }
 
 // Arguments mocks base method
-func (m *MockInvocation) Arguments() []interface{} {
+func (m *MockInvocation) Arguments() []any {
 	ret := m.ctrl.Call(m, "Arguments")
-	ret0, _ := ret[0].([]interface{})
+	ret0, _ := ret[0].([]any)
 	return ret0
 }
 
@@ -155,9 +155,9 @@ func (mr *MockInvocationMockRecorder) Arguments() *gomock.Call {
 }
 
 // Reply mocks base method
-func (m *MockInvocation) Reply() interface{} {
+func (m *MockInvocation) Reply() any {
 	ret := m.ctrl.Call(m, "Reply")
-	ret0, _ := ret[0].(interface{})
+	ret0, _ := ret[0].(any)
 	return ret0
 }
 
@@ -191,9 +191,9 @@ func (mr *MockInvocationMockRecorder) IsGenericInvocation() *gomock.Call {
 }
 
 // Attachments mocks base method
-func (m *MockInvocation) Attachments() map[string]interface{} {
+func (m *MockInvocation) Attachments() map[string]any {
 	ret := m.ctrl.Call(m, "Attachments")
-	ret0, _ := ret[0].(map[string]interface{})
+	ret0, _ := ret[0].(map[string]any)
 	return ret0
 }
 
@@ -203,12 +203,12 @@ func (mr *MockInvocationMockRecorder) Attachments() *gomock.Call {
 }
 
 // SetAttachment mocks base method
-func (m *MockInvocation) SetAttachment(key string, value interface{}) {
+func (m *MockInvocation) SetAttachment(key string, value any) {
 	m.ctrl.Call(m, "SetAttachment", key, value)
 }
 
 // SetAttachment indicates an expected call of SetAttachment
-func (mr *MockInvocationMockRecorder) SetAttachment(key, value interface{}) *gomock.Call {
+func (mr *MockInvocationMockRecorder) SetAttachment(key, value any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetAttachment", reflect.TypeOf((*MockInvocation)(nil).SetAttachment), key, value)
 }
 
@@ -221,19 +221,19 @@ func (m *MockInvocation) GetAttachment(key string) (string, bool) {
 }
 
 // GetAttachment indicates an expected call of GetAttachment
-func (mr *MockInvocationMockRecorder) GetAttachment(key interface{}) *gomock.Call {
+func (mr *MockInvocationMockRecorder) GetAttachment(key any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAttachment", reflect.TypeOf((*MockInvocation)(nil).GetAttachment), key)
 }
 
 // GetAttachmentInterface mocks base method
-func (m *MockInvocation) GetAttachmentInterface(arg0 string) interface{} {
+func (m *MockInvocation) GetAttachmentInterface(arg0 string) any {
 	ret := m.ctrl.Call(m, "GetAttachmentInterface", arg0)
-	ret0, _ := ret[0].(interface{})
+	ret0, _ := ret[0].(any)
 	return ret0
 }
 
 // GetAttachmentInterface indicates an expected call of GetAttachmentInterface
-func (mr *MockInvocationMockRecorder) GetAttachmentInterface(arg0 interface{}) *gomock.Call {
+func (mr *MockInvocationMockRecorder) GetAttachmentInterface(arg0 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAttachmentInterface", reflect.TypeOf((*MockInvocation)(nil).GetAttachmentInterface), arg0)
 }
 
@@ -245,7 +245,7 @@ func (m *MockInvocation) GetAttachmentWithDefaultValue(key, defaultValue string)
 }
 
 // GetAttachmentWithDefaultValue indicates an expected call of GetAttachmentWithDefaultValue
-func (mr *MockInvocationMockRecorder) GetAttachmentWithDefaultValue(key, defaultValue interface{}) *gomock.Call {
+func (mr *MockInvocationMockRecorder) GetAttachmentWithDefaultValue(key, defaultValue any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAttachmentWithDefaultValue", reflect.TypeOf((*MockInvocation)(nil).GetAttachmentWithDefaultValue), key, defaultValue)
 }
 
@@ -266,9 +266,9 @@ func (mr *MockInvocationMockRecorder) GetAttachmentAsContext() *gomock.Call {
 }
 
 // Attributes mocks base method
-func (m *MockInvocation) Attributes() map[string]interface{} {
+func (m *MockInvocation) Attributes() map[string]any {
 	ret := m.ctrl.Call(m, "Attributes")
-	ret0, _ := ret[0].(map[string]interface{})
+	ret0, _ := ret[0].(map[string]any)
 	return ret0
 }
 
@@ -278,37 +278,37 @@ func (mr *MockInvocationMockRecorder) Attributes() *gomock.Call {
 }
 
 // SetAttribute mocks base method
-func (m *MockInvocation) SetAttribute(key string, value interface{}) {
+func (m *MockInvocation) SetAttribute(key string, value any) {
 	m.ctrl.Call(m, "SetAttribute", key, value)
 }
 
 // SetAttribute indicates an expected call of SetAttribute
-func (mr *MockInvocationMockRecorder) SetAttribute(key, value interface{}) *gomock.Call {
+func (mr *MockInvocationMockRecorder) SetAttribute(key, value any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetAttribute", reflect.TypeOf((*MockInvocation)(nil).SetAttribute), key, value)
 }
 
 // GetAttribute mocks base method
-func (m *MockInvocation) GetAttribute(key string) (interface{}, bool) {
+func (m *MockInvocation) GetAttribute(key string) (any, bool) {
 	ret := m.ctrl.Call(m, "GetAttribute", key)
-	ret0, _ := ret[0].(interface{})
+	ret0, _ := ret[0].(any)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
 
 // GetAttribute indicates an expected call of GetAttribute
-func (mr *MockInvocationMockRecorder) GetAttribute(key interface{}) *gomock.Call {
+func (mr *MockInvocationMockRecorder) GetAttribute(key any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAttribute", reflect.TypeOf((*MockInvocation)(nil).GetAttribute), key)
 }
 
 // GetAttributeWithDefaultValue mocks base method
-func (m *MockInvocation) GetAttributeWithDefaultValue(key string, defaultValue interface{}) interface{} {
+func (m *MockInvocation) GetAttributeWithDefaultValue(key string, defaultValue any) any {
 	ret := m.ctrl.Call(m, "GetAttributeWithDefaultValue", key, defaultValue)
-	ret0, _ := ret[0].(interface{})
+	ret0, _ := ret[0].(any)
 	return ret0
 }
 
 // GetAttributeWithDefaultValue indicates an expected call of GetAttributeWithDefaultValue
-func (mr *MockInvocationMockRecorder) GetAttributeWithDefaultValue(key, defaultValue interface{}) *gomock.Call {
+func (mr *MockInvocationMockRecorder) GetAttributeWithDefaultValue(key, defaultValue any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAttributeWithDefaultValue", reflect.TypeOf((*MockInvocation)(nil).GetAttributeWithDefaultValue), key, defaultValue)
 }
 
@@ -341,7 +341,7 @@ func (m *MockResult) SetError(arg0 error) {
 }
 
 // SetError indicates an expected call of SetError
-func (mr *MockResultMockRecorder) SetError(arg0 interface{}) *gomock.Call {
+func (mr *MockResultMockRecorder) SetError(arg0 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetError", reflect.TypeOf((*MockResult)(nil).SetError), arg0)
 }
 
@@ -358,19 +358,19 @@ func (mr *MockResultMockRecorder) Error() *gomock.Call {
 }
 
 // SetResult mocks base method
-func (m *MockResult) SetResult(arg0 interface{}) {
+func (m *MockResult) SetResult(arg0 any) {
 	m.ctrl.Call(m, "SetResult", arg0)
 }
 
 // SetResult indicates an expected call of SetResult
-func (mr *MockResultMockRecorder) SetResult(arg0 interface{}) *gomock.Call {
+func (mr *MockResultMockRecorder) SetResult(arg0 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetResult", reflect.TypeOf((*MockResult)(nil).SetResult), arg0)
 }
 
 // Result mocks base method
-func (m *MockResult) Result() interface{} {
+func (m *MockResult) Result() any {
 	ret := m.ctrl.Call(m, "Result")
-	ret0, _ := ret[0].(interface{})
+	ret0, _ := ret[0].(any)
 	return ret0
 }
 
@@ -380,19 +380,19 @@ func (mr *MockResultMockRecorder) Result() *gomock.Call {
 }
 
 // SetAttachments mocks base method
-func (m *MockResult) SetAttachments(arg0 map[string]interface{}) {
+func (m *MockResult) SetAttachments(arg0 map[string]any) {
 	m.ctrl.Call(m, "SetAttachments", arg0)
 }
 
 // SetAttachments indicates an expected call of SetAttachments
-func (mr *MockResultMockRecorder) SetAttachments(arg0 interface{}) *gomock.Call {
+func (mr *MockResultMockRecorder) SetAttachments(arg0 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetAttachments", reflect.TypeOf((*MockResult)(nil).SetAttachments), arg0)
 }
 
 // Attachments mocks base method
-func (m *MockResult) Attachments() map[string]interface{} {
+func (m *MockResult) Attachments() map[string]any {
 	ret := m.ctrl.Call(m, "Attachments")
-	ret0, _ := ret[0].(map[string]interface{})
+	ret0, _ := ret[0].(map[string]any)
 	return ret0
 }
 
@@ -402,24 +402,24 @@ func (mr *MockResultMockRecorder) Attachments() *gomock.Call {
 }
 
 // AddAttachment mocks base method
-func (m *MockResult) AddAttachment(arg0 string, arg1 interface{}) {
+func (m *MockResult) AddAttachment(arg0 string, arg1 any) {
 	m.ctrl.Call(m, "AddAttachment", arg0, arg1)
 }
 
 // AddAttachment indicates an expected call of AddAttachment
-func (mr *MockResultMockRecorder) AddAttachment(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockResultMockRecorder) AddAttachment(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddAttachment", reflect.TypeOf((*MockResult)(nil).AddAttachment), arg0, arg1)
 }
 
 // Attachment mocks base method
-func (m *MockResult) Attachment(arg0 string, arg1 interface{}) interface{} {
+func (m *MockResult) Attachment(arg0 string, arg1 any) any {
 	ret := m.ctrl.Call(m, "Attachment", arg0, arg1)
-	ret0, _ := ret[0].(interface{})
+	ret0, _ := ret[0].(any)
 	return ret0
 }
 
 // Attachment indicates an expected call of Attachment
-func (mr *MockResultMockRecorder) Attachment(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockResultMockRecorder) Attachment(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Attachment", reflect.TypeOf((*MockResult)(nil).Attachment), arg0, arg1)
 }
 
@@ -488,7 +488,7 @@ func (m *MockInvoker) Invoke(arg0 context.Context, arg1 protocol.Invocation) pro
 }
 
 // Invoke indicates an expected call of Invoke
-func (mr *MockInvokerMockRecorder) Invoke(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockInvokerMockRecorder) Invoke(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Invoke", reflect.TypeOf((*MockInvoker)(nil).Invoke), arg0, arg1)
 }
 
@@ -567,7 +567,7 @@ func Test_otelServerFilter_Invoke(t *testing.T) {
 	invocation.EXPECT().ActualMethodName().Return("oteldubbogo").AnyTimes()
 	invocation.EXPECT().MethodName().Return("otel").AnyTimes()
 	invocation.EXPECT().SetAttachment(gomock.Any(), gomock.Any()).Return().AnyTimes()
-	invocation.EXPECT().Attachments().Return(map[string]interface{}{}).AnyTimes()
+	invocation.EXPECT().Attachments().Return(map[string]any{}).AnyTimes()
 
 	tests := []struct {
 		name   string
@@ -613,7 +613,7 @@ func Test_otelClientFilter_Invoke(t *testing.T) {
 	invocation.EXPECT().ActualMethodName().Return("oteldubbogo").AnyTimes()
 	invocation.EXPECT().MethodName().Return("otel").AnyTimes()
 	invocation.EXPECT().SetAttachment(gomock.Any(), gomock.Any()).Return().AnyTimes()
-	invocation.EXPECT().Attachments().Return(map[string]interface{}{}).AnyTimes()
+	invocation.EXPECT().Attachments().Return(map[string]any{}).AnyTimes()
 
 	tests := []struct {
 		name   string

@@ -37,7 +37,7 @@ import (
 
 func TestLoadBalance(t *testing.T) {
 	lb := newP2CLoadBalance()
-	invocation := protoinvoc.NewRPCInvocation("TestMethod", []interface{}{}, nil)
+	invocation := protoinvoc.NewRPCInvocation("TestMethod", []any{}, nil)
 	randSeed := func() int64 {
 		return 0
 	}

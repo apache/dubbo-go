@@ -92,7 +92,7 @@ func TestMultiRegRefer(t *testing.T) {
 
 	regProtocol.Refer(url2)
 	var count int
-	regProtocol.registries.Range(func(key, value interface{}) bool {
+	regProtocol.registries.Range(func(key, value any) bool {
 		count++
 		return true
 	})
@@ -113,7 +113,7 @@ func TestOneRegRefer(t *testing.T) {
 
 	regProtocol.Refer(url2)
 	var count int
-	regProtocol.registries.Range(func(key, value interface{}) bool {
+	regProtocol.registries.Range(func(key, value any) bool {
 		count++
 		return true
 	})
@@ -161,14 +161,14 @@ func TestMultiRegAndMultiProtoExporter(t *testing.T) {
 	regProtocol.Export(invoker2)
 
 	var count int
-	regProtocol.registries.Range(func(key, value interface{}) bool {
+	regProtocol.registries.Range(func(key, value any) bool {
 		count++
 		return true
 	})
 	assert.Equal(t, count, 2)
 
 	var count2 int
-	regProtocol.bounds.Range(func(key, value interface{}) bool {
+	regProtocol.bounds.Range(func(key, value any) bool {
 		count2++
 		return true
 	})
@@ -192,14 +192,14 @@ func TestOneRegAndProtoExporter(t *testing.T) {
 	regProtocol.Export(invoker2)
 
 	var count int
-	regProtocol.registries.Range(func(key, value interface{}) bool {
+	regProtocol.registries.Range(func(key, value any) bool {
 		count++
 		return true
 	})
 	assert.Equal(t, count, 1)
 
 	var count2 int
-	regProtocol.bounds.Range(func(key, value interface{}) bool {
+	regProtocol.bounds.Range(func(key, value any) bool {
 		count2++
 		return true
 	})
@@ -214,7 +214,7 @@ func TestDestroy(t *testing.T) {
 	regProtocol.Destroy()
 
 	var count int
-	regProtocol.registries.Range(func(key, value interface{}) bool {
+	regProtocol.registries.Range(func(key, value any) bool {
 		count++
 		return true
 	})

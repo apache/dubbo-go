@@ -72,7 +72,7 @@ func (f *consumerGracefulShutdownFilter) OnResponse(ctx context.Context, result 
 	return result
 }
 
-func (f *consumerGracefulShutdownFilter) Set(name string, conf interface{}) {
+func (f *consumerGracefulShutdownFilter) Set(name string, conf any) {
 	switch name {
 	case constant.GracefulShutdownFilterShutdownConfig:
 		if shutdownConfig, ok := conf.(*config.ShutdownConfig); ok {

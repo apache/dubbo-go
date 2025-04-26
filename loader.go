@@ -306,7 +306,7 @@ func GetConfigResolver(conf *loaderConf) *koanf.Koanf {
 
 // resolvePlaceholder replace ${xx} with real value
 func resolvePlaceholder(resolver *koanf.Koanf) *koanf.Koanf {
-	m := make(map[string]interface{})
+	m := make(map[string]any)
 	for k, v := range resolver.All() {
 		s, ok := v.(string)
 		if !ok {

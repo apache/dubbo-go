@@ -36,7 +36,7 @@ type PrefixLogger struct {
 }
 
 // Infof does info logging.
-func (pl *PrefixLogger) Infof(format string, args ...interface{}) {
+func (pl *PrefixLogger) Infof(format string, args ...any) {
 	if pl != nil {
 		// Handle nil, so the tests can pass in a nil logger.
 		format = pl.prefix + format
@@ -47,7 +47,7 @@ func (pl *PrefixLogger) Infof(format string, args ...interface{}) {
 }
 
 // Warnf does warning logging.
-func (pl *PrefixLogger) Warnf(format string, args ...interface{}) {
+func (pl *PrefixLogger) Warnf(format string, args ...any) {
 	if pl != nil {
 		format = pl.prefix + format
 		pl.logger.WarningDepth(1, fmt.Sprintf(format, args...))
@@ -57,7 +57,7 @@ func (pl *PrefixLogger) Warnf(format string, args ...interface{}) {
 }
 
 // Errorf does error logging.
-func (pl *PrefixLogger) Errorf(format string, args ...interface{}) {
+func (pl *PrefixLogger) Errorf(format string, args ...any) {
 	if pl != nil {
 		format = pl.prefix + format
 		pl.logger.ErrorDepth(1, fmt.Sprintf(format, args...))

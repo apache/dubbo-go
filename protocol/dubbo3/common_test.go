@@ -50,8 +50,8 @@ func (g *greeterProvider) SayHello(ctx context.Context, req *internal.HelloReque
 	return &internal.HelloReply{Message: "this is message from reply"}, nil
 }
 
-func dubboGreeterSayHelloHandler(srv interface{}, ctx context.Context,
-	dec func(interface{}) error, interceptor native_grpc.UnaryServerInterceptor) (interface{}, error) {
+func dubboGreeterSayHelloHandler(srv any, ctx context.Context,
+	dec func(any) error, interceptor native_grpc.UnaryServerInterceptor) (any, error) {
 
 	in := new(internal.HelloRequest)
 	if err := dec(in); err != nil {
@@ -59,7 +59,7 @@ func dubboGreeterSayHelloHandler(srv interface{}, ctx context.Context,
 	}
 	base := srv.(Dubbo3GrpcService)
 
-	args := []interface{}{}
+	args := []any{}
 	args = append(args, in)
 	invo := invocation.NewRPCInvocation("SayHello", args, nil)
 
@@ -71,7 +71,7 @@ func dubboGreeterSayHelloHandler(srv interface{}, ctx context.Context,
 		Server:     srv,
 		FullMethod: "/helloworld.Greeter/SayHello",
 	}
-	handler := func(context.Context, interface{}) (interface{}, error) {
+	handler := func(context.Context, any) (any, error) {
 		result := base.XXX_GetProxyImpl().Invoke(context.Background(), invo)
 		return result.Result(), result.Error()
 	}

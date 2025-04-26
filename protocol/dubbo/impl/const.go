@@ -234,7 +234,7 @@ var (
 // DescRegex ...
 var DescRegex, _ = regexp.Compile(DESC_REGEX)
 
-var NilValue = reflect.Zero(reflect.TypeOf((*interface{})(nil)).Elem())
+var NilValue = reflect.Zero(reflect.TypeOf((*any)(nil)).Elem())
 
 // Body map keys
 var (

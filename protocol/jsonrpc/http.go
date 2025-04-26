@@ -53,7 +53,7 @@ type Request struct {
 	version  string
 	service  string
 	method   string
-	args     interface{}
+	args     any
 }
 
 // HTTPOptions is a HTTP option include HandshakeTimeout and HTTPTimeout.
@@ -94,7 +94,7 @@ func NewHTTPClient(opt *HTTPOptions) *HTTPClient {
 }
 
 // NewRequest creates a new HTTP request with @service ,@method and @arguments.
-func (c *HTTPClient) NewRequest(service *common.URL, method string, args interface{}) *Request {
+func (c *HTTPClient) NewRequest(service *common.URL, method string, args any) *Request {
 	return &Request{
 		ID:       atomic.AddInt64(&c.ID, 1),
 		group:    service.GetParam(constant.GroupKey, ""),
@@ -107,7 +107,7 @@ func (c *HTTPClient) NewRequest(service *common.URL, method string, args interfa
 }
 
 // Call makes a HTTP call with @ctx , @service ,@req and @rsp
-func (c *HTTPClient) Call(ctx context.Context, service *common.URL, req *Request, rsp interface{}) error {
+func (c *HTTPClient) Call(ctx context.Context, service *common.URL, req *Request, rsp any) error {
 	// header
 	httpHeader := http.Header{}
 	httpHeader.Set("Content-Type", "application/json")

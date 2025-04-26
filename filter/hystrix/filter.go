@@ -255,12 +255,12 @@ func initConfigConsumer() error {
 		return perrors.Errorf("no config for hystrix_consumer")
 	}
 	filterConf := config.GetConsumerConfig().FilterConf
-	var filterConfig interface{}
+	var filterConfig any
 	switch reflect.ValueOf(filterConf).Interface().(type) {
-	case map[interface{}]interface{}:
-		filterConfig = config.GetConsumerConfig().FilterConf.(map[interface{}]interface{})[HYSTRIX]
-	case map[string]interface{}:
-		filterConfig = config.GetConsumerConfig().FilterConf.(map[string]interface{})[HYSTRIX]
+	case map[any]any:
+		filterConfig = config.GetConsumerConfig().FilterConf.(map[any]any)[HYSTRIX]
+	case map[string]any:
+		filterConfig = config.GetConsumerConfig().FilterConf.(map[string]any)[HYSTRIX]
 	}
 	if filterConfig == nil {
 		return perrors.Errorf("no config for hystrix_consumer")
@@ -280,7 +280,7 @@ func initConfigProvider() error {
 	if config.GetProviderConfig().FilterConf == nil {
 		return perrors.Errorf("no config for hystrix_provider")
 	}
-	filterConfig := config.GetProviderConfig().FilterConf.(map[interface{}]interface{})[HYSTRIX]
+	filterConfig := config.GetProviderConfig().FilterConf.(map[any]any)[HYSTRIX]
 	if filterConfig == nil {
 		return perrors.Errorf("no config for hystrix_provider")
 	}

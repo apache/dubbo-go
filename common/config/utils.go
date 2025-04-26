@@ -62,7 +62,7 @@ func removeDuplicateElement(items []string) []string {
 	return result
 }
 
-func Verify(s interface{}) error {
+func Verify(s any) error {
 	if err := validate.Struct(s); err != nil {
 		errs := err.(validator.ValidationErrors)
 		var slice []string

@@ -49,7 +49,7 @@ func GetGsonGeneralizer() Generalizer {
 
 type GsonGeneralizer struct{}
 
-func (GsonGeneralizer) Generalize(obj interface{}) (interface{}, error) {
+func (GsonGeneralizer) Generalize(obj any) (any, error) {
 	newObj, ok := obj.(hessian.POJO)
 	if !ok {
 		return nil, perrors.Errorf("unexpected type of obj(=%T), wanted is hessian pojo", obj)
@@ -63,7 +63,7 @@ func (GsonGeneralizer) Generalize(obj interface{}) (interface{}, error) {
 	return string(jsonbytes), nil
 }
 
-func (GsonGeneralizer) Realize(obj interface{}, typ reflect.Type) (interface{}, error) {
+func (GsonGeneralizer) Realize(obj any, typ reflect.Type) (any, error) {
 	jsonbytes, ok := obj.(string)
 	if !ok {
 		return nil, perrors.Errorf("unexpected type of obj(=%T), wanted is string", obj)
@@ -83,7 +83,7 @@ func (GsonGeneralizer) Realize(obj interface{}, typ reflect.Type) (interface{}, 
 	return ret, nil
 }
 
-func (GsonGeneralizer) GetType(obj interface{}) (typ string, err error) {
+func (GsonGeneralizer) GetType(obj any) (typ string, err error) {
 	typ, err = hessian2.GetJavaName(obj)
 	// no error or error is not NilError
 	if err == nil || err != hessian2.NilError {

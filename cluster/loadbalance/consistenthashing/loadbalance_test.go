@@ -63,7 +63,7 @@ func (s *consistentHashSelectorSuite) SetupTest() {
 }
 
 func (s *consistentHashSelectorSuite) TestToKey() {
-	result := s.selector.toKey([]interface{}{"username", "age"})
+	result := s.selector.toKey([]any{"username", "age"})
 	s.Equal(result, "usernameage")
 }
 
@@ -112,11 +112,11 @@ func (s *consistentHashLoadBalanceSuite) SetupTest() {
 }
 
 func (s *consistentHashLoadBalanceSuite) TestSelect() {
-	args := []interface{}{"name", "password", "age"}
+	args := []any{"name", "password", "age"}
 	invoker := s.lb.Select(s.invokers, invocation.NewRPCInvocation("echo", args, nil))
 	s.Equal(fmt.Sprintf("%s:%d", ip, port8081), invoker.GetURL().Location)
 
-	args = []interface{}{"ok", "abc"}
+	args = []any{"ok", "abc"}
 	invoker = s.lb.Select(s.invokers, invocation.NewRPCInvocation("echo", args, nil))
 	s.Equal(fmt.Sprintf("%s:%d", ip, port8080), invoker.GetURL().Location)
 }

@@ -31,7 +31,7 @@ type Codec interface {
 
 type DecodeResult struct {
 	IsRequest bool // indicates whether the current request is a heartbeat request
-	Result    interface{}
+	Result    any
 }
 
 var codec = make(map[string]Codec, 2)

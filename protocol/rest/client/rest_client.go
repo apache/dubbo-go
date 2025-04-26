@@ -35,10 +35,10 @@ type RestClientRequest struct {
 	Method      string
 	PathParams  map[string]string
 	QueryParams map[string]string
-	Body        interface{}
+	Body        any
 }
 
 // RestClient user can implement this client interface to send request
 type RestClient interface {
-	Do(request *RestClientRequest, res interface{}) error
+	Do(request *RestClientRequest, res any) error
 }

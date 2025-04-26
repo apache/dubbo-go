@@ -193,8 +193,8 @@ func (n *nacosServiceDiscovery) GetInstances(serviceName string) []registry.Serv
 // Due to nacos namingClient does not support pagination, so we have to query all instances and then return part of them
 func (n *nacosServiceDiscovery) GetInstancesByPage(serviceName string, offset int, pageSize int) gxpage.Pager {
 	all := n.GetInstances(serviceName)
-	res := make([]interface{}, 0, pageSize)
-	// could not use res = all[a:b] here because the res should be []interface{}, not []ServiceInstance
+	res := make([]any, 0, pageSize)
+	// could not use res = all[a:b] here because the res should be []any, not []ServiceInstance
 	for i := offset; i < len(all) && i < offset+pageSize; i++ {
 		res = append(res, all[i])
 	}
@@ -207,8 +207,8 @@ func (n *nacosServiceDiscovery) GetInstancesByPage(serviceName string, offset in
 // Thus, we must query all instances and then do filter
 func (n *nacosServiceDiscovery) GetHealthyInstancesByPage(serviceName string, offset int, pageSize int, healthy bool) gxpage.Pager {
 	all := n.GetInstances(serviceName)
-	res := make([]interface{}, 0, pageSize)
-	// could not use res = all[a:b] here because the res should be []interface{}, not []ServiceInstance
+	res := make([]any, 0, pageSize)
+	// could not use res = all[a:b] here because the res should be []any, not []ServiceInstance
 	var (
 		i     = offset
 		count = 0

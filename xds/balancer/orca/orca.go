@@ -86,7 +86,7 @@ func FromMetadata(md metadata.MD) *orcapb.OrcaLoadReport {
 
 type loadParser struct{}
 
-func (*loadParser) Parse(md metadata.MD) interface{} {
+func (*loadParser) Parse(md metadata.MD) any {
 	return FromMetadata(md)
 }
 

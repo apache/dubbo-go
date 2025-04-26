@@ -38,12 +38,12 @@ type Client struct {
 type ClientInfo struct {
 	InterfaceName        string
 	MethodNames          []string
-	ConnectionInjectFunc func(dubboCliRaw interface{}, conn *Connection)
-	Meta                 map[string]interface{}
+	ConnectionInjectFunc func(dubboCliRaw any, conn *Connection)
+	Meta                 map[string]any
 }
 
 type ClientDefinition struct {
-	Svc  interface{}
+	Svc  any
 	Info *ClientInfo
 }
 
@@ -52,7 +52,7 @@ type Connection struct {
 	refOpts *ReferenceOptions
 }
 
-func (conn *Connection) call(ctx context.Context, reqs []interface{}, resp interface{}, methodName, callType string, opts ...CallOption) (protocol.Result, error) {
+func (conn *Connection) call(ctx context.Context, reqs []any, resp any, methodName, callType string, opts ...CallOption) (protocol.Result, error) {
 	options := newDefaultCallOptions()
 	for _, opt := range opts {
 		opt(options)
@@ -64,7 +64,7 @@ func (conn *Connection) call(ctx context.Context, reqs []interface{}, resp inter
 	return conn.refOpts.invoker.Invoke(ctx, inv), nil
 }
 
-func (conn *Connection) CallUnary(ctx context.Context, reqs []interface{}, resp interface{}, methodName string, opts ...CallOption) error {
+func (conn *Connection) CallUnary(ctx context.Context, reqs []any, resp any, methodName string, opts ...CallOption) error {
 	res, err := conn.call(ctx, reqs, resp, methodName, constant.CallUnary, opts...)
 	if err != nil {
 		return err
@@ -72,7 +72,7 @@ func (conn *Connection) CallUnary(ctx context.Context, reqs []interface{}, resp 
 	return res.Error()
 }
 
-func (conn *Connection) CallClientStream(ctx context.Context, methodName string, opts ...CallOption) (interface{}, error) {
+func (conn *Connection) CallClientStream(ctx context.Context, methodName string, opts ...CallOption) (any, error) {
 	res, err := conn.call(ctx, nil, nil, methodName, constant.CallClientStream, opts...)
 	if err != nil {
 		return nil, err
@@ -80,15 +80,15 @@ func (conn *Connection) CallClientStream(ctx context.Context, methodName string,
 	return res.Result(), res.Error()
 }
 
-func (conn *Connection) CallServerStream(ctx context.Context, req interface{}, methodName string, opts ...CallOption) (interface{}, error) {
-	res, err := conn.call(ctx, []interface{}{req}, nil, methodName, constant.CallServerStream, opts...)
+func (conn *Connection) CallServerStream(ctx context.Context, req any, methodName string, opts ...CallOption) (any, error) {
+	res, err := conn.call(ctx, []any{req}, nil, methodName, constant.CallServerStream, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return res.Result(), res.Error()
 }
 
-func (conn *Connection) CallBidiStream(ctx context.Context, methodName string, opts ...CallOption) (interface{}, error) {
+func (conn *Connection) CallBidiStream(ctx context.Context, methodName string, opts ...CallOption) (any, error) {
 	res, err := conn.call(ctx, nil, nil, methodName, constant.CallBidiStream, opts...)
 	if err != nil {
 		return nil, err
@@ -142,8 +142,8 @@ func (cli *Client) dial(interfaceName string, info *ClientInfo, opts ...Referenc
 	return &Connection{refOpts: newRefOpts}, nil
 }
 
-func generateInvocation(methodName string, reqs []interface{}, resp interface{}, callType string, opts *CallOptions) (protocol.Invocation, error) {
-	var paramsRawVals []interface{}
+func generateInvocation(methodName string, reqs []any, resp any, callType string, opts *CallOptions) (protocol.Invocation, error) {
+	var paramsRawVals []any
 	for _, req := range reqs {
 		paramsRawVals = append(paramsRawVals, req)
 	}

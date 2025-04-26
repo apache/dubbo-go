@@ -60,7 +60,7 @@ type UnmarshalOptions struct {
 //
 // The type of the resource is determined by the type of ret. E.g.
 // map[string]ListenerUpdate means this is for LDS.
-func processAllResources(opts *UnmarshalOptions, ret interface{}) (UpdateMetadata, error) {
+func processAllResources(opts *UnmarshalOptions, ret any) (UpdateMetadata, error) {
 	timestamp := time.Now()
 	md := UpdateMetadata{
 		Version:   opts.Version,

@@ -219,7 +219,7 @@ func file_security_v1alpha1_ca_proto_rawDescGZIP() []byte {
 }
 
 var file_security_v1alpha1_ca_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
-var file_security_v1alpha1_ca_proto_goTypes = []interface{}{
+var file_security_v1alpha1_ca_proto_goTypes = []any{
 	(*IstioCertificateRequest)(nil),  // 0: istio.v1.auth.IstioCertificateRequest
 	(*IstioCertificateResponse)(nil), // 1: istio.v1.auth.IstioCertificateResponse
 	(*_struct.Struct)(nil),           // 2: google.protobuf.Struct
@@ -241,7 +241,7 @@ func file_security_v1alpha1_ca_proto_init() {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_security_v1alpha1_ca_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_security_v1alpha1_ca_proto_msgTypes[0].Exporter = func(v any, i int) any {
 			switch v := v.(*IstioCertificateRequest); i {
 			case 0:
 				return &v.state
@@ -253,7 +253,7 @@ func file_security_v1alpha1_ca_proto_init() {
 				return nil
 			}
 		}
-		file_security_v1alpha1_ca_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_security_v1alpha1_ca_proto_msgTypes[1].Exporter = func(v any, i int) any {
 			switch v := v.(*IstioCertificateResponse); i {
 			case 0:
 				return &v.state

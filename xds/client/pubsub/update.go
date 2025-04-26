@@ -34,13 +34,13 @@ import (
 
 type watcherInfoWithUpdate struct {
 	wi     *watchInfo
-	update interface{}
+	update any
 	err    error
 }
 
 // scheduleCallback should only be called by methods of watchInfo, which checks
 // for watcher states and maintain consistency.
-func (pb *Pubsub) scheduleCallback(wi *watchInfo, update interface{}, err error) {
+func (pb *Pubsub) scheduleCallback(wi *watchInfo, update any, err error) {
 	pb.updateCh.Put(&watcherInfoWithUpdate{
 		wi:     wi,
 		update: update,

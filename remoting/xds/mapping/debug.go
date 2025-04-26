@@ -27,7 +27,7 @@ type ADSZResponse struct {
 }
 
 type ADSZClient struct {
-	Metadata map[string]interface{} `json:"metadata"`
+	Metadata map[string]any `json:"metadata"`
 }
 
 func (a *ADSZResponse) GetMap() map[string]string {
@@ -36,7 +36,7 @@ func (a *ADSZResponse) GetMap() map[string]string {
 		if c.Metadata["LABELS"] == nil {
 			continue
 		}
-		labelsMap, ok := c.Metadata["LABELS"].(map[string]interface{})
+		labelsMap, ok := c.Metadata["LABELS"].(map[string]any)
 		if !ok {
 			continue
 		}

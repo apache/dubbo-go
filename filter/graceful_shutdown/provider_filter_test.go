@@ -41,7 +41,7 @@ import (
 
 func TestProviderFilterInvoke(t *testing.T) {
 	url := common.NewURLWithOptions(common.WithParams(url.Values{}))
-	invocation := invocation.NewRPCInvocation("GetUser", []interface{}{"OK"}, make(map[string]interface{}))
+	invocation := invocation.NewRPCInvocation("GetUser", []any{"OK"}, make(map[string]any))
 
 	extension.SetRejectedExecutionHandler("test", func() filter.RejectedExecutionHandler {
 		return &TestRejectedExecutionHandler{}

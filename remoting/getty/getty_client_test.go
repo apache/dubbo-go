@@ -56,7 +56,7 @@ func TestRunSuite(t *testing.T) {
 
 func testRequestOneWay(t *testing.T, client *Client) {
 	request := remoting.NewRequest("2.0.2")
-	invocation := createInvocation("GetUser", nil, nil, []interface{}{"1", "username"},
+	invocation := createInvocation("GetUser", nil, nil, []any{"1", "username"},
 		[]reflect.Value{reflect.ValueOf("1"), reflect.ValueOf("username")})
 	attachment := map[string]string{InterfaceKey: "com.ikurento.user.UserProvider"}
 	setAttachment(invocation, attachment)
@@ -67,7 +67,7 @@ func testRequestOneWay(t *testing.T, client *Client) {
 	assert.NoError(t, err)
 }
 
-func createInvocation(methodName string, callback interface{}, reply interface{}, arguments []interface{},
+func createInvocation(methodName string, callback any, reply any, arguments []any,
 	parameterValues []reflect.Value) *invocation.RPCInvocation {
 	return invocation.NewRPCInvocationWithOptions(invocation.WithMethodName(methodName),
 		invocation.WithArguments(arguments), invocation.WithReply(reply),
@@ -107,8 +107,8 @@ func testClient_Call(t *testing.T, c *Client) {
 func testGetBigPkg(t *testing.T, c *Client) {
 	user := &User{}
 	request := remoting.NewRequest("2.0.2")
-	invocation := createInvocation("GetBigPkg", nil, nil, []interface{}{[]interface{}{nil}, user},
-		[]reflect.Value{reflect.ValueOf([]interface{}{nil}), reflect.ValueOf(user)})
+	invocation := createInvocation("GetBigPkg", nil, nil, []any{[]any{nil}, user},
+		[]reflect.Value{reflect.ValueOf([]any{nil}), reflect.ValueOf(user)})
 	attachment := map[string]string{InterfaceKey: "com.ikurento.user.UserProvider"}
 	setAttachment(invocation, attachment)
 	request.Data = invocation
@@ -126,7 +126,7 @@ func testGetBigPkg(t *testing.T, c *Client) {
 func testGetUser(t *testing.T, c *Client) {
 	user := &User{}
 	request := remoting.NewRequest("2.0.2")
-	invocation := createInvocation("GetUser", nil, nil, []interface{}{"1", "username"},
+	invocation := createInvocation("GetUser", nil, nil, []any{"1", "username"},
 		[]reflect.Value{reflect.ValueOf("1"), reflect.ValueOf("username")})
 	attachment := map[string]string{InterfaceKey: "com.ikurento.user.UserProvider"}
 	setAttachment(invocation, attachment)
@@ -148,7 +148,7 @@ func testGetUser0(t *testing.T, c *Client) {
 	)
 	user = &User{}
 	request := remoting.NewRequest("2.0.2")
-	invocation := createInvocation("GetUser0", nil, nil, []interface{}{"1", nil, "username"},
+	invocation := createInvocation("GetUser0", nil, nil, []any{"1", nil, "username"},
 		[]reflect.Value{reflect.ValueOf("1"), reflect.ValueOf(nil), reflect.ValueOf("username")})
 	attachment := map[string]string{InterfaceKey: "com.ikurento.user.UserProvider"}
 	setAttachment(invocation, attachment)
@@ -167,7 +167,7 @@ func testGetUser0(t *testing.T, c *Client) {
 func testGetUser1(t *testing.T, c *Client) {
 	var err error
 	request := remoting.NewRequest("2.0.2")
-	invocation := createInvocation("GetUser1", nil, nil, []interface{}{},
+	invocation := createInvocation("GetUser1", nil, nil, []any{},
 		[]reflect.Value{})
 	attachment := map[string]string{InterfaceKey: "com.ikurento.user.UserProvider"}
 	setAttachment(invocation, attachment)
@@ -185,7 +185,7 @@ func testGetUser1(t *testing.T, c *Client) {
 func testGetUser2(t *testing.T, c *Client) {
 	var err error
 	request := remoting.NewRequest("2.0.2")
-	invocation := createInvocation("GetUser2", nil, nil, []interface{}{},
+	invocation := createInvocation("GetUser2", nil, nil, []any{},
 		[]reflect.Value{})
 	attachment := map[string]string{InterfaceKey: "com.ikurento.user.UserProvider"}
 	setAttachment(invocation, attachment)
@@ -201,7 +201,7 @@ func testGetUser2(t *testing.T, c *Client) {
 func testGetUser3(t *testing.T, c *Client) {
 	var err error
 	request := remoting.NewRequest("2.0.2")
-	invocation := createInvocation("GetUser3", nil, nil, []interface{}{},
+	invocation := createInvocation("GetUser3", nil, nil, []any{},
 		[]reflect.Value{})
 	attachment := map[string]string{
 		InterfaceKey: "com.ikurento.user.UserProvider",
@@ -211,7 +211,7 @@ func testGetUser3(t *testing.T, c *Client) {
 	request.Event = false
 	request.TwoWay = true
 	pendingResponse := remoting.NewPendingResponse(request.ID)
-	user2 := []interface{}{}
+	user2 := []any{}
 	pendingResponse.Reply = &user2
 	remoting.AddPendingResponse(pendingResponse)
 	err = c.Request(request, 3*time.Second, pendingResponse)
@@ -222,14 +222,14 @@ func testGetUser3(t *testing.T, c *Client) {
 func testGetUser4(t *testing.T, c *Client) {
 	var err error
 	request := remoting.NewRequest("2.0.2")
-	invocation := invocation.NewRPCInvocation("GetUser4", []interface{}{[]interface{}{"1", "username"}}, nil)
+	invocation := invocation.NewRPCInvocation("GetUser4", []any{[]any{"1", "username"}}, nil)
 	attachment := map[string]string{InterfaceKey: "com.ikurento.user.UserProvider"}
 	setAttachment(invocation, attachment)
 	request.Data = invocation
 	request.Event = false
 	request.TwoWay = true
 	pendingResponse := remoting.NewPendingResponse(request.ID)
-	user2 := []interface{}{}
+	user2 := []any{}
 	pendingResponse.Reply = &user2
 	remoting.AddPendingResponse(pendingResponse)
 	err = c.Request(request, 3*time.Second, pendingResponse)
@@ -240,14 +240,14 @@ func testGetUser4(t *testing.T, c *Client) {
 func testGetUser5(t *testing.T, c *Client) {
 	var err error
 	request := remoting.NewRequest("2.0.2")
-	invocation := invocation.NewRPCInvocation("GetUser5", []interface{}{map[interface{}]interface{}{"id": "1", "name": "username"}}, nil)
+	invocation := invocation.NewRPCInvocation("GetUser5", []any{map[any]any{"id": "1", "name": "username"}}, nil)
 	attachment := map[string]string{InterfaceKey: "com.ikurento.user.UserProvider"}
 	setAttachment(invocation, attachment)
 	request.Data = invocation
 	request.Event = false
 	request.TwoWay = true
 	pendingResponse := remoting.NewPendingResponse(request.ID)
-	user3 := map[interface{}]interface{}{}
+	user3 := map[any]any{}
 	pendingResponse.Reply = &user3
 	remoting.AddPendingResponse(pendingResponse)
 	err = c.Request(request, 3*time.Second, pendingResponse)
@@ -263,7 +263,7 @@ func testGetUser6(t *testing.T, c *Client) {
 	)
 	user = &User{}
 	request := remoting.NewRequest("2.0.2")
-	invocation := invocation.NewRPCInvocation("GetUser6", []interface{}{0}, nil)
+	invocation := invocation.NewRPCInvocation("GetUser6", []any{0}, nil)
 	attachment := map[string]string{InterfaceKey: "com.ikurento.user.UserProvider"}
 	setAttachment(invocation, attachment)
 	request.Data = invocation
@@ -284,7 +284,7 @@ func testGetUser61(t *testing.T, c *Client) {
 	)
 	user = &User{}
 	request := remoting.NewRequest("2.0.2")
-	invocation := invocation.NewRPCInvocation("GetUser6", []interface{}{1}, nil)
+	invocation := invocation.NewRPCInvocation("GetUser6", []any{1}, nil)
 	attachment := map[string]string{InterfaceKey: "com.ikurento.user.UserProvider"}
 	setAttachment(invocation, attachment)
 	request.Data = invocation
@@ -302,7 +302,7 @@ func testClient_AsyncCall(t *testing.T, client *Client) {
 	user := &User{}
 	wg := sync.WaitGroup{}
 	request := remoting.NewRequest("2.0.2")
-	invocation := createInvocation("GetUser0", nil, nil, []interface{}{"4", nil, "username"},
+	invocation := createInvocation("GetUser0", nil, nil, []any{"4", nil, "username"},
 		[]reflect.Value{reflect.ValueOf("4"), reflect.ValueOf(nil), reflect.ValueOf("username")})
 	attachment := map[string]string{InterfaceKey: "com.ikurento.user.UserProvider"}
 	setAttachment(invocation, attachment)
@@ -419,7 +419,7 @@ type (
 )
 
 // size:4801228
-func (u *UserProvider) GetBigPkg(ctx context.Context, req []interface{}, rsp *User) error {
+func (u *UserProvider) GetBigPkg(ctx context.Context, req []any, rsp *User) error {
 	argBuf := new(bytes.Buffer)
 	for i := 0; i < 400; i++ {
 		argBuf.WriteString("击鼓其镗，踊跃用兵。土国城漕，我独南行。从孙子仲，平陈与宋。不我以归，忧心有忡。爰居爰处？爰丧其马？于以求之？于林之下。死生契阔，与子成说。执子之手，与子偕老。于嗟阔兮，不我活兮。于嗟洵兮，不我信兮。")
@@ -430,7 +430,7 @@ func (u *UserProvider) GetBigPkg(ctx context.Context, req []interface{}, rsp *Us
 	return nil
 }
 
-func (u *UserProvider) GetUser(ctx context.Context, req []interface{}, rsp *User) error {
+func (u *UserProvider) GetUser(ctx context.Context, req []any, rsp *User) error {
 	rsp.ID = req[0].(string)
 	rsp.Name = req[1].(string)
 	return nil
@@ -450,17 +450,17 @@ func (u *UserProvider) GetUser2() error {
 	return perrors.New("error")
 }
 
-func (u *UserProvider) GetUser3(rsp *[]interface{}) error {
+func (u *UserProvider) GetUser3(rsp *[]any) error {
 	*rsp = append(*rsp, User{ID: "1", Name: "username"})
 	return nil
 }
 
-func (u *UserProvider) GetUser4(ctx context.Context, req []interface{}) ([]interface{}, error) {
-	return []interface{}{User{ID: req[0].([]interface{})[0].(string), Name: req[0].([]interface{})[1].(string)}}, nil
+func (u *UserProvider) GetUser4(ctx context.Context, req []any) ([]any, error) {
+	return []any{User{ID: req[0].([]any)[0].(string), Name: req[0].([]any)[1].(string)}}, nil
 }
 
-func (u *UserProvider) GetUser5(ctx context.Context, req []interface{}) (map[interface{}]interface{}, error) {
-	return map[interface{}]interface{}{"key": User{ID: req[0].(map[interface{}]interface{})["id"].(string), Name: req[0].(map[interface{}]interface{})["name"].(string)}}, nil
+func (u *UserProvider) GetUser5(ctx context.Context, req []any) (map[any]any, error) {
+	return map[any]any{"key": User{ID: req[0].(map[any]any)["id"].(string), Name: req[0].(map[any]any)["name"].(string)}}, nil
 }
 
 func (u *UserProvider) GetUser6(id int64) (*User, error) {

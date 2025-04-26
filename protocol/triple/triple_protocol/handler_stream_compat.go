@@ -58,19 +58,19 @@ func (c *compatHandlerStream) SetContext(ctx context.Context) {
 	c.ctx = ctx
 }
 
-func (c *compatHandlerStream) SendMsg(m interface{}) error {
+func (c *compatHandlerStream) SendMsg(m any) error {
 	return c.conn.Send(m)
 }
 
-func (c *compatHandlerStream) RecvMsg(m interface{}) error {
+func (c *compatHandlerStream) RecvMsg(m any) error {
 	return c.conn.Receive(m)
 }
 
 func NewCompatStreamHandler(
 	procedure string,
-	srv interface{},
+	srv any,
 	typ StreamType,
-	streamFunc func(srv interface{}, stream grpc.ServerStream) error,
+	streamFunc func(srv any, stream grpc.ServerStream) error,
 	options ...HandlerOption,
 ) *Handler {
 	config := newHandlerConfig(procedure, options)
@@ -91,8 +91,8 @@ func NewCompatStreamHandler(
 
 func generateCompatStreamHandlerFunc(
 	procedure string,
-	srv interface{},
-	streamFunc func(interface{}, grpc.ServerStream) error,
+	srv any,
+	streamFunc func(any, grpc.ServerStream) error,
 	interceptor Interceptor,
 ) StreamingHandlerFunc {
 	implementation := func(ctx context.Context, conn StreamingHandlerConn) error {

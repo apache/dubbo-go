@@ -42,7 +42,7 @@ type CacheManager struct {
 
 type Item struct {
 	Key   string
-	Value interface{}
+	Value any
 }
 
 // NewCacheManager creates a new CacheManager instance.
@@ -76,12 +76,12 @@ func NewCacheManager(name, cacheFile string, dumpInterval time.Duration, maxCach
 }
 
 // Get retrieves the value associated with the given key from the cache.
-func (cm *CacheManager) Get(key string) (interface{}, bool) {
+func (cm *CacheManager) Get(key string) (any, bool) {
 	return cm.cache.Get(key)
 }
 
 // Set sets the value associated with the given key in the cache.
-func (cm *CacheManager) Set(key string, value interface{}) {
+func (cm *CacheManager) Set(key string, value any) {
 	cm.cache.Add(key, value)
 }
 
@@ -91,10 +91,10 @@ func (cm *CacheManager) Delete(key string) {
 }
 
 // GetAll returns all the key-value pairs in the cache.
-func (cm *CacheManager) GetAll() map[string]interface{} {
+func (cm *CacheManager) GetAll() map[string]any {
 	keys := cm.cache.Keys()
 
-	result := make(map[string]interface{})
+	result := make(map[string]any)
 	for _, k := range keys {
 		result[k.(string)], _ = cm.cache.Get(k)
 	}

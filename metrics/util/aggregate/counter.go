@@ -71,7 +71,7 @@ func (t *TimeWindowCounter) Inc() {
 	t.Add(1)
 }
 
-func (t *TimeWindowCounter) newEmptyValue() interface{} {
+func (t *TimeWindowCounter) newEmptyValue() any {
 	return &counter{0}
 }
 

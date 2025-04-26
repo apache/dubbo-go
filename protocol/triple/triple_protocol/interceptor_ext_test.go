@@ -250,7 +250,7 @@ type headerInspectingHandlerConn struct {
 	inspectResponseHeader func(triple.Spec, http.Header)
 }
 
-func (hc *headerInspectingHandlerConn) Send(msg interface{}) error {
+func (hc *headerInspectingHandlerConn) Send(msg any) error {
 	if !hc.inspectedResponse {
 		hc.inspectResponseHeader(hc.Spec(), hc.ResponseHeader())
 		hc.inspectedResponse = true
@@ -267,7 +267,7 @@ type headerInspectingClientConn struct {
 	inspectResponseHeader func(triple.Spec, http.Header)
 }
 
-func (cc *headerInspectingClientConn) Send(msg interface{}) error {
+func (cc *headerInspectingClientConn) Send(msg any) error {
 	if !cc.inspectedRequest {
 		cc.inspectRequestHeader(cc.Spec(), cc.RequestHeader())
 		cc.inspectedRequest = true
@@ -275,7 +275,7 @@ func (cc *headerInspectingClientConn) Send(msg interface{}) error {
 	return cc.StreamingClientConn.Send(msg)
 }
 
-func (cc *headerInspectingClientConn) Receive(msg interface{}) error {
+func (cc *headerInspectingClientConn) Receive(msg any) error {
 	err := cc.StreamingClientConn.Receive(msg)
 	if !cc.inspectedResponse {
 		cc.inspectResponseHeader(cc.Spec(), cc.ResponseHeader())

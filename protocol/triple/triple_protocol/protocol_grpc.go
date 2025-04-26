@@ -344,7 +344,7 @@ func (cc *grpcClientConn) Peer() Peer {
 	return cc.peer
 }
 
-func (cc *grpcClientConn) Send(msg interface{}) error {
+func (cc *grpcClientConn) Send(msg any) error {
 	if err := cc.marshaler.Marshal(msg); err != nil {
 		return err
 	}
@@ -359,7 +359,7 @@ func (cc *grpcClientConn) CloseRequest() error {
 	return cc.duplexCall.CloseWrite()
 }
 
-func (cc *grpcClientConn) Receive(msg interface{}) error {
+func (cc *grpcClientConn) Receive(msg any) error {
 	cc.duplexCall.BlockUntilResponseReady()
 	err := cc.unmarshaler.Unmarshal(msg)
 	if err == nil {
@@ -460,7 +460,7 @@ func (hc *grpcHandlerConn) Peer() Peer {
 }
 
 // Receive delegated receive and unmarshal processes to unmarshaler
-func (hc *grpcHandlerConn) Receive(msg interface{}) error {
+func (hc *grpcHandlerConn) Receive(msg any) error {
 	if err := hc.unmarshaler.Unmarshal(msg); err != nil {
 		return err // already coded
 	}
@@ -527,7 +527,7 @@ func isWhitelistedHeader(hdr string) bool {
 	}
 }
 
-func (hc *grpcHandlerConn) Send(msg interface{}) error {
+func (hc *grpcHandlerConn) Send(msg any) error {
 	defer flushResponseWriter(hc.responseWriter)
 	if !hc.wroteToBody {
 		mergeHeaders(hc.responseWriter.Header(), hc.responseHeader)
@@ -668,7 +668,7 @@ type grpcUnmarshaler struct {
 	webTrailer     http.Header
 }
 
-func (u *grpcUnmarshaler) Unmarshal(message interface{}) *Error {
+func (u *grpcUnmarshaler) Unmarshal(message any) *Error {
 	// delegate read packet and unmarshal processes to envelopeReader
 	err := u.envelopeReader.Unmarshal(message)
 	if err == nil {

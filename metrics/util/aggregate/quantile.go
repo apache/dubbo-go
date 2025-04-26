@@ -81,6 +81,6 @@ func (t *TimeWindowQuantile) Add(value float64) {
 	t.window.currentPane(time.Now().UnixMilli(), t.newEmptyValue).value.(*tdigest.TDigest).Add(value, 1)
 }
 
-func (t *TimeWindowQuantile) newEmptyValue() interface{} {
+func (t *TimeWindowQuantile) newEmptyValue() any {
 	return tdigest.NewWithCompression(t.compression)
 }

@@ -140,16 +140,16 @@ func GetProtocol() protocol.Protocol {
 
 type ServiceInfo struct {
 	InterfaceName string
-	ServiceType   interface{}
+	ServiceType   any
 	Methods       []MethodInfo
-	Meta          map[string]interface{}
+	Meta          map[string]any
 }
 
 type MethodInfo struct {
 	Name           string
 	Type           string
-	ReqInitFunc    func() interface{}
-	StreamInitFunc func(baseStream interface{}) interface{}
-	MethodFunc     func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error)
-	Meta           map[string]interface{}
+	ReqInitFunc    func() any
+	StreamInitFunc func(baseStream any) any
+	MethodFunc     func(ctx context.Context, args []any, handler any) (any, error)
+	Meta           map[string]any
 }

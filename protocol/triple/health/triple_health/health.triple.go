@@ -96,7 +96,7 @@ type HealthImpl struct {
 
 func (c *HealthImpl) Check(ctx context.Context, req *HealthCheckRequest, opts ...client.CallOption) (*HealthCheckResponse, error) {
 	resp := new(HealthCheckResponse)
-	if err := c.conn.CallUnary(ctx, []interface{}{req}, resp, "Check", opts...); err != nil {
+	if err := c.conn.CallUnary(ctx, []any{req}, resp, "Check", opts...); err != nil {
 		return nil, err
 	}
 	return resp, nil
@@ -145,7 +145,7 @@ func (cli *HealthWatchClient) Conn() (triple_protocol.StreamingClientConn, error
 var Health_ClientInfo = client.ClientInfo{
 	InterfaceName: "grpc.health.v1.Health",
 	MethodNames:   []string{"Check", "Watch"},
-	ConnectionInjectFunc: func(dubboCliRaw interface{}, conn *client.Connection) {
+	ConnectionInjectFunc: func(dubboCliRaw any, conn *client.Connection) {
 		dubboCli := dubboCliRaw.(*HealthImpl)
 		dubboCli.conn = conn
 	},
@@ -187,10 +187,10 @@ var Health_ServiceInfo = server.ServiceInfo{
 		{
 			Name: "Check",
 			Type: constant.CallUnary,
-			ReqInitFunc: func() interface{} {
+			ReqInitFunc: func() any {
 				return new(HealthCheckRequest)
 			},
-			MethodFunc: func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
+			MethodFunc: func(ctx context.Context, args []any, handler any) (any, error) {
 				req := args[0].(*HealthCheckRequest)
 				res, err := handler.(HealthHandler).Check(ctx, req)
 				if err != nil {
@@ -202,13 +202,13 @@ var Health_ServiceInfo = server.ServiceInfo{
 		{
 			Name: "Watch",
 			Type: constant.CallServerStream,
-			ReqInitFunc: func() interface{} {
+			ReqInitFunc: func() any {
 				return new(HealthCheckRequest)
 			},
-			StreamInitFunc: func(baseStream interface{}) interface{} {
+			StreamInitFunc: func(baseStream any) any {
 				return &HealthWatchServer{baseStream.(*triple_protocol.ServerStream)}
 			},
-			MethodFunc: func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
+			MethodFunc: func(ctx context.Context, args []any, handler any) (any, error) {
 				req := args[0].(*HealthCheckRequest)
 				stream := args[1].(Health_WatchServer)
 				if err := handler.(HealthHandler).Watch(ctx, req, stream); err != nil {

@@ -97,7 +97,7 @@ func (i *jsInstances) Run(rawScript string, invokers []protocol.Invoker, invocat
 	}
 	invocation.MergeAttachmentFromContext(ctx)
 
-	rtInvokersArr, ok := scriptRes.(*goja.Object).Export().([]interface{})
+	rtInvokersArr, ok := scriptRes.(*goja.Object).Export().([]any)
 	if !ok {
 		return invokers, fmt.Errorf("script result is not array , script return type: %s", reflect.ValueOf(scriptRes.(*goja.Object).Export()).String())
 	}
@@ -185,8 +185,8 @@ func newJsInstance() *jsInstance {
 	}
 }
 
-func (j jsInstance) runScript(pg *goja.Program) (res interface{}, err error) {
-	defer func(res *interface{}, err *error) {
+func (j jsInstance) runScript(pg *goja.Program) (res any, err error) {
+	defer func(res *any, err *error) {
 		if panicReason := recover(); panicReason != nil {
 			*res = nil
 			switch panicReason := panicReason.(type) {

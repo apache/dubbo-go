@@ -27,7 +27,7 @@ import (
 
 func TestProperties_Marshal(t *testing.T) {
 	p := &Properties{}
-	bytes, err := p.Marshal(map[string]interface{}{})
+	bytes, err := p.Marshal(map[string]any{})
 	assert.NoError(t, err)
 	assert.Nil(t, bytes)
 }

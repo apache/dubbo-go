@@ -38,7 +38,7 @@ import (
 
 func TestConusmerFilterInvoke(t *testing.T) {
 	url := common.NewURLWithOptions(common.WithParams(url.Values{}))
-	invocation := invocation.NewRPCInvocation("GetUser", []interface{}{"OK"}, make(map[string]interface{}))
+	invocation := invocation.NewRPCInvocation("GetUser", []any{"OK"}, make(map[string]any))
 
 	rootConfig := config.NewRootConfigBuilder().
 		SetShutDown(config.NewShutDownConfigBuilder().

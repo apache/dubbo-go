@@ -63,7 +63,7 @@ type watchInfo struct {
 	state watchInfoState
 }
 
-func (wi *watchInfo) newUpdate(update interface{}) {
+func (wi *watchInfo) newUpdate(update any) {
 	wi.mu.Lock()
 	defer wi.mu.Unlock()
 	if wi.state == watchInfoStateCanceled {
@@ -109,7 +109,7 @@ func (wi *watchInfo) timeout() {
 // Caller must hold wi.mu.
 func (wi *watchInfo) sendErrorLocked(err error) {
 	var (
-		u interface{}
+		u any
 	)
 	switch wi.rType {
 	case resource.ListenerResource:
