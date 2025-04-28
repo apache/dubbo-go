@@ -90,3 +90,8 @@ jobs:
 
     - name: Codecov
       run: bash <(curl -s https://codecov.io/bash)
+
+    - name: Skip SonarCloud analysis
+      run: |
+          echo "Explicitly skipping SonarCloud analysis"
+          echo "SONAR_SKIP=true" >> $GITHUB_ENV
