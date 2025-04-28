@@ -469,6 +469,11 @@ type ServiceOptions struct {
 	exporters       []protocol.Exporter
 	adaptiveService bool
 
+	// for triple non-IDL mode
+	// consider put here or global.ServiceConfig
+	// string for url
+	isIDL string
+
 	methodsCompat     []*config.MethodConfig
 	applicationCompat *config.ApplicationConfig
 	registriesCompat  map[string]*config.RegistryConfig
@@ -868,6 +873,12 @@ func WithParam(k, v string) ServiceOption {
 			opts.Service.Params = make(map[string]string)
 		}
 		opts.Service.Params[k] = v
+	}
+}
+
+func WithIDL(isIDL string) ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.isIDL = isIDL
 	}
 }
 

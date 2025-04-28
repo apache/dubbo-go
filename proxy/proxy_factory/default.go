@@ -77,7 +77,9 @@ func (factory *DefaultProxyFactory) GetAsyncProxy(invoker protocol.Invoker, call
 
 // GetInvoker gets a invoker
 func (factory *DefaultProxyFactory) GetInvoker(url *common.URL) protocol.Invoker {
+	// Triple Protocol 专属
 	if url.Protocol == constant.TriProtocol || (url.SubURL != nil && url.SubURL.Protocol == constant.TriProtocol) {
+		// WARNING: info is nil when non-idl mode, and ok is good
 		if info, ok := url.GetAttribute(constant.ServiceInfoKey); ok {
 			svc, _ := url.GetAttribute(constant.RpcServiceKey)
 			return newInfoInvoker(url, info.(*common.ServiceInfo), svc)
@@ -122,7 +124,7 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 		return result
 	}
 
-	in := []reflect.Value{svc.Rcvr()}
+	in := []reflect.Value{svc.Service()}
 	if method.CtxType() != nil {
 		ctx = context.WithValue(ctx, constant.AttachmentKey, invocation.Attachments())
 		in = append(in, method.SuiteContext(ctx))

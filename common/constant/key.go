@@ -64,6 +64,7 @@ const (
 	MaxServerRecvMsgSize   = "max-server-recv-msg-size"
 	KeepAliveInterval      = "keep-alive-interval"
 	KeepAliveTimeout       = "keep-alive-timeout"
+	ISIDL                  = "isIDL"
 )
 
 // tls constant

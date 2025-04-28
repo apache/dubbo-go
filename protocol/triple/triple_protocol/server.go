@@ -52,6 +52,9 @@ func (s *Server) RegisterUnaryHandler(
 	if !ok {
 		hdl = NewUnaryHandler(procedure, reqInitFunc, unary, options...)
 		s.handlers[procedure] = hdl
+
+		logger.Warnf("Triple server register method: %v", procedure)
+
 		s.mux.Handle(procedure, hdl)
 	} else {
 		config := newHandlerConfig(procedure, options)

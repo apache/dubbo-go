@@ -139,9 +139,12 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 		if svc.Interface == "" {
 			svc.Interface = info.InterfaceName
 		}
-		svcOpts.Id = common.GetReference(svcOpts.rpcService)
 		svcOpts.info = info
 	}
+
+	// 我认为这个可以放在外面
+	svcOpts.Id = common.GetReference(svcOpts.rpcService)
+
 	// TODO: delay needExport
 	if svcOpts.unexported != nil && svcOpts.unexported.Load() {
 		err := perrors.Errorf("The service %v has already unexported!", svc.Interface)
@@ -154,6 +157,7 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 	}
 
 	regUrls := make([]*common.URL, 0)
+	// svc.NotRegister set in options.go:559, 没有svc.RegistryIDs就是false
 	if !svc.NotRegister {
 		regUrls = config.LoadRegistries(svc.RegistryIDs, svcOpts.registriesCompat, common.PROVIDER)
 	}
@@ -168,29 +172,29 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 	var invoker protocol.Invoker
 	ports := getRandomPort(protocolConfigs)
 	nextPort := ports.Front()
-	for _, proto := range protocolConfigs {
+	for _, protocolConf := range protocolConfigs {
 		// *important* Register should have been replaced by processing of ServiceInfo.
 		// but many modules like metadata need to make use of information from ServiceMap.
 		// todo(DMwangnimg): finish replacing procedure
 
 		// registry the service reflect
-		methods, err := common.ServiceMap.Register(svc.Interface, proto.Name, svc.Group, svc.Version, svcOpts.rpcService)
+		methods, err := common.ServiceMap.Register(svc.Interface, protocolConf.Name, svc.Group, svc.Version, svcOpts.rpcService)
 		if err != nil {
 			formatErr := perrors.Errorf("The service %v needExport the protocol %v error! Error message is %v.",
-				svc.Interface, proto.Name, err.Error())
+				svc.Interface, protocolConf.Name, err.Error())
 			logger.Errorf(formatErr.Error())
 			return formatErr
 		}
 
-		port := proto.Port
-		if len(proto.Port) == 0 {
+		port := protocolConf.Port
+		if len(protocolConf.Port) == 0 {
 			port = nextPort.Value.(string)
 			nextPort = nextPort.Next()
 		}
 		ivkURL := common.NewURLWithOptions(
 			common.WithPath(svc.Interface),
-			common.WithProtocol(proto.Name),
-			common.WithIp(proto.Ip),
+			common.WithProtocol(protocolConf.Name),
+			common.WithIp(protocolConf.Ip),
 			common.WithPort(port),
 			common.WithParams(urlMap),
 			common.WithParamsValue(constant.BeanNameKey, svcOpts.Id),
@@ -198,13 +202,20 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 			//common.WithParamsValue(constant.SslEnabledKey, strconv.FormatBool(config.GetSslEnabled())),
 			common.WithMethods(strings.Split(methods, ",")),
 			// todo(DMwangnima): remove this
-			common.WithAttribute(constant.ServiceInfoKey, info),
+			// common.WithAttribute(constant.ServiceInfoKey, info),
+			common.WithAttribute(constant.RpcServiceKey, svcOpts.rpcService),
 			common.WithToken(svc.Token),
 			common.WithParamsValue(constant.MetadataTypeKey, svcOpts.metadataType),
 			// fix https://github.com/apache/dubbo-go/issues/2176
-			common.WithParamsValue(constant.MaxServerSendMsgSize, proto.MaxServerSendMsgSize),
-			common.WithParamsValue(constant.MaxServerRecvMsgSize, proto.MaxServerRecvMsgSize),
+			common.WithParamsValue(constant.MaxServerSendMsgSize, protocolConf.MaxServerSendMsgSize),
+			common.WithParamsValue(constant.MaxServerRecvMsgSize, protocolConf.MaxServerRecvMsgSize),
+			common.WithParamsValue(constant.ISIDL, svcOpts.isIDL),
 		)
+
+		if info != nil {
+			ivkURL.SetAttribute(constant.ServiceInfoKey, info)
+		}
+
 		if len(svc.Tag) > 0 {
 			ivkURL.AddParam(constant.Tagkey, svc.Tag)
 		}
@@ -234,6 +245,7 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 				svcOpts.exporters = append(svcOpts.exporters, exporter)
 			}
 		} else {
+			// generate infoProxyInvoker
 			invoker = svcOpts.generatorInvoker(ivkURL, info)
 			exporter := extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
 			if exporter == nil {
@@ -243,7 +255,7 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 		}
 		// this protocol would be destroyed in graceful_shutdown
 		// please refer to (https://github.com/apache/dubbo-go/issues/2429)
-		graceful_shutdown.RegisterProtocol(proto.Name)
+		graceful_shutdown.RegisterProtocol(protocolConf.Name)
 	}
 	svcOpts.exported.Store(true)
 	return nil
@@ -253,8 +265,11 @@ func (svcOpts *ServiceOptions) generatorInvoker(url *common.URL, info *common.Se
 	proxyFactory := extension.GetProxyFactory(svcOpts.ProxyFactoryKey)
 	if info != nil {
 		url.SetAttribute(constant.ServiceInfoKey, info)
-		url.SetAttribute(constant.RpcServiceKey, svcOpts.rpcService)
 	}
+
+	// 我认为可以放在外面
+	url.SetAttribute(constant.RpcServiceKey, svcOpts.rpcService)
+
 	return proxyFactory.GetInvoker(url)
 }
 

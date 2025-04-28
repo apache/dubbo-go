@@ -54,6 +54,7 @@ type TripleProtocol struct {
 }
 
 // Export TRIPLE service for remote invocation
+// invoker是 infoProxyInvoker
 func (tp *TripleProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	url := invoker.GetURL()
 	serviceKey := url.ServiceKey()

@@ -142,10 +142,10 @@ func (m *MethodType) SuiteContext(ctx context.Context) reflect.Value {
 
 // Service is description of service
 type Service struct {
-	name     string
-	rcvr     reflect.Value
-	rcvrType reflect.Type
-	methods  map[string]*MethodType
+	name        string
+	service     reflect.Value
+	serviceType reflect.Type
+	methods     map[string]*MethodType
 }
 
 // Method gets @s.methods.
@@ -158,14 +158,14 @@ func (s *Service) Name() string {
 	return s.name
 }
 
-// RcvrType gets @s.rcvrType.
-func (s *Service) RcvrType() reflect.Type {
-	return s.rcvrType
+// ServiceType gets @s.ServiceType.
+func (s *Service) ServiceType() reflect.Type {
+	return s.serviceType
 }
 
-// Rcvr gets @s.rcvr.
-func (s *Service) Rcvr() reflect.Value {
-	return s.rcvr
+// Service gets @s.Service.
+func (s *Service) Service() reflect.Value {
+	return s.service
 }
 
 type serviceMap struct {
@@ -204,7 +204,7 @@ func (sm *serviceMap) GetInterface(interfaceName string) []*Service {
 }
 
 // Register registers a service by @interfaceName and @protocol
-func (sm *serviceMap) Register(interfaceName, protocol, group, version string, rcvr RPCService) (string, error) {
+func (sm *serviceMap) Register(interfaceName, protocol, group, version string, service RPCService) (string, error) {
 	if sm.serviceMap[protocol] == nil {
 		sm.serviceMap[protocol] = make(map[string]*Service)
 	}
@@ -213,11 +213,11 @@ func (sm *serviceMap) Register(interfaceName, protocol, group, version string, r
 	}
 
 	s := new(Service)
-	s.rcvrType = reflect.TypeOf(rcvr)
-	s.rcvr = reflect.ValueOf(rcvr)
-	sname := reflect.Indirect(s.rcvr).Type().Name()
+	s.serviceType = reflect.TypeOf(service)
+	s.service = reflect.ValueOf(service)
+	sname := reflect.Indirect(s.service).Type().Name()
 	if sname == "" {
-		s := "no service name for type " + s.rcvrType.String()
+		s := "no service name for type " + s.serviceType.String()
 		logger.Errorf(s)
 		return "", perrors.New(s)
 	}
@@ -236,7 +236,7 @@ func (sm *serviceMap) Register(interfaceName, protocol, group, version string, r
 
 	// Install the methods
 	methods := ""
-	methods, s.methods = suitableMethods(s.rcvrType)
+	methods, s.methods = suitableMethods(s.serviceType)
 
 	if len(s.methods) == 0 {
 		s := "type " + sname + " has no exported methods of suitable type"

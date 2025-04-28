@@ -66,11 +66,27 @@ type ServiceDefinition struct {
 
 // Register assemble invoker chains like ProviderConfig.Load, init a service per call
 func (s *Server) Register(handler any, info *common.ServiceInfo, opts ...ServiceOption) error {
-	newSvcOpts, err := s.genSvcOpts(handler, opts...)
+	baseOpts := []ServiceOption{WithIDL("true")}
+	baseOpts = append(baseOpts, opts...)
+	newSvcOpts, err := s.genSvcOpts(handler, baseOpts...)
 	if err != nil {
 		return err
 	}
 	s.svcOptsMap.Store(newSvcOpts, info)
+	return nil
+}
+
+// RegisterService is for new Triple non-idl mode implement.
+func (s *Server) RegisterService(handler any, opts ...ServiceOption) error {
+	baseOpts := []ServiceOption{WithIDL("false")}
+	baseOpts = append(baseOpts, opts...)
+	newSvcOpts, err := s.genSvcOpts(handler, baseOpts...)
+	if err != nil {
+		return err
+	}
+
+	s.svcOptsMap.Store(newSvcOpts, nil)
+
 	return nil
 }
 
@@ -120,6 +136,8 @@ func (s *Server) exportServices() (err error) {
 		if infoRaw == nil {
 			err = svcOpts.ExportWithoutInfo()
 		} else {
+
+			//就干了一件事就是让Method大小写不敏感
 			info := infoRaw.(*common.ServiceInfo)
 			//Add a method with a name of a differtent first-letter case
 			//to achieve interoperability with java
