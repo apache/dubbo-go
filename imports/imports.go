@@ -47,6 +47,7 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/filter/active"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/adaptivesvc"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/auth"
+	_ "dubbo.apache.org/dubbo-go/v3/filter/context"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/echo"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/exec_limit"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/generic"
