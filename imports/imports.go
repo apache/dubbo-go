@@ -37,7 +37,6 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/random"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/roundrobin"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/condition"
-	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/meshrouter"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/polaris"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/script"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/tag"
@@ -86,8 +85,5 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/registry/polaris"
 	_ "dubbo.apache.org/dubbo-go/v3/registry/protocol"
 	_ "dubbo.apache.org/dubbo-go/v3/registry/servicediscovery"
-	_ "dubbo.apache.org/dubbo-go/v3/registry/xds"
 	_ "dubbo.apache.org/dubbo-go/v3/registry/zookeeper"
-	_ "dubbo.apache.org/dubbo-go/v3/xds/client/controller/version/v2"
-	_ "dubbo.apache.org/dubbo-go/v3/xds/client/controller/version/v3"
 )
