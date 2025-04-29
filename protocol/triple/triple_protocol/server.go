@@ -19,6 +19,7 @@ package triple_protocol
 
 import (
 	"context"
+	"crypto/tls"
 	"net/http"
 	"sync"
 )
@@ -171,13 +172,20 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) Run() error {
-	// todo(DMwangnima): deal with TLS
 	s.httpSrv.Handler = h2c.NewHandler(s, &http2.Server{})
 
-	if err := s.httpSrv.ListenAndServe(); err != nil {
-		return err
+	var err error
+	if s.httpSrv.TLSConfig != nil {
+		// TODO: Maybe we should be able to find a better way to start TLS.
+		err = s.httpSrv.ListenAndServeTLS("", "")
+	} else {
+		err = s.httpSrv.ListenAndServe()
 	}
-	return nil
+	return err
+}
+
+func (s *Server) SetTLSConfig(c *tls.Config) {
+	s.httpSrv.TLSConfig = c
 }
 
 func (s *Server) Stop() error {
