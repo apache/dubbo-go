@@ -78,7 +78,11 @@ func (s *Server) Register(handler any, info *common.ServiceInfo, opts ...Service
 
 // RegisterService is for new Triple non-idl mode implement.
 func (s *Server) RegisterService(handler any, opts ...ServiceOption) error {
-	baseOpts := []ServiceOption{WithIDL("false")}
+	interfaceName := common.GetReference(handler)
+	baseOpts := []ServiceOption{
+		WithIDL("false"),
+		WithInterface(interfaceName),
+	}
 	baseOpts = append(baseOpts, opts...)
 	newSvcOpts, err := s.genSvcOpts(handler, baseOpts...)
 	if err != nil {

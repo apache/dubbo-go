@@ -96,12 +96,25 @@ func (conn *Connection) CallBidiStream(ctx context.Context, methodName string, o
 	return res.Result(), res.Error()
 }
 
+func (cli *Client) NewService(service any, opts ...ReferenceOption) (*Connection, error) {
+	interafceName := common.GetReference(service)
+
+	finalOpts := []ReferenceOption{WithIDL("false")}
+	finalOpts = append(finalOpts, opts...)
+
+	return cli.DialWithService(interafceName, service, finalOpts...)
+}
+
 func (cli *Client) Dial(interfaceName string, opts ...ReferenceOption) (*Connection, error) {
-	return cli.dial(interfaceName, nil, opts...)
+	return cli.dial(interfaceName, nil, nil, opts...)
+}
+
+func (cli *Client) DialWithService(interfaceName string, service any, opts ...ReferenceOption) (*Connection, error) {
+	return cli.dial(interfaceName, nil, service, opts...)
 }
 
 func (cli *Client) DialWithInfo(interfaceName string, info *ClientInfo, opts ...ReferenceOption) (*Connection, error) {
-	return cli.dial(interfaceName, info, opts...)
+	return cli.dial(interfaceName, info, nil, opts...)
 }
 
 func (cli *Client) DialWithDefinition(interfaceName string, definition *ClientDefinition, opts ...ReferenceOption) (*Connection, error) {
@@ -115,10 +128,10 @@ func (cli *Client) DialWithDefinition(interfaceName string, definition *ClientDe
 		opts = append(opts, setReference(ref))
 	}
 
-	return cli.dial(interfaceName, definition.Info, opts...)
+	return cli.dial(interfaceName, definition.Info, nil, opts...)
 }
 
-func (cli *Client) dial(interfaceName string, info *ClientInfo, opts ...ReferenceOption) (*Connection, error) {
+func (cli *Client) dial(interfaceName string, info *ClientInfo, service any, opts ...ReferenceOption) (*Connection, error) {
 	if err := metadata.InitRegistryMetadataReport(cli.cliOpts.Registries); err != nil {
 		return nil, err
 	}
@@ -137,7 +150,12 @@ func (cli *Client) dial(interfaceName string, info *ClientInfo, opts ...Referenc
 	if err := newRefOpts.init(finalOpts...); err != nil {
 		return nil, err
 	}
-	newRefOpts.ReferWithInfo(info)
+
+	if info != nil {
+		newRefOpts.ReferWithInfo(info)
+	} else if service != nil {
+		newRefOpts.ReferWithService(service)
+	}
 
 	return &Connection{refOpts: newRefOpts}, nil
 }

@@ -130,9 +130,14 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 		common.WithParamsValue(constant.TimeoutKey, refOpts.Consumer.RequestTimeout),
 		common.WithParamsValue(constant.KeepAliveInterval, ref.KeepAliveInterval),
 		common.WithParamsValue(constant.KeepAliveTimeout, ref.KeepAliveTimeout),
+		// for new triple non-IDL mode
+		common.WithParamsValue(constant.ISIDL, ref.IsIDL),
 	)
 	if info != nil {
 		cfgURL.SetAttribute(constant.ClientInfoKey, info)
+	}
+	if srv != nil {
+		cfgURL.SetAttribute(constant.RpcServiceKey, srv)
 	}
 
 	if ref.ForceTag {
@@ -191,6 +196,7 @@ func processURL(ref *global.ReferenceConfig, regsCompat map[string]*config.Regis
 		*/
 		urlStrings := gxstrings.RegSplit(ref.URL, "\\s*[;]+\\s*")
 		for _, urlStr := range urlStrings {
+			// urlStr like 127.0.0.1:20000
 			serviceURL, err := common.NewURL(urlStr, common.WithProtocol(ref.Protocol))
 			if err != nil {
 				return nil, fmt.Errorf("url configuration error,  please check your configuration, user specified URL %v refer error, error message is %v ", urlStr, err.Error())

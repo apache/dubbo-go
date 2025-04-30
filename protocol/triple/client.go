@@ -23,21 +23,16 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"reflect"
 	"strings"
-)
 
-import (
-	"github.com/dubbogo/gost/log/logger"
-
-	"github.com/dustin/go-humanize"
-
-	"golang.org/x/net/http2"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
+	"github.com/dubbogo/gost/log/logger"
+	"github.com/dustin/go-humanize"
+	"golang.org/x/net/http2"
+
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
@@ -248,13 +243,32 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		baseTriURL = httpPrefix + baseTriURL
 	}
 	triClients := make(map[string]*tri.Client)
-	for _, method := range url.Methods {
-		triURL, err := joinPath(baseTriURL, url.Interface(), method)
-		if err != nil {
-			return nil, fmt.Errorf("JoinPath failed for base %s, interface %s, method %s", baseTriURL, url.Interface(), method)
+
+	if len(url.Methods) != 0 {
+		for _, method := range url.Methods {
+			triURL, err := joinPath(baseTriURL, url.Interface(), method)
+			if err != nil {
+				return nil, fmt.Errorf("JoinPath failed for base %s, interface %s, method %s", baseTriURL, url.Interface(), method)
+			}
+			triClient := tri.NewClient(httpClient, triURL, cliOpts...)
+			triClients[method] = triClient
 		}
-		triClient := tri.NewClient(httpClient, triURL, cliOpts...)
-		triClients[method] = triClient
+	} else {
+		service, ok := url.GetAttribute(constant.RpcServiceKey)
+		if !ok {
+			return nil, fmt.Errorf("Triple clientmanager can't get methods")
+		}
+
+		serviceType := reflect.TypeOf(service)
+		for i := 0; i < serviceType.NumMethod(); i++ {
+			methodName := serviceType.Method(i).Name
+			triURL, err := joinPath(baseTriURL, url.Interface(), methodName)
+			if err != nil {
+				return nil, fmt.Errorf("JoinPath failed for base %s, interface %s, method %s", baseTriURL, url.Interface(), methodName)
+			}
+			triClient := tri.NewClient(httpClient, triURL, cliOpts...)
+			triClients[methodName] = triClient
+		}
 	}
 
 	return &clientManager{

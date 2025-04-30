@@ -125,6 +125,7 @@ func (s *Server) Start(invoker protocol.Invoker, info *common.ServiceInfo) {
 	intfName := URL.Interface()
 	if info != nil && isIDL == "true" {
 		// new triple idl mode
+		logger.Errorf("new triple mode intfName: %v", intfName)
 		s.handleServiceWithInfo(intfName, invoker, info, hanOpts...)
 		s.saveServiceInfo(intfName, info)
 	} else if isIDL == "false" {
@@ -133,7 +134,8 @@ func (s *Server) Start(invoker protocol.Invoker, info *common.ServiceInfo) {
 		s.handleServiceWithInfo(intfName, invoker, reflectInfo, hanOpts...)
 		s.saveServiceInfo(intfName, reflectInfo)
 	} else {
-		// old triple idl mode and old triple non-idl mode
+		// old triple idl mode and non-idl mode
+		logger.Errorf("old triple mode intfName: %v", intfName)
 		s.compatHandleService(intfName, URL.Group(), URL.Version(), hanOpts...)
 	}
 	internal.ReflectionRegister(s)
@@ -206,6 +208,7 @@ func (s *Server) compatHandleService(interfaceName string, group, version string
 		}
 		// todo(DMwangnima): judge protocol type
 		service := config.GetProviderService(key)
+		logger.Warnf("service type: %T", service)
 		serviceKey := common.ServiceKey(providerService.Interface, providerService.Group, providerService.Version)
 		exporter, _ := tripleProtocol.ExporterMap().Load(serviceKey)
 		if exporter == nil {
@@ -429,17 +432,20 @@ func (s *Server) GracefulStop() {
 // createServiceInfoWithReflection is for non-idl scenario.
 // It makes use of reflection to extract method parameters information and create ServiceInfo.
 // As a result, Server could use this ServiceInfo to register.
-func createServiceInfoWithReflection(svc common.RPCService) *common.ServiceInfo {
+func createServiceInfoWithReflection(service common.RPCService) *common.ServiceInfo {
+	logger.Warnf("service = %#v", service)
+
 	var info common.ServiceInfo
-	val := reflect.ValueOf(svc)
-	typ := reflect.TypeOf(svc)
-	methodNum := val.NumMethod()
+	serviceType := reflect.TypeOf(service)
+	methodNum := serviceType.NumMethod()
 
 	// +1 for generic call method
 	methodInfos := make([]common.MethodInfo, 0, methodNum+1)
 
+	logger.Warnf("service %v has %v methods", serviceType.Name(), methodNum)
+
 	for i := 0; i < methodNum; i++ {
-		methodType := typ.Method(i)
+		methodType := serviceType.Method(i)
 		if methodType.Name == "Reference" {
 			continue
 		}

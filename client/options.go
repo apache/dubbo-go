@@ -332,6 +332,12 @@ func WithSticky() ReferenceOption {
 	}
 }
 
+func WithIDL(isIDL string) ReferenceOption {
+	return func(opts *ReferenceOptions) {
+		opts.Reference.IsIDL = isIDL
+	}
+}
+
 // ========== Protocol to consume ==========
 
 func WithProtocolDubbo() ReferenceOption {
