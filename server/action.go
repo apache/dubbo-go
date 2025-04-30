@@ -142,7 +142,6 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 		svcOpts.info = info
 	}
 
-	// 我认为这个可以放在外面
 	svcOpts.Id = common.GetReference(svcOpts.rpcService)
 
 	// TODO: delay needExport
@@ -157,7 +156,6 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 	}
 
 	regUrls := make([]*common.URL, 0)
-	// svc.NotRegister set in options.go:559, 没有svc.RegistryIDs就是false
 	if !svc.NotRegister {
 		regUrls = config.LoadRegistries(svc.RegistryIDs, svcOpts.registriesCompat, common.PROVIDER)
 	}
@@ -201,8 +199,6 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 			common.WithParamsValue(constant.ApplicationTagKey, svcOpts.Application.Tag),
 			//common.WithParamsValue(constant.SslEnabledKey, strconv.FormatBool(config.GetSslEnabled())),
 			common.WithMethods(strings.Split(methods, ",")),
-			// todo(DMwangnima): remove this
-			// common.WithAttribute(constant.ServiceInfoKey, info),
 			common.WithAttribute(constant.RpcServiceKey, svcOpts.rpcService),
 			common.WithToken(svc.Token),
 			common.WithParamsValue(constant.MetadataTypeKey, svcOpts.metadataType),
@@ -245,7 +241,6 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 				svcOpts.exporters = append(svcOpts.exporters, exporter)
 			}
 		} else {
-			// generate infoProxyInvoker
 			invoker = svcOpts.generatorInvoker(ivkURL, info)
 			exporter := extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
 			if exporter == nil {
@@ -267,7 +262,6 @@ func (svcOpts *ServiceOptions) generatorInvoker(url *common.URL, info *common.Se
 		url.SetAttribute(constant.ServiceInfoKey, info)
 	}
 
-	// 我认为可以放在外面
 	url.SetAttribute(constant.RpcServiceKey, svcOpts.rpcService)
 
 	return proxyFactory.GetInvoker(url)

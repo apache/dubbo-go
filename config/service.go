@@ -84,7 +84,6 @@ func GetConsumerService(name string) common.RPCService {
 func GetProviderService(name string) common.RPCService {
 	proServicesLock.Lock()
 	defer proServicesLock.Unlock()
-	logger.Warnf("proServices: %+v", proServices)
 	return proServices[name]
 }
 

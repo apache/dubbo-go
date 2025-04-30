@@ -168,9 +168,7 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 }
 
 func (c *ProviderConfig) Load() {
-	// 这个遍历是每次都不一样的
 	for registeredTypeName, service := range GetProviderServiceMap() {
-		logger.Warnf("service: %T", service)
 		serviceConfig, ok := c.Services[registeredTypeName]
 		if !ok {
 			if registeredTypeName == constant.ReflectionServiceTypeName ||
@@ -194,7 +192,6 @@ func (c *ProviderConfig) Load() {
 			}
 			serviceConfig.adaptiveService = c.AdaptiveService
 		}
-		logger.Errorf("registeredTypeName: %v, service: %+v", registeredTypeName, service)
 		serviceConfig.id = registeredTypeName
 		serviceConfig.Implement(service)
 		if err := serviceConfig.Export(); err != nil {

@@ -140,8 +140,6 @@ func (s *Server) exportServices() (err error) {
 		if infoRaw == nil {
 			err = svcOpts.ExportWithoutInfo()
 		} else {
-
-			//就干了一件事就是让Method大小写不敏感
 			info := infoRaw.(*common.ServiceInfo)
 			//Add a method with a name of a differtent first-letter case
 			//to achieve interoperability with java

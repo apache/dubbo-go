@@ -472,6 +472,7 @@ type ServiceOptions struct {
 	// for triple non-IDL mode
 	// consider put here or global.ServiceConfig
 	// string for url
+	// TODO: remove this when config package is remove
 	isIDL string
 
 	methodsCompat     []*config.MethodConfig
@@ -876,6 +877,7 @@ func WithParam(k, v string) ServiceOption {
 	}
 }
 
+// TODO: remove when config package is removed
 func WithIDL(isIDL string) ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.isIDL = isIDL

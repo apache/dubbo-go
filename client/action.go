@@ -200,7 +200,6 @@ func processURL(ref *global.ReferenceConfig, regsCompat map[string]*config.Regis
 		*/
 		urlStrings := gxstrings.RegSplit(ref.URL, "\\s*[;]+\\s*")
 		for _, urlStr := range urlStrings {
-			// urlStr like 127.0.0.1:20000
 			serviceURL, err := common.NewURL(urlStr, common.WithProtocol(ref.Protocol))
 			if err != nil {
 				return nil, fmt.Errorf("url configuration error,  please check your configuration, user specified URL %v refer error, error message is %v ", urlStr, err.Error())

@@ -49,6 +49,7 @@ type ReferenceConfig struct {
 	KeepAliveTimeout  string            `yaml:"keep-alive-timeout" json:"keep-alive-timeout,omitempty" property:"keep-alive-timeout"`
 
 	// just for new triple non-IDL mode
+	// TODO: remove IsIDL when config package is removed
 	IsIDL string
 }
 

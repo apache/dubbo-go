@@ -25,11 +25,21 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+)
 
+import (
 	"github.com/dubbogo/gost/log/logger"
 
 	hessian "github.com/apache/dubbo-go-hessian2"
 
+	grpc_go "github.com/dubbogo/grpc-go"
+
+	"github.com/dustin/go-humanize"
+
+	"google.golang.org/grpc"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
@@ -37,10 +47,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo3"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
-	grpc_go "github.com/dubbogo/grpc-go"
-	"github.com/dustin/go-humanize"
-	"google.golang.org/grpc"
-
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
@@ -70,13 +76,13 @@ func (s *Server) Start(invoker protocol.Invoker, info *common.ServiceInfo) {
 	serialization := URL.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	switch serialization {
 	case constant.ProtobufSerialization:
-		logger.Warnf("Triple server use protobuf serializaition")
+		logger.Debugf("Triple server use protobuf serializaition")
 	case constant.JSONSerialization:
-		logger.Warnf("Triple server use json serializaition")
+		logger.Debugf("Triple server use json serializaition")
 	case constant.Hessian2Serialization:
-		logger.Warnf("Triple server use hessian2 serializaition")
+		logger.Debugf("Triple server use hessian2 serializaition")
 	case constant.MsgpackSerialization:
-		logger.Warnf("Triple server use msgpack serializaition")
+		logger.Debugf("Triple server use msgpack serializaition")
 	default:
 		panic(fmt.Sprintf("Unsupported serialization: %s", serialization))
 	}
@@ -106,9 +112,9 @@ func (s *Server) Start(invoker protocol.Invoker, info *common.ServiceInfo) {
 		logger.Infof("TRIPLE Server initialized the TLSConfig configuration")
 	}
 
-	// todo:// move tls config to handleService
-
-	// isIDL这个表示只有new tirple通过non-IDL mode启动才会设置
+	// isIDL means that this will only be set when
+	// the new triple is started in non-IDL mode.
+	// TODO: remove isIDL when config package is removed
 	isIDL := URL.GetParam(constant.ISIDL, "")
 
 	var service common.RPCService
@@ -125,7 +131,6 @@ func (s *Server) Start(invoker protocol.Invoker, info *common.ServiceInfo) {
 	intfName := URL.Interface()
 	if info != nil {
 		// new triple idl mode
-		logger.Errorf("new triple mode intfName: %v", intfName)
 		s.handleServiceWithInfo(intfName, invoker, info, hanOpts...)
 		s.saveServiceInfo(intfName, info)
 	} else if isIDL == "false" {
@@ -134,8 +139,7 @@ func (s *Server) Start(invoker protocol.Invoker, info *common.ServiceInfo) {
 		s.handleServiceWithInfo(intfName, invoker, reflectInfo, hanOpts...)
 		s.saveServiceInfo(intfName, reflectInfo)
 	} else {
-		// old triple idl mode and non-idl mode
-		logger.Errorf("old triple mode intfName: %v", intfName)
+		// old triple idl mode and old triple non-idl mode
 		s.compatHandleService(intfName, URL.Group(), URL.Version(), hanOpts...)
 	}
 	internal.ReflectionRegister(s)
@@ -208,7 +212,6 @@ func (s *Server) compatHandleService(interfaceName string, group, version string
 		}
 		// todo(DMwangnima): judge protocol type
 		service := config.GetProviderService(key)
-		logger.Warnf("service type: %T", service)
 		serviceKey := common.ServiceKey(providerService.Interface, providerService.Group, providerService.Version)
 		exporter, _ := tripleProtocol.ExporterMap().Load(serviceKey)
 		if exporter == nil {
@@ -287,15 +290,31 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 					attachments := generateAttachments(req.Header())
 					// inject attachments
 					ctx = context.WithValue(ctx, constant.AttachmentKey, attachments)
+					capturedAttachments := make(map[string]any)
+					ctx = context.WithValue(ctx, constant.AttachmentServerKey, capturedAttachments)
 					invo := invocation.NewRPCInvocation(m.Name, args, attachments)
 					res := invoker.Invoke(ctx, invo)
 					// todo(DMwangnima): modify InfoInvoker to get a unified processing logic
+					var triResp *tri.Response
 					// please refer to server/InfoInvoker.Invoke()
-					if triResp, ok := res.Result().(*tri.Response); ok {
-						return triResp, res.Error()
+					if existingResp, ok := res.Result().(*tri.Response); ok {
+						triResp = existingResp
+					} else {
+						// please refer to proxy/proxy_factory/ProxyInvoker.Invoke
+						triResp = tri.NewResponse([]any{res.Result()})
 					}
-					// please refer to proxy/proxy_factory/ProxyInvoker.Invoke
-					triResp := tri.NewResponse([]any{res.Result()})
+					for k, v := range res.Attachments() {
+						switch val := v.(type) {
+						case string:
+							triResp.Trailer().Set(k, val)
+						case []string:
+							if len(val) > 0 {
+								triResp.Trailer().Set(k, val[0])
+							}
+						default:
+							triResp.Header().Set(k, fmt.Sprintf("%v", val))
+						}
+					}
 					return triResp, res.Error()
 				},
 				opts...,
@@ -433,16 +452,12 @@ func (s *Server) GracefulStop() {
 // It makes use of reflection to extract method parameters information and create ServiceInfo.
 // As a result, Server could use this ServiceInfo to register.
 func createServiceInfoWithReflection(service common.RPCService) *common.ServiceInfo {
-	logger.Warnf("service = %#v", service)
-
 	var info common.ServiceInfo
 	serviceType := reflect.TypeOf(service)
 	methodNum := serviceType.NumMethod()
 
 	// +1 for generic call method
 	methodInfos := make([]common.MethodInfo, 0, methodNum+1)
-
-	logger.Warnf("service %v has %v methods", serviceType.Name(), methodNum)
 
 	for i := 0; i < methodNum; i++ {
 		methodType := serviceType.Method(i)

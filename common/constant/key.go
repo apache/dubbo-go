@@ -64,7 +64,8 @@ const (
 	MaxServerRecvMsgSize   = "max-server-recv-msg-size"
 	KeepAliveInterval      = "keep-alive-interval"
 	KeepAliveTimeout       = "keep-alive-timeout"
-	ISIDL                  = "isIDL"
+	// TODO: remove ISIDL when config package is removed
+	ISIDL = "isIDL"
 )
 
 // tls constant

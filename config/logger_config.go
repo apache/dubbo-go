@@ -41,7 +41,7 @@ type LoggerConfig struct {
 	Driver string `default:"zap" yaml:"driver"`
 
 	// logger level
-	Level string `default:"debug" yaml:"level"`
+	Level string `default:"info" yaml:"level"`
 
 	// logger formatter default text
 	Format string `default:"text" yaml:"format"`

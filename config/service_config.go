@@ -293,8 +293,6 @@ func (s *ServiceConfig) Export() error {
 			ivkURL.SetAttribute(constant.ServiceInfoKey, info)
 		}
 
-		logger.Errorf("Interface: %v", s.Interface)
-
 		if len(s.Tag) > 0 {
 			ivkURL.AddParam(constant.Tagkey, s.Tag)
 		}
