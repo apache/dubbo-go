@@ -98,6 +98,7 @@ func (refOpts *ReferenceOptions) init(opts ...ReferenceOption) error {
 	}
 
 	// init cluster
+	// TODO: use constant replace failover
 	if ref.Cluster == "" {
 		ref.Cluster = "failover"
 	}

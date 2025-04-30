@@ -89,6 +89,10 @@ func (refOpts *ReferenceOptions) ReferWithService(srv common.RPCService) {
 	refOpts.refer(srv, nil)
 }
 
+func (refOpts *ReferenceOptions) Refer() {
+	refOpts.refer(nil, nil)
+}
+
 func (refOpts *ReferenceOptions) ReferWithInfo(info *ClientInfo) {
 	refOpts.refer(nil, info)
 }

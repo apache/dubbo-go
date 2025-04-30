@@ -123,7 +123,7 @@ func (s *Server) Start(invoker protocol.Invoker, info *common.ServiceInfo) {
 	//Set expected codec name from serviceinfo
 	hanOpts = append(hanOpts, tri.WithExpectedCodecName(serialization))
 	intfName := URL.Interface()
-	if info != nil && isIDL == "true" {
+	if info != nil {
 		// new triple idl mode
 		logger.Errorf("new triple mode intfName: %v", intfName)
 		s.handleServiceWithInfo(intfName, invoker, info, hanOpts...)

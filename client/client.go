@@ -155,6 +155,8 @@ func (cli *Client) dial(interfaceName string, info *ClientInfo, service any, opt
 		newRefOpts.ReferWithInfo(info)
 	} else if service != nil {
 		newRefOpts.ReferWithService(service)
+	} else {
+		newRefOpts.Refer()
 	}
 
 	return &Connection{refOpts: newRefOpts}, nil
