@@ -66,7 +66,7 @@ type ServiceDefinition struct {
 
 // Register assemble invoker chains like ProviderConfig.Load, init a service per call
 func (s *Server) Register(handler any, info *common.ServiceInfo, opts ...ServiceOption) error {
-	baseOpts := []ServiceOption{WithIDL("true")}
+	baseOpts := []ServiceOption{WithIDLMode(constant.IDL)}
 	baseOpts = append(baseOpts, opts...)
 	newSvcOpts, err := s.genSvcOpts(handler, baseOpts...)
 	if err != nil {
@@ -80,7 +80,7 @@ func (s *Server) Register(handler any, info *common.ServiceInfo, opts ...Service
 func (s *Server) RegisterService(handler any, opts ...ServiceOption) error {
 	interfaceName := common.GetReference(handler)
 	baseOpts := []ServiceOption{
-		WithIDL("false"),
+		WithIDLMode(constant.NONIDL),
 		WithInterface(interfaceName),
 	}
 	baseOpts = append(baseOpts, opts...)

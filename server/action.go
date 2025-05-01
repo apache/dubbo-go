@@ -205,7 +205,7 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 			// fix https://github.com/apache/dubbo-go/issues/2176
 			common.WithParamsValue(constant.MaxServerSendMsgSize, protocolConf.MaxServerSendMsgSize),
 			common.WithParamsValue(constant.MaxServerRecvMsgSize, protocolConf.MaxServerRecvMsgSize),
-			common.WithParamsValue(constant.ISIDL, svcOpts.isIDL),
+			common.WithParamsValue(constant.IDLMode, svcOpts.IDLMode),
 		)
 
 		if info != nil {

@@ -158,12 +158,16 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	switch serialization {
 	case constant.ProtobufSerialization:
 		isIDL = true
+		logger.Debugf("Triple client manager use protobuf serializaition")
 	case constant.JSONSerialization:
 		isIDL = true
+		logger.Debugf("Triple client manager use protojson serializaition")
 		cliOpts = append(cliOpts, tri.WithProtoJSON())
 	case constant.Hessian2Serialization:
+		logger.Debugf("Triple client manager use hessian2 serializaition")
 		cliOpts = append(cliOpts, tri.WithHessian2())
 	case constant.MsgpackSerialization:
+		logger.Debugf("Triple client manager use msgpack serializaition")
 		cliOpts = append(cliOpts, tri.WithMsgPack())
 	default:
 		panic(fmt.Sprintf("Unsupported serialization: %s", serialization))
@@ -256,13 +260,16 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 			triClients[method] = triClient
 		}
 	} else {
+		// This branch is for the non-IDL mode, where we pass in the service solely
+		// for the purpose of using reflection to obtain all methods of the service.
+		// There might be potential for optimization in this area later on.
 		service, ok := url.GetAttribute(constant.RpcServiceKey)
 		if !ok {
 			return nil, fmt.Errorf("Triple clientmanager can't get methods")
 		}
 
 		serviceType := reflect.TypeOf(service)
-		for i := 0; i < serviceType.NumMethod(); i++ {
+		for i := range serviceType.NumMethod() {
 			methodName := serviceType.Method(i).Name
 			triURL, err := joinPath(baseTriURL, url.Interface(), methodName)
 			if err != nil {

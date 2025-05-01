@@ -112,16 +112,13 @@ func (s *Server) Start(invoker protocol.Invoker, info *common.ServiceInfo) {
 		logger.Infof("TRIPLE Server initialized the TLSConfig configuration")
 	}
 
-	// isIDL means that this will only be set when
+	// IDLMode means that this will only be set when
 	// the new triple is started in non-IDL mode.
-	// TODO: remove isIDL when config package is removed
-	isIDL := URL.GetParam(constant.ISIDL, "")
+	// TODO: remove IDLMode when config package is removed
+	IDLMode := URL.GetParam(constant.IDLMode, "")
 
 	var service common.RPCService
-	if isIDL == "true" {
-		logger.Warnf("start in IDL mode")
-	} else if isIDL == "false" {
-		logger.Warnf("start in non-IDL mode")
+	if IDLMode == constant.NONIDL {
 		service, _ = URL.GetAttribute(constant.RpcServiceKey)
 	}
 
@@ -133,7 +130,7 @@ func (s *Server) Start(invoker protocol.Invoker, info *common.ServiceInfo) {
 		// new triple idl mode
 		s.handleServiceWithInfo(intfName, invoker, info, hanOpts...)
 		s.saveServiceInfo(intfName, info)
-	} else if isIDL == "false" {
+	} else if IDLMode == constant.NONIDL {
 		// new triple non-idl mode
 		reflectInfo := createServiceInfoWithReflection(service)
 		s.handleServiceWithInfo(intfName, invoker, reflectInfo, hanOpts...)

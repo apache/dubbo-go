@@ -473,7 +473,7 @@ type ServiceOptions struct {
 	// consider put here or global.ServiceConfig
 	// string for url
 	// TODO: remove this when config package is remove
-	isIDL string
+	IDLMode string
 
 	methodsCompat     []*config.MethodConfig
 	applicationCompat *config.ApplicationConfig
@@ -878,9 +878,9 @@ func WithParam(k, v string) ServiceOption {
 }
 
 // TODO: remove when config package is removed
-func WithIDL(isIDL string) ServiceOption {
+func WithIDLMode(IDLMode string) ServiceOption {
 	return func(opts *ServiceOptions) {
-		opts.isIDL = isIDL
+		opts.IDLMode = IDLMode
 	}
 }
 

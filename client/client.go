@@ -99,7 +99,7 @@ func (conn *Connection) CallBidiStream(ctx context.Context, methodName string, o
 func (cli *Client) NewService(service any, opts ...ReferenceOption) (*Connection, error) {
 	interafceName := common.GetReference(service)
 
-	finalOpts := []ReferenceOption{WithIDL("false")}
+	finalOpts := []ReferenceOption{WithIDL(constant.NONIDL)}
 	finalOpts = append(finalOpts, opts...)
 
 	return cli.DialWithService(interafceName, service, finalOpts...)

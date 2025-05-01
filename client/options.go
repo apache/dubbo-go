@@ -333,9 +333,10 @@ func WithSticky() ReferenceOption {
 	}
 }
 
-func WithIDL(isIDL string) ReferenceOption {
+// TODO: remove this function after old triple removed
+func WithIDL(IDLMode string) ReferenceOption {
 	return func(opts *ReferenceOptions) {
-		opts.Reference.IsIDL = isIDL
+		opts.Reference.IDLMode = IDLMode
 	}
 }
 

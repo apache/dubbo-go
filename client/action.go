@@ -135,11 +135,18 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 		common.WithParamsValue(constant.KeepAliveInterval, ref.KeepAliveInterval),
 		common.WithParamsValue(constant.KeepAliveTimeout, ref.KeepAliveTimeout),
 		// for new triple non-IDL mode
-		common.WithParamsValue(constant.ISIDL, ref.IsIDL),
+		// TODO: remove ISIDL after old triple removed
+		common.WithParamsValue(constant.IDLMode, ref.IDLMode),
 	)
+
+	// for new triple IDL mode
 	if info != nil {
 		cfgURL.SetAttribute(constant.ClientInfoKey, info)
 	}
+
+	// for new triple non-IDL mode
+	// It assists in passing the service,
+	// which is then parsed internally by new triple.
 	if srv != nil {
 		cfgURL.SetAttribute(constant.RpcServiceKey, srv)
 	}

@@ -49,8 +49,8 @@ type ReferenceConfig struct {
 	KeepAliveTimeout  string            `yaml:"keep-alive-timeout" json:"keep-alive-timeout,omitempty" property:"keep-alive-timeout"`
 
 	// just for new triple non-IDL mode
-	// TODO: remove IsIDL when config package is removed
-	IsIDL string
+	// TODO: remove IDLMode when config package is removed
+	IDLMode string
 }
 
 func DefaultReferenceConfig() *ReferenceConfig {
@@ -189,7 +189,7 @@ func (c *ReferenceConfig) Clone() *ReferenceConfig {
 		MeshProviderPort:  c.MeshProviderPort,
 		KeepAliveInterval: c.KeepAliveInterval,
 		KeepAliveTimeout:  c.KeepAliveTimeout,
-		IsIDL:             c.IsIDL,
+		IDLMode:           c.IDLMode,
 	}
 }
 
