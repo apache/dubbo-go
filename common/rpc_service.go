@@ -142,10 +142,10 @@ func (m *MethodType) SuiteContext(ctx context.Context) reflect.Value {
 
 // Service is description of service
 type Service struct {
-	name        string
-	service     reflect.Value
-	serviceType reflect.Type
-	methods     map[string]*MethodType
+	name    string
+	svc     reflect.Value
+	svcType reflect.Type
+	methods map[string]*MethodType
 }
 
 // Method gets @s.methods.
@@ -158,14 +158,14 @@ func (s *Service) Name() string {
 	return s.name
 }
 
-// ServiceType gets @s.ServiceType.
+// ServiceType gets @s.SvcType.
 func (s *Service) ServiceType() reflect.Type {
-	return s.serviceType
+	return s.svcType
 }
 
-// Service gets @s.Service.
+// Service gets @s.Svc.
 func (s *Service) Service() reflect.Value {
-	return s.service
+	return s.svc
 }
 
 type serviceMap struct {
@@ -204,7 +204,7 @@ func (sm *serviceMap) GetInterface(interfaceName string) []*Service {
 }
 
 // Register registers a service by @interfaceName and @protocol
-func (sm *serviceMap) Register(interfaceName, protocol, group, version string, service RPCService) (string, error) {
+func (sm *serviceMap) Register(interfaceName, protocol, group, version string, svc RPCService) (string, error) {
 	if sm.serviceMap[protocol] == nil {
 		sm.serviceMap[protocol] = make(map[string]*Service)
 	}
@@ -213,11 +213,11 @@ func (sm *serviceMap) Register(interfaceName, protocol, group, version string, s
 	}
 
 	s := new(Service)
-	s.serviceType = reflect.TypeOf(service)
-	s.service = reflect.ValueOf(service)
-	sname := reflect.Indirect(s.service).Type().Name()
+	s.svcType = reflect.TypeOf(svc)
+	s.svc = reflect.ValueOf(svc)
+	sname := reflect.Indirect(s.svc).Type().Name()
 	if sname == "" {
-		s := "no service name for type " + s.serviceType.String()
+		s := "no service name for type " + s.svcType.String()
 		logger.Errorf(s)
 		return "", perrors.New(s)
 	}
@@ -236,7 +236,7 @@ func (sm *serviceMap) Register(interfaceName, protocol, group, version string, s
 
 	// Install the methods
 	methods := ""
-	methods, s.methods = suitableMethods(s.serviceType)
+	methods, s.methods = suitableMethods(s.svcType)
 
 	if len(s.methods) == 0 {
 		s := "type " + sname + " has no exported methods of suitable type"

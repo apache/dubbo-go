@@ -448,16 +448,16 @@ func (s *Server) GracefulStop() {
 // createServiceInfoWithReflection is for non-idl scenario.
 // It makes use of reflection to extract method parameters information and create ServiceInfo.
 // As a result, Server could use this ServiceInfo to register.
-func createServiceInfoWithReflection(service common.RPCService) *common.ServiceInfo {
+func createServiceInfoWithReflection(svc common.RPCService) *common.ServiceInfo {
 	var info common.ServiceInfo
-	serviceType := reflect.TypeOf(service)
-	methodNum := serviceType.NumMethod()
+	svcType := reflect.TypeOf(svc)
+	methodNum := svcType.NumMethod()
 
 	// +1 for generic call method
 	methodInfos := make([]common.MethodInfo, 0, methodNum+1)
 
-	for i := 0; i < methodNum; i++ {
-		methodType := serviceType.Method(i)
+	for i := range methodNum {
+		methodType := svcType.Method(i)
 		if methodType.Name == "Reference" {
 			continue
 		}

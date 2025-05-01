@@ -48,6 +48,9 @@ type ClientDefinition struct {
 }
 
 // InterfaceName/group/version /ReferenceConfig
+// TODO: In the Connection structure, we are only using the invoker in the refOpts.
+// Considering simplifying the Connection.
+// Make the structure of Connection more in line with human logic.
 type Connection struct {
 	refOpts *ReferenceOptions
 }
@@ -131,7 +134,7 @@ func (cli *Client) DialWithDefinition(interfaceName string, definition *ClientDe
 	return cli.dial(interfaceName, definition.Info, nil, opts...)
 }
 
-func (cli *Client) dial(interfaceName string, info *ClientInfo, service any, opts ...ReferenceOption) (*Connection, error) {
+func (cli *Client) dial(interfaceName string, info *ClientInfo, srv any, opts ...ReferenceOption) (*Connection, error) {
 	if err := metadata.InitRegistryMetadataReport(cli.cliOpts.Registries); err != nil {
 		return nil, err
 	}
@@ -153,8 +156,8 @@ func (cli *Client) dial(interfaceName string, info *ClientInfo, service any, opt
 
 	if info != nil {
 		newRefOpts.ReferWithInfo(info)
-	} else if service != nil {
-		newRefOpts.ReferWithService(service)
+	} else if srv != nil {
+		newRefOpts.ReferWithService(srv)
 	} else {
 		newRefOpts.Refer()
 	}
