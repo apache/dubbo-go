@@ -20,6 +20,7 @@ package client
 
 import (
 	"context"
+	"errors"
 )
 
 import (
@@ -45,6 +46,18 @@ type ClientInfo struct {
 type ClientDefinition struct {
 	Svc  any
 	Info *ClientInfo
+	Conn *Connection
+}
+
+func (d *ClientDefinition) SetConnection(conn *Connection) {
+	d.Conn = conn
+}
+
+func (d *ClientDefinition) GetConnection() (*Connection, error) {
+	if d.Conn == nil {
+		return nil, errors.New("you need dubbo.load() first.")
+	}
+	return d.Conn, nil
 }
 
 // InterfaceName/group/version /ReferenceConfig
@@ -102,7 +115,11 @@ func (conn *Connection) CallBidiStream(ctx context.Context, methodName string, o
 func (cli *Client) NewService(service any, opts ...ReferenceOption) (*Connection, error) {
 	interafceName := common.GetReference(service)
 
-	finalOpts := []ReferenceOption{WithIDL(constant.NONIDL)}
+	finalOpts := []ReferenceOption{
+		WithIDL(constant.NONIDL),
+		// default msgpack serialization
+		WithSerialization(constant.MsgpackSerialization),
+	}
 	finalOpts = append(finalOpts, opts...)
 
 	return cli.DialWithService(interafceName, service, finalOpts...)

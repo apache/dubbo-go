@@ -158,16 +158,12 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	switch serialization {
 	case constant.ProtobufSerialization:
 		isIDL = true
-		logger.Debugf("Triple client manager use protobuf serializaition")
 	case constant.JSONSerialization:
 		isIDL = true
-		logger.Debugf("Triple client manager use protojson serializaition")
 		cliOpts = append(cliOpts, tri.WithProtoJSON())
 	case constant.Hessian2Serialization:
-		logger.Debugf("Triple client manager use hessian2 serializaition")
 		cliOpts = append(cliOpts, tri.WithHessian2())
 	case constant.MsgpackSerialization:
-		logger.Debugf("Triple client manager use msgpack serializaition")
 		cliOpts = append(cliOpts, tri.WithMsgPack())
 	default:
 		panic(fmt.Sprintf("Unsupported serialization: %s", serialization))

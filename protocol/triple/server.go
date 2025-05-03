@@ -76,13 +76,9 @@ func (s *Server) Start(invoker protocol.Invoker, info *common.ServiceInfo) {
 	serialization := URL.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	switch serialization {
 	case constant.ProtobufSerialization:
-		logger.Debugf("Triple server use protobuf serializaition")
 	case constant.JSONSerialization:
-		logger.Debugf("Triple server use json serializaition")
 	case constant.Hessian2Serialization:
-		logger.Debugf("Triple server use hessian2 serializaition")
 	case constant.MsgpackSerialization:
-		logger.Debugf("Triple server use msgpack serializaition")
 	default:
 		panic(fmt.Sprintf("Unsupported serialization: %s", serialization))
 	}
