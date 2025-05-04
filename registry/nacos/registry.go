@@ -47,7 +47,7 @@ import (
 )
 
 const (
-	RegistryConnDelay = 3
+	LookupInterval = 10 * time.Second
 )
 
 func init() {
@@ -177,46 +177,67 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 		return nil
 	}
 	serviceName := url.GetParam(constant.InterfaceKey, "")
-	var serviceNames []string
-	var err error
 	if serviceName == constant.AnyValue {
-		serviceNames, err = nr.getAllSubscribeServiceNames(url)
-		if err != nil {
-			return err
-		}
+		nr.subscribeAll(url, notifyListener)
+		go func() {
+			// scheduled lookup for new service
+			for {
+				nr.subscribeAll(url, notifyListener)
+				time.Sleep(LookupInterval)
+			}
+		}()
+		return nil
 	} else {
-		serviceNames = []string{getSubscribeName(url)}
+		// retry forever
+		for {
+			err := nr.subscribe(getSubscribeName(url), notifyListener)
+			if err == nil {
+				return nil
+			}
+		}
 	}
-	return nr.subscribe(serviceNames, notifyListener)
+}
+
+func (nr *nacosRegistry) subscribeAll(url *common.URL, notifyListener registry.NotifyListener) {
+	groupName := nr.URL.GetParam(constant.RegistryGroupKey, defaultGroup)
+	serviceNames, err := nr.getAllSubscribeServiceNames(url)
+	if err != nil {
+		logger.Warnf("getAllServices() = err:%v", perrors.WithStack(err))
+		return
+	}
+	if len(serviceNames) == 0 {
+		logger.Warnf("No services to listen to.")
+		return
+	}
+	for _, name := range serviceNames {
+		if _, ok := listenerCache.Load(name + groupName); ok {
+			continue
+		}
+		err = nr.subscribe(name, notifyListener)
+		if err != nil {
+			logger.Warnf("subscribe service %s err:%v", name, perrors.WithStack(err))
+		}
+	}
 }
 
 // subscribe subscribe services
-func (nr *nacosRegistry) subscribe(serviceNames []string, notifyListener registry.NotifyListener) error {
-	if len(serviceNames) == 0 {
-		logger.Warnf("No services to listen to.")
+func (nr *nacosRegistry) subscribe(serviceName string, notifyListener registry.NotifyListener) error {
+	if len(serviceName) == 0 {
+		logger.Warnf("can not subscribe because service name is empty")
 		return nil
 	}
-	for {
-		if !nr.IsAvailable() {
-			logger.Warnf("event listener game over.")
-			return perrors.New("nacosRegistry is not available.")
-		}
-		var err error
-		for _, serviceName := range serviceNames {
-			listener := NewNacosListenerWithServiceName(serviceName, nr.URL, nr.namingClient)
-			err = listener.listenService(serviceName)
-			metrics.Publish(metricsRegistry.NewSubscribeEvent(err == nil))
-			if err != nil {
-				logger.Warnf("getAllServices() = err:%v", perrors.WithStack(err))
-				time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
-				break
-			}
-			go nr.handleServiceEvents(listener, notifyListener)
-		}
-		if err == nil {
-			break
-		}
+	if !nr.IsAvailable() {
+		logger.Warnf("event listener game over.")
+		return perrors.New("nacosRegistry is not available.")
 	}
+	listener := NewNacosListenerWithServiceName(serviceName, nr.URL, nr.namingClient)
+	err := listener.listenService(serviceName)
+	metrics.Publish(metricsRegistry.NewSubscribeEvent(err == nil))
+	if err != nil {
+		logger.Warnf("subscribe service %s err:%v", serviceName, perrors.WithStack(err))
+		return err
+	}
+	go nr.handleServiceEvents(listener, notifyListener)
 	return nil
 }
 
@@ -263,7 +284,7 @@ func (nr *nacosRegistry) handleServiceEvents(listener registry.Listener, notifyL
 
 // UnSubscribe :
 func (nr *nacosRegistry) UnSubscribe(url *common.URL, _ registry.NotifyListener) error {
-	param := createSubscribeParam(getSubscribeName(url), nr.URL, nil)
+	param := createSubscribeParam(getSubscribeName(url), nr.URL.GetParam(constant.RegistryGroupKey, defaultGroup), nil)
 	if param == nil {
 		return nil
 	}
@@ -295,8 +316,7 @@ func (nr *nacosRegistry) LoadSubscribeInstances(url *common.URL, notify registry
 	return nil
 }
 
-func createSubscribeParam(serviceName string, regUrl *common.URL, cb callback) *vo.SubscribeParam {
-	groupName := regUrl.GetParam(constant.RegistryGroupKey, defaultGroup)
+func createSubscribeParam(serviceName string, groupName string, cb callback) *vo.SubscribeParam {
 	if cb == nil {
 		v, ok := listenerCache.Load(serviceName + groupName)
 		if !ok {

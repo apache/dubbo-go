@@ -176,7 +176,7 @@ func (nl *nacosListener) listenService(serviceName string) error {
 	if nl.namingClient == nil {
 		return perrors.New("nacos naming namingClient stopped")
 	}
-	nl.subscribeParam = createSubscribeParam(serviceName, nl.regURL, nl.Callback)
+	nl.subscribeParam = createSubscribeParam(serviceName, nl.regURL.GetParam(constant.RegistryGroupKey, defaultGroup), nl.Callback)
 	if nl.subscribeParam == nil {
 		return perrors.New("create nacos subscribeParam failed")
 	}
