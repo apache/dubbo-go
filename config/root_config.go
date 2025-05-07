@@ -386,9 +386,9 @@ func validateRegistryAddresses(registries map[string]*RegistryConfig) error {
 		}
 
 		if existingID, exists := cacheKeyMap[cacheKey]; exists {
-			logger.Errorf("Registry %s is already in use by %s", id, existingID)
-			return fmt.Errorf("duplicate registry cache key detected: %s is used by both %s and %s registries",
-				cacheKey, existingID, id)
+			err := fmt.Errorf("duplicate registry address: [%s] used by both [%s] and [%s]", cacheKey, existingID, id)
+			logger.Error(err)
+			return err
 		}
 
 		cacheKeyMap[cacheKey] = id
