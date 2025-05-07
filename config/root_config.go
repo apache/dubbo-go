@@ -18,6 +18,7 @@
 package config
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -164,6 +165,10 @@ func (rc *RootConfig) Init() error {
 		if err := reg.Init(); err != nil {
 			return err
 		}
+	}
+
+	if err := validateRegistryAddresses(rc.Registries); err != nil {
+		return err
 	}
 
 	if err := rc.MetadataReport.Init(rc); err != nil {
@@ -366,4 +371,28 @@ func (rc *RootConfig) Process(event *config_center.ConfigChangeEvent) {
 
 	// dynamically update metric
 	rc.Metrics.DynamicUpdateProperties(updateRootConfig.Metrics)
+}
+
+func validateRegistryAddresses(registries map[string]*RegistryConfig) error {
+	cacheKeyMap := make(map[string]string)
+
+	for id, reg := range registries {
+		address := reg.Address
+		namespace := reg.Namespace
+
+		cacheKey := address
+		if namespace != "" {
+			cacheKey = cacheKey + "?" + constant.NacosNamespaceID + "=" + namespace
+		}
+
+		if existingID, exists := cacheKeyMap[cacheKey]; exists {
+			logger.Errorf("Registry %s is already in use by %s", id, existingID)
+			return fmt.Errorf("duplicate registry cache key detected: %s is used by both %s and %s registries",
+				cacheKey, existingID, id)
+		}
+
+		cacheKeyMap[cacheKey] = id
+	}
+
+	return nil
 }
