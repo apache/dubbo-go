@@ -373,8 +373,9 @@ func (rc *RootConfig) Process(event *config_center.ConfigChangeEvent) {
 	rc.Metrics.DynamicUpdateProperties(updateRootConfig.Metrics)
 }
 
+// validateRegistryAddresses Checks whether there are duplicate registry addresses
 func validateRegistryAddresses(registries map[string]*RegistryConfig) error {
-	cacheKeyMap := make(map[string]string)
+	cacheKeyMap := make(map[string]string, len(registries))
 
 	for id, reg := range registries {
 		address := reg.Address
@@ -387,7 +388,7 @@ func validateRegistryAddresses(registries map[string]*RegistryConfig) error {
 
 		if existingID, exists := cacheKeyMap[cacheKey]; exists {
 			err := fmt.Errorf("duplicate registry address: [%s] used by both [%s] and [%s]", cacheKey, existingID, id)
-			logger.Error(err)
+			logger.Errorf("duplicate registry address: [%s] used by both [%s] and [%s]", cacheKey, existingID, id)
 			return err
 		}
 
