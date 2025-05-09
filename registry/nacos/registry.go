@@ -178,23 +178,29 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 	}
 	serviceName := url.GetParam(constant.InterfaceKey, "")
 	if serviceName == constant.AnyValue {
+		// sync subscribe all first
 		nr.subscribeAll(url, notifyListener)
-		go func() {
-			// scheduled lookup for new service
-			for {
-				nr.subscribeAll(url, notifyListener)
-				time.Sleep(LookupInterval)
-			}
-		}()
+		// scheduled lookup for new service
+		go nr.scheduledLookUp(url, notifyListener)
 		return nil
 	} else {
 		// retry forever
 		for {
+			if !nr.IsAvailable() {
+				return nil
+			}
 			err := nr.subscribe(getSubscribeName(url), notifyListener)
 			if err == nil {
 				return nil
 			}
 		}
+	}
+}
+
+func (nr *nacosRegistry) scheduledLookUp(url *common.URL, notifyListener registry.NotifyListener) {
+	for nr.IsAvailable() {
+		nr.subscribeAll(url, notifyListener)
+		time.Sleep(LookupInterval)
 	}
 }
 
@@ -211,8 +217,10 @@ func (nr *nacosRegistry) subscribeAll(url *common.URL, notifyListener registry.N
 	}
 	for _, name := range serviceNames {
 		if _, ok := listenerCache.Load(name + groupName); ok {
+			// has subscribed ,ignore
 			continue
 		}
+		// new service
 		err = nr.subscribe(name, notifyListener)
 		if err != nil {
 			logger.Warnf("subscribe service %s err:%v", name, perrors.WithStack(err))
@@ -231,12 +239,14 @@ func (nr *nacosRegistry) subscribe(serviceName string, notifyListener registry.N
 		return perrors.New("nacosRegistry is not available.")
 	}
 	listener := NewNacosListenerWithServiceName(serviceName, nr.URL, nr.namingClient)
+	// will add to listenerCache when subscribe success
 	err := listener.listenService(serviceName)
 	metrics.Publish(metricsRegistry.NewSubscribeEvent(err == nil))
 	if err != nil {
 		logger.Warnf("subscribe service %s err:%v", serviceName, perrors.WithStack(err))
 		return err
 	}
+	// handleServiceEvents will block to wait notify event and exit when error occur
 	go nr.handleServiceEvents(listener, notifyListener)
 	return nil
 }
@@ -272,6 +282,9 @@ func (nr *nacosRegistry) getAllSubscribeServiceNames(url *common.URL) ([]string,
 func (nr *nacosRegistry) handleServiceEvents(listener registry.Listener, notifyListener registry.NotifyListener) {
 	for {
 		serviceEvent, err := listener.Next()
+		if !nr.IsAvailable() {
+			return
+		}
 		if err != nil {
 			logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
 			listener.Close()
