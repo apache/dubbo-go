@@ -167,6 +167,7 @@ func (rc *RootConfig) Init() error {
 		}
 	}
 
+	// TODO：When config is migrated later, the impact of this will be migrated to the global module
 	if err := validateRegistryAddresses(rc.Registries); err != nil {
 		return err
 	}
@@ -373,6 +374,7 @@ func (rc *RootConfig) Process(event *config_center.ConfigChangeEvent) {
 	rc.Metrics.DynamicUpdateProperties(updateRootConfig.Metrics)
 }
 
+// TODO：When config is migrated later, the impact of this will be migrated to the global module
 // validateRegistryAddresses Checks whether there are duplicate registry addresses
 func validateRegistryAddresses(registries map[string]*RegistryConfig) error {
 	cacheKeyMap := make(map[string]string, len(registries))
