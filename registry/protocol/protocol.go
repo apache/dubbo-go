@@ -79,23 +79,20 @@ func newRegistryProtocol() *registryProtocol {
 }
 
 func (proto *registryProtocol) getRegistry(registryUrl *common.URL) registry.Registry {
-	var err error
-
 	namespace := registryUrl.GetParam(constant.RegistryNamespaceKey, "")
 	cacheKey := registryUrl.PrimitiveURL
 	if namespace != "" {
 		cacheKey = cacheKey + "?" + constant.NacosNamespaceID + "=" + namespace
 	}
-	reg, loaded := proto.registries.Load(cacheKey)
-	if !loaded {
-		reg, err = extension.GetRegistry(registryUrl.Protocol, registryUrl)
+	actualReg, _ := proto.registries.LoadOrStore(cacheKey, func() any {
+		reg, err := extension.GetRegistry(registryUrl.Protocol, registryUrl)
 		if err != nil {
-			logger.Errorf("Registry can not connect success, program is going to panic.Error message is %s", err.Error())
+			logger.Errorf("Registry cannot connect successfully. Error: %s", err.Error())
 			panic(err)
 		}
-		proto.registries.Store(cacheKey, reg)
-	}
-	return reg.(registry.Registry)
+		return reg
+	}())
+	return actualReg.(registry.Registry)
 }
 
 func getCacheKey(invoker protocol.Invoker) string {
