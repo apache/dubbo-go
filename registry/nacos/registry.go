@@ -182,17 +182,21 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 		nr.subscribeAll(url, notifyListener)
 		// scheduled lookup for new service
 		go nr.scheduledLookUp(url, notifyListener)
-		return nil
 	} else {
-		// retry forever
-		for {
-			if !nr.IsAvailable() {
-				return nil
-			}
-			err := nr.subscribe(getSubscribeName(url), notifyListener)
-			if err == nil {
-				return nil
-			}
+		nr.subscribeUntilSuccess(url, notifyListener)
+	}
+	return nil
+}
+
+func (nr *nacosRegistry) subscribeUntilSuccess(url *common.URL, notifyListener registry.NotifyListener) {
+	// retry forever
+	for {
+		if !nr.IsAvailable() {
+			return
+		}
+		err := nr.subscribe(getSubscribeName(url), notifyListener)
+		if err == nil {
+			return
 		}
 	}
 }
