@@ -189,6 +189,13 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 			port = nextPort.Value.(string)
 			nextPort = nextPort.Next()
 		}
+
+		// Ensure that isIDL does not have any other invalid inputs.
+		isIDL := constant.IDL
+		if svcOpts.IDLMode == constant.NONIDL {
+			isIDL = svcOpts.IDLMode
+		}
+
 		ivkURL := common.NewURLWithOptions(
 			common.WithPath(svc.Interface),
 			common.WithProtocol(protocolConf.Name),
@@ -205,7 +212,7 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 			// fix https://github.com/apache/dubbo-go/issues/2176
 			common.WithParamsValue(constant.MaxServerSendMsgSize, protocolConf.MaxServerSendMsgSize),
 			common.WithParamsValue(constant.MaxServerRecvMsgSize, protocolConf.MaxServerRecvMsgSize),
-			common.WithParamsValue(constant.IDLMode, svcOpts.IDLMode),
+			common.WithParamsValue(constant.IDLMode, isIDL),
 		)
 
 		if info != nil {
