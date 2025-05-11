@@ -201,7 +201,7 @@ func userHomeDir() string {
 
 // checkFileSuffix check file suffix
 func checkFileSuffix(suffix string) error {
-	for _, g := range []string{"json", "toml", "yaml", "yml", "properties"} {
+	for _, g := range []string{"json", "yaml", "yml"} {
 		if g == suffix {
 			return nil
 		}
