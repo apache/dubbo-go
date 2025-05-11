@@ -32,21 +32,21 @@ const (
 )
 
 const (
-	DefaultWeight           = 100
-	DefaultWarmup           = 10 * 60 // in java here is 10*60*1000 because of System.currentTimeMillis() is measured in milliseconds & in go time.Unix() is second
-	DefaultLoadBalance      = "random"
-	DefaultRetries          = "2"
-	DefaultRetriesInt       = 2
-	DefaultProtocol         = "dubbo"
-	DefaultRegTimeout       = "5s"
-	DefaultRegTTL           = "15m"
-	DefaultCluster          = "failover"
-	DefaultFailbackTimes    = "3"
-	DefaultFailbackTimesInt = 3
-	DefaultFailbackTasks    = 100
-	DefaultRestClient       = "resty"
-	DefaultRestServer       = "go-restful"
-	DefaultPort             = 20000
+	DefaultWeight           int64 = 100
+	DefaultWarmup                 = 10 * 60 // in java here is 10*60*1000 because of System.currentTimeMillis() is measured in milliseconds & in go time.Unix() is second
+	DefaultLoadBalance            = "random"
+	DefaultRetries                = "2"
+	DefaultRetriesInt             = 2
+	DefaultProtocol               = "dubbo"
+	DefaultRegTimeout             = "5s"
+	DefaultRegTTL                 = "15m"
+	DefaultCluster                = "failover"
+	DefaultFailbackTimes          = "3"
+	DefaultFailbackTimesInt       = 3
+	DefaultFailbackTasks          = 100
+	DefaultRestClient             = "resty"
+	DefaultRestServer             = "go-restful"
+	DefaultPort                   = 20000
 )
 
 const (

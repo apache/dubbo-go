@@ -76,6 +76,7 @@ type ServiceInstance interface {
 
 	// GetTag will return the tag of the instance
 	GetTag() string
+	GetWeight() int64
 }
 
 // nolint
@@ -99,6 +100,7 @@ type DefaultServiceInstance struct {
 	GroupName       string
 	endpoints       []*Endpoint `json:"-"`
 	Tag             string
+	Weight          int64
 }
 
 // GetID will return this instance's id. It should be unique.
@@ -129,6 +131,13 @@ func (d *DefaultServiceInstance) IsEnable() bool {
 // IsHealthy will return the value represent the instance whether healthy or not
 func (d *DefaultServiceInstance) IsHealthy() bool {
 	return d.Healthy
+}
+
+func (d *DefaultServiceInstance) GetWeight() int64 {
+	if d.Weight <= 0 {
+		d.Weight = constant.DefaultWeight
+	}
+	return d.Weight
 }
 
 // GetAddress will return the ip:Port

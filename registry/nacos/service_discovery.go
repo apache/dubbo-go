@@ -20,7 +20,6 @@ package nacos
 import (
 	"fmt"
 	"regexp"
-	"strconv"
 	"sync"
 )
 
@@ -184,6 +183,7 @@ func (n *nacosServiceDiscovery) GetInstances(serviceName string) []registry.Serv
 			Healthy:     ins.Healthy,
 			Metadata:    metadata,
 			GroupName:   n.group,
+			Weight:      int64(ins.Weight),
 		})
 	}
 	return res
@@ -315,13 +315,15 @@ func (n *nacosServiceDiscovery) toRegisterInstance(instance registry.ServiceInst
 		metadata = make(map[string]string, 1)
 	}
 
-	weightStr := n.registryURL.GetParam(constant.RegistryKey+"."+constant.WeightKey, "1.0")
-	weight, err := strconv.ParseFloat(weightStr, 64)
-	if err != nil || weight <= constant.MinNacosWeight {
-		logger.Warnf("Invalid weight value %q, using default 1.0. err: %v", weightStr, err)
+	var weight int64
+	if (n != nil) && (n.registryURL != nil) && (n.registryURL.SubURL != nil) {
+		weight = n.registryURL.SubURL.GetParamInt(constant.WeightKey, constant.DefaultWeight)
+	}
+	if weight <= constant.MinNacosWeight {
+		logger.Warnf("Invalid weight value %d, using default weight %d.", weight, constant.DefaultWeight)
 		weight = constant.DefaultNacosWeight
 	} else if weight > constant.MaxNacosWeight {
-		logger.Warnf("Weight %f exceeds Nacos maximum 10000, setting to 10000", weight)
+		logger.Warnf("Weight %d exceeds Nacos maximum 10000, setting to 10000", weight)
 		weight = constant.MaxNacosWeight
 	}
 
@@ -332,7 +334,7 @@ func (n *nacosServiceDiscovery) toRegisterInstance(instance registry.ServiceInst
 		Port:        uint64(instance.GetPort()),
 		Metadata:    metadata,
 		// We must specify the weight since Java nacos namingClient will ignore the instance whose weight is 0
-		Weight:    weight,
+		Weight:    float64(weight),
 		Enable:    instance.IsEnable(),
 		Healthy:   instance.IsHealthy(),
 		GroupName: n.group,
