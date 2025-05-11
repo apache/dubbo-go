@@ -8,7 +8,7 @@
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF interface{} KIND, either express or implied.
+// WITHOUT WARRANTIES OR CONDITIONS OF any KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
@@ -33,7 +33,7 @@ import (
 )
 
 // Equal asserts that two values are equal.
-func Equal(tb testing.TB, got, want interface{}, options ...Option) bool {
+func Equal(tb testing.TB, got, want any, options ...Option) bool {
 	tb.Helper()
 	if cmpEqual(got, want) {
 		return true
@@ -43,7 +43,7 @@ func Equal(tb testing.TB, got, want interface{}, options ...Option) bool {
 }
 
 // NotEqual asserts that two values are not equal.
-func NotEqual(tb testing.TB, got, want interface{}, options ...Option) bool {
+func NotEqual(tb testing.TB, got, want any, options ...Option) bool {
 	tb.Helper()
 	if !cmpEqual(got, want) {
 		return true
@@ -53,7 +53,7 @@ func NotEqual(tb testing.TB, got, want interface{}, options ...Option) bool {
 }
 
 // Nil asserts that the value is nil.
-func Nil(tb testing.TB, got interface{}, options ...Option) bool {
+func Nil(tb testing.TB, got any, options ...Option) bool {
 	tb.Helper()
 	if isNil(got) {
 		return true
@@ -63,7 +63,7 @@ func Nil(tb testing.TB, got interface{}, options ...Option) bool {
 }
 
 // NotNil asserts that the value isn't nil.
-func NotNil(tb testing.TB, got interface{}, options ...Option) bool {
+func NotNil(tb testing.TB, got any, options ...Option) bool {
 	tb.Helper()
 	if !isNil(got) {
 		return true
@@ -73,7 +73,7 @@ func NotNil(tb testing.TB, got interface{}, options ...Option) bool {
 }
 
 // Zero asserts that the value is its type's zero value.
-func Zero(tb testing.TB, got interface{}, options ...Option) bool {
+func Zero(tb testing.TB, got any, options ...Option) bool {
 	tb.Helper()
 	typ := reflect.TypeOf(got)
 	if typ == nil {
@@ -88,7 +88,7 @@ func Zero(tb testing.TB, got interface{}, options ...Option) bool {
 }
 
 // NotZero asserts that the value is non-zero.
-func NotZero(tb testing.TB, got interface{}, options ...Option) bool {
+func NotZero(tb testing.TB, got any, options ...Option) bool {
 	tb.Helper()
 	typ := reflect.TypeOf(got)
 	if typ == nil {
@@ -170,7 +170,7 @@ type Option interface {
 // are passed directly to fmt.Sprintf for formatting.
 //
 // If Sprintf is passed multiple times, only the last message is used.
-func Sprintf(template string, args ...interface{}) Option {
+func Sprintf(template string, args ...any) Option {
 	return &sprintfOption{fmt.Sprintf(template, args...)}
 }
 
@@ -182,7 +182,7 @@ func (o *sprintfOption) message() string {
 	return o.msg
 }
 
-func report(tb testing.TB, got, want interface{}, desc string, showWant bool, options ...Option) {
+func report(tb testing.TB, got, want any, desc string, showWant bool, options ...Option) {
 	tb.Helper()
 	buffer := &bytes.Buffer{}
 	if len(options) > 0 {
@@ -197,7 +197,7 @@ func report(tb testing.TB, got, want interface{}, desc string, showWant bool, op
 	tb.Fatal(buffer.String())
 }
 
-func isNil(got interface{}) bool {
+func isNil(got any) bool {
 	// Simple case, true only when the user directly passes a literal nil.
 	if got == nil {
 		return true
@@ -215,6 +215,6 @@ func isNil(got interface{}) bool {
 	}
 }
 
-func cmpEqual(got, want interface{}) bool {
+func cmpEqual(got, want any) bool {
 	return cmp.Equal(got, want, protocmp.Transform())
 }

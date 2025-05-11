@@ -35,7 +35,7 @@ import (
 type recoverHandlerInterceptor struct {
 	Interceptor
 
-	handle func(context.Context, Spec, http.Header, interface{}) error
+	handle func(context.Context, Spec, http.Header, any) error
 }
 
 func (i *recoverHandlerInterceptor) WrapUnary(next UnaryFunc) UnaryFunc {

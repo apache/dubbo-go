@@ -81,7 +81,7 @@ func TestRouter(t *testing.T) {
 		invokerList = append(invokerList, ivk)
 		invokerList = append(invokerList, ivk1)
 		invokerList = append(invokerList, ivk2)
-		attachments := map[string]interface{}{constant.Tagkey: "tag"}
+		attachments := map[string]any{constant.Tagkey: "tag"}
 		result := p.Route(invokerList, consumerUrl, invocation.NewRPCInvocation("GetUser", nil, attachments))
 		assert.True(t, len(result) == 3)
 	})
@@ -95,7 +95,7 @@ func TestRouter(t *testing.T) {
 		invokerList = append(invokerList, ivk)
 		invokerList = append(invokerList, ivk1)
 		invokerList = append(invokerList, ivk2)
-		attachments := map[string]interface{}{constant.Tagkey: "tag", constant.ForceUseTag: "true"}
+		attachments := map[string]any{constant.Tagkey: "tag", constant.ForceUseTag: "true"}
 		result := p.Route(invokerList, consumerUrl, invocation.NewRPCInvocation("GetUser", nil, attachments))
 		assert.True(t, len(result) == 0)
 	})
@@ -110,7 +110,7 @@ func TestRouter(t *testing.T) {
 		invokerList = append(invokerList, ivk)
 		invokerList = append(invokerList, ivk1)
 		invokerList = append(invokerList, ivk2)
-		attachments := map[string]interface{}{constant.Tagkey: "tag"}
+		attachments := map[string]any{constant.Tagkey: "tag"}
 		result := p.Route(invokerList, consumerUrl, invocation.NewRPCInvocation("GetUser", nil, attachments))
 		assert.True(t, len(result) == 1)
 		assert.True(t, result[0].GetURL().GetParam(constant.Tagkey, "") == "tag")
@@ -167,7 +167,7 @@ func TestRouter(t *testing.T) {
 		invokerList = append(invokerList, ivk)
 		invokerList = append(invokerList, ivk1)
 		invokerList = append(invokerList, ivk2)
-		attachments := map[string]interface{}{constant.Tagkey: "tag"}
+		attachments := map[string]any{constant.Tagkey: "tag"}
 		result := p.Route(invokerList, consumerUrl, invocation.NewRPCInvocation("GetUser", nil, attachments))
 		assert.True(t, len(result) == 3)
 	})
@@ -215,7 +215,7 @@ func TestRouter(t *testing.T) {
 		invokerList = append(invokerList, ivk)
 		invokerList = append(invokerList, ivk1)
 		invokerList = append(invokerList, ivk2)
-		attachments := map[string]interface{}{constant.Tagkey: "tag"}
+		attachments := map[string]any{constant.Tagkey: "tag"}
 		result := p.Route(invokerList, consumerUrl, invocation.NewRPCInvocation("GetUser", nil, attachments))
 		assert.True(t, len(result) == 3)
 	})
@@ -240,7 +240,7 @@ func TestRouter(t *testing.T) {
 		invokerList = append(invokerList, ivk)
 		invokerList = append(invokerList, ivk1)
 		invokerList = append(invokerList, ivk2)
-		attachments := map[string]interface{}{constant.Tagkey: "tag"}
+		attachments := map[string]any{constant.Tagkey: "tag"}
 		result := p.Route(invokerList, consumerUrl, invocation.NewRPCInvocation("GetUser", nil, attachments))
 		assert.True(t, len(result) == 1)
 	})
@@ -265,7 +265,7 @@ func TestRouter(t *testing.T) {
 		invokerList = append(invokerList, ivk)
 		invokerList = append(invokerList, ivk1)
 		invokerList = append(invokerList, ivk2)
-		attachments := map[string]interface{}{constant.Tagkey: "tag"}
+		attachments := map[string]any{constant.Tagkey: "tag"}
 		result := p.Route(invokerList, url3, invocation.NewRPCInvocation("GetUser", nil, attachments))
 		assert.True(t, len(result) == 2)
 	})
@@ -290,7 +290,7 @@ func TestRouter(t *testing.T) {
 		invokerList = append(invokerList, ivk)
 		invokerList = append(invokerList, ivk1)
 		invokerList = append(invokerList, ivk2)
-		attachments := map[string]interface{}{constant.Tagkey: "tag"}
+		attachments := map[string]any{constant.Tagkey: "tag"}
 		result := p.Route(invokerList, consumerUrl, invocation.NewRPCInvocation("GetUser", nil, attachments))
 		assert.True(t, len(result) == 3)
 	})
@@ -315,7 +315,7 @@ func TestRouter(t *testing.T) {
 		invokerList = append(invokerList, ivk)
 		invokerList = append(invokerList, ivk1)
 		invokerList = append(invokerList, ivk2)
-		attachments := map[string]interface{}{constant.Tagkey: "tag"}
+		attachments := map[string]any{constant.Tagkey: "tag"}
 		result := p.Route(invokerList, url3, invocation.NewRPCInvocation("GetUser", nil, attachments))
 		assert.True(t, len(result) == 3)
 	})

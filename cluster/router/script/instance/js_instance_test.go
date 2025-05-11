@@ -68,7 +68,7 @@ var url3 = func() *common.URL {
 func getRouteArgs() ([]protocol.Invoker, protocol.Invocation, context.Context) {
 	return []protocol.Invoker{
 			protocol.NewBaseInvoker(url1()), protocol.NewBaseInvoker(url2()), protocol.NewBaseInvoker(url3()),
-		}, invocation.NewRPCInvocation("GetUser", nil, map[string]interface{}{
+		}, invocation.NewRPCInvocation("GetUser", nil, map[string]any{
 			"attachmentKey": []string{"attachmentValue"},
 		}),
 		context.TODO()
@@ -122,7 +122,7 @@ func TestStructureFuncImpl(t *testing.T) {
 	runtime := goja.New()
 
 	test_invokers := []protocol.Invoker{protocol.NewBaseInvoker(url1())}
-	test_invocation := invocation.NewRPCInvocation("GetUser", nil, map[string]interface{}{"attachmentKey": []string{"attachmentValue"}})
+	test_invocation := invocation.NewRPCInvocation("GetUser", nil, map[string]any{"attachmentKey": []string{"attachmentValue"}})
 	test_context := context.TODO() // set invoker test field
 
 	for _, invoker := range test_invokers {
@@ -153,7 +153,7 @@ func TestStructureFuncImpl(t *testing.T) {
 	re_init_res_recv(runtime)
 
 	// run go func in javaScript
-	_ = runtime.Set(`check`, func(str string, args ...interface{}) {
+	_ = runtime.Set(`check`, func(str string, args ...any) {
 		/*
 			here set fmt.print to check func support
 		*/
@@ -177,7 +177,7 @@ func TestStructureFuncImpl(t *testing.T) {
 
 		invocation.SetInvoker(invoker protocol.Invoker)
 		invocation.CallBack()
-		invocation.SetCallBack(c interface{})
+		invocation.SetCallBack(c any)
 
 	*/
 	// 在 JavaScript 中调用 Go 的 struct 的方法
@@ -296,8 +296,8 @@ function route(invokers, invocation, context) {
             invokers[i].GetURL().SetParam("key-string", "value-string")
         )
         check(
-            'invokers[i].GetURL().SetAttribute("key-string", "value-interface{}")',
-            invokers[i].GetURL().SetAttribute("key-string", "value-interface{}")
+            'invokers[i].GetURL().SetAttribute("key-string", "value-any")',
+            invokers[i].GetURL().SetAttribute("key-string", "value-any")
         )
         check(
             'invokers[i].GetURL().GetAttribute("key-string")',
@@ -433,8 +433,8 @@ function route(invokers, invocation, context) {
             invocation.ServiceKey()
         )
         check(
-            'invocation.SetAttachment("key-string", "value-interface{}")',
-            invocation.SetAttachment("key-string", "value-interface{}")
+            'invocation.SetAttachment("key-string", "value-any")',
+            invocation.SetAttachment("key-string", "value-any")
         )
         check(
             'invocation.GetAttachment("key-string")',
@@ -445,16 +445,16 @@ function route(invokers, invocation, context) {
             invocation.GetAttachmentWithDefaultValue("key-string", "defaultValue-string")
         )
         check(
-            'invocation.SetAttribute("key-string", "value-interface{}")',
-            invocation.SetAttribute("key-string", "value-interface{}")
+            'invocation.SetAttribute("key-string", "value-any")',
+            invocation.SetAttribute("key-string", "value-any")
         )
         check(
             'invocation.GetAttribute("key-string")',
             invocation.GetAttribute("key-string")
         )
         check(
-            'invocation.GetAttributeWithDefaultValue("key-string", "defaultValue-interface{}")',
-            invocation.GetAttributeWithDefaultValue("key-string", "defaultValue-interface{}")
+            'invocation.GetAttributeWithDefaultValue("key-string", "defaultValue-any")',
+            invocation.GetAttributeWithDefaultValue("key-string", "defaultValue-any")
         )
         check(
             'invocation.GetAttachmentAsContext()',
@@ -483,8 +483,8 @@ func TestFuncWithCompile(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	assert.Equal(t, 2, len(res.Export().([]interface{})))
-	assert.Equal(t, localIp, (*(res.Export().([]interface{})[0]).(*protocol.BaseInvoker)).GetURL().Ip)
+	assert.Equal(t, 2, len(res.Export().([]any)))
+	assert.Equal(t, localIp, (*(res.Export().([]any)[0]).(*protocol.BaseInvoker)).GetURL().Ip)
 }
 
 func TestFuncWithCompileConcurrent(t *testing.T) {
@@ -505,8 +505,8 @@ func TestFuncWithCompileConcurrent(t *testing.T) {
 			if err != nil {
 				panic(err)
 			}
-			assert.Equal(t, 2, len(res.Export().([]interface{})))
-			assert.Equal(t, localIp, (*(res.Export().([]interface{})[0]).(*protocol.BaseInvoker)).GetURL().Ip)
+			assert.Equal(t, 2, len(res.Export().([]any)))
+			assert.Equal(t, localIp, (*(res.Export().([]any)[0]).(*protocol.BaseInvoker)).GetURL().Ip)
 		}()
 	}
 	wg.Wait()
@@ -531,7 +531,7 @@ function route(invokers,invocation,context) {
 		panic(err)
 	}
 	rt := goja.New()
-	_ = rt.Set(`println`, func(args ...interface{}) {
+	_ = rt.Set(`println`, func(args ...any) {
 		//fmt.Println(args...)
 	})
 	for i := 0; i < 100; i++ {
@@ -542,9 +542,9 @@ function route(invokers,invocation,context) {
 		if err != nil {
 			panic(err)
 		}
-		assert.Equal(t, 2, len(res.Export().([]interface{})))
-		assert.Equal(t, localIp, (*(res.Export().([]interface{})[0]).(*protocol.BaseInvoker)).GetURL().Ip)
-		assert.Equal(t, "20004", (*(res.Export().([]interface{})[0]).(*protocol.BaseInvoker)).GetURL().Port)
+		assert.Equal(t, 2, len(res.Export().([]any)))
+		assert.Equal(t, localIp, (*(res.Export().([]any)[0]).(*protocol.BaseInvoker)).GetURL().Ip)
+		assert.Equal(t, "20004", (*(res.Export().([]any)[0]).(*protocol.BaseInvoker)).GetURL().Port)
 	}
 }
 
@@ -556,7 +556,7 @@ func setRunScriptEnv() *goja.Runtime {
 	getArgs := func() ([]protocol.Invoker, *invocation.RPCInvocation, context.Context) {
 		return []protocol.Invoker{
 				newScriptInvokerImpl(srcInvoker1), newScriptInvokerImpl(srcInvoker2), newScriptInvokerImpl(srcInvoker3),
-			}, invocation.NewRPCInvocation("GetUser", nil, map[string]interface{}{
+			}, invocation.NewRPCInvocation("GetUser", nil, map[string]any{
 				"attachmentKey": []string{"attachmentValue"},
 			}), context.TODO()
 	}
@@ -583,7 +583,7 @@ func TestRunScriptInPanic(t *testing.T) {
 		rt := setRunScriptEnv()
 		pg, err := goja.Compile(``, errScript, true)
 		assert.Nil(t, err)
-		res, err := func() (res interface{}, err error) {
+		res, err := func() (res any, err error) {
 			defer func(err *error) {
 				panicReason := recover()
 				if panicReason != nil {
@@ -599,7 +599,7 @@ func TestRunScriptInPanic(t *testing.T) {
 			}(&err)
 			res, err = rt.RunProgram(pg)
 			testData := res.(*goja.Object).Export()
-			assert.Equal(t, reflect.ValueOf([]interface{}{}), reflect.ValueOf(testData))
+			assert.Equal(t, reflect.ValueOf([]any{}), reflect.ValueOf(testData))
 			return
 		}()
 		assert.NotNil(t, err)

@@ -36,7 +36,7 @@ func init() {
 	config.SetConsumerService(&RouteGuideClientImpl{})
 }
 
-// printFeatures lists all the features within the given bounding Rectangle.
+// PrintFeatures lists all the features within the given bounding Rectangle.
 func PrintFeatures(stream RouteGuide_ListFeaturesClient) {
 	for {
 		feature, err := stream.Recv()
@@ -51,7 +51,7 @@ func PrintFeatures(stream RouteGuide_ListFeaturesClient) {
 	}
 }
 
-// runRecordRoute sends a sequence of points to server and expects to get a RouteSummary from server.
+// RunRecordRoute sends a sequence of points to server and expects to get a RouteSummary from server.
 func RunRecordRoute(stream RouteGuide_RecordRouteClient) {
 	// Create a random number of random points
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))

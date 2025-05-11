@@ -68,7 +68,7 @@ func (m *MockIConfigClient) GetConfig(param vo.ConfigParam) (string, error) {
 }
 
 // GetConfig indicates an expected call of GetConfig
-func (mr *MockIConfigClientMockRecorder) GetConfig(param interface{}) *gomock.Call {
+func (mr *MockIConfigClientMockRecorder) GetConfig(param any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfig", reflect.TypeOf((*MockIConfigClient)(nil).GetConfig), param)
 }
 
@@ -81,7 +81,7 @@ func (m *MockIConfigClient) PublishConfig(param vo.ConfigParam) (bool, error) {
 }
 
 // PublishConfig indicates an expected call of PublishConfig
-func (mr *MockIConfigClientMockRecorder) PublishConfig(param interface{}) *gomock.Call {
+func (mr *MockIConfigClientMockRecorder) PublishConfig(param any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PublishConfig", reflect.TypeOf((*MockIConfigClient)(nil).PublishConfig), param)
 }
 
@@ -94,7 +94,7 @@ func (m *MockIConfigClient) DeleteConfig(param vo.ConfigParam) (bool, error) {
 }
 
 // DeleteConfig indicates an expected call of DeleteConfig
-func (mr *MockIConfigClientMockRecorder) DeleteConfig(param interface{}) *gomock.Call {
+func (mr *MockIConfigClientMockRecorder) DeleteConfig(param any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteConfig", reflect.TypeOf((*MockIConfigClient)(nil).DeleteConfig), param)
 }
 
@@ -110,7 +110,7 @@ func (m *MockIConfigClient) CloseClient() {
 }
 
 // ListenConfig indicates an expected call of ListenConfig
-func (mr *MockIConfigClientMockRecorder) ListenConfig(params interface{}) *gomock.Call {
+func (mr *MockIConfigClientMockRecorder) ListenConfig(params any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListenConfig", reflect.TypeOf((*MockIConfigClient)(nil).ListenConfig), params)
 }
 
@@ -122,7 +122,7 @@ func (m *MockIConfigClient) CancelListenConfig(params vo.ConfigParam) error {
 }
 
 // CancelListenConfig indicates an expected call of CancelListenConfig
-func (mr *MockIConfigClientMockRecorder) CancelListenConfig(params interface{}) *gomock.Call {
+func (mr *MockIConfigClientMockRecorder) CancelListenConfig(params any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CancelListenConfig", reflect.TypeOf((*MockIConfigClient)(nil).CancelListenConfig), params)
 }
 
@@ -135,7 +135,7 @@ func (m *MockIConfigClient) SearchConfig(param vo.SearchConfigParam) (*model.Con
 }
 
 // SearchConfig indicates an expected call of SearchConfig
-func (mr *MockIConfigClientMockRecorder) SearchConfig(param interface{}) *gomock.Call {
+func (mr *MockIConfigClientMockRecorder) SearchConfig(param any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchConfig", reflect.TypeOf((*MockIConfigClient)(nil).SearchConfig), param)
 }
 
@@ -148,7 +148,7 @@ func (m *MockIConfigClient) PublishAggr(param vo.ConfigParam) (bool, error) {
 }
 
 // PublishAggr indicates an expected call of PublishAggr
-func (mr *MockIConfigClientMockRecorder) PublishAggr(param interface{}) *gomock.Call {
+func (mr *MockIConfigClientMockRecorder) PublishAggr(param any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PublishAggr", reflect.TypeOf((*MockIConfigClient)(nil).PublishAggr), param)
 }
 

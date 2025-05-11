@@ -39,12 +39,12 @@ func newSlidingWindow(paneCount int, intervalInMs int64) *slidingWindow {
 }
 
 // values get all values from the slidingWindow's paneSlice.
-func (s *slidingWindow) values(timeMillis int64) []interface{} {
+func (s *slidingWindow) values(timeMillis int64) []any {
 	if timeMillis < 0 {
-		return make([]interface{}, 0)
+		return make([]any, 0)
 	}
 
-	res := make([]interface{}, 0, s.paneCount)
+	res := make([]any, 0, s.paneCount)
 
 	for _, p := range s.paneSlice {
 		if p == nil || s.isPaneDeprecated(p, timeMillis) {
@@ -62,7 +62,7 @@ func (s *slidingWindow) isPaneDeprecated(pane *pane, timeMillis int64) bool {
 }
 
 // currentPane get the pane at the specified timestamp or create a new one if the pane is deprecated.
-func (s *slidingWindow) currentPane(timeMillis int64, newEmptyValue func() interface{}) *pane {
+func (s *slidingWindow) currentPane(timeMillis int64, newEmptyValue func() any) *pane {
 	if timeMillis < 0 {
 		return nil
 	}

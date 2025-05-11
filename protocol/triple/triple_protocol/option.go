@@ -162,7 +162,7 @@ func WithHandlerOptions(options ...HandlerOption) HandlerOption {
 // usually necessary to prevent crashes. Instead, it helps servers collect
 // RPC-specific data during panics and send a more detailed error to
 // clients.
-func WithRecover(handle func(context.Context, Spec, http.Header, interface{}) error) HandlerOption {
+func WithRecover(handle func(context.Context, Spec, http.Header, any) error) HandlerOption {
 	return WithInterceptors(&recoverHandlerInterceptor{handle: handle})
 }
 

@@ -59,13 +59,13 @@ type ServiceInfo = common.ServiceInfo
 type MethodInfo = common.MethodInfo
 
 type ServiceDefinition struct {
-	Handler interface{}
+	Handler any
 	Info    *common.ServiceInfo
 	Opts    []ServiceOption
 }
 
 // Register assemble invoker chains like ProviderConfig.Load, init a service per call
-func (s *Server) Register(handler interface{}, info *common.ServiceInfo, opts ...ServiceOption) error {
+func (s *Server) Register(handler any, info *common.ServiceInfo, opts ...ServiceOption) error {
 	newSvcOpts, err := s.genSvcOpts(handler, opts...)
 	if err != nil {
 		return err
@@ -74,7 +74,7 @@ func (s *Server) Register(handler interface{}, info *common.ServiceInfo, opts ..
 	return nil
 }
 
-func (s *Server) genSvcOpts(handler interface{}, opts ...ServiceOption) (*ServiceOptions, error) {
+func (s *Server) genSvcOpts(handler any, opts ...ServiceOption) (*ServiceOptions, error) {
 	if s.cfg == nil {
 		return nil, errors.New("Server has not been initialized, please use NewServer() to create Server")
 	}
@@ -115,7 +115,7 @@ func (s *Server) genSvcOpts(handler interface{}, opts ...ServiceOption) (*Servic
 }
 
 func (s *Server) exportServices() (err error) {
-	s.svcOptsMap.Range(func(svcOptsRaw, infoRaw interface{}) bool {
+	s.svcOptsMap.Range(func(svcOptsRaw, infoRaw any) bool {
 		svcOpts := svcOptsRaw.(*ServiceOptions)
 		if infoRaw == nil {
 			err = svcOpts.ExportWithoutInfo()

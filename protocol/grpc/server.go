@@ -145,7 +145,7 @@ func (s *Server) Start(url *common.URL) {
 func getSyncMapLen(m *sync.Map) int {
 	length := 0
 
-	m.Range(func(_, _ interface{}) bool {
+	m.Range(func(_, _ any) bool {
 		length++
 		return true
 	})

@@ -100,7 +100,7 @@ func translateIds(registryIds []string) []string {
 	return removeDuplicateElement(ids)
 }
 
-func verify(s interface{}) error {
+func verify(s any) error {
 	if err := validate.Struct(s); err != nil {
 		errs := err.(validator.ValidationErrors)
 		var slice []string

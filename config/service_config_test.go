@@ -63,7 +63,7 @@ func TestNewServiceConfigBuilder(t *testing.T) {
 			SetProtocolIDs("dubbo").
 			SetInterface("org.apache.dubbo.HelloService").
 			SetMetadataType("local").
-			SetLoadBalancce("random").
+			SetLoadBalance("random").
 			SetWarmUpTie("warmup").
 			SetCluster("cluster").
 			AddRCRegistry("nacos", registryConfig).
@@ -114,7 +114,7 @@ func TestNewServiceConfigBuilder(t *testing.T) {
 		values := serviceConfig.getUrlMap()
 		assert.Equal(t, values.Get("methods.Say.weight"), "0")
 		assert.Equal(t, values.Get("methods.Say.tps.limit.rate"), "")
-		assert.Equal(t, values.Get(constant.ServiceFilterKey), "echo,token,accesslog,tps,generic_service,execute,pshutdown")
+		assert.Equal(t, values.Get(constant.ServiceFilterKey), "echo,token,accesslog,tps,generic_service,execute,pshutdown,context")
 	})
 
 	t.Run("Implement", func(t *testing.T) {

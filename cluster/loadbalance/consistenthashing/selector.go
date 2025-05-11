@@ -81,7 +81,7 @@ func (c *selector) Select(invocation protocol.Invocation) protocol.Invoker {
 	return c.selectForKey(c.hash(digest, 0))
 }
 
-func (c *selector) toKey(args []interface{}) string {
+func (c *selector) toKey(args []any) string {
 	var sb strings.Builder
 	for i := range c.argumentIndex {
 		if i >= 0 && i < len(args) {

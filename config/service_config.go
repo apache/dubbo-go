@@ -336,7 +336,7 @@ func (s *ServiceConfig) Export() error {
 	return nil
 }
 
-func (s *ServiceConfig) generatorInvoker(url *common.URL, info interface{}) protocol.Invoker {
+func (s *ServiceConfig) generatorInvoker(url *common.URL, info any) protocol.Invoker {
 	proxyFactory := extension.GetProxyFactory(s.ProxyFactoryKey)
 	if info != nil {
 		url.SetAttribute(constant.ServiceInfoKey, info)
@@ -539,7 +539,7 @@ func (pcb *ServiceConfigBuilder) SetMetadataType(setMetadataType string) *Servic
 	return pcb
 }
 
-func (pcb *ServiceConfigBuilder) SetLoadBalancce(lb string) *ServiceConfigBuilder {
+func (pcb *ServiceConfigBuilder) SetLoadBalance(lb string) *ServiceConfigBuilder {
 	pcb.serviceConfig.Loadbalance = lb
 	return pcb
 }

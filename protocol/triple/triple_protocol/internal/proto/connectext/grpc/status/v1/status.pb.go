@@ -149,7 +149,7 @@ func file_protocol_grpc_new_connect_proto_connectext_grpc_status_v1_status_proto
 }
 
 var file_protocol_grpc_new_connect_proto_connectext_grpc_status_v1_status_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
-var file_protocol_grpc_new_connect_proto_connectext_grpc_status_v1_status_proto_goTypes = []interface{}{
+var file_protocol_grpc_new_connect_proto_connectext_grpc_status_v1_status_proto_goTypes = []any{
 	(*Status)(nil),    // 0: grpc.status.v1.Status
 	(*anypb.Any)(nil), // 1: google.protobuf.Any
 }
@@ -168,7 +168,7 @@ func file_protocol_grpc_new_connect_proto_connectext_grpc_status_v1_status_proto
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_protocol_grpc_new_connect_proto_connectext_grpc_status_v1_status_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_protocol_grpc_new_connect_proto_connectext_grpc_status_v1_status_proto_msgTypes[0].Exporter = func(v any, i int) any {
 			switch v := v.(*Status); i {
 			case 0:
 				return &v.state

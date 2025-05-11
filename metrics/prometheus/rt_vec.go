@@ -183,7 +183,7 @@ func (r *RtVec) computeIfAbsent(k string, supplier func() *Rt) *Rt {
 }
 
 func (r *RtVec) Collect(ch chan<- prom.Metric) {
-	r.aggMap.Range(func(_, val interface{}) bool {
+	r.aggMap.Range(func(_, val any) bool {
 		v := val.(*Rt)
 		res := v.obs.result()
 		for _, m := range r.metrics {

@@ -20,6 +20,7 @@ notifications:
     issues:       notifications@dubbo.apache.org
     pullrequests: notifications@dubbo.apache.org
     jira_options: link label link label
+    discussions: notifications@dubbo.apache.org
 github:
     homepage: https://dubbo.apache.org/
     description: "Go Implementation For Apache Dubbo ."
@@ -36,16 +37,12 @@ github:
         issues: true
         # Enable projects for project management boards
         projects: true
+        # Enable GitHub Discussions for community discussions
+        discussions: true
     protected_branches:
-        master:
-            # only disable force push
-            foo: bar
-        3.0:
-            # only disable force push
-            foo: bar
-        3.1:
-            # only disable force push
-            foo: bar
+        master: {} # only disable force push
+        3.0: {} # only disable force push
+        3.1:  {} # only disable force push
     enabled_merge_buttons:
         # enable squash button:
         squash: true

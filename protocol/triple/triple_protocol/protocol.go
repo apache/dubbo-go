@@ -161,11 +161,11 @@ type errorTranslatingHandlerConnCloser struct {
 	fromWire func(error) error
 }
 
-func (hc *errorTranslatingHandlerConnCloser) Send(msg interface{}) error {
+func (hc *errorTranslatingHandlerConnCloser) Send(msg any) error {
 	return hc.fromWire(hc.handlerConnCloser.Send(msg))
 }
 
-func (hc *errorTranslatingHandlerConnCloser) Receive(msg interface{}) error {
+func (hc *errorTranslatingHandlerConnCloser) Receive(msg any) error {
 	return hc.fromWire(hc.handlerConnCloser.Receive(msg))
 }
 
@@ -184,11 +184,11 @@ type errorTranslatingClientConn struct {
 	fromWire func(error) error
 }
 
-func (cc *errorTranslatingClientConn) Send(msg interface{}) error {
+func (cc *errorTranslatingClientConn) Send(msg any) error {
 	return cc.fromWire(cc.StreamingClientConn.Send(msg))
 }
 
-func (cc *errorTranslatingClientConn) Receive(msg interface{}) error {
+func (cc *errorTranslatingClientConn) Receive(msg any) error {
 	return cc.fromWire(cc.StreamingClientConn.Receive(msg))
 }
 

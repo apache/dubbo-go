@@ -54,7 +54,7 @@ func TestRPCInvocation_ServiceKey(t *testing.T) {
 	// invocation with same interface and path value
 	sameInfPathConsumerUrl, err := common.NewURL(sameInfPathConsumerURL)
 	assert.NoError(t, err)
-	invocation := NewRPCInvocationWithOptions(WithAttachments(map[string]interface{}{
+	invocation := NewRPCInvocationWithOptions(WithAttachments(map[string]any{
 		constant.InterfaceKey: sameInfPathConsumerUrl.GetParam(constant.InterfaceKey, ""),
 		constant.PathKey:      sameInfPathConsumerUrl.Path,
 		constant.GroupKey:     sameInfPathConsumerUrl.GetParam(constant.GroupKey, ""),
@@ -65,7 +65,7 @@ func TestRPCInvocation_ServiceKey(t *testing.T) {
 	// invocation with different interface and path value
 	diffInfPathConsumerUrl, err := common.NewURL(diffInfPathConsumerURL)
 	assert.NoError(t, err)
-	invocation = NewRPCInvocationWithOptions(WithAttachments(map[string]interface{}{
+	invocation = NewRPCInvocationWithOptions(WithAttachments(map[string]any{
 		constant.InterfaceKey: diffInfPathConsumerUrl.GetParam(constant.InterfaceKey, ""),
 		constant.PathKey:      diffInfPathConsumerUrl.Path,
 		constant.GroupKey:     diffInfPathConsumerUrl.GetParam(constant.GroupKey, ""),

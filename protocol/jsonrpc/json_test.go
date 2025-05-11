@@ -34,7 +34,7 @@ func TestJsonClientCodecWrite(t *testing.T) {
 	cd := &CodecData{
 		ID:     1,
 		Method: "GetUser",
-		Args:   []interface{}{"args", 2},
+		Args:   []any{"args", 2},
 	}
 	codec := newJsonClientCodec()
 	data, err := codec.Write(cd)
@@ -87,7 +87,7 @@ func TestServerCodecRead(t *testing.T) {
 	assert.Equal(t, "2.0", codec.req.Version)
 	assert.Equal(t, "[\"args\",2]", string([]byte(*codec.req.Params)))
 
-	req := []interface{}{}
+	req := []any{}
 	err = codec.ReadBody(&req)
 	assert.NoError(t, err)
 	assert.Equal(t, "args", req[0])

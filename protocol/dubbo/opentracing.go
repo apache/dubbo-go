@@ -36,7 +36,7 @@ func injectTraceCtx(currentSpan opentracing.Span, inv *invocation_impl.RPCInvoca
 	return err
 }
 
-func filterContext(attachments map[string]interface{}) map[string]string {
+func filterContext(attachments map[string]any) map[string]string {
 	traceAttchment := make(map[string]string)
 	for k, v := range attachments {
 		if r, ok := v.(string); ok {
@@ -46,7 +46,7 @@ func filterContext(attachments map[string]interface{}) map[string]string {
 	return traceAttchment
 }
 
-func fillTraceAttachments(attachments map[string]interface{}, traceAttachment map[string]string) {
+func fillTraceAttachments(attachments map[string]any, traceAttachment map[string]string) {
 	for k, v := range traceAttachment {
 		attachments[k] = v
 	}

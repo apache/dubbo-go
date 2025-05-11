@@ -62,7 +62,7 @@ var file_proto_connect_import_v1_import_proto_rawDesc = []byte{
 	0x70, 0x6f, 0x72, 0x74, 0x3a, 0x3a, 0x56, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
-var file_proto_connect_import_v1_import_proto_goTypes = []interface{}{}
+var file_proto_connect_import_v1_import_proto_goTypes = []any{}
 var file_proto_connect_import_v1_import_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
 	0, // [0:0] is the sub-list for method input_type

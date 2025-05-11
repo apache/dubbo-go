@@ -34,7 +34,7 @@ var (
 	conServices                  = map[string]common.RPCService{} // service name -> service
 	proServicesLock              = sync.Mutex{}                   // used to guard proServices map and proServicesInfo map
 	proServices                  = map[string]common.RPCService{} // service name -> service
-	proServicesInfo              = map[string]interface{}{}       // service name -> service info
+	proServicesInfo              = map[string]any{}               // service name -> service info
 	interfaceNameConServicesLock = sync.Mutex{}                   // used to guard interfaceNameConServices map
 	interfaceNameConServices     = map[string]common.RPCService{} // interfaceName -> service
 )
@@ -62,7 +62,7 @@ func SetProviderService(service common.RPCService) {
 }
 
 // SetProviderServiceWithInfo is called by init() of implementation of RPCService
-func SetProviderServiceWithInfo(service common.RPCService, info interface{}) {
+func SetProviderServiceWithInfo(service common.RPCService, info any) {
 	ref := common.GetReference(service)
 	proServicesLock.Lock()
 	defer func() {
@@ -92,7 +92,7 @@ func GetProviderServiceMap() map[string]common.RPCService {
 	return proServices
 }
 
-func GetProviderServiceInfo(name string) interface{} {
+func GetProviderServiceInfo(name string) any {
 	proServicesLock.Lock()
 	defer proServicesLock.Unlock()
 	return proServicesInfo[name]
@@ -127,8 +127,8 @@ func GetCallback(name string) func(response common.CallbackResponse) {
 }
 
 // SetClientInfoService is used by new Triple generated code
-// use interface{} to represent info because config package can not depend on client package.
+// use any to represent info because config package can not depend on client package.
 // When refactoring work finished, this info should be with *client.ClientInfo type and this
 // function would be implemented.
 // todo(DMWangnima): refactor and implement this function
-func SetClientInfoService(info interface{}, service common.RPCService) {}
+func SetClientInfoService(info any, service common.RPCService) {}

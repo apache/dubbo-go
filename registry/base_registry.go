@@ -175,7 +175,7 @@ func (r *BaseRegistry) service(c *common.URL) string {
 // RestartCallBack for reregister when reconnect
 func (r *BaseRegistry) RestartCallBack() bool {
 	flag := true
-	r.registered.Range(func(key, value interface{}) bool {
+	r.registered.Range(func(key, value any) bool {
 		registeredUrl := value.(*common.URL)
 		err := r.register(registeredUrl)
 		if err != nil {

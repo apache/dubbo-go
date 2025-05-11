@@ -18,15 +18,15 @@
 package impl
 
 type ResponsePayload struct {
-	RspObj      interface{}
+	RspObj      any
 	Exception   error
-	Attachments map[string]interface{}
+	Attachments map[string]any
 }
 
-// NewResponse create a new ResponsePayload
-func NewResponsePayload(rspObj interface{}, exception error, attachments map[string]interface{}) *ResponsePayload {
+// NewResponsePayload create a new ResponsePayload
+func NewResponsePayload(rspObj any, exception error, attachments map[string]any) *ResponsePayload {
 	if attachments == nil {
-		attachments = make(map[string]interface{})
+		attachments = make(map[string]any)
 	}
 	return &ResponsePayload{
 		RspObj:      rspObj,
@@ -35,7 +35,7 @@ func NewResponsePayload(rspObj interface{}, exception error, attachments map[str
 	}
 }
 
-func EnsureResponsePayload(body interface{}) *ResponsePayload {
+func EnsureResponsePayload(body any) *ResponsePayload {
 	if res, ok := body.(*ResponsePayload); ok {
 		return res
 	}

@@ -27,6 +27,8 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/log/logger"
+
 	"github.com/dustin/go-humanize"
 
 	"golang.org/x/net/http2"
@@ -35,6 +37,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
@@ -60,7 +63,7 @@ func (cm *clientManager) getClient(method string) (*tri.Client, error) {
 	return triClient, nil
 }
 
-func (cm *clientManager) callUnary(ctx context.Context, method string, req, resp interface{}) error {
+func (cm *clientManager) callUnary(ctx context.Context, method string, req, resp any) error {
 	triClient, err := cm.getClient(method)
 	if err != nil {
 		return err
@@ -70,10 +73,24 @@ func (cm *clientManager) callUnary(ctx context.Context, method string, req, resp
 	if err := triClient.CallUnary(ctx, triReq, triResp); err != nil {
 		return err
 	}
+
+	serverAttachments, ok := ctx.Value(constant.AttachmentServerKey).(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	for k, v := range triResp.Trailer() {
+		if ok := isFilterHeader(k); ok {
+			continue
+		}
+		if len(v) > 0 {
+			serverAttachments[k] = v[0]
+		}
+	}
+
 	return nil
 }
 
-func (cm *clientManager) callClientStream(ctx context.Context, method string) (interface{}, error) {
+func (cm *clientManager) callClientStream(ctx context.Context, method string) (any, error) {
 	triClient, err := cm.getClient(method)
 	if err != nil {
 		return nil, err
@@ -85,7 +102,7 @@ func (cm *clientManager) callClientStream(ctx context.Context, method string) (i
 	return stream, nil
 }
 
-func (cm *clientManager) callServerStream(ctx context.Context, method string, req interface{}) (interface{}, error) {
+func (cm *clientManager) callServerStream(ctx context.Context, method string, req any) (any, error) {
 	triClient, err := cm.getClient(method)
 	if err != nil {
 		return nil, err
@@ -98,7 +115,7 @@ func (cm *clientManager) callServerStream(ctx context.Context, method string, re
 	return stream, nil
 }
 
-func (cm *clientManager) callBidiStream(ctx context.Context, method string) (interface{}, error) {
+func (cm *clientManager) callBidiStream(ctx context.Context, method string) (any, error) {
 	triClient, err := cm.getClient(method)
 	if err != nil {
 		return nil, err
@@ -165,6 +182,28 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	// todo(DMwangnima): support TLS in an ideal way
 	var cfg *tls.Config
 	var tlsFlag bool
+	var err error
+
+	// handle tls config
+	// TODO: think about a more elegant way to configure tls,
+	// Maybe we can try to create a ClientOptions for unified settings,
+	// after this function becomes bloated.
+
+	// TODO: Once the global replacement of the config is completed,
+	// replace config with global.
+	if tlsConfig := config.GetRootConfig().TLSConfig; tlsConfig != nil {
+		cfg, err = config.GetClientTlsConfig(&config.TLSConfig{
+			CACertFile:    tlsConfig.CACertFile,
+			TLSCertFile:   tlsConfig.TLSCertFile,
+			TLSKeyFile:    tlsConfig.TLSKeyFile,
+			TLSServerName: tlsConfig.TLSServerName,
+		})
+		if err != nil {
+			return nil, err
+		}
+		logger.Infof("TRIPLE clientManager initialized the TLSConfig configuration")
+		tlsFlag = true
+	}
 
 	var transport http.RoundTripper
 	callType := url.GetParam(constant.CallHTTPTypeKey, constant.CallHTTP2)
@@ -218,4 +257,16 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		isIDL:      isIDL,
 		triClients: triClients,
 	}, nil
+}
+
+func isFilterHeader(key string) bool {
+	if key != "" && key[0] == ':' {
+		return true
+	}
+	switch key {
+	case constant.GrpcHeaderMessage, constant.GrpcHeaderStatus:
+		return true
+	default:
+		return false
+	}
 }

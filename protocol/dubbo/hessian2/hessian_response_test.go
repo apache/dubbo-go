@@ -28,7 +28,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func doTestReflectResponse(t *testing.T, in interface{}, out interface{}) {
+func doTestReflectResponse(t *testing.T, in any, out any) {
 	err := ReflectResponse(in, out)
 	if err != nil {
 		t.Error(err)
@@ -70,8 +70,8 @@ func TestReflectResponse(t *testing.T) {
 	doTestReflectResponse(t, rr{"dubbogo", 32}, &r1)
 
 	// ------ map test -------
-	m1 := make(map[interface{}]interface{})
-	var m1r map[interface{}]interface{}
+	m1 := make(map[any]any)
+	var m1r map[any]any
 	m1["hello"] = "world"
 	m1[1] = "go"
 	m1["dubbo"] = 666
@@ -98,13 +98,13 @@ func TestReflectResponse(t *testing.T) {
 	var s2r []rr
 	doTestReflectResponse(t, s2, &s2r)
 
-	s3 := []interface{}{rr{"dubbo", 666}, 123, "hello"}
-	var s3r []interface{}
+	s3 := []any{rr{"dubbo", 666}, 123, "hello"}
+	var s3r []any
 	doTestReflectResponse(t, s3, &s3r)
 
 	// ------ interface test -------
-	in1 := []interface{}{rr{"dubbo", 666}, 123, "hello"}
-	var inr1 *interface{}
+	in1 := []any{rr{"dubbo", 666}, 123, "hello"}
+	var inr1 *any
 	doTestReflectResponse(t, in1, reflect.New(reflect.TypeOf(inr1).Elem()).Interface())
 
 	in2 := make(map[string]rr)
@@ -114,7 +114,7 @@ func TestReflectResponse(t *testing.T) {
 	doTestReflectResponse(t, in2, &inr2)
 }
 
-// separately test copy normal map to map[interface{}]interface{}
+// separately test copy normal map to map[any]any
 func TestCopyMap(t *testing.T) {
 	type rr struct {
 		Name string
@@ -122,7 +122,7 @@ func TestCopyMap(t *testing.T) {
 	}
 
 	m3 := make(map[string]rr)
-	var m3r map[interface{}]interface{}
+	var m3r map[any]any
 	r1 := rr{"hello", 123}
 	r2 := rr{"world", 456}
 	m3["dubbo"] = r1
@@ -145,7 +145,7 @@ func TestCopyMap(t *testing.T) {
 	assert.True(t, reflect.DeepEqual(r2, rr2))
 }
 
-// separately test copy normal slice to []interface{}
+// separately test copy normal slice to []any
 func TestCopySlice(t *testing.T) {
 	type rr struct {
 		Name string
@@ -156,7 +156,7 @@ func TestCopySlice(t *testing.T) {
 	r2 := rr{"world", 456}
 
 	s1 := []rr{r1, r2}
-	var s1r []interface{}
+	var s1r []any
 
 	err := ReflectResponse(s1, &s1r)
 	if err != nil {

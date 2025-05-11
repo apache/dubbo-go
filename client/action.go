@@ -127,6 +127,7 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 		common.WithParams(refOpts.getURLMap()),
 		common.WithParamsValue(constant.BeanNameKey, refOpts.id),
 		common.WithParamsValue(constant.MetadataTypeKey, refOpts.metaDataType),
+		common.WithParamsValue(constant.TimeoutKey, refOpts.Consumer.RequestTimeout),
 		common.WithParamsValue(constant.KeepAliveInterval, ref.KeepAliveInterval),
 		common.WithParamsValue(constant.KeepAliveTimeout, ref.KeepAliveTimeout),
 	)
@@ -192,7 +193,7 @@ func processURL(ref *global.ReferenceConfig, regsCompat map[string]*config.Regis
 		for _, urlStr := range urlStrings {
 			serviceURL, err := common.NewURL(urlStr, common.WithProtocol(ref.Protocol))
 			if err != nil {
-				return nil, fmt.Errorf(fmt.Sprintf("url configuration error,  please check your configuration, user specified URL %v refer error, error message is %v ", urlStr, err.Error()))
+				return nil, fmt.Errorf("url configuration error,  please check your configuration, user specified URL %v refer error, error message is %v ", urlStr, err.Error())
 			}
 			if serviceURL.Protocol == constant.RegistryProtocol { // serviceURL in this branch is a registry protocol
 				serviceURL.SubURL = cfgURL

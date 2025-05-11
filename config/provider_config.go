@@ -52,7 +52,7 @@ type ProviderConfig struct {
 	// Services services
 	Services     map[string]*ServiceConfig `yaml:"services" json:"services,omitempty" property:"services"`
 	ProxyFactory string                    `default:"default" yaml:"proxy" json:"proxy,omitempty" property:"proxy"`
-	FilterConf   interface{}               `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
+	FilterConf   any                       `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
 	ConfigType   map[string]string         `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 	// adaptive service
 	AdaptiveService        bool `yaml:"adaptive-service" json:"adaptive-service" property:"adaptive-service"`
@@ -104,7 +104,7 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 		if serviceConfig.Interface == "" {
 			service := GetProviderService(key)
 			// try to use interface name defined by pb
-			supportPBPackagerNameSerivce, ok := service.(common.TriplePBService)
+			supportPBPackagerNameService, ok := service.(common.TriplePBService)
 			if !ok {
 				logger.Errorf("Service with reference = %s is not support read interface name from it."+
 					"Please run go install github.com/dubbogo/dubbogo-cli/cmd/protoc-gen-go-triple@latest to update your "+
@@ -113,7 +113,7 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 				continue
 			} else {
 				// use interface name defined by pb
-				serviceConfig.Interface = supportPBPackagerNameSerivce.XXX_InterfaceName()
+				serviceConfig.Interface = supportPBPackagerNameService.XXX_InterfaceName()
 			}
 		}
 		if err := serviceConfig.Init(rc); err != nil {
@@ -177,7 +177,7 @@ func (c *ProviderConfig) Load() {
 				continue
 			}
 			// service doesn't config in config file, create one with default
-			supportPBPackagerNameSerivce, ok := service.(common.TriplePBService)
+			supportPBPackagerNameService, ok := service.(common.TriplePBService)
 			if !ok {
 				logger.Warnf(
 					"The provider service %s is ignored: neither the config is found, nor it is a valid Triple service.",
@@ -186,9 +186,9 @@ func (c *ProviderConfig) Load() {
 			}
 			serviceConfig = NewServiceConfigBuilder().Build()
 			// use interface name defined by pb
-			serviceConfig.Interface = supportPBPackagerNameSerivce.XXX_InterfaceName()
+			serviceConfig.Interface = supportPBPackagerNameService.XXX_InterfaceName()
 			if err := serviceConfig.Init(rootConfig); err != nil {
-				logger.Errorf("Service with refKey = %s init failed with error = %s")
+				logger.Errorf("Service with registeredTypeName = %s init failed with error = %#v", registeredTypeName, err)
 			}
 			serviceConfig.adaptiveService = c.AdaptiveService
 		}
@@ -251,7 +251,7 @@ func (pcb *ProviderConfigBuilder) SetProxyFactory(proxyFactory string) *Provider
 	return pcb
 }
 
-func (pcb *ProviderConfigBuilder) SetFilterConf(filterConf interface{}) *ProviderConfigBuilder {
+func (pcb *ProviderConfigBuilder) SetFilterConf(filterConf any) *ProviderConfigBuilder {
 	pcb.providerConfig.FilterConf = filterConf
 	return pcb
 }

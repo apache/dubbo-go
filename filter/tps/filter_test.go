@@ -45,12 +45,12 @@ func TestTpsLimitFilterInvokeWithNoTpsLimiter(t *testing.T) {
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.TPSLimiterKey, ""))
-	attch := make(map[string]interface{})
+	attch := make(map[string]any)
 
 	result := tpsFilter.Invoke(context.Background(),
 		protocol.NewBaseInvoker(invokeUrl),
 		invocation.NewRPCInvocation("MethodName",
-			[]interface{}{"OK"}, attch))
+			[]any{"OK"}, attch))
 	assert.Nil(t, result.Error())
 	assert.Nil(t, result.Result())
 }
@@ -68,12 +68,12 @@ func TestGenericFilterInvokeWithDefaultTpsLimiter(t *testing.T) {
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.TPSLimiterKey, constant.DefaultKey))
-	attch := make(map[string]interface{})
+	attch := make(map[string]any)
 
 	result := tpsFilter.Invoke(context.Background(),
 		protocol.NewBaseInvoker(invokeUrl),
 		invocation.NewRPCInvocation("MethodName",
-			[]interface{}{"OK"}, attch))
+			[]any{"OK"}, attch))
 	assert.Nil(t, result.Error())
 	assert.Nil(t, result.Result())
 }
@@ -99,11 +99,11 @@ func TestGenericFilterInvokeWithDefaultTpsLimiterNotAllow(t *testing.T) {
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.TPSLimiterKey, constant.DefaultKey))
-	attch := make(map[string]interface{})
+	attch := make(map[string]any)
 
 	result := tpsFilter.Invoke(context.Background(),
 		protocol.NewBaseInvoker(invokeUrl),
-		invocation.NewRPCInvocation("MethodName", []interface{}{"OK"}, attch))
+		invocation.NewRPCInvocation("MethodName", []any{"OK"}, attch))
 	assert.Nil(t, result.Error())
 	assert.Nil(t, result.Result())
 }

@@ -161,7 +161,7 @@ func file_proto_connect_collide_v1_collide_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_connect_collide_v1_collide_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
-var file_proto_connect_collide_v1_collide_proto_goTypes = []interface{}{
+var file_proto_connect_collide_v1_collide_proto_goTypes = []any{
 	(*ImportRequest)(nil),  // 0: triple.collide.v1.ImportRequest
 	(*ImportResponse)(nil), // 1: triple.collide.v1.ImportResponse
 }
@@ -181,7 +181,7 @@ func file_proto_connect_collide_v1_collide_proto_init() {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_proto_connect_collide_v1_collide_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_proto_connect_collide_v1_collide_proto_msgTypes[0].Exporter = func(v any, i int) any {
 			switch v := v.(*ImportRequest); i {
 			case 0:
 				return &v.state
@@ -193,7 +193,7 @@ func file_proto_connect_collide_v1_collide_proto_init() {
 				return nil
 			}
 		}
-		file_proto_connect_collide_v1_collide_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_proto_connect_collide_v1_collide_proto_msgTypes[1].Exporter = func(v any, i int) any {
 			switch v := v.(*ImportResponse); i {
 			case 0:
 				return &v.state

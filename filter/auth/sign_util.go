@@ -36,7 +36,7 @@ func Sign(metadata, key string) string {
 }
 
 // SignWithParams returns a signature with giving params and metadata.
-func SignWithParams(params []interface{}, metadata, key string) (string, error) {
+func SignWithParams(params []any, metadata, key string) (string, error) {
 	if len(params) == 0 {
 		return Sign(metadata, key), nil
 	}
@@ -50,7 +50,7 @@ func SignWithParams(params []interface{}, metadata, key string) (string, error) 
 	}
 }
 
-func toBytes(data []interface{}) ([]byte, error) {
+func toBytes(data []any) ([]byte, error) {
 	if bytes, err := json.Marshal(data); err != nil {
 		return nil, errors.New("")
 	} else {

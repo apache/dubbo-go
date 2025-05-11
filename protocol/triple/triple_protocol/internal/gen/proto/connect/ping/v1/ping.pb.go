@@ -607,7 +607,7 @@ func file_proto_connect_ping_v1_ping_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_connect_ping_v1_ping_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
-var file_proto_connect_ping_v1_ping_proto_goTypes = []interface{}{
+var file_proto_connect_ping_v1_ping_proto_goTypes = []any{
 	(*PingRequest)(nil),     // 0: triple.ping.v1.PingRequest
 	(*PingResponse)(nil),    // 1: triple.ping.v1.PingResponse
 	(*FailRequest)(nil),     // 2: triple.ping.v1.FailRequest
@@ -643,7 +643,7 @@ func file_proto_connect_ping_v1_ping_proto_init() {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_proto_connect_ping_v1_ping_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_proto_connect_ping_v1_ping_proto_msgTypes[0].Exporter = func(v any, i int) any {
 			switch v := v.(*PingRequest); i {
 			case 0:
 				return &v.state
@@ -655,7 +655,7 @@ func file_proto_connect_ping_v1_ping_proto_init() {
 				return nil
 			}
 		}
-		file_proto_connect_ping_v1_ping_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_proto_connect_ping_v1_ping_proto_msgTypes[1].Exporter = func(v any, i int) any {
 			switch v := v.(*PingResponse); i {
 			case 0:
 				return &v.state
@@ -667,7 +667,7 @@ func file_proto_connect_ping_v1_ping_proto_init() {
 				return nil
 			}
 		}
-		file_proto_connect_ping_v1_ping_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+		file_proto_connect_ping_v1_ping_proto_msgTypes[2].Exporter = func(v any, i int) any {
 			switch v := v.(*FailRequest); i {
 			case 0:
 				return &v.state
@@ -679,7 +679,7 @@ func file_proto_connect_ping_v1_ping_proto_init() {
 				return nil
 			}
 		}
-		file_proto_connect_ping_v1_ping_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+		file_proto_connect_ping_v1_ping_proto_msgTypes[3].Exporter = func(v any, i int) any {
 			switch v := v.(*FailResponse); i {
 			case 0:
 				return &v.state
@@ -691,7 +691,7 @@ func file_proto_connect_ping_v1_ping_proto_init() {
 				return nil
 			}
 		}
-		file_proto_connect_ping_v1_ping_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+		file_proto_connect_ping_v1_ping_proto_msgTypes[4].Exporter = func(v any, i int) any {
 			switch v := v.(*SumRequest); i {
 			case 0:
 				return &v.state
@@ -703,7 +703,7 @@ func file_proto_connect_ping_v1_ping_proto_init() {
 				return nil
 			}
 		}
-		file_proto_connect_ping_v1_ping_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+		file_proto_connect_ping_v1_ping_proto_msgTypes[5].Exporter = func(v any, i int) any {
 			switch v := v.(*SumResponse); i {
 			case 0:
 				return &v.state
@@ -715,7 +715,7 @@ func file_proto_connect_ping_v1_ping_proto_init() {
 				return nil
 			}
 		}
-		file_proto_connect_ping_v1_ping_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+		file_proto_connect_ping_v1_ping_proto_msgTypes[6].Exporter = func(v any, i int) any {
 			switch v := v.(*CountUpRequest); i {
 			case 0:
 				return &v.state
@@ -727,7 +727,7 @@ func file_proto_connect_ping_v1_ping_proto_init() {
 				return nil
 			}
 		}
-		file_proto_connect_ping_v1_ping_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+		file_proto_connect_ping_v1_ping_proto_msgTypes[7].Exporter = func(v any, i int) any {
 			switch v := v.(*CountUpResponse); i {
 			case 0:
 				return &v.state
@@ -739,7 +739,7 @@ func file_proto_connect_ping_v1_ping_proto_init() {
 				return nil
 			}
 		}
-		file_proto_connect_ping_v1_ping_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+		file_proto_connect_ping_v1_ping_proto_msgTypes[8].Exporter = func(v any, i int) any {
 			switch v := v.(*CumSumRequest); i {
 			case 0:
 				return &v.state
@@ -751,7 +751,7 @@ func file_proto_connect_ping_v1_ping_proto_init() {
 				return nil
 			}
 		}
-		file_proto_connect_ping_v1_ping_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
+		file_proto_connect_ping_v1_ping_proto_msgTypes[9].Exporter = func(v any, i int) any {
 			switch v := v.(*CumSumResponse); i {
 			case 0:
 				return &v.state

@@ -62,7 +62,7 @@ type Service struct {
 type DubboPackage struct {
 	Header  DubboHeader
 	Service Service
-	Body    interface{}
+	Body    any
 	Err     error
 	Codec   *ProtocolCodec
 }
@@ -118,11 +118,11 @@ func (p DubboPackage) GetLen() int {
 	return HEADER_LENGTH + p.Header.BodyLen
 }
 
-func (p DubboPackage) GetBody() interface{} {
+func (p DubboPackage) GetBody() any {
 	return p.Body
 }
 
-func (p *DubboPackage) SetBody(body interface{}) {
+func (p *DubboPackage) SetBody(body any) {
 	p.Body = body
 }
 

@@ -38,7 +38,7 @@ func TestCustomInit(t *testing.T) {
 		assert.NotNil(t, rootConfig)
 		customConfig := rootConfig.Custom
 		assert.NotNil(t, customConfig)
-		assert.Equal(t, customConfig.ConfigMap, map[string]interface{}(nil))
+		assert.Equal(t, customConfig.ConfigMap, map[string]any(nil))
 		assert.Equal(t, customConfig.GetDefineValue("test", "test"), "test")
 		assert.Equal(t, GetDefineValue("test", "test"), "test")
 	})
@@ -49,7 +49,7 @@ func TestCustomInit(t *testing.T) {
 		assert.NotNil(t, rootConfig)
 		customConfig := rootConfig.Custom
 		assert.NotNil(t, customConfig)
-		assert.Equal(t, customConfig.ConfigMap, map[string]interface{}{"test-config": true})
+		assert.Equal(t, customConfig.ConfigMap, map[string]any{"test-config": true})
 		assert.Equal(t, customConfig.GetDefineValue("test-config", false), true)
 		assert.Equal(t, customConfig.GetDefineValue("test-no-config", false), false)
 		assert.Equal(t, GetDefineValue("test-config", false), true)

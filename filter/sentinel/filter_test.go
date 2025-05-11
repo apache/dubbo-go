@@ -50,8 +50,8 @@ func TestSentinelFilter_QPS(t *testing.T) {
 	assert.NoError(t, err)
 	mockInvoker := protocol.NewBaseInvoker(url)
 	interfaceResourceName, _ := getResourceName(mockInvoker,
-		invocation.NewRPCInvocation("hello", []interface{}{"OK"}, make(map[string]interface{})), "prefix_")
-	mockInvocation := invocation.NewRPCInvocation("hello", []interface{}{"OK"}, make(map[string]interface{}))
+		invocation.NewRPCInvocation("hello", []any{"OK"}, make(map[string]any)), "prefix_")
+	mockInvocation := invocation.NewRPCInvocation("hello", []any{"OK"}, make(map[string]any))
 
 	_, err = flow.LoadRules([]*flow.Rule{
 		{
@@ -106,7 +106,7 @@ type stateChangeTestListener struct {
 func (s *stateChangeTestListener) OnTransformToClosed(prev circuitbreaker.State, rule circuitbreaker.Rule) {
 }
 
-func (s *stateChangeTestListener) OnTransformToOpen(prev circuitbreaker.State, rule circuitbreaker.Rule, snapshot interface{}) {
+func (s *stateChangeTestListener) OnTransformToOpen(prev circuitbreaker.State, rule circuitbreaker.Rule, snapshot any) {
 	s.OnTransformToOpenChan <- struct{}{}
 }
 
@@ -123,8 +123,8 @@ func TestSentinelFilter_ErrorCount(t *testing.T) {
 	assert.NoError(t, err)
 	mockInvoker := &ErrInvoker{protocol.NewBaseInvoker(url)}
 	_, methodResourceName := getResourceName(mockInvoker,
-		invocation.NewRPCInvocation("hi", []interface{}{"OK"}, make(map[string]interface{})), DefaultProviderPrefix)
-	mockInvocation := invocation.NewRPCInvocation("hi", []interface{}{"OK"}, make(map[string]interface{}))
+		invocation.NewRPCInvocation("hi", []any{"OK"}, make(map[string]any)), DefaultProviderPrefix)
+	mockInvocation := invocation.NewRPCInvocation("hi", []any{"OK"}, make(map[string]any))
 
 	// Register a state change listener so that we could observe the state change of the internal circuit breaker.
 	listener := &stateChangeTestListener{}
@@ -166,7 +166,7 @@ func TestConsumerFilter_Invoke(t *testing.T) {
 		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
 	assert.NoError(t, err)
 	mockInvoker := protocol.NewBaseInvoker(url)
-	mockInvocation := invocation.NewRPCInvocation("hello", []interface{}{"OK"}, make(map[string]interface{}))
+	mockInvocation := invocation.NewRPCInvocation("hello", []any{"OK"}, make(map[string]any))
 	result := f.Invoke(context.TODO(), mockInvoker, mockInvocation)
 	assert.NoError(t, result.Error())
 }
@@ -180,7 +180,7 @@ func TestProviderFilter_Invoke(t *testing.T) {
 		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
 	assert.NoError(t, err)
 	mockInvoker := protocol.NewBaseInvoker(url)
-	mockInvocation := invocation.NewRPCInvocation("hello", []interface{}{"OK"}, make(map[string]interface{}))
+	mockInvocation := invocation.NewRPCInvocation("hello", []any{"OK"}, make(map[string]any))
 	result := f.Invoke(context.TODO(), mockInvoker, mockInvocation)
 	assert.NoError(t, result.Error())
 }
@@ -195,7 +195,7 @@ func TestGetResourceName(t *testing.T) {
 	assert.NoError(t, err)
 	mockInvoker := protocol.NewBaseInvoker(url)
 	interfaceResourceName, methodResourceName := getResourceName(mockInvoker,
-		invocation.NewRPCInvocation("hello", []interface{}{"OK"}, make(map[string]interface{})), "prefix_")
+		invocation.NewRPCInvocation("hello", []any{"OK"}, make(map[string]any)), "prefix_")
 	assert.Equal(t, "com.ikurento.user.UserProvider:myGroup:1.0.0", interfaceResourceName)
 	assert.Equal(t, "prefix_com.ikurento.user.UserProvider:myGroup:1.0.0:hello()", methodResourceName)
 }
