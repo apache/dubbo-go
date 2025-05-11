@@ -59,6 +59,12 @@ func WithNacos() Option {
 	}
 }
 
+func WithApollo() Option {
+	return func(opts *Options) {
+		opts.Center.Protocol = constant.ApolloKey
+	}
+}
+
 func WithConfigCenter(cc string) Option {
 	return func(opts *Options) {
 		opts.Center.Protocol = cc
