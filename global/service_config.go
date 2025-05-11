@@ -17,6 +17,8 @@
 
 package global
 
+import "dubbo.apache.org/dubbo-go/v3/common/constant"
+
 // ServiceConfig is the configuration of the service provider
 type ServiceConfig struct {
 	Filter                      string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
@@ -46,6 +48,7 @@ type ServiceConfig struct {
 	ParamSign                   string            `yaml:"param.sign" json:"param.sign,omitempty" property:"param.sign"`
 	Tag                         string            `yaml:"tag" json:"tag,omitempty" property:"tag"`
 	TracingKey                  string            `yaml:"tracing-key" json:"tracing-key,omitempty" propertiy:"tracing-key"`
+	Weight                      int64             `yaml:"weight" json:"weight,omitempty" property:"weight"`
 
 	RCProtocolsMap  map[string]*ProtocolConfig
 	RCRegistriesMap map[string]*RegistryConfig
@@ -60,6 +63,7 @@ func DefaultServiceConfig() *ServiceConfig {
 		Params:          make(map[string]string, 8),
 		RCProtocolsMap:  make(map[string]*ProtocolConfig),
 		RCRegistriesMap: make(map[string]*RegistryConfig),
+		Weight:          constant.DefaultWeight,
 	}
 }
 
@@ -126,5 +130,6 @@ func (c *ServiceConfig) Clone() *ServiceConfig {
 		ParamSign:                   c.ParamSign,
 		Tag:                         c.Tag,
 		TracingKey:                  c.TracingKey,
+		Weight:                      c.Weight,
 	}
 }

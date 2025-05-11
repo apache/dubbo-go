@@ -381,6 +381,9 @@ func (svcOpts *ServiceOptions) getUrlMap() url.Values {
 	urlMap.Set(constant.ExportKey, strconv.FormatBool(svcOpts.needExport))
 	urlMap.Set(constant.PIDKey, fmt.Sprintf("%d", os.Getpid()))
 
+	// fix issue #2864, align with the implementation in Dubbo-Java
+	urlMap.Set(constant.WeightKey, strconv.FormatInt(svcOpts.Provider.Weight, 10))
+
 	for _, v := range srv.Methods {
 		prefix := "methods." + v.Name + "."
 		urlMap.Set(prefix+constant.LoadbalanceKey, v.LoadBalance)

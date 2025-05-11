@@ -150,6 +150,12 @@ func WithServerLoadBalance(lb string) ServerOption {
 	}
 }
 
+func WithServerWeight(weight int64) ServerOption {
+	return func(opts *ServerOptions) {
+		opts.Provider.Weight = weight
+	}
+}
+
 // warmUp is in seconds
 func WithServerWarmUp(warmUp time.Duration) ServerOption {
 	return func(opts *ServerOptions) {

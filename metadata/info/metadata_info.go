@@ -212,6 +212,7 @@ type ServiceInfo struct {
 	Port     int               `json:"port,omitempty" hessian:"port"`
 	Path     string            `json:"path,omitempty" hessian:"path"`
 	Params   map[string]string `json:"params,omitempty" hessian:"params"`
+	Weight   int64             `json:"weight,omitempty" hessian:"weight"`
 
 	ServiceKey string      `json:"-" hessian:"-"`
 	MatchKey   string      `json:"-" hessian:"-"`
