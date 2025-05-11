@@ -47,7 +47,7 @@ import (
 )
 
 const (
-	LookupInterval = 10 * time.Second
+	LookupInterval = 20 * time.Second
 )
 
 func init() {
