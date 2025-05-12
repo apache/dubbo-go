@@ -47,7 +47,7 @@ type ServiceConfig struct {
 	NotRegister                 bool              `yaml:"not_register" json:"not_register,omitempty" property:"not_register"`
 	ParamSign                   string            `yaml:"param.sign" json:"param.sign,omitempty" property:"param.sign"`
 	Tag                         string            `yaml:"tag" json:"tag,omitempty" property:"tag"`
-	TracingKey                  string            `yaml:"tracing-key" json:"tracing-key,omitempty" propertiy:"tracing-key"`
+	TracingKey                  string            `yaml:"tracing-key" json:"tracing-key,omitempty" property:"tracing-key"`
 	Weight                      int64             `yaml:"weight" json:"weight,omitempty" property:"weight"`
 
 	RCProtocolsMap  map[string]*ProtocolConfig
