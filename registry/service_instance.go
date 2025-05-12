@@ -134,8 +134,12 @@ func (d *DefaultServiceInstance) IsHealthy() bool {
 }
 
 func (d *DefaultServiceInstance) GetWeight() int64 {
-	if d.Weight <= 0 {
-		d.Weight = constant.DefaultWeight
+	if d.GetMetadata() != nil {
+		if weight, ok := d.GetMetadata()[constant.WeightKey]; ok {
+			d.Weight, _ = strconv.ParseInt(weight, 10, 64)
+		} else {
+			d.Weight = constant.DefaultWeight
+		}
 	}
 	return d.Weight
 }

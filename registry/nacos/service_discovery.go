@@ -65,9 +65,6 @@ type nacosServiceDiscovery struct {
 	// cache registry instances
 	registryInstances []registry.ServiceInstance
 
-	// registryURL stores the URL used for registration, used to fetch dynamic config like weight
-	registryURL *common.URL
-
 	instanceListenerMap map[string]*gxset.HashSet
 	listenerLock        sync.Mutex
 }
@@ -315,10 +312,7 @@ func (n *nacosServiceDiscovery) toRegisterInstance(instance registry.ServiceInst
 		metadata = make(map[string]string, 1)
 	}
 
-	var weight int64
-	if (n != nil) && (n.registryURL != nil) && (n.registryURL.SubURL != nil) {
-		weight = n.registryURL.SubURL.GetParamInt(constant.WeightKey, constant.DefaultWeight)
-	}
+	weight := instance.GetWeight()
 	if weight <= constant.MinNacosWeight {
 		logger.Warnf("Invalid weight value %d, using default weight %d.", weight, constant.DefaultWeight)
 		weight = constant.DefaultNacosWeight
@@ -381,7 +375,6 @@ func newNacosServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error
 		namingClient:        client,
 		descriptor:          descriptor,
 		registryInstances:   []registry.ServiceInstance{},
-		registryURL:         url,
 		instanceListenerMap: make(map[string]*gxset.HashSet),
 	}
 	return newInstance, nil

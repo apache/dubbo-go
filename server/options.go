@@ -157,13 +157,7 @@ func WithServerLoadBalance(lb string) ServerOption {
 
 func WithServerWeight(weight int64) ServerOption {
 	return func(opts *ServerOptions) {
-		if weight > 0 {
-			opts.Provider.Weight = weight
-		} else {
-			logger.Debugf("weight should be greater than 0, set to default value %d", constant.DefaultWeight)
-			opts.Provider.Weight = constant.DefaultWeight
-		}
-
+		opts.Provider.Weight = weight
 	}
 }
 
