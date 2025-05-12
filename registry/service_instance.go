@@ -185,7 +185,7 @@ func (d *DefaultServiceInstance) ToURLs(service *info.ServiceInfo) []*common.URL
 					common.WithPath(service.Name), common.WithInterface(service.Name),
 					common.WithMethods(service.GetMethods()), common.WithParams(service.GetParams()),
 					common.WithParams(url2.Values{constant.Tagkey: {d.Tag}}),
-					common.WithParamsValue(constant.WeightKey, strconv.FormatInt(d.GetWeight(), 10)),
+					common.WithParamsValue(constant.WeightKey, d.GetMetadata()[constant.WeightKey]),
 				)
 				urls = append(urls, url)
 			}

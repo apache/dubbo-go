@@ -80,6 +80,11 @@ func (srvOpts *ServerOptions) init(opts ...ServerOption) error {
 
 	prov := srvOpts.Provider
 
+	if srvOpts.Provider.Weight <= 0 {
+		logger.Debugf("weight should be greater than 0, set to default value %d", constant.DefaultWeight)
+		prov.Weight = constant.DefaultWeight
+	}
+
 	prov.RegistryIDs = commonCfg.TranslateIds(prov.RegistryIDs)
 	if len(prov.RegistryIDs) <= 0 {
 		prov.RegistryIDs = getRegistryIds(srvOpts.Registries)
@@ -152,7 +157,13 @@ func WithServerLoadBalance(lb string) ServerOption {
 
 func WithServerWeight(weight int64) ServerOption {
 	return func(opts *ServerOptions) {
-		opts.Provider.Weight = weight
+		if weight > 0 {
+			opts.Provider.Weight = weight
+		} else {
+			logger.Debugf("weight should be greater than 0, set to default value %d", constant.DefaultWeight)
+			opts.Provider.Weight = constant.DefaultWeight
+		}
+
 	}
 }
 
