@@ -20,7 +20,6 @@ package servicediscovery
 import (
 	"encoding/gob"
 	"reflect"
-	"strconv"
 	"sync"
 	"time"
 )
@@ -158,9 +157,7 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 						}
 					}
 				}
-				for i, url := range urls {
-					url.SetParam(constant.WeightKey, strconv.FormatInt(ce.Instances[i].GetWeight(), 10))
-				}
+
 				revisionsToUrls[revisions] = urls
 				newServiceURLs[serviceInfo.GetMatchKey()] = urls
 			}
