@@ -48,14 +48,13 @@ var (
 	errClientClosed      = perrors.New("client closed")
 	errClientReadTimeout = perrors.New("maybe the client read timeout or fail to decode tcp stream in Writer.Write")
 
-	clientConf *ClientConfig = GetDefaultClientConfig()
+	clientConf = GetDefaultClientConfig()
 
 	clientGrPool gxsync.GenericTaskPool
 )
 
 // it is init client for single protocol.
 func initClient(protocol string) {
-
 	if protocol == "" {
 		return
 	}
