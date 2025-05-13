@@ -994,6 +994,10 @@ func GetSubscribeName(url *URL) string {
 	return buffer.String()
 }
 
+// Reset will reset the URL
+// release the memory that allocated to the URL instance
+// and do not trust the URL instance retrieved from the pool
+// you should call reset before using it
 func (c *URL) Reset() {
 	c.params = make(url.Values)
 	c.attributes = make(map[string]interface{})
@@ -1010,6 +1014,10 @@ func (c *URL) Reset() {
 	c.Protocol = ""
 }
 
+// ReleaseURL will release the URL instance to the pool
+// when the URL instance is no longer used
+// for example, if you call mergeURL to merge two URL instance
+// you should call ReleaseURL to release a URL instance
 func (c *URL) ReleaseURL() {
 	c.Reset()
 	urlPool.Put(c)
