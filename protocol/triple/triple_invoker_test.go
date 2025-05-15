@@ -41,7 +41,7 @@ func Test_parseInvocation(t *testing.T) {
 		ctx    func() context.Context
 		url    *common.URL
 		invo   func() protocol.Invocation
-		expect func(t *testing.T, callType string, inRaw []interface{}, methodName string, err error)
+		expect func(t *testing.T, callType string, inRaw []any, methodName string, err error)
 	}{
 		{
 			desc: "miss callType",
@@ -52,7 +52,7 @@ func Test_parseInvocation(t *testing.T) {
 			invo: func() protocol.Invocation {
 				return invocation.NewRPCInvocationWithOptions()
 			},
-			expect: func(t *testing.T, callType string, inRaw []interface{}, methodName string, err error) {
+			expect: func(t *testing.T, callType string, inRaw []any, methodName string, err error) {
 				assert.NotNil(t, err)
 			},
 		},
@@ -67,7 +67,7 @@ func Test_parseInvocation(t *testing.T) {
 				iv.SetAttribute(constant.CallTypeKey, 1)
 				return iv
 			},
-			expect: func(t *testing.T, callType string, inRaw []interface{}, methodName string, err error) {
+			expect: func(t *testing.T, callType string, inRaw []any, methodName string, err error) {
 				assert.NotNil(t, err)
 			},
 		},
@@ -82,7 +82,7 @@ func Test_parseInvocation(t *testing.T) {
 				iv.SetAttribute(constant.CallTypeKey, constant.CallUnary)
 				return iv
 			},
-			expect: func(t *testing.T, callType string, inRaw []interface{}, methodName string, err error) {
+			expect: func(t *testing.T, callType string, inRaw []any, methodName string, err error) {
 				assert.NotNil(t, err)
 			},
 		},
@@ -127,7 +127,7 @@ func Test_parseAttachments(t *testing.T) {
 		{
 			desc: "user passed-in legal attachments",
 			ctx: func() context.Context {
-				userDefined := make(map[string]interface{})
+				userDefined := make(map[string]any)
 				userDefined["key1"] = "val1"
 				userDefined["key2"] = []string{"key2_1", "key2_2"}
 				return context.WithValue(context.Background(), constant.AttachmentKey, userDefined)
@@ -147,7 +147,7 @@ func Test_parseAttachments(t *testing.T) {
 		{
 			desc: "user passed-in illegal attachments",
 			ctx: func() context.Context {
-				userDefined := make(map[string]interface{})
+				userDefined := make(map[string]any)
 				userDefined["key1"] = 1
 				return context.WithValue(context.Background(), constant.AttachmentKey, userDefined)
 			},

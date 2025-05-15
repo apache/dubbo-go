@@ -30,14 +30,14 @@ func Test_generateAttachments(t *testing.T) {
 	tests := []struct {
 		desc   string
 		input  func() http.Header
-		expect func(t *testing.T, res map[string]interface{})
+		expect func(t *testing.T, res map[string]any)
 	}{
 		{
 			desc: "empty header",
 			input: func() http.Header {
 				return http.Header{}
 			},
-			expect: func(t *testing.T, res map[string]interface{}) {
+			expect: func(t *testing.T, res map[string]any) {
 				assert.Zero(t, len(res))
 			},
 		},
@@ -50,7 +50,7 @@ func Test_generateAttachments(t *testing.T) {
 				header.Add("key2", "val2_2")
 				return header
 			},
-			expect: func(t *testing.T, res map[string]interface{}) {
+			expect: func(t *testing.T, res map[string]any) {
 				assert.Equal(t, 2, len(res))
 				assert.Equal(t, []string{"val1"}, res["key1"])
 				assert.Equal(t, []string{"val2_1", "val2_2"}, res["key2"])
@@ -65,7 +65,7 @@ func Test_generateAttachments(t *testing.T) {
 				header.Add("Key2", "val2_2")
 				return header
 			},
-			expect: func(t *testing.T, res map[string]interface{}) {
+			expect: func(t *testing.T, res map[string]any) {
 				assert.Equal(t, 2, len(res))
 				assert.Equal(t, []string{"val1"}, res["key1"])
 				assert.Equal(t, []string{"val2_1", "val2_2"}, res["key2"])

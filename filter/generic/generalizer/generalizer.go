@@ -27,11 +27,11 @@ type Generalizer interface {
 	// For example:
 	// map, the type of the `obj` allows a basic type, e.g. string, and a complicated type which is a POJO, see also
 	// `hessian.POJO` at [apache/dubbo-go-hessian2](github.com/apache/dubbo-go-hessian2).
-	Generalize(obj interface{}) (interface{}, error)
+	Generalize(obj any) (any, error)
 
 	// Realize realizes a general struct, described in `obj`, to an object for Golang.
-	Realize(obj interface{}, typ reflect.Type) (interface{}, error)
+	Realize(obj any, typ reflect.Type) (any, error)
 
 	// GetType returns the type of the `obj`
-	GetType(obj interface{}) (string, error)
+	GetType(obj any) (string, error)
 }

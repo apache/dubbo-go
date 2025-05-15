@@ -55,7 +55,7 @@ func (factory *PassThroughProxyFactory) GetProxy(invoker protocol.Invoker, url *
 }
 
 // GetAsyncProxy gets a async proxy
-func (factory *PassThroughProxyFactory) GetAsyncProxy(invoker protocol.Invoker, callBack interface{}, url *common.URL) *proxy.Proxy {
+func (factory *PassThroughProxyFactory) GetAsyncProxy(invoker protocol.Invoker, callBack any, url *common.URL) *proxy.Proxy {
 	//create proxy
 	attachments := map[string]string{}
 	attachments[constant.AsyncKey] = url.GetParam(constant.AsyncKey, "false")
@@ -72,7 +72,7 @@ func (factory *PassThroughProxyFactory) GetInvoker(url *common.URL) protocol.Inv
 }
 
 // PassThroughProxyInvoker is a invoker struct, it calls service with specific method 'Serivce' and params:
-// Service(method string, argsTypes []string, args [][]byte, attachment map[string]interface{})
+// Service(method string, argsTypes []string, args [][]byte, attachment map[string]any)
 // PassThroughProxyInvoker pass through raw invocation data and method name to service, which will deal with them.
 type PassThroughProxyInvoker struct {
 	*ProxyInvoker
@@ -109,7 +109,7 @@ func (pi *PassThroughProxyInvoker) Invoke(ctx context.Context, invocation protoc
 	in = append(in, reflect.ValueOf(invocation.Attachments()))
 
 	var replyv reflect.Value
-	var retErr interface{}
+	var retErr any
 
 	returnValues, callErr := callLocalMethod(method.Method(), in)
 

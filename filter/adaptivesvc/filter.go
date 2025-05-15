@@ -154,7 +154,7 @@ func (f *adaptiveServiceProviderFilter) OnResponse(_ context.Context, result pro
 	return result
 }
 
-func wrapErrAdaptiveSvcInterrupted(customizedErr interface{}) error {
+func wrapErrAdaptiveSvcInterrupted(customizedErr any) error {
 	return fmt.Errorf("%w: %v", ErrAdaptiveSvcInterrupted, customizedErr)
 }
 

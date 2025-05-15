@@ -37,10 +37,10 @@ import (
 // test rebuild the ctx
 func TestRebuildCtx(t *testing.T) {
 	opentracing.SetGlobalTracer(mocktracer.New())
-	attach := make(map[string]interface{}, 10)
+	attach := make(map[string]any, 10)
 	attach[constant.VersionKey] = "1.0"
 	attach[constant.GroupKey] = "MyGroup"
-	inv := invocation.NewRPCInvocation("MethodName", []interface{}{"OK", "Hello"}, attach)
+	inv := invocation.NewRPCInvocation("MethodName", []any{"OK", "Hello"}, attach)
 
 	// attachment doesn't contains any tracing key-value pair,
 	ctx := rebuildCtx(inv)
@@ -53,7 +53,7 @@ func TestRebuildCtx(t *testing.T) {
 	assert.NoError(t, err)
 
 	// rebuild the context success
-	inv = invocation.NewRPCInvocation("MethodName", []interface{}{"OK", "Hello"}, attach)
+	inv = invocation.NewRPCInvocation("MethodName", []any{"OK", "Hello"}, attach)
 	ctx = rebuildCtx(inv)
 	span.Finish()
 	assert.NotNil(t, ctx)

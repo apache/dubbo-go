@@ -169,7 +169,7 @@ type PingServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewPingServiceHandler(svc PingServiceHandler, opts ...triple_protocol.HandlerOption) (string, http.Handler) {
 	pingServicePingHandler := triple_protocol.NewUnaryHandler(
-		PingServicePingProcedure, func() interface{} {
+		PingServicePingProcedure, func() any {
 			return &pingv1.PingRequest{}
 		},
 		svc.Ping,
@@ -178,7 +178,7 @@ func NewPingServiceHandler(svc PingServiceHandler, opts ...triple_protocol.Handl
 	)
 	pingServiceFailHandler := triple_protocol.NewUnaryHandler(
 		PingServiceFailProcedure,
-		func() interface{} {
+		func() any {
 			return &pingv1.FailRequest{}
 		},
 		svc.Fail,
@@ -190,7 +190,7 @@ func NewPingServiceHandler(svc PingServiceHandler, opts ...triple_protocol.Handl
 		opts...,
 	)
 	pingServiceCountUpHandler := triple_protocol.NewServerStreamHandler(
-		PingServiceCountUpProcedure, func() interface{} {
+		PingServiceCountUpProcedure, func() any {
 			return &pingv1.CountUpRequest{}
 		},
 		svc.CountUp,

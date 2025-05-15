@@ -105,7 +105,7 @@ func WithPort(port int) Option {
 	}
 }
 
-func WithParams(params interface{}) Option {
+func WithParams(params any) Option {
 	return func(opts *Options) {
 		opts.Protocol.Params = params
 	}

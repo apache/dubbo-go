@@ -40,7 +40,7 @@ func TestAssertions(t *testing.T) {
 
 		NotNil(t, make(chan int))
 		NotNil(t, func() {})
-		NotNil(t, interface{}(1))
+		NotNil(t, any(1))
 		NotNil(t, make(map[int]int))
 		NotNil(t, &pair{})
 		NotNil(t, make([]int, 0))
@@ -63,7 +63,7 @@ func TestAssertions(t *testing.T) {
 		Zero(t, s)
 		var m map[string]string
 		Zero(t, m)
-		var nilIntf interface{}
+		var nilIntf any
 		Zero(t, nilIntf)
 		NotZero(t, nilIntf)
 	})

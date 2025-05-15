@@ -101,6 +101,6 @@ type nopStreamingClientConn struct {
 	StreamingClientConn
 }
 
-func (c *nopStreamingClientConn) Receive(msg interface{}) error {
+func (c *nopStreamingClientConn) Receive(msg any) error {
 	return nil
 }

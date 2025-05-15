@@ -57,52 +57,52 @@ func (m *MockMetrics) EXPECT() *MockMetricsMockRecorder {
 }
 
 // GetInstanceMetrics mocks base method.
-func (m *MockMetrics) GetInstanceMetrics(url *common.URL, key string) (interface{}, error) {
+func (m *MockMetrics) GetInstanceMetrics(url *common.URL, key string) (any, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetInstanceMetrics", url, key)
-	ret0, _ := ret[0].(interface{})
+	ret0, _ := ret[0].(any)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetInstanceMetrics indicates an expected call of GetInstanceMetrics.
-func (mr *MockMetricsMockRecorder) GetInstanceMetrics(url, key interface{}) *gomock.Call {
+func (mr *MockMetricsMockRecorder) GetInstanceMetrics(url, key any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInstanceMetrics", reflect.TypeOf((*MockMetrics)(nil).GetInstanceMetrics), url, key)
 }
 
 // GetInvokerMetrics mocks base method.
-func (m *MockMetrics) GetInvokerMetrics(url *common.URL, key string) (interface{}, error) {
+func (m *MockMetrics) GetInvokerMetrics(url *common.URL, key string) (any, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetInvokerMetrics", url, key)
-	ret0, _ := ret[0].(interface{})
+	ret0, _ := ret[0].(any)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetInvokerMetrics indicates an expected call of GetInvokerMetrics.
-func (mr *MockMetricsMockRecorder) GetInvokerMetrics(url, key interface{}) *gomock.Call {
+func (mr *MockMetricsMockRecorder) GetInvokerMetrics(url, key any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInvokerMetrics", reflect.TypeOf((*MockMetrics)(nil).GetInvokerMetrics), url, key)
 }
 
 // GetMethodMetrics mocks base method.
-func (m *MockMetrics) GetMethodMetrics(url *common.URL, methodName, key string) (interface{}, error) {
+func (m *MockMetrics) GetMethodMetrics(url *common.URL, methodName, key string) (any, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetMethodMetrics", url, methodName, key)
-	ret0, _ := ret[0].(interface{})
+	ret0, _ := ret[0].(any)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetMethodMetrics indicates an expected call of GetMethodMetrics.
-func (mr *MockMetricsMockRecorder) GetMethodMetrics(url, methodName, key interface{}) *gomock.Call {
+func (mr *MockMetricsMockRecorder) GetMethodMetrics(url, methodName, key any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMethodMetrics", reflect.TypeOf((*MockMetrics)(nil).GetMethodMetrics), url, methodName, key)
 }
 
 // SetInstanceMetrics mocks base method.
-func (m *MockMetrics) SetInstanceMetrics(url *common.URL, key string, value interface{}) error {
+func (m *MockMetrics) SetInstanceMetrics(url *common.URL, key string, value any) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetInstanceMetrics", url, key, value)
 	ret0, _ := ret[0].(error)
@@ -110,13 +110,13 @@ func (m *MockMetrics) SetInstanceMetrics(url *common.URL, key string, value inte
 }
 
 // SetInstanceMetrics indicates an expected call of SetInstanceMetrics.
-func (mr *MockMetricsMockRecorder) SetInstanceMetrics(url, key, value interface{}) *gomock.Call {
+func (mr *MockMetricsMockRecorder) SetInstanceMetrics(url, key, value any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetInstanceMetrics", reflect.TypeOf((*MockMetrics)(nil).SetInstanceMetrics), url, key, value)
 }
 
 // SetInvokerMetrics mocks base method.
-func (m *MockMetrics) SetInvokerMetrics(url *common.URL, key string, value interface{}) error {
+func (m *MockMetrics) SetInvokerMetrics(url *common.URL, key string, value any) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetInvokerMetrics", url, key, value)
 	ret0, _ := ret[0].(error)
@@ -124,13 +124,13 @@ func (m *MockMetrics) SetInvokerMetrics(url *common.URL, key string, value inter
 }
 
 // SetInvokerMetrics indicates an expected call of SetInvokerMetrics.
-func (mr *MockMetricsMockRecorder) SetInvokerMetrics(url, key, value interface{}) *gomock.Call {
+func (mr *MockMetricsMockRecorder) SetInvokerMetrics(url, key, value any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetInvokerMetrics", reflect.TypeOf((*MockMetrics)(nil).SetInvokerMetrics), url, key, value)
 }
 
 // SetMethodMetrics mocks base method.
-func (m *MockMetrics) SetMethodMetrics(url *common.URL, methodName, key string, value interface{}) error {
+func (m *MockMetrics) SetMethodMetrics(url *common.URL, methodName, key string, value any) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetMethodMetrics", url, methodName, key, value)
 	ret0, _ := ret[0].(error)
@@ -138,7 +138,7 @@ func (m *MockMetrics) SetMethodMetrics(url *common.URL, methodName, key string, 
 }
 
 // SetMethodMetrics indicates an expected call of SetMethodMetrics.
-func (mr *MockMetricsMockRecorder) SetMethodMetrics(url, methodName, key, value interface{}) *gomock.Call {
+func (mr *MockMetricsMockRecorder) SetMethodMetrics(url, methodName, key, value any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMethodMetrics", reflect.TypeOf((*MockMetrics)(nil).SetMethodMetrics), url, methodName, key, value)
 }

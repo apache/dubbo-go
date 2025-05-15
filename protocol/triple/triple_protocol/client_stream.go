@@ -60,7 +60,7 @@ func (c *ClientStreamForClient) RequestHeader() http.Header {
 // If the server returns an error, Send returns an error that wraps [io.EOF].
 // Clients should check for case using the standard library's [errors.Is] or
 // [IsEnded] and unmarshal the error using CloseAndReceive.
-func (c *ClientStreamForClient) Send(request interface{}) error {
+func (c *ClientStreamForClient) Send(request any) error {
 	if c.err != nil {
 		return c.err
 	}
@@ -100,7 +100,7 @@ func (c *ClientStreamForClient) Conn() (StreamingClientConn, error) {
 // exported constructor function.
 type ServerStreamForClient struct {
 	conn StreamingClientConn
-	msg  interface{}
+	msg  any
 	// Error from client construction. If non-nil, return for all calls.
 	constructErr error
 	// Error from conn.Receive().
@@ -113,7 +113,7 @@ type ServerStreamForClient struct {
 // Receive returns false, the Err method will return any unexpected error
 // encountered.
 // todo(DMwangnima): add classic usage
-func (s *ServerStreamForClient) Receive(msg interface{}) bool {
+func (s *ServerStreamForClient) Receive(msg any) bool {
 	if s.constructErr != nil || s.receiveErr != nil {
 		return false
 	}
@@ -123,7 +123,7 @@ func (s *ServerStreamForClient) Receive(msg interface{}) bool {
 }
 
 // Msg returns the most recent message unmarshaled by a call to Receive.
-func (s *ServerStreamForClient) Msg() interface{} {
+func (s *ServerStreamForClient) Msg() any {
 	// todo(DMwangnima): processing nil pointer
 	//if s.msg == nil {
 	//	s.msg = new(Res)
@@ -219,7 +219,7 @@ func (b *BidiStreamForClient) RequestHeader() http.Header {
 // If the server returns an error, Send returns an error that wraps [io.EOF].
 // Clients should check for EOF using the standard library's [errors.Is] and
 // call Receive to retrieve the error.
-func (b *BidiStreamForClient) Send(msg interface{}) error {
+func (b *BidiStreamForClient) Send(msg any) error {
 	if b.err != nil {
 		return b.err
 	}
@@ -240,7 +240,7 @@ func (b *BidiStreamForClient) CloseRequest() error {
 
 // Receive a message. When the server is done sending messages and no other
 // errors have occurred, Receive will return an error that wraps [io.EOF].
-func (b *BidiStreamForClient) Receive(msg interface{}) error {
+func (b *BidiStreamForClient) Receive(msg any) error {
 	if b.err != nil {
 		return b.err
 	}

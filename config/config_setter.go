@@ -18,5 +18,5 @@
 package config
 
 type Setter interface {
-	Set(name string, config interface{})
+	Set(name string, config any)
 }

@@ -116,7 +116,7 @@ func callback(listener config_center.ConfigurationListener, path, data string, e
 
 // Close will remove key listener and close watcher
 func (cl *CacheListener) Close() error {
-	cl.keyListeners.Range(func(key, value interface{}) bool {
+	cl.keyListeners.Range(func(key, value any) bool {
 		cl.keyListeners.Delete(key)
 		return true
 	})

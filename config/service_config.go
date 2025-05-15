@@ -336,7 +336,7 @@ func (s *ServiceConfig) Export() error {
 	return nil
 }
 
-func (s *ServiceConfig) generatorInvoker(url *common.URL, info interface{}) protocol.Invoker {
+func (s *ServiceConfig) generatorInvoker(url *common.URL, info any) protocol.Invoker {
 	proxyFactory := extension.GetProxyFactory(s.ProxyFactoryKey)
 	if info != nil {
 		url.SetAttribute(constant.ServiceInfoKey, info)

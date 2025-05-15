@@ -59,7 +59,7 @@ func NewPromMetricRegistry(reg *prom.Registry, url *common.URL) *promMetricRegis
 	return &promMetricRegistry{r: reg, gather: reg, url: url}
 }
 
-func (p *promMetricRegistry) getOrComputeVec(key string, supplier func() prom.Collector) interface{} {
+func (p *promMetricRegistry) getOrComputeVec(key string, supplier func() prom.Collector) any {
 	v, ok := p.vecs.Load(key)
 	if !ok {
 		v, ok = p.vecs.LoadOrStore(key, supplier())

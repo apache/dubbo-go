@@ -438,7 +438,7 @@ func TestRouteArguments(t *testing.T) {
 
 	testData := []struct {
 		name     string
-		argument interface{}
+		argument any
 		rule     string
 
 		wantVal int
@@ -476,7 +476,7 @@ func TestRouteArguments(t *testing.T) {
 			router, err := NewConditionStateRouter(url)
 			assert.Nil(t, err)
 
-			arguments := make([]interface{}, 0, 1)
+			arguments := make([]any, 0, 1)
 			arguments = append(arguments, data.argument)
 
 			rpcInvocation := invocation.NewRPCInvocation("getBar", arguments, nil)
@@ -709,7 +709,7 @@ func TestRouteMultipleConditions(t *testing.T) {
 			router, err := NewConditionStateRouter(url)
 			assert.Nil(t, err)
 
-			arguments := make([]interface{}, 0, 1)
+			arguments := make([]any, 0, 1)
 			arguments = append(arguments, data.argument)
 
 			rpcInvocation := invocation.NewRPCInvocation(method, arguments, nil)
@@ -1349,7 +1349,7 @@ conditions:
 				}
 			} else {
 				// check multiply destination route successfully or not
-				ans := map[interface{}]float32{}
+				ans := map[any]float32{}
 				for _, s := range tt.multiDestination {
 					args := struct {
 						invokers   []protocol.Invoker
@@ -1358,7 +1358,7 @@ conditions:
 					}{tt.args.invokers[:], tt.args.url.Clone(), tt.args.invocation}
 					ans[len(s.invokers_filters.filtrate(args.invokers, tt.args.url, tt.args.invocation))] = s.weight * 1000
 				}
-				res := map[interface{}]int{}
+				res := map[any]int{}
 				for i := 0; i < 1000; i++ {
 					args := struct {
 						invokers   []protocol.Invoker

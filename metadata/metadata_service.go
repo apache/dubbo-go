@@ -328,10 +328,10 @@ var MetadataService_ServiceInfo = common.ServiceInfo{
 		{
 			Name: "getMetadataInfo",
 			Type: constant.CallUnary,
-			ReqInitFunc: func() interface{} {
+			ReqInitFunc: func() any {
 				return new(string)
 			},
-			MethodFunc: func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
+			MethodFunc: func(ctx context.Context, args []any, handler any) (any, error) {
 				revision := args[0].(*string)
 				res, err := handler.(MetadataServiceHandler).GetMetadataInfo(ctx, *revision)
 				return res, err
@@ -347,10 +347,10 @@ var MetadataServiceV2_ServiceInfo = common.ServiceInfo{
 		{
 			Name: "GetMetadataInfo",
 			Type: constant.CallUnary,
-			ReqInitFunc: func() interface{} {
+			ReqInitFunc: func() any {
 				return new(tripleapi.MetadataRequest)
 			},
-			MethodFunc: func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
+			MethodFunc: func(ctx context.Context, args []any, handler any) (any, error) {
 				req := args[0].(*tripleapi.MetadataRequest)
 				res, err := handler.(MetadataServiceV2Handler).GetMetadataInfo(ctx, req)
 				if err != nil {
@@ -362,10 +362,10 @@ var MetadataServiceV2_ServiceInfo = common.ServiceInfo{
 		{
 			Name: "getMetadataInfo",
 			Type: constant.CallUnary,
-			ReqInitFunc: func() interface{} {
+			ReqInitFunc: func() any {
 				return new(tripleapi.MetadataRequest)
 			},
-			MethodFunc: func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
+			MethodFunc: func(ctx context.Context, args []any, handler any) (any, error) {
 				req := args[0].(*tripleapi.MetadataRequest)
 				res, err := handler.(MetadataServiceV2Handler).GetMetadataInfo(ctx, req)
 				if err != nil {

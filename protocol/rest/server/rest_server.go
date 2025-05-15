@@ -69,7 +69,7 @@ type RestServerRequest interface {
 	// HeaderParameter get the header parameter of name
 	HeaderParameter(name string) string
 	// ReadEntity checks the Accept header and reads the content into the entityPointer.
-	ReadEntity(entityPointer interface{}) error
+	ReadEntity(entityPointer any) error
 }
 
 // RestServerResponse interface
@@ -79,7 +79,7 @@ type RestServerResponse interface {
 	// Return an error if writing was not successful.
 	WriteError(httpStatus int, err error) (writeErr error)
 	// WriteEntity marshals the value using the representation denoted by the Accept Header.
-	WriteEntity(value interface{}) error
+	WriteEntity(value any) error
 }
 
 // GetRouteFunc is a route function will be invoked by http server
@@ -87,7 +87,7 @@ func GetRouteFunc(invoker protocol.Invoker, methodConfig *rest_config.RestMethod
 	return func(req RestServerRequest, resp RestServerResponse) {
 		var (
 			err  error
-			args []interface{}
+			args []any
 		)
 		svc := common.ServiceMap.GetServiceByServiceKey(invoker.GetURL().Protocol, invoker.GetURL().ServiceKey())
 		// get method
@@ -95,7 +95,7 @@ func GetRouteFunc(invoker protocol.Invoker, methodConfig *rest_config.RestMethod
 		argsTypes := method.ArgsType()
 		replyType := method.ReplyType()
 		// two ways to prepare arguments
-		// if method like this 'func1(req []interface{}, rsp *User) error'
+		// if method like this 'func1(req []any, rsp *User) error'
 		// we don't have arguments type
 		if (len(argsTypes) == 1 || len(argsTypes) == 2 && replyType == nil) &&
 			argsTypes[0].String() == "[]interface {}" {
@@ -110,7 +110,7 @@ func GetRouteFunc(invoker protocol.Invoker, methodConfig *rest_config.RestMethod
 				logger.Errorf("[Go Restful] WriteErrorString error:%v", err)
 			}
 		}
-		result := invoker.Invoke(context.Background(), invocation.NewRPCInvocation(methodConfig.MethodName, args, make(map[string]interface{})))
+		result := invoker.Invoke(context.Background(), invocation.NewRPCInvocation(methodConfig.MethodName, args, make(map[string]any)))
 		if result.Error() != nil {
 			err = resp.WriteError(http.StatusInternalServerError, result.Error())
 			if err != nil {
@@ -125,10 +125,10 @@ func GetRouteFunc(invoker protocol.Invoker, methodConfig *rest_config.RestMethod
 	}
 }
 
-// getArgsInterfaceFromRequest when service function like GetUser(req []interface{}, rsp *User) error
+// getArgsInterfaceFromRequest when service function like GetUser(req []any, rsp *User) error
 // use this method to get arguments
-func getArgsInterfaceFromRequest(req RestServerRequest, methodConfig *rest_config.RestMethodConfig) ([]interface{}, error) {
-	argsMap := make(map[int]interface{}, 8)
+func getArgsInterfaceFromRequest(req RestServerRequest, methodConfig *rest_config.RestMethodConfig) ([]any, error) {
+	argsMap := make(map[int]any, 8)
 	maxKey := 0
 	for k, v := range methodConfig.PathParamsMap {
 		if maxKey < k {
@@ -157,14 +157,14 @@ func getArgsInterfaceFromRequest(req RestServerRequest, methodConfig *rest_confi
 		if maxKey < methodConfig.Body {
 			maxKey = methodConfig.Body
 		}
-		m := make(map[string]interface{})
+		m := make(map[string]any)
 		// TODO read as a slice
 		if err := req.ReadEntity(&m); err != nil {
-			return nil, perrors.Errorf("[Go restful] Read body entity as map[string]interface{} error:%v", err)
+			return nil, perrors.Errorf("[Go restful] Read body entity as map[string]any error:%v", err)
 		}
 		argsMap[methodConfig.Body] = m
 	}
-	args := make([]interface{}, maxKey+1)
+	args := make([]any, maxKey+1)
 	for k, v := range argsMap {
 		if k >= 0 {
 			args[k] = v
@@ -174,9 +174,9 @@ func getArgsInterfaceFromRequest(req RestServerRequest, methodConfig *rest_confi
 }
 
 // getArgsFromRequest get arguments from server.RestServerRequest
-func getArgsFromRequest(req RestServerRequest, argsTypes []reflect.Type, methodConfig *rest_config.RestMethodConfig) ([]interface{}, error) {
+func getArgsFromRequest(req RestServerRequest, argsTypes []reflect.Type, methodConfig *rest_config.RestMethodConfig) ([]any, error) {
 	argsLength := len(argsTypes)
-	args := make([]interface{}, argsLength)
+	args := make([]any, argsLength)
 	for i, t := range argsTypes {
 		args[i] = reflect.Zero(t).Interface()
 	}
@@ -196,7 +196,7 @@ func getArgsFromRequest(req RestServerRequest, argsTypes []reflect.Type, methodC
 }
 
 // assembleArgsFromHeaders assemble arguments from headers
-func assembleArgsFromHeaders(methodConfig *rest_config.RestMethodConfig, req RestServerRequest, argsLength int, argsTypes []reflect.Type, args []interface{}) error {
+func assembleArgsFromHeaders(methodConfig *rest_config.RestMethodConfig, req RestServerRequest, argsLength int, argsTypes []reflect.Type, args []any) error {
 	for k, v := range methodConfig.HeadersMap {
 		param := req.HeaderParameter(v)
 		if k < 0 || k >= argsLength {
@@ -216,18 +216,18 @@ func assembleArgsFromHeaders(methodConfig *rest_config.RestMethodConfig, req Res
 }
 
 // assembleArgsFromBody assemble arguments from body
-func assembleArgsFromBody(methodConfig *rest_config.RestMethodConfig, argsTypes []reflect.Type, req RestServerRequest, args []interface{}) error {
+func assembleArgsFromBody(methodConfig *rest_config.RestMethodConfig, argsTypes []reflect.Type, req RestServerRequest, args []any) error {
 	if methodConfig.Body >= 0 && methodConfig.Body < len(argsTypes) {
 		t := argsTypes[methodConfig.Body]
 		kind := t.Kind()
 		if kind == reflect.Ptr {
 			t = t.Elem()
 		}
-		var ni interface{}
+		var ni any
 		if t.String() == "[]interface {}" {
-			ni = make([]map[string]interface{}, 0)
+			ni = make([]map[string]any, 0)
 		} else if t.String() == "interface {}" {
-			ni = make(map[string]interface{})
+			ni = make(map[string]any)
 		} else {
 			n := reflect.New(t)
 			if n.CanInterface() {
@@ -243,10 +243,10 @@ func assembleArgsFromBody(methodConfig *rest_config.RestMethodConfig, argsTypes 
 }
 
 // assembleArgsFromQueryParams assemble arguments from query params
-func assembleArgsFromQueryParams(methodConfig *rest_config.RestMethodConfig, argsLength int, argsTypes []reflect.Type, req RestServerRequest, args []interface{}) error {
+func assembleArgsFromQueryParams(methodConfig *rest_config.RestMethodConfig, argsLength int, argsTypes []reflect.Type, req RestServerRequest, args []any) error {
 	var (
 		err   error
-		param interface{}
+		param any
 		i64   int64
 	)
 	for k, v := range methodConfig.QueryParamsMap {
@@ -284,10 +284,10 @@ func assembleArgsFromQueryParams(methodConfig *rest_config.RestMethodConfig, arg
 }
 
 // assembleArgsFromPathParams assemble arguments from path params
-func assembleArgsFromPathParams(methodConfig *rest_config.RestMethodConfig, argsLength int, argsTypes []reflect.Type, req RestServerRequest, args []interface{}) error {
+func assembleArgsFromPathParams(methodConfig *rest_config.RestMethodConfig, argsLength int, argsTypes []reflect.Type, req RestServerRequest, args []any) error {
 	var (
 		err   error
-		param interface{}
+		param any
 		i64   int64
 	)
 	for k, v := range methodConfig.PathParamsMap {

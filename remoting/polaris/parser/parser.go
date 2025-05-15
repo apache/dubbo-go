@@ -80,7 +80,7 @@ var (
 //
 // examples
 //   - case 1: param.$.store.book[*].author
-func ParseArgumentsByExpression(key string, parameters []interface{}) interface{} {
+func ParseArgumentsByExpression(key string, parameters []any) any {
 	index, key := resolveIndex(key)
 	if index == -1 || index >= len(parameters) {
 		logger.Errorf("[Parser][Polaris] invalid expression for : %s", key)
@@ -92,7 +92,7 @@ func ParseArgumentsByExpression(key string, parameters []interface{}) interface{
 		logger.Errorf("[Parser][Polaris] marshal parameter %+v fail : %+v", parameters[index], err)
 		return nil
 	}
-	var searchVal interface{}
+	var searchVal any
 	_ = json.Unmarshal(data, &searchVal)
 	res, err := jsonpath.JsonPathLookup(searchVal, key)
 	if err != nil {

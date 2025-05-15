@@ -32,11 +32,11 @@ import (
 	perrors "github.com/pkg/errors"
 )
 
-func getArgType(v interface{}) string {
+func getArgType(v any) string {
 	return GetClassDesc(v)
 }
 
-func getArgsTypeList(args []interface{}) (string, error) {
+func getArgsTypeList(args []any) (string, error) {
 	var (
 		typ   string
 		types string
@@ -61,14 +61,14 @@ func getArgsTypeList(args []interface{}) (string, error) {
 }
 
 type DubboRequest struct {
-	Params      interface{}
-	Attachments map[string]interface{}
+	Params      any
+	Attachments map[string]any
 }
 
 // NewRequest create a new DubboRequest
-func NewRequest(params interface{}, atta map[string]interface{}) *DubboRequest {
+func NewRequest(params any, atta map[string]any) *DubboRequest {
 	if atta == nil {
-		atta = make(map[string]interface{})
+		atta = make(map[string]any)
 	}
 	return &DubboRequest{
 		Params:      params,
@@ -76,14 +76,14 @@ func NewRequest(params interface{}, atta map[string]interface{}) *DubboRequest {
 	}
 }
 
-func EnsureRequest(body interface{}) *DubboRequest {
+func EnsureRequest(body any) *DubboRequest {
 	if req, ok := body.(*DubboRequest); ok {
 		return req
 	}
 	return NewRequest(body, nil)
 }
 
-func packRequest(service Service, header DubboHeader, req interface{}) ([]byte, error) {
+func packRequest(service Service, header DubboHeader, req any) ([]byte, error) {
 	var (
 		err       error
 		types     string
@@ -93,9 +93,9 @@ func packRequest(service Service, header DubboHeader, req interface{}) ([]byte, 
 
 	request := EnsureRequest(req)
 
-	args, ok := request.Params.([]interface{})
+	args, ok := request.Params.([]any)
 	if !ok {
-		return nil, perrors.Errorf("@params is not of type: []interface{}")
+		return nil, perrors.Errorf("@params is not of type: []any")
 	}
 
 	hb := header.Type == PackageHeartbeat
@@ -180,14 +180,14 @@ END:
 }
 
 // hessian decode request body
-func unpackRequestBody(decoder *hessian.Decoder, reqObj interface{}) error {
+func unpackRequestBody(decoder *hessian.Decoder, reqObj any) error {
 	if decoder == nil {
 		return perrors.Errorf("@decoder is nil")
 	}
 
-	req, ok := reqObj.([]interface{})
+	req, ok := reqObj.([]any)
 	if !ok {
-		return perrors.Errorf("@reqObj is not of type: []interface{}")
+		return perrors.Errorf("@reqObj is not of type: []any")
 	}
 	if len(req) < 7 {
 		return perrors.New("length of @reqObj should  be 7")
@@ -195,8 +195,8 @@ func unpackRequestBody(decoder *hessian.Decoder, reqObj interface{}) error {
 
 	var (
 		err                                                     error
-		dubboVersion, target, serviceVersion, method, argsTypes interface{}
-		args                                                    []interface{}
+		dubboVersion, target, serviceVersion, method, argsTypes any
+		args                                                    []any
 	)
 
 	dubboVersion, err = decoder.Decode()
@@ -230,7 +230,7 @@ func unpackRequestBody(decoder *hessian.Decoder, reqObj interface{}) error {
 	req[4] = argsTypes
 
 	ats := DescRegex.FindAllString(argsTypes.(string), -1)
-	var arg interface{}
+	var arg any
 	for i := 0; i < len(ats); i++ {
 		arg, err = decoder.Decode()
 		if err != nil {
@@ -244,7 +244,7 @@ func unpackRequestBody(decoder *hessian.Decoder, reqObj interface{}) error {
 	if err != nil {
 		return perrors.WithStack(err)
 	}
-	if v, ok := attachments.(map[interface{}]interface{}); ok {
+	if v, ok := attachments.(map[any]any); ok {
 		v[DUBBO_VERSION_KEY] = dubboVersion
 		req[6] = ToMapStringInterface(v)
 		return nil
@@ -253,8 +253,8 @@ func unpackRequestBody(decoder *hessian.Decoder, reqObj interface{}) error {
 	return perrors.Errorf("get wrong attachments: %+v", attachments)
 }
 
-func ToMapStringInterface(origin map[interface{}]interface{}) map[string]interface{} {
-	dest := make(map[string]interface{}, len(origin))
+func ToMapStringInterface(origin map[any]any) map[string]any {
+	dest := make(map[string]any, len(origin))
 	for k, v := range origin {
 		if kv, ok := k.(string); ok {
 			if v == nil {

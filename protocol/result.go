@@ -41,22 +41,22 @@ import (
 type Result interface {
 	SetError(error)
 	Error() error
-	SetResult(interface{})
-	Result() interface{}
-	SetAttachments(map[string]interface{})
-	Attachments() map[string]interface{}
-	AddAttachment(string, interface{})
-	Attachment(string, interface{}) interface{}
+	SetResult(any)
+	Result() any
+	SetAttachments(map[string]any)
+	Attachments() map[string]any
+	AddAttachment(string, any)
+	Attachment(string, any) any
 }
 
 var _ Result = (*RPCResult)(nil)
 
 // RPCResult is default RPC result.
 type RPCResult struct {
-	Attrs  map[string]interface{}
+	Attrs  map[string]any
 	BizErr error
 	Err    error
-	Rest   interface{}
+	Rest   any
 }
 
 // SetError sets error.
@@ -80,40 +80,40 @@ func (r *RPCResult) BizError() error {
 }
 
 // SetResult sets invoker result.
-func (r *RPCResult) SetResult(rest interface{}) {
+func (r *RPCResult) SetResult(rest any) {
 	r.Rest = rest
 }
 
 // Result gets invoker result.
-func (r *RPCResult) Result() interface{} {
+func (r *RPCResult) Result() any {
 	return r.Rest
 }
 
 // SetAttachments replaces the existing attachments with the specified param.
-func (r *RPCResult) SetAttachments(attr map[string]interface{}) {
+func (r *RPCResult) SetAttachments(attr map[string]any) {
 	r.Attrs = attr
 }
 
 // Attachments gets all attachments
-func (r *RPCResult) Attachments() map[string]interface{} {
+func (r *RPCResult) Attachments() map[string]any {
 	if r.Attrs == nil {
-		r.Attrs = make(map[string]interface{})
+		r.Attrs = make(map[string]any)
 	}
 	return r.Attrs
 }
 
 // AddAttachment adds the specified map to existing attachments in this instance.
-func (r *RPCResult) AddAttachment(key string, value interface{}) {
+func (r *RPCResult) AddAttachment(key string, value any) {
 	if r.Attrs == nil {
-		r.Attrs = make(map[string]interface{})
+		r.Attrs = make(map[string]any)
 	}
 	r.Attrs[key] = value
 }
 
 // Attachment gets attachment by key with default value.
-func (r *RPCResult) Attachment(key string, defaultValue interface{}) interface{} {
+func (r *RPCResult) Attachment(key string, defaultValue any) any {
 	if r.Attrs == nil {
-		r.Attrs = make(map[string]interface{})
+		r.Attrs = make(map[string]any)
 		return nil
 	}
 	v, ok := r.Attrs[key]

@@ -103,43 +103,43 @@ func NewDefault() *Logger {
 	return &Logger{lg: lg}
 }
 
-func (l *Logger) Debug(args ...interface{}) {
+func (l *Logger) Debug(args ...any) {
 	l.lg.Debug(args)
 }
 
-func (l *Logger) Debugf(template string, args ...interface{}) {
+func (l *Logger) Debugf(template string, args ...any) {
 	l.lg.Debugf(template, args...)
 }
 
-func (l *Logger) Info(args ...interface{}) {
+func (l *Logger) Info(args ...any) {
 	l.lg.Info(args)
 }
 
-func (l *Logger) Infof(template string, args ...interface{}) {
+func (l *Logger) Infof(template string, args ...any) {
 	l.lg.Infof(template, args...)
 }
 
-func (l *Logger) Warn(args ...interface{}) {
+func (l *Logger) Warn(args ...any) {
 	l.lg.Warn(args)
 }
 
-func (l *Logger) Warnf(template string, args ...interface{}) {
+func (l *Logger) Warnf(template string, args ...any) {
 	l.lg.Warnf(template, args...)
 }
 
-func (l *Logger) Error(args ...interface{}) {
+func (l *Logger) Error(args ...any) {
 	l.lg.Error(args)
 }
 
-func (l *Logger) Errorf(template string, args ...interface{}) {
+func (l *Logger) Errorf(template string, args ...any) {
 	l.lg.Errorf(template, args...)
 }
 
-func (l *Logger) Fatal(args ...interface{}) {
+func (l *Logger) Fatal(args ...any) {
 	l.lg.Fatal(args)
 }
 
-func (l *Logger) Fatalf(fmt string, args ...interface{}) {
+func (l *Logger) Fatalf(fmt string, args ...any) {
 	l.lg.Fatalf(fmt, args...)
 }
 

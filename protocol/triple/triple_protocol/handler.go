@@ -42,7 +42,7 @@ type Handler struct {
 // NewUnaryHandler constructs a [Handler] for a request-response procedure.
 func NewUnaryHandler(
 	procedure string,
-	reqInitFunc func() interface{},
+	reqInitFunc func() any,
 	unary func(context.Context, *Request) (*Response, error),
 	options ...HandlerOption,
 ) *Handler {
@@ -63,7 +63,7 @@ func NewUnaryHandler(
 
 func generateUnaryHandlerFunc(
 	procedure string,
-	reqInitFunc func() interface{},
+	reqInitFunc func() any,
 	unary func(context.Context, *Request) (*Response, error),
 	interceptor Interceptor,
 ) StreamingHandlerFunc {
@@ -179,7 +179,7 @@ func generateClientStreamHandlerFunc(
 // NewServerStreamHandler constructs a [Handler] for a server streaming procedure.
 func NewServerStreamHandler(
 	procedure string,
-	reqInitFunc func() interface{},
+	reqInitFunc func() any,
 	streamFunc func(context.Context, *Request, *ServerStream) error,
 	options ...HandlerOption,
 ) *Handler {
@@ -201,7 +201,7 @@ func NewServerStreamHandler(
 
 func generateServerStreamHandlerFunc(
 	procedure string,
-	reqInitFunc func() interface{},
+	reqInitFunc func() any,
 	streamFunc func(context.Context, *Request, *ServerStream) error,
 	interceptor Interceptor,
 ) StreamingHandlerFunc {

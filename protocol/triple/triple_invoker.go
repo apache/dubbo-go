@@ -165,7 +165,7 @@ func mergeAttachmentToOutgoing(ctx context.Context, inv protocol.Invocation) (co
 
 // parseInvocation retrieves information from invocation.
 // it returns ctx, callType, inRaw, method, error
-func parseInvocation(ctx context.Context, url *common.URL, invocation protocol.Invocation) (string, []interface{}, string, error) {
+func parseInvocation(ctx context.Context, url *common.URL, invocation protocol.Invocation) (string, []any, string, error) {
 	callTypeRaw, ok := invocation.GetAttribute(constant.CallTypeKey)
 	if !ok {
 		return "", nil, "", errors.New("miss CallType in invocation to invoke TripleInvoker")
@@ -193,7 +193,7 @@ func parseAttachments(ctx context.Context, url *common.URL, invocation protocol.
 	// retrieve users passed-in attachment
 	attaRaw := ctx.Value(constant.AttachmentKey)
 	if attaRaw != nil {
-		if userAtta, ok := attaRaw.(map[string]interface{}); ok {
+		if userAtta, ok := attaRaw.(map[string]any); ok {
 			for key, val := range userAtta {
 				invocation.SetAttachment(key, val)
 			}

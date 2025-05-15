@@ -19,6 +19,7 @@ package triple_protocol
 
 import (
 	"context"
+	"crypto/tls"
 	"net/http"
 	"sync"
 )
@@ -30,6 +31,10 @@ import (
 	"golang.org/x/net/http2/h2c"
 )
 
+import (
+	"github.com/dubbogo/gost/log/logger"
+)
+
 type Server struct {
 	mu       sync.Mutex
 	mux      *http.ServeMux
@@ -39,7 +44,7 @@ type Server struct {
 
 func (s *Server) RegisterUnaryHandler(
 	procedure string,
-	reqInitFunc func() interface{},
+	reqInitFunc func() any,
 	unary func(context.Context, *Request) (*Response, error),
 	options ...HandlerOption,
 ) error {
@@ -78,7 +83,7 @@ func (s *Server) RegisterClientStreamHandler(
 
 func (s *Server) RegisterServerStreamHandler(
 	procedure string,
-	reqInitFunc func() interface{},
+	reqInitFunc func() any,
 	stream func(context.Context, *Request, *ServerStream) error,
 	options ...HandlerOption,
 ) error {
@@ -118,7 +123,7 @@ func (s *Server) RegisterBidiStreamHandler(
 func (s *Server) RegisterCompatUnaryHandler(
 	procedure string,
 	method string,
-	srv interface{},
+	srv any,
 	unary MethodHandler,
 	options ...HandlerOption,
 ) error {
@@ -138,9 +143,9 @@ func (s *Server) RegisterCompatUnaryHandler(
 
 func (s *Server) RegisterCompatStreamHandler(
 	procedure string,
-	srv interface{},
+	srv any,
 	typ StreamType,
-	streamFunc func(srv interface{}, stream grpc.ServerStream) error,
+	streamFunc func(srv any, stream grpc.ServerStream) error,
 	options ...HandlerOption,
 ) error {
 	hdl, ok := s.handlers[procedure]
@@ -157,14 +162,30 @@ func (s *Server) RegisterCompatStreamHandler(
 	return nil
 }
 
-func (s *Server) Run() error {
-	// todo(DMwangnima): deal with TLS
-	s.httpSrv.Handler = h2c.NewHandler(s.mux, &http2.Server{})
-
-	if err := s.httpSrv.ListenAndServe(); err != nil {
-		return err
+func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	handler, pattern := s.mux.Handler(r)
+	if pattern == "" {
+		logger.Warnf("404: didn't register this method - %s\n", r.URL.Path)
 	}
-	return nil
+
+	handler.ServeHTTP(w, r)
+}
+
+func (s *Server) Run() error {
+	s.httpSrv.Handler = h2c.NewHandler(s, &http2.Server{})
+
+	var err error
+	if s.httpSrv.TLSConfig != nil {
+		// TODO: Maybe we should be able to find a better way to start TLS.
+		err = s.httpSrv.ListenAndServeTLS("", "")
+	} else {
+		err = s.httpSrv.ListenAndServe()
+	}
+	return err
+}
+
+func (s *Server) SetTLSConfig(c *tls.Config) {
+	s.httpSrv.TLSConfig = c
 }
 
 func (s *Server) Stop() error {

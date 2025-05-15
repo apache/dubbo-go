@@ -36,7 +36,7 @@ import (
 
 func TestFilterInvokeIgnored(t *testing.T) {
 	methodName := "hello"
-	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]interface{}))
+	invoc := invocation.NewRPCInvocation(methodName, []any{"OK"}, make(map[string]any))
 
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
@@ -51,7 +51,7 @@ func TestFilterInvokeIgnored(t *testing.T) {
 
 func TestFilterInvokeConfigureError(t *testing.T) {
 	methodName := "hello1"
-	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]interface{}))
+	invoc := invocation.NewRPCInvocation(methodName, []any{"OK"}, make(map[string]any))
 
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
@@ -68,7 +68,7 @@ func TestFilterInvokeConfigureError(t *testing.T) {
 
 func TestFilterInvoke(t *testing.T) {
 	methodName := "hello1"
-	invoc := invocation.NewRPCInvocation(methodName, []interface{}{"OK"}, make(map[string]interface{}))
+	invoc := invocation.NewRPCInvocation(methodName, []any{"OK"}, make(map[string]any))
 
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),

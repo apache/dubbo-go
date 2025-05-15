@@ -83,7 +83,7 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	logger.Infof("[Triple Protocol] Export service: %s", url.String())
 
 	key := url.GetParam(constant.BeanNameKey, "")
-	var service interface{}
+	var service any
 	service = config.GetProviderService(key)
 
 	serializationType := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
@@ -182,21 +182,21 @@ func (d *UnaryService) setReqParamsTypes(methodName string, typ []reflect.Type) 
 	d.reqTypeMap.Store(methodName, typ)
 }
 
-func (d *UnaryService) GetReqParamsInterfaces(methodName string) ([]interface{}, bool) {
+func (d *UnaryService) GetReqParamsInterfaces(methodName string) ([]any, bool) {
 	val, ok := d.reqTypeMap.Load(methodName)
 	if !ok {
 		return nil, false
 	}
 	typs := val.([]reflect.Type)
-	reqParamsInterfaces := make([]interface{}, 0, len(typs))
+	reqParamsInterfaces := make([]any, 0, len(typs))
 	for _, typ := range typs {
 		reqParamsInterfaces = append(reqParamsInterfaces, reflect.New(typ).Interface())
 	}
 	return reqParamsInterfaces, true
 }
 
-func (d *UnaryService) InvokeWithArgs(ctx context.Context, methodName string, arguments []interface{}) (interface{}, error) {
-	dubboAttachment := make(map[string]interface{})
+func (d *UnaryService) InvokeWithArgs(ctx context.Context, methodName string, arguments []any) (any, error) {
+	dubboAttachment := make(map[string]any)
 	md, ok := metadata.FromIncomingContext(ctx)
 	if ok {
 		for k := range md {

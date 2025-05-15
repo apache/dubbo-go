@@ -61,7 +61,7 @@ func TestSign(t *testing.T) {
 func TestSignWithParams(t *testing.T) {
 	metadata := "com.ikurento.user.UserProvider::sayHi"
 	key := "key"
-	params := []interface{}{
+	params := []any{
 		"a", 1, struct {
 			Name string
 			ID   int64
@@ -81,13 +81,13 @@ func Test_doSign(t *testing.T) {
 }
 
 func Test_toBytes(t *testing.T) {
-	params := []interface{}{
+	params := []any{
 		"a", 1, struct {
 			Name string
 			ID   int64
 		}{"YuYu", 1},
 	}
-	params2 := []interface{}{
+	params2 := []any{
 		"a", 1, struct {
 			Name string
 			ID   int64

@@ -66,7 +66,7 @@ func (m *MockRejectedExecutionHandler) RejectedExecution(url *common.URL, invoca
 }
 
 // RejectedExecution indicates an expected call of RejectedExecution
-func (mr *MockRejectedExecutionHandlerMockRecorder) RejectedExecution(url, invocation interface{}) *gomock.Call {
+func (mr *MockRejectedExecutionHandlerMockRecorder) RejectedExecution(url, invocation any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RejectedExecution", reflect.TypeOf((*MockRejectedExecutionHandler)(nil).RejectedExecution), url, invocation)
 }

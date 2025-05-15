@@ -1,6 +1,6 @@
 module dubbo.apache.org/dubbo-go/v3
 
-go 1.20
+go 1.23
 
 require (
 	github.com/RoaringBitmap/roaring v1.2.3
@@ -9,9 +9,6 @@ require (
 	github.com/alibaba/sentinel-golang v1.0.4
 	github.com/apache/dubbo-getty v1.4.10
 	github.com/apache/dubbo-go-hessian2 v1.12.5
-	github.com/cespare/xxhash/v2 v2.2.0
-	github.com/cncf/udpa/go v0.0.0-20210930031921-04548b0d99d4
-	github.com/cncf/xds/go v0.0.0-20220314180256-7f1daf1720fc
 	github.com/creasty/defaults v1.5.2
 	github.com/dop251/goja v0.0.0-20240220182346-e401ed450204
 	github.com/dop251/goja_nodejs v0.0.0-20211022123610-8dd9abb0616d
@@ -21,7 +18,6 @@ require (
 	github.com/dubbogo/triple v1.2.2-rc4
 	github.com/dustin/go-humanize v1.0.1
 	github.com/emicklei/go-restful/v3 v3.10.1
-	github.com/envoyproxy/go-control-plane v0.11.0
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/go-playground/validator/v10 v10.12.0
 	github.com/go-resty/resty/v2 v2.7.0
@@ -64,7 +60,6 @@ require (
 	go.uber.org/atomic v1.10.0
 	go.uber.org/zap v1.21.0
 	golang.org/x/net v0.23.0
-	google.golang.org/genproto v0.0.0-20221227171554-f9683d7f8bef
 	google.golang.org/grpc v1.52.0
 	google.golang.org/protobuf v1.30.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
@@ -72,19 +67,16 @@ require (
 )
 
 require (
-	cloud.google.com/go/compute v1.14.0 // indirect
-	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.1704 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.2.0 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
-	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
+	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/coreos/go-semver v0.3.0 // indirect
 	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dlclark/regexp2 v1.7.0 // indirect
-	github.com/envoyproxy/protoc-gen-validate v0.10.0 // indirect
 	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
@@ -135,12 +127,11 @@ require (
 	go.opentelemetry.io/proto/otlp v0.19.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/crypto v0.21.0 // indirect
-	golang.org/x/oauth2 v0.6.0 // indirect
 	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.0.0-20220722155302-e5dcc9cfc0b9 // indirect
-	google.golang.org/appengine v1.6.7 // indirect
+	google.golang.org/genproto v0.0.0-20221227171554-f9683d7f8bef // indirect
 	gopkg.in/ini.v1 v1.66.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

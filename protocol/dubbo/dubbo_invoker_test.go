@@ -54,8 +54,8 @@ package dubbo
 //	invoker := NewDubboInvoker(url, c)
 //	user := &User{}
 //
-//	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUser"), invocation.WithArguments([]interface{}{"1", "username"}),
-//		invocation.WithReply(user), invocation.WithAttachments(map[string]interface{}{"test_key": "test_value"}))
+//	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUser"), invocation.WithArguments([]any{"1", "username"}),
+//		invocation.WithReply(user), invocation.WithAttachments(map[string]any{"test_key": "test_value"}))
 //
 //	// Call
 //	res := invoker.Invoke(context.Background(), inv)
@@ -173,7 +173,7 @@ package dubbo
 //)
 //
 //// size:4801228
-//func (u *UserProvider) GetBigPkg(ctx context.Context, req []interface{}, rsp *User) error {
+//func (u *UserProvider) GetBigPkg(ctx context.Context, req []any, rsp *User) error {
 //	argBuf := new(bytes.Buffer)
 //	for i := 0; i < 800; i++ {
 //		// use chinese for test
@@ -184,7 +184,7 @@ package dubbo
 //	return nil
 //}
 //
-//func (u *UserProvider) GetUser(ctx context.Context, req []interface{}, rsp *User) error {
+//func (u *UserProvider) GetUser(ctx context.Context, req []any, rsp *User) error {
 //	rsp.ID = req[0].(string)
 //	rsp.Name = req[1].(string)
 //	return nil
@@ -202,17 +202,17 @@ package dubbo
 //	return perrors.New("error")
 //}
 //
-//func (u *UserProvider) GetUser3(rsp *[]interface{}) error {
+//func (u *UserProvider) GetUser3(rsp *[]any) error {
 //	*rsp = append(*rsp, User{ID: "1", Name: "username"})
 //	return nil
 //}
 //
-//func (u *UserProvider) GetUser4(ctx context.Context, req []interface{}) ([]interface{}, error) {
-//	return []interface{}{User{ID: req[0].([]interface{})[0].(string), Name: req[0].([]interface{})[1].(string)}}, nil
+//func (u *UserProvider) GetUser4(ctx context.Context, req []any) ([]any, error) {
+//	return []any{User{ID: req[0].([]any)[0].(string), Name: req[0].([]any)[1].(string)}}, nil
 //}
 //
-//func (u *UserProvider) GetUser5(ctx context.Context, req []interface{}) (map[interface{}]interface{}, error) {
-//	return map[interface{}]interface{}{"key": User{ID: req[0].(map[interface{}]interface{})["id"].(string), Name: req[0].(map[interface{}]interface{})["name"].(string)}}, nil
+//func (u *UserProvider) GetUser5(ctx context.Context, req []any) (map[any]any, error) {
+//	return map[any]any{"key": User{ID: req[0].(map[any]any)["id"].(string), Name: req[0].(map[any]any)["name"].(string)}}, nil
 //}
 //
 //func (u *UserProvider) GetUser6(id int64) (*User, error) {

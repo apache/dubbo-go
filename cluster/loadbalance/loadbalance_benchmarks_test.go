@@ -30,7 +30,6 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/leastactive"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/p2c"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/random"
-	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/ringhash"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/roundrobin"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"

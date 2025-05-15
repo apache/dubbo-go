@@ -93,7 +93,7 @@ func (m *MockInvoker) Invoke(arg0 context.Context, arg1 protocol.Invocation) pro
 }
 
 // Invoke indicates an expected call of Invoke.
-func (mr *MockInvokerMockRecorder) Invoke(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockInvokerMockRecorder) Invoke(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Invoke", reflect.TypeOf((*MockInvoker)(nil).Invoke), arg0, arg1)
 }

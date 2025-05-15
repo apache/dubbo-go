@@ -143,6 +143,7 @@ func newMockNacosServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, e
 		namingClient:        client,
 		descriptor:          descriptor,
 		registryInstances:   []registry.ServiceInstance{},
+		registryURL:         url,
 		instanceListenerMap: make(map[string]*gxset.HashSet),
 	}
 	return newInstance, nil
@@ -161,7 +162,7 @@ func (tn *testNotify) Notify(e *registry.ServiceEvent) {
 func (tn *testNotify) NotifyAll([]*registry.ServiceEvent, func()) {}
 
 type mockClient struct {
-	instance []interface{}
+	instance []any
 }
 
 func (c mockClient) RegisterInstance(param vo.RegisterInstanceParam) (bool, error) {

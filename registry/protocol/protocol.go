@@ -79,23 +79,20 @@ func newRegistryProtocol() *registryProtocol {
 }
 
 func (proto *registryProtocol) getRegistry(registryUrl *common.URL) registry.Registry {
-	var err error
-
 	namespace := registryUrl.GetParam(constant.RegistryNamespaceKey, "")
 	cacheKey := registryUrl.PrimitiveURL
 	if namespace != "" {
 		cacheKey = cacheKey + "?" + constant.NacosNamespaceID + "=" + namespace
 	}
-	reg, loaded := proto.registries.Load(cacheKey)
-	if !loaded {
-		reg, err = extension.GetRegistry(registryUrl.Protocol, registryUrl)
+	actualReg, _ := proto.registries.LoadOrStore(cacheKey, func() any {
+		reg, err := extension.GetRegistry(registryUrl.Protocol, registryUrl)
 		if err != nil {
-			logger.Errorf("Registry can not connect success, program is going to panic.Error message is %s", err.Error())
+			logger.Errorf("Registry cannot connect successfully. Error: %s", err.Error())
 			panic(err)
 		}
-		proto.registries.Store(cacheKey, reg)
-	}
-	return reg.(registry.Registry)
+		return reg
+	}())
+	return actualReg.(registry.Registry)
 }
 
 func getCacheKey(invoker protocol.Invoker) string {
@@ -133,7 +130,7 @@ func (proto *registryProtocol) initConfigurationListeners() {
 // nolint
 func (proto *registryProtocol) GetRegistries() []registry.Registry {
 	var rs []registry.Registry
-	proto.registries.Range(func(_, v interface{}) bool {
+	proto.registries.Range(func(_, v any) bool {
 		if r, ok := v.(registry.Registry); ok {
 			rs = append(rs, r)
 		}
@@ -406,7 +403,7 @@ func getSubscribedOverrideUrl(providerUrl *common.URL) *common.URL {
 
 // Destroy registry protocol
 func (proto *registryProtocol) Destroy() {
-	proto.bounds.Range(func(key, value interface{}) bool {
+	proto.bounds.Range(func(key, value any) bool {
 		// protocol holds the exporters actually, instead, registry holds them in order to avoid export repeatedly, so
 		// the work for unexport should be finished in protocol.UnExport(), see also config.destroyProviderProtocols().
 		exporter := value.(*exporterChangeableWrapper)
@@ -428,7 +425,7 @@ func (proto *registryProtocol) Destroy() {
 		return true
 	})
 
-	proto.registries.Range(func(key, value interface{}) bool {
+	proto.registries.Range(func(key, value any) bool {
 		proto.registries.Delete(key)
 		return true
 	})
@@ -529,7 +526,7 @@ func newProviderConfigurationListener(overrideListeners *sync.Map) *providerConf
 // Process notified once there's any change happens on the provider config
 func (listener *providerConfigurationListener) Process(event *config_center.ConfigChangeEvent) {
 	listener.BaseConfigurationListener.Process(event)
-	listener.overrideListeners.Range(func(key, value interface{}) bool {
+	listener.overrideListeners.Range(func(key, value any) bool {
 		value.(*overrideSubscribeListener).doOverrideIfNecessary()
 		return true
 	})

@@ -153,7 +153,7 @@ func (d *DynamicRouter) Process(event *config_center.ConfigChangeEvent) {
 
 /*
 to check configVersion, here need decode twice.
-From a performance perspective, decoding from a string and decoding from a map[string]interface{}
+From a performance perspective, decoding from a string and decoding from a map[string]any
 cost nearly same (a few milliseconds).
 
 To keep the code simpler,
@@ -162,7 +162,7 @@ here use yaml-to-map and yaml-to-struct, not yaml-to-map-to-struct
 generateCondition @return(router,force,enable,error)
 */
 func generateCondition(rawConfig string) (condRouter, bool, bool, error) {
-	m := map[string]interface{}{}
+	m := map[string]any{}
 
 	err := yaml.Unmarshal([]byte(rawConfig), m)
 	if err != nil {

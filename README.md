@@ -84,10 +84,11 @@ See the [samples](https://github.com/apache/dubbo-go-samples) for detailed infor
 - **HA Strategy**: Failover, Failfast, Failsafe/Failback, Available, Broadcast, Forking
 
 ## Ecosystem
-- [Console](https://github.com/apache/dubbo-kubernetes), under development
-- [Samples](https://github.com/apache/dubbo-go-samples)
+- [dubbo-go-samples](https://github.com/apache/dubbo-go-samples)
+- [dubbo-go-pixiu which acting as a proxy to solve Dubbo multi-language interoperability](https://github.com/apache/dubbo-go-pixiu)
 - [Interoperability with Dubbo Java](https://dubbo-next.staged.apache.org/zh-cn/overview/mannual/golang-sdk/tutorial/interop-dubbo/)
 - [Protoc-gen-go-triple](https://github.com/dubbogo/protoc-gen-go-triple/)
+- [Console](https://github.com/apache/dubbo-kubernetes), under development
 
 ## Contributing
 
@@ -95,7 +96,11 @@ Please visit [CONTRIBUTING](./CONTRIBUTING.md) for details on submitting patches
 
 ## Contact
 
-- [DingTalk Group](https://www.dingtalk.com/en): 23331795
+Join our discussion group through Ding talk, WeChat, or Discord.
+
+discord https://discord.gg/C5ywvytg
+![invite.png](./doc/imgs/invite.png)
+
 
 ## [User List](https://github.com/apache/dubbo-go/issues/2)
 

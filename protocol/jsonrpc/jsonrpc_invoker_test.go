@@ -60,7 +60,7 @@ package jsonrpc
 //
 //	jsonInvoker := NewJsonrpcInvoker(url, client)
 //	user := &User{}
-//	res := jsonInvoker.Invoke(context.Background(), invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUser"), invocation.WithArguments([]interface{}{"1", "username"}),
+//	res := jsonInvoker.Invoke(context.Background(), invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUser"), invocation.WithArguments([]any{"1", "username"}),
 //		invocation.WithReply(user)))
 //
 //	assert.NoError(t, res.Error())

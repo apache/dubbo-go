@@ -98,6 +98,6 @@ func (t *TimeWindowAggregator) Add(v float64) {
 	t.window.currentPane(time.Now().UnixMilli(), t.newEmptyValue).value.(*Result).Update(v)
 }
 
-func (t *TimeWindowAggregator) newEmptyValue() interface{} {
+func (t *TimeWindowAggregator) newEmptyValue() any {
 	return NewResult()
 }

@@ -80,7 +80,7 @@ func TestPackRequest(t *testing.T) {
 		SerialID: 0,
 		Type:     PackageRequest,
 		ID:       123,
-	}, []interface{}{1, 2})
+	}, []any{1, 2})
 
 	assert.Nil(t, err)
 
@@ -91,7 +91,7 @@ func TestPackRequest(t *testing.T) {
 
 func TestGetArgsTypeList(t *testing.T) {
 	type Test struct{}
-	str, err := getArgsTypeList([]interface{}{nil, 1, []int{2}, true, []bool{false}, "a", []string{"b"}, Test{}, &Test{}, []Test{}, map[string]Test{}, TestEnumGender(MAN)})
+	str, err := getArgsTypeList([]any{nil, 1, []int{2}, true, []bool{false}, "a", []string{"b"}, Test{}, &Test{}, []Test{}, map[string]Test{}, TestEnumGender(MAN)})
 	assert.NoError(t, err)
 	assert.Equal(t, "VJ[JZ[ZLjava/lang/String;[Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Object;[Ljava/lang/Object;Ljava/util/Map;Lcom/ikurento/test/TestEnumGender;", str)
 }
@@ -126,23 +126,23 @@ func TestDescRegex(t *testing.T) {
 
 func TestIssue192(t *testing.T) {
 	type args struct {
-		origin map[interface{}]interface{}
+		origin map[any]any
 	}
 	tests := []struct {
 		name string
 		args args
-		want map[string]interface{}
+		want map[string]any
 	}{
 		{
 			name: "not null",
 			args: args{
-				origin: map[interface{}]interface{}{
+				origin: map[any]any{
 					"1": nil,
 					"2": "3",
 					"":  "",
 				},
 			},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"1": "",
 				"2": "3",
 				"":  "",

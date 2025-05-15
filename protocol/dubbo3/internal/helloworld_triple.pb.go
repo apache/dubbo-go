@@ -124,13 +124,13 @@ type Dubbo3GrpcService interface {
 	XXX_ServiceDesc() *grpc.ServiceDesc
 }
 
-func _Greeter_SayHello_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Greeter_SayHello_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(HelloRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	base := srv.(Dubbo3GrpcService)
-	args := []interface{}{}
+	args := []any{}
 	args = append(args, in)
 	invo := invocation.NewRPCInvocation("SayHello", args, nil)
 	if interceptor == nil {
@@ -141,7 +141,7 @@ func _Greeter_SayHello_Handler(srv interface{}, ctx context.Context, dec func(in
 		Server:     srv,
 		FullMethod: "/internal.Greeter/SayHello",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(GreeterServer).SayHello(ctx, req.(*HelloRequest))
 	}
 	return interceptor(ctx, in, info, handler)

@@ -82,11 +82,11 @@ type StreamingHandlerConn interface {
 	Spec() Spec
 	Peer() Peer
 
-	Receive(interface{}) error
+	Receive(any) error
 	RequestHeader() http.Header
 	ExportableHeader() http.Header
 
-	Send(interface{}) error
+	Send(any) error
 	ResponseHeader() http.Header
 	ResponseTrailer() http.Header
 }
@@ -121,13 +121,13 @@ type StreamingClientConn interface {
 
 	// Send, RequestHeader, and CloseRequest may race with each other, but must
 	// be safe to call concurrently with all other methods.
-	Send(interface{}) error
+	Send(any) error
 	RequestHeader() http.Header
 	CloseRequest() error
 
 	// Receive, ResponseHeader, ResponseTrailer, and CloseResponse may race with
 	// each other, but must be safe to call concurrently with all other methods.
-	Receive(interface{}) error
+	Receive(any) error
 	ResponseHeader() http.Header
 	ResponseTrailer() http.Header
 	CloseResponse() error
@@ -137,7 +137,7 @@ type StreamingClientConn interface {
 // access to metadata like headers and the RPC specification, as well as
 // strongly-typed access to the message itself.
 type Request struct {
-	Msg interface{}
+	Msg any
 
 	spec   Spec
 	peer   Peer
@@ -145,7 +145,7 @@ type Request struct {
 }
 
 // NewRequest wraps a generated request message.
-func NewRequest(message interface{}) *Request {
+func NewRequest(message any) *Request {
 	return &Request{
 		Msg: message,
 		// Initialized lazily so we don't allocate unnecessarily.
@@ -155,7 +155,7 @@ func NewRequest(message interface{}) *Request {
 
 // Any returns the concrete request message as an empty interface, so that
 // *Request implements the [AnyRequest] interface.
-func (r *Request) Any() interface{} {
+func (r *Request) Any() any {
 	return r.Msg
 }
 
@@ -193,7 +193,7 @@ func (r *Request) internalOnly() {}
 // backward compatibility, only types defined in this package can implement
 // AnyRequest.
 type AnyRequest interface {
-	Any() interface{}
+	Any() any
 	Spec() Spec
 	Peer() Peer
 	Header() http.Header
@@ -205,14 +205,14 @@ type AnyRequest interface {
 // access to metadata like headers and trailers, as well as strongly-typed
 // access to the message itself.
 type Response struct {
-	Msg interface{}
+	Msg any
 
 	header  http.Header
 	trailer http.Header
 }
 
 // NewResponse wraps a generated response message.
-func NewResponse(message interface{}) *Response {
+func NewResponse(message any) *Response {
 	return &Response{
 		Msg: message,
 		// Initialized lazily so we don't allocate unnecessarily.
@@ -223,7 +223,7 @@ func NewResponse(message interface{}) *Response {
 
 // Any returns the concrete response message as an empty interface, so that
 // *Response implements the [AnyResponse] interface.
-func (r *Response) Any() interface{} {
+func (r *Response) Any() any {
 	return r.Msg
 }
 
@@ -265,7 +265,7 @@ func (r *Response) internalOnly() {}
 // backward compatibility, only types defined in this package can implement
 // AnyResponse.
 type AnyResponse interface {
-	Any() interface{}
+	Any() any
 	Header() http.Header
 	Trailer() http.Header
 

@@ -117,7 +117,7 @@ func (c *DubboCodec) encodeHeartbeatRequest(request *remoting.Request) (*bytes.B
 	pkg := &impl.DubboPackage{
 		Header:  header,
 		Service: impl.Service{},
-		Body:    impl.NewRequestPayload([]interface{}{}, nil),
+		Body:    impl.NewRequestPayload([]any{}, nil),
 		Err:     nil,
 		Codec:   impl.NewDubboCodec(nil),
 	}
@@ -196,7 +196,7 @@ func (c *DubboCodec) decodeRequest(data []byte) (*remoting.Request, int, error) 
 	var request *remoting.Request
 	buf := bytes.NewBuffer(data)
 	pkg := impl.NewDubboPackage(buf)
-	pkg.SetBody(make([]interface{}, 7))
+	pkg.SetBody(make([]any, 7))
 	err := pkg.Unmarshal()
 	if err != nil {
 		originErr := perrors.Cause(err)
@@ -218,12 +218,12 @@ func (c *DubboCodec) decodeRequest(data []byte) (*remoting.Request, int, error) 
 	}
 	if (pkg.Header.Type & impl.PackageHeartbeat) == 0x00 {
 		// convert params of request
-		req := pkg.Body.(map[string]interface{})
+		req := pkg.Body.(map[string]any)
 
 		// invocation := request.Data.(*invocation.RPCInvocation)
 		var methodName string
-		var args []interface{}
-		attachments := make(map[string]interface{})
+		var args []any
+		attachments := make(map[string]any)
 		if req[impl.DubboVersionKey] != nil {
 			// dubbo version
 			request.Version = req[impl.DubboVersionKey].(string)
@@ -234,8 +234,8 @@ func (c *DubboCodec) decodeRequest(data []byte) (*remoting.Request, int, error) 
 		attachments[constant.VersionKey] = pkg.Service.Version
 		// method
 		methodName = pkg.Service.Method
-		args = req[impl.ArgsKey].([]interface{})
-		attachments = req[impl.AttachmentsKey].(map[string]interface{})
+		args = req[impl.ArgsKey].([]any)
+		attachments = req[impl.AttachmentsKey].(map[string]any)
 		invoc := invct.NewRPCInvocationWithOptions(invct.WithAttachments(attachments),
 			invct.WithArguments(args), invct.WithMethodName(methodName))
 		request.Data = invoc

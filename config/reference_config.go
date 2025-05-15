@@ -166,7 +166,7 @@ func updateOrCreateMeshURL(rc *ReferenceConfig) {
 }
 
 // Refer retrieves invokers from urls.
-func (rc *ReferenceConfig) Refer(srv interface{}) {
+func (rc *ReferenceConfig) Refer(srv any) {
 	// If adaptive service is enabled,
 	// the cluster and load balance should be overridden to "adaptivesvc" and "p2c" respectively.
 	if rc.rootConfig.Consumer.AdaptiveService {

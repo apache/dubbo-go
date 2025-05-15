@@ -25,12 +25,12 @@ import (
 func Test_metadataSupplier_Keys(t *testing.T) {
 	tests := []struct {
 		name     string
-		metadata map[string]interface{}
+		metadata map[string]any
 		want     []string
 	}{
 		{
 			name: "test",
-			metadata: map[string]interface{}{
+			metadata: map[string]any{
 				"key1": nil,
 			},
 			want: []string{"key1"},
@@ -51,7 +51,7 @@ func Test_metadataSupplier_Keys(t *testing.T) {
 func Test_metadataSupplier_Set(t *testing.T) {
 	tests := []struct {
 		name     string
-		metadata map[string]interface{}
+		metadata map[string]any
 		key      string
 		value    string
 	}{
@@ -75,7 +75,7 @@ func Test_metadataSupplier_Set(t *testing.T) {
 func Test_metadataSupplier_Get(t *testing.T) {
 	tests := []struct {
 		name     string
-		metadata map[string]interface{}
+		metadata map[string]any
 		key      string
 		want     string
 	}{
@@ -87,7 +87,7 @@ func Test_metadataSupplier_Get(t *testing.T) {
 		},
 		{
 			name: "not exist",
-			metadata: map[string]interface{}{
+			metadata: map[string]any{
 				"k": nil,
 			},
 			key:  "key",
@@ -95,7 +95,7 @@ func Test_metadataSupplier_Get(t *testing.T) {
 		},
 		{
 			name: "nil slice",
-			metadata: map[string]interface{}{
+			metadata: map[string]any{
 				"key": nil,
 			},
 			key:  "key",
@@ -103,7 +103,7 @@ func Test_metadataSupplier_Get(t *testing.T) {
 		},
 		{
 			name: "empty slice",
-			metadata: map[string]interface{}{
+			metadata: map[string]any{
 				"key": []string{},
 			},
 			key:  "key",
@@ -111,7 +111,7 @@ func Test_metadataSupplier_Get(t *testing.T) {
 		},
 		{
 			name: "test",
-			metadata: map[string]interface{}{
+			metadata: map[string]any{
 				"key": []string{"test"},
 			},
 			key:  "key",
