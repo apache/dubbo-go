@@ -150,7 +150,7 @@ func (c *protoJSONCodec) Marshal(message any) ([]byte, error) {
 	if !ok {
 		return nil, errNotProto(message)
 	}
-	var options protojson.MarshalOptions = protojson.MarshalOptions{
+	var options = protojson.MarshalOptions{
 		UseProtoNames: true,
 	}
 	return options.Marshal(protoMessage)
@@ -356,7 +356,7 @@ func getArgType(v any) string {
 		return "V"
 	}
 
-	switch v.(type) {
+	switch v := v.(type) {
 	// Serialized tags for base types
 	case nil:
 		return "V"
@@ -414,7 +414,7 @@ func getArgType(v any) string {
 		// return  "java.util.HashMap"
 		return "java.util.Map"
 	case hessian.POJOEnum:
-		return v.(hessian.POJOEnum).JavaClassName()
+		return v.JavaClassName()
 	//  Serialized tags for complex types
 	default:
 		t := reflect.TypeOf(v)

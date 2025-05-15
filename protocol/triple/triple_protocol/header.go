@@ -102,11 +102,11 @@ func newIncomingContext(ctx context.Context, data http.Header) context.Context {
 	if !ok {
 		extraData = map[string]http.Header{}
 	}
-	if data != nil {
-		for key, vals := range data {
-			header[strings.ToLower(key)] = vals
-		}
+
+	for key, vals := range data {
+		header[strings.ToLower(key)] = vals
 	}
+
 	extraData[headerIncomingKey] = header
 	return context.WithValue(ctx, extraDataKey{}, extraData)
 }
@@ -117,11 +117,11 @@ func newIncomingContext(ctx context.Context, data http.Header) context.Context {
 // Please refer to https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md#sending-metadata.
 func NewOutgoingContext(ctx context.Context, data http.Header) context.Context {
 	var header = http.Header{}
-	if data != nil {
-		for key, vals := range data {
-			header[strings.ToLower(key)] = vals
-		}
+
+	for key, vals := range data {
+		header[strings.ToLower(key)] = vals
 	}
+
 	extraData, ok := ctx.Value(extraDataKey{}).(map[string]http.Header)
 	if !ok {
 		extraData = map[string]http.Header{}

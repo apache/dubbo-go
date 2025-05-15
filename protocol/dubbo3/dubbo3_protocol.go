@@ -152,7 +152,7 @@ func (dp *DubboProtocol) Destroy() {
 	dp.serverLock.Lock()
 	defer dp.serverLock.Unlock()
 	// Stop all server
-	for k, _ := range dp.serverMap {
+	for k := range dp.serverMap {
 		keyList = append(keyList, k)
 	}
 	for _, v := range keyList {

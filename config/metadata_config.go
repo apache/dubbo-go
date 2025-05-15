@@ -143,7 +143,7 @@ func (mc *MetadataReportConfig) Init(rc *RootConfig) error {
 		}
 		return opts.Init()
 	}
-	if rc.Registries != nil && len(rc.Registries) > 0 {
+	if len(rc.Registries) > 0 {
 		// if metadata report config is not available, then init metadata report instance with registries
 		for id, reg := range rc.Registries {
 			if isValid(reg.Address) {

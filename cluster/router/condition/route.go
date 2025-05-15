@@ -42,7 +42,7 @@ import (
 )
 
 var (
-	routePattern     = regexp.MustCompile("([&!=,]*)\\s*([^&!=,\\s]+)")
+	routePattern     = regexp.MustCompile(`([&!=,]*)\s*([^&!=,\s]+)`)
 	illegalMsg       = "Illegal route rule \"%s\", The error char '%s' before '%s'"
 	matcherFactories = make([]matcher.ConditionMatcherFactory, 0, 8)
 	once             sync.Once
@@ -118,8 +118,8 @@ func generateMatcher(url *common.URL) (when, then map[string]matcher.Matcher, er
 	if rule == "" || len(strings.Trim(rule, " ")) == 0 {
 		return nil, nil, errors.Errorf("Illegal route rule!")
 	}
-	rule = strings.Replace(rule, "consumer.", "", -1)
-	rule = strings.Replace(rule, "provider.", "", -1)
+	rule = strings.ReplaceAll(rule, "consumer.", "")
+	rule = strings.ReplaceAll(rule, "provider.", "")
 	i := strings.Index(rule, "=>")
 	// for the case of `{when rule} => {then rule}`
 	var whenRule string
@@ -444,7 +444,7 @@ func NewConditionMultiDestRouter(url *common.URL) (*MultiDestRouter, error) {
 		return nil, errors.Errorf("Condition Router get the rule key invaild , got %T", rawCondConf)
 	}
 	// ensure config effective
-	if (condConf.To == nil || len(condConf.To) == 0) && condConf.From.Match == "" {
+	if (len(condConf.To) == 0) && condConf.From.Match == "" {
 		return nil, nil
 	}
 

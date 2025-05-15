@@ -587,11 +587,11 @@ func TestRunScriptInPanic(t *testing.T) {
 			defer func(err *error) {
 				panicReason := recover()
 				if panicReason != nil {
-					switch panicReason.(type) {
+					switch panicReason := panicReason.(type) {
 					case string:
-						*err = fmt.Errorf("panic: %s", panicReason.(string))
+						*err = fmt.Errorf("panic: %s", panicReason)
 					case error:
-						*err = panicReason.(error)
+						*err = panicReason
 					default:
 						*err = fmt.Errorf("panic occurred: failed to retrieve panic information. Expected string or error, got %T", panicReason)
 					}

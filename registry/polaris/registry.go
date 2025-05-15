@@ -236,7 +236,6 @@ func (pr *polarisRegistry) Destroy() {
 			logger.Errorf("Deregister Polaris URL:%+v err:%v", url, err.Error())
 		}
 	}
-	return
 }
 
 // IsAvailable always return true when use polaris

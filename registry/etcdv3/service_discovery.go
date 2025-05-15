@@ -288,8 +288,8 @@ func (e *etcdV3ServiceDiscovery) DataChange(eventType remoting.Event) bool {
 		name := instance.ServiceName
 		instances := e.GetInstances(name)
 		for _, lis := range e.instanceListenerMap[instance.ServiceName].Values() {
-			var instanceLis registry.ServiceInstancesChangedListener
-			instanceLis = lis.(registry.ServiceInstancesChangedListener)
+
+			instanceLis := lis.(registry.ServiceInstancesChangedListener)
 			err = instanceLis.OnEvent(registry.NewServiceInstancesChangedEvent(name, instances))
 		}
 		if err != nil {

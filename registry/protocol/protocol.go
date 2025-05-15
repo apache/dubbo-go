@@ -353,9 +353,9 @@ func isMatched(providerUrl *common.URL, consumerUrl *common.URL) bool {
 	consumerInterface := consumerUrl.GetParam(constant.InterfaceKey, consumerUrl.Path)
 	providerInterface := providerUrl.GetParam(constant.InterfaceKey, providerUrl.Path)
 
-	if !(constant.AnyValue == consumerInterface ||
-		constant.AnyValue == providerInterface ||
-		providerInterface == consumerInterface) {
+	if constant.AnyValue != consumerInterface &&
+		constant.AnyValue != providerInterface &&
+		providerInterface != consumerInterface {
 		return false
 	}
 
@@ -419,11 +419,9 @@ func (proto *registryProtocol) Destroy() {
 		// close all protocol server after consumerUpdateWait + stepTimeout(max time wait during
 		// waitAndAcceptNewRequests procedure)
 		go func() {
-			select {
-			case <-time.After(config.GetShutDown().GetStepTimeout() + config.GetShutDown().GetConsumerUpdateWaitTime()):
-				exporter.UnExport()
-				proto.bounds.Delete(key)
-			}
+			<-time.After(config.GetShutDown().GetStepTimeout() + config.GetShutDown().GetConsumerUpdateWaitTime())
+			exporter.UnExport()
+			proto.bounds.Delete(key)
 		}()
 		return true
 	})
