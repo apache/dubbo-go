@@ -43,11 +43,8 @@ type nacosClientFacade interface {
 // HandleClientRestart Restart configClient handler
 func HandleClientRestart(r nacosClientFacade) {
 	defer r.WaitGroup().Done()
-	for {
-		select {
-		case <-r.GetDone():
-			logger.Warnf("(NacosProviderRegistry)reconnectNacosRegistry goroutine exit now...")
-			return
-		}
+	for range r.GetDone() {
+		logger.Warnf("(NacosProviderRegistry)reconnectNacosRegistry goroutine exit now...")
+		return
 	}
 }

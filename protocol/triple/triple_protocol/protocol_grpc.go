@@ -481,9 +481,7 @@ func (hc *grpcHandlerConn) ExportableHeader() http.Header {
 			continue
 		}
 		cloneVals := make([]string, len(vals))
-		for i, val := range vals {
-			cloneVals[i] = val
-		}
+		copy(cloneVals, vals)
 		res[key] = cloneVals
 	}
 
@@ -641,8 +639,8 @@ type grpcMarshaler struct {
 }
 
 func (m *grpcMarshaler) MarshalWebTrailers(trailer http.Header) *Error {
-	raw := m.envelopeWriter.bufferPool.Get()
-	defer m.envelopeWriter.bufferPool.Put(raw)
+	raw := m.bufferPool.Get()
+	defer m.bufferPool.Put(raw)
 	for key, values := range trailer {
 		// Per the Go specification, keys inserted during iteration may be produced
 		// later in the iteration or may be skipped. For safety, avoid mutating the
@@ -946,7 +944,7 @@ func grpcPercentEncodeSlow(bufferPool *bufferPool, msg string, offset int) strin
 	for i := offset; i < len(msg); i++ {
 		c := msg[i]
 		if c < ' ' || c > '~' || c == '%' {
-			out.WriteString(fmt.Sprintf("%%%02X", c))
+			fmt.Fprintf(out, "%%%02X", c)
 			continue
 		}
 		out.WriteByte(c)

@@ -89,14 +89,15 @@ func BuildInvokerChain(invoker protocol.Invoker, key string) protocol.Invoker {
 		fi := &FilterInvoker{next: next, invoker: invoker, filter: flt}
 		next = fi
 	}
-
-	if key == constant.ServiceFilterKey {
+	switch key {
+	case constant.ServiceFilterKey:
 		logger.Debugf("[BuildInvokerChain] The provider invocation link is %s, invoker: %s",
 			strings.Join(append(filterNames, "proxyInvoker"), " -> "), invoker)
-	} else if key == constant.ReferenceFilterKey {
+	case constant.ReferenceFilterKey:
 		logger.Debugf("[BuildInvokerChain] The consumer filters are %s, invoker: %s",
 			strings.Join(append(filterNames, "proxyInvoker"), " -> "), invoker)
 	}
+
 	return next
 }
 

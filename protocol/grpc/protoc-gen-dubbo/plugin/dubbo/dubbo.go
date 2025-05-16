@@ -81,14 +81,14 @@ func (g *dubboGrpc) P(args ...any) { g.gen.P(args...) }
 // Generate generates code for the services in the given file.
 // be consistent with grpc plugin
 func (g *dubboGrpc) Generate(file *generator.FileDescriptor) {
-	if len(file.FileDescriptorProto.Service) == 0 {
+	if len(file.Service) == 0 {
 		return
 	}
 
 	contextPkg = string(g.gen.AddImport(contextPkgPath))
 	grpcPkg = string(g.gen.AddImport(grpcPkgPath))
 
-	for i, service := range file.FileDescriptorProto.Service {
+	for i, service := range file.Service {
 		g.generateService(file, service, i)
 	}
 }

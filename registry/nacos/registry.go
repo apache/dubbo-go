@@ -128,7 +128,7 @@ func createRegisterParam(url *common.URL, serviceName string, groupName string) 
 func (nr *nacosRegistry) Register(url *common.URL) error {
 	start := time.Now()
 	serviceName := getServiceName(url)
-	groupName := nr.URL.GetParam(constant.NacosGroupKey, defaultGroup)
+	groupName := nr.GetParam(constant.NacosGroupKey, defaultGroup)
 	param := createRegisterParam(url, serviceName, groupName)
 	logger.Infof("[Nacos Registry] Registry instance with param = %+v", param)
 	isRegistry, err := nr.namingClient.Client().RegisterInstance(param)
@@ -158,7 +158,7 @@ func createDeregisterParam(url *common.URL, serviceName string, groupName string
 // UnRegister returns nil if unregister successfully. If not, returns an error.
 func (nr *nacosRegistry) UnRegister(url *common.URL) error {
 	serviceName := getServiceName(url)
-	groupName := nr.URL.GetParam(constant.NacosGroupKey, defaultGroup)
+	groupName := nr.GetParam(constant.NacosGroupKey, defaultGroup)
 	param := createDeregisterParam(url, serviceName, groupName)
 	isDeRegistry, err := nr.namingClient.Client().DeregisterInstance(param)
 	if err != nil {

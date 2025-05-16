@@ -37,7 +37,7 @@ func init() {
 type RestSubscribedURLsSynthesizer struct{}
 
 func (r RestSubscribedURLsSynthesizer) Support(subscribedURL *common.URL) bool {
-	return "rest" == subscribedURL.Protocol
+	return subscribedURL.Protocol == "rest"
 }
 
 func (r RestSubscribedURLsSynthesizer) Synthesize(subscribedURL *common.URL, serviceInstances []registry.ServiceInstance) []*common.URL {

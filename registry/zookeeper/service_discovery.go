@@ -277,8 +277,7 @@ func (zksd *zookeeperServiceDiscovery) DataChange(eventType remoting.Event) bool
 	var err error
 	instances := zksd.GetInstances(serviceName)
 	for _, lis := range zksd.instanceListenerMap[serviceName].Values() {
-		var instanceListener registry.ServiceInstancesChangedListener
-		instanceListener = lis.(registry.ServiceInstancesChangedListener)
+		instanceListener := lis.(registry.ServiceInstancesChangedListener)
 		err = instanceListener.OnEvent(registry.NewServiceInstancesChangedEvent(serviceName, instances))
 	}
 

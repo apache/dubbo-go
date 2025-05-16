@@ -92,15 +92,15 @@ func (s *ScriptRouter) Process(event *config_center.ConfigChangeEvent) {
 			}
 		}
 		// check new config
-		if "" == cfg.ScriptType {
+		if cfg.ScriptType == "" {
 			logger.Errorf("`type` field must be set in config")
 			return
 		}
-		if "" == cfg.Script {
+		if cfg.Script == "" {
 			logger.Errorf("`script` field must be set in config")
 			return
 		}
-		if "" == cfg.Key {
+		if cfg.Key == "" {
 			logger.Errorf("`applicationName` field must be set in config")
 			return
 		}
@@ -149,7 +149,7 @@ func (s *ScriptRouter) runScript(scriptType, rawScript string, invokers []protoc
 }
 
 func (s *ScriptRouter) Route(invokers []protocol.Invoker, _ *common.URL, invocation protocol.Invocation) []protocol.Invoker {
-	if invokers == nil || len(invokers) == 0 {
+	if len(invokers) == 0 {
 		return []protocol.Invoker{}
 	}
 
@@ -157,7 +157,7 @@ func (s *ScriptRouter) Route(invokers []protocol.Invoker, _ *common.URL, invocat
 	enabled, scriptType, rawScript := s.enabled, s.scriptType, s.rawScript
 	s.mu.RUnlock()
 
-	if enabled == false || s.scriptType == "" || s.rawScript == "" {
+	if !enabled || s.scriptType == "" || s.rawScript == "" {
 		return invokers
 	}
 

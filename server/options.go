@@ -251,9 +251,9 @@ func WithServerNotRegister() ServerOption {
 	}
 }
 
-func WithServerWarmup(milliSeconds time.Duration) ServerOption {
+func WithServerWarmup(warmupDuration time.Duration) ServerOption {
 	return func(opts *ServerOptions) {
-		opts.Provider.Warmup = milliSeconds.String()
+		opts.Provider.Warmup = warmupDuration.String()
 	}
 }
 
@@ -551,7 +551,7 @@ func (svcOpts *ServiceOptions) init(srv *Server, opts ...ServiceOption) error {
 	if len(svc.RegistryIDs) <= 0 {
 		svc.RegistryIDs = svcOpts.Provider.RegistryIDs
 	}
-	if svc.RegistryIDs == nil || len(svc.RegistryIDs) <= 0 {
+	if len(svc.RegistryIDs) <= 0 {
 		svc.NotRegister = true
 	}
 
@@ -751,9 +751,9 @@ func WithNotRegister() ServiceOption {
 	}
 }
 
-func WithWarmup(milliSeconds time.Duration) ServiceOption {
+func WithWarmup(warmupDuration time.Duration) ServiceOption {
 	return func(opts *ServiceOptions) {
-		opts.Service.Warmup = milliSeconds.String()
+		opts.Service.Warmup = warmupDuration.String()
 	}
 }
 
