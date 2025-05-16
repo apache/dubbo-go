@@ -209,7 +209,7 @@ func (nr *nacosRegistry) scheduledLookUp(url *common.URL, notifyListener registr
 }
 
 func (nr *nacosRegistry) subscribeAll(url *common.URL, notifyListener registry.NotifyListener) {
-	groupName := nr.URL.GetParam(constant.RegistryGroupKey, defaultGroup)
+	groupName := nr.GetParam(constant.RegistryGroupKey, defaultGroup)
 	serviceNames, err := nr.getAllSubscribeServiceNames(url)
 	if err != nil {
 		logger.Warnf("getAllServices() = err:%v", perrors.WithStack(err))
@@ -301,7 +301,7 @@ func (nr *nacosRegistry) handleServiceEvents(listener registry.Listener, notifyL
 
 // UnSubscribe :
 func (nr *nacosRegistry) UnSubscribe(url *common.URL, _ registry.NotifyListener) error {
-	param := createSubscribeParam(getSubscribeName(url), nr.URL.GetParam(constant.RegistryGroupKey, defaultGroup), nil)
+	param := createSubscribeParam(getSubscribeName(url), nr.GetParam(constant.RegistryGroupKey, defaultGroup), nil)
 	if param == nil {
 		return nil
 	}
