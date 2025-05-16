@@ -18,6 +18,7 @@
 package config
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -164,6 +165,11 @@ func (rc *RootConfig) Init() error {
 		if err := reg.Init(); err != nil {
 			return err
 		}
+	}
+
+	// TODO：When config is migrated later, the impact of this will be migrated to the global module
+	if err := validateRegistryAddresses(rc.Registries); err != nil {
+		return err
 	}
 
 	if err := rc.MetadataReport.Init(rc); err != nil {
@@ -366,4 +372,30 @@ func (rc *RootConfig) Process(event *config_center.ConfigChangeEvent) {
 
 	// dynamically update metric
 	rc.Metrics.DynamicUpdateProperties(updateRootConfig.Metrics)
+}
+
+// TODO：When config is migrated later, the impact of this will be migrated to the global module
+// validateRegistryAddresses Checks whether there are duplicate registry addresses
+func validateRegistryAddresses(registries map[string]*RegistryConfig) error {
+	cacheKeyMap := make(map[string]string, len(registries))
+
+	for id, reg := range registries {
+		address := reg.Address
+		namespace := reg.Namespace
+
+		cacheKey := address
+		if namespace != "" {
+			cacheKey = cacheKey + "?" + constant.NacosNamespaceID + "=" + namespace
+		}
+
+		if existingID, exists := cacheKeyMap[cacheKey]; exists {
+			err := fmt.Errorf("duplicate registry address: [%s] used by both [%s] and [%s]", cacheKey, existingID, id)
+			logger.Errorf("duplicate registry address: [%s] used by both [%s] and [%s]", cacheKey, existingID, id)
+			return err
+		}
+
+		cacheKeyMap[cacheKey] = id
+	}
+
+	return nil
 }

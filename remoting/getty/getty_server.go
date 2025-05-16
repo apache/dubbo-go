@@ -43,11 +43,10 @@ import (
 )
 
 var (
-	srvConf *ServerConfig
+	srvConf = GetDefaultServerConfig()
 )
 
 func initServer(protocol string) {
-	srvConf = GetDefaultServerConfig()
 	if protocol == "" {
 		return
 	}
