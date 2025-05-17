@@ -416,7 +416,6 @@ func (nr *nacosRegistry) Destroy() {
 			logger.Errorf("Deregister URL:%+v err:%v", url, err.Error())
 		}
 	}
-	return
 }
 
 // newNacosRegistry will create new instance
