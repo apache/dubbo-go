@@ -128,7 +128,7 @@ func createRegisterParam(url *common.URL, serviceName string, groupName string) 
 func (nr *nacosRegistry) Register(url *common.URL) error {
 	start := time.Now()
 	serviceName := getServiceName(url)
-	groupName := nr.URL.GetParam(constant.NacosGroupKey, defaultGroup)
+	groupName := nr.GetParam(constant.NacosGroupKey, defaultGroup)
 	param := createRegisterParam(url, serviceName, groupName)
 	logger.Infof("[Nacos Registry] Registry instance with param = %+v", param)
 	isRegistry, err := nr.namingClient.Client().RegisterInstance(param)
@@ -158,7 +158,7 @@ func createDeregisterParam(url *common.URL, serviceName string, groupName string
 // UnRegister returns nil if unregister successfully. If not, returns an error.
 func (nr *nacosRegistry) UnRegister(url *common.URL) error {
 	serviceName := getServiceName(url)
-	groupName := nr.URL.GetParam(constant.NacosGroupKey, defaultGroup)
+	groupName := nr.GetParam(constant.NacosGroupKey, defaultGroup)
 	param := createDeregisterParam(url, serviceName, groupName)
 	isDeRegistry, err := nr.namingClient.Client().DeregisterInstance(param)
 	if err != nil {
@@ -209,7 +209,7 @@ func (nr *nacosRegistry) scheduledLookUp(url *common.URL, notifyListener registr
 }
 
 func (nr *nacosRegistry) subscribeAll(url *common.URL, notifyListener registry.NotifyListener) {
-	groupName := nr.URL.GetParam(constant.RegistryGroupKey, defaultGroup)
+	groupName := nr.GetParam(constant.RegistryGroupKey, defaultGroup)
 	serviceNames, err := nr.getAllSubscribeServiceNames(url)
 	if err != nil {
 		logger.Warnf("getAllServices() = err:%v", perrors.WithStack(err))
@@ -301,7 +301,7 @@ func (nr *nacosRegistry) handleServiceEvents(listener registry.Listener, notifyL
 
 // UnSubscribe :
 func (nr *nacosRegistry) UnSubscribe(url *common.URL, _ registry.NotifyListener) error {
-	param := createSubscribeParam(getSubscribeName(url), nr.URL.GetParam(constant.RegistryGroupKey, defaultGroup), nil)
+	param := createSubscribeParam(getSubscribeName(url), nr.GetParam(constant.RegistryGroupKey, defaultGroup), nil)
 	if param == nil {
 		return nil
 	}

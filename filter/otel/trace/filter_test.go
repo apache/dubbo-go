@@ -157,7 +157,7 @@ func (mr *MockInvocationMockRecorder) Arguments() *gomock.Call {
 // Reply mocks base method
 func (m *MockInvocation) Reply() any {
 	ret := m.ctrl.Call(m, "Reply")
-	ret0, _ := ret[0].(any)
+	ret0 := ret[0]
 	return ret0
 }
 
@@ -228,7 +228,7 @@ func (mr *MockInvocationMockRecorder) GetAttachment(key any) *gomock.Call {
 // GetAttachmentInterface mocks base method
 func (m *MockInvocation) GetAttachmentInterface(arg0 string) any {
 	ret := m.ctrl.Call(m, "GetAttachmentInterface", arg0)
-	ret0, _ := ret[0].(any)
+	ret0 := ret[0]
 	return ret0
 }
 
@@ -290,7 +290,7 @@ func (mr *MockInvocationMockRecorder) SetAttribute(key, value any) *gomock.Call 
 // GetAttribute mocks base method
 func (m *MockInvocation) GetAttribute(key string) (any, bool) {
 	ret := m.ctrl.Call(m, "GetAttribute", key)
-	ret0, _ := ret[0].(any)
+	ret0 := ret[0]
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
@@ -303,7 +303,7 @@ func (mr *MockInvocationMockRecorder) GetAttribute(key any) *gomock.Call {
 // GetAttributeWithDefaultValue mocks base method
 func (m *MockInvocation) GetAttributeWithDefaultValue(key string, defaultValue any) any {
 	ret := m.ctrl.Call(m, "GetAttributeWithDefaultValue", key, defaultValue)
-	ret0, _ := ret[0].(any)
+	ret0 := ret[0]
 	return ret0
 }
 
@@ -370,7 +370,7 @@ func (mr *MockResultMockRecorder) SetResult(arg0 any) *gomock.Call {
 // Result mocks base method
 func (m *MockResult) Result() any {
 	ret := m.ctrl.Call(m, "Result")
-	ret0, _ := ret[0].(any)
+	ret0 := ret[0]
 	return ret0
 }
 
@@ -414,7 +414,7 @@ func (mr *MockResultMockRecorder) AddAttachment(arg0, arg1 any) *gomock.Call {
 // Attachment mocks base method
 func (m *MockResult) Attachment(arg0 string, arg1 any) any {
 	ret := m.ctrl.Call(m, "Attachment", arg0, arg1)
-	ret0, _ := ret[0].(any)
+	ret0 := ret[0]
 	return ret0
 }
 

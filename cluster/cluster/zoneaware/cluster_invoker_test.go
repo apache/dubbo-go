@@ -58,7 +58,7 @@ func TestZoneWareInvokerWithPreferredSuccess(t *testing.T) {
 		invoker := mock.NewMockInvoker(ctrl)
 		invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 		invoker.EXPECT().GetURL().Return(url).AnyTimes()
-		if 0 == i {
+		if i == 0 {
 			url.SetParam(constant.RegistryKey+"."+constant.PreferredKey, "true")
 			invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
 				func(ctx context.Context, invocation protocol.Invocation) protocol.Result {
@@ -101,7 +101,7 @@ func TestZoneWareInvokerWithWeightSuccess(t *testing.T) {
 		invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 		invoker.EXPECT().GetURL().Return(url).AnyTimes()
 		url.SetParam(constant.RegistryKey+"."+constant.RegistryLabelKey, "true")
-		if 1 == i {
+		if i == 1 {
 			url.SetParam(constant.RegistryKey+"."+constant.WeightKey, w1)
 			invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
 				func(ctx context.Context, invocation protocol.Invocation) protocol.Result {

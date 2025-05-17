@@ -129,9 +129,8 @@ func (s *Server) exportServices() (err error) {
 				newMethod.Name = dubboutil.SwapCaseFirstRune(method.Name)
 				additionalMethods = append(additionalMethods, newMethod)
 			}
-			for _, additionalMethod := range additionalMethods {
-				info.Methods = append(info.Methods, additionalMethod)
-			}
+
+			info.Methods = append(info.Methods, additionalMethods...)
 
 			err = svcOpts.ExportWithInfo(info)
 		}

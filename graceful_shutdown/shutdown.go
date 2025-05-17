@@ -86,23 +86,23 @@ func Init(opts ...Option) {
 			signal.Notify(signals, ShutdownSignals...)
 
 			go func() {
-				select {
-				case sig := <-signals:
-					logger.Infof("get signal %s, applicationConfig will shutdown.", sig)
-					// gracefulShutdownOnce.Do(func() {
-					time.AfterFunc(totalTimeout(), func() {
-						logger.Warn("Shutdown gracefully timeout, applicationConfig will shutdown immediately. ")
-						os.Exit(0)
-					})
-					beforeShutdown()
-					// those signals' original behavior is exit with dump ths stack, so we try to keep the behavior
-					for _, dumpSignal := range DumpHeapShutdownSignals {
-						if sig == dumpSignal {
-							debug.WriteHeapDump(os.Stdout.Fd())
-						}
-					}
+
+				sig := <-signals
+				logger.Infof("get signal %s, applicationConfig will shutdown.", sig)
+				// gracefulShutdownOnce.Do(func() {
+				time.AfterFunc(totalTimeout(), func() {
+					logger.Warn("Shutdown gracefully timeout, applicationConfig will shutdown immediately. ")
 					os.Exit(0)
+				})
+				beforeShutdown()
+				// those signals' original behavior is exit with dump ths stack, so we try to keep the behavior
+				for _, dumpSignal := range DumpHeapShutdownSignals {
+					if sig == dumpSignal {
+						debug.WriteHeapDump(os.Stdout.Fd())
+					}
 				}
+				os.Exit(0)
+
 			}()
 		}
 	})

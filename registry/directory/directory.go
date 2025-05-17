@@ -92,7 +92,7 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (director
 	dir.consumerURL = dir.getConsumerUrl(url.SubURL)
 
 	if routerChain, err := chain.NewRouterChain(); err == nil {
-		dir.Directory.SetRouterChain(routerChain)
+		dir.SetRouterChain(routerChain)
 	} else {
 		logger.Warnf("fail to create router chain with url: %s, err is: %v", url.SubURL, err)
 	}
@@ -476,7 +476,7 @@ func (dir *RegistryDirectory) List(invocation protocol.Invocation) []protocol.In
 
 // IsAvailable  whether the directory is available
 func (dir *RegistryDirectory) IsAvailable() bool {
-	if dir.Directory.IsDestroyed() {
+	if dir.IsDestroyed() {
 		return false
 	}
 
@@ -492,7 +492,7 @@ func (dir *RegistryDirectory) IsAvailable() bool {
 // Destroy method
 func (dir *RegistryDirectory) Destroy() {
 	// TODO:unregister & unsubscribe
-	dir.Directory.DoDestroy(func() {
+	dir.DoDestroy(func() {
 		if dir.RegisteredUrl != nil {
 			err := dir.registry.UnRegister(dir.RegisteredUrl)
 			if err != nil {
@@ -622,7 +622,7 @@ func (dir *ServiceDiscoveryRegistryDirectory) Subscribe(url *common.URL) error {
 	}
 
 	urlToReg := getConsumerUrlToRegistry(url)
-	err := dir.RegistryDirectory.registry.Register(urlToReg)
+	err := dir.registry.Register(urlToReg)
 	if err != nil {
 		logger.Errorf("consumer service %v register registry %v error, error message is %s",
 			url.String(), dir.registry.GetURL().String(), err.Error())

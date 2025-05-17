@@ -70,13 +70,13 @@ func (f *tokenFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invo
 		if !exist || remoteTknIface == nil {
 			return &protocol.RPCResult{Err: perrors.Errorf(InValidTokenFormat, invoker, invocation.MethodName())}
 		}
-		switch remoteTknIface.(type) {
+		switch remoteTknIface := remoteTknIface.(type) {
 		case string:
 			// deal with dubbo protocol
-			remoteTkn = remoteTknIface.(string)
+			remoteTkn = remoteTknIface
 		case []string:
 			// deal with triple protocol
-			remoteTkns := remoteTknIface.([]string)
+			remoteTkns := remoteTknIface
 			if len(remoteTkns) != 1 {
 				return &protocol.RPCResult{Err: perrors.Errorf(InValidTokenFormat, invoker, invocation.MethodName())}
 			}

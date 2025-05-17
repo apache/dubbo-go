@@ -144,9 +144,9 @@ func (cli *Client) dial(interfaceName string, info *ClientInfo, opts ...Referenc
 
 func generateInvocation(methodName string, reqs []any, resp any, callType string, opts *CallOptions) (protocol.Invocation, error) {
 	var paramsRawVals []any
-	for _, req := range reqs {
-		paramsRawVals = append(paramsRawVals, req)
-	}
+
+	paramsRawVals = append(paramsRawVals, reqs...)
+
 	if resp != nil {
 		paramsRawVals = append(paramsRawVals, resp)
 	}
