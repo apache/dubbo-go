@@ -106,7 +106,7 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 				continue
 			}
 			revision := instance.GetMetadata()[constant.ExportedServicesRevisionPropertyName]
-			if "0" == revision {
+			if revision == "0" {
 				logger.Infof("Find instance without valid service metadata: %s", instance.GetHost())
 				continue
 			}

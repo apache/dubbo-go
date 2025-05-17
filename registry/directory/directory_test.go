@@ -112,7 +112,7 @@ Loop1:
 		Loop2:
 			for {
 				if len(registryDirectory.cacheInvokers) > 0 {
-					if "mock1" == registryDirectory.cacheInvokers[0].GetURL().GetParam(constant.ClusterKey, "") {
+					if registryDirectory.cacheInvokers[0].GetURL().GetParam(constant.ClusterKey, "") == "mock1" {
 						assert.Len(t, registryDirectory.cacheInvokers, 1)
 						assert.True(t, true)
 						break Loop2

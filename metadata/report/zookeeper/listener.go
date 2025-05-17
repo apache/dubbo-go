@@ -140,6 +140,6 @@ func (l *CacheListener) pathToKey(path string) string {
 	if len(path) == 0 {
 		return path
 	}
-	groupKey := strings.Replace(strings.Replace(path, l.rootPath+constant.PathSeparator, "", -1), constant.PathSeparator, constant.DotSeparator, -1)
+	groupKey := strings.ReplaceAll(strings.ReplaceAll(path, l.rootPath+constant.PathSeparator, ""), constant.PathSeparator, constant.DotSeparator)
 	return groupKey[strings.Index(groupKey, constant.DotSeparator)+1:]
 }

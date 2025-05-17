@@ -54,7 +54,7 @@ func (w *WildcardValuePattern) Match(pattern string, value string, url *common.U
 		pattern = url.GetRawParam(pattern[1:])
 	}
 
-	if "*" == pattern {
+	if pattern == "*" {
 		return true
 	}
 	if pattern == "" && value == "" {

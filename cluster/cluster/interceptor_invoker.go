@@ -98,7 +98,7 @@ func BuildInterceptorChain(invoker protocol.Invoker, builtins ...Interceptor) pr
 		}
 	}
 
-	if builtins != nil && len(builtins) > 0 {
+	if len(builtins) > 0 {
 		for i := len(builtins) - 1; i >= 0; i-- {
 			v := &InterceptorInvoker{next: next, interceptor: builtins[i]}
 			next = v

@@ -50,10 +50,10 @@ func getArgsTypeList(args []any) (string, error) {
 		if !strings.Contains(typ, ".") {
 			types += typ
 		} else if strings.Index(typ, "[") == 0 {
-			types += strings.Replace(typ, ".", "/", -1)
+			types += strings.ReplaceAll(typ, ".", "/")
 		} else {
 			// java.util.List -> Ljava/util/List;
-			types += "L" + strings.Replace(typ, ".", "/", -1) + ";"
+			types += "L" + strings.ReplaceAll(typ, ".", "/") + ";"
 		}
 	}
 
