@@ -89,6 +89,16 @@ func (n *nacosServiceDiscovery) Destroy() error {
 
 // Register will register the service to nacos
 func (n *nacosServiceDiscovery) Register(instance registry.ServiceInstance) error {
+	// map : servicename : []instances
+	if len(n.registryInstances) > 0 && instance.GetServiceName() == n.registryInstances[0].GetServiceName() {
+		n.registryInstances = append(n.registryInstances, instance)
+		brins := n.toBatchRegisterInstance(n.registryInstances)
+		ok, err := n.namingClient.Client().BatchRegisterInstance(brins)
+		if err != nil || !ok {
+			return perrors.Errorf("register nacos instances failed, err:%+v", err)
+		}
+		return nil
+	}
 	ins := n.toRegisterInstance(instance)
 	ok, err := n.namingClient.Client().RegisterInstance(ins)
 	if err != nil || !ok {
@@ -338,6 +348,44 @@ func (n *nacosServiceDiscovery) toRegisterInstance(instance registry.ServiceInst
 		GroupName: n.group,
 		Ephemeral: true,
 	}
+}
+func (n *nacosServiceDiscovery) toBatchRegisterInstance(instances []registry.ServiceInstance) vo.BatchRegisterInstanceParam {
+	var brins vo.BatchRegisterInstanceParam
+	var rins []vo.RegisterInstanceParam
+	for _, instance := range instances {
+		metadata := instance.GetMetadata()
+		if metadata == nil {
+			metadata = make(map[string]string, 1)
+		}
+
+		weightStr := n.registryURL.GetParam(constant.RegistryKey+"."+constant.WeightKey, "1.0")
+		weight, err := strconv.ParseFloat(weightStr, 64)
+		if err != nil || weight <= constant.MinNacosWeight {
+			logger.Warnf("Invalid weight value %q, using default 1.0. err: %v", weightStr, err)
+			weight = constant.DefaultNacosWeight
+		} else if weight > constant.MaxNacosWeight {
+			logger.Warnf("Weight %f exceeds Nacos maximum 10000, setting to 10000", weight)
+			weight = constant.MaxNacosWeight
+		}
+
+		metadata[idKey] = instance.GetID()
+		rins = append(rins, vo.RegisterInstanceParam{
+			ServiceName: instance.GetServiceName(),
+			Ip:          instance.GetHost(),
+			Port:        uint64(instance.GetPort()),
+			Metadata:    metadata,
+			// We must specify the weight since Java nacos namingClient will ignore the instance whose weight is 0
+			Weight:    weight,
+			Enable:    instance.IsEnable(),
+			Healthy:   instance.IsHealthy(),
+			GroupName: n.group,
+			Ephemeral: true,
+		})
+	}
+	brins.ServiceName = rins[0].ServiceName
+	brins.GroupName = rins[0].GroupName
+	brins.Instances = rins
+	return brins
 }
 
 // toDeregisterInstance will convert the ServiceInstance to DeregisterInstanceParam

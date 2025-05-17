@@ -20,7 +20,6 @@ package nacos
 import (
 	"bytes"
 	"fmt"
-	"github.com/nacos-group/nacos-sdk-go/v2/model"
 	"math"
 	"strconv"
 	"strings"
@@ -132,18 +131,6 @@ func (nr *nacosRegistry) Register(url *common.URL) error {
 	groupName := nr.URL.GetParam(constant.NacosGroupKey, defaultGroup)
 	param := createRegisterParam(url, serviceName, groupName)
 	logger.Infof("[Nacos Registry] Registry instance with param = %+v", param)
-	selectParam := vo.SelectAllInstancesParam{
-		ServiceName: serviceName,
-		GroupName:   groupName,
-	}
-	existingInstances, err := nr.namingClient.Client().SelectAllInstances(selectParam)
-	if err != nil {
-		return perrors.Errorf("failed to fetch instances for service [%s]: %v", serviceName, err)
-	}
-	if instanceExists(existingInstances, param) {
-		logger.Infof("Instance already exists: %+v", param)
-		return nil
-	}
 	isRegistry, err := nr.namingClient.Client().RegisterInstance(param)
 	metrics.Publish(metricsRegistry.NewRegisterEvent(err == nil && isRegistry, start))
 	if err != nil {
@@ -156,15 +143,6 @@ func (nr *nacosRegistry) Register(url *common.URL) error {
 	return nil
 }
 
-// check exists
-func instanceExists(existingInstances []model.Instance, param vo.RegisterInstanceParam) bool {
-	for _, instance := range existingInstances {
-		if instance.Ip == param.Ip && instance.Port == param.Port && instance.ClusterName == param.ClusterName {
-			return true
-		}
-	}
-	return false
-}
 func createDeregisterParam(url *common.URL, serviceName string, groupName string) vo.DeregisterInstanceParam {
 	common.HandleRegisterIPAndPort(url)
 	port, _ := strconv.Atoi(url.Port)
