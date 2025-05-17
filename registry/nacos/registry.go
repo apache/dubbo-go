@@ -401,7 +401,6 @@ func (nr *nacosRegistry) IsAvailable() bool {
 	return lastAvailable
 }
 
-// nolint
 func (nr *nacosRegistry) Destroy() {
 	// Prevent close() from being called multiple times, causing panic
 	select {
