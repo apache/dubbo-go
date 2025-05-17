@@ -222,7 +222,7 @@ func newNacosRegistryForTest(f fields) *nacosRegistry {
 	}
 }
 
-func Test_nacosRegistry_Register(t *testing.T) {
+func TestNacosRegistryRegister(t *testing.T) {
 	params := url.Values{}
 	params.Set(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER))
 	params.Set(constant.NacosNotLoadLocalCache, "true")
@@ -274,7 +274,7 @@ func Test_nacosRegistry_Register(t *testing.T) {
 	}
 }
 
-func Test_nacosRegistry_UnRegister(t *testing.T) {
+func TestNacosRegistryUnRegister(t *testing.T) {
 	params := url.Values{}
 	params.Set(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER))
 	params.Set(constant.NacosNotLoadLocalCache, "true")
@@ -326,7 +326,7 @@ func Test_nacosRegistry_UnRegister(t *testing.T) {
 	}
 }
 
-func Test_nacosRegistry_Subscribe(t *testing.T) {
+func TestNacosRegistrySubscribe(t *testing.T) {
 	params := url.Values{}
 	params.Set(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER))
 	params.Set(constant.NacosNotLoadLocalCache, "true")
@@ -377,7 +377,7 @@ func Test_nacosRegistry_Subscribe(t *testing.T) {
 	}
 }
 
-func Test_nacosRegistry_Destroy(t *testing.T) {
+func TestNacosRegistryDestroy(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -412,7 +412,7 @@ func Test_nacosRegistry_Destroy(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 }
 
-func Test_nacosListener_Close(t *testing.T) {
+func TestNacosListenerClose(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -443,7 +443,7 @@ func Test_nacosListener_Close(t *testing.T) {
 	}
 }
 
-func Test_nacosListener_Next_After_Close(t *testing.T) {
+func TestNacosListenerNextAfterClose(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
