@@ -21,7 +21,9 @@ import (
 	"net/url"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
+	"time"
 )
 
 import (
@@ -372,5 +374,103 @@ func Test_nacosRegistry_Subscribe(t *testing.T) {
 				t.Errorf("Subscribe() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func Test_nacosRegistry_Destroy(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockNamingClient := NewMockINamingClient(ctrl)
+	nc := &nacosClient.NacosNamingClient{}
+	nc.SetClient(mockNamingClient)
+
+	regURL, _ := common.NewURL("registry://127.0.0.1:8848")
+	nr := &nacosRegistry{
+		URL:          regURL,
+		namingClient: nc,
+		done:         make(chan struct{}),
+		registryUrls: []*common.URL{},
+	}
+
+	serviceURL1, _ := common.NewURL("dubbo://127.0.0.1:20001/com.example.Service1?interface=com.example.Service1&group=test&version=1.0.0")
+	serviceURL2, _ := common.NewURL("dubbo://127.0.0.1:20002/com.example.Service2?interface=com.example.Service2&group=test&version=1.0.0")
+
+	nr.registryUrls = append(nr.registryUrls, serviceURL1)
+	nr.registryUrls = append(nr.registryUrls, serviceURL2)
+
+	mockNamingClient.EXPECT().DeregisterInstance(gomock.Any()).Times(len(nr.registryUrls)).Return(true, nil)
+
+	nr.Destroy()
+
+	select {
+	case <-nr.done:
+	default:
+		t.Errorf("nr.done channel was not closed after Destroy()")
+	}
+
+	time.Sleep(100 * time.Millisecond)
+}
+
+func Test_nacosListener_Close(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockNamingClient := NewMockINamingClient(ctrl)
+	nc := &nacosClient.NacosNamingClient{}
+	nc.SetClient(mockNamingClient)
+
+	regURL, _ := common.NewURL("registry://127.0.0.1:8848?registry.group=testgroup")
+	serviceName := "com.example.TestService"
+
+	nl := NewNacosListenerWithServiceName(serviceName, regURL, nc)
+
+	subscribeParam := &vo.SubscribeParam{
+		ServiceName:       serviceName,
+		GroupName:         "testgroup",
+		SubscribeCallback: nl.Callback,
+	}
+	nl.subscribeParam = subscribeParam
+
+	mockNamingClient.EXPECT().Unsubscribe(subscribeParam).Times(1).Return(nil)
+
+	nl.Close()
+
+	select {
+	case <-nl.done:
+	default:
+		t.Errorf("nl.done channel was not closed after Close()")
+	}
+}
+
+func Test_nacosListener_Next_After_Close(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockNamingClient := NewMockINamingClient(ctrl)
+	nc := &nacosClient.NacosNamingClient{}
+	nc.SetClient(mockNamingClient)
+
+	regURL, _ := common.NewURL("registry://127.0.0.1:8848")
+	serviceName := "com.example.AnotherService"
+
+	nl := NewNacosListenerWithServiceName(serviceName, regURL, nc)
+	mockNamingClient.EXPECT().Unsubscribe(gomock.Any()).Times(1)
+
+	nl.Close()
+
+	event, err := nl.Next()
+
+	if err == nil {
+		t.Errorf("Expected error from Next() after Close(), but got nil")
+	} else {
+		expectedErrorMsg := "listener stopped"
+		if !strings.Contains(err.Error(), expectedErrorMsg) {
+			t.Errorf("Expected error message to contain '%s', but got '%s'", expectedErrorMsg, err.Error())
+		}
+	}
+
+	if event != nil {
+		t.Errorf("Expected nil event from Next() after Close(), but got: %+v", event)
 	}
 }
