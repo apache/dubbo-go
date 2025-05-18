@@ -68,12 +68,14 @@ func initZapLoggerWithSyncer(conf *Config) *zap.Logger {
 
 // getEncoder get encoder by config, zapcore support json and console encoder
 func (c *Config) getEncoder() zapcore.Encoder {
-	if c.ZapConfig.Encoding == "json" {
+	switch c.ZapConfig.Encoding {
+	case "json":
 		return zapcore.NewJSONEncoder(c.ZapConfig.EncoderConfig)
-	} else if c.ZapConfig.Encoding == "console" {
+	case "console":
 		return zapcore.NewConsoleEncoder(c.ZapConfig.EncoderConfig)
+	default:
+		return nil
 	}
-	return nil
 }
 
 // getLogWriter get Lumberjack writer by LumberjackConfig
