@@ -92,7 +92,6 @@ func (n *nacosServiceDiscovery) Destroy() error {
 // Register will register the service to nacos
 func (n *nacosServiceDiscovery) Register(instance registry.ServiceInstance) error {
 	instSrvName := instance.GetServiceName()
-	n.registryInstances = append(n.registryInstances, instance) //all_instances
 	n.servicenameInstancesmap[instSrvName] = append(n.servicenameInstancesmap[instSrvName], instance)
 	if len(n.servicenameInstancesmap[instSrvName]) > 0 {
 		brins := n.toBatchRegisterInstances(n.servicenameInstancesmap[instSrvName])
@@ -100,6 +99,7 @@ func (n *nacosServiceDiscovery) Register(instance registry.ServiceInstance) erro
 		if err != nil || !ok {
 			return perrors.Errorf("register nacos instances failed, err:%+v", err)
 		}
+		n.registryInstances = append(n.registryInstances, instance) //all_instances
 	}
 	return nil
 }
