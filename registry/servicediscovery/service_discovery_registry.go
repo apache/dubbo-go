@@ -95,7 +95,6 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 		if s.instance == nil {
 			return perrors.New("create instance failed and nil instance")
 		}
-		s.instance.GetMetadata()
 		metaInfo.CalAndGetRevision()
 		if metadata.GetMetadataType() == constant.RemoteMetadataStorageType {
 			if s.metadataReport == nil {

@@ -419,12 +419,13 @@ func newNacosServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error
 
 	group := url.GetParam(constant.RegistryGroupKey, defaultGroup)
 	newInstance := &nacosServiceDiscovery{
-		group:               group,
-		namingClient:        client,
-		descriptor:          descriptor,
-		registryInstances:   []registry.ServiceInstance{},
-		registryURL:         url,
-		instanceListenerMap: make(map[string]*gxset.HashSet),
+		group:                   group,
+		namingClient:            client,
+		descriptor:              descriptor,
+		registryInstances:       []registry.ServiceInstance{},
+		servicenameInstancesmap: make(map[string][]registry.ServiceInstance),
+		registryURL:             url,
+		instanceListenerMap:     make(map[string]*gxset.HashSet),
 	}
 	return newInstance, nil
 }
