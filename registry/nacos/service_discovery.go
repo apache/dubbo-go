@@ -66,6 +66,8 @@ type nacosServiceDiscovery struct {
 	// cache registry instances
 	registryInstances []registry.ServiceInstance
 
+	servicenameInstancesmap map[string][]registry.ServiceInstance //Batch registration for the same service
+
 	// registryURL stores the URL used for registration, used to fetch dynamic config like weight
 	registryURL *common.URL
 
@@ -89,22 +91,16 @@ func (n *nacosServiceDiscovery) Destroy() error {
 
 // Register will register the service to nacos
 func (n *nacosServiceDiscovery) Register(instance registry.ServiceInstance) error {
-	// map : servicename : []instances
-	if len(n.registryInstances) > 0 && instance.GetServiceName() == n.registryInstances[0].GetServiceName() {
-		n.registryInstances = append(n.registryInstances, instance)
-		brins := n.toBatchRegisterInstance(n.registryInstances)
+	instSrvName := instance.GetServiceName()
+	n.registryInstances = append(n.registryInstances, instance) //all_instances
+	n.servicenameInstancesmap[instSrvName] = append(n.servicenameInstancesmap[instSrvName], instance)
+	if len(n.servicenameInstancesmap[instSrvName]) > 0 {
+		brins := n.toBatchRegisterInstances(n.servicenameInstancesmap[instSrvName])
 		ok, err := n.namingClient.Client().BatchRegisterInstance(brins)
 		if err != nil || !ok {
 			return perrors.Errorf("register nacos instances failed, err:%+v", err)
 		}
-		return nil
 	}
-	ins := n.toRegisterInstance(instance)
-	ok, err := n.namingClient.Client().RegisterInstance(ins)
-	if err != nil || !ok {
-		return perrors.WithMessage(err, "Could not register the instance. "+instance.GetServiceName())
-	}
-	n.registryInstances = append(n.registryInstances, instance)
 	return nil
 }
 
@@ -349,7 +345,7 @@ func (n *nacosServiceDiscovery) toRegisterInstance(instance registry.ServiceInst
 		Ephemeral: true,
 	}
 }
-func (n *nacosServiceDiscovery) toBatchRegisterInstance(instances []registry.ServiceInstance) vo.BatchRegisterInstanceParam {
+func (n *nacosServiceDiscovery) toBatchRegisterInstances(instances []registry.ServiceInstance) vo.BatchRegisterInstanceParam {
 	var brins vo.BatchRegisterInstanceParam
 	var rins []vo.RegisterInstanceParam
 	for _, instance := range instances {
@@ -383,7 +379,7 @@ func (n *nacosServiceDiscovery) toBatchRegisterInstance(instances []registry.Ser
 		})
 	}
 	brins.ServiceName = rins[0].ServiceName
-	brins.GroupName = rins[0].GroupName
+	brins.GroupName = n.group
 	brins.Instances = rins
 	return brins
 }
