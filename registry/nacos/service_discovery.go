@@ -354,7 +354,6 @@ func (n *nacosServiceDiscovery) toBatchRegisterInstances(instances []registry.Se
 		if metadata == nil {
 			metadata = make(map[string]string, 1)
 		}
-
 		weightStr := n.registryURL.GetParam(constant.RegistryKey+"."+constant.WeightKey, "1.0")
 		weight, err := strconv.ParseFloat(weightStr, 64)
 		if err != nil || weight <= constant.MinNacosWeight {
@@ -364,7 +363,6 @@ func (n *nacosServiceDiscovery) toBatchRegisterInstances(instances []registry.Se
 			logger.Warnf("Weight %f exceeds Nacos maximum 10000, setting to 10000", weight)
 			weight = constant.MaxNacosWeight
 		}
-
 		metadata[idKey] = instance.GetID()
 		rins = append(rins, vo.RegisterInstanceParam{
 			ServiceName: instance.GetServiceName(),
@@ -378,6 +376,10 @@ func (n *nacosServiceDiscovery) toBatchRegisterInstances(instances []registry.Se
 			GroupName: n.group,
 			Ephemeral: true,
 		})
+	}
+	if len(rins) == 0 {
+		logger.Warnf("No batch register instances found")
+		return vo.BatchRegisterInstanceParam{}
 	}
 	brins.ServiceName = rins[0].ServiceName
 	brins.GroupName = n.group

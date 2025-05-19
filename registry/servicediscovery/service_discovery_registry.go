@@ -91,10 +91,7 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 	}
 	urls := metaInfo.GetExportedServiceURLs()
 	for _, url := range urls {
-		s.instance = createInstance(metaInfo, url)
-		if s.instance == nil {
-			return perrors.New("create instance failed and nil instance")
-		}
+		instance := createInstance(metaInfo, url)
 		metaInfo.CalAndGetRevision()
 		if metadata.GetMetadataType() == constant.RemoteMetadataStorageType {
 			if s.metadataReport == nil {
@@ -105,7 +102,7 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 				return err
 			}
 		}
-		err := s.serviceDiscovery.Register(s.instance)
+		err := s.serviceDiscovery.Register(instance)
 		if err != nil {
 			return perrors.WithMessage(err, "Register service failed")
 		}
