@@ -22,8 +22,8 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
-	"time"
 )
 
 import (
@@ -401,15 +401,18 @@ func TestNacosRegistryDestroy(t *testing.T) {
 
 	mockNamingClient.EXPECT().DeregisterInstance(gomock.Any()).Times(len(nr.registryUrls)).Return(true, nil)
 
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+		<-nr.done
+		t.Log("nr.done channel closed")
+	}()
+
 	nr.Destroy()
 
-	select {
-	case <-nr.done:
-	default:
-		t.Errorf("nr.done channel was not closed after Destroy()")
-	}
-
-	time.Sleep(100 * time.Millisecond)
+	wg.Wait()
 }
 
 func TestNacosListenerClose(t *testing.T) {

@@ -52,12 +52,6 @@ const (
 	checkInterval  = 5 * time.Second
 )
 
-var (
-	lastAvailable bool
-	lastCheckTime time.Time
-	mu            sync.Mutex
-)
-
 func init() {
 	extension.SetRegistry(constant.NacosKey, newNacosRegistry)
 }
@@ -67,6 +61,13 @@ type nacosRegistry struct {
 	namingClient *nacosClient.NacosNamingClient
 	registryUrls []*common.URL
 	done         chan struct{}
+	availability availabilityCache
+}
+
+type availabilityCache struct {
+	mu            sync.Mutex
+	lastAvailable bool
+	lastCheckTime time.Time
 }
 
 func getCategory(url *common.URL) string {
@@ -293,9 +294,9 @@ func (nr *nacosRegistry) getAllSubscribeServiceNames(url *common.URL) ([]string,
 
 // handleServiceEvents receives service events from the listener and notifies the notifyListener
 func (nr *nacosRegistry) handleServiceEvents(listener registry.Listener, notifyListener registry.NotifyListener) {
+	defer listener.Close()
 	for {
 		if !nr.IsAvailable() {
-			listener.Close()
 			return
 		}
 
@@ -377,28 +378,28 @@ func (nr *nacosRegistry) IsAvailable() bool {
 	default:
 	}
 
-	mu.Lock()
-	defer mu.Unlock()
+	ac := &nr.availability
+	ac.mu.Lock()
+	defer ac.mu.Unlock()
 
-	if time.Since(lastCheckTime) < checkInterval {
-		return lastAvailable
+	if time.Since(ac.lastCheckTime) < checkInterval {
+		return ac.lastAvailable
 	}
 
-	lastCheckTime = time.Now()
+	ac.lastCheckTime = time.Now()
 
 	if nr.namingClient == nil || nr.namingClient.Client() == nil {
-		lastAvailable = false
+		ac.lastAvailable = false
 		return false
 	}
 
-	// Verify whether nacos is available through the lightweight nacos API
 	_, err := nr.namingClient.Client().GetAllServicesInfo(vo.GetAllServiceInfoParam{
 		GroupName: nr.GetParam(constant.RegistryGroupKey, defaultGroup),
 		PageNo:    1,
 		PageSize:  1,
 	})
-	lastAvailable = err == nil
-	return lastAvailable
+	ac.lastAvailable = err == nil
+	return ac.lastAvailable
 }
 
 func (nr *nacosRegistry) Destroy() {
