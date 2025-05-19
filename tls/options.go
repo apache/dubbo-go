@@ -27,25 +27,25 @@ import (
 
 type TLSOption func(*global.TLSConfig)
 
-func WithTLS_CACertFile(file string) TLSOption {
+func WithCACertFile(file string) TLSOption {
 	return func(cfg *global.TLSConfig) {
 		cfg.CACertFile = file
 	}
 }
 
-func WithTLS_TLSCertFile(file string) TLSOption {
+func WithTLSCertFile(file string) TLSOption {
 	return func(cfg *global.TLSConfig) {
 		cfg.TLSCertFile = file
 	}
 }
 
-func WithTLS_TLSKeyFile(file string) TLSOption {
+func WithTLSKeyFile(file string) TLSOption {
 	return func(cfg *global.TLSConfig) {
 		cfg.TLSKeyFile = file
 	}
 }
 
-func WithTLS_TLSServerName(name string) TLSOption {
+func WithTLSServerName(name string) TLSOption {
 	return func(cfg *global.TLSConfig) {
 		cfg.TLSServerName = name
 	}
