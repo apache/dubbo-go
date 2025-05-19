@@ -38,6 +38,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/otel/trace"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/tls"
 )
 
 type InstanceOptions struct {
@@ -484,13 +485,13 @@ func WithShutdown(opts ...graceful_shutdown.Option) InstanceOption {
 //	}
 //}
 
-//func WithTLS(opts ...global.TLSOption) InstanceOption {
-//	tlsCfg := new(global.TLSConfig)
-//	for _, opt := range opts {
-//		opt(tlsCfg)
-//	}
-//
-//	return func(cfg *InstanceOptions) {
-//		cfg.TLSConfig = tlsCfg
-//	}
-//}
+func WithTLS(opts ...tls.TLSOption) InstanceOption {
+	tlsCfg := new(global.TLSConfig)
+	for _, opt := range opts {
+		opt(tlsCfg)
+	}
+
+	return func(cfg *InstanceOptions) {
+		cfg.TLSConfig = tlsCfg
+	}
+}
