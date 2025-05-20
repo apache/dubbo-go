@@ -58,14 +58,13 @@ func (m *metadataServiceURLParamsMetadataCustomizer) GetPriority() int {
 func (m *metadataServiceURLParamsMetadataCustomizer) Customize(instance registry.ServiceInstance) {
 	urls := instance.GetServiceMetadata().GetExportedServiceURLs()
 	var url *common.URL
+	if len(urls) == 0 {
+		return
+	}
 	for _, url = range urls {
 		if url.Port == strconv.Itoa(instance.GetPort()) {
 			break
 		}
-	}
-	if url == nil {
-		// when metadata service is not exported the url will be nil,this is because metadata type is remote
-		return
 	}
 	ps := m.convertToParams(url)
 	str, err := json.Marshal(ps)
