@@ -140,7 +140,7 @@ func doAuthWork(url *common.URL, do func(filter.Authenticator) error) error {
 			return do(authenticator)
 
 		} else {
-			return errors.New("Authenticator for " + constant.ServiceAuthKey + " is not existing, make sure you have import the package.")
+			return errors.New("authenticator for " + constant.ServiceAuthKey + " is not existing, make sure you have import the package")
 		}
 	}
 	return nil

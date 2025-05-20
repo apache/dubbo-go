@@ -51,7 +51,7 @@ func mergeValue(str1, str2, def string) string {
 	if !defKey {
 		str = "," + constant.DefaultKey + str
 	}
-	str = strings.TrimPrefix(strings.Replace(str, ","+constant.DefaultKey, ","+def, -1), ",")
+	str = strings.TrimPrefix(strings.ReplaceAll(str, ","+constant.DefaultKey, ","+def), ",")
 	return removeMinus(strings.Split(str, ","))
 }
 

@@ -409,10 +409,10 @@ func GetArgsTypeList(args []any) (string, error) {
 		if !strings.Contains(typ, ".") {
 			types += typ
 		} else if strings.Index(typ, "[") == 0 {
-			types += strings.Replace(typ, ".", "/", -1)
+			types += strings.ReplaceAll(typ, ".", "/")
 		} else {
 			// java.util.List -> Ljava/util/List;
-			types += "L" + strings.Replace(typ, ".", "/", -1) + ";"
+			types += "L" + strings.ReplaceAll(typ, ".", "/") + ";"
 		}
 	}
 
@@ -484,7 +484,7 @@ func getArgType(v any) string {
 		// return  "java.util.HashMap"
 		return "java.util.Map"
 	case hessian.POJOEnum:
-		return v.(hessian.POJOEnum).JavaClassName()
+		return v.JavaClassName()
 	case *int8:
 		return "java.lang.Byte"
 	case *int16:

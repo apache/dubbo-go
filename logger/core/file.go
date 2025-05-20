@@ -15,36 +15,25 @@
  * limitations under the License.
  */
 
-package nacos
+// Package logger is unified facade provided by Dubbo to work with different logger frameworks, eg, Zapper, Logrus.
+package core
 
 import (
-	"sync"
-)
-
-import (
-	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
-	"github.com/dubbogo/gost/log/logger"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
-type nacosClientFacade interface {
-	NacosClient() *nacosClient.NacosConfigClient
-	SetNacosClient(*nacosClient.NacosConfigClient)
-	// WaitGroup for wait group control, zk configClient listener & zk configClient container
-	WaitGroup() *sync.WaitGroup
-	// GetDone For nacos configClient control	RestartCallBack() bool
-	GetDone() chan struct{}
-	common.Node
-}
-
-// HandleClientRestart Restart configClient handler
-func HandleClientRestart(r nacosClientFacade) {
-	defer r.WaitGroup().Done()
-	for range r.GetDone() {
-		logger.Warnf("(NacosProviderRegistry)reconnectNacosRegistry goroutine exit now...")
-		return
+func FileConfig(config *common.URL) *lumberjack.Logger {
+	return &lumberjack.Logger{
+		Filename:   config.GetParam(constant.LoggerFileNameKey, "dubbo.log"),
+		MaxSize:    config.GetParamByIntValue(constant.LoggerFileNaxSizeKey, 1),
+		MaxBackups: config.GetParamByIntValue(constant.LoggerFileMaxBackupsKey, 1),
+		MaxAge:     config.GetParamByIntValue(constant.LoggerFileMaxAgeKey, 3),
+		LocalTime:  config.GetParamBool(constant.LoggerFileLocalTimeKey, true),
+		Compress:   config.GetParamBool(constant.LoggerFileCompressKey, true),
 	}
 }

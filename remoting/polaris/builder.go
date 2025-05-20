@@ -105,7 +105,7 @@ func GetNamespace() string {
 // InitSDKContext inits polaris SDKContext by URL
 func InitSDKContext(url *common.URL) error {
 	if url == nil {
-		return errors.New("url is empty!")
+		return errors.New("url is empty")
 	}
 
 	openPolarisAbility = true

@@ -117,7 +117,7 @@ func (c *CenterConfig) translateConfigAddress() string {
 			panic(err)
 		}
 		c.Protocol = translatedUrl.Scheme
-		c.Address = strings.Replace(c.Address, translatedUrl.Scheme+"://", "", -1)
+		c.Address = strings.ReplaceAll(c.Address, translatedUrl.Scheme+"://", "")
 	}
 	return c.Address
 }

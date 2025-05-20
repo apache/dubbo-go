@@ -231,7 +231,7 @@ func generateMultiConditionRoute(rawConfig string) (*multiplyConditionRoute, boo
 		if conditionRoute == nil {
 			continue
 		}
-		if conditionRoute.thenCondition != nil && len(conditionRoute.thenCondition) != 0 {
+		if len(conditionRoute.thenCondition) != 0 {
 			conditionRouters = append(conditionRouters, conditionRoute)
 		} else {
 			disableMultiConditions = append(disableMultiConditions, &conditionRoute.whenCondition)

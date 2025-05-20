@@ -176,7 +176,7 @@ func GetClassDesc(v any) string {
 		// return  "java.util.HashMap"
 		return "java.util.Map"
 	case hessian.POJOEnum:
-		return v.(hessian.POJOEnum).JavaClassName()
+		return v.JavaClassName()
 	//  Serialized tags for complex types
 	default:
 		t := reflect.TypeOf(v)

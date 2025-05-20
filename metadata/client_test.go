@@ -275,7 +275,7 @@ func (m *mockInvoker) Destroy() {
 }
 
 func (m *mockInvoker) Invoke(ctx context.Context, inv protocol.Invocation) protocol.Result {
-	args := m.Mock.Called()
+	args := m.Called()
 	meta := args.Get(0).(protocol.Result).Result().(*info.MetadataInfo)
 	reply := inv.Reply().(*info.MetadataInfo)
 	reply.App = meta.App

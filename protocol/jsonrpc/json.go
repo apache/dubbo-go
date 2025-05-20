@@ -230,7 +230,7 @@ func (r *serverRequest) UnmarshalJSON(raw []byte) error {
 	}
 	_, okID := o["id"]
 	_, okParams := o["params"]
-	if len(o) == 3 && !(okID || okParams) || len(o) == 4 && !(okID && okParams) || len(o) > 4 {
+	if len(o) == 3 && (!okID && !okParams) || len(o) == 4 && (!okID || !okParams) || len(o) > 4 {
 		return perrors.New("bad request")
 	}
 	if r.Version != Version {

@@ -54,7 +54,7 @@ func (p *ProtocolPortsMetadataCustomizer) Customize(instance registry.ServiceIns
 		logger.Errorf("get metadata exported service url is error, %v", err)
 		return
 	}
-	if list == nil || len(list) == 0 {
+	if len(list) == 0 {
 		// client side
 		return
 	}

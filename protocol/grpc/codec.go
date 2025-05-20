@@ -50,7 +50,7 @@ type grpcJson struct {
 
 // Name implements grpc encoding package Codec interface method,
 // returns the name of the Codec implementation.
-func (_ grpcJson) Name() string {
+func (grpcJson) Name() string {
 	return codecJson
 }
 

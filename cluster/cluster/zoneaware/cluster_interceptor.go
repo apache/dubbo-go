@@ -40,7 +40,7 @@ func (z *interceptor) Invoke(ctx context.Context, invoker protocol.Invoker, invo
 				invocation.SetAttachment(key, "true")
 			}
 		case string:
-			if "true" == value {
+			if value == "true" {
 				invocation.SetAttachment(key, "true")
 			}
 		default:

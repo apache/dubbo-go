@@ -80,11 +80,11 @@ func (t *tripleCompatInterceptor) compatUnaryServerInterceptor(ctx context.Conte
 		resp := NewResponse(dubbo3Resp.Rest)
 		trailer := make(http.Header)
 		for key, valRaw := range dubbo3Resp.Attachments() {
-			switch valRaw.(type) {
+			switch valRaw := valRaw.(type) {
 			case string:
-				trailer[key] = []string{valRaw.(string)}
+				trailer[key] = []string{valRaw}
 			case []string:
-				trailer[key] = valRaw.([]string)
+				trailer[key] = valRaw
 			default:
 				panic(fmt.Sprintf("unsupported attachment value type %T", valRaw))
 			}

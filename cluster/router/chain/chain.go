@@ -109,7 +109,7 @@ func (c *RouterChain) copyRouters() []router.PriorityRouter {
 func (c *RouterChain) copyInvokers() []protocol.Invoker {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
-	if c.invokers == nil || len(c.invokers) == 0 {
+	if len(c.invokers) == 0 {
 		return nil
 	}
 	ret := make([]protocol.Invoker, 0, len(c.invokers))

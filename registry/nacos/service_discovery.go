@@ -297,8 +297,7 @@ func (n *nacosServiceDiscovery) AddListener(listener registry.ServiceInstancesCh
 
 				var e error
 				for _, lis := range n.instanceListenerMap[serviceName].Values() {
-					var instanceListener registry.ServiceInstancesChangedListener
-					instanceListener = lis.(registry.ServiceInstancesChangedListener)
+					instanceListener := lis.(registry.ServiceInstancesChangedListener)
 					e = instanceListener.OnEvent(registry.NewServiceInstancesChangedEvent(serviceName, instances))
 				}
 

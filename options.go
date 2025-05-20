@@ -119,11 +119,10 @@ func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 
 	// init registry
 	registries := rcCompat.Registries
-	if registries != nil {
-		for _, reg := range registries {
-			if err := reg.Init(); err != nil {
-				return err
-			}
+
+	for _, reg := range registries {
+		if err := reg.Init(); err != nil {
+			return err
 		}
 	}
 

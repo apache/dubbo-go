@@ -51,7 +51,7 @@ func NewDirectory(invokers []protocol.Invoker) *directory {
 
 // for-loop invokers ,if all invokers is available ,then it means directory is available
 func (dir *directory) IsAvailable() bool {
-	if dir.Directory.IsDestroyed() {
+	if dir.IsDestroyed() {
 		return false
 	}
 
@@ -82,7 +82,7 @@ func (dir *directory) List(invocation protocol.Invocation) []protocol.Invoker {
 
 // Destroy Destroy
 func (dir *directory) Destroy() {
-	dir.Directory.DoDestroy(func() {
+	dir.DoDestroy(func() {
 		for _, ivk := range dir.invokers {
 			ivk.Destroy()
 		}

@@ -177,12 +177,12 @@ func TestServiceFilter_Invoke(t *testing.T) {
 	result = filter.Invoke(context.Background(), mockInvoker, invocation5)
 	assert.Equal(t,
 		fmt.Sprintf("\"hello11\" method is not found, service key: %s", ivkUrl.ServiceKey()),
-		fmt.Sprintf("%v", result.Error().(error)))
+		fmt.Sprintf("%v", result.Error()))
 
 	result = filter.Invoke(context.Background(), mockInvoker, invocation6)
 	assert.Equal(t,
 		"the number of args(=2) is not matched with \"Hello\" method",
-		fmt.Sprintf("%v", result.Error().(error)))
+		fmt.Sprintf("%v", result.Error()))
 
 	//result = filter.Invoke(context.Background(), mockInvoker, invocation7)
 	//assert.Equal(t, int64(200), result.Result().(*generalizer.ResponseType).GetCode())

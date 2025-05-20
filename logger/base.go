@@ -15,36 +15,28 @@
  * limitations under the License.
  */
 
-package nacos
+package logger
 
 import (
-	"sync"
+	"github.com/natefinch/lumberjack"
+	"go.uber.org/zap"
 )
 
-import (
-	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
-	"github.com/dubbogo/gost/log/logger"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-)
-
-type nacosClientFacade interface {
-	NacosClient() *nacosClient.NacosConfigClient
-	SetNacosClient(*nacosClient.NacosConfigClient)
-	// WaitGroup for wait group control, zk configClient listener & zk configClient container
-	WaitGroup() *sync.WaitGroup
-	// GetDone For nacos configClient control	RestartCallBack() bool
-	GetDone() chan struct{}
-	common.Node
+type Config struct {
+	LumberjackConfig *lumberjack.Logger `yaml:"lumberjack-config"`
+	ZapConfig        *zap.Config        `yaml:"zap-config"`
+	CallerSkip       int
 }
 
-// HandleClientRestart Restart configClient handler
-func HandleClientRestart(r nacosClientFacade) {
-	defer r.WaitGroup().Done()
-	for range r.GetDone() {
-		logger.Warnf("(NacosProviderRegistry)reconnectNacosRegistry goroutine exit now...")
-		return
-	}
+type Logger interface {
+	Debug(args ...any)
+	Debugf(template string, args ...any)
+	Info(args ...any)
+	Infof(template string, args ...any)
+	Warn(args ...any)
+	Warnf(template string, args ...any)
+	Error(args ...any)
+	Errorf(template string, args ...any)
+	Fatal(args ...any)
+	Fatalf(fmt string, args ...any)
 }
