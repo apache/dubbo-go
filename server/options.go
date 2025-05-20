@@ -45,6 +45,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/tls"
 )
 
 type ServerOptions struct {
@@ -55,6 +56,7 @@ type ServerOptions struct {
 	Shutdown    *global.ShutdownConfig
 	Metrics     *global.MetricsConfig
 	Otel        *global.OtelConfig
+	TLS         *global.TLSConfig
 
 	providerCompat *config.ProviderConfig
 }
@@ -66,6 +68,7 @@ func defaultServerOptions() *ServerOptions {
 		Shutdown:    global.DefaultShutdownConfig(),
 		Metrics:     global.DefaultMetricsConfig(),
 		Otel:        global.DefaultOtelConfig(),
+		TLS:         global.DefaultTLSConfig(),
 	}
 }
 
@@ -74,26 +77,30 @@ func (srvOpts *ServerOptions) init(opts ...ServerOption) error {
 	for _, opt := range opts {
 		opt(srvOpts)
 	}
+
+	// TODO: test server TLSOption is good or bad?
+	// need to write a demo actually.
+
 	if err := defaults.Set(srvOpts); err != nil {
 		return err
 	}
 
-	prov := srvOpts.Provider
+	providerConf := srvOpts.Provider
 
-	prov.RegistryIDs = commonCfg.TranslateIds(prov.RegistryIDs)
-	if len(prov.RegistryIDs) <= 0 {
-		prov.RegistryIDs = getRegistryIds(srvOpts.Registries)
+	providerConf.RegistryIDs = commonCfg.TranslateIds(providerConf.RegistryIDs)
+	if len(providerConf.RegistryIDs) <= 0 {
+		providerConf.RegistryIDs = getRegistryIds(srvOpts.Registries)
 	}
 
-	prov.ProtocolIDs = commonCfg.TranslateIds(prov.ProtocolIDs)
+	providerConf.ProtocolIDs = commonCfg.TranslateIds(providerConf.ProtocolIDs)
 
-	if err := commonCfg.Verify(prov); err != nil {
+	if err := commonCfg.Verify(providerConf); err != nil {
 		return err
 	}
 
 	// enable adaptive service verbose
-	if prov.AdaptiveServiceVerbose {
-		if !prov.AdaptiveService {
+	if providerConf.AdaptiveServiceVerbose {
+		if !providerConf.AdaptiveService {
 			return perrors.Errorf("The adaptive service is disabled, " +
 				"adaptive service verbose should be disabled either.")
 		}
@@ -401,6 +408,24 @@ func WithServerAdaptiveServiceVerbose() ServerOption {
 	}
 }
 
+// WithServerTLSOption applies TLS options to the server configuration.
+// It iterates over the provided tls.
+// TLSOption and applies them to the ServerOptions.TLS field.
+func WithServerTLSOption(opts ...tls.TLSOption) ServerOption {
+	// TODO: tls.NewOptions(opts...) implement
+	// avoid to use loop to apply options
+	// ref: WithServerProtocol func
+
+	return func(serverOpts *ServerOptions) {
+		if serverOpts.TLS == nil {
+			serverOpts.TLS = &global.TLSConfig{}
+		}
+		for _, opt := range opts {
+			opt(serverOpts.TLS)
+		}
+	}
+}
+
 // ========== For framework ==========
 // These functions should not be invoked by users
 
@@ -437,6 +462,12 @@ func SetServerMetrics(metrics *global.MetricsConfig) ServerOption {
 func SetServerOtel(otel *global.OtelConfig) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Otel = otel
+	}
+}
+
+func SetServerTLS(tls *global.TLSConfig) ServerOption {
+	return func(opts *ServerOptions) {
+		opts.TLS = tls
 	}
 }
 
