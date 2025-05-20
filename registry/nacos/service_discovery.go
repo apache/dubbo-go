@@ -66,7 +66,7 @@ type nacosServiceDiscovery struct {
 	// cache registry instances
 	registryInstances []registry.ServiceInstance
 
-	servicenameInstancesMap map[string][]registry.ServiceInstance //Batch registration for the same service
+	serviceNameInstancesMap map[string][]registry.ServiceInstance //Batch registration for the same service
 
 	// registryURL stores the URL used for registration, used to fetch dynamic config like weight
 	registryURL *common.URL
@@ -92,11 +92,11 @@ func (n *nacosServiceDiscovery) Destroy() error {
 // Register will register the service to nacos
 func (n *nacosServiceDiscovery) Register(instance registry.ServiceInstance) error {
 	instSrvName := instance.GetServiceName()
-	if n.servicenameInstancesMap == nil {
-		n.servicenameInstancesMap = make(map[string][]registry.ServiceInstance)
+	if n.serviceNameInstancesMap == nil {
+		n.serviceNameInstancesMap = make(map[string][]registry.ServiceInstance)
 	}
-	n.servicenameInstancesMap[instSrvName] = append(n.servicenameInstancesMap[instSrvName], instance)
-	brins := n.toBatchRegisterInstances(n.servicenameInstancesMap[instSrvName])
+	n.serviceNameInstancesMap[instSrvName] = append(n.serviceNameInstancesMap[instSrvName], instance)
+	brins := n.toBatchRegisterInstances(n.serviceNameInstancesMap[instSrvName])
 	ok, err := n.namingClient.Client().BatchRegisterInstance(brins)
 	if err != nil || !ok {
 		return perrors.Errorf("register nacos instances failed, err:%+v", err)
@@ -400,7 +400,7 @@ func newNacosServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error
 		namingClient:            client,
 		descriptor:              descriptor,
 		registryInstances:       []registry.ServiceInstance{},
-		servicenameInstancesMap: make(map[string][]registry.ServiceInstance),
+		serviceNameInstancesMap: make(map[string][]registry.ServiceInstance),
 		registryURL:             url,
 		instanceListenerMap:     make(map[string]*gxset.HashSet),
 	}
