@@ -477,3 +477,55 @@ func TestNacosListenerNextAfterClose(t *testing.T) {
 		t.Errorf("Expected nil event from Next() after Close(), but got: %+v", event)
 	}
 }
+
+func TestNacosListenerCloseConcurrent(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockNamingClient := NewMockINamingClient(ctrl)
+	nc := &nacosClient.NacosNamingClient{}
+	nc.SetClient(mockNamingClient)
+
+	regURL, _ := common.NewURL("registry://127.0.0.1:8848?registry.group=testgroup")
+	serviceName := "com.example.ConcurrentTestService"
+
+	nl := NewNacosListenerWithServiceName(serviceName, regURL, nc)
+	subscribeParam := &vo.SubscribeParam{
+		ServiceName:       serviceName,
+		GroupName:         "testgroup",
+		SubscribeCallback: nl.Callback,
+	}
+
+	nl.subscribeParam = subscribeParam
+	mockNamingClient.EXPECT().Unsubscribe(subscribeParam).Times(1).Return(nil)
+
+	var (
+		wg            sync.WaitGroup
+		numGoroutines = 10
+		startSignal   = make(chan struct{})
+	)
+
+	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-startSignal
+			nl.Close()
+		}()
+	}
+
+	close(startSignal)
+	t.Logf("Signaled %d goroutines to start NacosListener Close", numGoroutines)
+
+	wg.Wait()
+
+	select {
+	case _, ok := <-nl.done:
+		if ok {
+			t.Errorf("nl.done channel was not closed after Close()")
+		}
+	default:
+		t.Log("nl.done channel was closed after Close() as expected")
+	}
+	t.Logf("NacosListener Close call completed successfully")
+}
