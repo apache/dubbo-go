@@ -587,18 +587,14 @@ func WithClientShutdown(opts ...graceful_shutdown.Option) ClientOption {
 	}
 }
 
-func WithClientTLSOption(opts ...tls.TLSOption) ClientOption {
-	// TODO: tls.NewOptions(opts...) implement
-	// avoid to use loop to apply options
-	// ref: WithServerProtocol func
+func WithClientTLSOption(opts ...tls.Option) ClientOption {
+	tlsOpts := tls.NewOptions(opts...)
 
 	return func(cliOpts *ClientOptions) {
 		if cliOpts.TLS == nil {
-			cliOpts.TLS = &global.TLSConfig{}
+			cliOpts.TLS = new(global.TLSConfig)
 		}
-		for _, opt := range opts {
-			opt(cliOpts.TLS)
-		}
+		cliOpts.TLS = tlsOpts.TLSConf
 	}
 }
 

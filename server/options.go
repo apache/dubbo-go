@@ -410,18 +410,14 @@ func WithServerAdaptiveServiceVerbose() ServerOption {
 // WithServerTLSOption applies TLS options to the server configuration.
 // It iterates over the provided tls.
 // TLSOption and applies them to the ServerOptions.TLS field.
-func WithServerTLSOption(opts ...tls.TLSOption) ServerOption {
-	// TODO: tls.NewOptions(opts...) implement
-	// avoid to use loop to apply options
-	// ref: WithServerProtocol func
+func WithServerTLSOption(opts ...tls.Option) ServerOption {
+	tlsOpts := tls.NewOptions(opts...)
 
-	return func(serverOpts *ServerOptions) {
-		if serverOpts.TLS == nil {
-			serverOpts.TLS = &global.TLSConfig{}
+	return func(srvOpts *ServerOptions) {
+		if srvOpts.TLS == nil {
+			srvOpts.TLS = new(global.TLSConfig)
 		}
-		for _, opt := range opts {
-			opt(serverOpts.TLS)
-		}
+		srvOpts.TLS = tlsOpts.TLSConf
 	}
 }
 

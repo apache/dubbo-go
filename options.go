@@ -485,15 +485,13 @@ func WithShutdown(opts ...graceful_shutdown.Option) InstanceOption {
 //	}
 //}
 
-func WithTLS(opts ...tls.TLSOption) InstanceOption {
-	// TODO: use newTLSOption is better
-	// just like WithProtocol
-	tlsCfg := new(global.TLSConfig)
-	for _, opt := range opts {
-		opt(tlsCfg)
-	}
+func WithTLS(opts ...tls.Option) InstanceOption {
+	tlsOpts := tls.NewOptions(opts...)
 
-	return func(cfg *InstanceOptions) {
-		cfg.TLSConfig = tlsCfg
+	return func(insOpts *InstanceOptions) {
+		if insOpts.TLSConfig == nil {
+			insOpts.TLSConfig = new(global.TLSConfig)
+		}
+		insOpts.TLSConfig = tlsOpts.TLSConf
 	}
 }

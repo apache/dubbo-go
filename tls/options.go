@@ -25,28 +25,44 @@ import (
 // to prevent users from directly using the global package, so I created
 // a new tls directory to allow users to establish config through the tls package.
 
-type TLSOption func(*global.TLSConfig)
+type Options struct {
+	TLSConf *global.TLSConfig
+}
 
-func WithCACertFile(file string) TLSOption {
-	return func(cfg *global.TLSConfig) {
-		cfg.CACertFile = file
+func defaultOptions() *Options {
+	return &Options{TLSConf: global.DefaultTLSConfig()}
+}
+
+func NewOptions(opts ...Option) *Options {
+	defOpts := defaultOptions()
+	for _, opt := range opts {
+		opt(defOpts)
+	}
+	return defOpts
+}
+
+type Option func(*Options)
+
+func WithCACertFile(file string) Option {
+	return func(opts *Options) {
+		opts.TLSConf.CACertFile = file
 	}
 }
 
-func WithCertFile(file string) TLSOption {
-	return func(cfg *global.TLSConfig) {
-		cfg.TLSCertFile = file
+func WithCertFile(file string) Option {
+	return func(opts *Options) {
+		opts.TLSConf.TLSCertFile = file
 	}
 }
 
-func WithKeyFile(file string) TLSOption {
-	return func(cfg *global.TLSConfig) {
-		cfg.TLSKeyFile = file
+func WithKeyFile(file string) Option {
+	return func(opts *Options) {
+		opts.TLSConf.TLSKeyFile = file
 	}
 }
 
-func WithServerName(name string) TLSOption {
-	return func(cfg *global.TLSConfig) {
-		cfg.TLSServerName = name
+func WithServerName(name string) Option {
+	return func(opts *Options) {
+		opts.TLSConf.TLSServerName = name
 	}
 }
