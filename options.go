@@ -485,16 +485,9 @@ func WithShutdown(opts ...graceful_shutdown.Option) InstanceOption {
 //	}
 //}
 
-// for example:
-//
-// WithTLS(
-// 	tls.WithCACertFile(xxx),
-// 	tls.WithTLSCertFile(xxx),
-// 	tls.WithTLSKeyFile(xxx),
-// 	tls.WithTLSServerName(xxx),
-// 	)
-
 func WithTLS(opts ...tls.TLSOption) InstanceOption {
+	// TODO: use newTLSOption is better
+	// just like WithProtocol
 	tlsCfg := new(global.TLSConfig)
 	for _, opt := range opts {
 		opt(tlsCfg)

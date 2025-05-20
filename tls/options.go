@@ -33,19 +33,19 @@ func WithCACertFile(file string) TLSOption {
 	}
 }
 
-func WithTLSCertFile(file string) TLSOption {
+func WithCertFile(file string) TLSOption {
 	return func(cfg *global.TLSConfig) {
 		cfg.TLSCertFile = file
 	}
 }
 
-func WithTLSKeyFile(file string) TLSOption {
+func WithKeyFile(file string) TLSOption {
 	return func(cfg *global.TLSConfig) {
 		cfg.TLSKeyFile = file
 	}
 }
 
-func WithTLSServerName(name string) TLSOption {
+func WithServerName(name string) TLSOption {
 	return func(cfg *global.TLSConfig) {
 		cfg.TLSServerName = name
 	}
