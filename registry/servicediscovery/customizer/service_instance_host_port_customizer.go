@@ -18,7 +18,6 @@
 package customizer
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
 	"strconv"
 )
 
@@ -39,7 +38,7 @@ func (e *hostPortCustomizer) GetPriority() int {
 }
 
 // Customize calculate the revision for exported urls and then put it into instance metadata
-func (e *hostPortCustomizer) Customize(instance registry.ServiceInstance, url *common.URL) {
+func (e *hostPortCustomizer) Customize(instance registry.ServiceInstance) {
 	if instance.GetPort() > 0 { // has set, avoid reset
 		return
 	}

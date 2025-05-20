@@ -18,7 +18,6 @@
 package customizer
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/registry"
@@ -38,6 +37,6 @@ func (p *MetadtaServiceVersionCustomizer) GetPriority() int {
 }
 
 // Customize put the the string like [{"protocol": "dubbo", "port": 123}] into instance's metadata
-func (p *MetadtaServiceVersionCustomizer) Customize(instance registry.ServiceInstance, url *common.URL) {
+func (p *MetadtaServiceVersionCustomizer) Customize(instance registry.ServiceInstance) {
 	instance.GetMetadata()[constant.MetadataVersion] = constant.MetadataServiceV2Version
 }

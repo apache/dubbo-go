@@ -19,6 +19,7 @@ package customizer
 
 import (
 	"encoding/json"
+	"strconv"
 )
 
 import (
@@ -54,7 +55,14 @@ func (m *metadataServiceURLParamsMetadataCustomizer) GetPriority() int {
 	return 0
 }
 
-func (m *metadataServiceURLParamsMetadataCustomizer) Customize(instance registry.ServiceInstance, url *common.URL) {
+func (m *metadataServiceURLParamsMetadataCustomizer) Customize(instance registry.ServiceInstance) {
+	urls := instance.GetServiceMetadata().GetExportedServiceURLs()
+	var url *common.URL
+	for _, url = range urls {
+		if url.Port == strconv.Itoa(instance.GetPort()) {
+			break
+		}
+	}
 	if url == nil {
 		// when metadata service is not exported the url will be nil,this is because metadata type is remote
 		return
