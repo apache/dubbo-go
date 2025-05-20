@@ -18,6 +18,7 @@
 package customizer
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"encoding/json"
 	"strconv"
 )
@@ -56,8 +57,11 @@ func (m *metadataServiceURLParamsMetadataCustomizer) GetPriority() int {
 }
 
 func (m *metadataServiceURLParamsMetadataCustomizer) Customize(instance registry.ServiceInstance) {
-	urls := instance.GetServiceMetadata().GetExportedServiceURLs()
 	var url *common.URL
+	urls, err := metadata.GetMetadataService().GetExportedServiceURLs()
+	if err != nil {
+		return
+	}
 	if len(urls) == 0 {
 		return
 	}

@@ -189,12 +189,6 @@ func (info *MetadataInfo) RemoveSubscribeURL(url *common.URL) {
 
 func (info *MetadataInfo) GetExportedServiceURLs() []*common.URL {
 	res := make([]*common.URL, 0)
-	if info == nil {
-		return res
-	}
-	if info.exportedServiceURLs == nil {
-		return res
-	}
 	for _, urls := range info.exportedServiceURLs {
 		res = append(res, urls...)
 	}
