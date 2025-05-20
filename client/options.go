@@ -545,7 +545,6 @@ func WithClientURL(url string) ClientOption {
 
 func WithClientFilter(filter string) ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.Filter = filter
 		opts.overallReference.Filter = filter
 	}
 }
