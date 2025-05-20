@@ -150,6 +150,7 @@ const (
 	ServiceInfoKey                     = "service-info"
 	RpcServiceKey                      = "rpc-service"
 	ClientInfoKey                      = "client-info"
+	TLSConfigKey                       = "tls-config"
 )
 
 const (

@@ -149,15 +149,16 @@ func (s *Server) Serve() error {
 	if err := metadata.InitRegistryMetadataReport(s.cfg.Registries); err != nil {
 		return err
 	}
-	opts := metadata.NewOptions(
+	metadataOpts := metadata.NewOptions(
 		metadata.WithAppName(s.cfg.Application.Name),
 		metadata.WithMetadataType(s.cfg.Application.MetadataType),
 		metadata.WithPort(getMetadataPort(s.cfg)),
 		metadata.WithMetadataProtocol(s.cfg.Application.MetadataServiceProtocol),
 	)
-	if err := opts.Init(); err != nil {
+	if err := metadataOpts.Init(); err != nil {
 		return err
 	}
+
 	if err := s.exportServices(); err != nil {
 		return err
 	}
@@ -275,7 +276,7 @@ func NewServer(opts ...ServerOption) (*Server, error) {
 	return srv, nil
 }
 
-func SetProServices(sd *InternalService) {
+func SetProviderServices(sd *InternalService) {
 	if sd.Name == "" {
 		logger.Warnf("[internal service]internal name is empty, please set internal name")
 		return

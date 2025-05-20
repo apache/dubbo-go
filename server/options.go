@@ -78,8 +78,7 @@ func (srvOpts *ServerOptions) init(opts ...ServerOption) error {
 		opt(srvOpts)
 	}
 
-	// TODO: test server TLSOption is good or bad?
-	// need to write a demo actually.
+	// NOTE: TLSOption is good, wonderful!!!
 
 	if err := defaults.Set(srvOpts); err != nil {
 		return err
@@ -477,6 +476,9 @@ func SetServerProvider(provider *global.ProviderConfig) ServerOption {
 	}
 }
 
+// FIXME: ServiceOptions contains ServerOptions?
+// Not ServerOptions contains ServiceOptions?
+// we need to find a way to fix it.
 type ServiceOptions struct {
 	Application *global.ApplicationConfig
 	Provider    *global.ProviderConfig
