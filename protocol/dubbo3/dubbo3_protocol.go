@@ -39,6 +39,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
@@ -262,7 +263,15 @@ func (dp *DubboProtocol) openServer(url *common.URL, tripleCodecType tripleConst
 		triOption.TLSKeyFile = tlsConfig.TLSKeyFile
 		triOption.CACertFile = tlsConfig.CACertFile
 		triOption.TLSServerName = tlsConfig.TLSServerName
-		logger.Infof("Triple Server initialized the TLSConfig configuration")
+		logger.Infof("DUBBO3 Server initialized the TLSConfig configuration")
+	} else if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
+		// use global TLSConfig handle tls
+		tlsConf := tlsConfRaw.(*global.TLSConfig)
+		triOption.CACertFile = tlsConf.CACertFile
+		triOption.TLSCertFile = tlsConf.TLSCertFile
+		triOption.TLSKeyFile = tlsConf.TLSKeyFile
+		triOption.TLSServerName = tlsConf.TLSServerName
+		logger.Infof("DUBBO3 Server initialized the TLSConfig configuration")
 	}
 
 	_, ok = dp.ExporterMap().Load(url.ServiceKey())

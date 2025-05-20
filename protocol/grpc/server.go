@@ -44,7 +44,9 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
 
 // DubboGrpcService is gRPC service
@@ -104,6 +106,8 @@ func (s *Server) Start(url *common.URL) {
 		grpc.MaxSendMsgSize(maxServerSendMsgSize),
 	)
 
+	// TODO: remove config TLSConfig
+	// delete this banch
 	tlsConfig := config.GetRootConfig().TLSConfig
 	if tlsConfig != nil {
 		var cfg *tls.Config
@@ -118,9 +122,19 @@ func (s *Server) Start(url *common.URL) {
 		}
 		logger.Infof("Grpc Server initialized the TLSConfig configuration")
 		serverOpts = append(serverOpts, grpc.Creds(credentials.NewTLS(cfg)))
+	} else if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
+		// use global TLSConfig handle tls
+		tlsConf := tlsConfRaw.(*global.TLSConfig)
+		cfg, err := dubbotls.GetServerTlsConfig(tlsConf)
+		if err != nil {
+			return
+		}
+		logger.Infof("Grpc Server initialized the TLSConfig configuration")
+		serverOpts = append(serverOpts, grpc.Creds(credentials.NewTLS(cfg)))
 	} else {
 		serverOpts = append(serverOpts, grpc.Creds(insecure.NewCredentials()))
 	}
+
 	server := grpc.NewServer(serverOpts...)
 	s.grpcServer = server
 

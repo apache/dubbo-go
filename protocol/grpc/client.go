@@ -43,6 +43,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/global"
+	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
 
 var clientConf *ClientConfig
@@ -88,8 +90,10 @@ func NewClient(url *common.URL) (*Client, error) {
 			grpc.MaxCallSendMsgSize(maxCallSendMsgSize),
 		),
 	)
-	tlsConfig := config.GetRootConfig().TLSConfig
 
+	// TODO: remove config TLSConfig
+	// delete this banch
+	tlsConfig := config.GetRootConfig().TLSConfig
 	if tlsConfig != nil {
 		cfg, err := config.GetClientTlsConfig(&config.TLSConfig{
 			CACertFile:    tlsConfig.CACertFile,
@@ -101,6 +105,15 @@ func NewClient(url *common.URL) (*Client, error) {
 		if err != nil {
 			return nil, err
 		}
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(cfg)))
+	} else if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
+		// use global TLSConfig handle tls
+		tlsConf := tlsConfRaw.(*global.TLSConfig)
+		cfg, err := dubbotls.GetServerTlsConfig(tlsConf)
+		if err != nil {
+			return nil, err
+		}
+		logger.Infof("Grpc Client initialized the TLSConfig configuration")
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(cfg)))
 	} else {
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))

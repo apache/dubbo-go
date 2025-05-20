@@ -42,6 +42,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	invocation_impl "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
@@ -122,14 +123,26 @@ func NewDubbo3Invoker(url *common.URL) (*DubboInvoker, error) {
 	}
 
 	triOption := triConfig.NewTripleOption(opts...)
+
+	// TODO: remove config TLSConfig
+	// delete this banch
 	tlsConfig := config.GetRootConfig().TLSConfig
 	if tlsConfig != nil {
+		triOption.CACertFile = tlsConfig.CACertFile
 		triOption.TLSCertFile = tlsConfig.TLSCertFile
 		triOption.TLSKeyFile = tlsConfig.TLSKeyFile
-		triOption.CACertFile = tlsConfig.CACertFile
 		triOption.TLSServerName = tlsConfig.TLSServerName
-		logger.Infof("Triple Client initialized the TLSConfig configuration")
+		logger.Infof("DUBBO3 Client initialized the TLSConfig configuration")
+	} else if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
+		// use global TLSConfig handle tls
+		tlsConf := tlsConfRaw.(*global.TLSConfig)
+		triOption.CACertFile = tlsConf.CACertFile
+		triOption.TLSCertFile = tlsConf.TLSCertFile
+		triOption.TLSKeyFile = tlsConf.TLSKeyFile
+		triOption.TLSServerName = tlsConf.TLSServerName
+		logger.Infof("DUBBO3 Server initialized the TLSConfig configuration")
 	}
+
 	client, err := triple.NewTripleClient(consumerService, triOption)
 
 	if err != nil {
