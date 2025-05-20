@@ -94,7 +94,7 @@ func NewDefault() *dubbogoLogger.DubboLogger {
 	encoder := zapcore.NewConsoleEncoder(encoderConfig())
 	zapAtomicLevel := zap.NewAtomicLevelAt(zapcore.InfoLevel)
 	lg = zap.New(zapcore.NewCore(encoder, zapcore.AddSync(os.Stdout), zapAtomicLevel),
-		zap.AddCaller(), zap.AddCallerSkip(2)).Sugar()
+		zap.AddCaller(), zap.AddCallerSkip(1)).Sugar()
 	return &dubbogoLogger.DubboLogger{Logger: lg, DynamicLevel: zapAtomicLevel}
 }
 
