@@ -19,34 +19,29 @@ package triple
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
 	"net/http"
 	"reflect"
 	"strings"
 	"sync"
-)
 
-import (
 	"github.com/dubbogo/gost/log/logger"
 
 	hessian "github.com/apache/dubbo-go-hessian2"
 
-	grpc_go "github.com/dubbogo/grpc-go"
-
-	"github.com/dustin/go-humanize"
-
-	"google.golang.org/grpc"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/internal"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo3"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/tls"
+	grpc_go "github.com/dubbogo/grpc-go"
+	"github.com/dustin/go-humanize"
+	"google.golang.org/grpc"
+
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
@@ -84,31 +79,19 @@ func (s *Server) Start(invoker protocol.Invoker, info *common.ServiceInfo) {
 	}
 	// todo: support opentracing interceptor
 
-	var cfg *tls.Config
-	var err error
-	// handle tls config
-	// TODO: think about a more elegant way to configure tls,
-	// Maybe we can try to create a ServerOptions for unified settings,
-	// after this function becomes bloated.
+	// TODO: move tls config to handleService
 
-	// TODO: Once the global replacement of the config is completed,
-	// replace config with global.
-	tlsConfig := config.GetRootConfig().TLSConfig
-	if tlsConfig != nil {
-		cfg, err = config.GetServerTlsConfig(&config.TLSConfig{
-			CACertFile:    tlsConfig.CACertFile,
-			TLSCertFile:   tlsConfig.TLSCertFile,
-			TLSKeyFile:    tlsConfig.TLSKeyFile,
-			TLSServerName: tlsConfig.TLSServerName,
-		})
+	// handle tls
+	tlsConfRaw, ok := URL.GetAttribute(constant.TLSConfigKey)
+	if ok {
+		tlsConf := tlsConfRaw.(*global.TLSConfig)
+		cfg, err := tls.GetServerTlsConfig(tlsConf)
 		if err != nil {
 			return
 		}
 		s.triServer.SetTLSConfig(cfg)
 		logger.Infof("TRIPLE Server initialized the TLSConfig configuration")
 	}
-
-	// todo:// move tls config to handleService
 
 	hanOpts := getHanOpts(URL)
 	//Set expected codec name from serviceinfo
