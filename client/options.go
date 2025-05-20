@@ -36,6 +36,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/proxy"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/tls"
 )
 
 type ReferenceOptions struct {
@@ -43,6 +44,7 @@ type ReferenceOptions struct {
 	Consumer  *global.ConsumerConfig
 	Metrics   *global.MetricsConfig
 	Otel      *global.OtelConfig
+	TLS       *global.TLSConfig
 
 	pxy          *proxy.Proxy
 	id           string
@@ -61,6 +63,7 @@ func defaultReferenceOptions() *ReferenceOptions {
 		Reference: global.DefaultReferenceConfig(),
 		Metrics:   global.DefaultMetricsConfig(),
 		Otel:      global.DefaultOtelConfig(),
+		TLS:       global.DefaultTLSConfig(),
 	}
 }
 
@@ -72,6 +75,7 @@ func (refOpts *ReferenceOptions) init(opts ...ReferenceOption) error {
 		return err
 	}
 
+	// TODO: rename ref to refConf
 	ref := refOpts.Reference
 
 	app := refOpts.applicationCompat
@@ -441,6 +445,12 @@ func setOtel(oc *global.OtelConfig) ReferenceOption {
 	}
 }
 
+func setTLS(tls *global.TLSConfig) ReferenceOption {
+	return func(opts *ReferenceOptions) {
+		opts.TLS = tls
+	}
+}
+
 type ClientOptions struct {
 	Consumer    *global.ConsumerConfig
 	Application *global.ApplicationConfig
@@ -448,6 +458,7 @@ type ClientOptions struct {
 	Shutdown    *global.ShutdownConfig
 	Metrics     *global.MetricsConfig
 	Otel        *global.OtelConfig
+	TLS         *global.TLSConfig
 
 	overallReference  *global.ReferenceConfig
 	applicationCompat *config.ApplicationConfig
@@ -462,6 +473,7 @@ func defaultClientOptions() *ClientOptions {
 		Shutdown:         global.DefaultShutdownConfig(),
 		Metrics:          global.DefaultMetricsConfig(),
 		Otel:             global.DefaultOtelConfig(),
+		TLS:              global.DefaultTLSConfig(),
 		overallReference: global.DefaultReferenceConfig(),
 	}
 }
@@ -474,6 +486,7 @@ func (cliOpts *ClientOptions) init(opts ...ClientOption) error {
 		return err
 	}
 
+	// TODO: rename con to consumerConf
 	con := cliOpts.Consumer
 
 	// init application
@@ -573,6 +586,21 @@ func WithClientShutdown(opts ...graceful_shutdown.Option) ClientOption {
 
 	return func(cliOpts *ClientOptions) {
 		cliOpts.Shutdown = sdOpts.Shutdown
+	}
+}
+
+func WithClientTLSOption(opts ...tls.TLSOption) ClientOption {
+	// TODO: tls.NewOptions(opts...) implement
+	// avoid to use loop to apply options
+	// ref: WithServerProtocol func
+
+	return func(cliOpts *ClientOptions) {
+		if cliOpts.TLS == nil {
+			cliOpts.TLS = &global.TLSConfig{}
+		}
+		for _, opt := range opts {
+			opt(cliOpts.TLS)
+		}
 	}
 }
 
@@ -852,6 +880,12 @@ func SetClientMetrics(metrics *global.MetricsConfig) ClientOption {
 func SetClientOtel(otel *global.OtelConfig) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.Otel = otel
+	}
+}
+
+func SetClientTLS(tls *global.TLSConfig) ClientOption {
+	return func(opts *ClientOptions) {
+		opts.TLS = tls
 	}
 }
 

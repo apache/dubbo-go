@@ -37,7 +37,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo3"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
-	"dubbo.apache.org/dubbo-go/v3/tls"
+	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 	grpc_go "github.com/dubbogo/grpc-go"
 	"github.com/dustin/go-humanize"
 	"google.golang.org/grpc"
@@ -85,7 +85,7 @@ func (s *Server) Start(invoker protocol.Invoker, info *common.ServiceInfo) {
 	tlsConfRaw, ok := URL.GetAttribute(constant.TLSConfigKey)
 	if ok {
 		tlsConf := tlsConfRaw.(*global.TLSConfig)
-		cfg, err := tls.GetServerTlsConfig(tlsConf)
+		cfg, err := dubbotls.GetServerTlsConfig(tlsConf)
 		if err != nil {
 			return
 		}

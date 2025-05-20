@@ -135,6 +135,10 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 		cfgURL.SetAttribute(constant.ClientInfoKey, info)
 	}
 
+	if refOpts.TLS != nil {
+		cfgURL.SetAttribute(constant.TLSConfigKey, refOpts.TLS)
+	}
+
 	if ref.ForceTag {
 		cfgURL.AddParam(constant.ForceUseTag, "true")
 	}
