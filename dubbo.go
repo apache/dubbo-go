@@ -227,8 +227,10 @@ func (ins *Instance) loadConsumer() error {
 	conLock.RLock()
 	defer conLock.RUnlock()
 	for intfName, definition := range consumerServices {
-		var conn *client.Connection
-		var dialErr error
+		var (
+			conn    *client.Connection
+			dialErr error
+		)
 		if definition.Info != nil {
 			conn, dialErr = cli.DialWithDefinition(intfName, definition)
 			definition.Info.ConnectionInjectFunc(definition.Svc, conn)
@@ -268,9 +270,7 @@ func SetConsumerService(svc common.RPCService) {
 	conLock.Lock()
 	defer conLock.Unlock()
 	consumerServices[common.GetReference(svc)] = &client.ClientDefinition{
-		Svc:  svc,
-		Info: nil,
-		Conn: nil,
+		Svc: svc,
 	}
 }
 
@@ -279,7 +279,6 @@ func SetProviderService(svc common.RPCService) {
 	defer conLock.Unlock()
 	providerServices[common.GetReference(svc)] = &server.ServiceDefinition{
 		Handler: svc,
-		Info:    nil,
 	}
 }
 
