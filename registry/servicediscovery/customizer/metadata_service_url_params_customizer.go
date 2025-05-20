@@ -30,7 +30,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
@@ -55,8 +54,7 @@ func (m *metadataServiceURLParamsMetadataCustomizer) GetPriority() int {
 	return 0
 }
 
-func (m *metadataServiceURLParamsMetadataCustomizer) Customize(instance registry.ServiceInstance) {
-	url, _ := metadata.GetMetadataService().GetMetadataServiceURL()
+func (m *metadataServiceURLParamsMetadataCustomizer) Customize(instance registry.ServiceInstance, url *common.URL) {
 	if url == nil {
 		// when metadata service is not exported the url will be nil,this is because metadata type is remote
 		return

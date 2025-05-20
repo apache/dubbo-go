@@ -236,5 +236,5 @@ func (d *DefaultServiceInstance) GetMetadata() map[string]string {
 type ServiceInstanceCustomizer interface {
 	gxsort.Prioritizer
 
-	Customize(instance ServiceInstance)
+	Customize(instance ServiceInstance, url *common.URL)
 }

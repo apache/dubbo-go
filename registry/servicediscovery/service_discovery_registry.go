@@ -129,7 +129,7 @@ func createInstance(meta *info.MetadataInfo, url *common.URL) registry.ServiceIn
 		Tag:             meta.Tag,
 	}
 	for _, cus := range extension.GetCustomizers() {
-		cus.Customize(instance)
+		cus.Customize(instance, url)
 	}
 	return instance
 }
