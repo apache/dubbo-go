@@ -205,8 +205,14 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 			common.WithParamsValue(constant.MaxServerSendMsgSize, proto.MaxServerSendMsgSize),
 			common.WithParamsValue(constant.MaxServerRecvMsgSize, proto.MaxServerRecvMsgSize),
 		)
+
 		if len(svcConf.Tag) > 0 {
 			ivkURL.AddParam(constant.Tagkey, svcConf.Tag)
+		}
+
+		// NOTE: tmp here for tls
+		if svcOpts.srvOpts.TLS != nil {
+			ivkURL.SetAttribute(constant.TLSConfigKey, svcOpts.srvOpts.TLS)
 		}
 
 		// post process the URL to be exported
@@ -254,11 +260,6 @@ func (svcOpts *ServiceOptions) generatorInvoker(url *common.URL, info *common.Se
 	if info != nil {
 		url.SetAttribute(constant.ServiceInfoKey, info)
 		url.SetAttribute(constant.RpcServiceKey, svcOpts.rpcService)
-	}
-
-	// NOTE: tmp here for tls
-	if svcOpts.srvOpts.TLS != nil {
-		url.SetAttribute(constant.TLSConfigKey, svcOpts.srvOpts.TLS)
 	}
 
 	return proxyFactory.GetInvoker(url)

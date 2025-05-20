@@ -87,6 +87,7 @@ func (s *Server) Start(invoker protocol.Invoker, info *common.ServiceInfo) {
 		tlsConf := tlsConfRaw.(*global.TLSConfig)
 		cfg, err := dubbotls.GetServerTlsConfig(tlsConf)
 		if err != nil {
+			logger.Errorf("TRIPLE Server inintialized the TLSConfig configuration failed. err: %v", err)
 			return
 		}
 		s.triServer.SetTLSConfig(cfg)
