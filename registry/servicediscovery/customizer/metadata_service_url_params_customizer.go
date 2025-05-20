@@ -20,7 +20,6 @@ package customizer
 import (
 	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"encoding/json"
-	"strconv"
 )
 
 import (
@@ -57,18 +56,10 @@ func (m *metadataServiceURLParamsMetadataCustomizer) GetPriority() int {
 }
 
 func (m *metadataServiceURLParamsMetadataCustomizer) Customize(instance registry.ServiceInstance) {
-	var url *common.URL
-	urls, err := metadata.GetMetadataService().GetExportedServiceURLs()
-	if err != nil {
+	url, _ := metadata.GetMetadataService().GetMetadataServiceURL()
+	if url == nil {
+		// when metadata service is not exported the url will be nil,this is because metadata type is remote
 		return
-	}
-	if len(urls) == 0 {
-		return
-	}
-	for _, url = range urls {
-		if url.Port == strconv.Itoa(instance.GetPort()) {
-			break
-		}
 	}
 	ps := m.convertToParams(url)
 	str, err := json.Marshal(ps)
