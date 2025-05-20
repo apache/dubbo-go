@@ -111,6 +111,8 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 }
 
 func createInstance(meta *info.MetadataInfo, url *common.URL) registry.ServiceInstance {
+	params := make(map[string]string, 8)
+	params[constant.MetadataStorageTypePropertyName] = metadata.GetMetadataType()
 	port, err := strconv.Atoi(url.Port)
 	if err != nil {
 		logger.Warnf("Parse port %s failed, err: %v", url.Port, err)
@@ -122,6 +124,7 @@ func createInstance(meta *info.MetadataInfo, url *common.URL) registry.ServiceIn
 		ServiceName:     meta.App,
 		Enable:          true,
 		Healthy:         true,
+		Metadata:        params,
 		ServiceMetadata: meta,
 		Tag:             meta.Tag,
 	}

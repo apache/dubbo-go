@@ -66,7 +66,7 @@ type nacosServiceDiscovery struct {
 	// cache registry instances
 	registryInstances []registry.ServiceInstance
 
-	servicenameInstancesmap map[string][]registry.ServiceInstance //Batch registration for the same service
+	servicenameInstancesMap map[string][]registry.ServiceInstance //Batch registration for the same service
 
 	// registryURL stores the URL used for registration, used to fetch dynamic config like weight
 	registryURL *common.URL
@@ -92,11 +92,11 @@ func (n *nacosServiceDiscovery) Destroy() error {
 // Register will register the service to nacos
 func (n *nacosServiceDiscovery) Register(instance registry.ServiceInstance) error {
 	instSrvName := instance.GetServiceName()
-	if n.servicenameInstancesmap == nil {
-		n.servicenameInstancesmap = make(map[string][]registry.ServiceInstance)
+	if n.servicenameInstancesMap == nil {
+		n.servicenameInstancesMap = make(map[string][]registry.ServiceInstance)
 	}
-	n.servicenameInstancesmap[instSrvName] = append(n.servicenameInstancesmap[instSrvName], instance)
-	brins := n.toBatchRegisterInstances(n.servicenameInstancesmap[instSrvName])
+	n.servicenameInstancesMap[instSrvName] = append(n.servicenameInstancesMap[instSrvName], instance)
+	brins := n.toBatchRegisterInstances(n.servicenameInstancesMap[instSrvName])
 	ok, err := n.namingClient.Client().BatchRegisterInstance(brins)
 	if err != nil || !ok {
 		return perrors.Errorf("register nacos instances failed, err:%+v", err)
@@ -350,32 +350,7 @@ func (n *nacosServiceDiscovery) toBatchRegisterInstances(instances []registry.Se
 	var brins vo.BatchRegisterInstanceParam
 	var rins []vo.RegisterInstanceParam
 	for _, instance := range instances {
-		metadata := instance.GetMetadata()
-		if metadata == nil {
-			metadata = make(map[string]string, 1)
-		}
-		weightStr := n.registryURL.GetParam(constant.RegistryKey+"."+constant.WeightKey, "1.0")
-		weight, err := strconv.ParseFloat(weightStr, 64)
-		if err != nil || weight <= constant.MinNacosWeight {
-			logger.Warnf("Invalid weight value %q, using default 1.0. err: %v", weightStr, err)
-			weight = constant.DefaultNacosWeight
-		} else if weight > constant.MaxNacosWeight {
-			logger.Warnf("Weight %f exceeds Nacos maximum 10000, setting to 10000", weight)
-			weight = constant.MaxNacosWeight
-		}
-		metadata[idKey] = instance.GetID()
-		rins = append(rins, vo.RegisterInstanceParam{
-			ServiceName: instance.GetServiceName(),
-			Ip:          instance.GetHost(),
-			Port:        uint64(instance.GetPort()),
-			Metadata:    metadata,
-			// We must specify the weight since Java nacos namingClient will ignore the instance whose weight is 0
-			Weight:    weight,
-			Enable:    instance.IsEnable(),
-			Healthy:   instance.IsHealthy(),
-			GroupName: n.group,
-			Ephemeral: true,
-		})
+		rins = append(rins, n.toRegisterInstance(instance))
 	}
 	if len(rins) == 0 {
 		logger.Warnf("No batch register instances found")
@@ -426,7 +401,7 @@ func newNacosServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error
 		namingClient:            client,
 		descriptor:              descriptor,
 		registryInstances:       []registry.ServiceInstance{},
-		servicenameInstancesmap: make(map[string][]registry.ServiceInstance),
+		servicenameInstancesMap: make(map[string][]registry.ServiceInstance),
 		registryURL:             url,
 		instanceListenerMap:     make(map[string]*gxset.HashSet),
 	}
