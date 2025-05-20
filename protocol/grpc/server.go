@@ -125,8 +125,8 @@ func (s *Server) Start(url *common.URL) {
 	} else if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
 		// use global TLSConfig handle tls
 		tlsConf := tlsConfRaw.(*global.TLSConfig)
-		cfg, err := dubbotls.GetServerTlsConfig(tlsConf)
-		if err != nil {
+		cfg, tlsErr := dubbotls.GetServerTlsConfig(tlsConf)
+		if tlsErr != nil {
 			return
 		}
 		logger.Infof("Grpc Server initialized the TLSConfig configuration")
