@@ -261,7 +261,7 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		// There might be potential for optimization in this area later on.
 		service, ok := url.GetAttribute(constant.RpcServiceKey)
 		if !ok {
-			return nil, fmt.Errorf("Triple clientmanager can't get methods")
+			return nil, fmt.Errorf("triple clientmanager can't get methods")
 		}
 
 		serviceType := reflect.TypeOf(service)

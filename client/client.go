@@ -55,7 +55,7 @@ func (d *ClientDefinition) SetConnection(conn *Connection) {
 
 func (d *ClientDefinition) GetConnection() (*Connection, error) {
 	if d.Conn == nil {
-		return nil, errors.New("you need dubbo.load() first.")
+		return nil, errors.New("you need dubbo.load() first")
 	}
 	return d.Conn, nil
 }
