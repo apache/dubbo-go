@@ -543,6 +543,7 @@ func WithClientURL(url string) ClientOption {
 	}
 }
 
+// todo(DMwangnima): change Filter Option like Cluster and LoadBalance
 func WithClientFilter(filter string) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.overallReference.Filter = filter
