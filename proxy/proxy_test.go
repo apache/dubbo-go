@@ -33,7 +33,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/hessian2"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
@@ -59,7 +59,7 @@ func (s *TestServiceInt) Reference() string {
 }
 
 func TestProxyImplement(t *testing.T) {
-	invoker := protocol.NewBaseInvoker(&common.URL{})
+	invoker := base.NewBaseInvoker(&common.URL{})
 	p := NewProxy(invoker, nil, map[string]string{constant.AsyncKey: "false"})
 	s := &TestService{}
 	p.Implement(s)
@@ -126,7 +126,7 @@ func TestProxyImplement(t *testing.T) {
 
 func TestProxyImplementForContext(t *testing.T) {
 	invoker := &TestProxyInvoker{
-		BaseInvoker: *protocol.NewBaseInvoker(&common.URL{}),
+		BaseInvoker: *base.NewBaseInvoker(&common.URL{}),
 	}
 	p := NewProxy(invoker, nil, map[string]string{constant.AsyncKey: "false"})
 	s := &TestService{}
@@ -142,10 +142,10 @@ func TestProxyImplementForContext(t *testing.T) {
 }
 
 type TestProxyInvoker struct {
-	protocol.BaseInvoker
+	base.BaseInvoker
 }
 
-func (bi *TestProxyInvoker) Invoke(_ context.Context, inv protocol.Invocation) protocol.Result {
+func (bi *TestProxyInvoker) Invoke(_ context.Context, inv base.Invocation) base.Result {
 	rpcInv := inv.(*invocation.RPCInvocation)
 	mapV := inv.Attachments()
 	mapV["TestProxyInvoker"] = "TestProxyInvokerValue"
@@ -153,7 +153,7 @@ func (bi *TestProxyInvoker) Invoke(_ context.Context, inv protocol.Invocation) p
 		fmt.Printf("hessian2.ReflectResponse(mapV:%v) = error:%v", mapV, err)
 	}
 
-	return &protocol.RPCResult{
+	return &base.RPCResult{
 		Rest: inv.Arguments(),
 	}
 }

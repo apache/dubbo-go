@@ -35,7 +35,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"dubbo.apache.org/dubbo-go/v3/proxy"
 )
@@ -62,12 +62,12 @@ func NewDefaultProxyFactory(_ ...proxy.Option) proxy.ProxyFactory {
 }
 
 // GetProxy gets a proxy
-func (factory *DefaultProxyFactory) GetProxy(invoker protocol.Invoker, url *common.URL) *proxy.Proxy {
+func (factory *DefaultProxyFactory) GetProxy(invoker base.Invoker, url *common.URL) *proxy.Proxy {
 	return factory.GetAsyncProxy(invoker, nil, url)
 }
 
 // GetAsyncProxy gets a async proxy
-func (factory *DefaultProxyFactory) GetAsyncProxy(invoker protocol.Invoker, callBack any, url *common.URL) *proxy.Proxy {
+func (factory *DefaultProxyFactory) GetAsyncProxy(invoker base.Invoker, callBack any, url *common.URL) *proxy.Proxy {
 	// create proxy
 	attachments := map[string]string{}
 	attachments[constant.AsyncKey] = url.GetParam(constant.AsyncKey, "false")
@@ -76,7 +76,7 @@ func (factory *DefaultProxyFactory) GetAsyncProxy(invoker protocol.Invoker, call
 }
 
 // GetInvoker gets a invoker
-func (factory *DefaultProxyFactory) GetInvoker(url *common.URL) protocol.Invoker {
+func (factory *DefaultProxyFactory) GetInvoker(url *common.URL) base.Invoker {
 	if url.Protocol == constant.TriProtocol || (url.SubURL != nil && url.SubURL.Protocol == constant.TriProtocol) {
 		if info, ok := url.GetAttribute(constant.ServiceInfoKey); ok {
 			svc, _ := url.GetAttribute(constant.RpcServiceKey)
@@ -84,18 +84,18 @@ func (factory *DefaultProxyFactory) GetInvoker(url *common.URL) protocol.Invoker
 		}
 	}
 	return &ProxyInvoker{
-		BaseInvoker: *protocol.NewBaseInvoker(url),
+		BaseInvoker: *base.NewBaseInvoker(url),
 	}
 }
 
 // ProxyInvoker is a invoker struct
 type ProxyInvoker struct {
-	protocol.BaseInvoker
+	base.BaseInvoker
 }
 
 // Invoke is used to call service method by invocation
-func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
-	result := &protocol.RPCResult{}
+func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation base.Invocation) base.Result {
+	result := &base.RPCResult{}
 	result.SetAttachments(invocation.Attachments())
 
 	// get providerUrl. The origin url may be is registry URL.
@@ -183,7 +183,7 @@ func getProviderURL(url *common.URL) *common.URL {
 }
 
 type infoProxyInvoker struct {
-	protocol.BaseInvoker
+	base.BaseInvoker
 	info      *common.ServiceInfo
 	svc       common.RPCService
 	methodMap map[string]*common.MethodInfo
@@ -197,10 +197,10 @@ func (tpi *infoProxyInvoker) init() {
 	tpi.methodMap = methodMap
 }
 
-func (tpi *infoProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+func (tpi *infoProxyInvoker) Invoke(ctx context.Context, invocation base.Invocation) base.Result {
 	name := invocation.MethodName()
 	args := invocation.Arguments()
-	result := new(protocol.RPCResult)
+	result := new(base.RPCResult)
 	if method, ok := tpi.methodMap[name]; ok {
 		res, err := method.MethodFunc(ctx, args, tpi.svc)
 		result.SetResult(res)
@@ -220,9 +220,9 @@ func (tpi *infoProxyInvoker) Invoke(ctx context.Context, invocation protocol.Inv
 	return result
 }
 
-func newInfoInvoker(url *common.URL, info *common.ServiceInfo, svc common.RPCService) protocol.Invoker {
+func newInfoInvoker(url *common.URL, info *common.ServiceInfo, svc common.RPCService) base.Invoker {
 	invoker := &infoProxyInvoker{
-		BaseInvoker: *protocol.NewBaseInvoker(url),
+		BaseInvoker: *base.NewBaseInvoker(url),
 		info:        info,
 		svc:         svc,
 	}
