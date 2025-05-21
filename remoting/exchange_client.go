@@ -30,7 +30,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 // Client is the interface that wraps SetExchangeClient、 Connect、Close、Request and
@@ -113,8 +113,8 @@ func (client *ExchangeClient) GetActiveNumber() uint32 {
 }
 
 // Request means two way request.
-func (client *ExchangeClient) Request(invocation *protocol.Invocation, url *common.URL, timeout time.Duration,
-	result *protocol.RPCResult) error {
+func (client *ExchangeClient) Request(invocation *base.Invocation, url *common.URL, timeout time.Duration,
+	result *base.RPCResult) error {
 	if er := client.doInit(url); er != nil {
 		return er
 	}
@@ -134,7 +134,7 @@ func (client *ExchangeClient) Request(invocation *protocol.Invocation, url *comm
 		result.Err = err
 		return err
 	}
-	if resultTmp, ok := rsp.response.Result.(*protocol.RPCResult); ok {
+	if resultTmp, ok := rsp.response.Result.(*base.RPCResult); ok {
 		result.Rest = resultTmp.Rest
 		result.Attrs = resultTmp.Attrs
 		result.Err = resultTmp.Err
@@ -146,8 +146,8 @@ func (client *ExchangeClient) Request(invocation *protocol.Invocation, url *comm
 }
 
 // AsyncRequest async two way request.
-func (client *ExchangeClient) AsyncRequest(invocation *protocol.Invocation, url *common.URL, timeout time.Duration,
-	callback common.AsyncCallback, result *protocol.RPCResult) error {
+func (client *ExchangeClient) AsyncRequest(invocation *base.Invocation, url *common.URL, timeout time.Duration,
+	callback common.AsyncCallback, result *base.RPCResult) error {
 	if er := client.doInit(url); er != nil {
 		return er
 	}
@@ -172,7 +172,7 @@ func (client *ExchangeClient) AsyncRequest(invocation *protocol.Invocation, url 
 }
 
 // Send sends oneway request.
-func (client *ExchangeClient) Send(invocation *protocol.Invocation, url *common.URL, timeout time.Duration) error {
+func (client *ExchangeClient) Send(invocation *base.Invocation, url *common.URL, timeout time.Duration) error {
 	if er := client.doInit(url); er != nil {
 		return er
 	}
