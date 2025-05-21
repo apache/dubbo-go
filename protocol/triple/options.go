@@ -18,13 +18,18 @@
 package triple
 
 type ServerOptions struct {
-	HTTP3 bool
 }
 
 func defaultServerOptions() *ServerOptions {
-	return &ServerOptions{
-		HTTP3: false,
+	return &ServerOptions{}
+}
+
+func NewServerOptions(opts ...ServerOption) *ServerOptions {
+	defSrvOpts := defaultServerOptions()
+	for _, opt := range opts {
+		opt(defSrvOpts)
 	}
+	return defSrvOpts
 }
 
 func (srvOpts *ServerOptions) init(opts ...ServerOption) {
@@ -35,9 +40,7 @@ func (srvOpts *ServerOptions) init(opts ...ServerOption) {
 
 type ServerOption func(*ServerOptions)
 
-func WithServerHTTP3() ServerOption {
+func WithServerEmtryOption() ServerOption {
 	return func(opts *ServerOptions) {
-		opts.HTTP3 = true
 	}
 }
-
