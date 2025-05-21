@@ -199,6 +199,8 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 			common.WithMethods(strings.Split(methods, ",")),
 			// todo(DMwangnima): remove this
 			common.WithAttribute(constant.ServiceInfoKey, info),
+			// TLSConifg
+			common.WithAttribute(constant.TLSConfigKey, svcOpts.srvOpts.TLS),
 			common.WithToken(svcConf.Token),
 			common.WithParamsValue(constant.MetadataTypeKey, svcOpts.metadataType),
 			// fix https://github.com/apache/dubbo-go/issues/2176
@@ -209,10 +211,6 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 		if len(svcConf.Tag) > 0 {
 			ivkURL.AddParam(constant.Tagkey, svcConf.Tag)
 		}
-
-		// NOTE: tmp here for tls
-		// TODO: put it in up case
-		ivkURL.SetAttribute(constant.TLSConfigKey, svcOpts.srvOpts.TLS)
 
 		// post process the URL to be exported
 		svcOpts.postProcessConfig(ivkURL)

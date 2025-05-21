@@ -137,12 +137,7 @@ func NewDubbo3Invoker(url *common.URL) (*DubboInvoker, error) {
 	} else if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
 		// use global TLSConfig handle tls
 		tlsConf := tlsConfRaw.(*global.TLSConfig)
-		// TODO: find a better way to judge if tlsConfig valid
-		cfg, err := dubbotls.GetClientTlsConfig(tlsConf)
-		if err != nil {
-			return nil, err
-		}
-		if cfg != nil {
+		if dubbotls.IsClientTLSValid(tlsConf) {
 			triOption.CACertFile = tlsConf.CACertFile
 			triOption.TLSCertFile = tlsConf.TLSCertFile
 			triOption.TLSKeyFile = tlsConf.TLSKeyFile

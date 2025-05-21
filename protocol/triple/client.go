@@ -183,13 +183,16 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	// handle tls
 	var (
 		tlsFlag bool
+		tlsConf *global.TLSConfig
 		cfg     *tls.Config
 		err     error
 	)
 
 	tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey)
 	if ok {
-		tlsConf := tlsConfRaw.(*global.TLSConfig)
+		tlsConf = tlsConfRaw.(*global.TLSConfig)
+	}
+	if dubbotls.IsClientTLSValid(tlsConf) {
 		cfg, err = dubbotls.GetClientTlsConfig(tlsConf)
 		if err != nil {
 			return nil, err

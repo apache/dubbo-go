@@ -268,13 +268,7 @@ func (dp *DubboProtocol) openServer(url *common.URL, tripleCodecType tripleConst
 	} else if tlsConfRaw, tlsOk := url.GetAttribute(constant.TLSConfigKey); tlsOk {
 		// use global TLSConfig handle tls
 		tlsConf := tlsConfRaw.(*global.TLSConfig)
-		// TODO: find a better way to judge if tlsConfig valid
-		cfg, err := dubbotls.GetServerTlsConfig(tlsConf)
-		if err != nil {
-			logger.Errorf("DUBBO3 Server inintialized the TLSConfig configuration failed. err: %v", err)
-			return
-		}
-		if cfg != nil {
+		if dubbotls.IsServerTLSValid(tlsConf) {
 			triOption.CACertFile = tlsConf.CACertFile
 			triOption.TLSCertFile = tlsConf.TLSCertFile
 			triOption.TLSKeyFile = tlsConf.TLSKeyFile

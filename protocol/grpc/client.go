@@ -109,17 +109,20 @@ func NewClient(url *common.URL) (*Client, error) {
 	} else if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
 		// use global TLSConfig handle tls
 		tlsConf := tlsConfRaw.(*global.TLSConfig)
-		cfg, err := dubbotls.GetServerTlsConfig(tlsConf)
-		if err != nil {
-			return nil, err
-		}
-		if cfg != nil {
-			logger.Infof("Grpc Client initialized the TLSConfig configuration")
-			dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(cfg)))
+		if dubbotls.IsClientTLSValid(tlsConf) {
+			cfg, err := dubbotls.GetServerTlsConfig(tlsConf)
+			if err != nil {
+				return nil, err
+			}
+			if cfg != nil {
+				logger.Infof("Grpc Client initialized the TLSConfig configuration")
+				dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(cfg)))
+			}
 		} else {
 			dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		}
 	} else {
+		// TODO: remove this else
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 

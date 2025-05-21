@@ -28,12 +28,27 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
+func IsServerTLSValid(tlsConf *global.TLSConfig) bool {
+	if tlsConf == nil {
+		return false
+	}
+	return tlsConf.TLSCertFile != "" && tlsConf.TLSKeyFile != ""
+}
+
+func IsClientTLSValid(tlsConf *global.TLSConfig) bool {
+	if tlsConf == nil {
+		return false
+	}
+	return tlsConf.CACertFile != ""
+}
+
 // GetServerTlsConfig build server tls config from TLSConfig
 func GetServerTlsConfig(tlsConf *global.TLSConfig) (*tls.Config, error) {
 	//no TLS
-	if tlsConf.TLSCertFile == "" && tlsConf.TLSKeyFile == "" {
+	if tlsConf.TLSCertFile == "" || tlsConf.TLSKeyFile == "" {
 		return nil, nil
 	}
+
 	var ca *x509.CertPool
 	cfg := &tls.Config{}
 	//need mTLS
@@ -65,6 +80,7 @@ func GetClientTlsConfig(tlsConf *global.TLSConfig) (*tls.Config, error) {
 	if tlsConf.CACertFile == "" {
 		return nil, nil
 	}
+
 	cfg := &tls.Config{
 		ServerName: tlsConf.TLSServerName,
 	}

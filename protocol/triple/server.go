@@ -88,19 +88,21 @@ func (s *Server) Start(invoker protocol.Invoker, info *common.ServiceInfo) {
 
 	// TODO: move tls config to handleService
 
+	var tlsConf *global.TLSConfig
+
 	// handle tls
 	tlsConfRaw, ok := URL.GetAttribute(constant.TLSConfigKey)
 	if ok {
-		tlsConf := tlsConfRaw.(*global.TLSConfig)
+		tlsConf = tlsConfRaw.(*global.TLSConfig)
+	}
+	if dubbotls.IsServerTLSValid(tlsConf) {
 		cfg, err := dubbotls.GetServerTlsConfig(tlsConf)
 		if err != nil {
 			logger.Errorf("TRIPLE Server inintialized the TLSConfig configuration failed. err: %v", err)
 			return
 		}
-		if cfg != nil {
-			s.triServer.SetTLSConfig(cfg)
-			logger.Infof("TRIPLE Server initialized the TLSConfig configuration")
-		}
+		s.triServer.SetTLSConfig(cfg)
+		logger.Infof("TRIPLE Server initialized the TLSConfig configuration")
 	}
 
 	hanOpts := getHanOpts(URL)

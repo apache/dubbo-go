@@ -81,13 +81,7 @@ func initServer(url *common.URL) {
 		} else if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
 			// use global TLSConfig handle tls
 			tlsConf := tlsConfRaw.(*global.TLSConfig)
-			// TODO: find a better way to judge if tlsConfig valid
-			cfg, err := dubbotls.GetServerTlsConfig(tlsConf)
-			if err != nil {
-				logger.Errorf("Getty Server inintialized the TLSConfig configuration failed. err: %v", err)
-				return
-			}
-			if cfg != nil {
+			if dubbotls.IsServerTLSValid(tlsConf) {
 				srvConf.SSLEnabled = true
 				srvConf.TLSBuilder = &getty.ServerTlsConfigBuilder{
 					ServerKeyCertChainPath:        tlsConf.TLSCertFile,
