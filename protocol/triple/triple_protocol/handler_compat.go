@@ -34,7 +34,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	dubbo_protocol "dubbo.apache.org/dubbo-go/v3/protocol"
+	dubbo_protocol "dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 type MethodHandler func(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error)

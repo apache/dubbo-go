@@ -18,18 +18,18 @@
 package extension
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
-var protocols = make(map[string]func() protocol.Protocol)
+var protocols = make(map[string]func() base.Protocol)
 
 // SetProtocol sets the protocol extension with @name
-func SetProtocol(name string, v func() protocol.Protocol) {
+func SetProtocol(name string, v func() base.Protocol) {
 	protocols[name] = v
 }
 
 // GetProtocol finds the protocol extension with @name
-func GetProtocol(name string) protocol.Protocol {
+func GetProtocol(name string) base.Protocol {
 	if protocols[name] == nil {
 		panic("protocol for " + name + " is not existing, make sure you have import the package.")
 	}
