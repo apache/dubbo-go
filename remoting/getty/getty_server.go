@@ -42,6 +42,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
+	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
 
 var (
@@ -80,13 +81,21 @@ func initServer(url *common.URL) {
 		} else if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
 			// use global TLSConfig handle tls
 			tlsConf := tlsConfRaw.(*global.TLSConfig)
-			srvConf.SSLEnabled = true
-			srvConf.TLSBuilder = &getty.ServerTlsConfigBuilder{
-				ServerKeyCertChainPath:        tlsConf.TLSCertFile,
-				ServerPrivateKeyPath:          tlsConf.TLSKeyFile,
-				ServerTrustCertCollectionPath: tlsConf.CACertFile,
+			// TODO: find a better way to judge if tlsConfig valid
+			cfg, err := dubbotls.GetServerTlsConfig(tlsConf)
+			if err != nil {
+				logger.Errorf("Getty Server inintialized the TLSConfig configuration failed. err: %v", err)
+				return
 			}
-			logger.Infof("Getty Server initialized the TLSConfig configuration")
+			if cfg != nil {
+				srvConf.SSLEnabled = true
+				srvConf.TLSBuilder = &getty.ServerTlsConfigBuilder{
+					ServerKeyCertChainPath:        tlsConf.TLSCertFile,
+					ServerPrivateKeyPath:          tlsConf.TLSKeyFile,
+					ServerTrustCertCollectionPath: tlsConf.CACertFile,
+				}
+				logger.Infof("Getty Server initialized the TLSConfig configuration")
+			}
 		}
 		//getty params
 		gettyServerConfig := protocolConf.Params

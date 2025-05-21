@@ -211,9 +211,8 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 		}
 
 		// NOTE: tmp here for tls
-		if svcOpts.srvOpts.TLS != nil {
-			ivkURL.SetAttribute(constant.TLSConfigKey, svcOpts.srvOpts.TLS)
-		}
+		// TODO: put it in up case
+		ivkURL.SetAttribute(constant.TLSConfigKey, svcOpts.srvOpts.TLS)
 
 		// post process the URL to be exported
 		svcOpts.postProcessConfig(ivkURL)

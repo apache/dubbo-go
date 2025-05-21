@@ -97,8 +97,10 @@ func (s *Server) Start(invoker protocol.Invoker, info *common.ServiceInfo) {
 			logger.Errorf("TRIPLE Server inintialized the TLSConfig configuration failed. err: %v", err)
 			return
 		}
-		s.triServer.SetTLSConfig(cfg)
-		logger.Infof("TRIPLE Server initialized the TLSConfig configuration")
+		if cfg != nil {
+			s.triServer.SetTLSConfig(cfg)
+			logger.Infof("TRIPLE Server initialized the TLSConfig configuration")
+		}
 	}
 
 	hanOpts := getHanOpts(URL)

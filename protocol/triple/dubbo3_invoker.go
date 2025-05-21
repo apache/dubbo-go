@@ -45,6 +45,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	invocation_impl "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
 
 // same as dubbo_invoker.go attachmentKey
@@ -136,11 +137,18 @@ func NewDubbo3Invoker(url *common.URL) (*DubboInvoker, error) {
 	} else if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
 		// use global TLSConfig handle tls
 		tlsConf := tlsConfRaw.(*global.TLSConfig)
-		triOption.CACertFile = tlsConf.CACertFile
-		triOption.TLSCertFile = tlsConf.TLSCertFile
-		triOption.TLSKeyFile = tlsConf.TLSKeyFile
-		triOption.TLSServerName = tlsConf.TLSServerName
-		logger.Infof("DUBBO3 Server initialized the TLSConfig configuration")
+		// TODO: find a better way to judge if tlsConfig valid
+		cfg, err := dubbotls.GetClientTlsConfig(tlsConf)
+		if err != nil {
+			return nil, err
+		}
+		if cfg != nil {
+			triOption.CACertFile = tlsConf.CACertFile
+			triOption.TLSCertFile = tlsConf.TLSCertFile
+			triOption.TLSKeyFile = tlsConf.TLSKeyFile
+			triOption.TLSServerName = tlsConf.TLSServerName
+			logger.Infof("DUBBO3 Server initialized the TLSConfig configuration")
+		}
 	}
 
 	client, err := triple.NewTripleClient(consumerService, triOption)

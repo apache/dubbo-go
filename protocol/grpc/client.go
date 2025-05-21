@@ -113,8 +113,12 @@ func NewClient(url *common.URL) (*Client, error) {
 		if err != nil {
 			return nil, err
 		}
-		logger.Infof("Grpc Client initialized the TLSConfig configuration")
-		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(cfg)))
+		if cfg != nil {
+			logger.Infof("Grpc Client initialized the TLSConfig configuration")
+			dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(cfg)))
+		} else {
+			dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		}
 	} else {
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}

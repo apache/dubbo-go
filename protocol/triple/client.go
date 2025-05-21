@@ -194,8 +194,10 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		if err != nil {
 			return nil, err
 		}
-		logger.Infof("TRIPLE clientManager initialized the TLSConfig configuration")
-		tlsFlag = true
+		if cfg != nil {
+			logger.Infof("TRIPLE clientManager initialized the TLSConfig configuration")
+			tlsFlag = true
+		}
 	}
 
 	var transport http.RoundTripper

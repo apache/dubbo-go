@@ -129,8 +129,13 @@ func (s *Server) Start(url *common.URL) {
 		if tlsErr != nil {
 			return
 		}
-		logger.Infof("Grpc Server initialized the TLSConfig configuration")
-		serverOpts = append(serverOpts, grpc.Creds(credentials.NewTLS(cfg)))
+		if cfg != nil {
+			logger.Infof("Grpc Server initialized the TLSConfig configuration")
+			serverOpts = append(serverOpts, grpc.Creds(credentials.NewTLS(cfg)))
+		} else {
+
+			serverOpts = append(serverOpts, grpc.Creds(insecure.NewCredentials()))
+		}
 	} else {
 		serverOpts = append(serverOpts, grpc.Creds(insecure.NewCredentials()))
 	}
