@@ -34,7 +34,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
@@ -85,11 +85,11 @@ func TestGetMetadataFromRpc(t *testing.T) {
 	defer mockInvoker.AssertExpectations(t)
 	mockProtocol := new(mockProtocol)
 	defer mockProtocol.AssertExpectations(t)
-	extension.SetProtocol("dubbo", func() protocol.Protocol {
+	extension.SetProtocol("dubbo", func() base.Protocol {
 		return mockProtocol
 	})
 
-	result := &protocol.RPCResult{
+	result := &base.RPCResult{
 		Attrs: map[string]any{},
 		Err:   nil,
 		Rest:  metadataInfo,
@@ -109,7 +109,7 @@ func TestGetMetadataFromRpc(t *testing.T) {
 	})
 	t.Run("invoke timeout", func(t *testing.T) {
 		mockProtocol.On("Refer").Return(mockInvoker).Once()
-		mockInvoker.On("Invoke").Return(&protocol.RPCResult{
+		mockInvoker.On("Invoke").Return(&base.RPCResult{
 			Attrs: map[string]any{},
 			Err:   errors.New("timeout error"),
 			Rest:  metadataInfo,
@@ -242,17 +242,17 @@ type mockProtocol struct {
 	mock.Mock
 }
 
-func (m *mockProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
+func (m *mockProtocol) Export(invoker base.Invoker) base.Exporter {
 	args := m.Called()
-	return args.Get(0).(protocol.Exporter)
+	return args.Get(0).(base.Exporter)
 }
 
-func (m *mockProtocol) Refer(url *common.URL) protocol.Invoker {
+func (m *mockProtocol) Refer(url *common.URL) base.Invoker {
 	args := m.Called()
 	if args.Get(0) == nil {
 		return nil
 	}
-	return args.Get(0).(protocol.Invoker)
+	return args.Get(0).(base.Invoker)
 }
 
 func (m *mockProtocol) Destroy() {
@@ -274,24 +274,24 @@ func (m *mockInvoker) Destroy() {
 	m.Called()
 }
 
-func (m *mockInvoker) Invoke(ctx context.Context, inv protocol.Invocation) protocol.Result {
+func (m *mockInvoker) Invoke(ctx context.Context, inv base.Invocation) base.Result {
 	args := m.Called()
-	meta := args.Get(0).(protocol.Result).Result().(*info.MetadataInfo)
+	meta := args.Get(0).(base.Result).Result().(*info.MetadataInfo)
 	reply := inv.Reply().(*info.MetadataInfo)
 	reply.App = meta.App
 	reply.Tag = meta.Tag
 	reply.Revision = meta.Revision
 	reply.Services = meta.Services
-	return args.Get(0).(protocol.Result)
+	return args.Get(0).(base.Result)
 }
 
 type mockExporter struct {
 	mock.Mock
 }
 
-func (m *mockExporter) GetInvoker() protocol.Invoker {
+func (m *mockExporter) GetInvoker() base.Invoker {
 	args := m.Called()
-	return args.Get(0).(protocol.Invoker)
+	return args.Get(0).(base.Invoker)
 }
 
 func (m *mockExporter) UnExport() {
