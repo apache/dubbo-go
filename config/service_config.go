@@ -42,7 +42,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 )
 
@@ -87,9 +87,9 @@ type ServiceConfig struct {
 	export          bool // a flag to control whether the current service should export or not
 	rpcService      common.RPCService
 	cacheMutex      sync.Mutex
-	cacheProtocol   protocol.Protocol
+	cacheProtocol   base.Protocol
 	exportersLock   sync.Mutex
-	exporters       []protocol.Exporter
+	exporters       []base.Exporter
 
 	metadataType string
 	rc           *RootConfig
@@ -253,7 +253,7 @@ func (s *ServiceConfig) Export() error {
 		return nil
 	}
 
-	var invoker protocol.Invoker
+	var invoker base.Invoker
 	ports := getRandomPort(protocolConfigs)
 	nextPort := ports.Front()
 
@@ -336,7 +336,7 @@ func (s *ServiceConfig) Export() error {
 	return nil
 }
 
-func (s *ServiceConfig) generatorInvoker(url *common.URL, info any) protocol.Invoker {
+func (s *ServiceConfig) generatorInvoker(url *common.URL, info any) base.Invoker {
 	proxyFactory := extension.GetProxyFactory(s.ProxyFactoryKey)
 	if info != nil {
 		url.SetAttribute(constant.ServiceInfoKey, info)
