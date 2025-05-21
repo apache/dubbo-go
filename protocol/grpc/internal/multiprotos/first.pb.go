@@ -35,7 +35,7 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
@@ -244,14 +244,14 @@ func (c *FristServiceClientImpl) GetDubboStub(cc *grpc.ClientConn) FristServiceC
 }
 
 type FristServiceProviderBase struct {
-	proxyImpl protocol.Invoker
+	proxyImpl base.Invoker
 }
 
-func (s *FristServiceProviderBase) SetProxyImpl(impl protocol.Invoker) {
+func (s *FristServiceProviderBase) SetProxyImpl(impl base.Invoker) {
 	s.proxyImpl = impl
 }
 
-func (s *FristServiceProviderBase) GetProxyImpl() protocol.Invoker {
+func (s *FristServiceProviderBase) GetProxyImpl() base.Invoker {
 	return s.proxyImpl
 }
 
@@ -267,9 +267,9 @@ func _DUBBO_FristService_Service_Handler(srv any, ctx context.Context, dec func(
 	// DubboGrpcService is gRPC service
 	type DubboGrpcService interface {
 		// SetProxyImpl sets proxy.
-		SetProxyImpl(impl protocol.Invoker)
+		SetProxyImpl(impl base.Invoker)
 		// GetProxyImpl gets proxy.
-		GetProxyImpl() protocol.Invoker
+		GetProxyImpl() base.Invoker
 		// ServiceDesc gets an RPC service's specification.
 		ServiceDesc() *grpc.ServiceDesc
 	}
