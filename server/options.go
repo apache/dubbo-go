@@ -78,8 +78,6 @@ func (srvOpts *ServerOptions) init(opts ...ServerOption) error {
 		opt(srvOpts)
 	}
 
-	// NOTE: TLSOption is good, wonderful!!!
-
 	if err := defaults.Set(srvOpts); err != nil {
 		return err
 	}

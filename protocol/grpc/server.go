@@ -107,7 +107,7 @@ func (s *Server) Start(url *common.URL) {
 	)
 
 	// TODO: remove config TLSConfig
-	// delete this banch
+	// delete this branch
 	tlsConfig := config.GetRootConfig().TLSConfig
 	if tlsConfig != nil {
 		var cfg *tls.Config

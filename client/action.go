@@ -130,13 +130,10 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 		common.WithParamsValue(constant.TimeoutKey, refOpts.Consumer.RequestTimeout),
 		common.WithParamsValue(constant.KeepAliveInterval, ref.KeepAliveInterval),
 		common.WithParamsValue(constant.KeepAliveTimeout, ref.KeepAliveTimeout),
+		common.WithAttribute(constant.TLSConfigKey, refOpts.TLS),
 	)
 	if info != nil {
 		cfgURL.SetAttribute(constant.ClientInfoKey, info)
-	}
-
-	if refOpts.TLS != nil {
-		cfgURL.SetAttribute(constant.TLSConfigKey, refOpts.TLS)
 	}
 
 	if ref.ForceTag {

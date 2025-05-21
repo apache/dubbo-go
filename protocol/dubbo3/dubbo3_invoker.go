@@ -120,6 +120,8 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 
 	triOption := triConfig.NewTripleOption(opts...)
 
+	// TODO: remove config TLSConfig
+	// delete this branch
 	tlsConfig := config.GetRootConfig().TLSConfig
 	if tlsConfig != nil {
 		triOption.CACertFile = tlsConfig.CACertFile

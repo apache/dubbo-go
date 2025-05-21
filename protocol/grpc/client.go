@@ -92,7 +92,7 @@ func NewClient(url *common.URL) (*Client, error) {
 	)
 
 	// TODO: remove config TLSConfig
-	// delete this banch
+	// delete this branch
 	tlsConfig := config.GetRootConfig().TLSConfig
 	if tlsConfig != nil {
 		cfg, err := config.GetClientTlsConfig(&config.TLSConfig{
