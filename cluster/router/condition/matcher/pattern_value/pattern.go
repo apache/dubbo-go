@@ -19,14 +19,14 @@ package pattern_value
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 type ValuePattern interface {
 	// ShouldMatch indicates whether the input is a specific pattern, for example, range pattern '1~100', wildcard pattern 'hello*', etc.
 	ShouldMatch(pattern string) bool
 	// Match indicates whether a pattern is matched with the request context
-	Match(pattern string, value string, url *common.URL, invocation protocol.Invocation, isWhenCondition bool) bool
+	Match(pattern string, value string, url *common.URL, invocation base.Invocation, isWhenCondition bool) bool
 	// Priority returns a priority for this valuePattern
 	// 0 to ^int(0) is better, smaller value by better priority
 	Priority() int64

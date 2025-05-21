@@ -29,7 +29,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router/condition"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
@@ -77,14 +77,14 @@ var providerUrls = []string{
 	"dubbo://dubbo.apache.org/com.foo.BarService?region=hangzhou&env=normal",
 }
 
-func buildInvokers() []protocol.Invoker {
-	res := make([]protocol.Invoker, 0, len(providerUrls))
+func buildInvokers() []base.Invoker {
+	res := make([]base.Invoker, 0, len(providerUrls))
 	for _, url := range providerUrls {
 		u, err := common.NewURL(url)
 		if err != nil {
 			panic(err)
 		}
-		res = append(res, protocol.NewBaseInvoker(u))
+		res = append(res, base.NewBaseInvoker(u))
 	}
 	return res
 }
@@ -116,9 +116,9 @@ func (INV InvokersFilters) add(rule string) InvokersFilters {
 	return append(INV, *m)
 }
 
-func (INV InvokersFilters) filtrate(inv []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
+func (INV InvokersFilters) filtrate(inv []base.Invoker, url *common.URL, invocation base.Invocation) []base.Invoker {
 	for _, cond := range INV {
-		tmpInv := make([]protocol.Invoker, 0)
+		tmpInv := make([]base.Invoker, 0)
 		for _, invoker := range inv {
 			if cond.MatchInvoker(url, invoker, invocation) {
 				tmpInv = append(tmpInv, invoker)
@@ -134,9 +134,9 @@ func Test_affinityRoute_Route(t *testing.T) {
 		content string
 	}
 	type args struct {
-		invokers   []protocol.Invoker
+		invokers   []base.Invoker
 		url        *common.URL
-		invocation protocol.Invocation
+		invocation base.Invocation
 	}
 	tests := []struct {
 		name             string

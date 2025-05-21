@@ -25,7 +25,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 // WildcardValuePattern evaluator must be the last one being executed.
@@ -49,7 +49,7 @@ func (w *WildcardValuePattern) ShouldMatch(pattern string) bool {
 	return true
 }
 
-func (w *WildcardValuePattern) Match(pattern string, value string, url *common.URL, invocation protocol.Invocation, isWhenCondition bool) bool {
+func (w *WildcardValuePattern) Match(pattern string, value string, url *common.URL, invocation base.Invocation, isWhenCondition bool) bool {
 	if url != nil && strings.HasPrefix(pattern, "$") {
 		pattern = url.GetRawParam(pattern[1:])
 	}
