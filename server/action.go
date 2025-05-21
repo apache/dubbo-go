@@ -43,7 +43,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 )
 
@@ -165,7 +165,7 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 		return nil
 	}
 
-	var invoker protocol.Invoker
+	var invoker base.Invoker
 	ports := getRandomPort(protocolConfigs)
 	nextPort := ports.Front()
 	for _, proto := range protocolConfigs {
@@ -249,7 +249,7 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 	return nil
 }
 
-func (svcOpts *ServiceOptions) generatorInvoker(url *common.URL, info *common.ServiceInfo) protocol.Invoker {
+func (svcOpts *ServiceOptions) generatorInvoker(url *common.URL, info *common.ServiceInfo) base.Invoker {
 	proxyFactory := extension.GetProxyFactory(svcOpts.ProxyFactoryKey)
 	if info != nil {
 		url.SetAttribute(constant.ServiceInfoKey, info)
