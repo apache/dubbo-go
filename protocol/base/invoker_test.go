@@ -15,40 +15,30 @@
  * limitations under the License.
  */
 
-package dubbo
+package base
 
 import (
-	"sync"
+	"testing"
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
+	"github.com/stretchr/testify/assert"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
-// DubboExporter is dubbo service exporter.
-type DubboExporter struct {
-	base.BaseExporter
-}
+func TestBaseInvoker(t *testing.T) {
+	url, err := common.NewURL("dubbo://localhost:9090")
+	assert.Nil(t, err)
 
-// NewDubboExporter get a DubboExporter.
-func NewDubboExporter(key string, invoker base.Invoker, exporterMap *sync.Map) *DubboExporter {
-	return &DubboExporter{
-		BaseExporter: *base.NewBaseExporter(key, invoker, exporterMap),
-	}
-}
+	ivk := NewBaseInvoker(url)
+	assert.NotNil(t, ivk.GetURL())
+	assert.True(t, ivk.IsAvailable())
+	assert.False(t, ivk.IsDestroyed())
 
-// Unexport unexport dubbo service exporter.
-func (de *DubboExporter) UnExport() {
-	interfaceName := de.GetInvoker().GetURL().GetParam(constant.InterfaceKey, "")
-	err := common.ServiceMap.UnRegister(interfaceName, DUBBO, de.GetInvoker().GetURL().ServiceKey())
-	if err != nil {
-		logger.Errorf("[DubboExporter.UnExport] error: %v", err)
-	}
-	de.BaseExporter.UnExport()
+	ivk.Destroy()
+	assert.False(t, ivk.IsAvailable())
+	assert.True(t, ivk.IsDestroyed())
 }

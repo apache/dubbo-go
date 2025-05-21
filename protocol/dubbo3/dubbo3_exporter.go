@@ -30,20 +30,20 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 // DubboExporter is dubbo3 service exporter.
 type DubboExporter struct {
-	protocol.BaseExporter
+	base.BaseExporter
 	// serviceMap
 	serviceMap *sync.Map
 }
 
 // NewDubboExporter get a Dubbo3Exporter.
-func NewDubboExporter(key string, invoker protocol.Invoker, exporterMap *sync.Map, serviceMap *sync.Map) *DubboExporter {
+func NewDubboExporter(key string, invoker base.Invoker, exporterMap *sync.Map, serviceMap *sync.Map) *DubboExporter {
 	return &DubboExporter{
-		BaseExporter: *protocol.NewBaseExporter(key, invoker, exporterMap),
+		BaseExporter: *base.NewBaseExporter(key, invoker, exporterMap),
 		serviceMap:   serviceMap,
 	}
 }

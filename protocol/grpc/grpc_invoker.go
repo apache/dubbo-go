@@ -35,14 +35,14 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 var errNoReply = errors.New("request need @response")
 
 // nolint
 type GrpcInvoker struct {
-	protocol.BaseInvoker
+	base.BaseInvoker
 	quitOnce    sync.Once
 	clientGuard *sync.RWMutex
 	client      *Client
@@ -51,7 +51,7 @@ type GrpcInvoker struct {
 // NewGrpcInvoker returns a Grpc invoker instance
 func NewGrpcInvoker(url *common.URL, client *Client) *GrpcInvoker {
 	return &GrpcInvoker{
-		BaseInvoker: *protocol.NewBaseInvoker(url),
+		BaseInvoker: *base.NewBaseInvoker(url),
 		clientGuard: &sync.RWMutex{},
 		client:      client,
 	}
@@ -72,14 +72,14 @@ func (gi *GrpcInvoker) getClient() *Client {
 }
 
 // Invoke is used to call service method by invocation
-func (gi *GrpcInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
-	var result protocol.RPCResult
+func (gi *GrpcInvoker) Invoke(ctx context.Context, invocation base.Invocation) base.Result {
+	var result base.RPCResult
 
 	if !gi.BaseInvoker.IsAvailable() {
 		// Generally, the case will not happen, because the invoker has been removed
 		// from the invoker list before destroy,so no new request will enter the destroyed invoker
 		logger.Warnf("this grpcInvoker is destroyed")
-		result.Err = protocol.ErrDestroyedInvoker
+		result.Err = base.ErrDestroyedInvoker
 		return &result
 	}
 
@@ -87,7 +87,7 @@ func (gi *GrpcInvoker) Invoke(ctx context.Context, invocation protocol.Invocatio
 	defer gi.clientGuard.RUnlock()
 
 	if gi.client == nil {
-		result.Err = protocol.ErrClientClosed
+		result.Err = base.ErrClientClosed
 		return &result
 	}
 
@@ -95,7 +95,7 @@ func (gi *GrpcInvoker) Invoke(ctx context.Context, invocation protocol.Invocatio
 		// Generally, the case will not happen, because the invoker has been removed
 		// from the invoker list before destroy,so no new request will enter the destroyed invoker
 		logger.Warnf("this grpcInvoker is destroying")
-		result.Err = protocol.ErrDestroyedInvoker
+		result.Err = base.ErrDestroyedInvoker
 		return &result
 	}
 

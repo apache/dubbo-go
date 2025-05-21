@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package dubbo
+package base
 
 import (
 	"sync"
@@ -25,30 +25,40 @@ import (
 	"github.com/dubbogo/gost/log/logger"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol/base"
-)
-
-// DubboExporter is dubbo service exporter.
-type DubboExporter struct {
-	base.BaseExporter
+// Exporter is the interface that wraps the basic GetInvoker method and Destroy UnExport.
+//
+// GetInvoker method is to get invoker.
+//
+// UnExport is to un export an exported service
+type Exporter interface {
+	GetInvoker() Invoker
+	UnExport()
 }
 
-// NewDubboExporter get a DubboExporter.
-func NewDubboExporter(key string, invoker base.Invoker, exporterMap *sync.Map) *DubboExporter {
-	return &DubboExporter{
-		BaseExporter: *base.NewBaseExporter(key, invoker, exporterMap),
+// BaseExporter is default exporter implement.
+type BaseExporter struct {
+	key         string
+	invoker     Invoker
+	exporterMap *sync.Map
+}
+
+// NewBaseExporter creates a new BaseExporter
+func NewBaseExporter(key string, invoker Invoker, exporterMap *sync.Map) *BaseExporter {
+	return &BaseExporter{
+		key:         key,
+		invoker:     invoker,
+		exporterMap: exporterMap,
 	}
 }
 
-// Unexport unexport dubbo service exporter.
-func (de *DubboExporter) UnExport() {
-	interfaceName := de.GetInvoker().GetURL().GetParam(constant.InterfaceKey, "")
-	err := common.ServiceMap.UnRegister(interfaceName, DUBBO, de.GetInvoker().GetURL().ServiceKey())
-	if err != nil {
-		logger.Errorf("[DubboExporter.UnExport] error: %v", err)
-	}
-	de.BaseExporter.UnExport()
+// GetInvoker gets invoker
+func (de *BaseExporter) GetInvoker() Invoker {
+	return de.invoker
+}
+
+// UnExport un export service.
+func (de *BaseExporter) UnExport() {
+	logger.Infof("Exporter unexport.")
+	de.invoker.Destroy()
+	de.exporterMap.Delete(de.key)
 }

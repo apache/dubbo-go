@@ -34,7 +34,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 	"dubbo.apache.org/dubbo-go/v3/remoting/getty"
@@ -60,7 +60,7 @@ var dubboProtocol *DubboProtocol
 
 // DubboProtocol supports dubbo protocol. It implements Protocol interface for dubbo protocol.
 type DubboProtocol struct {
-	protocol.BaseProtocol
+	base.BaseProtocol
 	// It is store relationship about serviceKey(group/interface:version) and ExchangeServer
 	// The ExchangeServer is introduced to replace of Server. Because Server is depend on getty directly.
 	serverMap  map[string]*remoting.ExchangeServer
@@ -70,13 +70,13 @@ type DubboProtocol struct {
 // NewDubboProtocol create a dubbo protocol.
 func NewDubboProtocol() *DubboProtocol {
 	return &DubboProtocol{
-		BaseProtocol: protocol.NewBaseProtocol(),
+		BaseProtocol: base.NewBaseProtocol(),
 		serverMap:    make(map[string]*remoting.ExchangeServer),
 	}
 }
 
 // Export export dubbo service.
-func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
+func (dp *DubboProtocol) Export(invoker base.Invoker) base.Exporter {
 	url := invoker.GetURL()
 	serviceKey := url.ServiceKey()
 	exporter := NewDubboExporter(serviceKey, invoker, dp.ExporterMap())
@@ -88,7 +88,7 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 }
 
 // Refer create dubbo service reference.
-func (dp *DubboProtocol) Refer(url *common.URL) protocol.Invoker {
+func (dp *DubboProtocol) Refer(url *common.URL) base.Invoker {
 	exchangeClient := getExchangeClient(url)
 	if exchangeClient == nil {
 		logger.Warnf("can't dial the server: %+v", url.Location)
@@ -124,7 +124,7 @@ func (dp *DubboProtocol) openServer(url *common.URL) {
 		dp.serverLock.Lock()
 		_, ok = dp.serverMap[url.Location]
 		if !ok {
-			handler := func(invocation *invocation.RPCInvocation) protocol.RPCResult {
+			handler := func(invocation *invocation.RPCInvocation) base.RPCResult {
 				return doHandleRequest(invocation)
 			}
 			srv := remoting.NewExchangeServer(url, getty.NewServer(url, handler))
@@ -136,16 +136,16 @@ func (dp *DubboProtocol) openServer(url *common.URL) {
 }
 
 // GetProtocol get a single dubbo protocol.
-func GetProtocol() protocol.Protocol {
+func GetProtocol() base.Protocol {
 	if dubboProtocol == nil {
 		dubboProtocol = NewDubboProtocol()
 	}
 	return dubboProtocol
 }
 
-func doHandleRequest(rpcInvocation *invocation.RPCInvocation) protocol.RPCResult {
+func doHandleRequest(rpcInvocation *invocation.RPCInvocation) base.RPCResult {
 	exporter, _ := dubboProtocol.ExporterMap().Load(rpcInvocation.ServiceKey())
-	result := protocol.RPCResult{}
+	result := base.RPCResult{}
 	if exporter == nil {
 		err := fmt.Errorf("don't have this exporter, key: %s", rpcInvocation.ServiceKey())
 		logger.Errorf(err.Error())
@@ -153,7 +153,7 @@ func doHandleRequest(rpcInvocation *invocation.RPCInvocation) protocol.RPCResult
 		// reply(session, p, hessian.PackageResponse)
 		return result
 	}
-	invoker := exporter.(protocol.Exporter).GetInvoker()
+	invoker := exporter.(base.Exporter).GetInvoker()
 	if invoker != nil {
 		// FIXME
 		ctx := rebuildCtx(rpcInvocation)

@@ -15,15 +15,10 @@
  * limitations under the License.
  */
 
-// Package protocol provides Protocol definition and core RPC protocol implementations
-package protocol
+package base
 
 import (
 	"sync"
-)
-
-import (
-	"github.com/dubbogo/gost/log/logger"
 )
 
 import (
@@ -41,16 +36,6 @@ type Protocol interface {
 	Export(invoker Invoker) Exporter
 	Refer(url *common.URL) Invoker
 	Destroy()
-}
-
-// Exporter is the interface that wraps the basic GetInvoker method and Destroy UnExport.
-//
-// GetInvoker method is to get invoker.
-//
-// UnExport is to un export an exported service
-type Exporter interface {
-	GetInvoker() Invoker
-	UnExport()
 }
 
 // BaseProtocol is default protocol implement.
@@ -115,32 +100,4 @@ func (bp *BaseProtocol) Destroy() {
 		}
 		return true
 	})
-}
-
-// BaseExporter is default exporter implement.
-type BaseExporter struct {
-	key         string
-	invoker     Invoker
-	exporterMap *sync.Map
-}
-
-// NewBaseExporter creates a new BaseExporter
-func NewBaseExporter(key string, invoker Invoker, exporterMap *sync.Map) *BaseExporter {
-	return &BaseExporter{
-		key:         key,
-		invoker:     invoker,
-		exporterMap: exporterMap,
-	}
-}
-
-// GetInvoker gets invoker
-func (de *BaseExporter) GetInvoker() Invoker {
-	return de.invoker
-}
-
-// UnExport un export service.
-func (de *BaseExporter) UnExport() {
-	logger.Infof("Exporter unexport.")
-	de.invoker.Destroy()
-	de.exporterMap.Delete(de.key)
 }

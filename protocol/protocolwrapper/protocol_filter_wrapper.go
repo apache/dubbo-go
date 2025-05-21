@@ -31,7 +31,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 const (
@@ -46,11 +46,11 @@ func init() {
 // ProtocolFilterWrapper
 // protocol in url decide who ProtocolFilterWrapper.protocol is
 type ProtocolFilterWrapper struct {
-	protocol protocol.Protocol
+	protocol base.Protocol
 }
 
 // Export service for remote invocation
-func (pfw *ProtocolFilterWrapper) Export(invoker protocol.Invoker) protocol.Exporter {
+func (pfw *ProtocolFilterWrapper) Export(invoker base.Invoker) base.Exporter {
 	if pfw.protocol == nil {
 		pfw.protocol = extension.GetProtocol(invoker.GetURL().Protocol)
 	}
@@ -59,7 +59,7 @@ func (pfw *ProtocolFilterWrapper) Export(invoker protocol.Invoker) protocol.Expo
 }
 
 // Refer a remote service
-func (pfw *ProtocolFilterWrapper) Refer(url *common.URL) protocol.Invoker {
+func (pfw *ProtocolFilterWrapper) Refer(url *common.URL) base.Invoker {
 	if pfw.protocol == nil {
 		pfw.protocol = extension.GetProtocol(url.Protocol)
 	}
@@ -75,7 +75,7 @@ func (pfw *ProtocolFilterWrapper) Destroy() {
 	pfw.protocol.Destroy()
 }
 
-func BuildInvokerChain(invoker protocol.Invoker, key string) protocol.Invoker {
+func BuildInvokerChain(invoker base.Invoker, key string) base.Invoker {
 	filterName := invoker.GetURL().GetParam(key, "")
 	if filterName == "" {
 		return invoker
@@ -102,14 +102,14 @@ func BuildInvokerChain(invoker protocol.Invoker, key string) protocol.Invoker {
 }
 
 // nolint
-func GetProtocol() protocol.Protocol {
+func GetProtocol() base.Protocol {
 	return &ProtocolFilterWrapper{}
 }
 
 // FilterInvoker defines invoker and filter
 type FilterInvoker struct {
-	next    protocol.Invoker
-	invoker protocol.Invoker
+	next    base.Invoker
+	invoker base.Invoker
 	filter  filter.Filter
 }
 
@@ -124,7 +124,7 @@ func (fi *FilterInvoker) IsAvailable() bool {
 }
 
 // Invoke is used to call service method by invocation
-func (fi *FilterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+func (fi *FilterInvoker) Invoke(ctx context.Context, invocation base.Invocation) base.Result {
 	result := fi.filter.Invoke(ctx, fi.next, invocation)
 	return fi.filter.OnResponse(ctx, result, fi.invoker, invocation)
 }

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package protocol
+package base
 
 import (
 	"fmt"

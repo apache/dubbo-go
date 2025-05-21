@@ -31,7 +31,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/internal"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 const (
@@ -48,13 +48,13 @@ func init() {
 }
 
 type TripleProtocol struct {
-	protocol.BaseProtocol
+	base.BaseProtocol
 	serverLock sync.Mutex
 	serverMap  map[string]*Server
 }
 
 // Export TRIPLE service for remote invocation
-func (tp *TripleProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
+func (tp *TripleProtocol) Export(invoker base.Invoker) base.Exporter {
 	url := invoker.GetURL()
 	serviceKey := url.ServiceKey()
 	var info *common.ServiceInfo
@@ -70,7 +70,7 @@ func (tp *TripleProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	return exporter
 }
 
-func (tp *TripleProtocol) openServer(invoker protocol.Invoker, info *common.ServiceInfo) {
+func (tp *TripleProtocol) openServer(invoker base.Invoker, info *common.ServiceInfo) {
 	url := invoker.GetURL()
 	tp.serverLock.Lock()
 	defer tp.serverLock.Unlock()
@@ -84,14 +84,17 @@ func (tp *TripleProtocol) openServer(invoker protocol.Invoker, info *common.Serv
 		panic("[TRIPLE Protocol]" + url.Key() + "is not existing")
 	}
 
+	// TODO: get triple ServerOptions
+	// srvOpts:= url.GetAttribute(constant.TripleServerOptionsKey)
+	// srv := NewServer(SrvOpts)
 	srv := NewServer()
 	srv.Start(invoker, info)
 	tp.serverMap[url.Location] = srv
 }
 
 // Refer a remote triple service
-func (tp *TripleProtocol) Refer(url *common.URL) protocol.Invoker {
-	var invoker protocol.Invoker
+func (tp *TripleProtocol) Refer(url *common.URL) base.Invoker {
+	var invoker base.Invoker
 	var err error
 	// for now, we do not need to use this info
 	_, ok := url.GetAttribute(constant.ClientInfoKey)
@@ -126,12 +129,12 @@ func (tp *TripleProtocol) Destroy() {
 
 func NewTripleProtocol() *TripleProtocol {
 	return &TripleProtocol{
-		BaseProtocol: protocol.NewBaseProtocol(),
+		BaseProtocol: base.NewBaseProtocol(),
 		serverMap:    make(map[string]*Server),
 	}
 }
 
-func GetProtocol() protocol.Protocol {
+func GetProtocol() base.Protocol {
 	if tripleProtocol == nil {
 		tripleProtocol = NewTripleProtocol()
 	}
