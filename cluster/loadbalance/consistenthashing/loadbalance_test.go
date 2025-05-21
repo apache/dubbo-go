@@ -29,7 +29,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
@@ -56,9 +56,9 @@ type consistentHashSelectorSuite struct {
 }
 
 func (s *consistentHashSelectorSuite) SetupTest() {
-	var invokers []protocol.Invoker
+	var invokers []base.Invoker
 	url, _ := common.NewURL(url20000)
-	invokers = append(invokers, protocol.NewBaseInvoker(url))
+	invokers = append(invokers, base.NewBaseInvoker(url))
 	s.selector = newSelector(invokers, "echo", 999944)
 }
 
@@ -70,9 +70,9 @@ func (s *consistentHashSelectorSuite) TestToKey() {
 func (s *consistentHashSelectorSuite) TestSelectForKey() {
 	url1, _ := common.NewURL(url8080Short)
 	url2, _ := common.NewURL(url8081Short)
-	s.selector.virtualInvokers = make(map[uint32]protocol.Invoker)
-	s.selector.virtualInvokers[99874] = protocol.NewBaseInvoker(url1)
-	s.selector.virtualInvokers[9999945] = protocol.NewBaseInvoker(url2)
+	s.selector.virtualInvokers = make(map[uint32]base.Invoker)
+	s.selector.virtualInvokers[99874] = base.NewBaseInvoker(url1)
+	s.selector.virtualInvokers[9999945] = base.NewBaseInvoker(url2)
 	s.selector.keys = []uint32{99874, 9999945}
 	result := s.selector.selectForKey(9999944)
 	s.Equal(result.GetURL().String(), url8081Short+"?")
@@ -87,10 +87,10 @@ type consistentHashLoadBalanceSuite struct {
 	url1     *common.URL
 	url2     *common.URL
 	url3     *common.URL
-	invokers []protocol.Invoker
-	invoker1 protocol.Invoker
-	invoker2 protocol.Invoker
-	invoker3 protocol.Invoker
+	invokers []base.Invoker
+	invoker1 base.Invoker
+	invoker2 base.Invoker
+	invoker3 base.Invoker
 	lb       loadbalance.LoadBalance
 }
 
@@ -103,9 +103,9 @@ func (s *consistentHashLoadBalanceSuite) SetupTest() {
 	s.url3, err = common.NewURL(url8082)
 	s.NoError(err)
 
-	s.invoker1 = protocol.NewBaseInvoker(s.url1)
-	s.invoker2 = protocol.NewBaseInvoker(s.url2)
-	s.invoker3 = protocol.NewBaseInvoker(s.url3)
+	s.invoker1 = base.NewBaseInvoker(s.url1)
+	s.invoker2 = base.NewBaseInvoker(s.url2)
+	s.invoker3 = base.NewBaseInvoker(s.url3)
 
 	s.invokers = append(s.invokers, s.invoker1, s.invoker2, s.invoker3)
 	s.lb = newConshashLoadBalance()
