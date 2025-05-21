@@ -38,7 +38,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/mock"
 )
@@ -46,11 +46,11 @@ import (
 var availableUrl, _ = common.NewURL(fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider",
 	constant.LocalHostValue, constant.DefaultPort))
 
-func registerAvailable(invoker *mock.MockInvoker) protocol.Invoker {
+func registerAvailable(invoker *mock.MockInvoker) base.Invoker {
 	extension.SetLoadbalance("random", random.NewRandomLoadBalance)
 	availableCluster := NewAvailableCluster()
 
-	invokers := []protocol.Invoker{}
+	invokers := []base.Invoker{}
 	invokers = append(invokers, invoker)
 	invoker.EXPECT().GetURL().Return(availableUrl).AnyTimes()
 	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
@@ -67,7 +67,7 @@ func TestAvailableClusterInvokerSuccess(t *testing.T) {
 	invoker := mock.NewMockInvoker(ctrl)
 	clusterInvoker := registerAvailable(invoker)
 
-	mockResult := &protocol.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
+	mockResult := &base.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
 	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockResult).AnyTimes()
 
@@ -85,7 +85,7 @@ func TestAvailableClusterInvokerNoAvail(t *testing.T) {
 
 	invoker.EXPECT().IsAvailable().Return(false).AnyTimes()
 
-	res := &protocol.RPCResult{Err: errors.New("no provider available")}
+	res := &base.RPCResult{Err: errors.New("no provider available")}
 	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(res).AnyTimes()
 
 	result := clusterInvoker.Invoke(context.TODO(), &invocation.RPCInvocation{})

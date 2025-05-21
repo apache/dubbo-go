@@ -37,7 +37,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/mock"
 )
@@ -45,10 +45,10 @@ import (
 var broadcastUrl, _ = common.NewURL(
 	fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
 
-func registerBroadcast(mockInvokers ...*mock.MockInvoker) protocol.Invoker {
+func registerBroadcast(mockInvokers ...*mock.MockInvoker) base.Invoker {
 	extension.SetLoadbalance("random", random.NewRandomLoadBalance)
 
-	invokers := []protocol.Invoker{}
+	invokers := []base.Invoker{}
 	for _, ivk := range mockInvokers {
 		invokers = append(invokers, ivk)
 		ivk.EXPECT().GetURL().Return(broadcastUrl).AnyTimes()
@@ -66,7 +66,7 @@ func TestBroadcastInvokeSuccess(t *testing.T) {
 
 	invokers := make([]*mock.MockInvoker, 0)
 
-	mockResult := &protocol.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
+	mockResult := &base.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
 	for i := 0; i < 3; i++ {
 		invoker := mock.NewMockInvoker(ctrl)
 		invokers = append(invokers, invoker)
@@ -85,8 +85,8 @@ func TestBroadcastInvokeFailed(t *testing.T) {
 
 	invokers := make([]*mock.MockInvoker, 0)
 
-	mockResult := &protocol.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
-	mockFailedResult := &protocol.RPCResult{Err: errors.New("just failed")}
+	mockResult := &base.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
+	mockFailedResult := &base.RPCResult{Err: errors.New("just failed")}
 	for i := 0; i < 10; i++ {
 		invoker := mock.NewMockInvoker(ctrl)
 		invokers = append(invokers, invoker)

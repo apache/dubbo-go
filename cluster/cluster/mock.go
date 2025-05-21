@@ -30,7 +30,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 var Count int
@@ -51,8 +51,8 @@ func NewMockCluster() Cluster {
 	return &mockCluster{}
 }
 
-func (cluster *mockCluster) Join(directory directory.Directory) protocol.Invoker {
-	return BuildInterceptorChain(protocol.NewBaseInvoker(directory.GetURL()))
+func (cluster *mockCluster) Join(directory directory.Directory) base.Invoker {
+	return BuildInterceptorChain(base.NewBaseInvoker(directory.GetURL()))
 }
 
 type MockInvoker struct {
@@ -84,7 +84,7 @@ func (bi *MockInvoker) IsDestroyed() bool {
 	return bi.destroyed
 }
 
-func (bi *MockInvoker) Invoke(c context.Context, invocation protocol.Invocation) protocol.Result {
+func (bi *MockInvoker) Invoke(c context.Context, invocation base.Invocation) base.Result {
 	Count++
 	var (
 		success bool
@@ -95,7 +95,7 @@ func (bi *MockInvoker) Invoke(c context.Context, invocation protocol.Invocation)
 	} else {
 		err = perrors.New("error")
 	}
-	result := &protocol.RPCResult{Err: err, Rest: Rest{Tried: Count, Success: success}}
+	result := &base.RPCResult{Err: err, Rest: Rest{Tried: Count, Success: success}}
 
 	return result
 }

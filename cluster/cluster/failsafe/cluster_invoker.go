@@ -30,7 +30,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 /**
@@ -44,18 +44,18 @@ type failsafeClusterInvoker struct {
 	base.BaseClusterInvoker
 }
 
-func newFailsafeClusterInvoker(directory directory.Directory) protocol.Invoker {
+func newFailsafeClusterInvoker(directory directory.Directory) protocolbase.Invoker {
 	return &failsafeClusterInvoker{
 		BaseClusterInvoker: base.NewBaseClusterInvoker(directory),
 	}
 }
 
-func (invoker *failsafeClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+func (invoker *failsafeClusterInvoker) Invoke(ctx context.Context, invocation protocolbase.Invocation) protocolbase.Result {
 	invokers := invoker.Directory.List(invocation)
 
 	err := invoker.CheckInvokers(invokers, invocation)
 	if err != nil {
-		return &protocol.RPCResult{}
+		return &protocolbase.RPCResult{}
 	}
 
 	url := invokers[0].GetURL()
@@ -68,8 +68,8 @@ func (invoker *failsafeClusterInvoker) Invoke(ctx context.Context, invocation pr
 	}
 	loadbalance := extension.GetLoadbalance(lb)
 
-	invoked := make([]protocol.Invoker, 0)
-	var result protocol.Result
+	invoked := make([]protocolbase.Invoker, 0)
+	var result protocolbase.Result
 
 	ivk := invoker.DoSelect(loadbalance, invocation, invokers, invoked)
 	// DO INVOKE
@@ -77,7 +77,7 @@ func (invoker *failsafeClusterInvoker) Invoke(ctx context.Context, invocation pr
 	if result.Error() != nil {
 		// ignore
 		logger.Errorf("Failsafe ignore exception: %v.\n", result.Error().Error())
-		return &protocol.RPCResult{}
+		return &protocolbase.RPCResult{}
 	}
 	return result
 }

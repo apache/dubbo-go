@@ -28,32 +28,32 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/cluster/base"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 type broadcastClusterInvoker struct {
 	base.BaseClusterInvoker
 }
 
-func newBroadcastClusterInvoker(directory directory.Directory) protocol.Invoker {
+func newBroadcastClusterInvoker(directory directory.Directory) protocolbase.Invoker {
 	return &broadcastClusterInvoker{
 		BaseClusterInvoker: base.NewBaseClusterInvoker(directory),
 	}
 }
 
 // nolint
-func (invoker *broadcastClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+func (invoker *broadcastClusterInvoker) Invoke(ctx context.Context, invocation protocolbase.Invocation) protocolbase.Result {
 	invokers := invoker.Directory.List(invocation)
 	err := invoker.CheckInvokers(invokers, invocation)
 	if err != nil {
-		return &protocol.RPCResult{Err: err}
+		return &protocolbase.RPCResult{Err: err}
 	}
 	err = invoker.CheckWhetherDestroyed()
 	if err != nil {
-		return &protocol.RPCResult{Err: err}
+		return &protocolbase.RPCResult{Err: err}
 	}
 
-	var result protocol.Result
+	var result protocolbase.Result
 	for _, ivk := range invokers {
 		result = ivk.Invoke(ctx, invocation)
 		if result.Error() != nil {
@@ -62,7 +62,7 @@ func (invoker *broadcastClusterInvoker) Invoke(ctx context.Context, invocation p
 		}
 	}
 	if err != nil {
-		return &protocol.RPCResult{Err: err}
+		return &protocolbase.RPCResult{Err: err}
 	}
 	return result
 }

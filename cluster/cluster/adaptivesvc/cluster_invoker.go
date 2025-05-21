@@ -35,29 +35,29 @@ import (
 	clsutils "dubbo.apache.org/dubbo-go/v3/cluster/utils"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 type adaptiveServiceClusterInvoker struct {
 	base.BaseClusterInvoker
 }
 
-func newAdaptiveServiceClusterInvoker(directory directory.Directory) protocol.Invoker {
+func newAdaptiveServiceClusterInvoker(directory directory.Directory) protocolbase.Invoker {
 	return &adaptiveServiceClusterInvoker{
 		BaseClusterInvoker: base.NewBaseClusterInvoker(directory),
 	}
 }
 
-func (ivk *adaptiveServiceClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+func (ivk *adaptiveServiceClusterInvoker) Invoke(ctx context.Context, invocation protocolbase.Invocation) protocolbase.Result {
 	invokers := ivk.Directory.List(invocation)
 	if err := ivk.CheckInvokers(invokers, invocation); err != nil {
-		return &protocol.RPCResult{Err: err}
+		return &protocolbase.RPCResult{Err: err}
 	}
 
 	// get loadBalance
 	lbKey := invokers[0].GetURL().GetParam(constant.LoadbalanceKey, constant.LoadBalanceKeyP2C)
 	if lbKey != constant.LoadBalanceKeyP2C {
-		return &protocol.RPCResult{Err: perrors.Errorf("adaptive service not supports %s load balance", lbKey)}
+		return &protocolbase.RPCResult{Err: perrors.Errorf("adaptive service not supports %s load balance", lbKey)}
 	}
 	lb := extension.GetLoadbalance(lbKey)
 
@@ -100,7 +100,7 @@ func (ivk *adaptiveServiceClusterInvoker) Invoke(ctx context.Context, invocation
 		invocation.MethodName(), metrics.HillClimbing, uint64(remaining))
 	if err != nil {
 		logger.Warnf("adaptive service metrics update is failed, err: %v", err)
-		return &protocol.RPCResult{Err: err}
+		return &protocolbase.RPCResult{Err: err}
 	}
 
 	return result

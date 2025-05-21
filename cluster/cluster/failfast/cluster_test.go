@@ -38,7 +38,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/mock"
 )
@@ -47,11 +47,11 @@ var failfastUrl, _ = common.NewURL(
 	fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
 
 // registerFailfast register failfastCluster to failfastCluster extension.
-func registerFailfast(invoker *mock.MockInvoker) protocol.Invoker {
+func registerFailfast(invoker *mock.MockInvoker) base.Invoker {
 	extension.SetLoadbalance("random", random.NewRandomLoadBalance)
 	failfastCluster := newFailfastCluster()
 
-	var invokers []protocol.Invoker
+	var invokers []base.Invoker
 	invokers = append(invokers, invoker)
 
 	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
@@ -72,7 +72,7 @@ func TestFailfastInvokeSuccess(t *testing.T) {
 	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 	invoker.EXPECT().GetURL().Return(failfastUrl).AnyTimes()
 
-	mockResult := &protocol.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
+	mockResult := &base.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
 
 	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockResult).AnyTimes()
 	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
@@ -93,7 +93,7 @@ func TestFailfastInvokeFail(t *testing.T) {
 	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 	invoker.EXPECT().GetURL().Return(failfastUrl).AnyTimes()
 
-	mockResult := &protocol.RPCResult{Err: perrors.New("error")}
+	mockResult := &base.RPCResult{Err: perrors.New("error")}
 
 	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockResult).AnyTimes()
 	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})

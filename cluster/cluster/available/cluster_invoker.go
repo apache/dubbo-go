@@ -29,7 +29,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/cluster/base"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 type availableClusterInvoker struct {
@@ -37,22 +37,22 @@ type availableClusterInvoker struct {
 }
 
 // NewClusterInvoker returns a availableCluster invoker instance
-func NewClusterInvoker(directory directory.Directory) protocol.Invoker {
+func NewClusterInvoker(directory directory.Directory) protocolbase.Invoker {
 	return &availableClusterInvoker{
 		BaseClusterInvoker: base.NewBaseClusterInvoker(directory),
 	}
 }
 
-func (invoker *availableClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+func (invoker *availableClusterInvoker) Invoke(ctx context.Context, invocation protocolbase.Invocation) protocolbase.Result {
 	invokers := invoker.Directory.List(invocation)
 	err := invoker.CheckInvokers(invokers, invocation)
 	if err != nil {
-		return &protocol.RPCResult{Err: err}
+		return &protocolbase.RPCResult{Err: err}
 	}
 
 	err = invoker.CheckWhetherDestroyed()
 	if err != nil {
-		return &protocol.RPCResult{Err: err}
+		return &protocolbase.RPCResult{Err: err}
 	}
 
 	for _, ivk := range invokers {
@@ -60,5 +60,5 @@ func (invoker *availableClusterInvoker) Invoke(ctx context.Context, invocation p
 			return ivk.Invoke(ctx, invocation)
 		}
 	}
-	return &protocol.RPCResult{Err: errors.New(fmt.Sprintf("no provider available in %v", invokers))}
+	return &protocolbase.RPCResult{Err: errors.New(fmt.Sprintf("no provider available in %v", invokers))}
 }

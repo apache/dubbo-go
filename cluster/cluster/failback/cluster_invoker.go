@@ -36,7 +36,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 /**
@@ -55,7 +55,7 @@ type failbackClusterInvoker struct {
 	taskList      *queue.Queue
 }
 
-func newFailbackClusterInvoker(directory directory.Directory) protocol.Invoker {
+func newFailbackClusterInvoker(directory directory.Directory) protocolbase.Invoker {
 	invoker := &failbackClusterInvoker{
 		BaseClusterInvoker: base.NewBaseClusterInvoker(directory),
 	}
@@ -76,7 +76,7 @@ func newFailbackClusterInvoker(directory directory.Directory) protocol.Invoker {
 }
 
 func (invoker *failbackClusterInvoker) tryTimerTaskProc(ctx context.Context, retryTask *retryTimerTask) {
-	invoked := make([]protocol.Invoker, 0)
+	invoked := make([]protocolbase.Invoker, 0)
 	invoked = append(invoked, retryTask.lastInvoker)
 
 	retryInvoker := invoker.DoSelect(retryTask.loadbalance, retryTask.invocation, retryTask.invokers, invoked)
@@ -117,12 +117,12 @@ func (invoker *failbackClusterInvoker) process(ctx context.Context) {
 }
 
 // nolint
-func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation protocolbase.Invocation) protocolbase.Result {
 	invokers := invoker.Directory.List(invocation)
 	if err := invoker.CheckInvokers(invokers, invocation); err != nil {
 		logger.Errorf("Failed to invoke the method %v in the service %v, wait for retry in background. Ignored exception: %v.\n",
 			invocation.MethodName(), invoker.GetURL().Service(), err)
-		return &protocol.RPCResult{}
+		return &protocolbase.RPCResult{}
 	}
 
 	// Get the service loadbalance config
@@ -135,7 +135,7 @@ func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation pr
 	}
 
 	loadBalance := extension.GetLoadbalance(lb)
-	invoked := make([]protocol.Invoker, 0, len(invokers))
+	invoked := make([]protocolbase.Invoker, 0, len(invokers))
 	ivk := invoker.DoSelect(loadBalance, invocation, invokers, invoked)
 	// DO INVOKE
 	result := ivk.Invoke(ctx, invocation)
@@ -148,7 +148,7 @@ func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation pr
 		taskLen := invoker.taskList.Len()
 		if taskLen >= invoker.failbackTasks {
 			logger.Warnf("tasklist is too full > %d.\n", taskLen)
-			return &protocol.RPCResult{}
+			return &protocolbase.RPCResult{}
 		}
 
 		timerTask := newRetryTimerTask(loadBalance, invocation, invokers, ivk, invoker)
@@ -157,7 +157,7 @@ func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation pr
 		logger.Errorf("Failback to invoke the method %v in the service %v, wait for retry in background. Ignored exception: %v.\n",
 			methodName, url.Service(), result.Error().Error())
 		// ignore
-		return &protocol.RPCResult{}
+		return &protocolbase.RPCResult{}
 	}
 	return result
 }
@@ -175,9 +175,9 @@ func (invoker *failbackClusterInvoker) Destroy() {
 
 type retryTimerTask struct {
 	loadbalance    loadbalance.LoadBalance
-	invocation     protocol.Invocation
-	invokers       []protocol.Invoker
-	lastInvoker    protocol.Invoker
+	invocation     protocolbase.Invocation
+	invokers       []protocolbase.Invoker
+	lastInvoker    protocolbase.Invoker
 	retries        int64
 	maxRetries     int64
 	lastT          time.Time
@@ -201,8 +201,8 @@ func (t *retryTimerTask) checkRetry() {
 	}
 }
 
-func newRetryTimerTask(loadbalance loadbalance.LoadBalance, invocation protocol.Invocation, invokers []protocol.Invoker,
-	lastInvoker protocol.Invoker, cInvoker *failbackClusterInvoker) *retryTimerTask {
+func newRetryTimerTask(loadbalance loadbalance.LoadBalance, invocation protocolbase.Invocation, invokers []protocolbase.Invoker,
+	lastInvoker protocolbase.Invoker, cInvoker *failbackClusterInvoker) *retryTimerTask {
 	task := &retryTimerTask{
 		loadbalance:    loadbalance,
 		invocation:     invocation,

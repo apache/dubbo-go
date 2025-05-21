@@ -22,7 +22,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 func init() {
@@ -40,6 +40,6 @@ func newFailfastCluster() clusterpkg.Cluster {
 }
 
 // Join returns a baseClusterInvoker instance
-func (cluster *failfastCluster) Join(directory directory.Directory) protocol.Invoker {
+func (cluster *failfastCluster) Join(directory directory.Directory) base.Invoker {
 	return clusterpkg.BuildInterceptorChain(newFailfastClusterInvoker(directory))
 }
