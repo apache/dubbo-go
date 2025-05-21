@@ -38,7 +38,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	_ "dubbo.apache.org/dubbo-go/v3/config_center/configurator"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
@@ -95,7 +95,7 @@ func (proto *registryProtocol) getRegistry(registryUrl *common.URL) registry.Reg
 	return actualReg.(registry.Registry)
 }
 
-func getCacheKey(invoker protocol.Invoker) string {
+func getCacheKey(invoker base.Invoker) string {
 	url := getProviderUrl(invoker)
 	delKeys := gxset.NewSet("dynamic", "enabled")
 	return url.CloneExceptParams(delKeys).String()
@@ -140,7 +140,7 @@ func (proto *registryProtocol) GetRegistries() []registry.Registry {
 }
 
 // Refer provider service from registry center
-func (proto *registryProtocol) Refer(url *common.URL) protocol.Invoker {
+func (proto *registryProtocol) Refer(url *common.URL) base.Invoker {
 	registryUrl := url
 	serviceUrl := registryUrl.SubURL
 	if registryUrl.Protocol == constant.RegistryProtocol {
@@ -176,7 +176,7 @@ func (proto *registryProtocol) Refer(url *common.URL) protocol.Invoker {
 }
 
 // Export provider service to registry center
-func (proto *registryProtocol) Export(originInvoker protocol.Invoker) protocol.Exporter {
+func (proto *registryProtocol) Export(originInvoker base.Invoker) base.Exporter {
 	proto.once.Do(func() {
 		proto.initConfigurationListeners()
 	})
@@ -227,7 +227,7 @@ func (proto *registryProtocol) Export(originInvoker protocol.Invoker) protocol.E
 	return exporter
 }
 
-func (proto *registryProtocol) doLocalExport(originInvoker protocol.Invoker, providerUrl *common.URL) *exporterChangeableWrapper {
+func (proto *registryProtocol) doLocalExport(originInvoker base.Invoker, providerUrl *common.URL) *exporterChangeableWrapper {
 	key := getCacheKey(originInvoker)
 	cachedExporter, loaded := proto.bounds.Load(key)
 	if !loaded {
@@ -240,11 +240,11 @@ func (proto *registryProtocol) doLocalExport(originInvoker protocol.Invoker, pro
 	return cachedExporter.(*exporterChangeableWrapper)
 }
 
-func (proto *registryProtocol) reExport(invoker protocol.Invoker, newUrl *common.URL) {
+func (proto *registryProtocol) reExport(invoker base.Invoker, newUrl *common.URL) {
 	key := getCacheKey(invoker)
 	if oldExporter, loaded := proto.bounds.Load(key); loaded {
 		wrappedNewInvoker := newInvokerDelegate(invoker, newUrl)
-		oldExporter.(protocol.Exporter).UnExport()
+		oldExporter.(base.Exporter).UnExport()
 		proto.bounds.Delete(key)
 		// oldExporter UnExport function unRegister rpcService from the serviceMap, so need register it again as far as possible
 		if err := registerServiceMap(invoker); err != nil {
@@ -255,7 +255,7 @@ func (proto *registryProtocol) reExport(invoker protocol.Invoker, newUrl *common
 	}
 }
 
-func registerServiceMap(invoker protocol.Invoker) error {
+func registerServiceMap(invoker base.Invoker) error {
 	providerUrl := getProviderUrl(invoker)
 	// the bean.name param of providerUrl is the ServiceConfig id property
 	// such as dubbo://:20000/org.apache.dubbo.UserProvider?bean.name=UserProvider&cluster=failfast...
@@ -285,12 +285,12 @@ func registerServiceMap(invoker protocol.Invoker) error {
 
 type overrideSubscribeListener struct {
 	url           *common.URL
-	originInvoker protocol.Invoker
+	originInvoker base.Invoker
 	protocol      *registryProtocol
 	configurator  config_center.Configurator
 }
 
-func newOverrideSubscribeListener(overriderUrl *common.URL, invoker protocol.Invoker, proto *registryProtocol) *overrideSubscribeListener {
+func newOverrideSubscribeListener(overriderUrl *common.URL, invoker base.Invoker, proto *registryProtocol) *overrideSubscribeListener {
 	return &overrideSubscribeListener{url: overriderUrl, originInvoker: invoker, protocol: proto}
 }
 
@@ -316,7 +316,7 @@ func (nl *overrideSubscribeListener) doOverrideIfNecessary() {
 	providerUrl := getProviderUrl(nl.originInvoker)
 	key := getCacheKey(nl.originInvoker)
 	if exporter, ok := nl.protocol.bounds.Load(key); ok {
-		currentUrl := exporter.(protocol.Exporter).GetInvoker().GetURL()
+		currentUrl := exporter.(base.Exporter).GetInvoker().GetURL()
 		// Compatible with the 2.6.x
 		if nl.configurator != nil {
 			nl.configurator.Configure(providerUrl)
@@ -429,7 +429,7 @@ func (proto *registryProtocol) Destroy() {
 	})
 }
 
-func getRegistryUrl(invoker protocol.Invoker) *common.URL {
+func getRegistryUrl(invoker base.Invoker) *common.URL {
 	// here add * for return a new url
 	url := invoker.GetURL()
 	// if the protocol == registry, set protocol the registry value in url.params
@@ -439,7 +439,7 @@ func getRegistryUrl(invoker protocol.Invoker) *common.URL {
 	return url
 }
 
-func getProviderUrl(invoker protocol.Invoker) *common.URL {
+func getProviderUrl(invoker base.Invoker) *common.URL {
 	url := invoker.GetURL()
 	// be careful params maps in url is map type
 	return url.SubURL.Clone()
@@ -450,7 +450,7 @@ func setProviderUrl(regURL *common.URL, providerURL *common.URL) {
 }
 
 // GetProtocol return the singleton registryProtocol
-func GetProtocol() protocol.Protocol {
+func GetProtocol() base.Protocol {
 	once.Do(func() {
 		regProtocol = newRegistryProtocol()
 	})
@@ -458,26 +458,26 @@ func GetProtocol() protocol.Protocol {
 }
 
 type invokerDelegate struct {
-	invoker protocol.Invoker
-	protocol.BaseInvoker
+	invoker base.Invoker
+	base.BaseInvoker
 }
 
-func newInvokerDelegate(invoker protocol.Invoker, url *common.URL) *invokerDelegate {
+func newInvokerDelegate(invoker base.Invoker, url *common.URL) *invokerDelegate {
 	return &invokerDelegate{
 		invoker:     invoker,
-		BaseInvoker: *protocol.NewBaseInvoker(url),
+		BaseInvoker: *base.NewBaseInvoker(url),
 	}
 }
 
 // Invoke remote service base on URL of wrappedInvoker
-func (ivk *invokerDelegate) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+func (ivk *invokerDelegate) Invoke(ctx context.Context, invocation base.Invocation) base.Result {
 	return ivk.invoker.Invoke(ctx, invocation)
 }
 
 type exporterChangeableWrapper struct {
-	protocol.Exporter
-	originInvoker protocol.Invoker
-	exporter      protocol.Exporter
+	base.Exporter
+	originInvoker base.Invoker
+	exporter      base.Exporter
 	registerUrl   *common.URL
 	subscribeUrl  *common.URL
 }
@@ -494,11 +494,11 @@ func (e *exporterChangeableWrapper) SetSubscribeUrl(subscribeUrl *common.URL) {
 	e.subscribeUrl = subscribeUrl
 }
 
-func (e *exporterChangeableWrapper) GetInvoker() protocol.Invoker {
+func (e *exporterChangeableWrapper) GetInvoker() base.Invoker {
 	return e.exporter.GetInvoker()
 }
 
-func newExporterChangeableWrapper(originInvoker protocol.Invoker, exporter protocol.Exporter) *exporterChangeableWrapper {
+func newExporterChangeableWrapper(originInvoker base.Invoker, exporter base.Exporter) *exporterChangeableWrapper {
 	return &exporterChangeableWrapper{
 		originInvoker: originInvoker,
 		exporter:      exporter,
