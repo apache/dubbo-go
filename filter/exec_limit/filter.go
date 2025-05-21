@@ -60,7 +60,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/handler"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 var (
@@ -94,7 +94,7 @@ func newFilter() filter.Filter {
 }
 
 // Invoke judges whether the current processing requests over the threshold
-func (f *executeLimitFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (f *executeLimitFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) base.Result {
 	methodConfigPrefix := "methods." + invocation.MethodName() + "."
 	ivkURL := invoker.GetURL()
 	limitTarget := ivkURL.ServiceKey()
@@ -112,7 +112,7 @@ func (f *executeLimitFilter) Invoke(ctx context.Context, invoker protocol.Invoke
 	limitRate, err := strconv.ParseInt(limitRateConfig, 0, 0)
 	if err != nil {
 		logger.Errorf("The configuration of execute.limit is invalid: %s", limitRateConfig)
-		return &protocol.RPCResult{}
+		return &base.RPCResult{}
 	}
 
 	if limitRate < 0 {
@@ -141,7 +141,7 @@ func (f *executeLimitFilter) Invoke(ctx context.Context, invoker protocol.Invoke
 }
 
 // OnResponse dummy process, returns the result directly
-func (f *executeLimitFilter) OnResponse(_ context.Context, result protocol.Result, _ protocol.Invoker, _ protocol.Invocation) protocol.Result {
+func (f *executeLimitFilter) OnResponse(_ context.Context, result base.Result, _ base.Invoker, _ base.Invocation) base.Result {
 	return result
 }
 

@@ -30,7 +30,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 const (
@@ -68,10 +68,10 @@ type OnlyLogRejectedExecutionHandler struct{}
 
 // RejectedExecution will do nothing, it only log the invocation.
 func (handler *OnlyLogRejectedExecutionHandler) RejectedExecution(url *common.URL,
-	_ protocol.Invocation) protocol.Result {
+	_ base.Invocation) base.Result {
 
 	logger.Errorf("The invocation was rejected. url: %s", url.String())
-	return &protocol.RPCResult{}
+	return &base.RPCResult{}
 }
 
 // GetOnlyLogRejectedExecutionHandler will return the instance of OnlyLogRejectedExecutionHandler

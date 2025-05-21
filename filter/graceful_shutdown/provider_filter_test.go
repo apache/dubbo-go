@@ -35,7 +35,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/filter"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
@@ -61,12 +61,12 @@ func TestProviderFilterInvoke(t *testing.T) {
 	filter.Set(constant.GracefulShutdownFilterShutdownConfig, config.GetShutDown())
 	assert.Equal(t, filter.shutdownConfig, config.GetShutDown())
 
-	result := filter.Invoke(context.Background(), protocol.NewBaseInvoker(url), invocation)
+	result := filter.Invoke(context.Background(), base.NewBaseInvoker(url), invocation)
 	assert.NotNil(t, result)
 	assert.Nil(t, result.Error())
 
 	config.GetShutDown().RejectRequest.Store(true)
-	result = filter.Invoke(context.Background(), protocol.NewBaseInvoker(url), invocation)
+	result = filter.Invoke(context.Background(), base.NewBaseInvoker(url), invocation)
 	assert.NotNil(t, result)
 	assert.NotNil(t, result.Error().Error(), "Rejected")
 
@@ -76,9 +76,9 @@ type TestRejectedExecutionHandler struct{}
 
 // RejectedExecution will do nothing, it only log the invocation.
 func (handler *TestRejectedExecutionHandler) RejectedExecution(url *common.URL,
-	_ protocol.Invocation) protocol.Result {
+	_ base.Invocation) base.Result {
 
-	return &protocol.RPCResult{
+	return &base.RPCResult{
 		Err: perrors.New("Rejected"),
 	}
 }

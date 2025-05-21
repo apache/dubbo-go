@@ -19,7 +19,7 @@ package filter
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 // RejectedExecutionHandler is the interface which defines the handler to handle exceptions from invoking filters.
@@ -30,5 +30,5 @@ import (
 //
 // RejectedExecution method will be called if the invocation was rejected by some component.
 type RejectedExecutionHandler interface {
-	RejectedExecution(url *common.URL, invocation protocol.Invocation) protocol.Result
+	RejectedExecution(url *common.URL, invocation base.Invocation) base.Result
 }

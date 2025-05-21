@@ -41,7 +41,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/filter"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 const (
@@ -133,7 +133,7 @@ type Filter struct {
 }
 
 // Invoke is an implementation of filter, provides Hystrix pattern latency and fault tolerance
-func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (f *Filter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) base.Result {
 	cmdName := fmt.Sprintf("%s&method=%s", invoker.GetURL().Key(), invocation.MethodName())
 
 	// Do the configuration if the circuit breaker is created for the first time
@@ -168,7 +168,7 @@ func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocatio
 		return invoker.Invoke(ctx, invocation)
 	}
 	logger.Infof("[Hystrix Filter]Using hystrix filter: %s", cmdName)
-	var result protocol.Result
+	var result base.Result
 	_ = hystrix.Do(cmdName, func() error {
 		result = invoker.Invoke(ctx, invocation)
 		err := result.Error()
@@ -186,7 +186,7 @@ func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocatio
 		// Return error and if it is caused by hystrix logic, so that it can be handled by previous filters.
 		_, ok := err.(hystrix.CircuitError)
 		logger.Debugf("[Hystrix Filter]Hystrix health check counted, error is: %v, failed by hystrix: %v; %s", err, ok, cmdName)
-		result = &protocol.RPCResult{}
+		result = &base.RPCResult{}
 		result.SetResult(nil)
 		result.SetError(NewHystrixFilterError(err, ok))
 		return err
@@ -195,7 +195,7 @@ func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocatio
 }
 
 // OnResponse dummy process, returns the result directly
-func (f *Filter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (f *Filter) OnResponse(ctx context.Context, result base.Result, invoker base.Invoker, invocation base.Invocation) base.Result {
 	return result
 }
 

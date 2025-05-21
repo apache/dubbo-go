@@ -38,7 +38,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/filter/generic/generalizer"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/mock"
 )
@@ -151,18 +151,18 @@ func TestServiceFilter_Invoke(t *testing.T) {
 		gomock.Not(invocation2),
 		gomock.Not(invocation3),
 	)).DoAndReturn(
-		func(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+		func(ctx context.Context, invocation base.Invocation) base.Result {
 			switch invocation.MethodName() {
 			case "Hello":
 				who := invocation.Arguments()[0].(string)
 				result, _ := service.Hello(who)
-				return &protocol.RPCResult{
+				return &base.RPCResult{
 					Rest: result,
 				}
 			case "HelloPB":
 				req := invocation.Arguments()[0].(*generalizer.RequestType)
 				result, _ := service.HelloPB(req)
-				return &protocol.RPCResult{
+				return &base.RPCResult{
 					Rest: result,
 				}
 			default:
@@ -205,7 +205,7 @@ func TestServiceFilter_OnResponse(t *testing.T) {
 			constant.GenericKey: "true",
 		})
 
-	rpcResult := &protocol.RPCResult{
+	rpcResult := &base.RPCResult{
 		Rest: "result",
 	}
 

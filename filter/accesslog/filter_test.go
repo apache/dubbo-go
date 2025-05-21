@@ -31,7 +31,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
@@ -44,7 +44,7 @@ func TestFilter_Invoke_Not_Config(t *testing.T) {
 			"loadbalance=random&methods.GetUser.retries=1&methods.GetUser.weight=0&module=dubbogo+user-info+server&name=" +
 			"BDTService&organization=ikurento.com&owner=ZX&registry.role=3&retries=&" +
 			"service.filter=echo%2Ctoken%2Caccesslog&timestamp=1569153406&token=934804bf-b007-4174-94eb-96e3e1d60cc7&version=&warmup=100")
-	invoker := protocol.NewBaseInvoker(url)
+	invoker := base.NewBaseInvoker(url)
 
 	attach := make(map[string]any, 10)
 	inv := invocation.NewRPCInvocation("MethodName", []any{"OK", "Hello"}, attach)
@@ -63,7 +63,7 @@ func TestFilterInvokeDefaultConfig(t *testing.T) {
 			"loadbalance=random&methods.GetUser.retries=1&methods.GetUser.weight=0&module=dubbogo+user-info+server&name=" +
 			"BDTService&organization=ikurento.com&owner=ZX&registry.role=3&retries=&" +
 			"service.filter=echo%2Ctoken%2Caccesslog&timestamp=1569153406&token=934804bf-b007-4174-94eb-96e3e1d60cc7&version=&warmup=100")
-	invoker := protocol.NewBaseInvoker(url)
+	invoker := base.NewBaseInvoker(url)
 
 	attach := make(map[string]any, 10)
 	attach[constant.VersionKey] = "1.0"
@@ -76,7 +76,7 @@ func TestFilterInvokeDefaultConfig(t *testing.T) {
 }
 
 func TestFilterOnResponse(t *testing.T) {
-	result := &protocol.RPCResult{}
+	result := &base.RPCResult{}
 	accessLogFilter := &Filter{}
 	response := accessLogFilter.OnResponse(context.TODO(), result, nil, nil)
 	assert.Equal(t, result, response)

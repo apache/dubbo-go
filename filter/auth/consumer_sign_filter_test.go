@@ -31,7 +31,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/mock"
 )
@@ -45,7 +45,7 @@ func TestConsumerSignFilter_Invoke(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	invoker := mock.NewMockInvoker(ctrl)
-	result := &protocol.RPCResult{}
+	result := &base.RPCResult{}
 	invoker.EXPECT().Invoke(context.Background(), inv).Return(result).Times(2)
 	invoker.EXPECT().GetURL().Return(url).Times(2)
 	assert.Equal(t, result, filter.Invoke(context.Background(), invoker, inv))

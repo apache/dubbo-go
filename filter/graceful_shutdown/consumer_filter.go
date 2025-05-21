@@ -31,7 +31,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/filter"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 var (
@@ -61,13 +61,13 @@ func newConsumerGracefulShutdownFilter() filter.Filter {
 }
 
 // Invoke adds the requests count and block the new requests if application is closing
-func (f *consumerGracefulShutdownFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (f *consumerGracefulShutdownFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) base.Result {
 	f.shutdownConfig.ConsumerActiveCount.Inc()
 	return invoker.Invoke(ctx, invocation)
 }
 
 // OnResponse reduces the number of active processes then return the process result
-func (f *consumerGracefulShutdownFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (f *consumerGracefulShutdownFilter) OnResponse(ctx context.Context, result base.Result, invoker base.Invoker, invocation base.Invocation) base.Result {
 	f.shutdownConfig.ConsumerActiveCount.Dec()
 	return result
 }

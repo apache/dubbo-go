@@ -34,7 +34,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 func init() {
@@ -58,11 +58,11 @@ type otelServerFilter struct {
 	TracerProvider trace.TracerProvider
 }
 
-func (f *otelServerFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, protocol protocol.Invocation) protocol.Result {
+func (f *otelServerFilter) OnResponse(ctx context.Context, result base.Result, invoker base.Invoker, protocol base.Invocation) base.Result {
 	return result
 }
 
-func (f *otelServerFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (f *otelServerFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) base.Result {
 	attachments := invocation.Attachments()
 	bags, spanCtx := Extract(ctx, attachments, f.Propagators)
 	ctx = baggage.ContextWithBaggage(ctx, bags)
@@ -99,11 +99,11 @@ type otelClientFilter struct {
 	TracerProvider trace.TracerProvider
 }
 
-func (f *otelClientFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, protocol protocol.Invocation) protocol.Result {
+func (f *otelClientFilter) OnResponse(ctx context.Context, result base.Result, invoker base.Invoker, protocol base.Invocation) base.Result {
 	return result
 }
 
-func (f *otelClientFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (f *otelClientFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) base.Result {
 	tracer := f.TracerProvider.Tracer(
 		constant.OtelPackageName,
 		trace.WithInstrumentationVersion(constant.OtelPackageVersion),

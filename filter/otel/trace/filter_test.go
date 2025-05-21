@@ -33,7 +33,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 type fields struct {
@@ -42,10 +42,10 @@ type fields struct {
 }
 type args struct {
 	ctx        context.Context
-	result     protocol.Result
-	invoker    protocol.Invoker
-	protocol   protocol.Invocation
-	invocation protocol.Invocation
+	result     base.Result
+	invoker    base.Invoker
+	protocol   base.Invocation
+	invocation base.Invocation
 }
 
 // MockInvocation is a mock of Invocation interface
@@ -167,9 +167,9 @@ func (mr *MockInvocationMockRecorder) Reply() *gomock.Call {
 }
 
 // Invoker mocks base method
-func (m *MockInvocation) Invoker() protocol.Invoker {
+func (m *MockInvocation) Invoker() base.Invoker {
 	ret := m.ctrl.Call(m, "Invoker")
-	ret0, _ := ret[0].(protocol.Invoker)
+	ret0, _ := ret[0].(base.Invoker)
 	return ret0
 }
 
@@ -481,9 +481,9 @@ func (mr *MockInvokerMockRecorder) Destroy() *gomock.Call {
 }
 
 // Invoke mocks base method
-func (m *MockInvoker) Invoke(arg0 context.Context, arg1 protocol.Invocation) protocol.Result {
+func (m *MockInvoker) Invoke(arg0 context.Context, arg1 base.Invocation) base.Result {
 	ret := m.ctrl.Call(m, "Invoke", arg0, arg1)
-	ret0, _ := ret[0].(protocol.Result)
+	ret0, _ := ret[0].(base.Result)
 	return ret0
 }
 
@@ -504,7 +504,7 @@ func Test_otelServerFilter_OnResponse(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   protocol.Result
+		want   base.Result
 	}{
 		{
 			name:   "test",
@@ -531,7 +531,7 @@ func Test_otelClientFilter_OnResponse(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   protocol.Result
+		want   base.Result
 	}{
 		{
 			name:   "test",
@@ -573,7 +573,7 @@ func Test_otelServerFilter_Invoke(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   protocol.Result
+		want   base.Result
 	}{
 		{
 			name:   "test",
@@ -619,7 +619,7 @@ func Test_otelClientFilter_Invoke(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   protocol.Result
+		want   base.Result
 	}{
 		{
 			name:   "test",

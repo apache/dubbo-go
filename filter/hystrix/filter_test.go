@@ -35,7 +35,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
@@ -130,22 +130,22 @@ func TestGetConfig3(t *testing.T) {
 }
 
 type testMockSuccessInvoker struct {
-	protocol.BaseInvoker
+	base.BaseInvoker
 }
 
-func (iv *testMockSuccessInvoker) Invoke(_ context.Context, _ protocol.Invocation) protocol.Result {
-	return &protocol.RPCResult{
+func (iv *testMockSuccessInvoker) Invoke(_ context.Context, _ base.Invocation) base.Result {
+	return &base.RPCResult{
 		Rest: "Success",
 		Err:  nil,
 	}
 }
 
 type testMockFailInvoker struct {
-	protocol.BaseInvoker
+	base.BaseInvoker
 }
 
-func (iv *testMockFailInvoker) Invoke(_ context.Context, _ protocol.Invocation) protocol.Result {
-	return &protocol.RPCResult{
+func (iv *testMockFailInvoker) Invoke(_ context.Context, _ base.Invocation) base.Result {
+	return &base.RPCResult{
 		Err: errors.Errorf("exception"),
 	}
 }
@@ -155,7 +155,7 @@ func TestHystrixFilterInvokeSuccess(t *testing.T) {
 	testUrl, err := common.NewURL(
 		fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
 	assert.NoError(t, err)
-	testInvoker := testMockSuccessInvoker{*protocol.NewBaseInvoker(testUrl)}
+	testInvoker := testMockSuccessInvoker{*base.NewBaseInvoker(testUrl)}
 	result := hf.Invoke(context.Background(), &testInvoker, &invocation.RPCInvocation{})
 	assert.NotNil(t, result)
 	assert.NoError(t, result.Error())
@@ -167,7 +167,7 @@ func TestHystrixFilterInvokeFail(t *testing.T) {
 	testUrl, err := common.NewURL(
 		fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
 	assert.NoError(t, err)
-	testInvoker := testMockFailInvoker{*protocol.NewBaseInvoker(testUrl)}
+	testInvoker := testMockFailInvoker{*base.NewBaseInvoker(testUrl)}
 	result := hf.Invoke(context.Background(), &testInvoker, &invocation.RPCInvocation{})
 	assert.NotNil(t, result)
 	assert.Error(t, result.Error())
@@ -177,13 +177,13 @@ func TestHystricFilterInvokeCircuitBreak(t *testing.T) {
 	mockInitHystrixConfig()
 	hystrix.Flush()
 	hf := &Filter{COrP: true}
-	resChan := make(chan protocol.Result, 50)
+	resChan := make(chan base.Result, 50)
 	for i := 0; i < 50; i++ {
 		go func() {
 			testUrl, err := common.NewURL(
 				fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
 			assert.NoError(t, err)
-			testInvoker := testMockSuccessInvoker{*protocol.NewBaseInvoker(testUrl)}
+			testInvoker := testMockSuccessInvoker{*base.NewBaseInvoker(testUrl)}
 			result := hf.Invoke(context.Background(), &testInvoker, &invocation.RPCInvocation{})
 			resChan <- result
 		}()
@@ -205,13 +205,13 @@ func TestHystricFilterInvokeCircuitBreakOmitException(t *testing.T) {
 	reg, _ := regexp.Compile(".*exception.*")
 	regs := []*regexp.Regexp{reg}
 	hf := &Filter{res: map[string][]*regexp.Regexp{"": regs}, COrP: true}
-	resChan := make(chan protocol.Result, 50)
+	resChan := make(chan base.Result, 50)
 	for i := 0; i < 50; i++ {
 		go func() {
 			testUrl, err := common.NewURL(
 				fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
 			assert.NoError(t, err)
-			testInvoker := testMockSuccessInvoker{*protocol.NewBaseInvoker(testUrl)}
+			testInvoker := testMockSuccessInvoker{*base.NewBaseInvoker(testUrl)}
 			result := hf.Invoke(context.Background(), &testInvoker, &invocation.RPCInvocation{})
 			resChan <- result
 		}()
