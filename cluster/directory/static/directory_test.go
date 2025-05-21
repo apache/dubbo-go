@@ -28,15 +28,15 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
 func TestStaticDirList(t *testing.T) {
-	invokers := []protocol.Invoker{}
+	invokers := []base.Invoker{}
 	for i := 0; i < 10; i++ {
 		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
-		invokers = append(invokers, protocol.NewBaseInvoker(url))
+		invokers = append(invokers, base.NewBaseInvoker(url))
 	}
 
 	staticDir := NewDirectory(invokers)
@@ -46,10 +46,10 @@ func TestStaticDirList(t *testing.T) {
 }
 
 func TestStaticDirDestroy(t *testing.T) {
-	invokers := []protocol.Invoker{}
+	invokers := []base.Invoker{}
 	for i := 0; i < 10; i++ {
 		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
-		invokers = append(invokers, protocol.NewBaseInvoker(url))
+		invokers = append(invokers, base.NewBaseInvoker(url))
 	}
 
 	staticDir := NewDirectory(invokers)
