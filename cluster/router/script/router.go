@@ -35,7 +35,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
@@ -140,7 +140,7 @@ func (s *ScriptRouter) Process(event *config_center.ConfigChangeEvent) {
 	}
 }
 
-func (s *ScriptRouter) runScript(scriptType, rawScript string, invokers []protocol.Invoker, invocation protocol.Invocation) ([]protocol.Invoker, error) {
+func (s *ScriptRouter) runScript(scriptType, rawScript string, invokers []base.Invoker, invocation base.Invocation) ([]base.Invoker, error) {
 	in, err := ins.GetInstances(scriptType)
 	if err != nil {
 		return nil, err
@@ -148,9 +148,9 @@ func (s *ScriptRouter) runScript(scriptType, rawScript string, invokers []protoc
 	return in.Run(rawScript, invokers, invocation)
 }
 
-func (s *ScriptRouter) Route(invokers []protocol.Invoker, _ *common.URL, invocation protocol.Invocation) []protocol.Invoker {
+func (s *ScriptRouter) Route(invokers []base.Invoker, _ *common.URL, invocation base.Invocation) []base.Invoker {
 	if len(invokers) == 0 {
-		return []protocol.Invoker{}
+		return []base.Invoker{}
 	}
 
 	s.mu.RLock()
@@ -177,7 +177,7 @@ func (s *ScriptRouter) Priority() int64 {
 	return 0
 }
 
-func (s *ScriptRouter) Notify(invokers []protocol.Invoker) {
+func (s *ScriptRouter) Notify(invokers []base.Invoker) {
 	if len(invokers) == 0 {
 		return
 	}

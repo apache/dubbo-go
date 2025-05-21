@@ -36,7 +36,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
@@ -65,9 +65,9 @@ var url3 = func() *common.URL {
 	return i
 }
 
-func getRouteArgs() ([]protocol.Invoker, protocol.Invocation, context.Context) {
-	return []protocol.Invoker{
-			protocol.NewBaseInvoker(url1()), protocol.NewBaseInvoker(url2()), protocol.NewBaseInvoker(url3()),
+func getRouteArgs() ([]base.Invoker, base.Invocation, context.Context) {
+	return []base.Invoker{
+			base.NewBaseInvoker(url1()), base.NewBaseInvoker(url2()), base.NewBaseInvoker(url3()),
 		}, invocation.NewRPCInvocation("GetUser", nil, map[string]any{
 			"attachmentKey": []string{"attachmentValue"},
 		}),
@@ -121,7 +121,7 @@ func re_init_res_recv(runtime *goja.Runtime) {
 func TestStructureFuncImpl(t *testing.T) {
 	runtime := goja.New()
 
-	test_invokers := []protocol.Invoker{protocol.NewBaseInvoker(url1())}
+	test_invokers := []base.Invoker{base.NewBaseInvoker(url1())}
 	test_invocation := invocation.NewRPCInvocation("GetUser", nil, map[string]any{"attachmentKey": []string{"attachmentValue"}})
 	test_context := context.TODO() // set invoker test field
 
@@ -484,7 +484,7 @@ func TestFuncWithCompile(t *testing.T) {
 		panic(err)
 	}
 	assert.Equal(t, 2, len(res.Export().([]any)))
-	assert.Equal(t, localIp, (*(res.Export().([]any)[0]).(*protocol.BaseInvoker)).GetURL().Ip)
+	assert.Equal(t, localIp, (*(res.Export().([]any)[0]).(*base.BaseInvoker)).GetURL().Ip)
 }
 
 func TestFuncWithCompileConcurrent(t *testing.T) {
@@ -506,7 +506,7 @@ func TestFuncWithCompileConcurrent(t *testing.T) {
 				panic(err)
 			}
 			assert.Equal(t, 2, len(res.Export().([]any)))
-			assert.Equal(t, localIp, (*(res.Export().([]any)[0]).(*protocol.BaseInvoker)).GetURL().Ip)
+			assert.Equal(t, localIp, (*(res.Export().([]any)[0]).(*base.BaseInvoker)).GetURL().Ip)
 		}()
 	}
 	wg.Wait()
@@ -543,18 +543,18 @@ function route(invokers,invocation,context) {
 			panic(err)
 		}
 		assert.Equal(t, 2, len(res.Export().([]any)))
-		assert.Equal(t, localIp, (*(res.Export().([]any)[0]).(*protocol.BaseInvoker)).GetURL().Ip)
-		assert.Equal(t, "20004", (*(res.Export().([]any)[0]).(*protocol.BaseInvoker)).GetURL().Port)
+		assert.Equal(t, localIp, (*(res.Export().([]any)[0]).(*base.BaseInvoker)).GetURL().Ip)
+		assert.Equal(t, "20004", (*(res.Export().([]any)[0]).(*base.BaseInvoker)).GetURL().Port)
 	}
 }
 
 func setRunScriptEnv() *goja.Runtime {
 	runtime := goja.New()
 	rt_link_external_libraries(runtime)
-	srcInvoker1, srcInvoker2, srcInvoker3 := protocol.NewBaseInvoker(url1()), protocol.NewBaseInvoker(url2()), protocol.NewBaseInvoker(url3())
+	srcInvoker1, srcInvoker2, srcInvoker3 := base.NewBaseInvoker(url1()), base.NewBaseInvoker(url2()), base.NewBaseInvoker(url3())
 
-	getArgs := func() ([]protocol.Invoker, *invocation.RPCInvocation, context.Context) {
-		return []protocol.Invoker{
+	getArgs := func() ([]base.Invoker, *invocation.RPCInvocation, context.Context) {
+		return []base.Invoker{
 				newScriptInvokerImpl(srcInvoker1), newScriptInvokerImpl(srcInvoker2), newScriptInvokerImpl(srcInvoker3),
 			}, invocation.NewRPCInvocation("GetUser", nil, map[string]any{
 				"attachmentKey": []string{"attachmentValue"},

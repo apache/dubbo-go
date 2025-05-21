@@ -25,7 +25,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 func init() {
@@ -34,7 +34,7 @@ func init() {
 }
 
 type ScriptInstances interface {
-	Run(rawScript string, invokers []protocol.Invoker, invocation protocol.Invocation) ([]protocol.Invoker, error)
+	Run(rawScript string, invokers []base.Invoker, invocation base.Invocation) ([]base.Invoker, error)
 	Compile(rawScript string) error
 	Destroy(rawScript string)
 }
@@ -68,7 +68,7 @@ func setInstances(tpName string, instance ScriptInstances) {
 type scriptInvokerWrapper struct {
 	isRan     bool
 	copiedURL *common.URL
-	invoker   protocol.Invoker
+	invoker   base.Invoker
 }
 
 func (f *scriptInvokerWrapper) GetURL() *common.URL {
@@ -91,7 +91,7 @@ func (f *scriptInvokerWrapper) Destroy() {
 	}
 }
 
-func (f *scriptInvokerWrapper) Invoke(ctx context.Context, inv protocol.Invocation) protocol.Result {
+func (f *scriptInvokerWrapper) Invoke(ctx context.Context, inv base.Invocation) base.Result {
 	if !f.isRan {
 		panic("Invoke should not be called")
 	} else {
@@ -103,7 +103,7 @@ func (f *scriptInvokerWrapper) setRanMode() {
 	f.isRan = true
 }
 
-func newScriptInvokerImpl(invoker protocol.Invoker) *scriptInvokerWrapper {
+func newScriptInvokerImpl(invoker base.Invoker) *scriptInvokerWrapper {
 	return &scriptInvokerWrapper{
 		copiedURL: invoker.GetURL().Clone(),
 		invoker:   invoker,
