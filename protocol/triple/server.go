@@ -112,7 +112,15 @@ func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
 		logger.Infof("TRIPLE Server initialized the TLSConfig configuration")
 	}
 
-	// todo:// move tls config to handleService
+	// IDLMode means that this will only be set when
+	// the new triple is started in non-IDL mode.
+	// TODO: remove IDLMode when config package is removed
+	IDLMode := URL.GetParam(constant.IDLMode, "")
+
+	var service common.RPCService
+	if IDLMode == constant.NONIDL {
+		service, _ = URL.GetAttribute(constant.RpcServiceKey)
+	}
 
 	hanOpts := getHanOpts(URL)
 	//Set expected codec name from serviceinfo
@@ -122,8 +130,13 @@ func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
 		// new triple idl mode
 		s.handleServiceWithInfo(intfName, invoker, info, hanOpts...)
 		s.saveServiceInfo(intfName, info)
+	} else if IDLMode == constant.NONIDL {
+		// new triple non-idl mode
+		reflectInfo := createServiceInfoWithReflection(service)
+		s.handleServiceWithInfo(intfName, invoker, reflectInfo, hanOpts...)
+		s.saveServiceInfo(intfName, reflectInfo)
 	} else {
-		// old triple idl mode and non-idl mode
+		// old triple idl mode and old triple non-idl mode
 		s.compatHandleService(intfName, URL.Group(), URL.Version(), hanOpts...)
 	}
 	internal.ReflectionRegister(s)
@@ -437,15 +450,14 @@ func (s *Server) GracefulStop() {
 // As a result, Server could use this ServiceInfo to register.
 func createServiceInfoWithReflection(svc common.RPCService) *common.ServiceInfo {
 	var info common.ServiceInfo
-	val := reflect.ValueOf(svc)
-	typ := reflect.TypeOf(svc)
-	methodNum := val.NumMethod()
+	svcType := reflect.TypeOf(svc)
+	methodNum := svcType.NumMethod()
 
 	// +1 for generic call method
 	methodInfos := make([]common.MethodInfo, 0, methodNum+1)
 
-	for i := 0; i < methodNum; i++ {
-		methodType := typ.Method(i)
+	for i := range methodNum {
+		methodType := svcType.Method(i)
 		if methodType.Name == "Reference" {
 			continue
 		}

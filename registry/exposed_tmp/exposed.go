@@ -30,8 +30,8 @@ import (
 // RegisterServiceInstance register service instance
 func RegisterServiceInstance() error {
 	defer func() {
-		// TODO remove this recover func,this just to avoid some unit test failed,this will not happen in user side mostly
-		// config test -> metadata exporter -> dubbo protocol/remoting -> config,cycle import will occur
+		// TODO: remove this recover func, this just to avoid some unit test failed, this will not happen in user side mostly
+		// config test -> metadata exporter -> dubbo protocol/remoting -> config, cycle import will occur
 		// some day we fix the cycle import then can remove this recover
 		if err := recover(); err != nil {
 			logger.Errorf("register service instance failed,please check if registry protocol is imported, error: %v", err)
