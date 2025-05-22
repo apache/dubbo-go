@@ -269,8 +269,8 @@ func (dp *DubboProtocol) openServer(url *common.URL, tripleCodecType tripleConst
 		logger.Infof("DUBBO3 Server initialized the TLSConfig configuration")
 	} else if tlsConfRaw, tlsOk := url.GetAttribute(constant.TLSConfigKey); tlsOk {
 		// use global TLSConfig handle tls
-		tlsConf, ok := tlsConfRaw.(*global.TLSConfig)
-		if !ok {
+		tlsConf, RawOk := tlsConfRaw.(*global.TLSConfig)
+		if !RawOk {
 			logger.Errorf("DUBBO3 Server initialized the TLSConfig configuration failed")
 			return
 		}
