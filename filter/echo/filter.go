@@ -30,6 +30,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 var (
@@ -53,9 +54,9 @@ func newEchoFilter() filter.Filter {
 }
 
 // Invoke response to the callers with its first argument.
-func (f *echoFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) base.Result {
+func (f *echoFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
 	if invocation.MethodName() == constant.Echo && len(invocation.Arguments()) == 1 {
-		return &base.RPCResult{
+		return &result.RPCResult{
 			Rest:  invocation.Arguments()[0],
 			Attrs: invocation.Attachments(),
 		}
@@ -65,8 +66,8 @@ func (f *echoFilter) Invoke(ctx context.Context, invoker base.Invoker, invocatio
 }
 
 // OnResponse dummy process, returns the result directly
-func (f *echoFilter) OnResponse(_ context.Context, result base.Result, _ base.Invoker,
-	_ base.Invocation) base.Result {
+func (f *echoFilter) OnResponse(_ context.Context, result result.Result, _ base.Invoker,
+	_ base.Invocation) result.Result {
 
 	return result
 }

@@ -36,6 +36,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/hessian2"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 type TestService struct {
@@ -145,7 +146,7 @@ type TestProxyInvoker struct {
 	base.BaseInvoker
 }
 
-func (bi *TestProxyInvoker) Invoke(_ context.Context, inv base.Invocation) base.Result {
+func (bi *TestProxyInvoker) Invoke(_ context.Context, inv base.Invocation) result.Result {
 	rpcInv := inv.(*invocation.RPCInvocation)
 	mapV := inv.Attachments()
 	mapV["TestProxyInvoker"] = "TestProxyInvokerValue"
@@ -153,7 +154,7 @@ func (bi *TestProxyInvoker) Invoke(_ context.Context, inv base.Invocation) base.
 		fmt.Printf("hessian2.ReflectResponse(mapV:%v) = error:%v", mapV, err)
 	}
 
-	return &base.RPCResult{
+	return &result.RPCResult{
 		Rest: inv.Arguments(),
 	}
 }

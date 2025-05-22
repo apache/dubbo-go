@@ -36,6 +36,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 const (
@@ -102,7 +103,7 @@ func newFilter() filter.Filter {
 
 // Invoke will check whether user wants to use this filter.
 // If we find the value of key constant.AccessLogFilterKey, we will log the invocation info
-func (f *Filter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) base.Result {
+func (f *Filter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
 	accessLog := invoker.GetURL().GetParam(constant.AccessLogFilterKey, "")
 
 	// the user do not
@@ -177,7 +178,7 @@ func (f *Filter) buildAccessLogData(_ base.Invoker, invocation base.Invocation) 
 }
 
 // OnResponse do nothing
-func (f *Filter) OnResponse(_ context.Context, result base.Result, _ base.Invoker, _ base.Invocation) base.Result {
+func (f *Filter) OnResponse(_ context.Context, result result.Result, _ base.Invoker, _ base.Invocation) result.Result {
 	return result
 }
 

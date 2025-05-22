@@ -31,6 +31,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 var Count int
@@ -84,7 +85,7 @@ func (bi *MockInvoker) IsDestroyed() bool {
 	return bi.destroyed
 }
 
-func (bi *MockInvoker) Invoke(c context.Context, invocation base.Invocation) base.Result {
+func (bi *MockInvoker) Invoke(c context.Context, invocation base.Invocation) result.Result {
 	Count++
 	var (
 		success bool
@@ -95,7 +96,7 @@ func (bi *MockInvoker) Invoke(c context.Context, invocation base.Invocation) bas
 	} else {
 		err = perrors.New("error")
 	}
-	result := &base.RPCResult{Err: err, Rest: Rest{Tried: Count, Success: success}}
+	result := &result.RPCResult{Err: err, Rest: Rest{Tried: Count, Success: success}}
 
 	return result
 }

@@ -28,6 +28,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 var (
@@ -52,7 +53,7 @@ func newSignFilter() filter.Filter {
 }
 
 // Invoke retrieves the configured Authenticator to add signature to invocation
-func (sf *signFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) base.Result {
+func (sf *signFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
 	url := invoker.GetURL()
 
 	err := doAuthWork(url, func(authenticator filter.Authenticator) error {
@@ -65,6 +66,6 @@ func (sf *signFilter) Invoke(ctx context.Context, invoker base.Invoker, invocati
 }
 
 // OnResponse dummy process, returns the result directly
-func (sf *signFilter) OnResponse(ctx context.Context, result base.Result, invoker base.Invoker, invocation base.Invocation) base.Result {
+func (sf *signFilter) OnResponse(ctx context.Context, result result.Result, invoker base.Invoker, invocation base.Invocation) result.Result {
 	return result
 }

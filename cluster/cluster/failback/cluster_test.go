@@ -43,6 +43,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/mock"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 var failbackUrl, _ = common.NewURL(
@@ -75,7 +76,7 @@ func TestFailbackSuceess(t *testing.T) {
 
 	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 
-	mockResult := &base.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
+	mockResult := &result.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
 	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockResult).AnyTimes()
 
 	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
@@ -94,16 +95,16 @@ func TestFailbackRetryOneSuccess(t *testing.T) {
 	invoker.EXPECT().IsAvailable().Return(true)
 
 	// failed at first
-	mockFailedResult := &base.RPCResult{Err: perrors.New("error")}
+	mockFailedResult := &result.RPCResult{Err: perrors.New("error")}
 	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockFailedResult)
 
 	// success second
 	var wg sync.WaitGroup
 	wg.Add(1)
 	now := time.Now()
-	mockSuccResult := &base.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
+	mockSuccResult := &result.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
 	invoker.EXPECT().IsAvailable().Return(true)
-	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(func(context.Context, base.Invocation) base.Result {
+	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(func(context.Context, base.Invocation) result.Result {
 		delta := time.Since(now).Nanoseconds() / int64(time.Second)
 		assert.True(t, delta >= 5)
 		wg.Done()
@@ -138,7 +139,7 @@ func TestFailbackRetryFailed(t *testing.T) {
 	invoker.EXPECT().GetURL().Return(failbackUrl).AnyTimes()
 	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 
-	mockFailedResult := &base.RPCResult{Err: perrors.New("error")}
+	mockFailedResult := &result.RPCResult{Err: perrors.New("error")}
 	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockFailedResult)
 
 	//
@@ -150,7 +151,7 @@ func TestFailbackRetryFailed(t *testing.T) {
 	// add retry call that eventually failed.
 	for i := 0; i < retries; i++ {
 		j := i + 1
-		invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(func(context.Context, base.Invocation) base.Result {
+		invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(func(context.Context, base.Invocation) result.Result {
 			delta := time.Since(now).Nanoseconds() / int64(time.Second)
 			assert.True(t, delta >= int64(5*j))
 			wg.Done()
@@ -187,14 +188,14 @@ func TestFailbackRetryFailed10Times(t *testing.T) {
 	invoker.EXPECT().GetURL().Return(failbackUrl).AnyTimes()
 
 	// 10 task should failed firstly.
-	mockFailedResult := &base.RPCResult{Err: perrors.New("error")}
+	mockFailedResult := &result.RPCResult{Err: perrors.New("error")}
 	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockFailedResult).Times(10)
 
 	// 10 task should retry and failed.
 	var wg sync.WaitGroup
 	wg.Add(10)
 	now := time.Now()
-	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(func(context.Context, base.Invocation) base.Result {
+	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(func(context.Context, base.Invocation) result.Result {
 		delta := time.Since(now).Nanoseconds() / int64(time.Second)
 		assert.True(t, delta >= 5)
 		wg.Done()
@@ -229,7 +230,7 @@ func TestFailbackOutOfLimit(t *testing.T) {
 	invoker.EXPECT().GetURL().Return(failbackUrl).AnyTimes()
 	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 
-	mockFailedResult := &base.RPCResult{Err: perrors.New("error")}
+	mockFailedResult := &result.RPCResult{Err: perrors.New("error")}
 	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockFailedResult).Times(11)
 
 	// reached limit

@@ -33,9 +33,9 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/impl"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
@@ -138,9 +138,9 @@ func (c *DubboTestCodec) EncodeResponse(response *remoting.Response) (*bytes.Buf
 	}
 	if !response.IsHeartbeat() {
 		resp.Body = &impl.ResponsePayload{
-			RspObj:      response.Result.(base.RPCResult).Rest,
-			Exception:   response.Result.(base.RPCResult).Err,
-			Attachments: response.Result.(base.RPCResult).Attrs,
+			RspObj:      response.Result.(result.RPCResult).Rest,
+			Exception:   response.Result.(result.RPCResult).Err,
+			Attachments: response.Result.(result.RPCResult).Attrs,
 		}
 	}
 
@@ -256,7 +256,7 @@ func (c *DubboTestCodec) decodeResponse(data []byte) (*remoting.Response, int, e
 		}
 		return response, hessian.HEADER_LENGTH + pkg.Header.BodyLen, error
 	}
-	rpcResult := &base.RPCResult{}
+	rpcResult := &result.RPCResult{}
 	response.Result = rpcResult
 	if pkg.Header.Type&impl.PackageRequest == 0x00 {
 		if pkg.Err != nil {

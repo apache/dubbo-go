@@ -27,6 +27,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 // When there're more than one registry for subscription.
@@ -47,12 +48,12 @@ func newZoneawareClusterInvoker(directory directory.Directory) protocolbase.Invo
 	return invoker
 }
 
-func (invoker *zoneawareClusterInvoker) Invoke(ctx context.Context, invocation protocolbase.Invocation) protocolbase.Result {
+func (invoker *zoneawareClusterInvoker) Invoke(ctx context.Context, invocation protocolbase.Invocation) result.Result {
 	invokers := invoker.Directory.List(invocation)
 
 	err := invoker.CheckInvokers(invokers, invocation)
 	if err != nil {
-		return &protocolbase.RPCResult{Err: err}
+		return &result.RPCResult{Err: err}
 	}
 
 	// First, pick the invoker (XXXClusterInvoker) that comes from the local registry, distinguish by a 'preferred' key.
@@ -75,7 +76,7 @@ func (invoker *zoneawareClusterInvoker) Invoke(ctx context.Context, invocation p
 
 		force := invocation.GetAttachmentWithDefaultValue(constant.RegistryKey+"."+constant.RegistryZoneForceKey, "")
 		if force == "true" {
-			return &protocolbase.RPCResult{
+			return &result.RPCResult{
 				Err: fmt.Errorf("no registry instance in zone or "+
 					"no available providers in the registry, zone: %v, "+
 					" registries: %v", zone, invoker.GetURL()),
@@ -97,7 +98,7 @@ func (invoker *zoneawareClusterInvoker) Invoke(ctx context.Context, invocation p
 		}
 	}
 
-	return &protocolbase.RPCResult{
+	return &result.RPCResult{
 		Err: fmt.Errorf("no provider available in %v", invokers),
 	}
 }

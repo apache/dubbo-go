@@ -37,6 +37,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 func init() {
@@ -133,8 +134,8 @@ type testMockSuccessInvoker struct {
 	base.BaseInvoker
 }
 
-func (iv *testMockSuccessInvoker) Invoke(_ context.Context, _ base.Invocation) base.Result {
-	return &base.RPCResult{
+func (iv *testMockSuccessInvoker) Invoke(_ context.Context, _ base.Invocation) result.Result {
+	return &result.RPCResult{
 		Rest: "Success",
 		Err:  nil,
 	}
@@ -144,8 +145,8 @@ type testMockFailInvoker struct {
 	base.BaseInvoker
 }
 
-func (iv *testMockFailInvoker) Invoke(_ context.Context, _ base.Invocation) base.Result {
-	return &base.RPCResult{
+func (iv *testMockFailInvoker) Invoke(_ context.Context, _ base.Invocation) result.Result {
+	return &result.RPCResult{
 		Err: errors.Errorf("exception"),
 	}
 }
@@ -177,7 +178,7 @@ func TestHystricFilterInvokeCircuitBreak(t *testing.T) {
 	mockInitHystrixConfig()
 	hystrix.Flush()
 	hf := &Filter{COrP: true}
-	resChan := make(chan base.Result, 50)
+	resChan := make(chan result.Result, 50)
 	for i := 0; i < 50; i++ {
 		go func() {
 			testUrl, err := common.NewURL(
@@ -205,7 +206,7 @@ func TestHystricFilterInvokeCircuitBreakOmitException(t *testing.T) {
 	reg, _ := regexp.Compile(".*exception.*")
 	regs := []*regexp.Regexp{reg}
 	hf := &Filter{res: map[string][]*regexp.Regexp{"": regs}, COrP: true}
-	resChan := make(chan base.Result, 50)
+	resChan := make(chan result.Result, 50)
 	for i := 0; i < 50; i++ {
 		go func() {
 			testUrl, err := common.NewURL(

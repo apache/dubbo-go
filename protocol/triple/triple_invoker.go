@@ -32,6 +32,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
@@ -61,8 +62,8 @@ func (ti *TripleInvoker) getClientManager() *clientManager {
 }
 
 // Invoke is used to call client-side method.
-func (ti *TripleInvoker) Invoke(ctx context.Context, invocation base.Invocation) base.Result {
-	var result base.RPCResult
+func (ti *TripleInvoker) Invoke(ctx context.Context, invocation base.Invocation) result.Result {
+	var result result.RPCResult
 
 	if !ti.BaseInvoker.IsAvailable() {
 		// Generally, the case will not happen, because the invoker has been removed

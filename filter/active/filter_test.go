@@ -35,6 +35,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/mock"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 func TestFilterInvoke(t *testing.T) {
@@ -62,7 +63,7 @@ func TestFilterOnResponse(t *testing.T) {
 	defer ctrl.Finish()
 	invoker := mock.NewMockInvoker(ctrl)
 	invoker.EXPECT().GetURL().Return(url).Times(1)
-	result := &base.RPCResult{
+	result := &result.RPCResult{
 		Err: errors.New("test"),
 	}
 	filter.OnResponse(context.TODO(), result, invoker, invoc)

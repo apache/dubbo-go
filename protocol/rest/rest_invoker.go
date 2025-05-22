@@ -33,6 +33,7 @@ import (
 	invocation_impl "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/rest/client"
 	"dubbo.apache.org/dubbo-go/v3/protocol/rest/config"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 // nolint
@@ -52,11 +53,11 @@ func NewRestInvoker(url *common.URL, client *client.RestClient, restMethodConfig
 }
 
 // Invoke is used to call service method by invocation
-func (ri *RestInvoker) Invoke(ctx context.Context, invocation base.Invocation) base.Result {
+func (ri *RestInvoker) Invoke(ctx context.Context, invocation base.Invocation) result.Result {
 	inv := invocation.(*invocation_impl.RPCInvocation)
 	methodConfig := ri.restMethodConfigMap[inv.MethodName()]
 	var (
-		result      base.RPCResult
+		result      result.RPCResult
 		body        any
 		pathParams  map[string]string
 		queryParams map[string]string

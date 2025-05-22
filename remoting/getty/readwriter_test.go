@@ -36,6 +36,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/impl"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	"dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
@@ -140,15 +141,15 @@ func getServer(t *testing.T) (*Server, *common.URL) {
 	invoker := &proxy_factory.ProxyInvoker{
 		BaseInvoker: *base.NewBaseInvoker(url),
 	}
-	handler := func(invocation *invocation.RPCInvocation) base.RPCResult {
+	handler := func(invocation *invocation.RPCInvocation) result.RPCResult {
 		// result := protocol.RPCResult{}
 		r := invoker.Invoke(context.Background(), invocation)
-		result := base.RPCResult{
+		res := result.RPCResult{
 			Err:   r.Error(),
 			Rest:  r.Result(),
 			Attrs: r.Attachments(),
 		}
-		return result
+		return res
 	}
 	server := NewServer(url, handler)
 	server.Start()

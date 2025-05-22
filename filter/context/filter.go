@@ -28,6 +28,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 var (
@@ -113,13 +114,13 @@ func newContextFilter() filter.Filter {
 }
 
 // Invoke do nothing
-func (f *contextFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) base.Result {
+func (f *contextFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
 	return invoker.Invoke(ctx, invocation)
 }
 
 // OnResponse pass attachments to result
-func (f *contextFilter) OnResponse(ctx context.Context, result base.Result, _ base.Invoker,
-	_ base.Invocation) base.Result {
+func (f *contextFilter) OnResponse(ctx context.Context, result result.Result, _ base.Invoker,
+	_ base.Invocation) result.Result {
 	attachmentsRaw := ctx.Value(constant.AttachmentServerKey)
 	if attachmentsRaw != nil {
 		if attachments, ok := attachmentsRaw.(map[string]any); ok {

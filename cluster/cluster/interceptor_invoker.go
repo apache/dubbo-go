@@ -25,6 +25,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 var (
@@ -78,7 +79,7 @@ func (i *InterceptorInvoker) IsAvailable() bool {
 }
 
 // Invoke is used to call service method by invocation
-func (i *InterceptorInvoker) Invoke(ctx context.Context, invocation base.Invocation) base.Result {
+func (i *InterceptorInvoker) Invoke(ctx context.Context, invocation base.Invocation) result.Result {
 	return i.interceptor.Invoke(ctx, i.next, invocation)
 }
 

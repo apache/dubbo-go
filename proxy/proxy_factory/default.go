@@ -36,6 +36,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"dubbo.apache.org/dubbo-go/v3/proxy"
 )
@@ -94,8 +95,8 @@ type ProxyInvoker struct {
 }
 
 // Invoke is used to call service method by invocation
-func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation base.Invocation) base.Result {
-	result := &base.RPCResult{}
+func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation base.Invocation) result.Result {
+	result := &result.RPCResult{}
 	result.SetAttachments(invocation.Attachments())
 
 	// get providerUrl. The origin url may be is registry URL.
@@ -197,10 +198,10 @@ func (tpi *infoProxyInvoker) init() {
 	tpi.methodMap = methodMap
 }
 
-func (tpi *infoProxyInvoker) Invoke(ctx context.Context, invocation base.Invocation) base.Result {
+func (tpi *infoProxyInvoker) Invoke(ctx context.Context, invocation base.Invocation) result.Result {
 	name := invocation.MethodName()
 	args := invocation.Arguments()
-	result := new(base.RPCResult)
+	result := new(result.RPCResult)
 	if method, ok := tpi.methodMap[name]; ok {
 		res, err := method.MethodFunc(ctx, args, tpi.svc)
 		result.SetResult(res)

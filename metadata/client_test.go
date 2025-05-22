@@ -35,6 +35,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
@@ -89,18 +90,18 @@ func TestGetMetadataFromRpc(t *testing.T) {
 		return mockProtocol
 	})
 
-	result := &base.RPCResult{
+	res := &result.RPCResult{
 		Attrs: map[string]any{},
 		Err:   nil,
 		Rest:  metadataInfo,
 	}
 	t.Run("normal", func(t *testing.T) {
 		mockProtocol.On("Refer").Return(mockInvoker).Once()
-		mockInvoker.On("Invoke").Return(result).Once()
+		mockInvoker.On("Invoke").Return(res).Once()
 		mockInvoker.On("Destroy").Once()
 		metadata, err := GetMetadataFromRpc("111", ins)
 		assert.Nil(t, err)
-		assert.Equal(t, metadata, result.Rest)
+		assert.Equal(t, metadata, res.Rest)
 	})
 	t.Run("refer error", func(t *testing.T) {
 		mockProtocol.On("Refer").Return(nil).Once()
@@ -109,7 +110,7 @@ func TestGetMetadataFromRpc(t *testing.T) {
 	})
 	t.Run("invoke timeout", func(t *testing.T) {
 		mockProtocol.On("Refer").Return(mockInvoker).Once()
-		mockInvoker.On("Invoke").Return(&base.RPCResult{
+		mockInvoker.On("Invoke").Return(&result.RPCResult{
 			Attrs: map[string]any{},
 			Err:   errors.New("timeout error"),
 			Rest:  metadataInfo,
@@ -274,15 +275,15 @@ func (m *mockInvoker) Destroy() {
 	m.Called()
 }
 
-func (m *mockInvoker) Invoke(ctx context.Context, inv base.Invocation) base.Result {
+func (m *mockInvoker) Invoke(ctx context.Context, inv base.Invocation) result.Result {
 	args := m.Called()
-	meta := args.Get(0).(base.Result).Result().(*info.MetadataInfo)
+	meta := args.Get(0).(result.Result).Result().(*info.MetadataInfo)
 	reply := inv.Reply().(*info.MetadataInfo)
 	reply.App = meta.App
 	reply.Tag = meta.Tag
 	reply.Revision = meta.Revision
 	reply.Services = meta.Services
-	return args.Get(0).(base.Result)
+	return args.Get(0).(result.Result)
 }
 
 type mockExporter struct {

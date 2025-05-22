@@ -40,6 +40,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/mock"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 var broadcastUrl, _ = common.NewURL(
@@ -66,7 +67,7 @@ func TestBroadcastInvokeSuccess(t *testing.T) {
 
 	invokers := make([]*mock.MockInvoker, 0)
 
-	mockResult := &base.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
+	mockResult := &result.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
 	for i := 0; i < 3; i++ {
 		invoker := mock.NewMockInvoker(ctrl)
 		invokers = append(invokers, invoker)
@@ -85,8 +86,8 @@ func TestBroadcastInvokeFailed(t *testing.T) {
 
 	invokers := make([]*mock.MockInvoker, 0)
 
-	mockResult := &base.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
-	mockFailedResult := &base.RPCResult{Err: errors.New("just failed")}
+	mockResult := &result.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
+	mockFailedResult := &result.RPCResult{Err: errors.New("just failed")}
 	for i := 0; i < 10; i++ {
 		invoker := mock.NewMockInvoker(ctrl)
 		invokers = append(invokers, invoker)

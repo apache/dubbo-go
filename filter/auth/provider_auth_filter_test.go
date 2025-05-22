@@ -33,9 +33,9 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/mock"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 func TestProviderAuthFilter_Invoke(t *testing.T) {
@@ -65,7 +65,7 @@ func TestProviderAuthFilter_Invoke(t *testing.T) {
 	filter := &authFilter{}
 	defer ctrl.Finish()
 	invoker := mock.NewMockInvoker(ctrl)
-	result := &base.RPCResult{}
+	result := &result.RPCResult{}
 	invoker.EXPECT().Invoke(context.Background(), inv).Return(result).Times(2)
 	invoker.EXPECT().GetURL().Return(url).Times(2)
 	assert.Equal(t, result, filter.Invoke(context.Background(), invoker, inv))

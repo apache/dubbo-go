@@ -34,6 +34,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 type fields struct {
@@ -42,7 +43,7 @@ type fields struct {
 }
 type args struct {
 	ctx        context.Context
-	result     base.Result
+	result     result.Result
 	invoker    base.Invoker
 	protocol   base.Invocation
 	invocation base.Invocation
@@ -481,9 +482,9 @@ func (mr *MockInvokerMockRecorder) Destroy() *gomock.Call {
 }
 
 // Invoke mocks base method
-func (m *MockInvoker) Invoke(arg0 context.Context, arg1 base.Invocation) base.Result {
+func (m *MockInvoker) Invoke(arg0 context.Context, arg1 base.Invocation) result.Result {
 	ret := m.ctrl.Call(m, "Invoke", arg0, arg1)
-	ret0, _ := ret[0].(base.Result)
+	ret0, _ := ret[0].(result.Result)
 	return ret0
 }
 
@@ -504,7 +505,7 @@ func Test_otelServerFilter_OnResponse(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   base.Result
+		want   result.Result
 	}{
 		{
 			name:   "test",
@@ -531,7 +532,7 @@ func Test_otelClientFilter_OnResponse(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   base.Result
+		want   result.Result
 	}{
 		{
 			name:   "test",
@@ -556,12 +557,12 @@ func Test_otelClientFilter_OnResponse(t *testing.T) {
 func Test_otelServerFilter_Invoke(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
-	result := NewMockResult(ctrl)
-	result.EXPECT().Error().Return(nil).AnyTimes()
+	res := NewMockResult(ctrl)
+	res.EXPECT().Error().Return(nil).AnyTimes()
 
 	invoker := NewMockInvoker(ctrl)
 	invoker.EXPECT().GetURL().Return(&common.URL{}).AnyTimes()
-	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(result).AnyTimes()
+	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(res).AnyTimes()
 
 	invocation := NewMockInvocation(ctrl)
 	invocation.EXPECT().ActualMethodName().Return("oteldubbogo").AnyTimes()
@@ -573,7 +574,7 @@ func Test_otelServerFilter_Invoke(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   base.Result
+		want   result.Result
 	}{
 		{
 			name:   "test",
@@ -583,7 +584,7 @@ func Test_otelServerFilter_Invoke(t *testing.T) {
 				invoker:    invoker,
 				invocation: invocation,
 			},
-			want: result,
+			want: res,
 		},
 	}
 	for _, tt := range tests {
@@ -602,12 +603,12 @@ func Test_otelServerFilter_Invoke(t *testing.T) {
 func Test_otelClientFilter_Invoke(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
-	result := NewMockResult(ctrl)
-	result.EXPECT().Error().Return(nil).AnyTimes()
+	res := NewMockResult(ctrl)
+	res.EXPECT().Error().Return(nil).AnyTimes()
 
 	invoker := NewMockInvoker(ctrl)
 	invoker.EXPECT().GetURL().Return(&common.URL{}).AnyTimes()
-	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(result).AnyTimes()
+	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(res).AnyTimes()
 
 	invocation := NewMockInvocation(ctrl)
 	invocation.EXPECT().ActualMethodName().Return("oteldubbogo").AnyTimes()
@@ -619,7 +620,7 @@ func Test_otelClientFilter_Invoke(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   base.Result
+		want   result.Result
 	}{
 		{
 			name:   "test",
@@ -629,7 +630,7 @@ func Test_otelClientFilter_Invoke(t *testing.T) {
 				invoker:    invoker,
 				invocation: invocation,
 			},
-			want: result,
+			want: res,
 		},
 	}
 	for _, tt := range tests {

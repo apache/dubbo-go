@@ -25,6 +25,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/cluster/base"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 type failfastClusterInvoker struct {
@@ -38,18 +39,18 @@ func newFailfastClusterInvoker(directory directory.Directory) protocolbase.Invok
 }
 
 // nolint
-func (invoker *failfastClusterInvoker) Invoke(ctx context.Context, invocation protocolbase.Invocation) protocolbase.Result {
+func (invoker *failfastClusterInvoker) Invoke(ctx context.Context, invocation protocolbase.Invocation) result.Result {
 	invokers := invoker.Directory.List(invocation)
 	err := invoker.CheckInvokers(invokers, invocation)
 	if err != nil {
-		return &protocolbase.RPCResult{Err: err}
+		return &result.RPCResult{Err: err}
 	}
 
 	loadbalance := base.GetLoadBalance(invokers[0], invocation.ActualMethodName())
 
 	err = invoker.CheckWhetherDestroyed()
 	if err != nil {
-		return &protocolbase.RPCResult{Err: err}
+		return &result.RPCResult{Err: err}
 	}
 
 	ivk := invoker.DoSelect(loadbalance, invocation, invokers, nil)

@@ -31,6 +31,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 // Client is the interface that wraps SetExchangeClient、 Connect、Close、Request and
@@ -114,7 +115,7 @@ func (client *ExchangeClient) GetActiveNumber() uint32 {
 
 // Request means two way request.
 func (client *ExchangeClient) Request(invocation *base.Invocation, url *common.URL, timeout time.Duration,
-	result *base.RPCResult) error {
+	res *result.RPCResult) error {
 	if er := client.doInit(url); er != nil {
 		return er
 	}
@@ -131,13 +132,13 @@ func (client *ExchangeClient) Request(invocation *base.Invocation, url *common.U
 	err := client.client.Request(request, timeout, rsp)
 	// request error
 	if err != nil {
-		result.Err = err
+		res.Err = err
 		return err
 	}
-	if resultTmp, ok := rsp.response.Result.(*base.RPCResult); ok {
-		result.Rest = resultTmp.Rest
-		result.Attrs = resultTmp.Attrs
-		result.Err = resultTmp.Err
+	if resultTmp, ok := rsp.response.Result.(*result.RPCResult); ok {
+		res.Rest = resultTmp.Rest
+		res.Attrs = resultTmp.Attrs
+		res.Err = resultTmp.Err
 	} else {
 		logger.Warnf("[ExchangeClient.Request] The type of result is unexpected, we want *protocol.RPCResult, "+
 			"but we got %T", rsp.response.Result)
@@ -147,7 +148,7 @@ func (client *ExchangeClient) Request(invocation *base.Invocation, url *common.U
 
 // AsyncRequest async two way request.
 func (client *ExchangeClient) AsyncRequest(invocation *base.Invocation, url *common.URL, timeout time.Duration,
-	callback common.AsyncCallback, result *base.RPCResult) error {
+	callback common.AsyncCallback, result *result.RPCResult) error {
 	if er := client.doInit(url); er != nil {
 		return er
 	}

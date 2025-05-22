@@ -33,6 +33,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 const (
@@ -60,7 +61,7 @@ func newSeataFilter() filter.Filter {
 }
 
 // Invoke Get Xid by attachment key `SEATA_XID`. When use Seata, transfer xid by attachments
-func (f *seataFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) base.Result {
+func (f *seataFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
 	xid := invocation.GetAttachmentWithDefaultValue(string(SEATA_XID), "")
 	if len(strings.TrimSpace(xid)) > 0 {
 		logger.Debugf("Method: %v,Xid: %v", invocation.MethodName(), xid)
@@ -70,6 +71,6 @@ func (f *seataFilter) Invoke(ctx context.Context, invoker base.Invoker, invocati
 }
 
 // OnResponse dummy process, returns the result directly
-func (f *seataFilter) OnResponse(ctx context.Context, result base.Result, invoker base.Invoker, invocation base.Invocation) base.Result {
+func (f *seataFilter) OnResponse(ctx context.Context, result result.Result, invoker base.Invoker, invocation base.Invocation) result.Result {
 	return result
 }

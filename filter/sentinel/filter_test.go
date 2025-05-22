@@ -38,6 +38,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 func TestSentinelFilter_QPS(t *testing.T) {
@@ -93,7 +94,7 @@ type ErrInvoker struct {
 	*base.BaseInvoker
 }
 
-func (ei *ErrInvoker) Invoke(context context.Context, invocation base.Invocation) base.Result {
+func (ei *ErrInvoker) Invoke(context context.Context, invocation base.Invocation) result.Result {
 	invoke := ei.BaseInvoker.Invoke(context, invocation)
 	invoke.SetError(errors.New("error"))
 	return invoke

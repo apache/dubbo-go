@@ -31,9 +31,9 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/mock"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 func TestConsumerSignFilter_Invoke(t *testing.T) {
@@ -45,11 +45,11 @@ func TestConsumerSignFilter_Invoke(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	invoker := mock.NewMockInvoker(ctrl)
-	result := &base.RPCResult{}
-	invoker.EXPECT().Invoke(context.Background(), inv).Return(result).Times(2)
+	res := &result.RPCResult{}
+	invoker.EXPECT().Invoke(context.Background(), inv).Return(res).Times(2)
 	invoker.EXPECT().GetURL().Return(url).Times(2)
-	assert.Equal(t, result, filter.Invoke(context.Background(), invoker, inv))
+	assert.Equal(t, res, filter.Invoke(context.Background(), invoker, inv))
 
 	url.SetParam(constant.ServiceAuthKey, "true")
-	assert.Equal(t, result, filter.Invoke(context.Background(), invoker, inv))
+	assert.Equal(t, res, filter.Invoke(context.Background(), invoker, inv))
 }

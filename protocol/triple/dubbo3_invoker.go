@@ -44,6 +44,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	invocation_impl "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 // same as dubbo_invoker.go attachmentKey
@@ -159,9 +160,9 @@ func (di *DubboInvoker) getClient() *triple.TripleClient {
 }
 
 // Invoke call remoting.
-func (di *DubboInvoker) Invoke(ctx context.Context, invocation base.Invocation) base.Result {
+func (di *DubboInvoker) Invoke(ctx context.Context, invocation base.Invocation) result.Result {
 	var (
-		result base.RPCResult
+		result result.RPCResult
 	)
 
 	if !di.BaseInvoker.IsAvailable() {

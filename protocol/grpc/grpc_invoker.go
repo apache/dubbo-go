@@ -36,6 +36,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 var errNoReply = errors.New("request need @response")
@@ -72,8 +73,8 @@ func (gi *GrpcInvoker) getClient() *Client {
 }
 
 // Invoke is used to call service method by invocation
-func (gi *GrpcInvoker) Invoke(ctx context.Context, invocation base.Invocation) base.Result {
-	var result base.RPCResult
+func (gi *GrpcInvoker) Invoke(ctx context.Context, invocation base.Invocation) result.Result {
+	var result result.RPCResult
 
 	if !gi.BaseInvoker.IsAvailable() {
 		// Generally, the case will not happen, because the invoker has been removed

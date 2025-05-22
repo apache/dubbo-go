@@ -33,6 +33,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 var (
@@ -61,14 +62,14 @@ func newTokenFilter() filter.Filter {
 }
 
 // Invoke verifies the incoming token with the service configured token
-func (f *tokenFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) base.Result {
+func (f *tokenFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
 	invokerTkn := invoker.GetURL().GetParam(constant.TokenKey, "")
 	if len(invokerTkn) > 0 {
 		attas := invocation.Attachments()
 		var remoteTkn string
 		remoteTknIface, exist := attas[constant.TokenKey]
 		if !exist || remoteTknIface == nil {
-			return &base.RPCResult{Err: perrors.Errorf(InValidTokenFormat, invoker, invocation.MethodName())}
+			return &result.RPCResult{Err: perrors.Errorf(InValidTokenFormat, invoker, invocation.MethodName())}
 		}
 		switch remoteTknIface := remoteTknIface.(type) {
 		case string:
@@ -78,23 +79,23 @@ func (f *tokenFilter) Invoke(ctx context.Context, invoker base.Invoker, invocati
 			// deal with triple protocol
 			remoteTkns := remoteTknIface
 			if len(remoteTkns) != 1 {
-				return &base.RPCResult{Err: perrors.Errorf(InValidTokenFormat, invoker, invocation.MethodName())}
+				return &result.RPCResult{Err: perrors.Errorf(InValidTokenFormat, invoker, invocation.MethodName())}
 			}
 			remoteTkn = remoteTkns[0]
 		default:
-			return &base.RPCResult{Err: perrors.Errorf(InValidTokenFormat, invoker, invocation.MethodName())}
+			return &result.RPCResult{Err: perrors.Errorf(InValidTokenFormat, invoker, invocation.MethodName())}
 		}
 
 		if strings.EqualFold(invokerTkn, remoteTkn) {
 			return invoker.Invoke(ctx, invocation)
 		}
-		return &base.RPCResult{Err: perrors.Errorf(InValidTokenFormat, invoker, invocation.MethodName())}
+		return &result.RPCResult{Err: perrors.Errorf(InValidTokenFormat, invoker, invocation.MethodName())}
 	}
 
 	return invoker.Invoke(ctx, invocation)
 }
 
 // OnResponse dummy process, returns the result directly
-func (f *tokenFilter) OnResponse(ctx context.Context, result base.Result, invoker base.Invoker, invocation base.Invocation) base.Result {
+func (f *tokenFilter) OnResponse(ctx context.Context, result result.Result, invoker base.Invoker, invocation base.Invocation) result.Result {
 	return result
 }

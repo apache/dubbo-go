@@ -40,6 +40,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	"dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
@@ -315,7 +316,7 @@ func testClient_AsyncCall(t *testing.T, client *Client) {
 	rsp.Reply = user
 	rsp.Callback = func(response common.CallbackResponse) {
 		r := response.(remoting.AsyncCallbackResponse)
-		rst := *r.Reply.(*remoting.Response).Result.(*base.RPCResult)
+		rst := *r.Reply.(*remoting.Response).Result.(*result.RPCResult)
 		assert.Equal(t, User{ID: "4", Name: "username"}, *(rst.Rest.(*User)))
 		wg.Done()
 	}
@@ -386,15 +387,15 @@ func InitTest(t *testing.T) (*Server, *common.URL) {
 	invoker := &proxy_factory.ProxyInvoker{
 		BaseInvoker: *base.NewBaseInvoker(url),
 	}
-	handler := func(invocation *invocation.RPCInvocation) base.RPCResult {
+	handler := func(invocation *invocation.RPCInvocation) result.RPCResult {
 		// result := protocol.RPCResult{}
 		r := invoker.Invoke(context.Background(), invocation)
-		result := base.RPCResult{
+		res := result.RPCResult{
 			Err:   r.Error(),
 			Rest:  r.Result(),
 			Attrs: r.Attachments(),
 		}
-		return result
+		return res
 	}
 	server := NewServer(url, handler)
 	server.Start()

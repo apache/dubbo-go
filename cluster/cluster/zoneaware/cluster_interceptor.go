@@ -25,11 +25,12 @@ import (
 	clusterpkg "dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 type interceptor struct{}
 
-func (z *interceptor) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) base.Result {
+func (z *interceptor) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
 	key := constant.RegistryKey + "." + constant.RegistryZoneForceKey
 	force := ctx.Value(key)
 

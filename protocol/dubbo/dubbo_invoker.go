@@ -37,6 +37,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
@@ -83,34 +84,34 @@ func (di *DubboInvoker) getClient() *remoting.ExchangeClient {
 }
 
 // Invoke call remoting.
-func (di *DubboInvoker) Invoke(ctx context.Context, ivc base.Invocation) base.Result {
+func (di *DubboInvoker) Invoke(ctx context.Context, ivc base.Invocation) result.Result {
 	var (
-		err    error
-		result base.RPCResult
+		err error
+		res result.RPCResult
 	)
 	if !di.BaseInvoker.IsAvailable() {
 		// Generally, the case will not happen, because the invoker has been removed
 		// from the invoker list before destroy,so no new request will enter the destroyed invoker
 		logger.Warnf("this dubboInvoker is destroyed")
-		result.Err = base.ErrDestroyedInvoker
-		return &result
+		res.Err = base.ErrDestroyedInvoker
+		return &res
 	}
 
 	di.clientGuard.RLock()
 	defer di.clientGuard.RUnlock()
 
 	if di.client == nil {
-		result.Err = base.ErrClientClosed
-		logger.Debugf("result.Err: %v", result.Err)
-		return &result
+		res.Err = base.ErrClientClosed
+		logger.Debugf("result.Err: %v", res.Err)
+		return &res
 	}
 
 	if !di.BaseInvoker.IsAvailable() {
 		// Generally, the case will not happen, because the invoker has been removed
 		// from the invoker list before destroy,so no new request will enter the destroyed invoker
 		logger.Warnf("this dubboInvoker is destroying")
-		result.Err = base.ErrDestroyedInvoker
-		return &result
+		res.Err = base.ErrDestroyedInvoker
+		return &res
 	}
 
 	inv := ivc.(*invocation.RPCInvocation)
@@ -137,27 +138,27 @@ func (di *DubboInvoker) Invoke(ctx context.Context, ivc base.Invocation) base.Re
 		async = false
 	}
 	// response := NewResponse(inv.Reply(), nil)
-	rest := &base.RPCResult{}
+	rest := &result.RPCResult{}
 	timeout := di.getTimeout(inv)
 	if async {
 		if callBack, ok := inv.CallBack().(func(response common.CallbackResponse)); ok {
-			result.Err = di.client.AsyncRequest(&ivc, url, timeout, callBack, rest)
+			res.Err = di.client.AsyncRequest(&ivc, url, timeout, callBack, rest)
 		} else {
-			result.Err = di.client.Send(&ivc, url, timeout)
+			res.Err = di.client.Send(&ivc, url, timeout)
 		}
 	} else {
 		if inv.Reply() == nil {
-			result.Err = base.ErrNoReply
+			res.Err = base.ErrNoReply
 		} else {
-			result.Err = di.client.Request(&ivc, url, timeout, rest)
+			res.Err = di.client.Request(&ivc, url, timeout, rest)
 		}
 	}
-	if result.Err == nil {
-		result.Rest = inv.Reply()
-		result.Attrs = rest.Attrs
+	if res.Err == nil {
+		res.Rest = inv.Reply()
+		res.Attrs = rest.Attrs
 	}
 
-	return &result
+	return &res
 }
 
 // get timeout including methodConfig

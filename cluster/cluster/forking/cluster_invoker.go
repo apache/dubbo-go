@@ -34,6 +34,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 type forkingClusterInvoker struct {
@@ -46,14 +47,14 @@ func newForkingClusterInvoker(directory directory.Directory) protocolbase.Invoke
 	}
 }
 
-func (invoker *forkingClusterInvoker) Invoke(ctx context.Context, invocation protocolbase.Invocation) protocolbase.Result {
+func (invoker *forkingClusterInvoker) Invoke(ctx context.Context, invocation protocolbase.Invocation) result.Result {
 	if err := invoker.CheckWhetherDestroyed(); err != nil {
-		return &protocolbase.RPCResult{Err: err}
+		return &result.RPCResult{Err: err}
 	}
 
 	invokers := invoker.Directory.List(invocation)
 	if err := invoker.CheckInvokers(invokers, invocation); err != nil {
-		return &protocolbase.RPCResult{Err: err}
+		return &result.RPCResult{Err: err}
 	}
 
 	var selected []protocolbase.Invoker
@@ -82,18 +83,18 @@ func (invoker *forkingClusterInvoker) Invoke(ctx context.Context, invocation pro
 
 	rsps, err := resultQ.Poll(1, time.Millisecond*time.Duration(timeouts))
 	if err != nil {
-		return &protocolbase.RPCResult{
+		return &result.RPCResult{
 			Err: fmt.Errorf("failed to forking invoke provider %v, "+
 				"but no luck to perform the invocation. Last error is: %v", selected, err),
 		}
 	}
 	if len(rsps) == 0 {
-		return &protocolbase.RPCResult{Err: fmt.Errorf("failed to forking invoke provider %v, but no resp", selected)}
+		return &result.RPCResult{Err: fmt.Errorf("failed to forking invoke provider %v, but no resp", selected)}
 	}
 
-	result, ok := rsps[0].(protocolbase.Result)
+	res, ok := rsps[0].(result.Result)
 	if !ok {
-		return &protocolbase.RPCResult{Err: fmt.Errorf("failed to forking invoke provider %v, but not legal resp", selected)}
+		return &result.RPCResult{Err: fmt.Errorf("failed to forking invoke provider %v, but not legal resp", selected)}
 	}
-	return result
+	return res
 }

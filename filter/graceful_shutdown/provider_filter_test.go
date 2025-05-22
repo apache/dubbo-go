@@ -37,6 +37,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 func TestProviderFilterInvoke(t *testing.T) {
@@ -76,9 +77,9 @@ type TestRejectedExecutionHandler struct{}
 
 // RejectedExecution will do nothing, it only log the invocation.
 func (handler *TestRejectedExecutionHandler) RejectedExecution(url *common.URL,
-	_ base.Invocation) base.Result {
+	_ base.Invocation) result.Result {
 
-	return &base.RPCResult{
+	return &result.RPCResult{
 		Err: perrors.New("Rejected"),
 	}
 }

@@ -38,6 +38,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/filter/tps/limiter"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 func TestTpsLimitFilterInvokeWithNoTpsLimiter(t *testing.T) {
@@ -87,7 +88,7 @@ func TestGenericFilterInvokeWithDefaultTpsLimiterNotAllow(t *testing.T) {
 		return mockLimiter
 	})
 
-	mockResult := &base.RPCResult{}
+	mockResult := &result.RPCResult{}
 	mockRejectedHandler := handler.NewMockRejectedExecutionHandler(ctrl)
 	mockRejectedHandler.EXPECT().RejectedExecution(gomock.Any(), gomock.Any()).Return(mockResult).Times(1)
 

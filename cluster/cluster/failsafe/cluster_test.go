@@ -41,6 +41,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/mock"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 var failsafeUrl, _ = common.NewURL(
@@ -73,7 +74,7 @@ func TestFailSafeInvokeSuccess(t *testing.T) {
 
 	invoker.EXPECT().GetURL().Return(failsafeUrl).AnyTimes()
 
-	mockResult := &base.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
+	mockResult := &result.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
 
 	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockResult).AnyTimes()
 	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
@@ -93,7 +94,7 @@ func TestFailSafeInvokeFail(t *testing.T) {
 
 	invoker.EXPECT().GetURL().Return(failsafeUrl).AnyTimes()
 
-	mockResult := &base.RPCResult{Err: perrors.New("error")}
+	mockResult := &result.RPCResult{Err: perrors.New("error")}
 
 	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockResult).AnyTimes()
 	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})

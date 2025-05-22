@@ -40,6 +40,7 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/config_center/configurator"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
@@ -470,7 +471,7 @@ func newInvokerDelegate(invoker base.Invoker, url *common.URL) *invokerDelegate 
 }
 
 // Invoke remote service base on URL of wrappedInvoker
-func (ivk *invokerDelegate) Invoke(ctx context.Context, invocation base.Invocation) base.Result {
+func (ivk *invokerDelegate) Invoke(ctx context.Context, invocation base.Invocation) result.Result {
 	return ivk.invoker.Invoke(ctx, invocation)
 }
 

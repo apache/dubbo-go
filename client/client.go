@@ -28,6 +28,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	invocation_impl "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 // ConsumerConfig
@@ -52,7 +53,7 @@ type Connection struct {
 	refOpts *ReferenceOptions
 }
 
-func (conn *Connection) call(ctx context.Context, reqs []any, resp any, methodName, callType string, opts ...CallOption) (base.Result, error) {
+func (conn *Connection) call(ctx context.Context, reqs []any, resp any, methodName, callType string, opts ...CallOption) (result.Result, error) {
 	options := newDefaultCallOptions()
 	for _, opt := range opts {
 		opt(options)

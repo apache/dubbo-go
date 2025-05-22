@@ -31,6 +31,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 var (
@@ -55,7 +56,7 @@ func newAuthFilter() filter.Filter {
 }
 
 // Invoke retrieves the configured Authenticator to verify the signature in an invocation
-func (paf *authFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) base.Result {
+func (paf *authFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
 	url := invoker.GetURL()
 
 	err := doAuthWork(url, func(authenticator filter.Authenticator) error {
@@ -63,7 +64,7 @@ func (paf *authFilter) Invoke(ctx context.Context, invoker base.Invoker, invocat
 	})
 	if err != nil {
 		logger.Errorf("auth the request: %v occur exception, cause: %s", invocation, err.Error())
-		return &base.RPCResult{
+		return &result.RPCResult{
 			Err: err,
 		}
 	}
@@ -72,7 +73,7 @@ func (paf *authFilter) Invoke(ctx context.Context, invoker base.Invoker, invocat
 }
 
 // OnResponse dummy process, returns the result directly
-func (paf *authFilter) OnResponse(ctx context.Context, result base.Result, invoker base.Invoker, invocation base.Invocation) base.Result {
+func (paf *authFilter) OnResponse(ctx context.Context, result result.Result, invoker base.Invoker, invocation base.Invocation) result.Result {
 	return result
 }
 

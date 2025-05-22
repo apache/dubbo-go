@@ -30,6 +30,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	invocation_impl "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 // JsonrpcInvoker is JSON RPC invoker
@@ -47,8 +48,8 @@ func NewJsonrpcInvoker(url *common.URL, client *HTTPClient) *JsonrpcInvoker {
 }
 
 // Invoke the JSON RPC invocation and return result.
-func (ji *JsonrpcInvoker) Invoke(ctx context.Context, invocation base.Invocation) base.Result {
-	var result base.RPCResult
+func (ji *JsonrpcInvoker) Invoke(ctx context.Context, invocation base.Invocation) result.Result {
+	var result result.RPCResult
 
 	inv := invocation.(*invocation_impl.RPCInvocation)
 	url := ji.GetURL()

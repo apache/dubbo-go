@@ -37,6 +37,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/mock"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 // test isCallingToGenericService branch
@@ -54,14 +55,14 @@ func TestFilter_Invoke(t *testing.T) {
 	mockInvoker := mock.NewMockInvoker(ctrl)
 	mockInvoker.EXPECT().GetURL().Return(invokeUrl).Times(2)
 	mockInvoker.EXPECT().Invoke(gomock.Any(), gomock.Not(normalInvocation)).DoAndReturn(
-		func(ctx context.Context, invocation base.Invocation) base.Result {
+		func(ctx context.Context, invocation base.Invocation) result.Result {
 			assert.Equal(t, constant.Generic, invocation.MethodName())
 			args := invocation.Arguments()
 			assert.Equal(t, "Hello", args[0])
 			assert.Equal(t, "java.lang.String", args[1].([]string)[0])
 			assert.Equal(t, "arg1", args[2].([]hessian.Object)[0].(string))
 			assert.Equal(t, constant.GenericSerializationDefault, invocation.GetAttachmentWithDefaultValue(constant.GenericKey, ""))
-			return &base.RPCResult{}
+			return &result.RPCResult{}
 		})
 
 	result := filter.Invoke(context.Background(), mockInvoker, normalInvocation)
@@ -87,14 +88,14 @@ func TestFilter_InvokeWithGenericCall(t *testing.T) {
 	mockInvoker := mock.NewMockInvoker(ctrl)
 	mockInvoker.EXPECT().GetURL().Return(invokeUrl).Times(3)
 	mockInvoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
-		func(arg0 context.Context, invocation base.Invocation) base.Result {
+		func(arg0 context.Context, invocation base.Invocation) result.Result {
 			assert.Equal(t, constant.Generic, invocation.MethodName())
 			args := invocation.Arguments()
 			assert.Equal(t, "hello", args[0])
 			assert.Equal(t, "java.lang.String", args[1].([]string)[0])
 			assert.Equal(t, "arg1", args[2].([]string)[0])
 			assert.Equal(t, constant.GenericSerializationDefault, invocation.GetAttachmentWithDefaultValue(constant.GenericKey, ""))
-			return &base.RPCResult{}
+			return &result.RPCResult{}
 		})
 
 	result := filter.Invoke(context.Background(), mockInvoker, genericInvocation)

@@ -37,6 +37,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 /**
@@ -80,10 +81,10 @@ func (invoker *failbackClusterInvoker) tryTimerTaskProc(ctx context.Context, ret
 	invoked = append(invoked, retryTask.lastInvoker)
 
 	retryInvoker := invoker.DoSelect(retryTask.loadbalance, retryTask.invocation, retryTask.invokers, invoked)
-	result := retryInvoker.Invoke(ctx, retryTask.invocation)
-	if result.Error() != nil {
+	res := retryInvoker.Invoke(ctx, retryTask.invocation)
+	if res.Error() != nil {
 		retryTask.lastInvoker = retryInvoker
-		retryTask.lastErr = result.Error()
+		retryTask.lastErr = res.Error()
 		retryTask.checkRetry()
 	}
 }
@@ -117,12 +118,12 @@ func (invoker *failbackClusterInvoker) process(ctx context.Context) {
 }
 
 // nolint
-func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation protocolbase.Invocation) protocolbase.Result {
+func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation protocolbase.Invocation) result.Result {
 	invokers := invoker.Directory.List(invocation)
 	if err := invoker.CheckInvokers(invokers, invocation); err != nil {
 		logger.Errorf("Failed to invoke the method %v in the service %v, wait for retry in background. Ignored exception: %v.\n",
 			invocation.MethodName(), invoker.GetURL().Service(), err)
-		return &protocolbase.RPCResult{}
+		return &result.RPCResult{}
 	}
 
 	// Get the service loadbalance config
@@ -138,8 +139,8 @@ func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation pr
 	invoked := make([]protocolbase.Invoker, 0, len(invokers))
 	ivk := invoker.DoSelect(loadBalance, invocation, invokers, invoked)
 	// DO INVOKE
-	result := ivk.Invoke(ctx, invocation)
-	if result.Error() != nil {
+	res := ivk.Invoke(ctx, invocation)
+	if res.Error() != nil {
 		invoker.once.Do(func() {
 			invoker.taskList = queue.New(invoker.failbackTasks)
 			go invoker.process(ctx)
@@ -148,18 +149,18 @@ func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation pr
 		taskLen := invoker.taskList.Len()
 		if taskLen >= invoker.failbackTasks {
 			logger.Warnf("tasklist is too full > %d.\n", taskLen)
-			return &protocolbase.RPCResult{}
+			return &result.RPCResult{}
 		}
 
 		timerTask := newRetryTimerTask(loadBalance, invocation, invokers, ivk, invoker)
 		invoker.taskList.Put(timerTask)
 
 		logger.Errorf("Failback to invoke the method %v in the service %v, wait for retry in background. Ignored exception: %v.\n",
-			methodName, url.Service(), result.Error().Error())
+			methodName, url.Service(), res.Error().Error())
 		// ignore
-		return &protocolbase.RPCResult{}
+		return &result.RPCResult{}
 	}
-	return result
+	return res
 }
 
 func (invoker *failbackClusterInvoker) Destroy() {

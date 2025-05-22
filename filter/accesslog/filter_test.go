@@ -33,6 +33,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 func TestFilter_Invoke_Not_Config(t *testing.T) {
@@ -76,7 +77,7 @@ func TestFilterInvokeDefaultConfig(t *testing.T) {
 }
 
 func TestFilterOnResponse(t *testing.T) {
-	result := &base.RPCResult{}
+	result := &result.RPCResult{}
 	accessLogFilter := &Filter{}
 	response := accessLogFilter.OnResponse(context.TODO(), result, nil, nil)
 	assert.Equal(t, result, response)

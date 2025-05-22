@@ -36,6 +36,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 	"dubbo.apache.org/dubbo-go/v3/remoting/getty"
 )
@@ -124,7 +125,7 @@ func (dp *DubboProtocol) openServer(url *common.URL) {
 		dp.serverLock.Lock()
 		_, ok = dp.serverMap[url.Location]
 		if !ok {
-			handler := func(invocation *invocation.RPCInvocation) base.RPCResult {
+			handler := func(invocation *invocation.RPCInvocation) result.RPCResult {
 				return doHandleRequest(invocation)
 			}
 			srv := remoting.NewExchangeServer(url, getty.NewServer(url, handler))
@@ -143,9 +144,9 @@ func GetProtocol() base.Protocol {
 	return dubboProtocol
 }
 
-func doHandleRequest(rpcInvocation *invocation.RPCInvocation) base.RPCResult {
+func doHandleRequest(rpcInvocation *invocation.RPCInvocation) result.RPCResult {
 	exporter, _ := dubboProtocol.ExporterMap().Load(rpcInvocation.ServiceKey())
-	result := base.RPCResult{}
+	result := result.RPCResult{}
 	if exporter == nil {
 		err := fmt.Errorf("don't have this exporter, key: %s", rpcInvocation.ServiceKey())
 		logger.Errorf(err.Error())

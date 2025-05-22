@@ -37,6 +37,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	invocation2 "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 var (
@@ -59,7 +60,7 @@ func newGenericServiceFilter() filter.Filter {
 	}
 	return serviceGeneric
 }
-func (f *genericServiceFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) base.Result {
+func (f *genericServiceFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
 	if !invocation.IsGenericInvocation() {
 		return invoker.Invoke(ctx, invocation)
 	}
@@ -81,7 +82,7 @@ func (f *genericServiceFilter) Invoke(ctx context.Context, invoker base.Invoker,
 	svc := common.ServiceMap.GetServiceByServiceKey(ivkUrl.Protocol, ivkUrl.ServiceKey())
 	method := svc.Method()[mtdname]
 	if method == nil {
-		return &base.RPCResult{
+		return &result.RPCResult{
 			Err: perrors.Errorf("\"%s\" method is not found, service key: %s", mtdname, ivkUrl.ServiceKey()),
 		}
 	}
@@ -93,7 +94,7 @@ func (f *genericServiceFilter) Invoke(ctx context.Context, invoker base.Invoker,
 	g := getGeneralizer(generic)
 
 	if len(args) != len(argsType) {
-		return &base.RPCResult{
+		return &result.RPCResult{
 			Err: perrors.Errorf("the number of args(=%d) is not matched with \"%s\" method", len(args), mtdname),
 		}
 	}
@@ -103,7 +104,7 @@ func (f *genericServiceFilter) Invoke(ctx context.Context, invoker base.Invoker,
 	for i := 0; i < len(argsType); i++ {
 		newarg, err := g.Realize(args[i], argsType[i])
 		if err != nil {
-			return &base.RPCResult{
+			return &result.RPCResult{
 				Err: perrors.Errorf("realization failed, %v", err),
 			}
 		}
@@ -117,7 +118,7 @@ func (f *genericServiceFilter) Invoke(ctx context.Context, invoker base.Invoker,
 	return invoker.Invoke(ctx, newivc)
 }
 
-func (f *genericServiceFilter) OnResponse(_ context.Context, result base.Result, _ base.Invoker, invocation base.Invocation) base.Result {
+func (f *genericServiceFilter) OnResponse(_ context.Context, result result.Result, _ base.Invoker, invocation base.Invocation) result.Result {
 	if invocation.IsGenericInvocation() && result.Result() != nil {
 		// get generic info from attachments of invocation, the default value is "true"
 		generic := invocation.GetAttachmentWithDefaultValue(constant.GenericKey, constant.GenericSerializationDefault)

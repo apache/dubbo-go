@@ -19,6 +19,7 @@ package protocol
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 // Protocol Deprecated： base.Protocol type alias, just for compatible with old generate pb.go file
@@ -34,10 +35,10 @@ type Exporter = base.Exporter
 type Invocation = base.Invocation
 
 // Result Deprecated： base.Result type alias, just for compatible with old generate pb.go file
-type Result = base.Result
+type Result = result.Result
 
 // RPCResult Deprecated： base.RPCResult type alias, just for compatible with old generate pb.go file
-type RPCResult = base.RPCResult
+type RPCResult = result.RPCResult
 
 // RPCStatue Deprecated： base.RPCStatue type alias, just for compatible with old generate pb.go file
 type RPCStatue = base.RPCStatus

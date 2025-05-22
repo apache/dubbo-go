@@ -33,6 +33,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	"dubbo.apache.org/dubbo-go/v3/proxy"
 )
 
@@ -79,8 +80,8 @@ type PassThroughProxyInvoker struct {
 }
 
 // Invoke is used to call service method by invocation
-func (pi *PassThroughProxyInvoker) Invoke(ctx context.Context, invocation base.Invocation) base.Result {
-	result := &base.RPCResult{}
+func (pi *PassThroughProxyInvoker) Invoke(ctx context.Context, invocation base.Invocation) result.Result {
+	result := &result.RPCResult{}
 	result.SetAttachments(invocation.Attachments())
 	url := getProviderURL(pi.GetURL())
 

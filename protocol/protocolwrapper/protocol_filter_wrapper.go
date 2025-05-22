@@ -32,6 +32,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 const (
@@ -124,7 +125,7 @@ func (fi *FilterInvoker) IsAvailable() bool {
 }
 
 // Invoke is used to call service method by invocation
-func (fi *FilterInvoker) Invoke(ctx context.Context, invocation base.Invocation) base.Result {
+func (fi *FilterInvoker) Invoke(ctx context.Context, invocation base.Invocation) result.Result {
 	result := fi.filter.Invoke(ctx, fi.next, invocation)
 	return fi.filter.OnResponse(ctx, result, fi.invoker, invocation)
 }

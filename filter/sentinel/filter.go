@@ -42,6 +42,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 func init() {
@@ -113,7 +114,7 @@ func newSentinelProviderFilter() filter.Filter {
 	return sentinelProvider
 }
 
-func (d *sentinelProviderFilter) Invoke(ctx context.Context, invoker protocolbase.Invoker, invocation protocolbase.Invocation) protocolbase.Result {
+func (d *sentinelProviderFilter) Invoke(ctx context.Context, invoker protocolbase.Invoker, invocation protocolbase.Invocation) result.Result {
 	interfaceResourceName, methodResourceName := getResourceName(invoker, invocation, getProviderPrefix())
 
 	var (
@@ -147,7 +148,7 @@ func (d *sentinelProviderFilter) Invoke(ctx context.Context, invoker protocolbas
 	return result
 }
 
-func (d *sentinelProviderFilter) OnResponse(ctx context.Context, result protocolbase.Result, _ protocolbase.Invoker, _ protocolbase.Invocation) protocolbase.Result {
+func (d *sentinelProviderFilter) OnResponse(ctx context.Context, result result.Result, _ protocolbase.Invoker, _ protocolbase.Invocation) result.Result {
 	return result
 }
 
@@ -172,7 +173,7 @@ func newSentinelConsumerFilter() filter.Filter {
 	return sentinelConsumer
 }
 
-func (d *sentinelConsumerFilter) Invoke(ctx context.Context, invoker protocolbase.Invoker, invocation protocolbase.Invocation) protocolbase.Result {
+func (d *sentinelConsumerFilter) Invoke(ctx context.Context, invoker protocolbase.Invoker, invocation protocolbase.Invocation) result.Result {
 	interfaceResourceName, methodResourceName := getResourceName(invoker, invocation, getConsumerPrefix())
 	var (
 		interfaceEntry *base.SentinelEntry
@@ -203,7 +204,7 @@ func (d *sentinelConsumerFilter) Invoke(ctx context.Context, invoker protocolbas
 	return result
 }
 
-func (d *sentinelConsumerFilter) OnResponse(ctx context.Context, result protocolbase.Result, _ protocolbase.Invoker, _ protocolbase.Invocation) protocolbase.Result {
+func (d *sentinelConsumerFilter) OnResponse(ctx context.Context, result result.Result, _ protocolbase.Invoker, _ protocolbase.Invocation) result.Result {
 	return result
 }
 
@@ -212,7 +213,7 @@ var (
 	sentinelDubboProviderFallback = getDefaultDubboFallback()
 )
 
-type DubboFallback func(context.Context, protocolbase.Invoker, protocolbase.Invocation, *base.BlockError) protocolbase.Result
+type DubboFallback func(context.Context, protocolbase.Invoker, protocolbase.Invocation, *base.BlockError) result.Result
 
 func SetDubboConsumerFallback(f DubboFallback) {
 	sentinelDubboConsumerFallback = f
@@ -223,8 +224,8 @@ func SetDubboProviderFallback(f DubboFallback) {
 }
 
 func getDefaultDubboFallback() DubboFallback {
-	return func(ctx context.Context, invoker protocolbase.Invoker, invocation protocolbase.Invocation, blockError *base.BlockError) protocolbase.Result {
-		return &protocolbase.RPCResult{Err: blockError}
+	return func(ctx context.Context, invoker protocolbase.Invoker, invocation protocolbase.Invocation, blockError *base.BlockError) result.Result {
+		return &result.RPCResult{Err: blockError}
 	}
 }
 

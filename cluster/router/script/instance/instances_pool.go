@@ -26,6 +26,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 func init() {
@@ -91,7 +92,7 @@ func (f *scriptInvokerWrapper) Destroy() {
 	}
 }
 
-func (f *scriptInvokerWrapper) Invoke(ctx context.Context, inv base.Invocation) base.Result {
+func (f *scriptInvokerWrapper) Invoke(ctx context.Context, inv base.Invocation) result.Result {
 	if !f.isRan {
 		panic("Invoke should not be called")
 	} else {

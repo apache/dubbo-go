@@ -35,6 +35,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 const mockFilterKey = "mockEcho"
@@ -70,11 +71,11 @@ func init() {
 
 type mockEchoFilter struct{}
 
-func (ef *mockEchoFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) base.Result {
+func (ef *mockEchoFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
 	logger.Infof("invoking echo filter.")
 	logger.Debugf("%v,%v", invocation.MethodName(), len(invocation.Arguments()))
 	if invocation.MethodName() == constant.Echo && len(invocation.Arguments()) == 1 {
-		return &base.RPCResult{
+		return &result.RPCResult{
 			Rest: invocation.Arguments()[0],
 		}
 	}
@@ -82,7 +83,7 @@ func (ef *mockEchoFilter) Invoke(ctx context.Context, invoker base.Invoker, invo
 	return invoker.Invoke(ctx, invocation)
 }
 
-func (ef *mockEchoFilter) OnResponse(ctx context.Context, result base.Result, invoker base.Invoker, invocation base.Invocation) base.Result {
+func (ef *mockEchoFilter) OnResponse(ctx context.Context, result result.Result, invoker base.Invoker, invocation base.Invocation) result.Result {
 	return result
 }
 

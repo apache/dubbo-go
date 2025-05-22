@@ -32,6 +32,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 var (
@@ -47,7 +48,7 @@ var (
 type Invoker interface {
 	common.Node
 	// Invoke the invocation and return result.
-	Invoke(context.Context, Invocation) Result
+	Invoke(context.Context, Invocation) result.Result
 }
 
 // BaseInvoker provides default invoker implements Invoker
@@ -84,8 +85,8 @@ func (bi *BaseInvoker) IsDestroyed() bool {
 }
 
 // Invoke provides default invoker implement
-func (bi *BaseInvoker) Invoke(context context.Context, invocation Invocation) Result {
-	return &RPCResult{}
+func (bi *BaseInvoker) Invoke(context context.Context, invocation Invocation) result.Result {
+	return &result.RPCResult{}
 }
 
 // Destroy changes available and destroyed flag and release the url's allocated memory

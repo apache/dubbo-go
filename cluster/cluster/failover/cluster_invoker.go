@@ -35,6 +35,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
@@ -48,9 +49,9 @@ func newFailoverClusterInvoker(directory directory.Directory) protocolbase.Invok
 	}
 }
 
-func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation protocolbase.Invocation) protocolbase.Result {
+func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation protocolbase.Invocation) result.Result {
 	var (
-		result    protocolbase.Result
+		res       result.Result
 		invoked   []protocolbase.Invoker
 		providers []string
 		ivk       protocolbase.Invoker
@@ -58,7 +59,7 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 
 	invokers := invoker.Directory.List(invocation)
 	if err := invoker.CheckInvokers(invokers, invocation); err != nil {
-		return &protocolbase.RPCResult{Err: err}
+		return &result.RPCResult{Err: err}
 	}
 
 	methodName := invocation.ActualMethodName()
@@ -70,12 +71,12 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 		// NOTE: if `invokers` changed, then `invoked` also lose accuracy.
 		if i > 0 {
 			if err := invoker.CheckWhetherDestroyed(); err != nil {
-				return &protocolbase.RPCResult{Err: err}
+				return &result.RPCResult{Err: err}
 			}
 
 			invokers = invoker.Directory.List(invocation)
 			if err := invoker.CheckInvokers(invokers, invocation); err != nil {
-				return &protocolbase.RPCResult{Err: err}
+				return &result.RPCResult{Err: err}
 			}
 		}
 		ivk = invoker.DoSelect(loadBalance, invocation, invokers, invoked)
@@ -84,19 +85,19 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 		}
 		invoked = append(invoked, ivk)
 		// DO INVOKE
-		result = ivk.Invoke(ctx, invocation)
-		if result.Error() != nil && !isBizError(result.Error()) {
+		res = ivk.Invoke(ctx, invocation)
+		if res.Error() != nil && !isBizError(res.Error()) {
 			providers = append(providers, ivk.GetURL().Key())
 			continue
 		}
-		return result
+		return res
 	}
 	ip := common.GetLocalIp()
 	invokerSvc := invoker.GetURL().Service()
 	invokerUrl := invoker.Directory.GetURL()
 	if ivk == nil {
 		logger.Errorf("Failed to invoke the method %s of the service %s .No provider is available.", methodName, invokerSvc)
-		return &protocolbase.RPCResult{
+		return &result.RPCResult{
 			Err: perrors.Errorf("Failed to invoke the method %s of the service %s .No provider is available because can't connect server.",
 				methodName, invokerSvc),
 		}
@@ -105,9 +106,9 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 	logger.Errorf(fmt.Sprintf("Failed to invoke the method %v in the service %v. "+
 		"Tried %v times of the providers %v (%v/%v)from the registry %v on the consumer %v using the dubbo version %v. "+
 		"Last error is %+v.", methodName, invokerSvc, retries, providers, len(providers), len(invokers),
-		invokerUrl, ip, constant.Version, result.Error().Error()))
+		invokerUrl, ip, constant.Version, res.Error().Error()))
 
-	return result
+	return res
 }
 
 func isBizError(err error) bool {

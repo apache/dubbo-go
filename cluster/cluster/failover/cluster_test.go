@@ -37,10 +37,11 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 // nolint
-func normalInvoke(successCount int, urlParam url.Values, invocations ...*invocation.RPCInvocation) base.Result {
+func normalInvoke(successCount int, urlParam url.Values, invocations ...*invocation.RPCInvocation) result.Result {
 	extension.SetLoadbalance("random", random.NewRandomLoadBalance)
 	failoverCluster := newFailoverCluster()
 

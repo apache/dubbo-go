@@ -25,6 +25,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 // metricsEvent is the event defined for rpc metrics
@@ -33,7 +34,7 @@ type metricsEvent struct {
 	invoker    base.Invoker
 	invocation base.Invocation
 	costTime   time.Duration
-	result     base.Result
+	result     result.Result
 }
 
 // Type returns the type of the event, it is used for metrics bus to dispatch the event to rpc collector
@@ -56,7 +57,7 @@ func NewBeforeInvokeEvent(invoker base.Invoker, invocation base.Invocation) metr
 	}
 }
 
-func NewAfterInvokeEvent(invoker base.Invoker, invocation base.Invocation, costTime time.Duration, result base.Result) metrics.MetricsEvent {
+func NewAfterInvokeEvent(invoker base.Invoker, invocation base.Invocation, costTime time.Duration, result result.Result) metrics.MetricsEvent {
 	return &metricsEvent{
 		name:       AfterInvoke,
 		invoker:    invoker,
