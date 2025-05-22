@@ -377,12 +377,6 @@ func TestNacosRegistrySubscribe(t *testing.T) {
 	}
 }
 
-//type mockNotifyListener struct{}
-//
-//func (m *mockNotifyListener) Notify(*registry.ServiceEvent) {}
-//
-//func (m *mockNotifyListener) NotifyAll([]*registry.ServiceEvent, func()) {}
-
 func TestNacosRegistryDestroy(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -435,7 +429,7 @@ func TestNacosRegistryDestroy(t *testing.T) {
 	if nr.namingClient != nil {
 		t.Errorf("namingClient was not set to nil")
 	}
-	
+
 	if _, ok := listenerCache.Load(serviceName + "testgroup"); ok {
 		t.Errorf("listenerCache was not cleared")
 	}
