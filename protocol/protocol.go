@@ -18,18 +18,15 @@
 package protocol
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/protocol/base"
-	"dubbo.apache.org/dubbo-go/v3/protocol/result"
+	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
-// Invocation Deprecated： base.Invocation type alias, just for compatible with old generate pb.go file
-type Invocation = base.Invocation
-
-// Result Deprecated： base.Result type alias, just for compatible with old generate pb.go file
-type Result = result.Result
-
-// RPCResult Deprecated： base.RPCResult type alias, just for compatible with old generate pb.go file
-type RPCResult = result.RPCResult
-
-// RPCStatue Deprecated： base.RPCStatue type alias, just for compatible with old generate pb.go file
-type RPCStatue = base.RPCStatus
+// Protocol is the interface that wraps the basic Export, Refer and Destroy method.
+type Protocol interface {
+	// Export method is to export service for remote invocation
+	Export(invoker Invoker) Exporter
+	// Refer method is to refer a remote service
+	Refer(url *common.URL) Invoker
+	// Destroy method will destroy all invokers and exporters, so it only is called once.
+	Destroy()
+}

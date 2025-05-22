@@ -17,19 +17,10 @@
 
 package protocol
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/protocol/base"
-	"dubbo.apache.org/dubbo-go/v3/protocol/result"
-)
-
-// Invocation Deprecated： base.Invocation type alias, just for compatible with old generate pb.go file
-type Invocation = base.Invocation
-
-// Result Deprecated： base.Result type alias, just for compatible with old generate pb.go file
-type Result = result.Result
-
-// RPCResult Deprecated： base.RPCResult type alias, just for compatible with old generate pb.go file
-type RPCResult = result.RPCResult
-
-// RPCStatue Deprecated： base.RPCStatue type alias, just for compatible with old generate pb.go file
-type RPCStatue = base.RPCStatus
+// Exporter is the interface that wraps the basic GetInvoker method and Destroy UnExport.
+type Exporter interface {
+	// GetInvoker method is to get invoker.
+	GetInvoker() Invoker
+	// UnExport is to un export an exported service
+	UnExport()
+}

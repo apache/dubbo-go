@@ -18,18 +18,20 @@
 package protocol
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"context"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
-// Invocation Deprecated： base.Invocation type alias, just for compatible with old generate pb.go file
-type Invocation = base.Invocation
-
-// Result Deprecated： base.Result type alias, just for compatible with old generate pb.go file
-type Result = result.Result
-
-// RPCResult Deprecated： base.RPCResult type alias, just for compatible with old generate pb.go file
-type RPCResult = result.RPCResult
-
-// RPCStatue Deprecated： base.RPCStatue type alias, just for compatible with old generate pb.go file
-type RPCStatue = base.RPCStatus
+// Invoker the service invocation interface for the consumer
+// Extension - Invoker
+//
+//go:generate mockgen -source invoker.go -destination mock/mock_invoker.go -self_package dubbo.apache.org/dubbo-go/v3/protocol/mock --package mock Invoker
+type Invoker interface {
+	common.Node
+	// Invoke the invocation and return result.
+	Invoke(context.Context, Invocation) result.Result
+}
