@@ -22,6 +22,15 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
+// Protocol Deprecated： base.Protocol type alias, just for compatible with old generate pb.go file
+type Protocol = base.Protocol
+
+// Invoker Deprecated： base.Invoker type alias, just for compatible with old generate pb.go file
+type Invoker = base.Invoker
+
+// Exporter Deprecated： base.Exporter type alias, just for compatible with old generate pb.go file
+type Exporter = base.Exporter
+
 // Invocation Deprecated： base.Invocation type alias, just for compatible with old generate pb.go file
 type Invocation = base.Invocation
 
