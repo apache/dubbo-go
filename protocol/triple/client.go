@@ -20,6 +20,7 @@ package triple
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -191,7 +192,10 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 
 	tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey)
 	if ok {
-		tlsConf = tlsConfRaw.(*global.TLSConfig)
+		tlsConf, ok = tlsConfRaw.(*global.TLSConfig)
+		if !ok {
+			return nil, errors.New("TRIPLE clientManager initialized the TLSConfig configuration failed")
+		}
 	}
 	if dubbotls.IsClientTLSValid(tlsConf) {
 		cfg, err = dubbotls.GetClientTlsConfig(tlsConf)

@@ -120,18 +120,22 @@ func (s *Server) Start(url *common.URL) {
 		if err != nil {
 			return
 		}
-		logger.Infof("Grpc Server initialized the TLSConfig configuration")
+		logger.Infof("gRPC Server initialized the TLSConfig configuration")
 		serverOpts = append(serverOpts, grpc.Creds(credentials.NewTLS(cfg)))
 	} else if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
 		// use global TLSConfig handle tls
-		tlsConf := tlsConfRaw.(*global.TLSConfig)
+		tlsConf, ok := tlsConfRaw.(*global.TLSConfig)
+		if !ok {
+			logger.Errorf("gRPC Server initialized the TLSConfig configuration failed")
+			return
+		}
 		if dubbotls.IsServerTLSValid(tlsConf) {
 			cfg, tlsErr := dubbotls.GetServerTlsConfig(tlsConf)
 			if tlsErr != nil {
 				return
 			}
 			if cfg != nil {
-				logger.Infof("Grpc Server initialized the TLSConfig configuration")
+				logger.Infof("gRPC Server initialized the TLSConfig configuration")
 				serverOpts = append(serverOpts, grpc.Creds(credentials.NewTLS(cfg)))
 			}
 		} else {

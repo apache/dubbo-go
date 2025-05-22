@@ -18,6 +18,7 @@
 package grpc
 
 import (
+	"errors"
 	"reflect"
 	"sync"
 	"time"
@@ -108,7 +109,12 @@ func NewClient(url *common.URL) (*Client, error) {
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(cfg)))
 	} else if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
 		// use global TLSConfig handle tls
-		tlsConf := tlsConfRaw.(*global.TLSConfig)
+		tlsConf, ok := tlsConfRaw.(*global.TLSConfig)
+		if !ok {
+			logger.Errorf("DUBBO3 Server initialized the TLSConfig configuration failed")
+			return nil, errors.New("DUBBO3 Client initialized the TLSConfig configuration failed")
+		}
+
 		if dubbotls.IsClientTLSValid(tlsConf) {
 			cfg, err := dubbotls.GetServerTlsConfig(tlsConf)
 			if err != nil {

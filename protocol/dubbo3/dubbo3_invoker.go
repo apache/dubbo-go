@@ -19,6 +19,7 @@ package dubbo3
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"strconv"
 	"strings"
@@ -131,7 +132,11 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 		logger.Infof("DUBBO3 Client initialized the TLSConfig configuration")
 	} else if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
 		// use global TLSConfig handle tls
-		tlsConf := tlsConfRaw.(*global.TLSConfig)
+		tlsConf, ok := tlsConfRaw.(*global.TLSConfig)
+		if !ok {
+			logger.Errorf("DUBBO3 Client initialized the TLSConfig configuration failed")
+			return nil, errors.New("DUBBO3 Client initialized the TLSConfig configuration failed")
+		}
 		if dubbotls.IsClientTLSValid(tlsConf) {
 			triOption.CACertFile = tlsConf.CACertFile
 			triOption.TLSCertFile = tlsConf.TLSCertFile
