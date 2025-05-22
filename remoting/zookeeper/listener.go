@@ -18,6 +18,7 @@
 package zookeeper
 
 import (
+	"fmt"
 	"net/url"
 	"path"
 	"strings"
@@ -197,6 +198,7 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 		logger.Errorf("[ZkEventListener handleZkNodeEvent]Path{%s} child nodes changed, zk.Children() = error{%v}", zkPath, perrors.WithStack(err))
 		return
 	}
+	fmt.Printf("newChildren:%+v\n\n", newChildren)
 	// a node was added -- listen the new node
 	var (
 		newNode string
@@ -317,6 +319,7 @@ func (l *ZkEventListener) listenAllDirEvents(conf *common.URL, listener remoting
 
 func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, listener remoting.DataListener, intf string) {
 	defer l.wg.Done()
+	fmt.Printf("info:%+v\n\n\n\n", intf)
 	if intf == constant.AnyValue {
 		l.listenAllDirEvents(conf, listener)
 		return
@@ -419,6 +422,7 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, li
 				logger.Warnf("listenDirEvent->listenSelf(zk path{%s}) goroutine exit now", zkPath)
 			}(zkNodePath, listener)
 		}
+		fmt.Printf("11111\n\n\n")
 		if l.startScheduleWatchTask(zkRootPath, children, ttl, listener, childEventCh) {
 			return
 		}
@@ -429,6 +433,7 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, li
 func (l *ZkEventListener) startScheduleWatchTask(
 	zkRootPath string, children []string, ttl time.Duration,
 	listener remoting.DataListener, childEventCh <-chan zk.Event) bool {
+	fmt.Printf("childEventCh:%+v\n\n\n", childEventCh)
 	tickerTTL := ttl
 	if tickerTTL > 20e9 {
 		tickerTTL = 20e9
@@ -437,6 +442,7 @@ func (l *ZkEventListener) startScheduleWatchTask(
 	for {
 		select {
 		case <-ticker.C:
+			fmt.Printf("333333333:\n\n\n")
 			l.handleZkNodeEvent(zkRootPath, children, listener)
 			if tickerTTL < ttl {
 				tickerTTL *= 2
@@ -447,9 +453,11 @@ func (l *ZkEventListener) startScheduleWatchTask(
 				ticker = time.NewTicker(tickerTTL)
 			}
 		case zkEvent := <-childEventCh:
+			fmt.Printf("22222:\n\n\n")
 			logger.Debugf("Get a zookeeper childEventCh{type:%s, server:%s, path:%s, state:%d-%s, err:%v}",
 				zkEvent.Type.String(), zkEvent.Server, zkEvent.Path, zkEvent.State, gxzookeeper.StateToString(zkEvent.State), zkEvent.Err)
 			ticker.Stop()
+			fmt.Printf("zkEvent.Type:%+v\n\n\n", zkEvent.Type)
 			if zkEvent.Type == zk.EventNodeChildrenChanged {
 				l.handleZkNodeEvent(zkEvent.Path, children, listener)
 			}

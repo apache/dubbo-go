@@ -377,6 +377,12 @@ func TestNacosRegistrySubscribe(t *testing.T) {
 	}
 }
 
+//type mockNotifyListener struct{}
+//
+//func (m *mockNotifyListener) Notify(*registry.ServiceEvent) {}
+//
+//func (m *mockNotifyListener) NotifyAll([]*registry.ServiceEvent, func()) {}
+
 func TestNacosRegistryDestroy(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -399,6 +405,18 @@ func TestNacosRegistryDestroy(t *testing.T) {
 	nr.registryUrls = append(nr.registryUrls, serviceURL1)
 	nr.registryUrls = append(nr.registryUrls, serviceURL2)
 
+	// Add a mock listener to listenerCache
+	serviceName := "com.example.TestService"
+	nl := NewNacosListenerWithServiceName(serviceName, regURL, nc)
+	subscribeParam := &vo.SubscribeParam{
+		ServiceName:       serviceName,
+		GroupName:         "testgroup",
+		SubscribeCallback: nl.Callback,
+	}
+	nl.subscribeParam = subscribeParam
+	listenerCache.Store(serviceName+"testgroup", nl)
+
+	mockNamingClient.EXPECT().Unsubscribe(subscribeParam).Return(nil)
 	mockNamingClient.EXPECT().DeregisterInstance(gomock.Any()).Times(len(nr.registryUrls)).Return(true, nil)
 
 	var wg sync.WaitGroup
@@ -413,6 +431,14 @@ func TestNacosRegistryDestroy(t *testing.T) {
 	nr.Destroy()
 
 	wg.Wait()
+
+	if nr.namingClient != nil {
+		t.Errorf("namingClient was not set to nil")
+	}
+	
+	if _, ok := listenerCache.Load(serviceName + "testgroup"); ok {
+		t.Errorf("listenerCache was not cleared")
+	}
 }
 
 func TestNacosListenerClose(t *testing.T) {
@@ -528,4 +554,41 @@ func TestNacosListenerCloseConcurrent(t *testing.T) {
 		t.Log("nl.done channel was closed after Close() as expected")
 	}
 	t.Logf("NacosListener Close call completed successfully")
+}
+
+func TestNacosRegistryCloseListener(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockNamingClient := NewMockINamingClient(ctrl)
+	nc := &nacosClient.NacosNamingClient{}
+	nc.SetClient(mockNamingClient)
+
+	regURL, _ := common.NewURL("registry://127.0.0.1:8848?registry.group=testgroup")
+	serviceName := "com.example.TestService"
+
+	nl := NewNacosListenerWithServiceName(serviceName, regURL, nc)
+	subscribeParam := &vo.SubscribeParam{
+		ServiceName:       serviceName,
+		GroupName:         "testgroup",
+		SubscribeCallback: nl.Callback,
+	}
+	nl.subscribeParam = subscribeParam
+	listenerCache.Store(serviceName+"testgroup", nl)
+
+	mockNamingClient.EXPECT().Unsubscribe(subscribeParam).Return(nil)
+
+	nr := &nacosRegistry{URL: regURL, namingClient: nc}
+	nr.CloseListener()
+
+	if _, ok := listenerCache.Load(serviceName + "testgroup"); ok {
+		t.Errorf("listenerCache was not cleared")
+	}
+
+	select {
+	case <-nl.done:
+		t.Log("nl.done channel closed successfully")
+	default:
+		t.Errorf("nl.done channel was not closed")
+	}
 }

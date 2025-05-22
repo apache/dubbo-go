@@ -62,6 +62,7 @@ type nacosRegistry struct {
 	registryUrls []*common.URL
 	done         chan struct{}
 	availability availabilityCache
+	wg           sync.WaitGroup
 }
 
 type availabilityCache struct {
@@ -261,7 +262,11 @@ func (nr *nacosRegistry) subscribe(serviceName string, notifyListener registry.N
 		return err
 	}
 	// handleServiceEvents will block to wait notify event and exit when error occur
-	go nr.handleServiceEvents(listener, notifyListener)
+	nr.wg.Add(1)
+	go func() {
+		defer nr.wg.Done()
+		nr.handleServiceEvents(listener, notifyListener)
+	}()
 	return nil
 }
 
@@ -403,12 +408,16 @@ func (nr *nacosRegistry) IsAvailable() bool {
 }
 
 func (nr *nacosRegistry) Destroy() {
+	nr.CloseListener()
+
 	// Prevent close() from being called multiple times, causing panic
 	select {
 	case <-nr.done:
 	default:
 		close(nr.done)
 	}
+
+	nr.wg.Wait()
 
 	for _, url := range nr.registryUrls {
 		err := nr.UnRegister(url)
@@ -417,6 +426,9 @@ func (nr *nacosRegistry) Destroy() {
 			logger.Errorf("Deregister URL:%+v err:%v", url, err.Error())
 		}
 	}
+
+	nr.registryUrls = nil
+	nr.CloseAndNilClient()
 }
 
 // newNacosRegistry will create new instance
@@ -441,4 +453,21 @@ func newNacosRegistry(url *common.URL) (registry.Registry, error) {
 		done:         make(chan struct{}),
 	}
 	return tmpRegistry, nil
+}
+
+func (nr *nacosRegistry) CloseListener() {
+	listenerCache.Range(func(key, value any) bool {
+		if listener, ok := value.(*nacosListener); ok {
+			listener.Close()
+		}
+		listenerCache.Delete(key)
+		return true
+	})
+}
+
+func (nr *nacosRegistry) CloseAndNilClient() {
+	if nr.namingClient != nil && nr.namingClient.Client() != nil {
+		nr.namingClient.Client().CloseClient()
+		nr.namingClient = nil
+	}
 }
