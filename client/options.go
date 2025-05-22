@@ -98,6 +98,7 @@ func (refOpts *ReferenceOptions) init(opts ...ReferenceOption) error {
 	}
 
 	// init cluster
+	// TODO: use constant replace failover
 	if ref.Cluster == "" {
 		ref.Cluster = "failover"
 	}
@@ -329,6 +330,13 @@ func WithGeneric() ReferenceOption {
 func WithSticky() ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Sticky = true
+	}
+}
+
+// TODO: remove this function after old triple removed
+func WithIDL(IDLMode string) ReferenceOption {
+	return func(opts *ReferenceOptions) {
+		opts.Reference.IDLMode = IDLMode
 	}
 }
 

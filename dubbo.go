@@ -18,13 +18,12 @@
 package dubbo
 
 import (
+	"errors"
 	"sync"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-
-	"github.com/pkg/errors"
 )
 
 import (
@@ -186,7 +185,9 @@ func (ins *Instance) start() (err error) {
 
 // loadProvider loads the service provider.
 func (ins *Instance) loadProvider() error {
+	var err error
 	var srvOpts []server.ServerOption
+
 	if ins.insOpts.Provider != nil {
 		srvOpts = append(srvOpts, server.SetServerProvider(ins.insOpts.Provider))
 	}
@@ -198,7 +199,13 @@ func (ins *Instance) loadProvider() error {
 	proLock.RLock()
 	defer proLock.RUnlock()
 	for _, definition := range providerServices {
-		if err = srv.Register(definition.Handler, definition.Info, definition.Opts...); err != nil {
+		if definition.Info != nil {
+			err = srv.Register(definition.Handler, definition.Info, definition.Opts...)
+		} else {
+			// if Info in nil, it means non-idl mode
+			err = srv.RegisterService(definition.Handler, definition.Opts...)
+		}
+		if err != nil {
 			return err
 		}
 	}
@@ -220,11 +227,21 @@ func (ins *Instance) loadConsumer() error {
 	conLock.RLock()
 	defer conLock.RUnlock()
 	for intfName, definition := range consumerServices {
-		conn, dialErr := cli.DialWithDefinition(intfName, definition)
+		var (
+			conn    *client.Connection
+			dialErr error
+		)
+		if definition.Info != nil {
+			conn, dialErr = cli.DialWithDefinition(intfName, definition)
+			definition.Info.ConnectionInjectFunc(definition.Svc, conn)
+		} else {
+			// default use msgpack
+			conn, dialErr = cli.NewService(definition.Svc)
+			consumerServices[common.GetReference(definition.Svc)].SetConnection(conn)
+		}
 		if dialErr != nil {
 			return dialErr
 		}
-		definition.Info.ConnectionInjectFunc(definition.Svc, conn)
 	}
 	return nil
 }
@@ -247,4 +264,24 @@ func SetProviderServiceWithInfo(svc common.RPCService, info *common.ServiceInfo)
 		Handler: svc,
 		Info:    info,
 	}
+}
+
+func SetConsumerService(svc common.RPCService) {
+	conLock.Lock()
+	defer conLock.Unlock()
+	consumerServices[common.GetReference(svc)] = &client.ClientDefinition{
+		Svc: svc,
+	}
+}
+
+func SetProviderService(svc common.RPCService) {
+	conLock.Lock()
+	defer conLock.Unlock()
+	providerServices[common.GetReference(svc)] = &server.ServiceDefinition{
+		Handler: svc,
+	}
+}
+
+func GetConsumerService(interfaceName string) (*client.Connection, error) {
+	return consumerServices[interfaceName].GetConnection()
 }

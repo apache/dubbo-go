@@ -89,6 +89,10 @@ func (refOpts *ReferenceOptions) ReferWithService(srv common.RPCService) {
 	refOpts.refer(srv, nil)
 }
 
+func (refOpts *ReferenceOptions) Refer() {
+	refOpts.refer(nil, nil)
+}
+
 func (refOpts *ReferenceOptions) ReferWithInfo(info *ClientInfo) {
 	refOpts.refer(nil, info)
 }
@@ -130,9 +134,21 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 		common.WithParamsValue(constant.TimeoutKey, refOpts.Consumer.RequestTimeout),
 		common.WithParamsValue(constant.KeepAliveInterval, ref.KeepAliveInterval),
 		common.WithParamsValue(constant.KeepAliveTimeout, ref.KeepAliveTimeout),
+		// for new triple non-IDL mode
+		// TODO: remove ISIDL after old triple removed
+		common.WithParamsValue(constant.IDLMode, ref.IDLMode),
 	)
+
+	// for new triple IDL mode
 	if info != nil {
 		cfgURL.SetAttribute(constant.ClientInfoKey, info)
+	}
+
+	// for new triple non-IDL mode
+	// It assists in passing the service,
+	// which is then parsed internally by new triple.
+	if srv != nil {
+		cfgURL.SetAttribute(constant.RpcServiceKey, srv)
 	}
 
 	if ref.ForceTag {

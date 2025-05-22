@@ -66,11 +66,28 @@ type ServiceDefinition struct {
 
 // Register assemble invoker chains like ProviderConfig.Load, init a service per call
 func (s *Server) Register(handler any, info *common.ServiceInfo, opts ...ServiceOption) error {
-	newSvcOpts, err := s.genSvcOpts(handler, opts...)
+	baseOpts := []ServiceOption{WithIDLMode(constant.IDL)}
+	baseOpts = append(baseOpts, opts...)
+	newSvcOpts, err := s.genSvcOpts(handler, baseOpts...)
 	if err != nil {
 		return err
 	}
 	s.svcOptsMap.Store(newSvcOpts, info)
+	return nil
+}
+
+// RegisterService is for new Triple non-idl mode implement.
+func (s *Server) RegisterService(handler any, opts ...ServiceOption) error {
+	baseOpts := []ServiceOption{
+		WithIDLMode(constant.NONIDL),
+		WithInterface(common.GetReference(handler)),
+	}
+	baseOpts = append(baseOpts, opts...)
+	newSvcOpts, err := s.genSvcOpts(handler, baseOpts...)
+	if err != nil {
+		return err
+	}
+	s.svcOptsMap.Store(newSvcOpts, nil)
 	return nil
 }
 
@@ -121,8 +138,10 @@ func (s *Server) exportServices() (err error) {
 			err = svcOpts.ExportWithoutInfo()
 		} else {
 			info := infoRaw.(*common.ServiceInfo)
-			//Add a method with a name of a differtent first-letter case
-			//to achieve interoperability with java
+			// Add a method with a name of a differtent first-letter case
+			// to achieve interoperability with java
+			// TODO: The method name case sensitivity in Dubbo-java should be addressed.
+			// We ought to make changes to handle this issue.
 			var additionalMethods []common.MethodInfo
 			for _, method := range info.Methods {
 				newMethod := method
