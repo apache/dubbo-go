@@ -257,25 +257,25 @@ func (s *ServiceConfig) Export() error {
 	ports := getRandomPort(protocolConfigs)
 	nextPort := ports.Front()
 
-	for _, proto := range protocolConfigs {
+	for _, protocolConf := range protocolConfigs {
 		// registry the service reflect
-		methods, err := common.ServiceMap.Register(s.Interface, proto.Name, s.Group, s.Version, s.rpcService)
+		methods, err := common.ServiceMap.Register(s.Interface, protocolConf.Name, s.Group, s.Version, s.rpcService)
 		if err != nil {
 			formatErr := perrors.Errorf("The service %v export the protocol %v error! Error message is %v.",
-				s.Interface, proto.Name, err.Error())
+				s.Interface, protocolConf.Name, err.Error())
 			logger.Errorf(formatErr.Error())
 			return formatErr
 		}
 
-		port := proto.Port
-		if num, err := strconv.Atoi(proto.Port); err != nil || num <= 0 {
+		port := protocolConf.Port
+		if num, err := strconv.Atoi(protocolConf.Port); err != nil || num <= 0 {
 			port = nextPort.Value.(string)
 			nextPort = nextPort.Next()
 		}
 		ivkURL := common.NewURLWithOptions(
 			common.WithPath(s.Interface),
-			common.WithProtocol(proto.Name),
-			common.WithIp(proto.Ip),
+			common.WithProtocol(protocolConf.Name),
+			common.WithIp(protocolConf.Ip),
 			common.WithPort(port),
 			common.WithParams(urlMap),
 			common.WithParamsValue(constant.BeanNameKey, s.id),
@@ -285,8 +285,8 @@ func (s *ServiceConfig) Export() error {
 			common.WithToken(s.Token),
 			common.WithParamsValue(constant.MetadataTypeKey, s.metadataType),
 			// fix https://github.com/apache/dubbo-go/issues/2176
-			common.WithParamsValue(constant.MaxServerSendMsgSize, proto.MaxServerSendMsgSize),
-			common.WithParamsValue(constant.MaxServerRecvMsgSize, proto.MaxServerRecvMsgSize),
+			common.WithParamsValue(constant.MaxServerSendMsgSize, protocolConf.MaxServerSendMsgSize),
+			common.WithParamsValue(constant.MaxServerRecvMsgSize, protocolConf.MaxServerRecvMsgSize),
 		)
 		info := GetProviderServiceInfo(s.id)
 		if info != nil {

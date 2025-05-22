@@ -139,9 +139,11 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 		if svcConf.Interface == "" {
 			svcConf.Interface = info.InterfaceName
 		}
-		svcOpts.Id = common.GetReference(svcOpts.rpcService)
 		svcOpts.info = info
 	}
+
+	svcOpts.Id = common.GetReference(svcOpts.rpcService)
+
 	// TODO: delay needExport
 	if svcOpts.unexported != nil && svcOpts.unexported.Load() {
 		err := perrors.Errorf("The service %v has already unexported!", svcConf.Interface)
@@ -168,45 +170,56 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 	var invoker protocol.Invoker
 	ports := getRandomPort(protocolConfigs)
 	nextPort := ports.Front()
-	for _, proto := range protocolConfigs {
+	for _, protocolConf := range protocolConfigs {
 		// *important* Register should have been replaced by processing of ServiceInfo.
 		// but many modules like metadata need to make use of information from ServiceMap.
 		// todo(DMwangnimg): finish replacing procedure
 
 		// registry the service reflect
-		methods, err := common.ServiceMap.Register(svcConf.Interface, proto.Name, svcConf.Group, svcConf.Version, svcOpts.rpcService)
+		methods, err := common.ServiceMap.Register(svcConf.Interface, protocolConf.Name, svcConf.Group, svcConf.Version, svcOpts.rpcService)
 		if err != nil {
 			formatErr := perrors.Errorf("The service %v needExport the protocol %v error! Error message is %v.",
-				svcConf.Interface, proto.Name, err.Error())
+				svcConf.Interface, protocolConf.Name, err.Error())
 			logger.Errorf(formatErr.Error())
 			return formatErr
 		}
 
-		port := proto.Port
-		if len(proto.Port) == 0 {
+		port := protocolConf.Port
+		if len(protocolConf.Port) == 0 {
 			port = nextPort.Value.(string)
 			nextPort = nextPort.Next()
 		}
+
+		// Ensure that isIDL does not have any other invalid inputs.
+		isIDL := constant.IDL
+		if svcOpts.IDLMode == constant.NONIDL {
+			isIDL = svcOpts.IDLMode
+		}
+
 		ivkURL := common.NewURLWithOptions(
 			common.WithPath(svcConf.Interface),
-			common.WithProtocol(proto.Name),
-			common.WithIp(proto.Ip),
+			common.WithProtocol(protocolConf.Name),
+			common.WithIp(protocolConf.Ip),
 			common.WithPort(port),
 			common.WithParams(urlMap),
 			common.WithParamsValue(constant.BeanNameKey, svcOpts.Id),
 			common.WithParamsValue(constant.ApplicationTagKey, svcOpts.Application.Tag),
 			//common.WithParamsValue(constant.SslEnabledKey, strconv.FormatBool(config.GetSslEnabled())),
 			common.WithMethods(strings.Split(methods, ",")),
-			// todo(DMwangnima): remove this
-			common.WithAttribute(constant.ServiceInfoKey, info),
 			// TLSConifg
 			common.WithAttribute(constant.TLSConfigKey, svcOpts.srvOpts.TLS),
+			common.WithAttribute(constant.RpcServiceKey, svcOpts.rpcService),
 			common.WithToken(svcConf.Token),
 			common.WithParamsValue(constant.MetadataTypeKey, svcOpts.metadataType),
 			// fix https://github.com/apache/dubbo-go/issues/2176
-			common.WithParamsValue(constant.MaxServerSendMsgSize, proto.MaxServerSendMsgSize),
-			common.WithParamsValue(constant.MaxServerRecvMsgSize, proto.MaxServerRecvMsgSize),
+			common.WithParamsValue(constant.MaxServerSendMsgSize, protocolConf.MaxServerSendMsgSize),
+			common.WithParamsValue(constant.MaxServerRecvMsgSize, protocolConf.MaxServerRecvMsgSize),
+			common.WithParamsValue(constant.IDLMode, isIDL),
 		)
+
+		if info != nil {
+			ivkURL.SetAttribute(constant.ServiceInfoKey, info)
+		}
 
 		if len(svcConf.Tag) > 0 {
 			ivkURL.AddParam(constant.Tagkey, svcConf.Tag)
@@ -246,7 +259,7 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 		}
 		// this protocol would be destroyed in graceful_shutdown
 		// please refer to (https://github.com/apache/dubbo-go/issues/2429)
-		graceful_shutdown.RegisterProtocol(proto.Name)
+		graceful_shutdown.RegisterProtocol(protocolConf.Name)
 	}
 	svcOpts.exported.Store(true)
 	return nil
@@ -256,8 +269,9 @@ func (svcOpts *ServiceOptions) generatorInvoker(url *common.URL, info *common.Se
 	proxyFactory := extension.GetProxyFactory(svcOpts.ProxyFactoryKey)
 	if info != nil {
 		url.SetAttribute(constant.ServiceInfoKey, info)
-		url.SetAttribute(constant.RpcServiceKey, svcOpts.rpcService)
 	}
+
+	url.SetAttribute(constant.RpcServiceKey, svcOpts.rpcService)
 
 	return proxyFactory.GetInvoker(url)
 }

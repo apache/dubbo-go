@@ -122,7 +122,7 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 		return result
 	}
 
-	in := []reflect.Value{svc.Rcvr()}
+	in := []reflect.Value{svc.Service()}
 	if method.CtxType() != nil {
 		ctx = context.WithValue(ctx, constant.AttachmentKey, invocation.Attachments())
 		in = append(in, method.SuiteContext(ctx))

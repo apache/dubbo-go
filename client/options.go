@@ -101,6 +101,7 @@ func (refOpts *ReferenceOptions) init(opts ...ReferenceOption) error {
 	}
 
 	// init cluster
+	// TODO: use constant replace failover
 	if refConf.Cluster == "" {
 		refConf.Cluster = "failover"
 	}
@@ -335,6 +336,13 @@ func WithSticky() ReferenceOption {
 	}
 }
 
+// TODO: remove this function after old triple removed
+func WithIDL(IDLMode string) ReferenceOption {
+	return func(opts *ReferenceOptions) {
+		opts.Reference.IDLMode = IDLMode
+	}
+}
+
 // ========== Protocol to consume ==========
 
 func WithProtocolDubbo() ReferenceOption {
@@ -557,8 +565,7 @@ func WithClientURL(url string) ClientOption {
 // todo(DMwangnima): change Filter Option like Cluster and LoadBalance
 func WithClientFilter(filter string) ClientOption {
 	return func(opts *ClientOptions) {
-		// todo: move this to overallReference
-		opts.Consumer.Filter = filter
+		opts.overallReference.Filter = filter
 	}
 }
 

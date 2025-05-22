@@ -90,7 +90,7 @@ func TestWithClientFilter(t *testing.T) {
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
 				assert.Nil(t, err)
-				assert.Equal(t, "test_filter", cli.cliOpts.Consumer.Filter)
+				assert.Equal(t, "test_filter", cli.cliOpts.overallReference.Filter)
 			},
 		},
 	}
