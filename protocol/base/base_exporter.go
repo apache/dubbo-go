@@ -26,12 +26,10 @@ import (
 )
 
 // Exporter is the interface that wraps the basic GetInvoker method and Destroy UnExport.
-//
-// GetInvoker method is to get invoker.
-//
-// UnExport is to un export an exported service
 type Exporter interface {
+	// GetInvoker method is to get invoker.
 	GetInvoker() Invoker
+	// UnExport is to un export an exported service
 	UnExport()
 }
 
