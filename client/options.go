@@ -546,8 +546,7 @@ func WithClientURL(url string) ClientOption {
 // todo(DMwangnima): change Filter Option like Cluster and LoadBalance
 func WithClientFilter(filter string) ClientOption {
 	return func(opts *ClientOptions) {
-		// todo: move this to overallReference
-		opts.Consumer.Filter = filter
+		opts.overallReference.Filter = filter
 	}
 }
 
