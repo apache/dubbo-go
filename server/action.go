@@ -107,7 +107,7 @@ func (svcOpts *ServiceOptions) IsExport() bool {
 }
 
 // Get Random Port
-func getRandomPort(protocolConfigs []*config.ProtocolConfig) *list.List {
+func getRandomPort(protocolConfigs []*global.ProtocolConfig) *list.List {
 	ports := list.New()
 	for _, proto := range protocolConfigs {
 		if len(proto.Port) > 0 {
@@ -161,7 +161,7 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 	}
 
 	urlMap := svcOpts.getUrlMap()
-	protocolConfigs := loadProtocol(svc.ProtocolIDs, svcOpts.protocolsCompat)
+	protocolConfigs := loadProtocol(svc.ProtocolIDs, svcOpts.Protocols)
 	if len(protocolConfigs) == 0 {
 		logger.Warnf("The service %v'svcOpts '%v' protocols don't has right protocolConfigs, Please check your configuration center and transfer protocol ", svc.Interface, svc.ProtocolIDs)
 		return nil
@@ -281,8 +281,8 @@ func setRegistrySubURL(ivkURL *common.URL, regUrl *common.URL) {
 }
 
 // loadProtocol filter protocols by ids
-func loadProtocol(protocolIds []string, protocols map[string]*config.ProtocolConfig) []*config.ProtocolConfig {
-	returnProtocols := make([]*config.ProtocolConfig, 0, len(protocols))
+func loadProtocol(protocolIds []string, protocols map[string]*global.ProtocolConfig) []*global.ProtocolConfig {
+	returnProtocols := make([]*global.ProtocolConfig, 0, len(protocols))
 	for _, v := range protocolIds {
 		for k, config := range protocols {
 			if v == k {

@@ -475,10 +475,8 @@ type ServiceOptions struct {
 	// TODO: remove this when config package is remove
 	IDLMode string
 
-	methodsCompat     []*config.MethodConfig
 	applicationCompat *config.ApplicationConfig
 	registriesCompat  map[string]*config.RegistryConfig
-	protocolsCompat   map[string]*config.ProtocolConfig
 }
 
 func defaultServiceOptions() *ServiceOptions {
@@ -542,15 +540,6 @@ func (svcOpts *ServiceOptions) init(srv *Server, opts ...ServiceOption) error {
 	// initialize Protocols
 	if len(svc.RCProtocolsMap) == 0 {
 		svc.RCProtocolsMap = svcOpts.Protocols
-	}
-	if len(svc.RCProtocolsMap) > 0 {
-		svcOpts.protocolsCompat = make(map[string]*config.ProtocolConfig)
-		for key, pro := range svc.RCProtocolsMap {
-			svcOpts.protocolsCompat[key] = compatProtocolConfig(pro)
-			if err := svcOpts.protocolsCompat[key].Init(); err != nil {
-				return err
-			}
-		}
 	}
 
 	svc.RegistryIDs = commonCfg.TranslateIds(svc.RegistryIDs)
