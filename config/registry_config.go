@@ -59,7 +59,7 @@ type RegistryConfig struct {
 }
 
 // Prefix dubbo.registries
-func (RegistryConfig) Prefix() string {
+func (*RegistryConfig) Prefix() string {
 	return constant.RegistryConfigPrefix
 }
 
@@ -143,63 +143,75 @@ func (c *RegistryConfig) GetInstance(roleType common.RoleType) (registry.Registr
 
 func (c *RegistryConfig) toURL(roleType common.RoleType) (*common.URL, error) {
 	address := c.translateRegistryAddress()
-	var registryURLProtocol string
 
-	switch c.RegistryType {
-	case constant.RegistryTypeService:
-		// service discovery protocol
-		registryURLProtocol = constant.ServiceRegistryProtocol
-	case constant.RegistryTypeInterface:
-		registryURLProtocol = constant.RegistryProtocol
-	default:
-		registryURLProtocol = constant.ServiceRegistryProtocol
+	if !isValid(address) {
+		logger.Infof("Empty or N/A registry address found, the process will work with no registry enabled " +
+			"which means that the address of this instance will not be registered and not able to be found by other consumer instances.")
+		return nil, nil
 	}
-	return common.NewURL(registryURLProtocol+"://"+address,
-		common.WithParams(c.getUrlMap(roleType)),
-		common.WithParamsValue(constant.RegistrySimplifiedKey, strconv.FormatBool(c.Simplified)),
-		common.WithParamsValue(constant.RegistryKey, c.Protocol),
-		common.WithParamsValue(constant.RegistryNamespaceKey, c.Namespace),
-		common.WithParamsValue(constant.RegistryTimeoutKey, c.Timeout),
-		common.WithUsername(c.Username),
-		common.WithPassword(c.Password),
-		common.WithLocation(c.Address),
-	)
+
+	registryURLProtocol := constant.ServiceRegistryProtocol // set the default protocol
+	switch c.RegistryType {
+	case constant.RegistryTypeInterface:
+		// Interface-level registration uses a stand-alone protocol
+		registryURLProtocol = constant.RegistryProtocol
+	case constant.RegistryTypeService:
+		// Service-level enrollment maintains the default protocol
+		// Leave this case for possible branch extensions in the future
+	default:
+		// Other unprocessed types automatically use the default protocol
+	}
+
+	return c.createNewURL(registryURLProtocol, address, roleType)
 }
 
 func (c *RegistryConfig) toURLs(roleType common.RoleType) ([]*common.URL, error) {
 	address := c.translateRegistryAddress()
-	var urls []*common.URL
-	var err error
-	var registryURL *common.URL
 
-	if !isValid(c.Address) {
+	if !isValid(address) {
 		logger.Infof("Empty or N/A registry address found, the process will work with no registry enabled " +
 			"which means that the address of this instance will not be registered and not able to be found by other consumer instances.")
-		return urls, nil
+		return nil, nil
 	}
+
+	var protocols []string
 	switch c.RegistryType {
 	case constant.RegistryTypeService:
-		// service discovery protocol
-		if registryURL, err = c.createNewURL(constant.ServiceRegistryProtocol, address, roleType); err == nil {
-			urls = append(urls, registryURL)
-		}
+		// Service-level registration uses the service discovery protocol
+		protocols = []string{constant.ServiceRegistryProtocol}
 	case constant.RegistryTypeInterface:
-		if registryURL, err = c.createNewURL(constant.RegistryProtocol, address, roleType); err == nil {
-			urls = append(urls, registryURL)
-		}
+		// Interface-level registration uses the registry protocol
+		protocols = []string{constant.RegistryProtocol}
 	case constant.RegistryTypeAll:
-		if registryURL, err = c.createNewURL(constant.ServiceRegistryProtocol, address, roleType); err == nil {
-			urls = append(urls, registryURL)
-		}
-		if registryURL, err = c.createNewURL(constant.RegistryProtocol, address, roleType); err == nil {
-			urls = append(urls, registryURL)
+		// All types of registration use both service discovery and registry protocols
+		protocols = []string{
+			constant.ServiceRegistryProtocol,
+			constant.RegistryProtocol,
 		}
 	default:
-		if registryURL, err = c.createNewURL(constant.ServiceRegistryProtocol, address, roleType); err == nil {
-			urls = append(urls, registryURL)
-		}
+		protocols = []string{constant.ServiceRegistryProtocol}
 	}
-	return urls, err
+
+	var (
+		urls     []*common.URL
+		lastErr  error
+		hasValid bool
+	)
+
+	for _, protocol := range protocols {
+		registryURL, err := c.createNewURL(protocol, address, roleType)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		urls = append(urls, registryURL)
+		hasValid = true
+	}
+
+	if !hasValid && lastErr != nil {
+		return nil, lastErr
+	}
+	return urls, lastErr
 }
 
 func LoadRegistries(registryIds []string, registries map[string]*RegistryConfig, roleType common.RoleType) []*common.URL {

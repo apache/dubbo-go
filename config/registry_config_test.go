@@ -109,7 +109,7 @@ func TestNewRegistryConfigBuilder(t *testing.T) {
 		SetWeight(100).
 		SetParams(map[string]string{"timeout": "3s"}).
 		AddParam("timeout", "15s").
-		SetRegistryType("local").
+		SetRegistryType("all").
 		Build()
 
 	config.DynamicUpdateProperties(config)
@@ -126,6 +126,11 @@ func TestNewRegistryConfigBuilder(t *testing.T) {
 	url, err = config.toURL(common.PROVIDER)
 	assert.NoError(t, err)
 	assert.Equal(t, url.GetParam("timeout", "3s"), "15s")
+
+	urls, err := config.toURLs(common.PROVIDER)
+	assert.NoError(t, err)
+	assert.Equal(t, urls[0].GetParam("timeout", "3s"), "15s")
+	assert.Equal(t, len(urls), 2)
 
 	address := config.translateRegistryAddress()
 	assert.Equal(t, address, "127.0.0.1:8848")
