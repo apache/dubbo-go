@@ -47,7 +47,6 @@ const (
 	DefaultRestClient       = "resty"
 	DefaultRestServer       = "go-restful"
 	DefaultPort             = 20000
-	DefaultPortString       = "20000"
 )
 
 const (

@@ -18,6 +18,10 @@
 package global
 
 import (
+	"strconv"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
@@ -38,7 +42,7 @@ type ProtocolConfig struct {
 func DefaultProtocolConfig() *ProtocolConfig {
 	return &ProtocolConfig{
 		Name: constant.TriProtocol,
-		Port: constant.DefaultPortString,
+		Port: strconv.Itoa(constant.DefaultPort),
 	}
 }
 
