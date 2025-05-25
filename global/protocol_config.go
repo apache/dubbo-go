@@ -39,6 +39,7 @@ type ProtocolConfig struct {
 	MaxServerRecvMsgSize string `default:"4mib" yaml:"max-server-recv-msg-size" json:"max-server-recv-msg-size,omitempty"`
 }
 
+// DefaultProtocolConfig returns a default ProtocolConfig instance.
 func DefaultProtocolConfig() *ProtocolConfig {
 	return &ProtocolConfig{
 		Name: constant.TriProtocol,
