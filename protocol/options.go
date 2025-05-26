@@ -22,6 +22,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
@@ -44,7 +45,7 @@ func NewOptions(opts ...Option) *Options {
 	if defOpts.ID == "" {
 		if defOpts.Protocol.Name == "" {
 			// should be the same as default value of config.ProtocolConfig.Protocol
-			defOpts.ID = "tri"
+			defOpts.ID = constant.TriProtocol
 		} else {
 			defOpts.ID = defOpts.Protocol.Name
 		}

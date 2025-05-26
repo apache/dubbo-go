@@ -31,7 +31,7 @@ func SetProtocol(name string, v func() protocol.Protocol) {
 // GetProtocol finds the protocol extension with @name
 func GetProtocol(name string) protocol.Protocol {
 	if protocols[name] == nil {
-		panic("protocol for " + name + " is not existing, make sure you have import the package.")
+		panic("protocol for [" + name + "] is not existing, make sure you have import the package.")
 	}
 	return protocols[name]()
 }
