@@ -28,9 +28,9 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-
 	hessian "github.com/apache/dubbo-go-hessian2"
+
+	"github.com/dubbogo/gost/log/logger"
 
 	grpc_go "github.com/dubbogo/grpc-go"
 

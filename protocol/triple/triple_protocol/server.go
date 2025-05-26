@@ -25,14 +25,12 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/log/logger"
+
 	"github.com/dubbogo/grpc-go"
 
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
-)
-
-import (
-	"github.com/dubbogo/gost/log/logger"
 )
 
 type Server struct {
