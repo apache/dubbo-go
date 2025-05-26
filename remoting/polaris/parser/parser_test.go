@@ -75,29 +75,29 @@ var (
 func TestParseArgumentsByExpression(t *testing.T) {
 
 	var (
-		argStore, argBicyle interface{}
+		argStore, argBicyle any
 	)
 
 	json.Unmarshal([]byte(testDataStore), &argStore)
 	json.Unmarshal([]byte(testDataBicyle), &argBicyle)
 
 	t.Run("test-case-1", func(t *testing.T) {
-		ret := ParseArgumentsByExpression("param.$.book[0].category", []interface{}{argStore})
+		ret := ParseArgumentsByExpression("param.$.book[0].category", []any{argStore})
 		assert.Equal(t, "reference", ret)
 	})
 
 	t.Run("test-case-2", func(t *testing.T) {
-		ret := ParseArgumentsByExpression("param[0].$.book[0].category", []interface{}{argStore, argBicyle})
+		ret := ParseArgumentsByExpression("param[0].$.book[0].category", []any{argStore, argBicyle})
 		assert.Equal(t, "reference", ret)
 	})
 
 	t.Run("test-case-2", func(t *testing.T) {
-		ret := ParseArgumentsByExpression("param[1].$.color", []interface{}{argStore, argBicyle})
+		ret := ParseArgumentsByExpression("param[1].$.color", []any{argStore, argBicyle})
 		assert.Equal(t, "red", ret)
 	})
 
 	t.Run("test-case-3", func(t *testing.T) {
-		ret := ParseArgumentsByExpression("param.$.color", []interface{}{argBicyle})
+		ret := ParseArgumentsByExpression("param.$.color", []any{argBicyle})
 		assert.Equal(t, "red", ret)
 	})
 

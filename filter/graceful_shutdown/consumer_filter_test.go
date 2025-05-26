@@ -32,13 +32,13 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
 func TestConusmerFilterInvoke(t *testing.T) {
 	url := common.NewURLWithOptions(common.WithParams(url.Values{}))
-	invocation := invocation.NewRPCInvocation("GetUser", []interface{}{"OK"}, make(map[string]interface{}))
+	invocation := invocation.NewRPCInvocation("GetUser", []any{"OK"}, make(map[string]any))
 
 	rootConfig := config.NewRootConfigBuilder().
 		SetShutDown(config.NewShutDownConfigBuilder().
@@ -53,7 +53,7 @@ func TestConusmerFilterInvoke(t *testing.T) {
 	filter.Set(constant.GracefulShutdownFilterShutdownConfig, config.GetShutDown())
 	assert.Equal(t, filter.shutdownConfig, config.GetShutDown())
 
-	result := filter.Invoke(context.Background(), protocol.NewBaseInvoker(url), invocation)
+	result := filter.Invoke(context.Background(), base.NewBaseInvoker(url), invocation)
 	assert.NotNil(t, result)
 	assert.Nil(t, result.Error())
 }

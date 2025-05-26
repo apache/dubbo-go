@@ -31,7 +31,7 @@ import (
 
 import (
 	common "dubbo.apache.org/dubbo-go/v3/common"
-	protocol "dubbo.apache.org/dubbo-go/v3/protocol"
+	base "dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 // MockTpsLimiter is a mock of TpsLimiter interface
@@ -58,7 +58,7 @@ func (m *MockTpsLimiter) EXPECT() *MockTpsLimiterMockRecorder {
 }
 
 // IsAllowable mocks base method
-func (m *MockTpsLimiter) IsAllowable(arg0 *common.URL, arg1 protocol.Invocation) bool {
+func (m *MockTpsLimiter) IsAllowable(arg0 *common.URL, arg1 base.Invocation) bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsAllowable", arg0, arg1)
 	ret0, _ := ret[0].(bool)
@@ -66,7 +66,7 @@ func (m *MockTpsLimiter) IsAllowable(arg0 *common.URL, arg1 protocol.Invocation)
 }
 
 // IsAllowable indicates an expected call of IsAllowable
-func (mr *MockTpsLimiterMockRecorder) IsAllowable(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockTpsLimiterMockRecorder) IsAllowable(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsAllowable", reflect.TypeOf((*MockTpsLimiter)(nil).IsAllowable), arg0, arg1)
 }

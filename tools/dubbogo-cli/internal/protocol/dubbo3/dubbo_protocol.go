@@ -47,7 +47,7 @@ func NewTripleClientPackageHandler() protocol.Protocol {
 }
 
 // Read decode @data to DubboPackage.
-func (p RpcClientPackageHandler) Read(data []byte, pendingRsp *sync.Map) (interface{}, int, error) {
+func (p RpcClientPackageHandler) Read(data []byte, pendingRsp *sync.Map) (any, int, error) {
 	pkg := &DubboPackage{}
 
 	buf := bytes.NewBuffer(data)

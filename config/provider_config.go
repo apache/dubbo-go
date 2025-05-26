@@ -52,7 +52,7 @@ type ProviderConfig struct {
 	// Services services
 	Services     map[string]*ServiceConfig `yaml:"services" json:"services,omitempty" property:"services"`
 	ProxyFactory string                    `default:"default" yaml:"proxy" json:"proxy,omitempty" property:"proxy"`
-	FilterConf   interface{}               `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
+	FilterConf   any                       `yaml:"filter_conf" json:"filter_conf,omitempty" property:"filter_conf"`
 	ConfigType   map[string]string         `yaml:"config_type" json:"config_type,omitempty" property:"config_type"`
 	// adaptive service
 	AdaptiveService        bool `yaml:"adaptive-service" json:"adaptive-service" property:"adaptive-service"`
@@ -251,7 +251,7 @@ func (pcb *ProviderConfigBuilder) SetProxyFactory(proxyFactory string) *Provider
 	return pcb
 }
 
-func (pcb *ProviderConfigBuilder) SetFilterConf(filterConf interface{}) *ProviderConfigBuilder {
+func (pcb *ProviderConfigBuilder) SetFilterConf(filterConf any) *ProviderConfigBuilder {
 	pcb.providerConfig.FilterConf = filterConf
 	return pcb
 }

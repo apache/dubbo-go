@@ -30,7 +30,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 func TestJsonrpcProtocolExport(t *testing.T) {
@@ -42,7 +42,7 @@ func TestJsonrpcProtocolExport(t *testing.T) {
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245")
 	assert.NoError(t, err)
-	exporter := proto.Export(protocol.NewBaseInvoker(url))
+	exporter := proto.Export(base.NewBaseInvoker(url))
 
 	// make sure url
 	eq := exporter.GetInvoker().GetURL().URLEqual(url)

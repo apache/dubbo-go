@@ -29,11 +29,11 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 // buildLabels will build the labels for the rpc metrics
-func buildLabels(url *common.URL, invocation protocol.Invocation) map[string]string {
+func buildLabels(url *common.URL, invocation base.Invocation) map[string]string {
 	return map[string]string{
 		constant.TagApplicationName:    url.GetParam(constant.ApplicationKey, ""),
 		constant.TagApplicationVersion: url.GetParam(constant.AppVersionKey, ""),

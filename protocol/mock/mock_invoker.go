@@ -32,7 +32,8 @@ import (
 
 import (
 	common "dubbo.apache.org/dubbo-go/v3/common"
-	protocol "dubbo.apache.org/dubbo-go/v3/protocol"
+	protocol "dubbo.apache.org/dubbo-go/v3/protocol/base"
+	result "dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 // MockInvoker is a mock of Invoker interface.
@@ -85,15 +86,15 @@ func (mr *MockInvokerMockRecorder) GetURL() *gomock.Call {
 }
 
 // Invoke mocks base method.
-func (m *MockInvoker) Invoke(arg0 context.Context, arg1 protocol.Invocation) protocol.Result {
+func (m *MockInvoker) Invoke(arg0 context.Context, arg1 protocol.Invocation) result.Result {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Invoke", arg0, arg1)
-	ret0, _ := ret[0].(protocol.Result)
+	ret0, _ := ret[0].(result.Result)
 	return ret0
 }
 
 // Invoke indicates an expected call of Invoke.
-func (mr *MockInvokerMockRecorder) Invoke(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockInvokerMockRecorder) Invoke(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Invoke", reflect.TypeOf((*MockInvoker)(nil).Invoke), arg0, arg1)
 }

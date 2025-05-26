@@ -34,7 +34,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/config_center/configurator"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
@@ -61,10 +61,10 @@ func TestRouter(t *testing.T) {
 	t.Run("staticEmptyTag", func(t *testing.T) {
 		p, err := NewTagPriorityRouter()
 		assert.Nil(t, err)
-		ivk := protocol.NewBaseInvoker(url1)
-		ivk1 := protocol.NewBaseInvoker(url2)
-		ivk2 := protocol.NewBaseInvoker(url3)
-		invokerList := make([]protocol.Invoker, 0, 3)
+		ivk := base.NewBaseInvoker(url1)
+		ivk1 := base.NewBaseInvoker(url2)
+		ivk2 := base.NewBaseInvoker(url3)
+		invokerList := make([]base.Invoker, 0, 3)
 		invokerList = append(invokerList, ivk)
 		invokerList = append(invokerList, ivk1)
 		invokerList = append(invokerList, ivk2)
@@ -74,43 +74,43 @@ func TestRouter(t *testing.T) {
 	t.Run("staticEmptyTag_requestHasTag", func(t *testing.T) {
 		p, err := NewTagPriorityRouter()
 		assert.Nil(t, err)
-		ivk := protocol.NewBaseInvoker(url1)
-		ivk1 := protocol.NewBaseInvoker(url2)
-		ivk2 := protocol.NewBaseInvoker(url3)
-		invokerList := make([]protocol.Invoker, 0, 3)
+		ivk := base.NewBaseInvoker(url1)
+		ivk1 := base.NewBaseInvoker(url2)
+		ivk2 := base.NewBaseInvoker(url3)
+		invokerList := make([]base.Invoker, 0, 3)
 		invokerList = append(invokerList, ivk)
 		invokerList = append(invokerList, ivk1)
 		invokerList = append(invokerList, ivk2)
-		attachments := map[string]interface{}{constant.Tagkey: "tag"}
+		attachments := map[string]any{constant.Tagkey: "tag"}
 		result := p.Route(invokerList, consumerUrl, invocation.NewRPCInvocation("GetUser", nil, attachments))
 		assert.True(t, len(result) == 3)
 	})
 	t.Run("staticEmptyTag_requestHasTag_force", func(t *testing.T) {
 		p, err := NewTagPriorityRouter()
 		assert.Nil(t, err)
-		ivk := protocol.NewBaseInvoker(url1)
-		ivk1 := protocol.NewBaseInvoker(url2)
-		ivk2 := protocol.NewBaseInvoker(url3)
-		invokerList := make([]protocol.Invoker, 0, 3)
+		ivk := base.NewBaseInvoker(url1)
+		ivk1 := base.NewBaseInvoker(url2)
+		ivk2 := base.NewBaseInvoker(url3)
+		invokerList := make([]base.Invoker, 0, 3)
 		invokerList = append(invokerList, ivk)
 		invokerList = append(invokerList, ivk1)
 		invokerList = append(invokerList, ivk2)
-		attachments := map[string]interface{}{constant.Tagkey: "tag", constant.ForceUseTag: "true"}
+		attachments := map[string]any{constant.Tagkey: "tag", constant.ForceUseTag: "true"}
 		result := p.Route(invokerList, consumerUrl, invocation.NewRPCInvocation("GetUser", nil, attachments))
 		assert.True(t, len(result) == 0)
 	})
 	t.Run("staticTag_requestHasTag", func(t *testing.T) {
 		p, err := NewTagPriorityRouter()
 		assert.Nil(t, err)
-		ivk := protocol.NewBaseInvoker(url1)
-		ivk1 := protocol.NewBaseInvoker(url2)
-		ivk2 := protocol.NewBaseInvoker(url3)
+		ivk := base.NewBaseInvoker(url1)
+		ivk1 := base.NewBaseInvoker(url2)
+		ivk2 := base.NewBaseInvoker(url3)
 		ivk2.GetURL().SetParam(constant.Tagkey, "tag")
-		invokerList := make([]protocol.Invoker, 0, 3)
+		invokerList := make([]base.Invoker, 0, 3)
 		invokerList = append(invokerList, ivk)
 		invokerList = append(invokerList, ivk1)
 		invokerList = append(invokerList, ivk2)
-		attachments := map[string]interface{}{constant.Tagkey: "tag"}
+		attachments := map[string]any{constant.Tagkey: "tag"}
 		result := p.Route(invokerList, consumerUrl, invocation.NewRPCInvocation("GetUser", nil, attachments))
 		assert.True(t, len(result) == 1)
 		assert.True(t, result[0].GetURL().GetParam(constant.Tagkey, "") == "tag")
@@ -118,11 +118,11 @@ func TestRouter(t *testing.T) {
 	t.Run("staticTag", func(t *testing.T) {
 		p, err := NewTagPriorityRouter()
 		assert.Nil(t, err)
-		ivk := protocol.NewBaseInvoker(url1)
-		ivk1 := protocol.NewBaseInvoker(url2)
-		ivk2 := protocol.NewBaseInvoker(url3)
+		ivk := base.NewBaseInvoker(url1)
+		ivk1 := base.NewBaseInvoker(url2)
+		ivk2 := base.NewBaseInvoker(url3)
 		ivk2.GetURL().SetParam(constant.Tagkey, "tag")
-		invokerList := make([]protocol.Invoker, 0, 3)
+		invokerList := make([]base.Invoker, 0, 3)
 		invokerList = append(invokerList, ivk)
 		invokerList = append(invokerList, ivk1)
 		invokerList = append(invokerList, ivk2)
@@ -140,10 +140,10 @@ func TestRouter(t *testing.T) {
 			Enabled: truePointer,
 			Valid:   truePointer,
 		})
-		ivk := protocol.NewBaseInvoker(url1)
-		ivk1 := protocol.NewBaseInvoker(url2)
-		ivk2 := protocol.NewBaseInvoker(url3)
-		invokerList := make([]protocol.Invoker, 0, 3)
+		ivk := base.NewBaseInvoker(url1)
+		ivk1 := base.NewBaseInvoker(url2)
+		ivk2 := base.NewBaseInvoker(url3)
+		invokerList := make([]base.Invoker, 0, 3)
 		invokerList = append(invokerList, ivk)
 		invokerList = append(invokerList, ivk1)
 		invokerList = append(invokerList, ivk2)
@@ -160,14 +160,14 @@ func TestRouter(t *testing.T) {
 			Enabled: truePointer,
 			Valid:   truePointer,
 		})
-		ivk := protocol.NewBaseInvoker(url1)
-		ivk1 := protocol.NewBaseInvoker(url2)
-		ivk2 := protocol.NewBaseInvoker(url3)
-		invokerList := make([]protocol.Invoker, 0, 3)
+		ivk := base.NewBaseInvoker(url1)
+		ivk1 := base.NewBaseInvoker(url2)
+		ivk2 := base.NewBaseInvoker(url3)
+		invokerList := make([]base.Invoker, 0, 3)
 		invokerList = append(invokerList, ivk)
 		invokerList = append(invokerList, ivk1)
 		invokerList = append(invokerList, ivk2)
-		attachments := map[string]interface{}{constant.Tagkey: "tag"}
+		attachments := map[string]any{constant.Tagkey: "tag"}
 		result := p.Route(invokerList, consumerUrl, invocation.NewRPCInvocation("GetUser", nil, attachments))
 		assert.True(t, len(result) == 3)
 	})
@@ -185,10 +185,10 @@ func TestRouter(t *testing.T) {
 				Addresses: []string{"192.168.0.3:20000"},
 			}},
 		})
-		ivk := protocol.NewBaseInvoker(url1)
-		ivk1 := protocol.NewBaseInvoker(url2)
-		ivk2 := protocol.NewBaseInvoker(url3)
-		invokerList := make([]protocol.Invoker, 0, 3)
+		ivk := base.NewBaseInvoker(url1)
+		ivk1 := base.NewBaseInvoker(url2)
+		ivk2 := base.NewBaseInvoker(url3)
+		invokerList := make([]base.Invoker, 0, 3)
 		invokerList = append(invokerList, ivk)
 		invokerList = append(invokerList, ivk1)
 		invokerList = append(invokerList, ivk2)
@@ -208,14 +208,14 @@ func TestRouter(t *testing.T) {
 				Name: "tag",
 			}},
 		})
-		ivk := protocol.NewBaseInvoker(url1)
-		ivk1 := protocol.NewBaseInvoker(url2)
-		ivk2 := protocol.NewBaseInvoker(url3)
-		invokerList := make([]protocol.Invoker, 0, 3)
+		ivk := base.NewBaseInvoker(url1)
+		ivk1 := base.NewBaseInvoker(url2)
+		ivk2 := base.NewBaseInvoker(url3)
+		invokerList := make([]base.Invoker, 0, 3)
 		invokerList = append(invokerList, ivk)
 		invokerList = append(invokerList, ivk1)
 		invokerList = append(invokerList, ivk2)
-		attachments := map[string]interface{}{constant.Tagkey: "tag"}
+		attachments := map[string]any{constant.Tagkey: "tag"}
 		result := p.Route(invokerList, consumerUrl, invocation.NewRPCInvocation("GetUser", nil, attachments))
 		assert.True(t, len(result) == 3)
 	})
@@ -233,14 +233,14 @@ func TestRouter(t *testing.T) {
 				Addresses: []string{"192.168.0.3:20000"},
 			}},
 		})
-		ivk := protocol.NewBaseInvoker(url1)
-		ivk1 := protocol.NewBaseInvoker(url2)
-		ivk2 := protocol.NewBaseInvoker(url3)
-		invokerList := make([]protocol.Invoker, 0, 3)
+		ivk := base.NewBaseInvoker(url1)
+		ivk1 := base.NewBaseInvoker(url2)
+		ivk2 := base.NewBaseInvoker(url3)
+		invokerList := make([]base.Invoker, 0, 3)
 		invokerList = append(invokerList, ivk)
 		invokerList = append(invokerList, ivk1)
 		invokerList = append(invokerList, ivk2)
-		attachments := map[string]interface{}{constant.Tagkey: "tag"}
+		attachments := map[string]any{constant.Tagkey: "tag"}
 		result := p.Route(invokerList, consumerUrl, invocation.NewRPCInvocation("GetUser", nil, attachments))
 		assert.True(t, len(result) == 1)
 	})
@@ -258,14 +258,14 @@ func TestRouter(t *testing.T) {
 				Addresses: []string{"192.168.0.1:20000", "192.168.0.3:20000"},
 			}},
 		})
-		ivk := protocol.NewBaseInvoker(url1)
-		ivk1 := protocol.NewBaseInvoker(url2)
-		ivk2 := protocol.NewBaseInvoker(url3)
-		invokerList := make([]protocol.Invoker, 0, 3)
+		ivk := base.NewBaseInvoker(url1)
+		ivk1 := base.NewBaseInvoker(url2)
+		ivk2 := base.NewBaseInvoker(url3)
+		invokerList := make([]base.Invoker, 0, 3)
 		invokerList = append(invokerList, ivk)
 		invokerList = append(invokerList, ivk1)
 		invokerList = append(invokerList, ivk2)
-		attachments := map[string]interface{}{constant.Tagkey: "tag"}
+		attachments := map[string]any{constant.Tagkey: "tag"}
 		result := p.Route(invokerList, url3, invocation.NewRPCInvocation("GetUser", nil, attachments))
 		assert.True(t, len(result) == 2)
 	})
@@ -283,14 +283,14 @@ func TestRouter(t *testing.T) {
 				Addresses: []string{"192.168.0.4:20000"},
 			}},
 		})
-		ivk := protocol.NewBaseInvoker(url1)
-		ivk1 := protocol.NewBaseInvoker(url2)
-		ivk2 := protocol.NewBaseInvoker(url3)
-		invokerList := make([]protocol.Invoker, 0, 3)
+		ivk := base.NewBaseInvoker(url1)
+		ivk1 := base.NewBaseInvoker(url2)
+		ivk2 := base.NewBaseInvoker(url3)
+		invokerList := make([]base.Invoker, 0, 3)
 		invokerList = append(invokerList, ivk)
 		invokerList = append(invokerList, ivk1)
 		invokerList = append(invokerList, ivk2)
-		attachments := map[string]interface{}{constant.Tagkey: "tag"}
+		attachments := map[string]any{constant.Tagkey: "tag"}
 		result := p.Route(invokerList, consumerUrl, invocation.NewRPCInvocation("GetUser", nil, attachments))
 		assert.True(t, len(result) == 3)
 	})
@@ -308,14 +308,14 @@ func TestRouter(t *testing.T) {
 				Addresses: []string{"192.168.0.1:20000", "192.168.0.3:20000"},
 			}},
 		})
-		ivk := protocol.NewBaseInvoker(url1)
-		ivk1 := protocol.NewBaseInvoker(url2)
-		ivk2 := protocol.NewBaseInvoker(url3)
-		invokerList := make([]protocol.Invoker, 0, 3)
+		ivk := base.NewBaseInvoker(url1)
+		ivk1 := base.NewBaseInvoker(url2)
+		ivk2 := base.NewBaseInvoker(url3)
+		invokerList := make([]base.Invoker, 0, 3)
 		invokerList = append(invokerList, ivk)
 		invokerList = append(invokerList, ivk1)
 		invokerList = append(invokerList, ivk2)
-		attachments := map[string]interface{}{constant.Tagkey: "tag"}
+		attachments := map[string]any{constant.Tagkey: "tag"}
 		result := p.Route(invokerList, url3, invocation.NewRPCInvocation("GetUser", nil, attachments))
 		assert.True(t, len(result) == 3)
 	})
@@ -323,10 +323,10 @@ func TestRouter(t *testing.T) {
 	t.Run("dynamicConfigIsNull", func(t *testing.T) {
 		p, err := NewTagPriorityRouter()
 		assert.Nil(t, err)
-		ivk := protocol.NewBaseInvoker(url1)
-		ivk1 := protocol.NewBaseInvoker(url2)
-		ivk2 := protocol.NewBaseInvoker(url3)
-		invokerList := make([]protocol.Invoker, 0, 3)
+		ivk := base.NewBaseInvoker(url1)
+		ivk1 := base.NewBaseInvoker(url2)
+		ivk2 := base.NewBaseInvoker(url3)
+		invokerList := make([]base.Invoker, 0, 3)
 		invokerList = append(invokerList, ivk)
 		invokerList = append(invokerList, ivk1)
 		invokerList = append(invokerList, ivk2)
@@ -340,11 +340,11 @@ func TestNotify(t *testing.T) {
 		p, err := NewTagPriorityRouter()
 		assert.Nil(t, err)
 		initUrl()
-		ivk := protocol.NewBaseInvoker(url1)
-		ivk1 := protocol.NewBaseInvoker(url2)
-		ivk2 := protocol.NewBaseInvoker(url3)
+		ivk := base.NewBaseInvoker(url1)
+		ivk1 := base.NewBaseInvoker(url2)
+		ivk2 := base.NewBaseInvoker(url3)
 		ivk.GetURL().SetParam(constant.ApplicationKey, "org.apache.dubbo.UserProvider.Test")
-		invokerList := make([]protocol.Invoker, 0, 3)
+		invokerList := make([]base.Invoker, 0, 3)
 		invokerList = append(invokerList, ivk)
 		invokerList = append(invokerList, ivk1)
 		invokerList = append(invokerList, ivk2)
@@ -377,11 +377,11 @@ tags:
 		p, err := NewTagPriorityRouter()
 		assert.Nil(t, err)
 		initUrl()
-		ivk := protocol.NewBaseInvoker(url1)
-		ivk1 := protocol.NewBaseInvoker(url2)
-		ivk2 := protocol.NewBaseInvoker(url3)
+		ivk := base.NewBaseInvoker(url1)
+		ivk1 := base.NewBaseInvoker(url2)
+		ivk2 := base.NewBaseInvoker(url3)
 		ivk.GetURL().SetParam(constant.ApplicationKey, "org.apache.dubbo.UserProvider.Test")
-		invokerList := make([]protocol.Invoker, 0, 3)
+		invokerList := make([]base.Invoker, 0, 3)
 		invokerList = append(invokerList, ivk)
 		invokerList = append(invokerList, ivk1)
 		invokerList = append(invokerList, ivk2)

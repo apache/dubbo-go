@@ -63,12 +63,12 @@ type Codec interface {
 	//
 	// Marshal may expect a specific type of message, and will error if this type
 	// is not given.
-	Marshal(interface{}) ([]byte, error)
+	Marshal(any) ([]byte, error)
 	// Unmarshal unmarshals the given message.
 	//
 	// Unmarshal may expect a specific type of message, and will error if this
 	// type is not given.
-	Unmarshal([]byte, interface{}) error
+	Unmarshal([]byte, any) error
 }
 
 // stableCodec is an extension to Codec for serializing with stable output.
@@ -87,7 +87,7 @@ type stableCodec interface {
 	// domain, and it may change in the future with codec updates, but for
 	// any given concrete value and any given version, it should return the
 	// same output.
-	MarshalStable(interface{}) ([]byte, error)
+	MarshalStable(any) ([]byte, error)
 
 	// IsBinary returns true if the marshaled data is binary for this codec.
 	//
@@ -103,7 +103,7 @@ var _ Codec = (*protoBinaryCodec)(nil)
 
 func (c *protoBinaryCodec) Name() string { return codecNameProto }
 
-func (c *protoBinaryCodec) Marshal(message interface{}) ([]byte, error) {
+func (c *protoBinaryCodec) Marshal(message any) ([]byte, error) {
 	protoMessage, ok := message.(proto.Message)
 	if !ok {
 		return nil, errNotProto(message)
@@ -111,7 +111,7 @@ func (c *protoBinaryCodec) Marshal(message interface{}) ([]byte, error) {
 	return proto.Marshal(protoMessage)
 }
 
-func (c *protoBinaryCodec) Unmarshal(data []byte, message interface{}) error {
+func (c *protoBinaryCodec) Unmarshal(data []byte, message any) error {
 	protoMessage, ok := message.(proto.Message)
 	if !ok {
 		return errNotProto(message)
@@ -119,7 +119,7 @@ func (c *protoBinaryCodec) Unmarshal(data []byte, message interface{}) error {
 	return proto.Unmarshal(data, protoMessage)
 }
 
-func (c *protoBinaryCodec) MarshalStable(message interface{}) ([]byte, error) {
+func (c *protoBinaryCodec) MarshalStable(message any) ([]byte, error) {
 	protoMessage, ok := message.(proto.Message)
 	if !ok {
 		return nil, errNotProto(message)
@@ -145,18 +145,18 @@ var _ Codec = (*protoJSONCodec)(nil)
 
 func (c *protoJSONCodec) Name() string { return c.name }
 
-func (c *protoJSONCodec) Marshal(message interface{}) ([]byte, error) {
+func (c *protoJSONCodec) Marshal(message any) ([]byte, error) {
 	protoMessage, ok := message.(proto.Message)
 	if !ok {
 		return nil, errNotProto(message)
 	}
-	var options protojson.MarshalOptions = protojson.MarshalOptions{
+	var options = protojson.MarshalOptions{
 		UseProtoNames: true,
 	}
 	return options.Marshal(protoMessage)
 }
 
-func (c *protoJSONCodec) Unmarshal(binary []byte, message interface{}) error {
+func (c *protoJSONCodec) Unmarshal(binary []byte, message any) error {
 	protoMessage, ok := message.(proto.Message)
 	if !ok {
 		return errNotProto(message)
@@ -168,7 +168,7 @@ func (c *protoJSONCodec) Unmarshal(binary []byte, message interface{}) error {
 	return options.Unmarshal(binary, protoMessage)
 }
 
-func (c *protoJSONCodec) MarshalStable(message interface{}) ([]byte, error) {
+func (c *protoJSONCodec) MarshalStable(message any) ([]byte, error) {
 	// protojson does not offer a "deterministic" field ordering, but fields
 	// are still ordered consistently by their index. However, protojson can
 	// output inconsistent whitespace for some reason, therefore it is
@@ -198,12 +198,12 @@ func (c *protoWrapperCodec) Name() string {
 	return c.innerCodec.Name()
 }
 
-func (c *protoWrapperCodec) Marshal(message interface{}) ([]byte, error) {
-	var reqs []interface{}
+func (c *protoWrapperCodec) Marshal(message any) ([]byte, error) {
+	var reqs []any
 	var ok bool
-	reqs, ok = message.([]interface{})
+	reqs, ok = message.([]any)
 	if !ok {
-		reqs = []interface{}{message}
+		reqs = []any{message}
 	}
 
 	reqsLen := len(reqs)
@@ -227,12 +227,12 @@ func (c *protoWrapperCodec) Marshal(message interface{}) ([]byte, error) {
 	return proto.Marshal(wrapperReq)
 }
 
-func (c *protoWrapperCodec) Unmarshal(binary []byte, message interface{}) error {
-	var params []interface{}
+func (c *protoWrapperCodec) Unmarshal(binary []byte, message any) error {
+	var params []any
 	var ok bool
-	params, ok = message.([]interface{})
+	params, ok = message.([]any)
 	if !ok {
-		params = []interface{}{message}
+		params = []any{message}
 	}
 
 	var wrapperReq interoperability.TripleRequestWrapper
@@ -263,7 +263,7 @@ func (h *hessian2Codec) Name() string {
 	return codecNameHessian2
 }
 
-func (c *hessian2Codec) Marshal(message interface{}) ([]byte, error) {
+func (c *hessian2Codec) Marshal(message any) ([]byte, error) {
 	encoder := hessian.NewEncoder()
 	if err := encoder.Encode(message); err != nil {
 		return nil, err
@@ -272,7 +272,7 @@ func (c *hessian2Codec) Marshal(message interface{}) ([]byte, error) {
 	return encoder.Buffer(), nil
 }
 
-func (c *hessian2Codec) Unmarshal(binary []byte, message interface{}) error {
+func (c *hessian2Codec) Unmarshal(binary []byte, message any) error {
 	decoder := hessian.NewDecoder(binary)
 	val, err := decoder.Decode()
 	if err != nil {
@@ -287,13 +287,13 @@ func (c *msgpackCodec) Name() string {
 	return codecNameMsgPack
 }
 
-func (c *msgpackCodec) Marshal(message interface{}) ([]byte, error) {
+func (c *msgpackCodec) Marshal(message any) ([]byte, error) {
 	var out []byte
 	encoder := msgpack.NewEncoderBytes(&out, new(msgpack.MsgpackHandle))
 	return out, encoder.Encode(message)
 }
 
-func (c *msgpackCodec) Unmarshal(binary []byte, message interface{}) error {
+func (c *msgpackCodec) Unmarshal(binary []byte, message any) error {
 	decoder := msgpack.NewDecoderBytes(binary, new(msgpack.MsgpackHandle))
 	return decoder.Decode(message)
 }
@@ -343,7 +343,7 @@ func (m *codecMap) Names() []string {
 	return names
 }
 
-func errNotProto(message interface{}) error {
+func errNotProto(message any) error {
 	if _, ok := message.(protoiface.MessageV1); ok {
 		return fmt.Errorf("%T uses github.com/golang/protobuf, but triple only supports google.golang.org/protobuf: see https://go.dev/blog/protobuf-apiv2", message)
 	}
@@ -351,12 +351,12 @@ func errNotProto(message interface{}) error {
 }
 
 // Definitions from dubbogo/grpc-go
-func getArgType(v interface{}) string {
+func getArgType(v any) string {
 	if v == nil {
 		return "V"
 	}
 
-	switch v.(type) {
+	switch v := v.(type) {
 	// Serialized tags for base types
 	case nil:
 		return "V"
@@ -410,11 +410,11 @@ func getArgType(v interface{}) string {
 		return "[Ljava.lang.String;"
 	case []hessian.Object:
 		return "[Ljava.lang.Object;"
-	case map[interface{}]interface{}:
+	case map[any]any:
 		// return  "java.util.HashMap"
 		return "java.util.Map"
 	case hessian.POJOEnum:
-		return v.(hessian.POJOEnum).JavaClassName()
+		return v.JavaClassName()
 	//  Serialized tags for complex types
 	default:
 		t := reflect.TypeOf(v)
@@ -442,7 +442,7 @@ func getArgType(v interface{}) string {
 	}
 }
 
-func reflectResponse(in interface{}, out interface{}) error {
+func reflectResponse(in any, out any) error {
 	if in == nil {
 		return perrors.Errorf("@in is nil")
 	}

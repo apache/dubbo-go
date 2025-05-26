@@ -157,9 +157,7 @@ func (polaris *polarisServiceDiscovery) Unregister(instance registry.ServiceInst
 		polaris.instanceLock.Lock()
 		defer polaris.instanceLock.Unlock()
 		key := getInstanceKey(polaris.namespace, instance)
-		if _, exist := polaris.registryInstances[key]; exist {
-			delete(polaris.registryInstances, key)
-		}
+		delete(polaris.registryInstances, key)
 	}()
 
 	err := polaris.provider.Deregister(convertToDeregisterInstance(polaris.namespace, instance))
@@ -212,7 +210,7 @@ func (polaris *polarisServiceDiscovery) GetInstances(serviceName string) []regis
 // the page will start at offset
 func (polaris *polarisServiceDiscovery) GetInstancesByPage(serviceName string, offset int, pageSize int) gxpage.Pager {
 	all := polaris.GetInstances(serviceName)
-	res := make([]interface{}, 0, pageSize)
+	res := make([]any, 0, pageSize)
 	for i := offset; i < len(all) && i < offset+pageSize; i++ {
 		res = append(res, all[i])
 	}
@@ -224,8 +222,8 @@ func (polaris *polarisServiceDiscovery) GetInstancesByPage(serviceName string, o
 // The page will start at offset
 func (polaris *polarisServiceDiscovery) GetHealthyInstancesByPage(serviceName string, offset int, pageSize int, healthy bool) gxpage.Pager {
 	all := polaris.GetInstances(serviceName)
-	res := make([]interface{}, 0, pageSize)
-	// could not use res = all[a:b] here because the res should be []interface{}, not []ServiceInstance
+	res := make([]any, 0, pageSize)
+	// could not use res = all[a:b] here because the res should be []any, not []ServiceInstance
 	var (
 		i     = offset
 		count = 0

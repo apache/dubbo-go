@@ -22,7 +22,9 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple"
 )
 
 type Options struct {
@@ -44,7 +46,7 @@ func NewOptions(opts ...Option) *Options {
 	if defOpts.ID == "" {
 		if defOpts.Protocol.Name == "" {
 			// should be the same as default value of config.ProtocolConfig.Protocol
-			defOpts.ID = "tri"
+			defOpts.ID = constant.TriProtocol
 		} else {
 			defOpts.ID = defOpts.Protocol.Name
 		}
@@ -73,9 +75,12 @@ func WithREST() Option {
 	}
 }
 
-func WithTriple() Option {
+func WithTriple(opts ...triple.ServerOption) Option {
+	triSrvOpts := triple.NewServerOptions()
+
 	return func(opts *Options) {
 		opts.Protocol.Name = "tri"
+		opts.Protocol.Params = triSrvOpts
 	}
 }
 
@@ -105,7 +110,7 @@ func WithPort(port int) Option {
 	}
 }
 
-func WithParams(params interface{}) Option {
+func WithParams(params any) Option {
 	return func(opts *Options) {
 		opts.Protocol.Params = params
 	}

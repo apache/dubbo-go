@@ -131,7 +131,7 @@ func (cli *ServerReflectionServerReflectionInfoClient) Recv() (*ServerReflection
 var ServerReflection_ClientInfo = client.ClientInfo{
 	InterfaceName: "grpc.reflection.v1alpha.ServerReflection",
 	MethodNames:   []string{"ServerReflectionInfo"},
-	ConnectionInjectFunc: func(dubboCliRaw interface{}, conn *client.Connection) {
+	ConnectionInjectFunc: func(dubboCliRaw any, conn *client.Connection) {
 		dubboCli := dubboCliRaw.(*ServerReflectionImpl)
 		dubboCli.conn = conn
 	},
@@ -184,10 +184,10 @@ var ServerReflection_ServiceInfo = server.ServiceInfo{
 		{
 			Name: "ServerReflectionInfo",
 			Type: constant.CallBidiStream,
-			StreamInitFunc: func(baseStream interface{}) interface{} {
+			StreamInitFunc: func(baseStream any) any {
 				return &ServerReflectionServerReflectionInfoServer{baseStream.(*triple_protocol.BidiStream)}
 			},
-			MethodFunc: func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
+			MethodFunc: func(ctx context.Context, args []any, handler any) (any, error) {
 				stream := args[0].(ServerReflection_ServerReflectionInfoServer)
 				if err := handler.(ServerReflectionHandler).ServerReflectionInfo(ctx, stream); err != nil {
 					return nil, err

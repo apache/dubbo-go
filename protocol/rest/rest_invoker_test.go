@@ -171,13 +171,13 @@ package rest
 //	invoker := NewRestInvoker(url, &restClient, methodConfigMap)
 //	user := &User{}
 //	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUser"),
-//		invocation.WithArguments([]interface{}{1, int32(23), "username", "application/json"}), invocation.WithReply(user))
+//		invocation.WithArguments([]any{1, int32(23), "username", "application/json"}), invocation.WithReply(user))
 //	res := invoker.Invoke(context.Background(), inv)
 //	assert.NoError(t, res.Error())
 //	assert.Equal(t, User{ID: 1, Age: int32(23), Name: "username"}, *res.Result().(*User))
 //	now := time.Now()
 //	inv = invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUserOne"),
-//		invocation.WithArguments([]interface{}{&User{1, &now, int32(23), "username"}}), invocation.WithReply(user))
+//		invocation.WithArguments([]any{&User{1, &now, int32(23), "username"}}), invocation.WithReply(user))
 //	res = invoker.Invoke(context.Background(), inv)
 //	assert.NoError(t, res.Error())
 //	assert.NotNil(t, res.Result())
@@ -187,21 +187,21 @@ package rest
 //	assert.Equal(t, "username", res.Result().(*User).Name)
 //	// test 1
 //	inv = invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUserTwo"),
-//		invocation.WithArguments([]interface{}{&User{1, &now, int32(23), "username"}}), invocation.WithReply(user))
+//		invocation.WithArguments([]any{&User{1, &now, int32(23), "username"}}), invocation.WithReply(user))
 //	res = invoker.Invoke(context.Background(), inv)
 //	assert.NoError(t, res.Error())
 //	assert.NotNil(t, res.Result())
 //	assert.Equal(t, "username", res.Result().(*User).Name)
 //	// test 2
 //	inv = invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUserThree"),
-//		invocation.WithArguments([]interface{}{&User{1, &now, int32(23), "username"}}), invocation.WithReply(user))
+//		invocation.WithArguments([]any{&User{1, &now, int32(23), "username"}}), invocation.WithReply(user))
 //	res = invoker.Invoke(context.Background(), inv)
 //	assert.NoError(t, res.Error())
 //	assert.NotNil(t, res.Result())
 //	assert.Equal(t, "username", res.Result().(*User).Name)
 //	// test 3
 //	inv = invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("GetUserFour"),
-//		invocation.WithArguments([]interface{}{[]User{{1, nil, int32(23), "username"}}}), invocation.WithReply(user))
+//		invocation.WithArguments([]any{[]User{{1, nil, int32(23), "username"}}}), invocation.WithReply(user))
 //	res = invoker.Invoke(context.Background(), inv)
 //	assert.NoError(t, res.Error())
 //	assert.NotNil(t, res.Result())

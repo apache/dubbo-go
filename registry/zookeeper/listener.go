@@ -155,7 +155,7 @@ func (l *RegistryConfigurationListener) Next() (*registry.ServiceEvent, error) {
 		case <-l.close:
 			return nil, perrors.New("listener has been closed")
 		case <-l.registry.Done():
-			logger.Warnf("zk consumer register has quit, so zk event listener exit now. (registry url {%v}", l.registry.BaseRegistry.URL)
+			logger.Warnf("zk consumer register has quit, so zk event listener exit now. (registry url {%v}", l.registry.URL)
 			return nil, perrors.New("zookeeper registry, (registry url{%v}) stopped")
 		case val := <-l.events.Out():
 			e, _ := val.(*config_center.ConfigChangeEvent)

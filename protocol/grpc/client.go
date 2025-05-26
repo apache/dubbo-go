@@ -164,7 +164,7 @@ func clientInit() {
 	}
 }
 
-func getInvoker(impl interface{}, conn *grpc.ClientConn) interface{} {
+func getInvoker(impl any, conn *grpc.ClientConn) any {
 	var in []reflect.Value
 	in = append(in, reflect.ValueOf(conn))
 	method := reflect.ValueOf(impl).MethodByName("GetDubboStub")

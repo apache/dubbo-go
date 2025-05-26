@@ -29,7 +29,6 @@ import (
 
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/json"
-	"github.com/knadh/koanf/parsers/toml"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/providers/rawbytes"
@@ -40,7 +39,6 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/constant/file"
-	"dubbo.apache.org/dubbo-go/v3/config/parsers/properties"
 )
 
 var (
@@ -203,7 +201,7 @@ func userHomeDir() string {
 
 // checkFileSuffix check file suffix
 func checkFileSuffix(suffix string) error {
-	for _, g := range []string{"json", "toml", "yaml", "yml", "properties"} {
+	for _, g := range []string{"json", "yaml", "yml"} {
 		if g == suffix {
 			return nil
 		}
@@ -290,10 +288,6 @@ func GetConfigResolver(conf *loaderConf) *koanf.Koanf {
 		err = k.Load(rawbytes.Provider(bytes), yaml.Parser())
 	case "json":
 		err = k.Load(rawbytes.Provider(bytes), json.Parser())
-	case "toml":
-		err = k.Load(rawbytes.Provider(bytes), toml.Parser())
-	case "properties":
-		err = k.Load(rawbytes.Provider(bytes), properties.Parser())
 	default:
 		err = errors.Errorf("no support %s file suffix", conf.suffix)
 	}
@@ -306,7 +300,7 @@ func GetConfigResolver(conf *loaderConf) *koanf.Koanf {
 
 // resolvePlaceholder replace ${xx} with real value
 func resolvePlaceholder(resolver *koanf.Koanf) *koanf.Koanf {
-	m := make(map[string]interface{})
+	m := make(map[string]any)
 	for k, v := range resolver.All() {
 		s, ok := v.(string)
 		if !ok {

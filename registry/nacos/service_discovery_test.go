@@ -39,7 +39,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery"
 	"dubbo.apache.org/dubbo-go/v3/remoting/nacos"
@@ -63,7 +64,7 @@ func TestNacosServiceDiscoveryGetDefaultPageSize(t *testing.T) {
 
 func TestFunction(t *testing.T) {
 
-	extension.SetProtocol("mock", func() protocol.Protocol {
+	extension.SetProtocol("mock", func() base.Protocol {
 		return &mockProtocol{}
 	})
 
@@ -143,6 +144,7 @@ func newMockNacosServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, e
 		namingClient:        client,
 		descriptor:          descriptor,
 		registryInstances:   []registry.ServiceInstance{},
+		registryURL:         url,
 		instanceListenerMap: make(map[string]*gxset.HashSet),
 	}
 	return newInstance, nil
@@ -161,7 +163,7 @@ func (tn *testNotify) Notify(e *registry.ServiceEvent) {
 func (tn *testNotify) NotifyAll([]*registry.ServiceEvent, func()) {}
 
 type mockClient struct {
-	instance []interface{}
+	instance []any
 }
 
 func (c mockClient) RegisterInstance(param vo.RegisterInstanceParam) (bool, error) {
@@ -213,11 +215,11 @@ func (c mockClient) CloseClient() {
 
 type mockProtocol struct{}
 
-func (m mockProtocol) Export(protocol.Invoker) protocol.Exporter {
+func (m mockProtocol) Export(base.Invoker) base.Exporter {
 	panic("implement me")
 }
 
-func (m mockProtocol) Refer(*common.URL) protocol.Invoker {
+func (m mockProtocol) Refer(*common.URL) base.Invoker {
 	return &mockInvoker{}
 }
 
@@ -239,8 +241,8 @@ func (m *mockInvoker) Destroy() {
 	panic("implement me")
 }
 
-func (m *mockInvoker) Invoke(context.Context, protocol.Invocation) protocol.Result {
-	return &protocol.RPCResult{
+func (m *mockInvoker) Invoke(context.Context, base.Invocation) result.Result {
+	return &result.RPCResult{
 		Rest: &mockResult{},
 	}
 }

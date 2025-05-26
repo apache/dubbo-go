@@ -32,14 +32,14 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 type BaseClusterInvoker struct {
 	Directory      directory.Directory
 	AvailableCheck bool
 	Destroyed      *atomic.Bool
-	StickyInvoker  protocol.Invoker
+	StickyInvoker  base.Invoker
 }
 
 func NewBaseClusterInvoker(directory directory.Directory) BaseClusterInvoker {
@@ -69,7 +69,7 @@ func (invoker *BaseClusterInvoker) IsAvailable() bool {
 }
 
 // CheckInvokers checks invokers' status if is available or not
-func (invoker *BaseClusterInvoker) CheckInvokers(invokers []protocol.Invoker, invocation protocol.Invocation) error {
+func (invoker *BaseClusterInvoker) CheckInvokers(invokers []base.Invoker, invocation base.Invocation) error {
 	if len(invokers) == 0 {
 		ip := common.GetLocalIp()
 		return perrors.Errorf("Failed to invoke the method %v. No provider available for the service %v from "+
@@ -89,8 +89,8 @@ func (invoker *BaseClusterInvoker) CheckWhetherDestroyed() error {
 	return nil
 }
 
-func (invoker *BaseClusterInvoker) DoSelect(lb loadbalance.LoadBalance, invocation protocol.Invocation, invokers []protocol.Invoker, invoked []protocol.Invoker) protocol.Invoker {
-	var selectedInvoker protocol.Invoker
+func (invoker *BaseClusterInvoker) DoSelect(lb loadbalance.LoadBalance, invocation base.Invocation, invokers []base.Invoker, invoked []base.Invoker) base.Invoker {
+	var selectedInvoker base.Invoker
 	if len(invokers) <= 0 {
 		return selectedInvoker
 	}
@@ -117,16 +117,16 @@ func (invoker *BaseClusterInvoker) DoSelect(lb loadbalance.LoadBalance, invocati
 	return selectedInvoker
 }
 
-func (invoker *BaseClusterInvoker) doSelectInvoker(lb loadbalance.LoadBalance, invocation protocol.Invocation, invokers []protocol.Invoker, invoked []protocol.Invoker) protocol.Invoker {
+func (invoker *BaseClusterInvoker) doSelectInvoker(lb loadbalance.LoadBalance, invocation base.Invocation, invokers []base.Invoker, invoked []base.Invoker) base.Invoker {
 	if len(invokers) == 0 {
 		return nil
 	}
-	go protocol.TryRefreshBlackList()
+	go base.TryRefreshBlackList()
 	if len(invokers) == 1 {
 		if invokers[0].IsAvailable() {
 			return invokers[0]
 		}
-		protocol.SetInvokerUnhealthyStatus(invokers[0])
+		base.SetInvokerUnhealthyStatus(invokers[0])
 		logger.Errorf("the invokers of %s is nil. ", invokers[0].GetURL().ServiceKey())
 		return nil
 	}
@@ -135,7 +135,7 @@ func (invoker *BaseClusterInvoker) doSelectInvoker(lb loadbalance.LoadBalance, i
 
 	// judge if the selected Invoker is invoked and available
 	if (!selectedInvoker.IsAvailable() && invoker.AvailableCheck) || isInvoked(selectedInvoker, invoked) {
-		protocol.SetInvokerUnhealthyStatus(selectedInvoker)
+		base.SetInvokerUnhealthyStatus(selectedInvoker)
 		otherInvokers := getOtherInvokers(invokers, selectedInvoker)
 		// do reselect
 		for i := 0; i < 3; i++ {
@@ -151,7 +151,7 @@ func (invoker *BaseClusterInvoker) doSelectInvoker(lb loadbalance.LoadBalance, i
 			if !reselectedInvoker.IsAvailable() {
 				logger.Infof("the invoker of %s is not available, maybe some network error happened or the server is shutdown.",
 					invoker.GetURL().Ip)
-				protocol.SetInvokerUnhealthyStatus(reselectedInvoker)
+				base.SetInvokerUnhealthyStatus(reselectedInvoker)
 				otherInvokers = getOtherInvokers(otherInvokers, reselectedInvoker)
 				continue
 			}
@@ -162,7 +162,7 @@ func (invoker *BaseClusterInvoker) doSelectInvoker(lb loadbalance.LoadBalance, i
 	return selectedInvoker
 }
 
-func isInvoked(selectedInvoker protocol.Invoker, invoked []protocol.Invoker) bool {
+func isInvoked(selectedInvoker base.Invoker, invoked []base.Invoker) bool {
 	for _, i := range invoked {
 		if i == selectedInvoker {
 			return true
@@ -171,7 +171,7 @@ func isInvoked(selectedInvoker protocol.Invoker, invoked []protocol.Invoker) boo
 	return false
 }
 
-func GetLoadBalance(invoker protocol.Invoker, methodName string) loadbalance.LoadBalance {
+func GetLoadBalance(invoker base.Invoker, methodName string) loadbalance.LoadBalance {
 	url := invoker.GetURL()
 
 	// Get the service loadbalance config
@@ -184,8 +184,8 @@ func GetLoadBalance(invoker protocol.Invoker, methodName string) loadbalance.Loa
 	return extension.GetLoadbalance(lb)
 }
 
-func getOtherInvokers(invokers []protocol.Invoker, invoker protocol.Invoker) []protocol.Invoker {
-	otherInvokers := make([]protocol.Invoker, 0)
+func getOtherInvokers(invokers []base.Invoker, invoker base.Invoker) []base.Invoker {
+	otherInvokers := make([]base.Invoker, 0)
 	for _, i := range invokers {
 		if i != invoker {
 			otherInvokers = append(otherInvokers, i)

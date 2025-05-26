@@ -41,11 +41,11 @@ const (
 
 type TestService struct{}
 
-func (s *TestService) MethodOne(ctx context.Context, arg1, arg2, arg3 interface{}) error {
+func (s *TestService) MethodOne(ctx context.Context, arg1, arg2, arg3 any) error {
 	return nil
 }
 
-func (s *TestService) MethodTwo(arg1, arg2, arg3 interface{}) (interface{}, error) {
+func (s *TestService) MethodTwo(arg1, arg2, arg3 any) (any, error) {
 	return struct{}{}, nil
 }
 
@@ -69,14 +69,14 @@ func (s *testService) Method1(ctx context.Context, args testService, rsp *struct
 	return nil
 }
 
-func (s *testService) Method2(ctx context.Context, args []interface{}) (testService, error) {
+func (s *testService) Method2(ctx context.Context, args []any) (testService, error) {
 	return testService{}, nil
 }
 
-func (s *testService) Method3(ctx context.Context, args []interface{}, rsp *struct{}) {
+func (s *testService) Method3(ctx context.Context, args []any, rsp *struct{}) {
 }
 
-func (s *testService) Method4(ctx context.Context, args []interface{}, rsp *struct{}) *testService {
+func (s *testService) Method4(ctx context.Context, args []any, rsp *struct{}) *testService {
 	return nil
 }
 

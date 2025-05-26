@@ -30,23 +30,23 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 // selector implementation of Selector:get invoker based on load balancing strategy
 type selector struct {
 	hashCode        uint32
 	replicaNum      int
-	virtualInvokers map[uint32]protocol.Invoker
+	virtualInvokers map[uint32]base.Invoker
 	keys            gxsort.Uint32Slice
 	argumentIndex   []int
 }
 
-func newSelector(invokers []protocol.Invoker, methodName string,
+func newSelector(invokers []base.Invoker, methodName string,
 	hashCode uint32) *selector {
 
 	selector := &selector{}
-	selector.virtualInvokers = make(map[uint32]protocol.Invoker)
+	selector.virtualInvokers = make(map[uint32]base.Invoker)
 	selector.hashCode = hashCode
 	url := invokers[0].GetURL()
 	selector.replicaNum = url.GetMethodParamIntValue(methodName, HashNodes, 160)
@@ -75,13 +75,13 @@ func newSelector(invokers []protocol.Invoker, methodName string,
 }
 
 // Select gets invoker based on load balancing strategy
-func (c *selector) Select(invocation protocol.Invocation) protocol.Invoker {
+func (c *selector) Select(invocation base.Invocation) base.Invoker {
 	key := c.toKey(invocation.Arguments())
 	digest := md5.Sum([]byte(key))
 	return c.selectForKey(c.hash(digest, 0))
 }
 
-func (c *selector) toKey(args []interface{}) string {
+func (c *selector) toKey(args []any) string {
 	var sb strings.Builder
 	for i := range c.argumentIndex {
 		if i >= 0 && i < len(args) {
@@ -91,7 +91,7 @@ func (c *selector) toKey(args []interface{}) string {
 	return sb.String()
 }
 
-func (c *selector) selectForKey(hash uint32) protocol.Invoker {
+func (c *selector) selectForKey(hash uint32) base.Invoker {
 	idx := sort.Search(len(c.keys), func(i int) bool {
 		return c.keys[i] >= hash
 	})

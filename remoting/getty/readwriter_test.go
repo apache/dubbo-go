@@ -33,9 +33,10 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/impl"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	"dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
@@ -50,8 +51,8 @@ func TestTCPPackageHandle(t *testing.T) {
 func testDecodeTCPPackage(t *testing.T, svr *Server, client *Client) {
 	request := remoting.NewRequest("2.0.2")
 	ap := &AdminProvider{}
-	rpcInvocation := createInvocation("GetAdmin", nil, nil, []interface{}{[]interface{}{"1", "username"}},
-		[]reflect.Value{reflect.ValueOf([]interface{}{"1", "username"}), reflect.ValueOf(ap)})
+	rpcInvocation := createInvocation("GetAdmin", nil, nil, []any{[]any{"1", "username"}},
+		[]reflect.Value{reflect.ValueOf([]any{"1", "username"}), reflect.ValueOf(ap)})
 	attachment := map[string]string{
 		constant.InterfaceKey: "com.ikurento.user.AdminProvider",
 		constant.PathKey:      "AdminProvider",
@@ -138,17 +139,17 @@ func getServer(t *testing.T) (*Server, *common.URL) {
 	_, err = common.ServiceMap.Register("com.ikurento.user.AdminProvider", url.Protocol, "", "0.0.1", adminProvider)
 	assert.NoError(t, err)
 	invoker := &proxy_factory.ProxyInvoker{
-		BaseInvoker: *protocol.NewBaseInvoker(url),
+		BaseInvoker: *base.NewBaseInvoker(url),
 	}
-	handler := func(invocation *invocation.RPCInvocation) protocol.RPCResult {
+	handler := func(invocation *invocation.RPCInvocation) result.RPCResult {
 		// result := protocol.RPCResult{}
 		r := invoker.Invoke(context.Background(), invocation)
-		result := protocol.RPCResult{
+		res := result.RPCResult{
 			Err:   r.Error(),
 			Rest:  r.Result(),
 			Attrs: r.Attachments(),
 		}
-		return result
+		return res
 	}
 	server := NewServer(url, handler)
 	server.Start()
@@ -160,7 +161,7 @@ func getServer(t *testing.T) (*Server, *common.URL) {
 
 type AdminProvider struct{}
 
-func (a *AdminProvider) GetAdmin(ctx context.Context, req []interface{}, rsp *User) error {
+func (a *AdminProvider) GetAdmin(ctx context.Context, req []any, rsp *User) error {
 	rsp.ID = req[0].(string)
 	rsp.Name = req[1].(string)
 	return nil

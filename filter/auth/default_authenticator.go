@@ -30,7 +30,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	invocation_impl "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
@@ -56,7 +56,7 @@ func newDefaultAuthenticator() filter.Authenticator {
 }
 
 // Sign adds the signature to the invocation
-func (authenticator *defaultAuthenticator) Sign(invocation protocol.Invocation, url *common.URL) error {
+func (authenticator *defaultAuthenticator) Sign(invocation base.Invocation, url *common.URL) error {
 	currentTimeMillis := strconv.Itoa(int(time.Now().Unix() * 1000))
 
 	consumer := url.GetParam(constant.ApplicationKey, "")
@@ -78,7 +78,7 @@ func (authenticator *defaultAuthenticator) Sign(invocation protocol.Invocation, 
 
 // getSignature
 // get signature by the metadata and params of the invocation
-func getSignature(url *common.URL, invocation protocol.Invocation, secrectKey string, currentTime string) (string, error) {
+func getSignature(url *common.URL, invocation base.Invocation, secrectKey string, currentTime string) (string, error) {
 	requestString := fmt.Sprintf(constant.SignatureStringFormat,
 		url.ColonSeparatedKey(), invocation.MethodName(), secrectKey, currentTime)
 	var signature string
@@ -96,7 +96,7 @@ func getSignature(url *common.URL, invocation protocol.Invocation, secrectKey st
 }
 
 // Authenticate verifies whether the signature sent by the requester is correct
-func (authenticator *defaultAuthenticator) Authenticate(invocation protocol.Invocation, url *common.URL) error {
+func (authenticator *defaultAuthenticator) Authenticate(invocation base.Invocation, url *common.URL) error {
 	accessKeyId := invocation.GetAttachmentWithDefaultValue(constant.AKKey, "")
 
 	requestTimestamp := invocation.GetAttachmentWithDefaultValue(constant.RequestTimestampKey, "")
@@ -122,7 +122,7 @@ func (authenticator *defaultAuthenticator) Authenticate(invocation protocol.Invo
 	return nil
 }
 
-func getAccessKeyPair(invocation protocol.Invocation, url *common.URL) (*filter.AccessKeyPair, error) {
+func getAccessKeyPair(invocation base.Invocation, url *common.URL) (*filter.AccessKeyPair, error) {
 	accesskeyStorage := extension.GetAccessKeyStorages(url.GetParam(constant.AccessKeyStorageKey, constant.DefaultAccessKeyStorage))
 	accessKeyPair := accesskeyStorage.GetAccessKeyPair(invocation, url)
 	if accessKeyPair == nil || IsEmpty(accessKeyPair.AccessKey, false) || IsEmpty(accessKeyPair.SecretKey, true) {
@@ -140,7 +140,7 @@ func doAuthWork(url *common.URL, do func(filter.Authenticator) error) error {
 			return do(authenticator)
 
 		} else {
-			return errors.New("Authenticator for " + constant.ServiceAuthKey + " is not existing, make sure you have import the package.")
+			return errors.New("authenticator for " + constant.ServiceAuthKey + " is not existing, make sure you have import the package")
 		}
 	}
 	return nil

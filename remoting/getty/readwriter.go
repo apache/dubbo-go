@@ -46,7 +46,7 @@ func NewRpcClientPackageHandler(client *Client) *RpcClientPackageHandler {
 
 // Read data from server. if the package size from server is larger than 4096 byte, server will read 4096 byte
 // and send to client each time. the Read can assemble it.
-func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface{}, int, error) {
+func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (any, int, error) {
 	rsp, length, err := (p.client.codec).Decode(data)
 	if err != nil {
 		err = perrors.WithStack(err)
@@ -61,19 +61,19 @@ func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (interface
 }
 
 // Write send the data to server
-func (p *RpcClientPackageHandler) Write(ss getty.Session, pkg interface{}) ([]byte, error) {
+func (p *RpcClientPackageHandler) Write(ss getty.Session, pkg any) ([]byte, error) {
 	req, ok := pkg.(*remoting.Request)
 	maxBufLength := clientConf.GettySessionParam.MaxMsgLen + impl.HEADER_LENGTH
 	if ok {
 		buf, err := (p.client.codec).EncodeRequest(req)
+		if err != nil {
+			logger.Warnf("binary.Write(req{%#v}) = err{%#v}", req, perrors.WithStack(err))
+			return nil, perrors.WithStack(err)
+		}
 		bufLength := buf.Len()
 		if bufLength > maxBufLength {
 			logger.Errorf("Data length %d too large, max payload %d", bufLength-impl.HEADER_LENGTH, clientConf.GettySessionParam.MaxMsgLen)
 			return nil, perrors.Errorf("Data length %d too large, max payload %d", bufLength-impl.HEADER_LENGTH, clientConf.GettySessionParam.MaxMsgLen)
-		}
-		if err != nil {
-			logger.Warnf("binary.Write(req{%#v}) = err{%#v}", req, perrors.WithStack(err))
-			return nil, perrors.WithStack(err)
 		}
 		return buf.Bytes(), nil
 	}
@@ -81,14 +81,14 @@ func (p *RpcClientPackageHandler) Write(ss getty.Session, pkg interface{}) ([]by
 	res, ok := pkg.(*remoting.Response)
 	if ok {
 		buf, err := (p.client.codec).EncodeResponse(res)
+		if err != nil {
+			logger.Warnf("binary.Write(res{%#v}) = err{%#v}", req, perrors.WithStack(err))
+			return nil, perrors.WithStack(err)
+		}
 		bufLength := buf.Len()
 		if bufLength > maxBufLength {
 			logger.Errorf("Data length %d too large, max payload %d", bufLength-impl.HEADER_LENGTH, clientConf.GettySessionParam.MaxMsgLen)
 			return nil, perrors.Errorf("Data length %d too large, max payload %d", bufLength-impl.HEADER_LENGTH, clientConf.GettySessionParam.MaxMsgLen)
-		}
-		if err != nil {
-			logger.Warnf("binary.Write(res{%#v}) = err{%#v}", req, perrors.WithStack(err))
-			return nil, perrors.WithStack(err)
 		}
 		return buf.Bytes(), nil
 	}
@@ -108,7 +108,7 @@ func NewRpcServerPackageHandler(server *Server) *RpcServerPackageHandler {
 
 // Read data from client. if the package size from client is larger than 4096 byte, client will read 4096 byte
 // and send to client each time. the Read can assemble it.
-func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface{}, int, error) {
+func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (any, int, error) {
 	req, length, err := (p.server.codec).Decode(data)
 	if err != nil {
 		err = perrors.WithStack(err)
@@ -123,7 +123,7 @@ func (p *RpcServerPackageHandler) Read(ss getty.Session, data []byte) (interface
 }
 
 // Write send the data to client
-func (p *RpcServerPackageHandler) Write(ss getty.Session, pkg interface{}) ([]byte, error) {
+func (p *RpcServerPackageHandler) Write(ss getty.Session, pkg any) ([]byte, error) {
 	res, ok := pkg.(*remoting.Response)
 	maxBufLength := srvConf.GettySessionParam.MaxMsgLen + impl.HEADER_LENGTH
 	if ok {

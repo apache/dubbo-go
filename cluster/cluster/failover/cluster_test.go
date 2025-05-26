@@ -35,16 +35,17 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 // nolint
-func normalInvoke(successCount int, urlParam url.Values, invocations ...*invocation.RPCInvocation) protocol.Result {
+func normalInvoke(successCount int, urlParam url.Values, invocations ...*invocation.RPCInvocation) result.Result {
 	extension.SetLoadbalance("random", random.NewRandomLoadBalance)
 	failoverCluster := newFailoverCluster()
 
-	var invokers []protocol.Invoker
+	var invokers []base.Invoker
 	for i := 0; i < 10; i++ {
 		newUrl, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i), common.WithParams(urlParam))
 		invokers = append(invokers, clusterpkg.NewMockInvoker(newUrl, successCount))
@@ -100,7 +101,7 @@ func TestFailoverDestroy(t *testing.T) {
 	extension.SetLoadbalance("random", random.NewRandomLoadBalance)
 	failoverCluster := newFailoverCluster()
 
-	invokers := []protocol.Invoker{}
+	invokers := []base.Invoker{}
 	for i := 0; i < 10; i++ {
 		u, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
 		invokers = append(invokers, clusterpkg.NewMockInvoker(u, 1))

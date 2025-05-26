@@ -47,6 +47,10 @@ type ReferenceConfig struct {
 	MeshProviderPort  int               `yaml:"mesh-provider-port" json:"mesh-provider-port,omitempty" propertiy:"mesh-provider-port"`
 	KeepAliveInterval string            `yaml:"keep-alive-interval" json:"keep-alive-interval,omitempty" property:"keep-alive-interval"`
 	KeepAliveTimeout  string            `yaml:"keep-alive-timeout" json:"keep-alive-timeout,omitempty" property:"keep-alive-timeout"`
+
+	// just for new triple non-IDL mode
+	// TODO: remove IDLMode when config package is removed
+	IDLMode string
 }
 
 func DefaultReferenceConfig() *ReferenceConfig {
@@ -75,7 +79,7 @@ func (c *ReferenceConfig) GetOptions() []ReferenceOption {
 	if c.Protocol != "" {
 		refOpts = append(refOpts, WithReference_Protocol(c.Protocol))
 	}
-	if c.RegistryIDs != nil && len(c.RegistryIDs) > 0 {
+	if len(c.RegistryIDs) > 0 {
 		refOpts = append(refOpts, WithReference_RegistryIDs(c.RegistryIDs))
 	}
 	if c.Cluster != "" {
@@ -101,7 +105,7 @@ func (c *ReferenceConfig) GetOptions() []ReferenceOption {
 	if c.ProvidedBy != "" {
 		refOpts = append(refOpts, WithReference_ProviderBy(c.ProvidedBy))
 	}
-	if c.Params != nil && len(c.Params) > 0 {
+	if len(c.Params) > 0 {
 		newParams := make(map[string]string, len(c.Params))
 		for k, v := range c.Params {
 			newParams[k] = v
@@ -185,6 +189,7 @@ func (c *ReferenceConfig) Clone() *ReferenceConfig {
 		MeshProviderPort:  c.MeshProviderPort,
 		KeepAliveInterval: c.KeepAliveInterval,
 		KeepAliveTimeout:  c.KeepAliveTimeout,
+		IDLMode:           c.IDLMode,
 	}
 }
 

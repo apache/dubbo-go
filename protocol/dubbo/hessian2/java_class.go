@@ -37,7 +37,7 @@ var (
 )
 
 // GetJavaName returns java name of an object
-func GetJavaName(obj interface{}) (string, error) {
+func GetJavaName(obj any) (string, error) {
 	if obj == nil {
 		return "", NilError
 	}
@@ -111,7 +111,7 @@ func getBasicJavaName(typ reflect.Type) (string, error) {
 // GetClassDesc get class desc.
 // - boolean[].class => "[Z"
 // - Object.class => "Ljava/lang/Object;"
-func GetClassDesc(v interface{}) string {
+func GetClassDesc(v any) string {
 	if v == nil {
 		return "V"
 	}
@@ -172,11 +172,11 @@ func GetClassDesc(v interface{}) string {
 		return "[Ljava.lang.String;"
 	case []hessian.Object:
 		return "[Ljava.lang.Object;"
-	case map[interface{}]interface{}:
+	case map[any]any:
 		// return  "java.util.HashMap"
 		return "java.util.Map"
 	case hessian.POJOEnum:
-		return v.(hessian.POJOEnum).JavaClassName()
+		return v.JavaClassName()
 	//  Serialized tags for complex types
 	default:
 		t := reflect.TypeOf(v)

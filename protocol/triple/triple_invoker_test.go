@@ -30,7 +30,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
@@ -40,8 +40,8 @@ func Test_parseInvocation(t *testing.T) {
 		desc   string
 		ctx    func() context.Context
 		url    *common.URL
-		invo   func() protocol.Invocation
-		expect func(t *testing.T, callType string, inRaw []interface{}, methodName string, err error)
+		invo   func() base.Invocation
+		expect func(t *testing.T, callType string, inRaw []any, methodName string, err error)
 	}{
 		{
 			desc: "miss callType",
@@ -49,10 +49,10 @@ func Test_parseInvocation(t *testing.T) {
 				return context.Background()
 			},
 			url: common.NewURLWithOptions(),
-			invo: func() protocol.Invocation {
+			invo: func() base.Invocation {
 				return invocation.NewRPCInvocationWithOptions()
 			},
-			expect: func(t *testing.T, callType string, inRaw []interface{}, methodName string, err error) {
+			expect: func(t *testing.T, callType string, inRaw []any, methodName string, err error) {
 				assert.NotNil(t, err)
 			},
 		},
@@ -62,12 +62,12 @@ func Test_parseInvocation(t *testing.T) {
 				return context.Background()
 			},
 			url: common.NewURLWithOptions(),
-			invo: func() protocol.Invocation {
+			invo: func() base.Invocation {
 				iv := invocation.NewRPCInvocationWithOptions()
 				iv.SetAttribute(constant.CallTypeKey, 1)
 				return iv
 			},
-			expect: func(t *testing.T, callType string, inRaw []interface{}, methodName string, err error) {
+			expect: func(t *testing.T, callType string, inRaw []any, methodName string, err error) {
 				assert.NotNil(t, err)
 			},
 		},
@@ -77,12 +77,12 @@ func Test_parseInvocation(t *testing.T) {
 				return context.Background()
 			},
 			url: common.NewURLWithOptions(),
-			invo: func() protocol.Invocation {
+			invo: func() base.Invocation {
 				iv := invocation.NewRPCInvocationWithOptions()
 				iv.SetAttribute(constant.CallTypeKey, constant.CallUnary)
 				return iv
 			},
-			expect: func(t *testing.T, callType string, inRaw []interface{}, methodName string, err error) {
+			expect: func(t *testing.T, callType string, inRaw []any, methodName string, err error) {
 				assert.NotNil(t, err)
 			},
 		},
@@ -101,7 +101,7 @@ func Test_parseAttachments(t *testing.T) {
 		desc   string
 		ctx    func() context.Context
 		url    *common.URL
-		invo   func() protocol.Invocation
+		invo   func() base.Invocation
 		expect func(t *testing.T, ctx context.Context, err error)
 	}{
 		{
@@ -113,7 +113,7 @@ func Test_parseAttachments(t *testing.T) {
 				common.WithInterface("interface"),
 				common.WithToken("token"),
 			),
-			invo: func() protocol.Invocation {
+			invo: func() base.Invocation {
 				return invocation.NewRPCInvocationWithOptions()
 			},
 			expect: func(t *testing.T, ctx context.Context, err error) {
@@ -127,13 +127,13 @@ func Test_parseAttachments(t *testing.T) {
 		{
 			desc: "user passed-in legal attachments",
 			ctx: func() context.Context {
-				userDefined := make(map[string]interface{})
+				userDefined := make(map[string]any)
 				userDefined["key1"] = "val1"
 				userDefined["key2"] = []string{"key2_1", "key2_2"}
 				return context.WithValue(context.Background(), constant.AttachmentKey, userDefined)
 			},
 			url: common.NewURLWithOptions(),
-			invo: func() protocol.Invocation {
+			invo: func() base.Invocation {
 				return invocation.NewRPCInvocationWithOptions()
 			},
 			expect: func(t *testing.T, ctx context.Context, err error) {
@@ -147,12 +147,12 @@ func Test_parseAttachments(t *testing.T) {
 		{
 			desc: "user passed-in illegal attachments",
 			ctx: func() context.Context {
-				userDefined := make(map[string]interface{})
+				userDefined := make(map[string]any)
 				userDefined["key1"] = 1
 				return context.WithValue(context.Background(), constant.AttachmentKey, userDefined)
 			},
 			url: common.NewURLWithOptions(),
-			invo: func() protocol.Invocation {
+			invo: func() base.Invocation {
 				return invocation.NewRPCInvocationWithOptions()
 			},
 			expect: func(t *testing.T, ctx context.Context, err error) {

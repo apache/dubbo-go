@@ -44,6 +44,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
@@ -251,9 +252,9 @@ func WithServerNotRegister() ServerOption {
 	}
 }
 
-func WithServerWarmup(milliSeconds time.Duration) ServerOption {
+func WithServerWarmup(warmupDuration time.Duration) ServerOption {
 	return func(opts *ServerOptions) {
-		opts.Provider.Warmup = milliSeconds.String()
+		opts.Provider.Warmup = warmupDuration.String()
 	}
 }
 
@@ -383,7 +384,7 @@ func WithServerProtocol(opts ...protocol.Option) ServerOption {
 
 // todo(DMwangnima): this configuration would be used by filter/hystrix
 // think about a more ideal way to configure
-func WithServerFilterConf(conf interface{}) ServerOption {
+func WithServerFilterConf(conf any) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.FilterConf = conf
 	}
@@ -464,15 +465,19 @@ type ServiceOptions struct {
 	ProxyFactoryKey string
 	rpcService      common.RPCService
 	cacheMutex      sync.Mutex
-	cacheProtocol   protocol.Protocol
+	cacheProtocol   base.Protocol
 	exportersLock   sync.Mutex
-	exporters       []protocol.Exporter
+	exporters       []base.Exporter
 	adaptiveService bool
 
-	methodsCompat     []*config.MethodConfig
+	// for triple non-IDL mode
+	// consider put here or global.ServiceConfig
+	// string for url
+	// TODO: remove this when config package is remove
+	IDLMode string
+
 	applicationCompat *config.ApplicationConfig
 	registriesCompat  map[string]*config.RegistryConfig
-	protocolsCompat   map[string]*config.ProtocolConfig
 }
 
 func defaultServiceOptions() *ServiceOptions {
@@ -537,21 +542,12 @@ func (svcOpts *ServiceOptions) init(srv *Server, opts ...ServiceOption) error {
 	if len(svc.RCProtocolsMap) == 0 {
 		svc.RCProtocolsMap = svcOpts.Protocols
 	}
-	if len(svc.RCProtocolsMap) > 0 {
-		svcOpts.protocolsCompat = make(map[string]*config.ProtocolConfig)
-		for key, pro := range svc.RCProtocolsMap {
-			svcOpts.protocolsCompat[key] = compatProtocolConfig(pro)
-			if err := svcOpts.protocolsCompat[key].Init(); err != nil {
-				return err
-			}
-		}
-	}
 
 	svc.RegistryIDs = commonCfg.TranslateIds(svc.RegistryIDs)
 	if len(svc.RegistryIDs) <= 0 {
 		svc.RegistryIDs = svcOpts.Provider.RegistryIDs
 	}
-	if svc.RegistryIDs == nil || len(svc.RegistryIDs) <= 0 {
+	if len(svc.RegistryIDs) <= 0 {
 		svc.NotRegister = true
 	}
 
@@ -751,9 +747,9 @@ func WithNotRegister() ServiceOption {
 	}
 }
 
-func WithWarmup(milliSeconds time.Duration) ServiceOption {
+func WithWarmup(warmupDuration time.Duration) ServiceOption {
 	return func(opts *ServiceOptions) {
-		opts.Service.Warmup = milliSeconds.String()
+		opts.Service.Warmup = warmupDuration.String()
 	}
 }
 
@@ -868,6 +864,13 @@ func WithParam(k, v string) ServiceOption {
 			opts.Service.Params = make(map[string]string)
 		}
 		opts.Service.Params[k] = v
+	}
+}
+
+// TODO: remove when config package is removed
+func WithIDLMode(IDLMode string) ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.IDLMode = IDLMode
 	}
 }
 

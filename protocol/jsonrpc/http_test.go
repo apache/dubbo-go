@@ -95,7 +95,7 @@ type (
 //			"X-Method":   "GetUser",
 //		})
 //
-//		req := client.NewRequest(url, "GetUser", []interface{}{"1", "username"})
+//		req := client.NewRequest(url, "GetUser", []any{"1", "username"})
 //		reply := &User{}
 //		err = client.Call(ctx, url, req, reply)
 //		assert.NoError(t, err)
@@ -108,7 +108,7 @@ type (
 //			"X-Services": url.Path,
 //			"X-Method":   "GetUser0",
 //		})
-//		req = client.NewRequest(url, "GetUser0", []interface{}{"1", nil, "username"})
+//		req = client.NewRequest(url, "GetUser0", []any{"1", nil, "username"})
 //		reply = &User{}
 //		err = client.Call(ctx, url, req, reply)
 //		assert.NoError(t, err)
@@ -121,7 +121,7 @@ type (
 //			"X-Services": url.Path,
 //			"X-Method":   "GetUser1",
 //		})
-//		req = client.NewRequest(url, "GetUser1", []interface{}{})
+//		req = client.NewRequest(url, "GetUser1", []any{})
 //		reply = &User{}
 //		err = client.Call(ctx, url, req, reply)
 //		assert.True(t, strings.Contains(err.Error(), "500 Internal Server Error"))
@@ -133,7 +133,7 @@ type (
 //			"X-Services": url.Path,
 //			"X-Method":   "GetUser2",
 //		})
-//		req = client.NewRequest(url, "GetUser2", []interface{}{"1", "username"})
+//		req = client.NewRequest(url, "GetUser2", []any{"1", "username"})
 //		reply1 := []User{}
 //		err = client.Call(ctx, url, req, &reply1)
 //		assert.NoError(t, err)
@@ -145,7 +145,7 @@ type (
 //			"X-Services": url.Path,
 //			"X-Method":   "GetUser3",
 //		})
-//		req = client.NewRequest(url, "GetUser3", []interface{}{"1", "username"})
+//		req = client.NewRequest(url, "GetUser3", []any{"1", "username"})
 //		reply1 = []User{}
 //		err = client.Call(ctx, url, req, &reply1)
 //		assert.NoError(t, err)
@@ -157,7 +157,7 @@ type (
 //			"X-Services": url.Path,
 //			"X-Method":   "GetUser4",
 //		})
-//		req = client.NewRequest(url, "GetUser4", []interface{}{0})
+//		req = client.NewRequest(url, "GetUser4", []any{0})
 //		reply = &User{}
 //		err = client.Call(ctx, url, req, reply)
 //		assert.NoError(t, err)
@@ -172,7 +172,7 @@ type (
 //		span := opentracing.StartSpan("Test-Inject-Tracing-ID")
 //		ctx = opentracing.ContextWithSpan(ctx, span)
 //
-//		req = client.NewRequest(url, "GetUser4", []interface{}{1})
+//		req = client.NewRequest(url, "GetUser4", []any{1})
 //		reply = &User{}
 //		err = client.Call(ctx, url, req, reply)
 //		assert.NoError(t, err)
@@ -181,7 +181,7 @@ type (
 //		// destroy
 //		proto.Destroy()
 //	}
-func (u *UserProvider) GetUser(ctx context.Context, req []interface{}, rsp *User) error {
+func (u *UserProvider) GetUser(ctx context.Context, req []any, rsp *User) error {
 	rsp.ID = req[0].(string)
 	rsp.Name = req[1].(string)
 	return nil
@@ -195,12 +195,12 @@ func (u *UserProvider) GetUser1() error {
 	return perrors.New("error")
 }
 
-func (u *UserProvider) GetUser2(ctx context.Context, req []interface{}, rsp *[]User) error {
+func (u *UserProvider) GetUser2(ctx context.Context, req []any, rsp *[]User) error {
 	*rsp = append(*rsp, User{ID: req[0].(string), Name: req[1].(string)})
 	return nil
 }
 
-func (u *UserProvider) GetUser3(ctx context.Context, req []interface{}) ([]User, error) {
+func (u *UserProvider) GetUser3(ctx context.Context, req []any) ([]User, error) {
 	return []User{{ID: req[0].(string), Name: req[1].(string)}}, nil
 }
 

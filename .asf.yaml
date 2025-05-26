@@ -20,6 +20,7 @@ notifications:
     issues:       notifications@dubbo.apache.org
     pullrequests: notifications@dubbo.apache.org
     jira_options: link label link label
+    discussions: notifications@dubbo.apache.org
 github:
     homepage: https://dubbo.apache.org/
     description: "Go Implementation For Apache Dubbo ."

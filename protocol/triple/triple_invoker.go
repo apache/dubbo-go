@@ -31,7 +31,8 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
@@ -40,7 +41,7 @@ var triAttachmentKeys = []string{
 }
 
 type TripleInvoker struct {
-	protocol.BaseInvoker
+	base.BaseInvoker
 	quitOnce      sync.Once
 	clientGuard   *sync.RWMutex
 	clientManager *clientManager
@@ -61,14 +62,14 @@ func (ti *TripleInvoker) getClientManager() *clientManager {
 }
 
 // Invoke is used to call client-side method.
-func (ti *TripleInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
-	var result protocol.RPCResult
+func (ti *TripleInvoker) Invoke(ctx context.Context, invocation base.Invocation) result.Result {
+	var result result.RPCResult
 
 	if !ti.BaseInvoker.IsAvailable() {
 		// Generally, the case will not happen, because the invoker has been removed
 		// from the invoker list before destroy,so no new request will enter the destroyed invoker
 		logger.Warnf("TripleInvoker is destroyed")
-		result.SetError(protocol.ErrDestroyedInvoker)
+		result.SetError(base.ErrDestroyedInvoker)
 		return &result
 	}
 
@@ -76,7 +77,7 @@ func (ti *TripleInvoker) Invoke(ctx context.Context, invocation protocol.Invocat
 	defer ti.clientGuard.RUnlock()
 
 	if ti.clientManager == nil {
-		result.SetError(protocol.ErrClientClosed)
+		result.SetError(base.ErrClientClosed)
 		return &result
 	}
 
@@ -142,7 +143,7 @@ func (ti *TripleInvoker) Invoke(ctx context.Context, invocation protocol.Invocat
 	return &result
 }
 
-func mergeAttachmentToOutgoing(ctx context.Context, inv protocol.Invocation) (context.Context, error) {
+func mergeAttachmentToOutgoing(ctx context.Context, inv base.Invocation) (context.Context, error) {
 	// Todo(finalt) Temporarily solve the problem that the timeout time is not valid
 	if timeout, ok := inv.GetAttachment(constant.TimeoutKey); ok {
 		ctx = context.WithValue(ctx, tri.TimeoutKey{}, timeout)
@@ -165,7 +166,7 @@ func mergeAttachmentToOutgoing(ctx context.Context, inv protocol.Invocation) (co
 
 // parseInvocation retrieves information from invocation.
 // it returns ctx, callType, inRaw, method, error
-func parseInvocation(ctx context.Context, url *common.URL, invocation protocol.Invocation) (string, []interface{}, string, error) {
+func parseInvocation(ctx context.Context, url *common.URL, invocation base.Invocation) (string, []any, string, error) {
 	callTypeRaw, ok := invocation.GetAttribute(constant.CallTypeKey)
 	if !ok {
 		return "", nil, "", errors.New("miss CallType in invocation to invoke TripleInvoker")
@@ -189,11 +190,11 @@ func parseInvocation(ctx context.Context, url *common.URL, invocation protocol.I
 }
 
 // parseAttachments retrieves attachments from users passed-in and URL, then injects them into ctx
-func parseAttachments(ctx context.Context, url *common.URL, invocation protocol.Invocation) {
+func parseAttachments(ctx context.Context, url *common.URL, invocation base.Invocation) {
 	// retrieve users passed-in attachment
 	attaRaw := ctx.Value(constant.AttachmentKey)
 	if attaRaw != nil {
-		if userAtta, ok := attaRaw.(map[string]interface{}); ok {
+		if userAtta, ok := attaRaw.(map[string]any); ok {
 			for key, val := range userAtta {
 				invocation.SetAttachment(key, val)
 			}
@@ -243,7 +244,7 @@ func NewTripleInvoker(url *common.URL) (*TripleInvoker, error) {
 		return nil, err
 	}
 	return &TripleInvoker{
-		BaseInvoker:   *protocol.NewBaseInvoker(url),
+		BaseInvoker:   *base.NewBaseInvoker(url),
 		quitOnce:      sync.Once{},
 		clientGuard:   &sync.RWMutex{},
 		clientManager: cm,

@@ -35,7 +35,7 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
@@ -197,7 +197,7 @@ func RegisterFristServiceServer(s *grpc.Server, srv FristServiceServer) {
 	s.RegisterService(&_FristService_serviceDesc, srv)
 }
 
-func _FristService_Service_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _FristService_Service_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(FirstRequest)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -209,7 +209,7 @@ func _FristService_Service_Handler(srv interface{}, ctx context.Context, dec fun
 		Server:     srv,
 		FullMethod: "/multiprotos.FristService/Service",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(FristServiceServer).Service(ctx, req.(*FirstRequest))
 	}
 	return interceptor(ctx, in, info, handler)
@@ -244,14 +244,14 @@ func (c *FristServiceClientImpl) GetDubboStub(cc *grpc.ClientConn) FristServiceC
 }
 
 type FristServiceProviderBase struct {
-	proxyImpl protocol.Invoker
+	proxyImpl base.Invoker
 }
 
-func (s *FristServiceProviderBase) SetProxyImpl(impl protocol.Invoker) {
+func (s *FristServiceProviderBase) SetProxyImpl(impl base.Invoker) {
 	s.proxyImpl = impl
 }
 
-func (s *FristServiceProviderBase) GetProxyImpl() protocol.Invoker {
+func (s *FristServiceProviderBase) GetProxyImpl() base.Invoker {
 	return s.proxyImpl
 }
 
@@ -259,7 +259,7 @@ func (c *FristServiceProviderBase) Reference() string {
 	return "fristServiceImpl"
 }
 
-func _DUBBO_FristService_Service_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _DUBBO_FristService_Service_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(FirstRequest)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -267,14 +267,14 @@ func _DUBBO_FristService_Service_Handler(srv interface{}, ctx context.Context, d
 	// DubboGrpcService is gRPC service
 	type DubboGrpcService interface {
 		// SetProxyImpl sets proxy.
-		SetProxyImpl(impl protocol.Invoker)
+		SetProxyImpl(impl base.Invoker)
 		// GetProxyImpl gets proxy.
-		GetProxyImpl() protocol.Invoker
+		GetProxyImpl() base.Invoker
 		// ServiceDesc gets an RPC service's specification.
 		ServiceDesc() *grpc.ServiceDesc
 	}
 	base := srv.(DubboGrpcService)
-	args := []interface{}{}
+	args := []any{}
 	args = append(args, in)
 	invo := invocation.NewRPCInvocation("Service", args, nil)
 	if interceptor == nil {
@@ -285,7 +285,7 @@ func _DUBBO_FristService_Service_Handler(srv interface{}, ctx context.Context, d
 		Server:     srv,
 		FullMethod: "/multiprotos.FristService/Service",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		result := base.GetProxyImpl().Invoke(ctx, invo)
 		return result.Result(), result.Error()
 	}

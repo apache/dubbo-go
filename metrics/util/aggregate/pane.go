@@ -18,15 +18,15 @@
 package aggregate
 
 // pane represents a window over a period of time.
-// It uses interface{} to store any type of value.
+// It uses any to store any type of value.
 type pane struct {
 	startInMs    int64
 	endInMs      int64
 	intervalInMs int64
-	value        interface{}
+	value        any
 }
 
-func newPane(intervalInMs, startInMs int64, value interface{}) *pane {
+func newPane(intervalInMs, startInMs int64, value any) *pane {
 	return &pane{
 		startInMs:    startInMs,
 		endInMs:      startInMs + intervalInMs,
@@ -35,7 +35,7 @@ func newPane(intervalInMs, startInMs int64, value interface{}) *pane {
 	}
 }
 
-func (p *pane) resetTo(startInMs int64, value interface{}) {
+func (p *pane) resetTo(startInMs int64, value any) {
 	p.startInMs = startInMs
 	p.endInMs = startInMs + p.intervalInMs
 	p.value = value

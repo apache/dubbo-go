@@ -37,7 +37,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/config_center/configurator"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/registry/directory"
@@ -67,7 +67,7 @@ func referNormal(t *testing.T, regProtocol *registryProtocol) {
 	url.SubURL = suburl
 
 	invoker := regProtocol.Refer(url)
-	assert.IsType(t, &protocol.BaseInvoker{}, invoker)
+	assert.IsType(t, &base.BaseInvoker{}, invoker)
 	assert.Equal(t, invoker.GetURL().String(), url.String())
 }
 
@@ -92,7 +92,7 @@ func TestMultiRegRefer(t *testing.T) {
 
 	regProtocol.Refer(url2)
 	var count int
-	regProtocol.registries.Range(func(key, value interface{}) bool {
+	regProtocol.registries.Range(func(key, value any) bool {
 		count++
 		return true
 	})
@@ -113,7 +113,7 @@ func TestOneRegRefer(t *testing.T) {
 
 	regProtocol.Refer(url2)
 	var count int
-	regProtocol.registries.Range(func(key, value interface{}) bool {
+	regProtocol.registries.Range(func(key, value any) bool {
 		count++
 		return true
 	})
@@ -133,7 +133,7 @@ func exporterNormal(t *testing.T, regProtocol *registryProtocol) *common.URL {
 	)
 
 	url.SubURL = suburl
-	invoker := protocol.NewBaseInvoker(url)
+	invoker := base.NewBaseInvoker(url)
 	exporter := regProtocol.Export(invoker)
 
 	assert.IsType(t, &exporterChangeableWrapper{}, exporter)
@@ -157,18 +157,18 @@ func TestMultiRegAndMultiProtoExporter(t *testing.T) {
 	)
 
 	url2.SubURL = suburl2
-	invoker2 := protocol.NewBaseInvoker(url2)
+	invoker2 := base.NewBaseInvoker(url2)
 	regProtocol.Export(invoker2)
 
 	var count int
-	regProtocol.registries.Range(func(key, value interface{}) bool {
+	regProtocol.registries.Range(func(key, value any) bool {
 		count++
 		return true
 	})
 	assert.Equal(t, count, 2)
 
 	var count2 int
-	regProtocol.bounds.Range(func(key, value interface{}) bool {
+	regProtocol.bounds.Range(func(key, value any) bool {
 		count2++
 		return true
 	})
@@ -188,18 +188,18 @@ func TestOneRegAndProtoExporter(t *testing.T) {
 	)
 
 	url2.SubURL = suburl2
-	invoker2 := protocol.NewBaseInvoker(url2)
+	invoker2 := base.NewBaseInvoker(url2)
 	regProtocol.Export(invoker2)
 
 	var count int
-	regProtocol.registries.Range(func(key, value interface{}) bool {
+	regProtocol.registries.Range(func(key, value any) bool {
 		count++
 		return true
 	})
 	assert.Equal(t, count, 1)
 
 	var count2 int
-	regProtocol.bounds.Range(func(key, value interface{}) bool {
+	regProtocol.bounds.Range(func(key, value any) bool {
 		count2++
 		return true
 	})
@@ -214,7 +214,7 @@ func TestDestroy(t *testing.T) {
 	regProtocol.Destroy()
 
 	var count int
-	regProtocol.registries.Range(func(key, value interface{}) bool {
+	regProtocol.registries.Range(func(key, value any) bool {
 		count++
 		return true
 	})

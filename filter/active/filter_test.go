@@ -32,13 +32,14 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/mock"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 func TestFilterInvoke(t *testing.T) {
-	invoc := invocation.NewRPCInvocation("test", []interface{}{"OK"}, make(map[string]interface{}))
+	invoc := invocation.NewRPCInvocation("test", []any{"OK"}, make(map[string]any))
 	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
 	filter := activeFilter{}
 	ctrl := gomock.NewController(t)
@@ -51,9 +52,9 @@ func TestFilterInvoke(t *testing.T) {
 }
 
 func TestFilterOnResponse(t *testing.T) {
-	c := protocol.CurrentTimeMillis()
+	c := base.CurrentTimeMillis()
 	elapsed := 100
-	invoc := invocation.NewRPCInvocation("test", []interface{}{"OK"}, map[string]interface{}{
+	invoc := invocation.NewRPCInvocation("test", []any{"OK"}, map[string]any{
 		dubboInvokeStartTime: strconv.FormatInt(c-int64(elapsed), 10),
 	})
 	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
@@ -62,12 +63,12 @@ func TestFilterOnResponse(t *testing.T) {
 	defer ctrl.Finish()
 	invoker := mock.NewMockInvoker(ctrl)
 	invoker.EXPECT().GetURL().Return(url).Times(1)
-	result := &protocol.RPCResult{
+	result := &result.RPCResult{
 		Err: errors.New("test"),
 	}
 	filter.OnResponse(context.TODO(), result, invoker, invoc)
-	methodStatus := protocol.GetMethodStatus(url, "test")
-	urlStatus := protocol.GetURLStatus(url)
+	methodStatus := base.GetMethodStatus(url, "test")
+	urlStatus := base.GetURLStatus(url)
 
 	assert.Equal(t, int32(1), methodStatus.GetTotal())
 	assert.Equal(t, int32(1), urlStatus.GetTotal())

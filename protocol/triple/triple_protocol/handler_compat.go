@@ -34,10 +34,10 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	dubbo_protocol "dubbo.apache.org/dubbo-go/v3/protocol"
+	dubbo_protocol "dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
-type MethodHandler func(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error)
+type MethodHandler func(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error)
 
 type tripleCompatInterceptor struct {
 	spec        Spec
@@ -48,7 +48,7 @@ type tripleCompatInterceptor struct {
 }
 
 // be compatible with old triple-gen code
-func (t *tripleCompatInterceptor) compatUnaryServerInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+func (t *tripleCompatInterceptor) compatUnaryServerInterceptor(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 	request := NewRequest(req)
 	request.spec = t.spec
 	request.peer = t.peer
@@ -80,11 +80,11 @@ func (t *tripleCompatInterceptor) compatUnaryServerInterceptor(ctx context.Conte
 		resp := NewResponse(dubbo3Resp.Rest)
 		trailer := make(http.Header)
 		for key, valRaw := range dubbo3Resp.Attachments() {
-			switch valRaw.(type) {
+			switch valRaw := valRaw.(type) {
 			case string:
-				trailer[key] = []string{valRaw.(string)}
+				trailer[key] = []string{valRaw}
 			case []string:
-				trailer[key] = valRaw.([]string)
+				trailer[key] = valRaw
 			default:
 				panic(fmt.Sprintf("unsupported attachment value type %T", valRaw))
 			}
@@ -103,7 +103,7 @@ func (t *tripleCompatInterceptor) compatUnaryServerInterceptor(ctx context.Conte
 func NewCompatUnaryHandler(
 	procedure string,
 	method string,
-	srv interface{},
+	srv any,
 	unary MethodHandler,
 	options ...HandlerOption,
 ) *Handler {
@@ -126,7 +126,7 @@ func NewCompatUnaryHandler(
 func generateCompatUnaryHandlerFunc(
 	procedure string,
 	method string,
-	srv interface{},
+	srv any,
 	unary MethodHandler,
 	interceptor Interceptor,
 ) StreamingHandlerFunc {
@@ -138,7 +138,7 @@ func generateCompatUnaryHandlerFunc(
 			procedure:   procedure,
 			interceptor: interceptor,
 		}
-		decodeFunc := func(req interface{}) error {
+		decodeFunc := func(req any) error {
 			if err := conn.Receive(req); err != nil {
 				return err
 			}

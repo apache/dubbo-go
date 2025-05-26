@@ -26,7 +26,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/cluster/base"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 // When there're more than one registry for subscription.
@@ -40,19 +41,19 @@ type zoneawareClusterInvoker struct {
 	base.BaseClusterInvoker
 }
 
-func newZoneawareClusterInvoker(directory directory.Directory) protocol.Invoker {
+func newZoneawareClusterInvoker(directory directory.Directory) protocolbase.Invoker {
 	invoker := &zoneawareClusterInvoker{
 		BaseClusterInvoker: base.NewBaseClusterInvoker(directory),
 	}
 	return invoker
 }
 
-func (invoker *zoneawareClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+func (invoker *zoneawareClusterInvoker) Invoke(ctx context.Context, invocation protocolbase.Invocation) result.Result {
 	invokers := invoker.Directory.List(invocation)
 
 	err := invoker.CheckInvokers(invokers, invocation)
 	if err != nil {
-		return &protocol.RPCResult{Err: err}
+		return &result.RPCResult{Err: err}
 	}
 
 	// First, pick the invoker (XXXClusterInvoker) that comes from the local registry, distinguish by a 'preferred' key.
@@ -66,7 +67,7 @@ func (invoker *zoneawareClusterInvoker) Invoke(ctx context.Context, invocation p
 	// providers in the registry with the same zone
 	key := constant.RegistryKey + "." + constant.RegistryZoneKey
 	zone := invocation.GetAttachmentWithDefaultValue(key, "")
-	if "" != zone {
+	if zone != "" {
 		for _, invoker := range invokers {
 			if invoker.IsAvailable() && matchParam(zone, key, "", invoker) {
 				return invoker.Invoke(ctx, invocation)
@@ -74,8 +75,8 @@ func (invoker *zoneawareClusterInvoker) Invoke(ctx context.Context, invocation p
 		}
 
 		force := invocation.GetAttachmentWithDefaultValue(constant.RegistryKey+"."+constant.RegistryZoneForceKey, "")
-		if "true" == force {
-			return &protocol.RPCResult{
+		if force == "true" {
+			return &result.RPCResult{
 				Err: fmt.Errorf("no registry instance in zone or "+
 					"no available providers in the registry, zone: %v, "+
 					" registries: %v", zone, invoker.GetURL()),
@@ -97,11 +98,11 @@ func (invoker *zoneawareClusterInvoker) Invoke(ctx context.Context, invocation p
 		}
 	}
 
-	return &protocol.RPCResult{
+	return &result.RPCResult{
 		Err: fmt.Errorf("no provider available in %v", invokers),
 	}
 }
 
-func matchParam(target, key, def string, invoker protocol.Invoker) bool {
+func matchParam(target, key, def string, invoker protocolbase.Invoker) bool {
 	return target == invoker.GetURL().GetParam(key, def)
 }

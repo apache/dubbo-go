@@ -79,7 +79,7 @@ func (m *MockINamingClient) RegisterInstance(param vo.RegisterInstanceParam) (bo
 }
 
 // RegisterInstance indicates an expected call of RegisterInstance
-func (mr *MockINamingClientMockRecorder) RegisterInstance(param interface{}) *gomock.Call {
+func (mr *MockINamingClientMockRecorder) RegisterInstance(param any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterInstance", reflect.TypeOf((*MockINamingClient)(nil).RegisterInstance), param)
 }
 
@@ -92,7 +92,7 @@ func (m *MockINamingClient) DeregisterInstance(param vo.DeregisterInstanceParam)
 }
 
 // DeregisterInstance indicates an expected call of DeregisterInstance
-func (mr *MockINamingClientMockRecorder) DeregisterInstance(param interface{}) *gomock.Call {
+func (mr *MockINamingClientMockRecorder) DeregisterInstance(param any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeregisterInstance", reflect.TypeOf((*MockINamingClient)(nil).DeregisterInstance), param)
 }
 
@@ -105,7 +105,7 @@ func (m *MockINamingClient) UpdateInstance(param vo.UpdateInstanceParam) (bool, 
 }
 
 // UpdateInstance indicates an expected call of UpdateInstance
-func (mr *MockINamingClientMockRecorder) UpdateInstance(param interface{}) *gomock.Call {
+func (mr *MockINamingClientMockRecorder) UpdateInstance(param any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateInstance", reflect.TypeOf((*MockINamingClient)(nil).UpdateInstance), param)
 }
 
@@ -122,7 +122,7 @@ func (m *MockINamingClient) CloseClient() {
 }
 
 // GetService indicates an expected call of GetService
-func (mr *MockINamingClientMockRecorder) GetService(param interface{}) *gomock.Call {
+func (mr *MockINamingClientMockRecorder) GetService(param any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetService", reflect.TypeOf((*MockINamingClient)(nil).GetService), param)
 }
 
@@ -135,7 +135,7 @@ func (m *MockINamingClient) SelectAllInstances(param vo.SelectAllInstancesParam)
 }
 
 // SelectAllInstances indicates an expected call of SelectAllInstances
-func (mr *MockINamingClientMockRecorder) SelectAllInstances(param interface{}) *gomock.Call {
+func (mr *MockINamingClientMockRecorder) SelectAllInstances(param any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectAllInstances", reflect.TypeOf((*MockINamingClient)(nil).SelectAllInstances), param)
 }
 
@@ -148,7 +148,7 @@ func (m *MockINamingClient) SelectInstances(param vo.SelectInstancesParam) ([]mo
 }
 
 // SelectInstances indicates an expected call of SelectInstances
-func (mr *MockINamingClientMockRecorder) SelectInstances(param interface{}) *gomock.Call {
+func (mr *MockINamingClientMockRecorder) SelectInstances(param any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectInstances", reflect.TypeOf((*MockINamingClient)(nil).SelectInstances), param)
 }
 
@@ -161,7 +161,7 @@ func (m *MockINamingClient) SelectOneHealthyInstance(param vo.SelectOneHealthIns
 }
 
 // SelectOneHealthyInstance indicates an expected call of SelectOneHealthyInstance
-func (mr *MockINamingClientMockRecorder) SelectOneHealthyInstance(param interface{}) *gomock.Call {
+func (mr *MockINamingClientMockRecorder) SelectOneHealthyInstance(param any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectOneHealthyInstance", reflect.TypeOf((*MockINamingClient)(nil).SelectOneHealthyInstance), param)
 }
 
@@ -173,7 +173,7 @@ func (m *MockINamingClient) Subscribe(param *vo.SubscribeParam) error {
 }
 
 // Subscribe indicates an expected call of Subscribe
-func (mr *MockINamingClientMockRecorder) Subscribe(param interface{}) *gomock.Call {
+func (mr *MockINamingClientMockRecorder) Subscribe(param any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Subscribe", reflect.TypeOf((*MockINamingClient)(nil).Subscribe), param)
 }
 
@@ -185,7 +185,7 @@ func (m *MockINamingClient) Unsubscribe(param *vo.SubscribeParam) error {
 }
 
 // Unsubscribe indicates an expected call of Unsubscribe
-func (mr *MockINamingClientMockRecorder) Unsubscribe(param interface{}) *gomock.Call {
+func (mr *MockINamingClientMockRecorder) Unsubscribe(param any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Unsubscribe", reflect.TypeOf((*MockINamingClient)(nil).Unsubscribe), param)
 }
 
@@ -198,7 +198,7 @@ func (m *MockINamingClient) GetAllServicesInfo(param vo.GetAllServiceInfoParam) 
 }
 
 // GetAllServicesInfo indicates an expected call of GetAllServicesInfo
-func (mr *MockINamingClientMockRecorder) GetAllServicesInfo(param interface{}) *gomock.Call {
+func (mr *MockINamingClientMockRecorder) GetAllServicesInfo(param any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllServicesInfo", reflect.TypeOf((*MockINamingClient)(nil).GetAllServicesInfo), param)
 }
 

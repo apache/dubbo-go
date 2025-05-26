@@ -28,7 +28,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 const (
@@ -56,7 +56,7 @@ func NewRRLoadBalance() loadbalance.LoadBalance {
 }
 
 // Select gets invoker based on round robin load balancing strategy
-func (lb *rrLoadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
+func (lb *rrLoadBalance) Select(invokers []base.Invoker, invocation base.Invocation) base.Invoker {
 	count := len(invokers)
 	if count == 0 {
 		return nil
@@ -74,7 +74,7 @@ func (lb *rrLoadBalance) Select(invokers []protocol.Invoker, invocation protocol
 		totalWeight         = int64(0)
 		maxCurrentWeight    = int64(math.MinInt64)
 		now                 = time.Now()
-		selectedInvoker     protocol.Invoker
+		selectedInvoker     base.Invoker
 		selectedWeightRobin *weightedRoundRobin
 	)
 
@@ -120,7 +120,7 @@ func (lb *rrLoadBalance) Select(invokers []protocol.Invoker, invocation protocol
 func cleanIfRequired(clean bool, invokers *cachedInvokers, now *time.Time) {
 	if clean && atomic.CompareAndSwapInt32(&state, Complete, Updating) {
 		defer atomic.CompareAndSwapInt32(&state, Updating, Complete)
-		invokers.Range(func(identify, robin interface{}) bool {
+		invokers.Range(func(identify, robin any) bool {
 			weightedRoundRobin := robin.(*weightedRoundRobin)
 			elapsed := now.Sub(*weightedRoundRobin.lastUpdate).Nanoseconds()
 			if elapsed > recyclePeriod {

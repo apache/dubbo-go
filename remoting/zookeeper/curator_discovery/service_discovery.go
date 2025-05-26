@@ -184,7 +184,7 @@ func (sd *ServiceDiscovery) unregisterService(instance *ServiceInstance) error {
 
 // ReRegisterServices re-register all cache services to zookeeper
 func (sd *ServiceDiscovery) ReRegisterServices() {
-	sd.services.Range(func(key, value interface{}) bool {
+	sd.services.Range(func(key, value any) bool {
 		entry, ok := value.(*Entry)
 		if !ok {
 			return true

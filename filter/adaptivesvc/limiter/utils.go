@@ -25,7 +25,7 @@ import (
 	"github.com/dubbogo/gost/log/logger"
 )
 
-func VerboseDebugf(msg string, args ...interface{}) {
+func VerboseDebugf(msg string, args ...any) {
 	if !Verbose {
 		return
 	}

@@ -39,18 +39,19 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/mock"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 var forkingUrl, _ = common.NewURL(
 	fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
 
-func registerForking(mockInvokers ...*mock.MockInvoker) protocol.Invoker {
+func registerForking(mockInvokers ...*mock.MockInvoker) base.Invoker {
 	extension.SetLoadbalance(constant.LoadBalanceKeyRoundRobin, roundrobin.NewRRLoadBalance)
 
-	var invokers []protocol.Invoker
+	var invokers []base.Invoker
 	for _, ivk := range mockInvokers {
 		invokers = append(invokers, ivk)
 		ivk.EXPECT().GetURL().Return(forkingUrl).AnyTimes()
@@ -68,7 +69,7 @@ func TestForkingInvokeSuccess(t *testing.T) {
 
 	invokers := make([]*mock.MockInvoker, 0)
 
-	mockResult := &protocol.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
+	mockResult := &result.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
 	forkingUrl.AddParam(constant.ForksKey, strconv.Itoa(3))
 	// forkingUrl.AddParam(constant.TimeoutKey, strconv.Itoa(constant.DefaultTimeout))
 
@@ -79,7 +80,7 @@ func TestForkingInvokeSuccess(t *testing.T) {
 		invokers = append(invokers, invoker)
 		invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 		invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
-			func(context.Context, protocol.Invocation) protocol.Result {
+			func(context.Context, base.Invocation) result.Result {
 				wg.Done()
 				return mockResult
 			})
@@ -98,7 +99,7 @@ func TestForkingInvokeTimeout(t *testing.T) {
 
 	invokers := make([]*mock.MockInvoker, 0)
 
-	mockResult := &protocol.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
+	mockResult := &result.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
 	forkingUrl.AddParam(constant.ForksKey, strconv.Itoa(3))
 
 	var wg sync.WaitGroup
@@ -108,7 +109,7 @@ func TestForkingInvokeTimeout(t *testing.T) {
 		invokers = append(invokers, invoker)
 		invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 		invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
-			func(context.Context, protocol.Invocation) protocol.Result {
+			func(context.Context, base.Invocation) result.Result {
 				time.Sleep(2 * time.Second)
 				wg.Done()
 				return mockResult
@@ -129,7 +130,7 @@ func TestForkingInvokeHalfTimeout(t *testing.T) {
 
 	invokers := make([]*mock.MockInvoker, 0)
 
-	mockResult := &protocol.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
+	mockResult := &result.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
 	forkingUrl.AddParam(constant.ForksKey, strconv.Itoa(3))
 
 	var wg sync.WaitGroup
@@ -140,13 +141,13 @@ func TestForkingInvokeHalfTimeout(t *testing.T) {
 		invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 		if i == 1 {
 			invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
-				func(context.Context, protocol.Invocation) protocol.Result {
+				func(context.Context, base.Invocation) result.Result {
 					wg.Done()
 					return mockResult
 				}).AnyTimes()
 		} else {
 			invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
-				func(context.Context, protocol.Invocation) protocol.Result {
+				func(context.Context, base.Invocation) result.Result {
 					time.Sleep(2 * time.Second)
 					wg.Done()
 					return mockResult

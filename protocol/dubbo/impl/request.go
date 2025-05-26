@@ -18,13 +18,13 @@
 package impl
 
 type RequestPayload struct {
-	Params      interface{}
-	Attachments map[string]interface{}
+	Params      any
+	Attachments map[string]any
 }
 
-func NewRequestPayload(args interface{}, atta map[string]interface{}) *RequestPayload {
+func NewRequestPayload(args any, atta map[string]any) *RequestPayload {
 	if atta == nil {
-		atta = make(map[string]interface{})
+		atta = make(map[string]any)
 	}
 	return &RequestPayload{
 		Params:      args,
@@ -32,7 +32,7 @@ func NewRequestPayload(args interface{}, atta map[string]interface{}) *RequestPa
 	}
 }
 
-func EnsureRequestPayload(body interface{}) *RequestPayload {
+func EnsureRequestPayload(body any) *RequestPayload {
 	if req, ok := body.(*RequestPayload); ok {
 		return req
 	}

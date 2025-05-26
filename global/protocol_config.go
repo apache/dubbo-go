@@ -17,12 +17,20 @@
 
 package global
 
+import (
+	"strconv"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+)
+
 // ProtocolConfig is protocol configuration
 type ProtocolConfig struct {
-	Name   string      `default:"dubbo" validate:"required" yaml:"name" json:"name,omitempty" property:"name"`
-	Ip     string      `yaml:"ip"  json:"ip,omitempty" property:"ip"`
-	Port   string      `default:"20000" yaml:"port" json:"port,omitempty" property:"port"`
-	Params interface{} `yaml:"params" json:"params,omitempty" property:"params"`
+	Name   string `yaml:"name" json:"name,omitempty" property:"name"`
+	Ip     string `yaml:"ip"  json:"ip,omitempty" property:"ip"`
+	Port   string `yaml:"port" json:"port,omitempty" property:"port"`
+	Params any    `yaml:"params" json:"params,omitempty" property:"params"`
 
 	// MaxServerSendMsgSize max size of server send message, 1mb=1000kb=1000000b 1mib=1024kb=1048576b.
 	// more detail to see https://pkg.go.dev/github.com/dustin/go-humanize#pkg-constants
@@ -31,8 +39,12 @@ type ProtocolConfig struct {
 	MaxServerRecvMsgSize string `default:"4mib" yaml:"max-server-recv-msg-size" json:"max-server-recv-msg-size,omitempty"`
 }
 
+// DefaultProtocolConfig returns a default ProtocolConfig instance.
 func DefaultProtocolConfig() *ProtocolConfig {
-	return &ProtocolConfig{}
+	return &ProtocolConfig{
+		Name: constant.TriProtocol,
+		Port: strconv.Itoa(constant.DefaultPort),
+	}
 }
 
 // Clone a new ProtocolConfig

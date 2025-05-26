@@ -792,7 +792,7 @@ func file_reflection_proto_rawDescGZIP() []byte {
 }
 
 var file_reflection_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
-var file_reflection_proto_goTypes = []interface{}{
+var file_reflection_proto_goTypes = []any{
 	(*ServerReflectionRequest)(nil),  // 0: dubbo.reflection.v1alpha.ServerReflectionRequest
 	(*ExtensionRequest)(nil),         // 1: dubbo.reflection.v1alpha.ExtensionRequest
 	(*ServerReflectionResponse)(nil), // 2: dubbo.reflection.v1alpha.ServerReflectionResponse
@@ -825,7 +825,7 @@ func file_reflection_proto_init() {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_reflection_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_reflection_proto_msgTypes[0].Exporter = func(v any, i int) any {
 			switch v := v.(*ServerReflectionRequest); i {
 			case 0:
 				return &v.state
@@ -837,7 +837,7 @@ func file_reflection_proto_init() {
 				return nil
 			}
 		}
-		file_reflection_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_reflection_proto_msgTypes[1].Exporter = func(v any, i int) any {
 			switch v := v.(*ExtensionRequest); i {
 			case 0:
 				return &v.state
@@ -849,7 +849,7 @@ func file_reflection_proto_init() {
 				return nil
 			}
 		}
-		file_reflection_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+		file_reflection_proto_msgTypes[2].Exporter = func(v any, i int) any {
 			switch v := v.(*ServerReflectionResponse); i {
 			case 0:
 				return &v.state
@@ -861,7 +861,7 @@ func file_reflection_proto_init() {
 				return nil
 			}
 		}
-		file_reflection_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+		file_reflection_proto_msgTypes[3].Exporter = func(v any, i int) any {
 			switch v := v.(*FileDescriptorResponse); i {
 			case 0:
 				return &v.state
@@ -873,7 +873,7 @@ func file_reflection_proto_init() {
 				return nil
 			}
 		}
-		file_reflection_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+		file_reflection_proto_msgTypes[4].Exporter = func(v any, i int) any {
 			switch v := v.(*ExtensionNumberResponse); i {
 			case 0:
 				return &v.state
@@ -885,7 +885,7 @@ func file_reflection_proto_init() {
 				return nil
 			}
 		}
-		file_reflection_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+		file_reflection_proto_msgTypes[5].Exporter = func(v any, i int) any {
 			switch v := v.(*ListServiceResponse); i {
 			case 0:
 				return &v.state
@@ -897,7 +897,7 @@ func file_reflection_proto_init() {
 				return nil
 			}
 		}
-		file_reflection_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+		file_reflection_proto_msgTypes[6].Exporter = func(v any, i int) any {
 			switch v := v.(*ServiceResponse); i {
 			case 0:
 				return &v.state
@@ -909,7 +909,7 @@ func file_reflection_proto_init() {
 				return nil
 			}
 		}
-		file_reflection_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+		file_reflection_proto_msgTypes[7].Exporter = func(v any, i int) any {
 			switch v := v.(*ErrorResponse); i {
 			case 0:
 				return &v.state
@@ -922,14 +922,14 @@ func file_reflection_proto_init() {
 			}
 		}
 	}
-	file_reflection_proto_msgTypes[0].OneofWrappers = []interface{}{
+	file_reflection_proto_msgTypes[0].OneofWrappers = []any{
 		(*ServerReflectionRequest_FileByFilename)(nil),
 		(*ServerReflectionRequest_FileContainingSymbol)(nil),
 		(*ServerReflectionRequest_FileContainingExtension)(nil),
 		(*ServerReflectionRequest_AllExtensionNumbersOfType)(nil),
 		(*ServerReflectionRequest_ListServices)(nil),
 	}
-	file_reflection_proto_msgTypes[2].OneofWrappers = []interface{}{
+	file_reflection_proto_msgTypes[2].OneofWrappers = []any{
 		(*ServerReflectionResponse_FileDescriptorResponse)(nil),
 		(*ServerReflectionResponse_AllExtensionNumbersResponse)(nil),
 		(*ServerReflectionResponse_ListServicesResponse)(nil),

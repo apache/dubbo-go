@@ -62,7 +62,7 @@ type SequenceType int64
 type DubboPackage struct {
 	Header  hessian.DubboHeader
 	Service hessian.Service
-	Body    interface{}
+	Body    any
 	Err     error
 }
 
@@ -91,7 +91,7 @@ func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, pendingRsp *sync.Map) error 
 		return perrors.WithStack(err)
 	}
 	if p.Header.Type&hessian.PackageRequest != 0x00 {
-		p.Body = make([]interface{}, 7)
+		p.Body = make([]any, 7)
 	} else {
 		rspObj, ok := pendingRsp.Load(uint64(p.Header.ID))
 		if !ok {
@@ -110,12 +110,12 @@ func (p *DubboPackage) Unmarshal(buf *bytes.Buffer, pendingRsp *sync.Map) error 
 // //////////////////////////////////////////
 // Response is protocol protocol response.
 type Response struct {
-	Reply interface{}
+	Reply any
 	atta  map[string]string
 }
 
 // NewResponse creates a new Response.
-func NewResponse(reply interface{}, atta map[string]string) *Response {
+func NewResponse(reply any, atta map[string]string) *Response {
 	return &Response{
 		Reply: reply,
 		atta:  atta,

@@ -35,7 +35,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/dubboutil"
 	"dubbo.apache.org/dubbo-go/v3/metadata"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/registry/exposed_tmp"
 )
 
@@ -44,7 +44,7 @@ var proServices = make([]*InternalService, 0, 16)
 var proLock sync.Mutex
 
 type Server struct {
-	invoker protocol.Invoker
+	invoker base.Invoker
 	info    *common.ServiceInfo
 
 	cfg *ServerOptions
@@ -59,14 +59,16 @@ type ServiceInfo = common.ServiceInfo
 type MethodInfo = common.MethodInfo
 
 type ServiceDefinition struct {
-	Handler interface{}
+	Handler any
 	Info    *common.ServiceInfo
 	Opts    []ServiceOption
 }
 
 // Register assemble invoker chains like ProviderConfig.Load, init a service per call
-func (s *Server) Register(handler interface{}, info *common.ServiceInfo, opts ...ServiceOption) error {
-	newSvcOpts, err := s.genSvcOpts(handler, opts...)
+func (s *Server) Register(handler any, info *common.ServiceInfo, opts ...ServiceOption) error {
+	baseOpts := []ServiceOption{WithIDLMode(constant.IDL)}
+	baseOpts = append(baseOpts, opts...)
+	newSvcOpts, err := s.genSvcOpts(handler, baseOpts...)
 	if err != nil {
 		return err
 	}
@@ -74,7 +76,22 @@ func (s *Server) Register(handler interface{}, info *common.ServiceInfo, opts ..
 	return nil
 }
 
-func (s *Server) genSvcOpts(handler interface{}, opts ...ServiceOption) (*ServiceOptions, error) {
+// RegisterService is for new Triple non-idl mode implement.
+func (s *Server) RegisterService(handler any, opts ...ServiceOption) error {
+	baseOpts := []ServiceOption{
+		WithIDLMode(constant.NONIDL),
+		WithInterface(common.GetReference(handler)),
+	}
+	baseOpts = append(baseOpts, opts...)
+	newSvcOpts, err := s.genSvcOpts(handler, baseOpts...)
+	if err != nil {
+		return err
+	}
+	s.svcOptsMap.Store(newSvcOpts, nil)
+	return nil
+}
+
+func (s *Server) genSvcOpts(handler any, opts ...ServiceOption) (*ServiceOptions, error) {
 	if s.cfg == nil {
 		return nil, errors.New("Server has not been initialized, please use NewServer() to create Server")
 	}
@@ -115,23 +132,24 @@ func (s *Server) genSvcOpts(handler interface{}, opts ...ServiceOption) (*Servic
 }
 
 func (s *Server) exportServices() (err error) {
-	s.svcOptsMap.Range(func(svcOptsRaw, infoRaw interface{}) bool {
+	s.svcOptsMap.Range(func(svcOptsRaw, infoRaw any) bool {
 		svcOpts := svcOptsRaw.(*ServiceOptions)
 		if infoRaw == nil {
 			err = svcOpts.ExportWithoutInfo()
 		} else {
 			info := infoRaw.(*common.ServiceInfo)
-			//Add a method with a name of a differtent first-letter case
-			//to achieve interoperability with java
+			// Add a method with a name of a differtent first-letter case
+			// to achieve interoperability with java
+			// TODO: The method name case sensitivity in Dubbo-java should be addressed.
+			// We ought to make changes to handle this issue.
 			var additionalMethods []common.MethodInfo
 			for _, method := range info.Methods {
 				newMethod := method
 				newMethod.Name = dubboutil.SwapCaseFirstRune(method.Name)
 				additionalMethods = append(additionalMethods, newMethod)
 			}
-			for _, additionalMethod := range additionalMethods {
-				info.Methods = append(info.Methods, additionalMethod)
-			}
+
+			info.Methods = append(info.Methods, additionalMethods...)
 
 			err = svcOpts.ExportWithInfo(info)
 		}

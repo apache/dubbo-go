@@ -30,20 +30,19 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/leastactive"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/p2c"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/random"
-	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/ringhash"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/roundrobin"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
-func Generate() []protocol.Invoker {
-	var invokers []protocol.Invoker
+func Generate() []base.Invoker {
+	var invokers []base.Invoker
 	for i := 1; i < 256; i++ {
 		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/org.apache.demo.HelloService", i))
-		invokers = append(invokers, protocol.NewBaseInvoker(url))
+		invokers = append(invokers, base.NewBaseInvoker(url))
 	}
 	return invokers
 }

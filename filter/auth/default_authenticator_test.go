@@ -42,7 +42,7 @@ func TestDefaultAuthenticator_Authenticate(t *testing.T) {
 	testurl.SetParam(constant.ParameterSignatureEnableKey, "true")
 	testurl.SetParam(constant.AccessKeyIDKey, access)
 	testurl.SetParam(constant.SecretAccessKeyKey, secret)
-	parmas := []interface{}{"OK", struct {
+	parmas := []any{"OK", struct {
 		Name string
 		ID   int64
 	}{"YUYU", 1}}
@@ -52,7 +52,7 @@ func TestDefaultAuthenticator_Authenticate(t *testing.T) {
 
 	authenticator = &defaultAuthenticator{}
 
-	invcation := invocation.NewRPCInvocation("test", parmas, map[string]interface{}{
+	invcation := invocation.NewRPCInvocation("test", parmas, map[string]any{
 		constant.RequestSignatureKey: signature,
 		constant.Consumer:            "test",
 		constant.RequestTimestampKey: requestTime,
@@ -61,7 +61,7 @@ func TestDefaultAuthenticator_Authenticate(t *testing.T) {
 	err := authenticator.Authenticate(invcation, testurl)
 	assert.Nil(t, err)
 	// modify the params
-	invcation = invocation.NewRPCInvocation("test", parmas[:1], map[string]interface{}{
+	invcation = invocation.NewRPCInvocation("test", parmas[:1], map[string]any{
 		constant.RequestSignatureKey: signature,
 		constant.Consumer:            "test",
 		constant.RequestTimestampKey: requestTime,
@@ -77,7 +77,7 @@ func TestDefaultAuthenticator_Sign(t *testing.T) {
 	testurl.SetParam(constant.AccessKeyIDKey, "akey")
 	testurl.SetParam(constant.SecretAccessKeyKey, "skey")
 	testurl.SetParam(constant.ParameterSignatureEnableKey, "false")
-	inv := invocation.NewRPCInvocation("test", []interface{}{"OK"}, nil)
+	inv := invocation.NewRPCInvocation("test", []any{"OK"}, nil)
 	_ = authenticator.Sign(inv, testurl)
 	assert.NotEqual(t, inv.GetAttachmentWithDefaultValue(constant.RequestSignatureKey, ""), "")
 	assert.NotEqual(t, inv.GetAttachmentWithDefaultValue(constant.Consumer, ""), "")
@@ -90,7 +90,7 @@ func Test_getAccessKeyPairSuccess(t *testing.T) {
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.SecretAccessKeyKey, "skey"),
 		common.WithParamsValue(constant.AccessKeyIDKey, "akey"))
-	invcation := invocation.NewRPCInvocation("MethodName", []interface{}{"OK"}, nil)
+	invcation := invocation.NewRPCInvocation("MethodName", []any{"OK"}, nil)
 	_, e := getAccessKeyPair(invcation, testurl)
 	assert.Nil(t, e)
 }
@@ -103,7 +103,7 @@ func Test_getAccessKeyPairFailed(t *testing.T) {
 	testurl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.AccessKeyIDKey, "akey"))
-	invcation := invocation.NewRPCInvocation("MethodName", []interface{}{"OK"}, nil)
+	invcation := invocation.NewRPCInvocation("MethodName", []any{"OK"}, nil)
 	_, e := getAccessKeyPair(invcation, testurl)
 	assert.NotNil(t, e)
 	testurl = common.NewURLWithOptions(
@@ -117,7 +117,7 @@ func Test_getAccessKeyPairFailed(t *testing.T) {
 func Test_getSignatureWithinParams(t *testing.T) {
 	testurl, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=gg&version=2.6.0")
 	testurl.SetParam(constant.ParameterSignatureEnableKey, "true")
-	inv := invocation.NewRPCInvocation("test", []interface{}{"OK"}, map[string]interface{}{
+	inv := invocation.NewRPCInvocation("test", []any{"OK"}, map[string]any{
 		"": "",
 	})
 	secret := "dubbo"
@@ -133,7 +133,7 @@ func Test_getSignatureWithinParams(t *testing.T) {
 func Test_getSignature(t *testing.T) {
 	testurl, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=gg&version=2.6.0")
 	testurl.SetParam(constant.ParameterSignatureEnableKey, "false")
-	inv := invocation.NewRPCInvocation("test", []interface{}{"OK"}, nil)
+	inv := invocation.NewRPCInvocation("test", []any{"OK"}, nil)
 	secret := "dubbo"
 	current := strconv.Itoa(int(time.Now().Unix() * 1000))
 	signature, _ := getSignature(testurl, inv, secret, current)

@@ -36,15 +36,15 @@ import (
 
 // DubboResponse dubbo response
 type DubboResponse struct {
-	RspObj      interface{}
+	RspObj      any
 	Exception   error
-	Attachments map[string]interface{}
+	Attachments map[string]any
 }
 
 // NewResponse create a new DubboResponse
-func NewResponse(rspObj interface{}, exception error, attachments map[string]interface{}) *DubboResponse {
+func NewResponse(rspObj any, exception error, attachments map[string]any) *DubboResponse {
 	if attachments == nil {
-		attachments = make(map[string]interface{}, 8)
+		attachments = make(map[string]any, 8)
 	}
 	return &DubboResponse{
 		RspObj:      rspObj,
@@ -54,7 +54,7 @@ func NewResponse(rspObj interface{}, exception error, attachments map[string]int
 }
 
 // EnsureResponse check body type, make sure it's a DubboResponse or package it as a DubboResponse
-func EnsureResponse(body interface{}) *DubboResponse {
+func EnsureResponse(body any) *DubboResponse {
 	if res, ok := body.(*DubboResponse); ok {
 		return res
 	}
@@ -66,7 +66,7 @@ func EnsureResponse(body interface{}) *DubboResponse {
 
 // https://github.com/apache/dubbo/blob/dubbo-2.7.1/dubbo-remoting/dubbo-remoting-api/src/main/java/org/apache/dubbo/remoting/exchange/codec/ExchangeCodec.java#L256
 // hessian encode response
-func packResponse(header DubboHeader, ret interface{}) ([]byte, error) {
+func packResponse(header DubboHeader, ret any) ([]byte, error) {
 	var byteArray []byte
 
 	response := EnsureResponse(ret)
@@ -172,7 +172,7 @@ func packResponse(header DubboHeader, ret interface{}) ([]byte, error) {
 }
 
 // hessian decode response body
-func unpackResponseBody(decoder *hessian.Decoder, resp interface{}) error {
+func unpackResponseBody(decoder *hessian.Decoder, resp any) error {
 	// body
 	if decoder == nil {
 		return perrors.Errorf("@decoder is nil")
@@ -195,7 +195,7 @@ func unpackResponseBody(decoder *hessian.Decoder, resp interface{}) error {
 			if err != nil {
 				return perrors.WithStack(err)
 			}
-			if v, ok := attachments.(map[interface{}]interface{}); ok {
+			if v, ok := attachments.(map[any]any); ok {
 				atta := ToMapStringInterface(v)
 				response.Attachments = atta
 			} else {
@@ -220,7 +220,7 @@ func unpackResponseBody(decoder *hessian.Decoder, resp interface{}) error {
 			if err != nil {
 				return perrors.WithStack(err)
 			}
-			if v, ok := attachments.(map[interface{}]interface{}); ok {
+			if v, ok := attachments.(map[any]any); ok {
 				response.Attachments = ToMapStringInterface(v)
 			} else {
 				return perrors.Errorf("get wrong attachments: %+v", attachments)
@@ -237,7 +237,7 @@ func unpackResponseBody(decoder *hessian.Decoder, resp interface{}) error {
 			if err != nil {
 				return perrors.WithStack(err)
 			}
-			if v, ok := attachments.(map[interface{}]interface{}); ok {
+			if v, ok := attachments.(map[any]any); ok {
 				atta := ToMapStringInterface(v)
 				response.Attachments = atta
 			} else {
@@ -317,7 +317,7 @@ func CopyMap(inMapValue, outMapValue reflect.Value) error {
 
 // ReflectResponse reflect return value
 // TODO response object should not be copied again to another object, it should be the exact type of the object
-func ReflectResponse(in interface{}, out interface{}) error {
+func ReflectResponse(in any, out any) error {
 	if in == nil {
 		return perrors.Errorf("@in is nil")
 	}
@@ -354,7 +354,7 @@ var versionInt = make(map[string]int)
 
 // https://github.com/apache/dubbo/blob/dubbo-2.7.1/dubbo-common/src/main/java/org/apache/dubbo/common/Version.java#L96
 // isSupportResponseAttachment is for compatibility among some dubbo version
-func isSupportResponseAttachment(ver interface{}) bool {
+func isSupportResponseAttachment(ver any) bool {
 	version, ok := ver.(string)
 	if !ok || len(version) == 0 {
 		return false
@@ -374,7 +374,7 @@ func isSupportResponseAttachment(ver interface{}) bool {
 	return v >= LOWEST_VERSION_FOR_RESPONSE_ATTACHMENT
 }
 
-func version2Int(ver interface{}) int {
+func version2Int(ver any) int {
 	version, ok := ver.(string)
 	if !ok || len(version) == 0 {
 		return 0

@@ -27,29 +27,30 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 type testMockSeataInvoker struct {
-	protocol.BaseInvoker
+	base.BaseInvoker
 }
 
-func (iv *testMockSeataInvoker) Invoke(ctx context.Context, _ protocol.Invocation) protocol.Result {
+func (iv *testMockSeataInvoker) Invoke(ctx context.Context, _ base.Invocation) result.Result {
 	val := ctx.Value(SEATA_XID)
 	if val != nil {
 		xid, ok := val.(string)
 		if ok {
-			return &protocol.RPCResult{Rest: xid}
+			return &result.RPCResult{Rest: xid}
 		}
 	}
-	return &protocol.RPCResult{}
+	return &result.RPCResult{}
 }
 
 func TestSeataFilter_Invoke(t *testing.T) {
 	filter := &seataFilter{}
 	result := filter.Invoke(context.Background(), &testMockSeataInvoker{}, invocation.NewRPCInvocation("$echo",
-		[]interface{}{"OK"}, map[string]interface{}{
+		[]any{"OK"}, map[string]any{
 			string(SEATA_XID): "10.30.21.227:8091:2000047792",
 		}))
 	assert.Equal(t, "10.30.21.227:8091:2000047792", result.Result())

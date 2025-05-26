@@ -43,7 +43,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 )
 
@@ -107,7 +107,7 @@ func (svcOpts *ServiceOptions) IsExport() bool {
 }
 
 // Get Random Port
-func getRandomPort(protocolConfigs []*config.ProtocolConfig) *list.List {
+func getRandomPort(protocolConfigs []*global.ProtocolConfig) *list.List {
 	ports := list.New()
 	for _, proto := range protocolConfigs {
 		if len(proto.Port) > 0 {
@@ -139,9 +139,11 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 		if svc.Interface == "" {
 			svc.Interface = info.InterfaceName
 		}
-		svcOpts.Id = common.GetReference(svcOpts.rpcService)
 		svcOpts.info = info
 	}
+
+	svcOpts.Id = common.GetReference(svcOpts.rpcService)
+
 	// TODO: delay needExport
 	if svcOpts.unexported != nil && svcOpts.unexported.Load() {
 		err := perrors.Errorf("The service %v has already unexported!", svc.Interface)
@@ -159,52 +161,64 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 	}
 
 	urlMap := svcOpts.getUrlMap()
-	protocolConfigs := loadProtocol(svc.ProtocolIDs, svcOpts.protocolsCompat)
+	protocolConfigs := loadProtocol(svc.ProtocolIDs, svcOpts.Protocols)
 	if len(protocolConfigs) == 0 {
 		logger.Warnf("The service %v'svcOpts '%v' protocols don't has right protocolConfigs, Please check your configuration center and transfer protocol ", svc.Interface, svc.ProtocolIDs)
 		return nil
 	}
 
-	var invoker protocol.Invoker
+	var invoker base.Invoker
 	ports := getRandomPort(protocolConfigs)
 	nextPort := ports.Front()
-	for _, proto := range protocolConfigs {
+	for _, protocolConf := range protocolConfigs {
 		// *important* Register should have been replaced by processing of ServiceInfo.
 		// but many modules like metadata need to make use of information from ServiceMap.
 		// todo(DMwangnimg): finish replacing procedure
 
 		// registry the service reflect
-		methods, err := common.ServiceMap.Register(svc.Interface, proto.Name, svc.Group, svc.Version, svcOpts.rpcService)
+		methods, err := common.ServiceMap.Register(svc.Interface, protocolConf.Name, svc.Group, svc.Version, svcOpts.rpcService)
 		if err != nil {
 			formatErr := perrors.Errorf("The service %v needExport the protocol %v error! Error message is %v.",
-				svc.Interface, proto.Name, err.Error())
+				svc.Interface, protocolConf.Name, err.Error())
 			logger.Errorf(formatErr.Error())
 			return formatErr
 		}
 
-		port := proto.Port
-		if len(proto.Port) == 0 {
+		port := protocolConf.Port
+		if len(protocolConf.Port) == 0 {
 			port = nextPort.Value.(string)
 			nextPort = nextPort.Next()
 		}
+
+		// Ensure that isIDL does not have any other invalid inputs.
+		isIDL := constant.IDL
+		if svcOpts.IDLMode == constant.NONIDL {
+			isIDL = svcOpts.IDLMode
+		}
+
 		ivkURL := common.NewURLWithOptions(
 			common.WithPath(svc.Interface),
-			common.WithProtocol(proto.Name),
-			common.WithIp(proto.Ip),
+			common.WithProtocol(protocolConf.Name),
+			common.WithIp(protocolConf.Ip),
 			common.WithPort(port),
 			common.WithParams(urlMap),
 			common.WithParamsValue(constant.BeanNameKey, svcOpts.Id),
 			common.WithParamsValue(constant.ApplicationTagKey, svcOpts.Application.Tag),
 			//common.WithParamsValue(constant.SslEnabledKey, strconv.FormatBool(config.GetSslEnabled())),
 			common.WithMethods(strings.Split(methods, ",")),
-			// todo(DMwangnima): remove this
-			common.WithAttribute(constant.ServiceInfoKey, info),
+			common.WithAttribute(constant.RpcServiceKey, svcOpts.rpcService),
 			common.WithToken(svc.Token),
 			common.WithParamsValue(constant.MetadataTypeKey, svcOpts.metadataType),
 			// fix https://github.com/apache/dubbo-go/issues/2176
-			common.WithParamsValue(constant.MaxServerSendMsgSize, proto.MaxServerSendMsgSize),
-			common.WithParamsValue(constant.MaxServerRecvMsgSize, proto.MaxServerRecvMsgSize),
+			common.WithParamsValue(constant.MaxServerSendMsgSize, protocolConf.MaxServerSendMsgSize),
+			common.WithParamsValue(constant.MaxServerRecvMsgSize, protocolConf.MaxServerRecvMsgSize),
+			common.WithParamsValue(constant.IDLMode, isIDL),
 		)
+
+		if info != nil {
+			ivkURL.SetAttribute(constant.ServiceInfoKey, info)
+		}
+
 		if len(svc.Tag) > 0 {
 			ivkURL.AddParam(constant.Tagkey, svc.Tag)
 		}
@@ -243,18 +257,20 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 		}
 		// this protocol would be destroyed in graceful_shutdown
 		// please refer to (https://github.com/apache/dubbo-go/issues/2429)
-		graceful_shutdown.RegisterProtocol(proto.Name)
+		graceful_shutdown.RegisterProtocol(protocolConf.Name)
 	}
 	svcOpts.exported.Store(true)
 	return nil
 }
 
-func (svcOpts *ServiceOptions) generatorInvoker(url *common.URL, info *common.ServiceInfo) protocol.Invoker {
+func (svcOpts *ServiceOptions) generatorInvoker(url *common.URL, info *common.ServiceInfo) base.Invoker {
 	proxyFactory := extension.GetProxyFactory(svcOpts.ProxyFactoryKey)
 	if info != nil {
 		url.SetAttribute(constant.ServiceInfoKey, info)
-		url.SetAttribute(constant.RpcServiceKey, svcOpts.rpcService)
 	}
+
+	url.SetAttribute(constant.RpcServiceKey, svcOpts.rpcService)
+
 	return proxyFactory.GetInvoker(url)
 }
 
@@ -265,8 +281,8 @@ func setRegistrySubURL(ivkURL *common.URL, regUrl *common.URL) {
 }
 
 // loadProtocol filter protocols by ids
-func loadProtocol(protocolIds []string, protocols map[string]*config.ProtocolConfig) []*config.ProtocolConfig {
-	returnProtocols := make([]*config.ProtocolConfig, 0, len(protocols))
+func loadProtocol(protocolIds []string, protocols map[string]*global.ProtocolConfig) []*global.ProtocolConfig {
+	returnProtocols := make([]*global.ProtocolConfig, 0, len(protocols))
 	for _, v := range protocolIds {
 		for k, config := range protocols {
 			if v == k {

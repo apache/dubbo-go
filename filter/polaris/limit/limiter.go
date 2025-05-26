@@ -36,7 +36,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	remotingpolaris "dubbo.apache.org/dubbo-go/v3/remoting/polaris"
 	"dubbo.apache.org/dubbo-go/v3/remoting/polaris/parser"
 )
@@ -45,7 +45,7 @@ type polarisTpsLimiter struct {
 	limitAPI polaris.LimitAPI
 }
 
-func (pl *polarisTpsLimiter) IsAllowable(url *common.URL, invocation protocol.Invocation) bool {
+func (pl *polarisTpsLimiter) IsAllowable(url *common.URL, invocation base.Invocation) bool {
 	if err := remotingpolaris.Check(); errors.Is(err, remotingpolaris.ErrorNoOpenPolarisAbility) {
 		logger.Debug("[TpsLimiter][Polaris] not open polaris ratelimit ability")
 		return true
@@ -74,7 +74,7 @@ func (pl *polarisTpsLimiter) IsAllowable(url *common.URL, invocation protocol.In
 	return resp.Get().Code == model.QuotaResultOk
 }
 
-func (pl *polarisTpsLimiter) buildQuotaRequest(url *common.URL, invoaction protocol.Invocation) polaris.QuotaRequest {
+func (pl *polarisTpsLimiter) buildQuotaRequest(url *common.URL, invoaction base.Invocation) polaris.QuotaRequest {
 	ns := remotingpolaris.GetNamespace()
 	applicationMode := false
 	for _, item := range config.GetRootConfig().Registries {

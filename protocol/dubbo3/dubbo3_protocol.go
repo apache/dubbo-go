@@ -41,7 +41,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
@@ -59,7 +59,7 @@ var (
 
 // DubboProtocol supports dubbo 3.0 protocol. It implements Protocol interface for dubbo protocol.
 type DubboProtocol struct {
-	protocol.BaseProtocol
+	base.BaseProtocol
 	serverLock sync.Mutex
 	serviceMap *sync.Map                       // serviceMap is used to export multiple service by one server
 	serverMap  map[string]*triple.TripleServer // serverMap stores all exported server
@@ -68,14 +68,14 @@ type DubboProtocol struct {
 // NewDubboProtocol create a dubbo protocol.
 func NewDubboProtocol() *DubboProtocol {
 	return &DubboProtocol{
-		BaseProtocol: protocol.NewBaseProtocol(),
+		BaseProtocol: base.NewBaseProtocol(),
 		serverMap:    make(map[string]*triple.TripleServer),
 		serviceMap:   &sync.Map{},
 	}
 }
 
 // Export export dubbo3 service.
-func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
+func (dp *DubboProtocol) Export(invoker base.Invoker) base.Exporter {
 	url := invoker.GetURL()
 	serviceKey := url.ServiceKey()
 	exporter := NewDubboExporter(serviceKey, invoker, dp.ExporterMap(), dp.serviceMap)
@@ -83,7 +83,7 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 	logger.Infof("[Triple Protocol] Export service: %s", url.String())
 
 	key := url.GetParam(constant.BeanNameKey, "")
-	var service interface{}
+	var service any
 	service = config.GetProviderService(key)
 
 	serializationType := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
@@ -133,7 +133,7 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 }
 
 // Refer create dubbo3 service reference.
-func (dp *DubboProtocol) Refer(url *common.URL) protocol.Invoker {
+func (dp *DubboProtocol) Refer(url *common.URL) base.Invoker {
 	invoker, err := NewDubboInvoker(url)
 	if err != nil {
 		logger.Errorf("Refer url = %+v, with error = %s", url, err.Error())
@@ -152,7 +152,7 @@ func (dp *DubboProtocol) Destroy() {
 	dp.serverLock.Lock()
 	defer dp.serverLock.Unlock()
 	// Stop all server
-	for k, _ := range dp.serverMap {
+	for k := range dp.serverMap {
 		keyList = append(keyList, k)
 	}
 	for _, v := range keyList {
@@ -166,15 +166,15 @@ func (dp *DubboProtocol) Destroy() {
 // Dubbo3GrpcService is gRPC service
 type Dubbo3GrpcService interface {
 	// SetProxyImpl sets proxy.
-	XXX_SetProxyImpl(impl protocol.Invoker)
+	XXX_SetProxyImpl(impl base.Invoker)
 	// GetProxyImpl gets proxy.
-	XXX_GetProxyImpl() protocol.Invoker
+	XXX_GetProxyImpl() base.Invoker
 	// ServiceDesc gets an RPC service's specification.
 	XXX_ServiceDesc() *grpc.ServiceDesc
 }
 
 type UnaryService struct {
-	proxyImpl  protocol.Invoker
+	proxyImpl  base.Invoker
 	reqTypeMap sync.Map
 }
 
@@ -182,21 +182,21 @@ func (d *UnaryService) setReqParamsTypes(methodName string, typ []reflect.Type) 
 	d.reqTypeMap.Store(methodName, typ)
 }
 
-func (d *UnaryService) GetReqParamsInterfaces(methodName string) ([]interface{}, bool) {
+func (d *UnaryService) GetReqParamsInterfaces(methodName string) ([]any, bool) {
 	val, ok := d.reqTypeMap.Load(methodName)
 	if !ok {
 		return nil, false
 	}
 	typs := val.([]reflect.Type)
-	reqParamsInterfaces := make([]interface{}, 0, len(typs))
+	reqParamsInterfaces := make([]any, 0, len(typs))
 	for _, typ := range typs {
 		reqParamsInterfaces = append(reqParamsInterfaces, reflect.New(typ).Interface())
 	}
 	return reqParamsInterfaces, true
 }
 
-func (d *UnaryService) InvokeWithArgs(ctx context.Context, methodName string, arguments []interface{}) (interface{}, error) {
-	dubboAttachment := make(map[string]interface{})
+func (d *UnaryService) InvokeWithArgs(ctx context.Context, methodName string, arguments []any) (any, error) {
+	dubboAttachment := make(map[string]any)
 	md, ok := metadata.FromIncomingContext(ctx)
 	if ok {
 		for k := range md {
@@ -276,7 +276,7 @@ func (dp *DubboProtocol) openServer(url *common.URL, tripleCodecType tripleConst
 }
 
 // GetProtocol get a single dubbo3 protocol.
-func GetProtocol() protocol.Protocol {
+func GetProtocol() base.Protocol {
 	protocolOnce.Do(func() {
 		dubboProtocol = NewDubboProtocol()
 	})

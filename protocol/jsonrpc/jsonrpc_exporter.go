@@ -28,18 +28,18 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 // JsonrpcExporter is JSON RPC exporter and  extends from base invoker.
 type JsonrpcExporter struct {
-	protocol.BaseExporter
+	base.BaseExporter
 }
 
 // NewJsonrpcExporter creates JSON RPC exporter with @key, @invoker and @exporterMap
-func NewJsonrpcExporter(key string, invoker protocol.Invoker, exporterMap *sync.Map) *JsonrpcExporter {
+func NewJsonrpcExporter(key string, invoker base.Invoker, exporterMap *sync.Map) *JsonrpcExporter {
 	return &JsonrpcExporter{
-		BaseExporter: *protocol.NewBaseExporter(key, invoker, exporterMap),
+		BaseExporter: *base.NewBaseExporter(key, invoker, exporterMap),
 	}
 }
 

@@ -36,8 +36,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/dubboutil"
 )
 
-// RPCService the type alias of interface{}
-type RPCService = interface{}
+// RPCService the type alias of any
+type RPCService = any
 
 // ReferencedRPCService is the rpc service interface which wraps base Reference method.
 //
@@ -46,7 +46,7 @@ type ReferencedRPCService interface {
 	Reference() string
 }
 
-// TriplePBService is  the type alias of interface{}
+// TriplePBService is  the type alias of any
 type TriplePBService interface {
 	XXX_InterfaceName() string
 }
@@ -83,7 +83,7 @@ type AsyncCallbackService interface {
 }
 
 // CallbackResponse for different protocol
-type CallbackResponse interface{}
+type CallbackResponse any
 
 // AsyncCallback async callback method
 type AsyncCallback func(response CallbackResponse)
@@ -142,10 +142,10 @@ func (m *MethodType) SuiteContext(ctx context.Context) reflect.Value {
 
 // Service is description of service
 type Service struct {
-	name     string
-	rcvr     reflect.Value
-	rcvrType reflect.Type
-	methods  map[string]*MethodType
+	name    string
+	svc     reflect.Value
+	svcType reflect.Type
+	methods map[string]*MethodType
 }
 
 // Method gets @s.methods.
@@ -158,14 +158,14 @@ func (s *Service) Name() string {
 	return s.name
 }
 
-// RcvrType gets @s.rcvrType.
-func (s *Service) RcvrType() reflect.Type {
-	return s.rcvrType
+// ServiceType gets @s.SvcType.
+func (s *Service) ServiceType() reflect.Type {
+	return s.svcType
 }
 
-// Rcvr gets @s.rcvr.
-func (s *Service) Rcvr() reflect.Value {
-	return s.rcvr
+// Service gets @s.Svc.
+func (s *Service) Service() reflect.Value {
+	return s.svc
 }
 
 type serviceMap struct {
@@ -204,7 +204,7 @@ func (sm *serviceMap) GetInterface(interfaceName string) []*Service {
 }
 
 // Register registers a service by @interfaceName and @protocol
-func (sm *serviceMap) Register(interfaceName, protocol, group, version string, rcvr RPCService) (string, error) {
+func (sm *serviceMap) Register(interfaceName, protocol, group, version string, svc RPCService) (string, error) {
 	if sm.serviceMap[protocol] == nil {
 		sm.serviceMap[protocol] = make(map[string]*Service)
 	}
@@ -213,11 +213,11 @@ func (sm *serviceMap) Register(interfaceName, protocol, group, version string, r
 	}
 
 	s := new(Service)
-	s.rcvrType = reflect.TypeOf(rcvr)
-	s.rcvr = reflect.ValueOf(rcvr)
-	sname := reflect.Indirect(s.rcvr).Type().Name()
+	s.svcType = reflect.TypeOf(svc)
+	s.svc = reflect.ValueOf(svc)
+	sname := reflect.Indirect(s.svc).Type().Name()
 	if sname == "" {
-		s := "no service name for type " + s.rcvrType.String()
+		s := "no service name for type " + s.svcType.String()
 		logger.Errorf(s)
 		return "", perrors.New(s)
 	}
@@ -236,7 +236,7 @@ func (sm *serviceMap) Register(interfaceName, protocol, group, version string, r
 
 	// Install the methods
 	methods := ""
-	methods, s.methods = suitableMethods(s.rcvrType)
+	methods, s.methods = suitableMethods(s.svcType)
 
 	if len(s.methods) == 0 {
 		s := "type " + sname + " has no exported methods of suitable type"
@@ -422,16 +422,16 @@ func suiteMethod(method reflect.Method) *MethodType {
 // ServiceInfo is meta info of a service
 type ServiceInfo struct {
 	InterfaceName string
-	ServiceType   interface{}
+	ServiceType   any
 	Methods       []MethodInfo
-	Meta          map[string]interface{}
+	Meta          map[string]any
 }
 
 type MethodInfo struct {
 	Name           string
 	Type           string
-	ReqInitFunc    func() interface{}
-	StreamInitFunc func(baseStream interface{}) interface{}
-	MethodFunc     func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error)
-	Meta           map[string]interface{}
+	ReqInitFunc    func() any
+	StreamInitFunc func(baseStream any) any
+	MethodFunc     func(ctx context.Context, args []any, handler any) (any, error)
+	Meta           map[string]any
 }
