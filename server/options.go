@@ -44,6 +44,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
@@ -464,9 +465,9 @@ type ServiceOptions struct {
 	ProxyFactoryKey string
 	rpcService      common.RPCService
 	cacheMutex      sync.Mutex
-	cacheProtocol   protocol.Protocol
+	cacheProtocol   base.Protocol
 	exportersLock   sync.Mutex
-	exporters       []protocol.Exporter
+	exporters       []base.Exporter
 	adaptiveService bool
 
 	// for triple non-IDL mode

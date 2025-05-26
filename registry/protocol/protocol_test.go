@@ -37,7 +37,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/config_center/configurator"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/registry/directory"
@@ -67,7 +67,7 @@ func referNormal(t *testing.T, regProtocol *registryProtocol) {
 	url.SubURL = suburl
 
 	invoker := regProtocol.Refer(url)
-	assert.IsType(t, &protocol.BaseInvoker{}, invoker)
+	assert.IsType(t, &base.BaseInvoker{}, invoker)
 	assert.Equal(t, invoker.GetURL().String(), url.String())
 }
 
@@ -133,7 +133,7 @@ func exporterNormal(t *testing.T, regProtocol *registryProtocol) *common.URL {
 	)
 
 	url.SubURL = suburl
-	invoker := protocol.NewBaseInvoker(url)
+	invoker := base.NewBaseInvoker(url)
 	exporter := regProtocol.Export(invoker)
 
 	assert.IsType(t, &exporterChangeableWrapper{}, exporter)
@@ -157,7 +157,7 @@ func TestMultiRegAndMultiProtoExporter(t *testing.T) {
 	)
 
 	url2.SubURL = suburl2
-	invoker2 := protocol.NewBaseInvoker(url2)
+	invoker2 := base.NewBaseInvoker(url2)
 	regProtocol.Export(invoker2)
 
 	var count int
@@ -188,7 +188,7 @@ func TestOneRegAndProtoExporter(t *testing.T) {
 	)
 
 	url2.SubURL = suburl2
-	invoker2 := protocol.NewBaseInvoker(url2)
+	invoker2 := base.NewBaseInvoker(url2)
 	regProtocol.Export(invoker2)
 
 	var count int

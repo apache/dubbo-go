@@ -28,11 +28,11 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
-var _ protocol.Invocation = (*RPCInvocation)(nil)
+var _ base.Invocation = (*RPCInvocation)(nil)
 
 // todo: is it necessary to separate fields of consumer(provider) from RPCInvocation
 // nolint
@@ -50,7 +50,7 @@ type RPCInvocation struct {
 	attachments        map[string]any
 	// Refer to dubbo 2.7.6.  It is different from attachment. It is used in internal process.
 	attributes map[string]any
-	invoker    protocol.Invoker
+	invoker    base.Invoker
 	lock       sync.RWMutex
 }
 
@@ -153,12 +153,12 @@ func (r *RPCInvocation) Attributes() map[string]any {
 }
 
 // Invoker gets the invoker in current context.
-func (r *RPCInvocation) Invoker() protocol.Invoker {
+func (r *RPCInvocation) Invoker() base.Invoker {
 	return r.invoker
 }
 
 // nolint
-func (r *RPCInvocation) SetInvoker(invoker protocol.Invoker) {
+func (r *RPCInvocation) SetInvoker(invoker base.Invoker) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	r.invoker = invoker
@@ -360,7 +360,7 @@ func WithAttachment(k string, v any) option {
 }
 
 // WithInvoker creates option with @invoker.
-func WithInvoker(invoker protocol.Invoker) option {
+func WithInvoker(invoker base.Invoker) option {
 	return func(invo *RPCInvocation) {
 		invo.invoker = invoker
 	}

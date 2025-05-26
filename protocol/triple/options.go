@@ -15,30 +15,32 @@
  * limitations under the License.
  */
 
-package protocol
+package triple
 
-import (
-	"testing"
-)
+type ServerOptions struct {
+}
 
-import (
-	"github.com/stretchr/testify/assert"
-)
+func defaultServerOptions() *ServerOptions {
+	return &ServerOptions{}
+}
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-)
+func NewServerOptions(opts ...ServerOption) *ServerOptions {
+	defSrvOpts := defaultServerOptions()
+	for _, opt := range opts {
+		opt(defSrvOpts)
+	}
+	return defSrvOpts
+}
 
-func TestBaseInvoker(t *testing.T) {
-	url, err := common.NewURL("dubbo://localhost:9090")
-	assert.Nil(t, err)
+func (srvOpts *ServerOptions) init(opts ...ServerOption) {
+	for _, opt := range opts {
+		opt(srvOpts)
+	}
+}
 
-	ivk := NewBaseInvoker(url)
-	assert.NotNil(t, ivk.GetURL())
-	assert.True(t, ivk.IsAvailable())
-	assert.False(t, ivk.IsDestroyed())
+type ServerOption func(*ServerOptions)
 
-	ivk.Destroy()
-	assert.False(t, ivk.IsAvailable())
-	assert.True(t, ivk.IsDestroyed())
+func WithServerEmtryOption() ServerOption {
+	return func(opts *ServerOptions) {
+	}
 }

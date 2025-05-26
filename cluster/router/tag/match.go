@@ -29,31 +29,31 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
-type predicate func(invoker protocol.Invoker, tag any) bool
+type predicate func(invoker base.Invoker, tag any) bool
 
 // static tag matching. no used configuration center to create tag router configuration
-func staticTag(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
+func staticTag(invokers []base.Invoker, url *common.URL, invocation base.Invocation) []base.Invoker {
 	var (
 		tag    string
 		ok     bool
-		result []protocol.Invoker
+		result []base.Invoker
 	)
 	if tag, ok = invocation.GetAttachment(constant.Tagkey); !ok {
 		tag = url.GetParam(constant.Tagkey, "")
 	}
 	if tag != "" {
 		// match dynamic tag
-		result = filterInvokers(invokers, tag, func(invoker protocol.Invoker, tag any) bool {
+		result = filterInvokers(invokers, tag, func(invoker base.Invoker, tag any) bool {
 			return invoker.GetURL().GetParam(constant.Tagkey, "") != tag
 		})
 	}
 
 	// match empty tag
 	if (len(result) == 0 && !requestIsForce(url, invocation)) || tag == "" {
-		result = filterInvokers(invokers, tag, func(invoker protocol.Invoker, tag any) bool {
+		result = filterInvokers(invokers, tag, func(invoker base.Invoker, tag any) bool {
 			return invoker.GetURL().GetParam(constant.Tagkey, "") != ""
 		})
 	}
@@ -62,7 +62,7 @@ func staticTag(invokers []protocol.Invoker, url *common.URL, invocation protocol
 }
 
 // dynamic tag matching. used configuration center to create tag router configuration
-func dynamicTag(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation, cfg config.RouterConfig) []protocol.Invoker {
+func dynamicTag(invokers []base.Invoker, url *common.URL, invocation base.Invocation, cfg config.RouterConfig) []base.Invoker {
 	tag := invocation.GetAttachmentWithDefaultValue(constant.Tagkey, url.GetParam(constant.Tagkey, ""))
 	if tag == "" {
 		return requestEmptyTag(invokers, cfg)
@@ -73,8 +73,8 @@ func dynamicTag(invokers []protocol.Invoker, url *common.URL, invocation protoco
 // if request.tag is not set, only providers with empty tags will be matched.
 // even if a service is available in the cluster, it cannot be invoked if the tag does not match,
 // and requests without tags or other tags will never be able to access services with other tags.
-func requestEmptyTag(invokers []protocol.Invoker, cfg config.RouterConfig) []protocol.Invoker {
-	result := filterInvokers(invokers, "", func(invoker protocol.Invoker, tag any) bool {
+func requestEmptyTag(invokers []base.Invoker, cfg config.RouterConfig) []base.Invoker {
+	result := filterInvokers(invokers, "", func(invoker base.Invoker, tag any) bool {
 		return invoker.GetURL().GetParam(constant.Tagkey, "") != ""
 	})
 	if len(result) == 0 {
@@ -95,10 +95,10 @@ func requestEmptyTag(invokers []protocol.Invoker, cfg config.RouterConfig) []pro
 // if no service corresponding to the request tag exists in the cluster,
 // the provider with the empty request tag is degraded by default.
 // to change the default behavior that no provider matching TAG1 returns an exception, set request.tag.force=true.
-func requestTag(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation, cfg config.RouterConfig, tag string) []protocol.Invoker {
+func requestTag(invokers []base.Invoker, url *common.URL, invocation base.Invocation, cfg config.RouterConfig, tag string) []base.Invoker {
 	var (
 		addresses []string
-		result    []protocol.Invoker
+		result    []base.Invoker
 		match     []*common.ParamMatch
 	)
 	for _, tagCfg := range cfg.Tags {
@@ -110,7 +110,7 @@ func requestTag(invokers []protocol.Invoker, url *common.URL, invocation protoco
 
 	// only one of 'match' and 'addresses' will take effect if both are specified.
 	if len(match) != 0 {
-		result = filterInvokers(invokers, match, func(invoker protocol.Invoker, match any) bool {
+		result = filterInvokers(invokers, match, func(invoker base.Invoker, match any) bool {
 			matches := match.([]*common.ParamMatch)
 			for _, m := range matches {
 				if !m.IsMatch(invoker.GetURL()) {
@@ -122,7 +122,7 @@ func requestTag(invokers []protocol.Invoker, url *common.URL, invocation protoco
 	} else {
 		if len(addresses) == 0 {
 			// filter tag does not match
-			result = filterInvokers(invokers, tag, func(invoker protocol.Invoker, tag any) bool {
+			result = filterInvokers(invokers, tag, func(invoker base.Invoker, tag any) bool {
 				return invoker.GetURL().GetParam(constant.Tagkey, "") != tag
 			})
 			logger.Debugf("[tag router] filter dynamic tag, tag=%s, invokers=%+v", tag, result)
@@ -140,7 +140,7 @@ func requestTag(invokers []protocol.Invoker, url *common.URL, invocation protoco
 		return result
 	}
 	// failover: return all Providers without any tags
-	result = filterInvokers(invokers, tag, func(invoker protocol.Invoker, tag any) bool {
+	result = filterInvokers(invokers, tag, func(invoker base.Invoker, tag any) bool {
 		return invoker.GetURL().GetParam(constant.Tagkey, "") != ""
 	})
 	if len(addresses) == 0 {
@@ -152,8 +152,8 @@ func requestTag(invokers []protocol.Invoker, url *common.URL, invocation protoco
 }
 
 // filterInvokers remove invokers that match with predicate from the original input.
-func filterInvokers(invokers []protocol.Invoker, param any, predicate predicate) []protocol.Invoker {
-	result := make([]protocol.Invoker, len(invokers))
+func filterInvokers(invokers []base.Invoker, param any, predicate predicate) []base.Invoker {
+	result := make([]base.Invoker, len(invokers))
 	copy(result, invokers)
 	for i := 0; i < len(result); i++ {
 		if predicate(result[i], param) {
@@ -164,7 +164,7 @@ func filterInvokers(invokers []protocol.Invoker, param any, predicate predicate)
 	return result
 }
 
-func requestIsForce(url *common.URL, invocation protocol.Invocation) bool {
+func requestIsForce(url *common.URL, invocation base.Invocation) bool {
 	force := invocation.GetAttachmentWithDefaultValue(constant.ForceUseTag, url.GetParam(constant.ForceUseTag, "false"))
 	ok, err := strconv.ParseBool(force)
 	if err != nil {
@@ -174,7 +174,7 @@ func requestIsForce(url *common.URL, invocation protocol.Invocation) bool {
 }
 
 func getAddressPredicate(result bool) predicate {
-	return func(invoker protocol.Invoker, param any) bool {
+	return func(invoker base.Invoker, param any) bool {
 		address := param.([]string)
 		for _, v := range address {
 			invokerURL := invoker.GetURL()

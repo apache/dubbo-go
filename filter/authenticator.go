@@ -19,7 +19,7 @@ package filter
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 // Authenticator is the interface which defines how an Authenticator works.
@@ -27,8 +27,8 @@ import (
 type Authenticator interface {
 
 	// Sign adds signature to the invocation
-	Sign(protocol.Invocation, *common.URL) error
+	Sign(base.Invocation, *common.URL) error
 
 	// Authenticate verifies the signature of the request
-	Authenticate(protocol.Invocation, *common.URL) error
+	Authenticate(base.Invocation, *common.URL) error
 }

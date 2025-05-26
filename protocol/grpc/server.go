@@ -44,15 +44,15 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 // DubboGrpcService is gRPC service
 type DubboGrpcService interface {
 	// SetProxyImpl sets proxy.
-	SetProxyImpl(impl protocol.Invoker)
+	SetProxyImpl(impl base.Invoker)
 	// GetProxyImpl gets proxy.
-	GetProxyImpl() protocol.Invoker
+	GetProxyImpl() base.Invoker
 	// ServiceDesc gets an RPC service's specification.
 	ServiceDesc() *grpc.ServiceDesc
 }
@@ -187,7 +187,7 @@ func registerService(providerServices map[string]*config.ServiceConfig, server *
 		if exporter == nil {
 			panic(fmt.Sprintf("no exporter found for servicekey: %v", serviceKey))
 		}
-		invoker := exporter.(protocol.Exporter).GetInvoker()
+		invoker := exporter.(base.Exporter).GetInvoker()
 		if invoker == nil {
 			panic(fmt.Sprintf("no invoker found for servicekey: %v", serviceKey))
 		}

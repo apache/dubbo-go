@@ -38,9 +38,10 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/filter/generic/generalizer"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/mock"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 type MockHelloService struct{}
@@ -151,19 +152,19 @@ func TestServiceFilter_Invoke(t *testing.T) {
 		gomock.Not(invocation2),
 		gomock.Not(invocation3),
 	)).DoAndReturn(
-		func(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+		func(ctx context.Context, invocation base.Invocation) result.Result {
 			switch invocation.MethodName() {
 			case "Hello":
 				who := invocation.Arguments()[0].(string)
-				result, _ := service.Hello(who)
-				return &protocol.RPCResult{
-					Rest: result,
+				res, _ := service.Hello(who)
+				return &result.RPCResult{
+					Rest: res,
 				}
 			case "HelloPB":
 				req := invocation.Arguments()[0].(*generalizer.RequestType)
-				result, _ := service.HelloPB(req)
-				return &protocol.RPCResult{
-					Rest: result,
+				res, _ := service.HelloPB(req)
+				return &result.RPCResult{
+					Rest: res,
 				}
 			default:
 				panic("this branch shouldn't be reached")
@@ -205,7 +206,7 @@ func TestServiceFilter_OnResponse(t *testing.T) {
 			constant.GenericKey: "true",
 		})
 
-	rpcResult := &protocol.RPCResult{
+	rpcResult := &result.RPCResult{
 		Rest: "result",
 	}
 

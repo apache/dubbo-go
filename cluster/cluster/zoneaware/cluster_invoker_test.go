@@ -36,9 +36,10 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/mock"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 func TestZoneWareInvokerWithPreferredSuccess(t *testing.T) {
@@ -47,12 +48,12 @@ func TestZoneWareInvokerWithPreferredSuccess(t *testing.T) {
 	// into gomock.NewController(t) you no longer need to call ctrl.Finish().
 	// defer ctrl.Finish()
 
-	mockResult := &protocol.RPCResult{
+	mockResult := &result.RPCResult{
 		Attrs: map[string]any{constant.PreferredKey: "true"},
 		Rest:  clusterpkg.Rest{Tried: 0, Success: true},
 	}
 
-	var invokers []protocol.Invoker
+	var invokers []base.Invoker
 	for i := 0; i < 2; i++ {
 		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
 		invoker := mock.NewMockInvoker(ctrl)
@@ -61,13 +62,13 @@ func TestZoneWareInvokerWithPreferredSuccess(t *testing.T) {
 		if i == 0 {
 			url.SetParam(constant.RegistryKey+"."+constant.PreferredKey, "true")
 			invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
-				func(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+				func(ctx context.Context, invocation base.Invocation) result.Result {
 					return mockResult
 				}).AnyTimes()
 		} else {
 			invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
-				func(ctx context.Context, invocation protocol.Invocation) protocol.Result {
-					return &protocol.RPCResult{}
+				func(ctx context.Context, invocation base.Invocation) result.Result {
+					return &result.RPCResult{}
 				}).AnyTimes()
 		}
 
@@ -94,7 +95,7 @@ func TestZoneWareInvokerWithWeightSuccess(t *testing.T) {
 	w1 := "50"
 	w2 := "200"
 
-	var invokers []protocol.Invoker
+	var invokers []base.Invoker
 	for i := 0; i < 2; i++ {
 		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
 		invoker := mock.NewMockInvoker(ctrl)
@@ -104,8 +105,8 @@ func TestZoneWareInvokerWithWeightSuccess(t *testing.T) {
 		if i == 1 {
 			url.SetParam(constant.RegistryKey+"."+constant.WeightKey, w1)
 			invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
-				func(ctx context.Context, invocation protocol.Invocation) protocol.Result {
-					return &protocol.RPCResult{
+				func(ctx context.Context, invocation base.Invocation) result.Result {
+					return &result.RPCResult{
 						Attrs: map[string]any{constant.WeightKey: w1},
 						Rest:  clusterpkg.Rest{Tried: 0, Success: true},
 					}
@@ -113,8 +114,8 @@ func TestZoneWareInvokerWithWeightSuccess(t *testing.T) {
 		} else {
 			url.SetParam(constant.RegistryKey+"."+constant.WeightKey, w2)
 			invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
-				func(ctx context.Context, invocation protocol.Invocation) protocol.Result {
-					return &protocol.RPCResult{
+				func(ctx context.Context, invocation base.Invocation) result.Result {
+					return &result.RPCResult{
 						Attrs: map[string]any{constant.WeightKey: w2},
 						Rest:  clusterpkg.Rest{Tried: 0, Success: true},
 					}
@@ -151,7 +152,7 @@ func TestZoneWareInvokerWithZoneSuccess(t *testing.T) {
 	// into gomock.NewController(t) you no longer need to call ctrl.Finish().
 	// defer ctrl.Finish()
 
-	var invokers []protocol.Invoker
+	var invokers []base.Invoker
 	for i := 0; i < 2; i++ {
 		zoneValue := zoneArray[i]
 		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
@@ -161,8 +162,8 @@ func TestZoneWareInvokerWithZoneSuccess(t *testing.T) {
 		invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 		invoker.EXPECT().GetURL().Return(url).AnyTimes()
 		invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
-			func(ctx context.Context, invocation protocol.Invocation) protocol.Result {
-				return &protocol.RPCResult{
+			func(ctx context.Context, invocation base.Invocation) result.Result {
+				return &result.RPCResult{
 					Attrs: map[string]any{constant.RegistryZoneKey: zoneValue},
 					Rest:  clusterpkg.Rest{Tried: 0, Success: true},
 				}
@@ -190,7 +191,7 @@ func TestZoneWareInvokerWithZoneForceFail(t *testing.T) {
 	// into gomock.NewController(t) you no longer need to call ctrl.Finish().
 	// defer ctrl.Finish()
 
-	var invokers []protocol.Invoker
+	var invokers []base.Invoker
 	for i := 0; i < 2; i++ {
 		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
 

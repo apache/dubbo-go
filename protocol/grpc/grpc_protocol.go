@@ -28,7 +28,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 const (
@@ -44,7 +44,7 @@ var grpcProtocol *GrpcProtocol
 
 // GrpcProtocol is gRPC protocol
 type GrpcProtocol struct {
-	protocol.BaseProtocol
+	base.BaseProtocol
 	serverMap  map[string]*Server
 	serverLock sync.Mutex
 }
@@ -52,13 +52,13 @@ type GrpcProtocol struct {
 // NewGRPCProtocol creates new gRPC protocol
 func NewGRPCProtocol() *GrpcProtocol {
 	return &GrpcProtocol{
-		BaseProtocol: protocol.NewBaseProtocol(),
+		BaseProtocol: base.NewBaseProtocol(),
 		serverMap:    make(map[string]*Server),
 	}
 }
 
 // Export gRPC service for remote invocation
-func (gp *GrpcProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
+func (gp *GrpcProtocol) Export(invoker base.Invoker) base.Exporter {
 	url := invoker.GetURL()
 	serviceKey := url.ServiceKey()
 	exporter := NewGrpcExporter(serviceKey, invoker, gp.ExporterMap())
@@ -86,7 +86,7 @@ func (gp *GrpcProtocol) openServer(url *common.URL) {
 }
 
 // Refer a remote gRPC service
-func (gp *GrpcProtocol) Refer(url *common.URL) protocol.Invoker {
+func (gp *GrpcProtocol) Refer(url *common.URL) base.Invoker {
 	client, err := NewClient(url)
 	if err != nil {
 		logger.Warnf("can't dial the server: %s", url.Key())
@@ -113,7 +113,7 @@ func (gp *GrpcProtocol) Destroy() {
 }
 
 // GetProtocol gets gRPC protocol, will create if null.
-func GetProtocol() protocol.Protocol {
+func GetProtocol() base.Protocol {
 	if grpcProtocol == nil {
 		grpcProtocol = NewGRPCProtocol()
 	}

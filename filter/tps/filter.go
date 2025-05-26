@@ -47,7 +47,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/handler"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/tps/limiter"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 var (
@@ -71,7 +72,7 @@ func newTpsLimitFilter() filter.Filter {
 }
 
 // Invoke gets the configured limter to impose TPS limiting
-func (t *tpsLimitFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (t *tpsLimitFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
 	url := invoker.GetURL()
 	tpsLimiter := url.GetParam(constant.TPSLimiterKey, "")
 	rejectedExeHandler := url.GetParam(constant.TPSRejectedExecutionHandlerKey, constant.DefaultKey)
@@ -97,7 +98,7 @@ func (t *tpsLimitFilter) Invoke(ctx context.Context, invoker protocol.Invoker, i
 }
 
 // OnResponse dummy process, returns the result directly
-func (t *tpsLimitFilter) OnResponse(_ context.Context, result protocol.Result, _ protocol.Invoker,
-	_ protocol.Invocation) protocol.Result {
+func (t *tpsLimitFilter) OnResponse(_ context.Context, result result.Result, _ base.Invoker,
+	_ base.Invocation) result.Result {
 	return result
 }

@@ -24,6 +24,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple"
 )
 
 type Options struct {
@@ -74,9 +75,12 @@ func WithREST() Option {
 	}
 }
 
-func WithTriple() Option {
+func WithTriple(opts ...triple.ServerOption) Option {
+	triSrvOpts := triple.NewServerOptions()
+
 	return func(opts *Options) {
 		opts.Protocol.Name = "tri"
+		opts.Protocol.Params = triSrvOpts
 	}
 }
 

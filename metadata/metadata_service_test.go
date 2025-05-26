@@ -31,7 +31,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
 )
 
@@ -302,7 +302,7 @@ func Test_serviceExporterExport(t *testing.T) {
 	defer mockExporter.AssertExpectations(t)
 	dubboProtocol := new(mockProtocol)
 	defer dubboProtocol.AssertExpectations(t)
-	extension.SetProtocol("dubbo", func() protocol.Protocol {
+	extension.SetProtocol("dubbo", func() base.Protocol {
 		return dubboProtocol
 	})
 	t.Run("normal", func(t *testing.T) {

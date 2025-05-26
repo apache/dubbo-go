@@ -44,7 +44,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/internal"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo3"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
@@ -54,20 +54,24 @@ import (
 // provide functionality.
 type Server struct {
 	triServer *tri.Server
+	cfg       *ServerOptions
 	mu        sync.RWMutex
 	services  map[string]grpc.ServiceInfo
 }
 
 // NewServer creates a new TRIPLE server.
 // triServer would not be initialized since we could not get configurations here.
-func NewServer() *Server {
+func NewServer(opts ...ServerOption) *Server {
+	newSrvOpts := defaultServerOptions()
+	newSrvOpts.init(opts...)
 	return &Server{
+		cfg:      newSrvOpts,
 		services: make(map[string]grpc.ServiceInfo),
 	}
 }
 
 // Start TRIPLE server
-func (s *Server) Start(invoker protocol.Invoker, info *common.ServiceInfo) {
+func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
 	URL := invoker.GetURL()
 	addr := URL.Location
 	// initialize tri.Server
@@ -146,7 +150,7 @@ func (s *Server) Start(invoker protocol.Invoker, info *common.ServiceInfo) {
 
 // todo(DMwangnima): extract a common function
 // RefreshService refreshes Triple Service
-func (s *Server) RefreshService(invoker protocol.Invoker, info *common.ServiceInfo) {
+func (s *Server) RefreshService(invoker base.Invoker, info *common.ServiceInfo) {
 	URL := invoker.GetURL()
 	serialization := URL.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	switch serialization {
@@ -211,7 +215,7 @@ func (s *Server) compatHandleService(interfaceName string, group, version string
 			logger.Warnf("no exporter found for serviceKey: %v", serviceKey)
 			continue
 		}
-		invoker := exporter.(protocol.Exporter).GetInvoker()
+		invoker := exporter.(base.Exporter).GetInvoker()
 		if invoker == nil {
 			panic(fmt.Sprintf("no invoker found for servicekey: %v", serviceKey))
 		}
@@ -258,7 +262,7 @@ func (s *Server) compatRegisterHandler(interfaceName string, svc dubbo3.Dubbo3Gr
 }
 
 // handleServiceWithInfo injects invoker and create handler based on ServiceInfo
-func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.Invoker, info *common.ServiceInfo, opts ...tri.HandlerOption) {
+func (s *Server) handleServiceWithInfo(interfaceName string, invoker base.Invoker, info *common.ServiceInfo, opts ...tri.HandlerOption) {
 	for _, method := range info.Methods {
 		m := method
 		procedure := joinProcedure(interfaceName, method.Name)

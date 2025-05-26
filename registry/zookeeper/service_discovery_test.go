@@ -33,7 +33,8 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
@@ -109,11 +110,11 @@ func (c mockClient) GetAllServicesInfo(param vo.GetAllServiceInfoParam) (model.S
 
 type mockProtocol struct{}
 
-func (m mockProtocol) Export(protocol.Invoker) protocol.Exporter {
+func (m mockProtocol) Export(base.Invoker) base.Exporter {
 	panic("implement me")
 }
 
-func (m mockProtocol) Refer(*common.URL) protocol.Invoker {
+func (m mockProtocol) Refer(*common.URL) base.Invoker {
 	return &mockInvoker{}
 }
 
@@ -135,8 +136,8 @@ func (m *mockInvoker) Destroy() {
 	panic("implement me")
 }
 
-func (m *mockInvoker) Invoke(context.Context, protocol.Invocation) protocol.Result {
-	return &protocol.RPCResult{
+func (m *mockInvoker) Invoke(context.Context, base.Invocation) result.Result {
+	return &result.RPCResult{
 		Rest: &mockResult{},
 	}
 }

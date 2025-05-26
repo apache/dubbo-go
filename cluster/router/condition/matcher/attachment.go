@@ -28,7 +28,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 var (
@@ -49,7 +49,7 @@ func NewAttachmentConditionMatcher(key string) *AttachmentConditionMatcher {
 	}
 }
 
-func (a *AttachmentConditionMatcher) GetValue(sample map[string]string, url *common.URL, invocation protocol.Invocation) string {
+func (a *AttachmentConditionMatcher) GetValue(sample map[string]string, url *common.URL, invocation base.Invocation) string {
 	// split the rule
 	expressArray := strings.Split(a.key, "\\.")
 	attachmentExpress := expressArray[0]

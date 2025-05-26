@@ -35,7 +35,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 const (
@@ -102,7 +103,7 @@ func newFilter() filter.Filter {
 
 // Invoke will check whether user wants to use this filter.
 // If we find the value of key constant.AccessLogFilterKey, we will log the invocation info
-func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (f *Filter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
 	accessLog := invoker.GetURL().GetParam(constant.AccessLogFilterKey, "")
 
 	// the user do not
@@ -125,7 +126,7 @@ func (f *Filter) logIntoChannel(accessLogData Data) {
 }
 
 // buildAccessLogData builds the access log data
-func (f *Filter) buildAccessLogData(_ protocol.Invoker, invocation protocol.Invocation) map[string]string {
+func (f *Filter) buildAccessLogData(_ base.Invoker, invocation base.Invocation) map[string]string {
 	dataMap := make(map[string]string, 16)
 	attachments := invocation.Attachments()
 	itf := attachments[constant.InterfaceKey]
@@ -177,7 +178,7 @@ func (f *Filter) buildAccessLogData(_ protocol.Invoker, invocation protocol.Invo
 }
 
 // OnResponse do nothing
-func (f *Filter) OnResponse(_ context.Context, result protocol.Result, _ protocol.Invoker, _ protocol.Invocation) protocol.Result {
+func (f *Filter) OnResponse(_ context.Context, result result.Result, _ base.Invoker, _ base.Invocation) result.Result {
 	return result
 }
 
