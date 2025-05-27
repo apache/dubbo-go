@@ -213,20 +213,38 @@ func WithPort(port int) ServerOption {
 	return &portOption{strconv.Itoa(port)}
 }
 
-// func WithParams(params any) Option {
-// 	return func(opts *ServerOptions) {
-// 		opts.Protocol.Params = params
-// 	}
-// }
-//
-// func WithMaxServerSendMsgSize(size int) Option {
-// 	return func(opts *ServerOptions) {
-// 		opts.Protocol.MaxServerSendMsgSize = strconv.Itoa(size)
-// 	}
-// }
-//
-// func WithMaxServerRecvMsgSize(size int) Option {
-// 	return func(opts *ServerOptions) {
-// 		opts.Protocol.MaxServerRecvMsgSize = strconv.Itoa(size)
-// 	}
-// }
+type paramsOption struct {
+	Params any
+}
+
+func (o *paramsOption) applyToServer(config *global.ProtocolConfig) {
+	config.Params = o.Params
+}
+
+func WithParams(params any) ServerOption {
+	return &paramsOption{params}
+}
+
+type maxServerSendMsgSizeOption struct {
+	MaxServerSendMsgSize int
+}
+
+func (o *maxServerSendMsgSizeOption) applyToServer(config *global.ProtocolConfig) {
+	config.MaxServerSendMsgSize = strconv.Itoa(o.MaxServerSendMsgSize)
+}
+
+func WithMaxServerSendMsgSize(size int) ServerOption {
+	return &maxServerSendMsgSizeOption{size}
+}
+
+type maxServerRecvMsgSize struct {
+	MaxServerRecvMsgSize int
+}
+
+func (o *maxServerRecvMsgSize) applyToServer(config *global.ProtocolConfig) {
+	config.MaxServerRecvMsgSize = strconv.Itoa(o.MaxServerRecvMsgSize)
+}
+
+func WithMaxServerRecvMsgSize(size int) ServerOption {
+	return &maxServerRecvMsgSize{size}
+}
