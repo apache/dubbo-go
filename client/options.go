@@ -345,7 +345,7 @@ func WithIDL(IDLMode string) ReferenceOption {
 
 func WithProtocolDubbo() ReferenceOption {
 	return func(opts *ReferenceOptions) {
-		opts.Reference.Protocol = constant.Dubbo
+		opts.Reference.Protocol = constant.DubboProtocol
 	}
 }
 
@@ -793,7 +793,7 @@ func WithClientSticky() ClientOption {
 
 func WithClientProtocolDubbo() ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.Protocol = constant.Dubbo
+		opts.Consumer.Protocol = constant.DubboProtocol
 	}
 }
 

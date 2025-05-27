@@ -26,7 +26,7 @@ import (
 // )
 
 import (
-	// "dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple"
 )
@@ -104,7 +104,7 @@ func NewServerOptions(opts ...ServerOption) *ServerOptions {
 	if defOpts.ID == "" {
 		if defOpts.Protocol.Name == "" {
 			// should be the same as default value of config.ProtocolConfig.Protocol
-			defOpts.ID = "tri"
+			defOpts.ID = constant.TriProtocol
 		} else {
 			defOpts.ID = defOpts.Protocol.Name
 		}
@@ -132,7 +132,7 @@ func NewClientOptions(opts ...ClientOption) *ClientOptions {
 	if defOpts.ID == "" {
 		if defOpts.ProtocolClient.Name == "" {
 			// should be the same as default value of config.ProtocolConfig.Protocol
-			defOpts.ID = "tri"
+			defOpts.ID = constant.TriProtocol
 		} else {
 			defOpts.ID = defOpts.ProtocolClient.Name
 		}
@@ -165,12 +165,12 @@ type dubboOption struct{}
 
 func (o *dubboOption) applyToClient(config *global.ProtocolClientConfig) {
 	config = global.DefaultProtocolClientConfig()
-	config.Name = "dubbo"
+	config.Name = constant.DubboProtocol
 }
 
 func (o *dubboOption) applyToServer(config *global.ProtocolConfig) {
 	config = global.DefaultProtocolConfig()
-	config.Name = "dubbo"
+	config.Name = constant.DubboProtocol
 }
 
 // TODO: Maybe we need configure dubbo protocol future.
@@ -182,12 +182,12 @@ type jsonRPCOption struct{}
 
 func (o *jsonRPCOption) applyToClient(config *global.ProtocolClientConfig) {
 	config = global.DefaultProtocolClientConfig()
-	config.Name = "jsonrpc"
+	config.Name = constant.JSONRPCProtocol
 }
 
 func (o *jsonRPCOption) applyToServer(config *global.ProtocolConfig) {
 	config = global.DefaultProtocolConfig()
-	config.Name = "jsonrpc"
+	config.Name = constant.JSONRPCProtocol
 }
 
 // TODO: Maybe we need configure jsonRPC protocol future.
@@ -199,12 +199,12 @@ type restOption struct{}
 
 func (o *restOption) applyToClient(config *global.ProtocolClientConfig) {
 	config = global.DefaultProtocolClientConfig()
-	config.Name = "rest"
+	config.Name = constant.RESTProtocol
 }
 
 func (o *restOption) applyToServer(config *global.ProtocolConfig) {
 	config = global.DefaultProtocolConfig()
-	config.Name = "rest"
+	config.Name = constant.RESTProtocol
 }
 
 // TODO: Maybe we need configure REST protocol future.
