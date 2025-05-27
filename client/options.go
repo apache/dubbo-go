@@ -33,6 +33,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple"
 	"dubbo.apache.org/dubbo-go/v3/proxy"
@@ -803,7 +804,7 @@ func WithClientProtocolTriple(opts ...triple.Option) ClientOption {
 	triOpts := triple.NewOptions(opts...)
 	return func(opts *ClientOptions) {
 		opts.Consumer.Protocol = constant.TriProtocol
-		opts.overallReference.TripleConfig = triOpts.Triple
+		opts.overallReference.ProtocolClientConfig.TripleConfig = triOpts.Triple
 	}
 }
 
@@ -813,9 +814,14 @@ func WithClientProtocolJsonRPC() ClientOption {
 	}
 }
 
-func WithClientProtocol(protocol string) ClientOption {
-	return func(opts *ClientOptions) {
-		opts.Consumer.Protocol = protocol
+func WithClientProtocol(opts ...protocol.ClientOption) ClientOption {
+	proOpts := protocol.NewClientOptions(opts...)
+
+	return func(srvOpts *ClientOptions) {
+		if srvOpts.overallReference.ProtocolClientConfig == nil {
+			srvOpts.overallReference.ProtocolClientConfig = new(global.ProtocolClientConfig)
+		}
+		srvOpts.overallReference.ProtocolClientConfig = proOpts.ProtocolClient
 	}
 }
 

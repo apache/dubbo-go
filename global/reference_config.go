@@ -46,8 +46,8 @@ type ReferenceConfig struct {
 	MeshProviderPort int               `yaml:"mesh-provider-port" json:"mesh-provider-port,omitempty" property:"mesh-provider-port"`
 
 	// config
-	MethodsConfig []*MethodConfig `yaml:"methods"  json:"methods,omitempty" property:"methods"`
-	TripleConfig  *TripleConfig   `yaml:"triple" json:"triple,omitempty" property:"triple"`
+	MethodsConfig        []*MethodConfig       `yaml:"methods"  json:"methods,omitempty" property:"methods"`
+	ProtocolClientConfig *ProtocolClientConfig `yaml:"protocol-config" json:"protocol-config,omitemty" property:"protocol-config"`
 
 	// TODO: Deprecated：use TripleConfig
 	// remove KeepAliveInterval and KeepAliveInterval in version 4.0.0
@@ -63,8 +63,8 @@ func DefaultReferenceConfig() *ReferenceConfig {
 	return &ReferenceConfig{
 		// use Triple protocol by default
 		//Protocol: "tri",
-		MethodsConfig: make([]*MethodConfig, 0, 8),
-		TripleConfig:  DefaultTripleConfig(),
+		MethodsConfig:        make([]*MethodConfig, 0, 8),
+		ProtocolClientConfig: DefaultProtocolClientConfig(),
 		//Params:   make(map[string]string, 8),
 	}
 }
