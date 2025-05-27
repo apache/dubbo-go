@@ -18,6 +18,10 @@
 package triple
 
 import (
+	"time"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
@@ -45,21 +49,24 @@ func WithTestOption(test string) Option {
 	}
 }
 
-func WithKeepAlive(interval, timeout string) Option {
+// TODO: add some comments
+func WithKeepAlive(interval, timeout time.Duration) Option {
 	return func(opts *Options) {
-		opts.Triple.KeepAliveInterval = interval
-		opts.Triple.KeepAliveTimeout = timeout
+		opts.Triple.KeepAliveInterval = interval.String()
+		opts.Triple.KeepAliveTimeout = timeout.String()
 	}
 }
 
-func WithKeepAliveInterval(interval string) Option {
+// TODO: add some comments
+func WithKeepAliveInterval(interval time.Duration) Option {
 	return func(opts *Options) {
-		opts.Triple.KeepAliveInterval = interval
+		opts.Triple.KeepAliveInterval = interval.String()
 	}
 }
 
-func WithKeepAliveTimeout(timeout string) Option {
+// TODO: add some comments
+func WithKeepAliveTimeout(timeout time.Duration) Option {
 	return func(opts *Options) {
-		opts.Triple.KeepAliveTimeout = timeout
+		opts.Triple.KeepAliveTimeout = timeout.String()
 	}
 }
