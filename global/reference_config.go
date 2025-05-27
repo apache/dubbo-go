@@ -50,6 +50,7 @@ type ReferenceConfig struct {
 	TripleConfig  *TripleConfig   `yaml:"triple" json:"triple,omitempty" property:"triple"`
 
 	// TODO: Deprecated：use TripleConfig
+	// remove KeepAliveInterval and KeepAliveInterval in version 4.0.0
 	KeepAliveInterval string `yaml:"keep-alive-interval" json:"keep-alive-interval,omitempty" property:"keep-alive-interval"`
 	KeepAliveTimeout  string `yaml:"keep-alive-timeout" json:"keep-alive-timeout,omitempty" property:"keep-alive-timeout"`
 

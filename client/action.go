@@ -132,8 +132,12 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 		common.WithParamsValue(constant.BeanNameKey, refOpts.id),
 		common.WithParamsValue(constant.MetadataTypeKey, refOpts.metaDataType),
 		common.WithParamsValue(constant.TimeoutKey, refOpts.Consumer.RequestTimeout),
+
+		// TODO: Deprecated：use TripleConfig
+		// remove KeepAliveInterval and KeepAliveInterval in version 4.0.0
 		common.WithParamsValue(constant.KeepAliveInterval, ref.KeepAliveInterval),
 		common.WithParamsValue(constant.KeepAliveTimeout, ref.KeepAliveTimeout),
+
 		common.WithAttribute(constant.TripleConfigKey, ref.TripleConfig),
 		// for new triple non-IDL mode
 		// TODO: remove ISIDL after old triple removed

@@ -18,6 +18,7 @@
 package global
 
 type TripleConfig struct {
+	// TODO: remove test
 	Test              string `yaml:"test" json:"test,omitempty" property:"test"`
 	KeepAliveInterval string `yaml:"keep-alive-interval" json:"keep-alive-interval,omitempty" property:"keep-alive-interval"`
 	KeepAliveTimeout  string `yaml:"keep-alive-timeout" json:"keep-alive-timeout,omitempty" property:"keep-alive-timeout"`
