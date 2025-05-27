@@ -389,7 +389,7 @@ func (refOpts *ReferenceOptions) getURLMap() url.Values {
 	}
 	urlMap.Set(constant.ReferenceFilterKey, commonCfg.MergeValue(ref.Filter, "", defaultReferenceFilter))
 
-	for _, v := range ref.Methods {
+	for _, v := range ref.MethodsConfig {
 		urlMap.Set("methods."+v.Name+"."+constant.LoadbalanceKey, v.LoadBalance)
 		urlMap.Set("methods."+v.Name+"."+constant.RetriesKey, v.Retries)
 		urlMap.Set("methods."+v.Name+"."+constant.StickyKey, strconv.FormatBool(v.Sticky))

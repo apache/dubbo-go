@@ -673,7 +673,7 @@ func compatGlobalReferences(c map[string]*config.ReferenceConfig) map[string]*gl
 			Version:          ref.Version,
 			Serialization:    ref.Serialization,
 			ProvidedBy:       ref.ProvidedBy,
-			Methods:          compatGlobalMethod(ref.Methods),
+			MethodsConfig:    compatGlobalMethod(ref.Methods),
 			Async:            ref.Async,
 			Params:           ref.Params,
 			Generic:          ref.Generic,

@@ -87,7 +87,7 @@ func (refOpts *ReferenceOptions) init(opts ...ReferenceOption) error {
 	}
 
 	// init method
-	methods := ref.Methods
+	methods := ref.MethodsConfig
 	if length := len(methods); length > 0 {
 		refOpts.methodsCompat = make([]*config.MethodConfig, length)
 		for i, method := range methods {
@@ -389,10 +389,10 @@ func WithMethod(opts ...config.MethodOption) ReferenceOption {
 	regOpts := config.NewMethodOptions(opts...)
 
 	return func(opts *ReferenceOptions) {
-		if len(opts.Reference.Methods) == 0 {
-			opts.Reference.Methods = make([]*global.MethodConfig, 0)
+		if len(opts.Reference.MethodsConfig) == 0 {
+			opts.Reference.MethodsConfig = make([]*global.MethodConfig, 0)
 		}
-		opts.Reference.Methods = append(opts.Reference.Methods, regOpts.Method)
+		opts.Reference.MethodsConfig = append(opts.Reference.MethodsConfig, regOpts.Method)
 	}
 }
 

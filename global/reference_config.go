@@ -23,31 +23,35 @@ import (
 
 // ReferenceConfig is the configuration of service consumer
 type ReferenceConfig struct {
-	InterfaceName     string            `yaml:"interface"  json:"interface,omitempty" property:"interface"`
-	Check             *bool             `yaml:"check"  json:"check,omitempty" property:"check"`
-	URL               string            `yaml:"url"  json:"url,omitempty" property:"url"`
-	Filter            string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	Protocol          string            `yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
-	RegistryIDs       []string          `yaml:"registry-ids"  json:"registry-ids,omitempty"  property:"registry-ids"`
-	Cluster           string            `yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
-	Loadbalance       string            `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
-	Retries           string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
-	Group             string            `yaml:"group"  json:"group,omitempty" property:"group"`
-	Version           string            `yaml:"version"  json:"version,omitempty" property:"version"`
-	Serialization     string            `yaml:"serialization" json:"serialization" property:"serialization"`
-	ProvidedBy        string            `yaml:"provided_by"  json:"provided_by,omitempty" property:"provided_by"`
-	Methods           []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
-	TripleConfig      *TripleConfig     `yaml:"triple" json:"triple,omitempty" property:"triple"`
-	Async             bool              `yaml:"async"  json:"async,omitempty" property:"async"`
-	Params            map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
-	Generic           string            `yaml:"generic"  json:"generic,omitempty" property:"generic"`
-	Sticky            bool              `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
-	RequestTimeout    string            `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
-	ForceTag          bool              `yaml:"force.tag"  json:"force.tag,omitempty" property:"force.tag"`
-	TracingKey        string            `yaml:"tracing-key" json:"tracing-key,omitempty" property:"tracing-key"`
-	MeshProviderPort  int               `yaml:"mesh-provider-port" json:"mesh-provider-port,omitempty" property:"mesh-provider-port"`
-	KeepAliveInterval string            `yaml:"keep-alive-interval" json:"keep-alive-interval,omitempty" property:"keep-alive-interval"`
-	KeepAliveTimeout  string            `yaml:"keep-alive-timeout" json:"keep-alive-timeout,omitempty" property:"keep-alive-timeout"`
+	InterfaceName    string            `yaml:"interface"  json:"interface,omitempty" property:"interface"`
+	Check            *bool             `yaml:"check"  json:"check,omitempty" property:"check"`
+	URL              string            `yaml:"url"  json:"url,omitempty" property:"url"`
+	Filter           string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
+	Protocol         string            `yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
+	RegistryIDs      []string          `yaml:"registry-ids"  json:"registry-ids,omitempty"  property:"registry-ids"`
+	Cluster          string            `yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
+	Loadbalance      string            `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
+	Retries          string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
+	Group            string            `yaml:"group"  json:"group,omitempty" property:"group"`
+	Version          string            `yaml:"version"  json:"version,omitempty" property:"version"`
+	Serialization    string            `yaml:"serialization" json:"serialization" property:"serialization"`
+	ProvidedBy       string            `yaml:"provided_by"  json:"provided_by,omitempty" property:"provided_by"`
+	Async            bool              `yaml:"async"  json:"async,omitempty" property:"async"`
+	Params           map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
+	Generic          string            `yaml:"generic"  json:"generic,omitempty" property:"generic"`
+	Sticky           bool              `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
+	RequestTimeout   string            `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
+	ForceTag         bool              `yaml:"force.tag"  json:"force.tag,omitempty" property:"force.tag"`
+	TracingKey       string            `yaml:"tracing-key" json:"tracing-key,omitempty" property:"tracing-key"`
+	MeshProviderPort int               `yaml:"mesh-provider-port" json:"mesh-provider-port,omitempty" property:"mesh-provider-port"`
+
+	// config
+	MethodsConfig []*MethodConfig `yaml:"methods"  json:"methods,omitempty" property:"methods"`
+	TripleConfig  *TripleConfig   `yaml:"triple" json:"triple,omitempty" property:"triple"`
+
+	// TODO: Deprecated：use TripleConfig
+	KeepAliveInterval string `yaml:"keep-alive-interval" json:"keep-alive-interval,omitempty" property:"keep-alive-interval"`
+	KeepAliveTimeout  string `yaml:"keep-alive-timeout" json:"keep-alive-timeout,omitempty" property:"keep-alive-timeout"`
 
 	// just for new triple non-IDL mode
 	// TODO: remove IDLMode when config package is removed
@@ -58,8 +62,8 @@ func DefaultReferenceConfig() *ReferenceConfig {
 	return &ReferenceConfig{
 		// use Triple protocol by default
 		//Protocol: "tri",
-		Methods:      make([]*MethodConfig, 0, 8),
-		TripleConfig: DefaultTripleConfig(),
+		MethodsConfig: make([]*MethodConfig, 0, 8),
+		TripleConfig:  DefaultTripleConfig(),
 		//Params:   make(map[string]string, 8),
 	}
 }
@@ -154,9 +158,9 @@ func (c *ReferenceConfig) Clone() *ReferenceConfig {
 	copy(newRegistryIDs, c.RegistryIDs)
 
 	var newMethods []*MethodConfig
-	if c.Methods != nil {
-		newMethods = make([]*MethodConfig, 0, len(c.Methods))
-		for _, method := range c.Methods {
+	if c.MethodsConfig != nil {
+		newMethods = make([]*MethodConfig, 0, len(c.MethodsConfig))
+		for _, method := range c.MethodsConfig {
 			newMethods = append(newMethods, method.Clone())
 		}
 	}
@@ -180,7 +184,7 @@ func (c *ReferenceConfig) Clone() *ReferenceConfig {
 		Version:           c.Version,
 		Serialization:     c.Serialization,
 		ProvidedBy:        c.ProvidedBy,
-		Methods:           newMethods,
+		MethodsConfig:     newMethods,
 		Async:             c.Async,
 		Params:            newParams,
 		Generic:           c.Generic,
