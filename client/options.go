@@ -35,7 +35,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple"
 	"dubbo.apache.org/dubbo-go/v3/proxy"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
@@ -798,13 +797,9 @@ func WithClientProtocolDubbo() ClientOption {
 	}
 }
 
-// TODO: find a ideal way to config client protocol
-// ref: server WithProtocol function
-func WithClientProtocolTriple(opts ...triple.Option) ClientOption {
-	triOpts := triple.NewOptions(opts...)
+func WithClientProtocolTriple() ClientOption {
 	return func(opts *ClientOptions) {
 		opts.Consumer.Protocol = constant.TriProtocol
-		opts.overallReference.ProtocolClientConfig.TripleConfig = triOpts.Triple
 	}
 }
 

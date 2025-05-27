@@ -21,9 +21,9 @@ import (
 	"strconv"
 )
 
-import (
+// import (
 // "github.com/dubbogo/gost/log/logger"
-)
+// )
 
 import (
 	// "dubbo.apache.org/dubbo-go/v3/common/constant"
@@ -146,11 +146,11 @@ type tripleOption struct {
 }
 
 func (o *tripleOption) applyToClient(config *global.ProtocolClientConfig) {
-	config = global.DefaultProtocolClientConfig()
+	config.TripleConfig = o.triOpts.Triple
 }
 
 func (o *tripleOption) applyToServer(config *global.ProtocolConfig) {
-	config = global.DefaultProtocolConfig()
+	config.TripleConfig = o.triOpts.Triple
 }
 
 func WithTriple(opts ...triple.Option) Option {
