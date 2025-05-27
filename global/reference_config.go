@@ -69,6 +69,7 @@ func DefaultReferenceConfig() *ReferenceConfig {
 	}
 }
 
+// TODO: check if ProtocolClientConfig need get options
 func (c *ReferenceConfig) GetOptions() []ReferenceOption {
 	var refOpts []ReferenceOption
 	if c.InterfaceName != "" {
@@ -172,31 +173,32 @@ func (c *ReferenceConfig) Clone() *ReferenceConfig {
 	}
 
 	return &ReferenceConfig{
-		InterfaceName:     c.InterfaceName,
-		Check:             newCheck,
-		URL:               c.URL,
-		Filter:            c.Filter,
-		Protocol:          c.Protocol,
-		RegistryIDs:       newRegistryIDs,
-		Cluster:           c.Cluster,
-		Loadbalance:       c.Loadbalance,
-		Retries:           c.Retries,
-		Group:             c.Group,
-		Version:           c.Version,
-		Serialization:     c.Serialization,
-		ProvidedBy:        c.ProvidedBy,
-		MethodsConfig:     newMethods,
-		Async:             c.Async,
-		Params:            newParams,
-		Generic:           c.Generic,
-		Sticky:            c.Sticky,
-		RequestTimeout:    c.RequestTimeout,
-		ForceTag:          c.ForceTag,
-		TracingKey:        c.TracingKey,
-		MeshProviderPort:  c.MeshProviderPort,
-		KeepAliveInterval: c.KeepAliveInterval,
-		KeepAliveTimeout:  c.KeepAliveTimeout,
-		IDLMode:           c.IDLMode,
+		InterfaceName:        c.InterfaceName,
+		Check:                newCheck,
+		URL:                  c.URL,
+		Filter:               c.Filter,
+		Protocol:             c.Protocol,
+		RegistryIDs:          newRegistryIDs,
+		Cluster:              c.Cluster,
+		Loadbalance:          c.Loadbalance,
+		Retries:              c.Retries,
+		Group:                c.Group,
+		Version:              c.Version,
+		Serialization:        c.Serialization,
+		ProvidedBy:           c.ProvidedBy,
+		MethodsConfig:        newMethods,
+		ProtocolClientConfig: c.ProtocolClientConfig.Clone(),
+		Async:                c.Async,
+		Params:               newParams,
+		Generic:              c.Generic,
+		Sticky:               c.Sticky,
+		RequestTimeout:       c.RequestTimeout,
+		ForceTag:             c.ForceTag,
+		TracingKey:           c.TracingKey,
+		MeshProviderPort:     c.MeshProviderPort,
+		KeepAliveInterval:    c.KeepAliveInterval,
+		KeepAliveTimeout:     c.KeepAliveTimeout,
+		IDLMode:              c.IDLMode,
 	}
 }
 

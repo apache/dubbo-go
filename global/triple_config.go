@@ -27,3 +27,16 @@ type TripleConfig struct {
 func DefaultTripleConfig() *TripleConfig {
 	return &TripleConfig{}
 }
+
+// Clone a new TripleConfig
+func (t *TripleConfig) Clone() *TripleConfig {
+	if t == nil {
+		return nil
+	}
+
+	return &TripleConfig{
+		Test: t.Test,
+		KeepAliveInterval: t.KeepAliveInterval,
+		KeepAliveTimeout: t.KeepAliveTimeout,
+	}
+}

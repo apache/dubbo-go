@@ -63,7 +63,7 @@ func (c *ProtocolConfig) Clone() *ProtocolConfig {
 		Ip:                   c.Ip,
 		Port:                 c.Port,
 		Params:               c.Params,
-		TripleConfig:         c.TripleConfig,
+		TripleConfig:         c.TripleConfig.Clone(),
 		MaxServerSendMsgSize: c.MaxServerSendMsgSize,
 		MaxServerRecvMsgSize: c.MaxServerRecvMsgSize,
 	}

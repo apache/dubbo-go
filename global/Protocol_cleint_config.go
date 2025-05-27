@@ -21,6 +21,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
+// TODO: find a better name replace ProtocolClientConfig
 type ProtocolClientConfig struct {
 	// TODO: maybe we could use this field
 	Name string `yaml:"name" json:"name,omitempty" property:"name"`
@@ -44,6 +45,6 @@ func (c *ProtocolClientConfig) Clone() *ProtocolClientConfig {
 
 	return &ProtocolClientConfig{
 		Name:         c.Name,
-		TripleConfig: c.TripleConfig,
+		TripleConfig: c.TripleConfig.Clone(),
 	}
 }
