@@ -47,7 +47,6 @@ var (
 )
 
 func Load(opts ...LoaderConfOption) error {
-	// conf
 	conf := NewLoaderConf(opts...)
 	if conf.opts == nil {
 		koan := GetConfigResolver(conf)
@@ -170,7 +169,6 @@ func WithBytes(bytes []byte) LoaderConfOption {
 
 // absolutePath get absolut path
 func absolutePath(inPath string) string {
-
 	if inPath == "$HOME" || strings.HasPrefix(inPath, "$HOME"+string(os.PathSeparator)) {
 		inPath = userHomeDir() + inPath[5:]
 	}

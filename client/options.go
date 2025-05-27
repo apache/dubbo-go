@@ -34,6 +34,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple"
 	"dubbo.apache.org/dubbo-go/v3/proxy"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
@@ -645,6 +646,7 @@ func WithClientClusterStrategy(strategy string) ClientOption {
 	}
 }
 
+// Deprecated：use triple.WithKeepAliveInterval()
 // If there is no other traffic on the connection, the ping will be sent, only works for 'tri' protocol with http2.
 // A minimum value of 10s will be used instead to invoid 'too many pings'.If not set, default value is 10s.
 func WithKeepAliveInterval(keepAliveInterval time.Duration) ClientOption {
@@ -656,6 +658,7 @@ func WithKeepAliveInterval(keepAliveInterval time.Duration) ClientOption {
 	}
 }
 
+// Deprecated：use triple.WithKeepAliveTimeout()
 // WithKeepAliveTimeout is timeout after which the connection will be closed, only works for 'tri' protocol with http2
 // If not set, default value is 20s.
 func WithKeepAliveTimeout(keepAliveTimeout time.Duration) ClientOption {
@@ -790,9 +793,13 @@ func WithClientProtocolDubbo() ClientOption {
 	}
 }
 
-func WithClientProtocolTriple() ClientOption {
+// TODO: find a ideal way to config client protocol
+// ref: server WithProtocol function
+func WithClientProtocolTriple(opts ...triple.Option) ClientOption {
+	triOpts := triple.NewOptions(opts...)
 	return func(opts *ClientOptions) {
 		opts.Consumer.Protocol = constant.TriProtocol
+		opts.overallReference.TripleConfig = triOpts.Triple
 	}
 }
 

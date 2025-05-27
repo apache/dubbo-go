@@ -37,6 +37,7 @@ type ReferenceConfig struct {
 	Serialization     string            `yaml:"serialization" json:"serialization" property:"serialization"`
 	ProvidedBy        string            `yaml:"provided_by"  json:"provided_by,omitempty" property:"provided_by"`
 	Methods           []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
+	TripleConfig      *TripleConfig     `yaml:"triple" json:"triple,omitempty" property:"triple"`
 	Async             bool              `yaml:"async"  json:"async,omitempty" property:"async"`
 	Params            map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
 	Generic           string            `yaml:"generic"  json:"generic,omitempty" property:"generic"`
@@ -57,7 +58,8 @@ func DefaultReferenceConfig() *ReferenceConfig {
 	return &ReferenceConfig{
 		// use Triple protocol by default
 		//Protocol: "tri",
-		Methods: make([]*MethodConfig, 0, 8),
+		Methods:      make([]*MethodConfig, 0, 8),
+		TripleConfig: DefaultTripleConfig(),
 		//Params:   make(map[string]string, 8),
 	}
 }

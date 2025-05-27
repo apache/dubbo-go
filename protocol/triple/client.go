@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"reflect"
 	"strings"
+	"time"
 )
 
 import (
@@ -39,6 +40,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
@@ -55,6 +57,9 @@ type clientManager struct {
 	// triple_protocol clients, key is method name
 	triClients map[string]*tri.Client
 }
+
+// TODO: code a triple client between clientManager and triple_protocol client
+// TODO: write a NewClient for triple client
 
 func (cm *clientManager) getClient(method string) (*tri.Client, error) {
 	triClient, ok := cm.triClients[method]
@@ -149,9 +154,20 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		maxCallSendMsgSize = int(sendMsgSize)
 	}
 	cliOpts = append(cliOpts, tri.WithSendMaxBytes(maxCallSendMsgSize))
+
+	// Deprecated：use tripleconfig
 	// set keepalive interval and keepalive timeout
 	keepAliveInterval := url.GetParamDuration(constant.KeepAliveInterval, constant.DefaultKeepAliveInterval)
 	keepAliveTimeout := url.GetParamDuration(constant.KeepAliveTimeout, constant.DefaultKeepAliveTimeout)
+
+	tripleConfRaw, ok := url.GetAttribute(constant.TripleConfigKey)
+	if ok {
+		tripleConf := tripleConfRaw.(*global.TripleConfig)
+		// TODO: handle ParseDuration error
+		keepAliveInterval, _ = time.ParseDuration(tripleConf.KeepAliveInterval)
+		keepAliveTimeout, _ = time.ParseDuration(tripleConf.KeepAliveTimeout)
+	}
+
 	var isIDL bool
 	// set serialization
 	serialization := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)

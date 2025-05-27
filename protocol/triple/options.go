@@ -17,30 +17,49 @@
 
 package triple
 
-type ServerOptions struct {
+import (
+	"dubbo.apache.org/dubbo-go/v3/global"
+)
+
+type Options struct {
+	Triple *global.TripleConfig
 }
 
-func defaultServerOptions() *ServerOptions {
-	return &ServerOptions{}
+func defaultOptions() *Options {
+	return &Options{Triple: global.DefaultTripleConfig()}
 }
 
-func NewServerOptions(opts ...ServerOption) *ServerOptions {
-	defSrvOpts := defaultServerOptions()
+func NewOptions(opts ...Option) *Options {
+	defSrvOpts := defaultOptions()
 	for _, opt := range opts {
 		opt(defSrvOpts)
 	}
 	return defSrvOpts
 }
 
-func (srvOpts *ServerOptions) init(opts ...ServerOption) {
-	for _, opt := range opts {
-		opt(srvOpts)
+type Option func(*Options)
+
+func WithTestOption(test string) Option {
+	return func(opts *Options) {
+		opts.Triple.Test = test
 	}
 }
 
-type ServerOption func(*ServerOptions)
+func WithKeepAlive(interval, timeout string) Option {
+	return func(opts *Options) {
+		opts.Triple.KeepAliveInterval = interval
+		opts.Triple.KeepAliveTimeout = timeout
+	}
+}
 
-func WithServerEmtryOption() ServerOption {
-	return func(opts *ServerOptions) {
+func WithKeepAliveInterval(interval string) Option {
+	return func(opts *Options) {
+		opts.Triple.KeepAliveInterval = interval
+	}
+}
+
+func WithKeepAliveTimeout(timeout string) Option {
+	return func(opts *Options) {
+		opts.Triple.KeepAliveTimeout = timeout
 	}
 }

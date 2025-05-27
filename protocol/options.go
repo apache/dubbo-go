@@ -22,6 +22,10 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/log/logger"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple"
@@ -42,6 +46,8 @@ func NewOptions(opts ...Option) *Options {
 	for _, opt := range opts {
 		opt(defOpts)
 	}
+
+	logger.Warnf("cfg: %+v", defOpts.Protocol.TripleConfig)
 
 	if defOpts.ID == "" {
 		if defOpts.Protocol.Name == "" {
@@ -75,12 +81,12 @@ func WithREST() Option {
 	}
 }
 
-func WithTriple(opts ...triple.ServerOption) Option {
-	triSrvOpts := triple.NewServerOptions()
+func WithTriple(opts ...triple.Option) Option {
+	triSrvOpts := triple.NewOptions(opts...)
 
 	return func(opts *Options) {
 		opts.Protocol.Name = "tri"
-		opts.Protocol.Params = triSrvOpts
+		opts.Protocol.TripleConfig = triSrvOpts.Triple
 	}
 }
 

@@ -43,6 +43,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/internal"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo3"
@@ -54,18 +55,19 @@ import (
 // provide functionality.
 type Server struct {
 	triServer *tri.Server
-	cfg       *ServerOptions
+	cfg       *global.TripleConfig
 	mu        sync.RWMutex
 	services  map[string]grpc.ServiceInfo
 }
 
 // NewServer creates a new TRIPLE server.
 // triServer would not be initialized since we could not get configurations here.
-func NewServer(opts ...ServerOption) *Server {
-	newSrvOpts := defaultServerOptions()
-	newSrvOpts.init(opts...)
+// NOTE: Now everything changed, we can initialized triServer now.
+// We can get configurations here now.
+func NewServer(cfg *global.TripleConfig) *Server {
+	logger.Warnf("cfg: %+v", cfg)
 	return &Server{
-		cfg:      newSrvOpts,
+		cfg:      cfg,
 		services: make(map[string]grpc.ServiceInfo),
 	}
 }

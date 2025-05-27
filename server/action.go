@@ -207,6 +207,7 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 			//common.WithParamsValue(constant.SslEnabledKey, strconv.FormatBool(config.GetSslEnabled())),
 			common.WithMethods(strings.Split(methods, ",")),
 			common.WithAttribute(constant.RpcServiceKey, svcOpts.rpcService),
+			common.WithAttribute(constant.TripleConfigKey, protocolConf.TripleConfig),
 			common.WithToken(svc.Token),
 			common.WithParamsValue(constant.MetadataTypeKey, svcOpts.metadataType),
 			// fix https://github.com/apache/dubbo-go/issues/2176
