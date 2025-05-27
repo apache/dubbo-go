@@ -43,8 +43,8 @@ type ReferenceConfig struct {
 	Sticky            bool              `yaml:"sticky"   json:"sticky,omitempty" property:"sticky"`
 	RequestTimeout    string            `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
 	ForceTag          bool              `yaml:"force.tag"  json:"force.tag,omitempty" property:"force.tag"`
-	TracingKey        string            `yaml:"tracing-key" json:"tracing-key,omitempty" propertiy:"tracing-key"`
-	MeshProviderPort  int               `yaml:"mesh-provider-port" json:"mesh-provider-port,omitempty" propertiy:"mesh-provider-port"`
+	TracingKey        string            `yaml:"tracing-key" json:"tracing-key,omitempty" property:"tracing-key"`
+	MeshProviderPort  int               `yaml:"mesh-provider-port" json:"mesh-provider-port,omitempty" property:"mesh-provider-port"`
 	KeepAliveInterval string            `yaml:"keep-alive-interval" json:"keep-alive-interval,omitempty" property:"keep-alive-interval"`
 	KeepAliveTimeout  string            `yaml:"keep-alive-timeout" json:"keep-alive-timeout,omitempty" property:"keep-alive-timeout"`
 
