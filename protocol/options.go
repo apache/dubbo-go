@@ -161,32 +161,78 @@ func WithTriple(opts ...triple.Option) Option {
 	}
 }
 
-// type Option func(*ServerOptions)
-//
-// func WithDubbo() Option {
-// 	return func(opts *ServerOptions) {
-// 		opts.Protocol.Name = "dubbo"
-// 	}
-// }
-//
-// func WithJSONRPC() Option {
-// 	return func(opts *ServerOptions) {
-// 		opts.Protocol.Name = "jsonrpc"
-// 	}
-// }
-//
-// func WithREST() Option {
-// 	return func(opts *ServerOptions) {
-// 		opts.Protocol.Name = "rest"
-// 	}
-// }
+type dubboOption struct{}
 
-// func WithProtocol(p string) Option {
-// 	return func(opts *ServerOptions) {
-// 		opts.Protocol.Name = p
-// 	}
-// }
+func (o *dubboOption) applyToClient(config *global.ProtocolClientConfig) {
+	config = global.DefaultProtocolClientConfig()
+	config.Name = "dubbo"
+}
 
+func (o *dubboOption) applyToServer(config *global.ProtocolConfig) {
+	config = global.DefaultProtocolConfig()
+	config.Name = "dubbo"
+}
+
+// TODO: Maybe we need configure dubbo protocol future.
+func WithDubbo() Option {
+	return &dubboOption{}
+}
+
+type jsonRPCOption struct{}
+
+func (o *jsonRPCOption) applyToClient(config *global.ProtocolClientConfig) {
+	config = global.DefaultProtocolClientConfig()
+	config.Name = "jsonrpc"
+}
+
+func (o *jsonRPCOption) applyToServer(config *global.ProtocolConfig) {
+	config = global.DefaultProtocolConfig()
+	config.Name = "jsonrpc"
+}
+
+// TODO: Maybe we need configure jsonRPC protocol future.
+func WithJSONRPC() Option {
+	return &jsonRPCOption{}
+}
+
+type restOption struct{}
+
+func (o *restOption) applyToClient(config *global.ProtocolClientConfig) {
+	config = global.DefaultProtocolClientConfig()
+	config.Name = "rest"
+}
+
+func (o *restOption) applyToServer(config *global.ProtocolConfig) {
+	config = global.DefaultProtocolConfig()
+	config.Name = "rest"
+}
+
+// TODO: Maybe we need configure REST protocol future.
+func WithREST() Option {
+	return &restOption{}
+}
+
+type protocolNameOption struct {
+	Name string
+}
+
+func (o *protocolNameOption) applyToClient(config *global.ProtocolClientConfig) {
+	config = global.DefaultProtocolClientConfig()
+	config.Name = o.Name
+}
+
+func (o *protocolNameOption) applyToServer(config *global.ProtocolConfig) {
+	config = global.DefaultProtocolConfig()
+	config.Name = o.Name
+}
+
+// NOTE: This option can't be configured freely.
+func WithProtocol(p string) Option {
+	return &protocolNameOption{p}
+}
+
+// TODO: protocol config struct don't have ID field, we need to deal with it.
+//
 // WithID specifies the id of protocol.Options. Then you could configure server.WithProtocolIDs and
 // server.WithServer_ProtocolIDs to specify which protocol you need to use in multi-protocols scenario.
 // func WithID(id string) Option {
@@ -194,12 +240,18 @@ func WithTriple(opts ...triple.Option) Option {
 // 		opts.ID = id
 // 	}
 // }
-//
-// func WithIp(ip string) Option {
-// 	return func(opts *ServerOptions) {
-// 		opts.Protocol.Ip = ip
-// 	}
-// }
+
+type ipOption struct {
+	Ip string
+}
+
+func (o *ipOption) applyToServer(config *global.ProtocolConfig) {
+	config.Ip = o.Ip
+}
+
+func WithIp(ip string) ServerOption {
+	return &ipOption{ip}
+}
 
 type portOption struct {
 	Port string
