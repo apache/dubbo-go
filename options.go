@@ -36,6 +36,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	"dubbo.apache.org/dubbo-go/v3/otel/trace"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
@@ -379,16 +380,17 @@ func WithMetadataServiceProtocol(protocol string) InstanceOption {
 
 // TODO: deal this fuction
 //
-// func WithProtocol(opts ...protocol.Option) InstanceOption {
-// 	proOpts := protocol.NewServerOptions(opts...)
-//
-// 	return func(insOpts *InstanceOptions) {
-// 		if insOpts.Protocols == nil {
-// 			insOpts.Protocols = make(map[string]*global.ProtocolConfig)
-// 		}
-// 		insOpts.Protocols[proOpts.ID] = proOpts.Protocol
-// 	}
-// }
+// only work in server side.
+func WithProtocol(opts ...protocol.ServerOption) InstanceOption {
+	proOpts := protocol.NewServerOptions(opts...)
+
+	return func(insOpts *InstanceOptions) {
+		if insOpts.Protocols == nil {
+			insOpts.Protocols = make(map[string]*global.ProtocolConfig)
+		}
+		insOpts.Protocols[proOpts.ID] = proOpts.Protocol
+	}
+}
 
 func WithRegistry(opts ...registry.Option) InstanceOption {
 	regOpts := registry.NewOptions(opts...)

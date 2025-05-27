@@ -805,7 +805,7 @@ func WithClientProtocolTriple() ClientOption {
 
 func WithClientProtocolJsonRPC() ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.Protocol = "jsonrpc"
+		opts.Consumer.Protocol = constant.JSONRPCProtocol
 	}
 }
 
