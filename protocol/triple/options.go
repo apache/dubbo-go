@@ -43,7 +43,9 @@ func NewOptions(opts ...Option) *Options {
 
 type Option func(*Options)
 
-// TODO: add some comments
+// WithKeepAlive sets the keep-alive interval and timeout for the Triple protocol.
+// interval: The duration between keep-alive pings.
+// timeout: The duration to wait for a keep-alive response before considering the connection dead.
 func WithKeepAlive(interval, timeout time.Duration) Option {
 	return func(opts *Options) {
 		opts.Triple.KeepAliveInterval = interval.String()
@@ -51,28 +53,32 @@ func WithKeepAlive(interval, timeout time.Duration) Option {
 	}
 }
 
-// TODO: add some comments
+// WithKeepAliveInterval sets the keep-alive interval for the Triple protocol.
+// interval: The duration between keep-alive pings.
 func WithKeepAliveInterval(interval time.Duration) Option {
 	return func(opts *Options) {
 		opts.Triple.KeepAliveInterval = interval.String()
 	}
 }
 
-// TODO: add some comments
+// WithKeepAliveTimeout sets the keep-alive timeout for the Triple protocol.
+// timeout: The duration to wait for a keep-alive response before considering the connection dead.
 func WithKeepAliveTimeout(timeout time.Duration) Option {
 	return func(opts *Options) {
 		opts.Triple.KeepAliveTimeout = timeout.String()
 	}
 }
 
-// TODO: add some comments
+// WithMaxServerSendMsgSize sets the maximum size of messages that the server can send.
+// size: The maximum message size in bytes, specified as a string (e.g., "4MB").
 func WithMaxServerSendMsgSize(size string) Option {
 	return func(opts *Options) {
 		opts.Triple.MaxServerSendMsgSize = size
 	}
 }
 
-// TODO: add some comments
+// WithMaxServerRecvMsgSize sets the maximum size of messages that the server can receive.
+// size: The maximum message size in bytes, specified as a string (e.g., "4MB").
 func WithMaxServerRecvMsgSize(size string) Option {
 	return func(opts *Options) {
 		opts.Triple.MaxServerRecvMsgSize = size

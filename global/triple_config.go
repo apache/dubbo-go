@@ -17,6 +17,7 @@
 
 package global
 
+// TODO: Should the server and client configurations be separated?
 type TripleConfig struct {
 	KeepAliveInterval string `yaml:"keep-alive-interval" json:"keep-alive-interval,omitempty" property:"keep-alive-interval"`
 	KeepAliveTimeout  string `yaml:"keep-alive-timeout" json:"keep-alive-timeout,omitempty" property:"keep-alive-timeout"`
