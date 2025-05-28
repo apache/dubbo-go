@@ -21,9 +21,9 @@ import (
 	"strconv"
 )
 
-// import (
-// "github.com/dubbogo/gost/log/logger"
-// )
+import (
+	"github.com/dubbogo/gost/log/logger"
+)
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
@@ -101,6 +101,8 @@ func NewServerOptions(opts ...ServerOption) *ServerOptions {
 		opt.applyToServer(defOpts.Protocol)
 	}
 
+	logger.Warnf("defOpts.Protocol: %+v", defOpts.Protocol)
+
 	if defOpts.ID == "" {
 		if defOpts.Protocol.Name == "" {
 			// should be the same as default value of config.ProtocolConfig.Protocol
@@ -164,12 +166,10 @@ func WithTriple(opts ...triple.Option) Option {
 type dubboOption struct{}
 
 func (o *dubboOption) applyToClient(config *global.ProtocolClientConfig) {
-	config = global.DefaultProtocolClientConfig()
 	config.Name = constant.DubboProtocol
 }
 
 func (o *dubboOption) applyToServer(config *global.ProtocolConfig) {
-	config = global.DefaultProtocolConfig()
 	config.Name = constant.DubboProtocol
 }
 
@@ -181,12 +181,10 @@ func WithDubbo() Option {
 type jsonRPCOption struct{}
 
 func (o *jsonRPCOption) applyToClient(config *global.ProtocolClientConfig) {
-	config = global.DefaultProtocolClientConfig()
 	config.Name = constant.JSONRPCProtocol
 }
 
 func (o *jsonRPCOption) applyToServer(config *global.ProtocolConfig) {
-	config = global.DefaultProtocolConfig()
 	config.Name = constant.JSONRPCProtocol
 }
 
@@ -198,12 +196,10 @@ func WithJSONRPC() Option {
 type restOption struct{}
 
 func (o *restOption) applyToClient(config *global.ProtocolClientConfig) {
-	config = global.DefaultProtocolClientConfig()
 	config.Name = constant.RESTProtocol
 }
 
 func (o *restOption) applyToServer(config *global.ProtocolConfig) {
-	config = global.DefaultProtocolConfig()
 	config.Name = constant.RESTProtocol
 }
 
@@ -217,12 +213,10 @@ type protocolNameOption struct {
 }
 
 func (o *protocolNameOption) applyToClient(config *global.ProtocolClientConfig) {
-	config = global.DefaultProtocolClientConfig()
 	config.Name = o.Name
 }
 
 func (o *protocolNameOption) applyToServer(config *global.ProtocolConfig) {
-	config = global.DefaultProtocolConfig()
 	config.Name = o.Name
 }
 

@@ -384,6 +384,8 @@ func WithMetadataServiceProtocol(protocol string) InstanceOption {
 func WithProtocol(opts ...protocol.ServerOption) InstanceOption {
 	proOpts := protocol.NewServerOptions(opts...)
 
+	log.Warnf("proOpts: %+v", proOpts)
+
 	return func(insOpts *InstanceOptions) {
 		if insOpts.Protocols == nil {
 			insOpts.Protocols = make(map[string]*global.ProtocolConfig)
