@@ -26,6 +26,7 @@ import (
 	dubbogoLogger "github.com/dubbogo/gost/log/logger"
 
 	"github.com/mattn/go-colorable"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )

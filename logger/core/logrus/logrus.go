@@ -27,6 +27,7 @@ import (
 	dubbogoLogger "github.com/dubbogo/gost/log/logger"
 
 	"github.com/mattn/go-colorable"
+
 	"github.com/sirupsen/logrus"
 )
 
