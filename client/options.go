@@ -357,7 +357,7 @@ func WithProtocolTriple() ReferenceOption {
 
 func WithProtocolJsonRPC() ReferenceOption {
 	return func(opts *ReferenceOptions) {
-		opts.Reference.Protocol = "jsonrpc"
+		opts.Reference.Protocol = constant.JSONRPCProtocol
 	}
 }
 

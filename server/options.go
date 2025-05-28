@@ -825,18 +825,16 @@ func WithTag(tag string) ServiceOption {
 	}
 }
 
-// TODO: deal this fuction
-//
-// func WithProtocol(opts ...protocol.Option) ServiceOption {
-// 	proOpts := protocol.NewServerOptions(opts...)
-//
-// 	return func(opts *ServiceOptions) {
-// 		if opts.Protocols == nil {
-// 			opts.Protocols = make(map[string]*global.ProtocolConfig)
-// 		}
-// 		opts.Protocols[proOpts.ID] = proOpts.Protocol
-// 	}
-// }
+func WithProtocol(opts ...protocol.ServerOption) ServiceOption {
+	proOpts := protocol.NewServerOptions(opts...)
+
+	return func(opts *ServiceOptions) {
+		if opts.Protocols == nil {
+			opts.Protocols = make(map[string]*global.ProtocolConfig)
+		}
+		opts.Protocols[proOpts.ID] = proOpts.Protocol
+	}
+}
 
 func WithRegistry(opts ...registry.Option) ServiceOption {
 	regOpts := registry.NewOptions(opts...)

@@ -25,6 +25,9 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
+// TODO: The triple options for the server and client are mixed together now.
+// We need to find a way to separate them later.
+
 type Options struct {
 	Triple *global.TripleConfig
 }
