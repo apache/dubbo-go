@@ -46,6 +46,7 @@ type Option func(*Options)
 // WithKeepAlive sets the keep-alive interval and timeout for the Triple protocol.
 // interval: The duration between keep-alive pings.
 // timeout: The duration to wait for a keep-alive response before considering the connection dead.
+// If not set, default interval is 10s, default timeout is 20s.
 func WithKeepAlive(interval, timeout time.Duration) Option {
 	return func(opts *Options) {
 		opts.Triple.KeepAliveInterval = interval.String()
@@ -55,6 +56,7 @@ func WithKeepAlive(interval, timeout time.Duration) Option {
 
 // WithKeepAliveInterval sets the keep-alive interval for the Triple protocol.
 // interval: The duration between keep-alive pings.
+// If not set, default interval is 10s.
 func WithKeepAliveInterval(interval time.Duration) Option {
 	return func(opts *Options) {
 		opts.Triple.KeepAliveInterval = interval.String()
@@ -63,6 +65,7 @@ func WithKeepAliveInterval(interval time.Duration) Option {
 
 // WithKeepAliveTimeout sets the keep-alive timeout for the Triple protocol.
 // timeout: The duration to wait for a keep-alive response before considering the connection dead.
+// If not set, default timeout is 20s.
 func WithKeepAliveTimeout(timeout time.Duration) Option {
 	return func(opts *Options) {
 		opts.Triple.KeepAliveTimeout = timeout.String()
@@ -71,6 +74,7 @@ func WithKeepAliveTimeout(timeout time.Duration) Option {
 
 // WithMaxServerSendMsgSize sets the maximum size of messages that the server can send.
 // size: The maximum message size in bytes, specified as a string (e.g., "4MB").
+// If not set, default value is 2147MB (math.MaxInt32).
 func WithMaxServerSendMsgSize(size string) Option {
 	return func(opts *Options) {
 		opts.Triple.MaxServerSendMsgSize = size
@@ -79,6 +83,7 @@ func WithMaxServerSendMsgSize(size string) Option {
 
 // WithMaxServerRecvMsgSize sets the maximum size of messages that the server can receive.
 // size: The maximum message size in bytes, specified as a string (e.g., "4MB").
+// If not set, default value is 4MB (4194304 bytes).
 func WithMaxServerRecvMsgSize(size string) Option {
 	return func(opts *Options) {
 		opts.Triple.MaxServerRecvMsgSize = size
