@@ -176,6 +176,15 @@ func (s *Server) RefreshService(invoker base.Invoker, info *common.ServiceInfo) 
 }
 
 func getHanOpts(url *common.URL) (hanOpts []tri.HandlerOption) {
+	var tripleConf *global.TripleConfig
+
+	tripleConfRaw, ok := url.GetAttribute(constant.TripleConfigKey)
+	if ok {
+		tripleConf = tripleConfRaw.(*global.TripleConfig)
+	}
+
+	// Deprecated：use TripleConfig
+	// TODO: remove MaxServerSendMsgSize and MaxServerRecvMsgSize when version 4.0.0
 	var err error
 	maxServerRecvMsgSize := constant.DefaultMaxServerRecvMsgSize
 	if recvMsgSize, convertErr := humanize.ParseBytes(url.GetParam(constant.MaxServerRecvMsgSize, "")); convertErr == nil && recvMsgSize != 0 {
@@ -183,11 +192,29 @@ func getHanOpts(url *common.URL) (hanOpts []tri.HandlerOption) {
 	}
 	hanOpts = append(hanOpts, tri.WithReadMaxBytes(maxServerRecvMsgSize))
 
+	if tripleConf.MaxServerRecvMsgSize != "" {
+		logger.Warnf("MaxServerRecvMsgSize: %v", tripleConf.MaxServerRecvMsgSize)
+		if recvMsgSize, convertErr := humanize.ParseBytes(tripleConf.MaxServerRecvMsgSize); convertErr == nil && recvMsgSize != 0 {
+			maxServerRecvMsgSize = int(recvMsgSize)
+		}
+		hanOpts = append(hanOpts, tri.WithReadMaxBytes(maxServerRecvMsgSize))
+	}
+
+	// Deprecated：use TripleConfig
+	// TODO: remove MaxServerSendMsgSize and MaxServerRecvMsgSize when version 4.0.0
 	maxServerSendMsgSize := constant.DefaultMaxServerSendMsgSize
 	if sendMsgSize, convertErr := humanize.ParseBytes(url.GetParam(constant.MaxServerSendMsgSize, "")); err == convertErr && sendMsgSize != 0 {
 		maxServerSendMsgSize = int(sendMsgSize)
 	}
 	hanOpts = append(hanOpts, tri.WithSendMaxBytes(maxServerSendMsgSize))
+
+	if tripleConf.MaxServerSendMsgSize != "" {
+		logger.Warnf("MaxServerSendMsgSize: %v", tripleConf.MaxServerSendMsgSize)
+		if sendMsgSize, convertErr := humanize.ParseBytes(tripleConf.MaxServerSendMsgSize); err == convertErr && sendMsgSize != 0 {
+			maxServerSendMsgSize = int(sendMsgSize)
+		}
+		hanOpts = append(hanOpts, tri.WithSendMaxBytes(maxServerSendMsgSize))
+	}
 
 	// todo:// open tracing
 

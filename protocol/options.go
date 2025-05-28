@@ -271,26 +271,44 @@ func WithParams(params any) ServerOption {
 	return &paramsOption{params}
 }
 
+// Deprecated：use triple.WithMaxServerSendMsgSize()
+//
+// TODO: remove MaxServerSendMsgSize and MaxServerRecvMsgSize when version 4.0.0
 type maxServerSendMsgSizeOption struct {
-	MaxServerSendMsgSize int
+	MaxServerSendMsgSize string
 }
 
+// Deprecated：use triple.WithMaxServerSendMsgSize()
+//
+// TODO: remove MaxServerSendMsgSize and MaxServerRecvMsgSize when version 4.0.0
 func (o *maxServerSendMsgSizeOption) applyToServer(config *global.ProtocolConfig) {
-	config.MaxServerSendMsgSize = strconv.Itoa(o.MaxServerSendMsgSize)
+	config.MaxServerSendMsgSize = o.MaxServerSendMsgSize
 }
 
-func WithMaxServerSendMsgSize(size int) ServerOption {
+// Deprecated：use triple.WithMaxServerSendMsgSize()
+//
+// TODO: remove MaxServerSendMsgSize and MaxServerRecvMsgSize when version 4.0.0
+func WithMaxServerSendMsgSize(size string) ServerOption {
 	return &maxServerSendMsgSizeOption{size}
 }
 
+// Deprecated：use triple.WithMaxServerRecvMsgSize()
+//
+// TODO: remove MaxServerSendMsgSize and MaxServerRecvMsgSize when version 4.0.0
 type maxServerRecvMsgSize struct {
-	MaxServerRecvMsgSize int
+	MaxServerRecvMsgSize string
 }
 
+// Deprecated：use triple.WithMaxServerRecvMsgSize()
+//
+// TODO: remove MaxServerSendMsgSize and MaxServerRecvMsgSize when version 4.0.0
 func (o *maxServerRecvMsgSize) applyToServer(config *global.ProtocolConfig) {
-	config.MaxServerRecvMsgSize = strconv.Itoa(o.MaxServerRecvMsgSize)
+	config.MaxServerRecvMsgSize = o.MaxServerRecvMsgSize
 }
 
-func WithMaxServerRecvMsgSize(size int) ServerOption {
+// Deprecated：use triple.WithMaxServerRecvMsgSize()
+//
+// TODO: remove MaxServerSendMsgSize and MaxServerRecvMsgSize when version 4.0.0
+func WithMaxServerRecvMsgSize(size string) ServerOption {
 	return &maxServerRecvMsgSize{size}
 }

@@ -70,3 +70,17 @@ func WithKeepAliveTimeout(timeout time.Duration) Option {
 		opts.Triple.KeepAliveTimeout = timeout.String()
 	}
 }
+
+// TODO: add some comments
+func WithMaxServerSendMsgSize(size string) Option {
+	return func(opts *Options) {
+		opts.Triple.MaxServerSendMsgSize = size
+	}
+}
+
+// TODO: add some comments
+func WithMaxServerRecvMsgSize(size string) Option {
+	return func(opts *Options) {
+		opts.Triple.MaxServerRecvMsgSize = size
+	}
+}

@@ -22,6 +22,11 @@ type TripleConfig struct {
 	Test              string `yaml:"test" json:"test,omitempty" property:"test"`
 	KeepAliveInterval string `yaml:"keep-alive-interval" json:"keep-alive-interval,omitempty" property:"keep-alive-interval"`
 	KeepAliveTimeout  string `yaml:"keep-alive-timeout" json:"keep-alive-timeout,omitempty" property:"keep-alive-timeout"`
+
+	// MaxServerSendMsgSize max size of server send message, 1mb=1000kb=1000000b 1mib=1024kb=1048576b.
+	// more detail to see https://pkg.go.dev/github.com/dustin/go-humanize#pkg-constants
+	MaxServerSendMsgSize string `yaml:"max-server-send-msg-size" json:"max-server-send-msg-size,omitempty"` // MaxServerRecvMsgSize max size of server receive message
+	MaxServerRecvMsgSize string `default:"4mib" yaml:"max-server-recv-msg-size" json:"max-server-recv-msg-size,omitempty"`
 }
 
 func DefaultTripleConfig() *TripleConfig {
@@ -35,8 +40,10 @@ func (t *TripleConfig) Clone() *TripleConfig {
 	}
 
 	return &TripleConfig{
-		Test: t.Test,
-		KeepAliveInterval: t.KeepAliveInterval,
-		KeepAliveTimeout: t.KeepAliveTimeout,
+		Test:                 t.Test,
+		KeepAliveInterval:    t.KeepAliveInterval,
+		KeepAliveTimeout:     t.KeepAliveTimeout,
+		MaxServerSendMsgSize: t.MaxServerSendMsgSize,
+		MaxServerRecvMsgSize: t.MaxServerRecvMsgSize,
 	}
 }

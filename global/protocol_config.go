@@ -36,6 +36,9 @@ type ProtocolConfig struct {
 
 	TripleConfig *TripleConfig `yaml:"triple" json:"triple,omitempty" property:"triple"`
 
+	// Deprecated：use TripleConfig
+	// TODO: remove MaxServerSendMsgSize and MaxServerRecvMsgSize when version 4.0.0
+	//
 	// MaxServerSendMsgSize max size of server send message, 1mb=1000kb=1000000b 1mib=1024kb=1048576b.
 	// more detail to see https://pkg.go.dev/github.com/dustin/go-humanize#pkg-constants
 	MaxServerSendMsgSize string `yaml:"max-server-send-msg-size" json:"max-server-send-msg-size,omitempty"`
