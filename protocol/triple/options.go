@@ -43,12 +43,6 @@ func NewOptions(opts ...Option) *Options {
 
 type Option func(*Options)
 
-func WithTestOption(test string) Option {
-	return func(opts *Options) {
-		opts.Triple.Test = test
-	}
-}
-
 // TODO: add some comments
 func WithKeepAlive(interval, timeout time.Duration) Option {
 	return func(opts *Options) {
