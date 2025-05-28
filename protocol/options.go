@@ -22,10 +22,6 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple"
@@ -59,6 +55,11 @@ func (o *clientOptionsOption) applyToClient(config *ClientOptions) {
 	}
 }
 
+// WithServerOptions composes multiple ServerOptions into one.
+func WithServerOptions(options ...ServerOption) ServerOption {
+	return &ServerOptionsOption{options}
+}
+
 type ServerOptionsOption struct {
 	options []ServerOption
 }
@@ -67,6 +68,11 @@ func (o *ServerOptionsOption) applyToServer(config *ServerOptions) {
 	for _, option := range o.options {
 		option.applyToServer(config)
 	}
+}
+
+// WithOptions composes multiple Options into one.
+func WithOptions(options ...Option) Option {
+	return &optionsOption{options}
 }
 
 type optionsOption struct {
@@ -100,8 +106,6 @@ func NewServerOptions(opts ...ServerOption) *ServerOptions {
 	for _, opt := range opts {
 		opt.applyToServer(defOpts)
 	}
-
-	logger.Warnf("defOpts.Protocol: %+v", defOpts.Protocol)
 
 	if defOpts.ID == "" {
 		if defOpts.Protocol.Name == "" {

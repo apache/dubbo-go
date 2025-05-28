@@ -65,7 +65,6 @@ type Server struct {
 // NOTE: Now everything changed, we can initialized triServer now.
 // We can get configurations here now.
 func NewServer(cfg *global.TripleConfig) *Server {
-	logger.Warnf("cfg: %+v", cfg)
 	return &Server{
 		cfg:      cfg,
 		services: make(map[string]grpc.ServiceInfo),
@@ -193,7 +192,6 @@ func getHanOpts(url *common.URL) (hanOpts []tri.HandlerOption) {
 	hanOpts = append(hanOpts, tri.WithReadMaxBytes(maxServerRecvMsgSize))
 
 	if tripleConf != nil && tripleConf.MaxServerRecvMsgSize != "" {
-		logger.Warnf("MaxServerRecvMsgSize: %v", tripleConf.MaxServerRecvMsgSize)
 		if recvMsgSize, convertErr := humanize.ParseBytes(tripleConf.MaxServerRecvMsgSize); convertErr == nil && recvMsgSize != 0 {
 			maxServerRecvMsgSize = int(recvMsgSize)
 		}
@@ -209,7 +207,6 @@ func getHanOpts(url *common.URL) (hanOpts []tri.HandlerOption) {
 	hanOpts = append(hanOpts, tri.WithSendMaxBytes(maxServerSendMsgSize))
 
 	if tripleConf != nil && tripleConf.MaxServerSendMsgSize != "" {
-		logger.Warnf("MaxServerSendMsgSize: %v", tripleConf.MaxServerSendMsgSize)
 		if sendMsgSize, convertErr := humanize.ParseBytes(tripleConf.MaxServerSendMsgSize); err == convertErr && sendMsgSize != 0 {
 			maxServerSendMsgSize = int(sendMsgSize)
 		}
