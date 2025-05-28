@@ -22,7 +22,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 func init() {
@@ -40,6 +40,6 @@ func newZoneawareCluster() clusterpkg.Cluster {
 }
 
 // Join returns a zoneAwareClusterInvoker instance
-func (cluster *zoneawareCluster) Join(directory directory.Directory) protocol.Invoker {
+func (cluster *zoneawareCluster) Join(directory directory.Directory) base.Invoker {
 	return clusterpkg.BuildInterceptorChain(newZoneawareClusterInvoker(directory), newInterceptor())
 }

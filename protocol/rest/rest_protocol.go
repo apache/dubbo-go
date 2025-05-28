@@ -30,7 +30,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/rest/client"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/rest/client/client_impl"
 	rest_config "dubbo.apache.org/dubbo-go/v3/protocol/rest/config"
@@ -50,7 +50,7 @@ func init() {
 
 // nolint
 type RestProtocol struct {
-	protocol.BaseProtocol
+	base.BaseProtocol
 	serverLock sync.Mutex
 	serverMap  map[string]server.RestServer
 	clientLock sync.Mutex
@@ -60,14 +60,14 @@ type RestProtocol struct {
 // NewRestProtocol returns a RestProtocol
 func NewRestProtocol() *RestProtocol {
 	return &RestProtocol{
-		BaseProtocol: protocol.NewBaseProtocol(),
+		BaseProtocol: base.NewBaseProtocol(),
 		serverMap:    make(map[string]server.RestServer, 8),
 		clientMap:    make(map[client.RestOptions]client.RestClient, 8),
 	}
 }
 
 // Export export rest service
-func (rp *RestProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
+func (rp *RestProtocol) Export(invoker base.Invoker) base.Exporter {
 	url := invoker.GetURL()
 	serviceKey := url.ServiceKey()
 	exporter := NewRestExporter(serviceKey, invoker, rp.ExporterMap())
@@ -86,7 +86,7 @@ func (rp *RestProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 }
 
 // Refer create rest service reference
-func (rp *RestProtocol) Refer(url *common.URL) protocol.Invoker {
+func (rp *RestProtocol) Refer(url *common.URL) base.Invoker {
 	// create rest_invoker
 	// todo fix timeout config
 	// start
@@ -164,7 +164,7 @@ func (rp *RestProtocol) Destroy() {
 }
 
 // GetRestProtocol get a rest protocol
-func GetRestProtocol() protocol.Protocol {
+func GetRestProtocol() base.Protocol {
 	if restProtocol == nil {
 		restProtocol = NewRestProtocol()
 	}

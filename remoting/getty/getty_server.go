@@ -39,8 +39,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
@@ -139,11 +139,11 @@ type Server struct {
 	codec          remoting.Codec
 	tcpServer      getty.Server
 	rpcHandler     *RpcServerHandler
-	requestHandler func(*invocation.RPCInvocation) protocol.RPCResult
+	requestHandler func(*invocation.RPCInvocation) result.RPCResult
 }
 
 // NewServer create a new Server
-func NewServer(url *common.URL, handlers func(*invocation.RPCInvocation) protocol.RPCResult) *Server {
+func NewServer(url *common.URL, handlers func(*invocation.RPCInvocation) result.RPCResult) *Server {
 	// init
 	initServer(url)
 	s := &Server{

@@ -33,7 +33,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/proxy"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/tls"
@@ -48,7 +48,7 @@ type ReferenceOptions struct {
 
 	pxy          *proxy.Proxy
 	id           string
-	invoker      protocol.Invoker
+	invoker      base.Invoker
 	urls         []*common.URL
 	metaDataType string
 	info         *ClientInfo

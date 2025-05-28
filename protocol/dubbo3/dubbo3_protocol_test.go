@@ -32,7 +32,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 const (
@@ -50,7 +50,7 @@ func TestDubboProtocolExport(t *testing.T) {
 	proto := GetProtocol()
 	url, err := common.NewURL(mockDubbo3CommonUrl)
 	assert.NoError(t, err)
-	exporter := proto.Export(protocol.NewBaseInvoker(url))
+	exporter := proto.Export(base.NewBaseInvoker(url))
 	time.Sleep(time.Second)
 
 	// make sure url

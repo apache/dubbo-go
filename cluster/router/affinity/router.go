@@ -36,7 +36,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
@@ -48,7 +48,7 @@ func newServiceAffinityRoute() *ServiceAffinityRoute {
 	return &ServiceAffinityRoute{}
 }
 
-func (s *ServiceAffinityRoute) Notify(invokers []protocol.Invoker) {
+func (s *ServiceAffinityRoute) Notify(invokers []base.Invoker) {
 	if len(invokers) == 0 {
 		return
 	}
@@ -95,7 +95,7 @@ func newApplicationAffinityRouter() *ApplicationAffinityRoute {
 	return a
 }
 
-func (s *ApplicationAffinityRoute) Notify(invokers []protocol.Invoker) {
+func (s *ApplicationAffinityRoute) Notify(invokers []base.Invoker) {
 	if len(invokers) == 0 {
 		return
 	}
@@ -177,7 +177,7 @@ func (a *affinityRoute) Process(event *config_center.ConfigChangeEvent) {
 	}
 }
 
-func (a *affinityRoute) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
+func (a *affinityRoute) Route(invokers []base.Invoker, url *common.URL, invocation base.Invocation) []base.Invoker {
 	if len(invokers) == 0 {
 		return invokers
 	}
@@ -190,7 +190,7 @@ func (a *affinityRoute) Route(invokers []protocol.Invoker, url *common.URL, invo
 		return invokers
 	}
 
-	res := make([]protocol.Invoker, 0, len(invokers))
+	res := make([]base.Invoker, 0, len(invokers))
 	for _, invoker := range invokers {
 		if matcher.MatchInvoker(url, invoker, invocation) {
 			res = append(res, invoker)
@@ -212,7 +212,7 @@ func (a *affinityRoute) Priority() int64 {
 	return math.MinInt64
 }
 
-func (a *affinityRoute) Notify(_ []protocol.Invoker) {
+func (a *affinityRoute) Notify(_ []base.Invoker) {
 	panic("this function should not be called")
 }
 

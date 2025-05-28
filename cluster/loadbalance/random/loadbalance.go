@@ -25,7 +25,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 func init() {
@@ -41,7 +41,7 @@ func NewRandomLoadBalance() loadbalance.LoadBalance {
 	return &randomLoadBalance{}
 }
 
-func (lb *randomLoadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
+func (lb *randomLoadBalance) Select(invokers []base.Invoker, invocation base.Invocation) base.Invoker {
 
 	// Number of invokers
 	var length int

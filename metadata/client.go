@@ -35,7 +35,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	tripleapi "dubbo.apache.org/dubbo-go/v3/metadata/triple_api/proto"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
@@ -75,7 +75,7 @@ type remoteMetadataService interface {
 }
 
 type triMetadataServiceV2 struct {
-	invoker protocol.Invoker
+	invoker base.Invoker
 }
 
 func (m *triMetadataServiceV2) getMetadataInfo(ctx context.Context, revision string) (*info.MetadataInfo, error) {
@@ -113,7 +113,7 @@ func convertMetadataInfoV2(v2 *tripleapi.MetadataInfoV2) *info.MetadataInfo {
 	return metadataInfo
 }
 
-func generateInvocation(u *common.URL, methodName string, req any, resp any, callType string) (protocol.Invocation, error) {
+func generateInvocation(u *common.URL, methodName string, req any, resp any, callType string) (base.Invocation, error) {
 	var inv *invocation.RPCInvocation
 	if u.Protocol == constant.TriProtocol {
 		var paramsRawVals []any
@@ -144,7 +144,7 @@ func generateInvocation(u *common.URL, methodName string, req any, resp any, cal
 }
 
 type remoteMetadataServiceV1 struct {
-	invoker protocol.Invoker
+	invoker base.Invoker
 }
 
 func (m *remoteMetadataServiceV1) getMetadataInfo(ctx context.Context, revision string) (*info.MetadataInfo, error) {

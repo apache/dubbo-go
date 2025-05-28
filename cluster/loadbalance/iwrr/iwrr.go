@@ -24,12 +24,12 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 type iwrrEntry struct {
 	weight  int64
-	invoker protocol.Invoker
+	invoker base.Invoker
 
 	next *iwrrEntry
 }
@@ -77,7 +77,7 @@ type interleavedweightedRoundRobin struct {
 	mu      sync.Mutex
 }
 
-func NewInterleavedweightedRoundRobin(invokers []protocol.Invoker, invocation protocol.Invocation) *interleavedweightedRoundRobin {
+func NewInterleavedweightedRoundRobin(invokers []base.Invoker, invocation base.Invocation) *interleavedweightedRoundRobin {
 	iwrrp := new(interleavedweightedRoundRobin)
 	iwrrp.current = NewIwrrQueue()
 	iwrrp.next = NewIwrrQueue()
@@ -99,7 +99,7 @@ func NewInterleavedweightedRoundRobin(invokers []protocol.Invoker, invocation pr
 	return iwrrp
 }
 
-func (iwrr *interleavedweightedRoundRobin) Pick(invocation protocol.Invocation) protocol.Invoker {
+func (iwrr *interleavedweightedRoundRobin) Pick(invocation base.Invocation) base.Invoker {
 	iwrr.mu.Lock()
 	defer iwrr.mu.Unlock()
 

@@ -27,8 +27,9 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/metadata"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	invocation_impl "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 // ConsumerConfig
@@ -68,7 +69,7 @@ type Connection struct {
 	refOpts *ReferenceOptions
 }
 
-func (conn *Connection) call(ctx context.Context, reqs []any, resp any, methodName, callType string, opts ...CallOption) (protocol.Result, error) {
+func (conn *Connection) call(ctx context.Context, reqs []any, resp any, methodName, callType string, opts ...CallOption) (result.Result, error) {
 	options := newDefaultCallOptions()
 	for _, opt := range opts {
 		opt(options)
@@ -187,7 +188,7 @@ func (cli *Client) dial(interfaceName string, info *ClientInfo, srv any, opts ..
 	return &Connection{refOpts: newRefOpts}, nil
 }
 
-func generateInvocation(methodName string, reqs []any, resp any, callType string, opts *CallOptions) (protocol.Invocation, error) {
+func generateInvocation(methodName string, reqs []any, resp any, callType string, opts *CallOptions) (base.Invocation, error) {
 	var paramsRawVals []any
 
 	paramsRawVals = append(paramsRawVals, reqs...)

@@ -44,6 +44,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/tls"
 )
@@ -491,9 +492,9 @@ type ServiceOptions struct {
 	ProxyFactoryKey string
 	rpcService      common.RPCService
 	cacheMutex      sync.Mutex
-	cacheProtocol   protocol.Protocol
+	cacheProtocol   base.Protocol
 	exportersLock   sync.Mutex
-	exporters       []protocol.Exporter
+	exporters       []base.Exporter
 	adaptiveService bool
 
 	// for triple non-IDL mode
@@ -502,10 +503,8 @@ type ServiceOptions struct {
 	// TODO: remove this when config package is remove
 	IDLMode string
 
-	methodsCompat     []*config.MethodConfig
 	applicationCompat *config.ApplicationConfig
 	registriesCompat  map[string]*config.RegistryConfig
-	protocolsCompat   map[string]*config.ProtocolConfig
 }
 
 func defaultServiceOptions() *ServiceOptions {
@@ -569,15 +568,6 @@ func (svcOpts *ServiceOptions) init(srv *Server, opts ...ServiceOption) error {
 	// initialize Protocols
 	if len(svc.RCProtocolsMap) == 0 {
 		svc.RCProtocolsMap = svcOpts.Protocols
-	}
-	if len(svc.RCProtocolsMap) > 0 {
-		svcOpts.protocolsCompat = make(map[string]*config.ProtocolConfig)
-		for key, pro := range svc.RCProtocolsMap {
-			svcOpts.protocolsCompat[key] = compatProtocolConfig(pro)
-			if err := svcOpts.protocolsCompat[key].Init(); err != nil {
-				return err
-			}
-		}
 	}
 
 	svc.RegistryIDs = commonCfg.TranslateIds(svc.RegistryIDs)

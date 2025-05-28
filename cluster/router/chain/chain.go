@@ -34,13 +34,13 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 // RouterChain Router chain
 type RouterChain struct {
 	// Full list of addresses from registry, classified by method name.
-	invokers []protocol.Invoker
+	invokers []base.Invoker
 	// Containing all routers, reconstruct every time 'route://' urls change.
 	routers []router.PriorityRouter
 	// Fixed router instances: ConfigConditionRouter, TagRouter, e.g., the rule for each instance may change but the
@@ -51,8 +51,8 @@ type RouterChain struct {
 }
 
 // Route Loop routers in RouterChain and call Route method to determine the target invokers list.
-func (c *RouterChain) Route(url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
-	finalInvokers := make([]protocol.Invoker, 0, len(c.invokers))
+func (c *RouterChain) Route(url *common.URL, invocation base.Invocation) []base.Invoker {
+	finalInvokers := make([]base.Invoker, 0, len(c.invokers))
 	// multiple invoker may include different methods, find correct invoker otherwise
 	// will return the invoker without methods
 	for _, invoker := range c.invokers {
@@ -87,7 +87,7 @@ func (c *RouterChain) AddRouters(routers []router.PriorityRouter) {
 
 // SetInvokers receives updated invokers from registry center. If the times of notification exceeds countThreshold and
 // time interval exceeds timeThreshold since last cache update, then notify to update the cache.
-func (c *RouterChain) SetInvokers(invokers []protocol.Invoker) {
+func (c *RouterChain) SetInvokers(invokers []base.Invoker) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	c.invokers = invokers
@@ -106,13 +106,13 @@ func (c *RouterChain) copyRouters() []router.PriorityRouter {
 }
 
 // copyInvokers copies a snapshot of the received invokers.
-func (c *RouterChain) copyInvokers() []protocol.Invoker {
+func (c *RouterChain) copyInvokers() []base.Invoker {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 	if len(c.invokers) == 0 {
 		return nil
 	}
-	ret := make([]protocol.Invoker, 0, len(c.invokers))
+	ret := make([]base.Invoker, 0, len(c.invokers))
 	ret = append(ret, c.invokers...)
 	return ret
 }

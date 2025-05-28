@@ -33,8 +33,9 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	invocation2 "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 var (
@@ -59,7 +60,7 @@ func newGenericFilter() filter.Filter {
 }
 
 // Invoke turns the parameters to map for generic method
-func (f *genericFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (f *genericFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
 	if isCallingToGenericService(invoker, invocation) {
 
 		mtdname := invocation.MethodName()
@@ -106,7 +107,7 @@ func (f *genericFilter) Invoke(ctx context.Context, invoker protocol.Invoker, in
 }
 
 // OnResponse dummy process, returns the result directly
-func (f *genericFilter) OnResponse(_ context.Context, result protocol.Result, _ protocol.Invoker,
-	_ protocol.Invocation) protocol.Result {
+func (f *genericFilter) OnResponse(_ context.Context, result result.Result, _ base.Invoker,
+	_ base.Invocation) result.Result {
 	return result
 }

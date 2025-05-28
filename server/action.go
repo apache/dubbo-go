@@ -43,7 +43,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 )
 
@@ -107,7 +107,7 @@ func (svcOpts *ServiceOptions) IsExport() bool {
 }
 
 // Get Random Port
-func getRandomPort(protocolConfigs []*config.ProtocolConfig) *list.List {
+func getRandomPort(protocolConfigs []*global.ProtocolConfig) *list.List {
 	ports := list.New()
 	for _, proto := range protocolConfigs {
 		if len(proto.Port) > 0 {
@@ -161,13 +161,13 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 	}
 
 	urlMap := svcOpts.getUrlMap()
-	protocolConfigs := loadProtocol(svcConf.ProtocolIDs, svcOpts.protocolsCompat)
+	protocolConfigs := loadProtocol(svcConf.ProtocolIDs, svcOpts.Protocols)
 	if len(protocolConfigs) == 0 {
 		logger.Warnf("The service %v'svcOpts '%v' protocols don't has right protocolConfigs, Please check your configuration center and transfer protocol ", svcConf.Interface, svcConf.ProtocolIDs)
 		return nil
 	}
 
-	var invoker protocol.Invoker
+	var invoker base.Invoker
 	ports := getRandomPort(protocolConfigs)
 	nextPort := ports.Front()
 	for _, protocolConf := range protocolConfigs {
@@ -265,7 +265,7 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 	return nil
 }
 
-func (svcOpts *ServiceOptions) generatorInvoker(url *common.URL, info *common.ServiceInfo) protocol.Invoker {
+func (svcOpts *ServiceOptions) generatorInvoker(url *common.URL, info *common.ServiceInfo) base.Invoker {
 	proxyFactory := extension.GetProxyFactory(svcOpts.ProxyFactoryKey)
 	if info != nil {
 		url.SetAttribute(constant.ServiceInfoKey, info)
@@ -283,8 +283,8 @@ func setRegistrySubURL(ivkURL *common.URL, regUrl *common.URL) {
 }
 
 // loadProtocol filter protocols by ids
-func loadProtocol(protocolIds []string, protocols map[string]*config.ProtocolConfig) []*config.ProtocolConfig {
-	returnProtocols := make([]*config.ProtocolConfig, 0, len(protocols))
+func loadProtocol(protocolIds []string, protocols map[string]*global.ProtocolConfig) []*global.ProtocolConfig {
+	returnProtocols := make([]*global.ProtocolConfig, 0, len(protocols))
 	for _, v := range protocolIds {
 		for k, config := range protocols {
 			if v == k {

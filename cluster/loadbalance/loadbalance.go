@@ -18,9 +18,9 @@
 package loadbalance
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 type LoadBalance interface {
-	Select([]protocol.Invoker, protocol.Invocation) protocol.Invoker
+	Select([]base.Invoker, base.Invocation) base.Invoker
 }
