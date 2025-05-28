@@ -47,7 +47,7 @@ type ReferenceConfig struct {
 
 	// config
 	MethodsConfig        []*MethodConfig       `yaml:"methods"  json:"methods,omitempty" property:"methods"`
-	ProtocolClientConfig *ProtocolClientConfig `yaml:"protocol-config" json:"protocol-config,omitemty" property:"protocol-config"`
+	ProtocolClientConfig *ProtocolClientConfig `yaml:"protocol-config" json:"protocol-config,omitempty" property:"protocol-config"`
 
 	// TODO: Deprecated：use TripleConfig
 	// remove KeepAliveInterval and KeepAliveInterval in version 4.0.0
