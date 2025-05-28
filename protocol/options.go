@@ -32,11 +32,11 @@ import (
 )
 
 type ClientOption interface {
-	applyToClient(*global.ProtocolClientConfig)
+	applyToClient(*ClientOptions)
 }
 
 type ServerOption interface {
-	applyToServer(*global.ProtocolConfig)
+	applyToServer(*ServerOptions)
 }
 
 type Option interface {
@@ -53,7 +53,7 @@ type clientOptionsOption struct {
 	options []ClientOption
 }
 
-func (o *clientOptionsOption) applyToClient(config *global.ProtocolClientConfig) {
+func (o *clientOptionsOption) applyToClient(config *ClientOptions) {
 	for _, option := range o.options {
 		option.applyToClient(config)
 	}
@@ -63,7 +63,7 @@ type ServerOptionsOption struct {
 	options []ServerOption
 }
 
-func (o *ServerOptionsOption) applyToServer(config *global.ProtocolConfig) {
+func (o *ServerOptionsOption) applyToServer(config *ServerOptions) {
 	for _, option := range o.options {
 		option.applyToServer(config)
 	}
@@ -73,13 +73,13 @@ type optionsOption struct {
 	options []Option
 }
 
-func (o *optionsOption) applyToClient(config *global.ProtocolClientConfig) {
+func (o *optionsOption) applyToClient(config *ClientOptions) {
 	for _, option := range o.options {
 		option.applyToClient(config)
 	}
 }
 
-func (o *optionsOption) applyToServer(config *global.ProtocolConfig) {
+func (o *optionsOption) applyToServer(config *ServerOptions) {
 	for _, option := range o.options {
 		option.applyToServer(config)
 	}
@@ -98,7 +98,7 @@ func defaultServerOptions() *ServerOptions {
 func NewServerOptions(opts ...ServerOption) *ServerOptions {
 	defOpts := defaultServerOptions()
 	for _, opt := range opts {
-		opt.applyToServer(defOpts.Protocol)
+		opt.applyToServer(defOpts)
 	}
 
 	logger.Warnf("defOpts.Protocol: %+v", defOpts.Protocol)
@@ -128,7 +128,7 @@ func defaultClientOptions() *ClientOptions {
 func NewClientOptions(opts ...ClientOption) *ClientOptions {
 	defOpts := defaultClientOptions()
 	for _, opt := range opts {
-		opt.applyToClient(defOpts.ProtocolClient)
+		opt.applyToClient(defOpts)
 	}
 
 	if defOpts.ID == "" {
@@ -147,12 +147,12 @@ type tripleOption struct {
 	triOpts triple.Options
 }
 
-func (o *tripleOption) applyToClient(config *global.ProtocolClientConfig) {
-	config.TripleConfig = o.triOpts.Triple
+func (o *tripleOption) applyToClient(config *ClientOptions) {
+	config.ProtocolClient.TripleConfig = o.triOpts.Triple
 }
 
-func (o *tripleOption) applyToServer(config *global.ProtocolConfig) {
-	config.TripleConfig = o.triOpts.Triple
+func (o *tripleOption) applyToServer(config *ServerOptions) {
+	config.Protocol.TripleConfig = o.triOpts.Triple
 }
 
 func WithTriple(opts ...triple.Option) Option {
@@ -165,12 +165,12 @@ func WithTriple(opts ...triple.Option) Option {
 
 type dubboOption struct{}
 
-func (o *dubboOption) applyToClient(config *global.ProtocolClientConfig) {
-	config.Name = constant.DubboProtocol
+func (o *dubboOption) applyToClient(config *ClientOptions) {
+	config.ProtocolClient.Name = constant.DubboProtocol
 }
 
-func (o *dubboOption) applyToServer(config *global.ProtocolConfig) {
-	config.Name = constant.DubboProtocol
+func (o *dubboOption) applyToServer(config *ServerOptions) {
+	config.Protocol.Name = constant.DubboProtocol
 }
 
 // TODO: Maybe we need configure dubbo protocol future.
@@ -180,12 +180,12 @@ func WithDubbo() Option {
 
 type jsonRPCOption struct{}
 
-func (o *jsonRPCOption) applyToClient(config *global.ProtocolClientConfig) {
-	config.Name = constant.JSONRPCProtocol
+func (o *jsonRPCOption) applyToClient(config *ClientOptions) {
+	config.ProtocolClient.Name = constant.JSONRPCProtocol
 }
 
-func (o *jsonRPCOption) applyToServer(config *global.ProtocolConfig) {
-	config.Name = constant.JSONRPCProtocol
+func (o *jsonRPCOption) applyToServer(config *ServerOptions) {
+	config.Protocol.Name = constant.JSONRPCProtocol
 }
 
 // TODO: Maybe we need configure jsonRPC protocol future.
@@ -195,12 +195,12 @@ func WithJSONRPC() Option {
 
 type restOption struct{}
 
-func (o *restOption) applyToClient(config *global.ProtocolClientConfig) {
-	config.Name = constant.RESTProtocol
+func (o *restOption) applyToClient(config *ClientOptions) {
+	config.ProtocolClient.Name = constant.RESTProtocol
 }
 
-func (o *restOption) applyToServer(config *global.ProtocolConfig) {
-	config.Name = constant.RESTProtocol
+func (o *restOption) applyToServer(config *ServerOptions) {
+	config.Protocol.Name = constant.RESTProtocol
 }
 
 // TODO: Maybe we need configure REST protocol future.
@@ -212,12 +212,12 @@ type protocolNameOption struct {
 	Name string
 }
 
-func (o *protocolNameOption) applyToClient(config *global.ProtocolClientConfig) {
-	config.Name = o.Name
+func (o *protocolNameOption) applyToClient(config *ClientOptions) {
+	config.ProtocolClient.Name = o.Name
 }
 
-func (o *protocolNameOption) applyToServer(config *global.ProtocolConfig) {
-	config.Name = o.Name
+func (o *protocolNameOption) applyToServer(config *ServerOptions) {
+	config.Protocol.Name = o.Name
 }
 
 // NOTE: This option can't be configured freely.
@@ -225,22 +225,26 @@ func WithProtocol(p string) Option {
 	return &protocolNameOption{p}
 }
 
-// TODO: protocol config struct don't have ID field, we need to deal with it.
-//
+type idOption struct {
+	ID string
+}
+
+func (o *idOption) applyToServer(config *ServerOptions) {
+	config.ID = o.ID
+}
+
 // WithID specifies the id of protocol.Options. Then you could configure server.WithProtocolIDs and
 // server.WithServer_ProtocolIDs to specify which protocol you need to use in multi-protocols scenario.
-// func WithID(id string) Option {
-// 	return func(opts *ServerOptions) {
-// 		opts.ID = id
-// 	}
-// }
+func WithID(id string) ServerOption {
+	return &idOption{id}
+}
 
 type ipOption struct {
 	Ip string
 }
 
-func (o *ipOption) applyToServer(config *global.ProtocolConfig) {
-	config.Ip = o.Ip
+func (o *ipOption) applyToServer(config *ServerOptions) {
+	config.Protocol.Ip = o.Ip
 }
 
 func WithIp(ip string) ServerOption {
@@ -251,8 +255,8 @@ type portOption struct {
 	Port string
 }
 
-func (o *portOption) applyToServer(config *global.ProtocolConfig) {
-	config.Port = o.Port
+func (o *portOption) applyToServer(config *ServerOptions) {
+	config.Protocol.Port = o.Port
 }
 
 func WithPort(port int) ServerOption {
@@ -263,8 +267,8 @@ type paramsOption struct {
 	Params any
 }
 
-func (o *paramsOption) applyToServer(config *global.ProtocolConfig) {
-	config.Params = o.Params
+func (o *paramsOption) applyToServer(config *ServerOptions) {
+	config.Protocol.Params = o.Params
 }
 
 func WithParams(params any) ServerOption {
@@ -277,8 +281,8 @@ type maxServerSendMsgSizeOption struct {
 }
 
 // TODO: remove MaxServerSendMsgSize and MaxServerRecvMsgSize when version 4.0.0
-func (o *maxServerSendMsgSizeOption) applyToServer(config *global.ProtocolConfig) {
-	config.MaxServerSendMsgSize = o.MaxServerSendMsgSize
+func (o *maxServerSendMsgSizeOption) applyToServer(config *ServerOptions) {
+	config.Protocol.MaxServerSendMsgSize = o.MaxServerSendMsgSize
 }
 
 // TODO: remove MaxServerSendMsgSize and MaxServerRecvMsgSize when version 4.0.0
@@ -294,8 +298,8 @@ type maxServerRecvMsgSize struct {
 }
 
 // TODO: remove MaxServerSendMsgSize and MaxServerRecvMsgSize when version 4.0.0
-func (o *maxServerRecvMsgSize) applyToServer(config *global.ProtocolConfig) {
-	config.MaxServerRecvMsgSize = o.MaxServerRecvMsgSize
+func (o *maxServerRecvMsgSize) applyToServer(config *ServerOptions) {
+	config.Protocol.MaxServerRecvMsgSize = o.MaxServerRecvMsgSize
 }
 
 // TODO: remove MaxServerSendMsgSize and MaxServerRecvMsgSize when version 4.0.0
