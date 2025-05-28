@@ -32,6 +32,8 @@ type ProtocolConfig struct {
 	Port   string `default:"50051" yaml:"port" json:"port,omitempty" property:"port"`
 	Params any    `yaml:"params" json:"params,omitempty" property:"params"`
 
+	TripleConfig *TripleConfig `yaml:"triple" json:"triple,omitempty" property:"triple"`
+
 	// MaxServerSendMsgSize max size of server send message, 1mb=1000kb=1000000b 1mib=1024kb=1048576b.
 	// more detail to see https://pkg.go.dev/github.com/dustin/go-humanize#pkg-constants
 	MaxServerSendMsgSize string `yaml:"max-server-send-msg-size" json:"max-server-send-msg-size,omitempty"`
