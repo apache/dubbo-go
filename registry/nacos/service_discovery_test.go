@@ -121,7 +121,7 @@ func TestFunction(t *testing.T) {
 }
 
 func TestBatchRegisterInstances(t *testing.T) {
-	extension.SetProtocol("mock", func() protocol.Protocol {
+	extension.SetProtocol("mock", func() base.Protocol {
 		return &mockProtocol{}
 	})
 	var urls []*common.URL
