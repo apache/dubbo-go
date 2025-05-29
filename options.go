@@ -396,7 +396,7 @@ func WithMetadataServiceProtocol(protocol string) InstanceOption {
 //		}
 //	}
 //
-// but now only work in server side fot compat old API.
+// but now only work in server side for compat old API.
 func WithProtocol(opts ...protocol.ServerOption) InstanceOption {
 	proOpts := protocol.NewServerOptions(opts...)
 

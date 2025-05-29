@@ -199,6 +199,7 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 
 	cliKeepAliveOpts, keepAliveInterval, keepAliveTimeout, genKeepAliveOptsErr := genKeepAliveOpts(url)
 	if genKeepAliveOptsErr != nil {
+		logger.Errorf("genKeepAliveOpts err: %v", genKeepAliveOptsErr)
 		return nil, genKeepAliveOptsErr
 	}
 
@@ -305,14 +306,18 @@ func genKeepAliveOpts(url *common.URL) ([]tri.ClientOption, time.Duration, time.
 	if ok {
 		var parseErr error
 		tripleConf := tripleConfRaw.(*global.TripleConfig)
-		// TODO: handle ParseDuration error
-		if tripleConf != nil && tripleConf.KeepAliveInterval != "" {
+
+		if tripleConf == nil {
+			return cliKeepAliveOpts, keepAliveInterval, keepAliveTimeout, nil
+		}
+
+		if tripleConf.KeepAliveInterval != "" {
 			keepAliveInterval, parseErr = time.ParseDuration(tripleConf.KeepAliveInterval)
 			if parseErr != nil {
 				return nil, 0, 0, parseErr
 			}
 		}
-		if tripleConf != nil && tripleConf.KeepAliveTimeout != "" {
+		if tripleConf.KeepAliveTimeout != "" {
 			keepAliveTimeout, parseErr = time.ParseDuration(tripleConf.KeepAliveTimeout)
 			if parseErr != nil {
 				return nil, 0, 0, parseErr
