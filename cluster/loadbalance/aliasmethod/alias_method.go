@@ -20,9 +20,7 @@ package aliasmethod // weighted random with alias-method algorithm
 
 import (
 	"math/rand"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
@@ -107,8 +105,8 @@ func (am *aliasMethodPicker) init(invocation base.Invocation) {
 }
 
 func (am *aliasMethodPicker) Pick() base.Invoker {
-	i := rand.Intn(len(am.invokers))
-	if rand.Float64() < am.prob[i] {
+	i := rand.Intn(len(am.invokers)) //NOSONAR
+	if rand.Float64() < am.prob[i] { //NOSONAR
 		return am.invokers[i]
 	}
 	return am.invokers[am.alias[i]]
