@@ -57,14 +57,14 @@ func (o *clientOptionsOption) applyToClient(config *ClientOptions) {
 
 // WithServerOptions composes multiple ServerOptions into one.
 func WithServerOptions(options ...ServerOption) ServerOption {
-	return &ServerOptionsOption{options}
+	return &serverOptionsOption{options}
 }
 
-type ServerOptionsOption struct {
+type serverOptionsOption struct {
 	options []ServerOption
 }
 
-func (o *ServerOptionsOption) applyToServer(config *ServerOptions) {
+func (o *serverOptionsOption) applyToServer(config *ServerOptions) {
 	for _, option := range o.options {
 		option.applyToServer(config)
 	}
