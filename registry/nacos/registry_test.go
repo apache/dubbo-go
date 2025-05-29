@@ -377,14 +377,17 @@ func TestNacosRegistrySubscribe(t *testing.T) {
 	}
 }
 
+// TestNacosRegistryDestroy Tests the Destroy method of NacosRegistry
 func TestNacosRegistryDestroy(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	// Create a mock object
 	mockNamingClient := NewMockINamingClient(ctrl)
 	nc := &nacosClient.NacosNamingClient{}
 	nc.SetClient(mockNamingClient)
 
+	// Initialize the NacosRegistry object
 	regURL, _ := common.NewURL("registry://127.0.0.1:8848")
 	nr := &nacosRegistry{
 		URL:          regURL,
@@ -393,9 +396,11 @@ func TestNacosRegistryDestroy(t *testing.T) {
 		registryUrls: []*common.URL{},
 	}
 
+	//Simulate the registered service URL
 	serviceURL1, _ := common.NewURL("dubbo://127.0.0.1:20001/com.example.Service1?interface=com.example.Service1&group=test&version=1.0.0")
 	serviceURL2, _ := common.NewURL("dubbo://127.0.0.1:20002/com.example.Service2?interface=com.example.Service2&group=test&version=1.0.0")
 
+	// Add the service URL to the registry
 	nr.registryUrls = append(nr.registryUrls, serviceURL1)
 	nr.registryUrls = append(nr.registryUrls, serviceURL2)
 
@@ -410,9 +415,11 @@ func TestNacosRegistryDestroy(t *testing.T) {
 	nl.subscribeParam = subscribeParam
 	listenerCache.Store(serviceName+"testgroup", nl)
 
+	// Simulate unsubscribe and unregister instances
 	mockNamingClient.EXPECT().Unsubscribe(subscribeParam).Return(nil)
 	mockNamingClient.EXPECT().DeregisterInstance(gomock.Any()).Times(len(nr.registryUrls)).Return(true, nil)
 
+	// Use goroutine to wait for nr.done channel to close
 	var wg sync.WaitGroup
 	wg.Add(1)
 
@@ -426,6 +433,7 @@ func TestNacosRegistryDestroy(t *testing.T) {
 
 	wg.Wait()
 
+	// Check if namingClient and listenerCache are cleaned up
 	if nr.namingClient != nil {
 		t.Errorf("namingClient was not set to nil")
 	}
@@ -455,10 +463,12 @@ func TestNacosListenerClose(t *testing.T) {
 	}
 	nl.subscribeParam = subscribeParam
 
+	// Set the `Unsubscribe` method of the expected mock object `mockNamingClient`. The `Unsubscribe` method should be called exactly once.
 	mockNamingClient.EXPECT().Unsubscribe(subscribeParam).Times(1).Return(nil)
 
 	nl.Close()
 
+	// Check if the nl.done channel is closed
 	select {
 	case <-nl.done:
 	default:
@@ -466,6 +476,7 @@ func TestNacosListenerClose(t *testing.T) {
 	}
 }
 
+// TestNacosListenerNextAfterClose tests the behavior of NacosListener calling the Next method after Close
 func TestNacosListenerNextAfterClose(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -482,6 +493,7 @@ func TestNacosListenerNextAfterClose(t *testing.T) {
 
 	nl.Close()
 
+	// Call the Next method to verify whether an error is returned
 	event, err := nl.Next()
 
 	if err == nil {
@@ -493,11 +505,13 @@ func TestNacosListenerNextAfterClose(t *testing.T) {
 		}
 	}
 
+	// Check if Next returns a nil event
 	if event != nil {
 		t.Errorf("Expected nil event from Next() after Close(), but got: %+v", event)
 	}
 }
 
+// TestNacosListenerCloseConcurrent tests the concurrent calls to the Close method of NacosListener
 func TestNacosListenerCloseConcurrent(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -516,6 +530,7 @@ func TestNacosListenerCloseConcurrent(t *testing.T) {
 		SubscribeCallback: nl.Callback,
 	}
 
+	// Set the `Unsubscribe` method of the expected mock object `mockNamingClient`. The `Unsubscribe` method should be called exactly once.
 	nl.subscribeParam = subscribeParam
 	mockNamingClient.EXPECT().Unsubscribe(subscribeParam).Times(1).Return(nil)
 
@@ -525,6 +540,7 @@ func TestNacosListenerCloseConcurrent(t *testing.T) {
 		startSignal   = make(chan struct{})
 	)
 
+	// Start multiple goroutines to test concurrent calls to the Close method
 	for i := 0; i < numGoroutines; i++ {
 		wg.Add(1)
 		go func() {
@@ -534,11 +550,13 @@ func TestNacosListenerCloseConcurrent(t *testing.T) {
 		}()
 	}
 
+	//Send a signal after starting goroutine
 	close(startSignal)
 	t.Logf("Signaled %d goroutines to start NacosListener Close", numGoroutines)
 
 	wg.Wait()
 
+	// Check if the nl.done channel is closed
 	select {
 	case _, ok := <-nl.done:
 		if ok {
@@ -550,6 +568,7 @@ func TestNacosListenerCloseConcurrent(t *testing.T) {
 	t.Logf("NacosListener Close call completed successfully")
 }
 
+// TestNacosRegistryCloseListener tests the CloseListener method of NacosRegistry
 func TestNacosRegistryCloseListener(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -561,6 +580,7 @@ func TestNacosRegistryCloseListener(t *testing.T) {
 	regURL, _ := common.NewURL("registry://127.0.0.1:8848?registry.group=testgroup")
 	serviceName := "com.example.TestService"
 
+	//Simulate the behavior of registering and closing listeners
 	nl := NewNacosListenerWithServiceName(serviceName, regURL, nc)
 	subscribeParam := &vo.SubscribeParam{
 		ServiceName:       serviceName,
@@ -572,9 +592,11 @@ func TestNacosRegistryCloseListener(t *testing.T) {
 
 	mockNamingClient.EXPECT().Unsubscribe(subscribeParam).Return(nil)
 
+	// Call the CloseListener method
 	nr := &nacosRegistry{URL: regURL, namingClient: nc}
 	nr.CloseListener()
 
+	// Verify whether to clear the entries in the listenerCache
 	if _, ok := listenerCache.Load(serviceName + "testgroup"); ok {
 		t.Errorf("listenerCache was not cleared")
 	}
