@@ -59,6 +59,7 @@ type nacosListener struct {
 	cacheLock      sync.Mutex
 	done           chan struct{}
 	subscribeParam *vo.SubscribeParam
+	once           sync.Once
 }
 
 // NewNacosListenerWithServiceName creates a data listener for nacos
@@ -214,6 +215,8 @@ func (nl *nacosListener) Next() (*registry.ServiceEvent, error) {
 
 // nolint
 func (nl *nacosListener) Close() {
-	_ = nl.stopListen()
-	close(nl.done)
+	nl.once.Do(func() {
+		_ = nl.stopListen()
+		close(nl.done)
+	})
 }
