@@ -372,7 +372,7 @@ func (s *destSets) randDest() *destination {
 	if len(s.destinations) == 1 {
 		return s.destinations[0]
 	}
-	sum := rand.Intn(s.weightSum)
+	sum := rand.Intn(s.weightSum) //NOSONAR
 	for _, d := range s.destinations {
 		sum -= d.weight
 		if sum <= 0 {

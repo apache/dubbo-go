@@ -64,7 +64,7 @@ func BenchmarkTimeWindowAggregatorAdd(b *testing.B) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			tw.Add(rand.Float64() * 100)
+			tw.Add(rand.Float64() * 100) //NOSONAR
 		}()
 	}
 	wg.Wait()
@@ -76,7 +76,7 @@ func BenchmarkTimeWindowAggregatorResult(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		wg.Add(1)
 		go func() {
-			tw.Add(rand.Float64() * 100)
+			tw.Add(rand.Float64() * 100) //NOSONAR
 		}()
 		go func() {
 			defer wg.Done()

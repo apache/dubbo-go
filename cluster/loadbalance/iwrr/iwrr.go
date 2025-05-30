@@ -83,7 +83,7 @@ func NewInterleavedweightedRoundRobin(invokers []base.Invoker, invocation base.I
 	iwrrp.next = NewIwrrQueue()
 
 	size := uint64(len(invokers))
-	offset := rand.Uint64() % size
+	offset := rand.Uint64() % size //NOSONAR
 	step := int64(0)
 	for idx := uint64(0); idx < size; idx++ {
 		invoker := invokers[(idx+offset)%size]
