@@ -39,7 +39,7 @@ jobs:
       # ref: https://github.com/actions/cache/blob/main/examples.md#go---module
       uses: actions/cache@v4
       with:
-        # Cache, only work in linux
+        # Cache, works only on Linux
         path: |
           ~/.cache/go-build
           ~/go/pkg/mod
