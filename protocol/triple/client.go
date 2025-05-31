@@ -198,7 +198,7 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		}
 	}
 	if dubbotls.IsClientTLSValid(tlsConf) {
-		cfg, err = dubbotls.GetClientTlsConfig(tlsConf)
+		cfg, err = dubbotls.GetClientTlSConfig(tlsConf)
 		if err != nil {
 			return nil, err
 		}

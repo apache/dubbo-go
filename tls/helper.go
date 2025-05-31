@@ -42,8 +42,8 @@ func IsClientTLSValid(tlsConf *global.TLSConfig) bool {
 	return tlsConf.CACertFile != ""
 }
 
-// GetServerTlsConfig build server tls config from TLSConfig
-func GetServerTlsConfig(tlsConf *global.TLSConfig) (*tls.Config, error) {
+// GetServerTlSConfig build server tls config from TLSConfig
+func GetServerTlSConfig(tlsConf *global.TLSConfig) (*tls.Config, error) {
 	//no TLS
 	if tlsConf.TLSCertFile == "" || tlsConf.TLSKeyFile == "" {
 		return nil, nil
@@ -74,8 +74,8 @@ func GetServerTlsConfig(tlsConf *global.TLSConfig) (*tls.Config, error) {
 	return cfg, nil
 }
 
-// GetClientTlsConfig build client tls config from TLSConfig
-func GetClientTlsConfig(tlsConf *global.TLSConfig) (*tls.Config, error) {
+// GetClientTlSConfig build client tls config from TLSConfig
+func GetClientTlSConfig(tlsConf *global.TLSConfig) (*tls.Config, error) {
 	//no TLS
 	if tlsConf.CACertFile == "" {
 		return nil, nil

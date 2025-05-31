@@ -111,12 +111,12 @@ func NewClient(url *common.URL) (*Client, error) {
 		// use global TLSConfig handle tls
 		tlsConf, ok := tlsConfRaw.(*global.TLSConfig)
 		if !ok {
-			logger.Errorf("DUBBO3 Server initialized the TLSConfig configuration failed")
+			logger.Errorf("Grpc Client initialized the TLSConfig configuration failed")
 			return nil, errors.New("DUBBO3 Client initialized the TLSConfig configuration failed")
 		}
 
 		if dubbotls.IsClientTLSValid(tlsConf) {
-			cfg, err := dubbotls.GetServerTlsConfig(tlsConf)
+			cfg, err := dubbotls.GetClientTlSConfig(tlsConf)
 			if err != nil {
 				return nil, err
 			}

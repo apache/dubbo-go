@@ -104,7 +104,7 @@ func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
 		}
 	}
 	if dubbotls.IsServerTLSValid(tlsConf) {
-		cfg, err := dubbotls.GetServerTlsConfig(tlsConf)
+		cfg, err := dubbotls.GetServerTlSConfig(tlsConf)
 		if err != nil {
 			logger.Errorf("TRIPLE Server initialized the TLSConfig configuration failed. err: %v", err)
 			return

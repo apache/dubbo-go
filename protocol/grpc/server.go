@@ -130,7 +130,7 @@ func (s *Server) Start(url *common.URL) {
 			return
 		}
 		if dubbotls.IsServerTLSValid(tlsConf) {
-			cfg, tlsErr := dubbotls.GetServerTlsConfig(tlsConf)
+			cfg, tlsErr := dubbotls.GetServerTlSConfig(tlsConf)
 			if tlsErr != nil {
 				return
 			}
