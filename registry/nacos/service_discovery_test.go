@@ -19,7 +19,9 @@ package nacos
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strconv"
 	"sync"
 	"testing"
 )
@@ -115,6 +117,75 @@ func TestFunction(t *testing.T) {
 	assert.NoError(t, err)
 	err = sd.Unregister(ins)
 	assert.Nil(t, err)
+}
+
+func TestBatchRegisterInstances(t *testing.T) {
+	extension.SetProtocol("mock", func() base.Protocol {
+		return &mockProtocol{}
+	})
+	var urls []*common.URL
+	url1, _ := common.NewURL("dubbo://127.0.0.1:8848")
+	url2, _ := common.NewURL("tri://127.0.0.1:8848")
+	port := 20000
+	urls = append(urls, url1)
+	urls = append(urls, url2)
+	for _, url := range urls {
+		pcl := url.Protocol
+		port = port + 1
+		sd, _ := newMockNacosServiceDiscovery(url)
+		defer func() {
+			_ = sd.Destroy()
+		}()
+		ins := &registry.DefaultServiceInstance{
+			ID:          "testID",
+			ServiceName: "nacos_batchRegister_test1",
+			Host:        url.Ip,
+			Port:        port,
+			Enable:      true,
+			Healthy:     true,
+			Metadata:    nil,
+		}
+		params := map[string]string{
+			"protocol": "mock",
+			"timeout":  "",
+			"version":  "",
+			pcl:        "",
+			"release":  "",
+			"port":     strconv.Itoa(port),
+		}
+		parmjosn, _ := json.Marshal(params)
+		ins.Metadata = map[string]string{"t1": "test", constant.MetadataServiceURLParamsPropertyName: string(parmjosn)}
+		err := sd.Register(ins)
+		assert.Nil(t, err)
+	}
+
+	url3, _ := common.NewURL("tri://127.0.0.1:8848")
+	sd, _ := newMockNacosServiceDiscovery(url3)
+	defer func() {
+		_ = sd.Destroy()
+	}()
+	ins := &registry.DefaultServiceInstance{
+		ID:          "testID",
+		ServiceName: "nacos_batchRegister_test2",
+		Host:        "127.0.0.1",
+		Port:        20004,
+		Enable:      true,
+		Healthy:     true,
+		Metadata:    nil,
+	}
+	params := map[string]string{
+		"protocol":    "mock",
+		"timeout":     "",
+		"version":     "",
+		url3.Protocol: "",
+		"release":     "",
+		"port":        "20004",
+	}
+	parmjosn, _ := json.Marshal(params)
+	ins.Metadata = map[string]string{"t1": "test", constant.MetadataServiceURLParamsPropertyName: string(parmjosn)}
+	err := sd.Register(ins)
+	assert.Nil(t, err)
+
 }
 
 func newMockNacosServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error) {

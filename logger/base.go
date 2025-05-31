@@ -19,6 +19,7 @@ package logger
 
 import (
 	"github.com/natefinch/lumberjack"
+
 	"go.uber.org/zap"
 )
 
