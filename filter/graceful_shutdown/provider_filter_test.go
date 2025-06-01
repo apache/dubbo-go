@@ -35,7 +35,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
@@ -63,8 +62,6 @@ func TestProviderFilterInvoke(t *testing.T) {
 	assert.Nil(t, result.Error())
 
 	shutdown.RejectRequest.Store(true)
-	result = filter.Invoke(context.Background(), protocol.NewBaseInvoker(url), invocation)
-	config.GetShutDown().RejectRequest.Store(true)
 	result = filter.Invoke(context.Background(), base.NewBaseInvoker(url), invocation)
 	assert.NotNil(t, result)
 	assert.NotNil(t, result.Error().Error(), "Rejected")
