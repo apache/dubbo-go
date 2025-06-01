@@ -30,8 +30,8 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/filter"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
@@ -48,7 +48,7 @@ func init() {
 }
 
 type providerGracefulShutdownFilter struct {
-	shutdownConfig *config.ShutdownConfig
+	shutdownConfig *global.ShutdownConfig
 }
 
 func newProviderGracefulShutdownFilter() filter.Filter {
@@ -89,7 +89,7 @@ func (f *providerGracefulShutdownFilter) OnResponse(ctx context.Context, result 
 func (f *providerGracefulShutdownFilter) Set(name string, conf any) {
 	switch name {
 	case constant.GracefulShutdownFilterShutdownConfig:
-		if shutdownConfig, ok := conf.(*config.ShutdownConfig); ok {
+		if shutdownConfig, ok := conf.(*global.ShutdownConfig); ok {
 			f.shutdownConfig = shutdownConfig
 			return
 		}

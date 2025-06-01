@@ -31,7 +31,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
@@ -40,18 +40,14 @@ func TestConusmerFilterInvoke(t *testing.T) {
 	url := common.NewURLWithOptions(common.WithParams(url.Values{}))
 	invocation := invocation.NewRPCInvocation("GetUser", []any{"OK"}, make(map[string]any))
 
-	rootConfig := config.NewRootConfigBuilder().
-		SetShutDown(config.NewShutDownConfigBuilder().
-			SetTimeout("60s").
-			SetStepTimeout("3s").
-			Build()).Build()
-
-	config.SetRootConfig(*rootConfig)
+	shutdown := graceful_shutdown.NewOptions(
+		graceful_shutdown.WithRejectRequestHandler("test"),
+	).Shutdown
 
 	filterValue, _ := extension.GetFilter(constant.GracefulShutdownConsumerFilterKey)
 	filter := filterValue.(*consumerGracefulShutdownFilter)
-	filter.Set(constant.GracefulShutdownFilterShutdownConfig, config.GetShutDown())
-	assert.Equal(t, filter.shutdownConfig, config.GetShutDown())
+	filter.Set(constant.GracefulShutdownFilterShutdownConfig, shutdown)
+	assert.Equal(t, filter.shutdownConfig, shutdown)
 
 	result := filter.Invoke(context.Background(), protocol.NewBaseInvoker(url), invocation)
 	assert.NotNil(t, result)

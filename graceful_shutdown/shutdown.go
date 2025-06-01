@@ -33,6 +33,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
 const (
@@ -49,8 +50,8 @@ const (
 )
 
 var (
-	initOnce       sync.Once
-	compatShutdown *config.ShutdownConfig
+	initOnce sync.Once
+	shutdown *global.ShutdownConfig
 
 	proMu     sync.Mutex
 	protocols map[string]struct{}
@@ -63,7 +64,7 @@ func Init(opts ...Option) {
 		for _, opt := range opts {
 			opt(newOpts)
 		}
-		compatShutdown = compatShutdownConfig(newOpts.Shutdown)
+		shutdown = newOpts.Shutdown
 		// retrieve ShutdownConfig for gracefulShutdownFilter
 		cGracefulShutdownFilter, existcGracefulShutdownFilter := extension.GetFilter(constant.GracefulShutdownConsumerFilterKey)
 		if !existcGracefulShutdownFilter {
@@ -74,14 +75,14 @@ func Init(opts ...Option) {
 			return
 		}
 		if filter, ok := cGracefulShutdownFilter.(config.Setter); ok {
-			filter.Set(constant.GracefulShutdownFilterShutdownConfig, compatShutdown)
+			filter.Set(constant.GracefulShutdownFilterShutdownConfig, shutdown)
 		}
 
 		if filter, ok := sGracefulShutdownFilter.(config.Setter); ok {
-			filter.Set(constant.GracefulShutdownFilterShutdownConfig, compatShutdown)
+			filter.Set(constant.GracefulShutdownFilterShutdownConfig, shutdown)
 		}
 
-		if compatShutdown.InternalSignal != nil && *compatShutdown.InternalSignal {
+		if shutdown.InternalSignal != nil && *shutdown.InternalSignal {
 			signals := make(chan os.Signal, 1)
 			signal.Notify(signals, ShutdownSignals...)
 
@@ -109,7 +110,7 @@ func Init(opts ...Option) {
 }
 
 // RegisterProtocol registers protocol which would be destroyed before shutdown.
-// Please make sure that Init function has been invoked before, otherwise this
+// Please make sure that the Init function has been invoked before, otherwise this
 // function would not make any sense.
 func RegisterProtocol(name string) {
 	proMu.Lock()
@@ -118,7 +119,7 @@ func RegisterProtocol(name string) {
 }
 
 func totalTimeout() time.Duration {
-	timeout := parseDuration(compatShutdown.Timeout, timeoutDesc, defaultTimeout)
+	timeout := parseDuration(shutdown.Timeout, timeoutDesc, defaultTimeout)
 	if timeout < defaultTimeout {
 		timeout = defaultTimeout
 	}
@@ -128,11 +129,11 @@ func totalTimeout() time.Duration {
 
 func beforeShutdown() {
 	destroyRegistries()
-	// waiting for a short time so that the clients have enough time to get the notification that server shutdowns
+	// waiting for a short time so that the clients have enough time to get the notification, that server shutdowns
 	// The value of configuration depends on how long the clients will get notification.
 	waitAndAcceptNewRequests()
 
-	// reject sending/receiving the new request, but keeping waiting for accepting requests
+	// reject sending/receiving the new request but keeping waiting for accepting requests
 	waitForSendingAndReceivingRequests()
 
 	// destroy all protocols
@@ -155,10 +156,10 @@ func destroyRegistries() {
 func waitAndAcceptNewRequests() {
 	logger.Info("Graceful shutdown --- Keep waiting and accept new requests for a short time. ")
 
-	updateWaitTime := parseDuration(compatShutdown.ConsumerUpdateWaitTime, consumerUpdateWaitTimeDesc, defaultConsumerUpdateWaitTime)
+	updateWaitTime := parseDuration(shutdown.ConsumerUpdateWaitTime, consumerUpdateWaitTimeDesc, defaultConsumerUpdateWaitTime)
 	time.Sleep(updateWaitTime)
 
-	stepTimeout := parseDuration(compatShutdown.StepTimeout, stepTimeoutDesc, defaultStepTimeout)
+	stepTimeout := parseDuration(shutdown.StepTimeout, stepTimeoutDesc, defaultStepTimeout)
 
 	// ignore this step
 	if stepTimeout < 0 {
@@ -170,36 +171,36 @@ func waitAndAcceptNewRequests() {
 func waitingProviderProcessedTimeout(timeout time.Duration) {
 	deadline := time.Now().Add(timeout)
 
-	offlineRequestWindowTimeout := parseDuration(compatShutdown.OfflineRequestWindowTimeout, offlineRequestWindowTimeoutDesc, defaultOfflineRequestWindowTimeout)
+	offlineRequestWindowTimeout := parseDuration(shutdown.OfflineRequestWindowTimeout, offlineRequestWindowTimeoutDesc, defaultOfflineRequestWindowTimeout)
 
 	for time.Now().Before(deadline) &&
-		(compatShutdown.ProviderActiveCount.Load() > 0 || time.Now().Before(compatShutdown.ProviderLastReceivedRequestTime.Load().Add(offlineRequestWindowTimeout))) {
+		(shutdown.ProviderActiveCount.Load() > 0 || time.Now().Before(shutdown.ProviderLastReceivedRequestTime.Load().Add(offlineRequestWindowTimeout))) {
 		// sleep 10 ms and then we check it again
 		time.Sleep(10 * time.Millisecond)
 		logger.Infof("waiting for provider active invocation count = %d, provider last received request time: %v",
-			compatShutdown.ProviderActiveCount.Load(), compatShutdown.ProviderLastReceivedRequestTime.Load())
+			shutdown.ProviderActiveCount.Load(), shutdown.ProviderLastReceivedRequestTime.Load())
 	}
 }
 
-// for provider. It will wait for processing receiving requests
+// For provider. It will wait for processing receiving requests
 func waitForSendingAndReceivingRequests() {
 	logger.Info("Graceful shutdown --- Keep waiting until sending/accepting requests finish or timeout. ")
-	compatShutdown.RejectRequest.Store(true)
+	shutdown.RejectRequest.Store(true)
 	waitingConsumerProcessedTimeout()
 }
 
 func waitingConsumerProcessedTimeout() {
-	stepTimeout := parseDuration(compatShutdown.StepTimeout, stepTimeoutDesc, defaultStepTimeout)
+	stepTimeout := parseDuration(shutdown.StepTimeout, stepTimeoutDesc, defaultStepTimeout)
 
 	if stepTimeout <= 0 {
 		return
 	}
 	deadline := time.Now().Add(stepTimeout)
 
-	for time.Now().Before(deadline) && compatShutdown.ConsumerActiveCount.Load() > 0 {
+	for time.Now().Before(deadline) && shutdown.ConsumerActiveCount.Load() > 0 {
 		// sleep 10 ms and then we check it again
 		time.Sleep(10 * time.Millisecond)
-		logger.Infof("waiting for consumer active invocation count = %d", compatShutdown.ConsumerActiveCount.Load())
+		logger.Infof("waiting for consumer active invocation count = %d", shutdown.ConsumerActiveCount.Load())
 	}
 }
 
