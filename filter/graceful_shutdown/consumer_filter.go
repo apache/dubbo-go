@@ -77,16 +77,15 @@ func (f *consumerGracefulShutdownFilter) OnResponse(ctx context.Context, result 
 func (f *consumerGracefulShutdownFilter) Set(name string, conf any) {
 	switch name {
 	case constant.GracefulShutdownFilterShutdownConfig:
-		if shutdownConfig, ok := conf.(*global.ShutdownConfig); ok {
-			f.shutdownConfig = shutdownConfig
-			return
+		switch conf.(type) {
+		case *global.ShutdownConfig:
+			f.shutdownConfig = conf.(*global.ShutdownConfig)
+		case *config.ShutdownConfig:
+			f.shutdownConfig = compatGlobalShutdownConfig(conf.(*config.ShutdownConfig))
+		default:
+			logger.Warnf("the type of config for {%s} should be *global.ShutdownConfig", constant.GracefulShutdownFilterShutdownConfig)
 		}
-		// only for compatibility with old config, able to directly remove after config is deleted
-		if shutdownConfig, ok := conf.(*config.ShutdownConfig); ok {
-			f.shutdownConfig = compatGlobalShutdownConfig(shutdownConfig)
-			return
-		}
-		logger.Warnf("the type of config for {%s} should be *global.ShutdownConfig", constant.GracefulShutdownFilterShutdownConfig)
+		return
 	default:
 		// do nothing
 	}

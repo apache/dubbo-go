@@ -65,11 +65,11 @@ func WithConsumerUpdateWaitTime(duration time.Duration) Option {
 }
 
 // todo(DMwangnima): add more specified configuration API
-func WithRejectRequestHandler(handler string) Option {
-	return func(opts *Options) {
-		opts.Shutdown.RejectRequestHandler = handler
-	}
-}
+//func WithRejectRequestHandler(handler string) Option {
+//	return func(opts *Options) {
+//		opts.Shutdown.RejectRequestHandler = handler
+//	}
+//}
 
 func WithoutInternalSignal() Option {
 	return func(opts *Options) {
