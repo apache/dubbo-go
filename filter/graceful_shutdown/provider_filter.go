@@ -30,6 +30,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
@@ -61,7 +62,7 @@ func newProviderGracefulShutdownFilter() filter.Filter {
 	return psf
 }
 
-// Invoke adds the requests count and block the new requests if application is closing
+// Invoke adds the requests count and blocks the new requests if application is closing
 func (f *providerGracefulShutdownFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
 	if f.rejectNewRequest() {
 		logger.Info("The application is closing, new request will be rejected.")
@@ -94,7 +95,12 @@ func (f *providerGracefulShutdownFilter) Set(name string, conf any) {
 			f.shutdownConfig = shutdownConfig
 			return
 		}
-		logger.Warnf("the type of config for {%s} should be *config.ShutdownConfig", constant.GracefulShutdownFilterShutdownConfig)
+		// only for compatibility with old config, able to directly remove after config is deleted
+		if shutdownConfig, ok := conf.(*config.ShutdownConfig); ok {
+			f.shutdownConfig = compatGlobalShutdownConfig(shutdownConfig)
+			return
+		}
+		logger.Warnf("the type of config for {%s} should be *global.ShutdownConfig", constant.GracefulShutdownFilterShutdownConfig)
 	default:
 		// do nothing
 	}
