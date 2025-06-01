@@ -93,7 +93,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, ivc base.Invocation) result.
 		// Generally, the case will not happen, because the invoker has been removed
 		// from the invoker list before destroy,so no new request will enter the destroyed invoker
 		logger.Warnf("this dubboInvoker is destroyed")
-		res.Err = base.ErrDestroyedInvoker
+		res.SetError(base.ErrDestroyedInvoker)
 		return &res
 	}
 
