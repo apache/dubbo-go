@@ -48,20 +48,19 @@ func TestProviderFilterInvoke(t *testing.T) {
 		return &TestRejectedExecutionHandler{}
 	})
 
-	shutdown := graceful_shutdown.NewOptions(
-		graceful_shutdown.WithRejectRequestHandler("test"),
-	).Shutdown
+	opt := graceful_shutdown.NewOptions()
+	opt.Shutdown.RejectRequestHandler = "test"
 
 	filterValue, _ := extension.GetFilter(constant.GracefulShutdownProviderFilterKey)
 	filter := filterValue.(*providerGracefulShutdownFilter)
-	filter.Set(constant.GracefulShutdownFilterShutdownConfig, shutdown)
-	assert.Equal(t, filter.shutdownConfig, shutdown)
+	filter.Set(constant.GracefulShutdownFilterShutdownConfig, opt.Shutdown)
+	assert.Equal(t, filter.shutdownConfig, opt.Shutdown)
 
 	result := filter.Invoke(context.Background(), base.NewBaseInvoker(url), invocation)
 	assert.NotNil(t, result)
 	assert.Nil(t, result.Error())
 
-	shutdown.RejectRequest.Store(true)
+	opt.Shutdown.RejectRequest.Store(true)
 	result = filter.Invoke(context.Background(), base.NewBaseInvoker(url), invocation)
 	assert.NotNil(t, result)
 	assert.NotNil(t, result.Error().Error(), "Rejected")
