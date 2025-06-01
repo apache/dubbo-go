@@ -101,8 +101,8 @@ func (di *DubboInvoker) Invoke(ctx context.Context, ivc base.Invocation) result.
 	defer di.clientGuard.RUnlock()
 
 	if di.client == nil {
-		res.Err = base.ErrClientClosed
-		logger.Debugf("result.Err: %v", res.Err)
+		res.SetError(base.ErrClientClosed)
+		logger.Debugf("result.Err: %v", res.Error())
 		return &res
 	}
 
@@ -134,20 +134,23 @@ func (di *DubboInvoker) Invoke(ctx context.Context, ivc base.Invocation) result.
 	timeout := di.getTimeout(inv)
 	if async {
 		if callBack, ok := inv.CallBack().(func(response common.CallbackResponse)); ok {
-			res.Err = di.client.AsyncRequest(&ivc, url, timeout, callBack, rest)
+			err = di.client.AsyncRequest(&ivc, url, timeout, callBack, rest)
+			res.SetError(err)
 		} else {
-			res.Err = di.client.Send(&ivc, url, timeout)
+			err = di.client.Send(&ivc, url, timeout)
+			res.SetError(err)
 		}
 	} else {
 		if inv.Reply() == nil {
-			res.Err = base.ErrNoReply
+			res.SetError(base.ErrNoReply)
 		} else {
-			res.Err = di.client.Request(&ivc, url, timeout, rest)
+			err = di.client.Request(&ivc, url, timeout, rest)
+			res.SetError(err)
 		}
 	}
 	if res.Err == nil {
-		res.Rest = inv.Reply()
-		res.Attrs = rest.Attrs
+		res.SetResult(inv.Reply())
+		res.SetAttachments(rest.Attachments())
 	}
 
 	return &res
