@@ -33,6 +33,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
@@ -49,7 +50,7 @@ func TestConusmerFilterInvoke(t *testing.T) {
 	filter.Set(constant.GracefulShutdownFilterShutdownConfig, shutdown)
 	assert.Equal(t, filter.shutdownConfig, shutdown)
 
-	result := filter.Invoke(context.Background(), protocol.NewBaseInvoker(url), invocation)
+	result := filter.Invoke(context.Background(), base.NewBaseInvoker(url), invocation)
 	assert.NotNil(t, result)
 	assert.Nil(t, result.Error())
 }

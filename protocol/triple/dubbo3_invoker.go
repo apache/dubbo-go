@@ -42,8 +42,9 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	invocation_impl "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 // same as dubbo_invoker.go attachmentKey
@@ -54,7 +55,7 @@ var attachmentKey = []string{
 
 // DubboInvoker is implement of protocol.Invoker, a dubboInvoker refer to one service and ip.
 type DubboInvoker struct {
-	protocol.BaseInvoker
+	base.BaseInvoker
 	// the net layer client, it is focus on network communication.
 	client *triple.TripleClient
 	// quitOnce is used to make sure DubboInvoker is only destroyed once
@@ -137,7 +138,7 @@ func NewDubbo3Invoker(url *common.URL) (*DubboInvoker, error) {
 	}
 
 	return &DubboInvoker{
-		BaseInvoker: *protocol.NewBaseInvoker(url),
+		BaseInvoker: *base.NewBaseInvoker(url),
 		client:      client,
 		timeout:     timeout,
 		clientGuard: &sync.RWMutex{},
@@ -159,16 +160,16 @@ func (di *DubboInvoker) getClient() *triple.TripleClient {
 }
 
 // Invoke call remoting.
-func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+func (di *DubboInvoker) Invoke(ctx context.Context, invocation base.Invocation) result.Result {
 	var (
-		result protocol.RPCResult
+		result result.RPCResult
 	)
 
 	if !di.BaseInvoker.IsAvailable() {
 		// Generally, the case will not happen, because the invoker has been removed
 		// from the invoker list before destroy,so no new request will enter the destroyed invoker
 		logger.Warnf("this dubboInvoker is destroyed")
-		result.Err = protocol.ErrDestroyedInvoker
+		result.Err = base.ErrDestroyedInvoker
 		return &result
 	}
 
@@ -176,7 +177,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	defer di.clientGuard.RUnlock()
 
 	if di.client == nil {
-		result.Err = protocol.ErrClientClosed
+		result.Err = base.ErrClientClosed
 		return &result
 	}
 
@@ -184,7 +185,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 		// Generally, the case will not happen, because the invoker has been removed
 		// from the invoker list before destroy,so no new request will enter the destroyed invoker
 		logger.Warnf("this grpcInvoker is destroying")
-		result.Err = protocol.ErrDestroyedInvoker
+		result.Err = base.ErrDestroyedInvoker
 		return &result
 	}
 

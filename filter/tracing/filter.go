@@ -31,7 +31,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 // this should be executed before users set their own Tracer
@@ -49,7 +50,7 @@ var (
 // notice that this could be used in both client-side and server-side.
 type tracingFilter struct{}
 
-func (tf *tracingFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (tf *tracingFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
 	var (
 		spanCtx context.Context
 		span    opentracing.Span
@@ -86,8 +87,8 @@ func (tf *tracingFilter) Invoke(ctx context.Context, invoker protocol.Invoker, i
 	return result
 }
 
-func (tf *tracingFilter) OnResponse(ctx context.Context, result protocol.Result,
-	invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (tf *tracingFilter) OnResponse(ctx context.Context, result result.Result,
+	invoker base.Invoker, invocation base.Invocation) result.Result {
 	return result
 }
 

@@ -32,7 +32,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	"dubbo.apache.org/dubbo-go/v3/proxy"
 )
 
@@ -50,12 +51,12 @@ func NewPassThroughProxyFactory(_ ...proxy.Option) proxy.ProxyFactory {
 }
 
 // GetProxy gets a proxy
-func (factory *PassThroughProxyFactory) GetProxy(invoker protocol.Invoker, url *common.URL) *proxy.Proxy {
+func (factory *PassThroughProxyFactory) GetProxy(invoker base.Invoker, url *common.URL) *proxy.Proxy {
 	return factory.GetAsyncProxy(invoker, nil, url)
 }
 
 // GetAsyncProxy gets a async proxy
-func (factory *PassThroughProxyFactory) GetAsyncProxy(invoker protocol.Invoker, callBack any, url *common.URL) *proxy.Proxy {
+func (factory *PassThroughProxyFactory) GetAsyncProxy(invoker base.Invoker, callBack any, url *common.URL) *proxy.Proxy {
 	//create proxy
 	attachments := map[string]string{}
 	attachments[constant.AsyncKey] = url.GetParam(constant.AsyncKey, "false")
@@ -63,10 +64,10 @@ func (factory *PassThroughProxyFactory) GetAsyncProxy(invoker protocol.Invoker, 
 }
 
 // GetInvoker gets a invoker
-func (factory *PassThroughProxyFactory) GetInvoker(url *common.URL) protocol.Invoker {
+func (factory *PassThroughProxyFactory) GetInvoker(url *common.URL) base.Invoker {
 	return &PassThroughProxyInvoker{
 		ProxyInvoker: &ProxyInvoker{
-			BaseInvoker: *protocol.NewBaseInvoker(url),
+			BaseInvoker: *base.NewBaseInvoker(url),
 		},
 	}
 }
@@ -79,8 +80,8 @@ type PassThroughProxyInvoker struct {
 }
 
 // Invoke is used to call service method by invocation
-func (pi *PassThroughProxyInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
-	result := &protocol.RPCResult{}
+func (pi *PassThroughProxyInvoker) Invoke(ctx context.Context, invocation base.Invocation) result.Result {
+	result := &result.RPCResult{}
 	result.SetAttachments(invocation.Attachments())
 	url := getProviderURL(pi.GetURL())
 
@@ -102,7 +103,7 @@ func (pi *PassThroughProxyInvoker) Invoke(ctx context.Context, invocation protoc
 	method := srv.Method()["Service"]
 
 	in := make([]reflect.Value, 0, 5)
-	in = append(in, srv.Rcvr())
+	in = append(in, srv.Service())
 	in = append(in, reflect.ValueOf(invocation.MethodName()))
 	in = append(in, reflect.ValueOf(invocation.GetAttachmentInterface(constant.ParamsTypeKey)))
 	in = append(in, reflect.ValueOf(args))

@@ -64,6 +64,16 @@ const (
 	MaxServerRecvMsgSize   = "max-server-recv-msg-size"
 	KeepAliveInterval      = "keep-alive-interval"
 	KeepAliveTimeout       = "keep-alive-timeout"
+
+	// TODO: remove IDLMode after old triple removed
+	IDLMode = "IDL-mode"
+)
+
+// TODO: remove this after old triple removed
+// IDLMode
+const (
+	IDL    = "IDL"
+	NONIDL = "non-IDL"
 )
 
 // tls constant

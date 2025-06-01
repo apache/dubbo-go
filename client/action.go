@@ -41,7 +41,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	"dubbo.apache.org/dubbo-go/v3/proxy"
 )
@@ -89,6 +89,10 @@ func (refOpts *ReferenceOptions) ReferWithService(srv common.RPCService) {
 	refOpts.refer(srv, nil)
 }
 
+func (refOpts *ReferenceOptions) Refer() {
+	refOpts.refer(nil, nil)
+}
+
 func (refOpts *ReferenceOptions) ReferWithInfo(info *ClientInfo) {
 	refOpts.refer(nil, info)
 }
@@ -130,9 +134,21 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 		common.WithParamsValue(constant.TimeoutKey, refOpts.Consumer.RequestTimeout),
 		common.WithParamsValue(constant.KeepAliveInterval, ref.KeepAliveInterval),
 		common.WithParamsValue(constant.KeepAliveTimeout, ref.KeepAliveTimeout),
+		// for new triple non-IDL mode
+		// TODO: remove ISIDL after old triple removed
+		common.WithParamsValue(constant.IDLMode, ref.IDLMode),
 	)
+
+	// for new triple IDL mode
 	if info != nil {
 		cfgURL.SetAttribute(constant.ClientInfoKey, info)
+	}
+
+	// for new triple non-IDL mode
+	// It assists in passing the service,
+	// which is then parsed internally by new triple.
+	if srv != nil {
+		cfgURL.SetAttribute(constant.RpcServiceKey, srv)
 	}
 
 	if ref.ForceTag {
@@ -219,12 +235,12 @@ func processURL(ref *global.ReferenceConfig, regsCompat map[string]*config.Regis
 	return urls, nil
 }
 
-func buildInvoker(urls []*common.URL, ref *global.ReferenceConfig) (protocol.Invoker, error) {
+func buildInvoker(urls []*common.URL, ref *global.ReferenceConfig) (base.Invoker, error) {
 	var (
-		invoker protocol.Invoker
+		invoker base.Invoker
 		regURL  *common.URL
 	)
-	invokers := make([]protocol.Invoker, len(urls))
+	invokers := make([]base.Invoker, len(urls))
 	for i, u := range urls {
 		if u.Protocol == constant.ServiceRegistryProtocol {
 			invoker = extension.GetProtocol(constant.RegistryProtocol).Refer(u)
@@ -242,7 +258,7 @@ func buildInvoker(urls []*common.URL, ref *global.ReferenceConfig) (protocol.Inv
 		invokers[i] = invoker
 	}
 
-	var resInvoker protocol.Invoker
+	var resInvoker base.Invoker
 	// TODO(hxmhlt): decouple from directory, config should not depend on directory module
 	if len(invokers) == 1 {
 		resInvoker = invokers[0]
@@ -395,7 +411,7 @@ func (refOpts *ReferenceOptions) getURLMap() url.Values {
 //}
 
 // GetInvoker get invoker from ReferenceConfigs
-func (refOpts *ReferenceOptions) GetInvoker() protocol.Invoker {
+func (refOpts *ReferenceOptions) GetInvoker() base.Invoker {
 	return refOpts.invoker
 }
 

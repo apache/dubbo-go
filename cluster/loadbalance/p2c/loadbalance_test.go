@@ -31,7 +31,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/metrics"
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	protoinvoc "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
@@ -44,7 +44,7 @@ func TestLoadBalance(t *testing.T) {
 
 	t.Run("no invokers", func(t *testing.T) {
 		rand.Seed(randSeed())
-		ivk := lb.Select([]protocol.Invoker{}, invocation)
+		ivk := lb.Select([]base.Invoker{}, invocation)
 		assert.Nil(t, ivk)
 	})
 
@@ -52,8 +52,8 @@ func TestLoadBalance(t *testing.T) {
 		rand.Seed(randSeed())
 		url0, _ := common.NewURL("dubbo://192.168.1.0:20000/com.ikurento.user.UserProvider")
 
-		ivkArr := []protocol.Invoker{
-			protocol.NewBaseInvoker(url0),
+		ivkArr := []base.Invoker{
+			base.NewBaseInvoker(url0),
 		}
 		ivk := lb.Select(ivkArr, invocation)
 		assert.Equal(t, ivkArr[0].GetURL().String(), ivk.GetURL().String())
@@ -79,9 +79,9 @@ func TestLoadBalance(t *testing.T) {
 			Times(1).
 			Return(uint64(5), nil)
 
-		ivkArr := []protocol.Invoker{
-			protocol.NewBaseInvoker(url0),
-			protocol.NewBaseInvoker(url1),
+		ivkArr := []base.Invoker{
+			base.NewBaseInvoker(url0),
+			base.NewBaseInvoker(url1),
 		}
 
 		ivk := lb.Select(ivkArr, invocation)
@@ -110,10 +110,10 @@ func TestLoadBalance(t *testing.T) {
 			Times(1).
 			Return(uint64(5), nil)
 
-		ivkArr := []protocol.Invoker{
-			protocol.NewBaseInvoker(url0),
-			protocol.NewBaseInvoker(url1),
-			protocol.NewBaseInvoker(url2),
+		ivkArr := []base.Invoker{
+			base.NewBaseInvoker(url0),
+			base.NewBaseInvoker(url1),
+			base.NewBaseInvoker(url2),
 		}
 
 		ivk := lb.Select(ivkArr, invocation)
@@ -138,10 +138,10 @@ func TestLoadBalance(t *testing.T) {
 			Times(1).
 			Return(0, metrics.ErrMetricsNotFound)
 
-		ivkArr := []protocol.Invoker{
-			protocol.NewBaseInvoker(url0),
-			protocol.NewBaseInvoker(url1),
-			protocol.NewBaseInvoker(url2),
+		ivkArr := []base.Invoker{
+			base.NewBaseInvoker(url0),
+			base.NewBaseInvoker(url1),
+			base.NewBaseInvoker(url2),
 		}
 
 		ivk := lb.Select(ivkArr, invocation)
@@ -171,10 +171,10 @@ func TestLoadBalance(t *testing.T) {
 			Times(1).
 			Return(uint64(0), metrics.ErrMetricsNotFound)
 
-		ivkArr := []protocol.Invoker{
-			protocol.NewBaseInvoker(url0),
-			protocol.NewBaseInvoker(url1),
-			protocol.NewBaseInvoker(url2),
+		ivkArr := []base.Invoker{
+			base.NewBaseInvoker(url0),
+			base.NewBaseInvoker(url1),
+			base.NewBaseInvoker(url2),
 		}
 
 		ivk := lb.Select(ivkArr, invocation)

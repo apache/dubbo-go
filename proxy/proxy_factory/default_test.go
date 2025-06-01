@@ -28,13 +28,13 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 func TestGetProxy(t *testing.T) {
 	proxyFactory := NewDefaultProxyFactory()
 	url := common.NewURLWithOptions()
-	proxy := proxyFactory.GetProxy(protocol.NewBaseInvoker(url), url)
+	proxy := proxyFactory.GetProxy(base.NewBaseInvoker(url), url)
 	assert.NotNil(t, proxy)
 }
 
@@ -48,7 +48,7 @@ func TestGetAsyncProxy(t *testing.T) {
 	proxyFactory := NewDefaultProxyFactory()
 	url := common.NewURLWithOptions()
 	async := &TestAsync{}
-	proxy := proxyFactory.GetAsyncProxy(protocol.NewBaseInvoker(url), async.CallBack, url)
+	proxy := proxyFactory.GetAsyncProxy(base.NewBaseInvoker(url), async.CallBack, url)
 	assert.NotNil(t, proxy)
 }
 

@@ -28,9 +28,9 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-
 	hessian "github.com/apache/dubbo-go-hessian2"
+
+	"github.com/dubbogo/gost/log/logger"
 
 	grpc_go "github.com/dubbogo/grpc-go"
 
@@ -44,7 +44,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/internal"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo3"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
@@ -54,20 +54,24 @@ import (
 // provide functionality.
 type Server struct {
 	triServer *tri.Server
+	cfg       *ServerOptions
 	mu        sync.RWMutex
 	services  map[string]grpc.ServiceInfo
 }
 
 // NewServer creates a new TRIPLE server.
 // triServer would not be initialized since we could not get configurations here.
-func NewServer() *Server {
+func NewServer(opts ...ServerOption) *Server {
+	newSrvOpts := defaultServerOptions()
+	newSrvOpts.init(opts...)
 	return &Server{
+		cfg:      newSrvOpts,
 		services: make(map[string]grpc.ServiceInfo),
 	}
 }
 
 // Start TRIPLE server
-func (s *Server) Start(invoker protocol.Invoker, info *common.ServiceInfo) {
+func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
 	URL := invoker.GetURL()
 	addr := URL.Location
 	// initialize tri.Server
@@ -108,7 +112,15 @@ func (s *Server) Start(invoker protocol.Invoker, info *common.ServiceInfo) {
 		logger.Infof("TRIPLE Server initialized the TLSConfig configuration")
 	}
 
-	// todo:// move tls config to handleService
+	// IDLMode means that this will only be set when
+	// the new triple is started in non-IDL mode.
+	// TODO: remove IDLMode when config package is removed
+	IDLMode := URL.GetParam(constant.IDLMode, "")
+
+	var service common.RPCService
+	if IDLMode == constant.NONIDL {
+		service, _ = URL.GetAttribute(constant.RpcServiceKey)
+	}
 
 	hanOpts := getHanOpts(URL)
 	//Set expected codec name from serviceinfo
@@ -118,8 +130,13 @@ func (s *Server) Start(invoker protocol.Invoker, info *common.ServiceInfo) {
 		// new triple idl mode
 		s.handleServiceWithInfo(intfName, invoker, info, hanOpts...)
 		s.saveServiceInfo(intfName, info)
+	} else if IDLMode == constant.NONIDL {
+		// new triple non-idl mode
+		reflectInfo := createServiceInfoWithReflection(service)
+		s.handleServiceWithInfo(intfName, invoker, reflectInfo, hanOpts...)
+		s.saveServiceInfo(intfName, reflectInfo)
 	} else {
-		// old triple idl mode and non-idl mode
+		// old triple idl mode and old triple non-idl mode
 		s.compatHandleService(intfName, URL.Group(), URL.Version(), hanOpts...)
 	}
 	internal.ReflectionRegister(s)
@@ -133,7 +150,7 @@ func (s *Server) Start(invoker protocol.Invoker, info *common.ServiceInfo) {
 
 // todo(DMwangnima): extract a common function
 // RefreshService refreshes Triple Service
-func (s *Server) RefreshService(invoker protocol.Invoker, info *common.ServiceInfo) {
+func (s *Server) RefreshService(invoker base.Invoker, info *common.ServiceInfo) {
 	URL := invoker.GetURL()
 	serialization := URL.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	switch serialization {
@@ -198,7 +215,7 @@ func (s *Server) compatHandleService(interfaceName string, group, version string
 			logger.Warnf("no exporter found for serviceKey: %v", serviceKey)
 			continue
 		}
-		invoker := exporter.(protocol.Exporter).GetInvoker()
+		invoker := exporter.(base.Exporter).GetInvoker()
 		if invoker == nil {
 			panic(fmt.Sprintf("no invoker found for servicekey: %v", serviceKey))
 		}
@@ -245,7 +262,7 @@ func (s *Server) compatRegisterHandler(interfaceName string, svc dubbo3.Dubbo3Gr
 }
 
 // handleServiceWithInfo injects invoker and create handler based on ServiceInfo
-func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.Invoker, info *common.ServiceInfo, opts ...tri.HandlerOption) {
+func (s *Server) handleServiceWithInfo(interfaceName string, invoker base.Invoker, info *common.ServiceInfo, opts ...tri.HandlerOption) {
 	for _, method := range info.Methods {
 		m := method
 		procedure := joinProcedure(interfaceName, method.Name)
@@ -433,15 +450,14 @@ func (s *Server) GracefulStop() {
 // As a result, Server could use this ServiceInfo to register.
 func createServiceInfoWithReflection(svc common.RPCService) *common.ServiceInfo {
 	var info common.ServiceInfo
-	val := reflect.ValueOf(svc)
-	typ := reflect.TypeOf(svc)
-	methodNum := val.NumMethod()
+	svcType := reflect.TypeOf(svc)
+	methodNum := svcType.NumMethod()
 
 	// +1 for generic call method
 	methodInfos := make([]common.MethodInfo, 0, methodNum+1)
 
-	for i := 0; i < methodNum; i++ {
-		methodType := typ.Method(i)
+	for i := range methodNum {
+		methodType := svcType.Method(i)
 		if methodType.Name == "Reference" {
 			continue
 		}

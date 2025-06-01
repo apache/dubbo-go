@@ -47,6 +47,10 @@ type ReferenceConfig struct {
 	MeshProviderPort  int               `yaml:"mesh-provider-port" json:"mesh-provider-port,omitempty" propertiy:"mesh-provider-port"`
 	KeepAliveInterval string            `yaml:"keep-alive-interval" json:"keep-alive-interval,omitempty" property:"keep-alive-interval"`
 	KeepAliveTimeout  string            `yaml:"keep-alive-timeout" json:"keep-alive-timeout,omitempty" property:"keep-alive-timeout"`
+
+	// just for new triple non-IDL mode
+	// TODO: remove IDLMode when config package is removed
+	IDLMode string
 }
 
 func DefaultReferenceConfig() *ReferenceConfig {
@@ -185,6 +189,7 @@ func (c *ReferenceConfig) Clone() *ReferenceConfig {
 		MeshProviderPort:  c.MeshProviderPort,
 		KeepAliveInterval: c.KeepAliveInterval,
 		KeepAliveTimeout:  c.KeepAliveTimeout,
+		IDLMode:           c.IDLMode,
 	}
 }
 

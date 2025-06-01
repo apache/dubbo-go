@@ -19,7 +19,7 @@ package filter
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 // AccessKeyPair stores the basic attributes for authentication.
@@ -35,5 +35,5 @@ type AccessKeyPair struct {
 // AccessKeyStorage is the interface which supports us to store our AccessKeyPair or
 // load AccessKeyPair from other storage, such as filesystem.
 type AccessKeyStorage interface {
-	GetAccessKeyPair(protocol.Invocation, *common.URL) *AccessKeyPair
+	GetAccessKeyPair(base.Invocation, *common.URL) *AccessKeyPair
 }

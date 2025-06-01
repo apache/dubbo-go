@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"reflect"
 	"strings"
 )
 
@@ -74,7 +75,7 @@ func (cm *clientManager) callUnary(ctx context.Context, method string, req, resp
 		return err
 	}
 
-	serverAttachments, ok := ctx.Value(constant.AttachmentServerKey).(map[string]interface{})
+	serverAttachments, ok := ctx.Value(constant.AttachmentServerKey).(map[string]any)
 	if !ok {
 		return nil
 	}
@@ -244,13 +245,35 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		baseTriURL = httpPrefix + baseTriURL
 	}
 	triClients := make(map[string]*tri.Client)
-	for _, method := range url.Methods {
-		triURL, err := joinPath(baseTriURL, url.Interface(), method)
-		if err != nil {
-			return nil, fmt.Errorf("JoinPath failed for base %s, interface %s, method %s", baseTriURL, url.Interface(), method)
+
+	if len(url.Methods) != 0 {
+		for _, method := range url.Methods {
+			triURL, err := joinPath(baseTriURL, url.Interface(), method)
+			if err != nil {
+				return nil, fmt.Errorf("JoinPath failed for base %s, interface %s, method %s", baseTriURL, url.Interface(), method)
+			}
+			triClient := tri.NewClient(httpClient, triURL, cliOpts...)
+			triClients[method] = triClient
 		}
-		triClient := tri.NewClient(httpClient, triURL, cliOpts...)
-		triClients[method] = triClient
+	} else {
+		// This branch is for the non-IDL mode, where we pass in the service solely
+		// for the purpose of using reflection to obtain all methods of the service.
+		// There might be potential for optimization in this area later on.
+		service, ok := url.GetAttribute(constant.RpcServiceKey)
+		if !ok {
+			return nil, fmt.Errorf("triple clientmanager can't get methods")
+		}
+
+		serviceType := reflect.TypeOf(service)
+		for i := range serviceType.NumMethod() {
+			methodName := serviceType.Method(i).Name
+			triURL, err := joinPath(baseTriURL, url.Interface(), methodName)
+			if err != nil {
+				return nil, fmt.Errorf("JoinPath failed for base %s, interface %s, method %s", baseTriURL, url.Interface(), methodName)
+			}
+			triClient := tri.NewClient(httpClient, triURL, cliOpts...)
+			triClients[methodName] = triClient
+		}
 	}
 
 	return &clientManager{

@@ -56,6 +56,7 @@ func (m *metadataServiceURLParamsMetadataCustomizer) GetPriority() int {
 }
 
 func (m *metadataServiceURLParamsMetadataCustomizer) Customize(instance registry.ServiceInstance) {
+	//todo Multi-instance metadata alignment needs to be improved
 	url, _ := metadata.GetMetadataService().GetMetadataServiceURL()
 	if url == nil {
 		// when metadata service is not exported the url will be nil,this is because metadata type is remote

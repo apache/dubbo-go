@@ -27,7 +27,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 const (
@@ -57,7 +57,7 @@ func newConshashLoadBalance() loadbalance.LoadBalance {
 }
 
 // Select gets invoker based on load balancing strategy
-func (lb *conshashLoadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
+func (lb *conshashLoadBalance) Select(invokers []base.Invoker, invocation base.Invocation) base.Invoker {
 	methodName := invocation.MethodName()
 	key := invokers[0].GetURL().ServiceKey() + "." + methodName
 

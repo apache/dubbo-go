@@ -30,7 +30,7 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 const (
@@ -73,7 +73,7 @@ func newJsInstances() *jsInstances {
 	}
 }
 
-func (i *jsInstances) Run(rawScript string, invokers []protocol.Invoker, invocation protocol.Invocation) ([]protocol.Invoker, error) {
+func (i *jsInstances) Run(rawScript string, invokers []base.Invoker, invocation base.Invocation) ([]base.Invoker, error) {
 	i.pgLock.RLock()
 	pg, ok := i.program[rawScript]
 	i.pgLock.RUnlock()
@@ -83,7 +83,7 @@ func (i *jsInstances) Run(rawScript string, invokers []protocol.Invoker, invocat
 	}
 	matcher := i.insPool.Get().(*jsInstance)
 
-	packInvokers := make([]protocol.Invoker, 0, len(invokers))
+	packInvokers := make([]base.Invoker, 0, len(invokers))
 	for _, invoker := range invokers {
 		packInvokers = append(packInvokers, newScriptInvokerImpl(invoker))
 	}
@@ -102,11 +102,11 @@ func (i *jsInstances) Run(rawScript string, invokers []protocol.Invoker, invocat
 		return invokers, fmt.Errorf("script result is not array , script return type: %s", reflect.ValueOf(scriptRes.(*goja.Object).Export()).String())
 	}
 
-	result := make([]protocol.Invoker, 0, len(rtInvokersArr))
+	result := make([]base.Invoker, 0, len(rtInvokersArr))
 	for _, res := range rtInvokersArr {
 		if i, ok := res.(*scriptInvokerWrapper); ok {
 			i.setRanMode()
-			result = append(result, res.(protocol.Invoker))
+			result = append(result, res.(base.Invoker))
 		} else {
 			return invokers, fmt.Errorf("invalid element type , it should be (*scriptInvokerWrapper) , but type is : %s)", reflect.TypeOf(res).String())
 		}
@@ -155,7 +155,7 @@ func (i *jsInstances) Destroy(rawScript string) {
 	i.pgLock.Unlock()
 }
 
-func (j jsInstance) initCallArgs(invokers []protocol.Invoker, invocation protocol.Invocation, ctx context.Context) {
+func (j jsInstance) initCallArgs(invokers []base.Invoker, invocation base.Invocation, ctx context.Context) {
 	j.rt.ClearInterrupt()
 	err := j.rt.Set(`invokers`, invokers)
 	if err != nil {

@@ -33,30 +33,31 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/cluster/base"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 type forkingClusterInvoker struct {
 	base.BaseClusterInvoker
 }
 
-func newForkingClusterInvoker(directory directory.Directory) protocol.Invoker {
+func newForkingClusterInvoker(directory directory.Directory) protocolbase.Invoker {
 	return &forkingClusterInvoker{
 		BaseClusterInvoker: base.NewBaseClusterInvoker(directory),
 	}
 }
 
-func (invoker *forkingClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+func (invoker *forkingClusterInvoker) Invoke(ctx context.Context, invocation protocolbase.Invocation) result.Result {
 	if err := invoker.CheckWhetherDestroyed(); err != nil {
-		return &protocol.RPCResult{Err: err}
+		return &result.RPCResult{Err: err}
 	}
 
 	invokers := invoker.Directory.List(invocation)
 	if err := invoker.CheckInvokers(invokers, invocation); err != nil {
-		return &protocol.RPCResult{Err: err}
+		return &result.RPCResult{Err: err}
 	}
 
-	var selected []protocol.Invoker
+	var selected []protocolbase.Invoker
 	forks := invoker.GetURL().GetParamByIntValue(constant.ForksKey, constant.DefaultForks)
 	timeouts := invoker.GetURL().GetParamInt(constant.TimeoutKey, constant.DefaultTimeout)
 	if forks < 0 || forks > len(invokers) {
@@ -72,7 +73,7 @@ func (invoker *forkingClusterInvoker) Invoke(ctx context.Context, invocation pro
 
 	resultQ := queue.New(1)
 	for _, ivk := range selected {
-		go func(k protocol.Invoker) {
+		go func(k protocolbase.Invoker) {
 			result := k.Invoke(ctx, invocation)
 			if err := resultQ.Put(result); err != nil {
 				logger.Errorf("resultQ put failed with exception: %v.\n", err)
@@ -82,18 +83,18 @@ func (invoker *forkingClusterInvoker) Invoke(ctx context.Context, invocation pro
 
 	rsps, err := resultQ.Poll(1, time.Millisecond*time.Duration(timeouts))
 	if err != nil {
-		return &protocol.RPCResult{
+		return &result.RPCResult{
 			Err: fmt.Errorf("failed to forking invoke provider %v, "+
 				"but no luck to perform the invocation. Last error is: %v", selected, err),
 		}
 	}
 	if len(rsps) == 0 {
-		return &protocol.RPCResult{Err: fmt.Errorf("failed to forking invoke provider %v, but no resp", selected)}
+		return &result.RPCResult{Err: fmt.Errorf("failed to forking invoke provider %v, but no resp", selected)}
 	}
 
-	result, ok := rsps[0].(protocol.Result)
+	res, ok := rsps[0].(result.Result)
 	if !ok {
-		return &protocol.RPCResult{Err: fmt.Errorf("failed to forking invoke provider %v, but not legal resp", selected)}
+		return &result.RPCResult{Err: fmt.Errorf("failed to forking invoke provider %v, but not legal resp", selected)}
 	}
-	return result
+	return res
 }

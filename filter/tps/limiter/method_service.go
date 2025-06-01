@@ -34,7 +34,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 const (
@@ -122,7 +122,7 @@ type MethodServiceTpsLimiter struct {
 // The key point is how to keep thread-safe
 // This implementation use concurrent map + loadOrStore to make implementation thread-safe
 // You can image that even multiple threads create limiter, but only one could store the limiter into tpsState
-func (limiter MethodServiceTpsLimiter) IsAllowable(url *common.URL, invocation protocol.Invocation) bool {
+func (limiter MethodServiceTpsLimiter) IsAllowable(url *common.URL, invocation base.Invocation) bool {
 	methodConfigPrefix := "methods." + invocation.MethodName() + "."
 
 	methodLimitRateConfig := url.GetParam(methodConfigPrefix+constant.TPSLimitRateKey, "")
@@ -184,7 +184,7 @@ func (limiter MethodServiceTpsLimiter) IsAllowable(url *common.URL, invocation p
 // Or, we will try to look up server-level configuration and then convert it to int64
 func getLimitConfig(methodLevelConfig string,
 	url *common.URL,
-	invocation protocol.Invocation,
+	invocation base.Invocation,
 	configKey string,
 	defaultVal int64) int64 {
 

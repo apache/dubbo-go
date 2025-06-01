@@ -33,7 +33,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/proxy"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
@@ -46,7 +46,7 @@ type ReferenceOptions struct {
 
 	pxy          *proxy.Proxy
 	id           string
-	invoker      protocol.Invoker
+	invoker      base.Invoker
 	urls         []*common.URL
 	metaDataType string
 	info         *ClientInfo
@@ -98,6 +98,7 @@ func (refOpts *ReferenceOptions) init(opts ...ReferenceOption) error {
 	}
 
 	// init cluster
+	// TODO: use constant replace failover
 	if ref.Cluster == "" {
 		ref.Cluster = "failover"
 	}
@@ -332,6 +333,13 @@ func WithSticky() ReferenceOption {
 	}
 }
 
+// TODO: remove this function after old triple removed
+func WithIDL(IDLMode string) ReferenceOption {
+	return func(opts *ReferenceOptions) {
+		opts.Reference.IDLMode = IDLMode
+	}
+}
+
 // ========== Protocol to consume ==========
 
 func WithProtocolDubbo() ReferenceOption {
@@ -546,8 +554,7 @@ func WithClientURL(url string) ClientOption {
 // todo(DMwangnima): change Filter Option like Cluster and LoadBalance
 func WithClientFilter(filter string) ClientOption {
 	return func(opts *ClientOptions) {
-		// todo: move this to overallReference
-		opts.Consumer.Filter = filter
+		opts.overallReference.Filter = filter
 	}
 }
 

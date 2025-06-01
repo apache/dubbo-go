@@ -23,24 +23,24 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 type mockProtocolFilter struct{}
 
 // NewMockProtocolFilter creates a new mock protocol
-func NewMockProtocolFilter() protocol.Protocol {
+func NewMockProtocolFilter() base.Protocol {
 	return &mockProtocolFilter{}
 }
 
 // Export mock service for  remote invocation
-func (pfw *mockProtocolFilter) Export(invoker protocol.Invoker) protocol.Exporter {
-	return protocol.NewBaseExporter("key", invoker, &sync.Map{})
+func (pfw *mockProtocolFilter) Export(invoker base.Invoker) base.Exporter {
+	return base.NewBaseExporter("key", invoker, &sync.Map{})
 }
 
 // Refer a mock remote service
-func (pfw *mockProtocolFilter) Refer(url *common.URL) protocol.Invoker {
-	return protocol.NewBaseInvoker(url)
+func (pfw *mockProtocolFilter) Refer(url *common.URL) base.Invoker {
+	return base.NewBaseInvoker(url)
 }
 
 // Destroy will do nothing
