@@ -33,6 +33,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
@@ -40,18 +41,20 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
-func TestProviderFilterInvoke(t *testing.T) {
-	url := common.NewURLWithOptions(common.WithParams(url.Values{}))
-	invocation := invocation.NewRPCInvocation("GetUser", []any{"OK"}, make(map[string]any))
+func TestProviderFilterInvokeWithGlobalPackage(t *testing.T) {
+	var (
+		url            = common.NewURLWithOptions(common.WithParams(url.Values{}))
+		invocation     = invocation.NewRPCInvocation("GetUser", []any{"OK"}, make(map[string]any))
+		opt            = graceful_shutdown.NewOptions()
+		filterValue, _ = extension.GetFilter(constant.GracefulShutdownProviderFilterKey)
+	)
 
 	extension.SetRejectedExecutionHandler("test", func() filter.RejectedExecutionHandler {
 		return &TestRejectedExecutionHandler{}
 	})
 
-	opt := graceful_shutdown.NewOptions()
 	opt.Shutdown.RejectRequestHandler = "test"
 
-	filterValue, _ := extension.GetFilter(constant.GracefulShutdownProviderFilterKey)
 	filter := filterValue.(*providerGracefulShutdownFilter)
 	filter.Set(constant.GracefulShutdownFilterShutdownConfig, opt.Shutdown)
 	assert.Equal(t, filter.shutdownConfig, opt.Shutdown)
@@ -64,7 +67,44 @@ func TestProviderFilterInvoke(t *testing.T) {
 	result = filter.Invoke(context.Background(), base.NewBaseInvoker(url), invocation)
 	assert.NotNil(t, result)
 	assert.NotNil(t, result.Error().Error(), "Rejected")
+}
 
+// only for compatibility with old config, able to directly remove after config is deleted
+func TestProviderFilterInvokeWithConfigPackage(t *testing.T) {
+	var (
+		url        = common.NewURLWithOptions(common.WithParams(url.Values{}))
+		invocation = invocation.NewRPCInvocation("GetUser", []any{"OK"}, make(map[string]any))
+		rootConfig = config.NewRootConfigBuilder().
+				SetShutDown(config.NewShutDownConfigBuilder().
+					SetTimeout("60s").
+					SetStepTimeout("3s").
+					SetRejectRequestHandler("test").
+					Build()).Build()
+		filterValue, _ = extension.GetFilter(constant.GracefulShutdownProviderFilterKey)
+	)
+
+	extension.SetRejectedExecutionHandler("test", func() filter.RejectedExecutionHandler {
+		return &TestRejectedExecutionHandler{}
+	})
+
+	config.SetRootConfig(*rootConfig)
+
+	filter := filterValue.(*providerGracefulShutdownFilter)
+	filter.Set(constant.GracefulShutdownFilterShutdownConfig, config.GetShutDown())
+	assert.Equal(t, filter.shutdownConfig, compatGlobalShutdownConfig(config.GetShutDown()))
+
+	result := filter.Invoke(context.Background(), base.NewBaseInvoker(url), invocation)
+	assert.NotNil(t, result)
+	assert.Nil(t, result.Error())
+
+	// only use this way to set the RejectRequest, because the variable is compact to GlobalShutdownConfig
+	filter.shutdownConfig.RejectRequest.Store(true)
+	// not able to use this way to set the RejectRequest
+	//config.GetShutDown().RejectRequest.Store(true)
+
+	result = filter.Invoke(context.Background(), base.NewBaseInvoker(url), invocation)
+	assert.NotNil(t, result)
+	assert.NotNil(t, result.Error().Error(), "Rejected")
 }
 
 type TestRejectedExecutionHandler struct{}

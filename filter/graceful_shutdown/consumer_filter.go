@@ -80,6 +80,7 @@ func (f *consumerGracefulShutdownFilter) Set(name string, conf any) {
 		switch conf := conf.(type) {
 		case *global.ShutdownConfig:
 			f.shutdownConfig = conf
+		// only for compatibility with old config, able to directly remove after config is deleted
 		case *config.ShutdownConfig:
 			f.shutdownConfig = compatGlobalShutdownConfig(conf)
 		default:
