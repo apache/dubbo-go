@@ -129,7 +129,7 @@ func totalTimeout() time.Duration {
 
 func beforeShutdown() {
 	destroyRegistries()
-	// waiting for a short time so that the clients have enough time to get the notification, that server shutdowns
+	// waiting for a short time so that the clients have enough time to get the notification that server shutdowns
 	// The value of configuration depends on how long the clients will get notification.
 	waitAndAcceptNewRequests()
 
