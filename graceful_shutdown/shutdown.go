@@ -51,7 +51,6 @@ const (
 
 var (
 	initOnce sync.Once
-	shutdown *global.ShutdownConfig
 
 	proMu     sync.Mutex
 	protocols map[string]struct{}
@@ -64,21 +63,21 @@ func Init(opts ...Option) {
 		for _, opt := range opts {
 			opt(newOpts)
 		}
-		shutdown = newOpts.Shutdown
+		shutdown := newOpts.Shutdown
 		// retrieve ShutdownConfig for gracefulShutdownFilter
-		cGracefulShutdownFilter, existcGracefulShutdownFilter := extension.GetFilter(constant.GracefulShutdownConsumerFilterKey)
-		if !existcGracefulShutdownFilter {
+		gracefulShutdownConsumerFilter, exist := extension.GetFilter(constant.GracefulShutdownConsumerFilterKey)
+		if !exist {
 			return
 		}
-		sGracefulShutdownFilter, existsGracefulShutdownFilter := extension.GetFilter(constant.GracefulShutdownProviderFilterKey)
-		if !existsGracefulShutdownFilter {
+		gracefulShutdownProviderFilter, exist := extension.GetFilter(constant.GracefulShutdownProviderFilterKey)
+		if !exist {
 			return
 		}
-		if filter, ok := cGracefulShutdownFilter.(config.Setter); ok {
+		if filter, ok := gracefulShutdownConsumerFilter.(config.Setter); ok {
 			filter.Set(constant.GracefulShutdownFilterShutdownConfig, shutdown)
 		}
 
-		if filter, ok := sGracefulShutdownFilter.(config.Setter); ok {
+		if filter, ok := gracefulShutdownProviderFilter.(config.Setter); ok {
 			filter.Set(constant.GracefulShutdownFilterShutdownConfig, shutdown)
 		}
 
@@ -91,11 +90,11 @@ func Init(opts ...Option) {
 				sig := <-signals
 				logger.Infof("get signal %s, applicationConfig will shutdown.", sig)
 				// gracefulShutdownOnce.Do(func() {
-				time.AfterFunc(totalTimeout(), func() {
+				time.AfterFunc(totalTimeout(shutdown), func() {
 					logger.Warn("Shutdown gracefully timeout, applicationConfig will shutdown immediately. ")
 					os.Exit(0)
 				})
-				beforeShutdown()
+				beforeShutdown(shutdown)
 				// those signals' original behavior is exit with dump ths stack, so we try to keep the behavior
 				for _, dumpSignal := range DumpHeapShutdownSignals {
 					if sig == dumpSignal {
@@ -118,7 +117,7 @@ func RegisterProtocol(name string) {
 	proMu.Unlock()
 }
 
-func totalTimeout() time.Duration {
+func totalTimeout(shutdown *global.ShutdownConfig) time.Duration {
 	timeout := parseDuration(shutdown.Timeout, timeoutDesc, defaultTimeout)
 	if timeout < defaultTimeout {
 		timeout = defaultTimeout
@@ -127,14 +126,14 @@ func totalTimeout() time.Duration {
 	return timeout
 }
 
-func beforeShutdown() {
+func beforeShutdown(shutdown *global.ShutdownConfig) {
 	destroyRegistries()
 	// waiting for a short time so that the clients have enough time to get the notification that server shutdowns
 	// The value of configuration depends on how long the clients will get notification.
-	waitAndAcceptNewRequests()
+	waitAndAcceptNewRequests(shutdown)
 
 	// reject sending/receiving the new request but keeping waiting for accepting requests
-	waitForSendingAndReceivingRequests()
+	waitForSendingAndReceivingRequests(shutdown)
 
 	// destroy all protocols
 	destroyProtocols()
@@ -153,7 +152,7 @@ func destroyRegistries() {
 	registryProtocol.Destroy()
 }
 
-func waitAndAcceptNewRequests() {
+func waitAndAcceptNewRequests(shutdown *global.ShutdownConfig) {
 	logger.Info("Graceful shutdown --- Keep waiting and accept new requests for a short time. ")
 
 	updateWaitTime := parseDuration(shutdown.ConsumerUpdateWaitTime, consumerUpdateWaitTimeDesc, defaultConsumerUpdateWaitTime)
@@ -165,10 +164,10 @@ func waitAndAcceptNewRequests() {
 	if stepTimeout < 0 {
 		return
 	}
-	waitingProviderProcessedTimeout(stepTimeout)
+	waitingProviderProcessedTimeout(shutdown, stepTimeout)
 }
 
-func waitingProviderProcessedTimeout(timeout time.Duration) {
+func waitingProviderProcessedTimeout(shutdown *global.ShutdownConfig, timeout time.Duration) {
 	deadline := time.Now().Add(timeout)
 
 	offlineRequestWindowTimeout := parseDuration(shutdown.OfflineRequestWindowTimeout, offlineRequestWindowTimeoutDesc, defaultOfflineRequestWindowTimeout)
@@ -183,13 +182,13 @@ func waitingProviderProcessedTimeout(timeout time.Duration) {
 }
 
 // For provider. It will wait for processing receiving requests
-func waitForSendingAndReceivingRequests() {
+func waitForSendingAndReceivingRequests(shutdown *global.ShutdownConfig) {
 	logger.Info("Graceful shutdown --- Keep waiting until sending/accepting requests finish or timeout. ")
 	shutdown.RejectRequest.Store(true)
-	waitingConsumerProcessedTimeout()
+	waitingConsumerProcessedTimeout(shutdown)
 }
 
-func waitingConsumerProcessedTimeout() {
+func waitingConsumerProcessedTimeout(shutdown *global.ShutdownConfig) {
 	stepTimeout := parseDuration(shutdown.StepTimeout, stepTimeoutDesc, defaultStepTimeout)
 
 	if stepTimeout <= 0 {
