@@ -56,35 +56,35 @@ func newDefaultAuthenticator() filter.Authenticator {
 }
 
 // Sign adds the signature to the invocation
-func (authenticator *defaultAuthenticator) Sign(invo base.Invocation, url *common.URL) error {
+func (authenticator *defaultAuthenticator) Sign(inv base.Invocation, url *common.URL) error {
 	currentTimeMillis := strconv.Itoa(int(time.Now().Unix() * 1000))
 
 	consumer := url.GetParam(constant.ApplicationKey, "")
-	accessKeyPair, err := getAccessKeyPair(invo, url)
+	accessKeyPair, err := getAccessKeyPair(inv, url)
 	if err != nil {
 		return errors.New("get accesskey pair failed, cause: " + err.Error())
 	}
-	inv := invo.(*invocation.RPCInvocation)
-	signature, err := getSignature(url, invo, accessKeyPair.SecretKey, currentTimeMillis)
+	rpcInv := inv.(*invocation.RPCInvocation)
+	signature, err := getSignature(url, inv, accessKeyPair.SecretKey, currentTimeMillis)
 	if err != nil {
 		return err
 	}
-	inv.SetAttachment(constant.RequestSignatureKey, signature)
-	inv.SetAttachment(constant.RequestTimestampKey, currentTimeMillis)
-	inv.SetAttachment(constant.AKKey, accessKeyPair.AccessKey)
-	inv.SetAttachment(constant.Consumer, consumer)
+	rpcInv.SetAttachment(constant.RequestSignatureKey, signature)
+	rpcInv.SetAttachment(constant.RequestTimestampKey, currentTimeMillis)
+	rpcInv.SetAttachment(constant.AKKey, accessKeyPair.AccessKey)
+	rpcInv.SetAttachment(constant.Consumer, consumer)
 	return nil
 }
 
 // getSignature
 // get signature by the metadata and params of the invocation
-func getSignature(url *common.URL, invo base.Invocation, secrectKey string, currentTime string) (string, error) {
+func getSignature(url *common.URL, inv base.Invocation, secrectKey string, currentTime string) (string, error) {
 	requestString := fmt.Sprintf(constant.SignatureStringFormat,
-		url.ColonSeparatedKey(), invo.MethodName(), secrectKey, currentTime)
+		url.ColonSeparatedKey(), inv.MethodName(), secrectKey, currentTime)
 	var signature string
 	if parameterEncrypt := url.GetParamBool(constant.ParameterSignatureEnableKey, false); parameterEncrypt {
 		var err error
-		if signature, err = SignWithParams(invo.Arguments(), requestString, secrectKey); err != nil {
+		if signature, err = SignWithParams(inv.Arguments(), requestString, secrectKey); err != nil {
 			// TODO
 			return "", errors.New("sign the request with params failed, cause:" + err.Error())
 		}
@@ -96,23 +96,23 @@ func getSignature(url *common.URL, invo base.Invocation, secrectKey string, curr
 }
 
 // Authenticate verifies whether the signature sent by the requester is correct
-func (authenticator *defaultAuthenticator) Authenticate(invo base.Invocation, url *common.URL) error {
-	accessKeyId := invo.GetAttachmentWithDefaultValue(constant.AKKey, "")
+func (authenticator *defaultAuthenticator) Authenticate(inv base.Invocation, url *common.URL) error {
+	accessKeyId := inv.GetAttachmentWithDefaultValue(constant.AKKey, "")
 
-	requestTimestamp := invo.GetAttachmentWithDefaultValue(constant.RequestTimestampKey, "")
-	originSignature := invo.GetAttachmentWithDefaultValue(constant.RequestSignatureKey, "")
-	consumer := invo.GetAttachmentWithDefaultValue(constant.Consumer, "")
+	requestTimestamp := inv.GetAttachmentWithDefaultValue(constant.RequestTimestampKey, "")
+	originSignature := inv.GetAttachmentWithDefaultValue(constant.RequestSignatureKey, "")
+	consumer := inv.GetAttachmentWithDefaultValue(constant.Consumer, "")
 	if IsEmpty(accessKeyId, false) || IsEmpty(consumer, false) ||
 		IsEmpty(requestTimestamp, false) || IsEmpty(originSignature, false) {
 		return errors.New("failed to authenticate your ak/sk, maybe the consumer has not enabled the auth")
 	}
 
-	accessKeyPair, err := getAccessKeyPair(invo, url)
+	accessKeyPair, err := getAccessKeyPair(inv, url)
 	if err != nil {
 		return errors.New("failed to authenticate , can't load the accessKeyPair")
 	}
 
-	computeSignature, err := getSignature(url, invo, accessKeyPair.SecretKey, requestTimestamp)
+	computeSignature, err := getSignature(url, inv, accessKeyPair.SecretKey, requestTimestamp)
 	if err != nil {
 		return err
 	}
@@ -122,9 +122,9 @@ func (authenticator *defaultAuthenticator) Authenticate(invo base.Invocation, ur
 	return nil
 }
 
-func getAccessKeyPair(invo base.Invocation, url *common.URL) (*filter.AccessKeyPair, error) {
+func getAccessKeyPair(inv base.Invocation, url *common.URL) (*filter.AccessKeyPair, error) {
 	accesskeyStorage := extension.GetAccessKeyStorages(url.GetParam(constant.AccessKeyStorageKey, constant.DefaultAccessKeyStorage))
-	accessKeyPair := accesskeyStorage.GetAccessKeyPair(invo, url)
+	accessKeyPair := accesskeyStorage.GetAccessKeyPair(inv, url)
 	if accessKeyPair == nil || IsEmpty(accessKeyPair.AccessKey, false) || IsEmpty(accessKeyPair.SecretKey, true) {
 		return nil, errors.New("accessKeyId or secretAccessKey not found")
 	} else {

@@ -36,7 +36,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
-	invocation2 "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
@@ -60,68 +60,68 @@ func newGenericServiceFilter() filter.Filter {
 	}
 	return serviceGeneric
 }
-func (f *genericServiceFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
-	if !invocation.IsGenericInvocation() {
-		return invoker.Invoke(ctx, invocation)
+func (f *genericServiceFilter) Invoke(ctx context.Context, invoker base.Invoker, inv base.Invocation) result.Result {
+	if !inv.IsGenericInvocation() {
+		return invoker.Invoke(ctx, inv)
 	}
 
 	// get real invocation info from the generic invocation
-	mtdname := invocation.Arguments()[0].(string)
+	mtdName := inv.Arguments()[0].(string)
 	// types are not required in dubbo-go, for dubbo-go client to dubbo-go server, types could be nil
-	types := invocation.Arguments()[1]
-	args := invocation.Arguments()[2].([]hessian.Object)
+	types := inv.Arguments()[1]
+	args := inv.Arguments()[2].([]hessian.Object)
 
 	logger.Debugf(`received a generic invocation:
 		MethodName: %s,
 		Types: %s,
 		Args: %s
-	`, mtdname, types, args)
+	`, mtdName, types, args)
 
 	// get the type of the argument
 	ivkUrl := invoker.GetURL()
 	svc := common.ServiceMap.GetServiceByServiceKey(ivkUrl.Protocol, ivkUrl.ServiceKey())
-	method := svc.Method()[mtdname]
+	method := svc.Method()[mtdName]
 	if method == nil {
 		return &result.RPCResult{
-			Err: perrors.Errorf("\"%s\" method is not found, service key: %s", mtdname, ivkUrl.ServiceKey()),
+			Err: perrors.Errorf("\"%s\" method is not found, service key: %s", mtdName, ivkUrl.ServiceKey()),
 		}
 	}
 	argsType := method.ArgsType()
 
 	// get generic info from attachments of invocation, the default value is "true"
-	generic := invocation.GetAttachmentWithDefaultValue(constant.GenericKey, constant.GenericSerializationDefault)
+	generic := inv.GetAttachmentWithDefaultValue(constant.GenericKey, constant.GenericSerializationDefault)
 	// get generalizer according to value in the `generic`
 	g := getGeneralizer(generic)
 
 	if len(args) != len(argsType) {
 		return &result.RPCResult{
-			Err: perrors.Errorf("the number of args(=%d) is not matched with \"%s\" method", len(args), mtdname),
+			Err: perrors.Errorf("the number of args(=%d) is not matched with \"%s\" method", len(args), mtdName),
 		}
 	}
 
 	// realize
-	newargs := make([]any, len(argsType))
+	newArgs := make([]any, len(argsType))
 	for i := 0; i < len(argsType); i++ {
-		newarg, err := g.Realize(args[i], argsType[i])
+		newArg, err := g.Realize(args[i], argsType[i])
 		if err != nil {
 			return &result.RPCResult{
 				Err: perrors.Errorf("realization failed, %v", err),
 			}
 		}
-		newargs[i] = newarg
+		newArgs[i] = newArg
 	}
 
 	// build a normal invocation
-	newivc := invocation2.NewRPCInvocation(mtdname, newargs, invocation.Attachments())
-	newivc.SetReply(invocation.Reply())
+	newIvc := invocation.NewRPCInvocation(mtdName, newArgs, inv.Attachments())
+	newIvc.SetReply(inv.Reply())
 
-	return invoker.Invoke(ctx, newivc)
+	return invoker.Invoke(ctx, newIvc)
 }
 
-func (f *genericServiceFilter) OnResponse(_ context.Context, result result.Result, _ base.Invoker, invocation base.Invocation) result.Result {
-	if invocation.IsGenericInvocation() && result.Result() != nil {
+func (f *genericServiceFilter) OnResponse(_ context.Context, result result.Result, _ base.Invoker, inv base.Invocation) result.Result {
+	if inv.IsGenericInvocation() && result.Result() != nil {
 		// get generic info from attachments of invocation, the default value is "true"
-		generic := invocation.GetAttachmentWithDefaultValue(constant.GenericKey, constant.GenericSerializationDefault)
+		generic := inv.GetAttachmentWithDefaultValue(constant.GenericKey, constant.GenericSerializationDefault)
 		// get generalizer according to value in the `generic`
 		g := getGeneralizer(generic)
 

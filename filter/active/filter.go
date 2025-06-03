@@ -32,7 +32,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
-	invocation2 "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
@@ -62,21 +62,21 @@ func newActiveFilter() filter.Filter {
 }
 
 // Invoke starts to record the requests status
-func (f *activeFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
-	invocation.(*invocation2.RPCInvocation).SetAttachment(dubboInvokeStartTime, strconv.FormatInt(base.CurrentTimeMillis(), 10))
-	base.BeginCount(invoker.GetURL(), invocation.MethodName())
-	return invoker.Invoke(ctx, invocation)
+func (f *activeFilter) Invoke(ctx context.Context, invoker base.Invoker, inv base.Invocation) result.Result {
+	inv.(*invocation.RPCInvocation).SetAttachment(dubboInvokeStartTime, strconv.FormatInt(base.CurrentTimeMillis(), 10))
+	base.BeginCount(invoker.GetURL(), inv.MethodName())
+	return invoker.Invoke(ctx, inv)
 }
 
 // OnResponse update the active count base on the request result.
-func (f *activeFilter) OnResponse(ctx context.Context, result result.Result, invoker base.Invoker, invocation base.Invocation) result.Result {
-	startTime, err := strconv.ParseInt(invocation.(*invocation2.RPCInvocation).GetAttachmentWithDefaultValue(dubboInvokeStartTime, "0"), 10, 64)
+func (f *activeFilter) OnResponse(ctx context.Context, result result.Result, invoker base.Invoker, inv base.Invocation) result.Result {
+	startTime, err := strconv.ParseInt(inv.(*invocation.RPCInvocation).GetAttachmentWithDefaultValue(dubboInvokeStartTime, "0"), 10, 64)
 	if err != nil {
 		result.SetError(err)
 		logger.Errorf("parse dubbo_invoke_start_time to int64 failed")
 		return result
 	}
 	elapsed := base.CurrentTimeMillis() - startTime
-	base.EndCount(invoker.GetURL(), invocation.MethodName(), elapsed, result.Error() == nil)
+	base.EndCount(invoker.GetURL(), inv.MethodName(), elapsed, result.Error() == nil)
 	return result
 }
