@@ -73,6 +73,7 @@ func (w *envelopeWriter) Marshal(message any) *Error {
 		}
 		return nil
 	}
+	// w.codec: *triple_protocol.protoWrapperCodec
 	raw, err := w.codec.Marshal(message)
 	if err != nil {
 		if w.backupCodec != nil && w.codec.Name() != w.backupCodec.Name() {
@@ -200,6 +201,7 @@ func (r *envelopeReader) Unmarshal(message any) *Error {
 		return errSpecialEnvelope
 	}
 
+	// protoWrapperCodec
 	if err := r.codec.Unmarshal(data.Bytes(), message); err != nil {
 		if r.backupCodec != nil && r.backupCodec.Name() != r.codec.Name() {
 			logger.Debugf("failed to unmarshal message with codec %s, trying alternative codec %s", r.codec.Name(), r.backupCodec.Name())

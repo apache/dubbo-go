@@ -71,7 +71,7 @@ func (f *genericServiceFilter) Invoke(ctx context.Context, invoker base.Invoker,
 	types := inv.Arguments()[1]
 	args := inv.Arguments()[2].([]hessian.Object)
 
-	logger.Debugf(`received a generic invocation:
+	logger.Errorf(`received a generic invocation:
 		MethodName: %s,
 		Types: %s,
 		Args: %s

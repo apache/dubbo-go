@@ -30,6 +30,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+
+	"github.com/dubbogo/gost/log/logger"
 )
 
 // Version is the semantic version of the triple module.
@@ -328,6 +330,7 @@ type handlerConnCloser interface {
 // consume the response stream and is not appropriate when receiving multiple
 // messages.
 func receiveUnaryResponse(conn StreamingClientConn, response AnyResponse) error {
+	logger.Warnf("here*******************************")
 	resp, ok := response.(*Response)
 	if !ok {
 		panic(fmt.Sprintf("response %T is not of Response type", response))

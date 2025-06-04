@@ -253,6 +253,8 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation base.Invocation) 
 		in = append(in, invocation.ParameterValues()...)
 	}
 
+	logger.Warnf("in: %+v", in)
+
 	methodName := invocation.MethodName()
 	triAttachmentWithErr := client.Invoke(methodName, in, invocation.Reply())
 	result.SetError(triAttachmentWithErr.GetError())

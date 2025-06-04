@@ -25,6 +25,10 @@ import (
 	"time"
 )
 
+import (
+	"github.com/dubbogo/gost/log/logger"
+)
+
 type TimeoutKey struct{}
 
 // Client is a reusable, concurrency-safe client for a single procedure.
@@ -81,6 +85,7 @@ func NewClient(httpClient HTTPClient, url string, options ...ClientOption) *Clie
 		// Send always returns an io.EOF unless the error is from the client-side.
 		// We want the user to continue to call Receive in those cases to get the
 		// full error from the server-side.
+		logger.Errorf("here????????????????????")
 		if err := conn.Send(request.Any()); err != nil && !errors.Is(err, io.EOF) {
 			// for HTTP/1.1 case, CloseRequest must happen before CloseResponse
 			// since HTTP/1.1 is of request-response type

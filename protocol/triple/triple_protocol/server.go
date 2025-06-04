@@ -61,6 +61,7 @@ func (s *Server) RegisterUnaryHandler(
 	hdl, ok := s.handlers[procedure]
 	if !ok {
 		hdl = NewUnaryHandler(procedure, reqInitFunc, unary, options...)
+		logger.Warnf("register path: %v", procedure)
 		s.handlers[procedure] = hdl
 		s.mux.Handle(procedure, hdl)
 	} else {

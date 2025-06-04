@@ -29,15 +29,10 @@ import (
 type GenericService struct {
 	// ref: proxy/proxy.go DefaultProxyImplementFunc
 	Invoke       func(ctx context.Context, methodName string, types []string, args []hessian.Object) (any, error) `dubbo:"$invoke"`
-	referenceStr string
-}
-
-// NewGenericService returns a GenericService instance
-func NewGenericService(referenceStr string) *GenericService {
-	return &GenericService{referenceStr: referenceStr}
+	ReferenceStr string
 }
 
 // Reference gets referenceStr from GenericService
 func (u *GenericService) Reference() string {
-	return u.referenceStr
+	return u.ReferenceStr
 }

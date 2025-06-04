@@ -148,3 +148,7 @@ require (
 	gopkg.in/ini.v1 v1.66.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/dubbogo/triple => ../triple
+
+replace github.com/dubbogo/grpc-go => ../dubbogo-grpc-go

@@ -32,6 +32,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/proto/connectext/grpc/status/v1"
+	// "github.com/dubbogo/gost/log/logger"
 )
 
 // protocol specification headers
@@ -187,7 +188,10 @@ func (g *grpcHandler) NewConn(
 	}
 
 	// content-type -> codecName -> codec
+	// logger.Errorf("headerContentType: %v", request.Header)
+	// msgpack
 	codecName := grpcCodecFromContentType(getHeaderCanonical(request.Header, headerContentType))
+	// codec type is *triple_protocol.protoWrapperCodec
 	codec := g.Codecs.Get(codecName) // handler.go guarantees this is not nil
 	backupCodec := g.Codecs.Get(g.ExpectedCodecName)
 	protocolName := ProtocolGRPC

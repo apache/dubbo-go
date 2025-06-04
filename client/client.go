@@ -26,6 +26,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/generic"
 	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
@@ -128,6 +129,21 @@ func (cli *Client) NewService(service any, opts ...ReferenceOption) (*Connection
 	finalOpts = append(finalOpts, opts...)
 
 	return cli.DialWithService(interfaceName, service, finalOpts...)
+}
+
+func (cli *Client) NewGenericService(referenceStr string, opts ...ReferenceOption) (*generic.GenericService, error) {
+	finalOpts := []ReferenceOption{
+		WithIDL(constant.NONIDL),
+		// default msgpack serialization
+		WithSerialization(constant.Hessian2Serialization),
+	}
+	finalOpts = append(finalOpts, opts...)
+
+	genericService := &generic.GenericService{ReferenceStr: referenceStr}
+
+	_, err := cli.DialWithService(referenceStr, genericService, finalOpts...)
+
+	return genericService, err
 }
 
 func (cli *Client) Dial(interfaceName string, opts ...ReferenceOption) (*Connection, error) {

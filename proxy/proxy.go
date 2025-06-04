@@ -176,9 +176,12 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 				}
 			}
 
+			logger.Errorf("invocation method name: %v", methodName)
 			inv = invocation.NewRPCInvocationWithOptions(invocation.WithMethodName(methodName),
 				invocation.WithArguments(inIArr),
 				invocation.WithCallBack(p.callback), invocation.WithParameterValues(inVArr))
+			// tmp
+			inv.SetAttribute(constant.CallTypeKey, constant.CallUnary)
 			if !replyEmptyFlag {
 				inv.SetReply(reply.Interface())
 			}
@@ -260,6 +263,7 @@ func refectAndMakeObjectFunc(valueOfElem reflect.Value, makeDubboCallProxy func(
 				continue
 			}
 
+			logger.Errorf("outNum is %v", outNum)
 			funcOuts := make([]reflect.Type, outNum)
 			for i := 0; i < outNum; i++ {
 				funcOuts[i] = t.Type.Out(i)
