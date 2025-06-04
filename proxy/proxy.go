@@ -37,7 +37,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
-	invocation_impl "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
 // nolint
@@ -125,7 +125,7 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 		return func(in []reflect.Value) []reflect.Value {
 			var (
 				err            error
-				inv            *invocation_impl.RPCInvocation
+				inv            *invocation.RPCInvocation
 				inIArr         []any
 				inVArr         []reflect.Value
 				reply          reflect.Value
@@ -176,9 +176,9 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 				}
 			}
 
-			inv = invocation_impl.NewRPCInvocationWithOptions(invocation_impl.WithMethodName(methodName),
-				invocation_impl.WithArguments(inIArr),
-				invocation_impl.WithCallBack(p.callback), invocation_impl.WithParameterValues(inVArr))
+			inv = invocation.NewRPCInvocationWithOptions(invocation.WithMethodName(methodName),
+				invocation.WithArguments(inIArr),
+				invocation.WithCallBack(p.callback), invocation.WithParameterValues(inVArr))
 			if !replyEmptyFlag {
 				inv.SetReply(reply.Interface())
 			}
