@@ -43,6 +43,8 @@ func NewOptions(opts ...Option) *Options {
 
 type Option func(*Options)
 
+// ---------- For user ----------
+
 func WithCACertFile(file string) Option {
 	return func(opts *Options) {
 		opts.TLSConf.CACertFile = file
