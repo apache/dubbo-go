@@ -41,8 +41,10 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
 
 var protocolOnce sync.Once
@@ -256,13 +258,29 @@ func (dp *DubboProtocol) openServer(url *common.URL, tripleCodecType tripleConst
 
 	triOption := triConfig.NewTripleOption(opts...)
 
+	// TODO: remove config TLSConfig
+	// delete this branch
 	tlsConfig := config.GetRootConfig().TLSConfig
 	if tlsConfig != nil {
+		triOption.CACertFile = tlsConfig.CACertFile
 		triOption.TLSCertFile = tlsConfig.TLSCertFile
 		triOption.TLSKeyFile = tlsConfig.TLSKeyFile
-		triOption.CACertFile = tlsConfig.CACertFile
 		triOption.TLSServerName = tlsConfig.TLSServerName
-		logger.Infof("Triple Server initialized the TLSConfig configuration")
+		logger.Infof("DUBBO3 Server initialized the TLSConfig configuration")
+	} else if tlsConfRaw, tlsOk := url.GetAttribute(constant.TLSConfigKey); tlsOk {
+		// use global TLSConfig handle tls
+		tlsConf, RawOk := tlsConfRaw.(*global.TLSConfig)
+		if !RawOk {
+			logger.Errorf("DUBBO3 Server initialized the TLSConfig configuration failed")
+			return
+		}
+		if dubbotls.IsServerTLSValid(tlsConf) {
+			triOption.CACertFile = tlsConf.CACertFile
+			triOption.TLSCertFile = tlsConf.TLSCertFile
+			triOption.TLSKeyFile = tlsConf.TLSKeyFile
+			triOption.TLSServerName = tlsConf.TLSServerName
+			logger.Infof("DUBBO3 Server initialized the TLSConfig configuration")
+		}
 	}
 
 	_, ok = dp.ExporterMap().Load(url.ServiceKey())

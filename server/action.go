@@ -133,11 +133,11 @@ func (svcOpts *ServiceOptions) ExportWithInfo(info *common.ServiceInfo) error {
 }
 
 func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
-	svc := svcOpts.Service
+	svcConf := svcOpts.Service
 
 	if info != nil {
-		if svc.Interface == "" {
-			svc.Interface = info.InterfaceName
+		if svcConf.Interface == "" {
+			svcConf.Interface = info.InterfaceName
 		}
 		svcOpts.info = info
 	}
@@ -146,24 +146,24 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 
 	// TODO: delay needExport
 	if svcOpts.unexported != nil && svcOpts.unexported.Load() {
-		err := perrors.Errorf("The service %v has already unexported!", svc.Interface)
+		err := perrors.Errorf("The service %v has already unexported!", svcConf.Interface)
 		logger.Errorf(err.Error())
 		return err
 	}
 	if svcOpts.exported != nil && svcOpts.exported.Load() {
-		logger.Warnf("The service %v has already exported!", svc.Interface)
+		logger.Warnf("The service %v has already exported!", svcConf.Interface)
 		return nil
 	}
 
 	regUrls := make([]*common.URL, 0)
-	if !svc.NotRegister {
-		regUrls = config.LoadRegistries(svc.RegistryIDs, svcOpts.registriesCompat, common.PROVIDER)
+	if !svcConf.NotRegister {
+		regUrls = config.LoadRegistries(svcConf.RegistryIDs, svcOpts.registriesCompat, common.PROVIDER)
 	}
 
 	urlMap := svcOpts.getUrlMap()
-	protocolConfigs := loadProtocol(svc.ProtocolIDs, svcOpts.Protocols)
+	protocolConfigs := loadProtocol(svcConf.ProtocolIDs, svcOpts.Protocols)
 	if len(protocolConfigs) == 0 {
-		logger.Warnf("The service %v'svcOpts '%v' protocols don't has right protocolConfigs, Please check your configuration center and transfer protocol ", svc.Interface, svc.ProtocolIDs)
+		logger.Warnf("The service %v'svcOpts '%v' protocols don't has right protocolConfigs, Please check your configuration center and transfer protocol ", svcConf.Interface, svcConf.ProtocolIDs)
 		return nil
 	}
 
@@ -176,10 +176,10 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 		// todo(DMwangnimg): finish replacing procedure
 
 		// registry the service reflect
-		methods, err := common.ServiceMap.Register(svc.Interface, protocolConf.Name, svc.Group, svc.Version, svcOpts.rpcService)
+		methods, err := common.ServiceMap.Register(svcConf.Interface, protocolConf.Name, svcConf.Group, svcConf.Version, svcOpts.rpcService)
 		if err != nil {
 			formatErr := perrors.Errorf("The service %v needExport the protocol %v error! Error message is %v.",
-				svc.Interface, protocolConf.Name, err.Error())
+				svcConf.Interface, protocolConf.Name, err.Error())
 			logger.Errorf(formatErr.Error())
 			return formatErr
 		}
@@ -197,7 +197,7 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 		}
 
 		ivkURL := common.NewURLWithOptions(
-			common.WithPath(svc.Interface),
+			common.WithPath(svcConf.Interface),
 			common.WithProtocol(protocolConf.Name),
 			common.WithIp(protocolConf.Ip),
 			common.WithPort(port),
@@ -206,8 +206,10 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 			common.WithParamsValue(constant.ApplicationTagKey, svcOpts.Application.Tag),
 			//common.WithParamsValue(constant.SslEnabledKey, strconv.FormatBool(config.GetSslEnabled())),
 			common.WithMethods(strings.Split(methods, ",")),
+			// TLSConifg
+			common.WithAttribute(constant.TLSConfigKey, svcOpts.srvOpts.TLS),
 			common.WithAttribute(constant.RpcServiceKey, svcOpts.rpcService),
-			common.WithToken(svc.Token),
+			common.WithToken(svcConf.Token),
 			common.WithParamsValue(constant.MetadataTypeKey, svcOpts.metadataType),
 			// fix https://github.com/apache/dubbo-go/issues/2176
 			common.WithParamsValue(constant.MaxServerSendMsgSize, protocolConf.MaxServerSendMsgSize),
@@ -219,8 +221,8 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 			ivkURL.SetAttribute(constant.ServiceInfoKey, info)
 		}
 
-		if len(svc.Tag) > 0 {
-			ivkURL.AddParam(constant.Tagkey, svc.Tag)
+		if len(svcConf.Tag) > 0 {
+			ivkURL.AddParam(constant.Tagkey, svcConf.Tag)
 		}
 
 		// post process the URL to be exported
@@ -321,33 +323,33 @@ func (svcOpts *ServiceOptions) Implement(rpcService common.RPCService) {
 }
 
 func (svcOpts *ServiceOptions) getUrlMap() url.Values {
-	srv := svcOpts.Service
+	svcConf := svcOpts.Service
 	app := svcOpts.applicationCompat
 	metrics := svcOpts.srvOpts.Metrics
 	tracing := svcOpts.srvOpts.Otel.TracingConfig
 
 	urlMap := url.Values{}
 	// first set user params
-	for k, v := range srv.Params {
+	for k, v := range svcConf.Params {
 		urlMap.Set(k, v)
 	}
-	urlMap.Set(constant.InterfaceKey, srv.Interface)
+	urlMap.Set(constant.InterfaceKey, svcConf.Interface)
 	urlMap.Set(constant.TimestampKey, strconv.FormatInt(time.Now().Unix(), 10))
-	urlMap.Set(constant.ClusterKey, srv.Cluster)
-	urlMap.Set(constant.LoadbalanceKey, srv.Loadbalance)
-	urlMap.Set(constant.WarmupKey, srv.Warmup)
-	urlMap.Set(constant.RetriesKey, srv.Retries)
-	if srv.Group != "" {
-		urlMap.Set(constant.GroupKey, srv.Group)
+	urlMap.Set(constant.ClusterKey, svcConf.Cluster)
+	urlMap.Set(constant.LoadbalanceKey, svcConf.Loadbalance)
+	urlMap.Set(constant.WarmupKey, svcConf.Warmup)
+	urlMap.Set(constant.RetriesKey, svcConf.Retries)
+	if svcConf.Group != "" {
+		urlMap.Set(constant.GroupKey, svcConf.Group)
 	}
-	if srv.Version != "" {
-		urlMap.Set(constant.VersionKey, srv.Version)
+	if svcConf.Version != "" {
+		urlMap.Set(constant.VersionKey, svcConf.Version)
 	}
 	urlMap.Set(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER))
 	urlMap.Set(constant.ReleaseKey, "dubbo-golang-"+constant.Version)
 	urlMap.Set(constant.SideKey, (common.RoleType(common.PROVIDER)).Role())
 	// todo: move
-	urlMap.Set(constant.SerializationKey, srv.Serialization)
+	urlMap.Set(constant.SerializationKey, svcConf.Serialization)
 	// application config info
 	urlMap.Set(constant.ApplicationKey, app.Name)
 	urlMap.Set(constant.OrganizationKey, app.Organization)
@@ -359,10 +361,10 @@ func (svcOpts *ServiceOptions) getUrlMap() url.Values {
 
 	//filter
 	var filters string
-	if srv.Filter == "" {
+	if svcConf.Filter == "" {
 		filters = constant.DefaultServiceFilters
 	} else {
-		filters = srv.Filter
+		filters = svcConf.Filter
 	}
 	if svcOpts.adaptiveService {
 		filters += fmt.Sprintf(",%s", constant.AdaptiveServiceProviderFilterKey)
@@ -376,28 +378,28 @@ func (svcOpts *ServiceOptions) getUrlMap() url.Values {
 	urlMap.Set(constant.ServiceFilterKey, filters)
 
 	// filter special config
-	urlMap.Set(constant.AccessLogFilterKey, srv.AccessLog)
+	urlMap.Set(constant.AccessLogFilterKey, svcConf.AccessLog)
 	// tps limiter
-	urlMap.Set(constant.TPSLimitStrategyKey, srv.TpsLimitStrategy)
-	urlMap.Set(constant.TPSLimitIntervalKey, srv.TpsLimitInterval)
-	urlMap.Set(constant.TPSLimitRateKey, srv.TpsLimitRate)
-	urlMap.Set(constant.TPSLimiterKey, srv.TpsLimiter)
-	urlMap.Set(constant.TPSRejectedExecutionHandlerKey, srv.TpsLimitRejectedHandler)
-	urlMap.Set(constant.TracingConfigKey, srv.TracingKey)
+	urlMap.Set(constant.TPSLimitStrategyKey, svcConf.TpsLimitStrategy)
+	urlMap.Set(constant.TPSLimitIntervalKey, svcConf.TpsLimitInterval)
+	urlMap.Set(constant.TPSLimitRateKey, svcConf.TpsLimitRate)
+	urlMap.Set(constant.TPSLimiterKey, svcConf.TpsLimiter)
+	urlMap.Set(constant.TPSRejectedExecutionHandlerKey, svcConf.TpsLimitRejectedHandler)
+	urlMap.Set(constant.TracingConfigKey, svcConf.TracingKey)
 
 	// execute limit filter
-	urlMap.Set(constant.ExecuteLimitKey, srv.ExecuteLimit)
-	urlMap.Set(constant.ExecuteRejectedExecutionHandlerKey, srv.ExecuteLimitRejectedHandler)
+	urlMap.Set(constant.ExecuteLimitKey, svcConf.ExecuteLimit)
+	urlMap.Set(constant.ExecuteRejectedExecutionHandlerKey, svcConf.ExecuteLimitRejectedHandler)
 
 	// auth filter
-	urlMap.Set(constant.ServiceAuthKey, srv.Auth)
-	urlMap.Set(constant.ParameterSignatureEnableKey, srv.ParamSign)
+	urlMap.Set(constant.ServiceAuthKey, svcConf.Auth)
+	urlMap.Set(constant.ParameterSignatureEnableKey, svcConf.ParamSign)
 
 	// whether to needExport or not
 	urlMap.Set(constant.ExportKey, strconv.FormatBool(svcOpts.needExport))
 	urlMap.Set(constant.PIDKey, fmt.Sprintf("%d", os.Getpid()))
 
-	for _, v := range srv.Methods {
+	for _, v := range svcConf.Methods {
 		prefix := "methods." + v.Name + "."
 		urlMap.Set(prefix+constant.LoadbalanceKey, v.LoadBalance)
 		urlMap.Set(prefix+constant.RetriesKey, v.Retries)

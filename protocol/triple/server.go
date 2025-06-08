@@ -19,7 +19,6 @@ package triple
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
 	"net/http"
 	"reflect"
@@ -43,10 +42,13 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/internal"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo3"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
+
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
@@ -88,24 +90,23 @@ func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
 	}
 	// todo: support opentracing interceptor
 
-	var cfg *tls.Config
-	var err error
-	// handle tls config
-	// TODO: think about a more elegant way to configure tls,
-	// Maybe we can try to create a ServerOptions for unified settings,
-	// after this function becomes bloated.
+	// TODO: move tls config to handleService
 
-	// TODO: Once the global replacement of the config is completed,
-	// replace config with global.
-	tlsConfig := config.GetRootConfig().TLSConfig
-	if tlsConfig != nil {
-		cfg, err = config.GetServerTlsConfig(&config.TLSConfig{
-			CACertFile:    tlsConfig.CACertFile,
-			TLSCertFile:   tlsConfig.TLSCertFile,
-			TLSKeyFile:    tlsConfig.TLSKeyFile,
-			TLSServerName: tlsConfig.TLSServerName,
-		})
+	var tlsConf *global.TLSConfig
+
+	// handle tls
+	tlsConfRaw, ok := URL.GetAttribute(constant.TLSConfigKey)
+	if ok {
+		tlsConf, ok = tlsConfRaw.(*global.TLSConfig)
+		if !ok {
+			logger.Errorf("TRIPLE Server initialized the TLSConfig configuration failed")
+			return
+		}
+	}
+	if dubbotls.IsServerTLSValid(tlsConf) {
+		cfg, err := dubbotls.GetServerTlSConfig(tlsConf)
 		if err != nil {
+			logger.Errorf("TRIPLE Server initialized the TLSConfig configuration failed. err: %v", err)
 			return
 		}
 		s.triServer.SetTLSConfig(cfg)

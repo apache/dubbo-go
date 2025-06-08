@@ -56,7 +56,6 @@ func compatRootConfig(c *InstanceOptions) *config.RootConfig {
 		CacheFile:           c.CacheFile,
 		Custom:              compatCustomConfig(c.Custom),
 		Profiles:            compatProfilesConfig(c.Profiles),
-		TLSConfig:           compatTLSConfig(c.TLSConfig),
 	}
 }
 
@@ -361,18 +360,6 @@ func compatProfilesConfig(c *global.ProfilesConfig) *config.ProfilesConfig {
 	}
 }
 
-func compatTLSConfig(c *global.TLSConfig) *config.TLSConfig {
-	if c == nil {
-		return nil
-	}
-	return &config.TLSConfig{
-		CACertFile:    c.CACertFile,
-		TLSCertFile:   c.TLSCertFile,
-		TLSKeyFile:    c.TLSKeyFile,
-		TLSServerName: c.TLSServerName,
-	}
-}
-
 func compatMetricAggregationConfig(a *global.AggregateConfig) *config.AggregateConfig {
 	if a == nil {
 		return nil
@@ -446,7 +433,6 @@ func compatInstanceOptions(cr *config.RootConfig, rc *InstanceOptions) {
 	rc.CacheFile = cr.CacheFile
 	rc.Custom = compatGlobalCustomConfig(cr.Custom)
 	rc.Profiles = compatGlobalProfilesConfig(cr.Profiles)
-	rc.TLSConfig = compatGlobalTLSConfig(cr.TLSConfig)
 }
 
 func compatGlobalProtocolConfig(c *config.ProtocolConfig) *global.ProtocolConfig {
@@ -845,17 +831,5 @@ func compatGlobalProfilesConfig(c *config.ProfilesConfig) *global.ProfilesConfig
 	}
 	return &global.ProfilesConfig{
 		Active: c.Active,
-	}
-}
-
-func compatGlobalTLSConfig(c *config.TLSConfig) *global.TLSConfig {
-	if c == nil {
-		return nil
-	}
-	return &global.TLSConfig{
-		CACertFile:    c.CACertFile,
-		TLSCertFile:   c.TLSCertFile,
-		TLSKeyFile:    c.TLSKeyFile,
-		TLSServerName: c.TLSServerName,
 	}
 }
