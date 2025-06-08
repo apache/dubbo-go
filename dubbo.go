@@ -290,6 +290,6 @@ func SetProviderService(svc common.RPCService) {
 	}
 }
 
-func GetConsumerService(interfaceName string) (*client.Connection, error) {
+func GetConsumerConnection(interfaceName string) (*client.Connection, error) {
 	return consumerServices[interfaceName].GetConnection()
 }

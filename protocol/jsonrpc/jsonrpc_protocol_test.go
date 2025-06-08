@@ -64,6 +64,7 @@ func TestJsonrpcProtocolExport(t *testing.T) {
 	assert.False(t, ok)
 }
 
+// TODO: After discarding the config package, delete the test
 func TestJsonrpcProtocolRefer(t *testing.T) {
 	// Refer
 	proto := GetProtocol()
@@ -73,10 +74,12 @@ func TestJsonrpcProtocolRefer(t *testing.T) {
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245")
 	assert.NoError(t, err)
+	// TODO: Temporary compatibility with old APIs, can be removed later
 	con := config.ConsumerConfig{
 		RequestTimeout: "5s",
 	}
 	config.SetConsumerConfig(con)
+
 	invoker := proto.Refer(url)
 
 	// make sure url

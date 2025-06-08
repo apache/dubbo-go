@@ -131,6 +131,7 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 		common.WithParams(refOpts.getURLMap()),
 		common.WithParamsValue(constant.BeanNameKey, refOpts.id),
 		common.WithParamsValue(constant.MetadataTypeKey, refOpts.metaDataType),
+		// TODO: remove TimeoutKey after old confid removed
 		common.WithParamsValue(constant.TimeoutKey, refOpts.Consumer.RequestTimeout),
 
 		// TODO: Deprecated：use TripleConfig
@@ -145,6 +146,7 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 		// for new triple non-IDL mode
 		// TODO: remove ISIDL after old triple removed
 		common.WithParamsValue(constant.IDLMode, ref.IDLMode),
+		common.WithAttribute(constant.ConsumerConfigKey, refOpts.Consumer),
 	)
 
 	// for new triple IDL mode
