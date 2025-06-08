@@ -71,7 +71,13 @@ type DubboInvoker struct {
 
 // NewDubbo3Invoker constructor
 func NewDubbo3Invoker(url *common.URL) (*DubboInvoker, error) {
+	// TODO: Temporary compatibility with old APIs, can be removed later
 	rt := config.GetConsumerConfig().RequestTimeout
+	if consumerConfRaw, ok := url.GetAttribute(constant.ConsumerConfigKey); ok {
+		if consumerConf, ok := consumerConfRaw.(*global.ConsumerConfig); ok {
+			rt = consumerConf.RequestTimeout
+		}
+	}
 
 	timeout := url.GetParamDuration(constant.TimeoutKey, rt)
 	// for triple pb serialization. The bean name from provider is the provider reference key,

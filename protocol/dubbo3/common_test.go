@@ -32,6 +32,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
+// TODO: After the config is removed, remove the test
 // userd dubbo3 biz service
 func addService() {
 	config.SetProviderService(newGreeterProvider())

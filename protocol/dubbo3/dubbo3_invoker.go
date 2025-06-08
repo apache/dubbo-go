@@ -71,13 +71,27 @@ type DubboInvoker struct {
 
 // NewDubboInvoker constructor
 func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
-	rt := config.GetConsumerConfig().RequestTimeout
-
+	var (
+		rt              string
+		consumerService any
+	)
+	// TODO: Temporary compatibility with old APIs, can be removed later
+	rt = config.GetConsumerConfig().RequestTimeout
+	if consumerConfRaw, ok := url.GetAttribute(constant.ConsumerConfigKey); ok {
+		if consumerConf, ok := consumerConfRaw.(*global.ConsumerConfig); ok {
+			rt = consumerConf.RequestTimeout
+		}
+	}
+	// TODO: If you do not need to be compatible with the old API, you can directly use url.GetAttribute(constant.ConsumerConfigKey) as the timeout
 	timeout := url.GetParamDuration(constant.TimeoutKey, rt)
 	// for triple pb serialization. The bean name from provider is the provider reference key,
-	// which can't locate the target consumer stub, so we use interface key..
+	// which can't locate the target consumer stub, so we use interface key.
 	interfaceKey := url.GetParam(constant.InterfaceKey, "")
-	consumerService := config.GetConsumerServiceByInterfaceName(interfaceKey)
+	//TODO: Temporary compatibility with old APIs, can be removed later
+	consumerService = config.GetConsumerServiceByInterfaceName(interfaceKey)
+	if rpcService, ok := url.GetAttribute(constant.RpcServiceKey); ok {
+		consumerService = rpcService
+	}
 
 	dubboSerializerType := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	triCodecType := tripleConstant.CodecType(dubboSerializerType)
@@ -101,6 +115,7 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 	opts = append(opts, triConfig.WithGRPCMaxCallRecvMessageSize(maxCallRecvMsgSize))
 	opts = append(opts, triConfig.WithGRPCMaxCallSendMessageSize(maxCallSendMsgSize))
 
+	//TODO: Temporary compatibility with old APIs, can be removed later
 	tracingKey := url.GetParam(constant.TracingConfigKey, "")
 	if tracingKey != "" {
 		tracingConfig := config.GetTracingConfig(tracingKey)

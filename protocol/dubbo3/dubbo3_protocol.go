@@ -86,7 +86,11 @@ func (dp *DubboProtocol) Export(invoker base.Invoker) base.Exporter {
 
 	key := url.GetParam(constant.BeanNameKey, "")
 	var service any
+	//TODO: Temporary compatibility with old APIs, can be removed later
 	service = config.GetProviderService(key)
+	if rpcService, ok := url.GetAttribute(constant.RpcServiceKey); ok {
+		service = rpcService
+	}
 
 	serializationType := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	var triSerializationType tripleConstant.CodecType
@@ -225,6 +229,7 @@ func (dp *DubboProtocol) openServer(url *common.URL, tripleCodecType tripleConst
 		triConfig.WithLocation(url.Location),
 		triConfig.WithLogger(logger.GetLogger()),
 	}
+	//TODO: Temporary compatibility with old APIs, can be removed later
 	tracingKey := url.GetParam(constant.TracingConfigKey, "")
 	if tracingKey != "" {
 		tracingConfig := config.GetTracingConfig(tracingKey)
