@@ -69,7 +69,7 @@ func SetRootConfig(r RootConfig) {
 
 // Prefix dubbo
 func (rc *RootConfig) Prefix() string {
-	return constant.Dubbo
+	return constant.DubboProtocol
 }
 
 func GetRootConfig() *RootConfig {

@@ -87,6 +87,20 @@ func compatProtocolConfig(c *global.ProtocolConfig) *config.ProtocolConfig {
 		Ip:                   c.Ip,
 		Port:                 c.Port,
 		Params:               c.Params,
+		TripleConfig:         compatTripleConfig(c.TripleConfig),
+		MaxServerSendMsgSize: c.MaxServerSendMsgSize,
+		MaxServerRecvMsgSize: c.MaxServerRecvMsgSize,
+	}
+}
+
+// just for compat
+func compatTripleConfig(c *global.TripleConfig) *config.TripleConfig {
+	if c == nil {
+		return nil
+	}
+	return &config.TripleConfig{
+		KeepAliveInterval:    c.KeepAliveInterval,
+		KeepAliveTimeout:     c.KeepAliveTimeout,
 		MaxServerSendMsgSize: c.MaxServerSendMsgSize,
 		MaxServerRecvMsgSize: c.MaxServerRecvMsgSize,
 	}
@@ -444,6 +458,20 @@ func compatGlobalProtocolConfig(c *config.ProtocolConfig) *global.ProtocolConfig
 		Ip:                   c.Ip,
 		Port:                 c.Port,
 		Params:               c.Params,
+		TripleConfig:         compatGlobalTripleConfig(c.TripleConfig),
+		MaxServerSendMsgSize: c.MaxServerSendMsgSize,
+		MaxServerRecvMsgSize: c.MaxServerRecvMsgSize,
+	}
+}
+
+// just for compat
+func compatGlobalTripleConfig(c *config.TripleConfig) *global.TripleConfig {
+	if c == nil {
+		return nil
+	}
+	return &global.TripleConfig{
+		KeepAliveInterval:    c.KeepAliveInterval,
+		KeepAliveTimeout:     c.KeepAliveTimeout,
 		MaxServerSendMsgSize: c.MaxServerSendMsgSize,
 		MaxServerRecvMsgSize: c.MaxServerRecvMsgSize,
 	}
@@ -659,7 +687,7 @@ func compatGlobalReferences(c map[string]*config.ReferenceConfig) map[string]*gl
 			Version:          ref.Version,
 			Serialization:    ref.Serialization,
 			ProvidedBy:       ref.ProvidedBy,
-			Methods:          compatGlobalMethod(ref.Methods),
+			MethodsConfig:    compatGlobalMethod(ref.Methods),
 			Async:            ref.Async,
 			Params:           ref.Params,
 			Generic:          ref.Generic,

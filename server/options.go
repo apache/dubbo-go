@@ -375,8 +375,8 @@ func WithServerProtocolIDs(protocolIDs []string) ServerOption {
 	}
 }
 
-func WithServerProtocol(opts ...protocol.Option) ServerOption {
-	proOpts := protocol.NewOptions(opts...)
+func WithServerProtocol(opts ...protocol.ServerOption) ServerOption {
+	proOpts := protocol.NewServerOptions(opts...)
 
 	return func(srvOpts *ServerOptions) {
 		if srvOpts.Protocols == nil {
@@ -852,8 +852,8 @@ func WithTag(tag string) ServiceOption {
 	}
 }
 
-func WithProtocol(opts ...protocol.Option) ServiceOption {
-	proOpts := protocol.NewOptions(opts...)
+func WithProtocol(opts ...protocol.ServerOption) ServiceOption {
+	proOpts := protocol.NewServerOptions(opts...)
 
 	return func(opts *ServiceOptions) {
 		if opts.Protocols == nil {

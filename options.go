@@ -379,8 +379,27 @@ func WithMetadataServiceProtocol(protocol string) InstanceOption {
 	}
 }
 
-func WithProtocol(opts ...protocol.Option) InstanceOption {
-	proOpts := protocol.NewOptions(opts...)
+// TODO: deal this fuction
+// this function I want handle the protocol.Option which
+// both server and client can use together.
+// like:
+//
+//	func WithProtocol(opts ...protocol.Option) InstanceOption {
+//		proOpts := protocol.NewOptions(opts...)
+//
+//		log.Warnf("proOpts: %+v", proOpts)
+//
+//		return func(insOpts *InstanceOptions) {
+//			if insOpts.Protocols == nil {
+//				insOpts.Protocols = make(map[string]*global.ProtocolConfig)
+//			}
+//			insOpts.Protocols[proOpts.ID] = proOpts.Protocol
+//		}
+//	}
+//
+// but now only work in server side for compat old API.
+func WithProtocol(opts ...protocol.ServerOption) InstanceOption {
+	proOpts := protocol.NewServerOptions(opts...)
 
 	return func(insOpts *InstanceOptions) {
 		if insOpts.Protocols == nil {

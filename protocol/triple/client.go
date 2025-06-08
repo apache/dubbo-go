@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"reflect"
 	"strings"
+	"time"
 )
 
 import (
@@ -57,6 +58,9 @@ type clientManager struct {
 	// triple_protocol clients, key is method name
 	triClients map[string]*tri.Client
 }
+
+// TODO: code a triple client between clientManager and triple_protocol client
+// TODO: write a NewClient for triple client
 
 func (cm *clientManager) getClient(method string) (*tri.Client, error) {
 	triClient, ok := cm.triClients[method]
@@ -139,22 +143,8 @@ func (cm *clientManager) close() error {
 // newClientManager extracts configurations from url and builds clientManager
 func newClientManager(url *common.URL) (*clientManager, error) {
 	var cliOpts []tri.ClientOption
-
-	// set max send and recv msg size
-	maxCallRecvMsgSize := constant.DefaultMaxCallRecvMsgSize
-	if recvMsgSize, err := humanize.ParseBytes(url.GetParam(constant.MaxCallRecvMsgSize, "")); err == nil && recvMsgSize > 0 {
-		maxCallRecvMsgSize = int(recvMsgSize)
-	}
-	cliOpts = append(cliOpts, tri.WithReadMaxBytes(maxCallRecvMsgSize))
-	maxCallSendMsgSize := constant.DefaultMaxCallSendMsgSize
-	if sendMsgSize, err := humanize.ParseBytes(url.GetParam(constant.MaxCallSendMsgSize, "")); err == nil && sendMsgSize > 0 {
-		maxCallSendMsgSize = int(sendMsgSize)
-	}
-	cliOpts = append(cliOpts, tri.WithSendMaxBytes(maxCallSendMsgSize))
-	// set keepalive interval and keepalive timeout
-	keepAliveInterval := url.GetParamDuration(constant.KeepAliveInterval, constant.DefaultKeepAliveInterval)
-	keepAliveTimeout := url.GetParamDuration(constant.KeepAliveTimeout, constant.DefaultKeepAliveTimeout)
 	var isIDL bool
+
 	// set serialization
 	serialization := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	switch serialization {
@@ -207,6 +197,14 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 			tlsFlag = true
 		}
 	}
+
+	cliKeepAliveOpts, keepAliveInterval, keepAliveTimeout, genKeepAliveOptsErr := genKeepAliveOpts(url)
+	if genKeepAliveOptsErr != nil {
+		logger.Errorf("genKeepAliveOpts err: %v", genKeepAliveOptsErr)
+		return nil, genKeepAliveOptsErr
+	}
+
+	cliOpts = append(cliOpts, cliKeepAliveOpts...)
 
 	var transport http.RoundTripper
 	callType := url.GetParam(constant.CallHTTPTypeKey, constant.CallHTTP2)
@@ -282,6 +280,53 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		isIDL:      isIDL,
 		triClients: triClients,
 	}, nil
+}
+
+func genKeepAliveOpts(url *common.URL) ([]tri.ClientOption, time.Duration, time.Duration, error) {
+	var cliKeepAliveOpts []tri.ClientOption
+
+	// set max send and recv msg size
+	maxCallRecvMsgSize := constant.DefaultMaxCallRecvMsgSize
+	if recvMsgSize, err := humanize.ParseBytes(url.GetParam(constant.MaxCallRecvMsgSize, "")); err == nil && recvMsgSize > 0 {
+		maxCallRecvMsgSize = int(recvMsgSize)
+	}
+	cliKeepAliveOpts = append(cliKeepAliveOpts, tri.WithReadMaxBytes(maxCallRecvMsgSize))
+	maxCallSendMsgSize := constant.DefaultMaxCallSendMsgSize
+	if sendMsgSize, err := humanize.ParseBytes(url.GetParam(constant.MaxCallSendMsgSize, "")); err == nil && sendMsgSize > 0 {
+		maxCallSendMsgSize = int(sendMsgSize)
+	}
+	cliKeepAliveOpts = append(cliKeepAliveOpts, tri.WithSendMaxBytes(maxCallSendMsgSize))
+
+	// set keepalive interval and keepalive timeout
+	// Deprecated：use tripleconfig
+	// TODO: remove KeepAliveInterval and KeepAliveInterval in version 4.0.0
+	keepAliveInterval := url.GetParamDuration(constant.KeepAliveInterval, constant.DefaultKeepAliveInterval)
+	keepAliveTimeout := url.GetParamDuration(constant.KeepAliveTimeout, constant.DefaultKeepAliveTimeout)
+
+	tripleConfRaw, ok := url.GetAttribute(constant.TripleConfigKey)
+	if ok {
+		var parseErr error
+		tripleConf := tripleConfRaw.(*global.TripleConfig)
+
+		if tripleConf == nil {
+			return cliKeepAliveOpts, keepAliveInterval, keepAliveTimeout, nil
+		}
+
+		if tripleConf.KeepAliveInterval != "" {
+			keepAliveInterval, parseErr = time.ParseDuration(tripleConf.KeepAliveInterval)
+			if parseErr != nil {
+				return nil, 0, 0, parseErr
+			}
+		}
+		if tripleConf.KeepAliveTimeout != "" {
+			keepAliveTimeout, parseErr = time.ParseDuration(tripleConf.KeepAliveTimeout)
+			if parseErr != nil {
+				return nil, 0, 0, parseErr
+			}
+		}
+	}
+
+	return cliKeepAliveOpts, keepAliveInterval, keepAliveTimeout, nil
 }
 
 func isFilterHeader(key string) bool {

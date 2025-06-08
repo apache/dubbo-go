@@ -33,6 +33,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/proxy"
 	"dubbo.apache.org/dubbo-go/v3/registry"
@@ -89,7 +90,7 @@ func (refOpts *ReferenceOptions) init(opts ...ReferenceOption) error {
 	}
 
 	// init method
-	methods := refConf.Methods
+	methods := refConf.MethodsConfig
 	if length := len(methods); length > 0 {
 		refOpts.methodsCompat = make([]*config.MethodConfig, length)
 		for i, method := range methods {
@@ -347,7 +348,7 @@ func WithIDL(IDLMode string) ReferenceOption {
 
 func WithProtocolDubbo() ReferenceOption {
 	return func(opts *ReferenceOptions) {
-		opts.Reference.Protocol = constant.Dubbo
+		opts.Reference.Protocol = constant.DubboProtocol
 	}
 }
 
@@ -359,7 +360,7 @@ func WithProtocolTriple() ReferenceOption {
 
 func WithProtocolJsonRPC() ReferenceOption {
 	return func(opts *ReferenceOptions) {
-		opts.Reference.Protocol = "jsonrpc"
+		opts.Reference.Protocol = constant.JSONRPCProtocol
 	}
 }
 
@@ -391,10 +392,10 @@ func WithMethod(opts ...config.MethodOption) ReferenceOption {
 	regOpts := config.NewMethodOptions(opts...)
 
 	return func(opts *ReferenceOptions) {
-		if len(opts.Reference.Methods) == 0 {
-			opts.Reference.Methods = make([]*global.MethodConfig, 0)
+		if len(opts.Reference.MethodsConfig) == 0 {
+			opts.Reference.MethodsConfig = make([]*global.MethodConfig, 0)
 		}
-		opts.Reference.Methods = append(opts.Reference.Methods, regOpts.Method)
+		opts.Reference.MethodsConfig = append(opts.Reference.MethodsConfig, regOpts.Method)
 	}
 }
 
@@ -667,6 +668,9 @@ func WithClientClusterStrategy(strategy string) ClientOption {
 	}
 }
 
+// Deprecated：use triple.WithKeepAliveInterval()
+// TODO: remove KeepAliveInterval and KeepAliveInterval in version 4.0.0
+//
 // If there is no other traffic on the connection, the ping will be sent, only works for 'tri' protocol with http2.
 // A minimum value of 10s will be used instead to invoid 'too many pings'.If not set, default value is 10s.
 func WithKeepAliveInterval(keepAliveInterval time.Duration) ClientOption {
@@ -678,6 +682,9 @@ func WithKeepAliveInterval(keepAliveInterval time.Duration) ClientOption {
 	}
 }
 
+// Deprecated：use triple.WithKeepAliveTimeout()
+// TODO: remove KeepAliveInterval and KeepAliveInterval in version 4.0.0
+//
 // WithKeepAliveTimeout is timeout after which the connection will be closed, only works for 'tri' protocol with http2
 // If not set, default value is 20s.
 func WithKeepAliveTimeout(keepAliveTimeout time.Duration) ClientOption {
@@ -808,7 +815,7 @@ func WithClientSticky() ClientOption {
 
 func WithClientProtocolDubbo() ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.Protocol = constant.Dubbo
+		opts.Consumer.Protocol = constant.DubboProtocol
 	}
 }
 
@@ -820,13 +827,18 @@ func WithClientProtocolTriple() ClientOption {
 
 func WithClientProtocolJsonRPC() ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.Protocol = "jsonrpc"
+		opts.Consumer.Protocol = constant.JSONRPCProtocol
 	}
 }
 
-func WithClientProtocol(protocol string) ClientOption {
-	return func(opts *ClientOptions) {
-		opts.Consumer.Protocol = protocol
+func WithClientProtocol(opts ...protocol.ClientOption) ClientOption {
+	proOpts := protocol.NewClientOptions(opts...)
+
+	return func(srvOpts *ClientOptions) {
+		if srvOpts.overallReference.ProtocolClientConfig == nil {
+			srvOpts.overallReference.ProtocolClientConfig = new(global.ProtocolClientConfig)
+		}
+		srvOpts.overallReference.ProtocolClientConfig = proOpts.ProtocolClient
 	}
 }
 

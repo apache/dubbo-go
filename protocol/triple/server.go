@@ -56,18 +56,15 @@ import (
 // provide functionality.
 type Server struct {
 	triServer *tri.Server
-	cfg       *ServerOptions
+	cfg       *global.TripleConfig
 	mu        sync.RWMutex
 	services  map[string]grpc.ServiceInfo
 }
 
 // NewServer creates a new TRIPLE server.
-// triServer would not be initialized since we could not get configurations here.
-func NewServer(opts ...ServerOption) *Server {
-	newSrvOpts := defaultServerOptions()
-	newSrvOpts.init(opts...)
+func NewServer(cfg *global.TripleConfig) *Server {
 	return &Server{
-		cfg:      newSrvOpts,
+		cfg:      cfg,
 		services: make(map[string]grpc.ServiceInfo),
 	}
 }
@@ -175,6 +172,12 @@ func (s *Server) RefreshService(invoker base.Invoker, info *common.ServiceInfo) 
 }
 
 func getHanOpts(url *common.URL) (hanOpts []tri.HandlerOption) {
+	group := url.GetParam(constant.GroupKey, "")
+	version := url.GetParam(constant.VersionKey, "")
+	hanOpts = append(hanOpts, tri.WithGroup(group), tri.WithVersion(version))
+
+	// Deprecated：use TripleConfig
+	// TODO: remove MaxServerSendMsgSize and MaxServerRecvMsgSize when version 4.0.0
 	var err error
 	maxServerRecvMsgSize := constant.DefaultMaxServerRecvMsgSize
 	if recvMsgSize, convertErr := humanize.ParseBytes(url.GetParam(constant.MaxServerRecvMsgSize, "")); convertErr == nil && recvMsgSize != 0 {
@@ -182,17 +185,43 @@ func getHanOpts(url *common.URL) (hanOpts []tri.HandlerOption) {
 	}
 	hanOpts = append(hanOpts, tri.WithReadMaxBytes(maxServerRecvMsgSize))
 
+	// Deprecated：use TripleConfig
+	// TODO: remove MaxServerSendMsgSize and MaxServerRecvMsgSize when version 4.0.0
 	maxServerSendMsgSize := constant.DefaultMaxServerSendMsgSize
 	if sendMsgSize, convertErr := humanize.ParseBytes(url.GetParam(constant.MaxServerSendMsgSize, "")); err == convertErr && sendMsgSize != 0 {
 		maxServerSendMsgSize = int(sendMsgSize)
 	}
 	hanOpts = append(hanOpts, tri.WithSendMaxBytes(maxServerSendMsgSize))
 
+	var tripleConf *global.TripleConfig
+
+	tripleConfRaw, ok := url.GetAttribute(constant.TripleConfigKey)
+	if ok {
+		tripleConf = tripleConfRaw.(*global.TripleConfig)
+	}
+
+	if tripleConf == nil {
+		return hanOpts
+	}
+
+	if tripleConf.MaxServerRecvMsgSize != "" {
+		logger.Warnf("MaxServerRecvMsgSize: %v", tripleConf.MaxServerRecvMsgSize)
+		if recvMsgSize, convertErr := humanize.ParseBytes(tripleConf.MaxServerRecvMsgSize); convertErr == nil && recvMsgSize != 0 {
+			maxServerRecvMsgSize = int(recvMsgSize)
+		}
+		hanOpts = append(hanOpts, tri.WithReadMaxBytes(maxServerRecvMsgSize))
+	}
+
+	if tripleConf.MaxServerSendMsgSize != "" {
+		logger.Warnf("MaxServerSendMsgSize: %v", tripleConf.MaxServerSendMsgSize)
+		if sendMsgSize, convertErr := humanize.ParseBytes(tripleConf.MaxServerSendMsgSize); err == convertErr && sendMsgSize != 0 {
+			maxServerSendMsgSize = int(sendMsgSize)
+		}
+		hanOpts = append(hanOpts, tri.WithSendMaxBytes(maxServerSendMsgSize))
+	}
+
 	// todo:// open tracing
 
-	group := url.GetParam(constant.GroupKey, "")
-	version := url.GetParam(constant.VersionKey, "")
-	hanOpts = append(hanOpts, tri.WithGroup(group), tri.WithVersion(version))
 	return hanOpts
 }
 

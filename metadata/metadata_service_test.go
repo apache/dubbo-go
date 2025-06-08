@@ -312,7 +312,7 @@ func Test_serviceExporterExport(t *testing.T) {
 		opts := &Options{
 			appName:      "dubbo-app",
 			metadataType: constant.RemoteMetadataStorageType,
-			protocol:     constant.Dubbo,
+			protocol:     constant.DubboProtocol,
 			port:         p,
 		}
 		dubboProtocol.On("Export").Return(mockExporter).Once()
@@ -331,7 +331,7 @@ func Test_serviceExporterExport(t *testing.T) {
 		opts := &Options{
 			appName:      "dubbo-app",
 			metadataType: constant.RemoteMetadataStorageType,
-			protocol:     constant.Dubbo,
+			protocol:     constant.DubboProtocol,
 			port:         p,
 		}
 		e := &serviceExporter{
@@ -345,7 +345,7 @@ func Test_serviceExporterExport(t *testing.T) {
 		opts := &Options{
 			appName:      "dubbo-app",
 			metadataType: constant.RemoteMetadataStorageType,
-			protocol:     constant.Dubbo,
+			protocol:     constant.DubboProtocol,
 			port:         0,
 		}
 		// UnRegister first otherwise will fail

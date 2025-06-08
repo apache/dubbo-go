@@ -209,11 +209,17 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 			// TLSConifg
 			common.WithAttribute(constant.TLSConfigKey, svcOpts.srvOpts.TLS),
 			common.WithAttribute(constant.RpcServiceKey, svcOpts.rpcService),
+			common.WithAttribute(constant.TripleConfigKey, protocolConf.TripleConfig),
 			common.WithToken(svcConf.Token),
 			common.WithParamsValue(constant.MetadataTypeKey, svcOpts.metadataType),
+
 			// fix https://github.com/apache/dubbo-go/issues/2176
+			// TODO: remove MaxServerSendMsgSize value and MaxServerRecvMsgSize value when version 4.0.0
+			// use TripleConfig to transport arguments
 			common.WithParamsValue(constant.MaxServerSendMsgSize, protocolConf.MaxServerSendMsgSize),
 			common.WithParamsValue(constant.MaxServerRecvMsgSize, protocolConf.MaxServerRecvMsgSize),
+
+			// TODO: remove IDL value when version 4.0.0
 			common.WithParamsValue(constant.IDLMode, isIDL),
 		)
 
