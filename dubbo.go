@@ -75,6 +75,7 @@ func (ins *Instance) NewClient(opts ...client.ClientOption) (*client.Client, err
 	sdCfg := ins.insOpts.CloneShutdown()
 	metricsCfg := ins.insOpts.CloneMetrics()
 	otelCfg := ins.insOpts.CloneOtel()
+	tlsCfg := ins.insOpts.CloneTLSConfig()
 
 	if conCfg != nil {
 		if !conCfg.Check {
@@ -105,6 +106,9 @@ func (ins *Instance) NewClient(opts ...client.ClientOption) (*client.Client, err
 	if otelCfg != nil {
 		cliOpts = append(cliOpts, client.SetClientOtel(otelCfg))
 	}
+	if tlsCfg != nil {
+		cliOpts = append(cliOpts, client.SetClientTLS(tlsCfg))
+	}
 
 	// options passed by users has higher priority
 	cliOpts = append(cliOpts, opts...)
@@ -130,6 +134,7 @@ func (ins *Instance) NewServer(opts ...server.ServerOption) (*server.Server, err
 	sdCfg := ins.insOpts.CloneShutdown()
 	metricsCfg := ins.insOpts.CloneMetrics()
 	otelCfg := ins.insOpts.CloneOtel()
+	tlsCfg := ins.insOpts.CloneTLSConfig()
 
 	if appCfg != nil {
 		srvOpts = append(srvOpts,
@@ -158,6 +163,9 @@ func (ins *Instance) NewServer(opts ...server.ServerOption) (*server.Server, err
 	}
 	if otelCfg != nil {
 		srvOpts = append(srvOpts, server.SetServerOtel(otelCfg))
+	}
+	if tlsCfg != nil {
+		srvOpts = append(srvOpts, server.SetServerTLS(tlsCfg))
 	}
 
 	// options passed by users have higher priority

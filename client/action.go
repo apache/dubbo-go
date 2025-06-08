@@ -138,7 +138,10 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 		common.WithParamsValue(constant.KeepAliveInterval, ref.KeepAliveInterval),
 		common.WithParamsValue(constant.KeepAliveTimeout, ref.KeepAliveTimeout),
 
+		// attribute
 		common.WithAttribute(constant.TripleConfigKey, ref.ProtocolClientConfig.TripleConfig),
+		common.WithAttribute(constant.TLSConfigKey, refOpts.TLS),
+
 		// for new triple non-IDL mode
 		// TODO: remove ISIDL after old triple removed
 		common.WithParamsValue(constant.IDLMode, ref.IDLMode),

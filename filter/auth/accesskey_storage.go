@@ -51,7 +51,7 @@ func newDefaultAccesskeyStorage() filter.AccessKeyStorage {
 }
 
 // GetAccessKeyPair retrieves AccessKeyPair from url by the key "accessKeyId" and "secretAccessKey"
-func (storage *defaultAccesskeyStorage) GetAccessKeyPair(invocation base.Invocation, url *common.URL) *filter.AccessKeyPair {
+func (storage *defaultAccesskeyStorage) GetAccessKeyPair(inv base.Invocation, url *common.URL) *filter.AccessKeyPair {
 	return &filter.AccessKeyPair{
 		AccessKey: url.GetParam(constant.AccessKeyIDKey, ""),
 		SecretKey: url.GetParam(constant.SecretAccessKeyKey, ""),

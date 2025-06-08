@@ -19,6 +19,7 @@ package triple
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"strconv"
 	"strings"
@@ -44,8 +45,9 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
-	invocation_impl "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
+	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
 
 // same as dubbo_invoker.go attachmentKey
@@ -136,14 +138,31 @@ func NewDubbo3Invoker(url *common.URL) (*DubboInvoker, error) {
 	}
 
 	triOption := triConfig.NewTripleOption(opts...)
+
+	// TODO: remove config TLSConfig
+	// delete this branch
 	tlsConfig := config.GetRootConfig().TLSConfig
 	if tlsConfig != nil {
+		triOption.CACertFile = tlsConfig.CACertFile
 		triOption.TLSCertFile = tlsConfig.TLSCertFile
 		triOption.TLSKeyFile = tlsConfig.TLSKeyFile
-		triOption.CACertFile = tlsConfig.CACertFile
 		triOption.TLSServerName = tlsConfig.TLSServerName
-		logger.Infof("Triple Client initialized the TLSConfig configuration")
+		logger.Infof("DUBBO3 Client initialized the TLSConfig configuration")
+	} else if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
+		// use global TLSConfig handle tls
+		tlsConf, ok := tlsConfRaw.(*global.TLSConfig)
+		if !ok {
+			return nil, errors.New("DUBBO3 Client initialized the TLSConfig configuration failed")
+		}
+		if dubbotls.IsClientTLSValid(tlsConf) {
+			triOption.CACertFile = tlsConf.CACertFile
+			triOption.TLSCertFile = tlsConf.TLSCertFile
+			triOption.TLSKeyFile = tlsConf.TLSKeyFile
+			triOption.TLSServerName = tlsConf.TLSServerName
+			logger.Infof("DUBBO3 Client initialized the TLSConfig configuration")
+		}
 	}
+
 	client, err := triple.NewTripleClient(consumerService, triOption)
 
 	if err != nil {
@@ -253,17 +272,17 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation base.Invocation) 
 }
 
 // get timeout including methodConfig
-func (di *DubboInvoker) getTimeout(invocation *invocation_impl.RPCInvocation) time.Duration {
-	timeout := di.GetURL().GetParam(strings.Join([]string{constant.MethodKeys, invocation.MethodName(), constant.TimeoutKey}, "."), "")
+func (di *DubboInvoker) getTimeout(inv *invocation.RPCInvocation) time.Duration {
+	timeout := di.GetURL().GetParam(strings.Join([]string{constant.MethodKeys, inv.MethodName(), constant.TimeoutKey}, "."), "")
 	if len(timeout) != 0 {
 		if t, err := time.ParseDuration(timeout); err == nil {
 			// config timeout into attachment
-			invocation.SetAttachment(constant.TimeoutKey, strconv.Itoa(int(t.Milliseconds())))
+			inv.SetAttachment(constant.TimeoutKey, strconv.Itoa(int(t.Milliseconds())))
 			return t
 		}
 	}
 	// set timeout into invocation at method level
-	invocation.SetAttachment(constant.TimeoutKey, strconv.Itoa(int(di.timeout.Milliseconds())))
+	inv.SetAttachment(constant.TimeoutKey, strconv.Itoa(int(di.timeout.Milliseconds())))
 	return di.timeout
 }
 

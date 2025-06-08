@@ -20,6 +20,7 @@ package triple
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -39,9 +40,9 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
+	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
 
 const (
@@ -171,30 +172,30 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 
 	// todo(DMwangnima): support opentracing
 
-	// todo(DMwangnima): support TLS in an ideal way
-	var cfg *tls.Config
-	var tlsFlag bool
-	var err error
+	// handle tls
+	var (
+		tlsFlag bool
+		tlsConf *global.TLSConfig
+		cfg     *tls.Config
+		err     error
+	)
 
-	// handle tls config
-	// TODO: think about a more elegant way to configure tls,
-	// Maybe we can try to create a ClientOptions for unified settings,
-	// after this function becomes bloated.
-
-	// TODO: Once the global replacement of the config is completed,
-	// replace config with global.
-	if tlsConfig := config.GetRootConfig().TLSConfig; tlsConfig != nil {
-		cfg, err = config.GetClientTlsConfig(&config.TLSConfig{
-			CACertFile:    tlsConfig.CACertFile,
-			TLSCertFile:   tlsConfig.TLSCertFile,
-			TLSKeyFile:    tlsConfig.TLSKeyFile,
-			TLSServerName: tlsConfig.TLSServerName,
-		})
+	tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey)
+	if ok {
+		tlsConf, ok = tlsConfRaw.(*global.TLSConfig)
+		if !ok {
+			return nil, errors.New("TRIPLE clientManager initialized the TLSConfig configuration failed")
+		}
+	}
+	if dubbotls.IsClientTLSValid(tlsConf) {
+		cfg, err = dubbotls.GetClientTlSConfig(tlsConf)
 		if err != nil {
 			return nil, err
 		}
-		logger.Infof("TRIPLE clientManager initialized the TLSConfig configuration")
-		tlsFlag = true
+		if cfg != nil {
+			logger.Infof("TRIPLE clientManager initialized the TLSConfig configuration")
+			tlsFlag = true
+		}
 	}
 
 	cliKeepAliveOpts, keepAliveInterval, keepAliveTimeout, genKeepAliveOptsErr := genKeepAliveOpts(url)

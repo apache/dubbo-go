@@ -34,7 +34,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
-	invocation2 "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
@@ -60,21 +60,21 @@ func newGenericFilter() filter.Filter {
 }
 
 // Invoke turns the parameters to map for generic method
-func (f *genericFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
-	if isCallingToGenericService(invoker, invocation) {
+func (f *genericFilter) Invoke(ctx context.Context, invoker base.Invoker, inv base.Invocation) result.Result {
+	if isCallingToGenericService(invoker, inv) {
 
-		mtdname := invocation.MethodName()
-		oldargs := invocation.Arguments()
+		mtdName := inv.MethodName()
+		oldArgs := inv.Arguments()
 
-		types := make([]string, 0, len(oldargs))
-		args := make([]hessian.Object, 0, len(oldargs))
+		types := make([]string, 0, len(oldArgs))
+		args := make([]hessian.Object, 0, len(oldArgs))
 
 		// get generic info from attachments of invocation, the default value is "true"
-		generic := invocation.GetAttachmentWithDefaultValue(constant.GenericKey, constant.GenericSerializationDefault)
+		generic := inv.GetAttachmentWithDefaultValue(constant.GenericKey, constant.GenericSerializationDefault)
 		// get generalizer according to value in the `generic`
 		g := getGeneralizer(generic)
 
-		for _, arg := range oldargs {
+		for _, arg := range oldArgs {
 			// use the default generalizer(MapGeneralizer)
 			typ, err := g.GetType(arg)
 			if err != nil {
@@ -83,27 +83,27 @@ func (f *genericFilter) Invoke(ctx context.Context, invoker base.Invoker, invoca
 			obj, err := g.Generalize(arg)
 			if err != nil {
 				logger.Errorf("generalization failed, %v", err)
-				return invoker.Invoke(ctx, invocation)
+				return invoker.Invoke(ctx, inv)
 			}
 			types = append(types, typ)
 			args = append(args, obj)
 		}
 
 		// construct a new invocation for generic call
-		newargs := []any{
-			mtdname,
+		newArgs := []any{
+			mtdName,
 			types,
 			args,
 		}
-		newivc := invocation2.NewRPCInvocation(constant.Generic, newargs, invocation.Attachments())
-		newivc.SetReply(invocation.Reply())
-		newivc.Attachments()[constant.GenericKey] = invoker.GetURL().GetParam(constant.GenericKey, "")
+		newIvc := invocation.NewRPCInvocation(constant.Generic, newArgs, inv.Attachments())
+		newIvc.SetReply(inv.Reply())
+		newIvc.Attachments()[constant.GenericKey] = invoker.GetURL().GetParam(constant.GenericKey, "")
 
-		return invoker.Invoke(ctx, newivc)
-	} else if isMakingAGenericCall(invoker, invocation) {
-		invocation.Attachments()[constant.GenericKey] = invoker.GetURL().GetParam(constant.GenericKey, "")
+		return invoker.Invoke(ctx, newIvc)
+	} else if isMakingAGenericCall(invoker, inv) {
+		inv.Attachments()[constant.GenericKey] = invoker.GetURL().GetParam(constant.GenericKey, "")
 	}
-	return invoker.Invoke(ctx, invocation)
+	return invoker.Invoke(ctx, inv)
 }
 
 // OnResponse dummy process, returns the result directly

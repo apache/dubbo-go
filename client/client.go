@@ -28,7 +28,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
-	invocation_impl "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
@@ -168,6 +168,7 @@ func (cli *Client) dial(interfaceName string, info *ClientInfo, srv any, opts ..
 		setConsumer(cli.cliOpts.Consumer),
 		setMetrics(cli.cliOpts.Metrics),
 		setOtel(cli.cliOpts.Otel),
+		setTLS(cli.cliOpts.TLS),
 		// this config must be set after Reference initialized
 		setInterfaceName(interfaceName),
 	}
@@ -195,13 +196,13 @@ func generateInvocation(methodName string, reqs []any, resp any, callType string
 	if resp != nil {
 		paramsRawVals = append(paramsRawVals, resp)
 	}
-	inv := invocation_impl.NewRPCInvocationWithOptions(
-		invocation_impl.WithMethodName(methodName),
-		invocation_impl.WithAttachment(constant.TimeoutKey, opts.RequestTimeout),
-		invocation_impl.WithAttachment(constant.RetriesKey, opts.Retries),
-		invocation_impl.WithArguments(reqs),
-		invocation_impl.WithReply(resp),
-		invocation_impl.WithParameterRawValues(paramsRawVals),
+	inv := invocation.NewRPCInvocationWithOptions(
+		invocation.WithMethodName(methodName),
+		invocation.WithAttachment(constant.TimeoutKey, opts.RequestTimeout),
+		invocation.WithAttachment(constant.RetriesKey, opts.Retries),
+		invocation.WithArguments(reqs),
+		invocation.WithReply(resp),
+		invocation.WithParameterRawValues(paramsRawVals),
 	)
 	inv.SetAttribute(constant.CallTypeKey, callType)
 
