@@ -70,7 +70,8 @@ const (
 	// TODO: remove IDLMode after old triple removed
 	IDLMode = "IDL-mode"
 
-	TripleConfigKey = "triple-config"
+	TripleConfigKey   = "triple-config"
+	ConsumerConfigKey = "consumer-config"
 )
 
 // TODO: remove this after old triple removed
