@@ -63,7 +63,7 @@ func Init(opts ...Option) {
 		for _, opt := range opts {
 			opt(newOpts)
 		}
-		shutdown := newOpts.Shutdown
+
 		// retrieve ShutdownConfig for gracefulShutdownFilter
 		gracefulShutdownConsumerFilter, exist := extension.GetFilter(constant.GracefulShutdownConsumerFilterKey)
 		if !exist {
@@ -74,27 +74,26 @@ func Init(opts ...Option) {
 			return
 		}
 		if filter, ok := gracefulShutdownConsumerFilter.(config.Setter); ok {
-			filter.Set(constant.GracefulShutdownFilterShutdownConfig, shutdown)
+			filter.Set(constant.GracefulShutdownFilterShutdownConfig, newOpts.Shutdown)
 		}
 
 		if filter, ok := gracefulShutdownProviderFilter.(config.Setter); ok {
-			filter.Set(constant.GracefulShutdownFilterShutdownConfig, shutdown)
+			filter.Set(constant.GracefulShutdownFilterShutdownConfig, newOpts.Shutdown)
 		}
 
-		if shutdown.InternalSignal != nil && *shutdown.InternalSignal {
+		if newOpts.Shutdown.InternalSignal != nil && *newOpts.Shutdown.InternalSignal {
 			signals := make(chan os.Signal, 1)
 			signal.Notify(signals, ShutdownSignals...)
 
 			go func() {
-
 				sig := <-signals
 				logger.Infof("get signal %s, applicationConfig will shutdown.", sig)
 				// gracefulShutdownOnce.Do(func() {
-				time.AfterFunc(totalTimeout(shutdown), func() {
+				time.AfterFunc(totalTimeout(newOpts.Shutdown), func() {
 					logger.Warn("Shutdown gracefully timeout, applicationConfig will shutdown immediately. ")
 					os.Exit(0)
 				})
-				beforeShutdown(shutdown)
+				beforeShutdown(newOpts.Shutdown)
 				// those signals' original behavior is exit with dump ths stack, so we try to keep the behavior
 				for _, dumpSignal := range DumpHeapShutdownSignals {
 					if sig == dumpSignal {
@@ -102,7 +101,6 @@ func Init(opts ...Option) {
 					}
 				}
 				os.Exit(0)
-
 			}()
 		}
 	})
