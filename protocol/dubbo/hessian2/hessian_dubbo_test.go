@@ -283,7 +283,7 @@ func TestDecodeFromTcpStream(t *testing.T) {
 	assert.NoError(t, err)
 
 	// set reader buffer = 1024 to split resp into two parts
-	codec := NewStreamingHessianCodecCustom(0, bufio.NewReaderSize(bytes.NewReader(resp), 1024), 0)
+	codec := NewStreamHessianCodecCustom(0, bufio.NewReaderSize(bytes.NewReader(resp), 1024), 0)
 	h := &DubboHeader{}
 	assert.NoError(t, codec.ReadHeader(h))
 	assert.Equal(t, h.SerialID, header.SerialID)

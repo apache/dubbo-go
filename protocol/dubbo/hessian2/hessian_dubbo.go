@@ -64,10 +64,10 @@ type Service struct {
 
 // HessianCodec defines hessian codec
 type HessianCodec struct {
-	pkgType   PackageType
-	reader    *bufio.Reader
-	bodyLen   int
-	streaming bool
+	pkgType PackageType
+	reader  *bufio.Reader
+	bodyLen int
+	stream  bool
 }
 
 // NewHessianCodec generate a new hessian codec instance
@@ -86,13 +86,13 @@ func NewHessianCodecCustom(pkgType PackageType, reader *bufio.Reader, bodyLen in
 	}
 }
 
-// NewStreamingHessianCodecCustom generate a new hessian codec instance
-func NewStreamingHessianCodecCustom(pkgType PackageType, reader *bufio.Reader, bodyLen int) *HessianCodec {
+// NewStreamHessianCodecCustom generate a new hessian codec instance
+func NewStreamHessianCodecCustom(pkgType PackageType, reader *bufio.Reader, bodyLen int) *HessianCodec {
 	return &HessianCodec{
-		pkgType:   pkgType,
-		reader:    reader,
-		bodyLen:   bodyLen,
-		streaming: true,
+		pkgType: pkgType,
+		reader:  reader,
+		bodyLen: bodyLen,
+		stream:  true,
 	}
 }
 
@@ -122,15 +122,13 @@ func (h *HessianCodec) ReadHeader(header *DubboHeader) error {
 	var err error
 	var buf []byte
 
-	if h.streaming {
+	if h.stream {
 		buf = make([]byte, HEADER_LENGTH)
-		n, _ := h.reader.Read(buf)
+		n, err := h.reader.Read(buf)
+		if err != nil {
+			return perrors.WithStack(err)
+		}
 		if n < HEADER_LENGTH {
-			// just try once
-			_, err = h.reader.Peek(HEADER_LENGTH - n)
-			if err != nil {
-				return perrors.WithStack(err)
-			}
 			_, err = h.reader.Read(buf[n:])
 			if err != nil { // this is impossible
 				return perrors.WithStack(err)
@@ -192,7 +190,7 @@ func (h *HessianCodec) ReadHeader(header *DubboHeader) error {
 	h.pkgType = header.Type
 	h.bodyLen = header.BodyLen
 
-	if h.reader.Buffered() < h.bodyLen && !h.streaming {
+	if h.reader.Buffered() < h.bodyLen && !h.stream {
 		return ErrBodyNotEnough
 	}
 
@@ -204,7 +202,7 @@ func (h *HessianCodec) ReadBody(rspObj any) error {
 	var err error
 	var buf []byte
 
-	if h.streaming {
+	if h.stream {
 		buf = make([]byte, h.bodyLen)
 		readLen, n := 0, 0
 		for readLen < h.bodyLen {
@@ -263,7 +261,7 @@ func (h *HessianCodec) ReadBody(rspObj any) error {
 func (h *HessianCodec) ReadAttachments() (map[string]any, error) {
 	var err error
 	var buf []byte
-	if h.streaming {
+	if h.stream {
 		buf = make([]byte, h.bodyLen)
 		readLen, n := 0, 0
 		for readLen < h.bodyLen {
