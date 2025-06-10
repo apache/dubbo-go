@@ -84,10 +84,8 @@ func (gi *GrpcInvoker) Invoke(ctx context.Context, invocation base.Invocation) r
 		return &result
 	}
 
-	gi.clientGuard.RLock()
-	defer gi.clientGuard.RUnlock()
-
-	if gi.client == nil {
+	client := gi.getClient()
+	if client == nil {
 		result.SetError(base.ErrClientClosed)
 		return &result
 	}
@@ -101,7 +99,7 @@ func (gi *GrpcInvoker) Invoke(ctx context.Context, invocation base.Invocation) r
 	in = append(in, invocation.ParameterValues()...)
 
 	methodName := invocation.MethodName()
-	method := gi.client.invoker.MethodByName(methodName)
+	method := client.invoker.MethodByName(methodName)
 	res := method.Call(in)
 
 	result.SetResult(res[0])

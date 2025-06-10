@@ -173,10 +173,8 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation base.Invocation) 
 		return &result
 	}
 
-	di.clientGuard.RLock()
-	defer di.clientGuard.RUnlock()
-
-	if di.client == nil {
+	client := di.getClient()
+	if client == nil {
 		result.SetError(base.ErrClientClosed)
 		return &result
 	}
@@ -221,7 +219,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation base.Invocation) 
 	}
 
 	methodName := invocation.MethodName()
-	triAttachmentWithErr := di.client.Invoke(methodName, in, invocation.Reply())
+	triAttachmentWithErr := client.Invoke(methodName, in, invocation.Reply())
 	result.SetError(triAttachmentWithErr.GetError())
 	result.SetAttachments(make(map[string]any))
 	for k, v := range triAttachmentWithErr.GetAttachments() {
