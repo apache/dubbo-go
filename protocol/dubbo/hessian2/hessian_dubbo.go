@@ -120,11 +120,12 @@ func (h *HessianCodec) Write(service Service, header DubboHeader, body any) ([]b
 // ReadHeader uses hessian codec to read dubbo header
 func (h *HessianCodec) ReadHeader(header *DubboHeader) error {
 	var err error
+	var n int
 	var buf []byte
 
 	if h.stream {
 		buf = make([]byte, HEADER_LENGTH)
-		n, err := h.reader.Read(buf)
+		n, err = h.reader.Read(buf)
 		if err != nil {
 			return perrors.WithStack(err)
 		}

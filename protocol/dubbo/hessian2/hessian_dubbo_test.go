@@ -257,7 +257,7 @@ func (CaseStream) JavaClassName() string {
 func TestDecodeFromTcpStream(t *testing.T) {
 	payload := make([]byte, 1024)
 	alphabet := "abcdefghijklmnopqrstuvwxyz"
-	for i, _ := range payload {
+	for i := range payload {
 		payload[i] = alphabet[i%26]
 	}
 	cs := &CaseStream{
