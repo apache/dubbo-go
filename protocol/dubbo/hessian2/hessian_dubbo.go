@@ -119,9 +119,11 @@ func (h *HessianCodec) Write(service Service, header DubboHeader, body any) ([]b
 
 // ReadHeader uses hessian codec to read dubbo header
 func (h *HessianCodec) ReadHeader(header *DubboHeader) error {
-	var err error
-	var n int
-	var buf []byte
+	var (
+		err error
+		n   int
+		buf []byte
+	)
 
 	if h.stream {
 		buf = make([]byte, HEADER_LENGTH)
@@ -200,8 +202,10 @@ func (h *HessianCodec) ReadHeader(header *DubboHeader) error {
 
 // ReadBody uses hessian codec to read response body
 func (h *HessianCodec) ReadBody(rspObj any) error {
-	var err error
-	var buf []byte
+	var (
+		err error
+		buf []byte
+	)
 
 	if h.stream {
 		buf = make([]byte, h.bodyLen)
@@ -260,8 +264,11 @@ func (h *HessianCodec) ReadBody(rspObj any) error {
 
 // ignore body, but only read attachments
 func (h *HessianCodec) ReadAttachments() (map[string]any, error) {
-	var err error
-	var buf []byte
+	var (
+		err error
+		buf []byte
+	)
+
 	if h.stream {
 		buf = make([]byte, h.bodyLen)
 		readLen, n := 0, 0
