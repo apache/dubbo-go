@@ -80,28 +80,18 @@ func (gi *GrpcInvoker) Invoke(ctx context.Context, invocation base.Invocation) r
 		// Generally, the case will not happen, because the invoker has been removed
 		// from the invoker list before destroy,so no new request will enter the destroyed invoker
 		logger.Warnf("this grpcInvoker is destroyed")
-		result.Err = base.ErrDestroyedInvoker
+		result.SetError(base.ErrDestroyedInvoker)
 		return &result
 	}
 
-	gi.clientGuard.RLock()
-	defer gi.clientGuard.RUnlock()
-
-	if gi.client == nil {
-		result.Err = base.ErrClientClosed
-		return &result
-	}
-
-	if !gi.BaseInvoker.IsAvailable() {
-		// Generally, the case will not happen, because the invoker has been removed
-		// from the invoker list before destroy,so no new request will enter the destroyed invoker
-		logger.Warnf("this grpcInvoker is destroying")
-		result.Err = base.ErrDestroyedInvoker
+	client := gi.getClient()
+	if client == nil {
+		result.SetError(base.ErrClientClosed)
 		return &result
 	}
 
 	if invocation.Reply() == nil {
-		result.Err = errNoReply
+		result.SetError(errNoReply)
 	}
 
 	var in []reflect.Value
@@ -109,13 +99,13 @@ func (gi *GrpcInvoker) Invoke(ctx context.Context, invocation base.Invocation) r
 	in = append(in, invocation.ParameterValues()...)
 
 	methodName := invocation.MethodName()
-	method := gi.client.invoker.MethodByName(methodName)
+	method := client.invoker.MethodByName(methodName)
 	res := method.Call(in)
 
-	result.Rest = res[0]
+	result.SetResult(res[0])
 	// check err
 	if !res[1].IsNil() {
-		result.Err = res[1].Interface().(error)
+		result.SetError(res[1].Interface().(error))
 	} else {
 		_ = hessian2.ReflectResponse(res[0], invocation.Reply())
 	}

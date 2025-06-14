@@ -100,24 +100,14 @@ func (di *DubboInvoker) Invoke(ctx context.Context, ivc base.Invocation) result.
 		// Generally, the case will not happen, because the invoker has been removed
 		// from the invoker list before destroy,so no new request will enter the destroyed invoker
 		logger.Warnf("this dubboInvoker is destroyed")
-		res.Err = base.ErrDestroyedInvoker
+		res.SetError(base.ErrDestroyedInvoker)
 		return &res
 	}
 
-	di.clientGuard.RLock()
-	defer di.clientGuard.RUnlock()
-
-	if di.client == nil {
-		res.Err = base.ErrClientClosed
-		logger.Debugf("result.Err: %v", res.Err)
-		return &res
-	}
-
-	if !di.BaseInvoker.IsAvailable() {
-		// Generally, the case will not happen, because the invoker has been removed
-		// from the invoker list before destroy,so no new request will enter the destroyed invoker
-		logger.Warnf("this dubboInvoker is destroying")
-		res.Err = base.ErrDestroyedInvoker
+	client := di.getClient()
+	if client == nil {
+		res.SetError(base.ErrClientClosed)
+		logger.Debugf("result.Err: %v", res.Error())
 		return &res
 	}
 
@@ -149,20 +139,23 @@ func (di *DubboInvoker) Invoke(ctx context.Context, ivc base.Invocation) result.
 	timeout := di.getTimeout(inv)
 	if async {
 		if callBack, ok := inv.CallBack().(func(response common.CallbackResponse)); ok {
-			res.Err = di.client.AsyncRequest(&ivc, url, timeout, callBack, rest)
+			err = client.AsyncRequest(&ivc, url, timeout, callBack, rest)
+			res.SetError(err)
 		} else {
-			res.Err = di.client.Send(&ivc, url, timeout)
+			err = client.Send(&ivc, url, timeout)
+			res.SetError(err)
 		}
 	} else {
 		if inv.Reply() == nil {
-			res.Err = base.ErrNoReply
+			res.SetError(base.ErrNoReply)
 		} else {
-			res.Err = di.client.Request(&ivc, url, timeout, rest)
+			err = client.Request(&ivc, url, timeout, rest)
+			res.SetError(err)
 		}
 	}
 	if res.Err == nil {
-		res.Rest = inv.Reply()
-		res.Attrs = rest.Attrs
+		res.SetResult(inv.Reply())
+		res.SetAttachments(rest.Attachments())
 	}
 
 	return &res
