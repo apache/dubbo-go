@@ -26,11 +26,11 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
-func compatShutdownConfig(c *global.ShutdownConfig) *config.ShutdownConfig {
+func compatGlobalShutdownConfig(c *config.ShutdownConfig) *global.ShutdownConfig {
 	if c == nil {
 		return nil
 	}
-	cfg := &config.ShutdownConfig{
+	cfg := &global.ShutdownConfig{
 		Timeout:                     c.Timeout,
 		StepTimeout:                 c.StepTimeout,
 		ConsumerUpdateWaitTime:      c.ConsumerUpdateWaitTime,
@@ -40,5 +40,6 @@ func compatShutdownConfig(c *global.ShutdownConfig) *config.ShutdownConfig {
 		RejectRequest:               atomic.Bool{},
 	}
 	cfg.RejectRequest.Store(c.RejectRequest.Load())
+
 	return cfg
 }

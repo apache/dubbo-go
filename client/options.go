@@ -545,7 +545,7 @@ func (cliOpts *ClientOptions) init(opts ...ClientOption) error {
 	// todo(DMwangnima): is there any part that we should do compatibility processing?
 
 	// init graceful_shutdown
-	graceful_shutdown.Init(graceful_shutdown.SetShutdown_Config(cliOpts.Shutdown))
+	graceful_shutdown.Init(graceful_shutdown.SetShutdownConfig(cliOpts.Shutdown))
 	return nil
 }
 
