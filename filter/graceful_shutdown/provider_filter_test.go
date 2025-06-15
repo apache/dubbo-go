@@ -35,50 +35,85 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/filter"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
-func TestProviderFilterInvoke(t *testing.T) {
-	url := common.NewURLWithOptions(common.WithParams(url.Values{}))
-	invocation := invocation.NewRPCInvocation("GetUser", []any{"OK"}, make(map[string]any))
+func TestProviderFilterInvokeWithGlobalPackage(t *testing.T) {
+	var (
+		url            = common.NewURLWithOptions(common.WithParams(url.Values{}))
+		invocation     = invocation.NewRPCInvocation("GetUser", []any{"OK"}, make(map[string]any))
+		opt            = graceful_shutdown.NewOptions()
+		filterValue, _ = extension.GetFilter(constant.GracefulShutdownProviderFilterKey)
+	)
 
 	extension.SetRejectedExecutionHandler("test", func() filter.RejectedExecutionHandler {
 		return &TestRejectedExecutionHandler{}
 	})
 
-	rootConfig := config.NewRootConfigBuilder().
-		SetShutDown(config.NewShutDownConfigBuilder().
-			SetTimeout("60s").
-			SetStepTimeout("3s").
-			SetRejectRequestHandler("test").
-			Build()).Build()
+	opt.Shutdown.RejectRequestHandler = "test"
 
-	config.SetRootConfig(*rootConfig)
-
-	filterValue, _ := extension.GetFilter(constant.GracefulShutdownProviderFilterKey)
 	filter := filterValue.(*providerGracefulShutdownFilter)
-	filter.Set(constant.GracefulShutdownFilterShutdownConfig, config.GetShutDown())
-	assert.Equal(t, filter.shutdownConfig, config.GetShutDown())
+	filter.Set(constant.GracefulShutdownFilterShutdownConfig, opt.Shutdown)
+	assert.Equal(t, filter.shutdownConfig, opt.Shutdown)
 
-	result := filter.Invoke(context.Background(), protocol.NewBaseInvoker(url), invocation)
+	result := filter.Invoke(context.Background(), base.NewBaseInvoker(url), invocation)
 	assert.NotNil(t, result)
 	assert.Nil(t, result.Error())
 
-	config.GetShutDown().RejectRequest.Store(true)
-	result = filter.Invoke(context.Background(), protocol.NewBaseInvoker(url), invocation)
+	opt.Shutdown.RejectRequest.Store(true)
+	result = filter.Invoke(context.Background(), base.NewBaseInvoker(url), invocation)
 	assert.NotNil(t, result)
 	assert.NotNil(t, result.Error().Error(), "Rejected")
+}
 
+// only for compatibility with old config, able to directly remove after config is deleted
+func TestProviderFilterInvokeWithConfigPackage(t *testing.T) {
+	var (
+		url        = common.NewURLWithOptions(common.WithParams(url.Values{}))
+		invocation = invocation.NewRPCInvocation("GetUser", []any{"OK"}, make(map[string]any))
+		rootConfig = config.NewRootConfigBuilder().
+				SetShutDown(config.NewShutDownConfigBuilder().
+					SetTimeout("60s").
+					SetStepTimeout("3s").
+					SetRejectRequestHandler("test").
+					Build()).Build()
+		filterValue, _ = extension.GetFilter(constant.GracefulShutdownProviderFilterKey)
+	)
+
+	extension.SetRejectedExecutionHandler("test", func() filter.RejectedExecutionHandler {
+		return &TestRejectedExecutionHandler{}
+	})
+
+	config.SetRootConfig(*rootConfig)
+
+	filter := filterValue.(*providerGracefulShutdownFilter)
+	filter.Set(constant.GracefulShutdownFilterShutdownConfig, config.GetShutDown())
+	assert.Equal(t, filter.shutdownConfig, compatGlobalShutdownConfig(config.GetShutDown()))
+
+	result := filter.Invoke(context.Background(), base.NewBaseInvoker(url), invocation)
+	assert.NotNil(t, result)
+	assert.Nil(t, result.Error())
+
+	// only use this way to set the RejectRequest, because the variable is compact to GlobalShutdownConfig
+	filter.shutdownConfig.RejectRequest.Store(true)
+	// not able to use this way to set the RejectRequest
+	//config.GetShutDown().RejectRequest.Store(true)
+
+	result = filter.Invoke(context.Background(), base.NewBaseInvoker(url), invocation)
+	assert.NotNil(t, result)
+	assert.NotNil(t, result.Error().Error(), "Rejected")
 }
 
 type TestRejectedExecutionHandler struct{}
 
 // RejectedExecution will do nothing, it only log the invocation.
 func (handler *TestRejectedExecutionHandler) RejectedExecution(url *common.URL,
-	_ protocol.Invocation) protocol.Result {
+	_ base.Invocation) result.Result {
 
-	return &protocol.RPCResult{
+	return &result.RPCResult{
 		Err: perrors.New("Rejected"),
 	}
 }

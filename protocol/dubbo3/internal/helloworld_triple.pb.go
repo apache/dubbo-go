@@ -38,7 +38,7 @@ import (
 )
 
 import (
-	protocol "dubbo.apache.org/dubbo-go/v3/protocol"
+	protocol "dubbo.apache.org/dubbo-go/v3/protocol/base"
 	invocation "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 

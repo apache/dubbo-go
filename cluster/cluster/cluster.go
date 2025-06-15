@@ -20,9 +20,9 @@ package cluster
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 type Cluster interface {
-	Join(directory.Directory) protocol.Invoker
+	Join(directory.Directory) base.Invoker
 }

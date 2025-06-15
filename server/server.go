@@ -35,7 +35,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/dubboutil"
 	"dubbo.apache.org/dubbo-go/v3/metadata"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/registry/exposed_tmp"
 )
 
@@ -44,7 +44,7 @@ var proServices = make([]*InternalService, 0, 16)
 var proLock sync.Mutex
 
 type Server struct {
-	invoker protocol.Invoker
+	invoker base.Invoker
 	info    *common.ServiceInfo
 
 	cfg *ServerOptions
@@ -66,11 +66,28 @@ type ServiceDefinition struct {
 
 // Register assemble invoker chains like ProviderConfig.Load, init a service per call
 func (s *Server) Register(handler any, info *common.ServiceInfo, opts ...ServiceOption) error {
-	newSvcOpts, err := s.genSvcOpts(handler, opts...)
+	baseOpts := []ServiceOption{WithIDLMode(constant.IDL)}
+	baseOpts = append(baseOpts, opts...)
+	newSvcOpts, err := s.genSvcOpts(handler, baseOpts...)
 	if err != nil {
 		return err
 	}
 	s.svcOptsMap.Store(newSvcOpts, info)
+	return nil
+}
+
+// RegisterService is for new Triple non-idl mode implement.
+func (s *Server) RegisterService(handler any, opts ...ServiceOption) error {
+	baseOpts := []ServiceOption{
+		WithIDLMode(constant.NONIDL),
+		WithInterface(common.GetReference(handler)),
+	}
+	baseOpts = append(baseOpts, opts...)
+	newSvcOpts, err := s.genSvcOpts(handler, baseOpts...)
+	if err != nil {
+		return err
+	}
+	s.svcOptsMap.Store(newSvcOpts, nil)
 	return nil
 }
 
@@ -121,8 +138,10 @@ func (s *Server) exportServices() (err error) {
 			err = svcOpts.ExportWithoutInfo()
 		} else {
 			info := infoRaw.(*common.ServiceInfo)
-			//Add a method with a name of a differtent first-letter case
-			//to achieve interoperability with java
+			// Add a method with a name of a differtent first-letter case
+			// to achieve interoperability with java
+			// TODO: The method name case sensitivity in Dubbo-java should be addressed.
+			// We ought to make changes to handle this issue.
 			var additionalMethods []common.MethodInfo
 			for _, method := range info.Methods {
 				newMethod := method
@@ -149,15 +168,16 @@ func (s *Server) Serve() error {
 	if err := metadata.InitRegistryMetadataReport(s.cfg.Registries); err != nil {
 		return err
 	}
-	opts := metadata.NewOptions(
+	metadataOpts := metadata.NewOptions(
 		metadata.WithAppName(s.cfg.Application.Name),
 		metadata.WithMetadataType(s.cfg.Application.MetadataType),
 		metadata.WithPort(getMetadataPort(s.cfg)),
 		metadata.WithMetadataProtocol(s.cfg.Application.MetadataServiceProtocol),
 	)
-	if err := opts.Init(); err != nil {
+	if err := metadataOpts.Init(); err != nil {
 		return err
 	}
+
 	if err := s.exportServices(); err != nil {
 		return err
 	}
@@ -275,7 +295,7 @@ func NewServer(opts ...ServerOption) (*Server, error) {
 	return srv, nil
 }
 
-func SetProServices(sd *InternalService) {
+func SetProviderServices(sd *InternalService) {
 	if sd.Name == "" {
 		logger.Warnf("[internal service]internal name is empty, please set internal name")
 		return

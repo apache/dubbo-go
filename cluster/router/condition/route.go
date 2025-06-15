@@ -38,7 +38,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 var (
@@ -75,7 +75,7 @@ func NewConditionStateRouter(url *common.URL) (*StateRouter, error) {
 // condition rule like `self_condition => peers_condition `
 //
 // @return active_peers_invokers, Is_self_condition_match_success
-func (s *StateRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
+func (s *StateRouter) Route(invokers []base.Invoker, url *common.URL, invocation base.Invocation) []base.Invoker {
 	if len(invokers) == 0 {
 		return invokers
 	}
@@ -86,10 +86,10 @@ func (s *StateRouter) Route(invokers []protocol.Invoker, url *common.URL, invoca
 
 	if len(s.thenCondition) == 0 {
 		logger.Warn("condition state router thenCondition is empty")
-		return []protocol.Invoker{}
+		return []base.Invoker{}
 	}
 
-	var result = make([]protocol.Invoker, 0, len(invokers))
+	var result = make([]base.Invoker, 0, len(invokers))
 	for _, invoker := range invokers {
 		if s.matchThen(invoker.GetURL(), url) {
 			result = append(result, invoker)
@@ -99,7 +99,7 @@ func (s *StateRouter) Route(invokers []protocol.Invoker, url *common.URL, invoca
 	return result
 }
 
-func (s *StateRouter) matchWhen(url *common.URL, invocation protocol.Invocation) bool {
+func (s *StateRouter) matchWhen(url *common.URL, invocation base.Invocation) bool {
 	if len(s.whenCondition) == 0 {
 		return true
 	}
@@ -258,7 +258,7 @@ func getMatcher(key string) matcher.Matcher {
 	return matcher.GetMatcherFactory(constant.Param).NewMatcher(key)
 }
 
-func doMatch(url *common.URL, param *common.URL, invocation protocol.Invocation, conditions map[string]matcher.Matcher, isWhenCondition bool) bool {
+func doMatch(url *common.URL, param *common.URL, invocation base.Invocation, conditions map[string]matcher.Matcher, isWhenCondition bool) bool {
 	sample := url.ToMap()
 	for _, matcherPair := range conditions {
 		if !matcher.Match(matcherPair, sample, param, invocation, isWhenCondition) {
@@ -312,11 +312,11 @@ func NewFieldMatcher(rule string) (FieldMatcher, error) {
 	return FieldMatcher{rule: rule, match: m}, nil
 }
 
-func (m *FieldMatcher) MatchRequest(url *common.URL, invocation protocol.Invocation) bool {
+func (m *FieldMatcher) MatchRequest(url *common.URL, invocation base.Invocation) bool {
 	return doMatch(url, nil, invocation, m.match, true)
 }
 
-func (m *FieldMatcher) MatchInvoker(url *common.URL, ivk protocol.Invoker, invocation protocol.Invocation) bool {
+func (m *FieldMatcher) MatchInvoker(url *common.URL, ivk base.Invoker, invocation base.Invocation) bool {
 	return doMatch(ivk.GetURL(), url, nil, m.match, false)
 }
 
@@ -345,7 +345,7 @@ func newCondSet(rule string, subSetWeight int) (condSet, error) {
 type destination struct {
 	matchRule string
 	weight    int
-	ivks      []protocol.Invoker
+	ivks      []base.Invoker
 }
 
 type destSets struct {
@@ -360,7 +360,7 @@ func newDestSets() *destSets {
 	}
 }
 
-func (s *destSets) addDest(weight int, rule string, ivks []protocol.Invoker) {
+func (s *destSets) addDest(weight int, rule string, ivks []base.Invoker) {
 	s.destinations = append(s.destinations, &destination{weight: weight, matchRule: rule, ivks: ivks})
 	s.weightSum += weight
 }
@@ -372,7 +372,7 @@ func (s *destSets) randDest() *destination {
 	if len(s.destinations) == 1 {
 		return s.destinations[0]
 	}
-	sum := rand.Intn(s.weightSum)
+	sum := rand.Intn(s.weightSum) //NOSONAR
 	for _, d := range s.destinations {
 		sum -= d.weight
 		if sum <= 0 {
@@ -382,7 +382,7 @@ func (s *destSets) randDest() *destination {
 	return nil
 }
 
-func (m MultiDestRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) ([]protocol.Invoker, bool) {
+func (m MultiDestRouter) Route(invokers []base.Invoker, url *common.URL, invocation base.Invocation) ([]base.Invoker, bool) {
 	if len(invokers) == 0 {
 		return invokers, false
 	}
@@ -393,12 +393,12 @@ func (m MultiDestRouter) Route(invokers []protocol.Invoker, url *common.URL, inv
 
 	if len(m.thenCondition) == 0 {
 		logger.Warn("condition state router thenCondition is empty")
-		return []protocol.Invoker{}, true
+		return []base.Invoker{}, true
 	}
 
 	destinations := newDestSets()
 	for _, condition := range m.thenCondition {
-		res := make([]protocol.Invoker, 0)
+		res := make([]base.Invoker, 0)
 		for _, invoker := range invokers {
 			if condition.MatchInvoker(url, invoker, invocation) {
 				res = append(res, invoker)
@@ -425,7 +425,7 @@ func (m MultiDestRouter) Route(invokers []protocol.Invoker, url *common.URL, inv
 		thenRule = append(thenRule, set.rule)
 	}
 	invocation.Attributes()["condition-chain"] = append(i, "request="+m.whenCondition.rule+",invokers!="+strings.Join(thenRule, ","))
-	return []protocol.Invoker{}, true
+	return []base.Invoker{}, true
 }
 
 func NewConditionMultiDestRouter(url *common.URL) (*MultiDestRouter, error) {

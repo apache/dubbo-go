@@ -39,8 +39,11 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
+	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
 
 var (
@@ -54,8 +57,8 @@ var (
 )
 
 // it is init client for single protocol.
-func initClient(protocol string) {
-	if protocol == "" {
+func initClient(url *common.URL) {
+	if url.Protocol == "" {
 		return
 	}
 
@@ -68,7 +71,7 @@ func initClient(protocol string) {
 		return
 	}
 
-	protocolConf := config.GetRootConfig().Protocols[protocol]
+	protocolConf := config.GetRootConfig().Protocols[url.Protocol]
 	if protocolConf == nil {
 		logger.Info("use default getty client config")
 		return
@@ -81,6 +84,22 @@ func initClient(protocol string) {
 				ClientKeyCertChainPath:        tlsConfig.TLSCertFile,
 				ClientPrivateKeyPath:          tlsConfig.TLSKeyFile,
 				ClientTrustCertCollectionPath: tlsConfig.CACertFile,
+			}
+		} else if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
+			// use global TLSConfig handle tls
+			tlsConf, ok := tlsConfRaw.(*global.TLSConfig)
+			if !ok {
+				logger.Errorf("Getty client initialized the TLSConfig configuration failed")
+				return
+			}
+			if dubbotls.IsClientTLSValid(tlsConf) {
+				srvConf.SSLEnabled = true
+				srvConf.TLSBuilder = &getty.ClientTlsConfigBuilder{
+					ClientKeyCertChainPath:        tlsConf.TLSCertFile,
+					ClientPrivateKeyPath:          tlsConf.TLSKeyFile,
+					ClientTrustCertCollectionPath: tlsConf.CACertFile,
+				}
+				logger.Infof("Getty client initialized the TLSConfig configuration")
 			}
 		}
 		//getty params
@@ -165,7 +184,7 @@ func (c *Client) SetExchangeClient(client *remoting.ExchangeClient) {
 
 // Connect init client and try to connection.
 func (c *Client) Connect(url *common.URL) error {
-	initClient(url.Protocol)
+	initClient(url)
 	c.conf = *clientConf
 	c.sslEnabled = c.conf.SSLEnabled
 	// codec

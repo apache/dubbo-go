@@ -27,23 +27,24 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 type testMockSeataInvoker struct {
-	protocol.BaseInvoker
+	base.BaseInvoker
 }
 
-func (iv *testMockSeataInvoker) Invoke(ctx context.Context, _ protocol.Invocation) protocol.Result {
+func (iv *testMockSeataInvoker) Invoke(ctx context.Context, _ base.Invocation) result.Result {
 	val := ctx.Value(SEATA_XID)
 	if val != nil {
 		xid, ok := val.(string)
 		if ok {
-			return &protocol.RPCResult{Rest: xid}
+			return &result.RPCResult{Rest: xid}
 		}
 	}
-	return &protocol.RPCResult{}
+	return &result.RPCResult{}
 }
 
 func TestSeataFilter_Invoke(t *testing.T) {

@@ -33,9 +33,10 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/impl"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	"dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
@@ -138,17 +139,17 @@ func getServer(t *testing.T) (*Server, *common.URL) {
 	_, err = common.ServiceMap.Register("com.ikurento.user.AdminProvider", url.Protocol, "", "0.0.1", adminProvider)
 	assert.NoError(t, err)
 	invoker := &proxy_factory.ProxyInvoker{
-		BaseInvoker: *protocol.NewBaseInvoker(url),
+		BaseInvoker: *base.NewBaseInvoker(url),
 	}
-	handler := func(invocation *invocation.RPCInvocation) protocol.RPCResult {
+	handler := func(invocation *invocation.RPCInvocation) result.RPCResult {
 		// result := protocol.RPCResult{}
 		r := invoker.Invoke(context.Background(), invocation)
-		result := protocol.RPCResult{
+		res := result.RPCResult{
 			Err:   r.Error(),
 			Rest:  r.Result(),
 			Attrs: r.Attachments(),
 		}
-		return result
+		return res
 	}
 	server := NewServer(url, handler)
 	server.Start()

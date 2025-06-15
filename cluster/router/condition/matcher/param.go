@@ -19,7 +19,7 @@ package matcher
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 type ParamConditionMatcher struct {
@@ -32,6 +32,6 @@ func NewParamConditionMatcher(key string) *ParamConditionMatcher {
 	}
 }
 
-func (p *ParamConditionMatcher) GetValue(sample map[string]string, url *common.URL, invocation protocol.Invocation) string {
+func (p *ParamConditionMatcher) GetValue(sample map[string]string, url *common.URL, invocation base.Invocation) string {
 	return GetSampleValueFromURL(p.key, sample, url, invocation)
 }

@@ -29,7 +29,8 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/logger/zap"
+	_ "dubbo.apache.org/dubbo-go/v3/logger/core/logrus"
+	"dubbo.apache.org/dubbo-go/v3/logger/core/zap"
 )
 
 var (

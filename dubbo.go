@@ -18,13 +18,12 @@
 package dubbo
 
 import (
+	"errors"
 	"sync"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-
-	"github.com/pkg/errors"
 )
 
 import (
@@ -76,6 +75,7 @@ func (ins *Instance) NewClient(opts ...client.ClientOption) (*client.Client, err
 	sdCfg := ins.insOpts.CloneShutdown()
 	metricsCfg := ins.insOpts.CloneMetrics()
 	otelCfg := ins.insOpts.CloneOtel()
+	tlsCfg := ins.insOpts.CloneTLSConfig()
 
 	if conCfg != nil {
 		if !conCfg.Check {
@@ -106,6 +106,9 @@ func (ins *Instance) NewClient(opts ...client.ClientOption) (*client.Client, err
 	if otelCfg != nil {
 		cliOpts = append(cliOpts, client.SetClientOtel(otelCfg))
 	}
+	if tlsCfg != nil {
+		cliOpts = append(cliOpts, client.SetClientTLS(tlsCfg))
+	}
 
 	// options passed by users has higher priority
 	cliOpts = append(cliOpts, opts...)
@@ -131,6 +134,7 @@ func (ins *Instance) NewServer(opts ...server.ServerOption) (*server.Server, err
 	sdCfg := ins.insOpts.CloneShutdown()
 	metricsCfg := ins.insOpts.CloneMetrics()
 	otelCfg := ins.insOpts.CloneOtel()
+	tlsCfg := ins.insOpts.CloneTLSConfig()
 
 	if appCfg != nil {
 		srvOpts = append(srvOpts,
@@ -160,6 +164,9 @@ func (ins *Instance) NewServer(opts ...server.ServerOption) (*server.Server, err
 	if otelCfg != nil {
 		srvOpts = append(srvOpts, server.SetServerOtel(otelCfg))
 	}
+	if tlsCfg != nil {
+		srvOpts = append(srvOpts, server.SetServerTLS(tlsCfg))
+	}
 
 	// options passed by users have higher priority
 	srvOpts = append(srvOpts, opts...)
@@ -186,7 +193,9 @@ func (ins *Instance) start() (err error) {
 
 // loadProvider loads the service provider.
 func (ins *Instance) loadProvider() error {
+	var err error
 	var srvOpts []server.ServerOption
+
 	if ins.insOpts.Provider != nil {
 		srvOpts = append(srvOpts, server.SetServerProvider(ins.insOpts.Provider))
 	}
@@ -198,7 +207,13 @@ func (ins *Instance) loadProvider() error {
 	proLock.RLock()
 	defer proLock.RUnlock()
 	for _, definition := range providerServices {
-		if err = srv.Register(definition.Handler, definition.Info, definition.Opts...); err != nil {
+		if definition.Info != nil {
+			err = srv.Register(definition.Handler, definition.Info, definition.Opts...)
+		} else {
+			// if Info in nil, it means non-idl mode
+			err = srv.RegisterService(definition.Handler, definition.Opts...)
+		}
+		if err != nil {
 			return err
 		}
 	}
@@ -220,11 +235,21 @@ func (ins *Instance) loadConsumer() error {
 	conLock.RLock()
 	defer conLock.RUnlock()
 	for intfName, definition := range consumerServices {
-		conn, dialErr := cli.DialWithDefinition(intfName, definition)
+		var (
+			conn    *client.Connection
+			dialErr error
+		)
+		if definition.Info != nil {
+			conn, dialErr = cli.DialWithDefinition(intfName, definition)
+			definition.Info.ConnectionInjectFunc(definition.Svc, conn)
+		} else {
+			// default use msgpack
+			conn, dialErr = cli.NewService(definition.Svc)
+			consumerServices[common.GetReference(definition.Svc)].SetConnection(conn)
+		}
 		if dialErr != nil {
 			return dialErr
 		}
-		definition.Info.ConnectionInjectFunc(definition.Svc, conn)
 	}
 	return nil
 }
@@ -247,4 +272,24 @@ func SetProviderServiceWithInfo(svc common.RPCService, info *common.ServiceInfo)
 		Handler: svc,
 		Info:    info,
 	}
+}
+
+func SetConsumerService(svc common.RPCService) {
+	conLock.Lock()
+	defer conLock.Unlock()
+	consumerServices[common.GetReference(svc)] = &client.ClientDefinition{
+		Svc: svc,
+	}
+}
+
+func SetProviderService(svc common.RPCService) {
+	conLock.Lock()
+	defer conLock.Unlock()
+	providerServices[common.GetReference(svc)] = &server.ServiceDefinition{
+		Handler: svc,
+	}
+}
+
+func GetConsumerConnection(interfaceName string) (*client.Connection, error) {
+	return consumerServices[interfaceName].GetConnection()
 }

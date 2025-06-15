@@ -19,7 +19,7 @@ package filter
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 // TpsLimiter is the interface which defines the Limiter that judge if the TPS overs the threshold
@@ -50,5 +50,5 @@ import (
  *      tps.limit.strategy: "name of implementation" # method-level
  */
 type TpsLimiter interface {
-	IsAllowable(*common.URL, protocol.Invocation) bool
+	IsAllowable(*common.URL, base.Invocation) bool
 }

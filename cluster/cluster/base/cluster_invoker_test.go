@@ -30,7 +30,7 @@ import (
 	clusterpkg "dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/random"
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
@@ -40,7 +40,7 @@ const (
 )
 
 func TestStickyNormal(t *testing.T) {
-	var invokers []protocol.Invoker
+	var invokers []protocolbase.Invoker
 	for i := 0; i < 10; i++ {
 		url, _ := common.NewURL(fmt.Sprintf(baseClusterInvokerFormat, i))
 		url.SetParam("sticky", "true")
@@ -48,7 +48,7 @@ func TestStickyNormal(t *testing.T) {
 	}
 	base := &BaseClusterInvoker{}
 	base.AvailableCheck = true
-	var invoked []protocol.Invoker
+	var invoked []protocolbase.Invoker
 
 	tmpRandomBalance := random.NewRandomLoadBalance()
 	tmpInvocation := invocation.NewRPCInvocation(baseClusterInvokerMethodName, nil, nil)
@@ -58,7 +58,7 @@ func TestStickyNormal(t *testing.T) {
 }
 
 func TestStickyNormalWhenError(t *testing.T) {
-	invokers := []protocol.Invoker{}
+	invokers := []protocolbase.Invoker{}
 	for i := 0; i < 10; i++ {
 		url, _ := common.NewURL(fmt.Sprintf(baseClusterInvokerFormat, i))
 		url.SetParam("sticky", "true")
@@ -67,7 +67,7 @@ func TestStickyNormalWhenError(t *testing.T) {
 	base := &BaseClusterInvoker{}
 	base.AvailableCheck = true
 
-	var invoked []protocol.Invoker
+	var invoked []protocolbase.Invoker
 	result := base.DoSelect(random.NewRandomLoadBalance(), invocation.NewRPCInvocation(baseClusterInvokerMethodName, nil, nil), invokers, invoked)
 	invoked = append(invoked, result)
 	result1 := base.DoSelect(random.NewRandomLoadBalance(), invocation.NewRPCInvocation(baseClusterInvokerMethodName, nil, nil), invokers, invoked)

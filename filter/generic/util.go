@@ -28,18 +28,18 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/filter/generic/generalizer"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 // isCallingToGenericService check if it calls to a generic service
-func isCallingToGenericService(invoker protocol.Invoker, invocation protocol.Invocation) bool {
+func isCallingToGenericService(invoker base.Invoker, invocation base.Invocation) bool {
 	return isGeneric(invoker.GetURL().GetParam(constant.GenericKey, "")) &&
 		invocation.MethodName() != constant.Generic &&
 		invocation.MethodName() != constant.GenericAsync
 }
 
 // isMakingAGenericCall check if it is making a generic call to a generic service
-func isMakingAGenericCall(invoker protocol.Invoker, invocation protocol.Invocation) bool {
+func isMakingAGenericCall(invoker base.Invoker, invocation base.Invocation) bool {
 	return isGeneric(invoker.GetURL().GetParam(constant.GenericKey, "")) &&
 		(invocation.MethodName() == constant.Generic ||
 			invocation.MethodName() == constant.GenericAsync) &&

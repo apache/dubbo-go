@@ -26,7 +26,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 var (
@@ -50,6 +50,6 @@ func newAdaptiveServiceCluster() clusterpkg.Cluster {
 	return instance
 }
 
-func (c *adaptiveServiceCluster) Join(directory directory.Directory) protocol.Invoker {
+func (c *adaptiveServiceCluster) Join(directory directory.Directory) base.Invoker {
 	return clusterpkg.BuildInterceptorChain(newAdaptiveServiceClusterInvoker(directory))
 }

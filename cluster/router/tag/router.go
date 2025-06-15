@@ -34,7 +34,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
@@ -47,7 +47,7 @@ func NewTagPriorityRouter() (*PriorityRouter, error) {
 }
 
 // Route Determine the target invokers list.
-func (p *PriorityRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
+func (p *PriorityRouter) Route(invokers []base.Invoker, url *common.URL, invocation base.Invocation) []base.Invoker {
 	if len(invokers) == 0 {
 		logger.Warnf("[tag router] invokers from previous router is empty")
 		return invokers
@@ -73,7 +73,7 @@ func (p *PriorityRouter) Priority() int64 {
 	return 0
 }
 
-func (p *PriorityRouter) Notify(invokers []protocol.Invoker) {
+func (p *PriorityRouter) Notify(invokers []base.Invoker) {
 	if len(invokers) == 0 {
 		return
 	}

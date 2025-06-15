@@ -35,14 +35,15 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 var errNoReply = errors.New("request need @response")
 
 // nolint
 type GrpcInvoker struct {
-	protocol.BaseInvoker
+	base.BaseInvoker
 	quitOnce    sync.Once
 	clientGuard *sync.RWMutex
 	client      *Client
@@ -51,7 +52,7 @@ type GrpcInvoker struct {
 // NewGrpcInvoker returns a Grpc invoker instance
 func NewGrpcInvoker(url *common.URL, client *Client) *GrpcInvoker {
 	return &GrpcInvoker{
-		BaseInvoker: *protocol.NewBaseInvoker(url),
+		BaseInvoker: *base.NewBaseInvoker(url),
 		clientGuard: &sync.RWMutex{},
 		client:      client,
 	}
@@ -72,35 +73,25 @@ func (gi *GrpcInvoker) getClient() *Client {
 }
 
 // Invoke is used to call service method by invocation
-func (gi *GrpcInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
-	var result protocol.RPCResult
+func (gi *GrpcInvoker) Invoke(ctx context.Context, invocation base.Invocation) result.Result {
+	var result result.RPCResult
 
 	if !gi.BaseInvoker.IsAvailable() {
 		// Generally, the case will not happen, because the invoker has been removed
 		// from the invoker list before destroy,so no new request will enter the destroyed invoker
 		logger.Warnf("this grpcInvoker is destroyed")
-		result.Err = protocol.ErrDestroyedInvoker
+		result.SetError(base.ErrDestroyedInvoker)
 		return &result
 	}
 
-	gi.clientGuard.RLock()
-	defer gi.clientGuard.RUnlock()
-
-	if gi.client == nil {
-		result.Err = protocol.ErrClientClosed
-		return &result
-	}
-
-	if !gi.BaseInvoker.IsAvailable() {
-		// Generally, the case will not happen, because the invoker has been removed
-		// from the invoker list before destroy,so no new request will enter the destroyed invoker
-		logger.Warnf("this grpcInvoker is destroying")
-		result.Err = protocol.ErrDestroyedInvoker
+	client := gi.getClient()
+	if client == nil {
+		result.SetError(base.ErrClientClosed)
 		return &result
 	}
 
 	if invocation.Reply() == nil {
-		result.Err = errNoReply
+		result.SetError(errNoReply)
 	}
 
 	var in []reflect.Value
@@ -108,13 +99,13 @@ func (gi *GrpcInvoker) Invoke(ctx context.Context, invocation protocol.Invocatio
 	in = append(in, invocation.ParameterValues()...)
 
 	methodName := invocation.MethodName()
-	method := gi.client.invoker.MethodByName(methodName)
+	method := client.invoker.MethodByName(methodName)
 	res := method.Call(in)
 
-	result.Rest = res[0]
+	result.SetResult(res[0])
 	// check err
 	if !res[1].IsNil() {
-		result.Err = res[1].Interface().(error)
+		result.SetError(res[1].Interface().(error))
 	} else {
 		_ = hessian2.ReflectResponse(res[0], invocation.Reply())
 	}

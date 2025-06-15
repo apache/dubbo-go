@@ -29,15 +29,16 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
-	invocation_impl "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/rest/client"
 	"dubbo.apache.org/dubbo-go/v3/protocol/rest/config"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 // nolint
 type RestInvoker struct {
-	protocol.BaseInvoker
+	base.BaseInvoker
 	client              client.RestClient
 	restMethodConfigMap map[string]*config.RestMethodConfig
 }
@@ -45,18 +46,18 @@ type RestInvoker struct {
 // NewRestInvoker returns a RestInvoker
 func NewRestInvoker(url *common.URL, client *client.RestClient, restMethodConfig map[string]*config.RestMethodConfig) *RestInvoker {
 	return &RestInvoker{
-		BaseInvoker:         *protocol.NewBaseInvoker(url),
+		BaseInvoker:         *base.NewBaseInvoker(url),
 		client:              *client,
 		restMethodConfigMap: restMethodConfig,
 	}
 }
 
 // Invoke is used to call service method by invocation
-func (ri *RestInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
-	inv := invocation.(*invocation_impl.RPCInvocation)
-	methodConfig := ri.restMethodConfigMap[inv.MethodName()]
+func (ri *RestInvoker) Invoke(ctx context.Context, inv base.Invocation) result.Result {
+	rpcInv := inv.(*invocation.RPCInvocation)
+	methodConfig := ri.restMethodConfigMap[rpcInv.MethodName()]
 	var (
-		result      protocol.RPCResult
+		result      result.RPCResult
 		body        any
 		pathParams  map[string]string
 		queryParams map[string]string
@@ -64,23 +65,23 @@ func (ri *RestInvoker) Invoke(ctx context.Context, invocation protocol.Invocatio
 		err         error
 	)
 	if methodConfig == nil {
-		result.Err = perrors.Errorf("[RestInvoker] Rest methodConfig:%s is nil", inv.MethodName())
+		result.Err = perrors.Errorf("[RestInvoker] Rest methodConfig:%s is nil", rpcInv.MethodName())
 		return &result
 	}
-	if pathParams, err = restStringMapTransform(methodConfig.PathParamsMap, inv.Arguments()); err != nil {
+	if pathParams, err = restStringMapTransform(methodConfig.PathParamsMap, rpcInv.Arguments()); err != nil {
 		result.Err = err
 		return &result
 	}
-	if queryParams, err = restStringMapTransform(methodConfig.QueryParamsMap, inv.Arguments()); err != nil {
+	if queryParams, err = restStringMapTransform(methodConfig.QueryParamsMap, rpcInv.Arguments()); err != nil {
 		result.Err = err
 		return &result
 	}
-	if header, err = getRestHttpHeader(methodConfig, inv.Arguments()); err != nil {
+	if header, err = getRestHttpHeader(methodConfig, rpcInv.Arguments()); err != nil {
 		result.Err = err
 		return &result
 	}
-	if len(inv.Arguments()) > methodConfig.Body && methodConfig.Body >= 0 {
-		body = inv.Arguments()[methodConfig.Body]
+	if len(rpcInv.Arguments()) > methodConfig.Body && methodConfig.Body >= 0 {
+		body = rpcInv.Arguments()[methodConfig.Body]
 	}
 	req := &client.RestClientRequest{
 		Location:    ri.GetURL().Location,
@@ -91,9 +92,9 @@ func (ri *RestInvoker) Invoke(ctx context.Context, invocation protocol.Invocatio
 		Body:        body,
 		Header:      header,
 	}
-	result.Err = ri.client.Do(req, inv.Reply())
+	result.Err = ri.client.Do(req, rpcInv.Reply())
 	if result.Err == nil {
-		result.Rest = inv.Reply()
+		result.Rest = rpcInv.Reply()
 	}
 	return &result
 }

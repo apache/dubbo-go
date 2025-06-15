@@ -39,7 +39,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	remotingpolaris "dubbo.apache.org/dubbo-go/v3/remoting/polaris"
 	"dubbo.apache.org/dubbo-go/v3/remoting/polaris/parser"
 )
@@ -88,8 +88,8 @@ type polarisRouter struct {
 }
 
 // Route Determine the target invokers list.
-func (p *polarisRouter) Route(invokers []protocol.Invoker, url *common.URL,
-	invoaction protocol.Invocation) []protocol.Invoker {
+func (p *polarisRouter) Route(invokers []base.Invoker, url *common.URL,
+	invoaction base.Invocation) []base.Invoker {
 
 	if !p.openRoute {
 		logger.Debug("[Router][Polaris] not open polaris route ability")
@@ -107,7 +107,7 @@ func (p *polarisRouter) Route(invokers []protocol.Invoker, url *common.URL,
 		return invokers
 	}
 
-	invokersMap := make(map[string]protocol.Invoker, len(invokers))
+	invokersMap := make(map[string]base.Invoker, len(invokers))
 	targetIns := make([]model.Instance, 0, len(invokers))
 	for i := range invokers {
 		invoker := invokers[i]
@@ -135,7 +135,7 @@ func (p *polarisRouter) Route(invokers []protocol.Invoker, url *common.URL,
 		return invokers
 	}
 
-	ret := make([]protocol.Invoker, 0, len(resp.GetInstances()))
+	ret := make([]base.Invoker, 0, len(resp.GetInstances()))
 	for i := range resp.GetInstances() {
 		if val, ok := invokersMap[resp.GetInstances()[i].GetId()]; ok {
 			ret = append(ret, val)
@@ -162,7 +162,7 @@ func getService(url *common.URL) string {
 }
 
 func (p *polarisRouter) buildRouteRequest(svc string, url *common.URL,
-	invocation protocol.Invocation) (polaris.ProcessRoutersRequest, error) {
+	invocation base.Invocation) (polaris.ProcessRoutersRequest, error) {
 
 	routeReq := polaris.ProcessRoutersRequest{
 		ProcessRoutersRequest: model.ProcessRoutersRequest{
@@ -227,7 +227,7 @@ func (p *polarisRouter) buildTrafficLabels(svc string) ([]string, error) {
 	return labels, nil
 }
 
-func getInvokeMethod(url *common.URL, invoaction protocol.Invocation) string {
+func getInvokeMethod(url *common.URL, invoaction base.Invocation) string {
 	applicationMode := false
 	for _, item := range config.GetRootConfig().Registries {
 		if item.Protocol == constant.PolarisKey {
@@ -293,7 +293,7 @@ func (p *polarisRouter) Priority() int64 {
 }
 
 // Notify the router the invoker list
-func (p *polarisRouter) Notify(invokers []protocol.Invoker) {
+func (p *polarisRouter) Notify(invokers []base.Invoker) {
 	if !p.openRoute {
 		return
 	}

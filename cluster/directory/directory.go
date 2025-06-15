@@ -19,7 +19,7 @@ package directory
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 // Directory implementations include RegistryDirectory, ServiceDiscoveryRegistryDirectory, StaticDirectory
@@ -30,7 +30,7 @@ type Directory interface {
 	// NOTICE: The invoker list returned to the caller may be backed by the same data hold by the current Directory
 	// implementation for the sake of performance consideration. This requires the caller of List() shouldn't modify
 	// the return result directly.
-	List(invocation protocol.Invocation) []protocol.Invoker
+	List(invocation base.Invocation) []base.Invoker
 
 	// Subscribe listen to registry instances
 	Subscribe(url *common.URL) error

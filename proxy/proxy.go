@@ -36,14 +36,14 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
-	invocation_impl "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
 // nolint
 type Proxy struct {
 	rpc         common.RPCService
-	invoke      protocol.Invoker
+	invoke      base.Invoker
 	callback    any
 	attachments map[string]string
 	implement   ImplementFunc
@@ -60,13 +60,13 @@ type (
 var typError = reflect.Zero(reflect.TypeOf((*error)(nil)).Elem()).Type()
 
 // NewProxy create service proxy.
-func NewProxy(invoke protocol.Invoker, callback any, attachments map[string]string) *Proxy {
+func NewProxy(invoke base.Invoker, callback any, attachments map[string]string) *Proxy {
 	return NewProxyWithOptions(invoke, callback, attachments,
 		WithProxyImplementFunc(DefaultProxyImplementFunc))
 }
 
 // NewProxyWithOptions create service proxy with options.
-func NewProxyWithOptions(invoke protocol.Invoker, callback any, attachments map[string]string, opts ...ProxyOption) *Proxy {
+func NewProxyWithOptions(invoke base.Invoker, callback any, attachments map[string]string, opts ...ProxyOption) *Proxy {
 	p := &Proxy{
 		invoke:      invoke,
 		callback:    callback,
@@ -110,7 +110,7 @@ func (p *Proxy) GetCallback() any {
 }
 
 // GetInvoker gets Invoker.
-func (p *Proxy) GetInvoker() protocol.Invoker {
+func (p *Proxy) GetInvoker() base.Invoker {
 	return p.invoke
 }
 
@@ -125,7 +125,7 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 		return func(in []reflect.Value) []reflect.Value {
 			var (
 				err            error
-				inv            *invocation_impl.RPCInvocation
+				inv            *invocation.RPCInvocation
 				inIArr         []any
 				inVArr         []reflect.Value
 				reply          reflect.Value
@@ -176,9 +176,9 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 				}
 			}
 
-			inv = invocation_impl.NewRPCInvocationWithOptions(invocation_impl.WithMethodName(methodName),
-				invocation_impl.WithArguments(inIArr),
-				invocation_impl.WithCallBack(p.callback), invocation_impl.WithParameterValues(inVArr))
+			inv = invocation.NewRPCInvocationWithOptions(invocation.WithMethodName(methodName),
+				invocation.WithArguments(inIArr),
+				invocation.WithCallBack(p.callback), invocation.WithParameterValues(inVArr))
 			if !replyEmptyFlag {
 				inv.SetReply(reply.Interface())
 			}

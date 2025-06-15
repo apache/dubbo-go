@@ -19,7 +19,7 @@ package matcher
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 type ConditionMatcherFactory interface {
@@ -39,7 +39,7 @@ type ConditionMatcherFactory interface {
 // 3. ParamConditionMatcher represented by 'region=hangzhou'
 type Matcher interface {
 	// IsMatch indicates whether this matcher matches the patterns with request context.
-	IsMatch(value string, param *common.URL, invocation protocol.Invocation, isWhenCondition bool) bool
+	IsMatch(value string, param *common.URL, invocation base.Invocation, isWhenCondition bool) bool
 	// GetMatches returns matches.
 	// match patterns extracted from when condition.
 	GetMatches() map[string]struct{}
@@ -48,5 +48,5 @@ type Matcher interface {
 	GetMismatches() map[string]struct{}
 	// GetValue returns a value from different places of the request context, for example, url, attachment and invocation.
 	// This makes condition rule possible to check values in any place of a request.
-	GetValue(sample map[string]string, url *common.URL, invocation protocol.Invocation) string
+	GetValue(sample map[string]string, url *common.URL, invocation base.Invocation) string
 }

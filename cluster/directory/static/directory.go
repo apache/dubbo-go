@@ -25,16 +25,16 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory/base"
 	"dubbo.apache.org/dubbo-go/v3/cluster/router/chain"
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 type directory struct {
 	*base.Directory
-	invokers []protocol.Invoker
+	invokers []protocolbase.Invoker
 }
 
 // NewDirectory Create a new staticDirectory with invokers
-func NewDirectory(invokers []protocol.Invoker) *directory {
+func NewDirectory(invokers []protocolbase.Invoker) *directory {
 	var url *common.URL
 
 	if len(invokers) > 0 {
@@ -67,9 +67,9 @@ func (dir *directory) IsAvailable() bool {
 }
 
 // List List invokers
-func (dir *directory) List(invocation protocol.Invocation) []protocol.Invoker {
+func (dir *directory) List(invocation protocolbase.Invocation) []protocolbase.Invoker {
 	l := len(dir.invokers)
-	invokers := make([]protocol.Invoker, l)
+	invokers := make([]protocolbase.Invoker, l)
 	copy(invokers, dir.invokers)
 	routerChain := dir.RouterChain()
 
@@ -86,12 +86,12 @@ func (dir *directory) Destroy() {
 		for _, ivk := range dir.invokers {
 			ivk.Destroy()
 		}
-		dir.invokers = []protocol.Invoker{}
+		dir.invokers = []protocolbase.Invoker{}
 	})
 }
 
 // BuildRouterChain build router chain by invokers
-func (dir *directory) BuildRouterChain(invokers []protocol.Invoker) error {
+func (dir *directory) BuildRouterChain(invokers []protocolbase.Invoker) error {
 	if len(invokers) == 0 {
 		return perrors.Errorf("invokers == null")
 	}

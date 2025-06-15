@@ -30,7 +30,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 var (
@@ -52,7 +52,7 @@ func NewArgumentConditionMatcher(key string) *ArgumentConditionMatcher {
 	}
 }
 
-func (a *ArgumentConditionMatcher) GetValue(sample map[string]string, url *common.URL, invocation protocol.Invocation) string {
+func (a *ArgumentConditionMatcher) GetValue(sample map[string]string, url *common.URL, invocation base.Invocation) string {
 	// split the rule
 	expressArray := strings.Split(a.key, "\\.")
 	argumentExpress := expressArray[0]

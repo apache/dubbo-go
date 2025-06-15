@@ -19,6 +19,7 @@ package triple
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"strconv"
 	"strings"
@@ -42,8 +43,11 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
-	invocation_impl "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
+	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
 
 // same as dubbo_invoker.go attachmentKey
@@ -54,7 +58,7 @@ var attachmentKey = []string{
 
 // DubboInvoker is implement of protocol.Invoker, a dubboInvoker refer to one service and ip.
 type DubboInvoker struct {
-	protocol.BaseInvoker
+	base.BaseInvoker
 	// the net layer client, it is focus on network communication.
 	client *triple.TripleClient
 	// quitOnce is used to make sure DubboInvoker is only destroyed once
@@ -67,7 +71,13 @@ type DubboInvoker struct {
 
 // NewDubbo3Invoker constructor
 func NewDubbo3Invoker(url *common.URL) (*DubboInvoker, error) {
+	// TODO: Temporary compatibility with old APIs, can be removed later
 	rt := config.GetConsumerConfig().RequestTimeout
+	if consumerConfRaw, ok := url.GetAttribute(constant.ConsumerConfigKey); ok {
+		if consumerConf, ok := consumerConfRaw.(*global.ConsumerConfig); ok {
+			rt = consumerConf.RequestTimeout
+		}
+	}
 
 	timeout := url.GetParamDuration(constant.TimeoutKey, rt)
 	// for triple pb serialization. The bean name from provider is the provider reference key,
@@ -96,9 +106,21 @@ func NewDubbo3Invoker(url *common.URL) (*DubboInvoker, error) {
 	}
 	opts = append(opts, triConfig.WithGRPCMaxCallRecvMessageSize(maxCallRecvMsgSize))
 	opts = append(opts, triConfig.WithGRPCMaxCallSendMessageSize(maxCallSendMsgSize))
+
 	// grpc keepalive config
+	// Deprecated：use tripleconfig
+	// TODO: remove KeepAliveInterval and KeepAliveInterval in version 4.0.0
 	keepAliveInterval := url.GetParamDuration(constant.KeepAliveInterval, constant.DefaultKeepAliveInterval)
 	keepAliveTimeout := url.GetParamDuration(constant.KeepAliveTimeout, constant.DefaultKeepAliveTimeout)
+
+	tripleConfRaw, ok := url.GetAttribute(constant.TripleConfigKey)
+	if ok {
+		tripleConf := tripleConfRaw.(*global.TripleConfig)
+		// TODO: handle ParseDuration error
+		keepAliveInterval, _ = time.ParseDuration(tripleConf.KeepAliveInterval)
+		keepAliveTimeout, _ = time.ParseDuration(tripleConf.KeepAliveTimeout)
+	}
+
 	opts = append(opts, triConfig.WithGRPCKeepAliveTimeInterval(keepAliveInterval))
 	opts = append(opts, triConfig.WithGRPCKeepAliveTimeout(keepAliveTimeout))
 
@@ -122,14 +144,31 @@ func NewDubbo3Invoker(url *common.URL) (*DubboInvoker, error) {
 	}
 
 	triOption := triConfig.NewTripleOption(opts...)
+
+	// TODO: remove config TLSConfig
+	// delete this branch
 	tlsConfig := config.GetRootConfig().TLSConfig
 	if tlsConfig != nil {
+		triOption.CACertFile = tlsConfig.CACertFile
 		triOption.TLSCertFile = tlsConfig.TLSCertFile
 		triOption.TLSKeyFile = tlsConfig.TLSKeyFile
-		triOption.CACertFile = tlsConfig.CACertFile
 		triOption.TLSServerName = tlsConfig.TLSServerName
-		logger.Infof("Triple Client initialized the TLSConfig configuration")
+		logger.Infof("DUBBO3 Client initialized the TLSConfig configuration")
+	} else if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
+		// use global TLSConfig handle tls
+		tlsConf, ok := tlsConfRaw.(*global.TLSConfig)
+		if !ok {
+			return nil, errors.New("DUBBO3 Client initialized the TLSConfig configuration failed")
+		}
+		if dubbotls.IsClientTLSValid(tlsConf) {
+			triOption.CACertFile = tlsConf.CACertFile
+			triOption.TLSCertFile = tlsConf.TLSCertFile
+			triOption.TLSKeyFile = tlsConf.TLSKeyFile
+			triOption.TLSServerName = tlsConf.TLSServerName
+			logger.Infof("DUBBO3 Client initialized the TLSConfig configuration")
+		}
 	}
+
 	client, err := triple.NewTripleClient(consumerService, triOption)
 
 	if err != nil {
@@ -137,7 +176,7 @@ func NewDubbo3Invoker(url *common.URL) (*DubboInvoker, error) {
 	}
 
 	return &DubboInvoker{
-		BaseInvoker: *protocol.NewBaseInvoker(url),
+		BaseInvoker: *base.NewBaseInvoker(url),
 		client:      client,
 		timeout:     timeout,
 		clientGuard: &sync.RWMutex{},
@@ -159,32 +198,22 @@ func (di *DubboInvoker) getClient() *triple.TripleClient {
 }
 
 // Invoke call remoting.
-func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+func (di *DubboInvoker) Invoke(ctx context.Context, invocation base.Invocation) result.Result {
 	var (
-		result protocol.RPCResult
+		result result.RPCResult
 	)
 
 	if !di.BaseInvoker.IsAvailable() {
 		// Generally, the case will not happen, because the invoker has been removed
 		// from the invoker list before destroy,so no new request will enter the destroyed invoker
 		logger.Warnf("this dubboInvoker is destroyed")
-		result.Err = protocol.ErrDestroyedInvoker
+		result.SetError(base.ErrDestroyedInvoker)
 		return &result
 	}
 
-	di.clientGuard.RLock()
-	defer di.clientGuard.RUnlock()
-
-	if di.client == nil {
-		result.Err = protocol.ErrClientClosed
-		return &result
-	}
-
-	if !di.BaseInvoker.IsAvailable() {
-		// Generally, the case will not happen, because the invoker has been removed
-		// from the invoker list before destroy,so no new request will enter the destroyed invoker
-		logger.Warnf("this grpcInvoker is destroying")
-		result.Err = protocol.ErrDestroyedInvoker
+	client := di.getClient()
+	if client == nil {
+		result.SetError(base.ErrClientClosed)
 		return &result
 	}
 
@@ -228,28 +257,28 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation protocol.Invocati
 	}
 
 	methodName := invocation.MethodName()
-	triAttachmentWithErr := di.client.Invoke(methodName, in, invocation.Reply())
-	result.Err = triAttachmentWithErr.GetError()
-	result.Attrs = make(map[string]any)
+	triAttachmentWithErr := client.Invoke(methodName, in, invocation.Reply())
+	result.SetError(triAttachmentWithErr.GetError())
+	result.SetAttachments(make(map[string]any))
 	for k, v := range triAttachmentWithErr.GetAttachments() {
-		result.Attrs[k] = v
+		result.AddAttachment(k, v)
 	}
-	result.Rest = invocation.Reply()
+	result.SetResult(invocation.Reply())
 	return &result
 }
 
 // get timeout including methodConfig
-func (di *DubboInvoker) getTimeout(invocation *invocation_impl.RPCInvocation) time.Duration {
-	timeout := di.GetURL().GetParam(strings.Join([]string{constant.MethodKeys, invocation.MethodName(), constant.TimeoutKey}, "."), "")
+func (di *DubboInvoker) getTimeout(inv *invocation.RPCInvocation) time.Duration {
+	timeout := di.GetURL().GetParam(strings.Join([]string{constant.MethodKeys, inv.MethodName(), constant.TimeoutKey}, "."), "")
 	if len(timeout) != 0 {
 		if t, err := time.ParseDuration(timeout); err == nil {
 			// config timeout into attachment
-			invocation.SetAttachment(constant.TimeoutKey, strconv.Itoa(int(t.Milliseconds())))
+			inv.SetAttachment(constant.TimeoutKey, strconv.Itoa(int(t.Milliseconds())))
 			return t
 		}
 	}
 	// set timeout into invocation at method level
-	invocation.SetAttachment(constant.TimeoutKey, strconv.Itoa(int(di.timeout.Milliseconds())))
+	inv.SetAttachment(constant.TimeoutKey, strconv.Itoa(int(di.timeout.Milliseconds())))
 	return di.timeout
 }
 
@@ -257,7 +286,7 @@ func (di *DubboInvoker) getTimeout(invocation *invocation_impl.RPCInvocation) ti
 func (di *DubboInvoker) IsAvailable() bool {
 	client := di.getClient()
 	if client != nil {
-		// FIXME here can't check if tcp server is started now!!!
+		// FIXME: here can't check if tcp server is started now!!!
 		return client.IsAvailable()
 	}
 	return false
