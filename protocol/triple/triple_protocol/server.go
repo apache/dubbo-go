@@ -35,6 +35,10 @@ import (
 	"github.com/quic-go/quic-go/http3"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+)
+
 type Server struct {
 	mu       sync.Mutex
 	mux      *http.ServeMux
@@ -163,26 +167,20 @@ func (s *Server) RegisterCompatStreamHandler(
 	return nil
 }
 
-func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	handler, pattern := s.mux.Handler(r)
-	if pattern == "" {
-		// TODO: Delete this useless log.
-		logger.Warnf("404: didn't register this method - %s\n", r.URL.Path)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-func (s *Server) Run(http3Enable bool) error {
-	if http3Enable {
+func (s *Server) Run(httpType string) error {
+	switch httpType {
+	case constant.CallHTTP2:
+		return s.startHttp2()
+	case constant.CallHTTP3:
 		return s.startHttp3()
+	default:
+		panic("Unsupport http type, only support http2 or http3")
 	}
-	return s.startHttp2()
 }
 
 func (s *Server) startHttp2() error {
 	logger.Debug("Triple HTTP/2 server starting")
-	s.httpSrv.Handler = h2c.NewHandler(s, &http2.Server{})
+	s.httpSrv.Handler = h2c.NewHandler(s.mux, &http2.Server{})
 
 	if s.httpSrv.TLSConfig != nil {
 		return s.httpSrv.ListenAndServeTLS("", "")
@@ -199,10 +197,11 @@ func (s *Server) startHttp3() error {
 }
 
 // TODO: Find an ideal way to set TLSConfig.
-func (s *Server) SetTLSConfig(c *tls.Config, http3Enable bool) {
-	if !http3Enable {
+func (s *Server) SetTLSConfig(c *tls.Config, httpType string) {
+	switch httpType {
+	case constant.CallHTTP2:
 		s.httpSrv.TLSConfig = c
-	} else {
+	case constant.CallHTTP3:
 		// Adapt and enhance a generic tls.Config object into a configuration
 		// specifically for HTTP/3 services.
 		// ref: https://quic-go.net/docs/http3/server/#setting-up-a-http3server
@@ -231,24 +230,27 @@ func (s *Server) GracefulStop(ctx context.Context) error {
 		err = s.httpSrv.Shutdown(ctx)
 	}
 
+	// TODO: triple http3 GracefulStop
+
 	// FIXME: There is something wrong when http3 work with GracefulStop.
-	if s.http3Srv != nil {
-		err = s.http3Srv.Shutdown(ctx)
-	}
+	// if s.http3Srv != nil {
+	// 	err = s.http3Srv.Shutdown(ctx)
+	// }
 
 	return err
 }
 
-func NewServer(addr string, http3Enable bool) *Server {
+func NewServer(addr string, httpType string) *Server {
 	var srv *Server
 
-	if !http3Enable {
+	switch httpType {
+	case constant.CallHTTP2:
 		srv = &Server{
 			mux:      http.NewServeMux(),
 			handlers: make(map[string]*Handler),
 			httpSrv:  &http.Server{Addr: addr},
 		}
-	} else {
+	case constant.CallHTTP3:
 		srv = &Server{
 			mux:      http.NewServeMux(),
 			handlers: make(map[string]*Handler),

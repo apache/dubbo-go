@@ -81,13 +81,13 @@ func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
 		tripleConf = tripleConfRaw.(*global.TripleConfig)
 	}
 
-	var http3Enable bool
-	if tripleConf != nil && tripleConf.Http3 != nil {
-		http3Enable = tripleConf.Http3.Enable
+	var httpType string
+	if tripleConf != nil && tripleConf.Http3 != nil && tripleConf.Http3.Enable {
+		httpType = constant.CallHTTP3
 	}
 
 	// initialize tri.Server
-	s.triServer = tri.NewServer(addr, http3Enable)
+	s.triServer = tri.NewServer(addr, httpType)
 
 	serialization := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	switch serialization {
@@ -119,7 +119,7 @@ func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
 			logger.Errorf("TRIPLE Server initialized the TLSConfig configuration failed. err: %v", err)
 			return
 		}
-		s.triServer.SetTLSConfig(cfg, http3Enable)
+		s.triServer.SetTLSConfig(cfg, httpType)
 		logger.Infof("TRIPLE Server initialized the TLSConfig configuration")
 	}
 
@@ -155,7 +155,7 @@ func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
 	internal.ReflectionRegister(s)
 
 	go func() {
-		if runErr := s.triServer.Run(http3Enable); runErr != nil {
+		if runErr := s.triServer.Run(httpType); runErr != nil {
 			logger.Errorf("server serve failed with err: %v", runErr)
 		}
 	}()
