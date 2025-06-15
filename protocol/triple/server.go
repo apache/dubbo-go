@@ -71,12 +71,12 @@ func NewServer(cfg *global.TripleConfig) *Server {
 
 // Start TRIPLE server
 func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
-	URL := invoker.GetURL()
-	addr := URL.Location
+	url := invoker.GetURL()
+	addr := url.Location
 	// initialize tri.Server
 	s.triServer = tri.NewServer(addr)
 
-	serialization := URL.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
+	serialization := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	switch serialization {
 	case constant.ProtobufSerialization:
 	case constant.JSONSerialization:
@@ -92,7 +92,7 @@ func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
 	var tlsConf *global.TLSConfig
 
 	// handle tls
-	tlsConfRaw, ok := URL.GetAttribute(constant.TLSConfigKey)
+	tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey)
 	if ok {
 		tlsConf, ok = tlsConfRaw.(*global.TLSConfig)
 		if !ok {
@@ -113,16 +113,16 @@ func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
 	// IDLMode means that this will only be set when
 	// the new triple is started in non-IDL mode.
 	// TODO: remove IDLMode when config package is removed
-	IDLMode := URL.GetParam(constant.IDLMode, "")
+	IDLMode := url.GetParam(constant.IDLMode, "")
 
 	var service common.RPCService
 	if IDLMode == constant.NONIDL {
-		service, _ = URL.GetAttribute(constant.RpcServiceKey)
+		service, _ = url.GetAttribute(constant.RpcServiceKey)
 	}
 
 	var tripleConf *global.TripleConfig
 
-	tripleConfRaw, ok := URL.GetAttribute(constant.TripleConfigKey)
+	tripleConfRaw, ok := url.GetAttribute(constant.TripleConfigKey)
 	if ok {
 		tripleConf = tripleConfRaw.(*global.TripleConfig)
 	}
@@ -131,10 +131,10 @@ func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
 		s.triServer.SetHttp3Enable(tripleConf.Http3.Enable)
 	}
 
-	hanOpts := getHanOpts(URL, tripleConf)
+	hanOpts := getHanOpts(url, tripleConf)
 	//Set expected codec name from serviceinfo
 	hanOpts = append(hanOpts, tri.WithExpectedCodecName(serialization))
-	intfName := URL.Interface()
+	intfName := url.Interface()
 	if info != nil {
 		// new triple idl mode
 		s.handleServiceWithInfo(intfName, invoker, info, hanOpts...)
@@ -146,7 +146,7 @@ func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
 		s.saveServiceInfo(intfName, reflectInfo)
 	} else {
 		// old triple idl mode and old triple non-idl mode
-		s.compatHandleService(intfName, URL.Group(), URL.Version(), hanOpts...)
+		s.compatHandleService(intfName, url.Group(), url.Version(), hanOpts...)
 	}
 	internal.ReflectionRegister(s)
 
