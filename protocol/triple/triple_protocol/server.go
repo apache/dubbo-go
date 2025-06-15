@@ -190,8 +190,10 @@ func (s *Server) Run() error {
 			err = s.httpSrv.ListenAndServe()
 		}
 	} else {
-		logger.Debug("@@triple HTTP/3 server start@@")
+		// Even if the ListenAndServeTLS function is not explicitly invoked,
+		// Triple HTTP/3 server will mandate the use of the pre-configured TLSConfig.
 		err = s.http3Srv.ListenAndServe()
+		logger.Debug("triple HTTP/3 server start")
 	}
 
 	if err != nil {

@@ -255,12 +255,17 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		} else {
 			transport = &http3.Transport{
 				TLSClientConfig: cfg,
+				// TODO: add http3 keepalive config
+				// QUICConfig: &quic.Config{
+				// 	MaxIdleTimeout: keepAliveInterval,Add commentMore actions
+				// },
 			}
 		}
 		logger.Infof("Triple http3 client transport init successfully")
 	default:
 		panic(fmt.Sprintf("Unsupported callType: %s", callType))
 	}
+
 	httpClient := &http.Client{
 		Transport: transport,
 	}
@@ -273,6 +278,7 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	} else {
 		baseTriURL = httpPrefix + baseTriURL
 	}
+
 	triClients := make(map[string]*tri.Client)
 
 	if len(url.Methods) != 0 {
