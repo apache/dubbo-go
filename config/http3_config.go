@@ -17,15 +17,9 @@
 
 package config
 
-type TripleConfig struct {
-	// MaxServerSendMsgSize max size of server send message, 1mb=1000kb=1000000b 1mib=1024kb=1048576b.
-	// more detail to see https://pkg.go.dev/github.com/dustin/go-humanize#pkg-constants
-	MaxServerSendMsgSize string `yaml:"max-server-send-msg-size" json:"max-server-send-msg-size,omitempty"`
-	// MaxServerRecvMsgSize max size of server receive message
-	MaxServerRecvMsgSize string `yaml:"max-server-recv-msg-size" json:"max-server-recv-msg-size,omitempty"`
-
-	Http3 *Http3Config `yaml:"http3" json:"http3,omitempty" property:"http3"`
-
-	KeepAliveInterval string `yaml:"keep-alive-interval" json:"keep-alive-interval,omitempty" property:"keep-alive-interval"`
-	KeepAliveTimeout  string `yaml:"keep-alive-timeout" json:"keep-alive-timeout,omitempty" property:"keep-alive-timeout"`
+// http3 config for triple protocol
+type Http3Config struct {
+	// Whether to enable HTTP/3 support.
+	// The default value is false.
+	Enable bool `yaml:"enable" json:"enable,omitempty"`
 }

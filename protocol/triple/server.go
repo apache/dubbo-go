@@ -120,7 +120,18 @@ func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
 		service, _ = URL.GetAttribute(constant.RpcServiceKey)
 	}
 
-	hanOpts := getHanOpts(URL)
+	var tripleConf *global.TripleConfig
+
+	tripleConfRaw, ok := URL.GetAttribute(constant.TripleConfigKey)
+	if ok {
+		tripleConf = tripleConfRaw.(*global.TripleConfig)
+	}
+
+	if tripleConf != nil && tripleConf.Http3 != nil {
+		s.triServer.SetHttp3Enable(tripleConf.Http3.Enable)
+	}
+
+	hanOpts := getHanOpts(URL, tripleConf)
 	//Set expected codec name from serviceinfo
 	hanOpts = append(hanOpts, tri.WithExpectedCodecName(serialization))
 	intfName := URL.Interface()
@@ -159,7 +170,7 @@ func (s *Server) RefreshService(invoker base.Invoker, info *common.ServiceInfo) 
 	default:
 		panic(fmt.Sprintf("Unsupported serialization: %s", serialization))
 	}
-	hanOpts := getHanOpts(URL)
+	hanOpts := getHanOpts(URL, s.cfg)
 	//Set expected codec name from serviceinfo
 	hanOpts = append(hanOpts, tri.WithExpectedCodecName(serialization))
 	intfName := URL.Interface()
@@ -171,7 +182,7 @@ func (s *Server) RefreshService(invoker base.Invoker, info *common.ServiceInfo) 
 	}
 }
 
-func getHanOpts(url *common.URL) (hanOpts []tri.HandlerOption) {
+func getHanOpts(url *common.URL, tripleConf *global.TripleConfig) (hanOpts []tri.HandlerOption) {
 	group := url.GetParam(constant.GroupKey, "")
 	version := url.GetParam(constant.VersionKey, "")
 	hanOpts = append(hanOpts, tri.WithGroup(group), tri.WithVersion(version))
@@ -192,13 +203,6 @@ func getHanOpts(url *common.URL) (hanOpts []tri.HandlerOption) {
 		maxServerSendMsgSize = int(sendMsgSize)
 	}
 	hanOpts = append(hanOpts, tri.WithSendMaxBytes(maxServerSendMsgSize))
-
-	var tripleConf *global.TripleConfig
-
-	tripleConfRaw, ok := url.GetAttribute(constant.TripleConfigKey)
-	if ok {
-		tripleConf = tripleConfRaw.(*global.TripleConfig)
-	}
 
 	if tripleConf == nil {
 		return hanOpts

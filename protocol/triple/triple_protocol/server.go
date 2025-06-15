@@ -41,7 +41,8 @@ type Server struct {
 	handlers map[string]*Handler
 	httpSrv  *http.Server
 
-	http3Srv *http3.Server
+	http3Enable bool
+	http3Srv    *http3.Server
 }
 
 func (s *Server) RegisterUnaryHandler(
@@ -181,7 +182,7 @@ func (s *Server) Run() error {
 
 	var err error
 	// TODO: Find an ideal way to separate the logic of starting httpSrv and http3Srv.
-	if false {
+	if !s.http3Enable {
 		if s.httpSrv.TLSConfig != nil {
 			// TODO: Find an ideal way to start server with TLSConfig.
 			err = s.httpSrv.ListenAndServeTLS("", "")
@@ -203,6 +204,10 @@ func (s *Server) Run() error {
 func (s *Server) SetTLSConfig(c *tls.Config) {
 	s.httpSrv.TLSConfig = c
 	s.http3Srv.TLSConfig = c
+}
+
+func (s *Server) SetHttp3Enable(enable bool) {
+	s.http3Enable = enable
 }
 
 // TODO: Consider http3 server stop.

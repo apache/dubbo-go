@@ -99,10 +99,22 @@ func compatTripleConfig(c *global.TripleConfig) *config.TripleConfig {
 		return nil
 	}
 	return &config.TripleConfig{
-		KeepAliveInterval:    c.KeepAliveInterval,
-		KeepAliveTimeout:     c.KeepAliveTimeout,
 		MaxServerSendMsgSize: c.MaxServerSendMsgSize,
 		MaxServerRecvMsgSize: c.MaxServerRecvMsgSize,
+		Http3:                compatHttp3Config(c.Http3),
+
+		KeepAliveInterval: c.KeepAliveInterval,
+		KeepAliveTimeout:  c.KeepAliveTimeout,
+	}
+}
+
+// just for compat
+func compatHttp3Config(c *global.Http3Config) *config.Http3Config {
+	if c == nil {
+		return nil
+	}
+	return &config.Http3Config{
+		Enable: c.Enable,
 	}
 }
 
