@@ -36,6 +36,7 @@ import (
 
 	"golang.org/x/net/http2"
 
+	"github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/http3"
 )
 
@@ -224,6 +225,9 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	}
 
 	switch callType {
+	// This case might be for backward compatibility,
+	// it's not useful for the Triple protocol, HTTP/1 lacks trailer functionality.
+	// Triple protocol only supports HTTP/2 and HTTP/3.
 	case constant.CallHTTP:
 		transport = &http.Transport{
 			TLSClientConfig: cfg,
@@ -251,14 +255,22 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 				TLSClientConfig: &tls.Config{
 					InsecureSkipVerify: true,
 				},
+				QUICConfig: &quic.Config{
+					// ref: https://quic-go.net/docs/quic/connection/#keeping-a-connection-alive
+					KeepAlivePeriod: keepAliveInterval,
+					// ref: https://quic-go.net/docs/quic/connection/#idle-timeout
+					MaxIdleTimeout: keepAliveTimeout,
+				},
 			}
 		} else {
 			transport = &http3.Transport{
 				TLSClientConfig: cfg,
-				// TODO: add http3 keepalive config
-				// QUICConfig: &quic.Config{
-				// 	MaxIdleTimeout: keepAliveInterval,Add commentMore actions
-				// },
+				QUICConfig: &quic.Config{
+					// ref: https://quic-go.net/docs/quic/connection/#keeping-a-connection-alive
+					KeepAlivePeriod: keepAliveInterval,
+					// ref: https://quic-go.net/docs/quic/connection/#idle-timeout
+					MaxIdleTimeout: keepAliveTimeout,
+				},
 			}
 		}
 		logger.Infof("Triple http3 client transport init successfully")
