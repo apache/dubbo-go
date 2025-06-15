@@ -237,6 +237,8 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		if tlsFlag {
 			transport = &http2.Transport{
 				TLSClientConfig: cfg,
+				ReadIdleTimeout: keepAliveInterval,
+				PingTimeout:     keepAliveTimeout,
 			}
 		} else {
 			transport = &http2.Transport{
