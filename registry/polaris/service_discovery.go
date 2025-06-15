@@ -318,7 +318,7 @@ func convertToRegisterInstance(namespace string, instance registry.ServiceInstan
 		health      = instance.IsHealthy()
 		isolate     = instance.IsEnable()
 		ttl         = 5
-		protocolVal = string(constant.Dubbo)
+		protocolVal = string(constant.DubboProtocol)
 	)
 
 	return &api.InstanceRegisterRequest{

@@ -15,35 +15,31 @@
  * limitations under the License.
  */
 
-package global
+package graceful_shutdown
 
-// TLSConfig tls config
-//
-// # Experimental
-//
-// Notice: This struct is EXPERIMENTAL and may be changed or removed in a
-// later release.
-type TLSConfig struct {
-	CACertFile    string `yaml:"ca-cert-file" json:"ca-cert-file" property:"ca-cert-file"`
-	TLSCertFile   string `yaml:"tls-cert-file" json:"tls-cert-file" property:"tls-cert-file"`
-	TLSKeyFile    string `yaml:"tls-key-file" json:"tls-key-file" property:"tls-key-file"`
-	TLSServerName string `yaml:"tls-server-name" json:"tls-server-name" property:"tls-server-name"`
-}
+import (
+	"go.uber.org/atomic"
+)
 
-func DefaultTLSConfig() *TLSConfig {
-	return &TLSConfig{}
-}
+import (
+	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/global"
+)
 
-// Clone a new TLSConfig
-func (c *TLSConfig) Clone() *TLSConfig {
+func compatGlobalShutdownConfig(c *config.ShutdownConfig) *global.ShutdownConfig {
 	if c == nil {
 		return nil
 	}
-
-	return &TLSConfig{
-		CACertFile:    c.CACertFile,
-		TLSCertFile:   c.TLSCertFile,
-		TLSKeyFile:    c.TLSKeyFile,
-		TLSServerName: c.TLSServerName,
+	cfg := &global.ShutdownConfig{
+		Timeout:                     c.Timeout,
+		StepTimeout:                 c.StepTimeout,
+		ConsumerUpdateWaitTime:      c.ConsumerUpdateWaitTime,
+		RejectRequestHandler:        c.RejectRequestHandler,
+		InternalSignal:              c.InternalSignal,
+		OfflineRequestWindowTimeout: c.OfflineRequestWindowTimeout,
+		RejectRequest:               atomic.Bool{},
 	}
+	cfg.RejectRequest.Store(c.RejectRequest.Load())
+
+	return cfg
 }

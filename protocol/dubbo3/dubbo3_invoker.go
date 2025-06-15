@@ -19,6 +19,7 @@ package dubbo3
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"strconv"
 	"strings"
@@ -42,9 +43,11 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
-	invocation_impl "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
+	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
 
 // same as dubbo_invoker.go attachmentKey
@@ -68,13 +71,27 @@ type DubboInvoker struct {
 
 // NewDubboInvoker constructor
 func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
-	rt := config.GetConsumerConfig().RequestTimeout
-
+	var (
+		rt              string
+		consumerService any
+	)
+	// TODO: Temporary compatibility with old APIs, can be removed later
+	rt = config.GetConsumerConfig().RequestTimeout
+	if consumerConfRaw, ok := url.GetAttribute(constant.ConsumerConfigKey); ok {
+		if consumerConf, ok := consumerConfRaw.(*global.ConsumerConfig); ok {
+			rt = consumerConf.RequestTimeout
+		}
+	}
+	// TODO: If you do not need to be compatible with the old API, you can directly use url.GetAttribute(constant.ConsumerConfigKey) as the timeout
 	timeout := url.GetParamDuration(constant.TimeoutKey, rt)
 	// for triple pb serialization. The bean name from provider is the provider reference key,
-	// which can't locate the target consumer stub, so we use interface key..
+	// which can't locate the target consumer stub, so we use interface key.
 	interfaceKey := url.GetParam(constant.InterfaceKey, "")
-	consumerService := config.GetConsumerServiceByInterfaceName(interfaceKey)
+	//TODO: Temporary compatibility with old APIs, can be removed later
+	consumerService = config.GetConsumerServiceByInterfaceName(interfaceKey)
+	if rpcService, ok := url.GetAttribute(constant.RpcServiceKey); ok {
+		consumerService = rpcService
+	}
 
 	dubboSerializerType := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	triCodecType := tripleConstant.CodecType(dubboSerializerType)
@@ -98,6 +115,7 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 	opts = append(opts, triConfig.WithGRPCMaxCallRecvMessageSize(maxCallRecvMsgSize))
 	opts = append(opts, triConfig.WithGRPCMaxCallSendMessageSize(maxCallSendMsgSize))
 
+	//TODO: Temporary compatibility with old APIs, can be removed later
 	tracingKey := url.GetParam(constant.TracingConfigKey, "")
 	if tracingKey != "" {
 		tracingConfig := config.GetTracingConfig(tracingKey)
@@ -118,13 +136,30 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 	}
 
 	triOption := triConfig.NewTripleOption(opts...)
+
+	// TODO: remove config TLSConfig
+	// delete this branch
 	tlsConfig := config.GetRootConfig().TLSConfig
 	if tlsConfig != nil {
+		triOption.CACertFile = tlsConfig.CACertFile
 		triOption.TLSCertFile = tlsConfig.TLSCertFile
 		triOption.TLSKeyFile = tlsConfig.TLSKeyFile
-		triOption.CACertFile = tlsConfig.CACertFile
 		triOption.TLSServerName = tlsConfig.TLSServerName
-		logger.Infof("Triple Client initialized the TLSConfig configuration")
+		logger.Infof("DUBBO3 Client initialized the TLSConfig configuration")
+	} else if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
+		// use global TLSConfig handle tls
+		tlsConf, ok := tlsConfRaw.(*global.TLSConfig)
+		if !ok {
+			logger.Errorf("DUBBO3 Client initialized the TLSConfig configuration failed")
+			return nil, errors.New("DUBBO3 Client initialized the TLSConfig configuration failed")
+		}
+		if dubbotls.IsClientTLSValid(tlsConf) {
+			triOption.CACertFile = tlsConf.CACertFile
+			triOption.TLSCertFile = tlsConf.TLSCertFile
+			triOption.TLSKeyFile = tlsConf.TLSKeyFile
+			triOption.TLSServerName = tlsConf.TLSServerName
+			logger.Infof("DUBBO3 Server initialized the TLSConfig configuration")
+		}
 	}
 	client, err := triple.NewTripleClient(consumerService, triOption)
 
@@ -235,7 +270,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation base.Invocation) 
 }
 
 // get timeout including methodConfig
-func (di *DubboInvoker) getTimeout(invocation *invocation_impl.RPCInvocation) time.Duration {
+func (di *DubboInvoker) getTimeout(invocation *invocation.RPCInvocation) time.Duration {
 	timeout := di.GetURL().GetParam(strings.Join([]string{constant.MethodKeys, invocation.MethodName(), constant.TimeoutKey}, "."), "")
 	if len(timeout) != 0 {
 		if t, err := time.ParseDuration(timeout); err == nil {

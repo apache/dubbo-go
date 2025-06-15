@@ -131,12 +131,22 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 		common.WithParams(refOpts.getURLMap()),
 		common.WithParamsValue(constant.BeanNameKey, refOpts.id),
 		common.WithParamsValue(constant.MetadataTypeKey, refOpts.metaDataType),
+		// TODO: remove TimeoutKey after old confid removed
 		common.WithParamsValue(constant.TimeoutKey, refOpts.Consumer.RequestTimeout),
+
+		// TODO: Deprecated：use TripleConfig
+		// remove KeepAliveInterval and KeepAliveInterval in version 4.0.0
 		common.WithParamsValue(constant.KeepAliveInterval, ref.KeepAliveInterval),
 		common.WithParamsValue(constant.KeepAliveTimeout, ref.KeepAliveTimeout),
+
+		// attribute
+		common.WithAttribute(constant.TripleConfigKey, ref.ProtocolClientConfig.TripleConfig),
+		common.WithAttribute(constant.TLSConfigKey, refOpts.TLS),
+
 		// for new triple non-IDL mode
 		// TODO: remove ISIDL after old triple removed
 		common.WithParamsValue(constant.IDLMode, ref.IDLMode),
+		common.WithAttribute(constant.ConsumerConfigKey, refOpts.Consumer),
 	)
 
 	// for new triple IDL mode
@@ -388,7 +398,7 @@ func (refOpts *ReferenceOptions) getURLMap() url.Values {
 	}
 	urlMap.Set(constant.ReferenceFilterKey, commonCfg.MergeValue(ref.Filter, "", defaultReferenceFilter))
 
-	for _, v := range ref.Methods {
+	for _, v := range ref.MethodsConfig {
 		urlMap.Set("methods."+v.Name+"."+constant.LoadbalanceKey, v.LoadBalance)
 		urlMap.Set("methods."+v.Name+"."+constant.RetriesKey, v.Retries)
 		urlMap.Set("methods."+v.Name+"."+constant.StickyKey, strconv.FormatBool(v.Sticky))

@@ -266,7 +266,7 @@ var reflectionServer *ReflectionServer
 func init() {
 	reflectionServer = NewServer()
 	internal.ReflectionRegister = Register
-	server.SetProServices(&server.InternalService{
+	server.SetProviderServices(&server.InternalService{
 		Name: "reflection",
 		Init: func(options *server.ServiceOptions) (*server.ServiceDefinition, bool) {
 			return &server.ServiceDefinition{

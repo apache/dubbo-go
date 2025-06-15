@@ -28,7 +28,10 @@ const (
 	OverrideProtocol = "override" //compatible with 2.6.x
 	EmptyProtocol    = "empty"
 	RouterProtocol   = "router"
+	DubboProtocol    = "dubbo"
 	TriProtocol      = "tri"
+	JSONRPCProtocol  = "jsonrpc"
+	RESTProtocol     = "rest"
 )
 
 const (

@@ -22,10 +22,10 @@ import (
 )
 
 import (
-	invocation_impl "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
-func injectTraceCtx(currentSpan opentracing.Span, inv *invocation_impl.RPCInvocation) error {
+func injectTraceCtx(currentSpan opentracing.Span, inv *invocation.RPCInvocation) error {
 	// inject opentracing ctx
 	traceAttachments := filterContext(inv.Attachments())
 	carrier := opentracing.TextMapCarrier(traceAttachments)

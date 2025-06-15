@@ -30,6 +30,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/internal"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
@@ -84,10 +85,12 @@ func (tp *TripleProtocol) openServer(invoker base.Invoker, info *common.ServiceI
 		panic("[TRIPLE Protocol]" + url.Key() + "is not existing")
 	}
 
-	// TODO: get triple ServerOptions
-	// srvOpts:= url.GetAttribute(constant.TripleServerOptionsKey)
-	// srv := NewServer(SrvOpts)
-	srv := NewServer()
+	// TODO: handle errors
+	tripleConfRaw, _ := url.GetAttribute(constant.TripleConfigKey)
+	// TODO: verificate the tripleConf
+	tripleConf, _ := tripleConfRaw.(*global.TripleConfig)
+
+	srv := NewServer(tripleConf)
 	srv.Start(invoker, info)
 	tp.serverMap[url.Location] = srv
 }

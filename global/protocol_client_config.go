@@ -17,33 +17,34 @@
 
 package global
 
-// TLSConfig tls config
-//
-// # Experimental
-//
-// Notice: This struct is EXPERIMENTAL and may be changed or removed in a
-// later release.
-type TLSConfig struct {
-	CACertFile    string `yaml:"ca-cert-file" json:"ca-cert-file" property:"ca-cert-file"`
-	TLSCertFile   string `yaml:"tls-cert-file" json:"tls-cert-file" property:"tls-cert-file"`
-	TLSKeyFile    string `yaml:"tls-key-file" json:"tls-key-file" property:"tls-key-file"`
-	TLSServerName string `yaml:"tls-server-name" json:"tls-server-name" property:"tls-server-name"`
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+)
+
+// TODO: find a better name replace ProtocolClientConfig
+type ProtocolClientConfig struct {
+	// TODO: maybe we could use this field
+	Name string `yaml:"name" json:"name,omitempty" property:"name"`
+
+	TripleConfig *TripleConfig `yaml:"triple" json:"triple,omitempty" property:"triple"`
 }
 
-func DefaultTLSConfig() *TLSConfig {
-	return &TLSConfig{}
+// DefaultProtocolConfig returns a default ProtocolConfig instance.
+func DefaultProtocolClientConfig() *ProtocolClientConfig {
+	return &ProtocolClientConfig{
+		Name:         constant.TriProtocol,
+		TripleConfig: DefaultTripleConfig(),
+	}
 }
 
-// Clone a new TLSConfig
-func (c *TLSConfig) Clone() *TLSConfig {
+// Clone a new ProtocolConfig
+func (c *ProtocolClientConfig) Clone() *ProtocolClientConfig {
 	if c == nil {
 		return nil
 	}
 
-	return &TLSConfig{
-		CACertFile:    c.CACertFile,
-		TLSCertFile:   c.TLSCertFile,
-		TLSKeyFile:    c.TLSKeyFile,
-		TLSServerName: c.TLSServerName,
+	return &ProtocolClientConfig{
+		Name:         c.Name,
+		TripleConfig: c.TripleConfig.Clone(),
 	}
 }

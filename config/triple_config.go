@@ -15,30 +15,14 @@
  * limitations under the License.
  */
 
-package graceful_shutdown
+package config
 
-import (
-	"go.uber.org/atomic"
-)
+type TripleConfig struct {
+	KeepAliveInterval string `yaml:"keep-alive-interval" json:"keep-alive-interval,omitempty" property:"keep-alive-interval"`
+	KeepAliveTimeout  string `yaml:"keep-alive-timeout" json:"keep-alive-timeout,omitempty" property:"keep-alive-timeout"`
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/global"
-)
-
-func compatShutdownConfig(c *global.ShutdownConfig) *config.ShutdownConfig {
-	if c == nil {
-		return nil
-	}
-	cfg := &config.ShutdownConfig{
-		Timeout:                     c.Timeout,
-		StepTimeout:                 c.StepTimeout,
-		ConsumerUpdateWaitTime:      c.ConsumerUpdateWaitTime,
-		RejectRequestHandler:        c.RejectRequestHandler,
-		InternalSignal:              c.InternalSignal,
-		OfflineRequestWindowTimeout: c.OfflineRequestWindowTimeout,
-		RejectRequest:               atomic.Bool{},
-	}
-	cfg.RejectRequest.Store(c.RejectRequest.Load())
-	return cfg
+	// MaxServerSendMsgSize max size of server send message, 1mb=1000kb=1000000b 1mib=1024kb=1048576b.
+	// more detail to see https://pkg.go.dev/github.com/dustin/go-humanize#pkg-constants
+	MaxServerSendMsgSize string `yaml:"max-server-send-msg-size" json:"max-server-send-msg-size,omitempty"` // MaxServerRecvMsgSize max size of server receive message
+	MaxServerRecvMsgSize string `yaml:"max-server-recv-msg-size" json:"max-server-recv-msg-size,omitempty"`
 }

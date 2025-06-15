@@ -62,11 +62,16 @@ const (
 	MaxServerSendMsgSize   = "max-server-send-msg-size"
 	MaxCallRecvMsgSize     = "max-call-recv-msg-size"
 	MaxServerRecvMsgSize   = "max-server-recv-msg-size"
-	KeepAliveInterval      = "keep-alive-interval"
-	KeepAliveTimeout       = "keep-alive-timeout"
+
+	// TODO: remove KeepAliveInterval and KeepAliveInterval in version 4.0.0
+	KeepAliveInterval = "keep-alive-interval"
+	KeepAliveTimeout  = "keep-alive-timeout"
 
 	// TODO: remove IDLMode after old triple removed
 	IDLMode = "IDL-mode"
+
+	TripleConfigKey   = "triple-config"
+	ConsumerConfigKey = "consumer-config"
 )
 
 // TODO: remove this after old triple removed
@@ -160,6 +165,7 @@ const (
 	ServiceInfoKey                     = "service-info"
 	RpcServiceKey                      = "rpc-service"
 	ClientInfoKey                      = "client-info"
+	TLSConfigKey                       = "tls-config"
 )
 
 const (

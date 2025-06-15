@@ -15,24 +15,22 @@
  * limitations under the License.
  */
 
-package graceful_shutdown
-
-import (
-	"time"
-)
+package tls
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
+// The consideration of not placing TLSOption in the global package is
+// to prevent users from directly using the global package, so I created
+// a new tls directory to allow users to establish config through the tls package.
+
 type Options struct {
-	Shutdown *global.ShutdownConfig
+	TLSConf *global.TLSConfig
 }
 
 func defaultOptions() *Options {
-	return &Options{
-		Shutdown: global.DefaultShutdownConfig(),
-	}
+	return &Options{TLSConf: global.DefaultTLSConfig()}
 }
 
 func NewOptions(opts ...Option) *Options {
@@ -40,60 +38,33 @@ func NewOptions(opts ...Option) *Options {
 	for _, opt := range opts {
 		opt(defOpts)
 	}
-
 	return defOpts
 }
 
 type Option func(*Options)
 
-func WithTimeout(timeout time.Duration) Option {
+// ---------- For user ----------
+
+func WithCACertFile(file string) Option {
 	return func(opts *Options) {
-		opts.Shutdown.Timeout = timeout.String()
+		opts.TLSConf.CACertFile = file
 	}
 }
 
-func WithStepTimeout(timeout time.Duration) Option {
+func WithCertFile(file string) Option {
 	return func(opts *Options) {
-		opts.Shutdown.StepTimeout = timeout.String()
+		opts.TLSConf.TLSCertFile = file
 	}
 }
 
-func WithConsumerUpdateWaitTime(duration time.Duration) Option {
+func WithKeyFile(file string) Option {
 	return func(opts *Options) {
-		opts.Shutdown.ConsumerUpdateWaitTime = duration.String()
+		opts.TLSConf.TLSKeyFile = file
 	}
 }
 
-// todo(DMwangnima): add more specified configuration API
-//func WithRejectRequestHandler(handler string) Option {
-//	return func(opts *Options) {
-//		opts.Shutdown.RejectRequestHandler = handler
-//	}
-//}
-
-func WithoutInternalSignal() Option {
+func WithServerName(name string) Option {
 	return func(opts *Options) {
-		signal := false
-		opts.Shutdown.InternalSignal = &signal
-	}
-}
-
-func WithOfflineRequestWindowTimeout(timeout time.Duration) Option {
-	return func(opts *Options) {
-		opts.Shutdown.OfflineRequestWindowTimeout = timeout.String()
-	}
-}
-
-func WithRejectRequest() Option {
-	return func(opts *Options) {
-		opts.Shutdown.RejectRequest.Store(true)
-	}
-}
-
-// ---------- For framework ----------
-
-func SetShutdownConfig(cfg *global.ShutdownConfig) Option {
-	return func(opts *Options) {
-		opts.Shutdown = cfg
+		opts.TLSConf.TLSServerName = name
 	}
 }

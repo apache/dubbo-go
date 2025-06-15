@@ -46,6 +46,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/tls"
 )
 
 type ServerOptions struct {
@@ -56,6 +57,7 @@ type ServerOptions struct {
 	Shutdown    *global.ShutdownConfig
 	Metrics     *global.MetricsConfig
 	Otel        *global.OtelConfig
+	TLS         *global.TLSConfig
 
 	providerCompat *config.ProviderConfig
 }
@@ -67,6 +69,7 @@ func defaultServerOptions() *ServerOptions {
 		Shutdown:    global.DefaultShutdownConfig(),
 		Metrics:     global.DefaultMetricsConfig(),
 		Otel:        global.DefaultOtelConfig(),
+		TLS:         global.DefaultTLSConfig(),
 	}
 }
 
@@ -75,26 +78,27 @@ func (srvOpts *ServerOptions) init(opts ...ServerOption) error {
 	for _, opt := range opts {
 		opt(srvOpts)
 	}
+
 	if err := defaults.Set(srvOpts); err != nil {
 		return err
 	}
 
-	prov := srvOpts.Provider
+	providerConf := srvOpts.Provider
 
-	prov.RegistryIDs = commonCfg.TranslateIds(prov.RegistryIDs)
-	if len(prov.RegistryIDs) <= 0 {
-		prov.RegistryIDs = getRegistryIds(srvOpts.Registries)
+	providerConf.RegistryIDs = commonCfg.TranslateIds(providerConf.RegistryIDs)
+	if len(providerConf.RegistryIDs) <= 0 {
+		providerConf.RegistryIDs = getRegistryIds(srvOpts.Registries)
 	}
 
-	prov.ProtocolIDs = commonCfg.TranslateIds(prov.ProtocolIDs)
+	providerConf.ProtocolIDs = commonCfg.TranslateIds(providerConf.ProtocolIDs)
 
-	if err := commonCfg.Verify(prov); err != nil {
+	if err := commonCfg.Verify(providerConf); err != nil {
 		return err
 	}
 
 	// enable adaptive service verbose
-	if prov.AdaptiveServiceVerbose {
-		if !prov.AdaptiveService {
+	if providerConf.AdaptiveServiceVerbose {
+		if !providerConf.AdaptiveService {
 			return perrors.Errorf("The adaptive service is disabled, " +
 				"adaptive service verbose should be disabled either.")
 		}
@@ -104,7 +108,7 @@ func (srvOpts *ServerOptions) init(opts ...ServerOption) error {
 	}
 
 	// init graceful_shutdown
-	graceful_shutdown.Init(graceful_shutdown.SetShutdown_Config(srvOpts.Shutdown))
+	graceful_shutdown.Init(graceful_shutdown.SetShutdownConfig(srvOpts.Shutdown))
 
 	return nil
 }
@@ -371,8 +375,8 @@ func WithServerProtocolIDs(protocolIDs []string) ServerOption {
 	}
 }
 
-func WithServerProtocol(opts ...protocol.Option) ServerOption {
-	proOpts := protocol.NewOptions(opts...)
+func WithServerProtocol(opts ...protocol.ServerOption) ServerOption {
+	proOpts := protocol.NewServerOptions(opts...)
 
 	return func(srvOpts *ServerOptions) {
 		if srvOpts.Protocols == nil {
@@ -399,6 +403,20 @@ func WithServerAdaptiveService() ServerOption {
 func WithServerAdaptiveServiceVerbose() ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.AdaptiveServiceVerbose = true
+	}
+}
+
+// WithServerTLSOption applies TLS options to the server configuration.
+// It iterates over the provided tls.
+// TLSOption and applies them to the ServerOptions.TLS field.
+func WithServerTLSOption(opts ...tls.Option) ServerOption {
+	tlsOpts := tls.NewOptions(opts...)
+
+	return func(srvOpts *ServerOptions) {
+		if srvOpts.TLS == nil {
+			srvOpts.TLS = new(global.TLSConfig)
+		}
+		srvOpts.TLS = tlsOpts.TLSConf
 	}
 }
 
@@ -441,12 +459,21 @@ func SetServerOtel(otel *global.OtelConfig) ServerOption {
 	}
 }
 
+func SetServerTLS(tls *global.TLSConfig) ServerOption {
+	return func(opts *ServerOptions) {
+		opts.TLS = tls
+	}
+}
+
 func SetServerProvider(provider *global.ProviderConfig) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider = provider
 	}
 }
 
+// FIXME: ServiceOptions contains ServerOptions?
+// Not ServerOptions contains ServiceOptions?
+// we need to find a way to fix it.
 type ServiceOptions struct {
 	Application *global.ApplicationConfig
 	Provider    *global.ProviderConfig
@@ -825,8 +852,8 @@ func WithTag(tag string) ServiceOption {
 	}
 }
 
-func WithProtocol(opts ...protocol.Option) ServiceOption {
-	proOpts := protocol.NewOptions(opts...)
+func WithProtocol(opts ...protocol.ServerOption) ServiceOption {
+	proOpts := protocol.NewServerOptions(opts...)
 
 	return func(opts *ServiceOptions) {
 		if opts.Protocols == nil {
