@@ -40,9 +40,7 @@ type Server struct {
 	mux      *http.ServeMux
 	handlers map[string]*Handler
 	httpSrv  *http.Server
-
-	http3Enable bool
-	http3Srv    *http3.Server
+	http3Srv *http3.Server
 }
 
 func (s *Server) RegisterUnaryHandler(
@@ -175,58 +173,88 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	handler.ServeHTTP(w, r)
 }
 
-func (s *Server) Run() error {
+func (s *Server) Run(http3Enable bool) error {
+	if http3Enable {
+		return s.startHttp3()
+	}
+	return s.startHttp2()
+}
+
+func (s *Server) startHttp2() error {
+	logger.Debug("Triple HTTP/2 server starting")
 	s.httpSrv.Handler = h2c.NewHandler(s, &http2.Server{})
+
+	if s.httpSrv.TLSConfig != nil {
+		return s.httpSrv.ListenAndServeTLS("", "")
+	}
+	return s.httpSrv.ListenAndServe()
+}
+
+func (s *Server) startHttp3() error {
+	logger.Debug("Triple HTTP/3 server starting")
 	// TODO: Find an ideal way to initialize the http3 server handler.
 	s.http3Srv.Handler = s.mux
 
-	var err error
-	// TODO: Find an ideal way to separate the logic of starting httpSrv and http3Srv.
-	if !s.http3Enable {
-		if s.httpSrv.TLSConfig != nil {
-			// TODO: Find an ideal way to start server with TLSConfig.
-			err = s.httpSrv.ListenAndServeTLS("", "")
-		} else {
-			err = s.httpSrv.ListenAndServe()
-		}
-	} else {
-		// Even if the ListenAndServeTLS function is not explicitly invoked,
-		// Triple HTTP/3 server will mandate the use of the pre-configured TLSConfig.
-		err = s.http3Srv.ListenAndServe()
-		logger.Debug("triple HTTP/3 server start")
-	}
-
-	if err != nil {
-		return err
-	}
-	return nil
+	return s.http3Srv.ListenAndServe()
 }
 
 // TODO: Find an ideal way to set TLSConfig.
-func (s *Server) SetTLSConfig(c *tls.Config) {
-	s.httpSrv.TLSConfig = c
-	s.http3Srv.TLSConfig = c
-}
-
-func (s *Server) SetHttp3Enable(enable bool) {
-	s.http3Enable = enable
-}
-
-// TODO: Consider http3 server stop.
-func (s *Server) Stop() error {
-	return s.httpSrv.Close()
-}
-
-// TODO: Consider http3 server graceful stop.
-func (s *Server) GracefulStop(ctx context.Context) error {
-	return s.httpSrv.Shutdown(ctx)
-}
-
-func NewServer(addr string) *Server {
-	return &Server{
-		mux:      http.NewServeMux(),
-		handlers: make(map[string]*Handler),
-		httpSrv:  &http.Server{Addr: addr},
-		http3Srv: &http3.Server{Addr: addr},
+func (s *Server) SetTLSConfig(c *tls.Config, http3Enable bool) {
+	if !http3Enable {
+		s.httpSrv.TLSConfig = c
+	} else {
+		// Adapt and enhance a generic tls.Config object into a configuration
+		// specifically for HTTP/3 services.
+		// ref: https://quic-go.net/docs/http3/server/#setting-up-a-http3server
+		s.http3Srv.TLSConfig = http3.ConfigureTLSConfig(c)
 	}
+}
+
+func (s *Server) Stop() error {
+	var err error
+
+	if s.httpSrv != nil {
+		err = s.httpSrv.Close()
+	}
+
+	if s.http3Srv != nil {
+		err = s.http3Srv.Close()
+	}
+
+	return err
+}
+
+func (s *Server) GracefulStop(ctx context.Context) error {
+	var err error
+
+	if s.httpSrv != nil {
+		err = s.httpSrv.Shutdown(ctx)
+	}
+
+	// FIXME: There is something wrong when http3 work with GracefulStop.
+	if s.http3Srv != nil {
+		err = s.http3Srv.Shutdown(ctx)
+	}
+
+	return err
+}
+
+func NewServer(addr string, http3Enable bool) *Server {
+	var srv *Server
+
+	if !http3Enable {
+		srv = &Server{
+			mux:      http.NewServeMux(),
+			handlers: make(map[string]*Handler),
+			httpSrv:  &http.Server{Addr: addr},
+		}
+	} else {
+		srv = &Server{
+			mux:      http.NewServeMux(),
+			handlers: make(map[string]*Handler),
+			http3Srv: &http3.Server{Addr: addr},
+		}
+	}
+
+	return srv
 }

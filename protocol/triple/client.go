@@ -213,9 +213,9 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		logger.Errorf("genKeepAliveOpts err: %v", genKeepAliveOptsErr)
 		return nil, genKeepAliveOptsErr
 	}
-
 	cliOpts = append(cliOpts, cliKeepAliveOpts...)
 
+	// handle http transport of triple protocol
 	var transport http.RoundTripper
 	callType := url.GetParam(constant.CallHTTPTypeKey, constant.CallHTTP2)
 

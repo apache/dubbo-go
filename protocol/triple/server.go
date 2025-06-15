@@ -73,8 +73,21 @@ func NewServer(cfg *global.TripleConfig) *Server {
 func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
 	url := invoker.GetURL()
 	addr := url.Location
+
+	var tripleConf *global.TripleConfig
+
+	tripleConfRaw, ok := url.GetAttribute(constant.TripleConfigKey)
+	if ok {
+		tripleConf = tripleConfRaw.(*global.TripleConfig)
+	}
+
+	var http3Enable bool
+	if tripleConf != nil && tripleConf.Http3 != nil {
+		http3Enable = tripleConf.Http3.Enable
+	}
+
 	// initialize tri.Server
-	s.triServer = tri.NewServer(addr)
+	s.triServer = tri.NewServer(addr, http3Enable)
 
 	serialization := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	switch serialization {
@@ -106,7 +119,7 @@ func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
 			logger.Errorf("TRIPLE Server initialized the TLSConfig configuration failed. err: %v", err)
 			return
 		}
-		s.triServer.SetTLSConfig(cfg)
+		s.triServer.SetTLSConfig(cfg, http3Enable)
 		logger.Infof("TRIPLE Server initialized the TLSConfig configuration")
 	}
 
@@ -120,20 +133,11 @@ func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
 		service, _ = url.GetAttribute(constant.RpcServiceKey)
 	}
 
-	var tripleConf *global.TripleConfig
-
-	tripleConfRaw, ok := url.GetAttribute(constant.TripleConfigKey)
-	if ok {
-		tripleConf = tripleConfRaw.(*global.TripleConfig)
-	}
-
-	if tripleConf != nil && tripleConf.Http3 != nil {
-		s.triServer.SetHttp3Enable(tripleConf.Http3.Enable)
-	}
-
 	hanOpts := getHanOpts(url, tripleConf)
+
 	//Set expected codec name from serviceinfo
 	hanOpts = append(hanOpts, tri.WithExpectedCodecName(serialization))
+
 	intfName := url.Interface()
 	if info != nil {
 		// new triple idl mode
@@ -151,7 +155,7 @@ func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
 	internal.ReflectionRegister(s)
 
 	go func() {
-		if runErr := s.triServer.Run(); runErr != nil {
+		if runErr := s.triServer.Run(http3Enable); runErr != nil {
 			logger.Errorf("server serve failed with err: %v", runErr)
 		}
 	}()
@@ -209,7 +213,7 @@ func getHanOpts(url *common.URL, tripleConf *global.TripleConfig) (hanOpts []tri
 	}
 
 	if tripleConf.MaxServerRecvMsgSize != "" {
-		logger.Warnf("MaxServerRecvMsgSize: %v", tripleConf.MaxServerRecvMsgSize)
+		logger.Debugf("MaxServerRecvMsgSize: %v", tripleConf.MaxServerRecvMsgSize)
 		if recvMsgSize, convertErr := humanize.ParseBytes(tripleConf.MaxServerRecvMsgSize); convertErr == nil && recvMsgSize != 0 {
 			maxServerRecvMsgSize = int(recvMsgSize)
 		}
@@ -217,7 +221,7 @@ func getHanOpts(url *common.URL, tripleConf *global.TripleConfig) (hanOpts []tri
 	}
 
 	if tripleConf.MaxServerSendMsgSize != "" {
-		logger.Warnf("MaxServerSendMsgSize: %v", tripleConf.MaxServerSendMsgSize)
+		logger.Debugf("MaxServerSendMsgSize: %v", tripleConf.MaxServerSendMsgSize)
 		if sendMsgSize, convertErr := humanize.ParseBytes(tripleConf.MaxServerSendMsgSize); err == convertErr && sendMsgSize != 0 {
 			maxServerSendMsgSize = int(sendMsgSize)
 		}
