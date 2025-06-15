@@ -35,6 +35,8 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"golang.org/x/net/http2"
+
+	"github.com/quic-go/quic-go/http3"
 )
 
 import (
@@ -198,7 +200,15 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		}
 	}
 
-	cliKeepAliveOpts, keepAliveInterval, keepAliveTimeout, genKeepAliveOptsErr := genKeepAliveOpts(url)
+	var tripleConf *global.TripleConfig
+
+	tripleConfRaw, ok := url.GetAttribute(constant.TripleConfigKey)
+	if ok {
+		tripleConf = tripleConfRaw.(*global.TripleConfig)
+	}
+
+	// handle keepalive options
+	cliKeepAliveOpts, keepAliveInterval, keepAliveTimeout, genKeepAliveOptsErr := genKeepAliveOpts(url, tripleConf)
 	if genKeepAliveOptsErr != nil {
 		logger.Errorf("genKeepAliveOpts err: %v", genKeepAliveOptsErr)
 		return nil, genKeepAliveOptsErr
@@ -208,6 +218,11 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 
 	var transport http.RoundTripper
 	callType := url.GetParam(constant.CallHTTPTypeKey, constant.CallHTTP2)
+
+	if tripleConf != nil && tripleConf.Http3 != nil && tripleConf.Http3.Enable {
+		callType = constant.CallHTTP3
+	}
+
 	switch callType {
 	case constant.CallHTTP:
 		transport = &http.Transport{
@@ -229,6 +244,20 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 				PingTimeout:     keepAliveTimeout,
 			}
 		}
+	case constant.CallHTTP3:
+		// TODO: Enrich the http3 transport config for triple protocol.
+		if !tlsFlag {
+			transport = &http3.Transport{
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: true,
+				},
+			}
+		} else {
+			transport = &http3.Transport{
+				TLSClientConfig: cfg,
+			}
+		}
+		logger.Infof("Triple http3 client transport init successfully")
 	default:
 		panic(fmt.Sprintf("Unsupported callType: %s", callType))
 	}
@@ -282,7 +311,7 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	}, nil
 }
 
-func genKeepAliveOpts(url *common.URL) ([]tri.ClientOption, time.Duration, time.Duration, error) {
+func genKeepAliveOpts(url *common.URL, tripleConf *global.TripleConfig) ([]tri.ClientOption, time.Duration, time.Duration, error) {
 	var cliKeepAliveOpts []tri.ClientOption
 
 	// set max send and recv msg size
@@ -303,26 +332,22 @@ func genKeepAliveOpts(url *common.URL) ([]tri.ClientOption, time.Duration, time.
 	keepAliveInterval := url.GetParamDuration(constant.KeepAliveInterval, constant.DefaultKeepAliveInterval)
 	keepAliveTimeout := url.GetParamDuration(constant.KeepAliveTimeout, constant.DefaultKeepAliveTimeout)
 
-	tripleConfRaw, ok := url.GetAttribute(constant.TripleConfigKey)
-	if ok {
-		var parseErr error
-		tripleConf := tripleConfRaw.(*global.TripleConfig)
+	if tripleConf == nil {
+		return cliKeepAliveOpts, keepAliveInterval, keepAliveTimeout, nil
+	}
 
-		if tripleConf == nil {
-			return cliKeepAliveOpts, keepAliveInterval, keepAliveTimeout, nil
-		}
+	var parseErr error
 
-		if tripleConf.KeepAliveInterval != "" {
-			keepAliveInterval, parseErr = time.ParseDuration(tripleConf.KeepAliveInterval)
-			if parseErr != nil {
-				return nil, 0, 0, parseErr
-			}
+	if tripleConf.KeepAliveInterval != "" {
+		keepAliveInterval, parseErr = time.ParseDuration(tripleConf.KeepAliveInterval)
+		if parseErr != nil {
+			return nil, 0, 0, parseErr
 		}
-		if tripleConf.KeepAliveTimeout != "" {
-			keepAliveTimeout, parseErr = time.ParseDuration(tripleConf.KeepAliveTimeout)
-			if parseErr != nil {
-				return nil, 0, 0, parseErr
-			}
+	}
+	if tripleConf.KeepAliveTimeout != "" {
+		keepAliveTimeout, parseErr = time.ParseDuration(tripleConf.KeepAliveTimeout)
+		if parseErr != nil {
+			return nil, 0, 0, parseErr
 		}
 	}
 
