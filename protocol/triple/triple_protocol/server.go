@@ -31,6 +31,8 @@ import (
 
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
+
+	"github.com/quic-go/quic-go/http3"
 )
 
 type Server struct {
@@ -38,6 +40,8 @@ type Server struct {
 	mux      *http.ServeMux
 	handlers map[string]*Handler
 	httpSrv  *http.Server
+
+	http3Srv *http3.Server
 }
 
 func (s *Server) RegisterUnaryHandler(
@@ -163,6 +167,7 @@ func (s *Server) RegisterCompatStreamHandler(
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	handler, pattern := s.mux.Handler(r)
 	if pattern == "" {
+		// TODO: Delete this useless log.
 		logger.Warnf("404: didn't register this method - %s\n", r.URL.Path)
 	}
 
@@ -171,25 +176,41 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) Run() error {
 	s.httpSrv.Handler = h2c.NewHandler(s, &http2.Server{})
+	// TODO: Find an ideal way to initialize the http3 server handler.
+	s.http3Srv.Handler = s.mux
 
 	var err error
-	if s.httpSrv.TLSConfig != nil {
-		// TODO: Maybe we should be able to find a better way to start TLS.
-		err = s.httpSrv.ListenAndServeTLS("", "")
+	// TODO: Find an ideal way to separate the logic of starting httpSrv and http3Srv.
+	if false {
+		if s.httpSrv.TLSConfig != nil {
+			// TODO: Find an ideal way to start server with TLSConfig.
+			err = s.httpSrv.ListenAndServeTLS("", "")
+		} else {
+			err = s.httpSrv.ListenAndServe()
+		}
 	} else {
-		err = s.httpSrv.ListenAndServe()
+		logger.Debug("@@triple HTTP/3 server start@@")
+		err = s.http3Srv.ListenAndServe()
 	}
-	return err
+
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
+// TODO: Find an ideal way to set TLSConfig.
 func (s *Server) SetTLSConfig(c *tls.Config) {
 	s.httpSrv.TLSConfig = c
+	s.http3Srv.TLSConfig = c
 }
 
+// TODO: Consider http3 server stop.
 func (s *Server) Stop() error {
 	return s.httpSrv.Close()
 }
 
+// TODO: Consider http3 server graceful stop.
 func (s *Server) GracefulStop(ctx context.Context) error {
 	return s.httpSrv.Shutdown(ctx)
 }
@@ -199,5 +220,6 @@ func NewServer(addr string) *Server {
 		mux:      http.NewServeMux(),
 		handlers: make(map[string]*Handler),
 		httpSrv:  &http.Server{Addr: addr},
+		http3Srv: &http3.Server{Addr: addr},
 	}
 }
