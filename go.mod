@@ -22,7 +22,7 @@ require (
 	github.com/go-playground/validator/v10 v10.12.0
 	github.com/go-resty/resty/v2 v2.7.0
 	github.com/golang/mock v1.6.0
-	github.com/golang/protobuf v1.5.3
+	github.com/golang/protobuf v1.5.4
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.3.1
 	github.com/grpc-ecosystem/grpc-opentracing v0.0.0-20180507213350-8e809c8a8645
