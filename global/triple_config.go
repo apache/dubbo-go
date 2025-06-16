@@ -18,6 +18,8 @@
 package global
 
 // TODO: Find an ideal way to separate the triple config of server and client.
+
+// TripleConfig represents the config of triple protocol
 type TripleConfig struct {
 	//
 	// for server

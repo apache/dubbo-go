@@ -17,6 +17,7 @@
 
 package config
 
+// TripleConfig represents the config of triple protocol
 type TripleConfig struct {
 	// MaxServerSendMsgSize max size of server send message, 1mb=1000kb=1000000b 1mib=1024kb=1048576b.
 	// more detail to see https://pkg.go.dev/github.com/dustin/go-humanize#pkg-constants

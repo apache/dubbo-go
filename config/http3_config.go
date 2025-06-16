@@ -17,7 +17,7 @@
 
 package config
 
-// http3 config for triple protocol
+// Http3Config represents the config of http3
 type Http3Config struct {
 	// Whether to enable HTTP/3 support.
 	// The default value is false.
