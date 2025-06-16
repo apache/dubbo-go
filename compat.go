@@ -288,6 +288,73 @@ func compatConsumerConfig(c *global.ConsumerConfig) *config.ConsumerConfig {
 		FilterConf:                     c.FilterConf,
 		MaxWaitTimeForServiceDiscovery: c.MaxWaitTimeForServiceDiscovery,
 		MeshEnabled:                    c.MeshEnabled,
+		References:                     compatReferences(c.References),
+	}
+}
+
+func compatReferences(c map[string]*global.ReferenceConfig) map[string]*config.ReferenceConfig {
+	refs := make(map[string]*config.ReferenceConfig, len(c))
+	for name, ref := range c {
+		refs[name] = &config.ReferenceConfig{
+			InterfaceName:        ref.InterfaceName,
+			Check:                ref.Check,
+			URL:                  ref.URL,
+			Filter:               ref.Filter,
+			Protocol:             ref.Protocol,
+			RegistryIDs:          ref.RegistryIDs,
+			Cluster:              ref.Cluster,
+			Loadbalance:          ref.Loadbalance,
+			Retries:              ref.Retries,
+			Group:                ref.Group,
+			Version:              ref.Version,
+			Serialization:        ref.Serialization,
+			ProvidedBy:           ref.ProvidedBy,
+			MethodsConfig:        compatMethod(ref.MethodsConfig),
+			ProtocolClientConfig: compatProtocolClientConfig(ref.ProtocolClientConfig),
+			Async:                ref.Async,
+			Params:               ref.Params,
+			Generic:              ref.Generic,
+			Sticky:               ref.Sticky,
+			RequestTimeout:       ref.RequestTimeout,
+			ForceTag:             ref.ForceTag,
+			TracingKey:           ref.TracingKey,
+			MeshProviderPort:     ref.MeshProviderPort,
+		}
+	}
+	return refs
+}
+
+// TODO: merge compatGlobalMethod() and compatGlobalMethodConfig
+func compatMethod(m []*global.MethodConfig) []*config.MethodConfig {
+	methods := make([]*config.MethodConfig, 0, len(m))
+	for _, method := range m {
+		methods = append(methods, &config.MethodConfig{
+			InterfaceId:                 method.InterfaceId,
+			InterfaceName:               method.InterfaceName,
+			Name:                        method.Name,
+			Retries:                     method.Retries,
+			LoadBalance:                 method.LoadBalance,
+			Weight:                      method.Weight,
+			TpsLimitInterval:            method.TpsLimitInterval,
+			TpsLimitRate:                method.TpsLimitRate,
+			TpsLimitStrategy:            method.TpsLimitStrategy,
+			ExecuteLimit:                method.ExecuteLimit,
+			ExecuteLimitRejectedHandler: method.ExecuteLimitRejectedHandler,
+			Sticky:                      method.Sticky,
+			RequestTimeout:              method.RequestTimeout,
+		})
+	}
+	return methods
+}
+
+// just for compat
+func compatProtocolClientConfig(c *global.ProtocolClientConfig) *config.ProtocolClientConfig {
+	if c == nil {
+		return nil
+	}
+	return &config.ProtocolClientConfig{
+		Name:         c.Name,
+		TripleConfig: compatTripleConfig(c.TripleConfig),
 	}
 }
 
@@ -434,6 +501,7 @@ func compatInstanceOptions(cr *config.RootConfig, rc *InstanceOptions) {
 	if cr == nil {
 		return
 	}
+
 	proCompat := make(map[string]*global.ProtocolConfig)
 	for k, v := range cr.Protocols {
 		proCompat[k] = compatGlobalProtocolConfig(v)
@@ -482,10 +550,22 @@ func compatGlobalTripleConfig(c *config.TripleConfig) *global.TripleConfig {
 		return nil
 	}
 	return &global.TripleConfig{
-		KeepAliveInterval:    c.KeepAliveInterval,
-		KeepAliveTimeout:     c.KeepAliveTimeout,
+		KeepAliveInterval: c.KeepAliveInterval,
+		KeepAliveTimeout:  c.KeepAliveTimeout,
+		Http3:             compatGlobalHttp3Config(c.Http3),
+
 		MaxServerSendMsgSize: c.MaxServerSendMsgSize,
 		MaxServerRecvMsgSize: c.MaxServerRecvMsgSize,
+	}
+}
+
+// just for compat
+func compatGlobalHttp3Config(c *config.Http3Config) *global.Http3Config {
+	if c == nil {
+		return nil
+	}
+	return &global.Http3Config{
+		Enable: c.Enable,
 	}
 }
 
@@ -686,33 +766,35 @@ func compatGlobalReferences(c map[string]*config.ReferenceConfig) map[string]*gl
 	refs := make(map[string]*global.ReferenceConfig, len(c))
 	for name, ref := range c {
 		refs[name] = &global.ReferenceConfig{
-			InterfaceName:    ref.InterfaceName,
-			Check:            ref.Check,
-			URL:              ref.URL,
-			Filter:           ref.Filter,
-			Protocol:         ref.Protocol,
-			RegistryIDs:      ref.RegistryIDs,
-			Cluster:          ref.Cluster,
-			Loadbalance:      ref.Loadbalance,
-			Retries:          ref.Retries,
-			Group:            ref.Group,
-			Version:          ref.Version,
-			Serialization:    ref.Serialization,
-			ProvidedBy:       ref.ProvidedBy,
-			MethodsConfig:    compatGlobalMethod(ref.Methods),
-			Async:            ref.Async,
-			Params:           ref.Params,
-			Generic:          ref.Generic,
-			Sticky:           ref.Sticky,
-			RequestTimeout:   ref.RequestTimeout,
-			ForceTag:         ref.ForceTag,
-			TracingKey:       ref.TracingKey,
-			MeshProviderPort: ref.MeshProviderPort,
+			InterfaceName:        ref.InterfaceName,
+			Check:                ref.Check,
+			URL:                  ref.URL,
+			Filter:               ref.Filter,
+			Protocol:             ref.Protocol,
+			RegistryIDs:          ref.RegistryIDs,
+			Cluster:              ref.Cluster,
+			Loadbalance:          ref.Loadbalance,
+			Retries:              ref.Retries,
+			Group:                ref.Group,
+			Version:              ref.Version,
+			Serialization:        ref.Serialization,
+			ProvidedBy:           ref.ProvidedBy,
+			MethodsConfig:        compatGlobalMethod(ref.MethodsConfig),
+			ProtocolClientConfig: compatGlobalProtocolClientConfig(ref.ProtocolClientConfig),
+			Async:                ref.Async,
+			Params:               ref.Params,
+			Generic:              ref.Generic,
+			Sticky:               ref.Sticky,
+			RequestTimeout:       ref.RequestTimeout,
+			ForceTag:             ref.ForceTag,
+			TracingKey:           ref.TracingKey,
+			MeshProviderPort:     ref.MeshProviderPort,
 		}
 	}
 	return refs
 }
 
+// TODO: merge compatGlobalMethod() and compatGlobalMethodConfig
 func compatGlobalMethod(m []*config.MethodConfig) []*global.MethodConfig {
 	methods := make([]*global.MethodConfig, 0, len(m))
 	for _, method := range m {
@@ -733,6 +815,17 @@ func compatGlobalMethod(m []*config.MethodConfig) []*global.MethodConfig {
 		})
 	}
 	return methods
+}
+
+// just for compat
+func compatGlobalProtocolClientConfig(c *config.ProtocolClientConfig) *global.ProtocolClientConfig {
+	if c == nil {
+		return nil
+	}
+	return &global.ProtocolClientConfig{
+		Name:         c.Name,
+		TripleConfig: compatGlobalTripleConfig(c.TripleConfig),
+	}
 }
 
 func compatGlobalMetricConfig(c *config.MetricsConfig) *global.MetricsConfig {

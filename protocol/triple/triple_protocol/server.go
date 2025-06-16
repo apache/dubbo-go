@@ -192,8 +192,6 @@ func (s *Server) startHttp2(tlsConf *tls.Config) error {
 		TLSConfig: tlsConf,
 	}
 
-	logger.Debugf("TRIPLE HTTP/2 Server starting on %v", s.addr)
-
 	var err error
 
 	if s.httpSrv.TLSConfig != nil {
@@ -201,6 +199,8 @@ func (s *Server) startHttp2(tlsConf *tls.Config) error {
 	} else {
 		err = s.httpSrv.ListenAndServe()
 	}
+
+	logger.Debugf("TRIPLE HTTP/2 Server starting on %v", s.addr)
 
 	return err
 }

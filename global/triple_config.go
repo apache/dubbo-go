@@ -57,7 +57,7 @@ func (t *TripleConfig) Clone() *TripleConfig {
 	return &TripleConfig{
 		MaxServerSendMsgSize: t.MaxServerSendMsgSize,
 		MaxServerRecvMsgSize: t.MaxServerRecvMsgSize,
-		Http3:                t.Http3,
+		Http3:                t.Http3.Clone(),
 
 		KeepAliveInterval: t.KeepAliveInterval,
 		KeepAliveTimeout:  t.KeepAliveTimeout,
