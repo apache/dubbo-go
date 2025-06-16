@@ -269,7 +269,7 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 
 		logger.Infof("Triple http3 client transport init successfully")
 	default:
-		panic(fmt.Sprintf("Unsupported callType: %s", callProtocol))
+		panic(fmt.Sprintf("Unsupported callProtocol: %s", callProtocol))
 	}
 
 	httpClient := &http.Client{
