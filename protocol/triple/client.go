@@ -209,7 +209,7 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	}
 
 	// handle keepalive options
-	cliKeepAliveOpts, keepAliveInterval, keepAliveTimeout, genKeepAliveOptsErr := genKeepAliveOpts(url, tripleConf)
+	cliKeepAliveOpts, keepAliveInterval, keepAliveTimeout, genKeepAliveOptsErr := genKeepAliveOptions(url, tripleConf)
 	if genKeepAliveOptsErr != nil {
 		logger.Errorf("genKeepAliveOpts err: %v", genKeepAliveOptsErr)
 		return nil, genKeepAliveOptsErr
@@ -234,6 +234,7 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		}
 		cliOpts = append(cliOpts, tri.WithTriple())
 	case constant.CallHTTP2:
+		// TODO: Enrich the http2 transport config for triple protocol.
 		if tlsFlag {
 			transport = &http2.Transport{
 				TLSClientConfig: cfg,
@@ -331,7 +332,7 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	}, nil
 }
 
-func genKeepAliveOpts(url *common.URL, tripleConf *global.TripleConfig) ([]tri.ClientOption, time.Duration, time.Duration, error) {
+func genKeepAliveOptions(url *common.URL, tripleConf *global.TripleConfig) ([]tri.ClientOption, time.Duration, time.Duration, error) {
 	var cliKeepAliveOpts []tri.ClientOption
 
 	// set max send and recv msg size
