@@ -20,6 +20,7 @@ package triple_protocol
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"net/http"
 	"sync"
 )
@@ -170,13 +171,17 @@ func (s *Server) RegisterCompatStreamHandler(
 }
 
 func (s *Server) Run(callProtocol string, tlsConf *tls.Config) error {
+	// TODO: Refactor to support starting HTTP/2 and HTTP/3 servers simultaneously.
+	// The current switch logic is mutually exclusive. Future work should allow enabling
+	// both protocols, likely based on configuration, and run them concurrently.
 	switch callProtocol {
 	case constant.CallHTTP2:
 		return s.startHttp2(tlsConf)
 	case constant.CallHTTP3:
 		return s.startHttp3(tlsConf)
 	default:
-		panic("Unsupport http type, only support http2 or http3")
+		// Consider returning an error instead of panicking for better library design.
+		return fmt.Errorf("unsupported protocol: %s, only http2 or http3 are supported", callProtocol)
 	}
 }
 
