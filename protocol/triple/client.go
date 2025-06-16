@@ -252,30 +252,21 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 			}
 		}
 	case constant.CallHTTP3:
-		// TODO: Enrich the http3 transport config for triple protocol.
 		if !tlsFlag {
-			transport = &http3.Transport{
-				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: true,
-				},
-				QUICConfig: &quic.Config{
-					// ref: https://quic-go.net/docs/quic/connection/#keeping-a-connection-alive
-					KeepAlivePeriod: keepAliveInterval,
-					// ref: https://quic-go.net/docs/quic/connection/#idle-timeout
-					MaxIdleTimeout: keepAliveTimeout,
-				},
-			}
-		} else {
-			transport = &http3.Transport{
-				TLSClientConfig: cfg,
-				QUICConfig: &quic.Config{
-					// ref: https://quic-go.net/docs/quic/connection/#keeping-a-connection-alive
-					KeepAlivePeriod: keepAliveInterval,
-					// ref: https://quic-go.net/docs/quic/connection/#idle-timeout
-					MaxIdleTimeout: keepAliveTimeout,
-				},
-			}
+			panic("TRIPLE http3 client must have TLS config, but TLS config is nil")
 		}
+
+		// TODO: Enrich the http3 transport config for triple protocol.
+		transport = &http3.Transport{
+			TLSClientConfig: cfg,
+			QUICConfig: &quic.Config{
+				// ref: https://quic-go.net/docs/quic/connection/#keeping-a-connection-alive
+				KeepAlivePeriod: keepAliveInterval,
+				// ref: https://quic-go.net/docs/quic/connection/#idle-timeout
+				MaxIdleTimeout: keepAliveTimeout,
+			},
+		}
+
 		logger.Infof("Triple http3 client transport init successfully")
 	default:
 		panic(fmt.Sprintf("Unsupported callType: %s", callProtocol))
