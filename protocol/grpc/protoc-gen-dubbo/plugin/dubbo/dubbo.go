@@ -24,8 +24,8 @@ import (
 )
 
 import (
-	pb "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/golang/protobuf/protoc-gen-go/generator"
+	pb "google.golang.org/protobuf/types/descriptorpb"
 )
 
 // Paths for packages used by code generated in this file,
