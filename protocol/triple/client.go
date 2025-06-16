@@ -218,13 +218,13 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 
 	// handle http transport of triple protocol
 	var transport http.RoundTripper
-	callType := url.GetParam(constant.CallHTTPTypeKey, constant.CallHTTP2)
+	callProtocol := url.GetParam(constant.CallHTTPProtocolKey, constant.CallHTTP2)
 
 	if tripleConf != nil && tripleConf.Http3 != nil && tripleConf.Http3.Enable {
-		callType = constant.CallHTTP3
+		callProtocol = constant.CallHTTP3
 	}
 
-	switch callType {
+	switch callProtocol {
 	// This case might be for backward compatibility,
 	// it's not useful for the Triple protocol, HTTP/1 lacks trailer functionality.
 	// Triple protocol only supports HTTP/2 and HTTP/3.
@@ -278,7 +278,7 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		}
 		logger.Infof("Triple http3 client transport init successfully")
 	default:
-		panic(fmt.Sprintf("Unsupported callType: %s", callType))
+		panic(fmt.Sprintf("Unsupported callType: %s", callProtocol))
 	}
 
 	httpClient := &http.Client{
