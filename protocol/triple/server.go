@@ -82,9 +82,12 @@ func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
 		tripleConf = tripleConfRaw.(*global.TripleConfig)
 	}
 
-	var httpType string
+	var callProtocol string
 	if tripleConf != nil && tripleConf.Http3 != nil && tripleConf.Http3.Enable {
-		httpType = constant.CallHTTP3
+		callProtocol = constant.CallHTTP3
+	} else {
+		// HTTP default type is HTTP/2.
+		callProtocol = constant.CallHTTP2
 	}
 
 	// initialize tri.Server
@@ -157,7 +160,7 @@ func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
 	internal.ReflectionRegister(s)
 
 	go func() {
-		if runErr := s.triServer.Run(httpType, tlsConf); runErr != nil {
+		if runErr := s.triServer.Run(callProtocol, tlsConf); runErr != nil {
 			logger.Errorf("server serve failed with err: %v", runErr)
 		}
 	}()

@@ -169,8 +169,8 @@ func (s *Server) RegisterCompatStreamHandler(
 	return nil
 }
 
-func (s *Server) Run(httpType string, tlsConf *tls.Config) error {
-	switch httpType {
+func (s *Server) Run(callProtocol string, tlsConf *tls.Config) error {
+	switch callProtocol {
 	case constant.CallHTTP2:
 		return s.startHttp2(tlsConf)
 	case constant.CallHTTP3:
