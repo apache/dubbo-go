@@ -32,6 +32,7 @@ import (
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 
+	"github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/http3"
 )
 
@@ -41,6 +42,7 @@ import (
 
 type Server struct {
 	mu       sync.Mutex
+	addr     string
 	mux      *http.ServeMux
 	handlers map[string]*Handler
 	httpSrv  *http.Server
@@ -167,46 +169,56 @@ func (s *Server) RegisterCompatStreamHandler(
 	return nil
 }
 
-func (s *Server) Run(httpType string) error {
+func (s *Server) Run(httpType string, tlsConf *tls.Config) error {
 	switch httpType {
 	case constant.CallHTTP2:
-		return s.startHttp2()
+		return s.startHttp2(tlsConf)
 	case constant.CallHTTP3:
-		return s.startHttp3()
+		return s.startHttp3(tlsConf)
 	default:
 		panic("Unsupport http type, only support http2 or http3")
 	}
 }
 
-func (s *Server) startHttp2() error {
-	logger.Debug("Triple HTTP/2 server starting")
-	s.httpSrv.Handler = h2c.NewHandler(s.mux, &http2.Server{})
+func (s *Server) startHttp2(tlsConf *tls.Config) error {
+	s.httpSrv = &http.Server{
+		Addr:      s.addr,
+		Handler:   h2c.NewHandler(s.mux, &http2.Server{}),
+		TLSConfig: tlsConf,
+	}
+
+	logger.Debugf("TRIPLE HTTP/2 Server starting on %v", s.addr)
+
+	var err error
 
 	if s.httpSrv.TLSConfig != nil {
-		return s.httpSrv.ListenAndServeTLS("", "")
+		err = s.httpSrv.ListenAndServeTLS("", "")
+	} else {
+		err = s.httpSrv.ListenAndServe()
 	}
-	return s.httpSrv.ListenAndServe()
+
+	return err
 }
 
-func (s *Server) startHttp3() error {
-	logger.Debug("Triple HTTP/3 server starting")
-	// TODO: Find an ideal way to initialize the http3 server handler.
-	s.http3Srv.Handler = s.mux
+func (s *Server) startHttp3(tlsConf *tls.Config) error {
+	if tlsConf == nil {
+		panic("TRIPLE HTTP/3 Server must have TLS config, but TLS config is nil")
+	}
 
-	return s.http3Srv.ListenAndServe()
-}
-
-// TODO: Find an ideal way to set TLSConfig.
-func (s *Server) SetTLSConfig(c *tls.Config, httpType string) {
-	switch httpType {
-	case constant.CallHTTP2:
-		s.httpSrv.TLSConfig = c
-	case constant.CallHTTP3:
+	s.http3Srv = &http3.Server{
+		Addr:    s.addr,
+		Handler: s.mux,
 		// Adapt and enhance a generic tls.Config object into a configuration
 		// specifically for HTTP/3 services.
 		// ref: https://quic-go.net/docs/http3/server/#setting-up-a-http3server
-		s.http3Srv.TLSConfig = http3.ConfigureTLSConfig(c)
+		TLSConfig: http3.ConfigureTLSConfig(tlsConf),
+		// TODO: Detailed QUIC configuration.
+		QUICConfig: &quic.Config{},
 	}
+
+	logger.Debugf("TRIPLE HTTP/3 Server starting on %v", s.addr)
+
+	return s.http3Srv.ListenAndServe()
 }
 
 func (s *Server) Stop() error {
@@ -233,6 +245,7 @@ func (s *Server) GracefulStop(ctx context.Context) error {
 	// TODO: triple http3 GracefulStop
 
 	// FIXME: There is something wrong when http3 work with GracefulStop.
+	//
 	// if s.http3Srv != nil {
 	// 	err = s.http3Srv.Shutdown(ctx)
 	// }
@@ -240,23 +253,10 @@ func (s *Server) GracefulStop(ctx context.Context) error {
 	return err
 }
 
-func NewServer(addr string, httpType string) *Server {
-	var srv *Server
-
-	switch httpType {
-	case constant.CallHTTP2:
-		srv = &Server{
-			mux:      http.NewServeMux(),
-			handlers: make(map[string]*Handler),
-			httpSrv:  &http.Server{Addr: addr},
-		}
-	case constant.CallHTTP3:
-		srv = &Server{
-			mux:      http.NewServeMux(),
-			handlers: make(map[string]*Handler),
-			http3Srv: &http3.Server{Addr: addr},
-		}
+func NewServer(addr string) *Server {
+	return &Server{
+		mux:      http.NewServeMux(),
+		addr:     addr,
+		handlers: make(map[string]*Handler),
 	}
-
-	return srv
 }

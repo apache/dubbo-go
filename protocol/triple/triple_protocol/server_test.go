@@ -27,10 +27,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-)
-
 func TestServer_RegisterMuxHandle(t *testing.T) {
 	tests := []struct {
 		desc         string
@@ -81,7 +77,7 @@ func TestServer_RegisterMuxHandle(t *testing.T) {
 		},
 	}
 
-	srv := NewServer("127.0.0.1:20000", constant.CallHTTP2)
+	srv := NewServer("127.0.0.1:20000")
 	for _, test := range tests {
 		err := srv.RegisterUnaryHandler(test.path, nil, nil)
 		assert.Nil(t, err)

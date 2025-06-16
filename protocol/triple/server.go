@@ -19,6 +19,7 @@ package triple
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"reflect"
@@ -87,7 +88,7 @@ func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
 	}
 
 	// initialize tri.Server
-	s.triServer = tri.NewServer(addr, httpType)
+	s.triServer = tri.NewServer(addr)
 
 	serialization := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	switch serialization {
@@ -102,24 +103,25 @@ func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
 
 	// TODO: move tls config to handleService
 
-	var tlsConf *global.TLSConfig
+	var globalTlsConf *global.TLSConfig
+	var tlsConf *tls.Config
+	var err error
 
 	// handle tls
 	tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey)
 	if ok {
-		tlsConf, ok = tlsConfRaw.(*global.TLSConfig)
+		globalTlsConf, ok = tlsConfRaw.(*global.TLSConfig)
 		if !ok {
 			logger.Errorf("TRIPLE Server initialized the TLSConfig configuration failed")
 			return
 		}
 	}
-	if dubbotls.IsServerTLSValid(tlsConf) {
-		cfg, err := dubbotls.GetServerTlSConfig(tlsConf)
+	if dubbotls.IsServerTLSValid(globalTlsConf) {
+		tlsConf, err = dubbotls.GetServerTlSConfig(globalTlsConf)
 		if err != nil {
 			logger.Errorf("TRIPLE Server initialized the TLSConfig configuration failed. err: %v", err)
 			return
 		}
-		s.triServer.SetTLSConfig(cfg, httpType)
 		logger.Infof("TRIPLE Server initialized the TLSConfig configuration")
 	}
 
@@ -155,7 +157,7 @@ func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
 	internal.ReflectionRegister(s)
 
 	go func() {
-		if runErr := s.triServer.Run(httpType); runErr != nil {
+		if runErr := s.triServer.Run(httpType, tlsConf); runErr != nil {
 			logger.Errorf("server serve failed with err: %v", runErr)
 		}
 	}()
