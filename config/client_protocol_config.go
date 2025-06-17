@@ -17,8 +17,6 @@
 
 package config
 
-// TODO: find a better name replace ClientProtocolConfig
-//
 // ClientProtocolConfig represents the config of client's protocol
 type ClientProtocolConfig struct {
 	// TODO: maybe we could use this field

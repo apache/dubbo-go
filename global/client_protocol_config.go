@@ -21,7 +21,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
-// TODO: find a better name replace ClientProtocolConfig
+// ClientProtocolConfig represents the config of client's protocol
 type ClientProtocolConfig struct {
 	// TODO: maybe we could use this field
 	Name string `yaml:"name" json:"name,omitempty" property:"name"`

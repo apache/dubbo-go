@@ -42,6 +42,7 @@ type TripleConfig struct {
 	KeepAliveTimeout  string `yaml:"keep-alive-timeout" json:"keep-alive-timeout,omitempty" property:"keep-alive-timeout"`
 }
 
+// DefaultTripleConfig returns a default TripleConfig instance.
 func DefaultTripleConfig() *TripleConfig {
 	return &TripleConfig{
 		Http3: DefaultHttp3Config(),

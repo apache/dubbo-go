@@ -33,11 +33,12 @@ type Http3Config struct {
 	// negotiation bool
 }
 
+// DefaultHttp3Config returns a default Http3Config instance.
 func DefaultHttp3Config() *Http3Config {
 	return &Http3Config{}
 }
 
-// Clone a new TripleConfig
+// Clone a new Http3Config
 func (t *Http3Config) Clone() *Http3Config {
 	if t == nil {
 		return nil
