@@ -243,17 +243,18 @@ func (s *Server) Stop() error {
 func (s *Server) GracefulStop(ctx context.Context) error {
 	var err error
 
+	// TODO: use waitgroup to handle GracefulStop.
+
 	if s.httpSrv != nil {
 		err = s.httpSrv.Shutdown(ctx)
 	}
 
-	// TODO: triple http3 GracefulStop
-
 	// FIXME: There is something wrong when http3 work with GracefulStop.
-	//
-	// if s.http3Srv != nil {
-	// 	err = s.http3Srv.Shutdown(ctx)
-	// }
+	// http3's GracefulStop is very slow.
+
+	if s.http3Srv != nil {
+		err = s.http3Srv.Shutdown(ctx)
+	}
 
 	return err
 }
