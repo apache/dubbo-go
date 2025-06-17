@@ -29,15 +29,15 @@ type ClientProtocolConfig struct {
 	TripleConfig *TripleConfig `yaml:"triple" json:"triple,omitempty" property:"triple"`
 }
 
-// DefaultProtocolConfig returns a default ProtocolConfig instance.
-func DefaultProtocolClientConfig() *ClientProtocolConfig {
+// DefaultClientProtocolConfig returns a default ClientProtocolConfig instance.
+func DefaultClientProtocolConfig() *ClientProtocolConfig {
 	return &ClientProtocolConfig{
 		Name:         constant.TriProtocol,
 		TripleConfig: DefaultTripleConfig(),
 	}
 }
 
-// Clone a new ProtocolConfig
+// Clone a new ClientProtocolConfig
 func (c *ClientProtocolConfig) Clone() *ClientProtocolConfig {
 	if c == nil {
 		return nil

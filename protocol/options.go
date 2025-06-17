@@ -126,7 +126,7 @@ type ClientOptions struct {
 }
 
 func defaultClientOptions() *ClientOptions {
-	return &ClientOptions{ProtocolClient: global.DefaultProtocolClientConfig()}
+	return &ClientOptions{ProtocolClient: global.DefaultClientProtocolConfig()}
 }
 
 func NewClientOptions(opts ...ClientOption) *ClientOptions {

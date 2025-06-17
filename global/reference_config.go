@@ -65,7 +65,7 @@ func DefaultReferenceConfig() *ReferenceConfig {
 		// use Triple protocol by default
 		//Protocol: "tri",
 		MethodsConfig:        make([]*MethodConfig, 0, 8),
-		ProtocolClientConfig: DefaultProtocolClientConfig(),
+		ProtocolClientConfig: DefaultClientProtocolConfig(),
 		//Params:   make(map[string]string, 8),
 	}
 }
