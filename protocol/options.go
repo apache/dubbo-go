@@ -120,7 +120,7 @@ func NewServerOptions(opts ...ServerOption) *ServerOptions {
 }
 
 type ClientOptions struct {
-	ProtocolClient *global.ProtocolClientConfig
+	ProtocolClient *global.ClientProtocolConfig
 
 	ID string
 }

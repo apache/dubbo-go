@@ -836,7 +836,7 @@ func WithClientProtocol(opts ...protocol.ClientOption) ClientOption {
 
 	return func(srvOpts *ClientOptions) {
 		if srvOpts.overallReference.ProtocolClientConfig == nil {
-			srvOpts.overallReference.ProtocolClientConfig = new(global.ProtocolClientConfig)
+			srvOpts.overallReference.ProtocolClientConfig = new(global.ClientProtocolConfig)
 		}
 		srvOpts.overallReference.ProtocolClientConfig = proOpts.ProtocolClient
 	}

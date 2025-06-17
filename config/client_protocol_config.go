@@ -17,10 +17,10 @@
 
 package config
 
-// TODO: find a better name replace ProtocolClientConfig
+// TODO: find a better name replace ClientProtocolConfig
 //
-// ProtocolClientConfig represents the config of client's protocol
-type ProtocolClientConfig struct {
+// ClientProtocolConfig represents the config of client's protocol
+type ClientProtocolConfig struct {
 	// TODO: maybe we could use this field
 	Name string `yaml:"name" json:"name,omitempty" property:"name"`
 

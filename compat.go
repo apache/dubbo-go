@@ -348,11 +348,11 @@ func compatMethod(m []*global.MethodConfig) []*config.MethodConfig {
 }
 
 // just for compat
-func compatProtocolClientConfig(c *global.ProtocolClientConfig) *config.ProtocolClientConfig {
+func compatProtocolClientConfig(c *global.ClientProtocolConfig) *config.ClientProtocolConfig {
 	if c == nil {
 		return nil
 	}
-	return &config.ProtocolClientConfig{
+	return &config.ClientProtocolConfig{
 		Name:         c.Name,
 		TripleConfig: compatTripleConfig(c.TripleConfig),
 	}
@@ -818,11 +818,11 @@ func compatGlobalMethod(m []*config.MethodConfig) []*global.MethodConfig {
 }
 
 // just for compat
-func compatGlobalProtocolClientConfig(c *config.ProtocolClientConfig) *global.ProtocolClientConfig {
+func compatGlobalProtocolClientConfig(c *config.ClientProtocolConfig) *global.ClientProtocolConfig {
 	if c == nil {
 		return nil
 	}
-	return &global.ProtocolClientConfig{
+	return &global.ClientProtocolConfig{
 		Name:         c.Name,
 		TripleConfig: compatGlobalTripleConfig(c.TripleConfig),
 	}

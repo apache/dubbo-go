@@ -48,7 +48,7 @@ type ReferenceConfig struct {
 	// config
 	MethodsConfig []*MethodConfig `yaml:"methods"  json:"methods,omitempty" property:"methods"`
 	// TODO: rename protocol_config to protocol when publish 4.0.0.
-	ProtocolClientConfig *ProtocolClientConfig `yaml:"protocol_config" json:"protocol_config,omitempty" property:"protocol_config"`
+	ProtocolClientConfig *ClientProtocolConfig `yaml:"protocol_config" json:"protocol_config,omitempty" property:"protocol_config"`
 
 	// TODO: Deprecated：use TripleConfig
 	// remove KeepAliveInterval and KeepAliveInterval in version 4.0.0
@@ -348,7 +348,7 @@ func WithReference_KeepAliveTimeout(timeout string) ReferenceOption {
 	}
 }
 
-func WithReference_ProtocolClientConfig(protocolClientConfig *ProtocolClientConfig) ReferenceOption {
+func WithReference_ProtocolClientConfig(protocolClientConfig *ClientProtocolConfig) ReferenceOption {
 	return func(cfg *ReferenceConfig) {
 		cfg.ProtocolClientConfig = protocolClientConfig.Clone()
 	}

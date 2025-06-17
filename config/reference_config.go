@@ -69,7 +69,7 @@ type ReferenceConfig struct {
 
 	MethodsConfig []*MethodConfig `yaml:"methods"  json:"methods,omitempty" property:"methods"`
 	// TODO: rename protocol_config to protocol when publish 4.0.0.
-	ProtocolClientConfig *ProtocolClientConfig `yaml:"protocol_config" json:"protocol_config,omitempty" property:"protocol_config"`
+	ProtocolClientConfig *ClientProtocolConfig `yaml:"protocol_config" json:"protocol_config,omitempty" property:"protocol_config"`
 
 	Async            bool              `yaml:"async"  json:"async,omitempty" property:"async"`
 	Params           map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
