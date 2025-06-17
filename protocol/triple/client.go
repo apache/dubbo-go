@@ -219,10 +219,12 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	// handle http transport of triple protocol
 	var transport http.RoundTripper
 
-	// Default callProtocol is HTTP/2.
-	callProtocol := constant.CallHTTP2
+	var callProtocol string
 	if tripleConf != nil && tripleConf.Http3 != nil && tripleConf.Http3.Enable {
 		callProtocol = constant.CallHTTP3
+	} else {
+		// HTTP default type is HTTP/2.
+		callProtocol = constant.CallHTTP2
 	}
 
 	switch callProtocol {
