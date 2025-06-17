@@ -180,7 +180,6 @@ func (s *Server) Run(callProtocol string, tlsConf *tls.Config) error {
 	case constant.CallHTTP3:
 		return s.startHttp3(tlsConf)
 	default:
-		// Consider returning an error instead of panicking for better library design.
 		return fmt.Errorf("unsupported protocol: %s, only http2 or http3 are supported", callProtocol)
 	}
 }
@@ -207,7 +206,7 @@ func (s *Server) startHttp2(tlsConf *tls.Config) error {
 
 func (s *Server) startHttp3(tlsConf *tls.Config) error {
 	if tlsConf == nil {
-		panic("TRIPLE HTTP/3 Server must have TLS config, but TLS config is nil")
+		return fmt.Errorf("TRIPLE HTTP/3 Server must have TLS config, but TLS config is nil")
 	}
 
 	s.http3Srv = &http3.Server{

@@ -256,7 +256,7 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		}
 	case constant.CallHTTP3:
 		if !tlsFlag {
-			panic("TRIPLE http3 client must have TLS config, but TLS config is nil")
+			return nil, fmt.Errorf("TRIPLE http3 client must have TLS config, but TLS config is nil")
 		}
 
 		// TODO: Enrich the http3 transport config for triple protocol.
@@ -272,7 +272,7 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 
 		logger.Infof("Triple http3 client transport init successfully")
 	default:
-		panic(fmt.Sprintf("Unsupported callProtocol: %s", callProtocol))
+		return nil, fmt.Errorf("unsupported http protocol: %s", callProtocol)
 	}
 
 	httpClient := &http.Client{
