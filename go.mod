@@ -1,4 +1,4 @@
-module dubbo.apache.org/dubbo-go/v3
+module github.com/liushiqi1001/dubbo-go/v3
 
 go 1.23
 
