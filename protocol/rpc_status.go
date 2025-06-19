@@ -21,17 +21,12 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-)
 
-import (
 	"github.com/dubbogo/gost/log/logger"
 
-	uberAtomic "go.uber.org/atomic"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	uberAtomic "go.uber.org/atomic"
 )
 
 var (
@@ -266,7 +261,7 @@ func TryRefreshBlackList() {
 				defer wg.Done()
 				for j := range ivks {
 					if j%3-i == 0 && ivks[j].IsAvailable() {
-						RemoveInvokerUnhealthyStatus(ivks[i])
+						RemoveInvokerUnhealthyStatus(ivks[j])
 					}
 				}
 			}(ivks, i)
