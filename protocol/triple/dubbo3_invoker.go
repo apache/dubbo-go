@@ -207,23 +207,13 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation base.Invocation) 
 		// Generally, the case will not happen, because the invoker has been removed
 		// from the invoker list before destroy,so no new request will enter the destroyed invoker
 		logger.Warnf("this dubboInvoker is destroyed")
-		result.Err = base.ErrDestroyedInvoker
+		result.SetError(base.ErrDestroyedInvoker)
 		return &result
 	}
 
-	di.clientGuard.RLock()
-	defer di.clientGuard.RUnlock()
-
-	if di.client == nil {
-		result.Err = base.ErrClientClosed
-		return &result
-	}
-
-	if !di.BaseInvoker.IsAvailable() {
-		// Generally, the case will not happen, because the invoker has been removed
-		// from the invoker list before destroy,so no new request will enter the destroyed invoker
-		logger.Warnf("this grpcInvoker is destroying")
-		result.Err = base.ErrDestroyedInvoker
+	client := di.getClient()
+	if client == nil {
+		result.SetError(base.ErrClientClosed)
 		return &result
 	}
 
@@ -267,13 +257,13 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation base.Invocation) 
 	}
 
 	methodName := invocation.MethodName()
-	triAttachmentWithErr := di.client.Invoke(methodName, in, invocation.Reply())
-	result.Err = triAttachmentWithErr.GetError()
-	result.Attrs = make(map[string]any)
+	triAttachmentWithErr := client.Invoke(methodName, in, invocation.Reply())
+	result.SetError(triAttachmentWithErr.GetError())
+	result.SetAttachments(make(map[string]any))
 	for k, v := range triAttachmentWithErr.GetAttachments() {
-		result.Attrs[k] = v
+		result.AddAttachment(k, v)
 	}
-	result.Rest = invocation.Reply()
+	result.SetResult(invocation.Reply())
 	return &result
 }
 
@@ -296,7 +286,7 @@ func (di *DubboInvoker) getTimeout(inv *invocation.RPCInvocation) time.Duration 
 func (di *DubboInvoker) IsAvailable() bool {
 	client := di.getClient()
 	if client != nil {
-		// FIXME here can't check if tcp server is started now!!!
+		// FIXME: here can't check if tcp server is started now!!!
 		return client.IsAvailable()
 	}
 	return false

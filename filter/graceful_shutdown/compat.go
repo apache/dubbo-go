@@ -15,13 +15,31 @@
  * limitations under the License.
  */
 
-package polaris
+package graceful_shutdown
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"go.uber.org/atomic"
 )
 
-func init() {
-	extension.SetRouterFactory(constant.PluginPolarisRouterFactory, NewPolarisRouterFactory)
+import (
+	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/global"
+)
+
+func compatGlobalShutdownConfig(c *config.ShutdownConfig) *global.ShutdownConfig {
+	if c == nil {
+		return nil
+	}
+	cfg := &global.ShutdownConfig{
+		Timeout:                     c.Timeout,
+		StepTimeout:                 c.StepTimeout,
+		ConsumerUpdateWaitTime:      c.ConsumerUpdateWaitTime,
+		RejectRequestHandler:        c.RejectRequestHandler,
+		InternalSignal:              c.InternalSignal,
+		OfflineRequestWindowTimeout: c.OfflineRequestWindowTimeout,
+		RejectRequest:               atomic.Bool{},
+	}
+	cfg.RejectRequest.Store(c.RejectRequest.Load())
+
+	return cfg
 }

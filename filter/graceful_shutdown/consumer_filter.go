@@ -31,6 +31,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/filter"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
@@ -49,7 +50,7 @@ func init() {
 }
 
 type consumerGracefulShutdownFilter struct {
-	shutdownConfig *config.ShutdownConfig
+	shutdownConfig *global.ShutdownConfig
 }
 
 func newConsumerGracefulShutdownFilter() filter.Filter {
@@ -76,11 +77,16 @@ func (f *consumerGracefulShutdownFilter) OnResponse(ctx context.Context, result 
 func (f *consumerGracefulShutdownFilter) Set(name string, conf any) {
 	switch name {
 	case constant.GracefulShutdownFilterShutdownConfig:
-		if shutdownConfig, ok := conf.(*config.ShutdownConfig); ok {
-			f.shutdownConfig = shutdownConfig
-			return
+		switch ct := conf.(type) {
+		case *global.ShutdownConfig:
+			f.shutdownConfig = ct
+		// only for compatibility with old config, able to directly remove after config is deleted
+		case *config.ShutdownConfig:
+			f.shutdownConfig = compatGlobalShutdownConfig(ct)
+		default:
+			logger.Warnf("the type of config for {%s} should be *global.ShutdownConfig", constant.GracefulShutdownFilterShutdownConfig)
 		}
-		logger.Warnf("the type of config for {%s} should be *config.ShutdownConfig", constant.GracefulShutdownFilterShutdownConfig)
+		return
 	default:
 		// do nothing
 	}

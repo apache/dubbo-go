@@ -108,7 +108,7 @@ func (srvOpts *ServerOptions) init(opts ...ServerOption) error {
 	}
 
 	// init graceful_shutdown
-	graceful_shutdown.Init(graceful_shutdown.SetShutdown_Config(srvOpts.Shutdown))
+	graceful_shutdown.Init(graceful_shutdown.SetShutdownConfig(srvOpts.Shutdown))
 
 	return nil
 }

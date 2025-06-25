@@ -76,7 +76,7 @@ See the [samples](https://github.com/apache/dubbo-go-samples) for detailed infor
 ![dubbo-go-architecture](./doc/imgs/arc.png)
 
 - **RPC Protocols**: Triple, gRPC compatible and HTTP-friendly
-- **Service Discovery**: Nacos, Zookeeper, Etcd, Polaris-mesh, Consul.
+- **Service Discovery**: Nacos, Zookeeper, Etcd, Consul.
 - **Load Balance**: Adaptive, Random, RoundRobin, LeastActive, ConsistentHash
 - **Traffic Management**: traffic split, timeout, rate limiting, canary release
 - **Configuration**: yaml file, dynamic configuration(Nacos, Zookeeper, etc.).
