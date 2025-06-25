@@ -246,22 +246,21 @@ func (s *Server) Stop() error {
 		}
 	}
 
-	if len(errs) == 0 {
+	switch len(errs) {
+	case 0:
 		return nil
-	}
-
-	if len(errs) == 1 {
+	case 1:
 		return errs[0]
+	default:
+		var sb strings.Builder
+		sb.WriteString("multiple errors occurred during stop:")
+		for _, err := range errs {
+			// Newline and indent for easier reading
+			sb.WriteString("\n\t- ")
+			sb.WriteString(err.Error())
+		}
+		return errors.New(sb.String())
 	}
-
-	var sb strings.Builder
-	sb.WriteString("multiple errors occurred during stop:")
-	for _, err := range errs {
-		// Newline and indent for easier reading
-		sb.WriteString("\n\t- ")
-		sb.WriteString(err.Error())
-	}
-	return errors.New(sb.String())
 }
 
 // Gracefulstop shutdown the Triple server for both HTTP/2 and HTTP/3 gracefully.
@@ -304,23 +303,21 @@ func (s *Server) GracefulStop(ctx context.Context) error {
 		errs = append(errs, err)
 	}
 
-	if len(errs) == 0 {
+	switch len(errs) {
+	case 0:
 		return nil
-	}
-
-	if len(errs) == 1 {
+	case 1:
 		return errs[0]
+	default:
+		var sb strings.Builder
+		sb.WriteString("multiple errors occurred during graceful stop:")
+		for _, err := range errs {
+			// Newline and indent for easier reading
+			sb.WriteString("\n\t- ")
+			sb.WriteString(err.Error())
+		}
+		return errors.New(sb.String())
 	}
-
-	var sb strings.Builder
-	sb.WriteString("multiple errors occurred during graceful stop:")
-	for _, err := range errs {
-		// Newline and indent for easier reading
-		sb.WriteString("\n\t- ")
-		sb.WriteString(err.Error())
-	}
-
-	return errors.New(sb.String())
 }
 
 func NewServer(addr string) *Server {
