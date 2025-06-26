@@ -18,13 +18,12 @@
 package extension
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-
 	"github.com/pkg/errors"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/logger"
 )
 
 var logs = make(map[string]func(config *common.URL) (logger.Logger, error))
@@ -34,7 +33,6 @@ func SetLogger(driver string, log func(config *common.URL) (logger.Logger, error
 }
 
 func GetLogger(driver string, config *common.URL) (logger.Logger, error) {
-
 	if logs[driver] != nil {
 		return logs[driver](config)
 	} else {

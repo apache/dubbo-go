@@ -76,14 +76,14 @@ fmt:
 LOCALBIN ?= $(shell pwd)/bin
 $(LOCALBIN):
 	mkdir -p $(LOCALBIN)
-GOLANG_LINT_VERSION ?= v1.44.2
+GOLANG_LINT_VERSION ?= v2.1.6
 GOLANG_LINT ?= $(LOCALBIN)/golangci-lint
 GOLANG_LINT_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh"
 
 .PHONY: golangci-lint-install
 golangci-lint-install: $(LOCALBIN) ## Download golangci lint locally if necessary.
 	test -s $(LOCALBIN)/golangci-lint  && $(LOCALBIN)/golangci-lint --version | grep -q $(GOLANG_LINT_VERSION) || \
-	GOBIN=$(LOCALBIN) go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANG_LINT_VERSION)
+	GOBIN=$(LOCALBIN) go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANG_LINT_VERSION)
 
 .PHONY: lint
 lint: golangci-lint-install  ## Run golang lint against code

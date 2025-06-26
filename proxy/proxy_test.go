@@ -33,19 +33,20 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/hessian2"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 type TestService struct {
-	MethodOne   func(context.Context, int, bool, *interface{}) error
-	MethodTwo   func([]interface{}) error
-	MethodThree func(int, bool) (interface{}, error)
-	MethodFour  func(int, bool) (*interface{}, error) `dubbo:"methodFour"`
+	MethodOne   func(context.Context, int, bool, *any) error
+	MethodTwo   func([]any) error
+	MethodThree func(int, bool) (any, error)
+	MethodFour  func(int, bool) (*any, error) `dubbo:"methodFour"`
 	MethodFive  func() error
-	MethodSix   func(context.Context, string) (interface{}, error)
-	Echo        func(interface{}, *interface{}) error
+	MethodSix   func(context.Context, string) (any, error)
+	Echo        func(any, *any) error
 }
 
 func (s *TestService) Reference() string {
@@ -59,7 +60,7 @@ func (s *TestServiceInt) Reference() string {
 }
 
 func TestProxyImplement(t *testing.T) {
-	invoker := protocol.NewBaseInvoker(&common.URL{})
+	invoker := base.NewBaseInvoker(&common.URL{})
 	p := NewProxy(invoker, nil, map[string]string{constant.AsyncKey: "false"})
 	s := &TestService{}
 	p.Implement(s)
@@ -86,9 +87,9 @@ func TestProxyImplement(t *testing.T) {
 	p.rpc = nil
 	type S1 struct {
 		TestService
-		methodOne func(context.Context, interface{}, *struct{}) error
+		methodOne func(context.Context, any, *struct{}) error
 	}
-	s1 := &S1{TestService: *s, methodOne: func(_ context.Context, _ interface{}, _ *struct{}) error {
+	s1 := &S1{TestService: *s, methodOne: func(_ context.Context, _ any, _ *struct{}) error {
 		return perrors.New("errors")
 	}}
 	p.Implement(s1)
@@ -107,7 +108,7 @@ func TestProxyImplement(t *testing.T) {
 	p.rpc = nil
 	type S2 struct {
 		TestService
-		MethodOne func([]interface{}) (*struct{}, int, error)
+		MethodOne func([]any) (*struct{}, int, error)
 	}
 	s2 := &S2{TestService: *s}
 	p.Implement(s2)
@@ -117,7 +118,7 @@ func TestProxyImplement(t *testing.T) {
 	p.rpc = nil
 	type S3 struct {
 		TestService
-		MethodOne func(context.Context, []interface{}, *struct{}) interface{}
+		MethodOne func(context.Context, []any, *struct{}) any
 	}
 	s3 := &S3{TestService: *s}
 	p.Implement(s3)
@@ -126,26 +127,26 @@ func TestProxyImplement(t *testing.T) {
 
 func TestProxyImplementForContext(t *testing.T) {
 	invoker := &TestProxyInvoker{
-		BaseInvoker: *protocol.NewBaseInvoker(&common.URL{}),
+		BaseInvoker: *base.NewBaseInvoker(&common.URL{}),
 	}
 	p := NewProxy(invoker, nil, map[string]string{constant.AsyncKey: "false"})
 	s := &TestService{}
 	p.Implement(s)
-	attachments1 := make(map[string]interface{}, 4)
+	attachments1 := make(map[string]any, 4)
 	attachments1["k1"] = "v1"
 	attachments1["k2"] = "v2"
 	context := context.WithValue(context.Background(), constant.AttachmentKey, attachments1)
 	r, err := p.Get().(*TestService).MethodSix(context, "xxx")
-	v1 := r.(map[string]interface{})
+	v1 := r.(map[string]any)
 	assert.NoError(t, err)
 	assert.Equal(t, v1["TestProxyInvoker"], "TestProxyInvokerValue")
 }
 
 type TestProxyInvoker struct {
-	protocol.BaseInvoker
+	base.BaseInvoker
 }
 
-func (bi *TestProxyInvoker) Invoke(_ context.Context, inv protocol.Invocation) protocol.Result {
+func (bi *TestProxyInvoker) Invoke(_ context.Context, inv base.Invocation) result.Result {
 	rpcInv := inv.(*invocation.RPCInvocation)
 	mapV := inv.Attachments()
 	mapV["TestProxyInvoker"] = "TestProxyInvokerValue"
@@ -153,7 +154,7 @@ func (bi *TestProxyInvoker) Invoke(_ context.Context, inv protocol.Invocation) p
 		fmt.Printf("hessian2.ReflectResponse(mapV:%v) = error:%v", mapV, err)
 	}
 
-	return &protocol.RPCResult{
+	return &result.RPCResult{
 		Rest: inv.Arguments(),
 	}
 }

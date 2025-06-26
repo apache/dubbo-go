@@ -20,13 +20,18 @@ package triple
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
+	"reflect"
 	"strings"
+	"time"
 )
 
 import (
+	"github.com/dubbogo/gost/log/logger"
+
 	"github.com/dustin/go-humanize"
 
 	"golang.org/x/net/http2"
@@ -35,7 +40,9 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
+	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
 
 const (
@@ -52,6 +59,9 @@ type clientManager struct {
 	triClients map[string]*tri.Client
 }
 
+// TODO: code a triple client between clientManager and triple_protocol client
+// TODO: write a NewClient for triple client
+
 func (cm *clientManager) getClient(method string) (*tri.Client, error) {
 	triClient, ok := cm.triClients[method]
 	if !ok {
@@ -60,7 +70,7 @@ func (cm *clientManager) getClient(method string) (*tri.Client, error) {
 	return triClient, nil
 }
 
-func (cm *clientManager) callUnary(ctx context.Context, method string, req, resp interface{}) error {
+func (cm *clientManager) callUnary(ctx context.Context, method string, req, resp any) error {
 	triClient, err := cm.getClient(method)
 	if err != nil {
 		return err
@@ -70,10 +80,24 @@ func (cm *clientManager) callUnary(ctx context.Context, method string, req, resp
 	if err := triClient.CallUnary(ctx, triReq, triResp); err != nil {
 		return err
 	}
+
+	serverAttachments, ok := ctx.Value(constant.AttachmentServerKey).(map[string]any)
+	if !ok {
+		return nil
+	}
+	for k, v := range triResp.Trailer() {
+		if ok := isFilterHeader(k); ok {
+			continue
+		}
+		if len(v) > 0 {
+			serverAttachments[k] = v[0]
+		}
+	}
+
 	return nil
 }
 
-func (cm *clientManager) callClientStream(ctx context.Context, method string) (interface{}, error) {
+func (cm *clientManager) callClientStream(ctx context.Context, method string) (any, error) {
 	triClient, err := cm.getClient(method)
 	if err != nil {
 		return nil, err
@@ -85,7 +109,7 @@ func (cm *clientManager) callClientStream(ctx context.Context, method string) (i
 	return stream, nil
 }
 
-func (cm *clientManager) callServerStream(ctx context.Context, method string, req interface{}) (interface{}, error) {
+func (cm *clientManager) callServerStream(ctx context.Context, method string, req any) (any, error) {
 	triClient, err := cm.getClient(method)
 	if err != nil {
 		return nil, err
@@ -98,7 +122,7 @@ func (cm *clientManager) callServerStream(ctx context.Context, method string, re
 	return stream, nil
 }
 
-func (cm *clientManager) callBidiStream(ctx context.Context, method string) (interface{}, error) {
+func (cm *clientManager) callBidiStream(ctx context.Context, method string) (any, error) {
 	triClient, err := cm.getClient(method)
 	if err != nil {
 		return nil, err
@@ -119,22 +143,8 @@ func (cm *clientManager) close() error {
 // newClientManager extracts configurations from url and builds clientManager
 func newClientManager(url *common.URL) (*clientManager, error) {
 	var cliOpts []tri.ClientOption
-
-	// set max send and recv msg size
-	maxCallRecvMsgSize := constant.DefaultMaxCallRecvMsgSize
-	if recvMsgSize, err := humanize.ParseBytes(url.GetParam(constant.MaxCallRecvMsgSize, "")); err == nil && recvMsgSize > 0 {
-		maxCallRecvMsgSize = int(recvMsgSize)
-	}
-	cliOpts = append(cliOpts, tri.WithReadMaxBytes(maxCallRecvMsgSize))
-	maxCallSendMsgSize := constant.DefaultMaxCallSendMsgSize
-	if sendMsgSize, err := humanize.ParseBytes(url.GetParam(constant.MaxCallSendMsgSize, "")); err == nil && sendMsgSize > 0 {
-		maxCallSendMsgSize = int(sendMsgSize)
-	}
-	cliOpts = append(cliOpts, tri.WithSendMaxBytes(maxCallSendMsgSize))
-	// set keepalive interval and keepalive timeout
-	keepAliveInterval := url.GetParamDuration(constant.KeepAliveInterval, constant.DefaultKeepAliveInterval)
-	keepAliveTimeout := url.GetParamDuration(constant.KeepAliveTimeout, constant.DefaultKeepAliveTimeout)
 	var isIDL bool
+
 	// set serialization
 	serialization := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	switch serialization {
@@ -162,9 +172,39 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 
 	// todo(DMwangnima): support opentracing
 
-	// todo(DMwangnima): support TLS in an ideal way
-	var cfg *tls.Config
-	var tlsFlag bool
+	// handle tls
+	var (
+		tlsFlag bool
+		tlsConf *global.TLSConfig
+		cfg     *tls.Config
+		err     error
+	)
+
+	tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey)
+	if ok {
+		tlsConf, ok = tlsConfRaw.(*global.TLSConfig)
+		if !ok {
+			return nil, errors.New("TRIPLE clientManager initialized the TLSConfig configuration failed")
+		}
+	}
+	if dubbotls.IsClientTLSValid(tlsConf) {
+		cfg, err = dubbotls.GetClientTlSConfig(tlsConf)
+		if err != nil {
+			return nil, err
+		}
+		if cfg != nil {
+			logger.Infof("TRIPLE clientManager initialized the TLSConfig configuration")
+			tlsFlag = true
+		}
+	}
+
+	cliKeepAliveOpts, keepAliveInterval, keepAliveTimeout, genKeepAliveOptsErr := genKeepAliveOpts(url)
+	if genKeepAliveOptsErr != nil {
+		logger.Errorf("genKeepAliveOpts err: %v", genKeepAliveOptsErr)
+		return nil, genKeepAliveOptsErr
+	}
+
+	cliOpts = append(cliOpts, cliKeepAliveOpts...)
 
 	var transport http.RoundTripper
 	callType := url.GetParam(constant.CallHTTPTypeKey, constant.CallHTTP2)
@@ -205,17 +245,98 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		baseTriURL = httpPrefix + baseTriURL
 	}
 	triClients := make(map[string]*tri.Client)
-	for _, method := range url.Methods {
-		triURL, err := joinPath(baseTriURL, url.Interface(), method)
-		if err != nil {
-			return nil, fmt.Errorf("JoinPath failed for base %s, interface %s, method %s", baseTriURL, url.Interface(), method)
+
+	if len(url.Methods) != 0 {
+		for _, method := range url.Methods {
+			triURL, err := joinPath(baseTriURL, url.Interface(), method)
+			if err != nil {
+				return nil, fmt.Errorf("JoinPath failed for base %s, interface %s, method %s", baseTriURL, url.Interface(), method)
+			}
+			triClient := tri.NewClient(httpClient, triURL, cliOpts...)
+			triClients[method] = triClient
 		}
-		triClient := tri.NewClient(httpClient, triURL, cliOpts...)
-		triClients[method] = triClient
+	} else {
+		// This branch is for the non-IDL mode, where we pass in the service solely
+		// for the purpose of using reflection to obtain all methods of the service.
+		// There might be potential for optimization in this area later on.
+		service, ok := url.GetAttribute(constant.RpcServiceKey)
+		if !ok {
+			return nil, fmt.Errorf("triple clientmanager can't get methods")
+		}
+
+		serviceType := reflect.TypeOf(service)
+		for i := range serviceType.NumMethod() {
+			methodName := serviceType.Method(i).Name
+			triURL, err := joinPath(baseTriURL, url.Interface(), methodName)
+			if err != nil {
+				return nil, fmt.Errorf("JoinPath failed for base %s, interface %s, method %s", baseTriURL, url.Interface(), methodName)
+			}
+			triClient := tri.NewClient(httpClient, triURL, cliOpts...)
+			triClients[methodName] = triClient
+		}
 	}
 
 	return &clientManager{
 		isIDL:      isIDL,
 		triClients: triClients,
 	}, nil
+}
+
+func genKeepAliveOpts(url *common.URL) ([]tri.ClientOption, time.Duration, time.Duration, error) {
+	var cliKeepAliveOpts []tri.ClientOption
+
+	// set max send and recv msg size
+	maxCallRecvMsgSize := constant.DefaultMaxCallRecvMsgSize
+	if recvMsgSize, err := humanize.ParseBytes(url.GetParam(constant.MaxCallRecvMsgSize, "")); err == nil && recvMsgSize > 0 {
+		maxCallRecvMsgSize = int(recvMsgSize)
+	}
+	cliKeepAliveOpts = append(cliKeepAliveOpts, tri.WithReadMaxBytes(maxCallRecvMsgSize))
+	maxCallSendMsgSize := constant.DefaultMaxCallSendMsgSize
+	if sendMsgSize, err := humanize.ParseBytes(url.GetParam(constant.MaxCallSendMsgSize, "")); err == nil && sendMsgSize > 0 {
+		maxCallSendMsgSize = int(sendMsgSize)
+	}
+	cliKeepAliveOpts = append(cliKeepAliveOpts, tri.WithSendMaxBytes(maxCallSendMsgSize))
+
+	// set keepalive interval and keepalive timeout
+	// Deprecated：use tripleconfig
+	// TODO: remove KeepAliveInterval and KeepAliveInterval in version 4.0.0
+	keepAliveInterval := url.GetParamDuration(constant.KeepAliveInterval, constant.DefaultKeepAliveInterval)
+	keepAliveTimeout := url.GetParamDuration(constant.KeepAliveTimeout, constant.DefaultKeepAliveTimeout)
+
+	tripleConfRaw, ok := url.GetAttribute(constant.TripleConfigKey)
+	if ok {
+		var parseErr error
+		tripleConf := tripleConfRaw.(*global.TripleConfig)
+
+		if tripleConf == nil {
+			return cliKeepAliveOpts, keepAliveInterval, keepAliveTimeout, nil
+		}
+
+		if tripleConf.KeepAliveInterval != "" {
+			keepAliveInterval, parseErr = time.ParseDuration(tripleConf.KeepAliveInterval)
+			if parseErr != nil {
+				return nil, 0, 0, parseErr
+			}
+		}
+		if tripleConf.KeepAliveTimeout != "" {
+			keepAliveTimeout, parseErr = time.ParseDuration(tripleConf.KeepAliveTimeout)
+			if parseErr != nil {
+				return nil, 0, 0, parseErr
+			}
+		}
+	}
+
+	return cliKeepAliveOpts, keepAliveInterval, keepAliveTimeout, nil
+}
+
+func isFilterHeader(key string) bool {
+	if key != "" && key[0] == ':' {
+		return true
+	}
+	switch key {
+	case constant.GrpcHeaderMessage, constant.GrpcHeaderStatus:
+		return true
+	default:
+		return false
+	}
 }

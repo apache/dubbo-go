@@ -344,7 +344,7 @@ func (cc *grpcClientConn) Peer() Peer {
 	return cc.peer
 }
 
-func (cc *grpcClientConn) Send(msg interface{}) error {
+func (cc *grpcClientConn) Send(msg any) error {
 	if err := cc.marshaler.Marshal(msg); err != nil {
 		return err
 	}
@@ -359,7 +359,7 @@ func (cc *grpcClientConn) CloseRequest() error {
 	return cc.duplexCall.CloseWrite()
 }
 
-func (cc *grpcClientConn) Receive(msg interface{}) error {
+func (cc *grpcClientConn) Receive(msg any) error {
 	cc.duplexCall.BlockUntilResponseReady()
 	err := cc.unmarshaler.Unmarshal(msg)
 	if err == nil {
@@ -460,7 +460,7 @@ func (hc *grpcHandlerConn) Peer() Peer {
 }
 
 // Receive delegated receive and unmarshal processes to unmarshaler
-func (hc *grpcHandlerConn) Receive(msg interface{}) error {
+func (hc *grpcHandlerConn) Receive(msg any) error {
 	if err := hc.unmarshaler.Unmarshal(msg); err != nil {
 		return err // already coded
 	}
@@ -481,9 +481,7 @@ func (hc *grpcHandlerConn) ExportableHeader() http.Header {
 			continue
 		}
 		cloneVals := make([]string, len(vals))
-		for i, val := range vals {
-			cloneVals[i] = val
-		}
+		copy(cloneVals, vals)
 		res[key] = cloneVals
 	}
 
@@ -527,7 +525,7 @@ func IsWhitelistedHeader(hdr string) bool {
 	}
 }
 
-func (hc *grpcHandlerConn) Send(msg interface{}) error {
+func (hc *grpcHandlerConn) Send(msg any) error {
 	defer flushResponseWriter(hc.responseWriter)
 	if !hc.wroteToBody {
 		mergeHeaders(hc.responseWriter.Header(), hc.responseHeader)
@@ -641,8 +639,8 @@ type grpcMarshaler struct {
 }
 
 func (m *grpcMarshaler) MarshalWebTrailers(trailer http.Header) *Error {
-	raw := m.envelopeWriter.bufferPool.Get()
-	defer m.envelopeWriter.bufferPool.Put(raw)
+	raw := m.bufferPool.Get()
+	defer m.bufferPool.Put(raw)
 	for key, values := range trailer {
 		// Per the Go specification, keys inserted during iteration may be produced
 		// later in the iteration or may be skipped. For safety, avoid mutating the
@@ -668,7 +666,7 @@ type grpcUnmarshaler struct {
 	webTrailer     http.Header
 }
 
-func (u *grpcUnmarshaler) Unmarshal(message interface{}) *Error {
+func (u *grpcUnmarshaler) Unmarshal(message any) *Error {
 	// delegate read packet and unmarshal processes to envelopeReader
 	err := u.envelopeReader.Unmarshal(message)
 	if err == nil {
@@ -946,7 +944,7 @@ func grpcPercentEncodeSlow(bufferPool *bufferPool, msg string, offset int) strin
 	for i := offset; i < len(msg); i++ {
 		c := msg[i]
 		if c < ' ' || c > '~' || c == '%' {
-			out.WriteString(fmt.Sprintf("%%%02X", c))
+			fmt.Fprintf(out, "%%%02X", c)
 			continue
 		}
 		out.WriteByte(c)

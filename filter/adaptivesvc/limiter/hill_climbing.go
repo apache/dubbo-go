@@ -140,7 +140,7 @@ func (u *HillClimbingUpdater) DoUpdate() error {
 	}()
 	VerboseDebugf("[HillClimbingUpdater] A request finished, the limiter will be updated, seq: %d.", u.seq)
 
-	rtt := uint64(time.Now().Sub(u.startTime).Milliseconds())
+	rtt := uint64(time.Since(u.startTime).Milliseconds())
 	inflight := u.limiter.Inflight()
 
 	option, err := u.getOption(rtt, inflight)

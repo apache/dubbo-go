@@ -20,7 +20,7 @@ jobs:
       # If you want to matrix build , you can append the following list.
       matrix:
         go_version:
-          - '1.20'
+          - '1.23'
         os:
           - ubuntu-latest
 
@@ -36,10 +36,13 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Cache dependencies
+      # ref: https://github.com/actions/cache/blob/main/examples.md#go---module
       uses: actions/cache@v4
       with:
-        # Cache
-        path: ~/go/pkg/mod
+        # Cache, works only on Linux
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
         # Cache key
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
         # An ordered list of keys to use for restoring the cache if no cache hit occurred for key

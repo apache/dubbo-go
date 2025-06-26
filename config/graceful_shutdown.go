@@ -55,19 +55,19 @@ const defaultShutDownTime = time.Second * 60
 
 func gracefulShutdownInit() {
 	// retrieve ShutdownConfig for gracefulShutdownFilter
-	cGracefulShutdownFilter, existcGracefulShutdownFilter := extension.GetFilter(constant.GracefulShutdownConsumerFilterKey)
-	if !existcGracefulShutdownFilter {
+	gracefulShutdownConsumerFilter, exist := extension.GetFilter(constant.GracefulShutdownConsumerFilterKey)
+	if !exist {
 		return
 	}
-	sGracefulShutdownFilter, existsGracefulShutdownFilter := extension.GetFilter(constant.GracefulShutdownProviderFilterKey)
-	if !existsGracefulShutdownFilter {
+	gracefulShutdownProviderFilter, exist := extension.GetFilter(constant.GracefulShutdownProviderFilterKey)
+	if !exist {
 		return
 	}
-	if filter, ok := cGracefulShutdownFilter.(Setter); ok && rootConfig.Shutdown != nil {
+	if filter, ok := gracefulShutdownConsumerFilter.(Setter); ok && rootConfig.Shutdown != nil {
 		filter.Set(constant.GracefulShutdownFilterShutdownConfig, GetShutDown())
 	}
 
-	if filter, ok := sGracefulShutdownFilter.(Setter); ok && rootConfig.Shutdown != nil {
+	if filter, ok := gracefulShutdownProviderFilter.(Setter); ok && rootConfig.Shutdown != nil {
 		filter.Set(constant.GracefulShutdownFilterShutdownConfig, GetShutDown())
 	}
 
@@ -76,23 +76,22 @@ func gracefulShutdownInit() {
 		signal.Notify(signals, ShutdownSignals...)
 
 		go func() {
-			select {
-			case sig := <-signals:
-				logger.Infof("get signal %s, applicationConfig will shutdown.", sig)
-				// gracefulShutdownOnce.Do(func() {
-				time.AfterFunc(totalTimeout(), func() {
-					logger.Warn("Shutdown gracefully timeout, applicationConfig will shutdown immediately. ")
-					os.Exit(0)
-				})
-				BeforeShutdown()
-				// those signals' original behavior is exit with dump ths stack, so we try to keep the behavior
-				for _, dumpSignal := range DumpHeapShutdownSignals {
-					if sig == dumpSignal {
-						debug.WriteHeapDump(os.Stdout.Fd())
-					}
-				}
+			sig := <-signals
+			logger.Infof("get signal %s, applicationConfig will shutdown.", sig)
+			// gracefulShutdownOnce.Do(func() {
+			time.AfterFunc(totalTimeout(), func() {
+				logger.Warn("Shutdown gracefully timeout, applicationConfig will shutdown immediately. ")
 				os.Exit(0)
+			})
+			BeforeShutdown()
+			// those signals' original behavior is exit with dump ths stack, so we try to keep the behavior
+			for _, dumpSignal := range DumpHeapShutdownSignals {
+				if sig == dumpSignal {
+					debug.WriteHeapDump(os.Stdout.Fd())
+				}
 			}
+			os.Exit(0)
+
 		}()
 	}
 }

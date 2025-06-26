@@ -28,7 +28,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	"dubbo.apache.org/dubbo-go/v3/metrics/rpc"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 // must initialize before using the filter and after loading configuration
@@ -42,7 +43,7 @@ func init() {
 type metricsFilter struct{}
 
 // Invoke publish the BeforeInvokeEvent and AfterInvokeEvent to metrics bus
-func (mf *metricsFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (mf *metricsFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
 	metrics.Publish(rpc.NewBeforeInvokeEvent(invoker, invocation))
 	start := time.Now()
 	res := invoker.Invoke(ctx, invocation)
@@ -53,7 +54,7 @@ func (mf *metricsFilter) Invoke(ctx context.Context, invoker protocol.Invoker, i
 }
 
 // OnResponse do nothing and return the result
-func (mf *metricsFilter) OnResponse(ctx context.Context, res protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (mf *metricsFilter) OnResponse(ctx context.Context, res result.Result, invoker base.Invoker, invocation base.Invocation) result.Result {
 	return res
 }
 

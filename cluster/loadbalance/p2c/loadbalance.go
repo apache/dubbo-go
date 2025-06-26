@@ -34,7 +34,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/metrics"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 var (
@@ -64,7 +64,7 @@ func newP2CLoadBalance() loadbalance.LoadBalance {
 	return instance
 }
 
-func (l *p2cLoadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
+func (l *p2cLoadBalance) Select(invokers []base.Invoker, invocation base.Invocation) base.Invoker {
 	if len(invokers) == 0 {
 		return nil
 	}

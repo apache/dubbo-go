@@ -19,7 +19,9 @@ package nacos
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strconv"
 	"sync"
 	"testing"
 )
@@ -39,7 +41,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery"
 	"dubbo.apache.org/dubbo-go/v3/remoting/nacos"
@@ -63,7 +66,7 @@ func TestNacosServiceDiscoveryGetDefaultPageSize(t *testing.T) {
 
 func TestFunction(t *testing.T) {
 
-	extension.SetProtocol("mock", func() protocol.Protocol {
+	extension.SetProtocol("mock", func() base.Protocol {
 		return &mockProtocol{}
 	})
 
@@ -116,6 +119,75 @@ func TestFunction(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestBatchRegisterInstances(t *testing.T) {
+	extension.SetProtocol("mock", func() base.Protocol {
+		return &mockProtocol{}
+	})
+	var urls []*common.URL
+	url1, _ := common.NewURL("dubbo://127.0.0.1:8848")
+	url2, _ := common.NewURL("tri://127.0.0.1:8848")
+	port := 20000
+	urls = append(urls, url1)
+	urls = append(urls, url2)
+	for _, url := range urls {
+		pcl := url.Protocol
+		port = port + 1
+		sd, _ := newMockNacosServiceDiscovery(url)
+		defer func() {
+			_ = sd.Destroy()
+		}()
+		ins := &registry.DefaultServiceInstance{
+			ID:          "testID",
+			ServiceName: "nacos_batchRegister_test1",
+			Host:        url.Ip,
+			Port:        port,
+			Enable:      true,
+			Healthy:     true,
+			Metadata:    nil,
+		}
+		params := map[string]string{
+			"protocol": "mock",
+			"timeout":  "",
+			"version":  "",
+			pcl:        "",
+			"release":  "",
+			"port":     strconv.Itoa(port),
+		}
+		parmjosn, _ := json.Marshal(params)
+		ins.Metadata = map[string]string{"t1": "test", constant.MetadataServiceURLParamsPropertyName: string(parmjosn)}
+		err := sd.Register(ins)
+		assert.Nil(t, err)
+	}
+
+	url3, _ := common.NewURL("tri://127.0.0.1:8848")
+	sd, _ := newMockNacosServiceDiscovery(url3)
+	defer func() {
+		_ = sd.Destroy()
+	}()
+	ins := &registry.DefaultServiceInstance{
+		ID:          "testID",
+		ServiceName: "nacos_batchRegister_test2",
+		Host:        "127.0.0.1",
+		Port:        20004,
+		Enable:      true,
+		Healthy:     true,
+		Metadata:    nil,
+	}
+	params := map[string]string{
+		"protocol":    "mock",
+		"timeout":     "",
+		"version":     "",
+		url3.Protocol: "",
+		"release":     "",
+		"port":        "20004",
+	}
+	parmjosn, _ := json.Marshal(params)
+	ins.Metadata = map[string]string{"t1": "test", constant.MetadataServiceURLParamsPropertyName: string(parmjosn)}
+	err := sd.Register(ins)
+	assert.Nil(t, err)
+
+}
+
 func newMockNacosServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error) {
 	discoveryURL := common.NewURLWithOptions(
 		common.WithParams(url.GetParams()),
@@ -143,6 +215,7 @@ func newMockNacosServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, e
 		namingClient:        client,
 		descriptor:          descriptor,
 		registryInstances:   []registry.ServiceInstance{},
+		registryURL:         url,
 		instanceListenerMap: make(map[string]*gxset.HashSet),
 	}
 	return newInstance, nil
@@ -161,7 +234,7 @@ func (tn *testNotify) Notify(e *registry.ServiceEvent) {
 func (tn *testNotify) NotifyAll([]*registry.ServiceEvent, func()) {}
 
 type mockClient struct {
-	instance []interface{}
+	instance []any
 }
 
 func (c mockClient) RegisterInstance(param vo.RegisterInstanceParam) (bool, error) {
@@ -213,11 +286,11 @@ func (c mockClient) CloseClient() {
 
 type mockProtocol struct{}
 
-func (m mockProtocol) Export(protocol.Invoker) protocol.Exporter {
+func (m mockProtocol) Export(base.Invoker) base.Exporter {
 	panic("implement me")
 }
 
-func (m mockProtocol) Refer(*common.URL) protocol.Invoker {
+func (m mockProtocol) Refer(*common.URL) base.Invoker {
 	return &mockInvoker{}
 }
 
@@ -239,8 +312,8 @@ func (m *mockInvoker) Destroy() {
 	panic("implement me")
 }
 
-func (m *mockInvoker) Invoke(context.Context, protocol.Invocation) protocol.Result {
-	return &protocol.RPCResult{
+func (m *mockInvoker) Invoke(context.Context, base.Invocation) result.Result {
+	return &result.RPCResult{
 		Rest: &mockResult{},
 	}
 }

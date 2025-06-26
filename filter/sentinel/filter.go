@@ -41,7 +41,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 func init() {
@@ -60,7 +61,7 @@ type DubboLoggerWrapper struct {
 	logger.Logger
 }
 
-func (d DubboLoggerWrapper) Debug(msg string, keysAndValues ...interface{}) {
+func (d DubboLoggerWrapper) Debug(msg string, keysAndValues ...any) {
 	d.Logger.Debug(logging.AssembleMsg(logging.GlobalCallerDepth, "DEBUG", msg, nil, keysAndValues...))
 }
 
@@ -68,7 +69,7 @@ func (d DubboLoggerWrapper) DebugEnabled() bool {
 	return true
 }
 
-func (d DubboLoggerWrapper) Info(msg string, keysAndValues ...interface{}) {
+func (d DubboLoggerWrapper) Info(msg string, keysAndValues ...any) {
 	d.Logger.Info(logging.AssembleMsg(logging.GlobalCallerDepth, "INFO", msg, nil, keysAndValues...))
 }
 
@@ -76,7 +77,7 @@ func (d DubboLoggerWrapper) InfoEnabled() bool {
 	return true
 }
 
-func (d DubboLoggerWrapper) Warn(msg string, keysAndValues ...interface{}) {
+func (d DubboLoggerWrapper) Warn(msg string, keysAndValues ...any) {
 	d.Logger.Warn(logging.AssembleMsg(logging.GlobalCallerDepth, "WARN", msg, nil, keysAndValues...))
 }
 
@@ -84,7 +85,7 @@ func (d DubboLoggerWrapper) WarnEnabled() bool {
 	return true
 }
 
-func (d DubboLoggerWrapper) Error(err error, msg string, keysAndValues ...interface{}) {
+func (d DubboLoggerWrapper) Error(err error, msg string, keysAndValues ...any) {
 	d.Logger.Warn(logging.AssembleMsg(logging.GlobalCallerDepth, "ERROR", msg, err, keysAndValues...))
 }
 
@@ -113,7 +114,7 @@ func newSentinelProviderFilter() filter.Filter {
 	return sentinelProvider
 }
 
-func (d *sentinelProviderFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (d *sentinelProviderFilter) Invoke(ctx context.Context, invoker protocolbase.Invoker, invocation protocolbase.Invocation) result.Result {
 	interfaceResourceName, methodResourceName := getResourceName(invoker, invocation, getProviderPrefix())
 
 	var (
@@ -147,7 +148,7 @@ func (d *sentinelProviderFilter) Invoke(ctx context.Context, invoker protocol.In
 	return result
 }
 
-func (d *sentinelProviderFilter) OnResponse(ctx context.Context, result protocol.Result, _ protocol.Invoker, _ protocol.Invocation) protocol.Result {
+func (d *sentinelProviderFilter) OnResponse(ctx context.Context, result result.Result, _ protocolbase.Invoker, _ protocolbase.Invocation) result.Result {
 	return result
 }
 
@@ -172,7 +173,7 @@ func newSentinelConsumerFilter() filter.Filter {
 	return sentinelConsumer
 }
 
-func (d *sentinelConsumerFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (d *sentinelConsumerFilter) Invoke(ctx context.Context, invoker protocolbase.Invoker, invocation protocolbase.Invocation) result.Result {
 	interfaceResourceName, methodResourceName := getResourceName(invoker, invocation, getConsumerPrefix())
 	var (
 		interfaceEntry *base.SentinelEntry
@@ -203,7 +204,7 @@ func (d *sentinelConsumerFilter) Invoke(ctx context.Context, invoker protocol.In
 	return result
 }
 
-func (d *sentinelConsumerFilter) OnResponse(ctx context.Context, result protocol.Result, _ protocol.Invoker, _ protocol.Invocation) protocol.Result {
+func (d *sentinelConsumerFilter) OnResponse(ctx context.Context, result result.Result, _ protocolbase.Invoker, _ protocolbase.Invocation) result.Result {
 	return result
 }
 
@@ -212,7 +213,7 @@ var (
 	sentinelDubboProviderFallback = getDefaultDubboFallback()
 )
 
-type DubboFallback func(context.Context, protocol.Invoker, protocol.Invocation, *base.BlockError) protocol.Result
+type DubboFallback func(context.Context, protocolbase.Invoker, protocolbase.Invocation, *base.BlockError) result.Result
 
 func SetDubboConsumerFallback(f DubboFallback) {
 	sentinelDubboConsumerFallback = f
@@ -223,8 +224,8 @@ func SetDubboProviderFallback(f DubboFallback) {
 }
 
 func getDefaultDubboFallback() DubboFallback {
-	return func(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation, blockError *base.BlockError) protocol.Result {
-		return &protocol.RPCResult{Err: blockError}
+	return func(ctx context.Context, invoker protocolbase.Invoker, invocation protocolbase.Invocation, blockError *base.BlockError) result.Result {
+		return &result.RPCResult{Err: blockError}
 	}
 }
 
@@ -233,7 +234,7 @@ const (
 	DefaultConsumerPrefix = "dubbo:consumer:"
 )
 
-func getResourceName(invoker protocol.Invoker, invocation protocol.Invocation, prefix string) (interfaceResourceName, methodResourceName string) {
+func getResourceName(invoker protocolbase.Invoker, invocation protocolbase.Invocation, prefix string) (interfaceResourceName, methodResourceName string) {
 	var sb strings.Builder
 
 	sb.WriteString(prefix)

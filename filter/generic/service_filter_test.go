@@ -38,9 +38,10 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/filter/generic/generalizer"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/mock"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 type MockHelloService struct{}
@@ -78,17 +79,17 @@ func TestServiceFilter_Invoke(t *testing.T) {
 	mockInvoker := mock.NewMockInvoker(ctrl)
 
 	// methodName is not "$invoke"
-	invocation1 := invocation.NewRPCInvocation("test", nil, nil)
-	mockInvoker.EXPECT().Invoke(gomock.Any(), gomock.Eq(invocation1))
-	_ = filter.Invoke(context.Background(), mockInvoker, invocation1)
+	inv1 := invocation.NewRPCInvocation("test", nil, nil)
+	mockInvoker.EXPECT().Invoke(gomock.Any(), gomock.Eq(inv1))
+	_ = filter.Invoke(context.Background(), mockInvoker, inv1)
 	// arguments are nil
-	invocation2 := invocation.NewRPCInvocation(constant.Generic, nil, nil)
-	mockInvoker.EXPECT().Invoke(gomock.Any(), gomock.Eq(invocation2))
-	_ = filter.Invoke(context.Background(), mockInvoker, invocation2)
+	inv2 := invocation.NewRPCInvocation(constant.Generic, nil, nil)
+	mockInvoker.EXPECT().Invoke(gomock.Any(), gomock.Eq(inv2))
+	_ = filter.Invoke(context.Background(), mockInvoker, inv2)
 	// the number of arguments is not 3
-	invocation3 := invocation.NewRPCInvocation(constant.Generic, []interface{}{"hello"}, nil)
-	mockInvoker.EXPECT().Invoke(gomock.Any(), gomock.Eq(invocation3))
-	_ = filter.Invoke(context.Background(), mockInvoker, invocation3)
+	inv3 := invocation.NewRPCInvocation(constant.Generic, []any{"hello"}, nil)
+	mockInvoker.EXPECT().Invoke(gomock.Any(), gomock.Eq(inv3))
+	_ = filter.Invoke(context.Background(), mockInvoker, inv3)
 
 	// hello service
 	service := &MockHelloService{}
@@ -111,59 +112,59 @@ func TestServiceFilter_Invoke(t *testing.T) {
 
 	// invoke a method without errors using default generalization
 	invocation4 := invocation.NewRPCInvocation(constant.Generic,
-		[]interface{}{
+		[]any{
 			"Hello",
 			[]string{"java.lang.String"},
 			[]hessian.Object{"world"},
-		}, map[string]interface{}{
+		}, map[string]any{
 			constant.GenericKey: "true",
 		})
 	// invoke a non-existed method
 	invocation5 := invocation.NewRPCInvocation(constant.Generic,
-		[]interface{}{
+		[]any{
 			"hello11",
 			[]string{"java.lang.String"},
 			[]hessian.Object{"world"},
-		}, map[string]interface{}{
+		}, map[string]any{
 			constant.GenericKey: "true",
 		})
 	// invoke a method with incorrect arguments
 	invocation6 := invocation.NewRPCInvocation(constant.Generic,
-		[]interface{}{
+		[]any{
 			"Hello",
 			[]string{"java.lang.String", "java.lang.String"},
 			[]hessian.Object{"world", "haha"},
-		}, map[string]interface{}{
+		}, map[string]any{
 			constant.GenericKey: "true",
 		})
 	// invoke a method without errors using protobuf-json generalization
 	//invocation7 := invocation.NewRPCInvocation(constant.Generic,
-	//	[]interface{}{
+	//	[]any{
 	//		"HelloPB",
 	//		[]string{},
 	//		[]hessian.Object{"{\"id\":1}"},
-	//	}, map[string]interface{}{
+	//	}, map[string]any{
 	//		constant.GenericKey: constant.GenericSerializationProtobuf,
 	//	})
 
 	mockInvoker.EXPECT().Invoke(gomock.Any(), gomock.All(
-		gomock.Not(invocation1),
-		gomock.Not(invocation2),
-		gomock.Not(invocation3),
+		gomock.Not(inv1),
+		gomock.Not(inv2),
+		gomock.Not(inv3),
 	)).DoAndReturn(
-		func(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+		func(ctx context.Context, invocation base.Invocation) result.Result {
 			switch invocation.MethodName() {
 			case "Hello":
 				who := invocation.Arguments()[0].(string)
-				result, _ := service.Hello(who)
-				return &protocol.RPCResult{
-					Rest: result,
+				res, _ := service.Hello(who)
+				return &result.RPCResult{
+					Rest: res,
 				}
 			case "HelloPB":
 				req := invocation.Arguments()[0].(*generalizer.RequestType)
-				result, _ := service.HelloPB(req)
-				return &protocol.RPCResult{
-					Rest: result,
+				res, _ := service.HelloPB(req)
+				return &result.RPCResult{
+					Rest: res,
 				}
 			default:
 				panic("this branch shouldn't be reached")
@@ -177,12 +178,12 @@ func TestServiceFilter_Invoke(t *testing.T) {
 	result = filter.Invoke(context.Background(), mockInvoker, invocation5)
 	assert.Equal(t,
 		fmt.Sprintf("\"hello11\" method is not found, service key: %s", ivkUrl.ServiceKey()),
-		fmt.Sprintf("%v", result.Error().(error)))
+		fmt.Sprintf("%v", result.Error()))
 
 	result = filter.Invoke(context.Background(), mockInvoker, invocation6)
 	assert.Equal(t,
 		"the number of args(=2) is not matched with \"Hello\" method",
-		fmt.Sprintf("%v", result.Error().(error)))
+		fmt.Sprintf("%v", result.Error()))
 
 	//result = filter.Invoke(context.Background(), mockInvoker, invocation7)
 	//assert.Equal(t, int64(200), result.Result().(*generalizer.ResponseType).GetCode())
@@ -197,15 +198,15 @@ func TestServiceFilter_OnResponse(t *testing.T) {
 
 	// invoke a method without errors
 	invocation1 := invocation.NewRPCInvocation(constant.Generic,
-		[]interface{}{
+		[]any{
 			"hello",
-			[]interface{}{"java.lang.String"},
-			[]interface{}{"world"},
-		}, map[string]interface{}{
+			[]any{"java.lang.String"},
+			[]any{"world"},
+		}, map[string]any{
 			constant.GenericKey: "true",
 		})
 
-	rpcResult := &protocol.RPCResult{
+	rpcResult := &result.RPCResult{
 		Rest: "result",
 	}
 

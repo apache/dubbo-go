@@ -34,26 +34,27 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 const mockFilterKey = "mockEcho"
 
 func TestProtocolFilterWrapperExport(t *testing.T) {
 	filtProto := extension.GetProtocol(FILTER)
-	filtProto.(*ProtocolFilterWrapper).protocol = &protocol.BaseProtocol{}
+	filtProto.(*ProtocolFilterWrapper).protocol = &base.BaseProtocol{}
 
 	u := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.ServiceFilterKey, mockFilterKey))
-	exporter := filtProto.Export(protocol.NewBaseInvoker(u))
+	exporter := filtProto.Export(base.NewBaseInvoker(u))
 	_, ok := exporter.GetInvoker().(*FilterInvoker)
 	assert.True(t, ok)
 }
 
 func TestProtocolFilterWrapperRefer(t *testing.T) {
 	filtProto := extension.GetProtocol(FILTER)
-	filtProto.(*ProtocolFilterWrapper).protocol = &protocol.BaseProtocol{}
+	filtProto.(*ProtocolFilterWrapper).protocol = &base.BaseProtocol{}
 
 	u := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
@@ -70,11 +71,11 @@ func init() {
 
 type mockEchoFilter struct{}
 
-func (ef *mockEchoFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (ef *mockEchoFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
 	logger.Infof("invoking echo filter.")
 	logger.Debugf("%v,%v", invocation.MethodName(), len(invocation.Arguments()))
 	if invocation.MethodName() == constant.Echo && len(invocation.Arguments()) == 1 {
-		return &protocol.RPCResult{
+		return &result.RPCResult{
 			Rest: invocation.Arguments()[0],
 		}
 	}
@@ -82,7 +83,7 @@ func (ef *mockEchoFilter) Invoke(ctx context.Context, invoker protocol.Invoker, 
 	return invoker.Invoke(ctx, invocation)
 }
 
-func (ef *mockEchoFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (ef *mockEchoFilter) OnResponse(ctx context.Context, result result.Result, invoker base.Invoker, invocation base.Invocation) result.Result {
 	return result
 }
 

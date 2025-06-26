@@ -20,6 +20,7 @@ package nacos
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"sync"
 )
 
@@ -65,6 +66,11 @@ type nacosServiceDiscovery struct {
 	// cache registry instances
 	registryInstances []registry.ServiceInstance
 
+	serviceNameInstancesMap map[string][]registry.ServiceInstance //Batch registration for the same service
+
+	// registryURL stores the URL used for registration, used to fetch dynamic config like weight
+	registryURL *common.URL
+
 	instanceListenerMap map[string]*gxset.HashSet
 	listenerLock        sync.Mutex
 }
@@ -85,12 +91,17 @@ func (n *nacosServiceDiscovery) Destroy() error {
 
 // Register will register the service to nacos
 func (n *nacosServiceDiscovery) Register(instance registry.ServiceInstance) error {
-	ins := n.toRegisterInstance(instance)
-	ok, err := n.namingClient.Client().RegisterInstance(ins)
-	if err != nil || !ok {
-		return perrors.WithMessage(err, "Could not register the instance. "+instance.GetServiceName())
+	instSrvName := instance.GetServiceName()
+	if n.serviceNameInstancesMap == nil {
+		n.serviceNameInstancesMap = make(map[string][]registry.ServiceInstance)
 	}
-	n.registryInstances = append(n.registryInstances, instance)
+	n.serviceNameInstancesMap[instSrvName] = append(n.serviceNameInstancesMap[instSrvName], instance)
+	brins := n.toBatchRegisterInstances(n.serviceNameInstancesMap[instSrvName])
+	ok, err := n.namingClient.Client().BatchRegisterInstance(brins)
+	if err != nil || !ok {
+		return perrors.Errorf("register nacos instances failed, err:%+v", err)
+	}
+	n.registryInstances = append(n.registryInstances, instance) //all_instances
 	return nil
 }
 
@@ -189,8 +200,8 @@ func (n *nacosServiceDiscovery) GetInstances(serviceName string) []registry.Serv
 // Due to nacos namingClient does not support pagination, so we have to query all instances and then return part of them
 func (n *nacosServiceDiscovery) GetInstancesByPage(serviceName string, offset int, pageSize int) gxpage.Pager {
 	all := n.GetInstances(serviceName)
-	res := make([]interface{}, 0, pageSize)
-	// could not use res = all[a:b] here because the res should be []interface{}, not []ServiceInstance
+	res := make([]any, 0, pageSize)
+	// could not use res = all[a:b] here because the res should be []any, not []ServiceInstance
 	for i := offset; i < len(all) && i < offset+pageSize; i++ {
 		res = append(res, all[i])
 	}
@@ -203,8 +214,8 @@ func (n *nacosServiceDiscovery) GetInstancesByPage(serviceName string, offset in
 // Thus, we must query all instances and then do filter
 func (n *nacosServiceDiscovery) GetHealthyInstancesByPage(serviceName string, offset int, pageSize int, healthy bool) gxpage.Pager {
 	all := n.GetInstances(serviceName)
-	res := make([]interface{}, 0, pageSize)
-	// could not use res = all[a:b] here because the res should be []interface{}, not []ServiceInstance
+	res := make([]any, 0, pageSize)
+	// could not use res = all[a:b] here because the res should be []any, not []ServiceInstance
 	var (
 		i     = offset
 		count = 0
@@ -286,8 +297,7 @@ func (n *nacosServiceDiscovery) AddListener(listener registry.ServiceInstancesCh
 
 				var e error
 				for _, lis := range n.instanceListenerMap[serviceName].Values() {
-					var instanceListener registry.ServiceInstancesChangedListener
-					instanceListener = lis.(registry.ServiceInstancesChangedListener)
+					instanceListener := lis.(registry.ServiceInstancesChangedListener)
 					e = instanceListener.OnEvent(registry.NewServiceInstancesChangedEvent(serviceName, instances))
 				}
 
@@ -310,6 +320,17 @@ func (n *nacosServiceDiscovery) toRegisterInstance(instance registry.ServiceInst
 	if metadata == nil {
 		metadata = make(map[string]string, 1)
 	}
+
+	weightStr := n.registryURL.GetParam(constant.RegistryKey+"."+constant.WeightKey, "1.0")
+	weight, err := strconv.ParseFloat(weightStr, 64)
+	if err != nil || weight <= constant.MinNacosWeight {
+		logger.Warnf("Invalid weight value %q, using default 1.0. err: %v", weightStr, err)
+		weight = constant.DefaultNacosWeight
+	} else if weight > constant.MaxNacosWeight {
+		logger.Warnf("Weight %f exceeds Nacos maximum 10000, setting to 10000", weight)
+		weight = constant.MaxNacosWeight
+	}
+
 	metadata[idKey] = instance.GetID()
 	return vo.RegisterInstanceParam{
 		ServiceName: instance.GetServiceName(),
@@ -317,12 +338,27 @@ func (n *nacosServiceDiscovery) toRegisterInstance(instance registry.ServiceInst
 		Port:        uint64(instance.GetPort()),
 		Metadata:    metadata,
 		// We must specify the weight since Java nacos namingClient will ignore the instance whose weight is 0
-		Weight:    1,
+		Weight:    weight,
 		Enable:    instance.IsEnable(),
 		Healthy:   instance.IsHealthy(),
 		GroupName: n.group,
 		Ephemeral: true,
 	}
+}
+func (n *nacosServiceDiscovery) toBatchRegisterInstances(instances []registry.ServiceInstance) vo.BatchRegisterInstanceParam {
+	var brins vo.BatchRegisterInstanceParam
+	var rins []vo.RegisterInstanceParam
+	for _, instance := range instances {
+		rins = append(rins, n.toRegisterInstance(instance))
+	}
+	if len(rins) == 0 {
+		logger.Warnf("No batch register instances found")
+		return vo.BatchRegisterInstanceParam{}
+	}
+	brins.ServiceName = rins[0].ServiceName
+	brins.GroupName = n.group
+	brins.Instances = rins
+	return brins
 }
 
 // toDeregisterInstance will convert the ServiceInstance to DeregisterInstanceParam
@@ -360,11 +396,13 @@ func newNacosServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error
 
 	group := url.GetParam(constant.RegistryGroupKey, defaultGroup)
 	newInstance := &nacosServiceDiscovery{
-		group:               group,
-		namingClient:        client,
-		descriptor:          descriptor,
-		registryInstances:   []registry.ServiceInstance{},
-		instanceListenerMap: make(map[string]*gxset.HashSet),
+		group:                   group,
+		namingClient:            client,
+		descriptor:              descriptor,
+		registryInstances:       []registry.ServiceInstance{},
+		serviceNameInstancesMap: make(map[string][]registry.ServiceInstance),
+		registryURL:             url,
+		instanceListenerMap:     make(map[string]*gxset.HashSet),
 	}
 	return newInstance, nil
 }

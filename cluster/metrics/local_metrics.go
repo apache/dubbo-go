@@ -37,17 +37,17 @@ var _ Metrics = (*localMetrics)(nil)
 type localMetrics struct {
 	// protect metrics
 	lock    *sync.RWMutex
-	metrics map[string]interface{}
+	metrics map[string]any
 }
 
 func newLocalMetrics() *localMetrics {
 	return &localMetrics{
 		lock:    new(sync.RWMutex),
-		metrics: make(map[string]interface{}),
+		metrics: make(map[string]any),
 	}
 }
 
-func (m *localMetrics) GetMethodMetrics(url *common.URL, methodName, key string) (interface{}, error) {
+func (m *localMetrics) GetMethodMetrics(url *common.URL, methodName, key string) (any, error) {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
 	metricsKey := fmt.Sprintf("%s.%s.%s.%s", getInstanceKey(url), getInvokerKey(url), methodName, key)
@@ -57,7 +57,7 @@ func (m *localMetrics) GetMethodMetrics(url *common.URL, methodName, key string)
 	return nil, ErrMetricsNotFound
 }
 
-func (m *localMetrics) SetMethodMetrics(url *common.URL, methodName, key string, value interface{}) error {
+func (m *localMetrics) SetMethodMetrics(url *common.URL, methodName, key string, value any) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	metricsKey := fmt.Sprintf("%s.%s.%s.%s", getInstanceKey(url), getInvokerKey(url), methodName, key)
@@ -65,18 +65,18 @@ func (m *localMetrics) SetMethodMetrics(url *common.URL, methodName, key string,
 	return nil
 }
 
-func (m *localMetrics) GetInvokerMetrics(url *common.URL, key string) (interface{}, error) {
+func (m *localMetrics) GetInvokerMetrics(url *common.URL, key string) (any, error) {
 	panic("implement me")
 }
 
-func (m *localMetrics) SetInvokerMetrics(url *common.URL, key string, value interface{}) error {
+func (m *localMetrics) SetInvokerMetrics(url *common.URL, key string, value any) error {
 	panic("implement me")
 }
 
-func (m *localMetrics) GetInstanceMetrics(url *common.URL, key string) (interface{}, error) {
+func (m *localMetrics) GetInstanceMetrics(url *common.URL, key string) (any, error) {
 	panic("implement me")
 }
 
-func (m *localMetrics) SetInstanceMetrics(url *common.URL, key string, value interface{}) error {
+func (m *localMetrics) SetInstanceMetrics(url *common.URL, key string, value any) error {
 	panic("implement me")
 }

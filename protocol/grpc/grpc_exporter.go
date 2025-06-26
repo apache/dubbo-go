@@ -28,18 +28,18 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 // nolint
 type GrpcExporter struct {
-	*protocol.BaseExporter
+	*base.BaseExporter
 }
 
 // NewGrpcExporter creates a new gRPC exporter
-func NewGrpcExporter(key string, invoker protocol.Invoker, exporterMap *sync.Map) *GrpcExporter {
+func NewGrpcExporter(key string, invoker base.Invoker, exporterMap *sync.Map) *GrpcExporter {
 	return &GrpcExporter{
-		BaseExporter: protocol.NewBaseExporter(key, invoker, exporterMap),
+		BaseExporter: base.NewBaseExporter(key, invoker, exporterMap),
 	}
 }
 

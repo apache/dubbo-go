@@ -28,7 +28,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
 	"dubbo.apache.org/dubbo-go/v3/remoting/getty"
 )
@@ -87,7 +87,7 @@ func TestDubboProtocol_Export(t *testing.T) {
 	proto := GetProtocol()
 	url, err := common.NewURL(mockCommonUrl)
 	assert.NoError(t, err)
-	exporter := proto.Export(protocol.NewBaseInvoker(url))
+	exporter := proto.Export(base.NewBaseInvoker(url))
 	// make sure url
 	eq := exporter.GetInvoker().GetURL().URLEqual(url)
 	assert.True(t, eq)
@@ -95,7 +95,7 @@ func TestDubboProtocol_Export(t *testing.T) {
 	// second service: the same path and the different version
 	url2, err := common.NewURL(mockCommonUrl, common.WithParamsValue(constant.VersionKey, "v1.1"))
 	assert.NoError(t, err)
-	exporter2 := proto.Export(protocol.NewBaseInvoker(url2))
+	exporter2 := proto.Export(base.NewBaseInvoker(url2))
 	// make sure url
 	eq2 := exporter2.GetInvoker().GetURL().URLEqual(url2)
 	assert.True(t, eq2)
@@ -134,7 +134,7 @@ func TestDubboProtocol_Refer(t *testing.T) {
 
 	url, err := common.NewURL(mockCommonUrl)
 	proto.Export(&proxy_factory.ProxyInvoker{
-		BaseInvoker: *protocol.NewBaseInvoker(url),
+		BaseInvoker: *base.NewBaseInvoker(url),
 	})
 	assert.NoError(t, err)
 	invoker := proto.Refer(url)

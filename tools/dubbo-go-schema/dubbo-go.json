@@ -93,7 +93,6 @@
           "enum": [
             "nacos",
             "etcdv3",
-            "polaris",
             "xds",
             "zookeeper",
             "service-discovery-registry"

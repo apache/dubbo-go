@@ -29,7 +29,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 // ScopeValuePattern matches with patterns like 'key=1~100', 'key=~100' or 'key=1~'
@@ -52,7 +52,7 @@ func (s *ScopeValuePattern) ShouldMatch(pattern string) bool {
 	return strings.Contains(pattern, "~")
 }
 
-func (s *ScopeValuePattern) Match(pattern string, value string, url *common.URL, invocation protocol.Invocation, isWhenCondition bool) bool {
+func (s *ScopeValuePattern) Match(pattern string, value string, url *common.URL, invocation base.Invocation, isWhenCondition bool) bool {
 	defaultValue := !isWhenCondition
 	intValue, err := strconv.Atoi(value)
 	if err != nil {

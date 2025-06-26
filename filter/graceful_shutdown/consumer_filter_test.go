@@ -32,28 +32,50 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
-func TestConusmerFilterInvoke(t *testing.T) {
-	url := common.NewURLWithOptions(common.WithParams(url.Values{}))
-	invocation := invocation.NewRPCInvocation("GetUser", []interface{}{"OK"}, make(map[string]interface{}))
+func TestConsumerFilterInvokeWithGlobalPackage(t *testing.T) {
+	var (
+		url            = common.NewURLWithOptions(common.WithParams(url.Values{}))
+		invocation     = invocation.NewRPCInvocation("GetUser", []any{"OK"}, make(map[string]any))
+		opt            = graceful_shutdown.NewOptions()
+		filterValue, _ = extension.GetFilter(constant.GracefulShutdownConsumerFilterKey)
+	)
 
-	rootConfig := config.NewRootConfigBuilder().
-		SetShutDown(config.NewShutDownConfigBuilder().
-			SetTimeout("60s").
-			SetStepTimeout("3s").
-			Build()).Build()
+	opt.Shutdown.RejectRequestHandler = "test"
+
+	filter := filterValue.(*consumerGracefulShutdownFilter)
+	filter.Set(constant.GracefulShutdownFilterShutdownConfig, opt.Shutdown)
+	assert.Equal(t, filter.shutdownConfig, opt.Shutdown)
+
+	result := filter.Invoke(context.Background(), base.NewBaseInvoker(url), invocation)
+	assert.NotNil(t, result)
+	assert.Nil(t, result.Error())
+}
+
+// only for compatibility with old config, able to directly remove after config is deleted
+func TestConsumerFilterInvokeWithConfigPackage(t *testing.T) {
+	var (
+		url        = common.NewURLWithOptions(common.WithParams(url.Values{}))
+		invocation = invocation.NewRPCInvocation("GetUser", []any{"OK"}, make(map[string]any))
+		rootConfig = config.NewRootConfigBuilder().
+				SetShutDown(config.NewShutDownConfigBuilder().
+					SetTimeout("60s").
+					SetStepTimeout("3s").
+					Build()).Build()
+		filterValue, _ = extension.GetFilter(constant.GracefulShutdownConsumerFilterKey)
+	)
 
 	config.SetRootConfig(*rootConfig)
 
-	filterValue, _ := extension.GetFilter(constant.GracefulShutdownConsumerFilterKey)
 	filter := filterValue.(*consumerGracefulShutdownFilter)
 	filter.Set(constant.GracefulShutdownFilterShutdownConfig, config.GetShutDown())
-	assert.Equal(t, filter.shutdownConfig, config.GetShutDown())
+	assert.Equal(t, filter.shutdownConfig, compatGlobalShutdownConfig(config.GetShutDown()))
 
-	result := filter.Invoke(context.Background(), protocol.NewBaseInvoker(url), invocation)
+	result := filter.Invoke(context.Background(), base.NewBaseInvoker(url), invocation)
 	assert.NotNil(t, result)
 	assert.Nil(t, result.Error())
 }

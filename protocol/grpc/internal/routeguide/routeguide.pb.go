@@ -35,7 +35,7 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
@@ -567,7 +567,7 @@ func RegisterRouteGuideServer(s *grpc.Server, srv RouteGuideServer) {
 	s.RegisterService(&_RouteGuide_serviceDesc, srv)
 }
 
-func _RouteGuide_GetFeature_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _RouteGuide_GetFeature_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(Point)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -579,13 +579,13 @@ func _RouteGuide_GetFeature_Handler(srv interface{}, ctx context.Context, dec fu
 		Server:     srv,
 		FullMethod: "/routeguide.RouteGuide/GetFeature",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(RouteGuideServer).GetFeature(ctx, req.(*Point))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RouteGuide_ListFeatures_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _RouteGuide_ListFeatures_Handler(srv any, stream grpc.ServerStream) error {
 	m := new(Rectangle)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
@@ -606,7 +606,7 @@ func (x *routeGuideListFeaturesServer) Send(m *Feature) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func _RouteGuide_RecordRoute_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _RouteGuide_RecordRoute_Handler(srv any, stream grpc.ServerStream) error {
 	return srv.(RouteGuideServer).RecordRoute(&routeGuideRecordRouteServer{stream})
 }
 
@@ -632,7 +632,7 @@ func (x *routeGuideRecordRouteServer) Recv() (*Point, error) {
 	return m, nil
 }
 
-func _RouteGuide_RouteChat_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _RouteGuide_RouteChat_Handler(srv any, stream grpc.ServerStream) error {
 	return srv.(RouteGuideServer).RouteChat(&routeGuideRouteChatServer{stream})
 }
 
@@ -727,14 +727,14 @@ func (c *RouteGuideClientImpl) GetDubboStub(cc *grpc.ClientConn) RouteGuideClien
 }
 
 type RouteGuideProviderBase struct {
-	proxyImpl protocol.Invoker
+	proxyImpl base.Invoker
 }
 
-func (s *RouteGuideProviderBase) SetProxyImpl(impl protocol.Invoker) {
+func (s *RouteGuideProviderBase) SetProxyImpl(impl base.Invoker) {
 	s.proxyImpl = impl
 }
 
-func (s *RouteGuideProviderBase) GetProxyImpl() protocol.Invoker {
+func (s *RouteGuideProviderBase) GetProxyImpl() base.Invoker {
 	return s.proxyImpl
 }
 
@@ -742,7 +742,7 @@ func (c *RouteGuideProviderBase) Reference() string {
 	return "routeGuideImpl"
 }
 
-func _DUBBO_RouteGuide_GetFeature_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _DUBBO_RouteGuide_GetFeature_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(Point)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -750,14 +750,14 @@ func _DUBBO_RouteGuide_GetFeature_Handler(srv interface{}, ctx context.Context, 
 	// DubboGrpcService is gRPC service
 	type DubboGrpcService interface {
 		// SetProxyImpl sets proxy.
-		SetProxyImpl(impl protocol.Invoker)
+		SetProxyImpl(impl base.Invoker)
 		// GetProxyImpl gets proxy.
-		GetProxyImpl() protocol.Invoker
+		GetProxyImpl() base.Invoker
 		// ServiceDesc gets an RPC service's specification.
 		ServiceDesc() *grpc.ServiceDesc
 	}
 	base := srv.(DubboGrpcService)
-	args := []interface{}{}
+	args := []any{}
 	args = append(args, in)
 	invo := invocation.NewRPCInvocation("GetFeature", args, nil)
 	if interceptor == nil {
@@ -768,20 +768,20 @@ func _DUBBO_RouteGuide_GetFeature_Handler(srv interface{}, ctx context.Context, 
 		Server:     srv,
 		FullMethod: "/routeguide.RouteGuide/GetFeature",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		result := base.GetProxyImpl().Invoke(ctx, invo)
 		return result.Result(), result.Error()
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DUBBO_RouteGuide_ListFeatures_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _DUBBO_RouteGuide_ListFeatures_Handler(srv any, stream grpc.ServerStream) error {
 	// DubboGrpcService is gRPC service
 	type DubboGrpcService interface {
 		// SetProxyImpl sets proxy.
-		SetProxyImpl(impl protocol.Invoker)
+		SetProxyImpl(impl base.Invoker)
 		// GetProxyImpl gets proxy.
-		GetProxyImpl() protocol.Invoker
+		GetProxyImpl() base.Invoker
 		// ServiceDesc gets an RPC service's specification.
 		ServiceDesc() *grpc.ServiceDesc
 	}
@@ -797,13 +797,13 @@ func _DUBBO_RouteGuide_ListFeatures_Handler(srv interface{}, stream grpc.ServerS
 	return srv.(RouteGuideServer).ListFeatures(m, &routeGuideListFeaturesServer{stream})
 }
 
-func _DUBBO_RouteGuide_RecordRoute_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _DUBBO_RouteGuide_RecordRoute_Handler(srv any, stream grpc.ServerStream) error {
 	// DubboGrpcService is gRPC service
 	type DubboGrpcService interface {
 		// SetProxyImpl sets proxy.
-		SetProxyImpl(impl protocol.Invoker)
+		SetProxyImpl(impl base.Invoker)
 		// GetProxyImpl gets proxy.
-		GetProxyImpl() protocol.Invoker
+		GetProxyImpl() base.Invoker
 		// ServiceDesc gets an RPC service's specification.
 		ServiceDesc() *grpc.ServiceDesc
 	}
@@ -815,13 +815,13 @@ func _DUBBO_RouteGuide_RecordRoute_Handler(srv interface{}, stream grpc.ServerSt
 	return srv.(RouteGuideServer).RecordRoute(&routeGuideRecordRouteServer{stream})
 }
 
-func _DUBBO_RouteGuide_RouteChat_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _DUBBO_RouteGuide_RouteChat_Handler(srv any, stream grpc.ServerStream) error {
 	// DubboGrpcService is gRPC service
 	type DubboGrpcService interface {
 		// SetProxyImpl sets proxy.
-		SetProxyImpl(impl protocol.Invoker)
+		SetProxyImpl(impl base.Invoker)
 		// GetProxyImpl gets proxy.
-		GetProxyImpl() protocol.Invoker
+		GetProxyImpl() base.Invoker
 		// ServiceDesc gets an RPC service's specification.
 		ServiceDesc() *grpc.ServiceDesc
 	}

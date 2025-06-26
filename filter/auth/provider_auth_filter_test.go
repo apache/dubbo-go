@@ -33,9 +33,9 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/mock"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 func TestProviderAuthFilter_Invoke(t *testing.T) {
@@ -44,7 +44,7 @@ func TestProviderAuthFilter_Invoke(t *testing.T) {
 	url, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=gg&version=2.6.0")
 	url.SetParam(constant.AccessKeyIDKey, access)
 	url.SetParam(constant.SecretAccessKeyKey, secret)
-	parmas := []interface{}{
+	parmas := []any{
 		"OK",
 		struct {
 			Name string
@@ -55,7 +55,7 @@ func TestProviderAuthFilter_Invoke(t *testing.T) {
 	requestTime := strconv.Itoa(int(time.Now().Unix() * 1000))
 	signature, _ := getSignature(url, inv, secret, requestTime)
 
-	inv = invocation.NewRPCInvocation("test", []interface{}{"OK"}, map[string]interface{}{
+	inv = invocation.NewRPCInvocation("test", []any{"OK"}, map[string]any{
 		constant.RequestSignatureKey: signature,
 		constant.Consumer:            "test",
 		constant.RequestTimestampKey: requestTime,
@@ -65,7 +65,7 @@ func TestProviderAuthFilter_Invoke(t *testing.T) {
 	filter := &authFilter{}
 	defer ctrl.Finish()
 	invoker := mock.NewMockInvoker(ctrl)
-	result := &protocol.RPCResult{}
+	result := &result.RPCResult{}
 	invoker.EXPECT().Invoke(context.Background(), inv).Return(result).Times(2)
 	invoker.EXPECT().GetURL().Return(url).Times(2)
 	assert.Equal(t, result, filter.Invoke(context.Background(), invoker, inv))

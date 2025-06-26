@@ -52,14 +52,14 @@ func TestObjToMap(t *testing.T) {
 	obj.CaCa.XxYy.Xx = "3"
 	obj.DaDa = time.Date(2020, 10, 29, 2, 34, 0, 0, time.Local)
 	obj.EeEe = 100
-	m := objToMap(obj).(map[string]interface{})
+	m := objToMap(obj).(map[string]any)
 	assert.Equal(t, "1", m["aaAa"].(string))
 	assert.Equal(t, "1", m["baBa"].(string))
-	assert.Equal(t, "2", m["caCa"].(map[string]interface{})["aaAa"].(string))
-	assert.Equal(t, "3", m["caCa"].(map[string]interface{})["xxYy"].(map[string]interface{})["xx"].(string))
+	assert.Equal(t, "2", m["caCa"].(map[string]any)["aaAa"].(string))
+	assert.Equal(t, "3", m["caCa"].(map[string]any)["xxYy"].(map[string]any)["xx"].(string))
 
 	assert.Equal(t, reflect.Map, reflect.TypeOf(m["caCa"]).Kind())
-	assert.Equal(t, reflect.Map, reflect.TypeOf(m["caCa"].(map[string]interface{})["xxYy"]).Kind())
+	assert.Equal(t, reflect.Map, reflect.TypeOf(m["caCa"].(map[string]any)["xxYy"]).Kind())
 	assert.Equal(t, "2020-10-29 02:34:00", m["daDa"].(time.Time).Format("2006-01-02 15:04:05"))
 	assert.Equal(t, 100, m["eeEe"].(int))
 }
@@ -87,30 +87,30 @@ func TestObjToMap_Slice(t *testing.T) {
 	tmp.XxYy.xxXx = "3"
 	tmp.XxYy.Xx = "3"
 	testData.CaCa = append(testData.CaCa, tmp)
-	m := objToMap(testData).(map[string]interface{})
+	m := objToMap(testData).(map[string]any)
 
 	assert.Equal(t, "1", m["aaAa"].(string))
 	assert.Equal(t, "1", m["baBa"].(string))
-	assert.Equal(t, "2", m["caCa"].([]interface{})[0].(map[string]interface{})["aaAa"].(string))
-	assert.Equal(t, "3", m["caCa"].([]interface{})[0].(map[string]interface{})["xxYy"].(map[string]interface{})["xx"].(string))
+	assert.Equal(t, "2", m["caCa"].([]any)[0].(map[string]any)["aaAa"].(string))
+	assert.Equal(t, "3", m["caCa"].([]any)[0].(map[string]any)["xxYy"].(map[string]any)["xx"].(string))
 
 	assert.Equal(t, reflect.Slice, reflect.TypeOf(m["caCa"]).Kind())
-	assert.Equal(t, reflect.Map, reflect.TypeOf(m["caCa"].([]interface{})[0].(map[string]interface{})["xxYy"]).Kind())
+	assert.Equal(t, reflect.Map, reflect.TypeOf(m["caCa"].([]any)[0].(map[string]any)["xxYy"]).Kind())
 }
 
 func TestObjToMap_Map(t *testing.T) {
 	var testData struct {
 		AaAa   string
-		Baba   map[string]interface{}
+		Baba   map[string]any
 		CaCa   map[string]string
-		DdDd   map[string]interface{}
-		IntMap map[int]interface{}
+		DdDd   map[string]any
+		IntMap map[int]any
 	}
 	testData.AaAa = "aaaa"
-	testData.Baba = make(map[string]interface{})
+	testData.Baba = make(map[string]any)
 	testData.CaCa = make(map[string]string)
 	testData.DdDd = nil
-	testData.IntMap = make(map[int]interface{})
+	testData.IntMap = make(map[int]any)
 
 	testData.Baba["kk"] = 1
 	var structData struct {
@@ -125,17 +125,17 @@ func TestObjToMap_Map(t *testing.T) {
 	m := objToMap(testData)
 
 	assert.Equal(t, reflect.Map, reflect.TypeOf(m).Kind())
-	mappedStruct := m.(map[string]interface{})
+	mappedStruct := m.(map[string]any)
 	assert.Equal(t, reflect.String, reflect.TypeOf(mappedStruct["aaAa"]).Kind())
 	assert.Equal(t, reflect.Map, reflect.TypeOf(mappedStruct["baba"]).Kind())
-	assert.Equal(t, reflect.Map, reflect.TypeOf(mappedStruct["baba"].(map[interface{}]interface{})["struct"]).Kind())
-	assert.Equal(t, "str", mappedStruct["baba"].(map[interface{}]interface{})["struct"].(map[string]interface{})["str"])
-	assert.Equal(t, nil, mappedStruct["baba"].(map[interface{}]interface{})["nil"])
+	assert.Equal(t, reflect.Map, reflect.TypeOf(mappedStruct["baba"].(map[any]any)["struct"]).Kind())
+	assert.Equal(t, "str", mappedStruct["baba"].(map[any]any)["struct"].(map[string]any)["str"])
+	assert.Equal(t, nil, mappedStruct["baba"].(map[any]any)["nil"])
 	assert.Equal(t, reflect.Map, reflect.TypeOf(mappedStruct["caCa"]).Kind())
 	assert.Equal(t, reflect.Map, reflect.TypeOf(mappedStruct["ddDd"]).Kind())
 	intMap := mappedStruct["intMap"]
 	assert.Equal(t, reflect.Map, reflect.TypeOf(intMap).Kind())
-	assert.Equal(t, 1, intMap.(map[interface{}]interface{})[1])
+	assert.Equal(t, 1, intMap.(map[any]any)[1])
 }
 
 var mockMapGeneralizer = GetMapGeneralizer()
@@ -177,13 +177,13 @@ func TestPOJOClassName(t *testing.T) {
 	m, err := mockMapGeneralizer.Generalize(p)
 	assert.Nil(t, err)
 	// parent
-	assert.Equal(t, "xavierniu", m.(map[string]interface{})["name"].(string))
-	assert.Equal(t, 30, m.(map[string]interface{})["age"].(int))
-	assert.Equal(t, "org.apache.dubbo.mockParent", m.(map[string]interface{})["class"].(string))
+	assert.Equal(t, "xavierniu", m.(map[string]any)["name"].(string))
+	assert.Equal(t, 30, m.(map[string]any)["age"].(int))
+	assert.Equal(t, "org.apache.dubbo.mockParent", m.(map[string]any)["class"].(string))
 	// child
-	assert.Equal(t, 20, m.(map[string]interface{})["child"].(map[string]interface{})["age"].(int))
-	assert.Equal(t, "lmc", m.(map[string]interface{})["child"].(map[string]interface{})["name"].(string))
-	assert.Equal(t, "org.apache.dubbo.mockChild", m.(map[string]interface{})["child"].(map[string]interface{})["class"].(string))
+	assert.Equal(t, 20, m.(map[string]any)["child"].(map[string]any)["age"].(int))
+	assert.Equal(t, "lmc", m.(map[string]any)["child"].(map[string]any)["name"].(string))
+	assert.Equal(t, "org.apache.dubbo.mockChild", m.(map[string]any)["child"].(map[string]any)["class"].(string))
 
 	r, err := mockMapGeneralizer.Realize(m, reflect.TypeOf(p))
 	assert.Nil(t, err)
@@ -215,10 +215,10 @@ func TestPOJOArray(t *testing.T) {
 
 	m, err := mockMapGeneralizer.Generalize(pojoArr)
 	assert.Nil(t, err)
-	assert.Equal(t, "lmc", m.([]interface{})[0].(map[string]interface{})["name"].(string))
-	assert.Equal(t, 20, m.([]interface{})[0].(map[string]interface{})["age"].(int))
-	assert.Equal(t, "lmc1", m.([]interface{})[1].(map[string]interface{})["name"].(string))
-	assert.Equal(t, 21, m.([]interface{})[1].(map[string]interface{})["age"].(int))
+	assert.Equal(t, "lmc", m.([]any)[0].(map[string]any)["name"].(string))
+	assert.Equal(t, 20, m.([]any)[0].(map[string]any)["age"].(int))
+	assert.Equal(t, "lmc1", m.([]any)[1].(map[string]any)["name"].(string))
+	assert.Equal(t, 21, m.([]any)[1].(map[string]any)["age"].(int))
 
 	r, err := mockMapGeneralizer.Realize(m, reflect.TypeOf(pojoArr))
 	assert.Nil(t, err)
@@ -239,7 +239,7 @@ func TestNullField(t *testing.T) {
 	}
 
 	m, _ := mockMapGeneralizer.Generalize(p)
-	assert.Nil(t, m.(map[string]interface{})["child"])
+	assert.Nil(t, m.(map[string]any)["child"])
 
 	r, err := mockMapGeneralizer.Realize(m, reflect.TypeOf(p))
 	assert.Nil(t, err)

@@ -61,32 +61,3 @@ func compatRegistryConfig(c *global.RegistryConfig) *config.RegistryConfig {
 		UseAsConfigCenter: c.UseAsConfigCenter,
 	}
 }
-
-func compatMethodConfig(c *global.MethodConfig) *config.MethodConfig {
-	return &config.MethodConfig{
-		InterfaceId:                 c.InterfaceId,
-		InterfaceName:               c.InterfaceName,
-		Name:                        c.Name,
-		Retries:                     c.Retries,
-		LoadBalance:                 c.LoadBalance,
-		Weight:                      c.Weight,
-		TpsLimitInterval:            c.TpsLimitInterval,
-		TpsLimitRate:                c.TpsLimitRate,
-		TpsLimitStrategy:            c.TpsLimitStrategy,
-		ExecuteLimit:                c.ExecuteLimit,
-		ExecuteLimitRejectedHandler: c.ExecuteLimitRejectedHandler,
-		Sticky:                      c.Sticky,
-		RequestTimeout:              c.RequestTimeout,
-	}
-}
-
-func compatProtocolConfig(c *global.ProtocolConfig) *config.ProtocolConfig {
-	return &config.ProtocolConfig{
-		Name:                 c.Name,
-		Ip:                   c.Ip,
-		Port:                 c.Port,
-		Params:               c.Params,
-		MaxServerSendMsgSize: c.MaxServerSendMsgSize,
-		MaxServerRecvMsgSize: c.MaxServerRecvMsgSize,
-	}
-}

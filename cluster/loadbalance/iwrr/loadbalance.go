@@ -21,7 +21,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 func init() {
@@ -36,7 +36,7 @@ func newInterleavedWeightedRoundRobinBalance() loadbalance.LoadBalance {
 }
 
 // Select gets invoker based on interleaved weighted round robine load balancing strategy
-func (lb *interleavedWeightedRoundRobinBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
+func (lb *interleavedWeightedRoundRobinBalance) Select(invokers []base.Invoker, invocation base.Invocation) base.Invoker {
 	count := len(invokers)
 	if count == 0 {
 		return nil

@@ -193,8 +193,8 @@ func (zksd *zookeeperServiceDiscovery) GetInstances(serviceName string) []regist
 // GetInstancesByPage will return the instances
 func (zksd *zookeeperServiceDiscovery) GetInstancesByPage(serviceName string, offset int, pageSize int) gxpage.Pager {
 	all := zksd.GetInstances(serviceName)
-	res := make([]interface{}, 0, pageSize)
-	// could not use res = all[a:b] here because the res should be []interface{}, not []ServiceInstance
+	res := make([]any, 0, pageSize)
+	// could not use res = all[a:b] here because the res should be []any, not []ServiceInstance
 	for i := offset; i < len(all) && i < offset+pageSize; i++ {
 		res = append(res, all[i])
 	}
@@ -207,8 +207,8 @@ func (zksd *zookeeperServiceDiscovery) GetInstancesByPage(serviceName string, of
 // Thus, we must query all instances and then do filter
 func (zksd *zookeeperServiceDiscovery) GetHealthyInstancesByPage(serviceName string, offset int, pageSize int, healthy bool) gxpage.Pager {
 	all := zksd.GetInstances(serviceName)
-	res := make([]interface{}, 0, pageSize)
-	// could not use res = all[a:b] here because the res should be []interface{}, not []ServiceInstance
+	res := make([]any, 0, pageSize)
+	// could not use res = all[a:b] here because the res should be []any, not []ServiceInstance
 	var (
 		i     = offset
 		count = 0
@@ -277,8 +277,7 @@ func (zksd *zookeeperServiceDiscovery) DataChange(eventType remoting.Event) bool
 	var err error
 	instances := zksd.GetInstances(serviceName)
 	for _, lis := range zksd.instanceListenerMap[serviceName].Values() {
-		var instanceListener registry.ServiceInstancesChangedListener
-		instanceListener = lis.(registry.ServiceInstancesChangedListener)
+		instanceListener := lis.(registry.ServiceInstancesChangedListener)
 		err = instanceListener.OnEvent(registry.NewServiceInstancesChangedEvent(serviceName, instances))
 	}
 
@@ -292,7 +291,7 @@ func (zksd *zookeeperServiceDiscovery) DataChange(eventType remoting.Event) bool
 // toCuratorInstance convert to curator's service instance
 func (zksd *zookeeperServiceDiscovery) toCuratorInstance(instance registry.ServiceInstance) *curator_discovery.ServiceInstance {
 	id := instance.GetHost() + ":" + strconv.Itoa(instance.GetPort())
-	pl := make(map[string]interface{}, 8)
+	pl := make(map[string]any, 8)
 	pl["id"] = id
 	pl["name"] = instance.GetServiceName()
 	pl["metadata"] = instance.GetMetadata()
@@ -311,14 +310,14 @@ func (zksd *zookeeperServiceDiscovery) toCuratorInstance(instance registry.Servi
 
 // toZookeeperInstance convert to registry's service instance
 func toZookeeperInstance(cris *curator_discovery.ServiceInstance) registry.ServiceInstance {
-	pl, ok := cris.Payload.(map[string]interface{})
+	pl, ok := cris.Payload.(map[string]any)
 	if !ok {
-		logger.Errorf("[zkServiceDiscovery] toZookeeperInstance{%s} payload is not map[string]interface{}", cris.ID)
+		logger.Errorf("[zkServiceDiscovery] toZookeeperInstance{%s} payload is not map[string]any", cris.ID)
 		return nil
 	}
-	mdi, ok := pl["metadata"].(map[string]interface{})
+	mdi, ok := pl["metadata"].(map[string]any)
 	if !ok {
-		logger.Errorf("[zkServiceDiscovery] toZookeeperInstance{%s} metadata is not map[string]interface{}", cris.ID)
+		logger.Errorf("[zkServiceDiscovery] toZookeeperInstance{%s} metadata is not map[string]any", cris.ID)
 		return nil
 	}
 	md := make(map[string]string, len(mdi))

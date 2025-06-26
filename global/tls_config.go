@@ -31,8 +31,7 @@ type TLSConfig struct {
 }
 
 func DefaultTLSConfig() *TLSConfig {
-	// please refer to /config/tls_config.go NewTLSConfigBuilder
-	return nil
+	return &TLSConfig{}
 }
 
 // Clone a new TLSConfig
@@ -46,31 +45,5 @@ func (c *TLSConfig) Clone() *TLSConfig {
 		TLSCertFile:   c.TLSCertFile,
 		TLSKeyFile:    c.TLSKeyFile,
 		TLSServerName: c.TLSServerName,
-	}
-}
-
-type TLSOption func(*TLSConfig)
-
-func WithTLS_CACertFile(file string) TLSOption {
-	return func(cfg *TLSConfig) {
-		cfg.CACertFile = file
-	}
-}
-
-func WithTLS_TLSCertFile(file string) TLSOption {
-	return func(cfg *TLSConfig) {
-		cfg.TLSCertFile = file
-	}
-}
-
-func WithTLS_TLSKeyFile(file string) TLSOption {
-	return func(cfg *TLSConfig) {
-		cfg.TLSKeyFile = file
-	}
-}
-
-func WithTLS_TLSServerName(name string) TLSOption {
-	return func(cfg *TLSConfig) {
-		cfg.TLSServerName = name
 	}
 }

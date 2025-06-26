@@ -41,7 +41,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/filter"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 const (
@@ -133,7 +134,7 @@ type Filter struct {
 }
 
 // Invoke is an implementation of filter, provides Hystrix pattern latency and fault tolerance
-func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (f *Filter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
 	cmdName := fmt.Sprintf("%s&method=%s", invoker.GetURL().Key(), invocation.MethodName())
 
 	// Do the configuration if the circuit breaker is created for the first time
@@ -168,12 +169,12 @@ func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocatio
 		return invoker.Invoke(ctx, invocation)
 	}
 	logger.Infof("[Hystrix Filter]Using hystrix filter: %s", cmdName)
-	var result protocol.Result
+	var res result.Result
 	_ = hystrix.Do(cmdName, func() error {
-		result = invoker.Invoke(ctx, invocation)
-		err := result.Error()
+		res = invoker.Invoke(ctx, invocation)
+		err := res.Error()
 		if err != nil {
-			result.SetError(NewHystrixFilterError(err, false))
+			res.SetError(NewHystrixFilterError(err, false))
 			for _, reg := range f.res[invocation.MethodName()] {
 				if reg.MatchString(err.Error()) {
 					logger.Debugf("[Hystrix Filter]Error in invocation but omitted in circuit breaker: %v; %s", err, cmdName)
@@ -186,16 +187,16 @@ func (f *Filter) Invoke(ctx context.Context, invoker protocol.Invoker, invocatio
 		// Return error and if it is caused by hystrix logic, so that it can be handled by previous filters.
 		_, ok := err.(hystrix.CircuitError)
 		logger.Debugf("[Hystrix Filter]Hystrix health check counted, error is: %v, failed by hystrix: %v; %s", err, ok, cmdName)
-		result = &protocol.RPCResult{}
-		result.SetResult(nil)
-		result.SetError(NewHystrixFilterError(err, ok))
+		res = &result.RPCResult{}
+		res.SetResult(nil)
+		res.SetError(NewHystrixFilterError(err, ok))
 		return err
 	})
-	return result
+	return res
 }
 
 // OnResponse dummy process, returns the result directly
-func (f *Filter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (f *Filter) OnResponse(ctx context.Context, result result.Result, invoker base.Invoker, invocation base.Invocation) result.Result {
 	return result
 }
 
@@ -255,12 +256,12 @@ func initConfigConsumer() error {
 		return perrors.Errorf("no config for hystrix_consumer")
 	}
 	filterConf := config.GetConsumerConfig().FilterConf
-	var filterConfig interface{}
+	var filterConfig any
 	switch reflect.ValueOf(filterConf).Interface().(type) {
-	case map[interface{}]interface{}:
-		filterConfig = config.GetConsumerConfig().FilterConf.(map[interface{}]interface{})[HYSTRIX]
-	case map[string]interface{}:
-		filterConfig = config.GetConsumerConfig().FilterConf.(map[string]interface{})[HYSTRIX]
+	case map[any]any:
+		filterConfig = config.GetConsumerConfig().FilterConf.(map[any]any)[HYSTRIX]
+	case map[string]any:
+		filterConfig = config.GetConsumerConfig().FilterConf.(map[string]any)[HYSTRIX]
 	}
 	if filterConfig == nil {
 		return perrors.Errorf("no config for hystrix_consumer")
@@ -280,7 +281,7 @@ func initConfigProvider() error {
 	if config.GetProviderConfig().FilterConf == nil {
 		return perrors.Errorf("no config for hystrix_provider")
 	}
-	filterConfig := config.GetProviderConfig().FilterConf.(map[interface{}]interface{})[HYSTRIX]
+	filterConfig := config.GetProviderConfig().FilterConf.(map[any]any)[HYSTRIX]
 	if filterConfig == nil {
 		return perrors.Errorf("no config for hystrix_provider")
 	}

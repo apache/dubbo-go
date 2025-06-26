@@ -27,6 +27,8 @@ import (
 )
 
 import (
+	hessian "github.com/apache/dubbo-go-hessian2"
+
 	"github.com/dubbogo/gost/log/logger"
 
 	grpc_go "github.com/dubbogo/grpc-go"
@@ -40,10 +42,13 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/internal"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo3"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
+
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
@@ -51,20 +56,21 @@ import (
 // provide functionality.
 type Server struct {
 	triServer *tri.Server
+	cfg       *global.TripleConfig
 	mu        sync.RWMutex
 	services  map[string]grpc.ServiceInfo
 }
 
 // NewServer creates a new TRIPLE server.
-// triServer would not be initialized since we could not get configurations here.
-func NewServer() *Server {
+func NewServer(cfg *global.TripleConfig) *Server {
 	return &Server{
+		cfg:      cfg,
 		services: make(map[string]grpc.ServiceInfo),
 	}
 }
 
 // Start TRIPLE server
-func (s *Server) Start(invoker protocol.Invoker, info *common.ServiceInfo) {
+func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
 	URL := invoker.GetURL()
 	addr := URL.Location
 	// initialize tri.Server
@@ -81,9 +87,38 @@ func (s *Server) Start(invoker protocol.Invoker, info *common.ServiceInfo) {
 	}
 	// todo: support opentracing interceptor
 
-	// todo(DMwangnima): think about a more elegant way to configure tls
+	// TODO: move tls config to handleService
 
-	// todo:// move tls config to handleService
+	var tlsConf *global.TLSConfig
+
+	// handle tls
+	tlsConfRaw, ok := URL.GetAttribute(constant.TLSConfigKey)
+	if ok {
+		tlsConf, ok = tlsConfRaw.(*global.TLSConfig)
+		if !ok {
+			logger.Errorf("TRIPLE Server initialized the TLSConfig configuration failed")
+			return
+		}
+	}
+	if dubbotls.IsServerTLSValid(tlsConf) {
+		cfg, err := dubbotls.GetServerTlSConfig(tlsConf)
+		if err != nil {
+			logger.Errorf("TRIPLE Server initialized the TLSConfig configuration failed. err: %v", err)
+			return
+		}
+		s.triServer.SetTLSConfig(cfg)
+		logger.Infof("TRIPLE Server initialized the TLSConfig configuration")
+	}
+
+	// IDLMode means that this will only be set when
+	// the new triple is started in non-IDL mode.
+	// TODO: remove IDLMode when config package is removed
+	IDLMode := URL.GetParam(constant.IDLMode, "")
+
+	var service common.RPCService
+	if IDLMode == constant.NONIDL {
+		service, _ = URL.GetAttribute(constant.RpcServiceKey)
+	}
 
 	hanOpts := getHanOpts(URL)
 	//Set expected codec name from serviceinfo
@@ -93,8 +128,13 @@ func (s *Server) Start(invoker protocol.Invoker, info *common.ServiceInfo) {
 		// new triple idl mode
 		s.handleServiceWithInfo(intfName, invoker, info, hanOpts...)
 		s.saveServiceInfo(intfName, info)
+	} else if IDLMode == constant.NONIDL {
+		// new triple non-idl mode
+		reflectInfo := createServiceInfoWithReflection(service)
+		s.handleServiceWithInfo(intfName, invoker, reflectInfo, hanOpts...)
+		s.saveServiceInfo(intfName, reflectInfo)
 	} else {
-		// old triple idl mode and non-idl mode
+		// old triple idl mode and old triple non-idl mode
 		s.compatHandleService(intfName, URL.Group(), URL.Version(), hanOpts...)
 	}
 	internal.ReflectionRegister(s)
@@ -108,7 +148,7 @@ func (s *Server) Start(invoker protocol.Invoker, info *common.ServiceInfo) {
 
 // todo(DMwangnima): extract a common function
 // RefreshService refreshes Triple Service
-func (s *Server) RefreshService(invoker protocol.Invoker, info *common.ServiceInfo) {
+func (s *Server) RefreshService(invoker base.Invoker, info *common.ServiceInfo) {
 	URL := invoker.GetURL()
 	serialization := URL.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	switch serialization {
@@ -132,6 +172,12 @@ func (s *Server) RefreshService(invoker protocol.Invoker, info *common.ServiceIn
 }
 
 func getHanOpts(url *common.URL) (hanOpts []tri.HandlerOption) {
+	group := url.GetParam(constant.GroupKey, "")
+	version := url.GetParam(constant.VersionKey, "")
+	hanOpts = append(hanOpts, tri.WithGroup(group), tri.WithVersion(version))
+
+	// Deprecated：use TripleConfig
+	// TODO: remove MaxServerSendMsgSize and MaxServerRecvMsgSize when version 4.0.0
 	var err error
 	maxServerRecvMsgSize := constant.DefaultMaxServerRecvMsgSize
 	if recvMsgSize, convertErr := humanize.ParseBytes(url.GetParam(constant.MaxServerRecvMsgSize, "")); convertErr == nil && recvMsgSize != 0 {
@@ -139,17 +185,43 @@ func getHanOpts(url *common.URL) (hanOpts []tri.HandlerOption) {
 	}
 	hanOpts = append(hanOpts, tri.WithReadMaxBytes(maxServerRecvMsgSize))
 
+	// Deprecated：use TripleConfig
+	// TODO: remove MaxServerSendMsgSize and MaxServerRecvMsgSize when version 4.0.0
 	maxServerSendMsgSize := constant.DefaultMaxServerSendMsgSize
 	if sendMsgSize, convertErr := humanize.ParseBytes(url.GetParam(constant.MaxServerSendMsgSize, "")); err == convertErr && sendMsgSize != 0 {
 		maxServerSendMsgSize = int(sendMsgSize)
 	}
 	hanOpts = append(hanOpts, tri.WithSendMaxBytes(maxServerSendMsgSize))
 
+	var tripleConf *global.TripleConfig
+
+	tripleConfRaw, ok := url.GetAttribute(constant.TripleConfigKey)
+	if ok {
+		tripleConf = tripleConfRaw.(*global.TripleConfig)
+	}
+
+	if tripleConf == nil {
+		return hanOpts
+	}
+
+	if tripleConf.MaxServerRecvMsgSize != "" {
+		logger.Warnf("MaxServerRecvMsgSize: %v", tripleConf.MaxServerRecvMsgSize)
+		if recvMsgSize, convertErr := humanize.ParseBytes(tripleConf.MaxServerRecvMsgSize); convertErr == nil && recvMsgSize != 0 {
+			maxServerRecvMsgSize = int(recvMsgSize)
+		}
+		hanOpts = append(hanOpts, tri.WithReadMaxBytes(maxServerRecvMsgSize))
+	}
+
+	if tripleConf.MaxServerSendMsgSize != "" {
+		logger.Warnf("MaxServerSendMsgSize: %v", tripleConf.MaxServerSendMsgSize)
+		if sendMsgSize, convertErr := humanize.ParseBytes(tripleConf.MaxServerSendMsgSize); err == convertErr && sendMsgSize != 0 {
+			maxServerSendMsgSize = int(sendMsgSize)
+		}
+		hanOpts = append(hanOpts, tri.WithSendMaxBytes(maxServerSendMsgSize))
+	}
+
 	// todo:// open tracing
 
-	group := url.GetParam(constant.GroupKey, "")
-	version := url.GetParam(constant.VersionKey, "")
-	hanOpts = append(hanOpts, tri.WithGroup(group), tri.WithVersion(version))
 	return hanOpts
 }
 
@@ -173,7 +245,7 @@ func (s *Server) compatHandleService(interfaceName string, group, version string
 			logger.Warnf("no exporter found for serviceKey: %v", serviceKey)
 			continue
 		}
-		invoker := exporter.(protocol.Exporter).GetInvoker()
+		invoker := exporter.(base.Exporter).GetInvoker()
 		if invoker == nil {
 			panic(fmt.Sprintf("no invoker found for servicekey: %v", serviceKey))
 		}
@@ -220,7 +292,7 @@ func (s *Server) compatRegisterHandler(interfaceName string, svc dubbo3.Dubbo3Gr
 }
 
 // handleServiceWithInfo injects invoker and create handler based on ServiceInfo
-func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.Invoker, info *common.ServiceInfo, opts ...tri.HandlerOption) {
+func (s *Server) handleServiceWithInfo(interfaceName string, invoker base.Invoker, info *common.ServiceInfo, opts ...tri.HandlerOption) {
 	for _, method := range info.Methods {
 		m := method
 		procedure := joinProcedure(interfaceName, method.Name)
@@ -230,8 +302,8 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 				procedure,
 				m.ReqInitFunc,
 				func(ctx context.Context, req *tri.Request) (*tri.Response, error) {
-					var args []interface{}
-					if argsRaw, ok := req.Msg.([]interface{}); ok {
+					var args []any
+					if argsRaw, ok := req.Msg.([]any); ok {
 						// non-idl mode, req.Msg consists of many arguments
 						for _, argRaw := range argsRaw {
 							// refer to createServiceInfoWithReflection, in ReqInitFunc, argRaw is a pointer to real arg.
@@ -245,6 +317,8 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 					attachments := generateAttachments(req.Header())
 					// inject attachments
 					ctx = context.WithValue(ctx, constant.AttachmentKey, attachments)
+					capturedAttachments := make(map[string]any)
+					ctx = context.WithValue(ctx, constant.AttachmentServerKey, capturedAttachments)
 					invo := invocation.NewRPCInvocation(m.Name, args, attachments)
 					res := invoker.Invoke(ctx, invo)
 					// todo(DMwangnima): modify InfoInvoker to get a unified processing logic
@@ -274,7 +348,7 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 			_ = s.triServer.RegisterClientStreamHandler(
 				procedure,
 				func(ctx context.Context, stream *tri.ClientStream) (*tri.Response, error) {
-					var args []interface{}
+					var args []any
 					args = append(args, m.StreamInitFunc(stream))
 					attachments := generateAttachments(stream.RequestHeader())
 					// inject attachments
@@ -285,7 +359,7 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 						return triResp, res.Error()
 					}
 					// please refer to proxy/proxy_factory/ProxyInvoker.Invoke
-					triResp := tri.NewResponse([]interface{}{res.Result()})
+					triResp := tri.NewResponse([]any{res.Result()})
 					return triResp, res.Error()
 				},
 				opts...,
@@ -295,7 +369,7 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 				procedure,
 				m.ReqInitFunc,
 				func(ctx context.Context, req *tri.Request, stream *tri.ServerStream) error {
-					var args []interface{}
+					var args []any
 					args = append(args, req.Msg, m.StreamInitFunc(stream))
 					attachments := generateAttachments(req.Header())
 					// inject attachments
@@ -310,7 +384,7 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 			_ = s.triServer.RegisterBidiStreamHandler(
 				procedure,
 				func(ctx context.Context, stream *tri.BidiStream) error {
-					var args []interface{}
+					var args []any
 					args = append(args, m.StreamInitFunc(stream))
 					attachments := generateAttachments(stream.RequestHeader())
 					// inject attachments
@@ -404,12 +478,14 @@ func (s *Server) GracefulStop() {
 // As a result, Server could use this ServiceInfo to register.
 func createServiceInfoWithReflection(svc common.RPCService) *common.ServiceInfo {
 	var info common.ServiceInfo
-	val := reflect.ValueOf(svc)
-	typ := reflect.TypeOf(svc)
-	methodNum := val.NumMethod()
-	methodInfos := make([]common.MethodInfo, methodNum)
-	for i := 0; i < methodNum; i++ {
-		methodType := typ.Method(i)
+	svcType := reflect.TypeOf(svc)
+	methodNum := svcType.NumMethod()
+
+	// +1 for generic call method
+	methodInfos := make([]common.MethodInfo, 0, methodNum+1)
+
+	for i := range methodNum {
+		methodType := svcType.Method(i)
 		if methodType.Name == "Reference" {
 			continue
 		}
@@ -428,24 +504,41 @@ func createServiceInfoWithReflection(svc common.RPCService) *common.ServiceInfo 
 			Name: methodType.Name,
 			// only support Unary invocation now
 			Type: constant.CallUnary,
-			ReqInitFunc: func() interface{} {
-				params := make([]interface{}, len(paramsTypes))
+			ReqInitFunc: func() any {
+				params := make([]any, len(paramsTypes))
 				for k, paramType := range paramsTypes {
 					params[k] = reflect.New(paramType).Interface()
 				}
 				return params
 			},
 		}
-		methodInfos[i] = methodInfo
+		methodInfos = append(methodInfos, methodInfo)
 	}
+
+	// only support no-idl mod call unary
+	genericMethodInfo := common.MethodInfo{
+		Name: "$invoke",
+		Type: constant.CallUnary,
+		ReqInitFunc: func() any {
+			params := make([]any, 3)
+			// params must be pointer
+			params[0] = func(s string) *string { return &s }("methodName") // methodName *string
+			params[1] = &[]string{}                                        // argv type  *[]string
+			params[2] = &[]hessian.Object{}                                // argv       *[]hessian.Object
+			return params
+		},
+	}
+
+	methodInfos = append(methodInfos, genericMethodInfo)
+
 	info.Methods = methodInfos
 
 	return &info
 }
 
-// generateAttachments transfer http.Header to map[string]interface{} and make all keys lowercase
-func generateAttachments(header http.Header) map[string]interface{} {
-	attachments := make(map[string]interface{}, len(header))
+// generateAttachments transfer http.Header to map[string]any and make all keys lowercase
+func generateAttachments(header http.Header) map[string]any {
+	attachments := make(map[string]any, len(header))
 	for key, val := range header {
 		lowerKey := strings.ToLower(key)
 		attachments[lowerKey] = val

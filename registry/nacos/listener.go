@@ -59,6 +59,7 @@ type nacosListener struct {
 	cacheLock      sync.Mutex
 	done           chan struct{}
 	subscribeParam *vo.SubscribeParam
+	once           sync.Once
 }
 
 // NewNacosListenerWithServiceName creates a data listener for nacos
@@ -176,7 +177,8 @@ func (nl *nacosListener) listenService(serviceName string) error {
 	if nl.namingClient == nil {
 		return perrors.New("nacos naming namingClient stopped")
 	}
-	nl.subscribeParam = createSubscribeParam(serviceName, nl.regURL, nl.Callback)
+	group := nl.regURL.GetParam(constant.RegistryGroupKey, defaultGroup)
+	nl.subscribeParam = createSubscribeParam(serviceName, group, nl.Callback)
 	if nl.subscribeParam == nil {
 		return perrors.New("create nacos subscribeParam failed")
 	}
@@ -213,6 +215,8 @@ func (nl *nacosListener) Next() (*registry.ServiceEvent, error) {
 
 // nolint
 func (nl *nacosListener) Close() {
-	_ = nl.stopListen()
-	close(nl.done)
+	nl.once.Do(func() {
+		_ = nl.stopListen()
+		close(nl.done)
+	})
 }

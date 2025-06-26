@@ -62,8 +62,23 @@ const (
 	MaxServerSendMsgSize   = "max-server-send-msg-size"
 	MaxCallRecvMsgSize     = "max-call-recv-msg-size"
 	MaxServerRecvMsgSize   = "max-server-recv-msg-size"
-	KeepAliveInterval      = "keep-alive-interval"
-	KeepAliveTimeout       = "keep-alive-timeout"
+
+	// TODO: remove KeepAliveInterval and KeepAliveInterval in version 4.0.0
+	KeepAliveInterval = "keep-alive-interval"
+	KeepAliveTimeout  = "keep-alive-timeout"
+
+	// TODO: remove IDLMode after old triple removed
+	IDLMode = "IDL-mode"
+
+	TripleConfigKey   = "triple-config"
+	ConsumerConfigKey = "consumer-config"
+)
+
+// TODO: remove this after old triple removed
+// IDLMode
+const (
+	IDL    = "IDL"
+	NONIDL = "non-IDL"
 )
 
 // tls constant
@@ -105,6 +120,7 @@ const (
 	XdsCircuitBreakerKey                 = "xds_circuit_reaker"
 	OTELServerTraceKey                   = "otelServerTrace"
 	OTELClientTraceKey                   = "otelClientTrace"
+	ContextFilterKey                     = "context"
 )
 
 const (
@@ -149,6 +165,7 @@ const (
 	ServiceInfoKey                     = "service-info"
 	RpcServiceKey                      = "rpc-service"
 	ClientInfoKey                      = "client-info"
+	TLSConfigKey                       = "tls-config"
 )
 
 const (
@@ -321,6 +338,7 @@ const (
 	Tagkey                            = "dubbo.tag" // key of tag
 	ConditionKey                      = "dubbo.condition"
 	AttachmentKey                     = DubboCtxKey("attachment") // key in context in invoker
+	AttachmentServerKey               = DubboCtxKey("server-attachment")
 	TagRouterFactoryKey               = "tag"
 	AffinityAppRouterFactoryKey       = "application.affinity"
 	AffinityServiceRouterFactoryKey   = "service.affinity"
@@ -462,4 +480,21 @@ const (
 // priority
 const (
 	DefaultPriority = 0
+)
+
+const (
+	TripleGoInterfaceName = "XXX_TRIPLE_GO_INTERFACE_NAME"
+	TripleGoMethodName    = "XXX_TRIPLE_GO_METHOD_NAME"
+)
+
+// Weight constants for Nacos instance registration
+const (
+	DefaultNacosWeight = 1.0     // Default weight if not specified or invalid
+	MinNacosWeight     = 0.0     // Minimum allowed weight (Nacos range starts at 0)
+	MaxNacosWeight     = 10000.0 // Maximum allowed weight (Nacos range ends at 10000)
+)
+
+const (
+	GrpcHeaderStatus  = "Grpc-Status"
+	GrpcHeaderMessage = "Grpc-Message"
 )

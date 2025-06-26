@@ -36,8 +36,9 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/filter/handler"
 	"dubbo.apache.org/dubbo-go/v3/filter/tps/limiter"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 func TestTpsLimitFilterInvokeWithNoTpsLimiter(t *testing.T) {
@@ -45,12 +46,12 @@ func TestTpsLimitFilterInvokeWithNoTpsLimiter(t *testing.T) {
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.TPSLimiterKey, ""))
-	attch := make(map[string]interface{})
+	attch := make(map[string]any)
 
 	result := tpsFilter.Invoke(context.Background(),
-		protocol.NewBaseInvoker(invokeUrl),
+		base.NewBaseInvoker(invokeUrl),
 		invocation.NewRPCInvocation("MethodName",
-			[]interface{}{"OK"}, attch))
+			[]any{"OK"}, attch))
 	assert.Nil(t, result.Error())
 	assert.Nil(t, result.Result())
 }
@@ -68,12 +69,12 @@ func TestGenericFilterInvokeWithDefaultTpsLimiter(t *testing.T) {
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.TPSLimiterKey, constant.DefaultKey))
-	attch := make(map[string]interface{})
+	attch := make(map[string]any)
 
 	result := tpsFilter.Invoke(context.Background(),
-		protocol.NewBaseInvoker(invokeUrl),
+		base.NewBaseInvoker(invokeUrl),
 		invocation.NewRPCInvocation("MethodName",
-			[]interface{}{"OK"}, attch))
+			[]any{"OK"}, attch))
 	assert.Nil(t, result.Error())
 	assert.Nil(t, result.Result())
 }
@@ -87,7 +88,7 @@ func TestGenericFilterInvokeWithDefaultTpsLimiterNotAllow(t *testing.T) {
 		return mockLimiter
 	})
 
-	mockResult := &protocol.RPCResult{}
+	mockResult := &result.RPCResult{}
 	mockRejectedHandler := handler.NewMockRejectedExecutionHandler(ctrl)
 	mockRejectedHandler.EXPECT().RejectedExecution(gomock.Any(), gomock.Any()).Return(mockResult).Times(1)
 
@@ -99,11 +100,11 @@ func TestGenericFilterInvokeWithDefaultTpsLimiterNotAllow(t *testing.T) {
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.TPSLimiterKey, constant.DefaultKey))
-	attch := make(map[string]interface{})
+	attch := make(map[string]any)
 
 	result := tpsFilter.Invoke(context.Background(),
-		protocol.NewBaseInvoker(invokeUrl),
-		invocation.NewRPCInvocation("MethodName", []interface{}{"OK"}, attch))
+		base.NewBaseInvoker(invokeUrl),
+		invocation.NewRPCInvocation("MethodName", []any{"OK"}, attch))
 	assert.Nil(t, result.Error())
 	assert.Nil(t, result.Result())
 }

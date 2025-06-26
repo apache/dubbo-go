@@ -30,7 +30,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router/condition/matcher/pattern_value"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 var (
@@ -56,12 +56,12 @@ func NewBaseConditionMatcher(key string) *BaseConditionMatcher {
 }
 
 // GetValue returns a value from different places of the request context.
-func (b *BaseConditionMatcher) GetValue(sample map[string]string, url *common.URL, invocation protocol.Invocation) string {
+func (b *BaseConditionMatcher) GetValue(sample map[string]string, url *common.URL, invocation base.Invocation) string {
 	return ""
 }
 
 // IsMatch indicates whether this matcher matches the patterns with request context.
-func (b *BaseConditionMatcher) IsMatch(value string, param *common.URL, invocation protocol.Invocation, isWhenCondition bool) bool {
+func (b *BaseConditionMatcher) IsMatch(value string, param *common.URL, invocation base.Invocation, isWhenCondition bool) bool {
 	if value == "" {
 		// if key does not present in whichever of url, invocation or attachment based on the matcher type, then return false.
 		return false
@@ -92,7 +92,7 @@ func (b *BaseConditionMatcher) GetMismatches() map[string]struct{} {
 	return b.misMatches
 }
 
-func (b *BaseConditionMatcher) patternMatches(value string, param *common.URL, invocation protocol.Invocation, isWhenCondition bool) bool {
+func (b *BaseConditionMatcher) patternMatches(value string, param *common.URL, invocation base.Invocation, isWhenCondition bool) bool {
 	for match := range b.matches {
 		if doPatternMatch(match, value, param, invocation, isWhenCondition) {
 			return true
@@ -101,7 +101,7 @@ func (b *BaseConditionMatcher) patternMatches(value string, param *common.URL, i
 	return false
 }
 
-func (b *BaseConditionMatcher) patternMisMatches(value string, param *common.URL, invocation protocol.Invocation, isWhenCondition bool) bool {
+func (b *BaseConditionMatcher) patternMisMatches(value string, param *common.URL, invocation base.Invocation, isWhenCondition bool) bool {
 	for mismatch := range b.misMatches {
 		if doPatternMatch(mismatch, value, param, invocation, isWhenCondition) {
 			return false
@@ -110,7 +110,7 @@ func (b *BaseConditionMatcher) patternMisMatches(value string, param *common.URL
 	return true
 }
 
-func doPatternMatch(pattern string, value string, url *common.URL, invocation protocol.Invocation, isWhenCondition bool) bool {
+func doPatternMatch(pattern string, value string, url *common.URL, invocation base.Invocation, isWhenCondition bool) bool {
 	once.Do(initValueMatchers)
 	for _, valueMatcher := range valueMatchers {
 		if valueMatcher.ShouldMatch(pattern) {
@@ -125,7 +125,7 @@ func doPatternMatch(pattern string, value string, url *common.URL, invocation pr
 }
 
 // GetSampleValueFromURL returns the value of the conditionKey in the URL
-func GetSampleValueFromURL(conditionKey string, sample map[string]string, param *common.URL, invocation protocol.Invocation) string {
+func GetSampleValueFromURL(conditionKey string, sample map[string]string, param *common.URL, invocation base.Invocation) string {
 	var sampleValue string
 	// get real invoked method name from invocation
 	if invocation != nil && (constant.MethodKey == conditionKey || constant.MethodsKey == conditionKey) {
@@ -136,7 +136,7 @@ func GetSampleValueFromURL(conditionKey string, sample map[string]string, param 
 	return sampleValue
 }
 
-func Match(condition Matcher, sample map[string]string, param *common.URL, invocation protocol.Invocation, isWhenCondition bool) bool {
+func Match(condition Matcher, sample map[string]string, param *common.URL, invocation base.Invocation, isWhenCondition bool) bool {
 	return condition.IsMatch(condition.GetValue(sample, param, invocation), param, invocation, isWhenCondition)
 }
 

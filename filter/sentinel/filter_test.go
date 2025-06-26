@@ -36,8 +36,9 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 func TestSentinelFilter_QPS(t *testing.T) {
@@ -48,10 +49,10 @@ func TestSentinelFilter_QPS(t *testing.T) {
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
 	assert.NoError(t, err)
-	mockInvoker := protocol.NewBaseInvoker(url)
+	mockInvoker := base.NewBaseInvoker(url)
 	interfaceResourceName, _ := getResourceName(mockInvoker,
-		invocation.NewRPCInvocation("hello", []interface{}{"OK"}, make(map[string]interface{})), "prefix_")
-	mockInvocation := invocation.NewRPCInvocation("hello", []interface{}{"OK"}, make(map[string]interface{}))
+		invocation.NewRPCInvocation("hello", []any{"OK"}, make(map[string]any)), "prefix_")
+	mockInvocation := invocation.NewRPCInvocation("hello", []any{"OK"}, make(map[string]any))
 
 	_, err = flow.LoadRules([]*flow.Rule{
 		{
@@ -90,10 +91,10 @@ func TestSentinelFilter_QPS(t *testing.T) {
 }
 
 type ErrInvoker struct {
-	*protocol.BaseInvoker
+	*base.BaseInvoker
 }
 
-func (ei *ErrInvoker) Invoke(context context.Context, invocation protocol.Invocation) protocol.Result {
+func (ei *ErrInvoker) Invoke(context context.Context, invocation base.Invocation) result.Result {
 	invoke := ei.BaseInvoker.Invoke(context, invocation)
 	invoke.SetError(errors.New("error"))
 	return invoke
@@ -106,7 +107,7 @@ type stateChangeTestListener struct {
 func (s *stateChangeTestListener) OnTransformToClosed(prev circuitbreaker.State, rule circuitbreaker.Rule) {
 }
 
-func (s *stateChangeTestListener) OnTransformToOpen(prev circuitbreaker.State, rule circuitbreaker.Rule, snapshot interface{}) {
+func (s *stateChangeTestListener) OnTransformToOpen(prev circuitbreaker.State, rule circuitbreaker.Rule, snapshot any) {
 	s.OnTransformToOpenChan <- struct{}{}
 }
 
@@ -121,10 +122,10 @@ func TestSentinelFilter_ErrorCount(t *testing.T) {
 		"module=dubbogo+user-info+server&org=test.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
 	assert.NoError(t, err)
-	mockInvoker := &ErrInvoker{protocol.NewBaseInvoker(url)}
+	mockInvoker := &ErrInvoker{base.NewBaseInvoker(url)}
 	_, methodResourceName := getResourceName(mockInvoker,
-		invocation.NewRPCInvocation("hi", []interface{}{"OK"}, make(map[string]interface{})), DefaultProviderPrefix)
-	mockInvocation := invocation.NewRPCInvocation("hi", []interface{}{"OK"}, make(map[string]interface{}))
+		invocation.NewRPCInvocation("hi", []any{"OK"}, make(map[string]any)), DefaultProviderPrefix)
+	mockInvocation := invocation.NewRPCInvocation("hi", []any{"OK"}, make(map[string]any))
 
 	// Register a state change listener so that we could observe the state change of the internal circuit breaker.
 	listener := &stateChangeTestListener{}
@@ -165,8 +166,8 @@ func TestConsumerFilter_Invoke(t *testing.T) {
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
 	assert.NoError(t, err)
-	mockInvoker := protocol.NewBaseInvoker(url)
-	mockInvocation := invocation.NewRPCInvocation("hello", []interface{}{"OK"}, make(map[string]interface{}))
+	mockInvoker := base.NewBaseInvoker(url)
+	mockInvocation := invocation.NewRPCInvocation("hello", []any{"OK"}, make(map[string]any))
 	result := f.Invoke(context.TODO(), mockInvoker, mockInvocation)
 	assert.NoError(t, result.Error())
 }
@@ -179,8 +180,8 @@ func TestProviderFilter_Invoke(t *testing.T) {
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
 	assert.NoError(t, err)
-	mockInvoker := protocol.NewBaseInvoker(url)
-	mockInvocation := invocation.NewRPCInvocation("hello", []interface{}{"OK"}, make(map[string]interface{}))
+	mockInvoker := base.NewBaseInvoker(url)
+	mockInvocation := invocation.NewRPCInvocation("hello", []any{"OK"}, make(map[string]any))
 	result := f.Invoke(context.TODO(), mockInvoker, mockInvocation)
 	assert.NoError(t, result.Error())
 }
@@ -193,9 +194,9 @@ func TestGetResourceName(t *testing.T) {
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
 	assert.NoError(t, err)
-	mockInvoker := protocol.NewBaseInvoker(url)
+	mockInvoker := base.NewBaseInvoker(url)
 	interfaceResourceName, methodResourceName := getResourceName(mockInvoker,
-		invocation.NewRPCInvocation("hello", []interface{}{"OK"}, make(map[string]interface{})), "prefix_")
+		invocation.NewRPCInvocation("hello", []any{"OK"}, make(map[string]any)), "prefix_")
 	assert.Equal(t, "com.ikurento.user.UserProvider:myGroup:1.0.0", interfaceResourceName)
 	assert.Equal(t, "prefix_com.ikurento.user.UserProvider:myGroup:1.0.0:hello()", methodResourceName)
 }

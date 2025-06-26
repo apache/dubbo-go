@@ -24,7 +24,8 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 var (
@@ -63,7 +64,7 @@ func GetClusterInterceptors() []Interceptor {
 
 // InterceptorInvoker mocks cluster interceptor as an invoker
 type InterceptorInvoker struct {
-	next        protocol.Invoker
+	next        base.Invoker
 	interceptor Interceptor
 }
 
@@ -78,7 +79,7 @@ func (i *InterceptorInvoker) IsAvailable() bool {
 }
 
 // Invoke is used to call service method by invocation
-func (i *InterceptorInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+func (i *InterceptorInvoker) Invoke(ctx context.Context, invocation base.Invocation) result.Result {
 	return i.interceptor.Invoke(ctx, i.next, invocation)
 }
 
@@ -87,7 +88,7 @@ func (i *InterceptorInvoker) Destroy() {
 	i.next.Destroy()
 }
 
-func BuildInterceptorChain(invoker protocol.Invoker, builtins ...Interceptor) protocol.Invoker {
+func BuildInterceptorChain(invoker base.Invoker, builtins ...Interceptor) base.Invoker {
 	// The order of interceptors is from left to right, so loading from right to left
 	next := invoker
 	interceptors := GetClusterInterceptors()
@@ -98,7 +99,7 @@ func BuildInterceptorChain(invoker protocol.Invoker, builtins ...Interceptor) pr
 		}
 	}
 
-	if builtins != nil && len(builtins) > 0 {
+	if len(builtins) > 0 {
 		for i := len(builtins) - 1; i >= 0; i-- {
 			v := &InterceptorInvoker{next: next, interceptor: builtins[i]}
 			next = v

@@ -35,7 +35,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	tripleapi "dubbo.apache.org/dubbo-go/v3/metadata/triple_api/proto"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
@@ -75,7 +75,7 @@ type remoteMetadataService interface {
 }
 
 type triMetadataServiceV2 struct {
-	invoker protocol.Invoker
+	invoker base.Invoker
 }
 
 func (m *triMetadataServiceV2) getMetadataInfo(ctx context.Context, revision string) (*info.MetadataInfo, error) {
@@ -113,10 +113,10 @@ func convertMetadataInfoV2(v2 *tripleapi.MetadataInfoV2) *info.MetadataInfo {
 	return metadataInfo
 }
 
-func generateInvocation(u *common.URL, methodName string, req interface{}, resp interface{}, callType string) (protocol.Invocation, error) {
+func generateInvocation(u *common.URL, methodName string, req any, resp any, callType string) (base.Invocation, error) {
 	var inv *invocation.RPCInvocation
 	if u.Protocol == constant.TriProtocol {
-		var paramsRawVals []interface{}
+		var paramsRawVals []any
 		paramsRawVals = append(paramsRawVals, req)
 		if resp != nil {
 			paramsRawVals = append(paramsRawVals, resp)
@@ -125,7 +125,7 @@ func generateInvocation(u *common.URL, methodName string, req interface{}, resp 
 			invocation.WithMethodName(methodName),
 			invocation.WithAttachment(constant.TimeoutKey, "5000"),
 			invocation.WithAttachment(constant.RetriesKey, "2"),
-			invocation.WithArguments([]interface{}{req}),
+			invocation.WithArguments([]any{req}),
 			invocation.WithReply(resp),
 			invocation.WithParameterRawValues(paramsRawVals),
 		)
@@ -134,9 +134,9 @@ func generateInvocation(u *common.URL, methodName string, req interface{}, resp 
 		rV := reflect.ValueOf(req)
 		inv = invocation.NewRPCInvocationWithOptions(
 			invocation.WithMethodName(methodName),
-			invocation.WithArguments([]interface{}{rV.Interface()}),
+			invocation.WithArguments([]any{rV.Interface()}),
 			invocation.WithReply(resp),
-			invocation.WithAttachments(map[string]interface{}{constant.AsyncKey: "false"}),
+			invocation.WithAttachments(map[string]any{constant.AsyncKey: "false"}),
 			invocation.WithParameterValues([]reflect.Value{rV}))
 	}
 
@@ -144,7 +144,7 @@ func generateInvocation(u *common.URL, methodName string, req interface{}, resp 
 }
 
 type remoteMetadataServiceV1 struct {
-	invoker protocol.Invoker
+	invoker base.Invoker
 }
 
 func (m *remoteMetadataServiceV1) getMetadataInfo(ctx context.Context, revision string) (*info.MetadataInfo, error) {

@@ -24,18 +24,18 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 type aliasMethodPicker struct {
-	invokers []protocol.Invoker // Instance
+	invokers []base.Invoker // Instance
 
 	weightSum int64
 	alias     []int
 	prob      []float64
 }
 
-func NewAliasMethodPicker(invokers []protocol.Invoker, invocation protocol.Invocation) *aliasMethodPicker {
+func NewAliasMethodPicker(invokers []base.Invoker, invocation base.Invocation) *aliasMethodPicker {
 	am := &aliasMethodPicker{
 		invokers: invokers,
 	}
@@ -44,7 +44,7 @@ func NewAliasMethodPicker(invokers []protocol.Invoker, invocation protocol.Invoc
 }
 
 // Alias Method: https://en.wikipedia.org/wiki/Alias_method
-func (am *aliasMethodPicker) init(invocation protocol.Invocation) {
+func (am *aliasMethodPicker) init(invocation base.Invocation) {
 	n := len(am.invokers)
 	weights := make([]int64, n)
 	am.alias = make([]int, n)
@@ -106,9 +106,9 @@ func (am *aliasMethodPicker) init(invocation protocol.Invocation) {
 	}
 }
 
-func (am *aliasMethodPicker) Pick() protocol.Invoker {
-	i := rand.Intn(len(am.invokers))
-	if rand.Float64() < am.prob[i] {
+func (am *aliasMethodPicker) Pick() base.Invoker {
+	i := rand.Intn(len(am.invokers)) //NOSONAR
+	if rand.Float64() < am.prob[i] { //NOSONAR
 		return am.invokers[i]
 	}
 	return am.invokers[am.alias[i]]

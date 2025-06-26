@@ -90,7 +90,7 @@ func TestWithClientFilter(t *testing.T) {
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
 				assert.Nil(t, err)
-				assert.Equal(t, "test_filter", cli.cliOpts.Consumer.Filter)
+				assert.Equal(t, "test_filter", cli.cliOpts.overallReference.Filter)
 			},
 		},
 	}
@@ -578,7 +578,7 @@ func TestWithClientProtocol(t *testing.T) {
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
 				assert.Nil(t, err)
-				assert.Equal(t, constant.Dubbo, cli.cliOpts.Consumer.Protocol)
+				assert.Equal(t, constant.DubboProtocol, cli.cliOpts.Consumer.Protocol)
 			},
 		},
 		{
@@ -1119,7 +1119,7 @@ func TestWithProtocol(t *testing.T) {
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
 				assert.Nil(t, err)
-				assert.Equal(t, constant.Dubbo, refOpts.Reference.Protocol)
+				assert.Equal(t, constant.DubboProtocol, refOpts.Reference.Protocol)
 			},
 		},
 		{

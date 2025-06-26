@@ -44,7 +44,7 @@ func main() {
 		panic(err)
 	}
 	var resp string
-	if err := conn.CallUnary(context.Background(), []interface{}{"hello", "new", "dubbo"}, &resp, "Greet"); err != nil {
+	if err := conn.CallUnary(context.Background(), []any{"hello", "new", "dubbo"}, &resp, "Greet"); err != nil {
 		logger.Errorf("GreetProvider.Greet err: %s", err)
 		return
 	}

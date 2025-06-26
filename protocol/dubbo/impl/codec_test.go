@@ -32,7 +32,7 @@ import (
 
 func TestDubboPackage_MarshalAndUnmarshal(t *testing.T) {
 	pkg := NewDubboPackage(nil)
-	pkg.Body = []interface{}{"a"}
+	pkg.Body = []any{"a"}
 	pkg.Header.Type = PackageHeartbeat
 	pkg.Header.SerialID = constant.SHessian2
 	pkg.Header.ID = 10086
@@ -45,13 +45,13 @@ func TestDubboPackage_MarshalAndUnmarshal(t *testing.T) {
 	pkgres := NewDubboPackage(data)
 	pkgres.SetSerializer(HessianSerializer{})
 
-	pkgres.Body = []interface{}{}
+	pkgres.Body = []any{}
 	err = pkgres.Unmarshal()
 	assert.NoError(t, err)
 	assert.Equal(t, PackageHeartbeat|PackageRequest|PackageRequest_TwoWay, pkgres.Header.Type)
 	assert.Equal(t, constant.SHessian2, pkgres.Header.SerialID)
 	assert.Equal(t, int64(10086), pkgres.Header.ID)
-	assert.Equal(t, 0, len(pkgres.Body.([]interface{})))
+	assert.Equal(t, 0, len(pkgres.Body.([]any)))
 
 	// request
 	pkg.Header.Type = PackageRequest
@@ -65,9 +65,9 @@ func TestDubboPackage_MarshalAndUnmarshal(t *testing.T) {
 
 	pkgres = NewDubboPackage(data)
 	pkgres.SetSerializer(HessianSerializer{})
-	pkgres.Body = make([]interface{}, 7)
+	pkgres.Body = make([]any, 7)
 	err = pkgres.Unmarshal()
-	reassembleBody := pkgres.GetBody().(map[string]interface{})
+	reassembleBody := pkgres.GetBody().(map[string]any)
 	assert.NoError(t, err)
 	assert.Equal(t, PackageRequest, pkgres.Header.Type)
 	assert.Equal(t, constant.SHessian2, pkgres.Header.SerialID)
@@ -77,8 +77,8 @@ func TestDubboPackage_MarshalAndUnmarshal(t *testing.T) {
 	assert.Equal(t, "2.6", pkgres.Service.Version)
 	assert.Equal(t, "Method", pkgres.Service.Method)
 	assert.Equal(t, "Ljava/lang/String;", reassembleBody["argsTypes"].(string))
-	assert.Equal(t, []interface{}{"a"}, reassembleBody["args"])
-	tmpData := map[string]interface{}{
+	assert.Equal(t, []any{"a"}, reassembleBody["args"])
+	tmpData := map[string]any{
 		"dubbo":     "2.0.2",
 		"interface": "Service",
 		"path":      "path",

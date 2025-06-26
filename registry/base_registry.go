@@ -175,7 +175,7 @@ func (r *BaseRegistry) service(c *common.URL) string {
 // RestartCallBack for reregister when reconnect
 func (r *BaseRegistry) RestartCallBack() bool {
 	flag := true
-	r.registered.Range(func(key, value interface{}) bool {
+	r.registered.Range(func(key, value any) bool {
 		registeredUrl := value.(*common.URL)
 		err := r.register(registeredUrl)
 		if err != nil {
@@ -264,7 +264,7 @@ func (r *BaseRegistry) providerRegistry(c *common.URL, params url.Values, f crea
 	if c.Path == "" || len(c.Methods) == 0 {
 		return "", "", perrors.Errorf("conf{Path:%s, Methods:%s}", c.Path, c.Methods)
 	}
-	dubboPath = fmt.Sprintf("/%s/%s/%s", r.URL.GetParam(constant.RegistryGroupKey, "dubbo"), r.service(c), common.DubboNodes[common.PROVIDER])
+	dubboPath = fmt.Sprintf("/%s/%s/%s", r.GetParam(constant.RegistryGroupKey, "dubbo"), r.service(c), common.DubboNodes[common.PROVIDER])
 	if f != nil {
 		err = f(dubboPath)
 	}
@@ -310,7 +310,7 @@ func (r *BaseRegistry) consumerRegistry(c *common.URL, params url.Values, f crea
 		rawURL    string
 		err       error
 	)
-	dubboPath = fmt.Sprintf("/%s/%s/%s", r.URL.GetParam(constant.RegistryGroupKey, "dubbo"), r.service(c), common.DubboNodes[common.CONSUMER])
+	dubboPath = fmt.Sprintf("/%s/%s/%s", r.GetParam(constant.RegistryGroupKey, "dubbo"), r.service(c), common.DubboNodes[common.CONSUMER])
 
 	if f != nil {
 		err = f(dubboPath)

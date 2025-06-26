@@ -29,7 +29,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	invocation2 "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
 func TestDefaultAccesskeyStorage_GetAccesskeyPair(t *testing.T) {
@@ -37,9 +37,9 @@ func TestDefaultAccesskeyStorage_GetAccesskeyPair(t *testing.T) {
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.SecretAccessKeyKey, "skey"),
 		common.WithParamsValue(constant.AccessKeyIDKey, "akey"))
-	invocation := &invocation2.RPCInvocation{}
+	inv := &invocation.RPCInvocation{}
 	storage = &defaultAccesskeyStorage{}
-	accesskeyPair := storage.GetAccessKeyPair(invocation, url)
+	accesskeyPair := storage.GetAccessKeyPair(inv, url)
 	assert.Equal(t, "skey", accesskeyPair.SecretKey)
 	assert.Equal(t, "akey", accesskeyPair.AccessKey)
 }

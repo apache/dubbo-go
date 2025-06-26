@@ -32,7 +32,9 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/filter"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 var (
@@ -48,7 +50,7 @@ func init() {
 }
 
 type providerGracefulShutdownFilter struct {
-	shutdownConfig *config.ShutdownConfig
+	shutdownConfig *global.ShutdownConfig
 }
 
 func newProviderGracefulShutdownFilter() filter.Filter {
@@ -60,8 +62,8 @@ func newProviderGracefulShutdownFilter() filter.Filter {
 	return psf
 }
 
-// Invoke adds the requests count and block the new requests if application is closing
-func (f *providerGracefulShutdownFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+// Invoke adds the requests count and blocks the new requests if application is closing
+func (f *providerGracefulShutdownFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
 	if f.rejectNewRequest() {
 		logger.Info("The application is closing, new request will be rejected.")
 		handler := constant.DefaultKey
@@ -81,19 +83,24 @@ func (f *providerGracefulShutdownFilter) Invoke(ctx context.Context, invoker pro
 }
 
 // OnResponse reduces the number of active processes then return the process result
-func (f *providerGracefulShutdownFilter) OnResponse(ctx context.Context, result protocol.Result, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+func (f *providerGracefulShutdownFilter) OnResponse(ctx context.Context, result result.Result, invoker base.Invoker, invocation base.Invocation) result.Result {
 	f.shutdownConfig.ProviderActiveCount.Dec()
 	return result
 }
 
-func (f *providerGracefulShutdownFilter) Set(name string, conf interface{}) {
+func (f *providerGracefulShutdownFilter) Set(name string, conf any) {
 	switch name {
 	case constant.GracefulShutdownFilterShutdownConfig:
-		if shutdownConfig, ok := conf.(*config.ShutdownConfig); ok {
-			f.shutdownConfig = shutdownConfig
-			return
+		switch ct := conf.(type) {
+		case *global.ShutdownConfig:
+			f.shutdownConfig = ct
+		// only for compatibility with old config, able to directly remove after config is deleted
+		case *config.ShutdownConfig:
+			f.shutdownConfig = compatGlobalShutdownConfig(ct)
+		default:
+			logger.Warnf("the type of config for {%s} should be *global.ShutdownConfig", constant.GracefulShutdownFilterShutdownConfig)
 		}
-		logger.Warnf("the type of config for {%s} should be *config.ShutdownConfig", constant.GracefulShutdownFilterShutdownConfig)
+		return
 	default:
 		// do nothing
 	}

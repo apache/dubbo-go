@@ -37,14 +37,14 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 // for version 3.0-
 type stateRouters []*StateRouter
 
-func (p stateRouters) route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
+func (p stateRouters) route(invokers []base.Invoker, url *common.URL, invocation base.Invocation) []base.Invoker {
 	if len(invokers) == 0 || len(p) == 0 {
 		return invokers
 	}
@@ -62,13 +62,13 @@ type multiplyConditionRoute struct {
 	routes          []*MultiDestRouter
 }
 
-func (m *multiplyConditionRoute) route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
+func (m *multiplyConditionRoute) route(invokers []base.Invoker, url *common.URL, invocation base.Invocation) []base.Invoker {
 	if len(m.trafficDisabled) != 0 {
 		for _, cond := range m.trafficDisabled {
 			if cond.MatchRequest(url, invocation) {
 				logger.Warnf("Request has been disabled %s by Condition.trafficDisable.match=\"%s\"", url.String(), cond.rule)
 				invocation.SetAttachment(constant.TrafficDisableKey, struct{}{})
-				return []protocol.Invoker{}
+				return []base.Invoker{}
 			}
 		}
 	}
@@ -85,7 +85,7 @@ func (m *multiplyConditionRoute) route(invokers []protocol.Invoker, url *common.
 				if ok {
 					logger.Errorf("request[%s] route an empty set in condition-route:: %s", url.String(), strings.Join(routeChains, "-->"))
 				}
-				return []protocol.Invoker{}
+				return []base.Invoker{}
 			}
 		}
 		delete(invocation.Attributes(), "condition-chain")
@@ -95,7 +95,7 @@ func (m *multiplyConditionRoute) route(invokers []protocol.Invoker, url *common.
 }
 
 type condRouter interface {
-	route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker
+	route(invokers []base.Invoker, url *common.URL, invocation base.Invocation) []base.Invoker
 }
 
 type DynamicRouter struct {
@@ -105,7 +105,7 @@ type DynamicRouter struct {
 	conditionRouter condRouter
 }
 
-func (d *DynamicRouter) Route(invokers []protocol.Invoker, url *common.URL, invocation protocol.Invocation) []protocol.Invoker {
+func (d *DynamicRouter) Route(invokers []base.Invoker, url *common.URL, invocation base.Invocation) []base.Invoker {
 	if len(invokers) == 0 {
 		return invokers
 	}
@@ -153,7 +153,7 @@ func (d *DynamicRouter) Process(event *config_center.ConfigChangeEvent) {
 
 /*
 to check configVersion, here need decode twice.
-From a performance perspective, decoding from a string and decoding from a map[string]interface{}
+From a performance perspective, decoding from a string and decoding from a map[string]any
 cost nearly same (a few milliseconds).
 
 To keep the code simpler,
@@ -162,7 +162,7 @@ here use yaml-to-map and yaml-to-struct, not yaml-to-map-to-struct
 generateCondition @return(router,force,enable,error)
 */
 func generateCondition(rawConfig string) (condRouter, bool, bool, error) {
-	m := map[string]interface{}{}
+	m := map[string]any{}
 
 	err := yaml.Unmarshal([]byte(rawConfig), m)
 	if err != nil {
@@ -231,7 +231,7 @@ func generateMultiConditionRoute(rawConfig string) (*multiplyConditionRoute, boo
 		if conditionRoute == nil {
 			continue
 		}
-		if conditionRoute.thenCondition != nil && len(conditionRoute.thenCondition) != 0 {
+		if len(conditionRoute.thenCondition) != 0 {
 			conditionRouters = append(conditionRouters, conditionRoute)
 		} else {
 			disableMultiConditions = append(disableMultiConditions, &conditionRoute.whenCondition)
@@ -286,7 +286,7 @@ func (s *ServiceRouter) Priority() int64 {
 	return 140
 }
 
-func (s *ServiceRouter) Notify(invokers []protocol.Invoker) {
+func (s *ServiceRouter) Notify(invokers []base.Invoker) {
 	if len(invokers) == 0 {
 		return
 	}
@@ -339,7 +339,7 @@ func (a *ApplicationRouter) Priority() int64 {
 	return 145
 }
 
-func (a *ApplicationRouter) Notify(invokers []protocol.Invoker) {
+func (a *ApplicationRouter) Notify(invokers []base.Invoker) {
 	if len(invokers) == 0 {
 		return
 	}

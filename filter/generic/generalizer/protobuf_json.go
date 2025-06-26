@@ -46,7 +46,7 @@ func GetProtobufJsonGeneralizer() Generalizer {
 // Currently, ProtobufJsonGeneralizer is disabled temporarily until the triple protocol is ready.
 type ProtobufJsonGeneralizer struct{}
 
-func (g *ProtobufJsonGeneralizer) Generalize(obj interface{}) (interface{}, error) {
+func (g *ProtobufJsonGeneralizer) Generalize(obj any) (any, error) {
 	message, ok := obj.(proto.Message)
 	if !ok {
 		return nil, perrors.Errorf("unexpected type of obj(=%T), wanted is proto.Message", obj)
@@ -60,7 +60,7 @@ func (g *ProtobufJsonGeneralizer) Generalize(obj interface{}) (interface{}, erro
 	return string(jsonbytes), nil
 }
 
-func (g *ProtobufJsonGeneralizer) Realize(obj interface{}, typ reflect.Type) (interface{}, error) {
+func (g *ProtobufJsonGeneralizer) Realize(obj any, typ reflect.Type) (any, error) {
 	jsonbytes, ok := obj.(string)
 	if !ok {
 		return nil, perrors.Errorf("unexpected type of obj(=%T), wanted is string", obj)
@@ -87,6 +87,6 @@ func (g *ProtobufJsonGeneralizer) Realize(obj interface{}, typ reflect.Type) (in
 }
 
 // GetType returns empty string for "protobuf-json"
-func (g *ProtobufJsonGeneralizer) GetType(_ interface{}) (string, error) {
+func (g *ProtobufJsonGeneralizer) GetType(_ any) (string, error) {
 	return "", nil
 }

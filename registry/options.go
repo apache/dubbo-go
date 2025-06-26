@@ -18,7 +18,6 @@
 package registry
 
 import (
-	"fmt"
 	"strings"
 	"time"
 )
@@ -47,7 +46,7 @@ func NewOptions(opts ...Option) *Options {
 	}
 
 	if defOpts.Registry.Protocol == "" {
-		panic(fmt.Sprintf("Please specify registry, eg. WithZookeeper()"))
+		panic("Please specify registry, eg. WithZookeeper()")
 	}
 	if defOpts.ID == "" {
 		defOpts.ID = defOpts.Registry.Protocol
@@ -68,12 +67,6 @@ func WithEtcdV3() Option {
 func WithNacos() Option {
 	return func(opts *Options) {
 		opts.Registry.Protocol = constant.NacosKey
-	}
-}
-
-func WithPolaris() Option {
-	return func(opts *Options) {
-		opts.Registry.Protocol = constant.PolarisKey
 	}
 }
 

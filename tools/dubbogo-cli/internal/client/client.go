@@ -53,7 +53,7 @@ type TelnetClient struct {
 }
 
 // NewTelnetClient create a new tcp connection, and create default request
-func NewTelnetClient(host string, port int, protocolName, interfaceID, version, group, method string, reqPkg interface{}, timeout int) (*TelnetClient, error) {
+func NewTelnetClient(host string, port int, protocolName, interfaceID, version, group, method string, reqPkg any, timeout int) (*TelnetClient, error) {
 	tcpAddr := net.JoinHostPort(host, strconv.Itoa(port))
 	resolved := resolveTCPAddr(tcpAddr)
 	conn, err := net.DialTCP("tcp", nil, resolved)
@@ -78,7 +78,7 @@ func NewTelnetClient(host string, port int, protocolName, interfaceID, version, 
 				Version:     version,
 				Method:      method,
 				Group:       group,
-				Params:      []interface{}{reqPkg},
+				Params:      []any{reqPkg},
 			},
 		},
 	}, nil
@@ -94,7 +94,7 @@ func resolveTCPAddr(addr string) *net.TCPAddr {
 }
 
 // ProcessRequests send all requests
-func (t *TelnetClient) ProcessRequests(userPkg interface{}) {
+func (t *TelnetClient) ProcessRequests(userPkg any) {
 	for i := range t.requestList {
 		t.processSingleRequest(t.requestList[i], userPkg)
 	}
@@ -102,7 +102,7 @@ func (t *TelnetClient) ProcessRequests(userPkg interface{}) {
 
 // addPendingResponse add a response @model to pending queue
 // once the rsp got, the model will be used.
-func (t *TelnetClient) addPendingResponse(model interface{}) uint64 {
+func (t *TelnetClient) addPendingResponse(model any) uint64 {
 	seqId := t.sequence.Load()
 	t.pendingResponses.Store(seqId, model)
 	t.waitNum.Inc()
@@ -122,7 +122,7 @@ func (t *TelnetClient) removePendingResponse(seq uint64) {
 }
 
 // processSingleRequest call one req.
-func (t *TelnetClient) processSingleRequest(req *protocol.Request, userPkg interface{}) {
+func (t *TelnetClient) processSingleRequest(req *protocol.Request, userPkg any) {
 	// proto create package procedure
 	req.ID = t.sequence.Load()
 	inputData, err := t.proto.Write(req)

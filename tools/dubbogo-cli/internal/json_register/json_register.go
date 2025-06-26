@@ -35,7 +35,7 @@ import (
 
 // RegisterStructFromFile create the interface defined by @path file, and register it to hessian
 // the interface defined must have field "JavaClassName"
-func RegisterStructFromFile(path string) interface{} {
+func RegisterStructFromFile(path string) any {
 	if path == "" {
 		return nil
 	}
@@ -53,7 +53,7 @@ func RegisterStructFromFile(path string) interface{} {
 	return pkg
 }
 
-func getJavaClassName(pkg interface{}) string {
+func getJavaClassName(pkg any) string {
 	val := reflect.ValueOf(pkg).Elem()
 	typ := reflect.TypeOf(pkg).Elem()
 	nums := val.NumField()

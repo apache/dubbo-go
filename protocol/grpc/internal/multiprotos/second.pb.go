@@ -35,7 +35,7 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
@@ -311,7 +311,7 @@ func RegisterSecondServiceServer(s *grpc.Server, srv SecondServiceServer) {
 	s.RegisterService(&_SecondService_serviceDesc, srv)
 }
 
-func _SecondService_Service1_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _SecondService_Service1_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(SecondRequest)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -323,13 +323,13 @@ func _SecondService_Service1_Handler(srv interface{}, ctx context.Context, dec f
 		Server:     srv,
 		FullMethod: "/multiprotos.SecondService/Service1",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(SecondServiceServer).Service1(ctx, req.(*SecondRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SecondService_Service2_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _SecondService_Service2_Handler(srv any, stream grpc.ServerStream) error {
 	m := new(SecondRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
@@ -350,7 +350,7 @@ func (x *secondServiceService2Server) Send(m *SecondResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func _SecondService_Service3_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _SecondService_Service3_Handler(srv any, stream grpc.ServerStream) error {
 	return srv.(SecondServiceServer).Service3(&secondServiceService3Server{stream})
 }
 
@@ -376,7 +376,7 @@ func (x *secondServiceService3Server) Recv() (*SecondRequest, error) {
 	return m, nil
 }
 
-func _SecondService_Service4_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _SecondService_Service4_Handler(srv any, stream grpc.ServerStream) error {
 	return srv.(SecondServiceServer).Service4(&secondServiceService4Server{stream})
 }
 
@@ -451,14 +451,14 @@ func (c *SecondServiceClientImpl) GetDubboStub(cc *grpc.ClientConn) SecondServic
 }
 
 type SecondServiceProviderBase struct {
-	proxyImpl protocol.Invoker
+	proxyImpl base.Invoker
 }
 
-func (s *SecondServiceProviderBase) SetProxyImpl(impl protocol.Invoker) {
+func (s *SecondServiceProviderBase) SetProxyImpl(impl base.Invoker) {
 	s.proxyImpl = impl
 }
 
-func (s *SecondServiceProviderBase) GetProxyImpl() protocol.Invoker {
+func (s *SecondServiceProviderBase) GetProxyImpl() base.Invoker {
 	return s.proxyImpl
 }
 
@@ -466,7 +466,7 @@ func (c *SecondServiceProviderBase) Reference() string {
 	return "secondServiceImpl"
 }
 
-func _DUBBO_SecondService_Service1_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _DUBBO_SecondService_Service1_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(SecondRequest)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -474,14 +474,14 @@ func _DUBBO_SecondService_Service1_Handler(srv interface{}, ctx context.Context,
 	// DubboGrpcService is gRPC service
 	type DubboGrpcService interface {
 		// SetProxyImpl sets proxy.
-		SetProxyImpl(impl protocol.Invoker)
+		SetProxyImpl(impl base.Invoker)
 		// GetProxyImpl gets proxy.
-		GetProxyImpl() protocol.Invoker
+		GetProxyImpl() base.Invoker
 		// ServiceDesc gets an RPC service's specification.
 		ServiceDesc() *grpc.ServiceDesc
 	}
 	base := srv.(DubboGrpcService)
-	args := []interface{}{}
+	args := []any{}
 	args = append(args, in)
 	invo := invocation.NewRPCInvocation("Service1", args, nil)
 	if interceptor == nil {
@@ -492,20 +492,20 @@ func _DUBBO_SecondService_Service1_Handler(srv interface{}, ctx context.Context,
 		Server:     srv,
 		FullMethod: "/multiprotos.SecondService/Service1",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		result := base.GetProxyImpl().Invoke(ctx, invo)
 		return result.Result(), result.Error()
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DUBBO_SecondService_Service2_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _DUBBO_SecondService_Service2_Handler(srv any, stream grpc.ServerStream) error {
 	// DubboGrpcService is gRPC service
 	type DubboGrpcService interface {
 		// SetProxyImpl sets proxy.
-		SetProxyImpl(impl protocol.Invoker)
+		SetProxyImpl(impl base.Invoker)
 		// GetProxyImpl gets proxy.
-		GetProxyImpl() protocol.Invoker
+		GetProxyImpl() base.Invoker
 		// ServiceDesc gets an RPC service's specification.
 		ServiceDesc() *grpc.ServiceDesc
 	}
@@ -521,13 +521,13 @@ func _DUBBO_SecondService_Service2_Handler(srv interface{}, stream grpc.ServerSt
 	return srv.(SecondServiceServer).Service2(m, &secondServiceService2Server{stream})
 }
 
-func _DUBBO_SecondService_Service3_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _DUBBO_SecondService_Service3_Handler(srv any, stream grpc.ServerStream) error {
 	// DubboGrpcService is gRPC service
 	type DubboGrpcService interface {
 		// SetProxyImpl sets proxy.
-		SetProxyImpl(impl protocol.Invoker)
+		SetProxyImpl(impl base.Invoker)
 		// GetProxyImpl gets proxy.
-		GetProxyImpl() protocol.Invoker
+		GetProxyImpl() base.Invoker
 		// ServiceDesc gets an RPC service's specification.
 		ServiceDesc() *grpc.ServiceDesc
 	}
@@ -539,13 +539,13 @@ func _DUBBO_SecondService_Service3_Handler(srv interface{}, stream grpc.ServerSt
 	return srv.(SecondServiceServer).Service3(&secondServiceService3Server{stream})
 }
 
-func _DUBBO_SecondService_Service4_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _DUBBO_SecondService_Service4_Handler(srv any, stream grpc.ServerStream) error {
 	// DubboGrpcService is gRPC service
 	type DubboGrpcService interface {
 		// SetProxyImpl sets proxy.
-		SetProxyImpl(impl protocol.Invoker)
+		SetProxyImpl(impl base.Invoker)
 		// GetProxyImpl gets proxy.
-		GetProxyImpl() protocol.Invoker
+		GetProxyImpl() base.Invoker
 		// ServiceDesc gets an RPC service's specification.
 		ServiceDesc() *grpc.ServiceDesc
 	}

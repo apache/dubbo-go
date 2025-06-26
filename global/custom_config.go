@@ -24,12 +24,12 @@ package global
 // Notice: This struct is EXPERIMENTAL and may be changed or removed in a
 // later release.
 type CustomConfig struct {
-	ConfigMap map[string]interface{} `yaml:"config-map" json:"config-map,omitempty" property:"config-map"`
+	ConfigMap map[string]any `yaml:"config-map" json:"config-map,omitempty" property:"config-map"`
 }
 
 func DefaultCustomConfig() *CustomConfig {
 	return &CustomConfig{
-		ConfigMap: make(map[string]interface{}),
+		ConfigMap: make(map[string]any),
 	}
 }
 
@@ -39,7 +39,7 @@ func (c *CustomConfig) Clone() *CustomConfig {
 		return nil
 	}
 
-	newConfigMap := make(map[string]interface{}, len(c.ConfigMap))
+	newConfigMap := make(map[string]any, len(c.ConfigMap))
 	for k, v := range c.ConfigMap {
 		newConfigMap[k] = v
 	}

@@ -23,7 +23,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 // PriorityRouterFactory creates priority router with url
@@ -35,7 +35,7 @@ type PriorityRouterFactory interface {
 // PriorityRouter routes with priority
 type PriorityRouter interface {
 	// Route Determine the target invokers list.
-	Route([]protocol.Invoker, *common.URL, protocol.Invocation) []protocol.Invoker
+	Route([]base.Invoker, *common.URL, base.Invocation) []base.Invoker
 
 	// URL Return URL in router
 	URL() *common.URL
@@ -45,13 +45,13 @@ type PriorityRouter interface {
 	Priority() int64
 
 	// Notify the router the invoker list
-	Notify(invokers []protocol.Invoker)
+	Notify(invokers []base.Invoker)
 }
 
 // Poolable caches address pool and address metadata for a router instance which will be used later in Router's Route.
 type Poolable interface {
 	// Pool created address pool and address metadata from the invokers.
-	Pool([]protocol.Invoker) (AddrPool, AddrMetadata)
+	Pool([]base.Invoker) (AddrPool, AddrMetadata)
 
 	// ShouldPool returns if it should pool. One typical scenario is a router rule changes, in this case, a pooling
 	// is necessary, even if the addresses not changed at all.
@@ -75,7 +75,7 @@ type AddrMetadata interface {
 // the router implements Poolable.
 type Cache interface {
 	// GetInvokers returns the snapshot of received invokers.
-	GetInvokers() []protocol.Invoker
+	GetInvokers() []base.Invoker
 
 	// FindAddrPool returns address pool associated with the given Poolable instance.
 	FindAddrPool(Poolable) AddrPool

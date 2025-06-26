@@ -94,7 +94,7 @@ func (l *CacheListener) pathToKeyGroup(path string) (string, string) {
 	if len(path) == 0 {
 		return path, ""
 	}
-	groupKey := strings.Replace(strings.Replace(path, l.rootPath+constant.PathSeparator, "", -1), constant.PathSeparator, constant.DotSeparator, -1)
+	groupKey := strings.ReplaceAll(strings.ReplaceAll(path, l.rootPath+constant.PathSeparator, ""), constant.PathSeparator, constant.DotSeparator)
 	index := strings.Index(groupKey, constant.DotSeparator)
 	return groupKey[index+1:], groupKey[0:index]
 }

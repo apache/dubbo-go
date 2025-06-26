@@ -22,6 +22,8 @@ import (
 )
 
 import (
+	"github.com/apache/dubbo-go-hessian2"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -57,4 +59,47 @@ func TestGetArgType(t *testing.T) {
 	t.Run("param", func(t *testing.T) {
 		assert.Equal(t, dubboParam, getArgType(&Param{}))
 	})
+}
+
+func TestMarshalRequestWithTypedNilPointer(t *testing.T) {
+	encoder := hessian.NewEncoder()
+	pkg := DubboPackage{
+		Service: Service{
+			Path:    "test.Path",
+			Version: "1.0.0",
+			Method:  "Echo",
+		},
+		Body: &RequestPayload{
+			Params: []any{(*int32)(nil)},
+			Attachments: map[string]any{
+				"key": "value",
+			},
+		},
+	}
+
+	data, err := marshalRequest(encoder, pkg)
+	assert.NoError(t, err)
+	assert.NotNil(t, data)
+}
+
+func TestMarshalRequestWithNonNilPointer(t *testing.T) {
+	val := int32(42)
+	encoder := hessian.NewEncoder()
+	pkg := DubboPackage{
+		Service: Service{
+			Path:    "test.Path",
+			Version: "1.0.0",
+			Method:  "Echo",
+		},
+		Body: &RequestPayload{
+			Params: []any{&val},
+			Attachments: map[string]any{
+				"key": "value",
+			},
+		},
+	}
+
+	data, err := marshalRequest(encoder, pkg)
+	assert.NoError(t, err)
+	assert.NotNil(t, data)
 }

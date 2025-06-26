@@ -41,7 +41,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	"dubbo.apache.org/dubbo-go/v3/proxy"
 )
@@ -89,6 +89,10 @@ func (refOpts *ReferenceOptions) ReferWithService(srv common.RPCService) {
 	refOpts.refer(srv, nil)
 }
 
+func (refOpts *ReferenceOptions) Refer() {
+	refOpts.refer(nil, nil)
+}
+
 func (refOpts *ReferenceOptions) ReferWithInfo(info *ClientInfo) {
 	refOpts.refer(nil, info)
 }
@@ -127,12 +131,34 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 		common.WithParams(refOpts.getURLMap()),
 		common.WithParamsValue(constant.BeanNameKey, refOpts.id),
 		common.WithParamsValue(constant.MetadataTypeKey, refOpts.metaDataType),
+		// TODO: remove TimeoutKey after old confid removed
 		common.WithParamsValue(constant.TimeoutKey, refOpts.Consumer.RequestTimeout),
+
+		// TODO: Deprecated：use TripleConfig
+		// remove KeepAliveInterval and KeepAliveInterval in version 4.0.0
 		common.WithParamsValue(constant.KeepAliveInterval, ref.KeepAliveInterval),
 		common.WithParamsValue(constant.KeepAliveTimeout, ref.KeepAliveTimeout),
+
+		// attribute
+		common.WithAttribute(constant.TripleConfigKey, ref.ProtocolClientConfig.TripleConfig),
+		common.WithAttribute(constant.TLSConfigKey, refOpts.TLS),
+
+		// for new triple non-IDL mode
+		// TODO: remove ISIDL after old triple removed
+		common.WithParamsValue(constant.IDLMode, ref.IDLMode),
+		common.WithAttribute(constant.ConsumerConfigKey, refOpts.Consumer),
 	)
+
+	// for new triple IDL mode
 	if info != nil {
 		cfgURL.SetAttribute(constant.ClientInfoKey, info)
+	}
+
+	// for new triple non-IDL mode
+	// It assists in passing the service,
+	// which is then parsed internally by new triple.
+	if srv != nil {
+		cfgURL.SetAttribute(constant.RpcServiceKey, srv)
 	}
 
 	if ref.ForceTag {
@@ -193,7 +219,7 @@ func processURL(ref *global.ReferenceConfig, regsCompat map[string]*config.Regis
 		for _, urlStr := range urlStrings {
 			serviceURL, err := common.NewURL(urlStr, common.WithProtocol(ref.Protocol))
 			if err != nil {
-				return nil, fmt.Errorf(fmt.Sprintf("url configuration error,  please check your configuration, user specified URL %v refer error, error message is %v ", urlStr, err.Error()))
+				return nil, fmt.Errorf("url configuration error,  please check your configuration, user specified URL %v refer error, error message is %v ", urlStr, err.Error())
 			}
 			if serviceURL.Protocol == constant.RegistryProtocol { // serviceURL in this branch is a registry protocol
 				serviceURL.SubURL = cfgURL
@@ -219,12 +245,12 @@ func processURL(ref *global.ReferenceConfig, regsCompat map[string]*config.Regis
 	return urls, nil
 }
 
-func buildInvoker(urls []*common.URL, ref *global.ReferenceConfig) (protocol.Invoker, error) {
+func buildInvoker(urls []*common.URL, ref *global.ReferenceConfig) (base.Invoker, error) {
 	var (
-		invoker protocol.Invoker
+		invoker base.Invoker
 		regURL  *common.URL
 	)
-	invokers := make([]protocol.Invoker, len(urls))
+	invokers := make([]base.Invoker, len(urls))
 	for i, u := range urls {
 		if u.Protocol == constant.ServiceRegistryProtocol {
 			invoker = extension.GetProtocol(constant.RegistryProtocol).Refer(u)
@@ -242,7 +268,7 @@ func buildInvoker(urls []*common.URL, ref *global.ReferenceConfig) (protocol.Inv
 		invokers[i] = invoker
 	}
 
-	var resInvoker protocol.Invoker
+	var resInvoker base.Invoker
 	// TODO(hxmhlt): decouple from directory, config should not depend on directory module
 	if len(invokers) == 1 {
 		resInvoker = invokers[0]
@@ -372,7 +398,7 @@ func (refOpts *ReferenceOptions) getURLMap() url.Values {
 	}
 	urlMap.Set(constant.ReferenceFilterKey, commonCfg.MergeValue(ref.Filter, "", defaultReferenceFilter))
 
-	for _, v := range ref.Methods {
+	for _, v := range ref.MethodsConfig {
 		urlMap.Set("methods."+v.Name+"."+constant.LoadbalanceKey, v.LoadBalance)
 		urlMap.Set("methods."+v.Name+"."+constant.RetriesKey, v.Retries)
 		urlMap.Set("methods."+v.Name+"."+constant.StickyKey, strconv.FormatBool(v.Sticky))
@@ -395,7 +421,7 @@ func (refOpts *ReferenceOptions) getURLMap() url.Values {
 //}
 
 // GetInvoker get invoker from ReferenceConfigs
-func (refOpts *ReferenceOptions) GetInvoker() protocol.Invoker {
+func (refOpts *ReferenceOptions) GetInvoker() base.Invoker {
 	return refOpts.invoker
 }
 

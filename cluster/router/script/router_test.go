@@ -29,7 +29,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
@@ -59,10 +59,10 @@ var url3 = func() *common.URL {
 	return i
 }
 
-func getRouteCheckArgs() ([]protocol.Invoker, protocol.Invocation, context.Context) {
-	return []protocol.Invoker{
-			protocol.NewBaseInvoker(url1()), protocol.NewBaseInvoker(url2()), protocol.NewBaseInvoker(url3()),
-		}, invocation.NewRPCInvocation("GetUser", nil, map[string]interface{}{
+func getRouteCheckArgs() ([]base.Invoker, base.Invocation, context.Context) {
+	return []base.Invoker{
+			base.NewBaseInvoker(url1()), base.NewBaseInvoker(url2()), base.NewBaseInvoker(url3()),
+		}, invocation.NewRPCInvocation("GetUser", nil, map[string]any{
 			"attachmentKey": []string{"attachmentValue"},
 		}),
 		context.TODO()
@@ -73,14 +73,14 @@ func TestScriptRouter_Route(t *testing.T) {
 		cfgContent string
 	}
 	type args struct {
-		invokers   []protocol.Invoker
-		invocation protocol.Invocation
+		invokers   []base.Invoker
+		invocation base.Invocation
 	}
 	tests := []struct {
 		name   string
 		fields fields
 		args   args
-		want   func([]protocol.Invoker) bool
+		want   func([]base.Invoker) bool
 	}{
 		{
 			name: "base test",
@@ -103,7 +103,7 @@ script: |
 				res.invokers, res.invocation, _ = getRouteCheckArgs()
 				return res
 			}(),
-			want: func(invokers []protocol.Invoker) bool {
+			want: func(invokers []base.Invoker) bool {
 				for _, invoker := range invokers {
 					if invoker.GetURL().Port != "20001" {
 						return false
@@ -132,7 +132,7 @@ script: |
 				res.invokers, res.invocation, _ = getRouteCheckArgs()
 				return res
 			}(),
-			want: func(invokers []protocol.Invoker) bool {
+			want: func(invokers []base.Invoker) bool {
 				expect_invokers, _, _ := getRouteCheckArgs()
 				return checkInvokersSame(invokers, expect_invokers)
 			},
@@ -157,7 +157,7 @@ script: |
 				res.invokers, res.invocation, _ = getRouteCheckArgs()
 				return res
 			}(),
-			want: func(invokers []protocol.Invoker) bool {
+			want: func(invokers []base.Invoker) bool {
 				expect_invokers, _, _ := getRouteCheckArgs()
 				return checkInvokersSame(invokers, expect_invokers)
 			},
@@ -186,7 +186,7 @@ script: |
 				res.invokers, res.invocation, _ = getRouteCheckArgs()
 				return res
 			}(),
-			want: func(invokers []protocol.Invoker) bool {
+			want: func(invokers []base.Invoker) bool {
 				expect_invokers, _, _ := getRouteCheckArgs()
 				return checkInvokersSame(invokers, expect_invokers)
 			},
@@ -211,7 +211,7 @@ script: |
 				res.invokers, res.invocation, _ = getRouteCheckArgs()
 				return res
 			}(),
-			want: func(invokers []protocol.Invoker) bool {
+			want: func(invokers []base.Invoker) bool {
 				expect_invokers, _, _ := getRouteCheckArgs()
 				return checkInvokersSame(invokers, expect_invokers)
 			},
@@ -227,7 +227,7 @@ script: |
 	}
 }
 
-func checkInvokersSame(invokers []protocol.Invoker, otherInvokers []protocol.Invoker) bool {
+func checkInvokersSame(invokers []base.Invoker, otherInvokers []base.Invoker) bool {
 	k := map[string]struct{}{}
 	for _, invoker := range otherInvokers {
 		k[invoker.GetURL().String()] = struct{}{}

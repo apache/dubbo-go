@@ -35,8 +35,9 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	tripleapi "dubbo.apache.org/dubbo-go/v3/metadata/triple_api/proto"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
@@ -143,8 +144,8 @@ func (mts *DefaultMetadataService) MethodMapper() map[string]string {
 type serviceExporter struct {
 	opts             *Options
 	service          MetadataService
-	protocolExporter protocol.Exporter
-	v2Exporter       protocol.Exporter
+	protocolExporter base.Exporter
+	v2Exporter       base.Exporter
 }
 
 // Export will export the metadataService
@@ -242,11 +243,11 @@ func (e *serviceExporter) exportV2(port string) {
 
 // serviceInvoker, if base on server.infoInvoker will cause cycle dependency, so we need to use this way
 type serviceInvoker struct {
-	*protocol.BaseInvoker
-	invoke func(context context.Context, invocation protocol.Invocation) protocol.Result
+	*base.BaseInvoker
+	invoke func(context context.Context, invocation base.Invocation) result.Result
 }
 
-func (si serviceInvoker) Invoke(context context.Context, invocation protocol.Invocation) protocol.Result {
+func (si serviceInvoker) Invoke(context context.Context, invocation base.Invocation) result.Result {
 	return si.invoke(context, invocation)
 }
 
@@ -328,10 +329,10 @@ var MetadataService_ServiceInfo = common.ServiceInfo{
 		{
 			Name: "getMetadataInfo",
 			Type: constant.CallUnary,
-			ReqInitFunc: func() interface{} {
+			ReqInitFunc: func() any {
 				return new(string)
 			},
-			MethodFunc: func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
+			MethodFunc: func(ctx context.Context, args []any, handler any) (any, error) {
 				revision := args[0].(*string)
 				res, err := handler.(MetadataServiceHandler).GetMetadataInfo(ctx, *revision)
 				return res, err
@@ -347,10 +348,10 @@ var MetadataServiceV2_ServiceInfo = common.ServiceInfo{
 		{
 			Name: "GetMetadataInfo",
 			Type: constant.CallUnary,
-			ReqInitFunc: func() interface{} {
+			ReqInitFunc: func() any {
 				return new(tripleapi.MetadataRequest)
 			},
-			MethodFunc: func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
+			MethodFunc: func(ctx context.Context, args []any, handler any) (any, error) {
 				req := args[0].(*tripleapi.MetadataRequest)
 				res, err := handler.(MetadataServiceV2Handler).GetMetadataInfo(ctx, req)
 				if err != nil {
@@ -362,10 +363,10 @@ var MetadataServiceV2_ServiceInfo = common.ServiceInfo{
 		{
 			Name: "getMetadataInfo",
 			Type: constant.CallUnary,
-			ReqInitFunc: func() interface{} {
+			ReqInitFunc: func() any {
 				return new(tripleapi.MetadataRequest)
 			},
-			MethodFunc: func(ctx context.Context, args []interface{}, handler interface{}) (interface{}, error) {
+			MethodFunc: func(ctx context.Context, args []any, handler any) (any, error) {
 				req := args[0].(*tripleapi.MetadataRequest)
 				res, err := handler.(MetadataServiceV2Handler).GetMetadataInfo(ctx, req)
 				if err != nil {

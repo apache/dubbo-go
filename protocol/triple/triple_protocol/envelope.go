@@ -63,7 +63,7 @@ type envelopeWriter struct {
 }
 
 // marshal and write to socket
-func (w *envelopeWriter) Marshal(message interface{}) *Error {
+func (w *envelopeWriter) Marshal(message any) *Error {
 	if message == nil {
 		if _, err := w.writer.Write(nil); err != nil {
 			if tripleErr, ok := asError(err); ok {
@@ -146,7 +146,7 @@ type envelopeReader struct {
 }
 
 // Unmarshal reads entire envelope and uses codec to unmarshal
-func (r *envelopeReader) Unmarshal(message interface{}) *Error {
+func (r *envelopeReader) Unmarshal(message any) *Error {
 	buffer := r.bufferPool.Get()
 	defer r.bufferPool.Put(buffer)
 
@@ -215,7 +215,11 @@ func (r *envelopeReader) Unmarshal(message interface{}) *Error {
 func (r *envelopeReader) Read(env *envelope) *Error {
 	// Read prefix firstly, then read the packet with length specified by length field
 	prefixes := [5]byte{}
-	prefixBytesRead, err := r.reader.Read(prefixes[:])
+	// NOTE: We need to go to ReadFull prefixes and then handle the following steps,
+	// because when receiving data using the HTTP/3 protocol, due to the underlying
+	// UDP protocol, it often leads to processing the next steps without Read Full,
+	// which will cause EOF error.
+	prefixBytesRead, err := io.ReadFull(r.reader, prefixes[:])
 
 	switch {
 	case (err == nil || errors.Is(err, io.EOF)) &&
@@ -229,7 +233,7 @@ func (r *envelopeReader) Read(env *envelope) *Error {
 		// to the user so that they know that the stream has ended. We shouldn't
 		// add any alarming text about protocol errors, though.
 		return NewError(CodeUnknown, err)
-	case err != nil || prefixBytesRead < 5:
+	case err != nil:
 		// Something else has gone wrong - the stream didn't end cleanly.
 		if tripleErr, ok := asError(err); ok {
 			return tripleErr

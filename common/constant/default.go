@@ -28,7 +28,10 @@ const (
 	OverrideProtocol = "override" //compatible with 2.6.x
 	EmptyProtocol    = "empty"
 	RouterProtocol   = "router"
+	DubboProtocol    = "dubbo"
 	TriProtocol      = "tri"
+	JSONRPCProtocol  = "jsonrpc"
+	RESTProtocol     = "rest"
 )
 
 const (
@@ -62,7 +65,7 @@ const (
 	// that put the AdaptiveServiceProviderFilterKey at the end.
 	DefaultServiceFilters = EchoFilterKey + "," +
 		TokenFilterKey + "," + AccessLogFilterKey + "," + TpsLimitFilterKey + "," +
-		GenericServiceFilterKey + "," + ExecuteLimitFilterKey + "," + GracefulShutdownProviderFilterKey
+		GenericServiceFilterKey + "," + ExecuteLimitFilterKey + "," + GracefulShutdownProviderFilterKey + "," + ContextFilterKey
 
 	DefaultReferenceFilters = GracefulShutdownConsumerFilterKey
 )

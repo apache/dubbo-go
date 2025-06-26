@@ -33,7 +33,6 @@ import (
 
 import (
 	"google.golang.org/protobuf/proto"
-
 	"google.golang.org/protobuf/reflect/protoregistry"
 )
 
@@ -41,6 +40,7 @@ import (
 	triple "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/assert"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/import/v1/importv1connect"
+
 	pingv1 "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/ping/v1"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/ping/v1/pingv1connect"
 )
@@ -544,7 +544,7 @@ func TestConcurrentStreams(t *testing.T) {
 			assert.Nil(t, err)
 			start.Wait()
 			for i := 0; i < 100; i++ {
-				num := rand.Int63n(1000) //nolint: gosec
+				num := rand.Int63n(1000) //nolint: gosec //NOSONAR
 				total += num
 				if err := sum.Send(&pingv1.CumSumRequest{Number: num}); err != nil {
 					t.Errorf("failed to send request: %v", err)
@@ -2024,7 +2024,7 @@ func TestHandlerReturnsNilResponse(t *testing.T) {
 	t.Parallel()
 
 	var panics int
-	recoverPanic := func(_ context.Context, spec triple.Spec, _ http.Header, p interface{}) error {
+	recoverPanic := func(_ context.Context, spec triple.Spec, _ http.Header, p any) error {
 		panics++
 		assert.NotNil(t, p)
 		str := fmt.Sprint(p)
@@ -2151,11 +2151,11 @@ func (c failCodec) Name() string {
 	return "proto"
 }
 
-func (c failCodec) Marshal(message interface{}) ([]byte, error) {
+func (c failCodec) Marshal(message any) ([]byte, error) {
 	return nil, errors.New("boom")
 }
 
-func (c failCodec) Unmarshal(data []byte, message interface{}) error {
+func (c failCodec) Unmarshal(data []byte, message any) error {
 	protoMessage, ok := message.(proto.Message)
 	if !ok {
 		return fmt.Errorf("not protobuf: %T", message)

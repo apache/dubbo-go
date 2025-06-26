@@ -35,7 +35,7 @@ type RestConsumerConfig struct {
 }
 
 // UnmarshalYAML unmarshals the RestConsumerConfig by @unmarshal function
-func (c *RestConsumerConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (c *RestConsumerConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
 	}
@@ -55,7 +55,7 @@ type RestProviderConfig struct {
 }
 
 // UnmarshalYAML unmarshals the RestProviderConfig by @unmarshal function
-func (c *RestProviderConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (c *RestProviderConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
 	}
@@ -81,7 +81,7 @@ type RestServiceConfig struct {
 }
 
 // UnmarshalYAML unmarshals the RestServiceConfig by @unmarshal function
-func (c *RestServiceConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (c *RestServiceConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
 	}
@@ -111,7 +111,7 @@ type RestMethodConfig struct {
 }
 
 // UnmarshalYAML unmarshals the RestMethodConfig by @unmarshal function
-func (c *RestMethodConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (c *RestMethodConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	if err := defaults.Set(c); err != nil {
 		return err
 	}

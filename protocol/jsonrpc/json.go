@@ -39,7 +39,7 @@ const (
 type CodecData struct {
 	ID     int64
 	Method string
-	Args   interface{}
+	Args   any
 	Error  string
 }
 
@@ -55,9 +55,9 @@ const (
 
 // Error response Error
 type Error struct {
-	Code    int         `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Data    any    `json:"data,omitempty"`
 }
 
 // Error decodes response error for a string.
@@ -74,10 +74,10 @@ func (e *Error) Error() string {
 }
 
 type clientRequest struct {
-	Version string      `json:"jsonrpc"`
-	Method  string      `json:"method"`
-	Params  interface{} `json:"params"`
-	ID      int64       `json:"id"`
+	Version string `json:"jsonrpc"`
+	Method  string `json:"method"`
+	Params  any    `json:"params"`
+	ID      int64  `json:"id"`
 }
 
 type clientResponse struct {
@@ -161,7 +161,7 @@ func (c *jsonClientCodec) Write(d *CodecData) ([]byte, error) {
 }
 
 // Read bytes as structured data
-func (c *jsonClientCodec) Read(streamBytes []byte, x interface{}) error {
+func (c *jsonClientCodec) Read(streamBytes []byte, x any) error {
 	c.rsp.reset()
 
 	buf := bytes.NewBuffer(streamBytes)
@@ -230,7 +230,7 @@ func (r *serverRequest) UnmarshalJSON(raw []byte) error {
 	}
 	_, okID := o["id"]
 	_, okParams := o["params"]
-	if len(o) == 3 && !(okID || okParams) || len(o) == 4 && !(okID && okParams) || len(o) > 4 {
+	if len(o) == 3 && (!okID && !okParams) || len(o) == 4 && (!okID || !okParams) || len(o) > 4 {
 		return perrors.New("bad request")
 	}
 	if r.Version != Version {
@@ -265,8 +265,8 @@ func (r *serverRequest) UnmarshalJSON(raw []byte) error {
 type serverResponse struct {
 	Version string           `json:"jsonrpc"`
 	ID      *json.RawMessage `json:"id"`
-	Result  interface{}      `json:"result,omitempty"`
-	Error   interface{}      `json:"error,omitempty"`
+	Result  any              `json:"result,omitempty"`
+	Error   any              `json:"error,omitempty"`
 }
 
 // ServerCodec is codec data for request server.
@@ -317,7 +317,7 @@ func (c *ServerCodec) ReadHeader(header map[string]string, body []byte) error {
 }
 
 // ReadBody reads @x as request body.
-func (c *ServerCodec) ReadBody(x interface{}) error {
+func (c *ServerCodec) ReadBody(x any) error {
 	// If x!=nil and return error e:
 	// - Write() will be called with e.Error() in r.Error
 	if x == nil {
@@ -338,7 +338,7 @@ func (c *ServerCodec) ReadBody(x interface{}) error {
 			// fallback and attempt an unmarshal with JSON params as
 			// array value and RPC params is struct. Unmarshal into
 			// array containing the request struct.
-			params := [1]interface{}{x}
+			params := [1]any{x}
 			if err = json.Unmarshal(*c.req.Params, &params); err != nil {
 				return &Error{Code: -32602, Message: "Invalid params, error:" + err.Error()}
 			}
@@ -369,7 +369,7 @@ func newError(message string) *Error {
 }
 
 // Write responses as byte
-func (c *ServerCodec) Write(errMsg string, x interface{}) ([]byte, error) {
+func (c *ServerCodec) Write(errMsg string, x any) ([]byte, error) {
 	// If return error: nothing happens.
 	// In r.Error will be "" or .Error() of error returned by:
 	// - ReadBody()
