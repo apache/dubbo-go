@@ -24,9 +24,19 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+)
 
+import (
 	"github.com/dubbogo/gost/log/logger"
 
+	grpc_go "github.com/dubbogo/grpc-go"
+
+	"github.com/dustin/go-humanize"
+
+	"google.golang.org/grpc"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
@@ -34,11 +44,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo3"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
-	grpc_go "github.com/dubbogo/grpc-go"
-	"github.com/dustin/go-humanize"
-	"google.golang.org/grpc"
-
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
@@ -254,10 +259,10 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 					for k, v := range res.Attachments() {
 						switch val := v.(type) {
 						case string:
-							triple_protocol.AppendToOutgoingContext(ctx, k, val)
+							tri.AppendToOutgoingContext(ctx, k, val)
 						case []string:
 							for _, v := range val {
-								triple_protocol.AppendToOutgoingContext(ctx, k, v)
+								tri.AppendToOutgoingContext(ctx, k, v)
 							}
 						}
 					}
