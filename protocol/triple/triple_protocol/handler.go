@@ -108,8 +108,10 @@ func generateUnaryHandlerFunc(
 		response, err := untyped(ctx, request)
 
 		// merge headers
-		mergeHeaders(conn.ResponseHeader(), response.Header())
-		mergeHeaders(conn.ResponseTrailer(), response.Trailer())
+		if response != nil {
+			mergeHeaders(conn.ResponseHeader(), response.Header())
+			mergeHeaders(conn.ResponseTrailer(), response.Trailer())
+		}
 		//Write the server-side return-attachment-data in the tailer to send to the caller
 		if data := ExtractFromOutgoingContext(ctx); data != nil {
 			mergeHeaders(conn.ResponseTrailer(), data)
@@ -158,8 +160,10 @@ func generateClientStreamHandlerFunc(
 		ctx = newIncomingContext(ctx, conn.RequestHeader())
 		res, err := streamFunc(ctx, stream)
 
-		mergeHeaders(conn.ResponseHeader(), res.header)
-		mergeHeaders(conn.ResponseTrailer(), res.trailer)
+		if res != nil {
+			mergeHeaders(conn.ResponseHeader(), res.header)
+			mergeHeaders(conn.ResponseTrailer(), res.trailer)
+		}
 		if outgoingData := ExtractFromOutgoingContext(ctx); outgoingData != nil {
 			mergeHeaders(conn.ResponseTrailer(), outgoingData)
 		}
