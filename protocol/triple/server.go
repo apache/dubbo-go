@@ -321,11 +321,23 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker base.Invoke
 					res := invoker.Invoke(ctx, invo)
 					// todo(DMwangnima): modify InfoInvoker to get a unified processing logic
 					// please refer to server/InfoInvoker.Invoke()
-					if triResp, ok := res.Result().(*tri.Response); ok {
-						return triResp, res.Error()
+					var triResp *tri.Response
+					if existingResp, ok := res.Result().(*tri.Response); ok {
+						triResp = existingResp
+					} else {
+						// please refer to proxy/proxy_factory/ProxyInvoker.Invoke
+						triResp = tri.NewResponse([]any{res.Result()})
 					}
-					// please refer to proxy/proxy_factory/ProxyInvoker.Invoke
-					triResp := tri.NewResponse([]any{res.Result()})
+					for k, v := range res.Attachments() {
+						switch val := v.(type) {
+						case string:
+							tri.AppendToOutgoingContext(ctx, k, val)
+						case []string:
+							for _, v := range val {
+								tri.AppendToOutgoingContext(ctx, k, v)
+							}
+						}
+					}
 					return triResp, res.Error()
 				},
 				opts...,
