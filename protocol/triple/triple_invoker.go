@@ -22,16 +22,12 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-)
 
-import (
-	"github.com/dubbogo/gost/log/logger"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"github.com/dubbogo/gost/log/logger"
+
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
@@ -137,6 +133,15 @@ func (ti *TripleInvoker) Invoke(ctx context.Context, invocation protocol.Invocat
 		result.SetResult(stream)
 	default:
 		panic(fmt.Sprintf("Unsupported CallType: %s", callType))
+	}
+
+	if header, ok := tri.FromIncomingContext(ctx); ok {
+		for v, k := range header {
+			if tri.IsReservedHeader(v) {
+				continue
+			}
+			result.AddAttachment(v, k)
+		}
 	}
 
 	return &result

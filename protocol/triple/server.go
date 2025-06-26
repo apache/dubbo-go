@@ -24,19 +24,9 @@ import (
 	"reflect"
 	"strings"
 	"sync"
-)
 
-import (
 	"github.com/dubbogo/gost/log/logger"
 
-	grpc_go "github.com/dubbogo/grpc-go"
-
-	"github.com/dustin/go-humanize"
-
-	"google.golang.org/grpc"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
@@ -44,6 +34,11 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo3"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	grpc_go "github.com/dubbogo/grpc-go"
+	"github.com/dustin/go-humanize"
+	"google.golang.org/grpc"
+
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
@@ -245,8 +240,6 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 					attachments := generateAttachments(req.Header())
 					// inject attachments
 					ctx = context.WithValue(ctx, constant.AttachmentKey, attachments)
-					capturedAttachments := make(map[string]any)
-					ctx = context.WithValue(ctx, constant.AttachmentServerKey, capturedAttachments)
 					invo := invocation.NewRPCInvocation(m.Name, args, attachments)
 					res := invoker.Invoke(ctx, invo)
 					// todo(DMwangnima): modify InfoInvoker to get a unified processing logic
@@ -261,13 +254,11 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker protocol.In
 					for k, v := range res.Attachments() {
 						switch val := v.(type) {
 						case string:
-							triResp.Trailer().Set(k, val)
+							triple_protocol.AppendToOutgoingContext(ctx, k, val)
 						case []string:
-							if len(val) > 0 {
-								triResp.Trailer().Set(k, val[0])
+							for _, v := range val {
+								triple_protocol.AppendToOutgoingContext(ctx, k, v)
 							}
-						default:
-							triResp.Header().Set(k, fmt.Sprintf("%v", val))
 						}
 					}
 					return triResp, res.Error()

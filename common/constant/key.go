@@ -105,7 +105,6 @@ const (
 	XdsCircuitBreakerKey                 = "xds_circuit_reaker"
 	OTELServerTraceKey                   = "otelServerTrace"
 	OTELClientTraceKey                   = "otelClientTrace"
-	ContextFilterKey                     = "context"
 )
 
 const (
@@ -322,7 +321,6 @@ const (
 	Tagkey                            = "dubbo.tag" // key of tag
 	ConditionKey                      = "dubbo.condition"
 	AttachmentKey                     = DubboCtxKey("attachment") // key in context in invoker
-	AttachmentServerKey               = DubboCtxKey("server-attachment")
 	TagRouterFactoryKey               = "tag"
 	AffinityAppRouterFactoryKey       = "application.affinity"
 	AffinityServiceRouterFactoryKey   = "service.affinity"
@@ -464,21 +462,4 @@ const (
 // priority
 const (
 	DefaultPriority = 0
-)
-
-const (
-	TripleGoInterfaceName = "XXX_TRIPLE_GO_INTERFACE_NAME"
-	TripleGoMethodName    = "XXX_TRIPLE_GO_METHOD_NAME"
-)
-
-// Weight constants for Nacos instance registration
-const (
-	DefaultNacosWeight = 1.0     // Default weight if not specified or invalid
-	MinNacosWeight     = 0.0     // Minimum allowed weight (Nacos range starts at 0)
-	MaxNacosWeight     = 10000.0 // Maximum allowed weight (Nacos range ends at 10000)
-)
-
-const (
-	GrpcHeaderStatus  = "Grpc-Status"
-	GrpcHeaderMessage = "Grpc-Message"
 )
