@@ -107,11 +107,6 @@ func generateUnaryHandlerFunc(
 
 		response, err := untyped(ctx, request)
 
-		// merge headers
-		if response != nil {
-			mergeHeaders(conn.ResponseHeader(), response.Header())
-			mergeHeaders(conn.ResponseTrailer(), response.Trailer())
-		}
 		//Write the server-side return-attachment-data in the tailer to send to the caller
 		if data := ExtractFromOutgoingContext(ctx); data != nil {
 			mergeHeaders(conn.ResponseTrailer(), data)
@@ -121,6 +116,9 @@ func generateUnaryHandlerFunc(
 			return err
 		}
 
+		// merge headers
+		mergeHeaders(conn.ResponseHeader(), response.Header())
+		mergeHeaders(conn.ResponseTrailer(), response.Trailer())
 		return conn.Send(response.Any())
 	}
 
@@ -160,10 +158,6 @@ func generateClientStreamHandlerFunc(
 		ctx = newIncomingContext(ctx, conn.RequestHeader())
 		res, err := streamFunc(ctx, stream)
 
-		if res != nil {
-			mergeHeaders(conn.ResponseHeader(), res.header)
-			mergeHeaders(conn.ResponseTrailer(), res.trailer)
-		}
 		if outgoingData := ExtractFromOutgoingContext(ctx); outgoingData != nil {
 			mergeHeaders(conn.ResponseTrailer(), outgoingData)
 		}
@@ -176,6 +170,9 @@ func generateClientStreamHandlerFunc(
 			// if we panic here instead, so we can include the procedure name.
 			panic(fmt.Sprintf("%s returned nil *triple.Response and nil error", procedure)) //nolint: forbidigo
 		}
+
+		mergeHeaders(conn.ResponseHeader(), res.header)
+		mergeHeaders(conn.ResponseTrailer(), res.trailer)
 		return conn.Send(res.Msg)
 	}
 	if interceptor != nil {
