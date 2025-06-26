@@ -106,7 +106,7 @@ func generateUnaryHandlerFunc(
 		ctx = newIncomingContext(ctx, conn.RequestHeader())
 
 		response, err := untyped(ctx, request)
-		
+
 		// merge headers
 		mergeHeaders(conn.ResponseHeader(), response.Header())
 		mergeHeaders(conn.ResponseTrailer(), response.Trailer())
@@ -163,7 +163,7 @@ func generateClientStreamHandlerFunc(
 		if outgoingData := ExtractFromOutgoingContext(ctx); outgoingData != nil {
 			mergeHeaders(conn.ResponseTrailer(), outgoingData)
 		}
-		
+
 		if err != nil {
 			return err
 		}
