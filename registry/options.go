@@ -70,6 +70,12 @@ func WithNacos() Option {
 	}
 }
 
+func WithPolaris() Option {
+	return func(opts *Options) {
+		opts.Registry.Protocol = constant.PolarisKey
+	}
+}
+
 func WithXDS() Option {
 	return func(opts *Options) {
 		opts.Registry.Protocol = constant.XDSRegistryKey
