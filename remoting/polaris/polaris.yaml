@@ -1,0 +1,84 @@
+global:
+  system:
+    mode: 0
+    discoverCluster:
+      namespace: Polaris
+      service: polaris.discover
+      refreshInterval: 10m
+    healthCheckCluster:
+      namespace: Polaris
+      service: polaris.healthcheck
+      refreshInterval: 10m
+    monitorCluster:
+      namespace: Polaris
+      service: polaris.monitor
+      refreshInterval: 10m
+  api:
+    timeout: 1s
+    reportInterval: 10m
+    maxRetryTimes: 5
+    retryInterval: 1s
+  serverConnector:
+    protocol: grpc
+    connectTimeout: 500ms
+    messageTimeout: 1s
+    connectionIdleTimeout: 1s
+    requestQueueSize: 1000
+    serverSwitchInterval: 10m
+    plugin:
+      grpc:
+        maxCallRecvMsgSize: 52428800
+  statReporter:
+    enable: false
+consumer:
+  localCache:
+    type: inmemory
+    serviceExpireTime: 24h
+    serviceRefreshInterval: 2s
+    persistDir: $HOME/polaris/backup
+    persistMaxWriteRetry: 5
+    persistMaxReadRetry: 1
+    persistRetryInterval: 1s
+    persistAvailableInterval: 60s
+    startUseFileCache: true
+  serviceRouter:
+    chain:
+      - ruleBasedRouter
+      - nearbyBasedRouter
+    plugin:
+      nearbyBasedRouter:
+        matchLevel: zone
+      ruleBasedRouter: {}
+    percentOfMinInstances: 0
+    enableRecoverAll: true
+  loadbalancer:
+    type: weightedRandom
+    plugin:
+      ringHash:
+        vnodeCount: 500
+  circuitBreaker:
+    enable: true
+    checkPeriod: 30s
+    requestCountAfterHalfOpen: 10
+    sleepWindow: 30s
+    successCountAfterHalfOpen: 8
+    recoverWindow: 60s
+    recoverNumBuckets: 10
+    chain:
+      - errorCount
+      - errorRate
+    plugin:
+      errorCount:
+        continuousErrorThreshold: 10
+        metricNumBuckets: 10
+        metricStatTimeWindow: 1m0s
+      errorRate:
+        errorRateThreshold: 0.5
+        metricNumBuckets: 5
+        metricStatTimeWindow: 1m0s
+        requestVolumeThreshold: 10
+  subscribe:
+    type: subscribeLocalChannel
+    plugin:
+      subscribeLocalChannel:
+        channelBufferSize: 50
