@@ -42,9 +42,11 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
-var defaultTTL = 10 * time.Minute
+var (
+	defaultTTL = 10 * time.Minute
+	isFirstRun = true
+)
 
-// nolint
 type ZkEventListener struct {
 	Client      *gxzookeeper.ZookeeperClient
 	pathMapLock sync.Mutex
@@ -333,6 +335,15 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, li
 		} else {
 			logger.Warnf("[Zookeeper EventListener][listenDirEvent] Wrong configuration for registry.ttl, error=%+v, using default value %v instead", err, defaultTTL)
 		}
+	}
+
+	// Using 'Get+ChildenW' to solve latency issues during initial startup
+	if isFirstRun {
+		children, err := l.Client.GetChildren(zkRootPath)
+		if err == nil {
+			l.handleZkNodeEvent(zkRootPath, children, listener)
+		}
+		isFirstRun = false
 	}
 	for {
 		// Get current children with watcher for the zkRootPath
