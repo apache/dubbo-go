@@ -18,16 +18,19 @@
 package cmd
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/tools/dubbogo-cli/generator/sample"
 	"fmt"
-	"github.com/stretchr/testify/require"
 	"os"
 	"path/filepath"
 	"testing"
 )
 
 import (
+	"github.com/stretchr/testify/require"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/tools/dubbogo-cli/generator/application"
+	"dubbo.apache.org/dubbo-go/v3/tools/dubbogo-cli/generator/sample"
 )
 
 func TestNewApp(t *testing.T) {

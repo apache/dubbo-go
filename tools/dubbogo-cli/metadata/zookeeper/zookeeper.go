@@ -26,12 +26,13 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/metadata/definition"
+
 	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/metadata/definition"
 	"dubbo.apache.org/dubbo-go/v3/tools/dubbogo-cli/metadata"
 )
 

@@ -39,9 +39,7 @@ package main
 
 import (
 	_ "dubbo-go-app/pkg/service"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
 )
