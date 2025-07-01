@@ -119,20 +119,24 @@ The Demo uses the direct connection mode, without relying on the registration ce
 
 #### 3.1.2 Run The Demo
 
+Install dependency
+
+```bash
+go mod tidy
+```
+
 Run Server
 
-```
-$ cd go-server/cmd
-$ go run .
+```bash
+cd go-server/cmd
+go run .
 ```
 
 Run client in another terminate
 
-```
-$ go mod tidy
-$ cd go-client/cmd
-$ go run .
-
+```bash
+cd go-client/cmd
+go run .
 ```
 
 See the logs

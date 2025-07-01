@@ -57,9 +57,11 @@ prepare: prepareLic
 .PHONE: test
 test: clean
 	$(GO_TEST) ./... -coverprofile=coverage.txt -covermode=atomic
+	(cd $(CLI_DIR) && $(GO_TEST) ./...)
 
 deps: prepare
 	$(GO_GET) -v -t -d ./...
+	(cd $(CLI_DIR) && $(GO_GET) -v -t -d ./...)
 
 .PHONY: license
 license: clean prepareLic

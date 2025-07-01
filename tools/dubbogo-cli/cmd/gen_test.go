@@ -18,20 +18,16 @@
 package cmd
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/tools/dubbogo-cli/generator/sample"
 	"fmt"
+	"github.com/stretchr/testify/require"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 )
 
 import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/tools/dubbogo-cli/generator/application"
-	"dubbo.apache.org/dubbo-go/v3/tools/dubbogo-cli/generator/sample"
 )
 
 func TestNewApp(t *testing.T) {
@@ -51,19 +47,40 @@ func TestNewDemo(t *testing.T) {
 }
 
 func assertFileSame(t *testing.T, genPath, templatePath string) {
-	tempFiles, err := walkDir(templatePath)
-	assert.Nil(t, err)
-	for _, tempPath := range tempFiles {
-		newGenetedPath := strings.ReplaceAll(tempPath, "/template/", "/")
-		newGenetedFile, err := os.ReadFile(newGenetedPath)
-		assert.Nil(t, err)
-		tempFile, err := os.ReadFile(tempPath)
-		assert.Nil(t, err)
-		assert.Equal(t, string(tempFile), string(newGenetedFile))
-	}
-	os.RemoveAll(genPath)
-}
+	t.Cleanup(func() {
+		os.RemoveAll(genPath)
+	})
 
+	// 1. get all files in template directory
+	templateFiles, err := walkDir(templatePath)
+	require.NoError(t, err, "iterate template directory failed")
+
+	// 2. get all files in generated directory
+	genFiles, err := walkDir(genPath)
+	require.NoError(t, err, "iterate generated directory failed")
+
+	// 3. assert the number of generated files matches the template files
+	require.Len(t, genFiles, len(templateFiles), "number of generated files does not match template files")
+
+	// 4. compare each file in the template directory with the corresponding file in the generated directory
+	for _, tempFileAbsPath := range templateFiles {
+		// get relative paths of the template files
+		relPath, err := filepath.Rel(templatePath, tempFileAbsPath)
+		require.NoError(t, err)
+
+		genFileAbsPath := filepath.Join(genPath, relPath)
+
+		require.FileExists(t, genFileAbsPath, "file not exist: %s", genFileAbsPath)
+
+		tempContent, err := os.ReadFile(tempFileAbsPath)
+		require.NoError(t, err)
+
+		genContent, err := os.ReadFile(genFileAbsPath)
+		require.NoError(t, err)
+
+		require.Equal(t, string(tempContent), string(genContent), "get different file content: %s", genFileAbsPath)
+	}
+}
 func walkDir(dirPth string) (files []string, err error) {
 	files = make([]string, 0, 30)
 
