@@ -33,6 +33,8 @@ GO_TEST = $(GO) test
 GO_BUILD_FLAGS = -v
 GO_BUILD_LDFLAGS = -X main.version=$(VERSION)
 
+CLI_DIR = /tools/dubbo-cli
+
 GO_LICENSE_CHECKER_DIR = license-header-checker-$(GO_OS)
 GO_LICENSE_CHECKER = $(GO_PATH)/bin/license-header-checker
 LICENSE_DIR = /tmp/tools/license
