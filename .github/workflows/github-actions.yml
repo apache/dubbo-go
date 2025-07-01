@@ -76,8 +76,8 @@ jobs:
     - name: Verify
       run: |
         go mod tidy
+        cd tools/dubbogo-cli && go mod tidy
         make verify
-        cd tools/dubbogo-cli && go mod tidy && go get -v -t -d ./...
 
     - name: Integration Testing
       run: |
