@@ -40,7 +40,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config/generic"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	"dubbo.apache.org/dubbo-go/v3/proxy"
 )
@@ -48,7 +48,7 @@ import (
 // ReferenceConfig is the configuration of service consumer
 type ReferenceConfig struct {
 	pxy        *proxy.Proxy
-	invoker    protocol.Invoker
+	invoker    base.Invoker
 	urls       []*common.URL
 	rootConfig *RootConfig
 
@@ -235,10 +235,10 @@ func (rc *ReferenceConfig) Refer(srv any) {
 
 	// Get invokers according to rc.urls
 	var (
-		invoker protocol.Invoker
+		invoker base.Invoker
 		regURL  *common.URL
 	)
-	invokers := make([]protocol.Invoker, len(rc.urls))
+	invokers := make([]base.Invoker, len(rc.urls))
 	for i, u := range rc.urls {
 		if u.Protocol == constant.ServiceRegistryProtocol {
 			invoker = extension.GetProtocol(constant.RegistryProtocol).Refer(u)
@@ -386,7 +386,7 @@ func (rc *ReferenceConfig) GenericLoad(id string) {
 }
 
 // GetInvoker get invoker from ReferenceConfig
-func (rc *ReferenceConfig) GetInvoker() protocol.Invoker {
+func (rc *ReferenceConfig) GetInvoker() base.Invoker {
 	return rc.invoker
 }
 

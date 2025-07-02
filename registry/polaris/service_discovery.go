@@ -157,9 +157,7 @@ func (polaris *polarisServiceDiscovery) Unregister(instance registry.ServiceInst
 		polaris.instanceLock.Lock()
 		defer polaris.instanceLock.Unlock()
 		key := getInstanceKey(polaris.namespace, instance)
-		if _, exist := polaris.registryInstances[key]; exist {
-			delete(polaris.registryInstances, key)
-		}
+		delete(polaris.registryInstances, key)
 	}()
 
 	err := polaris.provider.Deregister(convertToDeregisterInstance(polaris.namespace, instance))
@@ -320,7 +318,7 @@ func convertToRegisterInstance(namespace string, instance registry.ServiceInstan
 		health      = instance.IsHealthy()
 		isolate     = instance.IsEnable()
 		ttl         = 5
-		protocolVal = string(constant.Dubbo)
+		protocolVal = string(constant.DubboProtocol)
 	)
 
 	return &api.InstanceRegisterRequest{

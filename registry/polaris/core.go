@@ -85,35 +85,32 @@ func (watcher *PolarisServiceWatcher) startWatch() {
 			ConfigType: remoting.EventTypeAdd,
 		})
 
-		for {
-			select {
-			case event := <-resp.EventChannel:
-				eType := event.GetSubScribeEventType()
-				if eType == internalapi.EventInstance {
-					insEvent := event.(*model.InstanceEvent)
+		for event := range resp.EventChannel {
+			eType := event.GetSubScribeEventType()
+			if eType == internalapi.EventInstance {
+				insEvent := event.(*model.InstanceEvent)
 
-					if insEvent.AddEvent != nil {
-						watcher.notifyAllSubscriber(&config_center.ConfigChangeEvent{
-							Value:      insEvent.AddEvent.Instances,
-							ConfigType: remoting.EventTypeAdd,
-						})
+				if insEvent.AddEvent != nil {
+					watcher.notifyAllSubscriber(&config_center.ConfigChangeEvent{
+						Value:      insEvent.AddEvent.Instances,
+						ConfigType: remoting.EventTypeAdd,
+					})
+				}
+				if insEvent.UpdateEvent != nil {
+					instances := make([]model.Instance, len(insEvent.UpdateEvent.UpdateList))
+					for i := range insEvent.UpdateEvent.UpdateList {
+						instances[i] = insEvent.UpdateEvent.UpdateList[i].After
 					}
-					if insEvent.UpdateEvent != nil {
-						instances := make([]model.Instance, len(insEvent.UpdateEvent.UpdateList))
-						for i := range insEvent.UpdateEvent.UpdateList {
-							instances[i] = insEvent.UpdateEvent.UpdateList[i].After
-						}
-						watcher.notifyAllSubscriber(&config_center.ConfigChangeEvent{
-							Value:      instances,
-							ConfigType: remoting.EventTypeUpdate,
-						})
-					}
-					if insEvent.DeleteEvent != nil {
-						watcher.notifyAllSubscriber(&config_center.ConfigChangeEvent{
-							Value:      insEvent.DeleteEvent.Instances,
-							ConfigType: remoting.EventTypeDel,
-						})
-					}
+					watcher.notifyAllSubscriber(&config_center.ConfigChangeEvent{
+						Value:      instances,
+						ConfigType: remoting.EventTypeUpdate,
+					})
+				}
+				if insEvent.DeleteEvent != nil {
+					watcher.notifyAllSubscriber(&config_center.ConfigChangeEvent{
+						Value:      insEvent.DeleteEvent.Instances,
+						ConfigType: remoting.EventTypeDel,
+					})
 				}
 			}
 		}

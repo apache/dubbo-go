@@ -33,12 +33,12 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	rest_config "dubbo.apache.org/dubbo-go/v3/protocol/rest/config"
 )
 
-const parseParameterErrorStr = "An error occurred while parsing parameters on the server"
+const parseParameterErrorStr = "an error occurred while parsing parameters on the server"
 
 // RestServer user can implement this server interface
 type RestServer interface {
@@ -83,7 +83,7 @@ type RestServerResponse interface {
 }
 
 // GetRouteFunc is a route function will be invoked by http server
-func GetRouteFunc(invoker protocol.Invoker, methodConfig *rest_config.RestMethodConfig) func(req RestServerRequest, resp RestServerResponse) {
+func GetRouteFunc(invoker base.Invoker, methodConfig *rest_config.RestMethodConfig) func(req RestServerRequest, resp RestServerResponse) {
 	return func(req RestServerRequest, resp RestServerResponse) {
 		var (
 			err  error
@@ -259,22 +259,24 @@ func assembleArgsFromQueryParams(methodConfig *rest_config.RestMethodConfig, arg
 			t = t.Elem()
 			kind = t.Kind()
 		}
-		if kind == reflect.Slice {
+		switch kind {
+		case reflect.Slice:
 			param = req.QueryParameters(v)
-		} else if kind == reflect.String {
+		case reflect.String:
 			param = req.QueryParameter(v)
-		} else if kind == reflect.Int {
+		case reflect.Int:
 			param, err = strconv.Atoi(req.QueryParameter(v))
-		} else if kind == reflect.Int32 {
+		case reflect.Int32:
 			i64, err = strconv.ParseInt(req.QueryParameter(v), 10, 32)
 			if err == nil {
 				param = int32(i64)
 			}
-		} else if kind == reflect.Int64 {
+		case reflect.Int64:
 			param, err = strconv.ParseInt(req.QueryParameter(v), 10, 64)
-		} else {
+		default:
 			return perrors.Errorf("[Go restful] Query param parse error, the index %v args's type isn't int or string or slice", k)
 		}
+
 		if err != nil {
 			return perrors.Errorf("[Go restful] Query param parse error, error:%v", perrors.WithStack(err))
 		}
@@ -300,20 +302,23 @@ func assembleArgsFromPathParams(methodConfig *rest_config.RestMethodConfig, args
 			t = t.Elem()
 			kind = t.Kind()
 		}
-		if kind == reflect.Int {
+
+		switch kind {
+		case reflect.Int:
 			param, err = strconv.Atoi(req.PathParameter(v))
-		} else if kind == reflect.Int32 {
+		case reflect.Int32:
 			i64, err = strconv.ParseInt(req.PathParameter(v), 10, 32)
 			if err == nil {
 				param = int32(i64)
 			}
-		} else if kind == reflect.Int64 {
+		case reflect.Int64:
 			param, err = strconv.ParseInt(req.PathParameter(v), 10, 64)
-		} else if kind == reflect.String {
+		case reflect.String:
 			param = req.PathParameter(v)
-		} else {
+		default:
 			return perrors.Errorf("[Go restful] Path param parse error, the index %v args's type isn't int or string", k)
 		}
+
 		if err != nil {
 			return perrors.Errorf("[Go restful] Path param parse error, error is %v", perrors.WithStack(err))
 		}

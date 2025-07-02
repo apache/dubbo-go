@@ -41,8 +41,10 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
 
 var protocolOnce sync.Once
@@ -59,7 +61,7 @@ var (
 
 // DubboProtocol supports dubbo 3.0 protocol. It implements Protocol interface for dubbo protocol.
 type DubboProtocol struct {
-	protocol.BaseProtocol
+	base.BaseProtocol
 	serverLock sync.Mutex
 	serviceMap *sync.Map                       // serviceMap is used to export multiple service by one server
 	serverMap  map[string]*triple.TripleServer // serverMap stores all exported server
@@ -68,14 +70,14 @@ type DubboProtocol struct {
 // NewDubboProtocol create a dubbo protocol.
 func NewDubboProtocol() *DubboProtocol {
 	return &DubboProtocol{
-		BaseProtocol: protocol.NewBaseProtocol(),
+		BaseProtocol: base.NewBaseProtocol(),
 		serverMap:    make(map[string]*triple.TripleServer),
 		serviceMap:   &sync.Map{},
 	}
 }
 
 // Export export dubbo3 service.
-func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
+func (dp *DubboProtocol) Export(invoker base.Invoker) base.Exporter {
 	url := invoker.GetURL()
 	serviceKey := url.ServiceKey()
 	exporter := NewDubboExporter(serviceKey, invoker, dp.ExporterMap(), dp.serviceMap)
@@ -84,7 +86,11 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 
 	key := url.GetParam(constant.BeanNameKey, "")
 	var service any
+	//TODO: Temporary compatibility with old APIs, can be removed later
 	service = config.GetProviderService(key)
+	if rpcService, ok := url.GetAttribute(constant.RpcServiceKey); ok {
+		service = rpcService
+	}
 
 	serializationType := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	var triSerializationType tripleConstant.CodecType
@@ -133,7 +139,7 @@ func (dp *DubboProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 }
 
 // Refer create dubbo3 service reference.
-func (dp *DubboProtocol) Refer(url *common.URL) protocol.Invoker {
+func (dp *DubboProtocol) Refer(url *common.URL) base.Invoker {
 	invoker, err := NewDubboInvoker(url)
 	if err != nil {
 		logger.Errorf("Refer url = %+v, with error = %s", url, err.Error())
@@ -152,7 +158,7 @@ func (dp *DubboProtocol) Destroy() {
 	dp.serverLock.Lock()
 	defer dp.serverLock.Unlock()
 	// Stop all server
-	for k, _ := range dp.serverMap {
+	for k := range dp.serverMap {
 		keyList = append(keyList, k)
 	}
 	for _, v := range keyList {
@@ -166,15 +172,15 @@ func (dp *DubboProtocol) Destroy() {
 // Dubbo3GrpcService is gRPC service
 type Dubbo3GrpcService interface {
 	// SetProxyImpl sets proxy.
-	XXX_SetProxyImpl(impl protocol.Invoker)
+	XXX_SetProxyImpl(impl base.Invoker)
 	// GetProxyImpl gets proxy.
-	XXX_GetProxyImpl() protocol.Invoker
+	XXX_GetProxyImpl() base.Invoker
 	// ServiceDesc gets an RPC service's specification.
 	XXX_ServiceDesc() *grpc.ServiceDesc
 }
 
 type UnaryService struct {
-	proxyImpl  protocol.Invoker
+	proxyImpl  base.Invoker
 	reqTypeMap sync.Map
 }
 
@@ -223,6 +229,7 @@ func (dp *DubboProtocol) openServer(url *common.URL, tripleCodecType tripleConst
 		triConfig.WithLocation(url.Location),
 		triConfig.WithLogger(logger.GetLogger()),
 	}
+	//TODO: Temporary compatibility with old APIs, can be removed later
 	tracingKey := url.GetParam(constant.TracingConfigKey, "")
 	if tracingKey != "" {
 		tracingConfig := config.GetTracingConfig(tracingKey)
@@ -256,13 +263,29 @@ func (dp *DubboProtocol) openServer(url *common.URL, tripleCodecType tripleConst
 
 	triOption := triConfig.NewTripleOption(opts...)
 
+	// TODO: remove config TLSConfig
+	// delete this branch
 	tlsConfig := config.GetRootConfig().TLSConfig
 	if tlsConfig != nil {
+		triOption.CACertFile = tlsConfig.CACertFile
 		triOption.TLSCertFile = tlsConfig.TLSCertFile
 		triOption.TLSKeyFile = tlsConfig.TLSKeyFile
-		triOption.CACertFile = tlsConfig.CACertFile
 		triOption.TLSServerName = tlsConfig.TLSServerName
-		logger.Infof("Triple Server initialized the TLSConfig configuration")
+		logger.Infof("DUBBO3 Server initialized the TLSConfig configuration")
+	} else if tlsConfRaw, tlsOk := url.GetAttribute(constant.TLSConfigKey); tlsOk {
+		// use global TLSConfig handle tls
+		tlsConf, RawOk := tlsConfRaw.(*global.TLSConfig)
+		if !RawOk {
+			logger.Errorf("DUBBO3 Server initialized the TLSConfig configuration failed")
+			return
+		}
+		if dubbotls.IsServerTLSValid(tlsConf) {
+			triOption.CACertFile = tlsConf.CACertFile
+			triOption.TLSCertFile = tlsConf.TLSCertFile
+			triOption.TLSKeyFile = tlsConf.TLSKeyFile
+			triOption.TLSServerName = tlsConf.TLSServerName
+			logger.Infof("DUBBO3 Server initialized the TLSConfig configuration")
+		}
 	}
 
 	_, ok = dp.ExporterMap().Load(url.ServiceKey())
@@ -276,7 +299,7 @@ func (dp *DubboProtocol) openServer(url *common.URL, tripleCodecType tripleConst
 }
 
 // GetProtocol get a single dubbo3 protocol.
-func GetProtocol() protocol.Protocol {
+func GetProtocol() base.Protocol {
 	protocolOnce.Do(func() {
 		dubboProtocol = NewDubboProtocol()
 	})

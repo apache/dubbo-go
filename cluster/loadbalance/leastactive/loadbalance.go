@@ -25,7 +25,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 const (
@@ -47,7 +47,7 @@ func newLeastActiveLoadBalance() loadbalance.LoadBalance {
 }
 
 // Select gets invoker based on least active load balancing strategy
-func (lb *leastActiveLoadBalance) Select(invokers []protocol.Invoker, invocation protocol.Invocation) protocol.Invoker {
+func (lb *leastActiveLoadBalance) Select(invokers []base.Invoker, invocation base.Invocation) base.Invoker {
 	count := len(invokers)
 	if count == 0 {
 		return nil
@@ -69,7 +69,7 @@ func (lb *leastActiveLoadBalance) Select(invokers []protocol.Invoker, invocation
 	for i := 0; i < count; i++ {
 		invoker := invokers[i]
 		// Active number
-		active := protocol.GetMethodStatus(invoker.GetURL(), invocation.MethodName()).GetActive()
+		active := base.GetMethodStatus(invoker.GetURL(), invocation.MethodName()).GetActive()
 		// current weight (maybe in warmUp)
 		afterWarmup := loadbalance.GetWeight(invoker, invocation)
 		// save for later use

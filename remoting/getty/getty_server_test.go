@@ -26,6 +26,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/config"
 )
 
@@ -41,7 +42,9 @@ func TestInitServer(t *testing.T) {
 		},
 	}
 	config.SetRootConfig(rootConf)
-	initServer("dubbo")
+	url, err := common.NewURL("dubbo://127.0.0.1:20003/test")
+	assert.Nil(t, err)
+	initServer(url)
 	config.SetRootConfig(*originRootConf)
 	assert.NotNil(t, srvConf)
 }

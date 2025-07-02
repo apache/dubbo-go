@@ -66,6 +66,8 @@ type nacosServiceDiscovery struct {
 	// cache registry instances
 	registryInstances []registry.ServiceInstance
 
+	serviceNameInstancesMap map[string][]registry.ServiceInstance //Batch registration for the same service
+
 	// registryURL stores the URL used for registration, used to fetch dynamic config like weight
 	registryURL *common.URL
 
@@ -89,12 +91,17 @@ func (n *nacosServiceDiscovery) Destroy() error {
 
 // Register will register the service to nacos
 func (n *nacosServiceDiscovery) Register(instance registry.ServiceInstance) error {
-	ins := n.toRegisterInstance(instance)
-	ok, err := n.namingClient.Client().RegisterInstance(ins)
-	if err != nil || !ok {
-		return perrors.WithMessage(err, "Could not register the instance. "+instance.GetServiceName())
+	instSrvName := instance.GetServiceName()
+	if n.serviceNameInstancesMap == nil {
+		n.serviceNameInstancesMap = make(map[string][]registry.ServiceInstance)
 	}
-	n.registryInstances = append(n.registryInstances, instance)
+	n.serviceNameInstancesMap[instSrvName] = append(n.serviceNameInstancesMap[instSrvName], instance)
+	brins := n.toBatchRegisterInstances(n.serviceNameInstancesMap[instSrvName])
+	ok, err := n.namingClient.Client().BatchRegisterInstance(brins)
+	if err != nil || !ok {
+		return perrors.Errorf("register nacos instances failed, err:%+v", err)
+	}
+	n.registryInstances = append(n.registryInstances, instance) //all_instances
 	return nil
 }
 
@@ -292,8 +299,7 @@ func (n *nacosServiceDiscovery) AddListener(listener registry.ServiceInstancesCh
 
 				var e error
 				for _, lis := range n.instanceListenerMap[serviceName].Values() {
-					var instanceListener registry.ServiceInstancesChangedListener
-					instanceListener = lis.(registry.ServiceInstancesChangedListener)
+					instanceListener := lis.(registry.ServiceInstancesChangedListener)
 					e = instanceListener.OnEvent(registry.NewServiceInstancesChangedEvent(serviceName, instances))
 				}
 
@@ -349,6 +355,21 @@ func (n *nacosServiceDiscovery) toRegisterInstance(instance registry.ServiceInst
 		Ephemeral: true,
 	}
 }
+func (n *nacosServiceDiscovery) toBatchRegisterInstances(instances []registry.ServiceInstance) vo.BatchRegisterInstanceParam {
+	var brins vo.BatchRegisterInstanceParam
+	var rins []vo.RegisterInstanceParam
+	for _, instance := range instances {
+		rins = append(rins, n.toRegisterInstance(instance))
+	}
+	if len(rins) == 0 {
+		logger.Warnf("No batch register instances found")
+		return vo.BatchRegisterInstanceParam{}
+	}
+	brins.ServiceName = rins[0].ServiceName
+	brins.GroupName = n.group
+	brins.Instances = rins
+	return brins
+}
 
 // toDeregisterInstance will convert the ServiceInstance to DeregisterInstanceParam
 func (n *nacosServiceDiscovery) toDeregisterInstance(instance registry.ServiceInstance) vo.DeregisterInstanceParam {
@@ -385,12 +406,13 @@ func newNacosServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error
 
 	group := url.GetParam(constant.RegistryGroupKey, defaultGroup)
 	newInstance := &nacosServiceDiscovery{
-		group:               group,
-		namingClient:        client,
-		descriptor:          descriptor,
-		registryInstances:   []registry.ServiceInstance{},
-		registryURL:         url,
-		instanceListenerMap: make(map[string]*gxset.HashSet),
+		group:                   group,
+		namingClient:            client,
+		descriptor:              descriptor,
+		registryInstances:       []registry.ServiceInstance{},
+		serviceNameInstancesMap: make(map[string][]registry.ServiceInstance),
+		registryURL:             url,
+		instanceListenerMap:     make(map[string]*gxset.HashSet),
 	}
 	return newInstance, nil
 }

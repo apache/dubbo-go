@@ -30,7 +30,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
@@ -40,7 +40,7 @@ func Test_parseInvocation(t *testing.T) {
 		desc   string
 		ctx    func() context.Context
 		url    *common.URL
-		invo   func() protocol.Invocation
+		invo   func() base.Invocation
 		expect func(t *testing.T, callType string, inRaw []any, methodName string, err error)
 	}{
 		{
@@ -49,7 +49,7 @@ func Test_parseInvocation(t *testing.T) {
 				return context.Background()
 			},
 			url: common.NewURLWithOptions(),
-			invo: func() protocol.Invocation {
+			invo: func() base.Invocation {
 				return invocation.NewRPCInvocationWithOptions()
 			},
 			expect: func(t *testing.T, callType string, inRaw []any, methodName string, err error) {
@@ -62,7 +62,7 @@ func Test_parseInvocation(t *testing.T) {
 				return context.Background()
 			},
 			url: common.NewURLWithOptions(),
-			invo: func() protocol.Invocation {
+			invo: func() base.Invocation {
 				iv := invocation.NewRPCInvocationWithOptions()
 				iv.SetAttribute(constant.CallTypeKey, 1)
 				return iv
@@ -77,7 +77,7 @@ func Test_parseInvocation(t *testing.T) {
 				return context.Background()
 			},
 			url: common.NewURLWithOptions(),
-			invo: func() protocol.Invocation {
+			invo: func() base.Invocation {
 				iv := invocation.NewRPCInvocationWithOptions()
 				iv.SetAttribute(constant.CallTypeKey, constant.CallUnary)
 				return iv
@@ -101,7 +101,7 @@ func Test_parseAttachments(t *testing.T) {
 		desc   string
 		ctx    func() context.Context
 		url    *common.URL
-		invo   func() protocol.Invocation
+		invo   func() base.Invocation
 		expect func(t *testing.T, ctx context.Context, err error)
 	}{
 		{
@@ -113,7 +113,7 @@ func Test_parseAttachments(t *testing.T) {
 				common.WithInterface("interface"),
 				common.WithToken("token"),
 			),
-			invo: func() protocol.Invocation {
+			invo: func() base.Invocation {
 				return invocation.NewRPCInvocationWithOptions()
 			},
 			expect: func(t *testing.T, ctx context.Context, err error) {
@@ -133,7 +133,7 @@ func Test_parseAttachments(t *testing.T) {
 				return context.WithValue(context.Background(), constant.AttachmentKey, userDefined)
 			},
 			url: common.NewURLWithOptions(),
-			invo: func() protocol.Invocation {
+			invo: func() base.Invocation {
 				return invocation.NewRPCInvocationWithOptions()
 			},
 			expect: func(t *testing.T, ctx context.Context, err error) {
@@ -152,7 +152,7 @@ func Test_parseAttachments(t *testing.T) {
 				return context.WithValue(context.Background(), constant.AttachmentKey, userDefined)
 			},
 			url: common.NewURLWithOptions(),
-			invo: func() protocol.Invocation {
+			invo: func() base.Invocation {
 				return invocation.NewRPCInvocationWithOptions()
 			},
 			expect: func(t *testing.T, ctx context.Context, err error) {

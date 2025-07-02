@@ -33,7 +33,8 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 type fields struct {
@@ -42,10 +43,10 @@ type fields struct {
 }
 type args struct {
 	ctx        context.Context
-	result     protocol.Result
-	invoker    protocol.Invoker
-	protocol   protocol.Invocation
-	invocation protocol.Invocation
+	result     result.Result
+	invoker    base.Invoker
+	protocol   base.Invocation
+	invocation base.Invocation
 }
 
 // MockInvocation is a mock of Invocation interface
@@ -157,7 +158,7 @@ func (mr *MockInvocationMockRecorder) Arguments() *gomock.Call {
 // Reply mocks base method
 func (m *MockInvocation) Reply() any {
 	ret := m.ctrl.Call(m, "Reply")
-	ret0, _ := ret[0].(any)
+	ret0 := ret[0]
 	return ret0
 }
 
@@ -167,9 +168,9 @@ func (mr *MockInvocationMockRecorder) Reply() *gomock.Call {
 }
 
 // Invoker mocks base method
-func (m *MockInvocation) Invoker() protocol.Invoker {
+func (m *MockInvocation) Invoker() base.Invoker {
 	ret := m.ctrl.Call(m, "Invoker")
-	ret0, _ := ret[0].(protocol.Invoker)
+	ret0, _ := ret[0].(base.Invoker)
 	return ret0
 }
 
@@ -228,7 +229,7 @@ func (mr *MockInvocationMockRecorder) GetAttachment(key any) *gomock.Call {
 // GetAttachmentInterface mocks base method
 func (m *MockInvocation) GetAttachmentInterface(arg0 string) any {
 	ret := m.ctrl.Call(m, "GetAttachmentInterface", arg0)
-	ret0, _ := ret[0].(any)
+	ret0 := ret[0]
 	return ret0
 }
 
@@ -290,7 +291,7 @@ func (mr *MockInvocationMockRecorder) SetAttribute(key, value any) *gomock.Call 
 // GetAttribute mocks base method
 func (m *MockInvocation) GetAttribute(key string) (any, bool) {
 	ret := m.ctrl.Call(m, "GetAttribute", key)
-	ret0, _ := ret[0].(any)
+	ret0 := ret[0]
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
@@ -303,7 +304,7 @@ func (mr *MockInvocationMockRecorder) GetAttribute(key any) *gomock.Call {
 // GetAttributeWithDefaultValue mocks base method
 func (m *MockInvocation) GetAttributeWithDefaultValue(key string, defaultValue any) any {
 	ret := m.ctrl.Call(m, "GetAttributeWithDefaultValue", key, defaultValue)
-	ret0, _ := ret[0].(any)
+	ret0 := ret[0]
 	return ret0
 }
 
@@ -370,7 +371,7 @@ func (mr *MockResultMockRecorder) SetResult(arg0 any) *gomock.Call {
 // Result mocks base method
 func (m *MockResult) Result() any {
 	ret := m.ctrl.Call(m, "Result")
-	ret0, _ := ret[0].(any)
+	ret0 := ret[0]
 	return ret0
 }
 
@@ -414,7 +415,7 @@ func (mr *MockResultMockRecorder) AddAttachment(arg0, arg1 any) *gomock.Call {
 // Attachment mocks base method
 func (m *MockResult) Attachment(arg0 string, arg1 any) any {
 	ret := m.ctrl.Call(m, "Attachment", arg0, arg1)
-	ret0, _ := ret[0].(any)
+	ret0 := ret[0]
 	return ret0
 }
 
@@ -481,9 +482,9 @@ func (mr *MockInvokerMockRecorder) Destroy() *gomock.Call {
 }
 
 // Invoke mocks base method
-func (m *MockInvoker) Invoke(arg0 context.Context, arg1 protocol.Invocation) protocol.Result {
+func (m *MockInvoker) Invoke(arg0 context.Context, arg1 base.Invocation) result.Result {
 	ret := m.ctrl.Call(m, "Invoke", arg0, arg1)
-	ret0, _ := ret[0].(protocol.Result)
+	ret0, _ := ret[0].(result.Result)
 	return ret0
 }
 
@@ -504,7 +505,7 @@ func Test_otelServerFilter_OnResponse(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   protocol.Result
+		want   result.Result
 	}{
 		{
 			name:   "test",
@@ -531,7 +532,7 @@ func Test_otelClientFilter_OnResponse(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   protocol.Result
+		want   result.Result
 	}{
 		{
 			name:   "test",
@@ -556,12 +557,12 @@ func Test_otelClientFilter_OnResponse(t *testing.T) {
 func Test_otelServerFilter_Invoke(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
-	result := NewMockResult(ctrl)
-	result.EXPECT().Error().Return(nil).AnyTimes()
+	res := NewMockResult(ctrl)
+	res.EXPECT().Error().Return(nil).AnyTimes()
 
 	invoker := NewMockInvoker(ctrl)
 	invoker.EXPECT().GetURL().Return(&common.URL{}).AnyTimes()
-	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(result).AnyTimes()
+	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(res).AnyTimes()
 
 	invocation := NewMockInvocation(ctrl)
 	invocation.EXPECT().ActualMethodName().Return("oteldubbogo").AnyTimes()
@@ -573,7 +574,7 @@ func Test_otelServerFilter_Invoke(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   protocol.Result
+		want   result.Result
 	}{
 		{
 			name:   "test",
@@ -583,7 +584,7 @@ func Test_otelServerFilter_Invoke(t *testing.T) {
 				invoker:    invoker,
 				invocation: invocation,
 			},
-			want: result,
+			want: res,
 		},
 	}
 	for _, tt := range tests {
@@ -602,12 +603,12 @@ func Test_otelServerFilter_Invoke(t *testing.T) {
 func Test_otelClientFilter_Invoke(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
-	result := NewMockResult(ctrl)
-	result.EXPECT().Error().Return(nil).AnyTimes()
+	res := NewMockResult(ctrl)
+	res.EXPECT().Error().Return(nil).AnyTimes()
 
 	invoker := NewMockInvoker(ctrl)
 	invoker.EXPECT().GetURL().Return(&common.URL{}).AnyTimes()
-	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(result).AnyTimes()
+	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(res).AnyTimes()
 
 	invocation := NewMockInvocation(ctrl)
 	invocation.EXPECT().ActualMethodName().Return("oteldubbogo").AnyTimes()
@@ -619,7 +620,7 @@ func Test_otelClientFilter_Invoke(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   protocol.Result
+		want   result.Result
 	}{
 		{
 			name:   "test",
@@ -629,7 +630,7 @@ func Test_otelClientFilter_Invoke(t *testing.T) {
 				invoker:    invoker,
 				invocation: invocation,
 			},
-			want: result,
+			want: res,
 		},
 	}
 	for _, tt := range tests {

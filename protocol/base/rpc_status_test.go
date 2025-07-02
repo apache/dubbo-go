@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package protocol
+package base
 
 import (
 	"strconv"
@@ -31,7 +31,7 @@ import (
 )
 
 const (
-	mockCommonDubboUrl = "dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider"
+	mockCommonDubboUrl = "dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider" //NOSONAR just for test
 )
 
 func TestBeginCount(t *testing.T) {

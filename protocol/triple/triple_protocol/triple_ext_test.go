@@ -33,7 +33,6 @@ import (
 
 import (
 	"google.golang.org/protobuf/proto"
-
 	"google.golang.org/protobuf/reflect/protoregistry"
 )
 
@@ -41,6 +40,7 @@ import (
 	triple "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/assert"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/import/v1/importv1connect"
+
 	pingv1 "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/ping/v1"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/ping/v1/pingv1connect"
 )
@@ -544,7 +544,7 @@ func TestConcurrentStreams(t *testing.T) {
 			assert.Nil(t, err)
 			start.Wait()
 			for i := 0; i < 100; i++ {
-				num := rand.Int63n(1000) //nolint: gosec
+				num := rand.Int63n(1000) //nolint: gosec //NOSONAR
 				total += num
 				if err := sum.Send(&pingv1.CumSumRequest{Number: num}); err != nil {
 					t.Errorf("failed to send request: %v", err)

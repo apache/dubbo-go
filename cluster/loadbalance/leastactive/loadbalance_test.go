@@ -29,23 +29,23 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
 func TestLeastActiveSelect(t *testing.T) {
 	loadBalance := newLeastActiveLoadBalance()
 
-	var invokers []protocol.Invoker
+	var invokers []base.Invoker
 
 	url, _ := common.NewURL(fmt.Sprintf("dubbo://%s:%d/org.apache.demo.HelloService", constant.LocalHostValue, constant.DefaultPort))
-	invokers = append(invokers, protocol.NewBaseInvoker(url))
+	invokers = append(invokers, base.NewBaseInvoker(url))
 	i := loadBalance.Select(invokers, &invocation.RPCInvocation{})
 	assert.True(t, i.GetURL().URLEqual(url))
 
 	for i := 1; i < 10; i++ {
 		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/org.apache.demo.HelloService", i))
-		invokers = append(invokers, protocol.NewBaseInvoker(url))
+		invokers = append(invokers, base.NewBaseInvoker(url))
 	}
 	loadBalance.Select(invokers, &invocation.RPCInvocation{})
 }
@@ -53,15 +53,15 @@ func TestLeastActiveSelect(t *testing.T) {
 func TestLeastActiveByWeight(t *testing.T) {
 	loadBalance := newLeastActiveLoadBalance()
 
-	var invokers []protocol.Invoker
+	var invokers []base.Invoker
 	loop := 3
 	for i := 1; i <= loop; i++ {
 		url, _ := common.NewURL(fmt.Sprintf("test%v://192.168.1.%v:20000/org.apache.demo.HelloService?weight=%v", i, i, i))
-		invokers = append(invokers, protocol.NewBaseInvoker(url))
+		invokers = append(invokers, base.NewBaseInvoker(url))
 	}
 
 	inv := invocation.NewRPCInvocationWithOptions(invocation.WithMethodName("test"))
-	protocol.BeginCount(invokers[2].GetURL(), inv.MethodName())
+	base.BeginCount(invokers[2].GetURL(), inv.MethodName())
 
 	loop = 10000
 

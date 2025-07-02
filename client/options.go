@@ -34,8 +34,10 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/proxy"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/tls"
 )
 
 type ReferenceOptions struct {
@@ -43,10 +45,11 @@ type ReferenceOptions struct {
 	Consumer  *global.ConsumerConfig
 	Metrics   *global.MetricsConfig
 	Otel      *global.OtelConfig
+	TLS       *global.TLSConfig
 
 	pxy          *proxy.Proxy
 	id           string
-	invoker      protocol.Invoker
+	invoker      base.Invoker
 	urls         []*common.URL
 	metaDataType string
 	info         *ClientInfo
@@ -61,6 +64,7 @@ func defaultReferenceOptions() *ReferenceOptions {
 		Reference: global.DefaultReferenceConfig(),
 		Metrics:   global.DefaultMetricsConfig(),
 		Otel:      global.DefaultOtelConfig(),
+		TLS:       global.DefaultTLSConfig(),
 	}
 }
 
@@ -72,21 +76,21 @@ func (refOpts *ReferenceOptions) init(opts ...ReferenceOption) error {
 		return err
 	}
 
-	ref := refOpts.Reference
+	refConf := refOpts.Reference
 
 	app := refOpts.applicationCompat
 	if app != nil {
 		refOpts.metaDataType = app.MetadataType
-		if ref.Group == "" {
-			ref.Group = app.Group
+		if refConf.Group == "" {
+			refConf.Group = app.Group
 		}
-		if ref.Version == "" {
-			ref.Version = app.Version
+		if refConf.Version == "" {
+			refConf.Version = app.Version
 		}
 	}
 
 	// init method
-	methods := ref.Methods
+	methods := refConf.MethodsConfig
 	if length := len(methods); length > 0 {
 		refOpts.methodsCompat = make([]*config.MethodConfig, length)
 		for i, method := range methods {
@@ -98,23 +102,24 @@ func (refOpts *ReferenceOptions) init(opts ...ReferenceOption) error {
 	}
 
 	// init cluster
-	if ref.Cluster == "" {
-		ref.Cluster = "failover"
+	// TODO: use constant replace failover
+	if refConf.Cluster == "" {
+		refConf.Cluster = "failover"
 	}
 
 	// init registries
 	if len(refOpts.registriesCompat) > 0 {
 		regs := refOpts.registriesCompat
-		if len(ref.RegistryIDs) <= 0 {
-			ref.RegistryIDs = make([]string, len(regs))
+		if len(refConf.RegistryIDs) <= 0 {
+			refConf.RegistryIDs = make([]string, len(regs))
 			for key := range regs {
-				ref.RegistryIDs = append(ref.RegistryIDs, key)
+				refConf.RegistryIDs = append(refConf.RegistryIDs, key)
 			}
 		}
-		ref.RegistryIDs = commonCfg.TranslateIds(ref.RegistryIDs)
+		refConf.RegistryIDs = commonCfg.TranslateIds(refConf.RegistryIDs)
 
 		newRegs := make(map[string]*config.RegistryConfig)
-		for _, id := range ref.RegistryIDs {
+		for _, id := range refConf.RegistryIDs {
 			if reg, ok := regs[id]; ok {
 				newRegs[id] = reg
 			}
@@ -123,16 +128,16 @@ func (refOpts *ReferenceOptions) init(opts ...ReferenceOption) error {
 	}
 
 	// init protocol
-	if ref.Protocol == "" {
-		ref.Protocol = constant.TriProtocol
+	if refConf.Protocol == "" {
+		refConf.Protocol = constant.TriProtocol
 		if refOpts.Consumer != nil && refOpts.Consumer.Protocol != "" {
-			ref.Protocol = refOpts.Consumer.Protocol
+			refConf.Protocol = refOpts.Consumer.Protocol
 		}
 	}
 
 	// init serialization
-	if ref.Serialization == "" {
-		ref.Serialization = constant.ProtobufSerialization
+	if refConf.Serialization == "" {
+		refConf.Serialization = constant.ProtobufSerialization
 	}
 
 	return commonCfg.Verify(refOpts)
@@ -332,11 +337,18 @@ func WithSticky() ReferenceOption {
 	}
 }
 
+// TODO: remove this function after old triple removed
+func WithIDL(IDLMode string) ReferenceOption {
+	return func(opts *ReferenceOptions) {
+		opts.Reference.IDLMode = IDLMode
+	}
+}
+
 // ========== Protocol to consume ==========
 
 func WithProtocolDubbo() ReferenceOption {
 	return func(opts *ReferenceOptions) {
-		opts.Reference.Protocol = constant.Dubbo
+		opts.Reference.Protocol = constant.DubboProtocol
 	}
 }
 
@@ -348,7 +360,7 @@ func WithProtocolTriple() ReferenceOption {
 
 func WithProtocolJsonRPC() ReferenceOption {
 	return func(opts *ReferenceOptions) {
-		opts.Reference.Protocol = "jsonrpc"
+		opts.Reference.Protocol = constant.JSONRPCProtocol
 	}
 }
 
@@ -380,10 +392,10 @@ func WithMethod(opts ...config.MethodOption) ReferenceOption {
 	regOpts := config.NewMethodOptions(opts...)
 
 	return func(opts *ReferenceOptions) {
-		if len(opts.Reference.Methods) == 0 {
-			opts.Reference.Methods = make([]*global.MethodConfig, 0)
+		if len(opts.Reference.MethodsConfig) == 0 {
+			opts.Reference.MethodsConfig = make([]*global.MethodConfig, 0)
 		}
-		opts.Reference.Methods = append(opts.Reference.Methods, regOpts.Method)
+		opts.Reference.MethodsConfig = append(opts.Reference.MethodsConfig, regOpts.Method)
 	}
 }
 
@@ -441,6 +453,12 @@ func setOtel(oc *global.OtelConfig) ReferenceOption {
 	}
 }
 
+func setTLS(tls *global.TLSConfig) ReferenceOption {
+	return func(opts *ReferenceOptions) {
+		opts.TLS = tls
+	}
+}
+
 type ClientOptions struct {
 	Consumer    *global.ConsumerConfig
 	Application *global.ApplicationConfig
@@ -448,6 +466,7 @@ type ClientOptions struct {
 	Shutdown    *global.ShutdownConfig
 	Metrics     *global.MetricsConfig
 	Otel        *global.OtelConfig
+	TLS         *global.TLSConfig
 
 	overallReference  *global.ReferenceConfig
 	applicationCompat *config.ApplicationConfig
@@ -462,6 +481,7 @@ func defaultClientOptions() *ClientOptions {
 		Shutdown:         global.DefaultShutdownConfig(),
 		Metrics:          global.DefaultMetricsConfig(),
 		Otel:             global.DefaultOtelConfig(),
+		TLS:              global.DefaultTLSConfig(),
 		overallReference: global.DefaultReferenceConfig(),
 	}
 }
@@ -474,7 +494,7 @@ func (cliOpts *ClientOptions) init(opts ...ClientOption) error {
 		return err
 	}
 
-	con := cliOpts.Consumer
+	consumerConf := cliOpts.Consumer
 
 	// init application
 	application := cliOpts.Application
@@ -489,15 +509,15 @@ func (cliOpts *ClientOptions) init(opts ...ClientOption) error {
 	regs := cliOpts.Registries
 	if regs != nil {
 		cliOpts.registriesCompat = make(map[string]*config.RegistryConfig)
-		if len(con.RegistryIDs) <= 0 {
-			con.RegistryIDs = make([]string, len(regs))
+		if len(consumerConf.RegistryIDs) <= 0 {
+			consumerConf.RegistryIDs = make([]string, len(regs))
 			for key := range regs {
-				con.RegistryIDs = append(con.RegistryIDs, key)
+				consumerConf.RegistryIDs = append(consumerConf.RegistryIDs, key)
 			}
 		}
-		con.RegistryIDs = commonCfg.TranslateIds(con.RegistryIDs)
+		consumerConf.RegistryIDs = commonCfg.TranslateIds(consumerConf.RegistryIDs)
 
-		for _, id := range con.RegistryIDs {
+		for _, id := range consumerConf.RegistryIDs {
 			if reg, ok := regs[id]; ok {
 				cliOpts.registriesCompat[id] = compatRegistryConfig(reg)
 				if err := cliOpts.registriesCompat[id].Init(); err != nil {
@@ -525,7 +545,7 @@ func (cliOpts *ClientOptions) init(opts ...ClientOption) error {
 	// todo(DMwangnima): is there any part that we should do compatibility processing?
 
 	// init graceful_shutdown
-	graceful_shutdown.Init(graceful_shutdown.SetShutdown_Config(cliOpts.Shutdown))
+	graceful_shutdown.Init(graceful_shutdown.SetShutdownConfig(cliOpts.Shutdown))
 	return nil
 }
 
@@ -546,8 +566,7 @@ func WithClientURL(url string) ClientOption {
 // todo(DMwangnima): change Filter Option like Cluster and LoadBalance
 func WithClientFilter(filter string) ClientOption {
 	return func(opts *ClientOptions) {
-		// todo: move this to overallReference
-		opts.Consumer.Filter = filter
+		opts.overallReference.Filter = filter
 	}
 }
 
@@ -573,6 +592,17 @@ func WithClientShutdown(opts ...graceful_shutdown.Option) ClientOption {
 
 	return func(cliOpts *ClientOptions) {
 		cliOpts.Shutdown = sdOpts.Shutdown
+	}
+}
+
+func WithClientTLSOption(opts ...tls.Option) ClientOption {
+	tlsOpts := tls.NewOptions(opts...)
+
+	return func(cliOpts *ClientOptions) {
+		if cliOpts.TLS == nil {
+			cliOpts.TLS = new(global.TLSConfig)
+		}
+		cliOpts.TLS = tlsOpts.TLSConf
 	}
 }
 
@@ -638,6 +668,9 @@ func WithClientClusterStrategy(strategy string) ClientOption {
 	}
 }
 
+// Deprecated：use triple.WithKeepAliveInterval()
+// TODO: remove KeepAliveInterval and KeepAliveInterval in version 4.0.0
+//
 // If there is no other traffic on the connection, the ping will be sent, only works for 'tri' protocol with http2.
 // A minimum value of 10s will be used instead to invoid 'too many pings'.If not set, default value is 10s.
 func WithKeepAliveInterval(keepAliveInterval time.Duration) ClientOption {
@@ -649,6 +682,9 @@ func WithKeepAliveInterval(keepAliveInterval time.Duration) ClientOption {
 	}
 }
 
+// Deprecated：use triple.WithKeepAliveTimeout()
+// TODO: remove KeepAliveInterval and KeepAliveInterval in version 4.0.0
+//
 // WithKeepAliveTimeout is timeout after which the connection will be closed, only works for 'tri' protocol with http2
 // If not set, default value is 20s.
 func WithKeepAliveTimeout(keepAliveTimeout time.Duration) ClientOption {
@@ -779,7 +815,7 @@ func WithClientSticky() ClientOption {
 
 func WithClientProtocolDubbo() ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.Protocol = constant.Dubbo
+		opts.Consumer.Protocol = constant.DubboProtocol
 	}
 }
 
@@ -791,13 +827,18 @@ func WithClientProtocolTriple() ClientOption {
 
 func WithClientProtocolJsonRPC() ClientOption {
 	return func(opts *ClientOptions) {
-		opts.Consumer.Protocol = "jsonrpc"
+		opts.Consumer.Protocol = constant.JSONRPCProtocol
 	}
 }
 
-func WithClientProtocol(protocol string) ClientOption {
-	return func(opts *ClientOptions) {
-		opts.Consumer.Protocol = protocol
+func WithClientProtocol(opts ...protocol.ClientOption) ClientOption {
+	proOpts := protocol.NewClientOptions(opts...)
+
+	return func(srvOpts *ClientOptions) {
+		if srvOpts.overallReference.ProtocolClientConfig == nil {
+			srvOpts.overallReference.ProtocolClientConfig = new(global.ProtocolClientConfig)
+		}
+		srvOpts.overallReference.ProtocolClientConfig = proOpts.ProtocolClient
 	}
 }
 
@@ -852,6 +893,12 @@ func SetClientMetrics(metrics *global.MetricsConfig) ClientOption {
 func SetClientOtel(otel *global.OtelConfig) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.Otel = otel
+	}
+}
+
+func SetClientTLS(tls *global.TLSConfig) ClientOption {
+	return func(opts *ClientOptions) {
+		opts.TLS = tls
 	}
 }
 

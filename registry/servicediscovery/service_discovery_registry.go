@@ -19,6 +19,7 @@ package servicediscovery
 
 import (
 	"bytes"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -88,9 +89,9 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 	if metaInfo == nil {
 		panic("no metada info found of registry id " + s.url.GetParam(constant.RegistryIdKey, ""))
 	}
-	s.instance = createInstance(metaInfo)
-	// consumer has no host and port, so it will not register service
-	if s.instance.GetHost() != "" && s.instance.GetPort() != 0 {
+	urls := metaInfo.GetExportedServiceURLs()
+	for _, url := range urls {
+		instance := createInstance(metaInfo, url)
 		metaInfo.CalAndGetRevision()
 		if metadata.GetMetadataType() == constant.RemoteMetadataStorageType {
 			if s.metadataReport == nil {
@@ -101,15 +102,25 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 				return err
 			}
 		}
-		return s.serviceDiscovery.Register(s.instance)
+		err := s.serviceDiscovery.Register(instance)
+		if err != nil {
+			return perrors.WithMessage(err, "Register service failed")
+		}
 	}
 	return nil
 }
 
-func createInstance(meta *info.MetadataInfo) registry.ServiceInstance {
+func createInstance(meta *info.MetadataInfo, url *common.URL) registry.ServiceInstance {
 	params := make(map[string]string, 8)
 	params[constant.MetadataStorageTypePropertyName] = metadata.GetMetadataType()
+	port, err := strconv.Atoi(url.Port)
+	if err != nil {
+		logger.Warnf("Parse port %s failed, err: %v", url.Port, err)
+	}
 	instance := &registry.DefaultServiceInstance{
+		ID:              url.Address(),
+		Host:            url.Ip,
+		Port:            port,
 		ServiceName:     meta.App,
 		Enable:          true,
 		Healthy:         true,
@@ -117,7 +128,6 @@ func createInstance(meta *info.MetadataInfo) registry.ServiceInstance {
 		ServiceMetadata: meta,
 		Tag:             meta.Tag,
 	}
-
 	for _, cus := range extension.GetCustomizers() {
 		cus.Customize(instance)
 	}

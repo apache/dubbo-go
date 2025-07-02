@@ -34,7 +34,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
@@ -42,23 +43,23 @@ type failoverClusterInvoker struct {
 	base.BaseClusterInvoker
 }
 
-func newFailoverClusterInvoker(directory directory.Directory) protocol.Invoker {
+func newFailoverClusterInvoker(directory directory.Directory) protocolbase.Invoker {
 	return &failoverClusterInvoker{
 		BaseClusterInvoker: base.NewBaseClusterInvoker(directory),
 	}
 }
 
-func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation protocol.Invocation) protocol.Result {
+func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation protocolbase.Invocation) result.Result {
 	var (
-		result    protocol.Result
-		invoked   []protocol.Invoker
+		res       result.Result
+		invoked   []protocolbase.Invoker
 		providers []string
-		ivk       protocol.Invoker
+		ivk       protocolbase.Invoker
 	)
 
 	invokers := invoker.Directory.List(invocation)
 	if err := invoker.CheckInvokers(invokers, invocation); err != nil {
-		return &protocol.RPCResult{Err: err}
+		return &result.RPCResult{Err: err}
 	}
 
 	methodName := invocation.ActualMethodName()
@@ -70,12 +71,12 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 		// NOTE: if `invokers` changed, then `invoked` also lose accuracy.
 		if i > 0 {
 			if err := invoker.CheckWhetherDestroyed(); err != nil {
-				return &protocol.RPCResult{Err: err}
+				return &result.RPCResult{Err: err}
 			}
 
 			invokers = invoker.Directory.List(invocation)
 			if err := invoker.CheckInvokers(invokers, invocation); err != nil {
-				return &protocol.RPCResult{Err: err}
+				return &result.RPCResult{Err: err}
 			}
 		}
 		ivk = invoker.DoSelect(loadBalance, invocation, invokers, invoked)
@@ -84,19 +85,19 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 		}
 		invoked = append(invoked, ivk)
 		// DO INVOKE
-		result = ivk.Invoke(ctx, invocation)
-		if result.Error() != nil && !isBizError(result.Error()) {
+		res = ivk.Invoke(ctx, invocation)
+		if res.Error() != nil && !isBizError(res.Error()) {
 			providers = append(providers, ivk.GetURL().Key())
 			continue
 		}
-		return result
+		return res
 	}
 	ip := common.GetLocalIp()
 	invokerSvc := invoker.GetURL().Service()
 	invokerUrl := invoker.Directory.GetURL()
 	if ivk == nil {
 		logger.Errorf("Failed to invoke the method %s of the service %s .No provider is available.", methodName, invokerSvc)
-		return &protocol.RPCResult{
+		return &result.RPCResult{
 			Err: perrors.Errorf("Failed to invoke the method %s of the service %s .No provider is available because can't connect server.",
 				methodName, invokerSvc),
 		}
@@ -105,16 +106,16 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 	logger.Errorf(fmt.Sprintf("Failed to invoke the method %v in the service %v. "+
 		"Tried %v times of the providers %v (%v/%v)from the registry %v on the consumer %v using the dubbo version %v. "+
 		"Last error is %+v.", methodName, invokerSvc, retries, providers, len(providers), len(invokers),
-		invokerUrl, ip, constant.Version, result.Error().Error()))
+		invokerUrl, ip, constant.Version, res.Error().Error()))
 
-	return result
+	return res
 }
 
 func isBizError(err error) bool {
 	return triple_protocol.IsWireError(err) && triple_protocol.CodeOf(err) == triple_protocol.CodeBizError
 }
 
-func getRetries(invokers []protocol.Invoker, methodName string, invocation protocol.Invocation) int {
+func getRetries(invokers []protocolbase.Invoker, methodName string, invocation protocolbase.Invocation) int {
 	// Todo(finalt) Temporarily solve the problem that the retries is not valid
 	if retries, ok := invocation.GetAttachment(constant.RetriesKey); ok {
 		if rInt, err := strconv.Atoi(retries); err == nil {

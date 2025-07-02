@@ -47,7 +47,6 @@ func (c *compatHandlerStream) SendHeader(md metadata.MD) error {
 
 func (c *compatHandlerStream) SetTrailer(md metadata.MD) {
 	// todo(DMwangnima): add trailer method for streaming
-	return
 }
 
 func (c *compatHandlerStream) Context() context.Context {

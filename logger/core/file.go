@@ -15,30 +15,25 @@
  * limitations under the License.
  */
 
-package graceful_shutdown
+// Package logger is unified facade provided by Dubbo to work with different logger frameworks, eg, Zapper, Logrus.
+package core
 
 import (
-	"go.uber.org/atomic"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
-func compatShutdownConfig(c *global.ShutdownConfig) *config.ShutdownConfig {
-	if c == nil {
-		return nil
+func FileConfig(config *common.URL) *lumberjack.Logger {
+	return &lumberjack.Logger{
+		Filename:   config.GetParam(constant.LoggerFileNameKey, "dubbo.log"),
+		MaxSize:    config.GetParamByIntValue(constant.LoggerFileNaxSizeKey, 1),
+		MaxBackups: config.GetParamByIntValue(constant.LoggerFileMaxBackupsKey, 1),
+		MaxAge:     config.GetParamByIntValue(constant.LoggerFileMaxAgeKey, 3),
+		LocalTime:  config.GetParamBool(constant.LoggerFileLocalTimeKey, true),
+		Compress:   config.GetParamBool(constant.LoggerFileCompressKey, true),
 	}
-	cfg := &config.ShutdownConfig{
-		Timeout:                     c.Timeout,
-		StepTimeout:                 c.StepTimeout,
-		ConsumerUpdateWaitTime:      c.ConsumerUpdateWaitTime,
-		RejectRequestHandler:        c.RejectRequestHandler,
-		InternalSignal:              c.InternalSignal,
-		OfflineRequestWindowTimeout: c.OfflineRequestWindowTimeout,
-		RejectRequest:               atomic.Bool{},
-	}
-	cfg.RejectRequest.Store(c.RejectRequest.Load())
-	return cfg
 }

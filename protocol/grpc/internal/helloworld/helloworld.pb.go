@@ -35,7 +35,7 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
@@ -252,14 +252,14 @@ func (c *GreeterClientImpl) GetDubboStub(cc *grpc.ClientConn) GreeterClient {
 }
 
 type GreeterProviderBase struct {
-	proxyImpl protocol.Invoker
+	proxyImpl base.Invoker
 }
 
-func (s *GreeterProviderBase) SetProxyImpl(impl protocol.Invoker) {
+func (s *GreeterProviderBase) SetProxyImpl(impl base.Invoker) {
 	s.proxyImpl = impl
 }
 
-func (s *GreeterProviderBase) GetProxyImpl() protocol.Invoker {
+func (s *GreeterProviderBase) GetProxyImpl() base.Invoker {
 	return s.proxyImpl
 }
 
@@ -275,9 +275,9 @@ func _DUBBO_Greeter_SayHello_Handler(srv any, ctx context.Context, dec func(any)
 	// DubboGrpcService is gRPC service
 	type DubboGrpcService interface {
 		// SetProxyImpl sets proxy.
-		SetProxyImpl(impl protocol.Invoker)
+		SetProxyImpl(impl base.Invoker)
 		// GetProxyImpl gets proxy.
-		GetProxyImpl() protocol.Invoker
+		GetProxyImpl() base.Invoker
 		// ServiceDesc gets an RPC service's specification.
 		ServiceDesc() *grpc.ServiceDesc
 	}

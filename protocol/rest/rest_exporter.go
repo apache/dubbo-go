@@ -28,18 +28,18 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 // nolint
 type RestExporter struct {
-	protocol.BaseExporter
+	base.BaseExporter
 }
 
 // NewRestExporter returns a RestExporter
-func NewRestExporter(key string, invoker protocol.Invoker, exporterMap *sync.Map) *RestExporter {
+func NewRestExporter(key string, invoker base.Invoker, exporterMap *sync.Map) *RestExporter {
 	return &RestExporter{
-		BaseExporter: *protocol.NewBaseExporter(key, invoker, exporterMap),
+		BaseExporter: *base.NewBaseExporter(key, invoker, exporterMap),
 	}
 }
 

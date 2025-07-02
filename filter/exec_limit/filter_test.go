@@ -30,7 +30,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
@@ -44,7 +44,7 @@ func TestFilterInvokeIgnored(t *testing.T) {
 
 	limitFilter := newFilter()
 
-	result := limitFilter.Invoke(context.Background(), protocol.NewBaseInvoker(invokeUrl), invoc)
+	result := limitFilter.Invoke(context.Background(), base.NewBaseInvoker(invokeUrl), invoc)
 	assert.NotNil(t, result)
 	assert.Nil(t, result.Error())
 }
@@ -61,7 +61,7 @@ func TestFilterInvokeConfigureError(t *testing.T) {
 
 	limitFilter := newFilter()
 
-	result := limitFilter.Invoke(context.Background(), protocol.NewBaseInvoker(invokeUrl), invoc)
+	result := limitFilter.Invoke(context.Background(), base.NewBaseInvoker(invokeUrl), invoc)
 	assert.NotNil(t, result)
 	assert.Nil(t, result.Error())
 }
@@ -78,7 +78,7 @@ func TestFilterInvoke(t *testing.T) {
 
 	limitFilter := newFilter()
 
-	result := limitFilter.Invoke(context.Background(), protocol.NewBaseInvoker(invokeUrl), invoc)
+	result := limitFilter.Invoke(context.Background(), base.NewBaseInvoker(invokeUrl), invoc)
 	assert.NotNil(t, result)
 	assert.Nil(t, result.Error())
 }

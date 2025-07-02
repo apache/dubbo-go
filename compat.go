@@ -56,7 +56,6 @@ func compatRootConfig(c *InstanceOptions) *config.RootConfig {
 		CacheFile:           c.CacheFile,
 		Custom:              compatCustomConfig(c.Custom),
 		Profiles:            compatProfilesConfig(c.Profiles),
-		TLSConfig:           compatTLSConfig(c.TLSConfig),
 	}
 }
 
@@ -88,6 +87,20 @@ func compatProtocolConfig(c *global.ProtocolConfig) *config.ProtocolConfig {
 		Ip:                   c.Ip,
 		Port:                 c.Port,
 		Params:               c.Params,
+		TripleConfig:         compatTripleConfig(c.TripleConfig),
+		MaxServerSendMsgSize: c.MaxServerSendMsgSize,
+		MaxServerRecvMsgSize: c.MaxServerRecvMsgSize,
+	}
+}
+
+// just for compat
+func compatTripleConfig(c *global.TripleConfig) *config.TripleConfig {
+	if c == nil {
+		return nil
+	}
+	return &config.TripleConfig{
+		KeepAliveInterval:    c.KeepAliveInterval,
+		KeepAliveTimeout:     c.KeepAliveTimeout,
 		MaxServerSendMsgSize: c.MaxServerSendMsgSize,
 		MaxServerRecvMsgSize: c.MaxServerRecvMsgSize,
 	}
@@ -361,18 +374,6 @@ func compatProfilesConfig(c *global.ProfilesConfig) *config.ProfilesConfig {
 	}
 }
 
-func compatTLSConfig(c *global.TLSConfig) *config.TLSConfig {
-	if c == nil {
-		return nil
-	}
-	return &config.TLSConfig{
-		CACertFile:    c.CACertFile,
-		TLSCertFile:   c.TLSCertFile,
-		TLSKeyFile:    c.TLSKeyFile,
-		TLSServerName: c.TLSServerName,
-	}
-}
-
 func compatMetricAggregationConfig(a *global.AggregateConfig) *config.AggregateConfig {
 	if a == nil {
 		return nil
@@ -446,7 +447,6 @@ func compatInstanceOptions(cr *config.RootConfig, rc *InstanceOptions) {
 	rc.CacheFile = cr.CacheFile
 	rc.Custom = compatGlobalCustomConfig(cr.Custom)
 	rc.Profiles = compatGlobalProfilesConfig(cr.Profiles)
-	rc.TLSConfig = compatGlobalTLSConfig(cr.TLSConfig)
 }
 
 func compatGlobalProtocolConfig(c *config.ProtocolConfig) *global.ProtocolConfig {
@@ -458,6 +458,20 @@ func compatGlobalProtocolConfig(c *config.ProtocolConfig) *global.ProtocolConfig
 		Ip:                   c.Ip,
 		Port:                 c.Port,
 		Params:               c.Params,
+		TripleConfig:         compatGlobalTripleConfig(c.TripleConfig),
+		MaxServerSendMsgSize: c.MaxServerSendMsgSize,
+		MaxServerRecvMsgSize: c.MaxServerRecvMsgSize,
+	}
+}
+
+// just for compat
+func compatGlobalTripleConfig(c *config.TripleConfig) *global.TripleConfig {
+	if c == nil {
+		return nil
+	}
+	return &global.TripleConfig{
+		KeepAliveInterval:    c.KeepAliveInterval,
+		KeepAliveTimeout:     c.KeepAliveTimeout,
 		MaxServerSendMsgSize: c.MaxServerSendMsgSize,
 		MaxServerRecvMsgSize: c.MaxServerRecvMsgSize,
 	}
@@ -673,7 +687,7 @@ func compatGlobalReferences(c map[string]*config.ReferenceConfig) map[string]*gl
 			Version:          ref.Version,
 			Serialization:    ref.Serialization,
 			ProvidedBy:       ref.ProvidedBy,
-			Methods:          compatGlobalMethod(ref.Methods),
+			MethodsConfig:    compatGlobalMethod(ref.Methods),
 			Async:            ref.Async,
 			Params:           ref.Params,
 			Generic:          ref.Generic,
@@ -845,17 +859,5 @@ func compatGlobalProfilesConfig(c *config.ProfilesConfig) *global.ProfilesConfig
 	}
 	return &global.ProfilesConfig{
 		Active: c.Active,
-	}
-}
-
-func compatGlobalTLSConfig(c *config.TLSConfig) *global.TLSConfig {
-	if c == nil {
-		return nil
-	}
-	return &global.TLSConfig{
-		CACertFile:    c.CACertFile,
-		TLSCertFile:   c.TLSCertFile,
-		TLSKeyFile:    c.TLSKeyFile,
-		TLSServerName: c.TLSServerName,
 	}
 }

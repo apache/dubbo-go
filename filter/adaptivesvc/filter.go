@@ -36,7 +36,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/filter/adaptivesvc/limiter"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 var (
@@ -64,8 +65,8 @@ func newAdaptiveServiceProviderFilter() filter.Filter {
 	return instance
 }
 
-func (f *adaptiveServiceProviderFilter) Invoke(ctx context.Context, invoker protocol.Invoker,
-	invocation protocol.Invocation) protocol.Result {
+func (f *adaptiveServiceProviderFilter) Invoke(ctx context.Context, invoker base.Invoker,
+	invocation base.Invocation) result.Result {
 	if invocation.GetAttachmentWithDefaultValue(constant.AdaptiveServiceEnabledKey, "") !=
 		constant.AdaptiveServiceIsEnabled {
 		// the adaptive service is enabled on the invocation
@@ -79,27 +80,27 @@ func (f *adaptiveServiceProviderFilter) Invoke(ctx context.Context, invoker prot
 			// a new limiter
 			if l, err = limiterMapperSingleton.newAndSetMethodLimiter(invoker.GetURL(),
 				invocation.MethodName(), limiter.HillClimbingLimiter); err != nil {
-				return &protocol.RPCResult{Err: wrapErrAdaptiveSvcInterrupted(err)}
+				return &result.RPCResult{Err: wrapErrAdaptiveSvcInterrupted(err)}
 			}
 		} else {
 			// unexpected errors
-			return &protocol.RPCResult{Err: wrapErrAdaptiveSvcInterrupted(err)}
+			return &result.RPCResult{Err: wrapErrAdaptiveSvcInterrupted(err)}
 		}
 	}
 
 	updater, err := l.Acquire()
 	if err != nil {
-		return &protocol.RPCResult{Err: wrapErrAdaptiveSvcInterrupted(err)}
+		return &result.RPCResult{Err: wrapErrAdaptiveSvcInterrupted(err)}
 	}
 
 	invocation.SetAttribute(constant.AdaptiveServiceUpdaterKey, updater)
 	return invoker.Invoke(ctx, invocation)
 }
 
-func (f *adaptiveServiceProviderFilter) OnResponse(_ context.Context, result protocol.Result, invoker protocol.Invoker,
-	invocation protocol.Invocation) protocol.Result {
+func (f *adaptiveServiceProviderFilter) OnResponse(_ context.Context, res result.Result, invoker base.Invoker,
+	invocation base.Invocation) result.Result {
 	var asEnabled string
-	asEnabledIface := result.Attachment(constant.AdaptiveServiceEnabledKey, nil)
+	asEnabledIface := res.Attachment(constant.AdaptiveServiceEnabledKey, nil)
 	if asEnabledIface != nil {
 		if str, strOK := asEnabledIface.(string); strOK {
 			asEnabled = str
@@ -109,13 +110,13 @@ func (f *adaptiveServiceProviderFilter) OnResponse(_ context.Context, result pro
 	}
 	if asEnabled != constant.AdaptiveServiceIsEnabled {
 		// the adaptive service is enabled on the invocation
-		return result
+		return res
 	}
 
-	if isErrAdaptiveSvcInterrupted(result.Error()) {
+	if isErrAdaptiveSvcInterrupted(res.Error()) {
 		// If the Invoke method of the adaptiveServiceProviderFilter returns an error,
 		// the OnResponse of the adaptiveServiceProviderFilter should not be performed.
-		return result
+		return res
 	}
 
 	// get updater from the attributes
@@ -123,35 +124,35 @@ func (f *adaptiveServiceProviderFilter) OnResponse(_ context.Context, result pro
 	if updaterIface == nil {
 		logger.Errorf("[adasvc filter] The updater is not found on the attributes: %#v",
 			invocation.Attributes())
-		return &protocol.RPCResult{Err: ErrUpdaterNotFound}
+		return &result.RPCResult{Err: ErrUpdaterNotFound}
 	}
 	updater, ok := updaterIface.(limiter.Updater)
 	if !ok {
 		logger.Errorf("[adasvc filter] The type of the updater is not unexpected, we got %#v", updaterIface)
-		return &protocol.RPCResult{Err: ErrUnexpectedUpdaterType}
+		return &result.RPCResult{Err: ErrUnexpectedUpdaterType}
 	}
 
 	err := updater.DoUpdate()
 	if err != nil {
 		logger.Errorf("[adasvc filter] The DoUpdate method was failed, err: %s.", err)
-		return &protocol.RPCResult{Err: err}
+		return &result.RPCResult{Err: err}
 	}
 
 	// get limiter for the mapper
 	l, err := limiterMapperSingleton.getMethodLimiter(invoker.GetURL(), invocation.MethodName())
 	if err != nil {
 		logger.Errorf("[adasvc filter] The method limiter for \"%s\" is not found.", invocation.MethodName())
-		return &protocol.RPCResult{Err: err}
+		return &result.RPCResult{Err: err}
 	}
 
 	// set attachments to inform consumer of provider status
-	result.AddAttachment(constant.AdaptiveServiceRemainingKey, fmt.Sprintf("%d", l.Remaining()))
-	result.AddAttachment(constant.AdaptiveServiceInflightKey, fmt.Sprintf("%d", l.Inflight()))
+	res.AddAttachment(constant.AdaptiveServiceRemainingKey, fmt.Sprintf("%d", l.Remaining()))
+	res.AddAttachment(constant.AdaptiveServiceInflightKey, fmt.Sprintf("%d", l.Inflight()))
 	logger.Debugf("[adasvc filter] The attachments are set, %s: %d, %s: %d.",
 		constant.AdaptiveServiceRemainingKey, l.Remaining(),
 		constant.AdaptiveServiceInflightKey, l.Inflight())
 
-	return result
+	return res
 }
 
 func wrapErrAdaptiveSvcInterrupted(customizedErr any) error {

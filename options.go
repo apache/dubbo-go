@@ -38,6 +38,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/otel/trace"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/tls"
 )
 
 type InstanceOptions struct {
@@ -119,11 +120,10 @@ func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 
 	// init registry
 	registries := rcCompat.Registries
-	if registries != nil {
-		for _, reg := range registries {
-			if err := reg.Init(); err != nil {
-				return err
-			}
+
+	for _, reg := range registries {
+		if err := reg.Init(); err != nil {
+			return err
 		}
 	}
 
@@ -379,8 +379,27 @@ func WithMetadataServiceProtocol(protocol string) InstanceOption {
 	}
 }
 
-func WithProtocol(opts ...protocol.Option) InstanceOption {
-	proOpts := protocol.NewOptions(opts...)
+// TODO: deal this fuction
+// this function I want handle the protocol.Option which
+// both server and client can use together.
+// like:
+//
+//	func WithProtocol(opts ...protocol.Option) InstanceOption {
+//		proOpts := protocol.NewOptions(opts...)
+//
+//		log.Warnf("proOpts: %+v", proOpts)
+//
+//		return func(insOpts *InstanceOptions) {
+//			if insOpts.Protocols == nil {
+//				insOpts.Protocols = make(map[string]*global.ProtocolConfig)
+//			}
+//			insOpts.Protocols[proOpts.ID] = proOpts.Protocol
+//		}
+//	}
+//
+// but now only work in server side for compat old API.
+func WithProtocol(opts ...protocol.ServerOption) InstanceOption {
+	proOpts := protocol.NewServerOptions(opts...)
 
 	return func(insOpts *InstanceOptions) {
 		if insOpts.Protocols == nil {
@@ -485,13 +504,13 @@ func WithShutdown(opts ...graceful_shutdown.Option) InstanceOption {
 //	}
 //}
 
-//func WithTLS(opts ...global.TLSOption) InstanceOption {
-//	tlsCfg := new(global.TLSConfig)
-//	for _, opt := range opts {
-//		opt(tlsCfg)
-//	}
-//
-//	return func(cfg *InstanceOptions) {
-//		cfg.TLSConfig = tlsCfg
-//	}
-//}
+func WithTLS(opts ...tls.Option) InstanceOption {
+	tlsOpts := tls.NewOptions(opts...)
+
+	return func(insOpts *InstanceOptions) {
+		if insOpts.TLSConfig == nil {
+			insOpts.TLSConfig = new(global.TLSConfig)
+		}
+		insOpts.TLSConfig = tlsOpts.TLSConf
+	}
+}

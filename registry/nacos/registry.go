@@ -23,6 +23,7 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -48,6 +49,7 @@ import (
 
 const (
 	LookupInterval = 20 * time.Second
+	checkInterval  = 5 * time.Second
 )
 
 func init() {
@@ -58,6 +60,15 @@ type nacosRegistry struct {
 	*common.URL
 	namingClient *nacosClient.NacosNamingClient
 	registryUrls []*common.URL
+	done         chan struct{}
+	availability availabilityCache
+	wg           sync.WaitGroup
+}
+
+type availabilityCache struct {
+	mu            sync.Mutex
+	lastAvailable bool
+	lastCheckTime time.Time
 }
 
 func getCategory(url *common.URL) string {
@@ -128,7 +139,7 @@ func createRegisterParam(url *common.URL, serviceName string, groupName string) 
 func (nr *nacosRegistry) Register(url *common.URL) error {
 	start := time.Now()
 	serviceName := getServiceName(url)
-	groupName := nr.URL.GetParam(constant.NacosGroupKey, defaultGroup)
+	groupName := nr.GetParam(constant.NacosGroupKey, defaultGroup)
 	param := createRegisterParam(url, serviceName, groupName)
 	logger.Infof("[Nacos Registry] Registry instance with param = %+v", param)
 	isRegistry, err := nr.namingClient.Client().RegisterInstance(param)
@@ -158,7 +169,7 @@ func createDeregisterParam(url *common.URL, serviceName string, groupName string
 // UnRegister returns nil if unregister successfully. If not, returns an error.
 func (nr *nacosRegistry) UnRegister(url *common.URL) error {
 	serviceName := getServiceName(url)
-	groupName := nr.URL.GetParam(constant.NacosGroupKey, defaultGroup)
+	groupName := nr.GetParam(constant.NacosGroupKey, defaultGroup)
 	param := createDeregisterParam(url, serviceName, groupName)
 	isDeRegistry, err := nr.namingClient.Client().DeregisterInstance(param)
 	if err != nil {
@@ -209,7 +220,7 @@ func (nr *nacosRegistry) scheduledLookUp(url *common.URL, notifyListener registr
 }
 
 func (nr *nacosRegistry) subscribeAll(url *common.URL, notifyListener registry.NotifyListener) {
-	groupName := nr.URL.GetParam(constant.RegistryGroupKey, defaultGroup)
+	groupName := nr.GetParam(constant.RegistryGroupKey, defaultGroup)
 	serviceNames, err := nr.getAllSubscribeServiceNames(url)
 	if err != nil {
 		logger.Warnf("getAllServices() = err:%v", perrors.WithStack(err))
@@ -251,7 +262,11 @@ func (nr *nacosRegistry) subscribe(serviceName string, notifyListener registry.N
 		return err
 	}
 	// handleServiceEvents will block to wait notify event and exit when error occur
-	go nr.handleServiceEvents(listener, notifyListener)
+	nr.wg.Add(1)
+	go func() {
+		defer nr.wg.Done()
+		nr.handleServiceEvents(listener, notifyListener)
+	}()
 	return nil
 }
 
@@ -284,16 +299,18 @@ func (nr *nacosRegistry) getAllSubscribeServiceNames(url *common.URL) ([]string,
 
 // handleServiceEvents receives service events from the listener and notifies the notifyListener
 func (nr *nacosRegistry) handleServiceEvents(listener registry.Listener, notifyListener registry.NotifyListener) {
+	defer listener.Close()
 	for {
-		serviceEvent, err := listener.Next()
 		if !nr.IsAvailable() {
 			return
 		}
+
+		serviceEvent, err := listener.Next()
 		if err != nil {
 			logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
-			listener.Close()
 			return
 		}
+
 		logger.Infof("[Nacos Registry] Update begin, service event: %v", serviceEvent.String())
 		notifyListener.Notify(serviceEvent)
 	}
@@ -301,7 +318,7 @@ func (nr *nacosRegistry) handleServiceEvents(listener registry.Listener, notifyL
 
 // UnSubscribe :
 func (nr *nacosRegistry) UnSubscribe(url *common.URL, _ registry.NotifyListener) error {
-	param := createSubscribeParam(getSubscribeName(url), nr.URL.GetParam(constant.RegistryGroupKey, defaultGroup), nil)
+	param := createSubscribeParam(getSubscribeName(url), nr.GetParam(constant.RegistryGroupKey, defaultGroup), nil)
 	if param == nil {
 		return nil
 	}
@@ -359,12 +376,49 @@ func (nr *nacosRegistry) GetURL() *common.URL {
 
 // IsAvailable determines nacos registry center whether it is available
 func (nr *nacosRegistry) IsAvailable() bool {
-	// TODO
-	return true
+	// Considering both local state + server state
+	select {
+	case <-nr.done:
+		return false
+	default:
+	}
+
+	ac := &nr.availability
+	ac.mu.Lock()
+	defer ac.mu.Unlock()
+
+	if time.Since(ac.lastCheckTime) < checkInterval {
+		return ac.lastAvailable
+	}
+
+	ac.lastCheckTime = time.Now()
+
+	if nr.namingClient == nil || nr.namingClient.Client() == nil {
+		ac.lastAvailable = false
+		return false
+	}
+
+	_, err := nr.namingClient.Client().GetAllServicesInfo(vo.GetAllServiceInfoParam{
+		GroupName: nr.GetParam(constant.RegistryGroupKey, defaultGroup),
+		PageNo:    1,
+		PageSize:  1,
+	})
+	ac.lastAvailable = err == nil
+	return ac.lastAvailable
 }
 
-// nolint
 func (nr *nacosRegistry) Destroy() {
+	nr.CloseListener()
+
+	// Prevent close() from being called multiple times, causing panic
+	select {
+	case <-nr.done:
+	default:
+		close(nr.done)
+	}
+
+	nr.wg.Wait()
+
 	for _, url := range nr.registryUrls {
 		err := nr.UnRegister(url)
 		logger.Infof("DeRegister Nacos URL:%+v", url)
@@ -372,7 +426,9 @@ func (nr *nacosRegistry) Destroy() {
 			logger.Errorf("Deregister URL:%+v err:%v", url, err.Error())
 		}
 	}
-	return
+
+	nr.registryUrls = nil
+	nr.CloseAndNilClient()
 }
 
 // newNacosRegistry will create new instance
@@ -394,6 +450,24 @@ func newNacosRegistry(url *common.URL) (registry.Registry, error) {
 		URL:          url, // registry.group is recorded at this url
 		namingClient: namingClient,
 		registryUrls: []*common.URL{},
+		done:         make(chan struct{}),
 	}
 	return tmpRegistry, nil
+}
+
+func (nr *nacosRegistry) CloseListener() {
+	listenerCache.Range(func(key, value any) bool {
+		if listener, ok := value.(*nacosListener); ok {
+			listener.Close()
+		}
+		listenerCache.Delete(key)
+		return true
+	})
+}
+
+func (nr *nacosRegistry) CloseAndNilClient() {
+	if nr.namingClient != nil && nr.namingClient.Client() != nil {
+		nr.namingClient.Client().CloseClient()
+		nr.namingClient = nil
+	}
 }

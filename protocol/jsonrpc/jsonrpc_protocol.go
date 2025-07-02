@@ -32,7 +32,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 const (
@@ -49,7 +50,7 @@ var jsonrpcProtocol *JsonrpcProtocol
 
 // JsonrpcProtocol is JSON RPC protocol.
 type JsonrpcProtocol struct {
-	protocol.BaseProtocol
+	base.BaseProtocol
 	serverMap  map[string]*Server
 	serverLock sync.Mutex
 }
@@ -57,13 +58,13 @@ type JsonrpcProtocol struct {
 // NewJsonrpcProtocol creates JSON RPC protocol
 func NewJsonrpcProtocol() *JsonrpcProtocol {
 	return &JsonrpcProtocol{
-		BaseProtocol: protocol.NewBaseProtocol(),
+		BaseProtocol: base.NewBaseProtocol(),
 		serverMap:    make(map[string]*Server),
 	}
 }
 
 // Export JSON RPC service for remote invocation
-func (jp *JsonrpcProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
+func (jp *JsonrpcProtocol) Export(invoker base.Invoker) base.Exporter {
 	url := invoker.GetURL()
 	serviceKey := strings.TrimPrefix(url.Path, "/")
 
@@ -78,10 +79,16 @@ func (jp *JsonrpcProtocol) Export(invoker protocol.Invoker) protocol.Exporter {
 }
 
 // Refer a remote JSON PRC service from registry
-func (jp *JsonrpcProtocol) Refer(url *common.URL) protocol.Invoker {
-	rtStr := config.GetConsumerConfig().RequestTimeout
+func (jp *JsonrpcProtocol) Refer(url *common.URL) base.Invoker {
+	// TODO: Temporary compatibility with old APIs, can be removed later
+	rt := config.GetConsumerConfig().RequestTimeout
+	if consumerConfRaw, ok := url.GetAttribute(constant.ConsumerConfigKey); ok {
+		if consumerConf, ok := consumerConfRaw.(*global.ConsumerConfig); ok {
+			rt = consumerConf.RequestTimeout
+		}
+	}
 	// the read order of requestTimeout is from url , if nil then from consumer config , if nil then default 3s. requestTimeout can be dynamically updated from config center.
-	requestTimeout := url.GetParamDuration(constant.TimeoutKey, rtStr)
+	requestTimeout := url.GetParamDuration(constant.TimeoutKey, rt)
 	// New Json rpc Invoker
 	invoker := NewJsonrpcInvoker(url, NewHTTPClient(&HTTPOptions{
 		HandshakeTimeout: time.Second, // todo config timeout config.GetConsumerConfig().ConnectTimeout,
@@ -125,7 +132,7 @@ func (jp *JsonrpcProtocol) openServer(url *common.URL) {
 }
 
 // GetProtocol gets JSON RPC protocol.
-func GetProtocol() protocol.Protocol {
+func GetProtocol() base.Protocol {
 	if jsonrpcProtocol == nil {
 		jsonrpcProtocol = NewJsonrpcProtocol()
 	}
