@@ -132,7 +132,7 @@ cd go-server/cmd
 go run .
 ```
 
-Run client in another terminate
+Run client in another terminal
 
 ```bash
 cd go-client/cmd
