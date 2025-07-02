@@ -42,10 +42,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
-var (
-	defaultTTL = 10 * time.Minute
-	isFirstRun = true
-)
+var defaultTTL = 10 * time.Minute
 
 type ZkEventListener struct {
 	Client      *gxzookeeper.ZookeeperClient
@@ -338,12 +335,9 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, li
 	}
 
 	// Using 'Get+ChildenW' to solve latency issues during initial startup
-	if isFirstRun {
-		children, err := l.Client.GetChildren(zkRootPath)
-		if err == nil {
-			l.handleZkNodeEvent(zkRootPath, children, listener)
-		}
-		isFirstRun = false
+	children, err := l.Client.GetChildren(zkRootPath)
+	if err == nil {
+		l.handleZkNodeEvent(zkRootPath, children, listener)
 	}
 	for {
 		// Get current children with watcher for the zkRootPath
