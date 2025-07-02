@@ -19,16 +19,13 @@ package loadbalance
 
 import (
 	"time"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
-
 // GetWeight returns the weight for the load‑balancing strategy.
-func GetWeight(invoker protocol.Invoker, invocation protocol.Invocation) int64 {
+func GetWeight(invoker base.Invoker, invocation base.Invocation) int64 {
 
 	url := invoker.GetURL()
 
