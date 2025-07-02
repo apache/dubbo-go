@@ -272,6 +272,7 @@ func compatConsumerConfig(c *global.ConsumerConfig) *config.ConsumerConfig {
 		ProxyFactory:                   c.ProxyFactory,
 		Check:                          c.Check,
 		AdaptiveService:                c.AdaptiveService,
+		References:                     compatReferences(c.References),
 		TracingKey:                     c.TracingKey,
 		FilterConf:                     c.FilterConf,
 		MaxWaitTimeForServiceDiscovery: c.MaxWaitTimeForServiceDiscovery,
@@ -393,6 +394,65 @@ func compatMetricPrometheusConfig(c *global.PrometheusConfig) *config.Prometheus
 		Exporter:    compatMetricPrometheusExporter(c.Exporter),
 		Pushgateway: compatMetricPrometheusGateway(c.Pushgateway),
 	}
+}
+
+func compatReferences(c map[string]*global.ReferenceConfig) map[string]*config.ReferenceConfig {
+	if c == nil {
+		return nil
+	}
+	refs := make(map[string]*config.ReferenceConfig, len(c))
+	for name, ref := range c {
+		refs[name] = &config.ReferenceConfig{
+			InterfaceName:    ref.InterfaceName,
+			Check:            ref.Check,
+			URL:              ref.URL,
+			Filter:           ref.Filter,
+			Protocol:         ref.Protocol,
+			RegistryIDs:      ref.RegistryIDs,
+			Cluster:          ref.Cluster,
+			Loadbalance:      ref.Loadbalance,
+			Retries:          ref.Retries,
+			Group:            ref.Group,
+			Version:          ref.Version,
+			Serialization:    ref.Serialization,
+			ProvidedBy:       ref.ProvidedBy,
+			Methods:          compatMethodsConfig(ref.MethodsConfig),
+			Async:            ref.Async,
+			Params:           ref.Params,
+			Generic:          ref.Generic,
+			Sticky:           ref.Sticky,
+			RequestTimeout:   ref.RequestTimeout,
+			ForceTag:         ref.ForceTag,
+			TracingKey:       ref.TracingKey,
+			MeshProviderPort: ref.MeshProviderPort,
+		}
+	}
+	return refs
+}
+
+func compatMethodsConfig(methods []*global.MethodConfig) []*config.MethodConfig {
+	if methods == nil {
+		return nil
+	}
+	result := make([]*config.MethodConfig, 0, len(methods))
+	for _, method := range methods {
+		result = append(result, &config.MethodConfig{
+			InterfaceId:                 method.InterfaceId,
+			InterfaceName:               method.InterfaceName,
+			Name:                        method.Name,
+			Retries:                     method.Retries,
+			LoadBalance:                 method.LoadBalance,
+			Weight:                      method.Weight,
+			TpsLimitInterval:            method.TpsLimitInterval,
+			TpsLimitRate:                method.TpsLimitRate,
+			TpsLimitStrategy:            method.TpsLimitStrategy,
+			ExecuteLimit:                method.ExecuteLimit,
+			ExecuteLimitRejectedHandler: method.ExecuteLimitRejectedHandler,
+			Sticky:                      method.Sticky,
+			RequestTimeout:              method.RequestTimeout,
+		})
+	}
+	return result
 }
 
 func compatMetricPrometheusExporter(e *global.Exporter) *config.Exporter {
