@@ -134,10 +134,9 @@ func (s *Server) genSvcOpts(handler any, opts ...ServiceOption) (*ServiceOptions
 func (s *Server) exportServices() (err error) {
 	s.svcOptsMap.Range(func(svcOptsRaw, infoRaw any) bool {
 		svcOpts := svcOptsRaw.(*ServiceOptions)
-		if infoRaw == nil {
+		if info, ok := infoRaw.(*common.ServiceInfo); !ok || info == nil {
 			err = svcOpts.ExportWithoutInfo()
 		} else {
-			info := infoRaw.(*common.ServiceInfo)
 			// Add a method with a name of a differtent first-letter case
 			// to achieve interoperability with java
 			// TODO: The method name case sensitivity in Dubbo-java should be addressed.
