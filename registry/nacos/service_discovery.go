@@ -180,6 +180,7 @@ func (n *nacosServiceDiscovery) GetInstances(serviceName string) []registry.Serv
 			ServiceName: serviceName,
 			Host:        ins.Ip,
 			Port:        int(ins.Port),
+			Weight:      int64(ins.Weight),
 			Enable:      ins.Enable,
 			Healthy:     ins.Healthy,
 			Metadata:    metadata,
@@ -281,6 +282,7 @@ func (n *nacosServiceDiscovery) AddListener(listener registry.ServiceInstancesCh
 						ServiceName: serviceName,
 						Host:        service.Ip,
 						Port:        int(service.Port),
+						Weight:      int64(service.Weight),
 						Enable:      service.Enable,
 						Healthy:     true,
 						Metadata:    metadata,
@@ -315,14 +317,22 @@ func (n *nacosServiceDiscovery) toRegisterInstance(instance registry.ServiceInst
 		metadata = make(map[string]string, 1)
 	}
 
-	weightStr := n.registryURL.GetParam(constant.RegistryKey+"."+constant.WeightKey, "1.0")
-	weight, err := strconv.ParseFloat(weightStr, 64)
-	if err != nil || weight <= constant.MinNacosWeight {
-		logger.Warnf("Invalid weight value %q, using default 1.0. err: %v", weightStr, err)
-		weight = constant.DefaultNacosWeight
-	} else if weight > constant.MaxNacosWeight {
-		logger.Warnf("Weight %f exceeds Nacos maximum 10000, setting to 10000", weight)
-		weight = constant.MaxNacosWeight
+	// ─────────── 1. Retrieve weight (Provider takes precedence; URL may override) ───────────
+	w := instance.GetWeight() // Set by Provider via WithServerWeight / WithWeight
+
+	// If the registry URL explicitly sets registry.weight, override the value
+	if urlW := n.registryURL.GetParam(constant.RegistryKey+"."+constant.WeightKey, ""); urlW != "" {
+		if f, err := strconv.ParseFloat(urlW, 64); err == nil {
+			w = int64(f)
+		}
+	}
+
+	// ─────────── 2. Validity check ───────────
+	switch {
+	case w <= 0:
+		w = int64(constant.DefaultNacosWeight) // Nacos default is 1
+	case w > constant.MaxNacosWeight:
+		w = constant.MaxNacosWeight // Nacos upper limit is 10000
 	}
 
 	metadata[idKey] = instance.GetID()
@@ -332,7 +342,7 @@ func (n *nacosServiceDiscovery) toRegisterInstance(instance registry.ServiceInst
 		Port:        uint64(instance.GetPort()),
 		Metadata:    metadata,
 		// We must specify the weight since Java nacos namingClient will ignore the instance whose weight is 0
-		Weight:    weight,
+		Weight:    float64(w),
 		Enable:    instance.IsEnable(),
 		Healthy:   instance.IsHealthy(),
 		GroupName: n.group,
@@ -383,4 +393,28 @@ func newNacosServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error
 		instanceListenerMap: make(map[string]*gxset.HashSet),
 	}
 	return newInstance, nil
+}
+
+// convertInstances converts nacos model.Instance to registry.ServiceInstance
+// This method is used for testing weight conversion
+func (n *nacosServiceDiscovery) convertInstances(instances []model.Instance) []registry.ServiceInstance {
+	res := make([]registry.ServiceInstance, 0, len(instances))
+	for _, ins := range instances {
+		metadata := ins.Metadata
+		id := metadata[idKey]
+		delete(metadata, idKey)
+
+		res = append(res, &registry.DefaultServiceInstance{
+			ID:          id,
+			ServiceName: "test-service", // 测试用的服务名
+			Host:        ins.Ip,
+			Port:        int(ins.Port),
+			Weight:      int64(ins.Weight), // 确保权重传递
+			Enable:      ins.Enable,
+			Healthy:     ins.Healthy,
+			Metadata:    metadata,
+			GroupName:   n.group,
+		})
+	}
+	return res
 }

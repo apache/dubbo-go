@@ -46,10 +46,10 @@ type ServiceConfig struct {
 	ParamSign                   string            `yaml:"param.sign" json:"param.sign,omitempty" property:"param.sign"`
 	Tag                         string            `yaml:"tag" json:"tag,omitempty" property:"tag"`
 	TracingKey                  string            `yaml:"tracing-key" json:"tracing-key,omitempty" propertiy:"tracing-key"`
-
-	RCProtocolsMap  map[string]*ProtocolConfig
-	RCRegistriesMap map[string]*RegistryConfig
-	ProxyFactoryKey string
+	Weight                      int64             `yaml:"weight" json:"weight,omitempty" property:"weight"`
+	RCProtocolsMap              map[string]*ProtocolConfig
+	RCRegistriesMap             map[string]*RegistryConfig
+	ProxyFactoryKey             string
 }
 
 type ServiceOption func(*ServiceConfig)
@@ -126,5 +126,6 @@ func (c *ServiceConfig) Clone() *ServiceConfig {
 		ParamSign:                   c.ParamSign,
 		Tag:                         c.Tag,
 		TracingKey:                  c.TracingKey,
+		Weight:                      c.Weight,
 	}
 }
