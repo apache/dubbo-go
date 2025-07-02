@@ -75,7 +75,7 @@ func TestWeight_RegisterParam(t *testing.T) {
 
 func fakeInstance(w float64) model.Instance {
 	return model.Instance{
-		Ip:     "1.1.1.1",
+		Ip:     "192.181.10.1",
 		Port:   20000,
 		Weight: w,
 		Metadata: map[string]string{
