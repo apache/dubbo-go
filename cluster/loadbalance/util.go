@@ -26,11 +26,11 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 )
 
-// GetWeight gets weight for load balance strategy
+// GetWeight returns the weight for the load‑balancing strategy.
 func GetWeight(invoker protocol.Invoker, invocation protocol.Invocation) int64 {
 	url := invoker.GetURL()
 
-	// ① method-level 或 registry-level 权重（URL 参数）——优先读取
+	// 1) Method‑level or registry‑level weight taken from URL parameters — highest priority.
 	var weight = url.GetMethodParamInt64(
 		invocation.MethodName(), constant.WeightKey, -1)
 
@@ -38,12 +38,12 @@ func GetWeight(invoker protocol.Invoker, invocation protocol.Invocation) int64 {
 		weight = url.GetParamInt(constant.RegistryKey+"."+constant.WeightKey, constant.DefaultWeight)
 	}
 
-	// ② 若 URL 里仍没写，则落到默认值 100
+	// 2) If the URL does not specify a weight, fall back to the default value (100).
 	if weight < 0 {
 		weight = constant.DefaultWeight
 	}
 
-	// ③ warm-up 校正（保持旧逻辑不变）
+	// 3) Warm‑up adjustment (same logic as before).
 	if weight > 0 {
 		now := time.Now().Unix()
 		ts := url.GetParamInt(constant.RemoteTimestampKey, now)
