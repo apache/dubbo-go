@@ -137,7 +137,7 @@ func (s *Server) exportServices() (err error) {
 		if info, ok := infoRaw.(*common.ServiceInfo); !ok || info == nil {
 			err = svcOpts.ExportWithoutInfo()
 		} else {
-			// Add a method with a name of a differtent first-letter case
+			// Add a method with a name of a different first-letter case
 			// to achieve interoperability with java
 			// TODO: The method name case sensitivity in Dubbo-java should be addressed.
 			// We ought to make changes to handle this issue.
