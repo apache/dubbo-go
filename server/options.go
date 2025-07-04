@@ -524,6 +524,7 @@ func (svcOpts *ServiceOptions) init(srv *Server, opts ...ServiceOption) error {
 	if err := defaults.Set(svcOpts); err != nil {
 		return err
 	}
+
 	svcOpts.srvOpts = srv.cfg
 	svc := svcOpts.Service
 	dubboutil.CopyFields(reflect.ValueOf(srv.cfg.Provider).Elem(), reflect.ValueOf(svc).Elem())
