@@ -18,6 +18,7 @@
 package server
 
 import (
+	"fmt"
 	"reflect"
 	"strconv"
 	"sync"
@@ -524,7 +525,7 @@ func (svcOpts *ServiceOptions) init(srv *Server, opts ...ServiceOption) error {
 	if err := defaults.Set(svcOpts); err != nil {
 		return err
 	}
-
+	fmt.Printf("svcOpts:%+v\n\n", svcOpts)
 	svcOpts.srvOpts = srv.cfg
 	svc := svcOpts.Service
 	dubboutil.CopyFields(reflect.ValueOf(srv.cfg.Provider).Elem(), reflect.ValueOf(svc).Elem())
