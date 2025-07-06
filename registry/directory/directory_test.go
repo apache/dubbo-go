@@ -47,7 +47,6 @@ func TestSubscribe(t *testing.T) {
 }
 
 func TestSubscribe_InvalidUrl(t *testing.T) {
-
 	url, _ := common.NewURL("mock://127.0.0.1:1111")
 	mockRegistry, _ := registry.NewMockRegistry(&common.URL{})
 	_, err := NewRegistryDirectory(url, mockRegistry)
@@ -55,7 +54,6 @@ func TestSubscribe_InvalidUrl(t *testing.T) {
 }
 
 func Test_Destroy(t *testing.T) {
-
 	registryDirectory, _ := normalRegistryDir()
 
 	time.Sleep(3e9)
@@ -68,7 +66,6 @@ func Test_Destroy(t *testing.T) {
 }
 
 func Test_List(t *testing.T) {
-
 	registryDirectory, _ := normalRegistryDir()
 
 	time.Sleep(6e9)
@@ -77,7 +74,6 @@ func Test_List(t *testing.T) {
 }
 
 func Test_MergeProviderUrl(t *testing.T) {
-
 	registryDirectory, mockRegistry := normalRegistryDir(true)
 	providerUrl, _ := common.NewURL("dubbo://0.0.0.0:20000/org.apache.dubbo-go.mockService",
 		common.WithParamsValue(constant.ClusterKey, "mock1"),
@@ -92,7 +88,6 @@ func Test_MergeProviderUrl(t *testing.T) {
 }
 
 func Test_MergeOverrideUrl(t *testing.T) {
-
 	registryDirectory, mockRegistry := normalRegistryDir(true)
 	providerUrl, _ := common.NewURL("dubbo://0.0.0.0:20000/org.apache.dubbo-go.mockService",
 		common.WithParamsValue(constant.ClusterKey, "mock"),
@@ -125,7 +120,6 @@ Loop1:
 }
 
 func Test_RefreshUrl(t *testing.T) {
-
 	registryDirectory, mockRegistry := normalRegistryDir()
 	providerUrl, _ := common.NewURL("dubbo://0.0.0.0:20011/org.apache.dubbo-go.mockService",
 		common.WithParamsValue(constant.ClusterKey, "mock1"),

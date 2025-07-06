@@ -578,6 +578,7 @@ type consumerConfigurationListener struct {
 
 func newConsumerConfigurationListener(dir *RegistryDirectory, url *common.URL) *consumerConfigurationListener {
 	listener := &consumerConfigurationListener{directory: dir}
+	
 	// TODO: Temporary compatibility with old APIs, can be removed later
 	application := config.GetRootConfig().Application
 	listener.InitWith(
