@@ -87,14 +87,14 @@ func (tp *TripleProtocol) openServer(invoker base.Invoker, info *common.ServiceI
 
 	tripleConfRaw, ok := url.GetAttribute(constant.TripleConfigKey)
 	if !ok {
-		logger.Errorf("Triple config is not found for url: %s", url.Key())
-		return
+		// NOTE: sometimes happened on old triple
+		logger.Debugf("Triple config is not found for url: %s", url.Key())
 	}
 
 	tripleConf, ok := tripleConfRaw.(*global.TripleConfig)
 	if !ok || tripleConf == nil {
-		logger.Errorf("Triple config obtained from url: %s is not of type *global.TripleConfig or is nil", url.Key())
-		return
+		// NOTE: sometimes happened on old triple
+		logger.Debugf("Triple config obtained from url: %s is not of type *global.TripleConfig or is nil", url.Key())
 	}
 
 	srv := NewServer(tripleConf)
