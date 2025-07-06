@@ -158,7 +158,7 @@ func normalRegistryDir(noMockEvent ...bool) (*RegistryDirectory, *registry.MockR
 		common.WithParamsValue(constant.ClusterKey, "mock"),
 		common.WithParamsValue(constant.GroupKey, "group"),
 		common.WithParamsValue(constant.VersionKey, "1.0.0"),
-		common.WithParamsValue(constant.ApplicationKey,"test-application"),
+		common.WithParamsValue(constant.ApplicationKey, "test-application"),
 	)
 	url.SubURL = suburl
 	mockRegistry, _ := registry.NewMockRegistry(&common.URL{})
@@ -221,4 +221,3 @@ func TestToGroupInvokers(t *testing.T) {
 		assert.True(t, len(registryDirectory.toGroupInvokers()) == 2)
 	})
 }
-

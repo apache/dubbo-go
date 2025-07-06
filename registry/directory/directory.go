@@ -40,9 +40,9 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	_ "dubbo.apache.org/dubbo-go/v3/config_center/configurator"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	metricsRegistry "dubbo.apache.org/dubbo-go/v3/metrics/registry"
 	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
@@ -578,7 +578,7 @@ type consumerConfigurationListener struct {
 
 func newConsumerConfigurationListener(dir *RegistryDirectory, url *common.URL) *consumerConfigurationListener {
 	listener := &consumerConfigurationListener{directory: dir}
-	
+
 	// TODO: Temporary compatibility with old APIs, can be removed later
 	application := config.GetRootConfig().Application
 	listener.InitWith(
@@ -587,16 +587,16 @@ func newConsumerConfigurationListener(dir *RegistryDirectory, url *common.URL) *
 		extension.GetDefaultConfiguratorFunc(),
 	)
 
-	if ApplicationConfRaw, ok := url.GetAttribute(constant.ApplicationKey); ok{
+	if ApplicationConfRaw, ok := url.GetAttribute(constant.ApplicationKey); ok {
 		if ApplicationConfig, ok := ApplicationConfRaw.(*global.ApplicationConfig); ok {
 			listener.InitWith(
-			ApplicationConfig.Name+constant.ConfiguratorSuffix,
-			listener,
-			extension.GetDefaultConfiguratorFunc(),
+				ApplicationConfig.Name+constant.ConfiguratorSuffix,
+				listener,
+				extension.GetDefaultConfiguratorFunc(),
 			)
 		}
 	}
-	
+
 	return listener
 }
 
