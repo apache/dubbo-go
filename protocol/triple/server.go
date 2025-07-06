@@ -472,7 +472,12 @@ func (s *Server) Stop() {
 
 // GracefulStop TRIPLE server
 func (s *Server) GracefulStop() {
-	_ = s.triServer.GracefulStop(context.Background())
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), constant.DefaultGracefulShutdownTimeout)
+	defer cancel()
+
+	if err := s.triServer.GracefulStop(shutdownCtx); err != nil {
+		logger.Errorf("Triple server shutdown error: %v", err)
+	}
 }
 
 // createServiceInfoWithReflection is for non-idl scenario.
