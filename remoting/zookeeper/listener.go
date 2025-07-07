@@ -208,6 +208,7 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 			logger.Errorf("Get new node path {%v} 's content error,message is  {%v}",
 				newNode, perrors.WithStack(connErr))
 		}
+		logger.Debugf("[Zookeeper Listener] add zkNode{%s}", newNode)
 		if !listener.DataChange(remoting.Event{Path: newNode, Action: remoting.EventTypeAdd, Content: string(content)}) {
 			continue
 		}
@@ -334,11 +335,6 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, li
 		}
 	}
 
-	// Using 'Get+ChildenW' to solve latency issues during initial startup
-	children, err := l.Client.GetChildren(zkRootPath)
-	if err == nil {
-		l.handleZkNodeEvent(zkRootPath, children, listener)
-	}
 	for {
 		// Get current children with watcher for the zkRootPath
 		children, childEventCh, err := l.Client.GetChildrenW(zkRootPath)
@@ -363,6 +359,12 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, li
 		failTimes = 0
 		if len(children) == 0 {
 			logger.Debugf("[Zookeeper EventListener][listenDirEvent] Can not gey any children for the path {%s}, please check if the provider does ready.", zkRootPath)
+		}
+		if len(children) > 0 {
+			logger.Infof("Proactively trigger handleZkNodeEvent for %s", zkRootPath)
+			l.handleZkNodeEvent(zkRootPath, children, listener)
+		} else {
+			logger.Infof("Skip proactive handleZkNodeEvent for %s due to empty children", zkRootPath)
 		}
 		for _, c := range children {
 			// Only need to compare Path when subscribing to provider
@@ -438,6 +440,7 @@ func (l *ZkEventListener) startScheduleWatchTask(
 	if tickerTTL > 20e9 {
 		tickerTTL = 20e9
 	}
+
 	ticker := time.NewTicker(tickerTTL)
 	for {
 		select {
