@@ -166,6 +166,26 @@ func WithFilter(filter string) ReferenceOption {
 	}
 }
 
+// WithInterface sets the interface name for the service reference.
+//
+// As a functional option, it is passed to a client constructor
+// (e.g., NewGreetService) to configure which remote service to connect to.
+//
+// The interfaceName is a crucial identifier for service discovery and routing,
+// and it must exactly match the name registered by the service provider.
+//
+// Usage:
+//
+//	svc, err := greet.NewGreetService(
+//	    cli,
+//	    client.WithInterface("com.your.company.GreetService"),
+//	)
+func WithInterface(interfaceName string) ReferenceOption {
+	return func(opts *ReferenceOptions) {
+		opts.Reference.InterfaceName = interfaceName
+	}
+}
+
 func WithRegistryIDs(registryIDs ...string) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		if len(registryIDs) > 0 {
