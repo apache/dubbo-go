@@ -40,6 +40,7 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/polaris"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/script"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/tag"
+	_ "dubbo.apache.org/dubbo-go/v3/config_center/apollo"
 	_ "dubbo.apache.org/dubbo-go/v3/config_center/nacos"
 	_ "dubbo.apache.org/dubbo-go/v3/config_center/zookeeper"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/accesslog"

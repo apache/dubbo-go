@@ -308,6 +308,10 @@ const (
 )
 
 const (
+	ApolloKey = "apollo"
+)
+
+const (
 	XDSRegistryKey = "xds"
 )
 

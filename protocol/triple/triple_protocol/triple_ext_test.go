@@ -544,7 +544,7 @@ func TestConcurrentStreams(t *testing.T) {
 			assert.Nil(t, err)
 			start.Wait()
 			for i := 0; i < 100; i++ {
-				num := rand.Int63n(1000) //nolint: gosec //NOSONAR
+				num := rand.Int63n(1000) //NOSONAR
 				total += num
 				if err := sum.Send(&pingv1.CumSumRequest{Number: num}); err != nil {
 					t.Errorf("failed to send request: %v", err)
