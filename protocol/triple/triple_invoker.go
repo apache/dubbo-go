@@ -140,6 +140,15 @@ func (ti *TripleInvoker) Invoke(ctx context.Context, invocation base.Invocation)
 		panic(fmt.Sprintf("Unsupported CallType: %s", callType))
 	}
 
+	if header, ok := tri.FromIncomingContext(ctx); ok {
+		for v, k := range header {
+			if tri.IsReservedHeader(v) {
+				continue
+			}
+			result.AddAttachment(v, k)
+		}
+	}
+
 	return &result
 }
 

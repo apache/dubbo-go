@@ -317,13 +317,11 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker base.Invoke
 					attachments := generateAttachments(req.Header())
 					// inject attachments
 					ctx = context.WithValue(ctx, constant.AttachmentKey, attachments)
-					capturedAttachments := make(map[string]any)
-					ctx = context.WithValue(ctx, constant.AttachmentServerKey, capturedAttachments)
 					invo := invocation.NewRPCInvocation(m.Name, args, attachments)
 					res := invoker.Invoke(ctx, invo)
 					// todo(DMwangnima): modify InfoInvoker to get a unified processing logic
-					var triResp *tri.Response
 					// please refer to server/InfoInvoker.Invoke()
+					var triResp *tri.Response
 					if existingResp, ok := res.Result().(*tri.Response); ok {
 						triResp = existingResp
 					} else {
@@ -333,13 +331,11 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker base.Invoke
 					for k, v := range res.Attachments() {
 						switch val := v.(type) {
 						case string:
-							triResp.Trailer().Set(k, val)
+							tri.AppendToOutgoingContext(ctx, k, val)
 						case []string:
-							if len(val) > 0 {
-								triResp.Trailer().Set(k, val[0])
+							for _, v := range val {
+								tri.AppendToOutgoingContext(ctx, k, v)
 							}
-						default:
-							triResp.Header().Set(k, fmt.Sprintf("%v", val))
 						}
 					}
 					return triResp, res.Error()
