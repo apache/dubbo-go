@@ -19,6 +19,7 @@ package protocolwrapper
 
 import (
 	"context"
+	"fmt"
 	"strings"
 )
 
@@ -55,6 +56,8 @@ func (pfw *ProtocolFilterWrapper) Export(invoker base.Invoker) base.Exporter {
 	if pfw.protocol == nil {
 		pfw.protocol = extension.GetProtocol(invoker.GetURL().Protocol)
 	}
+	fmt.Printf("3333333\n\n\n\n")
+	fmt.Printf("invoker3333333:%+v\n\n\n\n", invoker.GetURL())
 	invoker = BuildInvokerChain(invoker, constant.ServiceFilterKey)
 	return pfw.protocol.Export(invoker)
 }
@@ -64,10 +67,13 @@ func (pfw *ProtocolFilterWrapper) Refer(url *common.URL) base.Invoker {
 	if pfw.protocol == nil {
 		pfw.protocol = extension.GetProtocol(url.Protocol)
 	}
+	fmt.Printf("url:%s\n\n\n\n", url.String())
 	invoker := pfw.protocol.Refer(url)
 	if invoker == nil {
 		return nil
 	}
+	fmt.Printf("44444444\n\n\n\n")
+	fmt.Printf("invoker:%+v\n\n\n", invoker.GetURL())
 	return BuildInvokerChain(invoker, constant.ReferenceFilterKey)
 }
 
@@ -78,6 +84,7 @@ func (pfw *ProtocolFilterWrapper) Destroy() {
 
 func BuildInvokerChain(invoker base.Invoker, key string) base.Invoker {
 	filterName := invoker.GetURL().GetParam(key, "")
+	fmt.Printf("filter name:%s\n\n", filterName)
 	if filterName == "" {
 		return invoker
 	}

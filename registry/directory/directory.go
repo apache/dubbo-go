@@ -410,6 +410,7 @@ func (dir *RegistryDirectory) uncacheInvokerWithKey(key string) protocolbase.Inv
 func (dir *RegistryDirectory) cacheInvoker(url *common.URL, event *registry.ServiceEvent) protocolbase.Invoker {
 	dir.overrideUrl(dir.GetDirectoryUrl())
 	referenceUrl := dir.GetDirectoryUrl().SubURL
+	fmt.Printf("newUrl: %s\n\n", referenceUrl)
 
 	if url == nil && dir.cacheOriginUrl != nil {
 		url = dir.cacheOriginUrl

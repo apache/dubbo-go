@@ -18,6 +18,7 @@
 package server
 
 import (
+	"fmt"
 	"reflect"
 	"strconv"
 	"sync"
@@ -82,7 +83,14 @@ func (srvOpts *ServerOptions) init(opts ...ServerOption) error {
 	if err := defaults.Set(srvOpts); err != nil {
 		return err
 	}
-
+	for key, svc := range srvOpts.Provider.Services {
+		fmt.Printf("Service key: %s\n", key)
+		fmt.Printf("  Interface: %s\n", svc.Interface)
+		fmt.Printf("  Filter:    %s\n", svc.Filter)
+		fmt.Printf("  Group:     %s\n", svc.Group)
+		fmt.Printf("  Version:   %s\n", svc.Version)
+		fmt.Println()
+	}
 	providerConf := srvOpts.Provider
 
 	providerConf.RegistryIDs = commonCfg.TranslateIds(providerConf.RegistryIDs)
@@ -527,6 +535,14 @@ func (svcOpts *ServiceOptions) init(srv *Server, opts ...ServiceOption) error {
 
 	svcOpts.srvOpts = srv.cfg
 	svc := svcOpts.Service
+	for key, svc := range srv.cfg.Provider.Services {
+		fmt.Printf("1111111:svc: %s\n", key)
+		fmt.Printf("  Interface: %s\n", svc.Interface)
+		fmt.Printf("  Filter:    %s\n", svc.Filter)
+		fmt.Printf("  Group:     %s\n", svc.Group)
+		fmt.Printf("  Version:   %s\n", svc.Version)
+		fmt.Println()
+	}
 	dubboutil.CopyFields(reflect.ValueOf(srv.cfg.Provider).Elem(), reflect.ValueOf(svc).Elem())
 
 	svcOpts.exported = atomic.NewBool(false)
@@ -947,4 +963,83 @@ func SetProtocols(pros map[string]*global.ProtocolConfig) ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.Protocols = pros
 	}
+}
+
+func GetProviderOptionsFromConfig(c *global.ServiceConfig) []ServiceOption {
+	var opts []ServiceOption
+
+	//if c.Interface != "" {
+	//	opts = append(opts, WithInterface(c.Interface))
+	//}
+	if c.Group != "" {
+		opts = append(opts, WithGroup(c.Group))
+	}
+	if c.Version != "" {
+		opts = append(opts, WithVersion(c.Version))
+	}
+	if c.Serialization != "" {
+		opts = append(opts, WithSerialization(c.Serialization))
+	}
+	if len(c.ProtocolIDs) > 0 {
+		opts = append(opts, WithProtocolIDs(c.ProtocolIDs))
+	}
+	if len(c.RegistryIDs) > 0 {
+		opts = append(opts, WithRegistryIDs(c.RegistryIDs))
+	}
+	if c.Filter != "" {
+		opts = append(opts, WithFilter(c.Filter))
+	}
+	if c.Token != "" {
+		opts = append(opts, WithToken(c.Token))
+	}
+	if c.Tag != "" {
+		opts = append(opts, WithTag(c.Tag))
+	}
+	if c.Cluster != "" {
+		opts = append(opts, WithCluster(c.Cluster))
+	}
+	if c.Loadbalance != "" {
+		opts = append(opts, WithLoadBalance(c.Loadbalance))
+	}
+	if c.Auth != "" {
+		opts = append(opts, WithAuth(c.Auth))
+	}
+	if c.NotRegister {
+		opts = append(opts, WithNotRegister())
+	}
+	if c.ParamSign != "" {
+		opts = append(opts, WithParamSign(c.ParamSign))
+	}
+	if c.Retries != "" {
+		if i, err := strconv.Atoi(c.Retries); err == nil {
+			opts = append(opts, WithRetries(i))
+		}
+	}
+	if c.ExecuteLimit != "" {
+		opts = append(opts, WithExecuteLimit(c.ExecuteLimit))
+	}
+	if c.TpsLimitRate != "" {
+		if i, err := strconv.Atoi(c.TpsLimitRate); err == nil {
+			opts = append(opts, WithTpsLimitRate(i))
+		}
+	}
+	if c.TpsLimiter != "" {
+		opts = append(opts, WithTpsLimiter(c.TpsLimiter))
+	}
+	if c.TpsLimitStrategy != "" {
+		opts = append(opts, WithTpsLimitStrategy(c.TpsLimitStrategy))
+	}
+	if c.TpsLimitRejectedHandler != "" {
+		opts = append(opts, WithTpsLimitRejectedHandler(c.TpsLimitRejectedHandler))
+	}
+	if c.ExecuteLimitRejectedHandler != "" {
+		opts = append(opts, WithExecuteLimitRejectedHandler(c.ExecuteLimitRejectedHandler))
+	}
+	if c.Warmup != "" {
+		if d, err := time.ParseDuration(c.Warmup); err == nil {
+			opts = append(opts, WithWarmup(d))
+		}
+	}
+
+	return opts
 }
