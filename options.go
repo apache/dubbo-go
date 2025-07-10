@@ -18,7 +18,6 @@
 package dubbo
 
 import (
-	"fmt"
 	"strconv"
 	"time"
 )
@@ -86,27 +85,11 @@ func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 	for _, opt := range opts {
 		opt(rc)
 	}
-	fmt.Printf("rccccccccc222222:%+v\n", rc.Provider.Services)
-	for key, svc := range rc.Provider.Services {
-		fmt.Printf("Service key: %s\n", key)
-		fmt.Printf("  Interface: %s\n", svc.Interface)
-		fmt.Printf("  Filter:    %s\n", svc.Filter)
-		fmt.Printf("  Group:     %s\n", svc.Group)
-		fmt.Printf("  Version:   %s\n", svc.Version)
-		fmt.Println()
-	}
+
 	// remaining procedure is like RootConfig.Init() without RootConfig.Start()
 	// tasks of RootConfig.Start() would be decomposed to Client and Server
 	rcCompat := compatRootConfig(rc)
-	fmt.Printf("rccccccccc22222233333:%+v\n", rcCompat.Provider.Services)
-	for key, svc := range rcCompat.Provider.Services {
-		fmt.Printf("Service key: %s\n", key)
-		fmt.Printf("  Interface: %s\n", svc.Interface)
-		fmt.Printf("  Filter:    %s\n", svc.Filter)
-		fmt.Printf("  Group:     %s\n", svc.Group)
-		fmt.Printf("  Version:   %s\n", svc.Version)
-		fmt.Println()
-	}
+
 	if err := rcCompat.Logger.Init(); err != nil { // init default logger
 		return err
 	}
@@ -180,34 +163,9 @@ func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 	if err := metadata.InitRegistryMetadataReport(rc.Registries); err != nil {
 		return err
 	}
-	fmt.Printf("rcCompat:%+v\n", rcCompat.Provider.Services)
-	for key, svc := range rcCompat.Provider.Services {
-		fmt.Printf("Service key: %s\n", key)
-		fmt.Printf("  Interface: %s\n", svc.Interface)
-		fmt.Printf("  Filter:    %s\n", svc.Filter)
-		fmt.Printf("  Group:     %s\n", svc.Group)
-		fmt.Printf("  Version:   %s\n", svc.Version)
-		fmt.Println()
-	}
-	fmt.Printf("rccccccccc:%+v\n", rc.Provider.Services)
-	for key, svc := range rc.Provider.Services {
-		fmt.Printf("Service key: %s\n", key)
-		fmt.Printf("  Interface: %s\n", svc.Interface)
-		fmt.Printf("  Filter:    %s\n", svc.Filter)
-		fmt.Printf("  Group:     %s\n", svc.Group)
-		fmt.Printf("  Version:   %s\n", svc.Version)
-		fmt.Println()
-	}
+
 	compatInstanceOptions(rcCompat, rc) // overrider options config because some config are changed after init
-	fmt.Printf("rc.1e2[kdwdw:%+v\n", (*rc).Provider.Services)
-	for key, svc := range rc.Provider.Services {
-		fmt.Printf("Service key: %s\n", key)
-		fmt.Printf("  Interface: %s\n", svc.Interface)
-		fmt.Printf("  Filter:    %s\n", svc.Filter)
-		fmt.Printf("  Group:     %s\n", svc.Group)
-		fmt.Printf("  Version:   %s\n", svc.Version)
-		fmt.Println()
-	}
+
 	return nil
 }
 

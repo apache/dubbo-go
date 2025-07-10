@@ -19,7 +19,6 @@ package dubbo
 
 import (
 	"errors"
-	"reflect"
 	"sync"
 )
 
@@ -199,7 +198,6 @@ func (ins *Instance) loadProvider() error {
 	if ins.insOpts.Provider != nil {
 		srvOpts = append(srvOpts, server.SetServerProvider(ins.insOpts.Provider))
 	}
-	//MergeProviderServiceOptionsFromConfig(ins.insOpts.Provider)
 	srv, err := ins.NewServer(srvOpts...)
 	if err != nil {
 		return err
@@ -225,36 +223,6 @@ func (ins *Instance) loadProvider() error {
 	}()
 	return nil
 }
-
-func getInterfaceName(handler any) string {
-	if svc, ok := handler.(common.TriplePBService); ok {
-		return svc.XXX_InterfaceName()
-	}
-	return reflect.TypeOf(handler).String()
-}
-
-//func MergeProviderServiceOptionsFromConfig(cfg *global.ProviderConfig) {
-//	for name, svcConfig := range cfg.Services {
-//		//fmt.Printf("name:%+v \n", name)
-//		//fmt.Printf("providerServices:%+v \n", providerServices)
-//		definition, ok := providerServices[svcConfig.Interface]
-//		if !ok {
-//			// 可能是 interfaceName 而不是配置别名
-//			for _, v := range providerServices {
-//				if v.Info != nil && v.Info.InterfaceName == svcConfig.Interface {
-//					definition = v
-//					ok = true
-//					break
-//				}
-//			}
-//		}
-//		if !ok {
-//			logger.Warnf("Service %s not registered, skip options injection", name)
-//			continue
-//		}
-//		definition.Opts = append(definition.Opts, server.GetProviderOptionsFromConfig(svcConfig)...)
-//	}
-//}
 
 // loadConsumer loads the service consumer.
 func (ins *Instance) loadConsumer() error {

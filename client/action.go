@@ -103,7 +103,6 @@ func (refOpts *ReferenceOptions) ReferWithServiceAndInfo(srv common.RPCService, 
 
 func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) {
 	ref := refOpts.Reference
-	fmt.Printf("refOpts.Reference222222:%+v\n\n\n", ref)
 	con := refOpts.Consumer
 
 	var methods []string
@@ -151,7 +150,6 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 		common.WithParamsValue(constant.IDLMode, ref.IDLMode),
 		common.WithAttribute(constant.ConsumerConfigKey, refOpts.Consumer),
 	)
-	fmt.Printf("cfgURLLLLLL1111:%+v\n\n\n", cfgURL)
 	// for new triple IDL mode
 	if info != nil {
 		cfgURL.SetAttribute(constant.ClientInfoKey, info)
@@ -177,7 +175,6 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("urls1111:%+v\n\n\n", urls)
 	// build invoker according to urls
 	invoker, err := buildInvoker(urls, ref)
 	if err != nil {
@@ -249,14 +246,11 @@ func processURL(ref *global.ReferenceConfig, regsCompat map[string]*config.Regis
 }
 
 func buildInvoker(urls []*common.URL, ref *global.ReferenceConfig) (base.Invoker, error) {
-	fmt.Printf("1111111111111\n\n\n")
 	var (
 		invoker base.Invoker
 		regURL  *common.URL
 	)
 	invokers := make([]base.Invoker, len(urls))
-	fmt.Printf("urls:%+v\n\n\n", urls)
-	fmt.Printf("ref.URL:%s\n\n\n", ref.URL)
 	for i, u := range urls {
 		if u.Protocol == constant.ServiceRegistryProtocol {
 			invoker = extension.GetProtocol(constant.RegistryProtocol).Refer(u)
@@ -265,7 +259,6 @@ func buildInvoker(urls []*common.URL, ref *global.ReferenceConfig) (base.Invoker
 		}
 
 		if ref.URL != "" {
-			fmt.Printf("ref.Filter:%s\n\n\n", ref.Filter)
 			invoker = protocolwrapper.BuildInvokerChain(invoker, constant.ReferenceFilterKey)
 		}
 
@@ -352,7 +345,6 @@ func (refOpts *ReferenceOptions) getURLMap() url.Values {
 	app := refOpts.applicationCompat
 	metrics := refOpts.Metrics
 	tracing := refOpts.Otel.TracingConfig
-	fmt.Printf("refOpts.Reference:%+v\n\n\n", ref)
 
 	urlMap := url.Values{}
 	// first set user params

@@ -18,7 +18,6 @@
 package server
 
 import (
-	"fmt"
 	"reflect"
 	"strconv"
 	"sync"
@@ -83,14 +82,7 @@ func (srvOpts *ServerOptions) init(opts ...ServerOption) error {
 	if err := defaults.Set(srvOpts); err != nil {
 		return err
 	}
-	for key, svc := range srvOpts.Provider.Services {
-		fmt.Printf("Service key: %s\n", key)
-		fmt.Printf("  Interface: %s\n", svc.Interface)
-		fmt.Printf("  Filter:    %s\n", svc.Filter)
-		fmt.Printf("  Group:     %s\n", svc.Group)
-		fmt.Printf("  Version:   %s\n", svc.Version)
-		fmt.Println()
-	}
+
 	providerConf := srvOpts.Provider
 
 	providerConf.RegistryIDs = commonCfg.TranslateIds(providerConf.RegistryIDs)
@@ -535,14 +527,7 @@ func (svcOpts *ServiceOptions) init(srv *Server, opts ...ServiceOption) error {
 
 	svcOpts.srvOpts = srv.cfg
 	svc := svcOpts.Service
-	for key, svc := range srv.cfg.Provider.Services {
-		fmt.Printf("1111111:svc: %s\n", key)
-		fmt.Printf("  Interface: %s\n", svc.Interface)
-		fmt.Printf("  Filter:    %s\n", svc.Filter)
-		fmt.Printf("  Group:     %s\n", svc.Group)
-		fmt.Printf("  Version:   %s\n", svc.Version)
-		fmt.Println()
-	}
+
 	dubboutil.CopyFields(reflect.ValueOf(srv.cfg.Provider).Elem(), reflect.ValueOf(svc).Elem())
 
 	svcOpts.exported = atomic.NewBool(false)
@@ -968,9 +953,9 @@ func SetProtocols(pros map[string]*global.ProtocolConfig) ServiceOption {
 func GetProviderOptionsFromConfig(c *global.ServiceConfig) []ServiceOption {
 	var opts []ServiceOption
 
-	//if c.Interface != "" {
-	//	opts = append(opts, WithInterface(c.Interface))
-	//}
+	if c.Interface != "" {
+		opts = append(opts, WithInterface(c.Interface))
+	}
 	if c.Group != "" {
 		opts = append(opts, WithGroup(c.Group))
 	}

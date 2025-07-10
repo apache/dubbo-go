@@ -21,7 +21,6 @@ package client
 import (
 	"context"
 	"errors"
-	"fmt"
 )
 
 import (
@@ -173,13 +172,11 @@ func (cli *Client) dial(interfaceName string, info *ClientInfo, srv any, opts ..
 		// this config must be set after Reference initialized
 		setInterfaceName(interfaceName),
 	}
-	fmt.Printf("cli.cliOpts.overallReference:%+v\n", cli.cliOpts.overallReference)
-	fmt.Printf("li.cliOpts.Consumer:%+v\n", cli.cliOpts.Consumer)
+
 	finalOpts = append(finalOpts, opts...)
 	if err := newRefOpts.init(finalOpts...); err != nil {
 		return nil, err
 	}
-	fmt.Printf("newRefOpts:%+v\n", newRefOpts.Reference)
 	if info != nil {
 		newRefOpts.ReferWithInfo(info)
 	} else if srv != nil {
