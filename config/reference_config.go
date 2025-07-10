@@ -186,7 +186,7 @@ func (rc *ReferenceConfig) Refer(srv any) {
 		common.WithParamsValue(constant.BeanNameKey, rc.id),
 		common.WithParamsValue(constant.MetadataTypeKey, rc.metaDataType),
 	)
-
+	fmt.Printf("cfgURLLLLLL:%+v\n\n\n", cfgURL)
 	SetConsumerServiceByInterfaceName(rc.InterfaceName, srv)
 	if rc.ForceTag {
 		cfgURL.AddParam(constant.ForceUseTag, "true")
@@ -326,6 +326,7 @@ func (rc *ReferenceConfig) getURLMap() url.Values {
 	for k, v := range rc.Params {
 		urlMap.Set(k, v)
 	}
+	fmt.Printf("refOpts.rc:%+v\n\n\n", rc)
 	urlMap.Set(constant.InterfaceKey, rc.InterfaceName)
 	urlMap.Set(constant.TimestampKey, strconv.FormatInt(time.Now().Unix(), 10))
 	urlMap.Set(constant.ClusterKey, rc.Cluster)

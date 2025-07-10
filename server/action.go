@@ -134,7 +134,7 @@ func (svcOpts *ServiceOptions) ExportWithInfo(info *common.ServiceInfo) error {
 
 func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 	svcConf := svcOpts.Service
-
+	fmt.Printf("svcOpts.Service:%+v\n\n\n", svcConf)
 	if info != nil {
 		if svcConf.Interface == "" {
 			svcConf.Interface = info.InterfaceName
@@ -249,6 +249,7 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 			for _, regUrl := range regUrls {
 				setRegistrySubURL(ivkURL, regUrl)
 				invoker = svcOpts.generatorInvoker(regUrl, info)
+				fmt.Printf("3333333invoke:%+v\n", invoker.GetURL())
 				exporter := svcOpts.cacheProtocol.Export(invoker)
 				if exporter == nil {
 					return perrors.New(fmt.Sprintf("Registry protocol new exporter error, registry is {%v}, url is {%v}", regUrl, ivkURL))
@@ -369,6 +370,7 @@ func (svcOpts *ServiceOptions) getUrlMap() url.Values {
 
 	//filter
 	var filters string
+	fmt.Printf("svcConf.Filter:%+v\n\n", svcConf.Filter)
 	if svcConf.Filter == "" {
 		filters = constant.DefaultServiceFilters
 	} else {

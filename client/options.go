@@ -18,6 +18,7 @@
 package client
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 )
@@ -510,12 +511,13 @@ func (cliOpts *ClientOptions) init(opts ...ClientOption) error {
 	for _, opt := range opts {
 		opt(cliOpts)
 	}
+	fmt.Printf("newCliOpts11111:%+v\n\n\n\n", cliOpts.overallReference)
 	if err := defaults.Set(cliOpts); err != nil {
 		return err
 	}
 
 	consumerConf := cliOpts.Consumer
-
+	fmt.Printf("newCliOpts2222:%+v\n\n\n\n", cliOpts.overallReference)
 	// init application
 	application := cliOpts.Application
 	if application != nil {
@@ -524,7 +526,7 @@ func (cliOpts *ClientOptions) init(opts ...ClientOption) error {
 			return err
 		}
 	}
-
+	fmt.Printf("newCliOpts3333:%+v\n\n\n\n", cliOpts.overallReference)
 	// init registries
 	regs := cliOpts.Registries
 	if regs != nil {
@@ -546,7 +548,7 @@ func (cliOpts *ClientOptions) init(opts ...ClientOption) error {
 			}
 		}
 	}
-
+	fmt.Printf("newCliOpts4444:%+v\n\n\n\n", cliOpts.overallReference)
 	// init cluster
 	if cliOpts.overallReference.Cluster == "" {
 		cliOpts.overallReference.Cluster = constant.ClusterKeyFailover
@@ -564,20 +566,22 @@ func (cliOpts *ClientOptions) init(opts ...ClientOption) error {
 
 	// todo(DMwangnima): is there any part that we should do compatibility processing?
 	// init overallReference from Consumer config
-	if consumerConf != nil {
-		if cliOpts.overallReference.Filter == "" {
-			cliOpts.overallReference.Filter = consumerConf.Filter
-		}
-		if len(cliOpts.overallReference.RegistryIDs) <= 0 {
-			cliOpts.overallReference.RegistryIDs = consumerConf.RegistryIDs
-		}
-		if cliOpts.overallReference.TracingKey == "" {
-			cliOpts.overallReference.TracingKey = consumerConf.TracingKey
-		}
-		if cliOpts.overallReference.Check == nil {
-			cliOpts.overallReference.Check = &consumerConf.Check
-		}
-	}
+	fmt.Printf("cliOpts.overallReference.Filter: %s\n", cliOpts.overallReference.Filter)
+	//if consumerConf != nil {
+	//	fmt.Printf("111111\n\n\n")
+	//	if cliOpts.overallReference.Filter == "" {
+	//		cliOpts.overallReference.Filter = consumerConf.Filter
+	//	}
+	//	if len(cliOpts.overallReference.RegistryIDs) <= 0 {
+	//		cliOpts.overallReference.RegistryIDs = consumerConf.RegistryIDs
+	//	}
+	//	if cliOpts.overallReference.TracingKey == "" {
+	//		cliOpts.overallReference.TracingKey = consumerConf.TracingKey
+	//	}
+	//	if cliOpts.overallReference.Check == nil {
+	//		cliOpts.overallReference.Check = &consumerConf.Check
+	//	}
+	//}
 
 	// init graceful_shutdown
 	graceful_shutdown.Init(graceful_shutdown.SetShutdownConfig(cliOpts.Shutdown))

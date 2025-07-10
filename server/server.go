@@ -19,6 +19,8 @@
 package server
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/global"
+	"fmt"
 	"sort"
 	"strconv"
 	"sync"
@@ -72,6 +74,7 @@ func (s *Server) Register(handler any, info *common.ServiceInfo, opts ...Service
 	if err != nil {
 		return err
 	}
+	fmt.Printf("newSvcOpts555555:%+v\n", newSvcOpts.Service)
 	s.svcOptsMap.Store(newSvcOpts, info)
 	return nil
 }
@@ -121,6 +124,29 @@ func (s *Server) genSvcOpts(handler any, opts ...ServiceOption) (*ServiceOptions
 		svcOpts = append(svcOpts,
 			SetRegistries(regsCfg),
 		)
+	}
+	if proCfg != nil && proCfg.Services != nil {
+		info := common.GetReference(handler)
+		fmt.Printf("infoinfo:%+v\n", info)
+		fmt.Printf("proCfg.Services:%+v\n", proCfg.Services)
+		var svcCfg *global.ServiceConfig
+		// 先按 interface name 匹配
+		if cfg, ok := proCfg.Services[info]; ok {
+			svcCfg = cfg
+		} else {
+			// fallback: 遍历匹配 interface 字段
+			for _, cfg := range proCfg.Services {
+				if cfg.Interface == info {
+					svcCfg = cfg
+					break
+				}
+			}
+		}
+		fmt.Printf("svcCfg11111:%+v\n\n", svcCfg)
+		if svcCfg != nil {
+			svcOpts = append(svcOpts, GetProviderOptionsFromConfig(svcCfg)...)
+			logger.Infof("Injected options from provider.services for %s", info)
+		}
 	}
 	// options passed by users have higher priority
 	svcOpts = append(svcOpts, opts...)
