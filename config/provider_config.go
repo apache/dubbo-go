@@ -100,9 +100,7 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 			break
 		}
 	}
-	fmt.Printf("server:%+v\n", c.Services)
 	for key, serviceConfig := range c.Services {
-		fmt.Printf("serviceConfig.Interface:%+v\n\n", serviceConfig.Interface)
 		if serviceConfig.Interface == "" {
 			service := GetProviderService(key)
 			// try to use interface name defined by pb

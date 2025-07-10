@@ -101,9 +101,6 @@ func (s *ServiceConfig) Prefix() string {
 }
 
 func (s *ServiceConfig) Init(rc *RootConfig) error {
-	fmt.Printf("serviceConfig:%+v\n", s)
-	fmt.Printf("rc:%+v\n", rc)
-	fmt.Printf("Filter:%+v\n", s.Filter)
 	s.rc = rc
 	if err := initProviderMethodConfig(s); err != nil {
 		return err
@@ -113,7 +110,6 @@ func (s *ServiceConfig) Init(rc *RootConfig) error {
 	}
 	s.exported = atomic.NewBool(false)
 	s.metadataType = rc.Application.MetadataType
-	fmt.Printf("Filter:%+v\n", s.Filter)
 	if s.Filter == "" {
 		s.Filter = rc.Provider.Filter
 	}
@@ -317,11 +313,9 @@ func (s *ServiceConfig) Export() error {
 			s.cacheMutex.Unlock()
 
 			for _, regUrl := range regUrls {
-				fmt.Printf("regUrl:%+v\n", regUrl)
 				setRegistrySubURL(ivkURL, regUrl)
 
 				invoker = s.generatorInvoker(regUrl, info)
-				fmt.Printf("invokerwwwwww:%+v\n", invoker.GetURL())
 				exporter := s.cacheProtocol.Export(invoker)
 				if exporter == nil {
 					return perrors.New(fmt.Sprintf("Registry protocol new exporter error, registry is {%v}, url is {%v}", regUrl, ivkURL))
@@ -431,7 +425,6 @@ func (s *ServiceConfig) getUrlMap() url.Values {
 
 	// filter
 	var filters string
-	fmt.Printf("svcConf.Filter:%+v\n\n", s.Filter)
 	if s.Filter == "" {
 		filters = constant.DefaultServiceFilters
 	} else {
