@@ -123,24 +123,17 @@ func (s *Server) genSvcOpts(handler any, opts ...ServiceOption) (*ServiceOptions
 			SetRegistries(regsCfg),
 		)
 	}
+	// Get service-level configuration items from provider.services configuration
 	if proCfg != nil && proCfg.Services != nil {
-		info := common.GetReference(handler)
-		var svcCfg *global.ServiceConfig
-		// 先按 interface name 匹配
-		if cfg, ok := proCfg.Services[info]; ok {
-			svcCfg = cfg
-		} else {
-			// fallback: 遍历匹配 interface 字段
-			for _, cfg := range proCfg.Services {
-				if cfg.Interface == info {
-					svcCfg = cfg
-					break
-				}
-			}
-		}
+		// Get the unique identifier of the handler (the default is the structure name or the alias set during registration)
+		interfaceName := getServiceInterfaceName(handler)
+		svcCfg := matchServiceConfig(proCfg.Services, interfaceName)
+
 		if svcCfg != nil {
 			svcOpts = append(svcOpts, GetProviderOptionsFromConfig(svcCfg)...)
-			logger.Infof("Injected options from provider.services for %s", info)
+			logger.Infof("Injected options from provider.services for %s", interfaceName)
+		} else {
+			logger.Warnf("No matching service config found for [%s]", interfaceName)
 		}
 	}
 	// options passed by users have higher priority
@@ -150,6 +143,27 @@ func (s *Server) genSvcOpts(handler any, opts ...ServiceOption) (*ServiceOptions
 	}
 	newSvcOpts.Implement(handler)
 	return newSvcOpts, nil
+}
+
+func matchServiceConfig(services map[string]*global.ServiceConfig, info string) *global.ServiceConfig {
+	// Give priority to accurately finding the service configuration from the configuration based on the reference name (i.e. the handler registration name)
+	if cfg, ok := services[info]; ok {
+		return cfg
+	}
+	//fallback: traverse matching interface fields
+	for _, cfg := range services {
+		if cfg.Interface == info {
+			return cfg
+		}
+	}
+	return nil
+}
+
+func getServiceInterfaceName(handler any) string {
+	if s, ok := handler.(common.TriplePBService); ok {
+		return s.XXX_InterfaceName()
+	}
+	return common.GetReference(handler)
 }
 
 func (s *Server) exportServices() (err error) {
