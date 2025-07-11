@@ -358,6 +358,8 @@ func compatProtocolClientConfig(c *global.ClientProtocolConfig) *config.ClientPr
 		TripleConfig: compatTripleConfig(c.TripleConfig),
 	}
 }
+
+// The main purpose of this function is to configure the transformation. Used in compatibility processing between new and old configuration systems
 func compatReferences(c map[string]*global.ReferenceConfig) map[string]*config.ReferenceConfig {
 	refs := make(map[string]*config.ReferenceConfig, len(c))
 	for name, ref := range c {
@@ -389,6 +391,7 @@ func compatReferences(c map[string]*global.ReferenceConfig) map[string]*config.R
 	return refs
 }
 
+// The main purpose of this function is to configure the transformation. Used in compatibility processing between new and old configuration systems
 func compatMethodConf(m []*global.MethodConfig) []*config.MethodConfig {
 	methods := make([]*config.MethodConfig, 0, len(m))
 	for _, method := range m {
