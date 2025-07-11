@@ -18,7 +18,6 @@
 package client
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/global"
 	"testing"
 	"time"
 )
@@ -29,6 +28,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 

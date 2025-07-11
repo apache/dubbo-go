@@ -516,7 +516,7 @@ func (cliOpts *ClientOptions) init(opts ...ClientOption) error {
 	}
 
 	consumerConf := cliOpts.Consumer
-	
+
 	// init application
 	application := cliOpts.Application
 	if application != nil {

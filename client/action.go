@@ -176,7 +176,7 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 	if err != nil {
 		panic(err)
 	}
-	
+
 	// build invoker according to urls
 	invoker, err := buildInvoker(urls, ref)
 	if err != nil {
