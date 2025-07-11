@@ -177,6 +177,7 @@ func (cli *Client) dial(interfaceName string, info *ClientInfo, srv any, opts ..
 	if err := newRefOpts.init(finalOpts...); err != nil {
 		return nil, err
 	}
+	
 	if info != nil {
 		newRefOpts.ReferWithInfo(info)
 	} else if srv != nil {
