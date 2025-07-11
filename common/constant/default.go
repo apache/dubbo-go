@@ -108,9 +108,13 @@ const (
 	DefaultMaxCallRecvMsgSize = 1024 * 1024 * 4
 	DefaultMaxCallSendMsgSize = math.MaxInt32
 
+	// keepalive
 	DefaultKeepAliveInterval = "10s"
 	DefaultKeepAliveTimeout  = "20s"
 	MinKeepAliveInterval     = 10 * time.Second // KeepAliveMinInterval is the minimum ping interval to invoid too many ping
+
+	// graceful shutdown
+	DefaultGracefulShutdownTimeout = 10 * time.Second
 )
 
 const (
