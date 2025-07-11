@@ -85,10 +85,17 @@ func (tp *TripleProtocol) openServer(invoker base.Invoker, info *common.ServiceI
 		panic("[TRIPLE Protocol]" + url.Key() + "is not existing")
 	}
 
-	// TODO: handle errors
-	tripleConfRaw, _ := url.GetAttribute(constant.TripleConfigKey)
-	// TODO: verificate the tripleConf
-	tripleConf, _ := tripleConfRaw.(*global.TripleConfig)
+	tripleConfRaw, ok := url.GetAttribute(constant.TripleConfigKey)
+	if !ok {
+		// NOTE: sometimes happened on old triple
+		logger.Warnf("Triple config is not found for url: %s", url.Key())
+	}
+
+	tripleConf, ok := tripleConfRaw.(*global.TripleConfig)
+	if !ok || tripleConf == nil {
+		// NOTE: sometimes happened on old triple
+		logger.Warnf("Triple config obtained from url: %s is not of type *global.TripleConfig or is nil", url.Key())
+	}
 
 	srv := NewServer(tripleConf)
 	srv.Start(invoker, info)
