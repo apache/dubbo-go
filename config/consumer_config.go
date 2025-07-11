@@ -142,7 +142,7 @@ func (cc *ConsumerConfig) Load() {
 				continue
 			}
 		}
-
+		refConfig.id = registeredTypeName
 		refConfig.Refer(refRPCService)
 		refConfig.Implement(refRPCService)
 	}

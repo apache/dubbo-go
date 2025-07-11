@@ -150,6 +150,7 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 		common.WithParamsValue(constant.IDLMode, ref.IDLMode),
 		common.WithAttribute(constant.ConsumerConfigKey, refOpts.Consumer),
 	)
+
 	// for new triple IDL mode
 	if info != nil {
 		cfgURL.SetAttribute(constant.ClientInfoKey, info)
@@ -175,6 +176,7 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 	if err != nil {
 		panic(err)
 	}
+	
 	// build invoker according to urls
 	invoker, err := buildInvoker(urls, ref)
 	if err != nil {
