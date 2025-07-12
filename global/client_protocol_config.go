@@ -21,29 +21,29 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
-// TODO: find a better name replace ProtocolClientConfig
-type ProtocolClientConfig struct {
+// ClientProtocolConfig represents the config of client's protocol
+type ClientProtocolConfig struct {
 	// TODO: maybe we could use this field
 	Name string `yaml:"name" json:"name,omitempty" property:"name"`
 
 	TripleConfig *TripleConfig `yaml:"triple" json:"triple,omitempty" property:"triple"`
 }
 
-// DefaultProtocolConfig returns a default ProtocolConfig instance.
-func DefaultProtocolClientConfig() *ProtocolClientConfig {
-	return &ProtocolClientConfig{
+// DefaultClientProtocolConfig returns a default ClientProtocolConfig instance.
+func DefaultClientProtocolConfig() *ClientProtocolConfig {
+	return &ClientProtocolConfig{
 		Name:         constant.TriProtocol,
 		TripleConfig: DefaultTripleConfig(),
 	}
 }
 
-// Clone a new ProtocolConfig
-func (c *ProtocolClientConfig) Clone() *ProtocolClientConfig {
+// Clone a new ClientProtocolConfig
+func (c *ClientProtocolConfig) Clone() *ClientProtocolConfig {
 	if c == nil {
 		return nil
 	}
 
-	return &ProtocolClientConfig{
+	return &ClientProtocolConfig{
 		Name:         c.Name,
 		TripleConfig: c.TripleConfig.Clone(),
 	}

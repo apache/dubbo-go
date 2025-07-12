@@ -19,6 +19,7 @@ package triple
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"reflect"
@@ -71,12 +72,28 @@ func NewServer(cfg *global.TripleConfig) *Server {
 
 // Start TRIPLE server
 func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
-	URL := invoker.GetURL()
-	addr := URL.Location
+	url := invoker.GetURL()
+	addr := url.Location
+
+	var tripleConf *global.TripleConfig
+
+	tripleConfRaw, ok := url.GetAttribute(constant.TripleConfigKey)
+	if ok {
+		tripleConf = tripleConfRaw.(*global.TripleConfig)
+	}
+
+	var callProtocol string
+	if tripleConf != nil && tripleConf.Http3 != nil && tripleConf.Http3.Enable {
+		callProtocol = constant.CallHTTP3
+	} else {
+		// HTTP default type is HTTP/2.
+		callProtocol = constant.CallHTTP2
+	}
+
 	// initialize tri.Server
 	s.triServer = tri.NewServer(addr)
 
-	serialization := URL.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
+	serialization := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	switch serialization {
 	case constant.ProtobufSerialization:
 	case constant.JSONSerialization:
@@ -89,41 +106,44 @@ func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
 
 	// TODO: move tls config to handleService
 
-	var tlsConf *global.TLSConfig
+	var globalTlsConf *global.TLSConfig
+	var tlsConf *tls.Config
+	var err error
 
 	// handle tls
-	tlsConfRaw, ok := URL.GetAttribute(constant.TLSConfigKey)
+	tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey)
 	if ok {
-		tlsConf, ok = tlsConfRaw.(*global.TLSConfig)
+		globalTlsConf, ok = tlsConfRaw.(*global.TLSConfig)
 		if !ok {
 			logger.Errorf("TRIPLE Server initialized the TLSConfig configuration failed")
 			return
 		}
 	}
-	if dubbotls.IsServerTLSValid(tlsConf) {
-		cfg, err := dubbotls.GetServerTlSConfig(tlsConf)
+	if dubbotls.IsServerTLSValid(globalTlsConf) {
+		tlsConf, err = dubbotls.GetServerTlSConfig(globalTlsConf)
 		if err != nil {
 			logger.Errorf("TRIPLE Server initialized the TLSConfig configuration failed. err: %v", err)
 			return
 		}
-		s.triServer.SetTLSConfig(cfg)
 		logger.Infof("TRIPLE Server initialized the TLSConfig configuration")
 	}
 
 	// IDLMode means that this will only be set when
 	// the new triple is started in non-IDL mode.
 	// TODO: remove IDLMode when config package is removed
-	IDLMode := URL.GetParam(constant.IDLMode, "")
+	IDLMode := url.GetParam(constant.IDLMode, "")
 
 	var service common.RPCService
 	if IDLMode == constant.NONIDL {
-		service, _ = URL.GetAttribute(constant.RpcServiceKey)
+		service, _ = url.GetAttribute(constant.RpcServiceKey)
 	}
 
-	hanOpts := getHanOpts(URL)
+	hanOpts := getHanOpts(url, tripleConf)
+
 	//Set expected codec name from serviceinfo
 	hanOpts = append(hanOpts, tri.WithExpectedCodecName(serialization))
-	intfName := URL.Interface()
+
+	intfName := url.Interface()
 	if info != nil {
 		// new triple idl mode
 		s.handleServiceWithInfo(intfName, invoker, info, hanOpts...)
@@ -135,12 +155,12 @@ func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
 		s.saveServiceInfo(intfName, reflectInfo)
 	} else {
 		// old triple idl mode and old triple non-idl mode
-		s.compatHandleService(intfName, URL.Group(), URL.Version(), hanOpts...)
+		s.compatHandleService(intfName, url.Group(), url.Version(), hanOpts...)
 	}
 	internal.ReflectionRegister(s)
 
 	go func() {
-		if runErr := s.triServer.Run(); runErr != nil {
+		if runErr := s.triServer.Run(callProtocol, tlsConf); runErr != nil {
 			logger.Errorf("server serve failed with err: %v", runErr)
 		}
 	}()
@@ -159,7 +179,7 @@ func (s *Server) RefreshService(invoker base.Invoker, info *common.ServiceInfo) 
 	default:
 		panic(fmt.Sprintf("Unsupported serialization: %s", serialization))
 	}
-	hanOpts := getHanOpts(URL)
+	hanOpts := getHanOpts(URL, s.cfg)
 	//Set expected codec name from serviceinfo
 	hanOpts = append(hanOpts, tri.WithExpectedCodecName(serialization))
 	intfName := URL.Interface()
@@ -171,14 +191,13 @@ func (s *Server) RefreshService(invoker base.Invoker, info *common.ServiceInfo) 
 	}
 }
 
-func getHanOpts(url *common.URL) (hanOpts []tri.HandlerOption) {
+func getHanOpts(url *common.URL, tripleConf *global.TripleConfig) (hanOpts []tri.HandlerOption) {
 	group := url.GetParam(constant.GroupKey, "")
 	version := url.GetParam(constant.VersionKey, "")
 	hanOpts = append(hanOpts, tri.WithGroup(group), tri.WithVersion(version))
 
 	// Deprecated：use TripleConfig
 	// TODO: remove MaxServerSendMsgSize and MaxServerRecvMsgSize when version 4.0.0
-	var err error
 	maxServerRecvMsgSize := constant.DefaultMaxServerRecvMsgSize
 	if recvMsgSize, convertErr := humanize.ParseBytes(url.GetParam(constant.MaxServerRecvMsgSize, "")); convertErr == nil && recvMsgSize != 0 {
 		maxServerRecvMsgSize = int(recvMsgSize)
@@ -188,24 +207,17 @@ func getHanOpts(url *common.URL) (hanOpts []tri.HandlerOption) {
 	// Deprecated：use TripleConfig
 	// TODO: remove MaxServerSendMsgSize and MaxServerRecvMsgSize when version 4.0.0
 	maxServerSendMsgSize := constant.DefaultMaxServerSendMsgSize
-	if sendMsgSize, convertErr := humanize.ParseBytes(url.GetParam(constant.MaxServerSendMsgSize, "")); err == convertErr && sendMsgSize != 0 {
+	if sendMsgSize, convertErr := humanize.ParseBytes(url.GetParam(constant.MaxServerSendMsgSize, "")); convertErr == nil && sendMsgSize != 0 {
 		maxServerSendMsgSize = int(sendMsgSize)
 	}
 	hanOpts = append(hanOpts, tri.WithSendMaxBytes(maxServerSendMsgSize))
-
-	var tripleConf *global.TripleConfig
-
-	tripleConfRaw, ok := url.GetAttribute(constant.TripleConfigKey)
-	if ok {
-		tripleConf = tripleConfRaw.(*global.TripleConfig)
-	}
 
 	if tripleConf == nil {
 		return hanOpts
 	}
 
 	if tripleConf.MaxServerRecvMsgSize != "" {
-		logger.Warnf("MaxServerRecvMsgSize: %v", tripleConf.MaxServerRecvMsgSize)
+		logger.Debugf("MaxServerRecvMsgSize: %v", tripleConf.MaxServerRecvMsgSize)
 		if recvMsgSize, convertErr := humanize.ParseBytes(tripleConf.MaxServerRecvMsgSize); convertErr == nil && recvMsgSize != 0 {
 			maxServerRecvMsgSize = int(recvMsgSize)
 		}
@@ -213,8 +225,8 @@ func getHanOpts(url *common.URL) (hanOpts []tri.HandlerOption) {
 	}
 
 	if tripleConf.MaxServerSendMsgSize != "" {
-		logger.Warnf("MaxServerSendMsgSize: %v", tripleConf.MaxServerSendMsgSize)
-		if sendMsgSize, convertErr := humanize.ParseBytes(tripleConf.MaxServerSendMsgSize); err == convertErr && sendMsgSize != 0 {
+		logger.Debugf("MaxServerSendMsgSize: %v", tripleConf.MaxServerSendMsgSize)
+		if sendMsgSize, convertErr := humanize.ParseBytes(tripleConf.MaxServerSendMsgSize); convertErr == nil && sendMsgSize != 0 {
 			maxServerSendMsgSize = int(sendMsgSize)
 		}
 		hanOpts = append(hanOpts, tri.WithSendMaxBytes(maxServerSendMsgSize))
