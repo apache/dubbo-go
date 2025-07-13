@@ -1,0 +1,27 @@
+openapi: 3.1.0
+info:
+    title: greet
+paths:
+    /greet.GreetService/Greet:
+        post:
+            tags:
+                - greet.GreetService
+            summary: Greet
+            operationId: greet.GreetService.Greet
+            responses:
+                default:
+                    description: Error
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/triple.error'
+                "200":
+                    description: Success
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/greet.GreetResponse'
+components: {}
+security: []
+tags:
+    - name: greet.GreetService
