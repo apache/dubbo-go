@@ -19,36 +19,41 @@ package loadbalance
 
 import (
 	"time"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
-// GetWeight gets weight for load balance strategy
+// GetWeight returns the weight for the load‑balancing strategy.
 func GetWeight(invoker base.Invoker, invocation base.Invocation) int64 {
-	var weight int64
-	url := invoker.GetURL()
-	// Multiple registry scenario, load balance among multiple registries.
-	isRegIvk := url.GetParamBool(constant.RegistryKey+"."+constant.RegistryLabelKey, false)
-	if isRegIvk {
-		weight = url.GetParamInt(constant.RegistryKey+"."+constant.WeightKey, constant.DefaultWeight)
-	} else {
-		weight = url.GetMethodParamInt64(invocation.MethodName(), constant.WeightKey, constant.DefaultWeight)
 
-		if weight > 0 {
-			// get service register time an do warm up time
-			now := time.Now().Unix()
-			timestamp := url.GetParamInt(constant.RemoteTimestampKey, now)
-			if uptime := now - timestamp; uptime > 0 {
-				warmup := url.GetParamInt(constant.WarmupKey, constant.DefaultWarmup)
-				if uptime < warmup {
-					if ww := float64(uptime) / float64(warmup) / float64(weight); ww < 1 {
-						weight = 1
-					} else if int64(ww) <= weight {
-						weight = int64(ww)
-					}
+	url := invoker.GetURL()
+
+	//  Method‑level or registry‑level weight taken from URL parameters — highest priority.
+	var weight = url.GetMethodParamInt64(
+		invocation.MethodName(), constant.WeightKey, -1)
+
+	if weight < 0 && url.GetParamBool(constant.RegistryKey+"."+constant.RegistryLabelKey, false) {
+		weight = url.GetParamInt(constant.RegistryKey+"."+constant.WeightKey, constant.DefaultWeight)
+	}
+
+	// If the URL does not specify a weight, fall back to the default value (100).
+	if weight < 0 {
+		weight = constant.DefaultWeight
+	}
+
+	// Warm‑up adjustment (same logic as before).
+	if weight > 0 {
+		now := time.Now().Unix()
+		ts := url.GetParamInt(constant.RemoteTimestampKey, now)
+		if uptime := now - ts; uptime > 0 {
+			warm := url.GetParamInt(constant.WarmupKey, constant.DefaultWarmup)
+			if uptime < warm {
+				calc := float64(uptime) * float64(weight) / float64(warm)
+				if calc < 1 {
+					weight = 1
+				} else if int64(calc) <= weight {
+					weight = int64(calc)
 				}
 			}
 		}
@@ -57,6 +62,5 @@ func GetWeight(invoker base.Invoker, invocation base.Invocation) int64 {
 	if weight < 0 {
 		weight = 0
 	}
-
 	return weight
 }
