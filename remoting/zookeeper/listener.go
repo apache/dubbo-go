@@ -441,6 +441,11 @@ func (l *ZkEventListener) startScheduleWatchTask(
 		tickerTTL = 20e9
 	}
 
+	childrenNode, err := l.Client.GetChildren(zkRootPath)
+	if err == nil {
+		l.handleZkNodeEvent(zkRootPath, childrenNode, listener)
+	}
+
 	ticker := time.NewTicker(tickerTTL)
 	for {
 		select {
