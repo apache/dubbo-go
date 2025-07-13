@@ -284,7 +284,6 @@ func compatConsumerConfig(c *global.ConsumerConfig) *config.ConsumerConfig {
 		ProxyFactory:                   c.ProxyFactory,
 		Check:                          c.Check,
 		AdaptiveService:                c.AdaptiveService,
-		References:                     compatReferences(c.References),
 		TracingKey:                     c.TracingKey,
 		FilterConf:                     c.FilterConf,
 		MaxWaitTimeForServiceDiscovery: c.MaxWaitTimeForServiceDiscovery,
@@ -357,61 +356,6 @@ func compatProtocolClientConfig(c *global.ClientProtocolConfig) *config.ClientPr
 		Name:         c.Name,
 		TripleConfig: compatTripleConfig(c.TripleConfig),
 	}
-}
-
-// The main purpose of this function is to configure the transformation. Used in compatibility processing between new and old configuration systems
-func compatReferences(c map[string]*global.ReferenceConfig) map[string]*config.ReferenceConfig {
-	refs := make(map[string]*config.ReferenceConfig, len(c))
-	for name, ref := range c {
-		refs[name] = &config.ReferenceConfig{
-			InterfaceName:    ref.InterfaceName,
-			Check:            ref.Check,
-			URL:              ref.URL,
-			Filter:           ref.Filter,
-			Protocol:         ref.Protocol,
-			RegistryIDs:      ref.RegistryIDs,
-			Cluster:          ref.Cluster,
-			Loadbalance:      ref.Loadbalance,
-			Retries:          ref.Retries,
-			Group:            ref.Group,
-			Version:          ref.Version,
-			Serialization:    ref.Serialization,
-			ProvidedBy:       ref.ProvidedBy,
-			Methods:          compatMethodConf(ref.MethodsConfig),
-			Async:            ref.Async,
-			Params:           ref.Params,
-			Generic:          ref.Generic,
-			Sticky:           ref.Sticky,
-			RequestTimeout:   ref.RequestTimeout,
-			ForceTag:         ref.ForceTag,
-			TracingKey:       ref.TracingKey,
-			MeshProviderPort: ref.MeshProviderPort,
-		}
-	}
-	return refs
-}
-
-// The main purpose of this function is to configure the transformation. Used in compatibility processing between new and old configuration systems
-func compatMethodConf(m []*global.MethodConfig) []*config.MethodConfig {
-	methods := make([]*config.MethodConfig, 0, len(m))
-	for _, method := range m {
-		methods = append(methods, &config.MethodConfig{
-			InterfaceId:                 method.InterfaceId,
-			InterfaceName:               method.InterfaceName,
-			Name:                        method.Name,
-			Retries:                     method.Retries,
-			LoadBalance:                 method.LoadBalance,
-			Weight:                      method.Weight,
-			TpsLimitInterval:            method.TpsLimitInterval,
-			TpsLimitRate:                method.TpsLimitRate,
-			TpsLimitStrategy:            method.TpsLimitStrategy,
-			ExecuteLimit:                method.ExecuteLimit,
-			ExecuteLimitRejectedHandler: method.ExecuteLimitRejectedHandler,
-			Sticky:                      method.Sticky,
-			RequestTimeout:              method.RequestTimeout,
-		})
-	}
-	return methods
 }
 
 func compatMetricConfig(c *global.MetricsConfig) *config.MetricsConfig {
