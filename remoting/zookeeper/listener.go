@@ -42,7 +42,10 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
-var defaultTTL = 10 * time.Minute
+var (
+	defaultTTL     = 10 * time.Minute
+	maxScheduleTTL = 20 * time.Second
+)
 
 type ZkEventListener struct {
 	Client      *gxzookeeper.ZookeeperClient
@@ -253,8 +256,8 @@ func (l *ZkEventListener) listenAllDirEvents(conf *common.URL, listener remoting
 			logger.Warnf("[Zookeeper EventListener][listenDirEvent] Wrong configuration for registry.ttl, error=%+v, using default value %v instead", err, defaultTTL)
 		}
 	}
-	if ttl > 20e9 {
-		ttl = 20e9
+	if ttl > maxScheduleTTL {
+		ttl = maxScheduleTTL
 	}
 
 	rootPath := path.Join(constant.PathSeparator, constant.Dubbo)
@@ -431,8 +434,8 @@ func (l *ZkEventListener) startScheduleWatchTask(
 	zkRootPath string, children []string, ttl time.Duration,
 	listener remoting.DataListener, childEventCh <-chan zk.Event) bool {
 	tickerTTL := ttl
-	if tickerTTL > 20e9 {
-		tickerTTL = 20e9
+	if tickerTTL > maxScheduleTTL {
+		tickerTTL = maxScheduleTTL
 	}
 
 	childrenNode, err := l.Client.GetChildren(zkRootPath)
