@@ -51,6 +51,19 @@ components:
             title: Triple Error
             additionalProperties: true
             description: 'Error type returned by triple: https://cn.dubbo.apache.org/zh-cn/overview/reference/protocols/triple-spec/'
+        google.protobuf.Any:
+            type: object
+            properties:
+                type:
+                    type: string
+                value:
+                    type: string
+                    format: binary
+                debug:
+                    type: object
+                    additionalProperties: true
+            additionalProperties: true
+            description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.
 security: []
 tags:
     - name: greet.GreetService

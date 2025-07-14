@@ -75,5 +75,8 @@ func generateComponents(fd protoreflect.FileDescriptor) (*openapimodel.Component
 		AdditionalProperties: &base.DynamicValue[*base.SchemaProxy, bool]{N: 1, B: true},
 	}))
 
+	googleAnyID, googleAnyShema := newGoogleAny()
+	components.Schemas.Set(googleAnyID, base.CreateSchemaProxy(googleAnyShema))
+
 	return components, nil
 }
