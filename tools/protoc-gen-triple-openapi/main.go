@@ -20,9 +20,11 @@ package main
 import (
 	"os"
 
-	"dubbo.apache.org/dubbo-go/v3/tools/protoc-gen-triple-openapi/internal/converter"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
+
 	"google.golang.org/protobuf/proto"
+
+	"dubbo.apache.org/dubbo-go/v3/tools/protoc-gen-triple-openapi/internal/converter"
 )
 
 func main() {

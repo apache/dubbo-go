@@ -21,10 +21,21 @@ import (
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	openapimodel "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/pb33f/libopenapi/orderedmap"
+
+	"gopkg.in/yaml.v3"
 )
 
 func makeMediaTypes(s *base.SchemaProxy) *orderedmap.Map[string, *openapimodel.MediaType] {
 	mediaTypes := orderedmap.New[string, *openapimodel.MediaType]()
 	mediaTypes.Set("application/json", &openapimodel.MediaType{Schema: s})
 	return mediaTypes
+}
+
+func createStringNode(str string) *yaml.Node {
+	n := &yaml.Node{
+		Kind:  yaml.ScalarNode,
+		Tag:   "!!str",
+		Value: str,
+	}
+	return n
 }

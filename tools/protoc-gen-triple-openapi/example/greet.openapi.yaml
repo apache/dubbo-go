@@ -21,7 +21,36 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/greet.GreetResponse'
-components: {}
+components:
+    schemas:
+        triple.error:
+            type: object
+            properties:
+                code:
+                    type: string
+                    examples:
+                        - unimplemented
+                    enum:
+                        - invalid_argument
+                        - unauthenticated
+                        - permission_denied
+                        - unimplemented
+                        - deadline_exceeded
+                        - aborted
+                        - failed_precondition
+                        - resource_exhausted
+                        - internal
+                        - unavailable
+                        - unknown
+                    description: The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
+                message:
+                    type: string
+                    description: A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client.
+                detail:
+                    $ref: '#/components/schemas/google.protobuf.Any'
+            title: Triple Error
+            additionalProperties: true
+            description: 'Error type returned by triple: https://cn.dubbo.apache.org/zh-cn/overview/reference/protocols/triple-spec/'
 security: []
 tags:
     - name: greet.GreetService
