@@ -23,6 +23,20 @@ paths:
                                 $ref: '#/components/schemas/greet.GreetResponse'
 components:
     schemas:
+        greet.GreetRequest:
+            type: object
+            properties:
+                name:
+                    type: string
+                    title: name
+            title: GreetRequest
+        greet.GreetResponse:
+            type: object
+            properties:
+                greeting:
+                    type: string
+                    title: greeting
+            title: GreetResponse
         triple.error:
             type: object
             properties:
@@ -49,7 +63,6 @@ components:
                 detail:
                     $ref: '#/components/schemas/google.protobuf.Any'
             title: Triple Error
-            additionalProperties: true
             description: 'Error type returned by triple: https://cn.dubbo.apache.org/zh-cn/overview/reference/protocols/triple-spec/'
         google.protobuf.Any:
             type: object

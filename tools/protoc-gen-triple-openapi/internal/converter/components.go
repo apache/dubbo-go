@@ -26,6 +26,8 @@ import (
 	libopenapiutils "github.com/pb33f/libopenapi/utils"
 
 	"google.golang.org/protobuf/reflect/protoreflect"
+
+	"dubbo.apache.org/dubbo-go/v3/tools/protoc-gen-triple-openapi/internal/converter/schema"
 )
 
 func generateComponents(fd protoreflect.FileDescriptor) (*openapimodel.Components, error) {
@@ -41,6 +43,8 @@ func generateComponents(fd protoreflect.FileDescriptor) (*openapimodel.Component
 		Callbacks:       orderedmap.New[string, *openapimodel.Callback](),
 		Extensions:      orderedmap.New[string, *yaml.Node](),
 	}
+
+	components.Schemas = schema.GenerateFileSchemas(fd)
 
 	// triple error component
 	tripleErrorProps := orderedmap.New[string, *base.SchemaProxy]()
@@ -68,11 +72,10 @@ func generateComponents(fd protoreflect.FileDescriptor) (*openapimodel.Component
 	}))
 	tripleErrorProps.Set("detail", base.CreateSchemaProxyRef("#/components/schemas/google.protobuf.Any"))
 	components.Schemas.Set("triple.error", base.CreateSchemaProxy(&base.Schema{
-		Title:                "Triple Error",
-		Description:          `Error type returned by triple: https://cn.dubbo.apache.org/zh-cn/overview/reference/protocols/triple-spec/`,
-		Properties:           tripleErrorProps,
-		Type:                 []string{"object"},
-		AdditionalProperties: &base.DynamicValue[*base.SchemaProxy, bool]{N: 1, B: true},
+		Title:       "Triple Error",
+		Description: `Error type returned by triple: https://cn.dubbo.apache.org/zh-cn/overview/reference/protocols/triple-spec/`,
+		Properties:  tripleErrorProps,
+		Type:        []string{"object"},
 	}))
 
 	googleAnyID, googleAnyShema := newGoogleAny()
