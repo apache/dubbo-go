@@ -21,11 +21,15 @@ import (
 	"flag"
 	"fmt"
 	"os"
+)
 
+import (
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 
 	"google.golang.org/protobuf/proto"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/tools/protoc-gen-triple-openapi/internal/converter"
 )
 

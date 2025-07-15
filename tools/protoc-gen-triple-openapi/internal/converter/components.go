@@ -18,14 +18,16 @@
 package converter
 
 import (
-	"gopkg.in/yaml.v3"
-
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	openapimodel "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/pb33f/libopenapi/orderedmap"
 
 	"google.golang.org/protobuf/reflect/protoreflect"
 
+	"gopkg.in/yaml.v3"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/tools/protoc-gen-triple-openapi/internal/converter/schema"
 )
 

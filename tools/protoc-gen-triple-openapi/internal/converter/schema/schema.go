@@ -19,7 +19,9 @@ package schema
 
 import (
 	"sort"
+)
 
+import (
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	"github.com/pb33f/libopenapi/orderedmap"
 

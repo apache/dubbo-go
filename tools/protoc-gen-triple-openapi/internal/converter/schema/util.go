@@ -19,12 +19,15 @@ package schema
 
 import (
 	"fmt"
+)
 
+import (
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	"github.com/pb33f/libopenapi/orderedmap"
-	"gopkg.in/yaml.v3"
 
 	"google.golang.org/protobuf/reflect/protoreflect"
+
+	"gopkg.in/yaml.v3"
 )
 
 func messageToSchema(tt protoreflect.MessageDescriptor) (string, *base.Schema) {

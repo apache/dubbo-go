@@ -23,9 +23,9 @@ import (
 	"io"
 	"path/filepath"
 	"strings"
+)
 
-	"gopkg.in/yaml.v3"
-
+import (
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 
 	"github.com/pb33f/libopenapi/datamodel/high/base"
@@ -34,9 +34,13 @@ import (
 	"github.com/pb33f/libopenapi/orderedmap"
 
 	"google.golang.org/protobuf/proto"
+
 	"google.golang.org/protobuf/reflect/protodesc"
+
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/pluginpb"
+
+	"gopkg.in/yaml.v3"
 )
 
 func ConvertFrom(r io.Reader) (*pluginpb.CodeGeneratorResponse, error) {
