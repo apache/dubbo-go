@@ -49,12 +49,12 @@ func main() {
 		log.Fatalf("Failed to convert from stdin: %v", err)
 	}
 
-	if err := renderResponse(resp); err != nil {
+	if err := returnToProtoc(resp); err != nil {
 		log.Fatalf("Failed to render response: %v", err)
 	}
 }
 
-func renderResponse(resp *plugin.CodeGeneratorResponse) error {
+func returnToProtoc(resp *plugin.CodeGeneratorResponse) error {
 	data, err := proto.Marshal(resp)
 	if err != nil {
 		return fmt.Errorf("failed to marshal response: %w", err)
