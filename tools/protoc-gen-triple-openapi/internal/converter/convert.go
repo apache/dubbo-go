@@ -18,7 +18,6 @@
 package converter
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -43,6 +42,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/tools/protoc-gen-triple-openapi/internal/options"
+)
+
 func ConvertFrom(r io.Reader) (*pluginpb.CodeGeneratorResponse, error) {
 	in, err := io.ReadAll(r)
 	if err != nil {
@@ -58,6 +61,8 @@ func ConvertFrom(r io.Reader) (*pluginpb.CodeGeneratorResponse, error) {
 }
 
 func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorResponse, error) {
+	opts, err := options.Generate(req.GetParameter())
+
 	genFiles := make(map[string]struct{}, len(req.FileToGenerate))
 	for _, file := range req.FileToGenerate {
 		genFiles[file] = struct{}{}
@@ -177,20 +182,20 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 		openapiDoc.Paths.PathItems = items
 		openapiDoc.Tags = tags
 
-		var buf bytes.Buffer
-		encoder := yaml.NewEncoder(&buf)
-		encoder.SetIndent(2)
-
-		err = encoder.Encode(openapiDoc)
+		content, err := formatOpenapiDoc(opts, openapiDoc)
 		if err != nil {
 			return nil, err
 		}
 
-		b := buf.Bytes()
+		var filename string
 
-		content := string(b)
 		name := *fileDesc.Name
-		filename := strings.TrimSuffix(name, filepath.Ext(name)) + ".openapi.yaml"
+		switch opts.Format {
+		case "yaml":
+			filename = strings.TrimSuffix(name, filepath.Ext(name)) + ".triple.openapi.yaml"
+		case "json":
+			filename = strings.TrimSuffix(name, filepath.Ext(name)) + ".triple.openapi.json"
+		}
 		files = append(files, &pluginpb.CodeGeneratorResponse_File{
 			Name:              &filename,
 			Content:           &content,
@@ -203,6 +208,21 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 	}, nil
 }
 
+func formatOpenapiDoc(opts options.Options, doc *openapimodel.Document) (string, error) {
+	switch opts.Format {
+	case "yaml":
+		return string(doc.RenderWithIndention(2)), nil
+	case "json":
+		b, err := doc.RenderJSON("  ")
+		if err != nil {
+			return "", err
+		}
+		return string(b), nil
+	default:
+		return "", fmt.Errorf("unknown format: %s", opts.Format)
+	}
+}
+
 func newErrorResponse(description string) *openapimodel.Response {
 	responseSchema := base.CreateSchemaProxyRef("#/components/schemas/ErrorResponse")
 	responseMediaType := makeMediaTypes(responseSchema)
@@ -211,5 +231,3 @@ func newErrorResponse(description string) *openapimodel.Response {
 		Content:     responseMediaType,
 	}
 }
-
-
