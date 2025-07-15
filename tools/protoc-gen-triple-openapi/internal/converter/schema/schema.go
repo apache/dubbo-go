@@ -18,6 +18,8 @@
 package schema
 
 import (
+	"sort"
+
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	"github.com/pb33f/libopenapi/orderedmap"
 
@@ -49,7 +51,15 @@ func GenerateFileSchemas(tt protoreflect.FileDescriptor) *orderedmap.Map[string,
 
 	schemas := orderedmap.New[string, *base.SchemaProxy]()
 
+	sortedMessages := make([]protoreflect.MessageDescriptor, 0, len(collecter.Messages))
 	for message := range collecter.Messages {
+		sortedMessages = append(sortedMessages, message)
+	}
+	sort.Slice(sortedMessages, func(i, j int) bool {
+		return sortedMessages[i].FullName() < sortedMessages[j].FullName()
+	})
+
+	for _, message := range sortedMessages {
 		id, schema := messageToSchema(message)
 		if schema != nil {
 			schemas.Set(id, base.CreateSchemaProxy(schema))
