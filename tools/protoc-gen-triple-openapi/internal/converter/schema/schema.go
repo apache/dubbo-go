@@ -34,6 +34,8 @@ func GenerateFileSchemas(tt protoreflect.FileDescriptor) *orderedmap.Map[string,
 
 	schemas := orderedmap.New[string, *base.SchemaProxy]()
 
+	// It is necessary to sort multiple messages here,
+	// otherwise the components will be out of order.
 	sortedMessages := make([]protoreflect.MessageDescriptor, 0, len(messages))
 	for message := range messages {
 		sortedMessages = append(sortedMessages, message)
