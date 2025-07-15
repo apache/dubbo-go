@@ -89,6 +89,7 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 			Description: "dubbo-go generate OpenAPI docs.",
 		}
 
+		// handle openapi servers
 		openapiDoc.Servers = append(openapiDoc.Servers, &openapimodel.Server{
 			URL:         "http://0.0.0.0:20000",
 			Description: "Dubbo-go Default Server",
