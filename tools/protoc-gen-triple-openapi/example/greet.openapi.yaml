@@ -14,11 +14,11 @@ paths:
       summary: Greet
       operationId: greet.GreetService.Greet
       requestBody:
-        description: TODO
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/greet.GreetRequest'
+        required: true
       responses:
         default:
           description: Error
@@ -39,11 +39,11 @@ paths:
       summary: GreetUser
       operationId: greet.GreetService.GreetUser
       requestBody:
-        description: TODO
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/greet.GreetUserRequest'
+        required: true
       responses:
         default:
           description: Error
@@ -59,6 +59,13 @@ paths:
                 $ref: '#/components/schemas/greet.GreetUserResponse'
 components:
   schemas:
+    greet.GreetUserResponse:
+      type: object
+      properties:
+        greeting:
+          type: string
+          title: greeting
+      title: GreetUserResponse
     greet.GreetRequest:
       type: object
       properties:
@@ -80,13 +87,6 @@ components:
           type: string
           title: name
       title: GreetUserRequest
-    greet.GreetUserResponse:
-      type: object
-      properties:
-        greeting:
-          type: string
-          title: greeting
-      title: GreetUserResponse
     ErrorResponse:
       type: object
       properties:

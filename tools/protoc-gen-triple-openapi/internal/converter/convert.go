@@ -127,13 +127,15 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 				}
 
 				// RequestBody
+				isRequired := true
 				requestBodyMediaType := orderedmap.New[string, *openapimodel.MediaType]()
 				requestSchema := base.CreateSchemaProxyRef("#/components/schemas/" + string(md.Input().FullName()))
 				requestBodyMediaType.Set("application/json", &openapimodel.MediaType{Schema: requestSchema})
 				op.RequestBody = &openapimodel.RequestBody{
 					// TODO: description
-					Description: "TODO",
+					Description: "",
 					Content:     requestBodyMediaType,
+					Required:    &isRequired,
 				}
 
 				// Responses
