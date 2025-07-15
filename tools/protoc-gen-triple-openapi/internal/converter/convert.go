@@ -143,30 +143,27 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 				codeMap := orderedmap.New[string, *openapimodel.Response]()
 
 				// status code 200
-				response200MediaType := orderedmap.New[string, *openapimodel.MediaType]()
 				response200Schema := base.CreateSchemaProxyRef("#/components/schemas/" + string(md.Output().FullName()))
-				response200MediaType.Set("application/json", &openapimodel.MediaType{Schema: response200Schema})
+				response200MediaType := makeMediaTypes(response200Schema)
 				codeMap.Set("200", &openapimodel.Response{
 					Description: "OK",
 					Content:     response200MediaType,
 				})
 
 				// status code 400
-				response400MediaType := orderedmap.New[string, *openapimodel.MediaType]()
 				response400Schema := base.CreateSchemaProxyRef("#/components/schemas/ErrorResponse")
-				response400MediaType.Set("application.json", &openapimodel.MediaType{Schema: response400Schema})
+				response400MediaType := makeMediaTypes(response400Schema)
 				codeMap.Set("400", &openapimodel.Response{
 					Description: "Bad Request",
 					Content:     response400MediaType,
 				})
 
 				// status code 500
-				response500MediaType := orderedmap.New[string, *openapimodel.MediaType]()
 				response500Schema := base.CreateSchemaProxyRef("#/components/schemas/ErrorResponse")
-				response500MediaType.Set("application.json", &openapimodel.MediaType{Schema: response500Schema})
+				response500MediaType := makeMediaTypes(response500Schema)
 				codeMap.Set("500", &openapimodel.Response{
 					Description: "Internal Server Error",
-					Content:     response400MediaType,
+					Content:     response500MediaType,
 				})
 
 				op.Responses = &openapimodel.Responses{

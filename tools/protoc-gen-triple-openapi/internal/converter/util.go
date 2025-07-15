@@ -28,23 +28,3 @@ func makeMediaTypes(s *base.SchemaProxy) *orderedmap.Map[string, *openapimodel.M
 	mediaTypes.Set("application/json", &openapimodel.MediaType{Schema: s})
 	return mediaTypes
 }
-
-func newGoogleAny() (string, *base.Schema) {
-	props := orderedmap.New[string, *base.SchemaProxy]()
-	props.Set("type", base.CreateSchemaProxy(&base.Schema{Type: []string{"string"}}))
-	props.Set("value", base.CreateSchemaProxy(&base.Schema{
-		Type:   []string{"string"},
-		Format: "binary",
-	}))
-	props.Set("debug", base.CreateSchemaProxy(&base.Schema{
-		Type:                 []string{"object"},
-		AdditionalProperties: &base.DynamicValue[*base.SchemaProxy, bool]{N: 1, B: true},
-	}))
-
-	return "google.protobuf.Any", &base.Schema{
-		Description:          "Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.",
-		Type:                 []string{"object"},
-		Properties:           props,
-		AdditionalProperties: &base.DynamicValue[*base.SchemaProxy, bool]{N: 1, B: true},
-	}
-}
