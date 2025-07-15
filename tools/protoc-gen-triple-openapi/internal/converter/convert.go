@@ -111,7 +111,6 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 			tags = append(tags, &base.Tag{
 				Name: string(service.FullName()),
 				// TODO: add serivce description
-				Description: "",
 			})
 
 			methods := service.Methods()
@@ -123,7 +122,6 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 					OperationId: string(md.Name()),
 					Tags:        []string{string(service.FullName())},
 					// TODO: add operation description
-					Description: "",
 				}
 
 				// RequestBody
@@ -133,9 +131,8 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 				requestBodyMediaType.Set("application/json", &openapimodel.MediaType{Schema: requestSchema})
 				op.RequestBody = &openapimodel.RequestBody{
 					// TODO: description
-					Description: "",
-					Content:     requestBodyMediaType,
-					Required:    &isRequired,
+					Content:  requestBodyMediaType,
+					Required: &isRequired,
 				}
 
 				// Responses
