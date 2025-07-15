@@ -3,6 +3,9 @@ info:
   title: Dubbo-go OpenAPI
   description: dubbo-go generate OpenAPI docs.
   version: v1
+servers:
+  - url: http://0.0.0.0:20000
+    description: Dubbo-go Default Server
 paths:
   /greet.GreetService/Greet:
     post:
