@@ -130,6 +130,13 @@ func TestCloneConfig(t *testing.T) {
 		CheckCompleteInequality(t, c, clone)
 	})
 
+	t.Run("ClientProtocolConfig", func(t *testing.T) {
+		c := DefaultClientProtocolConfig()
+		InitCheckCompleteInequality(t, c)
+		clone := c.Clone()
+		CheckCompleteInequality(t, c, clone)
+	})
+
 	t.Run("ProviderConfig", func(t *testing.T) {
 		c := DefaultProviderConfig()
 		InitCheckCompleteInequality(t, c)
@@ -167,6 +174,20 @@ func TestCloneConfig(t *testing.T) {
 
 	t.Run("TLSConfig", func(t *testing.T) {
 		c := &TLSConfig{}
+		InitCheckCompleteInequality(t, c)
+		clone := c.Clone()
+		CheckCompleteInequality(t, c, clone)
+	})
+
+	t.Run("TripleConfig", func(t *testing.T) {
+		c := DefaultTripleConfig()
+		InitCheckCompleteInequality(t, c)
+		clone := c.Clone()
+		CheckCompleteInequality(t, c, clone)
+	})
+
+	t.Run("Http3Config", func(t *testing.T) {
+		c := DefaultHttp3Config()
 		InitCheckCompleteInequality(t, c)
 		clone := c.Clone()
 		CheckCompleteInequality(t, c, clone)
