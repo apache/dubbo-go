@@ -43,15 +43,7 @@ message GreetResponse {
 Then, you can use the following command to generate the OpenAPI documentation:
 
 ```shell
-protoc --proto_path=. --triple-openapi_out=. greet.proto
+protoc --triple-openapi_out=. greet.proto
 ```
 
 This will generate a file named `greet.openapi.yaml` with the OpenAPI documentation.
-
-## License
-
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
-
-## Contributing
-
-Contributions are welcome! Please read the [contributing guidelines](CONTRIBUTING.md) for more information.
