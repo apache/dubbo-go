@@ -8,6 +8,12 @@ paths:
                 - greet.GreetService
             summary: Greet
             operationId: greet.GreetService.Greet
+            requestBody:
+                description: TODO
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/greet.GreetRequest'
             responses:
                 default:
                     description: Error
@@ -23,13 +29,6 @@ paths:
                                 $ref: '#/components/schemas/greet.GreetResponse'
 components:
     schemas:
-        greet.GreetRequest:
-            type: object
-            properties:
-                name:
-                    type: string
-                    title: name
-            title: GreetRequest
         greet.GreetResponse:
             type: object
             properties:
@@ -37,6 +36,13 @@ components:
                     type: string
                     title: greeting
             title: GreetResponse
+        greet.GreetRequest:
+            type: object
+            properties:
+                name:
+                    type: string
+                    title: name
+            title: GreetRequest
         triple.error:
             type: object
             properties:

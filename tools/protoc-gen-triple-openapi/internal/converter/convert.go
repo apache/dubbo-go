@@ -116,15 +116,25 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 					Description: "",
 				}
 
+				// RequestBody
+				requestBodyMediaType := orderedmap.New[string, *openapimodel.MediaType]()
+				requestSchema := base.CreateSchemaProxyRef("#/components/schemas/" + string(md.Input().FullName()))
+				requestBodyMediaType.Set("application/json", &openapimodel.MediaType{Schema: requestSchema})
+				op.RequestBody = &openapimodel.RequestBody{
+					// TODO: description
+					Description: "TODO",
+					Content:     requestBodyMediaType,
+				}
+
 				// Responses
 				codeMap := orderedmap.New[string, *openapimodel.Response]()
-				mediaType := orderedmap.New[string, *openapimodel.MediaType]()
-				outputSchema := base.CreateSchemaProxyRef("#/components/schemas/" + string(md.Output().FullName()))
+				responseMediaType := orderedmap.New[string, *openapimodel.MediaType]()
+				responseSchema := base.CreateSchemaProxyRef("#/components/schemas/" + string(md.Output().FullName()))
 
-				mediaType.Set("application/json", &openapimodel.MediaType{Schema: outputSchema})
+				responseMediaType.Set("application/json", &openapimodel.MediaType{Schema: responseSchema})
 				codeMap.Set("200", &openapimodel.Response{
 					Description: "Success",
-					Content:     mediaType,
+					Content:     responseMediaType,
 				})
 
 				op.Responses = &openapimodel.Responses{
