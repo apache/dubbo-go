@@ -39,7 +39,7 @@ help:
 .PHONY: build
 build:
 	@echo "Building $(BINARY_NAME)..."
-	go build -o $(BINARY_NAME) main.go
+	go build -o $(BINARY_NAME) .
 
 .PHONY: generate
 generate: build

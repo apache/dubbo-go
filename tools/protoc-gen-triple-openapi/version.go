@@ -17,44 +17,4 @@
 
 package main
 
-import (
-	"flag"
-	"fmt"
-	"os"
-
-	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
-
-	"google.golang.org/protobuf/proto"
-
-	"dubbo.apache.org/dubbo-go/v3/tools/protoc-gen-triple-openapi/internal/converter"
-)
-
-func main() {
-	showVersion := flag.Bool("version", false, "print the version and exit")
-
-	flag.Parse()
-
-	if *showVersion {
-		fmt.Printf("protoc-gen-triple-openapi %s\n", version)
-		return
-	}
-
-	resp, err := converter.ConvertFrom(os.Stdin)
-	if err != nil {
-		panic(err)
-	}
-
-	renderResponse(resp)
-}
-
-func renderResponse(resp *plugin.CodeGeneratorResponse) {
-	data, err := proto.Marshal(resp)
-	if err != nil {
-		panic(err)
-	}
-
-	_, err = os.Stdout.Write(data)
-	if err != nil {
-		panic(err)
-	}
-}
+const version = "0.0.0-dev"
