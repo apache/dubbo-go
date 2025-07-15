@@ -120,8 +120,7 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 
 				// operation
 				op := &openapimodel.Operation{
-					Summary:     string(md.Name()),
-					OperationId: string(md.FullName()),
+					OperationId: string(md.Name()),
 					Tags:        []string{string(service.FullName())},
 					// TODO: add operation description
 					Description: "",

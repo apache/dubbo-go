@@ -11,8 +11,7 @@ paths:
     post:
       tags:
         - greet.GreetService
-      summary: Greet
-      operationId: greet.GreetService.Greet
+      operationId: Greet
       requestBody:
         content:
           application/json:
@@ -42,8 +41,7 @@ paths:
     post:
       tags:
         - greet.GreetService
-      summary: GreetUser
-      operationId: greet.GreetService.GreetUser
+      operationId: GreetUser
       requestBody:
         content:
           application/json:
