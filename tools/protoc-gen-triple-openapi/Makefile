@@ -20,3 +20,33 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
+
+# Variables
+BINARY_NAME=protoc-gen-triple-openapi
+PROTO_FILE=./example/greet.proto
+OUTPUT_DIR=./example
+
+.PHONY: help
+help:
+	@echo "Usage: make [target]"
+	@echo ""
+	@echo "Targets:"
+	@echo "  build     Build the binary"
+	@echo "  generate  Generate OpenAPI spec from the example proto file"
+	@echo "  clean     Remove generated files"
+	@echo "  help      Show this help message"
+
+.PHONY: build
+build:
+	@echo "Building $(BINARY_NAME)..."
+	go build -o $(BINARY_NAME) main.go
+
+.PHONY: generate
+generate: build
+	@echo "Generating OpenAPI spec from $(PROTO_FILE)..."
+	protoc --plugin=$(BINARY_NAME)=./$(BINARY_NAME) --triple-openapi_out=. $(PROTO_FILE)
+
+.PHONY: clean
+clean:
+	@echo "Cleaning up..."
+	rm -f $(BINARY_NAME) $(OUTPUT_DIR)/greet.openapi.yaml
