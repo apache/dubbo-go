@@ -27,8 +27,6 @@ import (
 
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 
-	"github.com/swaggest/jsonschema-go"
-
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	openapimodel "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/pb33f/libopenapi/index"
@@ -36,7 +34,6 @@ import (
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
-	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/pluginpb"
 )
@@ -165,85 +162,6 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 	return &plugin.CodeGeneratorResponse{
 		File: files,
 	}, nil
-}
-
-func resolveJsonSchema(root *jsonschema.Schema, t protoreflect.Descriptor) *jsonschema.Schema {
-	switch tt := t.(type) {
-	case protoreflect.EnumDescriptor:
-	case protoreflect.EnumValueDescriptor:
-	case protoreflect.MessageDescriptor:
-		s := &jsonschema.Schema{}
-		s.WithID(string(t.FullName()))
-		// TODO: add description
-		s.WithDescription("TODO: message jsonschema description")
-		s.WithType(jsonschema.Object.Type())
-		fields := tt.Fields()
-		children := make(map[string]jsonschema.SchemaOrBool, fields.Len())
-		for i := 0; i < fields.Len(); i++ {
-			field := fields.Get(i)
-			child := resolveJsonSchema(root, field)
-			children[field.JSONName()] = jsonschema.SchemaOrBool{TypeObject: child}
-		}
-		s.WithProperties(children)
-		return s
-	case protoreflect.FieldDescriptor:
-		s := &jsonschema.Schema{}
-		s.WithID(string(tt.FullName()))
-		s.WithDescription("TODO: filed jsonschema description")
-		if tt.IsMap() {
-			s.AdditionalProperties = &jsonschema.SchemaOrBool{TypeObject: resolveJsonSchema(root, tt.MapValue())}
-		}
-		switch tt.Kind() {
-		case protoreflect.BoolKind:
-			s.WithType(jsonschema.Boolean.Type())
-		case protoreflect.EnumKind:
-		case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Uint32Kind:
-			s.WithType(jsonschema.Integer.Type())
-		case protoreflect.Sfixed32Kind, protoreflect.Fixed32Kind:
-			s.WithType(jsonschema.Integer.Type())
-		case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Uint64Kind:
-			s.WithType(jsonschema.Number.Type())
-		case protoreflect.Sfixed64Kind, protoreflect.Fixed64Kind:
-			s.WithType(jsonschema.Number.Type())
-		case protoreflect.FloatKind:
-			s.WithType(jsonschema.Number.Type())
-		case protoreflect.DoubleKind:
-			s.WithType(jsonschema.Number.Type())
-		case protoreflect.StringKind:
-			s.WithType(jsonschema.String.Type())
-		case protoreflect.BytesKind:
-			s.WithType(jsonschema.String.Type())
-		case protoreflect.MessageKind:
-			s.WithRef("#/components/schemas/" + string(tt.FullName()))
-			s.WithType(jsonschema.Object.Type())
-		}
-		return s
-	case protoreflect.OneofDescriptor:
-
-	case protoreflect.FileDescriptor:
-		s := &jsonschema.Schema{}
-		s.WithID(string(t.FullName()))
-		s.WithDescription("TODO: file jsonschema description")
-		children := []jsonschema.SchemaOrBool{}
-		enums := tt.Enums()
-		for i := 0; i < enums.Len(); i++ {
-			child := resolveJsonSchema(root, enums.Get(i))
-			children = append(children, jsonschema.SchemaOrBool{TypeObject: child})
-		}
-		messages := tt.Messages()
-		for i := 0; i < messages.Len(); i++ {
-			child := resolveJsonSchema(root, messages.Get(i))
-			children = append(children, jsonschema.SchemaOrBool{TypeObject: child})
-		}
-		s.WithItems(jsonschema.Items{SchemaArray: children})
-		return s
-
-	// We don't use these here
-	case protoreflect.ServiceDescriptor:
-	case protoreflect.MethodDescriptor:
-	}
-
-	return nil
 }
 
 func initializeDoc(doc *openapimodel.Document) {
