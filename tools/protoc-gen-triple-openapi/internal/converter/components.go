@@ -23,7 +23,6 @@ import (
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	openapimodel "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/pb33f/libopenapi/orderedmap"
-	libopenapiutil "github.com/pb33f/libopenapi/utils"
 
 	"google.golang.org/protobuf/reflect/protoreflect"
 
@@ -47,39 +46,21 @@ func generateComponents(fd protoreflect.FileDescriptor) (*openapimodel.Component
 	components.Schemas = schema.GenerateFileSchemas(fd)
 
 	// triple error component
-	tripleErrorProps := orderedmap.New[string, *base.SchemaProxy]()
-	tripleErrorProps.Set("code", base.CreateSchemaProxy(&base.Schema{
-		Description: "The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].",
-		Type:        []string{"string"},
-		Examples:    []*yaml.Node{libopenapiutil.CreateStringNode("unimplemented")},
-		Enum: []*yaml.Node{
-			libopenapiutil.CreateStringNode("invalid_argument"),
-			libopenapiutil.CreateStringNode("unauthenticated"),
-			libopenapiutil.CreateStringNode("permission_denied"),
-			libopenapiutil.CreateStringNode("unimplemented"),
-			libopenapiutil.CreateStringNode("deadline_exceeded"),
-			libopenapiutil.CreateStringNode("aborted"),
-			libopenapiutil.CreateStringNode("failed_precondition"),
-			libopenapiutil.CreateStringNode("resource_exhausted"),
-			libopenapiutil.CreateStringNode("internal"),
-			libopenapiutil.CreateStringNode("unavailable"),
-			libopenapiutil.CreateStringNode("unknown"),
-		},
-	}))
-	tripleErrorProps.Set("message", base.CreateSchemaProxy(&base.Schema{
-		Description: "A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client.",
+	errorResponseProps := orderedmap.New[string, *base.SchemaProxy]()
+	errorResponseProps.Set("status", base.CreateSchemaProxy(&base.Schema{
+		Description: "The status code.",
 		Type:        []string{"string"},
 	}))
-	tripleErrorProps.Set("detail", base.CreateSchemaProxyRef("#/components/schemas/google.protobuf.Any"))
-	components.Schemas.Set("triple.error", base.CreateSchemaProxy(&base.Schema{
-		Title:       "Triple Error",
+	errorResponseProps.Set("message", base.CreateSchemaProxy(&base.Schema{
+		Description: "A developer-facing error message.",
+		Type:        []string{"string"},
+	}))
+	components.Schemas.Set("ErrorResponse", base.CreateSchemaProxy(&base.Schema{
+		Title:       "ErrorResponse",
 		Description: `Error type returned by triple: https://cn.dubbo.apache.org/zh-cn/overview/reference/protocols/triple-spec/`,
-		Properties:  tripleErrorProps,
+		Properties:  errorResponseProps,
 		Type:        []string{"object"},
 	}))
-
-	googleAnyID, googleAnyShema := newGoogleAny()
-	components.Schemas.Set(googleAnyID, base.CreateSchemaProxy(googleAnyShema))
 
 	return components, nil
 }

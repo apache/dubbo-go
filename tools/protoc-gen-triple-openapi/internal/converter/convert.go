@@ -82,10 +82,14 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 			return nil, err
 		}
 
-		openapiDoc.Info.Title = string(fd.FullName())
-		// TODO: add info description
-		openapiDoc.Info.Description = ""
+		// handle openapi info
+		openapiDoc.Info = &base.Info{
+			Title:       "Dubbo-go OpenAPI",
+			Version:     "v1",
+			Description: "dubbo-go generate OpenAPI docs.",
+		}
 
+		// handle openapi components
 		openapiDoc.Components, err = generateComponents(fd)
 		if err != nil {
 			return nil, err
@@ -142,7 +146,7 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 					Codes: codeMap,
 					Default: &openapimodel.Response{
 						Description: "Error",
-						Content:     makeMediaTypes(base.CreateSchemaProxyRef("#/components/schemas/triple.error")),
+						Content:     makeMediaTypes(base.CreateSchemaProxyRef("#/components/schemas/ErrorResponse")),
 					},
 				}
 
@@ -183,7 +187,7 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 
 func initializeDoc(doc *openapimodel.Document) {
 	if doc.Version == "" {
-		doc.Version = "3.1.0"
+		doc.Version = "3.0.1"
 	}
 	if doc.Info == nil {
 		doc.Info = &base.Info{}
