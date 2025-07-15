@@ -23,7 +23,7 @@ import (
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	openapimodel "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/pb33f/libopenapi/orderedmap"
-	libopenapiutils "github.com/pb33f/libopenapi/utils"
+	libopenapiutil "github.com/pb33f/libopenapi/utils"
 
 	"google.golang.org/protobuf/reflect/protoreflect"
 
@@ -51,19 +51,19 @@ func generateComponents(fd protoreflect.FileDescriptor) (*openapimodel.Component
 	tripleErrorProps.Set("code", base.CreateSchemaProxy(&base.Schema{
 		Description: "The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].",
 		Type:        []string{"string"},
-		Examples:    []*yaml.Node{libopenapiutils.CreateStringNode("unimplemented")},
+		Examples:    []*yaml.Node{libopenapiutil.CreateStringNode("unimplemented")},
 		Enum: []*yaml.Node{
-			libopenapiutils.CreateStringNode("invalid_argument"),
-			libopenapiutils.CreateStringNode("unauthenticated"),
-			libopenapiutils.CreateStringNode("permission_denied"),
-			libopenapiutils.CreateStringNode("unimplemented"),
-			libopenapiutils.CreateStringNode("deadline_exceeded"),
-			libopenapiutils.CreateStringNode("aborted"),
-			libopenapiutils.CreateStringNode("failed_precondition"),
-			libopenapiutils.CreateStringNode("resource_exhausted"),
-			libopenapiutils.CreateStringNode("internal"),
-			libopenapiutils.CreateStringNode("unavailable"),
-			libopenapiutils.CreateStringNode("unknown"),
+			libopenapiutil.CreateStringNode("invalid_argument"),
+			libopenapiutil.CreateStringNode("unauthenticated"),
+			libopenapiutil.CreateStringNode("permission_denied"),
+			libopenapiutil.CreateStringNode("unimplemented"),
+			libopenapiutil.CreateStringNode("deadline_exceeded"),
+			libopenapiutil.CreateStringNode("aborted"),
+			libopenapiutil.CreateStringNode("failed_precondition"),
+			libopenapiutil.CreateStringNode("resource_exhausted"),
+			libopenapiutil.CreateStringNode("internal"),
+			libopenapiutil.CreateStringNode("unavailable"),
+			libopenapiutil.CreateStringNode("unknown"),
 		},
 	}))
 	tripleErrorProps.Set("message", base.CreateSchemaProxy(&base.Schema{
