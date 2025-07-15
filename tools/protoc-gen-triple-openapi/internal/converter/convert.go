@@ -77,7 +77,7 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 
 	// TODO: consider basic OpenAPI file
 
-	openapiDoc := &openapimodel.Document{
+	doc := &openapimodel.Document{
 		Version: "3.0.1",
 		Info:    &base.Info{},
 		Paths: &openapimodel.Paths{
@@ -104,20 +104,20 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 		}
 
 		// handle openapi info
-		openapiDoc.Info = &base.Info{
+		doc.Info = &base.Info{
 			Title:       "Dubbo-go OpenAPI",
 			Version:     "v1",
 			Description: "dubbo-go generate OpenAPI docs.",
 		}
 
 		// handle openapi servers
-		openapiDoc.Servers = append(openapiDoc.Servers, &openapimodel.Server{
+		doc.Servers = append(doc.Servers, &openapimodel.Server{
 			URL:         "http://0.0.0.0:20000",
 			Description: "Dubbo-go Default Server",
 		})
 
 		// handle openapi components
-		openapiDoc.Components, err = generateComponents(fd)
+		doc.Components, err = generateComponents(fd)
 		if err != nil {
 			return nil, err
 		}
@@ -139,7 +139,7 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 				md := methods.Get(j)
 
 				// operation
-				op := &openapimodel.Operation{
+				operation := &openapimodel.Operation{
 					OperationId: string(md.Name()),
 					Tags:        []string{string(service.FullName())},
 					// TODO: add operation description
@@ -148,7 +148,7 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 				// RequestBody
 				isRequired := true
 				requestSchema := base.CreateSchemaProxyRef("#/components/schemas/" + string(md.Input().FullName()))
-				op.RequestBody = &openapimodel.RequestBody{
+				operation.RequestBody = &openapimodel.RequestBody{
 					// TODO: description
 					Content:  makeMediaTypes(requestSchema),
 					Required: &isRequired,
@@ -164,25 +164,26 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 					Content:     makeMediaTypes(response200Schema),
 				})
 
+				// status code 400
 				codeMap.Set("400", newErrorResponse("Bad Request"))
 
 				// status code 500
 				codeMap.Set("500", newErrorResponse("Internal Server Error"))
 
-				op.Responses = &openapimodel.Responses{
+				operation.Responses = &openapimodel.Responses{
 					Codes: codeMap,
 				}
 
 				item := &openapimodel.PathItem{}
-				item.Post = op
+				item.Post = operation
 
 				items.Set("/"+string(service.FullName())+"/"+string(md.Name()), item)
 			}
 		}
-		openapiDoc.Paths.PathItems = items
-		openapiDoc.Tags = tags
+		doc.Paths.PathItems = items
+		doc.Tags = tags
 
-		content, err := formatOpenapiDoc(opts, openapiDoc)
+		content, err := formatOpenapiDoc(opts, doc)
 		if err != nil {
 			return nil, err
 		}
