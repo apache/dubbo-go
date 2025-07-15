@@ -18,6 +18,7 @@
 package converter
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -154,10 +155,16 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 		openapiDoc.Paths.PathItems = items
 		openapiDoc.Tags = tags
 
-		b, err := yaml.Marshal(openapiDoc)
+		var buf bytes.Buffer
+		encoder := yaml.NewEncoder(&buf)
+		encoder.SetIndent(2)
+
+		err = encoder.Encode(openapiDoc)
 		if err != nil {
 			return nil, err
 		}
+
+		b := buf.Bytes()
 
 		content := string(b)
 		name := *fileDesc.Name
