@@ -141,21 +141,36 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 
 				// Responses
 				codeMap := orderedmap.New[string, *openapimodel.Response]()
-				responseMediaType := orderedmap.New[string, *openapimodel.MediaType]()
-				responseSchema := base.CreateSchemaProxyRef("#/components/schemas/" + string(md.Output().FullName()))
 
-				responseMediaType.Set("application/json", &openapimodel.MediaType{Schema: responseSchema})
+				// status code 200
+				response200MediaType := orderedmap.New[string, *openapimodel.MediaType]()
+				response200Schema := base.CreateSchemaProxyRef("#/components/schemas/" + string(md.Output().FullName()))
+				response200MediaType.Set("application/json", &openapimodel.MediaType{Schema: response200Schema})
 				codeMap.Set("200", &openapimodel.Response{
-					Description: "Success",
-					Content:     responseMediaType,
+					Description: "OK",
+					Content:     response200MediaType,
+				})
+
+				// status code 400
+				response400MediaType := orderedmap.New[string, *openapimodel.MediaType]()
+				response400Schema := base.CreateSchemaProxyRef("#/components/schemas/ErrorResponse")
+				response400MediaType.Set("application.json", &openapimodel.MediaType{Schema: response400Schema})
+				codeMap.Set("400", &openapimodel.Response{
+					Description: "Bad Request",
+					Content:     response400MediaType,
+				})
+
+				// status code 500
+				response500MediaType := orderedmap.New[string, *openapimodel.MediaType]()
+				response500Schema := base.CreateSchemaProxyRef("#/components/schemas/ErrorResponse")
+				response500MediaType.Set("application.json", &openapimodel.MediaType{Schema: response500Schema})
+				codeMap.Set("500", &openapimodel.Response{
+					Description: "Internal Server Error",
+					Content:     response400MediaType,
 				})
 
 				op.Responses = &openapimodel.Responses{
 					Codes: codeMap,
-					Default: &openapimodel.Response{
-						Description: "Error",
-						Content:     makeMediaTypes(base.CreateSchemaProxyRef("#/components/schemas/ErrorResponse")),
-					},
 				}
 
 				item := &openapimodel.PathItem{}

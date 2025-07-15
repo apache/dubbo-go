@@ -20,18 +20,24 @@ paths:
               $ref: '#/components/schemas/greet.GreetRequest'
         required: true
       responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         "200":
-          description: Success
+          description: OK
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/greet.GreetResponse'
+        "400":
+          description: Bad Request
+          content:
+            application.json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          content:
+            application.json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /greet.GreetService/GreetUser:
     post:
       tags:
@@ -45,18 +51,24 @@ paths:
               $ref: '#/components/schemas/greet.GreetUserRequest'
         required: true
       responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         "200":
-          description: Success
+          description: OK
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/greet.GreetUserResponse'
+        "400":
+          description: Bad Request
+          content:
+            application.json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          content:
+            application.json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
     greet.GreetRequest:
