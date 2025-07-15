@@ -72,8 +72,20 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 
 	// TODO: consider basic OpenAPI file
 
-	openapiDoc := &openapimodel.Document{}
-	initializeDoc(openapiDoc)
+	openapiDoc := &openapimodel.Document{
+		Version: "3.0.1",
+		Info:    &base.Info{},
+		Paths: &openapimodel.Paths{
+			PathItems:  orderedmap.New[string, *openapimodel.PathItem](),
+			Extensions: orderedmap.New[string, *yaml.Node](),
+		},
+		Security:   []*base.SecurityRequirement{},
+		Extensions: orderedmap.New[string, *yaml.Node](),
+		Webhooks:   orderedmap.New[string, *openapimodel.PathItem](),
+		Index:      &index.SpecIndex{},
+		Rolodex:    &index.Rolodex{},
+		Components: &openapimodel.Components{},
+	}
 
 	files := []*pluginpb.CodeGeneratorResponse_File{}
 	for _, fileDesc := range req.GetProtoFile() {
@@ -130,12 +142,10 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 
 				// RequestBody
 				isRequired := true
-				requestBodyMediaType := orderedmap.New[string, *openapimodel.MediaType]()
 				requestSchema := base.CreateSchemaProxyRef("#/components/schemas/" + string(md.Input().FullName()))
-				requestBodyMediaType.Set("application/json", &openapimodel.MediaType{Schema: requestSchema})
 				op.RequestBody = &openapimodel.RequestBody{
 					// TODO: description
-					Content:  requestBodyMediaType,
+					Content:  makeMediaTypes(requestSchema),
 					Required: &isRequired,
 				}
 
@@ -144,27 +154,15 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 
 				// status code 200
 				response200Schema := base.CreateSchemaProxyRef("#/components/schemas/" + string(md.Output().FullName()))
-				response200MediaType := makeMediaTypes(response200Schema)
 				codeMap.Set("200", &openapimodel.Response{
 					Description: "OK",
-					Content:     response200MediaType,
+					Content:     makeMediaTypes(response200Schema),
 				})
 
-				// status code 400
-				response400Schema := base.CreateSchemaProxyRef("#/components/schemas/ErrorResponse")
-				response400MediaType := makeMediaTypes(response400Schema)
-				codeMap.Set("400", &openapimodel.Response{
-					Description: "Bad Request",
-					Content:     response400MediaType,
-				})
+				codeMap.Set("400", newErrorResponse("Bad Request"))
 
 				// status code 500
-				response500Schema := base.CreateSchemaProxyRef("#/components/schemas/ErrorResponse")
-				response500MediaType := makeMediaTypes(response500Schema)
-				codeMap.Set("500", &openapimodel.Response{
-					Description: "Internal Server Error",
-					Content:     response500MediaType,
-				})
+				codeMap.Set("500", newErrorResponse("Internal Server Error"))
 
 				op.Responses = &openapimodel.Responses{
 					Codes: codeMap,
@@ -205,72 +203,13 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 	}, nil
 }
 
-func initializeDoc(doc *openapimodel.Document) {
-	if doc.Version == "" {
-		doc.Version = "3.0.1"
+func newErrorResponse(description string) *openapimodel.Response {
+	responseSchema := base.CreateSchemaProxyRef("#/components/schemas/ErrorResponse")
+	responseMediaType := makeMediaTypes(responseSchema)
+	return &openapimodel.Response{
+		Description: description,
+		Content:     responseMediaType,
 	}
-	if doc.Info == nil {
-		doc.Info = &base.Info{}
-	}
-	if doc.Paths == nil {
-		doc.Paths = &openapimodel.Paths{}
-	}
-	if doc.Paths.PathItems == nil {
-		doc.Paths.PathItems = orderedmap.New[string, *openapimodel.PathItem]()
-	}
-	if doc.Paths.Extensions == nil {
-		doc.Paths.Extensions = orderedmap.New[string, *yaml.Node]()
-	}
-	if doc.Security == nil {
-		doc.Security = []*base.SecurityRequirement{}
-	}
-	if doc.Extensions == nil {
-		doc.Extensions = orderedmap.New[string, *yaml.Node]()
-	}
-	if doc.Webhooks == nil {
-		doc.Webhooks = orderedmap.New[string, *openapimodel.PathItem]()
-	}
-	if doc.Index == nil {
-		doc.Index = &index.SpecIndex{}
-	}
-	if doc.Rolodex == nil {
-		doc.Rolodex = &index.Rolodex{}
-	}
-	if doc.Components == nil {
-		doc.Components = &openapimodel.Components{}
-	}
-	initializeComponents(doc.Components)
 }
 
-func initializeComponents(components *openapimodel.Components) {
-	if components.Schemas == nil {
-		components.Schemas = orderedmap.New[string, *base.SchemaProxy]()
-	}
-	if components.Responses == nil {
-		components.Responses = orderedmap.New[string, *openapimodel.Response]()
-	}
-	if components.Parameters == nil {
-		components.Parameters = orderedmap.New[string, *openapimodel.Parameter]()
-	}
-	if components.Examples == nil {
-		components.Examples = orderedmap.New[string, *base.Example]()
-	}
-	if components.RequestBodies == nil {
-		components.RequestBodies = orderedmap.New[string, *openapimodel.RequestBody]()
-	}
-	if components.Headers == nil {
-		components.Headers = orderedmap.New[string, *openapimodel.Header]()
-	}
-	if components.SecuritySchemes == nil {
-		components.SecuritySchemes = orderedmap.New[string, *openapimodel.SecurityScheme]()
-	}
-	if components.Links == nil {
-		components.Links = orderedmap.New[string, *openapimodel.Link]()
-	}
-	if components.Callbacks == nil {
-		components.Callbacks = orderedmap.New[string, *openapimodel.Callback]()
-	}
-	if components.Extensions == nil {
-		components.Extensions = orderedmap.New[string, *yaml.Node]()
-	}
-}
+

@@ -20,6 +20,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 )
 
@@ -45,20 +46,23 @@ func main() {
 
 	resp, err := converter.ConvertFrom(os.Stdin)
 	if err != nil {
-		panic(err)
+		log.Fatalf("Failed to convert from stdin: %v", err)
 	}
 
-	renderResponse(resp)
+	if err := renderResponse(resp); err != nil {
+		log.Fatalf("Failed to render response: %v", err)
+	}
 }
 
-func renderResponse(resp *plugin.CodeGeneratorResponse) {
+func renderResponse(resp *plugin.CodeGeneratorResponse) error {
 	data, err := proto.Marshal(resp)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("failed to marshal response: %w", err)
 	}
 
 	_, err = os.Stdout.Write(data)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("failed to write response: %w", err)
 	}
+	return nil
 }

@@ -28,33 +28,14 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-type collecter struct {
-	Messages map[protoreflect.MessageDescriptor]struct{}
-}
-
-func NewCollecter() *collecter {
-	return &collecter{
-		Messages: map[protoreflect.MessageDescriptor]struct{}{},
-	}
-}
-
 func GenerateFileSchemas(tt protoreflect.FileDescriptor) *orderedmap.Map[string, *base.SchemaProxy] {
-	collecter := NewCollecter()
-
-	services := tt.Services()
-	for i := 0; i < services.Len(); i++ {
-		service := services.Get(i)
-		methods := service.Methods()
-		for j := 0; j < methods.Len(); j++ {
-			method := methods.Get(j)
-			collecter.collectMethod(method)
-		}
-	}
+	messages := make(map[protoreflect.MessageDescriptor]struct{})
+	collectMessages(tt, messages)
 
 	schemas := orderedmap.New[string, *base.SchemaProxy]()
 
-	sortedMessages := make([]protoreflect.MessageDescriptor, 0, len(collecter.Messages))
-	for message := range collecter.Messages {
+	sortedMessages := make([]protoreflect.MessageDescriptor, 0, len(messages))
+	for message := range messages {
 		sortedMessages = append(sortedMessages, message)
 	}
 	sort.Slice(sortedMessages, func(i, j int) bool {
@@ -71,34 +52,47 @@ func GenerateFileSchemas(tt protoreflect.FileDescriptor) *orderedmap.Map[string,
 	return schemas
 }
 
-func (c *collecter) collectMethod(tt protoreflect.MethodDescriptor) {
-	c.collectMessage(tt.Input())
-	c.collectMessage(tt.Output())
+func collectMessages(fd protoreflect.FileDescriptor, messages map[protoreflect.MessageDescriptor]struct{}) {
+	services := fd.Services()
+	for i := 0; i < services.Len(); i++ {
+		service := services.Get(i)
+		methods := service.Methods()
+		for j := 0; j < methods.Len(); j++ {
+			method := methods.Get(j)
+			collectMethodMessages(method, messages)
+		}
+	}
 }
 
-func (c *collecter) collectMessage(tt protoreflect.MessageDescriptor) {
-	if tt == nil {
+func collectMethodMessages(md protoreflect.MethodDescriptor, messages map[protoreflect.MessageDescriptor]struct{}) {
+	collectMessage(md.Input(), messages)
+	collectMessage(md.Output(), messages)
+}
+
+func collectMessage(md protoreflect.MessageDescriptor, messages map[protoreflect.MessageDescriptor]struct{}) {
+	if md == nil {
 		return
 	}
 
-	c.Messages[tt] = struct{}{}
+	if _, ok := messages[md]; ok {
+		return
+	}
+	messages[md] = struct{}{}
 
-	fields := tt.Fields()
+	fields := md.Fields()
 	for i := 0; i < fields.Len(); i++ {
-		c.collectField(fields.Get(i))
+		collectField(fields.Get(i), messages)
 	}
 
-	// TODO: consider enum
-
-	messages := tt.Messages()
-	for i := 0; i < messages.Len(); i++ {
-		c.collectMessage(messages.Get(i))
+	nestedMessages := md.Messages()
+	for i := 0; i < nestedMessages.Len(); i++ {
+		collectMessage(nestedMessages.Get(i), messages)
 	}
 }
 
-func (c *collecter) collectField(tt protoreflect.FieldDescriptor) {
-	if tt == nil {
+func collectField(fd protoreflect.FieldDescriptor, messages map[protoreflect.MessageDescriptor]struct{}) {
+	if fd == nil {
 		return
 	}
-	c.collectMessage(tt.Message())
+	collectMessage(fd.Message(), messages)
 }

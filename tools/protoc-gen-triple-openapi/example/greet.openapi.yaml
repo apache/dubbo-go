@@ -28,13 +28,13 @@ paths:
         "400":
           description: Bad Request
           content:
-            application.json:
+            application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         "500":
           description: Internal Server Error
           content:
-            application.json:
+            application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
   /greet.GreetService/GreetUser:
@@ -58,13 +58,13 @@ paths:
         "400":
           description: Bad Request
           content:
-            application.json:
+            application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         "500":
           description: Internal Server Error
           content:
-            application.json:
+            application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 components:

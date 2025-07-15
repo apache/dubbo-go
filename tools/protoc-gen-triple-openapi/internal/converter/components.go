@@ -23,8 +23,6 @@ import (
 	"github.com/pb33f/libopenapi/orderedmap"
 
 	"google.golang.org/protobuf/reflect/protoreflect"
-
-	"gopkg.in/yaml.v3"
 )
 
 import (
@@ -33,19 +31,8 @@ import (
 
 func generateComponents(fd protoreflect.FileDescriptor) (*openapimodel.Components, error) {
 	components := &openapimodel.Components{
-		Schemas:         orderedmap.New[string, *base.SchemaProxy](),
-		Responses:       orderedmap.New[string, *openapimodel.Response](),
-		Parameters:      orderedmap.New[string, *openapimodel.Parameter](),
-		Examples:        orderedmap.New[string, *base.Example](),
-		RequestBodies:   orderedmap.New[string, *openapimodel.RequestBody](),
-		Headers:         orderedmap.New[string, *openapimodel.Header](),
-		SecuritySchemes: orderedmap.New[string, *openapimodel.SecurityScheme](),
-		Links:           orderedmap.New[string, *openapimodel.Link](),
-		Callbacks:       orderedmap.New[string, *openapimodel.Callback](),
-		Extensions:      orderedmap.New[string, *yaml.Node](),
+		Schemas: schema.GenerateFileSchemas(fd),
 	}
-
-	components.Schemas = schema.GenerateFileSchemas(fd)
 
 	// triple error component
 	errorResponseProps := orderedmap.New[string, *base.SchemaProxy]()
