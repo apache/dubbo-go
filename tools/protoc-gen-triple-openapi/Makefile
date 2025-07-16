@@ -45,8 +45,9 @@ build:
 generate: build
 	@echo "Generating OpenAPI spec from $(PROTO_FILE)..."
 	protoc --plugin=$(BINARY_NAME)=./$(BINARY_NAME) --triple-openapi_out=. $(PROTO_FILE)
+	protoc --plugin=$(BINARY_NAME)=./$(BINARY_NAME) --triple-openapi_out=. --triple-openapi_opt=format=json $(PROTO_FILE)
 
 .PHONY: clean
 clean:
 	@echo "Cleaning up..."
-	rm -f $(BINARY_NAME) $(OUTPUT_DIR)/greet.openapi.yaml
+	rm -f $(BINARY_NAME) $(OUTPUT_DIR)/greet.triple.openapi.yaml $(OUTPUT_DIR)/greet.triple.openapi.json
