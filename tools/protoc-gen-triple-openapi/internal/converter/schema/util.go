@@ -104,7 +104,6 @@ func ScalarFieldToSchema(parent *base.SchemaProxy, tt protoreflect.FieldDescript
 	if !inContainer {
 		s.Title = string(tt.Name())
 		// TODO: add description
-		s.Description = ""
 	}
 
 	switch tt.Kind() {
