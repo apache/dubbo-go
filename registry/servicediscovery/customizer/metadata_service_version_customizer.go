@@ -54,8 +54,10 @@ func (p *MetadtaServiceVersionCustomizer) Customize(instance registry.ServiceIns
 		return
 	}
 	if (params[constant.ProtocolKey]) == constant.TriProtocol {
+		// triple support v1 and v2, and v2 is preferred to use
 		instance.GetMetadata()[constant.MetadataVersion] = constant.MetadataServiceV2Version
 	} else {
+		// dubbo support only v1
 		instance.GetMetadata()[constant.MetadataVersion] = constant.MetadataServiceV1Version
 	}
 }
