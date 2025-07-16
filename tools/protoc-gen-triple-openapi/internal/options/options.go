@@ -48,7 +48,7 @@ func Generate(s string) (Options, error) {
 			case "json":
 				opts.Format = "json"
 			default:
-				return opts, fmt.Errorf("not support '%s' format", format)
+				return opts, fmt.Errorf("format '%s' is not supported", format)
 			}
 		default:
 			return opts, fmt.Errorf("invalid parameter: %s", param)
