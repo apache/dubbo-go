@@ -18,6 +18,14 @@
 package customizer
 
 import (
+	"encoding/json"
+)
+
+import (
+	"github.com/dubbogo/gost/log/logger"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/registry"
@@ -38,5 +46,16 @@ func (p *MetadtaServiceVersionCustomizer) GetPriority() int {
 
 // Customize put the the string like [{"protocol": "dubbo", "port": 123}] into instance's metadata
 func (p *MetadtaServiceVersionCustomizer) Customize(instance registry.ServiceInstance) {
-	instance.GetMetadata()[constant.MetadataVersion] = constant.MetadataServiceV2Version
+	s := instance.GetMetadata()[constant.MetadataServiceURLParamsPropertyName]
+	params := make(map[string]string)
+	err := json.Unmarshal([]byte(s), &params)
+	if err != nil {
+		logger.Errorf("json unmarshal error %v", err)
+		return
+	}
+	if (params[constant.ProtocolKey]) == constant.TriProtocol {
+		instance.GetMetadata()[constant.MetadataVersion] = constant.MetadataServiceV2Version
+	} else {
+		instance.GetMetadata()[constant.MetadataVersion] = constant.MetadataServiceV1Version
+	}
 }
