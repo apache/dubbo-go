@@ -43,6 +43,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/tools/protoc-gen-triple-openapi/constant"
 	"dubbo.apache.org/dubbo-go/v3/tools/protoc-gen-triple-openapi/internal/options"
 )
 
@@ -78,7 +79,7 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 	// TODO: consider basic OpenAPI file
 
 	doc := &openapimodel.Document{
-		Version: "3.0.1",
+		Version: constant.OpenAPIDocVersion,
 		Info:    &base.Info{},
 		Paths: &openapimodel.Paths{
 			PathItems:  orderedmap.New[string, *openapimodel.PathItem](),
@@ -105,15 +106,15 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 
 		// handle openapi info
 		doc.Info = &base.Info{
-			Title:       "Dubbo-go OpenAPI",
-			Version:     "v1",
-			Description: "dubbo-go generate OpenAPI docs.",
+			Title:       constant.OpenAPIDocInfoTitle,
+			Version:     constant.OpenAPIDocInfoVersion,
+			Description: constant.OpenAPIDocInfoDescription,
 		}
 
 		// handle openapi servers
 		doc.Servers = append(doc.Servers, &openapimodel.Server{
-			URL:         "http://0.0.0.0:20000",
-			Description: "Dubbo-go Default Server",
+			URL:         constant.OpenAPIDocServerURL,
+			Description: constant.OpenAPIDocServerDesription,
 		})
 
 		// handle openapi components
@@ -147,7 +148,8 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 
 				// RequestBody
 				isRequired := true
-				requestSchema := base.CreateSchemaProxyRef("#/components/schemas/" + string(md.Input().FullName()))
+				requestSchema := base.CreateSchemaProxyRef(constant.OpenAPIDocComponentsSchemaSuffix +
+					string(md.Input().FullName()))
 				operation.RequestBody = &openapimodel.RequestBody{
 					// TODO: description
 					Content:  makeMediaTypes(requestSchema),
@@ -158,17 +160,18 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 				codeMap := orderedmap.New[string, *openapimodel.Response]()
 
 				// status code 200
-				response200Schema := base.CreateSchemaProxyRef("#/components/schemas/" + string(md.Output().FullName()))
-				codeMap.Set("200", &openapimodel.Response{
-					Description: "OK",
+				response200Schema := base.CreateSchemaProxyRef(constant.OpenAPIDocComponentsSchemaSuffix +
+					string(md.Output().FullName()))
+				codeMap.Set(constant.StatusCode200, &openapimodel.Response{
+					Description: constant.StatusCode200Description,
 					Content:     makeMediaTypes(response200Schema),
 				})
 
 				// status code 400
-				codeMap.Set("400", newErrorResponse("Bad Request"))
+				codeMap.Set(constant.StatusCode400, newErrorResponse(constant.StatusCode400Description))
 
 				// status code 500
-				codeMap.Set("500", newErrorResponse("Internal Server Error"))
+				codeMap.Set(constant.StatusCode500, newErrorResponse(constant.StatusCode500Description))
 
 				operation.Responses = &openapimodel.Responses{
 					Codes: codeMap,
@@ -192,10 +195,10 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 
 		name := *fileDesc.Name
 		switch opts.Format {
-		case "yaml":
-			filename = strings.TrimSuffix(name, filepath.Ext(name)) + ".triple.openapi.yaml"
-		case "json":
-			filename = strings.TrimSuffix(name, filepath.Ext(name)) + ".triple.openapi.json"
+		case constant.YAMLFormat:
+			filename = strings.TrimSuffix(name, filepath.Ext(name)) + constant.YAMLFormatSuffix
+		case constant.JSONFormat:
+			filename = strings.TrimSuffix(name, filepath.Ext(name)) + constant.JSONFormatSuffix
 		}
 		files = append(files, &pluginpb.CodeGeneratorResponse_File{
 			Name:              &filename,
@@ -211,9 +214,9 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 
 func formatOpenapiDoc(opts options.Options, doc *openapimodel.Document) (string, error) {
 	switch opts.Format {
-	case "yaml":
+	case constant.YAMLFormat:
 		return string(doc.RenderWithIndention(2)), nil
-	case "json":
+	case constant.JSONFormat:
 		b, err := doc.RenderJSON("  ")
 		if err != nil {
 			return "", err
@@ -225,7 +228,7 @@ func formatOpenapiDoc(opts options.Options, doc *openapimodel.Document) (string,
 }
 
 func newErrorResponse(description string) *openapimodel.Response {
-	responseSchema := base.CreateSchemaProxyRef("#/components/schemas/ErrorResponse")
+	responseSchema := base.CreateSchemaProxyRef(constant.OpenAPIDocComponentsSchemaSuffix + "ErrorResponse")
 	responseMediaType := makeMediaTypes(responseSchema)
 	return &openapimodel.Response{
 		Description: description,
