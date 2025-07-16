@@ -23,8 +23,8 @@ import (
 	"github.com/pb33f/libopenapi/orderedmap"
 )
 
-func makeMediaTypes(s *base.SchemaProxy) *orderedmap.Map[string, *openapimodel.MediaType] {
+func makeMediaTypes(schemaProxy *base.SchemaProxy) *orderedmap.Map[string, *openapimodel.MediaType] {
 	mediaTypes := orderedmap.New[string, *openapimodel.MediaType]()
-	mediaTypes.Set("application/json", &openapimodel.MediaType{Schema: s})
+	mediaTypes.Set("application/json", &openapimodel.MediaType{Schema: schemaProxy})
 	return mediaTypes
 }
