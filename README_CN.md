@@ -10,11 +10,9 @@
 
 [English](README.md) | 中文
 
-Apache Dubbo 是一款易用的 Web 和 RPC 框架，它为构建企业级微服务提供了多种语言实现（Go、[Java](https://github.com/apache/dubbo)、[Rust](https://github.com/apache/dubbo-rust)、[Node.js](https://github.com/apache/dubbo-js)、[Web](https://github.com/apache/dubbo-js)），并涵盖了通信、服务发现、流量管理、可观测性、安全、工具和最佳实践。
+Dubbo-go 是一款高性能 Go 语言微服务 RPC 框架，生态覆盖多种网络协议：Triple、Dubbo、JSONRPC、gRPC、HTTP、HTTP2等，是编写 go 语言微服务的不二之选。
 
-Dubbo-go 是 [Triple 协议](https://dubbo.apache.org/zh-cn/overview/reference/protocols/triple-spec/)（一个完全兼容 gRPC 且对 HTTP 友好的协议）以及用于构建微服务架构的各种功能的 Go 语言实现。
-
-请访问[官网](https://dubbo.apache.org/)以获取更多信息。
+您可以访问[官网](https://dubbo.apache.org/)以获取更多信息。
 
 ## 快速开始
 
