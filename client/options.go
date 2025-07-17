@@ -102,9 +102,8 @@ func (refOpts *ReferenceOptions) init(opts ...ReferenceOption) error {
 	}
 
 	// init cluster
-	// TODO: use constant replace failover
 	if refConf.Cluster == "" {
-		refConf.Cluster = "failover"
+		refConf.Cluster = constant.ClusterKeyFailover
 	}
 
 	// init registries
