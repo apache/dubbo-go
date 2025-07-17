@@ -8,6 +8,8 @@
 
 ---
 
+English | [中文](README_CN.md)
+
 Apache Dubbo is an easy-to-use Web and RPC framework that provides multiple
 language implementations(Go, [Java](https://github.com/apache/dubbo), [Rust](https://github.com/apache/dubbo-rust), [Node.js](https://github.com/apache/dubbo-js), [Web](https://github.com/apache/dubbo-js)) for communication, service discovery, traffic management,
 observability, security, tools, and best practices for building enterprise-ready microservices.
@@ -131,7 +133,7 @@ For usage details, see the [protoc-gen-go-triple README](https://github.com/dubb
 
 ### [imports-formatter](https://github.com/dubbogo/tools?tab=readme-ov-file#imports-formatter)
 
-A code formatting tool that organizes golang `import` blocks according to the Dubbo-Go community style guide.
+This is a plugin for dubbo-go developers. A code formatting tool that organizes golang `import` blocks according to the Dubbo-Go community style guide.
 
 **Features:**
 
@@ -288,4 +290,4 @@ If you are using [apache/dubbo-go](https://github.com/apache/dubbo-go) and think
 
 ## License
 
-Apache Dubbo-go software is licensed under the Apache License Version 2.0. See the LICENSE file for details.
+Apache Dubbo-go software is licensed under the Apache License Version 2.0. See the [LICENSE](./LICENSE) file for details.
