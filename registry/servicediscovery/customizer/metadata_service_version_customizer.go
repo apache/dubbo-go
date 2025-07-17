@@ -46,6 +46,10 @@ func (p *MetadtaServiceVersionCustomizer) GetPriority() int {
 
 // Customize put the the string like [{"protocol": "dubbo", "port": 123}] into instance's metadata
 func (p *MetadtaServiceVersionCustomizer) Customize(instance registry.ServiceInstance) {
+	if instance.GetMetadata()[constant.MetadataStorageTypePropertyName] != constant.DefaultMetadataStorageType {
+		return
+	}
+	// only run when storage-type == local
 	metadata := instance.GetMetadata()[constant.MetadataServiceURLParamsPropertyName]
 	params := make(map[string]string)
 	err := json.Unmarshal([]byte(metadata), &params)
