@@ -123,20 +123,24 @@ dubbogo-cli newDemo .
 
 #### 3.1.2 运行Demo
 
+安装依赖
+
+```bash
+go mod tidy
+```
+
 开启服务端
 
-```
-$ cd go-server/cmd
-$ go run .
+```bash
+cd go-server/cmd
+go run .
 ```
 
 另一个终端开启客户端
 
-```
-$ go mod tidy
-$ cd go-client/cmd
-$ go run .
-
+```bash
+cd go-client/cmd
+go run .
 ```
 
 可看到打印日志
