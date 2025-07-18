@@ -134,7 +134,6 @@ func (svcOpts *ServiceOptions) ExportWithInfo(info *common.ServiceInfo) error {
 
 func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 	svcConf := svcOpts.Service
-
 	if info != nil {
 		if svcConf.Interface == "" {
 			svcConf.Interface = info.InterfaceName

@@ -172,6 +172,7 @@ func (cli *Client) dial(interfaceName string, info *ClientInfo, srv any, opts ..
 		// this config must be set after Reference initialized
 		setInterfaceName(interfaceName),
 	}
+
 	finalOpts = append(finalOpts, opts...)
 	if err := newRefOpts.init(finalOpts...); err != nil {
 		return nil, err

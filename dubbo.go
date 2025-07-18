@@ -112,7 +112,6 @@ func (ins *Instance) NewClient(opts ...client.ClientOption) (*client.Client, err
 
 	// options passed by users has higher priority
 	cliOpts = append(cliOpts, opts...)
-
 	cli, err := client.NewClient(cliOpts...)
 	if err != nil {
 		return nil, err

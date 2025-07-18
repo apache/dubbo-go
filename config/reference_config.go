@@ -326,6 +326,7 @@ func (rc *ReferenceConfig) getURLMap() url.Values {
 	for k, v := range rc.Params {
 		urlMap.Set(k, v)
 	}
+
 	urlMap.Set(constant.InterfaceKey, rc.InterfaceName)
 	urlMap.Set(constant.TimestampKey, strconv.FormatInt(time.Now().Unix(), 10))
 	urlMap.Set(constant.ClusterKey, rc.Cluster)
