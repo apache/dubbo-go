@@ -285,6 +285,7 @@ func (svcOpts *ServiceOptions) generatorInvoker(url *common.URL, info *common.Se
 // setRegistrySubURL set registry sub url is ivkURl
 func setRegistrySubURL(ivkURL *common.URL, regUrl *common.URL) {
 	ivkURL.AddParam(constant.RegistryKey, regUrl.GetParam(constant.RegistryKey, ""))
+	ivkURL.AddParam(constant.RegistryTypeKey, regUrl.GetParam(constant.RegistryTypeKey, ""))
 	regUrl.SubURL = ivkURL
 }
 
