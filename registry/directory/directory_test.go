@@ -33,18 +33,11 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
-
-func init() {
-	config.SetRootConfig(config.RootConfig{
-		Application: &config.ApplicationConfig{Name: "test-application"},
-	})
-}
 
 func TestSubscribe(t *testing.T) {
 	registryDirectory, _ := normalRegistryDir()
@@ -165,6 +158,7 @@ func normalRegistryDir(noMockEvent ...bool) (*RegistryDirectory, *registry.MockR
 		common.WithParamsValue(constant.ClusterKey, "mock"),
 		common.WithParamsValue(constant.GroupKey, "group"),
 		common.WithParamsValue(constant.VersionKey, "1.0.0"),
+		common.WithParamsValue(constant.ApplicationKey, "test-application"),
 	)
 	url.SubURL = suburl
 	mockRegistry, _ := registry.NewMockRegistry(&common.URL{})
@@ -188,6 +182,7 @@ func normalRegistryDir(noMockEvent ...bool) (*RegistryDirectory, *registry.MockR
 }
 
 func TestToGroupInvokers(t *testing.T) {
+
 	t.Run("SameGroup", func(t *testing.T) {
 		registryDirectory, mockRegistry := normalRegistryDir(true)
 		providerUrl, _ := common.NewURL("dubbo://0.0.0.0:20000/org.apache.dubbo-go.mockService",
