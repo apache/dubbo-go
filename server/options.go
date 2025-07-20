@@ -1006,6 +1006,8 @@ func GetProviderOptionsFromConfig(c *global.ServiceConfig) []ServiceOption {
 	if c.TpsLimitRate != "" {
 		if i, err := strconv.Atoi(c.TpsLimitRate); err == nil {
 			opts = append(opts, WithTpsLimitRate(i))
+		} else {
+			logger.Warnf("WARN: Failed to parse TpsLimitRate %q: %v. TPS limit will not be applied.", c.TpsLimitRate, err)
 		}
 	}
 	if c.TpsLimiter != "" {
@@ -1023,6 +1025,8 @@ func GetProviderOptionsFromConfig(c *global.ServiceConfig) []ServiceOption {
 	if c.Warmup != "" {
 		if d, err := time.ParseDuration(c.Warmup); err == nil {
 			opts = append(opts, WithWarmup(d))
+		} else {
+			logger.Warnf("WARN: Failed to parse Warmup duration %q: %v. Warmup period will not be applied.", c.Warmup, err)
 		}
 	}
 
