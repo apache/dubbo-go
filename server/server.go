@@ -34,7 +34,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/dubboutil"
-	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/registry/exposed_tmp"
@@ -126,11 +125,22 @@ func (s *Server) genSvcOpts(handler any, opts ...ServiceOption) (*ServiceOptions
 	// Get service-level configuration items from provider.services configuration
 	if proCfg != nil && proCfg.Services != nil {
 		// Get the unique identifier of the handler (the default is the structure name or the alias set during registration)
-		interfaceName := getServiceInterfaceName(handler)
-		svcCfg := matchServiceConfig(proCfg.Services, interfaceName)
+		interfaceName := common.GetReference(handler)
+		// Give priority to accurately finding the service configuration from the configuration based on the reference name (i.e. the handler registration name)
+		svcCfg, ok := proCfg.Services[interfaceName]
+		if !ok {
+			//fallback: traverse matching interface fields
+			for _, cfg := range proCfg.Services {
+				if cfg.Interface == interfaceName {
+					svcCfg = cfg
+				}
+			}
+		}
 
 		if svcCfg != nil {
-			svcOpts = append(svcOpts, GetProviderOptionsFromConfig(svcCfg)...)
+			svcOpts = append(svcOpts,
+				SetService(svcCfg),
+			)
 			logger.Infof("Injected options from provider.services for %s", interfaceName)
 		} else {
 			logger.Warnf("No matching service config found for [%s]", interfaceName)
@@ -143,27 +153,6 @@ func (s *Server) genSvcOpts(handler any, opts ...ServiceOption) (*ServiceOptions
 	}
 	newSvcOpts.Implement(handler)
 	return newSvcOpts, nil
-}
-
-func matchServiceConfig(services map[string]*global.ServiceConfig, info string) *global.ServiceConfig {
-	// Give priority to accurately finding the service configuration from the configuration based on the reference name (i.e. the handler registration name)
-	if cfg, ok := services[info]; ok {
-		return cfg
-	}
-	//fallback: traverse matching interface fields
-	for _, cfg := range services {
-		if cfg.Interface == info {
-			return cfg
-		}
-	}
-	return nil
-}
-
-func getServiceInterfaceName(handler any) string {
-	if s, ok := handler.(common.TriplePBService); ok {
-		return s.XXX_InterfaceName()
-	}
-	return common.GetReference(handler)
 }
 
 func (s *Server) exportServices() (err error) {
