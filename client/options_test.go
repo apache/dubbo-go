@@ -1233,7 +1233,7 @@ func TestWithKeepAliveConfig(t *testing.T) {
 	processNewClientCases(t, cases)
 }
 
-func TestClientOptionsInit_CopiesFromConsumer(t *testing.T) {
+func TestInitWithConsumer(t *testing.T) {
 	trueVal := true
 	cliOpts := &ClientOptions{
 		Consumer: &global.ConsumerConfig{
