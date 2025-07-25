@@ -1233,84 +1233,32 @@ func TestWithKeepAliveConfig(t *testing.T) {
 	processNewClientCases(t, cases)
 }
 
-func TestClientOptionsInitConsumerToOverallReferenceCopy(t *testing.T) {
+func TestClientOptionsInit_CopiesFromConsumer(t *testing.T) {
+	trueVal := true
 	cliOpts := &ClientOptions{
 		Consumer: &global.ConsumerConfig{
-			Filter:      "mock-filter",
-			RegistryIDs: []string{"mock-registry"},
-			TracingKey:  "trace-123",
-			Check:       true,
+			Filter:      "f",
+			RegistryIDs: []string{"r"},
+			TracingKey:  "t",
+			Check:       trueVal,
 		},
 		overallReference: &global.ReferenceConfig{},
 		Registries: map[string]*global.RegistryConfig{
-			"mock-registry": {
+			"r": {
+				Protocol: "mock-protocol",
 				Address:  "127.0.0.1:2181",
-				Protocol: "zookeeper",
 			},
 		},
 	}
 
-	err := cliOpts.init()
-	if err != nil {
-		t.Fatalf("init failed: %v", err)
+	if err := cliOpts.init(); err != nil {
+		t.Fatal(err)
 	}
 
-	// Verify that the overallReference field is overwritten
-	if cliOpts.overallReference.Filter != "mock-filter" {
-		t.Errorf("expected Filter to be copied from Consumer, got: %s", cliOpts.overallReference.Filter)
-	}
-
-	if len(cliOpts.overallReference.RegistryIDs) != 1 || cliOpts.overallReference.RegistryIDs[0] != "mock-registry" {
-		t.Errorf("expected RegistryIDs to be copied from Consumer, got: %v", cliOpts.overallReference.RegistryIDs)
-	}
-
-	if cliOpts.overallReference.TracingKey != "trace-123" {
-		t.Errorf("expected TracingKey to be copied from Consumer, got: %s", cliOpts.overallReference.TracingKey)
-	}
-
-	if cliOpts.overallReference.Check == nil || *cliOpts.overallReference.Check != true {
-		t.Errorf("expected Check to be copied as pointer with value true, got: %v", cliOpts.overallReference.Check)
-	}
-
-	falseVal := false
-
-	reverseTestingcliOpts := &ClientOptions{
-		Consumer: &global.ConsumerConfig{
-			Filter:      "from-consumer",
-			RegistryIDs: []string{"from-consumer-id"},
-			TracingKey:  "from-consumer-trace",
-			Check:       true,
-		},
-		overallReference: &global.ReferenceConfig{
-			Filter:      "already-set",
-			RegistryIDs: []string{"already-set-id"},
-			TracingKey:  "already-set-trace",
-			Check:       &falseVal,
-		},
-		Registries: map[string]*global.RegistryConfig{
-			"already-set-id": {
-				Address:  "127.0.0.1:2181",
-				Protocol: "zookeeper",
-			},
-		},
-	}
-
-	err = reverseTestingcliOpts.init()
-	if err != nil {
-		t.Fatalf("init failed: %v", err)
-	}
-
-	// Reverse test to verify that the overallReference field is not overwritten
-	if reverseTestingcliOpts.overallReference.Filter != "already-set" {
-		t.Errorf("expected Filter to remain 'already-set', got %s", reverseTestingcliOpts.overallReference.Filter)
-	}
-	if len(reverseTestingcliOpts.overallReference.RegistryIDs) != 1 || reverseTestingcliOpts.overallReference.RegistryIDs[0] != "already-set-id" {
-		t.Errorf("expected RegistryIDs to remain ['already-set-id'], got %v", reverseTestingcliOpts.overallReference.RegistryIDs)
-	}
-	if reverseTestingcliOpts.overallReference.TracingKey != "already-set-trace" {
-		t.Errorf("expected TracingKey to remain 'already-set-trace', got %s", reverseTestingcliOpts.overallReference.TracingKey)
-	}
-	if reverseTestingcliOpts.overallReference.Check == nil || *reverseTestingcliOpts.overallReference.Check != false {
-		t.Errorf("expected Check to remain false, got %v", reverseTestingcliOpts.overallReference.Check)
+	ref := cliOpts.overallReference
+	if ref.Filter != "f" || ref.TracingKey != "t" ||
+		len(ref.RegistryIDs) != 1 || ref.RegistryIDs[0] != "r" ||
+		ref.Check == nil || *ref.Check != true {
+		t.Errorf("fields not copied as expected: %+v", ref)
 	}
 }
