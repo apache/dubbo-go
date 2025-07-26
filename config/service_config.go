@@ -316,7 +316,6 @@ func (s *ServiceConfig) Export() error {
 				setRegistrySubURL(ivkURL, regUrl)
 
 				invoker = s.generatorInvoker(regUrl, info)
-
 				exporter := s.cacheProtocol.Export(invoker)
 				if exporter == nil {
 					return perrors.New(fmt.Sprintf("Registry protocol new exporter error, registry is {%v}, url is {%v}", regUrl, ivkURL))
