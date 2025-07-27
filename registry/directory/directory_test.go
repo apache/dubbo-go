@@ -182,7 +182,6 @@ func normalRegistryDir(noMockEvent ...bool) (*RegistryDirectory, *registry.MockR
 }
 
 func TestToGroupInvokers(t *testing.T) {
-
 	t.Run("SameGroup", func(t *testing.T) {
 		registryDirectory, mockRegistry := normalRegistryDir(true)
 		providerUrl, _ := common.NewURL("dubbo://0.0.0.0:20000/org.apache.dubbo-go.mockService",
