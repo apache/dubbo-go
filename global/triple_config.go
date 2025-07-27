@@ -17,19 +17,36 @@
 
 package global
 
-// TODO: Should the server and client configurations be separated?
+// TODO: Find an ideal way to separate the triple config of server and client.
+
+// TripleConfig represents the config of triple protocol
 type TripleConfig struct {
-	KeepAliveInterval string `yaml:"keep-alive-interval" json:"keep-alive-interval,omitempty" property:"keep-alive-interval"`
-	KeepAliveTimeout  string `yaml:"keep-alive-timeout" json:"keep-alive-timeout,omitempty" property:"keep-alive-timeout"`
+	//
+	// for server
+	//
 
 	// MaxServerSendMsgSize max size of server send message, 1mb=1000kb=1000000b 1mib=1024kb=1048576b.
 	// more detail to see https://pkg.go.dev/github.com/dustin/go-humanize#pkg-constants
-	MaxServerSendMsgSize string `yaml:"max-server-send-msg-size" json:"max-server-send-msg-size,omitempty"` // MaxServerRecvMsgSize max size of server receive message
+	MaxServerSendMsgSize string `yaml:"max-server-send-msg-size" json:"max-server-send-msg-size,omitempty"`
+	// MaxServerRecvMsgSize max size of server receive message
 	MaxServerRecvMsgSize string `yaml:"max-server-recv-msg-size" json:"max-server-recv-msg-size,omitempty"`
+
+	// the config of http3 transport
+	Http3 *Http3Config `yaml:"http3" json:"http3,omitempty"`
+
+	//
+	// for client
+	//
+
+	KeepAliveInterval string `yaml:"keep-alive-interval" json:"keep-alive-interval,omitempty" property:"keep-alive-interval"`
+	KeepAliveTimeout  string `yaml:"keep-alive-timeout" json:"keep-alive-timeout,omitempty" property:"keep-alive-timeout"`
 }
 
+// DefaultTripleConfig returns a default TripleConfig instance.
 func DefaultTripleConfig() *TripleConfig {
-	return &TripleConfig{}
+	return &TripleConfig{
+		Http3: DefaultHttp3Config(),
+	}
 }
 
 // Clone a new TripleConfig
@@ -39,9 +56,11 @@ func (t *TripleConfig) Clone() *TripleConfig {
 	}
 
 	return &TripleConfig{
-		KeepAliveInterval:    t.KeepAliveInterval,
-		KeepAliveTimeout:     t.KeepAliveTimeout,
 		MaxServerSendMsgSize: t.MaxServerSendMsgSize,
 		MaxServerRecvMsgSize: t.MaxServerRecvMsgSize,
+		Http3:                t.Http3.Clone(),
+
+		KeepAliveInterval: t.KeepAliveInterval,
+		KeepAliveTimeout:  t.KeepAliveTimeout,
 	}
 }

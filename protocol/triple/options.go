@@ -92,3 +92,16 @@ func WithMaxServerRecvMsgSize(size string) Option {
 		opts.Triple.MaxServerRecvMsgSize = size
 	}
 }
+
+// Http3Enable enables HTTP/3 support for the Triple protocol.
+// It sets the corresponding configuration to enable HTTP/3.
+//
+// # Experimental
+//
+// NOTICE: This API is EXPERIMENTAL and may be changed or removed in
+// a later release.
+func Http3Enable() Option {
+	return func(opts *Options) {
+		opts.Triple.Http3.Enable = true
+	}
+}

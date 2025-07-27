@@ -52,21 +52,25 @@ type ReferenceConfig struct {
 	urls       []*common.URL
 	rootConfig *RootConfig
 
-	id               string
-	InterfaceName    string            `yaml:"interface"  json:"interface,omitempty" property:"interface"`
-	Check            *bool             `yaml:"check"  json:"check,omitempty" property:"check"`
-	URL              string            `yaml:"url"  json:"url,omitempty" property:"url"`
-	Filter           string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	Protocol         string            `yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
-	RegistryIDs      []string          `yaml:"registry-ids"  json:"registry-ids,omitempty"  property:"registry-ids"`
-	Cluster          string            `yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
-	Loadbalance      string            `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
-	Retries          string            `yaml:"retries"  json:"retries,omitempty" property:"retries"`
-	Group            string            `yaml:"group"  json:"group,omitempty" property:"group"`
-	Version          string            `yaml:"version"  json:"version,omitempty" property:"version"`
-	Serialization    string            `yaml:"serialization" json:"serialization" property:"serialization"`
-	ProvidedBy       string            `yaml:"provided_by"  json:"provided_by,omitempty" property:"provided_by"`
-	Methods          []*MethodConfig   `yaml:"methods"  json:"methods,omitempty" property:"methods"`
+	id            string
+	InterfaceName string   `yaml:"interface"  json:"interface,omitempty" property:"interface"`
+	Check         *bool    `yaml:"check"  json:"check,omitempty" property:"check"`
+	URL           string   `yaml:"url"  json:"url,omitempty" property:"url"`
+	Filter        string   `yaml:"filter" json:"filter,omitempty" property:"filter"`
+	Protocol      string   `yaml:"protocol"  json:"protocol,omitempty" property:"protocol"`
+	RegistryIDs   []string `yaml:"registry-ids"  json:"registry-ids,omitempty"  property:"registry-ids"`
+	Cluster       string   `yaml:"cluster"  json:"cluster,omitempty" property:"cluster"`
+	Loadbalance   string   `yaml:"loadbalance"  json:"loadbalance,omitempty" property:"loadbalance"`
+	Retries       string   `yaml:"retries"  json:"retries,omitempty" property:"retries"`
+	Group         string   `yaml:"group"  json:"group,omitempty" property:"group"`
+	Version       string   `yaml:"version"  json:"version,omitempty" property:"version"`
+	Serialization string   `yaml:"serialization" json:"serialization" property:"serialization"`
+	ProvidedBy    string   `yaml:"provided_by"  json:"provided_by,omitempty" property:"provided_by"`
+
+	MethodsConfig []*MethodConfig `yaml:"methods"  json:"methods,omitempty" property:"methods"`
+	// TODO: rename protocol_config to protocol when publish 4.0.0.
+	ProtocolClientConfig *ClientProtocolConfig `yaml:"protocol_config" json:"protocol_config,omitempty" property:"protocol_config"`
+
 	Async            bool              `yaml:"async"  json:"async,omitempty" property:"async"`
 	Params           map[string]string `yaml:"params"  json:"params,omitempty" property:"params"`
 	Generic          string            `yaml:"generic"  json:"generic,omitempty" property:"generic"`
@@ -84,7 +88,7 @@ func (rc *ReferenceConfig) Prefix() string {
 }
 
 func (rc *ReferenceConfig) Init(root *RootConfig) error {
-	for _, method := range rc.Methods {
+	for _, method := range rc.MethodsConfig {
 		if err := method.Init(); err != nil {
 			return err
 		}
@@ -322,6 +326,7 @@ func (rc *ReferenceConfig) getURLMap() url.Values {
 	for k, v := range rc.Params {
 		urlMap.Set(k, v)
 	}
+
 	urlMap.Set(constant.InterfaceKey, rc.InterfaceName)
 	urlMap.Set(constant.TimestampKey, strconv.FormatInt(time.Now().Unix(), 10))
 	urlMap.Set(constant.ClusterKey, rc.Cluster)
@@ -364,7 +369,7 @@ func (rc *ReferenceConfig) getURLMap() url.Values {
 	}
 	urlMap.Set(constant.ReferenceFilterKey, mergeValue(rc.Filter, "", defaultReferenceFilter))
 
-	for _, v := range rc.Methods {
+	for _, v := range rc.MethodsConfig {
 		urlMap.Set("methods."+v.Name+"."+constant.LoadbalanceKey, v.LoadBalance)
 		urlMap.Set("methods."+v.Name+"."+constant.RetriesKey, v.Retries)
 		urlMap.Set("methods."+v.Name+"."+constant.StickyKey, strconv.FormatBool(v.Sticky))
@@ -402,7 +407,7 @@ func (rc *ReferenceConfig) postProcessConfig(url *common.URL) {
 // newEmptyReferenceConfig returns empty ReferenceConfig
 func newEmptyReferenceConfig() *ReferenceConfig {
 	newReferenceConfig := &ReferenceConfig{}
-	newReferenceConfig.Methods = make([]*MethodConfig, 0, 8)
+	newReferenceConfig.MethodsConfig = make([]*MethodConfig, 0, 8)
 	newReferenceConfig.Params = make(map[string]string, 8)
 	return newReferenceConfig
 }
@@ -485,12 +490,12 @@ func (pcb *ReferenceConfigBuilder) SetProvidedBy(providedBy string) *ReferenceCo
 }
 
 func (pcb *ReferenceConfigBuilder) SetMethodConfig(methodConfigs []*MethodConfig) *ReferenceConfigBuilder {
-	pcb.referenceConfig.Methods = methodConfigs
+	pcb.referenceConfig.MethodsConfig = methodConfigs
 	return pcb
 }
 
 func (pcb *ReferenceConfigBuilder) AddMethodConfig(methodConfig *MethodConfig) *ReferenceConfigBuilder {
-	pcb.referenceConfig.Methods = append(pcb.referenceConfig.Methods, methodConfig)
+	pcb.referenceConfig.MethodsConfig = append(pcb.referenceConfig.MethodsConfig, methodConfig)
 	return pcb
 }
 
