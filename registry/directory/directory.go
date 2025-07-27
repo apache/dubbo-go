@@ -84,10 +84,10 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (director
 	logger.Debugf("new RegistryDirectory for service :%s.", url.Key())
 
 	if _, ok := url.GetAttribute(constant.ApplicationKey); !ok {
-		
+
 		application := config.GetRootConfig().Application
 		if application == nil {
-			
+
 			defaultAppConfig := global.DefaultApplicationConfig()
 			url.SetAttribute(constant.ApplicationKey, defaultAppConfig)
 		}
