@@ -31,6 +31,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/tag"
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
@@ -151,14 +152,19 @@ func Test_RefreshUrl(t *testing.T) {
 
 func normalRegistryDir(noMockEvent ...bool) (*RegistryDirectory, *registry.MockRegistry) {
 	extension.SetProtocol(protocolwrapper.FILTER, protocolwrapper.NewMockProtocolFilter)
+	
+	applicationConfig := &global.ApplicationConfig{
+		Name: "test-application",
+	}
 
-	url, _ := common.NewURL("mock://127.0.0.1:1111")
+	url, _ := common.NewURL("mock://127.0.0.1:1111",
+		common.WithAttribute(constant.ApplicationKey,applicationConfig),
+	)
 	suburl, _ := common.NewURL(
 		"dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService",
 		common.WithParamsValue(constant.ClusterKey, "mock"),
 		common.WithParamsValue(constant.GroupKey, "group"),
 		common.WithParamsValue(constant.VersionKey, "1.0.0"),
-		common.WithParamsValue(constant.ApplicationKey, "test-application"),
 	)
 	url.SubURL = suburl
 	mockRegistry, _ := registry.NewMockRegistry(&common.URL{})

@@ -84,10 +84,10 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (director
 	logger.Debugf("new RegistryDirectory for service :%s.", url.Key())
 
 	if _, ok := url.GetAttribute(constant.ApplicationKey); !ok {
-		// 尝试从全局配置中获取 ApplicationConfig
+		
 		application := config.GetRootConfig().Application
 		if application == nil {
-			// 如果 URL 和全局配置中都没有 ApplicationConfig，则设置一个默认值。
+			
 			defaultAppConfig := global.DefaultApplicationConfig()
 			url.SetAttribute(constant.ApplicationKey, defaultAppConfig)
 		}
