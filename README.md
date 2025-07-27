@@ -8,13 +8,11 @@
 
 ---
 
-Apache Dubbo is an easy-to-use Web and RPC framework that provides multiple
-language implementations(Go, [Java](https://github.com/apache/dubbo), [Rust](https://github.com/apache/dubbo-rust), [Node.js](https://github.com/apache/dubbo-js), [Web](https://github.com/apache/dubbo-js)) for communication, service discovery, traffic management,
-observability, security, tools, and best practices for building enterprise-ready microservices.
+English | [中文](README_CN.md)
 
-Dubbo-go is the Go implementation of [triple protocol](https://dubbo.apache.org/zh-cn/overview/reference/protocols/triple-spec/)(a fully gRPC compatible and HTTP-friendly protocol) and the various features for building microservice architecture designed by Dubbo. 
+Dubbo-go is a high-performance RPC framework for Go language microservices, covering various network protocols: Triple, Dubbo, JSONRPC, gRPC, HTTP, HTTP2, etc. It is the ideal choice for writing microservices in Go.
 
-Visit [the official website](https://dubbo.apache.org/) for more information.
+You can visit [the official website](https://dubbo.apache.org/) for more information.
 
 ## Getting started
 
@@ -82,6 +80,63 @@ See the [samples](https://github.com/apache/dubbo-go-samples) for detailed infor
 - **Configuration**: yaml file, dynamic configuration(Nacos, Zookeeper, etc.).
 - **Observability**: metrics(Prometheus, Grafana) and tracing(Jaeger, Zipkin).
 - **HA Strategy**: Failover, Failfast, Failsafe/Failback, Available, Broadcast, Forking
+
+
+## ️ Tools
+
+The `tools/` directory and the `dubbogo/tools` repository provide several utilities to streamline your Dubbo-Go development experience.
+
+### [dubbo-go-schema](https://github.com/apache/dubbo-go/tree/main/tools/dubbo-go-schema)
+
+A tool that provides JSON Schema for Dubbo-Go configuration files. This simplifies the configuration process by enabling editor assistance.
+
+**Features:**
+
+* **Intelligent Assistance:** Enables code completion, hints, and real-time validation for configuration files in supported IDEs.
+* **Simplified Configuration:** Helps you write valid and accurate configurations with ease.
+
+For usage details, see the [dubbo-go-schema README](./tools/dubbo-go-schema/README.md).
+
+
+### [dubbogo-cli-v2](https://github.com/dubbogo/tools/tree/master/cmd/dubbogo-cli-v2)
+
+A comprehensive command-line tool for bootstrapping, managing, and debugging your Dubbo-Go applications.
+
+**Features:**
+
+* **Project Scaffolding:** Quickly create new application templates.
+* **Tool Management:** Install and manage essential development tools.
+* **Interface Debugging:** Provides commands to debug your services.
+
+*Note: This tool replaces the deprecated [dubbogo-cli](https://github.com/dubbogo/tools/tree/master/cmd/dubbogo-cli).*
+
+For usage details, see the [dubbogo-cli-v2 README](https://github.com/dubbogo/tools/tree/master/cmd/dubbogo-cli-v2).
+
+
+### [protoc-gen-go-triple](https://github.com/dubbogo/protoc-gen-go-triple)
+
+A `protoc` plugin that generates golang code for the Triple protocol from your `.proto` (Protocol Buffer) definition files.
+
+**Features:**
+
+* **Code Generation:** Generates golang client and server stubs for the Triple protocol.
+* **Seamless Integration:** Works alongside the official `protoc-gen-go` to produce both Protobuf message code (`.pb.go`) and Triple interface code (`.triple.go`).
+
+*Note: This tool replaces the deprecated [protoc-gen-dubbo3grpc](https://github.com/dubbogo/tools/tree/master/cmd/protoc-gen-dubbo3grpc) and deprecated [protoc-gen-go-triple](https://github.com/dubbogo/tools/tree/master/cmd/protoc-gen-go-triple).*
+
+For usage details, see the [protoc-gen-go-triple README](https://github.com/dubbogo/protoc-gen-go-triple).
+
+
+### [imports-formatter](https://github.com/dubbogo/tools?tab=readme-ov-file#imports-formatter)
+
+This is a plugin for dubbo-go developers. A code formatting tool that organizes golang `import` blocks according to the Dubbo-Go community style guide.
+
+**Features:**
+
+* **Automatic Formatting:** Splits `import` statements into three distinct groups: golang standard library, third-party libraries, and internal project packages.
+* **Code Consistency:** Enforces a clean and consistent import style across the codebase.
+
+For usage details, see the [imports-formatter README](https://github.com/dubbogo/tools?tab=readme-ov-file#imports-formatter).
 
 ## Ecosystem
 - [dubbo-go-samples](https://github.com/apache/dubbo-go-samples)
@@ -231,4 +286,4 @@ If you are using [apache/dubbo-go](https://github.com/apache/dubbo-go) and think
 
 ## License
 
-Apache Dubbo-go software is licensed under the Apache License Version 2.0. See the LICENSE file for details.
+Apache Dubbo-go software is licensed under the Apache License Version 2.0. See the [LICENSE](./LICENSE) file for details.

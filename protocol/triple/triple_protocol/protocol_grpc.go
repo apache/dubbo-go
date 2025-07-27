@@ -477,7 +477,7 @@ func (hc *grpcHandlerConn) ExportableHeader() http.Header {
 	hdr := hc.request.Header
 	for key, vals := range hdr {
 		key = strings.ToLower(key)
-		if isReservedHeader(key) && !isWhitelistedHeader(key) {
+		if IsReservedHeader(key) && !IsWhitelistedHeader(key) {
 			continue
 		}
 		cloneVals := make([]string, len(vals))
@@ -491,7 +491,7 @@ func (hc *grpcHandlerConn) ExportableHeader() http.Header {
 // isReservedHeader checks whether hdr belongs to HTTP2 headers
 // reserved by gRPC protocol. Any other headers are classified as the
 // user-specified metadata.
-func isReservedHeader(hdr string) bool {
+func IsReservedHeader(hdr string) bool {
 	if hdr != "" && hdr[0] == ':' {
 		return true
 	}
@@ -516,7 +516,7 @@ func isReservedHeader(hdr string) bool {
 
 // isWhitelistedHeader checks whether hdr should be propagated into metadata
 // visible to users, even though it is classified as "reserved", above.
-func isWhitelistedHeader(hdr string) bool {
+func IsWhitelistedHeader(hdr string) bool {
 	switch hdr {
 	case ":authority", "user-agent":
 		return true

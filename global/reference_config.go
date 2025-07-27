@@ -46,8 +46,9 @@ type ReferenceConfig struct {
 	MeshProviderPort int               `yaml:"mesh-provider-port" json:"mesh-provider-port,omitempty" property:"mesh-provider-port"`
 
 	// config
-	MethodsConfig        []*MethodConfig       `yaml:"methods"  json:"methods,omitempty" property:"methods"`
-	ProtocolClientConfig *ProtocolClientConfig `yaml:"protocol-config" json:"protocol-config,omitempty" property:"protocol-config"`
+	MethodsConfig []*MethodConfig `yaml:"methods"  json:"methods,omitempty" property:"methods"`
+	// TODO: rename protocol_config to protocol when publish 4.0.0.
+	ProtocolClientConfig *ClientProtocolConfig `yaml:"protocol_config" json:"protocol_config,omitempty" property:"protocol_config"`
 
 	// TODO: Deprecated：use TripleConfig
 	// remove KeepAliveInterval and KeepAliveInterval in version 4.0.0
@@ -64,7 +65,7 @@ func DefaultReferenceConfig() *ReferenceConfig {
 		// use Triple protocol by default
 		//Protocol: "tri",
 		MethodsConfig:        make([]*MethodConfig, 0, 8),
-		ProtocolClientConfig: DefaultProtocolClientConfig(),
+		ProtocolClientConfig: DefaultClientProtocolConfig(),
 		//Params:   make(map[string]string, 8),
 	}
 }
@@ -140,6 +141,9 @@ func (c *ReferenceConfig) GetOptions() []ReferenceOption {
 	}
 	if c.KeepAliveTimeout != "" {
 		refOpts = append(refOpts, WithReference_KeepAliveTimeout(c.KeepAliveTimeout))
+	}
+	if c.ProtocolClientConfig != nil {
+		refOpts = append(refOpts, WithReference_ProtocolClientConfig(c.ProtocolClientConfig))
 	}
 	return refOpts
 }
@@ -341,5 +345,11 @@ func WithReference_KeepAliveInterval(interval string) ReferenceOption {
 func WithReference_KeepAliveTimeout(timeout string) ReferenceOption {
 	return func(cfg *ReferenceConfig) {
 		cfg.KeepAliveTimeout = timeout
+	}
+}
+
+func WithReference_ProtocolClientConfig(protocolClientConfig *ClientProtocolConfig) ReferenceOption {
+	return func(cfg *ReferenceConfig) {
+		cfg.ProtocolClientConfig = protocolClientConfig.Clone()
 	}
 }
