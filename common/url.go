@@ -28,22 +28,15 @@ import (
 	"strings"
 	"sync"
 	"time"
-)
 
-import (
 	cm "github.com/Workiva/go-datastructures/common"
 
 	gxset "github.com/dubbogo/gost/container/set"
-
 	"github.com/google/uuid"
-
 	"github.com/jinzhu/copier"
 
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	perrors "github.com/pkg/errors"
 )
 
 // dubbo role type constant
@@ -225,6 +218,15 @@ func WithAttribute(key string, attribute any) Option {
 			url.attributes = make(map[string]any)
 		}
 		url.attributes[key] = attribute
+	}
+}
+
+// WithWeight sets weight for URL
+func WithWeight(weight int64) Option {
+	return func(url *URL) {
+		if weight > 0 {
+			url.SetParam(constant.WeightKey, strconv.FormatInt(weight, 10))
+		}
 	}
 }
 

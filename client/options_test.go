@@ -28,6 +28,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
@@ -1230,4 +1231,34 @@ func TestWithKeepAliveConfig(t *testing.T) {
 		},
 	}
 	processNewClientCases(t, cases)
+}
+
+func TestInitWithConsumer(t *testing.T) {
+	trueVal := true
+	cliOpts := &ClientOptions{
+		Consumer: &global.ConsumerConfig{
+			Filter:      "f",
+			RegistryIDs: []string{"r"},
+			TracingKey:  "t",
+			Check:       trueVal,
+		},
+		overallReference: &global.ReferenceConfig{},
+		Registries: map[string]*global.RegistryConfig{
+			"r": {
+				Protocol: "mock-protocol",
+				Address:  "127.0.0.1:2181",
+			},
+		},
+	}
+
+	if err := cliOpts.init(); err != nil {
+		t.Fatal(err)
+	}
+
+	ref := cliOpts.overallReference
+	if ref.Filter != "f" || ref.TracingKey != "t" ||
+		len(ref.RegistryIDs) != 1 || ref.RegistryIDs[0] != "r" ||
+		ref.Check == nil || *ref.Check != true {
+		t.Errorf("fields not copied as expected: %+v", ref)
+	}
 }

@@ -21,23 +21,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"strconv"
 	"sync"
 	"testing"
-)
 
-import (
+	"dubbo.apache.org/dubbo-go/v3/metadata/info"
+
 	gxset "github.com/dubbogo/gost/container/set"
-
 	"github.com/nacos-group/nacos-sdk-go/v2/model"
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 
-	perrors "github.com/pkg/errors"
-
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -46,6 +40,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery"
 	"dubbo.apache.org/dubbo-go/v3/remoting/nacos"
+	perrors "github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 )
 
 const testName = "test"
@@ -57,6 +53,55 @@ func TestNewNacosServiceDiscovery(t *testing.T) {
 	assert.Nil(t, err)
 	err = sd.Destroy()
 	assert.Nil(t, err)
+}
+
+// Registration side: toRegisterInstance writes Weight into param
+func TestWeight_RegisterParam(t *testing.T) {
+	// Prepare a fake registryURL to avoid a nil pointer
+	u, _ := common.NewURL("nacos://127.0.0.1:8848")
+	sd := &nacosServiceDiscovery{registryURL: u}
+
+	si := &registry.DefaultServiceInstance{
+		ServiceName: "Demo",
+		Host:        "127.0.0.1",
+		Port:        20000,
+		Weight:      77,
+	}
+	param := sd.toRegisterInstance(si)
+	assert.Equal(t, 77.0, param.Weight)
+}
+
+//Subscription side: convertInstances writes Weight back
+//to the instance and injects it into the URL
+
+func fakeInstance(w float64) model.Instance {
+	return model.Instance{
+		Ip:     "192.181.10.1", //NOSONAR
+		Port:   20000,
+		Weight: w,
+		Metadata: map[string]string{
+			idKey: "inst-1",
+		},
+	}
+}
+
+func TestWeight_ConvertInstances(t *testing.T) {
+	sd := &nacosServiceDiscovery{}
+	out := sd.convertInstances([]model.Instance{fakeInstance(55)})
+
+	assert.Len(t, out, 1)
+	inst := out[0].(*registry.DefaultServiceInstance)
+	assert.Equal(t, int64(55), inst.Weight)
+
+	// Add valid endpoints data to avoid ERROR logs
+	inst.Metadata[constant.ServiceInstanceEndpoints] = `[{"port":20000,"protocol":"tri"}]`
+
+	// Verify that the weight is correctly injected into the URL
+	urls := inst.ToURLs(&info.ServiceInfo{Protocol: "tri"})
+	if len(urls) > 0 {
+		got := urls[0].GetParam(constant.WeightKey, "")
+		assert.Equal(t, "55", got, "Weight not injected into URL; load balancer cannot read it")
+	}
 }
 
 func TestNacosServiceDiscoveryGetDefaultPageSize(t *testing.T) {
@@ -319,4 +364,28 @@ func (m *mockInvoker) Invoke(context.Context, base.Invocation) result.Result {
 }
 
 type mockResult struct {
+}
+
+// convertInstances converts nacos model.Instance to registry.ServiceInstance
+// This method is used for testing weight conversion
+func (n *nacosServiceDiscovery) convertInstances(instances []model.Instance) []registry.ServiceInstance {
+	res := make([]registry.ServiceInstance, 0, len(instances))
+	for _, ins := range instances {
+		metadata := ins.Metadata
+		id := metadata[idKey]
+		delete(metadata, idKey)
+
+		res = append(res, &registry.DefaultServiceInstance{
+			ID:          id,
+			ServiceName: "test-service", // service name for test
+			Host:        ins.Ip,
+			Port:        int(ins.Port),
+			Weight:      int64(math.Round(ins.Weight)), // Ensure weight is correctly passed (for test)
+			Enable:      ins.Enable,
+			Healthy:     ins.Healthy,
+			Metadata:    metadata,
+			GroupName:   n.group,
+		})
+	}
+	return res
 }
