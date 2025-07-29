@@ -102,9 +102,8 @@ func (refOpts *ReferenceOptions) init(opts ...ReferenceOption) error {
 	}
 
 	// init cluster
-	// TODO: use constant replace failover
 	if refConf.Cluster == "" {
-		refConf.Cluster = "failover"
+		refConf.Cluster = constant.ClusterKeyFailover
 	}
 
 	// init registries
@@ -510,6 +509,7 @@ func (cliOpts *ClientOptions) init(opts ...ClientOption) error {
 	for _, opt := range opts {
 		opt(cliOpts)
 	}
+
 	if err := defaults.Set(cliOpts); err != nil {
 		return err
 	}
@@ -564,6 +564,21 @@ func (cliOpts *ClientOptions) init(opts ...ClientOption) error {
 
 	// todo(DMwangnima): is there any part that we should do compatibility processing?
 
+	// init overallReference from Consumer config
+	if consumerConf != nil {
+		if cliOpts.overallReference.Filter == "" {
+			cliOpts.overallReference.Filter = consumerConf.Filter
+		}
+		if len(cliOpts.overallReference.RegistryIDs) <= 0 {
+			cliOpts.overallReference.RegistryIDs = consumerConf.RegistryIDs
+		}
+		if cliOpts.overallReference.TracingKey == "" {
+			cliOpts.overallReference.TracingKey = consumerConf.TracingKey
+		}
+		if cliOpts.overallReference.Check == nil {
+			cliOpts.overallReference.Check = &consumerConf.Check
+		}
+	}
 	// init graceful_shutdown
 	graceful_shutdown.Init(graceful_shutdown.SetShutdownConfig(cliOpts.Shutdown))
 	return nil
