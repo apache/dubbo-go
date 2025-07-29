@@ -122,6 +122,7 @@ func (tp *TripleProtocol) Refer(url *common.URL) base.Invoker {
 		logger.Warnf("can't dial the server: %s", url.Key())
 		return nil
 	}
+
 	tp.SetInvokers(invoker)
 	logger.Infof("[TRIPLE Protocol] Refer service: %s", url.String())
 	return invoker
