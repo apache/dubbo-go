@@ -42,9 +42,11 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
-var defaultTTL = 10 * time.Minute
+var (
+	defaultTTL     = 10 * time.Minute
+	maxScheduleTTL = 20 * time.Second
+)
 
-// nolint
 type ZkEventListener struct {
 	Client      *gxzookeeper.ZookeeperClient
 	pathMapLock sync.Mutex
@@ -209,6 +211,7 @@ func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, li
 			logger.Errorf("Get new node path {%v} 's content error,message is  {%v}",
 				newNode, perrors.WithStack(connErr))
 		}
+
 		if !listener.DataChange(remoting.Event{Path: newNode, Action: remoting.EventTypeAdd, Content: string(content)}) {
 			continue
 		}
@@ -253,8 +256,8 @@ func (l *ZkEventListener) listenAllDirEvents(conf *common.URL, listener remoting
 			logger.Warnf("[Zookeeper EventListener][listenDirEvent] Wrong configuration for registry.ttl, error=%+v, using default value %v instead", err, defaultTTL)
 		}
 	}
-	if ttl > 20e9 {
-		ttl = 20e9
+	if ttl > maxScheduleTTL {
+		ttl = maxScheduleTTL
 	}
 
 	rootPath := path.Join(constant.PathSeparator, constant.Dubbo)
@@ -334,6 +337,7 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, li
 			logger.Warnf("[Zookeeper EventListener][listenDirEvent] Wrong configuration for registry.ttl, error=%+v, using default value %v instead", err, defaultTTL)
 		}
 	}
+
 	for {
 		// Get current children with watcher for the zkRootPath
 		children, childEventCh, err := l.Client.GetChildrenW(zkRootPath)
@@ -430,9 +434,15 @@ func (l *ZkEventListener) startScheduleWatchTask(
 	zkRootPath string, children []string, ttl time.Duration,
 	listener remoting.DataListener, childEventCh <-chan zk.Event) bool {
 	tickerTTL := ttl
-	if tickerTTL > 20e9 {
-		tickerTTL = 20e9
+	if tickerTTL > maxScheduleTTL {
+		tickerTTL = maxScheduleTTL
 	}
+
+	childrenNode, err := l.Client.GetChildren(zkRootPath)
+	if err == nil {
+		l.handleZkNodeEvent(zkRootPath, childrenNode, listener)
+	}
+
 	ticker := time.NewTicker(tickerTTL)
 	for {
 		select {

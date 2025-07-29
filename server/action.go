@@ -134,7 +134,6 @@ func (svcOpts *ServiceOptions) ExportWithInfo(info *common.ServiceInfo) error {
 
 func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 	svcConf := svcOpts.Service
-
 	if info != nil {
 		if svcConf.Interface == "" {
 			svcConf.Interface = info.InterfaceName
@@ -364,6 +363,8 @@ func (svcOpts *ServiceOptions) getUrlMap() url.Values {
 	urlMap.Set(constant.AppVersionKey, app.Version)
 	urlMap.Set(constant.OwnerKey, app.Owner)
 	urlMap.Set(constant.EnvironmentKey, app.Environment)
+	//issue #2864  nacos client add weight
+	urlMap.Set(constant.WeightKey, strconv.FormatInt(svcOpts.Provider.Weight, 10))
 
 	//filter
 	var filters string

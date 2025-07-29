@@ -527,6 +527,7 @@ func (svcOpts *ServiceOptions) init(srv *Server, opts ...ServiceOption) error {
 
 	svcOpts.srvOpts = srv.cfg
 	svc := svcOpts.Service
+
 	dubboutil.CopyFields(reflect.ValueOf(srv.cfg.Provider).Elem(), reflect.ValueOf(svc).Elem())
 
 	svcOpts.exported = atomic.NewBool(false)

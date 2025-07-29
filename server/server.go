@@ -122,6 +122,30 @@ func (s *Server) genSvcOpts(handler any, opts ...ServiceOption) (*ServiceOptions
 			SetRegistries(regsCfg),
 		)
 	}
+	// Get service-level configuration items from provider.services configuration
+	if proCfg != nil && proCfg.Services != nil {
+		// Get the unique identifier of the handler (the default is the structure name or the alias set during registration)
+		interfaceName := common.GetReference(handler)
+		// Give priority to accurately finding the service configuration from the configuration based on the reference name (i.e. the handler registration name)
+		svcCfg, ok := proCfg.Services[interfaceName]
+		if !ok {
+			//fallback: traverse matching interface fields
+			for _, cfg := range proCfg.Services {
+				if cfg.Interface == interfaceName {
+					svcCfg = cfg
+				}
+			}
+		}
+
+		if svcCfg != nil {
+			svcOpts = append(svcOpts,
+				SetService(svcCfg),
+			)
+			logger.Infof("Injected options from provider.services for %s", interfaceName)
+		} else {
+			logger.Warnf("No matching service config found for [%s]", interfaceName)
+		}
+	}
 	// options passed by users have higher priority
 	svcOpts = append(svcOpts, opts...)
 	if err := newSvcOpts.init(s, svcOpts...); err != nil {
