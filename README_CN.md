@@ -94,7 +94,7 @@ func main() {
 * **智能辅助：** 在支持的 IDE 中为配置文件启用代码补全、提示和实时校验。
 * **简化配置：** 帮助您轻松编写有效且准确的配置。
 
-有关使用详情，请参阅 [dubbo-go-schema README](https://www.google.com/search?q=./tools/dubbo-go-schema/README.md)。
+有关使用详情，请参阅 [dubbo-go-schema README](./tools/dubbo-go-schema/README.md)。
 
 ### [dubbogo-cli-v2](https://github.com/dubbogo/tools/tree/master/cmd/dubbogo-cli-v2)
 
@@ -144,7 +144,7 @@ func main() {
 
 ## 贡献代码
 
-关于提交补丁和贡献流程的详细信息，请访问 [CONTRIBUTING](https://www.google.com/search?q=./CONTRIBUTING.md)。
+关于提交补丁和贡献流程的详细信息，请访问 [CONTRIBUTING](./CONTRIBUTING.md)。
 
 ## 联系我们
 
