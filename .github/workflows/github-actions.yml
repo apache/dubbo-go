@@ -13,6 +13,20 @@ permissions:
   contents: read
 
 jobs:
+  license:
+    name: Check License Header
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check License Header
+        uses: apache/skywalking-eyes/header@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          config: .licenserc.yaml
+          mode: check
+
   build:
     name: ${{ matrix.os }} - Go ${{ matrix.go_version }}
     runs-on: ${{ matrix.os }}
