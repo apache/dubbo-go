@@ -28,15 +28,22 @@ import (
 	"strings"
 	"sync"
 	"time"
+)
 
+import (
 	cm "github.com/Workiva/go-datastructures/common"
 
 	gxset "github.com/dubbogo/gost/container/set"
+
 	"github.com/google/uuid"
+
 	"github.com/jinzhu/copier"
 
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	perrors "github.com/pkg/errors"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 // dubbo role type constant
