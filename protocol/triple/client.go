@@ -34,10 +34,10 @@ import (
 
 	"github.com/dustin/go-humanize"
 
-	"golang.org/x/net/http2"
-
 	"github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/http3"
+
+	"golang.org/x/net/http2"
 )
 
 import (

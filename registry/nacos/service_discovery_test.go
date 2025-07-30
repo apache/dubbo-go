@@ -25,23 +25,29 @@ import (
 	"strconv"
 	"sync"
 	"testing"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/metadata/info"
-
+import (
 	gxset "github.com/dubbogo/gost/container/set"
+
 	"github.com/nacos-group/nacos-sdk-go/v2/model"
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 
+	perrors "github.com/pkg/errors"
+
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery"
 	"dubbo.apache.org/dubbo-go/v3/remoting/nacos"
-	perrors "github.com/pkg/errors"
-	"github.com/stretchr/testify/assert"
 )
 
 const testName = "test"
