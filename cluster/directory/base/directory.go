@@ -93,7 +93,7 @@ func (dir *Directory) isProperRouter(url *common.URL) bool {
 
 // DoDestroy stop directory
 func (dir *Directory) DoDestroy(doDestroy func()) {
-	if dir.destroyed.CompareAndSwap(false, true) {
+	if dir.destroyed.CAS(false, true) {
 		dir.mutex.Lock()
 		doDestroy()
 		dir.mutex.Unlock()

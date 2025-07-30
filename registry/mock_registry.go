@@ -62,7 +62,7 @@ func (r *MockRegistry) UnRegister(conf *common.URL) error {
 
 // nolint
 func (r *MockRegistry) Destroy() {
-	if r.destroyed.CompareAndSwap(false, true) {
+	if r.destroyed.CAS(false, true) {
 	}
 }
 
