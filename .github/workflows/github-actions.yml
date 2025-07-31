@@ -82,10 +82,11 @@ jobs:
         else
             go get -v -t -d ./...
         fi
+        go install github.com/dubbogo/tools/cmd/imports-formatter@latest
 
     - name: Format code
       run: |
-        go fmt ./... && git status && [[ -z `git status -s` ]]
+        go fmt ./... && GOROOT=$(go env GOROOT) imports-formatter && git status && [[ -z `git status -s` ]]
 
     - name: Verify
       run: |

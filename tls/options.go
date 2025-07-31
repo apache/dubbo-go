@@ -24,7 +24,6 @@ import (
 // The consideration of not placing TLSOption in the global package is
 // to prevent users from directly using the global package, so I created
 // a new tls directory to allow users to establish config through the tls package.
-
 type Options struct {
 	TLSConf *global.TLSConfig
 }

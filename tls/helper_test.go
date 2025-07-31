@@ -19,9 +19,14 @@ package tls
 
 import (
 	"testing"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/global"
+import (
 	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
 func TestIsServerTLSValid(t *testing.T) {
