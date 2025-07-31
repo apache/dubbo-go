@@ -59,8 +59,7 @@ type Option func(*Options)
 
 func WithEtcdV3() Option {
 	return func(opts *Options) {
-		// todo(DMwangnima): move etcdv3 to constant
-		opts.Registry.Protocol = "etcdv3"
+		opts.Registry.Protocol = constant.EtcdV3Key
 	}
 }
 
