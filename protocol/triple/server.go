@@ -48,9 +48,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo3"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
-	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
-
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
+	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
 
 // Server is TRIPLE adaptation layer representation. It makes use of tri.Server to

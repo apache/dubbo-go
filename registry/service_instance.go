@@ -21,13 +21,17 @@ import (
 	"encoding/json"
 	url2 "net/url"
 	"strconv"
+)
 
+import (
 	"github.com/dubbogo/gost/log/logger"
+	gxsort "github.com/dubbogo/gost/sort"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
-	gxsort "github.com/dubbogo/gost/sort"
 )
 
 // ServiceInstance is the interface  which is used for service registration and discovery.
