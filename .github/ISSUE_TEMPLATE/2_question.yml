@@ -1,0 +1,40 @@
+name: "❓ Question"
+description: "Ask a question about the project"
+title: "[QUESTION] "
+labels: ["question"]
+body:
+  - type: checkboxes
+    id: verification
+    attributes:
+      label: "⚠️ Verification"
+      description: "Please verify that you've done the following:"
+      options:
+        - label: I have searched the [issues](https://github.com/apache/dubbo-go/issues) of this repository and believe that this is not a duplicate.
+          required: true
+
+  - type: textarea
+    id: question
+    attributes:
+      label: "❓ Your Question"
+      description: "What would you like to know?"
+      placeholder: "Ask your question in detail"
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: "📚 Context"
+      description: "Add any context that might help us answer your question"
+      placeholder: "Explain any background or context that led to this question"
+    validations:
+      required: false
+
+  - type: textarea
+    id: related-resources
+    attributes:
+      label: "🔗 Related Resources"
+      description: "Link to any related documents, code, or resources"
+      placeholder: "Share any related links or resources"
+    validations:
+      required: false

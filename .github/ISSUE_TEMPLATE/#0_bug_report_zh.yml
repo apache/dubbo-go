@@ -1,0 +1,98 @@
+name: "🐞 Bug 报告"
+description: "提交 Bug 帮助我们改进"
+title: "[BUG] "
+labels: ["bug"]
+body:
+  - type: checkboxes
+    id: duplicate-check
+    attributes:
+      label: "⚠️ 验证"
+      description: "请确认您已经完成以下操作："
+      options:
+        - label: 我已经搜索过 [issues](https://github.com/apache/dubbo-go/issues)，确信这不是一个重复的问题。
+          required: true
+
+  - type: markdown
+    attributes:
+      value: "## 🔍 环境信息"
+      
+  - type: input
+    id: go-version
+    attributes:
+      label: "Go 版本"
+      description: "您使用的 Go 版本"
+      placeholder: "1.23.0"
+    validations:
+      required: true
+
+  - type: input
+    id: dubbo-go-version
+    attributes:
+      label: "dubbo-go 版本"
+      description: "您使用的 dubbo-go 版本"
+      placeholder: "v3.3.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      description: "运行系统"
+      options:
+        - Windows
+        - macOS
+        - Linux
+    validations:
+      required: true
+
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: "📝 Bug 描述"
+      description: "清晰简洁地描述这个 bug。"
+      placeholder: "请告诉我们您遇到了什么问题。"
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction-steps
+    attributes:
+      label: "🔄 复现步骤"
+      description: "如何复现这个问题？"
+      placeholder: |
+        1. 第一步
+        2. 第二步
+        3. 第三步
+        4. ...
+        
+        如果可能，请提供 GitHub 仓库链接以复现此问题。
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: "✅ 预期行为"
+      description: "您期望发生什么？"
+      placeholder: "描述您期望发生的情况"
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: "❌ 实际行为"
+      description: "实际发生了什么？"
+      placeholder: "描述实际发生的情况"
+    validations:
+      required: true
+
+  - type: textarea
+    id: possible-solution
+    attributes:
+      label: "💡 可能的解决方案"
+      description: "如果您对如何解决这个问题有想法，请在此分享。"
+      placeholder: "您对解决此问题的建议"
+    validations:
+      required: false

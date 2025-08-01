@@ -1,0 +1,98 @@
+name: "🐞 Bug Report"
+description: "Report a bug to help us improve"
+title: "[BUG] "
+labels: ["bug"]
+body:
+  - type: checkboxes
+    id: duplicate-check
+    attributes:
+      label: "⚠️ Verification"
+      description: "Please verify that you've done the following:"
+      options:
+        - label: I have searched the [issues](https://github.com/apache/dubbo-go/issues) of this repository and believe that this is not a duplicate.
+          required: true
+
+  - type: markdown
+    attributes:
+      value: "## 🔍 Environment"
+      
+  - type: input
+    id: go-version
+    attributes:
+      label: "Go Version"
+      description: "The version of Go you're using"
+      placeholder: "1.21.0"
+    validations:
+      required: true
+
+  - type: input
+    id: dubbo-go-version
+    attributes:
+      label: "Dubbo-go Version"
+      description: "The version of dubbo-go you're using"
+      placeholder: "v1.0.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      description: What platform are you using?
+      options:
+        - Windows
+        - macOS
+        - Linux
+    validations:
+      required: true
+
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: "📝 Describe the Bug"
+      description: "A clear and concise description of what the bug is."
+      placeholder: "Tell us what you're seeing that doesn't work as expected."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction-steps
+    attributes:
+      label: "🔄 Steps to Reproduce"
+      description: "How can we reproduce this issue?"
+      placeholder: |
+        1. Step 1
+        2. Step 2
+        3. Step 3
+        4. ...
+        
+        Please provide GitHub repository link if possible to reproduce this issue.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: "✅ Expected Behavior"
+      description: "What did you expect to happen?"
+      placeholder: "Describe what you expected to happen"
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: "❌ Actual Behavior"
+      description: "What actually happened?"
+      placeholder: "Describe what actually happened"
+    validations:
+      required: true
+
+  - type: textarea
+    id: possible-solution
+    attributes:
+      label: "💡 Possible Solution"
+      description: "If you have ideas on how to fix this issue, please share them here."
+      placeholder: "Your suggestions for fixing the problem"
+    validations:
+      required: false

@@ -1,0 +1,26 @@
+name: "💬 Discussion"
+description: "Start a discussion about the project"
+title: "[DISCUSSION] "
+labels: ["discussion"]
+body:
+  - type: markdown
+    attributes:
+      value: "## 🔄 Discussion Topic"
+      
+  - type: textarea
+    id: discussion-content
+    attributes:
+      label: "Discussion Details"
+      description: "Please describe what you'd like to discuss"
+      placeholder: "Provide details about what you want to discuss regarding the project"
+    validations:
+      required: true
+
+  - type: textarea
+    id: related-context
+    attributes:
+      label: "📚 Related Context"
+      description: "Add any relevant context or background information"
+      placeholder: "Share any background information that helps frame this discussion"
+    validations:
+      required: false
