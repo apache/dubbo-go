@@ -34,6 +34,42 @@ body:
     validations:
       required: true
 
+  - type: input
+    id: server-config
+    attributes:
+      label: "Server Configuration"
+      description: "Server framework and version"
+      placeholder: "Dubbo-go, v3.0.5"
+    validations:
+      required: false
+
+  - type: input
+    id: client-config
+    attributes:
+      label: "Client Configuration"
+      description: "Client framework and version"
+      placeholder: "Dubbo-go, v3.0.5"
+    validations:
+      required: false
+
+  - type: input
+    id: protocol-config
+    attributes:
+      label: "Protocol Configuration"
+      description: "Communication protocol used"
+      placeholder: "Triple"
+    validations:
+      required: false
+
+  - type: input
+    id: registry-config
+    attributes:
+      label: "Registry Configuration"
+      description: "Registry type and version"
+      placeholder: "Nacos, v2.0.0"
+    validations:
+      required: false
+
   - type: dropdown
     id: platform
     attributes:

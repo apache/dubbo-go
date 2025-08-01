@@ -34,6 +34,42 @@ body:
     validations:
       required: true
 
+  - type: input
+    id: server-config
+    attributes:
+      label: "服务端配置"
+      description: "服务端使用的框架和版本"
+      placeholder: "Dubbo-go, v3.0.5"
+    validations:
+      required: false
+
+  - type: input
+    id: client-config
+    attributes:
+      label: "客户端配置"
+      description: "客户端使用的框架和版本"
+      placeholder: "Dubbo-go, v3.0.5"
+    validations:
+      required: false
+
+  - type: input
+    id: protocol-config
+    attributes:
+      label: "协议配置"
+      description: "使用的通信协议"
+      placeholder: "Triple"
+    validations:
+      required: false
+
+  - type: input
+    id: registry-config
+    attributes:
+      label: "注册中心配置"
+      description: "注册中心类型和版本"
+      placeholder: "Nacos, v2.0.0"
+    validations:
+      required: false
+
   - type: dropdown
     id: platform
     attributes:
