@@ -73,8 +73,8 @@ body:
   - type: dropdown
     id: platform
     attributes:
-      label: Platform
-      description: "运行系统"
+      label: 操作系统
+      description: "你使用的操作系统"
       options:
         - Windows
         - macOS
