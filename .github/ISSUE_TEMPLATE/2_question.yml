@@ -3,18 +3,27 @@ description: "Ask a question about the project"
 title: "[QUESTION] "
 labels: ["question"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🤔 Question
+        
+        We're happy to help answer your questions about Dubbo-go!
+
   - type: checkboxes
     id: verification
     attributes:
-      label: "⚠️ Verification"
-      description: "Please verify that you've done the following:"
+      label: "✅ Verification Checklist"
+      description: "Please verify that you've completed the following:"
       options:
-        - label: I have searched the [issues](https://github.com/apache/dubbo-go/issues) of this repository and believe that this is not a duplicate.
+        - label: "🔍 I have searched the [existing issues](https://github.com/apache/dubbo-go/issues) and confirmed this is not a duplicate"
           required: true
 
   - type: markdown
     attributes:
-      value: "## 🔍 Configuration (Optional)"
+      value: |
+        ---
+        ## 🔧 Configuration (Optional)"
 
   - type: input
     id: server-config
@@ -52,21 +61,35 @@ body:
     validations:
       required: false
 
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        ## ❓ Question Details
+
   - type: textarea
     id: question
     attributes:
-      label: "❓ Your Question"
-      description: "What would you like to know?"
-      placeholder: "Ask your question in detail"
+      label: "💬 Your Question"
+      description: "Please describe your question in detail"
+      placeholder: |
+        Please describe your question in detail, including:
+        • What specifically would you like to know?
+        • What confusion have you encountered?
+        • What kind of help are you expecting?
     validations:
       required: true
 
   - type: textarea
     id: context
     attributes:
-      label: "📚 Context"
+      label: "📚 Background Information"
       description: "Add any context that might help us answer your question"
-      placeholder: "Explain any background or context that led to this question"
+      placeholder: |
+        Provide relevant background information:
+        • What project are you working on?
+        • Why do you need to understand this?
+        • What have you already tried?
     validations:
       required: false
 
@@ -75,6 +98,10 @@ body:
     attributes:
       label: "🔗 Related Resources"
       description: "Link to any related documents, code, or resources"
-      placeholder: "Share any related links or resources"
+      placeholder: |
+        Share related links or resources:
+        • Relevant documentation links
+        • Code repositories or snippets
+        • Reference materials
     validations:
       required: false
