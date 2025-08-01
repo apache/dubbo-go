@@ -56,7 +56,7 @@ body:
     id: registry-config
     attributes:
       label: "注册中心配置"
-      description: "注册中���类型和版本"
+      description: "注册中心类型和版本"
       placeholder: "Nacos, v2.0.0"
     validations:
       required: false
@@ -76,7 +76,7 @@ body:
         请详细描述您的问题，包括：
         • 具体想了解什么？
         • 遇到了什么困惑？
-        • 期望��到什么样的帮助？
+        • 期望得到什么样的帮助？
     validations:
       required: true
 
