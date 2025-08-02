@@ -1,0 +1,107 @@
+name: "❓ 问题咨询"
+description: "提出关于项目的疑问"
+title: "[QUESTION] "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🤔 问题咨询
+        
+        我们很乐意帮助您解答关于 Dubbo-go 的问题！
+
+  - type: checkboxes
+    id: verification
+    attributes:
+      label: "✅ 验证清单"
+      description: "请确认您已经完成以下操作："
+      options:
+        - label: "🔍 我已经搜索过 [现有 Issues](https://github.com/apache/dubbo-go/issues)，确信这不是重复问题"
+          required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        ## 🔧 环境信息（可选）
+
+  - type: input
+    id: server-config
+    attributes:
+      label: "服务端配置"
+      description: "服务端使用的框架和版本"
+      placeholder: "Dubbo-go, v3.0.5"
+    validations:
+      required: false
+
+  - type: input
+    id: client-config
+    attributes:
+      label: "客户端配置"
+      description: "客户端使用的框架和版本"
+      placeholder: "Dubbo-go, v3.0.5"
+    validations:
+      required: false
+
+  - type: input
+    id: protocol-config
+    attributes:
+      label: "协议配置"
+      description: "使用的通信协议"
+      placeholder: "Triple"
+    validations:
+      required: false
+
+  - type: input
+    id: registry-config
+    attributes:
+      label: "注册中心配置"
+      description: "注册中心类型和版本"
+      placeholder: "Nacos, v2.0.0"
+    validations:
+      required: false
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        ## ❓ 问题详情
+
+  - type: textarea
+    id: question
+    attributes:
+      label: "💬 您的问题"
+      description: "请详细描述您想了解的问题"
+      placeholder: |
+        请详细描述您的问题，包括：
+        • 具体想了解什么？
+        • 遇到了什么困惑？
+        • 期望得到什么样的帮助？
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: "📚 背景信息"
+      description: "添加任何可能帮助我们回答您问题的上下文"
+      placeholder: |
+        提供相关背景信息：
+        • 您在做什么项目？
+        • 为什么需要了解这个问题？
+        • 您已经尝试过什么？
+    validations:
+      required: false
+
+  - type: textarea
+    id: related-resources
+    attributes:
+      label: "🔗 相关资源"
+      description: "链接到任何相关文档、代码或资源"
+      placeholder: |
+        分享相关链接或资源：
+        • 相关文档链接
+        • 代码仓库或片段
+        • 参考资料
+    validations:
+      required: false

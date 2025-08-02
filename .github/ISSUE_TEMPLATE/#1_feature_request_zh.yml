@@ -1,0 +1,94 @@
+name: "✨ 功能请求"
+description: "提出新想法或功能建议"
+title: "[FEATURE] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🚀 功能请求
+        
+        感谢您为项目提供新的想法和建议！
+
+  - type: checkboxes
+    id: verification
+    attributes:
+      label: "✅ 验证清单"
+      description: "请确认您已经完成以下操作："
+      options:
+        - label: "🔍 我已经搜索过 [现有 Issues](https://github.com/apache/dubbo-go/issues)，确信这不是重复请求"
+          required: true
+        - label: "📋 我已经查看了 [发布说明](https://github.com/apache/dubbo-go/releases)，确信此功能尚未实现"
+          required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        ## 💡 功能详情
+
+  - type: textarea
+    id: solution-description
+    attributes:
+      label: "🎯 功能描述"
+      description: "清晰概述您建议的功能或方法"
+      placeholder: |
+        请详细描述您希望看到的功能，包括：
+        • 功能的核心作用
+        • 预期的使用方式
+        • 与现有功能的关系
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-cases
+    attributes:
+      label: "📋 使用场景"
+      description: "这个功能适用的典型场景和业务价值"
+      placeholder: |
+        请描述具体的使用场景：
+        • 在什么情况下会使用这个功能？
+        • 解决了什么具体问题？
+        • 带来什么价值？
+    validations:
+      required: true
+
+  - type: textarea
+    id: complexity-risks
+    attributes:
+      label: "⚖️ 复杂性与风险评估"
+      description: "潜在的技术挑战、实现难度或可能的风险"
+      placeholder: |
+        请考虑并描述：
+        • 实现难度评估
+        • 可能的技术挑战
+        • 对现有功能的影响
+        • 性能考虑
+    validations:
+      required: false
+
+  - type: textarea
+    id: external-dependencies
+    attributes:
+      label: "🔗 外部依赖"
+      description: "实现此功能需要的第三方工具、服务或集成"
+      placeholder: |
+        列出所需的外部依赖：
+        • 第三方库或框架
+        • 外部服务
+        • 特定的环境要求
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: "📚 附加信息"
+      description: "任何其他相关的上下文、截图或参考资料"
+      placeholder: |
+        提供任何有助于理解需求的信息：
+        • 相关文档或标准
+        • 参考实现
+        • 设计草图或截图
+    validations:
+      required: false

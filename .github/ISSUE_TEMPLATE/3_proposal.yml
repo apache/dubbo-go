@@ -1,0 +1,47 @@
+name: "📝 Proposal"
+description: "Create a technical proposal"
+title: "[PROPOSAL] "
+labels: ["proposal"]
+body:
+  - type: checkboxes
+    id: verification
+    attributes:
+      label: "⚠️ Verification"
+      description: "Please verify that you've done the following:"
+      options:
+        - label: I have searched the [issues](https://github.com/apache/dubbo-go/issues) of this repository and believe that this is not a duplicate.
+          required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        ## 📋 Proposal Details
+        Please use this for a concrete design proposal for functionality.
+        If you just want to request a new feature and discuss the possible business value, create a Feature Request instead.
+
+  - type: textarea
+    id: proposal-summary
+    attributes:
+      label: "✨ Proposal Summary"
+      description: "A brief overview of your proposal"
+      placeholder: "Provide a concise summary of your technical proposal"
+    validations:
+      required: true
+
+  - type: textarea
+    id: implementation-approach
+    attributes:
+      label: "🛠️ Implementation Approach"
+      description: "How should this be implemented?"
+      placeholder: "Describe the approach to implementing this proposal"
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: "📚 Additional Context"
+      description: "Any other relevant information"
+      placeholder: "Provide any other context that might help understand your proposal"
+    validations:
+      required: false
