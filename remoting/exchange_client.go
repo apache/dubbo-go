@@ -61,7 +61,7 @@ type ExchangeClient struct {
 	ConnectTimeout time.Duration  // timeout for connecting server
 	address        string         // server address for dialing. The format: ip:port
 	client         Client         // dealing with the transport
-	init           bool           // the tag for init.
+	init           uatomic.Bool   // the tag for init.
 	activeNum      uatomic.Uint32 // the number of service using the exchangeClient
 }
 
@@ -82,7 +82,7 @@ func NewExchangeClient(url *common.URL, client Client, connectTimeout time.Durat
 }
 
 func (cl *ExchangeClient) doInit(url *common.URL) error {
-	if cl.init {
+	if cl.init.Load() {
 		return nil
 	}
 	if cl.client.Connect(url) != nil {
@@ -93,8 +93,7 @@ func (cl *ExchangeClient) doInit(url *common.URL) error {
 			return errors.New("Failed to connect server " + url.Location)
 		}
 	}
-	// FIXME atomic operation
-	cl.init = true
+	cl.init.Store(true)
 	return nil
 }
 
@@ -195,7 +194,7 @@ func (client *ExchangeClient) Send(invocation *base.Invocation, url *common.URL,
 // Close close the client.
 func (client *ExchangeClient) Close() {
 	client.client.Close()
-	client.init = false
+	client.init.Store(false)
 }
 
 // IsAvailable to check if the underlying network client is available yet.
