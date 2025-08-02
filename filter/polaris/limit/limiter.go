@@ -74,20 +74,32 @@ func (pl *polarisTpsLimiter) IsAllowable(url *common.URL, invocation base.Invoca
 	return resp.Get().Code == model.QuotaResultOk
 }
 
-func (pl *polarisTpsLimiter) buildQuotaRequest(url *common.URL, invoaction base.Invocation) polaris.QuotaRequest {
+func (pl *polarisTpsLimiter) buildQuotaRequest(url *common.URL, invocation base.Invocation) polaris.QuotaRequest {
 	ns := remotingpolaris.GetNamespace()
 	applicationMode := false
+
+	// TODO: only for compatibility with old config, able to directly remove after config is deleted
 	for _, item := range config.GetRootConfig().Registries {
 		if item.Protocol == constant.PolarisKey {
 			applicationMode = item.RegistryType == constant.ServiceKey
 		}
 	}
 
+	if url.GetParam(constant.RegistryKey, "") == constant.PolarisKey {
+		if registryType := url.GetParam(constant.RegistryTypeKey, ""); registryType != "" {
+			applicationMode = registryType == constant.ServiceKey
+		}
+	}
+
 	svc := url.Interface()
-	method := invoaction.MethodName()
+	method := invocation.MethodName()
 	if applicationMode {
+		// TODO: only for compatibility with old config, able to directly remove after config is deleted
 		svc = config.GetApplicationConfig().Name
-		method = url.Interface() + "/" + invoaction.MethodName()
+		if applicationKey := url.GetParam(constant.ApplicationKey, ""); applicationKey != "" {
+			svc = applicationKey
+		}
+		method = url.Interface() + "/" + invocation.MethodName()
 	}
 
 	req := polaris.NewQuotaRequest()
@@ -95,19 +107,19 @@ func (pl *polarisTpsLimiter) buildQuotaRequest(url *common.URL, invoaction base.
 	req.SetService(svc)
 	req.SetMethod(method)
 
-	matchs, ok := pl.buildArguments(req.(*model.QuotaRequestImpl))
+	matches, ok := pl.buildArguments(req.(*model.QuotaRequestImpl))
 	if !ok {
 		return nil
 	}
 
-	attachement := invoaction.Attachments()
-	arguments := invoaction.Arguments()
+	attachment := invocation.Attachments()
+	arguments := invocation.Arguments()
 
-	for i := range matchs {
-		item := matchs[i]
+	for i := range matches {
+		item := matches[i]
 		switch item.GetType() {
 		case v1.MatchArgument_HEADER:
-			if val, ok := attachement[item.GetKey()]; ok {
+			if val, ok := attachment[item.GetKey()]; ok {
 				req.AddArgument(model.BuildHeaderArgument(item.GetKey(), fmt.Sprintf("%+v", val)))
 			}
 		case v1.MatchArgument_QUERY:
