@@ -56,7 +56,7 @@ func (invoker *BaseClusterInvoker) GetURL() *common.URL {
 
 func (invoker *BaseClusterInvoker) Destroy() {
 	// this is must atom operation
-	if invoker.Destroyed.CAS(false, true) {
+	if invoker.Destroyed.CompareAndSwap(false, true) {
 		invoker.Directory.Destroy()
 	}
 }
