@@ -1,0 +1,26 @@
+name: "💬 讨论"
+description: "开始一个关于项目的讨论"
+title: "[讨论] "
+labels: ["discussion"]
+body:
+  - type: markdown
+    attributes:
+      value: "## 🔄 讨论主题"
+      
+  - type: textarea
+    id: discussion-content
+    attributes:
+      label: "讨论详情"
+      description: "请描述您想要讨论的内容"
+      placeholder: "提供关于您想讨论的项目相关事项的详细信息"
+    validations:
+      required: true
+
+  - type: textarea
+    id: related-context
+    attributes:
+      label: "📚 相关背景"
+      description: "添加任何相关的上下文或背景信息"
+      placeholder: "分享有助于理解此讨论的背景信息"
+    validations:
+      required: false
