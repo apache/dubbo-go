@@ -76,6 +76,9 @@ type ServiceInstance interface {
 
 	// GetTag will return the tag of the instance
 	GetTag() string
+
+	// GetWeight will return the weight of the instance; if ≤0, the caller should use DefaultWeight as fallback
+	GetWeight() int64
 }
 
 // nolint
@@ -91,6 +94,7 @@ type DefaultServiceInstance struct {
 	ServiceName     string
 	Host            string
 	Port            int
+	Weight          int64
 	Enable          bool
 	Healthy         bool
 	Metadata        map[string]string
@@ -175,7 +179,8 @@ func (d *DefaultServiceInstance) ToURLs(service *info.ServiceInfo) []*common.URL
 					common.WithIp(d.Host), common.WithPort(strconv.Itoa(endpoint.Port)),
 					common.WithPath(service.Name), common.WithInterface(service.Name),
 					common.WithMethods(service.GetMethods()), common.WithParams(service.GetParams()),
-					common.WithParams(url2.Values{constant.Tagkey: {d.Tag}}))
+					common.WithParams(url2.Values{constant.Tagkey: {d.Tag}}),
+					common.WithWeight(d.GetWeight()))
 				urls = append(urls, url)
 			}
 		}
@@ -184,7 +189,8 @@ func (d *DefaultServiceInstance) ToURLs(service *info.ServiceInfo) []*common.URL
 			common.WithIp(d.Host), common.WithPort(strconv.Itoa(d.Port)),
 			common.WithPath(service.Name), common.WithInterface(service.Name),
 			common.WithMethods(service.GetMethods()), common.WithParams(service.GetParams()),
-			common.WithParams(url2.Values{constant.Tagkey: {d.Tag}}))
+			common.WithParams(url2.Values{constant.Tagkey: {d.Tag}}),
+			common.WithWeight(d.GetWeight()))
 		urls = append(urls, url)
 	}
 	return urls
@@ -237,4 +243,11 @@ type ServiceInstanceCustomizer interface {
 	gxsort.Prioritizer
 
 	Customize(instance ServiceInstance)
+}
+
+func (d *DefaultServiceInstance) GetWeight() int64 {
+	if d.Weight <= 0 {
+		return constant.DefaultWeight
+	}
+	return d.Weight
 }

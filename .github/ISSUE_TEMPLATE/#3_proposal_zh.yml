@@ -1,0 +1,47 @@
+name: "📝 提案"
+description: "创建一个技术提案"
+title: "[提案] "
+labels: ["proposal"]
+body:
+  - type: checkboxes
+    id: verification
+    attributes:
+      label: "⚠️ 验证"
+      description: "请确认您已经完成以下操作："
+      options:
+        - label: 我已经搜索过 [issues](https://github.com/apache/dubbo-go/issues)，确信这不是一个重复的提案。
+          required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        ## 📋 提案详情
+        请使用此模板提交具体的功能设计提案。
+        如果您只想请求新功能并讨论可能的业务价值，请创建功能请求。
+
+  - type: textarea
+    id: proposal-summary
+    attributes:
+      label: "✨ 提案摘要"
+      description: "您提案的简要概述"
+      placeholder: "提供您的技术提案的简明摘要"
+    validations:
+      required: true
+
+  - type: textarea
+    id: implementation-approach
+    attributes:
+      label: "🛠️ 实现方法"
+      description: "应该如何实现这个提案？"
+      placeholder: "描述实现此提案的方法"
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: "📚 附加上下文"
+      description: "任何其他相关信息"
+      placeholder: "提供可能有助于理解您提案的任何其他上下文"
+    validations:
+      required: false

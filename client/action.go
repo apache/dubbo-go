@@ -107,7 +107,9 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 
 	var methods []string
 	if info != nil {
-		ref.InterfaceName = info.InterfaceName
+		if ref.InterfaceName == "" {
+			ref.InterfaceName = info.InterfaceName
+		}
 		methods = info.MethodNames
 		refOpts.id = info.InterfaceName
 		refOpts.info = info

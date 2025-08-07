@@ -102,9 +102,8 @@ func (refOpts *ReferenceOptions) init(opts ...ReferenceOption) error {
 	}
 
 	// init cluster
-	// TODO: use constant replace failover
 	if refConf.Cluster == "" {
-		refConf.Cluster = "failover"
+		refConf.Cluster = constant.ClusterKeyFailover
 	}
 
 	// init registries
@@ -163,6 +162,26 @@ func WithURL(url string) ReferenceOption {
 func WithFilter(filter string) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Filter = filter
+	}
+}
+
+// WithInterface sets the interface name for the service reference.
+//
+// As a functional option, it is passed to a client constructor
+// (e.g., NewGreetService) to configure which remote service to connect to.
+//
+// The interfaceName is a crucial identifier for service discovery and routing,
+// and it must exactly match the name registered by the service provider.
+//
+// Usage:
+//
+//	svc, err := greet.NewGreetService(
+//	    cli,
+//	    client.WithInterface("com.your.company.GreetService"),
+//	)
+func WithInterface(interfaceName string) ReferenceOption {
+	return func(opts *ReferenceOptions) {
+		opts.Reference.InterfaceName = interfaceName
 	}
 }
 
@@ -490,6 +509,7 @@ func (cliOpts *ClientOptions) init(opts ...ClientOption) error {
 	for _, opt := range opts {
 		opt(cliOpts)
 	}
+
 	if err := defaults.Set(cliOpts); err != nil {
 		return err
 	}
@@ -544,6 +564,21 @@ func (cliOpts *ClientOptions) init(opts ...ClientOption) error {
 
 	// todo(DMwangnima): is there any part that we should do compatibility processing?
 
+	// init overallReference from Consumer config
+	if consumerConf != nil {
+		if cliOpts.overallReference.Filter == "" {
+			cliOpts.overallReference.Filter = consumerConf.Filter
+		}
+		if len(cliOpts.overallReference.RegistryIDs) <= 0 {
+			cliOpts.overallReference.RegistryIDs = consumerConf.RegistryIDs
+		}
+		if cliOpts.overallReference.TracingKey == "" {
+			cliOpts.overallReference.TracingKey = consumerConf.TracingKey
+		}
+		if cliOpts.overallReference.Check == nil {
+			cliOpts.overallReference.Check = &consumerConf.Check
+		}
+	}
 	// init graceful_shutdown
 	graceful_shutdown.Init(graceful_shutdown.SetShutdownConfig(cliOpts.Shutdown))
 	return nil
@@ -836,7 +871,7 @@ func WithClientProtocol(opts ...protocol.ClientOption) ClientOption {
 
 	return func(srvOpts *ClientOptions) {
 		if srvOpts.overallReference.ProtocolClientConfig == nil {
-			srvOpts.overallReference.ProtocolClientConfig = new(global.ProtocolClientConfig)
+			srvOpts.overallReference.ProtocolClientConfig = new(global.ClientProtocolConfig)
 		}
 		srvOpts.overallReference.ProtocolClientConfig = proOpts.ProtocolClient
 	}

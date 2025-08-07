@@ -120,7 +120,6 @@ const (
 	XdsCircuitBreakerKey                 = "xds_circuit_reaker"
 	OTELServerTraceKey                   = "otelServerTrace"
 	OTELClientTraceKey                   = "otelClientTrace"
-	ContextFilterKey                     = "context"
 )
 
 const (
@@ -159,9 +158,9 @@ const (
 	CallClientStream                   = "client-stream"
 	CallServerStream                   = "server-stream"
 	CallBidiStream                     = "bidi-stream"
-	CallHTTPTypeKey                    = "call-http-type"
 	CallHTTP                           = "http"
 	CallHTTP2                          = "http2"
+	CallHTTP3                          = "http3"
 	ServiceInfoKey                     = "service-info"
 	RpcServiceKey                      = "rpc-service"
 	ClientInfoKey                      = "client-info"
@@ -310,6 +309,10 @@ const (
 )
 
 const (
+	ApolloKey = "apollo"
+)
+
+const (
 	XDSRegistryKey = "xds"
 )
 
@@ -339,7 +342,6 @@ const (
 	Tagkey                            = "dubbo.tag" // key of tag
 	ConditionKey                      = "dubbo.condition"
 	AttachmentKey                     = DubboCtxKey("attachment") // key in context in invoker
-	AttachmentServerKey               = DubboCtxKey("server-attachment")
 	TagRouterFactoryKey               = "tag"
 	AffinityAppRouterFactoryKey       = "application.affinity"
 	AffinityServiceRouterFactoryKey   = "service.affinity"
@@ -389,6 +391,7 @@ const (
 
 	MetadataServiceV1        = "MetadataServiceV1"
 	MetadataServiceV2        = "MetadataServiceV2"
+	MetadataServiceV1Version = "1.0.0"
 	MetadataServiceV2Version = "2.0.0"
 )
 
@@ -493,9 +496,4 @@ const (
 	DefaultNacosWeight = 1.0     // Default weight if not specified or invalid
 	MinNacosWeight     = 0.0     // Minimum allowed weight (Nacos range starts at 0)
 	MaxNacosWeight     = 10000.0 // Maximum allowed weight (Nacos range ends at 10000)
-)
-
-const (
-	GrpcHeaderStatus  = "Grpc-Status"
-	GrpcHeaderMessage = "Grpc-Message"
 )

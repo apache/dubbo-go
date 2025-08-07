@@ -527,6 +527,7 @@ func (svcOpts *ServiceOptions) init(srv *Server, opts ...ServiceOption) error {
 
 	svcOpts.srvOpts = srv.cfg
 	svc := svcOpts.Service
+
 	dubboutil.CopyFields(reflect.ValueOf(srv.cfg.Provider).Elem(), reflect.ValueOf(svc).Elem())
 
 	svcOpts.exported = atomic.NewBool(false)
@@ -604,9 +605,24 @@ type ServiceOption func(*ServiceOptions)
 
 // ---------- For user ----------
 
-func WithInterface(intf string) ServiceOption {
+// WithInterface sets the interface name for the service being exposed.
+//
+// As a functional option, it is passed to a service registration function
+// (e.g., RegisterGreetServiceHandler) to configure the service's properties.
+//
+// The `interfaceName` acts as the unique identifier for this service in the registry.
+// Clients (consumers) must use this exact name to discover and invoke the service.
+//
+// Usage:
+//
+//	err := greet.RegisterGreetServiceHandler(
+//	    srv,
+//	    &GreetTripleServer{},
+//	    server.WithInterface("com.your.company.GreetService"),
+//	)
+func WithInterface(interfaceName string) ServiceOption {
 	return func(opts *ServiceOptions) {
-		opts.Service.Interface = intf
+		opts.Service.Interface = interfaceName
 	}
 }
 
