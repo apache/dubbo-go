@@ -107,8 +107,7 @@ func WithMetadataProtocol(protocol string) Option {
 }
 
 type ReportOptions struct {
-	registryId   string
-	registryType string
+	registryId string
 	*global.MetadataReportConfig
 }
 
@@ -133,7 +132,6 @@ func InitRegistryMetadataReport(registries map[string]*global.RegistryConfig) er
 func fromRegistry(id string, rc *global.RegistryConfig) *ReportOptions {
 	opts := NewReportOptions(
 		WithRegistryId(id),
-		WithRegistryType(rc.RegistryType),
 		WithProtocol(rc.Protocol),
 		WithAddress(rc.Address),
 		WithUsername(rc.Username),
@@ -271,11 +269,5 @@ func WithParams(params map[string]string) ReportOption {
 func WithRegistryId(id string) ReportOption {
 	return func(opts *ReportOptions) {
 		opts.registryId = id
-	}
-}
-
-func WithRegistryType(t string) ReportOption {
-	return func(opts *ReportOptions) {
-		opts.registryType = t
 	}
 }

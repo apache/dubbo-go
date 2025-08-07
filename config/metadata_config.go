@@ -112,7 +112,6 @@ func (mc *MetadataReportConfig) toReportOptions() (*metadata.ReportOptions, erro
 func registryToReportOptions(id string, rc *RegistryConfig) (*metadata.ReportOptions, error) {
 	opts := metadata.NewReportOptions(
 		metadata.WithRegistryId(id),
-		metadata.WithRegistryType(rc.RegistryType),
 		metadata.WithProtocol(rc.Protocol),
 		metadata.WithAddress(rc.Address),
 		metadata.WithUsername(rc.Username),
