@@ -19,6 +19,7 @@ package trace
 
 import (
 	"context"
+	"go.opentelemetry.io/otel/sdk"
 )
 
 import (
@@ -26,7 +27,7 @@ import (
 	"go.opentelemetry.io/otel/baggage"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
-	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -70,7 +71,7 @@ func (f *otelServerFilter) Invoke(ctx context.Context, invoker base.Invoker, inv
 
 	tracer := f.TracerProvider.Tracer(
 		constant.OtelPackageName,
-		trace.WithInstrumentationVersion(constant.OtelPackageVersion),
+		trace.WithInstrumentationVersion(sdk.Version()),
 	)
 
 	ctx, span := tracer.Start(
@@ -78,9 +79,9 @@ func (f *otelServerFilter) Invoke(ctx context.Context, invoker base.Invoker, inv
 		invocation.ActualMethodName(),
 		trace.WithSpanKind(trace.SpanKindServer),
 		trace.WithAttributes(
-			RPCSystemDubbo,
-			semconv.RPCServiceKey.String(invoker.GetURL().ServiceKey()),
-			semconv.RPCMethodKey.String(invocation.MethodName()),
+			semconv.RPCSystemApacheDubbo,
+			semconv.RPCService(invoker.GetURL().ServiceKey()),
+			semconv.RPCMethod(invocation.MethodName()),
 		),
 	)
 	defer span.End()
@@ -107,7 +108,7 @@ func (f *otelClientFilter) OnResponse(ctx context.Context, result result.Result,
 func (f *otelClientFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
 	tracer := f.TracerProvider.Tracer(
 		constant.OtelPackageName,
-		trace.WithInstrumentationVersion(constant.OtelPackageVersion),
+		trace.WithInstrumentationVersion(sdk.Version()),
 	)
 
 	var span trace.Span
@@ -116,9 +117,9 @@ func (f *otelClientFilter) Invoke(ctx context.Context, invoker base.Invoker, inv
 		invocation.ActualMethodName(),
 		trace.WithSpanKind(trace.SpanKindClient),
 		trace.WithAttributes(
-			RPCSystemDubbo,
-			semconv.RPCServiceKey.String(invoker.GetURL().ServiceKey()),
-			semconv.RPCMethodKey.String(invocation.MethodName()),
+			semconv.RPCSystemApacheDubbo,
+			semconv.RPCService(invoker.GetURL().ServiceKey()),
+			semconv.RPCMethod(invocation.MethodName()),
 		),
 	)
 	defer span.End()

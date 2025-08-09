@@ -31,8 +31,7 @@ import (
 
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-
-	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 )
 
 type ExporterConfig struct {
@@ -96,9 +95,9 @@ func NewExporter(config *ExporterConfig, customFunc func() (sdktrace.SpanExporte
 		samplerOption,
 		sdktrace.WithBatcher(exporter),
 		sdktrace.WithResource(resource.NewSchemaless(
-			semconv.ServiceNamespaceKey.String(config.ServiceNamespace),
-			semconv.ServiceNameKey.String(config.ServiceName),
-			semconv.ServiceVersionKey.String(config.ServiceVersion),
+			semconv.ServiceNamespace(config.ServiceNamespace),
+			semconv.ServiceName(config.ServiceName),
+			semconv.ServiceVersion(config.ServiceVersion),
 		)),
 	)
 
