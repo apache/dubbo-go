@@ -19,7 +19,6 @@ package trace
 
 import (
 	"context"
-	"go.opentelemetry.io/otel/sdk"
 )
 
 import (
@@ -27,6 +26,7 @@ import (
 	"go.opentelemetry.io/otel/baggage"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.opentelemetry.io/otel/trace"
 )
