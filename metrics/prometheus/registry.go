@@ -177,8 +177,8 @@ func (p *promMetricRegistry) exportPushgateway() {
 		logger.Error("no pushgateway base url found in config path: metrics.prometheus.pushgateway.base-url, please check your config")
 		return
 	}
-	username := p.url.GetParam(constant.PrometheusPushgatewayBaseUrlKey, "")
-	password := p.url.GetParam(constant.PrometheusPushgatewayBaseUrlKey, "")
+	username := p.url.GetParam(constant.PrometheusPushgatewayUsernameKey, "")
+	password := p.url.GetParam(constant.PrometheusPushgatewayPasswordKey, "")
 	job := p.url.GetParam(constant.PrometheusPushgatewayJobKey, constant.PrometheusDefaultJobName)
 	pushInterval := p.url.GetParamByIntValue(constant.PrometheusPushgatewayPushIntervalKey, constant.PrometheusDefaultPushInterval)
 	pusher := push.New(baseUrl, job).Gatherer(p.gather)
