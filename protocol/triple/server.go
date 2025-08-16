@@ -25,21 +25,10 @@ import (
 	"reflect"
 	"strings"
 	"sync"
-)
 
-import (
 	hessian "github.com/apache/dubbo-go-hessian2"
-
 	"github.com/dubbogo/gost/log/logger"
 
-	grpc_go "github.com/dubbogo/grpc-go"
-
-	"github.com/dustin/go-humanize"
-
-	"google.golang.org/grpc"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
@@ -48,7 +37,12 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo3"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	grpc_go "github.com/dubbogo/grpc-go"
+	"github.com/dustin/go-humanize"
+	"google.golang.org/grpc"
+
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
+
 	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
 
@@ -90,7 +84,11 @@ func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
 	}
 
 	// initialize tri.Server
-	s.triServer = tri.NewServer(addr)
+	var negotiation bool = true // default to true for backward compatibility
+	if tripleConf != nil && tripleConf.Http3 != nil {
+		negotiation = tripleConf.Http3.Negotiation
+	}
+	s.triServer = tri.NewServer(addr, negotiation)
 
 	serialization := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	switch serialization {

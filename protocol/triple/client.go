@@ -25,9 +25,7 @@ import (
 	"net"
 	"net/http"
 	"reflect"
-	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -371,17 +369,7 @@ type dualTransport struct {
 	http2Transport *http2.Transport
 	http3Transport *http3.Transport
 	// Cache for alternative services to avoid repeated lookups
-	altSvcCache map[string]*altSvcInfo
-	// Mutex for thread-safe access to altSvcCache
-	altSvcMu sync.RWMutex
-}
-
-// altSvcInfo represents cached alternative service information
-type altSvcInfo struct {
-	protocol string // "h3" for HTTP/3, "h2" for HTTP/2
-	host     string
-	port     string
-	expires  time.Time
+	altSvcCache *tri.AltSvcCache
 }
 
 // newDualTransport creates a new dual transport that supports both HTTP/2 and HTTP/3
@@ -403,24 +391,23 @@ func newDualTransport(tlsConfig *tls.Config, keepAliveInterval, keepAliveTimeout
 	return &dualTransport{
 		http2Transport: http2Transport,
 		http3Transport: http3Transport,
-		altSvcCache:    make(map[string]*altSvcInfo),
+		altSvcCache:    tri.NewAltSvcCache(),
 	}
 }
 
 // RoundTrip implements http.RoundTripper interface with HTTP Alternative Services support
 func (dt *dualTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	// Check if we have cached alternative service information
-	dt.altSvcMu.RLock()
-	cachedAltSvc, exists := dt.altSvcCache[req.URL.Host]
-	dt.altSvcMu.RUnlock()
+	cachedAltSvc := dt.altSvcCache.Get(req.URL.Host)
 
 	// If we have valid cached alt-svc info and it's for HTTP/3, try HTTP/3 first
-	if exists && cachedAltSvc.expires.After(time.Now()) && cachedAltSvc.protocol == "h3" {
+	// Check if the cached information is still valid (not expired)
+	if cachedAltSvc != nil && cachedAltSvc.Protocol == "h3" {
 		logger.Debugf("Using cached HTTP/3 alternative service for %s", req.URL.String())
 		resp, err := dt.http3Transport.RoundTrip(req)
 		if err == nil {
 			// Update alt-svc cache from response headers
-			dt.updateAltSvcCache(req.URL.Host, resp.Header)
+			dt.altSvcCache.UpdateFromHeaders(req.URL.Host, resp.Header)
 			return resp, nil
 		}
 		logger.Debugf("Cached HTTP/3 request failed to %s, falling back to HTTP/2: %v", req.URL.String(), err)
@@ -435,156 +422,12 @@ func (dt *dualTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 
 	// Check for alternative services in the response
-	dt.updateAltSvcCache(req.URL.Host, resp.Header)
+	dt.altSvcCache.UpdateFromHeaders(req.URL.Host, resp.Header)
 
 	// If the response indicates HTTP/3 is available, try HTTP/3 for future requests
-	if altSvc := dt.getAltSvcForHost(req.URL.Host); altSvc != nil && altSvc.protocol == "h3" {
+	if altSvc := dt.altSvcCache.Get(req.URL.Host); altSvc != nil && altSvc.Protocol == "h3" {
 		logger.Debugf("Server %s supports HTTP/3, will use HTTP/3 for future requests", req.URL.Host)
 	}
 
 	return resp, nil
-}
-
-// updateAltSvcCache updates the alternative service cache based on response headers
-func (dt *dualTransport) updateAltSvcCache(host string, headers http.Header) {
-	altSvcHeader := headers.Get("Alt-Svc")
-	if altSvcHeader == "" {
-		return
-	}
-
-	// Parse Alt-Svc header according to RFC 7838
-	// Example: "h3=\":443\"; ma=86400, h3-29=\":443\"; ma=86400"
-	altSvcs := dt.parseAltSvcHeader(altSvcHeader)
-	if len(altSvcs) == 0 {
-		return
-	}
-
-	// Prefer HTTP/3 over HTTP/2
-	var preferredAltSvc *altSvcInfo
-	for _, altSvc := range altSvcs {
-		if altSvc.protocol == "h3" {
-			preferredAltSvc = altSvc
-			break
-		} else if altSvc.protocol == "h2" && preferredAltSvc == nil {
-			preferredAltSvc = altSvc
-		}
-	}
-
-	if preferredAltSvc != nil {
-		dt.altSvcMu.Lock()
-		dt.altSvcCache[host] = preferredAltSvc
-		dt.altSvcMu.Unlock()
-		logger.Debugf("Updated alt-svc cache for %s: %s", host, preferredAltSvc.protocol)
-	}
-}
-
-// parseAltSvcHeader parses the Alt-Svc header according to RFC 7838
-func (dt *dualTransport) parseAltSvcHeader(altSvcHeader string) []*altSvcInfo {
-	var altSvcs []*altSvcInfo
-
-	// Split by comma to get individual alternative services
-	parts := strings.Split(altSvcHeader, ",")
-	for _, part := range parts {
-		part = strings.TrimSpace(part)
-		if part == "" {
-			continue
-		}
-
-		// Parse protocol and authority
-		// Format: protocol="authority"; ma=max_age
-		// Example: h3=":443"; ma=86400
-		altSvc := dt.parseAltSvcPart(part)
-		if altSvc != nil {
-			altSvcs = append(altSvcs, altSvc)
-		}
-	}
-
-	return altSvcs
-}
-
-// parseAltSvcPart parses a single alternative service part
-func (dt *dualTransport) parseAltSvcPart(part string) *altSvcInfo {
-	// Find the protocol (before the first '=')
-	eqIndex := strings.Index(part, "=")
-	if eqIndex == -1 {
-		return nil
-	}
-
-	protocol := strings.TrimSpace(part[:eqIndex])
-	if protocol != "h3" && protocol != "h2" {
-		return nil
-	}
-
-	// Find the authority (between quotes)
-	quoteStart := strings.Index(part, "\"")
-	if quoteStart == -1 {
-		return nil
-	}
-
-	quoteEnd := strings.LastIndex(part, "\"")
-	if quoteEnd == -1 || quoteEnd <= quoteStart {
-		return nil
-	}
-
-	authority := part[quoteStart+1 : quoteEnd]
-
-	// Parse authority to get host and port
-	host, port := dt.parseAuthority(authority)
-
-	// Parse max_age if present
-	maxAge := 24 * time.Hour // Default to 24 hours
-	if maIndex := strings.Index(part, "ma="); maIndex != -1 {
-		maPart := part[maIndex+3:]
-		if semicolonIndex := strings.Index(maPart, ";"); semicolonIndex != -1 {
-			maPart = maPart[:semicolonIndex]
-		}
-		if age, err := strconv.Atoi(strings.TrimSpace(maPart)); err == nil && age > 0 {
-			maxAge = time.Duration(age) * time.Second
-		}
-	}
-
-	return &altSvcInfo{
-		protocol: protocol,
-		host:     host,
-		port:     port,
-		expires:  time.Now().Add(maxAge),
-	}
-}
-
-// parseAuthority parses the authority part of an alternative service
-func (dt *dualTransport) parseAuthority(authority string) (host, port string) {
-	// Authority format can be:
-	// - ":port" (host is the same as original)
-	// - "host:port"
-	// - "host" (port is the same as original)
-
-	if strings.HasPrefix(authority, ":") {
-		// Just port specified
-		port = authority[1:]
-		return "", port
-	}
-
-	if colonIndex := strings.Index(authority, ":"); colonIndex != -1 {
-		// Both host and port specified
-		host = authority[:colonIndex]
-		port = authority[colonIndex+1:]
-		return host, port
-	}
-
-	// Just host specified
-	host = authority
-	return host, ""
-}
-
-// getAltSvcForHost returns the cached alternative service for a host
-func (dt *dualTransport) getAltSvcForHost(host string) *altSvcInfo {
-	dt.altSvcMu.RLock()
-	defer dt.altSvcMu.RUnlock()
-
-	altSvc, exists := dt.altSvcCache[host]
-	if !exists || altSvc.expires.Before(time.Now()) {
-		return nil
-	}
-
-	return altSvc
 }

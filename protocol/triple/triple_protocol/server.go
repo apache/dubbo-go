@@ -25,61 +25,25 @@ import (
 	"net/http"
 	"strings"
 	"sync"
-)
 
-import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"github.com/dubbogo/gost/log/logger"
-
 	"github.com/dubbogo/grpc-go"
-
 	"github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/http3"
-
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
-
 	"golang.org/x/sync/errgroup"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-)
-
-// AltSvcHandler wraps an http.Handler to automatically add Alt-Svc headers
-// for non-HTTP/3 requests, enabling HTTP Alternative Services discovery
-type AltSvcHandler struct {
-	handler     http.Handler
-	http3Server *http3.Server
-}
-
-// ServeHTTP implements http.Handler interface
-func (h *AltSvcHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// Add Alt-Svc header for non-HTTP/3 requests to advertise HTTP/3 availability
-	if r.ProtoMajor < 3 {
-		if err := h.http3Server.SetQUICHeaders(w.Header()); err != nil {
-			logger.Warnf("Failed to set QUIC headers for %s: %v", r.URL.String(), err)
-		}
-	}
-
-	// Call the wrapped handler
-	h.handler.ServeHTTP(w, r)
-}
-
-// NewAltSvcHandler creates a new AltSvcHandler that wraps the given handler
-func NewAltSvcHandler(handler http.Handler, http3Server *http3.Server) *AltSvcHandler {
-	return &AltSvcHandler{
-		handler:     handler,
-		http3Server: http3Server,
-	}
-}
-
 type Server struct {
-	mu       sync.Mutex
-	addr     string
-	mux      *http.ServeMux
-	handlers map[string]*Handler
-	httpSrv  *http.Server
-	http3Srv *http3.Server
+	mu          sync.Mutex
+	addr        string
+	mux         *http.ServeMux
+	handlers    map[string]*Handler
+	httpSrv     *http.Server
+	http3Srv    *http3.Server
+	negotiation bool // Whether to enable HTTP/3 negotiation via Alt-Svc headers
 }
 
 func (s *Server) RegisterUnaryHandler(
@@ -272,7 +236,7 @@ func (s *Server) startHttp2AndHttp3(tlsConf *tls.Config) error {
 	}
 
 	// Create Alt-Svc handler wrapper for HTTP/2 server
-	altSvcHandler := NewAltSvcHandler(s.mux, s.http3Srv)
+	altSvcHandler := NewAltSvcHandler(s.mux, s.http3Srv, s.negotiation)
 
 	// Start HTTP/2 server with Alt-Svc handler wrapper
 	s.httpSrv = &http.Server{
@@ -399,10 +363,11 @@ func (s *Server) GracefulStop(ctx context.Context) error {
 	}
 }
 
-func NewServer(addr string) *Server {
+func NewServer(addr string, negotiation bool) *Server {
 	return &Server{
-		mux:      http.NewServeMux(),
-		addr:     addr,
-		handlers: make(map[string]*Handler),
+		mux:         http.NewServeMux(),
+		addr:        addr,
+		handlers:    make(map[string]*Handler),
+		negotiation: negotiation,
 	}
 }
