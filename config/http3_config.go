@@ -25,13 +25,14 @@ type Http3Config struct {
 	// The default value is false.
 	Enable bool `yaml:"enable" json:"enable,omitempty"`
 
-	// TODO: add more params about http3
-
-	// TODO: negotiation implementation
-	// ref: https://quic-go.net/docs/http3/server/#advertising-http3-via-alt-svc
-	//
 	// Whether to enable HTTP/3 negotiation.
+	// If set to true, HTTP/2 alt-svc negotiation will be enabled,
+	// allowing clients to negotiate between HTTP/2 and HTTP/3.
 	// If set to false, HTTP/2 alt-svc negotiation will be skipped,
 	// enabling HTTP/3 but disabling HTTP/2 on the consumer side.
-	// negotiation bool
+	// The default value is true.
+	// ref: https://quic-go.net/docs/http3/server/#advertising-http3-via-alt-svc
+	Negotiation bool `yaml:"negotiation" json:"negotiation,omitempty"`
+
+	// TODO: add more params about http3
 }
