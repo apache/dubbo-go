@@ -25,15 +25,24 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
+import (
 	"github.com/dubbogo/gost/log/logger"
+
 	"github.com/dubbogo/grpc-go"
+
 	"github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/http3"
+
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
+
 	"golang.org/x/sync/errgroup"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 type Server struct {

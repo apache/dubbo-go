@@ -22,8 +22,11 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+)
 
+import (
 	"github.com/quic-go/quic-go/http3"
+
 	"github.com/stretchr/testify/assert"
 )
 

@@ -104,3 +104,9 @@ func Http3Enable() Option {
 		opts.Triple.Http3.Enable = true
 	}
 }
+
+func Http3Negotiation(negotiation bool) Option {
+	return func(opts *Options) {
+		opts.Triple.Http3.Negotiation = negotiation
+	}
+}
