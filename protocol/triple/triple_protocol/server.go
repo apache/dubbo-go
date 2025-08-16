@@ -173,16 +173,16 @@ func (s *Server) RegisterCompatStreamHandler(
 }
 
 func (s *Server) Run(callProtocol string, tlsConf *tls.Config) error {
-	// TODO: Refactor to support starting HTTP/2 and HTTP/3 servers simultaneously.
-	// The current switch logic is mutually exclusive. Future work should allow enabling
-	// both protocols, likely based on configuration, and run them concurrently.
+	// Support for starting HTTP/2 and HTTP/3 servers simultaneously.
 	switch callProtocol {
 	case constant.CallHTTP2:
 		return s.startHttp2(tlsConf)
 	case constant.CallHTTP3:
 		return s.startHttp3(tlsConf)
+	case constant.CallHTTP2AndHTTP3:
+		return s.startHttp2AndHttp3(tlsConf)
 	default:
-		return fmt.Errorf("unsupported protocol: %s, only http2 or http3 are supported", callProtocol)
+		return fmt.Errorf("unsupported protocol: %s, only http2, http3, or http2-and-http3 are supported", callProtocol)
 	}
 }
 
@@ -225,6 +225,50 @@ func (s *Server) startHttp3(tlsConf *tls.Config) error {
 	logger.Debugf("TRIPLE HTTP/3 Server starting on %v", s.addr)
 
 	return s.http3Srv.ListenAndServe()
+}
+
+func (s *Server) startHttp2AndHttp3(tlsConf *tls.Config) error {
+	// Check if TLS config is provided for HTTP/3
+	if tlsConf == nil {
+		return fmt.Errorf("TRIPLE HTTP/2 and HTTP/3 Server must have TLS config, but TLS config is nil")
+	}
+
+	// Start HTTP/2 server
+	s.httpSrv = &http.Server{
+		Addr:      s.addr,
+		Handler:   h2c.NewHandler(s.mux, &http2.Server{}),
+		TLSConfig: tlsConf,
+	}
+
+	// Start HTTP/3 server
+	s.http3Srv = &http3.Server{
+		Addr:       s.addr,
+		Handler:    s.mux,
+		TLSConfig:  http3.ConfigureTLSConfig(tlsConf),
+		QUICConfig: &quic.Config{},
+	}
+
+	logger.Debugf("TRIPLE HTTP/2 and HTTP/3 Server starting on %v", s.addr)
+
+	// Start both servers concurrently
+	errChan := make(chan error, 2)
+
+	// Start HTTP/2 server in a goroutine
+	go func() {
+		if err := s.httpSrv.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
+			errChan <- fmt.Errorf("HTTP/2 server error: %w", err)
+		}
+	}()
+
+	// Start HTTP/3 server in a goroutine
+	go func() {
+		if err := s.http3Srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			errChan <- fmt.Errorf("HTTP/3 server error: %w", err)
+		}
+	}()
+
+	// Wait for the first error from either server
+	return <-errChan
 }
 
 // Stop the Triple server for both HTTP/2 and HTTP/3.

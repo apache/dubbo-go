@@ -20,8 +20,11 @@ package global
 // Http3Config represents the config of http3
 type Http3Config struct {
 	// Whether to enable HTTP/3 support.
+	// When set to true, both HTTP/2 and HTTP/3 servers will be started simultaneously.
+	// When set to false, only HTTP/2 server will be started.
 	// The default value is false.
 	Enable bool `yaml:"enable" json:"enable,omitempty"`
+
 	// TODO: add more params about http3
 
 	// TODO: negotiation implementation
