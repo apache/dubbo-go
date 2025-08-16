@@ -45,6 +45,34 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
+// AltSvcHandler wraps an http.Handler to automatically add Alt-Svc headers
+// for non-HTTP/3 requests, enabling HTTP Alternative Services discovery
+type AltSvcHandler struct {
+	handler     http.Handler
+	http3Server *http3.Server
+}
+
+// ServeHTTP implements http.Handler interface
+func (h *AltSvcHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// Add Alt-Svc header for non-HTTP/3 requests to advertise HTTP/3 availability
+	if r.ProtoMajor < 3 {
+		if err := h.http3Server.SetQUICHeaders(w.Header()); err != nil {
+			logger.Warnf("Failed to set QUIC headers for %s: %v", r.URL.String(), err)
+		}
+	}
+
+	// Call the wrapped handler
+	h.handler.ServeHTTP(w, r)
+}
+
+// NewAltSvcHandler creates a new AltSvcHandler that wraps the given handler
+func NewAltSvcHandler(handler http.Handler, http3Server *http3.Server) *AltSvcHandler {
+	return &AltSvcHandler{
+		handler:     handler,
+		http3Server: http3Server,
+	}
+}
+
 type Server struct {
 	mu       sync.Mutex
 	addr     string
@@ -235,14 +263,7 @@ func (s *Server) startHttp2AndHttp3(tlsConf *tls.Config) error {
 		return fmt.Errorf("TRIPLE HTTP/2 and HTTP/3 Server must have TLS config, but TLS config is nil")
 	}
 
-	// Start HTTP/2 server
-	s.httpSrv = &http.Server{
-		Addr:      s.addr,
-		Handler:   h2c.NewHandler(s.mux, &http2.Server{}),
-		TLSConfig: tlsConf,
-	}
-
-	// Start HTTP/3 server
+	// Start HTTP/3 server first to get its configuration
 	s.http3Srv = &http3.Server{
 		Addr:       s.addr,
 		Handler:    s.mux,
@@ -250,13 +271,23 @@ func (s *Server) startHttp2AndHttp3(tlsConf *tls.Config) error {
 		QUICConfig: &quic.Config{},
 	}
 
+	// Create Alt-Svc handler wrapper for HTTP/2 server
+	altSvcHandler := NewAltSvcHandler(s.mux, s.http3Srv)
+
+	// Start HTTP/2 server with Alt-Svc handler wrapper
+	s.httpSrv = &http.Server{
+		Addr:      s.addr,
+		Handler:   h2c.NewHandler(altSvcHandler, &http2.Server{}),
+		TLSConfig: tlsConf,
+	}
+
 	logger.Debugf("TRIPLE HTTP/2 and HTTP/3 Server starting on %v", s.addr)
 
 	// Use errgroup to manage concurrent server startup
-	g := &errgroup.Group{}
+	eg := &errgroup.Group{}
 
 	// Start HTTP/2 server in a goroutine
-	g.Go(func() error {
+	eg.Go(func() error {
 		if err := s.httpSrv.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
 			return fmt.Errorf("HTTP/2 server error: %w", err)
 		}
@@ -264,7 +295,7 @@ func (s *Server) startHttp2AndHttp3(tlsConf *tls.Config) error {
 	})
 
 	// Start HTTP/3 server in a goroutine
-	g.Go(func() error {
+	eg.Go(func() error {
 		if err := s.http3Srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			return fmt.Errorf("HTTP/3 server error: %w", err)
 		}
@@ -272,7 +303,7 @@ func (s *Server) startHttp2AndHttp3(tlsConf *tls.Config) error {
 	})
 
 	// Wait for the first error from either server
-	return g.Wait()
+	return eg.Wait()
 }
 
 // Stop the Triple server for both HTTP/2 and HTTP/3.
