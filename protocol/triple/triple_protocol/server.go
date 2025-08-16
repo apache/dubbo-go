@@ -37,6 +37,8 @@ import (
 
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
+
+	"golang.org/x/sync/errgroup"
 )
 
 import (
@@ -250,25 +252,27 @@ func (s *Server) startHttp2AndHttp3(tlsConf *tls.Config) error {
 
 	logger.Debugf("TRIPLE HTTP/2 and HTTP/3 Server starting on %v", s.addr)
 
-	// Start both servers concurrently
-	errChan := make(chan error, 2)
+	// Use errgroup to manage concurrent server startup
+	g := &errgroup.Group{}
 
 	// Start HTTP/2 server in a goroutine
-	go func() {
+	g.Go(func() error {
 		if err := s.httpSrv.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
-			errChan <- fmt.Errorf("HTTP/2 server error: %w", err)
+			return fmt.Errorf("HTTP/2 server error: %w", err)
 		}
-	}()
+		return nil
+	})
 
 	// Start HTTP/3 server in a goroutine
-	go func() {
+	g.Go(func() error {
 		if err := s.http3Srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			errChan <- fmt.Errorf("HTTP/3 server error: %w", err)
+			return fmt.Errorf("HTTP/3 server error: %w", err)
 		}
-	}()
+		return nil
+	})
 
 	// Wait for the first error from either server
-	return <-errChan
+	return g.Wait()
 }
 
 // Stop the Triple server for both HTTP/2 and HTTP/3.
