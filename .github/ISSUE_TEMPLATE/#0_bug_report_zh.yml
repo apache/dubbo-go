@@ -1,0 +1,158 @@
+name: "🐞 Bug 报告"
+description: "提交 Bug 帮助我们改进"
+title: "[BUG] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 👋 感谢您的反馈！
+        
+        请填写以下信息帮助我们更好地理解和解决问题。
+
+  - type: checkboxes
+    id: duplicate-check
+    attributes:
+      label: "✅ 验证清单"
+      description: "请确认您已经完成以下操作："
+      options:
+        - label: "🔍 我已经搜索过 [现有 Issues](https://github.com/apache/dubbo-go/issues)，确信这不是重复问题"
+          required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        ## 🔧 环境信息
+
+  - type: input
+    id: go-version
+    attributes:
+      label: "🚀 Go 版本"
+      description: "请提供您使用的 Go 版本"
+      placeholder: "例如：1.23.0"
+    validations:
+      required: true
+
+  - type: input
+    id: dubbo-go-version
+    attributes:
+      label: "📦 Dubbo-go 版本"
+      description: "请提供您使用的 dubbo-go 版本"
+      placeholder: "例如：v3.3.0"
+    validations:
+      required: true
+
+  - type: input
+    id: server-config
+    attributes:
+      label: "🖥️ 服务端配置"
+      description: "服务端使用的框架和版本信息"
+      placeholder: "例如：Dubbo-go, v3.0.5"
+    validations:
+      required: false
+
+  - type: input
+    id: client-config
+    attributes:
+      label: "💻 客户端配置"
+      description: "客户端使用的框架和版本信息"
+      placeholder: "例如：Dubbo-go, v3.0.5"
+    validations:
+      required: false
+
+  - type: input
+    id: protocol-config
+    attributes:
+      label: "🌐 协议配置"
+      description: "使用的通信协议"
+      placeholder: "例如：Triple, Dubbo, gRPC"
+    validations:
+      required: false
+
+  - type: input
+    id: registry-config
+    attributes:
+      label: "📋 注册中心配置"
+      description: "注册中心类型和版本信息"
+      placeholder: "例如：Nacos v2.0.0, Zookeeper v3.8.0"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: "💾 操作系统"
+      description: "您使用的操作系统平台"
+      options:
+        - "🪟 Windows"
+        - "🍎 macOS"
+        - "🐧 Linux"
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        ## 🐛 问题详情
+
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: "📝 Bug 描述"
+      description: "请清晰简洁地描述您遇到的问题"
+      placeholder: |
+        请详细描述您遇到的 bug，包括：
+        • 具体的问题现象
+        • 错误信息（如有）
+        • 影响范围
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction-steps
+    attributes:
+      label: "🔄 重现步骤"
+      description: "请提供详细的步骤来重现这个问题"
+      placeholder: |
+        请按顺序列出重现步骤：
+        1. 第一步...
+        2. 第二步...
+        3. 第三步...
+        4. 看到错误
+
+        💡 如果可能，请提供 GitHub 仓库链接或最小重现代码
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: "✅ 预期行为"
+      description: "请描述您期望应该发生什么"
+      placeholder: "详细描述正确的行为应该是什么样的..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: "❌ 实际行为"
+      description: "请描述实际发生了什么"
+      placeholder: |
+        详细描述实际发生的情况，包括：
+        • 错误消息
+        • 异常堆栈
+        • 日志输出
+    validations:
+      required: true
+
+  - type: textarea
+    id: possible-solution
+    attributes:
+      label: "💡 可能的解决方案"
+      description: "如果您对解决这个问题有想法，请在此分享"
+      placeholder: "分享您的想法、建议或已尝试的解决方案..."
+    validations:
+      required: false

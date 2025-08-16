@@ -42,6 +42,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	_ "dubbo.apache.org/dubbo-go/v3/config_center/configurator"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	metricsRegistry "dubbo.apache.org/dubbo-go/v3/metrics/registry"
 	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
@@ -81,6 +82,15 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (director
 		return nil, perrors.Errorf("url is invalid, suburl can not be nil")
 	}
 	logger.Debugf("new RegistryDirectory for service :%s.", url.Key())
+
+	if _, ok := url.GetAttribute(constant.ApplicationKey); !ok {
+		application := config.GetRootConfig().Application
+		if application == nil {
+			defaultAppConfig := global.DefaultApplicationConfig()
+			url.SetAttribute(constant.ApplicationKey, defaultAppConfig)
+		}
+	}
+
 	dir := &RegistryDirectory{
 		Directory:        base.NewDirectory(url),
 		cacheInvokers:    []protocolbase.Invoker{},
@@ -97,7 +107,7 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (director
 		logger.Warnf("fail to create router chain with url: %s, err is: %v", url.SubURL, err)
 	}
 
-	dir.consumerConfigurationListener = newConsumerConfigurationListener(dir)
+	dir.consumerConfigurationListener = newConsumerConfigurationListener(dir, url)
 	dir.consumerConfigurationListener.addNotifyListener(dir)
 	dir.referenceConfigurationListener = newReferenceConfigurationListener(dir, url)
 
@@ -575,14 +585,27 @@ type consumerConfigurationListener struct {
 	directory *RegistryDirectory
 }
 
-func newConsumerConfigurationListener(dir *RegistryDirectory) *consumerConfigurationListener {
+func newConsumerConfigurationListener(dir *RegistryDirectory, url *common.URL) *consumerConfigurationListener {
 	listener := &consumerConfigurationListener{directory: dir}
+
+	// TODO: Temporary compatibility with old APIs, can be removed later
 	application := config.GetRootConfig().Application
 	listener.InitWith(
 		application.Name+constant.ConfiguratorSuffix,
 		listener,
 		extension.GetDefaultConfiguratorFunc(),
 	)
+
+	if ApplicationConfRaw, ok := url.GetAttribute(constant.ApplicationKey); ok {
+		if ApplicationConfig, ok := ApplicationConfRaw.(*global.ApplicationConfig); ok {
+			listener.InitWith(
+				ApplicationConfig.Name+constant.ConfiguratorSuffix,
+				listener,
+				extension.GetDefaultConfiguratorFunc(),
+			)
+		}
+	}
+
 	return listener
 }
 

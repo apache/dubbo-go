@@ -47,6 +47,7 @@ header:
     - 'LICENSE'
     - 'NOTICE'
     - '**/*.hessian2.go'
+    - '**/*.triple.openapi.yaml'
     - 'protocol/triple/triple_protocol'
     - 'protocol/triple/reflection/serverreflection.go'
 
