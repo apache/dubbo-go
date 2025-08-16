@@ -93,7 +93,57 @@ func WithMaxServerRecvMsgSize(size string) Option {
 }
 
 // Http3Enable enables HTTP/3 support for the Triple protocol.
-// It sets the corresponding configuration to enable HTTP/3.
+// This option configures the server to start both HTTP/2 and HTTP/3 servers
+// simultaneously, providing modern HTTP/3 capabilities alongside traditional HTTP/2.
+//
+// When enabled, the server will:
+//   - Start an HTTP/3 server using QUIC protocol
+//   - Continue running the existing HTTP/2 server
+//   - Enable protocol negotiation between HTTP/2 and HTTP/3
+//   - Provide improved performance and security benefits of HTTP/3
+//
+// Usage Examples:
+//
+//	// Basic HTTP/3 enablement
+//	server := triple.NewServer(
+//	    triple.Http3Enable(),
+//	)
+//
+//	// HTTP/3 with custom negotiation settings
+//	server := triple.NewServer(
+//	    triple.Http3Enable(),
+//	    triple.Http3Negotiation(false), // Disable automatic negotiation
+//	)
+//
+//	// Complete HTTP/3 configuration
+//	server := triple.NewServer(
+//	    triple.Http3Enable(),
+//	    triple.Http3Negotiation(true),  // Enable automatic negotiation
+//	)
+//
+// Benefits of HTTP/3:
+//   - Improved performance through QUIC protocol
+//   - Better connection multiplexing
+//   - Reduced latency with connection establishment
+//   - Enhanced security with TLS 1.3
+//   - Better handling of network changes and packet loss
+//
+// Requirements:
+//   - TLS configuration is required for HTTP/3
+//   - Server must have valid TLS certificates
+//   - Clients must support HTTP/3 for full benefits
+//   - Fallback to HTTP/2 is automatic for unsupported clients
+//
+// Default Behavior:
+//   - HTTP/3 is disabled by default for backward compatibility
+//   - When enabled, negotiation defaults to true
+//   - Both HTTP/2 and HTTP/3 servers run on the same port
+//
+// Technical Details:
+//   - Uses QUIC protocol over UDP for HTTP/3
+//   - Implements RFC 9114 (HTTP/3) specification
+//   - Supports all existing Triple protocol features
+//   - Maintains full compatibility with HTTP/2 clients
 //
 // # Experimental
 //
@@ -105,6 +155,49 @@ func Http3Enable() Option {
 	}
 }
 
+// Http3Negotiation configures HTTP/3 negotiation behavior for the Triple protocol.
+// This option controls whether HTTP/2 Alternative Services (Alt-Svc) negotiation
+// is enabled when both HTTP/2 and HTTP/3 servers are running simultaneously.
+//
+// Parameters:
+//   - negotiation: A boolean flag that controls the negotiation behavior
+//   - true:  Enables HTTP/3 negotiation via Alt-Svc headers
+//   - HTTP/2 responses will include Alt-Svc headers advertising HTTP/3 availability
+//   - Clients can negotiate between HTTP/2 and HTTP/3 protocols
+//   - Provides graceful protocol fallback and upgrade capabilities
+//   - false: Disables HTTP/3 negotiation
+//   - No Alt-Svc headers will be added to HTTP/2 responses
+//   - HTTP/3 server runs independently without protocol advertisement
+//   - Clients must explicitly connect to HTTP/3 endpoints
+//
+// Usage Examples:
+//
+//	// Enable HTTP/3 negotiation (default behavior)
+//	server := triple.NewServer(
+//	    triple.Http3Enable(),
+//	    triple.Http3Negotiation(true),
+//	)
+//
+//	// Disable HTTP/3 negotiation for explicit protocol control
+//	server := triple.NewServer(
+//	    triple.Http3Enable(),
+//	    triple.Http3Negotiation(false),
+//	)
+//
+// Default Behavior:
+//   - When HTTP/3 is enabled, negotiation defaults to true
+//   - This ensures backward compatibility and optimal client experience
+//
+// Technical Details:
+//   - Alt-Svc headers follow RFC 7838 specification
+//   - Format: "h3=\":port\"; ma=max-age"
+//   - Enables clients to discover and switch to HTTP/3 automatically
+//   - Supports graceful protocol negotiation without service interruption
+//
+// # Experimental
+//
+// NOTICE: This API is EXPERIMENTAL and may be changed or removed in
+// a later release.
 func Http3Negotiation(negotiation bool) Option {
 	return func(opts *Options) {
 		opts.Triple.Http3.Negotiation = negotiation
