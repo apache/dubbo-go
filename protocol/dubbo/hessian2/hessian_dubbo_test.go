@@ -279,7 +279,7 @@ func TestDecodeFromTcpStream(t *testing.T) {
 		ID:             1,
 		ResponseStatus: Zero,
 	}
-	resp, err := codecW.Write(service, header, []interface{}{cs})
+	resp, err := codecW.Write(service, header, []any{cs})
 	assert.NoError(t, err)
 
 	// set reader buffer = 1024 to split resp into two parts
@@ -291,7 +291,7 @@ func TestDecodeFromTcpStream(t *testing.T) {
 	assert.Equal(t, h.ID, header.ID)
 	assert.Equal(t, h.ResponseStatus, header.ResponseStatus)
 
-	reqBody := make([]interface{}, 7)
+	reqBody := make([]any, 7)
 
 	err = codec.ReadBody(reqBody)
 	assert.NoError(t, err)
@@ -299,7 +299,7 @@ func TestDecodeFromTcpStream(t *testing.T) {
 	assert.Equal(t, reqBody[2], service.Version)
 	assert.Equal(t, reqBody[3], service.Method)
 
-	if list, ok := reqBody[5].([]interface{}); ok {
+	if list, ok := reqBody[5].([]any); ok {
 		assert.Len(t, list, 1)
 		if infoPtr, ok2 := list[0].(*CaseStream); ok2 {
 			assert.Equal(t, len(infoPtr.Payload), 1024)
