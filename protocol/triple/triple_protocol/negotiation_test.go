@@ -30,6 +30,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/global"
+)
+
 func TestParseAltSvcHeader(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -307,4 +311,41 @@ func TestAltSvcHandlerNegotiation(t *testing.T) {
 
 	// Verify that the handler still works correctly regardless of negotiation setting
 	assert.Equal(t, w.Header().Get("Alt-Svc"), w2.Header().Get("Alt-Svc"))
+}
+
+func TestNewServerWithTripleConf(t *testing.T) {
+	// Test with negotiation enabled
+	tripleConfEnabled := &global.TripleConfig{
+		Http3: &global.Http3Config{
+			Enable:      true,
+			Negotiation: true,
+		},
+	}
+
+	serverEnabled := NewServer("127.0.0.1:20001", tripleConfEnabled)
+	assert.True(t, serverEnabled.tripleConfig.Http3.Negotiation)
+
+	// Test with negotiation disabled
+	tripleConfDisabled := &global.TripleConfig{
+		Http3: &global.Http3Config{
+			Enable:      true,
+			Negotiation: false,
+		},
+	}
+
+	serverDisabled := NewServer("127.0.0.1:20002", tripleConfDisabled)
+	assert.False(t, serverDisabled.tripleConfig.Http3.Negotiation)
+
+	// Test with nil tripleConf (should use default negotiation=true)
+	serverDefault := NewServer("127.0.0.1:20003", nil)
+	assert.Nil(t, serverDefault.tripleConfig)
+
+	// Test with tripleConf but nil Http3 (should use default negotiation=true)
+	tripleConfNilHttp3 := &global.TripleConfig{
+		Http3: nil,
+	}
+
+	serverNilHttp3 := NewServer("127.0.0.1:20004", tripleConfNilHttp3)
+	assert.NotNil(t, serverNilHttp3.tripleConfig)
+	assert.Nil(t, serverNilHttp3.tripleConfig.Http3)
 }

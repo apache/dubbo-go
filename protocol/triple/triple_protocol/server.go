@@ -43,16 +43,17 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
 type Server struct {
-	mu          sync.Mutex
-	addr        string
-	mux         *http.ServeMux
-	handlers    map[string]*Handler
-	httpSrv     *http.Server
-	http3Srv    *http3.Server
-	negotiation bool // Whether to enable HTTP/3 negotiation via Alt-Svc headers
+	mu           sync.Mutex
+	addr         string
+	mux          *http.ServeMux
+	handlers     map[string]*Handler
+	httpSrv      *http.Server
+	http3Srv     *http3.Server
+	tripleConfig *global.TripleConfig // Configuration for the triple protocol
 }
 
 func (s *Server) RegisterUnaryHandler(
@@ -245,7 +246,11 @@ func (s *Server) startHttp2AndHttp3(tlsConf *tls.Config) error {
 	}
 
 	// Create Alt-Svc handler wrapper for HTTP/2 server
-	altSvcHandler := NewAltSvcHandler(s.mux, s.http3Srv, s.negotiation)
+	var negotiation bool
+	if s.tripleConfig != nil && s.tripleConfig.Http3 != nil {
+		negotiation = s.tripleConfig.Http3.Negotiation
+	}
+	altSvcHandler := NewAltSvcHandler(s.mux, s.http3Srv, negotiation)
 
 	// Start HTTP/2 server with Alt-Svc handler wrapper
 	s.httpSrv = &http.Server{
@@ -372,11 +377,11 @@ func (s *Server) GracefulStop(ctx context.Context) error {
 	}
 }
 
-func NewServer(addr string, negotiation bool) *Server {
+func NewServer(addr string, tripleConf *global.TripleConfig) *Server {
 	return &Server{
-		mux:         http.NewServeMux(),
-		addr:        addr,
-		handlers:    make(map[string]*Handler),
-		negotiation: negotiation,
+		mux:          http.NewServeMux(),
+		addr:         addr,
+		handlers:     make(map[string]*Handler),
+		tripleConfig: tripleConf,
 	}
 }

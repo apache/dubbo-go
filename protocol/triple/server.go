@@ -90,11 +90,7 @@ func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
 	}
 
 	// initialize tri.Server
-	var negotiation bool = true // default to true for backward compatibility
-	if tripleConf != nil && tripleConf.Http3 != nil {
-		negotiation = tripleConf.Http3.Negotiation
-	}
-	s.triServer = tri.NewServer(addr, negotiation)
+	s.triServer = tri.NewServer(addr, tripleConf)
 
 	serialization := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	switch serialization {
