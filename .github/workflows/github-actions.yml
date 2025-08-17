@@ -73,11 +73,6 @@ jobs:
         git config --global user.name "robot"
         git merge ${{github.event.pull_request.head.sha}}
 
-    - name: Install dependencies
-      run: |
-        # TODO: try to delete go get
-        go get -v -t -d ./...
-
     - name: Check Code Format
       run: make fmt && git status && [[ -z `git status -s` ]]
 
