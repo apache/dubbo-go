@@ -61,17 +61,6 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-go-
 
-    - name: Merge code into the upstream
-      if: ${{ github.event_name == 'pull_request' }}
-      run: |
-        git fetch origin $GITHUB_BASE_REF
-        git checkout -b $GITHUB_BASE_REF origin/$GITHUB_BASE_REF
-        git remote add devrepo https://github.com/${{github.event.pull_request.head.repo.full_name}}.git
-        git fetch devrepo ${{github.event.pull_request.head.sha}}
-        git config --global user.email "dubbo-go@github-ci.com"
-        git config --global user.name "robot"
-        git merge ${{github.event.pull_request.head.sha}}
-
     - name: Check Code Format
       run: make fmt && git status && [[ -z `git status -s` ]]
 
