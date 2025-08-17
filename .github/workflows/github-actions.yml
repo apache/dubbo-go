@@ -81,6 +81,9 @@ jobs:
     - name: Lint
       run: make lint
 
+    - name: Codecov
+      run: bash <(curl -s https://codecov.io/bash)
+
   Integration-Test:
     name: Integration Test (${{ matrix.os }} - Go ${{ matrix.go_version }})
     runs-on: ${{ matrix.os }}
@@ -125,6 +128,3 @@ jobs:
           echo "$GITHUB_EVENT_NAME is an unsupported event type."
           exit 1
         fi
-
-    - name: Codecov
-      run: bash <(curl -s https://codecov.io/bash)
