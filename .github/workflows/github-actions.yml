@@ -86,12 +86,12 @@ jobs:
 
     - name: Format code
       run: |
-        go fmt ./... && GOROOT=$(go env GOROOT) imports-formatter && git status && [[ -z `git status -s` ]]
+        make fmt && git status && [[ -z `git status -s` ]]
 
-    - name: Verify
+    - name: Unit Testing
       run: |
         go mod tidy
-        make verify
+        make test
 
     - name: Integration Testing
       run: |
