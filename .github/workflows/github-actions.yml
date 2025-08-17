@@ -27,7 +27,7 @@ jobs:
           config: .licenserc.yaml
           mode: check
 
-  build:
+  CI:
     name: ${{ matrix.os }} - Go ${{ matrix.go_version }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -76,22 +76,17 @@ jobs:
 
     - name: Install dependencies
       run: |
-        if [ -f Gopkg.toml ]; then
-            curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-            dep ensure
-        else
-            go get -v -t -d ./...
-        fi
-        go install github.com/dubbogo/tools/cmd/imports-formatter@latest
+        # TODO: try to delete go get
+        go get -v -t -d ./...
 
-    - name: Format code
-      run: |
-        make fmt && git status && [[ -z `git status -s` ]]
+    - name: Check Code Format
+      run: make fmt && git status && [[ -z `git status -s` ]]
 
     - name: Unit Testing
-      run: |
-        go mod tidy
-        make test
+      run: make test
+
+    - name: Lint
+      run: make lint
 
     - name: Integration Testing
       run: |
