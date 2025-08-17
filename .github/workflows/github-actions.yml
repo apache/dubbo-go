@@ -87,7 +87,7 @@ jobs:
     - name: Lint
       run: make lint
 
-  Integration Test:
+  Integration-Test:
     name: Integration Test ${{ matrix.os }} - Go ${{ matrix.go_version }}
     runs-on: ${{ matrix.os }}
     strategy:
