@@ -29,7 +29,7 @@ type Http3Config struct {
 	// If set to true, HTTP/2 alt-svc negotiation will be enabled,
 	// allowing clients to negotiate between HTTP/2 and HTTP/3.
 	// If set to false, HTTP/2 alt-svc negotiation will be skipped,
-	// enabling HTTP/3 but disabling HTTP/2 on the consumer side.
+	// Clients cannot discover HTTP/3 via Alt-Svc.
 	// The default value is true.
 	// ref: https://quic-go.net/docs/http3/server/#advertising-http3-via-alt-svc
 	Negotiation bool `yaml:"negotiation" json:"negotiation,omitempty"`
