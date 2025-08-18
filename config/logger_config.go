@@ -34,6 +34,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/logger"
 )
 
 type LoggerConfig struct {
@@ -117,7 +118,17 @@ func (l *LoggerConfig) toURL() *common.URL {
 
 // DynamicUpdateProperties dynamically update properties.
 func (l *LoggerConfig) DynamicUpdateProperties(new *LoggerConfig) {
-
+	if new == nil {
+		return
+	}
+	if new.Level != "" && new.Level != l.Level {
+		// best-effort runtime adjustment; only update stored level if runtime logger accepts it
+		if ok := dubboLogger.SetLoggerLevel(new.Level); ok {
+			l.Level = new.Level
+		} else {
+			logger.Warnf("logger does not support dynamic level change to %s", new.Level)
+		}
+	}
 }
 
 type LoggerConfigBuilder struct {

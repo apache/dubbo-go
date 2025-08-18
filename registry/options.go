@@ -188,6 +188,12 @@ func WithRegisterInterface() Option {
 	}
 }
 
+func WithRegisterService() Option {
+	return func(opts *Options) {
+		opts.Registry.RegistryType = constant.RegistryTypeService
+	}
+}
+
 func WithoutUseAsMetaReport() Option {
 	return func(opts *Options) {
 		opts.Registry.UseAsMetaReport = "false"
