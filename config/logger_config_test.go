@@ -22,6 +22,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"github.com/dubbogo/gost/log/logger"
 
 	"github.com/stretchr/testify/assert"
@@ -82,4 +83,58 @@ func TestNewLoggerConfigBuilder(t *testing.T) {
 	assert.Equal(t, config.File.MaxSize, 100)
 	assert.Equal(t, *config.File.Compress, true)
 	assert.Equal(t, config.File.MaxBackups, 5)
+}
+
+func TestLoggerDynamicUpdateLevel(t *testing.T) {
+	//load initial config from bytes
+	initialYAML := `
+dubbo:
+  logger:
+    driver: zap
+    level: info
+`
+	err := Load(WithBytes([]byte(initialYAML)))
+	assert.Nil(t, err)
+	assert.NotNil(t, rootConfig)
+	assert.NotNil(t, rootConfig.Logger)
+	assert.Equal(t, "info", rootConfig.Logger.Level)
+
+	//simulate config center change: update level -> debug
+	updatedYAML := `
+dubbo:
+  logger:
+    level: debug
+`
+	evt := &config_center.ConfigChangeEvent{Key: "test", Value: updatedYAML}
+	rootConfig.Process(evt)
+
+	//expect level updated in place (requires LoggerConfig.DynamicUpdateProperties implementation)
+	assert.Equal(t, "debug", rootConfig.Logger.Level)
+}
+
+func TestLoggerDynamicUpdateInvalidLevel(t *testing.T) {
+	//load initial config from bytes
+	initialYAML := `
+dubbo:
+  logger:
+    driver: zap
+    level: info
+`
+	err := Load(WithBytes([]byte(initialYAML)))
+	assert.Nil(t, err)
+	assert.NotNil(t, rootConfig)
+	assert.NotNil(t, rootConfig.Logger)
+	assert.Equal(t, "info", rootConfig.Logger.Level)
+
+	//simulate config center change with invalid level
+	updatedYAML := `
+dubbo:
+  logger:
+    level: invalid-level
+`
+	evt := &config_center.ConfigChangeEvent{Key: "test", Value: updatedYAML}
+	rootConfig.Process(evt)
+
+	//expect level unchanged
+	assert.Equal(t, "info", rootConfig.Logger.Level)
 }
