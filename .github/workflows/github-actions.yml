@@ -27,8 +27,8 @@ jobs:
           config: .licenserc.yaml
           mode: check
 
-  build:
-    name: ${{ matrix.os }} - Go ${{ matrix.go_version }}
+  CI:
+    name: CI (${{ matrix.os }} - Go ${{ matrix.go_version }})
     runs-on: ${{ matrix.os }}
     strategy:
       # If you want to matrix build , you can append the following list.
@@ -39,12 +39,10 @@ jobs:
           - ubuntu-latest
 
     steps:
-
     - name: Setup Go ${{ matrix.go_version }}
       uses: actions/setup-go@v5
       with:
         go-version: ${{ matrix.go_version }}
-      id: go
 
     - name: Checkout
       uses: actions/checkout@v4
@@ -63,48 +61,59 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-go-
 
-    - name: Merge code into the upstream
-      if: ${{ github.event_name == 'pull_request' }}
-      run: |
-        git fetch origin $GITHUB_BASE_REF
-        git checkout -b $GITHUB_BASE_REF origin/$GITHUB_BASE_REF
-        git remote add devrepo https://github.com/${{github.event.pull_request.head.repo.full_name}}.git
-        git fetch devrepo ${{github.event.pull_request.head.sha}}
-        git config --global user.email "dubbo-go@github-ci.com"
-        git config --global user.name "robot"
-        git merge ${{github.event.pull_request.head.sha}}
+    - name: Check Code Format
+      run: make fmt && git status && [[ -z `git status -s` ]]
 
-    - name: Install dependencies
-      run: |
-        if [ -f Gopkg.toml ]; then
-            curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-            dep ensure
-        else
-            go get -v -t -d ./...
-        fi
-        go install github.com/dubbogo/tools/cmd/imports-formatter@latest
+    - name: Unit Test
+      run: make test
 
-    - name: Format code
-      run: |
-        go fmt ./... && GOROOT=$(go env GOROOT) imports-formatter && git status && [[ -z `git status -s` ]]
+    - name: Lint
+      run: make lint
 
-    - name: Verify
-      run: |
-        go mod tidy
-        make verify
+    - name: Codecov
+      run: bash <(curl -s https://codecov.io/bash)
 
-    - name: Integration Testing
+  Integration-Test:
+    name: Integration Test (${{ matrix.os }} - Go ${{ matrix.go_version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # If you want to matrix build , you can append the following list.
+      matrix:
+        go_version:
+          - '1.23'
+        os:
+          - ubuntu-latest
+
+    steps:
+    - name: Setup Go ${{ matrix.go_version }}
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go_version }}
+
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Cache dependencies
+      # ref: https://github.com/actions/cache/blob/main/examples.md#go---module
+      uses: actions/cache@v4
+      with:
+        # Cache, works only on Linux
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        # Cache key
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        # An ordered list of keys to use for restoring the cache if no cache hit occurred for key
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Integration Test
       run: |
         if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
-          chmod +x integrate_test.sh \
-            && ./integrate_test.sh ${{github.event.pull_request.head.repo.full_name}} ${{github.event.pull_request.head.sha}} ${{github.base_ref}}
+            ./integrate_test.sh ${{github.event.pull_request.head.repo.full_name}} ${{github.event.pull_request.head.sha}} ${{github.base_ref}}
         elif [ "$GITHUB_EVENT_NAME" == "push" ]; then
-          chmod +x integrate_test.sh \
-            && ./integrate_test.sh $GITHUB_REPOSITORY $GITHUB_SHA $GITHUB_REF_NAME
+            ./integrate_test.sh $GITHUB_REPOSITORY $GITHUB_SHA $GITHUB_REF_NAME
         else
           echo "$GITHUB_EVENT_NAME is an unsupported event type."
           exit 1
         fi
-
-    - name: Codecov
-      run: bash <(curl -s https://codecov.io/bash)

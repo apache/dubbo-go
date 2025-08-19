@@ -210,7 +210,7 @@ func TestListener(t *testing.T) {
 	// test remove
 	apollo.RemoveListener(mockNamespace, listener)
 	listenerCount := 0
-	apollo.listeners.Range(func(_, value interface{}) bool {
+	apollo.listeners.Range(func(_, value any) bool {
 		apolloListener := value.(*apolloListener)
 		for e := range apolloListener.listeners {
 			t.Logf("listener:%v", e)
