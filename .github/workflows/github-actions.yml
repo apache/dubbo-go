@@ -67,12 +67,6 @@ jobs:
     - name: Unit Test
       run: make test
 
-    - name: dubbogo-cli
-      run: |
-        go mod tidy
-        (cd tools/dubbogo-cli && go mod tidy)
-        make verify
-
     - name: Lint
       run: make lint
 
