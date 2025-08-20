@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -77,13 +78,16 @@ func assertFileSame(t *testing.T, genPath, templatePath string) {
 
 		tempContent, err := os.ReadFile(tempFileAbsPath)
 		require.NoError(t, err)
+		normalizedTempContent := strings.ReplaceAll(string(tempContent), "\r\n", "\n")
 
 		genContent, err := os.ReadFile(genFileAbsPath)
+		normalizedGenContent := strings.ReplaceAll(string(genContent), "\r\n", "\n")
 		require.NoError(t, err)
 
-		require.Equal(t, string(tempContent), string(genContent), "get different file content: %s", genFileAbsPath)
+		require.Equal(t, normalizedTempContent, normalizedGenContent, "get different file content: %s", genFileAbsPath)
 	}
 }
+
 func walkDir(dirPth string) (files []string, err error) {
 	files = make([]string, 0, 30)
 
