@@ -98,7 +98,7 @@ A tool that provides JSON Schema for Dubbo-Go configuration files. This simplifi
 For usage details, see the [dubbo-go-schema README](./tools/dubbo-go-schema/README.md).
 
 
-### [dubbogo-cli-v2](https://github.com/dubbogo/tools/tree/master/cmd/dubbogo-cli-v2)
+### [dubbogo-cli](https://github.com/apache/dubbo-go/tree/main/tools/dubbogo-cli)
 
 A comprehensive command-line tool for bootstrapping, managing, and debugging your Dubbo-Go applications.
 
@@ -108,9 +108,8 @@ A comprehensive command-line tool for bootstrapping, managing, and debugging you
 * **Tool Management:** Install and manage essential development tools.
 * **Interface Debugging:** Provides commands to debug your services.
 
-*Note: This tool replaces the deprecated [dubbogo-cli](https://github.com/dubbogo/tools/tree/master/cmd/dubbogo-cli).*
-
-For usage details, see the [dubbogo-cli-v2 README](https://github.com/dubbogo/tools/tree/master/cmd/dubbogo-cli-v2).
+- [dubbogo-cli](https://github.com/apache/dubbo-go/tree/main/tools/dubbogo-cli)
+- [dubbogo-cli-v2](https://github.com/dubbogo/tools/tree/master/cmd/dubbogo-cli-v2)
 
 
 ### [protoc-gen-go-triple](https://github.com/dubbogo/protoc-gen-go-triple)
