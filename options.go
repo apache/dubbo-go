@@ -89,6 +89,7 @@ func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 	// remaining procedure is like RootConfig.Init() without RootConfig.Start()
 	// tasks of RootConfig.Start() would be decomposed to Client and Server
 	rcCompat := compatRootConfig(rc)
+
 	if err := rcCompat.Logger.Init(); err != nil { // init default logger
 		return err
 	}
@@ -164,6 +165,7 @@ func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 	}
 
 	compatInstanceOptions(rcCompat, rc) // overrider options config because some config are changed after init
+
 	return nil
 }
 

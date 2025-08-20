@@ -22,7 +22,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
+	"fmt"
 	"strings"
 )
 
@@ -43,8 +43,7 @@ func SignWithParams(params []any, metadata, key string) (string, error) {
 
 	data := append(params, metadata)
 	if bytes, err := toBytes(data); err != nil {
-		// TODO
-		return "", errors.New("data convert to bytes failed")
+		return "", fmt.Errorf("failed to convert data to bytes: %w", err)
 	} else {
 		return doSign(bytes, key), nil
 	}
@@ -52,7 +51,7 @@ func SignWithParams(params []any, metadata, key string) (string, error) {
 
 func toBytes(data []any) ([]byte, error) {
 	if bytes, err := json.Marshal(data); err != nil {
-		return nil, errors.New("")
+		return nil, fmt.Errorf("failed to marshal data to JSON: %w", err)
 	} else {
 		return bytes, nil
 	}

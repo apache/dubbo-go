@@ -33,18 +33,12 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
-
-func init() {
-	config.SetRootConfig(config.RootConfig{
-		Application: &config.ApplicationConfig{Name: "test-application"},
-	})
-}
 
 func TestSubscribe(t *testing.T) {
 	registryDirectory, _ := normalRegistryDir()
@@ -159,7 +153,13 @@ func Test_RefreshUrl(t *testing.T) {
 func normalRegistryDir(noMockEvent ...bool) (*RegistryDirectory, *registry.MockRegistry) {
 	extension.SetProtocol(protocolwrapper.FILTER, protocolwrapper.NewMockProtocolFilter)
 
-	url, _ := common.NewURL("mock://127.0.0.1:1111")
+	applicationConfig := &global.ApplicationConfig{
+		Name: "test-application",
+	}
+
+	url, _ := common.NewURL("mock://127.0.0.1:1111",
+		common.WithAttribute(constant.ApplicationKey, applicationConfig),
+	)
 	suburl, _ := common.NewURL(
 		"dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService",
 		common.WithParamsValue(constant.ClusterKey, "mock"),

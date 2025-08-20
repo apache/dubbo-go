@@ -228,6 +228,15 @@ func WithAttribute(key string, attribute any) Option {
 	}
 }
 
+// WithWeight sets weight for URL
+func WithWeight(weight int64) Option {
+	return func(url *URL) {
+		if weight > 0 {
+			url.SetParam(constant.WeightKey, strconv.FormatInt(weight, 10))
+		}
+	}
+}
+
 // NewURLWithOptions will create a new URL with options
 func NewURLWithOptions(opts ...Option) *URL {
 	newURL := &URL{}

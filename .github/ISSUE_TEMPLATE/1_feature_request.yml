@@ -1,0 +1,60 @@
+name: "✨ Feature Request"
+description: "Suggest an idea for this project"
+title: "[FEATURE] "
+labels: ["enhancement"]
+body:
+  - type: checkboxes
+    id: verification
+    attributes:
+      label: "⚠️ Verification"
+      description: "Please verify that you've done the following:"
+      options:
+        - label: I have searched the [issues](https://github.com/apache/dubbo-go/issues) of this repository and believe that this is not a duplicate.
+          required: true
+        - label: I have searched the [release notes](https://github.com/apache/dubbo-go/releases) of this repository and believe that this is not a duplicate.
+          required: true
+
+  - type: textarea
+    id: solution-description
+    attributes:
+      label: "🎯 Solution Description"
+      description: "A clear overview of the proposed approach or feature."
+      placeholder: "Describe the solution you'd like to see implemented"
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-cases
+    attributes:
+      label: "📋 Use Cases"
+      description: "Typical scenarios where this solution would be applied."
+      placeholder: "Describe situations where this feature would be useful"
+    validations:
+      required: true
+
+  - type: textarea
+    id: complexity-risks
+    attributes:
+      label: "⚖️ Complexity & Risks"
+      description: "Potential challenges, technical hurdles, or downsides."
+      placeholder: "Describe any potential challenges or concerns"
+    validations:
+      required: false
+
+  - type: textarea
+    id: external-dependencies
+    attributes:
+      label: "🔗 External Dependencies"
+      description: "Required third-party tools, services, or integrations."
+      placeholder: "List any external tools or services needed"
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: "📘 Additional Context"
+      description: "Add any other context or screenshots about the feature request here."
+      placeholder: "Add any other relevant information here"
+    validations:
+      required: false

@@ -83,6 +83,7 @@ func (c *RegistryConfig) getUrlMap(roleType common.RoleType) url.Values {
 	urlMap.Set(constant.RegistryKey+"."+constant.WeightKey, strconv.FormatInt(c.Weight, 10))
 	urlMap.Set(constant.RegistryTTLKey, c.TTL)
 	urlMap.Set(constant.ClientNameKey, clientNameID(c, c.Protocol, c.Address))
+	urlMap.Set(constant.RegistryTypeKey, c.RegistryType)
 
 	for k, v := range c.Params {
 		urlMap.Set(k, v)

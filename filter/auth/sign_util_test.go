@@ -36,11 +36,24 @@ func TestIsEmpty(t *testing.T) {
 		want bool
 	}{
 		// TODO: Add test cases.
-		{"test1", args{s: "   ", allowSpace: false}, true},
-		{"test2", args{s: "   ", allowSpace: true}, false},
-		{"test3", args{s: "hello,dubbo", allowSpace: false}, false},
-		{"test4", args{s: "hello,dubbo", allowSpace: true}, false},
-		{"test5", args{s: "", allowSpace: true}, true},
+		{"whitespace_false", args{s: "   ", allowSpace: false}, true},
+		{"whitespace_true", args{s: "   ", allowSpace: true}, false},
+		{"normal_false", args{s: "hello,dubbo", allowSpace: false}, false},
+		{"normal_true", args{s: "hello,dubbo", allowSpace: true}, false},
+		{"empty_true", args{s: "", allowSpace: true}, true},
+		{"empty_false", args{s: "", allowSpace: false}, true},
+		{"single_space_false", args{s: " ", allowSpace: false}, true},
+		{"single_space_true", args{s: " ", allowSpace: true}, false},
+		{"single_tab_false", args{s: "\t", allowSpace: false}, true},
+		{"single_tab_true", args{s: "\t", allowSpace: true}, false},
+		{"mixed_whitespace_false", args{s: " \t\n\r ", allowSpace: false}, true},
+		{"mixed_whitespace_true", args{s: " \t\n\r ", allowSpace: true}, false},
+		{"leading_space_false", args{s: "  hello", allowSpace: false}, false},
+		{"leading_space_true", args{s: "  hello", allowSpace: true}, false},
+		{"trailing_space_false", args{s: "hello  ", allowSpace: false}, false},
+		{"trailing_space_true", args{s: "hello  ", allowSpace: true}, false},
+		{"both_ends_false", args{s: "  hello  ", allowSpace: false}, false},
+		{"both_ends_true", args{s: "  hello  ", allowSpace: true}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

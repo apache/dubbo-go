@@ -43,7 +43,7 @@ import (
 
 // version will be used by Version func
 const (
-	version  = "1.0.0"
+	version  = constant.MetadataServiceV1Version
 	allMatch = "*"
 )
 
