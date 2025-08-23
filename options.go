@@ -20,13 +20,7 @@ package dubbo
 import (
 	"strconv"
 	"time"
-)
 
-import (
-	log "github.com/dubbogo/gost/log/logger"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
@@ -39,6 +33,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/tls"
+	log "github.com/dubbogo/gost/log/logger"
 )
 
 type InstanceOptions struct {

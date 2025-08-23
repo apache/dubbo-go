@@ -19,6 +19,7 @@ package affinity
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router"
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 )
@@ -36,7 +37,7 @@ func NewServiceAffinityRouterFactory() router.PriorityRouterFactory {
 	return &ServiceAffinityRouterFactory{}
 }
 
-func (n ServiceAffinityRouterFactory) NewPriorityRouter() (router.PriorityRouter, error) {
+func (n ServiceAffinityRouterFactory) NewPriorityRouter(url *common.URL) (router.PriorityRouter, error) {
 	return newServiceAffinityRoute(), nil
 }
 
@@ -48,6 +49,6 @@ func NewApplicationAffinityRouterFactory() router.PriorityRouterFactory {
 	return &ApplicationAffinityRouterFactory{}
 }
 
-func (n ApplicationAffinityRouterFactory) NewPriorityRouter() (router.PriorityRouter, error) {
-	return newApplicationAffinityRouter(), nil
+func (n ApplicationAffinityRouterFactory) NewPriorityRouter(url *common.URL) (router.PriorityRouter, error) {
+	return newApplicationAffinityRouter(url), nil
 }

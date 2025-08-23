@@ -19,6 +19,7 @@ package script
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router"
+	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
 func init() {
@@ -40,6 +41,6 @@ func NewScriptRouterFactory() router.PriorityRouterFactory {
 }
 
 // NewPriorityRouter construct a new PriorityRouter
-func (f *ScriptRouteFactory) NewPriorityRouter() (router.PriorityRouter, error) {
+func (f *ScriptRouteFactory) NewPriorityRouter(url *common.URL) (router.PriorityRouter, error) {
 	return NewScriptRouter(), nil
 }

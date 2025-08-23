@@ -119,7 +119,7 @@ func (c *RouterChain) copyInvokers() []base.Invoker {
 
 // NewRouterChain init router chain
 // Loop routerFactories and call NewRouter method
-func NewRouterChain() (*RouterChain, error) {
+func NewRouterChain(url *common.URL) (*RouterChain, error) {
 	routerFactories := extension.GetRouterFactories()
 	if len(routerFactories) == 0 {
 		return nil, perrors.Errorf("No routerFactory exits , create one please")
@@ -128,7 +128,7 @@ func NewRouterChain() (*RouterChain, error) {
 	routers := make([]router.PriorityRouter, 0, len(routerFactories))
 
 	for key, routerFactory := range routerFactories {
-		r, err := routerFactory().NewPriorityRouter()
+		r, err := routerFactory().NewPriorityRouter(url)
 		if err != nil {
 			logger.Errorf("Build router chain failed with routerFactories key:%s and error:%v", key, err)
 			continue
