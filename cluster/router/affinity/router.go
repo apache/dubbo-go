@@ -21,8 +21,6 @@ import (
 	"math"
 	"strings"
 	"sync"
-
-	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
 import (
@@ -38,6 +36,7 @@ import (
 	conf "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
