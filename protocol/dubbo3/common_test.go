@@ -45,5 +45,3 @@ func (g *greeterProvider) SayHello(ctx context.Context, req *internal.HelloReque
 	fmt.Printf("req: %v", req)
 	return &internal.HelloReply{Message: "this is message from reply"}, nil
 }
-
-// removed unused helper handler
