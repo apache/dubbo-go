@@ -20,10 +20,8 @@ package triple_protocol
 import (
 	"context"
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 	"sync"
 )
 
@@ -37,6 +35,8 @@ import (
 
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
+
+	"golang.org/x/sync/errgroup"
 )
 
 import (
@@ -228,96 +228,59 @@ func (s *Server) startHttp3(tlsConf *tls.Config) error {
 }
 
 // Stop the Triple server for both HTTP/2 and HTTP/3.
-// Because stop is very fast, there is no need to parallelize stop.
 func (s *Server) Stop() error {
-	var errs []error
+	eg, _ := errgroup.WithContext(context.Background())
 
 	// stop HTTP server
 	if s.httpSrv != nil {
-		if err := s.httpSrv.Close(); err != nil {
-			errs = append(errs, fmt.Errorf("http server close failed: %w", err))
-		}
+		eg.Go(func() error {
+			if err := s.httpSrv.Close(); err != nil {
+				return fmt.Errorf("http server close failed: %w", err)
+			}
+			return nil
+		})
 	}
 
 	// stop HTTP/3 server
 	if s.http3Srv != nil {
-		if err := s.http3Srv.Close(); err != nil {
-			errs = append(errs, fmt.Errorf("http3 server close failed: %w", err))
-		}
+		eg.Go(func() error {
+			if err := s.http3Srv.Close(); err != nil {
+				return fmt.Errorf("http3 server close failed: %w", err)
+			}
+			return nil
+		})
 	}
 
-	switch len(errs) {
-	case 0:
-		return nil
-	case 1:
-		return errs[0]
-	default:
-		var sb strings.Builder
-		sb.WriteString("multiple errors occurred during stop:")
-		for _, err := range errs {
-			// Newline and indent for easier reading
-			sb.WriteString("\n\t- ")
-			sb.WriteString(err.Error())
-		}
-		return errors.New(sb.String())
-	}
+	// Wait for all goroutines to complete and collect any errors
+	return eg.Wait()
 }
 
 // Gracefulstop shutdown the Triple server for both HTTP/2 and HTTP/3 gracefully.
-// Because graceful shutdown is slow, I adopted concurrent processing.
 func (s *Server) GracefulStop(ctx context.Context) error {
-	var (
-		wg      sync.WaitGroup
-		errChan = make(chan error, 2)
-	)
+	eg, ctx := errgroup.WithContext(ctx)
 
 	// shutdown HTTP server
 	if s.httpSrv != nil {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		eg.Go(func() error {
 			if err := s.httpSrv.Shutdown(ctx); err != nil {
-				errChan <- fmt.Errorf("http server shutdown failed: %w", err)
+				return fmt.Errorf("http server shutdown failed: %w", err)
 			}
-		}()
+			return nil
+		})
 	}
 
 	// shutdown HTTP/3 server
 	if s.http3Srv != nil {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		eg.Go(func() error {
 			if err := s.http3Srv.Shutdown(ctx); err != nil {
-				errChan <- fmt.Errorf("http3 server shutdown failed: %w", err)
+				return fmt.Errorf("http3 server shutdown failed: %w", err)
 			}
-		}()
+			return nil
+		})
 	}
 
-	wg.Wait()
-	close(errChan)
-
-	// Error Collection and Handling.
-	// Collect all errors into a slice.
-	var errs []error
-	for err := range errChan {
-		errs = append(errs, err)
-	}
-
-	switch len(errs) {
-	case 0:
-		return nil
-	case 1:
-		return errs[0]
-	default:
-		var sb strings.Builder
-		sb.WriteString("multiple errors occurred during graceful stop:")
-		for _, err := range errs {
-			// Newline and indent for easier reading
-			sb.WriteString("\n\t- ")
-			sb.WriteString(err.Error())
-		}
-		return errors.New(sb.String())
-	}
+	// Wait for all goroutines to complete and collect any errors
+	return eg.Wait()
 }
 
 func NewServer(addr string) *Server {
