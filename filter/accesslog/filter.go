@@ -41,20 +41,20 @@ import (
 
 const (
 	// used in URL.
-	// nolint
+	// FileDateFormat is the date format used for file rotation.
 	FileDateFormat = "2006-01-02"
-	// nolint
+	// MessageDateLayout is the datetime layout used in log message.
 	MessageDateLayout = "2006-01-02 15:04:05"
-	// nolint
+	// LogMaxBuffer is the max buffered log items.
 	LogMaxBuffer = 5000
-	// nolint
+	// LogFileMode is the file permission for access log files.
 	LogFileMode = 0o600
 
 	// those fields are the data collected by this filter
 
-	// nolint
+	// Types represents the list of argument types in log.
 	Types = "types"
-	// nolint
+	// Arguments represents the arguments string in log.
 	Arguments = "arguments"
 )
 

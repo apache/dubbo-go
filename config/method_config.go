@@ -48,7 +48,7 @@ type MethodConfig struct {
 	RequestTimeout              string `yaml:"timeout"  json:"timeout,omitempty" property:"timeout"`
 }
 
-// nolint
+// Prefix builds the configuration key prefix for this method.
 func (m *MethodConfig) Prefix() string {
 	if len(m.InterfaceId) != 0 {
 		return constant.Dubbo + "." + m.InterfaceName + "." + m.InterfaceId + "." + m.Name + "."

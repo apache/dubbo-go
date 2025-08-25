@@ -31,7 +31,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
-// nolint
+// GrpcExporter is the exporter implementation for gRPC protocol.
 type GrpcExporter struct {
 	*base.BaseExporter
 }

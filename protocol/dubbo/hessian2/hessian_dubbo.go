@@ -24,7 +24,7 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go-hessian2"
+	hessian "github.com/apache/dubbo-go-hessian2"
 
 	perrors "github.com/pkg/errors"
 )
@@ -40,7 +40,7 @@ const (
 	PackageType_BitSize       = 0x2f
 )
 
-// PackageType nolint
+// PackageType represents the bitmask for dubbo package types.
 type PackageType int
 
 // DubboHeader dubbo header

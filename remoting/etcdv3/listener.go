@@ -37,7 +37,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
-// nolint
+// EventListener watches etcd keys and forwards events to DataListener.
 type EventListener struct {
 	client     *gxetcd.Client
 	keyMapLock sync.RWMutex
@@ -226,7 +226,7 @@ func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataLis
 	}(key)
 }
 
-// nolint
+// Close waits for all spawned goroutines to finish.
 func (l *EventListener) Close() {
 	l.wg.Wait()
 }

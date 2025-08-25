@@ -41,7 +41,7 @@ import (
 
 var errNoReply = errors.New("request need @response")
 
-// nolint
+// GrpcInvoker is a gRPC invoker wrapping a generated client and guarding its lifecycle.
 type GrpcInvoker struct {
 	base.BaseInvoker
 	quitOnce    sync.Once

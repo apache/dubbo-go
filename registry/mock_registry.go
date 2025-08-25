@@ -20,16 +20,10 @@ package registry
 import (
 	"fmt"
 	"time"
-)
 
-import (
-	"github.com/dubbogo/gost/log/logger"
-
-	"go.uber.org/atomic"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"github.com/dubbogo/gost/log/logger"
+	"go.uber.org/atomic"
 )
 
 // MockRegistry is used as mock registry
@@ -55,15 +49,14 @@ func (*MockRegistry) Register(url *common.URL) error {
 	return nil
 }
 
-// nolint
+// UnRegister unregisters the given URL from mock registry.
 func (r *MockRegistry) UnRegister(conf *common.URL) error {
 	return nil
 }
 
-// nolint
+// Destroy marks the mock registry as destroyed.
 func (r *MockRegistry) Destroy() {
-	if r.destroyed.CompareAndSwap(false, true) {
-	}
+	r.destroyed.Store(true)
 }
 
 // IsAvailable is use for determine a mock registry available
@@ -71,7 +64,7 @@ func (r *MockRegistry) IsAvailable() bool {
 	return !r.destroyed.Load()
 }
 
-// nolint
+// GetURL returns the registry URL.
 func (r *MockRegistry) GetURL() *common.URL {
 	return nil
 }
@@ -80,7 +73,7 @@ func (r *MockRegistry) subscribe(*common.URL) (Listener, error) {
 	return r.listener, nil
 }
 
-// nolint
+// Subscribe subscribes to service events and notifies the listener.
 func (r *MockRegistry) Subscribe(url *common.URL, notifyListener NotifyListener) error {
 	go func() {
 		for {
@@ -106,20 +99,16 @@ func (r *MockRegistry) Subscribe(url *common.URL, notifyListener NotifyListener)
 	go func() {
 		for {
 			t, _ := r.checkLoopSubscribe(url)
-			if t == 0 {
-				continue
-			} else if t == -1 {
+			if t == -1 {
 				return
 			}
-
-			for {
-				select {
-				case e := <-r.allAddress:
-					notifyListener.NotifyAll(e, func() {
-						fmt.Print("notify all ok")
-					})
-					break
-				}
+			if t == 0 {
+				continue
+			}
+			for e := range r.allAddress {
+				notifyListener.NotifyAll(e, func() {
+					fmt.Print("notify all ok")
+				})
 			}
 		}
 	}()
@@ -149,12 +138,12 @@ func (l *listener) Next() (*ServiceEvent, error) {
 func (*listener) Close() {
 }
 
-// nolint
+// MockEvent sends a single event to subscribers.
 func (r *MockRegistry) MockEvent(event *ServiceEvent) {
 	r.listener.listenChan <- event
 }
 
-// nolint
+// MockEvents sends a batch of events to subscribers.
 func (r *MockRegistry) MockEvents(events []*ServiceEvent) {
 	r.allAddress <- events
 }

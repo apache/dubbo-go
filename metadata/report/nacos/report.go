@@ -216,7 +216,7 @@ func (n *nacosMetadataReport) RemoveServiceAppMappingListener(key string, group 
 
 type nacosMetadataReportFactory struct{}
 
-// nolint
+// CreateMetadataReport creates the nacos-based metadata report implementation.
 func (n *nacosMetadataReportFactory) CreateMetadataReport(url *common.URL) report.MetadataReport {
 	url.SetParam(constant.NacosNamespaceID, url.GetParam(constant.MetadataReportNamespaceKey, ""))
 	url.SetParam(constant.TimeoutKey, url.GetParam(constant.TimeoutKey, constant.DefaultRegTimeout))

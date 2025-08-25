@@ -35,7 +35,7 @@ import (
 var _ base.Invocation = (*RPCInvocation)(nil)
 
 // todo: is it necessary to separate fields of consumer(provider) from RPCInvocation
-// nolint
+// RPCInvocation carries method, parameters, attachments and invocation metadata.
 type RPCInvocation struct {
 	methodName string
 	// Parameter Type Names. It is used to specify the parameterType
@@ -157,7 +157,7 @@ func (r *RPCInvocation) Invoker() base.Invoker {
 	return r.invoker
 }
 
-// nolint
+// SetInvoker sets the invoker in current context (thread-safe).
 func (r *RPCInvocation) SetInvoker(invoker base.Invoker) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
