@@ -44,5 +44,3 @@ func Test_zookeeperServiceDiscovery_DataChange(t *testing.T) {
 	serviceDiscovery := &zookeeperServiceDiscovery{}
 	assert.Equal(t, registry.DefaultPageSize, serviceDiscovery.GetDefaultPageSize())
 }
-
-// removed unused test notifier and mocks

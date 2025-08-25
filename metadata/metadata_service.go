@@ -335,15 +335,13 @@ var MetadataServiceV2_ServiceInfo = common.ServiceInfo{
 }
 
 // MetadataServiceV1Handler
-// 兼容 V1 接口定义
-// 注意：V1 的方法签名与 V2 不同
-
+// Compatible with V1 interface definition
+// Note: V1 method signatures differ from V2
 type MetadataServiceHandler interface {
 	GetMetadataInfo(ctx context.Context, revision string) (*info.MetadataInfo, error)
 }
 
-// MetadataServiceV1 的最小实现，用于导出 triple v1
-
+// Minimal implementation of MetadataServiceV1 for exporting triple v1.
 type MetadataServiceV1 struct {
 	delegate MetadataService
 }

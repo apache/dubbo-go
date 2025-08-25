@@ -17,8 +17,6 @@
 
 package dubbo3
 
-// removed unused mock URL constant
-
 //func TestInvoke(t *testing.T) {
 //	go internal.InitDubboServer()
 //	time.Sleep(time.Second * 3)

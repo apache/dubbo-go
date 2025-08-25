@@ -34,8 +34,6 @@ const (
 	_prefixParamArr = "param["
 )
 
-var ()
-
 // ParseArgumentsByExpression follow https://goessner.net/articles/JsonPath/
 //
 //	{

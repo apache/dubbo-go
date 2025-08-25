@@ -43,7 +43,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting/zookeeper"
 )
 
-// removed unused variable
 func init() {
 	mf := &zookeeperMetadataReportFactory{}
 	extension.SetMetadataReportFactory("zookeeper", func() report.MetadataReportFactory {

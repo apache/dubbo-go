@@ -25,8 +25,6 @@ type MockDataListener struct{}
 
 func (*MockDataListener) Process(configType *config_center.ConfigChangeEvent) {}
 
-// remove unused helper types
-
 /*
 func Test_dataListener_DataChange(t *testing.T) {
 	tests := []struct {
