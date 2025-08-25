@@ -24,22 +24,16 @@ import (
 	"strings"
 	"sync"
 	"testing"
-)
 
-import (
-	"github.com/knadh/koanf"
-	"github.com/knadh/koanf/parsers/json"
-	"github.com/knadh/koanf/parsers/yaml"
-	"github.com/knadh/koanf/providers/rawbytes"
-
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
+	"github.com/knadh/koanf"
+	"github.com/knadh/koanf/parsers/json"
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/rawbytes"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -178,6 +172,9 @@ func initMockApollo(t *testing.T) *apolloConfiguration {
 		AppID:     "testApplication_yang",
 		Cluster:   "dev",
 		Namespace: "mockDubbogo.yaml",
+		Params: map[string]string{
+			"config-center.isBackupConfig": "false",
+		},
 	}}
 	apollo := initApollo()
 	apolloUrl := strings.ReplaceAll(apollo.URL, "http", "apollo")
