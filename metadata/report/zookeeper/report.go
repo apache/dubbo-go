@@ -43,8 +43,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting/zookeeper"
 )
 
-var emptyStrSlice = make([]string, 0)
-
+// removed unused variable
 func init() {
 	mf := &zookeeperMetadataReportFactory{}
 	extension.SetMetadataReportFactory("zookeeper", func() report.MetadataReportFactory {

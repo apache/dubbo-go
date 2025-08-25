@@ -22,7 +22,6 @@ import (
 	"net/url"
 	"path"
 	"sync"
-	"time"
 )
 
 import (
@@ -83,33 +82,8 @@ func newZkRegistry(url *common.URL) (registry.Registry, error) {
 }
 
 // nolint
-type Options struct {
-	client *gxzookeeper.ZookeeperClient
-}
-
-// nolint
+type Options struct{ client *gxzookeeper.ZookeeperClient }
 type Option func(*Options)
-
-func newMockZkRegistry(url *common.URL, opts ...gxzookeeper.Option) (*zk.TestCluster, *zkRegistry, error) {
-	var (
-		err error
-		r   *zkRegistry
-		c   *zk.TestCluster
-	)
-
-	r = &zkRegistry{
-		zkPath: make(map[string]int),
-	}
-	r.InitBaseRegistry(url, r)
-	c, r.client, _, err = gxzookeeper.NewMockZookeeperClient("test", 15*time.Second, opts...)
-	if err != nil {
-		return nil, nil, err
-	}
-	r.WaitGroup().Add(1)
-	go zookeeper.HandleClientRestart(r)
-	r.InitListeners()
-	return c, r, nil
-}
 
 // InitListeners initializes listeners of zookeeper registry center
 func (r *zkRegistry) InitListeners() {
@@ -319,9 +293,4 @@ func (r *zkRegistry) getCloseListener(conf *common.URL) (*RegistryConfigurationL
 	}
 
 	return zkListener, nil
-}
-
-func (r *zkRegistry) handleClientRestart() {
-	r.WaitGroup().Add(1)
-	go zookeeper.HandleClientRestart(r)
 }

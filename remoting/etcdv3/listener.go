@@ -19,7 +19,6 @@ package etcdv3
 
 import (
 	"sync"
-	"time"
 )
 
 import (
@@ -171,10 +170,6 @@ func (l *EventListener) ListenServiceNodeEventWithPrefix(prefix string, listener
 			}
 		}
 	}
-}
-
-func timeSecondDuration(sec int) time.Duration {
-	return time.Duration(sec) * time.Second
 }
 
 // ListenServiceEvent is invoked by etcdv3 ConsumerRegistry::Registe/ etcdv3 ConsumerRegistry::get/etcdv3 ConsumerRegistry::getListener

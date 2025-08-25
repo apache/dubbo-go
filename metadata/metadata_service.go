@@ -37,7 +37,6 @@ import (
 	tripleapi "dubbo.apache.org/dubbo-go/v3/metadata/triple_api/proto"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
-	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
@@ -241,49 +240,6 @@ func (e *serviceExporter) exportV2(port string) {
 	//exporter.metadataService.SetMetadataServiceURL(ivkURL)
 }
 
-// serviceInvoker, if base on server.infoInvoker will cause cycle dependency, so we need to use this way
-type serviceInvoker struct {
-	*base.BaseInvoker
-	invoke func(context context.Context, invocation base.Invocation) result.Result
-}
-
-func (si serviceInvoker) Invoke(context context.Context, invocation base.Invocation) result.Result {
-	return si.invoke(context, invocation)
-}
-
-type MetadataServiceHandler interface {
-	GetMetadataInfo(ctx context.Context, revision string) (*info.MetadataInfo, error)
-}
-
-type MetadataServiceV1 struct {
-	delegate MetadataService
-}
-
-func (mtsV1 *MetadataServiceV1) GetMetadataInfo(ctx context.Context, revision string) (*info.MetadataInfo, error) {
-	metadataInfo, err := mtsV1.delegate.GetMetadataInfo(revision)
-	if err != nil {
-		return nil, err
-	}
-	return metadataInfo, nil
-}
-
-func convertV1(serviceInfos map[string]*info.ServiceInfo) map[string]*tripleapi.ServiceInfo {
-	serviceInfoV1s := make(map[string]*tripleapi.ServiceInfo, len(serviceInfos))
-	for k, i := range serviceInfos {
-		serviceInfo := &tripleapi.ServiceInfo{
-			Name:     i.Name,
-			Group:    i.Group,
-			Version:  i.Version,
-			Protocol: i.Protocol,
-			Port:     0,
-			Path:     i.Path,
-			Params:   i.Params,
-		}
-		serviceInfoV1s[k] = serviceInfo
-	}
-	return serviceInfoV1s
-}
-
 // MetadataServiceV2Handler is an implementation of the org.apache.dubbo.metadata.MetadataServiceV2 service.
 type MetadataServiceV2Handler interface {
 	GetMetadataInfo(context.Context, *tripleapi.MetadataRequest) (*tripleapi.MetadataInfoV2, error)
@@ -376,4 +332,22 @@ var MetadataServiceV2_ServiceInfo = common.ServiceInfo{
 			},
 		},
 	},
+}
+
+// MetadataServiceV1Handler
+// 兼容 V1 接口定义
+// 注意：V1 的方法签名与 V2 不同
+
+type MetadataServiceHandler interface {
+	GetMetadataInfo(ctx context.Context, revision string) (*info.MetadataInfo, error)
+}
+
+// MetadataServiceV1 的最小实现，用于导出 triple v1
+
+type MetadataServiceV1 struct {
+	delegate MetadataService
+}
+
+func (mtsV1 *MetadataServiceV1) GetMetadataInfo(ctx context.Context, revision string) (*info.MetadataInfo, error) {
+	return mtsV1.delegate.GetMetadataInfo(revision)
 }
