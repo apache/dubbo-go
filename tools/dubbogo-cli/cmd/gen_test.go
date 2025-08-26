@@ -26,7 +26,7 @@ import (
 )
 
 import (
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -51,17 +51,41 @@ func TestNewDemo(t *testing.T) {
 }
 
 func assertFileSame(t *testing.T, genPath, templatePath string) {
-	tempFiles, err := walkDir(templatePath)
-	assert.Nil(t, err)
-	for _, tempPath := range tempFiles {
-		newGenetedPath := strings.ReplaceAll(tempPath, "/template/", "/")
-		newGenetedFile, err := os.ReadFile(newGenetedPath)
-		assert.Nil(t, err)
-		tempFile, err := os.ReadFile(tempPath)
-		assert.Nil(t, err)
-		assert.Equal(t, string(tempFile), string(newGenetedFile))
+	t.Cleanup(func() {
+		os.RemoveAll(genPath)
+	})
+
+	// 1. get all files in template directory
+	templateFiles, err := walkDir(templatePath)
+	require.NoError(t, err, "iterate template directory failed")
+
+	// 2. get all files in generated directory
+	genFiles, err := walkDir(genPath)
+	require.NoError(t, err, "iterate generated directory failed")
+
+	// 3. assert the number of generated files matches the template files
+	require.Len(t, genFiles, len(templateFiles), "number of generated files does not match template files")
+
+	// 4. compare each file in the template directory with the corresponding file in the generated directory
+	for _, tempFileAbsPath := range templateFiles {
+		// get relative paths of the template files
+		relPath, err := filepath.Rel(templatePath, tempFileAbsPath)
+		require.NoError(t, err)
+
+		genFileAbsPath := filepath.Join(genPath, relPath)
+
+		require.FileExists(t, genFileAbsPath, "file not exist: %s", genFileAbsPath)
+
+		tempContent, err := os.ReadFile(tempFileAbsPath)
+		require.NoError(t, err)
+		normalizedTempContent := strings.ReplaceAll(string(tempContent), "\r\n", "\n")
+
+		genContent, err := os.ReadFile(genFileAbsPath)
+		normalizedGenContent := strings.ReplaceAll(string(genContent), "\r\n", "\n")
+		require.NoError(t, err)
+
+		require.Equal(t, normalizedTempContent, normalizedGenContent, "get different file content: %s", genFileAbsPath)
 	}
-	os.RemoveAll(genPath)
 }
 
 func walkDir(dirPth string) (files []string, err error) {
