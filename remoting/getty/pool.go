@@ -105,10 +105,6 @@ func (c *gettyRPCClient) updateActive(active int64) {
 	atomic.StoreInt64(&c.active, active)
 }
 
-func (c *gettyRPCClient) getActive() int64 {
-	return atomic.LoadInt64(&c.active)
-}
-
 func (c *gettyRPCClient) newSession(session getty.Session) error {
 	var (
 		ok         bool

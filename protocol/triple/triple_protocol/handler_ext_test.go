@@ -36,7 +36,6 @@ func TestHandler_ServeHTTP(t *testing.T) {
 		successPingServer{},
 	))
 	const pingProcedure = "/" + pingv1connect.PingServiceName + "/Ping"
-	const sumProcedure = "/" + pingv1connect.PingServiceName + "/Sum"
 	server := httptest.NewServer(mux)
 	client := server.Client()
 	t.Cleanup(func() {

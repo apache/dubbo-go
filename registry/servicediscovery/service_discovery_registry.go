@@ -18,7 +18,6 @@
 package servicediscovery
 
 import (
-	"bytes"
 	"strconv"
 	"strings"
 	"sync"
@@ -45,7 +44,6 @@ import (
 	metricsRegistry "dubbo.apache.org/dubbo-go/v3/metrics/registry"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	_ "dubbo.apache.org/dubbo-go/v3/registry/servicediscovery/customizer"
-	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery/synthesizer"
 )
 
 func init() {
@@ -292,44 +290,6 @@ func (s *serviceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry
 // LoadSubscribeInstances load subscribe instance
 func (s *serviceDiscoveryRegistry) LoadSubscribeInstances(url *common.URL, notify registry.NotifyListener) error {
 	return nil
-}
-
-func getUrlKey(url *common.URL) string {
-	var bf bytes.Buffer
-	if len(url.Protocol) != 0 {
-		bf.WriteString(url.Protocol)
-		bf.WriteString("://")
-	}
-	if len(url.Location) != 0 {
-		bf.WriteString(url.Location)
-		bf.WriteString(":")
-		bf.WriteString(url.Port)
-	}
-	if len(url.Path) != 0 {
-		bf.WriteString("/")
-		bf.WriteString(url.Path)
-	}
-	bf.WriteString("?")
-	appendParam(bf, constant.VersionKey, url)
-	appendParam(bf, constant.GroupKey, url)
-	appendParam(bf, constant.NacosProtocolKey, url)
-	return bf.String()
-}
-
-func appendParam(buffer bytes.Buffer, paramKey string, url *common.URL) {
-	buffer.WriteString(paramKey)
-	buffer.WriteString("=")
-	buffer.WriteString(url.GetParam(paramKey, ""))
-}
-
-func (s *serviceDiscoveryRegistry) synthesizeSubscribedURLs(subscribedURL *common.URL, serviceInstances []registry.ServiceInstance) []*common.URL {
-	var urls []*common.URL
-	for _, syn := range synthesizer.GetAllSynthesizer() {
-		if syn.Support(subscribedURL) {
-			urls = append(urls, syn.Synthesize(subscribedURL, serviceInstances)...)
-		}
-	}
-	return urls
 }
 
 func shouldSubscribe(url *common.URL) bool {

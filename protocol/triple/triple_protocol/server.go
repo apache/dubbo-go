@@ -22,7 +22,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
-	"sync"
 )
 
 import (
@@ -45,7 +44,6 @@ import (
 )
 
 type Server struct {
-	mu           sync.Mutex
 	addr         string
 	mux          *http.ServeMux
 	handlers     map[string]*Handler

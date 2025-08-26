@@ -462,27 +462,3 @@ func (c *handlerConfig) newProtocolHandlers(streamType StreamType) []protocolHan
 func getIdentifier(group, version string) string {
 	return group + "/" + version
 }
-
-func newStreamHandler(
-	procedure string,
-	streamType StreamType,
-	implementation StreamingHandlerFunc,
-	options ...HandlerOption,
-) *Handler {
-	config := newHandlerConfig(procedure, options)
-	if ic := config.Interceptor; ic != nil {
-		implementation = ic.WrapStreamingHandler(implementation)
-	}
-	protocolHandlers := config.newProtocolHandlers(streamType)
-
-	hdl := &Handler{
-		spec:             config.newSpec(streamType),
-		implementations:  make(map[string]StreamingHandlerFunc, defaultImplementationsSize),
-		protocolHandlers: protocolHandlers,
-		allowMethod:      sortedAllowMethodValue(protocolHandlers),
-		acceptPost:       sortedAcceptPostValue(protocolHandlers),
-	}
-	hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
-
-	return hdl
-}

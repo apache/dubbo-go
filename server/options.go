@@ -58,8 +58,6 @@ type ServerOptions struct {
 	Metrics     *global.MetricsConfig
 	Otel        *global.OtelConfig
 	TLS         *global.TLSConfig
-
-	providerCompat *config.ProviderConfig
 }
 
 func defaultServerOptions() *ServerOptions {

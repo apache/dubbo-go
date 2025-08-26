@@ -19,7 +19,6 @@ package etcdv3
 
 import (
 	"context"
-	"sync"
 	"testing"
 )
 
@@ -91,18 +90,6 @@ func TestFunction(t *testing.T) {
 	err = sd.Unregister(ins)
 	assert.NoError(t, err)
 }
-
-type testNotify struct {
-	wg *sync.WaitGroup
-	t  *testing.T
-}
-
-func (tn *testNotify) Notify(e *registry.ServiceEvent) {
-	assert.Equal(tn.t, "2233", e.Service.Port)
-	tn.wg.Done()
-}
-
-func (tn *testNotify) NotifyAll([]*registry.ServiceEvent, func()) {}
 
 type mockProtocol struct{}
 

@@ -23,13 +23,8 @@ import (
 )
 
 import (
-	native_grpc "github.com/dubbogo/grpc-go"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo3/internal"
-	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
 // TODO: After the config is removed, remove the test
@@ -49,32 +44,4 @@ func newGreeterProvider() *greeterProvider {
 func (g *greeterProvider) SayHello(ctx context.Context, req *internal.HelloRequest) (reply *internal.HelloReply, err error) {
 	fmt.Printf("req: %v", req)
 	return &internal.HelloReply{Message: "this is message from reply"}, nil
-}
-
-func dubboGreeterSayHelloHandler(srv any, ctx context.Context,
-	dec func(any) error, interceptor native_grpc.UnaryServerInterceptor) (any, error) {
-
-	in := new(internal.HelloRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	base := srv.(Dubbo3GrpcService)
-
-	args := []any{}
-	args = append(args, in)
-	invo := invocation.NewRPCInvocation("SayHello", args, nil)
-
-	if interceptor == nil {
-		result := base.XXX_GetProxyImpl().Invoke(context.Background(), invo)
-		return result.Result(), result.Error()
-	}
-	info := &native_grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/helloworld.Greeter/SayHello",
-	}
-	handler := func(context.Context, any) (any, error) {
-		result := base.XXX_GetProxyImpl().Invoke(context.Background(), invo)
-		return result.Result(), result.Error()
-	}
-	return interceptor(ctx, in, info, handler)
 }
