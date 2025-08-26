@@ -31,6 +31,6 @@ func NewPolarisRouterFactory() router.PriorityRouterFactory {
 }
 
 // NewPriorityRouter construct a new PriorityRouter
-func (f *RouteFactory) NewPriorityRouter(url *common.URL) (router.PriorityRouter, error) {
+func (f *RouteFactory) NewPriorityRouter(_ *common.URL) (router.PriorityRouter, error) {
 	return newPolarisRouter()
 }

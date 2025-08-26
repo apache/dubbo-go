@@ -37,7 +37,7 @@ func NewServiceAffinityRouterFactory() router.PriorityRouterFactory {
 	return &ServiceAffinityRouterFactory{}
 }
 
-func (n ServiceAffinityRouterFactory) NewPriorityRouter(url *common.URL) (router.PriorityRouter, error) {
+func (n ServiceAffinityRouterFactory) NewPriorityRouter(_ *common.URL) (router.PriorityRouter, error) {
 	return newServiceAffinityRoute(), nil
 }
 

@@ -41,6 +41,6 @@ func NewScriptRouterFactory() router.PriorityRouterFactory {
 }
 
 // NewPriorityRouter construct a new PriorityRouter
-func (f *ScriptRouteFactory) NewPriorityRouter(url *common.URL) (router.PriorityRouter, error) {
+func (f *ScriptRouteFactory) NewPriorityRouter(_ *common.URL) (router.PriorityRouter, error) {
 	return NewScriptRouter(), nil
 }
