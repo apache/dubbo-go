@@ -83,14 +83,14 @@ func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
 
 	var callProtocol string
 	if tripleConf != nil && tripleConf.Http3 != nil && tripleConf.Http3.Enable {
-		callProtocol = constant.CallHTTP3
+		callProtocol = constant.CallHTTP2AndHTTP3
 	} else {
 		// HTTP default type is HTTP/2.
 		callProtocol = constant.CallHTTP2
 	}
 
 	// initialize tri.Server
-	s.triServer = tri.NewServer(addr)
+	s.triServer = tri.NewServer(addr, tripleConf)
 
 	serialization := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	switch serialization {

@@ -20,15 +20,19 @@ package config
 // Http3Config represents the config of http3
 type Http3Config struct {
 	// Whether to enable HTTP/3 support.
+	// When set to true, both HTTP/2 and HTTP/3 servers will be started simultaneously.
+	// When set to false, only HTTP/2 server will be started.
 	// The default value is false.
 	Enable bool `yaml:"enable" json:"enable,omitempty"`
-	// TODO: add more params about http3
 
-	// TODO: negotiation implementation
-	// ref: https://quic-go.net/docs/http3/server/#advertising-http3-via-alt-svc
-	//
 	// Whether to enable HTTP/3 negotiation.
+	// If set to true, HTTP/2 alt-svc negotiation will be enabled,
+	// allowing clients to negotiate between HTTP/2 and HTTP/3.
 	// If set to false, HTTP/2 alt-svc negotiation will be skipped,
-	// enabling HTTP/3 but disabling HTTP/2 on the consumer side.
-	// negotiation bool
+	// Clients cannot discover HTTP/3 via Alt-Svc.
+	// The default value is true.
+	// ref: https://quic-go.net/docs/http3/server/#advertising-http3-via-alt-svc
+	Negotiation bool `yaml:"negotiation" json:"negotiation,omitempty"`
+
+	// TODO: add more params about http3
 }

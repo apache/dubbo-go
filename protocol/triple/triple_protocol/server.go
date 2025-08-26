@@ -41,15 +41,17 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
 type Server struct {
-	mu       sync.Mutex
-	addr     string
-	mux      *http.ServeMux
-	handlers map[string]*Handler
-	httpSrv  *http.Server
-	http3Srv *http3.Server
+	mu           sync.Mutex
+	addr         string
+	mux          *http.ServeMux
+	handlers     map[string]*Handler
+	httpSrv      *http.Server
+	http3Srv     *http3.Server
+	tripleConfig *global.TripleConfig // Configuration for the triple protocol
 }
 
 func (s *Server) RegisterUnaryHandler(
@@ -173,16 +175,16 @@ func (s *Server) RegisterCompatStreamHandler(
 }
 
 func (s *Server) Run(callProtocol string, tlsConf *tls.Config) error {
-	// TODO: Refactor to support starting HTTP/2 and HTTP/3 servers simultaneously.
-	// The current switch logic is mutually exclusive. Future work should allow enabling
-	// both protocols, likely based on configuration, and run them concurrently.
+	// Support for starting HTTP/2 and HTTP/3 servers simultaneously.
 	switch callProtocol {
 	case constant.CallHTTP2:
 		return s.startHttp2(tlsConf)
 	case constant.CallHTTP3:
 		return s.startHttp3(tlsConf)
+	case constant.CallHTTP2AndHTTP3:
+		return s.startHttp2AndHttp3(tlsConf)
 	default:
-		return fmt.Errorf("unsupported protocol: %s, only http2 or http3 are supported", callProtocol)
+		return fmt.Errorf("unsupported protocol: %s, only http2, http3, or http2-and-http3 are supported", callProtocol)
 	}
 }
 
@@ -225,6 +227,59 @@ func (s *Server) startHttp3(tlsConf *tls.Config) error {
 	logger.Debugf("TRIPLE HTTP/3 Server starting on %v", s.addr)
 
 	return s.http3Srv.ListenAndServe()
+}
+
+func (s *Server) startHttp2AndHttp3(tlsConf *tls.Config) error {
+	// Check if TLS config is provided for HTTP/3
+	if tlsConf == nil {
+		return fmt.Errorf("TRIPLE HTTP/2 and HTTP/3 Server must have TLS config, but TLS config is nil")
+	}
+
+	// Start HTTP/3 server first to get its configuration
+	s.http3Srv = &http3.Server{
+		Addr:       s.addr,
+		Handler:    s.mux,
+		TLSConfig:  http3.ConfigureTLSConfig(tlsConf),
+		QUICConfig: &quic.Config{},
+	}
+
+	// Create Alt-Svc handler wrapper for HTTP/2 server
+	var negotiation bool
+	if s.tripleConfig != nil && s.tripleConfig.Http3 != nil {
+		negotiation = s.tripleConfig.Http3.Negotiation
+	}
+	altSvcHandler := NewAltSvcHandler(s.mux, s.http3Srv, negotiation)
+
+	// Start HTTP/2 server with Alt-Svc handler wrapper
+	s.httpSrv = &http.Server{
+		Addr:      s.addr,
+		Handler:   h2c.NewHandler(altSvcHandler, &http2.Server{}),
+		TLSConfig: tlsConf,
+	}
+
+	logger.Debugf("TRIPLE HTTP/2 and HTTP/3 Server starting on %v", s.addr)
+
+	// Use errgroup to manage concurrent server startup
+	eg := &errgroup.Group{}
+
+	// Start HTTP/2 server in a goroutine
+	eg.Go(func() error {
+		if err := s.httpSrv.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
+			return fmt.Errorf("HTTP/2 server error: %w", err)
+		}
+		return nil
+	})
+
+	// Start HTTP/3 server in a goroutine
+	eg.Go(func() error {
+		if err := s.http3Srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			return fmt.Errorf("HTTP/3 server error: %w", err)
+		}
+		return nil
+	})
+
+	// Wait for the first error from either server
+	return eg.Wait()
 }
 
 // Stop the Triple server for both HTTP/2 and HTTP/3.
@@ -283,10 +338,11 @@ func (s *Server) GracefulStop(ctx context.Context) error {
 	return eg.Wait()
 }
 
-func NewServer(addr string) *Server {
+func NewServer(addr string, tripleConf *global.TripleConfig) *Server {
 	return &Server{
-		mux:      http.NewServeMux(),
-		addr:     addr,
-		handlers: make(map[string]*Handler),
+		mux:          http.NewServeMux(),
+		addr:         addr,
+		handlers:     make(map[string]*Handler),
+		tripleConfig: tripleConf,
 	}
 }

@@ -27,6 +27,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/global"
+)
+
 func TestServer_RegisterMuxHandle(t *testing.T) {
 	tests := []struct {
 		desc         string
@@ -77,7 +81,12 @@ func TestServer_RegisterMuxHandle(t *testing.T) {
 		},
 	}
 
-	srv := NewServer("127.0.0.1:20000")
+	srv := NewServer("127.0.0.1:20000", &global.TripleConfig{
+		Http3: &global.Http3Config{
+			Enable:      true,
+			Negotiation: true,
+		},
+	})
 	for _, test := range tests {
 		err := srv.RegisterUnaryHandler(test.path, nil, nil)
 		assert.Nil(t, err)
