@@ -83,7 +83,6 @@ func newZkRegistry(url *common.URL) (registry.Registry, error) {
 
 // Options defines optional parameters to construct a zkRegistry (used in tests/mocks).
 type Options struct {
-	client *gxzookeeper.ZookeeperClient
 }
 
 // Option mutates Options when constructing a zkRegistry (functional options pattern).

@@ -282,11 +282,6 @@ func (sd *ServiceDiscovery) pathForInstance(name, id string) string {
 	return path.Join(sd.basePath, name, id)
 }
 
-// prefixPathForInstance builds the zookeeper path prefix for instances of a service.
-func (sd *ServiceDiscovery) prefixPathForInstance(name string) string {
-	return path.Join(sd.basePath, name)
-}
-
 // pathForName builds the zookeeper path for a service name.
 func (sd *ServiceDiscovery) pathForName(name string) string {
 	return path.Join(sd.basePath, name)
