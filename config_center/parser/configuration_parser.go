@@ -192,7 +192,7 @@ func serviceItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.UR
 	return urls, nil
 }
 
-// nolint
+// appItemToUrls builds override URLs for application-scope items.
 func appItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.URL, error) {
 	addresses := item.Addresses
 	if len(addresses) == 0 {
@@ -258,7 +258,7 @@ func getServiceString(service string) (string, error) {
 	return serviceStr, nil
 }
 
-// nolint
+// getParamString serializes parameters of a ConfigItem to query string.
 func getParamString(item ConfigItem) (string, error) {
 	var retStr string
 	retStr = retStr + "category="

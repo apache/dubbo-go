@@ -26,7 +26,7 @@ var (
 	restProviderServiceConfigMap map[string]*RestServiceConfig
 )
 
-// nolint
+// RestConsumerConfig holds consumer-side REST settings and references.
 type RestConsumerConfig struct {
 	Client                string                        `default:"resty" yaml:"rest_client" json:"rest_client,omitempty" property:"rest_client"`
 	Produces              string                        `default:"application/json" yaml:"rest_produces"  json:"rest_produces,omitempty" property:"rest_produces"`
@@ -46,7 +46,7 @@ func (c *RestConsumerConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	return nil
 }
 
-// nolint
+// RestProviderConfig holds provider-side REST settings and services.
 type RestProviderConfig struct {
 	Server                string                        `default:"go-restful" yaml:"rest_server" json:"rest_server,omitempty" property:"rest_server"`
 	Produces              string                        `default:"*/*" yaml:"rest_produces"  json:"rest_produces,omitempty" property:"rest_produces"`
@@ -66,7 +66,7 @@ func (c *RestProviderConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	return nil
 }
 
-// nolint
+// RestServiceConfig describes a REST service and its methods.
 type RestServiceConfig struct {
 	InterfaceName        string              `required:"true"  yaml:"interface"  json:"interface,omitempty" property:"interface"`
 	URL                  string              `yaml:"url"  json:"url,omitempty" property:"url"`
@@ -92,7 +92,7 @@ func (c *RestServiceConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	return nil
 }
 
-// nolint
+// RestMethodConfig describes a REST method mapping and parameters.
 type RestMethodConfig struct {
 	InterfaceName  string
 	MethodName     string `required:"true" yaml:"name"  json:"name,omitempty" property:"name"`
@@ -122,32 +122,32 @@ func (c *RestMethodConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	return nil
 }
 
-// nolint
+// GetRestConsumerServiceConfig returns consumer service config by id.
 func GetRestConsumerServiceConfig(id string) *RestServiceConfig {
 	return restConsumerServiceConfigMap[id]
 }
 
-// nolint
+// GetRestProviderServiceConfig returns provider service config by id.
 func GetRestProviderServiceConfig(id string) *RestServiceConfig {
 	return restProviderServiceConfigMap[id]
 }
 
-// nolint
+// SetRestConsumerServiceConfigMap sets consumer service configs map.
 func SetRestConsumerServiceConfigMap(configMap map[string]*RestServiceConfig) {
 	restConsumerServiceConfigMap = configMap
 }
 
-// nolint
+// SetRestProviderServiceConfigMap sets provider service configs map.
 func SetRestProviderServiceConfigMap(configMap map[string]*RestServiceConfig) {
 	restProviderServiceConfigMap = configMap
 }
 
-// nolint
+// GetRestConsumerServiceConfigMap returns the consumer service configs map.
 func GetRestConsumerServiceConfigMap() map[string]*RestServiceConfig {
 	return restConsumerServiceConfigMap
 }
 
-// nolint
+// GetRestProviderServiceConfigMap returns the provider service configs map.
 func GetRestProviderServiceConfigMap() map[string]*RestServiceConfig {
 	return restProviderServiceConfigMap
 }

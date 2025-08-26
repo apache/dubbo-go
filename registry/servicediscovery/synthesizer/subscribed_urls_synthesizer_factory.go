@@ -26,14 +26,14 @@ var (
 	synthesizerMutex sync.RWMutex
 )
 
-// nolint
+// AddSynthesizer registers a SubscribedURLsSynthesizer into the factory list.
 func AddSynthesizer(synthesizer SubscribedURLsSynthesizer) {
 	synthesizerMutex.Lock()
 	defer synthesizerMutex.Unlock()
 	synthesizers = append(synthesizers, synthesizer)
 }
 
-// nolint
+// GetAllSynthesizer returns all registered SubscribedURLsSynthesizer.
 func GetAllSynthesizer() []SubscribedURLsSynthesizer {
 	synthesizerMutex.RLock()
 	defer synthesizerMutex.RUnlock()

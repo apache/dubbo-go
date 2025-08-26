@@ -27,7 +27,7 @@ import (
 
 var serviceInstanceSelectorMappings = make(map[string]func() instance.ServiceInstanceSelector, 2)
 
-// nolint
+// SetServiceInstanceSelector registers a factory for ServiceInstanceSelector.
 func SetServiceInstanceSelector(name string, f func() instance.ServiceInstanceSelector) {
 	serviceInstanceSelectorMappings[name] = f
 }

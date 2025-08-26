@@ -31,7 +31,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
-// nolint
+// RestExporter is the exporter implementation for REST protocol.
 type RestExporter struct {
 	base.BaseExporter
 }

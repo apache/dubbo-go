@@ -36,7 +36,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
-// nolint
+// RestInvoker invokes REST services using a RestClient and method mappings.
 type RestInvoker struct {
 	base.BaseInvoker
 	client              client.RestClient
@@ -111,7 +111,7 @@ func restStringMapTransform(paramsMap map[int]string, args []any) (map[string]st
 	return resMap, nil
 }
 
-// nolint
+// getRestHttpHeader builds the HTTP headers for a REST call based on method config and args.
 func getRestHttpHeader(methodConfig *config.RestMethodConfig, args []any) (http.Header, error) {
 	header := http.Header{}
 	headersMap := methodConfig.HeadersMap
