@@ -64,8 +64,8 @@ type AltSvcInfo struct {
 
 // AltSvcCache manages cached alternative service information
 type AltSvcCache struct {
-	cache map[string]*AltSvcInfo
 	mu    sync.RWMutex
+	cache map[string]*AltSvcInfo
 }
 
 // NewAltSvcCache creates a new Alt-Svc cache
