@@ -117,7 +117,7 @@ func (invoker *failbackClusterInvoker) process(ctx context.Context) {
 	}
 }
 
-// nolint
+// Invoke executes with failback semantics: schedule retries on failure.
 func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation protocolbase.Invocation) result.Result {
 	invokers := invoker.Directory.List(invocation)
 	if err := invoker.CheckInvokers(invokers, invocation); err != nil {

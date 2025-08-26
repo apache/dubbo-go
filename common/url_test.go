@@ -574,3 +574,21 @@ func TestIsAnyCondition(t *testing.T) {
 		})
 	}
 }
+
+func TestNewURLWithMultiAddr(t *testing.T) {
+	u1, err := NewURL("zookeeper://127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183")
+	assert.Nil(t, err)
+	assert.Equal(t, "127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183", u1.Location)
+
+	u2, err := NewURL("zookeeper://127.0.0.1:2181 , 127.0.0.1:2182, 127.0.0.1:2183")
+	assert.Nil(t, err)
+	assert.Equal(t, "127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183", u2.Location)
+
+	u3, err := NewURL("zookeeper://127.0.0.1:2181 , 127.0.0.1:2182, 127.0.0.1:2183,, , , ")
+	assert.Nil(t, err)
+	assert.Equal(t, "127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183", u3.Location)
+
+	u4, err := NewURL(" , ,127.0.0.1:2181 , 127.0.0.1:2182, 127.0.0.1:2183,, , , ", WithProtocol("zookeeper"))
+	assert.Nil(t, err)
+	assert.Equal(t, "127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183", u4.Location)
+}

@@ -40,7 +40,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
-// nolint
+// Proxy is the reflective RPC proxy for Dubbo2 style services.
 type Proxy struct {
 	rpc         common.RPCService
 	invoke      base.Invoker

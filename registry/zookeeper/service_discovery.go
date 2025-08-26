@@ -83,27 +83,27 @@ func newZookeeperServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, e
 	return zksd, nil
 }
 
-// nolint
+// ZkClient returns the underlying zookeeper client.
 func (zksd *zookeeperServiceDiscovery) ZkClient() *gxzookeeper.ZookeeperClient {
 	return zksd.client
 }
 
-// nolint
+// SetZkClient sets the underlying zookeeper client.
 func (zksd *zookeeperServiceDiscovery) SetZkClient(client *gxzookeeper.ZookeeperClient) {
 	zksd.client = client
 }
 
-// nolint
+// ZkClientLock exposes the lock guarding client changes.
 func (zksd *zookeeperServiceDiscovery) ZkClientLock() *sync.Mutex {
 	return &zksd.cltLock
 }
 
-// nolint
+// WaitGroup exposes the wait group used to track internal goroutines.
 func (zksd *zookeeperServiceDiscovery) WaitGroup() *sync.WaitGroup {
 	return &zksd.wg
 }
 
-// nolint
+// Done returns the done channel used to signal shutdown.
 func (zksd *zookeeperServiceDiscovery) Done() chan struct{} {
 	return zksd.done
 }
@@ -120,12 +120,12 @@ func (zksd *zookeeperServiceDiscovery) RestartCallBack() bool {
 	return true
 }
 
-// nolint
+// GetURL returns the service discovery URL.
 func (zksd *zookeeperServiceDiscovery) GetURL() *common.URL {
 	return zksd.url
 }
 
-// nolint
+// String returns a concise description of the service discovery.
 func (zksd *zookeeperServiceDiscovery) String() string {
 	return fmt.Sprintf("zookeeper-service-discovery[%s]", zksd.url)
 }

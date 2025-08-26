@@ -81,8 +81,12 @@ func newZkRegistry(url *common.URL) (registry.Registry, error) {
 	return r, nil
 }
 
-// nolint
-type Options struct{ client *gxzookeeper.ZookeeperClient }
+// Options defines optional parameters to construct a zkRegistry (used in tests/mocks).
+type Options struct {
+	client *gxzookeeper.ZookeeperClient
+}
+
+// Option mutates Options when constructing a zkRegistry (functional options pattern).
 type Option func(*Options)
 
 // InitListeners initializes listeners of zookeeper registry center
@@ -160,17 +164,17 @@ func (r *zkRegistry) CloseAndNilClient() {
 	r.client = nil
 }
 
-// nolint
+// ZkClient returns the underlying zookeeper client.
 func (r *zkRegistry) ZkClient() *gxzookeeper.ZookeeperClient {
 	return r.client
 }
 
-// nolint
+// SetZkClient sets the underlying zookeeper client.
 func (r *zkRegistry) SetZkClient(client *gxzookeeper.ZookeeperClient) {
 	r.client = client
 }
 
-// nolint
+// ZkClientLock exposes the lock guarding client changes.
 func (r *zkRegistry) ZkClientLock() *sync.Mutex {
 	return &r.cltLock
 }

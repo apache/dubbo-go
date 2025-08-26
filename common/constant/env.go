@@ -17,7 +17,7 @@
 
 package constant
 
-// nolint
+// Environment-related default values and keys.
 const (
 	DefaultDubboApp      = "dubbo.io"
 	ConfigFileEnvKey     = "DUBBO_GO_CONFIG_PATH" // key of environment variable dubbogo configure file path

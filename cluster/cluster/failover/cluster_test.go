@@ -40,7 +40,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
-// nolint
 func normalInvoke(successCount int, urlParam url.Values, invocations ...*invocation.RPCInvocation) result.Result {
 	extension.SetLoadbalance("random", random.NewRandomLoadBalance)
 	failoverCluster := newFailoverCluster()
@@ -59,7 +58,6 @@ func normalInvoke(successCount int, urlParam url.Values, invocations ...*invocat
 	return clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 }
 
-// nolint
 func TestFailoverInvokeSuccess(t *testing.T) {
 	urlParams := url.Values{}
 	result := normalInvoke(3, urlParams)
@@ -67,7 +65,6 @@ func TestFailoverInvokeSuccess(t *testing.T) {
 	clusterpkg.Count = 0
 }
 
-// nolint
 func TestFailoverInvokeFail(t *testing.T) {
 	urlParams := url.Values{}
 	result := normalInvoke(4, urlParams)
@@ -75,7 +72,6 @@ func TestFailoverInvokeFail(t *testing.T) {
 	clusterpkg.Count = 0
 }
 
-// nolint
 func TestFailoverInvoke1(t *testing.T) {
 	urlParams := url.Values{}
 	urlParams.Set(constant.RetriesKey, "3")
@@ -84,7 +80,6 @@ func TestFailoverInvoke1(t *testing.T) {
 	clusterpkg.Count = 0
 }
 
-// nolint
 func TestFailoverInvoke2(t *testing.T) {
 	urlParams := url.Values{}
 	urlParams.Set(constant.RetriesKey, "2")
@@ -96,7 +91,6 @@ func TestFailoverInvoke2(t *testing.T) {
 	clusterpkg.Count = 0
 }
 
-// nolint
 func TestFailoverDestroy(t *testing.T) {
 	extension.SetLoadbalance("random", random.NewRandomLoadBalance)
 	failoverCluster := newFailoverCluster()

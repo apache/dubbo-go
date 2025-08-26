@@ -213,7 +213,7 @@ func (nl *nacosListener) Next() (*registry.ServiceEvent, error) {
 	}
 }
 
-// nolint
+// Close stops the subscription and releases resources.
 func (nl *nacosListener) Close() {
 	nl.once.Do(func() {
 		_ = nl.stopListen()

@@ -62,13 +62,13 @@ func (s *rpcSession) GetReqNum() int32 {
 	return atomic.LoadInt32(&s.reqNum)
 }
 
-// nolint
+// RpcClientHandler handles client-side getty session lifecycle and messages.
 type RpcClientHandler struct {
 	conn         *gettyRPCClient
 	timeoutTimes int
 }
 
-// nolint
+// NewRpcClientHandler constructs a RpcClientHandler.
 func NewRpcClientHandler(client *gettyRPCClient) *RpcClientHandler {
 	return &RpcClientHandler{conn: client}
 }
@@ -167,7 +167,7 @@ func (h *RpcClientHandler) OnCron(session getty.Session) {
 	}
 }
 
-// nolint
+// RpcServerHandler handles server-side getty sessions and request processing.
 type RpcServerHandler struct {
 	maxSessionNum  int
 	sessionTimeout time.Duration
@@ -177,7 +177,7 @@ type RpcServerHandler struct {
 	timeoutTimes   int
 }
 
-// nolint
+// NewRpcServerHandler constructs a RpcServerHandler.
 func NewRpcServerHandler(maxSessionNum int, sessionTimeout time.Duration, serverP *Server) *RpcServerHandler {
 	return &RpcServerHandler{
 		maxSessionNum:  maxSessionNum,

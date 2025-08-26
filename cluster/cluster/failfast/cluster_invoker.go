@@ -38,7 +38,7 @@ func newFailfastClusterInvoker(directory directory.Directory) protocolbase.Invok
 	}
 }
 
-// nolint
+// Invoke performs a single attempt invocation and fails fast on error.
 func (invoker *failfastClusterInvoker) Invoke(ctx context.Context, invocation protocolbase.Invocation) result.Result {
 	invokers := invoker.Directory.List(invocation)
 	err := invoker.CheckInvokers(invokers, invocation)

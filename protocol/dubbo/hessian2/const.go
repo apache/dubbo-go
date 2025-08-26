@@ -228,7 +228,7 @@ var (
 	ErrIllegalPackage  = perrors.New("illegal package!")
 )
 
-// nolint
+// DescRegex is the precompiled regexp for method descriptor patterns.
 var DescRegex, _ = regexp.Compile(DESC_REGEX)
 
 var NilValue = reflect.Zero(reflect.TypeOf((*any)(nil)).Elem())

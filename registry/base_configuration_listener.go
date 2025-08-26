@@ -31,7 +31,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
-// nolint
+// BaseConfigurationListener provides shared logic for processing configuration center updates.
 type BaseConfigurationListener struct {
 	configurators           []config_center.Configurator
 	dynamicConfiguration    config_center.DynamicConfiguration

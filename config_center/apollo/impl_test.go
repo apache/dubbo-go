@@ -178,6 +178,9 @@ func initMockApollo(t *testing.T) *apolloConfiguration {
 		AppID:     "testApplication_yang",
 		Cluster:   "dev",
 		Namespace: "mockDubbogo.yaml",
+		Params: map[string]string{
+			"config-center.isBackupConfig": "false",
+		},
 	}}
 	apollo := initApollo()
 	apolloUrl := strings.ReplaceAll(apollo.URL, "http", "apollo")

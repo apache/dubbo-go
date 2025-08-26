@@ -43,12 +43,12 @@ var restProtocol *RestProtocol
 
 const REST = "rest"
 
-// nolint
+// init registers the REST protocol in extension.
 func init() {
 	extension.SetProtocol(REST, GetRestProtocol)
 }
 
-// nolint
+// RestProtocol implements base.Protocol for REST.
 type RestProtocol struct {
 	base.BaseProtocol
 	serverLock sync.Mutex
@@ -111,7 +111,7 @@ func (rp *RestProtocol) Refer(url *common.URL) base.Invoker {
 	return invoker
 }
 
-// nolint
+// getServer returns or creates a RestServer for the given URL.
 func (rp *RestProtocol) getServer(url *common.URL, serverType string) server.RestServer {
 	restServer, ok := rp.serverMap[url.Location]
 	if ok {
@@ -133,7 +133,7 @@ func (rp *RestProtocol) getServer(url *common.URL, serverType string) server.Res
 	return restServer
 }
 
-// nolint
+// getClient returns or creates a RestClient for the given options.
 func (rp *RestProtocol) getClient(restOptions client.RestOptions, clientType string) client.RestClient {
 	restClient, ok := rp.clientMap[restOptions]
 	if ok {

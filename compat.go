@@ -114,7 +114,8 @@ func compatHttp3Config(c *global.Http3Config) *config.Http3Config {
 		return nil
 	}
 	return &config.Http3Config{
-		Enable: c.Enable,
+		Enable:      c.Enable,
+		Negotiation: c.Negotiation,
 	}
 }
 
@@ -565,7 +566,8 @@ func compatGlobalHttp3Config(c *config.Http3Config) *global.Http3Config {
 		return nil
 	}
 	return &global.Http3Config{
-		Enable: c.Enable,
+		Enable:      c.Enable,
+		Negotiation: c.Negotiation,
 	}
 }
 
