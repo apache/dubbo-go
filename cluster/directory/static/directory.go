@@ -91,11 +91,11 @@ func (dir *directory) Destroy() {
 }
 
 // BuildRouterChain build router chain by invokers
-func (dir *directory) BuildRouterChain(invokers []protocolbase.Invoker) error {
+func (dir *directory) BuildRouterChain(invokers []protocolbase.Invoker, url *common.URL) error {
 	if len(invokers) == 0 {
 		return perrors.Errorf("invokers == null")
 	}
-	routerChain, e := chain.NewRouterChain()
+	routerChain, e := chain.NewRouterChain(url)
 	if e != nil {
 		return e
 	}

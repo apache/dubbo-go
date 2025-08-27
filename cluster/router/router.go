@@ -29,7 +29,7 @@ import (
 // PriorityRouterFactory creates priority router with url
 type PriorityRouterFactory interface {
 	// NewPriorityRouter creates router instance with URL
-	NewPriorityRouter() (PriorityRouter, error)
+	NewPriorityRouter(url *common.URL) (PriorityRouter, error)
 }
 
 // PriorityRouter routes with priority

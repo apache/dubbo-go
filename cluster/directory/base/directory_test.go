@@ -50,7 +50,7 @@ func TestBuildRouterChain(t *testing.T) {
 	regURL.AddParam(constant.InterfaceKey, "mock-app")
 	directory := NewDirectory(regURL)
 	var err error
-	directory.routerChain, err = chain.NewRouterChain()
+	directory.routerChain, err = chain.NewRouterChain(url)
 	assert.Error(t, err)
 }
 

@@ -19,6 +19,7 @@ package tag
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router"
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 )
@@ -41,6 +42,6 @@ func NewTagRouterFactory() router.PriorityRouterFactory {
 }
 
 // NewPriorityRouter construct a new PriorityRouter
-func (f *RouteFactory) NewPriorityRouter() (router.PriorityRouter, error) {
+func (f *RouteFactory) NewPriorityRouter(_ *common.URL) (router.PriorityRouter, error) {
 	return NewTagPriorityRouter()
 }

@@ -101,7 +101,7 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (director
 
 	dir.consumerURL = dir.getConsumerUrl(url.SubURL)
 
-	if routerChain, err := chain.NewRouterChain(); err == nil {
+	if routerChain, err := chain.NewRouterChain(url); err == nil {
 		dir.SetRouterChain(routerChain)
 	} else {
 		logger.Warnf("fail to create router chain with url: %s, err is: %v", url.SubURL, err)
@@ -369,7 +369,7 @@ func (dir *RegistryDirectory) toGroupInvokers() []protocolbase.Invoker {
 			if err != nil {
 				panic(err)
 			}
-			err = staticDir.BuildRouterChain(invokers)
+			err = staticDir.BuildRouterChain(invokers, dir.GetURL())
 			if err != nil {
 				logger.Error(err)
 				continue

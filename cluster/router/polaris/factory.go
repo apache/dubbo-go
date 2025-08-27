@@ -19,6 +19,7 @@ package polaris
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router"
+	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
 // RouteFactory router factory
@@ -30,6 +31,6 @@ func NewPolarisRouterFactory() router.PriorityRouterFactory {
 }
 
 // NewPriorityRouter construct a new PriorityRouter
-func (f *RouteFactory) NewPriorityRouter() (router.PriorityRouter, error) {
+func (f *RouteFactory) NewPriorityRouter(_ *common.URL) (router.PriorityRouter, error) {
 	return newPolarisRouter()
 }

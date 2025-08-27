@@ -30,12 +30,13 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/router"
 	"dubbo.apache.org/dubbo-go/v3/cluster/router/condition"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	conf "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
@@ -82,8 +83,16 @@ type ApplicationAffinityRoute struct {
 	currentApplication string
 }
 
-func newApplicationAffinityRouter() *ApplicationAffinityRoute {
-	applicationName := config.GetApplicationConfig().Name
+func newApplicationAffinityRouter(url *common.URL) *ApplicationAffinityRoute {
+
+	application, ok := url.GetAttribute(constant.ApplicationKey)
+	if !ok {
+		logger.Warnf("ApplicationAffinityRoute url does not have application attribute, url=%s", url)
+		return nil
+	}
+
+	applicationName := application.(global.ApplicationConfig).Name
+
 	a := &ApplicationAffinityRoute{
 		currentApplication: applicationName,
 	}
@@ -216,8 +225,8 @@ func (a *affinityRoute) Notify(_ []base.Invoker) {
 	panic("this function should not be called")
 }
 
-func parseConfig(c string) (config.AffinityRouter, error) {
-	res := config.AffinityRouter{}
+func parseConfig(c string) (router.AffinityRouter, error) {
+	res := router.AffinityRouter{}
 	err := yaml.Unmarshal([]byte(c), &res)
 	return res, err
 }
