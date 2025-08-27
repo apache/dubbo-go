@@ -27,6 +27,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+import (
+	cfgcenter "dubbo.apache.org/dubbo-go/v3/config_center"
+	dlogger "dubbo.apache.org/dubbo-go/v3/logger"
+)
+
 func TestLoggerInit(t *testing.T) {
 	t.Run("empty use default", func(t *testing.T) {
 		err := Load(WithPath("./testdata/config/logger/empty_log.yaml"))
@@ -82,4 +87,63 @@ func TestNewLoggerConfigBuilder(t *testing.T) {
 	assert.Equal(t, config.File.MaxSize, 100)
 	assert.Equal(t, *config.File.Compress, true)
 	assert.Equal(t, config.File.MaxBackups, 5)
+}
+
+func TestLoggerDynamicUpdateLevel(t *testing.T) {
+	// load initial config from bytes
+	initialYAML := `
+  dubbo:
+    logger:
+      driver: zap
+      level: info
+  `
+	err := Load(WithBytes([]byte(initialYAML)))
+	assert.Nil(t, err)
+	assert.NotNil(t, rootConfig)
+	assert.NotNil(t, rootConfig.Logger)
+	assert.Equal(t, "info", rootConfig.Logger.Level)
+
+	// if runtime logger doesn't support dynamic level, skip this test
+	if !dlogger.SetLoggerLevel(rootConfig.Logger.Level) {
+		t.Skip("logger doesn't support dynamic level change in current environment")
+	}
+
+	// simulate config center change: update level -> debug
+	updatedYAML := `
+  dubbo:
+    logger:
+      level: debug
+  `
+	evt := &cfgcenter.ConfigChangeEvent{Key: "test", Value: updatedYAML}
+	rootConfig.Process(evt)
+
+	// expect level updated in place
+	assert.Equal(t, "debug", rootConfig.Logger.Level)
+}
+
+func TestLoggerDynamicUpdateInvalidLevel(t *testing.T) {
+	// load initial config from bytes
+	initialYAML := `
+  dubbo:
+    logger:
+      driver: zap
+      level: info
+  `
+	err := Load(WithBytes([]byte(initialYAML)))
+	assert.Nil(t, err)
+	assert.NotNil(t, rootConfig)
+	assert.NotNil(t, rootConfig.Logger)
+	assert.Equal(t, "info", rootConfig.Logger.Level)
+
+	// simulate config center change with invalid level
+	updatedYAML := `
+  dubbo:
+    logger:
+      level: invalid-level
+  `
+	evt := &cfgcenter.ConfigChangeEvent{Key: "test", Value: updatedYAML}
+	rootConfig.Process(evt)
+
+	// expect level unchanged when runtime doesn't support the invalid level
+	assert.Equal(t, "info", rootConfig.Logger.Level)
 }
