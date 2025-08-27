@@ -122,8 +122,6 @@ func hotUpdateConfig(conf *loaderConf) error {
 		return err
 	}
 
-	// Directly replace the global instanceOptions with the new configuration.
-	// Any part of the application that accesses instanceOptions directly will now use the new values.
 	instanceOptions = newOpts
 	logger.Infof("Configuration hot reload completed successfully.")
 	return nil
