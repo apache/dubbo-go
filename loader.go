@@ -28,13 +28,14 @@ import (
 import (
 	"github.com/dubbogo/gost/log/logger"
 
+	"github.com/fsnotify/fsnotify"
+
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/json"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/providers/rawbytes"
 
-	"github.com/fsnotify/fsnotify"
 	"github.com/pkg/errors"
 )
 
@@ -122,7 +123,14 @@ func hotUpdateConfig(conf *loaderConf) error {
 		return err
 	}
 
+	// Any part of the application that accesses instanceOptions directly will now use the new values.
 	instanceOptions = newOpts
+
+	// Explicitly update logger level after hot reload
+	if ok := logger.SetLoggerLevel(instanceOptions.Logger.Level); !ok {
+		logger.Warnf("Failed to update logger level after hot reload. Logger may not support dynamic level changes.")
+	}
+
 	logger.Infof("Configuration hot reload completed successfully.")
 	return nil
 }
