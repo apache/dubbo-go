@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 )
 
 import (
@@ -33,6 +34,7 @@ import (
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/providers/rawbytes"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/pkg/errors"
 )
 
@@ -44,6 +46,7 @@ import (
 var (
 	defaultActive   = "default"
 	instanceOptions = defaultInstanceOptions()
+	once            sync.Once
 )
 
 func Load(opts ...LoaderConfOption) error {
@@ -64,7 +67,66 @@ func Load(opts ...LoaderConfOption) error {
 	}
 
 	instance := &Instance{insOpts: instanceOptions}
+	// start the file watcher
+	once.Do(func() {
+		go watch(conf)
+	})
 	return instance.start()
+}
+
+func watch(conf *loaderConf) {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		logger.Errorf("Failed to initialize file watcher, error: %v", err)
+		return
+	}
+	defer watcher.Close()
+
+	err = watcher.Add(conf.path)
+	if err != nil {
+		logger.Errorf("Failed to add file %s to watcher, error: %v", conf.path, err)
+		return
+	}
+
+	for {
+		select {
+		case event := <-watcher.Events:
+			if event.Op&fsnotify.Write == fsnotify.Write {
+				logger.Infof("Configuration file %s updated, initiating hot reload...", event.Name)
+				if err := hotUpdateConfig(conf); err != nil {
+					logger.Warnf("Hot reload of configuration failed, error: %v", err)
+				}
+			}
+		case err := <-watcher.Errors:
+			logger.Warnf("File watcher encountered an error: %v", err)
+		}
+	}
+}
+
+func hotUpdateConfig(conf *loaderConf) error {
+	newOpts := defaultInstanceOptions()
+	bytes, err := os.ReadFile(conf.path)
+	if err != nil {
+		return err
+	}
+	conf.bytes = bytes
+
+	koan := GetConfigResolver(conf)
+	koan = conf.MergeConfig(koan)
+
+	if err := koan.UnmarshalWithConf(newOpts.Prefix(), newOpts, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
+		return err
+	}
+
+	if err := newOpts.init(); err != nil {
+		return err
+	}
+
+	// Directly replace the global instanceOptions with the new configuration.
+	// Any part of the application that accesses instanceOptions directly will now use the new values.
+	instanceOptions = newOpts
+	logger.Infof("Configuration hot reload completed successfully.")
+	return nil
 }
 
 type loaderConf struct {
