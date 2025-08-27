@@ -71,7 +71,11 @@ jobs:
       run: make lint
 
     - name: Codecov
-      run: bash <(curl -s https://codecov.io/bash)
+    - uses: codecov/codecov-action@v5
+      with:
+        fail_ci_if_error: true # optional (default = false)
+        token: ${{ secrets.CODECOV_TOKEN }}
+        verbose: true # optional (default = false)
 
   Integration-Test:
     name: Integration Test (${{ matrix.os }} - Go ${{ matrix.go_version }})
