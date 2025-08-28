@@ -54,5 +54,5 @@ require (
 
 require (
 	github.com/olekukonko/tablewriter v0.0.0-20170122224234-a0225b3f23b5
-	gopkg.in/yaml.v3 v3.0.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
