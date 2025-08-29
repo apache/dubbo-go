@@ -143,7 +143,7 @@ func hotUpdateConfig(conf *loaderConf) error {
 		logger.Warnf("Failed to update logger level after hot reload. Logger may not support dynamic level changes.")
 	}
 
-	logger.Infof("Configuration hot reload completed successfully.")
+	logger.Infof("Configuration hot reload completed successfully!")
 	return nil
 }
 
