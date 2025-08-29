@@ -417,7 +417,7 @@ func checkPlaceholder(s string) (newKey, defaultValue string) {
 	return
 }
 
-// StopFileWatcher 停止文件监听器
+// StopFileWatcher Stop file listener
 func StopFileWatcher() {
 	logger.Info("Stopping file watcher...")
 	close(stopCh)
