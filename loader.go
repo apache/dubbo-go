@@ -22,10 +22,14 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
+	gr "github.com/dubbogo/gost/runtime"
+
+	"github.com/fsnotify/fsnotify"
 
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/json"
@@ -39,11 +43,15 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/constant/file"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 )
 
 var (
 	defaultActive   = "default"
 	instanceOptions = defaultInstanceOptions()
+	once            sync.Once
+	stopCh          = make(chan struct{})
+	watcherWg       sync.WaitGroup
 )
 
 func Load(opts ...LoaderConfOption) error {
@@ -64,7 +72,79 @@ func Load(opts ...LoaderConfOption) error {
 	}
 
 	instance := &Instance{insOpts: instanceOptions}
+	// start the file watcher
+	once.Do(func() {
+		gr.GoSafely(&watcherWg, false, func() {
+			watch(conf, stopCh)
+		}, nil)
+		extension.AddCustomShutdownCallback(func() {
+			StopFileWatcher()
+		})
+	})
 	return instance.start()
+}
+
+func watch(conf *loaderConf, stopCh <-chan struct{}) {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		logger.Errorf("Failed to initialize file watcher, error: %v", err)
+		return
+	}
+	defer watcher.Close()
+
+	err = watcher.Add(conf.path)
+	if err != nil {
+		logger.Errorf("Failed to add file %s to watcher, error: %v", conf.path, err)
+		return
+	}
+
+	for {
+		select {
+		case <-stopCh:
+			logger.Infof("File watcher is stopping...")
+			return
+		case event := <-watcher.Events:
+			if event.Op&fsnotify.Write == fsnotify.Write {
+				logger.Infof("Configuration file %s updated, initiating hot reload...", event.Name)
+				if err := hotUpdateConfig(conf); err != nil {
+					logger.Warnf("Hot reload of configuration failed, error: %v", err)
+				}
+			}
+		case err := <-watcher.Errors:
+			logger.Warnf("File watcher encountered an error: %v", err)
+		}
+	}
+}
+
+func hotUpdateConfig(conf *loaderConf) error {
+	newOpts := defaultInstanceOptions()
+	bytes, err := os.ReadFile(conf.path)
+	if err != nil {
+		return err
+	}
+	conf.bytes = bytes
+
+	koan := GetConfigResolver(conf)
+	koan = conf.MergeConfig(koan)
+
+	if err := koan.UnmarshalWithConf(newOpts.Prefix(), newOpts, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
+		return err
+	}
+
+	if err := newOpts.init(); err != nil {
+		return err
+	}
+
+	// Any part of the application that accesses instanceOptions directly will now use the new values.
+	instanceOptions = newOpts
+
+	// Explicitly update logger level after hot reload
+	if ok := logger.SetLoggerLevel(instanceOptions.Logger.Level); !ok {
+		logger.Warnf("Failed to update logger level after hot reload. Logger may not support dynamic level changes.")
+	}
+
+	logger.Infof("Configuration hot reload completed successfully!")
+	return nil
 }
 
 type loaderConf struct {
@@ -335,4 +415,12 @@ func checkPlaceholder(s string) (newKey, defaultValue string) {
 	defaultValue = strings.TrimSpace(s[indexColon+1:])
 
 	return
+}
+
+// StopFileWatcher Stop file listener
+func StopFileWatcher() {
+	logger.Info("Stopping file watcher...")
+	close(stopCh)
+	watcherWg.Wait()
+	logger.Info("File watcher stopped successfully")
 }
