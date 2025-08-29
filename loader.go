@@ -27,6 +27,7 @@ import (
 
 import (
 	"github.com/dubbogo/gost/log/logger"
+	gr "github.com/dubbogo/gost/runtime"
 
 	"github.com/fsnotify/fsnotify"
 
@@ -42,12 +43,15 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/constant/file"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 )
 
 var (
 	defaultActive   = "default"
 	instanceOptions = defaultInstanceOptions()
 	once            sync.Once
+	stopCh          = make(chan struct{})
+	watcherWg       sync.WaitGroup
 )
 
 func Load(opts ...LoaderConfOption) error {
@@ -70,12 +74,17 @@ func Load(opts ...LoaderConfOption) error {
 	instance := &Instance{insOpts: instanceOptions}
 	// start the file watcher
 	once.Do(func() {
-		go watch(conf)
+		gr.GoSafely(&watcherWg, false, func() {
+			watch(conf, stopCh)
+		}, nil)
+		extension.AddCustomShutdownCallback(func() {
+			StopFileWatcher()
+		})
 	})
 	return instance.start()
 }
 
-func watch(conf *loaderConf) {
+func watch(conf *loaderConf, stopCh <-chan struct{}) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		logger.Errorf("Failed to initialize file watcher, error: %v", err)
@@ -91,6 +100,9 @@ func watch(conf *loaderConf) {
 
 	for {
 		select {
+		case <-stopCh:
+			logger.Infof("File watcher is stopping...")
+			return
 		case event := <-watcher.Events:
 			if event.Op&fsnotify.Write == fsnotify.Write {
 				logger.Infof("Configuration file %s updated, initiating hot reload...", event.Name)
@@ -403,4 +415,12 @@ func checkPlaceholder(s string) (newKey, defaultValue string) {
 	defaultValue = strings.TrimSpace(s[indexColon+1:])
 
 	return
+}
+
+// StopFileWatcher 停止文件监听器
+func StopFileWatcher() {
+	logger.Info("Stopping file watcher...")
+	close(stopCh)
+	watcherWg.Wait()
+	logger.Info("File watcher stopped successfully")
 }
