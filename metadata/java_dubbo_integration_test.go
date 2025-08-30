@@ -18,16 +18,16 @@
 package metadata_test
 
 import (
-        "testing"
+	"testing"
 )
 
 import (
-        "github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 import (
-        "dubbo.apache.org/dubbo-go/v3/common"
-        "dubbo.apache.org/dubbo-go/v3/metadata/info"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 )
 
 // TestJavaDubboRevisionCompatibility tests Java Dubbo client revision compatibility

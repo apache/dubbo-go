@@ -18,16 +18,16 @@
 package metadata_test
 
 import (
-        "testing"
+	"testing"
 )
 
 import (
-        "github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 import (
-        "dubbo.apache.org/dubbo-go/v3/common/constant"
-        "dubbo.apache.org/dubbo-go/v3/metadata"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/metadata"
 )
 
 // TestJavaDubboIssueCompatibility tests functionality that resolves Java Dubbo 3.3.1 compatibility issues
@@ -131,7 +131,7 @@ func TestServiceDiscoveryIntegration(t *testing.T) {
 
 	t.Run("Service_Endpoint_Registration", func(t *testing.T) {
 		// Verify service endpoint registration format
-		expectedEndpoints := map[string]interface{}{
+		expectedEndpoints := map[string]any{
 			"port":     20033,
 			"protocol": constant.TriProtocol,
 		}
@@ -196,7 +196,7 @@ func TestConfigurationValidation(t *testing.T) {
 	t.Run("Triple_Protocol_Configuration", func(t *testing.T) {
 		// Verify Triple protocol configuration is correct
 
-		validConfigs := map[string]interface{}{
+		validConfigs := map[string]any{
 			"protocol": constant.TriProtocol,
 			"port":     20033,
 			"timeout":  5000,
