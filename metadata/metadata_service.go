@@ -300,8 +300,6 @@ func (e *serviceExporter) exportV2(port string) error {
 	return nil
 }
 
-
-
 type MetadataServiceHandler interface {
 	GetMetadataInfo(ctx context.Context, revision string) (*info.MetadataInfo, error)
 }
@@ -317,8 +315,6 @@ func (mtsV1 *MetadataServiceV1) GetMetadataInfo(ctx context.Context, revision st
 	}
 	return metadataInfo, nil
 }
-
-
 
 // MetadataServiceV2Handler is an implementation of the org.apache.dubbo.metadata.MetadataServiceV2 service.
 type MetadataServiceV2Handler interface {
