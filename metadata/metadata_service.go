@@ -21,19 +21,15 @@ import (
 	"context"
 	"strconv"
 	"strings"
-)
 
-import (
 	"github.com/dubbogo/gost/log/logger"
 
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
+	perrors "github.com/pkg/errors"
+
 	tripleapi "dubbo.apache.org/dubbo-go/v3/metadata/triple_api/proto"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
@@ -161,9 +157,16 @@ func (e *serviceExporter) Export() error {
 	// Only export V2 for tri protocol to maintain compatibility
 	if e.opts.protocol == constant.TriProtocol {
 		if err := e.exportV2(port); err != nil {
-			// Log warning but don't fail - V1 should continue working
-			logger.Warnf("Failed to export MetadataService V2: %v", err)
+			if e.opts.failOnV2ExportError {
+				// Hard failure: V2 is critical for Java 3.3.1+ clients
+				return perrors.Errorf("export V2 failed: %v", err)
+			} else {
+				// Soft failure: V2 is optional, don't break existing V1 functionality
+				logger.Warnf("export V2 failed (soft): %v", err)
+			}
 		}
+	} else {
+		logger.Warnf("skip V2 on protocol=%s (tri only)", e.opts.protocol)
 	}
 
 	return nil
@@ -310,6 +313,9 @@ type MetadataServiceV2 struct {
 }
 
 func (mtsV2 *MetadataServiceV2) GetMetadataInfo(ctx context.Context, req *tripleapi.MetadataRequest) (*tripleapi.MetadataInfoV2, error) {
+	if req == nil {
+		return nil, perrors.New("request cannot be nil")
+	}
 	metadataInfo, err := mtsV2.delegate.GetMetadataInfo(req.GetRevision())
 	if err != nil {
 		return nil, err
@@ -325,8 +331,16 @@ func (mtsV2 *MetadataServiceV2) GetMetadataInfo(ctx context.Context, req *triple
 }
 
 func convertV2(serviceInfos map[string]*info.ServiceInfo) map[string]*tripleapi.ServiceInfoV2 {
+	if serviceInfos == nil {
+		return make(map[string]*tripleapi.ServiceInfoV2)
+	}
+
 	serviceInfoV2s := make(map[string]*tripleapi.ServiceInfoV2, len(serviceInfos))
 	for k, serviceInfo := range serviceInfos {
+		if serviceInfo == nil {
+			logger.Warnf("serviceInfo is nil for key: %s, skipping", k)
+			continue
+		}
 		serviceInfoV2 := &tripleapi.ServiceInfoV2{
 			Name:     serviceInfo.Name,
 			Group:    serviceInfo.Group,

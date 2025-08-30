@@ -21,20 +21,12 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net"
-)
 
-import (
 	getty "github.com/apache/dubbo-getty"
-
 	"github.com/dubbogo/gost/log/logger"
+
 	gxsync "github.com/dubbogo/gost/sync"
 
-	perrors "github.com/pkg/errors"
-
-	"gopkg.in/yaml.v2"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
@@ -42,6 +34,9 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
+	perrors "github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
+
 	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
 
@@ -104,16 +99,19 @@ func initServer(url *common.URL) {
 
 		gettyServerConfigBytes, err := yaml.Marshal(gettyServerConfig)
 		if err != nil {
-			panic(err)
+			logger.Errorf("failed to marshal getty server config: %v", err)
+			return
 		}
 		err = yaml.Unmarshal(gettyServerConfigBytes, srvConf)
 		if err != nil {
-			panic(err)
+			logger.Errorf("failed to unmarshal getty server config: %v", err)
+			return
 		}
 	}
 
 	if err := srvConf.CheckValidity(); err != nil {
-		panic(err)
+		logger.Errorf("server config check validity failed: %v", err)
+		return
 	}
 }
 
@@ -182,7 +180,7 @@ func (s *Server) newSession(session getty.Session) error {
 		return nil
 	}
 	if _, ok = session.Conn().(*net.TCPConn); !ok {
-		panic(fmt.Sprintf("%s, session.conn{%#v} is not tcp connection\n", session.Stat(), session.Conn()))
+		return perrors.Errorf("%s, session.conn{%#v} is not tcp connection", session.Stat(), session.Conn())
 	}
 
 	if _, ok = session.Conn().(*tls.Conn); !ok {
