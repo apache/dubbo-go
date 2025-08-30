@@ -43,7 +43,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting/zookeeper"
 )
 
-var emptyStrSlice = make([]string, 0)
+
 
 func init() {
 	mf := &zookeeperMetadataReportFactory{}
