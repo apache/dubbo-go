@@ -134,7 +134,7 @@ func (m *zookeeperMetadataReport) RemoveServiceAppMappingListener(key string, gr
 
 type zookeeperMetadataReportFactory struct{}
 
-// CreateMetadataReport creates the zookeeper-based metadata report implementation.
+// nolint
 func (mf *zookeeperMetadataReportFactory) CreateMetadataReport(url *common.URL) report.MetadataReport {
 	client, err := gxzookeeper.NewZookeeperClient(
 		"zookeeperMetadataReport",
