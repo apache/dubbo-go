@@ -171,19 +171,19 @@ func TestServiceFilter_Invoke(t *testing.T) {
 			}
 		}).AnyTimes()
 
-	result := filter.Invoke(context.Background(), mockInvoker, invocation4)
-	assert.Nil(t, result.Error())
-	assert.Equal(t, "hello, world", result.Result())
+	invokeResult := filter.Invoke(context.Background(), mockInvoker, invocation4)
+	assert.Nil(t, invokeResult.Error())
+	assert.Equal(t, "hello, world", invokeResult.Result())
 
-	result = filter.Invoke(context.Background(), mockInvoker, invocation5)
+	invokeResult = filter.Invoke(context.Background(), mockInvoker, invocation5)
 	assert.Equal(t,
 		fmt.Sprintf("\"hello11\" method is not found, service key: %s", ivkUrl.ServiceKey()),
-		fmt.Sprintf("%v", result.Error()))
+		fmt.Sprintf("%v", invokeResult.Error()))
 
-	result = filter.Invoke(context.Background(), mockInvoker, invocation6)
+	invokeResult = filter.Invoke(context.Background(), mockInvoker, invocation6)
 	assert.Equal(t,
 		"the number of args(=2) is not matched with \"Hello\" method",
-		fmt.Sprintf("%v", result.Error()))
+		fmt.Sprintf("%v", invokeResult.Error()))
 
 	//result = filter.Invoke(context.Background(), mockInvoker, invocation7)
 	//assert.Equal(t, int64(200), result.Result().(*generalizer.ResponseType).GetCode())
@@ -210,6 +210,6 @@ func TestServiceFilter_OnResponse(t *testing.T) {
 		Rest: "result",
 	}
 
-	result := filter.OnResponse(context.Background(), rpcResult, nil, invocation1)
-	assert.Equal(t, "result", result.Result())
+	response := filter.OnResponse(context.Background(), rpcResult, nil, invocation1)
+	assert.Equal(t, "result", response.Result())
 }

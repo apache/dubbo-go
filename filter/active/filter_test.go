@@ -63,10 +63,10 @@ func TestFilterOnResponse(t *testing.T) {
 	defer ctrl.Finish()
 	invoker := mock.NewMockInvoker(ctrl)
 	invoker.EXPECT().GetURL().Return(url).Times(1)
-	result := &result.RPCResult{
+	rpcResult := &result.RPCResult{
 		Err: errors.New("test"),
 	}
-	filter.OnResponse(context.TODO(), result, invoker, invoc)
+	filter.OnResponse(context.TODO(), rpcResult, invoker, invoc)
 	methodStatus := base.GetMethodStatus(url, "test")
 	urlStatus := base.GetURLStatus(url)
 
