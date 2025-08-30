@@ -21,19 +21,15 @@ import (
 	"context"
 	"strconv"
 	"strings"
-)
 
-import (
-	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
+	"github.com/dubbogo/gost/log/logger"
+
+	perrors "github.com/pkg/errors"
+
 	tripleapi "dubbo.apache.org/dubbo-go/v3/metadata/triple_api/proto"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
@@ -93,7 +89,7 @@ func (mts *DefaultMetadataService) GetExportedURLs(serviceInterface string, grou
 // GetMetadataInfo can get metadata in memory
 func (mts *DefaultMetadataService) GetMetadataInfo(revision string) (*info.MetadataInfo, error) {
 	if revision == "" {
-		return nil, nil
+		return nil, perrors.New("revision cannot be empty")
 	}
 	for _, metadataInfo := range mts.metadataMap {
 		if metadataInfo.Revision == revision {
@@ -101,7 +97,7 @@ func (mts *DefaultMetadataService) GetMetadataInfo(revision string) (*info.Metad
 		}
 	}
 	logger.Warnf("metadata not found for revision: %s", revision)
-	return nil, nil
+	return nil, perrors.Errorf("metadata not found for revision: %s", revision)
 }
 
 // GetExportedServiceURLs get exported service urls
@@ -159,20 +155,14 @@ func (e *serviceExporter) Export() error {
 
 	// Export V2 protocol on same port with different interface name
 	// Only export V2 for tri protocol to maintain compatibility
-	if e.shouldExportV2() {
-		if err := e.exportV2Services(port); err != nil {
+	if e.opts.protocol == constant.TriProtocol {
+		if err := e.exportV2(port); err != nil {
 			// Log warning but don't fail - V1 should continue working
 			logger.Warnf("Failed to export MetadataService V2: %v", err)
 		}
 	}
 
 	return nil
-}
-
-// shouldExportV2 determines if V2 protocol should be exported
-// Only export V2 for tri protocol to avoid serialization conflicts
-func (e *serviceExporter) shouldExportV2() bool {
-	return e.opts.protocol == constant.TriProtocol
 }
 
 // getPort returns the port to use for metadata service export
@@ -191,12 +181,6 @@ func (e *serviceExporter) exportV1Services(port string) error {
 	}
 	// Export tri protocol V1 with hessian2 serialization
 	return e.exportTripleV1(port)
-}
-
-// exportV2Services exports V2 metadata service on same port with different interface
-// This ensures clients can discover V2 service using standard discovery mechanisms
-func (e *serviceExporter) exportV2Services(port string) error {
-	return e.exportV2(port)
 }
 
 // Unexport will unexport both dubbo and tri protocol metadata services
@@ -284,12 +268,8 @@ func (e *serviceExporter) exportV2(port string) error {
 		common.WithAttribute(constant.RpcServiceKey, v2),
 	)
 
-	// Register V2 service for client discovery
-	methods, err := common.ServiceMap.Register(ivkURL.Interface(), ivkURL.Protocol, ivkURL.Group(), ivkURL.Version(), v2)
-	if err != nil {
-		return perrors.Errorf("failed to register MetadataServiceV2 %v: %v", ivkURL.Interface(), err)
-	}
-	ivkURL.Methods = strings.Split(methods, ",")
+	// Set methods for V2 service
+	ivkURL.Methods = []string{"getMetadataInfo"}
 
 	proxyFactory := extension.GetProxyFactory("")
 	invoker := proxyFactory.GetInvoker(ivkURL)

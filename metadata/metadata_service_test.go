@@ -20,19 +20,15 @@ package metadata
 import (
 	"strconv"
 	"testing"
-)
 
-import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
+	"github.com/stretchr/testify/assert"
+
 	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
 )
 
@@ -183,8 +179,24 @@ func TestDefaultMetadataServiceGetMetadataInfo(t *testing.T) {
 				metadataMap: newMetadataMap(),
 			}
 			got, err := mts.GetMetadataInfo(tt.args.revision)
-			assert.Nil(t, err)
-			assert.Equalf(t, tt.want, got, "GetMetadataInfo(%v)", tt.args.revision)
+
+			// Handle different test cases based on revision
+			switch tt.args.revision {
+			case "":
+				// Empty revision should return an error
+				assert.NotNil(t, err)
+				assert.Nil(t, got)
+				assert.Contains(t, err.Error(), "revision cannot be empty")
+			case "2":
+				// Non-existent revision should return an error
+				assert.NotNil(t, err)
+				assert.Nil(t, got)
+				assert.Contains(t, err.Error(), "metadata not found for revision")
+			default:
+				// Normal cases should not have errors
+				assert.Nil(t, err)
+				assert.Equalf(t, tt.want, got, "GetMetadataInfo(%v)", tt.args.revision)
+			}
 		})
 	}
 }
