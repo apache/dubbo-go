@@ -35,7 +35,6 @@ func TestIsEmpty(t *testing.T) {
 		args args
 		want bool
 	}{
-		// TODO: Add test cases.
 		{"whitespace_false", args{s: "   ", allowSpace: false}, true},
 		{"whitespace_true", args{s: "   ", allowSpace: true}, false},
 		{"normal_false", args{s: "hello,dubbo", allowSpace: false}, false},
@@ -80,7 +79,8 @@ func TestSignWithParams(t *testing.T) {
 			ID   int64
 		}{"YuYu", 1},
 	}
-	signature, _ := SignWithParams(params, metadata, key)
+	signature, err := SignWithParams(params, metadata, key)
+	assert.NoError(t, err)
 	assert.False(t, IsEmpty(signature, false))
 }
 
@@ -106,8 +106,11 @@ func Test_toBytes(t *testing.T) {
 			ID   int64
 		}{"YuYu", 1},
 	}
-	jsonBytes, _ := toBytes(params)
-	jsonBytes2, _ := toBytes(params2)
+	jsonBytes, err := toBytes(params)
+	assert.NoError(t, err)
 	assert.NotNil(t, jsonBytes)
+	jsonBytes2, err2 := toBytes(params2)
+	assert.NoError(t, err2)
+	assert.NotNil(t, jsonBytes2)
 	assert.Equal(t, jsonBytes, jsonBytes2)
 }

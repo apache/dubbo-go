@@ -43,8 +43,8 @@ import (
 
 func TestProviderFilterInvokeWithGlobalPackage(t *testing.T) {
 	var (
-		url            = common.NewURLWithOptions(common.WithParams(url.Values{}))
-		invocation     = invocation.NewRPCInvocation("GetUser", []any{"OK"}, make(map[string]any))
+		baseUrl        = common.NewURLWithOptions(common.WithParams(url.Values{}))
+		rpcInvocation  = invocation.NewRPCInvocation("GetUser", []any{"OK"}, make(map[string]any))
 		opt            = graceful_shutdown.NewOptions()
 		filterValue, _ = extension.GetFilter(constant.GracefulShutdownProviderFilterKey)
 	)
@@ -55,26 +55,26 @@ func TestProviderFilterInvokeWithGlobalPackage(t *testing.T) {
 
 	opt.Shutdown.RejectRequestHandler = "test"
 
-	filter := filterValue.(*providerGracefulShutdownFilter)
-	filter.Set(constant.GracefulShutdownFilterShutdownConfig, opt.Shutdown)
-	assert.Equal(t, filter.shutdownConfig, opt.Shutdown)
+	providerFilter := filterValue.(*providerGracefulShutdownFilter)
+	providerFilter.Set(constant.GracefulShutdownFilterShutdownConfig, opt.Shutdown)
+	assert.Equal(t, providerFilter.shutdownConfig, opt.Shutdown)
 
-	result := filter.Invoke(context.Background(), base.NewBaseInvoker(url), invocation)
-	assert.NotNil(t, result)
-	assert.Nil(t, result.Error())
+	invokeResult := providerFilter.Invoke(context.Background(), base.NewBaseInvoker(baseUrl), rpcInvocation)
+	assert.NotNil(t, invokeResult)
+	assert.Nil(t, invokeResult.Error())
 
 	opt.Shutdown.RejectRequest.Store(true)
-	result = filter.Invoke(context.Background(), base.NewBaseInvoker(url), invocation)
-	assert.NotNil(t, result)
-	assert.NotNil(t, result.Error().Error(), "Rejected")
+	invokeResult = providerFilter.Invoke(context.Background(), base.NewBaseInvoker(baseUrl), rpcInvocation)
+	assert.NotNil(t, invokeResult)
+	assert.NotNil(t, invokeResult.Error().Error(), "Rejected")
 }
 
 // only for compatibility with old config, able to directly remove after config is deleted
 func TestProviderFilterInvokeWithConfigPackage(t *testing.T) {
 	var (
-		url        = common.NewURLWithOptions(common.WithParams(url.Values{}))
-		invocation = invocation.NewRPCInvocation("GetUser", []any{"OK"}, make(map[string]any))
-		rootConfig = config.NewRootConfigBuilder().
+		baseUrl       = common.NewURLWithOptions(common.WithParams(url.Values{}))
+		rpcInvocation = invocation.NewRPCInvocation("GetUser", []any{"OK"}, make(map[string]any))
+		rootConfig    = config.NewRootConfigBuilder().
 				SetShutDown(config.NewShutDownConfigBuilder().
 					SetTimeout("60s").
 					SetStepTimeout("3s").
@@ -89,22 +89,22 @@ func TestProviderFilterInvokeWithConfigPackage(t *testing.T) {
 
 	config.SetRootConfig(*rootConfig)
 
-	filter := filterValue.(*providerGracefulShutdownFilter)
-	filter.Set(constant.GracefulShutdownFilterShutdownConfig, config.GetShutDown())
-	assert.Equal(t, filter.shutdownConfig, compatGlobalShutdownConfig(config.GetShutDown()))
+	providerFilter := filterValue.(*providerGracefulShutdownFilter)
+	providerFilter.Set(constant.GracefulShutdownFilterShutdownConfig, config.GetShutDown())
+	assert.Equal(t, providerFilter.shutdownConfig, compatGlobalShutdownConfig(config.GetShutDown()))
 
-	result := filter.Invoke(context.Background(), base.NewBaseInvoker(url), invocation)
-	assert.NotNil(t, result)
-	assert.Nil(t, result.Error())
+	invokeResult := providerFilter.Invoke(context.Background(), base.NewBaseInvoker(baseUrl), rpcInvocation)
+	assert.NotNil(t, invokeResult)
+	assert.Nil(t, invokeResult.Error())
 
 	// only use this way to set the RejectRequest, because the variable is compact to GlobalShutdownConfig
-	filter.shutdownConfig.RejectRequest.Store(true)
+	providerFilter.shutdownConfig.RejectRequest.Store(true)
 	// not able to use this way to set the RejectRequest
 	//config.GetShutDown().RejectRequest.Store(true)
 
-	result = filter.Invoke(context.Background(), base.NewBaseInvoker(url), invocation)
-	assert.NotNil(t, result)
-	assert.NotNil(t, result.Error().Error(), "Rejected")
+	invokeResult = providerFilter.Invoke(context.Background(), base.NewBaseInvoker(baseUrl), rpcInvocation)
+	assert.NotNil(t, invokeResult)
+	assert.NotNil(t, invokeResult.Error().Error(), "Rejected")
 }
 
 type TestRejectedExecutionHandler struct{}

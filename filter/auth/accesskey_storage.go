@@ -35,13 +35,13 @@ var (
 )
 
 func init() {
-	extension.SetAccessKeyStorages(constant.DefaultAccessKeyStorage, newDefaultAccesskeyStorage)
+	extension.SetAccessKeyStorages(constant.DefaultAccessKeyStorage, newDefaultAccessKeyStorage)
 }
 
 // defaultAccesskeyStorage is the default implementation of AccesskeyStorage
 type defaultAccesskeyStorage struct{}
 
-func newDefaultAccesskeyStorage() filter.AccessKeyStorage {
+func newDefaultAccessKeyStorage() filter.AccessKeyStorage {
 	if storage == nil {
 		storageOnce.Do(func() {
 			storage = &defaultAccesskeyStorage{}

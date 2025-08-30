@@ -39,8 +39,8 @@ import (
 
 func TestConsumerFilterInvokeWithGlobalPackage(t *testing.T) {
 	var (
-		url            = common.NewURLWithOptions(common.WithParams(url.Values{}))
-		invocation     = invocation.NewRPCInvocation("GetUser", []any{"OK"}, make(map[string]any))
+		baseUrl        = common.NewURLWithOptions(common.WithParams(url.Values{}))
+		rpcInvocation  = invocation.NewRPCInvocation("GetUser", []any{"OK"}, make(map[string]any))
 		opt            = graceful_shutdown.NewOptions()
 		filterValue, _ = extension.GetFilter(constant.GracefulShutdownConsumerFilterKey)
 	)
@@ -51,7 +51,7 @@ func TestConsumerFilterInvokeWithGlobalPackage(t *testing.T) {
 	filter.Set(constant.GracefulShutdownFilterShutdownConfig, opt.Shutdown)
 	assert.Equal(t, filter.shutdownConfig, opt.Shutdown)
 
-	result := filter.Invoke(context.Background(), base.NewBaseInvoker(url), invocation)
+	result := filter.Invoke(context.Background(), base.NewBaseInvoker(baseUrl), rpcInvocation)
 	assert.NotNil(t, result)
 	assert.Nil(t, result.Error())
 }
@@ -59,9 +59,9 @@ func TestConsumerFilterInvokeWithGlobalPackage(t *testing.T) {
 // only for compatibility with old config, able to directly remove after config is deleted
 func TestConsumerFilterInvokeWithConfigPackage(t *testing.T) {
 	var (
-		url        = common.NewURLWithOptions(common.WithParams(url.Values{}))
-		invocation = invocation.NewRPCInvocation("GetUser", []any{"OK"}, make(map[string]any))
-		rootConfig = config.NewRootConfigBuilder().
+		baseUrl       = common.NewURLWithOptions(common.WithParams(url.Values{}))
+		rpcInvocation = invocation.NewRPCInvocation("GetUser", []any{"OK"}, make(map[string]any))
+		rootConfig    = config.NewRootConfigBuilder().
 				SetShutDown(config.NewShutDownConfigBuilder().
 					SetTimeout("60s").
 					SetStepTimeout("3s").
@@ -75,7 +75,7 @@ func TestConsumerFilterInvokeWithConfigPackage(t *testing.T) {
 	filter.Set(constant.GracefulShutdownFilterShutdownConfig, config.GetShutDown())
 	assert.Equal(t, filter.shutdownConfig, compatGlobalShutdownConfig(config.GetShutDown()))
 
-	result := filter.Invoke(context.Background(), base.NewBaseInvoker(url), invocation)
+	result := filter.Invoke(context.Background(), base.NewBaseInvoker(baseUrl), rpcInvocation)
 	assert.NotNil(t, result)
 	assert.Nil(t, result.Error())
 }

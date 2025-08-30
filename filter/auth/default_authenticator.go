@@ -62,7 +62,7 @@ func (authenticator *defaultAuthenticator) Sign(inv base.Invocation, url *common
 	consumer := url.GetParam(constant.ApplicationKey, "")
 	accessKeyPair, err := getAccessKeyPair(inv, url)
 	if err != nil {
-		return errors.New("get accesskey pair failed, cause: " + err.Error())
+		return errors.New("get accessKey pair failed, cause: " + err.Error())
 	}
 	rpcInv := inv.(*invocation.RPCInvocation)
 	signature, err := getSignature(url, inv, accessKeyPair.SecretKey, currentTimeMillis)
@@ -123,8 +123,8 @@ func (authenticator *defaultAuthenticator) Authenticate(inv base.Invocation, url
 }
 
 func getAccessKeyPair(inv base.Invocation, url *common.URL) (*filter.AccessKeyPair, error) {
-	accesskeyStorage := extension.GetAccessKeyStorages(url.GetParam(constant.AccessKeyStorageKey, constant.DefaultAccessKeyStorage))
-	accessKeyPair := accesskeyStorage.GetAccessKeyPair(inv, url)
+	accessKeyStorage := extension.GetAccessKeyStorages(url.GetParam(constant.AccessKeyStorageKey, constant.DefaultAccessKeyStorage))
+	accessKeyPair := accessKeyStorage.GetAccessKeyPair(inv, url)
 	if accessKeyPair == nil || IsEmpty(accessKeyPair.AccessKey, false) || IsEmpty(accessKeyPair.SecretKey, true) {
 		return nil, errors.New("accessKeyId or secretAccessKey not found")
 	} else {
