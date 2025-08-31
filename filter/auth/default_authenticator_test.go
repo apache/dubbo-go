@@ -85,6 +85,16 @@ func TestDefaultAuthenticator_Sign(t *testing.T) {
 	assert.Equal(t, inv.GetAttachmentWithDefaultValue(constant.AKKey, ""), "akey")
 }
 
+func TestDefaultAuthenticator_SignNotAccessKeyIDKeyError(t *testing.T) {
+	authenticator = &defaultAuthenticator{}
+	testUrl, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?application=test&interface=com.ikurento.user.UserProvider&group=gg&version=2.6.0")
+	testUrl.SetParam(constant.SecretAccessKeyKey, "skey")
+	testUrl.SetParam(constant.ParameterSignatureEnableKey, "false")
+	inv := invocation.NewRPCInvocation("test", []any{"OK"}, nil)
+	err := authenticator.Sign(inv, testUrl)
+	assert.NotNil(t, err)
+}
+
 func Test_getAccessKeyPairSuccess(t *testing.T) {
 	testUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
