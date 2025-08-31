@@ -17,7 +17,9 @@
 
 package util
 
-import "strings"
+import (
+	"strings"
+)
 
 // ToUpper will capitalize the first character
 func ToUpper(s string) string {

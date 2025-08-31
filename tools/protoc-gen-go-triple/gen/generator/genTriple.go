@@ -19,8 +19,6 @@ package generator
 
 import (
 	"errors"
-	"dubbo.apache.org/dubbo-go/v3/tools/protoc-gen-go-triple/util"
-	"google.golang.org/protobuf/compiler/protogen"
 	"os"
 	"path/filepath"
 	"strings"
@@ -28,6 +26,12 @@ import (
 
 import (
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
+
+	"google.golang.org/protobuf/compiler/protogen"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/tools/protoc-gen-go-triple/util"
 )
 
 func (g *Generator) parseTripleToString(t TripleGo) (string, error) {
