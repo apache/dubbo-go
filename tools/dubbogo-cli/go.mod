@@ -1,6 +1,6 @@
 module dubbo.apache.org/dubbo-go/v3/tools/dubbogo-cli
 
-go 1.23
+go 1.25
 
 require (
 	dubbo.apache.org/dubbo-go/v3 v3.0.1

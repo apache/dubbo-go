@@ -19,7 +19,6 @@ package etcdv3
 
 import (
 	"sync"
-	"time"
 )
 
 import (
@@ -37,7 +36,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
-// nolint
+// EventListener watches etcd keys and forwards events to DataListener.
 type EventListener struct {
 	client     *gxetcd.Client
 	keyMapLock sync.RWMutex
@@ -173,10 +172,6 @@ func (l *EventListener) ListenServiceNodeEventWithPrefix(prefix string, listener
 	}
 }
 
-func timeSecondDuration(sec int) time.Duration {
-	return time.Duration(sec) * time.Second
-}
-
 // ListenServiceEvent is invoked by etcdv3 ConsumerRegistry::Registe/ etcdv3 ConsumerRegistry::get/etcdv3 ConsumerRegistry::getListener
 // registry.go:Listen -> listenServiceEvent -> listenDirEvent -> listenServiceNodeEvent
 // registry.go:Listen -> listenServiceEvent -> listenServiceNodeEvent
@@ -226,7 +221,7 @@ func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataLis
 	}(key)
 }
 
-// nolint
+// Close waits for all spawned goroutines to finish.
 func (l *EventListener) Close() {
 	l.wg.Wait()
 }

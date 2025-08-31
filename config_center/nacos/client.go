@@ -35,7 +35,6 @@ import (
 
 // NacosClient Nacos configClient
 type NacosClient struct {
-	name         string
 	NacosAddrs   []string
 	sync.Mutex   // for Client
 	configClient *nacosClient.NacosConfigClient

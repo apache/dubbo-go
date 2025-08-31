@@ -30,12 +30,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
-const (
-	testDestinationRuleYML      = "testdata/router_config_dest_rule.yml"
-	errorTestDestinationRuleYML = "testdata/router_config_destination_rule_error.yml"
-	testVirtualServiceYML       = "testdata/router_config_virtual_service.yml"
-)
-
 func TestString(t *testing.T) {
 	s := "a1=>a2"
 	s1 := "=>a2"

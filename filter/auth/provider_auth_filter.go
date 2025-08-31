@@ -76,7 +76,3 @@ func (paf *authFilter) Invoke(ctx context.Context, invoker base.Invoker, invocat
 func (paf *authFilter) OnResponse(ctx context.Context, result result.Result, invoker base.Invoker, invocation base.Invocation) result.Result {
 	return result
 }
-
-func newProviderAuthFilter() filter.Filter {
-	return &authFilter{}
-}

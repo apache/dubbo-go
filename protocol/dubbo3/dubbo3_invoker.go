@@ -21,8 +21,6 @@ import (
 	"context"
 	"errors"
 	"reflect"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 )
@@ -45,7 +43,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
-	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
@@ -267,21 +264,6 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation base.Invocation) 
 	}
 	result.Rest = invocation.Reply()
 	return &result
-}
-
-// get timeout including methodConfig
-func (di *DubboInvoker) getTimeout(invocation *invocation.RPCInvocation) time.Duration {
-	timeout := di.GetURL().GetParam(strings.Join([]string{constant.MethodKeys, invocation.MethodName(), constant.TimeoutKey}, "."), "")
-	if len(timeout) != 0 {
-		if t, err := time.ParseDuration(timeout); err == nil {
-			// config timeout into attachment
-			invocation.SetAttachment(constant.TimeoutKey, strconv.Itoa(int(t.Milliseconds())))
-			return t
-		}
-	}
-	// set timeout into invocation at method level
-	invocation.SetAttachment(constant.TimeoutKey, strconv.Itoa(int(di.timeout.Milliseconds())))
-	return di.timeout
 }
 
 // IsAvailable check if invoker is available, now it is useless

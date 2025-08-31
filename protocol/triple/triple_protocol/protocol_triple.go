@@ -537,9 +537,6 @@ func (m *tripleUnaryMarshaler) write(data []byte) *Error {
 
 type tripleUnaryRequestMarshaler struct {
 	tripleUnaryMarshaler
-
-	stableCodec stableCodec
-	duplexCall  *duplexHTTPCall
 }
 
 func (m *tripleUnaryRequestMarshaler) Marshal(message any) *Error {

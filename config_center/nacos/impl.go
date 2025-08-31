@@ -41,7 +41,6 @@ import (
 )
 
 const (
-	nacosClientName = "nacos config_center"
 	// the number is a little big tricky
 	// it will be used in query which looks up all keys with the target group
 	// now, one key represents one application

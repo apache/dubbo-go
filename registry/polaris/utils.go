@@ -30,7 +30,6 @@ import (
 
 type PolarisInstanceInfo struct {
 	instance registry.ServiceInstance
-	url      *common.URL
 }
 
 func getInstanceKey(namespace string, instance registry.ServiceInstance) string {

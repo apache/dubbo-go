@@ -330,12 +330,3 @@ func (u *HillClimbingUpdater) adjustLimitation(option HillClimbingOption) error 
 	VerboseDebugf("[HillClimbingUpdater] The limitation is update from %d to %d.", uint64(oldLimitation), uint64(limitation))
 	return nil
 }
-
-func (u *HillClimbingUpdater) shouldDrop(lastUpdatedTime time.Time) (isDropped bool) {
-	if !u.limiter.lastUpdatedTime.Load().Equal(lastUpdatedTime) {
-		VerboseDebugf("[HillClimbingUpdater] The limitation is updated by others, drop this update, seq: %d.", u.seq)
-		isDropped = true
-		return
-	}
-	return
-}

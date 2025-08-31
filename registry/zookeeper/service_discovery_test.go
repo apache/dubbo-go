@@ -18,23 +18,16 @@
 package zookeeper
 
 import (
-	"context"
-	"sync"
 	"testing"
 )
 
 import (
-	"github.com/nacos-group/nacos-sdk-go/v2/model"
-	"github.com/nacos-group/nacos-sdk-go/v2/vo"
-
 	"github.com/stretchr/testify/assert"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol/base"
-	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
@@ -50,97 +43,4 @@ func Test_newZookeeperServiceDiscovery(t *testing.T) {
 func Test_zookeeperServiceDiscovery_DataChange(t *testing.T) {
 	serviceDiscovery := &zookeeperServiceDiscovery{}
 	assert.Equal(t, registry.DefaultPageSize, serviceDiscovery.GetDefaultPageSize())
-}
-
-type testNotify struct {
-	wg *sync.WaitGroup
-	t  *testing.T
-}
-
-func (tn *testNotify) Notify(e *registry.ServiceEvent) {
-	assert.Equal(tn.t, "2181", e.Service.Port)
-	tn.wg.Done()
-}
-
-func (tn *testNotify) NotifyAll([]*registry.ServiceEvent, func()) {}
-
-type mockClient struct {
-	instance []any
-}
-
-func (c mockClient) RegisterInstance(param vo.RegisterInstanceParam) (bool, error) {
-	return true, nil
-}
-
-func (c mockClient) DeregisterInstance(param vo.DeregisterInstanceParam) (bool, error) {
-	return true, nil
-}
-
-func (c mockClient) UpdateInstance(param vo.UpdateInstanceParam) (bool, error) {
-	return true, nil
-}
-
-func (c mockClient) GetService(param vo.GetServiceParam) (model.Service, error) {
-	panic("implement me")
-}
-
-func (c mockClient) SelectInstances(param vo.SelectInstancesParam) ([]model.Instance, error) {
-	panic("implement me")
-}
-
-func (c mockClient) SelectAllInstances(param vo.SelectAllInstancesParam) ([]model.Instance, error) {
-	panic("implement me")
-}
-
-func (c mockClient) SelectOneHealthyInstance(param vo.SelectOneHealthInstanceParam) (*model.Instance, error) {
-	panic("implement me")
-}
-
-func (c mockClient) Subscribe(param *vo.SubscribeParam) error {
-	return nil
-}
-
-func (c mockClient) Unsubscribe(param *vo.SubscribeParam) error {
-	panic("implement me")
-}
-
-func (c mockClient) GetAllServicesInfo(param vo.GetAllServiceInfoParam) (model.ServiceList, error) {
-	panic("implement me")
-}
-
-type mockProtocol struct{}
-
-func (m mockProtocol) Export(base.Invoker) base.Exporter {
-	panic("implement me")
-}
-
-func (m mockProtocol) Refer(*common.URL) base.Invoker {
-	return &mockInvoker{}
-}
-
-func (m mockProtocol) Destroy() {
-	panic("implement me")
-}
-
-type mockInvoker struct{}
-
-func (m *mockInvoker) GetURL() *common.URL {
-	panic("implement me")
-}
-
-func (m *mockInvoker) IsAvailable() bool {
-	panic("implement me")
-}
-
-func (m *mockInvoker) Destroy() {
-	panic("implement me")
-}
-
-func (m *mockInvoker) Invoke(context.Context, base.Invocation) result.Result {
-	return &result.RPCResult{
-		Rest: &mockResult{},
-	}
-}
-
-type mockResult struct {
 }

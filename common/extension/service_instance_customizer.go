@@ -42,13 +42,13 @@ func GetCustomizers() []registry.ServiceInstanceCustomizer {
 
 type customizerSlice []registry.ServiceInstanceCustomizer
 
-// nolint
+// Len returns the number of customizers.
 func (c customizerSlice) Len() int {
 	return len(c)
 }
 
-// nolint
+// Swap swaps the customizers at the provided indices.
 func (c customizerSlice) Swap(i, j int) { c[i], c[j] = c[j], c[i] }
 
-// nolint
+// Less orders customizers by priority (lower value means higher priority).
 func (c customizerSlice) Less(i, j int) bool { return c[i].GetPriority() < c[j].GetPriority() }

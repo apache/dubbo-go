@@ -19,7 +19,6 @@ package parser
 
 import (
 	"encoding/json"
-	"regexp"
 	"strconv"
 	"strings"
 )
@@ -33,10 +32,6 @@ import (
 const (
 	_pefixParam     = "param"
 	_prefixParamArr = "param["
-)
-
-var (
-	_arrayRegx, _ = regexp.Compile(`"^.+\\[[0-9]+\\]"`)
 )
 
 // ParseArgumentsByExpression follow https://goessner.net/articles/JsonPath/
