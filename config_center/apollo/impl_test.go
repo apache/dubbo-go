@@ -18,6 +18,7 @@
 package apollo
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -27,10 +28,15 @@ import (
 )
 
 import (
+	"github.com/apolloconfig/agollo/v4/constant"
+	"github.com/apolloconfig/agollo/v4/extension"
+
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/json"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/rawbytes"
+
+	"github.com/spf13/viper"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -172,6 +178,9 @@ func TestGetConfigItem(t *testing.T) {
 }
 
 func initMockApollo(t *testing.T) *apolloConfiguration {
+	// Register the YAML format parser with concurrent safety.
+	extension.AddFormatParser(constant.YAML, &Parser{})
+	extension.AddFormatParser(constant.YML, &Parser{})
 	c := &config.RootConfig{ConfigCenter: &config.CenterConfig{
 		Protocol:  "apollo",
 		Address:   "localhost:8080",
@@ -237,4 +246,40 @@ func (l *apolloDataListener) Process(configType *config_center.ConfigChangeEvent
 	l.wg.Done()
 	l.count++
 	l.event = configType.Key
+}
+
+// custom parser with concurrent safety
+type Parser struct {
+}
+
+func (d *Parser) Parse(configContent any) (map[string]any, error) {
+	content, ok := configContent.(string)
+	if !ok {
+		return nil, nil
+	}
+	if content == "" {
+		return nil, nil
+	}
+	vp := viper.New()
+	vp.SetConfigType("yaml")
+	buffer := bytes.NewBufferString(content)
+	// use viper to parse
+	err := vp.ReadConfig(buffer)
+	if err != nil {
+		return nil, err
+	}
+
+	return convertToMap(vp), nil
+}
+
+func convertToMap(vp *viper.Viper) map[string]any {
+	if vp == nil {
+		return nil
+	}
+
+	m := make(map[string]any)
+	for _, key := range vp.AllKeys() {
+		m[key] = vp.Get(key)
+	}
+	return m
 }
