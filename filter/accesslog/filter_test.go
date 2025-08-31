@@ -51,8 +51,8 @@ func TestFilter_Invoke_Not_Config(t *testing.T) {
 	inv := invocation.NewRPCInvocation("MethodName", []any{"OK", "Hello"}, attach)
 
 	accessLogFilter := &Filter{}
-	result := accessLogFilter.Invoke(context.Background(), invoker, inv)
-	assert.Nil(t, result.Error())
+	invokeResult := accessLogFilter.Invoke(context.Background(), invoker, inv)
+	assert.Nil(t, invokeResult.Error())
 }
 
 func TestFilterInvokeDefaultConfig(t *testing.T) {
@@ -72,13 +72,13 @@ func TestFilterInvokeDefaultConfig(t *testing.T) {
 	inv := invocation.NewRPCInvocation("MethodName", []any{"OK", "Hello"}, attach)
 
 	accessLogFilter := &Filter{}
-	result := accessLogFilter.Invoke(context.Background(), invoker, inv)
-	assert.Nil(t, result.Error())
+	invokeResult := accessLogFilter.Invoke(context.Background(), invoker, inv)
+	assert.Nil(t, invokeResult.Error())
 }
 
 func TestFilterOnResponse(t *testing.T) {
-	result := &result.RPCResult{}
+	rpcResult := &result.RPCResult{}
 	accessLogFilter := &Filter{}
-	response := accessLogFilter.OnResponse(context.TODO(), result, nil, nil)
-	assert.Equal(t, result, response)
+	response := accessLogFilter.OnResponse(context.TODO(), rpcResult, nil, nil)
+	assert.Equal(t, rpcResult, response)
 }
