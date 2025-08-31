@@ -1,0 +1,61 @@
+name: protoc-gen-plugin Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  release:
+    permissions:
+      contents: write
+    name: Release protoc-gen-plugin
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [linux, darwin, windows]
+        goarch: [386, amd64, arm64]
+        exclude:
+          - goos: darwin
+            goarch: 386
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+
+      - name: Download dependencies
+        run: |
+          go mod download
+
+      - name: Prepare build directory
+        run: |
+          mkdir -p build/
+          cp README.md build/
+          cp LICENSE build/
+
+      - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          go build -trimpath -o $GITHUB_WORKSPACE/build
+
+      - name: Create package
+        id: package
+        run: |
+          PACKAGE_NAME=protoc-gen-plugin.${GITHUB_REF#refs/tags/}.${{ matrix.goos }}.${{ matrix.goarch }}.tar.gz
+          tar -czvf $PACKAGE_NAME -C build .
+          echo "name=${PACKAGE_NAME}" >> $GITHUB_OUTPUT
+
+      - name: Upload asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./${{ steps.package.outputs.name }}
+          asset_name: ${{ steps.package.outputs.name }}
+          asset_content_type: application/gzip
+
