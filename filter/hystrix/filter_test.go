@@ -157,10 +157,10 @@ func TestHystrixFilterInvokeSuccess(t *testing.T) {
 		fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
 	assert.NoError(t, err)
 	testInvoker := testMockSuccessInvoker{*base.NewBaseInvoker(testUrl)}
-	result := hf.Invoke(context.Background(), &testInvoker, &invocation.RPCInvocation{})
-	assert.NotNil(t, result)
-	assert.NoError(t, result.Error())
-	assert.NotNil(t, result.Result())
+	invokeResult := hf.Invoke(context.Background(), &testInvoker, &invocation.RPCInvocation{})
+	assert.NotNil(t, invokeResult)
+	assert.NoError(t, invokeResult.Error())
+	assert.NotNil(t, invokeResult.Result())
 }
 
 func TestHystrixFilterInvokeFail(t *testing.T) {
@@ -169,12 +169,12 @@ func TestHystrixFilterInvokeFail(t *testing.T) {
 		fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
 	assert.NoError(t, err)
 	testInvoker := testMockFailInvoker{*base.NewBaseInvoker(testUrl)}
-	result := hf.Invoke(context.Background(), &testInvoker, &invocation.RPCInvocation{})
-	assert.NotNil(t, result)
-	assert.Error(t, result.Error())
+	invokeResult := hf.Invoke(context.Background(), &testInvoker, &invocation.RPCInvocation{})
+	assert.NotNil(t, invokeResult)
+	assert.Error(t, invokeResult.Error())
 }
 
-func TestHystricFilterInvokeCircuitBreak(t *testing.T) {
+func TestHystrixFilterInvokeCircuitBreak(t *testing.T) {
 	mockInitHystrixConfig()
 	hystrix.Flush()
 	hf := &Filter{COrP: true}
@@ -185,8 +185,8 @@ func TestHystricFilterInvokeCircuitBreak(t *testing.T) {
 				fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
 			assert.NoError(t, err)
 			testInvoker := testMockSuccessInvoker{*base.NewBaseInvoker(testUrl)}
-			result := hf.Invoke(context.Background(), &testInvoker, &invocation.RPCInvocation{})
-			resChan <- result
+			invokeResult := hf.Invoke(context.Background(), &testInvoker, &invocation.RPCInvocation{})
+			resChan <- invokeResult
 		}()
 	}
 	// This can not always pass the test when on travis due to concurrency, you can uncomment the code below and test it locally
@@ -200,7 +200,7 @@ func TestHystricFilterInvokeCircuitBreak(t *testing.T) {
 	//assert.True(t, lastRest)
 }
 
-func TestHystricFilterInvokeCircuitBreakOmitException(t *testing.T) {
+func TestHystrixFilterInvokeCircuitBreakOmitException(t *testing.T) {
 	mockInitHystrixConfig()
 	hystrix.Flush()
 	reg, _ := regexp.Compile(".*exception.*")
@@ -213,8 +213,8 @@ func TestHystricFilterInvokeCircuitBreakOmitException(t *testing.T) {
 				fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
 			assert.NoError(t, err)
 			testInvoker := testMockSuccessInvoker{*base.NewBaseInvoker(testUrl)}
-			result := hf.Invoke(context.Background(), &testInvoker, &invocation.RPCInvocation{})
-			resChan <- result
+			invokeResult := hf.Invoke(context.Background(), &testInvoker, &invocation.RPCInvocation{})
+			resChan <- invokeResult
 		}()
 	}
 	// This can not always pass the test when on travis due to concurrency, you can uncomment the code below and test it locally

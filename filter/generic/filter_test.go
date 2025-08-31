@@ -65,8 +65,8 @@ func TestFilter_Invoke(t *testing.T) {
 			return &result.RPCResult{}
 		})
 
-	result := filter.Invoke(context.Background(), mockInvoker, normalInvocation)
-	assert.NotNil(t, result)
+	r := filter.Invoke(context.Background(), mockInvoker, normalInvocation)
+	assert.NotNil(t, r)
 }
 
 // test isMakingAGenericCall branch
@@ -98,6 +98,6 @@ func TestFilter_InvokeWithGenericCall(t *testing.T) {
 			return &result.RPCResult{}
 		})
 
-	result := filter.Invoke(context.Background(), mockInvoker, genericInvocation)
-	assert.NotNil(t, result)
+	r := filter.Invoke(context.Background(), mockInvoker, genericInvocation)
+	assert.NotNil(t, r)
 }

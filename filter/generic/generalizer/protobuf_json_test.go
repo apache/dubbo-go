@@ -32,13 +32,13 @@ func TestProtobufJsonGeneralizer(t *testing.T) {
 	req := &RequestType{
 		Id: 1,
 	}
-	reqjson, err := g.Generalize(req)
+	reqJson, err := g.Generalize(req)
 	assert.Nil(t, err)
-	rreq, err := g.Realize(reqjson, reflect.TypeOf(req))
+	rReq, err := g.Realize(reqJson, reflect.TypeOf(req))
 	assert.Nil(t, err)
-	reqobj, ok := rreq.(*RequestType)
+	reqObj, ok := rReq.(*RequestType)
 	assert.True(t, ok)
-	assert.Equal(t, req.Id, reqobj.GetId())
+	assert.Equal(t, req.Id, reqObj.GetId())
 
 	resp := &ResponseType{
 		Code:    200,
@@ -46,14 +46,14 @@ func TestProtobufJsonGeneralizer(t *testing.T) {
 		Name:    "xavierniu",
 		Message: "Nice to meet you",
 	}
-	respjson, err := g.Generalize(resp)
+	respJson, err := g.Generalize(resp)
 	assert.Nil(t, err)
-	rresp, err := g.Realize(respjson, reflect.TypeOf(resp))
+	rResp, err := g.Realize(respJson, reflect.TypeOf(resp))
 	assert.Nil(t, err)
-	respobj, ok := rresp.(*ResponseType)
+	respObj, ok := rResp.(*ResponseType)
 	assert.True(t, ok)
-	assert.Equal(t, resp.Code, respobj.GetCode())
-	assert.Equal(t, resp.Id, respobj.GetId())
-	assert.Equal(t, resp.Name, respobj.GetName())
-	assert.Equal(t, resp.Message, respobj.GetMessage())
+	assert.Equal(t, resp.Code, respObj.GetCode())
+	assert.Equal(t, resp.Id, respObj.GetId())
+	assert.Equal(t, resp.Name, respObj.GetName())
+	assert.Equal(t, resp.Message, respObj.GetMessage())
 }
