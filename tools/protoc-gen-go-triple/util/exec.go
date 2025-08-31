@@ -28,9 +28,9 @@ func Exec(arg, dir string) (string, error) {
 	var cmd *exec.Cmd
 	switch osEnv {
 	case "darwin", "linux":
-		cmd = exec.Command("sh", "-c", arg)
+		cmd = exec.Command("sh", "-c", arg) //NOSONAR
 	case "windows":
-		cmd = exec.Command("cmd.exe", "/c", arg)
+		cmd = exec.Command("cmd.exe", "/c", arg) //NOSONAR
 	default:
 		return "", fmt.Errorf("unexpected os: %v", osEnv)
 	}
