@@ -117,16 +117,16 @@ func (l *LoggerConfig) toURL() *common.URL {
 }
 
 // DynamicUpdateProperties dynamically update properties.
-func (l *LoggerConfig) DynamicUpdateProperties(new *LoggerConfig) {
-	if new == nil {
+func (l *LoggerConfig) DynamicUpdateProperties(updated *LoggerConfig) {
+	if updated == nil {
 		return
 	}
-	if new.Level != "" && new.Level != l.Level {
+	if updated.Level != "" && updated.Level != l.Level {
 		// only persist when runtime logger accepts it
-		if ok := dubboLogger.SetLoggerLevel(new.Level); ok {
-			l.Level = new.Level
+		if ok := dubboLogger.SetLoggerLevel(updated.Level); ok {
+			l.Level = updated.Level
 		} else {
-			logger.Warnf("logger does not support dynamic level change to %s", new.Level)
+			logger.Warnf("logger does not support dynamic level change to %s", updated.Level)
 		}
 	}
 }

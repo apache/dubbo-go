@@ -104,9 +104,12 @@ func TestLoggerDynamicUpdateLevel(t *testing.T) {
 	assert.Equal(t, "info", rootConfig.Logger.Level)
 
 	// if runtime logger doesn't support dynamic level, skip this test
-	if !dlogger.SetLoggerLevel(rootConfig.Logger.Level) {
+	// Test with a different level to properly verify dynamic support
+	if !dlogger.SetLoggerLevel("debug") {
 		t.Skip("logger doesn't support dynamic level change in current environment")
 	}
+	// Reset back to original level
+	dlogger.SetLoggerLevel("info")
 
 	// simulate config center change: update level -> debug
 	updatedYAML := `
