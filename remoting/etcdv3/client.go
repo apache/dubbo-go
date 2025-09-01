@@ -59,7 +59,7 @@ func ValidateClient(container clientFacade, opts ...gxetcd.Option) error {
 	return nil
 }
 
-// nolint
+// NewServiceDiscoveryClient creates a new etcd client for service discovery with sensible defaults.
 func NewServiceDiscoveryClient(opts ...gxetcd.Option) *gxetcd.Client {
 	options := &gxetcd.Options{
 		Heartbeat: 1, // default heartbeat

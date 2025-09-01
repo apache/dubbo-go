@@ -93,7 +93,32 @@ func WithMaxServerRecvMsgSize(size string) Option {
 }
 
 // Http3Enable enables HTTP/3 support for the Triple protocol.
-// It sets the corresponding configuration to enable HTTP/3.
+// This option configures the server to start both HTTP/2 and HTTP/3 servers
+// simultaneously, providing modern HTTP/3 capabilities alongside traditional HTTP/2.
+//
+// When enabled, the server will:
+//   - Start an HTTP/3 server using QUIC protocol
+//   - Continue running the existing HTTP/2 server
+//   - Enable protocol negotiation between HTTP/2 and HTTP/3
+//   - Provide improved performance and security benefits of HTTP/3
+//
+// Usage Examples:
+//
+//	// Basic HTTP/3 enablement
+//	server := triple.NewServer(
+//	    triple.Http3Enable(),
+//	)
+//
+// Requirements:
+//   - TLS configuration is required for HTTP/3
+//   - Server must have valid TLS certificates
+//   - Clients must support HTTP/3 for full benefits
+//   - Fallback to HTTP/2 is automatic for unsupported clients
+//
+// Default Behavior:
+//   - HTTP/3 is disabled by default for backward compatibility
+//   - When enabled, negotiation defaults to true
+//   - Both HTTP/2 and HTTP/3 servers run on the same port
 //
 // # Experimental
 //
@@ -102,5 +127,37 @@ func WithMaxServerRecvMsgSize(size string) Option {
 func Http3Enable() Option {
 	return func(opts *Options) {
 		opts.Triple.Http3.Enable = true
+	}
+}
+
+// Http3Negotiation configures HTTP/3 negotiation behavior for the Triple protocol.
+// This option controls whether HTTP/2 Alternative Services (Alt-Svc) negotiation
+// is enabled when both HTTP/2 and HTTP/3 servers are running simultaneously.
+//
+// Usage Examples:
+//
+//	// Enable HTTP/3 negotiation (default behavior)
+//	server := triple.NewServer(
+//	    triple.Http3Enable(),
+//	    triple.Http3Negotiation(true),
+//	)
+//
+//	// Disable HTTP/3 negotiation for explicit protocol control
+//	server := triple.NewServer(
+//	    triple.Http3Enable(),
+//	    triple.Http3Negotiation(false),
+//	)
+//
+// Default Behavior:
+//   - When HTTP/3 is enabled, negotiation defaults to true
+//   - This ensures backward compatibility and optimal client experience
+//
+// # Experimental
+//
+// NOTICE: This API is EXPERIMENTAL and may be changed or removed in
+// a later release.
+func Http3Negotiation(negotiation bool) Option {
+	return func(opts *Options) {
+		opts.Triple.Http3.Negotiation = negotiation
 	}
 }

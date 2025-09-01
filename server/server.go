@@ -35,7 +35,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/dubboutil"
 	"dubbo.apache.org/dubbo-go/v3/metadata"
-	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/registry/exposed_tmp"
 )
 
@@ -44,9 +43,6 @@ var proServices = make([]*InternalService, 0, 16)
 var proLock sync.Mutex
 
 type Server struct {
-	invoker base.Invoker
-	info    *common.ServiceInfo
-
 	cfg *ServerOptions
 
 	svcOptsMap sync.Map

@@ -65,7 +65,8 @@ func init() {
 	compareURLEqualFunc = defaultCompareURLEqual
 }
 
-// nolint
+// RoleType defines the role of the node in Dubbo service topology.
+// The values are indexes for arrays like DubboNodes and DubboRole.
 type RoleType int
 
 func (t RoleType) String() string {
@@ -965,17 +966,17 @@ func IsEquals(left *URL, right *URL, excludes ...string) bool {
 // Instances will be order by URL.String()
 type URLSlice []*URL
 
-// nolint
+// Len returns the number of URLs in the slice.
 func (s URLSlice) Len() int {
 	return len(s)
 }
 
-// nolint
+// Less reports whether the URL at index i should sort before the URL at index j.
 func (s URLSlice) Less(i, j int) bool {
 	return s[i].String() < s[j].String()
 }
 
-// nolint
+// Swap swaps the URLs at indexes i and j.
 func (s URLSlice) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }

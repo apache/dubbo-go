@@ -18,11 +18,9 @@
 package polaris
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -80,11 +78,6 @@ type polarisRouter struct {
 
 	routerAPI   polaris.RouterAPI
 	consumerAPI polaris.ConsumerAPI
-
-	cancel context.CancelFunc
-
-	lock      sync.RWMutex
-	instances map[string]model.Instance
 }
 
 // Route Determine the target invokers list.

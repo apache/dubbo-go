@@ -1,8 +1,8 @@
 # Apache Dubbo for Golang
 
 [![Build Status](https://github.com/apache/dubbo-go/workflows/CI/badge.svg)](https://travis-ci.org/apache/dubbo-go)
-[![codecov](https://codecov.io/gh/apache/dubbo-go/branch/master/graph/badge.svg)](https://codecov.io/gh/apache/dubbo-go)
-[![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/github.com/apache/dubbo-go?tab=doc)
+[![codecov](https://codecov.io/gh/apache/dubbo-go/branch/main/graph/badge.svg)](https://codecov.io/gh/apache/dubbo-go)
+[![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/github.com/apache/dubbo-go/v3?tab=doc)
 [![Go Report Card](https://goreportcard.com/badge/github.com/apache/dubbo-go)](https://goreportcard.com/report/github.com/apache/dubbo-go)
 ![license](https://img.shields.io/badge/license-Apache--2.0-green.svg)
 
@@ -96,7 +96,7 @@ func main() {
 
 有关使用详情，请参阅 [dubbo-go-schema README](./tools/dubbo-go-schema/README.md)。
 
-### [dubbogo-cli-v2](https://github.com/dubbogo/tools/tree/master/cmd/dubbogo-cli-v2)
+### [dubbogo-cli](https://github.com/apache/dubbo-go/tree/main/tools/dubbogo-cli)
 
 一个功能全面的命令行工具，用于引导、管理和调试您的 Dubbo-Go 应用。
 
@@ -106,9 +106,9 @@ func main() {
 * **工具管理：** 安装和管理必要的开发工具。
 * **接口调试：** 提供命令来调试您的服务。
 
-*注意：该工具取代了已废弃的 [dubbogo-cli](https://github.com/dubbogo/tools/tree/master/cmd/dubbogo-cli)。*
+- [dubbogo-cli](https://github.com/apache/dubbo-go/tree/main/tools/dubbogo-cli)
+- [dubbogo-cli-v2](https://github.com/dubbogo/tools/tree/master/cmd/dubbogo-cli-v2)
 
-有关使用详情，请参阅 [dubbogo-cli-v2 README](https://github.com/dubbogo/tools/tree/master/cmd/dubbogo-cli-v2)。
 
 ### [protoc-gen-go-triple](https://github.com/dubbogo/protoc-gen-go-triple)
 

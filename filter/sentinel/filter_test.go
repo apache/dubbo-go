@@ -147,8 +147,8 @@ func TestSentinelFilter_ErrorCount(t *testing.T) {
 
 	f := &sentinelProviderFilter{}
 	for i := 0; i < 50; i++ {
-		result := f.Invoke(context.TODO(), mockInvoker, mockInvocation)
-		assert.Error(t, result.Error())
+		invokeResult := f.Invoke(context.TODO(), mockInvoker, mockInvocation)
+		assert.Error(t, invokeResult.Error())
 	}
 	select {
 	case <-time.After(time.Second):
@@ -182,8 +182,8 @@ func TestProviderFilter_Invoke(t *testing.T) {
 	assert.NoError(t, err)
 	mockInvoker := base.NewBaseInvoker(url)
 	mockInvocation := invocation.NewRPCInvocation("hello", []any{"OK"}, make(map[string]any))
-	result := f.Invoke(context.TODO(), mockInvoker, mockInvocation)
-	assert.NoError(t, result.Error())
+	invokeResult := f.Invoke(context.TODO(), mockInvoker, mockInvocation)
+	assert.NoError(t, invokeResult.Error())
 }
 
 func TestGetResourceName(t *testing.T) {

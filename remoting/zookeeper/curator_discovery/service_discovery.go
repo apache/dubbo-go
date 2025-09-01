@@ -277,17 +277,12 @@ func (sd *ServiceDiscovery) getNameAndID(path string) (string, string, error) {
 	return name, id, nil
 }
 
-// nolint
+// pathForInstance builds the zookeeper path for a specific instance.
 func (sd *ServiceDiscovery) pathForInstance(name, id string) string {
 	return path.Join(sd.basePath, name, id)
 }
 
-// nolint
-func (sd *ServiceDiscovery) prefixPathForInstance(name string) string {
-	return path.Join(sd.basePath, name)
-}
-
-// nolint
+// pathForName builds the zookeeper path for a service name.
 func (sd *ServiceDiscovery) pathForName(name string) string {
 	return path.Join(sd.basePath, name)
 }

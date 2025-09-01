@@ -207,7 +207,7 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 
 	var callProtocol string
 	if tripleConf != nil && tripleConf.Http3 != nil && tripleConf.Http3.Enable {
-		callProtocol = constant.CallHTTP3
+		callProtocol = constant.CallHTTP2AndHTTP3
 	} else {
 		// HTTP default type is HTTP/2.
 		callProtocol = constant.CallHTTP2
@@ -257,6 +257,14 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		}
 
 		logger.Infof("Triple http3 client transport init successfully")
+	case constant.CallHTTP2AndHTTP3:
+		if !tlsFlag {
+			return nil, fmt.Errorf("TRIPLE HTTP/2 and HTTP/3 client must have TLS config, but TLS config is nil")
+		}
+
+		// Create a dual transport that can handle both HTTP/2 and HTTP/3
+		transport = newDualTransport(cfg, keepAliveInterval, keepAliveTimeout)
+		logger.Infof("Triple HTTP/2 and HTTP/3 client transport init successfully")
 	default:
 		return nil, fmt.Errorf("unsupported http protocol: %s", callProtocol)
 	}
@@ -353,4 +361,73 @@ func genKeepAliveOptions(url *common.URL, tripleConf *global.TripleConfig) ([]tr
 	}
 
 	return cliKeepAliveOpts, keepAliveInterval, keepAliveTimeout, nil
+}
+
+// dualTransport is a transport that can handle both HTTP/2 and HTTP/3
+// It uses HTTP Alternative Services (Alt-Svc) for protocol negotiation
+type dualTransport struct {
+	http2Transport *http2.Transport
+	http3Transport *http3.Transport
+	// Cache for alternative services to avoid repeated lookups
+	altSvcCache *tri.AltSvcCache
+}
+
+// newDualTransport creates a new dual transport that supports both HTTP/2 and HTTP/3
+func newDualTransport(tlsConfig *tls.Config, keepAliveInterval, keepAliveTimeout time.Duration) http.RoundTripper {
+	http2Transport := &http2.Transport{
+		TLSClientConfig: tlsConfig,
+		ReadIdleTimeout: keepAliveInterval,
+		PingTimeout:     keepAliveTimeout,
+	}
+
+	http3Transport := &http3.Transport{
+		TLSClientConfig: tlsConfig,
+		QUICConfig: &quic.Config{
+			KeepAlivePeriod: keepAliveInterval,
+			MaxIdleTimeout:  keepAliveTimeout,
+		},
+	}
+
+	return &dualTransport{
+		http2Transport: http2Transport,
+		http3Transport: http3Transport,
+		altSvcCache:    tri.NewAltSvcCache(),
+	}
+}
+
+// RoundTrip implements http.RoundTripper interface with HTTP Alternative Services support
+func (dt *dualTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	// Check if we have cached alternative service information
+	cachedAltSvc := dt.altSvcCache.Get(req.URL.Host)
+
+	// If we have valid cached alt-svc info and it's for HTTP/3, try HTTP/3 first
+	// Check if the cached information is still valid (not expired)
+	if cachedAltSvc != nil && cachedAltSvc.Protocol == "h3" {
+		logger.Debugf("Using cached HTTP/3 alternative service for %s", req.URL.String())
+		resp, err := dt.http3Transport.RoundTrip(req)
+		if err == nil {
+			// Update alt-svc cache from response headers
+			dt.altSvcCache.UpdateFromHeaders(req.URL.Host, resp.Header)
+			return resp, nil
+		}
+		logger.Debugf("Cached HTTP/3 request failed to %s, falling back to HTTP/2: %v", req.URL.String(), err)
+	}
+
+	// Start with HTTP/2 to get alternative service information
+	logger.Debugf("Making initial HTTP/2 request to %s to discover alternative services", req.URL.String())
+	resp, err := dt.http2Transport.RoundTrip(req)
+	if err != nil {
+		logger.Errorf("HTTP/2 request failed to %s: %v", req.URL.String(), err)
+		return nil, err
+	}
+
+	// Check for alternative services in the response
+	dt.altSvcCache.UpdateFromHeaders(req.URL.Host, resp.Header)
+
+	// If the response indicates HTTP/3 is available, try HTTP/3 for future requests
+	if altSvc := dt.altSvcCache.Get(req.URL.Host); altSvc != nil && altSvc.Protocol == "h3" {
+		logger.Debugf("Server %s supports HTTP/3, will use HTTP/3 for future requests", req.URL.Host)
+	}
+
+	return resp, nil
 }

@@ -28,7 +28,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
@@ -43,69 +42,4 @@ func TestMetadataServiceURLParamsMetadataCustomizer(t *testing.T) {
 func createInstance() registry.ServiceInstance {
 	ins := &registry.DefaultServiceInstance{}
 	return ins
-}
-
-type mockMetadataService struct {
-	urls []any
-}
-
-func (m *mockMetadataService) Reference() string {
-	panic("implement me")
-}
-
-func (m *mockMetadataService) ServiceName() (string, error) {
-	panic("implement me")
-}
-
-func (m *mockMetadataService) ExportURL(*common.URL) (bool, error) {
-	panic("implement me")
-}
-
-func (m *mockMetadataService) UnexportURL(*common.URL) error {
-	panic("implement me")
-}
-
-func (m *mockMetadataService) SubscribeURL(*common.URL) (bool, error) {
-	panic("implement me")
-}
-
-func (m *mockMetadataService) UnsubscribeURL(*common.URL) error {
-	panic("implement me")
-}
-
-func (m *mockMetadataService) PublishServiceDefinition(*common.URL) error {
-	panic("implement me")
-}
-
-func (m *mockMetadataService) GetExportedURLs(string, string, string, string) ([]any, error) {
-	return m.urls, nil
-}
-
-func (m *mockMetadataService) MethodMapper() map[string]string {
-	panic("implement me")
-}
-
-func (m *mockMetadataService) GetSubscribedURLs() ([]*common.URL, error) {
-	var res []*common.URL
-	for _, ui := range m.urls {
-		u, _ := common.NewURL(ui.(string))
-		res = append(res, u)
-	}
-	return res, nil
-}
-
-func (m *mockMetadataService) GetServiceDefinition(string, string, string) (string, error) {
-	panic("implement me")
-}
-
-func (m *mockMetadataService) GetServiceDefinitionByServiceKey(string) (string, error) {
-	panic("implement me")
-}
-
-func (m *mockMetadataService) RefreshMetadata(string, string) (bool, error) {
-	panic("implement me")
-}
-
-func (m *mockMetadataService) Version() (string, error) {
-	return "1.0.0", nil
 }

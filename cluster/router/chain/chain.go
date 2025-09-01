@@ -105,18 +105,6 @@ func (c *RouterChain) copyRouters() []router.PriorityRouter {
 	return ret
 }
 
-// copyInvokers copies a snapshot of the received invokers.
-func (c *RouterChain) copyInvokers() []base.Invoker {
-	c.mutex.RLock()
-	defer c.mutex.RUnlock()
-	if len(c.invokers) == 0 {
-		return nil
-	}
-	ret := make([]base.Invoker, 0, len(c.invokers))
-	ret = append(ret, c.invokers...)
-	return ret
-}
-
 // NewRouterChain init router chain
 // Loop routerFactories and call NewRouter method
 func NewRouterChain(url *common.URL) (*RouterChain, error) {

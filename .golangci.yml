@@ -21,6 +21,7 @@ linters:
     - ineffassign
     - misspell
     - staticcheck
+    - unused
   settings:
     depguard:
       rules:

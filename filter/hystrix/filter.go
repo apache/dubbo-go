@@ -46,7 +46,7 @@ import (
 )
 
 const (
-	// nolint
+	// HYSTRIX is the key used in filter configuration.
 	HYSTRIX = "hystrix"
 )
 
@@ -303,7 +303,7 @@ func initConfigProvider() error {
 //	return initHystrixConfig()
 //}
 
-// nolint
+// CommandConfigWithError describes hystrix command configs with error whitelist.
 type CommandConfigWithError struct {
 	Timeout                int      `yaml:"timeout"`
 	MaxConcurrentRequests  int      `yaml:"max_concurrent_requests"`
@@ -321,14 +321,14 @@ type CommandConfigWithError struct {
 //- ErrorPercentThreshold: it causes circuits to open once the rolling measure of errors exceeds this percent of requests
 //See hystrix doc
 
-// nolint
+// FilterConfig holds hystrix configs at default/service/method levels.
 type FilterConfig struct {
 	Configs  map[string]*CommandConfigWithError
 	Default  string
 	Services map[string]ServiceHystrixConfig
 }
 
-// nolint
+// ServiceHystrixConfig binds service-level and method-level hystrix configs.
 type ServiceHystrixConfig struct {
 	ServiceConfig string `yaml:"service_config"`
 	Methods       map[string]string

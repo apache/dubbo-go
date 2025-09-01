@@ -109,7 +109,7 @@ func (r *etcdV3Registry) DoRegister(root string, node string) error {
 	return r.client.RegisterTemp(path.Join(root, node), "")
 }
 
-// nolint
+// DoUnregister is not supported in etcdV3Registry.
 func (r *etcdV3Registry) DoUnregister(root string, node string) error {
 	return perrors.New("DoUnregister is not support in etcdV3Registry")
 }

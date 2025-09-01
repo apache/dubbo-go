@@ -128,7 +128,7 @@ func (proto *registryProtocol) initConfigurationListeners() {
 	proto.providerConfigurationListener = newProviderConfigurationListener(proto.overrideListeners)
 }
 
-// nolint
+// GetRegistries returns all underlying registry instances.
 func (proto *registryProtocol) GetRegistries() []registry.Registry {
 	var rs []registry.Registry
 	proto.registries.Range(func(_, v any) bool {

@@ -142,7 +142,6 @@ func NewMetricIdByLabels(key *MetricKey, labels map[string]string) *MetricId {
 // not an intermediate result(like summary，histogram they will export to a set of MetricSample)
 type MetricSample struct {
 	*MetricId
-	value float64
 }
 
 // CounterMetric counter metric

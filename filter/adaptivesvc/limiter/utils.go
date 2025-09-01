@@ -32,13 +32,6 @@ func VerboseDebugf(msg string, args ...any) {
 	logger.Debugf(msg, args...)
 }
 
-func minUint64(lhs, rhs uint64) uint64 {
-	if lhs < rhs {
-		return lhs
-	}
-	return rhs
-}
-
 func minDuration(lhs, rhs time.Duration) time.Duration {
 	if lhs < rhs {
 		return lhs

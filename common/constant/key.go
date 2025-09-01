@@ -161,6 +161,7 @@ const (
 	CallHTTP                           = "http"
 	CallHTTP2                          = "http2"
 	CallHTTP3                          = "http3"
+	CallHTTP2AndHTTP3                  = "http2-and-http3"
 	ServiceInfoKey                     = "service-info"
 	RpcServiceKey                      = "rpc-service"
 	ClientInfoKey                      = "client-info"

@@ -20,11 +20,8 @@ package triple_protocol
 import (
 	"context"
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"net/http"
-	"strings"
-	"sync"
 )
 
 import (
@@ -37,19 +34,22 @@ import (
 
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
+
+	"golang.org/x/sync/errgroup"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
 type Server struct {
-	mu       sync.Mutex
-	addr     string
-	mux      *http.ServeMux
-	handlers map[string]*Handler
-	httpSrv  *http.Server
-	http3Srv *http3.Server
+	addr         string
+	mux          *http.ServeMux
+	handlers     map[string]*Handler
+	httpSrv      *http.Server
+	http3Srv     *http3.Server
+	tripleConfig *global.TripleConfig // Configuration for the triple protocol
 }
 
 func (s *Server) RegisterUnaryHandler(
@@ -173,16 +173,16 @@ func (s *Server) RegisterCompatStreamHandler(
 }
 
 func (s *Server) Run(callProtocol string, tlsConf *tls.Config) error {
-	// TODO: Refactor to support starting HTTP/2 and HTTP/3 servers simultaneously.
-	// The current switch logic is mutually exclusive. Future work should allow enabling
-	// both protocols, likely based on configuration, and run them concurrently.
+	// Support for starting HTTP/2 and HTTP/3 servers simultaneously.
 	switch callProtocol {
 	case constant.CallHTTP2:
 		return s.startHttp2(tlsConf)
 	case constant.CallHTTP3:
 		return s.startHttp3(tlsConf)
+	case constant.CallHTTP2AndHTTP3:
+		return s.startHttp2AndHttp3(tlsConf)
 	default:
-		return fmt.Errorf("unsupported protocol: %s, only http2 or http3 are supported", callProtocol)
+		return fmt.Errorf("unsupported protocol: %s, only http2, http3, or http2-and-http3 are supported", callProtocol)
 	}
 }
 
@@ -227,103 +227,120 @@ func (s *Server) startHttp3(tlsConf *tls.Config) error {
 	return s.http3Srv.ListenAndServe()
 }
 
+func (s *Server) startHttp2AndHttp3(tlsConf *tls.Config) error {
+	// Check if TLS config is provided for HTTP/3
+	if tlsConf == nil {
+		return fmt.Errorf("TRIPLE HTTP/2 and HTTP/3 Server must have TLS config, but TLS config is nil")
+	}
+
+	// Start HTTP/3 server first to get its configuration
+	s.http3Srv = &http3.Server{
+		Addr:       s.addr,
+		Handler:    s.mux,
+		TLSConfig:  http3.ConfigureTLSConfig(tlsConf),
+		QUICConfig: &quic.Config{},
+	}
+
+	// Create Alt-Svc handler wrapper for HTTP/2 server
+	var negotiation bool
+	if s.tripleConfig != nil && s.tripleConfig.Http3 != nil {
+		negotiation = s.tripleConfig.Http3.Negotiation
+	}
+	altSvcHandler := NewAltSvcHandler(s.mux, s.http3Srv, negotiation)
+
+	// Start HTTP/2 server with Alt-Svc handler wrapper
+	s.httpSrv = &http.Server{
+		Addr:      s.addr,
+		Handler:   h2c.NewHandler(altSvcHandler, &http2.Server{}),
+		TLSConfig: tlsConf,
+	}
+
+	logger.Debugf("TRIPLE HTTP/2 and HTTP/3 Server starting on %v", s.addr)
+
+	// Use errgroup to manage concurrent server startup
+	eg := &errgroup.Group{}
+
+	// Start HTTP/2 server in a goroutine
+	eg.Go(func() error {
+		if err := s.httpSrv.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
+			return fmt.Errorf("HTTP/2 server error: %w", err)
+		}
+		return nil
+	})
+
+	// Start HTTP/3 server in a goroutine
+	eg.Go(func() error {
+		if err := s.http3Srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			return fmt.Errorf("HTTP/3 server error: %w", err)
+		}
+		return nil
+	})
+
+	// Wait for the first error from either server
+	return eg.Wait()
+}
+
 // Stop the Triple server for both HTTP/2 and HTTP/3.
-// Because stop is very fast, there is no need to parallelize stop.
 func (s *Server) Stop() error {
-	var errs []error
+	eg, _ := errgroup.WithContext(context.Background())
 
 	// stop HTTP server
 	if s.httpSrv != nil {
-		if err := s.httpSrv.Close(); err != nil {
-			errs = append(errs, fmt.Errorf("http server close failed: %w", err))
-		}
+		eg.Go(func() error {
+			if err := s.httpSrv.Close(); err != nil {
+				return fmt.Errorf("http server close failed: %w", err)
+			}
+			return nil
+		})
 	}
 
 	// stop HTTP/3 server
 	if s.http3Srv != nil {
-		if err := s.http3Srv.Close(); err != nil {
-			errs = append(errs, fmt.Errorf("http3 server close failed: %w", err))
-		}
+		eg.Go(func() error {
+			if err := s.http3Srv.Close(); err != nil {
+				return fmt.Errorf("http3 server close failed: %w", err)
+			}
+			return nil
+		})
 	}
 
-	switch len(errs) {
-	case 0:
-		return nil
-	case 1:
-		return errs[0]
-	default:
-		var sb strings.Builder
-		sb.WriteString("multiple errors occurred during stop:")
-		for _, err := range errs {
-			// Newline and indent for easier reading
-			sb.WriteString("\n\t- ")
-			sb.WriteString(err.Error())
-		}
-		return errors.New(sb.String())
-	}
+	// Wait for all goroutines to complete and collect any errors
+	return eg.Wait()
 }
 
 // Gracefulstop shutdown the Triple server for both HTTP/2 and HTTP/3 gracefully.
-// Because graceful shutdown is slow, I adopted concurrent processing.
 func (s *Server) GracefulStop(ctx context.Context) error {
-	var (
-		wg      sync.WaitGroup
-		errChan = make(chan error, 2)
-	)
+	eg, ctx := errgroup.WithContext(ctx)
 
 	// shutdown HTTP server
 	if s.httpSrv != nil {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		eg.Go(func() error {
 			if err := s.httpSrv.Shutdown(ctx); err != nil {
-				errChan <- fmt.Errorf("http server shutdown failed: %w", err)
+				return fmt.Errorf("http server shutdown failed: %w", err)
 			}
-		}()
+			return nil
+		})
 	}
 
 	// shutdown HTTP/3 server
 	if s.http3Srv != nil {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		eg.Go(func() error {
 			if err := s.http3Srv.Shutdown(ctx); err != nil {
-				errChan <- fmt.Errorf("http3 server shutdown failed: %w", err)
+				return fmt.Errorf("http3 server shutdown failed: %w", err)
 			}
-		}()
+			return nil
+		})
 	}
 
-	wg.Wait()
-	close(errChan)
-
-	// Error Collection and Handling.
-	// Collect all errors into a slice.
-	var errs []error
-	for err := range errChan {
-		errs = append(errs, err)
-	}
-
-	switch len(errs) {
-	case 0:
-		return nil
-	case 1:
-		return errs[0]
-	default:
-		var sb strings.Builder
-		sb.WriteString("multiple errors occurred during graceful stop:")
-		for _, err := range errs {
-			// Newline and indent for easier reading
-			sb.WriteString("\n\t- ")
-			sb.WriteString(err.Error())
-		}
-		return errors.New(sb.String())
-	}
+	// Wait for all goroutines to complete and collect any errors
+	return eg.Wait()
 }
 
-func NewServer(addr string) *Server {
+func NewServer(addr string, tripleConf *global.TripleConfig) *Server {
 	return &Server{
-		mux:      http.NewServeMux(),
-		addr:     addr,
-		handlers: make(map[string]*Handler),
+		mux:          http.NewServeMux(),
+		addr:         addr,
+		handlers:     make(map[string]*Handler),
+		tripleConfig: tripleConf,
 	}
 }

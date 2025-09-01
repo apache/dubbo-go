@@ -102,7 +102,7 @@ func BuildInvokerChain(invoker base.Invoker, key string) base.Invoker {
 	return next
 }
 
-// nolint
+// GetProtocol returns a Protocol that applies filter chains around another protocol.
 func GetProtocol() base.Protocol {
 	return &ProtocolFilterWrapper{}
 }

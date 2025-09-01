@@ -20,7 +20,6 @@ package registry
 import (
 	"fmt"
 	"net/url"
-	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -46,12 +45,10 @@ const (
 )
 
 var (
-	processID = ""
-	localIP   = ""
+	localIP = ""
 )
 
 func init() {
-	processID = fmt.Sprintf("%d", os.Getpid())
 	localIP = common.GetLocalIp()
 }
 
@@ -326,15 +323,6 @@ func (r *BaseRegistry) consumerRegistry(c *common.URL, params url.Values, f crea
 	rawURL = fmt.Sprintf("consumer://%s%s?%s", localIP, c.Path, s)
 	logger.Debugf("consumer path:%s, url:%s", dubboPath, rawURL)
 	return dubboPath, rawURL, nil
-}
-
-// sleepWait...
-func sleepWait(n int) {
-	wait := time.Duration((n + 1) * 2e8)
-	if wait > MaxWaitInterval {
-		wait = MaxWaitInterval
-	}
-	time.Sleep(wait)
 }
 
 // Subscribe :subscribe from registry, event will notify by notifyListener

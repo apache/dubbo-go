@@ -67,7 +67,7 @@ type Registry interface {
 	LoadSubscribeInstances(*common.URL, NotifyListener) error
 }
 
-// nolint
+// NotifyListener handles service change notifications from Registry implementations.
 type NotifyListener interface {
 	// Notify supports notifications on the service interface and the dimension of the data type. When a list of
 	// events are passed in, it's considered as a complete list, on the other side, if one single event is

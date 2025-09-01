@@ -81,7 +81,7 @@ type ServiceInstance interface {
 	GetWeight() int64
 }
 
-// nolint
+// Endpoint describes an exposed port and protocol of a service instance.
 type Endpoint struct {
 	Port     int    `json:"port,omitempty"`
 	Protocol string `json:"protocol,omitempty"`

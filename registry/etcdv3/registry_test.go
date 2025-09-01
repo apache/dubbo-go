@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-// nolint
+// Package etcdv3 contains tests for etcdv3 registry components.
 package etcdv3
 
 /*

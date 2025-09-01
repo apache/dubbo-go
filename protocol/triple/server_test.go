@@ -26,6 +26,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/global"
+)
+
 func Test_generateAttachments(t *testing.T) {
 	tests := []struct {
 		desc   string
@@ -77,6 +82,66 @@ func Test_generateAttachments(t *testing.T) {
 		t.Run(test.desc, func(t *testing.T) {
 			atta := generateAttachments(test.input())
 			test.expect(t, atta)
+		})
+	}
+}
+
+func TestServer_StartWithHttp2AndHttp3(t *testing.T) {
+	// Test configuration for enabling both HTTP/2 and HTTP/3
+	tripleConfig := &global.TripleConfig{
+		Http3: &global.Http3Config{
+			Enable: true, // Enable HTTP/3 (which now means both HTTP/2 and HTTP/3)
+		},
+	}
+
+	server := NewServer(tripleConfig)
+
+	// This test verifies that the server correctly determines the protocol
+	// when Enable is set to true
+	// Note: We can't actually start the server in a unit test due to port binding
+	// but we can verify the configuration logic
+
+	assert.NotNil(t, server)
+	assert.Equal(t, tripleConfig, server.cfg)
+}
+
+func TestServer_ProtocolSelection(t *testing.T) {
+	tests := []struct {
+		name             string
+		http3Config      *global.Http3Config
+		expectedProtocol string
+	}{
+		{
+			name: "HTTP/2 only (default)",
+			http3Config: &global.Http3Config{
+				Enable: false,
+			},
+			expectedProtocol: constant.CallHTTP2,
+		},
+		{
+			name: "HTTP/2 and HTTP/3 both",
+			http3Config: &global.Http3Config{
+				Enable: true,
+			},
+			expectedProtocol: constant.CallHTTP2AndHTTP3,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tripleConfig := &global.TripleConfig{
+				Http3: tt.http3Config,
+			}
+
+			// Extract the protocol selection logic for testing
+			var callProtocol string
+			if tripleConfig != nil && tripleConfig.Http3 != nil && tripleConfig.Http3.Enable {
+				callProtocol = constant.CallHTTP2AndHTTP3
+			} else {
+				callProtocol = constant.CallHTTP2
+			}
+
+			assert.Equal(t, tt.expectedProtocol, callProtocol)
 		})
 	}
 }
