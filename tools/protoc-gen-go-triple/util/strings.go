@@ -15,31 +15,24 @@
  * limitations under the License.
  */
 
-package auth
+package util
 
 import (
-	"net/url"
-	"testing"
+	"strings"
 )
 
-import (
-	"github.com/stretchr/testify/assert"
-)
+// ToUpper will capitalize the first character
+func ToUpper(s string) string {
+	if s == "" {
+		return ""
+	}
+	return strings.ToUpper(s[:1]) + s[1:]
+}
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
-)
-
-func TestDefaultAccessKeyStorage_GetAccessKeyPair(t *testing.T) {
-	baseUrl := common.NewURLWithOptions(
-		common.WithParams(url.Values{}),
-		common.WithParamsValue(constant.SecretAccessKeyKey, "skey"),
-		common.WithParamsValue(constant.AccessKeyIDKey, "akey"))
-	inv := &invocation.RPCInvocation{}
-	storage = &defaultAccesskeyStorage{}
-	accessKeyPair := storage.GetAccessKeyPair(inv, baseUrl)
-	assert.Equal(t, "skey", accessKeyPair.SecretKey)
-	assert.Equal(t, "akey", accessKeyPair.AccessKey)
+// ToLower will lowercase the first character
+func ToLower(s string) string {
+	if s == "" {
+		return ""
+	}
+	return strings.ToLower(s[:1]) + s[1:]
 }

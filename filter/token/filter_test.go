@@ -37,13 +37,13 @@ import (
 func TestTokenFilterInvoke(t *testing.T) {
 	filter := &tokenFilter{}
 
-	url := common.NewURLWithOptions(
+	baseUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.TokenKey, "ori_key"))
 	attch := make(map[string]any)
 	attch[constant.TokenKey] = "ori_key"
 	result := filter.Invoke(context.Background(),
-		base.NewBaseInvoker(url),
+		base.NewBaseInvoker(baseUrl),
 		invocation.NewRPCInvocation("MethodName",
 			[]any{"OK"}, attch))
 	assert.Nil(t, result.Error())

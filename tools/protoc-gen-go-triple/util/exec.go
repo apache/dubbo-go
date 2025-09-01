@@ -15,31 +15,28 @@
  * limitations under the License.
  */
 
-package auth
+package util
 
 import (
-	"net/url"
-	"testing"
+	"fmt"
+	"os/exec"
+	"runtime"
 )
 
-import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
-)
-
-func TestDefaultAccessKeyStorage_GetAccessKeyPair(t *testing.T) {
-	baseUrl := common.NewURLWithOptions(
-		common.WithParams(url.Values{}),
-		common.WithParamsValue(constant.SecretAccessKeyKey, "skey"),
-		common.WithParamsValue(constant.AccessKeyIDKey, "akey"))
-	inv := &invocation.RPCInvocation{}
-	storage = &defaultAccesskeyStorage{}
-	accessKeyPair := storage.GetAccessKeyPair(inv, baseUrl)
-	assert.Equal(t, "skey", accessKeyPair.SecretKey)
-	assert.Equal(t, "akey", accessKeyPair.AccessKey)
+func Exec(arg, dir string) (string, error) {
+	osEnv := runtime.GOOS
+	var cmd *exec.Cmd
+	switch osEnv {
+	case "darwin", "linux":
+		cmd = exec.Command("sh", "-c", arg) //NOSONAR
+	case "windows":
+		cmd = exec.Command("cmd.exe", "/c", arg) //NOSONAR
+	default:
+		return "", fmt.Errorf("unexpected os: %v", osEnv)
+	}
+	if len(dir) > 0 {
+		cmd.Dir = dir
+	}
+	output, err := cmd.CombinedOutput()
+	return string(output), err
 }

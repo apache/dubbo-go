@@ -65,10 +65,10 @@ func TestProviderAuthFilter_Invoke(t *testing.T) {
 	filter := &authFilter{}
 	defer ctrl.Finish()
 	invoker := mock.NewMockInvoker(ctrl)
-	result := &result.RPCResult{}
-	invoker.EXPECT().Invoke(context.Background(), inv).Return(result).Times(2)
+	rpcResult := &result.RPCResult{}
+	invoker.EXPECT().Invoke(context.Background(), inv).Return(rpcResult).Times(2)
 	invoker.EXPECT().GetURL().Return(url).Times(2)
-	assert.Equal(t, result, filter.Invoke(context.Background(), invoker, inv))
+	assert.Equal(t, rpcResult, filter.Invoke(context.Background(), invoker, inv))
 	url.SetParam(constant.ServiceAuthKey, "true")
-	assert.Equal(t, result, filter.Invoke(context.Background(), invoker, inv))
+	assert.Equal(t, rpcResult, filter.Invoke(context.Background(), invoker, inv))
 }
