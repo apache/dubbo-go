@@ -89,28 +89,6 @@ func (rc *registryCollector) notifyHandler(event *RegistryMetricsEvent) {
 	rc.R.Rt(metrics.NewMetricId(NotifyRt, level), &metrics.RtOpts{}).Observe(event.CostMs())
 }
 
-// directoryHandler handles directory metrics
-func (rc *registryCollector) directoryHandler(event *RegistryMetricsEvent) {
-	// Event is converted to metrics
-	// Save metrics to the MetricRegistry
-	level := metrics.GetApplicationLevel()
-	typ := event.Attachment["DirTyp"]
-	switch typ {
-	case NumAllInc:
-		rc.R.Gauge(metrics.NewMetricId(DirectoryMetricNumAll, level)).Inc()
-	case NumAllDec:
-		rc.R.Gauge(metrics.NewMetricId(DirectoryMetricNumAll, level)).Add(-1)
-	case NumDisableTotal:
-		rc.R.Gauge(metrics.NewMetricId(DirectoryMetricNumDisable, level)).Inc()
-	case NumToReconnectTotal:
-		rc.R.Gauge(metrics.NewMetricId(DirectoryMetricNumToReconnect, level)).Inc()
-	case NumValidTotal:
-		rc.R.Gauge(metrics.NewMetricId(DirectoryMetricNumValid, level)).Inc()
-	default:
-	}
-
-}
-
 // serverRegHandler handles server register metrics
 func (rc *registryCollector) serverRegHandler(event *RegistryMetricsEvent) {
 	// Event is converted to metrics

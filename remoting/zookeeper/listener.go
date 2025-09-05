@@ -130,7 +130,7 @@ func (l *ZkEventListener) ListenConfigurationEvent(zkPath string, listener remot
 	}(zkPath, listener)
 }
 
-// nolint
+// listenServiceNodeEvent watches a single zk node and reports changes via listener.
 func (l *ZkEventListener) listenServiceNodeEvent(zkPath string, listener ...remoting.DataListener) bool {
 	l.pathMapLock.Lock()
 	a, ok := l.pathMap[zkPath]

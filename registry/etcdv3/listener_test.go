@@ -18,25 +18,12 @@
 package etcdv3
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 )
 
 type MockDataListener struct{}
 
 func (*MockDataListener) Process(configType *config_center.ConfigChangeEvent) {}
-
-type dataListenerFields struct {
-	interestedURL []*common.URL
-	listener      config_center.ConfigurationListener
-}
-
-func newDataListener(listenerFields dataListenerFields) *dataListener {
-	return &dataListener{
-		interestedURL: listenerFields.interestedURL,
-		listener:      listenerFields.listener,
-	}
-}
 
 /*
 func Test_dataListener_DataChange(t *testing.T) {

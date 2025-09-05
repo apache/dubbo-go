@@ -20,9 +20,6 @@ package logger
 
 import (
 	dubbogoLogger "github.com/dubbogo/gost/log/logger"
-
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 var logger Logger
@@ -53,32 +50,4 @@ func SetLoggerLevel(level string) bool {
 type OpsLogger interface {
 	Logger
 	SetLoggerLevel(level string) bool
-}
-
-// initZapLoggerWithSyncer init zap Logger with syncer
-func initZapLoggerWithSyncer(conf *Config) *zap.Logger {
-	core := zapcore.NewCore(
-		conf.getEncoder(),
-		conf.getLogWriter(),
-		zap.NewAtomicLevelAt(conf.ZapConfig.Level.Level()),
-	)
-
-	return zap.New(core, zap.AddCaller(), zap.AddCallerSkip(conf.CallerSkip))
-}
-
-// getEncoder get encoder by config, zapcore support json and console encoder
-func (c *Config) getEncoder() zapcore.Encoder {
-	switch c.ZapConfig.Encoding {
-	case "json":
-		return zapcore.NewJSONEncoder(c.ZapConfig.EncoderConfig)
-	case "console":
-		return zapcore.NewConsoleEncoder(c.ZapConfig.EncoderConfig)
-	default:
-		return nil
-	}
-}
-
-// getLogWriter get Lumberjack writer by LumberjackConfig
-func (c *Config) getLogWriter() zapcore.WriteSyncer {
-	return zapcore.AddSync(c.LumberjackConfig)
 }

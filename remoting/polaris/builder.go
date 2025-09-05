@@ -132,29 +132,3 @@ func InitSDKContext(url *common.URL) error {
 
 	return rerr
 }
-
-func mergePolarisConfiguration(easy, complexConf config.Configuration) {
-
-	easySvrList := easy.GetGlobal().GetServerConnector().GetAddresses()
-
-	complexSvrList := complexConf.GetGlobal().GetServerConnector().GetAddresses()
-
-	result := make(map[string]bool)
-
-	for i := range complexSvrList {
-		result[complexSvrList[i]] = true
-	}
-
-	for i := range easySvrList {
-		if _, exist := result[easySvrList[i]]; !exist {
-			result[easySvrList[i]] = true
-		}
-	}
-
-	finalSvrList := make([]string, 0)
-	for k := range result {
-		finalSvrList = append(finalSvrList, k)
-	}
-
-	complexConf.GetGlobal().GetServerConnector().SetAddresses(finalSvrList)
-}

@@ -42,7 +42,7 @@ func newBroadcastClusterInvoker(directory directory.Directory) protocolbase.Invo
 	}
 }
 
-// nolint
+// Invoke broadcasts the invocation to all invokers and aggregates errors.
 func (invoker *broadcastClusterInvoker) Invoke(ctx context.Context, invocation protocolbase.Invocation) result.Result {
 	invokers := invoker.Directory.List(invocation)
 	err := invoker.CheckInvokers(invokers, invocation)

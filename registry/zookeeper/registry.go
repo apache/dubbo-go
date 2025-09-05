@@ -22,7 +22,6 @@ import (
 	"net/url"
 	"path"
 	"sync"
-	"time"
 )
 
 import (
@@ -82,34 +81,12 @@ func newZkRegistry(url *common.URL) (registry.Registry, error) {
 	return r, nil
 }
 
-// nolint
+// Options defines optional parameters to construct a zkRegistry (used in tests/mocks).
 type Options struct {
-	client *gxzookeeper.ZookeeperClient
 }
 
-// nolint
+// Option mutates Options when constructing a zkRegistry (functional options pattern).
 type Option func(*Options)
-
-func newMockZkRegistry(url *common.URL, opts ...gxzookeeper.Option) (*zk.TestCluster, *zkRegistry, error) {
-	var (
-		err error
-		r   *zkRegistry
-		c   *zk.TestCluster
-	)
-
-	r = &zkRegistry{
-		zkPath: make(map[string]int),
-	}
-	r.InitBaseRegistry(url, r)
-	c, r.client, _, err = gxzookeeper.NewMockZookeeperClient("test", 15*time.Second, opts...)
-	if err != nil {
-		return nil, nil, err
-	}
-	r.WaitGroup().Add(1)
-	go zookeeper.HandleClientRestart(r)
-	r.InitListeners()
-	return c, r, nil
-}
 
 // InitListeners initializes listeners of zookeeper registry center
 func (r *zkRegistry) InitListeners() {
@@ -186,17 +163,17 @@ func (r *zkRegistry) CloseAndNilClient() {
 	r.client = nil
 }
 
-// nolint
+// ZkClient returns the underlying zookeeper client.
 func (r *zkRegistry) ZkClient() *gxzookeeper.ZookeeperClient {
 	return r.client
 }
 
-// nolint
+// SetZkClient sets the underlying zookeeper client.
 func (r *zkRegistry) SetZkClient(client *gxzookeeper.ZookeeperClient) {
 	r.client = client
 }
 
-// nolint
+// ZkClientLock exposes the lock guarding client changes.
 func (r *zkRegistry) ZkClientLock() *sync.Mutex {
 	return &r.cltLock
 }
@@ -319,9 +296,4 @@ func (r *zkRegistry) getCloseListener(conf *common.URL) (*RegistryConfigurationL
 	}
 
 	return zkListener, nil
-}
-
-func (r *zkRegistry) handleClientRestart() {
-	r.WaitGroup().Add(1)
-	go zookeeper.HandleClientRestart(r)
 }

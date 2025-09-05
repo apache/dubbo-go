@@ -43,8 +43,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting/zookeeper"
 )
 
-var emptyStrSlice = make([]string, 0)
-
 func init() {
 	mf := &zookeeperMetadataReportFactory{}
 	extension.SetMetadataReportFactory("zookeeper", func() report.MetadataReportFactory {
@@ -136,7 +134,7 @@ func (m *zookeeperMetadataReport) RemoveServiceAppMappingListener(key string, gr
 
 type zookeeperMetadataReportFactory struct{}
 
-// nolint
+// CreateMetadataReport creates the zookeeper-based metadata report implementation.
 func (mf *zookeeperMetadataReportFactory) CreateMetadataReport(url *common.URL) report.MetadataReport {
 	client, err := gxzookeeper.NewZookeeperClient(
 		"zookeeperMetadataReport",

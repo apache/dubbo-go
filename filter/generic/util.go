@@ -53,16 +53,6 @@ func isGeneric(generic string) bool {
 	return lowerGeneric == constant.GenericSerializationDefault
 }
 
-// toUnexport is to lower the first letter
-func toUnexport(a string) string {
-	return strings.ToLower(a[:1]) + a[1:]
-}
-
-// toExport is to upper the first letter
-func toExport(a string) string {
-	return strings.ToUpper(a[:1]) + a[1:]
-}
-
 func getGeneralizer(generic string) (g generalizer.Generalizer) {
 	switch strings.ToLower(generic) {
 	case constant.GenericSerializationDefault:

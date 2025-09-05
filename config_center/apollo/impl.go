@@ -157,7 +157,7 @@ func formatContent(conf *storage.Config, fileType string) (string, error) {
 		return conf.GetContent(), nil
 	case "yaml", "yml":
 		props := make(map[string]string)
-		conf.GetCache().Range(func(key, value interface{}) bool {
+		conf.GetCache().Range(func(key, value any) bool {
 			k, ok1 := key.(string)
 			v, ok2 := value.(string)
 			if ok1 && ok2 {
@@ -192,8 +192,8 @@ func getFileTypeFromNS(ns string) string {
 }
 
 // makeNestedMap convert flat key-value pairs to nested structure
-func makeNestedMap(props map[string]string) map[string]interface{} {
-	result := make(map[string]interface{})
+func makeNestedMap(props map[string]string) map[string]any {
+	result := make(map[string]any)
 
 	for k, v := range props {
 		parts := strings.Split(k, ".")
@@ -206,9 +206,9 @@ func makeNestedMap(props map[string]string) map[string]interface{} {
 			} else {
 				// Create or get nested map
 				if _, exists := current[part]; !exists {
-					current[part] = make(map[string]interface{})
+					current[part] = make(map[string]any)
 				}
-				current = current[part].(map[string]interface{})
+				current = current[part].(map[string]any)
 			}
 		}
 	}
