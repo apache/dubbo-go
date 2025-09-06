@@ -18,6 +18,10 @@
 package extension
 
 import (
+	"github.com/pkg/errors"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/filter"
 )
 
@@ -47,9 +51,10 @@ func SetAccessKeyStorages(name string, fcn func() filter.AccessKeyStorage) {
 
 // GetAccessKeyStorages finds the storage with the @name.
 // Panic if not found
-func GetAccessKeyStorages(name string) filter.AccessKeyStorage {
-	if accessKeyStorages[name] == nil {
-		return nil, fmt.Errorf("accessKeyStorages for %s is not existing, make sure you have import the package.", name)
+func GetAccessKeyStorages(name string) (filter.AccessKeyStorage, error) {
+	f := accessKeyStorages[name]
+	if f == nil {
+		return nil, errors.New("accessKeyStorages for " + name + " is not existing, make sure you have import the package.")
 	}
-	return accessKeyStorages[name](), nil
+	return f(), nil
 }
