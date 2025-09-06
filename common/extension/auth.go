@@ -49,7 +49,7 @@ func SetAccessKeyStorages(name string, fcn func() filter.AccessKeyStorage) {
 // Panic if not found
 func GetAccessKeyStorages(name string) filter.AccessKeyStorage {
 	if accessKeyStorages[name] == nil {
-		panic("accessKeyStorages for " + name + " is not existing, make sure you have import the package.")
+		return nil, fmt.Errorf("accessKeyStorages for %s is not existing, make sure you have import the package.", name)
 	}
-	return accessKeyStorages[name]()
+	return accessKeyStorages[name](), nil
 }
