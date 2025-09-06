@@ -71,12 +71,23 @@ func (f *activeFilter) Invoke(ctx context.Context, invoker base.Invoker, inv bas
 // OnResponse update the active count base on the request result.
 func (f *activeFilter) OnResponse(ctx context.Context, result result.Result, invoker base.Invoker, inv base.Invocation) result.Result {
 	startTime, err := strconv.ParseInt(inv.(*invocation.RPCInvocation).GetAttachmentWithDefaultValue(dubboInvokeStartTime, "0"), 10, 64)
+
+	defer func() {
+		if err != nil {
+			// This err common is nil，when if not nil set a default elapsed value 1
+			base.EndCount(invoker.GetURL(), inv.MethodName(), 1, false)
+			return
+		}
+
+		elapsed := base.CurrentTimeMillis() - startTime
+		base.EndCount(invoker.GetURL(), inv.MethodName(), elapsed, result.Error() == nil)
+	}()
+
 	if err != nil {
 		result.SetError(err)
 		logger.Errorf("parse dubbo_invoke_start_time to int64 failed")
 		return result
 	}
-	elapsed := base.CurrentTimeMillis() - startTime
-	base.EndCount(invoker.GetURL(), inv.MethodName(), elapsed, result.Error() == nil)
+
 	return result
 }
