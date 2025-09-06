@@ -159,21 +159,42 @@ func endCount0(rpcStatus *RPCStatus, elapsed int64, succeeded bool) {
 	atomic.AddInt32(&rpcStatus.total, 1)
 	atomic.AddInt64(&rpcStatus.totalElapsed, elapsed)
 
-	if rpcStatus.maxElapsed < elapsed {
-		atomic.StoreInt64(&rpcStatus.maxElapsed, elapsed)
-	}
-	if succeeded {
-		if rpcStatus.succeededMaxElapsed < elapsed {
-			atomic.StoreInt64(&rpcStatus.succeededMaxElapsed, elapsed)
+	for {
+		oldValue := atomic.LoadInt64(&rpcStatus.maxElapsed)
+		if oldValue >= elapsed {
+			break
 		}
+		if atomic.CompareAndSwapInt64(&rpcStatus.maxElapsed, oldValue, elapsed) {
+			break
+		}
+	}
+
+	if succeeded {
+		for {
+			oldValue := atomic.LoadInt64(&rpcStatus.succeededMaxElapsed)
+			if oldValue >= elapsed {
+				break
+			}
+			if atomic.CompareAndSwapInt64(&rpcStatus.succeededMaxElapsed, oldValue, elapsed) {
+				break
+			}
+		}
+
 		atomic.StoreInt32(&rpcStatus.successiveRequestFailureCount, 0)
 	} else {
 		atomic.StoreInt64(&rpcStatus.lastRequestFailedTimestamp, CurrentTimeMillis())
 		atomic.AddInt32(&rpcStatus.successiveRequestFailureCount, 1)
 		atomic.AddInt32(&rpcStatus.failed, 1)
 		atomic.AddInt64(&rpcStatus.failedElapsed, elapsed)
-		if rpcStatus.failedMaxElapsed < elapsed {
-			atomic.StoreInt64(&rpcStatus.failedMaxElapsed, elapsed)
+
+		for {
+			oldValue := atomic.LoadInt64(&rpcStatus.failedMaxElapsed)
+			if oldValue >= elapsed {
+				break
+			}
+			if atomic.CompareAndSwapInt64(&rpcStatus.failedMaxElapsed, oldValue, elapsed) {
+				break
+			}
 		}
 	}
 }
