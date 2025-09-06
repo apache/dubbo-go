@@ -19,15 +19,12 @@ package trace
 
 import (
 	"go.opentelemetry.io/otel/attribute"
-
-	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 )
 
 var (
 	RPCNameKey             = attribute.Key("name")
 	RPCMessageTypeKey      = attribute.Key("message.type")
 	RPCMessageIDKey        = attribute.Key("message.id")
-	RPCSystemDubbo         = semconv.RPCSystemKey.String("apache_dubbo")
 	RPCNameMessage         = RPCNameKey.String("message")
 	RPCMessageTypeSent     = RPCMessageTypeKey.String("SENT")
 	RPCMessageTypeReceived = RPCMessageTypeKey.String("RECEIVED")

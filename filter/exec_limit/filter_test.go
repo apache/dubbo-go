@@ -62,6 +62,7 @@ func TestFilterInvokeConfigureError(t *testing.T) {
 	limitFilter := newFilter()
 
 	result := limitFilter.Invoke(context.Background(), base.NewBaseInvoker(invokeUrl), invoc)
+
 	assert.NotNil(t, result)
 	assert.Nil(t, result.Error())
 }

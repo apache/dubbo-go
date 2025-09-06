@@ -23,6 +23,8 @@ MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 MAKEFLAGS += --no-print-directory
 
+CLI_DIR = tools/dubbogo-cli
+
 .PHONY: help test fmt clean lint
 
 help:
@@ -35,11 +37,13 @@ help:
 # Run unit tests
 test: clean
 	go test ./... -coverprofile=coverage.txt -covermode=atomic
+	cd $(CLI_DIR) && go test ./...
 
 fmt: install-imports-formatter
 	# replace interface{} with any
 	go run golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@latest -category=efaceany -fix -test ./...
 	go fmt ./... && GOROOT=$(shell go env GOROOT) imports-formatter
+	cd $(CLI_DIR) && go fmt ./...
 
 # Clean test generate files
 clean:

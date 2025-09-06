@@ -82,7 +82,7 @@ type polarisRouter struct {
 
 // Route Determine the target invokers list.
 func (p *polarisRouter) Route(invokers []base.Invoker, url *common.URL,
-	invoaction base.Invocation) []base.Invoker {
+	invocation base.Invocation) []base.Invoker {
 
 	if !p.openRoute {
 		logger.Debug("[Router][Polaris] not open polaris route ability")
@@ -114,7 +114,7 @@ func (p *polarisRouter) Route(invokers []base.Invoker, url *common.URL,
 		}
 	}
 
-	req, err := p.buildRouteRequest(service, url, invoaction)
+	req, err := p.buildRouteRequest(service, url, invocation)
 	if err != nil {
 		return invokers
 	}

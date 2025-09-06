@@ -32,14 +32,14 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
-func TestDefaultAccesskeyStorage_GetAccesskeyPair(t *testing.T) {
-	url := common.NewURLWithOptions(
+func TestDefaultAccessKeyStorage_GetAccessKeyPair(t *testing.T) {
+	baseUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.SecretAccessKeyKey, "skey"),
 		common.WithParamsValue(constant.AccessKeyIDKey, "akey"))
 	inv := &invocation.RPCInvocation{}
 	storage = &defaultAccesskeyStorage{}
-	accesskeyPair := storage.GetAccessKeyPair(inv, url)
-	assert.Equal(t, "skey", accesskeyPair.SecretKey)
-	assert.Equal(t, "akey", accesskeyPair.AccessKey)
+	accessKeyPair := storage.GetAccessKeyPair(inv, baseUrl)
+	assert.Equal(t, "skey", accessKeyPair.SecretKey)
+	assert.Equal(t, "akey", accessKeyPair.AccessKey)
 }
