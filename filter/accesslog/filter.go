@@ -25,18 +25,13 @@ import (
 	"strings"
 	"sync"
 	"time"
-)
 
-import (
-	"github.com/dubbogo/gost/log/logger"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
+	"github.com/dubbogo/gost/log/logger"
 )
 
 const (
@@ -229,10 +224,11 @@ func (f *Filter) openLogFile(accessLog string) (*os.File, error) {
 	// and today is '2020-03-05'
 	// we will create one new file to log access data
 	// By this way, we can split the access log based on days.
+	// use 'accessLog' as completely path to avoid log not found.
 	if now != last {
-		err = os.Rename(fileInfo.Name(), fileInfo.Name()+"."+now)
+		err = os.Rename(accessLog, accessLog+"."+now)
 		if err != nil {
-			logger.Warnf("Can not rename access log file: %s, %v", fileInfo.Name(), err)
+			logger.Warnf("Can not rename access log file: %s, %v", accessLog, err)
 			return nil, err
 		}
 		logFile, err = os.OpenFile(accessLog, os.O_CREATE|os.O_APPEND|os.O_RDWR, LogFileMode)
