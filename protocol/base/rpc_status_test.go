@@ -19,6 +19,7 @@ package base
 
 import (
 	"strconv"
+	"sync"
 	"testing"
 )
 
@@ -154,4 +155,47 @@ func TestCurrentTimeMillis(t *testing.T) {
 	str := strconv.FormatInt(c, 10)
 	i, _ := strconv.ParseInt(str, 10, 64)
 	assert.Equal(t, c, i)
+}
+
+func TestAtomicUpdateMax(t *testing.T) {
+	var value int64 = 10
+	atomicUpdateMax(&value, 20)
+	assert.Equal(t, int64(20), value)
+
+	atomicUpdateMax(&value, 20)
+	assert.Equal(t, int64(20), value)
+
+	atomicUpdateMax(&value, 15)
+	assert.Equal(t, int64(20), value)
+
+	var zeroValue int64 = 0
+	atomicUpdateMax(&zeroValue, 5)
+	assert.Equal(t, int64(5), zeroValue)
+
+	var negativeValue int64 = -10
+	atomicUpdateMax(&negativeValue, -5)
+	assert.Equal(t, int64(-5), negativeValue)
+	atomicUpdateMax(&negativeValue, -20)
+	assert.Equal(t, int64(-5), negativeValue)
+}
+
+func TestAtomicUpdateMaxConcurrent(t *testing.T) {
+	var value int64 = 0
+	const goroutineCount = 100
+	const iterationsPerGoroutine = 1000
+
+	var wg sync.WaitGroup
+	for i := 0; i < goroutineCount; i++ {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+			for j := 0; j < iterationsPerGoroutine; j++ {
+				updateValue := int64((id + j) % goroutineCount)
+				atomicUpdateMax(&value, updateValue)
+			}
+		}(i)
+	}
+
+	wg.Wait()
+	assert.Equal(t, int64(goroutineCount-1), value)
 }
