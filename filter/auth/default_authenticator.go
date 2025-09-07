@@ -123,7 +123,10 @@ func (authenticator *defaultAuthenticator) Authenticate(inv base.Invocation, url
 }
 
 func getAccessKeyPair(inv base.Invocation, url *common.URL) (*filter.AccessKeyPair, error) {
-	accessKeyStorage := extension.GetAccessKeyStorages(url.GetParam(constant.AccessKeyStorageKey, constant.DefaultAccessKeyStorage))
+	accessKeyStorage, err := extension.GetAccessKeyStorages(url.GetParam(constant.AccessKeyStorageKey, constant.DefaultAccessKeyStorage))
+	if err != nil {
+		return nil, err
+	}
 	accessKeyPair := accessKeyStorage.GetAccessKeyPair(inv, url)
 	if accessKeyPair == nil || IsEmpty(accessKeyPair.AccessKey, false) || IsEmpty(accessKeyPair.SecretKey, true) {
 		return nil, errors.New("accessKeyId or secretAccessKey not found")

@@ -106,10 +106,6 @@ func Test_getAccessKeyPairSuccess(t *testing.T) {
 }
 
 func Test_getAccessKeyPairFailed(t *testing.T) {
-	defer func() {
-		e := recover()
-		assert.NotNil(t, e)
-	}()
 	testUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.AccessKeyIDKey, "akey"))
@@ -119,9 +115,11 @@ func Test_getAccessKeyPairFailed(t *testing.T) {
 	testUrl = common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.SecretAccessKeyKey, "skey"),
-		common.WithParamsValue(constant.AccessKeyIDKey, "akey"), common.WithParamsValue(constant.AccessKeyStorageKey, "dubbo"))
+		common.WithParamsValue(constant.AccessKeyIDKey, "akey"),
+		common.WithParamsValue(constant.AccessKeyStorageKey, "dubbo"))
 	_, e = getAccessKeyPair(rpcInvocation, testUrl)
-	assert.NoError(t, e)
+	assert.NotNil(t, e)
+	assert.Contains(t, e.Error(), "accessKeyStorages for dubbo is not existing")
 }
 
 func Test_getSignatureWithinParams(t *testing.T) {
