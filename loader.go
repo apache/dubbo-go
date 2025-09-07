@@ -20,30 +20,24 @@ package dubbo
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strings"
 	"sync"
-)
 
-import (
 	"github.com/dubbogo/gost/log/logger"
+
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/constant/file"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	gr "github.com/dubbogo/gost/runtime"
-
 	"github.com/fsnotify/fsnotify"
-
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/json"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/providers/rawbytes"
-
 	"github.com/pkg/errors"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/constant/file"
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
 )
 
 var (
@@ -118,15 +112,24 @@ func watch(conf *loaderConf, stopCh <-chan struct{}) {
 
 func hotUpdateConfig(conf *loaderConf) error {
 	newOpts := defaultInstanceOptions()
-	bytes, err := os.ReadFile(conf.path)
+
+	newBytes, err := os.ReadFile(conf.path)
 	if err != nil {
 		return err
 	}
-	conf.bytes = bytes
+	oldBytes := conf.bytes
 
-	koan := GetConfigResolver(conf)
-	koan = conf.MergeConfig(koan)
+	oldKoan := buildKoanfFromBytes(conf, oldBytes)
+	newKoan := buildKoanfFromBytes(conf, newBytes)
 
+	if !safeChanged(oldKoan, newKoan) {
+		logger.Warnf("Hot reload denied: changes outside allowed hot-reload keys detected")
+		return errors.New("hot reload denied: disallowed configuration changes detected")
+	}
+
+	conf.bytes = newBytes
+
+	koan := newKoan
 	if err := koan.UnmarshalWithConf(newOpts.Prefix(), newOpts, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
 		return err
 	}
@@ -423,4 +426,65 @@ func StopFileWatcher() {
 	close(stopCh)
 	watcherWg.Wait()
 	logger.Info("File watcher stopped successfully")
+}
+
+func buildKoanfFromBytes(conf *loaderConf, b []byte) *koanf.Koanf {
+	c := *conf
+	c.bytes = b
+	k := GetConfigResolver(&c)
+	return c.MergeConfig(k)
+}
+
+var hotReloadAllowedPredicates = []func(string) bool{
+	func(k string) bool { return strings.Contains(k, ".logger.") },
+}
+
+func AllowHotReloadPrefix(prefix string) {
+	hotReloadAllowedPredicates = append(hotReloadAllowedPredicates, func(k string) bool { return strings.HasPrefix(k, prefix) })
+}
+
+func AllowHotReloadContains(substr string) {
+	hotReloadAllowedPredicates = append(hotReloadAllowedPredicates, func(k string) bool { return strings.Contains(k, substr) })
+}
+
+func AllowHotReloadExact(key string) {
+	hotReloadAllowedPredicates = append(hotReloadAllowedPredicates, func(k string) bool { return k == key })
+}
+
+func isAllowedKey(key string) bool {
+	for _, p := range hotReloadAllowedPredicates {
+		if p(key) {
+			return true
+		}
+	}
+	return false
+}
+
+func safeChanged(oldK, newK *koanf.Koanf) bool {
+	oldAll := oldK.All()
+	newAll := newK.All()
+
+	keys := make(map[string]struct{}, len(oldAll)+len(newAll))
+	for k := range oldAll {
+		keys[k] = struct{}{}
+	}
+	for k := range newAll {
+		keys[k] = struct{}{}
+	}
+
+	for k := range keys {
+
+		if isAllowedKey(k) {
+			continue
+		}
+		ov, oOk := oldAll[k]
+		nv, nOk := newAll[k]
+		if oOk != nOk {
+			return false
+		}
+		if !reflect.DeepEqual(ov, nv) {
+			return false
+		}
+	}
+	return true
 }
