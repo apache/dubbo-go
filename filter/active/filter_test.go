@@ -83,7 +83,7 @@ func TestFilterOnResponse(t *testing.T) {
 }
 
 func TestFilterOnResponseWithDefer(t *testing.T) {
-	defer base.CleanAllStatus()
+	base.CleanAllStatus()
 
 	// Test scenario 1: dubboInvokeStartTime is parsed successfully and the result is correct.
 	t.Run("ParseSuccessAndResultSuccess", func(t *testing.T) {
