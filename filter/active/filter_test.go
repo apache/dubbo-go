@@ -81,3 +81,133 @@ func TestFilterOnResponse(t *testing.T) {
 	assert.True(t, urlStatus.GetLastRequestFailedTimestamp() != int64(0))
 	assert.True(t, methodStatus.GetLastRequestFailedTimestamp() != int64(0))
 }
+
+func TestFilterOnResponseWithDefer(t *testing.T) {
+	defer base.CleanAllStatus()
+
+	// Test scenario 1: dubboInvokeStartTime is parsed successfully and the result is correct.
+	t.Run("ParseSuccessAndResultSuccess", func(t *testing.T) {
+		defer base.CleanAllStatus()
+
+		c := base.CurrentTimeMillis()
+		invoc := invocation.NewRPCInvocation("test1", []any{"OK"}, map[string]any{
+			dubboInvokeStartTime: strconv.FormatInt(c, 10),
+		})
+		url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
+		filter := activeFilter{}
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		invoker := mock.NewMockInvoker(ctrl)
+		invoker.EXPECT().GetURL().Return(url).Times(1)
+		rpcResult := &result.RPCResult{}
+
+		filter.OnResponse(context.TODO(), rpcResult, invoker, invoc)
+
+		methodStatus := base.GetMethodStatus(url, "test1")
+		urlStatus := base.GetURLStatus(url)
+
+		assert.Equal(t, int32(1), methodStatus.GetTotal())
+		assert.Equal(t, int32(1), urlStatus.GetTotal())
+		assert.Equal(t, int32(0), methodStatus.GetFailed())
+		assert.Equal(t, int32(0), urlStatus.GetFailed())
+		assert.Equal(t, int32(0), methodStatus.GetSuccessiveRequestFailureCount())
+		assert.Equal(t, int32(0), urlStatus.GetSuccessiveRequestFailureCount())
+		assert.True(t, methodStatus.GetTotalElapsed() >= int64(0))
+		assert.True(t, urlStatus.GetTotalElapsed() >= int64(0))
+	})
+
+	// Test scenario 2: dubboInvokeStartTime is parsed successfully, but the result is incorrect
+	t.Run("ParseSuccessAndResultFailed", func(t *testing.T) {
+		defer base.CleanAllStatus()
+
+		c := base.CurrentTimeMillis()
+		invoc := invocation.NewRPCInvocation("test2", []any{"OK"}, map[string]any{
+			dubboInvokeStartTime: strconv.FormatInt(c, 10),
+		})
+		url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
+		filter := activeFilter{}
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		invoker := mock.NewMockInvoker(ctrl)
+		invoker.EXPECT().GetURL().Return(url).Times(1)
+		rpcResult := &result.RPCResult{
+			Err: errors.New("test error"),
+		}
+
+		filter.OnResponse(context.TODO(), rpcResult, invoker, invoc)
+
+		methodStatus := base.GetMethodStatus(url, "test2")
+		urlStatus := base.GetURLStatus(url)
+
+		assert.Equal(t, int32(1), methodStatus.GetTotal())
+		assert.Equal(t, int32(1), urlStatus.GetTotal())
+		assert.Equal(t, int32(1), methodStatus.GetFailed())
+		assert.Equal(t, int32(1), urlStatus.GetFailed())
+		assert.Equal(t, int32(1), methodStatus.GetSuccessiveRequestFailureCount())
+		assert.Equal(t, int32(1), urlStatus.GetSuccessiveRequestFailureCount())
+		assert.True(t, methodStatus.GetFailedElapsed() >= int64(0))
+		assert.True(t, urlStatus.GetFailedElapsed() >= int64(0))
+		assert.True(t, urlStatus.GetLastRequestFailedTimestamp() != int64(0))
+		assert.True(t, methodStatus.GetLastRequestFailedTimestamp() != int64(0))
+	})
+
+	// Test Scenario 3: dubboInvokeStartTime parsing failed (non-numeric string)
+	t.Run("ParseFailedWithInvalidString", func(t *testing.T) {
+		defer base.CleanAllStatus()
+
+		invoc := invocation.NewRPCInvocation("test3", []any{"OK"}, map[string]any{
+			dubboInvokeStartTime: "invalid-time",
+		})
+		url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
+		filter := activeFilter{}
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		invoker := mock.NewMockInvoker(ctrl)
+		invoker.EXPECT().GetURL().Return(url).Times(1)
+		rpcResult := &result.RPCResult{}
+
+		result := filter.OnResponse(context.TODO(), rpcResult, invoker, invoc)
+		assert.NotNil(t, result.Error())
+
+		methodStatus := base.GetMethodStatus(url, "test3")
+		urlStatus := base.GetURLStatus(url)
+
+		// Verification count and status - should use the default duration of 1 and be marked as failed
+		assert.Equal(t, int32(1), methodStatus.GetTotal())
+		assert.Equal(t, int32(1), urlStatus.GetTotal())
+		assert.Equal(t, int32(1), methodStatus.GetFailed())
+		assert.Equal(t, int32(1), urlStatus.GetFailed())
+		assert.Equal(t, int32(1), methodStatus.GetSuccessiveRequestFailureCount())
+		assert.Equal(t, int32(1), urlStatus.GetSuccessiveRequestFailureCount())
+		assert.True(t, methodStatus.GetFailedElapsed() >= int64(1))
+		assert.True(t, urlStatus.GetFailedElapsed() >= int64(1))
+	})
+
+	// Test scenario 4: dubboInvokeStartTime does not exist (use the default value 0)
+	t.Run("ParseFailedWithDefaultValue", func(t *testing.T) {
+		defer base.CleanAllStatus()
+
+		invoc := invocation.NewRPCInvocation("test4", []any{"OK"}, make(map[string]any))
+		url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
+		filter := activeFilter{}
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		invoker := mock.NewMockInvoker(ctrl)
+		invoker.EXPECT().GetURL().Return(url).Times(1)
+		rpcResult := &result.RPCResult{}
+
+		filter.OnResponse(context.TODO(), rpcResult, invoker, invoc)
+
+		methodStatus := base.GetMethodStatus(url, "test4")
+		urlStatus := base.GetURLStatus(url)
+
+		assert.Equal(t, int32(1), methodStatus.GetTotal())
+		assert.Equal(t, int32(1), urlStatus.GetTotal())
+		assert.Equal(t, int32(0), methodStatus.GetFailed())
+		assert.Equal(t, int32(0), urlStatus.GetFailed())
+		assert.Equal(t, int32(0), methodStatus.GetSuccessiveRequestFailureCount())
+		assert.Equal(t, int32(0), urlStatus.GetSuccessiveRequestFailureCount())
+		assert.True(t, methodStatus.GetTotalElapsed() > int64(0))
+		assert.True(t, urlStatus.GetTotalElapsed() > int64(0))
+	})
+}
