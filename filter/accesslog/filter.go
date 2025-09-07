@@ -229,7 +229,7 @@ func (f *Filter) openLogFile(accessLog string) (*os.File, error) {
 	// and today is '2020-03-05'
 	// we will create one new file to log access data
 	// By this way, we can split the access log based on days.
-	// use 'accessLog' as completely path to avoid log not found.
+	// use 'accessLog' as complete path to avoid log not found.
 	if now != last {
 		err = os.Rename(accessLog, accessLog+"."+now)
 		if err != nil {
