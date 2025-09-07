@@ -38,9 +38,11 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
+const ProviderUrl = "dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider"
+
 func TestFilterInvoke(t *testing.T) {
 	invoc := invocation.NewRPCInvocation("test", []any{"OK"}, make(map[string]any))
-	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
+	url, _ := common.NewURL(ProviderUrl)
 	filter := activeFilter{}
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -57,7 +59,7 @@ func TestFilterOnResponse(t *testing.T) {
 	invoc := invocation.NewRPCInvocation("test", []any{"OK"}, map[string]any{
 		dubboInvokeStartTime: strconv.FormatInt(c-int64(elapsed), 10),
 	})
-	url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
+	url, _ := common.NewURL(ProviderUrl)
 	filter := activeFilter{}
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -93,7 +95,7 @@ func TestFilterOnResponseWithDefer(t *testing.T) {
 		invoc := invocation.NewRPCInvocation("test1", []any{"OK"}, map[string]any{
 			dubboInvokeStartTime: strconv.FormatInt(c, 10),
 		})
-		url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
+		url, _ := common.NewURL(ProviderUrl)
 		filter := activeFilter{}
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
@@ -124,7 +126,7 @@ func TestFilterOnResponseWithDefer(t *testing.T) {
 		invoc := invocation.NewRPCInvocation("test2", []any{"OK"}, map[string]any{
 			dubboInvokeStartTime: strconv.FormatInt(c, 10),
 		})
-		url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
+		url, _ := common.NewURL(ProviderUrl)
 		filter := activeFilter{}
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
@@ -158,7 +160,7 @@ func TestFilterOnResponseWithDefer(t *testing.T) {
 		invoc := invocation.NewRPCInvocation("test3", []any{"OK"}, map[string]any{
 			dubboInvokeStartTime: "invalid-time",
 		})
-		url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
+		url, _ := common.NewURL(ProviderUrl)
 		filter := activeFilter{}
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
@@ -188,7 +190,7 @@ func TestFilterOnResponseWithDefer(t *testing.T) {
 		defer base.CleanAllStatus()
 
 		invoc := invocation.NewRPCInvocation("test4", []any{"OK"}, make(map[string]any))
-		url, _ := common.NewURL("dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider")
+		url, _ := common.NewURL(ProviderUrl)
 		filter := activeFilter{}
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
