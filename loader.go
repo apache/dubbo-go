@@ -24,20 +24,27 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+)
 
+import (
 	"github.com/dubbogo/gost/log/logger"
-
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/constant/file"
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	gr "github.com/dubbogo/gost/runtime"
+
 	"github.com/fsnotify/fsnotify"
+
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/json"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/providers/rawbytes"
+
 	"github.com/pkg/errors"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/constant/file"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 )
 
 var (
@@ -46,6 +53,7 @@ var (
 	once            sync.Once
 	stopCh          = make(chan struct{})
 	watcherWg       sync.WaitGroup
+	stopOnce        sync.Once
 )
 
 func Load(opts ...LoaderConfOption) error {
@@ -423,7 +431,9 @@ func checkPlaceholder(s string) (newKey, defaultValue string) {
 // StopFileWatcher Stop file listener
 func StopFileWatcher() {
 	logger.Info("Stopping file watcher...")
-	close(stopCh)
+	stopOnce.Do(func() {
+		close(stopCh)
+	})
 	watcherWg.Wait()
 	logger.Info("File watcher stopped successfully")
 }
