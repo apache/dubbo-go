@@ -31,6 +31,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple"
 )
 
 // ConsumerConfig
@@ -144,6 +145,14 @@ func (cli *Client) NewGenericService(referenceStr string, opts ...ReferenceOptio
 	_, err := cli.DialWithService(referenceStr, genericService, finalOpts...)
 
 	return genericService, err
+}
+
+// NewTripleGenericService creates a generic service for Triple protocol
+// This provides a unified interface similar to Dubbo's NewGenericService
+func (cli *Client) NewTripleGenericService(serviceKey string) (*triple.TripleGenericService, error) {
+	// Create a TripleGenericService instance
+	genericService := triple.NewTripleGenericService(serviceKey)
+	return genericService, nil
 }
 
 func (cli *Client) Dial(interfaceName string, opts ...ReferenceOption) (*Connection, error) {

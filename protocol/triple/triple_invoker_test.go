@@ -20,6 +20,7 @@ package triple
 import (
 	"context"
 	"net/http"
+	"reflect"
 	"testing"
 )
 
@@ -41,7 +42,7 @@ func Test_parseInvocation(t *testing.T) {
 		ctx    func() context.Context
 		url    *common.URL
 		invo   func() base.Invocation
-		expect func(t *testing.T, callType string, inRaw []any, methodName string, err error)
+		expect func(t *testing.T, callType string, inRaw []any, in []reflect.Value, methodName string, err error)
 	}{
 		{
 			desc: "miss callType",
@@ -52,7 +53,7 @@ func Test_parseInvocation(t *testing.T) {
 			invo: func() base.Invocation {
 				return invocation.NewRPCInvocationWithOptions()
 			},
-			expect: func(t *testing.T, callType string, inRaw []any, methodName string, err error) {
+			expect: func(t *testing.T, callType string, inRaw []any, in []reflect.Value, methodName string, err error) {
 				assert.NotNil(t, err)
 			},
 		},
@@ -67,7 +68,7 @@ func Test_parseInvocation(t *testing.T) {
 				iv.SetAttribute(constant.CallTypeKey, 1)
 				return iv
 			},
-			expect: func(t *testing.T, callType string, inRaw []any, methodName string, err error) {
+			expect: func(t *testing.T, callType string, inRaw []any, in []reflect.Value, methodName string, err error) {
 				assert.NotNil(t, err)
 			},
 		},
@@ -82,7 +83,7 @@ func Test_parseInvocation(t *testing.T) {
 				iv.SetAttribute(constant.CallTypeKey, constant.CallUnary)
 				return iv
 			},
-			expect: func(t *testing.T, callType string, inRaw []any, methodName string, err error) {
+			expect: func(t *testing.T, callType string, inRaw []any, in []reflect.Value, methodName string, err error) {
 				assert.NotNil(t, err)
 			},
 		},
@@ -90,8 +91,8 @@ func Test_parseInvocation(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			callType, inRaw, methodName, err := parseInvocation(test.ctx(), test.url, test.invo())
-			test.expect(t, callType, inRaw, methodName, err)
+			callType, inRaw, in, methodName, err := parseInvocation(test.ctx(), test.url, test.invo())
+			test.expect(t, callType, inRaw, in, methodName, err)
 		})
 	}
 }

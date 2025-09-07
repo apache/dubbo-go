@@ -20,12 +20,15 @@ package triple
 import (
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
 	"net/http"
 	"reflect"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -44,6 +47,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
@@ -52,6 +57,1031 @@ const (
 	httpPrefix  string = "http://"
 	httpsPrefix string = "https://"
 )
+
+// TripleGenericService implements generic invocation for Triple protocol
+// It provides a unified interface similar to Dubbo's GenericService
+type TripleGenericService struct {
+	serviceKey string
+}
+
+// NewTripleGenericService creates a new TripleGenericService instance
+func NewTripleGenericService(serviceKey string) *TripleGenericService {
+	return &TripleGenericService{
+		serviceKey: serviceKey,
+	}
+}
+
+// NewTripleGenericServiceWithClient creates a new TripleGenericService with an existing client
+// Note: Currently simplified to just use serviceKey, client parameter is ignored for future compatibility
+func NewTripleGenericServiceWithClient(serviceKey string, client any) *TripleGenericService {
+	return NewTripleGenericService(serviceKey)
+}
+
+// Invoke performs generic invocation with method name, parameter types, and arguments
+// This method provides a unified interface similar to Dubbo's GenericService.Invoke
+func (tgs *TripleGenericService) Invoke(ctx context.Context, methodName string, types []string, args []any) (any, error) {
+	// Validate input parameters
+	if methodName == "" {
+		return nil, fmt.Errorf("method name cannot be empty")
+	}
+
+	// Prepare arguments for generic invocation
+	// For Triple protocol generic calls, we follow Dubbo's pattern:
+	// args[0] = method name, args[1] = parameter types, args[2] = parameter values
+	genericArgs := []any{methodName, types, args}
+
+	// Create RPC invocation with generic method and arguments
+	inv := invocation.NewRPCInvocation(constant.Generic, genericArgs, make(map[string]any))
+
+	// Set generic flag to identify this as a generic invocation
+	inv.SetAttachment(constant.GenericKey, "true")
+
+	// Set parameter types information if provided
+	if len(types) > 0 {
+		inv.SetAttachment("parameterTypes", types)
+	}
+
+	// Create client manager for the service
+	url, urlErr := common.NewURL(tgs.serviceKey, common.WithProtocol("tri"))
+	if urlErr != nil {
+		return nil, fmt.Errorf("failed to create URL for service %s: %w", tgs.serviceKey, urlErr)
+	}
+
+	cm, err := newClientManager(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create client manager for service %s: %w", tgs.serviceKey, err)
+	}
+
+	// Perform the actual invocation based on client mode
+	if !cm.isIDL {
+		// Non-IDL mode: direct parameter passing
+		return tgs.invokeNonIDL(ctx, cm, methodName, args)
+	} else {
+		// IDL mode: protobuf-based invocation
+		return tgs.invokeIDL(ctx, cm, inv)
+	}
+}
+
+// invokeNonIDL handles invocation for non-IDL mode services
+func (tgs *TripleGenericService) invokeNonIDL(ctx context.Context, cm *clientManager, methodName string, args []any) (any, error) {
+	if len(args) == 0 {
+		return nil, fmt.Errorf("Triple protocol generic invocation requires at least one argument for non-IDL mode")
+	}
+
+	// Get the generalizer manager
+	gm := GetTripleGeneralizerManager()
+
+	// Get the appropriate generalizer based on generic type
+	// For now, use "true" as default (basic generalizer)
+	_ = gm.GetGeneralizer("true")
+
+	// Prepare request parameters - convert generic args to concrete types
+	reqParams := make([]any, len(args))
+	for i, arg := range args {
+		// For generic invocation, args are already in the expected format
+		// In a more sophisticated implementation, you might need to determine
+		// the target type from method signatures
+		reqParams[i] = arg
+	}
+
+	// For non-IDL mode, response parameters are typically the same as request parameters
+	respParams := make([]any, len(reqParams))
+	copy(respParams, reqParams)
+
+	// Execute the call
+	err := cm.callUnary(ctx, methodName, reqParams, respParams)
+	if err != nil {
+		return nil, fmt.Errorf("Triple protocol generic invocation failed for method %s: %w", methodName, err)
+	}
+
+	// Return the first response parameter (typical pattern for non-IDL mode)
+	if len(respParams) > 0 {
+		return respParams[0], nil
+	}
+
+	return nil, nil
+}
+
+// invokeIDL handles invocation for IDL mode services (protobuf-based)
+func (tgs *TripleGenericService) invokeIDL(ctx context.Context, cm *clientManager, inv base.Invocation) (any, error) {
+	// For IDL mode, we would typically use protobuf serialization
+	// This is a placeholder implementation - in practice, this would involve:
+	// 1. Converting generic arguments to protobuf messages
+	// 2. Making the actual RPC call
+	// 3. Converting protobuf response back to generic format
+
+	// TODO: Implement full IDL mode support
+	return nil, fmt.Errorf("IDL mode generic invocation is not yet fully implemented for Triple protocol")
+}
+
+// Reference returns the service key
+func (tgs *TripleGenericService) Reference() string {
+	return tgs.serviceKey
+}
+
+// TripleAttachmentManager manages attachments for Triple protocol
+type TripleAttachmentManager struct {
+	attachments map[string]any
+}
+
+func NewTripleAttachmentManager() *TripleAttachmentManager {
+	return &TripleAttachmentManager{
+		attachments: make(map[string]any),
+	}
+}
+
+func (tam *TripleAttachmentManager) SetAttachment(key string, value any) {
+	tam.attachments[key] = value
+}
+
+func (tam *TripleAttachmentManager) GetAttachment(key string) (any, bool) {
+	value, exists := tam.attachments[key]
+	return value, exists
+}
+
+func (tam *TripleAttachmentManager) GetAttachmentString(key string) (string, bool) {
+	if value, exists := tam.attachments[key]; exists {
+		if str, ok := value.(string); ok {
+			return str, true
+		}
+		// Try to convert to string
+		return fmt.Sprintf("%v", value), true
+	}
+	return "", false
+}
+
+func (tam *TripleAttachmentManager) GetAttachmentInt(key string) (int, bool) {
+	if value, exists := tam.attachments[key]; exists {
+		switch v := value.(type) {
+		case int:
+			return v, true
+		case int32:
+			return int(v), true
+		case int64:
+			return int(v), true
+		case float32:
+			return int(v), true
+		case float64:
+			return int(v), true
+		case string:
+			if intVal, err := strconv.Atoi(v); err == nil {
+				return intVal, true
+			}
+		}
+	}
+	return 0, false
+}
+
+func (tam *TripleAttachmentManager) GetAttachmentBool(key string) (bool, bool) {
+	if value, exists := tam.attachments[key]; exists {
+		switch v := value.(type) {
+		case bool:
+			return v, true
+		case string:
+			if boolVal, err := strconv.ParseBool(v); err == nil {
+				return boolVal, true
+			}
+		case int, int32, int64:
+			// 0 is false, non-zero is true
+			return v != 0, true
+		}
+	}
+	return false, false
+}
+
+func (tam *TripleAttachmentManager) GetAllAttachments() map[string]any {
+	result := make(map[string]any)
+	for k, v := range tam.attachments {
+		result[k] = v
+	}
+	return result
+}
+
+func (tam *TripleAttachmentManager) RemoveAttachment(key string) {
+	delete(tam.attachments, key)
+}
+
+func (tam *TripleAttachmentManager) ClearAttachments() {
+	tam.attachments = make(map[string]any)
+}
+
+func (tam *TripleAttachmentManager) HasAttachment(key string) bool {
+	_, exists := tam.attachments[key]
+	return exists
+}
+
+// SerializeAttachment serializes attachment value to string for HTTP header transmission
+func (tam *TripleAttachmentManager) SerializeAttachment(key string) (string, error) {
+	if value, exists := tam.attachments[key]; exists {
+		return tam.serializeValue(value)
+	}
+	return "", fmt.Errorf("attachment %s not found", key)
+}
+
+// DeserializeAttachment deserializes string back to attachment value
+func (tam *TripleAttachmentManager) DeserializeAttachment(key, value string) error {
+	deserializedValue, err := tam.deserializeValue(value)
+	if err != nil {
+		return err
+	}
+	tam.attachments[key] = deserializedValue
+	return nil
+}
+
+func (tam *TripleAttachmentManager) serializeValue(value any) (string, error) {
+	switch v := value.(type) {
+	case string:
+		return v, nil
+	case int, int32, int64, uint, uint32, uint64:
+		return fmt.Sprintf("%d", v), nil
+	case float32, float64:
+		return fmt.Sprintf("%g", v), nil
+	case bool:
+		return fmt.Sprintf("%t", v), nil
+	case []string:
+		// For string arrays, join with comma
+		return strings.Join(v, ","), nil
+	default:
+		// For complex objects, use JSON serialization
+		if data, err := json.Marshal(value); err != nil {
+			return "", fmt.Errorf("failed to serialize attachment: %w", err)
+		} else {
+			return string(data), nil
+		}
+	}
+}
+
+func (tam *TripleAttachmentManager) deserializeValue(value string) (any, error) {
+	// Try to parse as basic types first
+	if intVal, err := strconv.ParseInt(value, 10, 64); err == nil {
+		return intVal, nil
+	}
+	if floatVal, err := strconv.ParseFloat(value, 64); err == nil {
+		return floatVal, nil
+	}
+	if boolVal, err := strconv.ParseBool(value); err == nil {
+		return boolVal, nil
+	}
+
+	// Try to parse as JSON for complex objects
+	var jsonVal any
+	if err := json.Unmarshal([]byte(value), &jsonVal); err == nil {
+		return jsonVal, nil
+	}
+
+	// If all else fails, return as string
+	return value, nil
+}
+
+// Enhanced TripleGenericService with attachment support
+func (tgs *TripleGenericService) InvokeWithAttachments(
+	ctx context.Context,
+	methodName string,
+	types []string,
+	args []any,
+	attachments map[string]any,
+) (any, error) {
+	// Validate input parameters
+	if methodName == "" {
+		return nil, fmt.Errorf("method name cannot be empty")
+	}
+
+	// Prepare arguments for generic invocation
+	genericArgs := []any{methodName, types, args}
+
+	// Create RPC invocation with generic method and arguments
+	inv := invocation.NewRPCInvocation(constant.Generic, genericArgs, make(map[string]any))
+
+	// Set generic flag to identify this as a generic invocation
+	inv.SetAttachment(constant.GenericKey, "true")
+
+	// Set parameter types information if provided
+	if len(types) > 0 {
+		inv.SetAttachment("parameterTypes", types)
+	}
+
+	// Set custom attachments
+	if attachments != nil {
+		for key, value := range attachments {
+			inv.SetAttachment(key, value)
+		}
+	}
+
+	// Create client manager for the service
+	url, urlErr := common.NewURL(tgs.serviceKey, common.WithProtocol("tri"))
+	if urlErr != nil {
+		return nil, fmt.Errorf("failed to create URL for service %s: %w", tgs.serviceKey, urlErr)
+	}
+
+	cm, err := newClientManager(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create client manager for service %s: %w", tgs.serviceKey, err)
+	}
+
+	// Perform the actual invocation based on client mode
+	if !cm.isIDL {
+		return tgs.invokeNonIDL(ctx, cm, methodName, args)
+	} else {
+		return tgs.invokeIDL(ctx, cm, inv)
+	}
+}
+
+// TripleAsyncManager manages asynchronous invocations
+type TripleAsyncManager struct {
+	activeCalls map[string]*TripleAsyncCall
+	mutex       sync.RWMutex
+}
+
+var (
+	tripleAsyncManager     *TripleAsyncManager
+	tripleAsyncManagerOnce sync.Once
+)
+
+func GetTripleAsyncManager() *TripleAsyncManager {
+	tripleAsyncManagerOnce.Do(func() {
+		tripleAsyncManager = &TripleAsyncManager{
+			activeCalls: make(map[string]*TripleAsyncCall),
+		}
+	})
+	return tripleAsyncManager
+}
+
+type TripleAsyncCall struct {
+	ID          string
+	MethodName  string
+	StartTime   time.Time
+	Timeout     time.Duration
+	CancelFunc  context.CancelFunc
+	Callback    func(result any, err error)
+	Attachments map[string]any
+}
+
+// TripleAsyncResult represents the result of an asynchronous call
+type TripleAsyncResult struct {
+	CallID      string
+	MethodName  string
+	Result      any
+	Error       error
+	Duration    time.Duration
+	StartTime   time.Time
+	EndTime     time.Time
+	Attachments map[string]any
+}
+
+// InvokeAsync performs asynchronous generic invocation with attachments
+func (tgs *TripleGenericService) InvokeAsync(
+	ctx context.Context,
+	methodName string,
+	types []string,
+	args []any,
+	attachments map[string]any,
+	callback func(result any, err error),
+) (string, error) {
+	return tgs.InvokeAsyncWithTimeout(ctx, methodName, types, args, attachments, callback, 30*time.Second)
+}
+
+// InvokeAsyncWithTimeout performs asynchronous generic invocation with custom timeout
+func (tgs *TripleGenericService) InvokeAsyncWithTimeout(
+	ctx context.Context,
+	methodName string,
+	types []string,
+	args []any,
+	attachments map[string]any,
+	callback func(result any, err error),
+	timeout time.Duration,
+) (string, error) {
+	// Validate input parameters
+	if methodName == "" {
+		return "", fmt.Errorf("method name cannot be empty")
+	}
+	if callback == nil {
+		return "", fmt.Errorf("callback function cannot be nil")
+	}
+	if timeout <= 0 {
+		timeout = 30 * time.Second // default timeout
+	}
+
+	// Generate unique call ID
+	callID := generateCallID()
+
+	// Create async call context with timeout
+	asyncCtx, cancelFunc := context.WithTimeout(ctx, timeout)
+
+	// Create async call object
+	asyncCall := &TripleAsyncCall{
+		ID:          callID,
+		MethodName:  methodName,
+		StartTime:   time.Now(),
+		Timeout:     timeout,
+		CancelFunc:  cancelFunc,
+		Callback:    callback,
+		Attachments: make(map[string]any),
+	}
+
+	// Copy attachments
+	if attachments != nil {
+		for k, v := range attachments {
+			asyncCall.Attachments[k] = v
+		}
+	}
+
+	// Register async call
+	asyncManager := GetTripleAsyncManager()
+	asyncManager.registerCall(asyncCall)
+
+	// Start async execution
+	go func() {
+		defer asyncManager.unregisterCall(callID)
+		defer cancelFunc()
+
+		// Execute the call synchronously
+		result, err := tgs.InvokeWithAttachments(asyncCtx, methodName, types, args, attachments)
+
+		// Check if context was cancelled or timed out
+		if asyncCtx.Err() != nil {
+			if asyncCtx.Err() == context.DeadlineExceeded {
+				err = fmt.Errorf("async call %s timed out after %v", callID, timeout)
+			} else {
+				err = fmt.Errorf("async call %s was cancelled: %w", callID, asyncCtx.Err())
+			}
+		}
+
+		// Create result object
+		asyncResult := &TripleAsyncResult{
+			CallID:      callID,
+			MethodName:  methodName,
+			Result:      result,
+			Error:       err,
+			StartTime:   asyncCall.StartTime,
+			EndTime:     time.Now(),
+			Attachments: asyncCall.Attachments,
+		}
+		asyncResult.Duration = asyncResult.EndTime.Sub(asyncResult.StartTime)
+
+		// Call the callback function
+		asyncCall.Callback(asyncResult.Result, asyncResult.Error)
+	}()
+
+	return callID, nil
+}
+
+// InvokeAsyncBatch performs batch asynchronous invocations
+func (tgs *TripleGenericService) InvokeAsyncBatch(
+	ctx context.Context,
+	invocations []TripleInvocationRequest,
+	callback func(results []TripleAsyncResult),
+) ([]string, error) {
+	return tgs.InvokeAsyncBatchWithTimeout(ctx, invocations, callback, 30*time.Second)
+}
+
+// InvokeAsyncBatchWithTimeout performs batch asynchronous invocations with custom timeout
+func (tgs *TripleGenericService) InvokeAsyncBatchWithTimeout(
+	ctx context.Context,
+	invocations []TripleInvocationRequest,
+	callback func(results []TripleAsyncResult),
+	timeout time.Duration,
+) ([]string, error) {
+	if len(invocations) == 0 {
+		return nil, fmt.Errorf("no invocations provided")
+	}
+	if callback == nil {
+		return nil, fmt.Errorf("callback function cannot be nil")
+	}
+
+	callIDs := make([]string, len(invocations))
+	results := make([]TripleAsyncResult, len(invocations))
+	resultsReceived := 0
+	var resultsMutex sync.Mutex
+
+	// Start all async calls
+	for i, req := range invocations {
+		localIndex := i
+		localReq := req
+
+		// Generate callID first
+		currentCallID := generateCallID()
+		callIDs[localIndex] = currentCallID
+
+		_, err := tgs.InvokeAsyncWithTimeout(ctx, localReq.MethodName, localReq.Types, localReq.Args, localReq.Attachments,
+			func(result any, resultErr error) {
+				// Collect result
+				resultsMutex.Lock()
+				results[localIndex] = TripleAsyncResult{
+					CallID:      currentCallID,
+					MethodName:  localReq.MethodName,
+					Result:      result,
+					Error:       resultErr,
+					StartTime:   time.Now(),
+					EndTime:     time.Now(),
+					Attachments: localReq.Attachments,
+				}
+				results[localIndex].Duration = results[localIndex].EndTime.Sub(results[localIndex].StartTime)
+				resultsReceived++
+				resultsMutex.Unlock()
+
+				// Call batch callback when all results are received
+				resultsMutex.Lock()
+				if resultsReceived == len(invocations) {
+					callback(results)
+				}
+				resultsMutex.Unlock()
+			}, timeout)
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to start async call %d: %w", i, err)
+		}
+	}
+
+	return callIDs, nil
+}
+
+// CancelAsyncCall cancels an asynchronous call
+func (tgs *TripleGenericService) CancelAsyncCall(callID string) bool {
+	asyncManager := GetTripleAsyncManager()
+	asyncCall := asyncManager.getCall(callID)
+	if asyncCall != nil {
+		asyncCall.CancelFunc()
+		asyncManager.unregisterCall(callID)
+		return true
+	}
+	return false
+}
+
+// GetAsyncCallStatus gets the status of an asynchronous call
+func (tgs *TripleGenericService) GetAsyncCallStatus(callID string) (*TripleAsyncCall, bool) {
+	asyncManager := GetTripleAsyncManager()
+	asyncCall := asyncManager.getCall(callID)
+	if asyncCall != nil {
+		return asyncCall, true
+	}
+	return nil, false
+}
+
+// GetActiveAsyncCalls gets all active asynchronous calls
+func (tgs *TripleGenericService) GetActiveAsyncCalls() map[string]*TripleAsyncCall {
+	asyncManager := GetTripleAsyncManager()
+	return asyncManager.getAllActiveCalls()
+}
+
+// WaitForAsyncCall waits for an asynchronous call to complete
+func (tgs *TripleGenericService) WaitForAsyncCall(callID string, timeout time.Duration) (*TripleAsyncResult, error) {
+	asyncManager := GetTripleAsyncManager()
+
+	// Check if call exists
+	asyncCall := asyncManager.getCall(callID)
+	if asyncCall == nil {
+		return nil, fmt.Errorf("async call %s not found", callID)
+	}
+
+	// Create channel to wait for completion
+	resultChan := make(chan *TripleAsyncResult, 1)
+
+	// Wrap the original callback
+	originalCallback := asyncCall.Callback
+	asyncCall.Callback = func(result any, err error) {
+		resultChan <- &TripleAsyncResult{
+			CallID:      callID,
+			MethodName:  asyncCall.MethodName,
+			Result:      result,
+			Error:       err,
+			StartTime:   asyncCall.StartTime,
+			EndTime:     time.Now(),
+			Attachments: asyncCall.Attachments,
+		}
+		// Call original callback if it exists
+		if originalCallback != nil {
+			originalCallback(result, err)
+		}
+	}
+
+	// Wait for result or timeout
+	select {
+	case result := <-resultChan:
+		result.Duration = result.EndTime.Sub(result.StartTime)
+		return result, nil
+	case <-time.After(timeout):
+		// Cancel the call if timeout
+		tgs.CancelAsyncCall(callID)
+		return nil, fmt.Errorf("wait for async call %s timed out after %v", callID, timeout)
+	}
+}
+
+// registerCall registers an async call
+func (tam *TripleAsyncManager) registerCall(asyncCall *TripleAsyncCall) {
+	tam.mutex.Lock()
+	defer tam.mutex.Unlock()
+	tam.activeCalls[asyncCall.ID] = asyncCall
+}
+
+// unregisterCall unregisters an async call
+func (tam *TripleAsyncManager) unregisterCall(callID string) {
+	tam.mutex.Lock()
+	defer tam.mutex.Unlock()
+	delete(tam.activeCalls, callID)
+}
+
+// getCall gets an async call by ID
+func (tam *TripleAsyncManager) getCall(callID string) *TripleAsyncCall {
+	tam.mutex.RLock()
+	defer tam.mutex.RUnlock()
+	return tam.activeCalls[callID]
+}
+
+// GetAllActiveCalls gets all active calls (exported method)
+func (tam *TripleAsyncManager) GetAllActiveCalls() map[string]*TripleAsyncCall {
+	tam.mutex.RLock()
+	defer tam.mutex.RUnlock()
+
+	result := make(map[string]*TripleAsyncCall)
+	for k, v := range tam.activeCalls {
+		result[k] = v
+	}
+	return result
+}
+
+// getAllActiveCalls gets all active calls (internal method)
+func (tam *TripleAsyncManager) getAllActiveCalls() map[string]*TripleAsyncCall {
+	return tam.GetAllActiveCalls()
+}
+
+// GetActiveCallCount gets the count of active calls
+func (tam *TripleAsyncManager) GetActiveCallCount() int {
+	tam.mutex.RLock()
+	defer tam.mutex.RUnlock()
+	return len(tam.activeCalls)
+}
+
+// CleanupExpiredCalls cleans up expired async calls
+func (tam *TripleAsyncManager) CleanupExpiredCalls() int {
+	tam.mutex.Lock()
+	defer tam.mutex.Unlock()
+
+	now := time.Now()
+	cleanupCount := 0
+
+	for id, asyncCall := range tam.activeCalls {
+		if now.After(asyncCall.StartTime.Add(asyncCall.Timeout)) {
+			asyncCall.CancelFunc()
+			delete(tam.activeCalls, id)
+			cleanupCount++
+		}
+	}
+
+	return cleanupCount
+}
+
+// generateCallID generates a unique call ID
+func generateCallID() string {
+	return fmt.Sprintf("triple-async-%d-%d", time.Now().UnixNano(), time.Now().Unix())
+}
+
+// BatchInvoke performs batch generic invocations with attachments
+func (tgs *TripleGenericService) BatchInvoke(
+	ctx context.Context,
+	invocations []TripleInvocationRequest,
+) ([]TripleInvocationResult, error) {
+	if len(invocations) == 0 {
+		return nil, fmt.Errorf("no invocations provided")
+	}
+
+	results := make([]TripleInvocationResult, len(invocations))
+
+	for i, req := range invocations {
+		result, err := tgs.InvokeWithAttachments(ctx, req.MethodName, req.Types, req.Args, req.Attachments)
+		results[i] = TripleInvocationResult{
+			Result: result,
+			Error:  err,
+			Index:  i,
+		}
+	}
+
+	return results, nil
+}
+
+// TripleInvocationRequest represents a single invocation request
+type TripleInvocationRequest struct {
+	MethodName  string
+	Types       []string
+	Args        []any
+	Attachments map[string]any
+}
+
+// TripleInvocationResult represents the result of a single invocation
+type TripleInvocationResult struct {
+	Result any
+	Error  error
+	Index  int
+}
+
+// CreateAttachmentBuilder creates a fluent builder for attachments
+func (tgs *TripleGenericService) CreateAttachmentBuilder() *TripleAttachmentBuilder {
+	return &TripleAttachmentBuilder{
+		attachments: make(map[string]any),
+	}
+}
+
+// TripleAttachmentBuilder provides fluent API for building attachments
+type TripleAttachmentBuilder struct {
+	attachments map[string]any
+}
+
+func (tab *TripleAttachmentBuilder) SetString(key, value string) *TripleAttachmentBuilder {
+	tab.attachments[key] = value
+	return tab
+}
+
+func (tab *TripleAttachmentBuilder) SetInt(key string, value int) *TripleAttachmentBuilder {
+	tab.attachments[key] = value
+	return tab
+}
+
+func (tab *TripleAttachmentBuilder) SetBool(key string, value bool) *TripleAttachmentBuilder {
+	tab.attachments[key] = value
+	return tab
+}
+
+func (tab *TripleAttachmentBuilder) SetObject(key string, value any) *TripleAttachmentBuilder {
+	tab.attachments[key] = value
+	return tab
+}
+
+func (tab *TripleAttachmentBuilder) SetMap(key string, value map[string]any) *TripleAttachmentBuilder {
+	tab.attachments[key] = value
+	return tab
+}
+
+func (tab *TripleAttachmentBuilder) Build() map[string]any {
+	result := make(map[string]any)
+	for k, v := range tab.attachments {
+		result[k] = v
+	}
+	return result
+}
+
+// Convenience methods for common attachment patterns
+func (tgs *TripleGenericService) WithTimeout(timeoutMs int) *TripleAttachmentBuilder {
+	return tgs.CreateAttachmentBuilder().SetInt(constant.TimeoutKey, timeoutMs)
+}
+
+func (tgs *TripleGenericService) WithUserId(userId string) *TripleAttachmentBuilder {
+	return tgs.CreateAttachmentBuilder().SetString("userId", userId)
+}
+
+func (tgs *TripleGenericService) WithTraceId(traceId string) *TripleAttachmentBuilder {
+	return tgs.CreateAttachmentBuilder().SetString("traceId", traceId)
+}
+
+func (tgs *TripleGenericService) WithCustomAttachments(attachments map[string]any) *TripleAttachmentBuilder {
+	builder := tgs.CreateAttachmentBuilder()
+	for k, v := range attachments {
+		builder.attachments[k] = v
+	}
+	return builder
+}
+
+// TripleGeneralizer defines the interface for data type conversion in Triple protocol
+type TripleGeneralizer interface {
+	// Generalize converts an object to a general format (like Map)
+	Generalize(obj any) (any, error)
+
+	// Realize converts a general format back to a specific type
+	Realize(obj any, typ reflect.Type) (any, error)
+
+	// GetType returns the type name of the object
+	GetType(obj any) (string, error)
+}
+
+// MapTripleGeneralizer implements TripleGeneralizer for Map-based conversion
+type MapTripleGeneralizer struct{}
+
+func (g *MapTripleGeneralizer) Generalize(obj any) (any, error) {
+	return objToTripleMap(obj), nil
+}
+
+func (g *MapTripleGeneralizer) Realize(obj any, typ reflect.Type) (any, error) {
+	// Simple map to struct conversion
+	// In practice, you might want to use a more robust solution like mapstructure
+	if data, ok := obj.(map[string]any); ok {
+		// Basic map to struct conversion
+		result := reflect.New(typ).Elem()
+		for key, value := range data {
+			field := result.FieldByName(key)
+			if field.IsValid() && field.CanSet() {
+				if val := reflect.ValueOf(value); val.Type().AssignableTo(field.Type()) {
+					field.Set(val)
+				}
+			}
+		}
+		return result.Interface(), nil
+	}
+	return obj, nil
+}
+
+func (g *MapTripleGeneralizer) GetType(obj any) (string, error) {
+	if obj == nil {
+		return "java.lang.Object", nil
+	}
+	return reflect.TypeOf(obj).String(), nil
+}
+
+// JSONTripleGeneralizer implements TripleGeneralizer for JSON-based conversion
+type JSONTripleGeneralizer struct{}
+
+func (g *JSONTripleGeneralizer) Generalize(obj any) (any, error) {
+	// Convert to JSON string for simplicity
+	// In practice, you might want to return structured data
+	if data, err := json.Marshal(obj); err != nil {
+		return nil, err
+	} else {
+		return string(data), nil
+	}
+}
+
+func (g *JSONTripleGeneralizer) Realize(obj any, typ reflect.Type) (any, error) {
+	if str, ok := obj.(string); ok {
+		newobj := reflect.New(typ).Interface()
+		if err := json.Unmarshal([]byte(str), newobj); err != nil {
+			return nil, err
+		}
+		return reflect.ValueOf(newobj).Elem().Interface(), nil
+	}
+	return obj, nil
+}
+
+func (g *JSONTripleGeneralizer) GetType(obj any) (string, error) {
+	if obj == nil {
+		return "java.lang.Object", nil
+	}
+	return "java.lang.String", nil // JSON format is represented as string
+}
+
+// ProtobufTripleGeneralizer implements TripleGeneralizer for Protobuf conversion
+type ProtobufTripleGeneralizer struct{}
+
+func (g *ProtobufTripleGeneralizer) Generalize(obj any) (any, error) {
+	// For Triple protocol, protobuf is the native format
+	// Return as-is for protobuf messages
+	return obj, nil
+}
+
+func (g *ProtobufTripleGeneralizer) Realize(obj any, typ reflect.Type) (any, error) {
+	// For protobuf, the object should already be in the correct format
+	if reflect.TypeOf(obj).AssignableTo(typ) {
+		return obj, nil
+	}
+	return nil, fmt.Errorf("cannot convert %T to %s", obj, typ.String())
+}
+
+func (g *ProtobufTripleGeneralizer) GetType(obj any) (string, error) {
+	if obj == nil {
+		return "java.lang.Object", nil
+	}
+	return reflect.TypeOf(obj).String(), nil
+}
+
+// BasicTripleGeneralizer implements TripleGeneralizer for basic types
+type BasicTripleGeneralizer struct{}
+
+func (g *BasicTripleGeneralizer) Generalize(obj any) (any, error) {
+	// Basic types (int, string, bool, etc.) are returned as-is
+	return obj, nil
+}
+
+func (g *BasicTripleGeneralizer) Realize(obj any, typ reflect.Type) (any, error) {
+	val := reflect.ValueOf(obj)
+	if val.Type().AssignableTo(typ) {
+		return obj, nil
+	}
+
+	// Try type conversion for basic types
+	targetVal := reflect.New(typ).Elem()
+	if val.CanConvert(typ) {
+		targetVal.Set(val.Convert(typ))
+		return targetVal.Interface(), nil
+	}
+
+	return nil, fmt.Errorf("cannot convert %T to %s", obj, typ.String())
+}
+
+func (g *BasicTripleGeneralizer) GetType(obj any) (string, error) {
+	if obj == nil {
+		return "java.lang.Object", nil
+	}
+
+	switch reflect.TypeOf(obj).Kind() {
+	case reflect.String:
+		return "java.lang.String", nil
+	case reflect.Int, reflect.Int32:
+		return "java.lang.Integer", nil
+	case reflect.Int64:
+		return "java.lang.Long", nil
+	case reflect.Float32:
+		return "java.lang.Float", nil
+	case reflect.Float64:
+		return "java.lang.Double", nil
+	case reflect.Bool:
+		return "java.lang.Boolean", nil
+	default:
+		return reflect.TypeOf(obj).String(), nil
+	}
+}
+
+// TripleGeneralizerManager manages different generalizers
+type TripleGeneralizerManager struct {
+	generalizers map[string]TripleGeneralizer
+}
+
+var (
+	tripleGeneralizerManager     *TripleGeneralizerManager
+	tripleGeneralizerManagerOnce sync.Once
+)
+
+func GetTripleGeneralizerManager() *TripleGeneralizerManager {
+	tripleGeneralizerManagerOnce.Do(func() {
+		tripleGeneralizerManager = &TripleGeneralizerManager{
+			generalizers: make(map[string]TripleGeneralizer),
+		}
+		tripleGeneralizerManager.initGeneralizers()
+	})
+	return tripleGeneralizerManager
+}
+
+func (tgm *TripleGeneralizerManager) initGeneralizers() {
+	tgm.generalizers["map"] = &MapTripleGeneralizer{}
+	tgm.generalizers["json"] = &JSONTripleGeneralizer{}
+	tgm.generalizers["protobuf"] = &ProtobufTripleGeneralizer{}
+	tgm.generalizers["basic"] = &BasicTripleGeneralizer{}
+	// Default generalizer
+	tgm.generalizers["true"] = &BasicTripleGeneralizer{}
+}
+
+func (tgm *TripleGeneralizerManager) GetGeneralizer(genericType string) TripleGeneralizer {
+	if g, ok := tgm.generalizers[genericType]; ok {
+		return g
+	}
+	// Return default generalizer
+	return tgm.generalizers["true"]
+}
+
+// objToTripleMap converts an object to a map for Triple protocol
+func objToTripleMap(obj any) any {
+	if obj == nil {
+		return obj
+	}
+
+	val := reflect.ValueOf(obj)
+	typ := reflect.TypeOf(obj)
+
+	// Dereference pointers
+	for typ.Kind() == reflect.Ptr {
+		if val.IsNil() {
+			return nil
+		}
+		val = val.Elem()
+		typ = typ.Elem()
+	}
+
+	switch typ.Kind() {
+	case reflect.Struct:
+		result := make(map[string]any)
+		for i := 0; i < val.NumField(); i++ {
+			field := typ.Field(i)
+			fieldVal := val.Field(i)
+
+			// Skip unexported fields
+			if !fieldVal.CanInterface() {
+				continue
+			}
+
+			// Use field name as key, recursively convert field value
+			fieldName := field.Name
+			if jsonTag := field.Tag.Get("json"); jsonTag != "" {
+				fieldName = jsonTag
+			}
+
+			result[fieldName] = objToTripleMap(fieldVal.Interface())
+		}
+		return result
+
+	case reflect.Slice, reflect.Array:
+		var result []any
+		for i := 0; i < val.Len(); i++ {
+			result = append(result, objToTripleMap(val.Index(i).Interface()))
+		}
+		return result
+
+	case reflect.Map:
+		result := make(map[string]any)
+		for _, key := range val.MapKeys() {
+			keyStr := fmt.Sprintf("%v", key.Interface())
+			result[keyStr] = objToTripleMap(val.MapIndex(key).Interface())
+		}
+		return result
+
+	default:
+		return obj
+	}
+}
 
 // clientManager wraps triple clients and is responsible for find concrete triple client to invoke
 // callUnary, callClientStream, callServerStream, callBidiStream.
