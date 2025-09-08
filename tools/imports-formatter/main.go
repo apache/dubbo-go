@@ -30,9 +30,11 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/tools/imports-formatter/constant"
-
 	"github.com/pkg/errors"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/tools/imports-formatter/constant"
 )
 
 const (

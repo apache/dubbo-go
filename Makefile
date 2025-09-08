@@ -24,6 +24,7 @@ MAKEFLAGS += --no-builtin-rules
 MAKEFLAGS += --no-print-directory
 
 CLI_DIR = tools/dubbogo-cli
+IMPORTS_FORMATTER_DIR = tools/imports-formatter
 
 .PHONY: help test fmt clean lint
 
@@ -58,4 +59,4 @@ install-golangci-lint:
 	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.4.0
 
 install-imports-formatter:
-	go install github.com/dubbogo/tools/cmd/imports-formatter@latest
+	cd $(IMPORTS_FORMATTER_DIR) && go install
