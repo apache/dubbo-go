@@ -1,6 +1,6 @@
 package test_files
 
-// 测试外部注释
+// test outside comment
 import (
 	_ "io"
 	_ "io/ioutil"
@@ -11,4 +11,4 @@ import (
 	_ "github.com/pkg/errors"
 )
 
-// 测试中间注释
+// test mid comment
