@@ -523,7 +523,7 @@ func ignore(path string) bool {
 }
 
 func generateGoRoot() string {
-	cmd := exec.Command("go", "env", "GOROOT")
+	cmd := exec.Command("go", "env", "GOROOT") //NOSONAR
 	output, err := cmd.Output()
 	if err != nil {
 		panic(err)
