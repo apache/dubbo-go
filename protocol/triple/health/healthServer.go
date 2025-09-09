@@ -117,16 +117,15 @@ func (srv *HealthTripleServer) Watch(ctx context.Context, request *triple_health
 
 // SetServingStatus is called when need to reset the serving status of a service
 // or insert a new service entry into the statusMap.
-func (srv *HealthTripleServer) SetServingStatus(service string, servingStatus triple_health.HealthCheckResponse_ServingStatus) error {
+func (srv *HealthTripleServer) SetServingStatus(service string, servingStatus triple_health.HealthCheckResponse_ServingStatus) {
 	srv.mu.Lock()
 	defer srv.mu.Unlock()
 	if srv.shutdown {
 		logger.Infof("health: status changing for %s to %v is ignored because health service is shutdown", service, servingStatus)
-		return nil
+		return
 	}
 
 	srv.setServingStatusLocked(service, servingStatus)
-	return nil
 }
 
 func (srv *HealthTripleServer) setServingStatusLocked(service string, servingStatus triple_health.HealthCheckResponse_ServingStatus) {
@@ -148,14 +147,13 @@ func (srv *HealthTripleServer) setServingStatusLocked(service string, servingSta
 //
 // This changes serving status for all services. To set status for a particular
 // services, call SetServingStatus().
-func (srv *HealthTripleServer) Shutdown() error {
+func (srv *HealthTripleServer) Shutdown() {
 	srv.mu.Lock()
 	defer srv.mu.Unlock()
 	srv.shutdown = true
 	for service := range srv.statusMap {
 		srv.setServingStatusLocked(service, triple_health.HealthCheckResponse_NOT_SERVING)
 	}
-	return nil
 }
 
 // Resume sets all serving status to SERVING, and configures the server to
@@ -163,14 +161,13 @@ func (srv *HealthTripleServer) Shutdown() error {
 //
 // This changes serving status for all services. To set status for a particular
 // services, call SetServingStatus().
-func (srv *HealthTripleServer) Resume() error {
+func (srv *HealthTripleServer) Resume() {
 	srv.mu.Lock()
 	defer srv.mu.Unlock()
 	srv.shutdown = false
 	for service := range srv.statusMap {
 		srv.setServingStatusLocked(service, triple_health.HealthCheckResponse_SERVING)
 	}
-	return nil
 }
 
 func init() {
