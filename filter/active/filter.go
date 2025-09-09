@@ -74,7 +74,7 @@ func (f *activeFilter) OnResponse(ctx context.Context, result result.Result, inv
 
 	defer func() {
 		if err != nil {
-			// This err common is nil，when if not nil set a default elapsed value 1
+			// When err is not nil, use default elapsed value of 1
 			base.EndCount(invoker.GetURL(), inv.MethodName(), 1, false)
 			return
 		}
