@@ -376,8 +376,8 @@ func suiteMethod(method reflect.Method) *MethodType {
 	// Health helper methods are not RPCs and should be ignored.
 	// They should not to be checked.
 	if mname == "Reference" || mname == "SetGRPCServer" || strings.HasPrefix(mname, "XXX") ||
-		(method.Type.In(0).String() == "*health.HealthTripleServer" && 
-		 (mname == "Resume" || mname == "SetServingStatus" || mname == "Shutdown")) {
+		(method.Type.In(0).String() == "*health.HealthTripleServer" &&
+			(mname == "Resume" || mname == "SetServingStatus" || mname == "Shutdown")) {
 		return nil
 	}
 
