@@ -596,30 +596,30 @@ func TestNewURLWithMultiAddr(t *testing.T) {
 func TestURLSetParamsMultiValue(t *testing.T) {
 	// Test case to verify multi-value parameter handling
 	u := &URL{}
-	
+
 	// Create url.Values with multiple values for the same key
 	params := url.Values{}
 	params.Add("tag", "foo")
 	params.Add("tag", "bar")
 	params.Add("tag", "baz")
 	params.Set("single", "value")
-	
+
 	// Set the parameters using the fixed implementation
 	u.SetParams(params)
-	
+
 	// The fixed implementation should preserve all values by joining them with commas
 	assert.Equal(t, "foo,bar,baz", u.GetParam("tag", ""))
 	assert.Equal(t, "value", u.GetParam("single", ""))
-	
+
 	// Test with empty values
 	params2 := url.Values{}
 	params2.Add("empty", "")
 	params2.Add("empty", "value")
 	params2.Add("only_empty", "")
-	
+
 	u2 := &URL{}
 	u2.SetParams(params2)
-	
+
 	// Empty values should be skipped, only non-empty values should be preserved
 	assert.Equal(t, "value", u2.GetParam("empty", ""))
 	assert.Equal(t, "", u2.GetParam("only_empty", ""))
@@ -628,22 +628,22 @@ func TestURLSetParamsMultiValue(t *testing.T) {
 func TestURLSetParamsMultiValueClone(t *testing.T) {
 	// Test case to verify that Clone preserves multi-value parameters
 	u := &URL{}
-	
+
 	// Create url.Values with multiple values for the same key
 	params := url.Values{}
 	params.Add("tag", "foo")
 	params.Add("tag", "bar")
 	params.Add("tag", "baz")
-	
+
 	// Set the parameters using the fixed implementation
 	u.SetParams(params)
-	
+
 	// Verify the original URL has all values
 	assert.Equal(t, "foo,bar,baz", u.GetParam("tag", ""))
-	
+
 	// Clone the URL
 	cloned := u.Clone()
-	
+
 	// The cloned URL should also have all values
 	// But RangeParams only returns the first value, so this might fail
 	assert.Equal(t, "foo,bar,baz", cloned.GetParam("tag", ""))
