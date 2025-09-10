@@ -742,8 +742,20 @@ func (c *URL) GetMethodParamBool(method string, key string, d bool) bool {
 // 2. it's not thread safe
 // 3. think twice when you want to invoke this method
 func (c *URL) SetParams(m url.Values) {
-	for k := range m {
-		c.SetParam(k, m.Get(k))
+	for k, vs := range m {
+		if len(vs) == 0 {
+			continue
+		}
+		// Filter out empty values and join non-empty values with comma separator
+		var nonEmptyValues []string
+		for _, v := range vs {
+			if v != "" {
+				nonEmptyValues = append(nonEmptyValues, v)
+			}
+		}
+		if len(nonEmptyValues) > 0 {
+			c.SetParam(k, strings.Join(nonEmptyValues, ","))
+		}
 	}
 }
 
