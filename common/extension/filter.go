@@ -58,3 +58,23 @@ func GetRejectedExecutionHandler(name string) (filter.RejectedExecutionHandler, 
 	}
 	return creator(), nil
 }
+
+// UnregisterFilter removes the filter extension with @name
+// This helps prevent memory leaks in dynamic extension scenarios
+func UnregisterFilter(name string) {
+	delete(filters, name)
+}
+
+// UnregisterRejectedExecutionHandler removes the RejectedExecutionHandler with @name
+func UnregisterRejectedExecutionHandler(name string) {
+	delete(rejectedExecutionHandler, name)
+}
+
+// GetAllFilterNames returns all registered filter names
+func GetAllFilterNames() []string {
+	names := make([]string, 0, len(filters))
+	for name := range filters {
+		names = append(names, name)
+	}
+	return names
+}
