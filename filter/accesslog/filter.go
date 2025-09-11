@@ -61,6 +61,9 @@ const (
 var (
 	once            sync.Once
 	accessLogFilter *Filter
+	shutdownOnce    sync.Once
+	shutdownCtx     context.Context
+	shutdownCancel  context.CancelFunc
 )
 
 func init() {
@@ -84,16 +87,45 @@ func init() {
  * AccessLogFilter is designed to be singleton
  */
 type Filter struct {
-	logChan chan Data
+	logChan   chan Data
+	fileCache map[string]*os.File
+	fileLock  sync.RWMutex
 }
 
 func newFilter() filter.Filter {
 	if accessLogFilter == nil {
 		once.Do(func() {
-			accessLogFilter = &Filter{logChan: make(chan Data, LogMaxBuffer)}
+			shutdownCtx, shutdownCancel = context.WithCancel(context.Background())
+			accessLogFilter = &Filter{
+				logChan:   make(chan Data, LogMaxBuffer),
+				fileCache: make(map[string]*os.File),
+			}
 			go func() {
-				for accessLogData := range accessLogFilter.logChan {
-					accessLogFilter.writeLogToFile(accessLogData)
+				defer func() {
+					// Drain remaining log data on shutdown
+					for {
+						select {
+						case accessLogData, ok := <-accessLogFilter.logChan:
+							if !ok {
+								return
+							}
+							accessLogFilter.writeLogToFile(accessLogData)
+						default:
+							return
+						}
+					}
+				}()
+
+				for {
+					select {
+					case accessLogData, ok := <-accessLogFilter.logChan:
+						if !ok {
+							return
+						}
+						accessLogFilter.writeLogToFile(accessLogData)
+					case <-shutdownCtx.Done():
+						return
+					}
 				}
 			}()
 		})
@@ -190,7 +222,7 @@ func (f *Filter) writeLogToFile(data Data) {
 		return
 	}
 
-	logFile, err := f.openLogFile(accessLog)
+	logFile, err := f.getOrOpenLogFile(accessLog)
 	if err != nil {
 		logger.Warnf("Can not open the access log file: %s, %v", accessLog, err)
 		return
@@ -204,12 +236,52 @@ func (f *Filter) writeLogToFile(data Data) {
 	}
 }
 
+// getOrOpenLogFile gets or opens the log file with proper caching and handle management
+func (f *Filter) getOrOpenLogFile(accessLog string) (*os.File, error) {
+	f.fileLock.RLock()
+	if logFile, exists := f.fileCache[accessLog]; exists {
+		// Check if we need to rotate the log
+		now := time.Now().Format(FileDateFormat)
+		if fileInfo, err := logFile.Stat(); err == nil {
+			last := fileInfo.ModTime().Format(FileDateFormat)
+			if now == last {
+				f.fileLock.RUnlock()
+				return logFile, nil
+			}
+		}
+	}
+	f.fileLock.RUnlock()
+
+	// Need to open new file or rotate existing one
+	f.fileLock.Lock()
+	defer f.fileLock.Unlock()
+
+	// Double-check after acquiring write lock
+	if logFile, exists := f.fileCache[accessLog]; exists {
+		now := time.Now().Format(FileDateFormat)
+		if fileInfo, err := logFile.Stat(); err == nil {
+			last := fileInfo.ModTime().Format(FileDateFormat)
+			if now == last {
+				return logFile, nil
+			}
+		}
+		// Close the old file before rotation
+		logFile.Close()
+		delete(f.fileCache, accessLog)
+	}
+
+	logFile, err := f.openLogFile(accessLog)
+	if err != nil {
+		return nil, err
+	}
+
+	f.fileCache[accessLog] = logFile
+	return logFile, nil
+}
+
 // openLogFile will open the log file with append mode.
 // If the file is not found, it will create the file.
 // Actually, the accessLog is the filename
-// You may find out that, once we want to write access log into log file,
-// we open the file again and again.
-// It needs to be optimized.
 func (f *Filter) openLogFile(accessLog string) (*os.File, error) {
 	logFile, err := os.OpenFile(accessLog, os.O_CREATE|os.O_APPEND|os.O_RDWR, LogFileMode)
 	if err != nil {
@@ -286,4 +358,28 @@ func (d *Data) toLogMessage() string {
 		builder.WriteString(d.data[Arguments])
 	}
 	return builder.String()
+}
+
+// Shutdown gracefully shuts down the access log filter
+// This should be called during application shutdown to prevent goroutine leaks
+func Shutdown() {
+	shutdownOnce.Do(func() {
+		if shutdownCancel != nil {
+			shutdownCancel()
+		}
+		if accessLogFilter != nil {
+			if accessLogFilter.logChan != nil {
+				close(accessLogFilter.logChan)
+			}
+			// Close all cached file handles
+			accessLogFilter.fileLock.Lock()
+			for path, file := range accessLogFilter.fileCache {
+				if err := file.Close(); err != nil {
+					logger.Warnf("Error closing access log file %s: %v", path, err)
+				}
+				delete(accessLogFilter.fileCache, path)
+			}
+			accessLogFilter.fileLock.Unlock()
+		}
+	})
 }
