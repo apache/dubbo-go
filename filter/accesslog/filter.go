@@ -85,8 +85,8 @@ func init() {
  */
 type Filter struct {
 	logChan      chan Data
+	fileLock     sync.RWMutex // protects fileCache
 	fileCache    map[string]*os.File
-	fileLock     sync.RWMutex
 	ctx          context.Context
 	cancel       context.CancelFunc
 	shutdownOnce sync.Once
@@ -245,7 +245,7 @@ func (f *Filter) writeLogToFileWithTimeout(data Data, timeout time.Duration) {
 
 	select {
 	case <-done:
-		// Success
+		logger.Debugf("AccessLog successfully written for: %s", data.accessLog)
 	case <-time.After(timeout):
 		logger.Warnf("AccessLog writeLogToFile timeout for: %s", data.accessLog)
 	}
@@ -273,18 +273,24 @@ func (f *Filter) writeLogToFile(data Data) {
 	}
 }
 
+// needLogRotation checks if the log file needs rotation based on date
+func needLogRotation(logFile *os.File) bool {
+	now := time.Now().Format(FileDateFormat)
+	if fileInfo, err := logFile.Stat(); err == nil {
+		last := fileInfo.ModTime().Format(FileDateFormat)
+		return now != last
+	}
+	return true // If we can't stat the file, assume rotation is needed
+}
+
 // getOrOpenLogFile gets or opens the log file with proper caching and handle management
 func (f *Filter) getOrOpenLogFile(accessLog string) (*os.File, error) {
 	f.fileLock.RLock()
 	if logFile, exists := f.fileCache[accessLog]; exists {
 		// Check if we need to rotate the log
-		now := time.Now().Format(FileDateFormat)
-		if fileInfo, err := logFile.Stat(); err == nil {
-			last := fileInfo.ModTime().Format(FileDateFormat)
-			if now == last {
-				f.fileLock.RUnlock()
-				return logFile, nil
-			}
+		if !needLogRotation(logFile) {
+			f.fileLock.RUnlock()
+			return logFile, nil
 		}
 	}
 	f.fileLock.RUnlock()
@@ -295,15 +301,13 @@ func (f *Filter) getOrOpenLogFile(accessLog string) (*os.File, error) {
 
 	// Double-check after acquiring write lock
 	if logFile, exists := f.fileCache[accessLog]; exists {
-		now := time.Now().Format(FileDateFormat)
-		if fileInfo, err := logFile.Stat(); err == nil {
-			last := fileInfo.ModTime().Format(FileDateFormat)
-			if now == last {
-				return logFile, nil
-			}
+		if !needLogRotation(logFile) {
+			return logFile, nil
 		}
 		// Close the old file before rotation
-		logFile.Close()
+		if err := logFile.Close(); err != nil {
+			logger.Warnf("Failed to close old log file %s: %v", accessLog, err)
+		}
 		delete(f.fileCache, accessLog)
 	}
 
