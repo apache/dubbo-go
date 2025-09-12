@@ -38,15 +38,16 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
-// TestAccessLogFilterGoroutineShutdown tests that the goroutine is properly shut down
-func TestAccessLogFilterGoroutineShutdown(t *testing.T) {
-	// Reset global state
+// resetGlobalState resets the global state for testing
+func resetGlobalState() {
 	once.Do(func() {}) // Trigger once
 	accessLogFilter = nil
-	shutdownCancel = nil
-	shutdownCtx = nil
-	shutdownOnce = sync.Once{}
 	once = sync.Once{}
+}
+
+// TestAccessLogFilterGoroutineShutdown tests that the goroutine is properly shut down
+func TestAccessLogFilterGoroutineShutdown(t *testing.T) {
+	resetGlobalState()
 
 	// Count goroutines before
 	initialGoroutines := runtime.NumGoroutine()
@@ -78,13 +79,7 @@ func TestAccessLogFilterGoroutineShutdown(t *testing.T) {
 
 // TestAccessLogFilterFileHandleManagement tests proper file handle management
 func TestAccessLogFilterFileHandleManagement(t *testing.T) {
-	// Reset global state
-	once.Do(func() {}) // Trigger once
-	accessLogFilter = nil
-	shutdownCancel = nil
-	shutdownCtx = nil
-	shutdownOnce = sync.Once{}
-	once = sync.Once{}
+	resetGlobalState()
 
 	tempFile := "/tmp/test_access_log.log"
 	defer os.Remove(tempFile)
