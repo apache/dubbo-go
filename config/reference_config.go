@@ -270,10 +270,15 @@ func (rc *ReferenceConfig) Refer(srv any) {
 			}
 			cluster, err := extension.GetCluster(hitClu)
 			if err != nil {
-				panic(err)
-			} else {
-				rc.invoker = cluster.Join(static.NewDirectory(invokers))
+				logger.Errorf("reference config get cluster %s error, error message is %s, will skip this invoker",
+					hitClu, err.Error())
+				return
 			}
+			if cluster == nil {
+				logger.Errorf("reference config cluster is nil for key %s, will skip this invoker", hitClu)
+				return
+			}
+			rc.invoker = cluster.Join(static.NewDirectory(invokers))
 		}
 	} else {
 		var hitClu string
@@ -289,10 +294,15 @@ func (rc *ReferenceConfig) Refer(srv any) {
 		}
 		cluster, err := extension.GetCluster(hitClu)
 		if err != nil {
-			panic(err)
-		} else {
-			rc.invoker = cluster.Join(static.NewDirectory(invokers))
+			logger.Errorf("reference config get cluster %s error, error message is %s, will skip this invoker",
+				hitClu, err.Error())
+			return
 		}
+		if cluster == nil {
+			logger.Errorf("reference config cluster is nil for key %s, will skip this invoker", hitClu)
+			return
+		}
+		rc.invoker = cluster.Join(static.NewDirectory(invokers))
 	}
 
 	// create proxy
