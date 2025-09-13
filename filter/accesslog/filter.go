@@ -424,12 +424,12 @@ func (f *Filter) shutdown() {
 
 		// Close all cached file handles
 		f.fileLock.Lock()
+		defer f.fileLock.Unlock()
 		for path, file := range f.fileCache {
 			if err := file.Close(); err != nil {
 				logger.Warnf("Error closing access log file %s: %v", path, err)
 			}
 			delete(f.fileCache, path)
 		}
-		f.fileLock.Unlock()
 	})
 }
