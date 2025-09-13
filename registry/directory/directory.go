@@ -367,7 +367,7 @@ func (dir *RegistryDirectory) toGroupInvokers() []protocolbase.Invoker {
 			clusterKey := dir.GetURL().SubURL.GetParam(constant.ClusterKey, constant.DefaultCluster)
 			cluster, err := extension.GetCluster(clusterKey)
 			if err != nil {
-				logger.Errorf("directory get cluster %s error, error message is %s, will skip this group",
+				logger.Errorf("directory get cluster %s error, error message is %w, will skip this group",
 					clusterKey, err.Error())
 				continue
 			}
