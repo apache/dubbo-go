@@ -22,6 +22,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
 import (
@@ -122,10 +124,10 @@ func filterHideKey(url *common.URL) *common.URL {
 	return url.CloneExceptParams(removeSet)
 }
 
-func (proto *registryProtocol) initConfigurationListeners() {
+func (proto *registryProtocol) initConfigurationListeners(url *common.URL) {
 	proto.overrideListeners = &sync.Map{}
 	proto.serviceConfigurationListeners = &sync.Map{}
-	proto.providerConfigurationListener = newProviderConfigurationListener(proto.overrideListeners)
+	proto.providerConfigurationListener = newProviderConfigurationListener(proto.overrideListeners, url)
 }
 
 // nolint
@@ -178,11 +180,24 @@ func (proto *registryProtocol) Refer(url *common.URL) base.Invoker {
 
 // Export provider service to registry center
 func (proto *registryProtocol) Export(originInvoker base.Invoker) base.Exporter {
-	proto.once.Do(func() {
-		proto.initConfigurationListeners()
-	})
 	registryUrl := getRegistryUrl(originInvoker)
 	providerUrl := getProviderUrl(originInvoker)
+
+	if _, ok := registryUrl.GetAttribute(constant.ShutdownConfigPrefix); !ok {
+		if config.GetShutDown() == nil {
+			registryUrl.SetAttribute(constant.ShutdownConfigPrefix, global.DefaultShutdownConfig())
+		}
+	}
+
+	if _, ok := providerUrl.GetAttribute(constant.ApplicationKey); !ok {
+		if config.GetShutDown() == nil {
+			providerUrl.SetAttribute(constant.ApplicationKey, global.DefaultApplicationConfig())
+		}
+	}
+
+	proto.once.Do(func() {
+		proto.initConfigurationListeners(providerUrl)
+	})
 
 	overriderUrl := getSubscribedOverrideUrl(providerUrl)
 	// Deprecated! subscribe to override rules in 2.6.x or before.
@@ -281,6 +296,23 @@ func registerServiceMap(invoker base.Invoker) error {
 		s := "reExport can not re register ServiceMap. Error message is " + err.Error()
 		return perrors.New(s)
 	}
+
+	if providerConfRaw, ok := providerUrl.GetAttribute(constant.ProviderConfigPrefix); ok {
+		if providerConfig, ok := providerConfRaw.(*global.ProviderConfig); ok {
+			if serviceConfig, ok := providerConfig.Services[id]; ok {
+				_, err := common.ServiceMap.Register(serviceConfig.Interface,
+					// FIXME
+					serviceConfig.ProtocolIDs[0], serviceConfig.Group,
+					serviceConfig.Version, rpcService)
+
+				if err != nil {
+					s := "reExport can not re register ServiceMap. Error message is " + err.Error()
+					return perrors.New(s)
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -414,6 +446,28 @@ func (proto *registryProtocol) Destroy() {
 		}
 		// TODO unsubscribeUrl
 
+		if shutdownConfRaw, ok := exporter.registerUrl.GetAttribute(constant.ShutdownConfigPrefix); ok {
+			if shutdownConfig, ok := shutdownConfRaw.(*config.ShutdownConfig); ok {
+				go func() {
+					stepTimeout, err := time.ParseDuration(shutdownConfig.StepTimeout)
+					if err != nil {
+						stepTimeout, _ = time.ParseDuration(global.DefaultShutdownConfig().StepTimeout)
+						logger.Errorf("Invalid StepTimeout in URL attribute, using default: %v", err)
+					}
+
+					consumerUpdateWaitTime, err := time.ParseDuration(shutdownConfig.ConsumerUpdateWaitTime)
+					if err != nil {
+						consumerUpdateWaitTime, _ = time.ParseDuration(global.DefaultShutdownConfig().ConsumerUpdateWaitTime)
+						logger.Errorf("Invalid ConsumerUpdateWaitTime in URL attribute, using default: %v", err)
+					}
+					<-time.After(stepTimeout + consumerUpdateWaitTime)
+					exporter.UnExport()
+					proto.bounds.Delete(key)
+				}()
+				return true
+			}
+		}
+
 		// close all protocol server after consumerUpdateWait + stepTimeout(max time wait during
 		// waitAndAcceptNewRequests procedure)
 		go func() {
@@ -511,7 +565,7 @@ type providerConfigurationListener struct {
 	overrideListeners *sync.Map
 }
 
-func newProviderConfigurationListener(overrideListeners *sync.Map) *providerConfigurationListener {
+func newProviderConfigurationListener(overrideListeners *sync.Map, url *common.URL) *providerConfigurationListener {
 	listener := &providerConfigurationListener{}
 	listener.overrideListeners = overrideListeners
 	listener.InitWith(
@@ -519,6 +573,16 @@ func newProviderConfigurationListener(overrideListeners *sync.Map) *providerConf
 		listener,
 		extension.GetDefaultConfiguratorFunc(),
 	)
+
+	if applicationConfRaw, ok := url.GetAttribute(constant.ApplicationKey); ok {
+		if applicationConfig, ok := applicationConfRaw.(*global.ApplicationConfig); ok {
+			listener.InitWith(
+				applicationConfig.Name+constant.ConfiguratorSuffix,
+				listener,
+				extension.GetDefaultConfiguratorFunc(),
+			)
+		}
+	}
 	return listener
 }
 
