@@ -294,7 +294,7 @@ func (rc *ReferenceConfig) Refer(srv any) {
 		}
 		cluster, err := extension.GetCluster(hitClu)
 		if err != nil {
-			logger.Errorf("reference config get cluster %s error, error message is %s, will skip this invoker",
+			logger.Errorf("reference config get cluster %s error, error message is %w, will skip this invoker",
 				hitClu, err.Error())
 			return
 		}
