@@ -20,6 +20,8 @@ package protocol
 import (
 	"testing"
 	"time"
+
+	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
 import (
@@ -34,7 +36,6 @@ import (
 	common_cfg "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/config_center/configurator"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
@@ -44,13 +45,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
-func init() {
-	config.SetRootConfig(config.RootConfig{
-		Application: &config.ApplicationConfig{Name: "test-application"},
-		Shutdown:    &config.ShutdownConfig{StepTimeout: "0s"},
-	})
-}
-
 func referNormal(t *testing.T, regProtocol *registryProtocol) {
 	extension.SetProtocol("registry", GetProtocol)
 	extension.SetRegistry("mock", registry.NewMockRegistry)
@@ -58,7 +52,19 @@ func referNormal(t *testing.T, regProtocol *registryProtocol) {
 	extension.SetCluster("mock", cluster.NewMockCluster)
 	extension.SetDirectory("mock", directory.NewRegistryDirectory)
 
-	url, _ := common.NewURL("mock://127.0.0.1:1111")
+	shutdownConfig := &global.ShutdownConfig{
+		StepTimeout:            "4s",
+		ConsumerUpdateWaitTime: "4s",
+	}
+
+	applicationConfig := &global.ApplicationConfig{
+		Name: "test-application",
+	}
+
+	url, _ := common.NewURL("mock://127.0.0.1:1111",
+		common.WithAttribute(constant.ShutdownConfigPrefix, shutdownConfig),
+		common.WithAttribute(constant.ApplicationKey, applicationConfig),
+	)
 	suburl, _ := common.NewURL(
 		"dubbo://127.0.0.1:20000//",
 		common.WithParamsValue(constant.ClusterKey, "mock"),
@@ -72,9 +78,6 @@ func referNormal(t *testing.T, regProtocol *registryProtocol) {
 }
 
 func TestRefer(t *testing.T) {
-	config.SetRootConfig(config.RootConfig{
-		Application: &config.ApplicationConfig{Name: "test-application"},
-	})
 	regProtocol := newRegistryProtocol()
 	referNormal(t, regProtocol)
 }
@@ -124,7 +127,20 @@ func exporterNormal(t *testing.T, regProtocol *registryProtocol) *common.URL {
 	extension.SetProtocol("registry", GetProtocol)
 	extension.SetRegistry("mock", registry.NewMockRegistry)
 	extension.SetProtocol(protocolwrapper.FILTER, protocolwrapper.NewMockProtocolFilter)
-	url, _ := common.NewURL("mock://127.0.0.1:1111")
+
+	shutdownConfig := &global.ShutdownConfig{
+		StepTimeout:            "4s",
+		ConsumerUpdateWaitTime: "4s",
+	}
+
+	applicationConfig := &global.ApplicationConfig{
+		Name: "test-application",
+	}
+
+	url, _ := common.NewURL("mock://127.0.0.1:1111",
+		common.WithAttribute(constant.ShutdownConfigPrefix, shutdownConfig),
+		common.WithAttribute(constant.ApplicationKey, applicationConfig),
+	)
 	suburl, _ := common.NewURL(
 		"dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService",
 		common.WithParamsValue(constant.ClusterKey, "mock"),
