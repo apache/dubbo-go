@@ -14,7 +14,7 @@ protoc --go-triple_out=useOldVersion=true[,other options...]:.
 
 Before using `protoc-gen-go-triple`, make sure you have the following prerequisites installed on your system:
 
-- Go (version 1.17 or higher)
+- Go (version 1.23 or higher)
 - Protocol Buffers (version 3.0 or higher)
 
 ## Installation
