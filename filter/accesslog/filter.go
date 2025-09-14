@@ -102,7 +102,7 @@ func newFilter() filter.Filter {
 				ctx:       ctx,
 				cancel:    cancel,
 			}
-			accessLogFilter.start()
+			go accessLogFilter.processLogs()
 		})
 	}
 	return accessLogFilter
@@ -187,11 +187,6 @@ func (f *Filter) buildAccessLogData(_ base.Invoker, invocation base.Invocation) 
 // OnResponse do nothing
 func (f *Filter) OnResponse(_ context.Context, result result.Result, _ base.Invoker, _ base.Invocation) result.Result {
 	return result
-}
-
-// start initializes and starts the background goroutine for processing logs
-func (f *Filter) start() {
-	go f.processLogs()
 }
 
 // processLogs runs in a background goroutine to process log data
