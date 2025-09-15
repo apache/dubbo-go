@@ -89,6 +89,7 @@ func (n *nacosServiceDiscovery) Destroy() error {
 
 	// Clean up listeners to prevent potential leaks
 	n.listenerLock.Lock()
+	defer n.listenerLock.Unlock()
 	// Unsubscribe from all services to stop callbacks
 	for serviceName := range n.instanceListenerMap {
 		err := n.namingClient.Client().Unsubscribe(&vo.SubscribeParam{
@@ -101,7 +102,6 @@ func (n *nacosServiceDiscovery) Destroy() error {
 	}
 	// Clear the listener map
 	n.instanceListenerMap = make(map[string]*gxset.HashSet)
-	n.listenerLock.Unlock()
 
 	n.namingClient.Close()
 	return nil
