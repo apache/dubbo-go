@@ -213,7 +213,7 @@ func (rc *ReferenceConfig) Refer(srv any) {
 		for _, urlStr := range urlStrings {
 			serviceURL, err := common.NewURL(urlStr)
 			if err != nil {
-				panic(fmt.Sprintf("url configuration error,  please check your configuration, user specified URL %v refer error, error message is %v ", urlStr, err.Error()))
+				panic(fmt.Sprintf("url configuration error,  please check your configuration, user specified URL %v refer error, error message is %v ", urlStr, err))
 			}
 			if serviceURL.Protocol == constant.RegistryProtocol { // serviceURL in this branch is a registry protocol
 				serviceURL.SubURL = cfgURL
@@ -271,7 +271,7 @@ func (rc *ReferenceConfig) Refer(srv any) {
 			cluster, err := extension.GetCluster(hitClu)
 			if err != nil {
 				logger.Errorf("reference config get cluster %s error, error message is %w, will skip this invoker",
-					hitClu, err.Error())
+					hitClu, err)
 				return
 			}
 			if cluster == nil {
@@ -295,7 +295,7 @@ func (rc *ReferenceConfig) Refer(srv any) {
 		cluster, err := extension.GetCluster(hitClu)
 		if err != nil {
 			logger.Errorf("reference config get cluster %s error, error message is %w, will skip this invoker",
-				hitClu, err.Error())
+				hitClu, err)
 			return
 		}
 		if cluster == nil {
