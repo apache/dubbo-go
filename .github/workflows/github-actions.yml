@@ -4,10 +4,10 @@ on:
   push:
     branches:
       - main
-      - 'release-*'
-      - 'feature-*'
+      - "release-*"
+      - "feature-*"
   pull_request:
-    branches: "*"
+    branches: ["*"]
 
 permissions:
   contents: read
@@ -34,48 +34,48 @@ jobs:
       # If you want to matrix build , you can append the following list.
       matrix:
         go_version:
-          - '1.23'
+          - "1.23"
         os:
           - ubuntu-latest
 
     steps:
-    - name: Setup Go ${{ matrix.go_version }}
-      uses: actions/setup-go@v5
-      with:
-        go-version: ${{ matrix.go_version }}
+      - name: Setup Go ${{ matrix.go_version }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go_version }}
 
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Cache dependencies
-      # ref: https://github.com/actions/cache/blob/main/examples.md#go---module
-      uses: actions/cache@v4
-      with:
-        # Cache, works only on Linux
-        path: |
-          ~/.cache/go-build
-          ~/go/pkg/mod
-        # Cache key
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        # An ordered list of keys to use for restoring the cache if no cache hit occurred for key
-        restore-keys: |
-          ${{ runner.os }}-go-
+      - name: Cache dependencies
+        # ref: https://github.com/actions/cache/blob/main/examples.md#go---module
+        uses: actions/cache@v4
+        with:
+          # Cache, works only on Linux
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          # Cache key
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          # An ordered list of keys to use for restoring the cache if no cache hit occurred for key
+          restore-keys: |
+            ${{ runner.os }}-go-
 
-    - name: Check Code Format
-      run: make fmt && git status && [[ -z `git status -s` ]]
+      - name: Check Code Format
+        run: make fmt && git status && [[ -z `git status -s` ]]
 
-    - name: Unit Test
-      run: make test
+      - name: Unit Test
+        run: make test
 
-    - name: Lint
-      run: make lint
+      - name: Lint
+        run: make lint
 
-    - name: Codecov
-      uses: codecov/codecov-action@v5 #NOSONAR
-      with:
-        fail_ci_if_error: true # optional (default = false)
-        token: ${{ secrets.CODECOV_TOKEN }}
-        verbose: true # optional (default = false)
+      - name: Codecov
+        uses: codecov/codecov-action@v5 #NOSONAR
+        with:
+          fail_ci_if_error: true # optional (default = false)
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true # optional (default = false)
 
   Integration-Test:
     name: Integration Test (${{ matrix.os }} - Go ${{ matrix.go_version }})
@@ -84,40 +84,40 @@ jobs:
       # If you want to matrix build , you can append the following list.
       matrix:
         go_version:
-          - '1.23'
+          - "1.23"
         os:
           - ubuntu-latest
 
     steps:
-    - name: Setup Go ${{ matrix.go_version }}
-      uses: actions/setup-go@v5
-      with:
-        go-version: ${{ matrix.go_version }}
+      - name: Setup Go ${{ matrix.go_version }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go_version }}
 
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Cache dependencies
-      # ref: https://github.com/actions/cache/blob/main/examples.md#go---module
-      uses: actions/cache@v4
-      with:
-        # Cache, works only on Linux
-        path: |
-          ~/.cache/go-build
-          ~/go/pkg/mod
-        # Cache key
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        # An ordered list of keys to use for restoring the cache if no cache hit occurred for key
-        restore-keys: |
-          ${{ runner.os }}-go-
+      - name: Cache dependencies
+        # ref: https://github.com/actions/cache/blob/main/examples.md#go---module
+        uses: actions/cache@v4
+        with:
+          # Cache, works only on Linux
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          # Cache key
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          # An ordered list of keys to use for restoring the cache if no cache hit occurred for key
+          restore-keys: |
+            ${{ runner.os }}-go-
 
-    - name: Integration Test
-      run: |
-        if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
-            ./integrate_test.sh ${{github.event.pull_request.head.repo.full_name}} ${{github.event.pull_request.head.sha}} ${{github.base_ref}}
-        elif [ "$GITHUB_EVENT_NAME" == "push" ]; then
-            ./integrate_test.sh $GITHUB_REPOSITORY $GITHUB_SHA $GITHUB_REF_NAME
-        else
-          echo "$GITHUB_EVENT_NAME is an unsupported event type."
-          exit 1
-        fi
+      - name: Integration Test
+        run: |
+          if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
+              ./integrate_test.sh ${{github.event.pull_request.head.repo.full_name}} ${{github.event.pull_request.head.sha}} ${{github.base_ref}}
+          elif [ "$GITHUB_EVENT_NAME" == "push" ]; then
+              ./integrate_test.sh $GITHUB_REPOSITORY $GITHUB_SHA $GITHUB_REF_NAME
+          else
+            echo "$GITHUB_EVENT_NAME is an unsupported event type."
+            exit 1
+          fi
