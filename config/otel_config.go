@@ -43,6 +43,7 @@ type OtelTraceConfig struct {
 	Propagator  string  `default:"w3c" yaml:"propagator" json:"propagator,omitempty" property:"propagator"`       // one of w3c(standard), b3(for zipkin),
 	SampleMode  string  `default:"ratio" yaml:"sample-mode" json:"sample-mode,omitempty" property:"sample-mode"`  // one of always, never, ratio
 	SampleRatio float64 `default:"0.5" yaml:"sample-ratio" json:"sample-ratio,omitempty" property:"sample-ratio"` // [0.0, 1.0]
+	Insecure    bool    `default:"false" yaml:"insecure" json:"insecure,omitempty" property:"insecure"`
 }
 
 func (oc *OtelConfig) Init(appConfig *ApplicationConfig) error {
@@ -95,6 +96,7 @@ func (c *OtelTraceConfig) toTraceProviderConfig(a *ApplicationConfig) *trace.Exp
 		ServiceNamespace: a.Organization,
 		ServiceName:      a.Name,
 		ServiceVersion:   a.Version,
+		Insecure:         c.Insecure,
 	}
 	return tpc
 }

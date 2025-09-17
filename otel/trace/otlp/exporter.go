@@ -57,7 +57,18 @@ func newHttpExporter(config *trace.ExporterConfig) (trace.Exporter, error) {
 	if httpInstance == nil {
 		initHttpOnce.Do(func() {
 			customFunc := func() (sdktrace.SpanExporter, error) {
-				client := otlptracehttp.NewClient(otlptracehttp.WithEndpoint(config.Endpoint))
+				var client otlptrace.Client
+				if config.Insecure {
+					client = otlptracehttp.NewClient(
+						otlptracehttp.WithEndpoint(config.Endpoint),
+						otlptracehttp.WithInsecure(),
+					)
+				} else {
+					client = otlptracehttp.NewClient(
+						otlptracehttp.WithEndpoint(config.Endpoint),
+					)
+				}
+
 				return otlptrace.New(context.Background(), client)
 			}
 
