@@ -44,6 +44,7 @@ type ExporterConfig struct {
 	ServiceNamespace string
 	ServiceName      string
 	ServiceVersion   string
+	Insecure         bool
 }
 
 type Exporter interface {
