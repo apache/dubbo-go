@@ -83,11 +83,26 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (director
 	}
 	logger.Debugf("new RegistryDirectory for service :%s.", url.Key())
 
+	// set application if not exist
 	if _, ok := url.GetAttribute(constant.ApplicationKey); !ok {
 		application := config.GetRootConfig().Application
 		if application == nil {
 			defaultAppConfig := global.DefaultApplicationConfig()
 			url.SetAttribute(constant.ApplicationKey, defaultAppConfig)
+		} else {
+			url.SetAttribute(constant.ApplicationKey, application)
+		}
+	}
+	// set registry if not exist
+	if _, ok := url.GetAttribute(constant.RegistryKey); !ok {
+		registries := config.GetRootConfig().Registries
+		if registries == nil {
+			defaultRegistryConfig := global.DefaultRegistryConfig()
+			url.SetAttribute(constant.RegistryKey, map[string]*global.RegistryConfig{
+				constant.DefaultKey: defaultRegistryConfig,
+			})
+		} else {
+			url.SetAttribute(constant.RegistryKey, registries)
 		}
 	}
 
