@@ -84,18 +84,25 @@ func init() {
  * AccessLogFilter is designed to be singleton
  */
 type Filter struct {
-	logChan chan Data
+	logChan      chan Data
+	fileLock     sync.RWMutex // protects fileCache
+	fileCache    map[string]*os.File
+	ctx          context.Context
+	cancel       context.CancelFunc
+	shutdownOnce sync.Once
 }
 
 func newFilter() filter.Filter {
 	if accessLogFilter == nil {
 		once.Do(func() {
-			accessLogFilter = &Filter{logChan: make(chan Data, LogMaxBuffer)}
-			go func() {
-				for accessLogData := range accessLogFilter.logChan {
-					accessLogFilter.writeLogToFile(accessLogData)
-				}
-			}()
+			ctx, cancel := context.WithCancel(context.Background())
+			accessLogFilter = &Filter{
+				logChan:   make(chan Data, LogMaxBuffer),
+				fileCache: make(map[string]*os.File),
+				ctx:       ctx,
+				cancel:    cancel,
+			}
+			go accessLogFilter.processLogs()
 		})
 	}
 	return accessLogFilter
@@ -182,6 +189,63 @@ func (f *Filter) OnResponse(_ context.Context, result result.Result, _ base.Invo
 	return result
 }
 
+// processLogs runs in a background goroutine to process log data
+func (f *Filter) processLogs() {
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Errorf("AccessLog processLogs panic: %v", r)
+		}
+		f.drainLogs()
+	}()
+
+	for {
+		select {
+		case accessLogData, ok := <-f.logChan:
+			if !ok {
+				return
+			}
+			f.writeLogToFileWithTimeout(accessLogData, 5*time.Second)
+		case <-f.ctx.Done():
+			return
+		}
+	}
+}
+
+// drainLogs drains remaining log data with timeout protection
+func (f *Filter) drainLogs() {
+	timeout := time.After(5 * time.Second)
+	for {
+		select {
+		case accessLogData, ok := <-f.logChan:
+			if !ok {
+				return
+			}
+			f.writeLogToFileWithTimeout(accessLogData, 1*time.Second)
+		case <-timeout:
+			logger.Warnf("AccessLog drain timeout, some logs may be lost")
+			return
+		default:
+			return
+		}
+	}
+}
+
+// writeLogToFileWithTimeout writes log with timeout protection
+func (f *Filter) writeLogToFileWithTimeout(data Data, timeout time.Duration) {
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		f.writeLogToFile(data)
+	}()
+
+	select {
+	case <-done:
+		logger.Debugf("AccessLog successfully written for: %s", data.accessLog)
+	case <-time.After(timeout):
+		logger.Warnf("AccessLog writeLogToFile timeout for: %s", data.accessLog)
+	}
+}
+
 // writeLogToFile actually write the logs into file
 func (f *Filter) writeLogToFile(data Data) {
 	accessLog := data.accessLog
@@ -190,7 +254,7 @@ func (f *Filter) writeLogToFile(data Data) {
 		return
 	}
 
-	logFile, err := f.openLogFile(accessLog)
+	logFile, err := f.getOrOpenLogFile(accessLog)
 	if err != nil {
 		logger.Warnf("Can not open the access log file: %s, %v", accessLog, err)
 		return
@@ -204,12 +268,56 @@ func (f *Filter) writeLogToFile(data Data) {
 	}
 }
 
+// needLogRotation checks if the log file needs rotation based on date
+func needLogRotation(logFile *os.File) bool {
+	now := time.Now().Format(FileDateFormat)
+	if fileInfo, err := logFile.Stat(); err == nil {
+		last := fileInfo.ModTime().Format(FileDateFormat)
+		return now != last
+	}
+	return true // If we can't stat the file, assume rotation is needed
+}
+
+// getOrOpenLogFile gets or opens the log file with proper caching and handle management
+func (f *Filter) getOrOpenLogFile(accessLog string) (*os.File, error) {
+	f.fileLock.RLock()
+	if logFile, exists := f.fileCache[accessLog]; exists {
+		// Check if we need to rotate the log
+		if !needLogRotation(logFile) {
+			f.fileLock.RUnlock()
+			return logFile, nil
+		}
+	}
+	f.fileLock.RUnlock()
+
+	// Need to open new file or rotate existing one
+	f.fileLock.Lock()
+	defer f.fileLock.Unlock()
+
+	// Double-check after acquiring write lock
+	if logFile, exists := f.fileCache[accessLog]; exists {
+		if !needLogRotation(logFile) {
+			return logFile, nil
+		}
+		// Close the old file before rotation
+		if err := logFile.Close(); err != nil {
+			logger.Warnf("Failed to close old log file %s: %v", accessLog, err)
+		}
+		delete(f.fileCache, accessLog)
+	}
+
+	logFile, err := f.openLogFile(accessLog)
+	if err != nil {
+		return nil, err
+	}
+
+	f.fileCache[accessLog] = logFile
+	return logFile, nil
+}
+
 // openLogFile will open the log file with append mode.
 // If the file is not found, it will create the file.
 // Actually, the accessLog is the filename
-// You may find out that, once we want to write access log into log file,
-// we open the file again and again.
-// It needs to be optimized.
 func (f *Filter) openLogFile(accessLog string) (*os.File, error) {
 	logFile, err := os.OpenFile(accessLog, os.O_CREATE|os.O_APPEND|os.O_RDWR, LogFileMode)
 	if err != nil {
@@ -286,4 +394,37 @@ func (d *Data) toLogMessage() string {
 		builder.WriteString(d.data[Arguments])
 	}
 	return builder.String()
+}
+
+// Shutdown gracefully shuts down the access log filter
+// This should be called during application shutdown to prevent goroutine leaks
+func Shutdown() {
+	if accessLogFilter != nil {
+		accessLogFilter.shutdown()
+	}
+}
+
+// shutdown gracefully shuts down this filter instance
+func (f *Filter) shutdown() {
+	f.shutdownOnce.Do(func() {
+		// Cancel the context to signal goroutine to stop
+		if f.cancel != nil {
+			f.cancel()
+		}
+
+		// Close the channel to stop accepting new logs
+		if f.logChan != nil {
+			close(f.logChan)
+		}
+
+		// Close all cached file handles
+		f.fileLock.Lock()
+		defer f.fileLock.Unlock()
+		for path, file := range f.fileCache {
+			if err := file.Close(); err != nil {
+				logger.Warnf("Error closing access log file %s: %v", path, err)
+			}
+			delete(f.fileCache, path)
+		}
+	})
 }

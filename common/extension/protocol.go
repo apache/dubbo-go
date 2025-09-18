@@ -35,3 +35,18 @@ func GetProtocol(name string) base.Protocol {
 	}
 	return protocols[name]()
 }
+
+// UnregisterProtocol removes the protocol extension with @name
+// This helps prevent memory leaks in dynamic extension scenarios
+func UnregisterProtocol(name string) {
+	delete(protocols, name)
+}
+
+// GetAllProtocolNames returns all registered protocol names
+func GetAllProtocolNames() []string {
+	names := make([]string, 0, len(protocols))
+	for name := range protocols {
+		names = append(names, name)
+	}
+	return names
+}

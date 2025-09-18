@@ -50,8 +50,8 @@ func TestFilter_Invoke_Not_Config(t *testing.T) {
 	attach := make(map[string]any, 10)
 	inv := invocation.NewRPCInvocation("MethodName", []any{"OK", "Hello"}, attach)
 
-	accessLogFilter := &Filter{}
-	invokeResult := accessLogFilter.Invoke(context.Background(), invoker, inv)
+	filter := &Filter{}
+	invokeResult := filter.Invoke(context.Background(), invoker, inv)
 	assert.Nil(t, invokeResult.Error())
 }
 
@@ -71,14 +71,14 @@ func TestFilterInvokeDefaultConfig(t *testing.T) {
 	attach[constant.GroupKey] = "MyGroup"
 	inv := invocation.NewRPCInvocation("MethodName", []any{"OK", "Hello"}, attach)
 
-	accessLogFilter := &Filter{}
-	invokeResult := accessLogFilter.Invoke(context.Background(), invoker, inv)
+	filter := &Filter{}
+	invokeResult := filter.Invoke(context.Background(), invoker, inv)
 	assert.Nil(t, invokeResult.Error())
 }
 
 func TestFilterOnResponse(t *testing.T) {
 	rpcResult := &result.RPCResult{}
-	accessLogFilter := &Filter{}
-	response := accessLogFilter.OnResponse(context.TODO(), rpcResult, nil, nil)
+	filter := &Filter{}
+	response := filter.OnResponse(context.TODO(), rpcResult, nil, nil)
 	assert.Equal(t, rpcResult, response)
 }
