@@ -139,7 +139,11 @@ func (s *Server) genSvcOpts(handler any, opts ...ServiceOption) (*ServiceOptions
 			)
 			logger.Infof("Injected options from provider.services for %s", interfaceName)
 		} else {
-			logger.Warnf("No matching service config found for [%s]", interfaceName)
+			// Only warn if there are actually services configured but none match
+			// This avoids unnecessary warnings when using new server API without config files
+			if len(proCfg.Services) > 0 {
+				logger.Warnf("No matching service config found for [%s]", interfaceName)
+			}
 		}
 	}
 	// options passed by users have higher priority
