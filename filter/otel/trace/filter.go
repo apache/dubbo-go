@@ -19,6 +19,7 @@ package trace
 
 import (
 	"context"
+	"dubbo.apache.org/dubbo-go/v3/filter"
 )
 
 import (
@@ -26,7 +27,6 @@ import (
 	"go.opentelemetry.io/otel/baggage"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/sdk"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -34,7 +34,6 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
@@ -55,6 +54,8 @@ func init() {
 	})
 }
 
+var _ filter.Filter = (*otelServerFilter)(nil)
+
 type otelServerFilter struct {
 	Propagators    propagation.TextMapPropagator
 	TracerProvider trace.TracerProvider
@@ -70,8 +71,8 @@ func (f *otelServerFilter) Invoke(ctx context.Context, invoker base.Invoker, inv
 	ctx = baggage.ContextWithBaggage(ctx, bags)
 
 	tracer := f.TracerProvider.Tracer(
-		constant.OtelPackageName,
-		trace.WithInstrumentationVersion(sdk.Version()),
+		constant.TraceScopeName,
+		trace.WithInstrumentationVersion(constant.Version),
 	)
 
 	ctx, span := tracer.Start(
@@ -86,15 +87,17 @@ func (f *otelServerFilter) Invoke(ctx context.Context, invoker base.Invoker, inv
 	)
 	defer span.End()
 
-	result := invoker.Invoke(ctx, invocation)
+	res := invoker.Invoke(ctx, invocation)
 
-	if result.Error() != nil {
-		span.SetStatus(codes.Error, result.Error().Error())
+	if res.Error() != nil {
+		span.SetStatus(codes.Error, res.Error().Error())
 	} else {
 		span.SetStatus(codes.Ok, codes.Ok.String())
 	}
-	return result
+	return res
 }
+
+var _ filter.Filter = (*otelClientFilter)(nil)
 
 type otelClientFilter struct {
 	Propagators    propagation.TextMapPropagator
@@ -107,8 +110,8 @@ func (f *otelClientFilter) OnResponse(ctx context.Context, result result.Result,
 
 func (f *otelClientFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
 	tracer := f.TracerProvider.Tracer(
-		constant.OtelPackageName,
-		trace.WithInstrumentationVersion(sdk.Version()),
+		constant.TraceScopeName,
+		trace.WithInstrumentationVersion(constant.Version),
 	)
 
 	var span trace.Span
@@ -132,12 +135,12 @@ func (f *otelClientFilter) Invoke(ctx context.Context, invoker base.Invoker, inv
 	for k, v := range attachments {
 		invocation.SetAttachment(k, v)
 	}
-	result := invoker.Invoke(ctx, invocation)
+	res := invoker.Invoke(ctx, invocation)
 
-	if result.Error() != nil {
-		span.SetStatus(codes.Error, result.Error().Error())
+	if res.Error() != nil {
+		span.SetStatus(codes.Error, res.Error().Error())
 	} else {
 		span.SetStatus(codes.Ok, codes.Ok.String())
 	}
-	return result
+	return res
 }

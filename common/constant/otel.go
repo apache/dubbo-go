@@ -17,6 +17,5 @@
 
 package constant
 
-const (
-	OtelPackageName = "go.opentelemetry.io/otel"
-)
+// TraceScopeName is unique name of trace used for the filter
+const TraceScopeName = "dubbo.apache.org/dubbo-go/v3/filter/otel/trace"
