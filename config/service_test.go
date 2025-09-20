@@ -18,6 +18,7 @@
 package config
 
 import (
+	"context"
 	"testing"
 )
 
@@ -25,20 +26,34 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+type MockHelloService struct {
+}
+
+func (hs *MockHelloService) Say(ctx context.Context, name string) (string, error) {
+	return name, nil
+}
+func (hs *MockHelloService) Reference() string {
+	return "MockHelloService"
+}
+
+func (hs *MockHelloService) JavaClassName() string {
+	return "org.apache.dubbo.MockHelloService"
+}
+
 func TestGetConsumerService(t *testing.T) {
 
-	SetConsumerService(&HelloService{})
-	SetProviderService(&HelloService{})
+	SetConsumerService(&MockHelloService{})
+	SetProviderService(&MockHelloService{})
 
-	service := GetConsumerService("HelloService")
-	reference := service.(*HelloService).Reference()
+	service := GetConsumerService("MockHelloService")
+	reference := service.(*MockHelloService).Reference()
 
-	assert.Equal(t, reference, "HelloService")
+	assert.Equal(t, reference, "MockHelloService")
 
-	SetConsumerServiceByInterfaceName("org.apache.dubbo.HelloService", &HelloService{})
-	service = GetConsumerServiceByInterfaceName("org.apache.dubbo.HelloService")
-	reference = service.(*HelloService).Reference()
-	assert.Equal(t, reference, "HelloService")
+	SetConsumerServiceByInterfaceName("org.apache.dubbo.MockHelloService", &MockHelloService{})
+	service = GetConsumerServiceByInterfaceName("org.apache.dubbo.MockHelloService")
+	reference = service.(*MockHelloService).Reference()
+	assert.Equal(t, reference, "MockHelloService")
 
 	callback := GetCallback(reference)
 	assert.Nil(t, callback)

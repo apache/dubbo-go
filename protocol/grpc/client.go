@@ -139,8 +139,14 @@ func NewClient(url *common.URL) (*Client, error) {
 	}
 
 	key := url.GetParam(constant.InterfaceKey, "")
-	impl := config.GetConsumerServiceByInterfaceName(key)
-	invoker := getInvoker(impl, conn)
+	//TODO: Temporary compatibility with old APIs, can be removed later
+	consumerService := config.GetConsumerServiceByInterfaceName(key)
+	if rpcServiceRaw, ok := url.GetAttribute(constant.RpcServiceKey); ok {
+		if rpcService, ok := rpcServiceRaw.(common.RPCService); ok {
+			consumerService = rpcService
+		}
+	}
+	invoker := getInvoker(consumerService, conn)
 
 	return &Client{
 		ClientConn: conn,

@@ -80,7 +80,13 @@ func NewDubbo3Invoker(url *common.URL) (*DubboInvoker, error) {
 	// for triple pb serialization. The bean name from provider is the provider reference key,
 	// which can't locate the target consumer stub, so we use interface key..
 	interfaceKey := url.GetParam(constant.InterfaceKey, "")
+	//TODO: Temporary compatibility with old APIs, can be removed later
 	consumerService := config.GetConsumerServiceByInterfaceName(interfaceKey)
+	if rpcServiceRaw, ok := url.GetAttribute(constant.RpcServiceKey); ok {
+		if rpcService, ok := rpcServiceRaw.(common.RPCService); ok {
+			consumerService = rpcService
+		}
+	}
 
 	dubboSerializerType := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	triCodecType := tripleConstant.CodecType(dubboSerializerType)
