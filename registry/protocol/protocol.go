@@ -170,7 +170,14 @@ func (proto *registryProtocol) Refer(url *common.URL) base.Invoker {
 	clusterKey := serviceUrl.GetParam(constant.ClusterKey, constant.DefaultCluster)
 	cluster, err := extension.GetCluster(clusterKey)
 	if err != nil {
-		panic(err)
+		logger.Errorf("consumer service %v get cluster %s error, error message is %s, will return nil invoker!",
+			serviceUrl.String(), clusterKey, err.Error())
+		return nil
+	}
+	if cluster == nil {
+		logger.Errorf("consumer service %v cluster is nil for key %s, will return nil invoker!",
+			serviceUrl.String(), clusterKey)
+		return nil
 	}
 	invoker := cluster.Join(dic)
 	return invoker

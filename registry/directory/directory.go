@@ -153,8 +153,8 @@ func (dir *RegistryDirectory) Subscribe(url *common.URL) error {
 		urlToReg := getConsumerUrlToRegistry(url)
 		err := dir.registry.Register(urlToReg)
 		if err != nil {
-			logger.Errorf("consumer service %v register registry %v error, error message is %s",
-				url.String(), dir.registry.GetURL().String(), err.Error())
+			logger.Errorf("consumer service %v register registry %v error, error message is %v",
+				url.String(), dir.registry.GetURL().String(), err)
 		}
 
 		close(done)
@@ -367,7 +367,13 @@ func (dir *RegistryDirectory) toGroupInvokers() []protocolbase.Invoker {
 			clusterKey := dir.GetURL().SubURL.GetParam(constant.ClusterKey, constant.DefaultCluster)
 			cluster, err := extension.GetCluster(clusterKey)
 			if err != nil {
-				panic(err)
+				logger.Errorf("directory get cluster %s error, error message is %w, will skip this group",
+					clusterKey, err)
+				continue
+			}
+			if cluster == nil {
+				logger.Errorf("directory cluster is nil for key %s, will skip this group", clusterKey)
+				continue
 			}
 			err = staticDir.BuildRouterChain(invokers, dir.GetURL())
 			if err != nil {
@@ -506,14 +512,14 @@ func (dir *RegistryDirectory) Destroy() {
 		if dir.RegisteredUrl != nil {
 			err := dir.registry.UnRegister(dir.RegisteredUrl)
 			if err != nil {
-				logger.Warnf("Unregister consumer url failed, %s", dir.RegisteredUrl.String(), err)
+				logger.Warnf("Unregister consumer url failed, %s, error: %v", dir.RegisteredUrl.String(), err)
 			}
 		}
 
 		if dir.SubscribedUrl != nil {
 			err := dir.registry.UnSubscribe(dir.SubscribedUrl, dir)
 			if err != nil {
-				logger.Warnf("Unsubscribe consumer url failed, %s", dir.RegisteredUrl.String(), err)
+				logger.Warnf("Unsubscribe consumer url failed, %s, error: %v", dir.RegisteredUrl.String(), err)
 			}
 		}
 
@@ -647,8 +653,8 @@ func (dir *ServiceDiscoveryRegistryDirectory) Subscribe(url *common.URL) error {
 	urlToReg := getConsumerUrlToRegistry(url)
 	err := dir.registry.Register(urlToReg)
 	if err != nil {
-		logger.Errorf("consumer service %v register registry %v error, error message is %s",
-			url.String(), dir.registry.GetURL().String(), err.Error())
+		logger.Errorf("consumer service %v register registry %v error, error message is %v",
+			url.String(), dir.registry.GetURL().String(), err)
 		return err
 	}
 	return nil
