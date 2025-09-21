@@ -737,13 +737,24 @@ func (c *URL) GetMethodParamBool(method string, key string, d bool) bool {
 	return r
 }
 
-// SetParams will put all key-value pair into URL.
+// SetParams copies all key-value pairs into URL.
 // 1. if there already has same key, the value will be override
-// 2. it's not thread safe
+// 2. this method acquires a write lock and deep-copies the provided values to avoid data races
 // 3. think twice when you want to invoke this method
 func (c *URL) SetParams(m url.Values) {
-	for k := range m {
-		c.SetParam(k, m.Get(k))
+	c.paramsLock.Lock()
+	defer c.paramsLock.Unlock()
+	if c.params == nil {
+		c.params = url.Values{}
+	}
+	for k, vs := range m {
+		if len(vs) == 0 {
+			delete(c.params, k)
+			continue
+		}
+		copied := make([]string, len(vs))
+		copy(copied, vs)
+		c.params[k] = copied
 	}
 }
 

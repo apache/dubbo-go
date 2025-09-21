@@ -74,6 +74,8 @@ func (f *activeFilter) OnResponse(ctx context.Context, result result.Result, inv
 	if err != nil {
 		result.SetError(err)
 		logger.Errorf("parse dubbo_invoke_start_time to int64 failed")
+		// When err is not nil, use default elapsed value of 1
+		base.EndCount(invoker.GetURL(), inv.MethodName(), 1, false)
 		return result
 	}
 	elapsed := base.CurrentTimeMillis() - startTime

@@ -592,3 +592,38 @@ func TestNewURLWithMultiAddr(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183", u4.Location)
 }
+
+func TestURLSetParamsMultiValue(t *testing.T) {
+	// Test case to verify multi-value parameter handling
+	u := &URL{}
+
+	// Create url.Values with multiple values for the same key
+	params := url.Values{}
+	params.Add("tag", "foo")
+	params.Add("tag", "bar")
+	params.Add("tag", "baz")
+	params.Set("single", "value")
+
+	// Set the parameters using the fixed implementation
+	u.SetParams(params)
+
+	// The implementation should preserve all values (multi-values stored internally)
+	got := u.GetParams()["tag"]
+	assert.ElementsMatch(t, []string{"foo", "bar", "baz"}, got)
+	assert.Equal(t, "value", u.GetParam("single", ""))
+
+	// Test with empty values
+	params2 := url.Values{}
+	params2.Add("empty", "")
+	params2.Add("empty", "value")
+	params2.Add("only_empty", "")
+
+	u2 := &URL{}
+	u2.SetParams(params2)
+
+	// Empty value slots are preserved as provided by caller
+	got2 := u2.GetParams()["empty"]
+	assert.ElementsMatch(t, []string{"", "value"}, got2)
+	got3 := u2.GetParams()["only_empty"]
+	assert.ElementsMatch(t, []string{""}, got3)
+}

@@ -324,7 +324,7 @@ func (c mockClient) Subscribe(param *vo.SubscribeParam) error {
 }
 
 func (c mockClient) Unsubscribe(param *vo.SubscribeParam) error {
-	panic("implement me")
+	return nil
 }
 
 func (c mockClient) GetAllServicesInfo(param vo.GetAllServiceInfoParam) (model.ServiceList, error) {
