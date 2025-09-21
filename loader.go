@@ -24,36 +24,30 @@ import (
 	"runtime"
 	"strings"
 	"sync"
-)
 
-import (
 	"github.com/dubbogo/gost/log/logger"
+
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/constant/file"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	gr "github.com/dubbogo/gost/runtime"
-
 	"github.com/fsnotify/fsnotify"
-
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/json"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/providers/rawbytes"
-
 	"github.com/pkg/errors"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/constant/file"
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
-)
-
 var (
-	defaultActive   = "default"
-	instanceOptions = defaultInstanceOptions()
-	once            sync.Once
-	stopCh          = make(chan struct{})
-	watcherWg       sync.WaitGroup
-	stopOnce        sync.Once
+	defaultActive        = "default"
+	instanceOptions      = defaultInstanceOptions()
+	instanceOptionsMutex sync.Mutex
+	once                 sync.Once
+	stopCh               = make(chan struct{})
+	watcherWg            sync.WaitGroup
+	stopOnce             sync.Once
 )
 
 func Load(opts ...LoaderConfOption) error {
@@ -147,7 +141,9 @@ func hotUpdateConfig(conf *loaderConf) error {
 	}
 
 	// Any part of the application that accesses instanceOptions directly will now use the new values.
+	instanceOptionsMutex.Lock()
 	instanceOptions = newOpts
+	instanceOptionsMutex.Unlock()
 
 	// Explicitly update logger level after hot reload
 	if ok := logger.SetLoggerLevel(instanceOptions.Logger.Level); !ok {
