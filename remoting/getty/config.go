@@ -33,6 +33,8 @@ import (
 
 const (
 	TCPReadWriteTimeoutMinValue = time.Second * 1
+	// DefaultMaxMsgLen defines the default maximum message length for getty session
+	DefaultMaxMsgLen = 1024000 // 1MB
 )
 
 type (
@@ -134,7 +136,7 @@ func GetDefaultClientConfig() *ClientConfig {
 			TcpReadTimeout:   "1s",
 			TcpWriteTimeout:  "5s",
 			WaitTimeout:      "1s",
-			MaxMsgLen:        1024000,
+			MaxMsgLen:        DefaultMaxMsgLen,
 			SessionName:      "client",
 		},
 	}
@@ -160,7 +162,7 @@ func GetDefaultServerConfig() *ServerConfig {
 			TcpReadTimeout:   "1s",
 			TcpWriteTimeout:  "5s",
 			WaitTimeout:      "1s",
-			MaxMsgLen:        1024000,
+			MaxMsgLen:        DefaultMaxMsgLen,
 			SessionName:      "server",
 		},
 	}
