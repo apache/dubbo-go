@@ -51,7 +51,7 @@ type (
 		tcpWriteTimeout  time.Duration
 		WaitTimeout      string `default:"7s" yaml:"wait-timeout" json:"wait-timeout,omitempty"`
 		waitTimeout      time.Duration
-		MaxMsgLen        int    `default:"1024" yaml:"max-msg-len" json:"max-msg-len,omitempty"`
+		MaxMsgLen        int    `default:"1024000" yaml:"max-msg-len" json:"max-msg-len,omitempty"`
 		SessionName      string `default:"rpc" yaml:"session-name" json:"session-name,omitempty"`
 	}
 
@@ -134,7 +134,7 @@ func GetDefaultClientConfig() *ClientConfig {
 			TcpReadTimeout:   "1s",
 			TcpWriteTimeout:  "5s",
 			WaitTimeout:      "1s",
-			MaxMsgLen:        102400,
+			MaxMsgLen:        1024000,
 			SessionName:      "client",
 		},
 	}
@@ -160,7 +160,7 @@ func GetDefaultServerConfig() *ServerConfig {
 			TcpReadTimeout:   "1s",
 			TcpWriteTimeout:  "5s",
 			WaitTimeout:      "1s",
-			MaxMsgLen:        102400,
+			MaxMsgLen:        1024000,
 			SessionName:      "server",
 		},
 	}
