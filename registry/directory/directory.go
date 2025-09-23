@@ -95,14 +95,37 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (director
 	}
 	// set registry if not exist
 	if _, ok := url.GetAttribute(constant.RegistryKey); !ok {
-		registries := config.GetRootConfig().Registries
-		if registries == nil {
+		configRegistries := config.GetRootConfig().Registries
+		if configRegistries == nil {
 			defaultRegistryConfig := global.DefaultRegistryConfig()
 			url.SetAttribute(constant.RegistryKey, map[string]*global.RegistryConfig{
 				constant.DefaultKey: defaultRegistryConfig,
 			})
 		} else {
-			url.SetAttribute(constant.RegistryKey, registries)
+			// convert config.RegistryConfig to global.RegistryConfig
+			globalRegistries := make(map[string]*global.RegistryConfig, len(configRegistries))
+			for key, configRegistry := range configRegistries {
+				globalRegistry := &global.RegistryConfig{
+					Protocol:          configRegistry.Protocol,
+					Timeout:           configRegistry.Timeout,
+					Group:             configRegistry.Group,
+					Namespace:         configRegistry.Namespace,
+					TTL:               configRegistry.TTL,
+					Address:           configRegistry.Address,
+					Username:          configRegistry.Username,
+					Password:          configRegistry.Password,
+					Simplified:        configRegistry.Simplified,
+					Preferred:         configRegistry.Preferred,
+					Zone:              configRegistry.Zone,
+					Weight:            configRegistry.Weight,
+					Params:            configRegistry.Params,
+					RegistryType:      configRegistry.RegistryType,
+					UseAsMetaReport:   configRegistry.UseAsMetaReport,
+					UseAsConfigCenter: configRegistry.UseAsConfigCenter,
+				}
+				globalRegistries[key] = globalRegistry
+			}
+			url.SetAttribute(constant.RegistryKey, globalRegistries)
 		}
 	}
 
