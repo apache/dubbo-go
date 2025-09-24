@@ -46,6 +46,13 @@ type Server struct {
 	cfg *ServerOptions
 
 	svcOptsMap sync.Map
+
+	// TODO from dubbo.go map server
+	proServicesLock sync.Mutex
+	proServices     map[string]common.RPCService
+	// change any to *common.ServiceInfo @see config/service.go
+	proServicesInfo map[string]*common.ServiceInfo // service name -> service info
+	serve           bool
 }
 
 // ServiceInfo Deprecated： common.ServiceInfo type alias, just for compatible with old generate pb.go file
@@ -62,28 +69,33 @@ type ServiceDefinition struct {
 
 // Register assemble invoker chains like ProviderConfig.Load, init a service per call
 func (s *Server) Register(handler any, info *common.ServiceInfo, opts ...ServiceOption) error {
-	baseOpts := []ServiceOption{WithIDLMode(constant.IDL)}
-	baseOpts = append(baseOpts, opts...)
-	newSvcOpts, err := s.genSvcOpts(handler, baseOpts...)
-	if err != nil {
-		return err
-	}
-	s.svcOptsMap.Store(newSvcOpts, info)
-	return nil
+	return s.registerWithMode(handler, info, constant.IDL, opts...)
 }
 
 // RegisterService is for new Triple non-idl mode implement.
 func (s *Server) RegisterService(handler any, opts ...ServiceOption) error {
+	return s.registerWithMode(handler, nil, constant.NONIDL, opts...)
+}
+
+// registerWithMode 统一的服务注册逻辑
+func (s *Server) registerWithMode(handler any, info *common.ServiceInfo, idlMode string, opts ...ServiceOption) error {
 	baseOpts := []ServiceOption{
-		WithIDLMode(constant.NONIDL),
-		WithInterface(common.GetReference(handler)),
+		WithIDLMode(idlMode),
 	}
+
+	// 只有在 NONIDL 模式下才需要显式设置接口
+	if idlMode == constant.NONIDL {
+		baseOpts = append(baseOpts, WithInterface(common.GetReference(handler)))
+	}
+
 	baseOpts = append(baseOpts, opts...)
 	newSvcOpts, err := s.genSvcOpts(handler, baseOpts...)
 	if err != nil {
 		return err
 	}
-	s.svcOptsMap.Store(newSvcOpts, nil)
+
+	s.svcOptsMap.Store(newSvcOpts, info)
+	s.registerProviderService(handler, info)
 	return nil
 }
 
@@ -182,6 +194,13 @@ func (s *Server) exportServices() (err error) {
 }
 
 func (s *Server) Serve() error {
+	s.proServicesLock.Lock()
+	defer s.proServicesLock.Unlock()
+	if s.serve {
+		return errors.New("server has already been started")
+	}
+	// prevent multiple calls to Serve
+	s.serve = true
 	// the registryConfig in ServiceOptions and ServerOptions all need to init a metadataReporter,
 	// when ServiceOptions.init() is called we don't know if a new registry config is set in the future use serviceOption
 	if err := metadata.InitRegistryMetadataReport(s.cfg.Registries); err != nil {
@@ -309,7 +328,9 @@ func NewServer(opts ...ServerOption) (*Server, error) {
 	}
 
 	srv := &Server{
-		cfg: newSrvOpts,
+		cfg:             newSrvOpts,
+		proServices:     make(map[string]common.RPCService),
+		proServicesInfo: make(map[string]*common.ServiceInfo),
 	}
 	return srv, nil
 }
@@ -322,4 +343,19 @@ func SetProviderServices(sd *InternalService) {
 	proLock.Lock()
 	defer proLock.Unlock()
 	proServices = append(proServices, sd)
+}
+
+func (s *Server) registerProviderService(service common.RPCService, info *common.ServiceInfo) {
+	s.proServicesLock.Lock()
+	defer s.proServicesLock.Unlock()
+	ref := common.GetReference(service)
+	logger.Infof("A provider service %s was registered successfully.", ref)
+	s.proServices[ref] = service
+	s.proServicesInfo[ref] = info
+}
+
+func (s *Server) GetProviderService(name string) common.RPCService {
+	s.proServicesLock.Lock()
+	defer s.proServicesLock.Unlock()
+	return s.proServices[name]
 }

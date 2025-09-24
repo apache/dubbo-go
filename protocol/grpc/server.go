@@ -157,6 +157,10 @@ func (s *Server) Start(url *common.URL) {
 		}
 		// wait all exporter ready , then set proxy impl and grpc registerService
 		waitGrpcExporter(providerServices)
+
+		//if rpcService, ok := url.GetAttribute(constant.RpcServiceKey); ok {
+		//	service = rpcService
+		//}
 		registerService(providerServices, server)
 		reflection.Register(server)
 
@@ -201,12 +205,13 @@ func waitGrpcExporter(providerServices map[string]*config.ServiceConfig) {
 // registerService SetProxyImpl invoker and grpc service
 func registerService(providerServices map[string]*config.ServiceConfig, server *grpc.Server) {
 	for key, providerService := range providerServices {
+
+		//TODO: Temporary compatibility with old APIs, can be removed later
 		service := config.GetProviderService(key)
 		ds, ok := service.(DubboGrpcService)
 		if !ok {
 			panic("illegal service type registered")
 		}
-
 		serviceKey := common.ServiceKey(providerService.Interface, providerService.Group, providerService.Version)
 		exporter, _ := grpcProtocol.ExporterMap().Load(serviceKey)
 		if exporter == nil {

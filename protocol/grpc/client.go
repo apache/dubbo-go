@@ -59,7 +59,9 @@ type Client struct {
 
 // NewClient creates a new gRPC client.
 func NewClient(url *common.URL) (*Client, error) {
-	clientConfInitOnce.Do(clientInit)
+	clientConfInitOnce.Do(func() {
+		clientInit(url)
+	})
 
 	// If global trace instance was set, it means trace function enabled.
 	// If not, will return NoopTracer.
@@ -152,7 +154,7 @@ func NewClient(url *common.URL) (*Client, error) {
 	}, nil
 }
 
-func clientInit() {
+func clientInit(url *common.URL) {
 	// load rootConfig from runtime
 	rootConfig := config.GetRootConfig()
 
