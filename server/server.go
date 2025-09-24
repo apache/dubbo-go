@@ -82,18 +82,15 @@ func (s *Server) registerWithMode(handler any, info *common.ServiceInfo, idlMode
 	baseOpts := []ServiceOption{
 		WithIDLMode(idlMode),
 	}
-
 	// 只有在 NONIDL 模式下才需要显式设置接口
 	if idlMode == constant.NONIDL {
 		baseOpts = append(baseOpts, WithInterface(common.GetReference(handler)))
 	}
-
 	baseOpts = append(baseOpts, opts...)
 	newSvcOpts, err := s.genSvcOpts(handler, baseOpts...)
 	if err != nil {
 		return err
 	}
-
 	s.svcOptsMap.Store(newSvcOpts, info)
 	s.registerProviderService(handler, info)
 	return nil
@@ -163,34 +160,41 @@ func (s *Server) genSvcOpts(handler any, opts ...ServiceOption) (*ServiceOptions
 	return newSvcOpts, nil
 }
 
-func (s *Server) exportServices() (err error) {
+// Add a method with a name of a different first-letter case
+// to achieve interoperability with java
+// TODO: The method name case sensitivity in Dubbo-java should be addressed.
+// We ought to make changes to handle this issue.
+func enhanceServiceInfo(info *common.ServiceInfo) *common.ServiceInfo {
+	var additionalMethods []common.MethodInfo
+	for _, method := range info.Methods {
+		newMethod := method
+		newMethod.Name = dubboutil.SwapCaseFirstRune(method.Name)
+		additionalMethods = append(additionalMethods, newMethod)
+	}
+	info.Methods = append(info.Methods, additionalMethods...)
+	return info
+}
+
+// exportServices export services in svcOptsMap
+func (s *Server) exportServices() error {
+	var exportErr error
 	s.svcOptsMap.Range(func(svcOptsRaw, infoRaw any) bool {
 		svcOpts := svcOptsRaw.(*ServiceOptions)
+		var err error
 		if info, ok := infoRaw.(*common.ServiceInfo); !ok || info == nil {
 			err = svcOpts.ExportWithoutInfo()
 		} else {
-			// Add a method with a name of a different first-letter case
-			// to achieve interoperability with java
-			// TODO: The method name case sensitivity in Dubbo-java should be addressed.
-			// We ought to make changes to handle this issue.
-			var additionalMethods []common.MethodInfo
-			for _, method := range info.Methods {
-				newMethod := method
-				newMethod.Name = dubboutil.SwapCaseFirstRune(method.Name)
-				additionalMethods = append(additionalMethods, newMethod)
-			}
-
-			info.Methods = append(info.Methods, additionalMethods...)
-
+			info = enhanceServiceInfo(info)
 			err = svcOpts.ExportWithInfo(info)
 		}
 		if err != nil {
 			logger.Errorf("export %s service failed, err: %s", svcOpts.Service.Interface, err)
+			exportErr = errors.Wrapf(err, "failed to export service %s", svcOpts.Service.Interface)
 			return false
 		}
 		return true
 	})
-	return err
+	return exportErr
 }
 
 func (s *Server) Serve() error {
@@ -228,14 +232,18 @@ func (s *Server) Serve() error {
 	select {}
 }
 
+func (s *Server) createInternalServiceOptions() *ServiceOptions {
+	return &ServiceOptions{
+		Application: s.cfg.Application,
+		Provider:    s.cfg.Provider,
+		Protocols:   s.cfg.Protocols,
+		Registries:  s.cfg.Registries,
+	}
+}
+
 // In order to expose internal services
 func (s *Server) exportInternalServices() error {
-	cfg := &ServiceOptions{}
-	cfg.Application = s.cfg.Application
-	cfg.Provider = s.cfg.Provider
-	cfg.Protocols = s.cfg.Protocols
-	cfg.Registries = s.cfg.Registries
-
+	cfg := s.createInternalServiceOptions()
 	services := make([]*InternalService, 0, len(proServices))
 
 	proLock.Lock()
