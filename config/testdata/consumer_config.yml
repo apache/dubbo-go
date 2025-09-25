@@ -107,5 +107,5 @@ protocol_conf:
       wait_timeout: "1s"
       # maximum len of data per request
       # this refers to the total amount of data requested or returned
-      max_msg_len: 102400
+      max_msg_len: 1024000
       session_name: "client"
