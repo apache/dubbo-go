@@ -79,7 +79,7 @@ func (p *PriorityRouter) Notify(invokers []base.Invoker) {
 	}
 	application := invokers[0].GetURL().GetParam(constant.ApplicationKey, "")
 	if application == "" {
-		logger.Error("url application is empty")
+		logger.Warn("url application is empty, tag router will not be enabled")
 		return
 	}
 	dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
