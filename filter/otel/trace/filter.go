@@ -56,6 +56,9 @@ func init() {
 
 var _ filter.Filter = (*otelServerFilter)(nil)
 
+// otelServerFilter implements server-side tracing for Dubbo requests
+// by creating and managing trace spans using the configured propagator
+// and tracer provider.
 type otelServerFilter struct {
 	Propagators    propagation.TextMapPropagator
 	TracerProvider trace.TracerProvider
@@ -99,6 +102,9 @@ func (f *otelServerFilter) Invoke(ctx context.Context, invoker base.Invoker, inv
 
 var _ filter.Filter = (*otelClientFilter)(nil)
 
+// otelClientFilter implements client-side tracing for Dubbo requests
+// by creating and managing trace spans using the configured propagator
+// and tracer provider.
 type otelClientFilter struct {
 	Propagators    propagation.TextMapPropagator
 	TracerProvider trace.TracerProvider
