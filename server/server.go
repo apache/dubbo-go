@@ -92,7 +92,6 @@ func (s *Server) registerWithMode(handler any, info *common.ServiceInfo, idlMode
 	if err != nil {
 		return err
 	}
-	newSvcOpts.info = enhanceServiceInfo(info)
 	s.registerServiceOptions(newSvcOpts)
 	return nil
 }
@@ -132,6 +131,7 @@ func (s *Server) genSvcOpts(handler any, opts ...ServiceOption) (*ServiceOptions
 	if proCfg != nil && proCfg.Services != nil {
 		// Get the unique identifier of the handler (the default is the structure name or the alias set during registration)
 		interfaceName := common.GetReference(handler)
+		newSvcOpts.Id = interfaceName
 		// Give priority to accurately finding the service configuration from the configuration based on the reference name (i.e. the handler registration name)
 		svcCfg, ok := proCfg.Services[interfaceName]
 		if !ok {
@@ -142,6 +142,13 @@ func (s *Server) genSvcOpts(handler any, opts ...ServiceOption) (*ServiceOptions
 				}
 			}
 		}
+		// TODO @see server/action.go Export
+		//if newSvcOpts.info != nil {
+		//	if newSvcOpts.Service.Interface == "" {
+		//		newSvcOpts.Service.Interface = newSvcOpts.info.InterfaceName
+		//	}
+		//	//newSvcOpts.info = info
+		//}
 
 		if svcCfg != nil {
 			svcOpts = append(svcOpts,
@@ -158,6 +165,7 @@ func (s *Server) genSvcOpts(handler any, opts ...ServiceOption) (*ServiceOptions
 		return nil, err
 	}
 	newSvcOpts.Implement(handler)
+	newSvcOpts.info = enhanceServiceInfo(newSvcOpts.info)
 	return newSvcOpts, nil
 }
 

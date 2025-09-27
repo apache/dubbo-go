@@ -136,6 +136,7 @@ func getRandomPort(protocolConfigs []*global.ProtocolConfig) *list.List {
 }
 
 func (svcOpts *ServiceOptions) Export() error {
+	// TODO Terry 为什么这里修改svcOpts
 	info := svcOpts.info
 	svcConf := svcOpts.Service
 	if info != nil {

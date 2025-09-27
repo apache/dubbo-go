@@ -190,11 +190,16 @@ func (ins *Instance) start() (err error) {
 	return err
 }
 
-// loadProvider loads the service provider.
+// loadProvider loads and initializes the service provider
+// Flow:
+// 1. Configure server options with Provider settings if available
+// 2. Create server instance with configured options
+// 3. Register all defined provider services (both IDL and non-IDL modes)
+// 4. Start server in a separate goroutine to handle incoming requests
 func (ins *Instance) loadProvider() error {
 	var err error
 	var srvOpts []server.ServerOption
-
+	// Step 1: Build server options - add Provider configuration if exists
 	if ins.insOpts.Provider != nil {
 		srvOpts = append(srvOpts, server.SetServerProvider(ins.insOpts.Provider))
 	}
@@ -202,20 +207,23 @@ func (ins *Instance) loadProvider() error {
 	if err != nil {
 		return err
 	}
-	// register services
+	// Step 2: Register all defined provider services
 	proLock.RLock()
 	defer proLock.RUnlock()
 	for _, definition := range providerServices {
+		// Step 3: Register service based on mode
 		if definition.Info != nil {
+			// IDL mode: Register with service information (interface definition available)
 			err = srv.Register(definition.Handler, definition.Info, definition.Opts...)
 		} else {
-			// if Info in nil, it means non-idl mode
+			// Non-IDL mode: Register service handler directly (no interface definition)
 			err = srv.RegisterService(definition.Handler, definition.Opts...)
 		}
 		if err != nil {
 			return err
 		}
 	}
+	// Step 4: Start server
 	go func() {
 		if err = srv.Serve(); err != nil {
 			logger.Fatalf("Failed to start server, err: %v", err)
