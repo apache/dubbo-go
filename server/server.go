@@ -45,15 +45,14 @@ var internalProLock sync.Mutex
 type Server struct {
 	cfg *ServerOptions
 
-	proServicesLock sync.RWMutex
+	mu sync.RWMutex
 	// key: *ServiceOptions, value: *common.ServiceInfo
 	//proServices map[string]common.RPCService
 	// change any to *common.ServiceInfo @see config/service.go
-	// TODO
 	svcOptsMap map[string]*ServiceOptions
 	// key is interface name, value is *ServiceOptions
 	interfaceNameServices map[string]*ServiceOptions
-
+	// indicate whether the server is already started
 	serve bool
 }
 
@@ -79,12 +78,12 @@ func (s *Server) RegisterService(handler any, opts ...ServiceOption) error {
 	return s.registerWithMode(handler, nil, constant.NONIDL, opts...)
 }
 
-// registerWithMode 统一的服务注册逻辑
+// registerWithMode unified service registration logic
 func (s *Server) registerWithMode(handler any, info *common.ServiceInfo, idlMode string, opts ...ServiceOption) error {
 	baseOpts := []ServiceOption{
 		WithIDLMode(idlMode),
 	}
-	// 只有在 NONIDL 模式下才需要显式设置接口
+	// only need to explicitly set interface in NONIDL mode
 	if idlMode == constant.NONIDL {
 		baseOpts = append(baseOpts, WithInterface(common.GetReference(handler)))
 	}
@@ -93,7 +92,7 @@ func (s *Server) registerWithMode(handler any, info *common.ServiceInfo, idlMode
 	if err != nil {
 		return err
 	}
-	newSvcOpts.info = info
+	newSvcOpts.info = enhanceServiceInfo(info)
 	s.registerServiceOptions(newSvcOpts)
 	return nil
 }
@@ -179,27 +178,21 @@ func enhanceServiceInfo(info *common.ServiceInfo) *common.ServiceInfo {
 
 // exportServices export services in svcOptsMap
 func (s *Server) exportServices() error {
-	var exportErr error
+	var err error
 	for _, svcOpts := range s.svcOptsMap {
-		var err error
-		if svcOpts.info == nil {
-			err = svcOpts.ExportWithoutInfo()
-		} else {
-			info := enhanceServiceInfo(svcOpts.info)
-			err = svcOpts.ExportWithInfo(info)
-		}
+		err := svcOpts.Export()
 		if err != nil {
 			logger.Errorf("export %s service failed, err: %s", svcOpts.Service.Interface, err)
-			exportErr = errors.Wrapf(err, "failed to export service %s", svcOpts.Service.Interface)
-			return exportErr
+			err = errors.Wrapf(err, "failed to export service %s", svcOpts.Service.Interface)
+			return err
 		}
 	}
-	return exportErr
+	return err
 }
 
 func (s *Server) Serve() error {
-	s.proServicesLock.Lock()
-	defer s.proServicesLock.Unlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	if s.serve {
 		return errors.New("server has already been started")
 	}
@@ -274,7 +267,7 @@ func (s *Server) exportInternalServices() error {
 		if service.BeforeExport != nil {
 			service.BeforeExport(service.svcOpts)
 		}
-		err := service.svcOpts.ExportWithInfo(service.info)
+		err := service.svcOpts.Export()
 		if service.AfterExport != nil {
 			service.AfterExport(service.svcOpts, err)
 		}
@@ -354,15 +347,45 @@ func SetProviderServices(sd *InternalService) {
 }
 
 func (s *Server) registerServiceOptions(serviceOptions *ServiceOptions) {
-	s.proServicesLock.Lock()
-	defer s.proServicesLock.Unlock()
-	//ref := common.GetReference(service)
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	logger.Infof("A provider service %s was registered successfully.", serviceOptions.Id)
 	s.svcOptsMap[serviceOptions.Id] = serviceOptions
 }
 
+// GetServiceOptions retrieves the ServiceOptions for a service by its name/ID
 func (s *Server) GetServiceOptions(name string) *ServiceOptions {
-	s.proServicesLock.RLock()
-	defer s.proServicesLock.RUnlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	return s.svcOptsMap[name]
+}
+
+// GetServiceInfo retrieves the ServiceInfo for a service by its name/ID
+// Returns nil if the service is not found or has no ServiceInfo
+func (s *Server) GetServiceInfo(name string) *common.ServiceInfo {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if svcOpts, ok := s.svcOptsMap[name]; ok {
+		return svcOpts.info
+	}
+	return nil
+}
+
+// GetRPCService retrieves the RPCService implementation for a service by its name/ID
+// Returns nil if the service is not found or has no RPCService
+func (s *Server) GetRPCService(name string) common.RPCService {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if svcOpts, ok := s.svcOptsMap[name]; ok {
+		return svcOpts.rpcService
+	}
+	return nil
+}
+
+// GetServiceOptionsByInterfaceName retrieves the ServiceOptions for a service by its interface name
+// Returns nil if no service is found with the given interface name
+func (s *Server) GetServiceOptionsByInterfaceName(interfaceName string) *ServiceOptions {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.interfaceNameServices[interfaceName]
 }
