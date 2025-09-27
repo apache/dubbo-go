@@ -39,20 +39,22 @@ import (
 )
 
 // proServices are for internal services
-var proServices = make([]*InternalService, 0, 16)
-var proLock sync.Mutex
+var internalProServices = make([]*InternalService, 0, 16)
+var internalProLock sync.Mutex
 
 type Server struct {
 	cfg *ServerOptions
 
-	svcOptsMap sync.Map
-
-	// TODO from dubbo.go map server
-	proServicesLock sync.Mutex
-	proServices     map[string]common.RPCService
+	proServicesLock sync.RWMutex
+	// key: *ServiceOptions, value: *common.ServiceInfo
+	//proServices map[string]common.RPCService
 	// change any to *common.ServiceInfo @see config/service.go
-	proServicesInfo map[string]*common.ServiceInfo // service name -> service info
-	serve           bool
+	// TODO
+	svcOptsMap map[string]*ServiceOptions
+	// key is interface name, value is *ServiceOptions
+	interfaceNameServices map[string]*ServiceOptions
+
+	serve bool
 }
 
 // ServiceInfo Deprecated： common.ServiceInfo type alias, just for compatible with old generate pb.go file
@@ -91,8 +93,8 @@ func (s *Server) registerWithMode(handler any, info *common.ServiceInfo, idlMode
 	if err != nil {
 		return err
 	}
-	s.svcOptsMap.Store(newSvcOpts, info)
-	s.registerProviderService(handler, info)
+	newSvcOpts.info = info
+	s.registerServiceOptions(newSvcOpts)
 	return nil
 }
 
@@ -178,22 +180,20 @@ func enhanceServiceInfo(info *common.ServiceInfo) *common.ServiceInfo {
 // exportServices export services in svcOptsMap
 func (s *Server) exportServices() error {
 	var exportErr error
-	s.svcOptsMap.Range(func(svcOptsRaw, infoRaw any) bool {
-		svcOpts := svcOptsRaw.(*ServiceOptions)
+	for _, svcOpts := range s.svcOptsMap {
 		var err error
-		if info, ok := infoRaw.(*common.ServiceInfo); !ok || info == nil {
+		if svcOpts.info == nil {
 			err = svcOpts.ExportWithoutInfo()
 		} else {
-			info = enhanceServiceInfo(info)
+			info := enhanceServiceInfo(svcOpts.info)
 			err = svcOpts.ExportWithInfo(info)
 		}
 		if err != nil {
 			logger.Errorf("export %s service failed, err: %s", svcOpts.Service.Interface, err)
 			exportErr = errors.Wrapf(err, "failed to export service %s", svcOpts.Service.Interface)
-			return false
+			return exportErr
 		}
-		return true
-	})
+	}
 	return exportErr
 }
 
@@ -244,11 +244,11 @@ func (s *Server) createInternalServiceOptions() *ServiceOptions {
 // In order to expose internal services
 func (s *Server) exportInternalServices() error {
 	cfg := s.createInternalServiceOptions()
-	services := make([]*InternalService, 0, len(proServices))
+	services := make([]*InternalService, 0, len(internalProServices))
 
-	proLock.Lock()
-	defer proLock.Unlock()
-	for _, service := range proServices {
+	internalProLock.Lock()
+	defer internalProLock.Unlock()
+	for _, service := range internalProServices {
 		if service.Init == nil {
 			return errors.New("[internal service]internal service init func is empty, please set the init func correctly")
 		}
@@ -336,9 +336,9 @@ func NewServer(opts ...ServerOption) (*Server, error) {
 	}
 
 	srv := &Server{
-		cfg:             newSrvOpts,
-		proServices:     make(map[string]common.RPCService),
-		proServicesInfo: make(map[string]*common.ServiceInfo),
+		cfg:                   newSrvOpts,
+		svcOptsMap:            make(map[string]*ServiceOptions),
+		interfaceNameServices: make(map[string]*ServiceOptions),
 	}
 	return srv, nil
 }
@@ -348,22 +348,21 @@ func SetProviderServices(sd *InternalService) {
 		logger.Warnf("[internal service]internal name is empty, please set internal name")
 		return
 	}
-	proLock.Lock()
-	defer proLock.Unlock()
-	proServices = append(proServices, sd)
+	internalProLock.Lock()
+	defer internalProLock.Unlock()
+	internalProServices = append(internalProServices, sd)
 }
 
-func (s *Server) registerProviderService(service common.RPCService, info *common.ServiceInfo) {
+func (s *Server) registerServiceOptions(serviceOptions *ServiceOptions) {
 	s.proServicesLock.Lock()
 	defer s.proServicesLock.Unlock()
-	ref := common.GetReference(service)
-	logger.Infof("A provider service %s was registered successfully.", ref)
-	s.proServices[ref] = service
-	s.proServicesInfo[ref] = info
+	//ref := common.GetReference(service)
+	logger.Infof("A provider service %s was registered successfully.", serviceOptions.Id)
+	s.svcOptsMap[serviceOptions.Id] = serviceOptions
 }
 
-func (s *Server) GetProviderService(name string) common.RPCService {
-	s.proServicesLock.Lock()
-	defer s.proServicesLock.Unlock()
-	return s.proServices[name]
+func (s *Server) GetServiceOptions(name string) *ServiceOptions {
+	s.proServicesLock.RLock()
+	defer s.proServicesLock.RUnlock()
+	return s.svcOptsMap[name]
 }
