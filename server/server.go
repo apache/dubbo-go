@@ -100,7 +100,7 @@ func (s *Server) genSvcOpts(handler any, opts ...ServiceOption) (*ServiceOptions
 	// Record the registered service for debugging and monitoring
 	interfaceName := common.GetReference(handler)
 	logger.Infof("Registering service: %s", interfaceName)
-	
+
 	newSvcOpts := defaultServiceOptions()
 	if appCfg != nil {
 		svcOpts = append(svcOpts,
