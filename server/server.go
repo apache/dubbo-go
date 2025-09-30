@@ -125,7 +125,6 @@ func (s *Server) genSvcOpts(handler any, opts ...ServiceOption) (*ServiceOptions
 	// Get service-level configuration items from provider.services configuration
 	if proCfg != nil && proCfg.Services != nil {
 		// Get the unique identifier of the handler (the default is the structure name or the alias set during registration)
-		// interfaceName already obtained above for logging
 		// Give priority to accurately finding the service configuration from the configuration based on the reference name (i.e. the handler registration name)
 		svcCfg, ok := proCfg.Services[interfaceName]
 		if !ok {
