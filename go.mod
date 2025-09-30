@@ -1,6 +1,6 @@
 module dubbo.apache.org/dubbo-go/v3
 
-go 1.24
+go 1.24.0
 
 require (
 	github.com/RoaringBitmap/roaring v1.2.3
