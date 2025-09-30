@@ -185,6 +185,7 @@ github.com/dubbogo/gost v1.11.18/go.mod h1:vIcP9rqz2KsXHPjsAwIUtfJIJjppQLQDcYaZT
 github.com/dubbogo/gost v1.13.1/go.mod h1:9HMXBv+WBMRWhF3SklpqDjkS/01AKWm2SrVdz/A0xJI=
 github.com/dubbogo/gost v1.14.1 h1:veA+5FqwUHvqaB5OPvsWz4iDkGGpyL4lig2rSOZANEs=
 github.com/dubbogo/gost v1.14.1/go.mod h1:m3VJVqCjQ87SwYRrxN2s4T33cOCDrMVbRh4+MAUitnQ=
+github.com/dubbogo/gost v1.14.2/go.mod h1:WydBuEOkwKEm9mcWLlOnmsVe1ELFgrNPmC5SzXdPv4A=
 github.com/dubbogo/grpc-go v1.42.9/go.mod h1:F1T9hnUvYGW4JLK1QNriavpOkhusU677ovPzLkk6zHM=
 github.com/dubbogo/grpc-go v1.42.10 h1:CoyCdtqKJEar/3rPa6peZbDqYZ/mVsCqAxB6TfTSkhQ=
 github.com/dubbogo/grpc-go v1.42.10/go.mod h1:JMkPt1mIHL96GAFeYsMoMjew6f1ROKycikGzZQH1s5U=
