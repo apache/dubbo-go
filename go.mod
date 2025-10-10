@@ -44,8 +44,9 @@ require (
 	github.com/polarismesh/polaris-go v1.3.0
 	github.com/prometheus/client_golang v1.19.1
 	github.com/prometheus/common v0.48.0
-	github.com/quic-go/quic-go v0.52.0
+	github.com/quic-go/quic-go v0.54.1
 	github.com/sirupsen/logrus v1.8.1
+	github.com/spf13/viper v1.8.1
 	github.com/stretchr/testify v1.9.0
 	github.com/ugorji/go/codec v1.2.6
 	go.etcd.io/etcd/api/v3 v3.5.7
@@ -87,7 +88,6 @@ require (
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
-	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/pprof v0.0.0-20230207041349-798e818bf904 // indirect
@@ -108,7 +108,6 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mschoch/smat v0.2.0 // indirect
-	github.com/onsi/ginkgo/v2 v2.11.0 // indirect
 	github.com/openzipkin/zipkin-go v0.4.2 // indirect
 	github.com/pelletier/go-toml v1.9.3 // indirect
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
@@ -123,7 +122,6 @@ require (
 	github.com/spf13/cast v1.3.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/spf13/viper v1.8.1 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.10 // indirect
