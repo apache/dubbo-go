@@ -67,6 +67,7 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/metadata/report/nacos"
 	_ "dubbo.apache.org/dubbo-go/v3/metadata/report/zookeeper"
 	_ "dubbo.apache.org/dubbo-go/v3/metrics/app_info"
+	_ "dubbo.apache.org/dubbo-go/v3/metrics/health"
 	_ "dubbo.apache.org/dubbo-go/v3/metrics/prometheus"
 	_ "dubbo.apache.org/dubbo-go/v3/otel/trace/jaeger"
 	_ "dubbo.apache.org/dubbo-go/v3/otel/trace/otlp"

@@ -475,6 +475,15 @@ const (
 	PrometheusPushgatewayJobKey          = "prometheus.pushgateway.job"
 )
 
+// Health check HTTP keys for K8S integration
+const (
+	HealthCheckEnabledKey   = "health-check.enabled"
+	HealthCheckPortKey      = "health-check.port"
+	HealthCheckLivePathKey  = "health-check.live-path"
+	HealthCheckReadyPathKey = "health-check.ready-path"
+	HealthCheckTimeoutKey   = "health-check.timeout"
+)
+
 // default meta cache config
 const (
 	DefaultMetaCacheName = "dubbo.meta"
