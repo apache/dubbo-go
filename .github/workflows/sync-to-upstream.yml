@@ -49,8 +49,8 @@ env:
   UPSTREAM_TARGET_BRANCH: develop
 
   # Git bot configuration (for commits)
-  BOT_NAME: "Pixiu Bot"
-  BOT_EMAIL: "bot@dubbo-go-pixiu.github.io"
+  BOT_NAME: "Dubbo-go Bot"
+  BOT_EMAIL: "bot@dubbo-go.github.io"
 
   # Workflow files to exclude when syncing to upstream
   # Add any fork-specific files that should not be synced
