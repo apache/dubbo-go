@@ -22,7 +22,7 @@ import (
 	"strconv"
 	"strings"
 
-	"dubbo.apache.org/dubbo-go/v3/common/extension/interfaces"
+	"dubbo.apache.org/dubbo-go/v3/config/interfaces"
 )
 
 import (
