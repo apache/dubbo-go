@@ -656,7 +656,7 @@ func compatGlobalProviderConfig(c *config.ProviderConfig) *global.ProviderConfig
 	}
 	services := make(map[string]*global.ServiceConfig)
 	for key, svc := range c.Services {
-		services[key] = compatGlobalServiceConfig(svc)
+		services[key] = CompatGlobalServiceConfig(svc)
 	}
 	return &global.ProviderConfig{
 		Filter:                 c.Filter,
@@ -673,7 +673,7 @@ func compatGlobalProviderConfig(c *config.ProviderConfig) *global.ProviderConfig
 	}
 }
 
-func compatGlobalServiceConfig(c *config.ServiceConfig) *global.ServiceConfig {
+func CompatGlobalServiceConfig(c *config.ServiceConfig) *global.ServiceConfig {
 	if c == nil {
 		return nil
 	}

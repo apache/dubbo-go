@@ -21,8 +21,6 @@ import (
 	"bytes"
 	"strconv"
 	"strings"
-
-	"dubbo.apache.org/dubbo-go/v3/config/interfaces"
 )
 
 import (
@@ -36,6 +34,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/config/interfaces"
 	"dubbo.apache.org/dubbo-go/v3/protocol/rest/config"
 )
 
