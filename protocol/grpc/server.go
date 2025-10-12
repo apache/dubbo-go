@@ -150,20 +150,26 @@ func (s *Server) Start(url *common.URL) {
 	s.grpcServer = server
 
 	go func() {
+		// TODO #2741 old config compatibility
 		providerServices := config.GetProviderConfig().Services
-
 		if len(providerServices) == 0 {
-			panic("provider service map is null")
+			if providerConfRaw, ok := url.GetAttribute(constant.ProviderConfigKey); ok {
+				providerConf, RawOk := providerConfRaw.(*global.ProviderConfig)
+				if !RawOk || providerConf == nil {
+					panic("illegal provider config")
+				}
+				providerServicesGlobal := providerConf.Services
+				waitGrpcExporterGlobal(providerServicesGlobal)
+				registerServiceGlobal(providerServicesGlobal, server)
+			} else {
+				panic("no provider service found")
+			}
+		} else {
+			// wait all exporter ready , then set proxy impl and grpc registerService
+			waitGrpcExporter(providerServices)
+			registerService(providerServices, server)
 		}
-		// wait all exporter ready , then set proxy impl and grpc registerService
-		waitGrpcExporter(providerServices)
-
-		//if rpcService, ok := url.GetAttribute(constant.RpcServiceKey); ok {
-		//	service = rpcService
-		//}
-		registerService(providerServices, server)
 		reflection.Register(server)
-
 		if err = server.Serve(lis); err != nil {
 			logger.Errorf("server serve failed with err: %v", err)
 		}
@@ -182,6 +188,7 @@ func getSyncMapLen(m *sync.Map) int {
 }
 
 // waitGrpcExporter wait until len(providerServices) = len(ExporterMap)
+// TODO #2741 old config compatibility
 func waitGrpcExporter(providerServices map[string]*config.ServiceConfig) {
 	t := time.NewTicker(50 * time.Millisecond)
 	defer t.Stop()
@@ -202,8 +209,53 @@ func waitGrpcExporter(providerServices map[string]*config.ServiceConfig) {
 	}
 }
 
+func waitGrpcExporterGlobal(providerServices map[string]*global.ServiceConfig) {
+	t := time.NewTicker(50 * time.Millisecond)
+	defer t.Stop()
+	pLen := len(providerServices)
+	ta := time.NewTimer(10 * time.Second)
+	defer ta.Stop()
+
+	for {
+		select {
+		case <-t.C:
+			mLen := getSyncMapLen(grpcProtocol.ExporterMap())
+			if pLen == mLen {
+				return
+			}
+		case <-ta.C:
+			panic("wait grpc exporter timeout when start grpc server")
+		}
+	}
+}
+
 // registerService SetProxyImpl invoker and grpc service
+// TODO #2741 old config compatibility
 func registerService(providerServices map[string]*config.ServiceConfig, server *grpc.Server) {
+	for key, providerService := range providerServices {
+
+		//TODO: Temporary compatibility with old APIs, can be removed later
+		service := config.GetProviderService(key)
+		ds, ok := service.(DubboGrpcService)
+		if !ok {
+			panic("illegal service type registered")
+		}
+		serviceKey := common.ServiceKey(providerService.Interface, providerService.Group, providerService.Version)
+		exporter, _ := grpcProtocol.ExporterMap().Load(serviceKey)
+		if exporter == nil {
+			panic(fmt.Sprintf("no exporter found for servicekey: %v", serviceKey))
+		}
+		invoker := exporter.(base.Exporter).GetInvoker()
+		if invoker == nil {
+			panic(fmt.Sprintf("no invoker found for servicekey: %v", serviceKey))
+		}
+
+		ds.SetProxyImpl(invoker)
+		server.RegisterService(ds.ServiceDesc(), service)
+	}
+}
+
+func registerServiceGlobal(providerServices map[string]*global.ServiceConfig, server *grpc.Server) {
 	for key, providerService := range providerServices {
 
 		//TODO: Temporary compatibility with old APIs, can be removed later

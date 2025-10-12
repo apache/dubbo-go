@@ -142,13 +142,6 @@ func (s *Server) genSvcOpts(handler any, opts ...ServiceOption) (*ServiceOptions
 				}
 			}
 		}
-		// TODO @see server/action.go Export
-		//if newSvcOpts.info != nil {
-		//	if newSvcOpts.Service.Interface == "" {
-		//		newSvcOpts.Service.Interface = newSvcOpts.info.InterfaceName
-		//	}
-		//	//newSvcOpts.info = info
-		//}
 
 		if svcCfg != nil {
 			svcOpts = append(svcOpts,
@@ -174,6 +167,9 @@ func (s *Server) genSvcOpts(handler any, opts ...ServiceOption) (*ServiceOptions
 // TODO: The method name case sensitivity in Dubbo-java should be addressed.
 // We ought to make changes to handle this issue.
 func enhanceServiceInfo(info *common.ServiceInfo) *common.ServiceInfo {
+	if info == nil {
+		return info
+	}
 	var additionalMethods []common.MethodInfo
 	for _, method := range info.Methods {
 		newMethod := method
@@ -184,7 +180,6 @@ func enhanceServiceInfo(info *common.ServiceInfo) *common.ServiceInfo {
 	return info
 }
 
-// exportServices export services in svcOptsMap
 func (s *Server) exportServices() error {
 	var err error
 	for _, svcOpts := range s.svcOptsMap {

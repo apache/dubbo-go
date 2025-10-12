@@ -188,6 +188,7 @@ func init() {
 
 	// In order to adapt config.Load
 	// Plans for future removal
+	// FIXME config
 	config.SetProviderServiceWithInfo(healthServer, &triple_health.Health_ServiceInfo)
 }
 

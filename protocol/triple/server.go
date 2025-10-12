@@ -239,6 +239,7 @@ func getHanOpts(url *common.URL, tripleConf *global.TripleConfig) (hanOpts []tri
 // *Important*, this function is responsible for being compatible with old triple-gen code and non-idl code
 // compatHandleService registers handler based on ServiceConfig and provider service.
 func (s *Server) compatHandleService(interfaceName string, group, version string, opts ...tri.HandlerOption) {
+	// FIXME config
 	providerServices := config.GetProviderConfig().Services
 	if len(providerServices) == 0 {
 		logger.Info("Provider service map is null, please register ProviderServices")
@@ -249,6 +250,7 @@ func (s *Server) compatHandleService(interfaceName string, group, version string
 			continue
 		}
 		// todo(DMwangnima): judge protocol type
+		// FIXME config
 		service := config.GetProviderService(key)
 		serviceKey := common.ServiceKey(providerService.Interface, providerService.Group, providerService.Version)
 		exporter, _ := tripleProtocol.ExporterMap().Load(serviceKey)

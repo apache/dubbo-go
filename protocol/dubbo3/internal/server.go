@@ -45,6 +45,7 @@ func (s *Server) SayHello(ctx context.Context, in *HelloRequest) (*HelloReply, e
 }
 
 // InitDubboServer creates global gRPC server.
+// TODO: After the config is removed, remove the test
 func InitDubboServer() {
 	serviceConfig := config.NewServiceConfigBuilder().
 		SetInterface("org.apache.dubbo.DubboGreeterImpl").

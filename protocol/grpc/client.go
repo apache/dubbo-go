@@ -156,6 +156,7 @@ func NewClient(url *common.URL) (*Client, error) {
 
 func clientInit(url *common.URL) {
 	// load rootConfig from runtime
+	// FIXME config
 	rootConfig := config.GetRootConfig()
 
 	clientConfig := GetClientConfig()
@@ -175,6 +176,7 @@ func clientInit(url *common.URL) {
 	if rootConfig.Application == nil {
 		return
 	}
+	// FIXME config
 	protocolConf := config.GetRootConfig().Protocols
 
 	if protocolConf == nil {

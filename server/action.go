@@ -106,37 +106,26 @@ func (svcOpts *ServiceOptions) IsExport() bool {
 	return svcOpts.exported.Load()
 }
 
-// getRandomPort generates random ports for protocol configurations that don't have ports specified.
-// It returns a list of port strings for protocols that need random port assignment.
+// Get Random Port
 func getRandomPort(protocolConfigs []*global.ProtocolConfig) *list.List {
 	ports := list.New()
 	for _, proto := range protocolConfigs {
 		if len(proto.Port) > 0 {
 			continue
 		}
-		// Create a temporary TCP listener to get a random available port
+
 		tcp, err := gxnet.ListenOnTCPRandomPort(proto.Ip)
 		if err != nil {
-			panic(perrors.Errorf("failed to get random TCP port for IP %s: %v", proto.Ip, err))
+			panic(perrors.New(fmt.Sprintf("Get tcp port error, err is {%v}", err)))
 		}
-		// Extract port from address and close listener immediately
-		addr := tcp.Addr().String()
-		// Close immediately instead of using defer in loop
-		if closeErr := tcp.Close(); closeErr != nil {
-			logger.Warnf("failed to close TCP listener: %v", closeErr)
-		}
-		// Parse port from address (format: "ip:port")
-		parts := strings.Split(addr, ":")
-		if len(parts) < 2 {
-			panic(perrors.Errorf("invalid address format: %s", addr))
-		}
-		ports.PushBack(parts[len(parts)-1])
+		defer tcp.Close()
+		ports.PushBack(strings.Split(tcp.Addr().String(), ":")[1])
 	}
 	return ports
 }
 
 func (svcOpts *ServiceOptions) Export() error {
-	// TODO Terry 为什么这里修改svcOpts
+	// TODO why edit svcOpts here
 	info := svcOpts.info
 	svcConf := svcOpts.Service
 	if info != nil {
@@ -225,6 +214,9 @@ func (svcOpts *ServiceOptions) Export() error {
 
 			// TODO: remove IDL value when version 4.0.0
 			common.WithParamsValue(constant.IDLMode, isIDL),
+
+			// provider info
+			common.WithAttribute(constant.ProviderConfigKey, svcOpts.srvOpts.Provider),
 		)
 
 		if info != nil {
