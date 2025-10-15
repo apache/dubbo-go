@@ -228,18 +228,14 @@ func (s *Server) Serve() error {
 	select {}
 }
 
-func (s *Server) createInternalServiceOptions() *ServiceOptions {
-	return &ServiceOptions{
-		Application: s.cfg.Application,
-		Provider:    s.cfg.Provider,
-		Protocols:   s.cfg.Protocols,
-		Registries:  s.cfg.Registries,
-	}
-}
-
 // In order to expose internal services
 func (s *Server) exportInternalServices() error {
-	cfg := s.createInternalServiceOptions()
+	cfg := &ServiceOptions{}
+	cfg.Application = s.cfg.Application
+	cfg.Provider = s.cfg.Provider
+	cfg.Protocols = s.cfg.Protocols
+	cfg.Registries = s.cfg.Registries
+
 	services := make([]*InternalService, 0, len(internalProServices))
 
 	internalProLock.Lock()
