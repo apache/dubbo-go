@@ -20,8 +20,6 @@ package protocol
 import (
 	"testing"
 	"time"
-
-	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
 import (
@@ -38,6 +36,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/config_center/configurator"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	"dubbo.apache.org/dubbo-go/v3/registry"
@@ -78,6 +77,7 @@ func referNormal(t *testing.T, regProtocol *registryProtocol) {
 }
 
 func TestRefer(t *testing.T) {
+
 	regProtocol := newRegistryProtocol()
 	referNormal(t, regProtocol)
 }
@@ -128,6 +128,9 @@ func exporterNormal(t *testing.T, regProtocol *registryProtocol) *common.URL {
 	extension.SetRegistry("mock", registry.NewMockRegistry)
 	extension.SetProtocol(protocolwrapper.FILTER, protocolwrapper.NewMockProtocolFilter)
 
+	// Clear ServiceMap to avoid "service already defined" errors between tests
+	common.ServiceMap.UnRegister("org.apache.dubbo-go.mockService", "dubbo", "group/org.apache.dubbo-go.mockService:1.0.0")
+
 	shutdownConfig := &global.ShutdownConfig{
 		StepTimeout:            "4s",
 		ConsumerUpdateWaitTime: "4s",
@@ -136,6 +139,23 @@ func exporterNormal(t *testing.T, regProtocol *registryProtocol) *common.URL {
 	applicationConfig := &global.ApplicationConfig{
 		Name: "test-application",
 	}
+
+	// Create service config for registerServiceMap
+	serviceConfig := &global.ServiceConfig{
+		Interface:   "org.apache.dubbo-go.mockService",
+		ProtocolIDs: []string{"dubbo"},
+		Group:       "group",
+		Version:     "1.0.0",
+	}
+
+	providerConfig := &global.ProviderConfig{
+		Services: map[string]*global.ServiceConfig{
+			"org.apache.dubbo-go.mockService": serviceConfig,
+		},
+	}
+
+	// Create a mock RPCService with exported methods
+	mockRPCService := &MockRPCService{}
 
 	url, _ := common.NewURL("mock://127.0.0.1:1111",
 		common.WithAttribute(constant.ShutdownConfigPrefix, shutdownConfig),
@@ -146,6 +166,9 @@ func exporterNormal(t *testing.T, regProtocol *registryProtocol) *common.URL {
 		common.WithParamsValue(constant.ClusterKey, "mock"),
 		common.WithParamsValue(constant.GroupKey, "group"),
 		common.WithParamsValue(constant.VersionKey, "1.0.0"),
+		common.WithParamsValue(constant.BeanNameKey, "org.apache.dubbo-go.mockService"),
+		common.WithAttribute(constant.ProviderConfigPrefix, providerConfig),
+		common.WithAttribute(constant.RpcServiceKey, mockRPCService),
 	)
 
 	url.SubURL = suburl
@@ -201,6 +224,7 @@ func TestOneRegAndProtoExporter(t *testing.T) {
 		common.WithParamsValue(constant.ClusterKey, "mock"),
 		common.WithParamsValue(constant.GroupKey, "group"),
 		common.WithParamsValue(constant.VersionKey, "1.0.0"),
+		common.WithParamsValue(constant.BeanNameKey, "org.apache.dubbo-go.mockService"),
 	)
 
 	url2.SubURL = suburl2
@@ -267,7 +291,9 @@ func TestExportWithServiceConfig(t *testing.T) {
 	extension.SetDefaultConfigurator(configurator.NewMockConfigurator)
 	ccUrl, _ := common.NewURL("mock://127.0.0.1:1111")
 	dc, _ := (&config_center.MockDynamicConfigurationFactory{}).GetDynamicConfiguration(ccUrl)
+	// Use common/config (not dubbo.apache.org/dubbo-go/v3/config)
 	common_cfg.GetEnvInstance().SetDynamicConfiguration(dc)
+
 	regProtocol := newRegistryProtocol()
 	url := exporterNormal(t, regProtocol)
 	if _, loaded := regProtocol.registries.Load(url.PrimitiveURL); !loaded {
@@ -290,7 +316,9 @@ func TestExportWithApplicationConfig(t *testing.T) {
 	extension.SetDefaultConfigurator(configurator.NewMockConfigurator)
 	ccUrl, _ := common.NewURL("mock://127.0.0.1:1111")
 	dc, _ := (&config_center.MockDynamicConfigurationFactory{}).GetDynamicConfiguration(ccUrl)
+	// Use common/config (not dubbo.apache.org/dubbo-go/v3/config)
 	common_cfg.GetEnvInstance().SetDynamicConfiguration(dc)
+
 	regProtocol := newRegistryProtocol()
 	url := exporterNormal(t, regProtocol)
 	if _, loaded := regProtocol.registries.Load(url.PrimitiveURL); !loaded {
@@ -313,4 +341,17 @@ func TestGetProviderUrlWithHideKey(t *testing.T) {
 	assert.NotContains(t, providerUrl.GetParams(), ".c")
 	assert.NotContains(t, providerUrl.GetParams(), ".d")
 	assert.Contains(t, providerUrl.GetParams(), "a")
+}
+
+// MockRPCService is a mock RPC service for testing
+type MockRPCService struct{}
+
+// MockMethod is a mock method that satisfies RPC method requirements
+func (m *MockRPCService) MockMethod(arg1, arg2 string) error {
+	return nil
+}
+
+// Reference returns the reference path
+func (m *MockRPCService) Reference() string {
+	return "org.apache.dubbo-go.mockService"
 }
