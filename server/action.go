@@ -217,6 +217,9 @@ func (svcOpts *ServiceOptions) Export() error {
 
 			// provider info
 			common.WithAttribute(constant.ProviderConfigKey, svcOpts.srvOpts.Provider),
+
+			// protocol conf
+			common.WithAttribute(constant.ProtocolConfigKey, svcOpts.Protocols),
 		)
 
 		if info != nil {

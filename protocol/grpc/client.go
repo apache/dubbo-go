@@ -22,6 +22,8 @@ import (
 	"reflect"
 	"sync"
 	"time"
+
+	"dubbo.apache.org/dubbo-go/v3"
 )
 
 import (
@@ -156,8 +158,6 @@ func NewClient(url *common.URL) (*Client, error) {
 
 func clientInit(url *common.URL) {
 	// load rootConfig from runtime
-	// FIXME config
-	rootConfig := config.GetRootConfig()
 
 	clientConfig := GetClientConfig()
 	clientConf = &clientConfig
@@ -173,28 +173,34 @@ func clientInit(url *common.URL) {
 		}
 	}()
 
-	if rootConfig.Application == nil {
+	//TODO: Temporary compatibility with old APIs, can be removed later
+	protocolConf := dubbo.CompatGlobalProtocolConfigMap(config.GetRootConfig().Protocols)
+	if protocolConf == nil {
+		if protocolConfRaw, ok := url.GetAttribute(constant.ProtocolConfigKey); ok {
+			protocolConfig, ok := protocolConfRaw.(map[string]*global.ProtocolConfig)
+			if !ok {
+				logger.Warnf("protocolConfig assert failed")
+				return
+			}
+			if protocolConfig == nil {
+				logger.Warnf("protocolConfig is nil")
+				return
+			}
+			protocolConf = protocolConfig
+		}
+	}
+	grpcConf := protocolConf[GRPC]
+	if grpcConf == nil {
+		logger.Warnf("grpcConf is nil")
 		return
 	}
-	// FIXME config
-	protocolConf := config.GetRootConfig().Protocols
-
-	if protocolConf == nil {
-		logger.Info("protocol_conf default use dubbo config")
-	} else {
-		grpcConf := protocolConf[GRPC]
-		if grpcConf == nil {
-			logger.Warnf("grpcConf is nil")
-			return
-		}
-		grpcConfByte, err := yaml.Marshal(grpcConf)
-		if err != nil {
-			panic(err)
-		}
-		err = yaml.Unmarshal(grpcConfByte, clientConf)
-		if err != nil {
-			panic(err)
-		}
+	grpcConfByte, err := yaml.Marshal(grpcConf)
+	if err != nil {
+		panic(err)
+	}
+	err = yaml.Unmarshal(grpcConfByte, clientConf)
+	if err != nil {
+		panic(err)
 	}
 }
 

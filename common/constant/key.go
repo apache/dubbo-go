@@ -167,6 +167,7 @@ const (
 	ClientInfoKey                      = "client-info"
 	TLSConfigKey                       = "tls-config"
 	ProviderConfigKey                  = "provider-config"
+	ProtocolConfigKey                  = "protocol-config"
 )
 
 const (

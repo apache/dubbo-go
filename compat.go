@@ -505,7 +505,7 @@ func compatInstanceOptions(cr *config.RootConfig, rc *InstanceOptions) {
 
 	proCompat := make(map[string]*global.ProtocolConfig)
 	for k, v := range cr.Protocols {
-		proCompat[k] = compatGlobalProtocolConfig(v)
+		proCompat[k] = CompatGlobalProtocolConfig(v)
 	}
 
 	regCompat := make(map[string]*global.RegistryConfig)
@@ -530,7 +530,7 @@ func compatInstanceOptions(cr *config.RootConfig, rc *InstanceOptions) {
 	rc.Profiles = compatGlobalProfilesConfig(cr.Profiles)
 }
 
-func compatGlobalProtocolConfig(c *config.ProtocolConfig) *global.ProtocolConfig {
+func CompatGlobalProtocolConfig(c *config.ProtocolConfig) *global.ProtocolConfig {
 	if c == nil {
 		return nil
 	}
@@ -543,6 +543,17 @@ func compatGlobalProtocolConfig(c *config.ProtocolConfig) *global.ProtocolConfig
 		MaxServerSendMsgSize: c.MaxServerSendMsgSize,
 		MaxServerRecvMsgSize: c.MaxServerRecvMsgSize,
 	}
+}
+
+func CompatGlobalProtocolConfigMap(m map[string]*config.ProtocolConfig) map[string]*global.ProtocolConfig {
+	if m == nil {
+		return nil
+	}
+	protocols := make(map[string]*global.ProtocolConfig, len(m))
+	for k, v := range m {
+		protocols[k] = CompatGlobalProtocolConfig(v)
+	}
+	return protocols
 }
 
 // just for compat
@@ -683,7 +694,7 @@ func CompatGlobalServiceConfig(c *config.ServiceConfig) *global.ServiceConfig {
 	}
 	protocols := make(map[string]*global.ProtocolConfig)
 	for key, pro := range c.RCProtocolsMap {
-		protocols[key] = compatGlobalProtocolConfig(pro)
+		protocols[key] = CompatGlobalProtocolConfig(pro)
 	}
 	registries := make(map[string]*global.RegistryConfig)
 	for key, reg := range c.RCRegistriesMap {

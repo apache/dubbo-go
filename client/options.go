@@ -486,6 +486,7 @@ type ClientOptions struct {
 	Metrics     *global.MetricsConfig
 	Otel        *global.OtelConfig
 	TLS         *global.TLSConfig
+	Protocols   map[string]*global.ProtocolConfig
 
 	overallReference  *global.ReferenceConfig
 	applicationCompat *config.ApplicationConfig
@@ -934,6 +935,12 @@ func SetClientOtel(otel *global.OtelConfig) ClientOption {
 func SetClientTLS(tls *global.TLSConfig) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.TLS = tls
+	}
+}
+
+func SetClientProtocols(cfg map[string]*global.ProtocolConfig) ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Protocols = cfg
 	}
 }
 
