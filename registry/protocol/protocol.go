@@ -298,17 +298,15 @@ func registerServiceMap(invoker base.Invoker) error {
 					s := "reExport can not get serviceConfig"
 					return perrors.New(s)
 				}
-				if rpcServiceRaw, ok := providerUrl.GetAttribute(constant.RpcServiceKey); ok {
-					if rpcService, ok := rpcServiceRaw.(common.RPCService); ok {
-						_, err := common.ServiceMap.Register(serviceConfig.Interface,
-							serviceConfig.ProtocolIDs[0], serviceConfig.Group,
-							serviceConfig.Version, rpcService)
-						if err != nil {
-							s := "reExport can not re register ServiceMap. Error message is " + err.Error()
-							return perrors.New(s)
-						}
-						return nil
+				if rpcService, ok := providerUrl.GetAttribute(constant.RpcServiceKey); ok {
+					_, err := common.ServiceMap.Register(serviceConfig.Interface,
+						serviceConfig.ProtocolIDs[0], serviceConfig.Group,
+						serviceConfig.Version, rpcService)
+					if err != nil {
+						s := "reExport can not re register ServiceMap. Error message is " + err.Error()
+						return perrors.New(s)
 					}
+					return nil
 				}
 			}
 		}
