@@ -22,9 +22,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -85,7 +83,7 @@ func (lb *rrLoadBalance) Select(invokers []base.Invoker, invocation base.Invocat
 		}
 
 		identifier := invoker.GetURL().Key()
-		loaded, found := cachedInvokers.LoadOrStore(identifier, &weightedRoundRobin{weight: weight})
+		loaded, found := cachedInvokers.LoadOrStore(identifier, &weightedRoundRobin{weight: weight, lastUpdate: &now})
 		weightRobin := loaded.(*weightedRoundRobin)
 		if !found {
 			clean = true
