@@ -22,6 +22,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
 import (
@@ -122,10 +124,10 @@ func filterHideKey(url *common.URL) *common.URL {
 	return url.CloneExceptParams(removeSet)
 }
 
-func (proto *registryProtocol) initConfigurationListeners() {
+func (proto *registryProtocol) initConfigurationListeners(url *common.URL) {
 	proto.overrideListeners = &sync.Map{}
 	proto.serviceConfigurationListeners = &sync.Map{}
-	proto.providerConfigurationListener = newProviderConfigurationListener(proto.overrideListeners)
+	proto.providerConfigurationListener = newProviderConfigurationListener(proto.overrideListeners, url)
 }
 
 // GetRegistries returns all underlying registry instances.
@@ -185,11 +187,32 @@ func (proto *registryProtocol) Refer(url *common.URL) base.Invoker {
 
 // Export provider service to registry center
 func (proto *registryProtocol) Export(originInvoker base.Invoker) base.Exporter {
-	proto.once.Do(func() {
-		proto.initConfigurationListeners()
-	})
 	registryUrl := getRegistryUrl(originInvoker)
 	providerUrl := getProviderUrl(originInvoker)
+
+	if _, ok := registryUrl.GetAttribute(constant.ShutdownConfigPrefix); !ok {
+		// Only set default global config when config package doesn't have one
+		if config.GetShutDown() == nil {
+			registryUrl.SetAttribute(constant.ShutdownConfigPrefix, global.DefaultShutdownConfig())
+		}
+	}
+
+	// Copy ApplicationKey from registryUrl to providerUrl if providerUrl doesn't have it
+	if _, ok := providerUrl.GetAttribute(constant.ApplicationKey); !ok {
+		if appConfigRaw, ok := registryUrl.GetAttribute(constant.ApplicationKey); ok {
+			// Use ApplicationConfig from registryUrl (new API)
+			providerUrl.SetAttribute(constant.ApplicationKey, appConfigRaw)
+		} else {
+			// Only set default global config when config package doesn't have one
+			if config.GetRootConfig() == nil || config.GetRootConfig().Application == nil {
+				providerUrl.SetAttribute(constant.ApplicationKey, global.DefaultApplicationConfig())
+			}
+		}
+	}
+
+	proto.once.Do(func() {
+		proto.initConfigurationListeners(providerUrl)
+	})
 
 	overriderUrl := getSubscribedOverrideUrl(providerUrl)
 	// Deprecated! subscribe to override rules in 2.6.x or before.
@@ -269,7 +292,36 @@ func registerServiceMap(invoker base.Invoker) error {
 	// such as dubbo://:20000/org.apache.dubbo.UserProvider?bean.name=UserProvider&cluster=failfast...
 	id := providerUrl.GetParam(constant.BeanNameKey, "")
 
-	serviceConfig := config.GetProviderConfig().Services[id]
+	if providerConfRaw, ok := providerUrl.GetAttribute(constant.ProviderConfigPrefix); ok {
+		if providerConfig, ok := providerConfRaw.(*global.ProviderConfig); ok {
+			if serviceConfig, ok := providerConfig.Services[id]; ok {
+				if serviceConfig == nil {
+					s := "reExport can not get serviceConfig"
+					return perrors.New(s)
+				}
+				if rpcServiceRaw, ok := providerUrl.GetAttribute(constant.RpcServiceKey); ok {
+					if rpcService, ok := rpcServiceRaw.(common.RPCService); ok {
+						_, err := common.ServiceMap.Register(serviceConfig.Interface,
+							serviceConfig.ProtocolIDs[0], serviceConfig.Group,
+							serviceConfig.Version, rpcService)
+						if err != nil {
+							s := "reExport can not re register ServiceMap. Error message is " + err.Error()
+							return perrors.New(s)
+						}
+						return nil
+					}
+				}
+			}
+		}
+	}
+
+	// Fallback to config package for backward compatibility
+	providerConfig := config.GetProviderConfig()
+	if providerConfig == nil {
+		return perrors.New("reExport: both global and config provider config are unavailable")
+	}
+
+	serviceConfig := providerConfig.Services[id]
 	if serviceConfig == nil {
 		s := "reExport can not get serviceConfig"
 		return perrors.New(s)
@@ -288,6 +340,7 @@ func registerServiceMap(invoker base.Invoker) error {
 		s := "reExport can not re register ServiceMap. Error message is " + err.Error()
 		return perrors.New(s)
 	}
+
 	return nil
 }
 
@@ -424,9 +477,24 @@ func (proto *registryProtocol) Destroy() {
 		// close all protocol server after consumerUpdateWait + stepTimeout(max time wait during
 		// waitAndAcceptNewRequests procedure)
 		go func() {
-			<-time.After(config.GetShutDown().GetStepTimeout() + config.GetShutDown().GetConsumerUpdateWaitTime())
-			exporter.UnExport()
-			proto.bounds.Delete(key)
+			// 1. Prefer global config from URL attribute (including default set in Export)
+			if shutdownConfRaw, ok := exporter.registerUrl.GetAttribute(constant.ShutdownConfigPrefix); ok {
+				if shutdownConfig, ok := shutdownConfRaw.(*global.ShutdownConfig); ok {
+					stepTimeout, _ := time.ParseDuration(shutdownConfig.StepTimeout)
+					consumerUpdateWaitTime, _ := time.ParseDuration(shutdownConfig.ConsumerUpdateWaitTime)
+					<-time.After(stepTimeout + consumerUpdateWaitTime)
+					exporter.UnExport()
+					proto.bounds.Delete(key)
+					return
+				}
+			}
+
+			// 2. Fallback to config package (already set in Export if exists)
+			if configShutdown := config.GetShutDown(); configShutdown != nil {
+				<-time.After(configShutdown.GetStepTimeout() + configShutdown.GetConsumerUpdateWaitTime())
+				exporter.UnExport()
+				proto.bounds.Delete(key)
+			}
 		}()
 		return true
 	})
@@ -518,14 +586,31 @@ type providerConfigurationListener struct {
 	overrideListeners *sync.Map
 }
 
-func newProviderConfigurationListener(overrideListeners *sync.Map) *providerConfigurationListener {
+func newProviderConfigurationListener(overrideListeners *sync.Map, url *common.URL) *providerConfigurationListener {
 	listener := &providerConfigurationListener{}
 	listener.overrideListeners = overrideListeners
-	listener.InitWith(
-		config.GetRootConfig().Application.Name+constant.ConfiguratorSuffix,
-		listener,
-		extension.GetDefaultConfiguratorFunc(),
-	)
+
+	// Prefer global config from URL attribute (new API)
+	if applicationConfRaw, ok := url.GetAttribute(constant.ApplicationKey); ok {
+		if applicationConfig, ok := applicationConfRaw.(*global.ApplicationConfig); ok {
+			listener.InitWith(
+				applicationConfig.Name+constant.ConfiguratorSuffix,
+				listener,
+				extension.GetDefaultConfiguratorFunc(),
+			)
+			return listener
+		}
+	}
+
+	// Fallback to config package (old API)
+	if rootConfig := config.GetRootConfig(); rootConfig != nil && rootConfig.Application != nil {
+		listener.InitWith(
+			rootConfig.Application.Name+constant.ConfiguratorSuffix,
+			listener,
+			extension.GetDefaultConfiguratorFunc(),
+		)
+	}
+
 	return listener
 }
 

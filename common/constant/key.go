@@ -492,6 +492,10 @@ const (
 	TripleGoMethodName    = "XXX_TRIPLE_GO_METHOD_NAME"
 )
 
+const (
+	RpcServiceInterfaceName = "RPCSERVICE_INTERFACE_NAME"
+)
+
 // Weight constants for Nacos instance registration
 const (
 	DefaultNacosWeight = 1.0     // Default weight if not specified or invalid
