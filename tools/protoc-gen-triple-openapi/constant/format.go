@@ -25,6 +25,6 @@ const (
 
 // json format
 const (
-	JSONFormat = "json"
+	JSONFormat       = "json"
 	JSONFormatSuffix = ".triple.openapi.json"
 )
