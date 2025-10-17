@@ -91,15 +91,8 @@ func genTriple(plugin *protogen.Plugin) error {
 		filename := file.GeneratedFilenamePrefix + ".triple.go"
 		// Use the same import path as the pb.go file to ensure they're in the same package
 		// Extract the package name from the go_package option
-		goPackage := file.Proto.Options.GetGoPackage()
-		var importPath protogen.GoImportPath
-		if goPackage != "" {
-			parts := strings.Split(goPackage, ";")
-			importPath = protogen.GoImportPath(parts[0])
-		} else {
-			importPath = file.GoImportPath
-		}
-		g := plugin.NewGeneratedFile(filename, importPath)
+		// Use the import path as parsed by protogen to avoid edge cases.
+		g := plugin.NewGeneratedFile(filename, file.GoImportPath)
 		// 导入dubbo基础库
 		g.QualifiedGoIdent(protogen.GoImportPath("dubbo.apache.org/dubbo-go/v3/client").Ident("client"))
 		g.QualifiedGoIdent(protogen.GoImportPath("dubbo.apache.org/dubbo-go/v3/common").Ident("common"))
