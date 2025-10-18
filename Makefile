@@ -50,7 +50,6 @@ fmt: install-imports-formatter
 # Check code format without modifying files (using git status)
 check-fmt:
 	@echo "Checking code format..."
-	@git status --porcelain > /dev/null 2>&1 || (echo "Error: Not a git repository" && exit 1)
 	@if [ -n "$$(git status --porcelain)" ]; then \
 		echo "Error: The following files have changes after formatting:"; \
 		echo "$$(git status --porcelain)"; \
