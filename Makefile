@@ -47,17 +47,22 @@ fmt: install-imports-formatter
 	go fmt ./... && GOROOT=$(shell go env GOROOT) imports-formatter
 	cd $(CLI_DIR) && go fmt ./...
 
-# Check code format without modifying files (using git status)
+# Check code format
 check-fmt:
 	@echo "Checking code format..."
-	@if [ -n "$$(git status --porcelain)" ]; then \
-		echo "Error: The following files have changes after formatting:"; \
-		echo "$$(git status --porcelain)"; \
+	@git diff --name-only > .git_fmt_before
+	@$(MAKE) fmt
+	@git diff --name-only > .git_fmt_after
+	@diff_files=$$(comm -13 .git_fmt_before .git_fmt_after); \
+	if [ -n "$$diff_files" ]; then \
+		echo "Error: The following files have formatting changes:"; \
+		echo "$$diff_files"; \
 		echo ""; \
 		echo "Please run 'make fmt' to fix formatting issues and commit the changes."; \
+		rm -f .git_fmt_before .git_fmt_after; \
 		exit 1; \
 	fi
-	@echo "All files are properly formatted."
+	@rm -f .git_fmt_before .git_fmt_after
 
 # Clean test generate files
 clean:
