@@ -203,7 +203,8 @@ func (proto *registryProtocol) Export(originInvoker base.Invoker) base.Exporter 
 			providerUrl.SetAttribute(constant.ApplicationKey, appConfigRaw)
 		} else {
 			// Only set default global config when config package doesn't have one
-			if config.GetRootConfig() == nil || config.GetRootConfig().Application == nil {
+			rootConfig := config.GetRootConfig()
+			if rootConfig == nil || rootConfig.Application == nil {
 				providerUrl.SetAttribute(constant.ApplicationKey, global.DefaultApplicationConfig())
 			}
 		}
@@ -291,17 +292,37 @@ func registerServiceMap(invoker base.Invoker) error {
 	// such as dubbo://:20000/org.apache.dubbo.UserProvider?bean.name=UserProvider&cluster=failfast...
 	id := providerUrl.GetParam(constant.BeanNameKey, "")
 
+	providerConfig := config.GetProviderConfig()
+
+	if providerConfig != nil {
+		if serviceConfig := providerConfig.Services[id]; serviceConfig != nil {
+			rpcService := config.GetProviderService(id)
+			if rpcService == nil {
+				return perrors.New("reExport can not get RPCService")
+			}
+
+			_, err := common.ServiceMap.Register(serviceConfig.Interface,
+				serviceConfig.ProtocolIDs[0], serviceConfig.Group,
+				serviceConfig.Version, rpcService)
+			if err != nil {
+				s := "reExport can not re register ServiceMap. Error message is " + err.Error()
+				return perrors.New(s)
+			}
+			return nil
+		}
+	}
+
 	if providerConfRaw, ok := providerUrl.GetAttribute(constant.ProviderConfigPrefix); ok {
-		if providerConfig, ok := providerConfRaw.(*global.ProviderConfig); ok {
-			if serviceConfig, ok := providerConfig.Services[id]; ok {
-				if serviceConfig == nil {
+		if providerConf, ok := providerConfRaw.(*global.ProviderConfig); ok {
+			if serviceConf, ok := providerConf.Services[id]; ok {
+				if serviceConf == nil {
 					s := "reExport can not get serviceConfig"
 					return perrors.New(s)
 				}
 				if rpcService, ok := providerUrl.GetAttribute(constant.RpcServiceKey); ok {
-					_, err := common.ServiceMap.Register(serviceConfig.Interface,
-						serviceConfig.ProtocolIDs[0], serviceConfig.Group,
-						serviceConfig.Version, rpcService)
+					_, err := common.ServiceMap.Register(serviceConf.Interface,
+						serviceConf.ProtocolIDs[0], serviceConf.Group,
+						serviceConf.Version, rpcService)
 					if err != nil {
 						s := "reExport can not re register ServiceMap. Error message is " + err.Error()
 						return perrors.New(s)
@@ -312,33 +333,7 @@ func registerServiceMap(invoker base.Invoker) error {
 		}
 	}
 
-	// Fallback to config package for backward compatibility
-	providerConfig := config.GetProviderConfig()
-	if providerConfig == nil {
-		return perrors.New("reExport: both global and config provider config are unavailable")
-	}
-
-	serviceConfig := providerConfig.Services[id]
-	if serviceConfig == nil {
-		s := "reExport can not get serviceConfig"
-		return perrors.New(s)
-	}
-	rpcService := config.GetProviderService(id)
-	if rpcService == nil {
-		s := "reExport can not get RPCService"
-		return perrors.New(s)
-	}
-
-	_, err := common.ServiceMap.Register(serviceConfig.Interface,
-		// FIXME
-		serviceConfig.ProtocolIDs[0], serviceConfig.Group,
-		serviceConfig.Version, rpcService)
-	if err != nil {
-		s := "reExport can not re register ServiceMap. Error message is " + err.Error()
-		return perrors.New(s)
-	}
-
-	return nil
+	return perrors.New("reExport can not get serviceConfig of config")
 }
 
 type overrideSubscribeListener struct {
@@ -474,7 +469,13 @@ func (proto *registryProtocol) Destroy() {
 		// close all protocol server after consumerUpdateWait + stepTimeout(max time wait during
 		// waitAndAcceptNewRequests procedure)
 		go func() {
-			// 1. Prefer global config from URL attribute (including default set in Export)
+			if configShutdown := config.GetShutDown(); configShutdown != nil {
+				<-time.After(configShutdown.GetStepTimeout() + configShutdown.GetConsumerUpdateWaitTime())
+				exporter.UnExport()
+				proto.bounds.Delete(key)
+				return
+			}
+
 			if shutdownConfRaw, ok := exporter.registerUrl.GetAttribute(constant.ShutdownConfigPrefix); ok {
 				if shutdownConfig, ok := shutdownConfRaw.(*global.ShutdownConfig); ok {
 					stepTimeout, _ := time.ParseDuration(shutdownConfig.StepTimeout)
@@ -486,12 +487,6 @@ func (proto *registryProtocol) Destroy() {
 				}
 			}
 
-			// 2. Fallback to config package (already set in Export if exists)
-			if configShutdown := config.GetShutDown(); configShutdown != nil {
-				<-time.After(configShutdown.GetStepTimeout() + configShutdown.GetConsumerUpdateWaitTime())
-				exporter.UnExport()
-				proto.bounds.Delete(key)
-			}
 		}()
 		return true
 	})
@@ -587,6 +582,14 @@ func newProviderConfigurationListener(overrideListeners *sync.Map, url *common.U
 	listener := &providerConfigurationListener{}
 	listener.overrideListeners = overrideListeners
 
+	// Fallback to config package (old API)
+	if rootConfig := config.GetRootConfig(); rootConfig != nil && rootConfig.Application != nil {
+		listener.InitWith(
+			rootConfig.Application.Name+constant.ConfiguratorSuffix,
+			listener,
+			extension.GetDefaultConfiguratorFunc(),
+		)
+	}
 	// Prefer global config from URL attribute (new API)
 	if applicationConfRaw, ok := url.GetAttribute(constant.ApplicationKey); ok {
 		if applicationConfig, ok := applicationConfRaw.(*global.ApplicationConfig); ok {
@@ -598,16 +601,6 @@ func newProviderConfigurationListener(overrideListeners *sync.Map, url *common.U
 			return listener
 		}
 	}
-
-	// Fallback to config package (old API)
-	if rootConfig := config.GetRootConfig(); rootConfig != nil && rootConfig.Application != nil {
-		listener.InitWith(
-			rootConfig.Application.Name+constant.ConfiguratorSuffix,
-			listener,
-			extension.GetDefaultConfiguratorFunc(),
-		)
-	}
-
 	return listener
 }
 

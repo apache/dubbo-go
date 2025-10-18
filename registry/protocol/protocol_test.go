@@ -77,7 +77,6 @@ func referNormal(t *testing.T, regProtocol *registryProtocol) {
 }
 
 func TestRefer(t *testing.T) {
-
 	regProtocol := newRegistryProtocol()
 	referNormal(t, regProtocol)
 }
