@@ -18,4 +18,5 @@
 package constant
 
 // TraceScopeName is unique name of trace used for the filter
+// Reference: https://github.com/open-telemetry/opentelemetry-specification/
 const TraceScopeName = "dubbo.apache.org/dubbo-go/v3/filter/otel/trace"
