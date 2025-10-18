@@ -261,13 +261,12 @@ func registerServiceMap(invoker base.Invoker) error {
 	// the bean.name param of providerUrl is the ServiceConfig id property
 	// such as dubbo://:20000/org.apache.dubbo.UserProvider?bean.name=UserProvider&cluster=failfast...
 	id := providerUrl.GetParam(constant.BeanNameKey, "")
-	// FIXME config
+
 	serviceConfig := config.GetProviderConfig().Services[id]
 	if serviceConfig == nil {
 		s := "reExport can not get serviceConfig"
 		return perrors.New(s)
 	}
-	// FIXME config
 	rpcService := config.GetProviderService(id)
 	if rpcService == nil {
 		s := "reExport can not get RPCService"
@@ -418,7 +417,6 @@ func (proto *registryProtocol) Destroy() {
 		// close all protocol server after consumerUpdateWait + stepTimeout(max time wait during
 		// waitAndAcceptNewRequests procedure)
 		go func() {
-			// FIXME config
 			<-time.After(config.GetShutDown().GetStepTimeout() + config.GetShutDown().GetConsumerUpdateWaitTime())
 			exporter.UnExport()
 			proto.bounds.Delete(key)
@@ -517,7 +515,6 @@ func newProviderConfigurationListener(overrideListeners *sync.Map) *providerConf
 	listener := &providerConfigurationListener{}
 	listener.overrideListeners = overrideListeners
 	listener.InitWith(
-		// FIXME config
 		config.GetRootConfig().Application.Name+constant.ConfiguratorSuffix,
 		listener,
 		extension.GetDefaultConfiguratorFunc(),
