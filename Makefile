@@ -26,13 +26,14 @@ MAKEFLAGS += --no-print-directory
 CLI_DIR = tools/dubbogo-cli
 IMPORTS_FORMATTER_DIR = tools/imports-formatter
 
-.PHONY: help test fmt clean lint
+.PHONY: help test fmt clean lint check-fmt
 
 help:
 	@echo "Available commands:"
 	@echo "  test       - Run unit tests"
 	@echo "  clean      - Clean test generate files"
 	@echo "  fmt        - Format code"
+	@echo "  check-fmt  - Check code format using git status"
 	@echo "  lint       - Run golangci-lint"
 
 # Run unit tests
@@ -45,6 +46,19 @@ fmt: install-imports-formatter
 	go run golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@latest -category=efaceany -fix -test ./...
 	go fmt ./... && GOROOT=$(shell go env GOROOT) imports-formatter
 	cd $(CLI_DIR) && go fmt ./...
+
+# Check code format without modifying files (using git status)
+check-fmt:
+	@echo "Checking code format..."
+	@git status --porcelain > /dev/null 2>&1 || (echo "Error: Not a git repository" && exit 1)
+	@if [ -n "$$(git status --porcelain)" ]; then \
+		echo "Error: The following files have changes after formatting:"; \
+		echo "$$(git status --porcelain)"; \
+		echo ""; \
+		echo "Please run 'make fmt' to fix formatting issues and commit the changes."; \
+		exit 1; \
+	fi
+	@echo "All files are properly formatted."
 
 # Clean test generate files
 clean:
