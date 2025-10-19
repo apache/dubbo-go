@@ -33,7 +33,6 @@ help:
 	@echo "  test       - Run unit tests"
 	@echo "  clean      - Clean test generate files"
 	@echo "  fmt        - Format code"
-	@echo "  check-fmt  - Check code format using git status"
 	@echo "  lint       - Run golangci-lint"
 
 # Run unit tests
@@ -47,22 +46,17 @@ fmt: install-imports-formatter
 	go fmt ./... && GOROOT=$(shell go env GOROOT) imports-formatter
 	cd $(CLI_DIR) && go fmt ./...
 
-# Check code format
+# This command is used in CI to verify that code formatting is correct
 check-fmt:
 	@echo "Checking code format..."
-	@git diff --name-only > .git_fmt_before
 	@$(MAKE) fmt
-	@git diff --name-only > .git_fmt_after
-	@diff_files=$$(comm -13 .git_fmt_before .git_fmt_after); \
-	if [ -n "$$diff_files" ]; then \
+	@if ! git diff --exit-code --quiet; then \
 		echo "Error: The following files have formatting changes:"; \
-		echo "$$diff_files"; \
+		git diff --name-only; \
 		echo ""; \
 		echo "Please run 'make fmt' to fix formatting issues and commit the changes."; \
-		rm -f .git_fmt_before .git_fmt_after; \
 		exit 1; \
 	fi
-	@rm -f .git_fmt_before .git_fmt_after
 
 # Clean test generate files
 clean:
