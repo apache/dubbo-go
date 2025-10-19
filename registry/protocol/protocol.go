@@ -582,7 +582,7 @@ func newProviderConfigurationListener(overrideListeners *sync.Map, url *common.U
 	listener := &providerConfigurationListener{}
 	listener.overrideListeners = overrideListeners
 
-	// Fallback to config package (old API)
+	//TODO: Temporary compatibility with old APIs, can be removed later
 	if rootConfig := config.GetRootConfig(); rootConfig != nil && rootConfig.Application != nil {
 		listener.InitWith(
 			rootConfig.Application.Name+constant.ConfiguratorSuffix,
