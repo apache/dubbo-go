@@ -52,10 +52,19 @@ var (
 	instanceOptions      = defaultInstanceOptions()
 	instanceOptionsMutex sync.Mutex
 	once                 sync.Once
-	stopCh               = make(chan struct{})
-	watcherWg            sync.WaitGroup
 	stopOnce             sync.Once
 )
+
+// fileWatcher manages the file watching state and concurrency control
+type fileWatcher struct {
+	stopCh    chan struct{}
+	watcherWg sync.WaitGroup
+	mu        sync.Mutex
+}
+
+var watcher = &fileWatcher{
+	stopCh: make(chan struct{}),
+}
 
 func Load(opts ...LoaderConfOption) error {
 	conf := NewLoaderConf(opts...)
@@ -77,8 +86,9 @@ func Load(opts ...LoaderConfOption) error {
 	instance := &Instance{insOpts: instanceOptions}
 	// start the file watcher
 	once.Do(func() {
-		gr.GoSafely(&watcherWg, false, func() {
-			watch(conf, stopCh)
+		watcher.watcherWg.Add(1)
+		gr.GoSafely(&watcher.watcherWg, false, func() {
+			watch(conf, watcher.stopCh)
 		}, nil)
 		extension.AddCustomShutdownCallback(func() {
 			StopFileWatcher()
@@ -435,9 +445,11 @@ func checkPlaceholder(s string) (newKey, defaultValue string) {
 func StopFileWatcher() {
 	logger.Info("Stopping file watcher...")
 	stopOnce.Do(func() {
-		close(stopCh)
+		watcher.mu.Lock()
+		defer watcher.mu.Unlock()
+		close(watcher.stopCh)
 	})
-	watcherWg.Wait()
+	watcher.watcherWg.Wait()
 	logger.Info("File watcher stopped successfully")
 }
 
