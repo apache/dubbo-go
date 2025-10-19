@@ -125,17 +125,8 @@ func getRandomPort(protocolConfigs []*global.ProtocolConfig) *list.List {
 }
 
 func (svcOpts *ServiceOptions) Export() error {
-	// TODO why edit svcOpts here
 	info := svcOpts.info
 	svcConf := svcOpts.Service
-	if info != nil {
-		if svcConf.Interface == "" {
-			svcConf.Interface = info.InterfaceName
-		}
-		svcOpts.info = info
-	}
-
-	svcOpts.Id = common.GetReference(svcOpts.rpcService)
 
 	// TODO: delay needExport
 	if svcOpts.unexported != nil && svcOpts.unexported.Load() {
