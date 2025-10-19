@@ -88,7 +88,7 @@ func (s *Server) registerWithMode(handler any, info *common.ServiceInfo, idlMode
 		baseOpts = append(baseOpts, WithInterface(common.GetReference(handler)))
 	}
 	baseOpts = append(baseOpts, opts...)
-	newSvcOpts, err := s.genSvcOpts(handler, baseOpts...)
+	newSvcOpts, err := s.genSvcOpts(handler, info, baseOpts...)
 	if err != nil {
 		return err
 	}
@@ -96,7 +96,7 @@ func (s *Server) registerWithMode(handler any, info *common.ServiceInfo, idlMode
 	return nil
 }
 
-func (s *Server) genSvcOpts(handler any, opts ...ServiceOption) (*ServiceOptions, error) {
+func (s *Server) genSvcOpts(handler any, info *common.ServiceInfo, opts ...ServiceOption) (*ServiceOptions, error) {
 	if s.cfg == nil {
 		return nil, errors.New("Server has not been initialized, please use NewServer() to create Server")
 	}
@@ -127,11 +127,10 @@ func (s *Server) genSvcOpts(handler any, opts ...ServiceOption) (*ServiceOptions
 			SetRegistries(regsCfg),
 		)
 	}
+	// Get the unique identifier of the handler (the default is the structure name or the alias set during registration)
+	interfaceName := common.GetReference(handler)
 	// Get service-level configuration items from provider.services configuration
 	if proCfg != nil && proCfg.Services != nil {
-		// Get the unique identifier of the handler (the default is the structure name or the alias set during registration)
-		interfaceName := common.GetReference(handler)
-		newSvcOpts.Id = interfaceName
 		// Give priority to accurately finding the service configuration from the configuration based on the reference name (i.e. the handler registration name)
 		svcCfg, ok := proCfg.Services[interfaceName]
 		if !ok {
@@ -157,8 +156,16 @@ func (s *Server) genSvcOpts(handler any, opts ...ServiceOption) (*ServiceOptions
 	if err := newSvcOpts.init(s, svcOpts...); err != nil {
 		return nil, err
 	}
+	svcConf := newSvcOpts.Service
+	if info != nil {
+		if svcConf.Interface == "" {
+			svcConf.Interface = info.InterfaceName
+		}
+		newSvcOpts.info = info
+	}
+	newSvcOpts.Id = interfaceName
 	newSvcOpts.Implement(handler)
-	newSvcOpts.info = enhanceServiceInfo(newSvcOpts.info)
+	newSvcOpts.info = enhanceServiceInfo(info)
 	return newSvcOpts, nil
 }
 
@@ -249,7 +256,7 @@ func (s *Server) exportInternalServices() error {
 			logger.Infof("[internal service]%s service will not expose", service.Name)
 			continue
 		}
-		newSvcOpts, err := s.genSvcOpts(sd.Handler, sd.Opts...)
+		newSvcOpts, err := s.genSvcOpts(sd.Handler, sd.Info, sd.Opts...)
 		if err != nil {
 			return err
 		}
