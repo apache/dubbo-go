@@ -357,6 +357,9 @@ func (s *Server) registerServiceOptions(serviceOptions *ServiceOptions) {
 	defer s.mu.Unlock()
 	logger.Infof("A provider service %s was registered successfully.", serviceOptions.Id)
 	s.svcOptsMap[serviceOptions.Id] = serviceOptions
+	if serviceOptions.Service != nil && serviceOptions.Service.Interface != "" {
+		s.interfaceNameServices[serviceOptions.Service.Interface] = serviceOptions
+	}
 }
 
 // GetServiceOptions retrieves the ServiceOptions for a service by its name/ID
