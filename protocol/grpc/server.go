@@ -169,15 +169,13 @@ func (s *Server) getProviderServices(url *common.URL) map[string]*global.Service
 		return convertServiceMap(providerServices)
 	}
 	// TODO #2741 old config compatibility
-	providerConfRaw, ok := url.GetAttribute(constant.ProviderConfigKey)
-	if !ok {
-		panic("no provider service found")
-	}
-	providerConf, ok := providerConfRaw.(*global.ProviderConfig)
-	if !ok || providerConf == nil {
+	if providerConfRaw, ok := url.GetAttribute(constant.ProviderConfigKey); ok {
+		if providerConf, ok := providerConfRaw.(*global.ProviderConfig); ok && providerConf != nil {
+			return providerConf.Services
+		}
 		panic("illegal provider config")
 	}
-	return providerConf.Services
+	panic("no provider service found")
 }
 
 // getSyncMapLen get sync map len

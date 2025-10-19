@@ -280,7 +280,6 @@ func init() {
 	})
 	// In order to adapt config.Load
 	// Plans for future removal
-	// FIXME config
 	config.SetProviderServiceWithInfo(reflectionServer, &rpb.ServerReflection_ServiceInfo)
 }
 
