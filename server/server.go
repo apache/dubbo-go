@@ -97,6 +97,10 @@ func (s *Server) genSvcOpts(handler any, opts ...ServiceOption) (*ServiceOptions
 	prosCfg := s.cfg.Protocols
 	regsCfg := s.cfg.Registries
 	// todo(DMwangnima): record the registered service
+	// Record the registered service for debugging and monitoring
+	interfaceName := common.GetReference(handler)
+	logger.Infof("Registering service: %s", interfaceName)
+
 	newSvcOpts := defaultServiceOptions()
 	if appCfg != nil {
 		svcOpts = append(svcOpts,
@@ -121,7 +125,6 @@ func (s *Server) genSvcOpts(handler any, opts ...ServiceOption) (*ServiceOptions
 	// Get service-level configuration items from provider.services configuration
 	if proCfg != nil && proCfg.Services != nil {
 		// Get the unique identifier of the handler (the default is the structure name or the alias set during registration)
-		interfaceName := common.GetReference(handler)
 		// Give priority to accurately finding the service configuration from the configuration based on the reference name (i.e. the handler registration name)
 		svcCfg, ok := proCfg.Services[interfaceName]
 		if !ok {

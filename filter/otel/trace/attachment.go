@@ -33,7 +33,7 @@ type metadataSupplier struct {
 	metadata map[string]any
 }
 
-var _ propagation.TextMapCarrier = &metadataSupplier{}
+var _ propagation.TextMapCarrier = (*metadataSupplier)(nil)
 
 func (s *metadataSupplier) Get(key string) string {
 	if s.metadata == nil {
