@@ -82,8 +82,10 @@ func NewDubbo3Invoker(url *common.URL) (*DubboInvoker, error) {
 	interfaceKey := url.GetParam(constant.InterfaceKey, "")
 	//TODO: Temporary compatibility with old APIs, can be removed later
 	consumerService := config.GetConsumerServiceByInterfaceName(interfaceKey)
-	if rpcService, ok := url.GetAttribute(constant.RpcServiceKey); ok {
-		consumerService = rpcService
+	if consumerService == nil {
+		if rpcService, ok := url.GetAttribute(constant.RpcServiceKey); ok {
+			consumerService = rpcService
+		}
 	}
 
 	dubboSerializerType := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
