@@ -46,6 +46,7 @@ type ReferenceOptions struct {
 	Metrics   *global.MetricsConfig
 	Otel      *global.OtelConfig
 	TLS       *global.TLSConfig
+	Protocols map[string]*global.ProtocolConfig
 
 	pxy          *proxy.Proxy
 	id           string
@@ -65,6 +66,7 @@ func defaultReferenceOptions() *ReferenceOptions {
 		Metrics:   global.DefaultMetricsConfig(),
 		Otel:      global.DefaultOtelConfig(),
 		TLS:       global.DefaultTLSConfig(),
+		Protocols: make(map[string]*global.ProtocolConfig),
 	}
 }
 
@@ -478,6 +480,12 @@ func setTLS(tls *global.TLSConfig) ReferenceOption {
 	}
 }
 
+func setProtocols(protocols map[string]*global.ProtocolConfig) ReferenceOption {
+	return func(opts *ReferenceOptions) {
+		opts.Protocols = protocols
+	}
+}
+
 type ClientOptions struct {
 	Consumer    *global.ConsumerConfig
 	Application *global.ApplicationConfig
@@ -486,6 +494,7 @@ type ClientOptions struct {
 	Metrics     *global.MetricsConfig
 	Otel        *global.OtelConfig
 	TLS         *global.TLSConfig
+	Protocols   map[string]*global.ProtocolConfig
 
 	overallReference  *global.ReferenceConfig
 	applicationCompat *config.ApplicationConfig
@@ -502,6 +511,7 @@ func defaultClientOptions() *ClientOptions {
 		Otel:             global.DefaultOtelConfig(),
 		TLS:              global.DefaultTLSConfig(),
 		overallReference: global.DefaultReferenceConfig(),
+		Protocols:        make(map[string]*global.ProtocolConfig),
 	}
 }
 
@@ -934,6 +944,12 @@ func SetClientOtel(otel *global.OtelConfig) ClientOption {
 func SetClientTLS(tls *global.TLSConfig) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.TLS = tls
+	}
+}
+
+func SetProtocols(protocols map[string]*global.ProtocolConfig) ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Protocols = protocols
 	}
 }
 

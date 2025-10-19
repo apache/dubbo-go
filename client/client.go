@@ -169,6 +169,7 @@ func (cli *Client) dial(interfaceName string, info *ClientInfo, srv any, opts ..
 		setMetrics(cli.cliOpts.Metrics),
 		setOtel(cli.cliOpts.Otel),
 		setTLS(cli.cliOpts.TLS),
+		setProtocols(cli.cliOpts.Protocols),
 		// this config must be set after Reference initialized
 		setInterfaceName(interfaceName),
 	}
