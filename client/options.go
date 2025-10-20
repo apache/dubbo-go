@@ -947,7 +947,7 @@ func SetClientTLS(tls *global.TLSConfig) ClientOption {
 	}
 }
 
-func SetProtocols(protocols map[string]*global.ProtocolConfig) ClientOption {
+func SetClientProtocols(protocols map[string]*global.ProtocolConfig) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.Protocols = protocols
 	}
