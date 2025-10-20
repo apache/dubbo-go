@@ -480,6 +480,10 @@ func setTLS(tls *global.TLSConfig) ReferenceOption {
 	}
 }
 
+// setProtocols sets the protocols configuration for the service reference.
+// This is an internal function used by the framework to configure protocol settings.
+// It accepts a map of protocol configurations where the key is the protocol name
+// and the value is the corresponding protocol configuration.
 func setProtocols(protocols map[string]*global.ProtocolConfig) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Protocols = protocols
@@ -947,6 +951,10 @@ func SetClientTLS(tls *global.TLSConfig) ClientOption {
 	}
 }
 
+// SetClientProtocols sets the protocols configuration for the client.
+// This function is used by the framework to configure protocol settings from global configuration.
+// It accepts a map of protocol configurations where the key is the protocol name
+// and the value is the corresponding protocol configuration.
 func SetClientProtocols(protocols map[string]*global.ProtocolConfig) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.Protocols = protocols

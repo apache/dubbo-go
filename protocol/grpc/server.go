@@ -152,6 +152,10 @@ func (s *Server) Start(url *common.URL) {
 
 	go func() {
 		providerServices := s.getProviderServices(url)
+		if providerServices == nil {
+			logger.Error("no provider service found")
+			return
+		}
 		// wait all exporter ready, then set proxy impl and grpc registerService
 		waitGrpcExporter(providerServices)
 		registerService(providerServices, server)
@@ -173,9 +177,9 @@ func (s *Server) getProviderServices(url *common.URL) map[string]*global.Service
 		if providerConf, ok := providerConfRaw.(*global.ProviderConfig); ok && providerConf != nil {
 			return providerConf.Services
 		}
-		panic("illegal provider config")
+		logger.Error("illegal provider config")
 	}
-	panic("no provider service found")
+	return nil
 }
 
 // getSyncMapLen get sync map len
