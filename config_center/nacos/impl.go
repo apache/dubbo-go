@@ -168,7 +168,12 @@ func (n *nacosDynamicConfiguration) GetRule(key string, opts ...config_center.Op
 		Group:  resolvedGroup,
 	})
 	if err != nil {
-		return "", perrors.WithStack(err)
+		if strings.Contains(err.Error(), "config data not exist") {
+			logger.Warnf("query router rule fail, key=%s, group=%s, err=%v", key, resolvedGroup, err)
+			return "", nil
+		} else {
+			return "", perrors.WithStack(err)
+		}
 	} else {
 		return content, nil
 	}
