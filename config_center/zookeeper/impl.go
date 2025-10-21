@@ -135,7 +135,7 @@ func (c *zookeeperDynamicConfiguration) GetProperties(key string, opts ...config
 	}
 	content, _, err := c.client.GetContent(c.rootPath + "/" + key)
 	if perrors.Is(err, zk.ErrNoNode) {
-		logger.Warnf("query router rule fail,key=%s,err=%v", key, err)
+		logger.Warnf("query rule fail,key=%s,err=%v", key, err)
 		return "", nil
 	}
 	if err != nil {
