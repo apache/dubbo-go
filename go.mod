@@ -36,7 +36,7 @@ require (
 	github.com/mattn/go-colorable v0.1.13
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
-	github.com/nacos-group/nacos-sdk-go/v2 v2.2.2
+	github.com/nacos-group/nacos-sdk-go/v2 v2.2.5
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/oliveagle/jsonpath v0.0.0-20180606110733-2e52cf6e6852
 	github.com/opentracing/opentracing-go v1.2.0
@@ -72,7 +72,12 @@ require (
 )
 
 require (
-	github.com/aliyun/alibaba-cloud-sdk-go v1.61.1704 // indirect
+	github.com/alibabacloud-go/debug v0.0.0-20190504072949-9472017b5c68 // indirect
+	github.com/alibabacloud-go/tea v1.1.17 // indirect
+	github.com/alibabacloud-go/tea-utils v1.4.4 // indirect
+	github.com/aliyun/alibaba-cloud-sdk-go v1.61.1800 // indirect
+	github.com/aliyun/alibabacloud-dkms-gcs-go-sdk v0.2.2 // indirect
+	github.com/aliyun/alibabacloud-dkms-transfer-go-sdk v0.1.7 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.2.0 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
@@ -140,7 +145,7 @@ require (
 	golang.org/x/mod v0.18.0 // indirect
 	golang.org/x/sys v0.23.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
-	golang.org/x/time v0.0.0-20220722155302-e5dcc9cfc0b9 // indirect
+	golang.org/x/time v0.1.0 // indirect
 	golang.org/x/tools v0.22.0 // indirect
 	google.golang.org/genproto v0.0.0-20230822172742-b8732ec3820d // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20230822172742-b8732ec3820d // indirect
