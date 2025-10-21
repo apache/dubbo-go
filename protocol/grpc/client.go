@@ -159,6 +159,7 @@ func NewClient(url *common.URL) (*Client, error) {
 
 func clientInit(url *common.URL) {
 	// load rootConfig from runtime
+	rootConfig := config.GetRootConfig()
 
 	clientConfig := GetClientConfig()
 	clientConf = &clientConfig
@@ -174,8 +175,15 @@ func clientInit(url *common.URL) {
 		}
 	}()
 
+	if rootConfig.Application == nil {
+		app := url.GetParam(constant.ApplicationKey, "")
+		if len(app) == 0 {
+			return
+		}
+	}
+
 	//TODO: Temporary compatibility with old APIs, can be removed later
-	protocolConf := dubbo.CompatGlobalProtocolConfigMap(config.GetRootConfig().Protocols)
+	protocolConf := dubbo.CompatGlobalProtocolConfigMap(rootConfig.Protocols)
 	if protocolConf == nil {
 		if protocolConfRaw, ok := url.GetAttribute(constant.ProtocolConfigKey); ok {
 			protocolConfig, ok := protocolConfRaw.(map[string]*global.ProtocolConfig)
