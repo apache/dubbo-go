@@ -151,7 +151,7 @@ func (s *Server) Start(url *common.URL) {
 	s.grpcServer = server
 
 	go func() {
-		providerServices := s.getProviderServices(url)
+		providerServices := getProviderServices(url)
 		if providerServices == nil {
 			logger.Error("no provider service found")
 			return
@@ -167,7 +167,7 @@ func (s *Server) Start(url *common.URL) {
 }
 
 // getProviderServices retrieves provider services from config or URL attributes
-func (s *Server) getProviderServices(url *common.URL) map[string]*global.ServiceConfig {
+func getProviderServices(url *common.URL) map[string]*global.ServiceConfig {
 	providerServices := config.GetProviderConfig().Services
 	if len(providerServices) > 0 {
 		return convertServiceMap(providerServices)
