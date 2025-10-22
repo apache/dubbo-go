@@ -83,7 +83,7 @@ func genTriple(plugin *protogen.Plugin) error {
 			continue
 		}
 
-		// 跳过无服务的proto文件
+		// Skip proto files without services.
 		if len(file.Proto.GetService()) == 0 {
 			continue
 		}
@@ -93,7 +93,7 @@ func genTriple(plugin *protogen.Plugin) error {
 		// Extract the package name from the go_package option
 		// Use the import path as parsed by protogen to avoid edge cases.
 		g := plugin.NewGeneratedFile(filename, file.GoImportPath)
-		// 导入dubbo基础库
+		// import Dubbo's libraries
 		g.QualifiedGoIdent(protogen.GoImportPath("dubbo.apache.org/dubbo-go/v3/client").Ident("client"))
 		g.QualifiedGoIdent(protogen.GoImportPath("dubbo.apache.org/dubbo-go/v3/common").Ident("common"))
 		g.QualifiedGoIdent(protogen.GoImportPath("dubbo.apache.org/dubbo-go/v3/common/constant").Ident("constant"))

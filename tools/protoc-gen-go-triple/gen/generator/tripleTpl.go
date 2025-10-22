@@ -140,8 +140,11 @@ const ImportTpl = `
 
 import (
 	"context"
-	"dubbo.apache.org/dubbo-go/v3"
 	{{if .IsStream}}"net/http"{{end}}
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3"
 )
 
 `
