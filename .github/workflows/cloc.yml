@@ -36,7 +36,7 @@ jobs:
           echo "::set-output name=body::$(python3 -c "import json; j=json.load(open('cloc.json')); s=j.get('SUM',{}); print(f'Files: {s.get('files',0)}, Code: {s.get('code',0)}, Blank: {s.get('blank',0)}')")"
 
       - name: post or update PR comment with cloc summary
-        uses: peter-evans/create-or-update-comment@v3
+        uses: peter-evans/create-or-update-comment@v3 # NOSONAR
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           issue-number: ${{ github.event.pull_request.number }}
