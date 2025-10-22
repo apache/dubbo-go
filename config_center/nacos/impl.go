@@ -168,10 +168,12 @@ func (n *nacosDynamicConfiguration) GetRule(key string, opts ...config_center.Op
 		Group:  resolvedGroup,
 	})
 	if err != nil {
+		// Config data not exist, which is normal during initialization
 		if strings.Contains(err.Error(), "config data not exist") {
 			logger.Warnf("query rule fail, key=%s, group=%s, err=%v", key, resolvedGroup, err)
 			return "", nil
 		} else {
+			// Other errors that need to be propagated
 			return "", perrors.WithStack(err)
 		}
 	} else {
