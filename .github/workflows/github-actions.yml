@@ -62,7 +62,7 @@ jobs:
           ${{ runner.os }}-go-
 
     - name: Check Code Format
-      run: make fmt && git status && [[ -z `git status -s` ]]
+      run: make check-fmt
 
     - name: Unit Test
       run: make test
