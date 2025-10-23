@@ -63,15 +63,15 @@ func ProcessProtoFile(g *protogen.GeneratedFile, f *protogen.File) (TripleGo, er
 		ProtoPackage: file.GetPackage(),
 		Services:     make([]Service, 0),
 	}
-	for k_s, service := range file.GetService() {
+	for serviceIndex, service := range file.GetService() {
 		serviceMethods := make([]Method, 0)
 
-		for k_m, method := range service.GetMethod() {
+		for methodIndex, method := range service.GetMethod() {
 			serviceMethods = append(serviceMethods, Method{
 				MethodName:     method.GetName(),
-				RequestType:    g.QualifiedGoIdent(f.Services[k_s].Methods[k_m].Input.GoIdent),
+				RequestType:    g.QualifiedGoIdent(f.Services[serviceIndex].Methods[methodIndex].Input.GoIdent),
 				StreamsRequest: method.GetClientStreaming(),
-				ReturnType:     g.QualifiedGoIdent(f.Services[k_s].Methods[k_m].Output.GoIdent),
+				ReturnType:     g.QualifiedGoIdent(f.Services[serviceIndex].Methods[methodIndex].Output.GoIdent),
 				StreamsReturn:  method.GetServerStreaming(),
 			})
 			if method.GetClientStreaming() || method.GetServerStreaming() {
