@@ -160,6 +160,21 @@ func TestURLEqual(t *testing.T) {
 	categoryAny, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=*&version=2.6.0&enabled=*&category=*")
 	assert.NoError(t, err)
 	assert.True(t, categoryAny.URLEqual(u3))
+
+	// test for interface with AnyValue (*)
+	u4, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.Service1&group=gg&version=2.6.0")
+	assert.NoError(t, err)
+	urlInterfaceAnyValue, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=*&group=gg&version=2.6.0")
+	assert.NoError(t, err)
+	assert.True(t, u4.URLEqual(urlInterfaceAnyValue), "interface=* should match any interface")
+
+	// test for interface with AnyValue (*) in reverse order
+	assert.True(t, urlInterfaceAnyValue.URLEqual(u4), "interface=* should match any interface (reverse)")
+
+	// test for interface with different values (should fail)
+	u5, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.Service2&group=gg&version=2.6.0")
+	assert.NoError(t, err)
+	assert.False(t, u4.URLEqual(u5), "different interfaces should not match")
 }
 
 func TestURLGetParam(t *testing.T) {

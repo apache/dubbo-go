@@ -358,13 +358,23 @@ func (c *URL) URLEqual(url *URL) bool {
 
 	cGroup := tmpC.GetParam(constant.GroupKey, "")
 	urlGroup := tmpURL.GetParam(constant.GroupKey, "")
+
 	cKey := tmpC.Key()
 	urlKey := tmpURL.Key()
+
+	cInterface := tmpC.Service()
+	urlInterface := tmpURL.Service()
 
 	if cGroup == constant.AnyValue {
 		cKey = strings.Replace(cKey, "group=*", "group="+urlGroup, 1)
 	} else if urlGroup == constant.AnyValue {
 		urlKey = strings.Replace(urlKey, "group=*", "group="+cGroup, 1)
+	}
+
+	if cInterface == constant.AnyValue {
+		cKey = strings.Replace(cKey, "interface=*", "interface="+urlInterface, 1)
+	} else if urlInterface == constant.AnyValue {
+		urlKey = strings.Replace(urlKey, "interface=*", "interface="+cInterface, 1)
 	}
 
 	// 1. protocol, username, password, ip, port, service name, group, version should be equal
@@ -377,7 +387,6 @@ func (c *URL) URLEqual(url *URL) bool {
 		return false
 	}
 
-	// TODO :may need add interface key any value condition
 	return isMatchCategory(tmpURL.GetParam(constant.CategoryKey, constant.DefaultCategory), tmpC.GetParam(constant.CategoryKey, constant.DefaultCategory))
 }
 
