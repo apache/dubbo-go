@@ -24,6 +24,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
 import (
@@ -36,7 +38,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	. "dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
@@ -58,7 +60,7 @@ func testRequestOneWay(t *testing.T, client *Client) {
 	request := remoting.NewRequest("2.0.2")
 	invocation := createInvocation("GetUser", nil, nil, []any{"1", "username"},
 		[]reflect.Value{reflect.ValueOf("1"), reflect.ValueOf("username")})
-	attachment := map[string]string{InterfaceKey: "com.ikurento.user.UserProvider"}
+	attachment := map[string]string{constant.InterfaceKey: "com.ikurento.user.UserProvider"}
 	setAttachment(invocation, attachment)
 	request.Data = invocation
 	request.Event = false
@@ -97,7 +99,7 @@ func testClient_AsyncCall(t *testing.T, client *Client) {
 	request := remoting.NewRequest("2.0.2")
 	invocation := createInvocation("GetUser0", nil, nil, []any{"4", nil, "username"},
 		[]reflect.Value{reflect.ValueOf("4"), reflect.ValueOf(nil), reflect.ValueOf("username")})
-	attachment := map[string]string{InterfaceKey: "com.ikurento.user.UserProvider"}
+	attachment := map[string]string{constant.InterfaceKey: "com.ikurento.user.UserProvider"}
 	setAttachment(invocation, attachment)
 	request.Data = invocation
 	request.Event = false
@@ -271,7 +273,8 @@ func (u User) JavaClassName() string {
 	return "com.ikurento.user.User"
 }
 
-func TestInitClient(t *testing.T) {
+// TODO: Temporary compatibility with old APIs, can be removed later
+func TestInitClientOldApi(t *testing.T) {
 	originRootConf := config.GetRootConfig()
 	rootConf := config.RootConfig{
 		Protocols: map[string]*config.ProtocolConfig{
@@ -285,7 +288,21 @@ func TestInitClient(t *testing.T) {
 	config.SetRootConfig(rootConf)
 	url, err := common.NewURL("dubbo://127.0.0.1:20003/test")
 	assert.Nil(t, err)
-	initServer(url)
+	initClient(url)
 	config.SetRootConfig(*originRootConf)
 	assert.NotNil(t, srvConf)
+}
+
+func TestInitClient(t *testing.T) {
+	url, err := common.NewURL("dubbo://127.0.0.1:20003/test")
+	assert.Nil(t, err)
+	url.SetAttribute(constant.ProtocolConfigKey, map[string]*global.ProtocolConfig{
+		"dubbo": {
+			Name: "dubbo",
+			Ip:   "127.0.0.1",
+			Port: "20003",
+		},
+	})
+	url.SetAttribute(constant.ApplicationKey, global.ApplicationConfig{})
+	initClient(url)
 }

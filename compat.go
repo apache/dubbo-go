@@ -979,3 +979,15 @@ func compatGlobalProfilesConfig(c *config.ProfilesConfig) *global.ProfilesConfig
 		Active: c.Active,
 	}
 }
+
+func CompatGlobalTLSConfig(c *config.TLSConfig) *global.TLSConfig {
+	if c == nil {
+		return nil
+	}
+	return &global.TLSConfig{
+		CACertFile:    c.CACertFile,
+		TLSCertFile:   c.TLSCertFile,
+		TLSKeyFile:    c.TLSKeyFile,
+		TLSServerName: c.TLSServerName,
+	}
+}
