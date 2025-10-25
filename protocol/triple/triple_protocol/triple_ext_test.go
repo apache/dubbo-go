@@ -1486,7 +1486,10 @@ func TestBidiStreamServerSendsFirstMessage(t *testing.T) {
 			assert.Nil(t, stream.CloseRequest())
 			assert.Nil(t, stream.CloseResponse())
 		})
-		assert.Nil(t, stream.Send(nil))
+		// tolerate EOF when server closes stream concurrently
+		if err = stream.Send(nil); err != nil {
+			assert.ErrorIs(t, err, io.EOF)
+		}
 		select {
 		case <-time.After(time.Second):
 			t.Error("timed out to get request headers")
@@ -1523,7 +1526,10 @@ func TestStreamForServer(t *testing.T) {
 		t.Cleanup(server.Close)
 		stream, err := client.CumSum(context.Background())
 		assert.Nil(t, err)
-		assert.Nil(t, stream.Send(nil))
+		// tolerate EOF when server closes stream concurrently
+		if err = stream.Send(nil); err != nil {
+			assert.ErrorIs(t, err, io.EOF)
+		}
 		err = stream.Receive(&pingv1.CumSumResponse{})
 		assert.NotNil(t, err)
 		assert.Equal(t, triple.CodeOf(err), triple.CodeInternal)
@@ -1539,7 +1545,10 @@ func TestStreamForServer(t *testing.T) {
 		t.Cleanup(server.Close)
 		stream, err := client.CumSum(context.Background())
 		assert.Nil(t, err)
-		assert.Nil(t, stream.Send(nil))
+		// tolerate EOF when server closes stream concurrently
+		if err = stream.Send(nil); err != nil {
+			assert.ErrorIs(t, err, io.EOF)
+		}
 		err = stream.Receive(&pingv1.CumSumResponse{})
 		assert.NotNil(t, err)
 		assert.Equal(t, triple.CodeOf(err), triple.CodeUnknown)
@@ -1558,7 +1567,10 @@ func TestStreamForServer(t *testing.T) {
 		t.Cleanup(server.Close)
 		stream, err := client.CumSum(context.Background())
 		assert.Nil(t, err)
-		assert.Nil(t, stream.Send(nil))
+		// tolerate EOF when server closes stream concurrently
+		if err = stream.Send(nil); err != nil {
+			assert.ErrorIs(t, err, io.EOF)
+		}
 		assert.Nil(t, stream.CloseRequest())
 	})
 	t.Run("server-stream", func(t *testing.T) {
