@@ -83,6 +83,8 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (director
 	}
 	logger.Debugf("new RegistryDirectory for service :%s.", url.Key())
 
+	// TODO: Temporary compatibility with old APIs, can be removed later
+
 	// set application if not exist
 	if _, ok := url.GetAttribute(constant.ApplicationKey); !ok {
 		application := config.GetRootConfig().Application
