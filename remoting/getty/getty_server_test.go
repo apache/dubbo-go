@@ -19,9 +19,6 @@ package getty
 
 import (
 	"testing"
-
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
 import (
@@ -30,7 +27,9 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
 // TODO: Temporary compatibility with old APIs, can be removed later
