@@ -195,16 +195,13 @@ func enhanceServiceInfo(info *common.ServiceInfo) *common.ServiceInfo {
 }
 
 func (s *Server) exportServices() error {
-	var err error
 	for _, svcOpts := range s.svcOptsMap {
-		err := svcOpts.Export()
-		if err != nil {
+		if err := svcOpts.Export(); err != nil {
 			logger.Errorf("export %s service failed, err: %s", svcOpts.Service.Interface, err)
-			err = errors.Wrapf(err, "failed to export service %s", svcOpts.Service.Interface)
-			return err
+			return errors.Wrapf(err, "failed to export service %s", svcOpts.Service.Interface)
 		}
 	}
-	return err
+	return nil
 }
 
 func (s *Server) Serve() error {
