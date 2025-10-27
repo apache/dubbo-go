@@ -388,6 +388,7 @@ func compatOtelConfig(c *global.OtelConfig) *config.OtelConfig {
 			Propagator:  c.TracingConfig.Propagator,
 			SampleMode:  c.TracingConfig.SampleMode,
 			SampleRatio: c.TracingConfig.SampleRatio,
+			Insecure:    c.TracingConfig.Insecure,
 		},
 	}
 }
@@ -914,6 +915,7 @@ func compatGlobalOtelConfig(c *config.OtelConfig) *global.OtelConfig {
 			Propagator:  c.TraceConfig.Propagator,
 			SampleMode:  c.TraceConfig.SampleMode,
 			SampleRatio: c.TraceConfig.SampleRatio,
+			Insecure:    c.TraceConfig.Insecure,
 		},
 	}
 }

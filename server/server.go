@@ -106,6 +106,10 @@ func (s *Server) genSvcOpts(handler any, info *common.ServiceInfo, opts ...Servi
 	prosCfg := s.cfg.Protocols
 	regsCfg := s.cfg.Registries
 	// todo(DMwangnima): record the registered service
+	// Record the registered service for debugging and monitoring
+	interfaceName := common.GetReference(handler)
+	logger.Infof("Registering service: %s", interfaceName)
+
 	newSvcOpts := defaultServiceOptions()
 	if appCfg != nil {
 		svcOpts = append(svcOpts,
@@ -127,10 +131,9 @@ func (s *Server) genSvcOpts(handler any, info *common.ServiceInfo, opts ...Servi
 			SetRegistries(regsCfg),
 		)
 	}
-	// Get the unique identifier of the handler (the default is the structure name or the alias set during registration)
-	interfaceName := common.GetReference(handler)
 	// Get service-level configuration items from provider.services configuration
 	if proCfg != nil && proCfg.Services != nil {
+		// Get the unique identifier of the handler (the default is the structure name or the alias set during registration)
 		// Give priority to accurately finding the service configuration from the configuration based on the reference name (i.e. the handler registration name)
 		svcCfg, ok := proCfg.Services[interfaceName]
 		if !ok {
@@ -148,7 +151,11 @@ func (s *Server) genSvcOpts(handler any, info *common.ServiceInfo, opts ...Servi
 			)
 			logger.Infof("Injected options from provider.services for %s", interfaceName)
 		} else {
-			logger.Warnf("No matching service config found for [%s]", interfaceName)
+			// Only warn if there are actually services configured but none match
+			// This avoids unnecessary warnings when using new server API without config files
+			if len(proCfg.Services) > 0 {
+				logger.Warnf("No matching service config found for [%s]", interfaceName)
+			}
 		}
 	}
 	// options passed by users have higher priority
