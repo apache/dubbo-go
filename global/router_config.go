@@ -17,7 +17,9 @@
 
 package global
 
-import "dubbo.apache.org/dubbo-go/v3/common"
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+)
 
 type RouterConfig struct {
 	Scope      string   `validate:"required" yaml:"scope" json:"scope,omitempty" property:"scope"`
