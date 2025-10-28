@@ -78,14 +78,10 @@ func (c *RouterConfig) Clone() *RouterConfig {
 	}
 
 	newConditions := make([]string, len(c.Conditions))
-	for k, v := range c.Conditions {
-		newConditions[k] = v
-	}
+	copy(newConditions, c.Conditions)
 
 	newTags := make([]Tag, len(c.Tags))
-	for k, v := range c.Tags {
-		newTags[k] = v
-	}
+	copy(newTags, c.Tags)
 
 	return &RouterConfig{
 		Scope:      c.Scope,
