@@ -57,7 +57,7 @@ func compatRootConfig(c *InstanceOptions) *config.RootConfig {
 		Otel:                compatOtelConfig(c.Otel),
 		Logger:              compatLoggerConfig(c.Logger),
 		Shutdown:            compatShutdownConfig(c.Shutdown),
-		Router:              rouCompat,
+		Router:              routeCompat,
 		EventDispatcherType: c.EventDispatcherType,
 		CacheFile:           c.CacheFile,
 		Custom:              compatCustomConfig(c.Custom),
