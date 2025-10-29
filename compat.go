@@ -42,7 +42,7 @@ func compatRootConfig(c *InstanceOptions) *config.RootConfig {
 
 	routeCompat := make([]*config.RouterConfig, 0)
 	for _, v := range c.Router {
-		routeCompat = append(routeCompat , compatRouterConfig(v))
+		routeCompat = append(routeCompat, compatRouterConfig(v))
 	}
 	return &config.RootConfig{
 		Application:         compatApplicationConfig(c.Application),
