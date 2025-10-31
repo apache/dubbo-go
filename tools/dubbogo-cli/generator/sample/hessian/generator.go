@@ -99,6 +99,13 @@ func scanFile(filePath string) (file *fileInfo, err error) {
 	stack := make([][]byte, 0)
 	var line []byte
 	var lineSize int
+	var (
+		packageRegexp       = regexp.MustCompile(PackageRegexp)
+		initFunctionRegexp  = regexp.MustCompile(InitFunctionRegexp)
+		hessianImportRegexp = regexp.MustCompile(HessianImportRegexp)
+		lineCommentRegexp   = regexp.MustCompile(LineCommentRegexp)
+		hessianPOJORegexp   = regexp.MustCompile(HessianPOJORegexp)
+	)
 	for {
 		line, _, err = buf.ReadLine()
 		if err == io.EOF {
@@ -116,13 +123,13 @@ func scanFile(filePath string) (file *fileInfo, err error) {
 		buffer = append(buffer, line...)
 		buffer = append(buffer, newLine)
 
-		if passed, _ := regexp.Match(PackageRegexp, line); passed { // 检测package位置
+		if packageRegexp.Match(line) { // 检测package位置
 			file.packageStartIndex = bufferSize              // 检测初始化函数初始位
 			file.packageEndIndex = bufferSize + lineSize + 1 // 检测初始化函数初始位
 			continue
 		}
 
-		if passed, _ := regexp.Match(InitFunctionRegexp, line); passed { // 检测初始化函数
+		if initFunctionRegexp.Match(line) { // 检测初始化函数
 			file.hasInitFunc = true
 			file.initFuncStartIndex = bufferSize                     // 检测初始化函数初始位
 			file.initFuncStatementStartIndex = bufferSize + lineSize // 初始化函数方法体初始位
@@ -130,17 +137,16 @@ func scanFile(filePath string) (file *fileInfo, err error) {
 		}
 
 		if !file.hasHessianImport {
-			r, _ := regexp.Compile(HessianImportRegexp)
-			rIndexList := r.FindIndex(line)
+			rIndexList := hessianImportRegexp.FindIndex(line)
 			if len(rIndexList) > 0 { // 检测是否已导入hessian2包
 				checkStatement := line[:rIndexList[0]]
-				passed, _ := regexp.Match(LineCommentRegexp, checkStatement) // 是否被行注释
+				passed := lineCommentRegexp.Match(checkStatement) // 是否被行注释
 				file.hasHessianImport = !passed
 				continue
 			}
 		}
 
-		if passed, _ := regexp.Match(HessianPOJORegexp, line); !passed { // 校验是否为Hessian.POJO实现类
+		if !hessianPOJORegexp.Match(line) { // 校验是否为Hessian.POJO实现类
 			continue
 		}
 		structName := getStructName(line)
@@ -270,7 +276,7 @@ func genRegistryStatement(file *fileInfo) error {
 		buffer = append(buffer, initFunctionSuffix...)
 	}
 
-	f, err := os.OpenFile(file.path, os.O_CREATE|os.O_WRONLY, 0666)
+	f, err := os.OpenFile(file.path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
 	if err != nil {
 		return err
 	}
