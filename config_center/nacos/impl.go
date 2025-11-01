@@ -159,19 +159,33 @@ func (n *nacosDynamicConfiguration) GetConfigKeysByGroup(group string) (*gxset.H
 	return result, nil
 }
 
-// GetRule Get router rule
+// GetRule retrieves a router rule from Nacos configuration center.
 func (n *nacosDynamicConfiguration) GetRule(key string, opts ...config_center.Option) (string, error) {
 	tmpOpts := config_center.NewOptions(opts...)
-	resolvedGroup := n.resolvedGroup(tmpOpts.Center.Group)
+	group := n.resolvedGroup(tmpOpts.Center.Group)
+
 	content, err := n.client.Client().GetConfig(vo.ConfigParam{
 		DataId: key,
-		Group:  resolvedGroup,
+		Group:  group,
 	})
-	if err != nil {
-		return "", perrors.WithStack(err)
-	} else {
+	if err == nil {
 		return content, nil
 	}
+
+	// Handle "config not exist" gracefully (normal during initialization)
+	if isConfigNotExistErr(err) {
+		logger.Warnf("config not found, key=%s, group=%s, err=%v", key, group, err)
+		return "", nil
+	}
+
+	// Other unexpected errors
+	logger.Errorf("failed to query rule, key=%s, group=%s, err=%+v", key, group, err)
+	return "", perrors.WithStack(err)
+}
+
+// isConfigNotExistErr is a helper to handle legacy SDKs that return string-based errors.
+func isConfigNotExistErr(err error) bool {
+	return err != nil && strings.Contains(strings.ToLower(err.Error()), "config data not exist")
 }
 
 // Parser Get Parser
