@@ -86,6 +86,23 @@ func (n *nacosServiceDiscovery) Destroy() error {
 			logger.Errorf("Unregister nacos instance:%+v, err:%+v", inst, err)
 		}
 	}
+
+	// Clean up listeners to prevent potential leaks
+	n.listenerLock.Lock()
+	defer n.listenerLock.Unlock()
+	// Unsubscribe from all services to stop callbacks
+	for serviceName := range n.instanceListenerMap {
+		err := n.namingClient.Client().Unsubscribe(&vo.SubscribeParam{
+			ServiceName: serviceName,
+			GroupName:   n.group,
+		})
+		if err != nil {
+			logger.Warnf("Failed to unsubscribe from service %s: %v", serviceName, err)
+		}
+	}
+	// Clear the listener map
+	n.instanceListenerMap = make(map[string]*gxset.HashSet)
+
 	n.namingClient.Close()
 	return nil
 }

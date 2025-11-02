@@ -62,7 +62,7 @@ jobs:
           ${{ runner.os }}-go-
 
     - name: Check Code Format
-      run: make fmt && git status && [[ -z `git status -s` ]]
+      run: make check-fmt
 
     - name: Unit Test
       run: make test
@@ -114,7 +114,7 @@ jobs:
     - name: Integration Test
       run: |
         if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
-            ./integrate_test.sh ${{github.event.pull_request.head.repo.full_name}} ${{github.event.pull_request.head.sha}} ${{github.base_ref}}
+            ./integrate_test.sh ${{github.event.pull_request.head.repo.full_name}} ${{github.event.pull_request.head.sha}} main
         elif [ "$GITHUB_EVENT_NAME" == "push" ]; then
             ./integrate_test.sh $GITHUB_REPOSITORY $GITHUB_SHA $GITHUB_REF_NAME
         else

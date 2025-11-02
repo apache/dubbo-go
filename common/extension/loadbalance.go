@@ -37,3 +37,17 @@ func GetLoadbalance(name string) loadbalance.LoadBalance {
 
 	return loadbalances[name]()
 }
+
+// UnregisterLoadbalance removes the loadbalance extension with @name
+func UnregisterLoadbalance(name string) {
+	delete(loadbalances, name)
+}
+
+// GetAllLoadbalanceNames returns all registered loadbalance names
+func GetAllLoadbalanceNames() []string {
+	names := make([]string, 0, len(loadbalances))
+	for name := range loadbalances {
+		names = append(names, name)
+	}
+	return names
+}

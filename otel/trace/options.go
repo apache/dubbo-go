@@ -138,3 +138,9 @@ func WithEndpoint(endpoint string) Option {
 		opts.Otel.TracingConfig.Endpoint = endpoint
 	}
 }
+
+func WithInsecure() Option {
+	return func(opts *Options) {
+		opts.Otel.TracingConfig.Insecure = true
+	}
+}

@@ -324,7 +324,7 @@ func (c mockClient) Subscribe(param *vo.SubscribeParam) error {
 }
 
 func (c mockClient) Unsubscribe(param *vo.SubscribeParam) error {
-	panic("implement me")
+	return nil
 }
 
 func (c mockClient) GetAllServicesInfo(param vo.GetAllServiceInfoParam) (model.ServiceList, error) {
@@ -332,6 +332,10 @@ func (c mockClient) GetAllServicesInfo(param vo.GetAllServiceInfoParam) (model.S
 }
 
 func (c mockClient) CloseClient() {
+}
+
+func (c mockClient) ServerHealthy() bool {
+	return true
 }
 
 type mockProtocol struct{}
