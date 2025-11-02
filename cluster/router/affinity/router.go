@@ -30,7 +30,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/router"
 	"dubbo.apache.org/dubbo-go/v3/cluster/router/condition"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	conf "dubbo.apache.org/dubbo-go/v3/common/config"
@@ -225,8 +224,8 @@ func (a *affinityRoute) Notify(_ []base.Invoker) {
 	panic("this function should not be called")
 }
 
-func parseConfig(c string) (router.AffinityRouter, error) {
-	res := router.AffinityRouter{}
+func parseConfig(c string) (global.AffinityRouter, error) {
+	res := global.AffinityRouter{}
 	err := yaml.Unmarshal([]byte(c), &res)
 	return res, err
 }

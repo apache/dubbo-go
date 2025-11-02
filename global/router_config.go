@@ -15,16 +15,15 @@
  * limitations under the License.
  */
 
-package router
+package global
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
-// RouterConfig is the configuration of the router.
 type RouterConfig struct {
-	Scope      string   `validate:"required" yaml:"scope" json:"scope,omitempty" property:"scope"` // must be chosen from `service` and `application`.
-	Key        string   `validate:"required" yaml:"key" json:"key,omitempty" property:"key"`       // specifies which service or application the rule body acts on.
+	Scope      string   `validate:"required" yaml:"scope" json:"scope,omitempty" property:"scope"`
+	Key        string   `validate:"required" yaml:"key" json:"key,omitempty" property:"key"`
 	Force      *bool    `default:"false" yaml:"force" json:"force,omitempty" property:"force"`
 	Runtime    *bool    `default:"false" yaml:"runtime" json:"runtime,omitempty" property:"runtime"`
 	Enabled    *bool    `default:"true" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
@@ -82,4 +81,54 @@ type AffinityRouter struct {
 	Runtime       bool          `default:"false" yaml:"runtime" json:"runtime,omitempty" property:"runtime"`
 	Enabled       bool          `default:"true" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
 	AffinityAware AffinityAware `yaml:"affinityAware" json:"affinityAware,omitempty" property:"affinityAware"`
+}
+
+func (c *RouterConfig) Clone() *RouterConfig {
+	if c == nil {
+		return nil
+	}
+
+	var newForce *bool
+	if c.Force != nil {
+		newForce = new(bool)
+		*newForce = *c.Force
+	}
+
+	var newRuntime *bool
+	if c.Runtime != nil {
+		newRuntime = new(bool)
+		*newRuntime = *c.Runtime
+	}
+
+	var newEnabled *bool
+	if c.Enabled != nil {
+		newEnabled = new(bool)
+		*newEnabled = *c.Enabled
+	}
+
+	var newValid *bool
+	if c.Valid != nil {
+		newValid = new(bool)
+		*newValid = *c.Valid
+	}
+
+	newConditions := make([]string, len(c.Conditions))
+	copy(newConditions, c.Conditions)
+
+	newTags := make([]Tag, len(c.Tags))
+	copy(newTags, c.Tags)
+
+	return &RouterConfig{
+		Scope:      c.Scope,
+		Key:        c.Key,
+		Force:      newForce,
+		Runtime:    newRuntime,
+		Enabled:    newEnabled,
+		Valid:      newValid,
+		Priority:   c.Priority,
+		Conditions: newConditions,
+		Tags:       newTags,
+		ScriptType: c.ScriptType,
+		Script:     c.Script,
+	}
 }

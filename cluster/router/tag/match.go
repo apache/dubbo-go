@@ -19,6 +19,8 @@ package tag
 
 import (
 	"strconv"
+
+	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
 import (
@@ -26,7 +28,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/router"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
@@ -62,7 +63,7 @@ func staticTag(invokers []base.Invoker, url *common.URL, invocation base.Invocat
 }
 
 // dynamic tag matching. used configuration center to create tag router configuration
-func dynamicTag(invokers []base.Invoker, url *common.URL, invocation base.Invocation, cfg router.RouterConfig) []base.Invoker {
+func dynamicTag(invokers []base.Invoker, url *common.URL, invocation base.Invocation, cfg global.RouterConfig) []base.Invoker {
 	tag := invocation.GetAttachmentWithDefaultValue(constant.Tagkey, url.GetParam(constant.Tagkey, ""))
 	if tag == "" {
 		return requestEmptyTag(invokers, cfg)
@@ -73,7 +74,7 @@ func dynamicTag(invokers []base.Invoker, url *common.URL, invocation base.Invoca
 // if request.tag is not set, only providers with empty tags will be matched.
 // even if a service is available in the cluster, it cannot be invoked if the tag does not match,
 // and requests without tags or other tags will never be able to access services with other tags.
-func requestEmptyTag(invokers []base.Invoker, cfg router.RouterConfig) []base.Invoker {
+func requestEmptyTag(invokers []base.Invoker, cfg global.RouterConfig) []base.Invoker {
 	result := filterInvokers(invokers, "", func(invoker base.Invoker, tag any) bool {
 		return invoker.GetURL().GetParam(constant.Tagkey, "") != ""
 	})
@@ -95,7 +96,7 @@ func requestEmptyTag(invokers []base.Invoker, cfg router.RouterConfig) []base.In
 // if no service corresponding to the request tag exists in the cluster,
 // the provider with the empty request tag is degraded by default.
 // to change the default behavior that no provider matching TAG1 returns an exception, set request.tag.force=true.
-func requestTag(invokers []base.Invoker, url *common.URL, invocation base.Invocation, cfg router.RouterConfig, tag string) []base.Invoker {
+func requestTag(invokers []base.Invoker, url *common.URL, invocation base.Invocation, cfg global.RouterConfig, tag string) []base.Invoker {
 	var (
 		addresses []string
 		result    []base.Invoker

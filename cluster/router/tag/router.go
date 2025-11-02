@@ -20,6 +20,8 @@ package tag
 import (
 	"strings"
 	"sync"
+
+	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
 import (
@@ -29,7 +31,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/router"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	conf "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
@@ -58,7 +59,7 @@ func (p *PriorityRouter) Route(invokers []base.Invoker, url *common.URL, invocat
 	if !ok {
 		return staticTag(invokers, url, invocation)
 	}
-	routerCfg := value.(router.RouterConfig)
+	routerCfg := value.(global.RouterConfig)
 	if !*routerCfg.Enabled || !*routerCfg.Valid {
 		return staticTag(invokers, url, invocation)
 	}
@@ -116,9 +117,9 @@ func (p *PriorityRouter) Process(event *config_center.ConfigChangeEvent) {
 	logger.Infof("[tag router]Parse tag router config success,routerConfig=%+v", routerConfig)
 }
 
-func parseRoute(routeContent string) (*router.RouterConfig, error) {
+func parseRoute(routeContent string) (*global.RouterConfig, error) {
 	routeDecoder := yaml.NewDecoder(strings.NewReader(routeContent))
-	routerConfig := &router.RouterConfig{}
+	routerConfig := &global.RouterConfig{}
 	err := routeDecoder.Decode(routerConfig)
 	if err != nil {
 		return nil, err
