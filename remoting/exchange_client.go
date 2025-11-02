@@ -19,19 +19,15 @@ package remoting
 
 import (
 	"errors"
+	"sync"
 	"time"
-)
 
-import (
 	"github.com/dubbogo/gost/log/logger"
 
-	uatomic "go.uber.org/atomic"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
+	uatomic "go.uber.org/atomic"
 )
 
 // Client is the interface that wraps SetExchangeClient、 Connect、Close、Request and
@@ -63,6 +59,7 @@ type ExchangeClient struct {
 	client         Client         // dealing with the transport
 	init           bool           // the tag for init.
 	activeNum      uatomic.Uint32 // the number of service using the exchangeClient
+	initOnce       sync.Once      // ensure init is atomic
 }
 
 // NewExchangeClient returns a ExchangeClient.
@@ -82,20 +79,20 @@ func NewExchangeClient(url *common.URL, client Client, connectTimeout time.Durat
 }
 
 func (cl *ExchangeClient) doInit(url *common.URL) error {
-	if cl.init {
-		return nil
-	}
-	if cl.client.Connect(url) != nil {
-		// retry for a while
-		time.Sleep(100 * time.Millisecond)
+	var err error
+	cl.initOnce.Do(func() {
 		if cl.client.Connect(url) != nil {
-			logger.Errorf("Failed to connect server %+v " + url.Location)
-			return errors.New("Failed to connect server " + url.Location)
+			// retry for a while
+			time.Sleep(100 * time.Millisecond)
+			if cl.client.Connect(url) != nil {
+				logger.Errorf("Failed to connect server %+v " + url.Location)
+				err = errors.New("Failed to connect server " + url.Location)
+				return
+			}
 		}
-	}
-	// FIXME atomic operation
-	cl.init = true
-	return nil
+		cl.init = true
+	})
+	return err
 }
 
 // IncreaseActiveNumber increase number of service using client.

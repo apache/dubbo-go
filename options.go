@@ -20,13 +20,7 @@ package dubbo
 import (
 	"strconv"
 	"time"
-)
 
-import (
-	log "github.com/dubbogo/gost/log/logger"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
@@ -39,6 +33,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/tls"
+	log "github.com/dubbogo/gost/log/logger"
 )
 
 type InstanceOptions struct {
@@ -443,7 +438,18 @@ func WithMetadataReport(opts ...metadata.ReportOption) InstanceOption {
 	metadataOpts := metadata.NewReportOptions(opts...)
 
 	return func(cfg *InstanceOptions) {
-		cfg.MetadataReport = metadataOpts.MetadataReportConfig
+		if metadataOpts.MetadataReportConfig != nil {
+			cfg.MetadataReport = &global.MetadataReportConfig{
+				Protocol:  metadataOpts.MetadataReportConfig.Protocol,
+				Address:   metadataOpts.MetadataReportConfig.Address,
+				Username:  metadataOpts.MetadataReportConfig.Username,
+				Password:  metadataOpts.MetadataReportConfig.Password,
+				Timeout:   metadataOpts.MetadataReportConfig.Timeout,
+				Group:     metadataOpts.MetadataReportConfig.Group,
+				Namespace: metadataOpts.MetadataReportConfig.Namespace,
+				Params:    metadataOpts.MetadataReportConfig.Params,
+			}
+		}
 	}
 }
 

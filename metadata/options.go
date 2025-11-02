@@ -22,30 +22,27 @@ import (
 	"strings"
 	"sync"
 	"time"
-)
 
-import (
 	"github.com/dubbogo/gost/log/logger"
 
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	perrors "github.com/pkg/errors"
 )
 
 var (
 	metadataOptions *Options
 	exportOnce      sync.Once
+	optionsMutex    sync.RWMutex // protect metadataOptions
 )
 
 type Options struct {
-	appName      string
-	metadataType string
-	port         int
-	protocol     string
+	appName             string
+	metadataType        string
+	port                int
+	protocol            string
+	failOnV2ExportError bool // when true, V2 export failure will cause Export() to return error
 }
 
 func defaultOptions() *Options {
@@ -61,20 +58,15 @@ func NewOptions(opts ...Option) *Options {
 }
 
 func (opts *Options) Init() error {
+	optionsMutex.Lock()
 	metadataOptions = opts
+	optionsMutex.Unlock()
+
 	var err error
 	exportOnce.Do(func() {
 		if opts.metadataType != constant.RemoteMetadataStorageType {
 			exporter := &serviceExporter{service: metadataService, opts: opts}
-			defer func() {
-				// TODO remove this recover func,this just to avoid some unit test failed,this will not happen in user side mostly
-				// config test -> metadata exporter -> dubbo protocol/remoting -> config,cycle import will occur
-				// some day we fix the cycle import then can remove this recover
-				if err := recover(); err != nil {
-					logger.Errorf("metadata export failed,please check if dubbo protocol is imported, error: %v", err)
-				}
-			}()
-			err = exporter.Export()
+			err = exporter.Export() // directly return error without recover
 		}
 	})
 	return err
@@ -106,9 +98,27 @@ func WithMetadataProtocol(protocol string) Option {
 	}
 }
 
+func WithFailOnV2ExportError(fail bool) Option {
+	return func(options *Options) {
+		options.failOnV2ExportError = fail
+	}
+}
+
+// MetadataReportConfig is app level configuration for metadata reporting
+type MetadataReportConfig struct {
+	Protocol  string            `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
+	Address   string            `required:"true" yaml:"address" json:"address"`
+	Username  string            `yaml:"username" json:"username,omitempty"`
+	Password  string            `yaml:"password" json:"password,omitempty"`
+	Timeout   string            `yaml:"timeout" json:"timeout,omitempty"`
+	Group     string            `yaml:"group" json:"group,omitempty"`
+	Namespace string            `yaml:"namespace" json:"namespace,omitempty"`
+	Params    map[string]string `yaml:"params"  json:"parameters,omitempty"`
+}
+
 type ReportOptions struct {
 	registryId string
-	*global.MetadataReportConfig
+	*MetadataReportConfig
 }
 
 func InitRegistryMetadataReport(registries map[string]*global.RegistryConfig) error {
@@ -182,7 +192,18 @@ func (opts *ReportOptions) toUrl() (*common.URL, error) {
 }
 
 func defaultReportOptions() *ReportOptions {
-	return &ReportOptions{MetadataReportConfig: global.DefaultMetadataReportConfig()}
+	globalConfig := global.DefaultMetadataReportConfig()
+	localConfig := &MetadataReportConfig{
+		Protocol:  globalConfig.Protocol,
+		Address:   globalConfig.Address,
+		Username:  globalConfig.Username,
+		Password:  globalConfig.Password,
+		Timeout:   globalConfig.Timeout,
+		Group:     globalConfig.Group,
+		Namespace: globalConfig.Namespace,
+		Params:    globalConfig.Params,
+	}
+	return &ReportOptions{MetadataReportConfig: localConfig}
 }
 
 func NewReportOptions(opts ...ReportOption) *ReportOptions {
