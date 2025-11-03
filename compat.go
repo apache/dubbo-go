@@ -40,11 +40,10 @@ func compatRootConfig(c *InstanceOptions) *config.RootConfig {
 		regCompat[k] = compatRegistryConfig(v)
 	}
 
-	rouCompat := make([]*config.RouterConfig, 0)
+	routeCompat := make([]*config.RouterConfig, 0)
 	for _, v := range c.Router {
-		rouCompat = append(rouCompat, compatRouterConfig(v))
+		routeCompat = append(routeCompat, compatRouterConfig(v))
 	}
-
 	return &config.RootConfig{
 		Application:         compatApplicationConfig(c.Application),
 		Protocols:           proCompat,
@@ -57,7 +56,7 @@ func compatRootConfig(c *InstanceOptions) *config.RootConfig {
 		Otel:                compatOtelConfig(c.Otel),
 		Logger:              compatLoggerConfig(c.Logger),
 		Shutdown:            compatShutdownConfig(c.Shutdown),
-		Router:              rouCompat,
+		Router:              routeCompat,
 		EventDispatcherType: c.EventDispatcherType,
 		CacheFile:           c.CacheFile,
 		Custom:              compatCustomConfig(c.Custom),
