@@ -27,6 +27,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/router"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
@@ -480,6 +481,17 @@ func WithShutdown(opts ...graceful_shutdown.Option) InstanceOption {
 
 	return func(insOpts *InstanceOptions) {
 		insOpts.Shutdown = sdOpts.Shutdown
+	}
+}
+
+func WithRouter(opts ...router.Option) InstanceOption {
+	sdOpts := router.NewOptions(opts...)
+
+	return func(insOpts *InstanceOptions) {
+		if insOpts.Router == nil {
+			insOpts.Router = make([]*global.RouterConfig, 0)
+		}
+		insOpts.Router = append(insOpts.Router, sdOpts.Router)
 	}
 }
 
