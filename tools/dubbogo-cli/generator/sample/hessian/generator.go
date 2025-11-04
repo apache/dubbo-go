@@ -79,7 +79,7 @@ func (g Generator) Execute() {
 	showLog(infoLog, "=== Generate completed [%s] ===", f)
 }
 
-// scanFile 扫描文件内容
+// scanFile scans the file content
 // nolint
 func scanFile(filePath string) (file *fileInfo, err error) {
 	var f *os.File
@@ -99,6 +99,13 @@ func scanFile(filePath string) (file *fileInfo, err error) {
 	stack := make([][]byte, 0)
 	var line []byte
 	var lineSize int
+	var (
+		packageRegexp       = regexp.MustCompile(PackageRegexp)
+		initFunctionRegexp  = regexp.MustCompile(InitFunctionRegexp)
+		hessianImportRegexp = regexp.MustCompile(HessianImportRegexp)
+		lineCommentRegexp   = regexp.MustCompile(LineCommentRegexp)
+		hessianPOJORegexp   = regexp.MustCompile(HessianPOJORegexp)
+	)
 	for {
 		line, _, err = buf.ReadLine()
 		if err == io.EOF {
@@ -110,37 +117,36 @@ func scanFile(filePath string) (file *fileInfo, err error) {
 		lineSize = len(line)
 
 		if file.hasInitFunc && lineSize > 0 && line[0] == funcEnd {
-			file.initFuncEndIndex = bufferSize + 1 // 检测初始化函数结束位
+			file.initFuncEndIndex = bufferSize + 1 // Detect the end position of the init function
 		}
 
 		buffer = append(buffer, line...)
 		buffer = append(buffer, newLine)
 
-		if passed, _ := regexp.Match(PackageRegexp, line); passed { // 检测package位置
-			file.packageStartIndex = bufferSize              // 检测初始化函数初始位
-			file.packageEndIndex = bufferSize + lineSize + 1 // 检测初始化函数初始位
+		if packageRegexp.Match(line) { // Detect package position
+			file.packageStartIndex = bufferSize              // Record start position of package
+			file.packageEndIndex = bufferSize + lineSize + 1 // Record end position of package
 			continue
 		}
 
-		if passed, _ := regexp.Match(InitFunctionRegexp, line); passed { // 检测初始化函数
+		if initFunctionRegexp.Match(line) { // Detect init function
 			file.hasInitFunc = true
-			file.initFuncStartIndex = bufferSize                     // 检测初始化函数初始位
-			file.initFuncStatementStartIndex = bufferSize + lineSize // 初始化函数方法体初始位
+			file.initFuncStartIndex = bufferSize                     // Record start position of init function
+			file.initFuncStatementStartIndex = bufferSize + lineSize // Record start position of init function body
 			continue
 		}
 
 		if !file.hasHessianImport {
-			r, _ := regexp.Compile(HessianImportRegexp)
-			rIndexList := r.FindIndex(line)
-			if len(rIndexList) > 0 { // 检测是否已导入hessian2包
+			rIndexList := hessianImportRegexp.FindIndex(line)
+			if len(rIndexList) > 0 { // Detect whether hessian2 package has been imported
 				checkStatement := line[:rIndexList[0]]
-				passed, _ := regexp.Match(LineCommentRegexp, checkStatement) // 是否被行注释
+				passed := lineCommentRegexp.Match(checkStatement) // Check if it's commented out
 				file.hasHessianImport = !passed
 				continue
 			}
 		}
 
-		if passed, _ := regexp.Match(HessianPOJORegexp, line); !passed { // 校验是否为Hessian.POJO实现类
+		if !hessianPOJORegexp.Match(line) { // Check whether it's a Hessian.POJO implementation class
 			continue
 		}
 		structName := getStructName(line)
@@ -153,7 +159,7 @@ func scanFile(filePath string) (file *fileInfo, err error) {
 	return
 }
 
-// getStructName 获取Hessian.POJO实现类的类名
+// getStructName gets the class name of the Hessian.POJO implementation
 func getStructName(line []byte) []byte {
 	r, _ := regexp.Compile(HessianPOJONameRegexp)
 	line = r.Find(line)
@@ -163,7 +169,7 @@ func getStructName(line []byte) []byte {
 	return nil
 }
 
-// genRegistryPOJOStatement 生成POJO注册方法体
+// genRegistryPOJOStatement generates the POJO registration statement
 func genRegistryPOJOStatement(pojo []byte) []byte {
 	var buffer []byte
 	buffer = append(buffer, hessianRegistryPOJOFunctionPrefix...)
@@ -200,7 +206,7 @@ func escape(str string) string {
 	return str
 }
 
-// genRegistryPOJOStatements 生成POJO注册方法体
+// genRegistryPOJOStatements generates POJO registration statements
 // nolint
 func genRegistryPOJOStatements(file *fileInfo, initFunctionStatement *[]byte) []byte {
 	f := file.path
@@ -210,7 +216,7 @@ func genRegistryPOJOStatements(file *fileInfo, initFunctionStatement *[]byte) []
 	var rIndexList []int
 	for _, name := range hessianPOJOList {
 		statement := genRegistryPOJOStatement(name)
-		if initFunctionStatement != nil { // 检测是否已存在注册方法体
+		if initFunctionStatement != nil { // Check whether a registration statement already exists
 			r, _ = regexp.Compile(escape(string(statement)))
 			initStatement := *initFunctionStatement
 			rIndexList = r.FindIndex(initStatement)
@@ -218,9 +224,9 @@ func genRegistryPOJOStatements(file *fileInfo, initFunctionStatement *[]byte) []
 				i := rIndexList[0]
 				n := lastIndexOf(initStatement, newLine, &i)
 				checkStatement := initStatement[lastIndexOf(initStatement, newLine, &n)+1 : i]
-				if passed, _ := regexp.Match(LineCommentRegexp, checkStatement); !passed { // 是否被行注释
+				if passed, _ := regexp.Match(LineCommentRegexp, checkStatement); !passed { // Check if commented out
 					showLog(infoLog, "=== Ignore POJO [%s].%s ===", f, name)
-					continue // 忽略相同的注册操作
+					continue // Ignore duplicate registration operations
 				}
 			}
 		}
@@ -242,7 +248,7 @@ func genRegistryStatement(file *fileInfo) error {
 
 	offset := 0
 
-	if !file.hasHessianImport { // 追加hessian2导包
+	if !file.hasHessianImport { // Add hessian2 import statement
 		sliceIndex := file.packageEndIndex + offset
 		var bufferClone []byte
 		bufferClone = append(bufferClone, buffer[:sliceIndex]...)
@@ -260,17 +266,17 @@ func genRegistryStatement(file *fileInfo) error {
 		registryPOJOStatement = genRegistryPOJOStatements(file, &initFunctionStatement)
 		var bufferClone []byte
 		bufferClone = append(bufferClone, buffer[:sliceIndex]...)
-		bufferClone = append(bufferClone, registryPOJOStatement...) // 追加POJO注册方法体至init函数
+		bufferClone = append(bufferClone, registryPOJOStatement...) // Append POJO registration statements into the init function
 		bufferClone = append(bufferClone, buffer[sliceIndex:]...)
 		buffer = bufferClone
-	} else { // 追加初始化函数
+	} else { // Add init function
 		registryPOJOStatement = genRegistryPOJOStatements(file, nil)
-		buffer = append(buffer, initFunctionPrefix...)    // 添加init函数
-		buffer = append(buffer, registryPOJOStatement...) // 追加POJO注册方法体至init函数
+		buffer = append(buffer, initFunctionPrefix...)    // Add init function
+		buffer = append(buffer, registryPOJOStatement...) // Append POJO registration statements into init function
 		buffer = append(buffer, initFunctionSuffix...)
 	}
 
-	f, err := os.OpenFile(file.path, os.O_CREATE|os.O_WRONLY, 0666)
+	f, err := os.OpenFile(file.path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
 	if err != nil {
 		return err
 	}
