@@ -292,6 +292,7 @@ func registerServiceMap(invoker base.Invoker) error {
 	// such as dubbo://:20000/org.apache.dubbo.UserProvider?bean.name=UserProvider&cluster=failfast...
 	id := providerUrl.GetParam(constant.BeanNameKey, "")
 
+	//TODO: Temporary compatibility with old APIs, can be removed later
 	providerConfig := config.GetProviderConfig()
 
 	if providerConfig != nil {
