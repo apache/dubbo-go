@@ -36,10 +36,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
-const (
-	MaxWheelTimeSpan = 900e9 // 900s, 15 minute
-)
-
 // ConsumerConfig is Consumer default configuration
 type ConsumerConfig struct {
 	Filter                         string                      `yaml:"filter" json:"filter,omitempty" property:"filter"`

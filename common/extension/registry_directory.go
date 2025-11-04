@@ -43,22 +43,22 @@ func SetDirectory(key string, v registryDirectory) {
 }
 
 // GetDefaultRegistryDirectory finds the registryDirectory with url and registry
-func GetDefaultRegistryDirectory(config *common.URL, registry registry.Registry) (directory.Directory, error) {
+func GetDefaultRegistryDirectory(url *common.URL, registry registry.Registry) (directory.Directory, error) {
 	if defaultDirectory == nil {
 		panic("registry directory is not existing, make sure you have import the package.")
 	}
-	return defaultDirectory(config, registry)
+	return defaultDirectory(url, registry)
 }
 
 // GetDirectoryInstance finds the registryDirectory with url and registry
-func GetDirectoryInstance(config *common.URL, registry registry.Registry) (directory.Directory, error) {
-	key := config.Protocol
+func GetDirectoryInstance(url *common.URL, registry registry.Registry) (directory.Directory, error) {
+	key := url.Protocol
 	if key == "" {
-		return GetDefaultRegistryDirectory(config, registry)
+		return GetDefaultRegistryDirectory(url, registry)
 	}
 	if directories[key] == nil {
 		logger.Warn("registry directory " + key + " does not exist, make sure you have import the package, will use the default directory type.")
-		return GetDefaultRegistryDirectory(config, registry)
+		return GetDefaultRegistryDirectory(url, registry)
 	}
-	return directories[key](config, registry)
+	return directories[key](url, registry)
 }

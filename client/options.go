@@ -41,12 +41,13 @@ import (
 )
 
 type ReferenceOptions struct {
-	Reference   *global.ReferenceConfig
-	Consumer    *global.ConsumerConfig
+	Reference *global.ReferenceConfig
+	Consumer  *global.ConsumerConfig
 	Application *global.ApplicationConfig
-	Metrics     *global.MetricsConfig
-	Otel        *global.OtelConfig
-	TLS         *global.TLSConfig
+	Metrics   *global.MetricsConfig
+	Otel      *global.OtelConfig
+	TLS       *global.TLSConfig
+	Protocols map[string]*global.ProtocolConfig
 
 	pxy          *proxy.Proxy
 	id           string
@@ -62,11 +63,12 @@ type ReferenceOptions struct {
 
 func defaultReferenceOptions() *ReferenceOptions {
 	return &ReferenceOptions{
-		Reference:   global.DefaultReferenceConfig(),
+		Reference: global.DefaultReferenceConfig(),
 		Application: global.DefaultApplicationConfig(),
-		Metrics:     global.DefaultMetricsConfig(),
-		Otel:        global.DefaultOtelConfig(),
-		TLS:         global.DefaultTLSConfig(),
+		Metrics:   global.DefaultMetricsConfig(),
+		Otel:      global.DefaultOtelConfig(),
+		TLS:       global.DefaultTLSConfig(),
+		Protocols: make(map[string]*global.ProtocolConfig),
 	}
 }
 
@@ -447,12 +449,6 @@ func setInterfaceName(interfaceName string) ReferenceOption {
 func setApplicationCompat(app *config.ApplicationConfig) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.applicationCompat = app
-	}
-}
-
-func setApplication(app *global.ApplicationConfig) ReferenceOption {
-	return func(opts *ReferenceOptions) {
-		opts.Application = app
 	}
 }
 

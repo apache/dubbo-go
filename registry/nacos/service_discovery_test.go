@@ -334,6 +334,10 @@ func (c mockClient) GetAllServicesInfo(param vo.GetAllServiceInfoParam) (model.S
 func (c mockClient) CloseClient() {
 }
 
+func (c mockClient) ServerHealthy() bool {
+	return true
+}
+
 type mockProtocol struct{}
 
 func (m mockProtocol) Export(base.Invoker) base.Exporter {
