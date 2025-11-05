@@ -96,11 +96,11 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (director
 		}
 	}
 	// set registry if not exist
-	if _, ok := url.GetAttribute(constant.RegistryKey); !ok {
+	if _, ok := url.GetAttribute(constant.RegistriesConfigKey); !ok {
 		configRegistries := config.GetRootConfig().Registries
 		if configRegistries == nil {
 			defaultRegistryConfig := global.DefaultRegistryConfig()
-			url.SetAttribute(constant.RegistryKey, map[string]*global.RegistryConfig{
+			url.SetAttribute(constant.RegistriesConfigKey, map[string]*global.RegistryConfig{
 				constant.DefaultKey: defaultRegistryConfig,
 			})
 		} else {
@@ -127,7 +127,7 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (director
 				}
 				globalRegistries[key] = globalRegistry
 			}
-			url.SetAttribute(constant.RegistryKey, globalRegistries)
+			url.SetAttribute(constant.RegistriesConfigKey, globalRegistries)
 		}
 	}
 

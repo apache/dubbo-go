@@ -53,8 +53,12 @@ var (
 func newPolarisRouter(url *common.URL) (*polarisRouter, error) {
 
 	// get from url param
-	application, _ := url.GetAttribute(constant.ApplicationKey)
-	registries, _ := url.GetAttribute(constant.RegistryKey)
+	applicationName := url.GetParam(constant.ApplicationKey, "")
+	// get from url attr
+	registries, ok := url.GetAttribute(constant.RegistriesConfigKey)
+	if !ok {
+		registries = make(map[string]*global.RegistryConfig)
+	}
 
 	if err := remotingpolaris.Check(); errors.Is(err, remotingpolaris.ErrorNoOpenPolarisAbility) {
 		return &polarisRouter{
@@ -75,7 +79,7 @@ func newPolarisRouter(url *common.URL) (*polarisRouter, error) {
 		openRoute:          true,
 		routerAPI:          routerAPI,
 		consumerAPI:        consumerAPI,
-		currentApplication: application.(string),
+		currentApplication: applicationName,
 		Registries:         registries.(map[string]*global.RegistryConfig),
 	}, nil
 }

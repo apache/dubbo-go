@@ -48,6 +48,23 @@ func DefaultRegistryConfig() *RegistryConfig {
 	return &RegistryConfig{UseAsMetaReport: "true", UseAsConfigCenter: "true", Timeout: "5s", TTL: "15m"}
 }
 
+// DefaultRegistriesConfig returns an empty map for registries configuration
+func DefaultRegistriesConfig() map[string]*RegistryConfig {
+	return make(map[string]*RegistryConfig)
+}
+
+// CloneRegistriesConfig clones a map of RegistryConfig
+func CloneRegistriesConfig(regs map[string]*RegistryConfig) map[string]*RegistryConfig {
+	if regs == nil {
+		return nil
+	}
+	cloned := make(map[string]*RegistryConfig, len(regs))
+	for k, v := range regs {
+		cloned[k] = v.Clone()
+	}
+	return cloned
+}
+
 // Clone a new RegistryConfig
 func (c *RegistryConfig) Clone() *RegistryConfig {
 	if c == nil {

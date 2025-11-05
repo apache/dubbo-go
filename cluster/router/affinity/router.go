@@ -84,13 +84,7 @@ type ApplicationAffinityRoute struct {
 
 func newApplicationAffinityRouter(url *common.URL) *ApplicationAffinityRoute {
 
-	application, ok := url.GetAttribute(constant.ApplicationKey)
-	if !ok {
-		logger.Warnf("ApplicationAffinityRoute url does not have application attribute, url=%s", url)
-		return nil
-	}
-
-	applicationName := application.(global.ApplicationConfig).Name
+	applicationName := url.GetParam(constant.ApplicationKey, "")
 
 	a := &ApplicationAffinityRoute{
 		currentApplication: applicationName,
