@@ -36,7 +36,9 @@ func (t *tagCustomizer) GetPriority() int {
 
 // Customize injects the tag value into instance metadata
 func (t *tagCustomizer) Customize(instance registry.ServiceInstance) {
-	if instance.GetTag() != "" {
-		instance.GetMetadata()[constant.Tagkey] = instance.GetTag()
+        tag := instance.GetTag()
+	if tag == "" {
+		return
 	}
+	instance.GetMetadata()[constant.Tagkey] = tag
 }
