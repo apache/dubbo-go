@@ -18,27 +18,29 @@
 package customizer
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/registry"
+	"testing"
 )
 
-func init() {
-	extension.AddCustomizers(&tagCustomizer{})
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/registry"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestTagCustomizer(t *testing.T) {
+	tc := &tagCustomizer{}
+	assert.Equal(t, 2, tc.GetPriority())
+
+	instance := createTagInstance()
+	tc.Customize(instance)
+
+	meta := instance.GetMetadata()
+	assert.Equal(t, "gray", meta[constant.Tagkey])
 }
 
-type tagCustomizer struct{}
-
-// GetPriority will return 2 so that it will be invoked in front of user defining Customizer
-func (t *tagCustomizer) GetPriority() int {
-	return 2
-}
-
-// Customize injects the tag value into instance metadata
-func (t *tagCustomizer) Customize(instance registry.ServiceInstance) {
-	tag := instance.GetTag()
-	if tag == "" {
-		return
+func createTagInstance() registry.ServiceInstance {
+	return &registry.DefaultServiceInstance{
+		Tag: "gray",
 	}
-	instance.GetMetadata()[constant.Tagkey] = tag
 }
