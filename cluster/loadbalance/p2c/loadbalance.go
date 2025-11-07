@@ -23,28 +23,25 @@ import (
 	"math/rand"
 	"sync"
 	"time"
-)
 
-import (
-	"github.com/dubbogo/gost/log/logger"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"dubbo.apache.org/dubbo-go/v3/cluster/metrics"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"github.com/dubbogo/gost/log/logger"
 )
 
 var (
 	randSeed = func() int64 {
 		return time.Now().Unix()
 	}
+	// Use package-level random number generator instead of global rand.Seed()
+	// Compatible with Go 1.24+ where rand.Seed method is deprecated
+	random = rand.New(rand.NewSource(randSeed()))
 )
 
 func init() {
-	rand.Seed(randSeed())
 	extension.SetLoadbalance(constant.LoadBalanceKeyP2C, newP2CLoadBalance)
 }
 
@@ -79,10 +76,10 @@ func (l *p2cLoadBalance) Select(invokers []base.Invoker, invocation base.Invocat
 	if len(invokers) == 2 {
 		i, j = 0, 1
 	} else {
-		i = rand.Intn(len(invokers))
+		i = random.Intn(len(invokers))
 		j = i
 		for i == j {
-			j = rand.Intn(len(invokers))
+			j = random.Intn(len(invokers))
 		}
 	}
 	logger.Debugf("[P2C select] Two invokers were selected, invoker[%d]: %s, invoker[%d]: %s.",

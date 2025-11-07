@@ -20,18 +20,13 @@ package p2c
 import (
 	"math/rand"
 	"testing"
-)
 
-import (
-	"github.com/golang/mock/gomock"
-
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/metrics"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+
 	protoinvoc "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
@@ -43,13 +38,13 @@ func TestLoadBalance(t *testing.T) {
 	}
 
 	t.Run("no invokers", func(t *testing.T) {
-		rand.Seed(randSeed())
+		rand.New(rand.NewSource(randSeed()))
 		ivk := lb.Select([]base.Invoker{}, invocation)
 		assert.Nil(t, ivk)
 	})
 
 	t.Run("one invoker", func(t *testing.T) {
-		rand.Seed(randSeed())
+		rand.New(rand.NewSource(randSeed()))
 		url0, _ := common.NewURL("dubbo://192.168.1.0:20000/com.ikurento.user.UserProvider")
 
 		ivkArr := []base.Invoker{
@@ -60,7 +55,7 @@ func TestLoadBalance(t *testing.T) {
 	})
 
 	t.Run("two invokers", func(t *testing.T) {
-		rand.Seed(randSeed())
+		rand.New(rand.NewSource(randSeed()))
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -90,7 +85,7 @@ func TestLoadBalance(t *testing.T) {
 	})
 
 	t.Run("multiple invokers", func(t *testing.T) {
-		rand.Seed(randSeed())
+		rand.New(rand.NewSource(randSeed()))
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -122,7 +117,7 @@ func TestLoadBalance(t *testing.T) {
 	})
 
 	t.Run("metrics i not found", func(t *testing.T) {
-		rand.Seed(randSeed())
+		rand.New(rand.NewSource(randSeed()))
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -150,7 +145,7 @@ func TestLoadBalance(t *testing.T) {
 	})
 
 	t.Run("metrics j not found", func(t *testing.T) {
-		rand.Seed(randSeed())
+		rand.New(rand.NewSource(randSeed()))
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
