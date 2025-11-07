@@ -19,6 +19,7 @@ package zookeeper
 
 import (
 	"encoding/base64"
+	"errors"
 	"strconv"
 	"strings"
 	"sync"
@@ -134,6 +135,10 @@ func (c *zookeeperDynamicConfiguration) GetProperties(key string, opts ...config
 		key = c.GetURL().GetParam(constant.ConfigNamespaceKey, config_center.DefaultGroup) + "/" + key
 	}
 	content, _, err := c.client.GetContent(c.rootPath + "/" + key)
+	if errors.Is(err, zk.ErrNoNode) {
+		logger.Warnf("query rule fail, key=%s, err=%v", key, err)
+		return "", nil
+	}
 	if err != nil {
 		return "", perrors.WithStack(err)
 	}

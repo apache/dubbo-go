@@ -18,15 +18,12 @@
 package generator
 
 import (
-	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
 import (
-	"github.com/golang/protobuf/protoc-gen-go/descriptor"
-
 	"google.golang.org/protobuf/compiler/protogen"
 )
 
@@ -59,21 +56,22 @@ func (g *Generator) generateToFile(filePath string, data []byte) error {
 	return util.GoFmtFile(filePath)
 }
 
-func ProcessProtoFile(file *descriptor.FileDescriptorProto) (TripleGo, error) {
+func ProcessProtoFile(g *protogen.GeneratedFile, f *protogen.File) (TripleGo, error) {
+	file := f.Proto
 	tripleGo := TripleGo{
 		Source:       file.GetName(),
 		ProtoPackage: file.GetPackage(),
 		Services:     make([]Service, 0),
 	}
-	for _, service := range file.GetService() {
+	for serviceIndex, service := range file.GetService() {
 		serviceMethods := make([]Method, 0)
 
-		for _, method := range service.GetMethod() {
+		for methodIndex, method := range service.GetMethod() {
 			serviceMethods = append(serviceMethods, Method{
 				MethodName:     method.GetName(),
-				RequestType:    util.ToUpper(strings.Split(method.GetInputType(), ".")[len(strings.Split(method.GetInputType(), "."))-1]),
+				RequestType:    g.QualifiedGoIdent(f.Services[serviceIndex].Methods[methodIndex].Input.GoIdent),
 				StreamsRequest: method.GetClientStreaming(),
-				ReturnType:     util.ToUpper(strings.Split(method.GetOutputType(), ".")[len(strings.Split(method.GetOutputType(), "."))-1]),
+				ReturnType:     g.QualifiedGoIdent(f.Services[serviceIndex].Methods[methodIndex].Output.GoIdent),
 				StreamsReturn:  method.GetServerStreaming(),
 			})
 			if method.GetClientStreaming() || method.GetServerStreaming() {
@@ -86,20 +84,6 @@ func ProcessProtoFile(file *descriptor.FileDescriptorProto) (TripleGo, error) {
 			Methods:     serviceMethods,
 		})
 	}
-	var goPkg string
-	pkgs := strings.Split(file.Options.GetGoPackage(), ";")
-	switch len(pkgs) {
-	case 2:
-		tripleGo.Package = pkgs[1]
-		goPkg = pkgs[0]
-	case 1:
-		tripleGo.Package = file.GetPackage()
-		goPkg = file.GetPackage()
-	default:
-		return tripleGo, errors.New("need to set the package name in go_package")
-	}
-
-	goPkg = strings.ReplaceAll(goPkg, "/", "_")
 	_, fileName := filepath.Split(file.GetName())
 	tripleGo.FileName = strings.Split(fileName, ".")[0]
 	return tripleGo, nil
