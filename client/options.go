@@ -110,7 +110,7 @@ func (refOpts *ReferenceOptions) init(opts ...ReferenceOption) error {
 
 	// init registries
 	// convert Registries to registriesCompat
-	if refOpts.Registries != nil && len(refOpts.Registries) > 0 {
+	if len(refOpts.Registries) > 0 {
 		if refOpts.registriesCompat == nil {
 			refOpts.registriesCompat = make(map[string]*config.RegistryConfig)
 		}
