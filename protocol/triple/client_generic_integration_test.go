@@ -23,7 +23,9 @@ import (
 	"sync"
 	"testing"
 	"time"
+)
 
+import (
 	"github.com/stretchr/testify/assert"
 )
 
@@ -38,7 +40,7 @@ func TestTripleGenericService_IntegrationScenarios(t *testing.T) {
 			"name":  "John Doe",
 			"email": "zhangsan@example.com",
 			"age":   28,
-			"city":  "北京",
+			"city":  "Beijing",
 		}
 
 		// Since there's no real server, we mainly test that calls don't panic and parameters are correctly passed
@@ -54,10 +56,10 @@ func TestTripleGenericService_IntegrationScenarios(t *testing.T) {
 		// Scenario 3: Update user information
 		updates := map[string]any{
 			"age":  30,
-			"city": "上海",
+			"city": "Shanghai",
 		}
 		_, err = tgs.Invoke(ctx, "updateUser", []string{"int64", "map"}, []any{int64(12345), updates})
-		assert.Error(t, err, "预期网络连接错误")
+		assert.Error(t, err, "Expected network connection error")
 
 		// Scenario 4: Delete user
 		_, err = tgs.Invoke(ctx, "deleteUser", []string{"int64"}, []any{int64(12345)})
@@ -83,11 +85,11 @@ func TestTripleGenericService_IntegrationScenarios(t *testing.T) {
 			"userId":      int64(789),
 			"items":       orderItems,
 			"totalAmount": 359.97,
-			"address":     "北京市朝阳区XX路XX号",
+			"address":     "Beijing Chaoyang District XX Street XX Number",
 		}
 
 		_, err := tgs.Invoke(ctx, "createOrder", []string{"map"}, []any{order})
-		assert.Error(t, err, "预期网络连接错误")
+		assert.Error(t, err, "Expected network connection error")
 
 		// Scenario 2: Query order status
 		_, err = tgs.Invoke(ctx, "getOrderStatus", []string{"string"}, []any{"ORDER_20231201_001"})
@@ -96,7 +98,7 @@ func TestTripleGenericService_IntegrationScenarios(t *testing.T) {
 		// Scenario 3: Cancel order
 		_, err = tgs.Invoke(ctx, "cancelOrder", []string{"string", "string"},
 			[]any{"ORDER_20231201_001", "User initiated cancellation"})
-		assert.Error(t, err, "预期网络连接错误")
+		assert.Error(t, err, "Expected network connection error")
 	})
 }
 
@@ -113,72 +115,72 @@ func TestTripleGenericService_DataTypesCoverage(t *testing.T) {
 		desc   string
 	}{
 		{
-			name:   "字符串类型",
+			name:   "string_type",
 			method: "processString",
 			types:  []string{"string"},
-			args:   []any{"Hello World 你好世界"},
-			desc:   "测试UTF-8字符串处理",
+			args:   []any{"Hello World UTF-8 Test"},
+			desc:   "Test UTF-8 string processing",
 		},
 		{
-			name:   "整数类型组合",
+			name:   "integer_type_combination",
 			method: "processIntegers",
 			types:  []string{"int32", "int64", "int32"},
 			args:   []any{int32(123), int64(9876543210), int32(-456)},
-			desc:   "测试不同整数类型",
+			desc:   "Test different integer types",
 		},
 		{
-			name:   "浮点数类型",
+			name:   "float_type",
 			method: "processFloats",
 			types:  []string{"float32", "float64"},
 			args:   []any{float32(3.14), float64(2.718281828)},
-			desc:   "测试浮点数精度",
+			desc:   "Test floating point precision",
 		},
 		{
-			name:   "布尔类型",
+			name:   "boolean_type",
 			method: "processBoolean",
 			types:  []string{"bool", "bool"},
 			args:   []any{true, false},
-			desc:   "测试布尔值",
+			desc:   "Test boolean values",
 		},
 		{
-			name:   "字节数组",
+			name:   "byte_array",
 			method: "processBytes",
 			types:  []string{"bytes"},
-			args:   []any{[]byte("binary data 二进制数据")},
-			desc:   "测试二进制数据",
+			args:   []any{[]byte("binary data test")},
+			desc:   "Test binary data",
 		},
 		{
-			name:   "数组类型",
+			name:   "array_type",
 			method: "processArray",
 			types:  []string{"[]string", "[]int64"},
 			args: []any{
 				[]string{"apple", "banana", "cherry"},
 				[]int64{100, 200, 300, 400, 500},
 			},
-			desc: "测试数组参数",
+			desc: "Test array parameters",
 		},
 		{
-			name:   "复杂对象",
+			name:   "complex_object",
 			method: "processComplexObject",
 			types:  []string{"map"},
 			args: []any{
 				map[string]any{
 					"id":     int64(12345),
-					"name":   "复杂对象测试",
+					"name":   "complex object test",
 					"active": true,
 					"tags":   []string{"test", "complex", "object"},
 					"metadata": map[string]any{
 						"version":    "1.0.0",
 						"created_at": "2023-12-01T10:00:00Z",
-						"author":     "测试用户",
+						"author":     "test user",
 					},
 					"scores": []float64{95.5, 87.3, 92.1},
 				},
 			},
-			desc: "测试嵌套复杂对象",
+			desc: "Test nested complex objects",
 		},
 		{
-			name:   "空值处理",
+			name:   "null_value_handling",
 			method: "processNullValues",
 			types:  []string{"string", "map", "[]string"},
 			args: []any{
@@ -186,17 +188,17 @@ func TestTripleGenericService_DataTypesCoverage(t *testing.T) {
 				map[string]any{},
 				[]string{},
 			},
-			desc: "测试空值和空集合",
+			desc: "Test null values and empty collections",
 		},
 		{
-			name:   "特殊字符",
+			name:   "special_characters",
 			method: "processSpecialChars",
 			types:  []string{"string"},
-			args:   []any{"特殊字符: !@#$%^&*()_+-={}[]|\\:;\"'<>?,./ 表情😀🎉🚀"},
-			desc:   "测试特殊字符和表情符号",
+			args:   []any{"Special chars: !@#$%^&*()_+-={}[]|\\:;\"'<>?,./ Emoji😀🎉🚀"},
+			desc:   "Test special characters and emojis",
 		},
 		{
-			name:   "大数据量",
+			name:   "large_data_volume",
 			method: "processLargeData",
 			types:  []string{"[]map"},
 			args: []any{
@@ -212,13 +214,13 @@ func TestTripleGenericService_DataTypesCoverage(t *testing.T) {
 					return data
 				}(),
 			},
-			desc: "测试大数据量处理",
+			desc: "Test large data volume processing",
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Logf("测试场景: %s", tc.desc)
+			t.Logf("Test scenario: %s", tc.desc)
 
 			// Test basic invocation
 			_, err := tgs.Invoke(ctx, tc.method, tc.types, tc.args)
@@ -237,7 +239,7 @@ func TestTripleGenericService_AttachmentsScenarios(t *testing.T) {
 	tgs := NewTripleGenericService("tri://127.0.0.1:20003/com.example.AttachmentService?serialization=hessian2")
 	ctx := context.Background()
 
-	t.Run("分布式追踪场景", func(t *testing.T) {
+	t.Run("distributed_tracing_scenario", func(t *testing.T) {
 		traceAttachments := map[string]any{
 			"traceId":      "trace-12345-67890",
 			"spanId":       "span-abcde-fghij",
@@ -248,10 +250,10 @@ func TestTripleGenericService_AttachmentsScenarios(t *testing.T) {
 
 		_, err := tgs.InvokeWithAttachments(ctx, "processWithTracing",
 			[]string{"string"}, []any{"test data"}, traceAttachments)
-		assert.Error(t, err, "预期网络连接错误")
+		assert.Error(t, err, "Expected network connection error")
 	})
 
-	t.Run("用户上下文场景", func(t *testing.T) {
+	t.Run("user_context_scenario", func(t *testing.T) {
 		userContextAttachments := tgs.CreateAttachmentBuilder().
 			SetString("userId", "user_12345").
 			SetString("username", "pixu").
@@ -265,10 +267,10 @@ func TestTripleGenericService_AttachmentsScenarios(t *testing.T) {
 
 		_, err := tgs.InvokeWithAttachments(ctx, "getUserProfile",
 			[]string{"string"}, []any{"profile_data"}, userContextAttachments)
-		assert.Error(t, err, "预期网络连接错误")
+		assert.Error(t, err, "Expected network connection error")
 	})
 
-	t.Run("限流和熔断场景", func(t *testing.T) {
+	t.Run("rate_limiting_and_circuit_breaking_scenario", func(t *testing.T) {
 		rateLimitAttachments := map[string]any{
 			"rateLimitKey":   "api_key_12345",
 			"requestsPerMin": 100,
@@ -283,10 +285,10 @@ func TestTripleGenericService_AttachmentsScenarios(t *testing.T) {
 			[]string{"map"}, []any{
 				map[string]any{"action": "getData", "params": "test"}},
 			rateLimitAttachments)
-		assert.Error(t, err, "预期网络连接错误")
+		assert.Error(t, err, "Expected network connection error")
 	})
 
-	t.Run("安全认证场景", func(t *testing.T) {
+	t.Run("security_authentication_scenario", func(t *testing.T) {
 		securityAttachments := tgs.CreateAttachmentBuilder().
 			SetString("authorization", "Bearer eyJhbGciOiJIUzI1NiIs...").
 			SetString("apiKey", "ak_test_12345").
@@ -300,7 +302,7 @@ func TestTripleGenericService_AttachmentsScenarios(t *testing.T) {
 			[]string{"string", "map"},
 			[]any{"sensitive_data", map[string]any{"level": "confidential"}},
 			securityAttachments)
-		assert.Error(t, err, "预期网络连接错误")
+		assert.Error(t, err, "Expected network connection error")
 	})
 }
 
@@ -309,7 +311,7 @@ func TestTripleGenericService_AsyncScenarios(t *testing.T) {
 	tgs := NewTripleGenericService("tri://127.0.0.1:20003/com.example.AsyncService?serialization=hessian2")
 	ctx := context.Background()
 
-	t.Run("并发异步调用", func(t *testing.T) {
+	t.Run("concurrent_async_calls", func(t *testing.T) {
 		var wg sync.WaitGroup
 		var mu sync.Mutex
 		var callIDs []string
@@ -331,7 +333,7 @@ func TestTripleGenericService_AsyncScenarios(t *testing.T) {
 						if err != nil {
 							errors = append(errors, err)
 						}
-						t.Logf("异步回调 %d: result=%v, err=%v", index, result, err)
+						t.Logf("async callback %d: result=%v, err=%v", index, result, err)
 					})
 
 				mu.Lock()
@@ -351,41 +353,41 @@ func TestTripleGenericService_AsyncScenarios(t *testing.T) {
 		t.Logf("Started %d asynchronous calls", len(callIDs))
 	})
 
-	t.Run("异步调用超时处理", func(t *testing.T) {
+	t.Run("async_call_timeout_handling", func(t *testing.T) {
 		done := make(chan bool, 1)
 
 		callID, err := tgs.InvokeAsyncWithTimeout(ctx, "slowMethod",
 			[]string{"int32"}, []any{int32(100)},
 			nil,
 			func(result any, err error) {
-				t.Logf("超时测试回调: result=%v, err=%v", result, err)
+				t.Logf("timeout test callback: result=%v, err=%v", result, err)
 				done <- true
 			},
 			100*time.Millisecond) // Very short timeout
 
 		if err == nil {
-			assert.NotEmpty(t, callID, "调用ID不应该为空")
+			assert.NotEmpty(t, callID, "call ID should not be empty")
 
 			// Wait for callback or timeout
 			select {
 			case <-done:
-				t.Log("异步调用回调执行完成")
+				t.Log("async call callback completed")
 			case <-time.After(1 * time.Second):
-				t.Log("等待异步回调超时，这是预期的")
+				t.Log("waiting for async callback timeout, this is expected")
 			}
 		}
 	})
 
-	t.Run("异步调用取消", func(t *testing.T) {
+	t.Run("async_call_cancellation", func(t *testing.T) {
 		callID, err := tgs.InvokeAsync(ctx, "longRunningMethod",
 			[]string{"string"}, []any{"test"},
 			nil,
 			func(result any, err error) {
-				t.Logf("取消测试回调: result=%v, err=%v", result, err)
+				t.Logf("cancellation test callback: result=%v, err=%v", result, err)
 			})
 
 		if err == nil {
-			assert.NotEmpty(t, callID, "调用ID不应该为空")
+			assert.NotEmpty(t, callID, "call ID should not be empty")
 
 			// Cancel call immediately
 			cancelled := tgs.CancelAsyncCall(callID)
@@ -403,7 +405,7 @@ func TestTripleGenericService_BatchScenarios(t *testing.T) {
 	tgs := NewTripleGenericService("tri://127.0.0.1:20003/com.example.BatchService?serialization=hessian2")
 	ctx := context.Background()
 
-	t.Run("批量用户查询", func(t *testing.T) {
+	t.Run("batch_user_query", func(t *testing.T) {
 		userIDs := []int64{1001, 1002, 1003, 1004, 1005}
 		var invocations []TripleInvocationRequest
 
@@ -420,22 +422,22 @@ func TestTripleGenericService_BatchScenarios(t *testing.T) {
 		}
 
 		results, err := tgs.BatchInvoke(ctx, invocations)
-		assert.NoError(t, err, "批量调用不应该有结构错误")
-		assert.Len(t, results, len(userIDs), "结果数量应该匹配")
+		assert.NoError(t, err, "batch invocation should not have structural errors")
+		assert.Len(t, results, len(userIDs), "result count should match")
 
 		for i, result := range results {
-			assert.Equal(t, i, result.Index, "结果索引应该匹配")
+			assert.Equal(t, i, result.Index, "result index should match")
 			// Expected network error for each call due to no real server
 			assert.Error(t, result.Error, "Expected network error for each call")
 		}
 	})
 
-	t.Run("混合方法批量调用", func(t *testing.T) {
+	t.Run("mixed_method_batch_call", func(t *testing.T) {
 		invocations := []TripleInvocationRequest{
 			{
 				MethodName:  "createUser",
 				Types:       []string{"map"},
-				Args:        []any{map[string]any{"name": "用户1", "age": 25}},
+				Args:        []any{map[string]any{"name": "user1", "age": 25}},
 				Attachments: map[string]any{"operation": "create"},
 			},
 			{
@@ -465,18 +467,18 @@ func TestTripleGenericService_BatchScenarios(t *testing.T) {
 		}
 
 		results, err := tgs.BatchInvoke(ctx, invocations)
-		assert.NoError(t, err, "批量调用不应该有结构错误")
-		assert.Len(t, results, len(invocations), "结果数量应该匹配")
+		assert.NoError(t, err, "batch invocation should not have structural errors")
+		assert.Len(t, results, len(invocations), "result count should match")
 
 		operations := []string{"create", "read", "update", "delete", "list"}
 		for i, result := range results {
-			assert.Equal(t, i, result.Index, "结果索引应该匹配")
-			t.Logf("操作 %s (索引 %d): %v", operations[i], i,
+			assert.Equal(t, i, result.Index, "result index should match")
+			t.Logf("operation %s (index %d): %v", operations[i], i,
 				map[string]any{"hasError": result.Error != nil})
 		}
 	})
 
-	t.Run("大批量并发控制", func(t *testing.T) {
+	t.Run("large_batch_concurrency_control", func(t *testing.T) {
 		// Create large number of call requests
 		var invocations []TripleInvocationRequest
 		for i := 0; i < 50; i++ {
@@ -494,10 +496,10 @@ func TestTripleGenericService_BatchScenarios(t *testing.T) {
 			maxConcurrency int
 			failFast       bool
 		}{
-			{"低并发", 2, false},
-			{"中等并发", 10, false},
-			{"高并发", 20, false},
-			{"快速失败", 5, true},
+			{"low_concurrency", 2, false},
+			{"medium_concurrency", 10, false},
+			{"high_concurrency", 20, false},
+			{"fail_fast", 5, true},
 		}
 
 		for _, test := range concurrencyTests {
@@ -511,10 +513,10 @@ func TestTripleGenericService_BatchScenarios(t *testing.T) {
 				results, err := tgs.BatchInvokeWithOptions(ctx, invocations, options)
 				duration := time.Since(start)
 
-				assert.NoError(t, err, "批量调用不应该有结构错误")
-				assert.Len(t, results, len(invocations), "结果数量应该匹配")
+				assert.NoError(t, err, "batch invocation should not have structural errors")
+				assert.Len(t, results, len(invocations), "result count should match")
 
-				t.Logf("并发设置: %d, 耗时: %v", test.maxConcurrency, duration)
+				t.Logf("concurrency setting: %d, duration: %v", test.maxConcurrency, duration)
 			})
 		}
 	})
@@ -548,7 +550,7 @@ func TestTripleGenericService_ErrorHandlingScenarios(t *testing.T) {
 		assert.Contains(t, err.Error(), "cannot convert")
 	})
 
-	t.Run("超时处理", func(t *testing.T) {
+	t.Run("timeout_handling", func(t *testing.T) {
 		shortCtx, cancel := context.WithTimeout(ctx, 1*time.Millisecond)
 		defer cancel()
 
@@ -560,7 +562,7 @@ func TestTripleGenericService_ErrorHandlingScenarios(t *testing.T) {
 		// Since context is already cancelled, might have context cancellation error
 	})
 
-	t.Run("并发安全测试", func(t *testing.T) {
+	t.Run("concurrent_safety_test", func(t *testing.T) {
 		var wg sync.WaitGroup
 		errorChan := make(chan error, 10)
 
@@ -590,8 +592,8 @@ func TestTripleGenericService_ErrorHandlingScenarios(t *testing.T) {
 		// All calls should have network errors, but should not have concurrency-related panics
 		assert.Len(t, errors, 10, "Should have 10 network errors")
 		for _, err := range errors {
-			assert.NotContains(t, err.Error(), "panic", "不应该有panic")
-			assert.NotContains(t, err.Error(), "concurrent", "不应该有并发错误")
+			assert.NotContains(t, err.Error(), "panic", "should not have panic")
+			assert.NotContains(t, err.Error(), "concurrent", "should not have concurrency errors")
 		}
 	})
 }
@@ -601,7 +603,7 @@ func TestTripleGenericService_PerformanceScenarios(t *testing.T) {
 	tgs := NewTripleGenericService("tri://127.0.0.1:20003/com.example.PerfService?serialization=hessian2")
 	ctx := context.Background()
 
-	t.Run("单次调用性能", func(t *testing.T) {
+	t.Run("single_call_performance", func(t *testing.T) {
 		iterations := 100
 		start := time.Now()
 
@@ -612,13 +614,13 @@ func TestTripleGenericService_PerformanceScenarios(t *testing.T) {
 		duration := time.Since(start)
 		avgDuration := duration / time.Duration(iterations)
 
-		t.Logf("单次调用平均耗时: %v (总计 %d 次调用)", avgDuration, iterations)
+		t.Logf("average single call duration: %v (total %d calls)", avgDuration, iterations)
 
 		// Verify average call time is reasonable (considering network error overhead)
 		assert.Less(t, avgDuration, 10*time.Millisecond, "Single call duration should be reasonable")
 	})
 
-	t.Run("批量调用性能对比", func(t *testing.T) {
+	t.Run("batch_call_performance_comparison", func(t *testing.T) {
 		callCount := 20
 
 		// Serial calls
@@ -642,21 +644,21 @@ func TestTripleGenericService_PerformanceScenarios(t *testing.T) {
 		_, _ = tgs.BatchInvoke(ctx, invocations)
 		batchDuration := time.Since(start)
 
-		t.Logf("串行调用耗时: %v", serialDuration)
-		t.Logf("批量调用耗时: %v", batchDuration)
-		t.Logf("性能提升比例: %.2fx", float64(serialDuration)/float64(batchDuration))
+		t.Logf("serialinvocationduration: %v", serialDuration)
+		t.Logf("batchinvocationduration: %v", batchDuration)
+		t.Logf("performance improvement ratio: %.2fx", float64(serialDuration)/float64(batchDuration))
 
 		// In a real network environment, batch calls would be faster due to parallelization
 		// However, in test environment with simulated errors, goroutine overhead might make batch calls slower
 		// So we just verify both complete successfully and log the performance difference
-		t.Logf("性能测试说明: 在真实网络环境中，批量调用通常更快。测试环境中由于没有真实网络延迟，goroutine开销可能导致批量调用较慢。")
+		t.Logf("performance test note: In real network environments，batchinvocationare usually faster。testenvironments, goroutine overhead may make，goroutineoverheadmaycausingbatchinvocationslower。")
 
 		// Verify both methods complete successfully (even with network errors)
 		assert.True(t, serialDuration > 0, "Serial calls should complete")
 		assert.True(t, batchDuration > 0, "Batch calls should complete")
 	})
 
-	t.Run("内存使用测试", func(t *testing.T) {
+	t.Run("memory_usage_test", func(t *testing.T) {
 		// Create large number of small objects to test memory usage
 		var invocations []TripleInvocationRequest
 		for i := 0; i < 1000; i++ {
@@ -676,10 +678,10 @@ func TestTripleGenericService_PerformanceScenarios(t *testing.T) {
 		results, err := tgs.BatchInvoke(ctx, invocations)
 		duration := time.Since(start)
 
-		assert.NoError(t, err, "大量数据批量调用不应该有结构错误")
-		assert.Len(t, results, 1000, "应该返回1000个结果")
+		assert.NoError(t, err, "largedatabatch invocation should not have structural errors")
+		assert.Len(t, results, 1000, "should return1000results")
 
-		t.Logf("处理1000个对象耗时: %v", duration)
-		assert.Less(t, duration, 5*time.Second, "大量数据处理时间应该合理")
+		t.Logf("processing1000objectsduration: %v", duration)
+		assert.Less(t, duration, 5*time.Second, "largedataprocessingprocessing time should be reasonable")
 	})
 }

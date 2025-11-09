@@ -758,6 +758,87 @@ func (tgs *TripleGenericService) BatchInvoke(
 	return results, nil
 }
 
+// BatchInvokeWithOptions performs batch generic invocations with options
+func (tgs *TripleGenericService) BatchInvokeWithOptions(
+	ctx context.Context,
+	invocations []TripleInvocationRequest,
+	options BatchInvokeOptions,
+) ([]TripleInvocationResult, error) {
+	if len(invocations) == 0 {
+		return nil, fmt.Errorf("no invocations provided")
+	}
+
+	// Set default max concurrency if not specified
+	maxConcurrency := options.MaxConcurrency
+	if maxConcurrency <= 0 {
+		maxConcurrency = 10 // default concurrency
+	}
+
+	results := make([]TripleInvocationResult, len(invocations))
+	resultsMutex := sync.Mutex{}
+
+	// Create semaphore for concurrency control
+	sem := make(chan struct{}, maxConcurrency)
+	var wg sync.WaitGroup
+
+	// Flag to track if we should fail fast
+	var shouldStop bool
+	var stopMutex sync.Mutex
+
+	for i, req := range invocations {
+		// Check if we should stop due to FailFast
+		if options.FailFast {
+			stopMutex.Lock()
+			if shouldStop {
+				stopMutex.Unlock()
+				break
+			}
+			stopMutex.Unlock()
+		}
+
+		wg.Add(1)
+		go func(index int, request TripleInvocationRequest) {
+			defer wg.Done()
+
+			// Acquire semaphore
+			sem <- struct{}{}
+			defer func() { <-sem }()
+
+			// Check again if we should stop
+			if options.FailFast {
+				stopMutex.Lock()
+				if shouldStop {
+					stopMutex.Unlock()
+					return
+				}
+				stopMutex.Unlock()
+			}
+
+			// Perform invocation
+			result, err := tgs.InvokeWithAttachments(ctx, request.MethodName, request.Types, request.Args, request.Attachments)
+
+			// Store result
+			resultsMutex.Lock()
+			results[index] = TripleInvocationResult{
+				Result: result,
+				Error:  err,
+				Index:  index,
+			}
+			resultsMutex.Unlock()
+
+			// If FailFast is enabled and there's an error, set stop flag
+			if options.FailFast && err != nil {
+				stopMutex.Lock()
+				shouldStop = true
+				stopMutex.Unlock()
+			}
+		}(i, req)
+	}
+
+	wg.Wait()
+	return results, nil
+}
+
 // TripleInvocationRequest represents a single invocation request
 type TripleInvocationRequest struct {
 	MethodName  string
@@ -771,6 +852,12 @@ type TripleInvocationResult struct {
 	Result any
 	Error  error
 	Index  int
+}
+
+// BatchInvokeOptions Batch invocation options
+type BatchInvokeOptions struct {
+	MaxConcurrency int
+	FailFast       bool
 }
 
 // CreateAttachmentBuilder creates a fluent builder for attachments
@@ -816,6 +903,201 @@ func (tab *TripleAttachmentBuilder) Build() map[string]any {
 		result[k] = v
 	}
 	return result
+}
+
+// convertParamsForIDL converts parameters for IDL mode
+func (tgs *TripleGenericService) convertParamsForIDL(params any, types []string) ([]any, error) {
+	// Handle different parameter formats
+	var paramList []any
+
+	// If params is already a slice
+	if reflect.TypeOf(params).Kind() == reflect.Slice {
+		paramList = params.([]any)
+	} else {
+		// Single parameter
+		paramList = []any{params}
+	}
+
+	// Check if types and params match
+	if len(paramList) != len(types) {
+		return nil, fmt.Errorf("parameter count mismatch: got %d params but %d types", len(paramList), len(types))
+	}
+
+	// Convert each parameter
+	result := make([]any, len(paramList))
+	for i, param := range paramList {
+		converted, err := convertSingleArgForSerialization(param, types[i])
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert parameter %d: %w", i, err)
+		}
+		result[i] = converted
+	}
+
+	return result, nil
+}
+
+// convertSingleArgForSerialization converts a single argument based on target type
+func convertSingleArgForSerialization(arg any, targetType string) (any, error) {
+	if arg == nil {
+		return nil, nil
+	}
+
+	// Handle basic type conversions
+	switch targetType {
+	case "string", "java.lang.String", "String":
+		return fmt.Sprintf("%v", arg), nil
+
+	case "int", "int32", "java.lang.Integer", "Integer":
+		switch v := arg.(type) {
+		case int:
+			return int32(v), nil
+		case int32:
+			return v, nil
+		case int64:
+			return int32(v), nil
+		case float64:
+			return int32(v), nil
+		case string:
+			val, err := strconv.ParseInt(v, 10, 32)
+			if err != nil {
+				return nil, fmt.Errorf("cannot convert '%s' to int32: %w", v, err)
+			}
+			return int32(val), nil
+		default:
+			return nil, fmt.Errorf("cannot convert %T to int32", arg)
+		}
+
+	case "int64", "long", "java.lang.Long", "Long":
+		switch v := arg.(type) {
+		case int:
+			return int64(v), nil
+		case int32:
+			return int64(v), nil
+		case int64:
+			return v, nil
+		case float64:
+			return int64(v), nil
+		case string:
+			val, err := strconv.ParseInt(v, 10, 64)
+			if err != nil {
+				return nil, fmt.Errorf("cannot convert '%s' to int64: %w", v, err)
+			}
+			return val, nil
+		default:
+			return nil, fmt.Errorf("cannot convert %T to int64", arg)
+		}
+
+	case "float32", "float", "java.lang.Float", "Float":
+		switch v := arg.(type) {
+		case float32:
+			return v, nil
+		case float64:
+			return float32(v), nil
+		case int:
+			return float32(v), nil
+		case int32:
+			return float32(v), nil
+		case int64:
+			return float32(v), nil
+		case string:
+			val, err := strconv.ParseFloat(v, 32)
+			if err != nil {
+				return nil, fmt.Errorf("cannot convert '%s' to float32: %w", v, err)
+			}
+			return float32(val), nil
+		default:
+			return nil, fmt.Errorf("cannot convert %T to float32", arg)
+		}
+
+	case "float64", "double", "java.lang.Double", "Double":
+		val, err := convertToFloat64(arg)
+		if err != nil {
+			return nil, err
+		}
+		return val, nil
+
+	case "bool", "boolean", "java.lang.Boolean", "Boolean":
+		switch v := arg.(type) {
+		case bool:
+			return v, nil
+		case string:
+			val, err := strconv.ParseBool(v)
+			if err != nil {
+				return nil, fmt.Errorf("cannot convert '%s' to bool: %w", v, err)
+			}
+			return val, nil
+		default:
+			return nil, fmt.Errorf("cannot convert %T to bool", arg)
+		}
+
+	case "map", "Map", "java.util.Map", "object", "Object":
+		// For map/object types, return as-is or convert to map
+		if reflect.TypeOf(arg).Kind() == reflect.Map {
+			return arg, nil
+		}
+		// Try to convert struct to map
+		return objToTripleMap(arg), nil
+
+	default:
+		// For unknown types, return as-is
+		return arg, nil
+	}
+}
+
+// convertToFloat64 converts various types to float64
+func convertToFloat64(arg any) (float64, error) {
+	if arg == nil {
+		return 0, nil
+	}
+
+	switch v := arg.(type) {
+	case float64:
+		return v, nil
+	case float32:
+		return float64(v), nil
+	case int:
+		return float64(v), nil
+	case int32:
+		return float64(v), nil
+	case int64:
+		return float64(v), nil
+	case string:
+		val, err := strconv.ParseFloat(v, 64)
+		if err != nil {
+			return 0, fmt.Errorf("cannot convert '%s' to float64: %w", v, err)
+		}
+		return val, nil
+	default:
+		return 0, fmt.Errorf("cannot convert %T to float64", arg)
+	}
+}
+
+// convertToInt32 converts various types to int32
+func convertToInt32(arg any) (int32, error) {
+	if arg == nil {
+		return 0, nil
+	}
+
+	switch v := arg.(type) {
+	case int32:
+		return v, nil
+	case int:
+		return int32(v), nil
+	case int64:
+		return int32(v), nil
+	case float64:
+		return int32(v), nil
+	case float32:
+		return int32(v), nil
+	case string:
+		val, err := strconv.ParseInt(v, 10, 32)
+		if err != nil {
+			return 0, fmt.Errorf("cannot convert '%s' to int32: %w", v, err)
+		}
+		return int32(val), nil
+	default:
+		return 0, fmt.Errorf("cannot convert %T to int32", arg)
+	}
 }
 
 // Convenience methods for common attachment patterns

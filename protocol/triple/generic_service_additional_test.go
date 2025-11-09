@@ -22,11 +22,13 @@ import (
 	"sync"
 	"testing"
 	"time"
+)
 
+import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TestTripleGenericService_ConvertSingleArgForSerializationDetailed 详细测试单个参数转换
+// TestTripleGenericService_ConvertSingleArgForSerializationDetailed detailed test for single argument serialization
 func TestTripleGenericService_ConvertSingleArgForSerializationDetailed(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -35,7 +37,7 @@ func TestTripleGenericService_ConvertSingleArgForSerializationDetailed(t *testin
 		expected    any
 		expectError bool
 	}{
-		// int32 转换测试
+		// int32 conversion tests
 		{"int32_from_int32", int32(123), "int32", int32(123), false},
 		{"int32_from_int", int(456), "int32", int32(456), false},
 		{"int32_from_int64", int64(789), "int32", int32(789), false},
@@ -45,46 +47,46 @@ func TestTripleGenericService_ConvertSingleArgForSerializationDetailed(t *testin
 		{"int32_from_string_invalid", "invalid", "int32", int32(0), true},
 		{"int32_from_bool", true, "int32", int32(0), true},
 
-		// int64 转换测试
+		// int64 conversion tests
 		{"int64_from_int64", int64(123456789), "int64", int64(123456789), false},
 		{"int64_from_int", int(456), "int64", int64(456), false},
 		{"int64_from_float64", float64(789.12), "int64", int64(789), false},
 		{"int64_from_string_valid", "9876543210", "int64", int64(9876543210), false},
 		{"int64_from_string_invalid", "not_a_number", "int64", int64(0), true},
 
-		// float32 转换测试
+		// float32 conversion tests
 		{"float32_from_float32", float32(3.14), "float32", float32(3.14), false},
 		{"float32_from_float64", float64(2.718), "float32", float32(2.718), false},
 		{"float32_from_int", int(42), "float32", float32(42.0), false},
 		{"float32_from_string_valid", "3.14159", "float32", float32(3.14159), false},
 		{"float32_from_string_invalid", "not_float", "float32", float32(0), true},
 
-		// float64 转换测试
+		// float64 conversion tests
 		{"float64_from_float64", float64(3.141592653589793), "float64", float64(3.141592653589793), false},
 		{"float64_from_int64", int64(123), "float64", float64(123.0), false},
 		{"float64_from_string_valid", "2.718281828", "float64", float64(2.718281828), false},
 		{"float64_from_string_invalid", "invalid_float", "float64", float64(0), true},
 
-		// string 转换测试
+		// string conversion tests
 		{"string_from_string", "hello", "string", "hello", false},
 		{"string_from_int", 123, "string", "123", false},
 		{"string_from_float", 3.14, "string", "3.14", false},
 		{"string_from_bool", true, "string", "true", false},
 		{"string_from_nil", nil, "string", "", false},
 
-		// bool 转换测试
+		// bool conversion tests
 		{"bool_from_bool_true", true, "bool", true, false},
 		{"bool_from_bool_false", false, "bool", false, false},
-		{"bool_from_int", 1, "bool", false, false}, // 非bool类型转换为false
+		{"bool_from_int", 1, "bool", false, false}, // non-bool types convert to false
 		{"bool_from_nil", nil, "bool", false, false},
 
-		// bytes 转换测试
+		// bytes conversion tests
 		{"bytes_from_bytes", []byte("hello"), "bytes", []byte("hello"), false},
 		{"bytes_from_string", "world", "bytes", []byte("world"), false},
 		{"bytes_from_int", 123, "bytes", []byte("123"), false},
 		{"bytes_from_nil", nil, "bytes", []byte(nil), false},
 
-		// 复杂类型保持原样
+		// complex types remain as-is
 		{"map_passthrough", map[string]any{"key": "value"}, "map", map[string]any{"key": "value"}, false},
 		{"slice_passthrough", []string{"a", "b", "c"}, "[]string", []string{"a", "b", "c"}, false},
 		{"unknown_type", "test", "unknown_type", "test", false},
@@ -104,7 +106,7 @@ func TestTripleGenericService_ConvertSingleArgForSerializationDetailed(t *testin
 	}
 }
 
-// TestTripleGenericService_ParameterValidation 参数验证测试
+// TestTripleGenericService_ParameterValidation parameter validation tests
 func TestTripleGenericService_ParameterValidation(t *testing.T) {
 	tgs := NewTripleGenericService("tri://127.0.0.1:20001/com.example.TestService")
 	ctx := context.Background()
@@ -142,7 +144,7 @@ func TestTripleGenericService_ParameterValidation(t *testing.T) {
 			methodName:    "testMethod",
 			types:         []string{},
 			args:          []any{},
-			expectedError: "", // 应该成功
+			expectedError: "", // should succeed
 		},
 		{
 			name:          "mismatched_param_count_more_types",
@@ -165,7 +167,7 @@ func TestTripleGenericService_ParameterValidation(t *testing.T) {
 			_, err := tgs.Invoke(ctx, tt.methodName, tt.types, tt.args)
 
 			if tt.expectedError == "" {
-				// 这些调用应该成功通过参数验证，但会因为网络错误失败
+				// these calls should pass parameter validation successfully, but will fail due to network errors
 				assert.Error(t, err, "Should have network error")
 				assert.Contains(t, err.Error(), "network connection failed", "Should be network error, not parameter error")
 			} else {
@@ -176,25 +178,25 @@ func TestTripleGenericService_ParameterValidation(t *testing.T) {
 	}
 }
 
-// TestTripleGenericService_EdgeCases 边界条件测试
+// TestTripleGenericService_EdgeCases edge case tests
 func TestTripleGenericService_EdgeCases(t *testing.T) {
 	tgs := NewTripleGenericService("tri://127.0.0.1:20001/com.example.TestService")
 	ctx := context.Background()
 
 	t.Run("extremely_long_method_name", func(t *testing.T) {
-		longMethodName := string(make([]byte, 10000)) // 10KB 方法名
+		longMethodName := string(make([]byte, 10000)) // 10KB method name
 		for i := range longMethodName {
 			longMethodName = longMethodName[:i] + "a" + longMethodName[i+1:]
 		}
 
 		_, err := tgs.Invoke(ctx, longMethodName, []string{"string"}, []any{"test"})
 		assert.Error(t, err)
-		// 应该是网络错误，不是参数错误
+		// should be network error, not parameter error
 		assert.Contains(t, err.Error(), "network connection failed")
 	})
 
 	t.Run("extremely_large_parameter", func(t *testing.T) {
-		largeData := make([]byte, 1024*1024) // 1MB 数据
+		largeData := make([]byte, 1024*1024) // 1MB data
 		for i := range largeData {
 			largeData[i] = byte(i % 256)
 		}
@@ -205,7 +207,7 @@ func TestTripleGenericService_EdgeCases(t *testing.T) {
 	})
 
 	t.Run("deeply_nested_structures", func(t *testing.T) {
-		// 创建深层嵌套的结构
+		// create deeply nested structure
 		nested := make(map[string]any)
 		current := nested
 		for i := 0; i < 100; i++ {
@@ -222,15 +224,15 @@ func TestTripleGenericService_EdgeCases(t *testing.T) {
 	})
 
 	t.Run("unicode_and_special_characters", func(t *testing.T) {
-		specialChars := "测试数据 🚀 Special chars: !@#$%^&*()_+-={}[]|\\:;\"'<>?,./"
+		specialChars := "testdata 🚀 Special chars: !@#$%^&*()_+-={}[]|\\:;\"'<>?,./"
 
-		_, err := tgs.Invoke(ctx, "unicode测试Method", []string{"string"}, []any{specialChars})
+		_, err := tgs.Invoke(ctx, "unicodetestMethod", []string{"string"}, []any{specialChars})
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "network connection failed")
 	})
 }
 
-// TestTripleGenericService_ConcurrencyStress 并发压力测试
+// TestTripleGenericService_ConcurrencyStress concurrent stress test
 func TestTripleGenericService_ConcurrencyStress(t *testing.T) {
 	tgs := NewTripleGenericService("tri://127.0.0.1:20001/com.example.StressTestService")
 	ctx := context.Background()
@@ -264,28 +266,28 @@ func TestTripleGenericService_ConcurrencyStress(t *testing.T) {
 		close(errorChan)
 		duration := time.Since(start)
 
-		// 收集错误
+		// collect errors
 		var errors []error
 		for err := range errorChan {
 			errors = append(errors, err)
 		}
 
-		// 所有调用都应该有网络错误
+		// all calls should have network errors
 		assert.Len(t, errors, numGoroutines*callsPerGoroutine, "All calls should have errors")
 
-		// 验证没有并发相关的panic或竞态条件
+		// verify no concurrency-related panics or race conditions
 		for _, err := range errors {
 			assert.Contains(t, err.Error(), "network connection failed", "Should be network errors")
 			assert.NotContains(t, err.Error(), "panic", "Should not have panics")
 			assert.NotContains(t, err.Error(), "race", "Should not have race conditions")
 		}
 
-		t.Logf("压力测试完成: %d goroutines, %d calls each, 总耗时: %v",
+		t.Logf("stresstestcompleted: %d goroutines, %d calls each, total duration: %v",
 			numGoroutines, callsPerGoroutine, duration)
 	})
 }
 
-// TestTripleGenericService_AsyncManagerStress 异步管理器压力测试
+// TestTripleGenericService_AsyncManagerStress async managerstresstest
 func TestTripleGenericService_AsyncManagerStress(t *testing.T) {
 	tgs := NewTripleGenericService("tri://127.0.0.1:20001/com.example.AsyncStressService")
 	ctx := context.Background()
@@ -295,7 +297,7 @@ func TestTripleGenericService_AsyncManagerStress(t *testing.T) {
 		var wg sync.WaitGroup
 		callIDs := make(chan string, numCalls)
 
-		// 启动大量异步调用
+		// startlargeasynccalls
 		for i := 0; i < numCalls; i++ {
 			wg.Add(1)
 			go func(index int) {
@@ -304,7 +306,7 @@ func TestTripleGenericService_AsyncManagerStress(t *testing.T) {
 				callID, err := tgs.InvokeAsync(ctx, "asyncStressMethod",
 					[]string{"int32"}, []any{int32(index)}, nil,
 					func(result any, err error) {
-						// 回调函数
+						// callback function
 					})
 
 				if err == nil {
@@ -316,7 +318,7 @@ func TestTripleGenericService_AsyncManagerStress(t *testing.T) {
 		wg.Wait()
 		close(callIDs)
 
-		// 收集调用ID
+		// collect callsID
 		var collectedIDs []string
 		for id := range callIDs {
 			collectedIDs = append(collectedIDs, id)
@@ -324,41 +326,41 @@ func TestTripleGenericService_AsyncManagerStress(t *testing.T) {
 
 		assert.Equal(t, numCalls, len(collectedIDs), "All async calls should succeed")
 
-		// 验证ID唯一性
+		// verifyIDuniqueness
 		idSet := make(map[string]bool)
 		for _, id := range collectedIDs {
 			assert.False(t, idSet[id], "Call ID should be unique: %s", id)
 			idSet[id] = true
 		}
 
-		// 等待一段时间让异步调用完成
+		// Wait for async calls to complete
 		time.Sleep(100 * time.Millisecond)
 
-		// 验证异步管理器状态
+		// Verify async manager state
 		manager := GetTripleAsyncManager()
 		activeCalls := manager.getAllActiveCalls()
 
-		t.Logf("异步压力测试完成: %d 调用, %d 活跃调用", numCalls, len(activeCalls))
+		t.Logf("asyncstresstestcompleted: %d calls, %d active calls", numCalls, len(activeCalls))
 	})
 }
 
-// TestTripleGenericService_AttachmentBuilderEdgeCases 附件构建器边界测试
+// TestTripleGenericService_AttachmentBuilderEdgeCases attachment builder boundariestest
 func TestTripleGenericService_AttachmentBuilderEdgeCases(t *testing.T) {
 	tgs := NewTripleGenericService("tri://127.0.0.1:20001/com.example.TestService")
 
 	t.Run("builder_edge_cases", func(t *testing.T) {
 		builder := tgs.CreateAttachmentBuilder()
 
-		// 测试空key
+		// testemptykey
 		result := builder.SetString("", "empty_key").Build()
 		assert.Equal(t, "empty_key", result[""])
 
-		// 测试空值
+		// testemptyvalue
 		builder = tgs.CreateAttachmentBuilder()
 		result = builder.SetString("empty_value", "").Build()
 		assert.Equal(t, "", result["empty_value"])
 
-		// 测试覆盖已存在的key
+		// testoverride existingkey
 		builder = tgs.CreateAttachmentBuilder()
 		result = builder.
 			SetString("key", "value1").
@@ -366,7 +368,7 @@ func TestTripleGenericService_AttachmentBuilderEdgeCases(t *testing.T) {
 			Build()
 		assert.Equal(t, "value2", result["key"])
 
-		// 测试混合类型
+		// testmixed types
 		builder = tgs.CreateAttachmentBuilder()
 		result = builder.
 			SetString("str", "string_value").
@@ -385,37 +387,37 @@ func TestTripleGenericService_AttachmentBuilderEdgeCases(t *testing.T) {
 		}
 		assert.Equal(t, expected, result)
 
-		// 测试多次Build()调用
+		// testmultipleBuild()calls
 		result1 := builder.Build()
 		result2 := builder.Build()
 		assert.Equal(t, result1, result2, "Multiple Build() calls should return same result")
 
-		// 验证修改一个结果不会影响另一个
+		// verifymodifying one result does not affect another
 		result1["new_key"] = "new_value"
 		assert.NotContains(t, result2, "new_key", "Results should be independent")
 	})
 }
 
-// TestTripleGenericService_ContextCancellation 上下文取消测试
+// TestTripleGenericService_ContextCancellation context cancellationtest
 func TestTripleGenericService_ContextCancellation(t *testing.T) {
 	tgs := NewTripleGenericService("tri://127.0.0.1:20001/com.example.TestService")
 
 	t.Run("context_cancellation", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 
-		// 立即取消上下文
+		// cancel context immediately
 		cancel()
 
 		_, err := tgs.Invoke(ctx, "testMethod", []string{"string"}, []any{"test"})
 		assert.Error(t, err)
-		// 可能是上下文取消错误或网络错误，取决于实现细节
+		// mayiscontext cancellationerroror networkerror，depending on implementation details
 	})
 
 	t.Run("context_timeout", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
 		defer cancel()
 
-		// 等待超时
+		// wait timeout
 		time.Sleep(1 * time.Millisecond)
 
 		_, err := tgs.Invoke(ctx, "testMethod", []string{"string"}, []any{"test"})
@@ -423,7 +425,7 @@ func TestTripleGenericService_ContextCancellation(t *testing.T) {
 	})
 }
 
-// TestTripleGenericService_BatchInvokeEdgeCases 批量调用边界测试
+// TestTripleGenericService_BatchInvokeEdgeCases batchcallsboundariestest
 func TestTripleGenericService_BatchInvokeEdgeCases(t *testing.T) {
 	tgs := NewTripleGenericService("tri://127.0.0.1:20001/com.example.BatchTestService")
 	ctx := context.Background()
@@ -436,14 +438,14 @@ func TestTripleGenericService_BatchInvokeEdgeCases(t *testing.T) {
 				Args:       []any{"valid"},
 			},
 			{
-				MethodName: "", // 无效方法名
+				MethodName: "", // invalidmethod name
 				Types:      []string{"string"},
 				Args:       []any{"test"},
 			},
 			{
 				MethodName: "invalidParams",
 				Types:      []string{"int32"},
-				Args:       []any{"not_a_number"}, // 类型不匹配
+				Args:       []any{"not_a_number"}, // type mismatch
 			},
 		}
 
@@ -451,7 +453,7 @@ func TestTripleGenericService_BatchInvokeEdgeCases(t *testing.T) {
 		assert.NoError(t, err, "Batch operation should not fail")
 		assert.Len(t, results, 3)
 
-		// 验证各个结果
+		// verifyindividual results
 		assert.Error(t, results[1].Error, "Empty method name should cause error")
 		assert.Contains(t, results[1].Error.Error(), "method name cannot be empty")
 
@@ -469,11 +471,11 @@ func TestTripleGenericService_BatchInvokeEdgeCases(t *testing.T) {
 		}
 
 		options := BatchInvokeOptions{
-			MaxConcurrency: 0, // 零并发
+			MaxConcurrency: 0, // zeroconcurrent
 			FailFast:       false,
 		}
 
-		// 应该使用默认并发或处理零并发情况
+		// shoulduse defaultconcurrentor handlezeroconcurrentcase
 		results, err := tgs.BatchInvokeWithOptions(ctx, invocations, options)
 		assert.NoError(t, err)
 		assert.Len(t, results, 1)
