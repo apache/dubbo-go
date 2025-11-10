@@ -80,7 +80,7 @@ func defaultRnd(n int) (i, j int) {
 	i = rnd.Intn(n) // NOSONAR
 	j = rnd.Intn(n) // NOSONAR
 	for i == j {
-		j = rand.Intn(n) // NOSONAR
+		j = rnd.Intn(n) // NOSONAR
 	}
 	return i, j
 }
