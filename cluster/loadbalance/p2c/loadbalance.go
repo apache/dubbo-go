@@ -41,13 +41,12 @@ var (
 	randSeed = func() int64 {
 		return time.Now().Unix()
 	}
-	// Use package-level random number generator instead of global rand.Seed()
-	// Compatible with Go 1.24+ where rand.Seed method is deprecated
-	random = rand.New(rand.NewSource(randSeed()))
 )
 
 func init() {
-	extension.SetLoadbalance(constant.LoadBalanceKeyP2C, newP2CLoadBalance)
+	extension.SetLoadbalance(constant.LoadBalanceKeyP2C, func() loadbalance.LoadBalance {
+		return newP2CLoadBalance(nil)
+	})
 }
 
 var (
@@ -55,12 +54,40 @@ var (
 	instance loadbalance.LoadBalance
 )
 
-type p2cLoadBalance struct{}
+type p2cLoadBalance struct {
+	randomPicker randomPicker
+}
 
-func newP2CLoadBalance() loadbalance.LoadBalance {
+// randomPicker is a function type that randomly selects two distinct indices from a range [0, n).
+// It returns two different indices that can be used to select two different invokers for P2C comparison.
+type randomPicker func(n int) (i, j int)
+
+// defaultRnd is the default implementation of randomPicker.
+// It handles edge cases for n <= 2 and ensures two distinct random indices for n > 2.
+func defaultRnd(n int) (i, j int) {
+	if n <= 1 {
+		return 0, 0
+	}
+	if n == 2 {
+		return 0, 1
+	}
+
+	r := rand.New(rand.NewSource(randSeed()))
+	i = r.Intn(n)
+	j = r.Intn(n)
+	for i == j {
+		j = r.Intn(n)
+	}
+	return i, j
+}
+
+func newP2CLoadBalance(r randomPicker) loadbalance.LoadBalance {
+	if r == nil {
+		r = defaultRnd
+	}
 	if instance == nil {
 		once.Do(func() {
-			instance = &p2cLoadBalance{}
+			instance = &p2cLoadBalance{randomPicker: r}
 		})
 	}
 	return instance
@@ -77,16 +104,7 @@ func (l *p2cLoadBalance) Select(invokers []base.Invoker, invocation base.Invocat
 	// The local metrics is available only for the earlier version.
 	m := metrics.LocalMetrics
 	// picks two nodes randomly
-	var i, j int
-	if len(invokers) == 2 {
-		i, j = 0, 1
-	} else {
-		i = random.Intn(len(invokers))
-		j = i
-		for i == j {
-			j = random.Intn(len(invokers))
-		}
-	}
+	i, j := l.randomPicker(len(invokers))
 	logger.Debugf("[P2C select] Two invokers were selected, invoker[%d]: %s, invoker[%d]: %s.",
 		i, invokers[i], j, invokers[j])
 

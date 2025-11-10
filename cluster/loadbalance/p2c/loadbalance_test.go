@@ -34,9 +34,40 @@ import (
 	protoinvoc "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
+func TestDefaultRnd(t *testing.T) {
+	t.Run("n <= 1", func(t *testing.T) {
+		i, j := defaultRnd(1)
+		assert.Equal(t, 0, i)
+		assert.Equal(t, 0, j)
+	})
+
+	t.Run("n == 2", func(t *testing.T) {
+		i, j := defaultRnd(2)
+		assert.Equal(t, 0, i)
+		assert.Equal(t, 1, j)
+	})
+
+	t.Run("n > 2", func(t *testing.T) {
+		n := 5
+		i, j := defaultRnd(n)
+		assert.True(t, i >= 0 && i < n)
+		assert.True(t, j >= 0 && j < n)
+		assert.NotEqual(t, i, j)
+	})
+}
+
 func TestLoadBalance(t *testing.T) {
-	lb := newP2CLoadBalance()
+	lb := newP2CLoadBalance(func(n int) (i, j int) {
+		if n <= 1 {
+			return 0, 0
+		}
+		if n == 2 {
+			return 0, 1
+		}
+		return 0, 1
+	})
 	invocation := protoinvoc.NewRPCInvocation("TestMethod", []any{}, nil)
+
 	t.Run("no invokers", func(t *testing.T) {
 		ivk := lb.Select([]base.Invoker{}, invocation)
 		assert.Nil(t, ivk)
@@ -44,6 +75,7 @@ func TestLoadBalance(t *testing.T) {
 
 	t.Run("one invoker", func(t *testing.T) {
 		url0, _ := common.NewURL("dubbo://192.168.1.0:20000/com.ikurento.user.UserProvider")
+
 		ivkArr := []base.Invoker{
 			base.NewBaseInvoker(url0),
 		}
@@ -91,11 +123,14 @@ func TestLoadBalance(t *testing.T) {
 		url1, _ := common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
 		url2, _ := common.NewURL("dubbo://192.168.1.2:20000/com.ikurento.user.UserProvider")
 
-		// P2C algorithm randomly selects 2 invokers, so we need to mock all possible combinations
 		m.EXPECT().
-			GetMethodMetrics(gomock.Any(), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.HillClimbing)).
-			Times(2).
+			GetMethodMetrics(gomock.Eq(url0), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.HillClimbing)).
+			Times(1).
 			Return(uint64(10), nil)
+		m.EXPECT().
+			GetMethodMetrics(gomock.Eq(url1), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.HillClimbing)).
+			Times(1).
+			Return(uint64(5), nil)
 
 		ivkArr := []base.Invoker{
 			base.NewBaseInvoker(url0),
@@ -103,8 +138,9 @@ func TestLoadBalance(t *testing.T) {
 			base.NewBaseInvoker(url2),
 		}
 
-		got := lb.Select(ivkArr, invocation)
-		assert.NotNil(t, got)
+		ivk := lb.Select(ivkArr, invocation)
+
+		assert.Equal(t, ivkArr[0].GetURL().String(), ivk.GetURL().String())
 	})
 
 	t.Run("metrics i not found", func(t *testing.T) {
@@ -118,9 +154,8 @@ func TestLoadBalance(t *testing.T) {
 		url1, _ := common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
 		url2, _ := common.NewURL("dubbo://192.168.1.2:20000/com.ikurento.user.UserProvider")
 
-		// P2C algorithm randomly selects 2 invokers, mock the first call to return not found error
 		m.EXPECT().
-			GetMethodMetrics(gomock.Any(), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.HillClimbing)).
+			GetMethodMetrics(gomock.Eq(url0), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.HillClimbing)).
 			Times(1).
 			Return(0, metrics.ErrMetricsNotFound)
 
@@ -130,8 +165,9 @@ func TestLoadBalance(t *testing.T) {
 			base.NewBaseInvoker(url2),
 		}
 
-		got := lb.Select(ivkArr, invocation)
-		assert.NotNil(t, got)
+		ivk := lb.Select(ivkArr, invocation)
+
+		assert.Equal(t, ivkArr[0].GetURL().String(), ivk.GetURL().String())
 	})
 
 	t.Run("metrics j not found", func(t *testing.T) {
@@ -145,14 +181,13 @@ func TestLoadBalance(t *testing.T) {
 		url1, _ := common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
 		url2, _ := common.NewURL("dubbo://192.168.1.2:20000/com.ikurento.user.UserProvider")
 
-		// P2C algorithm randomly selects 2 invokers, mock the first call to return 0, second call to return error
 		m.EXPECT().
-			GetMethodMetrics(gomock.Any(), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.HillClimbing)).
+			GetMethodMetrics(gomock.Eq(url0), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.HillClimbing)).
 			Times(1).
 			Return(uint64(0), nil)
 
 		m.EXPECT().
-			GetMethodMetrics(gomock.Any(), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.HillClimbing)).
+			GetMethodMetrics(gomock.Eq(url1), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.HillClimbing)).
 			Times(1).
 			Return(uint64(0), metrics.ErrMetricsNotFound)
 
@@ -162,7 +197,9 @@ func TestLoadBalance(t *testing.T) {
 			base.NewBaseInvoker(url2),
 		}
 
-		got := lb.Select(ivkArr, invocation)
-		assert.NotNil(t, got)
+		ivk := lb.Select(ivkArr, invocation)
+
+		assert.Equal(t, ivkArr[1].GetURL().String(), ivk.GetURL().String())
 	})
+
 }
