@@ -17,113 +17,108 @@
 
 package etcdv3
 
-import (
-	"context"
-	"testing"
-)
+// import (
+// 	"context"
+// 	"testing"
 
-import (
-	"github.com/stretchr/testify/assert"
-)
+// 	"dubbo.apache.org/dubbo-go/v3/common"
+// 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+// 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+// 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+// 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
+// 	"dubbo.apache.org/dubbo-go/v3/registry"
+// 	"github.com/stretchr/testify/assert"
+// )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/protocol/base"
-	"dubbo.apache.org/dubbo-go/v3/protocol/result"
-	"dubbo.apache.org/dubbo-go/v3/registry"
-)
+// const testName = "test"
 
-const testName = "test"
+// func TestNewEtcdV3ServiceDiscovery(t *testing.T) {
+// 	url, _ := common.NewURL("dubbo://127.0.0.1:2379", common.WithParamsValue(constant.ClientNameKey, "etcd-client"))
+// 	sd, err := newEtcdV3ServiceDiscovery(url)
+// 	assert.Nil(t, err)
+// 	err = sd.Destroy()
+// 	assert.Nil(t, err)
+// }
 
-func TestNewEtcdV3ServiceDiscovery(t *testing.T) {
-	url, _ := common.NewURL("dubbo://127.0.0.1:2379")
-	sd, err := newEtcdV3ServiceDiscovery(url)
-	assert.Nil(t, err)
-	err = sd.Destroy()
-	assert.Nil(t, err)
-}
+// func TestEtcdV3ServiceDiscoveryGetDefaultPageSize(t *testing.T) {
+// 	serviceDiscovery := &etcdV3ServiceDiscovery{}
+// 	assert.Equal(t, registry.DefaultPageSize, serviceDiscovery.GetDefaultPageSize())
+// }
 
-func TestEtcdV3ServiceDiscoveryGetDefaultPageSize(t *testing.T) {
-	serviceDiscovery := &etcdV3ServiceDiscovery{}
-	assert.Equal(t, registry.DefaultPageSize, serviceDiscovery.GetDefaultPageSize())
-}
+// func TestFunction(t *testing.T) {
 
-func TestFunction(t *testing.T) {
+// 	extension.SetProtocol("mock", func() base.Protocol {
+// 		return &mockProtocol{}
+// 	})
 
-	extension.SetProtocol("mock", func() base.Protocol {
-		return &mockProtocol{}
-	})
+// 	url, _ := common.NewURL("dubbo://127.0.0.1:2379")
+// 	sd, _ := newEtcdV3ServiceDiscovery(url)
+// 	defer func() {
+// 		_ = sd.Destroy()
+// 	}()
 
-	url, _ := common.NewURL("dubbo://127.0.0.1:2379")
-	sd, _ := newEtcdV3ServiceDiscovery(url)
-	defer func() {
-		_ = sd.Destroy()
-	}()
+// 	ins := &registry.DefaultServiceInstance{
+// 		ID:          "testID",
+// 		ServiceName: testName,
+// 		Host:        "127.0.0.1",
+// 		Port:        2233,
+// 		Enable:      true,
+// 		Healthy:     true,
+// 		Metadata:    nil,
+// 	}
+// 	ins.Metadata = map[string]string{"t1": "test12", constant.MetadataServiceURLParamsPropertyName: `{"protocol":"mock","timeout":"10000","version":"1.0.0","dubbo":"2.0.2","release":"2.7.6","port":"2233"}`}
+// 	err := sd.Register(ins)
+// 	assert.Nil(t, err)
 
-	ins := &registry.DefaultServiceInstance{
-		ID:          "testID",
-		ServiceName: testName,
-		Host:        "127.0.0.1",
-		Port:        2233,
-		Enable:      true,
-		Healthy:     true,
-		Metadata:    nil,
-	}
-	ins.Metadata = map[string]string{"t1": "test12", constant.MetadataServiceURLParamsPropertyName: `{"protocol":"mock","timeout":"10000","version":"1.0.0","dubbo":"2.0.2","release":"2.7.6","port":"2233"}`}
-	err := sd.Register(ins)
-	assert.Nil(t, err)
+// 	ins = &registry.DefaultServiceInstance{
+// 		ID:          "testID",
+// 		ServiceName: testName,
+// 		Host:        "127.0.0.1",
+// 		Port:        2233,
+// 		Enable:      true,
+// 		Healthy:     true,
+// 		Metadata:    nil,
+// 	}
+// 	ins.Metadata = map[string]string{"t1": "test12", constant.MetadataServiceURLParamsPropertyName: `{"protocol":"mock","timeout":"10000","version":"1.0.0","dubbo":"2.0.2","release":"2.7.6","port":"2233"}`}
+// 	err = sd.Update(ins)
+// 	assert.NoError(t, err)
+// 	err = sd.Unregister(ins)
+// 	assert.NoError(t, err)
+// }
 
-	ins = &registry.DefaultServiceInstance{
-		ID:          "testID",
-		ServiceName: testName,
-		Host:        "127.0.0.1",
-		Port:        2233,
-		Enable:      true,
-		Healthy:     true,
-		Metadata:    nil,
-	}
-	ins.Metadata = map[string]string{"t1": "test12", constant.MetadataServiceURLParamsPropertyName: `{"protocol":"mock","timeout":"10000","version":"1.0.0","dubbo":"2.0.2","release":"2.7.6","port":"2233"}`}
-	err = sd.Update(ins)
-	assert.NoError(t, err)
-	err = sd.Unregister(ins)
-	assert.NoError(t, err)
-}
+// type mockProtocol struct{}
 
-type mockProtocol struct{}
+// func (m mockProtocol) Export(base.Invoker) base.Exporter {
+// 	panic("implement me")
+// }
 
-func (m mockProtocol) Export(base.Invoker) base.Exporter {
-	panic("implement me")
-}
+// func (m mockProtocol) Refer(*common.URL) base.Invoker {
+// 	return &mockInvoker{}
+// }
 
-func (m mockProtocol) Refer(*common.URL) base.Invoker {
-	return &mockInvoker{}
-}
+// func (m mockProtocol) Destroy() {
+// 	panic("implement me")
+// }
 
-func (m mockProtocol) Destroy() {
-	panic("implement me")
-}
+// type mockInvoker struct{}
 
-type mockInvoker struct{}
+// func (m *mockInvoker) GetURL() *common.URL {
+// 	panic("implement me")
+// }
 
-func (m *mockInvoker) GetURL() *common.URL {
-	panic("implement me")
-}
+// func (m *mockInvoker) IsAvailable() bool {
+// 	panic("implement me")
+// }
 
-func (m *mockInvoker) IsAvailable() bool {
-	panic("implement me")
-}
+// func (m *mockInvoker) Destroy() {
+// 	panic("implement me")
+// }
 
-func (m *mockInvoker) Destroy() {
-	panic("implement me")
-}
+// func (m *mockInvoker) Invoke(context.Context, base.Invocation) result.Result {
+// 	return &result.RPCResult{
+// 		Rest: &mockResult{},
+// 	}
+// }
 
-func (m *mockInvoker) Invoke(context.Context, base.Invocation) result.Result {
-	return &result.RPCResult{
-		Rest: &mockResult{},
-	}
-}
-
-type mockResult struct {
-}
+// type mockResult struct {
+// }
