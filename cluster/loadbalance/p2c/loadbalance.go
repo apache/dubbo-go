@@ -22,7 +22,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	mrand "math/rand"
 	"sync"
 	"time"
 )
@@ -37,22 +36,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
-)
-
-var (
-	randSeed = func() int64 {
-		var b [8]byte
-		_, err := rand.Read(b[:])
-		if err != nil {
-			return time.Now().UnixNano()
-		}
-		return int64(binary.LittleEndian.Uint64(b[:]))
-	}
-	rndPool = sync.Pool{
-		New: func() any {
-			return mrand.New(mrand.NewSource(randSeed()))
-		},
-	}
 )
 
 func init() {
@@ -74,6 +57,25 @@ type p2cLoadBalance struct {
 // It returns two different indices that can be used to select two different invokers for P2C comparison.
 type randomPicker func(n int) (i, j int)
 
+// secureRandomInt returns a secure random integer in [0, max)
+func secureRandomInt(max int) int {
+	if max <= 0 {
+		return 0
+	}
+
+	// Generate a random uint32 using crypto/rand
+	var b [4]byte
+	_, err := rand.Read(b[:])
+	if err != nil {
+		// Fallback to time-based seed if crypto/rand fails
+		return int(time.Now().UnixNano() % int64(max))
+	}
+
+	// Convert to int and scale to range
+	randomUint := binary.LittleEndian.Uint32(b[:])
+	return int(randomUint % uint32(max))
+}
+
 // defaultRnd is the default implementation of randomPicker.
 // It handles edge cases for n <= 2 and ensures two distinct random indices for n > 2.
 func defaultRnd(n int) (i, j int) {
@@ -84,14 +86,10 @@ func defaultRnd(n int) (i, j int) {
 		return 0, 1
 	}
 
-	// Get random generator from pool and return it when done
-	r := rndPool.Get().(*mrand.Rand)
-	defer rndPool.Put(r)
-
-	i = r.Intn(n)
-	j = r.Intn(n)
+	i = secureRandomInt(n)
+	j = secureRandomInt(n)
 	for i == j {
-		j = r.Intn(n)
+		j = secureRandomInt(n)
 	}
 	return i, j
 }
