@@ -57,6 +57,8 @@ func TestDefaultRnd(t *testing.T) {
 }
 
 func TestLoadBalance(t *testing.T) {
+	// Create P2C load balancer with deterministic randomPicker for repeatable tests.
+	// Always returns fixed indices (0,1) except when n <= 1.
 	lb := newP2CLoadBalance(func(n int) (i, j int) {
 		if n <= 1 {
 			return 0, 0

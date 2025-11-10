@@ -49,12 +49,14 @@ var (
 	instance loadbalance.LoadBalance
 )
 
+// p2cLoadBalance is a load balancer implementation based on the Power of Two Choices algorithm.
 type p2cLoadBalance struct {
+	// randomPicker is injectable for testing; allows deterministic random selection.
 	randomPicker randomPicker
 }
 
 // randomPicker is a function type that randomly selects two distinct indices from a range [0, n).
-// It returns two different indices that can be used to select two different invokers for P2C comparison.
+// Injectable for testing to return predictable values.
 type randomPicker func(n int) (i, j int)
 
 // secureRandomInt returns a secure random integer in [0, max)
@@ -94,6 +96,9 @@ func defaultRnd(n int) (i, j int) {
 	return i, j
 }
 
+// newP2CLoadBalance creates or returns the singleton P2C load balancer.
+// Uses the provided randomPicker if non-nil; otherwise defaults to defaultRnd.
+// Thread-safe via sync.Once.
 func newP2CLoadBalance(r randomPicker) loadbalance.LoadBalance {
 	if r == nil {
 		r = defaultRnd
