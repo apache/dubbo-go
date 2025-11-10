@@ -38,7 +38,7 @@ import (
 const testName = "test"
 
 func TestNewEtcdV3ServiceDiscovery(t *testing.T) {
-	url, _ := common.NewURL("dubbo://127.0.0.1:2379", common.WithParamsValue(constant.ClientNameKey, "etcd-client"))
+	url, _ := common.NewURL("dubbo://127.0.0.1:2379")
 	sd, err := newEtcdV3ServiceDiscovery(url)
 	assert.Nil(t, err)
 	err = sd.Destroy()
