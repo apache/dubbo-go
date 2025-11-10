@@ -56,7 +56,7 @@ type p2cLoadBalance struct {
 }
 
 // randomPicker is a function type that randomly selects two distinct indices from a range [0, n).
-// Injectable for testing to return predictable values.
+// This function type is designed ONLY FOR TEST purposes to inject predictable values.
 type randomPicker func(n int) (i, j int)
 
 // secureRandomInt returns a secure random integer in [0, max)
@@ -98,6 +98,7 @@ func defaultRnd(n int) (i, j int) {
 
 // newP2CLoadBalance creates or returns the singleton P2C load balancer.
 // Uses the provided randomPicker if non-nil; otherwise defaults to defaultRnd.
+// randomPicker parameter is designed ONLY FOR TEST purposes.
 // Thread-safe via sync.Once.
 func newP2CLoadBalance(r randomPicker) loadbalance.LoadBalance {
 	if r == nil {
