@@ -18,9 +18,11 @@
 package p2c
 
 import (
+	"crypto/rand"
+	"encoding/binary"
 	"errors"
 	"fmt"
-	"math/rand"
+	mrand "math/rand"
 	"sync"
 	"time"
 )
@@ -39,7 +41,17 @@ import (
 
 var (
 	randSeed = func() int64 {
-		return time.Now().Unix()
+		var b [8]byte
+		_, err := rand.Read(b[:])
+		if err != nil {
+			return time.Now().UnixNano()
+		}
+		return int64(binary.LittleEndian.Uint64(b[:]))
+	}
+	rndPool = sync.Pool{
+		New: func() any {
+			return mrand.New(mrand.NewSource(randSeed()))
+		},
 	}
 )
 
@@ -72,7 +84,10 @@ func defaultRnd(n int) (i, j int) {
 		return 0, 1
 	}
 
-	r := rand.New(rand.NewSource(randSeed()))
+	// Get random generator from pool and return it when done
+	r := rndPool.Get().(*mrand.Rand)
+	defer rndPool.Put(r)
+
 	i = r.Intn(n)
 	j = r.Intn(n)
 	for i == j {
