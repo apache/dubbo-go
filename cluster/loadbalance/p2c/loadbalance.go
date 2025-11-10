@@ -18,10 +18,9 @@
 package p2c
 
 import (
-	"crypto/rand"
-	"encoding/binary"
 	"errors"
 	"fmt"
+	"math/rand"
 	"sync"
 	"time"
 )
@@ -59,23 +58,10 @@ type p2cLoadBalance struct {
 // This function type is designed ONLY FOR TEST purposes to inject predictable values.
 type randomPicker func(n int) (i, j int)
 
-// secureRandomInt returns a secure random integer in [0, max)
-func secureRandomInt(max int) int {
-	if max <= 0 {
-		return 0
-	}
-
-	// Generate a random uint32 using crypto/rand
-	var b [4]byte
-	_, err := rand.Read(b[:])
-	if err != nil {
-		// Fallback to time-based seed if crypto/rand fails
-		return int(time.Now().UnixNano() % int64(max))
-	}
-
-	// Convert to int and scale to range
-	randomUint := binary.LittleEndian.Uint32(b[:])
-	return int(randomUint % uint32(max))
+var rndPool = sync.Pool{
+	New: func() any {
+		return rand.New(rand.NewSource(time.Now().Unix()))
+	},
 }
 
 // defaultRnd is the default implementation of randomPicker.
@@ -88,10 +74,13 @@ func defaultRnd(n int) (i, j int) {
 		return 0, 1
 	}
 
-	i = secureRandomInt(n)
-	j = secureRandomInt(n)
+	rnd := rndPool.Get().(*rand.Rand)
+	defer rndPool.Put(rnd)
+
+	i = rnd.Intn(n) // NOSONAR
+	j = rnd.Intn(n) // NOSONAR
 	for i == j {
-		j = secureRandomInt(n)
+		j = rand.Intn(n) // NOSONAR
 	}
 	return i, j
 }
