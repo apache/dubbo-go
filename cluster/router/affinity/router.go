@@ -86,6 +86,11 @@ func newApplicationAffinityRouter(url *common.URL) *ApplicationAffinityRoute {
 
 	applicationName := url.GetParam(constant.ApplicationKey, "")
 
+	if applicationName == "" {
+		logger.Errorf("Application affinity router must set application name")
+		return nil
+	}
+
 	a := &ApplicationAffinityRoute{
 		currentApplication: applicationName,
 	}
