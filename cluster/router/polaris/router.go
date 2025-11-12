@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -54,6 +55,11 @@ func newPolarisRouter(url *common.URL) (*polarisRouter, error) {
 
 	// get from url param
 	applicationName := url.GetParam(constant.ApplicationKey, "")
+
+	if applicationName == "" {
+		return nil, fmt.Errorf("polaris router must set application name")
+	}
+
 	// get from url attr
 	registries, ok := url.GetAttribute(constant.RegistriesConfigKey)
 	if !ok {
@@ -91,6 +97,7 @@ type polarisRouter struct {
 	consumerAPI polaris.ConsumerAPI
 
 	// config change: config to global
+	mu                 sync.RWMutex
 	currentApplication string
 	Registries         map[string]*global.RegistryConfig
 }
@@ -154,9 +161,12 @@ func (p *polarisRouter) Route(invokers []base.Invoker, url *common.URL,
 }
 
 func (p *polarisRouter) getService(url *common.URL) string {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
 	applicationMode := false
 	for _, item := range p.Registries {
-		if item.Protocol == constant.PolarisKey {
+		if item != nil && item.Protocol == constant.PolarisKey {
 			applicationMode = item.RegistryType == constant.ServiceKey
 		}
 	}
@@ -230,15 +240,18 @@ func (p *polarisRouter) buildTrafficLabels(svc string) ([]string, error) {
 	routeRule := resp.GetValue().(*v1.Routing)
 	labels := make([]string, 0, 4)
 	labels = append(labels, collectRouteLabels(routeRule.GetInbounds())...)
-	labels = append(labels, collectRouteLabels(routeRule.GetInbounds())...)
+	labels = append(labels, collectRouteLabels(routeRule.GetOutbounds())...)
 
 	return labels, nil
 }
 
 func (p *polarisRouter) getInvokeMethod(url *common.URL, invoaction base.Invocation) string {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
 	applicationMode := false
 	for _, item := range p.Registries {
-		if item.Protocol == constant.PolarisKey {
+		if item != nil && item.Protocol == constant.PolarisKey {
 			applicationMode = item.RegistryType == constant.ServiceKey
 		}
 	}
