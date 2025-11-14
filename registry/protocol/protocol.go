@@ -189,23 +189,33 @@ func (proto *registryProtocol) Export(originInvoker base.Invoker) base.Exporter 
 	registryUrl := getRegistryUrl(originInvoker)
 	providerUrl := getProviderUrl(originInvoker)
 
+	// Copy ShutdownConfig from providerUrl to registryUrl if registryUrl doesn't have it
+	// (server layer sets it in ivkURL, which becomes providerUrl here)
 	if _, ok := registryUrl.GetAttribute(constant.ShutdownConfigPrefix); !ok {
-		// Only set default global config when config package doesn't have one
-		if config.GetShutDown() == nil {
+		if shutdownConfig, ok := providerUrl.GetAttribute(constant.ShutdownConfigPrefix); ok {
+			// Use ShutdownConfig from providerUrl (new API)
+			registryUrl.SetAttribute(constant.ShutdownConfigPrefix, shutdownConfig)
+		} else if config.GetShutDown() == nil {
+			// Fallback to default if config package doesn't have one
 			registryUrl.SetAttribute(constant.ShutdownConfigPrefix, global.DefaultShutdownConfig())
 		}
 	}
 
-	// Copy ApplicationKey from registryUrl to providerUrl if providerUrl doesn't have it
-	if _, ok := providerUrl.GetAttribute(constant.ApplicationKey); !ok {
-		if appConfigRaw, ok := registryUrl.GetAttribute(constant.ApplicationKey); ok {
-			// Use ApplicationConfig from registryUrl (new API)
-			providerUrl.SetAttribute(constant.ApplicationKey, appConfigRaw)
+	// Copy ApplicationKey from providerUrl to registryUrl if registryUrl doesn't have it
+	// ApplicationKey is passed as URL parameter (application name string)
+	// (server layer sets it in ivkURL, which becomes providerUrl here)
+	if registryUrl.GetParam(constant.ApplicationKey, "") == "" {
+		if appName := providerUrl.GetParam(constant.ApplicationKey, ""); appName != "" {
+			// Use application name from providerUrl (new API)
+			registryUrl.SetParam(constant.ApplicationKey, appName)
 		} else {
-			// Only set default global config when config package doesn't have one
+			// Fallback to config package for old API compatibility
 			rootConfig := config.GetRootConfig()
-			if rootConfig == nil || rootConfig.Application == nil {
-				providerUrl.SetAttribute(constant.ApplicationKey, global.DefaultApplicationConfig())
+			if rootConfig != nil && rootConfig.Application != nil {
+				registryUrl.SetParam(constant.ApplicationKey, rootConfig.Application.Name)
+			} else {
+				// Use default application name
+				registryUrl.SetParam(constant.ApplicationKey, global.DefaultApplicationConfig().Name)
 			}
 		}
 	}
@@ -313,7 +323,7 @@ func registerServiceMap(invoker base.Invoker) error {
 		}
 	}
 
-	if providerConfRaw, ok := providerUrl.GetAttribute(constant.ProviderConfigPrefix); ok {
+	if providerConfRaw, ok := providerUrl.GetAttribute(constant.ProviderConfigKey); ok {
 		if providerConf, ok := providerConfRaw.(*global.ProviderConfig); ok {
 			if serviceConf, ok := providerConf.Services[id]; ok {
 				if serviceConf == nil {
@@ -583,24 +593,22 @@ func newProviderConfigurationListener(overrideListeners *sync.Map, url *common.U
 	listener := &providerConfigurationListener{}
 	listener.overrideListeners = overrideListeners
 
-	//TODO: Temporary compatibility with old APIs, can be removed later
-	if rootConfig := config.GetRootConfig(); rootConfig != nil && rootConfig.Application != nil {
+	// Get application name from URL params (new API) or config (old API)
+	// ApplicationKey is passed as URL parameter (application name string)
+	appName := url.GetParam(constant.ApplicationKey, "")
+	if appName == "" {
+		// Fallback to config for old API compatibility
+		if rootConfig := config.GetRootConfig(); rootConfig != nil && rootConfig.Application != nil {
+			appName = rootConfig.Application.Name
+		}
+	}
+
+	if appName != "" {
 		listener.InitWith(
-			rootConfig.Application.Name+constant.ConfiguratorSuffix,
+			appName+constant.ConfiguratorSuffix,
 			listener,
 			extension.GetDefaultConfiguratorFunc(),
 		)
-	}
-	// Prefer global config from URL attribute (new API)
-	if applicationConfRaw, ok := url.GetAttribute(constant.ApplicationKey); ok {
-		if applicationConfig, ok := applicationConfRaw.(*global.ApplicationConfig); ok {
-			listener.InitWith(
-				applicationConfig.Name+constant.ConfiguratorSuffix,
-				listener,
-				extension.GetDefaultConfiguratorFunc(),
-			)
-			return listener
-		}
 	}
 	return listener
 }

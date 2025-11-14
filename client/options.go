@@ -41,13 +41,13 @@ import (
 )
 
 type ReferenceOptions struct {
-	Reference *global.ReferenceConfig
-	Consumer  *global.ConsumerConfig
+	Reference   *global.ReferenceConfig
+	Consumer    *global.ConsumerConfig
 	Application *global.ApplicationConfig
-	Metrics   *global.MetricsConfig
-	Otel      *global.OtelConfig
-	TLS       *global.TLSConfig
-	Protocols map[string]*global.ProtocolConfig
+	Metrics     *global.MetricsConfig
+	Otel        *global.OtelConfig
+	TLS         *global.TLSConfig
+	Protocols   map[string]*global.ProtocolConfig
 
 	pxy          *proxy.Proxy
 	id           string
@@ -63,12 +63,12 @@ type ReferenceOptions struct {
 
 func defaultReferenceOptions() *ReferenceOptions {
 	return &ReferenceOptions{
-		Reference: global.DefaultReferenceConfig(),
+		Reference:   global.DefaultReferenceConfig(),
 		Application: global.DefaultApplicationConfig(),
-		Metrics:   global.DefaultMetricsConfig(),
-		Otel:      global.DefaultOtelConfig(),
-		TLS:       global.DefaultTLSConfig(),
-		Protocols: make(map[string]*global.ProtocolConfig),
+		Metrics:     global.DefaultMetricsConfig(),
+		Otel:        global.DefaultOtelConfig(),
+		TLS:         global.DefaultTLSConfig(),
+		Protocols:   make(map[string]*global.ProtocolConfig),
 	}
 }
 
@@ -482,6 +482,22 @@ func setTLS(tls *global.TLSConfig) ReferenceOption {
 	}
 }
 
+func setApplication(application *global.ApplicationConfig) ReferenceOption {
+	return func(opts *ReferenceOptions) {
+		opts.Application = application
+	}
+}
+
+// setProtocols sets the protocols configuration for the service reference.
+// This is an internal function used by the framework to configure protocol settings.
+// It accepts a map of protocol configurations where the key is the protocol name
+// and the value is the corresponding protocol configuration.
+func setProtocols(protocols map[string]*global.ProtocolConfig) ReferenceOption {
+	return func(opts *ReferenceOptions) {
+		opts.Protocols = protocols
+	}
+}
+
 type ClientOptions struct {
 	Consumer    *global.ConsumerConfig
 	Application *global.ApplicationConfig
@@ -490,6 +506,7 @@ type ClientOptions struct {
 	Metrics     *global.MetricsConfig
 	Otel        *global.OtelConfig
 	TLS         *global.TLSConfig
+	Protocols   map[string]*global.ProtocolConfig
 
 	overallReference  *global.ReferenceConfig
 	applicationCompat *config.ApplicationConfig
@@ -905,7 +922,7 @@ func SetClientRegistries(regs map[string]*global.RegistryConfig) ClientOption {
 	}
 }
 
-func SetApplication(application *global.ApplicationConfig) ClientOption {
+func setClientApplication(application *global.ApplicationConfig) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.Application = application
 	}
@@ -938,6 +955,16 @@ func SetClientOtel(otel *global.OtelConfig) ClientOption {
 func SetClientTLS(tls *global.TLSConfig) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.TLS = tls
+	}
+}
+
+// SetClientProtocols sets the protocols configuration for the client.
+// This function is used by the framework to configure protocol settings from global configuration.
+// It accepts a map of protocol configurations where the key is the protocol name
+// and the value is the corresponding protocol configuration.
+func SetClientProtocols(protocols map[string]*global.ProtocolConfig) ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Protocols = protocols
 	}
 }
 
