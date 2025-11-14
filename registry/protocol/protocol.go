@@ -192,10 +192,7 @@ func (proto *registryProtocol) Export(originInvoker base.Invoker) base.Exporter 
 	// Copy ShutdownConfig from providerUrl to registryUrl if registryUrl doesn't have it
 	// (server layer sets it in ivkURL, which becomes providerUrl here)
 	if _, ok := registryUrl.GetAttribute(constant.ShutdownConfigPrefix); !ok {
-		if shutdownConfig, ok := providerUrl.GetAttribute(constant.ShutdownConfigPrefix); ok {
-			// Use ShutdownConfig from providerUrl (new API)
-			registryUrl.SetAttribute(constant.ShutdownConfigPrefix, shutdownConfig)
-		} else if config.GetShutDown() == nil {
+		if config.GetShutDown() == nil {
 			// Fallback to default if config package doesn't have one
 			registryUrl.SetAttribute(constant.ShutdownConfigPrefix, global.DefaultShutdownConfig())
 		}
@@ -205,18 +202,10 @@ func (proto *registryProtocol) Export(originInvoker base.Invoker) base.Exporter 
 	// ApplicationKey is passed as URL parameter (application name string)
 	// (server layer sets it in ivkURL, which becomes providerUrl here)
 	if registryUrl.GetParam(constant.ApplicationKey, "") == "" {
-		if appName := providerUrl.GetParam(constant.ApplicationKey, ""); appName != "" {
-			// Use application name from providerUrl (new API)
-			registryUrl.SetParam(constant.ApplicationKey, appName)
-		} else {
-			// Fallback to config package for old API compatibility
-			rootConfig := config.GetRootConfig()
-			if rootConfig != nil && rootConfig.Application != nil {
-				registryUrl.SetParam(constant.ApplicationKey, rootConfig.Application.Name)
-			} else {
-				// Use default application name
-				registryUrl.SetParam(constant.ApplicationKey, global.DefaultApplicationConfig().Name)
-			}
+		// Fallback to config package for old API compatibility
+		if config.GetRootConfig().Application == nil {
+			// Use default application name
+			registryUrl.SetParam(constant.ApplicationKey, global.DefaultApplicationConfig().Name)
 		}
 	}
 

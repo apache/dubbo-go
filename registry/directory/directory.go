@@ -83,14 +83,6 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (director
 	}
 	logger.Debugf("new RegistryDirectory for service :%s.", url.Key())
 
-	// Try to get application name from SubURL params if present
-	// (client layer sets it in cfgURL params via WithParamsValue)
-	if url.SubURL != nil {
-		if appName := url.SubURL.GetParam(constant.ApplicationKey, ""); appName != "" {
-			url.SetParam(constant.ApplicationKey, appName)
-		}
-	}
-
 	dir := &RegistryDirectory{
 		Directory:        base.NewDirectory(url),
 		cacheInvokers:    []protocolbase.Invoker{},
