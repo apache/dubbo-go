@@ -37,13 +37,12 @@ import (
 	tripleapi "dubbo.apache.org/dubbo-go/v3/metadata/triple_api/proto"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
-	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
 // version will be used by Version func
 const (
-	version  = "1.0.0"
+	version  = constant.MetadataServiceV1Version
 	allMatch = "*"
 )
 
@@ -239,49 +238,6 @@ func (e *serviceExporter) exportV2(port string) {
 	e.v2Exporter = extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
 	// do not set, because it will override MetadataService
 	//exporter.metadataService.SetMetadataServiceURL(ivkURL)
-}
-
-// serviceInvoker, if base on server.infoInvoker will cause cycle dependency, so we need to use this way
-type serviceInvoker struct {
-	*base.BaseInvoker
-	invoke func(context context.Context, invocation base.Invocation) result.Result
-}
-
-func (si serviceInvoker) Invoke(context context.Context, invocation base.Invocation) result.Result {
-	return si.invoke(context, invocation)
-}
-
-type MetadataServiceHandler interface {
-	GetMetadataInfo(ctx context.Context, revision string) (*info.MetadataInfo, error)
-}
-
-type MetadataServiceV1 struct {
-	delegate MetadataService
-}
-
-func (mtsV1 *MetadataServiceV1) GetMetadataInfo(ctx context.Context, revision string) (*info.MetadataInfo, error) {
-	metadataInfo, err := mtsV1.delegate.GetMetadataInfo(revision)
-	if err != nil {
-		return nil, err
-	}
-	return metadataInfo, nil
-}
-
-func convertV1(serviceInfos map[string]*info.ServiceInfo) map[string]*tripleapi.ServiceInfo {
-	serviceInfoV1s := make(map[string]*tripleapi.ServiceInfo, len(serviceInfos))
-	for k, i := range serviceInfos {
-		serviceInfo := &tripleapi.ServiceInfo{
-			Name:     i.Name,
-			Group:    i.Group,
-			Version:  i.Version,
-			Protocol: i.Protocol,
-			Port:     0,
-			Path:     i.Path,
-			Params:   i.Params,
-		}
-		serviceInfoV1s[k] = serviceInfo
-	}
-	return serviceInfoV1s
 }
 
 // MetadataServiceV2Handler is an implementation of the org.apache.dubbo.metadata.MetadataServiceV2 service.
