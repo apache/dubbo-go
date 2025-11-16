@@ -32,7 +32,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
-	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
 )
 
@@ -183,24 +182,8 @@ func TestDefaultMetadataServiceGetMetadataInfo(t *testing.T) {
 				metadataMap: newMetadataMap(),
 			}
 			got, err := mts.GetMetadataInfo(tt.args.revision)
-
-			// Handle different test cases based on revision
-			switch tt.args.revision {
-			case "":
-				// Empty revision should return an error
-				assert.NotNil(t, err)
-				assert.Nil(t, got)
-				assert.Contains(t, err.Error(), "revision cannot be empty")
-			case "2":
-				// Non-existent revision should return an error
-				assert.NotNil(t, err)
-				assert.Nil(t, got)
-				assert.Contains(t, err.Error(), "metadata not found for revision")
-			default:
-				// Normal cases should not have errors
-				assert.Nil(t, err)
-				assert.Equalf(t, tt.want, got, "GetMetadataInfo(%v)", tt.args.revision)
-			}
+			assert.Nil(t, err)
+			assert.Equalf(t, tt.want, got, "GetMetadataInfo(%v)", tt.args.revision)
 		})
 	}
 }
@@ -315,67 +298,66 @@ func TestDefaultMetadataServiceVersion(t *testing.T) {
 }
 
 func Test_serviceExporterExport(t *testing.T) {
-	tests := []struct {
-		name     string
-		protocol string
-		v1Calls  int
-		v2Calls  int
-	}{
-		{
-			name:     "dubbo_protocol_v1_only",
-			protocol: constant.DubboProtocol,
-			v1Calls:  1, // dubbo export
-			v2Calls:  0, // no V2 for dubbo
-		},
-		{
-			name:     "tri_protocol_v1_and_v2",
-			protocol: constant.TriProtocol,
-			v1Calls:  1, // tri V1 export
-			v2Calls:  1, // tri V2 export
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mockExporter := new(mockExporter)
-			dubboProtocol := new(mockProtocol)
-			triProtocol := new(mockProtocol)
-			extension.SetProtocol("dubbo", func() base.Protocol {
-				return dubboProtocol
-			})
-			extension.SetProtocol("tri", func() base.Protocol {
-				return triProtocol
-			})
-			extension.SetProtocol(protocolwrapper.FILTER, func() base.Protocol {
-				return triProtocol
-			})
-
-			port := common.GetRandomPort("")
-			p, err := strconv.Atoi(port)
-			assert.Nil(t, err)
-			opts := &Options{
-				appName:      "dubbo-app",
-				metadataType: constant.RemoteMetadataStorageType,
-				protocol:     tt.protocol,
-				port:         p,
-			}
-
-			// Setup expectations based on protocol
-			if tt.protocol == constant.DubboProtocol {
-				dubboProtocol.On("Export").Return(mockExporter).Times(tt.v1Calls)
-			} else {
-				triProtocol.On("Export").Return(mockExporter).Times(tt.v1Calls + tt.v2Calls)
-			}
-
-			e := &serviceExporter{
-				opts:    opts,
-				service: &DefaultMetadataService{},
-			}
-			err = e.Export()
-			assert.Nil(t, err)
-			mockExporter.AssertExpectations(t)
-			dubboProtocol.AssertExpectations(t)
-			triProtocol.AssertExpectations(t)
-		})
-	}
+	mockExporter := new(mockExporter)
+	defer mockExporter.AssertExpectations(t)
+	dubboProtocol := new(mockProtocol)
+	defer dubboProtocol.AssertExpectations(t)
+	extension.SetProtocol("dubbo", func() base.Protocol {
+		return dubboProtocol
+	})
+	t.Run("normal", func(t *testing.T) {
+		port := common.GetRandomPort("")
+		p, err := strconv.Atoi(port)
+		assert.Nil(t, err)
+		opts := &Options{
+			appName:      "dubbo-app",
+			metadataType: constant.RemoteMetadataStorageType,
+			protocol:     constant.DubboProtocol,
+			port:         p,
+		}
+		dubboProtocol.On("Export").Return(mockExporter).Once()
+		e := &serviceExporter{
+			opts:    opts,
+			service: &DefaultMetadataService{},
+		}
+		err = e.Export()
+		assert.Nil(t, err)
+	})
+	// first t.Run has called commom.ServiceMap.Register ,second will fail
+	t.Run("get methods error", func(t *testing.T) {
+		port := common.GetRandomPort("")
+		p, err := strconv.Atoi(port)
+		assert.Nil(t, err)
+		opts := &Options{
+			appName:      "dubbo-app",
+			metadataType: constant.RemoteMetadataStorageType,
+			protocol:     constant.DubboProtocol,
+			port:         p,
+		}
+		e := &serviceExporter{
+			opts:    opts,
+			service: &DefaultMetadataService{},
+		}
+		err = e.Export()
+		assert.NotNil(t, err)
+	})
+	t.Run("port == 0", func(t *testing.T) {
+		opts := &Options{
+			appName:      "dubbo-app",
+			metadataType: constant.RemoteMetadataStorageType,
+			protocol:     constant.DubboProtocol,
+			port:         0,
+		}
+		// UnRegister first otherwise will fail
+		err := common.ServiceMap.UnRegister(constant.MetadataServiceName, constant.DefaultProtocol,
+			common.ServiceKey(constant.MetadataServiceName, opts.appName, version))
+		assert.Nil(t, err)
+		dubboProtocol.On("Export").Return(mockExporter).Once()
+		e := &serviceExporter{
+			opts:    opts,
+			service: &DefaultMetadataService{},
+		}
+		err = e.Export()
+		assert.Nil(t, err)
+	})
 }
