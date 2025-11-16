@@ -328,7 +328,6 @@ type handlerConnCloser interface {
 // consume the response stream and is not appropriate when receiving multiple
 // messages.
 func receiveUnaryResponse(conn StreamingClientConn, response AnyResponse) error {
-	// Debug logging removed for cleaner test output
 	resp, ok := response.(*Response)
 	if !ok {
 		panic(fmt.Sprintf("response %T is not of Response type", response))
