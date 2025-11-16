@@ -104,19 +104,16 @@ func initServer(url *common.URL) {
 
 		gettyServerConfigBytes, err := yaml.Marshal(gettyServerConfig)
 		if err != nil {
-			logger.Errorf("failed to marshal getty server config: %v", err)
-			return
+			panic(err)
 		}
 		err = yaml.Unmarshal(gettyServerConfigBytes, srvConf)
 		if err != nil {
-			logger.Errorf("failed to unmarshal getty server config: %v", err)
-			return
+			panic(err)
 		}
 	}
 
 	if err := srvConf.CheckValidity(); err != nil {
-		logger.Errorf("server config check validity failed: %v", err)
-		return
+		panic(err)
 	}
 }
 
@@ -185,7 +182,7 @@ func (s *Server) newSession(session getty.Session) error {
 		return nil
 	}
 	if _, ok = session.Conn().(*net.TCPConn); !ok {
-		return perrors.Errorf("%s, session.conn{%#v} is not tcp connection", session.Stat(), session.Conn())
+		panic(fmt.Sprintf("%s, session.conn{%#v} is not tcp connection\n", session.Stat(), session.Conn()))
 	}
 
 	if _, ok = session.Conn().(*tls.Conn); !ok {

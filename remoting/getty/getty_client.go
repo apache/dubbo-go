@@ -110,13 +110,11 @@ func initClient(url *common.URL) {
 		}
 		gettyClientConfigBytes, err := yaml.Marshal(gettyClientConfig)
 		if err != nil {
-			logger.Errorf("failed to marshal getty client config: %v", err)
-			return
+			panic(err)
 		}
 		err = yaml.Unmarshal(gettyClientConfigBytes, clientConf)
 		if err != nil {
-			logger.Errorf("failed to unmarshal getty client config: %v", err)
-			return
+			panic(err)
 		}
 	}
 	if err := clientConf.CheckValidity(); err != nil {

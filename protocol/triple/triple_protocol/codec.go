@@ -26,8 +26,6 @@ import (
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 
-	"github.com/dubbogo/gost/log/logger"
-
 	perrors "github.com/pkg/errors"
 
 	msgpack "github.com/ugorji/go/codec"
@@ -209,7 +207,6 @@ func (c *protoWrapperCodec) Marshal(message any) ([]byte, error) {
 	}
 
 	reqsLen := len(reqs)
-	logger.Errorf("reqsLen: %v", reqsLen)
 	reqsBytes := make([][]byte, reqsLen)
 	reqsTypes := make([]string, reqsLen)
 	for i, req := range reqs {
@@ -227,8 +224,6 @@ func (c *protoWrapperCodec) Marshal(message any) ([]byte, error) {
 		ArgTypes:      reqsTypes,
 	}
 
-	logger.Info("wrapperReq ", wrapperReq)
-
 	return proto.Marshal(wrapperReq)
 }
 
@@ -240,21 +235,15 @@ func (c *protoWrapperCodec) Unmarshal(binary []byte, message any) error {
 		params = []any{message}
 	}
 
-	logger.Errorf("params len: %v", len(params))
 	var wrapperReq interoperability.TripleRequestWrapper
 	if err := proto.Unmarshal(binary, &wrapperReq); err != nil {
 		return err
 	}
-	logger.Errorf("wrapperReq: %+v", wrapperReq)
-	// len(params) is correct.
-	// but Unmarshal doesn't work.
 	if len(wrapperReq.Args) != len(params) {
-		return fmt.Errorf("protoWrapperCodec request params len is %d, but has %d actually",
-			len(wrapperReq.Args), len(params))
+		return fmt.Errorf("error, request params len is %d, but has %d actually", len(wrapperReq.Args), len(params))
 	}
 
 	for i, arg := range wrapperReq.Args {
-		logger.Warnf("params[%v] type: %T", i, params[i])
 		if err := c.innerCodec.Unmarshal(arg, params[i]); err != nil {
 			return err
 		}
@@ -276,9 +265,7 @@ func (h *hessian2Codec) Name() string {
 
 func (c *hessian2Codec) Marshal(message any) ([]byte, error) {
 	encoder := hessian.NewEncoder()
-	logger.Warnf("message type: %T", message)
 	if err := encoder.Encode(message); err != nil {
-		logger.Errorf("err: %v", err)
 		return nil, err
 	}
 
@@ -286,14 +273,11 @@ func (c *hessian2Codec) Marshal(message any) ([]byte, error) {
 }
 
 func (c *hessian2Codec) Unmarshal(binary []byte, message any) error {
-	logger.Warnf("binary: %v", binary)
 	decoder := hessian.NewDecoder(binary)
 	val, err := decoder.Decode()
 	if err != nil {
-		logger.Errorf("err: %v", err)
 		return err
 	}
-	logger.Warnf("val: %v", val)
 	return reflectResponse(val, message)
 }
 
