@@ -157,14 +157,13 @@ func normalRegistryDir(noMockEvent ...bool) (*RegistryDirectory, *registry.MockR
 		Name: "test-application",
 	}
 
-	url, _ := common.NewURL("mock://127.0.0.1:1111",
-		common.WithAttribute(constant.ApplicationKey, applicationConfig),
-	)
+	url, _ := common.NewURL("mock://127.0.0.1:1111")
 	suburl, _ := common.NewURL(
 		"dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService",
 		common.WithParamsValue(constant.ClusterKey, "mock"),
 		common.WithParamsValue(constant.GroupKey, "group"),
 		common.WithParamsValue(constant.VersionKey, "1.0.0"),
+		common.WithParamsValue(constant.ApplicationKey, applicationConfig.Name),
 	)
 	url.SubURL = suburl
 	mockRegistry, _ := registry.NewMockRegistry(&common.URL{})

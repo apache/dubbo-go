@@ -44,6 +44,7 @@ type ReferenceOptions struct {
 	Reference   *global.ReferenceConfig
 	Consumer    *global.ConsumerConfig
 	Application *global.ApplicationConfig
+	Shutdown    *global.ShutdownConfig
 	Metrics     *global.MetricsConfig
 	Otel        *global.OtelConfig
 	TLS         *global.TLSConfig
@@ -65,6 +66,7 @@ func defaultReferenceOptions() *ReferenceOptions {
 	return &ReferenceOptions{
 		Reference:   global.DefaultReferenceConfig(),
 		Application: global.DefaultApplicationConfig(),
+		Shutdown:    global.DefaultShutdownConfig(),
 		Metrics:     global.DefaultMetricsConfig(),
 		Otel:        global.DefaultOtelConfig(),
 		TLS:         global.DefaultTLSConfig(),
@@ -498,6 +500,12 @@ func setProtocols(protocols map[string]*global.ProtocolConfig) ReferenceOption {
 	}
 }
 
+func setShutdown(shutdown *global.ShutdownConfig) ReferenceOption {
+	return func(opts *ReferenceOptions) {
+		opts.Shutdown = shutdown
+	}
+}
+
 type ClientOptions struct {
 	Consumer    *global.ConsumerConfig
 	Application *global.ApplicationConfig
@@ -922,7 +930,7 @@ func SetClientRegistries(regs map[string]*global.RegistryConfig) ClientOption {
 	}
 }
 
-func setClientApplication(application *global.ApplicationConfig) ClientOption {
+func SetClientApplication(application *global.ApplicationConfig) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.Application = application
 	}

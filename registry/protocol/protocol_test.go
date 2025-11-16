@@ -62,11 +62,11 @@ func referNormal(t *testing.T, regProtocol *registryProtocol) {
 
 	url, _ := common.NewURL("mock://127.0.0.1:1111",
 		common.WithAttribute(constant.ShutdownConfigPrefix, shutdownConfig),
-		common.WithAttribute(constant.ApplicationKey, applicationConfig),
 	)
 	suburl, _ := common.NewURL(
 		"dubbo://127.0.0.1:20000//",
 		common.WithParamsValue(constant.ClusterKey, "mock"),
+		common.WithParamsValue(constant.ApplicationKey, applicationConfig.Name),
 	)
 
 	url.SubURL = suburl
@@ -158,7 +158,6 @@ func exporterNormal(t *testing.T, regProtocol *registryProtocol) *common.URL {
 
 	url, _ := common.NewURL("mock://127.0.0.1:1111",
 		common.WithAttribute(constant.ShutdownConfigPrefix, shutdownConfig),
-		common.WithAttribute(constant.ApplicationKey, applicationConfig),
 	)
 	suburl, _ := common.NewURL(
 		"dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService",
@@ -166,6 +165,7 @@ func exporterNormal(t *testing.T, regProtocol *registryProtocol) *common.URL {
 		common.WithParamsValue(constant.GroupKey, "group"),
 		common.WithParamsValue(constant.VersionKey, "1.0.0"),
 		common.WithParamsValue(constant.BeanNameKey, "org.apache.dubbo-go.mockService"),
+		common.WithParamsValue(constant.ApplicationKey, applicationConfig.Name),
 		common.WithAttribute(constant.ProviderConfigPrefix, providerConfig),
 		common.WithAttribute(constant.RpcServiceKey, mockRPCService),
 	)
@@ -217,13 +217,45 @@ func TestOneRegAndProtoExporter(t *testing.T) {
 	regProtocol := newRegistryProtocol()
 	exporterNormal(t, regProtocol)
 
-	url2, _ := common.NewURL("mock://127.0.0.1:1111")
+	// The test expects that exporting the same service to the same registry
+	// should reuse the same bound (not create a new one)
+	// So we export the exact same service again
+	shutdownConfig := &global.ShutdownConfig{
+		StepTimeout:            "4s",
+		ConsumerUpdateWaitTime: "4s",
+	}
+
+	applicationConfig := &global.ApplicationConfig{
+		Name: "test-application",
+	}
+
+	serviceConfig := &global.ServiceConfig{
+		Interface:   "org.apache.dubbo-go.mockService",
+		ProtocolIDs: []string{"dubbo"},
+		Group:       "group",
+		Version:     "1.0.0",
+	}
+
+	providerConfig := &global.ProviderConfig{
+		Services: map[string]*global.ServiceConfig{
+			"org.apache.dubbo-go.mockService": serviceConfig,
+		},
+	}
+
+	mockRPCService := &MockRPCService{}
+
+	url2, _ := common.NewURL("mock://127.0.0.1:1111",
+		common.WithAttribute(constant.ShutdownConfigPrefix, shutdownConfig),
+	)
 	suburl2, _ := common.NewURL(
 		"dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService",
 		common.WithParamsValue(constant.ClusterKey, "mock"),
 		common.WithParamsValue(constant.GroupKey, "group"),
 		common.WithParamsValue(constant.VersionKey, "1.0.0"),
 		common.WithParamsValue(constant.BeanNameKey, "org.apache.dubbo-go.mockService"),
+		common.WithParamsValue(constant.ApplicationKey, applicationConfig.Name),
+		common.WithAttribute(constant.ProviderConfigPrefix, providerConfig),
+		common.WithAttribute(constant.RpcServiceKey, mockRPCService),
 	)
 
 	url2.SubURL = suburl2
@@ -242,6 +274,7 @@ func TestOneRegAndProtoExporter(t *testing.T) {
 		count2++
 		return true
 	})
+	// Should still be 1 because we're exporting the same service (same cache key)
 	assert.Equal(t, count2, 1)
 }
 

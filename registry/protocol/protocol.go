@@ -292,6 +292,7 @@ func registerServiceMap(invoker base.Invoker) error {
 	id := providerUrl.GetParam(constant.BeanNameKey, "")
 
 	//TODO: Temporary compatibility with old APIs, can be removed later
+
 	providerConfig := config.GetProviderConfig()
 
 	if providerConfig != nil {
@@ -316,8 +317,7 @@ func registerServiceMap(invoker base.Invoker) error {
 		if providerConf, ok := providerConfRaw.(*global.ProviderConfig); ok {
 			if serviceConf, ok := providerConf.Services[id]; ok {
 				if serviceConf == nil {
-					s := "reExport can not get serviceConfig"
-					return perrors.New(s)
+					return perrors.New("reExport can not get RPCService")
 				}
 				if rpcService, ok := providerUrl.GetAttribute(constant.RpcServiceKey); ok {
 					_, err := common.ServiceMap.Register(serviceConf.Interface,
