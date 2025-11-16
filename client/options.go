@@ -41,12 +41,12 @@ import (
 )
 
 type ReferenceOptions struct {
-	Reference *global.ReferenceConfig
-	Consumer  *global.ConsumerConfig
-	Metrics   *global.MetricsConfig
-	Otel      *global.OtelConfig
-	TLS       *global.TLSConfig
-	Protocols map[string]*global.ProtocolConfig
+	Reference  *global.ReferenceConfig
+	Consumer   *global.ConsumerConfig
+	Metrics    *global.MetricsConfig
+	Otel       *global.OtelConfig
+	TLS        *global.TLSConfig
+	Protocols  map[string]*global.ProtocolConfig
 	Registries map[string]*global.RegistryConfig
 
 	pxy          *proxy.Proxy
@@ -63,11 +63,11 @@ type ReferenceOptions struct {
 
 func defaultReferenceOptions() *ReferenceOptions {
 	return &ReferenceOptions{
-		Reference: global.DefaultReferenceConfig(),
-		Metrics:   global.DefaultMetricsConfig(),
-		Otel:      global.DefaultOtelConfig(),
-		TLS:       global.DefaultTLSConfig(),
-		Protocols: make(map[string]*global.ProtocolConfig),
+		Reference:  global.DefaultReferenceConfig(),
+		Metrics:    global.DefaultMetricsConfig(),
+		Otel:       global.DefaultOtelConfig(),
+		TLS:        global.DefaultTLSConfig(),
+		Protocols:  make(map[string]*global.ProtocolConfig),
 		Registries: global.DefaultRegistriesConfig(),
 	}
 }
