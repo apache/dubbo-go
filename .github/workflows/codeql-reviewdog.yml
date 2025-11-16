@@ -11,7 +11,7 @@ jobs:
       actions: read
       contents: read
       security-events: write
-      pull-requests: write   # 允许 reviewdog 评论 PR
+      pull-requests: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
