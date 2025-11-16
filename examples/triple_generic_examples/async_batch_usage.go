@@ -1,5 +1,8 @@
+//go:build example_async_batch
+// +build example_async_batch
+
 /*
- * Triple 泛化调用异步和批量使用示例
+ * Triple Generic Call Async and Batch Usage Example
  */
 
 package main
@@ -9,44 +12,42 @@ import (
 	"fmt"
 	"sync"
 	"time"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple"
 )
 
 func main() {
-	fmt.Println("🚀 Triple 泛化调用异步和批量示例")
+	fmt.Println("🚀 Triple Generic Call Async and Batch Example")
 	fmt.Println("=================================")
 
 	tripleGS := triple.NewTripleGenericService("tri://127.0.0.1:20000/com.example.OrderService?serialization=hessian2")
 	ctx := context.Background()
 
 	// 示例1: 异步调用
-	fmt.Println("\n1. ⏰ 异步调用示例")
+	fmt.Println("\n1. ⏰ Asynchronous Call Example")
 	asyncExample(tripleGS, ctx)
 
 	// 示例2: 批量同步调用
-	fmt.Println("\n2. 📦 批量同步调用示例")
+	fmt.Println("\n2. 📦 Batch Synchronous Call Example")
 	batchSyncExample(tripleGS, ctx)
 
 	// 示例3: 批量异步调用
-	fmt.Println("\n3. ⚡ 批量异步调用示例")
+	fmt.Println("\n3. ⚡ Batch Asynchronous Call Example")
 	batchAsyncExample(tripleGS, ctx)
 
 	// 示例4: 高级批量调用配置
-	fmt.Println("\n4. ⚙️ 高级批量调用配置")
+	fmt.Println("\n4. ⚙️ Advanced Batch Call Configuration")
 	advancedBatchExample(tripleGS, ctx)
 
 	// 示例5: 异步调用管理
-	fmt.Println("\n5. 🎛️ 异步调用管理示例")
+	fmt.Println("\n5. 🎛️ Asynchronous Call Management Example")
 	asyncManagementExample(tripleGS, ctx)
 
-	fmt.Println("\n🎉 异步和批量示例完成!")
+	fmt.Println("\n🎉 Async and batch examples completed!")
 }
 
 func asyncExample(tripleGS *triple.TripleGenericService, ctx context.Context) {
-	fmt.Println("启动异步调用...")
+	fmt.Println("Starting asynchronous call...")
 
 	// 创建等待组来同步异步调用
 	var wg sync.WaitGroup
@@ -68,17 +69,17 @@ func asyncExample(tripleGS *triple.TripleGenericService, ctx context.Context) {
 		func(result interface{}, err error) {
 			defer wg.Done()
 			if err != nil {
-				results <- fmt.Sprintf("创建订单失败: %v", err)
+				results <- fmt.Sprintf("Failed to create order: %v", err)
 			} else {
-				results <- fmt.Sprintf("创建订单成功: %v", result)
+				results <- fmt.Sprintf("Order created successfully: %v", result)
 			}
 		})
 
 	if err != nil {
-		fmt.Printf("❌ 启动异步调用1失败: %v\n", err)
+		fmt.Printf("❌ Failed to start asynchronous call 1: %v\n", err)
 		wg.Done()
 	} else {
-		fmt.Printf("🚀 异步调用1已启动, ID: %s\n", callID1)
+		fmt.Printf("🚀 Asynchronous call 1 started, ID: %s\n", callID1)
 	}
 
 	// 异步调用2: 查询库存
@@ -90,17 +91,17 @@ func asyncExample(tripleGS *triple.TripleGenericService, ctx context.Context) {
 		func(result interface{}, err error) {
 			defer wg.Done()
 			if err != nil {
-				results <- fmt.Sprintf("查询库存失败: %v", err)
+				results <- fmt.Sprintf("Failed to check inventory: %v", err)
 			} else {
-				results <- fmt.Sprintf("查询库存成功: %v", result)
+				results <- fmt.Sprintf("Inventory checked successfully: %v", result)
 			}
 		})
 
 	if err != nil {
-		fmt.Printf("❌ 启动异步调用2失败: %v\n", err)
+		fmt.Printf("❌ Failed to start asynchronous call 2: %v\n", err)
 		wg.Done()
 	} else {
-		fmt.Printf("🚀 异步调用2已启动, ID: %s\n", callID2)
+		fmt.Printf("🚀 Asynchronous call 2 started, ID: %s\n", callID2)
 	}
 
 	// 异步调用3: 计算运费
@@ -112,18 +113,18 @@ func asyncExample(tripleGS *triple.TripleGenericService, ctx context.Context) {
 		func(result interface{}, err error) {
 			defer wg.Done()
 			if err != nil {
-				results <- fmt.Sprintf("计算运费失败: %v", err)
+				results <- fmt.Sprintf("Failed to calculate shipping: %v", err)
 			} else {
-				results <- fmt.Sprintf("计算运费成功: %v", result)
+				results <- fmt.Sprintf("Shipping calculated successfully: %v", result)
 			}
 		},
 		3*time.Second) // 3秒超时
 
 	if err != nil {
-		fmt.Printf("❌ 启动异步调用3失败: %v\n", err)
+		fmt.Printf("❌ Failed to start asynchronous call 3: %v\n", err)
 		wg.Done()
 	} else {
-		fmt.Printf("🚀 异步调用3已启动, ID: %s\n", callID3)
+		fmt.Printf("🚀 Asynchronous call 3 started, ID: %s\n", callID3)
 	}
 
 	// 等待所有异步调用完成
@@ -133,7 +134,7 @@ func asyncExample(tripleGS *triple.TripleGenericService, ctx context.Context) {
 	}()
 
 	// 收集结果
-	fmt.Println("等待异步调用结果...")
+	fmt.Println("Waiting for asynchronous call results...")
 	timeout := time.After(5 * time.Second)
 	resultCount := 0
 
@@ -141,20 +142,20 @@ func asyncExample(tripleGS *triple.TripleGenericService, ctx context.Context) {
 		select {
 		case result, ok := <-results:
 			if !ok {
-				fmt.Printf("✅ 所有异步调用完成 (共 %d 个)\n", resultCount)
+				fmt.Printf("✅ All asynchronous calls completed (total %d calls)\n", resultCount)
 				return
 			}
 			fmt.Printf("📝 %s\n", result)
 			resultCount++
 		case <-timeout:
-			fmt.Println("⏰ 等待异步调用超时")
+			fmt.Println("⏰ Waiting for asynchronous call timeout")
 			return
 		}
 	}
 }
 
 func batchSyncExample(tripleGS *triple.TripleGenericService, ctx context.Context) {
-	fmt.Println("准备批量同步调用...")
+	fmt.Println("Preparing batch synchronous call...")
 
 	// 准备批量订单处理请求
 	invocations := []triple.TripleInvocationRequest{
@@ -216,24 +217,24 @@ func batchSyncExample(tripleGS *triple.TripleGenericService, ctx context.Context
 	duration := time.Since(start)
 
 	if err != nil {
-		fmt.Printf("❌ 批量调用失败: %v\n", err)
+		fmt.Printf("❌ Batch call failed: %v\n", err)
 		return
 	}
 
-	fmt.Printf("✅ 批量调用完成，耗时: %v\n", duration)
-	fmt.Printf("📊 处理了 %d 个请求，结果如下:\n", len(results))
+	fmt.Printf("✅ Batch call completed, duration: %v\n", duration)
+	fmt.Printf("📊 Processed %d requests, results are as follows:\n", len(results))
 
 	for i, result := range results {
 		if result.Error != nil {
-			fmt.Printf("  [%d] ❌ %s 失败: %v\n", i+1, invocations[i].MethodName, result.Error)
+			fmt.Printf("  [%d] ❌ %s failed: %v\n", i+1, invocations[i].MethodName, result.Error)
 		} else {
-			fmt.Printf("  [%d] ✅ %s 成功: %v\n", i+1, invocations[i].MethodName, result.Result)
+			fmt.Printf("  [%d] ✅ %s succeeded: %v\n", i+1, invocations[i].MethodName, result.Result)
 		}
 	}
 }
 
 func batchAsyncExample(tripleGS *triple.TripleGenericService, ctx context.Context) {
-	fmt.Println("启动批量异步调用...")
+	fmt.Println("Starting batch asynchronous call...")
 
 	// 准备用户通知批量请求
 	var invocations []triple.TripleInvocationRequest
@@ -246,8 +247,8 @@ func batchAsyncExample(tripleGS *triple.TripleGenericService, ctx context.Contex
 			Args: []interface{}{
 				userID,
 				map[string]interface{}{
-					"title":   "双11大促销",
-					"content": "全场商品8折优惠，限时3天！",
+					"title":   "Double 11 Promotion",
+					"content": "80% off on all products, limited to 3 days!",
 					"type":    "promotion",
 				},
 			},
@@ -266,29 +267,29 @@ func batchAsyncExample(tripleGS *triple.TripleGenericService, ctx context.Contex
 
 	callIDs, err := tripleGS.InvokeAsyncBatch(ctx, invocations,
 		func(results []triple.TripleAsyncResult) {
-			fmt.Printf("📬 批量异步调用回调触发，收到 %d 个结果\n", len(results))
+			fmt.Printf("📬 Batch asynchronous call callback triggered, received %d results\n", len(results))
 
 			for _, result := range results {
 				wg.Add(1)
 				go func(r triple.TripleAsyncResult) {
 					defer wg.Done()
 					if r.Error != nil {
-						resultChan <- fmt.Sprintf("用户通知失败: %v", r.Error)
+						resultChan <- fmt.Sprintf("User notification failed: %v", r.Error)
 					} else {
-						resultChan <- fmt.Sprintf("用户通知成功: %v", r.Result)
+						resultChan <- fmt.Sprintf("User notification succeeded: %v", r.Result)
 					}
 				}(result)
 			}
 		})
 
 	if err != nil {
-		fmt.Printf("❌ 启动批量异步调用失败: %v\n", err)
+		fmt.Printf("❌ Failed to start batch asynchronous call: %v\n", err)
 		return
 	}
 
-	fmt.Printf("🚀 批量异步调用已启动，共 %d 个调用\n", len(callIDs))
+	fmt.Printf("🚀 Batch asynchronous call started, total %d calls\n", len(callIDs))
 	for i, callID := range callIDs {
-		fmt.Printf("  调用 %d ID: %s\n", i+1, callID)
+		fmt.Printf("  Call %d ID: %s\n", i+1, callID)
 	}
 
 	// 等待结果
@@ -297,7 +298,7 @@ func batchAsyncExample(tripleGS *triple.TripleGenericService, ctx context.Contex
 		close(resultChan)
 	}()
 
-	fmt.Println("等待批量异步调用结果...")
+	fmt.Println("Waiting for batch asynchronous call results...")
 	timeout := time.After(10 * time.Second)
 	resultCount := 0
 
@@ -305,20 +306,20 @@ func batchAsyncExample(tripleGS *triple.TripleGenericService, ctx context.Contex
 		select {
 		case result, ok := <-resultChan:
 			if !ok {
-				fmt.Printf("✅ 批量异步调用全部完成 (共 %d 个结果)\n", resultCount)
+				fmt.Printf("✅ All batch asynchronous calls completed (total %d results)\n", resultCount)
 				return
 			}
 			fmt.Printf("📝 %s\n", result)
 			resultCount++
 		case <-timeout:
-			fmt.Println("⏰ 等待批量异步调用超时")
+			fmt.Println("⏰ Waiting for batch asynchronous call timeout")
 			return
 		}
 	}
 }
 
 func advancedBatchExample(tripleGS *triple.TripleGenericService, ctx context.Context) {
-	fmt.Println("测试高级批量调用配置...")
+	fmt.Println("Testing advanced batch call configuration...")
 
 	// 准备大量数据处理请求
 	var invocations []triple.TripleInvocationRequest
@@ -351,21 +352,21 @@ func advancedBatchExample(tripleGS *triple.TripleGenericService, ctx context.Con
 		options triple.BatchInvokeOptions
 	}{
 		{
-			name: "低并发稳定模式",
+			name: "Low Concurrency Stable Mode",
 			options: triple.BatchInvokeOptions{
 				MaxConcurrency: 3,
 				FailFast:       false,
 			},
 		},
 		{
-			name: "高并发快速模式",
+			name: "High Concurrency Fast Mode",
 			options: triple.BatchInvokeOptions{
 				MaxConcurrency: 10,
 				FailFast:       false,
 			},
 		},
 		{
-			name: "快速失败模式",
+			name: "Fail Fast Mode",
 			options: triple.BatchInvokeOptions{
 				MaxConcurrency: 5,
 				FailFast:       true,
@@ -374,8 +375,8 @@ func advancedBatchExample(tripleGS *triple.TripleGenericService, ctx context.Con
 	}
 
 	for _, config := range testConfigs {
-		fmt.Printf("\n🔧 测试配置: %s\n", config.name)
-		fmt.Printf("   并发数: %d, 快速失败: %v\n",
+		fmt.Printf("\n🔧 Testing configuration: %s\n", config.name)
+		fmt.Printf("   Concurrency: %d, Fail Fast: %v\n",
 			config.options.MaxConcurrency, config.options.FailFast)
 
 		start := time.Now()
@@ -383,7 +384,7 @@ func advancedBatchExample(tripleGS *triple.TripleGenericService, ctx context.Con
 		duration := time.Since(start)
 
 		if err != nil {
-			fmt.Printf("❌ 批量调用失败: %v\n", err)
+			fmt.Printf("❌ Batch call failed: %v\n", err)
 			continue
 		}
 
@@ -397,16 +398,16 @@ func advancedBatchExample(tripleGS *triple.TripleGenericService, ctx context.Con
 			}
 		}
 
-		fmt.Printf("📊 结果统计:\n")
-		fmt.Printf("   总数: %d, 成功: %d, 失败: %d\n",
+		fmt.Printf("📊 Result statistics:\n")
+		fmt.Printf("   Total: %d, Success: %d, Failure: %d\n",
 			len(results), successCount, errorCount)
-		fmt.Printf("   耗时: %v, 平均: %v\n",
+		fmt.Printf("   Duration: %v, Average: %v\n",
 			duration, duration/time.Duration(len(results)))
 	}
 }
 
 func asyncManagementExample(tripleGS *triple.TripleGenericService, ctx context.Context) {
-	fmt.Println("演示异步调用管理功能...")
+	fmt.Println("Demonstrating asynchronous call management features...")
 
 	// 启动几个长时间运行的异步调用
 	var callIDs []string
@@ -425,15 +426,15 @@ func asyncManagementExample(tripleGS *triple.TripleGenericService, ctx context.C
 			})
 
 		if err != nil {
-			fmt.Printf("❌ 启动长任务 %d 失败: %v\n", i, err)
+			fmt.Printf("❌ Failed to start long task %d: %v\n", i, err)
 		} else {
 			callIDs = append(callIDs, callID)
-			fmt.Printf("🚀 长任务 %d 已启动, ID: %s\n", i, callID)
+			fmt.Printf("🚀 Long task %d started, ID: %s\n", i, callID)
 		}
 	}
 
 	if len(callIDs) == 0 {
-		fmt.Println("❌ 没有成功启动的异步调用")
+		fmt.Println("❌ No asynchronous calls successfully started")
 		return
 	}
 
@@ -441,40 +442,39 @@ func asyncManagementExample(tripleGS *triple.TripleGenericService, ctx context.C
 	time.Sleep(1 * time.Second)
 
 	// 查看活跃调用
-	fmt.Println("\n📋 查看活跃的异步调用:")
+	fmt.Println("\n📋 View active asynchronous calls:")
 	activeCalls := tripleGS.GetActiveAsyncCalls()
-	fmt.Printf("当前活跃调用数量: %d\n", len(activeCalls))
+	fmt.Printf("Current number of active calls: %d\n", len(activeCalls))
 
 	for callID, asyncCall := range activeCalls {
-		fmt.Printf("  调用ID: %s, 方法: %s, 开始时间: %v\n",
+		fmt.Printf("  Call ID: %s, Method: %s, Start Time: %v\n",
 			callID, asyncCall.MethodName, asyncCall.StartTime.Format("15:04:05"))
 	}
 
 	// 取消第一个调用
 	if len(callIDs) > 0 {
-		fmt.Printf("\n🛑 取消第一个异步调用: %s\n", callIDs[0])
+		fmt.Printf("\n🛑 Cancel the first asynchronous call: %s\n", callIDs[0])
 		cancelled := tripleGS.CancelAsyncCall(callIDs[0])
 		if cancelled {
-			fmt.Println("✅ 调用已成功取消")
+			fmt.Println("✅ Call successfully cancelled")
 		} else {
-			fmt.Println("❌ 调用取消失败")
+			fmt.Println("❌ Call cancellation failed")
 		}
 	}
 
 	// 等待其中一个调用完成
 	if len(callIDs) > 1 {
-		fmt.Printf("\n⏳ 等待调用完成: %s\n", callIDs[1])
+		fmt.Printf("\n⏳ Waiting for call completion: %s\n", callIDs[1])
 		result, err := tripleGS.WaitForAsyncCall(callIDs[1], 3*time.Second)
 		if err != nil {
-			fmt.Printf("❌ 等待调用失败: %v\n", err)
+			fmt.Printf("❌ Waiting for call failed: %v\n", err)
 		} else {
-			fmt.Printf("✅ 调用完成: %v\n", result)
+			fmt.Printf("✅ Call completed: %v\n", result)
 		}
 	}
 
 	// 最终状态检查
 	time.Sleep(500 * time.Millisecond)
 	finalActiveCalls := tripleGS.GetActiveAsyncCalls()
-	fmt.Printf("\n📊 最终活跃调用数量: %d\n", len(finalActiveCalls))
+	fmt.Printf("\n📊 Final number of active calls: %d\n", len(finalActiveCalls))
 }
-

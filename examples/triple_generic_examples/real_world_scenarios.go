@@ -1,5 +1,8 @@
+//go:build example_real_world
+// +build example_real_world
+
 /*
- * Triple 泛化调用真实世界场景示例
+ * Triple Generic Call Real-World Scenarios Example
  */
 
 package main
@@ -8,14 +11,12 @@ import (
 	"context"
 	"fmt"
 	"time"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple"
 )
 
 func main() {
-	fmt.Println("🌍 Triple 泛化调用真实世界场景示例")
+	fmt.Println(" Triple Generic Call Real-World Scenarios Example")
 	fmt.Println("=====================================")
 
 	// 初始化不同的服务客户端
@@ -27,41 +28,41 @@ func main() {
 
 	ctx := context.Background()
 
-	// 场景1: 电商下单完整流程
-	fmt.Println("\n🛒 场景1: 电商下单完整流程")
+	// Scenario 1: E-commerce Order Complete Process
+	fmt.Println("\n🛒 Scenario 1: E-commerce Order Complete Process")
 	eCommerceOrderFlow(ctx, userService, orderService, paymentService, inventoryService, notificationService)
 
-	// 场景2: 用户管理系统
-	fmt.Println("\n👥 场景2: 用户管理系统")
+	// Scenario 2: User Management System
+	fmt.Println("\n👥 Scenario 2: User Management System")
 	userManagementSystem(ctx, userService, notificationService)
 
-	// 场景3: 数据分析和报表
-	fmt.Println("\n📊 场景3: 数据分析和报表生成")
+	// Scenario 3: Data Analysis and Reporting
+	fmt.Println("\n📊 Scenario 3: Data Analysis and Reporting")
 	dataAnalyticsScenario(ctx, orderService, userService)
 
-	// 场景4: 微服务链路调用
-	fmt.Println("\n🔗 场景4: 微服务链路调用")
+	// Scenario 4: Microservice Chain Invocation
+	fmt.Println("\n🔗 Scenario 4: Microservice Chain Invocation")
 	microserviceChainCall(ctx, userService, orderService, paymentService)
 
-	// 场景5: 批量数据处理
-	fmt.Println("\n⚡ 场景5: 批量数据处理")
+	// Scenario 5: Batch Data Processing
+	fmt.Println("\n⚡ Scenario 5: Batch Data Processing")
 	batchDataProcessing(ctx, inventoryService, orderService)
 
-	fmt.Println("\n🎉 真实世界场景示例完成!")
+	fmt.Println("\n🎉 Real-world scenarios example completed!")
 }
 
-// 电商下单完整流程
+// E-commerce Order Complete Process
 func eCommerceOrderFlow(ctx context.Context, userService, orderService, paymentService, inventoryService, notificationService *triple.TripleGenericService) {
-	fmt.Println("开始电商下单流程...")
+	fmt.Println("Starting e-commerce order process...")
 
-	// 用户信息
+	// User information
 	userID := int64(12345)
 	productID := int64(67890)
 	quantity := int32(2)
 	unitPrice := 299.99
 
-	// 1. 验证用户信息
-	fmt.Println("🔍 步骤1: 验证用户信息")
+	// 1. Verify user information
+	fmt.Println("🔍 Step 1: Verify user information")
 	userResult, err := userService.InvokeWithAttachments(ctx, "getUserById",
 		[]string{"int64"},
 		[]interface{}{userID},
@@ -72,13 +73,13 @@ func eCommerceOrderFlow(ctx context.Context, userService, orderService, paymentS
 		})
 
 	if err != nil {
-		fmt.Printf("❌ 用户验证失败: %v\n", err)
+		fmt.Printf("❌ User verification failed: %v\n", err)
 		return
 	}
-	fmt.Printf("✅ 用户验证成功: %v\n", userResult)
+	fmt.Printf("✅ User verification successful: %v\n", userResult)
 
-	// 2. 检查库存
-	fmt.Println("📦 步骤2: 检查商品库存")
+	// 2. Check inventory
+	fmt.Println("📦 Step 2: Check product inventory")
 	inventoryResult, err := inventoryService.InvokeWithAttachments(ctx, "checkStock",
 		[]string{"int64", "int32"},
 		[]interface{}{productID, quantity},
@@ -89,13 +90,13 @@ func eCommerceOrderFlow(ctx context.Context, userService, orderService, paymentS
 		})
 
 	if err != nil {
-		fmt.Printf("❌ 库存检查失败: %v\n", err)
+		fmt.Printf("❌ Inventory check failed: %v\n", err)
 		return
 	}
-	fmt.Printf("✅ 库存检查成功: %v\n", inventoryResult)
+	fmt.Printf("✅ Inventory check successful: %v\n", inventoryResult)
 
-	// 3. 创建订单
-	fmt.Println("📝 步骤3: 创建订单")
+	// 3. Create order
+	fmt.Println("📝 Step 3: Create order")
 	orderData := map[string]interface{}{
 		"userId":     userID,
 		"productId":  productID,
@@ -117,16 +118,16 @@ func eCommerceOrderFlow(ctx context.Context, userService, orderService, paymentS
 		})
 
 	if err != nil {
-		fmt.Printf("❌ 订单创建失败: %v\n", err)
+		fmt.Printf("❌ Order creation failed: %v\n", err)
 		return
 	}
-	fmt.Printf("✅ 订单创建成功: %v\n", orderResult)
+	fmt.Printf("✅ Order creation successful: %v\n", orderResult)
 
 	// 假设从订单结果中提取订单ID
 	orderID := "ORDER_20231201_001"
 
-	// 4. 处理支付
-	fmt.Println("💳 步骤4: 处理支付")
+	// 4. Process payment
+	fmt.Println("💳 Step 4: Process payment")
 	paymentData := map[string]interface{}{
 		"orderId":       orderID,
 		"amount":        float64(quantity) * unitPrice,
@@ -145,13 +146,13 @@ func eCommerceOrderFlow(ctx context.Context, userService, orderService, paymentS
 		})
 
 	if err != nil {
-		fmt.Printf("❌ 支付处理失败: %v\n", err)
+		fmt.Printf("❌ Payment processing failed: %v\n", err)
 		return
 	}
-	fmt.Printf("✅ 支付处理成功: %v\n", paymentResult)
+	fmt.Printf("✅ Payment processing successful: %v\n", paymentResult)
 
-	// 5. 更新库存
-	fmt.Println("📉 步骤5: 更新库存")
+	// 5. Update inventory
+	fmt.Println("📉 Step 5: Update inventory")
 	_, err = inventoryService.InvokeWithAttachments(ctx, "reduceStock",
 		[]string{"int64", "int32", "string"},
 		[]interface{}{productID, quantity, orderID},
@@ -162,13 +163,13 @@ func eCommerceOrderFlow(ctx context.Context, userService, orderService, paymentS
 		})
 
 	if err != nil {
-		fmt.Printf("❌ 库存更新失败: %v\n", err)
+		fmt.Printf("❌ Inventory update failed: %v\n", err)
 	} else {
-		fmt.Printf("✅ 库存更新成功\n")
+		fmt.Printf("✅ Inventory update successful\n")
 	}
 
-	// 6. 发送通知
-	fmt.Println("📧 步骤6: 发送订单确认通知")
+	// 6. Send notification
+	fmt.Println("📧 Step 6: Send order confirmation notification")
 	notificationData := map[string]interface{}{
 		"userId":   userID,
 		"orderId":  orderID,
@@ -187,19 +188,19 @@ func eCommerceOrderFlow(ctx context.Context, userService, orderService, paymentS
 		})
 
 	if err != nil {
-		fmt.Printf("❌ 通知发送失败: %v\n", err)
+		fmt.Printf("❌ Notification sending failed: %v\n", err)
 	} else {
-		fmt.Printf("✅ 通知发送成功\n")
+		fmt.Printf("✅ Notification sending successful\n")
 	}
 
-	fmt.Println("🎉 电商下单流程完成!")
+	fmt.Println("🎉 E-commerce order process completed!")
 }
 
-// 用户管理系统
+// User Management System
 func userManagementSystem(ctx context.Context, userService, notificationService *triple.TripleGenericService) {
-	fmt.Println("开始用户管理系统演示...")
+	fmt.Println("Starting user management system demonstration...")
 
-	// 批量用户操作
+	// Batch user operations
 	userOperations := []map[string]interface{}{
 		{
 			"action": "create",
@@ -271,7 +272,7 @@ func userManagementSystem(ctx context.Context, userService, notificationService 
 	// 执行批量用户操作
 	results, err := userService.BatchInvoke(ctx, invocations)
 	if err != nil {
-		fmt.Printf("❌ 批量用户操作失败: %v\n", err)
+		fmt.Printf("❌ Batch user operation failed: %v\n", err)
 		return
 	}
 
@@ -279,9 +280,9 @@ func userManagementSystem(ctx context.Context, userService, notificationService 
 	for i, result := range results {
 		operation := userOperations[i]
 		if result.Error != nil {
-			fmt.Printf("❌ 用户操作 %d (%s) 失败: %v\n", i, operation["action"], result.Error)
+			fmt.Printf("❌ User operation %d (%s) failed: %v\n", i, operation["action"], result.Error)
 		} else {
-			fmt.Printf("✅ 用户操作 %d (%s) 成功: %v\n", i, operation["action"], result.Result)
+			fmt.Printf("✅ User operation %d (%s) successful: %v\n", i, operation["action"], result.Result)
 
 			// 发送操作完成通知
 			if operation["action"] == "create" {
@@ -297,9 +298,9 @@ func userManagementSystem(ctx context.Context, userService, notificationService 
 					nil,
 					func(result interface{}, err error) {
 						if err != nil {
-							fmt.Printf("⚠️ 欢迎邮件发送失败: %v\n", err)
+							fmt.Printf("⚠️ Welcome email sending failed: %v\n", err)
 						} else {
-							fmt.Printf("📧 欢迎邮件发送成功\n")
+							fmt.Printf("📧 Welcome email sent successfully\n")
 						}
 					})
 			}
@@ -307,9 +308,9 @@ func userManagementSystem(ctx context.Context, userService, notificationService 
 	}
 }
 
-// 数据分析和报表场景
+// Data Analysis and Reporting Scenario
 func dataAnalyticsScenario(ctx context.Context, orderService, userService *triple.TripleGenericService) {
-	fmt.Println("开始数据分析和报表生成...")
+	fmt.Println("Starting data analysis and reporting generation...")
 
 	// 分析参数
 	analysisParams := map[string]interface{}{
@@ -361,23 +362,23 @@ func dataAnalyticsScenario(ctx context.Context, orderService, userService *tripl
 	duration := time.Since(start)
 
 	if err != nil {
-		fmt.Printf("❌ 数据分析失败: %v\n", err)
+		fmt.Printf("❌ Data analysis failed: %v\n", err)
 		return
 	}
 
-	fmt.Printf("📈 数据分析完成，耗时: %v\n", duration)
+	fmt.Printf("📈 Data analysis completed, duration: %v\n", duration)
 
 	reportTypes := []string{"销售报表", "用户活动报表", "产品表现报表"}
 	for i, result := range results {
 		if result.Error != nil {
-			fmt.Printf("❌ %s 生成失败: %v\n", reportTypes[i], result.Error)
+			fmt.Printf("❌ %s generation failed: %v\n", reportTypes[i], result.Error)
 		} else {
-			fmt.Printf("✅ %s 生成成功\n", reportTypes[i])
+			fmt.Printf("✅ %s generated successfully\n", reportTypes[i])
 		}
 	}
 
-	// 获取热门产品数据
-	fmt.Println("📊 获取热门产品数据...")
+	// Get popular product data
+	fmt.Println("📊 Getting popular product data...")
 	topProductsParams := map[string]interface{}{
 		"limit":    10,
 		"sortBy":   "sales_volume",
@@ -394,22 +395,22 @@ func dataAnalyticsScenario(ctx context.Context, orderService, userService *tripl
 		})
 
 	if err != nil {
-		fmt.Printf("❌ 获取热门产品失败: %v\n", err)
+		fmt.Printf("❌ Failed to get popular products: %v\n", err)
 	} else {
-		fmt.Printf("✅ 热门产品数据获取成功\n")
+		fmt.Printf("✅ Successfully retrieved popular product data\n")
 	}
 }
 
-// 微服务链路调用
+// Microservice Chain Call
 func microserviceChainCall(ctx context.Context, userService, orderService, paymentService *triple.TripleGenericService) {
-	fmt.Println("开始微服务链路调用演示...")
+	fmt.Println("Starting microservice chain call demonstration...")
 
 	// 模拟一个复杂的业务链路：用户升级VIP会员
 	userID := int64(54321)
 	membershipType := "VIP_GOLD"
 
-	// 链路1: 用户服务 -> 验证用户资格
-	fmt.Println("🔗 链路1: 验证用户VIP升级资格")
+	// Link 1: User Service -> Verify user eligibility
+	fmt.Println("🔗 Link 1: Verify VIP upgrade eligibility")
 	userEligibility, err := userService.InvokeWithAttachments(ctx, "checkVipEligibility",
 		[]string{"int64", "string"},
 		[]interface{}{userID, membershipType},
@@ -420,13 +421,13 @@ func microserviceChainCall(ctx context.Context, userService, orderService, payme
 		})
 
 	if err != nil {
-		fmt.Printf("❌ 用户资格验证失败: %v\n", err)
+		fmt.Printf("❌ User eligibility verification failed: %v\n", err)
 		return
 	}
-	fmt.Printf("✅ 用户资格验证完成: %v\n", userEligibility)
+	fmt.Printf("✅ User eligibility verification completed: %v\n", userEligibility)
 
-	// 链路2: 订单服务 -> 计算历史消费
-	fmt.Println("🔗 链路2: 计算用户历史消费")
+	// Link 2: Order Service -> Calculate historical consumption
+	fmt.Println("🔗 Link 2: Calculate user historical consumption")
 	consumptionHistory, err := orderService.InvokeWithAttachments(ctx, "calculateUserConsumption",
 		[]string{"int64", "string"},
 		[]interface{}{userID, "last_12_months"},
@@ -438,13 +439,13 @@ func microserviceChainCall(ctx context.Context, userService, orderService, payme
 		})
 
 	if err != nil {
-		fmt.Printf("❌ 历史消费计算失败: %v\n", err)
+		fmt.Printf("❌ Historical consumption calculation failed: %v\n", err)
 		return
 	}
-	fmt.Printf("✅ 历史消费计算完成: %v\n", consumptionHistory)
+	fmt.Printf("✅ Historical consumption calculation completed: %v\n", consumptionHistory)
 
-	// 链路3: 支付服务 -> 处理VIP费用
-	fmt.Println("🔗 链路3: 处理VIP会员费用")
+	// Link 3: Payment Service -> Process VIP fees
+	fmt.Println("🔗 Link 3: Process VIP membership fees")
 	vipPaymentData := map[string]interface{}{
 		"userId":         userID,
 		"membershipType": membershipType,
@@ -468,13 +469,13 @@ func microserviceChainCall(ctx context.Context, userService, orderService, payme
 		})
 
 	if err != nil {
-		fmt.Printf("❌ VIP费用处理失败: %v\n", err)
+		fmt.Printf("❌ VIP fee processing failed: %v\n", err)
 		return
 	}
-	fmt.Printf("✅ VIP费用处理完成: %v\n", paymentResult)
+	fmt.Printf("✅ VIP fee processing completed: %v\n", paymentResult)
 
-	// 链路4: 用户服务 -> 激活VIP会员
-	fmt.Println("🔗 链路4: 激活VIP会员资格")
+	// Link 4: User Service -> Activate VIP membership
+	fmt.Println("🔗 Link 4: Activate VIP membership qualification")
 	vipActivationData := map[string]interface{}{
 		"userId":           userID,
 		"membershipType":   membershipType,
@@ -500,17 +501,17 @@ func microserviceChainCall(ctx context.Context, userService, orderService, payme
 	}
 	fmt.Printf("✅ VIP会员激活成功\n")
 
-	fmt.Println("🎉 微服务链路调用完成!")
+	fmt.Println("🎉 Microservice chain call completed!")
 }
 
-// 批量数据处理
+// Batch Data Processing
 func batchDataProcessing(ctx context.Context, inventoryService, orderService *triple.TripleGenericService) {
-	fmt.Println("开始批量数据处理演示...")
+	fmt.Println("Starting batch data processing demonstration...")
 
-	// 模拟库存盘点任务
-	fmt.Println("📦 执行批量库存盘点")
+	// Simulate inventory audit task
+	fmt.Println("📦 Executing batch inventory audit")
 
-	// 生成大量库存盘点请求
+	// Generate a large number of inventory audit requests
 	var inventoryChecks []triple.TripleInvocationRequest
 	warehouseIDs := []string{"WH_001", "WH_002", "WH_003", "WH_004", "WH_005"}
 
@@ -560,7 +561,7 @@ func batchDataProcessing(ctx context.Context, inventoryService, orderService *tr
 		duration := time.Since(start)
 
 		if err != nil {
-			fmt.Printf("❌ 批次处理失败: %v\n", err)
+			fmt.Printf("❌ Batch processing failed: %v\n", err)
 			continue
 		}
 
@@ -571,15 +572,15 @@ func batchDataProcessing(ctx context.Context, inventoryService, orderService *tr
 			}
 		}
 
-		fmt.Printf("✅ 批次完成: %d/%d 成功, 耗时: %v\n",
+		fmt.Printf("✅ Batch completed: %d/%d successful, duration: %v\n",
 			successCount, len(results), duration)
 
 		// 短暂延迟避免服务过载
 		time.Sleep(100 * time.Millisecond)
 	}
 
-	// 生成库存报告
-	fmt.Println("📊 生成库存盘点报告")
+	// Generate inventory report
+	fmt.Println("📊 Generating inventory audit report")
 	reportParams := map[string]interface{}{
 		"auditId":        "inventory_audit_20231201",
 		"warehouses":     warehouseIDs,
@@ -598,11 +599,10 @@ func batchDataProcessing(ctx context.Context, inventoryService, orderService *tr
 		})
 
 	if err != nil {
-		fmt.Printf("❌ 库存报告生成失败: %v\n", err)
+		fmt.Printf("❌ Inventory report generation failed: %v\n", err)
 	} else {
-		fmt.Printf("✅ 库存报告生成成功\n")
+		fmt.Printf("✅ Inventory report generated successfully\n")
 	}
 
-	fmt.Println("🎉 批量数据处理完成!")
+	fmt.Println("🎉 Batch data processing completed!")
 }
-
