@@ -37,15 +37,10 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
-var (
-	randSeed = func() int64 {
-		return time.Now().Unix()
-	}
-)
-
 func init() {
-	rand.Seed(randSeed())
-	extension.SetLoadbalance(constant.LoadBalanceKeyP2C, newP2CLoadBalance)
+	extension.SetLoadbalance(constant.LoadBalanceKeyP2C, func() loadbalance.LoadBalance {
+		return newP2CLoadBalance(nil)
+	})
 }
 
 var (
@@ -53,12 +48,54 @@ var (
 	instance loadbalance.LoadBalance
 )
 
-type p2cLoadBalance struct{}
+// p2cLoadBalance is a load balancer implementation based on the Power of Two Choices algorithm.
+type p2cLoadBalance struct {
+	// randomPicker is injectable for testing; allows deterministic random selection.
+	randomPicker randomPicker
+}
 
-func newP2CLoadBalance() loadbalance.LoadBalance {
+// randomPicker is a function type that randomly selects two distinct indices from a range [0, n).
+// This function type is designed ONLY FOR TEST purposes to inject predictable values.
+type randomPicker func(n int) (i, j int)
+
+var rndPool = sync.Pool{
+	New: func() any {
+		return rand.New(rand.NewSource(time.Now().Unix()))
+	},
+}
+
+// defaultRnd is the default implementation of randomPicker.
+// It handles edge cases for n <= 2 and ensures two distinct random indices for n > 2.
+func defaultRnd(n int) (i, j int) {
+	if n <= 1 {
+		return 0, 0
+	}
+	if n == 2 {
+		return 0, 1
+	}
+
+	rnd := rndPool.Get().(*rand.Rand)
+	defer rndPool.Put(rnd)
+
+	i = rnd.Intn(n) // NOSONAR
+	j = rnd.Intn(n) // NOSONAR
+	for i == j {
+		j = rnd.Intn(n) // NOSONAR
+	}
+	return i, j
+}
+
+// newP2CLoadBalance creates or returns the singleton P2C load balancer.
+// Uses the provided randomPicker if non-nil; otherwise defaults to defaultRnd.
+// randomPicker parameter is designed ONLY FOR TEST purposes.
+// Thread-safe via sync.Once.
+func newP2CLoadBalance(r randomPicker) loadbalance.LoadBalance {
+	if r == nil {
+		r = defaultRnd
+	}
 	if instance == nil {
 		once.Do(func() {
-			instance = &p2cLoadBalance{}
+			instance = &p2cLoadBalance{randomPicker: r}
 		})
 	}
 	return instance
@@ -75,16 +112,7 @@ func (l *p2cLoadBalance) Select(invokers []base.Invoker, invocation base.Invocat
 	// The local metrics is available only for the earlier version.
 	m := metrics.LocalMetrics
 	// picks two nodes randomly
-	var i, j int
-	if len(invokers) == 2 {
-		i, j = 0, 1
-	} else {
-		i = rand.Intn(len(invokers))
-		j = i
-		for i == j {
-			j = rand.Intn(len(invokers))
-		}
-	}
+	i, j := l.randomPicker(len(invokers))
 	logger.Debugf("[P2C select] Two invokers were selected, invoker[%d]: %s, invoker[%d]: %s.",
 		i, invokers[i], j, invokers[j])
 

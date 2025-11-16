@@ -165,6 +165,7 @@ func (cli *Client) dial(interfaceName string, info *ClientInfo, srv any, opts ..
 		setReference(cli.cliOpts.overallReference),
 		setApplicationCompat(cli.cliOpts.applicationCompat),
 		setRegistriesCompat(cli.cliOpts.registriesCompat),
+		setRegistries(cli.cliOpts.Registries),
 		setConsumer(cli.cliOpts.Consumer),
 		setMetrics(cli.cliOpts.Metrics),
 		setOtel(cli.cliOpts.Otel),
