@@ -20,7 +20,9 @@ package connection
 import (
 	"context"
 	"time"
+)
 
+import (
 	"github.com/dubbogo/gost/log/logger"
 )
 
@@ -51,7 +53,7 @@ func (dhc *DubboHealthChecker) CheckConnection(ctx context.Context, conn Connect
 		CheckTime: startTime,
 	}
 
-	// 1. Basic state check
+	// Basic state check
 	state := conn.GetState()
 	if state == StateShutdown || state == StateTransientFailure {
 		result.Healthy = false
@@ -60,7 +62,7 @@ func (dhc *DubboHealthChecker) CheckConnection(ctx context.Context, conn Connect
 		return result
 	}
 
-	// 2. Availability check using the connection's own IsAvailable method
+	//  Availability check using the connection's own IsAvailable method
 	// This delegates to the underlying implementation (Getty) which knows
 	// how to check session state without network I/O
 	if !conn.IsAvailable() {
@@ -70,7 +72,7 @@ func (dhc *DubboHealthChecker) CheckConnection(ctx context.Context, conn Connect
 		return result
 	}
 
-	// 3. Idle time check
+	// Idle time check
 	lastActive := conn.GetLastActive()
 	if !lastActive.IsZero() {
 		idleTime := time.Since(lastActive)
@@ -82,7 +84,7 @@ func (dhc *DubboHealthChecker) CheckConnection(ctx context.Context, conn Connect
 		}
 	}
 
-	// 4. For Dubbo protocol, we trust the Getty session state
+	// For Dubbo protocol, we trust the Getty session state
 	// Getty's internal session management is more reliable than
 	// sending network requests which could fail due to the very
 	// connection issues we're trying to detect
@@ -119,4 +121,3 @@ func (dhc *DubboHealthChecker) SetCheckInterval(interval time.Duration) {
 func (dhc *DubboHealthChecker) SetMaxIdleTime(maxIdleTime time.Duration) {
 	dhc.maxIdleTime = maxIdleTime
 }
-

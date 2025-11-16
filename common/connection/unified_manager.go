@@ -22,9 +22,14 @@ import (
 	"fmt"
 	"sync"
 	"time"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/common"
+import (
 	"github.com/dubbogo/gost/log/logger"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
 // UnifiedConnectionManager implements ConnectionManager interface
@@ -367,4 +372,3 @@ func (ucm *UnifiedConnectionManager) Close() error {
 	logger.Info("Unified connection manager closed successfully")
 	return nil
 }
-

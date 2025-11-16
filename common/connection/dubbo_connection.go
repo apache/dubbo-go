@@ -19,7 +19,9 @@ package connection
 
 import (
 	"time"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
@@ -101,4 +103,3 @@ func (dc *DubboConnection) GetProtocol() string {
 func (dc *DubboConnection) GetExchangeClient() *remoting.ExchangeClient {
 	return dc.client
 }
-

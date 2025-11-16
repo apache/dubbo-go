@@ -20,7 +20,9 @@ package connection
 import (
 	"context"
 	"time"
+)
 
+import (
 	"github.com/dubbogo/gost/log/logger"
 )
 
@@ -49,7 +51,7 @@ func (thc *TripleHealthChecker) CheckConnection(ctx context.Context, conn Connec
 		CheckTime: startTime,
 	}
 
-	// 1. Basic state check
+	//  Basic state check
 	state := conn.GetState()
 	if state == StateShutdown || state == StateTransientFailure {
 		result.Healthy = false
@@ -58,7 +60,7 @@ func (thc *TripleHealthChecker) CheckConnection(ctx context.Context, conn Connec
 		return result
 	}
 
-	// 2. Availability check using the connection's own IsAvailable method
+	//  Availability check using the connection's own IsAvailable method
 	// For Triple protocol, this typically checks gRPC connectivity state
 	if !conn.IsAvailable() {
 		result.Healthy = false
@@ -67,7 +69,7 @@ func (thc *TripleHealthChecker) CheckConnection(ctx context.Context, conn Connec
 		return result
 	}
 
-	// 3. Idle time check
+	// Idle time check
 	lastActive := conn.GetLastActive()
 	if !lastActive.IsZero() {
 		idleTime := time.Since(lastActive)
@@ -79,7 +81,7 @@ func (thc *TripleHealthChecker) CheckConnection(ctx context.Context, conn Connec
 		}
 	}
 
-	// 4. For Triple protocol, we can leverage gRPC's robust connectivity states
+	// For Triple protocol, we can leverage gRPC's robust connectivity states
 	// gRPC has excellent built-in health checking via HTTP/2 PING frames
 	// and connectivity state management (IDLE, CONNECTING, READY, TRANSIENT_FAILURE, SHUTDOWN)
 
@@ -115,4 +117,3 @@ func (thc *TripleHealthChecker) SetCheckInterval(interval time.Duration) {
 func (thc *TripleHealthChecker) SetMaxIdleTime(maxIdleTime time.Duration) {
 	thc.maxIdleTime = maxIdleTime
 }
-

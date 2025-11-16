@@ -252,7 +252,7 @@ func TestUnifiedConnectionManager(t *testing.T) {
 	assert.True(t, manager.IsConnectionHealthy(dubboConn))
 	assert.True(t, manager.IsConnectionHealthy(tripleConn))
 
-	t.Log("✅ Unified connection manager basic functionality works")
+	t.Log("Unified connection manager basic functionality works")
 }
 
 func TestConnectionHealthManagement(t *testing.T) {
@@ -285,7 +285,7 @@ func TestConnectionHealthManagement(t *testing.T) {
 	assert.NotEqual(t, conn, newConn) // Should be a different connection
 	assert.True(t, manager.IsConnectionHealthy(newConn))
 
-	t.Log("✅ Connection health management works correctly")
+	t.Log("Connection health management works correctly")
 }
 
 func TestStaleConnectionCleanup(t *testing.T) {
@@ -310,7 +310,7 @@ func TestStaleConnectionCleanup(t *testing.T) {
 	removed := manager.RemoveStaleConnections(url)
 	assert.Equal(t, 1, removed)
 
-	t.Log("✅ Stale connection cleanup works correctly")
+	t.Log("Stale connection cleanup works correctly")
 }
 
 func TestMultiProtocolStats(t *testing.T) {
@@ -341,7 +341,7 @@ func TestMultiProtocolStats(t *testing.T) {
 	assert.Equal(t, 1, stats["dubbo"].TotalConnections)
 	assert.Equal(t, 1, stats["triple"].TotalConnections)
 
-	t.Log("✅ Multi-protocol statistics work correctly")
+	t.Log("Multi-protocol statistics work correctly")
 }
 
 // Test event listening
@@ -372,7 +372,7 @@ func TestConnectionEventListening(t *testing.T) {
 	// Should have received health check failed event
 	assert.True(t, len(*listener.events) > 0)
 
-	t.Log("✅ Connection event listening works correctly")
+	t.Log("Connection event listening works correctly")
 }
 
 type testEventListener struct {
@@ -390,4 +390,3 @@ func (tel *testEventListener) OnHealthCheckFailed(conn Connection, result *Healt
 func (tel *testEventListener) OnConnectionRemoved(conn Connection, reason string) {
 	*tel.events = append(*tel.events, "connection_removed")
 }
-
