@@ -176,12 +176,9 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 				}
 			}
 
-			logger.Debugf("invocation method name: %v", methodName)
 			inv = invocation.NewRPCInvocationWithOptions(invocation.WithMethodName(methodName),
 				invocation.WithArguments(inIArr),
 				invocation.WithCallBack(p.callback), invocation.WithParameterValues(inVArr))
-			// tmp
-			inv.SetAttribute(constant.CallTypeKey, constant.CallUnary)
 			if !replyEmptyFlag {
 				inv.SetReply(reply.Interface())
 			}
