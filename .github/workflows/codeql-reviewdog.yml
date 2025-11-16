@@ -36,6 +36,11 @@ jobs:
         with:
           output: ./codeql-results.sarif
 
+      - name: Debug SARIF file
+        run: |
+          ls -l ./codeql-results.sarif
+          head -20 ./codeql-results.sarif
+
       - name: Install reviewdog
         run: |
           curl -sfL https://raw.githubusercontent.com/reviewdog/reviewdog/master/install.sh | sh -s -- -b ./
@@ -45,4 +50,4 @@ jobs:
         env:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          reviewdog -f=sarif -reporter=github-pr-review -fail-on-error=false -level=error < ./codeql-results.sarif
+          reviewdog -f=sarif -reporter=github-pr-review -fail-on-error=false -level=error -input=./codeql-results.sarif
