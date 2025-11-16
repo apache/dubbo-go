@@ -27,7 +27,6 @@ import (
 
 // GenericService uses for generic invoke for service call
 type GenericService struct {
-	// ref: proxy/proxy.go DefaultProxyImplementFunc
 	Invoke       func(ctx context.Context, methodName string, types []string, args []hessian.Object) (any, error) `dubbo:"$invoke"`
 	referenceStr string
 }

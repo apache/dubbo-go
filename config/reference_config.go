@@ -187,8 +187,6 @@ func (rc *ReferenceConfig) Refer(srv any) {
 		common.WithParamsValue(constant.MetadataTypeKey, rc.metaDataType),
 	)
 
-	logger.Errorf("srv: %T", srv)
-
 	SetConsumerServiceByInterfaceName(rc.InterfaceName, srv)
 	if rc.ForceTag {
 		cfgURL.AddParam(constant.ForceUseTag, "true")

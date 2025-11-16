@@ -333,3 +333,19 @@ var MetadataServiceV2_ServiceInfo = common.ServiceInfo{
 		},
 	},
 }
+
+// MetadataServiceV1Handler
+// Compatible with V1 interface definition
+// Note: V1 method signatures differ from V2
+type MetadataServiceHandler interface {
+	GetMetadataInfo(ctx context.Context, revision string) (*info.MetadataInfo, error)
+}
+
+// Minimal implementation of MetadataServiceV1 for exporting triple v1.
+type MetadataServiceV1 struct {
+	delegate MetadataService
+}
+
+func (mtsV1 *MetadataServiceV1) GetMetadataInfo(ctx context.Context, revision string) (*info.MetadataInfo, error) {
+	return mtsV1.delegate.GetMetadataInfo(revision)
+}
