@@ -506,7 +506,6 @@ func setTLS(tls *global.TLSConfig) ReferenceOption {
 	}
 }
 
-
 // setProtocols sets the protocols configuration for the service reference.
 // This is an internal function used by the framework to configure protocol settings.
 // It accepts a map of protocol configurations where the key is the protocol name
