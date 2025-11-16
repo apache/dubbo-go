@@ -47,7 +47,7 @@ type ReferenceOptions struct {
 	Otel      *global.OtelConfig
 	TLS       *global.TLSConfig
 	Protocols map[string]*global.ProtocolConfig
-  Registries map[string]*global.RegistryConfig
+	Registries map[string]*global.RegistryConfig
 
 	pxy          *proxy.Proxy
 	id           string
@@ -68,7 +68,7 @@ func defaultReferenceOptions() *ReferenceOptions {
 		Otel:      global.DefaultOtelConfig(),
 		TLS:       global.DefaultTLSConfig(),
 		Protocols: make(map[string]*global.ProtocolConfig),
-    Registries: global.DefaultRegistriesConfig(),
+		Registries: global.DefaultRegistriesConfig(),
 	}
 }
 
