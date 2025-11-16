@@ -443,18 +443,7 @@ func WithMetadataReport(opts ...metadata.ReportOption) InstanceOption {
 	metadataOpts := metadata.NewReportOptions(opts...)
 
 	return func(cfg *InstanceOptions) {
-		if metadataOpts.MetadataReportConfig != nil {
-			cfg.MetadataReport = &global.MetadataReportConfig{
-				Protocol:  metadataOpts.MetadataReportConfig.Protocol,
-				Address:   metadataOpts.MetadataReportConfig.Address,
-				Username:  metadataOpts.MetadataReportConfig.Username,
-				Password:  metadataOpts.MetadataReportConfig.Password,
-				Timeout:   metadataOpts.MetadataReportConfig.Timeout,
-				Group:     metadataOpts.MetadataReportConfig.Group,
-				Namespace: metadataOpts.MetadataReportConfig.Namespace,
-				Params:    metadataOpts.MetadataReportConfig.Params,
-			}
-		}
+		cfg.MetadataReport = metadataOpts.MetadataReportConfig
 	}
 }
 
