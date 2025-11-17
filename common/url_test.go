@@ -21,14 +21,9 @@ import (
 	"encoding/base64"
 	"net/url"
 	"testing"
-)
 
-import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -519,8 +514,9 @@ func TestIsAnyCondition(t *testing.T) {
 		serviceURL *URL
 	}
 	serviceURL, _ := NewURL(GetLocalIp()+":0", WithProtocol("admin"), WithParams(url.Values{
-		constant.GroupKey:   {"group"},
-		constant.VersionKey: {"version"},
+		constant.GroupKey:     {"group"},
+		constant.VersionKey:   {"version"},
+		constant.InterfaceKey: {"intf"},
 	}))
 	tests := []struct {
 		name string
@@ -555,7 +551,7 @@ func TestIsAnyCondition(t *testing.T) {
 				version:    constant.AnyValue,
 				serviceURL: serviceURL,
 			},
-			want: false,
+			want: true,
 		},
 		{
 			name: "test4",
@@ -563,6 +559,26 @@ func TestIsAnyCondition(t *testing.T) {
 				intf:       constant.AnyValue,
 				group:      "group1",
 				version:    constant.AnyValue,
+				serviceURL: serviceURL,
+			},
+			want: false,
+		},
+		{
+			name: "test5",
+			args: args{
+				intf:       "intf",
+				group:      "group",
+				version:    constant.AnyValue,
+				serviceURL: serviceURL,
+			},
+			want: true,
+		},
+		{
+			name: "test6",
+			args: args{
+				intf:       "intf",
+				group:      constant.AnyValue,
+				version:    "version1",
 				serviceURL: serviceURL,
 			},
 			want: false,
