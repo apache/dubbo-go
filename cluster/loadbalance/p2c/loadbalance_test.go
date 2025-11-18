@@ -18,7 +18,6 @@
 package p2c
 
 import (
-	"math/rand"
 	"testing"
 )
 
@@ -35,21 +34,48 @@ import (
 	protoinvoc "dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
+func TestDefaultRnd(t *testing.T) {
+	t.Run("n <= 1", func(t *testing.T) {
+		i, j := defaultRnd(1)
+		assert.Equal(t, 0, i)
+		assert.Equal(t, 0, j)
+	})
+
+	t.Run("n == 2", func(t *testing.T) {
+		i, j := defaultRnd(2)
+		assert.Equal(t, 0, i)
+		assert.Equal(t, 1, j)
+	})
+
+	t.Run("n > 2", func(t *testing.T) {
+		n := 5
+		i, j := defaultRnd(n)
+		assert.True(t, i >= 0 && i < n)
+		assert.True(t, j >= 0 && j < n)
+		assert.NotEqual(t, i, j)
+	})
+}
+
 func TestLoadBalance(t *testing.T) {
-	lb := newP2CLoadBalance()
+	// Create P2C load balancer with deterministic randomPicker for repeatable tests.
+	// Always returns fixed indices (0,1) except when n <= 1.
+	lb := newP2CLoadBalance(func(n int) (i, j int) {
+		if n <= 1 {
+			return 0, 0
+		}
+		if n == 2 {
+			return 0, 1
+		}
+		return 0, 1
+	})
 	invocation := protoinvoc.NewRPCInvocation("TestMethod", []any{}, nil)
-	randSeed := func() int64 {
-		return 0
-	}
 
 	t.Run("no invokers", func(t *testing.T) {
-		rand.Seed(randSeed())
 		ivk := lb.Select([]base.Invoker{}, invocation)
 		assert.Nil(t, ivk)
 	})
 
 	t.Run("one invoker", func(t *testing.T) {
-		rand.Seed(randSeed())
 		url0, _ := common.NewURL("dubbo://192.168.1.0:20000/com.ikurento.user.UserProvider")
 
 		ivkArr := []base.Invoker{
@@ -60,7 +86,6 @@ func TestLoadBalance(t *testing.T) {
 	})
 
 	t.Run("two invokers", func(t *testing.T) {
-		rand.Seed(randSeed())
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -90,7 +115,6 @@ func TestLoadBalance(t *testing.T) {
 	})
 
 	t.Run("multiple invokers", func(t *testing.T) {
-		rand.Seed(randSeed())
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -122,7 +146,6 @@ func TestLoadBalance(t *testing.T) {
 	})
 
 	t.Run("metrics i not found", func(t *testing.T) {
-		rand.Seed(randSeed())
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -150,7 +173,6 @@ func TestLoadBalance(t *testing.T) {
 	})
 
 	t.Run("metrics j not found", func(t *testing.T) {
-		rand.Seed(randSeed())
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 

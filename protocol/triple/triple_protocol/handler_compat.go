@@ -25,6 +25,8 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/log/logger"
+
 	"github.com/dubbogo/grpc-go"
 	"github.com/dubbogo/grpc-go/metadata"
 	"github.com/dubbogo/grpc-go/status"
@@ -64,13 +66,13 @@ func (t *tripleCompatInterceptor) compatUnaryServerInterceptor(ctx context.Conte
 		}
 		dubbo3RespRaw, err := handler(ctx, typed.Any())
 		if dubbo3RespRaw == nil && err == nil {
-			// This is going to panic during serialization. Debugging is much easier
-			// if we panic here instead, so we can include the procedure name.
-			panic(fmt.Sprintf("%s returned nil resp and nil error", t.procedure)) //nolint: forbidigo
+			logger.Errorf("Procedure %s unexpectedly returned both nil response and nil error, which should not happen", t.procedure)
+			return nil, errorf(CodeInternal, "Procedure %s unexpectedly returned both nil response and nil error, which should not happen", t.procedure)
 		}
 		dubbo3Resp, ok := dubbo3RespRaw.(*dubbo_protocol.RPCResult)
 		if !ok {
-			panic(fmt.Sprintf("%+v is not of type *RPCResult", dubbo3RespRaw))
+			logger.Errorf("Procedure %s returned an unexpected response type. Expected *dubbo_protocol.RPCResult, but got %T", t.procedure, dubbo3RespRaw)
+			return nil, errorf(CodeInternal, "Procedure %s returned an unexpected response type. Expected *dubbo_protocol.RPCResult, but got %T", t.procedure, dubbo3RespRaw)
 		}
 		dubbo3Err, ok := compatError(err)
 		if ok {

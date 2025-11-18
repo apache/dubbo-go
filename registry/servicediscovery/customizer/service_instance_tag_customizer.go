@@ -15,22 +15,30 @@
  * limitations under the License.
  */
 
-package polaris
+package customizer
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/router"
-	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
-// RouteFactory router factory
-type RouteFactory struct{}
-
-// NewPolarisRouterFactory constructs a new PriorityRouterFactory
-func NewPolarisRouterFactory() router.PriorityRouterFactory {
-	return &RouteFactory{}
+func init() {
+	extension.AddCustomizers(&tagCustomizer{})
 }
 
-// NewPriorityRouter construct a new PriorityRouter
-func (f *RouteFactory) NewPriorityRouter(url *common.URL) (router.PriorityRouter, error) {
-	return newPolarisRouter(url)
+type tagCustomizer struct{}
+
+// GetPriority will return 2 so that it will be invoked in front of user defining Customizer
+func (t *tagCustomizer) GetPriority() int {
+	return 2
+}
+
+// Customize injects the tag value into instance metadata
+func (t *tagCustomizer) Customize(instance registry.ServiceInstance) {
+	tag := instance.GetTag()
+	if tag == "" {
+		return
+	}
+	instance.GetMetadata()[constant.Tagkey] = tag
 }

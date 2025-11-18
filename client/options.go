@@ -45,10 +45,8 @@ type ReferenceOptions struct {
 	Consumer    *global.ConsumerConfig
 	Application *global.ApplicationConfig
 	Shutdown    *global.ShutdownConfig
-	Metrics     *global.MetricsConfig
-	Otel        *global.OtelConfig
-	TLS         *global.TLSConfig
-	Protocols   map[string]*global.ProtocolConfig
+	Protocols  map[string]*global.ProtocolConfig
+	Registries map[string]*global.RegistryConfig
 
 	pxy          *proxy.Proxy
 	id           string
@@ -71,6 +69,7 @@ func defaultReferenceOptions() *ReferenceOptions {
 		Otel:        global.DefaultOtelConfig(),
 		TLS:         global.DefaultTLSConfig(),
 		Protocols:   make(map[string]*global.ProtocolConfig),
+		Registries: global.DefaultRegistriesConfig(),
 	}
 }
 
@@ -113,6 +112,19 @@ func (refOpts *ReferenceOptions) init(opts ...ReferenceOption) error {
 	}
 
 	// init registries
+	// convert Registries to registriesCompat
+	if len(refOpts.Registries) > 0 {
+		if refOpts.registriesCompat == nil {
+			refOpts.registriesCompat = make(map[string]*config.RegistryConfig)
+		}
+		for id, reg := range refOpts.Registries {
+			refOpts.registriesCompat[id] = compatRegistryConfig(reg)
+			if err := refOpts.registriesCompat[id].Init(); err != nil {
+				return err
+			}
+		}
+	}
+
 	if len(refOpts.registriesCompat) > 0 {
 		regs := refOpts.registriesCompat
 		if len(refConf.RegistryIDs) <= 0 {
@@ -196,6 +208,17 @@ func WithRegistryIDs(registryIDs ...string) ReferenceOption {
 		if len(registryIDs) > 0 {
 			opts.Reference.RegistryIDs = registryIDs
 		}
+	}
+}
+
+func WithRegistry(opts ...registry.Option) ReferenceOption {
+	regOpts := registry.NewOptions(opts...)
+
+	return func(refOpts *ReferenceOptions) {
+		if refOpts.Registries == nil {
+			refOpts.Registries = make(map[string]*global.RegistryConfig)
+		}
+		refOpts.Registries[regOpts.ID] = regOpts.Registry
 	}
 }
 
@@ -503,6 +526,12 @@ func setProtocols(protocols map[string]*global.ProtocolConfig) ReferenceOption {
 func setShutdown(shutdown *global.ShutdownConfig) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Shutdown = shutdown
+  }
+}
+  
+func setRegistries(regs map[string]*global.RegistryConfig) ReferenceOption {
+	return func(opts *ReferenceOptions) {
+		opts.Registries = regs
 	}
 }
 
@@ -524,7 +553,7 @@ type ClientOptions struct {
 func defaultClientOptions() *ClientOptions {
 	return &ClientOptions{
 		Consumer:         global.DefaultConsumerConfig(),
-		Registries:       make(map[string]*global.RegistryConfig),
+		Registries:       global.DefaultRegistriesConfig(),
 		Application:      global.DefaultApplicationConfig(),
 		Shutdown:         global.DefaultShutdownConfig(),
 		Metrics:          global.DefaultMetricsConfig(),
