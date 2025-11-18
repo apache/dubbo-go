@@ -165,7 +165,7 @@ func exporterNormal(t *testing.T, regProtocol *registryProtocol) *common.URL {
 		common.WithParamsValue(constant.GroupKey, "group"),
 		common.WithParamsValue(constant.VersionKey, "1.0.0"),
 		common.WithParamsValue(constant.BeanNameKey, "org.apache.dubbo-go.mockService"),
-		common.WithParamsValue(constant.ApplicationKey, applicationConfig.Name),
+		common.WithAttribute(constant.ApplicationKey, applicationConfig),
 		common.WithAttribute(constant.ProviderConfigPrefix, providerConfig),
 		common.WithAttribute(constant.RpcServiceKey, mockRPCService),
 	)
@@ -253,7 +253,7 @@ func TestOneRegAndProtoExporter(t *testing.T) {
 		common.WithParamsValue(constant.GroupKey, "group"),
 		common.WithParamsValue(constant.VersionKey, "1.0.0"),
 		common.WithParamsValue(constant.BeanNameKey, "org.apache.dubbo-go.mockService"),
-		common.WithParamsValue(constant.ApplicationKey, applicationConfig.Name),
+		common.WithAttribute(constant.ApplicationKey, applicationConfig),
 		common.WithAttribute(constant.ProviderConfigPrefix, providerConfig),
 		common.WithAttribute(constant.RpcServiceKey, mockRPCService),
 	)
