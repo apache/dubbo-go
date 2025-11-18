@@ -39,8 +39,10 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	_ "dubbo.apache.org/dubbo-go/v3/config_center/configurator"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	metricsRegistry "dubbo.apache.org/dubbo-go/v3/metrics/registry"
 	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
@@ -80,6 +82,54 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (director
 		return nil, perrors.Errorf("url is invalid, suburl can not be nil")
 	}
 	logger.Debugf("new RegistryDirectory for service :%s.", url.Key())
+
+	// TODO: Temporary compatibility with old APIs, can be removed later
+
+	// set application if not exist
+	if _, ok := url.GetAttribute(constant.ApplicationKey); !ok {
+		application := config.GetRootConfig().Application
+		if application == nil {
+			defaultAppConfig := global.DefaultApplicationConfig()
+			url.SetAttribute(constant.ApplicationKey, defaultAppConfig)
+		} else {
+			url.SetAttribute(constant.ApplicationKey, application)
+		}
+	}
+	// set registry if not exist
+	if _, ok := url.GetAttribute(constant.RegistriesConfigKey); !ok {
+		configRegistries := config.GetRootConfig().Registries
+		if configRegistries == nil {
+			defaultRegistryConfig := global.DefaultRegistryConfig()
+			url.SetAttribute(constant.RegistriesConfigKey, map[string]*global.RegistryConfig{
+				constant.DefaultKey: defaultRegistryConfig,
+			})
+		} else {
+			// convert config.RegistryConfig to global.RegistryConfig
+			globalRegistries := make(map[string]*global.RegistryConfig, len(configRegistries))
+			for key, configRegistry := range configRegistries {
+				globalRegistry := &global.RegistryConfig{
+					Protocol:          configRegistry.Protocol,
+					Timeout:           configRegistry.Timeout,
+					Group:             configRegistry.Group,
+					Namespace:         configRegistry.Namespace,
+					TTL:               configRegistry.TTL,
+					Address:           configRegistry.Address,
+					Username:          configRegistry.Username,
+					Password:          configRegistry.Password,
+					Simplified:        configRegistry.Simplified,
+					Preferred:         configRegistry.Preferred,
+					Zone:              configRegistry.Zone,
+					Weight:            configRegistry.Weight,
+					Params:            configRegistry.Params,
+					RegistryType:      configRegistry.RegistryType,
+					UseAsMetaReport:   configRegistry.UseAsMetaReport,
+					UseAsConfigCenter: configRegistry.UseAsConfigCenter,
+				}
+				globalRegistries[key] = globalRegistry
+			}
+			url.SetAttribute(constant.RegistriesConfigKey, globalRegistries)
+		}
+	}
 
 	dir := &RegistryDirectory{
 		Directory:        base.NewDirectory(url),
@@ -584,14 +634,18 @@ type consumerConfigurationListener struct {
 func newConsumerConfigurationListener(dir *RegistryDirectory, url *common.URL) *consumerConfigurationListener {
 	listener := &consumerConfigurationListener{directory: dir}
 
-	if url.SubURL != nil {
-		appName := url.SubURL.GetParam(constant.ApplicationKey, "")
-		if appName == "" {
-			logger.Errorf("application name is empty in SubURL, cannot create consumer configuration listener")
-		} else {
+	// TODO: Temporary compatibility with old APIs, can be removed later
+	application := config.GetRootConfig().Application
+	listener.InitWith(
+		application.Name+constant.ConfiguratorSuffix,
+		listener,
+		extension.GetDefaultConfiguratorFunc(),
+	)
 
+	if ApplicationConfRaw, ok := url.GetAttribute(constant.ApplicationKey); ok {
+		if ApplicationConfig, ok := ApplicationConfRaw.(*global.ApplicationConfig); ok {
 			listener.InitWith(
-				appName+constant.ConfiguratorSuffix,
+				ApplicationConfig.Name+constant.ConfiguratorSuffix,
 				listener,
 				extension.GetDefaultConfiguratorFunc(),
 			)

@@ -207,7 +207,7 @@ func (svcOpts *ServiceOptions) Export() error {
 			common.WithParamsValue(constant.IDLMode, isIDL),
 
 			// application name
-			common.WithParamsValue(constant.ApplicationKey, svcOpts.Application.Name),
+			common.WithAttribute(constant.ApplicationKey, svcOpts.Application),
 
 			// shutdown config
 			common.WithAttribute(constant.ShutdownConfigPrefix, svcOpts.srvOpts.Shutdown),

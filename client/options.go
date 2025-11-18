@@ -45,8 +45,11 @@ type ReferenceOptions struct {
 	Consumer    *global.ConsumerConfig
 	Application *global.ApplicationConfig
 	Shutdown    *global.ShutdownConfig
-	Protocols  map[string]*global.ProtocolConfig
-	Registries map[string]*global.RegistryConfig
+	Metrics     *global.MetricsConfig
+	Otel        *global.OtelConfig
+	TLS         *global.TLSConfig
+	Protocols   map[string]*global.ProtocolConfig
+	Registries  map[string]*global.RegistryConfig
 
 	pxy          *proxy.Proxy
 	id           string
@@ -69,7 +72,7 @@ func defaultReferenceOptions() *ReferenceOptions {
 		Otel:        global.DefaultOtelConfig(),
 		TLS:         global.DefaultTLSConfig(),
 		Protocols:   make(map[string]*global.ProtocolConfig),
-		Registries: global.DefaultRegistriesConfig(),
+		Registries:  global.DefaultRegistriesConfig(),
 	}
 }
 
@@ -526,9 +529,9 @@ func setProtocols(protocols map[string]*global.ProtocolConfig) ReferenceOption {
 func setShutdown(shutdown *global.ShutdownConfig) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Shutdown = shutdown
-  }
+	}
 }
-  
+
 func setRegistries(regs map[string]*global.RegistryConfig) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Registries = regs

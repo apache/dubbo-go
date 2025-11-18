@@ -201,11 +201,11 @@ func (proto *registryProtocol) Export(originInvoker base.Invoker) base.Exporter 
 	// Copy ApplicationKey from providerUrl to registryUrl if registryUrl doesn't have it
 	// ApplicationKey is passed as URL parameter (application name string)
 	// (server layer sets it in ivkURL, which becomes providerUrl here)
-	if registryUrl.GetParam(constant.ApplicationKey, "") == "" {
+	if _, ok := registryUrl.GetAttribute(constant.ApplicationKey); !ok {
 		// Fallback to config package for old API compatibility
 		if config.GetRootConfig().Application == nil {
 			// Use default application name
-			registryUrl.SetParam(constant.ApplicationKey, global.DefaultApplicationConfig().Name)
+			registryUrl.SetAttribute(constant.ApplicationKey, global.DefaultApplicationConfig())
 		}
 	}
 
@@ -582,23 +582,24 @@ func newProviderConfigurationListener(overrideListeners *sync.Map, url *common.U
 	listener := &providerConfigurationListener{}
 	listener.overrideListeners = overrideListeners
 
-	// Get application name from URL params (new API) or config (old API)
-	// ApplicationKey is passed as URL parameter (application name string)
-	appName := url.GetParam(constant.ApplicationKey, "")
-	if appName == "" {
-		// Fallback to config for old API compatibility
-		if rootConfig := config.GetRootConfig(); rootConfig != nil && rootConfig.Application != nil {
-			appName = rootConfig.Application.Name
+	// TODO: Temporary compatibility with old APIs, can be removed later
+	application := config.GetRootConfig().Application
+	listener.InitWith(
+		application.Name+constant.ConfiguratorSuffix,
+		listener,
+		extension.GetDefaultConfiguratorFunc(),
+	)
+
+	if ApplicationConfRaw, ok := url.GetAttribute(constant.ApplicationKey); ok {
+		if ApplicationConfig, ok := ApplicationConfRaw.(*global.ApplicationConfig); ok {
+			listener.InitWith(
+				ApplicationConfig.Name+constant.ConfiguratorSuffix,
+				listener,
+				extension.GetDefaultConfiguratorFunc(),
+			)
 		}
 	}
 
-	if appName != "" {
-		listener.InitWith(
-			appName+constant.ConfiguratorSuffix,
-			listener,
-			extension.GetDefaultConfiguratorFunc(),
-		)
-	}
 	return listener
 }
 
