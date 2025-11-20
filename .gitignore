@@ -42,3 +42,6 @@ metadata/report/zookeeper/zookeeper-4unittest/
 # macOS
 .DS_Store
 .history
+
+# Cursor IDE rules (local development only)
+.cursorrules
