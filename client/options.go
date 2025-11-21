@@ -41,13 +41,15 @@ import (
 )
 
 type ReferenceOptions struct {
-	Reference  *global.ReferenceConfig
-	Consumer   *global.ConsumerConfig
-	Metrics    *global.MetricsConfig
-	Otel       *global.OtelConfig
-	TLS        *global.TLSConfig
-	Protocols  map[string]*global.ProtocolConfig
-	Registries map[string]*global.RegistryConfig
+	Reference   *global.ReferenceConfig
+	Consumer    *global.ConsumerConfig
+	Application *global.ApplicationConfig
+	Shutdown    *global.ShutdownConfig
+	Metrics     *global.MetricsConfig
+	Otel        *global.OtelConfig
+	TLS         *global.TLSConfig
+	Protocols   map[string]*global.ProtocolConfig
+	Registries  map[string]*global.RegistryConfig
 
 	pxy          *proxy.Proxy
 	id           string
@@ -63,12 +65,14 @@ type ReferenceOptions struct {
 
 func defaultReferenceOptions() *ReferenceOptions {
 	return &ReferenceOptions{
-		Reference:  global.DefaultReferenceConfig(),
-		Metrics:    global.DefaultMetricsConfig(),
-		Otel:       global.DefaultOtelConfig(),
-		TLS:        global.DefaultTLSConfig(),
-		Protocols:  make(map[string]*global.ProtocolConfig),
-		Registries: global.DefaultRegistriesConfig(),
+		Reference:   global.DefaultReferenceConfig(),
+		Application: global.DefaultApplicationConfig(),
+		Shutdown:    global.DefaultShutdownConfig(),
+		Metrics:     global.DefaultMetricsConfig(),
+		Otel:        global.DefaultOtelConfig(),
+		TLS:         global.DefaultTLSConfig(),
+		Protocols:   make(map[string]*global.ProtocolConfig),
+		Registries:  global.DefaultRegistriesConfig(),
 	}
 }
 
@@ -506,6 +510,12 @@ func setTLS(tls *global.TLSConfig) ReferenceOption {
 	}
 }
 
+func setApplication(application *global.ApplicationConfig) ReferenceOption {
+	return func(opts *ReferenceOptions) {
+		opts.Application = application
+	}
+}
+
 // setProtocols sets the protocols configuration for the service reference.
 // This is an internal function used by the framework to configure protocol settings.
 // It accepts a map of protocol configurations where the key is the protocol name
@@ -513,6 +523,12 @@ func setTLS(tls *global.TLSConfig) ReferenceOption {
 func setProtocols(protocols map[string]*global.ProtocolConfig) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Protocols = protocols
+	}
+}
+
+func setShutdown(shutdown *global.ShutdownConfig) ReferenceOption {
+	return func(opts *ReferenceOptions) {
+		opts.Shutdown = shutdown
 	}
 }
 
@@ -547,7 +563,6 @@ func defaultClientOptions() *ClientOptions {
 		Otel:             global.DefaultOtelConfig(),
 		TLS:              global.DefaultTLSConfig(),
 		overallReference: global.DefaultReferenceConfig(),
-		Protocols:        make(map[string]*global.ProtocolConfig),
 	}
 }
 
@@ -947,7 +962,7 @@ func SetClientRegistries(regs map[string]*global.RegistryConfig) ClientOption {
 	}
 }
 
-func SetApplication(application *global.ApplicationConfig) ClientOption {
+func SetClientApplication(application *global.ApplicationConfig) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.Application = application
 	}

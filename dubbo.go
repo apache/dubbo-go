@@ -93,7 +93,7 @@ func (ins *Instance) NewClient(opts ...client.ClientOption) (*client.Client, err
 		)
 	}
 	if appCfg != nil {
-		cliOpts = append(cliOpts, client.SetApplication(appCfg))
+		cliOpts = append(cliOpts, client.SetClientApplication(appCfg))
 	}
 	if regsCfg != nil {
 		cliOpts = append(cliOpts, client.SetClientRegistries(regsCfg))

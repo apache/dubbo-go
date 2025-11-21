@@ -206,6 +206,12 @@ func (svcOpts *ServiceOptions) Export() error {
 			// TODO: remove IDL value when version 4.0.0
 			common.WithParamsValue(constant.IDLMode, isIDL),
 
+			// application name
+			common.WithAttribute(constant.ApplicationKey, svcOpts.Application),
+
+			// shutdown config
+			common.WithAttribute(constant.ShutdownConfigPrefix, svcOpts.srvOpts.Shutdown),
+
 			// provider info
 			common.WithAttribute(constant.ProviderConfigKey, svcOpts.srvOpts.Provider),
 

@@ -163,10 +163,12 @@ func (cli *Client) dial(interfaceName string, info *ClientInfo, srv any, opts ..
 	newRefOpts := defaultReferenceOptions()
 	finalOpts := []ReferenceOption{
 		setReference(cli.cliOpts.overallReference),
+		setApplication(cli.cliOpts.Application),
 		setApplicationCompat(cli.cliOpts.applicationCompat),
 		setRegistriesCompat(cli.cliOpts.registriesCompat),
 		setRegistries(cli.cliOpts.Registries),
 		setConsumer(cli.cliOpts.Consumer),
+		setShutdown(cli.cliOpts.Shutdown),
 		setMetrics(cli.cliOpts.Metrics),
 		setOtel(cli.cliOpts.Otel),
 		setTLS(cli.cliOpts.TLS),

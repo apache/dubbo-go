@@ -148,6 +148,8 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 		// for new triple non-IDL mode
 		// TODO: remove ISIDL after old triple removed
 		common.WithParamsValue(constant.IDLMode, ref.IDLMode),
+		common.WithAttribute(constant.ApplicationKey, refOpts.Application),
+		common.WithAttribute(constant.ShutdownConfigPrefix, refOpts.Shutdown),
 		common.WithAttribute(constant.ConsumerConfigKey, refOpts.Consumer),
 		common.WithAttribute(constant.ProtocolConfigKey, ref.Protocol),
 		common.WithAttribute(constant.RegistriesConfigKey, refOpts.Registries),
