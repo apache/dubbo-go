@@ -41,6 +41,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
@@ -59,7 +60,9 @@ type Client struct {
 
 // NewClient creates a new gRPC client.
 func NewClient(url *common.URL) (*Client, error) {
-	clientConfInitOnce.Do(clientInit)
+	clientConfInitOnce.Do(func() {
+		clientInit(url)
+	})
 
 	// If global trace instance was set, it means trace function enabled.
 	// If not, will return NoopTracer.
@@ -139,8 +142,14 @@ func NewClient(url *common.URL) (*Client, error) {
 	}
 
 	key := url.GetParam(constant.InterfaceKey, "")
-	impl := config.GetConsumerServiceByInterfaceName(key)
-	invoker := getInvoker(impl, conn)
+	//TODO: Temporary compatibility with old APIs, can be removed later
+	consumerService := config.GetConsumerServiceByInterfaceName(key)
+	if consumerService == nil {
+		if rpcService, ok := url.GetAttribute(constant.RpcServiceKey); ok {
+			consumerService = rpcService
+		}
+	}
+	invoker := getInvoker(consumerService, conn)
 
 	return &Client{
 		ClientConn: conn,
@@ -148,7 +157,7 @@ func NewClient(url *common.URL) (*Client, error) {
 	}, nil
 }
 
-func clientInit() {
+func clientInit(url *common.URL) {
 	// load rootConfig from runtime
 	rootConfig := config.GetRootConfig()
 
@@ -167,26 +176,40 @@ func clientInit() {
 	}()
 
 	if rootConfig.Application == nil {
-		return
-	}
-	protocolConf := config.GetRootConfig().Protocols
-
-	if protocolConf == nil {
-		logger.Info("protocol_conf default use dubbo config")
-	} else {
-		grpcConf := protocolConf[GRPC]
-		if grpcConf == nil {
-			logger.Warnf("grpcConf is nil")
+		app := url.GetParam(constant.ApplicationKey, "")
+		if len(app) == 0 {
 			return
 		}
-		grpcConfByte, err := yaml.Marshal(grpcConf)
-		if err != nil {
-			panic(err)
+	}
+
+	//TODO: Temporary compatibility with old APIs, can be removed later
+	protocolConf := dubbo.CompatGlobalProtocolConfigMap(rootConfig.Protocols)
+	if protocolConf == nil {
+		if protocolConfRaw, ok := url.GetAttribute(constant.ProtocolConfigKey); ok {
+			protocolConfig, ok := protocolConfRaw.(map[string]*global.ProtocolConfig)
+			if !ok {
+				logger.Warnf("protocolConfig assert failed")
+				return
+			}
+			if protocolConfig == nil {
+				logger.Warnf("protocolConfig is nil")
+				return
+			}
+			protocolConf = protocolConfig
 		}
-		err = yaml.Unmarshal(grpcConfByte, clientConf)
-		if err != nil {
-			panic(err)
-		}
+	}
+	grpcConf := protocolConf[GRPC]
+	if grpcConf == nil {
+		logger.Warnf("grpcConf is nil")
+		return
+	}
+	grpcConfByte, err := yaml.Marshal(grpcConf)
+	if err != nil {
+		panic(err)
+	}
+	err = yaml.Unmarshal(grpcConfByte, clientConf)
+	if err != nil {
+		panic(err)
 	}
 }
 

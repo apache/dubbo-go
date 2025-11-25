@@ -167,6 +167,8 @@ const (
 	RpcServiceKey                      = "rpc-service"
 	ClientInfoKey                      = "client-info"
 	TLSConfigKey                       = "tls-config"
+	ProviderConfigKey                  = "provider-config"
+	ProtocolConfigKey                  = "protocol-config"
 )
 
 const (
@@ -491,6 +493,10 @@ const (
 const (
 	TripleGoInterfaceName = "XXX_TRIPLE_GO_INTERFACE_NAME"
 	TripleGoMethodName    = "XXX_TRIPLE_GO_METHOD_NAME"
+)
+
+const (
+	RpcServiceInterfaceName = "RPCSERVICE_INTERFACE_NAME"
 )
 
 // Weight constants for Nacos instance registration
