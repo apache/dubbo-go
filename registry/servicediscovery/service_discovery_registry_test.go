@@ -46,9 +46,10 @@ import (
 )
 
 const (
-	testInterface = "org.apache.dubbo.test.TestService"
-	testGroup     = "test-group"
-	testApp       = "test-app"
+	testInterface   = "org.apache.dubbo.test.TestService"
+	testGroup       = "test-group"
+	testApp         = "test-app"
+	testRegistryURL = "service-discovery://localhost:12345"
 )
 
 // TestServiceDiscoveryRegistryRegister verifies the registration process.
@@ -56,7 +57,7 @@ func TestServiceDiscoveryRegistryRegister(t *testing.T) {
 	mockSD, mockMapping := setupEnvironment(t)
 	regID := fmt.Sprintf("mock-reg-%d", time.Now().UnixNano())
 
-	registryURL, err := common.NewURL("service-discovery://localhost:12345",
+	registryURL, err := common.NewURL(testRegistryURL,
 		common.WithParamsValue(constant.RegistryKey, "mock"),
 		common.WithParamsValue(constant.RegistryIdKey, regID))
 	assert.NoError(t, err)
@@ -97,7 +98,7 @@ func TestServiceDiscoveryRegistrySubscribe(t *testing.T) {
 	mockSD, mockMapping := setupEnvironment(t)
 	mockMapping.data[testInterface] = gxset.NewSet(testApp)
 
-	registryURL, _ := common.NewURL("service-discovery://localhost:12345",
+	registryURL, _ := common.NewURL(testRegistryURL,
 		common.WithParamsValue(constant.RegistryKey, "mock"))
 
 	reg, err := newServiceDiscoveryRegistry(registryURL)
@@ -125,7 +126,7 @@ func TestServiceDiscoveryRegistryUnSubscribe(t *testing.T) {
 	mockSD, mockMapping := setupEnvironment(t)
 	mockMapping.data[testInterface] = gxset.NewSet(testApp)
 
-	registryURL, _ := common.NewURL("service-discovery://localhost:12345",
+	registryURL, _ := common.NewURL(testRegistryURL,
 		common.WithParamsValue(constant.RegistryKey, "mock"))
 
 	reg, err := newServiceDiscoveryRegistry(registryURL)
@@ -232,20 +233,30 @@ func (m *mockServiceNameMapping) Remove(url *common.URL) error { m.removeCalled 
 
 type mockNotifyListener struct{}
 
-func (m *mockNotifyListener) Notify(*registry.ServiceEvent)              {}
-func (m *mockNotifyListener) NotifyAll([]*registry.ServiceEvent, func()) {}
+func (m *mockNotifyListener) Notify(*registry.ServiceEvent) {
+	// for mocking
+}
+func (m *mockNotifyListener) NotifyAll([]*registry.ServiceEvent, func()) {
+	// for mocking
+}
 
 type mockProtocol struct{}
 
 func (m *mockProtocol) Export(invoker protocol.Invoker) protocol.Exporter { return &mockExporter{} }
 func (m *mockProtocol) Refer(url *common.URL) protocol.Invoker            { return &mockInvoker{} }
-func (m *mockProtocol) Destroy()                                          {}
+func (m *mockProtocol) Destroy() {
+	// for mocking
+}
 
 type mockExporter struct{}
 
-func (m *mockExporter) UnExport() {}
+func (m *mockExporter) UnExport() {
+	// for mocking
+}
 
-func (m *mockExporter) Unexport()                    {}
+func (m *mockExporter) Unexport() {
+	// for mocking
+}
 func (m *mockExporter) GetInvoker() protocol.Invoker { return &mockInvoker{} }
 
 type mockProxyFactory struct{}
@@ -262,7 +273,9 @@ func (m *mockProxyFactory) GetInvoker(url *common.URL) protocol.Invoker { return
 
 type mockInvoker struct{}
 
-func (m *mockInvoker) GetURL() *common.URL                                         { return nil }
-func (m *mockInvoker) IsAvailable() bool                                           { return true }
-func (m *mockInvoker) Destroy()                                                    {}
+func (m *mockInvoker) GetURL() *common.URL { return nil }
+func (m *mockInvoker) IsAvailable() bool   { return true }
+func (m *mockInvoker) Destroy() {
+	// for mocking
+}
 func (m *mockInvoker) Invoke(context.Context, protocol.Invocation) protocol.Result { return nil }
