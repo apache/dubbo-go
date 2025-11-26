@@ -22,6 +22,10 @@ import (
 	"time"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/global"
+)
+
 // A ClientOption configures a [Client].
 //
 // In addition to any options grouped in the documentation below, remember that
@@ -176,6 +180,11 @@ func WithRecover(handle func(context.Context, Spec, http.Header, any) error) Han
 // This option has no effect if the client uses the gRPC or gRPC-Web protocols.
 func WithRequireTripleProtocolHeader() HandlerOption {
 	return &requireTripleProtocolHeaderOption{}
+}
+
+// WithCORS configures CORS for the handler.
+func WithCORS(cors *global.CorsConfig) HandlerOption {
+	return &corsOption{cors: cors}
 }
 
 func WithGroup(group string) Option {
@@ -437,6 +446,17 @@ type requireTripleProtocolHeaderOption struct{}
 
 func (o *requireTripleProtocolHeaderOption) applyToHandler(config *handlerConfig) {
 	config.RequireTripleProtocolHeader = true
+}
+
+type corsOption struct {
+	cors *global.CorsConfig
+}
+
+func (o *corsOption) applyToHandler(config *handlerConfig) {
+	if o.cors == nil {
+		return
+	}
+	config.Cors = convertCorsConfig(o.cors)
 }
 
 type groupOption struct {

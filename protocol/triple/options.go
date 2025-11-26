@@ -22,6 +22,10 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/log/logger"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
@@ -89,6 +93,22 @@ func WithMaxServerSendMsgSize(size string) Option {
 func WithMaxServerRecvMsgSize(size string) Option {
 	return func(opts *Options) {
 		opts.Triple.MaxServerRecvMsgSize = size
+	}
+}
+
+// WithCORS applies CORS configuration to triple options.
+// Invalid configs are logged as errors and ignored (no-op).
+func WithCORS(opts ...CORSOption) Option {
+	cors := global.DefaultCorsConfig()
+	for _, opt := range opts {
+		opt(cors)
+	}
+	if err := validateCorsConfig(cors); err != nil {
+		logger.Errorf("[TRIPLE] invalid CORS config: %v", err)
+		return func(*Options) {}
+	}
+	return func(opts *Options) {
+		opts.Triple.Cors = cors
 	}
 }
 
