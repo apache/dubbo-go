@@ -64,10 +64,7 @@ func (c *ClientStreamForClient) Send(request any) error {
 	if c.err != nil {
 		return c.err
 	}
-	// todo(DMwangnima): remove this redundant statement
-	if request == nil {
-		return c.conn.Send(nil)
-	}
+
 	return c.conn.Send(request)
 }
 
@@ -124,10 +121,6 @@ func (s *ServerStreamForClient) Receive(msg any) bool {
 
 // Msg returns the most recent message unmarshaled by a call to Receive.
 func (s *ServerStreamForClient) Msg() any {
-	// todo(DMwangnima): processing nil pointer
-	//if s.msg == nil {
-	//	s.msg = new(Res)
-	//}
 	return s.msg
 }
 
@@ -222,10 +215,6 @@ func (b *BidiStreamForClient) RequestHeader() http.Header {
 func (b *BidiStreamForClient) Send(msg any) error {
 	if b.err != nil {
 		return b.err
-	}
-	// todo(DMwangnima): remove this redundant statement
-	if msg == nil {
-		return b.conn.Send(nil)
 	}
 	return b.conn.Send(msg)
 }
