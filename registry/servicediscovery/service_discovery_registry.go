@@ -154,7 +154,7 @@ func (s *serviceDiscoveryRegistry) UnSubscribe(url *common.URL, listener registr
 	// FIXME ServiceNames.String() is not good
 	serviceNamesKey := services.String()
 	l := s.serviceListeners[serviceNamesKey]
-	if l == nil {
+	if l != nil {
 		l.RemoveListener(url.ServiceKey())
 	}
 	s.stopListen(url)
