@@ -456,7 +456,14 @@ func (o *corsOption) applyToHandler(config *handlerConfig) {
 	if o.cors == nil {
 		return
 	}
-	config.Cors = convertCorsConfig(o.cors)
+	config.Cors = &corsConfig{
+		allowOrigins:     o.cors.AllowOrigins,
+		allowMethods:     o.cors.AllowMethods,
+		allowHeaders:     o.cors.AllowHeaders,
+		exposeHeaders:    o.cors.ExposeHeaders,
+		allowCredentials: o.cors.AllowCredentials,
+		maxAge:           o.cors.MaxAge,
+	}
 }
 
 type groupOption struct {

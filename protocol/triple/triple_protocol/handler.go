@@ -478,16 +478,26 @@ func getIdentifier(group, version string) string {
 
 // handleCORS processes CORS requests. Returns true if the request was handled and processing should stop.
 func (h *Handler) handleCORS(w http.ResponseWriter, r *http.Request) bool {
-	if r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-Method") != "" {
-		return handlePreflight(w, r, h.cors)
+	if h.cors == nil {
+		return false
 	}
 
-	if origin := r.Header.Get("Origin"); origin != "" {
-		if !allowOrigin(origin, h.cors) {
-			w.WriteHeader(http.StatusForbidden)
-			return true
-		}
-		addCORSHeaders(w, r, h.cors)
+	// Handle preflight requests
+	if r.Method == http.MethodOptions && r.Header.Get(corsRequestMethod) != "" {
+		return h.cors.handlePreflight(w, r)
 	}
+
+	// Handle normal requests with Origin header
+	origin := r.Header.Get(corsOrigin)
+	if origin == "" {
+		return false
+	}
+
+	if !h.cors.allowOrigin(origin) {
+		w.WriteHeader(http.StatusForbidden)
+		return true
+	}
+
+	h.cors.addCORSHeaders(w, r)
 	return false
 }

@@ -29,10 +29,6 @@ import (
 	"github.com/dubbogo/gost/log/logger"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/global"
-)
-
 // corsConfig is an internal CORS configuration struct that doesn't depend on global package.
 type corsConfig struct {
 	allowOrigins     []string
@@ -44,42 +40,45 @@ type corsConfig struct {
 	hasWildcard      bool
 }
 
-const defaultPreflightMaxAge = 86400
+const (
+	defaultPreflightMaxAge = 86400 // 24 hours in seconds
+	wildcardOrigin         = "*"
+)
 
-// convertCorsConfig converts a *global.CorsConfig to an internal *corsConfig.
-func convertCorsConfig(cfg *global.CorsConfig) *corsConfig {
-	if cfg == nil {
+const (
+	corsOrigin           = "Origin"
+	corsVary             = "Vary"
+	corsAllowOrigin      = "Access-Control-Allow-Origin"
+	corsAllowMethods     = "Access-Control-Allow-Methods"
+	corsAllowHeaders     = "Access-Control-Allow-Headers"
+	corsExposeHeaders    = "Access-Control-Expose-Headers"
+	corsAllowCredentials = "Access-Control-Allow-Credentials"
+	corsMaxAge           = "Access-Control-Max-Age"
+	corsRequestMethod    = "Access-Control-Request-Method"
+	corsRequestHeaders   = "Access-Control-Request-Headers"
+)
+
+var defaultCorsMethods = []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete}
+
+// build processes the corsConfig with handlers and returns a fully configured corsConfig.
+func (c *corsConfig) build(handlers []protocolHandler) *corsConfig {
+	if c == nil {
 		return nil
 	}
-	return &corsConfig{
-		allowOrigins:     append([]string(nil), cfg.AllowOrigins...),
-		allowMethods:     append([]string(nil), cfg.AllowMethods...),
-		allowHeaders:     append([]string(nil), cfg.AllowHeaders...),
-		exposeHeaders:    append([]string(nil), cfg.ExposeHeaders...),
-		allowCredentials: cfg.AllowCredentials,
-		maxAge:           cfg.MaxAge,
-	}
-}
-
-func buildCorsConfig(cfg *corsConfig, handlers []protocolHandler) *corsConfig {
-	if cfg == nil {
-		return nil
-	}
-	if len(cfg.allowOrigins) == 0 {
-		// Empty origins means CORS is disabled.
+	if len(c.allowOrigins) == 0 {
 		return nil
 	}
 
 	built := &corsConfig{
-		allowOrigins:     append([]string(nil), cfg.allowOrigins...),
-		allowHeaders:     append([]string(nil), cfg.allowHeaders...),
-		exposeHeaders:    append([]string(nil), cfg.exposeHeaders...),
-		allowCredentials: cfg.allowCredentials,
-		maxAge:           cfg.maxAge,
-		hasWildcard:      hasWildcardOrigin(cfg.allowOrigins),
+		allowOrigins:     append([]string(nil), c.allowOrigins...),
+		allowHeaders:     append([]string(nil), c.allowHeaders...),
+		exposeHeaders:    append([]string(nil), c.exposeHeaders...),
+		allowCredentials: c.allowCredentials,
+		maxAge:           c.maxAge,
+		hasWildcard:      c.checkHasWildcard(),
 	}
 
-	built.allowMethods = normalizeCorsMethods(cfg.allowMethods, handlers)
+	built.allowMethods = c.normalizeMethods(handlers)
 
 	if built.maxAge <= 0 {
 		built.maxAge = defaultPreflightMaxAge
@@ -88,38 +87,16 @@ func buildCorsConfig(cfg *corsConfig, handlers []protocolHandler) *corsConfig {
 	return built
 }
 
-// normalizeCorsMethods normalizes and deduplicates CORS methods, adding defaults if needed.
-func normalizeCorsMethods(configuredMethods []string, handlers []protocolHandler) []string {
-	methodSet := make(map[string]struct{})
+// buildCorsConfig is a convenience function that calls build on the corsConfig.
+func buildCorsConfig(cfg *corsConfig, handlers []protocolHandler) *corsConfig {
+	return cfg.build(handlers)
+}
 
-	// Add configured methods (normalized to uppercase)
-	for _, m := range configuredMethods {
-		if m == "" {
-			continue
-		}
-		methodSet[strings.ToUpper(m)] = struct{}{}
-	}
+// normalizeMethods normalizes and deduplicates CORS methods, adding defaults if needed.
+func (c *corsConfig) normalizeMethods(handlers []protocolHandler) []string {
+	methodSet := c.collectMethods(handlers)
+	methodSet[http.MethodOptions] = struct{}{} // Always include OPTIONS for preflight
 
-	// If no methods configured, try to infer from handlers
-	if len(methodSet) == 0 {
-		for _, hdl := range handlers {
-			for m := range hdl.Methods() {
-				methodSet[strings.ToUpper(m)] = struct{}{}
-			}
-		}
-	}
-
-	// If still no methods, use defaults
-	if len(methodSet) == 0 {
-		for _, m := range []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete} {
-			methodSet[m] = struct{}{}
-		}
-	}
-
-	// OPTIONS is always included for preflight requests
-	methodSet[http.MethodOptions] = struct{}{}
-
-	// Convert set to sorted slice
 	methods := make([]string, 0, len(methodSet))
 	for m := range methodSet {
 		methods = append(methods, m)
@@ -128,13 +105,40 @@ func normalizeCorsMethods(configuredMethods []string, handlers []protocolHandler
 	return methods
 }
 
+// collectMethods collects methods from config, handlers, or defaults.
+func (c *corsConfig) collectMethods(handlers []protocolHandler) map[string]struct{} {
+	methodSet := make(map[string]struct{})
+
+	for _, m := range c.allowMethods {
+		if m != "" {
+			methodSet[strings.ToUpper(m)] = struct{}{}
+		}
+	}
+
+	if len(methodSet) == 0 {
+		for _, hdl := range handlers {
+			for m := range hdl.Methods() {
+				methodSet[strings.ToUpper(m)] = struct{}{}
+			}
+		}
+	}
+
+	if len(methodSet) == 0 {
+		for _, m := range defaultCorsMethods {
+			methodSet[m] = struct{}{}
+		}
+	}
+
+	return methodSet
+}
+
 // matchOrigin checks if the request origin matches any allowed pattern.
 // Supports:
 //   - exact match
 //   - "*" wildcard
 //   - subdomain wildcard: "*.example.com" or "https://*.example.com"
-func matchOrigin(origin string, allowedOrigins []string) bool {
-	if origin == "" || len(allowedOrigins) == 0 {
+func (c *corsConfig) matchOrigin(origin string) bool {
+	if origin == "" || len(c.allowOrigins) == 0 {
 		return false
 	}
 
@@ -145,142 +149,161 @@ func matchOrigin(origin string, allowedOrigins []string) bool {
 	originHost := originURL.Hostname()
 	originScheme := originURL.Scheme
 
-	for _, allowed := range allowedOrigins {
-		switch allowed {
-		case "":
-			continue
-		case "*":
-			return true
-		case origin:
-			return true
-		}
-
-		allowedURL, err := url.Parse(allowed)
-		if err == nil && allowedURL.Hostname() != "" {
-			if allowedURL.Scheme != "" && allowedURL.Scheme != originScheme {
-				continue
-			}
-			allowedHost := allowedURL.Hostname()
-			if strings.HasPrefix(allowedHost, "*.") {
-				if subdomainOf(originHost, strings.TrimPrefix(allowedHost, "*.")) {
-					return true
-				}
-				continue
-			}
-			if allowedHost == originHost {
-				return true
-			}
+	for _, allowed := range c.allowOrigins {
+		if allowed == "" {
 			continue
 		}
-
-		if strings.HasPrefix(allowed, "*.") {
-			if subdomainOf(originHost, strings.TrimPrefix(allowed, "*.")) {
-				return true
-			}
-		} else if allowed == originHost {
+		if c.matchesOrigin(allowed, origin, originHost, originScheme) {
 			return true
 		}
 	}
-
 	return false
 }
 
-func subdomainOf(originHost, base string) bool {
+// matchesOrigin checks if a single allowed pattern matches the origin.
+func (c *corsConfig) matchesOrigin(allowed, origin, originHost, originScheme string) bool {
+	if allowed == wildcardOrigin || allowed == origin {
+		return true
+	}
+
+	// Try parsing as URL first (handles "https://*.example.com" format)
+	if allowedURL, err := url.Parse(allowed); err == nil && allowedURL.Hostname() != "" {
+		if allowedURL.Scheme != "" && allowedURL.Scheme != originScheme {
+			return false
+		}
+		return c.matchesHost(allowedURL.Hostname(), originHost)
+	}
+
+	// Try as hostname-only format (handles "*.example.com" format)
+	return c.matchesHost(allowed, originHost)
+}
+
+// matchesHost checks if an allowed host pattern matches the origin host.
+func (c *corsConfig) matchesHost(allowedHost, originHost string) bool {
+	if strings.HasPrefix(allowedHost, "*.") {
+		base := allowedHost[2:] // Skip "*."
+		return c.isSubdomainOf(originHost, base)
+	}
+	return allowedHost == originHost
+}
+
+func (c *corsConfig) isSubdomainOf(originHost, base string) bool {
 	if base == "" || originHost == "" {
 		return false
 	}
 	return originHost != base && strings.HasSuffix(originHost, "."+base)
 }
 
-func handlePreflight(w http.ResponseWriter, r *http.Request, cors *corsConfig) bool {
-	origin := r.Header.Get("Origin")
-	if origin == "" || cors == nil {
+func (c *corsConfig) handlePreflight(w http.ResponseWriter, r *http.Request) bool {
+	if c == nil {
+		return false
+	}
+	origin := r.Header.Get(corsOrigin)
+	if origin == "" {
 		return false
 	}
 
-	if !matchOrigin(origin, cors.allowOrigins) {
+	if !c.matchOrigin(origin) {
 		logger.Warnf("[TRIPLE] CORS preflight forbidden origin: %s", origin)
 		w.WriteHeader(http.StatusForbidden)
 		return true
 	}
 
-	requestedMethod := r.Header.Get("Access-Control-Request-Method")
-	allowedMethods := cors.allowMethods
-	if requestedMethod != "" && !containsMethod(allowedMethods, requestedMethod) {
+	if !c.isMethodAllowed(r) {
 		w.WriteHeader(http.StatusForbidden)
 		return true
 	}
 
-	applyCORSOrigin(w, cors, origin)
-	if len(allowedMethods) > 0 {
-		w.Header().Set("Access-Control-Allow-Methods", strings.Join(allowedMethods, ", "))
-	}
-
-	if len(cors.allowHeaders) > 0 {
-		w.Header().Set("Access-Control-Allow-Headers", strings.Join(cors.allowHeaders, ", "))
-	} else if requestedHeaders := r.Header.Get("Access-Control-Request-Headers"); requestedHeaders != "" {
-		w.Header().Set("Access-Control-Allow-Headers", requestedHeaders)
-	}
-
-	w.Header().Set("Access-Control-Max-Age", strconv.Itoa(cors.maxAge))
-
+	c.applyCORSOrigin(w, origin)
+	c.setAllowMethods(w)
+	c.setAllowHeaders(w, r)
+	w.Header().Set(corsMaxAge, strconv.Itoa(c.maxAge))
 	w.WriteHeader(http.StatusNoContent)
 	return true
 }
 
-func allowOrigin(origin string, cors *corsConfig) bool {
-	if matchOrigin(origin, cors.allowOrigins) {
+func (c *corsConfig) isMethodAllowed(r *http.Request) bool {
+	requestedMethod := r.Header.Get(corsRequestMethod)
+	return requestedMethod == "" || c.containsMethod(requestedMethod)
+}
+
+func (c *corsConfig) setAllowMethods(w http.ResponseWriter) {
+	// allowMethods is always non-empty after normalizeMethods (at least contains OPTIONS)
+	w.Header().Set(corsAllowMethods, strings.Join(c.allowMethods, ", "))
+}
+
+func (c *corsConfig) setAllowHeaders(w http.ResponseWriter, r *http.Request) {
+	if len(c.allowHeaders) > 0 {
+		w.Header().Set(corsAllowHeaders, strings.Join(c.allowHeaders, ", "))
+	} else if requestedHeaders := r.Header.Get(corsRequestHeaders); requestedHeaders != "" {
+		w.Header().Set(corsAllowHeaders, requestedHeaders)
+	}
+}
+
+func (c *corsConfig) allowOrigin(origin string) bool {
+	if c == nil {
+		return false
+	}
+	if c.matchOrigin(origin) {
 		return true
 	}
 	logger.Warnf("[TRIPLE] CORS forbidden origin: %s", origin)
 	return false
 }
 
-func addCORSHeaders(w http.ResponseWriter, r *http.Request, cors *corsConfig) {
-	if cors == nil {
+func (c *corsConfig) addCORSHeaders(w http.ResponseWriter, r *http.Request) {
+	if c == nil {
 		return
 	}
-	origin := r.Header.Get("Origin")
-	if origin == "" || !matchOrigin(origin, cors.allowOrigins) {
+	origin := r.Header.Get(corsOrigin)
+	if origin == "" || !c.matchOrigin(origin) {
 		return
 	}
 
-	applyCORSOrigin(w, cors, origin)
-	if len(cors.exposeHeaders) > 0 {
-		w.Header().Set("Access-Control-Expose-Headers", strings.Join(cors.exposeHeaders, ", "))
+	c.applyCORSOrigin(w, origin)
+	c.setExposeHeaders(w)
+}
+
+func (c *corsConfig) setExposeHeaders(w http.ResponseWriter) {
+	if len(c.exposeHeaders) > 0 {
+		w.Header().Set(corsExposeHeaders, strings.Join(c.exposeHeaders, ", "))
 	}
 }
 
-func applyCORSOrigin(w http.ResponseWriter, cors *corsConfig, origin string) {
-	if cors.allowCredentials {
-		w.Header().Set("Access-Control-Allow-Origin", origin)
-		w.Header().Add("Vary", "Origin")
-		w.Header().Set("Access-Control-Allow-Credentials", "true")
-		return
+func (c *corsConfig) applyCORSOrigin(w http.ResponseWriter, origin string) {
+	switch {
+	case c.allowCredentials:
+		w.Header().Set(corsAllowOrigin, origin)
+		w.Header().Add(corsVary, corsOrigin)
+		w.Header().Set(corsAllowCredentials, "true")
+	case c.hasWildcard:
+		w.Header().Set(corsAllowOrigin, wildcardOrigin)
+	default:
+		w.Header().Set(corsAllowOrigin, origin)
+		w.Header().Add(corsVary, corsOrigin)
 	}
-
-	if cors.hasWildcard {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		return
-	}
-
-	w.Header().Set("Access-Control-Allow-Origin", origin)
-	w.Header().Add("Vary", "Origin")
 }
 
-func containsMethod(methods []string, target string) bool {
-	target = strings.ToUpper(target)
-	for _, method := range methods {
-		if strings.ToUpper(method) == target {
+func (c *corsConfig) containsMethod(target string) bool {
+	if c == nil {
+		return false
+	}
+
+	targetUpper := strings.ToUpper(target)
+	for _, method := range c.allowMethods {
+		if method == targetUpper {
 			return true
 		}
 	}
 	return false
 }
 
-func hasWildcardOrigin(origins []string) bool {
-	for _, origin := range origins {
-		if origin == "*" {
+func (c *corsConfig) checkHasWildcard() bool {
+	if c == nil {
+		return false
+	}
+	for _, origin := range c.allowOrigins {
+		if origin == wildcardOrigin {
 			return true
 		}
 	}
