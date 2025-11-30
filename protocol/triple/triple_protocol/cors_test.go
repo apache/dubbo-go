@@ -22,7 +22,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/assert"
 )
