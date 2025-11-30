@@ -37,7 +37,7 @@ type Handler struct {
 	protocolHandlers []protocolHandler
 	allowMethod      string      // Allow header
 	acceptPost       string      // Accept-Post header
-	cors             *corsConfig // CORS configuration
+	cors             *corsPolicy // CORS policy
 }
 
 // NewUnaryHandler constructs a [Handler] for a request-response procedure.
@@ -57,7 +57,7 @@ func NewUnaryHandler(
 		protocolHandlers: protocolHandlers,
 		allowMethod:      sortedAllowMethodValue(protocolHandlers),
 		acceptPost:       sortedAcceptPostValue(protocolHandlers),
-		cors:             buildCorsConfig(config.Cors, protocolHandlers),
+		cors:             buildCorsPolicy(config.Cors, protocolHandlers),
 	}
 	hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
 	return hdl
@@ -143,7 +143,7 @@ func NewClientStreamHandler(
 		protocolHandlers: protocolHandlers,
 		allowMethod:      sortedAllowMethodValue(protocolHandlers),
 		acceptPost:       sortedAcceptPostValue(protocolHandlers),
-		cors:             buildCorsConfig(config.Cors, protocolHandlers),
+		cors:             buildCorsPolicy(config.Cors, protocolHandlers),
 	}
 	hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
 
@@ -202,7 +202,7 @@ func NewServerStreamHandler(
 		protocolHandlers: protocolHandlers,
 		allowMethod:      sortedAllowMethodValue(protocolHandlers),
 		acceptPost:       sortedAcceptPostValue(protocolHandlers),
-		cors:             buildCorsConfig(config.Cors, protocolHandlers),
+		cors:             buildCorsPolicy(config.Cors, protocolHandlers),
 	}
 	hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
 
@@ -263,7 +263,7 @@ func NewBidiStreamHandler(
 		protocolHandlers: protocolHandlers,
 		allowMethod:      sortedAllowMethodValue(protocolHandlers),
 		acceptPost:       sortedAcceptPostValue(protocolHandlers),
-		cors:             buildCorsConfig(config.Cors, protocolHandlers),
+		cors:             buildCorsPolicy(config.Cors, protocolHandlers),
 	}
 	hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
 
@@ -405,7 +405,7 @@ type handlerConfig struct {
 	SendMaxBytes                int
 	Group                       string
 	Version                     string
-	Cors                        *corsConfig
+	Cors                        *corsPolicy
 }
 
 func newHandlerConfig(procedure string, options []HandlerOption) *handlerConfig {

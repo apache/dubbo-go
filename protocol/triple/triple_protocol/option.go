@@ -22,10 +22,6 @@ import (
 	"time"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/global"
-)
-
 // A ClientOption configures a [Client].
 //
 // In addition to any options grouped in the documentation below, remember that
@@ -183,7 +179,7 @@ func WithRequireTripleProtocolHeader() HandlerOption {
 }
 
 // WithCORS configures CORS for the handler.
-func WithCORS(cors *global.CorsConfig) HandlerOption {
+func WithCORS(cors *CorsConfig) HandlerOption {
 	return &corsOption{cors: cors}
 }
 
@@ -449,20 +445,15 @@ func (o *requireTripleProtocolHeaderOption) applyToHandler(config *handlerConfig
 }
 
 type corsOption struct {
-	cors *global.CorsConfig
+	cors *CorsConfig
 }
 
 func (o *corsOption) applyToHandler(config *handlerConfig) {
 	if o.cors == nil {
 		return
 	}
-	config.Cors = &corsConfig{
-		allowOrigins:     o.cors.AllowOrigins,
-		allowMethods:     o.cors.AllowMethods,
-		allowHeaders:     o.cors.AllowHeaders,
-		exposeHeaders:    o.cors.ExposeHeaders,
-		allowCredentials: o.cors.AllowCredentials,
-		maxAge:           o.cors.MaxAge,
+	config.Cors = &corsPolicy{
+		CorsConfig: *o.cors,
 	}
 }
 

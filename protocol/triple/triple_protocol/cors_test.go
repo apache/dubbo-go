@@ -37,18 +37,20 @@ func (s stubProtocolHandler) Methods() map[string]struct{} {
 	return s.methods
 }
 
-// convertCorsConfigForTest converts a *global.CorsConfig to an internal *corsConfig for testing.
-func convertCorsConfigForTest(cfg *global.CorsConfig) *corsConfig {
+// convertCorsConfigForTest converts a *global.CorsConfig to an internal *corsPolicy for testing.
+func convertCorsConfigForTest(cfg *global.CorsConfig) *corsPolicy {
 	if cfg == nil {
 		return nil
 	}
-	return &corsConfig{
-		allowOrigins:     append([]string(nil), cfg.AllowOrigins...),
-		allowMethods:     append([]string(nil), cfg.AllowMethods...),
-		allowHeaders:     append([]string(nil), cfg.AllowHeaders...),
-		exposeHeaders:    append([]string(nil), cfg.ExposeHeaders...),
-		allowCredentials: cfg.AllowCredentials,
-		maxAge:           cfg.MaxAge,
+	return &corsPolicy{
+		CorsConfig: CorsConfig{
+			AllowOrigins:     append([]string(nil), cfg.AllowOrigins...),
+			AllowMethods:     append([]string(nil), cfg.AllowMethods...),
+			AllowHeaders:     append([]string(nil), cfg.AllowHeaders...),
+			ExposeHeaders:    append([]string(nil), cfg.ExposeHeaders...),
+			AllowCredentials: cfg.AllowCredentials,
+			MaxAge:           cfg.MaxAge,
+		},
 	}
 }
 
@@ -98,7 +100,7 @@ func TestMatchOriginVariants(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			c := &corsConfig{allowOrigins: tt.allowed}
+			c := &corsPolicy{CorsConfig: CorsConfig{AllowOrigins: tt.allowed}}
 			assert.Equal(t, c.matchOrigin(tt.origin), tt.want)
 		})
 	}
@@ -107,7 +109,7 @@ func TestMatchOriginVariants(t *testing.T) {
 func TestPreflightSuccess(t *testing.T) {
 	t.Parallel()
 	handler := stubProtocolHandler{methods: map[string]struct{}{http.MethodPost: {}}}
-	populated := buildCorsConfig(convertCorsConfigForTest(&global.CorsConfig{
+	populated := buildCorsPolicy(convertCorsConfigForTest(&global.CorsConfig{
 		AllowOrigins: []string{"https://a.com"},
 		MaxAge:       86400,
 	}), []protocolHandler{handler})
@@ -130,7 +132,7 @@ func TestPreflightSuccess(t *testing.T) {
 
 func TestPreflightForbidden(t *testing.T) {
 	t.Parallel()
-	policy := buildCorsConfig(convertCorsConfigForTest(&global.CorsConfig{
+	policy := buildCorsPolicy(convertCorsConfigForTest(&global.CorsConfig{
 		AllowOrigins: []string{"https://a.com"},
 	}), nil)
 	req := httptest.NewRequest(http.MethodOptions, "/", nil)
@@ -145,7 +147,7 @@ func TestPreflightForbidden(t *testing.T) {
 
 func TestAddCORSHeaders(t *testing.T) {
 	t.Parallel()
-	policy := buildCorsConfig(convertCorsConfigForTest(&global.CorsConfig{
+	policy := buildCorsPolicy(convertCorsConfigForTest(&global.CorsConfig{
 		AllowOrigins:     []string{"https://a.com"},
 		AllowCredentials: true,
 		ExposeHeaders:    []string{"X-Expose"},
@@ -176,7 +178,7 @@ func TestAddCORSHeadersNilPolicy(t *testing.T) {
 	req.Header.Set("Origin", "https://a.com")
 	rr := httptest.NewRecorder()
 
-	var nilPolicy *corsConfig
+	var nilPolicy *corsPolicy
 	nilPolicy.addCORSHeaders(rr, req)
 	// Should not add any CORS headers when policy is nil
 	assert.Equal(t, rr.Header().Get("Access-Control-Allow-Origin"), "")
@@ -184,7 +186,7 @@ func TestAddCORSHeadersNilPolicy(t *testing.T) {
 
 func TestAddCORSHeadersEmptyOrigin(t *testing.T) {
 	t.Parallel()
-	policy := buildCorsConfig(convertCorsConfigForTest(&global.CorsConfig{
+	policy := buildCorsPolicy(convertCorsConfigForTest(&global.CorsConfig{
 		AllowOrigins: []string{"https://a.com"},
 	}), nil)
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -198,7 +200,7 @@ func TestAddCORSHeadersEmptyOrigin(t *testing.T) {
 
 func TestAddCORSHeadersMultipleOrigins(t *testing.T) {
 	t.Parallel()
-	policy := buildCorsConfig(convertCorsConfigForTest(&global.CorsConfig{
+	policy := buildCorsPolicy(convertCorsConfigForTest(&global.CorsConfig{
 		AllowOrigins:  []string{"https://a.com", "https://b.com", "https://*.example.com"},
 		ExposeHeaders: []string{"X-Expose"},
 	}), nil)
@@ -236,13 +238,13 @@ func TestAddCORSHeadersMultipleOrigins(t *testing.T) {
 
 func TestBuildCorsPolicyDisabled(t *testing.T) {
 	t.Parallel()
-	got := buildCorsConfig(convertCorsConfigForTest(&global.CorsConfig{}), nil)
+	got := buildCorsPolicy(convertCorsConfigForTest(&global.CorsConfig{}), nil)
 	assert.Nil(t, got)
 }
 
 func TestBuildCorsPolicyNilConfig(t *testing.T) {
 	t.Parallel()
-	got := buildCorsConfig(nil, nil)
+	got := buildCorsPolicy(nil, nil)
 	assert.Nil(t, got)
 }
 
@@ -252,7 +254,7 @@ func TestServeHTTPCORSIntegration(t *testing.T) {
 	h := NewUnaryHandler("dummy", func() any { return nil }, func(ctx context.Context, req *Request) (*Response, error) {
 		w := http.Header{}
 		return &Response{Msg: struct{}{}, header: w, trailer: w}, nil
-	}, WithCORS(&global.CorsConfig{
+	}, WithCORS(&CorsConfig{
 		AllowOrigins:     []string{"https://a.com"},
 		AllowCredentials: true,
 		ExposeHeaders:    []string{"X-Expose"},
@@ -284,7 +286,7 @@ func TestServeHTTPForbiddenOrigin(t *testing.T) {
 	t.Parallel()
 	h := NewUnaryHandler("dummy", func() any { return nil }, func(ctx context.Context, req *Request) (*Response, error) {
 		return &Response{Msg: struct{}{}}, nil
-	}, WithCORS(&global.CorsConfig{
+	}, WithCORS(&CorsConfig{
 		AllowOrigins: []string{"https://a.com"},
 	}))
 
@@ -317,29 +319,29 @@ func TestServeHTTPNoCORSConfig(t *testing.T) {
 
 func TestBuildCorsPolicyMaxAge(t *testing.T) {
 	t.Parallel()
-	p := buildCorsConfig(convertCorsConfigForTest(&global.CorsConfig{
+	p := buildCorsPolicy(convertCorsConfigForTest(&global.CorsConfig{
 		AllowOrigins: []string{"https://a.com"},
 		MaxAge:       123,
 	}), nil)
 	assert.NotNil(t, p)
-	assert.Equal(t, p.maxAge, 123)
-	p2 := buildCorsConfig(convertCorsConfigForTest(&global.CorsConfig{
+	assert.Equal(t, p.MaxAge, 123)
+	p2 := buildCorsPolicy(convertCorsConfigForTest(&global.CorsConfig{
 		AllowOrigins: []string{"https://a.com"},
 		MaxAge:       0,
 	}), nil)
 	// maxAge == 0 means disable caching, should remain 0
-	assert.Equal(t, p2.maxAge, 0)
-	p3 := buildCorsConfig(convertCorsConfigForTest(&global.CorsConfig{
+	assert.Equal(t, p2.MaxAge, 0)
+	p3 := buildCorsPolicy(convertCorsConfigForTest(&global.CorsConfig{
 		AllowOrigins: []string{"https://a.com"},
 		MaxAge:       -1,
 	}), nil)
 	// maxAge < 0 should use default value
-	assert.Equal(t, p3.maxAge, defaultPreflightMaxAge)
+	assert.Equal(t, p3.MaxAge, defaultPreflightMaxAge)
 }
 
 func TestBuildCorsPolicyMethodsFallback(t *testing.T) {
 	t.Parallel()
-	p := buildCorsConfig(convertCorsConfigForTest(&global.CorsConfig{
+	p := buildCorsPolicy(convertCorsConfigForTest(&global.CorsConfig{
 		AllowOrigins: []string{"https://a.com"},
 	}), nil)
 	assert.NotNil(t, p)
@@ -350,7 +352,7 @@ func TestBuildCorsPolicyMethodsFallback(t *testing.T) {
 		http.MethodDelete:  {},
 		http.MethodOptions: {},
 	}
-	for _, m := range p.allowMethods {
+	for _, m := range p.AllowMethods {
 		delete(expect, m)
 	}
 	assert.Equal(t, len(expect), 0, assert.Sprintf("fallback methods missing: %v", expect))
@@ -370,7 +372,7 @@ func TestHandleCORSNilConfig(t *testing.T) {
 
 func TestHandleCORSNoOrigin(t *testing.T) {
 	t.Parallel()
-	cors := buildCorsConfig(convertCorsConfigForTest(&global.CorsConfig{
+	cors := buildCorsPolicy(convertCorsConfigForTest(&global.CorsConfig{
 		AllowOrigins: []string{"https://a.com"},
 	}), nil)
 	h := &Handler{cors: cors}
@@ -385,7 +387,7 @@ func TestHandleCORSNoOrigin(t *testing.T) {
 
 func TestHandleCORSPreflight(t *testing.T) {
 	t.Parallel()
-	cors := buildCorsConfig(convertCorsConfigForTest(&global.CorsConfig{
+	cors := buildCorsPolicy(convertCorsConfigForTest(&global.CorsConfig{
 		AllowOrigins: []string{"https://a.com"},
 	}), nil)
 	h := &Handler{cors: cors}
@@ -402,7 +404,7 @@ func TestHandleCORSPreflight(t *testing.T) {
 
 func TestHandleCORSPreflightNoOrigin(t *testing.T) {
 	t.Parallel()
-	cors := buildCorsConfig(convertCorsConfigForTest(&global.CorsConfig{
+	cors := buildCorsPolicy(convertCorsConfigForTest(&global.CorsConfig{
 		AllowOrigins: []string{"https://a.com"},
 	}), nil)
 	h := &Handler{cors: cors}
@@ -417,7 +419,7 @@ func TestHandleCORSPreflightNoOrigin(t *testing.T) {
 
 func TestHandleCORSOptionsWithoutPreflightHeader(t *testing.T) {
 	t.Parallel()
-	cors := buildCorsConfig(convertCorsConfigForTest(&global.CorsConfig{
+	cors := buildCorsPolicy(convertCorsConfigForTest(&global.CorsConfig{
 		AllowOrigins: []string{"https://a.com"},
 	}), nil)
 	h := &Handler{cors: cors}
@@ -433,7 +435,7 @@ func TestHandleCORSOptionsWithoutPreflightHeader(t *testing.T) {
 
 func TestHandleCORSForbiddenOrigin(t *testing.T) {
 	t.Parallel()
-	cors := buildCorsConfig(convertCorsConfigForTest(&global.CorsConfig{
+	cors := buildCorsPolicy(convertCorsConfigForTest(&global.CorsConfig{
 		AllowOrigins: []string{"https://a.com"},
 	}), nil)
 	h := &Handler{cors: cors}
@@ -449,7 +451,7 @@ func TestHandleCORSForbiddenOrigin(t *testing.T) {
 
 func TestHandleCORSAllowedOrigin(t *testing.T) {
 	t.Parallel()
-	cors := buildCorsConfig(convertCorsConfigForTest(&global.CorsConfig{
+	cors := buildCorsPolicy(convertCorsConfigForTest(&global.CorsConfig{
 		AllowOrigins: []string{"https://a.com"},
 	}), nil)
 	h := &Handler{cors: cors}
