@@ -18,6 +18,7 @@
 package triple
 
 import (
+	"errors"
 	"time"
 )
 
@@ -180,4 +181,67 @@ func Http3Negotiation(negotiation bool) Option {
 	return func(opts *Options) {
 		opts.Triple.Http3.Negotiation = negotiation
 	}
+}
+
+// CORSOption configures a single aspect of CORS.
+type CORSOption func(*global.CorsConfig)
+
+var (
+	errWildcardOriginWithCookies = errors.New("allowCredentials cannot be true when allow-origins contains \"*\"")
+)
+
+// CORSAllowOrigins sets allowed origins for CORS requests.
+func CORSAllowOrigins(origins ...string) CORSOption {
+	return func(c *global.CorsConfig) {
+		c.AllowOrigins = append([]string(nil), origins...)
+	}
+}
+
+// CORSAllowMethods sets allowed HTTP methods for CORS requests.
+func CORSAllowMethods(methods ...string) CORSOption {
+	return func(c *global.CorsConfig) {
+		c.AllowMethods = append([]string(nil), methods...)
+	}
+}
+
+// CORSAllowHeaders sets allowed request headers for CORS requests.
+func CORSAllowHeaders(headers ...string) CORSOption {
+	return func(c *global.CorsConfig) {
+		c.AllowHeaders = append([]string(nil), headers...)
+	}
+}
+
+// CORSExposeHeaders sets headers exposed to the browser.
+func CORSExposeHeaders(headers ...string) CORSOption {
+	return func(c *global.CorsConfig) {
+		c.ExposeHeaders = append([]string(nil), headers...)
+	}
+}
+
+// CORSAllowCredentials toggles whether credentials are allowed.
+func CORSAllowCredentials(allow bool) CORSOption {
+	return func(c *global.CorsConfig) {
+		c.AllowCredentials = allow
+	}
+}
+
+// CORSMaxAge sets the max age for preflight cache.
+func CORSMaxAge(maxAge int) CORSOption {
+	return func(c *global.CorsConfig) {
+		c.MaxAge = maxAge
+	}
+}
+
+// validateCorsConfig validates CORS configuration for unsafe combinations.
+// CORS spec requires that when allowCredentials is true, Access-Control-Allow-Origin
+// cannot be "*" (must be a specific origin).
+func validateCorsConfig(cors *global.CorsConfig) error {
+	if cors != nil && cors.AllowCredentials {
+		for _, origin := range cors.AllowOrigins {
+			if origin == "*" {
+				return errWildcardOriginWithCookies
+			}
+		}
+	}
+	return nil
 }

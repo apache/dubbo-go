@@ -26,6 +26,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/assert"
 )
 
 type stubProtocolHandler struct {
@@ -61,6 +62,7 @@ func (s stubProtocolHandler) NewConn(http.ResponseWriter, *http.Request) (handle
 }
 
 func TestMatchOriginVariants(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		origin  string
@@ -82,14 +84,17 @@ func TestMatchOriginVariants(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		c := &corsConfig{allowOrigins: tt.allowed}
-		if got := c.matchOrigin(tt.origin); got != tt.want {
-			t.Fatalf("%s: matchOrigin(%q, %v) = %v, want %v", tt.name, tt.origin, tt.allowed, got, tt.want)
-		}
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			c := &corsConfig{allowOrigins: tt.allowed}
+			assert.Equal(t, c.matchOrigin(tt.origin), tt.want)
+		})
 	}
 }
 
 func TestPreflightSuccess(t *testing.T) {
+	t.Parallel()
 	handler := stubProtocolHandler{methods: map[string]struct{}{http.MethodPost: {}}}
 	populated := buildCorsConfig(convertCorsConfigForTest(&global.CorsConfig{
 		AllowOrigins: []string{"https://a.com"},
@@ -101,27 +106,18 @@ func TestPreflightSuccess(t *testing.T) {
 	req.Header.Set("Access-Control-Request-Headers", "X-Test")
 	rr := httptest.NewRecorder()
 
-	if handled := populated.handlePreflight(rr, req); !handled {
-		t.Fatalf("expected preflight to be handled")
-	}
-	if rr.Code != http.StatusNoContent {
-		t.Fatalf("unexpected status: %d", rr.Code)
-	}
-	if got := rr.Header().Get("Access-Control-Allow-Origin"); got != "https://a.com" {
-		t.Fatalf("unexpected allow-origin: %q", got)
-	}
-	if got := rr.Header().Get("Access-Control-Allow-Methods"); got == "" || !populated.containsMethod(http.MethodPost) {
-		t.Fatalf("allow-methods missing POST, got %q", rr.Header().Get("Access-Control-Allow-Methods"))
-	}
-	if got := rr.Header().Get("Access-Control-Allow-Headers"); got != "X-Test" {
-		t.Fatalf("allow-headers echo expected, got %q", got)
-	}
-	if got := rr.Header().Get("Access-Control-Max-Age"); got != "86400" {
-		t.Fatalf("unexpected max-age: %q", got)
-	}
+	handled := populated.handlePreflight(rr, req)
+	assert.True(t, handled)
+	assert.Equal(t, rr.Code, http.StatusNoContent)
+	assert.Equal(t, rr.Header().Get("Access-Control-Allow-Origin"), "https://a.com")
+	gotMethods := rr.Header().Get("Access-Control-Allow-Methods")
+	assert.True(t, gotMethods != "" && populated.containsMethod(http.MethodPost), assert.Sprintf("allow-methods missing POST, got %q", gotMethods))
+	assert.Equal(t, rr.Header().Get("Access-Control-Allow-Headers"), "X-Test")
+	assert.Equal(t, rr.Header().Get("Access-Control-Max-Age"), "86400")
 }
 
 func TestPreflightForbidden(t *testing.T) {
+	t.Parallel()
 	policy := buildCorsConfig(convertCorsConfigForTest(&global.CorsConfig{
 		AllowOrigins: []string{"https://a.com"},
 	}), nil)
@@ -131,15 +127,12 @@ func TestPreflightForbidden(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	handled := policy.handlePreflight(rr, req)
-	if !handled {
-		t.Fatalf("preflight should be handled even when forbidden")
-	}
-	if rr.Code != http.StatusForbidden {
-		t.Fatalf("expected 403 for forbidden origin, got %d", rr.Code)
-	}
+	assert.True(t, handled, assert.Sprintf("preflight should be handled even when forbidden"))
+	assert.Equal(t, rr.Code, http.StatusForbidden)
 }
 
 func TestAddCORSHeaders(t *testing.T) {
+	t.Parallel()
 	policy := buildCorsConfig(convertCorsConfigForTest(&global.CorsConfig{
 		AllowOrigins:     []string{"https://a.com"},
 		AllowCredentials: true,
@@ -150,15 +143,9 @@ func TestAddCORSHeaders(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	policy.addCORSHeaders(rr, req)
-	if got := rr.Header().Get("Access-Control-Allow-Origin"); got != "https://a.com" {
-		t.Fatalf("unexpected allow-origin: %q", got)
-	}
-	if got := rr.Header().Get("Access-Control-Allow-Credentials"); got != "true" {
-		t.Fatalf("credentials header missing")
-	}
-	if got := rr.Header().Get("Access-Control-Expose-Headers"); got != "X-Expose" {
-		t.Fatalf("unexpected expose headers: %q", got)
-	}
+	assert.Equal(t, rr.Header().Get("Access-Control-Allow-Origin"), "https://a.com")
+	assert.Equal(t, rr.Header().Get("Access-Control-Allow-Credentials"), "true")
+	assert.Equal(t, rr.Header().Get("Access-Control-Expose-Headers"), "X-Expose")
 	// Check Vary header more strictly using Values to handle multiple values
 	vary := rr.Header().Values("Vary")
 	found := false
@@ -168,12 +155,11 @@ func TestAddCORSHeaders(t *testing.T) {
 			break
 		}
 	}
-	if !found {
-		t.Fatalf("expected Vary header to contain Origin, got %v", vary)
-	}
+	assert.True(t, found, assert.Sprintf("expected Vary header to contain Origin, got %v", vary))
 }
 
 func TestAddCORSHeadersNilPolicy(t *testing.T) {
+	t.Parallel()
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("Origin", "https://a.com")
 	rr := httptest.NewRecorder()
@@ -181,12 +167,11 @@ func TestAddCORSHeadersNilPolicy(t *testing.T) {
 	var nilPolicy *corsConfig
 	nilPolicy.addCORSHeaders(rr, req)
 	// Should not add any CORS headers when policy is nil
-	if got := rr.Header().Get("Access-Control-Allow-Origin"); got != "" {
-		t.Fatalf("expected no CORS headers for nil policy, got %q", got)
-	}
+	assert.Equal(t, rr.Header().Get("Access-Control-Allow-Origin"), "")
 }
 
 func TestAddCORSHeadersEmptyOrigin(t *testing.T) {
+	t.Parallel()
 	policy := buildCorsConfig(convertCorsConfigForTest(&global.CorsConfig{
 		AllowOrigins: []string{"https://a.com"},
 	}), nil)
@@ -196,12 +181,11 @@ func TestAddCORSHeadersEmptyOrigin(t *testing.T) {
 
 	policy.addCORSHeaders(rr, req)
 	// Should not add CORS headers when origin is empty
-	if got := rr.Header().Get("Access-Control-Allow-Origin"); got != "" {
-		t.Fatalf("expected no CORS headers for empty origin, got %q", got)
-	}
+	assert.Equal(t, rr.Header().Get("Access-Control-Allow-Origin"), "")
 }
 
 func TestAddCORSHeadersMultipleOrigins(t *testing.T) {
+	t.Parallel()
 	policy := buildCorsConfig(convertCorsConfigForTest(&global.CorsConfig{
 		AllowOrigins:  []string{"https://a.com", "https://b.com", "https://*.example.com"},
 		ExposeHeaders: []string{"X-Expose"},
@@ -220,7 +204,9 @@ func TestAddCORSHeadersMultipleOrigins(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			req := httptest.NewRequest(http.MethodGet, "/", nil)
 			req.Header.Set("Origin", tt.origin)
 			rr := httptest.NewRecorder()
@@ -228,31 +214,28 @@ func TestAddCORSHeadersMultipleOrigins(t *testing.T) {
 			policy.addCORSHeaders(rr, req)
 			got := rr.Header().Get("Access-Control-Allow-Origin")
 			if tt.shouldAdd {
-				if got != tt.expectedOrigin {
-					t.Fatalf("expected allow-origin %q, got %q", tt.expectedOrigin, got)
-				}
+				assert.Equal(t, got, tt.expectedOrigin)
 			} else {
-				if got != "" {
-					t.Fatalf("expected no allow-origin, got %q", got)
-				}
+				assert.Equal(t, got, "")
 			}
 		})
 	}
 }
 
 func TestBuildCorsPolicyDisabled(t *testing.T) {
-	if got := buildCorsConfig(convertCorsConfigForTest(&global.CorsConfig{}), nil); got != nil {
-		t.Fatalf("expected nil policy for empty origins, got %+v", got)
-	}
+	t.Parallel()
+	got := buildCorsConfig(convertCorsConfigForTest(&global.CorsConfig{}), nil)
+	assert.Nil(t, got)
 }
 
 func TestBuildCorsPolicyNilConfig(t *testing.T) {
-	if got := buildCorsConfig(nil, nil); got != nil {
-		t.Fatalf("expected nil policy for nil config, got %+v", got)
-	}
+	t.Parallel()
+	got := buildCorsConfig(nil, nil)
+	assert.Nil(t, got)
 }
 
 func TestServeHTTPCORSIntegration(t *testing.T) {
+	t.Parallel()
 	// Build a minimal handler with CORS enabled.
 	h := NewUnaryHandler("dummy", func() any { return nil }, func(ctx context.Context, req *Request) (*Response, error) {
 		w := http.Header{}
@@ -270,15 +253,9 @@ func TestServeHTTPCORSIntegration(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	h.ServeHTTP(rr, req)
-	if rr.Code == http.StatusForbidden {
-		t.Fatalf("request should not be forbidden for allowed origin")
-	}
-	if got := rr.Header().Get("Access-Control-Allow-Origin"); got != "https://a.com" {
-		t.Fatalf("unexpected allow-origin: %q", got)
-	}
-	if got := rr.Header().Get("Access-Control-Allow-Credentials"); got != "true" {
-		t.Fatalf("missing allow-credentials header")
-	}
+	assert.NotEqual(t, rr.Code, http.StatusForbidden, assert.Sprintf("request should not be forbidden for allowed origin"))
+	assert.Equal(t, rr.Header().Get("Access-Control-Allow-Origin"), "https://a.com")
+	assert.Equal(t, rr.Header().Get("Access-Control-Allow-Credentials"), "true")
 	// Check Vary header more strictly using Values to handle multiple values
 	vary := rr.Header().Values("Vary")
 	found := false
@@ -288,12 +265,11 @@ func TestServeHTTPCORSIntegration(t *testing.T) {
 			break
 		}
 	}
-	if !found {
-		t.Fatalf("expected Vary header to contain Origin, got %v", vary)
-	}
+	assert.True(t, found, assert.Sprintf("expected Vary header to contain Origin, got %v", vary))
 }
 
 func TestServeHTTPForbiddenOrigin(t *testing.T) {
+	t.Parallel()
 	h := NewUnaryHandler("dummy", func() any { return nil }, func(ctx context.Context, req *Request) (*Response, error) {
 		return &Response{Msg: struct{}{}}, nil
 	}, WithCORS(&global.CorsConfig{
@@ -307,12 +283,11 @@ func TestServeHTTPForbiddenOrigin(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	h.ServeHTTP(rr, req)
-	if rr.Code != http.StatusForbidden {
-		t.Fatalf("expected 403 for forbidden origin, got %d", rr.Code)
-	}
+	assert.Equal(t, rr.Code, http.StatusForbidden)
 }
 
 func TestServeHTTPNoCORSConfig(t *testing.T) {
+	t.Parallel()
 	h := NewUnaryHandler("dummy", func() any { return nil }, func(ctx context.Context, req *Request) (*Response, error) {
 		return &Response{Msg: struct{}{}}, nil
 	})
@@ -324,41 +299,31 @@ func TestServeHTTPNoCORSConfig(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	h.ServeHTTP(rr, req)
-	if rr.Code == http.StatusForbidden {
-		t.Fatalf("should not forbid when CORS disabled")
-	}
-	if got := rr.Header().Get("Access-Control-Allow-Origin"); got != "" {
-		t.Fatalf("CORS headers should not be injected when disabled, got %q", got)
-	}
+	assert.NotEqual(t, rr.Code, http.StatusForbidden, assert.Sprintf("should not forbid when CORS disabled"))
+	assert.Equal(t, rr.Header().Get("Access-Control-Allow-Origin"), "")
 }
 
 func TestBuildCorsPolicyMaxAge(t *testing.T) {
+	t.Parallel()
 	p := buildCorsConfig(convertCorsConfigForTest(&global.CorsConfig{
 		AllowOrigins: []string{"https://a.com"},
 		MaxAge:       123,
 	}), nil)
-	if p == nil {
-		t.Fatalf("policy should not be nil")
-	}
-	if p.maxAge != 123 {
-		t.Fatalf("expected maxAge=123, got %d", p.maxAge)
-	}
+	assert.NotNil(t, p)
+	assert.Equal(t, p.maxAge, 123)
 	p2 := buildCorsConfig(convertCorsConfigForTest(&global.CorsConfig{
 		AllowOrigins: []string{"https://a.com"},
 		MaxAge:       0,
 	}), nil)
-	if p2.maxAge != defaultPreflightMaxAge {
-		t.Fatalf("expected default maxAge %d, got %d", defaultPreflightMaxAge, p2.maxAge)
-	}
+	assert.Equal(t, p2.maxAge, defaultPreflightMaxAge)
 }
 
 func TestBuildCorsPolicyMethodsFallback(t *testing.T) {
+	t.Parallel()
 	p := buildCorsConfig(convertCorsConfigForTest(&global.CorsConfig{
 		AllowOrigins: []string{"https://a.com"},
 	}), nil)
-	if p == nil {
-		t.Fatalf("policy should not be nil")
-	}
+	assert.NotNil(t, p)
 	expect := map[string]struct{}{
 		http.MethodGet:     {},
 		http.MethodPost:    {},
@@ -369,7 +334,111 @@ func TestBuildCorsPolicyMethodsFallback(t *testing.T) {
 	for _, m := range p.allowMethods {
 		delete(expect, m)
 	}
-	if len(expect) != 0 {
-		t.Fatalf("fallback methods missing: %v", expect)
-	}
+	assert.Equal(t, len(expect), 0, assert.Sprintf("fallback methods missing: %v", expect))
+}
+
+func TestHandleCORSNilConfig(t *testing.T) {
+	t.Parallel()
+	h := &Handler{cors: nil}
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Origin", "https://a.com")
+	rr := httptest.NewRecorder()
+
+	handled := h.handleCORS(rr, req)
+	assert.False(t, handled, assert.Sprintf("should return false when cors is nil"))
+	assert.Equal(t, rr.Header().Get("Access-Control-Allow-Origin"), "")
+}
+
+func TestHandleCORSNoOrigin(t *testing.T) {
+	t.Parallel()
+	cors := buildCorsConfig(convertCorsConfigForTest(&global.CorsConfig{
+		AllowOrigins: []string{"https://a.com"},
+	}), nil)
+	h := &Handler{cors: cors}
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	// Don't set Origin header
+	rr := httptest.NewRecorder()
+
+	handled := h.handleCORS(rr, req)
+	assert.False(t, handled, assert.Sprintf("should return false when no Origin header"))
+	assert.Equal(t, rr.Header().Get("Access-Control-Allow-Origin"), "")
+}
+
+func TestHandleCORSPreflight(t *testing.T) {
+	t.Parallel()
+	cors := buildCorsConfig(convertCorsConfigForTest(&global.CorsConfig{
+		AllowOrigins: []string{"https://a.com"},
+	}), nil)
+	h := &Handler{cors: cors}
+	req := httptest.NewRequest(http.MethodOptions, "/", nil)
+	req.Header.Set("Origin", "https://a.com")
+	req.Header.Set("Access-Control-Request-Method", http.MethodPost)
+	rr := httptest.NewRecorder()
+
+	handled := h.handleCORS(rr, req)
+	assert.True(t, handled, assert.Sprintf("should handle preflight request"))
+	assert.Equal(t, rr.Code, http.StatusNoContent)
+	assert.Equal(t, rr.Header().Get("Access-Control-Allow-Origin"), "https://a.com")
+}
+
+func TestHandleCORSPreflightNoOrigin(t *testing.T) {
+	t.Parallel()
+	cors := buildCorsConfig(convertCorsConfigForTest(&global.CorsConfig{
+		AllowOrigins: []string{"https://a.com"},
+	}), nil)
+	h := &Handler{cors: cors}
+	req := httptest.NewRequest(http.MethodOptions, "/", nil)
+	req.Header.Set("Access-Control-Request-Method", http.MethodPost)
+	// Don't set Origin header
+	rr := httptest.NewRecorder()
+
+	handled := h.handleCORS(rr, req)
+	assert.False(t, handled, assert.Sprintf("preflight without Origin should return false"))
+}
+
+func TestHandleCORSOptionsWithoutPreflightHeader(t *testing.T) {
+	t.Parallel()
+	cors := buildCorsConfig(convertCorsConfigForTest(&global.CorsConfig{
+		AllowOrigins: []string{"https://a.com"},
+	}), nil)
+	h := &Handler{cors: cors}
+	req := httptest.NewRequest(http.MethodOptions, "/", nil)
+	req.Header.Set("Origin", "https://a.com")
+	// Don't set Access-Control-Request-Method header
+	rr := httptest.NewRecorder()
+
+	handled := h.handleCORS(rr, req)
+	assert.False(t, handled, assert.Sprintf("OPTIONS without preflight header should be treated as normal request"))
+	assert.Equal(t, rr.Header().Get("Access-Control-Allow-Origin"), "https://a.com")
+}
+
+func TestHandleCORSForbiddenOrigin(t *testing.T) {
+	t.Parallel()
+	cors := buildCorsConfig(convertCorsConfigForTest(&global.CorsConfig{
+		AllowOrigins: []string{"https://a.com"},
+	}), nil)
+	h := &Handler{cors: cors}
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Origin", "https://b.com")
+	rr := httptest.NewRecorder()
+
+	handled := h.handleCORS(rr, req)
+	assert.True(t, handled, assert.Sprintf("should handle and stop processing for forbidden origin"))
+	assert.Equal(t, rr.Code, http.StatusForbidden)
+	assert.Equal(t, rr.Header().Get("Access-Control-Allow-Origin"), "")
+}
+
+func TestHandleCORSAllowedOrigin(t *testing.T) {
+	t.Parallel()
+	cors := buildCorsConfig(convertCorsConfigForTest(&global.CorsConfig{
+		AllowOrigins: []string{"https://a.com"},
+	}), nil)
+	h := &Handler{cors: cors}
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Origin", "https://a.com")
+	rr := httptest.NewRecorder()
+
+	handled := h.handleCORS(rr, req)
+	assert.False(t, handled, assert.Sprintf("should return false to continue processing"))
+	assert.Equal(t, rr.Header().Get("Access-Control-Allow-Origin"), "https://a.com")
 }
