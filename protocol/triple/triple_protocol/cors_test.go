@@ -22,9 +22,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/assert"
 )
@@ -81,6 +79,17 @@ func TestMatchOriginVariants(t *testing.T) {
 		{"multiple origins - second match", "https://b.com", []string{"https://a.com", "https://b.com"}, true},
 		{"multiple origins - no match", "https://c.com", []string{"https://a.com", "https://b.com"}, false},
 		{"multiple origins with wildcard", "https://any.com", []string{"https://a.com", "*", "https://b.com"}, true},
+		// Port matching tests
+		{"origin with port matches exact port", "https://api.example.com:8443", []string{"https://api.example.com:8443"}, true},
+		{"origin with port does not match different port", "https://api.example.com:9999", []string{"https://api.example.com:8443"}, false},
+		{"origin without port matches default port config", "https://api.example.com", []string{"https://api.example.com"}, true},
+		{"origin with default port matches config without port", "https://api.example.com:443", []string{"https://api.example.com"}, true},
+		{"origin with non-default port does not match config without port", "https://api.example.com:8443", []string{"https://api.example.com"}, false},
+		{"http default port matching", "http://api.example.com:80", []string{"http://api.example.com"}, true},
+		{"http non-default port does not match", "http://api.example.com:8080", []string{"http://api.example.com"}, false},
+		// Test explicit default port in config matches origin without port
+		{"config with explicit 80 matches origin with explicit 80", "http://api.example.com:80", []string{"http://api.example.com:80"}, true},
+		{"config with non-default port does not match origin without port", "https://api.example.com", []string{"https://api.example.com:8443"}, false},
 	}
 
 	for _, tt := range tests {
@@ -98,6 +107,7 @@ func TestPreflightSuccess(t *testing.T) {
 	handler := stubProtocolHandler{methods: map[string]struct{}{http.MethodPost: {}}}
 	populated := buildCorsConfig(convertCorsConfigForTest(&global.CorsConfig{
 		AllowOrigins: []string{"https://a.com"},
+		MaxAge:       86400,
 	}), []protocolHandler{handler})
 
 	req := httptest.NewRequest(http.MethodOptions, "/", nil)
@@ -315,7 +325,14 @@ func TestBuildCorsPolicyMaxAge(t *testing.T) {
 		AllowOrigins: []string{"https://a.com"},
 		MaxAge:       0,
 	}), nil)
-	assert.Equal(t, p2.maxAge, defaultPreflightMaxAge)
+	// maxAge == 0 means disable caching, should remain 0
+	assert.Equal(t, p2.maxAge, 0)
+	p3 := buildCorsConfig(convertCorsConfigForTest(&global.CorsConfig{
+		AllowOrigins: []string{"https://a.com"},
+		MaxAge:       -1,
+	}), nil)
+	// maxAge < 0 should use default value
+	assert.Equal(t, p3.maxAge, defaultPreflightMaxAge)
 }
 
 func TestBuildCorsPolicyMethodsFallback(t *testing.T) {
