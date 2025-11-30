@@ -216,7 +216,8 @@ func newOriginPattern(origin string) *originPattern {
 	}
 
 	// Try parsing as URL first
-	if u, err := url.Parse(origin); err == nil && u.Host != "" {
+	u, err := url.Parse(origin)
+	if err == nil && u.Host != "" {
 		hostname := u.Hostname()
 		port := p.canonicalPort(u.Port(), u.Scheme)
 		isSubdomain := strings.HasPrefix(hostname, "*.")
