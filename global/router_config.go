@@ -41,13 +41,13 @@ type Tag struct {
 	Addresses []string             `yaml:"addresses" json:"addresses,omitempty" property:"addresses"`
 }
 
-<<<<<<< expose-API-of-router
 func DefaultRouterConfig() *RouterConfig {
 	return &RouterConfig{
 		Conditions: make([]string, 0),
 		Tags:       make([]Tag, 0),
 	}
-=======
+}
+
 type ConditionRule struct {
 	From ConditionRuleFrom `yaml:"from" json:"from,omitempty" property:"from"`
 	To   []ConditionRuleTo `yaml:"to" json:"to,omitempty" property:"to"`
@@ -88,7 +88,6 @@ type AffinityRouter struct {
 	Runtime       bool          `default:"false" yaml:"runtime" json:"runtime,omitempty" property:"runtime"`
 	Enabled       bool          `default:"true" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
 	AffinityAware AffinityAware `yaml:"affinityAware" json:"affinityAware,omitempty" property:"affinityAware"`
->>>>>>> develop
 }
 
 func (c *RouterConfig) Clone() *RouterConfig {
@@ -124,7 +123,6 @@ func (c *RouterConfig) Clone() *RouterConfig {
 	copy(newConditions, c.Conditions)
 
 	newTags := make([]Tag, len(c.Tags))
-<<<<<<< expose-API-of-router
 	for i := range c.Tags {
 		newTags[i] = c.Tags[i]
 		if c.Tags[i].Match != nil {
@@ -141,9 +139,6 @@ func (c *RouterConfig) Clone() *RouterConfig {
 			copy(newTags[i].Addresses, c.Tags[i].Addresses)
 		}
 	}
-=======
-	copy(newTags, c.Tags)
->>>>>>> develop
 
 	return &RouterConfig{
 		Scope:      c.Scope,
