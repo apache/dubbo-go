@@ -45,6 +45,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	restproto "dubbo.apache.org/dubbo-go/v3/protocol/rest"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/tls"
 )
@@ -874,6 +875,33 @@ func WithProtocol(opts ...protocol.ServerOption) ServiceOption {
 			opts.Protocols = make(map[string]*global.ProtocolConfig)
 		}
 		opts.Protocols[proOpts.ID] = proOpts.Protocol
+	}
+}
+
+// WithRestService wires REST metadata for the service being exported.
+// The id should align with the bean/service name used by REST protocol.
+func WithRestService(id string, svcOpts ...restproto.ServiceOption) ServiceOption {
+	return func(opts *ServiceOptions) {
+		if opts == nil {
+			return
+		}
+		restCfg := restproto.NewServiceConfig(svcOpts...)
+		if restCfg.InterfaceName == "" && opts.Service != nil {
+			restCfg.InterfaceName = opts.Service.Interface
+		}
+		serviceID := id
+		if serviceID == "" {
+			switch {
+			case opts.Id != "":
+				serviceID = opts.Id
+			case restCfg.InterfaceName != "":
+				serviceID = restCfg.InterfaceName
+			}
+		}
+		if serviceID == "" {
+			return
+		}
+		restproto.ApplyProviderServiceConfig(serviceID, restCfg)
 	}
 }
 

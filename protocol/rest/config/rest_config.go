@@ -26,6 +26,18 @@ var (
 	restProviderServiceConfigMap map[string]*RestServiceConfig
 )
 
+func ensureRestConsumerServiceConfigMap() {
+	if restConsumerServiceConfigMap == nil {
+		restConsumerServiceConfigMap = make(map[string]*RestServiceConfig)
+	}
+}
+
+func ensureRestProviderServiceConfigMap() {
+	if restProviderServiceConfigMap == nil {
+		restProviderServiceConfigMap = make(map[string]*RestServiceConfig)
+	}
+}
+
 // RestConsumerConfig holds consumer-side REST settings and references.
 type RestConsumerConfig struct {
 	Client                string                        `default:"resty" yaml:"rest_client" json:"rest_client,omitempty" property:"rest_client"`
@@ -140,6 +152,24 @@ func SetRestConsumerServiceConfigMap(configMap map[string]*RestServiceConfig) {
 // SetRestProviderServiceConfigMap sets provider service configs map.
 func SetRestProviderServiceConfigMap(configMap map[string]*RestServiceConfig) {
 	restProviderServiceConfigMap = configMap
+}
+
+// UpsertRestConsumerServiceConfig stores/updates a consumer Rest service config by id.
+func UpsertRestConsumerServiceConfig(id string, cfg *RestServiceConfig) {
+	if cfg == nil || id == "" {
+		return
+	}
+	ensureRestConsumerServiceConfigMap()
+	restConsumerServiceConfigMap[id] = cfg
+}
+
+// UpsertRestProviderServiceConfig stores/updates a provider Rest service config by id.
+func UpsertRestProviderServiceConfig(id string, cfg *RestServiceConfig) {
+	if cfg == nil || id == "" {
+		return
+	}
+	ensureRestProviderServiceConfigMap()
+	restProviderServiceConfigMap[id] = cfg
 }
 
 // GetRestConsumerServiceConfigMap returns the consumer service configs map.

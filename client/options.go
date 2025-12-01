@@ -35,6 +35,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	restproto "dubbo.apache.org/dubbo-go/v3/protocol/rest"
 	"dubbo.apache.org/dubbo-go/v3/proxy"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/tls"
@@ -418,6 +419,34 @@ func WithProtocolJsonRPC() ReferenceOption {
 func WithProtocol(protocol string) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Protocol = protocol
+	}
+}
+
+// WithRestReference configures REST-specific metadata (path/method bindings, etc.)
+// for the current reference. The id should match the bean name used by the service.
+// If left empty, it falls back to the reference id or interface name.
+func WithRestReference(id string, svcOpts ...restproto.ServiceOption) ReferenceOption {
+	return func(opts *ReferenceOptions) {
+		if opts == nil {
+			return
+		}
+		restCfg := restproto.NewServiceConfig(svcOpts...)
+		if restCfg.InterfaceName == "" && opts.Reference != nil {
+			restCfg.InterfaceName = opts.Reference.InterfaceName
+		}
+		serviceID := id
+		if serviceID == "" {
+			switch {
+			case opts.id != "":
+				serviceID = opts.id
+			case restCfg.InterfaceName != "":
+				serviceID = restCfg.InterfaceName
+			}
+		}
+		if serviceID == "" {
+			return
+		}
+		restproto.ApplyConsumerServiceConfig(serviceID, restCfg)
 	}
 }
 
