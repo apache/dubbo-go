@@ -22,6 +22,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
 )
@@ -466,14 +467,27 @@ func compatTags(c []global.Tag) []config.Tag {
 	if c == nil {
 		return nil
 	}
+	// deep copy
 	tags := make([]config.Tag, len(c))
-	for i, tag := range c {
-		tags[i] = config.Tag{
-			Name:      tag.Name,
-			Match:     tag.Match,
-			Addresses: tag.Addresses,
+
+	for i := range c {
+		tags[i].Name = c[i].Name
+		if c[i].Match != nil {
+			tags[i].Match = make([]*common.ParamMatch, len(c[i].Match))
+			for j := range c[i].Match {
+				if c[i].Match[j] != nil {
+					pm := *c[i].Match[j]
+					tags[i].Match[j] = &pm
+				}
+			}
+		}
+
+		if c[i].Addresses != nil {
+			tags[i].Addresses = make([]string, len(c[i].Addresses))
+			copy(tags[i].Addresses, c[i].Addresses)
 		}
 	}
+
 	return tags
 }
 
@@ -1022,12 +1036,22 @@ func compatGlobalTag(c []config.Tag) []global.Tag {
 	if c == nil {
 		return nil
 	}
+	// deepcopy
 	tags := make([]global.Tag, len(c))
-	for i, tag := range c {
-		tags[i] = global.Tag{
-			Name:      tag.Name,
-			Match:     tag.Match,
-			Addresses: tag.Addresses,
+	for i := range c {
+		tags[i].Name = c[i].Name
+		if c[i].Match != nil {
+			tags[i].Match = make([]*common.ParamMatch, len(c[i].Match))
+			for j := range c[i].Match {
+				if c[i].Match[j] != nil {
+					pm := *c[i].Match[j]
+					tags[i].Match[j] = &pm
+				}
+			}
+		}
+		if c[i].Addresses != nil {
+			tags[i].Addresses = make([]string, len(c[i].Addresses))
+			copy(tags[i].Addresses, c[i].Addresses)
 		}
 	}
 	return tags
