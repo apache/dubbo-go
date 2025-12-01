@@ -357,7 +357,8 @@ func (c *corsPolicy) matchOrigin(origin string) bool {
 
 	reqScheme := originURL.Scheme
 	reqHostname := originURL.Hostname()
-	reqPort := (*originPattern)(nil).canonicalPort(originURL.Port(), reqScheme)
+	var tmp originPattern
+	reqPort := tmp.canonicalPort(originURL.Port(), reqScheme)
 
 	for _, pattern := range patterns {
 		if pattern.match(reqScheme, reqHostname, reqPort) {
