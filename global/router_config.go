@@ -41,11 +41,54 @@ type Tag struct {
 	Addresses []string             `yaml:"addresses" json:"addresses,omitempty" property:"addresses"`
 }
 
+<<<<<<< expose-API-of-router
 func DefaultRouterConfig() *RouterConfig {
 	return &RouterConfig{
 		Conditions: make([]string, 0),
 		Tags:       make([]Tag, 0),
 	}
+=======
+type ConditionRule struct {
+	From ConditionRuleFrom `yaml:"from" json:"from,omitempty" property:"from"`
+	To   []ConditionRuleTo `yaml:"to" json:"to,omitempty" property:"to"`
+}
+
+type ConditionRuleFrom struct {
+	Match string `yaml:"match" json:"match,omitempty" property:"match"`
+}
+
+type ConditionRuleTo struct {
+	Match  string `yaml:"match" json:"match,omitempty" property:"match"`
+	Weight int    `default:"100" yaml:"weight" json:"weight,omitempty" property:"weight"`
+}
+
+type ConditionRuleDisable struct {
+	Match string `yaml:"match" json:"match,omitempty" property:"match"`
+}
+
+type AffinityAware struct {
+	Key   string `default:"" yaml:"key" json:"key,omitempty" property:"key"`
+	Ratio int32  `default:"0" yaml:"ratio" json:"ratio,omitempty" property:"ratio"`
+}
+
+// ConditionRouter -- when RouteConfigVersion == v3.1, decode by this
+type ConditionRouter struct {
+	Scope      string           `validate:"required" yaml:"scope" json:"scope,omitempty" property:"scope"` // must be chosen from `service` and `application`.
+	Key        string           `validate:"required" yaml:"key" json:"key,omitempty" property:"key"`       // specifies which service or application the rule body acts on.
+	Force      bool             `default:"false" yaml:"force" json:"force,omitempty" property:"force"`
+	Runtime    bool             `default:"false" yaml:"runtime" json:"runtime,omitempty" property:"runtime"`
+	Enabled    bool             `default:"true" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
+	Conditions []*ConditionRule `yaml:"conditions" json:"conditions,omitempty" property:"conditions"`
+}
+
+// AffinityRouter -- RouteConfigVersion == v3.1
+type AffinityRouter struct {
+	Scope         string        `validate:"required" yaml:"scope" json:"scope,omitempty" property:"scope"` // must be chosen from `service` and `application`.
+	Key           string        `validate:"required" yaml:"key" json:"key,omitempty" property:"key"`       // specifies which service or application the rule body acts on.
+	Runtime       bool          `default:"false" yaml:"runtime" json:"runtime,omitempty" property:"runtime"`
+	Enabled       bool          `default:"true" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
+	AffinityAware AffinityAware `yaml:"affinityAware" json:"affinityAware,omitempty" property:"affinityAware"`
+>>>>>>> develop
 }
 
 func (c *RouterConfig) Clone() *RouterConfig {
@@ -81,6 +124,7 @@ func (c *RouterConfig) Clone() *RouterConfig {
 	copy(newConditions, c.Conditions)
 
 	newTags := make([]Tag, len(c.Tags))
+<<<<<<< expose-API-of-router
 	for i := range c.Tags {
 		newTags[i] = c.Tags[i]
 		if c.Tags[i].Match != nil {
@@ -97,6 +141,9 @@ func (c *RouterConfig) Clone() *RouterConfig {
 			copy(newTags[i].Addresses, c.Tags[i].Addresses)
 		}
 	}
+=======
+	copy(newTags, c.Tags)
+>>>>>>> develop
 
 	return &RouterConfig{
 		Scope:      c.Scope,

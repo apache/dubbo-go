@@ -67,7 +67,7 @@ func defaultInstanceOptions() *InstanceOptions {
 	return &InstanceOptions{
 		Application:    global.DefaultApplicationConfig(),
 		Protocols:      make(map[string]*global.ProtocolConfig),
-		Registries:     make(map[string]*global.RegistryConfig),
+		Registries:     global.DefaultRegistriesConfig(),
 		ConfigCenter:   global.DefaultCenterConfig(),
 		MetadataReport: global.DefaultMetadataReportConfig(),
 		Provider:       global.DefaultProviderConfig(),

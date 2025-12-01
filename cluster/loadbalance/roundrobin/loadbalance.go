@@ -79,15 +79,17 @@ func (lb *rrLoadBalance) Select(invokers []base.Invoker, invocation base.Invocat
 	)
 
 	for _, invoker := range invokers {
-		weight := loadbalance.GetWeight(invoker, invocation)
-		if weight < 0 {
-			weight = 0
-		}
+		weight := max(loadbalance.GetWeight(invoker, invocation), 0)
 
 		identifier := invoker.GetURL().Key()
-		loaded, found := cachedInvokers.LoadOrStore(identifier, &weightedRoundRobin{weight: weight})
+		wr := &weightedRoundRobin{weight: weight}
+		wr.setLastUpdate(&now)
+		loaded, found := cachedInvokers.LoadOrStore(identifier, wr)
 		weightRobin := loaded.(*weightedRoundRobin)
-		if !found {
+
+		if found {
+			weightRobin.setLastUpdate(&now)
+		} else {
 			clean = true
 		}
 
@@ -96,7 +98,6 @@ func (lb *rrLoadBalance) Select(invokers []base.Invoker, invocation base.Invocat
 		}
 
 		currentWeight := weightRobin.increaseCurrent()
-		weightRobin.lastUpdate = &now
 
 		if currentWeight > maxCurrentWeight {
 			maxCurrentWeight = currentWeight
@@ -122,7 +123,7 @@ func cleanIfRequired(clean bool, invokers *cachedInvokers, now *time.Time) {
 		defer atomic.CompareAndSwapInt32(&state, Updating, Complete)
 		invokers.Range(func(identify, robin any) bool {
 			weightedRoundRobin := robin.(*weightedRoundRobin)
-			elapsed := now.Sub(*weightedRoundRobin.lastUpdate).Nanoseconds()
+			elapsed := now.Sub(*weightedRoundRobin.LastUpdate()).Nanoseconds()
 			if elapsed > recyclePeriod {
 				invokers.Delete(identify)
 			}
@@ -135,7 +136,7 @@ func cleanIfRequired(clean bool, invokers *cachedInvokers, now *time.Time) {
 type weightedRoundRobin struct {
 	weight     int64
 	current    int64
-	lastUpdate *time.Time
+	lastUpdate atomic.Pointer[time.Time]
 }
 
 func (robin *weightedRoundRobin) Weight() int64 {
@@ -145,6 +146,14 @@ func (robin *weightedRoundRobin) Weight() int64 {
 func (robin *weightedRoundRobin) setWeight(weight int64) {
 	robin.weight = weight
 	robin.current = 0
+}
+
+func (robin *weightedRoundRobin) LastUpdate() *time.Time {
+	return robin.lastUpdate.Load()
+}
+
+func (robin *weightedRoundRobin) setLastUpdate(time *time.Time) {
+	robin.lastUpdate.Store(time)
 }
 
 func (robin *weightedRoundRobin) increaseCurrent() int64 {

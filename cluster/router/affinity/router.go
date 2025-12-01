@@ -30,7 +30,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/router"
 	"dubbo.apache.org/dubbo-go/v3/cluster/router/condition"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	conf "dubbo.apache.org/dubbo-go/v3/common/config"
@@ -85,13 +84,12 @@ type ApplicationAffinityRoute struct {
 
 func newApplicationAffinityRouter(url *common.URL) *ApplicationAffinityRoute {
 
-	application, ok := url.GetAttribute(constant.ApplicationKey)
-	if !ok {
-		logger.Warnf("ApplicationAffinityRoute url does not have application attribute, url=%s", url)
+	applicationName := url.GetParam(constant.ApplicationKey, "")
+
+	if applicationName == "" {
+		logger.Errorf("Application affinity router must set application name")
 		return nil
 	}
-
-	applicationName := application.(global.ApplicationConfig).Name
 
 	a := &ApplicationAffinityRoute{
 		currentApplication: applicationName,
@@ -225,8 +223,8 @@ func (a *affinityRoute) Notify(_ []base.Invoker) {
 	panic("this function should not be called")
 }
 
-func parseConfig(c string) (router.AffinityRouter, error) {
-	res := router.AffinityRouter{}
+func parseConfig(c string) (global.AffinityRouter, error) {
+	res := global.AffinityRouter{}
 	err := yaml.Unmarshal([]byte(c), &res)
 	return res, err
 }

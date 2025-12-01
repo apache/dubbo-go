@@ -124,24 +124,9 @@ func getRandomPort(protocolConfigs []*global.ProtocolConfig) *list.List {
 	return ports
 }
 
-func (svcOpts *ServiceOptions) ExportWithoutInfo() error {
-	return svcOpts.export(nil)
-}
-
-func (svcOpts *ServiceOptions) ExportWithInfo(info *common.ServiceInfo) error {
-	return svcOpts.export(info)
-}
-
-func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
+func (svcOpts *ServiceOptions) Export() error {
+	info := svcOpts.info
 	svcConf := svcOpts.Service
-	if info != nil {
-		if svcConf.Interface == "" {
-			svcConf.Interface = info.InterfaceName
-		}
-		svcOpts.info = info
-	}
-
-	svcOpts.Id = common.GetReference(svcOpts.rpcService)
 
 	// TODO: delay needExport
 	if svcOpts.unexported != nil && svcOpts.unexported.Load() {
@@ -220,6 +205,18 @@ func (svcOpts *ServiceOptions) export(info *common.ServiceInfo) error {
 
 			// TODO: remove IDL value when version 4.0.0
 			common.WithParamsValue(constant.IDLMode, isIDL),
+
+			// application name
+			common.WithAttribute(constant.ApplicationKey, svcOpts.Application),
+
+			// shutdown config
+			common.WithAttribute(constant.ShutdownConfigPrefix, svcOpts.srvOpts.Shutdown),
+
+			// provider info
+			common.WithAttribute(constant.ProviderConfigKey, svcOpts.srvOpts.Provider),
+
+			// protocol conf
+			common.WithAttribute(constant.ProtocolConfigKey, svcOpts.Protocols),
 		)
 
 		if info != nil {

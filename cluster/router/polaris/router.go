@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -36,7 +37,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	remotingpolaris "dubbo.apache.org/dubbo-go/v3/remoting/polaris"
 	"dubbo.apache.org/dubbo-go/v3/remoting/polaris/parser"
@@ -50,7 +51,21 @@ var (
 	ErrorPolarisServiceRouteRuleEmpty = errors.New("service route rule is empty")
 )
 
-func newPolarisRouter() (*polarisRouter, error) {
+func newPolarisRouter(url *common.URL) (*polarisRouter, error) {
+
+	// get from url param
+	applicationName := url.GetParam(constant.ApplicationKey, "")
+
+	if applicationName == "" {
+		return nil, fmt.Errorf("polaris router must set application name")
+	}
+
+	// get from url attr
+	registries, ok := url.GetAttribute(constant.RegistriesConfigKey)
+	if !ok {
+		registries = make(map[string]*global.RegistryConfig)
+	}
+
 	if err := remotingpolaris.Check(); errors.Is(err, remotingpolaris.ErrorNoOpenPolarisAbility) {
 		return &polarisRouter{
 			openRoute: false,
@@ -67,9 +82,11 @@ func newPolarisRouter() (*polarisRouter, error) {
 	}
 
 	return &polarisRouter{
-		openRoute:   true,
-		routerAPI:   routerAPI,
-		consumerAPI: consumerAPI,
+		openRoute:          true,
+		routerAPI:          routerAPI,
+		consumerAPI:        consumerAPI,
+		currentApplication: applicationName,
+		Registries:         registries.(map[string]*global.RegistryConfig),
 	}, nil
 }
 
@@ -78,6 +95,11 @@ type polarisRouter struct {
 
 	routerAPI   polaris.RouterAPI
 	consumerAPI polaris.ConsumerAPI
+
+	// config change: config to global
+	mu                 sync.RWMutex
+	currentApplication string
+	Registries         map[string]*global.RegistryConfig
 }
 
 // Route Determine the target invokers list.
@@ -94,7 +116,7 @@ func (p *polarisRouter) Route(invokers []base.Invoker, url *common.URL,
 		return invokers
 	}
 
-	service := getService(url)
+	service := p.getService(url)
 	instanceMap := p.buildInstanceMap(service)
 	if len(instanceMap) == 0 {
 		return invokers
@@ -138,17 +160,20 @@ func (p *polarisRouter) Route(invokers []base.Invoker, url *common.URL,
 	return ret
 }
 
-func getService(url *common.URL) string {
+func (p *polarisRouter) getService(url *common.URL) string {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
 	applicationMode := false
-	for _, item := range config.GetRootConfig().Registries {
-		if item.Protocol == constant.PolarisKey {
+	for _, item := range p.Registries {
+		if item != nil && item.Protocol == constant.PolarisKey {
 			applicationMode = item.RegistryType == constant.ServiceKey
 		}
 	}
 
 	service := url.Interface()
 	if applicationMode {
-		service = config.GetApplicationConfig().Name
+		service = p.currentApplication
 	}
 
 	return service
@@ -176,7 +201,7 @@ func (p *polarisRouter) buildRouteRequest(svc string, url *common.URL,
 	for i := range labels {
 		label := labels[i]
 		if strings.Compare(label, model.LabelKeyPath) == 0 {
-			routeReq.AddArguments(model.BuildPathArgument(getInvokeMethod(url, invocation)))
+			routeReq.AddArguments(model.BuildPathArgument(p.getInvokeMethod(url, invocation)))
 			continue
 		}
 		if strings.HasPrefix(label, model.LabelKeyHeader) {
@@ -215,15 +240,18 @@ func (p *polarisRouter) buildTrafficLabels(svc string) ([]string, error) {
 	routeRule := resp.GetValue().(*v1.Routing)
 	labels := make([]string, 0, 4)
 	labels = append(labels, collectRouteLabels(routeRule.GetInbounds())...)
-	labels = append(labels, collectRouteLabels(routeRule.GetInbounds())...)
+	labels = append(labels, collectRouteLabels(routeRule.GetOutbounds())...)
 
 	return labels, nil
 }
 
-func getInvokeMethod(url *common.URL, invoaction base.Invocation) string {
+func (p *polarisRouter) getInvokeMethod(url *common.URL, invoaction base.Invocation) string {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
 	applicationMode := false
-	for _, item := range config.GetRootConfig().Registries {
-		if item.Protocol == constant.PolarisKey {
+	for _, item := range p.Registries {
+		if item != nil && item.Protocol == constant.PolarisKey {
 			applicationMode = item.RegistryType == constant.ServiceKey
 		}
 	}
@@ -293,7 +321,7 @@ func (p *polarisRouter) Notify(invokers []base.Invoker) {
 	if len(invokers) == 0 {
 		return
 	}
-	service := getService(invokers[0].GetURL())
+	service := p.getService(invokers[0].GetURL())
 	if service == "" {
 		logger.Error("url service is empty")
 		return
