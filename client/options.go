@@ -24,6 +24,7 @@ import (
 
 import (
 	"github.com/creasty/defaults"
+	"github.com/dubbogo/gost/log/logger"
 )
 
 import (
@@ -430,22 +431,29 @@ func WithRestReference(id string, svcOpts ...restproto.ServiceOption) ReferenceO
 		if opts == nil {
 			return
 		}
+
+		// Build rest service config and fill InterfaceName from Reference if missing.
 		restCfg := restproto.NewServiceConfig(svcOpts...)
 		if restCfg.InterfaceName == "" && opts.Reference != nil {
 			restCfg.InterfaceName = opts.Reference.InterfaceName
 		}
+
+		// Derive serviceID with explicit priority: function param `id` -> opts.id -> restCfg.InterfaceName
 		serviceID := id
 		if serviceID == "" {
-			switch {
-			case opts.id != "":
+			if opts.id != "" {
 				serviceID = opts.id
-			case restCfg.InterfaceName != "":
+			} else {
 				serviceID = restCfg.InterfaceName
 			}
 		}
+
+		// Final validation: if still empty, warn and skip applying config.
 		if serviceID == "" {
+			logger.Warnf("WithRestReference: cannot determine service id; provide `id`, set `opts.id`, or include `InterfaceName` in rest service config or Reference")
 			return
 		}
+
 		restproto.ApplyConsumerServiceConfig(serviceID, restCfg)
 	}
 }

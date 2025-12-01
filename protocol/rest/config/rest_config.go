@@ -18,12 +18,16 @@
 package config
 
 import (
+	"sync"
+
 	"github.com/creasty/defaults"
 )
 
 var (
 	restConsumerServiceConfigMap map[string]*RestServiceConfig
 	restProviderServiceConfigMap map[string]*RestServiceConfig
+	// protect access to the above maps
+	restConfigMu sync.RWMutex
 )
 
 func ensureRestConsumerServiceConfigMap() {
@@ -136,21 +140,29 @@ func (c *RestMethodConfig) UnmarshalYAML(unmarshal func(any) error) error {
 
 // GetRestConsumerServiceConfig returns consumer service config by id.
 func GetRestConsumerServiceConfig(id string) *RestServiceConfig {
+	restConfigMu.RLock()
+	defer restConfigMu.RUnlock()
 	return restConsumerServiceConfigMap[id]
 }
 
 // GetRestProviderServiceConfig returns provider service config by id.
 func GetRestProviderServiceConfig(id string) *RestServiceConfig {
+	restConfigMu.RLock()
+	defer restConfigMu.RUnlock()
 	return restProviderServiceConfigMap[id]
 }
 
 // SetRestConsumerServiceConfigMap sets consumer service configs map.
 func SetRestConsumerServiceConfigMap(configMap map[string]*RestServiceConfig) {
+	restConfigMu.Lock()
+	defer restConfigMu.Unlock()
 	restConsumerServiceConfigMap = configMap
 }
 
 // SetRestProviderServiceConfigMap sets provider service configs map.
 func SetRestProviderServiceConfigMap(configMap map[string]*RestServiceConfig) {
+	restConfigMu.Lock()
+	defer restConfigMu.Unlock()
 	restProviderServiceConfigMap = configMap
 }
 
@@ -159,6 +171,8 @@ func UpsertRestConsumerServiceConfig(id string, cfg *RestServiceConfig) {
 	if cfg == nil || id == "" {
 		return
 	}
+	restConfigMu.Lock()
+	defer restConfigMu.Unlock()
 	ensureRestConsumerServiceConfigMap()
 	restConsumerServiceConfigMap[id] = cfg
 }
@@ -168,16 +182,38 @@ func UpsertRestProviderServiceConfig(id string, cfg *RestServiceConfig) {
 	if cfg == nil || id == "" {
 		return
 	}
+	restConfigMu.Lock()
+	defer restConfigMu.Unlock()
 	ensureRestProviderServiceConfigMap()
 	restProviderServiceConfigMap[id] = cfg
 }
 
 // GetRestConsumerServiceConfigMap returns the consumer service configs map.
 func GetRestConsumerServiceConfigMap() map[string]*RestServiceConfig {
-	return restConsumerServiceConfigMap
+	restConfigMu.RLock()
+	defer restConfigMu.RUnlock()
+	if restConsumerServiceConfigMap == nil {
+		return nil
+	}
+	// return a shallow copy to avoid external modification of internal map
+	cp := make(map[string]*RestServiceConfig, len(restConsumerServiceConfigMap))
+	for k, v := range restConsumerServiceConfigMap {
+		cp[k] = v
+	}
+	return cp
 }
 
 // GetRestProviderServiceConfigMap returns the provider service configs map.
 func GetRestProviderServiceConfigMap() map[string]*RestServiceConfig {
-	return restProviderServiceConfigMap
+	restConfigMu.RLock()
+	defer restConfigMu.RUnlock()
+	if restProviderServiceConfigMap == nil {
+		return nil
+	}
+	// return a shallow copy to avoid external modification of internal map
+	cp := make(map[string]*RestServiceConfig, len(restProviderServiceConfigMap))
+	for k, v := range restProviderServiceConfigMap {
+		cp[k] = v
+	}
+	return cp
 }

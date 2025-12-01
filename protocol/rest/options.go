@@ -22,19 +22,19 @@ import (
 )
 
 import (
-	rest_config "dubbo.apache.org/dubbo-go/v3/protocol/rest/config"
+	restconfig "dubbo.apache.org/dubbo-go/v3/protocol/rest/config"
 )
 
 // ServiceOption customizes RestServiceConfig.
-type ServiceOption func(*rest_config.RestServiceConfig)
+type ServiceOption func(*restconfig.RestServiceConfig)
 
 // MethodOption customizes RestMethodConfig.
-type MethodOption func(*rest_config.RestMethodConfig)
+type MethodOption func(*restconfig.RestMethodConfig)
 
 // NewServiceConfig constructs a RestServiceConfig via functional options.
-func NewServiceConfig(opts ...ServiceOption) *rest_config.RestServiceConfig {
-	cfg := &rest_config.RestServiceConfig{
-		RestMethodConfigs: make([]*rest_config.RestMethodConfig, 0),
+func NewServiceConfig(opts ...ServiceOption) *restconfig.RestServiceConfig {
+	cfg := &restconfig.RestServiceConfig{
+		RestMethodConfigs: make([]*restconfig.RestMethodConfig, 0),
 	}
 	for _, opt := range opts {
 		opt(cfg)
@@ -44,8 +44,8 @@ func NewServiceConfig(opts ...ServiceOption) *rest_config.RestServiceConfig {
 }
 
 // NewMethodConfig builds a RestMethodConfig via functional options.
-func NewMethodConfig(name string, opts ...MethodOption) *rest_config.RestMethodConfig {
-	method := &rest_config.RestMethodConfig{
+func NewMethodConfig(name string, opts ...MethodOption) *restconfig.RestMethodConfig {
+	method := &restconfig.RestMethodConfig{
 		MethodName: name,
 		Body:       -1,
 	}
@@ -56,75 +56,75 @@ func NewMethodConfig(name string, opts ...MethodOption) *rest_config.RestMethodC
 }
 
 // ApplyConsumerServiceConfig registers the given service config for consumer side.
-func ApplyConsumerServiceConfig(id string, cfg *rest_config.RestServiceConfig) {
+func ApplyConsumerServiceConfig(id string, cfg *restconfig.RestServiceConfig) {
 	if cfg == nil || id == "" {
 		return
 	}
 	finalizeServiceConfig(cfg)
-	rest_config.UpsertRestConsumerServiceConfig(id, cfg)
+	restconfig.UpsertRestConsumerServiceConfig(id, cfg)
 }
 
 // ApplyProviderServiceConfig registers the given service config for provider side.
-func ApplyProviderServiceConfig(id string, cfg *rest_config.RestServiceConfig) {
+func ApplyProviderServiceConfig(id string, cfg *restconfig.RestServiceConfig) {
 	if cfg == nil || id == "" {
 		return
 	}
 	finalizeServiceConfig(cfg)
-	rest_config.UpsertRestProviderServiceConfig(id, cfg)
+	restconfig.UpsertRestProviderServiceConfig(id, cfg)
 }
 
 // WithServiceInterface sets the Java-style interface for the rest service.
 func WithServiceInterface(interfaceName string) ServiceOption {
-	return func(cfg *rest_config.RestServiceConfig) {
+	return func(cfg *restconfig.RestServiceConfig) {
 		cfg.InterfaceName = interfaceName
 	}
 }
 
 // WithServiceURL sets the base url.
 func WithServiceURL(url string) ServiceOption {
-	return func(cfg *rest_config.RestServiceConfig) {
+	return func(cfg *restconfig.RestServiceConfig) {
 		cfg.URL = url
 	}
 }
 
 // WithServicePath sets the base path that will prefix all method paths.
 func WithServicePath(path string) ServiceOption {
-	return func(cfg *rest_config.RestServiceConfig) {
+	return func(cfg *restconfig.RestServiceConfig) {
 		cfg.Path = path
 	}
 }
 
 // WithServiceProduces sets the default produces header for all methods.
 func WithServiceProduces(produces string) ServiceOption {
-	return func(cfg *rest_config.RestServiceConfig) {
+	return func(cfg *restconfig.RestServiceConfig) {
 		cfg.Produces = produces
 	}
 }
 
 // WithServiceConsumes sets the default consumes header for all methods.
 func WithServiceConsumes(consumes string) ServiceOption {
-	return func(cfg *rest_config.RestServiceConfig) {
+	return func(cfg *restconfig.RestServiceConfig) {
 		cfg.Consumes = consumes
 	}
 }
 
 // WithServiceClient specifies the rest client implementation (default: resty).
 func WithServiceClient(client string) ServiceOption {
-	return func(cfg *rest_config.RestServiceConfig) {
+	return func(cfg *restconfig.RestServiceConfig) {
 		cfg.Client = client
 	}
 }
 
 // WithServiceServer specifies underlying rest server implementation (default: go-restful).
 func WithServiceServer(server string) ServiceOption {
-	return func(cfg *rest_config.RestServiceConfig) {
+	return func(cfg *restconfig.RestServiceConfig) {
 		cfg.Server = server
 	}
 }
 
 // WithServiceMethod appends a rest method definition to the service.
 func WithServiceMethod(name string, opts ...MethodOption) ServiceOption {
-	return func(cfg *rest_config.RestServiceConfig) {
+	return func(cfg *restconfig.RestServiceConfig) {
 		method := NewMethodConfig(name, opts...)
 		cfg.RestMethodConfigs = append(cfg.RestMethodConfigs, method)
 	}
@@ -132,49 +132,49 @@ func WithServiceMethod(name string, opts ...MethodOption) ServiceOption {
 
 // WithMethodPath configures the method path (can be relative to service path).
 func WithMethodPath(path string) MethodOption {
-	return func(method *rest_config.RestMethodConfig) {
+	return func(method *restconfig.RestMethodConfig) {
 		method.Path = path
 	}
 }
 
 // WithMethodURL configures an absolute URL for the method.
 func WithMethodURL(url string) MethodOption {
-	return func(method *rest_config.RestMethodConfig) {
+	return func(method *restconfig.RestMethodConfig) {
 		method.URL = url
 	}
 }
 
 // WithMethodProduces sets the produces header for the method.
 func WithMethodProduces(produces string) MethodOption {
-	return func(method *rest_config.RestMethodConfig) {
+	return func(method *restconfig.RestMethodConfig) {
 		method.Produces = produces
 	}
 }
 
 // WithMethodConsumes sets the consumes header for the method.
 func WithMethodConsumes(consumes string) MethodOption {
-	return func(method *rest_config.RestMethodConfig) {
+	return func(method *restconfig.RestMethodConfig) {
 		method.Consumes = consumes
 	}
 }
 
 // WithMethodHTTPMethod sets HTTP verb for the method (GET/POST/...).
 func WithMethodHTTPMethod(methodType string) MethodOption {
-	return func(method *rest_config.RestMethodConfig) {
+	return func(method *restconfig.RestMethodConfig) {
 		method.MethodType = methodType
 	}
 }
 
 // WithMethodBodyIndex sets the index of argument bound to request body.
 func WithMethodBodyIndex(index int) MethodOption {
-	return func(method *rest_config.RestMethodConfig) {
+	return func(method *restconfig.RestMethodConfig) {
 		method.Body = index
 	}
 }
 
 // WithMethodPathParam binds a path param name to an argument index.
 func WithMethodPathParam(index int, name string) MethodOption {
-	return func(method *rest_config.RestMethodConfig) {
+	return func(method *restconfig.RestMethodConfig) {
 		if method.PathParamsMap == nil {
 			method.PathParamsMap = make(map[int]string)
 		}
@@ -184,7 +184,7 @@ func WithMethodPathParam(index int, name string) MethodOption {
 
 // WithMethodQueryParam binds a query param name to an argument index.
 func WithMethodQueryParam(index int, name string) MethodOption {
-	return func(method *rest_config.RestMethodConfig) {
+	return func(method *restconfig.RestMethodConfig) {
 		if method.QueryParamsMap == nil {
 			method.QueryParamsMap = make(map[int]string)
 		}
@@ -194,7 +194,7 @@ func WithMethodQueryParam(index int, name string) MethodOption {
 
 // WithMethodHeader binds a header name to an argument index.
 func WithMethodHeader(index int, name string) MethodOption {
-	return func(method *rest_config.RestMethodConfig) {
+	return func(method *restconfig.RestMethodConfig) {
 		if method.HeadersMap == nil {
 			method.HeadersMap = make(map[int]string)
 		}
@@ -202,12 +202,12 @@ func WithMethodHeader(index int, name string) MethodOption {
 	}
 }
 
-func finalizeServiceConfig(cfg *rest_config.RestServiceConfig) {
+func finalizeServiceConfig(cfg *restconfig.RestServiceConfig) {
 	if cfg == nil {
 		return
 	}
 	if cfg.RestMethodConfigsMap == nil {
-		cfg.RestMethodConfigsMap = make(map[string]*rest_config.RestMethodConfig, len(cfg.RestMethodConfigs))
+		cfg.RestMethodConfigsMap = make(map[string]*restconfig.RestMethodConfig, len(cfg.RestMethodConfigs))
 	}
 	for _, method := range cfg.RestMethodConfigs {
 		if method == nil || method.MethodName == "" {
