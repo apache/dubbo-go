@@ -22,6 +22,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
 )
@@ -40,6 +41,10 @@ func compatRootConfig(c *InstanceOptions) *config.RootConfig {
 		regCompat[k] = compatRegistryConfig(v)
 	}
 
+	routeCompat := make([]*config.RouterConfig, 0)
+	for _, v := range c.Router {
+		routeCompat = append(routeCompat, compatRouterConfig(v))
+	}
 	return &config.RootConfig{
 		Application:         compatApplicationConfig(c.Application),
 		Protocols:           proCompat,
@@ -52,6 +57,7 @@ func compatRootConfig(c *InstanceOptions) *config.RootConfig {
 		Otel:                compatOtelConfig(c.Otel),
 		Logger:              compatLoggerConfig(c.Logger),
 		Shutdown:            compatShutdownConfig(c.Shutdown),
+		Router:              routeCompat,
 		EventDispatcherType: c.EventDispatcherType,
 		CacheFile:           c.CacheFile,
 		Custom:              compatCustomConfig(c.Custom),
@@ -437,6 +443,54 @@ func compatShutdownConfig(c *global.ShutdownConfig) *config.ShutdownConfig {
 	return cfg
 }
 
+func compatRouterConfig(c *global.RouterConfig) *config.RouterConfig {
+	if c == nil {
+		return nil
+	}
+	return &config.RouterConfig{
+		Scope:      c.Scope,
+		Key:        c.Key,
+		Force:      c.Force,
+		Runtime:    c.Runtime,
+		Enabled:    c.Enabled,
+		Valid:      c.Valid,
+		Priority:   c.Priority,
+		Conditions: c.Conditions,
+		Tags:       compatTags(c.Tags),
+		ScriptType: c.ScriptType,
+		Script:     c.Script,
+	}
+
+}
+
+func compatTags(c []global.Tag) []config.Tag {
+	if c == nil {
+		return nil
+	}
+	// deep copy
+	tags := make([]config.Tag, len(c))
+
+	for i := range c {
+		tags[i].Name = c[i].Name
+		if c[i].Match != nil {
+			tags[i].Match = make([]*common.ParamMatch, len(c[i].Match))
+			for j := range c[i].Match {
+				if c[i].Match[j] != nil {
+					pm := *c[i].Match[j]
+					tags[i].Match[j] = &pm
+				}
+			}
+		}
+
+		if c[i].Addresses != nil {
+			tags[i].Addresses = make([]string, len(c[i].Addresses))
+			copy(tags[i].Addresses, c[i].Addresses)
+		}
+	}
+
+	return tags
+}
+
 func compatCustomConfig(c *global.CustomConfig) *config.CustomConfig {
 	if c == nil {
 		return nil
@@ -514,6 +568,11 @@ func compatInstanceOptions(cr *config.RootConfig, rc *InstanceOptions) {
 		regCompat[k] = compatGlobalRegistryConfig(v)
 	}
 
+	rouCompat := make([]*global.RouterConfig, 0)
+	for _, v := range cr.Router {
+		rouCompat = append(rouCompat, compatGlobalRouterConfig(v))
+	}
+
 	rc.Application = compatGlobalApplicationConfig(cr.Application)
 	rc.Protocols = proCompat
 	rc.Registries = regCompat
@@ -525,6 +584,7 @@ func compatInstanceOptions(cr *config.RootConfig, rc *InstanceOptions) {
 	rc.Otel = compatGlobalOtelConfig(cr.Otel)
 	rc.Logger = compatGlobalLoggerConfig(cr.Logger)
 	rc.Shutdown = compatGlobalShutdownConfig(cr.Shutdown)
+	rc.Router = rouCompat
 	rc.EventDispatcherType = cr.EventDispatcherType
 	rc.CacheFile = cr.CacheFile
 	rc.Custom = compatGlobalCustomConfig(cr.Custom)
@@ -962,6 +1022,50 @@ func compatGlobalShutdownConfig(c *config.ShutdownConfig) *global.ShutdownConfig
 	cfg.RejectRequest.Store(c.RejectRequest.Load())
 
 	return cfg
+}
+
+func compatGlobalRouterConfig(c *config.RouterConfig) *global.RouterConfig {
+	if c == nil {
+		return nil
+	}
+	return &global.RouterConfig{
+		Scope:      c.Scope,
+		Key:        c.Key,
+		Force:      c.Force,
+		Runtime:    c.Runtime,
+		Enabled:    c.Enabled,
+		Valid:      c.Valid,
+		Priority:   c.Priority,
+		Conditions: c.Conditions,
+		Tags:       compatGlobalTag(c.Tags),
+		ScriptType: c.ScriptType,
+		Script:     c.Script,
+	}
+}
+
+func compatGlobalTag(c []config.Tag) []global.Tag {
+	if c == nil {
+		return nil
+	}
+	// deepcopy
+	tags := make([]global.Tag, len(c))
+	for i := range c {
+		tags[i].Name = c[i].Name
+		if c[i].Match != nil {
+			tags[i].Match = make([]*common.ParamMatch, len(c[i].Match))
+			for j := range c[i].Match {
+				if c[i].Match[j] != nil {
+					pm := *c[i].Match[j]
+					tags[i].Match[j] = &pm
+				}
+			}
+		}
+		if c[i].Addresses != nil {
+			tags[i].Addresses = make([]string, len(c[i].Addresses))
+			copy(tags[i].Addresses, c[i].Addresses)
+		}
+	}
+	return tags
 }
 
 func compatGlobalCustomConfig(c *config.CustomConfig) *global.CustomConfig {

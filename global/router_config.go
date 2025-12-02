@@ -41,6 +41,13 @@ type Tag struct {
 	Addresses []string             `yaml:"addresses" json:"addresses,omitempty" property:"addresses"`
 }
 
+func DefaultRouterConfig() *RouterConfig {
+	return &RouterConfig{
+		Conditions: make([]string, 0),
+		Tags:       make([]Tag, 0),
+	}
+}
+
 type ConditionRule struct {
 	From ConditionRuleFrom `yaml:"from" json:"from,omitempty" property:"from"`
 	To   []ConditionRuleTo `yaml:"to" json:"to,omitempty" property:"to"`
@@ -116,7 +123,22 @@ func (c *RouterConfig) Clone() *RouterConfig {
 	copy(newConditions, c.Conditions)
 
 	newTags := make([]Tag, len(c.Tags))
-	copy(newTags, c.Tags)
+	for i := range c.Tags {
+		newTags[i] = c.Tags[i]
+		if c.Tags[i].Match != nil {
+			newTags[i].Match = make([]*common.ParamMatch, len(c.Tags[i].Match))
+			for j := range c.Tags[i].Match {
+				if c.Tags[i].Match[j] != nil {
+					pm := *c.Tags[i].Match[j] // 深拷贝 ParamMatch（包含 Value:StringMatch）
+					newTags[i].Match[j] = &pm
+				}
+			}
+		}
+		if c.Tags[i].Addresses != nil {
+			newTags[i].Addresses = make([]string, len(c.Tags[i].Addresses))
+			copy(newTags[i].Addresses, c.Tags[i].Addresses)
+		}
+	}
 
 	return &RouterConfig{
 		Scope:      c.Scope,

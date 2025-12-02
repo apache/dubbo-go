@@ -27,6 +27,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/router"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
@@ -54,7 +55,7 @@ type InstanceOptions struct {
 	Logger         *global.LoggerConfig              `yaml:"logger" json:"logger,omitempty" property:"logger"`
 	Shutdown       *global.ShutdownConfig            `yaml:"shutdown" json:"shutdown,omitempty" property:"shutdown"`
 	// todo(DMwangnima): router feature would be supported in the future
-	//Router              []*RouterConfig                   `yaml:"router" json:"router,omitempty" property:"router"`
+	Router              []*global.RouterConfig `yaml:"router" json:"router,omitempty" property:"router"`
 	EventDispatcherType string                 `default:"direct" yaml:"event-dispatcher-type" json:"event-dispatcher-type,omitempty"`
 	CacheFile           string                 `yaml:"cache_file" json:"cache_file,omitempty" property:"cache_file"`
 	Custom              *global.CustomConfig   `yaml:"custom" json:"custom,omitempty" property:"custom"`
@@ -75,6 +76,7 @@ func defaultInstanceOptions() *InstanceOptions {
 		Otel:           global.DefaultOtelConfig(),
 		Logger:         global.DefaultLoggerConfig(),
 		Shutdown:       global.DefaultShutdownConfig(),
+		Router:         make([]*global.RouterConfig, 0),
 		Custom:         global.DefaultCustomConfig(),
 		Profiles:       global.DefaultProfilesConfig(),
 		TLSConfig:      global.DefaultTLSConfig(),
@@ -292,6 +294,17 @@ func (rc *InstanceOptions) CloneShutdown() *global.ShutdownConfig {
 	return rc.Shutdown.Clone()
 }
 
+func (rc *InstanceOptions) CloneRouter() []*global.RouterConfig {
+	if rc.Router == nil {
+		return nil
+	}
+	routers := make([]*global.RouterConfig, 0, len(rc.Router))
+	for _, r := range rc.Router {
+		routers = append(routers, r.Clone())
+	}
+	return routers
+}
+
 func (rc *InstanceOptions) CloneCustom() *global.CustomConfig {
 	if rc.Custom == nil {
 		return nil
@@ -468,6 +481,17 @@ func WithShutdown(opts ...graceful_shutdown.Option) InstanceOption {
 
 	return func(insOpts *InstanceOptions) {
 		insOpts.Shutdown = sdOpts.Shutdown
+	}
+}
+
+func WithRouter(opts ...router.Option) InstanceOption {
+	sdOpts := router.NewOptions(opts...)
+
+	return func(insOpts *InstanceOptions) {
+		if insOpts.Router == nil {
+			insOpts.Router = make([]*global.RouterConfig, 0)
+		}
+		insOpts.Router = append(insOpts.Router, sdOpts.Router)
 	}
 }
 
