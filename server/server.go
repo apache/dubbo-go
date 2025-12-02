@@ -19,9 +19,12 @@
 package server
 
 import (
+	"os"
+	"os/signal"
 	"sort"
 	"strconv"
 	"sync"
+	"syscall"
 )
 
 import (
@@ -213,7 +216,15 @@ func (s *Server) Serve() error {
 	if err := exposed_tmp.RegisterServiceInstance(); err != nil {
 		return err
 	}
-	select {}
+	// Listen for interrupt signals to enable graceful shutdown
+	// This replaces the previous select{} which blocked indefinitely and couldn't respond to signals
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
+
+	// Wait for a signal to shutdown gracefully
+	sig := <-sigChan
+	logger.Infof("Received signal: %v, server is shutting down gracefully", sig)
+	return nil
 }
 
 // In order to expose internal services
