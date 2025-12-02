@@ -83,30 +83,30 @@ const (
 
 var defaultCorsMethods = []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete}
 
-// build processes the corsPolicy with handlers and returns a fully configured corsPolicy.
-func (c *corsPolicy) build(handlers []protocolHandler) *corsPolicy {
-	if c == nil {
+// buildCorsPolicy processes the corsPolicy with handlers and returns a fully configured corsPolicy.
+func buildCorsPolicy(cfg *corsPolicy, handlers []protocolHandler) *corsPolicy {
+	if cfg == nil {
 		return nil
 	}
-	if len(c.AllowOrigins) == 0 {
+	if len(cfg.AllowOrigins) == 0 {
 		return nil
 	}
 
-	hasWildcard := c.checkHasWildcard()
+	hasWildcard := cfg.checkHasWildcard()
 	built := &corsPolicy{
 		CorsConfig: CorsConfig{
-			AllowOrigins:     append([]string(nil), c.AllowOrigins...),
-			AllowMethods:     append([]string(nil), c.AllowMethods...),
-			AllowHeaders:     append([]string(nil), c.AllowHeaders...),
-			ExposeHeaders:    append([]string(nil), c.ExposeHeaders...),
-			AllowCredentials: c.AllowCredentials,
-			MaxAge:           c.MaxAge,
+			AllowOrigins:     append([]string(nil), cfg.AllowOrigins...),
+			AllowMethods:     append([]string(nil), cfg.AllowMethods...),
+			AllowHeaders:     append([]string(nil), cfg.AllowHeaders...),
+			ExposeHeaders:    append([]string(nil), cfg.ExposeHeaders...),
+			AllowCredentials: cfg.AllowCredentials,
+			MaxAge:           cfg.MaxAge,
 		},
 		hasWildcard: hasWildcard,
 	}
 
 	// Warn if wildcard "*" is used with other origins and credentials are disabled
-	if hasWildcard && !c.AllowCredentials && len(c.AllowOrigins) > 1 {
+	if hasWildcard && !cfg.AllowCredentials && len(cfg.AllowOrigins) > 1 {
 		logger.Warnf("[TRIPLE] CORS: wildcard \"*\" in allowOrigins will override all other origins when allowCredentials=false. Other origins will be ignored.")
 	}
 
@@ -125,11 +125,6 @@ func (c *corsPolicy) build(handlers []protocolHandler) *corsPolicy {
 	}
 
 	return built
-}
-
-// buildCorsPolicy calls build on the corsPolicy.
-func buildCorsPolicy(cfg *corsPolicy, handlers []protocolHandler) *corsPolicy {
-	return cfg.build(handlers)
 }
 
 // checkHasWildcard checks if the global wildcard "*" is present in allowOrigins.
