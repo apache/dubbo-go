@@ -57,7 +57,7 @@ func NewRestyClient(restOption *client.RestOptions) client.RestClient {
 				}
 				return c, nil
 			},
-			IdleConnTimeout: restOption.KeppAliveTimeout,
+			IdleConnTimeout: restOption.KeepAliveTimeout,
 		})
 	client.SetTimeout(restOption.RequestTimeout)
 	return &RestyClient{

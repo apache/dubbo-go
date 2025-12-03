@@ -41,7 +41,6 @@ func NewServiceConfig(opts ...ServiceOption) *restconfig.RestServiceConfig {
 	for _, opt := range opts {
 		opt(cfg)
 	}
-	finalizeServiceConfig(cfg)
 	return cfg
 }
 

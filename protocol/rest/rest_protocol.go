@@ -104,8 +104,12 @@ func (rp *RestProtocol) Refer(url *common.URL) base.Invoker {
 		logger.Errorf("%s service doesn't has consumer config", url.Path)
 		return nil
 	}
-	restOptions := client.RestOptions{RequestTimeout: requestTimeout, ConnectTimeout: connectTimeout, KeppAliveTimeout: keepAliveTimeout}
-	restClient := rp.getClient(restOptions, restServiceConfig.Client)
+	opts := client.NewRestOptions(
+		client.WithRequestTimeout(requestTimeout),
+		client.WithConnectTimeout(connectTimeout),
+		client.WithKeepAliveTimeout(keepAliveTimeout),
+	)
+	restClient := rp.getClient(*opts, restServiceConfig.Client)
 	invoker := NewRestInvoker(url, &restClient, restServiceConfig.RestMethodConfigsMap)
 	rp.SetInvokers(invoker)
 	return invoker

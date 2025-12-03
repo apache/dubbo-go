@@ -25,7 +25,7 @@ import (
 type RestOptions struct {
 	RequestTimeout   time.Duration
 	ConnectTimeout   time.Duration
-	KeppAliveTimeout time.Duration
+	KeepAliveTimeout time.Duration
 }
 
 // Option represents a functional option for configuring RestOptions.
@@ -35,9 +35,11 @@ type Option func(*RestOptions)
 // These defaults are only used when NewRestOptions is called.
 func defaultRestOptions() *RestOptions {
 	return &RestOptions{
-		// Keep backward compatibility: if user doesn't specify, we leave
-		// zero values here and let the underlying HTTP client decide.
-		// Users can explicitly configure these via the With* helpers below.
+		// Provide sensible defaults to avoid unbounded waits in production.
+		// These can be overridden via the With* helpers.
+		RequestTimeout:   30 * time.Second,
+		ConnectTimeout:   5 * time.Second,
+		KeepAliveTimeout: 90 * time.Second,
 	}
 }
 
@@ -68,7 +70,7 @@ func WithConnectTimeout(d time.Duration) Option {
 // WithKeepAliveTimeout sets the idle connection keep-alive timeout.
 func WithKeepAliveTimeout(d time.Duration) Option {
 	return func(o *RestOptions) {
-		o.KeppAliveTimeout = d
+		o.KeepAliveTimeout = d
 	}
 }
 
