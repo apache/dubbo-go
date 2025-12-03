@@ -891,14 +891,15 @@ func WithRestService(id string, svcOpts ...restproto.ServiceOption) ServiceOptio
 		}
 		serviceID := id
 		if serviceID == "" {
-			switch {
-			case opts.Id != "":
+			if opts.Id != "" {
 				serviceID = opts.Id
-			case restCfg.InterfaceName != "":
+			} else {
 				serviceID = restCfg.InterfaceName
 			}
 		}
 		if serviceID == "" {
+			logger.Warnf("WithRestService: failed to determine serviceID (id=%q, opts.Id=%q, restCfg.InterfaceName=%q); skip binding rest config",
+				id, opts.Id, restCfg.InterfaceName)
 			return
 		}
 		restproto.ApplyProviderServiceConfig(serviceID, restCfg)

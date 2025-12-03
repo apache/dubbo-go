@@ -22,6 +22,8 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/log/logger"
+
 	restconfig "dubbo.apache.org/dubbo-go/v3/protocol/rest/config"
 )
 
@@ -202,6 +204,7 @@ func WithMethodHeader(index int, name string) MethodOption {
 	}
 }
 
+// finalizeServiceConfig normalizes a RestServiceConfig and populates its method map.
 func finalizeServiceConfig(cfg *restconfig.RestServiceConfig) {
 	if cfg == nil {
 		return
@@ -220,6 +223,11 @@ func finalizeServiceConfig(cfg *restconfig.RestServiceConfig) {
 			method.Path = joinPath(cfg.Path, method.Path)
 		} else if method.Path == "" {
 			method.Path = cfg.Path
+		}
+		if existing, ok := cfg.RestMethodConfigsMap[method.MethodName]; ok {
+			// Warn when duplicate method name is encountered to avoid silent overwrite
+			logger.Warnf("finalizeServiceConfig: duplicate method name %q for service %q; existing method %+v will be overwritten by %+v",
+				method.MethodName, cfg.InterfaceName, existing, method)
 		}
 		cfg.RestMethodConfigsMap[method.MethodName] = method
 	}
