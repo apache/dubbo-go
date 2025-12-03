@@ -19,7 +19,9 @@ package rest
 
 import (
 	"testing"
+)
 
+import (
 	restconfig "dubbo.apache.org/dubbo-go/v3/protocol/rest/config"
 )
 
