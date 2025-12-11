@@ -37,6 +37,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/dubboutil"
+	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/registry/exposed_tmp"
 )
@@ -216,14 +217,30 @@ func (s *Server) Serve() error {
 	if err := exposed_tmp.RegisterServiceInstance(); err != nil {
 		return err
 	}
+
+	// Check if graceful_shutdown package is handling signals internally
+	// If InternalSignal is true (default), graceful_shutdown.Init() already set up signal handling
+	// and will call os.Exit(0) after cleanup, so we just block here.
+	// If InternalSignal is false, we need to handle signals ourselves and call cleanup.
+	if s.cfg.Shutdown != nil && s.cfg.Shutdown.InternalSignal != nil && *s.cfg.Shutdown.InternalSignal {
+		// graceful_shutdown package is handling signals, just block until shutdown
+		select {}
+	}
+
 	// Listen for interrupt signals to enable graceful shutdown
-	// This replaces the previous select{} which blocked indefinitely and couldn't respond to signals
+	// This replaces the previous select{} which blocked indefinitely and did not provide a way to gracefully shut down or clean up resources when the process received a signal
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
 
 	// Wait for a signal to shutdown gracefully
 	sig := <-sigChan
 	logger.Infof("Received signal: %v, application is shutting down gracefully", sig)
+
+	// Call graceful shutdown cleanup manually since InternalSignal is disabled
+	if s.cfg.Shutdown != nil {
+		graceful_shutdown.BeforeShutdown(s.cfg.Shutdown)
+	}
+
 	return nil
 }
 
