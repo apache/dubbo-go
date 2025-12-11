@@ -223,7 +223,7 @@ func (s *Server) Serve() error {
 
 	// Wait for a signal to shutdown gracefully
 	sig := <-sigChan
-	logger.Infof("Received signal: %v, server is shutting down gracefully", sig)
+	logger.Infof("Received signal: %v, application is shutting down gracefully", sig)
 	return nil
 }
 
