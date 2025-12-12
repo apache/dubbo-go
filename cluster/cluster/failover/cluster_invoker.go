@@ -85,9 +85,10 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 		}
 		invoked = append(invoked, ivk)
 		// DO INVOKE
+		ivkURL := ivk.GetURL().Key()
 		res = ivk.Invoke(ctx, invocation)
 		if res.Error() != nil && !isBizError(res.Error()) {
-			providers = append(providers, ivk.GetURL().Key())
+			providers = append(providers, ivkURL)
 			continue
 		}
 		return res
@@ -104,7 +105,7 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 	}
 
 	logger.Errorf(fmt.Sprintf("Failed to invoke the method %v in the service %v. "+
-		"Tried %v times of the providers %v (%v/%v)from the registry %v on the consumer %v using the dubbo version %v. "+
+		"Tried %v times of the providers %v (%v/%v) from the registry %v on the consumer %v using the dubbo version %v. "+
 		"Last error is %+v.", methodName, invokerSvc, retries, providers, len(providers), len(invokers),
 		invokerUrl, ip, constant.Version, res.Error().Error()))
 

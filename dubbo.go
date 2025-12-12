@@ -76,6 +76,7 @@ func (ins *Instance) NewClient(opts ...client.ClientOption) (*client.Client, err
 	metricsCfg := ins.insOpts.CloneMetrics()
 	otelCfg := ins.insOpts.CloneOtel()
 	tlsCfg := ins.insOpts.CloneTLSConfig()
+	protocolsCfg := ins.insOpts.CloneProtocols()
 
 	if conCfg != nil {
 		if !conCfg.Check {
@@ -92,7 +93,7 @@ func (ins *Instance) NewClient(opts ...client.ClientOption) (*client.Client, err
 		)
 	}
 	if appCfg != nil {
-		cliOpts = append(cliOpts, client.SetApplication(appCfg))
+		cliOpts = append(cliOpts, client.SetClientApplication(appCfg))
 	}
 	if regsCfg != nil {
 		cliOpts = append(cliOpts, client.SetClientRegistries(regsCfg))
@@ -108,6 +109,9 @@ func (ins *Instance) NewClient(opts ...client.ClientOption) (*client.Client, err
 	}
 	if tlsCfg != nil {
 		cliOpts = append(cliOpts, client.SetClientTLS(tlsCfg))
+	}
+	if protocolsCfg != nil {
+		cliOpts = append(cliOpts, client.SetClientProtocols(protocolsCfg))
 	}
 
 	// options passed by users has higher priority
@@ -134,6 +138,7 @@ func (ins *Instance) NewServer(opts ...server.ServerOption) (*server.Server, err
 	metricsCfg := ins.insOpts.CloneMetrics()
 	otelCfg := ins.insOpts.CloneOtel()
 	tlsCfg := ins.insOpts.CloneTLSConfig()
+	protocolsCfg := ins.insOpts.CloneProtocols()
 
 	if appCfg != nil {
 		srvOpts = append(srvOpts,
@@ -166,6 +171,9 @@ func (ins *Instance) NewServer(opts ...server.ServerOption) (*server.Server, err
 	if tlsCfg != nil {
 		srvOpts = append(srvOpts, server.SetServerTLS(tlsCfg))
 	}
+	if protocolsCfg != nil {
+		srvOpts = append(srvOpts, server.SetServerProtocols(protocolsCfg))
+	}
 
 	// options passed by users have higher priority
 	srvOpts = append(srvOpts, opts...)
@@ -190,11 +198,16 @@ func (ins *Instance) start() (err error) {
 	return err
 }
 
-// loadProvider loads the service provider.
+// loadProvider loads and initializes the service provider
+// Flow:
+// 1. Configure server options with Provider settings if available
+// 2. Create server instance with configured options
+// 3. Register all defined provider services (both IDL and non-IDL modes)
+// 4. Start server in a separate goroutine to handle incoming requests
 func (ins *Instance) loadProvider() error {
 	var err error
 	var srvOpts []server.ServerOption
-
+	// Step 1: Build server options - add Provider configuration if exists
 	if ins.insOpts.Provider != nil {
 		srvOpts = append(srvOpts, server.SetServerProvider(ins.insOpts.Provider))
 	}
@@ -202,20 +215,23 @@ func (ins *Instance) loadProvider() error {
 	if err != nil {
 		return err
 	}
-	// register services
+	// Step 2: Register all defined provider services
 	proLock.RLock()
 	defer proLock.RUnlock()
 	for _, definition := range providerServices {
+		// Step 3: Register service based on mode
 		if definition.Info != nil {
+			// IDL mode: Register with service information (interface definition available)
 			err = srv.Register(definition.Handler, definition.Info, definition.Opts...)
 		} else {
-			// if Info in nil, it means non-idl mode
+			// Non-IDL mode: Register service handler directly (no interface definition)
 			err = srv.RegisterService(definition.Handler, definition.Opts...)
 		}
 		if err != nil {
 			return err
 		}
 	}
+	// Step 4: Start server
 	go func() {
 		if err = srv.Serve(); err != nil {
 			logger.Fatalf("Failed to start server, err: %v", err)

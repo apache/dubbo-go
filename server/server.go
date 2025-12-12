@@ -39,13 +39,21 @@ import (
 )
 
 // proServices are for internal services
-var proServices = make([]*InternalService, 0, 16)
-var proLock sync.Mutex
+var internalProServices = make([]*InternalService, 0, 16)
+var internalProLock sync.Mutex
 
 type Server struct {
 	cfg *ServerOptions
 
-	svcOptsMap sync.Map
+	mu sync.RWMutex
+	// key: *ServiceOptions, value: *common.ServiceInfo
+	//proServices map[string]common.RPCService
+	// change any to *common.ServiceInfo @see config/service.go
+	svcOptsMap map[string]*ServiceOptions
+	// key is interface name, value is *ServiceOptions
+	interfaceNameServices map[string]*ServiceOptions
+	// indicate whether the server is already started
+	serve bool
 }
 
 // ServiceInfo Deprecated： common.ServiceInfo type alias, just for compatible with old generate pb.go file
@@ -62,32 +70,33 @@ type ServiceDefinition struct {
 
 // Register assemble invoker chains like ProviderConfig.Load, init a service per call
 func (s *Server) Register(handler any, info *common.ServiceInfo, opts ...ServiceOption) error {
-	baseOpts := []ServiceOption{WithIDLMode(constant.IDL)}
-	baseOpts = append(baseOpts, opts...)
-	newSvcOpts, err := s.genSvcOpts(handler, baseOpts...)
-	if err != nil {
-		return err
-	}
-	s.svcOptsMap.Store(newSvcOpts, info)
-	return nil
+	return s.registerWithMode(handler, info, constant.IDL, opts...)
 }
 
 // RegisterService is for new Triple non-idl mode implement.
 func (s *Server) RegisterService(handler any, opts ...ServiceOption) error {
+	return s.registerWithMode(handler, nil, constant.NONIDL, opts...)
+}
+
+// registerWithMode unified service registration logic
+func (s *Server) registerWithMode(handler any, info *common.ServiceInfo, idlMode string, opts ...ServiceOption) error {
 	baseOpts := []ServiceOption{
-		WithIDLMode(constant.NONIDL),
-		WithInterface(common.GetReference(handler)),
+		WithIDLMode(idlMode),
+	}
+	// only need to explicitly set interface in NONIDL mode
+	if idlMode == constant.NONIDL {
+		baseOpts = append(baseOpts, WithInterface(common.GetReference(handler)))
 	}
 	baseOpts = append(baseOpts, opts...)
-	newSvcOpts, err := s.genSvcOpts(handler, baseOpts...)
+	newSvcOpts, err := s.genSvcOpts(handler, info, baseOpts...)
 	if err != nil {
 		return err
 	}
-	s.svcOptsMap.Store(newSvcOpts, nil)
+	s.registerServiceOptions(newSvcOpts)
 	return nil
 }
 
-func (s *Server) genSvcOpts(handler any, opts ...ServiceOption) (*ServiceOptions, error) {
+func (s *Server) genSvcOpts(handler any, info *common.ServiceInfo, opts ...ServiceOption) (*ServiceOptions, error) {
 	if s.cfg == nil {
 		return nil, errors.New("Server has not been initialized, please use NewServer() to create Server")
 	}
@@ -97,6 +106,10 @@ func (s *Server) genSvcOpts(handler any, opts ...ServiceOption) (*ServiceOptions
 	prosCfg := s.cfg.Protocols
 	regsCfg := s.cfg.Registries
 	// todo(DMwangnima): record the registered service
+	// Record the registered service for debugging and monitoring
+	interfaceName := common.GetReference(handler)
+	logger.Infof("Registering service: %s", interfaceName)
+
 	newSvcOpts := defaultServiceOptions()
 	if appCfg != nil {
 		svcOpts = append(svcOpts,
@@ -121,7 +134,6 @@ func (s *Server) genSvcOpts(handler any, opts ...ServiceOption) (*ServiceOptions
 	// Get service-level configuration items from provider.services configuration
 	if proCfg != nil && proCfg.Services != nil {
 		// Get the unique identifier of the handler (the default is the structure name or the alias set during registration)
-		interfaceName := common.GetReference(handler)
 		// Give priority to accurately finding the service configuration from the configuration based on the reference name (i.e. the handler registration name)
 		svcCfg, ok := proCfg.Services[interfaceName]
 		if !ok {
@@ -151,41 +163,55 @@ func (s *Server) genSvcOpts(handler any, opts ...ServiceOption) (*ServiceOptions
 	if err := newSvcOpts.init(s, svcOpts...); err != nil {
 		return nil, err
 	}
+	svcConf := newSvcOpts.Service
+	if info != nil {
+		if svcConf.Interface == "" {
+			svcConf.Interface = info.InterfaceName
+		}
+		newSvcOpts.info = info
+	}
+	newSvcOpts.Id = interfaceName
 	newSvcOpts.Implement(handler)
+	newSvcOpts.info = enhanceServiceInfo(info)
 	return newSvcOpts, nil
 }
 
-func (s *Server) exportServices() (err error) {
-	s.svcOptsMap.Range(func(svcOptsRaw, infoRaw any) bool {
-		svcOpts := svcOptsRaw.(*ServiceOptions)
-		if info, ok := infoRaw.(*common.ServiceInfo); !ok || info == nil {
-			err = svcOpts.ExportWithoutInfo()
-		} else {
-			// Add a method with a name of a different first-letter case
-			// to achieve interoperability with java
-			// TODO: The method name case sensitivity in Dubbo-java should be addressed.
-			// We ought to make changes to handle this issue.
-			var additionalMethods []common.MethodInfo
-			for _, method := range info.Methods {
-				newMethod := method
-				newMethod.Name = dubboutil.SwapCaseFirstRune(method.Name)
-				additionalMethods = append(additionalMethods, newMethod)
-			}
+// Add a method with a name of a different first-letter case
+// to achieve interoperability with java
+// TODO: The method name case sensitivity in Dubbo-java should be addressed.
+// We ought to make changes to handle this issue.
+func enhanceServiceInfo(info *common.ServiceInfo) *common.ServiceInfo {
+	if info == nil {
+		return info
+	}
+	var additionalMethods []common.MethodInfo
+	for _, method := range info.Methods {
+		newMethod := method
+		newMethod.Name = dubboutil.SwapCaseFirstRune(method.Name)
+		additionalMethods = append(additionalMethods, newMethod)
+	}
+	info.Methods = append(info.Methods, additionalMethods...)
+	return info
+}
 
-			info.Methods = append(info.Methods, additionalMethods...)
-
-			err = svcOpts.ExportWithInfo(info)
-		}
-		if err != nil {
+func (s *Server) exportServices() error {
+	for _, svcOpts := range s.svcOptsMap {
+		if err := svcOpts.Export(); err != nil {
 			logger.Errorf("export %s service failed, err: %s", svcOpts.Service.Interface, err)
-			return false
+			return errors.Wrapf(err, "failed to export service %s", svcOpts.Service.Interface)
 		}
-		return true
-	})
-	return err
+	}
+	return nil
 }
 
 func (s *Server) Serve() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.serve {
+		return errors.New("server has already been started")
+	}
+	// prevent multiple calls to Serve
+	s.serve = true
 	// the registryConfig in ServiceOptions and ServerOptions all need to init a metadataReporter,
 	// when ServiceOptions.init() is called we don't know if a new registry config is set in the future use serviceOption
 	if err := metadata.InitRegistryMetadataReport(s.cfg.Registries); err != nil {
@@ -221,11 +247,11 @@ func (s *Server) exportInternalServices() error {
 	cfg.Protocols = s.cfg.Protocols
 	cfg.Registries = s.cfg.Registries
 
-	services := make([]*InternalService, 0, len(proServices))
+	services := make([]*InternalService, 0, len(internalProServices))
 
-	proLock.Lock()
-	defer proLock.Unlock()
-	for _, service := range proServices {
+	internalProLock.Lock()
+	defer internalProLock.Unlock()
+	for _, service := range internalProServices {
 		if service.Init == nil {
 			return errors.New("[internal service]internal service init func is empty, please set the init func correctly")
 		}
@@ -234,7 +260,7 @@ func (s *Server) exportInternalServices() error {
 			logger.Infof("[internal service]%s service will not expose", service.Name)
 			continue
 		}
-		newSvcOpts, err := s.genSvcOpts(sd.Handler, sd.Opts...)
+		newSvcOpts, err := s.genSvcOpts(sd.Handler, sd.Info, sd.Opts...)
 		if err != nil {
 			return err
 		}
@@ -251,7 +277,7 @@ func (s *Server) exportInternalServices() error {
 		if service.BeforeExport != nil {
 			service.BeforeExport(service.svcOpts)
 		}
-		err := service.svcOpts.ExportWithInfo(service.info)
+		err := service.svcOpts.Export()
 		if service.AfterExport != nil {
 			service.AfterExport(service.svcOpts, err)
 		}
@@ -313,7 +339,9 @@ func NewServer(opts ...ServerOption) (*Server, error) {
 	}
 
 	srv := &Server{
-		cfg: newSrvOpts,
+		cfg:                   newSrvOpts,
+		svcOptsMap:            make(map[string]*ServiceOptions),
+		interfaceNameServices: make(map[string]*ServiceOptions),
 	}
 	return srv, nil
 }
@@ -323,7 +351,54 @@ func SetProviderServices(sd *InternalService) {
 		logger.Warnf("[internal service]internal name is empty, please set internal name")
 		return
 	}
-	proLock.Lock()
-	defer proLock.Unlock()
-	proServices = append(proServices, sd)
+	internalProLock.Lock()
+	defer internalProLock.Unlock()
+	internalProServices = append(internalProServices, sd)
+}
+
+func (s *Server) registerServiceOptions(serviceOptions *ServiceOptions) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	logger.Infof("A provider service %s was registered successfully.", serviceOptions.Id)
+	s.svcOptsMap[serviceOptions.Id] = serviceOptions
+	if serviceOptions.Service != nil && serviceOptions.Service.Interface != "" {
+		s.interfaceNameServices[serviceOptions.Service.Interface] = serviceOptions
+	}
+}
+
+// GetServiceOptions retrieves the ServiceOptions for a service by its name/ID
+func (s *Server) GetServiceOptions(name string) *ServiceOptions {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.svcOptsMap[name]
+}
+
+// GetServiceInfo retrieves the ServiceInfo for a service by its name/ID
+// Returns nil if the service is not found or has no ServiceInfo
+func (s *Server) GetServiceInfo(name string) *common.ServiceInfo {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if svcOpts, ok := s.svcOptsMap[name]; ok {
+		return svcOpts.info
+	}
+	return nil
+}
+
+// GetRPCService retrieves the RPCService implementation for a service by its name/ID
+// Returns nil if the service is not found or has no RPCService
+func (s *Server) GetRPCService(name string) common.RPCService {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if svcOpts, ok := s.svcOptsMap[name]; ok {
+		return svcOpts.rpcService
+	}
+	return nil
+}
+
+// GetServiceOptionsByInterfaceName retrieves the ServiceOptions for a service by its interface name
+// Returns nil if no service is found with the given interface name
+func (s *Server) GetServiceOptionsByInterfaceName(interfaceName string) *ServiceOptions {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.interfaceNameServices[interfaceName]
 }

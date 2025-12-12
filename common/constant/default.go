@@ -115,6 +115,11 @@ const (
 
 	// graceful shutdown
 	DefaultGracefulShutdownTimeout = 10 * time.Second
+
+	// MaxWheelTimeSpan consumer side max wait time for heartbeat-period
+	MaxWheelTimeSpan = 900e9 // 900s, 15 minute
+	// DefaultHeartbeatTimeout consumer default heartbeat timeout
+	DefaultHeartbeatTimeout = 60 * time.Second
 )
 
 const (

@@ -20,12 +20,17 @@ package dubbo
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strings"
+	"sync"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
+	gr "github.com/dubbogo/gost/runtime"
+
+	"github.com/fsnotify/fsnotify"
 
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/json"
@@ -39,12 +44,27 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/constant/file"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 )
 
 var (
-	defaultActive   = "default"
-	instanceOptions = defaultInstanceOptions()
+	defaultActive        = "default"
+	instanceOptions      = defaultInstanceOptions()
+	instanceOptionsMutex sync.Mutex
+	once                 sync.Once
+	stopOnce             sync.Once
 )
+
+// fileWatcher manages the file watching state and concurrency control
+type fileWatcher struct {
+	stopCh    chan struct{}
+	watcherWg sync.WaitGroup
+	mu        sync.Mutex
+}
+
+var watcher = &fileWatcher{
+	stopCh: make(chan struct{}),
+}
 
 func Load(opts ...LoaderConfOption) error {
 	conf := NewLoaderConf(opts...)
@@ -64,7 +84,91 @@ func Load(opts ...LoaderConfOption) error {
 	}
 
 	instance := &Instance{insOpts: instanceOptions}
+	// start the file watcher
+	once.Do(func() {
+		watcher.watcherWg.Add(1)
+		gr.GoSafely(&watcher.watcherWg, false, func() {
+			watch(conf, watcher.stopCh)
+		}, nil)
+		extension.AddCustomShutdownCallback(func() {
+			StopFileWatcher()
+		})
+	})
 	return instance.start()
+}
+
+func watch(conf *loaderConf, stopCh <-chan struct{}) {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		logger.Errorf("Failed to initialize file watcher, error: %v", err)
+		return
+	}
+	defer watcher.Close()
+
+	err = watcher.Add(conf.path)
+	if err != nil {
+		logger.Errorf("Failed to add file %s to watcher, error: %v", conf.path, err)
+		return
+	}
+
+	for {
+		select {
+		case <-stopCh:
+			logger.Infof("File watcher is stopping...")
+			return
+		case event := <-watcher.Events:
+			if event.Op&fsnotify.Write == fsnotify.Write {
+				logger.Infof("Configuration file %s updated, initiating hot reload...", event.Name)
+				if err := hotUpdateConfig(conf); err != nil {
+					logger.Warnf("Hot reload of configuration failed, error: %v", err)
+				}
+			}
+		case err := <-watcher.Errors:
+			logger.Warnf("File watcher encountered an error: %v", err)
+		}
+	}
+}
+
+func hotUpdateConfig(conf *loaderConf) error {
+	newOpts := defaultInstanceOptions()
+
+	newBytes, err := os.ReadFile(conf.path)
+	if err != nil {
+		return err
+	}
+	oldBytes := conf.bytes
+
+	oldKoan := buildKoanfFromBytes(conf, oldBytes)
+	newKoan := buildKoanfFromBytes(conf, newBytes)
+
+	if !safeChanged(oldKoan, newKoan) {
+		logger.Warnf("Hot reload denied: changes outside allowed hot-reload keys detected")
+		return errors.New("hot reload denied: disallowed configuration changes detected")
+	}
+
+	conf.bytes = newBytes
+
+	koan := newKoan
+	if err := koan.UnmarshalWithConf(newOpts.Prefix(), newOpts, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
+		return err
+	}
+
+	if err := newOpts.init(); err != nil {
+		return err
+	}
+
+	// Any part of the application that accesses instanceOptions directly will now use the new values.
+	instanceOptionsMutex.Lock()
+	instanceOptions = newOpts
+	instanceOptionsMutex.Unlock()
+
+	// Explicitly update logger level after hot reload
+	if ok := logger.SetLoggerLevel(instanceOptions.Logger.Level); !ok {
+		logger.Warnf("Failed to update logger level after hot reload. Logger may not support dynamic level changes.")
+	}
+
+	logger.Infof("Configuration hot reload completed successfully!")
+	return nil
 }
 
 type loaderConf struct {
@@ -335,4 +439,77 @@ func checkPlaceholder(s string) (newKey, defaultValue string) {
 	defaultValue = strings.TrimSpace(s[indexColon+1:])
 
 	return
+}
+
+// StopFileWatcher Stop file listener
+func StopFileWatcher() {
+	logger.Info("Stopping file watcher...")
+	stopOnce.Do(func() {
+		watcher.mu.Lock()
+		defer watcher.mu.Unlock()
+		close(watcher.stopCh)
+	})
+	watcher.watcherWg.Wait()
+	logger.Info("File watcher stopped successfully")
+}
+
+func buildKoanfFromBytes(conf *loaderConf, b []byte) *koanf.Koanf {
+	c := *conf
+	c.bytes = b
+	k := GetConfigResolver(&c)
+	return c.MergeConfig(k)
+}
+
+var hotReloadAllowedPredicates = []func(string) bool{
+	func(k string) bool { return strings.Contains(k, ".logger.") },
+}
+
+func AllowHotReloadPrefix(prefix string) {
+	hotReloadAllowedPredicates = append(hotReloadAllowedPredicates, func(k string) bool { return strings.HasPrefix(k, prefix) })
+}
+
+func AllowHotReloadContains(substr string) {
+	hotReloadAllowedPredicates = append(hotReloadAllowedPredicates, func(k string) bool { return strings.Contains(k, substr) })
+}
+
+func AllowHotReloadExact(key string) {
+	hotReloadAllowedPredicates = append(hotReloadAllowedPredicates, func(k string) bool { return k == key })
+}
+
+func isAllowedKey(key string) bool {
+	for _, p := range hotReloadAllowedPredicates {
+		if p(key) {
+			return true
+		}
+	}
+	return false
+}
+
+func safeChanged(oldK, newK *koanf.Koanf) bool {
+	oldAll := oldK.All()
+	newAll := newK.All()
+
+	keys := make(map[string]struct{}, len(oldAll)+len(newAll))
+	for k := range oldAll {
+		keys[k] = struct{}{}
+	}
+	for k := range newAll {
+		keys[k] = struct{}{}
+	}
+
+	for k := range keys {
+
+		if isAllowedKey(k) {
+			continue
+		}
+		ov, oOk := oldAll[k]
+		nv, nOk := newAll[k]
+		if oOk != nOk {
+			return false
+		}
+		if !reflect.DeepEqual(ov, nv) {
+			return false
+		}
+	}
+	return true
 }

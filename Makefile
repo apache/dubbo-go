@@ -26,7 +26,7 @@ MAKEFLAGS += --no-print-directory
 CLI_DIR = tools/dubbogo-cli
 IMPORTS_FORMATTER_DIR = tools/imports-formatter
 
-.PHONY: help test fmt clean lint
+.PHONY: help test fmt clean lint check-fmt
 
 help:
 	@echo "Available commands:"
@@ -45,6 +45,18 @@ fmt: install-imports-formatter
 	go run golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@latest -category=efaceany -fix -test ./...
 	go fmt ./... && GOROOT=$(shell go env GOROOT) imports-formatter
 	cd $(CLI_DIR) && go fmt ./...
+
+# This command is used in CI to verify that code formatting is correct
+check-fmt:
+	@echo "Checking code format..."
+	@$(MAKE) fmt
+	@if ! git diff --exit-code --quiet; then \
+		echo "Error: The following files have formatting changes:"; \
+		git diff --name-only; \
+		echo ""; \
+		echo "Please run 'make fmt' to fix formatting issues and commit the changes."; \
+		exit 1; \
+	fi
 
 # Clean test generate files
 clean:

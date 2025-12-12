@@ -27,10 +27,13 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
-func TestInitServer(t *testing.T) {
+// TODO: Temporary compatibility with old APIs, can be removed later
+func TestInitServerOldApi(t *testing.T) {
 	originRootConf := config.GetRootConfig()
 	rootConf := config.RootConfig{
 		Protocols: map[string]*config.ProtocolConfig{
@@ -47,4 +50,18 @@ func TestInitServer(t *testing.T) {
 	initServer(url)
 	config.SetRootConfig(*originRootConf)
 	assert.NotNil(t, srvConf)
+}
+
+func TestInitServer(t *testing.T) {
+	url, err := common.NewURL("dubbo://127.0.0.1:20003/test")
+	assert.Nil(t, err)
+	url.SetAttribute(constant.ProtocolConfigKey, map[string]*global.ProtocolConfig{
+		"dubbo": {
+			Name: "dubbo",
+			Ip:   "127.0.0.1",
+			Port: "20003",
+		},
+	})
+	url.SetAttribute(constant.ApplicationKey, global.ApplicationConfig{})
+	initServer(url)
 }
