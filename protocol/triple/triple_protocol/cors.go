@@ -30,6 +30,10 @@ import (
 	"github.com/dubbogo/gost/log/logger"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+)
+
 // originPattern represents a pre-compiled origin matching pattern.
 type originPattern struct {
 	scheme      string // empty means any scheme
@@ -55,6 +59,7 @@ type corsPolicy struct {
 	CorsConfig       // embed public config to avoid duplication
 	hasWildcard      bool
 	compiledPatterns []originPattern // pre-compiled patterns for fast matching
+
 	// Pre-computed header values to avoid repeated strings.Join calls
 	prebuiltAllowMethods  string
 	prebuiltAllowHeaders  string
@@ -62,13 +67,9 @@ type corsPolicy struct {
 }
 
 const (
-	defaultPreflightMaxAge = 86400 // 24 hours in seconds
-	wildcardOrigin         = "*"
-	defaultHTTPPort        = "80"
-	defaultHTTPSPort       = "443"
-)
+	defaultHTTPPort  = "80"
+	defaultHTTPSPort = "443"
 
-const (
 	corsOrigin           = "Origin"
 	corsVary             = "Vary"
 	corsAllowOrigin      = "Access-Control-Allow-Origin"
@@ -117,13 +118,6 @@ func buildCorsPolicy(cfg *corsPolicy, handlers []protocolHandler) *corsPolicy {
 	built.prebuiltAllowHeaders = strings.Join(built.AllowHeaders, ", ")
 	built.prebuiltExposeHeaders = strings.Join(built.ExposeHeaders, ", ")
 
-	// maxAge < 0: invalid, use default value
-	// maxAge == 0: disable caching (don't send header)
-	// maxAge > 0: use configured value
-	if built.MaxAge < 0 {
-		built.MaxAge = defaultPreflightMaxAge
-	}
-
 	return built
 }
 
@@ -134,7 +128,7 @@ func (c *corsPolicy) checkHasWildcard() bool {
 		return false
 	}
 	for _, origin := range c.AllowOrigins {
-		if origin == wildcardOrigin {
+		if origin == constant.AnyValue {
 			return true
 		}
 	}
@@ -204,7 +198,7 @@ func (c *corsPolicy) compilePatterns() []originPattern {
 // newOriginPattern parses an origin string into a compiled pattern.
 func newOriginPattern(origin string) *originPattern {
 	p := &originPattern{}
-	if origin == wildcardOrigin {
+	if origin == constant.AnyValue {
 		p.isWildcard = true
 		p.raw = origin
 		return p
@@ -214,10 +208,11 @@ func newOriginPattern(origin string) *originPattern {
 	u, err := url.Parse(origin)
 	if err == nil && u.Host != "" {
 		hostname := u.Hostname()
-		port := p.canonicalPort(u.Port(), u.Scheme)
+		scheme := strings.ToLower(u.Scheme)
+		port := p.canonicalPort(u.Port(), scheme)
 		isSubdomain := strings.HasPrefix(hostname, "*.")
 
-		p.scheme = u.Scheme
+		p.scheme = scheme
 		if isSubdomain {
 			p.host = hostname[2:] // Remove "*." prefix
 			p.isSubdomain = true
@@ -318,7 +313,7 @@ func (p *originPattern) matchPort(reqPort, reqScheme string) bool {
 	}
 
 	if p.scheme == "" {
-		return p.canonicalPort(p.port, reqScheme) == reqPort
+		return p.port == reqPort
 	}
 	return p.port == reqPort
 }
@@ -350,7 +345,7 @@ func (c *corsPolicy) matchOrigin(origin string) bool {
 		return false
 	}
 
-	reqScheme := originURL.Scheme
+	reqScheme := strings.ToLower(originURL.Scheme)
 	reqHostname := originURL.Hostname()
 	var tmp originPattern
 	reqPort := tmp.canonicalPort(originURL.Port(), reqScheme)
@@ -462,7 +457,7 @@ func (c *corsPolicy) applyCORSOrigin(w http.ResponseWriter, origin string) {
 		w.Header().Add(corsVary, corsOrigin)
 		w.Header().Set(corsAllowCredentials, "true")
 	case c.hasWildcard:
-		w.Header().Set(corsAllowOrigin, wildcardOrigin)
+		w.Header().Set(corsAllowOrigin, constant.AnyValue)
 	default:
 		w.Header().Set(corsAllowOrigin, origin)
 		w.Header().Add(corsVary, corsOrigin)

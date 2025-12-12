@@ -41,8 +41,8 @@ type CorsConfig struct {
 	AllowCredentials bool `yaml:"allow-credentials" json:"allow-credentials,omitempty"`
 
 	// MaxAge specifies the maximum age (in seconds) for preflight cache.
-	// If negative, defaults to 86400 (24 hours).
-	// If zero, disables caching (no Access-Control-Max-Age header will be sent).
+	// Must be non-negative. If zero, disables caching (no Access-Control-Max-Age header will be sent).
+	// If positive, specifies the cache duration in seconds.
 	MaxAge int `yaml:"max-age" json:"max-age,omitempty"`
 }
 

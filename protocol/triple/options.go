@@ -19,6 +19,9 @@ package triple
 
 import (
 	"errors"
+	"net/http"
+	"net/url"
+	"strings"
 	"time"
 )
 
@@ -187,10 +190,6 @@ func Http3Negotiation(negotiation bool) Option {
 // CORSOption configures a single aspect of CORS.
 type CORSOption func(*global.CorsConfig)
 
-var (
-	errWildcardOriginWithCookies = errors.New("allowCredentials cannot be true when allow-origins contains \"*\"")
-)
-
 // CORSAllowOrigins sets allowed origins for CORS requests.
 func CORSAllowOrigins(origins ...string) CORSOption {
 	return func(c *global.CorsConfig) {
@@ -233,16 +232,112 @@ func CORSMaxAge(maxAge int) CORSOption {
 	}
 }
 
-// validateCorsConfig validates CORS configuration for unsafe combinations.
-// CORS spec requires that when allowCredentials is true, Access-Control-Allow-Origin
-// cannot be "*" (must be a specific origin).
+// validateCorsConfig validates CORS configuration.
 func validateCorsConfig(cors *global.CorsConfig) error {
-	if cors != nil && cors.AllowCredentials {
-		for _, origin := range cors.AllowOrigins {
-			if origin == "*" {
-				return errWildcardOriginWithCookies
-			}
+	if cors == nil {
+		return nil
+	}
+
+	for _, origin := range cors.AllowOrigins {
+		if origin == "" {
+			return errors.New("allow-origins cannot contain empty string")
+		}
+		if err := validateOrigin(origin); err != nil {
+			return err
+		}
+		if cors.AllowCredentials && origin == "*" {
+			return errors.New("allowCredentials cannot be true when allow-origins contains \"*\"")
 		}
 	}
+
+	for _, method := range cors.AllowMethods {
+		if method == "" {
+			return errors.New("allow-methods cannot contain empty string")
+		}
+		if !isValidHTTPMethod(method) {
+			return errors.New("allow-methods contains invalid HTTP method")
+		}
+	}
+
+	for _, header := range cors.AllowHeaders {
+		if strings.TrimSpace(header) == "" {
+			return errors.New("allow-headers cannot contain empty string")
+		}
+	}
+
+	for _, header := range cors.ExposeHeaders {
+		if strings.TrimSpace(header) == "" {
+			return errors.New("expose-headers cannot contain empty string")
+		}
+	}
+
+	if cors.MaxAge < 0 {
+		return errors.New("max-age cannot be negative")
+	}
+
 	return nil
+}
+
+func validateOrigin(origin string) error {
+	if origin == "*" {
+		return nil
+	}
+
+	if strings.Contains(origin, "*") {
+		if !strings.HasPrefix(origin, "*.") && !strings.Contains(origin, "://*.") {
+			return errors.New("wildcard must be at start: '*.domain' or 'scheme://*.domain'")
+		}
+		var domainPart string
+		if strings.Contains(origin, "://*.") {
+			parts := strings.Split(origin, "://*.")
+			if len(parts) != 2 || parts[1] == "" {
+				return errors.New("invalid subdomain wildcard format")
+			}
+			domainPart = parts[1]
+		} else {
+			domainPart = origin[2:]
+			if domainPart == "" {
+				return errors.New("invalid subdomain wildcard format")
+			}
+		}
+		if strings.Contains(domainPart, "*") {
+			return errors.New("only single wildcard at subdomain level is allowed")
+		}
+		return nil
+	}
+
+	if strings.Contains(origin, "://") {
+		u, err := url.Parse(origin)
+		if err != nil || u.Scheme == "" || u.Host == "" {
+			return errors.New("invalid URL format")
+		}
+		return nil
+	}
+
+	if strings.ContainsAny(origin, " \t\n\r") {
+		return errors.New("origin contains whitespace")
+	}
+
+	return nil
+}
+
+func isValidHTTPMethod(method string) bool {
+	if method == "" {
+		return false
+	}
+
+	methodUpper := strings.ToUpper(method)
+	validMethods := map[string]bool{
+		http.MethodGet:     true,
+		http.MethodHead:    true,
+		http.MethodPost:    true,
+		http.MethodPut:     true,
+		http.MethodPatch:   true,
+		http.MethodDelete:  true,
+		http.MethodConnect: true,
+		http.MethodOptions: true,
+		http.MethodTrace:   true,
+	}
+
+	return validMethods[methodUpper]
 }

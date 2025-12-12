@@ -331,12 +331,6 @@ func TestBuildCorsPolicyMaxAge(t *testing.T) {
 	}), nil)
 	// maxAge == 0 means disable caching, should remain 0
 	assert.Equal(t, p2.MaxAge, 0)
-	p3 := buildCorsPolicy(convertCorsConfigForTest(&global.CorsConfig{
-		AllowOrigins: []string{"https://a.com"},
-		MaxAge:       -1,
-	}), nil)
-	// maxAge < 0 should use default value
-	assert.Equal(t, p3.MaxAge, defaultPreflightMaxAge)
 }
 
 func TestBuildCorsPolicyMethodsFallback(t *testing.T) {
