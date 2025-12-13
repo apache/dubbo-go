@@ -59,7 +59,7 @@ type serviceDiscoveryRegistry struct {
 	lock                    sync.RWMutex
 	url                     *common.URL
 	serviceDiscovery        registry.ServiceDiscovery
-	instance                registry.ServiceInstance
+	instances               []registry.ServiceInstance
 	serviceNameMapping      mapping.ServiceNameMapping
 	metadataReport          report.MetadataReport
 	serviceListeners        map[string]registry.ServiceInstancesChangedListener
@@ -104,6 +104,7 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 		if err != nil {
 			return perrors.WithMessage(err, "Register service failed")
 		}
+		s.instances = append(s.instances, instance)
 	}
 	return nil
 }
@@ -133,13 +134,19 @@ func createInstance(meta *info.MetadataInfo, url *common.URL) registry.ServiceIn
 }
 
 func (s *serviceDiscoveryRegistry) UnRegisterService() error {
-	return s.serviceDiscovery.Unregister(s.instance)
+	for _, v := range s.instances {
+		if err := s.serviceDiscovery.Unregister(v); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (s *serviceDiscoveryRegistry) UnRegister(url *common.URL) error {
 	if !shouldRegister(url) {
 		return nil
 	}
+	s.UnRegisterService()
 	return nil
 }
 
@@ -170,7 +177,7 @@ func parseServices(literalServices string) *gxset.HashSet {
 	if len(literalServices) == 0 {
 		return set
 	}
-	var splitServices = strings.Split(literalServices, ",")
+	splitServices := strings.Split(literalServices, ",")
 	for _, s := range splitServices {
 		if len(s) != 0 {
 			set.Add(s)
