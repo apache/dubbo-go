@@ -23,16 +23,10 @@ import (
 	"strings"
 	"sync"
 	"time"
-)
 
-import (
 	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/log/logger"
 
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -41,9 +35,13 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
+	perrors "github.com/pkg/errors"
+
 	metricsMetadata "dubbo.apache.org/dubbo-go/v3/metrics/metadata"
+
 	metricsRegistry "dubbo.apache.org/dubbo-go/v3/metrics/registry"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+
 	_ "dubbo.apache.org/dubbo-go/v3/registry/servicediscovery/customizer"
 )
 
@@ -137,7 +135,7 @@ func createInstance(meta *info.MetadataInfo, url *common.URL) registry.ServiceIn
 func (s *serviceDiscoveryRegistry) UnRegisterService() error {
 	var (
 		keep = s.instances[:0]
-		errs = make([]error, 0)
+		errs []error
 	)
 
 	for _, v := range s.instances {
