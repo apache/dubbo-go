@@ -1,6 +1,74 @@
 
 # Release Notes
 ---
+
+## 3.3.1
+## Summary
+
+**v3.3.1** introduces significant enhancements to the **Triple protocol** (including experimental HTTP/3 support), stability improvements for **Configuration & Registry centers** (Nacos, Apollo, Zookeeper), and major **refactoring and performance optimizations** of the core modules. This release also includes adaptation for Go 1.24.
+
+### 🚀 New Features
+
+#### Triple Protocol Enhancements
+* **HTTP/3 Support**: Added experimental support for HTTP/3 in the Triple protocol (#2916).
+* **Dual Protocol Concurrency**: Supported starting both HTTP/3 and HTTP/2 servers simultaneously (#2972).
+* **Generic Call**: Added support for generic calls in the new Triple protocol (#2818).
+* **Non-IDL Mode**: Supported Non-IDL mode for the new Triple implementation (#2858).
+* **TLS Updates**: Implemented new Triple TLS configuration (#2852) and redesigned the TLS API (#2891).
+* **OpenAPI**: Added tooling support to generate OpenAPI documentation for the Triple protocol (#2951).
+
+#### Configuration & Registry
+* **Apollo Support**: Added support for the Apollo configuration center (#2857).
+* **Nacos Improvements**:
+    * Fixed an issue where Nacos weights did not work (#2937).
+    * Resolved Nacos instance overwrite issues (#2882).
+    * Fixed an issue where new services were not detected during subscription (#2859).
+* **Zookeeper Improvements**: Optimized the distinction between empty and non-existent nodes, and downgraded empty node error logs to Warn level (#3059).
+* **Hot Loading**: Implemented configuration hot-loading capability (#2992).
+
+#### Observability
+* **OpenTelemetry**: Upgraded OTel dependencies to v1.21.0 (#2971), adjusted Trace Scope names to align with OTel specs (#3041), and added an `Insecure` option to tracing configuration (#3028).
+* **Service Logging**: Implemented logging for the service registration process (#3043).
+
+#### Other Features
+* **Go Version**: Updated Go version support to 1.24 and removed deprecated `rand.seed` usage (#3046).
+* **Router API**: Exposed Router-related APIs (#3066) and allowed group/version wildcards for exact interface matches (#3080).
+* **Tooling**: Added an `imports formatter` tool (#3019) and integrated it into CI checks.
+
+### 💡 Refactoring & Improvements
+
+* **Config Decoupling**: Massive code refactoring moving dependencies from the `config` package to the `global` package or protocol-specific configurations to resolve circular dependencies (affecting registry, filter, tls, graceful_shutdown, etc.).
+* **Logger Refactoring**: Refactored the logger module (#2838) and added comprehensive unit tests (#2993).
+* **Makefile**: Completely rewrote the Makefile to improve the build experience and standardization (#2975).
+* **CAS Optimization**: Replaced deprecated CAS operations with `CompareAndSwap` (#2962).
+* **Graceful Shutdown**: Added timeout control for Triple protocol graceful shutdown (#2943) and utilized `errgroup` for handling stop errors (#2973).
+* **Memory Optimization**: Resolved memory leaks in Goroutine management, file handles, and extension caches (#3023).
+
+### 🐛 Bug Fixes
+
+* **Stability**:
+    * Replaced panic with error handling for cluster extension failures (#3021, #3064).
+    * Fixed logical dead loops (#2879).
+    * Fixed URL parameter loss in the `SetParams` method (#3022).
+* **Triple/Communication**:
+    * Fixed issues where clients failed to receive attachments from server responses (#2928, #2854).
+    * Fixed Context Attachment error handling in Triple protocol streaming calls (#2810).
+    * Fixed read prefix EOF errors (#2912).
+* **Logging & Misc**:
+    * Fixed incorrect log rotation paths to prevent file loss (#3014).
+    * Changed log level from Error to Warn when application parameters are empty in Tag Router (#3035).
+    * Fixed latency issues in Zookeeper client node perception (#2930).
+
+### 📚 Documentation & CI
+
+* **CI Enhancements**: Added `make check-fmt` (#3055), License header checks (#2957), and import-formatter checks (#2961).
+* **Docs Updates**: Updated README contact info, fixed invalid links in README_CN, and updated `protoc-gen-go-triple` documentation.
+* **SonarQube**: Fixed and suppressed various SonarQube/SonarCloud false positives and AI bot warnings.
+
+**Contributors:**
+Thanks to the following contributors for making this release possible:
+@1kasa, @97ZQ, @ALSoryu, @Akashisang, @Alanxtl, @AlexStocks, @CAICAIIs, @Flying-Tom, @FoghostCn, @HSenCode, @KamToHung, @MinatoWu, @MrSibe, @Nexusrex18, @No-SilverBullet, @Rinai-R, @Similarityoung, @Snow-kal, @WangzJi, @Whitea029, @ayamzh, @baerwang, @dongjiang1989, @evanzhang87, @flypiggyyoyoyo, @hs80, @liushiqi1001, @manzhizhen, @marsevilspirit, @nanjiek, @phpcyy, @sebbASF, @wqyenjoy, @xuzhijvn, @yumosx, @yxrxy, @zbchi, and @ziyyun.
+
 ## 3.3.0
 ## Summary
 
