@@ -18,6 +18,7 @@
 package servicediscovery
 
 import (
+	"errors"
 	"strconv"
 	"strings"
 	"sync"
@@ -134,11 +135,24 @@ func createInstance(meta *info.MetadataInfo, url *common.URL) registry.ServiceIn
 }
 
 func (s *serviceDiscoveryRegistry) UnRegisterService() error {
+	var (
+		keep = s.instances[:0]
+		errs = make([]error, 0)
+	)
+
 	for _, v := range s.instances {
 		if err := s.serviceDiscovery.Unregister(v); err != nil {
-			return err
+			// fail to unregister
+			keep = append(keep, v)
+			errs = append(errs, err)
 		}
 	}
+
+	s.instances = keep
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+
 	return nil
 }
 
