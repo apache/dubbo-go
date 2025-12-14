@@ -149,11 +149,7 @@ func (s *serviceDiscoveryRegistry) UnRegisterService() error {
 	}
 
 	s.instances = keep
-	if len(errs) > 0 {
-		return errors.Join(errs...)
-	}
-
-	return nil
+	return errors.Join(errs...)
 }
 
 func (s *serviceDiscoveryRegistry) UnRegister(url *common.URL) error {
