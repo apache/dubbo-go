@@ -19,6 +19,7 @@ package random
 
 import (
 	"math/rand"
+	"sort"
 )
 
 import (
@@ -70,11 +71,21 @@ func (lb *randomLoadBalance) Select(invokers []base.Invoker, invocation base.Inv
 	if totalWeight > 0 && !sameWeight {
 		// If (not every invoker has the same weight & at least one invoker's weight>0), select randomly based on totalWeight.
 		offset := rand.Int63n(totalWeight)
-
-		for i := 0; i < length; i++ {
-			if offset < weights[i] {
-				return invokers[i]
+		if length <= 4 {
+			for i := 0; i < length; i++ {
+				if offset < weights[i] {
+					return invokers[i]
+				}
 			}
+		} else {
+			idx := sort.Search(len(weights), func(i int) bool { return weights[i] >= offset })
+			if idx < length && weights[idx] == offset {
+				for idx+1 < length && weights[idx+1] == offset {
+					idx++
+				}
+				idx++
+			}
+			return invokers[idx]
 		}
 	}
 	// If all invokers have the same weight value or totalWeight=0, return evenly.
