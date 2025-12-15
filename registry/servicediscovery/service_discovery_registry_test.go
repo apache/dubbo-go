@@ -143,7 +143,7 @@ func TestServiceDiscoveryRegistryUnSubscribe(t *testing.T) {
 }
 
 // setupEnvironment initializes the test environment.
-func setupEnvironment(t *testing.T) (*mockServiceDiscovery, *mockServiceNameMapping) {
+func setupEnvironment(_ *testing.T) (*mockServiceDiscovery, *mockServiceNameMapping) {
 	appConfig := global.DefaultApplicationConfig()
 	appConfig.Name = testApp
 
