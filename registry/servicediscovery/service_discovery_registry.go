@@ -138,14 +138,13 @@ func createInstance(meta *info.MetadataInfo, url *common.URL) registry.ServiceIn
 
 func (s *serviceDiscoveryRegistry) UnRegisterService() error {
 	s.lock.Lock()
-	defer s.lock.Unlock()
+	keep := s.instances[:0]
+	origin := s.instances[:]
+	s.lock.Unlock()
 
-	var (
-		keep = s.instances[:0]
-		errs []error
-	)
+	var errs []error
 
-	for _, v := range s.instances {
+	for _, v := range origin {
 		if err := s.serviceDiscovery.Unregister(v); err != nil {
 			// fail to unregister
 			keep = append(keep, v)
@@ -153,7 +152,9 @@ func (s *serviceDiscoveryRegistry) UnRegisterService() error {
 		}
 	}
 
+	s.lock.Lock()
 	s.instances = keep
+	s.lock.Unlock()
 	return errors.Join(errs...)
 }
 
