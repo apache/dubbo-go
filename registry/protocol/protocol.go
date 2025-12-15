@@ -22,21 +22,17 @@ import (
 	"strings"
 	"sync"
 	"time"
-)
 
-import (
 	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/log/logger"
 
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
+	perrors "github.com/pkg/errors"
+
 	_ "dubbo.apache.org/dubbo-go/v3/config_center/configurator"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
@@ -161,7 +157,6 @@ func (proto *registryProtocol) Refer(url *common.URL) base.Invoker {
 
 	// This will start a new routine and listen to instance changes.
 	err = dic.Subscribe(registryUrl.SubURL)
-
 	if err != nil {
 		logger.Errorf("consumer service %v register registry %v error, error message is %s",
 			serviceUrl.String(), registryUrl.String(), err.Error())
@@ -226,7 +221,7 @@ func (proto *registryProtocol) Export(originInvoker base.Invoker) base.Exporter 
 	exporter := proto.doLocalExport(originInvoker, providerUrl)
 
 	// update health status
-	//health.SetServingStatusServing(registryUrl.Service())
+	// health.SetServingStatusServing(registryUrl.Service())
 
 	if len(registryUrl.Protocol) > 0 {
 		// url to registry
@@ -291,7 +286,7 @@ func registerServiceMap(invoker base.Invoker) error {
 	// such as dubbo://:20000/org.apache.dubbo.UserProvider?bean.name=UserProvider&cluster=failfast...
 	id := providerUrl.GetParam(constant.BeanNameKey, "")
 
-	//TODO: Temporary compatibility with old APIs, can be removed later
+	// TODO: Temporary compatibility with old APIs, can be removed later
 
 	providerConfig := config.GetProviderConfig()
 
@@ -462,7 +457,7 @@ func (proto *registryProtocol) Destroy() {
 		exporter := value.(*exporterChangeableWrapper)
 		reg := proto.getRegistry(getRegistryUrl(exporter.originInvoker))
 		if err := reg.UnRegister(exporter.registerUrl); err != nil {
-			panic(err)
+			logger.Warnf("Unregister consumer url failed, %s, error: %w", exporter.registerUrl.String(), err)
 		}
 		// TODO unsubscribeUrl
 
@@ -486,7 +481,6 @@ func (proto *registryProtocol) Destroy() {
 					return
 				}
 			}
-
 		}()
 		return true
 	})

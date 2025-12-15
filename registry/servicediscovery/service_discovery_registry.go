@@ -23,16 +23,10 @@ import (
 	"strings"
 	"sync"
 	"time"
-)
 
-import (
 	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/log/logger"
 
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -41,9 +35,13 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
+	perrors "github.com/pkg/errors"
+
 	metricsMetadata "dubbo.apache.org/dubbo-go/v3/metrics/metadata"
+
 	metricsRegistry "dubbo.apache.org/dubbo-go/v3/metrics/registry"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+
 	_ "dubbo.apache.org/dubbo-go/v3/registry/servicediscovery/customizer"
 )
 
@@ -105,7 +103,9 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 		if err != nil {
 			return perrors.WithMessage(err, "Register service failed")
 		}
+		s.lock.Lock()
 		s.instances = append(s.instances, instance)
+		s.lock.Unlock()
 	}
 	return nil
 }
@@ -135,6 +135,9 @@ func createInstance(meta *info.MetadataInfo, url *common.URL) registry.ServiceIn
 }
 
 func (s *serviceDiscoveryRegistry) UnRegisterService() error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
 	var (
 		keep = s.instances[:0]
 		errs []error
@@ -156,8 +159,7 @@ func (s *serviceDiscoveryRegistry) UnRegister(url *common.URL) error {
 	if !shouldRegister(url) {
 		return nil
 	}
-	s.UnRegisterService()
-	return nil
+	return s.UnRegisterService()
 }
 
 func (s *serviceDiscoveryRegistry) UnSubscribe(url *common.URL, listener registry.NotifyListener) error {
