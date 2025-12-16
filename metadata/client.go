@@ -154,18 +154,13 @@ func (m *remoteMetadataServiceV1) getMetadataInfo(ctx context.Context, revision 
 	var rawResult interface{}
 	inv, _ := generateInvocation(m.invoker.GetURL(), methodName, revision, &rawResult, constant.CallUnary)
 
-	logger.Debugf("[MetadataRPC] Calling %s on provider %s, revision: %s", methodName, m.invoker.GetURL().Location, revision)
-
 	res := m.invoker.Invoke(context.Background(), inv)
 	if res.Error() != nil {
 		logger.Errorf("[MetadataRPC] RPC call failed to %s: %v", m.invoker.GetURL().Location, res.Error())
 		return nil, res.Error()
 	}
 
-	logger.Debugf("[MetadataRPC] RPC call succeeded to %s, checking result type", m.invoker.GetURL().Location)
-
 	// rawResult now contains the deserialized value - could be *MetadataInfo, string, or nil
-	logger.Debugf("[MetadataRPC] Result type: %T, result value: %+v", rawResult, rawResult)
 
 	// Handle nil response (e.g., Java service not fully initialized)
 	if rawResult == nil {
@@ -178,14 +173,11 @@ func (m *remoteMetadataServiceV1) getMetadataInfo(ctx context.Context, revision 
 
 	// Try to handle different return types from Java Dubbo
 	if result, ok := rawResult.(*info.MetadataInfo); ok {
-		logger.Debugf("[MetadataRPC] Type assertion succeeded, got %d services", len(result.Services))
 		metadataInfo = result
 	} else if strValue, ok := rawResult.(string); ok {
 		// Old Java Dubbo version returns JSON string instead of MetadataInfo object
 		// Try to parse it as JSON for backward compatibility
 		logger.Warnf("[MetadataRPC] Provider %s returned string type (old Dubbo version), attempting JSON parse", m.invoker.GetURL().Location)
-		logger.Debugf("[MetadataRPC]   - String length: %d", len(strValue))
-		logger.Debugf("[MetadataRPC]   - String preview (first 500 chars): %s", truncateString(strValue, 500))
 
 		metadataInfo = &info.MetadataInfo{}
 		if err := json.Unmarshal([]byte(strValue), metadataInfo); err != nil {
@@ -194,22 +186,14 @@ func (m *remoteMetadataServiceV1) getMetadataInfo(ctx context.Context, revision 
 			return nil, perrors.Errorf("failed to parse metadata JSON from %s: %v", m.invoker.GetURL().Location, err)
 		}
 
-		logger.Infof("[MetadataRPC] Successfully parsed metadata JSON from old Dubbo provider %s, got %d services",
-			m.invoker.GetURL().Location, len(metadataInfo.Services))
 	} else {
 		// Neither MetadataInfo nor String - this is unexpected
-		logger.Errorf("[MetadataRPC] Unexpected metadata type from provider %s:", m.invoker.GetURL().Location)
-		logger.Errorf("[MetadataRPC]   - Expected type: *info.MetadataInfo or string")
-		logger.Errorf("[MetadataRPC]   - Actual type: %T", rawResult)
-		logger.Errorf("[MetadataRPC]   - Actual value: %+v", rawResult)
-		logger.Errorf("[MetadataRPC]   - Provider URL: %s", m.invoker.GetURL().String())
-		logger.Errorf("[MetadataRPC]   - Revision: %s", revision)
-
+		logger.Errorf("[MetadataRPC] Unexpected metadata type from %s: got %T, expected *info.MetadataInfo or string",
+			m.invoker.GetURL().Location, rawResult)
 		return nil, perrors.Errorf("unexpected metadata type from %s: got %T, expected *info.MetadataInfo or string",
 			m.invoker.GetURL().Location, rawResult)
 	}
 
-	logger.Debugf("[MetadataRPC] Successfully got metadata from %s with %d services", m.invoker.GetURL().Location, len(metadataInfo.Services))
 	return metadataInfo, nil
 }
 
