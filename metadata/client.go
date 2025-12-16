@@ -151,7 +151,7 @@ func (m *remoteMetadataServiceV1) getMetadataInfo(ctx context.Context, revision 
 	const methodName = "getMetadataInfo"
 	// Use interface{} as reply parameter to accept any type (MetadataInfo or string)
 	// This avoids panic when Java returns String instead of MetadataInfo
-	var rawResult interface{}
+	var rawResult any
 	inv, _ := generateInvocation(m.invoker.GetURL(), methodName, revision, &rawResult, constant.CallUnary)
 
 	res := m.invoker.Invoke(context.Background(), inv)

@@ -281,7 +281,7 @@ func (m *mockInvoker) Invoke(ctx context.Context, inv base.Invocation) result.Re
 
 	// Handle both *info.MetadataInfo and *interface{} reply types
 	// This supports the new implementation that uses interface{} to handle different return types
-	if replyPtr, ok := inv.Reply().(*interface{}); ok {
+	if replyPtr, ok := inv.Reply().(*any); ok {
 		// New code path: reply is *interface{}, set it to point to the metadata
 		*replyPtr = res.Result().(*info.MetadataInfo)
 	} else if reply, ok := inv.Reply().(*info.MetadataInfo); ok {
