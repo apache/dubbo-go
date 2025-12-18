@@ -277,13 +277,23 @@ func (m *mockInvoker) Destroy() {
 
 func (m *mockInvoker) Invoke(ctx context.Context, inv base.Invocation) result.Result {
 	args := m.Called()
-	meta := args.Get(0).(result.Result).Result().(*info.MetadataInfo)
-	reply := inv.Reply().(*info.MetadataInfo)
-	reply.App = meta.App
-	reply.Tag = meta.Tag
-	reply.Revision = meta.Revision
-	reply.Services = meta.Services
-	return args.Get(0).(result.Result)
+	res := args.Get(0).(result.Result)
+
+	// Handle both *info.MetadataInfo and *interface{} reply types
+	// This supports the new implementation that uses interface{} to handle different return types
+	if replyPtr, ok := inv.Reply().(*any); ok {
+		// New code path: reply is *interface{}, set it to point to the metadata
+		*replyPtr = res.Result().(*info.MetadataInfo)
+	} else if reply, ok := inv.Reply().(*info.MetadataInfo); ok {
+		// Old code path: reply is *info.MetadataInfo, copy fields
+		meta := res.Result().(*info.MetadataInfo)
+		reply.App = meta.App
+		reply.Tag = meta.Tag
+		reply.Revision = meta.Revision
+		reply.Services = meta.Services
+	}
+
+	return res
 }
 
 type mockExporter struct {
