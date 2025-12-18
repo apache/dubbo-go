@@ -60,6 +60,12 @@ const (
 	PingServiceCumSumProcedure = "/connect.ping.v1.PingService/CumSum"
 )
 
+// serviceBaseURL returns the service-level base path without the method suffix.
+func serviceBaseURL(baseURL string) string {
+	baseURL = strings.TrimRight(baseURL, "/")
+	return baseURL + "/" + PingServiceName
+}
+
 // PingServiceClient is a client for the connect.ping.v1.PingService service.
 type PingServiceClient interface {
 	// Ping sends a ping to the server to determine if it's reachable.
@@ -82,32 +88,32 @@ type PingServiceClient interface {
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
 func NewPingServiceClient(httpClient triple_protocol.HTTPClient, baseURL string, opts ...triple_protocol.ClientOption) PingServiceClient {
-	baseURL = strings.TrimRight(baseURL, "/")
+	serviceBase := serviceBaseURL(baseURL)
 	return &pingServiceClient{
 		ping: triple_protocol.NewClient(
 			httpClient,
-			baseURL+PingServicePingProcedure,
+			serviceBase,
 			triple_protocol.WithIdempotency(triple_protocol.IdempotencyNoSideEffects),
 			triple_protocol.WithClientOptions(opts...),
 		),
 		fail: triple_protocol.NewClient(
 			httpClient,
-			baseURL+PingServiceFailProcedure,
+			serviceBase,
 			opts...,
 		),
 		sum: triple_protocol.NewClient(
 			httpClient,
-			baseURL+PingServiceSumProcedure,
+			serviceBase,
 			opts...,
 		),
 		countUp: triple_protocol.NewClient(
 			httpClient,
-			baseURL+PingServiceCountUpProcedure,
+			serviceBase,
 			opts...,
 		),
 		cumSum: triple_protocol.NewClient(
 			httpClient,
-			baseURL+PingServiceCumSumProcedure,
+			serviceBase,
 			opts...,
 		),
 	}
@@ -125,27 +131,27 @@ type pingServiceClient struct {
 // Ping calls connect.ping.v1.PingService.Ping.
 // Ping(context.Context, *pingv1.PingRequest,*pingv1.PingResponse) (error)
 func (c *pingServiceClient) Ping(ctx context.Context, req *triple_protocol.Request, res *triple_protocol.Response) error {
-	return c.ping.CallUnary(ctx, req, res)
+	return c.ping.CallUnary(ctx, req, res, "Ping")
 }
 
 // Fail calls connect.ping.v1.PingService.Fail.
 func (c *pingServiceClient) Fail(ctx context.Context, req *triple_protocol.Request, res *triple_protocol.Response) error {
-	return c.fail.CallUnary(ctx, req, res)
+	return c.fail.CallUnary(ctx, req, res, "Fail")
 }
 
 // Sum calls connect.ping.v1.PingService.Sum.
 func (c *pingServiceClient) Sum(ctx context.Context) (*triple_protocol.ClientStreamForClient, error) {
-	return c.sum.CallClientStream(ctx)
+	return c.sum.CallClientStream(ctx, "Sum")
 }
 
 // CountUp calls connect.ping.v1.PingService.CountUp.
 func (c *pingServiceClient) CountUp(ctx context.Context, req *triple_protocol.Request) (*triple_protocol.ServerStreamForClient, error) {
-	return c.countUp.CallServerStream(ctx, req)
+	return c.countUp.CallServerStream(ctx, req, "CountUp")
 }
 
 // CumSum calls connect.ping.v1.PingService.CumSum.
 func (c *pingServiceClient) CumSum(ctx context.Context) (*triple_protocol.BidiStreamForClient, error) {
-	return c.cumSum.CallBidiStream(ctx)
+	return c.cumSum.CallBidiStream(ctx, "CumSum")
 }
 
 // PingServiceHandler is an implementation of the connect.ping.v1.PingService service.

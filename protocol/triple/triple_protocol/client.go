@@ -36,7 +36,7 @@ type TimeoutKey struct{}
 // use the [WithTriple] options.
 type Client struct {
 	config         *clientConfig
-	callUnary      func(context.Context, *Request, *Response) error
+	callUnary      func(context.Context, *Request, *Response, string) error
 	protocolClient protocolClient
 	err            error
 }
@@ -77,7 +77,7 @@ func NewClient(httpClient HTTPClient, url string, options ...ClientOption) *Clie
 	// once at client creation.
 	unarySpec := config.newSpec(StreamTypeUnary)
 	unaryFunc := UnaryFunc(func(ctx context.Context, request AnyRequest, response AnyResponse) error {
-		conn := client.protocolClient.NewConn(ctx, unarySpec, request.Header())
+		conn := client.protocolClient.NewConn(ctx, request.Spec(), request.Header())
 		// Send always returns an io.EOF unless the error is from the client-side.
 		// We want the user to continue to call Receive in those cases to get the
 		// full error from the server-side.
@@ -101,11 +101,15 @@ func NewClient(httpClient HTTPClient, url string, options ...ClientOption) *Clie
 	if interceptor := config.Interceptor; interceptor != nil {
 		unaryFunc = interceptor.WrapUnary(unaryFunc)
 	}
-	client.callUnary = func(ctx context.Context, request *Request, response *Response) error {
+	client.callUnary = func(ctx context.Context, request *Request, response *Response, method string) error {
 		// To make the specification, peer, and RPC headers visible to the full
 		// interceptor chain (as though they were supplied by the caller), we'll
 		// add them here.
-		request.spec = unarySpec
+		methodLevelSpec, buildErr := buildMethodLevelReqSpec(&unarySpec, method)
+		if buildErr != nil {
+			return buildErr
+		}
+		request.spec = methodLevelSpec
 		request.peer = client.protocolClient.Peer()
 		protocolCli.WriteRequestHeader(StreamTypeUnary, request.Header())
 		if err := unaryFunc(ctx, request, response); err != nil {
@@ -117,8 +121,23 @@ func NewClient(httpClient HTTPClient, url string, options ...ClientOption) *Clie
 	return client
 }
 
+func buildMethodLevelReqSpec(serviceLevelReqSpec *Spec, method string) (Spec, error) {
+	if serviceLevelReqSpec == nil {
+		return Spec{}, fmt.Errorf("serviceLevelReqSpec is nil")
+	}
+	methodLevelSpec := *serviceLevelReqSpec
+
+	methodLevelURL, err := url.JoinPath(methodLevelSpec.Procedure, method)
+	if err != nil {
+		return Spec{}, fmt.Errorf("JoinPath failed for procedure %s, method %s", methodLevelSpec.Procedure, method)
+	}
+
+	methodLevelSpec.Procedure = methodLevelURL
+	return methodLevelSpec, nil
+}
+
 // CallUnary calls a request-response procedure.
-func (c *Client) CallUnary(ctx context.Context, request *Request, response *Response) error {
+func (c *Client) CallUnary(ctx context.Context, request *Request, response *Response, method string) error {
 	if c.err != nil {
 		return c.err
 	}
@@ -128,23 +147,30 @@ func (c *Client) CallUnary(ctx context.Context, request *Request, response *Resp
 	}
 	mergeHeaders(request.Header(), ExtractFromOutgoingContext(ctx))
 	applyGroupVersionHeaders(request.Header(), c.config)
-	return c.callUnary(ctx, request, response)
+	return c.callUnary(ctx, request, response, method)
 }
 
 // CallClientStream calls a client streaming procedure.
-func (c *Client) CallClientStream(ctx context.Context) (*ClientStreamForClient, error) {
+func (c *Client) CallClientStream(ctx context.Context, method string) (*ClientStreamForClient, error) {
 	if c.err != nil {
 		return &ClientStreamForClient{err: c.err}, c.err
 	}
-	return &ClientStreamForClient{conn: c.newConn(ctx, StreamTypeClient)}, nil
+	conn, err := c.newConn(ctx, StreamTypeClient, method)
+	if err != nil {
+		return &ClientStreamForClient{err: err}, err
+	}
+	return &ClientStreamForClient{conn: conn}, nil
 }
 
 // CallServerStream calls a server streaming procedure.
-func (c *Client) CallServerStream(ctx context.Context, request *Request) (*ServerStreamForClient, error) {
+func (c *Client) CallServerStream(ctx context.Context, request *Request, method string) (*ServerStreamForClient, error) {
 	if c.err != nil {
 		return nil, c.err
 	}
-	conn := c.newConn(ctx, StreamTypeServer)
+	conn, err := c.newConn(ctx, StreamTypeServer, method)
+	if err != nil {
+		return nil, err
+	}
 	request.spec = conn.Spec()
 	request.peer = conn.Peer()
 	mergeHeaders(conn.RequestHeader(), request.header)
@@ -163,14 +189,23 @@ func (c *Client) CallServerStream(ctx context.Context, request *Request) (*Serve
 }
 
 // CallBidiStream calls a bidirectional streaming procedure.
-func (c *Client) CallBidiStream(ctx context.Context) (*BidiStreamForClient, error) {
+func (c *Client) CallBidiStream(ctx context.Context, method string) (*BidiStreamForClient, error) {
 	if c.err != nil {
 		return &BidiStreamForClient{err: c.err}, c.err
 	}
-	return &BidiStreamForClient{conn: c.newConn(ctx, StreamTypeBidi)}, nil
+	conn, err := c.newConn(ctx, StreamTypeBidi, method)
+	if err != nil {
+		return &BidiStreamForClient{err: err}, err
+	}
+	return &BidiStreamForClient{conn: conn}, nil
 }
 
-func (c *Client) newConn(ctx context.Context, streamType StreamType) StreamingClientConn {
+func (c *Client) newConn(ctx context.Context, streamType StreamType, method string) (StreamingClientConn, error) {
+	serviceLevelSpec := c.config.newSpec(streamType)
+	methodLevelSpec, buildErr := buildMethodLevelReqSpec(&serviceLevelSpec, method)
+	if buildErr != nil {
+		return nil, buildErr
+	}
 	newConn := func(ctx context.Context, spec Spec) StreamingClientConn {
 		header := make(http.Header, 8) // arbitrary power of two, prevent immediate resizing
 		mergeHeaders(header, ExtractFromOutgoingContext(ctx))
@@ -181,7 +216,7 @@ func (c *Client) newConn(ctx context.Context, streamType StreamType) StreamingCl
 	if interceptor := c.config.Interceptor; interceptor != nil {
 		newConn = interceptor.WrapStreamingClient(newConn)
 	}
-	return newConn(ctx, c.config.newSpec(streamType))
+	return newConn(ctx, methodLevelSpec), nil
 }
 
 type clientConfig struct {
@@ -210,7 +245,7 @@ func newClientConfig(rawURL string, options []ClientOption) (*clientConfig, *Err
 	if err != nil {
 		return nil, err
 	}
-	protoPath := extractProtoPath(url.Path)
+	protoPath := normalizeClientProcedure(url.Path)
 	config := clientConfig{
 		URL: url,
 		// use gRPC by default
@@ -310,4 +345,32 @@ func applyGroupVersionHeaders(header http.Header, cfg *clientConfig) {
 	if cfg.Version != "" {
 		header.Set(tripleServiceVersion, cfg.Version)
 	}
+}
+
+// normalizeClientProcedure mirrors protocol/triple/triple_protocol/protobuf_util.go's extractProtoPath but strips empty segments
+// to keep the service/method intact for client-side procedure building.
+func normalizeClientProcedure(path string) string {
+	segments := strings.Split(path, "/")
+	cleanSegments := make([]string, 0, len(segments))
+	for _, s := range segments {
+		if s != "" {
+			cleanSegments = append(cleanSegments, s)
+		}
+	}
+
+	var pkg, method string
+	if len(cleanSegments) > 0 {
+		pkg = cleanSegments[0]
+	}
+	if len(cleanSegments) > 1 {
+		pkg = cleanSegments[len(cleanSegments)-2]
+		method = cleanSegments[len(cleanSegments)-1]
+	}
+	if pkg == "" {
+		return "/"
+	}
+	if method == "" {
+		return "/" + pkg
+	}
+	return "/" + pkg + "/" + method
 }
