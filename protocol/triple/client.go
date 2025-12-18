@@ -24,8 +24,8 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"reflect"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -57,20 +57,47 @@ const (
 // callUnary, callClientStream, callServerStream, callBidiStream.
 // A Reference has a clientManager.
 type clientManager struct {
-	isIDL bool
-	// triple_protocol clients, key is method name
-	triClients map[string]*tri.Client
+	isIDL    bool
+	triGuard *sync.RWMutex
+	// triple_protocol clients
+	triClients *TriClientPool
 }
 
 // TODO: code a triple client between clientManager and triple_protocol client
 // TODO: write a NewClient for triple client
 
 func (cm *clientManager) getClient(method string) (*tri.Client, error) {
-	triClient, ok := cm.triClients[method]
-	if !ok {
+	cm.triGuard.RLock()
+	defer cm.triGuard.RUnlock()
+
+	if cm.triClients == nil {
+		return nil, fmt.Errorf("no client pool found for method: %s", method)
+	}
+	// Wait up to defaultClientGetTimeout for a pooled client; if none becomes available we return the
+	// fallback client and record a timeout which is used to drive autoscaling.
+	triClient, err := cm.triClients.Get(constant.DefaultClientGetTimeout)
+	if err != nil {
+		return nil, fmt.Errorf("missing triple client for method: %s", method)
+	}
+	if triClient == nil {
 		return nil, fmt.Errorf("missing triple client for method: %s", method)
 	}
 	return triClient, nil
+}
+
+func (cm *clientManager) putClient(method string, c *tri.Client) {
+	if c == nil {
+		return
+	}
+
+	cm.triGuard.RLock()
+	defer cm.triGuard.RUnlock()
+
+	if cm.triClients == nil {
+		logger.Warnf("no client pool found for method %s, dropping client", method)
+		return
+	}
+	cm.triClients.Put(c)
 }
 
 func (cm *clientManager) callUnary(ctx context.Context, method string, req, resp any) error {
@@ -78,9 +105,10 @@ func (cm *clientManager) callUnary(ctx context.Context, method string, req, resp
 	if err != nil {
 		return err
 	}
+	defer cm.putClient(method, triClient)
 	triReq := tri.NewRequest(req)
 	triResp := tri.NewResponse(resp)
-	if err := triClient.CallUnary(ctx, triReq, triResp); err != nil {
+	if err := triClient.CallUnary(ctx, triReq, triResp, method); err != nil {
 		return err
 	}
 	return nil
@@ -91,7 +119,8 @@ func (cm *clientManager) callClientStream(ctx context.Context, method string) (a
 	if err != nil {
 		return nil, err
 	}
-	stream, err := triClient.CallClientStream(ctx)
+	defer cm.putClient(method, triClient)
+	stream, err := triClient.CallClientStream(ctx, method)
 	if err != nil {
 		return nil, err
 	}
@@ -103,8 +132,9 @@ func (cm *clientManager) callServerStream(ctx context.Context, method string, re
 	if err != nil {
 		return nil, err
 	}
+	defer cm.putClient(method, triClient)
 	triReq := tri.NewRequest(req)
-	stream, err := triClient.CallServerStream(ctx, triReq)
+	stream, err := triClient.CallServerStream(ctx, triReq, method)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +146,8 @@ func (cm *clientManager) callBidiStream(ctx context.Context, method string) (any
 	if err != nil {
 		return nil, err
 	}
-	stream, err := triClient.CallBidiStream(ctx)
+	defer cm.putClient(method, triClient)
+	stream, err := triClient.CallBidiStream(ctx, method)
 	if err != nil {
 		return nil, err
 	}
@@ -124,8 +155,14 @@ func (cm *clientManager) callBidiStream(ctx context.Context, method string) (any
 }
 
 func (cm *clientManager) close() error {
-	// There is no need to release resources right now.
-	// But we leave this function here for future use.
+	cm.triGuard.Lock()
+	defer cm.triGuard.Unlock()
+	if cm.triClients == nil {
+		return ErrTriClientPoolCloseWhenEmpty
+	}
+	cm.triClients.Close()
+	cm.triClients = nil
+
 	return nil
 }
 
@@ -202,9 +239,6 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	}
 	cliOpts = append(cliOpts, cliKeepAliveOpts...)
 
-	// handle http transport of triple protocol
-	var transport http.RoundTripper
-
 	var callProtocol string
 	if tripleConf != nil && tripleConf.Http3 != nil && tripleConf.Http3.Enable {
 		callProtocol = constant.CallHTTP2AndHTTP3
@@ -213,65 +247,14 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		callProtocol = constant.CallHTTP2
 	}
 
-	switch callProtocol {
-	// This case might be for backward compatibility,
-	// it's not useful for the Triple protocol, HTTP/1 lacks trailer functionality.
-	// Triple protocol only supports HTTP/2 and HTTP/3.
-	case constant.CallHTTP:
-		transport = &http.Transport{
-			TLSClientConfig: cfg,
-		}
-		cliOpts = append(cliOpts, tri.WithTriple())
-	case constant.CallHTTP2:
-		// TODO: Enrich the http2 transport config for triple protocol.
-		if tlsFlag {
-			transport = &http2.Transport{
-				TLSClientConfig: cfg,
-				ReadIdleTimeout: keepAliveInterval,
-				PingTimeout:     keepAliveTimeout,
-			}
-		} else {
-			transport = &http2.Transport{
-				DialTLSContext: func(_ context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
-					return net.Dial(network, addr)
-				},
-				AllowHTTP:       true,
-				ReadIdleTimeout: keepAliveInterval,
-				PingTimeout:     keepAliveTimeout,
-			}
-		}
-	case constant.CallHTTP3:
-		if !tlsFlag {
-			return nil, fmt.Errorf("TRIPLE http3 client must have TLS config, but TLS config is nil")
-		}
-
-		// TODO: Enrich the http3 transport config for triple protocol.
-		transport = &http3.Transport{
-			TLSClientConfig: cfg,
-			QUICConfig: &quic.Config{
-				// ref: https://quic-go.net/docs/quic/connection/#keeping-a-connection-alive
-				KeepAlivePeriod: keepAliveInterval,
-				// ref: https://quic-go.net/docs/quic/connection/#idle-timeout
-				MaxIdleTimeout: keepAliveTimeout,
-			},
-		}
-
-		logger.Infof("Triple http3 client transport init successfully")
-	case constant.CallHTTP2AndHTTP3:
-		if !tlsFlag {
-			return nil, fmt.Errorf("TRIPLE HTTP/2 and HTTP/3 client must have TLS config, but TLS config is nil")
-		}
-
-		// Create a dual transport that can handle both HTTP/2 and HTTP/3
-		transport = newDualTransport(cfg, keepAliveInterval, keepAliveTimeout)
-		logger.Infof("Triple HTTP/2 and HTTP/3 client transport init successfully")
-	default:
-		return nil, fmt.Errorf("unsupported http protocol: %s", callProtocol)
+	transport, err := buildTransport(callProtocol, cfg, keepAliveInterval, keepAliveTimeout, tlsFlag)
+	if err != nil {
+		return nil, err
 	}
-
 	httpClient := &http.Client{
 		Transport: transport,
 	}
+	perClientTransport := url.GetParamBool(constant.TriCliPoolPerClientTrans, false)
 
 	var baseTriURL string
 	baseTriURL = strings.TrimPrefix(url.Location, httpPrefix)
@@ -282,42 +265,84 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		baseTriURL = httpPrefix + baseTriURL
 	}
 
-	triClients := make(map[string]*tri.Client)
+	triURL, err := joinPath(baseTriURL, url.Interface())
+	if err != nil {
+		return nil, fmt.Errorf("JoinPath failed for base %s, interface %s", baseTriURL, url.Interface())
+	}
 
-	if len(url.Methods) != 0 {
-		for _, method := range url.Methods {
-			triURL, err := joinPath(baseTriURL, url.Interface(), method)
-			if err != nil {
-				return nil, fmt.Errorf("JoinPath failed for base %s, interface %s, method %s", baseTriURL, url.Interface(), method)
+	pool, err := NewTriClientPool(constant.DefaultClientWarmingUp, constant.TriClientPoolMaxSize, func() *tri.Client {
+		if perClientTransport {
+			dedicatedTransport, buildErr := buildTransport(callProtocol, cfg, keepAliveInterval, keepAliveTimeout, tlsFlag)
+			if buildErr != nil {
+				return tri.NewClient(httpClient, triURL, cliOpts...)
 			}
-			triClient := tri.NewClient(httpClient, triURL, cliOpts...)
-			triClients[method] = triClient
+			return tri.NewClient(&http.Client{Transport: dedicatedTransport}, triURL, cliOpts...)
 		}
-	} else {
-		// This branch is for the non-IDL mode, where we pass in the service solely
-		// for the purpose of using reflection to obtain all methods of the service.
-		// There might be potential for optimization in this area later on.
-		service, ok := url.GetAttribute(constant.RpcServiceKey)
-		if !ok {
-			return nil, fmt.Errorf("triple clientmanager can't get methods")
-		}
+		return tri.NewClient(httpClient, triURL, cliOpts...)
+	})
 
-		serviceType := reflect.TypeOf(service)
-		for i := range serviceType.NumMethod() {
-			methodName := serviceType.Method(i).Name
-			triURL, err := joinPath(baseTriURL, url.Interface(), methodName)
-			if err != nil {
-				return nil, fmt.Errorf("JoinPath failed for base %s, interface %s, method %s", baseTriURL, url.Interface(), methodName)
-			}
-			triClient := tri.NewClient(httpClient, triURL, cliOpts...)
-			triClients[methodName] = triClient
-		}
+	if err != nil {
+		return nil, err
 	}
 
 	return &clientManager{
 		isIDL:      isIDL,
-		triClients: triClients,
+		triGuard:   &sync.RWMutex{},
+		triClients: pool,
 	}, nil
+}
+
+func buildTransport(callProtocol string, cfg *tls.Config, keepAliveInterval, keepAliveTimeout time.Duration, tlsFlag bool) (http.RoundTripper, error) {
+	switch callProtocol {
+	// This case might be for backward compatibility,
+	// it's not useful for the Triple protocol, HTTP/1 lacks trailer functionality.
+	// Triple protocol only supports HTTP/2 and HTTP/3.
+	case constant.CallHTTP:
+		return &http.Transport{
+			TLSClientConfig: cfg,
+		}, nil
+	case constant.CallHTTP2:
+		// TODO: Enrich the http2 transport config for triple protocol.
+		if tlsFlag {
+			return &http2.Transport{
+				TLSClientConfig: cfg,
+				ReadIdleTimeout: keepAliveInterval,
+				PingTimeout:     keepAliveTimeout,
+			}, nil
+		}
+		return &http2.Transport{
+			DialTLSContext: func(_ context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
+				return net.Dial(network, addr)
+			},
+			AllowHTTP:       true,
+			ReadIdleTimeout: keepAliveInterval,
+			PingTimeout:     keepAliveTimeout,
+		}, nil
+	case constant.CallHTTP3:
+		if !tlsFlag {
+			return nil, fmt.Errorf("TRIPLE http3 client must have TLS config, but TLS config is nil")
+		}
+		logger.Infof("Triple http3 client transport init successfully")
+		// TODO: Enrich the http3 transport config for triple protocol.
+		return &http3.Transport{
+			TLSClientConfig: cfg,
+			QUICConfig: &quic.Config{
+				// ref: https://quic-go.net/docs/quic/connection/#keeping-a-connection-alive
+				KeepAlivePeriod: keepAliveInterval,
+				// ref: https://quic-go.net/docs/quic/connection/#idle-timeout
+				MaxIdleTimeout: keepAliveTimeout,
+			},
+		}, nil
+	case constant.CallHTTP2AndHTTP3:
+		if !tlsFlag {
+			return nil, fmt.Errorf("TRIPLE HTTP/2 and HTTP/3 client must have TLS config, but TLS config is nil")
+		}
+		logger.Infof("Triple HTTP/2 and HTTP/3 client transport init successfully")
+		// Create a dual transport that can handle both HTTP/2 and HTTP/3
+		return newDualTransport(cfg, keepAliveInterval, keepAliveTimeout), nil
+	default:
+		return nil, fmt.Errorf("unsupported http protocol: %s", callProtocol)
+	}
 }
 
 func genKeepAliveOptions(url *common.URL, tripleConf *global.TripleConfig) ([]tri.ClientOption, time.Duration, time.Duration, error) {
