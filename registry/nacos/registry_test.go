@@ -204,6 +204,18 @@ func (mr *MockINamingClientMockRecorder) GetAllServicesInfo(param any) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllServicesInfo", reflect.TypeOf((*MockINamingClient)(nil).GetAllServicesInfo), param)
 }
 
+// ServerHealthy mocks base method
+func (m *MockINamingClient) ServerHealthy() bool {
+	ret := m.ctrl.Call(m, "ServerHealthy")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// ServerHealthy indicates an expected call of ServerHealthy
+func (mr *MockINamingClientMockRecorder) ServerHealthy() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ServerHealthy", reflect.TypeOf((*MockINamingClient)(nil).ServerHealthy))
+}
+
 type fields struct {
 	URL          *common.URL
 	namingClient *nacosClient.NacosNamingClient

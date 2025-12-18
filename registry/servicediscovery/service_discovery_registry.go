@@ -18,6 +18,7 @@
 package servicediscovery
 
 import (
+	"errors"
 	"strconv"
 	"strings"
 	"sync"
@@ -59,7 +60,7 @@ type serviceDiscoveryRegistry struct {
 	lock                    sync.RWMutex
 	url                     *common.URL
 	serviceDiscovery        registry.ServiceDiscovery
-	instance                registry.ServiceInstance
+	instances               []registry.ServiceInstance
 	serviceNameMapping      mapping.ServiceNameMapping
 	metadataReport          report.MetadataReport
 	serviceListeners        map[string]registry.ServiceInstancesChangedListener
@@ -104,6 +105,9 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 		if err != nil {
 			return perrors.WithMessage(err, "Register service failed")
 		}
+		s.lock.Lock()
+		s.instances = append(s.instances, instance)
+		s.lock.Unlock()
 	}
 	return nil
 }
@@ -133,14 +137,32 @@ func createInstance(meta *info.MetadataInfo, url *common.URL) registry.ServiceIn
 }
 
 func (s *serviceDiscoveryRegistry) UnRegisterService() error {
-	return s.serviceDiscovery.Unregister(s.instance)
+	s.lock.Lock()
+	keep := s.instances[:0]
+	origin := s.instances[:]
+	s.lock.Unlock()
+
+	var errs []error
+
+	for _, v := range origin {
+		if err := s.serviceDiscovery.Unregister(v); err != nil {
+			// fail to unregister
+			keep = append(keep, v)
+			errs = append(errs, err)
+		}
+	}
+
+	s.lock.Lock()
+	s.instances = keep
+	s.lock.Unlock()
+	return errors.Join(errs...)
 }
 
 func (s *serviceDiscoveryRegistry) UnRegister(url *common.URL) error {
 	if !shouldRegister(url) {
 		return nil
 	}
-	return nil
+	return s.UnRegisterService()
 }
 
 func (s *serviceDiscoveryRegistry) UnSubscribe(url *common.URL, listener registry.NotifyListener) error {
@@ -154,7 +176,9 @@ func (s *serviceDiscoveryRegistry) UnSubscribe(url *common.URL, listener registr
 	// FIXME ServiceNames.String() is not good
 	serviceNamesKey := services.String()
 	l := s.serviceListeners[serviceNamesKey]
-	l.RemoveListener(url.ServiceKey())
+	if l != nil {
+		l.RemoveListener(url.ServiceKey())
+	}
 	s.stopListen(url)
 	err := s.serviceNameMapping.Remove(url)
 	if err != nil {
@@ -168,7 +192,7 @@ func parseServices(literalServices string) *gxset.HashSet {
 	if len(literalServices) == 0 {
 		return set
 	}
-	var splitServices = strings.Split(literalServices, ",")
+	splitServices := strings.Split(literalServices, ",")
 	for _, s := range splitServices {
 		if len(s) != 0 {
 			set.Add(s)

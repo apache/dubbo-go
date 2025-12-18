@@ -15,22 +15,34 @@
  * limitations under the License.
  */
 
-package polaris
+package customizer
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/router"
-	"dubbo.apache.org/dubbo-go/v3/common"
+	"testing"
 )
 
-// RouteFactory router factory
-type RouteFactory struct{}
+import (
+	"github.com/stretchr/testify/assert"
+)
 
-// NewPolarisRouterFactory constructs a new PriorityRouterFactory
-func NewPolarisRouterFactory() router.PriorityRouterFactory {
-	return &RouteFactory{}
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/registry"
+)
+
+func TestTagCustomizer(t *testing.T) {
+	tc := &tagCustomizer{}
+	assert.Equal(t, 2, tc.GetPriority())
+
+	instance := createTagInstance()
+	tc.Customize(instance)
+
+	meta := instance.GetMetadata()
+	assert.Equal(t, "gray", meta[constant.Tagkey])
 }
 
-// NewPriorityRouter construct a new PriorityRouter
-func (f *RouteFactory) NewPriorityRouter(url *common.URL) (router.PriorityRouter, error) {
-	return newPolarisRouter(url)
+func createTagInstance() registry.ServiceInstance {
+	return &registry.DefaultServiceInstance{
+		Tag: "gray",
+	}
 }

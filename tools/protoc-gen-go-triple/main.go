@@ -25,6 +25,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 )
 
 import (
@@ -75,17 +76,48 @@ func main() {
 }
 
 func genTriple(plugin *protogen.Plugin) error {
+	var errors []error
+
 	for _, file := range plugin.Files {
 		if !file.Generate {
 			continue
 		}
-		tripleGo, err := generator.ProcessProtoFile(file.Proto)
-		if err != nil {
-			return err
+
+		// Skip proto files without services.
+		if len(file.Proto.GetService()) == 0 {
+			continue
 		}
+
 		filename := file.GeneratedFilenamePrefix + ".triple.go"
+		// Use the same import path as the pb.go file to ensure they're in the same package
+		// Extract the package name from the go_package option
+		// Use the import path as parsed by protogen to avoid edge cases.
 		g := plugin.NewGeneratedFile(filename, file.GoImportPath)
-		return generator.GenTripleFile(g, tripleGo)
+		// import Dubbo's libraries
+		g.QualifiedGoIdent(protogen.GoImportPath("dubbo.apache.org/dubbo-go/v3/client").Ident("client"))
+		g.QualifiedGoIdent(protogen.GoImportPath("dubbo.apache.org/dubbo-go/v3/common").Ident("common"))
+		g.QualifiedGoIdent(protogen.GoImportPath("dubbo.apache.org/dubbo-go/v3/common/constant").Ident("constant"))
+		g.QualifiedGoIdent(protogen.GoImportPath("dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol").Ident("triple_protocol"))
+		g.QualifiedGoIdent(protogen.GoImportPath("dubbo.apache.org/dubbo-go/v3/server").Ident("server"))
+		tripleGo, err := generator.ProcessProtoFile(g, file)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("processing %s: %w", file.Desc.Path(), err))
+			continue
+		}
+		// Ensure the generated file uses the exact Go package name computed by protoc-gen-go.
+		tripleGo.Package = string(file.GoPackageName)
+
+		err = generator.GenTripleFile(g, tripleGo)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("generating %s: %w", filename, err))
+		}
+	}
+	if len(errors) > 0 {
+		var errorMessages []string
+		for _, err := range errors {
+			errorMessages = append(errorMessages, err.Error())
+		}
+		return fmt.Errorf("multiple errors occurred:\n%s", strings.Join(errorMessages, "\n"))
 	}
 	return nil
 }
