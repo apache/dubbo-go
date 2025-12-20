@@ -30,7 +30,6 @@ import (
 // ============================================
 // gettyRPCClient Tests
 // ============================================
-
 func TestGettyRPCClientUpdateActive(t *testing.T) {
 	tests := []struct {
 		name     string

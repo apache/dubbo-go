@@ -29,7 +29,6 @@ import (
 // ============================================
 // Mock Codec Implementation
 // ============================================
-
 type mockCodec struct {
 	encodeRequestCalled  bool
 	encodeResponseCalled bool
@@ -155,9 +154,9 @@ func TestRegistryCodecOverwrite(t *testing.T) {
 
 func TestMockCodecEncodeRequest(t *testing.T) {
 	tests := []struct {
-		name     string
-		request  *Request
-		wantErr  bool
+		name    string
+		request *Request
+		wantErr bool
 	}{
 		{
 			name: "basic request",

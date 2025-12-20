@@ -37,7 +37,6 @@ import (
 // ============================================
 // Mock clientFacade for Facade Tests
 // ============================================
-
 type facadeMockClient struct {
 	ctx    context.Context
 	cancel context.CancelFunc

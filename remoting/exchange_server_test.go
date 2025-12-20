@@ -33,13 +33,12 @@ import (
 // ============================================
 // Mock Server Implementation
 // ============================================
-
 type mockServer struct {
-	mu           sync.Mutex
-	started      bool
-	stopped      bool
-	startCalled  int
-	stopCalled   int
+	mu          sync.Mutex
+	started     bool
+	stopped     bool
+	startCalled int
+	stopCalled  int
 }
 
 func newMockServer() *mockServer {

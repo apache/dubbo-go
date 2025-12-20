@@ -29,7 +29,6 @@ import (
 // ============================================
 // Mock DataListener Implementation
 // ============================================
-
 type mockDataListener struct {
 	mu            sync.Mutex
 	events        []Event
@@ -76,23 +75,23 @@ func (m *mockDataListener) setReturnValue(val bool) {
 
 func TestEventType(t *testing.T) {
 	tests := []struct {
-		name       string
-		eventType  EventType
+		name        string
+		eventType   EventType
 		expectedStr string
 	}{
 		{
-			name:       "add event",
-			eventType:  EventTypeAdd,
+			name:        "add event",
+			eventType:   EventTypeAdd,
 			expectedStr: "add",
 		},
 		{
-			name:       "delete event",
-			eventType:  EventTypeDel,
+			name:        "delete event",
+			eventType:   EventTypeDel,
 			expectedStr: "delete",
 		},
 		{
-			name:       "update event",
-			eventType:  EventTypeUpdate,
+			name:        "update event",
+			eventType:   EventTypeUpdate,
 			expectedStr: "update",
 		},
 	}

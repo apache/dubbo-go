@@ -33,7 +33,6 @@ import (
 // ============================================
 // Entry Tests
 // ============================================
-
 func TestEntry(t *testing.T) {
 	t.Run("create entry", func(t *testing.T) {
 		entry := &Entry{}

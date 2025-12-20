@@ -36,7 +36,6 @@ import (
 // ============================================
 // Mock ZkClientFacade Implementation
 // ============================================
-
 type mockZkClientFacade struct {
 	zkClient   *gxzookeeper.ZookeeperClient
 	zkLock     sync.Mutex

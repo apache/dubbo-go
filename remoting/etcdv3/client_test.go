@@ -36,7 +36,6 @@ import (
 // ============================================
 // Mock clientFacade Implementation
 // ============================================
-
 type mockClientFacade struct {
 	client     *gxetcd.Client
 	clientLock sync.Mutex

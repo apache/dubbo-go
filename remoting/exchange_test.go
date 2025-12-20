@@ -35,7 +35,6 @@ import (
 // ============================================
 // SequenceID Tests
 // ============================================
-
 func TestSequenceID(t *testing.T) {
 	t.Run("sequence increases by 2", func(t *testing.T) {
 		id1 := SequenceID()

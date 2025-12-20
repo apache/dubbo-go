@@ -30,7 +30,6 @@ import (
 // ============================================
 // ServiceInstance Tests
 // ============================================
-
 func TestServiceInstanceCreation(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -95,7 +94,7 @@ func TestServiceInstanceCreation(t *testing.T) {
 			},
 		},
 		{
-			name: "empty instance",
+			name:     "empty instance",
 			instance: &ServiceInstance{},
 			validate: func(t *testing.T, i *ServiceInstance) {
 				assert.Empty(t, i.Name)

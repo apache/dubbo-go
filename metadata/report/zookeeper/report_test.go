@@ -39,7 +39,6 @@ import (
 // ============================================
 // Test Helper Functions
 // ============================================
-
 func createTestMetadataInfo() *info.MetadataInfo {
 	return &info.MetadataInfo{
 		App:      "test-app",

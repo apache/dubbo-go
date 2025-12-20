@@ -36,7 +36,6 @@ import (
 // ============================================
 // Mock ZkClientFacade for Facade Tests
 // ============================================
-
 type facadeTestZkClientFacade struct {
 	zkClient         *gxzookeeper.ZookeeperClient
 	zkLock           sync.Mutex

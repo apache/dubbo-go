@@ -35,7 +35,6 @@ import (
 // ============================================
 // filterContext Tests
 // ============================================
-
 func TestFilterContext(t *testing.T) {
 	tests := []struct {
 		name        string

@@ -38,7 +38,6 @@ import (
 // ============================================
 // Mock Listener Implementation
 // ============================================
-
 type mockMappingListener struct {
 	eventCount atomic.Int32
 	lastEvent  observer.Event

@@ -34,7 +34,6 @@ import (
 // ============================================
 // Options Tests
 // ============================================
-
 func TestDefaultOptions(t *testing.T) {
 	opts := defaultOptions()
 	assert.NotNil(t, opts)
@@ -435,11 +434,11 @@ func TestWithRegistryId(t *testing.T) {
 
 func TestReportOptionsToUrl(t *testing.T) {
 	tests := []struct {
-		name      string
-		opts      *ReportOptions
-		wantErr   bool
-		errMsg    string
-		validate  func(*testing.T, *ReportOptions)
+		name     string
+		opts     *ReportOptions
+		wantErr  bool
+		errMsg   string
+		validate func(*testing.T, *ReportOptions)
 	}{
 		{
 			name: "valid zookeeper options",

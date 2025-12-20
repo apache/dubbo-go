@@ -35,18 +35,17 @@ import (
 // ============================================
 // Mock Client Implementation
 // ============================================
-
 type mockClient struct {
-	mu              sync.Mutex
-	exchangeClient  *ExchangeClient
-	connected       bool
-	available       bool
-	connectErr      error
-	requestErr      error
-	connectCalled   int
-	requestCalled   int
-	closeCalled     int
-	connectDelay    time.Duration
+	mu             sync.Mutex
+	exchangeClient *ExchangeClient
+	connected      bool
+	available      bool
+	connectErr     error
+	requestErr     error
+	connectCalled  int
+	requestCalled  int
+	closeCalled    int
+	connectDelay   time.Duration
 }
 
 func newMockClient() *mockClient {
