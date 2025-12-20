@@ -46,7 +46,7 @@ func (m *mockUpdater) DoUpdate() error {
 	return nil
 }
 
-func (m *mockUpdater) Report(uint64) {}
+func (m *mockUpdater) Report(_ uint64) {}
 
 func TestAdaptiveServiceProviderFilter_Invoke(t *testing.T) {
 	ctrl := gomock.NewController(t)
