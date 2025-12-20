@@ -1,75 +1,125 @@
-
-# Release Notes
----
-
 ## 3.3.1
+
 ## Summary
 
-**v3.3.1** introduces significant enhancements to the **Triple protocol** (including experimental HTTP/3 support), stability improvements for **Configuration & Registry centers** (Nacos, Apollo, Zookeeper), and major **refactoring and performance optimizations** of the core modules. This release also includes adaptation for Go 1.24.
+This release introduces major enhancements to the **Triple protocol**, improvements to configuration and registry centers (Nacos, Apollo, Zookeeper), and extensive refactoring of core modules to improve stability and performance. This version also updates compatibility to **Go 1.24**.
 
-### 🚀 New Features
+### New Features
 
-#### Triple Protocol Enhancements
-* **HTTP/3 Support**: Added experimental support for HTTP/3 in the Triple protocol (#2916).
-* **Dual Protocol Concurrency**: Supported starting both HTTP/3 and HTTP/2 servers simultaneously (#2972).
-* **Generic Call**: Added support for generic calls in the new Triple protocol (#2818).
-* **Non-IDL Mode**: Supported Non-IDL mode for the new Triple implementation (#2858).
-* **TLS Updates**: Implemented new Triple TLS configuration (#2852) and redesigned the TLS API (#2891).
-* **OpenAPI**: Added tooling support to generate OpenAPI documentation for the Triple protocol (#2951).
+- Supported group and version wildcards for exact interface matching. [#3080](https://github.com/apache/dubbo-go/pull/3080)
+- Supported injecting dubbo.tag into service metadata. [#3069](https://github.com/apache/dubbo-go/pull/3069)
+- Exposed Router-related APIs. [#3066](https://github.com/apache/dubbo-go/pull/3066)
+- Updated Go version support to Go 1.24 and removed deprecated `rand.seed` usage. [#3046](https://github.com/apache/dubbo-go/pull/3046)
+- Added an imports formatter tool and integrated it into CI checks. [#3019](https://github.com/apache/dubbo-go/pull/3019)
+- Added configuration hot-loading capability. [#2992](https://github.com/apache/dubbo-go/pull/2992)
+- Supported running HTTP/2 and HTTP/3 servers simultaneously. [#2972](https://github.com/apache/dubbo-go/pull/2972)
+- Added `WithInterface` option for client initialization. [#2946](https://github.com/apache/dubbo-go/pull/2946)
+- Added tooling support to generate OpenAPI documentation for Triple services. [#2951](https://github.com/apache/dubbo-go/pull/2951)
+- Added experimental HTTP/3 support for the Triple protocol. [#2916](https://github.com/apache/dubbo-go/pull/2916)
+- Added new TLS configuration for Triple protocol and redesigned TLS APIs. [#2852](https://github.com/apache/dubbo-go/pull/2852) [#2891](https://github.com/apache/dubbo-go/pull/2891)
+- Supported Non-IDL mode in the new Triple implementation. [#2858](https://github.com/apache/dubbo-go/pull/2858)
+- Added support for Apollo as a configuration center. [#2857](https://github.com/apache/dubbo-go/discussions/2857)
+- Supported decoding Hessian from stream to improve performance for large packet transmission. [#2841](https://github.com/apache/dubbo-go/pull/2841)
+- Added generic call support for the new Triple protocol. [#2818](https://github.com/apache/dubbo-go/pull/2818)
 
-#### Configuration & Registry
-* **Apollo Support**: Added support for the Apollo configuration center (#2857).
-* **Nacos Improvements**:
-    * Fixed an issue where Nacos weights did not work (#2937).
-    * Resolved Nacos instance overwrite issues (#2882).
-    * Fixed an issue where new services were not detected during subscription (#2859).
-* **Zookeeper Improvements**: Optimized the distinction between empty and non-existent nodes, and downgraded empty node error logs to Warn level (#3059).
-* **Hot Loading**: Implemented configuration hot-loading capability (#2992).
+### Bug Fixes
 
-#### Observability
-* **OpenTelemetry**: Upgraded OTel dependencies to v1.21.0 (#2971), adjusted Trace Scope names to align with OTel specs (#3041), and added an `Insecure` option to tracing configuration (#3028).
-* **Service Logging**: Implemented logging for the service registration process (#3043).
+- Fixed Nacos deregister on shutdown. [#3108](https://github.com/apache/dubbo-go/pull/3108)
+- Fixed panic when retrieving metadata from Java providers. [#3092](https://github.com/apache/dubbo-go/pull/3092)
+- Changed log level from Error to Warn when application parameters are empty in Tag Router. [#3035](https://github.com/apache/dubbo-go/pull/3035)
+- Fixed nil pointer bug. [#3071](https://github.com/apache/dubbo-go/pull/3071)
+- Fixed URL parameter loss in `SetParams` method. [#3022](https://github.com/apache/dubbo-go/pull/3022)
+- Replaced panic with error handling when cluster extension creation fails. [#3021](https://github.com/apache/dubbo-go/issues/3012) [#3064](https://github.com/apache/dubbo-go/pull/3064)
+- Fixed incorrect log rotation paths that could cause file loss. [#3014](https://github.com/apache/dubbo-go/pull/3014)
+- Fixed counter decrement on error. [#3013](https://github.com/apache/dubbo-go/pull/3013)
+- Fixed metadata issues: fixed application metadata retrieval failure caused by meta-v error, and fixed empty parameter issue when metadata storage type is remote. [#2952](https://github.com/apache/dubbo-go/pull/2952) [#2953](https://github.com/apache/dubbo-go/pull/2953)
+- Fixed provider config in dubbo.Load(). [#2941](https://github.com/apache/dubbo-go/pull/2941)
 
-#### Other Features
-* **Go Version**: Updated Go version support to 1.24 and removed deprecated `rand.seed` usage (#3046).
-* **Router API**: Exposed Router-related APIs (#3066) and allowed group/version wildcards for exact interface matches (#3080).
-* **Tooling**: Added an `imports formatter` tool (#3019) and integrated it into CI checks.
+- Fixed issues where clients could not receive attachments from server responses in Triple protocol. [#2928](https://github.com/apache/dubbo-go/pull/2928) [#2854](https://github.com/apache/dubbo-go/pull/2854)
+- Fixed Nacos weight configuration not taking effect. [#2937](https://github.com/apache/dubbo-go/pull/2937)
+- Fixed latency issues in Zookeeper client node perception. [#2930](https://github.com/apache/dubbo-go/pull/2930)
+- Fixed read prefix EOF errors in communication layer. [#2912](https://github.com/apache/dubbo-go/pull/2912)
+- Fixed Nacos instance overwrite issues. [#2882](https://github.com/apache/dubbo-go/pull/2882)
+- Fixed logical dead loop issues. [#2879](https://github.com/apache/dubbo-go/pull/2879)
+- Fixed Nacos subscription issues where newly registered services were not detected. [#2859](https://github.com/apache/dubbo-go/pull/2859)
+- Fixed Nacos weight option configuration. [#2843](https://github.com/apache/dubbo-go/pull/2843)
+- Fixed error propagation in marshalRequest. [#2817](https://github.com/apache/dubbo-go/pull/2817)
+- Fixed Context Attachment error handling in Triple streaming calls. [#2810](https://github.com/apache/dubbo-go/pull/2810)
 
-### 💡 Refactoring & Improvements
+### Code Enhancements
 
-* **Config Decoupling**: Massive code refactoring moving dependencies from the `config` package to the `global` package or protocol-specific configurations to resolve circular dependencies (affecting registry, filter, tls, graceful_shutdown, etc.).
-* **Logger Refactoring**: Refactored the logger module (#2838) and added comprehensive unit tests (#2993).
-* **Makefile**: Completely rewrote the Makefile to improve the build experience and standardization (#2975).
-* **CAS Optimization**: Replaced deprecated CAS operations with `CompareAndSwap` (#2962).
-* **Graceful Shutdown**: Added timeout control for Triple protocol graceful shutdown (#2943) and utilized `errgroup` for handling stop errors (#2973).
-* **Memory Optimization**: Resolved memory leaks in Goroutine management, file handles, and extension caches (#3023).
+- **Config Decoupling**: Massive code refactoring moving dependencies from the `config` package to the `global` package or protocol-specific configurations to resolve circular dependencies (affecting registry, filter, tls, graceful_shutdown, etc.).
+- Precompiled regex patterns to improve performance. [#3067](https://github.com/apache/dubbo-go/pull/3067)
+- Fixed Weighted RoundRobin by adding lastUpdate field to state storage. [#3053](https://github.com/apache/dubbo-go/pull/3053)
+- Fixed multiple package imports in Triple code generation. [#3052](https://github.com/apache/dubbo-go/pull/3052)
+- Fixed memory leaks related to goroutine management, file handles, and extension caches. [#3023](https://github.com/apache/dubbo-go/pull/3023)
+- Refactored logger module and added comprehensive unit tests. [#2838](https://github.com/apache/dubbo-go/pull/2838) [#2993](https://github.com/apache/dubbo-go/pull/2993)
+- Rewrote Makefile to improve build consistency and developer experience. [#2975](https://github.com/apache/dubbo-go/pull/2975)
+- Used `errgroup` to improve error handling during shutdown. [#2973](https://github.com/apache/dubbo-go/pull/2973)
+- Replaced deprecated CAS operations with `CompareAndSwap`. [#2962](https://github.com/apache/dubbo-go/pull/2962)
+- Hardened Triple openServer error handling for configuration errors. [#2945](https://github.com/apache/dubbo-go/pull/2945)
+- Added timeout control for graceful shutdown in Triple protocol. [#2943](https://github.com/apache/dubbo-go/pull/2943)
+- Replaced `interface{}` with `any` throughout the codebase for Go 1.18+ compatibility. [#2848](https://github.com/apache/dubbo-go/pull/2848)
 
-### 🐛 Bug Fixes
+### Observability
 
-* **Stability**:
-    * Replaced panic with error handling for cluster extension failures (#3021, #3064).
-    * Fixed logical dead loops (#2879).
-    * Fixed URL parameter loss in the `SetParams` method (#3022).
-* **Triple/Communication**:
-    * Fixed issues where clients failed to receive attachments from server responses (#2928, #2854).
-    * Fixed Context Attachment error handling in Triple protocol streaming calls (#2810).
-    * Fixed read prefix EOF errors (#2912).
-* **Logging & Misc**:
-    * Fixed incorrect log rotation paths to prevent file loss (#3014).
-    * Changed log level from Error to Warn when application parameters are empty in Tag Router (#3035).
-    * Fixed latency issues in Zookeeper client node perception (#2930).
+- Added logging for service registration lifecycle. [#3043](https://github.com/apache/dubbo-go/pull/3043)
+- Adjusted trace scope names to align with OpenTelemetry specifications. [#3041](https://github.com/apache/dubbo-go/pull/3041)
+- Added `Insecure` option to tracing configuration. [#3028](https://github.com/apache/dubbo-go/pull/3028)
+- Upgraded OpenTelemetry dependencies to v1.21.0. [#2971](https://github.com/apache/dubbo-go/pull/2971)
 
-### 📚 Documentation & CI
+### Documentation & CI
 
-* **CI Enhancements**: Added `make check-fmt` (#3055), License header checks (#2957), and import-formatter checks (#2961).
-* **Docs Updates**: Updated README contact info, fixed invalid links in README_CN, and updated `protoc-gen-go-triple` documentation.
-* **SonarQube**: Fixed and suppressed various SonarQube/SonarCloud false positives and AI bot warnings.
+- Added `make check-fmt` command to CI. [#3055](https://github.com/apache/dubbo-go/pull/3055)
+- Updated README contact info, fixed invalid links in README_CN, and updated `protoc-gen-go-triple` documentation.[#3020](https://github.com/apache/dubbo-go/pull/3020)
+- Added imports formatter checks in CI pipeline. [#2961](https://github.com/apache/dubbo-go/pull/2961)
+- Added License header checks. [#2957](https://github.com/apache/dubbo-go/pull/2957)
+- Fixed and suppressed various SonarQube/SonarCloud false positives and AI bot warnings.[#2902](https://github.com/apache/dubbo-go/pull/2902)
 
-**Contributors:**
-Thanks to the following contributors for making this release possible:
-@1kasa, @97ZQ, @ALSoryu, @Akashisang, @Alanxtl, @AlexStocks, @CAICAIIs, @Flying-Tom, @FoghostCn, @HSenCode, @KamToHung, @MinatoWu, @MrSibe, @Nexusrex18, @No-SilverBullet, @Rinai-R, @Similarityoung, @Snow-kal, @WangzJi, @Whitea029, @ayamzh, @baerwang, @dongjiang1989, @evanzhang87, @flypiggyyoyoyo, @hs80, @liushiqi1001, @manzhizhen, @marsevilspirit, @nanjiek, @phpcyy, @sebbASF, @wqyenjoy, @xuzhijvn, @yumosx, @yxrxy, @zbchi, and @ziyyun.
+### Contributors
+
+Special thanks to all contributors for their efforts in this release:
+@1kasa
+@97ZQ
+@ALSoryu
+@Akashisang
+@Alanxtl
+@AlexStocks
+@CAICAIIs
+@Flying-Tom
+@FoghostCn
+@HSenCode
+@KamToHung
+@MinatoWu
+@MrSibe
+@Nexusrex18
+@No-SilverBullet
+@Rinai-R
+@Similarityoung
+@Snow-kal
+@WangzJi
+@Whitea029
+@ayamzh
+@baerwang
+@dongjiang1989
+@evanzhang87
+@flypiggyyoyoyo
+@hs80
+@liushiqi1001
+@manzhizhen
+@marsevilspirit
+@nanjiek
+@phpcyy
+@sebbASF
+@wqyenjoy
+@xuzhijvn
+@yumosx
+@yxrxy
+@zbchi
+@ziyyun
 
 ## 3.3.0
+
 ## Summary
 
 This release introduces multiple bug fixes, new features, and code enhancements to improve the stability and functionality of Apache Dubbo-Go. Key improvements include resolving various service discovery and registry-related issues, addressing memory leaks, and enhancing the error handling and stability of the underlying communication library. Additionally, new features such as script-based routing, improved Java compatibility, Triple protocol keepalive, and support for Protobuf-based MetadataService have been implemented.
@@ -247,6 +297,7 @@ Special thanks to all contributors for their efforts in improving Apache Dubbo-G
 ## 3.0.3
 
 ### Features
+
 - [Support Grpc based Health check](https://github.com/apache/dubbo-go/pull/1935)
 - [Support xds certificate](https://github.com/apache/dubbo-go/pull/1945)
 - [Support gracefully offline without registry](https://github.com/apache/dubbo-go/pull/1973)
@@ -445,7 +496,7 @@ Special thanks to all contributors for their efforts in improving Apache Dubbo-G
 
   - [Triple CPU usage optimization](https://github.com/dubbogo/triple/pull/32/files)
 
-     Set default tcp read buffer to 4k to decrease gc, and descrease CPU usage by 60% of 3.0.0-rc2
+    Set default tcp read buffer to 4k to decrease gc, and descrease CPU usage by 60% of 3.0.0-rc2
 
   - [Add Triple Debug Log](https://github.com/dubbogo/triple/pull/29)
 
@@ -458,7 +509,9 @@ Special thanks to all contributors for their efforts in improving Apache Dubbo-G
   And there is no needs to define (p*Provider) Reference() method from now on.
 
 - [Set default logger level to info](https://github.com/apache/dubbo-go/pull/1549/files#diff-d5ab135265094924568957f56eaef061c7948d2664daa995fbe0de4c7ab2d272R82)
+
 - [Refactor of filter package sturcture](https://github.com/apache/dubbo-go/pull/1299)
+
 - [Refactor of cluster package structure](https://github.com/apache/dubbo-go/pull/1507)
 
 
@@ -486,6 +539,7 @@ Special thanks to all contributors for their efforts in improving Apache Dubbo-G
 - [Delete zk registry when set defualt consumer/provider config](https://github.com/apache/dubbo-go/pull/1324/files)
 
   
+
 ## 3.0.0-rc2
 
 ### New Features
@@ -533,6 +587,7 @@ Milestone:
 ## 3.0.0-rc1
 
 ### New Features
+
 - [Add triple protocol](https://github.com/apache/dubbo-go/pull/1071)
 - [Add dubbo3 router](https://github.com/apache/dubbo-go/pull/1187)
 - [Add app-level remote service discovery](https://github.com/apache/dubbo-go/pull/1161)
@@ -540,29 +595,34 @@ Milestone:
 - [Add pass through proxy factory](https://github.com/apache/dubbo-go/pull/1081)
 
 ### Enhancement
+
 - [Replace default config string with const value](https://github.com/apache/dubbo-go/pull/1182)
 - [Add retry times in zookeeper starting](https://github.com/apache/dubbo-go/pull/1179)
 - [Client pool enhance](https://github.com/apache/dubbo-go/pull/1119)
 - [Impl the way of load configure file](https://github.com/apache/dubbo-go/pull/1099)
 
 ### Bugfixes
+
 - [Fix: get failback error](https://github.com/apache/dubbo-go/pull/1177)
 - [Fix: delete a service provider when using k8s hpa](https://github.com/apache/dubbo-go/pull/1157)
 - [Fix: fix reExporter bug when config-center {applicationName}.configurator data change](https://github.com/apache/dubbo-go/pull/1144)
 - [Fix: stop the provider app panic error](https://github.com/apache/dubbo-go/pull/1129)
 
 ### Dependencies
+
 - [bump github.com/RoaringBitmap/roaring from 0.6.0 to 0.6.1](https://github.com/apache/dubbo-go/pull/1195)
 - [bump github.com/RoaringBitmap/roaring from 0.5.5 to 0.6.0](https://github.com/apache/dubbo-go/pull/1175)
 - [bump github.com/RoaringBitmap/roaring from 0.5.5 to 0.6.0](https://github.com/apache/dubbo-go/pull/1163)
 - [Bump github.com/magiconair/properties from 1.8.4 to 1.8.5](https://github.com/apache/dubbo-go/pull/1115)
 
 Milestone:
+
 - [https://github.com/apache/dubbo-go/milestone/9](https://github.com/apache/dubbo-go/milestone/9?closed=1)
 
 ## 1.5.6
 
 ### New Features
+
 - [Add dubbo-go-cli telnet tool](https://github.com/apache/dubbo-go/pull/818)
 - [Add Prox ImplementFunc to allow override impl](https://github.com/apache/dubbo-go/pull/1019)
 - [Add read configuration path from the command line when start](https://github.com/apache/dubbo-go/pull/1039)
@@ -571,6 +631,7 @@ Milestone:
 - [Add registry ip:port set from enviroment variable](https://github.com/apache/dubbo-go/pull/1036)
 
 ### Enhancement
+
 - [introduce ConfigPostProcessor extension](https://github.com/apache/dubbo-go/pull/943)
 - [Impl extension of two urls comparison](https://github.com/apache/dubbo-go/pull/854)
 - [using event-driven to let router send signal to notify channel](https://github.com/apache/dubbo-go/pull/976)
@@ -579,6 +640,7 @@ Milestone:
 - [Improve config center](https://github.com/apache/dubbo-go/pull/1030)
 
 ### Bugfixes
+
 - [Fix: generic struct2MapAll key of map keep type](https://github.com/apache/dubbo-go/pull/928)
 - [Fix: when events empty, delete all the invokers](https://github.com/apache/dubbo-go/pull/758)
 - [Fix: file service discovery run in windows](https://github.com/apache/dubbo-go/pull/932)
@@ -597,16 +659,19 @@ Milestone:
 - [Fix: body buffer too short](https://github.com/apache/dubbo-go/pull/1090)
 
 ### Dependencies
+
 - [Bump dubbo-go-hessian2 from v1.9.0-rc1 to v1.9.1](https://github.com/apache/dubbo-go/pull/1088/files)
 - [Bump github.com/nacos-group/nacos-sdk-go from 1.0.5 to v1.0.7](https://github.com/apache/dubbo-go/pull/1106)
 
 Milestone: 
+
 - [https://github.com/apache/dubbo-go/milestone/7](https://github.com/apache/dubbo-go/milestone/7?closed=1)
 - [https://github.com/apache/dubbo-go/milestone/10](https://github.com/apache/dubbo-go/milestone/10?closed=1)
 
 ## 1.5.5
 
 ### New Features
+
 - [Add Address notification batch mode](https://github.com/apache/dubbo-go/pull/741) 
 - [Add dubbo-gen stream support](https://github.com/apache/dubbo-go/pull/794) 
 - [Add Change verify to Makefile](https://github.com/apache/dubbo-go/pull/831) 
@@ -614,12 +679,14 @@ Milestone:
 - [Add grpc max message size config](https://github.com/apache/dubbo-go/pull/824) 
 
 ### Enhancement
+
 - [when it need local ip, it will get it every time. We can get local ip once, and reused it](https://github.com/apache/dubbo-go/pull/807) 
 - [enhance client's connectivity](https://github.com/apache/dubbo-go/pull/800) 
 - [Imp: get local ip once and reused it](https://github.com/apache/dubbo-go/pull/808) 
 - [Remove unmeaning logic](https://github.com/apache/dubbo-go/pull/855) 
 
 ### Bugfixes
+
 - [Fix: nacos registry can not get namespaceId](https://github.com/apache/dubbo-go/pull/778) [@peaman](https://github.com/peaman)       
 - [Fix: url encode](https://github.com/apache/dubbo-go/pull/802)       
 - [Fix: try to fix too many files open error](https://github.com/apache/dubbo-go/pull/797)       
@@ -631,6 +698,7 @@ Milestone:
 - [Fix: generic "encode hessian.Object"](https://github.com/apache/dubbo-go/pull/945)
 
 ### Dependencies
+
 - [Bump github.com/mitchellh/mapstructure from 1.2.3 to 1.3.3](https://github.com/apache/dubbo-go/pull/838)
 - [Bump github.com/go-resty/resty/v2 from 2.1.0 to 2.3.0](https://github.com/apache/dubbo-go/pull/837)
 - [Bump github.com/opentracing/opentracing-go from 1.1.0 to 1.2.0](https://github.com/apache/dubbo-go/pull/836)
@@ -649,11 +717,13 @@ Milestone: [https://github.com/apache/dubbo-go/milestone/5](https://github.com/a
 ## 1.4.5
 
 ### Bugfixes
+
 - [Fix too many files open error](https://github.com/apache/dubbo-go/pull/828)  [@wenxuwan](https://github.com/wenxuwan) Milestone: [https://github.com/apache/dubbo-go/milestone/6](https://github.com/apache/dubbo-go/milestone/6?closed=1)
 
 ## 1.5.4
 
 ### Bugfixes
+
 - [Fix etcd cluster reconnect](https://github.com/apache/dubbo-go/pull/828)
 - [Fix zookeeper deadlock problem](https://github.com/apache/dubbo-go/pull/826)
 - [Fix generic struct2MapAll](https://github.com/apache/dubbo-go/pull/822)
@@ -670,6 +740,7 @@ Milestone: [https://github.com/apache/dubbo-go/milestone/6](https://github.com/a
 ## 1.5.3
 
 ### New Features
+
 - [Add consul service discovery](https://github.com/apache/dubbo-go/pull/701) [@zhangshen023](https://github.com/zhangshen023)
 - [Add File system service discovery](https://github.com/apache/dubbo-go/pull/732) [@DogBaoBao](https://github.com/DogBaoBao)
 - [Migrate travis Ci to Github Actions](https://github.com/apache/dubbo-go/pull/752) [@sdttttt](https://github.com/sdttttt)
@@ -677,6 +748,7 @@ Milestone: [https://github.com/apache/dubbo-go/milestone/6](https://github.com/a
 - [Add dubbo-go docs and blog into doc directory](https://github.com/apache/dubbo-go/pull/767) [@oaoit](https://github.com/oaoit)
 
 ### Enhancement
+
 - [Add address notification batch mode](https://github.com/apache/dubbo-go/pull/741) [@beiwei30](https://github.com/beiwei30)
 - [Refactor network and codec model](https://github.com/apache/dubbo-go/pull/673) [@fangyincheng](https://github.com/fangyincheng) [@georgehao](https://github.com/georgehao)
 - [Remove unnecessary return and judgement](https://github.com/apache/dubbo-go/pull/730) [@YongHaoWu](https://github.com/YongHaoWu)
@@ -687,6 +759,7 @@ Milestone: [https://github.com/apache/dubbo-go/milestone/6](https://github.com/a
 - [Improve code quantity](https://github.com/apache/dubbo-go/pull/763) [@gaoxinge](https://github.com/gaoxinge)
 
 ### Bugfixes
+
 - [Fix etcdv3 lease](https://github.com/apache/dubbo-go/pull/738) [@zhangshen023](https://github.com/zhangshen023)
 - [Fix rename SethealthChecker to SetHealthChecker](https://github.com/apache/dubbo-go/pull/746) [@watermelo](https://github.com/watermelo)
 - [Fix init config problem in HystrixFilter](https://github.com/apache/dubbo-go/pull/731) [@YGrylls](https://github.com/YGrylls)
@@ -699,6 +772,7 @@ Project: [https://github.com/apache/dubbo-go/projects/10](https://github.com/apa
 ## 1.5.4
 
 ### Bugfixes
+
 - [Fix etcd cluster reconnect](https://github.com/apache/dubbo-go/pull/828)  
 - [Fix zookeeper deadlock problem](https://github.com/apache/dubbo-go/pull/826)      
 - [Fix generic struct2MapAll](https://github.com/apache/dubbo-go/pull/822)     
@@ -715,6 +789,7 @@ Milestone: [https://github.com/apache/dubbo-go/milestone/6](https://github.com/a
 ## 1.5.3
 
 ### New Features
+
 - [Add consul service discovery](https://github.com/apache/dubbo-go/pull/701) [@zhangshen023](https://github.com/zhangshen023)
 - [Add File system service discovery](https://github.com/apache/dubbo-go/pull/732) [@DogBaoBao](https://github.com/DogBaoBao)
 - [Migrate travis Ci to Github Actions](https://github.com/apache/dubbo-go/pull/752) [@sdttttt](https://github.com/sdttttt)
@@ -722,6 +797,7 @@ Milestone: [https://github.com/apache/dubbo-go/milestone/6](https://github.com/a
 - [Add dubbo-go docs and blog into doc directory](https://github.com/apache/dubbo-go/pull/767) [@oaoit](https://github.com/oaoit) 
 
 ### Enhancement
+
 - [Add address notification batch mode](https://github.com/apache/dubbo-go/pull/741) [@beiwei30](https://github.com/beiwei30)
 - [Refactor network and codec model](https://github.com/apache/dubbo-go/pull/673) [@fangyincheng](https://github.com/fangyincheng) [@georgehao](https://github.com/georgehao)
 - [Remove unnecessary return and judgement](https://github.com/apache/dubbo-go/pull/730) [@YongHaoWu](https://github.com/YongHaoWu)
@@ -732,6 +808,7 @@ Milestone: [https://github.com/apache/dubbo-go/milestone/6](https://github.com/a
 - [Improve code quantity](https://github.com/apache/dubbo-go/pull/763) [@gaoxinge](https://github.com/gaoxinge) 
 
 ### Bugfixes
+
 - [Fix etcdv3 lease](https://github.com/apache/dubbo-go/pull/738) [@zhangshen023](https://github.com/zhangshen023) 
 - [Fix rename SethealthChecker to SetHealthChecker](https://github.com/apache/dubbo-go/pull/746) [@watermelo](https://github.com/watermelo)  
 - [Fix init config problem in HystrixFilter](https://github.com/apache/dubbo-go/pull/731) [@YGrylls](https://github.com/YGrylls)   
@@ -744,6 +821,7 @@ Project: [https://github.com/apache/dubbo-go/projects/10](https://github.com/apa
 ## 1.5.1
 
 ### New Features
+
 - [Add dynamic tag router](https://github.com/apache/dubbo-go/pull/703)
 - [Add TLS support](https://github.com/apache/dubbo-go/pull/685)
 - [Add Nearest first for multiple registry](https://github.com/apache/dubbo-go/pull/659)
@@ -751,12 +829,14 @@ Project: [https://github.com/apache/dubbo-go/projects/10](https://github.com/apa
 - [Add dynamic tag router](https://github.com/apache/dubbo-go/pull/665)
 
 ### Enhancement
+
 - [Avoid init the log twice](https://github.com/apache/dubbo-go/pull/719)
 - [Correct words and format codes](https://github.com/apache/dubbo-go/pull/704)
 - [Change log stack level from warn to error](https://github.com/apache/dubbo-go/pull/702)
 - [Optimize remotes configuration](https://github.com/apache/dubbo-go/pull/687)
 
 ### Bugfixes
+
 - [Fix register service instance after provider config load](https://github.com/apache/dubbo-go/pull/694)
 - [Fix call subscribe function asynchronously](https://github.com/apache/dubbo-go/pull/721)
 - [Fix tag router rule copy](https://github.com/apache/dubbo-go/pull/721)
@@ -772,18 +852,20 @@ Project: [https://github.com/apache/dubbo-go/projects/8](https://github.com/apac
 ## 1.5.0
 
 ### New Features
+
 - [Application-Level Registry Model](https://github.com/apache/dubbo-go/pull/604)
-    - [DelegateMetadataReport & RemoteMetadataService](https://github.com/apache/dubbo-go/pull/505)
-    - [Nacos MetadataReport implementation](https://github.com/apache/dubbo-go/pull/522)
-    - [Nacos service discovery](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/nacos/service_discovery.go)
-    - [Zk metadata service](https://github.com/apache/dubbo-go/pull/633)
-    - [Zk service discovery](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/zookeeper/service_discovery.go)
-    - [Etcd metadata report](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/metadata/report/etcd/report.go)
-    - [Etcd metadata service discovery](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/etcdv3/service_discovery.go)
+  - [DelegateMetadataReport & RemoteMetadataService](https://github.com/apache/dubbo-go/pull/505)
+  - [Nacos MetadataReport implementation](https://github.com/apache/dubbo-go/pull/522)
+  - [Nacos service discovery](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/nacos/service_discovery.go)
+  - [Zk metadata service](https://github.com/apache/dubbo-go/pull/633)
+  - [Zk service discovery](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/zookeeper/service_discovery.go)
+  - [Etcd metadata report](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/metadata/report/etcd/report.go)
+  - [Etcd metadata service discovery](https://github.com/apache/dubbo-go/blob/9a5990d9a9c3d5e6633c0d7d926c156416bcb931/registry/etcdv3/service_discovery.go)
 - [Support grpc json protocol](https://github.com/apache/dubbo-go/pull/582)
 - [Ftr: using different labels btw provider and consumer, k8s service discovery across namespaces](https://github.com/apache/dubbo-go/pull/577 )
 
 ### Enhancement
+
 - [Optimize err handling ](https://github.com/apache/dubbo-go/pull/536/)
 - [Add attribute method into Invocation and RpcInvocation](https://github.com/apache/dubbo-go/pull/537)
 - [Optimize lock for zookeeper registry](https://github.com/apache/dubbo-go/pull/578)
@@ -798,6 +880,7 @@ Project: [https://github.com/apache/dubbo-go/projects/8](https://github.com/apac
 
 
 ### Bugfixes
+
 - [Fix Gitee problem](https://github.com/apache/dubbo-go/pull/590)
 - [Gitee quality analyses -- common](https://github.com/apache/dubbo-go/issues/616)
 - [Nacos client logDir path seperator for Windows](https://github.com/apache/dubbo-go/pull/591)
@@ -807,6 +890,7 @@ Project: [https://github.com/apache/dubbo-go/projects/8](https://github.com/apac
 - [Enhancement cluster code analysis](https://github.com/apache/dubbo-go/pull/632)
 
 ### Document & Comment
+
 - [Add comment for common directory](https://github.com/apache/dubbo-go/pull/530)
 - [Add comments for config_center](https://github.com/apache/dubbo-go/pull/545)
 - [Update the comments in metrics](https://github.com/apache/dubbo-go/pull/547)
@@ -820,6 +904,7 @@ Project: [https://github.com/apache/dubbo-go/projects/8](https://github.com/apac
 - [Update the comments in registy directory](https://github.com/apache/dubbo-go/pull/589)
 
 ## 1.4.0
+
 ### New Features
 
 - [Condition router](https://github.com/apache/dubbo-go/pull/294)
