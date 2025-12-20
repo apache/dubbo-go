@@ -67,7 +67,7 @@ type nacosServiceDiscovery struct {
 	// cache registry instances
 	registryInstances []registry.ServiceInstance
 
-	serviceNameInstancesMap map[string][]registry.ServiceInstance //Batch registration for the same service
+	serviceNameInstancesMap map[string][]registry.ServiceInstance // Batch registration for the same service
 
 	// registryURL stores the URL used for registration, used to fetch dynamic config like weight
 	registryURL *common.URL
@@ -119,7 +119,7 @@ func (n *nacosServiceDiscovery) Register(instance registry.ServiceInstance) erro
 	if err != nil || !ok {
 		return perrors.Errorf("register nacos instances failed, err:%+v", err)
 	}
-	n.registryInstances = append(n.registryInstances, instance) //all_instances
+	n.registryInstances = append(n.registryInstances, instance) // all_instances
 	return nil
 }
 
@@ -154,7 +154,7 @@ func (n *nacosServiceDiscovery) GetDefaultPageSize() int {
 func (n *nacosServiceDiscovery) GetServices() *gxset.HashSet {
 	res := gxset.NewSet()
 
-	//Filter out interface-level service DataIds
+	// Filter out interface-level service DataIds
 	const pattern = `^providers:[\w\.]+(?::[\w\.]*:|::[\w\.]*)?$`
 	re := regexp.MustCompile(pattern)
 	for pageNo := uint32(1); ; pageNo++ {
@@ -163,7 +163,6 @@ func (n *nacosServiceDiscovery) GetServices() *gxset.HashSet {
 			PageNo:    pageNo,
 			GroupName: n.group,
 		})
-
 		if err != nil {
 			logger.Errorf("Could not query the services: %v", err)
 			return res
@@ -341,7 +340,7 @@ func (n *nacosServiceDiscovery) toRegisterInstance(instance registry.ServiceInst
 		metadata = make(map[string]string, 1)
 	}
 
-	//Retrieve weight (Provider takes precedence; URL may override)
+	// Retrieve weight (Provider takes precedence; URL may override)
 	w := instance.GetWeight()
 	// Set by Provider via WithServerWeight / WithWeight
 
@@ -354,7 +353,7 @@ func (n *nacosServiceDiscovery) toRegisterInstance(instance registry.ServiceInst
 		}
 	}
 
-	//Validity check
+	// Validity check
 	switch {
 	case w <= 0:
 		w = int64(constant.DefaultNacosWeight)
@@ -378,6 +377,7 @@ func (n *nacosServiceDiscovery) toRegisterInstance(instance registry.ServiceInst
 		Ephemeral: true,
 	}
 }
+
 func (n *nacosServiceDiscovery) toBatchRegisterInstances(instances []registry.ServiceInstance) vo.BatchRegisterInstanceParam {
 	var brins vo.BatchRegisterInstanceParam
 	var rins []vo.RegisterInstanceParam
@@ -401,6 +401,7 @@ func (n *nacosServiceDiscovery) toDeregisterInstance(instance registry.ServiceIn
 		Ip:          instance.GetHost(),
 		Port:        uint64(instance.GetPort()),
 		GroupName:   n.group,
+		Ephemeral:   true,
 	}
 }
 

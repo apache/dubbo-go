@@ -19,6 +19,7 @@ package servicediscovery
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"testing"
@@ -147,7 +148,7 @@ func TestServiceDiscoveryRegistryUnSubscribe(t *testing.T) {
 }
 
 // setupEnvironment initializes the test environment.
-func setupEnvironment(t *testing.T) (*mockServiceDiscovery, *mockServiceNameMapping) {
+func setupEnvironment(_ *testing.T) (*mockServiceDiscovery, *mockServiceNameMapping) {
 	appConfig := global.DefaultApplicationConfig()
 	appConfig.Name = testApp
 
@@ -175,6 +176,11 @@ type mockServiceDiscovery struct {
 	listenerAdded    bool
 	capturedAppName  string
 	capturedInstance registry.ServiceInstance
+
+	// for Unregister tests
+	unregisterCalled  bool
+	unregisterIDs     []string
+	unregisterErrByID map[string]error
 }
 
 func (m *mockServiceDiscovery) String() string { return "mock" }
@@ -184,10 +190,21 @@ func (m *mockServiceDiscovery) Register(inst registry.ServiceInstance) error {
 	m.capturedInstance = inst
 	return nil
 }
-func (m *mockServiceDiscovery) Update(inst registry.ServiceInstance) error     { return nil }
-func (m *mockServiceDiscovery) Unregister(inst registry.ServiceInstance) error { return nil }
-func (m *mockServiceDiscovery) GetDefaultPageSize() int                        { return 10 }
-func (m *mockServiceDiscovery) GetServices() *gxset.HashSet                    { return gxset.NewSet("mock-service") }
+func (m *mockServiceDiscovery) Update(inst registry.ServiceInstance) error { return nil }
+func (m *mockServiceDiscovery) Unregister(inst registry.ServiceInstance) error {
+	m.unregisterCalled = true
+	if inst != nil {
+		m.unregisterIDs = append(m.unregisterIDs, inst.GetID())
+		if m.unregisterErrByID != nil {
+			if err, ok := m.unregisterErrByID[inst.GetID()]; ok {
+				return err
+			}
+		}
+	}
+	return nil
+}
+func (m *mockServiceDiscovery) GetDefaultPageSize() int     { return 10 }
+func (m *mockServiceDiscovery) GetServices() *gxset.HashSet { return gxset.NewSet("mock-service") }
 func (m *mockServiceDiscovery) GetInstances(name string) []registry.ServiceInstance {
 	m.capturedAppName = name
 	return []registry.ServiceInstance{}
@@ -196,9 +213,11 @@ func (m *mockServiceDiscovery) GetInstancesByPage(string, int, int) gxpage.Pager
 func (m *mockServiceDiscovery) GetHealthyInstancesByPage(string, int, int, bool) gxpage.Pager {
 	return nil
 }
+
 func (m *mockServiceDiscovery) GetRequestInstances([]string, int, int) map[string]gxpage.Pager {
 	return nil
 }
+
 func (m *mockServiceDiscovery) AddListener(registry.ServiceInstancesChangedListener) error {
 	defer m.wg.Done()
 	m.listenerAdded = true
@@ -220,6 +239,7 @@ func (m *mockServiceNameMapping) Map(url *common.URL) error {
 	m.data[serviceInterface] = gxset.NewSet(appName)
 	return nil
 }
+
 func (m *mockServiceNameMapping) Get(url *common.URL, _ mapping.MappingListener) (*gxset.HashSet, error) {
 	m.getCalled = true
 	m.capturedGroup = url.GetParam(constant.GroupKey, "")
@@ -236,6 +256,7 @@ type mockNotifyListener struct{}
 func (m *mockNotifyListener) Notify(*registry.ServiceEvent) {
 	// for mocking
 }
+
 func (m *mockNotifyListener) NotifyAll([]*registry.ServiceEvent, func()) {
 	// for mocking
 }
@@ -279,3 +300,215 @@ func (m *mockInvoker) Destroy() {
 	// for mocking
 }
 func (m *mockInvoker) Invoke(context.Context, protocol.Invocation) protocol.Result { return nil }
+
+// TestServiceDiscoveryRegistryUnRegister_AllSuccess verifies UnRegisterService bulk deregister success.
+func TestServiceDiscoveryRegistryUnRegister_AllSuccess(t *testing.T) {
+	mockSD, _ := setupEnvironment(t)
+
+	registryURL, _ := common.NewURL(testRegistryURL,
+		common.WithParamsValue(constant.RegistryKey, "mock"))
+
+	reg, err := newServiceDiscoveryRegistry(registryURL)
+	assert.NoError(t, err)
+
+	sdReg, ok := reg.(*serviceDiscoveryRegistry)
+	assert.True(t, ok)
+
+	inst1 := &registry.DefaultServiceInstance{
+		ID:          "inst-1",
+		ServiceName: testApp,
+		Host:        "127.0.0.1",
+		Port:        20880,
+		Enable:      true,
+		Healthy:     true,
+		Metadata:    map[string]string{"k": "v"},
+	}
+	inst2 := &registry.DefaultServiceInstance{
+		ID:          "inst-2",
+		ServiceName: testApp,
+		Host:        "127.0.0.1",
+		Port:        20881,
+		Enable:      true,
+		Healthy:     true,
+		Metadata:    map[string]string{"k2": "v2"},
+	}
+
+	sdReg.instances = []registry.ServiceInstance{inst1, inst2}
+	mockSD.unregisterErrByID = nil
+
+	err = sdReg.UnRegisterService()
+	assert.NoError(t, err)
+
+	// all instances should be removed after successful deregister
+	assert.Empty(t, sdReg.instances)
+
+	// verify Unregister called for each instance
+	assert.True(t, mockSD.unregisterCalled)
+	assert.ElementsMatch(t, []string{"inst-1", "inst-2"}, mockSD.unregisterIDs)
+}
+
+// TestServiceDiscoveryRegistryUnRegister_PartialFail verifies failed instances are kept and errors are returned.
+func TestServiceDiscoveryRegistryUnRegister_PartialFail(t *testing.T) {
+	mockSD, _ := setupEnvironment(t)
+
+	registryURL, _ := common.NewURL(testRegistryURL,
+		common.WithParamsValue(constant.RegistryKey, "mock"))
+
+	reg, err := newServiceDiscoveryRegistry(registryURL)
+	assert.NoError(t, err)
+
+	sdReg, ok := reg.(*serviceDiscoveryRegistry)
+	assert.True(t, ok)
+
+	inst1 := &registry.DefaultServiceInstance{
+		ID:          "inst-1",
+		ServiceName: testApp,
+		Host:        "127.0.0.1",
+		Port:        20880,
+		Enable:      true,
+		Healthy:     true,
+	}
+	inst2 := &registry.DefaultServiceInstance{
+		ID:          "inst-2",
+		ServiceName: testApp,
+		Host:        "127.0.0.1",
+		Port:        20881,
+		Enable:      true,
+		Healthy:     true,
+	}
+
+	sdReg.instances = []registry.ServiceInstance{inst1, inst2}
+
+	mockSD.unregisterErrByID = map[string]error{
+		"inst-1": errors.New("mock unregister failed"),
+	}
+
+	err = sdReg.UnRegisterService()
+	assert.Error(t, err)
+
+	// failed instance should remain, successful one removed
+	assert.Equal(t, 1, len(sdReg.instances))
+	assert.Equal(t, "inst-1", sdReg.instances[0].GetID())
+
+	// still called for both
+	assert.True(t, mockSD.unregisterCalled)
+	assert.ElementsMatch(t, []string{"inst-1", "inst-2"}, mockSD.unregisterIDs)
+}
+
+// TestServiceDiscoveryRegistryUnRegister_NoInstances verifies UnRegisterService handles empty list.
+func TestServiceDiscoveryRegistryUnRegister_NoInstances(t *testing.T) {
+	mockSD, _ := setupEnvironment(t)
+
+	registryURL, _ := common.NewURL(testRegistryURL,
+		common.WithParamsValue(constant.RegistryKey, "mock"))
+
+	reg, err := newServiceDiscoveryRegistry(registryURL)
+	assert.NoError(t, err)
+
+	sdReg, ok := reg.(*serviceDiscoveryRegistry)
+	assert.True(t, ok)
+
+	sdReg.instances = []registry.ServiceInstance{}
+
+	err = sdReg.UnRegisterService()
+	assert.NoError(t, err)
+
+	// should stay empty
+	assert.Empty(t, sdReg.instances)
+
+	// should not call Unregister
+	assert.False(t, mockSD.unregisterCalled)
+	assert.Empty(t, mockSD.unregisterIDs)
+}
+
+// TestServiceDiscoveryRegistryUnRegister_Concurrent verifies UnRegisterService under concurrent access.
+func TestServiceDiscoveryRegistryUnRegister_Concurrent(t *testing.T) {
+	mockSD, _ := setupEnvironment(t)
+
+	registryURL, _ := common.NewURL(testRegistryURL,
+		common.WithParamsValue(constant.RegistryKey, "mock"))
+
+	reg, err := newServiceDiscoveryRegistry(registryURL)
+	assert.NoError(t, err)
+
+	sdReg, ok := reg.(*serviceDiscoveryRegistry)
+	assert.True(t, ok)
+
+	// prepare initial instances
+	for i := 0; i < 5; i++ {
+		inst := &registry.DefaultServiceInstance{
+			ID:          fmt.Sprintf("init-%d", i),
+			ServiceName: testApp,
+			Host:        "127.0.0.1",
+			Port:        20000 + i,
+			Enable:      true,
+			Healthy:     true,
+		}
+		sdReg.instances = append(sdReg.instances, inst)
+	}
+
+	mockSD.unregisterErrByID = map[string]error{
+		"init-2": errors.New("mock unregister failed"),
+	}
+
+	var wg sync.WaitGroup
+	panicCh := make(chan any, 2)
+
+	// goroutine 1: unregister
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		defer func() {
+			if r := recover(); r != nil {
+				panicCh <- r
+			}
+		}()
+		_ = sdReg.UnRegisterService()
+	}()
+
+	// goroutine 2: simulate concurrent register / instance append
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		defer func() {
+			if r := recover(); r != nil {
+				panicCh <- r
+			}
+		}()
+
+		for i := 0; i < 3; i++ {
+			inst := &registry.DefaultServiceInstance{
+				ID:          fmt.Sprintf("concurrent-%d", i),
+				ServiceName: testApp,
+				Host:        "127.0.0.1",
+				Port:        21000 + i,
+				Enable:      true,
+				Healthy:     true,
+			}
+			// intentionally no lock: simulating real race
+			sdReg.instances = append(sdReg.instances, inst)
+			time.Sleep(10 * time.Millisecond)
+		}
+	}()
+
+	wg.Wait()
+	close(panicCh)
+
+	// assert no panic happened
+	for p := range panicCh {
+		t.Fatalf("panic occurred during concurrent unregister: %v", p)
+	}
+
+	// at least the failed instance should remain
+	foundFailed := false
+	for _, inst := range sdReg.instances {
+		if inst.GetID() == "init-2" {
+			foundFailed = true
+			break
+		}
+	}
+	assert.True(t, foundFailed, "failed instance should be kept after UnRegisterService")
+
+	// unregister should be called
+	assert.True(t, mockSD.unregisterCalled)
+}

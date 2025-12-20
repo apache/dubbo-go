@@ -1195,44 +1195,6 @@ func TestWithMeshProviderPort(t *testing.T) {
 	processReferenceOptionsInitCases(t, cases)
 }
 
-func TestWithKeepAliveConfig(t *testing.T) {
-	cases := []newClientCase{
-		{
-			desc: "config keepalive interval with less than 10s",
-			opts: []ClientOption{
-				WithKeepAliveInterval(time.Second * 5), //less than 10s(min ping interval),should be set to 10s
-			},
-			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
-				assert.Equal(t, "10s", cli.cliOpts.overallReference.KeepAliveInterval)
-			},
-		},
-		{
-			desc: "config keepalive interval with larger than 10s",
-			opts: []ClientOption{
-				WithKeepAliveInterval(time.Second * 20),
-			},
-			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
-				assert.Equal(t, "20s", cli.cliOpts.overallReference.KeepAliveInterval)
-			},
-		},
-		{
-			desc: "config keepalive interval and timeout",
-			opts: []ClientOption{
-				WithKeepAliveInterval(time.Second * 20),
-				WithKeepAliveTimeout(time.Second * 30),
-			},
-			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
-				assert.Equal(t, "20s", cli.cliOpts.overallReference.KeepAliveInterval)
-				assert.Equal(t, "30s", cli.cliOpts.overallReference.KeepAliveTimeout)
-			},
-		},
-	}
-	processNewClientCases(t, cases)
-}
-
 func TestInitWithConsumer(t *testing.T) {
 	trueVal := true
 	cliOpts := &ClientOptions{

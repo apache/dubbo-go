@@ -119,7 +119,11 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 			if metadataInfo == nil {
 				meta, err := GetMetadataInfo(lstn.app, instance, revision)
 				if err != nil {
-					return err
+					// Skip this instance if metadata fetch fails (e.g., old Java Dubbo version)
+					// Try next instance with same revision
+					logger.Warnf("Failed to get metadata from instance %s (revision %s): %v, skipping this instance",
+						instance.GetHost(), revision, err)
+					continue
 				}
 				metadataInfo = meta
 			}
