@@ -34,7 +34,6 @@ This release introduces major enhancements to the **Triple protocol**, improveme
 - Fixed counter decrement on error. [#3013](https://github.com/apache/dubbo-go/pull/3013)
 - Fixed metadata issues: fixed application metadata retrieval failure caused by meta-v error, and fixed empty parameter issue when metadata storage type is remote. [#2952](https://github.com/apache/dubbo-go/pull/2952) [#2953](https://github.com/apache/dubbo-go/pull/2953)
 - Fixed provider config in dubbo.Load(). [#2941](https://github.com/apache/dubbo-go/pull/2941)
-
 - Fixed issues where clients could not receive attachments from server responses in Triple protocol. [#2928](https://github.com/apache/dubbo-go/pull/2928) [#2854](https://github.com/apache/dubbo-go/pull/2854)
 - Fixed Nacos weight configuration not taking effect. [#2937](https://github.com/apache/dubbo-go/pull/2937)
 - Fixed latency issues in Zookeeper client node perception. [#2930](https://github.com/apache/dubbo-go/pull/2930)
