@@ -53,3 +53,56 @@ func TestInstantiateLogrus_FileAppenderAndJson(t *testing.T) {
 		t.Fatalf("expected logrus file logger, err=%v", err)
 	}
 }
+
+func TestInstantiateLogrus_TextFormat(t *testing.T) {
+	u := &common.URL{}
+	u.ReplaceParams(url.Values{
+		constant.LoggerLevelKey:    []string{"info"},
+		constant.LoggerAppenderKey: []string{"console"},
+		constant.LoggerFormatKey:   []string{"text"},
+	})
+	lg, err := instantiate(u)
+	if err != nil || lg == nil {
+		t.Fatalf("expected logrus logger with text format, err=%v", err)
+	}
+}
+
+func TestInstantiateLogrus_DefaultFormat(t *testing.T) {
+	u := &common.URL{}
+	u.ReplaceParams(url.Values{
+		constant.LoggerLevelKey:    []string{"info"},
+		constant.LoggerAppenderKey: []string{"console"},
+		constant.LoggerFormatKey:   []string{"unknown-format"},
+	})
+	lg, err := instantiate(u)
+	if err != nil || lg == nil {
+		t.Fatalf("expected logrus logger with default format fallback, err=%v", err)
+	}
+}
+
+func TestInstantiateLogrus_ConsoleAndFileAppender(t *testing.T) {
+	u := &common.URL{}
+	u.ReplaceParams(url.Values{
+		constant.LoggerLevelKey:       []string{"debug"},
+		constant.LoggerAppenderKey:    []string{"console,file"},
+		constant.LoggerFormatKey:      []string{"json"},
+		constant.LoggerFileNameKey:    []string{"test_combined.log"},
+		constant.LoggerFileNaxSizeKey: []string{"1"},
+	})
+	lg, err := instantiate(u)
+	if err != nil || lg == nil {
+		t.Fatalf("expected logrus logger with console and file appenders, err=%v", err)
+	}
+}
+
+func TestInstantiateLogrus_ValidLevel(t *testing.T) {
+	u := &common.URL{}
+	u.ReplaceParams(url.Values{
+		constant.LoggerLevelKey:    []string{"debug"},
+		constant.LoggerAppenderKey: []string{"console"},
+	})
+	lg, err := instantiate(u)
+	if err != nil || lg == nil {
+		t.Fatalf("expected logrus logger with valid level, err=%v", err)
+	}
+}
