@@ -469,12 +469,15 @@ func BenchmarkMockZkClientFacadeLock(b *testing.B) {
 		common.WithLocation("127.0.0.1:2181"),
 	)
 	facade := newMockZkClientFacade(url)
+	counter := 0
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		lock := facade.ZkClientLock()
 		lock.Lock()
+		counter++
 		lock.Unlock()
 	}
+	_ = counter
 }
 
 // ============================================

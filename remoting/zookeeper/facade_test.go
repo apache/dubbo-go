@@ -414,12 +414,15 @@ func BenchmarkFacadeRestartCallback(b *testing.B) {
 
 func BenchmarkFacadeLockUnlock(b *testing.B) {
 	facade := newFacadeTestZkClientFacade()
+	counter := 0
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		lock := facade.ZkClientLock()
 		lock.Lock()
+		counter++
 		lock.Unlock()
 	}
+	_ = counter
 }
 
 func BenchmarkFacadeGetURL(b *testing.B) {

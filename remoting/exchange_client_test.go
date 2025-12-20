@@ -103,12 +103,6 @@ func (m *mockClient) setConnectError(err error) {
 	m.connectErr = err
 }
 
-func (m *mockClient) setRequestError(err error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.requestErr = err
-}
-
 func (m *mockClient) setAvailable(available bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()

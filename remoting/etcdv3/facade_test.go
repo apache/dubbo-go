@@ -372,9 +372,7 @@ func TestFacadeEdgeCases(t *testing.T) {
 
 		// Second destroy should not panic (channel already closed)
 		defer func() {
-			if r := recover(); r != nil {
-				// Expected panic from closing already closed channel
-			}
+			_ = recover() // Expected panic from closing already closed channel
 		}()
 	})
 
