@@ -574,7 +574,7 @@ func TestConcurrentMetadataOperations(t *testing.T) {
 
 	// Verify all keys were added
 	count := 0
-	cacheListener.keyListeners.Range(func(key, value interface{}) bool {
+	cacheListener.keyListeners.Range(func(key, value any) bool {
 		count++
 		return true
 	})
