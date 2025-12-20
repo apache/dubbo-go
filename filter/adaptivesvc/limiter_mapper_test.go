@@ -19,10 +19,15 @@ package adaptivesvc
 
 import (
 	"testing"
+)
 
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/filter/adaptivesvc/limiter"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestLimiterMapper_newAndSetMethodLimiter(t *testing.T) {
