@@ -66,7 +66,7 @@ func TestAdaptiveServiceProviderFilter_Invoke(t *testing.T) {
 	})
 
 	t.Run("AdaptiveEnabled_AcquireSuccess", func(t *testing.T) {
-		invoc := invocation.NewRPCInvocation(methodName, nil, map[string]interface{}{
+		invoc := invocation.NewRPCInvocation(methodName, nil, map[string]any{
 			constant.AdaptiveServiceEnabledKey: constant.AdaptiveServiceIsEnabled,
 		})
 		invoker := mock.NewMockInvoker(ctrl)

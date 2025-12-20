@@ -42,7 +42,7 @@ func TestIsCallingToGenericService(t *testing.T) {
 	u1, _ := common.NewURL("dubbo://127.0.0.1:20000/ComTest?generic=true")
 	invoker1 := mock.NewMockInvoker(ctrl)
 	invoker1.EXPECT().GetURL().Return(u1).AnyTimes()
-	invoc1 := invocation.NewRPCInvocation("GetUser", []interface{}{"ID"}, nil)
+	invoc1 := invocation.NewRPCInvocation("GetUser", []any{"ID"}, nil)
 	assert.True(t, isCallingToGenericService(invoker1, invoc1))
 
 	u2, _ := common.NewURL("dubbo://127.0.0.1:20000/ComTest")
@@ -50,7 +50,7 @@ func TestIsCallingToGenericService(t *testing.T) {
 	invoker2.EXPECT().GetURL().Return(u2).AnyTimes()
 	assert.False(t, isCallingToGenericService(invoker2, invoc1))
 
-	invoc3 := invocation.NewRPCInvocation(constant.Generic, []interface{}{"m", "t", "a"}, nil)
+	invoc3 := invocation.NewRPCInvocation(constant.Generic, []any{"m", "t", "a"}, nil)
 	assert.False(t, isCallingToGenericService(invoker1, invoc3))
 }
 
@@ -62,13 +62,13 @@ func TestIsMakingAGenericCall(t *testing.T) {
 	invoker := mock.NewMockInvoker(ctrl)
 	invoker.EXPECT().GetURL().Return(u).AnyTimes()
 
-	invoc1 := invocation.NewRPCInvocation(constant.Generic, []interface{}{"method", "types", "args"}, nil)
+	invoc1 := invocation.NewRPCInvocation(constant.Generic, []any{"method", "types", "args"}, nil)
 	assert.True(t, isMakingAGenericCall(invoker, invoc1))
 
-	invoc2 := invocation.NewRPCInvocation(constant.Generic, []interface{}{"method"}, nil)
+	invoc2 := invocation.NewRPCInvocation(constant.Generic, []any{"method"}, nil)
 	assert.False(t, isMakingAGenericCall(invoker, invoc2))
 
-	invoc3 := invocation.NewRPCInvocation("GetUser", []interface{}{"a", "b", "c"}, nil)
+	invoc3 := invocation.NewRPCInvocation("GetUser", []any{"a", "b", "c"}, nil)
 	assert.False(t, isMakingAGenericCall(invoker, invoc3))
 }
 
