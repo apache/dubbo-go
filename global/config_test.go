@@ -378,18 +378,8 @@ func TestReferenceConfigGetOptions(t *testing.T) {
 		}
 		opts := ref.GetOptions()
 		assert.NotNil(t, opts)
-		// Verify that a valid retries value produces an option
+		// Verify that a valid retries value produces at least one option
 		assert.Greater(t, len(opts), 0, "should have at least one option from Retries")
-		// Verify retries option is present by checking that we have options
-		hasRetriesOption := false
-		for _, opt := range opts {
-			// The option function should be WithReference_Retries
-			if opt != nil {
-				hasRetriesOption = true
-				break
-			}
-		}
-		assert.True(t, hasRetriesOption, "should contain a retries-related option when Retries is a valid integer")
 	})
 
 	t.Run("reference_config_with_invalid_retries", func(t *testing.T) {
