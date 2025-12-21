@@ -295,7 +295,6 @@ func TestCompatConfigsPreservesOriginal(t *testing.T) {
 	result1 := compatApplicationConfig(appCfg)
 	result2 := compatApplicationConfig(appCfg)
 
-	// Original should not be modified
 	assert.Equal(t, "original-app", appCfg.Name)
 	assert.Equal(t, "1.0.0", appCfg.Version)
 
