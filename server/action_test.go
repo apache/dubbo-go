@@ -659,7 +659,6 @@ func TestPostProcessConfig(t *testing.T) {
 	svcOpts := &ServiceOptions{}
 	url, _ := common.NewURL("dubbo://localhost:20880/test")
 
-	// This should not panic
 	svcOpts.postProcessConfig(url)
 	assert.NotNil(t, url)
 }
