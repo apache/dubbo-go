@@ -33,7 +33,7 @@ func TestNewReporterConfig(t *testing.T) {
 	assert.Equal(t, "dubbo", config.Namespace)
 	assert.Equal(t, "9090", config.Port)
 	assert.Equal(t, "/metrics", config.Path)
-	assert.Equal(t, ReportModePull, config.Mode)
+	assert.Equal(t, string(ReportModePull), string(config.Mode))
 	assert.Empty(t, config.PushGatewayAddress)
-	assert.Equal(t, DefMaxAge, config.SummaryMaxAge)
+	assert.Equal(t, int64(DefMaxAge), config.SummaryMaxAge)
 }

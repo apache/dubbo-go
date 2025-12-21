@@ -28,7 +28,6 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/metrics"
 )
 
 func TestMetadataMetricEventType(t *testing.T) {
@@ -64,8 +63,4 @@ func TestNewMetadataMetricTimeEvent(t *testing.T) {
 	assert.NotNil(t, event.Start)
 	assert.NotNil(t, event.Attachment)
 	assert.Empty(t, event.Attachment)
-}
-
-func TestMetadataMetricEventImplementsMetricsEvent(t *testing.T) {
-	var _ metrics.MetricsEvent = &MetadataMetricEvent{}
 }

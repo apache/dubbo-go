@@ -117,7 +117,7 @@ func TestIsProvider(t *testing.T) {
 		{
 			name: "provider string",
 			url: common.NewURLWithOptions(
-				common.WithParamsValue(constant.RegistryRoleKey, "0"),
+				common.WithParamsValue(constant.RegistryRoleKey, "3"),
 			),
 			expected: true,
 		},
@@ -161,7 +161,7 @@ func TestIsConsumer(t *testing.T) {
 		{
 			name: "consumer string",
 			url: common.NewURLWithOptions(
-				common.WithParamsValue(constant.RegistryRoleKey, "1"),
+				common.WithParamsValue(constant.RegistryRoleKey, "0"),
 			),
 			expected: true,
 		},

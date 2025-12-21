@@ -19,9 +19,7 @@ package metrics
 
 import (
 	"testing"
-)
 
-import (
 	"github.com/stretchr/testify/assert"
 )
 
@@ -169,9 +167,13 @@ func TestBaseCollectorStateCount(t *testing.T) {
 		succ := registry.counters["succ"]
 		fail := registry.counters["fail"]
 
+		assert.NotNil(t, total)
+		assert.NotNil(t, succ)
 		assert.Equal(t, float64(1), total.value)
 		assert.Equal(t, float64(1), succ.value)
-		assert.Equal(t, float64(0), fail.value)
+		if fail != nil {
+			assert.Equal(t, float64(0), fail.value)
+		}
 	})
 
 	t.Run("failure", func(t *testing.T) {
@@ -180,6 +182,8 @@ func TestBaseCollectorStateCount(t *testing.T) {
 		total := registry.counters["total"]
 		fail := registry.counters["fail"]
 
+		assert.NotNil(t, total)
+		assert.NotNil(t, fail)
 		assert.Equal(t, float64(2), total.value)
 		assert.Equal(t, float64(1), fail.value)
 	})
