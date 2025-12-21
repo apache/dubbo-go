@@ -21,10 +21,15 @@ import (
 	"strconv"
 	"sync"
 	"testing"
+)
 
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/global"
-	"github.com/stretchr/testify/assert"
 )
 
 // Test NewServer creates a server successfully
