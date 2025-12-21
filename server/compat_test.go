@@ -206,7 +206,6 @@ func TestCompatRegistryConfigNumeric(t *testing.T) {
 
 	assert.NotNil(t, result)
 	assert.Equal(t, "zookeeper", result.Protocol)
-	// Verify weight is precisely preserved from original input
 	assert.Equal(t, int64(500), result.Weight)
 }
 
