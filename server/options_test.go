@@ -29,6 +29,8 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
 // Test defaultServerOptions
@@ -497,14 +499,13 @@ func TestWithInterface(t *testing.T) {
 	assert.Equal(t, "com.example.Service", opts.Service.Interface)
 }
 
-// Test WithRegistryIDs (no registries)
+// Test WithRegistryIDs
 func TestWithRegistryIDs(t *testing.T) {
 	opts := defaultServiceOptions()
 	registryIDs := []string{"registry1"}
 	opt := WithRegistryIDs(registryIDs)
 	opt(opts)
-	// This option only sets if len <= 0
-	assert.NotEqual(t, registryIDs, opts.Service.RegistryIDs)
+	assert.Equal(t, registryIDs, opts.Service.RegistryIDs)
 }
 
 // Test WithFilter
@@ -872,21 +873,28 @@ func TestSetProtocols(t *testing.T) {
 
 // Test WithServerRegistry
 func TestWithServerRegistry(t *testing.T) {
-	// Test that WithServerRegistry creates a valid registry option function
-	// Note: Actual registry initialization requires specific registry configuration
-	// This test just verifies the option function can be created
-	assert.NotPanics(t, func() {
-		_ = WithServerRegistry
-	})
+	opts := defaultServerOptions()
+
+	// Use registry.WithZookeeper() to create a proper registry option
+	opt := WithServerRegistry(registry.WithZookeeper(), registry.WithID("test-registry"))
+	opt(opts)
+
+	assert.NotNil(t, opts.Registries)
+	assert.Contains(t, opts.Registries, "test-registry")
+	assert.Equal(t, "zookeeper", opts.Registries["test-registry"].Protocol)
 }
 
 // Test WithServerProtocol
 func TestWithServerProtocol(t *testing.T) {
-	// Test that WithServerProtocol creates a valid protocol option function
-	// Note: Actual protocol initialization requires specific protocol configuration
-	assert.NotPanics(t, func() {
-		_ = WithServerProtocol
-	})
+	opts := defaultServerOptions()
+
+	// Use protocol options to create a proper protocol configuration
+	opt := WithServerProtocol(protocol.WithDubbo(), protocol.WithID("test-protocol"))
+	opt(opts)
+
+	assert.NotNil(t, opts.Protocols)
+	assert.Contains(t, opts.Protocols, "test-protocol")
+	assert.Equal(t, "dubbo", opts.Protocols["test-protocol"].Name)
 }
 
 // Test WithServerFilterConf
@@ -908,18 +916,28 @@ func TestWithServerTLSOption(t *testing.T) {
 
 // Test WithProtocol for ServiceOptions
 func TestWithProtocol(t *testing.T) {
-	// Test that WithProtocol creates a valid protocol option function
-	assert.NotPanics(t, func() {
-		_ = WithProtocol
-	})
+	opts := defaultServiceOptions()
+
+	// Use protocol options to create a proper protocol configuration
+	opt := WithProtocol(protocol.WithTriple(), protocol.WithID("test-protocol"))
+	opt(opts)
+
+	assert.NotNil(t, opts.Protocols)
+	assert.Contains(t, opts.Protocols, "test-protocol")
+	assert.Equal(t, "tri", opts.Protocols["test-protocol"].Name)
 }
 
 // Test WithRegistry for ServiceOptions
 func TestWithRegistry(t *testing.T) {
-	// Test that WithRegistry creates a valid registry option function
-	assert.NotPanics(t, func() {
-		_ = WithRegistry
-	})
+	opts := defaultServiceOptions()
+
+	// Use registry.WithNacos() to create a proper registry option
+	opt := WithRegistry(registry.WithNacos(), registry.WithID("test-registry"))
+	opt(opts)
+
+	assert.NotNil(t, opts.Registries)
+	assert.Contains(t, opts.Registries, "test-registry")
+	assert.Equal(t, "nacos", opts.Registries["test-registry"].Protocol)
 }
 
 // Test WithMethod
@@ -928,6 +946,8 @@ func TestWithMethod(t *testing.T) {
 	opt := WithMethod()
 	opt(opts)
 	assert.NotNil(t, opts.Service.Methods)
+	// Verify that a method was actually added
+	assert.Equal(t, 1, len(opts.Service.Methods))
 }
 
 // Test WithProtocolIDs for ServiceOptions
@@ -936,6 +956,5 @@ func TestWithProtocolIDs(t *testing.T) {
 	protocolIDs := []string{"dubbo"}
 	opt := WithProtocolIDs(protocolIDs)
 	opt(opts)
-	// This option only sets if len <= 0
-	assert.NotEqual(t, protocolIDs, opts.Service.ProtocolIDs)
+	assert.Equal(t, protocolIDs, opts.Service.ProtocolIDs)
 }
