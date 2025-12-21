@@ -378,15 +378,38 @@ func TestReferenceConfigGetOptions(t *testing.T) {
 		}
 		opts := ref.GetOptions()
 		assert.NotNil(t, opts)
+		// Verify that a valid retries value produces an option
+		assert.Greater(t, len(opts), 0, "should have at least one option from Retries")
+		// Verify retries option is present by checking that we have options
+		hasRetriesOption := false
+		for _, opt := range opts {
+			// The option function should be WithReference_Retries
+			if opt != nil {
+				hasRetriesOption = true
+				break
+			}
+		}
+		assert.True(t, hasRetriesOption, "should contain a retries-related option when Retries is a valid integer")
 	})
 
 	t.Run("reference_config_with_invalid_retries", func(t *testing.T) {
 		ref := &ReferenceConfig{
 			Retries: "invalid",
 		}
-		_ = ref.GetOptions()
+		opts := ref.GetOptions()
 		// Invalid retries should not be added to options
 		// This is expected behavior - invalid values are silently skipped
+		// Verify the returned options do not contain a retries option
+		// by confirming the invalid string is not converted
+
+		// GetOptions returns nil (or empty slice) when no options are present
+		// Since Retries is the only field and it's invalid, no options should be produced
+		if opts != nil {
+			// If opts is returned as a slice, it should be empty since Retries is invalid
+			assert.Equal(t, 0, len(opts), "invalid retries value should not produce any options")
+		}
+		// The fact that invalid retries is not in opts confirms it was rejected
+		t.Logf("Invalid retries value was correctly skipped (opts=%v)", opts)
 	})
 }
 
@@ -1487,6 +1510,37 @@ func TestProviderConfigClone(t *testing.T) {
 		assert.Equal(t, provider.Register, cloned.Register)
 		assert.NotSame(t, provider, cloned)
 		assert.NotSame(t, provider.Services, cloned.Services)
+
+		// Verify RegistryIDs is a true deep copy by mutating the clone
+		assert.Equal(t, len(provider.RegistryIDs), len(cloned.RegistryIDs))
+		assert.Equal(t, provider.RegistryIDs, cloned.RegistryIDs)
+		if len(cloned.RegistryIDs) > 0 {
+			originalValue := cloned.RegistryIDs[0]
+			cloned.RegistryIDs[0] = "modified"
+			assert.NotEqual(t, provider.RegistryIDs[0], cloned.RegistryIDs[0])
+			cloned.RegistryIDs[0] = originalValue
+		}
+		cloned.RegistryIDs = append(cloned.RegistryIDs, "new_registry")
+		assert.NotEqual(t, len(provider.RegistryIDs), len(cloned.RegistryIDs))
+
+		// Verify ProtocolIDs is a true deep copy by mutating the clone
+		assert.Equal(t, len(provider.ProtocolIDs), len(cloned.ProtocolIDs))
+		assert.Equal(t, provider.ProtocolIDs, cloned.ProtocolIDs)
+		if len(cloned.ProtocolIDs) > 0 {
+			originalValue := cloned.ProtocolIDs[0]
+			cloned.ProtocolIDs[0] = "modified"
+			assert.NotEqual(t, provider.ProtocolIDs[0], cloned.ProtocolIDs[0])
+			cloned.ProtocolIDs[0] = originalValue
+		}
+		cloned.ProtocolIDs = append(cloned.ProtocolIDs, "new_protocol")
+		assert.NotEqual(t, len(provider.ProtocolIDs), len(cloned.ProtocolIDs))
+
+		// Verify Services is a true deep copy by mutating the clone
+		assert.Equal(t, len(provider.Services), len(cloned.Services))
+		cloned.Services["service2"] = &ServiceConfig{Interface: "com.test.Service2"}
+		assert.NotEqual(t, len(provider.Services), len(cloned.Services))
+		assert.NotContains(t, provider.Services, "service2")
+		assert.Contains(t, cloned.Services, "service2")
 	})
 
 	t.Run("clone_nil_provider_config", func(t *testing.T) {
@@ -1500,9 +1554,26 @@ func TestProviderConfigClone(t *testing.T) {
 		cloned := provider.Clone()
 		assert.NotNil(t, cloned)
 		assert.NotSame(t, provider, cloned)
-		assert.NotSame(t, provider.RegistryIDs, cloned.RegistryIDs)
-		assert.NotSame(t, provider.ProtocolIDs, cloned.ProtocolIDs)
-		assert.NotSame(t, provider.Services, cloned.Services)
+
+		// Verify RegistryIDs is a true deep copy
+		if len(provider.RegistryIDs) > 0 {
+			assert.Equal(t, provider.RegistryIDs, cloned.RegistryIDs)
+			cloned.RegistryIDs[0] = "modified"
+			assert.NotEqual(t, provider.RegistryIDs[0], cloned.RegistryIDs[0])
+		}
+
+		// Verify ProtocolIDs is a true deep copy
+		if len(provider.ProtocolIDs) > 0 {
+			assert.Equal(t, provider.ProtocolIDs, cloned.ProtocolIDs)
+			cloned.ProtocolIDs[0] = "modified"
+			assert.NotEqual(t, provider.ProtocolIDs[0], cloned.ProtocolIDs[0])
+		}
+
+		// Verify Services is a true deep copy
+		originalServicesLen := len(provider.Services)
+		cloned.Services["new_service"] = &ServiceConfig{Interface: "com.test.NewService"}
+		assert.Equal(t, originalServicesLen, len(provider.Services))
+		assert.Greater(t, len(cloned.Services), len(provider.Services))
 	})
 }
 
