@@ -19,9 +19,14 @@ package stdout
 
 import (
 	"testing"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/otel/trace"
+import (
 	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/otel/trace"
 )
 
 func TestNewStdoutExporter(t *testing.T) {
@@ -75,4 +80,3 @@ func TestNewStdoutExporter_Singleton(t *testing.T) {
 	// Should return the same instance due to sync.Once
 	assert.Equal(t, exporter1, exporter2)
 }
-
