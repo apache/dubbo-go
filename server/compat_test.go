@@ -133,7 +133,6 @@ func TestCompatRegistryConfigAll(t *testing.T) {
 	assert.True(t, result.Simplified)
 	assert.True(t, result.Preferred)
 	assert.Equal(t, "zone1", result.Zone)
-	// Verify weight is precisely preserved from original input
 	assert.Equal(t, int64(100), result.Weight)
 	assert.Equal(t, "service_discovery", result.RegistryType)
 	assert.Equal(t, "true", result.UseAsMetaReport)
