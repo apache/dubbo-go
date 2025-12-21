@@ -20,9 +20,7 @@ package global
 import (
 	"reflect"
 	"testing"
-)
 
-import (
 	"github.com/stretchr/testify/assert"
 )
 
@@ -366,12 +364,6 @@ func TestReferenceConfigGetOptions(t *testing.T) {
 		}
 	})
 
-	t.Run("nil_reference_config_clone", func(t *testing.T) {
-		var nilRef *ReferenceConfig
-		cloned := nilRef.Clone()
-		assert.Nil(t, cloned)
-	})
-
 	t.Run("reference_config_with_retries_parsing", func(t *testing.T) {
 		ref := &ReferenceConfig{
 			Retries: "5",
@@ -399,6 +391,15 @@ func TestReferenceConfigGetOptions(t *testing.T) {
 			assert.Equal(t, 0, len(opts), "invalid retries value should not produce any options")
 		}
 		// The fact that invalid retries is not in opts confirms it was rejected
+	})
+}
+
+// TestReferenceConfigClone tests the Clone method of ReferenceConfig
+func TestReferenceConfigClone(t *testing.T) {
+	t.Run("nil_reference_config_clone", func(t *testing.T) {
+		var nilRef *ReferenceConfig
+		cloned := nilRef.Clone()
+		assert.Nil(t, cloned)
 	})
 }
 
@@ -1504,10 +1505,8 @@ func TestProviderConfigClone(t *testing.T) {
 		assert.Equal(t, len(provider.RegistryIDs), len(cloned.RegistryIDs))
 		assert.Equal(t, provider.RegistryIDs, cloned.RegistryIDs)
 		if len(cloned.RegistryIDs) > 0 {
-			originalValue := cloned.RegistryIDs[0]
 			cloned.RegistryIDs[0] = "modified"
-			assert.NotEqual(t, provider.RegistryIDs[0], cloned.RegistryIDs[0])
-			cloned.RegistryIDs[0] = originalValue
+			assert.NotEqual(t, cloned.RegistryIDs[0], provider.RegistryIDs[0], "Modifying clone should not affect original")
 		}
 		cloned.RegistryIDs = append(cloned.RegistryIDs, "new_registry")
 		assert.NotEqual(t, len(provider.RegistryIDs), len(cloned.RegistryIDs))
@@ -1516,10 +1515,8 @@ func TestProviderConfigClone(t *testing.T) {
 		assert.Equal(t, len(provider.ProtocolIDs), len(cloned.ProtocolIDs))
 		assert.Equal(t, provider.ProtocolIDs, cloned.ProtocolIDs)
 		if len(cloned.ProtocolIDs) > 0 {
-			originalValue := cloned.ProtocolIDs[0]
 			cloned.ProtocolIDs[0] = "modified"
-			assert.NotEqual(t, provider.ProtocolIDs[0], cloned.ProtocolIDs[0])
-			cloned.ProtocolIDs[0] = originalValue
+			assert.NotEqual(t, cloned.ProtocolIDs[0], provider.ProtocolIDs[0], "Modifying clone should not affect original")
 		}
 		cloned.ProtocolIDs = append(cloned.ProtocolIDs, "new_protocol")
 		assert.NotEqual(t, len(provider.ProtocolIDs), len(cloned.ProtocolIDs))
@@ -1547,21 +1544,15 @@ func TestProviderConfigClone(t *testing.T) {
 		// Verify RegistryIDs is a true deep copy
 		if len(provider.RegistryIDs) > 0 {
 			assert.Equal(t, provider.RegistryIDs, cloned.RegistryIDs)
-			originalRegistryID := cloned.RegistryIDs[0]
 			cloned.RegistryIDs[0] = "modified"
-			assert.NotEqual(t, provider.RegistryIDs[0], cloned.RegistryIDs[0])
-			// restore mutated value to keep cloned config consistent for any subsequent checks
-			cloned.RegistryIDs[0] = originalRegistryID
+			assert.NotEqual(t, provider.RegistryIDs[0], cloned.RegistryIDs[0], "Modifying clone should not affect original")
 		}
 
 		// Verify ProtocolIDs is a true deep copy
 		if len(provider.ProtocolIDs) > 0 {
 			assert.Equal(t, provider.ProtocolIDs, cloned.ProtocolIDs)
-			originalProtocolID := cloned.ProtocolIDs[0]
 			cloned.ProtocolIDs[0] = "modified"
-			assert.NotEqual(t, provider.ProtocolIDs[0], cloned.ProtocolIDs[0])
-			// restore mutated value to keep cloned config consistent for any subsequent checks
-			cloned.ProtocolIDs[0] = originalProtocolID
+			assert.NotEqual(t, provider.ProtocolIDs[0], cloned.ProtocolIDs[0], "Modifying clone should not affect original")
 		}
 
 		// Verify Services is a true deep copy
