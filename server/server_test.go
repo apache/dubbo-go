@@ -37,7 +37,6 @@ func TestNewServer(t *testing.T) {
 	srv, err := NewServer()
 	assert.NoError(t, err)
 	assert.NotNil(t, srv)
-	assert.NotNil(t, srv.cfg)
 
 	// Verify server is properly initialized by using public API
 	// Try to register and retrieve a service to verify internal maps work
@@ -60,8 +59,15 @@ func TestNewServerWithOptions(t *testing.T) {
 	)
 	assert.NoError(t, err)
 	assert.NotNil(t, srv)
-	assert.Equal(t, appCfg, srv.cfg.Application)
-	assert.Equal(t, "test-group", srv.cfg.Provider.Group)
+
+	// Verify configuration by registering a service and checking its options
+	handler := &mockRPCService{}
+	err = srv.Register(handler, nil)
+	assert.NoError(t, err)
+
+	svcOpts := srv.GetServiceOptions(handler.Reference())
+	assert.NotNil(t, svcOpts)
+	assert.Equal(t, "test-group", svcOpts.Service.Group)
 }
 
 // Test GetServiceOptions
@@ -206,17 +212,10 @@ func TestRegisterServiceOptionsEmptyInterface(t *testing.T) {
 
 // Test SetProviderServices
 func TestSetProviderServices(t *testing.T) {
-	// Preserve original internal services and restore after test
-	origInternalProServices := internalProServices
-	t.Cleanup(func() {
-		internalProServices = origInternalProServices
-	})
 	// Lock and backup original state
 	internalProLock.Lock()
 	originalServices := internalProServices
 	internalProServices = make([]*InternalService, 0, 16)
-
-	// Unlock before calling SetProviderServices (which needs the lock)
 	internalProLock.Unlock()
 
 	// Register cleanup to restore original state
@@ -301,7 +300,7 @@ func TestEnhanceServiceInfo(t *testing.T) {
 	assert.Equal(t, 2, len(result.Methods))
 	assert.Equal(t, "sayHello", result.Methods[0].Name)
 	// The swapped version should have capitalized first letter
-	assert.NotEqual(t, "sayHello", result.Methods[1].Name)
+	assert.Equal(t, "SayHello", result.Methods[1].Name)
 }
 
 // Test getMetadataPort with default protocol
@@ -346,7 +345,7 @@ func TestGetMetadataPortInvalid(t *testing.T) {
 	assert.Equal(t, 0, port)
 }
 
-// Mock RPCService for testing
+// mockRPCService is a mock implementation for testing
 type mockRPCService struct{}
 
 func (m *mockRPCService) Invoke(methodName string, params []any, results []any) error {
@@ -440,10 +439,8 @@ func TestRegisterWithMethodConfig(t *testing.T) {
 
 	svcOpts := srv.GetServiceOptions(handler.Reference())
 	assert.NotNil(t, svcOpts)
-	if svcOpts != nil {
-		assert.Equal(t, "test-group", svcOpts.Service.Group)
-		assert.Equal(t, "1.0.0", svcOpts.Service.Version)
-	}
+	assert.Equal(t, "test-group", svcOpts.Service.Group)
+	assert.Equal(t, "1.0.0", svcOpts.Service.Version)
 }
 
 // Test genSvcOpts with missing server config
@@ -467,11 +464,18 @@ func TestExportServicesEmpty(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-// Test NewServer with invalid config
-func TestNewServerWithInvalidConfig(t *testing.T) {
-	// This should not error during creation, but config validation might fail on use
+// Test NewServer with custom group option
+func TestNewServerWithCustomGroup(t *testing.T) {
 	srv, err := NewServer(WithServerGroup("test"))
 	assert.NoError(t, err)
 	assert.NotNil(t, srv)
-	assert.Equal(t, "test", srv.cfg.Provider.Group)
+
+	// Verify the group option by registering a service and checking its configuration
+	handler := &mockRPCService{}
+	err = srv.Register(handler, nil)
+	assert.NoError(t, err)
+
+	svcOpts := srv.GetServiceOptions(handler.Reference())
+	assert.NotNil(t, svcOpts)
+	assert.Equal(t, "test", svcOpts.Service.Group)
 }
