@@ -527,35 +527,6 @@ func TestCheckMultipleErrors(t *testing.T) {
 	assert.Error(t, err)
 }
 
-// Test getUrlMap with tag
-func TestGetUrlMapWithTag(t *testing.T) {
-	svcOpts := &ServiceOptions{
-		Service: &global.ServiceConfig{
-			Interface:     "com.example.Service",
-			Tag:           "production",
-			Cluster:       constant.ClusterKeyFailover,
-			Loadbalance:   constant.LoadBalanceKeyRoundRobin,
-			Warmup:        "60",
-			Retries:       "3",
-			Serialization: constant.JSONSerialization,
-			Params:        map[string]string{},
-		},
-		Provider: &global.ProviderConfig{},
-		applicationCompat: &config.ApplicationConfig{
-			Name: "test-app",
-		},
-		srvOpts: &ServerOptions{
-			Metrics: &global.MetricsConfig{},
-			Otel: &global.OtelConfig{
-				TracingConfig: &global.OtelTraceConfig{},
-			},
-		},
-	}
-
-	// Tag is added separately in Export method, not in getUrlMap
-	assert.Equal(t, "production", svcOpts.Service.Tag)
-}
-
 // Test getUrlMap with TPS limit config
 func TestGetUrlMapWithTpsLimit(t *testing.T) {
 	svcOpts := &ServiceOptions{
