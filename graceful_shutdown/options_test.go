@@ -20,9 +20,14 @@ package graceful_shutdown
 import (
 	"testing"
 	"time"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/global"
+import (
 	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
 func TestDefaultOptions(t *testing.T) {
