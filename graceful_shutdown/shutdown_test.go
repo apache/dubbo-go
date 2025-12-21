@@ -63,7 +63,7 @@ func TestInit(t *testing.T) {
 	mockConsumerFilter := &MockFilter{}
 	mockProviderFilter := &MockFilter{}
 
-	// Expect Set method calls 
+	// Expect Set method calls
 	mockConsumerFilter.On("Set", mock.Anything, mock.Anything).Return()
 	mockProviderFilter.On("Set", mock.Anything, mock.Anything).Return()
 
@@ -163,7 +163,7 @@ func TestWaitAndAcceptNewRequests(t *testing.T) {
 	elapsed = time.Since(start)
 
 	// Should only wait for ConsumerUpdateWaitTime
-	assert.Less(t, elapsed, 3*time.Second+100*time.Millisecond) 
+	assert.Less(t, elapsed, 3*time.Second+100*time.Millisecond)
 }
 
 func TestWaitForSendingAndReceivingRequests(t *testing.T) {
