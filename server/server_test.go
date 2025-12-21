@@ -18,16 +18,13 @@
 package server
 
 import (
+	"strconv"
+	"sync"
 	"testing"
-)
 
-import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"github.com/stretchr/testify/assert"
 )
 
 // Test NewServer creates a server successfully
@@ -36,8 +33,15 @@ func TestNewServer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, srv)
 	assert.NotNil(t, srv.cfg)
-	assert.NotNil(t, srv.svcOptsMap)
-	assert.NotNil(t, srv.interfaceNameServices)
+
+	// Verify server is properly initialized by using public API
+	// Try to register and retrieve a service to verify internal maps work
+	svcOpts := defaultServiceOptions()
+	svcOpts.Id = "init-test-service"
+	srv.registerServiceOptions(svcOpts)
+
+	retrieved := srv.GetServiceOptions("init-test-service")
+	assert.NotNil(t, retrieved, "Server should have properly initialized service maps")
 }
 
 // Test NewServer with options
@@ -164,9 +168,14 @@ func TestRegisterServiceOptions(t *testing.T) {
 
 	srv.registerServiceOptions(svcOpts)
 
-	// Verify via maps
-	assert.Equal(t, svcOpts, srv.svcOptsMap["test-service"])
-	assert.Equal(t, svcOpts, srv.interfaceNameServices["com.example.TestService"])
+	// Verify via public API methods
+	retrieved := srv.GetServiceOptions("test-service")
+	assert.NotNil(t, retrieved)
+	assert.Equal(t, svcOpts, retrieved)
+
+	retrievedByInterface := srv.GetServiceOptionsByInterfaceName("com.example.TestService")
+	assert.NotNil(t, retrievedByInterface)
+	assert.Equal(t, svcOpts, retrievedByInterface)
 }
 
 // Test registerServiceOptions with empty interface
@@ -180,15 +189,32 @@ func TestRegisterServiceOptionsEmptyInterface(t *testing.T) {
 
 	srv.registerServiceOptions(svcOpts)
 
-	// Should be in svcOptsMap but not in interfaceNameServices
-	assert.Equal(t, svcOpts, srv.svcOptsMap["test-service"])
-	assert.Nil(t, srv.interfaceNameServices[""])
+	// Should be retrievable by service ID but not by interface name
+	retrieved := srv.GetServiceOptions("test-service")
+	assert.NotNil(t, retrieved)
+	assert.Equal(t, svcOpts, retrieved)
+
+	// Empty interface should not be retrievable by interface name
+	retrievedByInterface := srv.GetServiceOptionsByInterfaceName("")
+	assert.Nil(t, retrievedByInterface)
 }
 
 // Test SetProviderServices
 func TestSetProviderServices(t *testing.T) {
-	// Reset the internal services slice
+	// Lock and backup original state
+	internalProLock.Lock()
+	originalServices := internalProServices
 	internalProServices = make([]*InternalService, 0, 16)
+
+	// Unlock before calling SetProviderServices (which needs the lock)
+	internalProLock.Unlock()
+
+	// Register cleanup to restore original state
+	t.Cleanup(func() {
+		internalProLock.Lock()
+		defer internalProLock.Unlock()
+		internalProServices = originalServices
+	})
 
 	internalService := &InternalService{
 		Name:     "test-internal-service",
@@ -202,23 +228,43 @@ func TestSetProviderServices(t *testing.T) {
 		},
 	}
 
+	// This function will acquire the lock internally
 	SetProviderServices(internalService)
 
+	// Access the global variable safely with lock
+	internalProLock.Lock()
+	defer internalProLock.Unlock()
 	assert.Len(t, internalProServices, 1)
 	assert.Equal(t, "test-internal-service", internalProServices[0].Name)
 }
 
 // Test SetProviderServices with empty name
 func TestSetProviderServicesEmptyName(t *testing.T) {
-	// Reset the internal services slice
+	// Lock and backup original state
+	internalProLock.Lock()
+	originalServices := internalProServices
 	internalProServices = make([]*InternalService, 0, 16)
+
+	// Unlock before calling SetProviderServices (which needs the lock)
+	internalProLock.Unlock()
+
+	// Register cleanup to restore original state
+	t.Cleanup(func() {
+		internalProLock.Lock()
+		defer internalProLock.Unlock()
+		internalProServices = originalServices
+	})
 
 	internalService := &InternalService{
 		Name: "",
 	}
 
+	// This function will acquire the lock internally
 	SetProviderServices(internalService)
 
+	// Access the global variable safely with lock
+	internalProLock.Lock()
+	defer internalProLock.Unlock()
 	assert.Len(t, internalProServices, 0)
 }
 
@@ -306,22 +352,26 @@ func TestConcurrentServiceRegistration(t *testing.T) {
 	srv, err := NewServer()
 	assert.NoError(t, err)
 
-	done := make(chan bool)
+	var wg sync.WaitGroup
 	for i := 0; i < 10; i++ {
+		wg.Add(1)
 		go func(idx int) {
+			defer wg.Done()
 			svcOpts := defaultServiceOptions()
-			svcOpts.Id = "service-" + string(rune(idx))
+			svcOpts.Id = "service-" + strconv.Itoa(idx)
 			srv.registerServiceOptions(svcOpts)
-			done <- true
 		}(i)
 	}
 
-	for i := 0; i < 10; i++ {
-		<-done
-	}
+	wg.Wait()
 
-	// Verify all services were registered
-	assert.Equal(t, 10, len(srv.svcOptsMap))
+	// Verify all services were registered using public API
+	for i := 0; i < 10; i++ {
+		svcID := "service-" + strconv.Itoa(i)
+		retrieved := srv.GetServiceOptions(svcID)
+		assert.NotNil(t, retrieved, "Service %s should be registered", svcID)
+		assert.Equal(t, svcID, retrieved.Id)
+	}
 }
 
 // Test Register with ServiceInfo
