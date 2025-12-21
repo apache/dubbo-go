@@ -201,6 +201,11 @@ func TestRegisterServiceOptionsEmptyInterface(t *testing.T) {
 
 // Test SetProviderServices
 func TestSetProviderServices(t *testing.T) {
+	// Preserve original internal services and restore after test
+	origInternalProServices := internalProServices
+	t.Cleanup(func() {
+		internalProServices = origInternalProServices
+	})
 	// Lock and backup original state
 	internalProLock.Lock()
 	originalServices := internalProServices
