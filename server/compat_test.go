@@ -297,7 +297,6 @@ func TestCompatConfigsPreservesOriginal(t *testing.T) {
 	assert.Equal(t, "original-app", appCfg.Name)
 	assert.Equal(t, "1.0.0", appCfg.Version)
 
-	// Results should have same values
 	assert.Equal(t, result1.Name, result2.Name)
 	assert.Equal(t, result1.Version, result2.Version)
 	assert.Equal(t, "original-app", result1.Name)
