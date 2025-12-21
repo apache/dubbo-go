@@ -505,7 +505,6 @@ func TestWithRegistryIDs(t *testing.T) {
 	registryIDs := []string{"registry1"}
 	opt := WithRegistryIDs(registryIDs)
 	opt(opts)
-	// Due to the bug in implementation (len <= 0), non-empty slice won't be assigned
 	assert.NotEqual(t, registryIDs, opts.Service.RegistryIDs)
 }
 
@@ -957,6 +956,5 @@ func TestWithProtocolIDs(t *testing.T) {
 	protocolIDs := []string{"dubbo"}
 	opt := WithProtocolIDs(protocolIDs)
 	opt(opts)
-	// Due to the bug in implementation (len <= 0), non-empty slice won't be assigned
 	assert.NotEqual(t, protocolIDs, opts.Service.ProtocolIDs)
 }
