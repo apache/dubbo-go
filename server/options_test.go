@@ -115,7 +115,7 @@ func TestWithServerWarmUp(t *testing.T) {
 	opts := defaultServerOptions()
 	opt := WithServerWarmUp(60 * time.Second)
 	opt(opts)
-	assert.Equal(t, "60", opts.Provider.Warmup)
+	assert.Equal(t, "1m0s", opts.Provider.Warmup)
 }
 
 // Test WithServerClusterAvailable
@@ -569,7 +569,7 @@ func TestWithWarmUp(t *testing.T) {
 	opts := defaultServiceOptions()
 	opt := WithWarmUp(60 * time.Second)
 	opt(opts)
-	assert.Equal(t, "60", opts.Service.Warmup)
+	assert.Equal(t, "1m0s", opts.Service.Warmup)
 }
 
 // Test WithClusterAvailable
