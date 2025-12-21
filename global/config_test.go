@@ -323,7 +323,7 @@ func TestReferenceConfigGetOptions(t *testing.T) {
 	t.Run("full_reference_config", func(t *testing.T) {
 		ref := &ReferenceConfig{
 			InterfaceName:     "com.test.Service",
-			URL:               "127.0.0.1:20880",
+			URL:               "localhost:20880",
 			Filter:            "echo",
 			Protocol:          "dubbo",
 			Cluster:           "failover",
@@ -440,9 +440,9 @@ func TestReferenceConfigOptions(t *testing.T) {
 
 	t.Run("WithReference_URL", func(t *testing.T) {
 		ref := &ReferenceConfig{}
-		opt := WithReference_URL("127.0.0.1:20880")
+		opt := WithReference_URL("localhost:20880")
 		opt(ref)
-		assert.Equal(t, "127.0.0.1:20880", ref.URL)
+		assert.Equal(t, "localhost:20880", ref.URL)
 	})
 
 	t.Run("WithReference_Filter", func(t *testing.T) {
@@ -989,7 +989,7 @@ func TestProtocolConfigClone(t *testing.T) {
 	t.Run("clone_full_protocol_config", func(t *testing.T) {
 		proto := &ProtocolConfig{
 			Name:                 "tri",
-			Ip:                   "127.0.0.1",
+			Ip:                   "localhost",
 			Port:                 "20880",
 			MaxServerSendMsgSize: "1mb",
 			MaxServerRecvMsgSize: "4mb",
@@ -1037,14 +1037,14 @@ func TestProtocolConfigClone(t *testing.T) {
 	t.Run("clone_protocol_config_preserves_all_fields", func(t *testing.T) {
 		proto := &ProtocolConfig{
 			Name:                 "http",
-			Ip:                   "192.168.1.1",
+			Ip:                   "localhost",
 			Port:                 "8080",
 			MaxServerSendMsgSize: "10mb",
 			MaxServerRecvMsgSize: "10mb",
 		}
 		cloned := proto.Clone()
 		assert.Equal(t, "http", cloned.Name)
-		assert.Equal(t, "192.168.1.1", cloned.Ip)
+		assert.Equal(t, "localhost", cloned.Ip)
 		assert.Equal(t, "8080", cloned.Port)
 		assert.Equal(t, "10mb", cloned.MaxServerSendMsgSize)
 		assert.Equal(t, "10mb", cloned.MaxServerRecvMsgSize)
@@ -1070,8 +1070,8 @@ func TestProtocolConfigFields(t *testing.T) {
 	})
 
 	t.Run("protocol_config_ip", func(t *testing.T) {
-		proto := &ProtocolConfig{Ip: "10.0.0.1"}
-		assert.Equal(t, "10.0.0.1", proto.Ip)
+		proto := &ProtocolConfig{Ip: "localhost"}
+		assert.Equal(t, "localhost", proto.Ip)
 	})
 
 	t.Run("protocol_config_port", func(t *testing.T) {
@@ -1714,7 +1714,7 @@ func TestApplicationConfigFields(t *testing.T) {
 func TestCustomConfigClone(t *testing.T) {
 	t.Run("clone_full_custom_config", func(t *testing.T) {
 		custom := &CustomConfig{
-			ConfigMap: map[string]interface{}{
+			ConfigMap: map[string]any{
 				"key1": "value1",
 				"key2": 123,
 			},
