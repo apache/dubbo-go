@@ -1558,15 +1558,21 @@ func TestProviderConfigClone(t *testing.T) {
 		// Verify RegistryIDs is a true deep copy
 		if len(provider.RegistryIDs) > 0 {
 			assert.Equal(t, provider.RegistryIDs, cloned.RegistryIDs)
+			originalRegistryID := cloned.RegistryIDs[0]
 			cloned.RegistryIDs[0] = "modified"
 			assert.NotEqual(t, provider.RegistryIDs[0], cloned.RegistryIDs[0])
+			// restore mutated value to keep cloned config consistent for any subsequent checks
+			cloned.RegistryIDs[0] = originalRegistryID
 		}
 
 		// Verify ProtocolIDs is a true deep copy
 		if len(provider.ProtocolIDs) > 0 {
 			assert.Equal(t, provider.ProtocolIDs, cloned.ProtocolIDs)
+			originalProtocolID := cloned.ProtocolIDs[0]
 			cloned.ProtocolIDs[0] = "modified"
 			assert.NotEqual(t, provider.ProtocolIDs[0], cloned.ProtocolIDs[0])
+			// restore mutated value to keep cloned config consistent for any subsequent checks
+			cloned.ProtocolIDs[0] = originalProtocolID
 		}
 
 		// Verify Services is a true deep copy
