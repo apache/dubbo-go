@@ -34,7 +34,7 @@ func TestConfigCenterMetricEventType(t *testing.T) {
 	event := &ConfigCenterMetricEvent{
 		key:          "test-key",
 		group:        "test-group",
-		configCenter: "nacos",
+		configCenter: Nacos,
 		changeType:   remoting.EventTypeAdd,
 		size:         1.0,
 	}
@@ -82,12 +82,12 @@ func TestConfigCenterMetricEventGetChangeType(t *testing.T) {
 }
 
 func TestNewIncMetricEvent(t *testing.T) {
-	event := NewIncMetricEvent("test-key", "test-group", remoting.EventTypeAdd, "nacos")
+	event := NewIncMetricEvent("test-key", "test-group", remoting.EventTypeAdd, Nacos)
 
 	assert.NotNil(t, event)
 	assert.Equal(t, "test-key", event.key)
 	assert.Equal(t, "test-group", event.group)
 	assert.Equal(t, remoting.EventTypeAdd, event.changeType)
-	assert.Equal(t, "nacos", event.configCenter)
+	assert.Equal(t, Nacos, event.configCenter)
 	assert.Equal(t, 1.0, event.size)
 }
