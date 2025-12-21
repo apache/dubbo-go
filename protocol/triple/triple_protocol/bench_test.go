@@ -33,6 +33,25 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/ping/v1/pingv1connect"
 )
 
+// ExamplePingServer implements the PingService for benchmarking
+type ExamplePingServer struct {
+	pingv1connect.UnimplementedPingServiceHandler
+}
+
+func (ExamplePingServer) Ping(ctx context.Context, req *tri.Request) (*tri.Response, error) {
+	// Extract PingRequest from the request message
+	pingReq := req.Msg.(*pingv1.PingRequest)
+
+	// Create PingResponse
+	pingResp := &pingv1.PingResponse{
+		Text:   pingReq.Text,
+		Number: pingReq.Number,
+	}
+
+	// Return response with PingResponse as message
+	return tri.NewResponse(pingResp), nil
+}
+
 func BenchmarkTriple(b *testing.B) {
 	mux := http.NewServeMux()
 	mux.Handle(

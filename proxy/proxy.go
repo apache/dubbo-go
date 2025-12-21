@@ -260,6 +260,7 @@ func refectAndMakeObjectFunc(valueOfElem reflect.Value, makeDubboCallProxy func(
 				continue
 			}
 
+			logger.Debugf("outNum is %v", outNum)
 			funcOuts := make([]reflect.Type, outNum)
 			for i := 0; i < outNum; i++ {
 				funcOuts[i] = t.Type.Out(i)

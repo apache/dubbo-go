@@ -15,38 +15,24 @@
  * limitations under the License.
  */
 
-package cmd
+package generic
 
 import (
-	"fmt"
+	"context"
 )
 
 import (
-	"github.com/spf13/cobra"
+	hessian "github.com/apache/dubbo-go-hessian2"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/tools/dubbogo-cli/generator/sample"
-)
-
-// newDemoCmd represents the new command
-var newDemoCmd = &cobra.Command{
-	Use:   "newDemo",
-	Short: "new a dubbo-go demo project with client and server",
-	Run:   createDemo,
+// GenericService uses for generic invoke for service call
+type GenericService struct {
+	// ref: proxy/proxy.go DefaultProxyImplementFunc
+	Invoke       func(ctx context.Context, methodName string, types []string, args []hessian.Object) (any, error) `dubbo:"$invoke"`
+	ReferenceStr string
 }
 
-func init() {
-	rootCmd.AddCommand(newDemoCmd)
-}
-
-func createDemo(cmd *cobra.Command, args []string) {
-	if len(args) == 0 {
-		fmt.Println("Please tell me the generate path, like '.' ")
-		return
-	}
-	path := args[0]
-	if err := sample.Generate(path); err != nil {
-		fmt.Printf("generate error: %s\n", err)
-	}
+// Reference gets referenceStr from GenericService
+func (u *GenericService) Reference() string {
+	return u.ReferenceStr
 }

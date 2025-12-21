@@ -118,6 +118,11 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 	} else {
 		refOpts.id = ref.InterfaceName
 	}
+
+	if ref.Generic == "true" {
+		methods = append(methods, "$invoke")
+	}
+
 	// If adaptive service is enabled,
 	// the cluster and load balance should be overridden to "adaptivesvc" and "p2c" respectively.
 	if con != nil && con.AdaptiveService {
