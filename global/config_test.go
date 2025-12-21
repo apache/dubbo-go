@@ -399,7 +399,6 @@ func TestReferenceConfigGetOptions(t *testing.T) {
 			assert.Equal(t, 0, len(opts), "invalid retries value should not produce any options")
 		}
 		// The fact that invalid retries is not in opts confirms it was rejected
-		t.Logf("Invalid retries value was correctly skipped (opts=%v)", opts)
 	})
 }
 
