@@ -61,7 +61,7 @@ func TestNewServerWithOptions(t *testing.T) {
 	assert.NotNil(t, srv)
 
 	// Verify configuration by registering a service and checking its options
-	handler := &mockRPCService{}
+	handler := &mockServerRPCService{}
 	err = srv.Register(handler, nil)
 	assert.NoError(t, err)
 
@@ -126,7 +126,7 @@ func TestGetRPCService(t *testing.T) {
 
 	svcOpts := defaultServiceOptions()
 	svcOpts.Id = "test-service"
-	mockService := &mockRPCService{}
+	mockService := &mockServerRPCService{}
 	svcOpts.rpcService = mockService
 	srv.registerServiceOptions(svcOpts)
 
@@ -230,7 +230,7 @@ func TestSetProviderServices(t *testing.T) {
 		Priority: 0,
 		Init: func(options *ServiceOptions) (*ServiceDefinition, bool) {
 			return &ServiceDefinition{
-				Handler: &mockRPCService{},
+				Handler: &mockServerRPCService{},
 				Info:    nil,
 				Opts:    []ServiceOption{},
 			}, true
@@ -345,14 +345,14 @@ func TestGetMetadataPortInvalid(t *testing.T) {
 	assert.Equal(t, 0, port)
 }
 
-// mockRPCService is a mock implementation for testing
-type mockRPCService struct{}
+// mockServerRPCService is a mock implementation for testing server_test.go only
+type mockServerRPCService struct{}
 
-func (m *mockRPCService) Invoke(methodName string, params []any, results []any) error {
+func (m *mockServerRPCService) Invoke(methodName string, params []any, results []any) error {
 	return nil
 }
 
-func (m *mockRPCService) Reference() string {
+func (m *mockServerRPCService) Reference() string {
 	return "com.example.MockService"
 }
 
@@ -388,7 +388,7 @@ func TestRegisterWithServiceInfo(t *testing.T) {
 	srv, err := NewServer()
 	assert.NoError(t, err)
 
-	handler := &mockRPCService{}
+	handler := &mockServerRPCService{}
 	info := &common.ServiceInfo{
 		InterfaceName: "com.example.Service",
 		Methods: []common.MethodInfo{
@@ -409,7 +409,7 @@ func TestRegisterService(t *testing.T) {
 	srv, err := NewServer()
 	assert.NoError(t, err)
 
-	handler := &mockRPCService{}
+	handler := &mockServerRPCService{}
 	err = srv.RegisterService(handler)
 	assert.NoError(t, err)
 
@@ -423,7 +423,7 @@ func TestRegisterWithMethodConfig(t *testing.T) {
 	srv, err := NewServer()
 	assert.NoError(t, err)
 
-	handler := &mockRPCService{}
+	handler := &mockServerRPCService{}
 	info := &common.ServiceInfo{
 		InterfaceName: "com.example.TestService",
 	}
@@ -449,7 +449,7 @@ func TestGenSvcOptsWithMissingServerConfig(t *testing.T) {
 		cfg: nil,
 	}
 
-	handler := &mockRPCService{}
+	handler := &mockServerRPCService{}
 	_, err := srv.genSvcOpts(handler, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "has not been initialized")
@@ -471,7 +471,7 @@ func TestNewServerWithCustomGroup(t *testing.T) {
 	assert.NotNil(t, srv)
 
 	// Verify the group option by registering a service and checking its configuration
-	handler := &mockRPCService{}
+	handler := &mockServerRPCService{}
 	err = srv.Register(handler, nil)
 	assert.NoError(t, err)
 
