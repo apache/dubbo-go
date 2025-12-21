@@ -41,7 +41,7 @@ type MockFilter struct {
 	mock.Mock
 }
 
-func (m *MockFilter) Set(key string, value interface{}) {
+func (m *MockFilter) Set(key string, value any) {
 	m.Called(key, value)
 }
 
