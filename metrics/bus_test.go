@@ -44,11 +44,37 @@ func init() {
 }
 
 func TestBusPublish(t *testing.T) {
-	t.Run("testBusPublish", func(t *testing.T) {
-		event := <-mockChan
+	event := <-mockChan
 
-		if event, ok := event.(MockEvent); ok {
-			assert.Equal(t, event, NewEmptyMockEvent())
-		}
-	})
+	if event, ok := event.(MockEvent); ok {
+		assert.Equal(t, event, NewEmptyMockEvent())
+	}
+}
+
+func TestBusUnsubscribe(t *testing.T) {
+	testChan := make(chan MetricsEvent, 1)
+	eventType := "dubbo.metrics.test.unsubscribe"
+
+	Subscribe(eventType, testChan)
+
+	testEvent := &MockEvent{}
+	Publish(testEvent)
+
+	Unsubscribe(eventType)
+
+	Publish(testEvent)
+}
+
+func TestBusPublishChannelFull(t *testing.T) {
+	testChan := make(chan MetricsEvent, 1)
+	eventType := "dubbo.metrics.test.full"
+
+	Subscribe(eventType, testChan)
+
+	testEvent := &MockEvent{}
+	testChan <- testEvent
+
+	Publish(testEvent)
+
+	Unsubscribe(eventType)
 }
