@@ -51,3 +51,91 @@ func TestInstantiateZap_FileAppender(t *testing.T) {
 		t.Fatalf("expected zap file logger, err=%v", err)
 	}
 }
+
+func TestInstantiateZap_TextFormat(t *testing.T) {
+	u := &common.URL{}
+	u.ReplaceParams(url.Values{
+		constant.LoggerLevelKey:    []string{"info"},
+		constant.LoggerAppenderKey: []string{"console"},
+		constant.LoggerFormatKey:   []string{"text"},
+	})
+	lg, err := instantiate(u)
+	if err != nil || lg == nil {
+		t.Fatalf("expected zap logger with text format, err=%v", err)
+	}
+}
+
+func TestInstantiateZap_DefaultFormat(t *testing.T) {
+	u := &common.URL{}
+	u.ReplaceParams(url.Values{
+		constant.LoggerLevelKey:    []string{"info"},
+		constant.LoggerAppenderKey: []string{"console"},
+		constant.LoggerFormatKey:   []string{"unknown-format"},
+	})
+	lg, err := instantiate(u)
+	if err != nil || lg == nil {
+		t.Fatalf("expected zap logger with default format fallback, err=%v", err)
+	}
+}
+
+func TestInstantiateZap_ConsoleAndFileAppender(t *testing.T) {
+	u := &common.URL{}
+	u.ReplaceParams(url.Values{
+		constant.LoggerLevelKey:       []string{"debug"},
+		constant.LoggerAppenderKey:    []string{"console,file"},
+		constant.LoggerFormatKey:      []string{"json"},
+		constant.LoggerFileNameKey:    []string{"test_combined.log"},
+		constant.LoggerFileNaxSizeKey: []string{"1"},
+	})
+	lg, err := instantiate(u)
+	if err != nil || lg == nil {
+		t.Fatalf("expected zap logger with console and file appenders, err=%v", err)
+	}
+}
+
+func TestInstantiateZap_InvalidLevel(t *testing.T) {
+	u := &common.URL{}
+	u.ReplaceParams(url.Values{
+		constant.LoggerLevelKey:    []string{"not-a-valid-level"},
+		constant.LoggerAppenderKey: []string{"console"},
+	})
+	lg, err := instantiate(u)
+	if err == nil {
+		t.Fatalf("expected error for invalid level, got nil")
+	}
+	if lg != nil {
+		t.Fatalf("expected nil logger for invalid level, got %v", lg)
+	}
+}
+
+func TestNewDefault(t *testing.T) {
+	lg := NewDefault()
+	if lg == nil {
+		t.Fatalf("expected non-nil default logger")
+	}
+	if lg.Logger == nil {
+		t.Fatalf("expected non-nil underlying logger")
+	}
+}
+
+func TestEncoderConfig(t *testing.T) {
+	ec := encoderConfig()
+	if ec.MessageKey != "msg" {
+		t.Fatalf("expected MessageKey 'msg', got %q", ec.MessageKey)
+	}
+	if ec.LevelKey != "level" {
+		t.Fatalf("expected LevelKey 'level', got %q", ec.LevelKey)
+	}
+	if ec.TimeKey != "time" {
+		t.Fatalf("expected TimeKey 'time', got %q", ec.TimeKey)
+	}
+	if ec.CallerKey != "line" {
+		t.Fatalf("expected CallerKey 'line', got %q", ec.CallerKey)
+	}
+	if ec.NameKey != "logger" {
+		t.Fatalf("expected NameKey 'logger', got %q", ec.NameKey)
+	}
+	if ec.StacktraceKey != "stacktrace" {
+		t.Fatalf("expected StacktraceKey 'stacktrace', got %q", ec.StacktraceKey)
+	}
+}
