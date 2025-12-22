@@ -539,7 +539,8 @@ func TestRPCInvocation_ConcurrentAccess(t *testing.T) {
 	// Note: We test only SetInvoker here because Invoker() doesn't use locks,
 	// and concurrent read/write would cause data races (which is a limitation of the current implementation).
 	// Testing concurrent writes only is still useful to verify SetInvoker's lock works correctly.
-	url, _ := common.NewURL("dubbo://127.0.0.1:20000/test")
+	url, err := common.NewURL("dubbo://127.0.0.1:20000/test")
+	assert.NoError(t, err)
 	mockInvoker := &mockInvoker{url: url}
 
 	wg.Add(numGoroutines)
