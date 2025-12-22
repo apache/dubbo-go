@@ -177,13 +177,13 @@ func TestCodeUnmarshalText(t *testing.T) {
 		t.Parallel()
 		invalidInputs := []string{
 			"invalid",
-			"CANCELED",           // case sensitive
-			"code_",              // missing number
-			"code_abc",           // not a number
-			"code_1",             // canonical codes can't use code_N format
-			"code_16",            // canonical codes can't use code_N format
-			"",                   // empty string
-			"code_-1",            // negative number
+			"CANCELED", // case sensitive
+			"code_",    // missing number
+			"code_abc", // not a number
+			"code_1",   // canonical codes can't use code_N format
+			"code_16",  // canonical codes can't use code_N format
+			"",         // empty string
+			"code_-1",  // negative number
 		}
 
 		for _, input := range invalidInputs {

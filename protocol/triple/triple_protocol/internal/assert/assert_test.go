@@ -106,7 +106,7 @@ func TestAssertions(t *testing.T) {
 		Nil(t, ([]int)(nil))
 		Nil(t, (map[int]int)(nil))
 		Nil(t, (chan int)(nil))
-		var nilInterface interface{}
+		var nilInterface any
 		Nil(t, nilInterface)
 
 		NotNil(t, make(chan int))
@@ -332,9 +332,9 @@ func TestAssertions(t *testing.T) {
 
 	t.Run("panics", func(t *testing.T) {
 		t.Parallel()
-		Panics(t, func() { panic("testing") }) //nolint:forbidigo
+		Panics(t, func() { panic("testing") })                 //nolint:forbidigo
 		Panics(t, func() { panic(errors.New("error panic")) }) //nolint:forbidigo
-		Panics(t, func() { panic(42) }) //nolint:forbidigo
+		Panics(t, func() { panic(42) })                        //nolint:forbidigo
 	})
 
 	t.Run("panics_failure", func(t *testing.T) {
@@ -397,7 +397,7 @@ func TestIsNil(t *testing.T) {
 		{"nil map", (map[string]int)(nil), true},
 		{"nil chan", (chan int)(nil), true},
 		{"nil func", (func())(nil), true},
-		{"nil interface pointer", (*interface{})(nil), true},
+		{"nil interface pointer", (*any)(nil), true},
 		{"non-nil int", 42, false},
 		{"non-nil string", "hello", false},
 		{"non-nil slice", []int{1, 2}, false},

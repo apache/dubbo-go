@@ -26,7 +26,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/ping/v1/pingv1connect"
 )
 
-
 func Example_client() {
 	logger := log.New(os.Stdout, "" /* prefix */, 0 /* flags */)
 	// Unfortunately, pkg.go.dev can't run examples that actually use the

@@ -173,14 +173,13 @@ func TestHandlerCompressionOptionTest(t *testing.T) {
 	})
 }
 
-
 // mockDecompressor implements Decompressor for testing
 type mockDecompressor struct {
-	reader    io.Reader
-	closed    bool
-	resetErr  error
-	closeErr  error
-	readErr   error
+	reader   io.Reader
+	closed   bool
+	resetErr error
+	closeErr error
+	readErr  error
 }
 
 func (m *mockDecompressor) Read(p []byte) (n int, err error) {

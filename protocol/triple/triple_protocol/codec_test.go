@@ -25,7 +25,9 @@ import (
 
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
+
 	"google.golang.org/protobuf/proto"
+
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -497,7 +499,6 @@ func TestErrNotProto(t *testing.T) {
 		assert.True(t, strings.Contains(err.Error(), "customStruct"))
 	})
 }
-
 
 // TestGetArgType tests getArgType function with all type branches
 func TestGetArgType(t *testing.T) {
