@@ -547,7 +547,7 @@ func TestRPCResult_Attachment(t *testing.T) {
 			},
 			key:          "key",
 			defaultValue: "default",
-			expected:     nil,
+			expected:     "default",
 		},
 		{
 			name: "get with nil default value",
