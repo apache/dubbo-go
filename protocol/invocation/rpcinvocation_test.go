@@ -346,7 +346,8 @@ func TestRPCInvocation_SetAndGetInvoker(t *testing.T) {
 	assert.Nil(t, invocation.Invoker())
 
 	// Create a mock invoker
-	url, _ := common.NewURL("dubbo://127.0.0.1:20000/test")
+	url, err := common.NewURL("dubbo://127.0.0.1:20000/test")
+	assert.NoError(t, err)
 	mockInvoker := &mockInvoker{url: url}
 
 	invocation.SetInvoker(mockInvoker)
