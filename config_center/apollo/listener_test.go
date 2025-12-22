@@ -49,7 +49,7 @@ func TestApolloListener(t *testing.T) {
 	l.AddListener(rec)
 
 	change := &storage.FullChangeEvent{
-		Changes: map[string]interface{}{"k": "v"},
+		Changes: map[string]any{"k": "v"},
 	}
 	change.Namespace = "application"
 	l.OnNewestChange(change)
