@@ -69,7 +69,7 @@ func (a *ArgumentConditionMatcher) GetValue(sample map[string]string, url *commo
 		return ""
 	}
 
-	if index < 0 || index > len(invocation.Arguments()) {
+	if index < 0 || index >= len(invocation.Arguments()) {
 		logger.Warn(notFoundArgumentValue)
 		return ""
 	}
