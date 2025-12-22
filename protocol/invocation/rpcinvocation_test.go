@@ -431,7 +431,8 @@ func TestRPCInvocation_WithAttachment(t *testing.T) {
 }
 
 func TestRPCInvocation_WithInvoker(t *testing.T) {
-	url, _ := common.NewURL("dubbo://127.0.0.1:20000/test")
+	url, err := common.NewURL("dubbo://127.0.0.1:20000/test")
+	assert.NoError(t, err)
 	mockInvoker := &mockInvoker{url: url}
 
 	invocation := NewRPCInvocationWithOptions(WithInvoker(mockInvoker))
