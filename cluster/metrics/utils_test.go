@@ -52,8 +52,8 @@ func TestGetInstanceKey(t *testing.T) {
 }
 
 func TestGetInstanceKeyWithDifferentPort(t *testing.T) {
-	url, err := common.NewURL("dubbo://192.168.1.100:8080/com.test.Service")
+	url, err := common.NewURL("dubbo://127.0.0.1:8080/com.test.Service")
 	require.NoError(t, err)
 	key := getInstanceKey(url)
-	assert.Equal(t, "192.168.1.100:8080", key)
+	assert.Equal(t, "127.0.0.1:8080", key)
 }

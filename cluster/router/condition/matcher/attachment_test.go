@@ -44,7 +44,7 @@ func TestAttachmentConditionMatcherGetValue(t *testing.T) {
 
 	inv := invocation.NewRPCInvocationWithOptions(
 		invocation.WithMethodName("test"),
-		invocation.WithAttachments(map[string]interface{}{
+		invocation.WithAttachments(map[string]any{
 			"version": "1.0.0",
 		}),
 	)
@@ -92,7 +92,7 @@ func TestAttachmentConditionMatcherGetValueDifferentKeys(t *testing.T) {
 
 			inv := invocation.NewRPCInvocationWithOptions(
 				invocation.WithMethodName("test"),
-				invocation.WithAttachments(map[string]interface{}{
+				invocation.WithAttachments(map[string]any{
 					tt.attachmentKey: tt.attachmentVal,
 				}),
 			)
@@ -110,7 +110,7 @@ func TestAttachmentConditionMatcherGetValueNotFound(t *testing.T) {
 
 	inv := invocation.NewRPCInvocationWithOptions(
 		invocation.WithMethodName("test"),
-		invocation.WithAttachments(map[string]interface{}{
+		invocation.WithAttachments(map[string]any{
 			"version": "1.0.0",
 		}),
 	)
@@ -136,7 +136,7 @@ func TestAttachmentConditionMatcherGetValueInvalidFormat(t *testing.T) {
 
 			inv := invocation.NewRPCInvocationWithOptions(
 				invocation.WithMethodName("test"),
-				invocation.WithAttachments(map[string]interface{}{
+				invocation.WithAttachments(map[string]any{
 					"version": "1.0.0",
 				}),
 			)
@@ -155,7 +155,7 @@ func TestAttachmentConditionMatcherGetValueWithDotNotation(t *testing.T) {
 
 	inv := invocation.NewRPCInvocationWithOptions(
 		invocation.WithMethodName("test"),
-		invocation.WithAttachments(map[string]interface{}{
+		invocation.WithAttachments(map[string]any{
 			"version": "1.0.0",
 		}),
 	)
@@ -184,7 +184,7 @@ func TestAttachmentConditionMatcherGetValueNumericKey(t *testing.T) {
 
 	inv := invocation.NewRPCInvocationWithOptions(
 		invocation.WithMethodName("test"),
-		invocation.WithAttachments(map[string]interface{}{
+		invocation.WithAttachments(map[string]any{
 			"abc123": "value123",
 		}),
 	)
@@ -200,7 +200,7 @@ func TestAttachmentConditionMatcherGetValueUnderscoreKey(t *testing.T) {
 
 	inv := invocation.NewRPCInvocationWithOptions(
 		invocation.WithMethodName("test"),
-		invocation.WithAttachments(map[string]interface{}{
+		invocation.WithAttachments(map[string]any{
 			"my_key": "my_value",
 		}),
 	)

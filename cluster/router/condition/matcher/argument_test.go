@@ -44,7 +44,7 @@ func TestArgumentConditionMatcherGetValue(t *testing.T) {
 
 	inv := invocation.NewRPCInvocationWithOptions(
 		invocation.WithMethodName("test"),
-		invocation.WithArguments([]interface{}{"value1", "value2", "value3"}),
+		invocation.WithArguments([]any{"value1", "value2", "value3"}),
 	)
 
 	value := matcher.GetValue(nil, url, inv)
@@ -52,7 +52,7 @@ func TestArgumentConditionMatcherGetValue(t *testing.T) {
 }
 
 func TestArgumentConditionMatcherGetValueDifferentIndices(t *testing.T) {
-	args := []interface{}{"first", "second", "third", "fourth"}
+	args := []any{"first", "second", "third", "fourth"}
 
 	tests := []struct {
 		name          string
@@ -108,7 +108,7 @@ func TestArgumentConditionMatcherGetValueInvalidFormat(t *testing.T) {
 		"arguments[abc]",
 	}
 
-	args := []interface{}{"value1", "value2"}
+	args := []any{"value1", "value2"}
 
 	for _, key := range tests {
 		t.Run(key, func(t *testing.T) {
@@ -134,7 +134,7 @@ func TestArgumentConditionMatcherGetValueOutOfBounds(t *testing.T) {
 
 	inv := invocation.NewRPCInvocationWithOptions(
 		invocation.WithMethodName("test"),
-		invocation.WithArguments([]interface{}{"value1", "value2"}),
+		invocation.WithArguments([]any{"value1", "value2"}),
 	)
 
 	value := matcher.GetValue(nil, url, inv)
@@ -149,7 +149,7 @@ func TestArgumentConditionMatcherGetValueAtBoundary(t *testing.T) {
 
 	inv := invocation.NewRPCInvocationWithOptions(
 		invocation.WithMethodName("test"),
-		invocation.WithArguments([]interface{}{"value1", "value2"}), // len = 2, index 2 is out of bounds
+		invocation.WithArguments([]any{"value1", "value2"}), // len = 2, index 2 is out of bounds
 	)
 
 	value := matcher.GetValue(nil, url, inv)
@@ -163,7 +163,7 @@ func TestArgumentConditionMatcherGetValueNegativeIndex(t *testing.T) {
 
 	inv := invocation.NewRPCInvocationWithOptions(
 		invocation.WithMethodName("test"),
-		invocation.WithArguments([]interface{}{"value1", "value2"}),
+		invocation.WithArguments([]any{"value1", "value2"}),
 	)
 
 	value := matcher.GetValue(nil, url, inv)
@@ -177,7 +177,7 @@ func TestArgumentConditionMatcherGetValueEmptyArguments(t *testing.T) {
 
 	inv := invocation.NewRPCInvocationWithOptions(
 		invocation.WithMethodName("test"),
-		invocation.WithArguments([]interface{}{}),
+		invocation.WithArguments([]any{}),
 	)
 
 	value := matcher.GetValue(nil, url, inv)
@@ -191,7 +191,7 @@ func TestArgumentConditionMatcherGetValueNumericArgument(t *testing.T) {
 
 	inv := invocation.NewRPCInvocationWithOptions(
 		invocation.WithMethodName("test"),
-		invocation.WithArguments([]interface{}{123, 456}),
+		invocation.WithArguments([]any{123, 456}),
 	)
 
 	value := matcher.GetValue(nil, url, inv)
@@ -205,7 +205,7 @@ func TestArgumentConditionMatcherGetValueBooleanArgument(t *testing.T) {
 
 	inv := invocation.NewRPCInvocationWithOptions(
 		invocation.WithMethodName("test"),
-		invocation.WithArguments([]interface{}{true, false}),
+		invocation.WithArguments([]any{true, false}),
 	)
 
 	value := matcher.GetValue(nil, url, inv)
@@ -220,7 +220,7 @@ func TestArgumentConditionMatcherGetValueWithDotNotation(t *testing.T) {
 
 	inv := invocation.NewRPCInvocationWithOptions(
 		invocation.WithMethodName("test"),
-		invocation.WithArguments([]interface{}{"value1", "value2"}),
+		invocation.WithArguments([]any{"value1", "value2"}),
 	)
 
 	value := matcher.GetValue(nil, url, inv)
@@ -234,7 +234,7 @@ func TestArgumentConditionMatcherGetValueLargeIndex(t *testing.T) {
 
 	inv := invocation.NewRPCInvocationWithOptions(
 		invocation.WithMethodName("test"),
-		invocation.WithArguments([]interface{}{"value1"}),
+		invocation.WithArguments([]any{"value1"}),
 	)
 
 	value := matcher.GetValue(nil, url, inv)
@@ -254,7 +254,7 @@ func TestArgumentConditionMatcherGetValueComplexObject(t *testing.T) {
 	testObj := TestStruct{Name: "test", Age: 25}
 	inv := invocation.NewRPCInvocationWithOptions(
 		invocation.WithMethodName("test"),
-		invocation.WithArguments([]interface{}{testObj}),
+		invocation.WithArguments([]any{testObj}),
 	)
 
 	value := matcher.GetValue(nil, url, inv)
