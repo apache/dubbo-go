@@ -27,6 +27,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// contextKey is a custom type for context keys to avoid collisions
+type contextKey string
+
 // mockInvocation is a simple mock implementation of Invocation interface for testing
 type mockInvocation struct {
 	methodName         string
@@ -78,7 +81,7 @@ func (m *mockInvocation) GetAttachmentWithDefaultValue(key string, defaultValue 
 func (m *mockInvocation) GetAttachmentAsContext() context.Context {
 	ctx := context.Background()
 	for k, v := range m.attachments {
-		ctx = context.WithValue(ctx, k, v)
+		ctx = context.WithValue(ctx, contextKey(k), v)
 	}
 	return ctx
 }
