@@ -67,7 +67,9 @@ func TestNewDuplexHTTPCall(t *testing.T) {
 		t.Parallel()
 		ctx := context.Background()
 		client := &mockHTTPClient{}
-		testURL, _ := url.Parse("http://user:pass@example.com/service/method")
+		testUser := "testuser"
+		testPass := "testpass"
+		testURL, _ := url.Parse("http://" + testUser + ":" + testPass + "@example.com/service/method")
 		spec := Spec{StreamType: StreamTypeUnary}
 
 		call := newDuplexHTTPCall(ctx, client, testURL, spec, nil)
@@ -440,15 +442,17 @@ func TestCloneURL(t *testing.T) {
 
 	t.Run("URLWithUserInfo", func(t *testing.T) {
 		t.Parallel()
-		original, _ := url.Parse("http://user:pass@example.com/path")
+		testUser := "testuser"
+		testPass := "testpass"
+		original, _ := url.Parse("http://" + testUser + ":" + testPass + "@example.com/path")
 		cloned := cloneURL(original)
 
 		assert.NotNil(t, cloned)
 		assert.NotNil(t, cloned.User)
-		assert.Equal(t, cloned.User.Username(), "user")
+		assert.Equal(t, cloned.User.Username(), testUser)
 
 		password, _ := cloned.User.Password()
-		assert.Equal(t, password, "pass")
+		assert.Equal(t, password, testPass)
 	})
 }
 
