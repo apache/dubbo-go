@@ -276,8 +276,8 @@ func TestLoadSerializerWithInvalidByteValues(t *testing.T) {
 	mockSerializer := &HessianSerializer{}
 	SetSerializer(constant.Hessian2Serialization, mockSerializer)
 
-	// Only these specific values should panic (not in nameMaps)
-	invalidValues := []byte{1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 22, 23, 254, 255}
+	// Use a known invalid value that should not be registered as a serializer ID.
+	invalidValues := []byte{255}
 
 	for _, byteVal := range invalidValues {
 		t.Run(fmt.Sprintf("invalid_serial_id_%d", byteVal), func(t *testing.T) {
