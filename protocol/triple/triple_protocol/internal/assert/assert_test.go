@@ -280,8 +280,8 @@ func TestAssertions(t *testing.T) {
 		t.Parallel()
 		// Test that invalid regexp is detected by compiling it ourselves
 		// We can't use mockTB here because Match calls Fatalf which doesn't stop execution in mock
-			invalid := "[" + t.Name()
-			_, err := regexp.Compile(invalid)
+		invalid := "[" + t.Name()
+		_, err := regexp.Compile(invalid)
 		if err == nil {
 			t.Error("Expected invalid regexp to fail compilation")
 		}
