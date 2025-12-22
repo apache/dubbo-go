@@ -206,7 +206,6 @@ func TestGetArgType(t *testing.T) {
 	})
 
 	t.Run("slice of string", func(t *testing.T) {
-		// Note: []string returns array type, not list
 		assert.Equal(t, "[Ljava.lang.String;", getArgType([]string{"a", "b"}))
 	})
 
