@@ -115,8 +115,23 @@ func buildPath(rootPath, subPath string) string {
 	if !strings.HasPrefix(path, pathSeparator) {
 		path = pathSeparator + path
 	}
-	path = strings.ReplaceAll(path, "//", "/")
-	return path
+
+	// collapse consecutive slashes to a single slash
+	buf := make([]byte, 0, len(path))
+	prevSlash := false
+	for i := 0; i < len(path); i++ {
+		c := path[i]
+		if c == '/' {
+			if prevSlash {
+				continue
+			}
+			prevSlash = true
+		} else {
+			prevSlash = false
+		}
+		buf = append(buf, c)
+	}
+	return string(buf)
 }
 
 func (c *zookeeperDynamicConfiguration) RemoveListener(key string, listener config_center.ConfigurationListener, opions ...config_center.Option) {
