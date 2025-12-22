@@ -66,7 +66,7 @@ func TestAliasMethodPickerWithDifferentWeights(t *testing.T) {
 	for i, weight := range weights {
 		urlParams := url.Values{}
 		urlParams.Set("methods.test."+constant.WeightKey, fmt.Sprintf("%d", weight))
-		u, err := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%d:20000/com.test.UserService", i), common.WithParams(urlParams))
+		u, err := common.NewURL(fmt.Sprintf("dubbo://127.0.0.1:%d/com.test.UserService", 20000+i), common.WithParams(urlParams))
 		require.NoError(t, err)
 		invokers = append(invokers, base.NewBaseInvoker(u))
 	}
@@ -122,12 +122,14 @@ func TestAliasMethodPickerPickDistribution(t *testing.T) {
 	invokers := []base.Invoker{}
 	// Create invokers with weight 1:2:3
 	weights := []int{100, 200, 300}
+	locations := make([]string, len(weights))
 
 	for i, weight := range weights {
 		urlParams := url.Values{}
 		urlParams.Set("methods.test."+constant.WeightKey, fmt.Sprintf("%d", weight))
-		u, err := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%d:20000/com.test.UserService", i), common.WithParams(urlParams))
+		u, err := common.NewURL(fmt.Sprintf("dubbo://127.0.0.1:%d/com.test.UserService", 20000+i), common.WithParams(urlParams))
 		require.NoError(t, err)
+		locations[i] = u.Location
 		invokers = append(invokers, base.NewBaseInvoker(u))
 	}
 
@@ -150,15 +152,15 @@ func TestAliasMethodPickerPickDistribution(t *testing.T) {
 	total := float64(iterations)
 
 	// Verify each invoker was selected and check distribution
-	count0, ok0 := counts["192.168.1.0:20000"]
+	count0, ok0 := counts[locations[0]]
 	assert.True(t, ok0, "invoker 0 should be selected")
 	assert.InDelta(t, 0.167, float64(count0)/total, 0.05) // ~1/6
 
-	count1, ok1 := counts["192.168.1.1:20000"]
+	count1, ok1 := counts[locations[1]]
 	assert.True(t, ok1, "invoker 1 should be selected")
 	assert.InDelta(t, 0.333, float64(count1)/total, 0.05) // ~2/6
 
-	count2, ok2 := counts["192.168.1.2:20000"]
+	count2, ok2 := counts[locations[2]]
 	assert.True(t, ok2, "invoker 2 should be selected")
 	assert.InDelta(t, 0.500, float64(count2)/total, 0.05) // ~3/6
 }
@@ -196,7 +198,7 @@ func TestAliasMethodPickerWithMixedWeights(t *testing.T) {
 	for i, weight := range weights {
 		urlParams := url.Values{}
 		urlParams.Set("methods.test."+constant.WeightKey, fmt.Sprintf("%d", weight))
-		u, err := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%d:20000/com.test.UserService", i), common.WithParams(urlParams))
+		u, err := common.NewURL(fmt.Sprintf("dubbo://127.0.0.1:%d/com.test.UserService", 20000+i), common.WithParams(urlParams))
 		require.NoError(t, err)
 		invokers = append(invokers, base.NewBaseInvoker(u))
 	}
@@ -229,7 +231,7 @@ func createTestInvokersWithWeight(count int, weight int) []base.Invoker {
 		} else {
 			urlParams.Set("methods.test."+constant.WeightKey, "0")
 		}
-		u, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%d:20000/com.test.UserService", i), common.WithParams(urlParams))
+		u, _ := common.NewURL(fmt.Sprintf("dubbo://127.0.0.1:%d/com.test.UserService", 20000+i), common.WithParams(urlParams))
 		invokers = append(invokers, base.NewBaseInvoker(u))
 	}
 

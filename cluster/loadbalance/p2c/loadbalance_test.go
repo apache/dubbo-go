@@ -76,7 +76,7 @@ func TestLoadBalance(t *testing.T) {
 	})
 
 	t.Run("one invoker", func(t *testing.T) {
-		url0, _ := common.NewURL("dubbo://192.168.1.0:20000/com.ikurento.user.UserProvider")
+		url0, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider")
 
 		ivkArr := []base.Invoker{
 			base.NewBaseInvoker(url0),
@@ -92,8 +92,8 @@ func TestLoadBalance(t *testing.T) {
 		m := metrics.NewMockMetrics(ctrl)
 		metrics.LocalMetrics = m
 
-		url0, _ := common.NewURL("dubbo://192.168.1.0:20000/com.ikurento.user.UserProvider")
-		url1, _ := common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
+		url0, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider")
+		url1, _ := common.NewURL("dubbo://127.0.0.1:20001/com.ikurento.user.UserProvider")
 
 		m.EXPECT().
 			GetMethodMetrics(gomock.Eq(url0), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.HillClimbing)).
@@ -121,9 +121,9 @@ func TestLoadBalance(t *testing.T) {
 		m := metrics.NewMockMetrics(ctrl)
 		metrics.LocalMetrics = m
 
-		url0, _ := common.NewURL("dubbo://192.168.1.0:20000/com.ikurento.user.UserProvider")
-		url1, _ := common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
-		url2, _ := common.NewURL("dubbo://192.168.1.2:20000/com.ikurento.user.UserProvider")
+		url0, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider")
+		url1, _ := common.NewURL("dubbo://127.0.0.1:20001/com.ikurento.user.UserProvider")
+		url2, _ := common.NewURL("dubbo://127.0.0.1:20002/com.ikurento.user.UserProvider")
 
 		m.EXPECT().
 			GetMethodMetrics(gomock.Eq(url0), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.HillClimbing)).
@@ -152,9 +152,9 @@ func TestLoadBalance(t *testing.T) {
 		m := metrics.NewMockMetrics(ctrl)
 		metrics.LocalMetrics = m
 
-		url0, _ := common.NewURL("dubbo://192.168.1.0:20000/com.ikurento.user.UserProvider")
-		url1, _ := common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
-		url2, _ := common.NewURL("dubbo://192.168.1.2:20000/com.ikurento.user.UserProvider")
+		url0, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider")
+		url1, _ := common.NewURL("dubbo://127.0.0.1:20001/com.ikurento.user.UserProvider")
+		url2, _ := common.NewURL("dubbo://127.0.0.1:20002/com.ikurento.user.UserProvider")
 
 		m.EXPECT().
 			GetMethodMetrics(gomock.Eq(url0), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.HillClimbing)).
@@ -179,9 +179,9 @@ func TestLoadBalance(t *testing.T) {
 		m := metrics.NewMockMetrics(ctrl)
 		metrics.LocalMetrics = m
 
-		url0, _ := common.NewURL("dubbo://192.168.1.0:20000/com.ikurento.user.UserProvider")
-		url1, _ := common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
-		url2, _ := common.NewURL("dubbo://192.168.1.2:20000/com.ikurento.user.UserProvider")
+		url0, _ := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider")
+		url1, _ := common.NewURL("dubbo://127.0.0.1:20001/com.ikurento.user.UserProvider")
+		url2, _ := common.NewURL("dubbo://127.0.0.1:20002/com.ikurento.user.UserProvider")
 
 		m.EXPECT().
 			GetMethodMetrics(gomock.Eq(url0), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.HillClimbing)).
