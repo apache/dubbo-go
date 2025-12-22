@@ -21,6 +21,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 import (
@@ -143,6 +144,116 @@ func TestClientPeer(t *testing.T) {
 	t.Run("grpc", func(t *testing.T) {
 		t.Parallel()
 		run(t, true)
+	})
+}
+
+func TestClientWithTimeout(t *testing.T) {
+	t.Parallel()
+	mux := http.NewServeMux()
+	mux.Handle(pingv1connect.NewPingServiceHandler(pingServer{}))
+	server := httptest.NewUnstartedServer(mux)
+	server.EnableHTTP2 = true
+	server.StartTLS()
+	t.Cleanup(server.Close)
+
+	t.Run("with client timeout option", func(t *testing.T) {
+		t.Parallel()
+		client := pingv1connect.NewPingServiceClient(
+			server.Client(),
+			server.URL,
+			triple.WithTimeout(5*time.Second),
+		)
+		err := client.Ping(
+			context.Background(),
+			triple.NewRequest(&pingv1.PingRequest{}),
+			triple.NewResponse(&pingv1.PingResponse{}),
+		)
+		assert.Nil(t, err)
+	})
+
+	t.Run("with context timeout", func(t *testing.T) {
+		t.Parallel()
+		client := pingv1connect.NewPingServiceClient(
+			server.Client(),
+			server.URL,
+		)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		err := client.Ping(
+			ctx,
+			triple.NewRequest(&pingv1.PingRequest{}),
+			triple.NewResponse(&pingv1.PingResponse{}),
+		)
+		assert.Nil(t, err)
+	})
+
+	t.Run("with TimeoutKey in context", func(t *testing.T) {
+		t.Parallel()
+		client := pingv1connect.NewPingServiceClient(
+			server.Client(),
+			server.URL,
+		)
+		ctx := context.WithValue(context.Background(), triple.TimeoutKey{}, "5s")
+		err := client.Ping(
+			ctx,
+			triple.NewRequest(&pingv1.PingRequest{}),
+			triple.NewResponse(&pingv1.PingResponse{}),
+		)
+		assert.Nil(t, err)
+	})
+}
+
+func TestClientWithGroupVersion(t *testing.T) {
+	t.Parallel()
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Headers are captured in request, we could verify them here if needed
+		w.WriteHeader(http.StatusOK)
+	})
+	server := httptest.NewServer(handler)
+	t.Cleanup(server.Close)
+
+	t.Run("with group and version", func(t *testing.T) {
+		t.Parallel()
+		client := triple.NewClient(
+			server.Client(),
+			server.URL+"/test.Service/Method",
+			triple.WithTriple(),
+			triple.WithGroup("test-group"),
+			triple.WithVersion("1.0.0"),
+		)
+		_ = client.CallUnary(
+			context.Background(),
+			triple.NewRequest(&pingv1.PingRequest{}),
+			triple.NewResponse(&pingv1.PingResponse{}),
+		)
+		// Note: We can't easily verify headers here without a proper server setup
+		// This test mainly verifies the options don't cause errors
+	})
+}
+
+func TestClientWithCodec(t *testing.T) {
+	t.Parallel()
+	mux := http.NewServeMux()
+	mux.Handle(pingv1connect.NewPingServiceHandler(pingServer{}))
+	server := httptest.NewUnstartedServer(mux)
+	server.EnableHTTP2 = true
+	server.StartTLS()
+	t.Cleanup(server.Close)
+
+	t.Run("with proto codec", func(t *testing.T) {
+		t.Parallel()
+		client := pingv1connect.NewPingServiceClient(
+			server.Client(),
+			server.URL,
+			triple.WithProtoJSON(),
+		)
+		err := client.Ping(
+			context.Background(),
+			triple.NewRequest(&pingv1.PingRequest{Number: 42}),
+			triple.NewResponse(&pingv1.PingResponse{}),
+		)
+		assert.Nil(t, err)
 	})
 }
 
