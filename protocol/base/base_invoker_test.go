@@ -49,30 +49,30 @@ func TestBaseInvokerWithFullURL(t *testing.T) {
 	assert.Nil(t, err)
 
 	ivk := NewBaseInvoker(url)
-	
+
 	// Test GetURL
 	returnedURL := ivk.GetURL()
 	assert.NotNil(t, returnedURL)
 	assert.Equal(t, "dubbo", returnedURL.Protocol)
 	assert.Equal(t, "192.168.1.100", returnedURL.Ip)
 	assert.Equal(t, "20880", returnedURL.Port)
-	
+
 	// Test initial state
 	assert.True(t, ivk.IsAvailable())
 	assert.False(t, ivk.IsDestroyed())
-	
+
 	// Test String method before destroy
 	str := ivk.String()
 	assert.Contains(t, str, "dubbo")
 	assert.Contains(t, str, "192.168.1.100")
 	assert.Contains(t, str, "20880")
-	
+
 	// Test Destroy
 	ivk.Destroy()
 	assert.False(t, ivk.IsAvailable())
 	assert.True(t, ivk.IsDestroyed())
 	assert.Nil(t, ivk.GetURL())
-	
+
 	// Test String method after destroy (url is nil)
 	str = ivk.String()
 	assert.Contains(t, str, "BaseInvoker")
@@ -83,10 +83,10 @@ func TestBaseInvokerInvoke(t *testing.T) {
 	assert.Nil(t, err)
 
 	ivk := NewBaseInvoker(url)
-	
+
 	// Create a mock invocation
 	ctx := context.Background()
-	
+
 	// Invoke method should return an empty RPCResult
 	result := ivk.Invoke(ctx, nil)
 	assert.NotNil(t, result)
@@ -97,12 +97,12 @@ func TestBaseInvokerMultipleDestroy(t *testing.T) {
 	assert.Nil(t, err)
 
 	ivk := NewBaseInvoker(url)
-	
+
 	// First destroy
 	ivk.Destroy()
 	assert.True(t, ivk.IsDestroyed())
 	assert.False(t, ivk.IsAvailable())
-	
+
 	// Second destroy should not cause panic
 	ivk.Destroy()
 	assert.True(t, ivk.IsDestroyed())
@@ -131,15 +131,15 @@ func TestBaseInvokerStringWithDifferentURLs(t *testing.T) {
 			contains: []string{"dubbo", "8888"},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			url, err := common.NewURL(tt.urlStr)
 			assert.Nil(t, err)
-			
+
 			ivk := NewBaseInvoker(url)
 			str := ivk.String()
-			
+
 			for _, contain := range tt.contains {
 				assert.Contains(t, str, contain)
 			}
