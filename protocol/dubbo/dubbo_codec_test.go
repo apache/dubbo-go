@@ -111,7 +111,7 @@ func TestIsRequestEdgeCases(t *testing.T) {
 			desc:     "bit 0 only",
 			data:     []byte{0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00},
 			expected: false,
-		},
+			desc:     "bit 1 only (not bit 2)",
 		{
 			desc:     "bit 1 only",
 			data:     []byte{0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00},
