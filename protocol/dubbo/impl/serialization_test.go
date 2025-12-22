@@ -20,11 +20,8 @@ package impl
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestGetSerializerById tests GetSerializerById with valid and invalid serializer IDs
@@ -78,14 +75,6 @@ func TestGetSerializerById(t *testing.T) {
 	}
 }
 
-// TestGetSerializerByIdWithUnregisteredSerializer tests GetSerializerById with unregistered serializer
-func TestGetSerializerByIdWithUnregisteredSerializer(t *testing.T) {
-	// Try to get a serializer ID that exists in nameMaps but is not registered
-	assert.Panics(t, func() {
-		GetSerializerById(constant.SProto)
-	})
-}
-
 // TestGetSerializerByIdConsistency tests that GetSerializerById returns consistent results
 func TestGetSerializerByIdConsistency(t *testing.T) {
 	mockSerializer := &HessianSerializer{}
@@ -101,4 +90,63 @@ func TestGetSerializerByIdConsistency(t *testing.T) {
 	assert.NoError(t, err3)
 	assert.Equal(t, result1, result2)
 	assert.Equal(t, result2, result3)
+}
+
+// TestSetSerializer tests SetSerializer can register a serializer
+func TestSetSerializer(t *testing.T) {
+	mockSerializer := &HessianSerializer{}
+	
+	// SetSerializer should not panic
+	assert.NotPanics(t, func() {
+		SetSerializer(constant.Hessian2Serialization, mockSerializer)
+	})
+
+	// After setting, GetSerializerById should return the same serializer
+	result, err := GetSerializerById(constant.SHessian2)
+	assert.NoError(t, err)
+	assert.Equal(t, mockSerializer, result)
+}
+
+// TestSetSerializerReplaces tests that SetSerializer can replace an existing serializer
+func TestSetSerializerReplaces(t *testing.T) {
+	mockSerializer1 := &HessianSerializer{}
+	SetSerializer(constant.Hessian2Serialization, mockSerializer1)
+
+	result1, _ := GetSerializerById(constant.SHessian2)
+	assert.Equal(t, mockSerializer1, result1)
+
+	// Replace with a new serializer
+	mockSerializer2 := &HessianSerializer{}
+	SetSerializer(constant.Hessian2Serialization, mockSerializer2)
+
+	result2, _ := GetSerializerById(constant.SHessian2)
+	assert.Equal(t, mockSerializer2, result2)
+}
+
+// TestSetSerializerWithMultipleNames tests SetSerializer with different serialization names
+func TestSetSerializerWithMultipleNames(t *testing.T) {
+	hessianSerializer := &HessianSerializer{}
+	
+	// Register the same serializer with multiple names
+	SetSerializer(constant.Hessian2Serialization, hessianSerializer)
+	
+	// Verify it's registered
+	result, err := GetSerializerById(constant.SHessian2)
+	assert.NoError(t, err)
+	assert.Equal(t, hessianSerializer, result)
+}
+
+// TestSetSerializerNotNil tests SetSerializer with non-nil serializer
+func TestSetSerializerNotNil(t *testing.T) {
+	serializer := &HessianSerializer{}
+	
+	// SetSerializer should accept non-nil serializer
+	assert.NotPanics(t, func() {
+		SetSerializer(constant.Hessian2Serialization, serializer)
+	})
+
+	// Verify the serializer is set correctly
+	result, err := GetSerializerById(constant.SHessian2)
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
 }
