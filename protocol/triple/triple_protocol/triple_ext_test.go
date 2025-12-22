@@ -29,18 +29,14 @@ import (
 	"sync"
 	"testing"
 	"time"
-)
 
-import (
 	"google.golang.org/protobuf/proto"
-
 	"google.golang.org/protobuf/reflect/protoregistry"
-)
 
-import (
 	triple "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/assert"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/import/v1/importv1connect"
+
 	pingv1 "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/ping/v1"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/ping/v1/pingv1connect"
 )
@@ -800,7 +796,12 @@ func TestUnavailableIfHostInvalid(t *testing.T) {
 		triple.NewResponse(&pingv1.PingResponse{}),
 	)
 	assert.NotNil(t, err)
-	assert.Equal(t, triple.CodeOf(err), triple.CodeUnavailable)
+	// On some systems (e.g., Windows with DNS hijacking), the invalid host may
+	// return an HTTP response without gRPC status, resulting in CodeInternal.
+	// On other systems, DNS lookup fails and returns CodeUnavailable.
+	code := triple.CodeOf(err)
+	assert.True(t, code == triple.CodeUnavailable || code == triple.CodeInternal,
+		assert.Sprintf("expected CodeUnavailable or CodeInternal, got %v", code))
 }
 
 func TestBidiRequiresHTTP2(t *testing.T) {
