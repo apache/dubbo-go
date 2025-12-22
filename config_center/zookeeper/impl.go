@@ -115,7 +115,9 @@ func buildPath(rootPath, subPath string) string {
 	if !strings.HasPrefix(path, pathSeparator) {
 		path = pathSeparator + path
 	}
-	path = strings.ReplaceAll(path, "//", "/")
+	for strings.Contains(path, "//") {
+		path = strings.ReplaceAll(path, "//", "/")
+	}
 	return path
 }
 
