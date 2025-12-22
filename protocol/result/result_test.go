@@ -801,7 +801,7 @@ func BenchmarkRPCResult_AddAttachment(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		r.AddAttachment("key", "value")
+		r.AddAttachment(fmt.Sprintf("key-%d", i), "value")
 	}
 }
 
