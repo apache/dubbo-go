@@ -28,7 +28,7 @@ import (
 // Test IP addresses used for address matching tests
 // These are non-routable private network addresses per RFC 1918
 const (
-	testLoopback  = "127.0.0.1"    // loopback address
+	testLoopback  = "127.0.0.1" // loopback address
 	testCIDR      = "192.168.1.0/24"
 	testIP1       = "192.168.1.1"
 	testIP2       = "192.168.1.2"

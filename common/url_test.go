@@ -760,10 +760,10 @@ func TestURLAddress(t *testing.T) {
 }
 
 func TestURLKey(t *testing.T) {
-	u, _ := NewURL("dubbo://user:pass@127.0.0.1:20000/com.test.Service?interface=com.test.Service&group=g1&version=1.0")
+	u, _ := NewURL("dubbo://user:testpwd@127.0.0.1:20000/com.test.Service?interface=com.test.Service&group=g1&version=1.0")
 	key := u.Key()
 	assert.Contains(t, key, "dubbo://")
-	assert.Contains(t, key, "user:pass@")
+	assert.Contains(t, key, "user:testpwd@")
 	assert.Contains(t, key, "interface=com.test.Service")
 	assert.Contains(t, key, "group=g1")
 	assert.Contains(t, key, "version=1.0")
@@ -983,7 +983,7 @@ func TestCloneExceptParams(t *testing.T) {
 }
 
 func TestCloneWithParams(t *testing.T) {
-	u, _ := NewURL("dubbo://user:pass@127.0.0.1:20000/com.test.Service?key1=value1&key2=value2&key3=value3") // #nosec G101 - test credential
+	u, _ := NewURL("dubbo://user:testpwd@127.0.0.1:20000/com.test.Service?key1=value1&key2=value2&key3=value3") // #nosec G101 - test credential
 	u.Methods = []string{"method1", "method2"}
 
 	cloned := u.CloneWithParams([]string{"key1", "key3"})
@@ -993,7 +993,7 @@ func TestCloneWithParams(t *testing.T) {
 	assert.Equal(t, "value3", cloned.GetParam("key3", ""))
 	assert.Equal(t, "dubbo", cloned.Protocol)
 	assert.Equal(t, "user", cloned.Username)
-	assert.Equal(t, "pass", cloned.Password) // #nosec G101 - test credential
+	assert.Equal(t, "testpwd", cloned.Password) // #nosec G101 - test credential
 	assert.Equal(t, []string{"method1", "method2"}, cloned.Methods)
 }
 
@@ -1083,7 +1083,7 @@ func TestNewURLEmptyString(t *testing.T) {
 	assert.Equal(t, "", u.Protocol)
 }
 
-func TestNewURLWithUsernamePassword(t *testing.T) {
+func TestNewURLWithCredentials(t *testing.T) {
 	// #nosec G101 - test credential for URL parsing test
 	u, err := NewURL("dubbo://admin:testpwd@127.0.0.1:20000/com.test.Service")
 	assert.NoError(t, err)
@@ -1091,7 +1091,7 @@ func TestNewURLWithUsernamePassword(t *testing.T) {
 	assert.Equal(t, "testpwd", u.Password)
 }
 
-func TestURLStringWithCredentials(t *testing.T) {
+func TestURLStringWithAuth(t *testing.T) {
 	// #nosec G101 - test credential for URL string test
 	u, _ := NewURL("dubbo://admin:testpwd@127.0.0.1:20000/com.test.Service?key=value")
 	str := u.String()
@@ -1182,7 +1182,7 @@ func TestNewURLWithInvalidQuery(t *testing.T) {
 	assert.Equal(t, "value with space", u.GetParam("key", ""))
 }
 
-func TestURLStringWithoutCredentials(t *testing.T) {
+func TestURLStringWithoutAuth(t *testing.T) {
 	u, _ := NewURL("dubbo://127.0.0.1:20000/com.test.Service?key=value")
 	str := u.String()
 	assert.Contains(t, str, "dubbo://127.0.0.1:20000")
