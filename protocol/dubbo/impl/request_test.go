@@ -19,7 +19,9 @@ package impl
 
 import (
 	"testing"
+)
 
+import (
 	"github.com/stretchr/testify/assert"
 )
 
@@ -76,6 +78,7 @@ func TestNewRequestPayload(t *testing.T) {
 			assert.NotNil(t, payload)
 			assert.Equal(t, test.expectParams, payload.Params)
 			assert.NotNil(t, payload.Attachments)
+			assert.Equal(t, test.expectAttachments, payload.Attachments)
 		})
 	}
 }
@@ -83,10 +86,10 @@ func TestNewRequestPayload(t *testing.T) {
 // TestEnsureRequestPayload tests EnsureRequestPayload with various body types
 func TestEnsureRequestPayload(t *testing.T) {
 	tests := []struct {
-		desc            string
-		body            any
-		expectParams    any
-		expectNotNil    bool
+		desc         string
+		body         any
+		expectParams any
+		expectNotNil bool
 	}{
 		{
 			desc:         "with RequestPayload object",

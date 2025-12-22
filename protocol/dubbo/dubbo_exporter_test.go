@@ -21,11 +21,16 @@ import (
 	"context"
 	"sync"
 	"testing"
+)
 
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
-	"github.com/stretchr/testify/assert"
 )
 
 // MockInvoker is a simple mock implementation of base.Invoker for testing
@@ -156,7 +161,7 @@ func TestDubboExporterGetInvoker(t *testing.T) {
 	}
 }
 
-// TestDubboExporterMultipleExporters tests creating multiple exporters
+// TestDubboExporterMultipleExporters tests creating multiple exporters with different keys coexisting in the same map
 func TestDubboExporterMultipleExporters(t *testing.T) {
 	tests := []struct {
 		desc          string
@@ -180,19 +185,35 @@ func TestDubboExporterMultipleExporters(t *testing.T) {
 		},
 	}
 
+	// Create a shared exporterMap for all test cases
+	exporterMap := &sync.Map{}
+	exporters := make(map[string]*DubboExporter)
+	mockInvokers := make(map[string]*MockInvoker)
+
+	// Create multiple exporters with different keys in the shared map
+	for _, test := range tests {
+		url, _ := common.NewURL("dubbo://localhost:20000/" + test.interfaceName + "?interface=" + test.interfaceName)
+		mockInvoker := &MockInvoker{
+			url:       url,
+			available: true,
+			destroyed: false,
+		}
+		mockInvokers[test.key] = mockInvoker
+
+		exporter := NewDubboExporter(test.key, mockInvoker, exporterMap)
+		exporters[test.key] = exporter
+	}
+
+	// Verify all exporters coexist in memory - validate the count
+	assert.Equal(t, len(tests), len(exporters), "all exporters should coexist in the exporters map")
+
+	// Verify each exporter has the correct invoker and can be accessed independently
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			exporterMap := &sync.Map{}
-			url, _ := common.NewURL("dubbo://localhost:20000/" + test.interfaceName + "?interface=" + test.interfaceName)
-			mockInvoker := &MockInvoker{
-				url:       url,
-				available: true,
-				destroyed: false,
-			}
-
-			exporter := NewDubboExporter(test.key, mockInvoker, exporterMap)
-			assert.NotNil(t, exporter)
-			assert.Equal(t, mockInvoker, exporter.GetInvoker())
+			exporter, ok := exporters[test.key]
+			assert.True(t, ok, "exporter with key %s should exist in exporters map", test.key)
+			assert.NotNil(t, exporter, "exporter should not be nil")
+			assert.Equal(t, mockInvokers[test.key], exporter.GetInvoker(), "exporter should return the correct invoker")
 		})
 	}
 }

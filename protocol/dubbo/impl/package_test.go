@@ -21,7 +21,9 @@ import (
 	"bytes"
 	"testing"
 	"time"
+)
 
+import (
 	"github.com/stretchr/testify/assert"
 )
 
@@ -233,9 +235,9 @@ func TestDubboPackageIsResponseWithException(t *testing.T) {
 // TestDubboPackageGetBodyLen tests GetBodyLen method
 func TestDubboPackageGetBodyLen(t *testing.T) {
 	tests := []struct {
-		desc      string
-		bodyLen   int
-		expected  int
+		desc     string
+		bodyLen  int
+		expected int
 	}{
 		{
 			desc:     "zero length body",
@@ -268,9 +270,9 @@ func TestDubboPackageGetBodyLen(t *testing.T) {
 // TestDubboPackageGetLen tests GetLen method
 func TestDubboPackageGetLen(t *testing.T) {
 	tests := []struct {
-		desc      string
-		bodyLen   int
-		expected  int
+		desc     string
+		bodyLen  int
+		expected int
 	}{
 		{
 			desc:     "zero length body",

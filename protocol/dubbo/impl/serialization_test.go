@@ -19,9 +19,14 @@ package impl
 
 import (
 	"testing"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
+import (
 	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 // TestGetSerializerById tests GetSerializerById with valid and invalid serializer IDs
@@ -95,7 +100,7 @@ func TestGetSerializerByIdConsistency(t *testing.T) {
 // TestSetSerializer tests SetSerializer can register a serializer
 func TestSetSerializer(t *testing.T) {
 	mockSerializer := &HessianSerializer{}
-	
+
 	// SetSerializer should not panic
 	assert.NotPanics(t, func() {
 		SetSerializer(constant.Hessian2Serialization, mockSerializer)
@@ -126,10 +131,10 @@ func TestSetSerializerReplaces(t *testing.T) {
 // TestSetSerializerWithMultipleNames tests SetSerializer with different serialization names
 func TestSetSerializerWithMultipleNames(t *testing.T) {
 	hessianSerializer := &HessianSerializer{}
-	
+
 	// Register the same serializer with multiple names
 	SetSerializer(constant.Hessian2Serialization, hessianSerializer)
-	
+
 	// Verify it's registered
 	result, err := GetSerializerById(constant.SHessian2)
 	assert.NoError(t, err)
@@ -139,7 +144,7 @@ func TestSetSerializerWithMultipleNames(t *testing.T) {
 // TestSetSerializerNotNil tests SetSerializer with non-nil serializer
 func TestSetSerializerNotNil(t *testing.T) {
 	serializer := &HessianSerializer{}
-	
+
 	// SetSerializer should accept non-nil serializer
 	assert.NotPanics(t, func() {
 		SetSerializer(constant.Hessian2Serialization, serializer)

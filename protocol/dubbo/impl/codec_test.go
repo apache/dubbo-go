@@ -311,4 +311,3 @@ func TestDubboPackageIntegrationWithLoadSerializer(t *testing.T) {
 	assert.NotNil(t, data)
 	assert.Greater(t, data.Len(), 0)
 }
-

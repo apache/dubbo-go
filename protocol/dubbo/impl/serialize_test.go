@@ -253,8 +253,8 @@ func TestLoadSerializerWithAllBytesValues(t *testing.T) {
 	SetSerializer(constant.Hessian2Serialization, mockSerializer)
 
 	validValues := []byte{
-		0,                       // Default - should map to Hessian2
-		constant.SHessian2,      // Explicit Hessian2
+		0,                  // Default - should map to Hessian2
+		constant.SHessian2, // Explicit Hessian2
 	}
 
 	for _, byteVal := range validValues {
@@ -484,4 +484,3 @@ func TestLoadSerializerPackageInheritance(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, data)
 }
-

@@ -20,7 +20,9 @@ package impl
 import (
 	"errors"
 	"testing"
+)
 
+import (
 	"github.com/stretchr/testify/assert"
 )
 
@@ -92,53 +94,53 @@ func TestNewResponsePayload(t *testing.T) {
 // TestEnsureResponsePayload tests EnsureResponsePayload with various body types
 func TestEnsureResponsePayload(t *testing.T) {
 	tests := []struct {
-		desc                string
-		body                any
-		expectRspObj        any
-		expectException     error
-		expectAttachments   map[string]any
-		expectNotNil        bool
+		desc              string
+		body              any
+		expectRspObj      any
+		expectException   error
+		expectAttachments map[string]any
+		expectNotNil      bool
 	}{
 		{
-			desc:              "with ResponsePayload object",
-			body:              NewResponsePayload("data", nil, map[string]any{"key": "value"}),
-			expectRspObj:      "data",
-			expectException:   nil,
-			expectNotNil:      true,
+			desc:            "with ResponsePayload object",
+			body:            NewResponsePayload("data", nil, map[string]any{"key": "value"}),
+			expectRspObj:    "data",
+			expectException: nil,
+			expectNotNil:    true,
 		},
 		{
-			desc:              "with error object",
-			body:              errors.New("test error"),
-			expectRspObj:      nil,
-			expectNotNil:      true,
+			desc:         "with error object",
+			body:         errors.New("test error"),
+			expectRspObj: nil,
+			expectNotNil: true,
 		},
 		{
-			desc:              "with string object",
-			body:              "string response",
-			expectRspObj:      "string response",
-			expectException:   nil,
-			expectNotNil:      true,
+			desc:            "with string object",
+			body:            "string response",
+			expectRspObj:    "string response",
+			expectException: nil,
+			expectNotNil:    true,
 		},
 		{
-			desc:              "with integer object",
-			body:              42,
-			expectRspObj:      42,
-			expectException:   nil,
-			expectNotNil:      true,
+			desc:            "with integer object",
+			body:            42,
+			expectRspObj:    42,
+			expectException: nil,
+			expectNotNil:    true,
 		},
 		{
-			desc:              "with map object",
-			body:              map[string]any{"result": "success"},
-			expectRspObj:      map[string]any{"result": "success"},
-			expectException:   nil,
-			expectNotNil:      true,
+			desc:            "with map object",
+			body:            map[string]any{"result": "success"},
+			expectRspObj:    map[string]any{"result": "success"},
+			expectException: nil,
+			expectNotNil:    true,
 		},
 		{
-			desc:              "with nil object",
-			body:              nil,
-			expectRspObj:      nil,
-			expectException:   nil,
-			expectNotNil:      true,
+			desc:            "with nil object",
+			body:            nil,
+			expectRspObj:    nil,
+			expectException: nil,
+			expectNotNil:    true,
 		},
 	}
 
