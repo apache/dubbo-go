@@ -61,13 +61,13 @@ func WithForce(force bool) Option {
 
 func WithRuntime(runtime bool) Option {
 	return func(opts *Options) {
-		opts.Router.Force = &runtime
+		opts.Router.Runtime = &runtime
 	}
 }
 
 func WithEnabled(enabled bool) Option {
 	return func(opts *Options) {
-		opts.Router.Force = &enabled
+		opts.Router.Enabled = &enabled
 	}
 }
 

@@ -68,15 +68,25 @@ func TestWithForce(t *testing.T) {
 func TestWithRuntime(t *testing.T) {
 	runtime := true
 	opts := NewOptions(WithRuntime(runtime))
-	assert.NotNil(t, opts.Router.Force)
-	assert.Equal(t, runtime, *opts.Router.Force)
+	assert.NotNil(t, opts.Router.Runtime)
+	assert.Equal(t, runtime, *opts.Router.Runtime)
+
+	runtime = false
+	opts = NewOptions(WithRuntime(runtime))
+	assert.NotNil(t, opts.Router.Runtime)
+	assert.Equal(t, runtime, *opts.Router.Runtime)
 }
 
 func TestWithEnabled(t *testing.T) {
 	enabled := true
 	opts := NewOptions(WithEnabled(enabled))
-	assert.NotNil(t, opts.Router.Force)
-	assert.Equal(t, enabled, *opts.Router.Force)
+	assert.NotNil(t, opts.Router.Enabled)
+	assert.Equal(t, enabled, *opts.Router.Enabled)
+
+	enabled = false
+	opts = NewOptions(WithEnabled(enabled))
+	assert.NotNil(t, opts.Router.Enabled)
+	assert.Equal(t, enabled, *opts.Router.Enabled)
 }
 
 func TestWithValid(t *testing.T) {
@@ -117,6 +127,8 @@ func TestMultipleOptions(t *testing.T) {
 	key := "multi-key"
 	priority := 50
 	force := true
+	runtime := true
+	enabled := false
 	valid := false
 	conditions := []string{"cond1", "cond2"}
 
@@ -125,6 +137,8 @@ func TestMultipleOptions(t *testing.T) {
 		WithKey(key),
 		WithPriority(priority),
 		WithForce(force),
+		WithRuntime(runtime),
+		WithEnabled(enabled),
 		WithValid(valid),
 		WithConditions(conditions),
 	)
@@ -134,6 +148,10 @@ func TestMultipleOptions(t *testing.T) {
 	assert.Equal(t, priority, opts.Router.Priority)
 	assert.NotNil(t, opts.Router.Force)
 	assert.Equal(t, force, *opts.Router.Force)
+	assert.NotNil(t, opts.Router.Runtime)
+	assert.Equal(t, runtime, *opts.Router.Runtime)
+	assert.NotNil(t, opts.Router.Enabled)
+	assert.Equal(t, enabled, *opts.Router.Enabled)
 	assert.NotNil(t, opts.Router.Valid)
 	assert.Equal(t, valid, *opts.Router.Valid)
 	assert.Equal(t, conditions, opts.Router.Conditions)
