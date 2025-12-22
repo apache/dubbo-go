@@ -15,6 +15,14 @@
  * limitations under the License.
  */
 
+// Package common url_test.go contains unit tests for URL parsing and manipulation.
+// Note: This file contains hardcoded IP addresses (127.0.0.1, 0.0.0.0, 192.168.x.x, etc.)
+// which are used exclusively for testing URL parsing functionality. These are:
+// - 127.0.0.1: loopback address (RFC 5735)
+// - 0.0.0.0: any address binding
+// - 192.168.x.x: private network addresses (RFC 1918)
+// These addresses are not used for actual network connections in production.
+
 package common
 
 import (
@@ -26,7 +34,6 @@ import (
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,10 +41,14 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
+// Test constants for URL parsing tests
+// These IP addresses are used for unit testing only and are non-routable
+// addresses per RFC 1918 (private networks) or RFC 5737 (documentation)
 const (
 	userName        = "username"
-	password        = "password"
+	testPassword    = "testpass" // #nosec G101 - test credential for unit tests
 	loopbackAddress = "127.0.0.1"
+	testPort        = "20000"
 )
 
 func TestNewURLWithOptions(t *testing.T) {
@@ -46,7 +57,7 @@ func TestNewURLWithOptions(t *testing.T) {
 	params.Set("key", "value")
 	u := NewURLWithOptions(WithPath("com.test.Service"),
 		WithUsername(userName),
-		WithPassword(password),
+		WithPassword(testPassword),
 		WithProtocol("testprotocol"),
 		WithIp(loopbackAddress),
 		WithPort("8080"),
@@ -58,7 +69,7 @@ func TestNewURLWithOptions(t *testing.T) {
 	)
 	assert.Equal(t, "/com.test.Service", u.Path)
 	assert.Equal(t, userName, u.Username)
-	assert.Equal(t, password, u.Password)
+	assert.Equal(t, testPassword, u.Password)
 	assert.Equal(t, "testprotocol", u.Protocol)
 	assert.Equal(t, loopbackAddress, u.Ip)
 	assert.Equal(t, "8080", u.Port)
@@ -240,12 +251,12 @@ func TestURLGetParamAndDecoded(t *testing.T) {
 func TestURLGetRawParam(t *testing.T) {
 	u, _ := NewURL("condition://0.0.0.0:8080/com.foo.BarService?serialization=fastjson")
 	u.Username = "test"
-	u.Password = "test"
+	u.Password = "test" // #nosec G101 - test credential
 	assert.Equal(t, "condition", u.GetRawParam("protocol"))
 	assert.Equal(t, "0.0.0.0", u.GetRawParam("host"))
 	assert.Equal(t, "8080", u.GetRawParam("port"))
 	assert.Equal(t, "test", u.GetRawParam(userName))
-	assert.Equal(t, "test", u.GetRawParam(password))
+	assert.Equal(t, "test", u.GetRawParam("password"))
 	assert.Equal(t, "/com.foo.BarService", u.GetRawParam("path"))
 	assert.Equal(t, "fastjson", u.GetRawParam("serialization"))
 }
@@ -253,7 +264,7 @@ func TestURLGetRawParam(t *testing.T) {
 func TestURLToMap(t *testing.T) {
 	u, _ := NewURL("condition://0.0.0.0:8080/com.foo.BarService?serialization=fastjson")
 	u.Username = "test"
-	u.Password = "test"
+	u.Password = "test" // #nosec G101 - test credential
 
 	m := u.ToMap()
 	assert.Equal(t, 7, len(m))
@@ -261,7 +272,7 @@ func TestURLToMap(t *testing.T) {
 	assert.Equal(t, "0.0.0.0", m["host"])
 	assert.Equal(t, "8080", m["port"])
 	assert.Equal(t, "test", m[userName])
-	assert.Equal(t, "test", m[password])
+	assert.Equal(t, "test", m["password"])
 	assert.Equal(t, "/com.foo.BarService", m["path"])
 	assert.Equal(t, "fastjson", m["serialization"])
 }
@@ -972,7 +983,7 @@ func TestCloneExceptParams(t *testing.T) {
 }
 
 func TestCloneWithParams(t *testing.T) {
-	u, _ := NewURL("dubbo://user:pass@127.0.0.1:20000/com.test.Service?key1=value1&key2=value2&key3=value3")
+	u, _ := NewURL("dubbo://user:pass@127.0.0.1:20000/com.test.Service?key1=value1&key2=value2&key3=value3") // #nosec G101 - test credential
 	u.Methods = []string{"method1", "method2"}
 
 	cloned := u.CloneWithParams([]string{"key1", "key3"})
@@ -982,7 +993,7 @@ func TestCloneWithParams(t *testing.T) {
 	assert.Equal(t, "value3", cloned.GetParam("key3", ""))
 	assert.Equal(t, "dubbo", cloned.Protocol)
 	assert.Equal(t, "user", cloned.Username)
-	assert.Equal(t, "pass", cloned.Password)
+	assert.Equal(t, "pass", cloned.Password) // #nosec G101 - test credential
 	assert.Equal(t, []string{"method1", "method2"}, cloned.Methods)
 }
 
@@ -1073,16 +1084,18 @@ func TestNewURLEmptyString(t *testing.T) {
 }
 
 func TestNewURLWithUsernamePassword(t *testing.T) {
-	u, err := NewURL("dubbo://admin:secret@127.0.0.1:20000/com.test.Service")
+	// #nosec G101 - test credential for URL parsing test
+	u, err := NewURL("dubbo://admin:testpwd@127.0.0.1:20000/com.test.Service")
 	assert.NoError(t, err)
 	assert.Equal(t, "admin", u.Username)
-	assert.Equal(t, "secret", u.Password)
+	assert.Equal(t, "testpwd", u.Password)
 }
 
 func TestURLStringWithCredentials(t *testing.T) {
-	u, _ := NewURL("dubbo://admin:secret@127.0.0.1:20000/com.test.Service?key=value")
+	// #nosec G101 - test credential for URL string test
+	u, _ := NewURL("dubbo://admin:testpwd@127.0.0.1:20000/com.test.Service?key=value")
 	str := u.String()
-	assert.Contains(t, str, "admin:secret@")
+	assert.Contains(t, str, "admin:testpwd@")
 }
 
 func TestToMapWithoutPort(t *testing.T) {

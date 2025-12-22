@@ -25,8 +25,21 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// Test IP addresses used for address matching tests
+// These are non-routable private network addresses per RFC 1918
+const (
+	testLoopback  = "127.0.0.1"    // loopback address
+	testCIDR      = "192.168.1.0/24"
+	testIP1       = "192.168.1.1"
+	testIP2       = "192.168.1.2"
+	testIP100     = "192.168.1.100"
+	testIPOther   = "192.168.2.100"
+	testIPPrivate = "10.0.0.1"
+	testAnyHost   = "0.0.0.0"
+)
+
 func TestParamMatchIsMatch(t *testing.T) {
-	u, _ := NewURL("dubbo://127.0.0.1:20000?app=test&version=1.0")
+	u, _ := NewURL("dubbo://" + testLoopback + ":20000?app=test&version=1.0")
 
 	tests := []struct {
 		name     string
@@ -117,25 +130,25 @@ func TestAddressMatchIsMatch(t *testing.T) {
 		expected bool
 	}{
 		// CIDR match
-		{"cidr match", AddressMatch{Cird: "192.168.1.0/24"}, "192.168.1.100", true},
-		{"cidr not match", AddressMatch{Cird: "192.168.1.0/24"}, "192.168.2.100", false},
-		{"cidr invalid", AddressMatch{Cird: "invalid"}, "192.168.1.1", false},
-		{"cidr empty value", AddressMatch{Cird: "192.168.1.0/24"}, "", false},
+		{"cidr match", AddressMatch{Cird: testCIDR}, testIP100, true},
+		{"cidr not match", AddressMatch{Cird: testCIDR}, testIPOther, false},
+		{"cidr invalid", AddressMatch{Cird: "invalid"}, testIP1, false},
+		{"cidr empty value", AddressMatch{Cird: testCIDR}, "", false},
 
 		// Wildcard match
 		{"wildcard any value *", AddressMatch{Wildcard: "192.*"}, "*", true},
-		{"wildcard any host 0.0.0.0", AddressMatch{Wildcard: "192.*"}, "0.0.0.0", true},
-		{"wildcard pattern match", AddressMatch{Wildcard: "192.168.*"}, "192.168.1.1", true},
-		{"wildcard pattern not match", AddressMatch{Wildcard: "192.168.*"}, "10.0.0.1", false},
+		{"wildcard any host 0.0.0.0", AddressMatch{Wildcard: "192.*"}, testAnyHost, true},
+		{"wildcard pattern match", AddressMatch{Wildcard: "192.168.*"}, testIP1, true},
+		{"wildcard pattern not match", AddressMatch{Wildcard: "192.168.*"}, testIPPrivate, false},
 		{"wildcard empty value", AddressMatch{Wildcard: "192.*"}, "", false},
 
 		// Exact match
-		{"exact match", AddressMatch{Exact: "192.168.1.1"}, "192.168.1.1", true},
-		{"exact not match", AddressMatch{Exact: "192.168.1.1"}, "192.168.1.2", false},
-		{"exact empty value", AddressMatch{Exact: "192.168.1.1"}, "", false},
+		{"exact match", AddressMatch{Exact: testIP1}, testIP1, true},
+		{"exact not match", AddressMatch{Exact: testIP1}, testIP2, false},
+		{"exact empty value", AddressMatch{Exact: testIP1}, "", false},
 
 		// No condition
-		{"no condition", AddressMatch{}, "192.168.1.1", false},
+		{"no condition", AddressMatch{}, testIP1, false},
 	}
 
 	for _, tt := range tests {
