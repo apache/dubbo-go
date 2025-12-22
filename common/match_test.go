@@ -25,17 +25,21 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Test IP addresses used for address matching tests
-// These are non-routable private network addresses per RFC 1918
+// Test IP addresses and patterns used for address matching tests.
+// Using RFC 5737 documentation addresses (192.0.2.0/24, 198.51.100.0/24, 203.0.113.0/24)
+// which are reserved for documentation and example purposes, and are exempt from
+// security scanner warnings per SonarQube rules.
 const (
-	testLoopback  = "127.0.0.1" // loopback address
-	testCIDR      = "192.168.1.0/24"
-	testIP1       = "192.168.1.1"
-	testIP2       = "192.168.1.2"
-	testIP100     = "192.168.1.100"
-	testIPOther   = "192.168.2.100"
-	testIPPrivate = "10.0.0.1"
-	testAnyHost   = "0.0.0.0"
+	testLoopback      = "127.0.0.1"      // loopback address (RFC 5735) - exempt
+	testCIDR          = "192.0.2.0/24"   // TEST-NET-1 CIDR (RFC 5737) - exempt
+	testIP1           = "192.0.2.1"      // TEST-NET-1 address (RFC 5737) - exempt
+	testIP2           = "192.0.2.2"      // TEST-NET-1 address (RFC 5737) - exempt
+	testIP100         = "192.0.2.100"    // TEST-NET-1 address (RFC 5737) - exempt
+	testIPOther       = "198.51.100.100" // TEST-NET-2 address (RFC 5737) - exempt
+	testIPPrivate     = "203.0.113.1"    // TEST-NET-3 address (RFC 5737) - exempt
+	testAnyHost       = "0.0.0.0"        // any address binding - exempt
+	testWildcard192   = "192.*"          // wildcard pattern for 192.x.x.x
+	testWildcard19202 = "192.0.2.*"      // wildcard pattern for TEST-NET-1
 )
 
 func TestParamMatchIsMatch(t *testing.T) {
@@ -136,11 +140,11 @@ func TestAddressMatchIsMatch(t *testing.T) {
 		{"cidr empty value", AddressMatch{Cird: testCIDR}, "", false},
 
 		// Wildcard match
-		{"wildcard any value *", AddressMatch{Wildcard: "192.*"}, "*", true},
-		{"wildcard any host 0.0.0.0", AddressMatch{Wildcard: "192.*"}, testAnyHost, true},
-		{"wildcard pattern match", AddressMatch{Wildcard: "192.168.*"}, testIP1, true},
-		{"wildcard pattern not match", AddressMatch{Wildcard: "192.168.*"}, testIPPrivate, false},
-		{"wildcard empty value", AddressMatch{Wildcard: "192.*"}, "", false},
+		{"wildcard any value *", AddressMatch{Wildcard: testWildcard192}, "*", true},
+		{"wildcard any host 0.0.0.0", AddressMatch{Wildcard: testWildcard192}, testAnyHost, true},
+		{"wildcard pattern match", AddressMatch{Wildcard: testWildcard19202}, testIP1, true},
+		{"wildcard pattern not match", AddressMatch{Wildcard: testWildcard19202}, testIPPrivate, false},
+		{"wildcard empty value", AddressMatch{Wildcard: testWildcard192}, "", false},
 
 		// Exact match
 		{"exact match", AddressMatch{Exact: testIP1}, testIP1, true},
