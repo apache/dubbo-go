@@ -19,7 +19,9 @@ package dubbo
 
 import (
 	"testing"
+)
 
+import (
 	"github.com/stretchr/testify/assert"
 )
 
@@ -108,27 +110,27 @@ func TestIsRequestEdgeCases(t *testing.T) {
 		expected bool
 	}{
 		{
-			desc:     "bit 7 only (not bit 2)",
+			desc:     "bit 0 only (not request bit)",
 			data:     []byte{0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00},
 			expected: false,
 		},
 		{
-			desc:     "bit 6 only (not bit 2)",
+			desc:     "bit 1 only (not request bit)",
 			data:     []byte{0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00},
 			expected: false,
 		},
 		{
-			desc:     "bit 5 only (not bit 2)",
+			desc:     "bit 2 only (request bit set)",
 			data:     []byte{0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00},
 			expected: false,
 		},
 		{
-			desc:     "multiple bits set including bit 2",
+			desc:     "bit 7 set with other bits (includes request bit)",
 			data:     []byte{0xFF, 0xFF, 0x80, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
 			expected: true,
 		},
 		{
-			desc:     "all bits set except bit 2",
+			desc:     "all bits set except bit 7 (no request bit)",
 			data:     []byte{0xFF, 0xFF, 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
 			expected: false,
 		},
@@ -215,7 +217,7 @@ func TestIsRequestConsistency(t *testing.T) {
 func TestRequestBitMask(t *testing.T) {
 	codec := &DubboCodec{}
 
-	// Test boundary values for bit 2 (0x80)
+	// Test boundary values for byte at position 2 with bit 7 (0x80) set
 	tests := []struct {
 		desc      string
 		byteValue byte
