@@ -19,7 +19,9 @@ package zookeeper
 
 import (
 	"testing"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
