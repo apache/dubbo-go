@@ -116,22 +116,8 @@ func buildPath(rootPath, subPath string) string {
 		path = pathSeparator + path
 	}
 
-	// collapse consecutive slashes to a single slash
-	buf := make([]byte, 0, len(path))
-	prevSlash := false
-	for i := 0; i < len(path); i++ {
-		c := path[i]
-		if c == '/' {
-			if prevSlash {
-				continue
-			}
-			prevSlash = true
-		} else {
-			prevSlash = false
-		}
-		buf = append(buf, c)
-	}
-	return string(buf)
+	path = collapseConsecutiveSlashes(path)
+	return path
 }
 
 func (c *zookeeperDynamicConfiguration) RemoveListener(key string, listener config_center.ConfigurationListener, opions ...config_center.Option) {
@@ -304,4 +290,22 @@ func (c *zookeeperDynamicConfiguration) buildPath(group string) string {
 		group = config_center.DefaultGroup
 	}
 	return c.rootPath + pathSeparator + group
+}
+
+func collapseConsecutiveSlashes(path string) string {
+	buf := make([]byte, 0, len(path))
+	prevSlash := false
+	for i := 0; i < len(path); i++ {
+		c := path[i]
+		if c == '/' {
+			if prevSlash {
+				continue
+			}
+			prevSlash = true
+		} else {
+			prevSlash = false
+		}
+		buf = append(buf, c)
+	}
+	return string(buf)
 }

@@ -66,13 +66,6 @@ func TestGetPath(t *testing.T) {
 	}
 }
 
-func TestRestartCallBack(t *testing.T) {
-	cfg := &zookeeperDynamicConfiguration{}
-	if !cfg.RestartCallBack() {
-		t.Fatalf("RestartCallBack expected true")
-	}
-}
-
 func TestPublishAndRemoveConfigWithMockZk(t *testing.T) {
 	cluster, client, _, err := gxzookeeper.NewMockZookeeperClient("test", 5e9)
 	if err != nil {

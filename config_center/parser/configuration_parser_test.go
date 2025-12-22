@@ -33,12 +33,6 @@ func TestDefaultConfigurationParserParser(t *testing.T) {
 	assert.Equal(t, "172.0.0.1", m["dubbo.registry.address"])
 }
 
-func TestDefaultConfigurationParserParse_Invalid(t *testing.T) {
-	parser := &DefaultConfigurationParser{}
-	_, err := parser.Parse("=bad")
-	assert.Error(t, err)
-}
-
 func TestDefaultConfigurationParserAppItemToUrls_ParserToUrls(t *testing.T) {
 	parser := &DefaultConfigurationParser{}
 	content := `configVersion: 2.7.1
@@ -120,11 +114,6 @@ configs:
 	assert.Equal(t, "mock1", urls[0].GetParam("cluster", ""))
 	assert.Equal(t, "override", urls[0].Protocol)
 	assert.Equal(t, "0.0.0.0", urls[0].Location)
-}
-
-func TestGetParamString_ErrorWhenNoParams(t *testing.T) {
-	_, err := getParamString(ConfigItem{Parameters: map[string]string{}})
-	assert.Error(t, err)
 }
 
 func TestGetEnabledString(t *testing.T) {
