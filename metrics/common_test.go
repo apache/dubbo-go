@@ -18,6 +18,7 @@
 package metrics
 
 import (
+	"os"
 	"testing"
 )
 
@@ -29,8 +30,12 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
-func TestGetApplicationLevel(t *testing.T) {
+func TestMain(m *testing.M) {
 	InitAppInfo("test-app", "1.0.0")
+	os.Exit(m.Run())
+}
+
+func TestGetApplicationLevel(t *testing.T) {
 	level := GetApplicationLevel()
 
 	assert.NotNil(t, level)
@@ -41,7 +46,6 @@ func TestGetApplicationLevel(t *testing.T) {
 }
 
 func TestApplicationMetricLevelTags(t *testing.T) {
-	InitAppInfo("test-app", "1.0.0")
 	level := GetApplicationLevel()
 	tags := level.Tags()
 
@@ -54,7 +58,6 @@ func TestApplicationMetricLevelTags(t *testing.T) {
 }
 
 func TestServiceMetricLevelTags(t *testing.T) {
-	InitAppInfo("test-app", "1.0.0")
 	serviceMetric := NewServiceMetric("com.example.Service")
 	tags := serviceMetric.Tags()
 
@@ -67,7 +70,6 @@ func TestServiceMetricLevelTags(t *testing.T) {
 }
 
 func TestMethodMetricLevelTags(t *testing.T) {
-	InitAppInfo("test-app", "1.0.0")
 	serviceMetric := NewServiceMetric("com.example.Service")
 	methodLevel := MethodMetricLevel{
 		ServiceMetricLevel: serviceMetric,
@@ -88,7 +90,6 @@ func TestMethodMetricLevelTags(t *testing.T) {
 }
 
 func TestConfigCenterLevelTags(t *testing.T) {
-	InitAppInfo("test-app", "1.0.0")
 	level := NewConfigCenterLevel("test-key", "test-group", "nacos", "added")
 	tags := level.Tags()
 

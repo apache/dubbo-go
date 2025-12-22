@@ -41,8 +41,7 @@ func TestMetadataMetricEventType(t *testing.T) {
 
 func TestMetadataMetricEventCostMs(t *testing.T) {
 	start := time.Now()
-	time.Sleep(10 * time.Millisecond)
-	end := time.Now()
+	end := start.Add(10 * time.Millisecond)
 
 	event := &MetadataMetricEvent{
 		Name:  MetadataPush,
@@ -51,8 +50,7 @@ func TestMetadataMetricEventCostMs(t *testing.T) {
 	}
 
 	cost := event.CostMs()
-	assert.Greater(t, cost, 0.0)
-	assert.Less(t, cost, 100.0) // Should be around 10ms
+	assert.Equal(t, 10.0, cost)
 }
 
 func TestNewMetadataMetricTimeEvent(t *testing.T) {

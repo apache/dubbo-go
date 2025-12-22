@@ -192,12 +192,12 @@ func TestBaseCollectorStateCount(t *testing.T) {
 }
 
 func TestDefaultCounterVec(t *testing.T) {
-	registry := newMockMetricRegistry()
 	key := NewMetricKey("test_counter", "Test counter")
-	counterVec := NewCounterVec(registry, key)
 	labels := map[string]string{"app": "dubbo", "version": "1.0.0"}
 
 	t.Run("Inc", func(t *testing.T) {
+		registry := newMockMetricRegistry()
+		counterVec := NewCounterVec(registry, key)
 		counterVec.Inc(labels)
 		metricId := NewMetricIdByLabels(key, labels)
 		counter := registry.Counter(metricId).(*mockCounterMetric)
@@ -205,47 +205,61 @@ func TestDefaultCounterVec(t *testing.T) {
 	})
 
 	t.Run("Add", func(t *testing.T) {
+		registry := newMockMetricRegistry()
+		counterVec := NewCounterVec(registry, key)
 		counterVec.Add(labels, 5.0)
 		metricId := NewMetricIdByLabels(key, labels)
 		counter := registry.Counter(metricId).(*mockCounterMetric)
-		assert.Equal(t, float64(6), counter.value)
+		assert.Equal(t, float64(5), counter.value)
 	})
 }
 
 func TestDefaultGaugeVec(t *testing.T) {
-	registry := newMockMetricRegistry()
 	key := NewMetricKey("test_gauge", "Test gauge")
-	gaugeVec := NewGaugeVec(registry, key)
 	labels := map[string]string{"app": "dubbo", "version": "1.0.0"}
 
 	t.Run("Set", func(t *testing.T) {
+		registry := newMockMetricRegistry()
+		gaugeVec := NewGaugeVec(registry, key)
 		gaugeVec.Set(labels, 100.0)
 		gauge := registry.Gauge(NewMetricIdByLabels(key, labels)).(*mockGaugeMetric)
 		assert.Equal(t, float64(100), gauge.value)
 	})
 
 	t.Run("Inc", func(t *testing.T) {
+		registry := newMockMetricRegistry()
+		gaugeVec := NewGaugeVec(registry, key)
+		gaugeVec.Set(labels, 100.0)
 		gaugeVec.Inc(labels)
 		gauge := registry.Gauge(NewMetricIdByLabels(key, labels)).(*mockGaugeMetric)
 		assert.Equal(t, float64(101), gauge.value)
 	})
 
 	t.Run("Dec", func(t *testing.T) {
+		registry := newMockMetricRegistry()
+		gaugeVec := NewGaugeVec(registry, key)
+		gaugeVec.Set(labels, 100.0)
 		gaugeVec.Dec(labels)
 		gauge := registry.Gauge(NewMetricIdByLabels(key, labels)).(*mockGaugeMetric)
-		assert.Equal(t, float64(100), gauge.value)
+		assert.Equal(t, float64(99), gauge.value)
 	})
 
 	t.Run("Add", func(t *testing.T) {
+		registry := newMockMetricRegistry()
+		gaugeVec := NewGaugeVec(registry, key)
+		gaugeVec.Set(labels, 100.0)
 		gaugeVec.Add(labels, 50.0)
 		gauge := registry.Gauge(NewMetricIdByLabels(key, labels)).(*mockGaugeMetric)
 		assert.Equal(t, float64(150), gauge.value)
 	})
 
 	t.Run("Sub", func(t *testing.T) {
+		registry := newMockMetricRegistry()
+		gaugeVec := NewGaugeVec(registry, key)
+		gaugeVec.Set(labels, 100.0)
 		gaugeVec.Sub(labels, 30.0)
 		gauge := registry.Gauge(NewMetricIdByLabels(key, labels)).(*mockGaugeMetric)
-		assert.Equal(t, float64(120), gauge.value)
+		assert.Equal(t, float64(70), gauge.value)
 	})
 }
 

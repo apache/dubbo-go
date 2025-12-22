@@ -41,8 +41,7 @@ func TestRegistryMetricsEventType(t *testing.T) {
 
 func TestRegistryMetricsEventCostMs(t *testing.T) {
 	start := time.Now()
-	time.Sleep(10 * time.Millisecond)
-	end := time.Now()
+	end := start.Add(10 * time.Millisecond)
 
 	event := &RegistryMetricsEvent{
 		Name:  Reg,
@@ -51,8 +50,7 @@ func TestRegistryMetricsEventCostMs(t *testing.T) {
 	}
 
 	cost := event.CostMs()
-	assert.Greater(t, cost, 0.0)
-	assert.Less(t, cost, 100.0)
+	assert.Equal(t, 10.0, cost)
 }
 
 func TestNewRegisterEvent(t *testing.T) {
