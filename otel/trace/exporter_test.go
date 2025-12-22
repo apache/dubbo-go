@@ -18,6 +18,7 @@
 package trace
 
 import (
+	"context"
 	"errors"
 	"testing"
 )
@@ -34,6 +35,8 @@ import (
 
 func TestDefaultExporter_GetTracerProvider(t *testing.T) {
 	tracerProvider := sdktrace.NewTracerProvider()
+	defer tracerProvider.Shutdown(context.Background())
+
 	exporter := &DefaultExporter{
 		TracerProvider: tracerProvider,
 	}
@@ -120,6 +123,7 @@ func TestNewExporter_SampleModeRatio(t *testing.T) {
 	tracerProvider, propagator, err := NewExporter(config, customFunc)
 	assert.NoError(t, err)
 	assert.NotNil(t, tracerProvider)
+	defer tracerProvider.Shutdown(context.Background())
 	assert.NotNil(t, propagator)
 }
 
@@ -139,6 +143,7 @@ func TestNewExporter_SampleModeAlways(t *testing.T) {
 	tracerProvider, propagator, err := NewExporter(config, customFunc)
 	assert.NoError(t, err)
 	assert.NotNil(t, tracerProvider)
+	defer tracerProvider.Shutdown(context.Background())
 	assert.NotNil(t, propagator)
 }
 
@@ -158,6 +163,7 @@ func TestNewExporter_SampleModeNever(t *testing.T) {
 	tracerProvider, propagator, err := NewExporter(config, customFunc)
 	assert.NoError(t, err)
 	assert.NotNil(t, tracerProvider)
+	defer tracerProvider.Shutdown(context.Background())
 	assert.NotNil(t, propagator)
 }
 
@@ -177,6 +183,7 @@ func TestNewExporter_PropagatorW3c(t *testing.T) {
 	tracerProvider, propagator, err := NewExporter(config, customFunc)
 	assert.NoError(t, err)
 	assert.NotNil(t, tracerProvider)
+	defer tracerProvider.Shutdown(context.Background())
 	assert.NotNil(t, propagator)
 }
 
@@ -196,6 +203,7 @@ func TestNewExporter_PropagatorB3(t *testing.T) {
 	tracerProvider, propagator, err := NewExporter(config, customFunc)
 	assert.NoError(t, err)
 	assert.NotNil(t, tracerProvider)
+	defer tracerProvider.Shutdown(context.Background())
 	assert.NotNil(t, propagator)
 }
 
@@ -215,6 +223,7 @@ func TestNewExporter_PropagatorEmpty(t *testing.T) {
 	tracerProvider, propagator, err := NewExporter(config, customFunc)
 	assert.NoError(t, err)
 	assert.NotNil(t, tracerProvider)
+	defer tracerProvider.Shutdown(context.Background())
 	// When propagator is empty or unknown, it should be nil
 	assert.Nil(t, propagator)
 }
@@ -235,6 +244,7 @@ func TestNewExporter_PropagatorUnknown(t *testing.T) {
 	tracerProvider, propagator, err := NewExporter(config, customFunc)
 	assert.NoError(t, err)
 	assert.NotNil(t, tracerProvider)
+	defer tracerProvider.Shutdown(context.Background())
 	// When propagator is unknown, it should be nil
 	assert.Nil(t, propagator)
 }
@@ -256,6 +266,7 @@ func TestNewExporter_WithServiceInfo(t *testing.T) {
 	tracerProvider, propagator, err := NewExporter(config, customFunc)
 	assert.NoError(t, err)
 	assert.NotNil(t, tracerProvider)
+	defer tracerProvider.Shutdown(context.Background())
 	assert.NotNil(t, propagator)
 }
 
@@ -279,5 +290,6 @@ func TestNewExporter_CompleteConfig(t *testing.T) {
 	tracerProvider, propagator, err := NewExporter(config, customFunc)
 	assert.NoError(t, err)
 	assert.NotNil(t, tracerProvider)
+	defer tracerProvider.Shutdown(context.Background())
 	assert.NotNil(t, propagator)
 }

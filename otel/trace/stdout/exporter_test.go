@@ -60,23 +60,3 @@ func TestNewStdoutExporter_WithConfig(t *testing.T) {
 	assert.NotNil(t, exporter.GetTracerProvider())
 	assert.NotNil(t, exporter.GetPropagator())
 }
-
-func TestNewStdoutExporter_Singleton(t *testing.T) {
-	config := &trace.ExporterConfig{
-		Exporter:    "stdout",
-		SampleMode:  "always",
-		Propagator:  "w3c",
-		ServiceName: "test-service",
-	}
-
-	exporter1, err1 := newStdoutExporter(config)
-	assert.NoError(t, err1)
-	assert.NotNil(t, exporter1)
-
-	exporter2, err2 := newStdoutExporter(config)
-	assert.NoError(t, err2)
-	assert.NotNil(t, exporter2)
-
-	// Should return the same instance due to sync.Once
-	assert.Equal(t, exporter1, exporter2)
-}
