@@ -28,14 +28,22 @@ import (
 var mockChan = make(chan MetricsEvent, 16)
 
 type MockEvent struct {
+	eventType string
 }
 
 func (m MockEvent) Type() string {
+	if m.eventType != "" {
+		return m.eventType
+	}
 	return "dubbo.metrics.mock"
 }
 
 func NewEmptyMockEvent() *MockEvent {
 	return &MockEvent{}
+}
+
+func NewMockEventWithType(eventType string) *MockEvent {
+	return &MockEvent{eventType: eventType}
 }
 
 func init() {
@@ -44,11 +52,66 @@ func init() {
 }
 
 func TestBusPublish(t *testing.T) {
-	t.Run("testBusPublish", func(t *testing.T) {
-		event := <-mockChan
+	event := <-mockChan
 
-		if event, ok := event.(MockEvent); ok {
-			assert.Equal(t, event, NewEmptyMockEvent())
+	if mockEvent, ok := event.(*MockEvent); ok {
+		assert.Equal(t, NewEmptyMockEvent(), mockEvent)
+	}
+}
+
+func TestBusUnsubscribe(t *testing.T) {
+	testChan := make(chan MetricsEvent, 1)
+	eventType := "dubbo.metrics.test.unsubscribe"
+
+	Subscribe(eventType, testChan)
+
+	testEvent1 := NewMockEventWithType(eventType)
+	Publish(testEvent1)
+
+	select {
+	case event := <-testChan:
+		assert.Equal(t, testEvent1, event)
+	default:
+		t.Fatal("Expected to receive event before unsubscribe")
+	}
+
+	Unsubscribe(eventType)
+
+	testEvent2 := NewMockEventWithType(eventType)
+	Publish(testEvent2)
+
+	select {
+	case _, ok := <-testChan:
+		if ok {
+			t.Fatal("Channel should be closed after Unsubscribe")
 		}
-	})
+	default:
+	}
+}
+
+func TestBusPublishChannelFull(t *testing.T) {
+	testChan := make(chan MetricsEvent, 1)
+	eventType := "dubbo.metrics.test.full"
+
+	Subscribe(eventType, testChan)
+
+	testEvent1 := NewMockEventWithType(eventType)
+	testChan <- testEvent1
+
+	testEvent2 := NewMockEventWithType(eventType)
+	Publish(testEvent2)
+
+	select {
+	case event := <-testChan:
+		assert.Equal(t, testEvent1, event)
+		select {
+		case <-testChan:
+			t.Fatal("Expected second event to be dropped when channel is full")
+		default:
+		}
+	default:
+		t.Fatal("Expected to receive first event from channel")
+	}
+
+	Unsubscribe(eventType)
 }
