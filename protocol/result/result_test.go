@@ -19,6 +19,7 @@ package result
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 )
 
@@ -751,7 +752,7 @@ func TestRPCResult_EdgeCases(t *testing.T) {
 	t.Run("large attachment map", func(t *testing.T) {
 		r := &RPCResult{}
 		for i := 0; i < 1000; i++ {
-			r.AddAttachment(string(rune(i)), i)
+			r.AddAttachment(fmt.Sprintf("key-%d", i), i)
 		}
 		assert.Equal(t, 1000, len(r.Attachments()))
 	})
