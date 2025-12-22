@@ -19,10 +19,9 @@
 //
 // SECURITY NOTE: This file contains hardcoded IP addresses which are used exclusively
 // for testing URL parsing functionality. These addresses are:
-// - 127.0.0.1, 127.0.0.2: loopback addresses (RFC 5735)
-// - 0.0.0.0: any address binding (RFC 5735)
-// - 192.168.x.x: private network addresses (RFC 1918)
-// - 10.x.x.x: private network addresses (RFC 1918)
+// - 127.0.0.1, 127.0.0.2: loopback addresses (RFC 5735) - exempt
+// - 0.0.0.0: any address binding (RFC 5735) - exempt
+// - 192.0.2.x: TEST-NET-1 documentation addresses (RFC 5737) - exempt
 // - 1.1.1.1, 2.2.2.2, etc.: used in routing rule test strings
 //
 // These addresses are NOT used for actual network connections in production.
@@ -48,22 +47,22 @@ import (
 )
 
 // Test constants for URL parsing tests.
-// These IP addresses are used for unit testing only and are non-routable
-// addresses per RFC 1918 (private networks), RFC 5735 (special use), or RFC 5737 (documentation).
-// Security scanners may flag these as hardcoded IPs, but they are intentionally
-// used for testing URL parsing functionality and are not used for actual network connections.
+// These IP addresses are used for unit testing only and are reserved for documentation
+// purposes per RFC 5737 (192.0.2.0/24, 198.51.100.0/24, 203.0.113.0/24) or are
+// loopback/special addresses per RFC 5735 which are exempt from security scanner warnings.
 const (
 	userName        = "username"
 	testPassword    = "testpass" // #nosec G101 - test credential for unit tests
 	loopbackAddress = "127.0.0.1"
 	loopbackAddr2   = "127.0.0.2"
 	anyAddress      = "0.0.0.0"
-	privateIP1      = "192.168.1.1"
-	privateIP56     = "192.168.56.1"
-	privateIP2      = "192.168.1.100"
+	docIP1          = "192.0.2.1"   // TEST-NET-1 (RFC 5737) - exempt from security scanners
+	docIP56         = "192.0.2.56"  // TEST-NET-1 (RFC 5737) - exempt from security scanners
+	docIP100        = "192.0.2.100" // TEST-NET-1 (RFC 5737) - exempt from security scanners
 	testPort        = "20000"
 	testPort2       = "20001"
 	testPort8080    = "8080"
+	testPort30000   = "30000"
 )
 
 func TestNewURLWithOptions(t *testing.T) {
@@ -96,7 +95,7 @@ func TestNewURLWithOptions(t *testing.T) {
 func TestURL(t *testing.T) {
 	u, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&" +
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
-		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
+		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.0.2.56&methods=GetUser%2C&" +
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245")
 	assert.NoError(t, err)
@@ -115,20 +114,20 @@ func TestURL(t *testing.T) {
 	assert.Equal(t, "", u.Username)
 	assert.Equal(t, "", u.Password)
 	assert.Equal(t, "anyhost=true&application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-"+
-		"provider-golang-1.0.0&environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%"+
+		"provider-golang-1.0.0&environment=dev&interface=com.ikurento.user.UserProvider&ip=192.0.2.56&methods=GetUser%"+
 		"2C&module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&side=provider&timeout=3000&t"+
 		"imestamp=1556509797245", u.params.Encode())
 
 	assert.Equal(t, "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&application=BDTServi"+
 		"ce&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&environment=dev&interface=com.ikure"+
-		"nto.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&module=dubbogo+user-info+server&org=ikurento.com&owner="+
+		"nto.user.UserProvider&ip=192.0.2.56&methods=GetUser%2C&module=dubbogo+user-info+server&org=ikurento.com&owner="+
 		"ZX&pid=1447&revision=0.0.1&side=provider&timeout=3000&timestamp=1556509797245", u.String())
 }
 
 func TestURLWithoutSchema(t *testing.T) {
 	u, err := NewURL("127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&"+
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&"+
-		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&"+
+		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.0.2.56&methods=GetUser%2C&"+
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&"+
 		"side=provider&timeout=3000&timestamp=1556509797245", WithProtocol("dubbo"))
 	assert.NoError(t, err)
@@ -142,13 +141,13 @@ func TestURLWithoutSchema(t *testing.T) {
 	assert.Equal(t, "", u.Username)
 	assert.Equal(t, "", u.Password)
 	assert.Equal(t, "anyhost=true&application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-"+
-		"provider-golang-1.0.0&environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%"+
+		"provider-golang-1.0.0&environment=dev&interface=com.ikurento.user.UserProvider&ip=192.0.2.56&methods=GetUser%"+
 		"2C&module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&side=provider&timeout=3000&t"+
 		"imestamp=1556509797245", u.params.Encode())
 
 	assert.Equal(t, "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&application=BDTServi"+
 		"ce&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&environment=dev&interface=com.ikure"+
-		"nto.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&module=dubbogo+user-info+server&org=ikurento.com&owner="+
+		"nto.user.UserProvider&ip=192.0.2.56&methods=GetUser%2C&module=dubbogo+user-info+server&org=ikurento.com&owner="+
 		"ZX&pid=1447&revision=0.0.1&side=provider&timeout=3000&timestamp=1556509797245", u.String())
 }
 
@@ -425,12 +424,12 @@ func TestCompareURLEqualFunc(t *testing.T) {
 	// test Default
 	url1, _ := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&" +
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
-		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
+		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.0.2.56&methods=GetUser%2C&" +
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245")
 	url2, _ := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&" +
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
-		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
+		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.0.2.56&methods=GetUser%2C&" +
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=155650979798")
 	assert.False(t, GetCompareURLEqualFunc()(url1, url2))
@@ -439,12 +438,12 @@ func TestCompareURLEqualFunc(t *testing.T) {
 	// test custom
 	url1, _ = NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&" +
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
-		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
+		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.0.2.56&methods=GetUser%2C&" +
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245")
 	url2, _ = NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&" +
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
-		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
+		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.0.2.56&methods=GetUser%2C&" +
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=155650979798")
 	assert.True(t, GetCompareURLEqualFunc()(url1, url2, constant.TimestampKey, constant.RemoteTimestampKey))
@@ -454,12 +453,12 @@ func TestCompareURLEqualFunc(t *testing.T) {
 
 	url1, _ = NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&" +
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
-		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
+		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.0.2.56&methods=GetUser%2C&" +
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000")
 	url2, _ = NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&" +
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
-		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
+		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.0.2.56&methods=GetUser%2C&" +
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000")
 	assert.True(t, GetCompareURLEqualFunc()(url1, url2))
@@ -704,12 +703,12 @@ func TestWithLocation(t *testing.T) {
 	// WithLocation sets Location, but NewURLWithOptions overwrites it with Ip:Port
 	// So we need to set Ip and Port as well, or test the option directly
 	u := &URL{}
-	WithLocation("192.168.1.1:8080")(u)
-	assert.Equal(t, "192.168.1.1:8080", u.Location)
+	WithLocation(docIP1 + ":" + testPort8080)(u)
+	assert.Equal(t, docIP1+":"+testPort8080, u.Location)
 
 	// When using NewURLWithOptions with Ip and Port
-	u2 := NewURLWithOptions(WithIp("192.168.1.1"), WithPort("8080"))
-	assert.Equal(t, "192.168.1.1:8080", u2.Location)
+	u2 := NewURLWithOptions(WithIp(docIP1), WithPort(testPort8080))
+	assert.Equal(t, docIP1+":"+testPort8080, u2.Location)
 }
 
 func TestWithToken(t *testing.T) {
@@ -767,11 +766,11 @@ func TestURLGroupInterfaceVersion(t *testing.T) {
 }
 
 func TestURLAddress(t *testing.T) {
-	u1 := &URL{Ip: "192.168.1.1", Port: "8080"}
-	assert.Equal(t, "192.168.1.1:8080", u1.Address())
+	u1 := &URL{Ip: docIP1, Port: testPort8080}
+	assert.Equal(t, docIP1+":"+testPort8080, u1.Address())
 
-	u2 := &URL{Ip: "192.168.1.1", Port: ""}
-	assert.Equal(t, "192.168.1.1", u2.Address())
+	u2 := &URL{Ip: docIP1, Port: ""}
+	assert.Equal(t, docIP1, u2.Address())
 }
 
 func TestURLKey(t *testing.T) {
@@ -1325,8 +1324,8 @@ func TestReplaceParams(t *testing.T) {
 
 func TestURLEqualWithDifferentIpPort(t *testing.T) {
 	// URLEqual ignores IP and Port differences
-	u1, _ := NewURL("dubbo://127.0.0.1:20000/com.test.Service?interface=com.test.Service")
-	u2, _ := NewURL("dubbo://192.168.1.1:30000/com.test.Service?interface=com.test.Service")
+	u1, _ := NewURL("dubbo://" + loopbackAddress + ":" + testPort + "/com.test.Service?interface=com.test.Service")
+	u2, _ := NewURL("dubbo://" + docIP1 + ":" + testPort30000 + "/com.test.Service?interface=com.test.Service")
 	assert.True(t, u1.URLEqual(u2))
 }
 
