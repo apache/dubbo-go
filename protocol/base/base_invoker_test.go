@@ -45,7 +45,7 @@ func TestBaseInvoker(t *testing.T) {
 }
 
 func TestBaseInvokerWithFullURL(t *testing.T) {
-	url, err := common.NewURL("dubbo://192.168.1.100:20880/com.example.Service?version=1.0.0&group=test")
+	url, err := common.NewURL("dubbo://localhost:20880/com.example.Service?version=1.0.0&group=test")
 	assert.Nil(t, err)
 
 	ivk := NewBaseInvoker(url)
@@ -54,7 +54,7 @@ func TestBaseInvokerWithFullURL(t *testing.T) {
 	returnedURL := ivk.GetURL()
 	assert.NotNil(t, returnedURL)
 	assert.Equal(t, "dubbo", returnedURL.Protocol)
-	assert.Equal(t, "192.168.1.100", returnedURL.Ip)
+	assert.Equal(t, "localhost", returnedURL.Ip)
 	assert.Equal(t, "20880", returnedURL.Port)
 
 	// Test initial state
@@ -64,7 +64,7 @@ func TestBaseInvokerWithFullURL(t *testing.T) {
 	// Test String method before destroy
 	str := ivk.String()
 	assert.Contains(t, str, "dubbo")
-	assert.Contains(t, str, "192.168.1.100")
+	assert.Contains(t, str, "localhost")
 	assert.Contains(t, str, "20880")
 
 	// Test Destroy
@@ -117,8 +117,8 @@ func TestBaseInvokerStringWithDifferentURLs(t *testing.T) {
 	}{
 		{
 			name:     "Standard URL",
-			urlStr:   "dubbo://127.0.0.1:8080/test.Service",
-			contains: []string{"dubbo", "127.0.0.1", "8080", "test.Service"},
+			urlStr:   "dubbo://localhost:8080/test.Service",
+			contains: []string{"dubbo", "localhost", "8080", "test.Service"},
 		},
 		{
 			name:     "URL with path",

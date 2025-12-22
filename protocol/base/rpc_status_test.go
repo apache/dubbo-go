@@ -31,7 +31,7 @@ import (
 )
 
 const (
-	mockCommonDubboUrl = "dubbo://192.168.10.10:20000/com.ikurento.user.UserProvider" //NOSONAR just for test
+	mockCommonDubboUrl = "dubbo://localhost:20000/com.ikurento.user.UserProvider"
 )
 
 func TestBeginCount(t *testing.T) {
@@ -280,7 +280,7 @@ func TestTryRefreshBlackList(t *testing.T) {
 	defer CleanAllStatus()
 
 	url1, _ := common.NewURL(mockCommonDubboUrl)
-	url2, _ := common.NewURL("dubbo://192.168.10.11:20001/com.ikurento.user.UserProvider")
+	url2, _ := common.NewURL("dubbo://localhost:20001/com.ikurento.user.UserProvider")
 
 	invoker1 := NewBaseInvoker(url1)
 	invoker2 := NewBaseInvoker(url2)
