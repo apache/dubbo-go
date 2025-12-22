@@ -108,27 +108,27 @@ func TestIsRequestEdgeCases(t *testing.T) {
 		desc     string
 		data     []byte
 		expected bool
+	}{
+		{
 			desc:     "bit 0 only",
 			data:     []byte{0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00},
 			expected: false,
-			desc:     "bit 1 only (not bit 2)",
+		},
 		{
 			desc:     "bit 1 only",
 			data:     []byte{0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00},
 			expected: false,
-			desc:     "bit 2 only (not bit 5)",
+		},
 		{
 			desc:     "bit 2 only",
 			data:     []byte{0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00},
 			expected: false,
-			desc:     "multiple bytes with 0xFF, and byte position 2 has 0x80 (bit 7 set)",
+		},
 		{
 			desc:     "multiple bits set including bit 7",
 			data:     []byte{0xFF, 0xFF, 0x80, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
 			expected: true,
 		},
-		{
-			desc:     "all bits set except bit 7",
 		{
 			desc:     "all bits set except bit 7 (no request bit)",
 			data:     []byte{0xFF, 0xFF, 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},

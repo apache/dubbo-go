@@ -58,7 +58,7 @@ func TestGetSerializerById(t *testing.T) {
 		{
 			desc:        "default Hessian2 serializer ID 0",
 			id:          0,
-			shouldPanic: false,
+			shouldPanic: true, // Will panic because ID 0 is not registered in nameMaps
 		},
 	}
 

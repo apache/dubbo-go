@@ -28,6 +28,10 @@ import (
 
 // TestNewResponsePayload tests creating a new ResponsePayload with various inputs
 func TestNewResponsePayload(t *testing.T) {
+	// Pre-define error variables to ensure consistent comparison
+	testError := errors.New("test error")
+	errorOccurred := errors.New("error occurred")
+
 	tests := []struct {
 		desc              string
 		rspObj            any
@@ -40,10 +44,10 @@ func TestNewResponsePayload(t *testing.T) {
 		{
 			desc:              "with all parameters",
 			rspObj:            "response data",
-			exception:         errors.New("test error"),
+			exception:         testError,
 			attachments:       map[string]any{"key": "value"},
 			expectRspObj:      "response data",
-			expectException:   errors.New("test error"),
+			expectException:   testError,
 			expectAttachments: map[string]any{"key": "value"},
 		},
 		{
@@ -58,10 +62,10 @@ func TestNewResponsePayload(t *testing.T) {
 		{
 			desc:              "with nil rspObj and exception",
 			rspObj:            nil,
-			exception:         errors.New("error occurred"),
+			exception:         errorOccurred,
 			attachments:       map[string]any{"error_code": 500},
 			expectRspObj:      nil,
-			expectException:   errors.New("error occurred"),
+			expectException:   errorOccurred,
 			expectAttachments: map[string]any{"error_code": 500},
 		},
 		{
