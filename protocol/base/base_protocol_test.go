@@ -96,7 +96,7 @@ func TestBaseProtocol_Export(t *testing.T) {
 
 	assert.NotNil(t, exporter)
 	assert.Equal(t, invoker, exporter.GetInvoker())
-	
+
 	// Note: Export creates a BaseExporter but doesn't automatically store it
 	// The exporter needs to be manually stored using SetExporterMap if needed
 	baseExporter, ok := exporter.(*BaseExporter)
@@ -113,7 +113,7 @@ func TestBaseProtocol_Refer(t *testing.T) {
 
 	assert.NotNil(t, invoker)
 	assert.Equal(t, url, invoker.GetURL())
-	
+
 	// Type assert to BaseInvoker to access IsAvailable and IsDestroyed
 	baseInvoker, ok := invoker.(*BaseInvoker)
 	assert.True(t, ok)

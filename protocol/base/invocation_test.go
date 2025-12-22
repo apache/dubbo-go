@@ -43,18 +43,23 @@ type mockInvocation struct {
 	attributes         map[string]any
 }
 
-func (m *mockInvocation) MethodName() string                      { return m.methodName }
-func (m *mockInvocation) ActualMethodName() string                { return m.actualMethodName }
-func (m *mockInvocation) ParameterTypeNames() []string            { return m.parameterTypeNames }
-func (m *mockInvocation) ParameterTypes() []reflect.Type          { return m.parameterTypes }
-func (m *mockInvocation) ParameterValues() []reflect.Value        { return m.parameterValues }
-func (m *mockInvocation) ParameterRawValues() []any               { return m.parameterRawValues }
-func (m *mockInvocation) Arguments() []any                        { return m.arguments }
-func (m *mockInvocation) Reply() any                              { return m.reply }
-func (m *mockInvocation) Invoker() Invoker                        { return m.invoker }
-func (m *mockInvocation) IsGenericInvocation() bool               { return m.isGeneric }
-func (m *mockInvocation) Attachments() map[string]any             { return m.attachments }
-func (m *mockInvocation) SetAttachment(key string, value any)     { m.attachments[key] = value }
+func (m *mockInvocation) MethodName() string               { return m.methodName }
+func (m *mockInvocation) ActualMethodName() string         { return m.actualMethodName }
+func (m *mockInvocation) ParameterTypeNames() []string     { return m.parameterTypeNames }
+func (m *mockInvocation) ParameterTypes() []reflect.Type   { return m.parameterTypes }
+func (m *mockInvocation) ParameterValues() []reflect.Value { return m.parameterValues }
+func (m *mockInvocation) ParameterRawValues() []any        { return m.parameterRawValues }
+func (m *mockInvocation) Arguments() []any                 { return m.arguments }
+func (m *mockInvocation) Reply() any                       { return m.reply }
+func (m *mockInvocation) Invoker() Invoker                 { return m.invoker }
+func (m *mockInvocation) IsGenericInvocation() bool        { return m.isGeneric }
+func (m *mockInvocation) Attachments() map[string]any      { return m.attachments }
+func (m *mockInvocation) SetAttachment(key string, value any) {
+	if m.attachments == nil {
+		m.attachments = make(map[string]any)
+	}
+	m.attachments[key] = value
+}
 func (m *mockInvocation) GetAttachment(key string) (string, bool) {
 	if v, ok := m.attachments[key]; ok {
 		if s, ok := v.(string); ok {
@@ -209,4 +214,39 @@ func TestInvocationInterface_WithInvoker(t *testing.T) {
 	}
 
 	assert.Equal(t, invoker, inv.Invoker())
+}
+
+// TestInvocationInterface_NilMapInitialization tests that SetAttachment and SetAttribute
+// properly initialize nil maps before setting values, preventing panics
+func TestInvocationInterface_NilMapInitialization(t *testing.T) {
+	// Create invocation with nil maps
+	inv := &mockInvocation{
+		methodName: "TestMethod",
+		// attachments and attributes are intentionally nil
+	}
+
+	// Test SetAttachment with nil map - should not panic
+	assert.NotPanics(t, func() {
+		inv.SetAttachment("key1", "value1")
+	})
+	assert.NotNil(t, inv.attachments)
+	val, ok := inv.GetAttachment("key1")
+	assert.True(t, ok)
+	assert.Equal(t, "value1", val)
+
+	// Test SetAttribute with nil map - should not panic
+	assert.NotPanics(t, func() {
+		inv.SetAttribute("attr1", "attrValue1")
+	})
+	assert.NotNil(t, inv.attributes)
+	attrVal, attrOk := inv.GetAttribute("attr1")
+	assert.True(t, attrOk)
+	assert.Equal(t, "attrValue1", attrVal)
+
+	// Test multiple sets on already initialized maps
+	inv.SetAttachment("key2", "value2")
+	inv.SetAttribute("attr2", "attrValue2")
+
+	assert.Len(t, inv.Attachments(), 2)
+	assert.Len(t, inv.Attributes(), 2)
 }
