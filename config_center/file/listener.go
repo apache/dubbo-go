@@ -38,6 +38,7 @@ import (
 type CacheListener struct {
 	watch        *fsnotify.Watcher
 	keyListeners sync.Map
+	contentCache sync.Map
 	rootPath     string
 }
 
@@ -52,27 +53,44 @@ func NewCacheListener(rootPath string) *CacheListener {
 	go func() {
 		for {
 			select {
-			case event := <-watch.Events:
+			case event, ok := <-watch.Events:
+				if !ok {
+					return
+				}
 				key := event.Name
+				if key == "" {
+					continue
+				}
 				logger.Debugf("watcher %s, event %v", cl.rootPath, event)
-				if event.Op&fsnotify.Write == fsnotify.Write {
-					if l, ok := cl.keyListeners.Load(key); ok {
-						dataChangeCallback(l.(map[config_center.ConfigurationListener]struct{}), key,
-							remoting.EventTypeUpdate)
-					}
-				}
-				if event.Op&fsnotify.Create == fsnotify.Create {
-					if l, ok := cl.keyListeners.Load(key); ok {
-						dataChangeCallback(l.(map[config_center.ConfigurationListener]struct{}), key,
-							remoting.EventTypeAdd)
-					}
-				}
 				if event.Op&fsnotify.Remove == fsnotify.Remove {
+					cl.contentCache.Delete(key)
 					if l, ok := cl.keyListeners.Load(key); ok {
 						removeCallback(l.(map[config_center.ConfigurationListener]struct{}), key, remoting.EventTypeDel)
 					}
 				}
-			case err := <-watch.Errors:
+				if event.Op&fsnotify.Write == fsnotify.Write {
+					content := getFileContent(key)
+					if prev, ok := cl.contentCache.Load(key); ok && prev.(string) == content {
+						continue
+					}
+					cl.contentCache.Store(key, content)
+					if l, ok := cl.keyListeners.Load(key); ok {
+						dataChangeCallback(l.(map[config_center.ConfigurationListener]struct{}), key, content,
+							remoting.EventTypeUpdate)
+					}
+				}
+				if event.Op&fsnotify.Create == fsnotify.Create {
+					content := getFileContent(key)
+					cl.contentCache.Store(key, content)
+					if l, ok := cl.keyListeners.Load(key); ok {
+						dataChangeCallback(l.(map[config_center.ConfigurationListener]struct{}), key, content,
+							remoting.EventTypeAdd)
+					}
+				}
+			case err, ok := <-watch.Errors:
+				if !ok {
+					return
+				}
 				// err may be nil, ignore
 				if err != nil {
 					logger.Warnf("file : listen watch fail:%+v", err)
@@ -99,14 +117,13 @@ func removeCallback(lmap map[config_center.ConfigurationListener]struct{}, key s
 	}
 }
 
-func dataChangeCallback(lmap map[config_center.ConfigurationListener]struct{}, key string, event remoting.EventType) {
+func dataChangeCallback(lmap map[config_center.ConfigurationListener]struct{}, key, content string, event remoting.EventType) {
 	if len(lmap) == 0 {
 		logger.Warnf("file watch callback but configuration listener is empty, key:%s, event:%v", key, event)
 		return
 	}
-	c := getFileContent(key)
 	for l := range lmap {
-		callback(l, key, c, event)
+		callback(l, key, content, event)
 	}
 }
 
@@ -147,10 +164,17 @@ func (cl *CacheListener) RemoveListener(key string, listener config_center.Confi
 	if !loaded {
 		return
 	}
-	delete(listeners.(map[config_center.ConfigurationListener]struct{}), listener)
-	if err := cl.watch.Remove(key); err != nil {
-		logger.Errorf("watcher remove path:%s err:%v", key, err)
+	lmap := listeners.(map[config_center.ConfigurationListener]struct{})
+	delete(lmap, listener)
+	if len(lmap) == 0 {
+		cl.keyListeners.Delete(key)
+		cl.contentCache.Delete(key)
+		if err := cl.watch.Remove(key); err != nil {
+			logger.Errorf("watcher remove path:%s err:%v", key, err)
+		}
+		return
 	}
+	cl.keyListeners.Store(key, lmap)
 }
 
 func getFileContent(path string) string {
