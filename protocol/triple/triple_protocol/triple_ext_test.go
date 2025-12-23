@@ -1667,7 +1667,10 @@ func TestStreamForServer(t *testing.T) {
 		t.Cleanup(server.Close)
 		stream, err := client.Sum(context.Background())
 		assert.Nil(t, err)
-		assert.Nil(t, stream.Send(&pingv1.SumRequest{Number: 1}))
+		// Tolerate EOF when server closes stream concurrently
+		if sendErr := stream.Send(&pingv1.SumRequest{Number: 1}); sendErr != nil && !errors.Is(sendErr, io.EOF) {
+			t.Fatalf("unexpected error: %v", sendErr)
+		}
 		res := triple.NewResponse(&pingv1.SumResponse{})
 		err = stream.CloseAndReceive(res)
 		assert.NotNil(t, err)
