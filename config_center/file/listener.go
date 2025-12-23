@@ -70,8 +70,10 @@ func NewCacheListener(rootPath string) *CacheListener {
 				}
 				if event.Op&fsnotify.Write == fsnotify.Write {
 					content := getFileContent(key)
-					if prev, ok := cl.contentCache.Load(key); ok && prev.(string) == content {
-						continue
+					if prev, ok := cl.contentCache.Load(key); ok {
+						if prevStr, ok := prev.(string); ok && prevStr == content {
+							continue
+						}
 					}
 					cl.contentCache.Store(key, content)
 					if l, ok := cl.keyListeners.Load(key); ok {
