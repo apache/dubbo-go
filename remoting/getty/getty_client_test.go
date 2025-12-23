@@ -32,6 +32,7 @@ import (
 	perrors "github.com/pkg/errors"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -65,7 +66,7 @@ func testRequestOneWay(t *testing.T, client *Client) {
 	request.Event = false
 	request.TwoWay = false
 	err := client.Request(request, 3*time.Second, nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func createInvocation(methodName string, callback any, reply any, arguments []any,
@@ -115,7 +116,7 @@ func testClient_AsyncCall(t *testing.T, client *Client) {
 	}
 	wg.Add(1)
 	err := client.Request(request, 3*time.Second, rsp)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, User{}, *user)
 	wg.Done()
 }
@@ -125,7 +126,7 @@ func InitTest(t *testing.T) (*Server, *common.URL) {
 	remoting.RegistryCodec("dubbo", &DubboTestCodec{})
 
 	methods, err := common.ServiceMap.Register("com.ikurento.user.UserProvider", "dubbo", "", "", &UserProvider{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "GetBigPkg,getBigPkg,GetUser,getUser,GetUser0,getUser0,GetUser1,getUser1,GetUser2,getUser2,GetUser3,getUser3,GetUser4,getUser4,GetUser5,getUser5,GetUser6,getUser6", methods)
 
 	// config
@@ -147,7 +148,7 @@ func InitTest(t *testing.T) (*Server, *common.URL) {
 			SessionName:      "client",
 		},
 	})
-	assert.NoError(t, clientConf.CheckValidity())
+	require.NoError(t, clientConf.CheckValidity())
 	SetServerConfig(ServerConfig{
 		SessionNumber:  700,
 		SessionTimeout: "20s",
@@ -165,18 +166,18 @@ func InitTest(t *testing.T) (*Server, *common.URL) {
 			SessionName:      "server",
 		},
 	})
-	assert.NoError(t, srvConf.CheckValidity())
+	require.NoError(t, srvConf.CheckValidity())
 
 	url, err := common.NewURL("dubbo://127.0.0.1:20060/com.ikurento.user.UserProvider?anyhost=true&" +
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=127.0.0.1&methods=GetUser%2C&" +
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	// init server
 	userProvider := &UserProvider{}
 	_, err = common.ServiceMap.Register("", url.Protocol, "", "0.0.1", userProvider)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	invoker := &proxy_factory.ProxyInvoker{
 		BaseInvoker: *base.NewBaseInvoker(url),
 	}
@@ -286,7 +287,7 @@ func TestInitClientOldApi(t *testing.T) {
 	}
 	config.SetRootConfig(rootConf)
 	url, err := common.NewURL("dubbo://127.0.0.1:20003/test")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	initClient(url)
 	config.SetRootConfig(*originRootConf)
 	assert.NotNil(t, srvConf)
@@ -294,7 +295,7 @@ func TestInitClientOldApi(t *testing.T) {
 
 func TestInitClient(t *testing.T) {
 	url, err := common.NewURL("dubbo://127.0.0.1:20003/test")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	url.SetAttribute(constant.ProtocolConfigKey, map[string]*global.ProtocolConfig{
 		"dubbo": {
 			Name: "dubbo",

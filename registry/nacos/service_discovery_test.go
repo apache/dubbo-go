@@ -36,6 +36,7 @@ import (
 	perrors "github.com/pkg/errors"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -56,9 +57,9 @@ func TestNewNacosServiceDiscovery(t *testing.T) {
 	url, _ := common.NewURL("dubbo://127.0.0.1:8848",
 		common.WithParamsValue(constant.ClientNameKey, "nacos-client"))
 	sd, err := newNacosServiceDiscovery(url)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	err = sd.Destroy()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 }
 
 // Registration side: toRegisterInstance writes Weight into param
@@ -74,7 +75,7 @@ func TestWeight_RegisterParam(t *testing.T) {
 		Weight:      77,
 	}
 	param := sd.toRegisterInstance(si)
-	assert.Equal(t, 77.0, param.Weight)
+	assert.InEpsilon(t, 77.0, param.Weight, 1e-9)
 }
 
 //Subscription side: convertInstances writes Weight back
@@ -138,7 +139,7 @@ func TestFunction(t *testing.T) {
 	}
 	ins.Metadata = map[string]string{"t1": "test12", constant.MetadataServiceURLParamsPropertyName: `{"protocol":"mock","timeout":"10000","version":"1.0.0","dubbo":"2.0.2","release":"2.7.6","port":"2233"}`}
 	err := sd.Register(ins)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
@@ -152,7 +153,7 @@ func TestFunction(t *testing.T) {
 	sicl := servicediscovery.NewServiceInstancesChangedListener("test_app", hs)
 	sicl.AddListenerAndNotify(testName, tn)
 	err = sd.AddListener(sicl)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	ins = &registry.DefaultServiceInstance{
 		ID:          "testID",
@@ -165,9 +166,9 @@ func TestFunction(t *testing.T) {
 	}
 	ins.Metadata = map[string]string{"t1": "test12", constant.MetadataServiceURLParamsPropertyName: `{"protocol":"mock","timeout":"10000","version":"1.0.0","dubbo":"2.0.2","release":"2.7.6","port":"2233"}`}
 	err = sd.Update(ins)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = sd.Unregister(ins)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 }
 
 func TestBatchRegisterInstances(t *testing.T) {
@@ -207,7 +208,7 @@ func TestBatchRegisterInstances(t *testing.T) {
 		parmjosn, _ := json.Marshal(params)
 		ins.Metadata = map[string]string{"t1": "test", constant.MetadataServiceURLParamsPropertyName: string(parmjosn)}
 		err := sd.Register(ins)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	}
 
 	url3, _ := common.NewURL("tri://127.0.0.1:8848")
@@ -235,7 +236,7 @@ func TestBatchRegisterInstances(t *testing.T) {
 	parmjosn, _ := json.Marshal(params)
 	ins.Metadata = map[string]string{"t1": "test", constant.MetadataServiceURLParamsPropertyName: string(parmjosn)}
 	err := sd.Register(ins)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 }
 

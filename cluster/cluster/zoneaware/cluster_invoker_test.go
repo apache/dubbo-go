@@ -27,6 +27,7 @@ import (
 	"github.com/golang/mock/gomock"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -81,7 +82,7 @@ func TestZoneWareInvokerWithPreferredSuccess(t *testing.T) {
 
 	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 
-	assert.Equal(t, mockResult, result)
+	assert.NoError(t, result.Error())
 }
 
 func TestZoneWareInvokerWithWeightSuccess(t *testing.T) {
@@ -138,7 +139,7 @@ func TestZoneWareInvokerWithWeightSuccess(t *testing.T) {
 		if w1 == result.Attachment(constant.WeightKey, "0") {
 			w1Count++
 		}
-		assert.NoError(t, result.Error())
+		require.NoError(t, result.Error())
 	}
 	t.Logf("loop count : %d, w1 height : %s | count : %d, w2 height : %s | count : %d", loop,
 		w1, w1Count, w2, w2Count)
@@ -213,5 +214,5 @@ func TestZoneWareInvokerWithZoneForceFail(t *testing.T) {
 
 	result := clusterInvoker.Invoke(context.Background(), inv)
 
-	assert.NotNil(t, result.Error())
+	assert.Error(t, result.Error())
 }

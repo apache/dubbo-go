@@ -23,6 +23,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -49,11 +50,11 @@ func TestRPCInvocation_ServiceKey(t *testing.T) {
 		"side=provider&timeout=3000&timestamp=1556509797245"
 
 	providerUrl, err := common.NewURL(providerURL)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// invocation with same interface and path value
 	sameInfPathConsumerUrl, err := common.NewURL(sameInfPathConsumerURL)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	invocation := NewRPCInvocationWithOptions(WithAttachments(map[string]any{
 		constant.InterfaceKey: sameInfPathConsumerUrl.GetParam(constant.InterfaceKey, ""),
 		constant.PathKey:      sameInfPathConsumerUrl.Path,
@@ -64,7 +65,7 @@ func TestRPCInvocation_ServiceKey(t *testing.T) {
 
 	// invocation with different interface and path value
 	diffInfPathConsumerUrl, err := common.NewURL(diffInfPathConsumerURL)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	invocation = NewRPCInvocationWithOptions(WithAttachments(map[string]any{
 		constant.InterfaceKey: diffInfPathConsumerUrl.GetParam(constant.InterfaceKey, ""),
 		constant.PathKey:      diffInfPathConsumerUrl.Path,

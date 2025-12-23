@@ -23,6 +23,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestIsEmpty(t *testing.T) {
@@ -80,7 +81,7 @@ func TestSignWithParams(t *testing.T) {
 		}{"YuYu", 1},
 	}
 	signature, err := SignWithParams(params, metadata, key)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.False(t, IsEmpty(signature, false))
 }
 
@@ -107,10 +108,10 @@ func Test_toBytes(t *testing.T) {
 		}{"YuYu", 1},
 	}
 	jsonBytes, err := toBytes(params)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, jsonBytes)
 	jsonBytes2, err2 := toBytes(params2)
-	assert.NoError(t, err2)
+	require.NoError(t, err2)
 	assert.NotNil(t, jsonBytes2)
-	assert.Equal(t, jsonBytes, jsonBytes2)
+	assert.JSONEq(t, string(jsonBytes), string(jsonBytes2))
 }

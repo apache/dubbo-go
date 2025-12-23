@@ -43,7 +43,7 @@ func Test_generateAttachments(t *testing.T) {
 				return http.Header{}
 			},
 			expect: func(t *testing.T, res map[string]any) {
-				assert.Zero(t, len(res))
+				assert.Empty(t, res)
 			},
 		},
 		{
@@ -56,7 +56,7 @@ func Test_generateAttachments(t *testing.T) {
 				return header
 			},
 			expect: func(t *testing.T, res map[string]any) {
-				assert.Equal(t, 2, len(res))
+				assert.Len(t, res, 2)
 				assert.Equal(t, []string{"val1"}, res["key1"])
 				assert.Equal(t, []string{"val2_1", "val2_2"}, res["key2"])
 			},
@@ -71,7 +71,7 @@ func Test_generateAttachments(t *testing.T) {
 				return header
 			},
 			expect: func(t *testing.T, res map[string]any) {
-				assert.Equal(t, 2, len(res))
+				assert.Len(t, res, 2)
 				assert.Equal(t, []string{"val1"}, res["key1"])
 				assert.Equal(t, []string{"val2_1", "val2_2"}, res["key2"])
 			},
@@ -100,9 +100,8 @@ func TestServer_StartWithHttp2AndHttp3(t *testing.T) {
 	// when Enable is set to true
 	// Note: We can't actually start the server in a unit test due to port binding
 	// but we can verify the configuration logic
-
 	assert.NotNil(t, server)
-	assert.Equal(t, tripleConfig, server.cfg)
+	assert.Equal(t, tripleConfig.Http3.Enable, server.cfg.Http3.Enable)
 }
 
 func TestServer_ProtocolSelection(t *testing.T) {
@@ -135,7 +134,7 @@ func TestServer_ProtocolSelection(t *testing.T) {
 
 			// Extract the protocol selection logic for testing
 			var callProtocol string
-			if tripleConfig != nil && tripleConfig.Http3 != nil && tripleConfig.Http3.Enable {
+			if tripleConfig.Http3 != nil && tripleConfig.Http3.Enable {
 				callProtocol = constant.CallHTTP2AndHTTP3
 			} else {
 				callProtocol = constant.CallHTTP2

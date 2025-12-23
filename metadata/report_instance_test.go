@@ -18,7 +18,6 @@
 package metadata
 
 import (
-	"reflect"
 	"testing"
 )
 
@@ -30,6 +29,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -54,16 +54,14 @@ func TestDelegateMetadataReportGetAppMetadata(t *testing.T) {
 	t.Run("normal", func(t *testing.T) {
 		mockReport.On("GetAppMetadata").Return(metadataInfo, nil).Once()
 		got, err := delegate.GetAppMetadata("dubbo", "1")
-		assert.Nil(t, err)
-		if !reflect.DeepEqual(got, metadataInfo) {
-			t.Errorf("GetAppMetadata() got = %v, want %v", got, metadataInfo)
-		}
-		assert.True(t, len(ch) == 1)
+		require.NoError(t, err)
+		assert.Equal(t, metadataInfo, got)
+		assert.Len(t, ch, 1)
 		metricEvent := <-ch
-		assert.Equal(t, metricEvent.Type(), constant.MetricsMetadata)
+		assert.Equal(t, constant.MetricsMetadata, metricEvent.Type())
 		event, ok := metricEvent.(*metricsMetadata.MetadataMetricEvent)
 		assert.True(t, ok)
-		assert.NotNil(t, event.Name, metricsMetadata.MetadataSub)
+		assert.NotEmpty(t, event.Name)
 		assert.NotNil(t, event.Start)
 		assert.NotNil(t, event.End)
 		assert.True(t, event.Succ)
@@ -71,16 +69,16 @@ func TestDelegateMetadataReportGetAppMetadata(t *testing.T) {
 	t.Run("error", func(t *testing.T) {
 		mockReport.On("GetAppMetadata").Return(info.NewAppMetadataInfo("dubbo"), errors.New("mock error")).Once()
 		_, err := delegate.GetAppMetadata("dubbo", "1111")
-		assert.NotNil(t, err)
-		assert.True(t, len(ch) == 1)
+		require.Error(t, err)
+		assert.Len(t, ch, 1)
 		metricEvent := <-ch
-		assert.Equal(t, metricEvent.Type(), constant.MetricsMetadata)
+		assert.Equal(t, constant.MetricsMetadata, metricEvent.Type())
 		event, ok := metricEvent.(*metricsMetadata.MetadataMetricEvent)
 		assert.True(t, ok)
-		assert.NotNil(t, event.Name, metricsMetadata.MetadataSub)
+		assert.NotEmpty(t, event.Name)
 		assert.NotNil(t, event.Start)
 		assert.NotNil(t, event.End)
-		assert.True(t, !event.Succ)
+		assert.False(t, event.Succ)
 	})
 }
 
@@ -95,13 +93,13 @@ func TestDelegateMetadataReportPublishAppMetadata(t *testing.T) {
 	t.Run("normal", func(t *testing.T) {
 		mockReport.On("PublishAppMetadata").Return(nil).Once()
 		err := delegate.PublishAppMetadata("application", "revision", metadataInfo)
-		assert.Nil(t, err)
-		assert.True(t, len(ch) == 1)
+		require.NoError(t, err)
+		assert.Len(t, ch, 1)
 		metricEvent := <-ch
-		assert.Equal(t, metricEvent.Type(), constant.MetricsMetadata)
+		assert.Equal(t, constant.MetricsMetadata, metricEvent.Type())
 		event, ok := metricEvent.(*metricsMetadata.MetadataMetricEvent)
 		assert.True(t, ok)
-		assert.NotNil(t, event.Name, metricsMetadata.MetadataPush)
+		assert.NotEmpty(t, event.Name)
 		assert.NotNil(t, event.Start)
 		assert.NotNil(t, event.End)
 		assert.True(t, event.Succ)
@@ -109,16 +107,16 @@ func TestDelegateMetadataReportPublishAppMetadata(t *testing.T) {
 	t.Run("error", func(t *testing.T) {
 		mockReport.On("PublishAppMetadata").Return(errors.New("mock error")).Once()
 		err := delegate.PublishAppMetadata("application", "revision", metadataInfo)
-		assert.NotNil(t, err)
-		assert.True(t, len(ch) == 1)
+		require.Error(t, err)
+		assert.Len(t, ch, 1)
 		metricEvent := <-ch
-		assert.Equal(t, metricEvent.Type(), constant.MetricsMetadata)
+		assert.Equal(t, constant.MetricsMetadata, metricEvent.Type())
 		event, ok := metricEvent.(*metricsMetadata.MetadataMetricEvent)
 		assert.True(t, ok)
-		assert.NotNil(t, event.Name, metricsMetadata.MetadataPush)
+		assert.NotEmpty(t, event.Name)
 		assert.NotNil(t, event.Start)
 		assert.NotNil(t, event.End)
-		assert.True(t, !event.Succ)
+		assert.False(t, event.Succ)
 	})
 }
 
@@ -129,13 +127,13 @@ func TestDelegateMetadataReportGetServiceAppMapping(t *testing.T) {
 	t.Run("normal", func(t *testing.T) {
 		mockReport.On("GetServiceAppMapping").Return(gxset.NewSet(), nil).Once()
 		got, err := delegate.GetServiceAppMapping("dubbo", "dev", &listener{})
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		assert.True(t, got.Empty())
 	})
 	t.Run("error", func(t *testing.T) {
 		mockReport.On("GetServiceAppMapping").Return(gxset.NewSet(), errors.New("mock error")).Once()
 		_, err := delegate.GetServiceAppMapping("dubbo", "dev", &listener{})
-		assert.NotNil(t, err)
+		require.Error(t, err)
 	})
 }
 
@@ -146,12 +144,12 @@ func TestDelegateMetadataReportRegisterServiceAppMapping(t *testing.T) {
 	t.Run("normal", func(t *testing.T) {
 		mockReport.On("RegisterServiceAppMapping").Return(nil).Once()
 		err := delegate.RegisterServiceAppMapping("interfaceName", "group", "application")
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	})
 	t.Run("error", func(t *testing.T) {
 		mockReport.On("RegisterServiceAppMapping").Return(errors.New("mock error")).Once()
 		err := delegate.RegisterServiceAppMapping("interfaceName", "group", "application")
-		assert.NotNil(t, err)
+		require.Error(t, err)
 	})
 }
 
@@ -162,12 +160,12 @@ func TestDelegateMetadataReportRemoveServiceAppMappingListener(t *testing.T) {
 	t.Run("normal", func(t *testing.T) {
 		mockReport.On("RemoveServiceAppMappingListener").Return(nil).Once()
 		err := delegate.RemoveServiceAppMappingListener("interfaceName", "group")
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	})
 	t.Run("error", func(t *testing.T) {
 		mockReport.On("RemoveServiceAppMappingListener").Return(errors.New("mock error")).Once()
 		err := delegate.RemoveServiceAppMappingListener("interfaceName", "group")
-		assert.NotNil(t, err)
+		require.Error(t, err)
 	})
 }
 
@@ -189,19 +187,19 @@ func TestGetMetadataReportByRegistry(t *testing.T) {
 
 func TestGetMetadataReports(t *testing.T) {
 	instances = make(map[string]report.MetadataReport)
-	assert.True(t, len(GetMetadataReports()) == 0)
+	assert.Empty(t, GetMetadataReports())
 	instances["default"] = new(mockMetadataReport)
-	assert.True(t, len(GetMetadataReports()) == 1)
+	assert.Len(t, GetMetadataReports(), 1)
 }
 
 func TestGetMetadataType(t *testing.T) {
-	assert.Equal(t, GetMetadataType(), constant.DefaultMetadataStorageType)
+	assert.Equal(t, constant.DefaultMetadataStorageType, GetMetadataType())
 	metadataOptions = &Options{}
-	assert.Equal(t, GetMetadataType(), constant.DefaultMetadataStorageType)
+	assert.Equal(t, constant.DefaultMetadataStorageType, GetMetadataType())
 	metadataOptions = &Options{
 		metadataType: constant.RemoteMetadataStorageType,
 	}
-	assert.Equal(t, GetMetadataType(), constant.RemoteMetadataStorageType)
+	assert.Equal(t, constant.RemoteMetadataStorageType, GetMetadataType())
 }
 
 func TestAddMetadataReport(t *testing.T) {
@@ -209,15 +207,15 @@ func TestAddMetadataReport(t *testing.T) {
 		common.WithProtocol("registryId"),
 	)
 	err := addMetadataReport("registryId", url)
-	assert.Nil(t, err)
-	assert.True(t, instances["registryId"] == nil)
+	require.NoError(t, err)
+	assert.Nil(t, instances["registryId"])
 	mockReport := new(mockMetadataReport)
 	extension.SetMetadataReportFactory("registryId", func() report.MetadataReportFactory {
 		return mockReport
 	})
 	err = addMetadataReport("registryId", url)
-	assert.Nil(t, err)
-	assert.True(t, instances["registryId"] != nil)
+	require.NoError(t, err)
+	assert.NotNil(t, instances["registryId"])
 }
 
 type mockMetadataReport struct {

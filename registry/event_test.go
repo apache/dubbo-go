@@ -34,13 +34,13 @@ func TestKey(t *testing.T) {
 	se := ServiceEvent{
 		Service: u1,
 	}
-	assert.Equal(t, se.Key(), "dubbo://:@127.0.0.1:20000/?interface=com.ikurento.user.UserProvider&group=&version=2.0&timestamp=&meshClusterID=")
+	assert.Equal(t, "dubbo://:@127.0.0.1:20000/?interface=com.ikurento.user.UserProvider&group=&version=2.0&timestamp=&meshClusterID=", se.Key())
 
 	se2 := ServiceEvent{
 		Service: u1,
 		KeyFunc: defineKey,
 	}
-	assert.Equal(t, se2.Key(), "Hello Key")
+	assert.Equal(t, "Hello Key", se2.Key())
 }
 
 func defineKey(url *common.URL) string {

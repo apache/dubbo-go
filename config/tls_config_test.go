@@ -36,10 +36,10 @@ func TestNewTLSConfigBuilder(t *testing.T) {
 		SetTLSServerName("tls_server_name").
 		SetTLSCertFile("tls_cert_file").
 		Build()
-	assert.Equal(t, config.CACertFile, "ca_cert_file")
-	assert.Equal(t, config.TLSCertFile, "tls_cert_file")
-	assert.Equal(t, config.TLSServerName, "tls_server_name")
-	assert.Equal(t, config.TLSKeyFile, "tls_key_file")
-	assert.Equal(t, config.Prefix(), constant.TLSConfigPrefix)
+	assert.Equal(t, "ca_cert_file", config.CACertFile)
+	assert.Equal(t, "tls_cert_file", config.TLSCertFile)
+	assert.Equal(t, "tls_server_name", config.TLSServerName)
+	assert.Equal(t, "tls_key_file", config.TLSKeyFile)
+	assert.Equal(t, constant.TLSConfigPrefix, config.Prefix())
 
 }

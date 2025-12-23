@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -53,7 +54,7 @@ func Test_parseInvocation(t *testing.T) {
 				return invocation.NewRPCInvocationWithOptions()
 			},
 			expect: func(t *testing.T, callType string, inRaw []any, methodName string, err error) {
-				assert.NotNil(t, err)
+				require.Error(t, err)
 			},
 		},
 		{
@@ -68,7 +69,7 @@ func Test_parseInvocation(t *testing.T) {
 				return iv
 			},
 			expect: func(t *testing.T, callType string, inRaw []any, methodName string, err error) {
-				assert.NotNil(t, err)
+				require.Error(t, err)
 			},
 		},
 		{
@@ -83,7 +84,7 @@ func Test_parseInvocation(t *testing.T) {
 				return iv
 			},
 			expect: func(t *testing.T, callType string, inRaw []any, methodName string, err error) {
-				assert.NotNil(t, err)
+				require.Error(t, err)
 			},
 		},
 	}
@@ -117,7 +118,7 @@ func Test_parseAttachments(t *testing.T) {
 				return invocation.NewRPCInvocationWithOptions()
 			},
 			expect: func(t *testing.T, ctx context.Context, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				header := http.Header(tri.ExtractFromOutgoingContext(ctx))
 				assert.NotNil(t, header)
 				assert.Equal(t, "interface", header.Get(constant.InterfaceKey))
@@ -137,7 +138,7 @@ func Test_parseAttachments(t *testing.T) {
 				return invocation.NewRPCInvocationWithOptions()
 			},
 			expect: func(t *testing.T, ctx context.Context, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				header := http.Header(tri.ExtractFromOutgoingContext(ctx))
 				assert.NotNil(t, header)
 				assert.Equal(t, "val1", header.Get("key1"))
@@ -156,7 +157,7 @@ func Test_parseAttachments(t *testing.T) {
 				return invocation.NewRPCInvocationWithOptions()
 			},
 			expect: func(t *testing.T, ctx context.Context, err error) {
-				assert.NotNil(t, err)
+				require.Error(t, err)
 			},
 		},
 	}

@@ -47,7 +47,7 @@ func TestRtVecCollect(t *testing.T) {
 		ch := make(chan prom.Metric, len(r.metrics))
 		r.Collect(ch)
 		close(ch)
-		assert.Equal(t, len(ch), len(r.metrics))
+		assert.Len(t, ch, len(r.metrics))
 		for _, m := range r.metrics {
 			metric, ok := <-ch
 			if !ok {
@@ -76,7 +76,7 @@ func TestRtVecDescribe(t *testing.T) {
 		ch := make(chan *prom.Desc, len(r.metrics))
 		r.Describe(ch)
 		close(ch)
-		assert.Equal(t, len(ch), len(r.metrics))
+		assert.Len(t, ch, len(r.metrics))
 		for _, m := range r.metrics {
 			desc, ok := <-ch
 			if !ok {
@@ -136,7 +136,7 @@ func TestRtVecWith(t *testing.T) {
 	for _, r := range vecs {
 		first := r.With(tags)
 		second := r.With(tags)
-		assert.True(t, first == second) // init once
+		assert.Equal(t, first, second) // init once
 	}
 }
 
@@ -161,6 +161,6 @@ func TestRtVecWithConcurrent(t *testing.T) {
 		}
 		wg.Wait()
 		res := r.With(labelValues).(*Rt).obs.result()
-		assert.True(t, res.Count == uint64(10))
+		assert.Equal(t, uint64(10), res.Count)
 	}
 }

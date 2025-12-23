@@ -72,6 +72,6 @@ func TestRoundRobinByWeight(t *testing.T) {
 
 	for _, i := range invokers {
 		w, _ := strconv.Atoi(i.GetURL().GetParam("weight", "-1"))
-		assert.True(t, selected[i] == w)
+		assert.Equal(t, w, selected[i])
 	}
 }

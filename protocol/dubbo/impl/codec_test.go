@@ -24,6 +24,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -40,18 +41,18 @@ func TestDubboPackage_MarshalAndUnmarshal(t *testing.T) {
 
 	// heartbeat
 	data, err := pkg.Marshal()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	pkgres := NewDubboPackage(data)
 	pkgres.SetSerializer(HessianSerializer{})
 
 	pkgres.Body = []any{}
 	err = pkgres.Unmarshal()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, PackageHeartbeat|PackageRequest|PackageRequest_TwoWay, pkgres.Header.Type)
 	assert.Equal(t, constant.SHessian2, pkgres.Header.SerialID)
 	assert.Equal(t, int64(10086), pkgres.Header.ID)
-	assert.Equal(t, 0, len(pkgres.Body.([]any)))
+	assert.Empty(t, pkgres.Body.([]any))
 
 	// request
 	pkg.Header.Type = PackageRequest
@@ -61,14 +62,14 @@ func TestDubboPackage_MarshalAndUnmarshal(t *testing.T) {
 	pkg.Service.Method = "Method"
 	pkg.Service.Timeout = time.Second
 	data, err = pkg.Marshal()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	pkgres = NewDubboPackage(data)
 	pkgres.SetSerializer(HessianSerializer{})
 	pkgres.Body = make([]any, 7)
 	err = pkgres.Unmarshal()
 	reassembleBody := pkgres.GetBody().(map[string]any)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, PackageRequest, pkgres.Header.Type)
 	assert.Equal(t, constant.SHessian2, pkgres.Header.SerialID)
 	assert.Equal(t, int64(10086), pkgres.Header.ID)

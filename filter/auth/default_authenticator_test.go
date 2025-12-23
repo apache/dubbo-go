@@ -27,6 +27,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -59,7 +60,7 @@ func TestDefaultAuthenticator_Authenticate(t *testing.T) {
 		constant.AKKey:               access,
 	})
 	err := authenticator.Authenticate(rpcInvocation, testUrl)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	// modify the params
 	rpcInvocation = invocation.NewRPCInvocation("test", params[:1], map[string]any{
 		constant.RequestSignatureKey: signature,
@@ -68,7 +69,7 @@ func TestDefaultAuthenticator_Authenticate(t *testing.T) {
 		constant.AKKey:               access,
 	})
 	err = authenticator.Authenticate(rpcInvocation, testUrl)
-	assert.NotNil(t, err)
+	require.Error(t, err)
 }
 
 func TestDefaultAuthenticator_Sign(t *testing.T) {
@@ -79,10 +80,10 @@ func TestDefaultAuthenticator_Sign(t *testing.T) {
 	testUrl.SetParam(constant.ParameterSignatureEnableKey, "false")
 	inv := invocation.NewRPCInvocation("test", []any{"OK"}, nil)
 	_ = authenticator.Sign(inv, testUrl)
-	assert.NotEqual(t, inv.GetAttachmentWithDefaultValue(constant.RequestSignatureKey, ""), "")
-	assert.NotEqual(t, inv.GetAttachmentWithDefaultValue(constant.Consumer, ""), "")
-	assert.NotEqual(t, inv.GetAttachmentWithDefaultValue(constant.RequestTimestampKey, ""), "")
-	assert.Equal(t, inv.GetAttachmentWithDefaultValue(constant.AKKey, ""), "akey")
+	assert.NotEmpty(t, inv.GetAttachmentWithDefaultValue(constant.RequestSignatureKey, ""))
+	assert.NotEmpty(t, inv.GetAttachmentWithDefaultValue(constant.Consumer, ""))
+	assert.NotEmpty(t, inv.GetAttachmentWithDefaultValue(constant.RequestTimestampKey, ""))
+	assert.Equal(t, "akey", inv.GetAttachmentWithDefaultValue(constant.AKKey, ""))
 }
 
 func TestDefaultAuthenticator_SignNotAccessKeyIDKeyError(t *testing.T) {
@@ -92,7 +93,7 @@ func TestDefaultAuthenticator_SignNotAccessKeyIDKeyError(t *testing.T) {
 	testUrl.SetParam(constant.ParameterSignatureEnableKey, "false")
 	inv := invocation.NewRPCInvocation("test", []any{"OK"}, nil)
 	err := authenticator.Sign(inv, testUrl)
-	assert.NotNil(t, err)
+	require.Error(t, err)
 }
 
 func Test_getAccessKeyPairSuccess(t *testing.T) {
@@ -102,7 +103,7 @@ func Test_getAccessKeyPairSuccess(t *testing.T) {
 		common.WithParamsValue(constant.AccessKeyIDKey, "akey"))
 	rpcInvocation := invocation.NewRPCInvocation("MethodName", []any{"OK"}, nil)
 	_, e := getAccessKeyPair(rpcInvocation, testUrl)
-	assert.Nil(t, e)
+	require.NoError(t, e)
 }
 
 func Test_getAccessKeyPairFailed(t *testing.T) {
@@ -111,14 +112,14 @@ func Test_getAccessKeyPairFailed(t *testing.T) {
 		common.WithParamsValue(constant.AccessKeyIDKey, "akey"))
 	rpcInvocation := invocation.NewRPCInvocation("MethodName", []any{"OK"}, nil)
 	_, e := getAccessKeyPair(rpcInvocation, testUrl)
-	assert.NotNil(t, e)
+	require.Error(t, e)
 	testUrl = common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
 		common.WithParamsValue(constant.SecretAccessKeyKey, "skey"),
 		common.WithParamsValue(constant.AccessKeyIDKey, "akey"),
 		common.WithParamsValue(constant.AccessKeyStorageKey, "dubbo"))
 	_, e = getAccessKeyPair(rpcInvocation, testUrl)
-	assert.NotNil(t, e)
+	require.Error(t, e)
 	assert.Contains(t, e.Error(), "accessKeyStorages for dubbo is not existing")
 }
 

@@ -22,9 +22,10 @@ import (
 )
 
 import (
-	"github.com/apache/dubbo-go-hessian2"
+	hessian "github.com/apache/dubbo-go-hessian2"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -78,7 +79,7 @@ func TestMarshalRequestWithTypedNilPointer(t *testing.T) {
 	}
 
 	data, err := marshalRequest(encoder, pkg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, data)
 }
 
@@ -100,6 +101,6 @@ func TestMarshalRequestWithNonNilPointer(t *testing.T) {
 	}
 
 	data, err := marshalRequest(encoder, pkg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, data)
 }

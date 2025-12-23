@@ -26,6 +26,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -103,10 +104,10 @@ func TestFailoverDestroy(t *testing.T) {
 
 	staticDir := static.NewDirectory(invokers)
 	clusterInvoker := failoverCluster.Join(staticDir)
-	assert.Equal(t, true, clusterInvoker.IsAvailable())
+	assert.True(t, clusterInvoker.IsAvailable())
 	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
-	assert.NoError(t, result.Error())
+	require.NoError(t, result.Error())
 	clusterpkg.Count = 0
 	clusterInvoker.Destroy()
-	assert.Equal(t, false, clusterInvoker.IsAvailable())
+	assert.False(t, clusterInvoker.IsAvailable())
 }

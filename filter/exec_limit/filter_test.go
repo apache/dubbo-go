@@ -46,7 +46,7 @@ func TestFilterInvokeIgnored(t *testing.T) {
 
 	result := limitFilter.Invoke(context.Background(), base.NewBaseInvoker(invokeUrl), invoc)
 	assert.NotNil(t, result)
-	assert.Nil(t, result.Error())
+	assert.NoError(t, result.Error())
 }
 
 func TestFilterInvokeConfigureError(t *testing.T) {
@@ -64,7 +64,7 @@ func TestFilterInvokeConfigureError(t *testing.T) {
 	result := limitFilter.Invoke(context.Background(), base.NewBaseInvoker(invokeUrl), invoc)
 
 	assert.NotNil(t, result)
-	assert.Nil(t, result.Error())
+	assert.NoError(t, result.Error())
 }
 
 func TestFilterInvoke(t *testing.T) {
@@ -81,5 +81,5 @@ func TestFilterInvoke(t *testing.T) {
 
 	result := limitFilter.Invoke(context.Background(), base.NewBaseInvoker(invokeUrl), invoc)
 	assert.NotNil(t, result)
-	assert.Nil(t, result.Error())
+	assert.NoError(t, result.Error())
 }

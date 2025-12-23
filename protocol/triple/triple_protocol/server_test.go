@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -89,7 +90,7 @@ func TestServer_RegisterMuxHandle(t *testing.T) {
 	})
 	for _, test := range tests {
 		err := srv.RegisterUnaryHandler(test.path, nil, nil)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		_, pattern := srv.mux.Handler(&http.Request{
 			URL: &url.URL{
 				Path: test.path,

@@ -25,6 +25,7 @@ import (
 	"github.com/knadh/koanf"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -33,7 +34,7 @@ import (
 
 func TestProfilesConfig_Prefix(t *testing.T) {
 	profiles := &ProfilesConfig{}
-	assert.Equal(t, profiles.Prefix(), constant.ProfilesConfigPrefix)
+	assert.Equal(t, constant.ProfilesConfigPrefix, profiles.Prefix())
 }
 
 func TestLoaderConf_MergeConfig(t *testing.T) {
@@ -43,33 +44,33 @@ func TestLoaderConf_MergeConfig(t *testing.T) {
 	koan = conf.MergeConfig(koan)
 
 	err := koan.UnmarshalWithConf(rc.Prefix(), rc, koanf.UnmarshalConf{Tag: "yaml"})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	registries := rc.Registries
 	assert.NotNil(t, registries)
-	assert.Equal(t, registries["nacos"].Timeout, "10s")
-	assert.Equal(t, registries["nacos"].Address, "nacos://127.0.0.1:8848")
+	assert.Equal(t, "10s", registries["nacos"].Timeout)
+	assert.Equal(t, "nacos://127.0.0.1:8848", registries["nacos"].Address)
 
 	protocols := rc.Protocols
 	assert.NotNil(t, protocols)
-	assert.Equal(t, protocols["dubbo"].Name, "dubbo")
-	assert.Equal(t, protocols["dubbo"].Port, "20000")
+	assert.Equal(t, "dubbo", protocols["dubbo"].Name)
+	assert.Equal(t, "20000", protocols["dubbo"].Port)
 
 	consumer := rc.Consumer
 	assert.NotNil(t, consumer)
-	assert.Equal(t, consumer.References["helloService"].Protocol, "dubbo")
-	assert.Equal(t, consumer.References["helloService"].InterfaceName, "org.github.dubbo.HelloService")
+	assert.Equal(t, "dubbo", consumer.References["helloService"].Protocol)
+	assert.Equal(t, "org.github.dubbo.HelloService", consumer.References["helloService"].InterfaceName)
 }
 
 func Test_getLegalActive(t *testing.T) {
 
 	t.Run("default", func(t *testing.T) {
 		active := getLegalActive("")
-		assert.Equal(t, active, "default")
+		assert.Equal(t, "default", active)
 	})
 
 	t.Run("normal", func(t *testing.T) {
 		active := getLegalActive("active")
-		assert.Equal(t, active, "active")
+		assert.Equal(t, "active", active)
 	})
 }

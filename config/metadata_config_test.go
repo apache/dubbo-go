@@ -23,6 +23,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -39,9 +40,9 @@ func TestNewMetadataReportConfigBuilder(t *testing.T) {
 		SetGroup("dubbo").
 		Build()
 
-	assert.Equal(t, config.Prefix(), constant.MetadataReportPrefix)
+	assert.Equal(t, constant.MetadataReportPrefix, config.Prefix())
 
 	url, err := config.ToUrl()
-	assert.NoError(t, err)
-	assert.Equal(t, url.GetParam(constant.TimeoutKey, "3s"), "10s")
+	require.NoError(t, err)
+	assert.Equal(t, "10s", url.GetParam(constant.TimeoutKey, "3s"))
 }

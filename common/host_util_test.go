@@ -71,14 +71,14 @@ func TestHandleRegisterIPAndPortWithEnvInvalidPort(t *testing.T) {
 }
 
 func TestIsValidPort(t *testing.T) {
-	assert.Equal(t, false, isValidPort(""))
-	assert.Equal(t, false, isValidPort("abc"))
-	assert.Equal(t, false, isValidPort("0"))
-	assert.Equal(t, false, isValidPort("65536"))
-	assert.Equal(t, true, isValidPort("20000"))
+	assert.False(t, isValidPort(""))
+	assert.False(t, isValidPort("abc"))
+	assert.False(t, isValidPort("0"))
+	assert.False(t, isValidPort("65536"))
+	assert.True(t, isValidPort("20000"))
 }
 
 func TestGetRandomPort(t *testing.T) {
 	port := GetRandomPort("")
-	assert.True(t, port != "")
+	assert.NotEmpty(t, port)
 }

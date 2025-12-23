@@ -280,10 +280,10 @@ func CheckCompleteInequality(t *testing.T, origin any, clone any) {
 			assert.Equal(t, "origin", originField.String())
 
 		case reflect.Bool:
-			assert.Equal(t, true, cloneField.Bool())
+			assert.True(t, cloneField.Bool())
 			cloneField.SetBool(false)
-			assert.Equal(t, false, cloneField.Bool())
-			assert.Equal(t, true, originField.Bool())
+			assert.False(t, cloneField.Bool())
+			assert.True(t, originField.Bool())
 
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			assert.EqualValues(t, 1, cloneField.Int())
@@ -298,10 +298,10 @@ func CheckCompleteInequality(t *testing.T, origin any, clone any) {
 			assert.EqualValues(t, 1, originField.Uint())
 
 		case reflect.Float32, reflect.Float64:
-			assert.EqualValues(t, 1.5, cloneField.Float())
+			assert.InEpsilon(t, 1.5, cloneField.Float(), 1e-9)
 			cloneField.SetFloat(2.5)
-			assert.EqualValues(t, 2.5, cloneField.Float())
-			assert.EqualValues(t, 1.5, originField.Float())
+			assert.InEpsilon(t, 2.5, cloneField.Float(), 1e-9)
+			assert.InEpsilon(t, 1.5, originField.Float(), 1e-9)
 
 		case reflect.Map, reflect.Ptr:
 			if originField.IsNil() {

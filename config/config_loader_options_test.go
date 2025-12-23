@@ -24,6 +24,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -33,24 +34,24 @@ import (
 func TestCheckGenre(t *testing.T) {
 
 	err := checkFileSuffix("abc")
-	assert.NotNil(t, err)
+	require.Error(t, err)
 
 	err = checkFileSuffix("zc")
-	assert.NotNil(t, err)
+	require.Error(t, err)
 
 	err = checkFileSuffix("json")
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestFileGenre(t *testing.T) {
 	conf := NewLoaderConf(WithPath("../config/testdata/config/properties/application.properties"))
-	assert.Equal(t, conf.suffix, "properties")
+	assert.Equal(t, "properties", conf.suffix)
 }
 
 func TestRootConfig(t *testing.T) {
 	rc := NewRootConfigBuilder().SetApplication(NewApplicationConfigBuilder().SetName("test-app").Build()).Build()
 	conf := NewLoaderConf(WithRootConfig(rc))
-	assert.Equal(t, conf.rc.Application.Name, "test-app")
+	assert.Equal(t, "test-app", conf.rc.Application.Name)
 }
 
 func TestNewLoaderConf_WithBytes(t *testing.T) {
@@ -61,7 +62,7 @@ dubbo.services.HelloService.registry=nacos,zk`
 	conf := NewLoaderConf(WithBytes([]byte(str)), WithGenre("properties"))
 
 	assert.NotNil(t, conf)
-	assert.NotNil(t, conf.bytes)
+	assert.NotEmpty(t, conf.bytes)
 }
 
 func TestNewLoaderConf_WithSuffix(t *testing.T) {
@@ -75,19 +76,19 @@ func TestNewLoaderConf_WithSuffix(t *testing.T) {
 
 func TestResolverFilePath(t *testing.T) {
 	name, suffix := resolverFilePath("../config/application.properties")
-	assert.Equal(t, name, "application")
-	assert.Equal(t, suffix, "properties")
+	assert.Equal(t, "application", name)
+	assert.Equal(t, "properties", suffix)
 }
 
 func TestResolverFilePath_Illegal_Path(t *testing.T) {
 	name, suffix := resolverFilePath("application.properties")
-	assert.Equal(t, name, "application")
-	assert.Equal(t, suffix, "properties")
+	assert.Equal(t, "application", name)
+	assert.Equal(t, "properties", suffix)
 }
 
 func TestResolverFilePath_Illegal_Path_Name(t *testing.T) {
 	name, suffix := resolverFilePath("application")
-	assert.Equal(t, name, "application")
+	assert.Equal(t, "application", name)
 	assert.Equal(t, suffix, string(file.YAML))
 }
 
@@ -99,11 +100,11 @@ func Test_getActiveFilePath(t *testing.T) {
 
 	filePath := conf.getActiveFilePath("dev")
 
-	assert.Equal(t, strings.HasSuffix(filePath, "application-dev.properties"), true)
+	assert.True(t, strings.HasSuffix(filePath, "application-dev.properties"))
 
 	exists := pathExists(filePath)
-	assert.Equal(t, exists, false)
+	assert.False(t, exists)
 	exists = pathExists("application.properties")
-	assert.Equal(t, exists, false)
+	assert.False(t, exists)
 
 }

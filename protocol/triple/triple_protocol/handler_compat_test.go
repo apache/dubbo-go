@@ -34,5 +34,5 @@ func TestCompatError(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, Code(1234), triErr.Code())
 	assert.Equal(t, "user defined", triErr.Message())
-	assert.Equal(t, 1, len(triErr.Details()))
+	assert.Len(t, triErr.Details(), 1)
 }

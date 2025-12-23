@@ -42,7 +42,7 @@ func TestEnvironmentUpdateExternalConfigMap(t *testing.T) {
 	assert.Equal(t, "b", v)
 	v, ok = GetEnvInstance().externalConfigMap.Load("1")
 	assert.False(t, ok)
-	assert.Equal(t, nil, v)
+	assert.Nil(t, v)
 }
 
 func TestEnvironmentUpdateAppExternalConfigMap(t *testing.T) {
@@ -57,7 +57,7 @@ func TestEnvironmentUpdateAppExternalConfigMap(t *testing.T) {
 	assert.Equal(t, "b", v)
 	v, ok = GetEnvInstance().appExternalConfigMap.Load("1")
 	assert.False(t, ok)
-	assert.Equal(t, nil, v)
+	assert.Nil(t, v)
 }
 
 func TestEnvironmentConfigurationAndGetProperty(t *testing.T) {

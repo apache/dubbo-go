@@ -24,6 +24,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -42,6 +43,6 @@ func TestWithTimeout(t *testing.T) {
 
 func TestGetRuleKey(t *testing.T) {
 	url, err := common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider?interface=test&group=groupA&version=0")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "test:0:groupA", GetRuleKey(url))
 }

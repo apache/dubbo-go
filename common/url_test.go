@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -60,8 +61,8 @@ func TestNewURLWithOptions(t *testing.T) {
 	assert.Equal(t, loopbackAddress, u.Ip)
 	assert.Equal(t, "8080", u.Port)
 	assert.Equal(t, methods, u.Methods)
-	assert.Equal(t, 2, len(u.params))
-	assert.Equal(t, 2, len(u.attributes))
+	assert.Len(t, u.params, 2)
+	assert.Len(t, u.attributes, 2)
 }
 
 func TestURL(t *testing.T) {
@@ -70,7 +71,7 @@ func TestURL(t *testing.T) {
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	urlInst := URL{}
 	urlInst.noCopy.Lock()
@@ -83,8 +84,8 @@ func TestURL(t *testing.T) {
 	assert.Equal(t, loopbackAddress, u.Ip)
 	assert.Equal(t, "20000", u.Port)
 	assert.Equal(t, urlInst.Methods, u.Methods)
-	assert.Equal(t, "", u.Username)
-	assert.Equal(t, "", u.Password)
+	assert.Empty(t, u.Username)
+	assert.Empty(t, u.Password)
 	assert.Equal(t, "anyhost=true&application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-"+
 		"provider-golang-1.0.0&environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%"+
 		"2C&module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&side=provider&timeout=3000&t"+
@@ -102,7 +103,7 @@ func TestURLWithoutSchema(t *testing.T) {
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&"+
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&"+
 		"side=provider&timeout=3000&timestamp=1556509797245", WithProtocol("dubbo"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, "/com.ikurento.user.UserProvider", u.Path)
 	assert.Equal(t, "127.0.0.1:20000", u.Location)
@@ -110,8 +111,8 @@ func TestURLWithoutSchema(t *testing.T) {
 	assert.Equal(t, loopbackAddress, u.Ip)
 	assert.Equal(t, "20000", u.Port)
 	assert.Equal(t, URL{}.Methods, u.Methods)
-	assert.Equal(t, "", u.Username)
-	assert.Equal(t, "", u.Password)
+	assert.Empty(t, u.Username)
+	assert.Empty(t, u.Password)
 	assert.Equal(t, "anyhost=true&application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-"+
 		"provider-golang-1.0.0&environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%"+
 		"2C&module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&side=provider&timeout=3000&t"+
@@ -125,40 +126,40 @@ func TestURLWithoutSchema(t *testing.T) {
 
 func TestURLEqual(t *testing.T) {
 	u1, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	u2, err := NewURL("dubbo://127.0.0.2:20001/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, u1.URLEqual(u2))
 
 	u3, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=gg&version=2.6.0")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.False(t, u1.URLEqual(u3))
 
 	// urlGroupAnyValue's group is *
 	urlGroupAnyValue, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=*&version=2.6.0")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, u3.URLEqual(urlGroupAnyValue))
 
 	// test for enabled
 	urlEnabledEmpty, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=*&version=2.6.0&enabled=")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, u3.URLEqual(urlEnabledEmpty))
 
 	urlEnabledFalse, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=*&version=2.6.0&enabled=1")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.False(t, u3.URLEqual(urlEnabledFalse))
 
 	urlEnabledTrue, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=*&version=2.6.0&enabled=true")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, u3.URLEqual(urlEnabledTrue))
 
 	urlEnabledAny, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=*&version=2.6.0&enabled=*")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, u3.URLEqual(urlEnabledAny))
 
 	// test for category
 	categoryAny, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=*&version=2.6.0&enabled=*&category=*")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, categoryAny.URLEqual(u3))
 }
 
@@ -215,11 +216,11 @@ func TestURLGetParamBool(t *testing.T) {
 	u.SetParams(params)
 
 	v := u.GetParamBool("force", false)
-	assert.Equal(t, true, v)
+	assert.True(t, v)
 
 	u = URL{}
 	v = u.GetParamBool("force", false)
-	assert.Equal(t, false, v)
+	assert.False(t, v)
 }
 
 func TestURLGetParamAndDecoded(t *testing.T) {
@@ -253,7 +254,7 @@ func TestURLToMap(t *testing.T) {
 	u.Password = "test"
 
 	m := u.ToMap()
-	assert.Equal(t, 7, len(m))
+	assert.Len(t, m, 7)
 	assert.Equal(t, "condition", m["protocol"])
 	assert.Equal(t, "0.0.0.0", m["host"])
 	assert.Equal(t, "8080", m["port"])
@@ -301,11 +302,11 @@ func TestURLGetMethodParamBool(t *testing.T) {
 	u.SetParams(params)
 
 	v := u.GetMethodParamBool("GetValue", "async", false)
-	assert.Equal(t, true, v)
+	assert.True(t, v)
 
 	u = URL{}
 	v = u.GetMethodParamBool("GetValue2", "async", false)
-	assert.Equal(t, false, v)
+	assert.False(t, v)
 }
 
 func TestURLGetAttribute(t *testing.T) {
@@ -316,13 +317,13 @@ func TestURLGetAttribute(t *testing.T) {
 	u.SetAttribute(key, val)
 
 	rawVal, ok := u.GetAttribute(key)
-	assert.Equal(t, true, ok)
+	assert.True(t, ok)
 	v, ok := rawVal.(string)
-	assert.Equal(t, true, ok)
+	assert.True(t, ok)
 	assert.Equal(t, val, v)
 
 	rawVal, ok = u.GetAttribute(notExistKey)
-	assert.Equal(t, false, ok)
+	assert.False(t, ok)
 	assert.Nil(t, rawVal)
 }
 
@@ -350,7 +351,7 @@ func TestMergeUrl(t *testing.T) {
 
 func TestURLSetParams(t *testing.T) {
 	u1, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&configVersion=1.0")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	params := url.Values{}
 	params.Set("key", "3")
 	u1.SetParams(params)
@@ -360,23 +361,23 @@ func TestURLSetParams(t *testing.T) {
 
 func TestURLReplaceParams(t *testing.T) {
 	u1, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&configVersion=1.0")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	params := url.Values{}
 	params.Set("key", "3")
 	u1.ReplaceParams(params)
 	assert.Equal(t, "3", u1.GetParam("key", ""))
-	assert.Equal(t, "", u1.GetParam("version", ""))
+	assert.Empty(t, u1.GetParam("version", ""))
 }
 
 func TestClone(t *testing.T) {
 	u1, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&configVersion=1.0")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	u2 := u1.Clone()
-	assert.Equal(t, u2.Protocol, "dubbo")
+	assert.Equal(t, "dubbo", u2.Protocol)
 	assert.Equal(t, "1.0", u2.GetParam("configVersion", ""))
 	u2.Protocol = "provider"
-	assert.Equal(t, u1.Protocol, "dubbo")
-	assert.Equal(t, u2.Protocol, "provider")
+	assert.Equal(t, "dubbo", u1.Protocol)
+	assert.Equal(t, "provider", u2.Protocol)
 }
 
 func TestColonSeparatedKey(t *testing.T) {
@@ -598,19 +599,19 @@ func TestIsAnyCondition(t *testing.T) {
 
 func TestNewURLWithMultiAddr(t *testing.T) {
 	u1, err := NewURL("zookeeper://127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183", u1.Location)
 
 	u2, err := NewURL("zookeeper://127.0.0.1:2181 , 127.0.0.1:2182, 127.0.0.1:2183")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183", u2.Location)
 
 	u3, err := NewURL("zookeeper://127.0.0.1:2181 , 127.0.0.1:2182, 127.0.0.1:2183,, , , ")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183", u3.Location)
 
 	u4, err := NewURL(" , ,127.0.0.1:2181 , 127.0.0.1:2182, 127.0.0.1:2183,, , , ", WithProtocol("zookeeper"))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183", u4.Location)
 }
 

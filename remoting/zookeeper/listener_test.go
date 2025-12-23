@@ -29,5 +29,5 @@ import (
 func TestZkPath(t *testing.T) {
 	zkPath := "io.grpc.examples.helloworld.GreeterGrpc$IGreeter"
 	zkPath = url.QueryEscape(zkPath)
-	assert.Equal(t, zkPath, "io.grpc.examples.helloworld.GreeterGrpc%24IGreeter")
+	assert.Equal(t, "io.grpc.examples.helloworld.GreeterGrpc%24IGreeter", zkPath)
 }

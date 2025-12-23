@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -95,22 +96,22 @@ func TestServiceMapRegister(t *testing.T) {
 	s0 := &testService{}
 	// methods, err := ServiceMap.Register("testporotocol", s0)
 	_, err := ServiceMap.Register(testInterfaceName, "testporotocol", "", "v0", s0)
-	assert.EqualError(t, err, "type testService is not exported")
+	require.EqualError(t, err, "type testService is not exported")
 
 	// succ
 	s := &TestService{}
 	methods, err := ServiceMap.Register(testInterfaceName, "testporotocol", "", "v1", s)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "MethodOne,methodOne,MethodThree,methodThree,methodTwo,MethodTwo", methods)
 
 	// repeat
 	_, err = ServiceMap.Register(testInterfaceName, "testporotocol", "", "v1", s)
-	assert.EqualError(t, err, "service already defined: testService:v1")
+	require.EqualError(t, err, "service already defined: testService:v1")
 
 	// no method
 	s1 := &TestService1{}
 	_, err = ServiceMap.Register(testInterfaceName, "testporotocol", "", "v2", s1)
-	assert.EqualError(t, err, "type testService:v2 has no exported methods of suitable type")
+	require.EqualError(t, err, "type testService:v2 has no exported methods of suitable type")
 
 	ServiceMap = &serviceMap{
 		serviceMap:   make(map[string]map[string]*Service),
@@ -121,22 +122,22 @@ func TestServiceMapRegister(t *testing.T) {
 func TestServiceMapUnRegister(t *testing.T) {
 	s := &TestService{}
 	_, err := ServiceMap.Register("TestService", testProtocol, "", "v1", s)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, ServiceMap.GetService(testProtocol, "TestService", "", "v1"))
-	assert.Equal(t, 1, len(ServiceMap.GetInterface("TestService")))
+	assert.Len(t, ServiceMap.GetInterface("TestService"), 1)
 
 	err = ServiceMap.UnRegister("", "", ServiceKey("TestService", "", "v1"))
-	assert.EqualError(t, err, "protocol or ServiceKey is nil")
+	require.EqualError(t, err, "protocol or ServiceKey is nil")
 
 	err = ServiceMap.UnRegister("", "protocol", ServiceKey("TestService", "", "v1"))
-	assert.EqualError(t, err, "no services for protocol")
+	require.EqualError(t, err, "no services for protocol")
 
 	err = ServiceMap.UnRegister("", testProtocol, ServiceKey("TestService", "", "v0"))
-	assert.EqualError(t, err, "no service for TestService:v0")
+	require.EqualError(t, err, "no service for TestService:v0")
 
 	// success
 	err = ServiceMap.UnRegister("TestService", testProtocol, ServiceKey("TestService", "", "v1"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestMethodTypeSuiteContext(t *testing.T) {
@@ -182,7 +183,7 @@ func TestSuiteMethod(t *testing.T) {
 	method = methodType.Method()
 	assert.Equal(t, "func(*common.TestService) error", method.Type.String())
 	at = methodType.ArgsType()
-	assert.Equal(t, 0, len(at))
+	assert.Empty(t, at)
 	assert.Nil(t, methodType.CtxType())
 	rt = methodType.ReplyType()
 	assert.Nil(t, rt)

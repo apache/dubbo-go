@@ -52,7 +52,7 @@ func TestFilter_Invoke_Not_Config(t *testing.T) {
 
 	filter := &Filter{}
 	invokeResult := filter.Invoke(context.Background(), invoker, inv)
-	assert.Nil(t, invokeResult.Error())
+	assert.NoError(t, invokeResult.Error())
 }
 
 func TestFilterInvokeDefaultConfig(t *testing.T) {
@@ -73,7 +73,7 @@ func TestFilterInvokeDefaultConfig(t *testing.T) {
 
 	filter := &Filter{}
 	invokeResult := filter.Invoke(context.Background(), invoker, inv)
-	assert.Nil(t, invokeResult.Error())
+	assert.NoError(t, invokeResult.Error())
 }
 
 func TestFilterOnResponse(t *testing.T) {
