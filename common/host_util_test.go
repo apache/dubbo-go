@@ -82,3 +82,70 @@ func TestGetRandomPort(t *testing.T) {
 	port := GetRandomPort("")
 	assert.NotEmpty(t, port)
 }
+
+func TestIsMatchGlobPattern(t *testing.T) {
+	tests := []struct {
+		name     string
+		pattern  string
+		value    string
+		expected bool
+	}{
+		// * matches anything
+		{"any pattern", "*", "anything", true},
+		{"any pattern empty value", "*", "", true},
+
+		// both empty
+		{"both empty", "", "", true},
+
+		// one empty
+		{"pattern empty", "", "value", false},
+		{"value empty", "pattern", "", false},
+
+		// no wildcard - exact match
+		{"exact match", "hello", "hello", true},
+		{"exact not match", "hello", "world", false},
+
+		// * at the end - prefix match
+		{"prefix match", "hello*", "hello world", true},
+		{"prefix exact", "hello*", "hello", true},
+		{"prefix not match", "hello*", "world", false},
+
+		// * at the beginning - suffix match
+		{"suffix match", "*world", "hello world", true},
+		{"suffix exact", "*world", "world", true},
+		{"suffix not match", "*world", "hello", false},
+
+		// * in the middle - prefix and suffix match
+		{"middle match", "hello*world", "hello beautiful world", true},
+		{"middle exact", "hello*world", "helloworld", true},
+		{"middle prefix not match", "hello*world", "hi beautiful world", false},
+		{"middle suffix not match", "hello*world", "hello beautiful earth", false},
+		{"middle both not match", "hello*world", "hi earth", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, IsMatchGlobPattern(tt.pattern, tt.value))
+		})
+	}
+}
+
+func TestGetLocalIpCached(t *testing.T) {
+	// First call
+	ip1 := GetLocalIp()
+	assert.NotEmpty(t, ip1)
+
+	// Second call should return cached value
+	ip2 := GetLocalIp()
+	assert.Equal(t, ip1, ip2)
+}
+
+func TestGetLocalHostNameCached(t *testing.T) {
+	// First call
+	hostname1 := GetLocalHostName()
+	assert.NotEmpty(t, hostname1)
+
+	// Second call should return cached value
+	hostname2 := GetLocalHostName()
+	assert.Equal(t, hostname1, hostname2)
+}

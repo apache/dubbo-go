@@ -20,6 +20,7 @@ package triple
 import (
 	"context"
 	"net/http"
+	"sync"
 	"testing"
 )
 
@@ -55,6 +56,7 @@ func Test_parseInvocation(t *testing.T) {
 			},
 			expect: func(t *testing.T, callType string, inRaw []any, methodName string, err error) {
 				require.Error(t, err)
+				assert.Contains(t, err.Error(), "miss CallType")
 			},
 		},
 		{
@@ -70,6 +72,7 @@ func Test_parseInvocation(t *testing.T) {
 			},
 			expect: func(t *testing.T, callType string, inRaw []any, methodName string, err error) {
 				require.Error(t, err)
+				assert.Contains(t, err.Error(), "CallType should be string")
 			},
 		},
 		{
@@ -85,6 +88,7 @@ func Test_parseInvocation(t *testing.T) {
 			},
 			expect: func(t *testing.T, callType string, inRaw []any, methodName string, err error) {
 				require.Error(t, err)
+				assert.Contains(t, err.Error(), "miss MethodName")
 			},
 		},
 	}
@@ -158,6 +162,7 @@ func Test_parseAttachments(t *testing.T) {
 			},
 			expect: func(t *testing.T, ctx context.Context, err error) {
 				require.Error(t, err)
+				assert.Contains(t, err.Error(), "invalid")
 			},
 		},
 	}
@@ -168,6 +173,332 @@ func Test_parseAttachments(t *testing.T) {
 			inv := test.invo()
 			parseAttachments(ctx, test.url, inv)
 			ctx, err := mergeAttachmentToOutgoing(ctx, inv)
+			test.expect(t, ctx, err)
+		})
+	}
+}
+
+// newTestTripleInvoker creates a TripleInvoker for testing without network connection
+func newTestTripleInvoker(url *common.URL, cm *clientManager) *TripleInvoker {
+	return &TripleInvoker{
+		BaseInvoker:   *base.NewBaseInvoker(url),
+		quitOnce:      sync.Once{},
+		clientGuard:   &sync.RWMutex{},
+		clientManager: cm,
+	}
+}
+
+func TestTripleInvoker_SetGetClientManager(t *testing.T) {
+	url := common.NewURLWithOptions()
+	ti := newTestTripleInvoker(url, nil)
+
+	// initially nil
+	assert.Nil(t, ti.getClientManager())
+
+	// set clientManager
+	cm := &clientManager{
+		isIDL:      true,
+		triClients: make(map[string]*tri.Client),
+	}
+	ti.setClientManager(cm)
+	assert.Equal(t, cm, ti.getClientManager())
+
+	// set to nil
+	ti.setClientManager(nil)
+	assert.Nil(t, ti.getClientManager())
+}
+
+func TestTripleInvoker_IsAvailable(t *testing.T) {
+	tests := []struct {
+		desc          string
+		clientManager *clientManager
+		expect        bool
+	}{
+		{
+			desc:          "clientManager is nil",
+			clientManager: nil,
+			expect:        false,
+		},
+		{
+			desc: "clientManager is not nil",
+			clientManager: &clientManager{
+				isIDL:      true,
+				triClients: make(map[string]*tri.Client),
+			},
+			expect: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.desc, func(t *testing.T) {
+			url := common.NewURLWithOptions()
+			ti := newTestTripleInvoker(url, test.clientManager)
+			assert.Equal(t, test.expect, ti.IsAvailable())
+		})
+	}
+}
+
+func TestTripleInvoker_IsDestroyed(t *testing.T) {
+	tests := []struct {
+		desc          string
+		clientManager *clientManager
+		destroyed     bool
+		expect        bool
+	}{
+		{
+			desc:          "clientManager is nil",
+			clientManager: nil,
+			destroyed:     false,
+			expect:        false,
+		},
+		{
+			desc: "clientManager is not nil and not destroyed",
+			clientManager: &clientManager{
+				isIDL:      true,
+				triClients: make(map[string]*tri.Client),
+			},
+			destroyed: false,
+			expect:    false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.desc, func(t *testing.T) {
+			url := common.NewURLWithOptions()
+			ti := newTestTripleInvoker(url, test.clientManager)
+			assert.Equal(t, test.expect, ti.IsDestroyed())
+		})
+	}
+}
+
+func TestTripleInvoker_Destroy(t *testing.T) {
+	t.Run("destroy with clientManager", func(t *testing.T) {
+		url := common.NewURLWithOptions()
+		cm := &clientManager{
+			isIDL:      true,
+			triClients: make(map[string]*tri.Client),
+		}
+		ti := newTestTripleInvoker(url, cm)
+
+		assert.True(t, ti.IsAvailable())
+		assert.NotNil(t, ti.getClientManager())
+
+		ti.Destroy()
+
+		assert.False(t, ti.IsAvailable())
+		assert.Nil(t, ti.getClientManager())
+	})
+
+	t.Run("destroy without clientManager", func(t *testing.T) {
+		url := common.NewURLWithOptions()
+		ti := newTestTripleInvoker(url, nil)
+
+		ti.Destroy()
+
+		assert.False(t, ti.IsAvailable())
+		assert.Nil(t, ti.getClientManager())
+	})
+
+	t.Run("destroy called multiple times", func(t *testing.T) {
+		url := common.NewURLWithOptions()
+		cm := &clientManager{
+			isIDL:      true,
+			triClients: make(map[string]*tri.Client),
+		}
+		ti := newTestTripleInvoker(url, cm)
+
+		// first destroy
+		ti.Destroy()
+		assert.Nil(t, ti.getClientManager())
+
+		// second destroy should not panic
+		ti.Destroy()
+		assert.Nil(t, ti.getClientManager())
+	})
+}
+
+func TestTripleInvoker_Invoke(t *testing.T) {
+	tests := []struct {
+		desc         string
+		setup        func() (*TripleInvoker, base.Invocation)
+		expectErr    error
+		expectErrMsg string
+	}{
+		{
+			desc: "invoker is destroyed",
+			setup: func() (*TripleInvoker, base.Invocation) {
+				url := common.NewURLWithOptions()
+				ti := newTestTripleInvoker(url, &clientManager{
+					isIDL:      true,
+					triClients: make(map[string]*tri.Client),
+				})
+				ti.Destroy()
+				inv := invocation.NewRPCInvocationWithOptions()
+				return ti, inv
+			},
+			expectErr: base.ErrDestroyedInvoker,
+		},
+		{
+			desc: "clientManager is nil",
+			setup: func() (*TripleInvoker, base.Invocation) {
+				url := common.NewURLWithOptions()
+				ti := newTestTripleInvoker(url, nil)
+				inv := invocation.NewRPCInvocationWithOptions()
+				return ti, inv
+			},
+			expectErr: base.ErrClientClosed,
+		},
+		{
+			desc: "parseInvocation error - miss callType",
+			setup: func() (*TripleInvoker, base.Invocation) {
+				url := common.NewURLWithOptions()
+				ti := newTestTripleInvoker(url, &clientManager{
+					isIDL:      true,
+					triClients: make(map[string]*tri.Client),
+				})
+				inv := invocation.NewRPCInvocationWithOptions()
+				return ti, inv
+			},
+			expectErrMsg: "miss CallType",
+		},
+		{
+			desc: "mergeAttachmentToOutgoing error - invalid attachment",
+			setup: func() (*TripleInvoker, base.Invocation) {
+				url := common.NewURLWithOptions()
+				ti := newTestTripleInvoker(url, &clientManager{
+					isIDL:      true,
+					triClients: make(map[string]*tri.Client),
+				})
+				inv := invocation.NewRPCInvocationWithOptions(
+					invocation.WithMethodName("TestMethod"),
+					invocation.WithAttachment("invalid_key", 123), // invalid attachment type
+				)
+				inv.SetAttribute(constant.CallTypeKey, constant.CallUnary)
+				return ti, inv
+			},
+			expectErrMsg: "invalid",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.desc, func(t *testing.T) {
+			ti, inv := test.setup()
+			result := ti.Invoke(context.Background(), inv)
+			if test.expectErr != nil {
+				assert.Equal(t, test.expectErr, result.Error())
+			}
+			if test.expectErrMsg != "" {
+				assert.NotNil(t, result.Error())
+				assert.Contains(t, result.Error().Error(), test.expectErrMsg)
+			}
+		})
+	}
+}
+
+func TestTripleInvoker_Invoke_Concurrent(t *testing.T) {
+	url := common.NewURLWithOptions()
+	ti := newTestTripleInvoker(url, &clientManager{
+		isIDL:      true,
+		triClients: make(map[string]*tri.Client),
+	})
+
+	var wg sync.WaitGroup
+	concurrency := 10
+
+	for i := 0; i < concurrency; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			inv := invocation.NewRPCInvocationWithOptions()
+			_ = ti.Invoke(context.Background(), inv)
+		}()
+	}
+
+	wg.Wait()
+}
+
+func Test_mergeAttachmentToOutgoing(t *testing.T) {
+	tests := []struct {
+		desc   string
+		ctx    context.Context
+		invo   func() base.Invocation
+		expect func(t *testing.T, ctx context.Context, err error)
+	}{
+		{
+			desc: "with timeout attachment",
+			ctx:  context.Background(),
+			invo: func() base.Invocation {
+				inv := invocation.NewRPCInvocationWithOptions(
+					invocation.WithAttachment(constant.TimeoutKey, "5000"),
+				)
+				return inv
+			},
+			expect: func(t *testing.T, ctx context.Context, err error) {
+				assert.Nil(t, err)
+				timeout := ctx.Value(tri.TimeoutKey{})
+				assert.Equal(t, "5000", timeout)
+			},
+		},
+		{
+			desc: "with string attachment",
+			ctx:  context.Background(),
+			invo: func() base.Invocation {
+				inv := invocation.NewRPCInvocationWithOptions(
+					invocation.WithAttachment("custom-key", "custom-value"),
+				)
+				return inv
+			},
+			expect: func(t *testing.T, ctx context.Context, err error) {
+				assert.Nil(t, err)
+				header := http.Header(tri.ExtractFromOutgoingContext(ctx))
+				assert.Equal(t, "custom-value", header.Get("custom-key"))
+			},
+		},
+		{
+			desc: "with string slice attachment",
+			ctx:  context.Background(),
+			invo: func() base.Invocation {
+				inv := invocation.NewRPCInvocationWithOptions(
+					invocation.WithAttachment("multi-key", []string{"val1", "val2"}),
+				)
+				return inv
+			},
+			expect: func(t *testing.T, ctx context.Context, err error) {
+				assert.Nil(t, err)
+				header := http.Header(tri.ExtractFromOutgoingContext(ctx))
+				assert.Equal(t, []string{"val1", "val2"}, header.Values("multi-key"))
+			},
+		},
+		{
+			desc: "with invalid attachment type",
+			ctx:  context.Background(),
+			invo: func() base.Invocation {
+				inv := invocation.NewRPCInvocationWithOptions(
+					invocation.WithAttachment("invalid-key", 12345),
+				)
+				return inv
+			},
+			expect: func(t *testing.T, ctx context.Context, err error) {
+				assert.NotNil(t, err)
+				assert.Contains(t, err.Error(), "invalid")
+			},
+		},
+		{
+			desc: "with empty attachments",
+			ctx:  context.Background(),
+			invo: func() base.Invocation {
+				return invocation.NewRPCInvocationWithOptions()
+			},
+			expect: func(t *testing.T, ctx context.Context, err error) {
+				assert.Nil(t, err)
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.desc, func(t *testing.T) {
+			inv := test.invo()
+			ctx, err := mergeAttachmentToOutgoing(test.ctx, inv)
 			test.expect(t, ctx, err)
 		})
 	}
