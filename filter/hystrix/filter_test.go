@@ -179,6 +179,8 @@ func TestHystrixFilterInvokeCircuitBreak(t *testing.T) {
 	hystrix.Flush()
 	hf := &Filter{COrP: true}
 	resChan := make(chan result.Result, 50)
+	configLoadMutex.Lock()
+	defer configLoadMutex.Unlock()
 	for i := 0; i < 50; i++ {
 		go func() {
 			testUrl, err := common.NewURL(
@@ -207,6 +209,8 @@ func TestHystrixFilterInvokeCircuitBreakOmitException(t *testing.T) {
 	regs := []*regexp.Regexp{reg}
 	hf := &Filter{res: map[string][]*regexp.Regexp{"": regs}, COrP: true}
 	resChan := make(chan result.Result, 50)
+	configLoadMutex.Lock()
+	defer configLoadMutex.Unlock()
 	for i := 0; i < 50; i++ {
 		go func() {
 			testUrl, err := common.NewURL(

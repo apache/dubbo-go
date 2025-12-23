@@ -251,3 +251,387 @@ func TestGetReference(t *testing.T) {
 	ref5 := GetReference(s5)
 	assert.Equal(t, expectedReference, ref5)
 }
+
+// Additional tests for better coverage
+
+func TestServiceMethods(t *testing.T) {
+	s := &TestService{}
+	_, err := ServiceMap.Register("TestServiceMethods", testProtocol, "group1", "v1", s)
+	assert.NoError(t, err)
+
+	service := ServiceMap.GetService(testProtocol, "TestServiceMethods", "group1", "v1")
+	assert.NotNil(t, service)
+
+	// Test Service.Method()
+	methods := service.Method()
+	assert.NotNil(t, methods)
+	assert.True(t, len(methods) > 0)
+
+	// Test Service.Name()
+	assert.Equal(t, "group1/TestServiceMethods:v1", service.Name())
+
+	// Test Service.ServiceType()
+	svcType := service.ServiceType()
+	assert.NotNil(t, svcType)
+	assert.Equal(t, "*common.TestService", svcType.String())
+
+	// Test Service.Service()
+	svcValue := service.Service()
+	assert.True(t, svcValue.IsValid())
+
+	// Cleanup
+	ServiceMap.UnRegister("TestServiceMethods", testProtocol, ServiceKey("TestServiceMethods", "group1", "v1"))
+}
+
+func TestGetServiceByServiceKey(t *testing.T) {
+	s := &TestService{}
+	_, err := ServiceMap.Register("TestGetServiceByKey", testProtocol, "", "v1", s)
+	assert.NoError(t, err)
+
+	// Test GetServiceByServiceKey - found
+	serviceKey := ServiceKey("TestGetServiceByKey", "", "v1")
+	service := ServiceMap.GetServiceByServiceKey(testProtocol, serviceKey)
+	assert.NotNil(t, service)
+
+	// Test GetServiceByServiceKey - protocol not found
+	service = ServiceMap.GetServiceByServiceKey("nonexistent", serviceKey)
+	assert.Nil(t, service)
+
+	// Test GetServiceByServiceKey - service key not found
+	service = ServiceMap.GetServiceByServiceKey(testProtocol, "nonexistent:v1")
+	assert.Nil(t, service)
+
+	// Cleanup
+	ServiceMap.UnRegister("TestGetServiceByKey", testProtocol, serviceKey)
+}
+
+func TestGetInterface(t *testing.T) {
+	s := &TestService{}
+	_, err := ServiceMap.Register("TestGetInterface", testProtocol, "", "v1", s)
+	assert.NoError(t, err)
+
+	// Test GetInterface - found
+	services := ServiceMap.GetInterface("TestGetInterface")
+	assert.NotNil(t, services)
+	assert.Equal(t, 1, len(services))
+
+	// Test GetInterface - not found
+	services = ServiceMap.GetInterface("nonexistent")
+	assert.Nil(t, services)
+
+	// Cleanup
+	ServiceMap.UnRegister("TestGetInterface", testProtocol, ServiceKey("TestGetInterface", "", "v1"))
+}
+
+func TestMethodTypeSuiteContextInvalid(t *testing.T) {
+	mt := &MethodType{ctxType: reflect.TypeOf((*context.Context)(nil)).Elem()}
+
+	// Test with nil context (invalid)
+	var nilCtx context.Context = nil
+	result := mt.SuiteContext(nilCtx)
+	assert.True(t, result.IsValid())
+	assert.True(t, result.IsZero())
+}
+
+func TestIsExported(t *testing.T) {
+	assert.True(t, isExported("Exported"))
+	assert.True(t, isExported("A"))
+	assert.False(t, isExported("unexported"))
+	assert.False(t, isExported("a"))
+	assert.False(t, isExported(""))
+}
+
+func TestIsExportedOrBuiltinType(t *testing.T) {
+	// Exported type
+	assert.True(t, isExportedOrBuiltinType(reflect.TypeOf(TestService{})))
+
+	// Pointer to exported type
+	assert.True(t, isExportedOrBuiltinType(reflect.TypeOf(&TestService{})))
+
+	// Builtin type (string)
+	assert.True(t, isExportedOrBuiltinType(reflect.TypeOf("")))
+
+	// Builtin type (int)
+	assert.True(t, isExportedOrBuiltinType(reflect.TypeOf(0)))
+
+	// Pointer to builtin
+	var i int
+	assert.True(t, isExportedOrBuiltinType(reflect.TypeOf(&i)))
+
+	// Unexported type
+	assert.False(t, isExportedOrBuiltinType(reflect.TypeOf(testService{})))
+}
+
+// Test service with XXX prefix methods (should be skipped)
+type TestServiceWithXXX struct{}
+
+func (s *TestServiceWithXXX) XXX_InterfaceName() string {
+	return "test"
+}
+
+func (s *TestServiceWithXXX) NormalMethod(ctx context.Context) error {
+	return nil
+}
+
+func (s *TestServiceWithXXX) Reference() string {
+	return "TestServiceWithXXX"
+}
+
+func TestSuiteMethodSkipsXXXPrefix(t *testing.T) {
+	s := &TestServiceWithXXX{}
+	sType := reflect.TypeOf(s)
+
+	// XXX_ prefixed method should be skipped
+	method, ok := sType.MethodByName("XXX_InterfaceName")
+	assert.True(t, ok)
+	mt := suiteMethod(method)
+	assert.Nil(t, mt)
+
+	// Reference method should be skipped
+	method, ok = sType.MethodByName("Reference")
+	assert.True(t, ok)
+	mt = suiteMethod(method)
+	assert.Nil(t, mt)
+
+	// Normal method should not be skipped
+	method, ok = sType.MethodByName("NormalMethod")
+	assert.True(t, ok)
+	mt = suiteMethod(method)
+	assert.NotNil(t, mt)
+}
+
+// Test service with SetGRPCServer method
+type TestServiceWithGRPC struct{}
+
+func (s *TestServiceWithGRPC) SetGRPCServer(server any) {}
+
+func (s *TestServiceWithGRPC) ValidMethod(ctx context.Context, arg any) error {
+	return nil
+}
+
+func TestSuiteMethodSkipsSetGRPCServer(t *testing.T) {
+	s := &TestServiceWithGRPC{}
+	sType := reflect.TypeOf(s)
+
+	// SetGRPCServer should be skipped
+	method, ok := sType.MethodByName("SetGRPCServer")
+	assert.True(t, ok)
+	mt := suiteMethod(method)
+	assert.Nil(t, mt)
+}
+
+func TestGetReferenceWithStruct(t *testing.T) {
+	// Test with struct (not pointer)
+	s := TestService{}
+	ref := GetReference(s)
+	assert.Equal(t, "TestService", ref)
+}
+
+func TestGetReferenceWithAnonymousStruct(t *testing.T) {
+	// Anonymous struct embedded in pointer
+	s := &struct {
+		ServiceWithoutRef
+	}{}
+	ref := GetReference(s)
+	assert.Equal(t, "ServiceWithoutRef", ref)
+}
+
+func TestRegisterWithEmptyServiceName(t *testing.T) {
+	// This tests the edge case where service name cannot be determined
+	// Using a non-struct type
+	var fn func()
+	_, err := ServiceMap.Register("test", "proto", "", "v1", fn)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "no service name")
+}
+
+func TestUnRegisterInterfaceNotFound(t *testing.T) {
+	s := &TestService{}
+	_, err := ServiceMap.Register("TestUnRegisterInterface", testProtocol, "", "v1", s)
+	assert.NoError(t, err)
+
+	// Manually remove from interfaceMap to simulate inconsistent state
+	ServiceMap.mutex.Lock()
+	delete(ServiceMap.interfaceMap, "TestUnRegisterInterface")
+	ServiceMap.mutex.Unlock()
+
+	err = ServiceMap.UnRegister("TestUnRegisterInterface", testProtocol, ServiceKey("TestUnRegisterInterface", "", "v1"))
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "no service for TestUnRegisterInterface")
+
+	// Cleanup
+	ServiceMap.mutex.Lock()
+	delete(ServiceMap.serviceMap[testProtocol], ServiceKey("TestUnRegisterInterface", "", "v1"))
+	ServiceMap.mutex.Unlock()
+}
+
+func TestSuitableMethodsWithMethodMapper(t *testing.T) {
+	s := &TestService{}
+	methods, methodMap := suitableMethods(reflect.TypeOf(s))
+
+	// Check that MethodMapper renamed MethodTwo to methodTwo
+	assert.Contains(t, methods, "methodTwo")
+	assert.Contains(t, methods, "MethodTwo") // swapped case version
+
+	// Verify the method exists in map
+	_, ok := methodMap["methodTwo"]
+	assert.True(t, ok)
+}
+
+// Service with method that has unexported method (not exported via PkgPath)
+type TestServiceUnexportedMethod struct{}
+
+func (s *TestServiceUnexportedMethod) ValidMethod(ctx context.Context) error {
+	return nil
+}
+
+func TestSuiteMethodWithUnexportedMethod(t *testing.T) {
+	s := &TestServiceUnexportedMethod{}
+	sType := reflect.TypeOf(s)
+
+	method, ok := sType.MethodByName("ValidMethod")
+	assert.True(t, ok)
+
+	// Method should be exported (PkgPath is empty for exported methods)
+	assert.Equal(t, "", method.PkgPath)
+
+	mt := suiteMethod(method)
+	assert.NotNil(t, mt)
+}
+
+func TestServiceInfoStruct(t *testing.T) {
+	// Test ServiceInfo struct initialization
+	info := ServiceInfo{
+		InterfaceName: "com.test.Service",
+		ServiceType:   &TestService{},
+		Methods: []MethodInfo{
+			{
+				Name: "TestMethod",
+				Type: "unary",
+				Meta: map[string]any{"key": "value"},
+			},
+		},
+		Meta: map[string]any{"version": "1.0"},
+	}
+
+	assert.Equal(t, "com.test.Service", info.InterfaceName)
+	assert.NotNil(t, info.ServiceType)
+	assert.Equal(t, 1, len(info.Methods))
+	assert.Equal(t, "TestMethod", info.Methods[0].Name)
+	assert.Equal(t, "unary", info.Methods[0].Type)
+	assert.Equal(t, "value", info.Methods[0].Meta["key"])
+	assert.Equal(t, "1.0", info.Meta["version"])
+}
+
+func TestMethodInfoFunctions(t *testing.T) {
+	// Test MethodInfo with function fields
+	reqInitCalled := false
+	streamInitCalled := false
+	methodFuncCalled := false
+
+	info := MethodInfo{
+		Name: "TestMethod",
+		Type: "unary",
+		ReqInitFunc: func() any {
+			reqInitCalled = true
+			return struct{}{}
+		},
+		StreamInitFunc: func(baseStream any) any {
+			streamInitCalled = true
+			return baseStream
+		},
+		MethodFunc: func(ctx context.Context, args []any, handler any) (any, error) {
+			methodFuncCalled = true
+			return nil, nil
+		},
+	}
+
+	// Call the functions
+	info.ReqInitFunc()
+	assert.True(t, reqInitCalled)
+
+	info.StreamInitFunc(nil)
+	assert.True(t, streamInitCalled)
+
+	info.MethodFunc(context.Background(), nil, nil)
+	assert.True(t, methodFuncCalled)
+}
+
+func TestRegisterMultipleServicesForSameInterface(t *testing.T) {
+	s1 := &TestService{}
+	s2 := &TestService{}
+
+	_, err := ServiceMap.Register("MultiService", testProtocol, "group1", "v1", s1)
+	assert.NoError(t, err)
+
+	_, err = ServiceMap.Register("MultiService", testProtocol, "group2", "v1", s2)
+	assert.NoError(t, err)
+
+	// Should have 2 services for the same interface
+	services := ServiceMap.GetInterface("MultiService")
+	assert.Equal(t, 2, len(services))
+
+	// Cleanup
+	ServiceMap.UnRegister("MultiService", testProtocol, ServiceKey("MultiService", "group1", "v1"))
+	ServiceMap.UnRegister("MultiService", testProtocol, ServiceKey("MultiService", "group2", "v1"))
+}
+
+func TestUnRegisterLastServiceInProtocol(t *testing.T) {
+	s := &TestService{}
+	protocol := "uniqueProtocol"
+
+	_, err := ServiceMap.Register("TestLastService", protocol, "", "v1", s)
+	assert.NoError(t, err)
+
+	// Verify protocol exists
+	ServiceMap.mutex.RLock()
+	_, exists := ServiceMap.serviceMap[protocol]
+	ServiceMap.mutex.RUnlock()
+	assert.True(t, exists)
+
+	// Unregister the only service
+	err = ServiceMap.UnRegister("TestLastService", protocol, ServiceKey("TestLastService", "", "v1"))
+	assert.NoError(t, err)
+
+	// Protocol should be removed from serviceMap
+	ServiceMap.mutex.RLock()
+	_, exists = ServiceMap.serviceMap[protocol]
+	ServiceMap.mutex.RUnlock()
+	assert.False(t, exists)
+}
+
+// Test with method that has wrong return type (not error)
+type TestServiceWrongReturn struct{}
+
+func (s *TestServiceWrongReturn) WrongReturn(ctx context.Context) string {
+	return ""
+}
+
+func TestSuiteMethodWrongReturnType(t *testing.T) {
+	s := &TestServiceWrongReturn{}
+	sType := reflect.TypeOf(s)
+
+	method, ok := sType.MethodByName("WrongReturn")
+	assert.True(t, ok)
+
+	mt := suiteMethod(method)
+	assert.Nil(t, mt) // Should be nil because return type is not error
+}
+
+// Test with method that has too many return values
+type TestServiceTooManyReturns struct{}
+
+func (s *TestServiceTooManyReturns) TooManyReturns(ctx context.Context) (any, any, error) {
+	return nil, nil, nil
+}
+
+func TestSuiteMethodTooManyReturns(t *testing.T) {
+	s := &TestServiceTooManyReturns{}
+	sType := reflect.TypeOf(s)
+
+	method, ok := sType.MethodByName("TooManyReturns")
+	assert.True(t, ok)
+
+	mt := suiteMethod(method)
+	assert.Nil(t, mt) // Should be nil because too many return values
+}

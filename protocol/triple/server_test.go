@@ -18,15 +18,21 @@
 package triple
 
 import (
+	"context"
+	"fmt"
 	"net/http"
+	"sync"
 	"testing"
 )
 
 import (
 	"github.com/stretchr/testify/assert"
+
+	"google.golang.org/grpc"
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
 )
@@ -135,7 +141,7 @@ func TestServer_ProtocolSelection(t *testing.T) {
 
 			// Extract the protocol selection logic for testing
 			var callProtocol string
-			if tripleConfig != nil && tripleConfig.Http3 != nil && tripleConfig.Http3.Enable {
+			if tripleConfig.Http3 != nil && tripleConfig.Http3.Enable {
 				callProtocol = constant.CallHTTP2AndHTTP3
 			} else {
 				callProtocol = constant.CallHTTP2
@@ -144,4 +150,339 @@ func TestServer_ProtocolSelection(t *testing.T) {
 			assert.Equal(t, tt.expectedProtocol, callProtocol)
 		})
 	}
+}
+
+func TestNewServer(t *testing.T) {
+	tests := []struct {
+		desc string
+		cfg  *global.TripleConfig
+	}{
+		{
+			desc: "nil config",
+			cfg:  nil,
+		},
+		{
+			desc: "empty config",
+			cfg:  &global.TripleConfig{},
+		},
+		{
+			desc: "config with http3",
+			cfg: &global.TripleConfig{
+				Http3: &global.Http3Config{
+					Enable: true,
+				},
+			},
+		},
+		{
+			desc: "config with keepalive",
+			cfg: &global.TripleConfig{
+				KeepAliveInterval: "30s",
+				KeepAliveTimeout:  "10s",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.desc, func(t *testing.T) {
+			server := NewServer(test.cfg)
+			assert.NotNil(t, server)
+			assert.Equal(t, test.cfg, server.cfg)
+			assert.NotNil(t, server.services)
+			assert.Empty(t, server.services)
+		})
+	}
+}
+
+func TestServer_GetServiceInfo(t *testing.T) {
+	t.Run("empty services", func(t *testing.T) {
+		server := NewServer(nil)
+		info := server.GetServiceInfo()
+		assert.NotNil(t, info)
+		assert.Empty(t, info)
+	})
+
+	t.Run("with services", func(t *testing.T) {
+		server := NewServer(nil)
+		// manually add service info for testing
+		server.mu.Lock()
+		server.services["test.Service"] = grpc.ServiceInfo{
+			Methods: []grpc.MethodInfo{
+				{Name: "Method1", IsClientStream: false, IsServerStream: false},
+			},
+		}
+		server.mu.Unlock()
+
+		info := server.GetServiceInfo()
+		assert.NotNil(t, info)
+		assert.Equal(t, 1, len(info))
+		assert.Contains(t, info, "test.Service")
+	})
+
+	t.Run("returns copy not reference", func(t *testing.T) {
+		server := NewServer(nil)
+		server.mu.Lock()
+		server.services["test.Service"] = grpc.ServiceInfo{}
+		server.mu.Unlock()
+
+		info1 := server.GetServiceInfo()
+		info2 := server.GetServiceInfo()
+
+		// modify info1 should not affect info2
+		delete(info1, "test.Service")
+		assert.Contains(t, info2, "test.Service")
+	})
+}
+
+func TestServer_SaveServiceInfo(t *testing.T) {
+	tests := []struct {
+		desc          string
+		interfaceName string
+		info          *common.ServiceInfo
+		expect        func(t *testing.T, server *Server)
+	}{
+		{
+			desc:          "unary method",
+			interfaceName: "test.UnaryService",
+			info: &common.ServiceInfo{
+				Methods: []common.MethodInfo{
+					{Name: "UnaryMethod", Type: constant.CallUnary},
+				},
+			},
+			expect: func(t *testing.T, server *Server) {
+				info := server.GetServiceInfo()
+				assert.Contains(t, info, "test.UnaryService")
+				assert.Equal(t, 1, len(info["test.UnaryService"].Methods))
+				assert.Equal(t, "UnaryMethod", info["test.UnaryService"].Methods[0].Name)
+				assert.False(t, info["test.UnaryService"].Methods[0].IsClientStream)
+				assert.False(t, info["test.UnaryService"].Methods[0].IsServerStream)
+			},
+		},
+		{
+			desc:          "client stream method",
+			interfaceName: "test.ClientStreamService",
+			info: &common.ServiceInfo{
+				Methods: []common.MethodInfo{
+					{Name: "ClientStreamMethod", Type: constant.CallClientStream},
+				},
+			},
+			expect: func(t *testing.T, server *Server) {
+				info := server.GetServiceInfo()
+				assert.Contains(t, info, "test.ClientStreamService")
+				assert.True(t, info["test.ClientStreamService"].Methods[0].IsClientStream)
+				assert.False(t, info["test.ClientStreamService"].Methods[0].IsServerStream)
+			},
+		},
+		{
+			desc:          "server stream method",
+			interfaceName: "test.ServerStreamService",
+			info: &common.ServiceInfo{
+				Methods: []common.MethodInfo{
+					{Name: "ServerStreamMethod", Type: constant.CallServerStream},
+				},
+			},
+			expect: func(t *testing.T, server *Server) {
+				info := server.GetServiceInfo()
+				assert.Contains(t, info, "test.ServerStreamService")
+				assert.False(t, info["test.ServerStreamService"].Methods[0].IsClientStream)
+				assert.True(t, info["test.ServerStreamService"].Methods[0].IsServerStream)
+			},
+		},
+		{
+			desc:          "bidi stream method",
+			interfaceName: "test.BidiStreamService",
+			info: &common.ServiceInfo{
+				Methods: []common.MethodInfo{
+					{Name: "BidiStreamMethod", Type: constant.CallBidiStream},
+				},
+			},
+			expect: func(t *testing.T, server *Server) {
+				info := server.GetServiceInfo()
+				assert.Contains(t, info, "test.BidiStreamService")
+				assert.True(t, info["test.BidiStreamService"].Methods[0].IsClientStream)
+				assert.True(t, info["test.BidiStreamService"].Methods[0].IsServerStream)
+			},
+		},
+		{
+			desc:          "multiple methods",
+			interfaceName: "test.MultiMethodService",
+			info: &common.ServiceInfo{
+				Methods: []common.MethodInfo{
+					{Name: "Method1", Type: constant.CallUnary},
+					{Name: "Method2", Type: constant.CallClientStream},
+					{Name: "Method3", Type: constant.CallServerStream},
+					{Name: "Method4", Type: constant.CallBidiStream},
+				},
+			},
+			expect: func(t *testing.T, server *Server) {
+				info := server.GetServiceInfo()
+				assert.Contains(t, info, "test.MultiMethodService")
+				assert.Equal(t, 4, len(info["test.MultiMethodService"].Methods))
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.desc, func(t *testing.T) {
+			server := NewServer(nil)
+			server.saveServiceInfo(test.interfaceName, test.info)
+			test.expect(t, server)
+		})
+	}
+}
+
+func TestServer_SaveServiceInfo_Concurrent(t *testing.T) {
+	server := NewServer(nil)
+	var wg sync.WaitGroup
+	concurrency := 10
+
+	for i := 0; i < concurrency; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			info := &common.ServiceInfo{
+				Methods: []common.MethodInfo{
+					{Name: "Method", Type: constant.CallUnary},
+				},
+			}
+			server.saveServiceInfo(fmt.Sprintf("test.Service%d", idx), info)
+		}(i)
+	}
+
+	wg.Wait()
+	assert.Equal(t, concurrency, len(server.GetServiceInfo()))
+}
+
+func Test_getHanOpts(t *testing.T) {
+	tests := []struct {
+		desc       string
+		url        *common.URL
+		tripleConf *global.TripleConfig
+		expectLen  int
+	}{
+		{
+			desc:       "basic url without triple config",
+			url:        common.NewURLWithOptions(),
+			tripleConf: nil,
+			expectLen:  4, // group, version, readMaxBytes, sendMaxBytes
+		},
+		{
+			desc: "url with group and version",
+			url: common.NewURLWithOptions(
+				common.WithParamsValue(constant.GroupKey, "testGroup"),
+				common.WithParamsValue(constant.VersionKey, "1.0.0"),
+			),
+			tripleConf: nil,
+			expectLen:  4,
+		},
+		{
+			desc: "url with max msg size",
+			url: common.NewURLWithOptions(
+				common.WithParamsValue(constant.MaxServerRecvMsgSize, "10MB"),
+				common.WithParamsValue(constant.MaxServerSendMsgSize, "10MB"),
+			),
+			tripleConf: nil,
+			expectLen:  4,
+		},
+		{
+			desc: "with triple config max msg size",
+			url:  common.NewURLWithOptions(),
+			tripleConf: &global.TripleConfig{
+				MaxServerRecvMsgSize: "20MB",
+				MaxServerSendMsgSize: "20MB",
+			},
+			expectLen: 6, // base 4 + 2 from tripleConf
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.desc, func(t *testing.T) {
+			opts := getHanOpts(test.url, test.tripleConf)
+			assert.Equal(t, test.expectLen, len(opts))
+		})
+	}
+}
+
+// mockRPCService is a mock service for testing createServiceInfoWithReflection
+type mockRPCService struct{}
+
+func (m *mockRPCService) Reference() string {
+	return "mockRPCService"
+}
+
+func (m *mockRPCService) TestMethod(ctx context.Context, req string) (string, error) {
+	return req, nil
+}
+
+func (m *mockRPCService) TestMethodWithMultipleArgs(ctx context.Context, arg1 string, arg2 int) (string, error) {
+	return arg1, nil
+}
+
+func Test_createServiceInfoWithReflection(t *testing.T) {
+	t.Run("basic service", func(t *testing.T) {
+		svc := &mockRPCService{}
+		info := createServiceInfoWithReflection(svc)
+
+		assert.NotNil(t, info)
+		assert.NotEmpty(t, info.Methods)
+
+		// should have TestMethod, TestMethodWithMultipleArgs, and $invoke
+		methodNames := make([]string, 0)
+		for _, m := range info.Methods {
+			methodNames = append(methodNames, m.Name)
+		}
+		assert.Contains(t, methodNames, "TestMethod")
+		assert.Contains(t, methodNames, "TestMethodWithMultipleArgs")
+		assert.Contains(t, methodNames, "$invoke") // generic call method
+	})
+
+	t.Run("method type is CallUnary", func(t *testing.T) {
+		svc := &mockRPCService{}
+		info := createServiceInfoWithReflection(svc)
+
+		for _, m := range info.Methods {
+			assert.Equal(t, constant.CallUnary, m.Type)
+		}
+	})
+
+	t.Run("ReqInitFunc returns correct params", func(t *testing.T) {
+		svc := &mockRPCService{}
+		info := createServiceInfoWithReflection(svc)
+
+		for _, m := range info.Methods {
+			if m.Name == "TestMethod" {
+				params := m.ReqInitFunc()
+				assert.NotNil(t, params)
+				paramsSlice, ok := params.([]any)
+				assert.True(t, ok)
+				assert.Equal(t, 1, len(paramsSlice)) // only req param (ctx is excluded)
+			}
+			if m.Name == "TestMethodWithMultipleArgs" {
+				params := m.ReqInitFunc()
+				paramsSlice, ok := params.([]any)
+				assert.True(t, ok)
+				assert.Equal(t, 2, len(paramsSlice)) // arg1 and arg2
+			}
+		}
+	})
+
+	t.Run("generic invoke method", func(t *testing.T) {
+		svc := &mockRPCService{}
+		info := createServiceInfoWithReflection(svc)
+
+		var invokeMethod *common.MethodInfo
+		for i := range info.Methods {
+			if info.Methods[i].Name == "$invoke" {
+				invokeMethod = &info.Methods[i]
+				break
+			}
+		}
+
+		assert.NotNil(t, invokeMethod)
+		assert.Equal(t, constant.CallUnary, invokeMethod.Type)
+
+		params := invokeMethod.ReqInitFunc()
+		paramsSlice, ok := params.([]any)
+		assert.True(t, ok)
+		assert.Equal(t, 3, len(paramsSlice)) // methodName, argv types, argv
+	})
 }

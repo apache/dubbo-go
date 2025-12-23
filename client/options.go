@@ -765,27 +765,16 @@ func WithClientClusterStrategy(strategy string) ClientOption {
 }
 
 // Deprecated：use triple.WithKeepAliveInterval()
-// TODO: remove KeepAliveInterval and KeepAliveInterval in version 4.0.0
-//
-// If there is no other traffic on the connection, the ping will be sent, only works for 'tri' protocol with http2.
-// A minimum value of 10s will be used instead to invoid 'too many pings'.If not set, default value is 10s.
 func WithKeepAliveInterval(keepAliveInterval time.Duration) ClientOption {
-	if keepAliveInterval < constant.MinKeepAliveInterval {
-		keepAliveInterval = constant.MinKeepAliveInterval
-	}
-	return func(opts *ClientOptions) {
-		opts.overallReference.KeepAliveInterval = keepAliveInterval.String()
+	return func(_ *ClientOptions) {
+		panic("use triple.WithKeepAliveInterval()")
 	}
 }
 
 // Deprecated：use triple.WithKeepAliveTimeout()
-// TODO: remove KeepAliveInterval and KeepAliveInterval in version 4.0.0
-//
-// WithKeepAliveTimeout is timeout after which the connection will be closed, only works for 'tri' protocol with http2
-// If not set, default value is 20s.
 func WithKeepAliveTimeout(keepAliveTimeout time.Duration) ClientOption {
-	return func(opts *ClientOptions) {
-		opts.overallReference.KeepAliveTimeout = keepAliveTimeout.String()
+	return func(_ *ClientOptions) {
+		panic("use triple.WithKeepAliveTimeout()")
 	}
 }
 

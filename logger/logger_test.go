@@ -58,3 +58,26 @@ func TestSetLoggerLevel(t *testing.T) {
 		t.Fatalf("expected level 'warn', got %q", m.level)
 	}
 }
+
+// simpleLogger implements Logger but NOT OpsLogger
+type simpleLogger struct{}
+
+func (s *simpleLogger) Debug(args ...any)                   {}
+func (s *simpleLogger) Debugf(template string, args ...any) {}
+func (s *simpleLogger) Info(args ...any)                    {}
+func (s *simpleLogger) Infof(template string, args ...any)  {}
+func (s *simpleLogger) Warn(args ...any)                    {}
+func (s *simpleLogger) Warnf(template string, args ...any)  {}
+func (s *simpleLogger) Error(args ...any)                   {}
+func (s *simpleLogger) Errorf(template string, args ...any) {}
+func (s *simpleLogger) Fatal(args ...any)                   {}
+func (s *simpleLogger) Fatalf(fmt string, args ...any)      {}
+
+func TestSetLoggerLevel_NotOpsLogger(t *testing.T) {
+	s := &simpleLogger{}
+	SetLogger(s)
+	ok := SetLoggerLevel("debug")
+	if ok {
+		t.Fatalf("expected SetLoggerLevel to return false for non-OpsLogger")
+	}
+}

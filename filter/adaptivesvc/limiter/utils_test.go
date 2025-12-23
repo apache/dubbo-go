@@ -15,11 +15,30 @@
  * limitations under the License.
  */
 
-package constant
+package limiter
 
-const (
-	Version      = "3.3.1"      // apache/dubbo-go version
-	Name         = "dubbogo"    // module name
-	DATE         = "2025/12/14" // release date
-	RouteVersion = "v3.1"
+import (
+	"testing"
+	"time"
 )
+
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+func TestMinDuration(t *testing.T) {
+	// Test when lhs is smaller than rhs
+	dur1 := 2 * time.Second
+	dur2 := 3 * time.Second
+	result := minDuration(dur1, dur2)
+	assert.Equal(t, dur1, result)
+
+	// Test when rhs is smaller than lhs
+	result = minDuration(dur2, dur1)
+	assert.Equal(t, dur1, result)
+
+	// Test when both durations are equal
+	dur3 := 2 * time.Second
+	result = minDuration(dur3, dur3)
+	assert.Equal(t, dur3, result)
+}

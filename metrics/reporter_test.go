@@ -15,11 +15,25 @@
  * limitations under the License.
  */
 
-package constant
+package metrics
 
-const (
-	Version      = "3.3.1"      // apache/dubbo-go version
-	Name         = "dubbogo"    // module name
-	DATE         = "2025/12/14" // release date
-	RouteVersion = "v3.1"
+import (
+	"testing"
 )
+
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+func TestNewReporterConfig(t *testing.T) {
+	config := NewReporterConfig()
+
+	assert.NotNil(t, config)
+	assert.True(t, config.Enable)
+	assert.Equal(t, "dubbo", config.Namespace)
+	assert.Equal(t, "9090", config.Port)
+	assert.Equal(t, "/metrics", config.Path)
+	assert.Equal(t, string(ReportModePull), string(config.Mode))
+	assert.Empty(t, config.PushGatewayAddress)
+	assert.Equal(t, int64(DefMaxAge), config.SummaryMaxAge)
+}
