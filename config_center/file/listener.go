@@ -93,7 +93,6 @@ func NewCacheListener(rootPath string) *CacheListener {
 				if !ok {
 					return
 				}
-				// err may be nil, ignore
 				if err != nil {
 					logger.Warnf("file : listen watch fail:%+v", err)
 				}
