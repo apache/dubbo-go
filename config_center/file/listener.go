@@ -83,6 +83,11 @@ func NewCacheListener(rootPath string) *CacheListener {
 				}
 				if event.Op&fsnotify.Create == fsnotify.Create {
 					content := getFileContent(key)
+					if prev, ok := cl.contentCache.Load(key); ok {
+						if prevStr, ok := prev.(string); ok && prevStr == content {
+							continue
+						}
+					}
 					cl.contentCache.Store(key, content)
 					if l, ok := cl.keyListeners.Load(key); ok {
 						dataChangeCallback(l.(map[config_center.ConfigurationListener]struct{}), key, content,
