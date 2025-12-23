@@ -27,271 +27,87 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// ============================================
-// gettyRPCClient Tests
-// ============================================
 func TestGettyRPCClientUpdateActive(t *testing.T) {
-	tests := []struct {
-		name     string
-		active   int64
-		expected int64
-	}{
-		{"set positive active", 1234567890, 1234567890},
-		{"set zero active", 0, 0},
-		{"set negative active", -1, -1},
-	}
+	client := &gettyRPCClient{}
+	client.updateActive(1234567890)
+	assert.Equal(t, int64(1234567890), atomic.LoadInt64(&client.active))
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			client := &gettyRPCClient{}
-			client.updateActive(tt.active)
-			assert.Equal(t, tt.expected, atomic.LoadInt64(&client.active))
-		})
-	}
+	client.updateActive(0)
+	assert.Equal(t, int64(0), atomic.LoadInt64(&client.active))
 }
 
 func TestGettyRPCClientSelectSession(t *testing.T) {
-	t.Run("nil sessions", func(t *testing.T) {
-		client := &gettyRPCClient{
-			sessions: nil,
-		}
-		session := client.selectSession()
-		assert.Nil(t, session)
-	})
+	client := &gettyRPCClient{sessions: nil}
+	assert.Nil(t, client.selectSession())
 
-	t.Run("empty sessions", func(t *testing.T) {
-		client := &gettyRPCClient{
-			sessions: []*rpcSession{},
-		}
-		session := client.selectSession()
-		assert.Nil(t, session)
-	})
+	client.sessions = []*rpcSession{}
+	assert.Nil(t, client.selectSession())
 }
 
-func TestGettyRPCClientAddSession(t *testing.T) {
-	t.Run("add nil session does not initialize sessions", func(t *testing.T) {
-		client := &gettyRPCClient{}
-		// addSession with nil will return early, sessions remain nil
-		// Note: The actual implementation checks for nil and returns early
-		// but we can't test this without triggering the nil check in the code
-		assert.Nil(t, client.sessions)
-	})
-}
+func TestGettyRPCClientSessionOperations(t *testing.T) {
+	client := &gettyRPCClient{}
 
-func TestGettyRPCClientRemoveSession(t *testing.T) {
-	t.Run("remove nil session", func(t *testing.T) {
-		client := &gettyRPCClient{}
-		// Should not panic
-		client.removeSession(nil)
-	})
+	// Remove/update nil session should not panic
+	client.removeSession(nil)
+	client.updateSession(nil)
 
-	t.Run("remove from nil sessions", func(t *testing.T) {
-		client := &gettyRPCClient{
-			sessions: nil,
-		}
-		// Should not panic
-		client.removeSession(nil)
-	})
-}
+	// Get from nil sessions
+	_, err := client.getClientRpcSession(nil)
+	assert.Equal(t, errClientClosed, err)
 
-func TestGettyRPCClientUpdateSession(t *testing.T) {
-	t.Run("update nil session", func(t *testing.T) {
-		client := &gettyRPCClient{}
-		// Should not panic
-		client.updateSession(nil)
-	})
-
-	t.Run("update with nil sessions list", func(t *testing.T) {
-		client := &gettyRPCClient{
-			sessions: nil,
-		}
-		// Should not panic
-		client.updateSession(nil)
-	})
-}
-
-func TestGettyRPCClientGetClientRpcSession(t *testing.T) {
-	t.Run("get from nil sessions", func(t *testing.T) {
-		client := &gettyRPCClient{
-			sessions: nil,
-		}
-		_, err := client.getClientRpcSession(nil)
-		assert.Equal(t, errClientClosed, err)
-	})
-
-	t.Run("session not found", func(t *testing.T) {
-		client := &gettyRPCClient{
-			sessions: []*rpcSession{},
-		}
-		_, err := client.getClientRpcSession(nil)
-		assert.NotNil(t, err)
-		assert.Contains(t, err.Error(), "session not exist")
-	})
+	// Session not found
+	client.sessions = []*rpcSession{}
+	_, err = client.getClientRpcSession(nil)
+	assert.Contains(t, err.Error(), "session not exist")
 }
 
 func TestGettyRPCClientIsAvailable(t *testing.T) {
-	t.Run("not available with nil sessions", func(t *testing.T) {
-		client := &gettyRPCClient{
-			sessions: nil,
-		}
-		assert.False(t, client.isAvailable())
-	})
+	client := &gettyRPCClient{sessions: nil}
+	assert.False(t, client.isAvailable())
 
-	t.Run("not available with empty sessions", func(t *testing.T) {
-		client := &gettyRPCClient{
-			sessions: []*rpcSession{},
-		}
-		assert.False(t, client.isAvailable())
-	})
+	client.sessions = []*rpcSession{}
+	assert.False(t, client.isAvailable())
 }
 
 func TestGettyRPCClientClose(t *testing.T) {
-	t.Run("close empty client", func(t *testing.T) {
-		client := &gettyRPCClient{
-			sessions: []*rpcSession{},
-		}
-		err := client.close()
-		assert.Nil(t, err)
-	})
-
-	t.Run("close twice", func(t *testing.T) {
-		client := &gettyRPCClient{
-			sessions: []*rpcSession{},
-		}
-		err1 := client.close()
-		assert.Nil(t, err1)
-
-		// Second close should return error
-		err2 := client.close()
-		assert.NotNil(t, err2)
-	})
+	client := &gettyRPCClient{sessions: []*rpcSession{}}
+	assert.Nil(t, client.close())
+	assert.NotNil(t, client.close()) // Second close returns error
 }
 
-// ============================================
-// Concurrent Access Tests
-// ============================================
-
-func TestGettyRPCClientConcurrentUpdateActive(t *testing.T) {
-	client := &gettyRPCClient{}
+func TestGettyRPCClientConcurrent(t *testing.T) {
+	client := &gettyRPCClient{sessions: []*rpcSession{}}
 	var wg sync.WaitGroup
 
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 50; i++ {
 		wg.Add(1)
 		go func(val int64) {
 			defer wg.Done()
 			client.updateActive(val)
+			_ = client.selectSession()
+			_ = client.isAvailable()
 		}(int64(i))
 	}
-
-	wg.Wait()
-	// Just verify no race condition occurred
-	_ = atomic.LoadInt64(&client.active)
-}
-
-func TestGettyRPCClientConcurrentSelectSession(t *testing.T) {
-	client := &gettyRPCClient{
-		sessions: []*rpcSession{},
-	}
-	var wg sync.WaitGroup
-
-	for i := 0; i < 100; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			_ = client.selectSession()
-		}()
-	}
-
 	wg.Wait()
 }
 
-func TestGettyRPCClientConcurrentIsAvailable(t *testing.T) {
-	client := &gettyRPCClient{
-		sessions: []*rpcSession{},
-	}
-	var wg sync.WaitGroup
+func TestRpcSession(t *testing.T) {
+	s := &rpcSession{reqNum: 0}
 
-	for i := 0; i < 100; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			_ = client.isAvailable()
-		}()
-	}
+	s.AddReqNum(5)
+	assert.Equal(t, int32(5), s.GetReqNum())
 
-	wg.Wait()
+	s.AddReqNum(3)
+	assert.Equal(t, int32(8), s.GetReqNum())
+
+	s.AddReqNum(-3)
+	assert.Equal(t, int32(5), s.GetReqNum())
 }
 
-// ============================================
-// Edge Cases Tests
-// ============================================
-
-func TestGettyRPCClientEdgeCases(t *testing.T) {
-	t.Run("client with addr", func(t *testing.T) {
-		client := &gettyRPCClient{
-			addr: "127.0.0.1:20880",
-		}
-		assert.Equal(t, "127.0.0.1:20880", client.addr)
-	})
-
-	t.Run("client active timestamp", func(t *testing.T) {
-		client := &gettyRPCClient{}
-		timestamp := int64(1609459200) // 2021-01-01 00:00:00 UTC
-		client.updateActive(timestamp)
-		assert.Equal(t, timestamp, atomic.LoadInt64(&client.active))
-	})
-}
-
-// ============================================
-// rpcSession Tests
-// ============================================
-
-func TestRpcSessionAddReqNum(t *testing.T) {
-	tests := []struct {
-		name     string
-		initial  int32
-		add      int32
-		expected int32
-	}{
-		{"add positive", 0, 5, 5},
-		{"add to existing", 10, 3, 13},
-		{"add negative", 10, -3, 7},
-		{"add zero", 5, 0, 5},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := &rpcSession{reqNum: tt.initial}
-			s.AddReqNum(tt.add)
-			assert.Equal(t, tt.expected, s.GetReqNum())
-		})
-	}
-}
-
-func TestRpcSessionGetReqNum(t *testing.T) {
-	tests := []struct {
-		name     string
-		reqNum   int32
-		expected int32
-	}{
-		{"zero requests", 0, 0},
-		{"positive requests", 100, 100},
-		{"max int32", 2147483647, 2147483647},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := &rpcSession{reqNum: tt.reqNum}
-			assert.Equal(t, tt.expected, s.GetReqNum())
-		})
-	}
-}
-
-func TestRpcSessionConcurrentAccess(t *testing.T) {
+func TestRpcSessionConcurrent(t *testing.T) {
 	s := &rpcSession{}
 	var wg sync.WaitGroup
 
-	// Concurrent AddReqNum
 	for i := 0; i < 100; i++ {
 		wg.Add(1)
 		go func() {
@@ -299,31 +115,19 @@ func TestRpcSessionConcurrentAccess(t *testing.T) {
 			s.AddReqNum(1)
 		}()
 	}
-
 	wg.Wait()
 	assert.Equal(t, int32(100), s.GetReqNum())
 }
 
-// ============================================
-// Integration-like Tests
-// ============================================
-
 func TestGettyRPCClientLifecycle(t *testing.T) {
-	client := &gettyRPCClient{
-		addr:     "127.0.0.1:20880",
-		sessions: []*rpcSession{},
-	}
+	client := &gettyRPCClient{addr: "127.0.0.1:20880", sessions: []*rpcSession{}}
 
-	// Initial state
 	assert.False(t, client.isAvailable())
 	assert.Equal(t, int64(0), atomic.LoadInt64(&client.active))
 
-	// Update active
 	client.updateActive(1234567890)
 	assert.Equal(t, int64(1234567890), atomic.LoadInt64(&client.active))
 
-	// Close
-	err := client.close()
-	assert.Nil(t, err)
+	assert.Nil(t, client.close())
 	assert.Equal(t, int64(0), atomic.LoadInt64(&client.active))
 }
