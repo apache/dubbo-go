@@ -40,15 +40,15 @@ type testClientFacade struct {
 	url    *common.URL
 }
 
-func (f *testClientFacade) Client() *gxetcd.Client       { return f.client }
-func (f *testClientFacade) SetClient(c *gxetcd.Client)   { f.client = c }
-func (f *testClientFacade) ClientLock() *sync.Mutex      { return &f.lock }
-func (f *testClientFacade) WaitGroup() *sync.WaitGroup   { return &f.wg }
-func (f *testClientFacade) Done() chan struct{}          { return f.done }
-func (f *testClientFacade) RestartCallBack() bool        { return true }
-func (f *testClientFacade) GetURL() *common.URL          { return f.url }
-func (f *testClientFacade) IsAvailable() bool            { return true }
-func (f *testClientFacade) Destroy()                     { close(f.done) }
+func (f *testClientFacade) Client() *gxetcd.Client     { return f.client }
+func (f *testClientFacade) SetClient(c *gxetcd.Client) { f.client = c }
+func (f *testClientFacade) ClientLock() *sync.Mutex    { return &f.lock }
+func (f *testClientFacade) WaitGroup() *sync.WaitGroup { return &f.wg }
+func (f *testClientFacade) Done() chan struct{}        { return f.done }
+func (f *testClientFacade) RestartCallBack() bool      { return true }
+func (f *testClientFacade) GetURL() *common.URL        { return f.url }
+func (f *testClientFacade) IsAvailable() bool          { return true }
+func (f *testClientFacade) Destroy()                   { close(f.done) }
 
 // Compile-time check
 var _ clientFacade = (*testClientFacade)(nil)

@@ -40,13 +40,13 @@ type testZkClientFacade struct {
 	url    *common.URL
 }
 
-func (f *testZkClientFacade) ZkClient() *gxzookeeper.ZookeeperClient  { return f.client }
+func (f *testZkClientFacade) ZkClient() *gxzookeeper.ZookeeperClient     { return f.client }
 func (f *testZkClientFacade) SetZkClient(c *gxzookeeper.ZookeeperClient) { f.client = c }
-func (f *testZkClientFacade) ZkClientLock() *sync.Mutex               { return &f.lock }
-func (f *testZkClientFacade) WaitGroup() *sync.WaitGroup              { return &f.wg }
-func (f *testZkClientFacade) Done() chan struct{}                     { return f.done }
-func (f *testZkClientFacade) RestartCallBack() bool                   { return true }
-func (f *testZkClientFacade) GetURL() *common.URL                     { return f.url }
+func (f *testZkClientFacade) ZkClientLock() *sync.Mutex                  { return &f.lock }
+func (f *testZkClientFacade) WaitGroup() *sync.WaitGroup                 { return &f.wg }
+func (f *testZkClientFacade) Done() chan struct{}                        { return f.done }
+func (f *testZkClientFacade) RestartCallBack() bool                      { return true }
+func (f *testZkClientFacade) GetURL() *common.URL                        { return f.url }
 
 // Compile-time check that testZkClientFacade implements ZkClientFacade
 var _ ZkClientFacade = (*testZkClientFacade)(nil)
