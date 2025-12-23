@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 
@@ -63,7 +64,7 @@ func TestNewExporter_NilConfig(t *testing.T) {
 	tracerProvider, propagator, err := NewExporter(nil, customFunc)
 	assert.Nil(t, tracerProvider)
 	assert.Nil(t, propagator)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "otel exporter config is nil")
 }
 
@@ -82,7 +83,7 @@ func TestNewExporter_CustomFuncError(t *testing.T) {
 	tracerProvider, propagator, err := NewExporter(config, customFunc)
 	assert.Nil(t, tracerProvider)
 	assert.Nil(t, propagator)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to create test exporter")
 }
 
@@ -102,7 +103,7 @@ func TestNewExporter_InvalidSampleMode(t *testing.T) {
 	tracerProvider, propagator, err := NewExporter(config, customFunc)
 	assert.Nil(t, tracerProvider)
 	assert.Nil(t, propagator)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "otel sample mode invalid-mode not supported")
 }
 
@@ -121,7 +122,7 @@ func TestNewExporter_SampleModeRatio(t *testing.T) {
 	}
 
 	tracerProvider, propagator, err := NewExporter(config, customFunc)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, tracerProvider)
 	defer tracerProvider.Shutdown(context.Background())
 	assert.NotNil(t, propagator)
@@ -141,7 +142,7 @@ func TestNewExporter_SampleModeAlways(t *testing.T) {
 	}
 
 	tracerProvider, propagator, err := NewExporter(config, customFunc)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, tracerProvider)
 	defer tracerProvider.Shutdown(context.Background())
 	assert.NotNil(t, propagator)
@@ -161,7 +162,7 @@ func TestNewExporter_SampleModeNever(t *testing.T) {
 	}
 
 	tracerProvider, propagator, err := NewExporter(config, customFunc)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, tracerProvider)
 	defer tracerProvider.Shutdown(context.Background())
 	assert.NotNil(t, propagator)
@@ -181,7 +182,7 @@ func TestNewExporter_PropagatorW3c(t *testing.T) {
 	}
 
 	tracerProvider, propagator, err := NewExporter(config, customFunc)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, tracerProvider)
 	defer tracerProvider.Shutdown(context.Background())
 	assert.NotNil(t, propagator)
@@ -201,7 +202,7 @@ func TestNewExporter_PropagatorB3(t *testing.T) {
 	}
 
 	tracerProvider, propagator, err := NewExporter(config, customFunc)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, tracerProvider)
 	defer tracerProvider.Shutdown(context.Background())
 	assert.NotNil(t, propagator)
@@ -221,7 +222,7 @@ func TestNewExporter_PropagatorEmpty(t *testing.T) {
 	}
 
 	tracerProvider, propagator, err := NewExporter(config, customFunc)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, tracerProvider)
 	defer tracerProvider.Shutdown(context.Background())
 	// When propagator is empty or unknown, it should be nil
@@ -242,7 +243,7 @@ func TestNewExporter_PropagatorUnknown(t *testing.T) {
 	}
 
 	tracerProvider, propagator, err := NewExporter(config, customFunc)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, tracerProvider)
 	defer tracerProvider.Shutdown(context.Background())
 	// When propagator is unknown, it should be nil
@@ -264,7 +265,7 @@ func TestNewExporter_WithServiceInfo(t *testing.T) {
 	}
 
 	tracerProvider, propagator, err := NewExporter(config, customFunc)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, tracerProvider)
 	defer tracerProvider.Shutdown(context.Background())
 	assert.NotNil(t, propagator)
@@ -288,7 +289,7 @@ func TestNewExporter_CompleteConfig(t *testing.T) {
 	}
 
 	tracerProvider, propagator, err := NewExporter(config, customFunc)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, tracerProvider)
 	defer tracerProvider.Shutdown(context.Background())
 	assert.NotNil(t, propagator)

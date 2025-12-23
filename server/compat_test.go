@@ -223,7 +223,7 @@ func TestCompatRegistryConfigWithParams(t *testing.T) {
 	result := compatRegistryConfig(regCfg)
 
 	assert.NotNil(t, result)
-	assert.Equal(t, 3, len(result.Params))
+	assert.Len(t, result.Params, 3)
 	assert.Equal(t, "value1", result.Params["key1"])
 	assert.Equal(t, "value2", result.Params["key2"])
 	assert.Equal(t, "value3", result.Params["key3"])

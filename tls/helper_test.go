@@ -33,6 +33,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -52,11 +53,11 @@ type testCertFiles struct {
 // generateTestCerts generates self-signed CA, server, and client certificates for testing
 func generateTestCerts(t *testing.T) *testCertFiles {
 	tempDir, err := os.MkdirTemp("", "tls_test")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Generate CA key pair
 	caKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	caTemplate := &x509.Certificate{
 		SerialNumber: big.NewInt(1),
@@ -72,18 +73,18 @@ func generateTestCerts(t *testing.T) *testCertFiles {
 	}
 
 	caCertDER, err := x509.CreateCertificate(rand.Reader, caTemplate, caTemplate, &caKey.PublicKey, caKey)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	caCertFile := filepath.Join(tempDir, "ca.pem")
 	err = writePEMFile(caCertFile, "CERTIFICATE", caCertDER)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	caCert, err := x509.ParseCertificate(caCertDER)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Generate server key pair
 	serverKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	serverTemplate := &x509.Certificate{
 		SerialNumber: big.NewInt(2),
@@ -99,19 +100,19 @@ func generateTestCerts(t *testing.T) *testCertFiles {
 	}
 
 	serverCertDER, err := x509.CreateCertificate(rand.Reader, serverTemplate, caCert, &serverKey.PublicKey, caKey)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	serverCertFile := filepath.Join(tempDir, "server.pem")
 	err = writePEMFile(serverCertFile, "CERTIFICATE", serverCertDER)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	serverKeyFile := filepath.Join(tempDir, "server-key.pem")
 	err = writePEMFile(serverKeyFile, "RSA PRIVATE KEY", x509.MarshalPKCS1PrivateKey(serverKey))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Generate client key pair
 	clientKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	clientTemplate := &x509.Certificate{
 		SerialNumber: big.NewInt(3),
@@ -126,11 +127,11 @@ func generateTestCerts(t *testing.T) *testCertFiles {
 	}
 
 	clientCertDER, err := x509.CreateCertificate(rand.Reader, clientTemplate, caCert, &clientKey.PublicKey, caKey)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	clientCertFile := filepath.Join(tempDir, "client.pem")
 	err = writePEMFile(clientCertFile, "CERTIFICATE", clientCertDER)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	clientKeyFile := filepath.Join(tempDir, "client-key.pem")
 	err = writePEMFile(clientKeyFile, "RSA PRIVATE KEY", x509.MarshalPKCS1PrivateKey(clientKey))
@@ -340,9 +341,9 @@ func TestGetServerTlSConfig(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg, err := GetServerTlSConfig(tt.tlsConf)
 			if tt.expectError {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 			if tt.expectNil {
 				assert.Nil(t, cfg)
@@ -363,7 +364,7 @@ func TestGetServerTlSConfig_InvalidCACert(t *testing.T) {
 	// Create an invalid CA cert file
 	invalidCACertFile := filepath.Join(certs.tempDir, "invalid_ca.pem")
 	err := os.WriteFile(invalidCACertFile, []byte("invalid cert content"), 0644)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	tlsConf := &global.TLSConfig{
 		CACertFile:  invalidCACertFile,
@@ -372,7 +373,7 @@ func TestGetServerTlSConfig_InvalidCACert(t *testing.T) {
 	}
 
 	cfg, err := GetServerTlSConfig(tlsConf)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, cfg)
 	assert.Contains(t, err.Error(), "failed to parse root certificate")
 }
@@ -460,9 +461,9 @@ func TestGetClientTlSConfig(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg, err := GetClientTlSConfig(tt.tlsConf)
 			if tt.expectError {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 			if tt.expectNil {
 				assert.Nil(t, cfg)
@@ -483,14 +484,14 @@ func TestGetClientTlSConfig_InvalidCACert(t *testing.T) {
 	// Create an invalid CA cert file
 	invalidCACertFile := filepath.Join(certs.tempDir, "invalid_ca.pem")
 	err := os.WriteFile(invalidCACertFile, []byte("invalid cert content"), 0644)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	tlsConf := &global.TLSConfig{
 		CACertFile: invalidCACertFile,
 	}
 
 	cfg, err := GetClientTlSConfig(tlsConf)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, cfg)
 	assert.Contains(t, err.Error(), "failed to parse root certificate")
 }

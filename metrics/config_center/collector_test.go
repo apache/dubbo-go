@@ -89,5 +89,5 @@ func TestNewIncMetricEvent(t *testing.T) {
 	assert.Equal(t, "test-group", event.group)
 	assert.Equal(t, remoting.EventTypeAdd, event.changeType)
 	assert.Equal(t, Nacos, event.configCenter)
-	assert.Equal(t, 1.0, event.size)
+	assert.InDelta(t, 1.0, event.size, 0.01)
 }

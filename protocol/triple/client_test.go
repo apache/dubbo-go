@@ -26,6 +26,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -138,11 +139,11 @@ func TestClientManager_GetClient(t *testing.T) {
 		t.Run(test.desc, func(t *testing.T) {
 			client, err := test.cm.getClient(test.method)
 			if test.expectErr {
-				assert.NotNil(t, err)
+				require.Error(t, err)
 				assert.Nil(t, client)
 				assert.Contains(t, err.Error(), "missing triple client")
 			} else {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.NotNil(t, client)
 			}
 		})
@@ -159,7 +160,7 @@ func TestClientManager_Close(t *testing.T) {
 	}
 
 	err := cm.close()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 }
 
 func TestClientManager_CallMethods_MissingClient(t *testing.T) {
@@ -170,27 +171,27 @@ func TestClientManager_CallMethods_MissingClient(t *testing.T) {
 
 	t.Run("callUnary missing client", func(t *testing.T) {
 		err := cm.callUnary(ctx, "NonExist", nil, nil)
-		assert.NotNil(t, err)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "missing triple client")
 	})
 
 	t.Run("callClientStream missing client", func(t *testing.T) {
 		stream, err := cm.callClientStream(ctx, "NonExist")
-		assert.NotNil(t, err)
+		require.Error(t, err)
 		assert.Nil(t, stream)
 		assert.Contains(t, err.Error(), "missing triple client")
 	})
 
 	t.Run("callServerStream missing client", func(t *testing.T) {
 		stream, err := cm.callServerStream(ctx, "NonExist", nil)
-		assert.NotNil(t, err)
+		require.Error(t, err)
 		assert.Nil(t, stream)
 		assert.Contains(t, err.Error(), "missing triple client")
 	})
 
 	t.Run("callBidiStream missing client", func(t *testing.T) {
 		stream, err := cm.callBidiStream(ctx, "NonExist")
-		assert.NotNil(t, err)
+		require.Error(t, err)
 		assert.Nil(t, stream)
 		assert.Contains(t, err.Error(), "missing triple client")
 	})
@@ -285,10 +286,10 @@ func Test_genKeepAliveOptions(t *testing.T) {
 		t.Run(test.desc, func(t *testing.T) {
 			opts, interval, timeout, err := genKeepAliveOptions(test.url, test.tripleConf)
 			if test.expectErr {
-				assert.NotNil(t, err)
+				require.Error(t, err)
 			} else {
-				assert.Nil(t, err)
-				assert.Equal(t, test.expectOptsLen, len(opts))
+				require.NoError(t, err)
+				assert.Len(t, opts, test.expectOptsLen)
 				assert.Equal(t, test.expectInterval, interval)
 				assert.Equal(t, test.expectTimeout, timeout)
 			}
@@ -349,7 +350,7 @@ func Test_newClientManager_Serialization(t *testing.T) {
 				})
 			} else {
 				cm, err := newClientManager(url)
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.NotNil(t, cm)
 				assert.Equal(t, test.expectIDL, cm.isIDL)
 			}
@@ -365,7 +366,7 @@ func Test_newClientManager_NoMethods(t *testing.T) {
 	)
 
 	cm, err := newClientManager(url)
-	assert.NotNil(t, err)
+	require.Error(t, err)
 	assert.Nil(t, cm)
 	assert.Contains(t, err.Error(), "can't get methods")
 }
@@ -378,9 +379,9 @@ func Test_newClientManager_WithMethods(t *testing.T) {
 	)
 
 	cm, err := newClientManager(url)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, cm)
-	assert.Equal(t, 3, len(cm.triClients))
+	assert.Len(t, cm.triClients, 3)
 	assert.Contains(t, cm.triClients, "Method1")
 	assert.Contains(t, cm.triClients, "Method2")
 	assert.Contains(t, cm.triClients, "Method3")
@@ -396,7 +397,7 @@ func Test_newClientManager_WithGroupAndVersion(t *testing.T) {
 	)
 
 	cm, err := newClientManager(url)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, cm)
 }
 
@@ -409,7 +410,7 @@ func Test_newClientManager_WithTimeout(t *testing.T) {
 	)
 
 	cm, err := newClientManager(url)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, cm)
 }
 
@@ -423,7 +424,7 @@ func Test_newClientManager_InvalidTLSConfig(t *testing.T) {
 	url.SetAttribute(constant.TLSConfigKey, "invalid-type")
 
 	cm, err := newClientManager(url)
-	assert.NotNil(t, err)
+	require.Error(t, err)
 	assert.Nil(t, cm)
 	assert.Contains(t, err.Error(), "TLSConfig configuration failed")
 }
@@ -443,7 +444,7 @@ func Test_newClientManager_HTTP3WithoutTLS(t *testing.T) {
 	url.SetAttribute(constant.TripleConfigKey, tripleConfig)
 
 	cm, err := newClientManager(url)
-	assert.NotNil(t, err)
+	require.Error(t, err)
 	assert.Nil(t, cm)
 	assert.Contains(t, err.Error(), "must have TLS config")
 }
@@ -472,10 +473,10 @@ func Test_newClientManager_WithRpcService(t *testing.T) {
 	url.SetAttribute(constant.RpcServiceKey, &mockService{})
 
 	cm, err := newClientManager(url)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, cm)
 	// Should have methods from mockService (Reference, TestMethod1, TestMethod2)
-	assert.True(t, len(cm.triClients) >= 2)
+	assert.GreaterOrEqual(t, len(cm.triClients), 2)
 }
 
 func TestDualTransport_Structure(t *testing.T) {
@@ -549,9 +550,9 @@ func Test_newClientManager_URLPrefixHandling(t *testing.T) {
 			)
 
 			cm, err := newClientManager(url)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			assert.NotNil(t, cm)
-			assert.Equal(t, 1, len(cm.triClients))
+			assert.Len(t, cm.triClients, 1)
 		})
 	}
 }
@@ -570,7 +571,7 @@ func Test_newClientManager_KeepAliveError(t *testing.T) {
 	url.SetAttribute(constant.TripleConfigKey, tripleConfig)
 
 	cm, err := newClientManager(url)
-	assert.NotNil(t, err)
+	require.Error(t, err)
 	assert.Nil(t, cm)
 }
 
@@ -583,7 +584,7 @@ func Test_newClientManager_DefaultProtocol(t *testing.T) {
 	)
 
 	cm, err := newClientManager(url)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, cm)
 }
 
@@ -599,7 +600,7 @@ func Test_newClientManager_EmptyTripleConfig(t *testing.T) {
 	url.SetAttribute(constant.TripleConfigKey, tripleConfig)
 
 	cm, err := newClientManager(url)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, cm)
 }
 
@@ -619,7 +620,7 @@ func Test_newClientManager_Http3Disabled(t *testing.T) {
 	url.SetAttribute(constant.TripleConfigKey, tripleConfig)
 
 	cm, err := newClientManager(url)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, cm)
 }
 
@@ -632,9 +633,9 @@ func Test_newClientManager_MultipleMethods(t *testing.T) {
 	)
 
 	cm, err := newClientManager(url)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, cm)
-	assert.Equal(t, len(methods), len(cm.triClients))
+	assert.Len(t, cm.triClients, len(methods))
 
 	for _, method := range methods {
 		_, exists := cm.triClients[method]
@@ -651,6 +652,6 @@ func Test_newClientManager_InterfaceName(t *testing.T) {
 	)
 
 	cm, err := newClientManager(url)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, cm)
 }

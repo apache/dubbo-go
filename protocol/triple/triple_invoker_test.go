@@ -388,7 +388,7 @@ func TestTripleInvoker_Invoke(t *testing.T) {
 				assert.Equal(t, test.expectErr, result.Error())
 			}
 			if test.expectErrMsg != "" {
-				assert.NotNil(t, result.Error())
+				require.Error(t, result.Error())
 				assert.Contains(t, result.Error().Error(), test.expectErrMsg)
 			}
 		})
@@ -434,7 +434,7 @@ func Test_mergeAttachmentToOutgoing(t *testing.T) {
 				return inv
 			},
 			expect: func(t *testing.T, ctx context.Context, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				timeout := ctx.Value(tri.TimeoutKey{})
 				assert.Equal(t, "5000", timeout)
 			},
@@ -449,7 +449,7 @@ func Test_mergeAttachmentToOutgoing(t *testing.T) {
 				return inv
 			},
 			expect: func(t *testing.T, ctx context.Context, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				header := http.Header(tri.ExtractFromOutgoingContext(ctx))
 				assert.Equal(t, "custom-value", header.Get("custom-key"))
 			},
@@ -464,7 +464,7 @@ func Test_mergeAttachmentToOutgoing(t *testing.T) {
 				return inv
 			},
 			expect: func(t *testing.T, ctx context.Context, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				header := http.Header(tri.ExtractFromOutgoingContext(ctx))
 				assert.Equal(t, []string{"val1", "val2"}, header.Values("multi-key"))
 			},
@@ -479,7 +479,7 @@ func Test_mergeAttachmentToOutgoing(t *testing.T) {
 				return inv
 			},
 			expect: func(t *testing.T, ctx context.Context, err error) {
-				assert.NotNil(t, err)
+				require.Error(t, err)
 				assert.Contains(t, err.Error(), "invalid")
 			},
 		},
@@ -490,7 +490,7 @@ func Test_mergeAttachmentToOutgoing(t *testing.T) {
 				return invocation.NewRPCInvocationWithOptions()
 			},
 			expect: func(t *testing.T, ctx context.Context, err error) {
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 			},
 		},
 	}

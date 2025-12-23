@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRPCResult_SetError(t *testing.T) {
@@ -56,9 +57,9 @@ func TestRPCResult_SetError(t *testing.T) {
 			r.SetError(tt.err)
 
 			if tt.expected == nil {
-				assert.Nil(t, r.Error())
+				assert.NoError(t, r.Error())
 			} else {
-				assert.NotNil(t, r.Error())
+				require.Error(t, r.Error())
 				assert.Equal(t, tt.expected.Error(), r.Error().Error())
 			}
 		})
@@ -94,7 +95,7 @@ func TestRPCResult_Error(t *testing.T) {
 			r := tt.setup()
 
 			if tt.expected == nil {
-				assert.Nil(t, r.Error())
+				assert.NoError(t, r.Error())
 			} else {
 				assert.Equal(t, tt.expected.Error(), r.Error().Error())
 			}
@@ -126,7 +127,7 @@ func TestRPCResult_SetBizError(t *testing.T) {
 			r.SetBizError(tt.err)
 
 			if tt.expected == nil {
-				assert.Nil(t, r.BizError())
+				assert.NoError(t, r.BizError())
 			} else {
 				assert.Equal(t, tt.expected.Error(), r.BizError().Error())
 			}
@@ -163,7 +164,7 @@ func TestRPCResult_BizError(t *testing.T) {
 			r := tt.setup()
 
 			if tt.expected == nil {
-				assert.Nil(t, r.BizError())
+				assert.NoError(t, r.BizError())
 			} else {
 				assert.Equal(t, tt.expected.Error(), r.BizError().Error())
 			}
@@ -381,7 +382,7 @@ func TestRPCResult_Attachments_Initialization(t *testing.T) {
 	attachments := r.Attachments()
 	assert.NotNil(t, attachments)
 	assert.NotNil(t, r.Attrs)
-	assert.Equal(t, 0, len(attachments))
+	assert.Empty(t, attachments)
 }
 
 func TestRPCResult_AddAttachment(t *testing.T) {
@@ -504,7 +505,7 @@ func TestRPCResult_AddAttachment_Multiple(t *testing.T) {
 	r.AddAttachment("key2", 123)
 	r.AddAttachment("key3", true)
 
-	assert.Equal(t, 3, len(r.Attrs))
+	assert.Len(t, r.Attrs, 3)
 	assert.Equal(t, "value1", r.Attrs["key1"])
 	assert.Equal(t, 123, r.Attrs["key2"])
 	assert.Equal(t, true, r.Attrs["key3"])
@@ -735,9 +736,9 @@ func TestRPCResult_ChainedOperations(t *testing.T) {
 
 	// Verify all operations worked
 	assert.Equal(t, "result", r.Result())
-	assert.NotNil(t, r.Error())
-	assert.NotNil(t, r.BizError())
-	assert.Equal(t, 2, len(r.Attachments()))
+	require.Error(t, r.Error())
+	require.Error(t, r.BizError())
+	assert.Len(t, r.Attachments(), 2)
 	assert.Equal(t, "value1", r.Attachment("key1", nil))
 	assert.Equal(t, "value2", r.Attachment("key2", nil))
 }
@@ -754,7 +755,7 @@ func TestRPCResult_EdgeCases(t *testing.T) {
 		for i := 0; i < 1000; i++ {
 			r.AddAttachment(fmt.Sprintf("key-%d", i), i)
 		}
-		assert.Equal(t, 1000, len(r.Attachments()))
+		assert.Len(t, r.Attachments(), 1000)
 	})
 
 	t.Run("overwrite with nil", func(t *testing.T) {

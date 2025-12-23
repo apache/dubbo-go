@@ -99,7 +99,7 @@ func TestEncodeHeaderHeartbeat(t *testing.T) {
 
 	header := codec.EncodeHeader(*pkg)
 	assert.NotNil(t, header)
-	assert.Greater(t, len(header), 0)
+	assert.NotEmpty(t, header)
 	assert.Equal(t, MAGIC_HIGH, header[0])
 	assert.Equal(t, MAGIC_LOW, header[1])
 }
@@ -144,7 +144,7 @@ func TestEncodeHeaderRequestTwoWay(t *testing.T) {
 
 	header := codec.EncodeHeader(*pkg)
 	assert.NotNil(t, header)
-	assert.Greater(t, len(header), 0)
+	assert.NotEmpty(t, header)
 }
 
 // TestProtocolCodecSetSerializer tests SetSerializer method of ProtocolCodec
@@ -175,7 +175,7 @@ func TestPackageResponseWorkflow(t *testing.T) {
 	assert.False(t, pkg.IsResponseWithException())
 
 	data, err := pkg.Marshal()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, data)
 }
 
@@ -199,7 +199,7 @@ func TestPackageRequestWorkflow(t *testing.T) {
 	assert.False(t, pkg.IsResponse())
 
 	data, err := pkg.Marshal()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, data)
 }
 
@@ -305,10 +305,10 @@ func TestDubboPackageIntegrationWithLoadSerializer(t *testing.T) {
 	pkg.Body = []any{"test"}
 
 	err := LoadSerializer(pkg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	data, err := pkg.Marshal()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, data)
-	assert.Greater(t, data.Len(), 0)
+	assert.Positive(t, data.Len())
 }

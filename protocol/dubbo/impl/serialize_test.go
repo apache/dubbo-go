@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -40,7 +41,7 @@ func TestLoadSerializerWithDefaultHessian2(t *testing.T) {
 	pkg.Header.SerialID = 0 // Default SerialID
 
 	err := LoadSerializer(pkg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, pkg.Codec)
 }
 
@@ -53,7 +54,7 @@ func TestLoadSerializerWithHessian2(t *testing.T) {
 	pkg.Header.SerialID = constant.SHessian2
 
 	err := LoadSerializer(pkg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, pkg.Codec)
 }
 
@@ -66,7 +67,7 @@ func TestLoadSerializerWithDifferentValidID(t *testing.T) {
 	pkg.Header.SerialID = constant.SHessian2
 
 	err := LoadSerializer(pkg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, pkg.Codec)
 }
 
@@ -92,7 +93,7 @@ func TestLoadSerializerWithZeroIDDefaultsToHessian2(t *testing.T) {
 	pkg.Header.SerialID = 0
 
 	err := LoadSerializer(pkg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	// Verify that the loaded serializer is for Hessian2
 	assert.NotNil(t, pkg.Codec)
 }
@@ -141,7 +142,7 @@ func TestLoadSerializerWithBufferedData(t *testing.T) {
 	pkg.Header.SerialID = constant.SHessian2
 
 	err := LoadSerializer(pkg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, pkg.Codec)
 }
 
@@ -195,7 +196,7 @@ func TestLoadSerializerSetsSerializerInCodec(t *testing.T) {
 	pkg.Header.SerialID = constant.SHessian2
 
 	err := LoadSerializer(pkg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, pkg.Codec)
 	assert.NotNil(t, pkg.Codec.serializer)
 }
@@ -237,7 +238,7 @@ func TestLoadSerializerReplacesExistingSerializer(t *testing.T) {
 	pkg.Header.SerialID = constant.SHessian2
 
 	err1 := LoadSerializer(pkg)
-	assert.NoError(t, err1)
+	require.NoError(t, err1)
 
 	// Create a new mock serializer and replace
 	mockSerializer2 := &HessianSerializer{}
@@ -264,7 +265,7 @@ func TestLoadSerializerWithAllBytesValues(t *testing.T) {
 
 			if byteVal == 0 || byteVal == constant.SHessian2 {
 				err := LoadSerializer(pkg)
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.NotNil(t, pkg.Codec)
 			}
 		})
@@ -318,7 +319,7 @@ func TestLoadSerializerCodecIsNotNil(t *testing.T) {
 	assert.NotNil(t, pkg.Codec)
 
 	err := LoadSerializer(pkg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// After LoadSerializer, Codec should still exist
 	assert.NotNil(t, pkg.Codec)
@@ -336,7 +337,7 @@ func TestLoadSerializerWithHeaderData(t *testing.T) {
 	pkg.Header.Type = PackageRequest
 
 	err := LoadSerializer(pkg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, constant.SHessian2, pkg.Header.SerialID)
 	assert.Equal(t, int64(12345), pkg.Header.ID)
 }
@@ -352,7 +353,7 @@ func TestLoadSerializerSequentialCalls(t *testing.T) {
 		pkg.Header.ID = int64(i)
 
 		err := LoadSerializer(pkg)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotNil(t, pkg.Codec)
 	}
 }
@@ -368,7 +369,7 @@ func TestLoadSerializerWithDataBuffer(t *testing.T) {
 	pkg.Header.SerialID = constant.SHessian2
 
 	err := LoadSerializer(pkg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, pkg.Codec)
 }
 
@@ -388,9 +389,9 @@ func TestHessianSerializerMarshalRequest(t *testing.T) {
 	pkg.SetSerializer(serializer)
 
 	data, err := pkg.Marshal()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, data)
-	assert.Greater(t, data.Len(), 0)
+	assert.Positive(t, data.Len())
 }
 
 // TestHessianSerializerMarshalResponse tests Hessian serializer marshal for response
@@ -407,9 +408,9 @@ func TestHessianSerializerMarshalResponse(t *testing.T) {
 	pkg.SetSerializer(serializer)
 
 	data, err := pkg.Marshal()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, data)
-	assert.Greater(t, data.Len(), 0)
+	assert.Positive(t, data.Len())
 }
 
 // TestHessianSerializerMarshalResponseWithException tests Hessian marshaling for exception response
@@ -426,7 +427,7 @@ func TestHessianSerializerMarshalResponseWithException(t *testing.T) {
 	pkg.SetSerializer(serializer)
 
 	data, err := pkg.Marshal()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, data)
 }
 
@@ -443,9 +444,9 @@ func TestHessianSerializerMarshalHeartbeat(t *testing.T) {
 	pkg.SetSerializer(serializer)
 
 	data, err := pkg.Marshal()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, data)
-	assert.Greater(t, data.Len(), 0)
+	assert.Positive(t, data.Len())
 }
 
 // TestLoadSerializerWithMultipleCalls tests LoadSerializer consistency
@@ -459,7 +460,7 @@ func TestLoadSerializerWithMultipleCalls(t *testing.T) {
 		pkg.Header.SerialID = constant.SHessian2
 
 		err := LoadSerializer(pkg)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotNil(t, pkg.Codec.serializer)
 	}
 }
@@ -477,10 +478,10 @@ func TestLoadSerializerPackageInheritance(t *testing.T) {
 	pkg.Body = []any{"test"}
 
 	err := LoadSerializer(pkg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Verify serializer is accessible for marshaling
 	data, err := pkg.Marshal()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, data)
 }

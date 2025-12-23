@@ -24,6 +24,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -49,7 +50,7 @@ func TestDefaultServerOptions(t *testing.T) {
 func TestServerOptionsInit(t *testing.T) {
 	opts := defaultServerOptions()
 	err := opts.init()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, opts.Provider)
 }
 
@@ -58,7 +59,7 @@ func TestServerOptionsInitWithOptions(t *testing.T) {
 	opts := defaultServerOptions()
 	testOpt := WithServerGroup("test-group")
 	err := opts.init(testOpt)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "test-group", opts.Provider.Group)
 }
 
@@ -947,7 +948,7 @@ func TestWithMethod(t *testing.T) {
 	opt(opts)
 	assert.NotNil(t, opts.Service.Methods)
 	// Verify that a method was actually added
-	assert.Equal(t, 1, len(opts.Service.Methods))
+	assert.Len(t, opts.Service.Methods, 1)
 }
 
 // Test WithProtocolIDs for ServiceOptions

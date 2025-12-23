@@ -54,7 +54,7 @@ func TestApplicationMetricLevelTags(t *testing.T) {
 	assert.Equal(t, "1.0.0", tags[constant.TagApplicationVersion])
 	assert.NotEmpty(t, tags[constant.TagIp])
 	assert.NotEmpty(t, tags[constant.TagHostname])
-	assert.Equal(t, "", tags[constant.TagGitCommitId])
+	assert.Empty(t, tags[constant.TagGitCommitId])
 }
 
 func TestServiceMetricLevelTags(t *testing.T) {

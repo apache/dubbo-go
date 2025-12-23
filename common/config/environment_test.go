@@ -104,7 +104,7 @@ func TestInmemoryConfigurationGetPropertyNilStore(t *testing.T) {
 
 	ok, v := conf.GetProperty("key")
 	assert.False(t, ok)
-	assert.Equal(t, "", v)
+	assert.Empty(t, v)
 }
 
 func TestInmemoryConfigurationGetSubPropertyNilStore(t *testing.T) {
@@ -137,5 +137,5 @@ func TestInmemoryConfigurationGetSubPropertyNoMatch(t *testing.T) {
 
 	result := conf.GetSubProperty("dubbo.")
 	assert.NotNil(t, result)
-	assert.Equal(t, 0, len(result))
+	assert.Empty(t, result)
 }

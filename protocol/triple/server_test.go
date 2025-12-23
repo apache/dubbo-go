@@ -213,7 +213,7 @@ func TestServer_GetServiceInfo(t *testing.T) {
 
 		info := server.GetServiceInfo()
 		assert.NotNil(t, info)
-		assert.Equal(t, 1, len(info))
+		assert.Len(t, info, 1)
 		assert.Contains(t, info, "test.Service")
 	})
 
@@ -250,7 +250,7 @@ func TestServer_SaveServiceInfo(t *testing.T) {
 			expect: func(t *testing.T, server *Server) {
 				info := server.GetServiceInfo()
 				assert.Contains(t, info, "test.UnaryService")
-				assert.Equal(t, 1, len(info["test.UnaryService"].Methods))
+				assert.Len(t, info["test.UnaryService"].Methods, 1)
 				assert.Equal(t, "UnaryMethod", info["test.UnaryService"].Methods[0].Name)
 				assert.False(t, info["test.UnaryService"].Methods[0].IsClientStream)
 				assert.False(t, info["test.UnaryService"].Methods[0].IsServerStream)
@@ -315,7 +315,7 @@ func TestServer_SaveServiceInfo(t *testing.T) {
 			expect: func(t *testing.T, server *Server) {
 				info := server.GetServiceInfo()
 				assert.Contains(t, info, "test.MultiMethodService")
-				assert.Equal(t, 4, len(info["test.MultiMethodService"].Methods))
+				assert.Len(t, info["test.MultiMethodService"].Methods, 4)
 			},
 		},
 	}
@@ -348,7 +348,7 @@ func TestServer_SaveServiceInfo_Concurrent(t *testing.T) {
 	}
 
 	wg.Wait()
-	assert.Equal(t, concurrency, len(server.GetServiceInfo()))
+	assert.Len(t, server.GetServiceInfo(), concurrency)
 }
 
 func Test_getHanOpts(t *testing.T) {
@@ -396,7 +396,7 @@ func Test_getHanOpts(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
 			opts := getHanOpts(test.url, test.tripleConf)
-			assert.Equal(t, test.expectLen, len(opts))
+			assert.Len(t, opts, test.expectLen)
 		})
 	}
 }
@@ -453,13 +453,13 @@ func Test_createServiceInfoWithReflection(t *testing.T) {
 				assert.NotNil(t, params)
 				paramsSlice, ok := params.([]any)
 				assert.True(t, ok)
-				assert.Equal(t, 1, len(paramsSlice)) // only req param (ctx is excluded)
+				assert.Len(t, paramsSlice, 1) // only req param (ctx is excluded)
 			}
 			if m.Name == "TestMethodWithMultipleArgs" {
 				params := m.ReqInitFunc()
 				paramsSlice, ok := params.([]any)
 				assert.True(t, ok)
-				assert.Equal(t, 2, len(paramsSlice)) // arg1 and arg2
+				assert.Len(t, paramsSlice, 2) // arg1 and arg2
 			}
 		}
 	})
@@ -482,6 +482,6 @@ func Test_createServiceInfoWithReflection(t *testing.T) {
 		params := invokeMethod.ReqInitFunc()
 		paramsSlice, ok := params.([]any)
 		assert.True(t, ok)
-		assert.Equal(t, 3, len(paramsSlice)) // methodName, argv types, argv
+		assert.Len(t, paramsSlice, 3) // methodName, argv types, argv
 	})
 }

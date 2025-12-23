@@ -165,7 +165,7 @@ func TestWithRatio(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			opts := NewOptions(WithRatio(c.ratio))
-			assert.Equal(t, c.ratio, opts.Otel.TracingConfig.SampleRatio)
+			assert.InDelta(t, c.ratio, opts.Otel.TracingConfig.SampleRatio, 0.01)
 		})
 	}
 }
@@ -268,7 +268,7 @@ func TestMultipleOptions(t *testing.T) {
 	assert.Equal(t, "jaeger", opts.Otel.TracingConfig.Exporter)
 	assert.Equal(t, "w3c", opts.Otel.TracingConfig.Propagator)
 	assert.Equal(t, "ratio", opts.Otel.TracingConfig.SampleMode)
-	assert.Equal(t, 0.75, opts.Otel.TracingConfig.SampleRatio)
+	assert.InDelta(t, 0.75, opts.Otel.TracingConfig.SampleRatio, 0.01)
 	assert.Equal(t, "localhost:14268", opts.Otel.TracingConfig.Endpoint)
 	assert.True(t, opts.Otel.TracingConfig.Insecure)
 }
