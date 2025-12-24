@@ -23,12 +23,11 @@ import (
 )
 
 import (
-	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+
+	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // Verify ZkClientFacade interface can be implemented

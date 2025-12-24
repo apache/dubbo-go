@@ -23,12 +23,10 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+
 	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	"github.com/dubbogo/gost/log/logger"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
 type ZkClientFacade interface {

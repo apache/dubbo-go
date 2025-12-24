@@ -24,12 +24,11 @@ import (
 )
 
 import (
-	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+
+	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
+
+	"github.com/stretchr/testify/assert"
 )
 
 type mockClientFacade struct {
