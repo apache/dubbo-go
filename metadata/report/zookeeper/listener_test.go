@@ -25,12 +25,14 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
-	"dubbo.apache.org/dubbo-go/v3/remoting"
-
 	"github.com/dubbogo/gost/gof/observer"
 
 	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 type mockMappingListener struct {

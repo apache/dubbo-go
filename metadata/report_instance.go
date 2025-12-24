@@ -22,6 +22,11 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/container/set"
+	"github.com/dubbogo/gost/log/logger"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -30,9 +35,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	metadataMetrics "dubbo.apache.org/dubbo-go/v3/metrics/metadata"
-
-	"github.com/dubbogo/gost/container/set"
-	"github.com/dubbogo/gost/log/logger"
 )
 
 var (

@@ -22,8 +22,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/remoting"
-
 	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
 	"github.com/dubbogo/gost/log/logger"
 
@@ -32,6 +30,10 @@ import (
 	"go.etcd.io/etcd/api/v3/mvccpb"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 // EventListener watches etcd keys and forwards events to DataListener.

@@ -23,6 +23,16 @@ import (
 )
 
 import (
+	"github.com/dubbogo/go-zookeeper/zk"
+
+	gxset "github.com/dubbogo/gost/container/set"
+	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
+	"github.com/dubbogo/gost/log/logger"
+
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -31,14 +41,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping/metadata"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 	"dubbo.apache.org/dubbo-go/v3/remoting/zookeeper"
-
-	"github.com/dubbogo/go-zookeeper/zk"
-
-	gxset "github.com/dubbogo/gost/container/set"
-	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
-	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
 )
 
 func init() {

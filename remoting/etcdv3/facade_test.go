@@ -23,11 +23,13 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-
 	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
 
 	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
 // Verify clientFacade interface can be implemented

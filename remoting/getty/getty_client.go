@@ -24,14 +24,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3"
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/global"
-	"dubbo.apache.org/dubbo-go/v3/remoting"
-	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
-
 	getty "github.com/apache/dubbo-getty"
 
 	"github.com/dubbogo/gost/log/logger"
@@ -43,6 +35,16 @@ import (
 	"go.uber.org/atomic"
 
 	"gopkg.in/yaml.v2"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3"
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
+	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
 
 var (

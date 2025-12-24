@@ -23,15 +23,17 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-
 	"github.com/stretchr/testify/assert"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+)
+
 type mockServer struct {
-	mu           sync.Mutex
-	startCalled  int
-	stopCalled   int
+	mu          sync.Mutex
+	startCalled int
+	stopCalled  int
 }
 
 func (m *mockServer) Start() {

@@ -22,13 +22,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/metadata/info"
-	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
-	"dubbo.apache.org/dubbo-go/v3/metadata/report"
-
 	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/gof/observer"
 
@@ -36,6 +29,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/metadata/info"
+	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
+	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 )
 
 type mockMetadataReport struct {

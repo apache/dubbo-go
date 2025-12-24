@@ -24,14 +24,16 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/metadata/info"
-
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
 
 	"github.com/golang/mock/gomock"
 
 	"github.com/nacos-group/nacos-sdk-go/v2/model"
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 )
 
 // MockIConfigClient is a mock of IConfigClient interface

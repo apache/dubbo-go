@@ -23,14 +23,16 @@ import (
 )
 
 import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
-
-	"github.com/stretchr/testify/assert"
 )
 
 var testURL, _ = common.NewURL("dubbo://127.0.0.1:20000?application=foo&interface=com.foo.Bar&methods=GetPetByID&version=1.0.0")
