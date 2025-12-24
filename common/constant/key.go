@@ -118,9 +118,8 @@ const (
 	TokenFilterKey                       = "token"
 	TpsLimitFilterKey                    = "tps"
 	TracingFilterKey                     = "tracing"
-
-	OTELServerTraceKey = "otelServerTrace"
-	OTELClientTraceKey = "otelClientTrace"
+	OTELServerTraceKey                   = "otelServerTrace"
+	OTELClientTraceKey                   = "otelClientTrace"
 )
 
 const (
