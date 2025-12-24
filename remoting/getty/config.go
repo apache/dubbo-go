@@ -22,13 +22,11 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+
 	getty "github.com/apache/dubbo-getty"
 
 	perrors "github.com/pkg/errors"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 const (

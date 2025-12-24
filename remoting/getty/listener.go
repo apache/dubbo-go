@@ -24,6 +24,10 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
+
 	getty "github.com/apache/dubbo-getty"
 
 	hessian "github.com/apache/dubbo-go-hessian2"
@@ -32,12 +36,6 @@ import (
 	gxtime "github.com/dubbogo/gost/time"
 
 	perrors "github.com/pkg/errors"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
-	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 const (

@@ -23,13 +23,6 @@ import (
 )
 
 import (
-	"github.com/pkg/errors"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -38,6 +31,11 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+
+	"github.com/pkg/errors"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 var (

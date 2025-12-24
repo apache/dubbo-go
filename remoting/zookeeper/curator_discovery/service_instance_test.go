@@ -26,32 +26,43 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestServiceInstanceJSONSerialization(t *testing.T) {
-	instance := &ServiceInstance{
-		Name:                "test-service",
-		ID:                  "instance-1",
-		Address:             "192.168.1.100",
-		Port:                8080,
-		Payload:             map[string]string{"key": "value"},
-		RegistrationTimeUTC: 1609459200000,
-		Tag:                 "v1",
-	}
+const (
+	testName    = "test-service"
+	testID      = "instance-1"
+	testAddress = "192.168.1.100"
+	testPort    = 8080
+	testTag     = "v1"
+	testRegTime = int64(1609459200000)
+)
 
-	// Marshal
+func createTestInstance() *ServiceInstance {
+	return &ServiceInstance{
+		Name:                testName,
+		ID:                  testID,
+		Address:             testAddress,
+		Port:                testPort,
+		Payload:             map[string]string{"key": "value"},
+		RegistrationTimeUTC: testRegTime,
+		Tag:                 testTag,
+	}
+}
+
+func TestServiceInstanceJSONSerialization(t *testing.T) {
+	instance := createTestInstance()
+
 	data, err := json.Marshal(instance)
 	assert.Nil(t, err)
 
-	// Unmarshal
 	var restored ServiceInstance
 	err = json.Unmarshal(data, &restored)
 	assert.Nil(t, err)
 
-	assert.Equal(t, instance.Name, restored.Name)
-	assert.Equal(t, instance.ID, restored.ID)
-	assert.Equal(t, instance.Address, restored.Address)
-	assert.Equal(t, instance.Port, restored.Port)
-	assert.Equal(t, instance.RegistrationTimeUTC, restored.RegistrationTimeUTC)
-	assert.Equal(t, instance.Tag, restored.Tag)
+	assert.Equal(t, testName, restored.Name)
+	assert.Equal(t, testID, restored.ID)
+	assert.Equal(t, testAddress, restored.Address)
+	assert.Equal(t, testPort, restored.Port)
+	assert.Equal(t, testRegTime, restored.RegistrationTimeUTC)
+	assert.Equal(t, testTag, restored.Tag)
 }
 
 func TestServiceInstanceJSONOmitEmpty(t *testing.T) {

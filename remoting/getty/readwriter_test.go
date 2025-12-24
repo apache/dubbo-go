@@ -25,12 +25,6 @@ import (
 )
 
 import (
-	hessian "github.com/apache/dubbo-go-hessian2"
-
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
@@ -39,6 +33,10 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	"dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
+
+	hessian "github.com/apache/dubbo-go-hessian2"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestTCPPackageHandle(t *testing.T) {

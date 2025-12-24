@@ -18,12 +18,10 @@
 package report
 
 import (
-	gxset "github.com/dubbogo/gost/container/set"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
+
+	gxset "github.com/dubbogo/gost/container/set"
 )
 
 // MetadataReport is an interface of remote metadata report.

@@ -24,6 +24,8 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/metadata/info"
+
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
 
 	"github.com/golang/mock/gomock"
@@ -32,261 +34,141 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/metadata/info"
-)
-
 // MockIConfigClient is a mock of IConfigClient interface
 type MockIConfigClient struct {
 	ctrl     *gomock.Controller
 	recorder *MockIConfigClientMockRecorder
 }
 
-// MockIConfigClientMockRecorder is the mock recorder for MockIConfigClient
 type MockIConfigClientMockRecorder struct {
 	mock *MockIConfigClient
 }
 
-// NewMockIConfigClient creates a new mock instance
 func NewMockIConfigClient(ctrl *gomock.Controller) *MockIConfigClient {
 	mock := &MockIConfigClient{ctrl: ctrl}
 	mock.recorder = &MockIConfigClientMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
-func (m *MockIConfigClient) EXPECT() *MockIConfigClientMockRecorder {
-	return m.recorder
-}
+func (m *MockIConfigClient) EXPECT() *MockIConfigClientMockRecorder { return m.recorder }
+func (m *MockIConfigClient) CloseClient()                           {}
 
-// GetConfig mocks base method
 func (m *MockIConfigClient) GetConfig(param vo.ConfigParam) (string, error) {
 	ret := m.ctrl.Call(m, "GetConfig", param)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	return ret[0].(string), ret[1].(error)
 }
 
-// GetConfig indicates an expected call of GetConfig
 func (mr *MockIConfigClientMockRecorder) GetConfig(param any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfig", reflect.TypeOf((*MockIConfigClient)(nil).GetConfig), param)
 }
 
-// PublishConfig mocks base method
 func (m *MockIConfigClient) PublishConfig(param vo.ConfigParam) (bool, error) {
 	ret := m.ctrl.Call(m, "PublishConfig", param)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	return ret[0].(bool), ret[1].(error)
 }
 
-// PublishConfig indicates an expected call of PublishConfig
 func (mr *MockIConfigClientMockRecorder) PublishConfig(param any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PublishConfig", reflect.TypeOf((*MockIConfigClient)(nil).PublishConfig), param)
 }
 
-// DeleteConfig mocks base method
 func (m *MockIConfigClient) DeleteConfig(param vo.ConfigParam) (bool, error) {
 	ret := m.ctrl.Call(m, "DeleteConfig", param)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	return ret[0].(bool), ret[1].(error)
 }
 
-// DeleteConfig indicates an expected call of DeleteConfig
 func (mr *MockIConfigClientMockRecorder) DeleteConfig(param any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteConfig", reflect.TypeOf((*MockIConfigClient)(nil).DeleteConfig), param)
 }
 
-// ListenConfig mocks base method
 func (m *MockIConfigClient) ListenConfig(params vo.ConfigParam) error {
-	ret := m.ctrl.Call(m, "ListenConfig", params)
-	ret0, _ := ret[0].(error)
-	return ret0
+	return m.ctrl.Call(m, "ListenConfig", params)[0].(error)
 }
 
-// CloseClient close nacos client
-func (m *MockIConfigClient) CloseClient() {
-}
-
-// ListenConfig indicates an expected call of ListenConfig
 func (mr *MockIConfigClientMockRecorder) ListenConfig(params any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListenConfig", reflect.TypeOf((*MockIConfigClient)(nil).ListenConfig), params)
 }
 
-// CancelListenConfig mocks base method
 func (m *MockIConfigClient) CancelListenConfig(params vo.ConfigParam) error {
-	ret := m.ctrl.Call(m, "CancelListenConfig", params)
-	ret0, _ := ret[0].(error)
-	return ret0
+	return m.ctrl.Call(m, "CancelListenConfig", params)[0].(error)
 }
 
-// CancelListenConfig indicates an expected call of CancelListenConfig
 func (mr *MockIConfigClientMockRecorder) CancelListenConfig(params any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CancelListenConfig", reflect.TypeOf((*MockIConfigClient)(nil).CancelListenConfig), params)
 }
 
-// SearchConfig mocks base method
 func (m *MockIConfigClient) SearchConfig(param vo.SearchConfigParam) (*model.ConfigPage, error) {
 	ret := m.ctrl.Call(m, "SearchConfig", param)
-	ret0, _ := ret[0].(*model.ConfigPage)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	return ret[0].(*model.ConfigPage), ret[1].(error)
 }
 
-// SearchConfig indicates an expected call of SearchConfig
 func (mr *MockIConfigClientMockRecorder) SearchConfig(param any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchConfig", reflect.TypeOf((*MockIConfigClient)(nil).SearchConfig), param)
 }
 
-// PublishAggr mocks base method
 func (m *MockIConfigClient) PublishAggr(param vo.ConfigParam) (bool, error) {
 	ret := m.ctrl.Call(m, "PublishAggr", param)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	return ret[0].(bool), ret[1].(error)
 }
 
-// PublishAggr indicates an expected call of PublishAggr
 func (mr *MockIConfigClientMockRecorder) PublishAggr(param any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PublishAggr", reflect.TypeOf((*MockIConfigClient)(nil).PublishAggr), param)
 }
 
-type fields struct {
-	client *nacosClient.NacosConfigClient
-}
-type args struct {
-	application string
-	revision    string
-	info        *info.MetadataInfo
-	key         string
-	group       string
-	value       string
+func createMockClient(ctrl *gomock.Controller) *nacosClient.NacosConfigClient {
+	mnc := NewMockIConfigClient(ctrl)
+	nc := &nacosClient.NacosConfigClient{}
+	nc.SetClient(mnc)
+	return nc
 }
 
-func newNacosMetadataReport(f fields) *nacosMetadataReport {
-	return &nacosMetadataReport{
-		client: f.client,
-	}
-}
-
-func Test_nacosMetadataReport_GetAppMetadata(t *testing.T) {
-	mi := info.MetadataInfo{
-		App: "GetAppMetadata",
-	}
+func TestNacosMetadataReportGetAppMetadata(t *testing.T) {
+	mi := info.MetadataInfo{App: "test-app"}
 	data, _ := json.Marshal(mi)
 
 	ctrl := gomock.NewController(t)
 	mnc := NewMockIConfigClient(ctrl)
-	mnc.EXPECT().GetConfig(gomock.Any()).MaxTimes(2).Return(string(data), nil)
+	mnc.EXPECT().GetConfig(gomock.Any()).Return(string(data), nil)
+
 	nc := &nacosClient.NacosConfigClient{}
 	nc.SetClient(mnc)
+	n := &nacosMetadataReport{client: nc}
 
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    *info.MetadataInfo
-		wantErr bool
-	}{
-		{
-			name: "test",
-			fields: fields{
-				client: nc,
-			},
-			args: args{
-				application: "dubbo",
-				revision:    "revision",
-			},
-			want:    &mi,
-			wantErr: false,
-		},
+	got, err := n.GetAppMetadata("dubbo", "revision")
+	if err != nil {
+		t.Errorf("GetAppMetadata() error = %v", err)
+		return
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			n := newNacosMetadataReport(tt.fields)
-			got, err := n.GetAppMetadata(tt.args.application, tt.args.revision)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GetAppMetadata() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetAppMetadata() got = %v, want %v", got, tt.want)
-			}
-		})
+	if !reflect.DeepEqual(got, &mi) {
+		t.Errorf("GetAppMetadata() got = %v, want %v", got, &mi)
 	}
 }
 
-func Test_nacosMetadataReport_PublishAppMetadata(t *testing.T) {
+func TestNacosMetadataReportPublishAppMetadata(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mnc := NewMockIConfigClient(ctrl)
-	mnc.EXPECT().PublishConfig(gomock.Any()).Times(2).Return(true, nil)
+	mnc.EXPECT().PublishConfig(gomock.Any()).Return(true, nil)
+
 	nc := &nacosClient.NacosConfigClient{}
 	nc.SetClient(mnc)
+	n := &nacosMetadataReport{client: nc}
 
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "test",
-			fields: fields{
-				client: nc,
-			},
-			args: args{
-				application: "PublishAppMetadata",
-				revision:    "PublishAppMetadata",
-				info: &info.MetadataInfo{
-					App: "PublishAppMetadata",
-				},
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			n := newNacosMetadataReport(tt.fields)
-			if err := n.PublishAppMetadata(tt.args.application, tt.args.revision, tt.args.info); (err != nil) != tt.wantErr {
-				t.Errorf("PublishAppMetadata() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
+	err := n.PublishAppMetadata("app", "rev", &info.MetadataInfo{App: "test"})
+	if err != nil {
+		t.Errorf("PublishAppMetadata() error = %v", err)
 	}
 }
 
-func Test_nacosMetadataReport_RegisterServiceAppMapping(t *testing.T) {
+func TestNacosMetadataReportRegisterServiceAppMapping(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mnc := NewMockIConfigClient(ctrl)
 	mnc.EXPECT().GetConfig(gomock.Any()).Return("oldValue", nil)
+
 	nc := &nacosClient.NacosConfigClient{}
 	nc.SetClient(mnc)
+	n := &nacosMetadataReport{client: nc}
 
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "test",
-			fields: fields{
-				client: nc,
-			},
-			args: args{
-				key:   "test",
-				group: "test",
-				value: "oldValue",
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			n := newNacosMetadataReport(tt.fields)
-			if err := n.RegisterServiceAppMapping(tt.args.key, tt.args.group, tt.args.value); (err != nil) != tt.wantErr {
-				t.Errorf("RegisterServiceAppMapping() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
+	err := n.RegisterServiceAppMapping("key", "group", "oldValue")
+	if err != nil {
+		t.Errorf("RegisterServiceAppMapping() error = %v", err)
 	}
 }

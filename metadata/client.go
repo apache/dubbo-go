@@ -24,12 +24,6 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -38,6 +32,10 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+
+	"github.com/dubbogo/gost/log/logger"
+
+	perrors "github.com/pkg/errors"
 )
 
 const defaultTimeout = "5s" // s

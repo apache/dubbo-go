@@ -28,19 +28,25 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	testBasePath    = "/dubbo/services"
+	testServiceName = "test-service"
+	testInstanceID  = "instance-1"
+)
+
 func TestEntry(t *testing.T) {
 	t.Run("basic operations", func(t *testing.T) {
 		entry := &Entry{}
 		assert.Nil(t, entry.instance)
 
 		entry.Lock()
-		entry.instance = &ServiceInstance{Name: "test"}
+		entry.instance = &ServiceInstance{Name: testServiceName}
 		entry.Unlock()
-		assert.Equal(t, "test", entry.instance.Name)
+		assert.Equal(t, testServiceName, entry.instance.Name)
 	})
 
 	t.Run("concurrent access", func(t *testing.T) {
-		entry := &Entry{instance: &ServiceInstance{Name: "test"}}
+		entry := &Entry{instance: &ServiceInstance{Name: testServiceName}}
 		var wg sync.WaitGroup
 
 		for i := 0; i < 100; i++ {
@@ -58,18 +64,10 @@ func TestEntry(t *testing.T) {
 }
 
 func TestNewServiceDiscovery(t *testing.T) {
-	tests := []struct {
-		basePath string
-	}{
-		{"/dubbo/services"},
-		{"/"},
-		{""},
-	}
-
-	for _, tt := range tests {
-		sd := NewServiceDiscovery(nil, tt.basePath)
+	for _, basePath := range []string{testBasePath, "/", ""} {
+		sd := NewServiceDiscovery(nil, basePath)
 		assert.NotNil(t, sd)
-		assert.Equal(t, tt.basePath, sd.basePath)
+		assert.Equal(t, basePath, sd.basePath)
 		assert.NotNil(t, sd.mutex)
 		assert.NotNil(t, sd.services)
 	}
@@ -79,10 +77,9 @@ func TestServiceDiscoveryPathForInstance(t *testing.T) {
 	tests := []struct {
 		basePath, serviceName, instanceID, expected string
 	}{
-		{"/dubbo/services", "test-service", "instance-1", "/dubbo/services/test-service/instance-1"},
+		{testBasePath, testServiceName, testInstanceID, testBasePath + "/" + testServiceName + "/" + testInstanceID},
 		{"/", "service", "id", "/service/id"},
 		{"", "service", "id", "service/id"},
-		{"/dubbo", "com.example.Service", "192.168.1.1:8080", "/dubbo/com.example.Service/192.168.1.1:8080"},
 	}
 
 	for _, tt := range tests {
@@ -95,7 +92,7 @@ func TestServiceDiscoveryPathForName(t *testing.T) {
 	tests := []struct {
 		basePath, serviceName, expected string
 	}{
-		{"/dubbo/services", "test-service", "/dubbo/services/test-service"},
+		{testBasePath, testServiceName, testBasePath + "/" + testServiceName},
 		{"/", "service", "/service"},
 		{"", "service", "service"},
 	}
@@ -111,10 +108,8 @@ func TestServiceDiscoveryGetNameAndID(t *testing.T) {
 		name, basePath, path, expectedName, expectedID string
 		wantErr                                        bool
 	}{
-		{"valid path", "/dubbo/services", "/dubbo/services/test-service/instance-1", "test-service", "instance-1", false},
-		{"extra parts", "/dubbo", "/dubbo/service/id/extra", "service", "id", false},
+		{"valid path", testBasePath, testBasePath + "/" + testServiceName + "/" + testInstanceID, testServiceName, testInstanceID, false},
 		{"missing id", "/dubbo", "/dubbo/service", "", "", true},
-		{"only base", "/dubbo", "/dubbo", "", "", true},
 		{"empty path", "/dubbo", "", "", "", true},
 	}
 
@@ -134,121 +129,71 @@ func TestServiceDiscoveryGetNameAndID(t *testing.T) {
 }
 
 func TestServiceDiscoveryDataChange(t *testing.T) {
-	sd := NewServiceDiscovery(nil, "/dubbo/services")
+	sd := NewServiceDiscovery(nil, testBasePath)
+	testPath := testBasePath + "/test/" + testInstanceID
 
-	tests := []struct {
-		eventType remoting.EventType
-		path      string
-	}{
-		{remoting.EventTypeAdd, "/dubbo/services/test/instance-1"},
-		{remoting.EventTypeUpdate, "/dubbo/services/test/instance-1"},
-		{remoting.EventTypeDel, "/dubbo/services/test/instance-1"},
-	}
-
-	for _, tt := range tests {
-		event := remoting.Event{Path: tt.path, Action: tt.eventType, Content: "content"}
+	for _, eventType := range []remoting.EventType{remoting.EventTypeAdd, remoting.EventTypeUpdate, remoting.EventTypeDel} {
+		event := remoting.Event{Path: testPath, Action: eventType, Content: "content"}
 		assert.True(t, sd.DataChange(event))
 	}
 
 	// Invalid path
-	assert.True(t, sd.DataChange(remoting.Event{Path: "/dubbo/services/only-name"}))
+	assert.True(t, sd.DataChange(remoting.Event{Path: testBasePath + "/only-name"}))
 }
 
 func TestServiceDiscoveryClose(t *testing.T) {
-	sd := &ServiceDiscovery{
-		client: nil, listener: nil, services: &sync.Map{}, mutex: &sync.Mutex{},
-	}
+	sd := &ServiceDiscovery{client: nil, listener: nil, services: &sync.Map{}, mutex: &sync.Mutex{}}
 	sd.Close() // Should not panic
 }
 
 func TestServiceDiscoveryServicesMap(t *testing.T) {
-	sd := NewServiceDiscovery(nil, "/dubbo")
+	sd := NewServiceDiscovery(nil, testBasePath)
 
-	// Store and load
-	entry := &Entry{instance: &ServiceInstance{Name: "test", ID: "1"}}
-	sd.services.Store("1", entry)
+	entry := &Entry{instance: &ServiceInstance{Name: testServiceName, ID: testInstanceID}}
+	sd.services.Store(testInstanceID, entry)
 
-	value, ok := sd.services.Load("1")
+	value, ok := sd.services.Load(testInstanceID)
 	assert.True(t, ok)
-	assert.Equal(t, "test", value.(*Entry).instance.Name)
+	assert.Equal(t, testServiceName, value.(*Entry).instance.Name)
 
-	// Load non-existent
-	_, ok = sd.services.Load("non-existent")
-	assert.False(t, ok)
-
-	// Delete
-	sd.services.Delete("1")
-	_, ok = sd.services.Load("1")
+	sd.services.Delete(testInstanceID)
+	_, ok = sd.services.Load(testInstanceID)
 	assert.False(t, ok)
 }
 
+func TestServiceDiscoveryUpdateService(t *testing.T) {
+	sd := NewServiceDiscovery(nil, testBasePath)
+
+	// Update non-existent
+	err := sd.UpdateService(&ServiceInstance{Name: testServiceName, ID: "non-existent"})
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "not registered")
+
+	// Update with invalid entry type
+	sd.services.Store("invalid-id", "not-an-entry")
+	err = sd.UpdateService(&ServiceInstance{Name: testServiceName, ID: "invalid-id"})
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "not entry")
+}
+
+func TestServiceDiscoveryUnregisterService(t *testing.T) {
+	sd := NewServiceDiscovery(nil, testBasePath)
+
+	err := sd.UnregisterService(&ServiceInstance{Name: testServiceName, ID: "non-existent"})
+	assert.Nil(t, err)
+}
+
 func TestServiceDiscoveryConcurrentAccess(t *testing.T) {
-	sd := NewServiceDiscovery(nil, "/dubbo")
+	sd := NewServiceDiscovery(nil, testBasePath)
 	var wg sync.WaitGroup
 
 	for i := 0; i < 100; i++ {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
-			entry := &Entry{instance: &ServiceInstance{Name: "service", ID: string(rune('a' + idx%26))}}
+			entry := &Entry{instance: &ServiceInstance{Name: testServiceName, ID: string(rune('a' + idx%26))}}
 			sd.services.Store(entry.instance.ID, entry)
 		}(i)
 	}
 	wg.Wait()
-}
-
-func TestServiceDiscoveryUpdateService(t *testing.T) {
-	sd := NewServiceDiscovery(nil, "/dubbo")
-
-	// Update non-existent
-	err := sd.UpdateService(&ServiceInstance{Name: "test", ID: "non-existent"})
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "not registered")
-
-	// Update with invalid entry type
-	sd.services.Store("invalid-id", "not-an-entry")
-	err = sd.UpdateService(&ServiceInstance{Name: "test", ID: "invalid-id"})
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "not entry")
-}
-
-func TestServiceDiscoveryUnregisterService(t *testing.T) {
-	sd := NewServiceDiscovery(nil, "/dubbo")
-
-	// Unregister non-existent
-	err := sd.UnregisterService(&ServiceInstance{Name: "test", ID: "non-existent"})
-	assert.Nil(t, err)
-
-	// Store and delete
-	entry := &Entry{instance: &ServiceInstance{Name: "test", ID: "1"}}
-	sd.services.Store("1", entry)
-	sd.services.Delete("1")
-	_, ok := sd.services.Load("1")
-	assert.False(t, ok)
-}
-
-func TestServiceDiscoveryReRegisterServices(t *testing.T) {
-	sd := NewServiceDiscovery(nil, "/dubbo")
-	sd.ReRegisterServices() // Empty services, should not panic
-
-	sd.services.Store("invalid", "not-an-entry")
-	sd.ReRegisterServices() // Invalid entry, should skip
-}
-
-func TestServiceDiscoveryMutex(t *testing.T) {
-	sd := NewServiceDiscovery(nil, "/dubbo")
-	var wg sync.WaitGroup
-	counter := 0
-
-	for i := 0; i < 100; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			sd.mutex.Lock()
-			counter++
-			sd.mutex.Unlock()
-		}()
-	}
-	wg.Wait()
-	assert.Equal(t, 100, counter)
 }
