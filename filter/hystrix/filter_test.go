@@ -30,6 +30,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -155,11 +156,11 @@ func TestHystrixFilterInvokeSuccess(t *testing.T) {
 	hf := &Filter{}
 	testUrl, err := common.NewURL(
 		fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	testInvoker := testMockSuccessInvoker{*base.NewBaseInvoker(testUrl)}
 	invokeResult := hf.Invoke(context.Background(), &testInvoker, &invocation.RPCInvocation{})
 	assert.NotNil(t, invokeResult)
-	assert.NoError(t, invokeResult.Error())
+	require.NoError(t, invokeResult.Error())
 	assert.NotNil(t, invokeResult.Result())
 }
 
@@ -167,11 +168,11 @@ func TestHystrixFilterInvokeFail(t *testing.T) {
 	hf := &Filter{}
 	testUrl, err := common.NewURL(
 		fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	testInvoker := testMockFailInvoker{*base.NewBaseInvoker(testUrl)}
 	invokeResult := hf.Invoke(context.Background(), &testInvoker, &invocation.RPCInvocation{})
 	assert.NotNil(t, invokeResult)
-	assert.Error(t, invokeResult.Error())
+	require.Error(t, invokeResult.Error())
 }
 
 func TestHystrixFilterInvokeCircuitBreak(t *testing.T) {

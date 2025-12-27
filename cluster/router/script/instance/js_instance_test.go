@@ -31,6 +31,7 @@ import (
 	"github.com/dop251/goja_nodejs/require"
 
 	"github.com/stretchr/testify/assert"
+	testify_require "github.com/stretchr/testify/require"
 )
 
 import (
@@ -467,7 +468,7 @@ function route(invokers, invocation, context) {
 __go_program_get_result = route(invokers,
     invocation, context)
 `)
-	assert.Nil(t, err)
+	testify_require.NoError(t, err)
 }
 
 func TestFuncWithCompile(t *testing.T) {
@@ -483,7 +484,7 @@ func TestFuncWithCompile(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	assert.Equal(t, 2, len(res.Export().([]any)))
+	assert.Len(t, res.Export().([]any), 2)
 	assert.Equal(t, localIp, (*(res.Export().([]any)[0]).(*base.BaseInvoker)).GetURL().Ip)
 }
 
@@ -505,7 +506,7 @@ func TestFuncWithCompileConcurrent(t *testing.T) {
 			if err != nil {
 				panic(err)
 			}
-			assert.Equal(t, 2, len(res.Export().([]any)))
+			assert.Len(t, res.Export().([]any), 2)
 			assert.Equal(t, localIp, (*(res.Export().([]any)[0]).(*base.BaseInvoker)).GetURL().Ip)
 		}()
 	}
@@ -542,7 +543,7 @@ function route(invokers,invocation,context) {
 		if err != nil {
 			panic(err)
 		}
-		assert.Equal(t, 2, len(res.Export().([]any)))
+		assert.Len(t, res.Export().([]any), 2)
 		assert.Equal(t, localIp, (*(res.Export().([]any)[0]).(*base.BaseInvoker)).GetURL().Ip)
 		assert.Equal(t, "20004", (*(res.Export().([]any)[0]).(*base.BaseInvoker)).GetURL().Port)
 	}
@@ -582,7 +583,7 @@ func TestRunScriptInPanic(t *testing.T) {
 	willPanic := func(errScript string) {
 		rt := setRunScriptEnv()
 		pg, err := goja.Compile(``, errScript, true)
-		assert.Nil(t, err)
+		testify_require.NoError(t, err)
 		res, err := func() (res any, err error) {
 			defer func(err *error) {
 				panicReason := recover()
@@ -602,15 +603,15 @@ func TestRunScriptInPanic(t *testing.T) {
 			assert.Equal(t, reflect.ValueOf([]any{}), reflect.ValueOf(testData))
 			return
 		}()
-		assert.NotNil(t, err)
+		testify_require.Error(t, err)
 		assert.Nil(t, res)
 	}
 	wontPanic := func(errScript string) {
 		rt := setRunScriptEnv()
 		pg, err := goja.Compile(``, errScript, true)
-		assert.Nil(t, err)
+		testify_require.NoError(t, err)
 		res, err := rt.RunProgram(pg)
-		assert.Nil(t, err)
+		testify_require.NoError(t, err)
 		assert.NotNil(t, res)
 		data := res.Export()
 		assert.NotNil(t, data)

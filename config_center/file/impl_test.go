@@ -26,6 +26,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -35,29 +36,29 @@ import (
 )
 
 const (
-	key = "com.dubbo.go"
+	key = "com_dubbo_go"
 )
 
 func initFileData(t *testing.T) (*FileSystemDynamicConfiguration, error) {
 	urlString := "registry://127.0.0.1:2181"
 	regurl, err := common.NewURL(urlString)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	factory, err := extension.GetConfigCenterFactory("file")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	dc, err := factory.GetDynamicConfiguration(regurl)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	return dc.(*FileSystemDynamicConfiguration), err
 }
 
 func TestPublishAndGetConfig(t *testing.T) {
 	file, err := initFileData(t)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = file.PublishConfig(key, "", "A")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	prop, err := file.GetProperties(key)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "A", prop)
 
 	defer destroy(file.rootPath, file)
@@ -65,18 +66,18 @@ func TestPublishAndGetConfig(t *testing.T) {
 
 func TestAddListener(t *testing.T) {
 	file, err := initFileData(t)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	group := "dubbogo"
 	value := "Test Value"
 	err = file.PublishConfig(key, group, value)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	listener := &mockDataListener{}
 	file.AddListener(key, listener, config_center.WithGroup(group))
 
 	value = "Test Value 2"
 	err = file.PublishConfig(key, group, value)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	// remove need wait a moment
 	time.Sleep(time.Second)
 	defer destroy(file.rootPath, file)
@@ -84,25 +85,25 @@ func TestAddListener(t *testing.T) {
 
 func TestRemoveListener(t *testing.T) {
 	file, err := initFileData(t)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	group := "dubbogo"
 	value := "Test Value"
 	err = file.PublishConfig(key, group, value)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	listener := &mockDataListener{}
 	file.AddListener(key, listener, config_center.WithGroup(group))
 
 	value = "Test Value 2"
 	err = file.PublishConfig(key, group, value)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// make sure callback before RemoveListener
 	time.Sleep(time.Second)
 	file.RemoveListener(key, listener, config_center.WithGroup(group))
 	value = "Test Value 3"
 	err = file.PublishConfig(key, group, value)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	// remove need wait a moment
 	time.Sleep(time.Second)
 	defer destroy(file.rootPath, file)
@@ -110,13 +111,13 @@ func TestRemoveListener(t *testing.T) {
 
 func TestGetConfigKeysByGroup(t *testing.T) {
 	file, err := initFileData(t)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	group := "dubbogo"
 	value := "Test Value"
 	err = file.PublishConfig(key, group, value)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	gs, err := file.GetConfigKeysByGroup(group)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 1, gs.Size())
 	assert.Equal(t, key, gs.Values()[0])
 	// remove need wait a moment
@@ -126,26 +127,26 @@ func TestGetConfigKeysByGroup(t *testing.T) {
 
 func TestGetConfig(t *testing.T) {
 	file, err := initFileData(t)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	group := "dubbogo"
 	value := "Test Value"
 	err = file.PublishConfig(key, group, value)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	prop, err := file.GetProperties(key, config_center.WithGroup(group))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, value, prop)
 	defer destroy(file.rootPath, file)
 }
 
 func TestPublishConfig(t *testing.T) {
 	file, err := initFileData(t)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	group := "dubbogo"
 	value := "Test Value"
 	err = file.PublishConfig(key, group, value)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	prop, err := file.GetInternalProperty(key, config_center.WithGroup(group))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, value, prop)
 	defer destroy(file.rootPath, file)
 }

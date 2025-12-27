@@ -28,6 +28,7 @@ import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -65,20 +66,20 @@ func testDecodeTCPPackage(t *testing.T, svr *Server, client *Client) {
 
 	pkgWriteHandler := NewRpcClientPackageHandler(client)
 	pkgBytes, err := pkgWriteHandler.Write(nil, request)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	pkgReadHandler := NewRpcServerPackageHandler(svr)
 	_, pkgLen, err := pkgReadHandler.Read(nil, pkgBytes)
-	assert.NoError(t, err)
-	assert.Equal(t, pkgLen, len(pkgBytes))
+	require.NoError(t, err)
+	assert.Len(t, pkgBytes, pkgLen)
 
 	// simulate incomplete tcp package
 	incompletePkgLen := len(pkgBytes) - 10
-	assert.True(t, incompletePkgLen >= impl.HEADER_LENGTH, "header buffer too short")
+	assert.GreaterOrEqual(t, incompletePkgLen, impl.HEADER_LENGTH, "header buffer too short")
 	incompletePkg := pkgBytes[0 : incompletePkgLen-1]
 	pkg, pkgLen, err := pkgReadHandler.Read(nil, incompletePkg)
-	assert.Equal(t, err.Error(), "body buffer too short")
-	assert.Equal(t, pkg.(*remoting.DecodeResult).Result, nil)
-	assert.Equal(t, pkgLen, 0)
+	assert.Equal(t, "body buffer too short", err.Error())
+	assert.Nil(t, pkg.(*remoting.DecodeResult).Result)
+	assert.Equal(t, 0, pkgLen)
 }
 
 func getServer(t *testing.T) (*Server, *common.URL) {
@@ -86,7 +87,7 @@ func getServer(t *testing.T) (*Server, *common.URL) {
 	remoting.RegistryCodec("dubbo", &DubboTestCodec{})
 
 	methods, err := common.ServiceMap.Register("com.ikurento.user.AdminProvider", "dubbo", "", "", &AdminProvider{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "GetAdmin,getAdmin", methods)
 
 	// config
@@ -108,7 +109,7 @@ func getServer(t *testing.T) (*Server, *common.URL) {
 			SessionName:      "client",
 		},
 	})
-	assert.NoError(t, clientConf.CheckValidity())
+	require.NoError(t, clientConf.CheckValidity())
 	SetServerConfig(ServerConfig{
 		SessionNumber:  700,
 		SessionTimeout: "20s",
@@ -126,18 +127,18 @@ func getServer(t *testing.T) (*Server, *common.URL) {
 			SessionName:      "server",
 		},
 	})
-	assert.NoError(t, srvConf.CheckValidity())
+	require.NoError(t, srvConf.CheckValidity())
 
 	url, err := common.NewURL("dubbo://127.0.0.1:20061/com.ikurento.user.AdminProvider?anyhost=true&" +
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
 		"environment=dev&interface=com.ikurento.user.AdminProvider&ip=127.0.0.1&methods=GetAdmin%2C&" +
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=AdminProvider")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	// init server
 	adminProvider := &AdminProvider{}
 	_, err = common.ServiceMap.Register("com.ikurento.user.AdminProvider", url.Protocol, "", "0.0.1", adminProvider)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	invoker := &proxy_factory.ProxyInvoker{
 		BaseInvoker: *base.NewBaseInvoker(url),
 	}

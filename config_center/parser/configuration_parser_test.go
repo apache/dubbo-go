@@ -23,13 +23,14 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestDefaultConfigurationParserParser(t *testing.T) {
 	parser := &DefaultConfigurationParser{}
 	m, err := parser.Parse("dubbo.registry.address=172.0.0.1\ndubbo.registry.name=test")
-	assert.NoError(t, err)
-	assert.Equal(t, 2, len(m))
+	require.NoError(t, err)
+	assert.Len(t, m, 2)
 	assert.Equal(t, "172.0.0.1", m["dubbo.registry.address"])
 }
 
@@ -52,12 +53,40 @@ configs:
     cluster: mock1
   side: provider`
 	urls, err := parser.ParseToUrls(content)
-	assert.NoError(t, err)
-	assert.Equal(t, 1, len(urls))
+	require.NoError(t, err)
+	assert.Len(t, urls, 1)
 	assert.Equal(t, "org.apache.dubbo-go.mockService", urls[0].GetParam("application", ""))
 	assert.Equal(t, "mock1", urls[0].GetParam("cluster", ""))
 	assert.Equal(t, "override", urls[0].Protocol)
 	assert.Equal(t, "0.0.0.0", urls[0].Location)
+}
+
+func TestDefaultConfigurationParserAppScopeDefaults(t *testing.T) {
+	parser := &DefaultConfigurationParser{}
+	content := `configVersion: 3.0.0
+scope: application
+key: app-key
+enabled: true
+configs:
+- type: custom
+  enabled: false
+  addresses: []
+  providerAddresses: []
+  services: []
+  applications: []
+  parameters:
+    mock: v
+  side: consumer`
+	urls, err := parser.ParseToUrls(content)
+	require.NoError(t, err)
+	assert.Len(t, urls, 1)
+	assert.Equal(t, "override", urls[0].Protocol)
+	assert.Equal(t, "0.0.0.0", urls[0].Location)
+	assert.Equal(t, "*", urls[0].Service())
+	assert.Equal(t, "app-key", urls[0].GetParam("application", ""))
+	assert.Equal(t, "dynamicconfigurators", urls[0].GetParam("category", ""))
+	assert.Equal(t, "3.0.0", urls[0].GetParam("configVersion", ""))
+	assert.Equal(t, "false", urls[0].GetParam("enabled", ""))
 }
 
 func TestDefaultConfigurationParserServiceItemToUrls_ParserToUrls(t *testing.T) {
@@ -79,11 +108,22 @@ configs:
     cluster: mock1
   side: provider`
 	urls, err := parser.ParseToUrls(content)
-	assert.NoError(t, err)
-	assert.Equal(t, 1, len(urls))
+	require.NoError(t, err)
+	assert.Len(t, urls, 1)
 	assert.Equal(t, "groupA", urls[0].GetParam("group", ""))
 	assert.Equal(t, "/test", urls[0].Path)
 	assert.Equal(t, "mock1", urls[0].GetParam("cluster", ""))
 	assert.Equal(t, "override", urls[0].Protocol)
 	assert.Equal(t, "0.0.0.0", urls[0].Location)
+}
+
+func TestGetEnabledString(t *testing.T) {
+	item := ConfigItem{Enabled: false}
+	cfg := ConfiguratorConfig{Enabled: true}
+	// when type empty/general use config.enabled
+	assert.Equal(t, "&enabled=true", getEnabledString(item, cfg))
+
+	item.Type = "custom"
+	item.Enabled = false
+	assert.Equal(t, "&enabled=false", getEnabledString(item, cfg))
 }

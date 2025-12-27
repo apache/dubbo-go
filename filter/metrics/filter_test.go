@@ -57,6 +57,6 @@ func TestMetricsFilterInvoke(t *testing.T) {
 	result = filter.OnResponse(ctx, nil, invoker, inv)
 	assert.Nil(t, result)
 
-	assert.Equal(t, 2, len(mockChan))
+	assert.Len(t, mockChan, 2)
 	assert.Equal(t, constant.MetricsRpc, (<-mockChan).Type())
 }

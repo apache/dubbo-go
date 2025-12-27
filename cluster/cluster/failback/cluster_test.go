@@ -31,6 +31,7 @@ import (
 	perrors "github.com/pkg/errors"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -106,15 +107,15 @@ func TestFailbackRetryOneSuccess(t *testing.T) {
 	invoker.EXPECT().IsAvailable().Return(true)
 	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(func(context.Context, base.Invocation) result.Result {
 		delta := time.Since(now).Nanoseconds() / int64(time.Second)
-		assert.True(t, delta >= 5)
+		assert.GreaterOrEqual(t, delta, int64(5))
 		wg.Done()
 		return mockSuccResult
 	})
 
 	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
-	assert.Nil(t, result.Error())
+	require.NoError(t, result.Error())
 	assert.Nil(t, result.Result())
-	assert.Equal(t, 0, len(result.Attachments()))
+	assert.Empty(t, result.Attachments())
 
 	// ensure the retry task has been executed
 	assert.Equal(t, int64(1), clusterInvoker.taskList.Len())
@@ -153,7 +154,7 @@ func TestFailbackRetryFailed(t *testing.T) {
 		j := i + 1
 		invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(func(context.Context, base.Invocation) result.Result {
 			delta := time.Since(now).Nanoseconds() / int64(time.Second)
-			assert.True(t, delta >= int64(5*j))
+			assert.GreaterOrEqual(t, delta, int64(5*j))
 			wg.Done()
 			return mockFailedResult
 		})
@@ -161,9 +162,9 @@ func TestFailbackRetryFailed(t *testing.T) {
 
 	// first call should failed.
 	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
-	assert.Nil(t, result.Error())
+	require.NoError(t, result.Error())
 	assert.Nil(t, result.Result())
-	assert.Equal(t, 0, len(result.Attachments()))
+	assert.Empty(t, result.Attachments())
 
 	wg.Wait()
 	time.Sleep(time.Second)
@@ -197,16 +198,16 @@ func TestFailbackRetryFailed10Times(t *testing.T) {
 	now := time.Now()
 	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(func(context.Context, base.Invocation) result.Result {
 		delta := time.Since(now).Nanoseconds() / int64(time.Second)
-		assert.True(t, delta >= 5)
+		assert.GreaterOrEqual(t, delta, int64(5))
 		wg.Done()
 		return mockFailedResult
 	}).Times(10)
 
 	for i := 0; i < 10; i++ {
 		result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
-		assert.Nil(t, result.Error())
+		require.NoError(t, result.Error())
 		assert.Nil(t, result.Result())
-		assert.Equal(t, 0, len(result.Attachments()))
+		assert.Empty(t, result.Attachments())
 	}
 
 	wg.Wait()
@@ -235,16 +236,16 @@ func TestFailbackOutOfLimit(t *testing.T) {
 
 	// reached limit
 	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
-	assert.Nil(t, result.Error())
+	require.NoError(t, result.Error())
 	assert.Nil(t, result.Result())
-	assert.Equal(t, 0, len(result.Attachments()))
+	assert.Empty(t, result.Attachments())
 
 	// all will be out of limit
 	for i := 0; i < 10; i++ {
 		result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
-		assert.Nil(t, result.Error())
+		require.NoError(t, result.Error())
 		assert.Nil(t, result.Result())
-		assert.Equal(t, 0, len(result.Attachments()))
+		assert.Empty(t, result.Attachments())
 
 		assert.Equal(t, int64(1), clusterInvoker.taskList.Len())
 	}

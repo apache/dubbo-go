@@ -24,6 +24,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -39,19 +40,19 @@ func TestString(t *testing.T) {
 	n1 := strings.SplitN(s1, "=>", 2)
 	n2 := strings.SplitN(s2, "=>", 2)
 
-	assert.Equal(t, n[0], "a1")
-	assert.Equal(t, n[1], "a2")
+	assert.Equal(t, "a1", n[0])
+	assert.Equal(t, "a2", n[1])
 
-	assert.Equal(t, n1[0], "")
-	assert.Equal(t, n1[1], "a2")
+	assert.Empty(t, n1[0])
+	assert.Equal(t, "a2", n1[1])
 
-	assert.Equal(t, n2[0], "a1")
-	assert.Equal(t, n2[1], "")
+	assert.Equal(t, "a1", n2[0])
+	assert.Empty(t, n2[1])
 }
 
 func TestRouterInit(t *testing.T) {
 	//err := RouterInit(testVirtualServiceYML, testDestinationRuleYML)
-	//assert.NoError(t, err)
+	//require.NoError(t, err)
 	//
 	//err = RouterInit(testVirtualServiceYML, errorTestDestinationRuleYML)
 	//assert.Error(t, err)
@@ -78,9 +79,9 @@ func TestNewRouterConfigBuilder(t *testing.T) {
 		Build()
 
 	err := initRouterConfig(rc)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = config.Init()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.Equal(t, config.Prefix(), constant.RouterConfigPrefix)
+	assert.Equal(t, constant.RouterConfigPrefix, config.Prefix())
 }

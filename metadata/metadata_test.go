@@ -18,7 +18,6 @@
 package metadata
 
 import (
-	"reflect"
 	"testing"
 )
 
@@ -56,11 +55,11 @@ func TestAddService(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			AddService(tt.args.registryId, tt.args.url)
-			assert.True(t, registryMetadataInfo[tt.args.registryId] != nil)
+			assert.NotNil(t, registryMetadataInfo[tt.args.registryId])
 			meta := registryMetadataInfo[tt.args.registryId]
 			meta.App = tt.args.url.GetParam(constant.ApplicationKey, "")
 			meta.Tag = tt.args.url.GetParam(constant.ApplicationTagKey, "")
-			assert.True(t, reflect.DeepEqual(meta.GetExportedServiceURLs()[0], tt.args.url))
+			assert.Equal(t, tt.args.url, meta.GetExportedServiceURLs()[0])
 		})
 	}
 }
@@ -89,11 +88,11 @@ func TestAddSubscribeURL(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			AddSubscribeURL(tt.args.registryId, tt.args.url)
-			assert.True(t, registryMetadataInfo[tt.args.registryId] != nil)
+			assert.NotNil(t, registryMetadataInfo[tt.args.registryId])
 			meta := registryMetadataInfo[tt.args.registryId]
 			meta.App = tt.args.url.GetParam(constant.ApplicationKey, "")
 			meta.Tag = tt.args.url.GetParam(constant.ApplicationTagKey, "")
-			assert.True(t, reflect.DeepEqual(meta.GetSubscribedURLs()[0], tt.args.url))
+			assert.Equal(t, tt.args.url, meta.GetSubscribedURLs()[0])
 		})
 	}
 }

@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -35,7 +36,7 @@ import (
 // Test NewServer creates a server successfully
 func TestNewServer(t *testing.T) {
 	srv, err := NewServer()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, srv)
 
 	// Verify server is properly initialized by using public API
@@ -57,13 +58,13 @@ func TestNewServerWithOptions(t *testing.T) {
 		SetServerApplication(appCfg),
 		WithServerGroup("test-group"),
 	)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, srv)
 
 	// Verify configuration by registering a service and checking its options
 	handler := &mockServerRPCService{}
 	err = srv.Register(handler, nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	svcOpts := srv.GetServiceOptions(handler.Reference())
 	assert.NotNil(t, svcOpts)
@@ -73,7 +74,7 @@ func TestNewServerWithOptions(t *testing.T) {
 // Test GetServiceOptions
 func TestGetServiceOptions(t *testing.T) {
 	srv, err := NewServer()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	svcOpts := defaultServiceOptions()
 	svcOpts.Id = "test-service"
@@ -87,7 +88,7 @@ func TestGetServiceOptions(t *testing.T) {
 // Test GetServiceOptions returns nil for non-existent service
 func TestGetServiceOptionsNotFound(t *testing.T) {
 	srv, err := NewServer()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	retrieved := srv.GetServiceOptions("non-existent")
 	assert.Nil(t, retrieved)
@@ -96,7 +97,7 @@ func TestGetServiceOptionsNotFound(t *testing.T) {
 // Test GetServiceInfo
 func TestGetServiceInfo(t *testing.T) {
 	srv, err := NewServer()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	svcOpts := defaultServiceOptions()
 	svcOpts.Id = "test-service"
@@ -113,7 +114,7 @@ func TestGetServiceInfo(t *testing.T) {
 // Test GetServiceInfo returns nil for non-existent service
 func TestGetServiceInfoNotFound(t *testing.T) {
 	srv, err := NewServer()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	info := srv.GetServiceInfo("non-existent")
 	assert.Nil(t, info)
@@ -122,7 +123,7 @@ func TestGetServiceInfoNotFound(t *testing.T) {
 // Test GetRPCService
 func TestGetRPCService(t *testing.T) {
 	srv, err := NewServer()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	svcOpts := defaultServiceOptions()
 	svcOpts.Id = "test-service"
@@ -138,7 +139,7 @@ func TestGetRPCService(t *testing.T) {
 // Test GetRPCService returns nil for non-existent service
 func TestGetRPCServiceNotFound(t *testing.T) {
 	srv, err := NewServer()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	rpcService := srv.GetRPCService("non-existent")
 	assert.Nil(t, rpcService)
@@ -147,7 +148,7 @@ func TestGetRPCServiceNotFound(t *testing.T) {
 // Test GetServiceOptionsByInterfaceName
 func TestGetServiceOptionsByInterfaceName(t *testing.T) {
 	srv, err := NewServer()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	svcOpts := defaultServiceOptions()
 	svcOpts.Id = "test-service"
@@ -162,7 +163,7 @@ func TestGetServiceOptionsByInterfaceName(t *testing.T) {
 // Test GetServiceOptionsByInterfaceName returns nil for non-existent interface
 func TestGetServiceOptionsByInterfaceNameNotFound(t *testing.T) {
 	srv, err := NewServer()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	retrieved := srv.GetServiceOptionsByInterfaceName("non.existent.Service")
 	assert.Nil(t, retrieved)
@@ -171,7 +172,7 @@ func TestGetServiceOptionsByInterfaceNameNotFound(t *testing.T) {
 // Test registerServiceOptions
 func TestRegisterServiceOptions(t *testing.T) {
 	srv, err := NewServer()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	svcOpts := defaultServiceOptions()
 	svcOpts.Id = "test-service"
@@ -192,7 +193,7 @@ func TestRegisterServiceOptions(t *testing.T) {
 // Test registerServiceOptions with empty interface
 func TestRegisterServiceOptionsEmptyInterface(t *testing.T) {
 	srv, err := NewServer()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	svcOpts := defaultServiceOptions()
 	svcOpts.Id = "test-service"
@@ -274,7 +275,7 @@ func TestSetProviderServicesEmptyName(t *testing.T) {
 	// Access the global variable safely with lock
 	internalProLock.Lock()
 	defer internalProLock.Unlock()
-	assert.Len(t, internalProServices, 0)
+	assert.Empty(t, internalProServices)
 }
 
 // Test enhanceServiceInfo with nil info
@@ -297,7 +298,7 @@ func TestEnhanceServiceInfo(t *testing.T) {
 	result := enhanceServiceInfo(info)
 	assert.NotNil(t, result)
 	// Should have doubled methods (original + case-swapped)
-	assert.Equal(t, 2, len(result.Methods))
+	assert.Len(t, result.Methods, 2)
 	assert.Equal(t, "sayHello", result.Methods[0].Name)
 	// The swapped version should have capitalized first letter
 	assert.Equal(t, "SayHello", result.Methods[1].Name)
@@ -359,7 +360,7 @@ func (m *mockServerRPCService) Reference() string {
 // Test concurrency: multiple goroutines registering services
 func TestConcurrentServiceRegistration(t *testing.T) {
 	srv, err := NewServer()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	var wg sync.WaitGroup
 	for i := 0; i < 10; i++ {
@@ -386,7 +387,7 @@ func TestConcurrentServiceRegistration(t *testing.T) {
 // Test Register with ServiceInfo
 func TestRegisterWithServiceInfo(t *testing.T) {
 	srv, err := NewServer()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	handler := &mockServerRPCService{}
 	info := &common.ServiceInfo{
@@ -397,7 +398,7 @@ func TestRegisterWithServiceInfo(t *testing.T) {
 	}
 
 	err = srv.Register(handler, info)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Service should be registered
 	svcOpts := srv.GetServiceOptions(handler.Reference())
@@ -407,11 +408,11 @@ func TestRegisterWithServiceInfo(t *testing.T) {
 // Test RegisterService without ServiceInfo
 func TestRegisterService(t *testing.T) {
 	srv, err := NewServer()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	handler := &mockServerRPCService{}
 	err = srv.RegisterService(handler)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Service should be registered with handler reference name
 	svcOpts := srv.GetServiceOptions(handler.Reference())
@@ -421,7 +422,7 @@ func TestRegisterService(t *testing.T) {
 // Test Register with handler that has method config
 func TestRegisterWithMethodConfig(t *testing.T) {
 	srv, err := NewServer()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	handler := &mockServerRPCService{}
 	info := &common.ServiceInfo{
@@ -435,7 +436,7 @@ func TestRegisterWithMethodConfig(t *testing.T) {
 		WithGroup("test-group"),
 		WithVersion("1.0.0"),
 	)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	svcOpts := srv.GetServiceOptions(handler.Reference())
 	assert.NotNil(t, svcOpts)
@@ -451,14 +452,14 @@ func TestGenSvcOptsWithMissingServerConfig(t *testing.T) {
 
 	handler := &mockServerRPCService{}
 	_, err := srv.genSvcOpts(handler, nil)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "has not been initialized")
 }
 
 // Test exportServices with empty service map
 func TestExportServicesEmpty(t *testing.T) {
 	srv, err := NewServer()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	err = srv.exportServices()
 	assert.NoError(t, err)
@@ -467,13 +468,13 @@ func TestExportServicesEmpty(t *testing.T) {
 // Test NewServer with custom group option
 func TestNewServerWithCustomGroup(t *testing.T) {
 	srv, err := NewServer(WithServerGroup("test"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, srv)
 
 	// Verify the group option by registering a service and checking its configuration
 	handler := &mockServerRPCService{}
 	err = srv.Register(handler, nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	svcOpts := srv.GetServiceOptions(handler.Reference())
 	assert.NotNil(t, svcOpts)

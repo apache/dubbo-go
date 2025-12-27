@@ -23,6 +23,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -86,7 +87,7 @@ func TestDubboProtocol_Export(t *testing.T) {
 	// Export
 	proto := GetProtocol()
 	url, err := common.NewURL(mockCommonUrl)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	exporter := proto.Export(base.NewBaseInvoker(url))
 	// make sure url
 	eq := exporter.GetInvoker().GetURL().URLEqual(url)
@@ -94,7 +95,7 @@ func TestDubboProtocol_Export(t *testing.T) {
 
 	// second service: the same path and the different version
 	url2, err := common.NewURL(mockCommonUrl, common.WithParamsValue(constant.VersionKey, "v1.1"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	exporter2 := proto.Export(base.NewBaseInvoker(url2))
 	// make sure url
 	eq2 := exporter2.GetInvoker().GetURL().URLEqual(url2)
@@ -120,7 +121,7 @@ func TestDubboProtocolReferNoConnect(t *testing.T) {
 	initDubboInvokerTest()
 	proto := GetProtocol()
 	url, err := common.NewURL(mockCommonUrl)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	invoker := proto.Refer(url)
 	assert.Nil(t, invoker)
 }
@@ -136,7 +137,7 @@ func TestDubboProtocol_Refer(t *testing.T) {
 	proto.Export(&proxy_factory.ProxyInvoker{
 		BaseInvoker: *base.NewBaseInvoker(url),
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	invoker := proto.Refer(url)
 	// make sure url
 	eq := invoker.GetURL().URLEqual(url)

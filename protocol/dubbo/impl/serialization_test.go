@@ -23,6 +23,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -108,7 +109,7 @@ func TestSetSerializer(t *testing.T) {
 
 	// After setting, GetSerializerById should return the same serializer
 	result, err := GetSerializerById(constant.SHessian2)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, mockSerializer, result)
 }
 
@@ -137,7 +138,7 @@ func TestSetSerializerWithMultipleNames(t *testing.T) {
 
 	// Verify it's registered
 	result, err := GetSerializerById(constant.SHessian2)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, hessianSerializer, result)
 }
 
@@ -152,6 +153,6 @@ func TestSetSerializerNotNil(t *testing.T) {
 
 	// Verify the serializer is set correctly
 	result, err := GetSerializerById(constant.SHessian2)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, result)
 }

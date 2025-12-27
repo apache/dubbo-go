@@ -26,14 +26,12 @@ import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func doTestReflectResponse(t *testing.T, in any, out any) {
 	err := ReflectResponse(in, out)
-	if err != nil {
-		t.Error(err)
-		t.FailNow()
-	}
+	require.NoError(t, err)
 
 	result := hessian.UnpackPtrValue(reflect.ValueOf(out)).Interface()
 
@@ -129,12 +127,9 @@ func TestCopyMap(t *testing.T) {
 	m3["go"] = r2
 
 	err := ReflectResponse(m3, &m3r)
-	if err != nil {
-		t.Error(err)
-		t.FailNow()
-	}
+	require.NoError(t, err)
 
-	assert.Equal(t, 2, len(m3r))
+	assert.Len(t, m3r, 2)
 
 	rr1, ok := m3r["dubbo"]
 	assert.True(t, ok)
@@ -159,12 +154,9 @@ func TestCopySlice(t *testing.T) {
 	var s1r []any
 
 	err := ReflectResponse(s1, &s1r)
-	if err != nil {
-		t.Error(err)
-		t.FailNow()
-	}
+	require.NoError(t, err)
 
-	assert.Equal(t, 2, len(s1r))
+	assert.Len(t, s1r, 2)
 	assert.True(t, reflect.DeepEqual(r1, s1r[0]))
 	assert.True(t, reflect.DeepEqual(r2, s1r[1]))
 }

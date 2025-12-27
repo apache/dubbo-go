@@ -223,13 +223,13 @@ affinityAware:
 				// check expect filtrate path
 				ans := tt.invokers_filters.filtrate(tt.args.invokers, tt.args.url, tt.args.invocation)
 				if len(ans) < int(float32(len(providerUrls))*(float32(a.ratio)/100.)) {
-					assert.Equalf(t, 0, len(ans), "route(%v, %v, %v)", tt.args.invokers, tt.args.url, tt.args.invocation)
+					assert.Emptyf(t, ans, "route(%v, %v, %v)", tt.args.invokers, tt.args.url, tt.args.invocation)
 				} else {
 					assert.Equalf(t, ans, res, "route(%v, %v, %v)", tt.args.invokers, tt.args.url, tt.args.invocation)
 				}
 			} else {
 				ans := tt.invokers_filters.filtrate(tt.args.invokers, tt.args.url, tt.args.invocation)
-				assert.Equalf(t, tt.expectLen, len(ans), "route(%v, %v, %v)", tt.args.invokers, tt.args.url, tt.args.invocation)
+				assert.Lenf(t, ans, tt.expectLen, "route(%v, %v, %v)", tt.args.invokers, tt.args.url, tt.args.invocation)
 			}
 		})
 	}

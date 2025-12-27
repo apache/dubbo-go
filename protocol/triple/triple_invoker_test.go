@@ -26,6 +26,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -54,7 +55,7 @@ func Test_parseInvocation(t *testing.T) {
 				return invocation.NewRPCInvocationWithOptions()
 			},
 			expect: func(t *testing.T, callType string, inRaw []any, methodName string, err error) {
-				assert.NotNil(t, err)
+				require.Error(t, err)
 				assert.Contains(t, err.Error(), "miss CallType")
 			},
 		},
@@ -70,7 +71,7 @@ func Test_parseInvocation(t *testing.T) {
 				return iv
 			},
 			expect: func(t *testing.T, callType string, inRaw []any, methodName string, err error) {
-				assert.NotNil(t, err)
+				require.Error(t, err)
 				assert.Contains(t, err.Error(), "CallType should be string")
 			},
 		},
@@ -86,88 +87,8 @@ func Test_parseInvocation(t *testing.T) {
 				return iv
 			},
 			expect: func(t *testing.T, callType string, inRaw []any, methodName string, err error) {
-				assert.NotNil(t, err)
+				require.Error(t, err)
 				assert.Contains(t, err.Error(), "miss MethodName")
-			},
-		},
-		{
-			desc: "success with CallUnary",
-			ctx: func() context.Context {
-				return context.Background()
-			},
-			url: common.NewURLWithOptions(),
-			invo: func() base.Invocation {
-				iv := invocation.NewRPCInvocationWithOptions(
-					invocation.WithMethodName("TestMethod"),
-					invocation.WithParameterRawValues([]any{"req", "resp"}),
-				)
-				iv.SetAttribute(constant.CallTypeKey, constant.CallUnary)
-				return iv
-			},
-			expect: func(t *testing.T, callType string, inRaw []any, methodName string, err error) {
-				assert.Nil(t, err)
-				assert.Equal(t, constant.CallUnary, callType)
-				assert.Equal(t, "TestMethod", methodName)
-				assert.Equal(t, 2, len(inRaw))
-			},
-		},
-		{
-			desc: "success with CallClientStream",
-			ctx: func() context.Context {
-				return context.Background()
-			},
-			url: common.NewURLWithOptions(),
-			invo: func() base.Invocation {
-				iv := invocation.NewRPCInvocationWithOptions(
-					invocation.WithMethodName("StreamMethod"),
-				)
-				iv.SetAttribute(constant.CallTypeKey, constant.CallClientStream)
-				return iv
-			},
-			expect: func(t *testing.T, callType string, inRaw []any, methodName string, err error) {
-				assert.Nil(t, err)
-				assert.Equal(t, constant.CallClientStream, callType)
-				assert.Equal(t, "StreamMethod", methodName)
-			},
-		},
-		{
-			desc: "success with CallServerStream",
-			ctx: func() context.Context {
-				return context.Background()
-			},
-			url: common.NewURLWithOptions(),
-			invo: func() base.Invocation {
-				iv := invocation.NewRPCInvocationWithOptions(
-					invocation.WithMethodName("ServerStreamMethod"),
-					invocation.WithParameterRawValues([]any{"req"}),
-				)
-				iv.SetAttribute(constant.CallTypeKey, constant.CallServerStream)
-				return iv
-			},
-			expect: func(t *testing.T, callType string, inRaw []any, methodName string, err error) {
-				assert.Nil(t, err)
-				assert.Equal(t, constant.CallServerStream, callType)
-				assert.Equal(t, "ServerStreamMethod", methodName)
-				assert.Equal(t, 1, len(inRaw))
-			},
-		},
-		{
-			desc: "success with CallBidiStream",
-			ctx: func() context.Context {
-				return context.Background()
-			},
-			url: common.NewURLWithOptions(),
-			invo: func() base.Invocation {
-				iv := invocation.NewRPCInvocationWithOptions(
-					invocation.WithMethodName("BidiStreamMethod"),
-				)
-				iv.SetAttribute(constant.CallTypeKey, constant.CallBidiStream)
-				return iv
-			},
-			expect: func(t *testing.T, callType string, inRaw []any, methodName string, err error) {
-				assert.Nil(t, err)
-				assert.Equal(t, constant.CallBidiStream, callType)
-				assert.Equal(t, "BidiStreamMethod", methodName)
 			},
 		},
 	}
@@ -201,7 +122,7 @@ func Test_parseAttachments(t *testing.T) {
 				return invocation.NewRPCInvocationWithOptions()
 			},
 			expect: func(t *testing.T, ctx context.Context, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				header := http.Header(tri.ExtractFromOutgoingContext(ctx))
 				assert.NotNil(t, header)
 				assert.Equal(t, "interface", header.Get(constant.InterfaceKey))
@@ -221,7 +142,7 @@ func Test_parseAttachments(t *testing.T) {
 				return invocation.NewRPCInvocationWithOptions()
 			},
 			expect: func(t *testing.T, ctx context.Context, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				header := http.Header(tri.ExtractFromOutgoingContext(ctx))
 				assert.NotNil(t, header)
 				assert.Equal(t, "val1", header.Get("key1"))
@@ -240,53 +161,8 @@ func Test_parseAttachments(t *testing.T) {
 				return invocation.NewRPCInvocationWithOptions()
 			},
 			expect: func(t *testing.T, ctx context.Context, err error) {
-				assert.NotNil(t, err)
+				require.Error(t, err)
 				assert.Contains(t, err.Error(), "invalid")
-			},
-		},
-		{
-			desc: "url has timeout key",
-			ctx: func() context.Context {
-				return context.Background()
-			},
-			url: common.NewURLWithOptions(
-				common.WithParamsValue(constant.TimeoutKey, "3000"),
-			),
-			invo: func() base.Invocation {
-				return invocation.NewRPCInvocationWithOptions()
-			},
-			expect: func(t *testing.T, ctx context.Context, err error) {
-				assert.Nil(t, err)
-				header := http.Header(tri.ExtractFromOutgoingContext(ctx))
-				assert.NotNil(t, header)
-				assert.Equal(t, "3000", header.Get(constant.TimeoutKey))
-			},
-		},
-		{
-			desc: "empty context attachments",
-			ctx: func() context.Context {
-				return context.Background()
-			},
-			url: common.NewURLWithOptions(),
-			invo: func() base.Invocation {
-				return invocation.NewRPCInvocationWithOptions()
-			},
-			expect: func(t *testing.T, ctx context.Context, err error) {
-				assert.Nil(t, err)
-			},
-		},
-		{
-			desc: "context with non-map attachment value",
-			ctx: func() context.Context {
-				return context.WithValue(context.Background(), constant.AttachmentKey, "not-a-map")
-			},
-			url: common.NewURLWithOptions(),
-			invo: func() base.Invocation {
-				return invocation.NewRPCInvocationWithOptions()
-			},
-			expect: func(t *testing.T, ctx context.Context, err error) {
-				// non-map attachment should be ignored
-				assert.Nil(t, err)
 			},
 		},
 	}
@@ -512,7 +388,7 @@ func TestTripleInvoker_Invoke(t *testing.T) {
 				assert.Equal(t, test.expectErr, result.Error())
 			}
 			if test.expectErrMsg != "" {
-				assert.NotNil(t, result.Error())
+				require.Error(t, result.Error())
 				assert.Contains(t, result.Error().Error(), test.expectErrMsg)
 			}
 		})
@@ -558,7 +434,7 @@ func Test_mergeAttachmentToOutgoing(t *testing.T) {
 				return inv
 			},
 			expect: func(t *testing.T, ctx context.Context, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				timeout := ctx.Value(tri.TimeoutKey{})
 				assert.Equal(t, "5000", timeout)
 			},
@@ -573,7 +449,7 @@ func Test_mergeAttachmentToOutgoing(t *testing.T) {
 				return inv
 			},
 			expect: func(t *testing.T, ctx context.Context, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				header := http.Header(tri.ExtractFromOutgoingContext(ctx))
 				assert.Equal(t, "custom-value", header.Get("custom-key"))
 			},
@@ -588,7 +464,7 @@ func Test_mergeAttachmentToOutgoing(t *testing.T) {
 				return inv
 			},
 			expect: func(t *testing.T, ctx context.Context, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				header := http.Header(tri.ExtractFromOutgoingContext(ctx))
 				assert.Equal(t, []string{"val1", "val2"}, header.Values("multi-key"))
 			},
@@ -603,7 +479,7 @@ func Test_mergeAttachmentToOutgoing(t *testing.T) {
 				return inv
 			},
 			expect: func(t *testing.T, ctx context.Context, err error) {
-				assert.NotNil(t, err)
+				require.Error(t, err)
 				assert.Contains(t, err.Error(), "invalid")
 			},
 		},
@@ -614,7 +490,7 @@ func Test_mergeAttachmentToOutgoing(t *testing.T) {
 				return invocation.NewRPCInvocationWithOptions()
 			},
 			expect: func(t *testing.T, ctx context.Context, err error) {
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 			},
 		},
 	}

@@ -24,6 +24,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -40,18 +41,18 @@ func TestDubboPackage_MarshalAndUnmarshal(t *testing.T) {
 
 	// heartbeat
 	data, err := pkg.Marshal()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	pkgres := NewDubboPackage(data)
 	pkgres.SetSerializer(HessianSerializer{})
 
 	pkgres.Body = []any{}
 	err = pkgres.Unmarshal()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, PackageHeartbeat|PackageRequest|PackageRequest_TwoWay, pkgres.Header.Type)
 	assert.Equal(t, constant.SHessian2, pkgres.Header.SerialID)
 	assert.Equal(t, int64(10086), pkgres.Header.ID)
-	assert.Equal(t, 0, len(pkgres.Body.([]any)))
+	assert.Empty(t, pkgres.Body.([]any))
 
 	// request
 	pkg.Header.Type = PackageRequest
@@ -61,14 +62,14 @@ func TestDubboPackage_MarshalAndUnmarshal(t *testing.T) {
 	pkg.Service.Method = "Method"
 	pkg.Service.Timeout = time.Second
 	data, err = pkg.Marshal()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	pkgres = NewDubboPackage(data)
 	pkgres.SetSerializer(HessianSerializer{})
 	pkgres.Body = make([]any, 7)
 	err = pkgres.Unmarshal()
 	reassembleBody := pkgres.GetBody().(map[string]any)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, PackageRequest, pkgres.Header.Type)
 	assert.Equal(t, constant.SHessian2, pkgres.Header.SerialID)
 	assert.Equal(t, int64(10086), pkgres.Header.ID)
@@ -98,7 +99,7 @@ func TestEncodeHeaderHeartbeat(t *testing.T) {
 
 	header := codec.EncodeHeader(*pkg)
 	assert.NotNil(t, header)
-	assert.Greater(t, len(header), 0)
+	assert.NotEmpty(t, header)
 	assert.Equal(t, MAGIC_HIGH, header[0])
 	assert.Equal(t, MAGIC_LOW, header[1])
 }
@@ -143,7 +144,7 @@ func TestEncodeHeaderRequestTwoWay(t *testing.T) {
 
 	header := codec.EncodeHeader(*pkg)
 	assert.NotNil(t, header)
-	assert.Greater(t, len(header), 0)
+	assert.NotEmpty(t, header)
 }
 
 // TestProtocolCodecSetSerializer tests SetSerializer method of ProtocolCodec
@@ -174,7 +175,7 @@ func TestPackageResponseWorkflow(t *testing.T) {
 	assert.False(t, pkg.IsResponseWithException())
 
 	data, err := pkg.Marshal()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, data)
 }
 
@@ -198,7 +199,7 @@ func TestPackageRequestWorkflow(t *testing.T) {
 	assert.False(t, pkg.IsResponse())
 
 	data, err := pkg.Marshal()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, data)
 }
 
@@ -304,10 +305,10 @@ func TestDubboPackageIntegrationWithLoadSerializer(t *testing.T) {
 	pkg.Body = []any{"test"}
 
 	err := LoadSerializer(pkg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	data, err := pkg.Marshal()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, data)
-	assert.Greater(t, data.Len(), 0)
+	assert.Positive(t, data.Len())
 }

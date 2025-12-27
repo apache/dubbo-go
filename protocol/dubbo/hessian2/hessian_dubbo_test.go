@@ -29,6 +29,7 @@ import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type Case struct {
@@ -75,19 +76,19 @@ func doTestHessianEncodeHeader(t *testing.T, packageType PackageType, responseSt
 		ID:             1,
 		ResponseStatus: responseStatus,
 	}, body)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	return resp, err
 }
 
 func doTestResponse(t *testing.T, packageType PackageType, responseStatus byte, body any, decodedResponse *DubboResponse, assertFunc func()) {
 	resp, err := doTestHessianEncodeHeader(t, packageType, responseStatus, body)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	codecR := NewHessianCodec(bufio.NewReader(bytes.NewReader(resp)))
 
 	h := &DubboHeader{}
 	err = codecR.ReadHeader(h)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, byte(2), h.SerialID)
 	assert.Equal(t, packageType, h.Type&(PackageRequest|PackageResponse|PackageHeartbeat))
@@ -95,7 +96,7 @@ func doTestResponse(t *testing.T, packageType PackageType, responseStatus byte, 
 	assert.Equal(t, responseStatus, h.ResponseStatus)
 
 	err = codecR.ReadBody(decodedResponse)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	t.Log(decodedResponse)
 
 	if assertFunc != nil {
@@ -126,7 +127,7 @@ func TestResponse(t *testing.T) {
 			t.Errorf("expect []*Case, but get %s", reflect.TypeOf(decodedResponse.RspObj).String())
 			return
 		}
-		assert.Equal(t, 1, len(arrRes))
+		assert.Len(t, arrRes, 1)
 		assert.Equal(t, &caseObj, arrRes[0])
 	})
 
@@ -171,20 +172,20 @@ func TestResponse(t *testing.T) {
 		if !ok {
 			assert.FailNow(t, "invalid decoded response map value", "expect []*Case, but get %v", reflect.TypeOf(c))
 		}
-		assert.Equal(t, 1, len(mapValueArr))
+		assert.Len(t, mapValueArr, 1)
 		assert.Equal(t, &caseObj, mapValueArr[0])
 	})
 }
 
 func doTestRequest(t *testing.T, packageType PackageType, responseStatus byte, body any) {
 	resp, err := doTestHessianEncodeHeader(t, packageType, responseStatus, body)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	codecR := NewHessianCodec(bufio.NewReader(bytes.NewReader(resp)))
 
 	h := &DubboHeader{}
 	err = codecR.ReadHeader(h)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, byte(2), h.SerialID)
 	assert.Equal(t, packageType, h.Type&(PackageRequest|PackageResponse|PackageHeartbeat))
 	assert.Equal(t, int64(1), h.ID)
@@ -192,9 +193,9 @@ func doTestRequest(t *testing.T, packageType PackageType, responseStatus byte, b
 
 	c := make([]any, 7)
 	err = codecR.ReadBody(c)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	t.Log(c)
-	assert.True(t, len(body.([]any)) == len(c[5].([]any)))
+	assert.Len(t, c[5].([]any), len(body.([]any)))
 }
 
 func TestRequest(t *testing.T) {
@@ -216,20 +217,20 @@ func TestHessianCodec_ReadAttachments(t *testing.T) {
 		Attachments: map[string]any{DUBBO_VERSION_KEY: "2.6.4", "att": AttachTestObject{ID: 23, Name: "haha"}},
 	}
 	resp, err := doTestHessianEncodeHeader(t, PackageResponse, Response_OK, body)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	hessian.UnRegisterPOJOs(&CaseB{}, &CaseA{})
 	codecR1 := NewHessianCodec(bufio.NewReader(bytes.NewReader(resp)))
 	codecR2 := NewHessianCodec(bufio.NewReader(bytes.NewReader(resp)))
 	h := &DubboHeader{}
-	assert.NoError(t, codecR1.ReadHeader(h))
+	require.NoError(t, codecR1.ReadHeader(h))
 	t.Log(h)
-	assert.NoError(t, codecR2.ReadHeader(h))
+	require.NoError(t, codecR2.ReadHeader(h))
 	t.Log(h)
 
 	err = codecR1.ReadBody(body)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	attrs, err := codecR2.ReadAttachments()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "2.6.4", attrs[DUBBO_VERSION_KEY])
 	assert.Equal(t, AttachTestObject{ID: 23, Name: "haha"}, *(attrs["att"].(*AttachTestObject)))
 	assert.NotEqual(t, AttachTestObject{ID: 24, Name: "nohaha"}, *(attrs["att"].(*AttachTestObject)))
@@ -280,12 +281,12 @@ func TestDecodeFromTcpStream(t *testing.T) {
 		ResponseStatus: Zero,
 	}
 	resp, err := codecW.Write(service, header, []any{cs})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// set reader buffer = 1024 to split resp into two parts
 	codec := NewStreamHessianCodecCustom(0, bufio.NewReaderSize(bytes.NewReader(resp), 1024), 0)
 	h := &DubboHeader{}
-	assert.NoError(t, codec.ReadHeader(h))
+	require.NoError(t, codec.ReadHeader(h))
 	assert.Equal(t, h.SerialID, header.SerialID)
 	assert.Equal(t, h.Type, header.Type)
 	assert.Equal(t, h.ID, header.ID)
@@ -294,7 +295,7 @@ func TestDecodeFromTcpStream(t *testing.T) {
 	reqBody := make([]any, 7)
 
 	err = codec.ReadBody(reqBody)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, reqBody[1], service.Path)
 	assert.Equal(t, reqBody[2], service.Version)
 	assert.Equal(t, reqBody[3], service.Method)
@@ -302,7 +303,7 @@ func TestDecodeFromTcpStream(t *testing.T) {
 	if list, ok := reqBody[5].([]any); ok {
 		assert.Len(t, list, 1)
 		if infoPtr, ok2 := list[0].(*CaseStream); ok2 {
-			assert.Equal(t, len(infoPtr.Payload), 1024)
+			assert.Len(t, infoPtr.Payload, 1024)
 		}
 	}
 

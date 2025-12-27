@@ -26,6 +26,7 @@ import (
 	"github.com/golang/mock/gomock"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -62,7 +63,7 @@ func TestAdaptiveServiceProviderFilter_Invoke(t *testing.T) {
 		invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(&result.RPCResult{Rest: "ok"})
 
 		res := filter.Invoke(context.Background(), invoker, invoc)
-		assert.Nil(t, res.Error())
+		assert.NoError(t, res.Error())
 	})
 
 	t.Run("AdaptiveEnabled_AcquireSuccess", func(t *testing.T) {
@@ -74,7 +75,7 @@ func TestAdaptiveServiceProviderFilter_Invoke(t *testing.T) {
 		invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(&result.RPCResult{Rest: "ok"})
 
 		res := filter.Invoke(context.Background(), invoker, invoc)
-		assert.Nil(t, res.Error())
+		require.NoError(t, res.Error())
 
 		updater, _ := invoc.GetAttribute(constant.AdaptiveServiceUpdaterKey)
 		assert.NotNil(t, updater)
@@ -122,7 +123,7 @@ func TestAdaptiveServiceProviderFilter_OnResponse(t *testing.T) {
 
 		ret := filter.OnResponse(context.Background(), res, invoker, invoc)
 
-		assert.Nil(t, ret.Error())
+		require.NoError(t, ret.Error())
 		assert.NotEmpty(t, ret.Attachment(constant.AdaptiveServiceRemainingKey, ""))
 		assert.NotEmpty(t, ret.Attachment(constant.AdaptiveServiceInflightKey, ""))
 		assert.True(t, updater.called)

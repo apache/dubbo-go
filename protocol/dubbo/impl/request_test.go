@@ -147,7 +147,7 @@ func TestNewRequestPayloadNilAttachments(t *testing.T) {
 	payload := NewRequestPayload("args", nil)
 
 	assert.NotNil(t, payload.Attachments)
-	assert.Equal(t, 0, len(payload.Attachments))
+	assert.Empty(t, payload.Attachments)
 }
 
 // TestRequestPayloadFields tests that RequestPayload fields are correctly set
@@ -202,5 +202,5 @@ func TestEnsureRequestPayloadCreateNewPayload(t *testing.T) {
 	assert.NotNil(t, payload)
 	assert.Equal(t, testArgs, payload.Params)
 	assert.NotNil(t, payload.Attachments)
-	assert.Equal(t, 0, len(payload.Attachments))
+	assert.Empty(t, payload.Attachments)
 }

@@ -39,9 +39,9 @@ func TestServerTlsConfigBuilder(t *testing.T) {
 	vf := reflect.ValueOf(serverTlsConfig)
 	name := reflect.Indirect(vf).Type().Name()
 
-	assert.Equal(t, name, "ServerTlsConfigBuilder")
+	assert.Equal(t, "ServerTlsConfigBuilder", name)
 
 	vf = reflect.ValueOf(clientTlsConfig)
 	name = reflect.Indirect(vf).Type().Name()
-	assert.Equal(t, name, "ClientTlsConfigBuilder")
+	assert.Equal(t, "ClientTlsConfigBuilder", name)
 }

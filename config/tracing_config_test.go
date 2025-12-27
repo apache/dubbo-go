@@ -23,6 +23,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -33,8 +34,8 @@ func TestTracingConfig(t *testing.T) {
 
 	tracing := &TracingConfig{}
 	err := tracing.Init()
-	assert.Nil(t, err)
-	assert.Equal(t, tracing.Prefix(), constant.TracingConfigPrefix)
-	assert.Equal(t, tracing.Name, "jaeger")
-	assert.Equal(t, *tracing.UseAgent, false)
+	require.NoError(t, err)
+	assert.Equal(t, constant.TracingConfigPrefix, tracing.Prefix())
+	assert.Equal(t, "jaeger", tracing.Name)
+	assert.False(t, *tracing.UseAgent)
 }

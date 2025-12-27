@@ -27,6 +27,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -55,7 +56,7 @@ func (s *PassThroughService) Service(method string, argTypes []string, args [][]
 func registerService(t *testing.T, protocol, interfaceName string, svc common.RPCService) {
 	t.Helper()
 	_, err := common.ServiceMap.Register(interfaceName, protocol, "", "", svc)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	t.Cleanup(func() {
 		_ = common.ServiceMap.UnRegister(interfaceName, protocol, common.ServiceKey(interfaceName, "", ""))
 	})
@@ -86,7 +87,7 @@ func TestProxyInvoker_Invoke(t *testing.T) {
 			invocation.WithAttachments(map[string]any{"trace": "t1"}),
 		)
 		result := invoker.Invoke(context.Background(), inv)
-		assert.NoError(t, result.Error())
+		require.NoError(t, result.Error())
 		assert.Equal(t, "hello:world", result.Result())
 		assert.Equal(t, "t1", result.Attachments()["trace"])
 	})
@@ -133,7 +134,7 @@ func TestPassThroughProxyInvoker_Invoke(t *testing.T) {
 			}),
 		)
 		result := invoker.Invoke(context.Background(), inv)
-		assert.NoError(t, result.Error())
+		require.NoError(t, result.Error())
 		assert.Equal(t, "RawMethod|bytes|payload", result.Result())
 		assert.Equal(t, "abc", result.Attachments()["trace"])
 	})

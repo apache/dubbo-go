@@ -31,6 +31,7 @@ import (
 	gxpage "github.com/dubbogo/gost/hash/page"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -61,10 +62,10 @@ func TestServiceDiscoveryRegistryRegister(t *testing.T) {
 	registryURL, err := common.NewURL(testRegistryURL,
 		common.WithParamsValue(constant.RegistryKey, "mock"),
 		common.WithParamsValue(constant.RegistryIdKey, regID))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	reg, err := newServiceDiscoveryRegistry(registryURL)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	providerURL, _ := common.NewURL("dubbo://127.0.0.1:20880/",
 		common.WithParamsValue(constant.ApplicationKey, testApp),
@@ -74,7 +75,7 @@ func TestServiceDiscoveryRegistryRegister(t *testing.T) {
 
 	// Interface Mapping
 	err = reg.Register(providerURL)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, mockMapping.mapCalled, "ServiceNameMapping.Map should be called")
 
 	// Instance Registration
@@ -82,7 +83,7 @@ func TestServiceDiscoveryRegistryRegister(t *testing.T) {
 	assert.True(t, ok)
 
 	err = sdReg.RegisterService()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.True(t, mockSD.registerCalled, "ServiceDiscovery.Register should be called")
 
@@ -103,7 +104,7 @@ func TestServiceDiscoveryRegistrySubscribe(t *testing.T) {
 		common.WithParamsValue(constant.RegistryKey, "mock"))
 
 	reg, err := newServiceDiscoveryRegistry(registryURL)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	consumerURL, _ := common.NewURL("dubbo://127.0.0.1:20000/",
 		common.WithInterface(testInterface),
@@ -113,7 +114,7 @@ func TestServiceDiscoveryRegistrySubscribe(t *testing.T) {
 
 	mockSD.wg.Add(1)
 	err = reg.Subscribe(consumerURL, &mockNotifyListener{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.True(t, mockMapping.getCalled)
 	assert.Equal(t, testApp, mockSD.capturedAppName)
@@ -131,7 +132,7 @@ func TestServiceDiscoveryRegistryUnSubscribe(t *testing.T) {
 		common.WithParamsValue(constant.RegistryKey, "mock"))
 
 	reg, err := newServiceDiscoveryRegistry(registryURL)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	consumerURL, _ := common.NewURL("dubbo://127.0.0.1:20000/",
 		common.WithInterface(testInterface),
@@ -143,7 +144,7 @@ func TestServiceDiscoveryRegistryUnSubscribe(t *testing.T) {
 	mockSD.wg.Wait()
 
 	err = reg.UnSubscribe(consumerURL, &mockNotifyListener{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, mockMapping.removeCalled)
 }
 
@@ -309,7 +310,7 @@ func TestServiceDiscoveryRegistryUnRegister_AllSuccess(t *testing.T) {
 		common.WithParamsValue(constant.RegistryKey, "mock"))
 
 	reg, err := newServiceDiscoveryRegistry(registryURL)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	sdReg, ok := reg.(*serviceDiscoveryRegistry)
 	assert.True(t, ok)
@@ -337,7 +338,7 @@ func TestServiceDiscoveryRegistryUnRegister_AllSuccess(t *testing.T) {
 	mockSD.unregisterErrByID = nil
 
 	err = sdReg.UnRegisterService()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// all instances should be removed after successful deregister
 	assert.Empty(t, sdReg.instances)
@@ -355,7 +356,7 @@ func TestServiceDiscoveryRegistryUnRegister_PartialFail(t *testing.T) {
 		common.WithParamsValue(constant.RegistryKey, "mock"))
 
 	reg, err := newServiceDiscoveryRegistry(registryURL)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	sdReg, ok := reg.(*serviceDiscoveryRegistry)
 	assert.True(t, ok)
@@ -384,10 +385,10 @@ func TestServiceDiscoveryRegistryUnRegister_PartialFail(t *testing.T) {
 	}
 
 	err = sdReg.UnRegisterService()
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	// failed instance should remain, successful one removed
-	assert.Equal(t, 1, len(sdReg.instances))
+	assert.Len(t, sdReg.instances, 1)
 	assert.Equal(t, "inst-1", sdReg.instances[0].GetID())
 
 	// still called for both
@@ -403,7 +404,7 @@ func TestServiceDiscoveryRegistryUnRegister_NoInstances(t *testing.T) {
 		common.WithParamsValue(constant.RegistryKey, "mock"))
 
 	reg, err := newServiceDiscoveryRegistry(registryURL)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	sdReg, ok := reg.(*serviceDiscoveryRegistry)
 	assert.True(t, ok)
@@ -411,7 +412,7 @@ func TestServiceDiscoveryRegistryUnRegister_NoInstances(t *testing.T) {
 	sdReg.instances = []registry.ServiceInstance{}
 
 	err = sdReg.UnRegisterService()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// should stay empty
 	assert.Empty(t, sdReg.instances)
@@ -429,7 +430,7 @@ func TestServiceDiscoveryRegistryUnRegister_Concurrent(t *testing.T) {
 		common.WithParamsValue(constant.RegistryKey, "mock"))
 
 	reg, err := newServiceDiscoveryRegistry(registryURL)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	sdReg, ok := reg.(*serviceDiscoveryRegistry)
 	assert.True(t, ok)

@@ -24,6 +24,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestNewResponsePayload tests creating a new ResponsePayload with various inputs
@@ -86,9 +87,9 @@ func TestNewResponsePayload(t *testing.T) {
 			assert.NotNil(t, payload)
 			assert.Equal(t, test.expectRspObj, payload.RspObj)
 			if test.expectException != nil {
-				assert.Error(t, payload.Exception)
+				require.Error(t, payload.Exception)
 			} else {
-				assert.NoError(t, payload.Exception)
+				require.NoError(t, payload.Exception)
 			}
 			assert.NotNil(t, payload.Attachments)
 		})
@@ -166,7 +167,7 @@ func TestNewResponsePayloadNilAttachments(t *testing.T) {
 	payload := NewResponsePayload("response", nil, nil)
 
 	assert.NotNil(t, payload.Attachments)
-	assert.Equal(t, 0, len(payload.Attachments))
+	assert.Empty(t, payload.Attachments)
 }
 
 // TestResponsePayloadFields tests that ResponsePayload fields are correctly set

@@ -26,6 +26,7 @@ import (
 	"github.com/opentracing/opentracing-go/mocktracer"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -97,7 +98,7 @@ func TestFilterContext(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
 			result := filterContext(test.attachments)
-			assert.Equal(t, test.expectedLen, len(result))
+			assert.Len(t, result, test.expectedLen)
 			for k, v := range test.expectedContains {
 				assert.Equal(t, v, result[k])
 			}
@@ -168,7 +169,7 @@ func TestFillTraceAttachments(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
 			fillTraceAttachments(test.initialAttachments, test.traceAttachment)
-			assert.Equal(t, len(test.expectedAttachments), len(test.initialAttachments))
+			assert.Len(t, test.initialAttachments, len(test.expectedAttachments))
 			for k, v := range test.expectedAttachments {
 				assert.Equal(t, v, test.initialAttachments[k])
 			}
@@ -219,7 +220,7 @@ func TestInjectTraceCtx(t *testing.T) {
 			if test.expectError {
 				assert.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.NotNil(t, inv.Attachments())
 			}
 		})
@@ -262,7 +263,7 @@ func TestInjectTraceCtxIntegration(t *testing.T) {
 			err := injectTraceCtx(span, inv)
 			span.Finish()
 
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			finalAttachments := inv.Attachments()
 			assert.NotNil(t, finalAttachments)
 

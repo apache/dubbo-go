@@ -24,16 +24,17 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMockService(t *testing.T) {
 
 	mockService := &MockService{}
 	reference := mockService.Reference()
-	assert.Equal(t, reference, "MockService")
+	assert.Equal(t, "MockService", reference)
 
 	err := mockService.GetUser1(context.TODO(), nil, nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = mockService.GetUser(context.TODO(), nil, nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }

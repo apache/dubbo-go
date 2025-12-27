@@ -26,6 +26,7 @@ import (
 	"github.com/dubbogo/gost/encoding/yaml"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -34,18 +35,18 @@ import (
 
 func TestRestConfigReaderReadConsumerConfig(t *testing.T) {
 	bs, err := yaml.LoadYMLConfig("./testdata/consumer_config.yml")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	configReader := NewRestConfigReader()
 	err = configReader.ReadConsumerConfig(bytes.NewBuffer(bs))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotEmpty(t, config.GetRestConsumerServiceConfigMap())
 }
 
 func TestRestConfigReaderReadProviderConfig(t *testing.T) {
 	bs, err := yaml.LoadYMLConfig("./testdata/provider_config.yml")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	configReader := NewRestConfigReader()
 	err = configReader.ReadProviderConfig(bytes.NewBuffer(bs))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotEmpty(t, config.GetRestProviderServiceConfigMap())
 }

@@ -33,12 +33,12 @@ func TestGetConsumerService(t *testing.T) {
 	service := GetConsumerService("HelloService")
 	reference := service.(*HelloService).Reference()
 
-	assert.Equal(t, reference, "HelloService")
+	assert.Equal(t, "HelloService", reference)
 
 	SetConsumerServiceByInterfaceName("org.apache.dubbo.HelloService", &HelloService{})
 	service = GetConsumerServiceByInterfaceName("org.apache.dubbo.HelloService")
 	reference = service.(*HelloService).Reference()
-	assert.Equal(t, reference, "HelloService")
+	assert.Equal(t, "HelloService", reference)
 
 	callback := GetCallback(reference)
 	assert.Nil(t, callback)

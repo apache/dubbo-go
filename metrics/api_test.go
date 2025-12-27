@@ -145,7 +145,7 @@ func TestMetricIdTagKeys(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &MetricId{Name: "test_metric", Tags: tt.tags}
 			got := m.TagKeys()
-			assert.Equal(t, tt.want, len(got))
+			assert.Len(t, got, tt.want)
 			for k := range tt.tags {
 				assert.Contains(t, got, k)
 			}
@@ -171,10 +171,10 @@ func TestBaseCollectorStateCount(t *testing.T) {
 
 		assert.NotNil(t, total)
 		assert.NotNil(t, succ)
-		assert.Equal(t, float64(1), total.value)
-		assert.Equal(t, float64(1), succ.value)
+		assert.InDelta(t, 1.0, total.value, 0.01)
+		assert.InDelta(t, 1.0, succ.value, 0.01)
 		if fail != nil {
-			assert.Equal(t, float64(0), fail.value)
+			assert.InDelta(t, 0.0, fail.value, 0.01)
 		}
 	})
 
@@ -186,8 +186,8 @@ func TestBaseCollectorStateCount(t *testing.T) {
 
 		assert.NotNil(t, total)
 		assert.NotNil(t, fail)
-		assert.Equal(t, float64(2), total.value)
-		assert.Equal(t, float64(1), fail.value)
+		assert.InDelta(t, 2.0, total.value, 0.01)
+		assert.InDelta(t, 1.0, fail.value, 0.01)
 	})
 }
 
@@ -201,7 +201,7 @@ func TestDefaultCounterVec(t *testing.T) {
 		counterVec.Inc(labels)
 		metricId := NewMetricIdByLabels(key, labels)
 		counter := registry.Counter(metricId).(*mockCounterMetric)
-		assert.Equal(t, float64(1), counter.value)
+		assert.InDelta(t, 1.0, counter.value, 0.01)
 	})
 
 	t.Run("Add", func(t *testing.T) {
@@ -210,7 +210,7 @@ func TestDefaultCounterVec(t *testing.T) {
 		counterVec.Add(labels, 5.0)
 		metricId := NewMetricIdByLabels(key, labels)
 		counter := registry.Counter(metricId).(*mockCounterMetric)
-		assert.Equal(t, float64(5), counter.value)
+		assert.InDelta(t, 5.0, counter.value, 0.01)
 	})
 }
 
@@ -223,7 +223,7 @@ func TestDefaultGaugeVec(t *testing.T) {
 		gaugeVec := NewGaugeVec(registry, key)
 		gaugeVec.Set(labels, 100.0)
 		gauge := registry.Gauge(NewMetricIdByLabels(key, labels)).(*mockGaugeMetric)
-		assert.Equal(t, float64(100), gauge.value)
+		assert.InDelta(t, 100.0, gauge.value, 0.01)
 	})
 
 	t.Run("Inc", func(t *testing.T) {
@@ -232,7 +232,7 @@ func TestDefaultGaugeVec(t *testing.T) {
 		gaugeVec.Set(labels, 100.0)
 		gaugeVec.Inc(labels)
 		gauge := registry.Gauge(NewMetricIdByLabels(key, labels)).(*mockGaugeMetric)
-		assert.Equal(t, float64(101), gauge.value)
+		assert.InDelta(t, 101.0, gauge.value, 0.01)
 	})
 
 	t.Run("Dec", func(t *testing.T) {
@@ -241,7 +241,7 @@ func TestDefaultGaugeVec(t *testing.T) {
 		gaugeVec.Set(labels, 100.0)
 		gaugeVec.Dec(labels)
 		gauge := registry.Gauge(NewMetricIdByLabels(key, labels)).(*mockGaugeMetric)
-		assert.Equal(t, float64(99), gauge.value)
+		assert.InDelta(t, 99.0, gauge.value, 0.01)
 	})
 
 	t.Run("Add", func(t *testing.T) {
@@ -250,7 +250,7 @@ func TestDefaultGaugeVec(t *testing.T) {
 		gaugeVec.Set(labels, 100.0)
 		gaugeVec.Add(labels, 50.0)
 		gauge := registry.Gauge(NewMetricIdByLabels(key, labels)).(*mockGaugeMetric)
-		assert.Equal(t, float64(150), gauge.value)
+		assert.InDelta(t, 150.0, gauge.value, 0.01)
 	})
 
 	t.Run("Sub", func(t *testing.T) {
@@ -259,7 +259,7 @@ func TestDefaultGaugeVec(t *testing.T) {
 		gaugeVec.Set(labels, 100.0)
 		gaugeVec.Sub(labels, 30.0)
 		gauge := registry.Gauge(NewMetricIdByLabels(key, labels)).(*mockGaugeMetric)
-		assert.Equal(t, float64(70), gauge.value)
+		assert.InDelta(t, 70.0, gauge.value, 0.01)
 	})
 }
 

@@ -120,7 +120,7 @@ func TestBroadcastInvokeFailedOver(t *testing.T) {
 	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 
 	// Assert that the result is the same as the failed result
-	assert.Equal(t, nil, result.Error())
+	assert.NoError(t, result.Error())
 }
 
 func TestBroadcastInvokeFailed(t *testing.T) {

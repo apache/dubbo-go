@@ -205,7 +205,7 @@ func TestDubboExporterMultipleExporters(t *testing.T) {
 	}
 
 	// Verify all exporters coexist in memory - validate the count
-	assert.Equal(t, len(tests), len(exporters), "all exporters should coexist in the exporters map")
+	assert.Len(t, exporters, len(tests), "all exporters should coexist in the exporters map")
 
 	// Verify each exporter has the correct invoker and can be accessed independently
 	for _, test := range tests {

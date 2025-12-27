@@ -28,6 +28,7 @@ import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -56,12 +57,12 @@ func TestMetadataInfoAddService(t *testing.T) {
 
 	url, _ := common.NewURL("dubbo://127.0.0.1:20000?application=foo&category=providers&check=false&dubbo=dubbo-go+v1.5.0&interface=com.foo.Bar&methods=GetPetByID%2CGetPetTypes&organization=Apache&owner=foo&revision=1.0.0&side=provider&version=1.0.0")
 	metadataInfo.AddService(url)
-	assert.True(t, len(metadataInfo.Services) > 0)
-	assert.True(t, len(metadataInfo.GetExportedServiceURLs()) > 0)
+	assert.NotEmpty(t, metadataInfo.Services)
+	assert.NotEmpty(t, metadataInfo.GetExportedServiceURLs())
 
 	metadataInfo.RemoveService(url)
-	assert.True(t, len(metadataInfo.Services) == 0)
-	assert.True(t, len(metadataInfo.GetExportedServiceURLs()) == 0)
+	assert.Empty(t, metadataInfo.Services)
+	assert.Empty(t, metadataInfo.GetExportedServiceURLs())
 }
 
 func TestHessian(t *testing.T) {
@@ -75,27 +76,27 @@ func TestHessian(t *testing.T) {
 	metadataInfo.Services["1"] = NewServiceInfo("dubbo.io", "default", "1.0.0", "dubbo", "", make(map[string]string))
 	e := hessian.NewEncoder()
 	err := e.Encode(metadataInfo)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	obj, err := hessian.NewDecoder(e.Buffer()).Decode()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	objJson, _ := json.Marshal(obj)
 	metaJson, _ := json.Marshal(metadataInfo)
-	assert.Equal(t, objJson, metaJson)
+	assert.JSONEq(t, string(metaJson), string(objJson))
 }
 
 func TestMetadataInfoAddSubscribeURL(t *testing.T) {
 	info := NewMetadataInfo("dubbo", "tag")
 	info.AddSubscribeURL(serviceUrl)
-	assert.True(t, len(info.GetSubscribedURLs()) > 0)
+	assert.NotEmpty(t, info.GetSubscribedURLs())
 	info.RemoveSubscribeURL(serviceUrl)
-	assert.True(t, len(info.GetSubscribedURLs()) == 0)
+	assert.Empty(t, info.GetSubscribedURLs())
 }
 
 func TestMetadataInfoCalAndGetRevision(t *testing.T) {
 	metadata := NewAppMetadataInfo("dubbo")
 	assert.Equalf(t, "0", metadata.CalAndGetRevision(), "CalAndGetRevision()")
 	metadata.AddService(serviceUrl)
-	assert.True(t, metadata.CalAndGetRevision() != "0")
+	assert.NotEqual(t, "0", metadata.CalAndGetRevision())
 
 	v := metadata.Revision
 	assert.Equal(t, v, metadata.CalAndGetRevision(), "CalAndGetRevision() test cache")
@@ -104,43 +105,43 @@ func TestMetadataInfoCalAndGetRevision(t *testing.T) {
 	url1 := serviceUrl.Clone()
 	url1.Methods = []string{}
 	metadata.AddService(url1)
-	assert.True(t, metadata.CalAndGetRevision() != "0", "CalAndGetRevision() test empty methods")
+	assert.NotEqual(t, "0", metadata.CalAndGetRevision(), "CalAndGetRevision() test empty methods")
 }
 
 func TestNewMetadataInfo(t *testing.T) {
 	info := NewMetadataInfo("dubbo", "tag")
-	assert.Equal(t, info.App, "dubbo")
-	assert.Equal(t, info.Tag, "tag")
+	assert.Equal(t, "dubbo", info.App)
+	assert.Equal(t, "tag", info.Tag)
 }
 
 func TestNewMetadataInfoWithParams(t *testing.T) {
 	info := NewMetadataInfoWithParams("dubbo", "",
 		map[string]*ServiceInfo{"org.apache.dubbo.samples.proto.GreetService": NewServiceInfoWithURL(serviceUrl)})
-	assert.Equal(t, info.App, "dubbo")
-	assert.Equal(t, info.Revision, "")
-	assert.Equal(t, info.Services, map[string]*ServiceInfo{"org.apache.dubbo.samples.proto.GreetService": NewServiceInfoWithURL(serviceUrl)})
+	assert.Equal(t, "dubbo", info.App)
+	assert.Empty(t, info.Revision)
+	assert.Equal(t, map[string]*ServiceInfo{"org.apache.dubbo.samples.proto.GreetService": NewServiceInfoWithURL(serviceUrl)}, info.Services)
 }
 
 func TestNewServiceInfoWithURL(t *testing.T) {
 	info := NewServiceInfoWithURL(serviceUrl)
-	assert.True(t, info.URL == serviceUrl)
+	assert.Same(t, serviceUrl, info.URL)
 	assert.Equal(t, info.Protocol, serviceUrl.Protocol)
 	assert.Equal(t, info.Name, serviceUrl.Interface())
 	assert.Equal(t, info.Group, serviceUrl.Group())
 	assert.Equal(t, info.Version, serviceUrl.Version())
 	assert.Equal(t, strconv.Itoa(info.Port), serviceUrl.Port)
 	assert.Equal(t, info.Path, strings.TrimPrefix(serviceUrl.Path, "/"))
-	assert.Equal(t, info.Params["Greet.timeout"], "1000")
+	assert.Equal(t, "1000", info.Params["Greet.timeout"])
 }
 
 func TestServiceInfoGetMethods(t *testing.T) {
 	service := NewServiceInfoWithURL(serviceUrl)
-	assert.Equal(t, service.GetMethods(), []string{"Greet", "SayHello"})
+	assert.Equal(t, []string{"Greet", "SayHello"}, service.GetMethods())
 }
 
 func TestServiceInfoGetParams(t *testing.T) {
 	service := NewServiceInfoWithURL(serviceUrl)
-	assert.Equal(t, service.GetParams()["loadbalance"], []string{"random"})
+	assert.Equal(t, []string{"random"}, service.GetParams()["loadbalance"])
 }
 
 func TestServiceInfoGetMatchKey(t *testing.T) {
@@ -148,10 +149,10 @@ func TestServiceInfoGetMatchKey(t *testing.T) {
 	matchKey := si.MatchKey
 	assert.Equal(t, si.GetMatchKey(), matchKey)
 	si.MatchKey = ""
-	assert.True(t, si.GetMatchKey() != "")
+	assert.NotEmpty(t, si.GetMatchKey())
 	si.MatchKey = ""
 	si.ServiceKey = ""
-	assert.True(t, si.GetMatchKey() != "")
+	assert.NotEmpty(t, si.GetMatchKey())
 }
 
 func TestServiceInfoJavaClassName(t *testing.T) {

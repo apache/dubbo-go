@@ -44,22 +44,22 @@ func TestMergeValue(t *testing.T) {
 
 func TestRemoveMinus(t *testing.T) {
 	strList := removeMinus([]string{})
-	assert.Equal(t, strList, "")
+	assert.Empty(t, strList)
 
 	strList = removeMinus([]string{"a", "b", "c", "d", "-a"})
-	assert.Equal(t, strList, "b,c,d")
+	assert.Equal(t, "b,c,d", strList)
 
 	strList = removeMinus([]string{"a", "b", "c", "d", "-a", "-b"})
-	assert.Equal(t, strList, "c,d")
+	assert.Equal(t, "c,d", strList)
 
 	strList = removeMinus([]string{"a", "b", "c", "-c", "-a", "-b"})
-	assert.Equal(t, strList, "")
+	assert.Empty(t, strList)
 
 	strList = removeMinus([]string{"b", "a", "-c", "c"})
-	assert.Equal(t, strList, "b,a")
+	assert.Equal(t, "b,a", strList)
 
 	strList = removeMinus([]string{"c", "b", "a", "d", "c", "-c", "-a", "e", "f"})
-	assert.Equal(t, strList, "b,d,c,e,f")
+	assert.Equal(t, "b,d,c,e,f", strList)
 }
 
 type mockConfig struct {

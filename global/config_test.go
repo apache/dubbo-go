@@ -24,6 +24,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestCloneConfig tests the Clone method of the *_config.go files
@@ -280,10 +281,10 @@ func CheckCompleteInequality(t *testing.T, origin any, clone any) {
 			assert.Equal(t, "origin", originField.String())
 
 		case reflect.Bool:
-			assert.Equal(t, true, cloneField.Bool())
+			assert.True(t, cloneField.Bool())
 			cloneField.SetBool(false)
-			assert.Equal(t, false, cloneField.Bool())
-			assert.Equal(t, true, originField.Bool())
+			assert.False(t, cloneField.Bool())
+			assert.True(t, originField.Bool())
 
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			assert.EqualValues(t, 1, cloneField.Int())
@@ -298,10 +299,10 @@ func CheckCompleteInequality(t *testing.T, origin any, clone any) {
 			assert.EqualValues(t, 1, originField.Uint())
 
 		case reflect.Float32, reflect.Float64:
-			assert.EqualValues(t, 1.5, cloneField.Float())
+			assert.InEpsilon(t, 1.5, cloneField.Float(), 1e-9)
 			cloneField.SetFloat(2.5)
-			assert.EqualValues(t, 2.5, cloneField.Float())
-			assert.EqualValues(t, 1.5, originField.Float())
+			assert.InEpsilon(t, 2.5, cloneField.Float(), 1e-9)
+			assert.InEpsilon(t, 1.5, originField.Float(), 1e-9)
 
 		case reflect.Map, reflect.Ptr:
 			if originField.IsNil() {
@@ -354,7 +355,7 @@ func TestReferenceConfigGetOptions(t *testing.T) {
 
 		opts := ref.GetOptions()
 		assert.NotNil(t, opts, "opts should not be nil")
-		assert.True(t, len(opts) > 0, "opts should have items")
+		assert.NotEmpty(t, opts, "opts should have items")
 	})
 
 	t.Run("empty_reference_config", func(t *testing.T) {
@@ -362,7 +363,7 @@ func TestReferenceConfigGetOptions(t *testing.T) {
 		emptyOpts := emptyRef.GetOptions()
 		// An empty config will return nil from GetOptions since all fields are empty
 		if emptyOpts != nil {
-			assert.Equal(t, 0, len(emptyOpts), "empty ref config should have no options")
+			assert.Empty(t, emptyOpts, "empty ref config should have no options")
 		}
 	})
 
@@ -373,7 +374,7 @@ func TestReferenceConfigGetOptions(t *testing.T) {
 		opts := ref.GetOptions()
 		assert.NotNil(t, opts)
 		// Verify that a valid retries value produces at least one option
-		assert.Greater(t, len(opts), 0, "should have at least one option from Retries")
+		assert.NotEmpty(t, opts, "should have at least one option from Retries")
 	})
 
 	t.Run("reference_config_with_invalid_retries", func(t *testing.T) {
@@ -390,7 +391,7 @@ func TestReferenceConfigGetOptions(t *testing.T) {
 		// Since Retries is the only field and it's invalid, no options should be produced
 		if opts != nil {
 			// If opts is returned as a slice, it should be empty since Retries is invalid
-			assert.Equal(t, 0, len(opts), "invalid retries value should not produce any options")
+			assert.Empty(t, opts, "invalid retries value should not produce any options")
 		}
 		// The fact that invalid retries is not in opts confirms it was rejected
 	})
@@ -455,7 +456,7 @@ func TestReferenceConfigOptions(t *testing.T) {
 		ref := &ReferenceConfig{}
 		opt := WithReference_RegistryIDs([]string{"reg1", "reg2"})
 		opt(ref)
-		assert.Equal(t, 2, len(ref.RegistryIDs))
+		assert.Len(t, ref.RegistryIDs, 2)
 		assert.Equal(t, "reg1", ref.RegistryIDs[0])
 		assert.Equal(t, "reg2", ref.RegistryIDs[1])
 	})
@@ -464,7 +465,7 @@ func TestReferenceConfigOptions(t *testing.T) {
 		ref := &ReferenceConfig{}
 		opt := WithReference_RegistryIDs([]string{})
 		opt(ref)
-		assert.Equal(t, 0, len(ref.RegistryIDs))
+		assert.Empty(t, ref.RegistryIDs)
 	})
 
 	t.Run("WithReference_Cluster", func(t *testing.T) {
@@ -607,56 +608,56 @@ func TestRegistryConfigUseAsMetadataReport(t *testing.T) {
 	t.Run("empty_use_as_meta_report_defaults_to_true", func(t *testing.T) {
 		reg := &RegistryConfig{UseAsMetaReport: ""}
 		result, err := reg.UseAsMetadataReport()
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		assert.True(t, result)
 	})
 
 	t.Run("true_string", func(t *testing.T) {
 		reg := &RegistryConfig{UseAsMetaReport: "true"}
 		result, err := reg.UseAsMetadataReport()
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		assert.True(t, result)
 	})
 
 	t.Run("false_string", func(t *testing.T) {
 		reg := &RegistryConfig{UseAsMetaReport: "false"}
 		result, err := reg.UseAsMetadataReport()
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		assert.False(t, result)
 	})
 
 	t.Run("TRUE_uppercase", func(t *testing.T) {
 		reg := &RegistryConfig{UseAsMetaReport: "TRUE"}
 		result, err := reg.UseAsMetadataReport()
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		assert.True(t, result)
 	})
 
 	t.Run("FALSE_uppercase", func(t *testing.T) {
 		reg := &RegistryConfig{UseAsMetaReport: "FALSE"}
 		result, err := reg.UseAsMetadataReport()
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		assert.False(t, result)
 	})
 
 	t.Run("invalid_use_as_meta_report", func(t *testing.T) {
 		reg := &RegistryConfig{UseAsMetaReport: "invalid"}
 		result, err := reg.UseAsMetadataReport()
-		assert.NotNil(t, err)
+		require.Error(t, err)
 		assert.False(t, result)
 	})
 
 	t.Run("1_as_true", func(t *testing.T) {
 		reg := &RegistryConfig{UseAsMetaReport: "1"}
 		result, err := reg.UseAsMetadataReport()
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		assert.True(t, result)
 	})
 
 	t.Run("0_as_false", func(t *testing.T) {
 		reg := &RegistryConfig{UseAsMetaReport: "0"}
 		result, err := reg.UseAsMetadataReport()
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		assert.False(t, result)
 	})
 }
@@ -727,7 +728,7 @@ func TestRegistryConfigClone(t *testing.T) {
 		}
 		cloned := reg.Clone()
 		assert.NotNil(t, cloned)
-		assert.Equal(t, 0, len(cloned.Params))
+		assert.Empty(t, cloned.Params)
 		assert.NotSame(t, reg.Params, cloned.Params)
 	})
 }
@@ -749,7 +750,7 @@ func TestDefaultRegistriesConfig(t *testing.T) {
 	t.Run("default_registries_config", func(t *testing.T) {
 		regs := DefaultRegistriesConfig()
 		assert.NotNil(t, regs)
-		assert.Equal(t, 0, len(regs))
+		assert.Empty(t, regs)
 	})
 }
 
@@ -773,7 +774,7 @@ func TestCloneRegistriesConfig(t *testing.T) {
 			},
 		}
 		cloned := CloneRegistriesConfig(regs)
-		assert.Equal(t, 2, len(cloned))
+		assert.Len(t, cloned, 2)
 		assert.Equal(t, "zookeeper", cloned["reg1"].Protocol)
 		assert.Equal(t, "nacos", cloned["reg2"].Protocol)
 		assert.NotSame(t, regs["reg1"], cloned["reg1"])
@@ -792,7 +793,7 @@ func TestCloneRegistriesConfig(t *testing.T) {
 		regs := make(map[string]*RegistryConfig)
 		cloned := CloneRegistriesConfig(regs)
 		assert.NotNil(t, cloned)
-		assert.Equal(t, 0, len(cloned))
+		assert.Empty(t, cloned)
 		assert.NotSame(t, regs, cloned)
 	})
 
@@ -806,7 +807,7 @@ func TestCloneRegistriesConfig(t *testing.T) {
 			},
 		}
 		cloned := CloneRegistriesConfig(regs)
-		assert.Equal(t, 1, len(cloned))
+		assert.Len(t, cloned, 1)
 		assert.Equal(t, "etcdv3", cloned["reg1"].Protocol)
 		assert.Equal(t, "10s", cloned["reg1"].Timeout)
 		assert.Equal(t, int64(50), cloned["reg1"].Weight)
@@ -860,12 +861,12 @@ func TestRouterConfigClone(t *testing.T) {
 		assert.NotSame(t, router, cloned)
 		assert.NotSame(t, router.Conditions, cloned.Conditions)
 		assert.NotSame(t, router.Tags, cloned.Tags)
-		assert.Equal(t, 2, len(cloned.Conditions))
-		assert.Equal(t, 2, len(cloned.Tags))
+		assert.Len(t, cloned.Conditions, 2)
+		assert.Len(t, cloned.Tags, 2)
 		assert.Equal(t, "tag1", cloned.Tags[0].Name)
 		assert.Equal(t, "tag2", cloned.Tags[1].Name)
-		assert.Equal(t, 2, len(cloned.Tags[0].Addresses))
-		assert.Equal(t, 1, len(cloned.Tags[1].Addresses))
+		assert.Len(t, cloned.Tags[0].Addresses, 2)
+		assert.Len(t, cloned.Tags[1].Addresses, 1)
 	})
 
 	t.Run("clone_nil_router_config", func(t *testing.T) {
@@ -918,8 +919,8 @@ func TestDefaultRouterConfig(t *testing.T) {
 	t.Run("default_router_config", func(t *testing.T) {
 		router := DefaultRouterConfig()
 		assert.NotNil(t, router)
-		assert.Equal(t, 0, len(router.Conditions))
-		assert.Equal(t, 0, len(router.Tags))
+		assert.Empty(t, router.Conditions)
+		assert.Empty(t, router.Tags)
 	})
 }
 
@@ -931,7 +932,7 @@ func TestTagStructure(t *testing.T) {
 			Addresses: []string{"addr1", "addr2"},
 		}
 		assert.Equal(t, "test", tag.Name)
-		assert.Equal(t, 2, len(tag.Addresses))
+		assert.Len(t, tag.Addresses, 2)
 	})
 
 	t.Run("tag_with_empty_addresses", func(t *testing.T) {
@@ -939,7 +940,7 @@ func TestTagStructure(t *testing.T) {
 			Name:      "test",
 			Addresses: []string{},
 		}
-		assert.Equal(t, 0, len(tag.Addresses))
+		assert.Empty(t, tag.Addresses)
 	})
 }
 
@@ -972,7 +973,7 @@ func TestRouterConfigFields(t *testing.T) {
 		router := &RouterConfig{
 			Conditions: []string{"cond1", "cond2", "cond3"},
 		}
-		assert.Equal(t, 3, len(router.Conditions))
+		assert.Len(t, router.Conditions, 3)
 		assert.Equal(t, "cond1", router.Conditions[0])
 		assert.Equal(t, "cond3", router.Conditions[2])
 	})
@@ -1210,7 +1211,7 @@ func TestConsumerConfigClone(t *testing.T) {
 		assert.Equal(t, consumer.AdaptiveService, cloned.AdaptiveService)
 		assert.NotSame(t, consumer, cloned)
 		assert.NotSame(t, consumer.References, cloned.References)
-		assert.Equal(t, 2, len(cloned.References))
+		assert.Len(t, cloned.References, 2)
 		assert.Equal(t, "com.test.Service1", cloned.References["ref1"].InterfaceName)
 	})
 
@@ -1238,7 +1239,7 @@ func TestDefaultConsumerConfig(t *testing.T) {
 		assert.NotNil(t, consumer)
 		assert.True(t, consumer.Check)
 		assert.NotNil(t, consumer.References)
-		assert.Equal(t, 0, len(consumer.References))
+		assert.Empty(t, consumer.References)
 	})
 }
 
@@ -1283,7 +1284,7 @@ func TestConsumerConfigFields(t *testing.T) {
 		consumer := &ConsumerConfig{
 			RegistryIDs: []string{"reg1", "reg2", "reg3"},
 		}
-		assert.Equal(t, 3, len(consumer.RegistryIDs))
+		assert.Len(t, consumer.RegistryIDs, 3)
 	})
 
 	t.Run("consumer_config_mesh_enabled", func(t *testing.T) {
@@ -1344,8 +1345,8 @@ func TestServiceConfigClone(t *testing.T) {
 		assert.NotSame(t, service, cloned)
 		assert.NotSame(t, service.Params, cloned.Params)
 		assert.Equal(t, "value", cloned.Params["key"])
-		assert.Equal(t, 1, len(cloned.ProtocolIDs))
-		assert.Equal(t, 1, len(cloned.RegistryIDs))
+		assert.Len(t, cloned.ProtocolIDs, 1)
+		assert.Len(t, cloned.RegistryIDs, 1)
 	})
 
 	t.Run("clone_nil_service_config", func(t *testing.T) {
@@ -1374,8 +1375,8 @@ func TestServiceConfigClone(t *testing.T) {
 			},
 		}
 		cloned := service.Clone()
-		assert.Equal(t, 2, len(cloned.RCProtocolsMap))
-		assert.Equal(t, 2, len(cloned.RCRegistriesMap))
+		assert.Len(t, cloned.RCProtocolsMap, 2)
+		assert.Len(t, cloned.RCRegistriesMap, 2)
 		assert.NotSame(t, service.RCProtocolsMap, cloned.RCProtocolsMap)
 		assert.NotSame(t, service.RCRegistriesMap, cloned.RCRegistriesMap)
 	})
@@ -1390,8 +1391,8 @@ func TestDefaultServiceConfig(t *testing.T) {
 		assert.NotNil(t, service.Params)
 		assert.NotNil(t, service.RCProtocolsMap)
 		assert.NotNil(t, service.RCRegistriesMap)
-		assert.Equal(t, 0, len(service.Methods))
-		assert.Equal(t, 0, len(service.Params))
+		assert.Empty(t, service.Methods)
+		assert.Empty(t, service.Params)
 	})
 }
 
@@ -1450,14 +1451,14 @@ func TestServiceConfigFields(t *testing.T) {
 		service := &ServiceConfig{
 			ProtocolIDs: []string{"proto1", "proto2"},
 		}
-		assert.Equal(t, 2, len(service.ProtocolIDs))
+		assert.Len(t, service.ProtocolIDs, 2)
 	})
 
 	t.Run("service_config_registry_ids", func(t *testing.T) {
 		service := &ServiceConfig{
 			RegistryIDs: []string{"reg1"},
 		}
-		assert.Equal(t, 1, len(service.RegistryIDs))
+		assert.Len(t, service.RegistryIDs, 1)
 	})
 }
 
@@ -1504,7 +1505,7 @@ func TestProviderConfigClone(t *testing.T) {
 		assert.NotSame(t, provider.Services, cloned.Services)
 
 		// Verify RegistryIDs is a true deep copy by mutating the clone
-		assert.Equal(t, len(provider.RegistryIDs), len(cloned.RegistryIDs))
+		assert.Len(t, cloned.RegistryIDs, len(provider.RegistryIDs))
 		assert.Equal(t, provider.RegistryIDs, cloned.RegistryIDs)
 		if len(cloned.RegistryIDs) > 0 {
 			cloned.RegistryIDs[0] = "modified"
@@ -1514,7 +1515,7 @@ func TestProviderConfigClone(t *testing.T) {
 		assert.NotEqual(t, len(provider.RegistryIDs), len(cloned.RegistryIDs))
 
 		// Verify ProtocolIDs is a true deep copy by mutating the clone
-		assert.Equal(t, len(provider.ProtocolIDs), len(cloned.ProtocolIDs))
+		assert.Len(t, cloned.ProtocolIDs, len(provider.ProtocolIDs))
 		assert.Equal(t, provider.ProtocolIDs, cloned.ProtocolIDs)
 		if len(cloned.ProtocolIDs) > 0 {
 			cloned.ProtocolIDs[0] = "modified"
@@ -1524,7 +1525,7 @@ func TestProviderConfigClone(t *testing.T) {
 		assert.NotEqual(t, len(provider.ProtocolIDs), len(cloned.ProtocolIDs))
 
 		// Verify Services is a true deep copy by mutating the clone
-		assert.Equal(t, len(provider.Services), len(cloned.Services))
+		assert.Len(t, cloned.Services, len(provider.Services))
 		cloned.Services["service2"] = &ServiceConfig{Interface: "com.test.Service2"}
 		assert.NotEqual(t, len(provider.Services), len(cloned.Services))
 		assert.NotContains(t, provider.Services, "service2")
@@ -1560,7 +1561,7 @@ func TestProviderConfigClone(t *testing.T) {
 		// Verify Services is a true deep copy
 		originalServicesLen := len(provider.Services)
 		cloned.Services["new_service"] = &ServiceConfig{Interface: "com.test.NewService"}
-		assert.Equal(t, originalServicesLen, len(provider.Services))
+		assert.Len(t, provider.Services, originalServicesLen)
 		assert.Greater(t, len(cloned.Services), len(provider.Services))
 	})
 }
@@ -1595,14 +1596,14 @@ func TestProviderConfigFields(t *testing.T) {
 		provider := &ProviderConfig{
 			RegistryIDs: []string{"reg1", "reg2"},
 		}
-		assert.Equal(t, 2, len(provider.RegistryIDs))
+		assert.Len(t, provider.RegistryIDs, 2)
 	})
 
 	t.Run("provider_config_protocol_ids", func(t *testing.T) {
 		provider := &ProviderConfig{
 			ProtocolIDs: []string{"proto1"},
 		}
-		assert.Equal(t, 1, len(provider.ProtocolIDs))
+		assert.Len(t, provider.ProtocolIDs, 1)
 	})
 
 	t.Run("provider_config_tracing_key", func(t *testing.T) {
@@ -1628,7 +1629,7 @@ func TestProviderConfigFields(t *testing.T) {
 				"service2": {Interface: "com.test.Service2"},
 			},
 		}
-		assert.Equal(t, 2, len(provider.Services))
+		assert.Len(t, provider.Services, 2)
 		assert.Equal(t, "com.test.Service1", provider.Services["service1"].Interface)
 	})
 

@@ -25,6 +25,7 @@ import (
 	"github.com/knadh/koanf"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestResolvePlaceHolder(t *testing.T) {
@@ -33,15 +34,15 @@ func TestResolvePlaceHolder(t *testing.T) {
 		koan := GetConfigResolver(conf)
 		assert.Equal(t, koan.Get("dubbo.config-center.address"), koan.Get("dubbo.registries.nacos.address"))
 		assert.Equal(t, koan.Get("localhost"), koan.Get("dubbo.protocols.dubbo.ip"))
-		assert.Equal(t, "", koan.Get("dubbo.registries.nacos.group"))
+		assert.Empty(t, koan.Get("dubbo.registries.nacos.group"))
 		assert.Equal(t, "dev", koan.Get("dubbo.registries.zk.group"))
 
 		rc := NewRootConfigBuilder().Build()
 		err := koan.UnmarshalWithConf(rc.Prefix(), rc, koanf.UnmarshalConf{Tag: "yaml"})
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, rc.ConfigCenter.Address, rc.Registries["nacos"].Address)
 		//not exist, default
-		assert.Equal(t, "", rc.Registries["nacos"].Group)
+		assert.Empty(t, rc.Registries["nacos"].Group)
 		assert.Equal(t, "dev", rc.Registries["zk"].Group)
 
 	})

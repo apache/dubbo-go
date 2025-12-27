@@ -118,8 +118,6 @@ func GetClassDesc(v any) string {
 
 	switch v := v.(type) {
 	// Serialized tags for base types
-	case nil:
-		return "V"
 	case bool:
 		return "Z"
 	case []bool:

@@ -28,6 +28,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -57,11 +58,11 @@ func TestRPCInvocation_ServiceKey(t *testing.T) {
 		"side=provider&timeout=3000&timestamp=1556509797245"
 
 	providerUrl, err := common.NewURL(providerURL)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// invocation with same interface and path value
 	sameInfPathConsumerUrl, err := common.NewURL(sameInfPathConsumerURL)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	invocation := NewRPCInvocationWithOptions(WithAttachments(map[string]any{
 		constant.InterfaceKey: sameInfPathConsumerUrl.GetParam(constant.InterfaceKey, ""),
 		constant.PathKey:      sameInfPathConsumerUrl.Path,
@@ -72,7 +73,7 @@ func TestRPCInvocation_ServiceKey(t *testing.T) {
 
 	// invocation with different interface and path value
 	diffInfPathConsumerUrl, err := common.NewURL(diffInfPathConsumerURL)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	invocation = NewRPCInvocationWithOptions(WithAttachments(map[string]any{
 		constant.InterfaceKey: diffInfPathConsumerUrl.GetParam(constant.InterfaceKey, ""),
 		constant.PathKey:      diffInfPathConsumerUrl.Path,
@@ -347,7 +348,7 @@ func TestRPCInvocation_SetAndGetInvoker(t *testing.T) {
 
 	// Create a mock invoker
 	url, err := common.NewURL("dubbo://127.0.0.1:20000/test")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	mockInvoker := &mockInvoker{url: url}
 
 	invocation.SetInvoker(mockInvoker)
@@ -405,7 +406,7 @@ func TestRPCInvocation_MergeAttachmentFromContext(t *testing.T) {
 	assert.NotNil(t, valInterface)
 	valArray, ok := valInterface.([]string)
 	assert.True(t, ok)
-	assert.Equal(t, 2, len(valArray))
+	assert.Len(t, valArray, 2)
 
 	// Test with nil context header (context without outgoing header)
 	invocation2 := NewRPCInvocationWithOptions()
@@ -432,7 +433,7 @@ func TestRPCInvocation_WithAttachment(t *testing.T) {
 
 func TestRPCInvocation_WithInvoker(t *testing.T) {
 	url, err := common.NewURL("dubbo://127.0.0.1:20000/test")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	mockInvoker := &mockInvoker{url: url}
 
 	invocation := NewRPCInvocationWithOptions(WithInvoker(mockInvoker))
@@ -540,7 +541,7 @@ func TestRPCInvocation_ConcurrentAccess(t *testing.T) {
 	// and concurrent read/write would cause data races (which is a limitation of the current implementation).
 	// Testing concurrent writes only is still useful to verify SetInvoker's lock works correctly.
 	url, err := common.NewURL("dubbo://127.0.0.1:20000/test")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	mockInvoker := &mockInvoker{url: url}
 
 	wg.Add(numGoroutines)

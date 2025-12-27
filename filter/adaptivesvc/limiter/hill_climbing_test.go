@@ -23,6 +23,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // Test for HillClimbing limiter's Acquire method
@@ -35,7 +36,7 @@ func TestHillClimbing_Acquire(t *testing.T) {
 
 	updater, err := limiter.Acquire()
 	assert.NotNil(t, updater)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Simulating no remaining capacity
 	limiter.limitation.Store(50)
@@ -43,7 +44,7 @@ func TestHillClimbing_Acquire(t *testing.T) {
 
 	updater, err = limiter.Acquire()
 	assert.Nil(t, updater)
-	assert.Error(t, err, ErrReachLimitation)
+	assert.ErrorIs(t, err, ErrReachLimitation)
 }
 
 // Test the HillClimbingUpdater's DoUpdate method
@@ -64,13 +65,13 @@ func TestHillClimbingUpdater_AdjustLimitation(t *testing.T) {
 
 	// Simulate a scenario where the limiter is set to extend its capacity
 	err := updater.adjustLimitation(HillClimbingOptionExtend)
-	assert.NoError(t, err)
-	assert.True(t, limiter.limitation.Load() > initialLimitation)
+	require.NoError(t, err)
+	assert.Greater(t, limiter.limitation.Load(), initialLimitation)
 
 	// Simulate a scenario where the limiter is set to shrink its capacity
 	err = updater.adjustLimitation(HillClimbingOptionShrink)
-	assert.NoError(t, err)
-	assert.True(t, limiter.limitation.Load() < initialLimitation)
+	require.NoError(t, err)
+	assert.Less(t, limiter.limitation.Load(), initialLimitation)
 }
 
 // Test HillClimbing's Remaining capacity behavior

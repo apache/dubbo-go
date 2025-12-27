@@ -49,7 +49,7 @@ func TestUpdateOrCreateMeshURL(t *testing.T) {
 			Consumer:  &global.ConsumerConfig{MeshEnabled: false},
 		}
 		updateOrCreateMeshURL(refOpts)
-		require.Equal(t, "", refOpts.Reference.URL)
+		require.Empty(t, refOpts.Reference.URL)
 	})
 
 	t.Run("mesh enabled build url", func(t *testing.T) {

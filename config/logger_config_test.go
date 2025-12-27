@@ -25,12 +25,13 @@ import (
 	"github.com/dubbogo/gost/log/logger"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestLoggerInit(t *testing.T) {
 	t.Run("empty use default", func(t *testing.T) {
 		err := Load(WithPath("./testdata/config/logger/empty_log.yaml"))
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		assert.NotNil(t, rootConfig)
 		loggerConfig := rootConfig.Logger
 		assert.NotNil(t, loggerConfig)
@@ -38,7 +39,7 @@ func TestLoggerInit(t *testing.T) {
 
 	t.Run("use config", func(t *testing.T) {
 		err := Load(WithPath("./testdata/config/logger/log.yaml"))
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		loggerConfig := rootConfig.Logger
 		assert.NotNil(t, loggerConfig)
 		// default
@@ -47,7 +48,7 @@ func TestLoggerInit(t *testing.T) {
 
 	t.Run("use config with file", func(t *testing.T) {
 		err := Load(WithPath("./testdata/config/logger/file_log.yaml"))
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		loggerConfig := rootConfig.Logger
 		assert.NotNil(t, loggerConfig)
 		logger.Debug("debug")
@@ -71,15 +72,15 @@ func TestNewLoggerConfigBuilder(t *testing.T) {
 
 	assert.NotNil(t, config)
 
-	assert.Equal(t, config.File.Name, "dubbo.log")
-	assert.Equal(t, config.Driver, "zap")
-	assert.Equal(t, config.Level, "info")
-	assert.Equal(t, config.File.MaxAge, 10)
+	assert.Equal(t, "dubbo.log", config.File.Name)
+	assert.Equal(t, "zap", config.Driver)
+	assert.Equal(t, "info", config.Level)
+	assert.Equal(t, 10, config.File.MaxAge)
 
 	// default value
-	assert.Equal(t, config.Appender, "console")
-	assert.Equal(t, config.Format, "text")
-	assert.Equal(t, config.File.MaxSize, 100)
-	assert.Equal(t, *config.File.Compress, true)
-	assert.Equal(t, config.File.MaxBackups, 5)
+	assert.Equal(t, "console", config.Appender)
+	assert.Equal(t, "text", config.Format)
+	assert.Equal(t, 100, config.File.MaxSize)
+	assert.True(t, *config.File.Compress)
+	assert.Equal(t, 5, config.File.MaxBackups)
 }

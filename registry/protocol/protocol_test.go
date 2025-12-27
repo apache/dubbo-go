@@ -98,7 +98,7 @@ func TestMultiRegRefer(t *testing.T) {
 		count++
 		return true
 	})
-	assert.Equal(t, count, 2)
+	assert.Equal(t, 2, count)
 }
 
 func TestOneRegRefer(t *testing.T) {
@@ -119,7 +119,7 @@ func TestOneRegRefer(t *testing.T) {
 		count++
 		return true
 	})
-	assert.Equal(t, count, 1)
+	assert.Equal(t, 1, count)
 }
 
 func exporterNormal(t *testing.T, regProtocol *registryProtocol) *common.URL {
@@ -203,14 +203,14 @@ func TestMultiRegAndMultiProtoExporter(t *testing.T) {
 		count++
 		return true
 	})
-	assert.Equal(t, count, 2)
+	assert.Equal(t, 2, count)
 
 	var count2 int
 	regProtocol.bounds.Range(func(key, value any) bool {
 		count2++
 		return true
 	})
-	assert.Equal(t, count2, 2)
+	assert.Equal(t, 2, count2)
 }
 
 func TestOneRegAndProtoExporter(t *testing.T) {
@@ -267,7 +267,7 @@ func TestOneRegAndProtoExporter(t *testing.T) {
 		count++
 		return true
 	})
-	assert.Equal(t, count, 1)
+	assert.Equal(t, 1, count)
 
 	var count2 int
 	regProtocol.bounds.Range(func(key, value any) bool {
@@ -275,7 +275,7 @@ func TestOneRegAndProtoExporter(t *testing.T) {
 		return true
 	})
 	// Should still be 1 because we're exporting the same service (same cache key)
-	assert.Equal(t, count2, 1)
+	assert.Equal(t, 1, count2)
 }
 
 func TestDestroy(t *testing.T) {

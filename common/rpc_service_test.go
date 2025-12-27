@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -95,22 +96,22 @@ func TestServiceMapRegister(t *testing.T) {
 	s0 := &testService{}
 	// methods, err := ServiceMap.Register("testporotocol", s0)
 	_, err := ServiceMap.Register(testInterfaceName, "testporotocol", "", "v0", s0)
-	assert.EqualError(t, err, "type testService is not exported")
+	require.EqualError(t, err, "type testService is not exported")
 
 	// succ
 	s := &TestService{}
 	methods, err := ServiceMap.Register(testInterfaceName, "testporotocol", "", "v1", s)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "MethodOne,methodOne,MethodThree,methodThree,methodTwo,MethodTwo", methods)
 
 	// repeat
 	_, err = ServiceMap.Register(testInterfaceName, "testporotocol", "", "v1", s)
-	assert.EqualError(t, err, "service already defined: testService:v1")
+	require.EqualError(t, err, "service already defined: testService:v1")
 
 	// no method
 	s1 := &TestService1{}
 	_, err = ServiceMap.Register(testInterfaceName, "testporotocol", "", "v2", s1)
-	assert.EqualError(t, err, "type testService:v2 has no exported methods of suitable type")
+	require.EqualError(t, err, "type testService:v2 has no exported methods of suitable type")
 
 	ServiceMap = &serviceMap{
 		serviceMap:   make(map[string]map[string]*Service),
@@ -121,22 +122,22 @@ func TestServiceMapRegister(t *testing.T) {
 func TestServiceMapUnRegister(t *testing.T) {
 	s := &TestService{}
 	_, err := ServiceMap.Register("TestService", testProtocol, "", "v1", s)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, ServiceMap.GetService(testProtocol, "TestService", "", "v1"))
-	assert.Equal(t, 1, len(ServiceMap.GetInterface("TestService")))
+	assert.Len(t, ServiceMap.GetInterface("TestService"), 1)
 
 	err = ServiceMap.UnRegister("", "", ServiceKey("TestService", "", "v1"))
-	assert.EqualError(t, err, "protocol or ServiceKey is nil")
+	require.EqualError(t, err, "protocol or ServiceKey is nil")
 
 	err = ServiceMap.UnRegister("", "protocol", ServiceKey("TestService", "", "v1"))
-	assert.EqualError(t, err, "no services for protocol")
+	require.EqualError(t, err, "no services for protocol")
 
 	err = ServiceMap.UnRegister("", testProtocol, ServiceKey("TestService", "", "v0"))
-	assert.EqualError(t, err, "no service for TestService:v0")
+	require.EqualError(t, err, "no service for TestService:v0")
 
 	// success
 	err = ServiceMap.UnRegister("TestService", testProtocol, ServiceKey("TestService", "", "v1"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestMethodTypeSuiteContext(t *testing.T) {
@@ -182,7 +183,7 @@ func TestSuiteMethod(t *testing.T) {
 	method = methodType.Method()
 	assert.Equal(t, "func(*common.TestService) error", method.Type.String())
 	at = methodType.ArgsType()
-	assert.Equal(t, 0, len(at))
+	assert.Empty(t, at)
 	assert.Nil(t, methodType.CtxType())
 	rt = methodType.ReplyType()
 	assert.Nil(t, rt)
@@ -257,7 +258,7 @@ func TestGetReference(t *testing.T) {
 func TestServiceMethods(t *testing.T) {
 	s := &TestService{}
 	_, err := ServiceMap.Register("TestServiceMethods", testProtocol, "group1", "v1", s)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	service := ServiceMap.GetService(testProtocol, "TestServiceMethods", "group1", "v1")
 	assert.NotNil(t, service)
@@ -265,7 +266,7 @@ func TestServiceMethods(t *testing.T) {
 	// Test Service.Method()
 	methods := service.Method()
 	assert.NotNil(t, methods)
-	assert.True(t, len(methods) > 0)
+	assert.NotEmpty(t, methods)
 
 	// Test Service.Name()
 	assert.Equal(t, "group1/TestServiceMethods:v1", service.Name())
@@ -286,7 +287,7 @@ func TestServiceMethods(t *testing.T) {
 func TestGetServiceByServiceKey(t *testing.T) {
 	s := &TestService{}
 	_, err := ServiceMap.Register("TestGetServiceByKey", testProtocol, "", "v1", s)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Test GetServiceByServiceKey - found
 	serviceKey := ServiceKey("TestGetServiceByKey", "", "v1")
@@ -308,12 +309,12 @@ func TestGetServiceByServiceKey(t *testing.T) {
 func TestGetInterface(t *testing.T) {
 	s := &TestService{}
 	_, err := ServiceMap.Register("TestGetInterface", testProtocol, "", "v1", s)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Test GetInterface - found
 	services := ServiceMap.GetInterface("TestGetInterface")
 	assert.NotNil(t, services)
-	assert.Equal(t, 1, len(services))
+	assert.Len(t, services, 1)
 
 	// Test GetInterface - not found
 	services = ServiceMap.GetInterface("nonexistent")
@@ -441,14 +442,14 @@ func TestRegisterWithEmptyServiceName(t *testing.T) {
 	// Using a non-struct type
 	var fn func()
 	_, err := ServiceMap.Register("test", "proto", "", "v1", fn)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no service name")
 }
 
 func TestUnRegisterInterfaceNotFound(t *testing.T) {
 	s := &TestService{}
 	_, err := ServiceMap.Register("TestUnRegisterInterface", testProtocol, "", "v1", s)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Manually remove from interfaceMap to simulate inconsistent state
 	ServiceMap.mutex.Lock()
@@ -456,7 +457,7 @@ func TestUnRegisterInterfaceNotFound(t *testing.T) {
 	ServiceMap.mutex.Unlock()
 
 	err = ServiceMap.UnRegister("TestUnRegisterInterface", testProtocol, ServiceKey("TestUnRegisterInterface", "", "v1"))
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no service for TestUnRegisterInterface")
 
 	// Cleanup
@@ -493,7 +494,7 @@ func TestSuiteMethodWithUnexportedMethod(t *testing.T) {
 	assert.True(t, ok)
 
 	// Method should be exported (PkgPath is empty for exported methods)
-	assert.Equal(t, "", method.PkgPath)
+	assert.Empty(t, method.PkgPath)
 
 	mt := suiteMethod(method)
 	assert.NotNil(t, mt)
@@ -516,7 +517,7 @@ func TestServiceInfoStruct(t *testing.T) {
 
 	assert.Equal(t, "com.test.Service", info.InterfaceName)
 	assert.NotNil(t, info.ServiceType)
-	assert.Equal(t, 1, len(info.Methods))
+	assert.Len(t, info.Methods, 1)
 	assert.Equal(t, "TestMethod", info.Methods[0].Name)
 	assert.Equal(t, "unary", info.Methods[0].Type)
 	assert.Equal(t, "value", info.Methods[0].Meta["key"])
@@ -562,14 +563,14 @@ func TestRegisterMultipleServicesForSameInterface(t *testing.T) {
 	s2 := &TestService{}
 
 	_, err := ServiceMap.Register("MultiService", testProtocol, "group1", "v1", s1)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, err = ServiceMap.Register("MultiService", testProtocol, "group2", "v1", s2)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Should have 2 services for the same interface
 	services := ServiceMap.GetInterface("MultiService")
-	assert.Equal(t, 2, len(services))
+	assert.Len(t, services, 2)
 
 	// Cleanup
 	ServiceMap.UnRegister("MultiService", testProtocol, ServiceKey("MultiService", "group1", "v1"))
@@ -581,7 +582,7 @@ func TestUnRegisterLastServiceInProtocol(t *testing.T) {
 	protocol := "uniqueProtocol"
 
 	_, err := ServiceMap.Register("TestLastService", protocol, "", "v1", s)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Verify protocol exists
 	ServiceMap.mutex.RLock()
@@ -591,7 +592,7 @@ func TestUnRegisterLastServiceInProtocol(t *testing.T) {
 
 	// Unregister the only service
 	err = ServiceMap.UnRegister("TestLastService", protocol, ServiceKey("TestLastService", "", "v1"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Protocol should be removed from serviceMap
 	ServiceMap.mutex.RLock()

@@ -61,7 +61,7 @@ func TestNewDubboPackage(t *testing.T) {
 				assert.NotNil(t, pkg)
 				assert.NotNil(t, pkg.Codec)
 				assert.Nil(t, pkg.Body)
-				assert.Nil(t, pkg.Err)
+				assert.NoError(t, pkg.Err)
 			}
 		})
 	}

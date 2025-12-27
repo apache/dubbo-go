@@ -23,6 +23,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -32,35 +33,35 @@ import (
 
 func TestProviderConfigEmptyRegistry(t *testing.T) {
 	err := Load(WithPath("./testdata/config/provider/empty_registry_application.yaml"))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	provider := rootConfig.Provider
-	assert.Equal(t, 1, len(provider.RegistryIDs))
+	assert.Len(t, provider.RegistryIDs, 1)
 	assert.Equal(t, "nacos", provider.RegistryIDs[0])
 }
 
 func TestProviderConfigRootRegistry(t *testing.T) {
 	err := Load(WithPath("./testdata/config/provider/registry_application.yaml"))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	provider := rootConfig.Provider
 	assert.NotNil(t, provider)
 	assert.NotNil(t, provider.Services["HelloService"])
 	assert.NotNil(t, provider.Services["OrderService"])
 
-	assert.Equal(t, 2, len(provider.Services["HelloService"].RegistryIDs))
-	assert.Equal(t, 1, len(provider.Services["OrderService"].RegistryIDs))
+	assert.Len(t, provider.Services["HelloService"].RegistryIDs, 2)
+	assert.Len(t, provider.Services["OrderService"].RegistryIDs, 1)
 }
 
 //
 //func TestConsumerInitWithDefaultProtocol(t *testing.T) {
 //	conPath, err := filepath.Abs("./testdata/consumer_config_withoutProtocol.yml")
-//	assert.NoError(t, err)
+//	require.NoError(t, err)
 //	assert.NoError(t, consumer.ConsumerInit(conPath))
 //	assert.Equal(t, "dubbo", config.consumerConfig.References["UserProvider"].Protocol)
 //}
 //
 //func TestProviderInitWithDefaultProtocol(t *testing.T) {
 //	conPath, err := filepath.Abs("./testdata/provider_config_withoutProtocol.yml")
-//	assert.NoError(t, err)
+//	require.NoError(t, err)
 //	assert.NoError(t, ProviderInit(conPath))
 //	assert.Equal(t, "dubbo", config.referenceConfig.Services["UserProvider"].Protocol)
 //}
@@ -81,6 +82,6 @@ func TestNewProviderConfigBuilder(t *testing.T) {
 		Build()
 
 	err := config.check()
-	assert.NoError(t, err)
-	assert.Equal(t, config.Prefix(), constant.ProviderConfigPrefix)
+	require.NoError(t, err)
+	assert.Equal(t, constant.ProviderConfigPrefix, config.Prefix())
 }

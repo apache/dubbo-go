@@ -28,6 +28,7 @@ import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type TestEnumGender hessian.JavaEnum
@@ -82,7 +83,7 @@ func TestPackRequest(t *testing.T) {
 		ID:       123,
 	}, []any{1, 2})
 
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	if bytes != nil {
 		t.Logf("pack request: %s", string(bytes))
@@ -92,34 +93,34 @@ func TestPackRequest(t *testing.T) {
 func TestGetArgsTypeList(t *testing.T) {
 	type Test struct{}
 	str, err := getArgsTypeList([]any{nil, 1, []int{2}, true, []bool{false}, "a", []string{"b"}, Test{}, &Test{}, []Test{}, map[string]Test{}, TestEnumGender(MAN)})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "VJ[JZ[ZLjava/lang/String;[Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Object;[Ljava/lang/Object;Ljava/util/Map;Lcom/ikurento/test/TestEnumGender;", str)
 }
 
 func TestDescRegex(t *testing.T) {
 	results := DescRegex.FindAllString("Ljava/lang/String;", -1)
-	assert.Equal(t, 1, len(results))
+	assert.Len(t, results, 1)
 	assert.Equal(t, "Ljava/lang/String;", results[0])
 
 	results = DescRegex.FindAllString("Ljava/lang/String;I", -1)
-	assert.Equal(t, 2, len(results))
+	assert.Len(t, results, 2)
 	assert.Equal(t, "Ljava/lang/String;", results[0])
 	assert.Equal(t, "I", results[1])
 
 	results = DescRegex.FindAllString("ILjava/lang/String;", -1)
-	assert.Equal(t, 2, len(results))
+	assert.Len(t, results, 2)
 	assert.Equal(t, "I", results[0])
 	assert.Equal(t, "Ljava/lang/String;", results[1])
 
 	results = DescRegex.FindAllString("ILjava/lang/String;IZ", -1)
-	assert.Equal(t, 4, len(results))
+	assert.Len(t, results, 4)
 	assert.Equal(t, "I", results[0])
 	assert.Equal(t, "Ljava/lang/String;", results[1])
 	assert.Equal(t, "I", results[2])
 	assert.Equal(t, "Z", results[3])
 
 	results = DescRegex.FindAllString("[Ljava/lang/String;[I", -1)
-	assert.Equal(t, 2, len(results))
+	assert.Len(t, results, 2)
 	assert.Equal(t, "[Ljava/lang/String;", results[0])
 	assert.Equal(t, "[I", results[1])
 }
