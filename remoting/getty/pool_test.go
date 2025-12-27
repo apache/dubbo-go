@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGettyRPCClientUpdateActive(t *testing.T) {
@@ -73,7 +74,7 @@ func TestGettyRPCClientClose(t *testing.T) {
 	client := &gettyRPCClient{sessions: []*rpcSession{}}
 	assert.Nil(t, client.close())
 	err := client.close()
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "close gettyRPCClient")
 	assert.Contains(t, err.Error(), "again")
 }

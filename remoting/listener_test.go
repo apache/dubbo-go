@@ -98,5 +98,5 @@ func TestDataListenerConcurrent(t *testing.T) {
 	}
 
 	wg.Wait()
-	assert.Equal(t, 100, len(listener.events))
+	assert.Len(t, listener.events, 100)
 }

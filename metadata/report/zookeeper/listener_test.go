@@ -29,6 +29,7 @@ import (
 	"github.com/dubbogo/gost/gof/observer"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -88,7 +89,7 @@ func TestListenerSet(t *testing.T) {
 	// ForEach
 	count := 0
 	err := set.ForEach(func(l mapping.MappingListener) error { count++; return nil })
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 1, count)
 
 	// ForEach with error

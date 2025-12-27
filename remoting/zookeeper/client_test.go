@@ -27,6 +27,7 @@ import (
 	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -70,7 +71,7 @@ func TestValidateZookeeperClient(t *testing.T) {
 	}
 
 	err := ValidateZookeeperClient(facade, "test")
-	assert.Error(t, err) // Expected to fail without real zk
+	require.Error(t, err) // Expected to fail without real zk
 
 	// Test with existing client (should skip creation)
 	facade2 := &mockZkClientFacade{
@@ -78,7 +79,7 @@ func TestValidateZookeeperClient(t *testing.T) {
 		url:    common.NewURLWithOptions(),
 	}
 	err = ValidateZookeeperClient(facade2, "test")
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestValidateZookeeperClientConcurrent(t *testing.T) {

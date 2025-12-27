@@ -123,7 +123,7 @@ func TestServiceDiscoveryGetNameAndID(t *testing.T) {
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 				assert.Equal(t, tt.expectedName, name)
 				assert.Equal(t, tt.expectedID, id)
 			}
@@ -183,7 +183,7 @@ func TestServiceDiscoveryUnregisterService(t *testing.T) {
 	sd := NewServiceDiscovery(nil, testBasePath)
 
 	err := sd.UnregisterService(&ServiceInstance{Name: testServiceName, ID: "non-existent"})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestServiceDiscoveryConcurrentAccess(t *testing.T) {

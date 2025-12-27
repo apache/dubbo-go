@@ -34,7 +34,7 @@ func TestFilterContext(t *testing.T) {
 
 	result := filterContext(attachments)
 
-	assert.Equal(t, 1, len(result))
+	assert.Len(t, result, 1)
 	assert.Equal(t, "string-value", result["string-key"])
 }
 
