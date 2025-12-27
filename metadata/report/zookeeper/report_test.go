@@ -55,7 +55,7 @@ func TestMetadataInfoSerialization(t *testing.T) {
 
 	// Invalid JSON
 	err = json.Unmarshal([]byte(`{invalid}`), &restored)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestRegisterServiceAppMappingValueMerge(t *testing.T) {

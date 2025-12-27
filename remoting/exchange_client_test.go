@@ -63,7 +63,7 @@ func TestNewExchangeClient(t *testing.T) {
 		m := &mockClient{available: true}
 		ec := NewExchangeClient(testURL(), m, 5*time.Second, false)
 		assert.NotNil(t, ec)
-		assert.True(t, m.connCount > 0)
+		assert.Positive(t, m.connCount)
 	})
 
 	t.Run("lazy init", func(t *testing.T) {

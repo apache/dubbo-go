@@ -113,13 +113,13 @@ func TestReportOptionsToUrl(t *testing.T) {
 	// Valid options
 	opts := NewReportOptions(WithZookeeper(), WithAddress("127.0.0.1:2181"))
 	url, err := opts.toUrl()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, "zookeeper", url.Protocol)
 
 	// Invalid options - empty protocol
 	opts = NewReportOptions(WithAddress("127.0.0.1:2181"))
 	url, err = opts.toUrl()
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.Nil(t, url)
 }
 
@@ -146,14 +146,14 @@ func TestFromRegistry(t *testing.T) {
 
 func TestInitRegistryMetadataReport(t *testing.T) {
 	// Empty/nil registries
-	assert.Nil(t, InitRegistryMetadataReport(nil))
-	assert.Nil(t, InitRegistryMetadataReport(map[string]*global.RegistryConfig{}))
+	assert.NoError(t, InitRegistryMetadataReport(nil))
+	assert.NoError(t, InitRegistryMetadataReport(map[string]*global.RegistryConfig{}))
 
 	// Invalid UseAsMetaReport
 	err := InitRegistryMetadataReport(map[string]*global.RegistryConfig{
 		"zk": {Protocol: "zookeeper", Address: "127.0.0.1:2181", UseAsMetaReport: "invalid"},
 	})
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestOptionsOverride(t *testing.T) {

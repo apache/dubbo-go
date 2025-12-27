@@ -51,9 +51,9 @@ func TestEventType(t *testing.T) {
 	assert.Equal(t, "delete", EventTypeDel.String())
 	assert.Equal(t, "update", EventTypeUpdate.String())
 
-	assert.Equal(t, EventType(0), EventTypeAdd)
-	assert.Equal(t, EventType(1), EventTypeDel)
-	assert.Equal(t, EventType(2), EventTypeUpdate)
+	assert.Equal(t, EventTypeAdd, EventType(0))
+	assert.Equal(t, EventTypeDel, EventType(1))
+	assert.Equal(t, EventTypeUpdate, EventType(2))
 }
 
 func TestEvent(t *testing.T) {

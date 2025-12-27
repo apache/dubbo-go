@@ -67,14 +67,14 @@ var _ mapping.MappingListener = (*mockMappingListener)(nil)
 func TestListenerSet(t *testing.T) {
 	set := NewListenerSet()
 	assert.NotNil(t, set)
-	assert.Equal(t, 0, len(set.listeners))
+	assert.Empty(t, set.listeners)
 
 	// Add listeners
 	l1, l2 := newMockMappingListener(), newMockMappingListener()
 	set.Add(l1)
 	set.Add(l2)
 	set.Add(l1) // duplicate
-	assert.Equal(t, 2, len(set.listeners))
+	assert.Len(t, set.listeners, 2)
 
 	// Has
 	assert.True(t, set.Has(l1))
@@ -83,7 +83,7 @@ func TestListenerSet(t *testing.T) {
 	// Remove
 	set.Remove(l1)
 	assert.False(t, set.Has(l1))
-	assert.Equal(t, 1, len(set.listeners))
+	assert.Len(t, set.listeners, 1)
 
 	// ForEach
 	count := 0
@@ -161,5 +161,5 @@ func TestCacheListenerDataChangeWithError(t *testing.T) {
 func TestCacheListenerPathToKey(t *testing.T) {
 	cl := NewCacheListener("/dubbo", nil)
 	assert.Equal(t, "com.example.Service", cl.pathToKey("/dubbo/mapping/com.example.Service"))
-	assert.Equal(t, "", cl.pathToKey(""))
+	assert.Empty(t, cl.pathToKey(""))
 }
