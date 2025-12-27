@@ -233,6 +233,18 @@ func getHanOpts(url *common.URL, tripleConf *global.TripleConfig) (hanOpts []tri
 
 	// todo:// open tracing
 
+	// CORS configuration
+	if tripleConf.Cors != nil && len(tripleConf.Cors.AllowOrigins) > 0 {
+		hanOpts = append(hanOpts, tri.WithCORS(&tri.CorsConfig{
+			AllowOrigins:     tripleConf.Cors.AllowOrigins,
+			AllowMethods:     tripleConf.Cors.AllowMethods,
+			AllowHeaders:     tripleConf.Cors.AllowHeaders,
+			ExposeHeaders:    tripleConf.Cors.ExposeHeaders,
+			AllowCredentials: tripleConf.Cors.AllowCredentials,
+			MaxAge:           tripleConf.Cors.MaxAge,
+		}))
+	}
+
 	return hanOpts
 }
 
