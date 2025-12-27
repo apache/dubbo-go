@@ -121,7 +121,7 @@ func TestServiceDiscoveryGetNameAndID(t *testing.T) {
 			sd := NewServiceDiscovery(nil, tt.basePath)
 			name, id, err := sd.getNameAndID(tt.path)
 			if tt.wantErr {
-				assert.NotNil(t, err)
+				assert.Error(t, err)
 			} else {
 				assert.Nil(t, err)
 				assert.Equal(t, tt.expectedName, name)
@@ -169,13 +169,13 @@ func TestServiceDiscoveryUpdateService(t *testing.T) {
 
 	// Update non-existent
 	err := sd.UpdateService(&ServiceInstance{Name: testServiceName, ID: "non-existent"})
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "not registered")
 
 	// Update with invalid entry type
 	sd.services.Store("invalid-id", "not-an-entry")
 	err = sd.UpdateService(&ServiceInstance{Name: testServiceName, ID: "invalid-id"})
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "not entry")
 }
 

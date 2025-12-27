@@ -81,7 +81,7 @@ func TestDataListener(t *testing.T) {
 		assert.True(t, listener.DataChange(event))
 	}
 
-	assert.Equal(t, 3, len(listener.events))
+	assert.Len(t, listener.events, 3)
 	assert.Equal(t, events, listener.events)
 }
 

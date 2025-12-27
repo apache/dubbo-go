@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -45,11 +46,11 @@ func TestMetadataInfoSerialization(t *testing.T) {
 	}
 
 	data, err := json.Marshal(original)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	var restored info.MetadataInfo
 	err = json.Unmarshal(data, &restored)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, original.App, restored.App)
 	assert.Equal(t, original.Revision, restored.Revision)
 
@@ -111,7 +112,7 @@ func TestRemoveServiceAppMappingListener(t *testing.T) {
 		cacheListener: NewCacheListener("/dubbo/", nil),
 	}
 	err := report.RemoveServiceAppMappingListener("test.service", "mapping")
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestCacheListenerIntegrationWithReport(t *testing.T) {

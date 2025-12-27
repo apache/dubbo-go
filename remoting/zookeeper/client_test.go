@@ -70,7 +70,7 @@ func TestValidateZookeeperClient(t *testing.T) {
 	}
 
 	err := ValidateZookeeperClient(facade, "test")
-	assert.NotNil(t, err) // Expected to fail without real zk
+	assert.Error(t, err) // Expected to fail without real zk
 
 	// Test with existing client (should skip creation)
 	facade2 := &mockZkClientFacade{
