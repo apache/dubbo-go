@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -121,9 +122,9 @@ func TestServiceDiscoveryGetNameAndID(t *testing.T) {
 			sd := NewServiceDiscovery(nil, tt.basePath)
 			name, id, err := sd.getNameAndID(tt.path)
 			if tt.wantErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.expectedName, name)
 				assert.Equal(t, tt.expectedID, id)
 			}
@@ -169,13 +170,13 @@ func TestServiceDiscoveryUpdateService(t *testing.T) {
 
 	// Update non-existent
 	err := sd.UpdateService(&ServiceInstance{Name: testServiceName, ID: "non-existent"})
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "not registered")
 
 	// Update with invalid entry type
 	sd.services.Store("invalid-id", "not-an-entry")
 	err = sd.UpdateService(&ServiceInstance{Name: testServiceName, ID: "invalid-id"})
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "not entry")
 }
 
@@ -183,7 +184,7 @@ func TestServiceDiscoveryUnregisterService(t *testing.T) {
 	sd := NewServiceDiscovery(nil, testBasePath)
 
 	err := sd.UnregisterService(&ServiceInstance{Name: testServiceName, ID: "non-existent"})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestServiceDiscoveryConcurrentAccess(t *testing.T) {

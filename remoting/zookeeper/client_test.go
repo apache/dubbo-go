@@ -79,7 +79,7 @@ func TestValidateZookeeperClient(t *testing.T) {
 		url:    common.NewURLWithOptions(),
 	}
 	err = ValidateZookeeperClient(facade2, "test")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestValidateZookeeperClientConcurrent(t *testing.T) {

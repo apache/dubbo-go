@@ -72,7 +72,7 @@ func TestGettyRPCClientIsAvailable(t *testing.T) {
 
 func TestGettyRPCClientClose(t *testing.T) {
 	client := &gettyRPCClient{sessions: []*rpcSession{}}
-	assert.Nil(t, client.close())
+	require.NoError(t, client.close())
 	err := client.close()
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "close gettyRPCClient")
@@ -132,6 +132,6 @@ func TestGettyRPCClientLifecycle(t *testing.T) {
 	client.updateActive(1234567890)
 	assert.Equal(t, int64(1234567890), atomic.LoadInt64(&client.active))
 
-	assert.Nil(t, client.close())
+	require.NoError(t, client.close())
 	assert.Equal(t, int64(0), atomic.LoadInt64(&client.active))
 }

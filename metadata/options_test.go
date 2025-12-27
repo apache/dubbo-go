@@ -147,14 +147,14 @@ func TestFromRegistry(t *testing.T) {
 
 func TestInitRegistryMetadataReport(t *testing.T) {
 	// Empty/nil registries
-	assert.NoError(t, InitRegistryMetadataReport(nil))
-	assert.NoError(t, InitRegistryMetadataReport(map[string]*global.RegistryConfig{}))
+	require.NoError(t, InitRegistryMetadataReport(nil))
+	require.NoError(t, InitRegistryMetadataReport(map[string]*global.RegistryConfig{}))
 
 	// Invalid UseAsMetaReport
 	err := InitRegistryMetadataReport(map[string]*global.RegistryConfig{
 		"zk": {Protocol: "zookeeper", Address: "127.0.0.1:2181", UseAsMetaReport: "invalid"},
 	})
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestOptionsOverride(t *testing.T) {

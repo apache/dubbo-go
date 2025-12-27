@@ -26,6 +26,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -128,6 +129,6 @@ func TestResponseHandle(t *testing.T) {
 		case <-time.After(100 * time.Millisecond):
 			t.Fatal("Done should be closed")
 		}
-		assert.Error(t, pr.Err)
+		require.Error(t, pr.Err)
 	})
 }

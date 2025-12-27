@@ -56,7 +56,7 @@ func TestMetadataInfoSerialization(t *testing.T) {
 
 	// Invalid JSON
 	err = json.Unmarshal([]byte(`{invalid}`), &restored)
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestRegisterServiceAppMappingValueMerge(t *testing.T) {
@@ -112,7 +112,7 @@ func TestRemoveServiceAppMappingListener(t *testing.T) {
 		cacheListener: NewCacheListener("/dubbo/", nil),
 	}
 	err := report.RemoveServiceAppMappingListener("test.service", "mapping")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestCacheListenerIntegrationWithReport(t *testing.T) {

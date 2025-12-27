@@ -27,6 +27,7 @@ import (
 	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -66,7 +67,7 @@ func TestValidateClient(t *testing.T) {
 		gxetcd.WithEndpoints("127.0.0.1:2379"),
 		gxetcd.WithTimeout(100*time.Millisecond),
 	)
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestNewServiceDiscoveryClient(t *testing.T) {

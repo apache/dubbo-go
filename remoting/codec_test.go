@@ -24,6 +24,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type mockCodec struct{}
@@ -86,17 +87,17 @@ func TestCodecInterface(t *testing.T) {
 
 	// EncodeRequest
 	buf, err := mockC.EncodeRequest(&Request{ID: 1, Version: "2.0.2"})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, buf)
 
 	// EncodeResponse
 	buf, err = mockC.EncodeResponse(&Response{ID: 1, Version: "2.0.2"})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, buf)
 
 	// Decode
 	result, length, err := mockC.Decode([]byte("test-data"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, 9, length)
 }
