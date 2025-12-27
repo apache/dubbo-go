@@ -21,9 +21,14 @@ import (
 	"fmt"
 	"sync"
 	"testing"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/remoting"
+import (
 	"github.com/stretchr/testify/assert"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 const (
