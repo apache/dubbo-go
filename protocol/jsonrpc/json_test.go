@@ -24,6 +24,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type TestData struct {
@@ -38,12 +39,12 @@ func TestJsonClientCodecWrite(t *testing.T) {
 	}
 	codec := newJsonClientCodec()
 	data, err := codec.Write(cd)
-	assert.NoError(t, err)
-	assert.Equal(t, "{\"jsonrpc\":\"2.0\",\"method\":\"GetUser\",\"params\":[\"args\",2],\"id\":1}\n", string(data))
+	require.NoError(t, err)
+	assert.JSONEq(t, "{\"jsonrpc\":\"2.0\",\"method\":\"GetUser\",\"params\":[\"args\",2],\"id\":1}\n", string(data))
 
 	cd.Args = 1
 	_, err = codec.Write(cd)
-	assert.EqualError(t, err, "unsupported param type: int")
+	require.EqualError(t, err, "unsupported param type: int")
 }
 
 func TestJsonClientCodecRead(t *testing.T) {
@@ -51,13 +52,13 @@ func TestJsonClientCodecRead(t *testing.T) {
 	codec.pending[1] = "GetUser"
 	rsp := &TestData{}
 	err := codec.Read([]byte("{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"Test\":\"test\"}}\n"), rsp)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "test", rsp.Test)
 
 	// error
 	codec.pending[1] = "GetUser"
 	err = codec.Read([]byte("{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32000,\"message\":\"error\"}}\n"), rsp)
-	assert.EqualError(t, err, "{\"code\":-32000,\"message\":\"error\"}")
+	require.EqualError(t, err, "{\"code\":-32000,\"message\":\"error\"}")
 }
 
 func TestServerCodecWrite(t *testing.T) {
@@ -65,23 +66,23 @@ func TestServerCodecWrite(t *testing.T) {
 	a := json.RawMessage([]byte("1"))
 	codec.req = serverRequest{Version: "1.0", Method: "GetUser", ID: &a}
 	data, err := codec.Write("error", &TestData{Test: "test"})
-	assert.NoError(t, err)
-	assert.Equal(t, "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"Test\":\"test\"},\"error\":{\"code\":-32000,\"message\":\"error\"}}\n", string(data))
+	require.NoError(t, err)
+	assert.JSONEq(t, "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"Test\":\"test\"},\"error\":{\"code\":-32000,\"message\":\"error\"}}\n", string(data))
 
 	data, err = codec.Write("{\"code\":-32000,\"message\":\"error\"}", &TestData{Test: "test"})
-	assert.NoError(t, err)
-	assert.Equal(t, "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"Test\":\"test\"},\"error\":{\"code\":-32000,\"message\":\"error\"}}\n", string(data))
+	require.NoError(t, err)
+	assert.JSONEq(t, "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"Test\":\"test\"},\"error\":{\"code\":-32000,\"message\":\"error\"}}\n", string(data))
 }
 
 func TestServerCodecRead(t *testing.T) {
 	codec := newServerCodec()
 	header := map[string]string{}
 	err := codec.ReadHeader(header, []byte("{\"jsonrpc\":\"2.0\",\"method\":\"GetUser\",\"params\":[\"args\",2],\"id\":1}\n"))
-	assert.EqualError(t, err, "{\"code\":-32601,\"message\":\"Method not found\"}")
+	require.EqualError(t, err, "{\"code\":-32601,\"message\":\"Method not found\"}")
 
 	header["HttpMethod"] = "POST"
 	err = codec.ReadHeader(header, []byte("{\"jsonrpc\":\"2.0\",\"method\":\"GetUser\",\"params\":[\"args\",2],\"id\":1}\n"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "1", string([]byte(*codec.req.ID)))
 	assert.Equal(t, "GetUser", codec.req.Method)
 	assert.Equal(t, "2.0", codec.req.Version)
@@ -89,7 +90,7 @@ func TestServerCodecRead(t *testing.T) {
 
 	req := []any{}
 	err = codec.ReadBody(&req)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "args", req[0])
-	assert.Equal(t, float64(2), req[1])
+	assert.InEpsilon(t, 2.0, req[1], 1e-9)
 }

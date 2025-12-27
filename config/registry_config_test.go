@@ -23,6 +23,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -78,7 +79,7 @@ func TestRegistryTypeAll(t *testing.T) {
 		},
 	}
 	urls := LoadRegistries(target, regs, common.PROVIDER)
-	assert.Equal(t, 2, len(urls))
+	assert.Len(t, urls, 2)
 	assert.Equal(t, "service-discovery-registry://127.0.0.2:2181", urls[0].PrimitiveURL)
 }
 
@@ -114,21 +115,21 @@ func TestNewRegistryConfigBuilder(t *testing.T) {
 
 	config.DynamicUpdateProperties(config)
 
-	assert.Equal(t, config.Prefix(), constant.RegistryConfigPrefix)
+	assert.Equal(t, constant.RegistryConfigPrefix, config.Prefix())
 
 	values := config.getUrlMap(common.PROVIDER)
-	assert.Equal(t, values.Get("timeout"), "15s")
+	assert.Equal(t, "15s", values.Get("timeout"))
 
 	url, err := config.toMetadataReportUrl()
-	assert.NoError(t, err)
-	assert.Equal(t, url.GetParam("timeout", "3s"), "10s")
+	require.NoError(t, err)
+	assert.Equal(t, "10s", url.GetParam("timeout", "3s"))
 
 	url, err = config.toURL(common.PROVIDER)
-	assert.NoError(t, err)
-	assert.Equal(t, url.GetParam("timeout", "3s"), "15s")
+	require.NoError(t, err)
+	assert.Equal(t, "15s", url.GetParam("timeout", "3s"))
 
 	address := config.translateRegistryAddress()
-	assert.Equal(t, address, "127.0.0.1:8848")
+	assert.Equal(t, "127.0.0.1:8848", address)
 }
 
 func TestNewRegistryConfig(t *testing.T) {
@@ -145,5 +146,5 @@ func TestNewRegistryConfig(t *testing.T) {
 		WithRegistryWeight(100),
 		WithRegistryParams(map[string]string{"timeout": "3s"}))
 
-	assert.Equal(t, config.Timeout, "10s")
+	assert.Equal(t, "10s", config.Timeout)
 }

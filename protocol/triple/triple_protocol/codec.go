@@ -358,8 +358,6 @@ func getArgType(v any) string {
 
 	switch v := v.(type) {
 	// Serialized tags for base types
-	case nil:
-		return "V"
 	case bool:
 		return "boolean"
 	case []bool:

@@ -29,6 +29,7 @@ import (
 	"github.com/golang/mock/gomock"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -50,7 +51,7 @@ func TestFilterInvoke(t *testing.T) {
 	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(nil)
 	invoker.EXPECT().GetURL().Return(url).Times(1)
 	filter.Invoke(context.Background(), invoker, invoc)
-	assert.True(t, invoc.GetAttachmentWithDefaultValue(dubboInvokeStartTime, "") != "")
+	assert.NotEmpty(t, invoc.GetAttachmentWithDefaultValue(dubboInvokeStartTime, ""))
 }
 
 func TestFilterOnResponse(t *testing.T) {
@@ -78,10 +79,10 @@ func TestFilterOnResponse(t *testing.T) {
 	assert.Equal(t, int32(1), urlStatus.GetFailed())
 	assert.Equal(t, int32(1), methodStatus.GetSuccessiveRequestFailureCount())
 	assert.Equal(t, int32(1), urlStatus.GetSuccessiveRequestFailureCount())
-	assert.True(t, methodStatus.GetFailedElapsed() >= int64(elapsed))
-	assert.True(t, urlStatus.GetFailedElapsed() >= int64(elapsed))
-	assert.True(t, urlStatus.GetLastRequestFailedTimestamp() != int64(0))
-	assert.True(t, methodStatus.GetLastRequestFailedTimestamp() != int64(0))
+	assert.GreaterOrEqual(t, methodStatus.GetFailedElapsed(), int64(elapsed))
+	assert.GreaterOrEqual(t, urlStatus.GetFailedElapsed(), int64(elapsed))
+	assert.NotEqual(t, int64(0), urlStatus.GetLastRequestFailedTimestamp())
+	assert.NotEqual(t, int64(0), methodStatus.GetLastRequestFailedTimestamp())
 }
 
 func TestFilterOnResponseWithDefer(t *testing.T) {
@@ -114,8 +115,8 @@ func TestFilterOnResponseWithDefer(t *testing.T) {
 		assert.Equal(t, int32(0), urlStatus.GetFailed())
 		assert.Equal(t, int32(0), methodStatus.GetSuccessiveRequestFailureCount())
 		assert.Equal(t, int32(0), urlStatus.GetSuccessiveRequestFailureCount())
-		assert.True(t, methodStatus.GetTotalElapsed() >= int64(0))
-		assert.True(t, urlStatus.GetTotalElapsed() >= int64(0))
+		assert.GreaterOrEqual(t, methodStatus.GetTotalElapsed(), int64(0))
+		assert.GreaterOrEqual(t, urlStatus.GetTotalElapsed(), int64(0))
 	})
 
 	// Test scenario 2: dubboInvokeStartTime is parsed successfully, but the result is incorrect
@@ -147,10 +148,10 @@ func TestFilterOnResponseWithDefer(t *testing.T) {
 		assert.Equal(t, int32(1), urlStatus.GetFailed())
 		assert.Equal(t, int32(1), methodStatus.GetSuccessiveRequestFailureCount())
 		assert.Equal(t, int32(1), urlStatus.GetSuccessiveRequestFailureCount())
-		assert.True(t, methodStatus.GetFailedElapsed() >= int64(0))
-		assert.True(t, urlStatus.GetFailedElapsed() >= int64(0))
-		assert.True(t, urlStatus.GetLastRequestFailedTimestamp() != int64(0))
-		assert.True(t, methodStatus.GetLastRequestFailedTimestamp() != int64(0))
+		assert.GreaterOrEqual(t, methodStatus.GetFailedElapsed(), int64(0))
+		assert.GreaterOrEqual(t, urlStatus.GetFailedElapsed(), int64(0))
+		assert.NotEqual(t, int64(0), urlStatus.GetLastRequestFailedTimestamp())
+		assert.NotEqual(t, int64(0), methodStatus.GetLastRequestFailedTimestamp())
 	})
 
 	// Test Scenario 3: dubboInvokeStartTime parsing failed (non-numeric string)
@@ -169,7 +170,7 @@ func TestFilterOnResponseWithDefer(t *testing.T) {
 		rpcResult := &result.RPCResult{}
 
 		result := filter.OnResponse(context.TODO(), rpcResult, invoker, invoc)
-		assert.NotNil(t, result.Error())
+		require.Error(t, result.Error())
 
 		methodStatus := base.GetMethodStatus(url, "test3")
 		urlStatus := base.GetURLStatus(url)
@@ -181,8 +182,8 @@ func TestFilterOnResponseWithDefer(t *testing.T) {
 		assert.Equal(t, int32(1), urlStatus.GetFailed())
 		assert.Equal(t, int32(1), methodStatus.GetSuccessiveRequestFailureCount())
 		assert.Equal(t, int32(1), urlStatus.GetSuccessiveRequestFailureCount())
-		assert.True(t, methodStatus.GetFailedElapsed() >= int64(1))
-		assert.True(t, urlStatus.GetFailedElapsed() >= int64(1))
+		assert.GreaterOrEqual(t, methodStatus.GetFailedElapsed(), int64(1))
+		assert.GreaterOrEqual(t, urlStatus.GetFailedElapsed(), int64(1))
 	})
 
 	// Test scenario 4: dubboInvokeStartTime does not exist (use the default value 0)
@@ -209,7 +210,7 @@ func TestFilterOnResponseWithDefer(t *testing.T) {
 		assert.Equal(t, int32(0), urlStatus.GetFailed())
 		assert.Equal(t, int32(0), methodStatus.GetSuccessiveRequestFailureCount())
 		assert.Equal(t, int32(0), urlStatus.GetSuccessiveRequestFailureCount())
-		assert.True(t, methodStatus.GetTotalElapsed() > int64(0))
-		assert.True(t, urlStatus.GetTotalElapsed() > int64(0))
+		assert.Positive(t, methodStatus.GetTotalElapsed())
+		assert.Positive(t, urlStatus.GetTotalElapsed())
 	})
 }

@@ -24,6 +24,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestProtobufJsonGeneralizer(t *testing.T) {
@@ -33,9 +34,9 @@ func TestProtobufJsonGeneralizer(t *testing.T) {
 		Id: 1,
 	}
 	reqJson, err := g.Generalize(req)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	rReq, err := g.Realize(reqJson, reflect.TypeOf(req))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	reqObj, ok := rReq.(*RequestType)
 	assert.True(t, ok)
 	assert.Equal(t, req.Id, reqObj.GetId())
@@ -47,9 +48,9 @@ func TestProtobufJsonGeneralizer(t *testing.T) {
 		Message: "Nice to meet you",
 	}
 	respJson, err := g.Generalize(resp)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	rResp, err := g.Realize(respJson, reflect.TypeOf(resp))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	respObj, ok := rResp.(*ResponseType)
 	assert.True(t, ok)
 	assert.Equal(t, resp.Code, respObj.GetCode())

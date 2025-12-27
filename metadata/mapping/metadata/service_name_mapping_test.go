@@ -28,6 +28,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -53,11 +54,11 @@ func TestNoReportInstance(t *testing.T) {
 		common.WithParamsValue(constant.ApplicationKey, "dubbo"),
 	)
 	_, err := ins.Get(serviceUrl, lis)
-	assert.NotNil(t, err, "test Get no report instance")
+	require.Error(t, err, "test Get no report instance")
 	err = ins.Map(serviceUrl)
-	assert.NotNil(t, err, "test Map with no report instance")
+	require.Error(t, err, "test Map with no report instance")
 	err = ins.Remove(serviceUrl)
-	assert.NotNil(t, err, "test Remove with no report instance")
+	require.Error(t, err, "test Remove with no report instance")
 }
 
 func TestServiceNameMappingGet(t *testing.T) {
@@ -68,17 +69,17 @@ func TestServiceNameMappingGet(t *testing.T) {
 		common.WithParamsValue(constant.ApplicationKey, "dubbo"),
 	)
 	mockReport, err := initMock()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	t.Run("test normal", func(t *testing.T) {
 		mockReport.On("GetServiceAppMapping").Return(gxset.NewSet("dubbo"), nil).Once()
 		apps, er := ins.Get(serviceUrl, lis)
-		assert.Nil(t, er)
-		assert.True(t, !apps.Empty())
+		require.NoError(t, er)
+		assert.False(t, apps.Empty())
 	})
 	t.Run("test error", func(t *testing.T) {
 		mockReport.On("GetServiceAppMapping").Return(gxset.NewSet(), errors.New("mock error")).Once()
 		_, err = ins.Get(serviceUrl, lis)
-		assert.NotNil(t, err)
+		require.Error(t, err)
 	})
 	mockReport.AssertExpectations(t)
 }
@@ -90,16 +91,16 @@ func TestServiceNameMappingMap(t *testing.T) {
 		common.WithParamsValue(constant.ApplicationKey, "dubbo"),
 	)
 	mockReport, err := initMock()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	t.Run("test normal", func(t *testing.T) {
 		mockReport.On("RegisterServiceAppMapping").Return(nil).Once()
 		err = ins.Map(serviceUrl)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	})
 	t.Run("test error", func(t *testing.T) {
 		mockReport.On("RegisterServiceAppMapping").Return(errors.New("mock error")).Times(retryTimes)
 		err = ins.Map(serviceUrl)
-		assert.NotNil(t, err, "test mapping error")
+		require.Error(t, err, "test mapping error")
 	})
 	mockReport.AssertExpectations(t)
 }
@@ -111,16 +112,16 @@ func TestServiceNameMappingRemove(t *testing.T) {
 		common.WithParamsValue(constant.ApplicationKey, "dubbo"),
 	)
 	mockReport, err := initMock()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	t.Run("test normal", func(t *testing.T) {
 		mockReport.On("RemoveServiceAppMappingListener").Return(nil).Once()
 		err = ins.Remove(serviceUrl)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	})
 	t.Run("test error", func(t *testing.T) {
 		mockReport.On("RemoveServiceAppMappingListener").Return(errors.New("mock error")).Once()
 		err = ins.Remove(serviceUrl)
-		assert.NotNil(t, err)
+		require.Error(t, err)
 	})
 	mockReport.AssertExpectations(t)
 }

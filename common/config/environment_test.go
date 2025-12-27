@@ -43,7 +43,7 @@ func TestEnvironmentUpdateExternalConfigMap(t *testing.T) {
 	assert.Equal(t, "b", v)
 	v, ok = GetEnvInstance().externalConfigMap.Load("1")
 	assert.False(t, ok)
-	assert.Equal(t, nil, v)
+	assert.Nil(t, v)
 }
 
 func TestEnvironmentUpdateAppExternalConfigMap(t *testing.T) {
@@ -58,7 +58,7 @@ func TestEnvironmentUpdateAppExternalConfigMap(t *testing.T) {
 	assert.Equal(t, "b", v)
 	v, ok = GetEnvInstance().appExternalConfigMap.Load("1")
 	assert.False(t, ok)
-	assert.Equal(t, nil, v)
+	assert.Nil(t, v)
 }
 
 func TestEnvironmentConfigurationAndGetProperty(t *testing.T) {
@@ -104,7 +104,7 @@ func TestInmemoryConfigurationGetPropertyNilStore(t *testing.T) {
 
 	ok, v := conf.GetProperty("key")
 	assert.False(t, ok)
-	assert.Equal(t, "", v)
+	assert.Empty(t, v)
 }
 
 func TestInmemoryConfigurationGetSubPropertyNilStore(t *testing.T) {
@@ -137,5 +137,5 @@ func TestInmemoryConfigurationGetSubPropertyNoMatch(t *testing.T) {
 
 	result := conf.GetSubProperty("dubbo.")
 	assert.NotNil(t, result)
-	assert.Equal(t, 0, len(result))
+	assert.Empty(t, result)
 }

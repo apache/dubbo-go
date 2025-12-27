@@ -24,6 +24,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -34,7 +35,7 @@ func TestGetPolarisConfigByUrl(t *testing.T) {
 	regurl := getRegUrl()
 	err := InitSDKContext(regurl)
 
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.ElementsMatch(t, []string{"127.0.0.1:8091"}, sdkCtx.GetConfig().GetGlobal().GetServerConnector().GetAddresses(), "server address")
 }
 

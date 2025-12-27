@@ -27,6 +27,7 @@ import (
 	"github.com/golang/mock/gomock"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -52,7 +53,7 @@ func TestTpsLimitFilterInvokeWithNoTpsLimiter(t *testing.T) {
 		base.NewBaseInvoker(invokeUrl),
 		invocation.NewRPCInvocation("MethodName",
 			[]any{"OK"}, attch))
-	assert.Nil(t, invokeResult.Error())
+	require.NoError(t, invokeResult.Error())
 	assert.Nil(t, invokeResult.Result())
 }
 
@@ -75,7 +76,7 @@ func TestGenericFilterInvokeWithDefaultTpsLimiter(t *testing.T) {
 		base.NewBaseInvoker(invokeUrl),
 		invocation.NewRPCInvocation("MethodName",
 			[]any{"OK"}, attch))
-	assert.Nil(t, invokeResult.Error())
+	require.NoError(t, invokeResult.Error())
 	assert.Nil(t, invokeResult.Result())
 }
 
@@ -105,6 +106,6 @@ func TestGenericFilterInvokeWithDefaultTpsLimiterNotAllow(t *testing.T) {
 	invokeResult := tpsFilter.Invoke(context.Background(),
 		base.NewBaseInvoker(invokeUrl),
 		invocation.NewRPCInvocation("MethodName", []any{"OK"}, attch))
-	assert.Nil(t, invokeResult.Error())
+	require.NoError(t, invokeResult.Error())
 	assert.Nil(t, invokeResult.Result())
 }

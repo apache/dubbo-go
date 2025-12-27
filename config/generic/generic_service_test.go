@@ -28,5 +28,5 @@ import (
 func TestGenericService(t *testing.T) {
 	service := NewGenericService("HelloService")
 	reference := service.Reference()
-	assert.Equal(t, reference, "HelloService")
+	assert.Equal(t, "HelloService", reference)
 }

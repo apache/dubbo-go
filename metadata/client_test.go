@@ -27,6 +27,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -63,7 +64,7 @@ var (
 func TestGetMetadataFromMetadataReport(t *testing.T) {
 	t.Run("no report instance", func(t *testing.T) {
 		_, err := GetMetadataFromMetadataReport("1", ins)
-		assert.NotNil(t, err)
+		require.Error(t, err)
 	})
 	mockReport := new(mockMetadataReport)
 	defer mockReport.AssertExpectations(t)
@@ -71,13 +72,13 @@ func TestGetMetadataFromMetadataReport(t *testing.T) {
 	t.Run("normal", func(t *testing.T) {
 		mockReport.On("GetAppMetadata").Return(metadataInfo, nil).Once()
 		got, err := GetMetadataFromMetadataReport("1", ins)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, metadataInfo, got)
 	})
 	t.Run("error", func(t *testing.T) {
 		mockReport.On("GetAppMetadata").Return(metadataInfo, errors.New("mock error")).Once()
 		_, err := GetMetadataFromMetadataReport("1", ins)
-		assert.NotNil(t, err)
+		require.Error(t, err)
 	})
 }
 
@@ -100,13 +101,13 @@ func TestGetMetadataFromRpc(t *testing.T) {
 		mockInvoker.On("Invoke").Return(res).Once()
 		mockInvoker.On("Destroy").Once()
 		metadata, err := GetMetadataFromRpc("111", ins)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, metadata, res.Rest)
 	})
 	t.Run("refer error", func(t *testing.T) {
 		mockProtocol.On("Refer").Return(nil).Once()
 		_, err := GetMetadataFromRpc("111", ins)
-		assert.NotNil(t, err)
+		require.Error(t, err)
 	})
 	t.Run("invoke timeout", func(t *testing.T) {
 		mockProtocol.On("Refer").Return(mockInvoker).Once()
@@ -117,7 +118,7 @@ func TestGetMetadataFromRpc(t *testing.T) {
 		}).Once()
 		mockInvoker.On("Destroy").Once()
 		_, err := GetMetadataFromRpc("111", ins)
-		assert.NotNil(t, err)
+		require.Error(t, err)
 	})
 }
 

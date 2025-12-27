@@ -455,7 +455,7 @@ func TestNewReferenceConfigBuilder(t *testing.T) {
 	assert.Nil(t, proxy)
 
 	values := config.getURLMap()
-	assert.Equal(t, values.Get(constant.GroupKey), "")
+	assert.Empty(t, values.Get(constant.GroupKey))
 
 	invoker := config.GetInvoker()
 	assert.Nil(t, invoker)
@@ -465,5 +465,5 @@ func TestReferenceConfigInitWithoutConsumerConfig(t *testing.T) {
 	testRootConfig := NewRootConfigBuilder().Build()
 	testRootConfig.Consumer = nil
 	err := NewReferenceConfigBuilder().Build().Init(testRootConfig)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }

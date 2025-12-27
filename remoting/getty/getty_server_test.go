@@ -23,6 +23,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -46,7 +47,7 @@ func TestInitServerOldApi(t *testing.T) {
 	}
 	config.SetRootConfig(rootConf)
 	url, err := common.NewURL("dubbo://127.0.0.1:20003/test")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	initServer(url)
 	config.SetRootConfig(*originRootConf)
 	assert.NotNil(t, srvConf)
@@ -54,7 +55,7 @@ func TestInitServerOldApi(t *testing.T) {
 
 func TestInitServer(t *testing.T) {
 	url, err := common.NewURL("dubbo://127.0.0.1:20003/test")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	url.SetAttribute(constant.ProtocolConfigKey, map[string]*global.ProtocolConfig{
 		"dubbo": {
 			Name: "dubbo",

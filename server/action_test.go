@@ -215,7 +215,7 @@ func TestRemoveDuplicateElementEmpty(t *testing.T) {
 	items := []string{}
 	result := removeDuplicateElement(items)
 
-	assert.Len(t, result, 0)
+	assert.Empty(t, result)
 }
 
 // Test removeDuplicateElement with only empty strings
@@ -223,7 +223,7 @@ func TestRemoveDuplicateElementOnlyEmpty(t *testing.T) {
 	items := []string{"", "", ""}
 	result := removeDuplicateElement(items)
 
-	assert.Len(t, result, 0)
+	assert.Empty(t, result)
 }
 
 // Test removeDuplicateElement with mixed content
@@ -259,7 +259,7 @@ func TestGetRegistryIdsEmpty(t *testing.T) {
 
 	ids := getRegistryIds(registries)
 
-	assert.Len(t, ids, 0)
+	assert.Empty(t, ids)
 }
 
 // Test GetExportedUrls when not exported
@@ -281,7 +281,7 @@ func TestGetExportedUrlsExportedEmpty(t *testing.T) {
 	}
 
 	urls := svcOpts.GetExportedUrls()
-	assert.Len(t, urls, 0)
+	assert.Empty(t, urls)
 }
 
 // Test getUrlMap basic functionality
@@ -480,7 +480,7 @@ func TestLoadProtocolNoMatch(t *testing.T) {
 	protocolIDs := []string{"non-existent"}
 	result := loadProtocol(protocolIDs, protocols)
 
-	assert.Len(t, result, 0)
+	assert.Empty(t, result)
 }
 
 // Test setRegistrySubURL

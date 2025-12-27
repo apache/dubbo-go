@@ -24,6 +24,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -126,10 +127,10 @@ func TestRouteMatchWhen(t *testing.T) {
 	for _, data := range testData {
 		t.Run(data.name, func(t *testing.T) {
 			url, err := common.NewURL(conditionAddr)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			url.AddParam(constant.RuleKey, data.rule)
 			router, err := NewConditionStateRouter(url)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			resVal := router.matchWhen(data.consumerUrl, rpcInvocation)
 			assert.Equal(t, data.wantVal, resVal)
 		})
@@ -209,12 +210,12 @@ func TestRouteMatchFilter(t *testing.T) {
 	for _, data := range testData {
 		t.Run(data.name, func(t *testing.T) {
 			url, err := common.NewURL(conditionAddr)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			url.AddParam(constant.RuleKey, data.rule)
 			url.AddParam(constant.ForceKey, "true")
 
 			router, err := NewConditionStateRouter(url)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 
 			filteredInvokers := router.Route(invokerList, data.comsumerURL, rpcInvocation)
 			resVal := len(filteredInvokers)
@@ -260,10 +261,10 @@ func TestRouterMethodRoute(t *testing.T) {
 	for _, data := range testData {
 		t.Run(data.name, func(t *testing.T) {
 			url, err := common.NewURL(conditionAddr)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			url.AddParam(constant.RuleKey, data.rule)
 			router, err := NewConditionStateRouter(url)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			consumer, _ := common.NewURL(data.consumerURL)
 			resVal := router.matchWhen(consumer, rpcInvocation)
 			assert.Equal(t, data.wantVal, resVal)
@@ -404,10 +405,10 @@ func TestRouteReturn(t *testing.T) {
 			}
 
 			url, err := common.NewURL(conditionAddr)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			url.AddParam(constant.RuleKey, data.rule)
 			router, err := NewConditionStateRouter(url)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 
 			filterInvokers := router.Route(invokers, consumerURL, rpcInvocation)
 			resVal := len(filterInvokers)
@@ -470,11 +471,11 @@ func TestRouteArguments(t *testing.T) {
 		t.Run(data.name, func(t *testing.T) {
 
 			url, err := common.NewURL(conditionAddr)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			url.AddParam(constant.RuleKey, data.rule)
 			url.AddParam(constant.ForceKey, "true")
 			router, err := NewConditionStateRouter(url)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 
 			arguments := make([]any, 0, 1)
 			arguments = append(arguments, data.argument)
@@ -555,11 +556,11 @@ func TestRouteAttachments(t *testing.T) {
 			rpcInvocation.SetAttachment(data.attachmentKey, data.attachmentValue)
 
 			url, err := common.NewURL(conditionAddr)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			url.AddParam(constant.RuleKey, data.rule)
 			url.AddParam(constant.ForceKey, "true")
 			router, err := NewConditionStateRouter(url)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 
 			filterInvokers := router.Route(invokerList, consumerURL, rpcInvocation)
 
@@ -644,11 +645,11 @@ func TestRouteRangePattern(t *testing.T) {
 			rpcInvocation.SetAttachment(data.attachmentKey, data.attachmentValue)
 
 			url, err := common.NewURL(conditionAddr)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			url.AddParam(constant.RuleKey, data.rule)
 			url.AddParam(constant.ForceKey, "true")
 			router, err := NewConditionStateRouter(url)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 
 			filterInvokers := router.Route(invokerList, consumerURL, rpcInvocation)
 
@@ -700,14 +701,14 @@ func TestRouteMultipleConditions(t *testing.T) {
 	for _, data := range testData {
 		t.Run(data.name, func(t *testing.T) {
 			consumerUrl, err := common.NewURL(data.consumerURL)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 
 			url, err := common.NewURL(conditionAddr)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			url.AddParam(constant.RuleKey, data.rule)
 			url.AddParam(constant.ForceKey, "true")
 			router, err := NewConditionStateRouter(url)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 
 			arguments := make([]any, 0, 1)
 			arguments = append(arguments, data.argument)
@@ -759,11 +760,11 @@ conditions:
 
 	rpcInvocation := invocation.NewRPCInvocation("sayHello", nil, nil)
 	invokers := router.Route(invokerList, consumerURL, rpcInvocation)
-	assert.Equal(t, 1, len(invokers))
+	assert.Len(t, invokers, 1)
 
 	rpcInvocation = invocation.NewRPCInvocation("sayHi", nil, nil)
 	invokers = router.Route(invokerList, consumerURL, rpcInvocation)
-	assert.Equal(t, 3, len(invokers))
+	assert.Len(t, invokers, 3)
 }
 
 func TestApplicationRouter(t *testing.T) {
@@ -804,11 +805,11 @@ conditions:
 
 	rpcInvocation := invocation.NewRPCInvocation("sayHello", nil, nil)
 	invokers := router.Route(invokerList, consumerURL, rpcInvocation)
-	assert.Equal(t, 1, len(invokers))
+	assert.Len(t, invokers, 1)
 
 	rpcInvocation = invocation.NewRPCInvocation("sayHi", nil, nil)
 	invokers = router.Route(invokerList, consumerURL, rpcInvocation)
-	assert.Equal(t, 3, len(invokers))
+	assert.Len(t, invokers, 3)
 }
 
 var providerUrls = []string{
@@ -932,7 +933,7 @@ conditions:
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := parseMultiConditionRoute(tt.args.routeContent)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			assert.Equalf(t, tt.want, got, "parseMultiConditionRoute(%v)", tt.args.routeContent)
 		})
 	}
@@ -1345,7 +1346,7 @@ conditions:
 					assert.Equalf(t, ans, res, "route(%v, %v, %v)", tt.args.invokers, tt.args.url, tt.args.invocation)
 				} else {
 					// check expect result.length
-					assert.Equalf(t, tt.expResLen, len(res), "route(%v, %v, %v)", tt.args.invokers, tt.args.url, tt.args.invocation)
+					assert.Lenf(t, res, tt.expResLen, "route(%v, %v, %v)", tt.args.invokers, tt.args.url, tt.args.invocation)
 				}
 			} else {
 				// check multiply destination route successfully or not

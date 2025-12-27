@@ -32,6 +32,7 @@ import (
 	perrors "github.com/pkg/errors"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -105,7 +106,7 @@ func TestServiceFilter_Invoke(t *testing.T) {
 		"",
 		"",
 		service)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	// mock
 	mockInvoker.EXPECT().GetURL().Return(ivkUrl).Times(3)
@@ -172,7 +173,7 @@ func TestServiceFilter_Invoke(t *testing.T) {
 		}).AnyTimes()
 
 	invokeResult := filter.Invoke(context.Background(), mockInvoker, invocation4)
-	assert.Nil(t, invokeResult.Error())
+	require.NoError(t, invokeResult.Error())
 	assert.Equal(t, "hello, world", invokeResult.Result())
 
 	invokeResult = filter.Invoke(context.Background(), mockInvoker, invocation5)

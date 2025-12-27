@@ -24,6 +24,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -71,23 +72,23 @@ func TestNewShutDownConfigBuilder(t *testing.T) {
 		SetInternalSignal(false).
 		Build()
 
-	assert.Equal(t, config.Prefix(), constant.ShutdownConfigPrefix)
+	assert.Equal(t, constant.ShutdownConfigPrefix, config.Prefix())
 
 	timeout := config.GetTimeout()
-	assert.Equal(t, timeout, 10*time.Second)
+	assert.Equal(t, 10*time.Second, timeout)
 
 	stepTimeout := config.GetStepTimeout()
-	assert.Equal(t, stepTimeout, 15*time.Second)
+	assert.Equal(t, 15*time.Second, stepTimeout)
 
 	offlineRequestWindowTimeout := config.GetOfflineRequestWindowTimeout()
-	assert.Equal(t, offlineRequestWindowTimeout, 13*time.Second)
+	assert.Equal(t, 13*time.Second, offlineRequestWindowTimeout)
 	err := config.Init()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	waitTime := config.GetConsumerUpdateWaitTime()
-	assert.Equal(t, waitTime, 3*time.Second)
+	assert.Equal(t, 3*time.Second, waitTime)
 
-	assert.Equal(t, config.GetInternalSignal(), false)
+	assert.False(t, config.GetInternalSignal())
 }
 
 func TestGetInternalSignal(t *testing.T) {
@@ -99,5 +100,5 @@ func TestGetInternalSignal(t *testing.T) {
 		SetRejectRequest(true).
 		Build()
 
-	assert.Equal(t, config.GetInternalSignal(), true)
+	assert.True(t, config.GetInternalSignal())
 }

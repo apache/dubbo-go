@@ -24,6 +24,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -73,7 +74,7 @@ func TestGrpcProtocolExport(t *testing.T) {
 	doInitProvider()
 
 	url, err := common.NewURL(helloworldURL)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	proto := GetProtocol()
 	exporter := proto.Export(base.NewBaseInvoker(url))
@@ -100,12 +101,12 @@ func TestGrpcProtocolExport(t *testing.T) {
 
 func TestGrpcProtocolRefer(t *testing.T) {
 	server, err := helloworld.NewServer("127.0.0.1:30000")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	go server.Start()
 	defer server.Stop()
 
 	url, err := common.NewURL(helloworldURL)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	proto := GetProtocol()
 	invoker := proto.Refer(url)

@@ -24,6 +24,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -55,8 +56,8 @@ func TestDefaultMetadataServiceGetExportedServiceURLs(t *testing.T) {
 		metadataMap: newMetadataMap(),
 	}
 	got, err := mts.GetExportedServiceURLs()
-	assert.Nil(t, err)
-	assert.True(t, len(got) == 1)
+	require.NoError(t, err)
+	assert.Len(t, got, 1)
 	assert.Equal(t, url, got[0])
 }
 
@@ -139,7 +140,7 @@ func TestDefaultMetadataServiceGetExportedURLs(t *testing.T) {
 				metadataMap: newMetadataMap(),
 			}
 			got, err := mts.GetExportedURLs(tt.args.serviceInterface, tt.args.group, tt.args.version, tt.args.protocol)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			assert.Equalf(t, tt.want, got, "GetExportedURLs(%v, %v, %v, %v)", tt.args.serviceInterface, tt.args.group, tt.args.version, tt.args.protocol)
 		})
 	}
@@ -182,7 +183,7 @@ func TestDefaultMetadataServiceGetMetadataInfo(t *testing.T) {
 				metadataMap: newMetadataMap(),
 			}
 			got, err := mts.GetMetadataInfo(tt.args.revision)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			assert.Equalf(t, tt.want, got, "GetMetadataInfo(%v)", tt.args.revision)
 		})
 	}
@@ -211,7 +212,7 @@ func TestDefaultMetadataServiceGetMetadataServiceURL(t *testing.T) {
 				metadataUrl: tt.fields.metadataUrl,
 			}
 			got, err := mts.GetMetadataServiceURL()
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			assert.Equalf(t, tt.want, got, "GetMetadataServiceURL()")
 		})
 	}
@@ -233,7 +234,7 @@ func TestDefaultMetadataServiceGetSubscribedURLs(t *testing.T) {
 				metadataMap: newMetadataMap(),
 			}
 			got, err := mts.GetSubscribedURLs()
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			assert.Equalf(t, tt.want, got, "GetSubscribedURLs()")
 		})
 	}
@@ -293,7 +294,7 @@ func TestDefaultMetadataServiceSetMetadataServiceURL(t *testing.T) {
 func TestDefaultMetadataServiceVersion(t *testing.T) {
 	mts := &DefaultMetadataService{}
 	got, err := mts.Version()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, version, got)
 }
 
@@ -308,7 +309,7 @@ func Test_serviceExporterExport(t *testing.T) {
 	t.Run("normal", func(t *testing.T) {
 		port := common.GetRandomPort("")
 		p, err := strconv.Atoi(port)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		opts := &Options{
 			appName:      "dubbo-app",
 			metadataType: constant.RemoteMetadataStorageType,
@@ -321,13 +322,13 @@ func Test_serviceExporterExport(t *testing.T) {
 			service: &DefaultMetadataService{},
 		}
 		err = e.Export()
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	})
 	// first t.Run has called commom.ServiceMap.Register ,second will fail
 	t.Run("get methods error", func(t *testing.T) {
 		port := common.GetRandomPort("")
 		p, err := strconv.Atoi(port)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		opts := &Options{
 			appName:      "dubbo-app",
 			metadataType: constant.RemoteMetadataStorageType,
@@ -339,7 +340,7 @@ func Test_serviceExporterExport(t *testing.T) {
 			service: &DefaultMetadataService{},
 		}
 		err = e.Export()
-		assert.NotNil(t, err)
+		require.Error(t, err)
 	})
 	t.Run("port == 0", func(t *testing.T) {
 		opts := &Options{
@@ -351,13 +352,13 @@ func Test_serviceExporterExport(t *testing.T) {
 		// UnRegister first otherwise will fail
 		err := common.ServiceMap.UnRegister(constant.MetadataServiceName, constant.DefaultProtocol,
 			common.ServiceKey(constant.MetadataServiceName, opts.appName, version))
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		dubboProtocol.On("Export").Return(mockExporter).Once()
 		e := &serviceExporter{
 			opts:    opts,
 			service: &DefaultMetadataService{},
 		}
 		err = e.Export()
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	})
 }

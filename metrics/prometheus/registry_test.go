@@ -29,6 +29,7 @@ import (
 	prom "github.com/prometheus/client_golang/prometheus"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -60,7 +61,7 @@ func TestPromMetricRegistryCounter(t *testing.T) {
 	p := NewPromMetricRegistry(prom.NewRegistry(), url)
 	p.Counter(metricId).Inc()
 	text, err := p.Scrape()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Contains(t, text, "# HELP dubbo_request request\n# TYPE dubbo_request counter")
 	assert.Contains(t, text, `dubbo_request{app="dubbo",version="1.0.0"} 1`)
 }
@@ -69,7 +70,7 @@ func TestPromMetricRegistryGauge(t *testing.T) {
 	p := NewPromMetricRegistry(prom.NewRegistry(), url)
 	p.Gauge(metricId).Set(100)
 	text, err := p.Scrape()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Contains(t, text, "# HELP dubbo_request request\n# TYPE dubbo_request gauge")
 	assert.Contains(t, text, `dubbo_request{app="dubbo",version="1.0.0"} 100`)
 
@@ -79,7 +80,7 @@ func TestPromMetricRegistryHistogram(t *testing.T) {
 	p := NewPromMetricRegistry(prom.NewRegistry(), url)
 	p.Histogram(metricId).Observe(100)
 	text, err := p.Scrape()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Contains(t, text, "# HELP dubbo_request request\n# TYPE dubbo_request histogram")
 	assert.Contains(t, text, `dubbo_request_bucket{app="dubbo",version="1.0.0",le="+Inf"} 1`)
 	assert.Contains(t, text, `dubbo_request_sum{app="dubbo",version="1.0.0"} 100`)
@@ -90,7 +91,7 @@ func TestPromMetricRegistrySummary(t *testing.T) {
 	p := NewPromMetricRegistry(prom.NewRegistry(), url)
 	p.Summary(metricId).Observe(100)
 	text, err := p.Scrape()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Contains(t, text, "# HELP dubbo_request request\n# TYPE dubbo_request summary")
 	assert.Contains(t, text, "dubbo_request_sum{app=\"dubbo\",version=\"1.0.0\"} 100")
 	assert.Contains(t, text, "dubbo_request_count{app=\"dubbo\",version=\"1.0.0\"} 1")
@@ -102,7 +103,7 @@ func TestPromMetricRegistryRt(t *testing.T) {
 		p.Rt(metricId, &metrics.RtOpts{}).Observe(10 * float64(i))
 	}
 	text, err := p.Scrape()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Contains(t, text, "# HELP dubbo_request_avg Average request\n# TYPE dubbo_request_avg gauge\ndubbo_request_avg{app=\"dubbo\",version=\"1.0.0\"} 45")
 	assert.Contains(t, text, "# HELP dubbo_request_last Last request\n# TYPE dubbo_request_last gauge\ndubbo_request_last{app=\"dubbo\",version=\"1.0.0\"} 90")
 	assert.Contains(t, text, "# HELP dubbo_request_max Max request\n# TYPE dubbo_request_max gauge\ndubbo_request_max{app=\"dubbo\",version=\"1.0.0\"} 90")
@@ -114,7 +115,7 @@ func TestPromMetricRegistryRt(t *testing.T) {
 		p.Rt(metricId, &metrics.RtOpts{Aggregate: true, BucketNum: 10, TimeWindowSeconds: 60}).Observe(10 * float64(i))
 	}
 	text, err = p.Scrape()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Contains(t, text, "# HELP dubbo_request_avg_milliseconds_aggregate The average request\n# TYPE dubbo_request_avg_milliseconds_aggregate gauge\ndubbo_request_avg_milliseconds_aggregate{app=\"dubbo\",version=\"1.0.0\"} 45")
 	assert.Contains(t, text, "# HELP dubbo_request_max_milliseconds_aggregate The maximum request\n# TYPE dubbo_request_max_milliseconds_aggregate gauge\ndubbo_request_max_milliseconds_aggregate{app=\"dubbo\",version=\"1.0.0\"} 90")
 	assert.Contains(t, text, "# HELP dubbo_request_min_milliseconds_aggregate The minimum request\n# TYPE dubbo_request_min_milliseconds_aggregate gauge\ndubbo_request_min_milliseconds_aggregate{app=\"dubbo\",version=\"1.0.0\"} 0")
@@ -132,7 +133,7 @@ func TestPromMetricRegistryCounterConcurrent(t *testing.T) {
 	}
 	wg.Wait()
 	text, err := p.Scrape()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Contains(t, text, "# HELP dubbo_request request\n# TYPE dubbo_request counter")
 	assert.Contains(t, text, `dubbo_request{app="dubbo",version="1.0.0"} 10`)
 }
@@ -153,12 +154,12 @@ func TestPromMetricRegistryExport(t *testing.T) {
 		err := http.ListenAndServe(url.GetParam(constant.PrometheusPushgatewayBaseUrlKey, ""),
 			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				bodyBytes, err := io.ReadAll(r.Body)
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 				text := string(bodyBytes)
 				assert.Contains(t, text, "dubbo_request_avg")
 				wg.Done()
 			}))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 	}()
 	timeout := url.GetParamByIntValue(constant.PrometheusPushgatewayPushIntervalKey, constant.PrometheusDefaultPushInterval)
 	if waitTimeout(&wg, time.Duration(timeout+1)*time.Second) {
@@ -169,10 +170,10 @@ func TestPromMetricRegistryExport(t *testing.T) {
 		url.GetParam(constant.PrometheusExporterMetricsPortKey, constant.PrometheusDefaultMetricsPort) +
 		url.GetParam(constant.PrometheusExporterMetricsPathKey, constant.PrometheusDefaultMetricsPath),
 	)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	defer resp.Body.Close()
 	bodyBytes, err := io.ReadAll(resp.Body)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	text := string(bodyBytes)
 	assert.Contains(t, text, "dubbo_request_avg")
 }

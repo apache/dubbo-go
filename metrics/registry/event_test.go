@@ -50,7 +50,7 @@ func TestRegistryMetricsEventCostMs(t *testing.T) {
 	}
 
 	cost := event.CostMs()
-	assert.Equal(t, 10.0, cost)
+	assert.InDelta(t, 10.0, cost, 0.01)
 }
 
 func TestNewRegisterEvent(t *testing.T) {

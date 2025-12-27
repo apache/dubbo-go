@@ -53,7 +53,7 @@ func TestConsumerFilterInvokeWithGlobalPackage(t *testing.T) {
 
 	result := filter.Invoke(context.Background(), base.NewBaseInvoker(baseUrl), rpcInvocation)
 	assert.NotNil(t, result)
-	assert.Nil(t, result.Error())
+	assert.NoError(t, result.Error())
 }
 
 // only for compatibility with old config, able to directly remove after config is deleted
@@ -77,5 +77,5 @@ func TestConsumerFilterInvokeWithConfigPackage(t *testing.T) {
 
 	result := filter.Invoke(context.Background(), base.NewBaseInvoker(baseUrl), rpcInvocation)
 	assert.NotNil(t, result)
-	assert.Nil(t, result.Error())
+	assert.NoError(t, result.Error())
 }

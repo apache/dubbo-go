@@ -68,7 +68,7 @@ lint: install-golangci-lint
 	golangci-lint run ./... --timeout=10m
 
 install-golangci-lint:
-	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.4.0
+	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.7.2
 
 install-imports-formatter:
 	cd $(IMPORTS_FORMATTER_DIR) && go install

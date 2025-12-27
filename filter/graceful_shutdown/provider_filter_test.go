@@ -27,6 +27,7 @@ import (
 	perrors "github.com/pkg/errors"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -61,7 +62,7 @@ func TestProviderFilterInvokeWithGlobalPackage(t *testing.T) {
 
 	invokeResult := providerFilter.Invoke(context.Background(), base.NewBaseInvoker(baseUrl), rpcInvocation)
 	assert.NotNil(t, invokeResult)
-	assert.Nil(t, invokeResult.Error())
+	require.NoError(t, invokeResult.Error())
 
 	opt.Shutdown.RejectRequest.Store(true)
 	invokeResult = providerFilter.Invoke(context.Background(), base.NewBaseInvoker(baseUrl), rpcInvocation)
@@ -95,7 +96,7 @@ func TestProviderFilterInvokeWithConfigPackage(t *testing.T) {
 
 	invokeResult := providerFilter.Invoke(context.Background(), base.NewBaseInvoker(baseUrl), rpcInvocation)
 	assert.NotNil(t, invokeResult)
-	assert.Nil(t, invokeResult.Error())
+	require.NoError(t, invokeResult.Error())
 
 	// only use this way to set the RejectRequest, because the variable is compact to GlobalShutdownConfig
 	providerFilter.shutdownConfig.RejectRequest.Store(true)

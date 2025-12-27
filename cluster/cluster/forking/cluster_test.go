@@ -30,6 +30,7 @@ import (
 	"github.com/golang/mock/gomock"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -120,7 +121,7 @@ func TestForkingInvokeTimeout(t *testing.T) {
 
 	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 	assert.NotNil(t, result)
-	assert.NotNil(t, result.Error())
+	require.Error(t, result.Error())
 	wg.Wait()
 }
 

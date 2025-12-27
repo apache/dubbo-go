@@ -41,14 +41,14 @@ func TestGoConfigProcess(t *testing.T) {
 	b := "dubbo:\n  registries:\n    demoZK:\n      protocol: zookeeper\n      timeout: 11s\n      address: 127.0.0.1:2181\n      simplified: abc123"
 	c2 := &config_center.ConfigChangeEvent{Key: "test", Value: b}
 	rc.rootConfig.Process(c2)
-	assert.Equal(t, rc.rootConfig.Registries["demoZK"].Timeout, "10s")
+	assert.Equal(t, "10s", rc.rootConfig.Registries["demoZK"].Timeout)
 
 	// test update registry time out
 	bs, _ := yaml.LoadYMLConfig("./testdata/root_config_test.yml")
 	c := &config_center.ConfigChangeEvent{Key: "test", Value: string(bs)}
 	rc.rootConfig.Process(c)
-	assert.Equal(t, rc.rootConfig.Registries["demoZK"].Timeout, "11s")
-	assert.Equal(t, rc.rootConfig.Consumer.RequestTimeout, "6s")
+	assert.Equal(t, "11s", rc.rootConfig.Registries["demoZK"].Timeout)
+	assert.Equal(t, "6s", rc.rootConfig.Consumer.RequestTimeout)
 
 }
 
@@ -76,9 +76,9 @@ func TestNewRootConfigBuilder(t *testing.T) {
 		SetCacheFile("abc=123").
 		Build()
 
-	assert.Equal(t, rootConfig.Prefix(), constant.Dubbo)
+	assert.Equal(t, constant.Dubbo, rootConfig.Prefix())
 	ids := rootConfig.getRegistryIds()
-	assert.Equal(t, ids[0], "nacos")
+	assert.Equal(t, "nacos", ids[0])
 
 	down := GetShutDown()
 	assert.NotNil(t, down)

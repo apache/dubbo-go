@@ -21,7 +21,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"testing"
 )
 
@@ -29,6 +28,7 @@ import (
 	"github.com/golang/mock/gomock"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -91,7 +91,7 @@ func TestAvailableClusterInvokerNoAvail(t *testing.T) {
 
 	result := clusterInvoker.Invoke(context.TODO(), &invocation.RPCInvocation{})
 
-	assert.NotNil(t, result.Error())
-	assert.True(t, strings.Contains(result.Error().Error(), "no provider available"))
+	require.Error(t, result.Error())
+	assert.Contains(t, result.Error().Error(), "no provider available")
 	assert.Nil(t, result.Result())
 }

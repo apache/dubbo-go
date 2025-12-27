@@ -23,6 +23,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -83,17 +84,17 @@ func TestVerify(t *testing.T) {
 	// Valid struct
 	valid := &testStruct{Name: "test", Age: 10}
 	err := Verify(valid)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Invalid struct - missing required field
 	invalid := &testStruct{Name: "", Age: 10}
 	err = Verify(invalid)
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	// Invalid struct - negative age
 	invalid2 := &testStruct{Name: "test", Age: -1}
 	err = Verify(invalid2)
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestMergeValue(t *testing.T) {

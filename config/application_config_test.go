@@ -23,6 +23,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -33,7 +34,7 @@ import (
 func TestApplicationConfig(t *testing.T) {
 
 	err := Load(WithPath("./testdata/config/application/application.yaml"))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	center := rootConfig.Registries
 	assert.NotNil(t, center)
@@ -52,16 +53,16 @@ func TestApplicationConfigBuilder(t *testing.T) {
 		Build()
 
 	err := application.check()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	err = application.Init()
 
-	assert.Nil(t, err)
-	assert.Equal(t, application.Name, "name")
-	assert.Equal(t, application.Organization, "organization")
-	assert.Equal(t, application.Module, "module")
-	assert.Equal(t, application.Version, "version")
-	assert.Equal(t, application.Owner, "owner")
-	assert.Equal(t, application.Environment, "environment")
-	assert.Equal(t, application.MetadataType, "metadataType")
-	assert.Equal(t, application.Prefix(), constant.ApplicationConfigPrefix)
+	require.NoError(t, err)
+	assert.Equal(t, "name", application.Name)
+	assert.Equal(t, "organization", application.Organization)
+	assert.Equal(t, "module", application.Module)
+	assert.Equal(t, "version", application.Version)
+	assert.Equal(t, "owner", application.Owner)
+	assert.Equal(t, "environment", application.Environment)
+	assert.Equal(t, "metadataType", application.MetadataType)
+	assert.Equal(t, constant.ApplicationConfigPrefix, application.Prefix())
 }

@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -85,26 +86,26 @@ func TestNewServiceConfigBuilder(t *testing.T) {
 		}
 
 		err := serviceConfig.Init(rc)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		err = serviceConfig.check()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		assert.Equal(t, serviceConfig.Prefix(), strings.Join([]string{constant.ServiceConfigPrefix, serviceConfig.id}, "."))
-		assert.Equal(t, serviceConfig.IsExport(), false)
+		assert.False(t, serviceConfig.IsExport())
 	})
 
 	t.Run("LoadRegistries&loadProtocol&getRandomPort", func(t *testing.T) {
 		registries := LoadRegistries(serviceConfig.RegistryIDs, serviceConfig.RCRegistriesMap, common.PROVIDER)
-		assert.Equal(t, len(registries), 1)
+		assert.Len(t, registries, 1)
 		assert.Equal(t, "service-discovery-registry", registries[0].Protocol)
-		assert.Equal(t, registries[0].Port, "8848")
-		assert.Equal(t, registries[0].GetParam("registry.role", "1"), "3")
-		assert.Equal(t, registries[0].GetParam("registry", "zk"), "nacos")
+		assert.Equal(t, "8848", registries[0].Port)
+		assert.Equal(t, "3", registries[0].GetParam("registry.role", "1"))
+		assert.Equal(t, "nacos", registries[0].GetParam("registry", "zk"))
 
 		protocols := loadProtocol(serviceConfig.ProtocolIDs, serviceConfig.RCProtocolsMap)
-		assert.Equal(t, len(protocols), 1)
-		assert.Equal(t, protocols[0].Name, "dubbo")
-		assert.Equal(t, protocols[0].Port, "20000")
+		assert.Len(t, protocols, 1)
+		assert.Equal(t, "dubbo", protocols[0].Name)
+		assert.Equal(t, "20000", protocols[0].Port)
 
 		ports := getRandomPort(protocols)
 		nextPort := ports.Front()
@@ -112,9 +113,9 @@ func TestNewServiceConfigBuilder(t *testing.T) {
 	})
 	t.Run("getUrlMap", func(t *testing.T) {
 		values := serviceConfig.getUrlMap()
-		assert.Equal(t, values.Get("methods.Say.weight"), "0")
-		assert.Equal(t, values.Get("methods.Say.tps.limit.rate"), "")
-		assert.Equal(t, values.Get(constant.ServiceFilterKey), "echo,token,accesslog,tps,generic_service,execute,pshutdown")
+		assert.Equal(t, "0", values.Get("methods.Say.weight"))
+		assert.Empty(t, values.Get("methods.Say.tps.limit.rate"))
+		assert.Equal(t, "echo,token,accesslog,tps,generic_service,execute,pshutdown", values.Get(constant.ServiceFilterKey))
 	})
 
 	t.Run("Implement", func(t *testing.T) {

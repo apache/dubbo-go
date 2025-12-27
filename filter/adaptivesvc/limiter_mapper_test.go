@@ -23,6 +23,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -38,12 +39,12 @@ func TestLimiterMapper_newAndSetMethodLimiter(t *testing.T) {
 
 	// Test creating a new limiter
 	l, err := mapper.newAndSetMethodLimiter(url, methodName, limiter.HillClimbingLimiter)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, l)
 
 	// Test that the same limiter is returned if already created
 	l2, err := mapper.newAndSetMethodLimiter(url, methodName, limiter.HillClimbingLimiter)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Same(t, l, l2)
 }
 
@@ -55,17 +56,17 @@ func TestLimiterMapper_getMethodLimiter(t *testing.T) {
 
 	// Add a limiter to the mapper
 	_, err := mapper.newAndSetMethodLimiter(url, methodName, limiter.HillClimbingLimiter)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Test getting an existing limiter
 	l, err := mapper.getMethodLimiter(url, methodName)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, l)
 
 	// Test getting a limiter that does not exist
 	url2 := &common.URL{Path: "/testService2"}
 	l, err = mapper.getMethodLimiter(url2, "nonExistentMethod")
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, l)
 	assert.Equal(t, ErrLimiterNotFoundOnMapper, err)
 }

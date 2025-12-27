@@ -24,6 +24,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -32,7 +33,7 @@ import (
 
 func TestBaseInvoker(t *testing.T) {
 	url, err := common.NewURL("dubbo://localhost:9090")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	ivk := NewBaseInvoker(url)
 	assert.NotNil(t, ivk.GetURL())

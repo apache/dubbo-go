@@ -28,6 +28,7 @@ import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -49,7 +50,7 @@ func TestDubboProtocolExport(t *testing.T) {
 
 	proto := GetProtocol()
 	url, err := common.NewURL(mockDubbo3CommonUrl)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	exporter := proto.Export(base.NewBaseInvoker(url))
 	time.Sleep(time.Second)
 
@@ -75,7 +76,7 @@ func TestDubboProtocolExport(t *testing.T) {
 func TestDubboProtocolRefer(t *testing.T) {
 	proto := GetProtocol()
 	url, err := common.NewURL(mockDubbo3CommonUrl)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	invoker := proto.Refer(url)
 
 	// make sure url
@@ -126,12 +127,12 @@ func TestDubbo3UnaryService_GetReqParamsInterfaces(t *testing.T) {
 	err := enc.Encode(&MockUser{
 		Name: "laurence",
 	})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	data := enc.Buffer()
 	decoder := hessian.NewDecoder(data)
 	val, err := decoder.Decode()
-	assert.Nil(t, err)
-	assert.Equal(t, 2, len(paramsInterfaces))
+	require.NoError(t, err)
+	assert.Len(t, paramsInterfaces, 2)
 	subTest(t, val, paramsInterfaces)
 	args := make([]any, 0, 1)
 	for _, v := range paramsInterfaces {
@@ -146,6 +147,6 @@ func subTest(t *testing.T, val, paramsInterfaces any) {
 	list := paramsInterfaces.([]any)
 	for k := range list {
 		err := hessian.ReflectResponse(val, list[k])
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	}
 }

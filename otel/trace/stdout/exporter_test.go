@@ -23,6 +23,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -38,7 +39,7 @@ func TestNewStdoutExporter(t *testing.T) {
 	}
 
 	exporter, err := newStdoutExporter(config)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, exporter)
 	assert.NotNil(t, exporter.GetTracerProvider())
 	assert.NotNil(t, exporter.GetPropagator())
@@ -55,7 +56,7 @@ func TestNewStdoutExporter_WithConfig(t *testing.T) {
 	}
 
 	exporter, err := newStdoutExporter(config)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, exporter)
 	assert.NotNil(t, exporter.GetTracerProvider())
 	assert.NotNil(t, exporter.GetPropagator())

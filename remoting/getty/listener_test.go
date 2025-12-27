@@ -27,6 +27,7 @@ import (
 	"github.com/opentracing/opentracing-go/mocktracer"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -50,7 +51,7 @@ func TestRebuildCtx(t *testing.T) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "Test-Client")
 	assert.NotNil(t, ctx)
 	err := injectTraceCtx(span, inv)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// rebuild the context success
 	inv = invocation.NewRPCInvocation("MethodName", []any{"OK", "Hello"}, attach)

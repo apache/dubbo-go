@@ -41,6 +41,7 @@ import (
 	gxset "github.com/dubbogo/gost/container/set"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -89,8 +90,8 @@ func TestNewURLWithOptions(t *testing.T) {
 	assert.Equal(t, loopbackAddress, u.Ip)
 	assert.Equal(t, "8080", u.Port)
 	assert.Equal(t, methods, u.Methods)
-	assert.Equal(t, 2, len(u.params))
-	assert.Equal(t, 2, len(u.attributes))
+	assert.Len(t, u.params, 2)
+	assert.Len(t, u.attributes, 2)
 }
 
 func TestURL(t *testing.T) {
@@ -99,7 +100,7 @@ func TestURL(t *testing.T) {
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.0.2.56&methods=GetUser%2C&" +
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	urlInst := URL{}
 	urlInst.noCopy.Lock()
@@ -112,8 +113,8 @@ func TestURL(t *testing.T) {
 	assert.Equal(t, loopbackAddress, u.Ip)
 	assert.Equal(t, "20000", u.Port)
 	assert.Equal(t, urlInst.Methods, u.Methods)
-	assert.Equal(t, "", u.Username)
-	assert.Equal(t, "", u.Password)
+	assert.Empty(t, u.Username)
+	assert.Empty(t, u.Password)
 	assert.Equal(t, "anyhost=true&application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-"+
 		"provider-golang-1.0.0&environment=dev&interface=com.ikurento.user.UserProvider&ip=192.0.2.56&methods=GetUser%"+
 		"2C&module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&side=provider&timeout=3000&t"+
@@ -131,7 +132,7 @@ func TestURLWithoutSchema(t *testing.T) {
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.0.2.56&methods=GetUser%2C&"+
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&"+
 		"side=provider&timeout=3000&timestamp=1556509797245", WithProtocol("dubbo"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, "/com.ikurento.user.UserProvider", u.Path)
 	assert.Equal(t, "127.0.0.1:20000", u.Location)
@@ -139,8 +140,8 @@ func TestURLWithoutSchema(t *testing.T) {
 	assert.Equal(t, loopbackAddress, u.Ip)
 	assert.Equal(t, "20000", u.Port)
 	assert.Equal(t, URL{}.Methods, u.Methods)
-	assert.Equal(t, "", u.Username)
-	assert.Equal(t, "", u.Password)
+	assert.Empty(t, u.Username)
+	assert.Empty(t, u.Password)
 	assert.Equal(t, "anyhost=true&application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-"+
 		"provider-golang-1.0.0&environment=dev&interface=com.ikurento.user.UserProvider&ip=192.0.2.56&methods=GetUser%"+
 		"2C&module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&side=provider&timeout=3000&t"+
@@ -154,40 +155,40 @@ func TestURLWithoutSchema(t *testing.T) {
 
 func TestURLEqual(t *testing.T) {
 	u1, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	u2, err := NewURL("dubbo://127.0.0.2:20001/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, u1.URLEqual(u2))
 
 	u3, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=gg&version=2.6.0")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.False(t, u1.URLEqual(u3))
 
 	// urlGroupAnyValue's group is *
 	urlGroupAnyValue, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=*&version=2.6.0")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, u3.URLEqual(urlGroupAnyValue))
 
 	// test for enabled
 	urlEnabledEmpty, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=*&version=2.6.0&enabled=")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, u3.URLEqual(urlEnabledEmpty))
 
 	urlEnabledFalse, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=*&version=2.6.0&enabled=1")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.False(t, u3.URLEqual(urlEnabledFalse))
 
 	urlEnabledTrue, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=*&version=2.6.0&enabled=true")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, u3.URLEqual(urlEnabledTrue))
 
 	urlEnabledAny, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=*&version=2.6.0&enabled=*")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, u3.URLEqual(urlEnabledAny))
 
 	// test for category
 	categoryAny, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=*&version=2.6.0&enabled=*&category=*")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, categoryAny.URLEqual(u3))
 }
 
@@ -244,11 +245,11 @@ func TestURLGetParamBool(t *testing.T) {
 	u.SetParams(params)
 
 	v := u.GetParamBool("force", false)
-	assert.Equal(t, true, v)
+	assert.True(t, v)
 
 	u = URL{}
 	v = u.GetParamBool("force", false)
-	assert.Equal(t, false, v)
+	assert.False(t, v)
 }
 
 func TestURLGetParamAndDecoded(t *testing.T) {
@@ -282,7 +283,7 @@ func TestURLToMap(t *testing.T) {
 	u.Password = testPassword // #nosec G101 - test credential
 
 	m := u.ToMap()
-	assert.Equal(t, 7, len(m))
+	assert.Len(t, m, 7)
 	assert.Equal(t, "condition", m["protocol"])
 	assert.Equal(t, anyAddress, m["host"])
 	assert.Equal(t, testPort8080, m["port"])
@@ -330,11 +331,11 @@ func TestURLGetMethodParamBool(t *testing.T) {
 	u.SetParams(params)
 
 	v := u.GetMethodParamBool("GetValue", "async", false)
-	assert.Equal(t, true, v)
+	assert.True(t, v)
 
 	u = URL{}
 	v = u.GetMethodParamBool("GetValue2", "async", false)
-	assert.Equal(t, false, v)
+	assert.False(t, v)
 }
 
 func TestURLGetAttribute(t *testing.T) {
@@ -345,13 +346,13 @@ func TestURLGetAttribute(t *testing.T) {
 	u.SetAttribute(key, val)
 
 	rawVal, ok := u.GetAttribute(key)
-	assert.Equal(t, true, ok)
+	assert.True(t, ok)
 	v, ok := rawVal.(string)
-	assert.Equal(t, true, ok)
+	assert.True(t, ok)
 	assert.Equal(t, val, v)
 
 	rawVal, ok = u.GetAttribute(notExistKey)
-	assert.Equal(t, false, ok)
+	assert.False(t, ok)
 	assert.Nil(t, rawVal)
 }
 
@@ -379,7 +380,7 @@ func TestMergeUrl(t *testing.T) {
 
 func TestURLSetParams(t *testing.T) {
 	u1, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&configVersion=1.0")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	params := url.Values{}
 	params.Set("key", "3")
 	u1.SetParams(params)
@@ -389,23 +390,23 @@ func TestURLSetParams(t *testing.T) {
 
 func TestURLReplaceParams(t *testing.T) {
 	u1, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&configVersion=1.0")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	params := url.Values{}
 	params.Set("key", "3")
 	u1.ReplaceParams(params)
 	assert.Equal(t, "3", u1.GetParam("key", ""))
-	assert.Equal(t, "", u1.GetParam("version", ""))
+	assert.Empty(t, u1.GetParam("version", ""))
 }
 
 func TestClone(t *testing.T) {
 	u1, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&configVersion=1.0")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	u2 := u1.Clone()
-	assert.Equal(t, u2.Protocol, "dubbo")
+	assert.Equal(t, "dubbo", u2.Protocol)
 	assert.Equal(t, "1.0", u2.GetParam("configVersion", ""))
 	u2.Protocol = "provider"
-	assert.Equal(t, u1.Protocol, "dubbo")
-	assert.Equal(t, u2.Protocol, "provider")
+	assert.Equal(t, "dubbo", u1.Protocol)
+	assert.Equal(t, "provider", u2.Protocol)
 }
 
 func TestColonSeparatedKey(t *testing.T) {
@@ -627,19 +628,19 @@ func TestIsAnyCondition(t *testing.T) {
 
 func TestNewURLWithMultiAddr(t *testing.T) {
 	u1, err := NewURL("zookeeper://127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183", u1.Location)
 
 	u2, err := NewURL("zookeeper://127.0.0.1:2181 , 127.0.0.1:2182, 127.0.0.1:2183")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183", u2.Location)
 
 	u3, err := NewURL("zookeeper://127.0.0.1:2181 , 127.0.0.1:2182, 127.0.0.1:2183,, , , ")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183", u3.Location)
 
 	u4, err := NewURL(" , ,127.0.0.1:2181 , 127.0.0.1:2182, 127.0.0.1:2183,, , , ", WithProtocol("zookeeper"))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183", u4.Location)
 }
 
@@ -685,7 +686,7 @@ func TestRoleType(t *testing.T) {
 	assert.Equal(t, "providers", RoleType(PROVIDER).String())
 
 	assert.Equal(t, "consumer", RoleType(CONSUMER).Role())
-	assert.Equal(t, "", RoleType(CONFIGURATOR).Role())
+	assert.Empty(t, RoleType(CONFIGURATOR).Role())
 	assert.Equal(t, "routers", RoleType(ROUTER).Role())
 	assert.Equal(t, "provider", RoleType(PROVIDER).Role())
 }
@@ -715,7 +716,7 @@ func TestWithLocation(t *testing.T) {
 func TestWithToken(t *testing.T) {
 	// empty token
 	u1 := NewURLWithOptions(WithToken(""))
-	assert.Equal(t, "", u1.GetParam(constant.TokenKey, ""))
+	assert.Empty(t, u1.GetParam(constant.TokenKey, ""))
 
 	// custom token
 	u2 := NewURLWithOptions(WithToken("my-token"))
@@ -747,11 +748,11 @@ func TestWithWeight(t *testing.T) {
 
 	// zero weight (should not be set)
 	u2 := NewURLWithOptions(WithWeight(0))
-	assert.Equal(t, "", u2.GetParam(constant.WeightKey, ""))
+	assert.Empty(t, u2.GetParam(constant.WeightKey, ""))
 
 	// negative weight (should not be set)
 	u3 := NewURLWithOptions(WithWeight(-1))
-	assert.Equal(t, "", u3.GetParam(constant.WeightKey, ""))
+	assert.Empty(t, u3.GetParam(constant.WeightKey, ""))
 }
 
 func TestMatchKey(t *testing.T) {
@@ -808,7 +809,7 @@ func TestServiceKey(t *testing.T) {
 	assert.Equal(t, "group/interface", ServiceKey("interface", "group", "0.0.0"))
 
 	// empty interface
-	assert.Equal(t, "", ServiceKey("", "group", "version"))
+	assert.Empty(t, ServiceKey("", "group", "version"))
 
 	// URL method
 	u, _ := NewURL("dubbo://127.0.0.1:20000/com.test.Service?interface=com.test.Service&group=g1&version=1.0")
@@ -844,7 +845,7 @@ func TestAddParam(t *testing.T) {
 	// add another value to same key
 	u.AddParam("key1", "value2")
 	params := u.GetParams()
-	assert.Equal(t, 2, len(params["key1"]))
+	assert.Len(t, params["key1"], 2)
 }
 
 func TestAddParamAvoidNil(t *testing.T) {
@@ -856,7 +857,7 @@ func TestAddParamAvoidNil(t *testing.T) {
 func TestDelParam(t *testing.T) {
 	u, _ := NewURL("dubbo://127.0.0.1:20000?key1=value1&key2=value2")
 	u.DelParam("key1")
-	assert.Equal(t, "", u.GetParam("key1", ""))
+	assert.Empty(t, u.GetParam("key1", ""))
 	assert.Equal(t, "value2", u.GetParam("key2", ""))
 
 	// delete from nil params
@@ -873,7 +874,7 @@ func TestGetNonDefaultParam(t *testing.T) {
 
 	v, ok = u.GetNonDefaultParam("nonexistent")
 	assert.False(t, ok)
-	assert.Equal(t, "", v)
+	assert.Empty(t, v)
 }
 
 func TestRangeParams(t *testing.T) {
@@ -992,9 +993,9 @@ func TestCloneExceptParams(t *testing.T) {
 	excludeSet := gxset.NewSet("key1", "key3")
 	cloned := u.CloneExceptParams(excludeSet)
 
-	assert.Equal(t, "", cloned.GetParam("key1", ""))
+	assert.Empty(t, cloned.GetParam("key1", ""))
 	assert.Equal(t, "value2", cloned.GetParam("key2", ""))
-	assert.Equal(t, "", cloned.GetParam("key3", ""))
+	assert.Empty(t, cloned.GetParam("key3", ""))
 	assert.Equal(t, "dubbo", cloned.Protocol)
 }
 
@@ -1006,7 +1007,7 @@ func TestCloneWithParams(t *testing.T) {
 	cloned := u.CloneWithParams([]string{"key1", "key3"})
 
 	assert.Equal(t, "value1", cloned.GetParam("key1", ""))
-	assert.Equal(t, "", cloned.GetParam("key2", ""))
+	assert.Empty(t, cloned.GetParam("key2", ""))
 	assert.Equal(t, "value3", cloned.GetParam("key3", ""))
 	assert.Equal(t, "dubbo", cloned.Protocol)
 	assert.Equal(t, userName, cloned.Username)
@@ -1095,15 +1096,15 @@ func TestGetSubscribeName(t *testing.T) {
 
 func TestNewURLEmptyString(t *testing.T) {
 	u, err := NewURL("")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, u)
-	assert.Equal(t, "", u.Protocol)
+	assert.Empty(t, u.Protocol)
 }
 
 func TestNewURLWithCredentials(t *testing.T) {
 	// #nosec G101 - test credential for URL parsing test
 	u, err := NewURL("dubbo://" + userName + ":" + testPassword + "@" + loopbackAddress + ":" + testPort + "/com.test.Service")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, userName, u.Username)
 	assert.Equal(t, testPassword, u.Password)
 }
@@ -1165,13 +1166,13 @@ func TestURLEqualWithCategory(t *testing.T) {
 
 func TestNewURLWithRegistryGroup(t *testing.T) {
 	u, err := NewURL("dubbo://127.0.0.1:20000/com.test.Service?registry.group=mygroup")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Contains(t, u.PrimitiveURL, "mygroup")
 }
 
 func TestColonSeparatedKeyEmpty(t *testing.T) {
 	u := &URL{}
-	assert.Equal(t, "", u.ColonSeparatedKey())
+	assert.Empty(t, u.ColonSeparatedKey())
 }
 
 func TestColonSeparatedKeyWithVersion000(t *testing.T) {
@@ -1195,7 +1196,7 @@ func TestNewURLParseError(t *testing.T) {
 func TestNewURLWithInvalidQuery(t *testing.T) {
 	// URL with special characters that need escaping
 	u, err := NewURL("dubbo://127.0.0.1:20000/com.test.Service?key=value%20with%20space")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "value with space", u.GetParam("key", ""))
 }
 
@@ -1265,13 +1266,13 @@ func TestURLWithPathAlreadyHasSlash(t *testing.T) {
 
 func TestServiceKeyWithEmptyInterface(t *testing.T) {
 	u := &URL{}
-	assert.Equal(t, "", u.ServiceKey())
+	assert.Empty(t, u.ServiceKey())
 }
 
 func TestGetRawParamDefault(t *testing.T) {
 	u, _ := NewURL("dubbo://127.0.0.1:20000?customKey=customValue")
 	assert.Equal(t, "customValue", u.GetRawParam("customKey"))
-	assert.Equal(t, "", u.GetRawParam("nonexistent"))
+	assert.Empty(t, u.GetRawParam("nonexistent"))
 }
 
 func TestCloneWithNilParams(t *testing.T) {
@@ -1308,7 +1309,7 @@ func TestSetParamsWithEmptySlice(t *testing.T) {
 
 	u.SetParams(params)
 	// Empty slice should delete the key
-	assert.Equal(t, "", u.GetParam("emptyKey", ""))
+	assert.Empty(t, u.GetParam("emptyKey", ""))
 }
 
 func TestReplaceParams(t *testing.T) {
@@ -1319,7 +1320,7 @@ func TestReplaceParams(t *testing.T) {
 
 	u.ReplaceParams(newParams)
 
-	assert.Equal(t, "", u.GetParam("key1", ""))
+	assert.Empty(t, u.GetParam("key1", ""))
 	assert.Equal(t, "value2", u.GetParam("key2", ""))
 }
 
@@ -1339,9 +1340,9 @@ func TestIsMatchCategoryWithEmptyCategory2(t *testing.T) {
 
 func TestNewURLWithLocationWithoutPort(t *testing.T) {
 	u, err := NewURL("dubbo://hostname/com.test.Service")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "hostname", u.Location)
-	assert.Equal(t, "", u.Port)
+	assert.Empty(t, u.Port)
 }
 
 func TestGetParamBoolInvalidValue(t *testing.T) {
@@ -1352,7 +1353,7 @@ func TestGetParamBoolInvalidValue(t *testing.T) {
 	u.SetParams(params)
 
 	v := u.GetParamBool("key", true)
-	assert.Equal(t, true, v) // returns default on parse error
+	assert.True(t, v) // returns default on parse error
 }
 
 func TestGetParamIntInvalidValue(t *testing.T) {

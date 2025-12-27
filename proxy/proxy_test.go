@@ -28,6 +28,7 @@ import (
 	perrors "github.com/pkg/errors"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -66,22 +67,22 @@ func TestProxyImplement(t *testing.T) {
 	p.Implement(s)
 
 	err := p.Get().(*TestService).MethodOne(nil, 0, false, nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	err = p.Get().(*TestService).MethodTwo(nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	ret, err := p.Get().(*TestService).MethodThree(0, false)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, ret) // ret is nil, because it doesn't be injection yet
 
 	ret2, err := p.Get().(*TestService).MethodFour(0, false)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "*interface {}", reflect.TypeOf(ret2).String())
 	err = p.Get().(*TestService).Echo(nil, nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	err = p.Get().(*TestService).MethodFive()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// inherit & lowercase
 	p.rpc = nil
@@ -94,9 +95,9 @@ func TestProxyImplement(t *testing.T) {
 	}}
 	p.Implement(s1)
 	err = s1.MethodOne(nil, 0, false, nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = s1.methodOne(nil, nil, nil)
-	assert.EqualError(t, err, "errors")
+	require.EqualError(t, err, "errors")
 
 	// no struct
 	p.rpc = nil
@@ -138,8 +139,8 @@ func TestProxyImplementForContext(t *testing.T) {
 	context := context.WithValue(context.Background(), constant.AttachmentKey, attachments1)
 	r, err := p.Get().(*TestService).MethodSix(context, "xxx")
 	v1 := r.(map[string]any)
-	assert.NoError(t, err)
-	assert.Equal(t, v1["TestProxyInvoker"], "TestProxyInvokerValue")
+	require.NoError(t, err)
+	assert.Equal(t, "TestProxyInvokerValue", v1["TestProxyInvoker"])
 }
 
 type TestProxyInvoker struct {

@@ -23,6 +23,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewOtelConfigBuilder(t *testing.T) {
@@ -32,7 +33,7 @@ func TestNewOtelConfigBuilder(t *testing.T) {
 
 	ac := NewApplicationConfigBuilder().Build()
 	err := config.Init(ac)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	tpc := config.TraceConfig.toTraceProviderConfig(ac)
 	assert.NotNil(t, tpc)
