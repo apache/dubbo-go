@@ -1,6 +1,6 @@
 # Apache Dubbo for Golang
 
-[![Build Status](https://github.com/apache/dubbo-go/workflows/CI/badge.svg)](https://travis-ci.org/apache/dubbo-go)
+[![CI](https://github.com/apache/dubbo-go/workflows/CI/badge.svg)](https://github.com/apache/dubbo-go/actions)
 [![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/github.com/apache/dubbo-go/v3?tab=doc)
 [![Go Report Card](https://goreportcard.com/badge/github.com/apache/dubbo-go)](https://goreportcard.com/report/github.com/apache/dubbo-go)
 ![license](https://img.shields.io/badge/license-Apache--2.0-green.svg)
@@ -9,13 +9,30 @@
 
 [English](README.md) | 中文
 
-Dubbo-go 是一款高性能 Go 语言微服务 RPC 框架，生态覆盖多种网络协议：Triple、Dubbo、JSONRPC、gRPC、HTTP、HTTP2等，是编写 go 语言微服务的不二之选。
+**Apache Dubbo-go** 是一款高性能、功能丰富的微服务框架。作为 Apache Dubbo 生态的 Go 语言实现，它充分利用 Golang 的并发特性，助力开发者在云原生时代构建扩展性强、可靠性高的分布式应用。
 
-您可以访问[官网](https://dubbo.apache.org/)以获取更多信息。
+在全新的 **v3.3.x** 系列版本中，Dubbo-go 已从传统的 RPC 框架演进为**云原生智能微服务治理平台**，引入了深度的 AI 集成与 Proxyless Mesh（无代理网格）能力。
+
+您可以访问 [官网](https://dubbo.apache.org/) 以获取更多信息。
 
 ## 快速开始
 
-您可以跟随我们的[快速开始](https://github.com/apache/dubbo-go-samples/tree/main/helloworld)示例，在 5 分钟内逐步学习如何开发一个 dubbo-go RPC 应用。
+### 环境准备
+
+* Go 1.24 或更高版本（建议使用最新版本以获得最佳性能与兼容性）。
+
+### 安装
+
+使用以下命令安装 Dubbo-go：
+
+```bash
+go get dubbo.apache.org/dubbo-go/v3@latest
+
+```
+
+### 快速示例
+
+通过我们的 [快速开始 (Helloworld)](https://github.com/apache/dubbo-go-samples/tree/main/helloworld) 示例，您可以在 5 分钟内掌握如何开发一个 RPC 应用。
 
 过程如下方代码所示，非常简单：您使用 Protobuf 定义一个服务，提供您自己的服务实现，将其注册到服务器，然后启动服务器。
 
@@ -72,15 +89,16 @@ func main() {
 
 ![dubbo-go-architecture](./doc/imgs/arc.png)
 
-- **RPC 协议**: Triple 协议，兼容 gRPC 且对 HTTP 友好
-- **服务发现**: Nacos、Zookeeper、Etcd、Polaris-mesh、Consul
-- **负载均衡**: 自适应、随机、轮询、最少活跃调用、一致性哈希
-- **流量管理**: 流量切分、超时设置、速率限制、金丝雀发布
-- **配置**: YAML 文件、动态配置（Nacos、Zookeeper 等）
-- **可观测性**: 指标（Prometheus、Grafana）和追踪（Jaeger、Zipkin）
-- **高可用策略**: 故障转移 (Failover)、快速失败 (Failfast)、失败安全/失败自动恢复 (Failsafe/Failback)、可用性优先 (Available)、广播 (Broadcast)、并行调用 (Forking)
+* **RPC 协议**: Triple (兼容 gRPC 且对 HTTP 友好)、Dubbo、JSONRPC、HTTP/2、HTTP/3 (实验性)。
+* **服务发现**: Nacos、Zookeeper、Etcd、Polaris-mesh、Consul。
+* **负载均衡**: 自适应、随机、轮询、最少活跃调用、一致性哈希。
+* **流量管理**: 流量切分、超时设置、速率限制、金丝雀发布。
+* **配置管理**: YAML 文件、动态配置（Nacos、Apollo、Zookeeper 等），支持基于指纹去重的优化版文件监听。
+* **可观测性**: 指标（Prometheus）、追踪（OpenTelemetry v1.21.0+ 标准化 Span 名）、日志（完整的生命周期事件记录）。
+* **高可用策略**: 故障转移 (Failover)、快速失败 (Failfast)、失败安全/失败自动恢复 (Failsafe/Failback)、广播 (Broadcast)、并行调用 (Forking)。
+* **跨语言互通**: 通过 Triple 协议泛化调用、版本通配符匹配等技术，实现与 Java 版 Dubbo 的完美互通。
 
-## ️ 工具
+## ️ 工具生态
 
 `tools/` 目录和 `dubbogo/tools` 仓库提供了一些实用工具，以简化您的 Dubbo-Go 开发体验。
 
@@ -141,7 +159,11 @@ func main() {
 - [Protoc-gen-go-triple](https://github.com/dubbogo/protoc-gen-go-triple/)
 - [控制台 (Console)](https://github.com/apache/dubbo-kubernetes)，开发中
 
-## 贡献代码
+## 社区与文档
+
+* **官方网站**: https://dubbo.apache.org/
+* **官方文档**: https://dubbo.apache.org/docs/dubbo-go/
+* **问题反馈**: [GitHub Issues](https://github.com/apache/dubbo-go/issues)
 
 关于提交补丁和贡献流程的详细信息，请访问 [CONTRIBUTING](./CONTRIBUTING.md)。
 
