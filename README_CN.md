@@ -90,7 +90,7 @@ func main() {
 ![dubbo-go-architecture](./doc/imgs/arc.png)
 
 * **RPC 协议**: Triple (兼容 gRPC 且对 HTTP 友好)、Dubbo、JSONRPC、HTTP/2、HTTP/3 (实验性)。
-* **服务发现**: Nacos、Zookeeper、Etcd、Polaris-mesh、Consul。
+* **服务发现**: Nacos、Zookeeper、Etcd、Polaris-mesh。
 * **负载均衡**: 自适应、随机、轮询、最少活跃调用、一致性哈希。
 * **流量管理**: 流量切分、超时设置、速率限制、金丝雀发布。
 * **配置管理**: YAML 文件、动态配置（Nacos、Apollo、Zookeeper 等），支持基于指纹去重的优化版文件监听。

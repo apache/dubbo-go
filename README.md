@@ -9,7 +9,7 @@
 
 English | [中文](README_CN.md)
 
-Apache Dubbo-go is a high-performance RPC and microservice framework compatible with other Dubbo language implementations. It leverages Golang's concurrency features to provide efficient service governance, including service discovery, load balancing, and traffic management. Dubbo-go supports multiple protocols, such as Dubbo,  JSONRPC,  Triple (gRPC-compatible), gRPC, HTTP, HTTP2, and HTTP/3 (experimental), ensuring seamless integration in heterogeneous environments.
+Apache Dubbo-go is a high-performance RPC and microservice framework compatible with other Dubbo language implementations. It leverages Golang's concurrency features to provide efficient service governance, including service discovery, load balancing, and traffic management. Dubbo-go supports multiple protocols, such as Dubbo, JSONRPC, Triple(gRPC-compatible), gRPC, HTTP, HTTP2, and HTTP/3 (experimental), ensuring seamless integration in heterogeneous environments.
 
 You can visit [the official website](https://dubbo.apache.org/) for more information.
 
@@ -31,9 +31,8 @@ For detailed changes, refer to CHANGELOG.md.
 
 To install Dubbo-go, use the following command:
 
-Bash
 
-```
+```Bash
 go get dubbo.apache.org/dubbo-go/v3@latest
 ```
 
@@ -99,7 +98,7 @@ See the [samples](https://github.com/apache/dubbo-go-samples) for detailed infor
 Dubbo-go provides robust service governance capabilities:
 
 - **RPC Protocols**: Triple, gRPC compatible and HTTP-friendly
-- **Service Discovery**: Nacos, Zookeeper, Etcd, Polaris-mesh, Consul.
+- **Service Discovery**: Nacos, Zookeeper, Etcd, Polaris-mesh.
 - **Load Balance**: Adaptive, Random, RoundRobin, LeastActive, ConsistentHash
 - **Traffic Management**: traffic split, timeout, rate limiting, canary release
 - **Configuration**: yaml file, dynamic configuration(Nacos, Apollo, Zookeeper, etc.).
