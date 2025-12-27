@@ -127,3 +127,10 @@ const (
 	LoggerAppender = "console"
 	LoggerFormat   = "text"
 )
+
+const (
+	HealthCheckDefaultPort      = "8080"
+	HealthCheckDefaultLivePath  = "/health/live"
+	HealthCheckDefaultReadyPath = "/health/ready"
+	HealthCheckDefaultTimeout   = "10s"
+)
