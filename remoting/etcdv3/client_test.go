@@ -37,17 +37,26 @@ type mockClientFacade struct {
 	client *gxetcd.Client
 	lock   sync.Mutex
 	url    *common.URL
+	wg     sync.WaitGroup
+	done   chan struct{}
 }
 
 func (m *mockClientFacade) Client() *gxetcd.Client     { return m.client }
 func (m *mockClientFacade) SetClient(c *gxetcd.Client) { m.client = c }
 func (m *mockClientFacade) ClientLock() *sync.Mutex    { return &m.lock }
-func (m *mockClientFacade) WaitGroup() *sync.WaitGroup { return &sync.WaitGroup{} }
-func (m *mockClientFacade) Done() chan struct{}        { return make(chan struct{}) }
-func (m *mockClientFacade) RestartCallBack() bool      { return true }
-func (m *mockClientFacade) GetURL() *common.URL        { return m.url }
-func (m *mockClientFacade) IsAvailable() bool          { return true }
-func (m *mockClientFacade) Destroy()                   {}
+func (m *mockClientFacade) WaitGroup() *sync.WaitGroup { return &m.wg }
+func (m *mockClientFacade) Done() chan struct{} {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	if m.done == nil {
+		m.done = make(chan struct{})
+	}
+	return m.done
+}
+func (m *mockClientFacade) RestartCallBack() bool { return true }
+func (m *mockClientFacade) GetURL() *common.URL   { return m.url }
+func (m *mockClientFacade) IsAvailable() bool     { return true }
+func (m *mockClientFacade) Destroy()              {}
 
 func TestValidateClient(t *testing.T) {
 	// Test with nil client (will fail without real etcd)

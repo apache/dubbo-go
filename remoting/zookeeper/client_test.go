@@ -43,15 +43,23 @@ type mockZkClientFacade struct {
 	client *gxzookeeper.ZookeeperClient
 	lock   sync.Mutex
 	url    *common.URL
+	done   chan struct{}
 }
 
 func (m *mockZkClientFacade) ZkClient() *gxzookeeper.ZookeeperClient     { return m.client }
 func (m *mockZkClientFacade) SetZkClient(c *gxzookeeper.ZookeeperClient) { m.client = c }
 func (m *mockZkClientFacade) ZkClientLock() *sync.Mutex                  { return &m.lock }
 func (m *mockZkClientFacade) WaitGroup() *sync.WaitGroup                 { return &sync.WaitGroup{} }
-func (m *mockZkClientFacade) Done() chan struct{}                        { return make(chan struct{}) }
-func (m *mockZkClientFacade) RestartCallBack() bool                      { return true }
-func (m *mockZkClientFacade) GetURL() *common.URL                        { return m.url }
+func (m *mockZkClientFacade) Done() chan struct{} {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	if m.done == nil {
+		m.done = make(chan struct{})
+	}
+	return m.done
+}
+func (m *mockZkClientFacade) RestartCallBack() bool { return true }
+func (m *mockZkClientFacade) GetURL() *common.URL   { return m.url }
 
 func TestValidateZookeeperClient(t *testing.T) {
 	// Test with invalid address (will fail to connect but exercises the code path)

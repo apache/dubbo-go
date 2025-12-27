@@ -72,7 +72,10 @@ func TestGettyRPCClientIsAvailable(t *testing.T) {
 func TestGettyRPCClientClose(t *testing.T) {
 	client := &gettyRPCClient{sessions: []*rpcSession{}}
 	assert.Nil(t, client.close())
-	assert.NotNil(t, client.close()) // Second close returns error
+	err := client.close()
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "close gettyRPCClient")
+	assert.Contains(t, err.Error(), "again")
 }
 
 func TestGettyRPCClientConcurrent(t *testing.T) {
