@@ -61,6 +61,11 @@ func newDuplexHTTPCall(
 	// Request. This ensures if a transport out of our control wants
 	// to mutate the req.URL, we don't feel the effects of it.
 	url = cloneURL(url)
+	// Bind the concrete RPC path to the request URL; without this the request
+	// lands on the service base path and handlers return 404.
+	url.Path = spec.Procedure
+	// RawPath must align with Path; clearing avoids stale values.
+	url.RawPath = ""
 	pipeReader, pipeWriter := io.Pipe()
 
 	// todo(DMwangnima): remove cloneURL logic in WithContext

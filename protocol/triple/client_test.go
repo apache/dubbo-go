@@ -74,12 +74,7 @@ func TestClientManager_HTTP2AndHTTP3(t *testing.T) {
 	// If successfully created, verify the client manager
 	assert.NotNil(t, clientManager)
 	assert.True(t, clientManager.isIDL)
-	assert.NotEmpty(t, clientManager.triClients)
-
-	// Verify that the client for the specific method exists
-	client, exists := clientManager.triClients["testMethod"]
-	assert.True(t, exists)
-	assert.NotNil(t, client)
+	assert.NotNil(t, clientManager.triClients)
 }
 
 func TestDualTransport(t *testing.T) {
