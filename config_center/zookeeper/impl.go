@@ -20,6 +20,7 @@ package zookeeper
 import (
 	"encoding/base64"
 	"errors"
+	"path"
 	"strconv"
 	"strings"
 	"sync"
@@ -111,12 +112,12 @@ func (c *zookeeperDynamicConfiguration) AddListener(key string, listener config_
 
 // buildPath build path and format
 func buildPath(rootPath, subPath string) string {
-	path := strings.TrimRight(rootPath+pathSeparator+subPath, pathSeparator)
-	if !strings.HasPrefix(path, pathSeparator) {
-		path = pathSeparator + path
+	fullPath := strings.TrimRight(rootPath+pathSeparator+subPath, pathSeparator)
+	if !strings.HasPrefix(fullPath, pathSeparator) {
+		fullPath = pathSeparator + fullPath
 	}
-	path = strings.ReplaceAll(path, "//", "/")
-	return path
+
+	return path.Clean(fullPath)
 }
 
 func (c *zookeeperDynamicConfiguration) RemoveListener(key string, listener config_center.ConfigurationListener, opions ...config_center.Option) {
@@ -185,8 +186,8 @@ func (c *zookeeperDynamicConfiguration) PublishConfig(key string, group string, 
 
 // RemoveConfig will remove the config with the (key, group) pair
 func (c *zookeeperDynamicConfiguration) RemoveConfig(key string, group string) error {
-	path := c.getPath(key, group)
-	err := c.client.Delete(path)
+	fullPath := c.getPath(key, group)
+	err := c.client.Delete(fullPath)
 	if err != nil {
 		return perrors.WithStack(err)
 	}
@@ -195,8 +196,8 @@ func (c *zookeeperDynamicConfiguration) RemoveConfig(key string, group string) e
 
 // GetConfigKeysByGroup will return all keys with the group
 func (c *zookeeperDynamicConfiguration) GetConfigKeysByGroup(group string) (*gxset.HashSet, error) {
-	path := c.getPath("", group)
-	result, err := c.client.GetChildren(path)
+	fullPath := c.getPath("", group)
+	result, err := c.client.GetChildren(fullPath)
 	if err != nil {
 		return nil, perrors.WithStack(err)
 	}

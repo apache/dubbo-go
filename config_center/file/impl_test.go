@@ -35,7 +35,7 @@ import (
 )
 
 const (
-	key = "com.dubbo.go"
+	key = "com_dubbo_go"
 )
 
 func initFileData(t *testing.T) (*FileSystemDynamicConfiguration, error) {
