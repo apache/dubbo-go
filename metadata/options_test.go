@@ -24,6 +24,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -113,13 +114,13 @@ func TestReportOptionsToUrl(t *testing.T) {
 	// Valid options
 	opts := NewReportOptions(WithZookeeper(), WithAddress("127.0.0.1:2181"))
 	url, err := opts.toUrl()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "zookeeper", url.Protocol)
 
 	// Invalid options - empty protocol
 	opts = NewReportOptions(WithAddress("127.0.0.1:2181"))
 	url, err = opts.toUrl()
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, url)
 }
 

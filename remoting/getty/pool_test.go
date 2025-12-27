@@ -73,7 +73,7 @@ func TestGettyRPCClientClose(t *testing.T) {
 	client := &gettyRPCClient{sessions: []*rpcSession{}}
 	assert.Nil(t, client.close())
 	err := client.close()
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "close gettyRPCClient")
 	assert.Contains(t, err.Error(), "again")
 }

@@ -128,6 +128,6 @@ func TestResponseHandle(t *testing.T) {
 		case <-time.After(100 * time.Millisecond):
 			t.Fatal("Done should be closed")
 		}
-		assert.NotNil(t, pr.Err)
+		assert.Error(t, pr.Err)
 	})
 }

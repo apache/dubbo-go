@@ -66,7 +66,7 @@ func TestValidateClient(t *testing.T) {
 		gxetcd.WithEndpoints("127.0.0.1:2379"),
 		gxetcd.WithTimeout(100*time.Millisecond),
 	)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestNewServiceDiscoveryClient(t *testing.T) {

@@ -45,11 +45,11 @@ func TestMetadataInfoSerialization(t *testing.T) {
 	}
 
 	data, err := json.Marshal(original)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	var restored info.MetadataInfo
 	err = json.Unmarshal(data, &restored)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, original.App, restored.App)
 	assert.Equal(t, original.Revision, restored.Revision)
 

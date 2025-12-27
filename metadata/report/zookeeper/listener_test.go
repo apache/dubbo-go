@@ -88,7 +88,7 @@ func TestListenerSet(t *testing.T) {
 	// ForEach
 	count := 0
 	err := set.ForEach(func(l mapping.MappingListener) error { count++; return nil })
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, 1, count)
 
 	// ForEach with error
@@ -112,7 +112,7 @@ func TestListenerSetConcurrency(t *testing.T) {
 	if err := g.Wait(); err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, 50, len(set.listeners))
+	assert.Len(t, set.listeners, 50)
 
 }
 
