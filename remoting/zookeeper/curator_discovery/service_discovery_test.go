@@ -18,16 +18,12 @@
 package curator_discovery
 
 import (
+	"fmt"
 	"sync"
 	"testing"
-)
 
-import (
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/remoting"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -193,9 +189,18 @@ func TestServiceDiscoveryConcurrentAccess(t *testing.T) {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
-			entry := &Entry{instance: &ServiceInstance{Name: testServiceName, ID: string(rune('a' + idx%26))}}
+			//Confirm ID is equal
+			entry := &Entry{instance: &ServiceInstance{Name: testServiceName, ID: fmt.Sprintf("id-%d", idx)}}
 			sd.services.Store(entry.instance.ID, entry)
 		}(i)
 	}
 	wg.Wait()
+
+	// test whether 100 datas is inserted
+	count := 0
+	sd.services.Range(func(_, _ any) bool {
+		count++
+		return true
+	})
+	assert.Equal(t, 100, count)
 }
