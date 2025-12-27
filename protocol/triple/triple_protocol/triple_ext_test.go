@@ -1654,6 +1654,22 @@ func TestStreamForServer(t *testing.T) {
 		assert.NotNil(t, res)
 		assert.Equal(t, msg.Sum, int64(1))
 	})
+	t.Run("client-stream-conn", func(t *testing.T) {
+		t.Parallel()
+		client, server := newPingServer(&pluggablePingServer{
+			sum: func(ctx context.Context, stream *triple.ClientStream) (*triple.Response, error) {
+				assert.NotNil(t, stream.Conn().Send("not-proto"))
+				return triple.NewResponse(&pingv1.SumResponse{}), nil
+			},
+		})
+		t.Cleanup(server.Close)
+		stream, err := client.Sum(context.Background())
+		assert.Nil(t, err)
+		assert.Nil(t, stream.Send(&pingv1.SumRequest{Number: 1}))
+		res := triple.NewResponse(&pingv1.SumResponse{})
+		err = stream.CloseAndReceive(res)
+		assert.Nil(t, err)
+	})
 	t.Run("client-stream-send-msg", func(t *testing.T) {
 		t.Parallel()
 		client, server := newPingServer(&pluggablePingServer{

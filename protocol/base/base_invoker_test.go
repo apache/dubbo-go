@@ -47,7 +47,7 @@ func TestBaseInvoker(t *testing.T) {
 
 func TestBaseInvokerWithFullURL(t *testing.T) {
 	url, err := common.NewURL("dubbo://localhost:20880/com.example.Service?version=1.0.0&group=test")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	ivk := NewBaseInvoker(url)
 
@@ -81,7 +81,7 @@ func TestBaseInvokerWithFullURL(t *testing.T) {
 
 func TestBaseInvokerInvoke(t *testing.T) {
 	url, err := common.NewURL("dubbo://localhost:9090/test.Service")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	ivk := NewBaseInvoker(url)
 
@@ -95,7 +95,7 @@ func TestBaseInvokerInvoke(t *testing.T) {
 
 func TestBaseInvokerMultipleDestroy(t *testing.T) {
 	url, err := common.NewURL("dubbo://localhost:9090")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	ivk := NewBaseInvoker(url)
 
@@ -136,7 +136,7 @@ func TestBaseInvokerStringWithDifferentURLs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			url, err := common.NewURL(tt.urlStr)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 
 			ivk := NewBaseInvoker(url)
 			str := ivk.String()
