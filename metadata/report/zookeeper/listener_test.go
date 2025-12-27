@@ -18,6 +18,7 @@
 package zookeeper
 
 import (
+	"context"
 	"errors"
 	"sync"
 	"sync/atomic"
@@ -28,6 +29,8 @@ import (
 	"github.com/dubbogo/gost/gof/observer"
 
 	"github.com/stretchr/testify/assert"
+
+	"golang.org/x/sync/errgroup"
 )
 
 import (
@@ -97,16 +100,20 @@ func TestListenerSet(t *testing.T) {
 
 func TestListenerSetConcurrency(t *testing.T) {
 	set := NewListenerSet()
-	var wg sync.WaitGroup
+	g, _ := errgroup.WithContext(context.Background())
+
 	for i := 0; i < 50; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		g.Go(func() error {
 			set.Add(newMockMappingListener())
-		}()
+			return nil
+		})
 	}
-	wg.Wait()
+
+	if err := g.Wait(); err != nil {
+		t.Fatal(err)
+	}
 	assert.Equal(t, 50, len(set.listeners))
+
 }
 
 func TestCacheListener(t *testing.T) {
