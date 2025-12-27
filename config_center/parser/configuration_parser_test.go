@@ -78,8 +78,8 @@ configs:
     mock: v
   side: consumer`
 	urls, err := parser.ParseToUrls(content)
-	assert.NoError(t, err)
-	assert.Equal(t, 1, len(urls))
+	require.NoError(t, err)
+	assert.Len(t, urls, 1)
 	assert.Equal(t, "override", urls[0].Protocol)
 	assert.Equal(t, "0.0.0.0", urls[0].Location)
 	assert.Equal(t, "*", urls[0].Service())

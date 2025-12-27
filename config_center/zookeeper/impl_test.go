@@ -18,7 +18,6 @@
 package zookeeper
 
 import (
-	"errors"
 	"testing"
 )
 
@@ -98,7 +97,7 @@ func TestPublishAndRemoveConfigWithMockZk(t *testing.T) {
 	err = cfg.RemoveConfig("k", "g")
 	require.NoError(t, err)
 	_, _, err = client.GetContent("/dubbo/config/g/k")
-	require.True(t, errors.Is(err, zk.ErrNoNode))
+	require.ErrorIs(t, err, zk.ErrNoNode)
 }
 
 func TestGetPropertiesWithMockZk(t *testing.T) {
@@ -124,7 +123,7 @@ func TestGetPropertiesWithMockZk(t *testing.T) {
 	// non-existing returns empty string and nil error
 	empty, err := cfg.GetProperties("missing", config_center.WithGroup("grp"))
 	require.NoError(t, err)
-	require.Equal(t, "", empty)
+	require.Empty(t, empty)
 }
 
 func mustURL(t *testing.T, raw string) *common.URL {

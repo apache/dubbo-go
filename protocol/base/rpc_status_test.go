@@ -213,7 +213,7 @@ func TestRPCStatusGetters(t *testing.T) {
 
 	// Test GetLastRequestFailedTimestamp
 	timestamp := urlStatus.GetLastRequestFailedTimestamp()
-	assert.True(t, timestamp > 0)
+	assert.Positive(t, timestamp)
 }
 
 func TestInvokerBlackList(t *testing.T) {
@@ -231,12 +231,12 @@ func TestInvokerBlackList(t *testing.T) {
 
 	// Test GetBlackListInvokers
 	blackListInvokers := GetBlackListInvokers(10)
-	assert.Equal(t, 1, len(blackListInvokers))
+	assert.Len(t, blackListInvokers, 1)
 	assert.Equal(t, invoker.GetURL().Key(), blackListInvokers[0].GetURL().Key())
 
 	// Test with blockSize smaller than actual size
 	blackListInvokers = GetBlackListInvokers(0)
-	assert.Equal(t, 0, len(blackListInvokers))
+	assert.Empty(t, blackListInvokers)
 
 	// Remove invoker from unhealthy status
 	RemoveInvokerUnhealthyStatus(invoker)
