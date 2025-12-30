@@ -1658,6 +1658,9 @@ func TestStreamForServer(t *testing.T) {
 		t.Parallel()
 		client, server := newPingServer(&pluggablePingServer{
 			sum: func(ctx context.Context, stream *triple.ClientStream) (*triple.Response, error) {
+				// First receive the client's message to ensure the stream is established
+				assert.True(t, stream.Receive(&pingv1.SumRequest{}))
+				// Now try to send non-proto message, which should fail
 				assert.NotNil(t, stream.Conn().Send("not-proto"))
 				return triple.NewResponse(&pingv1.SumResponse{}), nil
 			},
