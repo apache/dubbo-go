@@ -93,7 +93,7 @@ func Init(opts ...Option) {
 					logger.Warn("Graceful shutdown timeout, application will shutdown immediately")
 					os.Exit(0)
 				})
-				beforeShutdown(newOpts.Shutdown)
+				BeforeShutdown(newOpts.Shutdown)
 				// those signals' original behavior is exit with dump ths stack, so we try to keep the behavior
 				for _, dumpSignal := range DumpHeapShutdownSignals {
 					if sig == dumpSignal {
@@ -147,10 +147,6 @@ func BeforeShutdown(shutdown *global.ShutdownConfig) {
 	for callback := customCallbacks.Front(); callback != nil; callback = callback.Next() {
 		callback.Value.(func())()
 	}
-}
-
-func beforeShutdown(shutdown *global.ShutdownConfig) {
-	BeforeShutdown(shutdown)
 }
 
 // destroyRegistries destroys RegistryProtocol directly.
