@@ -24,7 +24,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"reflect"
 	"strings"
 	"time"
 )
@@ -57,41 +56,24 @@ const (
 // callUnary, callClientStream, callServerStream, callBidiStream.
 // A Reference has a clientManager.
 type clientManager struct {
-	isIDL bool
-	// triple_protocol clients, key is method name
-	triClients map[string]*tri.Client
+	isIDL     bool
+	triClient *tri.Client
 }
 
 // TODO: code a triple client between clientManager and triple_protocol client
 // TODO: write a NewClient for triple client
 
-func (cm *clientManager) getClient(method string) (*tri.Client, error) {
-	triClient, ok := cm.triClients[method]
-	if !ok {
-		return nil, fmt.Errorf("missing triple client for method: %s", method)
-	}
-	return triClient, nil
-}
-
 func (cm *clientManager) callUnary(ctx context.Context, method string, req, resp any) error {
-	triClient, err := cm.getClient(method)
-	if err != nil {
-		return err
-	}
 	triReq := tri.NewRequest(req)
 	triResp := tri.NewResponse(resp)
-	if err := triClient.CallUnary(ctx, triReq, triResp); err != nil {
+	if err := cm.triClient.CallUnary(ctx, triReq, method, triResp); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (cm *clientManager) callClientStream(ctx context.Context, method string) (any, error) {
-	triClient, err := cm.getClient(method)
-	if err != nil {
-		return nil, err
-	}
-	stream, err := triClient.CallClientStream(ctx)
+	stream, err := cm.triClient.CallClientStream(ctx, method)
 	if err != nil {
 		return nil, err
 	}
@@ -99,12 +81,8 @@ func (cm *clientManager) callClientStream(ctx context.Context, method string) (a
 }
 
 func (cm *clientManager) callServerStream(ctx context.Context, method string, req any) (any, error) {
-	triClient, err := cm.getClient(method)
-	if err != nil {
-		return nil, err
-	}
 	triReq := tri.NewRequest(req)
-	stream, err := triClient.CallServerStream(ctx, triReq)
+	stream, err := cm.triClient.CallServerStream(ctx, triReq, method)
 	if err != nil {
 		return nil, err
 	}
@@ -112,11 +90,7 @@ func (cm *clientManager) callServerStream(ctx context.Context, method string, re
 }
 
 func (cm *clientManager) callBidiStream(ctx context.Context, method string) (any, error) {
-	triClient, err := cm.getClient(method)
-	if err != nil {
-		return nil, err
-	}
-	stream, err := triClient.CallBidiStream(ctx)
+	stream, err := cm.triClient.CallBidiStream(ctx, method)
 	if err != nil {
 		return nil, err
 	}
@@ -282,59 +256,16 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		baseTriURL = httpPrefix + baseTriURL
 	}
 
-	triClients := make(map[string]*tri.Client)
-
-	// Check if this is a generic call - for generic call, we only need $invoke method
-	generic := url.GetParam(constant.GenericKey, "")
-	isGeneric := isGenericCall(generic)
-
-	if isGeneric {
-		// For generic call, only register $invoke method
-		invokeURL, err := joinPath(baseTriURL, url.Interface(), constant.Generic)
-		if err != nil {
-			return nil, fmt.Errorf("JoinPath failed for base %s, interface %s, method %s", baseTriURL, url.Interface(), constant.Generic)
-		}
-		triClients[constant.Generic] = tri.NewClient(httpClient, invokeURL, cliOpts...)
-	} else if len(url.Methods) != 0 {
-		for _, method := range url.Methods {
-			triURL, err := joinPath(baseTriURL, url.Interface(), method)
-			if err != nil {
-				return nil, fmt.Errorf("JoinPath failed for base %s, interface %s, method %s", baseTriURL, url.Interface(), method)
-			}
-			triClient := tri.NewClient(httpClient, triURL, cliOpts...)
-			triClients[method] = triClient
-		}
-	} else {
-		// This branch is for the non-IDL mode, where we pass in the service solely
-		// for the purpose of using reflection to obtain all methods of the service.
-		// There might be potential for optimization in this area later on.
-		service, ok := url.GetAttribute(constant.RpcServiceKey)
-		if !ok {
-			return nil, fmt.Errorf("triple clientmanager can't get methods")
-		}
-
-		serviceType := reflect.TypeOf(service)
-		for i := range serviceType.NumMethod() {
-			methodName := serviceType.Method(i).Name
-			triURL, err := joinPath(baseTriURL, url.Interface(), methodName)
-			if err != nil {
-				return nil, fmt.Errorf("JoinPath failed for base %s, interface %s, method %s", baseTriURL, url.Interface(), methodName)
-			}
-			triClient := tri.NewClient(httpClient, triURL, cliOpts...)
-			triClients[methodName] = triClient
-		}
-
-		// Register $invoke method for generic call support in non-IDL mode
-		invokeURL, err := joinPath(baseTriURL, url.Interface(), constant.Generic)
-		if err != nil {
-			return nil, fmt.Errorf("JoinPath failed for base %s, interface %s, method %s", baseTriURL, url.Interface(), constant.Generic)
-		}
-		triClients[constant.Generic] = tri.NewClient(httpClient, invokeURL, cliOpts...)
+	triURL, err := joinPath(baseTriURL, url.Interface())
+	if err != nil {
+		return nil, fmt.Errorf("JoinPath failed for base %s, interface %s", baseTriURL, url.Interface())
 	}
 
+	triClient := tri.NewClient(httpClient, triURL, cliOpts...)
+
 	return &clientManager{
-		isIDL:      isIDL,
-		triClients: triClients,
+		isIDL:     isIDL,
+		triClient: triClient,
 	}, nil
 }
 
