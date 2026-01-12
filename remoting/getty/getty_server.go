@@ -96,14 +96,14 @@ func initServer(url *common.URL) {
 			if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
 				tlsConf, ok := tlsConfRaw.(*global.TLSConfig)
 				if !ok {
-					logger.Errorf("Getty client initialized the TLSConfig configuration failed")
+					logger.Errorf("Getty Server initialized the TLSConfig configuration failed")
 					return
 				}
 				tlsConfig = tlsConf
 			}
 		}
 
-		if tlsConfig != nil {
+		if tlsConfig != nil && dubbotls.IsServerTLSValid(tlsConfig) {
 			srvConf.SSLEnabled = true
 			srvConf.TLSBuilder = &getty.ServerTlsConfigBuilder{
 				ServerKeyCertChainPath:        tlsConfig.TLSCertFile,
@@ -111,22 +111,6 @@ func initServer(url *common.URL) {
 				ServerTrustCertCollectionPath: tlsConfig.CACertFile,
 			}
 			logger.Infof("Getty Server initialized the TLSConfig configuration")
-		} else if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
-			// use global TLSConfig handle tls
-			tlsConf, ok := tlsConfRaw.(*global.TLSConfig)
-			if !ok {
-				logger.Errorf("Getty Server initialized the TLSConfig configuration failed")
-				return
-			}
-			if dubbotls.IsServerTLSValid(tlsConf) {
-				srvConf.SSLEnabled = true
-				srvConf.TLSBuilder = &getty.ServerTlsConfigBuilder{
-					ServerKeyCertChainPath:        tlsConf.TLSCertFile,
-					ServerPrivateKeyPath:          tlsConf.TLSKeyFile,
-					ServerTrustCertCollectionPath: tlsConf.CACertFile,
-				}
-				logger.Infof("Getty Server initialized the TLSConfig configuration")
-			}
 		}
 		//getty params
 		gettyServerConfig := protocolConf.Params
