@@ -155,14 +155,14 @@ func main() {
 
 - [dubbo-go-samples](https://github.com/apache/dubbo-go-samples)
 - [dubbo-go-pixiu: 作为代理解决 Dubbo 多语言互通问题](https://github.com/apache/dubbo-go-pixiu)
-- [与 Dubbo Java 互通](https://dubbo-next.staged.apache.org/zh-cn/overview/mannual/golang-sdk/tutorial/interop-dubbo/)
+- [与 Dubbo Java 互通](https://cn.dubbo.apache.org/zh-cn/overview/mannual/golang-sdk/tutorial/interop-dubbo/)
 - [Protoc-gen-go-triple](https://github.com/dubbogo/protoc-gen-go-triple/)
 - [控制台 (Console)](https://github.com/apache/dubbo-kubernetes)，开发中
 
 ## 社区与文档
 
 * **官方网站**: https://dubbo.apache.org/
-* **官方文档**: https://dubbo.apache.org/docs/dubbo-go/
+* **官方文档**: https://cn.dubbo.apache.org/zh-cn/overview/mannual/golang-sdk/
 * **问题反馈**: [GitHub Issues](https://github.com/apache/dubbo-go/issues)
 
 关于提交补丁和贡献流程的详细信息，请访问 [CONTRIBUTING](./CONTRIBUTING.md)。
