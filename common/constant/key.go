@@ -413,8 +413,10 @@ const (
 
 // Generic Filter
 const (
-	GenericSerializationDefault = "true"
-	GenericSerializationGson    = "gson"
+	GenericSerializationDefault      = "true"
+	GenericSerializationGson         = "gson"
+	GenericSerializationProtobuf     = "protobuf"
+	GenericSerializationProtobufJson = "protobuf-json"
 )
 
 // AdaptiveService Filter

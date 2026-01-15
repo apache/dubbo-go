@@ -19,8 +19,11 @@
 package server
 
 import (
+	"context"
+	"reflect"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -176,6 +179,61 @@ func (s *Server) genSvcOpts(handler any, info *common.ServiceInfo, opts ...Servi
 	return newSvcOpts, nil
 }
 
+// isNillable checks if a reflect.Value's kind supports nil checking.
+func isNillable(v reflect.Value) bool {
+	switch v.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice, reflect.UnsafePointer:
+		return true
+	default:
+		return false
+	}
+}
+
+// isReflectNil safely checks if a reflect.Value is nil.
+func isReflectNil(v reflect.Value) bool {
+	return isNillable(v) && v.IsNil()
+}
+
+// CallMethodByReflection invokes the given method via reflection and processes its return values.
+// This is a shared helper function used by both server/server.go and protocol/triple/server.go.
+func CallMethodByReflection(ctx context.Context, method reflect.Method, handler any, args []any) (any, error) {
+	in := []reflect.Value{reflect.ValueOf(handler)}
+	in = append(in, reflect.ValueOf(ctx))
+	for _, arg := range args {
+		in = append(in, reflect.ValueOf(arg))
+	}
+	returnValues := method.Func.Call(in)
+
+	// Process return values
+	if len(returnValues) == 1 {
+		if isReflectNil(returnValues[0]) {
+			return nil, nil
+		}
+		if err, ok := returnValues[0].Interface().(error); ok {
+			return nil, err
+		}
+		return nil, nil
+	}
+	var result any
+	var err error
+	if !isReflectNil(returnValues[0]) {
+		result = returnValues[0].Interface()
+	}
+	if len(returnValues) > 1 && !isReflectNil(returnValues[1]) {
+		if e, ok := returnValues[1].Interface().(error); ok {
+			err = e
+		}
+	}
+	return result, err
+}
+
+// createReflectionMethodFunc creates a MethodFunc that calls the given method via reflection.
+func createReflectionMethodFunc(method reflect.Method) func(ctx context.Context, args []any, handler any) (any, error) {
+	return func(ctx context.Context, args []any, handler any) (any, error) {
+		return CallMethodByReflection(ctx, method, handler, args)
+	}
+}
+
 // Add a method with a name of a different first-letter case
 // to achieve interoperability with java
 // TODO: The method name case sensitivity in Dubbo-java should be addressed.
@@ -184,13 +242,48 @@ func enhanceServiceInfo(info *common.ServiceInfo) *common.ServiceInfo {
 	if info == nil {
 		return info
 	}
+
+	// Get service type for reflection-based method calls
+	var svcType reflect.Type
+	if info.ServiceType != nil {
+		svcType = reflect.TypeOf(info.ServiceType)
+	}
+
+	// Build method map for reflection lookup
+	methodMap := make(map[string]reflect.Method)
+	if svcType != nil {
+		for i := 0; i < svcType.NumMethod(); i++ {
+			m := svcType.Method(i)
+			methodMap[m.Name] = m
+			methodMap[strings.ToLower(m.Name)] = m
+		}
+	}
+
+	// Add MethodFunc to methods that don't have it
+	for i := range info.Methods {
+		if info.Methods[i].MethodFunc == nil && svcType != nil {
+			if reflectMethod, ok := methodMap[info.Methods[i].Name]; ok {
+				info.Methods[i].MethodFunc = createReflectionMethodFunc(reflectMethod)
+			}
+		}
+	}
+
+	// Create additional methods with swapped-case names for Java interoperability
 	var additionalMethods []common.MethodInfo
 	for _, method := range info.Methods {
 		newMethod := method
 		newMethod.Name = dubboutil.SwapCaseFirstRune(method.Name)
+		if method.MethodFunc != nil {
+			newMethod.MethodFunc = method.MethodFunc
+		} else if svcType != nil {
+			if reflectMethod, ok := methodMap[dubboutil.SwapCaseFirstRune(method.Name)]; ok {
+				newMethod.MethodFunc = createReflectionMethodFunc(reflectMethod)
+			}
+		}
 		additionalMethods = append(additionalMethods, newMethod)
 	}
 	info.Methods = append(info.Methods, additionalMethods...)
+
 	return info
 }
 

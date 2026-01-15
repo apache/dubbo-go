@@ -284,7 +284,18 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 
 	triClients := make(map[string]*tri.Client)
 
-	if len(url.Methods) != 0 {
+	// Check if this is a generic call - for generic call, we only need $invoke method
+	generic := url.GetParam(constant.GenericKey, "")
+	isGeneric := isGenericCall(generic)
+
+	if isGeneric {
+		// For generic call, only register $invoke method
+		invokeURL, err := joinPath(baseTriURL, url.Interface(), constant.Generic)
+		if err != nil {
+			return nil, fmt.Errorf("JoinPath failed for base %s, interface %s, method %s", baseTriURL, url.Interface(), constant.Generic)
+		}
+		triClients[constant.Generic] = tri.NewClient(httpClient, invokeURL, cliOpts...)
+	} else if len(url.Methods) != 0 {
 		for _, method := range url.Methods {
 			triURL, err := joinPath(baseTriURL, url.Interface(), method)
 			if err != nil {
@@ -312,6 +323,13 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 			triClient := tri.NewClient(httpClient, triURL, cliOpts...)
 			triClients[methodName] = triClient
 		}
+
+		// Register $invoke method for generic call support in non-IDL mode
+		invokeURL, err := joinPath(baseTriURL, url.Interface(), constant.Generic)
+		if err != nil {
+			return nil, fmt.Errorf("JoinPath failed for base %s, interface %s, method %s", baseTriURL, url.Interface(), constant.Generic)
+		}
+		triClients[constant.Generic] = tri.NewClient(httpClient, invokeURL, cliOpts...)
 	}
 
 	return &clientManager{

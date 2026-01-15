@@ -21,8 +21,10 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"reflect"
 	"sync"
 	"testing"
+	"unsafe"
 )
 
 import (
@@ -483,5 +485,60 @@ func Test_createServiceInfoWithReflection(t *testing.T) {
 		paramsSlice, ok := params.([]any)
 		assert.True(t, ok)
 		assert.Len(t, paramsSlice, 3) // methodName, argv types, argv
+	})
+}
+
+// Test isReflectValueNil safely checks if a reflect.Value is nil
+func Test_isReflectValueNil(t *testing.T) {
+	tests := []struct {
+		name     string
+		value    any
+		expected bool
+	}{
+		// nil nillable types
+		{"nil chan", (chan int)(nil), true},
+		{"nil map", (map[string]int)(nil), true},
+		{"nil slice", ([]int)(nil), true},
+		{"nil func", (func())(nil), true},
+		{"nil pointer", (*int)(nil), true},
+		{"nil unsafe.Pointer", unsafe.Pointer(nil), true},
+
+		// non-nil nillable types
+		{"non-nil chan", make(chan int), false},
+		{"non-nil map", map[string]int{"a": 1}, false},
+		{"non-nil slice", []int{1, 2, 3}, false},
+		{"non-nil func", func() {}, false},
+		{"non-nil pointer", new(int), false},
+
+		// non-nillable types (should return false, not panic)
+		{"int", 42, false},
+		{"string", "hello", false},
+		{"bool", true, false},
+		{"float64", 3.14, false},
+		{"struct", struct{ Name string }{"test"}, false},
+		{"array", [3]int{1, 2, 3}, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := reflect.ValueOf(tt.value)
+			// should not panic
+			result := isReflectValueNil(v)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+// Test isReflectValueNil with UnsafePointer specifically
+func Test_isReflectValueNil_UnsafePointer(t *testing.T) {
+	t.Run("nil unsafe.Pointer", func(t *testing.T) {
+		v := reflect.ValueOf(unsafe.Pointer(nil))
+		assert.True(t, isReflectValueNil(v))
+	})
+
+	t.Run("non-nil unsafe.Pointer", func(t *testing.T) {
+		x := 42
+		v := reflect.ValueOf(unsafe.Pointer(&x))
+		assert.False(t, isReflectValueNil(v))
 	})
 }
