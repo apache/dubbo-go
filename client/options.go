@@ -382,6 +382,14 @@ func WithGeneric() ReferenceOption {
 	}
 }
 
+// WithGenericType sets the generic serialization type for generic call
+// Valid values: "true" (default), "gson", "protobuf", "protobuf-json"
+func WithGenericType(genericType string) ReferenceOption {
+	return func(opts *ReferenceOptions) {
+		opts.Reference.Generic = genericType
+	}
+}
+
 func WithSticky() ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Sticky = true
