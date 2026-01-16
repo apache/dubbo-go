@@ -229,11 +229,14 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 				TLSClientConfig: cfg,
 				ReadIdleTimeout: keepAliveInterval,
 				PingTimeout:     keepAliveTimeout,
+				DialTLSContext: func(ctx context.Context, network, addr string, tlsConfig *tls.Config) (net.Conn, error) {
+					return (&tls.Dialer{Config: tlsConfig}).DialContext(ctx, network, addr)
+				},
 			}
 		} else {
 			transport = &http2.Transport{
-				DialTLSContext: func(_ context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
-					return net.Dial(network, addr)
+				DialTLSContext: func(ctx context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
+					return (&net.Dialer{}).DialContext(ctx, network, addr)
 				},
 				AllowHTTP:       true,
 				ReadIdleTimeout: keepAliveInterval,
