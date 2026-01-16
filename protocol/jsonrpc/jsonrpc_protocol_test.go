@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -41,7 +42,7 @@ func TestJsonrpcProtocolExport(t *testing.T) {
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	exporter := proto.Export(base.NewBaseInvoker(url))
 
 	// make sure url
@@ -73,7 +74,7 @@ func TestJsonrpcProtocolRefer(t *testing.T) {
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	// TODO: Temporary compatibility with old APIs, can be removed later
 	con := config.ConsumerConfig{
 		RequestTimeout: "5s",

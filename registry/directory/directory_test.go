@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -51,7 +52,7 @@ func TestSubscribe_InvalidUrl(t *testing.T) {
 	url, _ := common.NewURL("mock://127.0.0.1:1111")
 	mockRegistry, _ := registry.NewMockRegistry(&common.URL{})
 	_, err := NewRegistryDirectory(url, mockRegistry)
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func Test_Destroy(t *testing.T) {
@@ -59,11 +60,11 @@ func Test_Destroy(t *testing.T) {
 
 	time.Sleep(3e9)
 	assert.Len(t, registryDirectory.cacheInvokers, 3)
-	assert.Equal(t, true, registryDirectory.IsAvailable())
+	assert.True(t, registryDirectory.IsAvailable())
 
 	registryDirectory.Destroy()
-	assert.Len(t, registryDirectory.cacheInvokers, 0)
-	assert.Equal(t, false, registryDirectory.IsAvailable())
+	assert.Empty(t, registryDirectory.cacheInvokers)
+	assert.False(t, registryDirectory.IsAvailable())
 }
 
 func Test_List(t *testing.T) {
@@ -71,7 +72,7 @@ func Test_List(t *testing.T) {
 
 	time.Sleep(6e9)
 	assert.Len(t, registryDirectory.List(&invocation.RPCInvocation{}), 3)
-	assert.Equal(t, true, registryDirectory.IsAvailable())
+	assert.True(t, registryDirectory.IsAvailable())
 }
 
 func Test_MergeProviderUrl(t *testing.T) {
@@ -108,7 +109,7 @@ Loop1:
 				if len(registryDirectory.cacheInvokers) > 0 {
 					if registryDirectory.cacheInvokers[0].GetURL().GetParam(constant.ClusterKey, "") == "mock1" {
 						assert.Len(t, registryDirectory.cacheInvokers, 1)
-						assert.True(t, true)
+
 						break Loop2
 					} else {
 						time.Sleep(500 * time.Millisecond)
@@ -147,7 +148,7 @@ func Test_RefreshUrl(t *testing.T) {
 	// clear all address
 	mockRegistry.MockEvents([]*registry.ServiceEvent{})
 	time.Sleep(1e9)
-	assert.Len(t, registryDirectory.cacheInvokers, 0)
+	assert.Empty(t, registryDirectory.cacheInvokers)
 }
 
 func normalRegistryDir(noMockEvent ...bool) (*RegistryDirectory, *registry.MockRegistry) {
@@ -157,14 +158,13 @@ func normalRegistryDir(noMockEvent ...bool) (*RegistryDirectory, *registry.MockR
 		Name: "test-application",
 	}
 
-	url, _ := common.NewURL("mock://127.0.0.1:1111",
-		common.WithAttribute(constant.ApplicationKey, applicationConfig),
-	)
+	url, _ := common.NewURL("mock://127.0.0.1:1111")
 	suburl, _ := common.NewURL(
 		"dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService",
 		common.WithParamsValue(constant.ClusterKey, "mock"),
 		common.WithParamsValue(constant.GroupKey, "group"),
 		common.WithParamsValue(constant.VersionKey, "1.0.0"),
+		common.WithParamsValue(constant.ApplicationKey, applicationConfig.Name),
 	)
 	url.SubURL = suburl
 	mockRegistry, _ := registry.NewMockRegistry(&common.URL{})
@@ -196,14 +196,14 @@ func TestToGroupInvokers(t *testing.T) {
 			common.WithParamsValue(constant.VersionKey, "1.0.0"))
 		mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerUrl})
 		time.Sleep(1e9)
-		assert.True(t, len(registryDirectory.toGroupInvokers()) == 1)
+		assert.Len(t, registryDirectory.toGroupInvokers(), 1)
 		providerUrl1, _ := common.NewURL("dubbo://0.0.0.0:20001/org.apache.dubbo-go.mockService",
 			common.WithParamsValue(constant.ClusterKey, "mock1"),
 			common.WithParamsValue(constant.GroupKey, "group"),
 			common.WithParamsValue(constant.VersionKey, "1.0.0"))
 		mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerUrl1})
 		time.Sleep(1e9)
-		assert.True(t, len(registryDirectory.toGroupInvokers()) == 2)
+		assert.Len(t, registryDirectory.toGroupInvokers(), 2)
 	})
 	t.Run("DifferentGroup", func(t *testing.T) {
 		extension.SetCluster("mock", cluster.NewMockCluster)
@@ -215,7 +215,7 @@ func TestToGroupInvokers(t *testing.T) {
 			common.WithParamsValue(constant.VersionKey, "1.0.0"))
 		mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerUrl})
 		time.Sleep(1e9)
-		assert.True(t, len(registryDirectory.toGroupInvokers()) == 1)
+		assert.Len(t, registryDirectory.toGroupInvokers(), 1)
 
 		providerUrl1, _ := common.NewURL("dubbo://0.0.0.0:20000/org.apache.dubbo-go.mockService",
 			common.WithParamsValue(constant.ClusterKey, "mock1"),
@@ -223,6 +223,6 @@ func TestToGroupInvokers(t *testing.T) {
 			common.WithParamsValue(constant.VersionKey, "1.0.0"))
 		mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerUrl1})
 		time.Sleep(1e9)
-		assert.True(t, len(registryDirectory.toGroupInvokers()) == 2)
+		assert.Len(t, registryDirectory.toGroupInvokers(), 2)
 	})
 }

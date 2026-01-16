@@ -24,6 +24,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -40,9 +41,9 @@ const testName = "test"
 func TestNewEtcdV3ServiceDiscovery(t *testing.T) {
 	url, _ := common.NewURL("dubbo://127.0.0.1:2379")
 	sd, err := newEtcdV3ServiceDiscovery(url)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	err = sd.Destroy()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 }
 
 func TestEtcdV3ServiceDiscoveryGetDefaultPageSize(t *testing.T) {
@@ -73,7 +74,7 @@ func TestFunction(t *testing.T) {
 	}
 	ins.Metadata = map[string]string{"t1": "test12", constant.MetadataServiceURLParamsPropertyName: `{"protocol":"mock","timeout":"10000","version":"1.0.0","dubbo":"2.0.2","release":"2.7.6","port":"2233"}`}
 	err := sd.Register(ins)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	ins = &registry.DefaultServiceInstance{
 		ID:          "testID",
@@ -86,9 +87,9 @@ func TestFunction(t *testing.T) {
 	}
 	ins.Metadata = map[string]string{"t1": "test12", constant.MetadataServiceURLParamsPropertyName: `{"protocol":"mock","timeout":"10000","version":"1.0.0","dubbo":"2.0.2","release":"2.7.6","port":"2233"}`}
 	err = sd.Update(ins)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = sd.Unregister(ins)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 type mockProtocol struct{}

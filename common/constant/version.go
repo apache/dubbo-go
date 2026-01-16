@@ -18,8 +18,8 @@
 package constant
 
 const (
-	Version      = "3.2.0"     // apache/dubbo-go version
-	Name         = "dubbogo"   // module name
-	DATE         = "2024/1/10" // release date
+	Version      = "3.3.1"      // apache/dubbo-go version
+	Name         = "dubbogo"    // module name
+	DATE         = "2025/12/14" // release date
 	RouteVersion = "v3.1"
 )

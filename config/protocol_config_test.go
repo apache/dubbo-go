@@ -23,13 +23,14 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetProtocolsConfig(t *testing.T) {
 
 	t.Run("empty use default", func(t *testing.T) {
 		err := Load(WithPath("./testdata/config/protocol/empty_application.yaml"))
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		protocols := rootConfig.Protocols
 		assert.NotNil(t, protocols)
 		// default
@@ -40,7 +41,7 @@ func TestGetProtocolsConfig(t *testing.T) {
 
 	t.Run("use config", func(t *testing.T) {
 		err := Load(WithPath("./testdata/config/protocol/application.yaml"))
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		protocols := rootConfig.Protocols
 		assert.NotNil(t, protocols)
 		// default

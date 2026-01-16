@@ -477,8 +477,13 @@ func ParseServiceKey(serviceKey string) (string, string, string) {
 
 // IsAnyCondition judges if is any condition
 func IsAnyCondition(intf, group, version string, serviceURL *URL) bool {
-	return intf == constant.AnyValue && (group == constant.AnyValue ||
-		group == serviceURL.Group()) && (version == constant.AnyValue || version == serviceURL.Version())
+	matchCondition := func(pattern, actual string) bool {
+		return pattern == constant.AnyValue || pattern == actual
+	}
+
+	return matchCondition(intf, serviceURL.Service()) &&
+		matchCondition(group, serviceURL.Group()) &&
+		matchCondition(version, serviceURL.Version())
 }
 
 // ColonSeparatedKey

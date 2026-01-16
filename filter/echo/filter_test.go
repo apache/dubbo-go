@@ -24,6 +24,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -38,6 +39,6 @@ func TestFilterInvoke(t *testing.T) {
 	assert.Equal(t, "OK", result.Result())
 
 	result = filter.Invoke(context.Background(), base.NewBaseInvoker(&common.URL{}), invocation.NewRPCInvocation("MethodName", []any{"OK"}, nil))
-	assert.Nil(t, result.Error())
+	require.NoError(t, result.Error())
 	assert.Nil(t, result.Result())
 }

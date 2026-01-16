@@ -29,12 +29,3 @@ const (
 	MeshDeleteClusterPrefix = "-"
 	MeshAnyAddrMatcher      = "*"
 )
-
-const (
-	XDSMetadataClusterIDKey = "CLUSTER_ID"
-	XDSMetadataLabelsKey    = "LABELS"
-
-	XDSMetadataDefaultDomainName = "Kubernetes"
-
-	XDSMetadataDubboGoMapperKey = "DUBBO_GO"
-)

@@ -249,7 +249,7 @@ func (g *grpcClient) WriteRequestHeader(_ StreamType, header http.Header) {
 	if getHeaderCanonical(header, headerUserAgent) == "" {
 		header[headerUserAgent] = []string{defaultGrpcUserAgent}
 	}
-	header[headerContentType] = []string{grpcContentTypeFromCodecName(g.Codec.Name())}
+	header[headerContentType] = []string{grpcContentTypeFromCodecName(getWireCodecName(g.Codec))}
 	// gRPC handles compression on a per-message basis, so we don't want to
 	// compress the whole stream. By default, http.Client will ask the server
 	// to gzip the stream if we don't set Accept-Encoding.

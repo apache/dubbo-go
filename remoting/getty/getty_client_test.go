@@ -32,12 +32,14 @@ import (
 	perrors "github.com/pkg/errors"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	. "dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
@@ -58,13 +60,13 @@ func testRequestOneWay(t *testing.T, client *Client) {
 	request := remoting.NewRequest("2.0.2")
 	invocation := createInvocation("GetUser", nil, nil, []any{"1", "username"},
 		[]reflect.Value{reflect.ValueOf("1"), reflect.ValueOf("username")})
-	attachment := map[string]string{InterfaceKey: "com.ikurento.user.UserProvider"}
+	attachment := map[string]string{constant.InterfaceKey: "com.ikurento.user.UserProvider"}
 	setAttachment(invocation, attachment)
 	request.Data = invocation
 	request.Event = false
 	request.TwoWay = false
 	err := client.Request(request, 3*time.Second, nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func createInvocation(methodName string, callback any, reply any, arguments []any,
@@ -97,7 +99,7 @@ func testClient_AsyncCall(t *testing.T, client *Client) {
 	request := remoting.NewRequest("2.0.2")
 	invocation := createInvocation("GetUser0", nil, nil, []any{"4", nil, "username"},
 		[]reflect.Value{reflect.ValueOf("4"), reflect.ValueOf(nil), reflect.ValueOf("username")})
-	attachment := map[string]string{InterfaceKey: "com.ikurento.user.UserProvider"}
+	attachment := map[string]string{constant.InterfaceKey: "com.ikurento.user.UserProvider"}
 	setAttachment(invocation, attachment)
 	request.Data = invocation
 	request.Event = false
@@ -114,7 +116,7 @@ func testClient_AsyncCall(t *testing.T, client *Client) {
 	}
 	wg.Add(1)
 	err := client.Request(request, 3*time.Second, rsp)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, User{}, *user)
 	wg.Done()
 }
@@ -124,7 +126,7 @@ func InitTest(t *testing.T) (*Server, *common.URL) {
 	remoting.RegistryCodec("dubbo", &DubboTestCodec{})
 
 	methods, err := common.ServiceMap.Register("com.ikurento.user.UserProvider", "dubbo", "", "", &UserProvider{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "GetBigPkg,getBigPkg,GetUser,getUser,GetUser0,getUser0,GetUser1,getUser1,GetUser2,getUser2,GetUser3,getUser3,GetUser4,getUser4,GetUser5,getUser5,GetUser6,getUser6", methods)
 
 	// config
@@ -146,7 +148,7 @@ func InitTest(t *testing.T) (*Server, *common.URL) {
 			SessionName:      "client",
 		},
 	})
-	assert.NoError(t, clientConf.CheckValidity())
+	require.NoError(t, clientConf.CheckValidity())
 	SetServerConfig(ServerConfig{
 		SessionNumber:  700,
 		SessionTimeout: "20s",
@@ -164,18 +166,18 @@ func InitTest(t *testing.T) (*Server, *common.URL) {
 			SessionName:      "server",
 		},
 	})
-	assert.NoError(t, srvConf.CheckValidity())
+	require.NoError(t, srvConf.CheckValidity())
 
 	url, err := common.NewURL("dubbo://127.0.0.1:20060/com.ikurento.user.UserProvider?anyhost=true&" +
 		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=127.0.0.1&methods=GetUser%2C&" +
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	// init server
 	userProvider := &UserProvider{}
 	_, err = common.ServiceMap.Register("", url.Protocol, "", "0.0.1", userProvider)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	invoker := &proxy_factory.ProxyInvoker{
 		BaseInvoker: *base.NewBaseInvoker(url),
 	}
@@ -271,7 +273,8 @@ func (u User) JavaClassName() string {
 	return "com.ikurento.user.User"
 }
 
-func TestInitClient(t *testing.T) {
+// TODO: Temporary compatibility with old APIs, can be removed later
+func TestInitClientOldApi(t *testing.T) {
 	originRootConf := config.GetRootConfig()
 	rootConf := config.RootConfig{
 		Protocols: map[string]*config.ProtocolConfig{
@@ -284,8 +287,22 @@ func TestInitClient(t *testing.T) {
 	}
 	config.SetRootConfig(rootConf)
 	url, err := common.NewURL("dubbo://127.0.0.1:20003/test")
-	assert.Nil(t, err)
-	initServer(url)
+	require.NoError(t, err)
+	initClient(url)
 	config.SetRootConfig(*originRootConf)
 	assert.NotNil(t, srvConf)
+}
+
+func TestInitClient(t *testing.T) {
+	url, err := common.NewURL("dubbo://127.0.0.1:20003/test")
+	require.NoError(t, err)
+	url.SetAttribute(constant.ProtocolConfigKey, map[string]*global.ProtocolConfig{
+		"dubbo": {
+			Name: "dubbo",
+			Ip:   "127.0.0.1",
+			Port: "20003",
+		},
+	})
+	url.SetAttribute(constant.ApplicationKey, global.ApplicationConfig{})
+	initClient(url)
 }

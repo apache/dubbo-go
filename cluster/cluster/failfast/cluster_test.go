@@ -29,6 +29,7 @@ import (
 	perrors "github.com/pkg/errors"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -78,7 +79,7 @@ func TestFailfastInvokeSuccess(t *testing.T) {
 	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockResult).AnyTimes()
 	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 
-	assert.NoError(t, result.Error())
+	require.NoError(t, result.Error())
 	res := result.Result().(clusterpkg.Rest)
 	assert.True(t, res.Success)
 	assert.Equal(t, 0, res.Tried)
@@ -99,7 +100,7 @@ func TestFailfastInvokeFail(t *testing.T) {
 	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockResult).AnyTimes()
 	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 
-	assert.NotNil(t, result.Error())
+	require.Error(t, result.Error())
 	assert.Equal(t, "error", result.Error().Error())
 	assert.Nil(t, result.Result())
 }

@@ -24,7 +24,7 @@ import (
 )
 
 import (
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -48,7 +48,7 @@ func TestNewNacosClient(t *testing.T) {
 		done: make(chan struct{}),
 	}
 	err := ValidateNacosClient(c)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	c.wg.Add(1)
 	go HandleClientRestart(c)
 	go func() {
@@ -79,7 +79,7 @@ func TestSetNacosClient(t *testing.T) {
 	}
 
 	err := ValidateNacosClient(c)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	c.wg.Add(1)
 	go HandleClientRestart(c)
 	go func() {
@@ -102,13 +102,13 @@ func TestNewNacosClient_connectError(t *testing.T) {
 
 	registryUrl, err := common.NewURL("registry://127.0.0.1:8848", common.WithParams(params))
 
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	c := &nacosDynamicConfiguration{
 		url:  registryUrl,
 		done: make(chan struct{}),
 	}
 	err = ValidateNacosClient(c)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	c.wg.Add(1)
 	go HandleClientRestart(c)
 	go func() {

@@ -24,6 +24,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var mockGsonGeneralizer = GetGsonGeneralizer()
@@ -63,11 +64,11 @@ func TestGsonGeneralizer(t *testing.T) {
 	}
 
 	m, err := mockGsonGeneralizer.Generalize(p)
-	assert.Nil(t, err)
-	assert.Equal(t, "{\"Gender\":\"male\",\"Email\":\"enableasync@example.com\",\"Name\":\"enableasync\",\"Age\":30,\"Child\":{\"Gender\":\"male\",\"Email\":\"childName@example.com\",\"Name\":\"childName\",\"Age\":20}}", m)
+	require.NoError(t, err)
+	assert.JSONEq(t, "{\"Gender\":\"male\",\"Email\":\"enableasync@example.com\",\"Name\":\"enableasync\",\"Age\":30,\"Child\":{\"Gender\":\"male\",\"Email\":\"childName@example.com\",\"Name\":\"childName\",\"Age\":20}}", m.(string))
 
 	r, err := mockGsonGeneralizer.Realize(m, reflect.TypeOf(p))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	rMockParent, ok := r.(*mockGsonParent)
 	assert.True(t, ok)
 	// parent
@@ -87,9 +88,9 @@ func TestGsonPointer(t *testing.T) {
 	}
 
 	m, err := mockMapGeneralizer.Generalize(c)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	newC, err := mockMapGeneralizer.Realize(m, reflect.TypeOf(c))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	rMockChild, ok := newC.(*mockGsonChild)
 	assert.True(t, ok)
 	assert.Equal(t, "childName", rMockChild.Name)

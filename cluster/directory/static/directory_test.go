@@ -53,7 +53,7 @@ func TestStaticDirDestroy(t *testing.T) {
 	}
 
 	staticDir := NewDirectory(invokers)
-	assert.Equal(t, true, staticDir.IsAvailable())
+	assert.True(t, staticDir.IsAvailable())
 	staticDir.Destroy()
-	assert.Equal(t, false, staticDir.IsAvailable())
+	assert.False(t, staticDir.IsAvailable())
 }

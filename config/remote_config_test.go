@@ -24,6 +24,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -59,19 +60,19 @@ func TestNewRemoteConfigBuilder(t *testing.T) {
 		Build()
 
 	values := config.getUrlMap()
-	assert.Equal(t, values.Get("timeout"), "15s")
+	assert.Equal(t, "15s", values.Get("timeout"))
 
 	url, err := config.ToURL()
-	assert.NoError(t, err)
-	assert.Equal(t, url.GetParam("timeout", "3s"), "15s")
+	require.NoError(t, err)
+	assert.Equal(t, "15s", url.GetParam("timeout", "3s"))
 
 	err = config.Init()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	timeout := config.GetTimeout()
-	assert.Equal(t, timeout, 10*time.Second)
-	assert.Equal(t, config.Prefix(), constant.RemotePrefix)
+	assert.Equal(t, 10*time.Second, timeout)
+	assert.Equal(t, constant.RemotePrefix, config.Prefix())
 
 	param := config.GetParam("timeout", "3s")
-	assert.Equal(t, param, "15s")
+	assert.Equal(t, "15s", param)
 }

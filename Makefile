@@ -26,7 +26,7 @@ MAKEFLAGS += --no-print-directory
 CLI_DIR = tools/dubbogo-cli
 IMPORTS_FORMATTER_DIR = tools/imports-formatter
 
-.PHONY: help test fmt clean lint
+.PHONY: help test fmt clean lint check-fmt
 
 help:
 	@echo "Available commands:"
@@ -42,9 +42,21 @@ test: clean
 
 fmt: install-imports-formatter
 	# replace interface{} with any
-	go run golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@latest -category=efaceany -fix -test ./...
+	go run golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@latest -any=true -fix -test ./...
 	go fmt ./... && GOROOT=$(shell go env GOROOT) imports-formatter
 	cd $(CLI_DIR) && go fmt ./...
+
+# This command is used in CI to verify that code formatting is correct
+check-fmt:
+	@echo "Checking code format..."
+	@$(MAKE) fmt
+	@if ! git diff --exit-code --quiet; then \
+		echo "Error: The following files have formatting changes:"; \
+		git diff --name-only; \
+		echo ""; \
+		echo "Please run 'make fmt' to fix formatting issues and commit the changes."; \
+		exit 1; \
+	fi
 
 # Clean test generate files
 clean:
@@ -56,7 +68,7 @@ lint: install-golangci-lint
 	golangci-lint run ./... --timeout=10m
 
 install-golangci-lint:
-	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.4.0
+	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.7.2
 
 install-imports-formatter:
 	cd $(IMPORTS_FORMATTER_DIR) && go install

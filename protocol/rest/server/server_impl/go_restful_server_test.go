@@ -22,7 +22,7 @@ import (
 )
 
 import (
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -34,7 +34,7 @@ import (
 func TestGoRestfulServerDeploySameUrl(t *testing.T) {
 	grs := NewGoRestfulServer()
 	url, err := common.NewURL("http://127.0.0.1:43121")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	grs.Start(url)
 	rmc := &config.RestMethodConfig{
 		Produces:   "*/*",

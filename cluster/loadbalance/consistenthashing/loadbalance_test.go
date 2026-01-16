@@ -64,7 +64,7 @@ func (s *consistentHashSelectorSuite) SetupTest() {
 
 func (s *consistentHashSelectorSuite) TestToKey() {
 	result := s.selector.toKey([]any{"username", "age"})
-	s.Equal(result, "usernameage")
+	s.Equal("usernameage", result)
 }
 
 func (s *consistentHashSelectorSuite) TestSelectForKey() {
@@ -75,7 +75,7 @@ func (s *consistentHashSelectorSuite) TestSelectForKey() {
 	s.selector.virtualInvokers[9999945] = base.NewBaseInvoker(url2)
 	s.selector.keys = []uint32{99874, 9999945}
 	result := s.selector.selectForKey(9999944)
-	s.Equal(result.GetURL().String(), url8081Short+"?")
+	s.Equal(url8081Short+"?", result.GetURL().String())
 }
 
 func TestConsistentHashLoadBalanceSuite(t *testing.T) {
@@ -97,11 +97,11 @@ type consistentHashLoadBalanceSuite struct {
 func (s *consistentHashLoadBalanceSuite) SetupTest() {
 	var err error
 	s.url1, err = common.NewURL(url8080)
-	s.NoError(err)
+	s.Require().NoError(err)
 	s.url2, err = common.NewURL(url8081)
-	s.NoError(err)
+	s.Require().NoError(err)
 	s.url3, err = common.NewURL(url8082)
-	s.NoError(err)
+	s.Require().NoError(err)
 
 	s.invoker1 = base.NewBaseInvoker(s.url1)
 	s.invoker2 = base.NewBaseInvoker(s.url2)

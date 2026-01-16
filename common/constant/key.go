@@ -70,8 +70,9 @@ const (
 	// TODO: remove IDLMode after old triple removed
 	IDLMode = "IDL-mode"
 
-	TripleConfigKey   = "triple-config"
-	ConsumerConfigKey = "consumer-config"
+	TripleConfigKey     = "triple-config"
+	ConsumerConfigKey   = "consumer-config"
+	RegistriesConfigKey = "registries-config"
 )
 
 // TODO: remove this after old triple removed
@@ -117,7 +118,6 @@ const (
 	TokenFilterKey                       = "token"
 	TpsLimitFilterKey                    = "tps"
 	TracingFilterKey                     = "tracing"
-	XdsCircuitBreakerKey                 = "xds_circuit_reaker"
 	OTELServerTraceKey                   = "otelServerTrace"
 	OTELClientTraceKey                   = "otelClientTrace"
 )
@@ -166,6 +166,8 @@ const (
 	RpcServiceKey                      = "rpc-service"
 	ClientInfoKey                      = "client-info"
 	TLSConfigKey                       = "tls-config"
+	ProviderConfigKey                  = "provider-config"
+	ProtocolConfigKey                  = "protocol-config"
 )
 
 const (
@@ -314,10 +316,6 @@ const (
 )
 
 const (
-	XDSRegistryKey = "xds"
-)
-
-const (
 	EtcdV3Key = "etcdv3"
 )
 
@@ -415,8 +413,10 @@ const (
 
 // Generic Filter
 const (
-	GenericSerializationDefault = "true"
-	GenericSerializationGson    = "gson"
+	GenericSerializationDefault      = "true"
+	GenericSerializationGson         = "gson"
+	GenericSerializationProtobuf     = "protobuf"
+	GenericSerializationProtobufJson = "protobuf-json"
 )
 
 // AdaptiveService Filter
@@ -490,6 +490,10 @@ const (
 const (
 	TripleGoInterfaceName = "XXX_TRIPLE_GO_INTERFACE_NAME"
 	TripleGoMethodName    = "XXX_TRIPLE_GO_METHOD_NAME"
+)
+
+const (
+	RpcServiceInterfaceName = "RPCSERVICE_INTERFACE_NAME"
 )
 
 // Weight constants for Nacos instance registration

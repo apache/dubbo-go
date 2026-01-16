@@ -1,7 +1,6 @@
 # Apache Dubbo for Golang
 
-[![Build Status](https://github.com/apache/dubbo-go/workflows/CI/badge.svg)](https://travis-ci.org/apache/dubbo-go)
-[![codecov](https://codecov.io/gh/apache/dubbo-go/branch/main/graph/badge.svg)](https://codecov.io/gh/apache/dubbo-go)
+[![CI](https://github.com/apache/dubbo-go/workflows/CI/badge.svg)](https://github.com/apache/dubbo-go/actions)
 [![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/github.com/apache/dubbo-go/v3?tab=doc)
 [![Go Report Card](https://goreportcard.com/badge/github.com/apache/dubbo-go)](https://goreportcard.com/report/github.com/apache/dubbo-go)
 ![license](https://img.shields.io/badge/license-Apache--2.0-green.svg)
@@ -10,11 +9,34 @@
 
 English | [中文](README_CN.md)
 
-Dubbo-go is a high-performance RPC framework for Go language microservices, covering various network protocols: Triple, Dubbo, JSONRPC, gRPC, HTTP, HTTP2, etc. It is the ideal choice for writing microservices in Go.
+Apache Dubbo-go is a high-performance RPC and microservice framework compatible with other Dubbo language implementations. It leverages Golang's concurrency features to provide efficient service governance, including service discovery, load balancing, and traffic management. Dubbo-go supports multiple protocols, such as Dubbo, JSONRPC, Triple(gRPC-compatible), gRPC, HTTP, HTTP2, and HTTP/3 (experimental), ensuring seamless integration in heterogeneous environments.
 
 You can visit [the official website](https://dubbo.apache.org/) for more information.
 
+## Recent Updates
+
+For detailed changes, refer to CHANGELOG.md.
+
+- **3.3.1**: Optimized configuration hot-reloading with content-based caching to prevent redundant notifications. Added experimental HTTP/3 support, Apollo integration, and Triple protocol OpenAPI generation. Fixed critical race conditions in service discovery under high-concurrency.
+
+- **3.3.0**: Introduced script routing, multi-destination conditional routing, Triple protocol keepalive and connection pooling, Nacos multi-category subscriptions, and enhancements for observability and interoperability.
+
 ## Getting started
+
+### Prerequisites
+
+- Go 1.24 or later (recommended for compatibility with recent updates).
+
+### Installation
+
+To install Dubbo-go, use the following command:
+
+
+```Bash
+go get dubbo.apache.org/dubbo-go/v3@latest
+```
+
+### Quick Example
 
 You can learn how to develop a dubbo-go RPC application step by step in 5 minutes by following our [Quick Start](https://github.com/apache/dubbo-go-samples/tree/main/helloworld) demo. 
 
@@ -73,13 +95,16 @@ See the [samples](https://github.com/apache/dubbo-go-samples) for detailed infor
 
 ![dubbo-go-architecture](./doc/imgs/arc.png)
 
+Dubbo-go provides robust service governance capabilities:
+
 - **RPC Protocols**: Triple, gRPC compatible and HTTP-friendly
-- **Service Discovery**: Nacos, Zookeeper, Etcd, Polaris-mesh, Consul.
+- **Service Discovery**: Nacos, Zookeeper, Etcd, Polaris-mesh.
 - **Load Balance**: Adaptive, Random, RoundRobin, LeastActive, ConsistentHash
 - **Traffic Management**: traffic split, timeout, rate limiting, canary release
-- **Configuration**: yaml file, dynamic configuration(Nacos, Zookeeper, etc.).
-- **Observability**: metrics(Prometheus, Grafana) and tracing(Jaeger, Zipkin).
-- **HA Strategy**: Failover, Failfast, Failsafe/Failback, Available, Broadcast, Forking
+- **Configuration**: yaml file, dynamic configuration(Nacos, Apollo, Zookeeper, etc.).
+- **Observability**: Metrics (Prometheus), tracing (OpenTelemetry v1.21.0+ with insecure options and standardized span names), logging (with service registration lifecycle events).
+- **HA Strategy**: Failover, Failfast, Failsafe/Failback, Available, Broadcast, Forking.
+- **Interoperability**: Full compatibility with Apache Dubbo (Java) via Triple protocol generic calls, group/version wildcard matching, and TLS API redesign.
 
 
 ## ️ Tools
@@ -140,13 +165,22 @@ For usage details, see the [imports-formatter README](https://github.com/dubbogo
 ## Ecosystem
 - [dubbo-go-samples](https://github.com/apache/dubbo-go-samples)
 - [dubbo-go-pixiu which acting as a proxy to solve Dubbo multi-language interoperability](https://github.com/apache/dubbo-go-pixiu)
-- [Interoperability with Dubbo Java](https://dubbo-next.staged.apache.org/zh-cn/overview/mannual/golang-sdk/tutorial/interop-dubbo/)
+- [Interoperability with Dubbo Java](https://cn.dubbo.apache.org/zh-cn/overview/mannual/golang-sdk/tutorial/interop-dubbo/)
 - [Protoc-gen-go-triple](https://github.com/dubbogo/protoc-gen-go-triple/)
 - [Console](https://github.com/apache/dubbo-kubernetes), under development
 
-## Contributing
+## Documentation
 
-Please visit [CONTRIBUTING](./CONTRIBUTING.md) for details on submitting patches and the contribution workflow.
+- Official Website: https://dubbo.apache.org/
+- Dubbo-go Documentation: https://cn.dubbo.apache.org/zh-cn/overview/mannual/golang-sdk/
+- CHANGELOG: https://github.com/apache/dubbo-go/blob/main/CHANGELOG.md
+
+## Community
+
+- GitHub Issues: https://github.com/apache/dubbo-go/issues
+- Mailing Lists: https://dubbo.apache.org/en/community/
+
+Contributions, issues, and discussions are welcome. Please visit [CONTRIBUTING](./CONTRIBUTING.md) for details on submitting patches and the contribution workflow.
 
 ## Contact
 

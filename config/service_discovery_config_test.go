@@ -23,6 +23,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -38,7 +39,7 @@ func TestNewServiceDiscoveryConfigBuilder(t *testing.T) {
 		Build()
 
 	err := config.Init()
-	assert.Nil(t, err)
-	assert.Equal(t, config.Protocol, "protocol")
-	assert.Equal(t, config.Prefix(), constant.ServiceDiscPrefix)
+	require.NoError(t, err)
+	assert.Equal(t, "protocol", config.Protocol)
+	assert.Equal(t, constant.ServiceDiscPrefix, config.Prefix())
 }

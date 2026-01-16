@@ -23,6 +23,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -35,9 +36,9 @@ func Test_newZookeeperServiceDiscovery(t *testing.T) {
 	url, _ := common.NewURL("dubbo://127.0.0.1:2181",
 		common.WithParamsValue(constant.ClientNameKey, "zk-client"))
 	sd, err := newZookeeperServiceDiscovery(url)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	err = sd.Destroy()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 }
 func Test_zookeeperServiceDiscovery_DataChange(t *testing.T) {

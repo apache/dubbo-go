@@ -97,6 +97,10 @@ type stableCodec interface {
 	IsBinary() bool
 }
 
+// protoBinaryCodec handles standard protobuf binary serialization.
+// It also supports Java Dubbo Triple generic calls when the message is not a proto.Message.
+// This dual functionality is needed because the server receives wrapped generic calls
+// with Content-Type "application/proto", so this codec must handle both cases.
 type protoBinaryCodec struct{}
 
 var _ Codec = (*protoBinaryCodec)(nil)
@@ -114,9 +118,59 @@ func (c *protoBinaryCodec) Marshal(message any) ([]byte, error) {
 func (c *protoBinaryCodec) Unmarshal(data []byte, message any) error {
 	protoMessage, ok := message.(proto.Message)
 	if !ok {
-		return errNotProto(message)
+		// Non-proto types indicate a generic call - try to unwrap from wrapper format.
+		// This is used by the server when receiving Java/Go generic calls.
+		return c.unmarshalWrappedMessage(data, message)
 	}
 	return proto.Unmarshal(data, protoMessage)
+}
+
+// unmarshalWrappedMessage handles both TripleResponseWrapper and TripleRequestWrapper formats.
+// It determines the format by checking if message is a slice (request) or not (response).
+func (c *protoBinaryCodec) unmarshalWrappedMessage(data []byte, message any) error {
+	hessianCodec := &hessian2Codec{}
+
+	// Check if message is a slice - if so, it's a request with multiple args
+	if params, isSlice := message.([]any); isSlice {
+		// Request format: TripleRequestWrapper with multiple args
+		var reqWrapper interoperability.TripleRequestWrapper
+		if err := proto.Unmarshal(data, &reqWrapper); err != nil {
+			return fmt.Errorf("unmarshal wrapped request: %w", err)
+		}
+		if len(reqWrapper.Args) != len(params) {
+			return fmt.Errorf("unmarshal wrapped request: expected %d params, got %d args", len(params), len(reqWrapper.Args))
+		}
+
+		for i, arg := range reqWrapper.Args {
+			if err := hessianCodec.Unmarshal(arg, params[i]); err != nil {
+				return fmt.Errorf("unmarshal wrapped request arg[%d]: %w", i, err)
+			}
+		}
+		return nil
+	}
+
+	// Response format: TripleResponseWrapper with single data field
+	var respWrapper interoperability.TripleResponseWrapper
+	if err := proto.Unmarshal(data, &respWrapper); err == nil {
+		// Check if it's a valid response wrapper (has serializeType or non-empty data)
+		if len(respWrapper.Data) > 0 {
+			return hessianCodec.Unmarshal(respWrapper.Data, message)
+		}
+		// Empty Data with serializeType indicates a null/void response, which is valid
+		if respWrapper.SerializeType != "" {
+			return nil
+		}
+	}
+
+	// Fallback: try as single-arg request (not a response wrapper)
+	var reqWrapper interoperability.TripleRequestWrapper
+	if err := proto.Unmarshal(data, &reqWrapper); err != nil {
+		return fmt.Errorf("unmarshal wrapped message: %T is not a proto.Message and data is not a valid wrapper", message)
+	}
+	if len(reqWrapper.Args) != 1 {
+		return fmt.Errorf("unmarshal wrapped message: expected 1 arg for single param, got %d", len(reqWrapper.Args))
+	}
+	return hessianCodec.Unmarshal(reqWrapper.Args[0], message)
 }
 
 func (c *protoBinaryCodec) MarshalStable(message any) ([]byte, error) {
@@ -189,19 +243,59 @@ func (c *protoJSONCodec) IsBinary() bool {
 	return false
 }
 
-// todo(DMwangnima): add unit tests
+// WrapperCodec is an interface for codecs that use a protobuf wrapper format
+// (TripleRequestWrapper/TripleResponseWrapper) on the wire. This is required for
+// interoperability with Java Dubbo Triple protocol in non-IDL mode.
+//
+// Codecs implementing this interface:
+// - Use protobuf as the wire format (Content-Type: application/proto)
+// - Wrap data in TripleRequestWrapper (for requests) or TripleResponseWrapper (for responses)
+// - Use an inner codec (e.g., hessian2) for the actual data serialization
+type WrapperCodec interface {
+	Codec
+	// WireCodecName returns "proto" because the wire format is protobuf.
+	WireCodecName() string
+}
+
+// getWireCodecName returns the codec name to use for Content-Type on the wire.
+// If the codec implements WrapperCodec, its WireCodecName() is used.
+// Otherwise, the codec's Name() is used.
+func getWireCodecName(codec Codec) string {
+	if wrapper, ok := codec.(WrapperCodec); ok {
+		return wrapper.WireCodecName()
+	}
+	return codec.Name()
+}
+
+// protoWrapperCodec wraps an inner codec (e.g., hessian2) in protobuf wrapper format.
+// This is used for interoperability with Java Dubbo Triple protocol in non-IDL mode.
+//
+// Wire format:
+//   - Requests use TripleRequestWrapper (multiple args, argTypes)
+//   - Responses use TripleResponseWrapper (single data field)
+//
+// The Content-Type is "application/proto" because the outer format is protobuf.
+// The inner serialization type (e.g., "hessian2") is stored in the wrapper's serializeType field.
 type protoWrapperCodec struct {
 	innerCodec Codec
 }
 
+var _ WrapperCodec = (*protoWrapperCodec)(nil)
+
+// Name returns the inner codec name (e.g., "hessian2") for codec registration and lookup.
 func (c *protoWrapperCodec) Name() string {
 	return c.innerCodec.Name()
 }
 
+// WireCodecName returns "proto" because the wire format is protobuf.
+// This ensures the correct Content-Type (application/proto) is used.
+func (c *protoWrapperCodec) WireCodecName() string {
+	return codecNameProto
+}
+
+// Marshal wraps the message in TripleRequestWrapper format for requests.
 func (c *protoWrapperCodec) Marshal(message any) ([]byte, error) {
-	var reqs []any
-	var ok bool
-	reqs, ok = message.([]any)
+	reqs, ok := message.([]any)
 	if !ok {
 		reqs = []any{message}
 	}
@@ -227,29 +321,50 @@ func (c *protoWrapperCodec) Marshal(message any) ([]byte, error) {
 	return proto.Marshal(wrapperReq)
 }
 
+// Unmarshal handles both TripleResponseWrapper (for responses) and TripleRequestWrapper (for requests).
+// It determines the format by checking if message is a slice (request) or not (response).
 func (c *protoWrapperCodec) Unmarshal(binary []byte, message any) error {
-	var params []any
-	var ok bool
-	params, ok = message.([]any)
-	if !ok {
-		params = []any{message}
-	}
-
-	var wrapperReq interoperability.TripleRequestWrapper
-	if err := proto.Unmarshal(binary, &wrapperReq); err != nil {
-		return err
-	}
-	if len(wrapperReq.Args) != len(params) {
-		return fmt.Errorf("error, request params len is %d, but has %d actually", len(wrapperReq.Args), len(params))
-	}
-
-	for i, arg := range wrapperReq.Args {
-		if err := c.innerCodec.Unmarshal(arg, params[i]); err != nil {
+	// Check if message is a slice - if so, it's a request with multiple args
+	if params, isSlice := message.([]any); isSlice {
+		// Request format: TripleRequestWrapper with multiple args
+		var wrapperReq interoperability.TripleRequestWrapper
+		if err := proto.Unmarshal(binary, &wrapperReq); err != nil {
 			return err
+		}
+		if len(wrapperReq.Args) != len(params) {
+			return fmt.Errorf("wrapper codec: expected %d params, got %d args", len(params), len(wrapperReq.Args))
+		}
+
+		for i, arg := range wrapperReq.Args {
+			if err := c.innerCodec.Unmarshal(arg, params[i]); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	// Response format: TripleResponseWrapper with single data field
+	var wrapperResp interoperability.TripleResponseWrapper
+	if err := proto.Unmarshal(binary, &wrapperResp); err == nil {
+		// Check if it's a valid response wrapper (has serializeType or non-empty data)
+		if len(wrapperResp.Data) > 0 {
+			return c.innerCodec.Unmarshal(wrapperResp.Data, message)
+		}
+		// Empty Data with serializeType indicates a null/void response, which is valid
+		if wrapperResp.SerializeType != "" {
+			return nil
 		}
 	}
 
-	return nil
+	// Fallback: try as single-arg request (not a response wrapper)
+	var wrapperReq interoperability.TripleRequestWrapper
+	if err := proto.Unmarshal(binary, &wrapperReq); err != nil {
+		return fmt.Errorf("wrapper codec: failed to unmarshal as request or response wrapper")
+	}
+	if len(wrapperReq.Args) != 1 {
+		return fmt.Errorf("wrapper codec: expected 1 arg for single param, got %d", len(wrapperReq.Args))
+	}
+	return c.innerCodec.Unmarshal(wrapperReq.Args[0], message)
 }
 
 func newProtoWrapperCodec(innerCodec Codec) *protoWrapperCodec {
@@ -358,8 +473,6 @@ func getArgType(v any) string {
 
 	switch v := v.(type) {
 	// Serialized tags for base types
-	case nil:
-		return "V"
 	case bool:
 		return "boolean"
 	case []bool:

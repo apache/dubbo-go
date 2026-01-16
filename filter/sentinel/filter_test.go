@@ -32,6 +32,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -48,7 +49,7 @@ func TestSentinelFilter_QPS(t *testing.T) {
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	mockInvoker := base.NewBaseInvoker(url)
 	interfaceResourceName, _ := getResourceName(mockInvoker,
 		invocation.NewRPCInvocation("hello", []any{"OK"}, make(map[string]any)), "prefix_")
@@ -64,7 +65,7 @@ func TestSentinelFilter_QPS(t *testing.T) {
 			RelationStrategy:       flow.CurrentResource,
 		},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	wg := sync.WaitGroup{}
 	wg.Add(10)
@@ -121,7 +122,7 @@ func TestSentinelFilter_ErrorCount(t *testing.T) {
 		"environment=dev&interface=com.test.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
 		"module=dubbogo+user-info+server&org=test.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	mockInvoker := &ErrInvoker{base.NewBaseInvoker(url)}
 	_, methodResourceName := getResourceName(mockInvoker,
 		invocation.NewRPCInvocation("hi", []any{"OK"}, make(map[string]any)), DefaultProviderPrefix)
@@ -143,12 +144,12 @@ func TestSentinelFilter_ErrorCount(t *testing.T) {
 			Threshold:                    50,
 		},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	f := &sentinelProviderFilter{}
 	for i := 0; i < 50; i++ {
 		invokeResult := f.Invoke(context.TODO(), mockInvoker, mockInvocation)
-		assert.Error(t, invokeResult.Error())
+		require.Error(t, invokeResult.Error())
 	}
 	select {
 	case <-time.After(time.Second):
@@ -165,11 +166,11 @@ func TestConsumerFilter_Invoke(t *testing.T) {
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	mockInvoker := base.NewBaseInvoker(url)
 	mockInvocation := invocation.NewRPCInvocation("hello", []any{"OK"}, make(map[string]any))
 	result := f.Invoke(context.TODO(), mockInvoker, mockInvocation)
-	assert.NoError(t, result.Error())
+	require.NoError(t, result.Error())
 }
 
 func TestProviderFilter_Invoke(t *testing.T) {
@@ -179,11 +180,11 @@ func TestProviderFilter_Invoke(t *testing.T) {
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	mockInvoker := base.NewBaseInvoker(url)
 	mockInvocation := invocation.NewRPCInvocation("hello", []any{"OK"}, make(map[string]any))
 	invokeResult := f.Invoke(context.TODO(), mockInvoker, mockInvocation)
-	assert.NoError(t, invokeResult.Error())
+	require.NoError(t, invokeResult.Error())
 }
 
 func TestGetResourceName(t *testing.T) {
@@ -193,7 +194,7 @@ func TestGetResourceName(t *testing.T) {
 		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	mockInvoker := base.NewBaseInvoker(url)
 	interfaceResourceName, methodResourceName := getResourceName(mockInvoker,
 		invocation.NewRPCInvocation("hello", []any{"OK"}, make(map[string]any)), "prefix_")

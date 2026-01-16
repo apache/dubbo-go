@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -50,15 +51,15 @@ const (
 
 func TestUnaryInvoke(t *testing.T) {
 	server, err := helloworld.NewServer("127.0.0.1:30000")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	go server.Start()
 	defer server.Stop()
 
 	url, err := common.NewURL(helloworldURL)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	cli, err := NewClient(url)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	var args []reflect.Value
 	args = append(args, reflect.ValueOf(&helloworld.HelloRequest{Name: "request name"}))
@@ -71,22 +72,22 @@ func TestUnaryInvoke(t *testing.T) {
 
 	invoker := NewGrpcInvoker(url, cli)
 	res := invoker.Invoke(context.Background(), invo)
-	assert.NoError(t, res.Error())
+	require.NoError(t, res.Error())
 	assert.Equal(t, &helloworld.HelloReply{Message: "Hello request name"}, res.Result().(reflect.Value).Interface())
 	assert.Equal(t, &helloworld.HelloReply{Message: "Hello request name"}, bizReply)
 }
 
 func TestStreamInvoke(t *testing.T) {
 	server, err := routeguide.NewServer("127.0.0.1:30000")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	go server.Start()
 	defer server.Stop()
 
 	url, err := common.NewURL(routeguideURL)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	cli, err := NewClient(url)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	invoker := NewGrpcInvoker(url, cli)
 
@@ -100,7 +101,7 @@ func TestStreamInvoke(t *testing.T) {
 		invocation.WithReply(bizReply),
 	)
 	res := invoker.Invoke(context.Background(), invo)
-	assert.NoError(t, res.Error())
+	require.NoError(t, res.Error())
 	assert.Equal(t, &routeguide.Feature{
 		Name:     "Berkshire Valley Management Area Trail, Jefferson, NJ, USA",
 		Location: &routeguide.Point{Latitude: 409146138, Longitude: -746188906},
@@ -121,7 +122,7 @@ func TestStreamInvoke(t *testing.T) {
 		invocation.WithParameterValues(args),
 	)
 	res = invoker.Invoke(context.Background(), invo)
-	assert.ErrorIs(t, res.Error(), errNoReply)
+	require.ErrorIs(t, res.Error(), errNoReply)
 	listFeaturesStream := res.Result().(reflect.Value).Interface().(routeguide.RouteGuide_ListFeaturesClient)
 	routeguide.PrintFeatures(listFeaturesStream)
 
@@ -131,7 +132,7 @@ func TestStreamInvoke(t *testing.T) {
 		invocation.WithParameterValues(args),
 	)
 	res = invoker.Invoke(context.Background(), invo)
-	assert.ErrorIs(t, res.Error(), errNoReply)
+	require.ErrorIs(t, res.Error(), errNoReply)
 	recordRouteStream := res.Result().(reflect.Value).Interface().(routeguide.RouteGuide_RecordRouteClient)
 	routeguide.RunRecordRoute(recordRouteStream)
 
@@ -141,7 +142,7 @@ func TestStreamInvoke(t *testing.T) {
 		invocation.WithParameterValues(args),
 	)
 	res = invoker.Invoke(context.Background(), invo)
-	assert.ErrorIs(t, res.Error(), errNoReply)
+	require.ErrorIs(t, res.Error(), errNoReply)
 	routeChatStream := res.Result().(reflect.Value).Interface().(routeguide.RouteGuide_RouteChatClient)
 	routeguide.RunRouteChat(routeChatStream)
 }

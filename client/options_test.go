@@ -24,6 +24,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -58,7 +59,7 @@ func TestWithClientURL(t *testing.T) {
 				WithClientURL("127.0.0.1:20000"),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, "127.0.0.1:20000", cli.cliOpts.overallReference.URL)
 			},
 		},
@@ -74,8 +75,8 @@ func TestWithClientCheck(t *testing.T) {
 				WithClientNoCheck(),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
-				assert.Equal(t, false, cli.cliOpts.Consumer.Check)
+				require.NoError(t, err)
+				assert.False(t, cli.cliOpts.Consumer.Check)
 			},
 		},
 	}
@@ -90,7 +91,7 @@ func TestWithClientFilter(t *testing.T) {
 				WithClientFilter("test_filter"),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, "test_filter", cli.cliOpts.overallReference.Filter)
 			},
 		},
@@ -106,7 +107,7 @@ func TestWithClientRegistryIDs(t *testing.T) {
 				WithClientRegistryIDs("zk", "nacos"),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, []string{"zk", "nacos"}, cli.cliOpts.Consumer.RegistryIDs)
 			},
 		},
@@ -125,7 +126,7 @@ func TestWithClientRegistry(t *testing.T) {
 				),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				reg, ok := cli.cliOpts.Registries[constant.ZookeeperKey]
 				assert.True(t, ok)
 				assert.Equal(t, "127.0.0.1:2181", reg.Address)
@@ -144,7 +145,7 @@ func TestWithClientRegistry(t *testing.T) {
 				),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				reg, ok := cli.cliOpts.Registries["zk"]
 				assert.True(t, ok)
 				assert.Equal(t, "127.0.0.1:2181", reg.Address)
@@ -168,7 +169,7 @@ func TestWithClientRegistry(t *testing.T) {
 				WithClientRegistryIDs("nacos_test"),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				zkReg, ok := cli.cliOpts.Registries[constant.ZookeeperKey]
 				assert.True(t, ok)
 				assert.Equal(t, "127.0.0.1:2181", zkReg.Address)
@@ -195,7 +196,7 @@ func TestWithClientShutdown(t *testing.T) {
 				WithClientShutdown(),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				// we do not verify the internal fields of Shutdown since graceful_shutdown module is in charge of it
 				assert.NotNil(t, cli.cliOpts.Shutdown)
 			},
@@ -210,7 +211,7 @@ func TestWithClientCluster(t *testing.T) {
 			desc: "default Cluster strategy",
 			opts: []ClientOption{},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.ClusterKeyFailover, cli.cliOpts.overallReference.Cluster)
 			},
 		},
@@ -220,7 +221,7 @@ func TestWithClientCluster(t *testing.T) {
 				WithClientClusterAvailable(),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.ClusterKeyAvailable, cli.cliOpts.overallReference.Cluster)
 			},
 		},
@@ -230,7 +231,7 @@ func TestWithClientCluster(t *testing.T) {
 				WithClientClusterBroadcast(),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.ClusterKeyBroadcast, cli.cliOpts.overallReference.Cluster)
 			},
 		},
@@ -240,7 +241,7 @@ func TestWithClientCluster(t *testing.T) {
 				WithClientClusterFailBack(),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.ClusterKeyFailback, cli.cliOpts.overallReference.Cluster)
 			},
 		},
@@ -250,7 +251,7 @@ func TestWithClientCluster(t *testing.T) {
 				WithClientClusterFailFast(),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.ClusterKeyFailfast, cli.cliOpts.overallReference.Cluster)
 			},
 		},
@@ -260,7 +261,7 @@ func TestWithClientCluster(t *testing.T) {
 				WithClientClusterFailOver(),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.ClusterKeyFailover, cli.cliOpts.overallReference.Cluster)
 			},
 		},
@@ -270,7 +271,7 @@ func TestWithClientCluster(t *testing.T) {
 				WithClientClusterFailSafe(),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.ClusterKeyFailsafe, cli.cliOpts.overallReference.Cluster)
 			},
 		},
@@ -280,7 +281,7 @@ func TestWithClientCluster(t *testing.T) {
 				WithClientClusterForking(),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.ClusterKeyForking, cli.cliOpts.overallReference.Cluster)
 			},
 		},
@@ -290,7 +291,7 @@ func TestWithClientCluster(t *testing.T) {
 				WithClientClusterZoneAware(),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.ClusterKeyZoneAware, cli.cliOpts.overallReference.Cluster)
 			},
 		},
@@ -300,7 +301,7 @@ func TestWithClientCluster(t *testing.T) {
 				WithClientClusterAdaptiveService(),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.ClusterKeyAdaptiveService, cli.cliOpts.overallReference.Cluster)
 			},
 		},
@@ -325,7 +326,7 @@ func TestWithClientLoadBalance(t *testing.T) {
 				WithClientLoadBalanceConsistentHashing(),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.LoadBalanceKeyConsistentHashing, cli.cliOpts.overallReference.Loadbalance)
 			},
 		},
@@ -335,7 +336,7 @@ func TestWithClientLoadBalance(t *testing.T) {
 				WithClientLoadBalanceLeastActive(),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.LoadBalanceKeyLeastActive, cli.cliOpts.overallReference.Loadbalance)
 			},
 		},
@@ -345,7 +346,7 @@ func TestWithClientLoadBalance(t *testing.T) {
 				WithClientLoadBalanceRandom(),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.LoadBalanceKeyRandom, cli.cliOpts.overallReference.Loadbalance)
 			},
 		},
@@ -355,7 +356,7 @@ func TestWithClientLoadBalance(t *testing.T) {
 				WithClientLoadBalanceRoundRobin(),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.LoadBalanceKeyRoundRobin, cli.cliOpts.overallReference.Loadbalance)
 			},
 		},
@@ -365,7 +366,7 @@ func TestWithClientLoadBalance(t *testing.T) {
 				WithClientLoadBalanceP2C(),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.LoadBalanceKeyP2C, cli.cliOpts.overallReference.Loadbalance)
 			},
 		},
@@ -381,7 +382,7 @@ func TestWithClientRetries(t *testing.T) {
 				WithClientRetries(3),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, "3", cli.cliOpts.overallReference.Retries)
 			},
 		},
@@ -397,7 +398,7 @@ func TestWithClientGroup(t *testing.T) {
 				WithClientGroup("test_group"),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, "test_group", cli.cliOpts.overallReference.Group)
 			},
 		},
@@ -413,7 +414,7 @@ func TestWithClientVersion(t *testing.T) {
 				WithClientVersion("test_version"),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, "test_version", cli.cliOpts.overallReference.Version)
 			},
 		},
@@ -427,7 +428,7 @@ func TestWithClientSerialization(t *testing.T) {
 			desc: "default Serialization",
 			opts: []ClientOption{},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.ProtobufSerialization, cli.cliOpts.overallReference.Serialization)
 			},
 		},
@@ -437,7 +438,7 @@ func TestWithClientSerialization(t *testing.T) {
 				WithClientSerializationJSON(),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.JSONSerialization, cli.cliOpts.overallReference.Serialization)
 			},
 		},
@@ -453,7 +454,7 @@ func TestWithClientProvidedBy(t *testing.T) {
 				WithClientProvidedBy("test_instance"),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, "test_instance", cli.cliOpts.overallReference.ProvidedBy)
 			},
 		},
@@ -471,7 +472,7 @@ func TestWithClientParams(t *testing.T) {
 				}),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, map[string]string{"test_key": "test_val"}, cli.cliOpts.overallReference.Params)
 			},
 		},
@@ -481,7 +482,7 @@ func TestWithClientParams(t *testing.T) {
 				WithClientParams(nil),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Nil(t, cli.cliOpts.overallReference.Params)
 			},
 		},
@@ -491,7 +492,7 @@ func TestWithClientParams(t *testing.T) {
 				WithClientParams((map[string]string)(nil)),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Nil(t, cli.cliOpts.overallReference.Params)
 			},
 		},
@@ -501,7 +502,7 @@ func TestWithClientParams(t *testing.T) {
 				WithClientParams(map[string]string{}),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Nil(t, cli.cliOpts.overallReference.Params)
 			},
 		},
@@ -517,7 +518,7 @@ func TestWithClientParam(t *testing.T) {
 				WithClientParam("test_key", "test_val"),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, map[string]string{"test_key": "test_val"}, cli.cliOpts.overallReference.Params)
 			},
 		},
@@ -528,7 +529,7 @@ func TestWithClientParam(t *testing.T) {
 				WithClientParam("test_key1", "test_val1"),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, map[string]string{"test_key": "test_val", "test_key1": "test_val1"}, cli.cliOpts.overallReference.Params)
 			},
 		},
@@ -538,7 +539,7 @@ func TestWithClientParam(t *testing.T) {
 				WithClientParam("", ""),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, map[string]string{"": ""}, cli.cliOpts.overallReference.Params)
 			},
 		},
@@ -554,7 +555,7 @@ func TestWithClientSticky(t *testing.T) {
 				WithClientSticky(),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.True(t, cli.cliOpts.overallReference.Sticky)
 			},
 		},
@@ -568,7 +569,7 @@ func TestWithClientProtocol(t *testing.T) {
 			desc: "default Protocol",
 			opts: []ClientOption{},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, "tri", cli.cliOpts.Consumer.Protocol)
 			},
 		},
@@ -578,7 +579,7 @@ func TestWithClientProtocol(t *testing.T) {
 				WithClientProtocolDubbo(),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.DubboProtocol, cli.cliOpts.Consumer.Protocol)
 			},
 		},
@@ -588,7 +589,7 @@ func TestWithClientProtocol(t *testing.T) {
 				WithClientProtocolTriple(),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, "tri", cli.cliOpts.Consumer.Protocol)
 			},
 		},
@@ -598,7 +599,7 @@ func TestWithClientProtocol(t *testing.T) {
 				WithClientProtocolJsonRPC(),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, "jsonrpc", cli.cliOpts.Consumer.Protocol)
 			},
 		},
@@ -614,7 +615,7 @@ func TestWithClientRequestTimeout(t *testing.T) {
 				WithClientRequestTimeout(6 * time.Second),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, "6s", cli.cliOpts.Consumer.RequestTimeout)
 			},
 		},
@@ -623,7 +624,7 @@ func TestWithClientRequestTimeout(t *testing.T) {
 			desc: "default RequestTimeout",
 			opts: []ClientOption{},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, "3s", cli.cliOpts.Consumer.RequestTimeout)
 			},
 		},
@@ -639,7 +640,7 @@ func TestWithClientForceTag(t *testing.T) {
 				WithClientForceTag(),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.True(t, cli.cliOpts.overallReference.ForceTag)
 			},
 		},
@@ -655,7 +656,7 @@ func TestWithClientMeshProviderPort(t *testing.T) {
 				WithClientMeshProviderPort(20001),
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, 20001, cli.cliOpts.overallReference.MeshProviderPort)
 			},
 		},
@@ -689,7 +690,7 @@ func TestWithCheck(t *testing.T) {
 				WithCheck(),
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.True(t, *refOpts.Reference.Check)
 			},
 		},
@@ -705,7 +706,7 @@ func TestWithURL(t *testing.T) {
 				WithURL("127.0.0.1:20000"),
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, "127.0.0.1:20000", refOpts.Reference.URL)
 			},
 		},
@@ -721,7 +722,7 @@ func TestWithFilter(t *testing.T) {
 				WithFilter("test_filter"),
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, "test_filter", refOpts.Reference.Filter)
 			},
 		},
@@ -737,7 +738,7 @@ func TestWithRegistryIDs(t *testing.T) {
 				WithRegistryIDs("zk", "nacos"),
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, []string{"zk", "nacos"}, refOpts.Reference.RegistryIDs)
 			},
 		},
@@ -751,7 +752,7 @@ func TestWithCluster(t *testing.T) {
 			desc: "default Cluster strategy",
 			opts: []ReferenceOption{},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.ClusterKeyFailover, refOpts.Reference.Cluster)
 			},
 		},
@@ -761,7 +762,7 @@ func TestWithCluster(t *testing.T) {
 				WithClusterAvailable(),
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.ClusterKeyAvailable, refOpts.Reference.Cluster)
 			},
 		},
@@ -771,7 +772,7 @@ func TestWithCluster(t *testing.T) {
 				WithClusterBroadcast(),
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.ClusterKeyBroadcast, refOpts.Reference.Cluster)
 			},
 		},
@@ -781,7 +782,7 @@ func TestWithCluster(t *testing.T) {
 				WithClusterFailBack(),
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.ClusterKeyFailback, refOpts.Reference.Cluster)
 			},
 		},
@@ -791,7 +792,7 @@ func TestWithCluster(t *testing.T) {
 				WithClusterFailFast(),
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.ClusterKeyFailfast, refOpts.Reference.Cluster)
 			},
 		},
@@ -801,7 +802,7 @@ func TestWithCluster(t *testing.T) {
 				WithClusterFailOver(),
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.ClusterKeyFailover, refOpts.Reference.Cluster)
 			},
 		},
@@ -811,7 +812,7 @@ func TestWithCluster(t *testing.T) {
 				WithClusterFailSafe(),
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.ClusterKeyFailsafe, refOpts.Reference.Cluster)
 			},
 		},
@@ -821,7 +822,7 @@ func TestWithCluster(t *testing.T) {
 				WithClusterForking(),
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.ClusterKeyForking, refOpts.Reference.Cluster)
 			},
 		},
@@ -831,7 +832,7 @@ func TestWithCluster(t *testing.T) {
 				WithClusterZoneAware(),
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.ClusterKeyZoneAware, refOpts.Reference.Cluster)
 			},
 		},
@@ -841,7 +842,7 @@ func TestWithCluster(t *testing.T) {
 				WithClusterAdaptiveService(),
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.ClusterKeyAdaptiveService, refOpts.Reference.Cluster)
 			},
 		},
@@ -866,7 +867,7 @@ func TestWithLoadBalance(t *testing.T) {
 				WithLoadBalanceConsistentHashing(),
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.LoadBalanceKeyConsistentHashing, refOpts.Reference.Loadbalance)
 			},
 		},
@@ -876,7 +877,7 @@ func TestWithLoadBalance(t *testing.T) {
 				WithLoadBalanceLeastActive(),
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.LoadBalanceKeyLeastActive, refOpts.Reference.Loadbalance)
 			},
 		},
@@ -886,7 +887,7 @@ func TestWithLoadBalance(t *testing.T) {
 				WithLoadBalanceRandom(),
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.LoadBalanceKeyRandom, refOpts.Reference.Loadbalance)
 			},
 		},
@@ -896,7 +897,7 @@ func TestWithLoadBalance(t *testing.T) {
 				WithLoadBalanceRoundRobin(),
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.LoadBalanceKeyRoundRobin, refOpts.Reference.Loadbalance)
 			},
 		},
@@ -906,7 +907,7 @@ func TestWithLoadBalance(t *testing.T) {
 				WithLoadBalanceP2C(),
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.LoadBalanceKeyP2C, refOpts.Reference.Loadbalance)
 			},
 		},
@@ -922,7 +923,7 @@ func TestWithRetries(t *testing.T) {
 				WithRetries(3),
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, "3", refOpts.Reference.Retries)
 			},
 		},
@@ -938,7 +939,7 @@ func TestWithGroup(t *testing.T) {
 				WithGroup("test_group"),
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, "test_group", refOpts.Reference.Group)
 			},
 		},
@@ -954,7 +955,7 @@ func TestWithVersion(t *testing.T) {
 				WithVersion("test_version"),
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, "test_version", refOpts.Reference.Version)
 			},
 		},
@@ -968,7 +969,7 @@ func TestWithSerialization(t *testing.T) {
 			desc: "default Serialization",
 			opts: []ReferenceOption{},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.ProtobufSerialization, refOpts.Reference.Serialization)
 			},
 		},
@@ -978,7 +979,7 @@ func TestWithSerialization(t *testing.T) {
 				WithSerializationJSON(),
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.JSONSerialization, refOpts.Reference.Serialization)
 			},
 		},
@@ -994,7 +995,7 @@ func TestWithProvidedBy(t *testing.T) {
 				WithProvidedBy("test_instance"),
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, "test_instance", refOpts.Reference.ProvidedBy)
 			},
 		},
@@ -1012,7 +1013,7 @@ func TestWithParams(t *testing.T) {
 				}),
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, map[string]string{"test_key": "test_val"}, refOpts.Reference.Params)
 			},
 		},
@@ -1022,7 +1023,7 @@ func TestWithParams(t *testing.T) {
 				WithParams(nil),
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Nil(t, refOpts.Reference.Params)
 			},
 		},
@@ -1032,7 +1033,7 @@ func TestWithParams(t *testing.T) {
 				WithParams((map[string]string)(nil)),
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Nil(t, refOpts.Reference.Params)
 			},
 		},
@@ -1042,7 +1043,7 @@ func TestWithParams(t *testing.T) {
 				WithParams(map[string]string{}),
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Nil(t, refOpts.Reference.Params)
 			},
 		},
@@ -1095,7 +1096,7 @@ func TestWithSticky(t *testing.T) {
 				WithSticky(),
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.True(t, refOpts.Reference.Sticky)
 			},
 		},
@@ -1109,7 +1110,7 @@ func TestWithProtocol(t *testing.T) {
 			desc: "default Protocol",
 			opts: []ReferenceOption{},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, "tri", refOpts.Reference.Protocol)
 			},
 		},
@@ -1119,7 +1120,7 @@ func TestWithProtocol(t *testing.T) {
 				WithProtocolDubbo(),
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, constant.DubboProtocol, refOpts.Reference.Protocol)
 			},
 		},
@@ -1129,7 +1130,7 @@ func TestWithProtocol(t *testing.T) {
 				WithProtocolTriple(),
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, "tri", refOpts.Reference.Protocol)
 			},
 		},
@@ -1139,7 +1140,7 @@ func TestWithProtocol(t *testing.T) {
 				WithProtocolJsonRPC(),
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, "jsonrpc", refOpts.Reference.Protocol)
 			},
 		},
@@ -1155,7 +1156,7 @@ func TestWithRequestTimeout(t *testing.T) {
 				WithRequestTimeout(6 * time.Second),
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, "6s", refOpts.Reference.RequestTimeout)
 			},
 		},
@@ -1171,7 +1172,7 @@ func TestWithForceTag(t *testing.T) {
 				WithForceTag(),
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.True(t, refOpts.Reference.ForceTag)
 			},
 		},
@@ -1187,50 +1188,12 @@ func TestWithMeshProviderPort(t *testing.T) {
 				WithMeshProviderPort(20001),
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, 20001, refOpts.Reference.MeshProviderPort)
 			},
 		},
 	}
 	processReferenceOptionsInitCases(t, cases)
-}
-
-func TestWithKeepAliveConfig(t *testing.T) {
-	cases := []newClientCase{
-		{
-			desc: "config keepalive interval with less than 10s",
-			opts: []ClientOption{
-				WithKeepAliveInterval(time.Second * 5), //less than 10s(min ping interval),should be set to 10s
-			},
-			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
-				assert.Equal(t, "10s", cli.cliOpts.overallReference.KeepAliveInterval)
-			},
-		},
-		{
-			desc: "config keepalive interval with larger than 10s",
-			opts: []ClientOption{
-				WithKeepAliveInterval(time.Second * 20),
-			},
-			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
-				assert.Equal(t, "20s", cli.cliOpts.overallReference.KeepAliveInterval)
-			},
-		},
-		{
-			desc: "config keepalive interval and timeout",
-			opts: []ClientOption{
-				WithKeepAliveInterval(time.Second * 20),
-				WithKeepAliveTimeout(time.Second * 30),
-			},
-			verify: func(t *testing.T, cli *Client, err error) {
-				assert.Nil(t, err)
-				assert.Equal(t, "20s", cli.cliOpts.overallReference.KeepAliveInterval)
-				assert.Equal(t, "30s", cli.cliOpts.overallReference.KeepAliveTimeout)
-			},
-		},
-	}
-	processNewClientCases(t, cases)
 }
 
 func TestInitWithConsumer(t *testing.T) {

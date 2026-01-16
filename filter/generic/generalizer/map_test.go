@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type testPlainObj struct {
@@ -130,7 +131,7 @@ func TestObjToMap_Map(t *testing.T) {
 	assert.Equal(t, reflect.Map, reflect.TypeOf(mappedStruct["baba"]).Kind())
 	assert.Equal(t, reflect.Map, reflect.TypeOf(mappedStruct["baba"].(map[any]any)["struct"]).Kind())
 	assert.Equal(t, "str", mappedStruct["baba"].(map[any]any)["struct"].(map[string]any)["str"])
-	assert.Equal(t, nil, mappedStruct["baba"].(map[any]any)["nil"])
+	assert.Nil(t, mappedStruct["baba"].(map[any]any)["nil"])
 	assert.Equal(t, reflect.Map, reflect.TypeOf(mappedStruct["caCa"]).Kind())
 	assert.Equal(t, reflect.Map, reflect.TypeOf(mappedStruct["ddDd"]).Kind())
 	intMap := mappedStruct["intMap"]
@@ -175,7 +176,7 @@ func TestPOJOClassName(t *testing.T) {
 	}
 
 	m, err := mockMapGeneralizer.Generalize(p)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	// parent
 	assert.Equal(t, "xavierniu", m.(map[string]any)["name"].(string))
 	assert.Equal(t, 30, m.(map[string]any)["age"].(int))
@@ -186,7 +187,7 @@ func TestPOJOClassName(t *testing.T) {
 	assert.Equal(t, "org.apache.dubbo.mockChild", m.(map[string]any)["child"].(map[string]any)["class"].(string))
 
 	r, err := mockMapGeneralizer.Realize(m, reflect.TypeOf(p))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	rMockParent, ok := r.(mockParent)
 	assert.True(t, ok)
 	// parent
@@ -214,14 +215,14 @@ func TestPOJOArray(t *testing.T) {
 	pojoArr := []*mockChild{c1, c2}
 
 	m, err := mockMapGeneralizer.Generalize(pojoArr)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "lmc", m.([]any)[0].(map[string]any)["name"].(string))
 	assert.Equal(t, 20, m.([]any)[0].(map[string]any)["age"].(int))
 	assert.Equal(t, "lmc1", m.([]any)[1].(map[string]any)["name"].(string))
 	assert.Equal(t, 21, m.([]any)[1].(map[string]any)["age"].(int))
 
 	r, err := mockMapGeneralizer.Realize(m, reflect.TypeOf(pojoArr))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	rPojoArr, ok := r.([]*mockChild)
 	assert.True(t, ok)
 	assert.Equal(t, "lmc", rPojoArr[0].Name)
@@ -242,7 +243,7 @@ func TestNullField(t *testing.T) {
 	assert.Nil(t, m.(map[string]any)["child"])
 
 	r, err := mockMapGeneralizer.Realize(m, reflect.TypeOf(p))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	rMockParent, ok := r.(mockParent)
 	assert.True(t, ok)
 	assert.Nil(t, rMockParent.Child)

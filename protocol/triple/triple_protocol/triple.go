@@ -340,7 +340,7 @@ func receiveUnaryResponse(conn StreamingClientConn, response AnyResponse) error 
 	// trailers, try to read another message from the stream.
 	if err := conn.Receive(resp.Msg); err == nil {
 		return NewError(CodeUnknown, errors.New("unary stream has multiple messages"))
-	} else if err != nil && !errors.Is(err, io.EOF) {
+	} else if !errors.Is(err, io.EOF) {
 		return NewError(CodeUnknown, err)
 	}
 	resp.header = conn.ResponseHeader()

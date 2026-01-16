@@ -95,13 +95,59 @@ func (f *genericFilter) Invoke(ctx context.Context, invoker base.Invoker, inv ba
 			types,
 			args,
 		}
-		newIvc := invocation.NewRPCInvocation(constant.Generic, newArgs, inv.Attachments())
-		newIvc.SetReply(inv.Reply())
+
+		// For Triple protocol non-IDL mode, we need to set parameterRawValues
+		// The format is [param1, param2, ..., paramN, reply] where the last element is the reply placeholder
+		// Triple invoker slices as: request = inRaw[0:len-1], reply = inRaw[len-1]
+		// So for generic call, we need [methodName, types, args, reply] to get request = [methodName, types, args]
+		reply := inv.Reply()
+		parameterRawValues := []any{mtdName, types, args, reply}
+
+		newIvc := invocation.NewRPCInvocationWithOptions(
+			invocation.WithMethodName(constant.Generic),
+			invocation.WithArguments(newArgs),
+			invocation.WithParameterRawValues(parameterRawValues),
+			invocation.WithAttachments(inv.Attachments()),
+			invocation.WithReply(reply),
+		)
 		newIvc.Attachments()[constant.GenericKey] = invoker.GetURL().GetParam(constant.GenericKey, "")
+
+		// Copy CallType attribute from original invocation for Triple protocol support
+		// If not present, set default to CallUnary for generic calls
+		if callType, ok := inv.GetAttribute(constant.CallTypeKey); ok {
+			newIvc.SetAttribute(constant.CallTypeKey, callType)
+		} else {
+			newIvc.SetAttribute(constant.CallTypeKey, constant.CallUnary)
+		}
 
 		return invoker.Invoke(ctx, newIvc)
 	} else if isMakingAGenericCall(invoker, inv) {
-		inv.Attachments()[constant.GenericKey] = invoker.GetURL().GetParam(constant.GenericKey, "")
+		// Arguments format: [methodName string, types []string, args []hessian.Object]
+		oldArgs := inv.Arguments()
+		reply := inv.Reply()
+
+		// For Triple protocol non-IDL mode, we need to set parameterRawValues
+		// parameterRawValues format: [methodName, types, args, reply]
+		// Triple invoker slices as: request = inRaw[0:len-1], reply = inRaw[len-1]
+		parameterRawValues := []any{oldArgs[0], oldArgs[1], oldArgs[2], reply}
+
+		newIvc := invocation.NewRPCInvocationWithOptions(
+			invocation.WithMethodName(inv.MethodName()),
+			invocation.WithArguments(oldArgs),
+			invocation.WithParameterRawValues(parameterRawValues),
+			invocation.WithAttachments(inv.Attachments()),
+			invocation.WithReply(reply),
+		)
+		newIvc.Attachments()[constant.GenericKey] = invoker.GetURL().GetParam(constant.GenericKey, "")
+
+		// Set CallType for Triple protocol support
+		if callType, ok := inv.GetAttribute(constant.CallTypeKey); ok {
+			newIvc.SetAttribute(constant.CallTypeKey, callType)
+		} else {
+			newIvc.SetAttribute(constant.CallTypeKey, constant.CallUnary)
+		}
+
+		return invoker.Invoke(ctx, newIvc)
 	}
 	return invoker.Invoke(ctx, inv)
 }

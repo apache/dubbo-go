@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -46,7 +47,7 @@ func TestTokenFilterInvoke(t *testing.T) {
 		base.NewBaseInvoker(baseUrl),
 		invocation.NewRPCInvocation("MethodName",
 			[]any{"OK"}, attch))
-	assert.Nil(t, result.Error())
+	require.NoError(t, result.Error())
 	assert.Nil(t, result.Result())
 }
 
@@ -57,7 +58,7 @@ func TestTokenFilterInvokeEmptyToken(t *testing.T) {
 	attch := make(map[string]any)
 	attch[constant.TokenKey] = "ori_key"
 	result := filter.Invoke(context.Background(), base.NewBaseInvoker(&testUrl), invocation.NewRPCInvocation("MethodName", []any{"OK"}, attch))
-	assert.Nil(t, result.Error())
+	require.NoError(t, result.Error())
 	assert.Nil(t, result.Result())
 }
 
@@ -69,7 +70,7 @@ func TestTokenFilterInvokeEmptyAttach(t *testing.T) {
 		common.WithParamsValue(constant.TokenKey, "ori_key"))
 	attch := make(map[string]any)
 	result := filter.Invoke(context.Background(), base.NewBaseInvoker(testUrl), invocation.NewRPCInvocation("MethodName", []any{"OK"}, attch))
-	assert.NotNil(t, result.Error())
+	assert.Error(t, result.Error())
 }
 
 func TestTokenFilterInvokeNotEqual(t *testing.T) {
@@ -82,5 +83,5 @@ func TestTokenFilterInvokeNotEqual(t *testing.T) {
 	attch[constant.TokenKey] = "err_key"
 	result := filter.Invoke(context.Background(),
 		base.NewBaseInvoker(testUrl), invocation.NewRPCInvocation("MethodName", []any{"OK"}, attch))
-	assert.NotNil(t, result.Error())
+	assert.Error(t, result.Error())
 }

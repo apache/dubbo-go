@@ -18,6 +18,7 @@
 package config_center
 
 import (
+	"strings"
 	"sync"
 )
 
@@ -149,6 +150,11 @@ func (c *MockDynamicConfiguration) GetInternalProperty(key string, opts ...Optio
 
 // GetRule gets properties of MockDynamicConfiguration
 func (c *MockDynamicConfiguration) GetRule(key string, opts ...Option) (string, error) {
+	// For configurator-related queries, return empty to avoid YAML parsing errors
+	// The actual configuration will be provided by MockServiceConfigEvent/MockApplicationConfigEvent
+	if strings.Contains(key, "configurator") || strings.HasSuffix(key, "configurators") {
+		return "", nil
+	}
 	return c.GetProperties(key, opts...)
 }
 

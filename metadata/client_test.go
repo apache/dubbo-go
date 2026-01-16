@@ -27,6 +27,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -63,7 +64,7 @@ var (
 func TestGetMetadataFromMetadataReport(t *testing.T) {
 	t.Run("no report instance", func(t *testing.T) {
 		_, err := GetMetadataFromMetadataReport("1", ins)
-		assert.NotNil(t, err)
+		require.Error(t, err)
 	})
 	mockReport := new(mockMetadataReport)
 	defer mockReport.AssertExpectations(t)
@@ -71,13 +72,13 @@ func TestGetMetadataFromMetadataReport(t *testing.T) {
 	t.Run("normal", func(t *testing.T) {
 		mockReport.On("GetAppMetadata").Return(metadataInfo, nil).Once()
 		got, err := GetMetadataFromMetadataReport("1", ins)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, metadataInfo, got)
 	})
 	t.Run("error", func(t *testing.T) {
 		mockReport.On("GetAppMetadata").Return(metadataInfo, errors.New("mock error")).Once()
 		_, err := GetMetadataFromMetadataReport("1", ins)
-		assert.NotNil(t, err)
+		require.Error(t, err)
 	})
 }
 
@@ -100,13 +101,13 @@ func TestGetMetadataFromRpc(t *testing.T) {
 		mockInvoker.On("Invoke").Return(res).Once()
 		mockInvoker.On("Destroy").Once()
 		metadata, err := GetMetadataFromRpc("111", ins)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, metadata, res.Rest)
 	})
 	t.Run("refer error", func(t *testing.T) {
 		mockProtocol.On("Refer").Return(nil).Once()
 		_, err := GetMetadataFromRpc("111", ins)
-		assert.NotNil(t, err)
+		require.Error(t, err)
 	})
 	t.Run("invoke timeout", func(t *testing.T) {
 		mockProtocol.On("Refer").Return(mockInvoker).Once()
@@ -117,7 +118,7 @@ func TestGetMetadataFromRpc(t *testing.T) {
 		}).Once()
 		mockInvoker.On("Destroy").Once()
 		_, err := GetMetadataFromRpc("111", ins)
-		assert.NotNil(t, err)
+		require.Error(t, err)
 	})
 }
 
@@ -277,13 +278,23 @@ func (m *mockInvoker) Destroy() {
 
 func (m *mockInvoker) Invoke(ctx context.Context, inv base.Invocation) result.Result {
 	args := m.Called()
-	meta := args.Get(0).(result.Result).Result().(*info.MetadataInfo)
-	reply := inv.Reply().(*info.MetadataInfo)
-	reply.App = meta.App
-	reply.Tag = meta.Tag
-	reply.Revision = meta.Revision
-	reply.Services = meta.Services
-	return args.Get(0).(result.Result)
+	res := args.Get(0).(result.Result)
+
+	// Handle both *info.MetadataInfo and *interface{} reply types
+	// This supports the new implementation that uses interface{} to handle different return types
+	if replyPtr, ok := inv.Reply().(*any); ok {
+		// New code path: reply is *interface{}, set it to point to the metadata
+		*replyPtr = res.Result().(*info.MetadataInfo)
+	} else if reply, ok := inv.Reply().(*info.MetadataInfo); ok {
+		// Old code path: reply is *info.MetadataInfo, copy fields
+		meta := res.Result().(*info.MetadataInfo)
+		reply.App = meta.App
+		reply.Tag = meta.Tag
+		reply.Revision = meta.Revision
+		reply.Services = meta.Services
+	}
+
+	return res
 }
 
 type mockExporter struct {

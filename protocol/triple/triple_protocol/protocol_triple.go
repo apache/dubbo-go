@@ -238,7 +238,7 @@ func (c *tripleClient) WriteRequestHeader(streamType StreamType, header http.Hea
 	}
 	header[tripleHeaderProtocolVersion] = []string{tripleProtocolVersion}
 	header[headerContentType] = []string{
-		tripleContentTypeFromCodecName(streamType, c.Codec.Name()),
+		tripleContentTypeFromCodecName(streamType, getWireCodecName(c.Codec)),
 	}
 	if acceptCompression := c.CompressionPools.CommaSeparatedNames(); acceptCompression != "" {
 		header[tripleUnaryHeaderAcceptCompression] = []string{acceptCompression}

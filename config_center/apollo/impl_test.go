@@ -39,6 +39,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -145,13 +146,13 @@ func runMockConfigServer() *httptest.Server {
 func TestGetConfig(t *testing.T) {
 	configuration := initMockApollo(t)
 	configs, err := configuration.GetProperties(mockNamespace, config_center.WithGroup("dubbo"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	koan := koanf.New(".")
 	err = koan.Load(rawbytes.Provider([]byte(configs)), yaml.Parser())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	rc := &config.RootConfig{}
 	err = koan.UnmarshalWithConf(rc.Prefix(), rc, koanf.UnmarshalConf{Tag: "yaml"})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, "demo-server", rc.Application.Name)
 }
@@ -159,13 +160,13 @@ func TestGetConfig(t *testing.T) {
 func TestGetJsonConfig(t *testing.T) {
 	configuration := initMockApollo(t)
 	configs, err := configuration.GetProperties(mockJsonNamespace, config_center.WithGroup("dubbo"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	koan := koanf.New(":")
 	err = koan.Load(rawbytes.Provider([]byte(configs)), json.Parser())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	rc := &config.RootConfig{}
 	err = koan.UnmarshalWithConf(rc.Prefix(), rc, koanf.UnmarshalConf{Tag: "json"})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, "demo-server", rc.Application.Name)
 }
@@ -173,7 +174,7 @@ func TestGetJsonConfig(t *testing.T) {
 func TestGetConfigItem(t *testing.T) {
 	configuration := initMockApollo(t)
 	appName, err := configuration.GetInternalProperty("dubbo.application.name")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "demo-server", appName)
 }
 
@@ -194,9 +195,9 @@ func initMockApollo(t *testing.T) *apolloConfiguration {
 	apollo := initApollo()
 	apolloUrl := strings.ReplaceAll(apollo.URL, "http", "apollo")
 	url, err := common.NewURL(apolloUrl, common.WithParams(c.ConfigCenter.GetUrlMap()))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	configuration, err := newApolloConfiguration(url)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	return configuration
 }
 
@@ -217,7 +218,7 @@ func TestListener(t *testing.T) {
 	apollo.AddListener(mockNamespace, listener)
 	listener.wg.Wait()
 	assert.Equal(t, "mockDubbogo.yaml", listener.event)
-	assert.Greater(t, listener.count, 0)
+	assert.Positive(t, listener.count)
 
 	// test remove
 	apollo.RemoveListener(mockNamespace, listener)
@@ -230,7 +231,7 @@ func TestListener(t *testing.T) {
 		}
 		return true
 	})
-	assert.Equal(t, listenerCount, 0)
+	assert.Equal(t, 0, listenerCount)
 }
 
 type apolloDataListener struct {
