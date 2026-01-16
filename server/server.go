@@ -19,9 +19,9 @@
 package server
 
 import (
+	"context"
 	"os"
 	"os/signal"
-	"context"
 	"reflect"
 	"sort"
 	"strconv"
