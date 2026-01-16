@@ -151,11 +151,6 @@ func (proto *registryProtocol) Refer(url *common.URL) base.Invoker {
 
 	reg := proto.getRegistry(url)
 
-	// copy application name from service URL to registry URL for routers that need it
-	if appName := serviceUrl.GetParam(constant.ApplicationKey, ""); appName != "" {
-		registryUrl.SetParam(constant.ApplicationKey, appName)
-	}
-
 	// new registry directory for store service url from registry
 	dic, err := extension.GetDirectoryInstance(registryUrl, reg)
 	if err != nil {
