@@ -494,6 +494,7 @@ func (h *Handler) handleCORS(w http.ResponseWriter, r *http.Request) bool {
 	}
 
 	if !h.cors.matchOrigin(origin) {
+		w.Header().Add(corsVary, corsOrigin)
 		w.WriteHeader(http.StatusForbidden)
 		return true
 	}
