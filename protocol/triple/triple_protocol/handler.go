@@ -493,7 +493,7 @@ func (h *Handler) handleCORS(w http.ResponseWriter, r *http.Request) bool {
 		return false
 	}
 
-	if !h.cors.allowOrigin(origin) {
+	if !h.cors.matchOrigin(origin) {
 		w.WriteHeader(http.StatusForbidden)
 		return true
 	}

@@ -232,12 +232,25 @@ func CORSMaxAge(maxAge int) CORSOption {
 	}
 }
 
+var validHTTPMethods = map[string]bool{
+	http.MethodGet:     true,
+	http.MethodHead:    true,
+	http.MethodPost:    true,
+	http.MethodPut:     true,
+	http.MethodPatch:   true,
+	http.MethodDelete:  true,
+	http.MethodConnect: true,
+	http.MethodOptions: true,
+	http.MethodTrace:   true,
+}
+
 // validateCorsConfig validates CORS configuration.
 func validateCorsConfig(cors *global.CorsConfig) error {
 	if cors == nil {
 		return nil
 	}
 
+	// Validate origins
 	for _, origin := range cors.AllowOrigins {
 		if origin == "" {
 			return errors.New("allow-origins cannot contain empty string")
@@ -250,25 +263,19 @@ func validateCorsConfig(cors *global.CorsConfig) error {
 		}
 	}
 
+	// Validate methods
 	for _, method := range cors.AllowMethods {
-		if method == "" {
-			return errors.New("allow-methods cannot contain empty string")
-		}
-		if !isValidHTTPMethod(method) {
+		if method == "" || !validHTTPMethods[strings.ToUpper(method)] {
 			return errors.New("allow-methods contains invalid HTTP method")
 		}
 	}
 
-	for _, header := range cors.AllowHeaders {
-		if strings.TrimSpace(header) == "" {
-			return errors.New("allow-headers cannot contain empty string")
-		}
+	// Validate headers (both allow and expose)
+	if err := validateHeaders(cors.AllowHeaders, "allow-headers"); err != nil {
+		return err
 	}
-
-	for _, header := range cors.ExposeHeaders {
-		if strings.TrimSpace(header) == "" {
-			return errors.New("expose-headers cannot contain empty string")
-		}
+	if err := validateHeaders(cors.ExposeHeaders, "expose-headers"); err != nil {
+		return err
 	}
 
 	if cors.MaxAge < 0 {
@@ -278,66 +285,67 @@ func validateCorsConfig(cors *global.CorsConfig) error {
 	return nil
 }
 
+func validateHeaders(headers []string, fieldName string) error {
+	for _, header := range headers {
+		if strings.TrimSpace(header) == "" {
+			return errors.New(fieldName + " cannot contain empty string")
+		}
+	}
+	return nil
+}
+
 func validateOrigin(origin string) error {
+	// Allow wildcard
 	if origin == "*" {
 		return nil
 	}
 
-	if strings.Contains(origin, "*") {
-		if !strings.HasPrefix(origin, "*.") && !strings.Contains(origin, "://*.") {
-			return errors.New("wildcard must be at start: '*.domain' or 'scheme://*.domain'")
-		}
-		var domainPart string
-		if strings.Contains(origin, "://*.") {
-			parts := strings.Split(origin, "://*.")
-			if len(parts) != 2 || parts[1] == "" {
-				return errors.New("invalid subdomain wildcard format")
-			}
-			domainPart = parts[1]
-		} else {
-			domainPart = origin[2:]
-			if domainPart == "" {
-				return errors.New("invalid subdomain wildcard format")
-			}
-		}
-		if strings.Contains(domainPart, "*") {
-			return errors.New("only single wildcard at subdomain level is allowed")
-		}
-		return nil
+	// Check for whitespace
+	if strings.ContainsAny(origin, " \t\n\r") {
+		return errors.New("origin contains whitespace")
 	}
 
+	// Handle subdomain wildcard (*.example.com or https://*.example.com)
+	if strings.Contains(origin, "*") {
+		return validateWildcardOrigin(origin)
+	}
+
+	// Validate URL format
 	if strings.Contains(origin, "://") {
 		u, err := url.Parse(origin)
 		if err != nil || u.Scheme == "" || u.Host == "" {
 			return errors.New("invalid URL format")
 		}
-		return nil
-	}
-
-	if strings.ContainsAny(origin, " \t\n\r") {
-		return errors.New("origin contains whitespace")
 	}
 
 	return nil
 }
 
-func isValidHTTPMethod(method string) bool {
-	if method == "" {
-		return false
+func validateWildcardOrigin(origin string) error {
+	// Must be *.domain or scheme://*.domain
+	if !strings.HasPrefix(origin, "*.") && !strings.Contains(origin, "://*.") {
+		return errors.New("wildcard must be at start: '*.domain' or 'scheme://*.domain'")
 	}
 
-	methodUpper := strings.ToUpper(method)
-	validMethods := map[string]bool{
-		http.MethodGet:     true,
-		http.MethodHead:    true,
-		http.MethodPost:    true,
-		http.MethodPut:     true,
-		http.MethodPatch:   true,
-		http.MethodDelete:  true,
-		http.MethodConnect: true,
-		http.MethodOptions: true,
-		http.MethodTrace:   true,
+	// Extract domain part after *.
+	var domain string
+	if strings.Contains(origin, "://*.") {
+		parts := strings.SplitN(origin, "://*.", 2)
+		if len(parts) != 2 || parts[1] == "" {
+			return errors.New("invalid subdomain wildcard format")
+		}
+		domain = parts[1]
+	} else {
+		domain = origin[2:]
+		if domain == "" {
+			return errors.New("invalid subdomain wildcard format")
+		}
 	}
 
-	return validMethods[methodUpper]
+	// Only single wildcard allowed
+	if strings.Contains(domain, "*") {
+		return errors.New("only single wildcard at subdomain level is allowed")
+	}
+
+	return nil
 }
