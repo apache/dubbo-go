@@ -37,7 +37,7 @@ type Handler struct {
 	protocolHandlers []protocolHandler
 	allowMethod      string      // Allow header
 	acceptPost       string      // Accept-Post header
-	cors             *corsPolicy // CORS policy
+	cors             *CorsConfig // CORS policy
 }
 
 // NewUnaryHandler constructs a [Handler] for a request-response procedure.
@@ -405,7 +405,7 @@ type handlerConfig struct {
 	SendMaxBytes                int
 	Group                       string
 	Version                     string
-	Cors                        *corsPolicy
+	Cors                        *CorsConfig
 }
 
 func newHandlerConfig(procedure string, options []HandlerOption) *handlerConfig {

@@ -452,9 +452,7 @@ func (o *corsOption) applyToHandler(config *handlerConfig) {
 	if o.cors == nil {
 		return
 	}
-	config.Cors = &corsPolicy{
-		CorsConfig: *o.cors,
-	}
+	config.Cors = o.cors
 }
 
 type groupOption struct {

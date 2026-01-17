@@ -29,19 +29,17 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/assert"
 )
 
-func convertCorsConfigForTest(cfg *global.CorsConfig) *corsPolicy {
+func convertCorsConfigForTest(cfg *global.CorsConfig) *CorsConfig {
 	if cfg == nil {
 		return nil
 	}
-	return &corsPolicy{
-		CorsConfig: CorsConfig{
-			AllowOrigins:     append([]string(nil), cfg.AllowOrigins...),
-			AllowMethods:     append([]string(nil), cfg.AllowMethods...),
-			AllowHeaders:     append([]string(nil), cfg.AllowHeaders...),
-			ExposeHeaders:    append([]string(nil), cfg.ExposeHeaders...),
-			AllowCredentials: cfg.AllowCredentials,
-			MaxAge:           cfg.MaxAge,
-		},
+	return &CorsConfig{
+		AllowOrigins:     append([]string(nil), cfg.AllowOrigins...),
+		AllowMethods:     append([]string(nil), cfg.AllowMethods...),
+		AllowHeaders:     append([]string(nil), cfg.AllowHeaders...),
+		ExposeHeaders:    append([]string(nil), cfg.ExposeHeaders...),
+		AllowCredentials: cfg.AllowCredentials,
+		MaxAge:           cfg.MaxAge,
 	}
 }
 
@@ -68,7 +66,7 @@ func TestMatchOrigin(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			c := &corsPolicy{CorsConfig: CorsConfig{AllowOrigins: tt.allowed}}
+			c := &CorsConfig{AllowOrigins: tt.allowed}
 			assert.Equal(t, c.matchOrigin(tt.origin), tt.want)
 		})
 	}
@@ -78,7 +76,7 @@ func TestAddCORSHeaders(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		name       string
-		policy     *corsPolicy
+		policy     *CorsConfig
 		origin     string
 		wantOrigin string
 		wantCreds  bool
@@ -166,7 +164,7 @@ func TestHandleCORS(t *testing.T) {
 
 	tests := []struct {
 		name            string
-		cors            *corsPolicy
+		cors            *CorsConfig
 		method          string
 		origin          string
 		preflightHeader string
