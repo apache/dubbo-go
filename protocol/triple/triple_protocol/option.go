@@ -491,19 +491,6 @@ func (o *FallbackCodecNameOption) applyToHandler(config *handlerConfig) {
 	config.FallbackCodecName = o.FallbackCodecName
 }
 
-// Deprecated: Use FallbackCodecNameOption instead.
-type ExpectedCodecNameOption struct {
-	ExpectedCodecName string
-}
-
-func (o *ExpectedCodecNameOption) applyToClient(config *clientConfig) {
-	// Do nothing as client doesn't have codec fallback issues
-}
-
-func (o *ExpectedCodecNameOption) applyToHandler(config *handlerConfig) {
-	config.FallbackCodecName = o.ExpectedCodecName
-}
-
 type tripleOption struct{}
 
 func (o *tripleOption) applyToClient(config *clientConfig) {
