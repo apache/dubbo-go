@@ -53,11 +53,13 @@ var (
 
 func newPolarisRouter(url *common.URL) (*polarisRouter, error) {
 
-	// get from url param
+	// get application name from url param
 	applicationName := url.GetParam(constant.ApplicationKey, "")
-
 	if applicationName == "" {
-		return nil, fmt.Errorf("polaris router must set application name")
+		applicationName = url.SubURL.GetParam(constant.ApplicationKey, "")
+		if applicationName == "" {
+			return nil, fmt.Errorf("polaris router must set application name")
+		}
 	}
 
 	// get from url attr
