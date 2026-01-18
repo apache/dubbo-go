@@ -186,8 +186,12 @@ func WithVersion(version string) Option {
 	return &versionOption{version}
 }
 
+// WithExpectedCodecName sets a fallback codec for the server handler.
+// When the primary codec (from client's Content-Type) fails to unmarshal
+// the request, the server will attempt to use this fallback codec.
+// This enhances interoperability, especially with Java clients.
 func WithExpectedCodecName(ExpectedCodecName string) Option {
-	return &ExpectedCodecNameOption{ExpectedCodecName: ExpectedCodecName}
+	return &FallbackCodecNameOption{FallbackCodecName: ExpectedCodecName}
 }
 
 // Option implements both [ClientOption] and [HandlerOption], so it can be
@@ -475,16 +479,29 @@ func (o *idempotencyOption) applyToHandler(config *handlerConfig) {
 	config.IdempotencyLevel = o.idempotencyLevel
 }
 
+type FallbackCodecNameOption struct {
+	FallbackCodecName string
+}
+
+func (o *FallbackCodecNameOption) applyToClient(config *clientConfig) {
+	// Do nothing as client doesn't have codec fallback issues
+}
+
+func (o *FallbackCodecNameOption) applyToHandler(config *handlerConfig) {
+	config.FallbackCodecName = o.FallbackCodecName
+}
+
+// Deprecated: Use FallbackCodecNameOption instead.
 type ExpectedCodecNameOption struct {
 	ExpectedCodecName string
 }
 
 func (o *ExpectedCodecNameOption) applyToClient(config *clientConfig) {
-	//Do nothing as client doesn't have codec issues
+	// Do nothing as client doesn't have codec fallback issues
 }
 
 func (o *ExpectedCodecNameOption) applyToHandler(config *handlerConfig) {
-	config.ExpectedCodecName = o.ExpectedCodecName
+	config.FallbackCodecName = o.ExpectedCodecName
 }
 
 type tripleOption struct{}

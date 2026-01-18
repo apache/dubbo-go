@@ -72,7 +72,7 @@ type protocol interface {
 type protocolHandlerParams struct {
 	Spec                        Spec
 	Codecs                      readOnlyCodecs
-	ExpectedCodecName           string
+	FallbackCodecName           string
 	CompressionPools            readOnlyCompressionPools
 	CompressMinBytes            int
 	BufferPool                  *bufferPool
