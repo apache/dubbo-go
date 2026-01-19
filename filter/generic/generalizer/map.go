@@ -96,6 +96,15 @@ func removeClass(obj any) any {
 			m[k] = removeClass(val)
 		}
 		return m
+	case map[any]any:
+		m := make(map[any]any, len(v))
+		for k, val := range v {
+			if k == "class" {
+				continue
+			}
+			m[k] = removeClass(val)
+		}
+		return m
 	case []any:
 		s := make([]any, 0, len(v))
 		for _, val := range v {
