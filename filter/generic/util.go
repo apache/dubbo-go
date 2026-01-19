@@ -49,19 +49,18 @@ func isMakingAGenericCall(invoker base.Invoker, invocation base.Invocation) bool
 
 // isGeneric receives a generic field from url of invoker to determine whether the service is generic or not
 func isGeneric(generic string) bool {
-	lowerGeneric := strings.ToLower(generic)
-	return lowerGeneric == constant.GenericSerializationDefault ||
-		lowerGeneric == constant.GenericSerializationGson ||
-		lowerGeneric == constant.GenericSerializationProtobufJson
+	return strings.EqualFold(generic, constant.GenericSerializationDefault) ||
+		strings.EqualFold(generic, constant.GenericSerializationGson) ||
+		strings.EqualFold(generic, constant.GenericSerializationProtobufJson)
 }
 
 func getGeneralizer(generic string) (g generalizer.Generalizer) {
-	switch strings.ToLower(generic) {
-	case constant.GenericSerializationDefault:
+	switch {
+	case strings.EqualFold(generic, constant.GenericSerializationDefault):
 		g = generalizer.GetMapGeneralizer()
-	case constant.GenericSerializationGson:
+	case strings.EqualFold(generic, constant.GenericSerializationGson):
 		g = generalizer.GetGsonGeneralizer()
-	case constant.GenericSerializationProtobufJson:
+	case strings.EqualFold(generic, constant.GenericSerializationProtobufJson):
 		g = generalizer.GetProtobufJsonGeneralizer()
 	default:
 		logger.Debugf("\"%s\" is not supported, use the default generalizer(MapGeneralizer)", generic)
