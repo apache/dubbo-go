@@ -54,7 +54,9 @@ func (g *MapGeneralizer) Generalize(obj any) (gobj any, err error) {
 }
 
 func (g *MapGeneralizer) Realize(obj any, typ reflect.Type) (any, error) {
-	obj = removeClass(obj)
+	if !getGenericIncludeClass() {
+		obj = removeClass(obj)
+	}
 	newobj := reflect.New(typ).Interface()
 	err := mapstructure.Decode(obj, newobj)
 	if err != nil {
