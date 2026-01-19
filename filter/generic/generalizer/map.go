@@ -22,20 +22,13 @@ import (
 	"strings"
 	"sync"
 	"time"
-)
 
-import (
+	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/hessian2"
 	hessian "github.com/apache/dubbo-go-hessian2"
-
 	"github.com/dubbogo/gost/log/logger"
-
 	"github.com/mitchellh/mapstructure"
 
 	perrors "github.com/pkg/errors"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/hessian2"
 )
 
 var (
@@ -54,10 +47,14 @@ type MapGeneralizer struct{}
 
 func (g *MapGeneralizer) Generalize(obj any) (gobj any, err error) {
 	gobj = objToMap(obj)
+	if !getGenericIncludeClass() {
+		gobj = removeClass(gobj)
+	}
 	return
 }
 
 func (g *MapGeneralizer) Realize(obj any, typ reflect.Type) (any, error) {
+	obj = removeClass(obj)
 	newobj := reflect.New(typ).Interface()
 	err := mapstructure.Decode(obj, newobj)
 	if err != nil {
@@ -82,6 +79,32 @@ func (g *MapGeneralizer) GetType(obj any) (typ string, err error) {
 
 	logger.Debugf("the type of object(=%T) couldn't be recognized as a POJO, use the default value(\"%s\")", obj, typ)
 	return
+}
+
+func getGenericIncludeClass() bool {
+	return true
+}
+
+func removeClass(obj any) any {
+	switch v := obj.(type) {
+	case map[string]any:
+		m := make(map[string]any, len(v))
+		for k, val := range v {
+			if k == "class" {
+				continue
+			}
+			m[k] = removeClass(val)
+		}
+		return m
+	case []any:
+		s := make([]any, 0, len(v))
+		for _, val := range v {
+			s = append(s, removeClass(val))
+		}
+		return s
+	default:
+		return obj
+	}
 }
 
 // objToMap converts an object(any) to a map
