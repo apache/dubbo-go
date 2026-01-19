@@ -19,10 +19,13 @@ package generalizer
 
 import (
 	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"dubbo.apache.org/dubbo-go/v3/common/config"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/hessian2"
 	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/dubbogo/gost/log/logger"
@@ -84,6 +87,23 @@ func (g *MapGeneralizer) GetType(obj any) (typ string, err error) {
 }
 
 func getGenericIncludeClass() bool {
+	cfgList := config.GetEnvInstance().Configuration()
+	for e := cfgList.Front(); e != nil; e = e.Next() {
+		conf, ok := e.Value.(*config.InmemoryConfiguration)
+		if !ok {
+			continue
+		}
+
+		if exist, val := conf.GetProperty(constant.GenericIncludeClassKey); exist {
+			parsed, err := strconv.ParseBool(val)
+			if err != nil {
+				logger.Warnf("generic.include.class value %q is invalid, fallback to true", val)
+				return true
+			}
+			return parsed
+		}
+	}
+
 	return true
 }
 
