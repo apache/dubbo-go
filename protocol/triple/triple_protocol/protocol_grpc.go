@@ -189,7 +189,7 @@ func (g *grpcHandler) NewConn(
 	// content-type -> codecName -> codec
 	codecName := grpcCodecFromContentType(getHeaderCanonical(request.Header, headerContentType))
 	codec := g.Codecs.Get(codecName) // handler.go guarantees this is not nil
-	backupCodec := g.Codecs.Get(g.ExpectedCodecName)
+	backupCodec := g.Codecs.Get(g.FallbackCodecName)
 	protocolName := ProtocolGRPC
 	conn := wrapHandlerConnWithCodedErrors(&grpcHandlerConn{
 		spec: g.Spec,
