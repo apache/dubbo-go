@@ -358,11 +358,24 @@ func buildMethodLevelReqSpec(serviceLevelReqSpec *Spec, method string) (Spec, er
 // multi-level URL prefixes (e.g., "/api/v1/com.example.Service") while the method name
 // will be appended later via buildMethodLevelReqSpec.
 func normalizeClientProcedure(path string) string {
+	// Handle empty string or a single slash early
 	if path == "" || path == "/" {
 		return "/"
 	}
+
+	// Pre-clean: strip all trailing slashes (handles cases like "path///")
+	path = strings.TrimRight(path, "/")
+
+	// Ensure the path has a leading slash
 	if !strings.HasPrefix(path, "/") {
 		path = "/" + path
 	}
-	return strings.TrimSuffix(path, "/")
+
+	// If the path becomes empty after trimming (meaning it was all slashes),
+	// reset it to a single slash.
+	if path == "" {
+		return "/"
+	}
+
+	return path
 }
