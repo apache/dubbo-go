@@ -24,6 +24,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestUser is a test struct for bean serialization
@@ -127,7 +128,7 @@ func TestBeanGeneralizer_Realize_Primitive(t *testing.T) {
 func TestBeanGeneralizer_Realize_Nil(t *testing.T) {
 	g := GetBeanGeneralizer()
 	result, err := g.Realize(nil, reflect.TypeOf(""))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, result)
 }
 
@@ -144,10 +145,10 @@ func TestBeanGeneralizer_RoundTrip_Struct(t *testing.T) {
 	}
 
 	generalized, err := g.Generalize(original)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	realized, err := g.Realize(generalized, reflect.TypeOf(&TestUser{}))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	user := realized.(*TestUser)
 	assert.Equal(t, original.Name, user.Name)
