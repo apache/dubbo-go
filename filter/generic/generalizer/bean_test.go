@@ -52,14 +52,14 @@ func TestBeanGeneralizer_Generalize_Primitive(t *testing.T) {
 
 	// Test string
 	result, err := g.Generalize("hello")
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	desc := result.(*JavaBeanDescriptor)
 	assert.Equal(t, TypePrimitive, desc.Type)
 	assert.Equal(t, "hello", desc.Properties["value"])
 
 	// Test int
 	result, err = g.Generalize(42)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	desc = result.(*JavaBeanDescriptor)
 	assert.Equal(t, TypePrimitive, desc.Type)
 	assert.Equal(t, 42, desc.Properties["value"])
@@ -68,7 +68,7 @@ func TestBeanGeneralizer_Generalize_Primitive(t *testing.T) {
 func TestBeanGeneralizer_Generalize_Nil(t *testing.T) {
 	g := GetBeanGeneralizer()
 	result, err := g.Generalize(nil)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Nil(t, result)
 }
 
@@ -76,20 +76,20 @@ func TestBeanGeneralizer_Generalize_Slice(t *testing.T) {
 	g := GetBeanGeneralizer()
 
 	result, err := g.Generalize([]string{"a", "b", "c"})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	desc := result.(*JavaBeanDescriptor)
 	assert.Equal(t, TypeArray, desc.Type)
-	assert.Equal(t, 3, len(desc.Properties))
+	assert.Len(t, desc.Properties, 3)
 }
 
 func TestBeanGeneralizer_Generalize_Map(t *testing.T) {
 	g := GetBeanGeneralizer()
 
 	result, err := g.Generalize(map[string]int{"one": 1, "two": 2})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	desc := result.(*JavaBeanDescriptor)
 	assert.Equal(t, TypeMap, desc.Type)
-	assert.Equal(t, 2, len(desc.Properties))
+	assert.Len(t, desc.Properties, 2)
 }
 
 func TestBeanGeneralizer_Generalize_Struct(t *testing.T) {
@@ -105,7 +105,7 @@ func TestBeanGeneralizer_Generalize_Struct(t *testing.T) {
 	}
 
 	result, err := g.Generalize(user)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	desc := result.(*JavaBeanDescriptor)
 	assert.Equal(t, TypeBean, desc.Type)
 	assert.Equal(t, "com.test.User", desc.ClassName)
@@ -120,14 +120,14 @@ func TestBeanGeneralizer_Realize_Primitive(t *testing.T) {
 	}
 
 	result, err := g.Realize(desc, reflect.TypeOf(""))
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, "hello", result)
 }
 
 func TestBeanGeneralizer_Realize_Nil(t *testing.T) {
 	g := GetBeanGeneralizer()
 	result, err := g.Realize(nil, reflect.TypeOf(""))
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Nil(t, result)
 }
 
@@ -144,10 +144,10 @@ func TestBeanGeneralizer_RoundTrip_Struct(t *testing.T) {
 	}
 
 	generalized, err := g.Generalize(original)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	realized, err := g.Realize(generalized, reflect.TypeOf(&TestUser{}))
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	user := realized.(*TestUser)
 	assert.Equal(t, original.Name, user.Name)
@@ -162,13 +162,13 @@ func TestBeanGeneralizer_RoundTrip_Slice(t *testing.T) {
 	original := []int{1, 2, 3, 4, 5}
 
 	generalized, err := g.Generalize(original)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	realized, err := g.Realize(generalized, reflect.TypeOf([]int{}))
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	slice := realized.([]int)
-	assert.Equal(t, len(original), len(slice))
+	assert.Len(t, slice, len(original))
 }
 
 func TestBeanGeneralizer_RoundTrip_Map(t *testing.T) {
@@ -177,13 +177,13 @@ func TestBeanGeneralizer_RoundTrip_Map(t *testing.T) {
 	original := map[string]string{"key1": "value1", "key2": "value2"}
 
 	generalized, err := g.Generalize(original)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	realized, err := g.Realize(generalized, reflect.TypeOf(map[string]string{}))
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	m := realized.(map[string]string)
-	assert.Equal(t, len(original), len(m))
+	assert.Len(t, m, len(original))
 }
 
 func TestJavaBeanDescriptor_JavaClassName(t *testing.T) {
@@ -200,6 +200,6 @@ func TestGetBeanGeneralizer_Singleton(t *testing.T) {
 func TestBeanGeneralizer_GetType(t *testing.T) {
 	g := GetBeanGeneralizer()
 	typ, err := g.GetType(&TestUser{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, "com.test.User", typ)
 }
