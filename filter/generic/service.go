@@ -24,8 +24,6 @@ import (
 
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -51,6 +49,11 @@ func (s *GenericService) Reference() string {
 // InvokeWithType invokes the remote method and deserializes the result into the reply struct.
 // The reply parameter must be a non-nil pointer to the target type.
 //
+// Note: This method uses MapGeneralizer for deserialization, which means it only supports
+// the default map-based generic serialization (generic=true). If you are using other
+// serialization types like Gson or Protobuf-JSON, use the Invoke method directly and
+// handle deserialization manually.
+//
 // Example usage:
 //
 //	var user User
@@ -60,17 +63,10 @@ func (s *GenericService) Reference() string {
 //	}
 //	fmt.Println(user.Name, user.Age)
 func (s *GenericService) InvokeWithType(ctx context.Context, methodName string, types []string, args []hessian.Object, reply any) error {
-	if reply == nil {
-		return perrors.New("reply cannot be nil")
-	}
-
-	replyValue := reflect.ValueOf(reply)
-	if replyValue.Kind() != reflect.Ptr {
-		return perrors.New("reply must be a pointer")
-	}
-
-	if replyValue.IsNil() {
-		return perrors.New("reply cannot be a nil pointer")
+	// Validate the reply pointer
+	replyValue, err := validateReplyPointer(reply)
+	if err != nil {
+		return err
 	}
 
 	// Call the underlying Invoke method
@@ -88,9 +84,9 @@ func (s *GenericService) InvokeWithType(ctx context.Context, methodName string, 
 
 	// Use MapGeneralizer to realize the map result to the target struct
 	g := generalizer.GetMapGeneralizer()
-	realized, err := g.Realize(result, replyType)
+	realized, err := realizeResult(result, replyType, g)
 	if err != nil {
-		return perrors.Errorf("failed to deserialize result to %s: %v", replyType.String(), err)
+		return err
 	}
 
 	// Set the realized value to reply

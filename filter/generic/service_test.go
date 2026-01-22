@@ -129,6 +129,10 @@ func TestGenericService_InvokeWithType(t *testing.T) {
 
 	t.Run("nil reply error", func(t *testing.T) {
 		service := NewGenericService("TestService")
+		// Add dummy invoke to prevent nil pointer dereference
+		service.Invoke = func(ctx context.Context, methodName string, types []string, args []hessian.Object) (any, error) {
+			return nil, nil
+		}
 
 		err := service.InvokeWithType(context.Background(), "getUser", []string{"java.lang.String"}, []hessian.Object{"123"}, nil)
 
@@ -138,11 +142,44 @@ func TestGenericService_InvokeWithType(t *testing.T) {
 
 	t.Run("non-pointer reply error", func(t *testing.T) {
 		service := NewGenericService("TestService")
+		// Add dummy invoke to prevent nil pointer dereference
+		service.Invoke = func(ctx context.Context, methodName string, types []string, args []hessian.Object) (any, error) {
+			return nil, nil
+		}
 
 		var user testUser
 		err := service.InvokeWithType(context.Background(), "getUser", []string{"java.lang.String"}, []hessian.Object{"123"}, user)
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "reply must be a pointer")
+	})
+
+	t.Run("invoke error", func(t *testing.T) {
+		service := NewGenericService("TestService")
+		service.Invoke = func(ctx context.Context, methodName string, types []string, args []hessian.Object) (any, error) {
+			return nil, assert.AnError
+		}
+
+		var user testUser
+		err := service.InvokeWithType(context.Background(), "getUser", []string{"java.lang.String"}, []hessian.Object{"123"}, &user)
+
+		require.Error(t, err)
+		assert.Equal(t, assert.AnError, err)
+	})
+
+	t.Run("deserialization error", func(t *testing.T) {
+		service := NewGenericService("TestService")
+		service.Invoke = func(ctx context.Context, methodName string, types []string, args []hessian.Object) (any, error) {
+			// Return a type that mismatches the target struct
+			return map[string]any{
+				"age": "invalid_age_type", // string cannot be unmarshaled to int
+			}, nil
+		}
+
+		var user testUser
+		err := service.InvokeWithType(context.Background(), "getUser", []string{"java.lang.String"}, []hessian.Object{"123"}, &user)
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to deserialize result")
 	})
 }

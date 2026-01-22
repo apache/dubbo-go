@@ -200,10 +200,10 @@ func (f *genericFilter) OnResponse(_ context.Context, res result.Result, invoker
 	generic := invoker.GetURL().GetParam(constant.GenericKey, constant.GenericSerializationDefault)
 	g := getGeneralizer(generic)
 
-	// Realize the map/slice to the target struct
-	realized, err := g.Realize(data, replyElemType)
+	// Realize the map/slice to the target struct using shared helper
+	realized, err := realizeResult(data, replyElemType, g)
 	if err != nil {
-		logger.Warnf("failed to deserialize generic result to %s: %v", replyElemType.String(), err)
+		logger.Warnf("failed to deserialize generic result: %v", err)
 		return res
 	}
 

@@ -292,3 +292,42 @@ func TestFilter_OnResponse_WithSliceDeserialization(t *testing.T) {
 	assert.Equal(t, "user2", users[1].Name)
 	assert.Equal(t, 25, users[1].Age)
 }
+
+// TestFilter_OnResponse_DeserializationError tests that OnResponse gracefully handles
+// deserialization failures by logging a warning and returning the original result.
+func TestFilter_OnResponse_DeserializationError(t *testing.T) {
+	invokeUrl := common.NewURLWithOptions(
+		common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.GenericKey, constant.GenericSerializationDefault))
+	filter := &genericFilter{}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockInvoker := mock.NewMockInvoker(ctrl)
+	mockInvoker.EXPECT().GetURL().Return(invokeUrl).AnyTimes()
+
+	t.Run("type mismatch - string to int", func(t *testing.T) {
+		var user mockUser
+		inv := invocation.NewRPCInvocationWithOptions(
+			invocation.WithMethodName(constant.Generic),
+			invocation.WithReply(&user),
+		)
+
+		// Return a map with incompatible type (string instead of int for age)
+		mapResult := map[string]any{
+			"name": "testUser",
+			"age":  "not_an_int", // This should cause deserialization to fail
+		}
+		res := &result.RPCResult{Rest: mapResult}
+
+		newRes := filter.OnResponse(context.Background(), res, mockInvoker, inv)
+
+		// OnResponse should return the original result when deserialization fails
+		// The user struct should remain unchanged (zero values)
+		assert.Empty(t, user.Name)
+		assert.Equal(t, 0, user.Age)
+		// The result should still be the original map
+		assert.Equal(t, mapResult, newRes.Result())
+	})
+}
