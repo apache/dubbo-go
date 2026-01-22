@@ -43,9 +43,9 @@ const (
 
 // JavaBeanDescriptor corresponds to org.apache.dubbo.common.beanutil.JavaBeanDescriptor
 type JavaBeanDescriptor struct {
-	ClassName  string                      `json:"className"`
-	Type       int                         `json:"type"`
-	Properties map[interface{}]interface{} `json:"properties"`
+	ClassName  string      `json:"className"`
+	Type       int         `json:"type"`
+	Properties map[any]any `json:"properties"`
 }
 
 // JavaClassName implements hessian.POJO
@@ -72,26 +72,26 @@ func GetBeanGeneralizer() Generalizer {
 // BeanGeneralizer converts objects to/from JavaBeanDescriptor format
 type BeanGeneralizer struct{}
 
-func (g *BeanGeneralizer) Generalize(obj interface{}) (interface{}, error) {
+func (g *BeanGeneralizer) Generalize(obj any) (any, error) {
 	if obj == nil {
 		return nil, nil
 	}
 	return g.toDescriptor(obj), nil
 }
 
-func (g *BeanGeneralizer) Realize(obj interface{}, typ reflect.Type) (interface{}, error) {
+func (g *BeanGeneralizer) Realize(obj any, typ reflect.Type) (any, error) {
 	if obj == nil {
 		return nil, nil
 	}
 	return GetMapGeneralizer().Realize(g.fromDescriptor(obj), typ)
 }
 
-func (g *BeanGeneralizer) GetType(obj interface{}) (string, error) {
+func (g *BeanGeneralizer) GetType(obj any) (string, error) {
 	return hessian2.GetJavaName(obj)
 }
 
 // toDescriptor converts Go object to JavaBeanDescriptor
-func (g *BeanGeneralizer) toDescriptor(obj interface{}) *JavaBeanDescriptor {
+func (g *BeanGeneralizer) toDescriptor(obj any) *JavaBeanDescriptor {
 	if obj == nil {
 		return nil
 	}
@@ -107,7 +107,7 @@ func (g *BeanGeneralizer) toDescriptor(obj interface{}) *JavaBeanDescriptor {
 		className = pojo.JavaClassName()
 	}
 
-	desc := &JavaBeanDescriptor{ClassName: className, Properties: make(map[interface{}]interface{})}
+	desc := &JavaBeanDescriptor{ClassName: className, Properties: make(map[any]any)}
 
 	switch t.Kind() {
 	case reflect.Bool, reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
@@ -146,18 +146,18 @@ func (g *BeanGeneralizer) toDescriptor(obj interface{}) *JavaBeanDescriptor {
 }
 
 // fromDescriptor converts JavaBeanDescriptor to map for MapGeneralizer.Realize
-func (g *BeanGeneralizer) fromDescriptor(obj interface{}) interface{} {
+func (g *BeanGeneralizer) fromDescriptor(obj any) any {
 	desc, ok := obj.(*JavaBeanDescriptor)
 	if !ok {
-		if m, ok := obj.(map[interface{}]interface{}); ok {
-			desc = &JavaBeanDescriptor{Properties: make(map[interface{}]interface{})}
+		if m, ok := obj.(map[any]any); ok {
+			desc = &JavaBeanDescriptor{Properties: make(map[any]any)}
 			if v, ok := m["className"].(string); ok {
 				desc.ClassName = v
 			}
 			if v, ok := m["type"].(int32); ok {
 				desc.Type = int(v)
 			}
-			if v, ok := m["properties"].(map[interface{}]interface{}); ok {
+			if v, ok := m["properties"].(map[any]any); ok {
 				desc.Properties = v
 			}
 		} else {
@@ -171,19 +171,19 @@ func (g *BeanGeneralizer) fromDescriptor(obj interface{}) interface{} {
 	case TypeEnum:
 		return desc.Properties["name"]
 	case TypeArray, TypeCollection:
-		result := make([]interface{}, len(desc.Properties))
+		result := make([]any, len(desc.Properties))
 		for i := 0; i < len(desc.Properties); i++ {
 			result[i] = g.fromDescriptor(desc.Properties[i])
 		}
 		return result
 	case TypeMap:
-		result := make(map[interface{}]interface{})
+		result := make(map[any]any)
 		for k, v := range desc.Properties {
 			result[g.fromDescriptor(k)] = g.fromDescriptor(v)
 		}
 		return result
 	case TypeBean:
-		result := make(map[string]interface{})
+		result := make(map[string]any)
 		if desc.ClassName != "" {
 			result["class"] = desc.ClassName
 		}

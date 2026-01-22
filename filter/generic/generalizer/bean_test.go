@@ -116,7 +116,7 @@ func TestBeanGeneralizer_Realize_Primitive(t *testing.T) {
 
 	desc := &JavaBeanDescriptor{
 		Type:       TypePrimitive,
-		Properties: map[interface{}]interface{}{"value": "hello"},
+		Properties: map[any]any{"value": "hello"},
 	}
 
 	result, err := g.Realize(desc, reflect.TypeOf(""))
