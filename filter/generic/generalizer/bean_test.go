@@ -73,6 +73,29 @@ func TestBeanGeneralizer_Generalize_Nil(t *testing.T) {
 	assert.Nil(t, result)
 }
 
+func TestBeanGeneralizer_Generalize_TypedNilPointer(t *testing.T) {
+	g := GetBeanGeneralizer()
+
+	// Test typed nil pointer (e.g., (*TestAddress)(nil) stored in an any)
+	var addr *TestAddress = nil
+	result, err := g.Generalize(addr)
+	require.NoError(t, err)
+	assert.Nil(t, result)
+
+	// Test typed nil pointer in struct field
+	user := &TestUser{
+		Name:    "John",
+		Age:     30,
+		Address: nil, // typed nil pointer field
+	}
+	result, err = g.Generalize(user)
+	require.NoError(t, err)
+	desc := result.(*JavaBeanDescriptor)
+	assert.Equal(t, TypeBean, desc.Type)
+	// The nil Address field should be nil in properties
+	assert.Nil(t, desc.Properties["address"])
+}
+
 func TestBeanGeneralizer_Generalize_Slice(t *testing.T) {
 	g := GetBeanGeneralizer()
 
@@ -203,4 +226,36 @@ func TestBeanGeneralizer_GetType(t *testing.T) {
 	typ, err := g.GetType(&TestUser{})
 	require.NoError(t, err)
 	assert.Equal(t, "com.test.User", typ)
+}
+
+func TestBeanGeneralizer_GetType_Nil(t *testing.T) {
+	g := GetBeanGeneralizer()
+	typ, err := g.GetType(nil)
+	require.NoError(t, err)
+	assert.Equal(t, "java.lang.Object", typ)
+}
+
+func TestBeanGeneralizer_Realize_ArrayWithInt32Keys(t *testing.T) {
+	g := GetBeanGeneralizer()
+
+	// Simulate JavaBeanDescriptor from Java Hessian with int32 keys
+	// Java Hessian decodes integer keys as int32, not int
+	desc := &JavaBeanDescriptor{
+		Type:      TypeArray,
+		ClassName: "[Ljava.lang.String;",
+		Properties: map[any]any{
+			int32(0): &JavaBeanDescriptor{Type: TypePrimitive, Properties: map[any]any{"value": "a"}},
+			int32(1): &JavaBeanDescriptor{Type: TypePrimitive, Properties: map[any]any{"value": "b"}},
+			int32(2): &JavaBeanDescriptor{Type: TypePrimitive, Properties: map[any]any{"value": "c"}},
+		},
+	}
+
+	realized, err := g.Realize(desc, reflect.TypeOf([]string{}))
+	require.NoError(t, err)
+
+	slice := realized.([]string)
+	assert.Len(t, slice, 3)
+	assert.Equal(t, "a", slice[0])
+	assert.Equal(t, "b", slice[1])
+	assert.Equal(t, "c", slice[2])
 }

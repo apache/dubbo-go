@@ -86,8 +86,17 @@ func (g *BeanGeneralizer) Realize(obj any, typ reflect.Type) (any, error) {
 	return GetMapGeneralizer().Realize(g.fromDescriptor(obj), typ)
 }
 
-func (g *BeanGeneralizer) GetType(obj any) (string, error) {
-	return hessian2.GetJavaName(obj)
+func (g *BeanGeneralizer) GetType(obj any) (typ string, err error) {
+	typ, err = hessian2.GetJavaName(obj)
+	// no error or error is not NilError
+	if err == nil || err != hessian2.NilError {
+		return
+	}
+
+	// fallback to java.lang.Object for nil or unrecognized types
+	typ = "java.lang.Object"
+	err = nil
+	return
 }
 
 // toDescriptor converts Go object to JavaBeanDescriptor
@@ -97,6 +106,10 @@ func (g *BeanGeneralizer) toDescriptor(obj any) *JavaBeanDescriptor {
 	}
 
 	v := reflect.ValueOf(obj)
+	// Handle typed nil pointer (e.g., (*T)(nil) stored in an any)
+	if v.Kind() == reflect.Ptr && v.IsNil() {
+		return nil
+	}
 	for v.Kind() == reflect.Ptr && !v.IsNil() {
 		v = v.Elem()
 	}
@@ -133,8 +146,7 @@ func (g *BeanGeneralizer) toDescriptor(obj any) *JavaBeanDescriptor {
 		desc.Type = TypeBean
 		for i := 0; i < t.NumField(); i++ {
 			if fv := v.Field(i); fv.CanInterface() {
-				name := t.Field(i).Name
-				desc.Properties[string(name[0]|0x20)+name[1:]] = g.toDescriptor(fv.Interface())
+				desc.Properties[toUnexport(t.Field(i).Name)] = g.toDescriptor(fv.Interface())
 			}
 		}
 
@@ -154,8 +166,8 @@ func (g *BeanGeneralizer) fromDescriptor(obj any) any {
 			if v, ok := m["className"].(string); ok {
 				desc.ClassName = v
 			}
-			if v, ok := m["type"].(int32); ok {
-				desc.Type = int(v)
+			if v, ok := toInt(m["type"]); ok {
+				desc.Type = v
 			}
 			if v, ok := m["properties"].(map[any]any); ok {
 				desc.Properties = v
@@ -171,9 +183,22 @@ func (g *BeanGeneralizer) fromDescriptor(obj any) any {
 	case TypeEnum:
 		return desc.Properties["name"]
 	case TypeArray, TypeCollection:
-		result := make([]any, len(desc.Properties))
-		for i := 0; i < len(desc.Properties); i++ {
-			result[i] = g.fromDescriptor(desc.Properties[i])
+		// Normalize numeric keys (int, int32, int64) to indices when rebuilding arrays/collections.
+		// Java Hessian decodes integer keys as int32, so we need to handle type conversion.
+		maxIndex := -1
+		for k := range desc.Properties {
+			if idx, ok := toInt(k); ok && idx > maxIndex {
+				maxIndex = idx
+			}
+		}
+		if maxIndex < 0 {
+			return []any{}
+		}
+		result := make([]any, maxIndex+1)
+		for k, v := range desc.Properties {
+			if idx, ok := toInt(k); ok && idx >= 0 && idx < len(result) {
+				result[idx] = g.fromDescriptor(v)
+			}
 		}
 		return result
 	case TypeMap:
@@ -195,4 +220,19 @@ func (g *BeanGeneralizer) fromDescriptor(obj any) any {
 		return result
 	}
 	return obj
+}
+
+// toInt converts various integer types to int.
+// Returns the converted value and true if successful, otherwise 0 and false.
+func toInt(v any) (int, bool) {
+	switch n := v.(type) {
+	case int:
+		return n, true
+	case int32:
+		return int(n), true
+	case int64:
+		return int(n), true
+	default:
+		return 0, false
+	}
 }
