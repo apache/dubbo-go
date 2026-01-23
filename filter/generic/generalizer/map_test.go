@@ -22,9 +22,12 @@ import (
 	"strconv"
 	"testing"
 	"time"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
