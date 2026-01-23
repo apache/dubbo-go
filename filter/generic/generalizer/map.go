@@ -26,10 +26,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/config"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/hessian2"
-
 	hessian "github.com/apache/dubbo-go-hessian2"
 
 	"github.com/dubbogo/gost/log/logger"
@@ -37,6 +33,12 @@ import (
 	"github.com/mitchellh/mapstructure"
 
 	perrors "github.com/pkg/errors"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/config"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/hessian2"
 )
 
 var (
