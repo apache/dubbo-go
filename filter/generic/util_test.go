@@ -75,9 +75,13 @@ func TestIsMakingAGenericCall(t *testing.T) {
 func TestIsGeneric(t *testing.T) {
 	assert.True(t, isGeneric("true"))
 	assert.True(t, isGeneric("True"))
+	assert.True(t, isGeneric("gson"))
+	assert.True(t, isGeneric("Gson"))
+	assert.True(t, isGeneric("protobuf-json"))
+	assert.True(t, isGeneric("Protobuf-Json"))
 	assert.False(t, isGeneric("false"))
 	assert.False(t, isGeneric(""))
-	assert.False(t, isGeneric("bean")) // 目前代码逻辑仅匹配 "true"
+	assert.False(t, isGeneric("bean"))
 }
 
 func TestGetGeneralizer(t *testing.T) {
@@ -87,6 +91,13 @@ func TestGetGeneralizer(t *testing.T) {
 	g2 := getGeneralizer(constant.GenericSerializationGson)
 	assert.IsType(t, generalizer.GetGsonGeneralizer(), g2)
 
-	g3 := getGeneralizer("unsupported_type")
-	assert.IsType(t, generalizer.GetMapGeneralizer(), g3)
+	g3 := getGeneralizer(constant.GenericSerializationProtobufJson)
+	assert.IsType(t, generalizer.GetProtobufJsonGeneralizer(), g3)
+
+	// test case insensitive
+	g4 := getGeneralizer("Protobuf-Json")
+	assert.IsType(t, generalizer.GetProtobufJsonGeneralizer(), g4)
+
+	g5 := getGeneralizer("unsupported_type")
+	assert.IsType(t, generalizer.GetMapGeneralizer(), g5)
 }
