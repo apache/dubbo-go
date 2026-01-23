@@ -124,7 +124,7 @@ func removeClass(obj any) any {
 	case map[any]any:
 		m := make(map[any]any, len(v))
 		for k, val := range v {
-			if k == "class" {
+			if key, ok := k.(string); ok && key == "class" {
 				continue
 			}
 			m[k] = removeClass(val)
