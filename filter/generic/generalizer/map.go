@@ -23,22 +23,15 @@ import (
 	"strings"
 	"sync"
 	"time"
-)
 
-import (
 	hessian "github.com/apache/dubbo-go-hessian2"
-
 	"github.com/dubbogo/gost/log/logger"
-
 	"github.com/mitchellh/mapstructure"
 
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/hessian2"
+	perrors "github.com/pkg/errors"
 )
 
 var (
@@ -93,6 +86,7 @@ func (g *MapGeneralizer) GetType(obj any) (typ string, err error) {
 	return
 }
 
+// getGenericIncludeClass retrieves "generic.include.class" config value (fallback to true)
 func getGenericIncludeClass() bool {
 	cfgList := config.GetEnvInstance().Configuration()
 	for e := cfgList.Front(); e != nil; e = e.Next() {
@@ -114,6 +108,8 @@ func getGenericIncludeClass() bool {
 	return true
 }
 
+// removeClass recursively removes "class" key from data (returns new copy, no original modify)
+// obj: any data (map[string]any/map[any]any/[]any/basic type)
 func removeClass(obj any) any {
 	switch v := obj.(type) {
 	case map[string]any:
