@@ -74,7 +74,7 @@ func TestGenerateInvocation(t *testing.T) {
 	resp := new(int)
 	opts := &CallOptions{RequestTimeout: "1s", Retries: "2"}
 
-	inv, err := generateInvocation("Echo", []any{"foo", 1}, resp, constant.CallUnary, opts)
+	inv, err := generateInvocation(context.Background(), "Echo", []any{"foo", 1}, resp, constant.CallUnary, opts)
 	require.NoError(t, err)
 
 	timeout, _ := inv.GetAttachment(constant.TimeoutKey)
