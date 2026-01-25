@@ -90,6 +90,8 @@ func (s *GenericService) InvokeWithType(ctx context.Context, methodName string, 
 	}
 
 	// Set the realized value to reply
-	replyValue.Elem().Set(reflect.ValueOf(realized))
+	if realized != nil {
+		replyValue.Elem().Set(reflect.ValueOf(realized))
+	}
 	return nil
 }

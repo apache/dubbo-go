@@ -208,7 +208,9 @@ func (f *genericFilter) OnResponse(_ context.Context, res result.Result, invoker
 	}
 
 	// Set the realized value to reply
-	replyValue.Elem().Set(reflect.ValueOf(realized))
+	if realized != nil {
+		replyValue.Elem().Set(reflect.ValueOf(realized))
+	}
 
 	// Update the result with the deserialized reply
 	res.SetResult(reply)
