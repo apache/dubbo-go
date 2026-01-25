@@ -19,6 +19,7 @@ package generalizer
 
 import (
 	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -35,6 +36,8 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/config"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/hessian2"
 )
 
@@ -54,10 +57,16 @@ type MapGeneralizer struct{}
 
 func (g *MapGeneralizer) Generalize(obj any) (gobj any, err error) {
 	gobj = objToMap(obj)
+	if !getGenericIncludeClass() {
+		gobj = removeClass(gobj)
+	}
 	return
 }
 
 func (g *MapGeneralizer) Realize(obj any, typ reflect.Type) (any, error) {
+	if !getGenericIncludeClass() {
+		obj = removeClass(obj)
+	}
 	newobj := reflect.New(typ).Interface()
 	err := mapstructure.Decode(obj, newobj)
 	if err != nil {
@@ -82,6 +91,61 @@ func (g *MapGeneralizer) GetType(obj any) (typ string, err error) {
 
 	logger.Debugf("the type of object(=%T) couldn't be recognized as a POJO, use the default value(\"%s\")", obj, typ)
 	return
+}
+
+// getGenericIncludeClass retrieves "generic.include.class" config value (fallback to true)
+func getGenericIncludeClass() bool {
+	cfgList := config.GetEnvInstance().Configuration()
+	for e := cfgList.Front(); e != nil; e = e.Next() {
+		conf, ok := e.Value.(*config.InmemoryConfiguration)
+		if !ok {
+			continue
+		}
+
+		if exist, val := conf.GetProperty(constant.GenericIncludeClassKey); exist {
+			parsed, err := strconv.ParseBool(val)
+			if err != nil {
+				logger.Warnf("generic.include.class value %q is invalid, fallback to true", val)
+				return true
+			}
+			return parsed
+		}
+	}
+
+	return true
+}
+
+// removeClass recursively removes "class" key from data (returns new copy, no original modify)
+// obj: any data (map[string]any/map[any]any/[]any/basic type)
+func removeClass(obj any) any {
+	switch v := obj.(type) {
+	case map[string]any:
+		m := make(map[string]any, len(v))
+		for k, val := range v {
+			if k == "class" {
+				continue
+			}
+			m[k] = removeClass(val)
+		}
+		return m
+	case map[any]any:
+		m := make(map[any]any, len(v))
+		for k, val := range v {
+			if key, ok := k.(string); ok && key == "class" {
+				continue
+			}
+			m[k] = removeClass(val)
+		}
+		return m
+	case []any:
+		s := make([]any, 0, len(v))
+		for _, val := range v {
+			s = append(s, removeClass(val))
+		}
+		return s
+	default:
+		return obj
+	}
 }
 
 // objToMap converts an object(any) to a map

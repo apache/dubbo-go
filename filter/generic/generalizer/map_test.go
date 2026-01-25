@@ -19,6 +19,7 @@ package generalizer
 
 import (
 	"reflect"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -26,6 +27,11 @@ import (
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/config"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 type testPlainObj struct {
@@ -247,4 +253,131 @@ func TestNullField(t *testing.T) {
 	rMockParent, ok := r.(mockParent)
 	assert.True(t, ok)
 	assert.Nil(t, rMockParent.Child)
+}
+
+func setGenericIncludeClass(t *testing.T, value *bool) {
+	env := config.GetEnvInstance()
+	if value == nil {
+		env.UpdateAppExternalConfigMap(map[string]string{})
+		env.UpdateExternalConfigMap(map[string]string{})
+		return
+	}
+
+	env.UpdateAppExternalConfigMap(map[string]string{
+		constant.GenericIncludeClassKey: strconv.FormatBool(*value),
+	})
+
+	t.Cleanup(func() {
+		env.UpdateAppExternalConfigMap(map[string]string{})
+		env.UpdateExternalConfigMap(map[string]string{})
+	})
+}
+
+func TestRemoveClass(t *testing.T) {
+	input := map[string]any{
+		"class": "root",
+		"name":  "n",
+		"child": map[any]any{
+			"class": "child",
+			"x":     1,
+			1:       "keep",
+		},
+		"list": []any{
+			map[string]any{"class": "item", "y": 2},
+			"v",
+		},
+	}
+
+	output := removeClass(input).(map[string]any)
+	if _, ok := output["class"]; ok {
+		t.Fatalf("expected root class to be removed")
+	}
+
+	child := output["child"].(map[any]any)
+	if _, ok := child["class"]; ok {
+		t.Fatalf("expected child class to be removed")
+	}
+	assert.Equal(t, "keep", child[1])
+
+	list := output["list"].([]any)
+	item := list[0].(map[string]any)
+	if _, ok := item["class"]; ok {
+		t.Fatalf("expected list item class to be removed")
+	}
+}
+
+func TestGenericIncludeClass_ConfigTrue(t *testing.T) {
+	val := true
+	setGenericIncludeClass(t, &val)
+
+	child := &mockChild{
+		Age:    20,
+		Gender: "male",
+		Email:  "lmc@example.com",
+		Name:   "lmc",
+	}
+	parent := mockParent{
+		Age:    30,
+		Gender: "male",
+		Email:  "xavierniu@example.com",
+		Name:   "xavierniu",
+		Child:  child,
+	}
+
+	m, err := mockMapGeneralizer.Generalize(parent)
+	require.NoError(t, err)
+	mMap := m.(map[string]any)
+	_, ok := mMap["class"]
+	assert.True(t, ok)
+	_, ok = mMap["child"].(map[string]any)["class"]
+	assert.True(t, ok)
+
+	r, err := mockMapGeneralizer.Realize(m, reflect.TypeOf(parent))
+	require.NoError(t, err)
+	rParent, ok := r.(mockParent)
+	assert.True(t, ok)
+	assert.Equal(t, "xavierniu", rParent.Name)
+	assert.Equal(t, 30, rParent.Age)
+	assert.Equal(t, "lmc", rParent.Child.Name)
+	assert.Equal(t, 20, rParent.Child.Age)
+}
+
+func TestGenericIncludeClass_ConfigFalse(t *testing.T) {
+	val := false
+	setGenericIncludeClass(t, &val)
+
+	child := &mockChild{
+		Age:    20,
+		Gender: "male",
+		Email:  "lmc@example.com",
+		Name:   "lmc",
+	}
+	parent := mockParent{
+		Age:    30,
+		Gender: "male",
+		Email:  "xavierniu@example.com",
+		Name:   "xavierniu",
+		Child:  child,
+	}
+
+	m, err := mockMapGeneralizer.Generalize(parent)
+	require.NoError(t, err)
+	mMap := m.(map[string]any)
+	_, ok := mMap["class"]
+	assert.False(t, ok)
+	_, ok = mMap["child"].(map[string]any)["class"]
+	assert.False(t, ok)
+
+	// ensure Realize drops class if provided
+	mMap["class"] = "org.apache.dubbo.mockParent"
+	mMap["child"].(map[string]any)["class"] = "org.apache.dubbo.mockChild"
+
+	r, err := mockMapGeneralizer.Realize(m, reflect.TypeOf(parent))
+	require.NoError(t, err)
+	rParent, ok := r.(mockParent)
+	assert.True(t, ok)
+	assert.Equal(t, "xavierniu", rParent.Name)
+	assert.Equal(t, 30, rParent.Age)
+	assert.Equal(t, "lmc", rParent.Child.Name)
+	assert.Equal(t, 20, rParent.Child.Age)
 }
