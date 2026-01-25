@@ -259,3 +259,54 @@ func TestBeanGeneralizer_Realize_ArrayWithInt32Keys(t *testing.T) {
 	assert.Equal(t, "b", slice[1])
 	assert.Equal(t, "c", slice[2])
 }
+
+// CircularNode is a test struct for circular reference testing
+type CircularNode struct {
+	Name string
+	Next *CircularNode
+}
+
+func TestBeanGeneralizer_Generalize_CircularReference(t *testing.T) {
+	g := GetBeanGeneralizer()
+
+	// Create a circular reference: node -> node (self-referencing)
+	node := &CircularNode{Name: "node1"}
+	node.Next = node
+
+	// Should not panic or infinite loop
+	result, err := g.Generalize(node)
+	require.NoError(t, err)
+	assert.NotNil(t, result)
+
+	desc := result.(*JavaBeanDescriptor)
+	assert.Equal(t, TypeBean, desc.Type)
+	assert.Equal(t, "node1", desc.Properties["name"].(*JavaBeanDescriptor).Properties["value"])
+	// The circular reference should be nil to break the cycle
+	assert.Nil(t, desc.Properties["next"])
+}
+
+func TestBeanGeneralizer_Generalize_MutualCircularReference(t *testing.T) {
+	g := GetBeanGeneralizer()
+
+	// Create mutual circular reference: node1 -> node2 -> node1
+	node1 := &CircularNode{Name: "node1"}
+	node2 := &CircularNode{Name: "node2"}
+	node1.Next = node2
+	node2.Next = node1
+
+	// Should not panic or infinite loop
+	result, err := g.Generalize(node1)
+	require.NoError(t, err)
+	assert.NotNil(t, result)
+
+	desc := result.(*JavaBeanDescriptor)
+	assert.Equal(t, TypeBean, desc.Type)
+	assert.Equal(t, "node1", desc.Properties["name"].(*JavaBeanDescriptor).Properties["value"])
+
+	// node1.Next should be node2
+	node2Desc := desc.Properties["next"].(*JavaBeanDescriptor)
+	assert.Equal(t, "node2", node2Desc.Properties["name"].(*JavaBeanDescriptor).Properties["value"])
+
+	// node2.Next should be nil (circular reference back to node1)
+	assert.Nil(t, node2Desc.Properties["next"])
+}

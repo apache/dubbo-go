@@ -81,7 +81,7 @@ func TestIsGeneric(t *testing.T) {
 	assert.True(t, isGeneric("Protobuf-Json"))
 	assert.False(t, isGeneric("false"))
 	assert.False(t, isGeneric(""))
-	assert.True(t, isGeneric("bean")) // bean serialization is supported
+	assert.True(t, isGeneric("bean"))
 }
 
 func TestGetGeneralizer(t *testing.T) {

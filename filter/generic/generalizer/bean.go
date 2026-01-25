@@ -30,7 +30,11 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/hessian2"
 )
 
-// JavaBeanDescriptor type constants
+// JavaBeanDescriptor type constants.
+// These constants are defined for Java interoperability with org.apache.dubbo.common.beanutil.JavaBeanDescriptor.
+// Note: toDescriptor() (Go → Java) only produces TypePrimitive, TypeArray, TypeMap, and TypeBean,
+// because Go doesn't have native enum or class concepts. However, fromDescriptor() (Java → Go)
+// handles all types including TypeClass, TypeEnum, and TypeCollection for full compatibility.
 const (
 	TypeClass      = 1
 	TypeEnum       = 2
@@ -76,7 +80,7 @@ func (g *BeanGeneralizer) Generalize(obj any) (any, error) {
 	if obj == nil {
 		return nil, nil
 	}
-	return g.toDescriptor(obj), nil
+	return g.toDescriptor(obj, make(map[uintptr]bool)), nil
 }
 
 func (g *BeanGeneralizer) Realize(obj any, typ reflect.Type) (any, error) {
@@ -99,8 +103,8 @@ func (g *BeanGeneralizer) GetType(obj any) (typ string, err error) {
 	return
 }
 
-// toDescriptor converts Go object to JavaBeanDescriptor
-func (g *BeanGeneralizer) toDescriptor(obj any) *JavaBeanDescriptor {
+// toDescriptor converts Go object to JavaBeanDescriptor with circular reference detection
+func (g *BeanGeneralizer) toDescriptor(obj any, visited map[uintptr]bool) *JavaBeanDescriptor {
 	if obj == nil {
 		return nil
 	}
@@ -110,6 +114,16 @@ func (g *BeanGeneralizer) toDescriptor(obj any) *JavaBeanDescriptor {
 	if v.Kind() == reflect.Ptr && v.IsNil() {
 		return nil
 	}
+
+	// Check for circular reference
+	if v.Kind() == reflect.Ptr {
+		ptr := v.Pointer()
+		if visited[ptr] {
+			return nil // circular reference detected, return nil to break the cycle
+		}
+		visited[ptr] = true
+	}
+
 	for v.Kind() == reflect.Ptr && !v.IsNil() {
 		v = v.Elem()
 	}
@@ -132,21 +146,21 @@ func (g *BeanGeneralizer) toDescriptor(obj any) *JavaBeanDescriptor {
 	case reflect.Slice, reflect.Array:
 		desc.Type = TypeArray
 		for i := 0; i < v.Len(); i++ {
-			desc.Properties[i] = g.toDescriptor(v.Index(i).Interface())
+			desc.Properties[i] = g.toDescriptor(v.Index(i).Interface(), visited)
 		}
 
 	case reflect.Map:
 		desc.Type = TypeMap
 		iter := v.MapRange()
 		for iter.Next() {
-			desc.Properties[g.toDescriptor(iter.Key().Interface())] = g.toDescriptor(iter.Value().Interface())
+			desc.Properties[g.toDescriptor(iter.Key().Interface(), visited)] = g.toDescriptor(iter.Value().Interface(), visited)
 		}
 
 	case reflect.Struct:
 		desc.Type = TypeBean
 		for i := 0; i < t.NumField(); i++ {
 			if fv := v.Field(i); fv.CanInterface() {
-				desc.Properties[toUnexport(t.Field(i).Name)] = g.toDescriptor(fv.Interface())
+				desc.Properties[toUnexport(t.Field(i).Name)] = g.toDescriptor(fv.Interface(), visited)
 			}
 		}
 
