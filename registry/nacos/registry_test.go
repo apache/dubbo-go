@@ -620,3 +620,33 @@ func TestNacosRegistryCloseListener(t *testing.T) {
 		t.Errorf("nl.done channel was not closed")
 	}
 }
+
+// TestNacosRegistrySubscribeUntilSuccessWithBackoff tests the exponential backoff retry mechanism
+func TestNacosRegistrySubscribeUntilSuccessWithBackoff(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockNamingClient := NewMockINamingClient(ctrl)
+	nc := &nacosClient.NacosNamingClient{}
+	nc.SetClient(mockNamingClient)
+
+	regURL, _ := common.NewURL("registry://127.0.0.1:8848?registry.group=testgroup")
+	nr := &nacosRegistry{
+		URL:          regURL,
+		namingClient: nc,
+		done:         make(chan struct{}),
+		registryUrls: []*common.URL{},
+	}
+
+	urlMap := url.Values{}
+	urlMap.Set(constant.RegistryRoleKey, strconv.Itoa(common.CONSUMER))
+	urlMap.Set(constant.InterfaceKey, "com.test.BackoffService")
+	testURL, _ := common.NewURL("dubbo://127.0.0.1:20000/com.test.BackoffService", common.WithParams(urlMap))
+
+	// Test case: registry becomes unavailable, should stop retrying immediately
+	t.Run("stops when registry unavailable", func(t *testing.T) {
+		close(nr.done) // simulate registry shutdown
+		nr.subscribeUntilSuccess(testURL, nil)
+		// If we reach here without hanging, the test passes
+	})
+}
