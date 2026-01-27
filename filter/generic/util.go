@@ -18,11 +18,14 @@
 package generic
 
 import (
+	"reflect"
 	"strings"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
+
+	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -67,4 +70,53 @@ func getGeneralizer(generic string) (g generalizer.Generalizer) {
 		g = generalizer.GetMapGeneralizer()
 	}
 	return
+}
+
+// realizeResult deserializes the data into the target type using the provided generalizer.
+// It returns the realized value and any error that occurred during deserialization.
+//
+// Parameters:
+//   - data: the source data to deserialize (typically map[string]any or []any)
+//   - targetType: the reflect.Type of the target struct
+//   - g: the generalizer to use for deserialization
+//
+// Returns:
+//   - the realized value matching targetType
+//   - error if deserialization fails
+func realizeResult(data any, targetType reflect.Type, g generalizer.Generalizer) (any, error) {
+	if data == nil {
+		return nil, nil
+	}
+
+	realized, err := g.Realize(data, targetType)
+	if err != nil {
+		return nil, perrors.Errorf("failed to deserialize result to %s: %v", targetType.String(), err)
+	}
+
+	return realized, nil
+}
+
+// validateReplyPointer checks if the reply is a valid non-nil pointer.
+//
+// Parameters:
+//   - reply: the value to validate
+//
+// Returns:
+//   - the reflect.Value of the reply
+//   - error if validation fails
+func validateReplyPointer(reply any) (reflect.Value, error) {
+	if reply == nil {
+		return reflect.Value{}, perrors.New("reply cannot be nil")
+	}
+
+	replyValue := reflect.ValueOf(reply)
+	if replyValue.Kind() != reflect.Ptr {
+		return reflect.Value{}, perrors.New("reply must be a pointer")
+	}
+
+	if replyValue.IsNil() {
+		return reflect.Value{}, perrors.New("reply cannot be a nil pointer")
+	}
+
+	return replyValue, nil
 }

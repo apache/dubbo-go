@@ -20,6 +20,7 @@ package generic
 
 import (
 	"context"
+	"reflect"
 	"sync"
 )
 
@@ -152,8 +153,67 @@ func (f *genericFilter) Invoke(ctx context.Context, invoker base.Invoker, inv ba
 	return invoker.Invoke(ctx, inv)
 }
 
-// OnResponse dummy process, returns the result directly
-func (f *genericFilter) OnResponse(_ context.Context, result result.Result, _ base.Invoker,
-	_ base.Invocation) result.Result {
-	return result
+// OnResponse deserializes the map result to the target struct if reply is provided.
+// If inv.Reply() is a non-nil pointer to a struct, the map result will be automatically
+// deserialized into it using the appropriate generalizer.
+func (f *genericFilter) OnResponse(_ context.Context, res result.Result, invoker base.Invoker,
+	inv base.Invocation) result.Result {
+	// Only process if this is a generic call and there's no error
+	if res.Error() != nil {
+		return res
+	}
+
+	// Check if this is a generic invocation
+	if !isGeneric(invoker.GetURL().GetParam(constant.GenericKey, "")) {
+		return res
+	}
+
+	// Get the reply from invocation
+	reply := inv.Reply()
+	if reply == nil {
+		return res
+	}
+
+	// Check if reply is a valid pointer
+	replyValue := reflect.ValueOf(reply)
+	if replyValue.Kind() != reflect.Ptr || replyValue.IsNil() {
+		return res
+	}
+
+	// Get the result data
+	data := res.Result()
+	if data == nil {
+		return res
+	}
+
+	// Check if data is a map type that needs to be deserialized
+	dataValue := reflect.ValueOf(data)
+	if dataValue.Kind() != reflect.Map && dataValue.Kind() != reflect.Slice {
+		// If data is not a map or slice, it's already a primitive type, no need to deserialize
+		return res
+	}
+
+	// Get the element type that the pointer points to
+	replyElemType := replyValue.Elem().Type()
+
+	// Get the generalizer based on the generic serialization type
+	generic := invoker.GetURL().GetParam(constant.GenericKey, constant.GenericSerializationDefault)
+	g := getGeneralizer(generic)
+
+	// Realize the map/slice to the target struct using shared helper
+	realized, err := realizeResult(data, replyElemType, g)
+	if err != nil {
+		logger.Warnf("failed to deserialize generic result: %v", err)
+		return res
+	}
+
+	// Set the realized value to reply
+	if realized != nil {
+		replyValue.Elem().Set(reflect.ValueOf(realized))
+	}
+
+	// Update the result with the deserialized reply
+	res.SetResult(reply)
+
+	return res
 }
