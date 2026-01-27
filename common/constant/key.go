@@ -417,6 +417,7 @@ const (
 	GenericSerializationGson         = "gson"
 	GenericSerializationProtobuf     = "protobuf"
 	GenericSerializationProtobufJson = "protobuf-json"
+	GenericSerializationBean         = "bean"
 	GenericIncludeClassKey           = "generic.include.class"
 )
 

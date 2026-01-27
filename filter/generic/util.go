@@ -54,7 +54,8 @@ func isMakingAGenericCall(invoker base.Invoker, invocation base.Invocation) bool
 func isGeneric(generic string) bool {
 	return strings.EqualFold(generic, constant.GenericSerializationDefault) ||
 		strings.EqualFold(generic, constant.GenericSerializationGson) ||
-		strings.EqualFold(generic, constant.GenericSerializationProtobufJson)
+		strings.EqualFold(generic, constant.GenericSerializationProtobufJson) ||
+		strings.EqualFold(generic, constant.GenericSerializationBean)
 }
 
 func getGeneralizer(generic string) (g generalizer.Generalizer) {
@@ -65,6 +66,8 @@ func getGeneralizer(generic string) (g generalizer.Generalizer) {
 		g = generalizer.GetGsonGeneralizer()
 	case strings.EqualFold(generic, constant.GenericSerializationProtobufJson):
 		g = generalizer.GetProtobufJsonGeneralizer()
+	case strings.EqualFold(generic, constant.GenericSerializationBean):
+		g = generalizer.GetBeanGeneralizer()
 	default:
 		logger.Debugf("\"%s\" is not supported, use the default generalizer(MapGeneralizer)", generic)
 		g = generalizer.GetMapGeneralizer()
