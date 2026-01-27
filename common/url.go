@@ -24,6 +24,7 @@ import (
 	"math"
 	"net"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -36,8 +37,6 @@ import (
 	gxset "github.com/dubbogo/gost/container/set"
 
 	"github.com/google/uuid"
-
-	"github.com/jinzhu/copier"
 
 	perrors "github.com/pkg/errors"
 )
@@ -408,8 +407,10 @@ func (c *URL) String() string {
 
 // Key gets key
 func (c *URL) Key() string {
-	buildString := fmt.Sprintf("%s://%s:%s@%s:%s/?interface=%s&group=%s&version=%s",
-		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Service(), c.GetParam(constant.GroupKey, ""), c.GetParam(constant.VersionKey, ""))
+	buildString := fmt.Sprintf(
+		"%s://%s:%s@%s:%s/?interface=%s&group=%s&version=%s",
+		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Service(), c.GetParam(constant.GroupKey, ""), c.GetParam(constant.VersionKey, ""),
+	)
 	return buildString
 }
 
@@ -417,17 +418,21 @@ func (c *URL) Key() string {
 func (c *URL) GetCacheInvokerMapKey() string {
 	urlNew, _ := NewURL(c.PrimitiveURL)
 
-	buildString := fmt.Sprintf("%s://%s:%s@%s:%s/?interface=%s&group=%s&version=%s&timestamp=%s&"+constant.MeshClusterIDKey+"=%s",
+	buildString := fmt.Sprintf(
+		"%s://%s:%s@%s:%s/?interface=%s&group=%s&version=%s&timestamp=%s&"+constant.MeshClusterIDKey+"=%s",
 		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Service(), c.GetParam(constant.GroupKey, ""),
 		c.GetParam(constant.VersionKey, ""), urlNew.GetParam(constant.TimestampKey, ""),
-		c.GetParam(constant.MeshClusterIDKey, ""))
+		c.GetParam(constant.MeshClusterIDKey, ""),
+	)
 	return buildString
 }
 
 // ServiceKey gets a unique key of a service.
 func (c *URL) ServiceKey() string {
-	return ServiceKey(c.GetParam(constant.InterfaceKey, strings.TrimPrefix(c.Path, constant.PathSeparator)),
-		c.GetParam(constant.GroupKey, ""), c.GetParam(constant.VersionKey, ""))
+	return ServiceKey(
+		c.GetParam(constant.InterfaceKey, strings.TrimPrefix(c.Path, constant.PathSeparator)),
+		c.GetParam(constant.GroupKey, ""), c.GetParam(constant.VersionKey, ""),
+	)
 }
 
 func ServiceKey(intf string, group string, version string) string {
@@ -767,10 +772,12 @@ func (c *URL) SetParams(m url.Values) {
 func (c *URL) ToMap() map[string]string {
 	paramsMap := make(map[string]string)
 
-	c.RangeParams(func(key, value string) bool {
-		paramsMap[key] = value
-		return true
-	})
+	c.RangeParams(
+		func(key, value string) bool {
+			paramsMap[key] = value
+			return true
+		},
+	)
 
 	if c.Protocol != "" {
 		paramsMap[PROTOCOL] = c.Protocol
@@ -845,11 +852,11 @@ func (c *URL) MergeURL(anotherUrl *URL) *URL {
 			}
 
 			methodsKey := "methods." + method + "." + paramKey
-			//if len(mergedURL.GetParam(methodsKey, "")) == 0 {
+			// if len(mergedURL.GetParam(methodsKey, "")) == 0 {
 			if v := anotherUrl.GetParam(methodsKey, ""); len(v) > 0 {
 				params[methodsKey] = []string{v}
 			}
-			//}
+			// }
 			mergedURL.Methods[i] = method
 		}
 	}
@@ -867,23 +874,59 @@ func (c *URL) MergeURL(anotherUrl *URL) *URL {
 	return mergedURL
 }
 
+// CloneWithFilter - Clone the URL with parameter filtering
+// excludeParams: the set of parameters to exclude from the cloned URL
+// reserveParams: the set of parameters to retain in the cloned URL
+func (c *URL) CloneWithFilter(excludeParams *gxset.HashSet, reserveParams []string) *URL {
+	newURL := &URL{
+		Protocol:     c.Protocol,
+		Location:     c.Location,
+		Ip:           c.Ip,
+		Port:         c.Port,
+		PrimitiveURL: c.PrimitiveURL,
+		Path:         c.Path,
+		Username:     c.Username,
+		Password:     c.Password,
+		Methods:      append(make([]string, 0), c.Methods...),
+		attributes:   make(map[string]any),
+		params:       url.Values{},
+	}
+
+	// Copy and filter params based on excludeParams or reserveParams
+	c.RangeParams(
+		func(key, value string) bool {
+			// If the param is in excludeParams or not in reserveParams, skip it
+			if excludeParams != nil && excludeParams.Contains(key) {
+				return true
+			}
+			if len(reserveParams) > 0 && !slices.Contains(reserveParams, key) {
+				return true
+			}
+			// Set the param if it passes the filter
+			newURL.SetParam(key, value)
+			return true
+		},
+	)
+
+	// Copy attributes
+	c.RangeAttributes(
+		func(key string, value any) bool {
+			newURL.SetAttribute(key, value)
+			return true
+		},
+	)
+
+	// Copy SubURL if it exists
+	if c.SubURL != nil {
+		newURL.SubURL = c.SubURL.Clone()
+	}
+
+	return newURL
+}
+
 // Clone will copy the URL
 func (c *URL) Clone() *URL {
-	newURL := &URL{}
-	if err := copier.Copy(newURL, c); err != nil {
-		// this is impossible
-		return newURL
-	}
-	newURL.params = url.Values{}
-	c.RangeParams(func(key, value string) bool {
-		newURL.SetParam(key, value)
-		return true
-	})
-	c.RangeAttributes(func(key string, value any) bool {
-		newURL.SetAttribute(key, value)
-		return true
-	})
-	return newURL
+	return c.CloneWithFilter(nil, nil)
 }
 
 func (c *URL) RangeAttributes(f func(key string, value any) bool) {
@@ -897,19 +940,7 @@ func (c *URL) RangeAttributes(f func(key string, value any) bool) {
 }
 
 func (c *URL) CloneExceptParams(excludeParams *gxset.HashSet) *URL {
-	newURL := &URL{}
-	if err := copier.Copy(newURL, c); err != nil {
-		// this is impossible
-		return newURL
-	}
-	newURL.params = url.Values{}
-	c.RangeParams(func(key, value string) bool {
-		if !excludeParams.Contains(key) {
-			newURL.SetParam(key, value)
-		}
-		return true
-	})
-	return newURL
+	return c.CloneWithFilter(excludeParams, nil)
 }
 
 func (c *URL) Compare(comp cm.Comparator) int {
@@ -927,24 +958,7 @@ func (c *URL) Compare(comp cm.Comparator) int {
 
 // CloneWithParams Copy URL based on the reserved parameter's keys.
 func (c *URL) CloneWithParams(reserveParams []string) *URL {
-	params := url.Values{}
-	for _, reserveParam := range reserveParams {
-		v := c.GetParam(reserveParam, "")
-		if len(v) != 0 {
-			params.Set(reserveParam, v)
-		}
-	}
-
-	return NewURLWithOptions(
-		WithProtocol(c.Protocol),
-		WithUsername(c.Username),
-		WithPassword(c.Password),
-		WithIp(c.Ip),
-		WithPort(c.Port),
-		WithPath(c.Path),
-		WithMethods(c.Methods),
-		WithParams(params),
-	)
+	return c.CloneWithFilter(nil, reserveParams)
 }
 
 // IsEquals compares if two URLs equals with each other. Excludes are all parameter keys which should ignored.
