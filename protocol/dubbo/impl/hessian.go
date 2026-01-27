@@ -23,20 +23,15 @@ import (
 	"strconv"
 	"strings"
 	"time"
-)
 
-import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/apache/dubbo-go-hessian2/java_exception"
-
 	"github.com/dubbogo/gost/log/logger"
 
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/hessian2"
+	perrors "github.com/pkg/errors"
 )
 
 type HessianSerializer struct{}
@@ -85,7 +80,11 @@ func marshalResponse(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 
 			if response.Exception != nil { // throw error
 				_ = encoder.Encode(resWithException)
-				if t, ok := response.Exception.(java_exception.Throwabler); ok {
+				if g, ok := response.Exception.(*hessian2.GenericException); ok {
+					_ = encoder.Encode(java_exception.NewDubboGenericException(g.ExceptionClass, g.ExceptionMessage))
+				} else if g, ok := response.Exception.(hessian2.GenericException); ok {
+					_ = encoder.Encode(java_exception.NewDubboGenericException(g.ExceptionClass, g.ExceptionMessage))
+				} else if t, ok := response.Exception.(java_exception.Throwabler); ok {
 					_ = encoder.Encode(t)
 				} else {
 					_ = encoder.Encode(java_exception.NewThrowable(response.Exception.Error()))
@@ -300,7 +299,9 @@ func unmarshalResponseBody(body []byte, p *DubboPackage) error {
 			}
 		}
 
-		if e, ok := expt.(error); ok {
+		if g, ok := hessian2.ToGenericException(expt); ok {
+			response.Exception = g
+		} else if e, ok := expt.(error); ok {
 			response.Exception = e
 		} else {
 			response.Exception = perrors.Errorf("got exception: %+v", expt)

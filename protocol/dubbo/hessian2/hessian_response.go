@@ -23,12 +23,9 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-)
 
-import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/apache/dubbo-go-hessian2/java_exception"
-
 	"github.com/dubbogo/gost/log/logger"
 
 	perrors "github.com/pkg/errors"
@@ -39,6 +36,51 @@ type DubboResponse struct {
 	RspObj      any
 	Exception   error
 	Attachments map[string]any
+}
+
+// GenericException keeps Java exception class and message.
+type GenericException struct {
+	ExceptionClass   string
+	ExceptionMessage string
+}
+
+// Error returns a readable error string.
+func (e GenericException) Error() string {
+	if e.ExceptionClass == "" {
+		return e.ExceptionMessage
+	}
+	if e.ExceptionMessage == "" {
+		return e.ExceptionClass
+	}
+	return "java exception: " + e.ExceptionClass + " - " + e.ExceptionMessage
+}
+
+// ToGenericException converts decoded exception to GenericException when possible.
+func ToGenericException(expt any) (*GenericException, bool) {
+	switch v := expt.(type) {
+	case *GenericException:
+		return v, true
+	case GenericException:
+		return &v, true
+	case *java_exception.DubboGenericException:
+		return &GenericException{ExceptionClass: v.ExceptionClass, ExceptionMessage: v.ExceptionMessage}, true
+	case java_exception.DubboGenericException:
+		return &GenericException{ExceptionClass: v.ExceptionClass, ExceptionMessage: v.ExceptionMessage}, true
+	case java_exception.Throwabler:
+		return &GenericException{ExceptionClass: v.JavaClassName(), ExceptionMessage: v.Error()}, true
+	case string:
+		return parseLegacyException(v), true
+	}
+	return nil, false
+}
+
+func parseLegacyException(exStr string) *GenericException {
+	const prefix = "java exception:"
+	msg := strings.TrimSpace(exStr)
+	if strings.HasPrefix(msg, prefix) {
+		msg = strings.TrimSpace(strings.TrimPrefix(msg, prefix))
+	}
+	return &GenericException{ExceptionClass: "java.lang.Exception", ExceptionMessage: msg}
 }
 
 // NewResponse create a new DubboResponse
@@ -117,7 +159,11 @@ func packResponse(header DubboHeader, ret any) ([]byte, error) {
 				if err != nil {
 					return nil, perrors.Errorf("encoding response failed: %v", err)
 				}
-				if t, ok := response.Exception.(java_exception.Throwabler); ok {
+				if g, ok := response.Exception.(*GenericException); ok {
+					err = encoder.Encode(java_exception.NewDubboGenericException(g.ExceptionClass, g.ExceptionMessage))
+				} else if g, ok := response.Exception.(GenericException); ok {
+					err = encoder.Encode(java_exception.NewDubboGenericException(g.ExceptionClass, g.ExceptionMessage))
+				} else if t, ok := response.Exception.(java_exception.Throwabler); ok {
 					err = encoder.Encode(t)
 				} else {
 					err = encoder.Encode(java_exception.NewThrowable(response.Exception.Error()))
@@ -203,7 +249,9 @@ func unpackResponseBody(decoder *hessian.Decoder, resp any) error {
 			}
 		}
 
-		if e, ok := expt.(error); ok {
+		if g, ok := ToGenericException(expt); ok {
+			response.Exception = g
+		} else if e, ok := expt.(error); ok {
 			response.Exception = e
 		} else {
 			response.Exception = perrors.Errorf("got exception: %+v", expt)
