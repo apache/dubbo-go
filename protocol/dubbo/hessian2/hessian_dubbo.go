@@ -249,6 +249,13 @@ func (h *HessianCodec) ReadBody(rspObj any) error {
 		} else {
 			rsp.Exception = perrors.Errorf("java exception:%v", exception)
 		}
+		if g, ok := ToGenericException(exception); ok {
+			rsp.Exception = g
+		} else if e, ok := exception.(error); ok {
+			rsp.Exception = e
+		} else {
+			rsp.Exception = perrors.Errorf("java exception:%v", exception)
+		}
 		return nil
 	case PackageRequest | PackageHeartbeat, PackageResponse | PackageHeartbeat:
 	case PackageRequest:
