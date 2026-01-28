@@ -36,6 +36,9 @@ import (
 )
 
 var (
+	// emptyURL is a global placeholder to prevent nil pointer dereferences during invoker destruction.
+	// It is returned by GetURL() when the invoker is destroyed, ensuring that concurrent readers receive a safe, initialized object.
+	emptyURL            = common.NewURLWithOptions(common.WithProtocol("empty"))
 	ErrClientClosed     = perrors.New("remoting client has closed")
 	ErrNoReply          = perrors.New("request need @response")
 	ErrDestroyedInvoker = perrors.New("request Destroyed invoker")
@@ -71,6 +74,9 @@ func NewBaseInvoker(url *common.URL) *BaseInvoker {
 
 // GetURL gets base invoker URL
 func (bi *BaseInvoker) GetURL() *common.URL {
+	if bi.url == nil {
+		return emptyURL
+	}
 	return bi.url
 }
 

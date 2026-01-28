@@ -72,7 +72,10 @@ func TestBaseInvokerWithFullURL(t *testing.T) {
 	ivk.Destroy()
 	assert.False(t, ivk.IsAvailable())
 	assert.True(t, ivk.IsDestroyed())
-	assert.Nil(t, ivk.GetURL())
+
+	safeUrl := ivk.GetURL()
+	assert.NotNil(t, safeUrl)
+	assert.Equal(t, "empty", safeUrl.Protocol)
 
 	// Test String method after destroy (url is nil)
 	str = ivk.String()
