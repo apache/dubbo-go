@@ -151,7 +151,7 @@ func (h *HessianCodec) ReadHeader(header *DubboHeader) error {
 		}
 	}
 
-	//// read header
+	// read header
 
 	if buf[0] != MAGIC_HIGH && buf[1] != MAGIC_LOW {
 		return ErrIllegalPackage
