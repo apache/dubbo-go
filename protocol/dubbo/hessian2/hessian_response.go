@@ -20,13 +20,13 @@ package hessian2
 import (
 	"encoding/binary"
 	"math"
-	"reflect")
+	"reflect"
+	"strconv"
+	"strings"
 
-import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 	"github.com/apache/dubbo-go-hessian2/java_exception"
 
-o-hessian2/java_exception"
 	"github.com/dubbogo/gost/log/logger"
 
 	perrors "github.com/pkg/errors"
@@ -41,7 +41,11 @@ type DubboResponse struct {
 
 // GenericException keeps Java exception class and message.
 type GenericException struct {
-	Excep// Error returns a readable error string.
+	ExceptionClass   string
+	ExceptionMessage string
+}
+
+// Error returns a readable error string.
 func (e GenericException) Error() string {
 	if e.ExceptionClass == "" {
 		return e.ExceptionMessage
@@ -50,20 +54,21 @@ func (e GenericException) Error() string {
 		return e.ExceptionClass
 	}
 	return "java exception: " + e.ExceptionClass + " - " + e.ExceptionMessage
-}eption: " + e.ExceptionClass + " - " + e.ExceptionMessage
 }
 
 // ToGenericException converts decoded exception to GenericException when possible.
 func ToGenericException(expt any) (*GenericException, bool) {
 	switch v := expt.(type) {
-	case *Gen	case *java_exception.DubboGenericException:
+	case *GenericException:
+		return v, true
+	case GenericException:
+		return &v, true
+	case *java_exception.DubboGenericException:
 		return &GenericException{ExceptionClass: v.ExceptionClass, ExceptionMessage: v.ExceptionMessage}, true
 	case java_exception.DubboGenericException:
 		return &GenericException{ExceptionClass: v.ExceptionClass, ExceptionMessage: v.ExceptionMessage}, true
 	case java_exception.Throwabler:
 		return &GenericException{ExceptionClass: v.JavaClassName(), ExceptionMessage: v.Error()}, true
-	case string:
-		return parseLegacyException(v), true), true), trueptionMessage: v.Error()}, true
 	case string:
 		return parseLegacyException(v), true
 	}
