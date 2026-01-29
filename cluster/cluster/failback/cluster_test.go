@@ -145,16 +145,15 @@ func TestFailbackRetryFailed(t *testing.T) {
 	mockFailedResult := &result.RPCResult{Err: perrors.New("error")}
 	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockFailedResult)
 
-	//
 	var wg sync.WaitGroup
 	retries := 2
 	wg.Add(retries)
 
 	// add retry call that eventually failed.
 	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(func(context.Context, base.Invocation) result.Result {
-	// with exponential backoff, retries happen with increasing intervals starting from ~1s
-	wg.Done()
-	return mockFailedResult
+		// with exponential backoff, retries happen with increasing intervals starting from ~1s
+		wg.Done()
+		return mockFailedResult
 	}).MinTimes(retries)
 
 	// first call should failed.
