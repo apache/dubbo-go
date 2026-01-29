@@ -131,7 +131,7 @@ func TestFailbackRetryOneSuccess(t *testing.T) {
 	assert.Equal(t, int64(0), clusterInvoker.taskList.Len())
 }
 
-// failed firstly, and failed again after ech retry time.
+// failed firstly, and failed again after ech retry time
 func TestFailbackRetryFailed(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
