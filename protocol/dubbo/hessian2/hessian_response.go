@@ -160,13 +160,14 @@ func packResponse(header DubboHeader, ret any) ([]byte, error) {
 				if err != nil {
 					return nil, perrors.Errorf("encoding response failed: %v", err)
 				}
-				if g, ok := response.Exception.(*GenericException); ok {
-					err = encoder.Encode(java_exception.NewDubboGenericException(g.ExceptionClass, g.ExceptionMessage))
-				} else if g, ok := response.Exception.(GenericException); ok {
-					err = encoder.Encode(java_exception.NewDubboGenericException(g.ExceptionClass, g.ExceptionMessage))
-				} else if t, ok := response.Exception.(java_exception.Throwabler); ok {
-					err = encoder.Encode(t)
-				} else {
+				switch ex := response.Exception.(type) {
+				case *GenericException:
+					err = encoder.Encode(java_exception.NewDubboGenericException(ex.ExceptionClass, ex.ExceptionMessage))
+				case GenericException:
+					err = encoder.Encode(java_exception.NewDubboGenericException(ex.ExceptionClass, ex.ExceptionMessage))
+				case java_exception.Throwabler:
+					err = encoder.Encode(ex)
+				default:
 					err = encoder.Encode(java_exception.NewThrowable(response.Exception.Error()))
 				}
 				if err != nil {
