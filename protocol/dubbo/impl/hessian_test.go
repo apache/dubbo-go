@@ -21,19 +21,13 @@ import (
 	"errors"
 	"testing"
 	"time"
-)
 
-import (
-	hessian "github.com/apache/dubbo-go-hessian2"
-	"github.com/apache/dubbo-go-hessian2/java_exception"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/hessian2"
+	hessian "github.com/apache/dubbo-go-hessian2"
+	"github.com/apache/dubbo-go-hessian2/java_exception"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -496,7 +490,7 @@ func TestMarshalResponse(t *testing.T) {
 			Body: &ResponsePayload{
 				Exception: hessian2.GenericException{
 					ExceptionClass:   "com.example.UserNotFoundException",
-					ExceptionMessage: "用户不存在",
+					ExceptionMessage: "user not found",
 				},
 				Attachments: map[string]any{},
 			},
@@ -516,10 +510,10 @@ func TestMarshalResponse(t *testing.T) {
 		switch ge := expt.(type) {
 		case *java_exception.DubboGenericException:
 			assert.Equal(t, "com.example.UserNotFoundException", ge.ExceptionClass)
-			assert.Equal(t, "用户不存在", ge.ExceptionMessage)
+			assert.Equal(t, "user not found", ge.ExceptionMessage)
 		case java_exception.DubboGenericException:
 			assert.Equal(t, "com.example.UserNotFoundException", ge.ExceptionClass)
-			assert.Equal(t, "用户不存在", ge.ExceptionMessage)
+			assert.Equal(t, "user not found", ge.ExceptionMessage)
 		default:
 			require.Failf(t, "unexpected exception type", "%T", expt)
 		}
@@ -696,7 +690,7 @@ func TestUnmarshalResponseBody(t *testing.T) {
 	t.Run("response with generic exception", func(t *testing.T) {
 		encoder := hessian.NewEncoder()
 		_ = encoder.Encode(RESPONSE_WITH_EXCEPTION)
-		_ = encoder.Encode(java_exception.NewDubboGenericException("com.example.UserNotFoundException", "用户不存在"))
+		_ = encoder.Encode(java_exception.NewDubboGenericException("com.example.UserNotFoundException", "user not found"))
 
 		pkg := &DubboPackage{}
 		err := unmarshalResponseBody(encoder.Buffer(), pkg)
@@ -706,7 +700,7 @@ func TestUnmarshalResponseBody(t *testing.T) {
 		ge, ok := response.Exception.(*hessian2.GenericException)
 		require.True(t, ok)
 		assert.Equal(t, "com.example.UserNotFoundException", ge.ExceptionClass)
-		assert.Equal(t, "用户不存在", ge.ExceptionMessage)
+		assert.Equal(t, "user not found", ge.ExceptionMessage)
 	})
 
 	t.Run("response with exception and attachments", func(t *testing.T) {
@@ -762,7 +756,7 @@ func TestUnmarshalResponseBody(t *testing.T) {
 	t.Run("response with legacy exception string", func(t *testing.T) {
 		encoder := hessian.NewEncoder()
 		_ = encoder.Encode(RESPONSE_WITH_EXCEPTION)
-		_ = encoder.Encode("java exception: 用户不存在")
+		_ = encoder.Encode("java exception: user not found")
 
 		pkg := &DubboPackage{}
 		err := unmarshalResponseBody(encoder.Buffer(), pkg)
@@ -772,7 +766,7 @@ func TestUnmarshalResponseBody(t *testing.T) {
 		ge, ok := response.Exception.(*hessian2.GenericException)
 		require.True(t, ok)
 		assert.Equal(t, "java.lang.Exception", ge.ExceptionClass)
-		assert.Equal(t, "用户不存在", ge.ExceptionMessage)
+		assert.Equal(t, "user not found", ge.ExceptionMessage)
 	})
 
 	t.Run("response with invalid attachments", func(t *testing.T) {

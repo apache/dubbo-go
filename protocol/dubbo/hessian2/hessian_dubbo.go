@@ -21,9 +21,7 @@ import (
 	"bufio"
 	"encoding/binary"
 	"time"
-)
 
-import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 
 	perrors "github.com/pkg/errors"
@@ -240,21 +238,14 @@ func (h *HessianCodec) ReadBody(rspObj any) error {
 		}
 		rsp, ok := rspObj.(*DubboResponse)
 		if !ok {
-			return perrors.Errorf("java exception:%v", exception)
+			return perrors.Errorf("java exception: %v", exception)
 		}
 		if g, ok := ToGenericException(exception); ok {
 			rsp.Exception = g
 		} else if e, ok := exception.(error); ok {
 			rsp.Exception = e
 		} else {
-			rsp.Exception = perrors.Errorf("java exception:%v", exception)
-		}
-		if g, ok := ToGenericException(exception); ok {
-			rsp.Exception = g
-		} else if e, ok := exception.(error); ok {
-			rsp.Exception = e
-		} else {
-			rsp.Exception = perrors.Errorf("java exception:%v", exception)
+			rsp.Exception = perrors.Errorf("java exception: %v", exception)
 		}
 		return nil
 	case PackageRequest | PackageHeartbeat, PackageResponse | PackageHeartbeat:
