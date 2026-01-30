@@ -48,6 +48,13 @@ type rpcCommonMetrics struct {
 	rtMilliseconds                metrics.RtVec
 	rtMillisecondsQuantiles       metrics.QuantileMetricVec
 	rtMillisecondsAggregate       metrics.RtVec
+
+	// Granular error metrics
+	requestsTimeoutTotal            metrics.CounterVec
+	requestsLimitTotal              metrics.CounterVec
+	requestsServiceUnavailableTotal metrics.CounterVec
+	requestsBusinessFailedTotal     metrics.CounterVec
+	requestsUnknownFailedTotal      metrics.CounterVec
 }
 
 // buildMetricSet will call init functions to initialize the metricSet
@@ -84,6 +91,13 @@ func (pm *providerMetrics) init(registry metrics.MetricRegistry) {
 		metrics.NewMetricKey("dubbo_provider_rt_milliseconds_p95", "The total response time spent by providers processing 95% of requests"),
 		metrics.NewMetricKey("dubbo_provider_rt_milliseconds_p99", "The total response time spent by providers processing 99% of requests"),
 	}, []float64{0.5, 0.9, 0.95, 0.99})
+
+	// Granular error metrics
+	pm.requestsTimeoutTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey("dubbo_provider_requests_timeout_total", "Total Timeout Failed Requests"))
+	pm.requestsLimitTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey("dubbo_provider_requests_limit_total", "Total Limit Failed Requests"))
+	pm.requestsServiceUnavailableTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey("dubbo_provider_requests_failed_service_unavailable_total", "Total Service Unavailable Failed Requests"))
+	pm.requestsBusinessFailedTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey("dubbo_provider_requests_business_failed_total", "Total Failed Business Requests"))
+	pm.requestsUnknownFailedTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey("dubbo_provider_requests_unknown_failed_total", "Total Unknown Failed Requests"))
 }
 
 func (cm *consumerMetrics) init(registry metrics.MetricRegistry) {
@@ -109,4 +123,11 @@ func (cm *consumerMetrics) init(registry metrics.MetricRegistry) {
 		metrics.NewMetricKey("dubbo_consumer_rt_milliseconds_p95", "The total response time spent by consumers processing 95% of requests"),
 		metrics.NewMetricKey("dubbo_consumer_rt_milliseconds_p99", "The total response time spent by consumers processing 99% of requests"),
 	}, []float64{0.5, 0.9, 0.95, 0.99})
+
+	// Granular error metrics
+	cm.requestsTimeoutTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey("dubbo_consumer_requests_timeout_total", "Total Timeout Failed Requests"))
+	cm.requestsLimitTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey("dubbo_consumer_requests_limit_total", "Total Limit Failed Requests"))
+	cm.requestsServiceUnavailableTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey("dubbo_consumer_requests_failed_service_unavailable_total", "Total Service Unavailable Failed Requests"))
+	cm.requestsBusinessFailedTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey("dubbo_consumer_requests_business_failed_total", "Total Failed Business Requests"))
+	cm.requestsUnknownFailedTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey("dubbo_consumer_requests_unknown_failed_total", "Total Unknown Failed Requests"))
 }
