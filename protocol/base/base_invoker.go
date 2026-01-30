@@ -35,10 +35,14 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
+const (
+	protocolDestroyed = "dubbo-internal-destroyed"
+)
+
 var (
 	// emptyURL is a global placeholder to prevent nil pointer dereferences during invoker destruction.
 	// It is returned by GetURL() when the invoker is destroyed, ensuring that concurrent readers receive a safe, initialized object.
-	emptyURL            = common.NewURLWithOptions(common.WithProtocol("empty"))
+	emptyURL            = common.NewURLWithOptions(common.WithProtocol(protocolDestroyed))
 	ErrClientClosed     = perrors.New("remoting client has closed")
 	ErrNoReply          = perrors.New("request need @response")
 	ErrDestroyedInvoker = perrors.New("request Destroyed invoker")
@@ -56,16 +60,15 @@ type Invoker interface {
 
 // BaseInvoker provides default invoker implements Invoker
 type BaseInvoker struct {
-	url       *common.URL
+	url       uatomic.Pointer[common.URL]
 	available uatomic.Bool
 	destroyed uatomic.Bool
 }
 
 // NewBaseInvoker creates a new BaseInvoker
 func NewBaseInvoker(url *common.URL) *BaseInvoker {
-	ivk := &BaseInvoker{
-		url: url,
-	}
+	ivk := &BaseInvoker{}
+	ivk.url.Store(url)
 	ivk.available.Store(true)
 	ivk.destroyed.Store(false)
 
@@ -74,10 +77,11 @@ func NewBaseInvoker(url *common.URL) *BaseInvoker {
 
 // GetURL gets base invoker URL
 func (bi *BaseInvoker) GetURL() *common.URL {
-	if bi.url == nil {
+	u := bi.url.Load()
+	if u == nil {
 		return emptyURL
 	}
-	return bi.url
+	return u
 }
 
 // IsAvailable gets available flag
@@ -100,13 +104,13 @@ func (bi *BaseInvoker) Destroy() {
 	logger.Infof("Destroy invoker: %s", bi.GetURL())
 	bi.destroyed.Store(true)
 	bi.available.Store(false)
-	bi.url = nil
+	bi.url.Store(nil)
 }
 
 func (bi *BaseInvoker) String() string {
-	if bi.url != nil {
+	if u := bi.url.Load(); u != nil {
 		return fmt.Sprintf("invoker{protocol: %s, host: %s:%s, path: %s}",
-			bi.url.Protocol, bi.url.Ip, bi.url.Port, bi.url.Path)
+			u.Protocol, u.Ip, u.Port, u.Path)
 	}
 	return fmt.Sprintf("%#v", bi)
 }
