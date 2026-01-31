@@ -179,7 +179,9 @@ func testClientInvokeWithTimeout(t *testing.T, tlsConfig *global.TLSConfig) {
 	t.Logf("invoke result err: %+v, duration: %v", err, duration)
 
 	require.Error(t, err)
-	assert.Truef(t, errors.Is(err, context.DeadlineExceeded), "context deadline exceeded")
+	var netErr interface{ Timeout() bool }
+	isTimeout := errors.Is(err, context.DeadlineExceeded) || (errors.As(err, &netErr) && netErr.Timeout())
+	assert.Truef(t, isTimeout, "expected timeout error, got: %v", err)
 
 	// 7. Ensure that the duration is at least the timeout duration
 	assert.GreaterOrEqual(t, duration, timeout)

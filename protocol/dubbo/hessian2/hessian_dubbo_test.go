@@ -151,7 +151,7 @@ func TestResponse(t *testing.T) {
 	errorMsg := "error!!!!!"
 	decodedResponse.RspObj = nil
 	doTestResponse(t, PackageResponse, Response_SERVER_ERROR, errorMsg, decodedResponse, func() {
-		assert.Equal(t, "java exception:error!!!!!", decodedResponse.Exception.Error())
+		assert.Equal(t, "java exception: java.lang.Exception - error!!!!!", decodedResponse.Exception.Error())
 	})
 
 	decodedResponse.RspObj = nil

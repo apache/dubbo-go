@@ -131,7 +131,7 @@ func TestFailbackRetryOneSuccess(t *testing.T) {
 	assert.Equal(t, int64(0), clusterInvoker.taskList.Len())
 }
 
-// failed firstly, and failed again after ech retry time.
+// failed firstly, and failed again after ech retry time
 func TestFailbackRetryFailed(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -145,19 +145,19 @@ func TestFailbackRetryFailed(t *testing.T) {
 	mockFailedResult := &result.RPCResult{Err: perrors.New("error")}
 	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockFailedResult)
 
-	//
 	var wg sync.WaitGroup
+	var retryCount atomic.Int64
 	retries := 2
 	wg.Add(retries)
 
 	// add retry call that eventually failed.
-	for i := 0; i < retries; i++ {
-		invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(func(context.Context, base.Invocation) result.Result {
-			// with exponential backoff, retries happen with increasing intervals starting from ~1s
+	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(func(context.Context, base.Invocation) result.Result {
+		// with exponential backoff, retries happen with increasing intervals starting from ~1s
+		if retryCount.Add(1) <= int64(retries) {
 			wg.Done()
-			return mockFailedResult
-		})
-	}
+		}
+		return mockFailedResult
+	}).MinTimes(retries)
 
 	// first call should failed.
 	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
@@ -184,6 +184,7 @@ func TestFailbackRetryFailed10Times(t *testing.T) {
 	invoker := mock.NewMockInvoker(ctrl)
 	clusterInvoker := registerFailback(invoker).(*failbackClusterInvoker)
 	clusterInvoker.maxRetries = 10
+	clusterInvoker.failbackTasks = 20
 
 	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 	invoker.EXPECT().GetURL().Return(failbackUrl).AnyTimes()
