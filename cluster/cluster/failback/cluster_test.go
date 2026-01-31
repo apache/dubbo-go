@@ -131,7 +131,7 @@ func TestFailbackRetryOneSuccess(t *testing.T) {
 	assert.Equal(t, int64(0), clusterInvoker.taskList.Len())
 }
 
-// failed firstly, and failed again after ech retry time.
+// failed firstly, and failed again after each retry time.
 func TestFailbackRetryFailed(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -145,19 +145,16 @@ func TestFailbackRetryFailed(t *testing.T) {
 	mockFailedResult := &result.RPCResult{Err: perrors.New("error")}
 	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockFailedResult)
 
-	//
-	var wg sync.WaitGroup
-	retries := 2
-	wg.Add(retries)
+	// Use atomic counter to safely track retries across goroutines.
+	// With exponential backoff and randomization factor, timing is non-deterministic.
+	var retryCount int64
+	targetRetries := int64(2)
 
-	// add retry call that eventually failed.
-	for i := 0; i < retries; i++ {
-		invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(func(context.Context, base.Invocation) result.Result {
-			// with exponential backoff, retries happen with increasing intervals starting from ~1s
-			wg.Done()
-			return mockFailedResult
-		})
-	}
+	// add retry calls that eventually failed.
+	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(func(context.Context, base.Invocation) result.Result {
+		atomic.AddInt64(&retryCount, 1)
+		return mockFailedResult
+	}).MinTimes(int(targetRetries))
 
 	// first call should failed.
 	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
@@ -165,7 +162,11 @@ func TestFailbackRetryFailed(t *testing.T) {
 	assert.Nil(t, result.Result())
 	assert.Empty(t, result.Attachments())
 
-	wg.Wait()
+	// Wait for at least targetRetries to complete
+	for atomic.LoadInt64(&retryCount) < targetRetries {
+		time.Sleep(100 * time.Millisecond)
+	}
+
 	time.Sleep(time.Second)
 	// with exponential backoff, after 2 failed retries the task is re-queued for next attempt
 	assert.GreaterOrEqual(t, clusterInvoker.taskList.Len(), int64(1))
