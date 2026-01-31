@@ -186,6 +186,7 @@ func TestFailbackRetryFailed10Times(t *testing.T) {
 	invoker := mock.NewMockInvoker(ctrl)
 	clusterInvoker := registerFailback(invoker).(*failbackClusterInvoker)
 	clusterInvoker.maxRetries = 10
+	clusterInvoker.failbackTasks = 20
 
 	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 	invoker.EXPECT().GetURL().Return(failbackUrl).AnyTimes()
