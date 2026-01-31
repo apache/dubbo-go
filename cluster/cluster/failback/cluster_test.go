@@ -162,14 +162,15 @@ func TestFailbackRetryFailed(t *testing.T) {
 	assert.Nil(t, result.Result())
 	assert.Empty(t, result.Attachments())
 
-	// Wait for at least targetRetries to complete
-	for atomic.LoadInt64(&retryCount) < targetRetries {
-		time.Sleep(100 * time.Millisecond)
-	}
+	// Wait for at least targetRetries to complete, with bounded timeout to avoid hanging tests
+	require.Eventually(t, func() bool {
+		return atomic.LoadInt64(&retryCount) >= targetRetries
+	}, 10*time.Second, 100*time.Millisecond)
 
-	time.Sleep(time.Second)
-	// with exponential backoff, after 2 failed retries the task is re-queued for next attempt
-	assert.GreaterOrEqual(t, clusterInvoker.taskList.Len(), int64(1))
+	// Wait for task to be re-queued after retries (with timeout)
+	require.Eventually(t, func() bool {
+		return clusterInvoker.taskList.Len() >= int64(1)
+	}, 5*time.Second, 100*time.Millisecond)
 
 	invoker.EXPECT().Destroy().Return()
 	clusterInvoker.Destroy()
@@ -213,13 +214,15 @@ func TestFailbackRetryFailed10Times(t *testing.T) {
 		assert.Empty(t, result.Attachments())
 	}
 
-	// Wait for at least 10 retries to complete
-	for atomic.LoadInt64(&retryCount) < 10 {
-		time.Sleep(100 * time.Millisecond)
-	}
-	time.Sleep(time.Second) // in order to ensure checkRetry have done
-	// With exponential backoff, tasks are re-queued after each retry
-	assert.GreaterOrEqual(t, clusterInvoker.taskList.Len(), int64(1))
+	// Wait for at least 10 retries to complete, with bounded timeout
+	require.Eventually(t, func() bool {
+		return atomic.LoadInt64(&retryCount) >= 10
+	}, 30*time.Second, 100*time.Millisecond)
+
+	// Wait for tasks to be re-queued after retries
+	require.Eventually(t, func() bool {
+		return clusterInvoker.taskList.Len() >= int64(1)
+	}, 5*time.Second, 100*time.Millisecond)
 
 	invoker.EXPECT().Destroy().Return()
 	clusterInvoker.Destroy()
