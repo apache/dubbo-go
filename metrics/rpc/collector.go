@@ -18,13 +18,10 @@
 package rpc
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
+	"github.com/dubbogo/gost/log/logger"
 )
 
 var (
@@ -172,27 +169,37 @@ func (c *rpcCollector) incRequestsFailedByType(role string, labels map[string]st
 		switch errType {
 		case ErrorTypeTimeout:
 			c.metricSet.provider.requestsTimeoutTotal.Inc(labels)
+			c.metricSet.provider.requestsTimeoutTotalAggregate.Inc(labels)
 		case ErrorTypeLimit:
 			c.metricSet.provider.requestsLimitTotal.Inc(labels)
+			c.metricSet.provider.requestsLimitTotalAggregate.Inc(labels)
 		case ErrorTypeServiceUnavailable:
 			c.metricSet.provider.requestsServiceUnavailableTotal.Inc(labels)
+			c.metricSet.provider.requestsServiceUnavailableTotalAggregate.Inc(labels)
 		case ErrorTypeBusinessFailed:
 			c.metricSet.provider.requestsBusinessFailedTotal.Inc(labels)
+			c.metricSet.provider.requestsBusinessFailedTotalAggregate.Inc(labels)
 		default:
 			c.metricSet.provider.requestsUnknownFailedTotal.Inc(labels)
+			c.metricSet.provider.requestsUnknownFailedTotalAggregate.Inc(labels)
 		}
 	case constant.SideConsumer:
 		switch errType {
 		case ErrorTypeTimeout:
 			c.metricSet.consumer.requestsTimeoutTotal.Inc(labels)
+			c.metricSet.consumer.requestsTimeoutTotalAggregate.Inc(labels)
 		case ErrorTypeLimit:
 			c.metricSet.consumer.requestsLimitTotal.Inc(labels)
+			c.metricSet.consumer.requestsLimitTotalAggregate.Inc(labels)
 		case ErrorTypeServiceUnavailable:
 			c.metricSet.consumer.requestsServiceUnavailableTotal.Inc(labels)
+			c.metricSet.consumer.requestsServiceUnavailableTotalAggregate.Inc(labels)
 		case ErrorTypeBusinessFailed:
 			c.metricSet.consumer.requestsBusinessFailedTotal.Inc(labels)
+			c.metricSet.consumer.requestsBusinessFailedTotalAggregate.Inc(labels)
 		default:
 			c.metricSet.consumer.requestsUnknownFailedTotal.Inc(labels)
+			c.metricSet.consumer.requestsUnknownFailedTotalAggregate.Inc(labels)
 		}
 	}
 }
