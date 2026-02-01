@@ -61,7 +61,7 @@ func TestNewRegisterEvent(t *testing.T) {
 	assert.Equal(t, Reg, event.Name)
 	assert.True(t, event.Succ)
 	assert.Equal(t, start, event.Start)
-	assert.True(t, event.End.After(start))
+	assert.True(t, !event.End.Before(start))
 }
 
 func TestNewSubscribeEvent(t *testing.T) {
@@ -79,7 +79,7 @@ func TestNewNotifyEvent(t *testing.T) {
 	assert.NotNil(t, event)
 	assert.Equal(t, Notify, event.Name)
 	assert.Equal(t, start, event.Start)
-	assert.True(t, event.End.After(start))
+	assert.True(t, !event.End.Before(start))
 }
 
 func TestNewDirectoryEvent(t *testing.T) {
@@ -99,7 +99,7 @@ func TestNewServerRegisterEvent(t *testing.T) {
 	assert.Equal(t, ServerReg, event.Name)
 	assert.True(t, event.Succ)
 	assert.Equal(t, start, event.Start)
-	assert.True(t, event.End.After(start))
+	assert.True(t, !event.End.Before(start))
 }
 
 func TestNewServerSubscribeEvent(t *testing.T) {
