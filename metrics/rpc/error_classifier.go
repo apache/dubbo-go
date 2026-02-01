@@ -35,6 +35,10 @@ const (
 	ErrorTypeServiceUnavailable
 	// ErrorTypeBusinessFailed is for business logic exceptions (CodeBizError)
 	ErrorTypeBusinessFailed
+	// ErrorTypeNetworkFailure is for network failure exceptions (CodeInternal)
+	ErrorTypeNetworkFailure
+	// ErrorTypeCodec is for codec errors (CodeInternal)
+	ErrorTypeCodec
 )
 
 // classifyError classifies an error based on triple protocol error codes.
@@ -43,7 +47,7 @@ func classifyError(err error) ErrorType {
 	if err == nil {
 		return ErrorTypeUnknown
 	}
-
+	// TODO: Support dubbo protocol error classification
 	// Get the error code from triple protocol error
 	code := triple_protocol.CodeOf(err)
 
