@@ -18,6 +18,10 @@
 package global
 
 import (
+	"reflect"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
@@ -51,6 +55,23 @@ func DefaultRouterConfig() *RouterConfig {
 type ConditionRule struct {
 	From ConditionRuleFrom `yaml:"from" json:"from,omitempty" property:"from"`
 	To   []ConditionRuleTo `yaml:"to" json:"to,omitempty" property:"to"`
+}
+
+// Equal checks if two ConditionRule instances are equal.
+// It treats nil and empty To slices as equal by comparing their lengths.
+func (x *ConditionRule) Equal(t *ConditionRule) bool {
+	if !reflect.DeepEqual(x.From, t.From) {
+		return false
+	}
+	if len(x.To) != len(t.To) {
+		return false
+	}
+	for i := range x.To {
+		if !reflect.DeepEqual(x.To[i], t.To[i]) {
+			return false
+		}
+	}
+	return true
 }
 
 type ConditionRuleFrom struct {

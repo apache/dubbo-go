@@ -19,7 +19,6 @@ package condition
 
 import (
 	"fmt"
-	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -394,7 +393,7 @@ func removeDuplicates(rules []*global.ConditionRule) {
 			continue
 		}
 		for j := i + 1; j < len(rules); j++ {
-			if rules[j] != nil && reflect.DeepEqual(rules[i], rules[j]) {
+			if rules[j] != nil && rules[i].Equal(rules[j]) {
 				rules[j] = nil
 			}
 		}
