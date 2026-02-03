@@ -89,12 +89,12 @@ func (bi *BaseInvoker) Invoke(context context.Context, invocation Invocation) re
 	return &result.RPCResult{}
 }
 
-// Destroy changes available and destroyed flag and release the url's allocated memory
+// Destroy marks the invoker as destroyed and unavailable.
+// Keep the URL to avoid nil dereference during in-flight filter OnResponse handling.
 func (bi *BaseInvoker) Destroy() {
 	logger.Infof("Destroy invoker: %s", bi.GetURL())
 	bi.destroyed.Store(true)
 	bi.available.Store(false)
-	bi.url = nil
 }
 
 func (bi *BaseInvoker) String() string {

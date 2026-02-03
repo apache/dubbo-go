@@ -72,11 +72,12 @@ func TestBaseInvokerWithFullURL(t *testing.T) {
 	ivk.Destroy()
 	assert.False(t, ivk.IsAvailable())
 	assert.True(t, ivk.IsDestroyed())
-	assert.Nil(t, ivk.GetURL())
+	assert.NotNil(t, ivk.GetURL())
 
-	// Test String method after destroy (url is nil)
+	// Test String method after destroy (url should still be available)
 	str = ivk.String()
-	assert.Contains(t, str, "BaseInvoker")
+	assert.Contains(t, str, "dubbo")
+	assert.Contains(t, str, "localhost")
 }
 
 func TestBaseInvokerInvoke(t *testing.T) {
