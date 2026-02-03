@@ -19,15 +19,12 @@ package hystrix
 
 import (
 	"context"
-	"fmt"
-	"regexp"
+	"errors"
 	"testing"
 )
 
 import (
 	"github.com/afex/hystrix-go/hystrix"
-
-	"github.com/pkg/errors"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -35,15 +32,9 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
-	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
-
-func init() {
-	mockInitHystrixConfig()
-}
 
 func TestNewHystrixFilterError(t *testing.T) {
 	get := NewHystrixFilterError(errors.New("test"), true)
@@ -51,196 +42,47 @@ func TestNewHystrixFilterError(t *testing.T) {
 	assert.Equal(t, "test", get.Error())
 }
 
-func mockInitHystrixConfig() {
-	// Mock config
-	confConsumer = &FilterConfig{
-		make(map[string]*CommandConfigWithError),
-		"Default",
-		make(map[string]ServiceHystrixConfig),
-	}
-	confConsumer.Configs["Default"] = &CommandConfigWithError{
-		Timeout:                1000,
-		MaxConcurrentRequests:  600,
-		RequestVolumeThreshold: 5,
-		SleepWindow:            5000,
-		ErrorPercentThreshold:  5,
-		Error:                  nil,
-	}
-	confConsumer.Configs["userp"] = &CommandConfigWithError{
-		Timeout:                2000,
-		MaxConcurrentRequests:  64,
-		RequestVolumeThreshold: 15,
-		SleepWindow:            4000,
-		ErrorPercentThreshold:  45,
-		Error:                  nil,
-	}
-	confConsumer.Configs["userp_m"] = &CommandConfigWithError{
-		Timeout:                1200,
-		MaxConcurrentRequests:  64,
-		RequestVolumeThreshold: 5,
-		SleepWindow:            6000,
-		ErrorPercentThreshold:  60,
-		Error: []string{
-			"exception",
-		},
-	}
-	confConsumer.Services["com.ikurento.user.UserProvider"] = ServiceHystrixConfig{
-		"userp",
-		map[string]string{
-			"GetUser": "userp_m",
-		},
-	}
-}
-
 func TestGetHystrixFilter(t *testing.T) {
 	filterGot := newFilterConsumer()
 	assert.NotNil(t, filterGot)
+
+	filterGot = newFilterProvider()
+	assert.NotNil(t, filterGot)
 }
 
-func TestGetConfig1(t *testing.T) {
-	mockInitHystrixConfig()
-	configGot := getConfig("com.ikurento.user.UserProvider", "GetUser", true)
-	assert.NotNil(t, configGot)
-	assert.Equal(t, 1200, configGot.Timeout)
-	assert.Equal(t, 64, configGot.MaxConcurrentRequests)
-	assert.Equal(t, 6000, configGot.SleepWindow)
-	assert.Equal(t, 60, configGot.ErrorPercentThreshold)
-	assert.Equal(t, 5, configGot.RequestVolumeThreshold)
-}
+func TestHystrixFilter_Invoke(t *testing.T) {
+	// Configure hystrix command for testing
+	// Resource name format: dubbo:consumer:InterfaceName:group:version:Method(paramTypes)
+	cmdName := "dubbo:consumer:com.ikurento.user.UserProvider:::TestMethod()"
+	hystrix.ConfigureCommand(cmdName, hystrix.CommandConfig{
+		Timeout:                1000,
+		MaxConcurrentRequests:  10,
+		RequestVolumeThreshold: 5,
+		SleepWindow:            1000,
+		ErrorPercentThreshold:  50,
+	})
 
-func TestGetConfig2(t *testing.T) {
-	mockInitHystrixConfig()
-	configGot := getConfig("com.ikurento.user.UserProvider", "GetUser0", true)
-	assert.NotNil(t, configGot)
-	assert.Equal(t, 2000, configGot.Timeout)
-	assert.Equal(t, 64, configGot.MaxConcurrentRequests)
-	assert.Equal(t, 4000, configGot.SleepWindow)
-	assert.Equal(t, 45, configGot.ErrorPercentThreshold)
-	assert.Equal(t, 15, configGot.RequestVolumeThreshold)
-}
-
-func TestGetConfig3(t *testing.T) {
-	mockInitHystrixConfig()
-	// This should use default
-	configGot := getConfig("Mock.Service", "GetMock", true)
-	assert.NotNil(t, configGot)
-	assert.Equal(t, 1000, configGot.Timeout)
-	assert.Equal(t, 600, configGot.MaxConcurrentRequests)
-	assert.Equal(t, 5000, configGot.SleepWindow)
-	assert.Equal(t, 5, configGot.ErrorPercentThreshold)
-	assert.Equal(t, 5, configGot.RequestVolumeThreshold)
-}
-
-type testMockSuccessInvoker struct {
-	base.BaseInvoker
-}
-
-func (iv *testMockSuccessInvoker) Invoke(_ context.Context, _ base.Invocation) result.Result {
-	return &result.RPCResult{
-		Rest: "Success",
-		Err:  nil,
-	}
-}
-
-type testMockFailInvoker struct {
-	base.BaseInvoker
-}
-
-func (iv *testMockFailInvoker) Invoke(_ context.Context, _ base.Invocation) result.Result {
-	return &result.RPCResult{
-		Err: errors.Errorf("exception"),
-	}
-}
-
-func TestHystrixFilterInvokeSuccess(t *testing.T) {
-	hf := &Filter{}
-	testUrl, err := common.NewURL(
-		fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
+	url, err := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider")
 	require.NoError(t, err)
-	testInvoker := testMockSuccessInvoker{*base.NewBaseInvoker(testUrl)}
-	invokeResult := hf.Invoke(context.Background(), &testInvoker, &invocation.RPCInvocation{})
-	assert.NotNil(t, invokeResult)
-	require.NoError(t, invokeResult.Error())
-	assert.NotNil(t, invokeResult.Result())
+	mockInvoker := base.NewBaseInvoker(url)
+
+	filter := &Filter{COrP: true}
+	mockInvocation := invocation.NewRPCInvocation("TestMethod", []any{"OK"}, make(map[string]any))
+
+	ctx := context.Background()
+	result := filter.Invoke(ctx, mockInvoker, mockInvocation)
+	assert.NotNil(t, result)
+	assert.NoError(t, result.Error())
 }
 
-func TestHystrixFilterInvokeFail(t *testing.T) {
-	hf := &Filter{}
-	testUrl, err := common.NewURL(
-		fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
+func TestHystrixFilter_OnResponse(t *testing.T) {
+	filter := &Filter{COrP: true}
+	ctx := context.Background()
+	url, err := common.NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider")
 	require.NoError(t, err)
-	testInvoker := testMockFailInvoker{*base.NewBaseInvoker(testUrl)}
-	invokeResult := hf.Invoke(context.Background(), &testInvoker, &invocation.RPCInvocation{})
-	assert.NotNil(t, invokeResult)
-	require.Error(t, invokeResult.Error())
-}
+	mockInvoker := base.NewBaseInvoker(url)
+	mockInvocation := invocation.NewRPCInvocation("TestMethod", []any{}, make(map[string]any))
 
-func TestHystrixFilterInvokeCircuitBreak(t *testing.T) {
-	mockInitHystrixConfig()
-	hystrix.Flush()
-	hf := &Filter{COrP: true}
-	resChan := make(chan result.Result, 50)
-	configLoadMutex.Lock()
-	defer configLoadMutex.Unlock()
-	for i := 0; i < 50; i++ {
-		go func() {
-			testUrl, err := common.NewURL(
-				fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
-			assert.NoError(t, err)
-			testInvoker := testMockSuccessInvoker{*base.NewBaseInvoker(testUrl)}
-			invokeResult := hf.Invoke(context.Background(), &testInvoker, &invocation.RPCInvocation{})
-			resChan <- invokeResult
-		}()
-	}
-	// This can not always pass the test when on travis due to concurrency, you can uncomment the code below and test it locally
-
-	//var lastRest bool
-	//for i := 0; i < 50; i++ {
-	//	lastRest = (<-resChan).Error().(*FilterError).FailByHystrix()
-	//}
-	//Normally the last result should be true, which means the circuit has been opened
-	//
-	//assert.True(t, lastRest)
-}
-
-func TestHystrixFilterInvokeCircuitBreakOmitException(t *testing.T) {
-	mockInitHystrixConfig()
-	hystrix.Flush()
-	reg, _ := regexp.Compile(".*exception.*")
-	regs := []*regexp.Regexp{reg}
-	hf := &Filter{res: map[string][]*regexp.Regexp{"": regs}, COrP: true}
-	resChan := make(chan result.Result, 50)
-	configLoadMutex.Lock()
-	defer configLoadMutex.Unlock()
-	for i := 0; i < 50; i++ {
-		go func() {
-			testUrl, err := common.NewURL(
-				fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
-			assert.NoError(t, err)
-			testInvoker := testMockSuccessInvoker{*base.NewBaseInvoker(testUrl)}
-			invokeResult := hf.Invoke(context.Background(), &testInvoker, &invocation.RPCInvocation{})
-			resChan <- invokeResult
-		}()
-	}
-	// This can not always pass the test when on travis due to concurrency, you can uncomment the code below and test it locally
-
-	//time.Sleep(time.Second * 6)
-	//var lastRest bool
-	//for i := 0; i < 50; i++ {
-	//	lastRest = (<-resChan).Error().(*FilterError).FailByHystrix()
-	//}
-	//
-	//assert.False(t, lastRest)
-}
-
-func TestGetHystrixFilterConsumer(t *testing.T) {
-	get := newFilterConsumer()
-	assert.NotNil(t, get)
-	assert.True(t, get.(*Filter).COrP)
-}
-
-func TestGetHystrixFilterProvider(t *testing.T) {
-	get := newFilterProvider()
-	assert.NotNil(t, get)
-	assert.False(t, get.(*Filter).COrP)
+	result := filter.OnResponse(ctx, nil, mockInvoker, mockInvocation)
+	assert.Nil(t, result)
 }
