@@ -36,8 +36,10 @@ const (
 	// ErrorTypeBusinessFailed is for business logic exceptions (CodeBizError)
 	ErrorTypeBusinessFailed
 	// ErrorTypeNetworkFailure is for network failure exceptions (CodeInternal)
+	// TODO: Map appropriate internal/network error codes to this type when available.
 	ErrorTypeNetworkFailure
 	// ErrorTypeCodec is for codec errors (CodeInternal)
+	// TODO: Map appropriate internal/codec error codes to this type when available.
 	ErrorTypeCodec
 )
 
