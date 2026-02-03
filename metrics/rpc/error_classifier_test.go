@@ -137,13 +137,13 @@ func TestClassifyError_Unknown(t *testing.T) {
 
 func TestErrorType_Values(t *testing.T) {
 	// Verify ErrorType constants have expected values
-	assert.Equal(t, ErrorType(0), ErrorTypeUnknown)
-	assert.Equal(t, ErrorType(1), ErrorTypeTimeout)
-	assert.Equal(t, ErrorType(2), ErrorTypeLimit)
-	assert.Equal(t, ErrorType(3), ErrorTypeServiceUnavailable)
-	assert.Equal(t, ErrorType(4), ErrorTypeBusinessFailed)
-	assert.Equal(t, ErrorType(5), ErrorTypeNetworkFailure)
-	assert.Equal(t, ErrorType(6), ErrorTypeCodec)
+	assert.Equal(t, ErrorTypeUnknown, ErrorType(0))
+	assert.Equal(t, ErrorTypeTimeout, ErrorType(1))
+	assert.Equal(t, ErrorTypeLimit, ErrorType(2))
+	assert.Equal(t, ErrorTypeServiceUnavailable, ErrorType(3))
+	assert.Equal(t, ErrorTypeBusinessFailed, ErrorType(4))
+	assert.Equal(t, ErrorTypeNetworkFailure, ErrorType(5))
+	assert.Equal(t, ErrorTypeCodec, ErrorType(6))
 }
 
 func TestClassifyError_AllErrorTypesClassification(t *testing.T) {
