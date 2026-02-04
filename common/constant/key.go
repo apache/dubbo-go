@@ -450,6 +450,8 @@ const (
 	LoggerFileMaxAgeKey     = "logger.file.max-age"
 	LoggerFileLocalTimeKey  = "logger.file.local-time"
 	LoggerFileCompressKey   = "logger.file.compress"
+	LoggerTraceEnabledKey     = "logger.trace-integration.enabled"
+	LoggerTraceRecordErrorKey = "logger.trace-integration.record-error-to-span"
 )
 
 // metrics key
