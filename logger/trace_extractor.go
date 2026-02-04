@@ -38,12 +38,7 @@ func ExtractTraceFields(ctx context.Context) TraceFields {
 		return TraceFields{}
 	}
 
-	span := trace.SpanFromContext(ctx)
-	if span == nil {
-		return TraceFields{}
-	}
-
-	spanCtx := span.SpanContext()
+	spanCtx := trace.SpanContextFromContext(ctx)
 	if !spanCtx.IsValid() {
 		return TraceFields{}
 	}
@@ -60,10 +55,6 @@ func HasTrace(ctx context.Context) bool {
 		return false
 	}
 
-	span := trace.SpanFromContext(ctx)
-	if span == nil {
-		return false
-	}
-
-	return span.SpanContext().IsValid()
+	spanCtx := trace.SpanContextFromContext(ctx)
+	return spanCtx.IsValid()
 }

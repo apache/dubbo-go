@@ -19,6 +19,7 @@ package logrus
 
 import (
 	"context"
+	"errors"
 	"fmt"
 )
 
@@ -140,7 +141,7 @@ func (l *LogrusCtxLogger) CtxError(ctx context.Context, args ...any) {
 	}
 
 	if l.recordErrorToSpan {
-		l.recordErrorToSpanIfPresent(ctx, "%v", args...)
+		l.recordErrorToSpanIfPresent(ctx, "%s", fmt.Sprint(args...))
 	}
 }
 
@@ -156,5 +157,5 @@ func (l *LogrusCtxLogger) recordErrorToSpanIfPresent(ctx context.Context, templa
 
 	msg := fmt.Sprintf(template, args...)
 	span.SetStatus(codes.Error, msg)
-	span.RecordError(fmt.Errorf(msg))
+	span.RecordError(errors.New(msg))
 }

@@ -139,7 +139,7 @@ func (l *ZapCtxLogger) CtxError(ctx context.Context, args ...any) {
 	}
 
 	if l.recordErrorToSpan {
-		l.recordErrorToSpanIfPresent(ctx, "%v", args...)
+		l.recordErrorToSpanIfPresent(ctx, "%s", fmt.Sprint(args...))
 	}
 }
 
