@@ -19,7 +19,9 @@ package logger
 
 import (
 	"context"
+)
 
+import (
 	"github.com/natefinch/lumberjack"
 
 	"go.uber.org/zap"

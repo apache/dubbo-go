@@ -29,6 +29,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"go.opentelemetry.io/otel/codes"
+
 	"go.opentelemetry.io/otel/trace"
 )
 

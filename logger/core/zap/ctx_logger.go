@@ -26,6 +26,7 @@ import (
 	dubbogoLogger "github.com/dubbogo/gost/log/logger"
 
 	"go.opentelemetry.io/otel/codes"
+
 	"go.opentelemetry.io/otel/trace"
 
 	"go.uber.org/zap"

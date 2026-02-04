@@ -28,6 +28,7 @@ import (
 	dubbogoLogger "github.com/dubbogo/gost/log/logger"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/otel/sdk/trace"
 
@@ -59,9 +60,9 @@ func TestZapCtxLogger_CtxInfof_WithTrace(t *testing.T) {
 	ctxLogger.CtxInfof(ctx, "test message")
 
 	// Parse log output
-	var logEntry map[string]interface{}
+	var logEntry map[string]any
 	err := json.Unmarshal(buf.Bytes(), &logEntry)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Verify log contains message
 	assert.Equal(t, "test message", logEntry["msg"])
@@ -90,9 +91,9 @@ func TestZapCtxLogger_CtxInfof_WithoutTrace(t *testing.T) {
 	ctx := context.Background()
 	ctxLogger.CtxInfof(ctx, "test message")
 
-	var logEntry map[string]interface{}
+	var logEntry map[string]any
 	err := json.Unmarshal(buf.Bytes(), &logEntry)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Verify log contains message but no trace fields
 	assert.Equal(t, "test message", logEntry["msg"])

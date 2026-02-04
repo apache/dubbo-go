@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/otel/sdk/trace"
+
 	oteltrace "go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/noop"
 )
@@ -47,7 +48,7 @@ func TestExtractTraceFields_WithValidSpan(t *testing.T) {
 }
 
 func TestExtractTraceFields_WithNilContext(t *testing.T) {
-	fields := ExtractTraceFields(nil)
+	fields := ExtractTraceFields(context.TODO())
 
 	assert.Empty(t, fields.TraceID)
 	assert.Empty(t, fields.SpanID)
@@ -84,7 +85,7 @@ func TestHasTrace_WithValidSpan(t *testing.T) {
 }
 
 func TestHasTrace_WithNilContext(t *testing.T) {
-	assert.False(t, HasTrace(nil))
+	assert.False(t, HasTrace(context.TODO()))
 }
 
 func TestHasTrace_WithoutSpan(t *testing.T) {
