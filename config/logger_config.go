@@ -51,6 +51,18 @@ type LoggerConfig struct {
 
 	// logger file
 	File *File `yaml:"file"`
+
+	// trace integration configuration
+	TraceIntegration *TraceIntegrationConfig `yaml:"trace-integration"`
+}
+
+// TraceIntegrationConfig configures the integration between logging and OpenTelemetry tracing.
+type TraceIntegrationConfig struct {
+	// whether to enable trace integration (inject traceId, spanId into logs)
+	Enabled *bool `default:"false" yaml:"enabled"`
+
+	// whether to record error logs to span
+	RecordErrorToSpan *bool `default:"true" yaml:"record-error-to-span"`
 }
 
 type File struct {
@@ -112,6 +124,17 @@ func (l *LoggerConfig) toURL() *common.URL {
 		common.WithParamsValue(constant.LoggerFileMaxAgeKey, strconv.Itoa(l.File.MaxAge)),
 		common.WithParamsValue(constant.LoggerFileCompressKey, strconv.FormatBool(*l.File.Compress)),
 	)
+
+	// Add trace integration parameters if configured
+	if l.TraceIntegration != nil {
+		if l.TraceIntegration.Enabled != nil {
+			url.AddParam(constant.LoggerTraceEnabledKey, strconv.FormatBool(*l.TraceIntegration.Enabled))
+		}
+		if l.TraceIntegration.RecordErrorToSpan != nil {
+			url.AddParam(constant.LoggerTraceRecordErrorKey, strconv.FormatBool(*l.TraceIntegration.RecordErrorToSpan))
+		}
+	}
+
 	return url
 }
 
