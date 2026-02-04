@@ -381,7 +381,7 @@ type handlerConfig struct {
 	CompressionPools            map[string]*compressionPool
 	CompressionNames            []string
 	Codecs                      map[string]Codec
-	ExpectedCodecName           string
+	FallbackCodecName           string
 	CompressMinBytes            int
 	Interceptor                 Interceptor
 	Procedure                   string
@@ -446,7 +446,7 @@ func (c *handlerConfig) newProtocolHandlers(streamType StreamType) []protocolHan
 			Spec:              c.newSpec(streamType),
 			Codecs:            codecs,
 			CompressionPools:  compressors,
-			ExpectedCodecName: c.ExpectedCodecName,
+			FallbackCodecName: c.FallbackCodecName,
 			// config content
 			CompressMinBytes:            c.CompressMinBytes,
 			BufferPool:                  c.BufferPool,

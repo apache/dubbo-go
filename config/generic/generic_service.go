@@ -15,28 +15,18 @@
  * limitations under the License.
  */
 
+// Package generic provides type aliases for backward compatibility.
+// Deprecated: Use dubbo.apache.org/dubbo-go/v3/filter/generic instead.
 package generic
 
 import (
-	"context"
+	"dubbo.apache.org/dubbo-go/v3/filter/generic"
 )
 
-import (
-	hessian "github.com/apache/dubbo-go-hessian2"
-)
+// GenericService is an alias for backward compatibility.
+// Deprecated: Use dubbo.apache.org/dubbo-go/v3/filter/generic.GenericService instead.
+type GenericService = generic.GenericService
 
-// GenericService uses for generic invoke for service call
-type GenericService struct {
-	Invoke       func(ctx context.Context, methodName string, types []string, args []hessian.Object) (any, error) `dubbo:"$invoke"`
-	referenceStr string
-}
-
-// NewGenericService returns a GenericService instance
-func NewGenericService(referenceStr string) *GenericService {
-	return &GenericService{referenceStr: referenceStr}
-}
-
-// Reference gets referenceStr from GenericService
-func (u *GenericService) Reference() string {
-	return u.referenceStr
-}
+// NewGenericService is an alias for backward compatibility.
+// Deprecated: Use dubbo.apache.org/dubbo-go/v3/filter/generic.NewGenericService instead.
+var NewGenericService = generic.NewGenericService

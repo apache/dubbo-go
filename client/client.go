@@ -26,6 +26,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/filter/generic"
 	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
@@ -128,6 +129,35 @@ func (cli *Client) NewService(service any, opts ...ReferenceOption) (*Connection
 	finalOpts = append(finalOpts, opts...)
 
 	return cli.DialWithService(interfaceName, service, finalOpts...)
+}
+
+// NewGenericService creates a GenericService for making generic calls without pre-generated stubs.
+// The referenceStr parameter specifies the service interface name (e.g., "org.apache.dubbo.samples.UserProvider").
+//
+// Example usage:
+//
+//	genericService, err := cli.NewGenericService("org.apache.dubbo.samples.UserProvider",
+//	    client.WithURL("tri://127.0.0.1:50052"),
+//	)
+//	if err != nil {
+//	    panic(err)
+//	}
+//	result, err := genericService.Invoke(ctx, "QueryUser", []string{"org.apache.dubbo.samples.User"}, []hessian.Object{user})
+func (cli *Client) NewGenericService(referenceStr string, opts ...ReferenceOption) (*generic.GenericService, error) {
+	finalOpts := []ReferenceOption{
+		WithIDL(constant.NONIDL),
+		WithGeneric(),
+		WithSerialization(constant.Hessian2Serialization),
+	}
+	finalOpts = append(finalOpts, opts...)
+
+	genericService := generic.NewGenericService(referenceStr)
+	_, err := cli.DialWithService(referenceStr, genericService, finalOpts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return genericService, nil
 }
 
 func (cli *Client) Dial(interfaceName string, opts ...ReferenceOption) (*Connection, error) {

@@ -37,6 +37,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/hessian2"
 )
 
 type HessianSerializer struct{}
@@ -85,9 +86,14 @@ func marshalResponse(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 
 			if response.Exception != nil { // throw error
 				_ = encoder.Encode(resWithException)
-				if t, ok := response.Exception.(java_exception.Throwabler); ok {
-					_ = encoder.Encode(t)
-				} else {
+				switch ex := response.Exception.(type) {
+				case *hessian2.GenericException:
+					_ = encoder.Encode(java_exception.NewDubboGenericException(ex.ExceptionClass, ex.ExceptionMessage))
+				case hessian2.GenericException:
+					_ = encoder.Encode(java_exception.NewDubboGenericException(ex.ExceptionClass, ex.ExceptionMessage))
+				case java_exception.Throwabler:
+					_ = encoder.Encode(ex)
+				default:
 					_ = encoder.Encode(java_exception.NewThrowable(response.Exception.Error()))
 				}
 			} else {
@@ -300,7 +306,9 @@ func unmarshalResponseBody(body []byte, p *DubboPackage) error {
 			}
 		}
 
-		if e, ok := expt.(error); ok {
+		if g, ok := hessian2.ToGenericException(expt); ok {
+			response.Exception = g
+		} else if e, ok := expt.(error); ok {
 			response.Exception = e
 		} else {
 			response.Exception = perrors.Errorf("got exception: %+v", expt)
@@ -425,9 +433,7 @@ func getArgType(v any) string {
 	}
 
 	switch v := v.(type) {
-	// Serialized tags for base types
-	case nil:
-		return "V"
+	// Serialized tags for base types=
 	case bool:
 		return "Z"
 	case []bool:

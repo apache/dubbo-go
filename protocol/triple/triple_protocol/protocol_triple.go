@@ -159,7 +159,7 @@ func (h *tripleHandler) NewConn(
 		contentType,
 	)
 	codec := h.Codecs.Get(codecName)
-	backupCodec := h.Codecs.Get(h.ExpectedCodecName)
+	backupCodec := h.Codecs.Get(h.FallbackCodecName)
 	// todo:// need to figure it out
 	// The codec can be nil in the GET request case; that's okay: when failed
 	// is non-nil, codec is never used.
@@ -238,7 +238,7 @@ func (c *tripleClient) WriteRequestHeader(streamType StreamType, header http.Hea
 	}
 	header[tripleHeaderProtocolVersion] = []string{tripleProtocolVersion}
 	header[headerContentType] = []string{
-		tripleContentTypeFromCodecName(streamType, c.Codec.Name()),
+		tripleContentTypeFromCodecName(streamType, getWireCodecName(c.Codec)),
 	}
 	if acceptCompression := c.CompressionPools.CommaSeparatedNames(); acceptCompression != "" {
 		header[tripleUnaryHeaderAcceptCompression] = []string{acceptCompression}
@@ -481,7 +481,7 @@ func (hc *tripleUnaryHandlerConn) writeResponseHeader(err error) {
 type tripleUnaryMarshaler struct {
 	writer           io.Writer
 	codec            Codec
-	backupCodec      Codec
+	backupCodec      Codec // backupCodec is the fallback codec when primary codec fails
 	compressMinBytes int
 	compressionName  string
 	compressionPool  *compressionPool
@@ -497,7 +497,7 @@ func (m *tripleUnaryMarshaler) Marshal(message any) *Error {
 	data, err := m.codec.Marshal(message)
 	if err != nil {
 		if m.backupCodec != nil && m.codec.Name() != m.backupCodec.Name() {
-			logger.Warnf("failed to marshal message with codec %s, trying alternative codec %s", m.codec.Name(), m.backupCodec.Name())
+			logger.Warnf("failed to marshal message with primary codec %s, trying fallback codec %s", m.codec.Name(), m.backupCodec.Name())
 			data, err = m.backupCodec.Marshal(message)
 		}
 		if err != nil {
@@ -546,7 +546,7 @@ func (m *tripleUnaryRequestMarshaler) Marshal(message any) *Error {
 type tripleUnaryUnmarshaler struct {
 	reader          io.Reader
 	codec           Codec
-	backupCodec     Codec //backupCodec is for the situation when content-type mismatches with the expected codec
+	backupCodec     Codec // backupCodec is the fallback codec when primary codec fails
 	compressionPool *compressionPool
 	bufferPool      *bufferPool
 	alreadyRead     bool
@@ -557,7 +557,7 @@ func (u *tripleUnaryUnmarshaler) Unmarshal(message any) *Error {
 	err := u.UnmarshalFunc(message, u.codec.Unmarshal)
 	if err != nil {
 		if u.backupCodec != nil && u.codec.Name() != u.backupCodec.Name() {
-			logger.Warnf("failed to unmarshal message with codec %s, trying alternative codec %s", u.codec.Name(), u.backupCodec.Name())
+			logger.Warnf("failed to unmarshal message with primary codec %s, trying fallback codec %s", u.codec.Name(), u.backupCodec.Name())
 			err = u.UnmarshalFunc(message, u.backupCodec.Unmarshal)
 		}
 	}

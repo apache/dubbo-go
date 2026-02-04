@@ -33,6 +33,8 @@ package common
 import (
 	"encoding/base64"
 	"net/url"
+	"strconv"
+	"sync"
 	"testing"
 	"time"
 )
@@ -1373,4 +1375,49 @@ func TestAppendParamWithEmptyValue(t *testing.T) {
 	// Should handle empty version and group
 	assert.Contains(t, name, "providers")
 	assert.Contains(t, name, "com.test.Service")
+}
+
+func TestCloneThreadSafe(t *testing.T) {
+	u, err := NewURL("dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=&version=2.6.0&configVersion=1.0")
+	require.NoError(t, err)
+
+	var wg sync.WaitGroup
+	wg.Add(100)
+
+	// Reader goroutines
+	for i := 0; i < 50; i++ {
+		go func() {
+			defer wg.Done()
+			for j := 0; j < 100; j++ {
+				c := u.Clone()
+				_ = c.String() // Use the clone to avoid optimization
+			}
+		}()
+	}
+
+	// Writer goroutines for params
+	for i := 0; i < 25; i++ {
+		go func(i int) {
+			defer wg.Done()
+			for j := 0; j < 100; j++ {
+				key := "key" + strconv.Itoa(j)
+				val := "val" + strconv.Itoa(i)
+				u.SetParam(key, val)
+			}
+		}(i)
+	}
+
+	// Writer goroutines for attributes
+	for i := 0; i < 25; i++ {
+		go func(i int) {
+			defer wg.Done()
+			for j := 0; j < 100; j++ {
+				key := "attr" + strconv.Itoa(j)
+				val := "attr_val" + strconv.Itoa(i)
+				u.SetAttribute(key, val)
+			}
+		}(i)
+	}
+
+	wg.Wait()
 }

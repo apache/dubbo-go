@@ -18,9 +18,11 @@
 package server
 
 import (
+	"reflect"
 	"strconv"
 	"sync"
 	"testing"
+	"unsafe"
 )
 
 import (
@@ -479,4 +481,80 @@ func TestNewServerWithCustomGroup(t *testing.T) {
 	svcOpts := srv.GetServiceOptions(handler.Reference())
 	assert.NotNil(t, svcOpts)
 	assert.Equal(t, "test", svcOpts.Service.Group)
+}
+
+// Test isNillable checks if a reflect.Value's kind supports nil checking
+func TestIsNillable(t *testing.T) {
+	tests := []struct {
+		name     string
+		value    any
+		expected bool
+	}{
+		// nillable types
+		{"chan", make(chan int), true},
+		{"func", func() {}, true},
+		{"interface", (*error)(nil), true},
+		{"map", map[string]int{}, true},
+		{"pointer", new(int), true},
+		{"slice", []int{}, true},
+		{"unsafe.Pointer", unsafe.Pointer(nil), true},
+		{"nil chan", (chan int)(nil), true},
+		{"nil map", (map[string]int)(nil), true},
+		{"nil slice", ([]int)(nil), true},
+
+		// non-nillable types
+		{"int", 42, false},
+		{"string", "hello", false},
+		{"bool", true, false},
+		{"float64", 3.14, false},
+		{"struct", struct{}{}, false},
+		{"array", [3]int{1, 2, 3}, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := reflect.ValueOf(tt.value)
+			result := isNillable(v)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+// Test isReflectNil safely checks if a reflect.Value is nil
+func TestIsReflectNil(t *testing.T) {
+	tests := []struct {
+		name     string
+		value    any
+		expected bool
+	}{
+		// nil nillable types
+		{"nil chan", (chan int)(nil), true},
+		{"nil map", (map[string]int)(nil), true},
+		{"nil slice", ([]int)(nil), true},
+		{"nil func", (func())(nil), true},
+		{"nil pointer", (*int)(nil), true},
+
+		// non-nil nillable types
+		{"non-nil chan", make(chan int), false},
+		{"non-nil map", map[string]int{"a": 1}, false},
+		{"non-nil slice", []int{1, 2, 3}, false},
+		{"non-nil func", func() {}, false},
+		{"non-nil pointer", new(int), false},
+
+		// non-nillable types (should return false, not panic)
+		{"int", 42, false},
+		{"string", "hello", false},
+		{"bool", true, false},
+		{"float64", 3.14, false},
+		{"struct", struct{ Name string }{"test"}, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := reflect.ValueOf(tt.value)
+			// should not panic
+			result := isReflectNil(v)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
 }

@@ -30,7 +30,6 @@ require (
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/hashicorp/vault/sdk v0.7.0
 	github.com/influxdata/tdigest v0.0.1
-	github.com/jinzhu/copier v0.3.5
 	github.com/knadh/koanf v1.5.0
 	github.com/magiconair/properties v1.8.5
 	github.com/mattn/go-colorable v0.1.13

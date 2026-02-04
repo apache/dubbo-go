@@ -29,6 +29,10 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/assert"
 )
 
+const (
+	testAcceptEncodingOrdering = "AcceptEncodingOrdering"
+)
+
 func TestAcceptEncodingOrdering(t *testing.T) {
 	t.Parallel()
 	const (
@@ -57,7 +61,7 @@ func TestAcceptEncodingOrdering(t *testing.T) {
 		withFakeBrotli,
 		withGzip(),
 	)
-	_ = client.CallUnary(context.Background(), NewRequest(&emptypb.Empty{}), NewResponse(&emptypb.Empty{}))
+	_ = client.CallUnary(context.Background(), NewRequest(&emptypb.Empty{}), testAcceptEncodingOrdering, NewResponse(&emptypb.Empty{}))
 	assert.True(t, called)
 }
 

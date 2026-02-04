@@ -197,8 +197,8 @@ func TestTripleInvoker_SetGetClientManager(t *testing.T) {
 
 	// set clientManager
 	cm := &clientManager{
-		isIDL:      true,
-		triClients: make(map[string]*tri.Client),
+		isIDL:     true,
+		triClient: nil,
 	}
 	ti.setClientManager(cm)
 	assert.Equal(t, cm, ti.getClientManager())
@@ -222,8 +222,8 @@ func TestTripleInvoker_IsAvailable(t *testing.T) {
 		{
 			desc: "clientManager is not nil",
 			clientManager: &clientManager{
-				isIDL:      true,
-				triClients: make(map[string]*tri.Client),
+				isIDL:     true,
+				triClient: nil,
 			},
 			expect: true,
 		},
@@ -254,8 +254,8 @@ func TestTripleInvoker_IsDestroyed(t *testing.T) {
 		{
 			desc: "clientManager is not nil and not destroyed",
 			clientManager: &clientManager{
-				isIDL:      true,
-				triClients: make(map[string]*tri.Client),
+				isIDL:     true,
+				triClient: nil,
 			},
 			destroyed: false,
 			expect:    false,
@@ -275,8 +275,8 @@ func TestTripleInvoker_Destroy(t *testing.T) {
 	t.Run("destroy with clientManager", func(t *testing.T) {
 		url := common.NewURLWithOptions()
 		cm := &clientManager{
-			isIDL:      true,
-			triClients: make(map[string]*tri.Client),
+			isIDL:     true,
+			triClient: nil,
 		}
 		ti := newTestTripleInvoker(url, cm)
 
@@ -302,8 +302,8 @@ func TestTripleInvoker_Destroy(t *testing.T) {
 	t.Run("destroy called multiple times", func(t *testing.T) {
 		url := common.NewURLWithOptions()
 		cm := &clientManager{
-			isIDL:      true,
-			triClients: make(map[string]*tri.Client),
+			isIDL:     true,
+			triClient: nil,
 		}
 		ti := newTestTripleInvoker(url, cm)
 
@@ -329,8 +329,8 @@ func TestTripleInvoker_Invoke(t *testing.T) {
 			setup: func() (*TripleInvoker, base.Invocation) {
 				url := common.NewURLWithOptions()
 				ti := newTestTripleInvoker(url, &clientManager{
-					isIDL:      true,
-					triClients: make(map[string]*tri.Client),
+					isIDL:     true,
+					triClient: nil,
 				})
 				ti.Destroy()
 				inv := invocation.NewRPCInvocationWithOptions()
@@ -353,8 +353,8 @@ func TestTripleInvoker_Invoke(t *testing.T) {
 			setup: func() (*TripleInvoker, base.Invocation) {
 				url := common.NewURLWithOptions()
 				ti := newTestTripleInvoker(url, &clientManager{
-					isIDL:      true,
-					triClients: make(map[string]*tri.Client),
+					isIDL:     true,
+					triClient: nil,
 				})
 				inv := invocation.NewRPCInvocationWithOptions()
 				return ti, inv
@@ -366,8 +366,8 @@ func TestTripleInvoker_Invoke(t *testing.T) {
 			setup: func() (*TripleInvoker, base.Invocation) {
 				url := common.NewURLWithOptions()
 				ti := newTestTripleInvoker(url, &clientManager{
-					isIDL:      true,
-					triClients: make(map[string]*tri.Client),
+					isIDL:     true,
+					triClient: nil,
 				})
 				inv := invocation.NewRPCInvocationWithOptions(
 					invocation.WithMethodName("TestMethod"),
@@ -398,8 +398,8 @@ func TestTripleInvoker_Invoke(t *testing.T) {
 func TestTripleInvoker_Invoke_Concurrent(t *testing.T) {
 	url := common.NewURLWithOptions()
 	ti := newTestTripleInvoker(url, &clientManager{
-		isIDL:      true,
-		triClients: make(map[string]*tri.Client),
+		isIDL:     true,
+		triClient: nil,
 	})
 
 	var wg sync.WaitGroup
