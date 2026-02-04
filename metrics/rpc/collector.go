@@ -167,43 +167,33 @@ func (c *rpcCollector) incRequestsFailedTotal(role string, labels map[string]str
 }
 
 func (c *rpcCollector) incRequestsFailedByType(role string, labels map[string]string, errType ErrorType) {
+	var ms *rpcCommonMetrics
+
 	switch role {
 	case constant.SideProvider:
-		switch errType {
-		case ErrorTypeTimeout:
-			c.metricSet.provider.requestsTimeoutTotal.Inc(labels)
-			c.metricSet.provider.requestsTimeoutTotalAggregate.Inc(labels)
-		case ErrorTypeLimit:
-			c.metricSet.provider.requestsLimitTotal.Inc(labels)
-			c.metricSet.provider.requestsLimitTotalAggregate.Inc(labels)
-		case ErrorTypeServiceUnavailable:
-			c.metricSet.provider.requestsServiceUnavailableTotal.Inc(labels)
-			c.metricSet.provider.requestsServiceUnavailableTotalAggregate.Inc(labels)
-		case ErrorTypeBusinessFailed:
-			c.metricSet.provider.requestsBusinessFailedTotal.Inc(labels)
-			c.metricSet.provider.requestsBusinessFailedTotalAggregate.Inc(labels)
-		default:
-			c.metricSet.provider.requestsUnknownFailedTotal.Inc(labels)
-			c.metricSet.provider.requestsUnknownFailedTotalAggregate.Inc(labels)
-		}
+		ms = &c.metricSet.provider.rpcCommonMetrics
 	case constant.SideConsumer:
-		switch errType {
-		case ErrorTypeTimeout:
-			c.metricSet.consumer.requestsTimeoutTotal.Inc(labels)
-			c.metricSet.consumer.requestsTimeoutTotalAggregate.Inc(labels)
-		case ErrorTypeLimit:
-			c.metricSet.consumer.requestsLimitTotal.Inc(labels)
-			c.metricSet.consumer.requestsLimitTotalAggregate.Inc(labels)
-		case ErrorTypeServiceUnavailable:
-			c.metricSet.consumer.requestsServiceUnavailableTotal.Inc(labels)
-			c.metricSet.consumer.requestsServiceUnavailableTotalAggregate.Inc(labels)
-		case ErrorTypeBusinessFailed:
-			c.metricSet.consumer.requestsBusinessFailedTotal.Inc(labels)
-			c.metricSet.consumer.requestsBusinessFailedTotalAggregate.Inc(labels)
-		default:
-			c.metricSet.consumer.requestsUnknownFailedTotal.Inc(labels)
-			c.metricSet.consumer.requestsUnknownFailedTotalAggregate.Inc(labels)
-		}
+		ms = &c.metricSet.consumer.rpcCommonMetrics
+	default:
+		return
+	}
+
+	switch errType {
+	case ErrorTypeTimeout:
+		ms.requestsTimeoutTotal.Inc(labels)
+		ms.requestsTimeoutTotalAggregate.Inc(labels)
+	case ErrorTypeLimit:
+		ms.requestsLimitTotal.Inc(labels)
+		ms.requestsLimitTotalAggregate.Inc(labels)
+	case ErrorTypeServiceUnavailable:
+		ms.requestsServiceUnavailableTotal.Inc(labels)
+		ms.requestsServiceUnavailableTotalAggregate.Inc(labels)
+	case ErrorTypeBusinessFailed:
+		ms.requestsBusinessFailedTotal.Inc(labels)
+		ms.requestsBusinessFailedTotalAggregate.Inc(labels)
+	default:
+		ms.requestsUnknownFailedTotal.Inc(labels)
+		ms.requestsUnknownFailedTotalAggregate.Inc(labels)
 	}
 }
 
