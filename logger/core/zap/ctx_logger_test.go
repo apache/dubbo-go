@@ -30,7 +30,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/otel/codes"
+
 	"go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -162,4 +165,131 @@ func TestZapCtxLogger_NonFormattedMethods(t *testing.T) {
 	assert.Contains(t, output, "info")
 	assert.Contains(t, output, "warn")
 	assert.Contains(t, output, "error")
+}
+
+func TestZapCtxLogger_RecordErrorToSpan_Errorf(t *testing.T) {
+	var buf bytes.Buffer
+	encoder := zapcore.NewJSONEncoder(zapcore.EncoderConfig{
+		MessageKey:  "msg",
+		LevelKey:    "level",
+		EncodeLevel: zapcore.LowercaseLevelEncoder,
+	})
+	core := zapcore.NewCore(encoder, zapcore.AddSync(&buf), zapcore.ErrorLevel)
+	zapLogger := zap.New(core).Sugar()
+
+	baseLogger := &dubbogoLogger.DubboLogger{Logger: zapLogger}
+	// Enable recordErrorToSpan
+	ctxLogger := NewZapCtxLogger(baseLogger, true)
+
+	// Create span recorder to capture span events
+	spanRecorder := tracetest.NewSpanRecorder()
+	tp := trace.NewTracerProvider(trace.WithSpanProcessor(spanRecorder))
+	tracer := tp.Tracer("test")
+	ctx, span := tracer.Start(context.Background(), "test-span")
+
+	// Log error with context
+	ctxLogger.CtxErrorf(ctx, "test error: %s", "something went wrong")
+	span.End()
+
+	// Verify error was logged
+	output := buf.String()
+	assert.Contains(t, output, "test error: something went wrong")
+
+	// Verify span recorded the error
+	spans := spanRecorder.Ended()
+	require.Len(t, spans, 1)
+	recordedSpan := spans[0]
+
+	// Check span status
+	assert.Equal(t, codes.Error, recordedSpan.Status().Code)
+	assert.Equal(t, "test error: something went wrong", recordedSpan.Status().Description)
+
+	// Check span events (error recording)
+	events := recordedSpan.Events()
+	require.Len(t, events, 1)
+	assert.Equal(t, "exception", events[0].Name)
+}
+
+func TestZapCtxLogger_RecordErrorToSpan_Error(t *testing.T) {
+	var buf bytes.Buffer
+	encoder := zapcore.NewJSONEncoder(zapcore.EncoderConfig{
+		MessageKey:  "msg",
+		LevelKey:    "level",
+		EncodeLevel: zapcore.LowercaseLevelEncoder,
+	})
+	core := zapcore.NewCore(encoder, zapcore.AddSync(&buf), zapcore.ErrorLevel)
+	zapLogger := zap.New(core).Sugar()
+
+	baseLogger := &dubbogoLogger.DubboLogger{Logger: zapLogger}
+	// Enable recordErrorToSpan
+	ctxLogger := NewZapCtxLogger(baseLogger, true)
+
+	// Create span recorder to capture span events
+	spanRecorder := tracetest.NewSpanRecorder()
+	tp := trace.NewTracerProvider(trace.WithSpanProcessor(spanRecorder))
+	tracer := tp.Tracer("test")
+	ctx, span := tracer.Start(context.Background(), "test-span")
+
+	// Log error with context
+	ctxLogger.CtxError(ctx, "test error message")
+	span.End()
+
+	// Verify error was logged
+	output := buf.String()
+	assert.Contains(t, output, "test error message")
+
+	// Verify span recorded the error
+	spans := spanRecorder.Ended()
+	require.Len(t, spans, 1)
+	recordedSpan := spans[0]
+
+	// Check span status
+	assert.Equal(t, codes.Error, recordedSpan.Status().Code)
+	assert.Equal(t, "test error message", recordedSpan.Status().Description)
+
+	// Check span events (error recording)
+	events := recordedSpan.Events()
+	require.Len(t, events, 1)
+	assert.Equal(t, "exception", events[0].Name)
+}
+
+func TestZapCtxLogger_RecordErrorToSpan_Disabled(t *testing.T) {
+	var buf bytes.Buffer
+	encoder := zapcore.NewJSONEncoder(zapcore.EncoderConfig{
+		MessageKey:  "msg",
+		LevelKey:    "level",
+		EncodeLevel: zapcore.LowercaseLevelEncoder,
+	})
+	core := zapcore.NewCore(encoder, zapcore.AddSync(&buf), zapcore.ErrorLevel)
+	zapLogger := zap.New(core).Sugar()
+
+	baseLogger := &dubbogoLogger.DubboLogger{Logger: zapLogger}
+	// Disable recordErrorToSpan
+	ctxLogger := NewZapCtxLogger(baseLogger, false)
+
+	// Create span recorder to capture span events
+	spanRecorder := tracetest.NewSpanRecorder()
+	tp := trace.NewTracerProvider(trace.WithSpanProcessor(spanRecorder))
+	tracer := tp.Tracer("test")
+	ctx, span := tracer.Start(context.Background(), "test-span")
+
+	// Log error with context
+	ctxLogger.CtxErrorf(ctx, "test error")
+	span.End()
+
+	// Verify error was logged
+	output := buf.String()
+	assert.Contains(t, output, "test error")
+
+	// Verify span did NOT record the error
+	spans := spanRecorder.Ended()
+	require.Len(t, spans, 1)
+	recordedSpan := spans[0]
+
+	// Check span status should be Unset (not Error)
+	assert.NotEqual(t, codes.Error, recordedSpan.Status().Code)
+
+	// Check span events should be empty
+	events := recordedSpan.Events()
+	assert.Len(t, events, 0)
 }

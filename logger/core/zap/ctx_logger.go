@@ -19,6 +19,7 @@ package zap
 
 import (
 	"context"
+	"errors"
 	"fmt"
 )
 
@@ -156,5 +157,5 @@ func (l *ZapCtxLogger) recordErrorToSpanIfPresent(ctx context.Context, template 
 
 	msg := fmt.Sprintf(template, args...)
 	span.SetStatus(codes.Error, msg)
-	span.RecordError(fmt.Errorf("%s", msg))
+	span.RecordError(errors.New(msg))
 }
