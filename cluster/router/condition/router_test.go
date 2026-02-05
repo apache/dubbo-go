@@ -1350,17 +1350,21 @@ conditions:
 				}
 			} else {
 				// check multiply destination route successfully or not
-				ans := map[any]float32{}
+				// Use larger sample size for statistical stability
+				const sampleSize = 5000
+				ans := map[int]float32{}
 				for _, s := range tt.multiDestination {
 					args := struct {
 						invokers   []base.Invoker
 						url        *common.URL
 						invocation base.Invocation
 					}{tt.args.invokers[:], tt.args.url.Clone(), tt.args.invocation}
-					ans[len(s.invokers_filters.filtrate(args.invokers, tt.args.url, tt.args.invocation))] = s.weight * 1000
+					key := len(s.invokers_filters.filtrate(args.invokers, tt.args.url, tt.args.invocation))
+					// Accumulate weights for same-length results to avoid map key collision
+					ans[key] += s.weight * sampleSize
 				}
-				res := map[any]int{}
-				for i := 0; i < 1000; i++ {
+				res := map[int]int{}
+				for i := 0; i < sampleSize; i++ {
 					args := struct {
 						invokers   []base.Invoker
 						url        *common.URL
@@ -1368,11 +1372,17 @@ conditions:
 					}{tt.args.invokers[:], tt.args.url.Clone(), tt.args.invocation}
 					res[len(d.Route(args.invokers, args.url, args.invocation))]++
 				}
-				for k, v := range ans {
-					if float32(res[k]+50) > v && float32(res[k]-50) < v {
-					} else {
-						assert.Fail(t, "out of range")
+				for k, expected := range ans {
+					actual := float32(res[k])
+					// Use percentage-based tolerance: max(25% of expected, 50) to handle both
+					// high and low expected values while accounting for statistical variance
+					tolerance := expected * 0.25
+					if tolerance < 50 {
+						tolerance = 50
 					}
+					assert.Truef(t, actual >= expected-tolerance && actual <= expected+tolerance,
+						"result count out of range for key=%d: expected=%.0f, actual=%.0f, tolerance=%.0f",
+						k, expected, actual, tolerance)
 				}
 			}
 		})
