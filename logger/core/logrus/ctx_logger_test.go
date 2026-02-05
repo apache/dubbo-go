@@ -269,5 +269,5 @@ func TestLogrusCtxLogger_RecordErrorToSpan_Disabled(t *testing.T) {
 
 	// Check span events should be empty
 	events := recordedSpan.Events()
-	assert.Len(t, events, 0)
+	assert.Empty(t, events)
 }
