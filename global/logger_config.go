@@ -36,6 +36,9 @@ type LoggerConfig struct {
 
 	// logger file
 	File *File `yaml:"file"`
+
+	// trace integration configuration
+	TraceIntegration *TraceIntegrationConfig `yaml:"trace-integration"`
 }
 
 type File struct {
@@ -52,6 +55,15 @@ type File struct {
 	MaxAge int `default:"3" yaml:"max-age"`
 
 	Compress *bool `default:"true" yaml:"compress"`
+}
+
+// TraceIntegrationConfig configures the integration between logging and OpenTelemetry tracing.
+type TraceIntegrationConfig struct {
+	// whether to enable trace integration (inject traceId, spanId into logs)
+	Enabled *bool `default:"false" yaml:"enabled"`
+
+	// whether to record error logs to span
+	RecordErrorToSpan *bool `default:"true" yaml:"record-error-to-span"`
 }
 
 func DefaultLoggerConfig() *LoggerConfig {
@@ -71,11 +83,12 @@ func (c *LoggerConfig) Clone() *LoggerConfig {
 	}
 
 	return &LoggerConfig{
-		Driver:   c.Driver,
-		Level:    c.Level,
-		Format:   c.Format,
-		Appender: c.Appender,
-		File:     c.File.Clone(),
+		Driver:           c.Driver,
+		Level:            c.Level,
+		Format:           c.Format,
+		Appender:         c.Appender,
+		File:             c.File.Clone(),
+		TraceIntegration: c.TraceIntegration.Clone(),
 	}
 }
 
@@ -97,5 +110,29 @@ func (f *File) Clone() *File {
 		MaxBackups: f.MaxBackups,
 		MaxAge:     f.MaxAge,
 		Compress:   f.Compress,
+	}
+}
+
+// Clone a new TraceIntegrationConfig
+func (t *TraceIntegrationConfig) Clone() *TraceIntegrationConfig {
+	if t == nil {
+		return nil
+	}
+
+	var newEnabled *bool
+	if t.Enabled != nil {
+		newEnabled = new(bool)
+		*newEnabled = *t.Enabled
+	}
+
+	var newRecordErrorToSpan *bool
+	if t.RecordErrorToSpan != nil {
+		newRecordErrorToSpan = new(bool)
+		*newRecordErrorToSpan = *t.RecordErrorToSpan
+	}
+
+	return &TraceIntegrationConfig{
+		Enabled:           newEnabled,
+		RecordErrorToSpan: newRecordErrorToSpan,
 	}
 }

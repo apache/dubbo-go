@@ -399,16 +399,28 @@ func compatOtelConfig(c *global.OtelConfig) *config.OtelConfig {
 	}
 }
 
+// compatTraceIntegrationConfig converts global.TraceIntegrationConfig to config.TraceIntegrationConfig
+func compatTraceIntegrationConfig(c *global.TraceIntegrationConfig) *config.TraceIntegrationConfig {
+	if c == nil {
+		return nil
+	}
+	return &config.TraceIntegrationConfig{
+		Enabled:           c.Enabled,
+		RecordErrorToSpan: c.RecordErrorToSpan,
+	}
+}
+
 func compatLoggerConfig(c *global.LoggerConfig) *config.LoggerConfig {
 	if c == nil {
 		return nil
 	}
 	return &config.LoggerConfig{
-		Driver:   c.Driver,
-		Level:    c.Level,
-		Format:   c.Format,
-		Appender: c.Appender,
-		File:     compatFile(c.File),
+		Driver:           c.Driver,
+		Level:            c.Level,
+		Format:           c.Format,
+		Appender:         c.Appender,
+		File:             compatFile(c.File),
+		TraceIntegration: compatTraceIntegrationConfig(c.TraceIntegration),
 	}
 }
 
@@ -980,16 +992,28 @@ func compatGlobalOtelConfig(c *config.OtelConfig) *global.OtelConfig {
 	}
 }
 
+// compatGlobalTraceIntegrationConfig converts config.TraceIntegrationConfig to global.TraceIntegrationConfig
+func compatGlobalTraceIntegrationConfig(c *config.TraceIntegrationConfig) *global.TraceIntegrationConfig {
+	if c == nil {
+		return nil
+	}
+	return &global.TraceIntegrationConfig{
+		Enabled:           c.Enabled,
+		RecordErrorToSpan: c.RecordErrorToSpan,
+	}
+}
+
 func compatGlobalLoggerConfig(c *config.LoggerConfig) *global.LoggerConfig {
 	if c == nil {
 		return nil
 	}
 	return &global.LoggerConfig{
-		Driver:   c.Driver,
-		Level:    c.Level,
-		Format:   c.Format,
-		Appender: c.Appender,
-		File:     compatGlobalFile(c.File),
+		Driver:           c.Driver,
+		Level:            c.Level,
+		Format:           c.Format,
+		Appender:         c.Appender,
+		File:             compatGlobalFile(c.File),
+		TraceIntegration: compatGlobalTraceIntegrationConfig(c.TraceIntegration),
 	}
 }
 
