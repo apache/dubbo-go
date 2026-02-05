@@ -26,21 +26,21 @@ type ErrorType uint8
 
 const (
 	// ErrorTypeUnknown is for unknown or unclassified errors
-	ErrorTypeUnknown ErrorType = iota
+	ErrorTypeUnknown ErrorType = 0
 	// ErrorTypeTimeout is for timeout exceptions (CodeDeadlineExceeded)
-	ErrorTypeTimeout
+	ErrorTypeTimeout ErrorType = 1
 	// ErrorTypeLimit is for rate limit exceeded exceptions (CodeResourceExhausted)
-	ErrorTypeLimit
+	ErrorTypeLimit ErrorType = 2
 	// ErrorTypeServiceUnavailable is for service unavailable exceptions (CodeUnavailable, CodePermissionDenied)
-	ErrorTypeServiceUnavailable
+	ErrorTypeServiceUnavailable ErrorType = 3
 	// ErrorTypeBusinessFailed is for business logic exceptions (CodeBizError)
-	ErrorTypeBusinessFailed
+	ErrorTypeBusinessFailed ErrorType = 4
 	// ErrorTypeNetworkFailure is for network failure exceptions (CodeInternal)
 	// TODO: At present, this error type has not been produced. If available, please map the appropriate internal/network error code to this type.
-	ErrorTypeNetworkFailure
+	ErrorTypeNetworkFailure ErrorType = 5
 	// ErrorTypeCodec is for codec errors (CodeInternal)
 	// TODO: At present, this error type has not been produced. If available, please map the appropriate internal/codec error code to this type.
-	ErrorTypeCodec
+	ErrorTypeCodec ErrorType = 6
 )
 
 // classifyError classifies an error based on triple protocol error codes.
