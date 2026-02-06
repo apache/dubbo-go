@@ -30,7 +30,8 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
@@ -65,7 +66,6 @@ func TestJsonrpcProtocolExport(t *testing.T) {
 	assert.False(t, ok)
 }
 
-// TODO: After discarding the config package, delete the test
 func TestJsonrpcProtocolRefer(t *testing.T) {
 	// Refer
 	proto := GetProtocol()
@@ -75,11 +75,12 @@ func TestJsonrpcProtocolRefer(t *testing.T) {
 		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 		"side=provider&timeout=3000&timestamp=1556509797245")
 	require.NoError(t, err)
-	// TODO: Temporary compatibility with old APIs, can be removed later
-	con := config.ConsumerConfig{
+
+	// Pass ConsumerConfig via URL attribute instead of using config.SetConsumerConfig()
+	consumerConf := &global.ConsumerConfig{
 		RequestTimeout: "5s",
 	}
-	config.SetConsumerConfig(con)
+	url.SetAttribute(constant.ConsumerConfigKey, consumerConf)
 
 	invoker := proto.Refer(url)
 
