@@ -196,6 +196,22 @@ func (lcb *LoggerConfigBuilder) SetFileCompress(compress bool) *LoggerConfigBuil
 	return lcb
 }
 
+func (lcb *LoggerConfigBuilder) SetTraceIntegrationEnabled(enabled bool) *LoggerConfigBuilder {
+	if lcb.loggerConfig.TraceIntegration == nil {
+		lcb.loggerConfig.TraceIntegration = &TraceIntegrationConfig{}
+	}
+	lcb.loggerConfig.TraceIntegration.Enabled = &enabled
+	return lcb
+}
+
+func (lcb *LoggerConfigBuilder) SetRecordErrorToSpan(enabled bool) *LoggerConfigBuilder {
+	if lcb.loggerConfig.TraceIntegration == nil {
+		lcb.loggerConfig.TraceIntegration = &TraceIntegrationConfig{}
+	}
+	lcb.loggerConfig.TraceIntegration.RecordErrorToSpan = &enabled
+	return lcb
+}
+
 // Build return config and set default value if nil
 func (lcb *LoggerConfigBuilder) Build() *LoggerConfig {
 	if err := defaults.Set(lcb.loggerConfig); err != nil {
