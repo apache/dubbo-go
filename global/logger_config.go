@@ -121,14 +121,14 @@ func (t *TraceIntegrationConfig) Clone() *TraceIntegrationConfig {
 
 	var newEnabled *bool
 	if t.Enabled != nil {
-		newEnabled = new(bool)
-		*newEnabled = *t.Enabled
+		e := *t.Enabled
+		newEnabled = &e
 	}
 
 	var newRecordErrorToSpan *bool
 	if t.RecordErrorToSpan != nil {
-		newRecordErrorToSpan = new(bool)
-		*newRecordErrorToSpan = *t.RecordErrorToSpan
+		r := *t.RecordErrorToSpan
+		newRecordErrorToSpan = &r
 	}
 
 	return &TraceIntegrationConfig{
