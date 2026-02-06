@@ -34,6 +34,18 @@ import (
 
 type predicate func(invoker base.Invoker, tag any) bool
 
+func getInstanceTag(invoker base.Invoker) string {
+	invUrl := invoker.GetURL()
+	if attr, ok := invUrl.GetAttribute(constant.ServiceInstanceKey); ok {
+		if instance, ok := attr.(interface{ GetMetadata() map[string]string }); ok {
+			if tag, ok := instance.GetMetadata()[constant.Tagkey]; ok {
+				return tag
+			}
+		}
+	}
+	return invUrl.GetParam(constant.Tagkey, "")
+}
+
 // static tag matching. no used configuration center to create tag router configuration
 func staticTag(invokers []base.Invoker, url *common.URL, invocation base.Invocation) []base.Invoker {
 	var (
@@ -47,14 +59,18 @@ func staticTag(invokers []base.Invoker, url *common.URL, invocation base.Invocat
 	if tag != "" {
 		// match dynamic tag
 		result = filterInvokers(invokers, tag, func(invoker base.Invoker, tag any) bool {
-			return invoker.GetURL().GetParam(constant.Tagkey, "") != tag
+			return getInstanceTag(invoker) != tag
 		})
 	}
 
+	if tag != "" && len(result) == 0 && requestIsForce(url, invocation) {
+		return result
+	}
+
 	// match empty tag
-	if (len(result) == 0 && !requestIsForce(url, invocation)) || tag == "" {
+	if len(result) == 0 || tag == "" {
 		result = filterInvokers(invokers, tag, func(invoker base.Invoker, tag any) bool {
-			return invoker.GetURL().GetParam(constant.Tagkey, "") != ""
+			return getInstanceTag(invoker) != ""
 		})
 	}
 	logger.Debugf("[tag router] filter static tag, invokers=%+v", result)

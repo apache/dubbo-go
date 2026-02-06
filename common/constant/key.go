@@ -405,6 +405,7 @@ const (
 	DefaultMetadataStorageType             = "local"
 	RemoteMetadataStorageType              = "remote"
 	ServiceInstanceEndpoints               = "dubbo.endpoints"
+	ServiceInstanceKey                     = "service_instance"
 	MetadataServicePrefix                  = "dubbo.metadata-service."
 	MetadataServiceURLParamsPropertyName   = MetadataServicePrefix + "url-params"
 	MetadataServiceURLsPropertyName        = MetadataServicePrefix + "urls"

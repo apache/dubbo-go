@@ -79,6 +79,19 @@ func (conn *Connection) call(ctx context.Context, reqs []any, resp any, methodNa
 	if err != nil {
 		return nil, err
 	}
+
+	if attaRaw := ctx.Value(constant.AttachmentKey); attaRaw != nil {
+		if userAtta, ok := attaRaw.(map[string]string); ok {
+			for key, val := range userAtta {
+				inv.SetAttachment(key, val)
+			}
+		} else if userAtta, ok := attaRaw.(map[string]any); ok {
+			for key, val := range userAtta {
+				inv.SetAttachment(key, val)
+			}
+		}
+	}
+
 	return conn.refOpts.invoker.Invoke(ctx, inv), nil
 }
 
