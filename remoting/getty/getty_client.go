@@ -21,29 +21,24 @@ import (
 	"math/rand"
 	"sync"
 	"time"
-)
 
-import (
 	getty "github.com/apache/dubbo-getty"
-
 	"github.com/dubbogo/gost/log/logger"
+
 	gxsync "github.com/dubbogo/gost/sync"
+
 	gxtime "github.com/dubbogo/gost/time"
 
-	perrors "github.com/pkg/errors"
-
-	"go.uber.org/atomic"
-
-	"gopkg.in/yaml.v2"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
+	perrors "github.com/pkg/errors"
+	"go.uber.org/atomic"
+	"gopkg.in/yaml.v2"
+
 	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
 
@@ -244,6 +239,9 @@ func (c *Client) Close() {
 
 // Request send request
 func (c *Client) Request(request *remoting.Request, timeout time.Duration, response *remoting.PendingResponse) error {
+	if timeout <= 0 {
+		timeout = c.opts.RequestTimeout
+	}
 	_, session, err := c.selectSession(c.addr)
 	if err != nil {
 		return perrors.WithStack(err)

@@ -24,18 +24,9 @@ import (
 	"sync"
 	"testing"
 	"time"
-)
 
-import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 
-	perrors "github.com/pkg/errors"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
@@ -44,6 +35,9 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	"dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
+	perrors "github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRunSuite(t *testing.T) {
@@ -82,7 +76,10 @@ func setAttachment(invocation *invocation.RPCInvocation, attachments map[string]
 }
 
 func getClient(url *common.URL) *Client {
-	client := NewClient(Options{})
+	defaultTimeout := url.GetParam(constant.TimeoutKey, "3s")
+	client := NewClient(Options{
+		ConnectTimeout: url.GetParamDuration("connect.timeout", defaultTimeout),
+	})
 	if err := client.Connect(url); err != nil {
 		return nil
 	}
