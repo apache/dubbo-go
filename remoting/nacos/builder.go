@@ -92,6 +92,7 @@ func GetNacosConfig(url *common.URL) ([]nacosConstant.ServerConfig, nacosConstan
 			if contextPath == "" && len(url.Path) > 0 {
 				contextPath = url.Path
 			}
+			serverConfigs = append(serverConfigs, nacosConstant.ServerConfig{IpAddr: ip, Port: uint64(port), ContextPath: contextPath})
 		}
 	}
 
