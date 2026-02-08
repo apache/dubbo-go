@@ -70,19 +70,23 @@ func gracefulShutdownInit() {
 	if filter, ok := gracefulShutdownProviderFilter.(Setter); ok && rootConfig.Shutdown != nil {
 		filter.Set(constant.GracefulShutdownFilterShutdownConfig, GetShutDown())
 	}
-
+	//是否开启信号量监听
 	if GetShutDown().GetInternalSignal() {
+		//创建一个信号量的chan
 		signals := make(chan os.Signal, 1)
+		//将关机信号列表注册到该chan中
 		signal.Notify(signals, ShutdownSignals...)
-
+		//异步监听
 		go func() {
 			sig := <-signals
 			logger.Infof("get signal %s, applicationConfig will shutdown.", sig)
 			// gracefulShutdownOnce.Do(func() {
+			// 再总下线时长之后, 执行系统退出函数
 			time.AfterFunc(totalTimeout(), func() {
 				logger.Warn("Shutdown gracefully timeout, applicationConfig will shutdown immediately. ")
 				os.Exit(0)
 			})
+			// 执行下线策略
 			BeforeShutdown()
 			// those signals' original behavior is exit with dump ths stack, so we try to keep the behavior
 			for _, dumpSignal := range DumpHeapShutdownSignals {
