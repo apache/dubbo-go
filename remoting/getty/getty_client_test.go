@@ -82,9 +82,9 @@ func setAttachment(invocation *invocation.RPCInvocation, attachments map[string]
 }
 
 func getClient(url *common.URL) *Client {
-	defaultTimeout := url.GetParam(constant.TimeoutKey, "3s")
 	client := NewClient(Options{
-		ConnectTimeout: url.GetParamDuration("connect.timeout", defaultTimeout),
+		// todo fix timeout
+		ConnectTimeout: 3 * time.Second, // config.GetConsumerConfig().ConnectTimeout,
 	})
 	if err := client.Connect(url); err != nil {
 		return nil
