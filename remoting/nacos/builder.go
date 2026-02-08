@@ -22,20 +22,20 @@ import (
 	"strconv"
 	"strings"
 	"time"
-)
 
-import (
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
 	"github.com/dubbogo/gost/log/logger"
 
 	nacosConstant "github.com/nacos-group/nacos-sdk-go/v2/common/constant"
 
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	perrors "github.com/pkg/errors"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
+var (
+	newNacosNamingClient = nacosClient.NewNacosNamingClient
+	newNacosConfigClient = nacosClient.NewNacosConfigClient
 )
 
 // NewNacosConfigClientByUrl read the config from url and build an instance
@@ -48,7 +48,7 @@ func NewNacosConfigClientByUrl(url *common.URL) (*nacosClient.NacosConfigClient,
 	if len(clientName) <= 0 {
 		return nil, perrors.New("nacos client name must set")
 	}
-	return nacosClient.NewNacosConfigClient(clientName, true, sc, cc)
+	return newNacosConfigClient(clientName, true, sc, cc)
 }
 
 // GetNacosConfig will return the nacos config
@@ -126,5 +126,5 @@ func NewNacosClientByURL(url *common.URL) (*nacosClient.NacosNamingClient, error
 	if len(namespaceID) > 0 {
 		clientName += namespaceID
 	}
-	return nacosClient.NewNacosNamingClient(clientName, true, scs, cc)
+	return newNacosNamingClient(clientName, true, scs, cc)
 }
