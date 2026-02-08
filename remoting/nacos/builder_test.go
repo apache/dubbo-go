@@ -24,8 +24,6 @@ import (
 )
 
 import (
-	"github.com/agiledragon/gomonkey"
-
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
 
 	nacosConstant "github.com/nacos-group/nacos-sdk-go/v2/common/constant"
@@ -54,12 +52,14 @@ type args struct {
 }
 
 func TestNewNacosClientByURL(t *testing.T) {
-	patches := gomonkey.NewPatches()
-	patches = patches.ApplyFunc(nacosClient.NewNacosNamingClient, func(name string, share bool, sc []nacosConstant.ServerConfig,
+	oldNewNacosNamingClient := newNacosNamingClient
+	newNacosNamingClient = func(name string, share bool, sc []nacosConstant.ServerConfig,
 		cc nacosConstant.ClientConfig) (*nacosClient.NacosNamingClient, error) {
 		return &nacosClient.NacosNamingClient{}, nil
+	}
+	t.Cleanup(func() {
+		newNacosNamingClient = oldNewNacosNamingClient
 	})
-	defer patches.Reset()
 
 	tests := []struct {
 		name    string
@@ -203,12 +203,14 @@ func TestGetNacosConfig(t *testing.T) {
 }
 
 func TestNewNacosConfigClientByUrl(t *testing.T) {
-	patches := gomonkey.NewPatches()
-	patches = patches.ApplyFunc(nacosClient.NewNacosConfigClient, func(name string, share bool, sc []nacosConstant.ServerConfig,
+	oldNewNacosConfigClient := newNacosConfigClient
+	newNacosConfigClient = func(name string, share bool, sc []nacosConstant.ServerConfig,
 		cc nacosConstant.ClientConfig) (*nacosClient.NacosConfigClient, error) {
 		return &nacosClient.NacosConfigClient{}, nil
+	}
+	t.Cleanup(func() {
+		newNacosConfigClient = oldNewNacosConfigClient
 	})
-	defer patches.Reset()
 
 	tests := []struct {
 		name    string
