@@ -21,7 +21,9 @@ import (
 	"net/url"
 	"reflect"
 	"testing"
+)
 
+import (
 	"github.com/agiledragon/gomonkey"
 
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
@@ -29,7 +31,9 @@ import (
 	nacosConstant "github.com/nacos-group/nacos-sdk-go/v2/common/constant"
 
 	"github.com/stretchr/testify/assert"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
