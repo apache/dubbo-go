@@ -22,20 +22,15 @@ import (
 	"strconv"
 	"strings"
 	"time"
-)
 
-import (
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
 	"github.com/dubbogo/gost/log/logger"
 
 	nacosConstant "github.com/nacos-group/nacos-sdk-go/v2/common/constant"
 
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	perrors "github.com/pkg/errors"
 )
 
 var (
@@ -88,7 +83,6 @@ func GetNacosConfig(url *common.URL) ([]nacosConstant.ServerConfig, nacosConstan
 			if len(portContextPath) > 1 {
 				contextPath = constant.PathSeparator + strings.Join(portContextPath[1:], constant.PathSeparator)
 			}
-			serverConfigs = append(serverConfigs, nacosConstant.ServerConfig{IpAddr: ip, Port: uint64(port), ContextPath: contextPath})
 			if contextPath == "" && len(url.Path) > 0 {
 				contextPath = url.Path
 			}
