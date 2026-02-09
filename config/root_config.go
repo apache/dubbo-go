@@ -122,11 +122,24 @@ func registerPOJO() {
 
 // Init is to start dubbo-go framework, load local configuration, or read configuration from config-center if necessary.
 // It's deprecated for user to call rootConfig.Init() manually, try config.Load(config.WithRootConfig(rootConfig)) instead.
+/*
+	当调用 config.Load()
+		初始化日志系统
+		初始化配置中心
+		初始化应用信息
+		初始化协议配置
+		初始化注册中心
+		初始化元数据报告
+		初始化监控、追踪等组件
+		最后初始化提供者和消费者配置
+*/
 func (rc *RootConfig) Init() error {
 	registerPOJO()
+	//初始化日志系统
 	if err := rc.Logger.Init(); err != nil { // init default logger
 		return err
 	}
+	//初始化配置中心
 	if err := rc.ConfigCenter.Init(rc); err != nil {
 		logger.Infof("[Config Center] Config center doesn't start")
 		logger.Debugf("config center doesn't start because %s", err)
@@ -135,7 +148,7 @@ func (rc *RootConfig) Init() error {
 			return err
 		}
 	}
-
+	//初始化应用信息
 	if err := rc.Application.Init(); err != nil {
 		return err
 	}
@@ -146,6 +159,7 @@ func (rc *RootConfig) Init() error {
 	}
 
 	// init protocol
+	///初始化协议配置
 	protocols := rc.Protocols
 	if len(protocols) <= 0 {
 		protocol := ProtocolConfig{}
@@ -161,6 +175,8 @@ func (rc *RootConfig) Init() error {
 	}
 
 	// init registry
+	// 注册中心初始化：遍历所有配置的注册中心（如 Zookeeper、Nacos 等），
+	// 调用每个注册中心的 Init() 方法进行初始化
 	for _, reg := range rc.Registries {
 		if err := reg.Init(); err != nil {
 			return err
@@ -168,13 +184,17 @@ func (rc *RootConfig) Init() error {
 	}
 
 	// TODO：When config is migrated later, the impact of this will be migrated to the global module
+	//调用 validateRegistryAddresses() 函数验证注册中心地址的有效性
 	if err := validateRegistryAddresses(rc.Registries); err != nil {
 		return err
 	}
 
+	//初始化元数据报告
 	if err := rc.MetadataReport.Init(rc); err != nil {
 		return err
 	}
+
+	//初始化监控、追踪等组件
 	if err := rc.Otel.Init(rc.Application); err != nil {
 		return err
 	}
@@ -189,7 +209,9 @@ func (rc *RootConfig) Init() error {
 	if err := initRouterConfig(rc); err != nil {
 		return err
 	}
+
 	// provider、consumer must last init
+	//最后初始化提供者和消费者配置
 	if err := rc.Provider.Init(rc); err != nil {
 		return err
 	}
@@ -208,6 +230,7 @@ func (rc *RootConfig) Init() error {
 func (rc *RootConfig) Start() {
 	startOnce.Do(func() {
 		gracefulShutdownInit()
+
 		rc.Consumer.Load()
 		rc.Provider.Load()
 		if err := initMetadata(rc); err != nil {

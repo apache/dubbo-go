@@ -169,6 +169,7 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 
 func (c *ProviderConfig) Load() {
 	for registeredTypeName, service := range GetProviderServiceMap() {
+		// 查找或创建服务配置
 		serviceConfig, ok := c.Services[registeredTypeName]
 		if !ok {
 			if registeredTypeName == constant.ReflectionServiceTypeName ||
@@ -184,6 +185,7 @@ func (c *ProviderConfig) Load() {
 					registeredTypeName)
 				continue
 			}
+			// 如果服务未在配置文件中定义，创建默认配置
 			serviceConfig = NewServiceConfigBuilder().Build()
 			// use interface name defined by pb
 			serviceConfig.Interface = supportPBPackagerNameService.XXX_InterfaceName()
@@ -192,6 +194,7 @@ func (c *ProviderConfig) Load() {
 			}
 			serviceConfig.adaptiveService = c.AdaptiveService
 		}
+		// 设置服务实现并导出
 		serviceConfig.id = registeredTypeName
 		serviceConfig.Implement(service)
 		if err := serviceConfig.Export(); err != nil {

@@ -26,7 +26,9 @@ import (
 )
 
 var (
-	filters                  = make(map[string]func() filter.Filter)
+	// filters 过滤器 存储所有的 filter 扩展, 在请求处理过程中进行拦截和处理，实现如日志记录、性能监控、权限验证等功能
+	filters = make(map[string]func() filter.Filter)
+	// RejectedExecutionHandler 请求拒绝处理器, 在请求超过阈值时候被调用, 用于拒绝处理请求, 默认实现是 OnlyLogRejectedExecutionHandler
 	rejectedExecutionHandler = make(map[string]func() filter.RejectedExecutionHandler)
 )
 

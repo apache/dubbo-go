@@ -54,7 +54,7 @@ import (
 const defaultShutDownTime = time.Second * 60
 
 func gracefulShutdownInit() {
-	// retrieve ShutdownConfig for gracefulShutdownFilter
+	//尝试从扩展点系统里拿到“优雅停机 consumer filter”和“优雅停机 provider filter”；拿不到就直接不启用优雅停机相关流程。
 	gracefulShutdownConsumerFilter, exist := extension.GetFilter(constant.GracefulShutdownConsumerFilterKey)
 	if !exist {
 		return
@@ -63,10 +63,16 @@ func gracefulShutdownInit() {
 	if !exist {
 		return
 	}
+	// retrieve ShutdownConfig for gracefulShutdownFilter
+	// 这份实现把“优雅停机”当成可插拔能力 ——
+	// 如果你没有把相关 filter 包 import 进来（从而触发注册），
+	// 那这里就拿不到 filter，于是优雅停机初始化直接跳过。
 	if filter, ok := gracefulShutdownConsumerFilter.(Setter); ok && rootConfig.Shutdown != nil {
 		filter.Set(constant.GracefulShutdownFilterShutdownConfig, GetShutDown())
 	}
 
+	//Setter 是一个接口 type Setter interface { Set(name string, config any) }
+	//gracefulShutdownProviderFilter.(Setter) 不是所有 filter 都必须支持注入配置；只有实现了 Setter 的 filter 才能被动态塞配置进去。
 	if filter, ok := gracefulShutdownProviderFilter.(Setter); ok && rootConfig.Shutdown != nil {
 		filter.Set(constant.GracefulShutdownFilterShutdownConfig, GetShutDown())
 	}
@@ -78,17 +84,21 @@ func gracefulShutdownInit() {
 		signal.Notify(signals, ShutdownSignals...)
 		//异步监听
 		go func() {
+			//阻塞等待第一个信号，收到后进入优雅停机流程。
 			sig := <-signals
 			logger.Infof("get signal %s, applicationConfig will shutdown.", sig)
 			// gracefulShutdownOnce.Do(func() {
 			// 再总下线时长之后, 执行系统退出函数
+			// 这是一个兜底定时器：如果优雅停机流程卡住超过总超时，就直接 os.Exit(0) 强制退出。
+			// 注意：这不是“等 BeforeShutdown 返回再退出”，而是一个并行计时炸弹。
 			time.AfterFunc(totalTimeout(), func() {
 				logger.Warn("Shutdown gracefully timeout, applicationConfig will shutdown immediately. ")
 				os.Exit(0)
 			})
-			// 执行下线策略
+			// 执行下线策略 真正的优雅停机主流程。
 			BeforeShutdown()
 			// those signals' original behavior is exit with dump ths stack, so we try to keep the behavior
+			// 对某些“默认行为是带堆栈/转储退出”的信号，这里尝试保留行为：在退出前写 heap dump 到 stdout fd。
 			for _, dumpSignal := range DumpHeapShutdownSignals {
 				if sig == dumpSignal {
 					debug.WriteHeapDump(os.Stdout.Fd())
@@ -101,18 +111,27 @@ func gracefulShutdownInit() {
 }
 
 // BeforeShutdown provides processing flow before shutdown
+// 优雅停机主流程（四步）
 func BeforeShutdown() {
+	// 1. 销毁所有注册中心（摘流量） 目标: 外部不再把新请求路由到这个实例。
 	destroyAllRegistries()
 	// waiting for a short time so that the clients have enough time to get the notification that server shutdowns
 	// The value of configuration depends on how long the clients will get notification.
+
+	// 2. 等待所有消费者调用完成（等流量自然迁移完） 这个过程是阻塞的，会等待所有消费者调用完成。
+	// 目标:留一个“客户端感知下线”的缓冲时间 + 等待 provider 处理完
 	waitAndAcceptNewRequests()
 
 	// reject sending/receiving the new request, but keeping waiting for accepting requests
+	// 3.开始拒绝新请求 + 等待 consumer 在途请求结束
 	waitForSendingAndReceivingRequests()
 
 	// destroy all protocols
+	// 4. 销毁所有协议（关闭所有网络连接） 目标: 所有网络连接都被关闭。
 	destroyProtocols()
 
+	// 5. 执行自定义回调 目标: 自定义逻辑（如通知监控系统、清理资源等）。
+	// 框架允许其他模块注册“进程退出前回调”（清理资源、flush、上报、关闭自建 goroutine 等）。
 	logger.Info("Graceful shutdown --- Execute the custom callbacks.")
 	customCallbacks := extension.GetAllCustomShutdownCallbacks()
 	for callback := customCallbacks.Front(); callback != nil; callback = callback.Next() {
@@ -143,10 +162,12 @@ func destroyProtocols() {
 
 // destroyProviderProtocols destroys the provider's protocol.
 // if the protocol is consumer's protocol too, we will keep it
+// provider 协议销毁：跳过“同时被 consumer 使用的协议”
 func destroyProviderProtocols(consumerProtocols *gxset.HashSet) {
 	logger.Info("Graceful shutdown --- First destroy provider's protocols. ")
 	for _, protocol := range rootConfig.Protocols {
 		// the protocol is the consumer's protocol too, we can not destroy it.
+		// 如果某个协议也在 consumerProtocols 里，说明 consumer 还要用它（或者共用资源），先不 destroy。
 		if consumerProtocols.Contains(protocol.Name) {
 			continue
 		}
@@ -177,6 +198,7 @@ func waitAndAcceptNewRequests() {
 	waitingProviderProcessedTimeout(rootConfig.Shutdown)
 }
 
+// 等待 provider 侧请求“自然收敛”。
 func waitingProviderProcessedTimeout(shutdownConfig *ShutdownConfig) {
 	timeout := shutdownConfig.GetStepTimeout()
 	if timeout <= 0 {
@@ -185,6 +207,11 @@ func waitingProviderProcessedTimeout(shutdownConfig *ShutdownConfig) {
 	deadline := time.Now().Add(timeout)
 
 	offlineRequestWindowTimeout := shutdownConfig.GetOfflineRequestWindowTimeout()
+	// 阻塞等待 provider 侧请求“自然收敛”。
+	//		ProviderActiveCount > 0 仍有正在处理的 provider 调用
+	//		当前时间 < ProviderLastReceivedRequestTime + offlineRequestWindowTimeout
+	//		虽然活跃数可能为 0，但距离“最后一次收到请求”还没过窗口期。
+	// 			窗口期意义: 防止出现“刚刚还有流量抖动/刚接到请求”的情况，给一个短窗确保流量真的停了。
 	for time.Now().Before(deadline) &&
 		(shutdownConfig.ProviderActiveCount.Load() > 0 || time.Now().Before(shutdownConfig.ProviderLastReceivedRequestTime.Load().Add(offlineRequestWindowTimeout))) {
 		// sleep 10 ms and then we check it again
@@ -201,10 +228,12 @@ func waitForSendingAndReceivingRequests() {
 		// ignore this step
 		return
 	}
+	//这就是“进入拒绝新请求阶段”的全局开关。
 	rootConfig.Shutdown.RejectRequest.Store(true)
 	waitingConsumerProcessedTimeout(rootConfig.Shutdown)
 }
 
+// 然后最多等待 stepTimeout，让 consumer 的在途调用收敛到 0。
 func waitingConsumerProcessedTimeout(shutdownConfig *ShutdownConfig) {
 	timeout := shutdownConfig.GetStepTimeout()
 	if timeout <= 0 {
@@ -219,8 +248,10 @@ func waitingConsumerProcessedTimeout(shutdownConfig *ShutdownConfig) {
 	}
 }
 
+// 总超时计算
 func totalTimeout() time.Duration {
-	timeout := defaultShutDownTime
+	timeout := defaultShutDownTime // 60s
+	//它只在 “GetTimeout() > 60s” 时覆盖；如果你配置 10s，这里仍然按 60s 兜底。
 	if rootConfig.Shutdown != nil && rootConfig.Shutdown.GetTimeout() > timeout {
 		timeout = rootConfig.Shutdown.GetTimeout()
 	}
@@ -229,6 +260,7 @@ func totalTimeout() time.Duration {
 }
 
 // we can not get the protocols from consumerConfig because some protocol don't have configuration, like jsonrpc.
+// 获取所有协议
 func getConsumerProtocols() *gxset.HashSet {
 	result := gxset.NewSet()
 	if rootConfig.Consumer == nil || rootConfig.Consumer.References == nil {

@@ -48,6 +48,7 @@ type ShutdownConfig struct {
 	 * default value is 60 * 1000 ms = 1 minutes
 	 * In general, it should be bigger than 3 * StepTimeout.
 	 */
+	//总超时时间：即使资源未完全释放，超过此时间应用也会强制关闭
 	Timeout string `default:"60s" yaml:"timeout" json:"timeout,omitempty" property:"timeout"`
 	/*
 	 * the timeout on each step. You should evaluate the response time of request
@@ -56,26 +57,34 @@ type ShutdownConfig struct {
 	 * and the 99.9% requests will return response in 2s, so the StepTimeout will be bigger than(10+2) * 1000ms,
 	 * maybe (10 + 2*3) * 1000ms is a good choice.
 	 */
+	//步骤超时时间：评估请求响应时间和客户端感知服务器关闭的时间
 	StepTimeout string `default:"3s" yaml:"step-timeout" json:"step.timeout,omitempty" property:"step.timeout"`
 
 	/*
 	 * ConsumerUpdateWaitTime means when provider is shutting down, after the unregister, time to wait for client to
 	 * update invokers. During this time, incoming invocation can be treated normally.
 	 */
+	//  消费者更新等待时间：提供者关闭时，等待客户端更新调用者的时间
 	ConsumerUpdateWaitTime string `default:"3s" yaml:"consumer-update-wait-time" json:"consumerUpdate.waitTIme,omitempty" property:"consumerUpdate.waitTIme"`
 	// when we try to shutdown the applicationConfig, we will reject the new requests. In most cases, you don't need to configure this.
+	// 请求拒绝处理器：配置当拒绝新请求时使用的处理器
 	RejectRequestHandler string `yaml:"reject-handler" json:"reject-handler,omitempty" property:"reject_handler"`
 	// internal listen kill signal，the default is true.
+	// 内部信号监听：是否监听终止信号，默认true
 	InternalSignal *bool `default:"true" yaml:"internal-signal" json:"internal.signal,omitempty" property:"internal.signal"`
 	// offline request window length
+	// 离线请求窗口超时时间
 	OfflineRequestWindowTimeout string `yaml:"offline-request-window-timeout" json:"offlineRequestWindowTimeout,omitempty" property:"offlineRequestWindowTimeout"`
 	// true -> new request will be rejected.
+	// 拒绝新请求标志：true表示拒绝新请求
 	RejectRequest atomic.Bool
 	// active invocation
+	// 活跃调用计数
 	ConsumerActiveCount atomic.Int32
 	ProviderActiveCount atomic.Int32
 
 	// provider last received request timestamp
+	// 提供者最后接收请求的时间戳
 	ProviderLastReceivedRequestTime atomic.Time
 }
 

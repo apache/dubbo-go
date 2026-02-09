@@ -118,10 +118,12 @@ func (cc *ConsumerConfig) Init(rc *RootConfig) error {
 
 func (cc *ConsumerConfig) Load() {
 	for registeredTypeName, refRPCService := range GetConsumerServiceMap() {
+		// 查找或创建服务配置
 		refConfig, ok := cc.References[registeredTypeName]
 		if !ok {
 			// not found configuration, now new a configuration with default.
 			refConfig = NewReferenceConfigBuilder().SetProtocol(tripleConstant.TRIPLE).Build()
+			// ... 配置服务信息
 			triplePBService, ok := refRPCService.(common.TriplePBService)
 			if !ok {
 				logger.Errorf("Dubbo-go cannot get interface name with registeredTypeName = %s."+

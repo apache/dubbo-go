@@ -63,6 +63,7 @@ func newProviderGracefulShutdownFilter() filter.Filter {
 }
 
 // Invoke adds the requests count and blocks the new requests if application is closing
+// 会添加请求计数 & 如果应用关闭，并阻止新请求
 func (f *providerGracefulShutdownFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
 	if f.rejectNewRequest() {
 		logger.Info("The application is closing, new request will be rejected.")

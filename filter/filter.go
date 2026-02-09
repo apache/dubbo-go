@@ -30,6 +30,9 @@ import (
 // Filter is the interface which wraps Invoke and OnResponse method and defines the functions of a filter.
 // Invoke method is the core function of a filter, it determines the process of the filter.
 // OnResponse method updates the results from Invoke and then returns the modified results.
+// 过滤器是包裹 Invoke 和 OnResponse 方法并定义过滤器功能的接口。
+// Invoke方法是过滤器的核心功能，它决定了过滤器的过程。
+// OnResponse 方法会更新 Invoke 的结果，然后返回修改后的结果。
 type Filter interface {
 	Invoke(context.Context, base.Invoker, base.Invocation) result.Result
 	OnResponse(context.Context, result.Result, base.Invoker, base.Invocation) result.Result
