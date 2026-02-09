@@ -35,8 +35,9 @@ type Handler struct {
 	// key is group/version
 	implementations  map[string]StreamingHandlerFunc
 	protocolHandlers []protocolHandler
-	allowMethod      string // Allow header
-	acceptPost       string // Accept-Post header
+	allowMethod      string      // Allow header
+	acceptPost       string      // Accept-Post header
+	cors             *CorsConfig // CORS policy
 }
 
 // NewUnaryHandler constructs a [Handler] for a request-response procedure.
@@ -56,6 +57,7 @@ func NewUnaryHandler(
 		protocolHandlers: protocolHandlers,
 		allowMethod:      sortedAllowMethodValue(protocolHandlers),
 		acceptPost:       sortedAcceptPostValue(protocolHandlers),
+		cors:             buildCorsPolicy(config.Cors, protocolHandlers),
 	}
 	hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
 	return hdl
@@ -141,6 +143,7 @@ func NewClientStreamHandler(
 		protocolHandlers: protocolHandlers,
 		allowMethod:      sortedAllowMethodValue(protocolHandlers),
 		acceptPost:       sortedAcceptPostValue(protocolHandlers),
+		cors:             buildCorsPolicy(config.Cors, protocolHandlers),
 	}
 	hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
 
@@ -199,6 +202,7 @@ func NewServerStreamHandler(
 		protocolHandlers: protocolHandlers,
 		allowMethod:      sortedAllowMethodValue(protocolHandlers),
 		acceptPost:       sortedAcceptPostValue(protocolHandlers),
+		cors:             buildCorsPolicy(config.Cors, protocolHandlers),
 	}
 	hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
 
@@ -259,6 +263,7 @@ func NewBidiStreamHandler(
 		protocolHandlers: protocolHandlers,
 		allowMethod:      sortedAllowMethodValue(protocolHandlers),
 		acceptPost:       sortedAcceptPostValue(protocolHandlers),
+		cors:             buildCorsPolicy(config.Cors, protocolHandlers),
 	}
 	hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
 
@@ -307,6 +312,13 @@ func (h *Handler) ServeHTTP(responseWriter http.ResponseWriter, request *http.Re
 		responseWriter.Header().Set("Connection", "close")
 		responseWriter.WriteHeader(http.StatusHTTPVersionNotSupported)
 		return
+	}
+
+	// CORS handling
+	if h.cors != nil {
+		if h.handleCORS(responseWriter, request) {
+			return
+		}
 	}
 
 	// inspect headers
@@ -393,6 +405,7 @@ type handlerConfig struct {
 	SendMaxBytes                int
 	Group                       string
 	Version                     string
+	Cors                        *CorsConfig
 }
 
 func newHandlerConfig(procedure string, options []HandlerOption) *handlerConfig {
@@ -461,4 +474,31 @@ func (c *handlerConfig) newProtocolHandlers(streamType StreamType) []protocolHan
 
 func getIdentifier(group, version string) string {
 	return group + "/" + version
+}
+
+// handleCORS processes CORS requests. Returns true if the request was handled and processing should stop.
+func (h *Handler) handleCORS(w http.ResponseWriter, r *http.Request) bool {
+	if h.cors == nil {
+		return false
+	}
+
+	// Handle preflight requests
+	if r.Method == http.MethodOptions && r.Header.Get(corsRequestMethod) != "" {
+		return h.cors.handlePreflight(w, r)
+	}
+
+	// Handle normal requests with Origin header
+	origin := r.Header.Get(corsOrigin)
+	if origin == "" {
+		return false
+	}
+
+	if !h.cors.matchOrigin(origin) {
+		w.Header().Add(corsVary, corsOrigin)
+		w.WriteHeader(http.StatusForbidden)
+		return true
+	}
+
+	h.cors.addCORSHeaders(w, r)
+	return false
 }
