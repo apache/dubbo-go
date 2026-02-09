@@ -38,7 +38,6 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/internal"
 	"dubbo.apache.org/dubbo-go/v3/internal/reflection"
 	rpb "dubbo.apache.org/dubbo-go/v3/protocol/triple/reflection/triple_reflection"
@@ -278,9 +277,6 @@ func init() {
 		},
 		Priority: constant.DefaultPriority,
 	})
-	// In order to adapt config.Load
-	// Plans for future removal
-	config.SetProviderServiceWithInfo(reflectionServer, &rpb.ServerReflection_ServiceInfo)
 }
 
 func Register(s reflection.ServiceInfoProvider) {
