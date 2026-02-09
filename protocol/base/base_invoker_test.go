@@ -75,7 +75,7 @@ func TestBaseInvokerWithFullURL(t *testing.T) {
 
 	safeURL := ivk.GetURL()
 	assert.NotNil(t, safeURL)
-	assert.Equal(t, "dubbo-internal-destroyed", safeURL.Protocol)
+	assert.Equal(t, "dubbo-go-internal-invoker-destroyed", safeURL.Protocol)
 
 	// Test String method after destroy (url is nil)
 	str = ivk.String()

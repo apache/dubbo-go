@@ -36,7 +36,7 @@ import (
 )
 
 const (
-	protocolDestroyed = "dubbo-internal-destroyed"
+	protocolDestroyed = "dubbo-go-internal-invoker-destroyed"
 )
 
 var (
