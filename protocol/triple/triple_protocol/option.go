@@ -178,6 +178,11 @@ func WithRequireTripleProtocolHeader() HandlerOption {
 	return &requireTripleProtocolHeaderOption{}
 }
 
+// WithCORS configures CORS for the handler.
+func WithCORS(cors *CorsConfig) HandlerOption {
+	return &corsOption{cors: cors}
+}
+
 func WithGroup(group string) Option {
 	return &groupOption{group}
 }
@@ -441,6 +446,17 @@ type requireTripleProtocolHeaderOption struct{}
 
 func (o *requireTripleProtocolHeaderOption) applyToHandler(config *handlerConfig) {
 	config.RequireTripleProtocolHeader = true
+}
+
+type corsOption struct {
+	cors *CorsConfig
+}
+
+func (o *corsOption) applyToHandler(config *handlerConfig) {
+	if o.cors == nil {
+		return
+	}
+	config.Cors = o.cors
 }
 
 type groupOption struct {
