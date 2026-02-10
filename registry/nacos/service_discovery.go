@@ -194,6 +194,7 @@ func (n *nacosServiceDiscovery) GetInstances(serviceName string) []registry.Serv
 	for _, ins := range instances {
 		metadata := ins.Metadata
 		id := metadata[idKey]
+		tag := metadata[constant.Tagkey]
 
 		delete(metadata, idKey)
 
@@ -209,6 +210,7 @@ func (n *nacosServiceDiscovery) GetInstances(serviceName string) []registry.Serv
 			Healthy:     ins.Healthy,
 			Metadata:    metadata,
 			GroupName:   n.group,
+			Tag:         tag,
 		})
 	}
 	return res
