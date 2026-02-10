@@ -75,7 +75,7 @@ func toURLs(registriesConfig *global.RegistryConfig, roleType common.RoleType) (
 	var err error
 	var registryURL *common.URL
 
-	if address != "" && address != constant.NotAvailable {
+	if address == "" || address == constant.NotAvailable {
 		logger.Infof("Empty or N/A registry address found, the process will work with no registry enabled " +
 			"which means that the address of this instance will not be registered and not able to be found by other consumer instances.")
 		return urls, nil
