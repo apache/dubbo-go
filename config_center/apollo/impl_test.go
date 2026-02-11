@@ -29,7 +29,7 @@ import (
 )
 
 import (
-	"github.com/apolloconfig/agollo/v4/constant"
+	aconstant "github.com/apolloconfig/agollo/v4/constant"
 	"github.com/apolloconfig/agollo/v4/extension"
 
 	"github.com/knadh/koanf"
@@ -45,6 +45,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
@@ -185,14 +186,14 @@ func TestGetConfigItem(t *testing.T) {
 
 func initMockApollo(t *testing.T) *apolloConfiguration {
 	// Register the YAML format parser with concurrent safety.
-	extension.AddFormatParser(constant.YAML, &Parser{})
-	extension.AddFormatParser(constant.YML, &Parser{})
+	extension.AddFormatParser(aconstant.YAML, &Parser{})
+	extension.AddFormatParser(aconstant.YML, &Parser{})
 
 	params := url.Values{}
-	params.Set("config-center.namespace", "mockDubbogo.yaml")
-	params.Set("config-center.appId", "testApplication_yang")
-	params.Set("config-center.cluster", "dev")
-	params.Set("config-center.isBackupConfig", "false")
+	params.Set(constant.ConfigNamespaceKey, "mockDubbogo.yaml")
+	params.Set(constant.ConfigAppIDKey, "testApplication_yang")
+	params.Set(constant.ConfigClusterKey, "dev")
+	params.Set(constant.ConfigBackupConfigKey, "false")
 
 	apollo := initApollo()
 	apolloUrl := strings.ReplaceAll(apollo.URL, "http", "apollo")
