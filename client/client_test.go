@@ -71,10 +71,10 @@ func TestClientDefinitionConnection(t *testing.T) {
 }
 
 func TestGenerateInvocation(t *testing.T) {
-	resp := new(int)
+	var resp int
 	opts := &CallOptions{RequestTimeout: "1s", Retries: "2"}
 
-	inv, err := generateInvocation("Echo", []any{"foo", 1}, resp, constant.CallUnary, opts)
+	inv, err := generateInvocation(context.Background(), "Echo", []any{"foo", 1}, &resp, constant.CallUnary, opts)
 	require.NoError(t, err)
 
 	timeout, _ := inv.GetAttachment(constant.TimeoutKey)
@@ -87,8 +87,32 @@ func TestGenerateInvocation(t *testing.T) {
 	require.Equal(t, constant.CallUnary, attr)
 
 	require.Equal(t, []any{"foo", 1}, inv.Arguments())
-	require.Equal(t, resp, inv.Reply())
-	require.Equal(t, []any{"foo", 1, resp}, inv.ParameterRawValues())
+	require.Equal(t, &resp, inv.Reply())
+	require.Equal(t, []any{"foo", 1, &resp}, inv.ParameterRawValues())
+}
+
+func TestGenerateInvocationWithContextAttachments(t *testing.T) {
+	var resp int
+	opts := &CallOptions{RequestTimeout: "1s", Retries: "2"}
+
+	userAttachments := map[string]any{
+		"userKey1": "userValue1",
+		"userKey2": 12345,
+		"traceID":  "abc-123",
+	}
+	ctx := context.WithValue(context.Background(), constant.AttachmentKey, userAttachments)
+
+	inv, err := generateInvocation(ctx, "Echo", []any{"foo", 1}, &resp, constant.CallUnary, opts)
+	require.NoError(t, err)
+
+	timeout, _ := inv.GetAttachment(constant.TimeoutKey)
+	retries, _ := inv.GetAttachment(constant.RetriesKey)
+	require.Equal(t, "1s", timeout)
+	require.Equal(t, "2", retries)
+
+	require.Equal(t, "userValue1", inv.GetAttachmentInterface("userKey1"))
+	require.Equal(t, 12345, inv.GetAttachmentInterface("userKey2"))
+	require.Equal(t, "abc-123", inv.GetAttachmentInterface("traceID"))
 }
 
 func TestConnectionCallPassesOptions(t *testing.T) {
@@ -96,8 +120,8 @@ func TestConnectionCallPassesOptions(t *testing.T) {
 	invoker := &fakeInvoker{res: invRes}
 	conn := &Connection{refOpts: &ReferenceOptions{invoker: invoker}}
 
-	resp := new(string)
-	res, err := conn.call(context.Background(), []any{"req"}, resp, "Ping", constant.CallUnary, WithCallRequestTimeout(1500*time.Millisecond), WithCallRetries(3))
+	var resp string
+	res, err := conn.call(context.Background(), []any{"req"}, &resp, "Ping", constant.CallUnary, WithCallRequestTimeout(1500*time.Millisecond), WithCallRetries(3))
 	require.NoError(t, err)
 	require.Equal(t, invRes, res)
 
@@ -108,7 +132,7 @@ func TestConnectionCallPassesOptions(t *testing.T) {
 	require.Equal(t, "3", retries)
 
 	requireCallType(t, inv, constant.CallUnary)
-	require.Equal(t, []any{"req", resp}, inv.ParameterRawValues())
+	require.Equal(t, []any{"req", &resp}, inv.ParameterRawValues())
 }
 
 func TestCallUnary(t *testing.T) {
@@ -116,11 +140,11 @@ func TestCallUnary(t *testing.T) {
 		invoker := &fakeInvoker{res: &result.RPCResult{}}
 		conn := &Connection{refOpts: &ReferenceOptions{invoker: invoker}}
 
-		resp := new(string)
-		err := conn.CallUnary(context.Background(), []any{"a"}, resp, "Unary")
+		var resp string
+		err := conn.CallUnary(context.Background(), []any{"a"}, &resp, "Unary")
 		require.NoError(t, err)
 		requireCallType(t, invoker.lastInvocation, constant.CallUnary)
-		require.Equal(t, []any{"a", resp}, invoker.lastInvocation.ParameterRawValues())
+		require.Equal(t, []any{"a", &resp}, invoker.lastInvocation.ParameterRawValues())
 	})
 
 	t.Run("error", func(t *testing.T) {
@@ -128,7 +152,8 @@ func TestCallUnary(t *testing.T) {
 		invoker := &fakeInvoker{res: &result.RPCResult{Err: resErr}}
 		conn := &Connection{refOpts: &ReferenceOptions{invoker: invoker}}
 
-		err := conn.CallUnary(context.Background(), []any{"a"}, new(string), "Unary")
+		var resp string
+		err := conn.CallUnary(context.Background(), []any{"a"}, &resp, "Unary")
 		require.ErrorIs(t, err, resErr)
 	})
 }

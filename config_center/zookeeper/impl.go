@@ -71,8 +71,12 @@ func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfigu
 		rootPath: "/dubbo/config",
 	}
 	logger.Infof("[Zookeeper ConfigCenter] New Zookeeper ConfigCenter with Configuration: %+v, url = %+v", c, c.GetURL())
-	if v := url.GetParam("config-center.base64", ""); v != "" {
-		c.base64Enabled, _ = strconv.ParseBool(v)
+	if v := url.GetParam("base64", ""); v != "" {
+		base64Enabled, err := strconv.ParseBool(v)
+		if err != nil {
+			panic("value of base64 must be bool, error=" + err.Error())
+		}
+		c.base64Enabled = base64Enabled
 	}
 
 	err := zookeeper.ValidateZookeeperClient(c, url.Location)

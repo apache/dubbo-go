@@ -38,7 +38,6 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
@@ -271,26 +270,6 @@ func (u *UserProvider) Reference() string {
 
 func (u User) JavaClassName() string {
 	return "com.ikurento.user.User"
-}
-
-// TODO: Temporary compatibility with old APIs, can be removed later
-func TestInitClientOldApi(t *testing.T) {
-	originRootConf := config.GetRootConfig()
-	rootConf := config.RootConfig{
-		Protocols: map[string]*config.ProtocolConfig{
-			"dubbo": {
-				Name: "dubbo",
-				Ip:   "127.0.0.1",
-				Port: "20003",
-			},
-		},
-	}
-	config.SetRootConfig(rootConf)
-	url, err := common.NewURL("dubbo://127.0.0.1:20003/test")
-	require.NoError(t, err)
-	initClient(url)
-	config.SetRootConfig(*originRootConf)
-	assert.NotNil(t, srvConf)
 }
 
 func TestInitClient(t *testing.T) {

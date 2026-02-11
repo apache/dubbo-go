@@ -17,7 +17,6 @@
 
 package nacos
 
-/*
 import (
 	"net/url"
 	"reflect"
@@ -25,11 +24,9 @@ import (
 )
 
 import (
-	"github.com/agiledragon/gomonkey"
-
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
 
-	nacosConstant "github.com/nacos-group/nacos-sdk-go/v2common/constant"
+	nacosConstant "github.com/nacos-group/nacos-sdk-go/v2/common/constant"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -37,7 +34,6 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
 )
 
 func getRegURL() *common.URL {
@@ -53,16 +49,17 @@ func getRegURL() *common.URL {
 
 type args struct {
 	url *common.URL
-	rc  *config.RemoteConfig
 }
 
 func TestNewNacosClientByURL(t *testing.T) {
-	patches := gomonkey.NewPatches()
-	patches = patches.ApplyFunc(nacosClient.NewNacosNamingClient, func(name string, share bool, sc []nacosConstant.ServerConfig,
+	oldNewNacosNamingClient := newNacosNamingClient
+	newNacosNamingClient = func(name string, share bool, sc []nacosConstant.ServerConfig,
 		cc nacosConstant.ClientConfig) (*nacosClient.NacosNamingClient, error) {
 		return &nacosClient.NacosNamingClient{}, nil
+	}
+	t.Cleanup(func() {
+		newNacosNamingClient = oldNewNacosNamingClient
 	})
-	defer patches.Reset()
 
 	tests := []struct {
 		name    string
@@ -93,47 +90,14 @@ func TestNewNacosClientByURL(t *testing.T) {
 	}
 }
 
-func TestNewNacosClient(t *testing.T) {
-	patches := gomonkey.NewPatches()
-	patches = patches.ApplyFunc(nacosClient.NewNacosNamingClient, func(name string, share bool, sc []nacosConstant.ServerConfig,
-		cc nacosConstant.ClientConfig) (*nacosClient.NacosNamingClient, error) {
-		return &nacosClient.NacosNamingClient{}, nil
-	})
-	defer patches.Reset()
+func TestNewNacosClientByURLMissingClientName(t *testing.T) {
+	regURLMap := url.Values{}
+	regURLMap.Set(constant.NacosNamespaceID, "nacos")
+	regURL, _ := common.NewURL("registry://test.nacos.io:80", common.WithParams(regURLMap))
 
-	tests := []struct {
-		name    string
-		args    args
-		want    *nacosClient.NacosNamingClient
-		wantErr bool
-	}{
-		{
-			name: "test",
-			args: args{
-				rc: &config.RemoteConfig{
-					Address:  "test.nacos.io:80/nacos",
-					Protocol: "nacos",
-					Timeout:  "10s",
-					Username: "naocs",
-					Password: "nacos",
-				},
-			},
-			want:    &nacosClient.NacosNamingClient{},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewNacosClient(tt.args.rc)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("NewNacosClient() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewNacosClient() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
+	client, err := NewNacosClientByURL(regURL)
+	assert.Nil(t, client)
+	assert.Error(t, err)
 }
 
 func TestGetNacosConfig(t *testing.T) {
@@ -157,6 +121,69 @@ func TestGetNacosConfig(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "with_context_path",
+			args: args{
+				url: func() *common.URL {
+					regURLMap := url.Values{}
+					regURLMap.Set(constant.ClientNameKey, "nacos-client")
+					regURL, _ := common.NewURL("registry://test.nacos.io:80/nacos", common.WithParams(regURLMap))
+					return regURL
+				}(),
+			},
+			want: []nacosConstant.ServerConfig{
+				{
+					IpAddr:      "test.nacos.io",
+					Port:        80,
+					ContextPath: "/nacos",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "endpoint_only",
+			args: args{
+				url: func() *common.URL {
+					regURLMap := url.Values{}
+					regURLMap.Set(constant.NacosEndpoint, "acm.aliyun.com")
+					regURLMap.Set(constant.ClientNameKey, "nacos-client")
+					regURL, _ := common.NewURL("registry://test.nacos.io:80", common.WithParams(regURLMap))
+					return regURL
+				}(),
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "nil_url",
+			args: args{
+				url: nil,
+			},
+			want:    []nacosConstant.ServerConfig{},
+			wantErr: true,
+		},
+		{
+			name: "empty_location",
+			args: args{
+				url: func() *common.URL {
+					regURL, _ := common.NewURL("registry://", common.WithParams(url.Values{}))
+					return regURL
+				}(),
+			},
+			want:    []nacosConstant.ServerConfig{},
+			wantErr: true,
+		},
+		{
+			name: "bad_address",
+			args: args{
+				url: func() *common.URL {
+					regURL, _ := common.NewURL("registry://bad-address", common.WithParams(url.Values{}))
+					return regURL
+				}(),
+			},
+			want:    []nacosConstant.ServerConfig{},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -168,18 +195,22 @@ func TestGetNacosConfig(t *testing.T) {
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetNacosConfig() got = %v, want %v", got, tt.want)
 			}
-			assert.NotNil(t, got1)
+			if !tt.wantErr {
+				assert.NotNil(t, got1)
+			}
 		})
 	}
 }
 
 func TestNewNacosConfigClientByUrl(t *testing.T) {
-	patches := gomonkey.NewPatches()
-	patches = patches.ApplyFunc(nacosClient.NewNacosNamingClient, func(name string, share bool, sc []nacosConstant.ServerConfig,
-		cc nacosConstant.ClientConfig) (*nacosClient.NacosNamingClient, error) {
-		return &nacosClient.NacosNamingClient{}, nil
+	oldNewNacosConfigClient := newNacosConfigClient
+	newNacosConfigClient = func(name string, share bool, sc []nacosConstant.ServerConfig,
+		cc nacosConstant.ClientConfig) (*nacosClient.NacosConfigClient, error) {
+		return &nacosClient.NacosConfigClient{}, nil
+	}
+	t.Cleanup(func() {
+		newNacosConfigClient = oldNewNacosConfigClient
 	})
-	defer patches.Reset()
 
 	tests := []struct {
 		name    string
@@ -207,4 +238,12 @@ func TestNewNacosConfigClientByUrl(t *testing.T) {
 	}
 }
 
-*/
+func TestNewNacosConfigClientByUrlMissingClientName(t *testing.T) {
+	regURLMap := url.Values{}
+	regURLMap.Set(constant.NacosNamespaceID, "nacos")
+	regURL, _ := common.NewURL("registry://test.nacos.io:80", common.WithParams(regURLMap))
+
+	client, err := NewNacosConfigClientByUrl(regURL)
+	assert.Nil(t, client)
+	assert.Error(t, err)
+}

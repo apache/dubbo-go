@@ -26,7 +26,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config/generic"
+	"dubbo.apache.org/dubbo-go/v3/filter/generic"
 	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
@@ -75,7 +75,7 @@ func (conn *Connection) call(ctx context.Context, reqs []any, resp any, methodNa
 	for _, opt := range opts {
 		opt(options)
 	}
-	inv, err := generateInvocation(methodName, reqs, resp, callType, options)
+	inv, err := generateInvocation(ctx, methodName, reqs, resp, callType, options)
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +223,7 @@ func (cli *Client) dial(interfaceName string, info *ClientInfo, srv any, opts ..
 	return &Connection{refOpts: newRefOpts}, nil
 }
 
-func generateInvocation(methodName string, reqs []any, resp any, callType string, opts *CallOptions) (base.Invocation, error) {
+func generateInvocation(ctx context.Context, methodName string, reqs []any, resp any, callType string, opts *CallOptions) (base.Invocation, error) {
 	var paramsRawVals []any
 
 	paramsRawVals = append(paramsRawVals, reqs...)
@@ -231,13 +231,26 @@ func generateInvocation(methodName string, reqs []any, resp any, callType string
 	if resp != nil {
 		paramsRawVals = append(paramsRawVals, resp)
 	}
+
+	attachments := map[string]any{
+		constant.TimeoutKey: opts.RequestTimeout,
+		constant.RetriesKey: opts.Retries,
+	}
+
+	if attaRaw := ctx.Value(constant.AttachmentKey); attaRaw != nil {
+		if userAtta, ok := attaRaw.(map[string]any); ok {
+			for key, val := range userAtta {
+				attachments[key] = val
+			}
+		}
+	}
+
 	inv := invocation.NewRPCInvocationWithOptions(
 		invocation.WithMethodName(methodName),
-		invocation.WithAttachment(constant.TimeoutKey, opts.RequestTimeout),
-		invocation.WithAttachment(constant.RetriesKey, opts.Retries),
 		invocation.WithArguments(reqs),
 		invocation.WithReply(resp),
 		invocation.WithParameterRawValues(paramsRawVals),
+		invocation.WithAttachments(attachments),
 	)
 	inv.SetAttribute(constant.CallTypeKey, callType)
 

@@ -151,7 +151,7 @@ func (h *HessianCodec) ReadHeader(header *DubboHeader) error {
 		}
 	}
 
-	//// read header
+	// read header
 
 	if buf[0] != MAGIC_HIGH && buf[1] != MAGIC_LOW {
 		return ErrIllegalPackage
@@ -240,9 +240,15 @@ func (h *HessianCodec) ReadBody(rspObj any) error {
 		}
 		rsp, ok := rspObj.(*DubboResponse)
 		if !ok {
-			return perrors.Errorf("java exception:%s", exception.(string))
+			return perrors.Errorf("java exception: %v", exception)
 		}
-		rsp.Exception = perrors.Errorf("java exception:%s", exception.(string))
+		if g, ok := ToGenericException(exception); ok {
+			rsp.Exception = g
+		} else if e, ok := exception.(error); ok {
+			rsp.Exception = e
+		} else {
+			rsp.Exception = perrors.Errorf("java exception: %v", exception)
+		}
 		return nil
 	case PackageRequest | PackageHeartbeat, PackageResponse | PackageHeartbeat:
 	case PackageRequest:

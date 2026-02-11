@@ -27,6 +27,8 @@ import (
 import (
 	"github.com/Workiva/go-datastructures/queue"
 
+	"github.com/cenkalti/backoff/v4"
+
 	"github.com/dubbogo/gost/log/logger"
 )
 
@@ -103,7 +105,8 @@ func (invoker *failbackClusterInvoker) process(ctx context.Context) {
 			}
 
 			retryTask := value.(*retryTimerTask)
-			if time.Since(retryTask.lastT).Seconds() < 5 {
+			// use exponential backoff calculated wait time instead of fixed 5 seconds
+			if time.Since(retryTask.lastT) < retryTask.nextBackoff {
 				break
 			}
 
@@ -182,34 +185,48 @@ type retryTimerTask struct {
 	retries        int64
 	maxRetries     int64
 	lastT          time.Time
+	nextBackoff    time.Duration               // next retry wait duration
+	backoff        *backoff.ExponentialBackOff // exponential backoff calculator
 	clusterInvoker *failbackClusterInvoker
 	lastErr        error
 }
 
 func (t *retryTimerTask) checkRetry() {
-	logger.Errorf("Failed retry to invoke the method %v in the service %v, wait again. The exception: %v.\n",
+	logger.Errorf("Failed retry to invoke the method %v in the service %v, wait again. The exception: %v",
 		t.invocation.MethodName(), t.clusterInvoker.GetURL().Service(), t.lastErr)
 	t.retries++
-	t.lastT = time.Now()
-	if t.retries > t.maxRetries {
-		logger.Errorf("Retry times exceed threshold (%v), invocation-> %v.\n",
+	t.nextBackoff = t.backoff.NextBackOff() // calculate next exponential backoff wait time
+
+	if t.retries > t.maxRetries || t.nextBackoff == backoff.Stop {
+		logger.Errorf("Retry times exceed threshold (%v), invocation-> %v",
 			t.retries, t.invocation)
 		return
 	}
 
+	logger.Infof("Failback retry scheduled after %v for method %v", t.nextBackoff, t.invocation.MethodName())
+
 	if err := t.clusterInvoker.taskList.Put(t); err != nil {
 		logger.Errorf("invoker.taskList.Put(retryTask:%#v) = error:%v", t, err)
+		return
 	}
+	t.lastT = time.Now() // update lastT after successful Put
 }
 
 func newRetryTimerTask(loadbalance loadbalance.LoadBalance, invocation protocolbase.Invocation, invokers []protocolbase.Invoker,
 	lastInvoker protocolbase.Invoker, cInvoker *failbackClusterInvoker) *retryTimerTask {
+	bo := backoff.NewExponentialBackOff()
+	bo.InitialInterval = 1 * time.Second
+	bo.MaxInterval = 60 * time.Second
+	bo.MaxElapsedTime = 0 // never timeout
+
 	task := &retryTimerTask{
 		loadbalance:    loadbalance,
 		invocation:     invocation,
 		invokers:       invokers,
 		lastInvoker:    lastInvoker,
 		lastT:          time.Now(),
+		backoff:        bo,
+		nextBackoff:    bo.NextBackOff(),
 		clusterInvoker: cInvoker,
 	}
 

@@ -19,6 +19,7 @@ package nacos
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"math"
 	"strconv"
@@ -28,6 +29,8 @@ import (
 )
 
 import (
+	"github.com/cenkalti/backoff/v4"
+
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
 	"github.com/dubbogo/gost/log/logger"
 
@@ -200,15 +203,30 @@ func (nr *nacosRegistry) Subscribe(url *common.URL, notifyListener registry.Noti
 }
 
 func (nr *nacosRegistry) subscribeUntilSuccess(url *common.URL, notifyListener registry.NotifyListener) {
-	// retry forever
-	for {
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		<-nr.done
+		cancel()
+	}()
+
+	bo := backoff.NewExponentialBackOff()
+	bo.InitialInterval = 1 * time.Second
+	bo.MaxInterval = 30 * time.Second
+	bo.MaxElapsedTime = 0
+
+	operation := func() error {
 		if !nr.IsAvailable() {
-			return
+			return backoff.Permanent(perrors.New("registry unavailable"))
 		}
-		err := nr.subscribe(getSubscribeName(url), notifyListener)
-		if err == nil {
-			return
-		}
+		return nr.subscribe(getSubscribeName(url), notifyListener)
+	}
+
+	notify := func(err error, duration time.Duration) {
+		logger.Warnf("[Nacos Registry] subscribe failed, retry after %v: %v", duration, err)
+	}
+
+	if err := backoff.RetryNotify(operation, backoff.WithContext(bo, ctx), notify); err != nil {
+		logger.Infof("[Nacos Registry] subscribe retry stopped: %v", err)
 	}
 }
 
