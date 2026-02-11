@@ -119,16 +119,17 @@ func createNewURL(registriesConfig *global.RegistryConfig, protocol string, addr
 }
 
 func translateRegistryAddress(registriesConfig *global.RegistryConfig) string {
-	if strings.Contains(registriesConfig.Address, "://") {
-		u, err := url.Parse(registriesConfig.Address)
+	addr := registriesConfig.Address
+	if strings.Contains(addr, "://") {
+		u, err := url.Parse(addr)
 		if err != nil {
 			logger.Errorf("The registry url is invalid, error: %#v", err)
 			panic(err)
 		}
-		registriesConfig.Protocol = u.Scheme
-		registriesConfig.Address = strings.Join([]string{u.Host, u.Path}, "")
+
+		addr = strings.Join([]string{u.Host, u.Path}, "")
 	}
-	return registriesConfig.Address
+	return addr
 }
 
 func getUrlMap(registriesConfig *global.RegistryConfig, roleType common.RoleType) url.Values {
