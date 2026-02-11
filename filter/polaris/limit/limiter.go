@@ -78,9 +78,8 @@ func (pl *polarisTpsLimiter) buildQuotaRequest(url *common.URL, invocation base.
 	ns := remotingpolaris.GetNamespace()
 	applicationMode := false
 
-	registries, ok := url.GetAttribute(constant.RegistriesConfigKey)
-	if ok {
-		if registryMap, ok := registries.(map[string]*global.RegistryConfig); ok && registryMap != nil {
+	if registries, ok := url.GetAttribute(constant.RegistriesConfigKey); ok {
+		if registryMap := registries.(map[string]*global.RegistryConfig); registryMap != nil {
 			for _, item := range registryMap {
 				if item != nil && item.Protocol == constant.PolarisKey && item.RegistryType == constant.ServiceKey {
 					applicationMode = true
