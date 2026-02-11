@@ -59,11 +59,8 @@ type ConditionRule struct {
 
 // Equal checks if two ConditionRule instances are equal.
 func (x *ConditionRule) Equal(t *ConditionRule) bool {
-	if x == t {
-		return true
-	}
 	if x == nil || t == nil {
-		return false
+		return x == t
 	}
 	if !reflect.DeepEqual(x.From, t.From) {
 		return false
