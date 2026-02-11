@@ -34,7 +34,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
@@ -65,44 +64,6 @@ func TestProviderFilterInvokeWithGlobalPackage(t *testing.T) {
 	require.NoError(t, invokeResult.Error())
 
 	opt.Shutdown.RejectRequest.Store(true)
-	invokeResult = providerFilter.Invoke(context.Background(), base.NewBaseInvoker(baseUrl), rpcInvocation)
-	assert.NotNil(t, invokeResult)
-	assert.NotNil(t, invokeResult.Error().Error(), "Rejected")
-}
-
-// only for compatibility with old config, able to directly remove after config is deleted
-func TestProviderFilterInvokeWithConfigPackage(t *testing.T) {
-	var (
-		baseUrl       = common.NewURLWithOptions(common.WithParams(url.Values{}))
-		rpcInvocation = invocation.NewRPCInvocation("GetUser", []any{"OK"}, make(map[string]any))
-		rootConfig    = config.NewRootConfigBuilder().
-				SetShutDown(config.NewShutDownConfigBuilder().
-					SetTimeout("60s").
-					SetStepTimeout("3s").
-					SetRejectRequestHandler("test").
-					Build()).Build()
-		filterValue, _ = extension.GetFilter(constant.GracefulShutdownProviderFilterKey)
-	)
-
-	extension.SetRejectedExecutionHandler("test", func() filter.RejectedExecutionHandler {
-		return &TestRejectedExecutionHandler{}
-	})
-
-	config.SetRootConfig(*rootConfig)
-
-	providerFilter := filterValue.(*providerGracefulShutdownFilter)
-	providerFilter.Set(constant.GracefulShutdownFilterShutdownConfig, config.GetShutDown())
-	assert.Equal(t, providerFilter.shutdownConfig, compatGlobalShutdownConfig(config.GetShutDown()))
-
-	invokeResult := providerFilter.Invoke(context.Background(), base.NewBaseInvoker(baseUrl), rpcInvocation)
-	assert.NotNil(t, invokeResult)
-	require.NoError(t, invokeResult.Error())
-
-	// only use this way to set the RejectRequest, because the variable is compact to GlobalShutdownConfig
-	providerFilter.shutdownConfig.RejectRequest.Store(true)
-	// not able to use this way to set the RejectRequest
-	//config.GetShutDown().RejectRequest.Store(true)
-
 	invokeResult = providerFilter.Invoke(context.Background(), base.NewBaseInvoker(baseUrl), rpcInvocation)
 	assert.NotNil(t, invokeResult)
 	assert.NotNil(t, invokeResult.Error().Error(), "Rejected")
