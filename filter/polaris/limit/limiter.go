@@ -80,10 +80,12 @@ func (pl *polarisTpsLimiter) buildQuotaRequest(url *common.URL, invocation base.
 
 	registries, ok := url.GetAttribute(constant.RegistriesConfigKey)
 	if ok {
-		for _, item := range registries.(map[string]*global.RegistryConfig) {
-			if item != nil && item.Protocol == constant.PolarisKey && item.RegistryType == constant.ServiceKey {
-				applicationMode = true
-				break
+		if registryMap, ok := registries.(map[string]*global.RegistryConfig); ok && registryMap != nil {
+			for _, item := range registryMap {
+				if item != nil && item.Protocol == constant.PolarisKey && item.RegistryType == constant.ServiceKey {
+					applicationMode = true
+					break
+				}
 			}
 		}
 	}
