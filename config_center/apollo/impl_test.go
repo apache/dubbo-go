@@ -197,9 +197,9 @@ func initMockApollo(t *testing.T) *apolloConfiguration {
 
 	apollo := initApollo()
 	apolloUrl := strings.ReplaceAll(apollo.URL, "http", "apollo")
-	url, err := common.NewURL(apolloUrl, common.WithParams(params))
+	apolloCfgURL, err := common.NewURL(apolloUrl, common.WithParams(params))
 	require.NoError(t, err)
-	configuration, err := newApolloConfiguration(url)
+	configuration, err := newApolloConfiguration(apolloCfgURL)
 	require.NoError(t, err)
 	return configuration
 }
