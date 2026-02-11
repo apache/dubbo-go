@@ -131,7 +131,7 @@ func TestToURLs_EmptyOrNA(t *testing.T) {
 			}
 			urls, err := toURLs(cfg, common.CONSUMER)
 			require.NoError(t, err)
-			assert.Len(t, urls, 0)
+			assert.Empty(t, urls)
 		})
 	}
 }
