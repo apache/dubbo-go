@@ -99,7 +99,7 @@ func TestLoadRegistries_FilteredIDs(t *testing.T) {
 	}
 }
 
-func TestLoadRegistries_PanicOnInvalidURL(t *testing.T) {
+func TestLoadRegistries_SkipInvalidURL(t *testing.T) {
 	registries := map[string]*global.RegistryConfig{
 		"bad": {
 			Protocol: "mock",
@@ -109,9 +109,8 @@ func TestLoadRegistries_PanicOnInvalidURL(t *testing.T) {
 		},
 	}
 
-	assert.Panics(t, func() {
-		_ = LoadRegistries([]string{"bad"}, registries, common.CONSUMER)
-	})
+	urls := LoadRegistries([]string{"bad"}, registries, common.CONSUMER)
+	assert.Empty(t, urls)
 }
 
 func TestToURLs_EmptyOrNA(t *testing.T) {
@@ -158,25 +157,18 @@ func TestToURLs_RegistryTypeAll(t *testing.T) {
 
 func TestTranslateRegistryAddress(t *testing.T) {
 	tests := []struct {
-		name      string
-		address   string
-		want      string
-		wantPanic bool
+		name    string
+		address string
+		want    string
 	}{
 		{name: "simple", address: "nacos://127.0.0.1:8848", want: "127.0.0.1:8848"},
 		{name: "path", address: "nacos://127.0.0.1:8848/path", want: "127.0.0.1:8848/path"},
-		{name: "invalid", address: "://bad", wantPanic: true},
+		{name: "invalid", address: "://bad", want: "://bad"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &global.RegistryConfig{Address: tt.address}
-			if tt.wantPanic {
-				assert.Panics(t, func() {
-					_ = translateRegistryAddress(cfg)
-				})
-				return
-			}
 			got := translateRegistryAddress(cfg)
 			assert.Equal(t, tt.want, got)
 		})

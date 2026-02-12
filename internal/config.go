@@ -54,14 +54,21 @@ func LoadRegistries(registryIds []string, registries map[string]*global.Registry
 		}
 
 		if target {
-			if urls, err := toURLs(registryConf, roleType); err != nil {
+			urls, err := toURLs(registryConf, roleType)
+			if err != nil {
 				logger.Errorf("The registry id: %s url is invalid, error: %#v", k, err)
-				panic(err)
-			} else {
-				for _, u := range urls {
-					u.AddParam(constant.RegistryIdKey, k)
+				continue
+			}
+
+			for _, u := range urls {
+				if u == nil {
+					continue
 				}
-				registryURLs = append(registryURLs, urls...)
+
+				clonedURL := u.Clone()
+				clonedURL.AddParam(constant.RegistryIdKey, k)
+
+				registryURLs = append(registryURLs, clonedURL)
 			}
 		}
 	}
@@ -124,7 +131,7 @@ func translateRegistryAddress(registriesConfig *global.RegistryConfig) string {
 		u, err := url.Parse(addr)
 		if err != nil {
 			logger.Errorf("The registry url is invalid, error: %#v", err)
-			panic(err)
+			return addr
 		}
 
 		addr = strings.Join([]string{u.Host, u.Path}, "")
