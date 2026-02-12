@@ -214,9 +214,24 @@ func clientInit(url *common.URL) {
 }
 
 func getInvoker(impl any, conn *grpc.ClientConn) any {
-	var in []reflect.Value
-	in = append(in, reflect.ValueOf(conn))
-	method := reflect.ValueOf(impl).MethodByName("GetDubboStub")
-	res := method.Call(in)
+	if impl == nil {
+		return nil
+	}
+
+	implValue := reflect.ValueOf(impl)
+	if !implValue.IsValid() {
+		return nil
+	}
+
+	method := implValue.MethodByName("GetDubboStub")
+	if !method.IsValid() {
+		return nil
+	}
+
+	res := method.Call([]reflect.Value{reflect.ValueOf(conn)})
+	if len(res) == 0 {
+		return nil
+	}
+
 	return res[0].Interface()
 }
