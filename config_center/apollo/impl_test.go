@@ -29,7 +29,7 @@ import (
 )
 
 import (
-	aconstant "github.com/apolloconfig/agollo/v4/constant"
+	apolloconstant "github.com/apolloconfig/agollo/v4/constant"
 	"github.com/apolloconfig/agollo/v4/extension"
 
 	"github.com/knadh/koanf"
@@ -186,8 +186,8 @@ func TestGetConfigItem(t *testing.T) {
 
 func initMockApollo(t *testing.T) *apolloConfiguration {
 	// Register the YAML format parser with concurrent safety.
-	extension.AddFormatParser(aconstant.YAML, &Parser{})
-	extension.AddFormatParser(aconstant.YML, &Parser{})
+	extension.AddFormatParser(apolloconstant.YAML, &Parser{})
+	extension.AddFormatParser(apolloconstant.YML, &Parser{})
 
 	params := url.Values{}
 	params.Set(constant.ConfigNamespaceKey, "mockDubbogo.yaml")
