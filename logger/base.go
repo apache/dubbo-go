@@ -18,6 +18,10 @@
 package logger
 
 import (
+	"context"
+)
+
+import (
 	"github.com/natefinch/lumberjack"
 
 	"go.uber.org/zap"
@@ -40,4 +44,17 @@ type Logger interface {
 	Errorf(template string, args ...any)
 	Fatal(args ...any)
 	Fatalf(fmt string, args ...any)
+}
+
+// CtxLogger extends Logger interface with context-aware logging methods.
+type CtxLogger interface {
+	Logger
+	CtxDebug(ctx context.Context, args ...any)
+	CtxDebugf(ctx context.Context, template string, args ...any)
+	CtxInfo(ctx context.Context, args ...any)
+	CtxInfof(ctx context.Context, template string, args ...any)
+	CtxWarn(ctx context.Context, args ...any)
+	CtxWarnf(ctx context.Context, template string, args ...any)
+	CtxError(ctx context.Context, args ...any)
+	CtxErrorf(ctx context.Context, template string, args ...any)
 }

@@ -2032,6 +2032,70 @@ func TestLoggerConfigClone(t *testing.T) {
 		assert.NotSame(t, logger, cloned)
 	})
 
+	t.Run("clone_full_logger_config_with_trace_integration", func(t *testing.T) {
+		enabled := true
+		recordError := false
+		logger := &LoggerConfig{
+			Driver:   "zap",
+			Level:    "info",
+			Format:   "json",
+			Appender: "console",
+			File: &File{
+				Name:       "app.log",
+				MaxSize:    100,
+				MaxBackups: 5,
+				MaxAge:     7,
+				Compress:   &enabled,
+			},
+			TraceIntegration: &TraceIntegrationConfig{
+				Enabled:           &enabled,
+				RecordErrorToSpan: &recordError,
+			},
+		}
+		cloned := logger.Clone()
+		assert.NotNil(t, cloned)
+		assert.Equal(t, logger.Driver, cloned.Driver)
+		assert.Equal(t, logger.Level, cloned.Level)
+		assert.Equal(t, logger.Format, cloned.Format)
+		assert.Equal(t, logger.Appender, cloned.Appender)
+		assert.NotSame(t, logger, cloned)
+		assert.NotSame(t, logger.File, cloned.File)
+		assert.NotSame(t, logger.TraceIntegration, cloned.TraceIntegration)
+		assert.Equal(t, *logger.TraceIntegration.Enabled, *cloned.TraceIntegration.Enabled)
+		assert.Equal(t, *logger.TraceIntegration.RecordErrorToSpan, *cloned.TraceIntegration.RecordErrorToSpan)
+	})
+
+	t.Run("clone_logger_config_with_nil_trace_integration", func(t *testing.T) {
+		logger := &LoggerConfig{
+			Level:            "debug",
+			TraceIntegration: nil,
+		}
+		cloned := logger.Clone()
+		assert.NotNil(t, cloned)
+		assert.Equal(t, logger.Level, cloned.Level)
+		assert.Nil(t, cloned.TraceIntegration)
+	})
+
+	t.Run("clone_trace_integration_config", func(t *testing.T) {
+		enabled := true
+		recordError := false
+		ti := &TraceIntegrationConfig{
+			Enabled:           &enabled,
+			RecordErrorToSpan: &recordError,
+		}
+		cloned := ti.Clone()
+		assert.NotNil(t, cloned)
+		assert.NotSame(t, ti, cloned)
+		assert.Equal(t, *ti.Enabled, *cloned.Enabled)
+		assert.Equal(t, *ti.RecordErrorToSpan, *cloned.RecordErrorToSpan)
+	})
+
+	t.Run("clone_nil_trace_integration_config", func(t *testing.T) {
+		var ti *TraceIntegrationConfig
+		cloned := ti.Clone()
+		assert.Nil(t, cloned)
+	})
+
 	t.Run("clone_nil_logger_config", func(t *testing.T) {
 		var logger *LoggerConfig
 		cloned := logger.Clone()

@@ -444,16 +444,18 @@ const (
 )
 
 const (
-	LoggerLevelKey          = "logger.level"
-	LoggerDriverKey         = "logger.driver"
-	LoggerFormatKey         = "logger.format"
-	LoggerAppenderKey       = "logger.appender"
-	LoggerFileNameKey       = "logger.file.name"
-	LoggerFileNaxSizeKey    = "logger.file.max-size"
-	LoggerFileMaxBackupsKey = "logger.file.max-backups"
-	LoggerFileMaxAgeKey     = "logger.file.max-age"
-	LoggerFileLocalTimeKey  = "logger.file.local-time"
-	LoggerFileCompressKey   = "logger.file.compress"
+	LoggerLevelKey            = "logger.level"
+	LoggerDriverKey           = "logger.driver"
+	LoggerFormatKey           = "logger.format"
+	LoggerAppenderKey         = "logger.appender"
+	LoggerFileNameKey         = "logger.file.name"
+	LoggerFileNaxSizeKey      = "logger.file.max-size"
+	LoggerFileMaxBackupsKey   = "logger.file.max-backups"
+	LoggerFileMaxAgeKey       = "logger.file.max-age"
+	LoggerFileLocalTimeKey    = "logger.file.local-time"
+	LoggerFileCompressKey     = "logger.file.compress"
+	LoggerTraceEnabledKey     = "logger.trace-integration.enabled"
+	LoggerTraceRecordErrorKey = "logger.trace-integration.record-error-to-span"
 )
 
 // metrics key
