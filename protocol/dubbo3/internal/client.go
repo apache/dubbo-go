@@ -16,14 +16,3 @@
  */
 
 package internal
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/config"
-)
-
-// TODO: After the config is removed, remove the test
-func init() {
-	// for pb client
-	config.SetConsumerServiceByInterfaceName("org.apache.dubbo.DubboGreeterImpl", &GreeterClientImpl{})
-	config.SetConsumerService(&GreeterClientImpl{})
-}
