@@ -26,7 +26,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/filter_impl"
 	_ "dubbo.apache.org/dubbo-go/v3/metrics/prometheus"
 	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"

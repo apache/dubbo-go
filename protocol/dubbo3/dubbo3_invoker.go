@@ -38,7 +38,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config"
@@ -86,7 +85,7 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 	// which can't locate the target consumer stub, so we use interface key.
 	interfaceKey := url.GetParam(constant.InterfaceKey, "")
 	//TODO: Temporary compatibility with old APIs, can be removed later
-	consumerService = dubbo.GetConsumerServiceByInterfaceName(interfaceKey)
+	consumerService = config.GetConsumerServiceByInterfaceName(interfaceKey)
 	if rpcService, ok := url.GetAttribute(constant.RpcServiceKey); ok {
 		consumerService = rpcService
 	}
