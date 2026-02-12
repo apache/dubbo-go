@@ -35,8 +35,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	conf "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
@@ -322,14 +322,19 @@ type ApplicationRouter struct {
 	currentApplication string
 }
 
-func NewApplicationRouter() *ApplicationRouter {
-	applicationName := config.GetApplicationConfig().Name
+func NewApplicationRouter(url *common.URL) *ApplicationRouter {
+	// get application name from url param
+	applicationName := url.GetParam(constant.ApplicationKey, "")
+	if applicationName == "" && url.SubURL != nil {
+		applicationName = url.SubURL.GetParam(constant.ApplicationKey, "")
+	}
+
 	a := &ApplicationRouter{
 		currentApplication: applicationName,
 	}
 
 	dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
-	if dynamicConfiguration != nil {
+	if dynamicConfiguration != nil && applicationName != "" {
 		dynamicConfiguration.AddListener(strings.Join([]string{applicationName, constant.ConditionRouterRuleSuffix}, ""), a)
 	}
 	return a
@@ -382,7 +387,7 @@ func (a *ApplicationRouter) Notify(invokers []base.Invoker) {
 	}
 }
 
-func removeDuplicates(rules []*config.ConditionRule) {
+func removeDuplicates(rules []*global.ConditionRule) {
 	for i := 0; i < len(rules); i++ {
 		if rules[i] == nil {
 			continue

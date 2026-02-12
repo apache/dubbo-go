@@ -18,7 +18,15 @@
 package triple
 
 import (
+	"errors"
+	"net/http"
+	"net/url"
+	"strings"
 	"time"
+)
+
+import (
+	"github.com/dubbogo/gost/log/logger"
 )
 
 import (
@@ -92,6 +100,23 @@ func WithMaxServerRecvMsgSize(size string) Option {
 	}
 }
 
+// WithCORS applies CORS configuration to triple options.
+// Invalid configs are logged as errors and ignored (no-op).
+func WithCORS(opts ...CORSOption) Option {
+	cors := global.DefaultCorsConfig()
+	for _, opt := range opts {
+		opt(cors)
+	}
+	if err := validateCorsConfig(cors); err != nil {
+		logger.Errorf("[TRIPLE] invalid CORS config: %v", err)
+		// Return a no-op function to ignore invalid CORS configuration
+		return func(*Options) {}
+	}
+	return func(opts *Options) {
+		opts.Triple.Cors = cors
+	}
+}
+
 // Http3Enable enables HTTP/3 support for the Triple protocol.
 // This option configures the server to start both HTTP/2 and HTTP/3 servers
 // simultaneously, providing modern HTTP/3 capabilities alongside traditional HTTP/2.
@@ -160,4 +185,167 @@ func Http3Negotiation(negotiation bool) Option {
 	return func(opts *Options) {
 		opts.Triple.Http3.Negotiation = negotiation
 	}
+}
+
+// CORSOption configures a single aspect of CORS.
+type CORSOption func(*global.CorsConfig)
+
+// CORSAllowOrigins sets allowed origins for CORS requests.
+func CORSAllowOrigins(origins ...string) CORSOption {
+	return func(c *global.CorsConfig) {
+		c.AllowOrigins = append([]string(nil), origins...)
+	}
+}
+
+// CORSAllowMethods sets allowed HTTP methods for CORS requests.
+func CORSAllowMethods(methods ...string) CORSOption {
+	return func(c *global.CorsConfig) {
+		c.AllowMethods = append([]string(nil), methods...)
+	}
+}
+
+// CORSAllowHeaders sets allowed request headers for CORS requests.
+func CORSAllowHeaders(headers ...string) CORSOption {
+	return func(c *global.CorsConfig) {
+		c.AllowHeaders = append([]string(nil), headers...)
+	}
+}
+
+// CORSExposeHeaders sets headers exposed to the browser.
+func CORSExposeHeaders(headers ...string) CORSOption {
+	return func(c *global.CorsConfig) {
+		c.ExposeHeaders = append([]string(nil), headers...)
+	}
+}
+
+// CORSAllowCredentials toggles whether credentials are allowed.
+func CORSAllowCredentials(allow bool) CORSOption {
+	return func(c *global.CorsConfig) {
+		c.AllowCredentials = allow
+	}
+}
+
+// CORSMaxAge sets the max age for preflight cache.
+func CORSMaxAge(maxAge int) CORSOption {
+	return func(c *global.CorsConfig) {
+		c.MaxAge = maxAge
+	}
+}
+
+var validHTTPMethods = map[string]bool{
+	http.MethodGet:     true,
+	http.MethodHead:    true,
+	http.MethodPost:    true,
+	http.MethodPut:     true,
+	http.MethodPatch:   true,
+	http.MethodDelete:  true,
+	http.MethodConnect: true,
+	http.MethodOptions: true,
+	http.MethodTrace:   true,
+}
+
+// validateCorsConfig validates CORS configuration.
+func validateCorsConfig(cors *global.CorsConfig) error {
+	if cors == nil {
+		return nil
+	}
+
+	// Validate origins
+	for _, origin := range cors.AllowOrigins {
+		if origin == "" {
+			return errors.New("allow-origins cannot contain empty string")
+		}
+		if err := validateOrigin(origin); err != nil {
+			return err
+		}
+		if cors.AllowCredentials && origin == "*" {
+			return errors.New("allowCredentials cannot be true when allow-origins contains \"*\"")
+		}
+	}
+
+	// Validate methods
+	for _, method := range cors.AllowMethods {
+		if method == "" || !validHTTPMethods[strings.ToUpper(method)] {
+			return errors.New("allow-methods contains invalid HTTP method")
+		}
+	}
+
+	// Validate headers (both allow and expose)
+	if err := validateHeaders(cors.AllowHeaders, "allow-headers"); err != nil {
+		return err
+	}
+	if err := validateHeaders(cors.ExposeHeaders, "expose-headers"); err != nil {
+		return err
+	}
+
+	if cors.MaxAge < 0 {
+		return errors.New("max-age cannot be negative")
+	}
+
+	return nil
+}
+
+func validateHeaders(headers []string, fieldName string) error {
+	for _, header := range headers {
+		if strings.TrimSpace(header) == "" {
+			return errors.New(fieldName + " cannot contain empty string")
+		}
+	}
+	return nil
+}
+
+func validateOrigin(origin string) error {
+	// Allow wildcard
+	if origin == "*" {
+		return nil
+	}
+
+	// Check for whitespace
+	if strings.ContainsAny(origin, " \t\n\r") {
+		return errors.New("origin contains whitespace")
+	}
+
+	// Handle subdomain wildcard (*.example.com or https://*.example.com)
+	if strings.Contains(origin, "*") {
+		return validateWildcardOrigin(origin)
+	}
+
+	// Validate URL format
+	if strings.Contains(origin, "://") {
+		u, err := url.Parse(origin)
+		if err != nil || u.Scheme == "" || u.Host == "" {
+			return errors.New("invalid URL format")
+		}
+	}
+
+	return nil
+}
+
+func validateWildcardOrigin(origin string) error {
+	// Must be *.domain or scheme://*.domain
+	if !strings.HasPrefix(origin, "*.") && !strings.Contains(origin, "://*.") {
+		return errors.New("wildcard must be at start: '*.domain' or 'scheme://*.domain'")
+	}
+
+	// Extract domain part after *.
+	var domain string
+	if strings.Contains(origin, "://*.") {
+		parts := strings.SplitN(origin, "://*.", 2)
+		if len(parts) != 2 || parts[1] == "" {
+			return errors.New("invalid subdomain wildcard format")
+		}
+		domain = parts[1]
+	} else {
+		domain = origin[2:]
+		if domain == "" {
+			return errors.New("invalid subdomain wildcard format")
+		}
+	}
+
+	// Only single wildcard allowed
+	if strings.Contains(domain, "*") {
+		return errors.New("only single wildcard at subdomain level is allowed")
+	}
+
+	return nil
 }
