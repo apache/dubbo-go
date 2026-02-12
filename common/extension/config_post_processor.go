@@ -18,24 +18,34 @@
 package extension
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config/interfaces"
+	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
-var processors = make(map[string]interfaces.ConfigPostProcessor)
+// ConfigPostProcessor is an extension to give users a chance to customize configs against ReferenceConfig and
+// ServiceConfig during deployment time.
+type ConfigPostProcessor interface {
+	// PostProcessReferenceConfig customizes ReferenceConfig's params.
+	PostProcessReferenceConfig(*common.URL)
+
+	// PostProcessServiceConfig customizes ServiceConfig's params.
+	PostProcessServiceConfig(*common.URL)
+}
+
+var processors = make(map[string]ConfigPostProcessor)
 
 // SetConfigPostProcessor registers a ConfigPostProcessor with the given name.
-func SetConfigPostProcessor(name string, processor interfaces.ConfigPostProcessor) {
+func SetConfigPostProcessor(name string, processor ConfigPostProcessor) {
 	processors[name] = processor
 }
 
 // GetConfigPostProcessor finds a ConfigPostProcessor by name.
-func GetConfigPostProcessor(name string) interfaces.ConfigPostProcessor {
+func GetConfigPostProcessor(name string) ConfigPostProcessor {
 	return processors[name]
 }
 
 // GetConfigPostProcessors returns all registered instances of ConfigPostProcessor.
-func GetConfigPostProcessors() []interfaces.ConfigPostProcessor {
-	ret := make([]interfaces.ConfigPostProcessor, 0, len(processors))
+func GetConfigPostProcessors() []ConfigPostProcessor {
+	ret := make([]ConfigPostProcessor, 0, len(processors))
 	for _, v := range processors {
 		ret = append(ret, v)
 	}
