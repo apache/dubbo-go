@@ -28,13 +28,16 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3"
 )
 
 func init() {
-	config.SetConsumerServiceByInterfaceName("io.grpc.examples.helloworld.GreeterGrpc$RouteGuide", &RouteGuideClientImpl{})
-	config.SetConsumerService(&RouteGuideClientImpl{})
+	dubbo.SetConsumerServiceByInterfaceName("io.grpc.examples.helloworld.GreeterGrpc$RouteGuide", &RouteGuideClientImpl{})
+	dubbo.SetConsumerService(&RouteGuideClientImpl{})
 }
+
+
+
 
 // PrintFeatures lists all the features within the given bounding Rectangle.
 func PrintFeatures(stream RouteGuide_ListFeaturesClient) {
