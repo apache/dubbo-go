@@ -155,7 +155,7 @@ func TestGetConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	appCfg := &global.ApplicationConfig{}
-	err = koan.UnmarshalWithConf("dubbo.application", appCfg, koanf.UnmarshalConf{Tag: "yaml"})
+	err = koan.UnmarshalWithConf(constant.ApplicationConfigPrefix, appCfg, koanf.UnmarshalConf{Tag: "yaml"})
 	require.NoError(t, err)
 
 	assert.Equal(t, "demo-server", appCfg.Name)
@@ -179,7 +179,7 @@ func TestGetJsonConfig(t *testing.T) {
 
 func TestGetConfigItem(t *testing.T) {
 	configuration := initMockApollo(t)
-	appName, err := configuration.GetInternalProperty("dubbo.application.name")
+	appName, err := configuration.GetInternalProperty(constant.ApplicationConfigPrefix + ".name")
 	require.NoError(t, err)
 	assert.Equal(t, "demo-server", appName)
 }
