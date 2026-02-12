@@ -36,9 +36,6 @@ func init() {
 	dubbo.SetConsumerService(&RouteGuideClientImpl{})
 }
 
-
-
-
 // PrintFeatures lists all the features within the given bounding Rectangle.
 func PrintFeatures(stream RouteGuide_ListFeaturesClient) {
 	for {
