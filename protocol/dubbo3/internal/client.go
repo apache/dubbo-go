@@ -16,3 +16,7 @@
  */
 
 package internal
+
+// _clientFileSentinel exists only to ensure this file is non-empty and
+// to keep the package structure clear for potential future client-related code.
+type _clientFileSentinel struct{}
