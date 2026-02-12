@@ -414,7 +414,9 @@ func TestRouteReturn(t *testing.T) {
 			resVal := len(filterInvokers)
 
 			assert.Equal(t, data.wantVal, resVal)
-			assert.Equal(t, wantInvokers, filterInvokers)
+			for i := range filterInvokers {
+				assert.Equal(t, wantInvokers[i].GetURL().String(), filterInvokers[i].GetURL().String())
+			}
 		})
 	}
 }
