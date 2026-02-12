@@ -96,8 +96,11 @@ func (c *rpcCollector) afterInvokeHandler(event *metricsEvent) {
 		if event.result.Error() == nil {
 			c.incRequestsSucceedTotal(role, labels)
 		} else {
-			// TODO: Breaking down RPC exceptions further
+			// Increment total failed count
 			c.incRequestsFailedTotal(role, labels)
+			// Classify and increment granular error metrics
+			errType := classifyError(event.result.Error())
+			c.incRequestsFailedByType(role, labels, errType)
 		}
 	}
 	c.reportRTMilliseconds(role, labels, event.costTime.Milliseconds())
@@ -160,6 +163,37 @@ func (c *rpcCollector) incRequestsFailedTotal(role string, labels map[string]str
 	case constant.SideConsumer:
 		c.metricSet.consumer.requestsFailedTotal.Inc(labels)
 		c.metricSet.consumer.requestsFailedTotalAggregate.Inc(labels)
+	}
+}
+
+func (c *rpcCollector) incRequestsFailedByType(role string, labels map[string]string, errType ErrorType) {
+	var ms *rpcCommonMetrics
+
+	switch role {
+	case constant.SideProvider:
+		ms = &c.metricSet.provider.rpcCommonMetrics
+	case constant.SideConsumer:
+		ms = &c.metricSet.consumer.rpcCommonMetrics
+	default:
+		return
+	}
+
+	switch errType {
+	case ErrorTypeTimeout:
+		ms.requestsTimeoutTotal.Inc(labels)
+		ms.requestsTimeoutTotalAggregate.Inc(labels)
+	case ErrorTypeLimit:
+		ms.requestsLimitTotal.Inc(labels)
+		ms.requestsLimitTotalAggregate.Inc(labels)
+	case ErrorTypeServiceUnavailable:
+		ms.requestsServiceUnavailableTotal.Inc(labels)
+		ms.requestsServiceUnavailableTotalAggregate.Inc(labels)
+	case ErrorTypeBusinessFailed:
+		ms.requestsBusinessFailedTotal.Inc(labels)
+		ms.requestsBusinessFailedTotalAggregate.Inc(labels)
+	default:
+		ms.requestsUnknownFailedTotal.Inc(labels)
+		ms.requestsUnknownFailedTotalAggregate.Inc(labels)
 	}
 }
 
