@@ -27,15 +27,6 @@ import (
 	log "github.com/dubbogo/gost/log/logger"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3"
-)
-
-func init() {
-	dubbo.SetConsumerServiceByInterfaceName("io.grpc.examples.helloworld.GreeterGrpc$RouteGuide", &RouteGuideClientImpl{})
-	dubbo.SetConsumerService(&RouteGuideClientImpl{})
-}
-
 // PrintFeatures lists all the features within the given bounding Rectangle.
 func PrintFeatures(stream RouteGuide_ListFeaturesClient) {
 	for {

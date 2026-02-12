@@ -25,15 +25,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3"
-)
-
-func init() {
-	dubbo.SetConsumerServiceByInterfaceName("io.grpc.examples.helloworld.GreeterGrpc$IGreeter", &GrpcGreeterImpl{})
-	dubbo.SetConsumerService(&GrpcGreeterImpl{})
-}
-
 // GrpcGreeterImpl
 // used for dubbo-grpc biz client
 type GrpcGreeterImpl struct {

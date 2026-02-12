@@ -35,8 +35,6 @@ import (
 var (
 	consumerServices = map[string]*client.ClientDefinition{}
 	conLock          sync.RWMutex
-	consumerServicesByInterfaceName = map[string]common.RPCService{}
-	conInterfaceLock                sync.RWMutex
 	providerServices = map[string]*server.ServiceDefinition{}
 	proLock          sync.RWMutex
 	startOnce        sync.Once
@@ -297,20 +295,6 @@ func SetConsumerService(svc common.RPCService) {
 	consumerServices[common.GetReference(svc)] = &client.ClientDefinition{
 		Svc: svc,
 	}
-}
-
-// SetConsumerServiceByInterfaceName registers a consumer by interface name for pb serialization.
-func SetConsumerServiceByInterfaceName(interfaceName string, srv common.RPCService) {
-	conInterfaceLock.Lock()
-	defer conInterfaceLock.Unlock()
-	consumerServicesByInterfaceName[interfaceName] = srv
-}
-
-// GetConsumerServiceByInterfaceName returns a consumer by interface name for pb serialization.
-func GetConsumerServiceByInterfaceName(interfaceName string) common.RPCService {
-	conInterfaceLock.RLock()
-	defer conInterfaceLock.RUnlock()
-	return consumerServicesByInterfaceName[interfaceName]
 }
 
 func SetProviderService(svc common.RPCService) {
