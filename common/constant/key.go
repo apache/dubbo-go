@@ -475,6 +475,13 @@ const (
 	PrometheusPushgatewayPasswordKey     = "prometheus.pushgateway.password"
 	PrometheusPushgatewayPushIntervalKey = "prometheus.pushgateway.push.interval"
 	PrometheusPushgatewayJobKey          = "prometheus.pushgateway.job"
+
+	ProbeEnabledKey          = "probe.enabled"
+	ProbePortKey             = "probe.port"
+	ProbeLivenessPathKey     = "probe.liveness.path"
+	ProbeReadinessPathKey    = "probe.readiness.path"
+	ProbeStartupPathKey      = "probe.startup.path"
+	ProbeUseInternalStateKey = "probe.use-internal-state"
 )
 
 // default meta cache config

@@ -28,6 +28,7 @@ type MetricsConfig struct {
 	EnableMetadata     *bool             `default:"true" yaml:"enable-metadata" json:"enable-metadata,omitempty" property:"enable-metadata"`
 	EnableRegistry     *bool             `default:"true" yaml:"enable-registry" json:"enable-registry,omitempty" property:"enable-registry"`
 	EnableConfigCenter *bool             `default:"true" yaml:"enable-config-center" json:"enable-config-center,omitempty" property:"enable-config-center"`
+	Probe              *ProbeConfig      `yaml:"probe" json:"probe" property:"probe"`
 }
 
 type AggregateConfig struct {
@@ -39,6 +40,15 @@ type AggregateConfig struct {
 type PrometheusConfig struct {
 	Exporter    *Exporter          `yaml:"exporter" json:"exporter,omitempty" property:"exporter"`
 	Pushgateway *PushgatewayConfig `yaml:"pushgateway" json:"pushgateway,omitempty" property:"pushgateway"`
+}
+
+type ProbeConfig struct {
+	Enabled          *bool  `default:"false" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
+	Port             string `default:"22222" yaml:"port" json:"port,omitempty" property:"port"`
+	LivenessPath     string `default:"/live" yaml:"liveness-path" json:"liveness-path,omitempty" property:"liveness-path"`
+	ReadinessPath    string `default:"/ready" yaml:"readiness-path" json:"readiness-path,omitempty" property:"readiness-path"`
+	StartupPath      string `default:"/startup" yaml:"startup-path" json:"startup-path,omitempty" property:"startup-path"`
+	UseInternalState *bool  `default:"true" yaml:"use-internal-state" json:"use-internal-state,omitempty" property:"use-internal-state"`
 }
 
 type Exporter struct {
@@ -57,7 +67,7 @@ type PushgatewayConfig struct {
 
 func DefaultMetricsConfig() *MetricsConfig {
 	// return a new config without setting any field means there is not any default value for initialization
-	return &MetricsConfig{Prometheus: defaultPrometheusConfig(), Aggregation: defaultAggregateConfig()}
+	return &MetricsConfig{Prometheus: defaultPrometheusConfig(), Aggregation: defaultAggregateConfig(), Probe: defaultProbeConfig()}
 }
 
 // Clone a new MetricsConfig
@@ -100,6 +110,7 @@ func (c *MetricsConfig) Clone() *MetricsConfig {
 		EnableMetadata:     newEnableMetadata,
 		EnableRegistry:     newEnableRegistry,
 		EnableConfigCenter: newEnableConfigCenter,
+		Probe:              c.Probe.Clone(),
 	}
 }
 
@@ -152,6 +163,36 @@ func (c *PushgatewayConfig) Clone() *PushgatewayConfig {
 		Username:     c.Username,
 		Password:     c.Password,
 		PushInterval: c.PushInterval,
+	}
+}
+
+func defaultProbeConfig() *ProbeConfig {
+	return &ProbeConfig{}
+}
+
+func (c *ProbeConfig) Clone() *ProbeConfig {
+	if c == nil {
+		return nil
+	}
+
+	var newEnabled *bool
+	if c.Enabled != nil {
+		newEnabled = new(bool)
+		*newEnabled = *c.Enabled
+	}
+	var newUseInternalState *bool
+	if c.UseInternalState != nil {
+		newUseInternalState = new(bool)
+		*newUseInternalState = *c.UseInternalState
+	}
+
+	return &ProbeConfig{
+		Enabled:          newEnabled,
+		Port:             c.Port,
+		LivenessPath:     c.LivenessPath,
+		ReadinessPath:    c.ReadinessPath,
+		StartupPath:      c.StartupPath,
+		UseInternalState: newUseInternalState,
 	}
 }
 
