@@ -169,7 +169,12 @@ func TestTranslateRegistryAddress(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &global.RegistryConfig{Address: tt.address}
-			got := translateRegistryAddress(cfg)
+			got, err := translateRegistryAddress(cfg)
+			if tt.name == "invalid" {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})
 	}

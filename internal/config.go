@@ -67,7 +67,6 @@ func LoadRegistries(registryIds []string, registries map[string]*global.Registry
 
 				clonedURL := u.Clone()
 				clonedURL.AddParam(constant.RegistryIdKey, k)
-
 				registryURLs = append(registryURLs, clonedURL)
 			}
 		}
@@ -77,9 +76,11 @@ func LoadRegistries(registryIds []string, registries map[string]*global.Registry
 }
 
 func toURLs(registriesConfig *global.RegistryConfig, roleType common.RoleType) ([]*common.URL, error) {
-	address := translateRegistryAddress(registriesConfig)
+	address, err := translateRegistryAddress(registriesConfig)
+	if err != nil {
+		return nil, err
+	}
 	var urls []*common.URL
-	var err error
 	var registryURL *common.URL
 
 	if address == "" || address == constant.NotAvailable {
@@ -125,18 +126,16 @@ func createNewURL(registriesConfig *global.RegistryConfig, protocol string, addr
 	)
 }
 
-func translateRegistryAddress(registriesConfig *global.RegistryConfig) string {
+func translateRegistryAddress(registriesConfig *global.RegistryConfig) (string, error) {
 	addr := registriesConfig.Address
 	if strings.Contains(addr, "://") {
 		u, err := url.Parse(addr)
 		if err != nil {
-			logger.Errorf("The registry url is invalid, error: %#v", err)
-			return addr
+			return "", err
 		}
-
-		addr = strings.Join([]string{u.Host, u.Path}, "")
+		return u.Host + u.Path, nil
 	}
-	return addr
+	return addr, nil
 }
 
 func getUrlMap(registriesConfig *global.RegistryConfig, roleType common.RoleType) url.Values {
