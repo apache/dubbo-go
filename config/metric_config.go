@@ -35,16 +35,25 @@ import (
 
 // MetricsConfig This is the config struct for all metrics implementation
 type MetricsConfig struct {
-	Enable             *bool             `default:"false" yaml:"enable" json:"enable,omitempty" property:"enable"`
-	Port               string            `default:"9090" yaml:"port" json:"port,omitempty" property:"port"`
-	Path               string            `default:"/metrics" yaml:"path" json:"path,omitempty" property:"path"`
-	Protocol           string            `default:"prometheus" yaml:"protocol" json:"protocol,omitempty" property:"protocol"`
-	EnableMetadata     *bool             `default:"false" yaml:"enable-metadata" json:"enable-metadata,omitempty" property:"enable-metadata"`
-	EnableRegistry     *bool             `default:"false" yaml:"enable-registry" json:"enable-registry,omitempty" property:"enable-registry"`
-	EnableConfigCenter *bool             `default:"false" yaml:"enable-config-center" json:"enable-config-center,omitempty" property:"enable-config-center"`
-	Prometheus         *PrometheusConfig `yaml:"prometheus" json:"prometheus" property:"prometheus"`
-	Aggregation        *AggregateConfig  `yaml:"aggregation" json:"aggregation" property:"aggregation"`
+	Enable             *bool              `default:"false" yaml:"enable" json:"enable,omitempty" property:"enable"`
+	Port               string             `default:"9090" yaml:"port" json:"port,omitempty" property:"port"`
+	Path               string             `default:"/metrics" yaml:"path" json:"path,omitempty" property:"path"`
+	Protocol           string             `default:"prometheus" yaml:"protocol" json:"protocol,omitempty" property:"protocol"`
+	EnableMetadata     *bool              `default:"false" yaml:"enable-metadata" json:"enable-metadata,omitempty" property:"enable-metadata"`
+	EnableRegistry     *bool              `default:"false" yaml:"enable-registry" json:"enable-registry,omitempty" property:"enable-registry"`
+	EnableConfigCenter *bool              `default:"false" yaml:"enable-config-center" json:"enable-config-center,omitempty" property:"enable-config-center"`
+	Prometheus         *PrometheusConfig  `yaml:"prometheus" json:"prometheus" property:"prometheus"`
+	Aggregation        *AggregateConfig   `yaml:"aggregation" json:"aggregation" property:"aggregation"`
+	HealthCheck        *HealthCheckConfig `yaml:"health-check" json:"health-check" property:"health-check"`
 	rootConfig         *RootConfig
+}
+
+type HealthCheckConfig struct {
+	Enabled   *bool  `default:"false" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
+	Port      string `default:"8080" yaml:"port" json:"port,omitempty" property:"port"`
+	LivePath  string `default:"/health/live" yaml:"live-path" json:"live-path,omitempty" property:"live-path"`
+	ReadyPath string `default:"/health/ready" yaml:"ready-path" json:"ready-path,omitempty" property:"ready-path"`
+	Timeout   string `default:"10s" yaml:"timeout" json:"timeout,omitempty" property:"timeout"`
 }
 
 type AggregateConfig struct {
@@ -160,6 +169,13 @@ func (mc *MetricsConfig) toURL() *common.URL {
 			url.SetParam(constant.PrometheusPushgatewayPushIntervalKey, strconv.Itoa(pushGateWay.PushInterval))
 			url.SetParam(constant.PrometheusPushgatewayJobKey, pushGateWay.Job)
 		}
+	}
+	if mc.HealthCheck != nil {
+		url.SetParam(constant.HealthCheckEnabledKey, strconv.FormatBool(*mc.HealthCheck.Enabled))
+		url.SetParam(constant.HealthCheckPortKey, mc.HealthCheck.Port)
+		url.SetParam(constant.HealthCheckLivePathKey, mc.HealthCheck.LivePath)
+		url.SetParam(constant.HealthCheckReadyPathKey, mc.HealthCheck.ReadyPath)
+		url.SetParam(constant.HealthCheckTimeoutKey, mc.HealthCheck.Timeout)
 	}
 	return url
 }
