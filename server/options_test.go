@@ -63,6 +63,17 @@ func TestServerOptionsInitWithOptions(t *testing.T) {
 	assert.Equal(t, "test-group", opts.Provider.Group)
 }
 
+func TestServerOptionsInitEnsuresMetricsDefaults(t *testing.T) {
+	opts := defaultServerOptions()
+	opts.Metrics = &global.MetricsConfig{}
+	err := opts.init()
+	require.NoError(t, err)
+	require.NotNil(t, opts.Metrics)
+	assert.NotNil(t, opts.Metrics.Prometheus)
+	assert.NotNil(t, opts.Metrics.Aggregation)
+	assert.NotNil(t, opts.Metrics.Probe)
+}
+
 // Test WithServerLoadBalanceConsistentHashing
 func TestWithServerLoadBalanceConsistentHashing(t *testing.T) {
 	opts := defaultServerOptions()

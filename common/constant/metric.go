@@ -53,6 +53,10 @@ const (
 	PrometheusDefaultMetricsPort        = "9090"
 	PrometheusDefaultPushInterval       = 30
 	PrometheusDefaultJobName            = "default_dubbo_job"
+	ProbeDefaultPort                    = "22222"
+	ProbeDefaultLivenessPath            = "/live"
+	ProbeDefaultReadinessPath           = "/ready"
+	ProbeDefaultStartupPath             = "/startup"
 	MetricFilterStartTime               = "metric_filter_start_time"
 )
 
