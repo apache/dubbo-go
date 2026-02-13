@@ -39,7 +39,6 @@ import (
 	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/dubboutil"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	aslimiter "dubbo.apache.org/dubbo-go/v3/filter/adaptivesvc/limiter"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
@@ -498,11 +497,7 @@ type ServiceOptions struct {
 	// for triple non-IDL mode
 	// consider put here or global.ServiceConfig
 	// string for url
-	// TODO: remove this when config package is remove
 	IDLMode string
-
-	applicationCompat *config.ApplicationConfig
-	registriesCompat  map[string]*config.RegistryConfig
 }
 
 func defaultServiceOptions() *ServiceOptions {
@@ -532,20 +527,11 @@ func (svcOpts *ServiceOptions) init(srv *Server, opts ...ServiceOption) error {
 
 	application := svcOpts.Application
 	if application != nil {
-		svcOpts.applicationCompat = compatApplicationConfig(application)
-		if err := svcOpts.applicationCompat.Init(); err != nil {
-			return err
-		}
-		// todo(DMwangnima): make this clearer
-		// this statement is responsible for setting rootConfig.Application
-		// since many modules would retrieve this information directly.
-		config.GetRootConfig().Application = svcOpts.applicationCompat
-		svcOpts.metadataType = svcOpts.applicationCompat.MetadataType
 		if svc.Group == "" {
-			svc.Group = svcOpts.applicationCompat.Group
+			svc.Group = application.Group
 		}
 		if svc.Version == "" {
-			svc.Version = svcOpts.applicationCompat.Version
+			svc.Version = application.Version
 		}
 	}
 	svcOpts.unexported = atomic.NewBool(false)
@@ -553,15 +539,6 @@ func (svcOpts *ServiceOptions) init(srv *Server, opts ...ServiceOption) error {
 	// initialize Registries
 	if len(svc.RCRegistriesMap) == 0 {
 		svc.RCRegistriesMap = svcOpts.Registries
-	}
-	if len(svc.RCRegistriesMap) > 0 {
-		svcOpts.registriesCompat = make(map[string]*config.RegistryConfig)
-		for key, reg := range svc.RCRegistriesMap {
-			svcOpts.registriesCompat[key] = compatRegistryConfig(reg)
-			if err := svcOpts.registriesCompat[key].Init(); err != nil {
-				return err
-			}
-		}
 	}
 
 	// initialize Protocols
@@ -885,17 +862,6 @@ func WithRegistry(opts ...registry.Option) ServiceOption {
 			opts.Registries = make(map[string]*global.RegistryConfig)
 		}
 		opts.Registries[regOpts.ID] = regOpts.Registry
-	}
-}
-
-func WithMethod(opts ...config.MethodOption) ServiceOption {
-	regOpts := config.NewMethodOptions(opts...)
-
-	return func(opts *ServiceOptions) {
-		if len(opts.Service.Methods) == 0 {
-			opts.Service.Methods = make([]*global.MethodConfig, 0)
-		}
-		opts.Service.Methods = append(opts.Service.Methods, regOpts.Method)
 	}
 }
 

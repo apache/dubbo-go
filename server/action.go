@@ -40,9 +40,9 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
+	"dubbo.apache.org/dubbo-go/v3/internal"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 )
@@ -141,7 +141,7 @@ func (svcOpts *ServiceOptions) Export() error {
 
 	regUrls := make([]*common.URL, 0)
 	if !svcConf.NotRegister {
-		regUrls = config.LoadRegistries(svcConf.RegistryIDs, svcOpts.registriesCompat, common.PROVIDER)
+		regUrls = internal.LoadRegistries(svcConf.RegistryIDs, svcOpts.Registries, common.PROVIDER)
 	}
 
 	urlMap := svcOpts.getUrlMap()
@@ -327,7 +327,7 @@ func (svcOpts *ServiceOptions) Implement(rpcService common.RPCService) {
 
 func (svcOpts *ServiceOptions) getUrlMap() url.Values {
 	svcConf := svcOpts.Service
-	app := svcOpts.applicationCompat
+	app := svcOpts.Application
 	metrics := svcOpts.srvOpts.Metrics
 	tracing := svcOpts.srvOpts.Otel.TracingConfig
 

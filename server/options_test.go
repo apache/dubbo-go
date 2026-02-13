@@ -941,16 +941,6 @@ func TestWithRegistry(t *testing.T) {
 	assert.Equal(t, "nacos", opts.Registries["test-registry"].Protocol)
 }
 
-// Test WithMethod
-func TestWithMethod(t *testing.T) {
-	opts := defaultServiceOptions()
-	opt := WithMethod()
-	opt(opts)
-	assert.NotNil(t, opts.Service.Methods)
-	// Verify that a method was actually added
-	assert.Len(t, opts.Service.Methods, 1)
-}
-
 // Test WithProtocolIDs for ServiceOptions
 func TestWithProtocolIDs(t *testing.T) {
 	opts := defaultServiceOptions()

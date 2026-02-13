@@ -30,7 +30,6 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
@@ -302,7 +301,7 @@ func TestGetUrlMapBasic(t *testing.T) {
 			Version:       "1.0.0",
 		},
 		Provider: &global.ProviderConfig{},
-		applicationCompat: &config.ApplicationConfig{
+		Application: &global.ApplicationConfig{
 			Name:         "test-app",
 			Organization: "test-org",
 			Module:       "test-module",
@@ -343,7 +342,7 @@ func TestGetUrlMapWithParams(t *testing.T) {
 			Serialization: constant.JSONSerialization,
 		},
 		Provider: &global.ProviderConfig{},
-		applicationCompat: &config.ApplicationConfig{
+		Application: &global.ApplicationConfig{
 			Name:         "test-app",
 			Organization: "test-org",
 		},
@@ -375,7 +374,7 @@ func TestGetUrlMapWithGroupAndVersion(t *testing.T) {
 			Params:        map[string]string{},
 		},
 		Provider: &global.ProviderConfig{},
-		applicationCompat: &config.ApplicationConfig{
+		Application: &global.ApplicationConfig{
 			Name: "test-app",
 		},
 		srvOpts: &ServerOptions{
@@ -412,7 +411,7 @@ func TestGetUrlMapWithMethods(t *testing.T) {
 			},
 		},
 		Provider: &global.ProviderConfig{},
-		applicationCompat: &config.ApplicationConfig{
+		Application: &global.ApplicationConfig{
 			Name: "test-app",
 		},
 		srvOpts: &ServerOptions{
@@ -545,7 +544,7 @@ func TestGetUrlMapWithTpsLimit(t *testing.T) {
 			Params:                  map[string]string{},
 		},
 		Provider: &global.ProviderConfig{},
-		applicationCompat: &config.ApplicationConfig{
+		Application: &global.ApplicationConfig{
 			Name: "test-app",
 		},
 		srvOpts: &ServerOptions{
@@ -578,7 +577,7 @@ func TestGetUrlMapWithExecuteLimit(t *testing.T) {
 			Params:                      map[string]string{},
 		},
 		Provider: &global.ProviderConfig{},
-		applicationCompat: &config.ApplicationConfig{
+		Application: &global.ApplicationConfig{
 			Name: "test-app",
 		},
 		srvOpts: &ServerOptions{
@@ -609,7 +608,7 @@ func TestGetUrlMapWithAuthAndParamSign(t *testing.T) {
 			Params:        map[string]string{},
 		},
 		Provider: &global.ProviderConfig{},
-		applicationCompat: &config.ApplicationConfig{
+		Application: &global.ApplicationConfig{
 			Name: "test-app",
 		},
 		srvOpts: &ServerOptions{
@@ -639,7 +638,7 @@ func TestGetUrlMapWithAccessLog(t *testing.T) {
 			Params:        map[string]string{},
 		},
 		Provider: &global.ProviderConfig{},
-		applicationCompat: &config.ApplicationConfig{
+		Application: &global.ApplicationConfig{
 			Name: "test-app",
 		},
 		srvOpts: &ServerOptions{
