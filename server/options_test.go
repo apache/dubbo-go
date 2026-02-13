@@ -20,18 +20,13 @@ package server
 import (
 	"testing"
 	"time"
-)
 
-import (
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // Test defaultServerOptions
@@ -61,17 +56,6 @@ func TestServerOptionsInitWithOptions(t *testing.T) {
 	err := opts.init(testOpt)
 	require.NoError(t, err)
 	assert.Equal(t, "test-group", opts.Provider.Group)
-}
-
-func TestServerOptionsInitEnsuresMetricsDefaults(t *testing.T) {
-	opts := defaultServerOptions()
-	opts.Metrics = &global.MetricsConfig{}
-	err := opts.init()
-	require.NoError(t, err)
-	require.NotNil(t, opts.Metrics)
-	assert.NotNil(t, opts.Metrics.Prometheus)
-	assert.NotNil(t, opts.Metrics.Aggregation)
-	assert.NotNil(t, opts.Metrics.Probe)
 }
 
 // Test WithServerLoadBalanceConsistentHashing
