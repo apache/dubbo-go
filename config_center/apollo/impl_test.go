@@ -22,13 +22,14 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"sync"
 	"testing"
 )
 
 import (
-	"github.com/apolloconfig/agollo/v4/constant"
+	apolloconstant "github.com/apolloconfig/agollo/v4/constant"
 	"github.com/apolloconfig/agollo/v4/extension"
 
 	"github.com/knadh/koanf"
@@ -44,8 +45,9 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
@@ -147,56 +149,57 @@ func TestGetConfig(t *testing.T) {
 	configuration := initMockApollo(t)
 	configs, err := configuration.GetProperties(mockNamespace, config_center.WithGroup("dubbo"))
 	require.NoError(t, err)
+
 	koan := koanf.New(".")
 	err = koan.Load(rawbytes.Provider([]byte(configs)), yaml.Parser())
 	require.NoError(t, err)
-	rc := &config.RootConfig{}
-	err = koan.UnmarshalWithConf(rc.Prefix(), rc, koanf.UnmarshalConf{Tag: "yaml"})
+
+	appCfg := &global.ApplicationConfig{}
+	err = koan.UnmarshalWithConf(constant.ApplicationConfigPrefix, appCfg, koanf.UnmarshalConf{Tag: "yaml"})
 	require.NoError(t, err)
 
-	assert.Equal(t, "demo-server", rc.Application.Name)
+	assert.Equal(t, "demo-server", appCfg.Name)
 }
 
 func TestGetJsonConfig(t *testing.T) {
 	configuration := initMockApollo(t)
 	configs, err := configuration.GetProperties(mockJsonNamespace, config_center.WithGroup("dubbo"))
 	require.NoError(t, err)
+
 	koan := koanf.New(":")
 	err = koan.Load(rawbytes.Provider([]byte(configs)), json.Parser())
 	require.NoError(t, err)
-	rc := &config.RootConfig{}
-	err = koan.UnmarshalWithConf(rc.Prefix(), rc, koanf.UnmarshalConf{Tag: "json"})
+
+	appCfg := &global.ApplicationConfig{}
+	err = koan.UnmarshalWithConf("dubbo:application", appCfg, koanf.UnmarshalConf{Tag: "json"})
 	require.NoError(t, err)
 
-	assert.Equal(t, "demo-server", rc.Application.Name)
+	assert.Equal(t, "demo-server", appCfg.Name)
 }
 
 func TestGetConfigItem(t *testing.T) {
 	configuration := initMockApollo(t)
-	appName, err := configuration.GetInternalProperty("dubbo.application.name")
+	appName, err := configuration.GetInternalProperty(constant.ApplicationConfigPrefix + ".name")
 	require.NoError(t, err)
 	assert.Equal(t, "demo-server", appName)
 }
 
 func initMockApollo(t *testing.T) *apolloConfiguration {
 	// Register the YAML format parser with concurrent safety.
-	extension.AddFormatParser(constant.YAML, &Parser{})
-	extension.AddFormatParser(constant.YML, &Parser{})
-	c := &config.RootConfig{ConfigCenter: &config.CenterConfig{
-		Protocol:  "apollo",
-		Address:   "localhost:8080",
-		AppID:     "testApplication_yang",
-		Cluster:   "dev",
-		Namespace: "mockDubbogo.yaml",
-		Params: map[string]string{
-			"config-center.isBackupConfig": "false",
-		},
-	}}
+	extension.AddFormatParser(apolloconstant.YAML, &Parser{})
+	extension.AddFormatParser(apolloconstant.YML, &Parser{})
+
+	params := url.Values{}
+	params.Set(constant.ConfigNamespaceKey, "mockDubbogo.yaml")
+	params.Set(constant.ConfigAppIDKey, "testApplication_yang")
+	params.Set(constant.ConfigClusterKey, "dev")
+	params.Set(constant.ConfigBackupConfigKey, "false")
+
 	apollo := initApollo()
 	apolloUrl := strings.ReplaceAll(apollo.URL, "http", "apollo")
-	url, err := common.NewURL(apolloUrl, common.WithParams(c.ConfigCenter.GetUrlMap()))
+	apolloCfgURL, err := common.NewURL(apolloUrl, common.WithParams(params))
 	require.NoError(t, err)
-	configuration, err := newApolloConfiguration(url)
+	configuration, err := newApolloConfiguration(apolloCfgURL)
 	require.NoError(t, err)
 	return configuration
 }

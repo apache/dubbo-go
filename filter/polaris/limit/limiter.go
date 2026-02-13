@@ -35,7 +35,6 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	remotingpolaris "dubbo.apache.org/dubbo-go/v3/remoting/polaris"
 	"dubbo.apache.org/dubbo-go/v3/remoting/polaris/parser"
@@ -78,27 +77,16 @@ func (pl *polarisTpsLimiter) buildQuotaRequest(url *common.URL, invocation base.
 	ns := remotingpolaris.GetNamespace()
 	applicationMode := false
 
-	// TODO: only for compatibility with old config, able to directly remove after config is deleted
-	for _, item := range config.GetRootConfig().Registries {
-		if item.Protocol == constant.PolarisKey {
-			applicationMode = item.RegistryType == constant.ServiceKey
-		}
-	}
-
 	if url.GetParam(constant.RegistryKey, "") == constant.PolarisKey {
-		if registryType := url.GetParam(constant.RegistryTypeKey, ""); registryType != "" {
-			applicationMode = registryType == constant.ServiceKey
+		if registryType := url.GetParam(constant.RegistryTypeKey, ""); registryType == constant.ServiceKey {
+			applicationMode = true
 		}
 	}
 
 	svc := url.Interface()
 	method := invocation.MethodName()
 	if applicationMode {
-		// TODO: only for compatibility with old config, able to directly remove after config is deleted
-		svc = config.GetApplicationConfig().Name
-		if applicationKey := url.GetParam(constant.ApplicationKey, ""); applicationKey != "" {
-			svc = applicationKey
-		}
+		svc = url.GetParam(constant.ApplicationKey, svc)
 		method = url.Interface() + "/" + invocation.MethodName()
 	}
 

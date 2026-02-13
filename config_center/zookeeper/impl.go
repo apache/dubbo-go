@@ -66,10 +66,10 @@ type zookeeperDynamicConfiguration struct {
 }
 
 func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfiguration, error) {
+	rootPath := url.GetParam(constant.ConfigRootPathParamKey, "/dubbo/config")
 	c := &zookeeperDynamicConfiguration{
-		url: url,
-		// TODO adapt config center config
-		rootPath: "/dubbo/config",
+		url:      url,
+		rootPath: rootPath,
 	}
 	logger.Infof("[Zookeeper ConfigCenter] New Zookeeper ConfigCenter with Configuration: %+v, url = %+v", c, c.GetURL())
 	if v := url.GetParam("base64", ""); v != "" {
