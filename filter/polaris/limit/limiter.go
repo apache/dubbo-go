@@ -35,7 +35,6 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	remotingpolaris "dubbo.apache.org/dubbo-go/v3/remoting/polaris"
 	"dubbo.apache.org/dubbo-go/v3/remoting/polaris/parser"
@@ -77,17 +76,6 @@ func (pl *polarisTpsLimiter) IsAllowable(url *common.URL, invocation base.Invoca
 func (pl *polarisTpsLimiter) buildQuotaRequest(url *common.URL, invocation base.Invocation) polaris.QuotaRequest {
 	ns := remotingpolaris.GetNamespace()
 	applicationMode := false
-
-	if registries, ok := url.GetAttribute(constant.RegistriesConfigKey); ok {
-		if registryMap := registries.(map[string]*global.RegistryConfig); registryMap != nil {
-			for _, item := range registryMap {
-				if item != nil && item.Protocol == constant.PolarisKey && item.RegistryType == constant.ServiceKey {
-					applicationMode = true
-					break
-				}
-			}
-		}
-	}
 
 	if url.GetParam(constant.RegistryKey, "") == constant.PolarisKey {
 		if registryType := url.GetParam(constant.RegistryTypeKey, ""); registryType == constant.ServiceKey {
