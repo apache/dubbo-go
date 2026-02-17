@@ -30,7 +30,8 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/server"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
 )
 
@@ -43,13 +44,24 @@ func (s *GreeterProvider) SayHello(ctx context.Context, in *api.HelloRequest) (*
 	return &api.User{Name: "Hello " + in.Name, Id: "12345", Age: 21}, nil
 }
 
-// export DUBBO_GO_CONFIG_PATH= PATH_TO_SAMPLES/helloworld/go-server/conf/dubbogo.yaml
 func main() {
-	config.SetProviderService(&GreeterProvider{})
-	if err := config.Load(); err != nil {
+	srv, err := server.NewServer(
+		server.WithServerProtocol(
+			protocol.WithPort(20000),
+			protocol.WithTriple(),
+		),
+	)
+	if err != nil {
 		panic(err)
 	}
-	select {}
+
+	if err := api.RegisterGreeterServer(srv, &GreeterProvider{}); err != nil {
+		panic(err)
+	}
+
+	if err := srv.Serve(); err != nil {
+		panic(err)
+	}
 }
 `
 )
@@ -58,7 +70,7 @@ func init() {
 	fileMap["srvGenerator"] = &fileGenerator{
 		path:    "./go-server/cmd",
 		file:    "server.go",
-		context: license + serverCode,
+		context: licenseForTemplates + serverCode,
 	}
 	//var str = "`" + `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"` + "`"
 }
