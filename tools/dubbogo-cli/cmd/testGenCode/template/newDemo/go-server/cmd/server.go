@@ -27,8 +27,9 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/server"
 )
 
 type GreeterProvider struct {
@@ -40,11 +41,20 @@ func (s *GreeterProvider) SayHello(ctx context.Context, in *api.HelloRequest) (*
 	return &api.User{Name: "Hello " + in.Name, Id: "12345", Age: 21}, nil
 }
 
-// export DUBBO_GO_CONFIG_PATH= PATH_TO_SAMPLES/helloworld/go-server/conf/dubbogo.yaml
 func main() {
-	config.SetProviderService(&GreeterProvider{})
-	if err := config.Load(); err != nil {
+	srv, err := server.NewServer(
+		server.WithServerProtocol(
+			protocol.WithPort(20000),
+			protocol.WithTriple(),
+		),
+	)
+	if err != nil {
 		panic(err)
 	}
-	select {}
+
+	api.RegisterGreeterServer(srv, &GreeterProvider{})
+
+	if err := srv.Serve(); err != nil {
+		logger.Error(err)
+	}
 }
