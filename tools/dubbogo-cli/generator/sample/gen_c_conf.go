@@ -42,10 +42,12 @@ dubbo:
         interface: "" # read from pb`
 )
 
-func init() {
-	fileMap["clientConfigFile"] = &fileGenerator{
-		path:    "./go-client/conf",
-		file:    "dubbogo.yaml",
-		context: clientConfigFile,
-	}
-}
+// Config files are no longer needed in the new config-free pattern
+// The client now uses programmatic configuration via client.NewClient()
+// func init() {
+// 	fileMap["clientConfigFile"] = &fileGenerator{
+// 		path:    "./go-client/conf",
+// 		file:    "dubbogo.yaml",
+// 		context: clientConfigFile,
+// 	}
+// }

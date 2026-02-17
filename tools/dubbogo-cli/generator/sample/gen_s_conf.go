@@ -44,10 +44,12 @@ dubbo:
         interface: "" # read from pb`
 )
 
-func init() {
-	fileMap["srvConfGenerator"] = &fileGenerator{
-		path:    "./go-server/conf",
-		file:    "dubbogo.yaml",
-		context: serverConfigFile,
-	}
-}
+// Config files are no longer needed in the new config-free pattern
+// The server now uses programmatic configuration via server.NewServer()
+// func init() {
+// 	fileMap["srvConfGenerator"] = &fileGenerator{
+// 		path:    "./go-server/conf",
+// 		file:    "dubbogo.yaml",
+// 		context: serverConfigFile,
+// 	}
+// }
