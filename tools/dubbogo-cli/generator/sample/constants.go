@@ -17,7 +17,9 @@
 
 package sample
 
-import "strings"
+import (
+	"strings"
+)
 
 const (
 	license = `/*
