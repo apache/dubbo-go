@@ -27,9 +27,9 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	_ "dubbo.apache.org/dubbo-go/v3/imports"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/server"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
+	_ "dubbo.apache.org/dubbo-go/v3/imports"
 )
 
 type GreeterProvider struct {
@@ -52,9 +52,11 @@ func main() {
 		panic(err)
 	}
 
-	api.RegisterGreeterServer(srv, &GreeterProvider{})
+	if err := api.RegisterGreeterServer(srv, &GreeterProvider{}); err != nil {
+		panic(err)
+	}
 
 	if err := srv.Serve(); err != nil {
-		logger.Error(err)
+		panic(err)
 	}
 }
