@@ -269,6 +269,6 @@ func init() {
 	fileMap["apiTripleFile"] = &fileGenerator{
 		path:    "./api",
 		file:    "samples_api_triple.pb.go",
-		context: license + apiTripleFile,
+		context: license + "\n" + apiTripleFile,
 	}
 }

@@ -263,6 +263,6 @@ func init() {
 	fileMap["apiFile"] = &fileGenerator{
 		path:    "./api",
 		file:    "samples_api.pb.go",
-		context: license + apiFile,
+		context: license + "\n" + apiFile,
 	}
 }
