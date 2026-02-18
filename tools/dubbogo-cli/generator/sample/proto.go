@@ -48,6 +48,6 @@ func init() {
 	fileMap[protoFile] = &fileGenerator{
 		path:    "./api",
 		file:    "samples_api.proto",
-		context: license + protoFile,
+		context: license + "\n" + protoFile,
 	}
 }
