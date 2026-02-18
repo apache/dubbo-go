@@ -18,7 +18,8 @@
 package sample
 
 const (
-	serverCode = `package main
+	serverCode = `
+package main
 
 import (
 	"context"
@@ -70,7 +71,7 @@ func init() {
 	fileMap["srvGenerator"] = &fileGenerator{
 		path:    "./go-server/cmd",
 		file:    "server.go",
-		context: licenseForTemplates + serverCode,
+		context: licenseForTemplates + "\n" + serverCode,
 	}
 	//var str = "`" + `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"` + "`"
 }

@@ -18,7 +18,8 @@
 package sample
 
 const (
-	protoFile = `syntax = "proto3";
+	protoFile = `
+syntax = "proto3";
 package api;
 
 option go_package = "./;api";

@@ -18,7 +18,8 @@
 package sample
 
 const (
-	clientCode = `package main
+	clientCode = `
+package main
 
 import (
 	"context"
@@ -64,6 +65,6 @@ func init() {
 	fileMap["clientGenerator"] = &fileGenerator{
 		path:    "./go-client/cmd",
 		file:    "client.go",
-		context: licenseForTemplates + clientCode,
+		context: licenseForTemplates + "\n" + clientCode,
 	}
 }
