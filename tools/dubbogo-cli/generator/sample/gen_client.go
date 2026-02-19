@@ -18,7 +18,8 @@
 package sample
 
 const (
-	clientCode = `package main
+	clientCode = `
+package main
 
 import (
 	"context"
@@ -29,17 +30,21 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/client"
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
 )
 
-var grpcGreeterImpl = new(api.GreeterClientImpl)
-
-// export DUBBO_GO_CONFIG_PATH= PATH_TO_SAMPLES/helloworld/go-client/conf/dubbogo.yaml
 func main() {
-	config.SetConsumerService(grpcGreeterImpl)
-	if err := config.Load(); err != nil {
+	cli, err := client.NewClient(
+		client.WithClientURL("tri://localhost:20000"),
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	greeterClient, err := api.NewGreeterClient(cli)
+	if err != nil {
 		panic(err)
 	}
 
@@ -47,7 +52,7 @@ func main() {
 	req := &api.HelloRequest{
 		Name: "laurence",
 	}
-	reply, err := grpcGreeterImpl.SayHello(context.Background(), req)
+	reply, err := greeterClient.SayHello(context.Background(), req)
 	if err != nil {
 		logger.Error(err)
 	}
@@ -60,6 +65,6 @@ func init() {
 	fileMap["clientGenerator"] = &fileGenerator{
 		path:    "./go-client/cmd",
 		file:    "client.go",
-		context: license + clientCode,
+		context: licenseForTemplates + "\n" + clientCode,
 	}
 }
