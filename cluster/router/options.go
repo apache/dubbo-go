@@ -61,13 +61,13 @@ func WithForce(force bool) Option {
 
 func WithRuntime(runtime bool) Option {
 	return func(opts *Options) {
-		opts.Router.Force = &runtime
+		opts.Router.Runtime = &runtime
 	}
 }
 
 func WithEnabled(enabled bool) Option {
 	return func(opts *Options) {
-		opts.Router.Force = &enabled
+		opts.Router.Enabled = &enabled
 	}
 }
 
@@ -93,5 +93,16 @@ func WithTags(tags []global.Tag) Option {
 	return func(opts *Options) {
 		opts.Router.Tags = tags
 	}
+}
 
+func WithScript(script string) Option {
+	return func(opts *Options) {
+		opts.Router.Script = script
+	}
+}
+
+func WithScriptType(scriptType string) Option {
+	return func(opts *Options) {
+		opts.Router.ScriptType = scriptType
+	}
 }
