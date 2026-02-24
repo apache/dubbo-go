@@ -84,10 +84,7 @@ func (e *subscribedServicesRevisionMetadataCustomizer) Customize(instance regist
 	instance.GetMetadata()[constant.SubscribedServicesRevisionPropertyName] = revision
 }
 
-// resolveRevision is different from Dubbo because golang doesn't support overload
-// so that we could use interface + method name as identifier and ignore the method params
-// per my understanding, it's enough because Dubbo actually ignore the url params.
-// please refer org.apache.dubbo.common.URL#toParameterString(java.lang.String...)
+// resolveRevision provides the actual pattern to calculate the revision.
 func resolveRevision(urls []*common.URL) string {
 	if len(urls) == 0 {
 		return "0"
@@ -95,14 +92,14 @@ func resolveRevision(urls []*common.URL) string {
 	candidates := make([]string, 0, len(urls))
 
 	for _, u := range urls {
-		sk := u.GetParam(constant.InterfaceKey, "")
+		desc := u.GetParam(constant.ApplicationKey, "") + u.Path + u.GetParam(constant.VersionKey, "") + u.Port
 
 		if len(u.Methods) == 0 {
-			candidates = append(candidates, sk)
+			candidates = append(candidates, desc)
 		} else {
 			for _, m := range u.Methods {
 				// methods are part of candidates
-				candidates = append(candidates, sk+constant.KeySeparator+m)
+				candidates = append(candidates, desc+constant.KeySeparator+m)
 			}
 		}
 
