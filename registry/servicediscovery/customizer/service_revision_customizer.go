@@ -85,6 +85,7 @@ func (e *subscribedServicesRevisionMetadataCustomizer) Customize(instance regist
 }
 
 // resolveRevision provides the actual pattern to calculate the revision.
+// please refer to dubbo-java's method, org.apache.dubbo.metadata.Metadata#calAndGetRevision
 func resolveRevision(urls []*common.URL) string {
 	if len(urls) == 0 {
 		return "0"

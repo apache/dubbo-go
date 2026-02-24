@@ -95,10 +95,9 @@ func (info *MetadataInfo) JavaClassName() string {
 	return "org.apache.dubbo.metadata.MetadataInfo"
 }
 
-// CalAndGetRevision is different from Dubbo because golang doesn't support overload
-// so that we should use interface + method name as identifier and ignore the method params
-// in my opinion, it's enough because Dubbo actually ignore the URL params.
-// please refer org.apache.dubbo.common.URL#toParameterString(java.lang.String...)
+// CalAndGetRevision calculate the revision for exported urls and then put it into instance metadata
+// please refer to dubbo-java's method, org.apache.dubbo.metadata.Metadata#calAndGetRevision
+// same as service_revision_customizer.resolveRevision
 func (info *MetadataInfo) CalAndGetRevision() string {
 	if info.Revision != "" {
 		return info.Revision
