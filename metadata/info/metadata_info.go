@@ -109,14 +109,14 @@ func (info *MetadataInfo) CalAndGetRevision() string {
 	candidates := make([]string, 0, 8)
 
 	for _, s := range info.Services {
-		iface := s.URL.GetParam(constant.InterfaceKey, "")
+		desc := s.URL.GetParam(constant.ApplicationKey, "") + s.URL.Path + s.URL.GetParam(constant.VersionKey, "") + s.URL.Port
 		ms := s.URL.Methods
 		if len(ms) == 0 {
-			candidates = append(candidates, iface)
+			candidates = append(candidates, desc)
 		} else {
 			for _, m := range ms {
 				// methods are part of candidates
-				candidates = append(candidates, iface+constant.KeySeparator+m)
+				candidates = append(candidates, desc+constant.KeySeparator+m)
 			}
 		}
 
