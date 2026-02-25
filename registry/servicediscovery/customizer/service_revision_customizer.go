@@ -104,7 +104,6 @@ func resolveRevision(urls []*common.URL) string {
 			}
 		}
 
-		// append url params if we need it
 	}
 	sort.Strings(candidates)
 

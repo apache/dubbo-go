@@ -92,22 +92,6 @@ func TestMetadataInfoAddSubscribeURL(t *testing.T) {
 	assert.Empty(t, info.GetSubscribedURLs())
 }
 
-func TestMetadataInfoCalAndGetRevision(t *testing.T) {
-	metadata := NewAppMetadataInfo("dubbo")
-	assert.Equalf(t, "0", metadata.CalAndGetRevision(), "CalAndGetRevision()")
-	metadata.AddService(serviceUrl)
-	assert.NotEqual(t, "0", metadata.CalAndGetRevision())
-
-	v := metadata.Revision
-	assert.Equal(t, v, metadata.CalAndGetRevision(), "CalAndGetRevision() test cache")
-
-	metadata = NewAppMetadataInfo("dubbo")
-	url1 := serviceUrl.Clone()
-	url1.Methods = []string{}
-	metadata.AddService(url1)
-	assert.NotEqual(t, "0", metadata.CalAndGetRevision(), "CalAndGetRevision() test empty methods")
-}
-
 func TestNewMetadataInfo(t *testing.T) {
 	info := NewMetadataInfo("dubbo", "tag")
 	assert.Equal(t, "dubbo", info.App)

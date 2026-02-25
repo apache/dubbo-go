@@ -91,7 +91,7 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 	urls := metaInfo.GetExportedServiceURLs()
 	for _, url := range urls {
 		instance := createInstance(metaInfo, url)
-		metaInfo.CalAndGetRevision()
+		metaInfo.Revision = instance.GetMetadata()[constant.ExportedServicesRevisionPropertyName]
 		if metadata.GetMetadataType() == constant.RemoteMetadataStorageType {
 			if s.metadataReport == nil {
 				return perrors.New("can not publish app metadata cause report instance not found")

@@ -18,10 +18,7 @@
 package info
 
 import (
-	"fmt"
-	"hash/crc32"
 	"net/url"
-	"sort"
 	"strconv"
 	"strings"
 )
@@ -93,44 +90,6 @@ func NewMetadataInfoWithParams(app string, revision string, services map[string]
 
 func (info *MetadataInfo) JavaClassName() string {
 	return "org.apache.dubbo.metadata.MetadataInfo"
-}
-
-// CalAndGetRevision calculate the revision for exported urls and then put it into instance metadata
-// please refer to dubbo-java's method, org.apache.dubbo.metadata.Metadata#calAndGetRevision
-// same as service_revision_customizer.resolveRevision
-func (info *MetadataInfo) CalAndGetRevision() string {
-	if info.Revision != "" {
-		return info.Revision
-	}
-	if len(info.Services) == 0 {
-		return "0"
-	}
-	candidates := make([]string, 0, 8)
-
-	for _, s := range info.Services {
-		desc := s.URL.GetParam(constant.ApplicationKey, "") + s.URL.Path + s.URL.GetParam(constant.VersionKey, "") + s.URL.Port
-		ms := s.URL.Methods
-		if len(ms) == 0 {
-			candidates = append(candidates, desc)
-		} else {
-			for _, m := range ms {
-				// methods are part of candidates
-				candidates = append(candidates, desc+constant.KeySeparator+m)
-			}
-		}
-
-		// append URL params if we need it
-	}
-	sort.Strings(candidates)
-
-	// it's nearly impossible to be overflow
-	res := uint64(0)
-	for _, c := range candidates {
-		res += uint64(crc32.ChecksumIEEE([]byte(c)))
-	}
-	info.Revision = fmt.Sprint(res)
-	return info.Revision
-
 }
 
 // AddService add provider service info to MetadataInfo
