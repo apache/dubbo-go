@@ -27,12 +27,16 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/router/tag"
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
 func TestStaticDirList(t *testing.T) {
+	extension.SetRouterFactory(constant.TagRouterFactoryKey, tag.NewTagRouterFactory)
 	invokers := []base.Invoker{}
 	for i := 0; i < 10; i++ {
 		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
