@@ -32,9 +32,9 @@ import (
 	commonConfig "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/config_center/configurator"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
@@ -800,7 +800,7 @@ conditions:
 	dc, _ := mockFactory.GetDynamicConfiguration(ccURL)
 	commonConfig.GetEnvInstance().SetDynamicConfiguration(dc)
 
-	router := NewApplicationRouter()
+	router := NewApplicationRouter(consumerURL)
 	router.Notify(invokerList)
 
 	rpcInvocation := invocation.NewRPCInvocation("sayHello", nil, nil)
@@ -874,7 +874,7 @@ func Test_parseMultiConditionRoute(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *config.ConditionRouter
+		want    *global.ConditionRouter
 		wantErr assert.ErrorAssertionFunc
 	}{
 		{name: "testParseConfig", args: args{`configVersion: v3.1
@@ -898,21 +898,21 @@ conditions:
   - from:
       match: version=v1
     to:
-      - match: version=v1`}, want: &config.ConditionRouter{
+      - match: version=v1`}, want: &global.ConditionRouter{
 			Scope:   "service",
 			Key:     "org.apache.dubbo.samples.CommentService",
 			Force:   false,
 			Runtime: true,
 			Enabled: true,
-			Conditions: []*config.ConditionRule{
+			Conditions: []*global.ConditionRule{
 				{
-					From: config.ConditionRuleFrom{Match: "tag=tag1"},
+					From: global.ConditionRuleFrom{Match: "tag=tag1"},
 					To:   nil,
 				}, {
-					From: config.ConditionRuleFrom{
+					From: global.ConditionRuleFrom{
 						Match: `tag=gray`,
 					},
-					To: []config.ConditionRuleTo{{
+					To: []global.ConditionRuleTo{{
 						Match:  `tag!=gray`,
 						Weight: 100,
 					}, {
@@ -920,10 +920,10 @@ conditions:
 						Weight: 900,
 					}},
 				}, {
-					From: config.ConditionRuleFrom{
+					From: global.ConditionRuleFrom{
 						Match: `version=v1`,
 					},
-					To: []config.ConditionRuleTo{{
+					To: []global.ConditionRuleTo{{
 						Match:  `version=v1`,
 						Weight: 0,
 					}},

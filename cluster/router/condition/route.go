@@ -37,7 +37,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router/condition/matcher"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
@@ -289,9 +289,9 @@ func (a byPriority) Len() int           { return len(a) }
 func (a byPriority) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a byPriority) Less(i, j int) bool { return a[i].Priority() < a[j].Priority() }
 
-func parseConditionRoute(routeContent string) (*config.RouterConfig, error) {
+func parseConditionRoute(routeContent string) (*global.RouterConfig, error) {
 	routeDecoder := yaml.NewDecoder(strings.NewReader(routeContent))
-	routerConfig := &config.RouterConfig{}
+	routerConfig := &global.RouterConfig{}
 	err := routeDecoder.Decode(routerConfig)
 	if err != nil {
 		return nil, err
@@ -439,9 +439,9 @@ func NewConditionMultiDestRouter(url *common.URL) (*MultiDestRouter, error) {
 	if !ok {
 		return nil, errors.Errorf("Condition Router can't get the rule key")
 	}
-	condConf, ok := rawCondConf.(*config.ConditionRule)
+	condConf, ok := rawCondConf.(*global.ConditionRule)
 	if !ok {
-		return nil, errors.Errorf("Condition Router get the rule key invaild , got %T", rawCondConf)
+		return nil, errors.Errorf("Condition Router get the rule key invalid , got %T", rawCondConf)
 	}
 	// ensure config effective
 	if (len(condConf.To) == 0) && condConf.From.Match == "" {
@@ -469,9 +469,9 @@ func NewConditionMultiDestRouter(url *common.URL) (*MultiDestRouter, error) {
 	return c, nil
 }
 
-func parseMultiConditionRoute(routeContent string) (*config.ConditionRouter, error) {
+func parseMultiConditionRoute(routeContent string) (*global.ConditionRouter, error) {
 	routeDecoder := yaml.NewDecoder(strings.NewReader(routeContent))
-	routerConfig := &config.ConditionRouter{}
+	routerConfig := &global.ConditionRouter{}
 	err := routeDecoder.Decode(routerConfig)
 	if err != nil {
 		return nil, err

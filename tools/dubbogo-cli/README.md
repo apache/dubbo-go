@@ -105,15 +105,11 @@ The Demo uses the direct connection mode, without relying on the registration ce
 │   ├── samples_api.proto
 │   └── samples_api_triple.pb.go
 ├── go-client
-│   ├── cmd
-│   │   └── client.go
-│   └── conf
-│       └── dubbogo.yaml
+│   └── cmd
+│       └── client.go
 ├── go-server
-│   ├── cmd
-│   │   └── server.go
-│   └── conf
-│       └── dubbogo.yaml
+│   └── cmd
+│       └── server.go
 └── go.mod
 ```
 

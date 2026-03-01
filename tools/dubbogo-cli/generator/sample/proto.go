@@ -18,7 +18,8 @@
 package sample
 
 const (
-	protoFile = `syntax = "proto3";
+	protoFile = `
+syntax = "proto3";
 package api;
 
 option go_package = "./;api";
@@ -48,6 +49,6 @@ func init() {
 	fileMap[protoFile] = &fileGenerator{
 		path:    "./api",
 		file:    "samples_api.proto",
-		context: license + protoFile,
+		context: license + "\n" + protoFile,
 	}
 }

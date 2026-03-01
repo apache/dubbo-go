@@ -31,7 +31,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
@@ -50,30 +49,6 @@ func TestConsumerFilterInvokeWithGlobalPackage(t *testing.T) {
 	filter := filterValue.(*consumerGracefulShutdownFilter)
 	filter.Set(constant.GracefulShutdownFilterShutdownConfig, opt.Shutdown)
 	assert.Equal(t, filter.shutdownConfig, opt.Shutdown)
-
-	result := filter.Invoke(context.Background(), base.NewBaseInvoker(baseUrl), rpcInvocation)
-	assert.NotNil(t, result)
-	assert.NoError(t, result.Error())
-}
-
-// only for compatibility with old config, able to directly remove after config is deleted
-func TestConsumerFilterInvokeWithConfigPackage(t *testing.T) {
-	var (
-		baseUrl       = common.NewURLWithOptions(common.WithParams(url.Values{}))
-		rpcInvocation = invocation.NewRPCInvocation("GetUser", []any{"OK"}, make(map[string]any))
-		rootConfig    = config.NewRootConfigBuilder().
-				SetShutDown(config.NewShutDownConfigBuilder().
-					SetTimeout("60s").
-					SetStepTimeout("3s").
-					Build()).Build()
-		filterValue, _ = extension.GetFilter(constant.GracefulShutdownConsumerFilterKey)
-	)
-
-	config.SetRootConfig(*rootConfig)
-
-	filter := filterValue.(*consumerGracefulShutdownFilter)
-	filter.Set(constant.GracefulShutdownFilterShutdownConfig, config.GetShutDown())
-	assert.Equal(t, filter.shutdownConfig, compatGlobalShutdownConfig(config.GetShutDown()))
 
 	result := filter.Invoke(context.Background(), base.NewBaseInvoker(baseUrl), rpcInvocation)
 	assert.NotNil(t, result)
