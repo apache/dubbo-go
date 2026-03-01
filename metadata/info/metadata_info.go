@@ -18,10 +18,7 @@
 package info
 
 import (
-	"fmt"
-	"hash/crc32"
 	"net/url"
-	"sort"
 	"strconv"
 	"strings"
 )
@@ -93,45 +90,6 @@ func NewMetadataInfoWithParams(app string, revision string, services map[string]
 
 func (info *MetadataInfo) JavaClassName() string {
 	return "org.apache.dubbo.metadata.MetadataInfo"
-}
-
-// CalAndGetRevision is different from Dubbo because golang doesn't support overload
-// so that we should use interface + method name as identifier and ignore the method params
-// in my opinion, it's enough because Dubbo actually ignore the URL params.
-// please refer org.apache.dubbo.common.URL#toParameterString(java.lang.String...)
-func (info *MetadataInfo) CalAndGetRevision() string {
-	if info.Revision != "" {
-		return info.Revision
-	}
-	if len(info.Services) == 0 {
-		return "0"
-	}
-	candidates := make([]string, 0, 8)
-
-	for _, s := range info.Services {
-		iface := s.URL.GetParam(constant.InterfaceKey, "")
-		ms := s.URL.Methods
-		if len(ms) == 0 {
-			candidates = append(candidates, iface)
-		} else {
-			for _, m := range ms {
-				// methods are part of candidates
-				candidates = append(candidates, iface+constant.KeySeparator+m)
-			}
-		}
-
-		// append URL params if we need it
-	}
-	sort.Strings(candidates)
-
-	// it's nearly impossible to be overflow
-	res := uint64(0)
-	for _, c := range candidates {
-		res += uint64(crc32.ChecksumIEEE([]byte(c)))
-	}
-	info.Revision = fmt.Sprint(res)
-	return info.Revision
-
 }
 
 // AddService add provider service info to MetadataInfo
