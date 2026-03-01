@@ -19,6 +19,7 @@ package grpc
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"sync"
 )
@@ -40,6 +41,7 @@ import (
 )
 
 var errNoReply = errors.New("request need @response")
+var errNoInvoker = errors.New("grpc client invoker is not initialized")
 
 // GrpcInvoker is a gRPC invoker wrapping a generated client and guarding its lifecycle.
 type GrpcInvoker struct {
@@ -98,8 +100,18 @@ func (gi *GrpcInvoker) Invoke(ctx context.Context, invocation base.Invocation) r
 	in = append(in, reflect.ValueOf(ctx))
 	in = append(in, invocation.ParameterValues()...)
 
+	if !client.invoker.IsValid() {
+		result.SetError(errNoInvoker)
+		return &result
+	}
+
 	methodName := invocation.MethodName()
 	method := client.invoker.MethodByName(methodName)
+	if !method.IsValid() {
+		result.SetError(fmt.Errorf("grpc method %s not found on invoker", methodName))
+		return &result
+	}
+
 	res := method.Call(in)
 
 	result.SetResult(res[0])

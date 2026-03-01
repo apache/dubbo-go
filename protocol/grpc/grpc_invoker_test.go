@@ -60,6 +60,7 @@ func TestUnaryInvoke(t *testing.T) {
 
 	cli, err := NewClient(url)
 	require.NoError(t, err)
+	cli.invoker = reflect.ValueOf(helloworld.NewGreeterClient(cli.ClientConn))
 
 	var args []reflect.Value
 	args = append(args, reflect.ValueOf(&helloworld.HelloRequest{Name: "request name"}))
@@ -88,6 +89,7 @@ func TestStreamInvoke(t *testing.T) {
 
 	cli, err := NewClient(url)
 	require.NoError(t, err)
+	cli.invoker = reflect.ValueOf(routeguide.NewRouteGuideClient(cli.ClientConn))
 
 	invoker := NewGrpcInvoker(url, cli)
 

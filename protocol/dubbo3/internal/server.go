@@ -26,8 +26,6 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/filter_impl"
 	_ "dubbo.apache.org/dubbo-go/v3/metrics/prometheus"
 	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
@@ -42,28 +40,4 @@ type Server struct {
 func (s *Server) SayHello(ctx context.Context, in *HelloRequest) (*HelloReply, error) {
 	log.Infof("Received: %v", in.GetName())
 	return &HelloReply{Message: "Hello " + in.GetName()}, nil
-}
-
-// InitDubboServer creates global gRPC server.
-// TODO: After the config is removed, remove the test
-func InitDubboServer() {
-	serviceConfig := config.NewServiceConfigBuilder().
-		SetInterface("org.apache.dubbo.DubboGreeterImpl").
-		SetProtocolIDs("tripleKey").Build()
-
-	providerConfig := config.NewProviderConfigBuilder().SetServices(map[string]*config.ServiceConfig{
-		common.GetReference(&Server{}): serviceConfig,
-	}).Build()
-
-	protocolConfig := config.NewProtocolConfigBuilder().SetName("tri").SetPort("20003").Build()
-
-	rootConfig := config.NewRootConfigBuilder().SetProvider(providerConfig).SetProtocols(map[string]*config.ProtocolConfig{
-		"tripleKey": protocolConfig,
-	}).Build()
-
-	config.SetProviderService(&Server{})
-	if err := rootConfig.Init(); err != nil {
-		panic(err)
-	}
-	rootConfig.Start()
 }
