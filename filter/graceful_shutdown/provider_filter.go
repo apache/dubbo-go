@@ -45,7 +45,7 @@ var (
 func init() {
 	// `init()` is performed before config.Load(), so shutdownConfig will be retrieved after config was loaded.
 	extension.SetFilter(constant.GracefulShutdownProviderFilterKey, func() filter.Filter {
-		return newProviderGracefulShutdownFilter()
+		return newProviderGracefulShutdownFilter() // 会添加请求计数 & 如果应用关闭，并阻止新请求
 	})
 }
 
