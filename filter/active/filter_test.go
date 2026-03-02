@@ -52,20 +52,24 @@ func TestFilterInvoke(t *testing.T) {
 	invoker.EXPECT().GetURL().Return(url).Times(1)
 	filter.Invoke(context.Background(), invoker, invoc)
 	assert.NotEmpty(t, invoc.GetAttachmentWithDefaultValue(dubboInvokeStartTime, ""))
+	urlFromAttachment, ok := invoc.GetAttachmentInterface(dubboInvokeURL).(*common.URL)
+	assert.True(t, ok, "dubboInvokeURL should be cached in attachment")
+	assert.Equal(t, url.Key(), urlFromAttachment.Key(), "Cached URL should match original URL")
+
 }
 
 func TestFilterOnResponse(t *testing.T) {
 	c := base.CurrentTimeMillis()
 	elapsed := 100
+	url, _ := common.NewURL(fmt.Sprintf("dubbo://%s:%d/com.alibaba.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
 	invoc := invocation.NewRPCInvocation("test", []any{"OK"}, map[string]any{
 		dubboInvokeStartTime: strconv.FormatInt(c-int64(elapsed), 10),
+		dubboInvokeURL:       url,
 	})
-	url, _ := common.NewURL(fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
 	filter := activeFilter{}
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	invoker := mock.NewMockInvoker(ctrl)
-	invoker.EXPECT().GetURL().Return(url).Times(1)
 	rpcResult := &result.RPCResult{
 		Err: errors.New("test"),
 	}
@@ -88,20 +92,20 @@ func TestFilterOnResponse(t *testing.T) {
 func TestFilterOnResponseWithDefer(t *testing.T) {
 	base.CleanAllStatus()
 
-	// Test scenario 1: dubboInvokeStartTime is parsed successfully and the result is correct.
+	// Test scenario 1: dubboInvokeStartTime is parsed successfully and result is correct.
 	t.Run("ParseSuccessAndResultSuccess", func(t *testing.T) {
 		defer base.CleanAllStatus()
 
 		c := base.CurrentTimeMillis()
+		url, _ := common.NewURL(fmt.Sprintf("dubbo://%s:%d/com.alibaba.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
 		invoc := invocation.NewRPCInvocation("test1", []any{"OK"}, map[string]any{
 			dubboInvokeStartTime: strconv.FormatInt(c, 10),
+			dubboInvokeURL:       url,
 		})
-		url, _ := common.NewURL(fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
 		filter := activeFilter{}
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 		invoker := mock.NewMockInvoker(ctrl)
-		invoker.EXPECT().GetURL().Return(url).Times(1)
 		rpcResult := &result.RPCResult{}
 
 		filter.OnResponse(context.TODO(), rpcResult, invoker, invoc)
@@ -119,20 +123,20 @@ func TestFilterOnResponseWithDefer(t *testing.T) {
 		assert.GreaterOrEqual(t, urlStatus.GetTotalElapsed(), int64(0))
 	})
 
-	// Test scenario 2: dubboInvokeStartTime is parsed successfully, but the result is incorrect
+	// Test scenario 2: dubboInvokeStartTime is parsed successfully, but result is incorrect
 	t.Run("ParseSuccessAndResultFailed", func(t *testing.T) {
 		defer base.CleanAllStatus()
 
 		c := base.CurrentTimeMillis()
+		url, _ := common.NewURL(fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
 		invoc := invocation.NewRPCInvocation("test2", []any{"OK"}, map[string]any{
 			dubboInvokeStartTime: strconv.FormatInt(c, 10),
+			dubboInvokeURL:       url,
 		})
-		url, _ := common.NewURL(fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
 		filter := activeFilter{}
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 		invoker := mock.NewMockInvoker(ctrl)
-		invoker.EXPECT().GetURL().Return(url).Times(1)
 		rpcResult := &result.RPCResult{
 			Err: errors.New("test error"),
 		}
@@ -158,15 +162,15 @@ func TestFilterOnResponseWithDefer(t *testing.T) {
 	t.Run("ParseFailedWithInvalidString", func(t *testing.T) {
 		defer base.CleanAllStatus()
 
+		url, _ := common.NewURL(fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
 		invoc := invocation.NewRPCInvocation("test3", []any{"OK"}, map[string]any{
 			dubboInvokeStartTime: "invalid-time",
+			dubboInvokeURL:       url,
 		})
-		url, _ := common.NewURL(fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
 		filter := activeFilter{}
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 		invoker := mock.NewMockInvoker(ctrl)
-		invoker.EXPECT().GetURL().Return(url).Times(1)
 		rpcResult := &result.RPCResult{}
 
 		result := filter.OnResponse(context.TODO(), rpcResult, invoker, invoc)
@@ -175,7 +179,7 @@ func TestFilterOnResponseWithDefer(t *testing.T) {
 		methodStatus := base.GetMethodStatus(url, "test3")
 		urlStatus := base.GetURLStatus(url)
 
-		// Verification count and status - should use the default duration of 1 and be marked as failed
+		// Verification count and status - should use default duration of 1 and be marked as failed
 		assert.Equal(t, int32(1), methodStatus.GetTotal())
 		assert.Equal(t, int32(1), urlStatus.GetTotal())
 		assert.Equal(t, int32(1), methodStatus.GetFailed())
@@ -186,17 +190,18 @@ func TestFilterOnResponseWithDefer(t *testing.T) {
 		assert.GreaterOrEqual(t, urlStatus.GetFailedElapsed(), int64(1))
 	})
 
-	// Test scenario 4: dubboInvokeStartTime does not exist (use the default value 0)
+	// Test scenario 4: dubboInvokeStartTime does not exist (use default value 0)
 	t.Run("ParseFailedWithDefaultValue", func(t *testing.T) {
 		defer base.CleanAllStatus()
 
-		invoc := invocation.NewRPCInvocation("test4", []any{"OK"}, make(map[string]any))
 		url, _ := common.NewURL(fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
+		invoc := invocation.NewRPCInvocation("test4", []any{"OK"}, map[string]any{
+			dubboInvokeURL: url,
+		})
 		filter := activeFilter{}
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 		invoker := mock.NewMockInvoker(ctrl)
-		invoker.EXPECT().GetURL().Return(url).Times(1)
 		rpcResult := &result.RPCResult{}
 
 		filter.OnResponse(context.TODO(), rpcResult, invoker, invoc)
