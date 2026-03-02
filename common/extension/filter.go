@@ -47,6 +47,7 @@ func GetFilter(name string) (filter.Filter, bool) {
 }
 
 // SetRejectedExecutionHandler sets the RejectedExecutionHandler with @name
+// 用于设置 RejectedExecutionHandler 扩展, 用于处理请求拒绝的情况, 可以自定义拒绝处理逻辑
 func SetRejectedExecutionHandler(name string, creator func() filter.RejectedExecutionHandler) {
 	rejectedExecutionHandler[name] = creator
 }

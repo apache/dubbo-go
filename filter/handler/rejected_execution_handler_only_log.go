@@ -47,7 +47,7 @@ func init() {
 
 var (
 	onlyLogHandlerInstance *OnlyLogRejectedExecutionHandler
-	onlyLogHandlerOnce     sync.Once
+	onlyLogHandlerOnce     sync.Once // 确保只创建一个实例
 )
 
 // OnlyLogRejectedExecutionHandler implements the RejectedExecutionHandler
@@ -68,6 +68,7 @@ var (
 type OnlyLogRejectedExecutionHandler struct{}
 
 // RejectedExecution will do nothing, it only log the invocation.
+// 什么也不执行，只记录日志
 func (handler *OnlyLogRejectedExecutionHandler) RejectedExecution(url *common.URL,
 	_ base.Invocation) result.Result {
 
@@ -76,6 +77,7 @@ func (handler *OnlyLogRejectedExecutionHandler) RejectedExecution(url *common.UR
 }
 
 // GetOnlyLogRejectedExecutionHandler will return the instance of OnlyLogRejectedExecutionHandler
+// 工厂函数，用于获取 OnlyLogRejectedExecutionHandler 的单例实例
 func GetOnlyLogRejectedExecutionHandler() filter.RejectedExecutionHandler {
 	onlyLogHandlerOnce.Do(func() {
 		onlyLogHandlerInstance = &OnlyLogRejectedExecutionHandler{}

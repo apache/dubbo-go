@@ -42,7 +42,7 @@ const (
 var (
 	// emptyURL is a global placeholder to prevent nil pointer dereferences during invoker destruction.
 	// It is returned by GetURL() when the invoker is destroyed, ensuring that concurrent readers receive a safe, initialized object.
-	emptyURL            = common.NewURLWithOptions(common.WithProtocol(protocolDestroyed))
+	emptyURL = common.NewURLWithOptions(common.WithProtocol(protocolDestroyed))
 	ErrClientClosed     = perrors.New("remoting client has closed")
 	ErrNoReply          = perrors.New("request need @response")
 	ErrDestroyedInvoker = perrors.New("request Destroyed invoker")
@@ -50,6 +50,7 @@ var (
 
 // Invoker the service invocation interface for the consumer
 // Extension - Invoker
+// 调用者接口，定义了服务调用的基本操作
 //
 //go:generate mockgen -source invoker.go -destination mock/mock_invoker.go -self_package dubbo.apache.org/dubbo-go/v3/protocol/mock --package mock Invoker
 type Invoker interface {
@@ -59,6 +60,7 @@ type Invoker interface {
 }
 
 // BaseInvoker provides default invoker implements Invoker
+// 基础调用者实现，提供了 Invoker 接口的默认实现
 type BaseInvoker struct {
 	url       uatomic.Pointer[common.URL]
 	available uatomic.Bool

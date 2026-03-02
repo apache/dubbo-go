@@ -28,6 +28,12 @@ import (
 // the implementation will be used. The common case is that sometimes you want to return the default
 // value when the request was rejected.  Or you want to be warned if any request was rejected.
 // In such situation, implement this interface and register it by invoking extension.SetRejectedExecutionHandler.
+
+// RejectedExecutionHandler是一个接口，它定义了用于处理调用过滤器时产生的异常的处理器。
+// 如果调用无法通过过滤器中的任何验证（例如ExecuteLimitFilter和TpsLimitFilter），
+// 就会使用该接口的实现。常见的情况是，有时你希望在请求被拒绝时返回默认值，
+// 或者在任何请求被拒绝时收到警告。
+// 在这种情况下，实现此接口并通过调用extension.SetRejectedExecutionHandler进行注册即可。
 //
 // RejectedExecution method will be called if the invocation was rejected by some component.
 type RejectedExecutionHandler interface {

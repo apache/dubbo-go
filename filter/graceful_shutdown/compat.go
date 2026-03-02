@@ -26,6 +26,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
+// compatGlobalShutdownConfig 兼容旧配置，能够直接删除后
 func compatGlobalShutdownConfig(c *config.ShutdownConfig) *global.ShutdownConfig {
 	if c == nil {
 		return nil

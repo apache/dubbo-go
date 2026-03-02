@@ -38,18 +38,21 @@ import (
 )
 
 var (
+	// psfOnce 确保 providerGracefulShutdownFilter 只被初始化一次
 	psfOnce sync.Once
-	psf     *providerGracefulShutdownFilter
+	// psf 提供方优雅关闭过滤器
+	psf *providerGracefulShutdownFilter
 )
 
 func init() {
 	// `init()` is performed before config.Load(), so shutdownConfig will be retrieved after config was loaded.
 	extension.SetFilter(constant.GracefulShutdownProviderFilterKey, func() filter.Filter {
-		return newProviderGracefulShutdownFilter() // 会添加请求计数 & 如果应用关闭，并阻止新请求
+		return newProviderGracefulShutdownFilter() // 就是一个单例
 	})
 }
 
 type providerGracefulShutdownFilter struct {
+	// shutdownConfig 关闭配置
 	shutdownConfig *global.ShutdownConfig
 }
 
@@ -65,12 +68,16 @@ func newProviderGracefulShutdownFilter() filter.Filter {
 // Invoke adds the requests count and blocks the new requests if application is closing
 // 会添加请求计数 & 如果应用关闭，并阻止新请求
 func (f *providerGracefulShutdownFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
+	// 如果拒绝新请求，则返回拒绝执行结果
 	if f.rejectNewRequest() {
 		logger.Info("The application is closing, new request will be rejected.")
+		// 使用配置的拒绝处理器处理请求
 		handler := constant.DefaultKey
+		// 如果配置了拒绝请求处理器，则使用配置的拒绝处理器处理请求
 		if f.shutdownConfig != nil && len(f.shutdownConfig.RejectRequestHandler) > 0 {
 			handler = f.shutdownConfig.RejectRequestHandler
 		}
+		// 如果获取拒绝执行处理器失败，则返回默认拒绝执行结果
 		rejectedExecutionHandler, err := extension.GetRejectedExecutionHandler(handler)
 		if err != nil {
 			logger.Warn(err)
@@ -78,13 +85,17 @@ func (f *providerGracefulShutdownFilter) Invoke(ctx context.Context, invoker bas
 			return rejectedExecutionHandler.RejectedExecution(invoker.GetURL(), invocation)
 		}
 	}
+	// 增加活跃请求计数
 	f.shutdownConfig.ProviderActiveCount.Inc()
+	// 更新最后接收请求的时间
 	f.shutdownConfig.ProviderLastReceivedRequestTime.Store(time.Now())
+	// 继续执行原始调用
 	return invoker.Invoke(ctx, invocation)
 }
 
 // OnResponse reduces the number of active processes then return the process result
 func (f *providerGracefulShutdownFilter) OnResponse(ctx context.Context, result result.Result, invoker base.Invoker, invocation base.Invocation) result.Result {
+	// 处理响应，减少活跃请求计数
 	f.shutdownConfig.ProviderActiveCount.Dec()
 
 	// 在 Closing 状态下，响应携带 Closing 标记
@@ -97,11 +108,13 @@ func (f *providerGracefulShutdownFilter) OnResponse(ctx context.Context, result 
 
 func (f *providerGracefulShutdownFilter) Set(name string, conf any) {
 	switch name {
+	// 设置过滤器配置
 	case constant.GracefulShutdownFilterShutdownConfig:
 		switch ct := conf.(type) {
 		case *global.ShutdownConfig:
 			f.shutdownConfig = ct
 		// only for compatibility with old config, able to directly remove after config is deleted
+		// 兼容旧配置，能够直接删除后
 		case *config.ShutdownConfig:
 			f.shutdownConfig = compatGlobalShutdownConfig(ct)
 		default:
