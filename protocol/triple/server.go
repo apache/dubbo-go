@@ -42,7 +42,6 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/internal"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
@@ -153,8 +152,7 @@ func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
 		s.handleServiceWithInfo(intfName, invoker, reflectInfo, hanOpts...)
 		s.saveServiceInfo(intfName, reflectInfo)
 	} else {
-		// old triple idl mode and old triple non-idl mode
-		s.compatHandleService(intfName, url.Group(), url.Version(), hanOpts...)
+		s.compatHandleService(url, intfName, url.Group(), url.Version(), hanOpts...)
 	}
 	internal.ReflectionRegister(s)
 
@@ -186,7 +184,7 @@ func (s *Server) RefreshService(invoker base.Invoker, info *common.ServiceInfo) 
 		s.handleServiceWithInfo(intfName, invoker, info, hanOpts...)
 		s.saveServiceInfo(intfName, info)
 	} else {
-		s.compatHandleService(intfName, URL.Group(), URL.Version(), hanOpts...)
+		s.compatHandleService(URL, intfName, URL.Group(), URL.Version(), hanOpts...)
 	}
 }
 
@@ -250,8 +248,13 @@ func getHanOpts(url *common.URL, tripleConf *global.TripleConfig) (hanOpts []tri
 
 // *Important*, this function is responsible for being compatible with old triple-gen code and non-idl code
 // compatHandleService registers handler based on ServiceConfig and provider service.
-func (s *Server) compatHandleService(interfaceName string, group, version string, opts ...tri.HandlerOption) {
-	providerServices := config.GetProviderConfig().Services
+func (s *Server) compatHandleService(url *common.URL, interfaceName string, group, version string, opts ...tri.HandlerOption) {
+	var providerServices map[string]*global.ServiceConfig
+	if providerConfRaw, ok := url.GetAttribute(constant.ProviderConfigKey); ok {
+		if providerConf, ok := providerConfRaw.(*global.ProviderConfig); ok && providerConf != nil {
+			providerServices = providerConf.Services
+		}
+	}
 	if len(providerServices) == 0 {
 		logger.Info("Provider service map is null, please register ProviderServices")
 		return
@@ -260,8 +263,11 @@ func (s *Server) compatHandleService(interfaceName string, group, version string
 		if providerService.Interface != interfaceName || providerService.Group != group || providerService.Version != version {
 			continue
 		}
-		// todo(DMwangnima): judge protocol type
-		service := config.GetProviderService(key)
+		service, _ := url.GetAttribute(constant.RpcServiceKey)
+		if service == nil {
+			logger.Warnf("no rpc service found for key: %v", key)
+			continue
+		}
 		serviceKey := common.ServiceKey(providerService.Interface, providerService.Group, providerService.Version)
 		exporter, _ := tripleProtocol.ExporterMap().Load(serviceKey)
 		if exporter == nil {
