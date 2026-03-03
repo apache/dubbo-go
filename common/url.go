@@ -564,6 +564,22 @@ func (c *URL) SetParam(key string, value string) {
 	c.params.Set(key, value)
 }
 
+// CompareAndSwapParam will set the key-value pair into URL when the current value equals the expected value.
+// It returns true if the value was set successfully, false otherwise.
+// This is a thread-safe compare-and-swap operation.
+func (c *URL) CompareAndSwapParam(key string, expected string, newValue string) bool {
+	c.paramsLock.Lock()
+	defer c.paramsLock.Unlock()
+	if c.params == nil {
+		c.params = url.Values{}
+	}
+	if c.params.Get(key) == expected {
+		c.params.Set(key, newValue)
+		return true
+	}
+	return false
+}
+
 func (c *URL) SetAttribute(key string, value any) {
 	c.attributesLock.Lock()
 	defer c.attributesLock.Unlock()
