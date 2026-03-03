@@ -52,9 +52,9 @@ func TestFilterInvoke(t *testing.T) {
 	invoker.EXPECT().GetURL().Return(url).Times(1)
 	filter.Invoke(context.Background(), invoker, invoc)
 	assert.NotEmpty(t, invoc.GetAttachmentWithDefaultValue(dubboInvokeStartTime, ""))
-	urlFromAttachment, ok := invoc.GetAttachmentInterface(dubboInvokeURL).(*common.URL)
-	assert.True(t, ok, "dubboInvokeURL should be cached in attachment")
-	assert.Equal(t, url.Key(), urlFromAttachment.Key(), "Cached URL should match original URL")
+	urlFromAttribute, ok := invoc.GetAttribute(dubboInvokeURL)
+	assert.True(t, ok, "dubboInvokeURL should be cached in attribute")
+	assert.Equal(t, url.Key(), urlFromAttribute.(*common.URL).Key(), "Cached URL should match original URL")
 
 }
 
@@ -64,8 +64,8 @@ func TestFilterOnResponse(t *testing.T) {
 	url, _ := common.NewURL(fmt.Sprintf("dubbo://%s:%d/com.alibaba.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
 	invoc := invocation.NewRPCInvocation("test", []any{"OK"}, map[string]any{
 		dubboInvokeStartTime: strconv.FormatInt(c-int64(elapsed), 10),
-		dubboInvokeURL:       url,
 	})
+	invoc.SetAttribute(dubboInvokeURL, url)
 	filter := activeFilter{}
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -100,8 +100,8 @@ func TestFilterOnResponseWithDefer(t *testing.T) {
 		url, _ := common.NewURL(fmt.Sprintf("dubbo://%s:%d/com.alibaba.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
 		invoc := invocation.NewRPCInvocation("test1", []any{"OK"}, map[string]any{
 			dubboInvokeStartTime: strconv.FormatInt(c, 10),
-			dubboInvokeURL:       url,
 		})
+		invoc.SetAttribute(dubboInvokeURL, url)
 		filter := activeFilter{}
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
@@ -131,8 +131,8 @@ func TestFilterOnResponseWithDefer(t *testing.T) {
 		url, _ := common.NewURL(fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
 		invoc := invocation.NewRPCInvocation("test2", []any{"OK"}, map[string]any{
 			dubboInvokeStartTime: strconv.FormatInt(c, 10),
-			dubboInvokeURL:       url,
 		})
+		invoc.SetAttribute(dubboInvokeURL, url)
 		filter := activeFilter{}
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
@@ -165,8 +165,8 @@ func TestFilterOnResponseWithDefer(t *testing.T) {
 		url, _ := common.NewURL(fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
 		invoc := invocation.NewRPCInvocation("test3", []any{"OK"}, map[string]any{
 			dubboInvokeStartTime: "invalid-time",
-			dubboInvokeURL:       url,
 		})
+		invoc.SetAttribute(dubboInvokeURL, url)
 		filter := activeFilter{}
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
@@ -195,9 +195,8 @@ func TestFilterOnResponseWithDefer(t *testing.T) {
 		defer base.CleanAllStatus()
 
 		url, _ := common.NewURL(fmt.Sprintf("dubbo://%s:%d/com.ikurento.user.UserProvider", constant.LocalHostValue, constant.DefaultPort))
-		invoc := invocation.NewRPCInvocation("test4", []any{"OK"}, map[string]any{
-			dubboInvokeURL: url,
-		})
+		invoc := invocation.NewRPCInvocation("test4", []any{"OK"}, map[string]any{})
+		invoc.SetAttribute(dubboInvokeURL, url)
 		filter := activeFilter{}
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()

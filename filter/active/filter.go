@@ -73,8 +73,7 @@ func (f *activeFilter) Invoke(ctx context.Context, invoker base.Invoker, inv bas
 	// Cache the URL object to ensure BeginCount and EndCount use the same URL instance
 	// This prevents statistics inconsistency when the invoker is destroyed concurrently
 	url := invoker.GetURL()
-	rpcInv.SetAttachment(dubboInvokeURL, url)
-
+	rpcInv.SetAttribute(dubboInvokeURL, url)
 	base.BeginCount(url, inv.MethodName())
 	return invoker.Invoke(ctx, inv)
 }
@@ -83,19 +82,29 @@ func (f *activeFilter) Invoke(ctx context.Context, invoker base.Invoker, inv bas
 func (f *activeFilter) OnResponse(ctx context.Context, result result.Result, invoker base.Invoker, inv base.Invocation) result.Result {
 	rpcInv := inv.(*invocation.RPCInvocation)
 
-	// Retrieve the cached URL from Invoke phase to ensure statistics consistency
-	url := rpcInv.GetAttachmentInterface(dubboInvokeURL)
+	/// Retrieve the cached URL from Invoke phase with a nil default value
+	rawUrl := rpcInv.GetAttributeWithDefaultValue(dubboInvokeURL, nil)
+
+	// Safely assert the type. If rawUrl is nil, ok will be false and panic is avoided.
+	url, ok := rawUrl.(*common.URL)
+
+	// If the URL is missing or invalid, it means the Invoke phase was likely interrupted.
+	// Skip EndCount to prevent statistic inconsistency or panics.
+	if !ok || url == nil {
+		logger.Warnf("activeFilter cannot get cached URL from attribute, skip EndCount. Invoker may not have passed Invoke phase.")
+		return result
+	}
 
 	startTime, err := strconv.ParseInt(rpcInv.GetAttachmentWithDefaultValue(dubboInvokeStartTime, "0"), 10, 64)
 	if err != nil {
 		result.SetError(err)
 		logger.Errorf("parse dubbo_invoke_start_time to int64 failed")
 		// When err is not nil, use default elapsed value of 1
-		base.EndCount(url.(*common.URL), inv.MethodName(), 1, false)
+		base.EndCount(url, inv.MethodName(), 1, false)
 		return result
 	}
 
 	elapsed := base.CurrentTimeMillis() - startTime
-	base.EndCount(url.(*common.URL), inv.MethodName(), elapsed, result.Error() == nil)
+	base.EndCount(url, inv.MethodName(), elapsed, result.Error() == nil)
 	return result
 }
