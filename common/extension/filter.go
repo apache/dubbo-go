@@ -53,6 +53,7 @@ func SetRejectedExecutionHandler(name string, creator func() filter.RejectedExec
 }
 
 // GetRejectedExecutionHandler finds the RejectedExecutionHandler with @name
+// 用于获取 RejectedExecutionHandler 扩展, 如果不存在则返回错误
 func GetRejectedExecutionHandler(name string) (filter.RejectedExecutionHandler, error) {
 	creator, ok := rejectedExecutionHandler[name]
 	if !ok {

@@ -89,10 +89,12 @@ type ShutdownConfig struct {
 }
 
 // Prefix dubbo.shutdown
+// 返回配置前缀
 func (config *ShutdownConfig) Prefix() string {
 	return constant.ShutdownConfigPrefix
 }
 
+// GetTimeout 获取超时时间
 func (config *ShutdownConfig) GetTimeout() time.Duration {
 	result, err := time.ParseDuration(config.Timeout)
 	if err != nil {
@@ -103,6 +105,7 @@ func (config *ShutdownConfig) GetTimeout() time.Duration {
 	return result
 }
 
+// GetStepTimeout 获取步骤超时时间
 func (config *ShutdownConfig) GetStepTimeout() time.Duration {
 	result, err := time.ParseDuration(config.StepTimeout)
 	if err != nil {
@@ -113,6 +116,7 @@ func (config *ShutdownConfig) GetStepTimeout() time.Duration {
 	return result
 }
 
+// GetOfflineRequestWindowTimeout 获取离线请求窗口超时时间
 func (config *ShutdownConfig) GetOfflineRequestWindowTimeout() time.Duration {
 	result, err := time.ParseDuration(config.OfflineRequestWindowTimeout)
 	if err != nil {
@@ -123,6 +127,7 @@ func (config *ShutdownConfig) GetOfflineRequestWindowTimeout() time.Duration {
 	return result
 }
 
+// GetConsumerUpdateWaitTime 获取消费者更新等待时间
 func (config *ShutdownConfig) GetConsumerUpdateWaitTime() time.Duration {
 	result, err := time.ParseDuration(config.ConsumerUpdateWaitTime)
 	if err != nil {
@@ -133,6 +138,7 @@ func (config *ShutdownConfig) GetConsumerUpdateWaitTime() time.Duration {
 	return result
 }
 
+// GetInternalSignal 获取内部信号监听标志
 func (config *ShutdownConfig) GetInternalSignal() bool {
 	if config.InternalSignal == nil {
 		return false
@@ -140,48 +146,58 @@ func (config *ShutdownConfig) GetInternalSignal() bool {
 	return *config.InternalSignal
 }
 
+// Init 初始化配置
 func (config *ShutdownConfig) Init() error {
 	return defaults.Set(config)
 }
 
+// ShutdownConfigBuilder 关闭配置构建器
 type ShutdownConfigBuilder struct {
 	shutdownConfig *ShutdownConfig
 }
 
+// NewShutDownConfigBuilder 创建关闭配置构建器
 func NewShutDownConfigBuilder() *ShutdownConfigBuilder {
 	return &ShutdownConfigBuilder{shutdownConfig: &ShutdownConfig{}}
 }
 
+// SetTimeout 设置超时时间
 func (scb *ShutdownConfigBuilder) SetTimeout(timeout string) *ShutdownConfigBuilder {
 	scb.shutdownConfig.Timeout = timeout
 	return scb
 }
 
+// SetStepTimeout 设置步骤超时时间
 func (scb *ShutdownConfigBuilder) SetStepTimeout(stepTimeout string) *ShutdownConfigBuilder {
 	scb.shutdownConfig.StepTimeout = stepTimeout
 	return scb
 }
 
+// SetRejectRequestHandler 设置拒绝请求处理器
 func (scb *ShutdownConfigBuilder) SetRejectRequestHandler(rejectRequestHandler string) *ShutdownConfigBuilder {
 	scb.shutdownConfig.RejectRequestHandler = rejectRequestHandler
 	return scb
 }
 
+// SetRejectRequest 设置拒绝新请求标志
 func (scb *ShutdownConfigBuilder) SetRejectRequest(rejectRequest bool) *ShutdownConfigBuilder {
 	scb.shutdownConfig.RejectRequest.Store(rejectRequest)
 	return scb
 }
 
+// SetInternalSignal 设置内部信号监听标志
 func (scb *ShutdownConfigBuilder) SetInternalSignal(internalSignal bool) *ShutdownConfigBuilder {
 	scb.shutdownConfig.InternalSignal = &internalSignal
 	return scb
 }
 
+// SetOfflineRequestWindowTimeout 设置离线请求窗口超时时间
 func (scb *ShutdownConfigBuilder) Build() *ShutdownConfig {
 	defaults.MustSet(scb.shutdownConfig)
 	return scb.shutdownConfig
 }
 
+// SetOfflineRequestWindowTimeout 设置离线请求窗口超时时间
 func (scb *ShutdownConfigBuilder) SetOfflineRequestWindowTimeout(offlineRequestWindowTimeout string) *ShutdownConfigBuilder {
 	scb.shutdownConfig.OfflineRequestWindowTimeout = offlineRequestWindowTimeout
 	return scb

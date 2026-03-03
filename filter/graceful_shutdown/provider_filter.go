@@ -82,6 +82,7 @@ func (f *providerGracefulShutdownFilter) Invoke(ctx context.Context, invoker bas
 		if err != nil {
 			logger.Warn(err)
 		} else {
+			// 调用拒绝执行处理器处理请求, 什么也不做, 只是记录日志
 			return rejectedExecutionHandler.RejectedExecution(invoker.GetURL(), invocation)
 		}
 	}
