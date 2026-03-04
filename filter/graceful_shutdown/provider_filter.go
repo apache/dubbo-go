@@ -86,6 +86,12 @@ func (f *providerGracefulShutdownFilter) Invoke(ctx context.Context, invoker bas
 // OnResponse reduces the number of active processes then return the process result
 func (f *providerGracefulShutdownFilter) OnResponse(ctx context.Context, result result.Result, invoker base.Invoker, invocation base.Invocation) result.Result {
 	f.shutdownConfig.ProviderActiveCount.Dec()
+
+	// 在 Closing 状态下，响应携带 Closing 标记
+	if f.isClosing() {
+		result.AddAttachment(constant.GracefulShutdownClosingKey, "true")
+	}
+
 	return result
 }
 
@@ -112,4 +118,11 @@ func (f *providerGracefulShutdownFilter) rejectNewRequest() bool {
 		return false
 	}
 	return f.shutdownConfig.RejectRequest.Load()
+}
+
+func (f *providerGracefulShutdownFilter) isClosing() bool {
+	if f.shutdownConfig == nil {
+		return false
+	}
+	return f.shutdownConfig.Closing.Load()
 }

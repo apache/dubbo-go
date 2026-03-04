@@ -18,6 +18,8 @@
 package global
 
 import (
+	"time"
+
 	"github.com/creasty/defaults"
 
 	"go.uber.org/atomic"
@@ -60,6 +62,18 @@ type ShutdownConfig struct {
 
 	// provider last received request timestamp
 	ProviderLastReceivedRequestTime atomic.Time
+
+	// Closing 标记：区分"拒绝新请求"和"正在关闭"
+	Closing atomic.Bool
+
+	// Closing Invoker 过期时间
+	ClosingInvokerExpireTime time.Duration `default:"30s" yaml:"closing-invoker-expire-time" json:"closingInvokerExpireTime,omitempty" property:"closingInvokerExpireTime"`
+
+	// 是否启用主动通知
+	EnableActiveNotify *bool `default:"true" yaml:"enable-active-notify" json:"enableActiveNotify,omitempty" property:"enableActiveNotify"`
+
+	// 是否启用 K8s 探针关闭
+	EnableK8sProbe *bool `default:"true" yaml:"enable-k8s-probe" json:"enableK8sProbe,omitempty" property:"enableK8sProbe"`
 }
 
 func DefaultShutdownConfig() *ShutdownConfig {
@@ -81,19 +95,35 @@ func (c *ShutdownConfig) Clone() *ShutdownConfig {
 		*newInternalSignal = *c.InternalSignal
 	}
 
+	var newEnableActiveNotify *bool
+	if c.EnableActiveNotify != nil {
+		newEnableActiveNotify = new(bool)
+		*newEnableActiveNotify = *c.EnableActiveNotify
+	}
+
+	var newEnableK8sProbe *bool
+	if c.EnableK8sProbe != nil {
+		newEnableK8sProbe = new(bool)
+		*newEnableK8sProbe = *c.EnableK8sProbe
+	}
+
 	newShutdownConfig := &ShutdownConfig{
-		Timeout:                     c.Timeout,
-		StepTimeout:                 c.StepTimeout,
-		ConsumerUpdateWaitTime:      c.ConsumerUpdateWaitTime,
-		RejectRequestHandler:        c.RejectRequestHandler,
-		InternalSignal:              newInternalSignal,
-		OfflineRequestWindowTimeout: c.OfflineRequestWindowTimeout,
+		Timeout:                      c.Timeout,
+		StepTimeout:                  c.StepTimeout,
+		ConsumerUpdateWaitTime:       c.ConsumerUpdateWaitTime,
+		RejectRequestHandler:         c.RejectRequestHandler,
+		InternalSignal:               newInternalSignal,
+		OfflineRequestWindowTimeout:  c.OfflineRequestWindowTimeout,
+		ClosingInvokerExpireTime:    c.ClosingInvokerExpireTime,
+		EnableActiveNotify:           newEnableActiveNotify,
+		EnableK8sProbe:              newEnableK8sProbe,
 	}
 
 	newShutdownConfig.RejectRequest.Store(c.RejectRequest.Load())
 	newShutdownConfig.ConsumerActiveCount.Store(c.ConsumerActiveCount.Load())
 	newShutdownConfig.ProviderActiveCount.Store(c.ProviderActiveCount.Load())
 	newShutdownConfig.ProviderLastReceivedRequestTime.Store(c.ProviderLastReceivedRequestTime.Load())
+	newShutdownConfig.Closing.Store(c.Closing.Load())
 
 	return newShutdownConfig
 }

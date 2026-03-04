@@ -125,17 +125,37 @@ func totalTimeout(shutdown *global.ShutdownConfig) time.Duration {
 }
 
 func beforeShutdown(shutdown *global.ShutdownConfig) {
+	// 1. 标记 Closing 状态
+	logger.Info("Graceful shutdown --- Mark closing state.")
+	shutdown.Closing.Store(true)
+
+	// 2. K8s 探针关闭
+	if shutdown.EnableK8sProbe != nil && *shutdown.EnableK8sProbe {
+		shutdownK8sProbe()
+	}
+
+	// 3. 主动通知长连接 Consumer
+	if shutdown.EnableActiveNotify != nil && *shutdown.EnableActiveNotify {
+		notifyLongConnectionConsumers()
+	}
+
+	// 4. 反注册注册中心（兜底）
 	destroyRegistries()
+
+	// 5. 等待并拒绝新请求
 	// waiting for a short time so that the clients have enough time to get the notification that server shutdowns
 	// The value of configuration depends on how long the clients will get notification.
 	waitAndAcceptNewRequests(shutdown)
 
+	// 6. 拒绝新请求并等待请求完成
 	// reject sending/receiving the new request but keeping waiting for accepting requests
 	waitForSendingAndReceivingRequests(shutdown)
 
+	// 7. 销毁协议
 	// destroy all protocols
 	destroyProtocols()
 
+	// 8. 执行回调
 	logger.Info("Graceful shutdown --- Execute the custom callbacks.")
 	customCallbacks := extension.GetAllCustomShutdownCallbacks()
 	for callback := customCallbacks.Front(); callback != nil; callback = callback.Next() {
@@ -211,4 +231,16 @@ func destroyProtocols() {
 	for name := range protocols {
 		extension.GetProtocol(name).Destroy()
 	}
+}
+
+// notifyLongConnectionConsumers 主动通知长连接 Consumer
+// 该函数在 active_notify.go 中实现
+func notifyLongConnectionConsumers() {
+	NotifyLongConnectionConsumers()
+}
+
+// shutdownK8sProbe 关闭 K8s 探针
+// 该函数在 k8s_probe.go 中实现
+func shutdownK8sProbe() {
+	ShutdownK8sProbe()
 }

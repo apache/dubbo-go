@@ -53,10 +53,10 @@ var _ Result = (*RPCResult)(nil)
 
 // RPCResult is default RPC result.
 type RPCResult struct {
-	Attrs  map[string]any
-	BizErr error
-	Err    error
-	Rest   any
+	Attrs  map[string]any // 这是附件
+	BizErr error          // 这是业务错误
+	Err    error          // 这是系统错误
+	Rest   any            // 这是业务结果
 }
 
 // SetError sets error.
@@ -103,6 +103,7 @@ func (r *RPCResult) Attachments() map[string]any {
 }
 
 // AddAttachment adds the specified map to existing attachments in this instance.
+// 在此实例中指定映射到现有附件。
 func (r *RPCResult) AddAttachment(key string, value any) {
 	if r.Attrs == nil {
 		r.Attrs = make(map[string]any)

@@ -109,6 +109,7 @@ const (
 	GracefulShutdownProviderFilterKey    = "pshutdown"
 	GracefulShutdownConsumerFilterKey    = "cshutdown"
 	GracefulShutdownFilterShutdownConfig = "GracefulShutdownFilterShutdownConfig"
+	GracefulShutdownClosingKey            = "closing"
 	HystrixConsumerFilterKey             = "hystrix_consumer"
 	HystrixProviderFilterKey             = "hystrix_provider"
 	MetricsFilterKey                     = "metrics"
