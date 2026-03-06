@@ -129,12 +129,7 @@ func beforeShutdown(shutdown *global.ShutdownConfig) {
 	logger.Info("Graceful shutdown --- Mark closing state.")
 	shutdown.Closing.Store(true)
 
-	// 2. K8s 探针关闭
-	if shutdown.EnableK8sProbe != nil && *shutdown.EnableK8sProbe {
-		shutdownK8sProbe()
-	}
-
-	// 3. 主动通知长连接 Consumer
+	// 2. 主动通知长连接 Consumer
 	if shutdown.EnableActiveNotify != nil && *shutdown.EnableActiveNotify {
 		notifyLongConnectionConsumers()
 	}
@@ -237,10 +232,4 @@ func destroyProtocols() {
 // 该函数在 active_notify.go 中实现
 func notifyLongConnectionConsumers() {
 	NotifyLongConnectionConsumers()
-}
-
-// shutdownK8sProbe 关闭 K8s 探针
-// 该函数在 k8s_probe.go 中实现
-func shutdownK8sProbe() {
-	ShutdownK8sProbe()
 }

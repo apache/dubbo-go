@@ -71,9 +71,6 @@ type ShutdownConfig struct {
 
 	// 是否启用主动通知
 	EnableActiveNotify *bool `default:"true" yaml:"enable-active-notify" json:"enableActiveNotify,omitempty" property:"enableActiveNotify"`
-
-	// 是否启用 K8s 探针关闭
-	EnableK8sProbe *bool `default:"true" yaml:"enable-k8s-probe" json:"enableK8sProbe,omitempty" property:"enableK8sProbe"`
 }
 
 func DefaultShutdownConfig() *ShutdownConfig {
@@ -101,12 +98,6 @@ func (c *ShutdownConfig) Clone() *ShutdownConfig {
 		*newEnableActiveNotify = *c.EnableActiveNotify
 	}
 
-	var newEnableK8sProbe *bool
-	if c.EnableK8sProbe != nil {
-		newEnableK8sProbe = new(bool)
-		*newEnableK8sProbe = *c.EnableK8sProbe
-	}
-
 	newShutdownConfig := &ShutdownConfig{
 		Timeout:                      c.Timeout,
 		StepTimeout:                  c.StepTimeout,
@@ -116,7 +107,6 @@ func (c *ShutdownConfig) Clone() *ShutdownConfig {
 		OfflineRequestWindowTimeout:  c.OfflineRequestWindowTimeout,
 		ClosingInvokerExpireTime:    c.ClosingInvokerExpireTime,
 		EnableActiveNotify:           newEnableActiveNotify,
-		EnableK8sProbe:              newEnableK8sProbe,
 	}
 
 	newShutdownConfig.RejectRequest.Store(c.RejectRequest.Load())
