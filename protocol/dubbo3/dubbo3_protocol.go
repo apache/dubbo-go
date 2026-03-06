@@ -84,7 +84,7 @@ func (dp *DubboProtocol) Export(invoker base.Invoker) base.Exporter {
 		service = rpcService
 	}
 	if service == nil {
-		logger.Errorf("no rpc service found in url attribute %s for service key: %s", constant.RpcServiceKey, key)
+		logger.Errorf("[Triple Protocol] No rpc service found in url attribute %s for service key: %s", constant.RpcServiceKey, key)
 		return nil
 	}
 
