@@ -224,9 +224,9 @@ func (dp *DubboProtocol) openServer(url *common.URL, tripleCodecType tripleConst
 		triConfig.WithLocation(url.Location),
 		triConfig.WithLogger(logger.GetLogger()),
 	}
-	if tracingConfRaw, ok := url.GetAttribute(constant.TracingConfigKey); ok {
-		tracingConfig, ok := tracingConfRaw.(*global.TracingConfig)
-		if !ok {
+	if tracingConfRaw, tracingAttrOk := url.GetAttribute(constant.TracingConfigKey); tracingAttrOk {
+		tracingConfig, tracingConfigOk := tracingConfRaw.(*global.TracingConfig)
+		if !tracingConfigOk {
 			logger.Warnf("invalid tracing config type %T, expected *global.TracingConfig", tracingConfRaw)
 		} else if tracingConfig != nil {
 			if tracingConfig.Name == "jaeger" {
