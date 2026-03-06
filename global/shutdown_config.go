@@ -51,6 +51,7 @@ type ShutdownConfig struct {
 	// when we try to shutdown the applicationConfig, we will reject the new requests. In most cases, you don't need to configure this.
 	RejectRequestHandler string `yaml:"reject-handler" json:"reject-handler,omitempty" property:"reject_handler"`
 	// internal listen kill signal，the default is true.
+	// 内部监听停止信号，默认值为真
 	InternalSignal *bool `default:"true" yaml:"internal-signal" json:"internal.signal,omitempty" property:"internal.signal"`
 	// offline request window length
 	OfflineRequestWindowTimeout string `yaml:"offline-request-window-timeout" json:"offlineRequestWindowTimeout,omitempty" property:"offlineRequestWindowTimeout"`
@@ -88,7 +89,7 @@ func (c *ShutdownConfig) Clone() *ShutdownConfig {
 
 	var newInternalSignal *bool
 	if c.InternalSignal != nil {
-		newInternalSignal = new(bool)
+		newInternalSignal = new(bool) //new(bool) 初始化一个新的 bool 指针
 		*newInternalSignal = *c.InternalSignal
 	}
 
@@ -99,14 +100,14 @@ func (c *ShutdownConfig) Clone() *ShutdownConfig {
 	}
 
 	newShutdownConfig := &ShutdownConfig{
-		Timeout:                      c.Timeout,
-		StepTimeout:                  c.StepTimeout,
-		ConsumerUpdateWaitTime:       c.ConsumerUpdateWaitTime,
-		RejectRequestHandler:         c.RejectRequestHandler,
-		InternalSignal:               newInternalSignal,
-		OfflineRequestWindowTimeout:  c.OfflineRequestWindowTimeout,
+		Timeout:                     c.Timeout,
+		StepTimeout:                 c.StepTimeout,
+		ConsumerUpdateWaitTime:      c.ConsumerUpdateWaitTime,
+		RejectRequestHandler:        c.RejectRequestHandler,
+		InternalSignal:              newInternalSignal,
+		OfflineRequestWindowTimeout: c.OfflineRequestWindowTimeout,
 		ClosingInvokerExpireTime:    c.ClosingInvokerExpireTime,
-		EnableActiveNotify:           newEnableActiveNotify,
+		EnableActiveNotify:          newEnableActiveNotify,
 	}
 
 	newShutdownConfig.RejectRequest.Store(c.RejectRequest.Load())

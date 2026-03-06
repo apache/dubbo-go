@@ -86,9 +86,10 @@ func Init(opts ...Option) {
 			signal.Notify(signals, ShutdownSignals...)
 
 			go func() {
+				// 收到x信号后，执行优雅关闭
 				sig := <-signals
 				logger.Infof("get signal %s, applicationConfig will shutdown.", sig)
-				// gracefulShutdownOnce.Do(func() {
+				// 兜底的优雅关闭超时，默认值为60秒
 				time.AfterFunc(totalTimeout(newOpts.Shutdown), func() {
 					logger.Warn("Shutdown gracefully timeout, applicationConfig will shutdown immediately. ")
 					os.Exit(0)
@@ -129,28 +130,28 @@ func beforeShutdown(shutdown *global.ShutdownConfig) {
 	logger.Info("Graceful shutdown --- Mark closing state.")
 	shutdown.Closing.Store(true)
 
-	// 2. 主动通知长连接 Consumer
+	// 2. 反注册注册中心（兜底）
+	destroyRegistries()
+
+	// 3. 主动通知长连接 Consumer
 	if shutdown.EnableActiveNotify != nil && *shutdown.EnableActiveNotify {
 		notifyLongConnectionConsumers()
 	}
 
-	// 4. 反注册注册中心（兜底）
-	destroyRegistries()
-
-	// 5. 等待并拒绝新请求
+	// 4. 等待并拒绝新请求
 	// waiting for a short time so that the clients have enough time to get the notification that server shutdowns
 	// The value of configuration depends on how long the clients will get notification.
 	waitAndAcceptNewRequests(shutdown)
 
-	// 6. 拒绝新请求并等待请求完成
+	// 5. 拒绝新请求并等待请求完成
 	// reject sending/receiving the new request but keeping waiting for accepting requests
 	waitForSendingAndReceivingRequests(shutdown)
 
-	// 7. 销毁协议
+	// 6. 销毁协议
 	// destroy all protocols
 	destroyProtocols()
 
-	// 8. 执行回调
+	// 7. 执行回调
 	logger.Info("Graceful shutdown --- Execute the custom callbacks.")
 	customCallbacks := extension.GetAllCustomShutdownCallbacks()
 	for callback := customCallbacks.Front(); callback != nil; callback = callback.Next() {
