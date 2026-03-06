@@ -22,30 +22,19 @@ import (
 	"reflect"
 	"sync"
 	"time"
-)
 
-import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"github.com/dubbogo/gost/log/logger"
-
 	"github.com/dustin/go-humanize"
-
 	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
-
 	"github.com/opentracing/opentracing-go"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
-
 	"gopkg.in/yaml.v2"
-)
 
-import (
-	"dubbo.apache.org/dubbo-go/v3"
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/global"
 	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
 
@@ -79,9 +68,6 @@ func NewClient(url *common.URL) (*Client, error) {
 		maxCallSendMsgSize = int(sendMsgSize)
 	}
 
-	// consumer config client connectTimeout
-	//connectTimeout := config.GetConsumerConfig().ConnectTimeout
-
 	dialOpts = append(dialOpts,
 		grpc.WithBlock(),
 		// todo config network timeout
@@ -93,24 +79,10 @@ func NewClient(url *common.URL) (*Client, error) {
 			grpc.MaxCallRecvMsgSize(maxCallRecvMsgSize),
 			grpc.MaxCallSendMsgSize(maxCallSendMsgSize),
 		),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 
-	// TODO: remove config TLSConfig
-	// delete this branch
-	tlsConfig := config.GetRootConfig().TLSConfig
-	if tlsConfig != nil {
-		cfg, err := config.GetClientTlsConfig(&config.TLSConfig{
-			CACertFile:    tlsConfig.CACertFile,
-			TLSCertFile:   tlsConfig.TLSCertFile,
-			TLSKeyFile:    tlsConfig.TLSKeyFile,
-			TLSServerName: tlsConfig.TLSServerName,
-		})
-		logger.Infof("Grpc Client initialized the TLSConfig configuration")
-		if err != nil {
-			return nil, err
-		}
-		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(cfg)))
-	} else if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
+	if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
 		// use global TLSConfig handle tls
 		tlsConf, ok := tlsConfRaw.(*global.TLSConfig)
 		if !ok {
@@ -127,12 +99,7 @@ func NewClient(url *common.URL) (*Client, error) {
 				logger.Infof("Grpc Client initialized the TLSConfig configuration")
 				dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(cfg)))
 			}
-		} else {
-			dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		}
-	} else {
-		// TODO: remove this else
-		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 
 	conn, err := grpc.Dial(url.Location, dialOpts...)
@@ -142,25 +109,25 @@ func NewClient(url *common.URL) (*Client, error) {
 	}
 
 	key := url.GetParam(constant.InterfaceKey, "")
-	//TODO: Temporary compatibility with old APIs, can be removed later
-	consumerService := config.GetConsumerServiceByInterfaceName(key)
-	if consumerService == nil {
-		if rpcService, ok := url.GetAttribute(constant.RpcServiceKey); ok {
-			consumerService = rpcService
-		}
+	var consumerService any
+	if rpcService, ok := url.GetAttribute(constant.RpcServiceKey); ok {
+		consumerService = rpcService
 	}
 	invoker := getInvoker(consumerService, conn)
+	invokerValue := reflect.Value{}
+	if invoker != nil {
+		invokerValue = reflect.ValueOf(invoker)
+	} else {
+		logger.Warnf("grpc client invoker is nil, interface=%s", key)
+	}
 
 	return &Client{
 		ClientConn: conn,
-		invoker:    reflect.ValueOf(invoker),
+		invoker:    invokerValue,
 	}, nil
 }
 
 func clientInit(url *common.URL) {
-	// load rootConfig from runtime
-	rootConfig := config.GetRootConfig()
-
 	clientConfig := GetClientConfig()
 	clientConf = &clientConfig
 
@@ -175,28 +142,18 @@ func clientInit(url *common.URL) {
 		}
 	}()
 
-	if rootConfig.Application == nil {
-		app := url.GetParam(constant.ApplicationKey, "")
-		if len(app) == 0 {
-			return
-		}
+	protocolConfRaw, ok := url.GetAttribute(constant.ProtocolConfigKey)
+	if !ok {
+		return
 	}
-
-	//TODO: Temporary compatibility with old APIs, can be removed later
-	protocolConf := dubbo.CompatGlobalProtocolConfigMap(rootConfig.Protocols)
+	protocolConf, ok := protocolConfRaw.(map[string]*global.ProtocolConfig)
+	if !ok {
+		logger.Warnf("protocolConfig assert failed")
+		return
+	}
 	if protocolConf == nil {
-		if protocolConfRaw, ok := url.GetAttribute(constant.ProtocolConfigKey); ok {
-			protocolConfig, ok := protocolConfRaw.(map[string]*global.ProtocolConfig)
-			if !ok {
-				logger.Warnf("protocolConfig assert failed")
-				return
-			}
-			if protocolConfig == nil {
-				logger.Warnf("protocolConfig is nil")
-				return
-			}
-			protocolConf = protocolConfig
-		}
+		logger.Warnf("protocolConfig is nil")
+		return
 	}
 	grpcConf := protocolConf[GRPC]
 	if grpcConf == nil {
