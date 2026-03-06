@@ -22,36 +22,28 @@ import (
 	"fmt"
 	"reflect"
 	"sync"
-)
 
-import (
 	"github.com/dubbogo/gost/log/logger"
-
 	"github.com/dubbogo/grpc-go"
 	"github.com/dubbogo/grpc-go/metadata"
 
 	tripleConstant "github.com/dubbogo/triple/pkg/common/constant"
-	triConfig "github.com/dubbogo/triple/pkg/config"
-	"github.com/dubbogo/triple/pkg/triple"
 
-	"github.com/dustin/go-humanize"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	triConfig "github.com/dubbogo/triple/pkg/config"
+	"github.com/dubbogo/triple/pkg/triple"
+	"github.com/dustin/go-humanize"
+
 	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
 
 var protocolOnce sync.Once
 
 func init() {
-	// todo(DMwangnima): deprecated
-	//extension.SetProtocol(tripleConstant.TRIPLE, GetProtocol)
 	protocolOnce = sync.Once{}
 }
 
@@ -86,10 +78,12 @@ func (dp *DubboProtocol) Export(invoker base.Invoker) base.Exporter {
 
 	key := url.GetParam(constant.BeanNameKey, "")
 	var service any
-	//TODO: Temporary compatibility with old APIs, can be removed later
-	service = config.GetProviderService(key)
 	if rpcService, ok := url.GetAttribute(constant.RpcServiceKey); ok {
 		service = rpcService
+	}
+	if service == nil {
+		logger.Errorf("no rpc service found in url attribute %s for service key: %s", constant.RpcServiceKey, key)
+		return nil
 	}
 
 	serializationType := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
@@ -229,22 +223,26 @@ func (dp *DubboProtocol) openServer(url *common.URL, tripleCodecType tripleConst
 		triConfig.WithLocation(url.Location),
 		triConfig.WithLogger(logger.GetLogger()),
 	}
-	//TODO: Temporary compatibility with old APIs, can be removed later
-	tracingKey := url.GetParam(constant.TracingConfigKey, "")
-	if tracingKey != "" {
-		tracingConfig := config.GetTracingConfig(tracingKey)
-		if tracingConfig != nil {
-			if tracingConfig.ServiceName == "" {
-				tracingConfig.ServiceName = config.GetApplicationConfig().Name
-			}
-			switch tracingConfig.Name {
-			case "jaeger":
+	if tracingConfRaw, ok := url.GetAttribute(constant.TracingConfigKey); ok {
+		tracingConfig, ok := tracingConfRaw.(*global.TracingConfig)
+		if !ok {
+			logger.Warnf("invalid tracing config type %T, expected *global.TracingConfig", tracingConfRaw)
+		} else if tracingConfig != nil {
+			if tracingConfig.Name == "jaeger" {
+				serviceName := tracingConfig.ServiceName
+				if serviceName == "" {
+					serviceName = url.GetParam(constant.ApplicationKey, "")
+				}
+				useAgent := false
+				if tracingConfig.UseAgent != nil {
+					useAgent = *tracingConfig.UseAgent
+				}
 				opts = append(opts, triConfig.WithJaegerConfig(
 					tracingConfig.Address,
-					tracingConfig.ServiceName,
-					*tracingConfig.UseAgent,
+					serviceName,
+					useAgent,
 				))
-			default:
+			} else {
 				logger.Warnf("unsupported tracing name %s, now triple only support jaeger", tracingConfig.Name)
 			}
 		}
@@ -263,16 +261,7 @@ func (dp *DubboProtocol) openServer(url *common.URL, tripleCodecType tripleConst
 
 	triOption := triConfig.NewTripleOption(opts...)
 
-	// TODO: remove config TLSConfig
-	// delete this branch
-	tlsConfig := config.GetRootConfig().TLSConfig
-	if tlsConfig != nil {
-		triOption.CACertFile = tlsConfig.CACertFile
-		triOption.TLSCertFile = tlsConfig.TLSCertFile
-		triOption.TLSKeyFile = tlsConfig.TLSKeyFile
-		triOption.TLSServerName = tlsConfig.TLSServerName
-		logger.Infof("DUBBO3 Server initialized the TLSConfig configuration")
-	} else if tlsConfRaw, tlsOk := url.GetAttribute(constant.TLSConfigKey); tlsOk {
+	if tlsConfRaw, tlsOk := url.GetAttribute(constant.TLSConfigKey); tlsOk {
 		// use global TLSConfig handle tls
 		tlsConf, RawOk := tlsConfRaw.(*global.TLSConfig)
 		if !RawOk {
