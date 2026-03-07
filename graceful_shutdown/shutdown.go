@@ -39,10 +39,10 @@ const (
 	defaultStepTimeout                 = 3 * time.Second
 	defaultConsumerUpdateWaitTime      = 3 * time.Second
 	defaultOfflineRequestWindowTimeout = 3 * time.Second
-	// 重试相关配置
-	defaultMaxRetries     = 3                      // 最大重试次数
-	defaultRetryBaseDelay = 500 * time.Millisecond // 基础重试延迟
-	defaultRetryMaxDelay  = 2 * time.Second        // 最大重试延迟
+	// retry config
+	defaultMaxRetries      = 3
+	defaultRetryBaseDelay = 500 * time.Millisecond
+	defaultRetryMaxDelay  = 2 * time.Second
 
 	timeoutDesc                     = "Timeout"
 	stepTimeoutDesc                 = "StepTimeout"
@@ -87,10 +87,9 @@ func Init(opts ...Option) {
 			signal.Notify(signals, ShutdownSignals...)
 
 			go func() {
-				// 收到x信号后，执行优雅关闭
 				sig := <-signals
 				logger.Infof("get signal %s, applicationConfig will shutdown.", sig)
-				// 兜底的优雅关闭超时，默认值为60秒
+				// fallback timeout
 				time.AfterFunc(totalTimeout(newOpts.Shutdown), func() {
 					logger.Warn("Shutdown gracefully timeout, applicationConfig will shutdown immediately. ")
 					os.Exit(0)
@@ -127,36 +126,29 @@ func totalTimeout(shutdown *global.ShutdownConfig) time.Duration {
 }
 
 func beforeShutdown(shutdown *global.ShutdownConfig) {
-	// 1. 标记 Closing 状态
-	// 设置 Closing=true，这样后续的请求响应都会携带 closing 标记
-	// Consumer 收到响应后会自动将该 Provider 标记为 closing
+	// 1. mark closing state
 	logger.Info("Graceful shutdown --- Mark closing state.")
 	shutdown.Closing.Store(true)
 
-	// 2. 反注册注册中心（兜底）
-	// 从注册中心移除当前 Provider，这样新的 Consumer 不会发现该实例
+	// 2. destroy registries (fallback)
 	destroyRegistries()
 
-	// 3. 主动通知长连接 Consumer
-	// 遍历所有已注册的协议，向每个连接的 Consumer 发送关闭通知
-	// 这是主动通知机制，与被动通知（响应携带 closing 标记）配合使用
-	// 支持超时控制，失败不影响后续流程（因为有注册中心兜底）
+	// 3. notify long connection consumers
 	notifyLongConnectionConsumers()
 
-	// 4. 等待并拒绝新请求
+	// 4. wait and accept new requests
 	// waiting for a short time so that the clients have enough time to get the notification that server shutdowns
 	// The value of configuration depends on how long the clients will get notification.
 	waitAndAcceptNewRequests(shutdown)
 
-	// 5. 拒绝新请求并等待请求完成
+	// 5. reject new requests and wait for in-flight requests
 	// reject sending/receiving the new request but keeping waiting for accepting requests
 	waitForSendingAndReceivingRequests(shutdown)
 
-	// 6. 销毁协议
-	// destroy all protocols
+	// 6. destroy protocols
 	destroyProtocols()
 
-	// 7. 执行回调
+	// 7. execute custom callbacks
 	logger.Info("Graceful shutdown --- Execute the custom callbacks.")
 	customCallbacks := extension.GetAllCustomShutdownCallbacks()
 	for callback := customCallbacks.Front(); callback != nil; callback = callback.Next() {
@@ -171,34 +163,22 @@ func destroyRegistries() {
 	registryProtocol.Destroy()
 }
 
-// notifyLongConnectionConsumers 主动通知长连接 Consumer
-// 该函数遍历所有已注册的协议回调，向每个连接的 Consumer 发送关闭通知
-// 实现机制：
-//   - 各协议（gRPC、Triple）通过 extension.SetGracefulShutdownCallback 注册回调
-//   - 回调机制避免循环导入问题
-//   - 支持超时控制，失败不影响后续流程（注册中心反注册作为兜底）
-//   - 支持指数退避重试机制
+// notifyLongConnectionConsumers notifies all connected consumers via long connections
 func notifyLongConnectionConsumers() {
 	logger.Info("Graceful shutdown --- Notify long connection consumers.")
 
-	// 设置主动通知超时时间
-	// 避免因为网络问题导致长时间阻塞
 	notifyTimeout := 3 * time.Second
 	ctx, cancel := context.WithTimeout(context.Background(), notifyTimeout)
 	defer cancel()
 
-	// 获取所有已注册的协议级别优雅下线回调
-	// 这些回调在各协议的 init() 中注册
 	callbacks := extension.GetAllGracefulShutdownCallbacks()
 
-	// 遍历所有回调，调用各协议的优雅关闭方法
 	for name, callback := range callbacks {
 		notifyWithRetry(ctx, name, callback)
 	}
 }
 
-// notifyWithRetry 带指数退避重试的通知
-// 策略：每次重试间隔时间翻倍，直到达到最大延迟
+// notifyWithRetry notifies with exponential backoff retry
 func notifyWithRetry(ctx context.Context, name string, callback extension.GracefulShutdownCallback) {
 	maxRetries := defaultMaxRetries
 	baseDelay := defaultRetryBaseDelay
@@ -206,7 +186,7 @@ func notifyWithRetry(ctx context.Context, name string, callback extension.Gracef
 
 	var lastErr error
 	for attempt := 0; attempt <= maxRetries; attempt++ {
-		// 检查是否超时
+		// check timeout
 		select {
 		case <-ctx.Done():
 			logger.Warnf("Graceful shutdown --- Notify %s timeout after %d attempts, continuing...", name, attempt)
@@ -214,9 +194,6 @@ func notifyWithRetry(ctx context.Context, name string, callback extension.Gracef
 		default:
 		}
 
-		// 调用协议的优雅关闭回调
-		// gRPC: 调用 GracefulStop() 等待所有请求完成后再关闭连接
-		// Triple: 调用 GracefulStop(ctx) 发送 GOAWAY 帧通知客户端
 		err := callback(ctx)
 		if err == nil {
 			logger.Infof("Graceful shutdown --- Notify %s completed", name)
@@ -226,9 +203,8 @@ func notifyWithRetry(ctx context.Context, name string, callback extension.Gracef
 		lastErr = err
 		logger.Warnf("Graceful shutdown --- Notify %s attempt %d failed: %v", name, attempt+1, err)
 
-		// 如果还有重试次数，等待后继续
+		// retry with exponential backoff
 		if attempt < maxRetries {
-			// 计算指数退避延迟
 			delay := baseDelay
 			for i := 0; i < attempt; i++ {
 				delay *= 2
@@ -248,7 +224,7 @@ func notifyWithRetry(ctx context.Context, name string, callback extension.Gracef
 		}
 	}
 
-	// 所有重试都失败
+	// all retries failed
 	logger.Warnf("Graceful shutdown --- Notify %s failed after %d attempts: %v", name, maxRetries+1, lastErr)
 }
 

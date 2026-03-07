@@ -38,39 +38,23 @@ const (
 )
 
 func init() {
-	// 注册 gRPC 协议到扩展点
-	// 这样可以通过 extension.GetProtocol("grpc") 获取 gRPC 协议实例
 	extension.SetProtocol(GRPC, GetProtocol)
 
-	// 注册优雅下线回调
-	// 当应用触发优雅下线时，会调用此回调通知所有连接的 Consumer 即将关闭
-	// 回调机制避免循环导入问题（graceful_shutdown -> protocol/grpc -> dubbo根包 -> client -> graceful_shutdown）
+	// register graceful shutdown callback
 	extension.SetGracefulShutdownCallback(GRPC, func(ctx context.Context) error {
-		// 1. 获取 gRPC 协议实例
-		// GetProtocol() 会返回全局唯一的 GrpcProtocol 实例
 		grpcProto := GetProtocol()
 		if grpcProto == nil {
 			return nil
 		}
 
-		// 2. 类型断言，将通用 Protocol 接口转换为 GrpcProtocol
-		// 只有 GrpcProtocol 才有 serverMap 字段
 		gp, ok := grpcProto.(*GrpcProtocol)
 		if !ok {
 			return nil
 		}
 
-		// 3. 加锁保护 serverMap（避免并发问题）
-		// 因为优雅下线可能被多个信号触发
 		gp.serverLock.Lock()
 		defer gp.serverLock.Unlock()
 
-		// 4. 遍历所有 gRPC Server，调用 GracefulStop 优雅关闭
-		// GracefulStop 会：
-		//   - 停止接收新请求
-		//   - 等待正在处理的请求完成
-		//   - 然后关闭连接
-		// 这样 Consumer 会收到通知，知道 Provider 即将关闭
 		for _, server := range gp.serverMap {
 			server.GracefulStop()
 		}

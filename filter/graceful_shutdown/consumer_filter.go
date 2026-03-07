@@ -68,7 +68,6 @@ func newConsumerGracefulShutdownFilter() filter.Filter {
 
 // Invoke adds the requests count and block the new requests if application is closing
 func (f *consumerGracefulShutdownFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
-	// 检查 Invoker 是否正在关闭
 	if f.isClosingInvoker(invoker) {
 		logger.Warnf("Graceful shutdown: skipping closing invoker: %s", invoker.GetURL().String())
 		return &result.RPCResult{Err: errors.New("provider is closing")}
@@ -81,12 +80,12 @@ func (f *consumerGracefulShutdownFilter) Invoke(ctx context.Context, invoker bas
 func (f *consumerGracefulShutdownFilter) OnResponse(ctx context.Context, result result.Result, invoker base.Invoker, invocation base.Invocation) result.Result {
 	f.shutdownConfig.ConsumerActiveCount.Dec()
 
-	// 检测响应中的 Closing 标记
+	// check closing flag in response
 	if f.isClosingResponse(result) {
 		f.markClosingInvoker(invoker)
 	}
 
-	// 检测请求错误，如果是连接关闭相关的错误，标记 Invoker 为不可用
+	// handle request error
 	if result.Error() != nil {
 		f.handleRequestError(invoker, result.Error())
 	}
@@ -112,7 +111,7 @@ func (f *consumerGracefulShutdownFilter) Set(name string, conf any) {
 	}
 }
 
-// isClosingInvoker 检查 Invoker 是否在 closing 列表中
+// isClosingInvoker checks if invoker is in closing list
 func (f *consumerGracefulShutdownFilter) isClosingInvoker(invoker base.Invoker) bool {
 	key := invoker.GetURL().String()
 	if expireTime, ok := f.closingInvokers.Load(key); ok {
@@ -124,7 +123,7 @@ func (f *consumerGracefulShutdownFilter) isClosingInvoker(invoker base.Invoker) 
 	return false
 }
 
-// isClosingResponse 检查响应是否携带 Closing 标记
+// isClosingResponse checks if response contains closing flag
 func (f *consumerGracefulShutdownFilter) isClosingResponse(result result.Result) bool {
 	if result != nil && result.Attachments() != nil {
 		if v, ok := result.Attachments()[constant.GracefulShutdownClosingKey]; ok {
@@ -136,8 +135,7 @@ func (f *consumerGracefulShutdownFilter) isClosingResponse(result result.Result)
 	return false
 }
 
-// markClosingInvoker 标记 Invoker 为正在关闭
-// 同时设置 invoker.available = false，将实例从可用列表中移除
+// markClosingInvoker marks invoker as closing and sets available=false
 func (f *consumerGracefulShutdownFilter) markClosingInvoker(invoker base.Invoker) {
 	key := invoker.GetURL().String()
 	expireTime := time.Now().Add(f.getClosingInvokerExpireTime())
@@ -145,10 +143,6 @@ func (f *consumerGracefulShutdownFilter) markClosingInvoker(invoker base.Invoker
 
 	logger.Infof("Graceful shutdown: marked invoker as closing: %s, will expire at %v", key, expireTime)
 
-	// 设置 Invoker 为不可用，从可用实例列表中移除
-	// ClusterInvoker 在选择时会自动跳过不可用的 Invoker
-	// 注意：这里调用的是 base.Invoker 的方法
-	// 实际类型可能是 *base.BaseInvoker 或其他实现了 Invoker 接口的类型
 	if bi, ok := invoker.(*base.BaseInvoker); ok {
 		bi.SetAvailable(false)
 		logger.Infof("Graceful shutdown: set invoker unavailable: %s", key)
@@ -162,16 +156,13 @@ func (f *consumerGracefulShutdownFilter) getClosingInvokerExpireTime() time.Dura
 	return 30 * time.Second
 }
 
-// handleRequestError 处理请求错误
-// 当请求失败时（如连接关闭），标记对应的 Invoker 为不可用
+// handleRequestError handles request errors and marks invoker as unavailable for connection errors
 func (f *consumerGracefulShutdownFilter) handleRequestError(invoker base.Invoker, err error) {
 	if err == nil {
 		return
 	}
 
-	// 检查是否是连接关闭相关的错误
-	// ErrClientClosed: 连接已关闭
-	// ErrDestroyedInvoker: Invoker 已销毁
+	// check for connection-related errors
 	errMsg := err.Error()
 	isConnectionError := strings.Contains(errMsg, "client has closed") ||
 		strings.Contains(errMsg, "connection") ||
@@ -187,7 +178,6 @@ func (f *consumerGracefulShutdownFilter) handleRequestError(invoker base.Invoker
 
 		logger.Infof("Graceful shutdown: connection error detected for invoker: %s, marking as closing, will expire at %v", key, expireTime)
 
-		// 设置 Invoker 为不可用
 		if bi, ok := invoker.(*base.BaseInvoker); ok {
 			bi.SetAvailable(false)
 			logger.Infof("Graceful shutdown: set invoker unavailable due to connection error: %s", key)
