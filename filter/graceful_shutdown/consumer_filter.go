@@ -20,6 +20,7 @@ package graceful_shutdown
 import (
 	"context"
 	"errors"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -153,8 +154,16 @@ func (f *consumerGracefulShutdownFilter) markClosingInvoker(invoker base.Invoker
 }
 
 func (f *consumerGracefulShutdownFilter) getClosingInvokerExpireTime() time.Duration {
-	if f.shutdownConfig != nil && f.shutdownConfig.ClosingInvokerExpireTime > 0 {
-		return f.shutdownConfig.ClosingInvokerExpireTime
+	if f.shutdownConfig != nil && f.shutdownConfig.ClosingInvokerExpireTime != "" {
+		if duration, err := time.ParseDuration(f.shutdownConfig.ClosingInvokerExpireTime); err == nil && duration > 0 {
+			return duration
+		}
+	}
+	// default 30s, also try parsing numeric string as milliseconds
+	if f.shutdownConfig != nil && f.shutdownConfig.ClosingInvokerExpireTime != "" {
+		if ms, err := strconv.ParseInt(f.shutdownConfig.ClosingInvokerExpireTime, 10, 64); err == nil && ms > 0 {
+			return time.Duration(ms) * time.Millisecond
+		}
 	}
 	return 30 * time.Second
 }
