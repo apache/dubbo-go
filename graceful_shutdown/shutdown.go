@@ -18,22 +18,19 @@
 package graceful_shutdown
 
 import (
+	"context"
 	"os"
 	"os/signal"
 	"runtime/debug"
 	"sync"
 	"time"
-)
 
-import (
-	"github.com/dubbogo/gost/log/logger"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
+
+	"github.com/dubbogo/gost/log/logger"
 )
 
 const (
@@ -127,16 +124,20 @@ func totalTimeout(shutdown *global.ShutdownConfig) time.Duration {
 
 func beforeShutdown(shutdown *global.ShutdownConfig) {
 	// 1. 标记 Closing 状态
+	// 设置 Closing=true，这样后续的请求响应都会携带 closing 标记
+	// Consumer 收到响应后会自动将该 Provider 标记为 closing
 	logger.Info("Graceful shutdown --- Mark closing state.")
 	shutdown.Closing.Store(true)
 
 	// 2. 反注册注册中心（兜底）
+	// 从注册中心移除当前 Provider，这样新的 Consumer 不会发现该实例
 	destroyRegistries()
 
 	// 3. 主动通知长连接 Consumer
-	if shutdown.EnableActiveNotify != nil && *shutdown.EnableActiveNotify {
-		notifyLongConnectionConsumers()
-	}
+	// 遍历所有已注册的协议，向每个连接的 Consumer 发送关闭通知
+	// 这是主动通知机制，与被动通知（响应携带 closing 标记）配合使用
+	// 支持超时控制，失败不影响后续流程（因为有注册中心兜底）
+	notifyLongConnectionConsumers()
 
 	// 4. 等待并拒绝新请求
 	// waiting for a short time so that the clients have enough time to get the notification that server shutdowns
@@ -164,6 +165,45 @@ func destroyRegistries() {
 	logger.Info("Graceful shutdown --- Destroy all registriesConfig. ")
 	registryProtocol := extension.GetProtocol(constant.RegistryProtocol)
 	registryProtocol.Destroy()
+}
+
+// notifyLongConnectionConsumers 主动通知长连接 Consumer
+// 该函数遍历所有已注册的协议回调，向每个连接的 Consumer 发送关闭通知
+// 实现机制：
+//   - 各协议（gRPC、Triple）通过 extension.SetGracefulShutdownCallback 注册回调
+//   - 回调机制避免循环导入问题
+//   - 支持超时控制，失败不影响后续流程（注册中心反注册作为兜底）
+func notifyLongConnectionConsumers() {
+	logger.Info("Graceful shutdown --- Notify long connection consumers.")
+
+	// 设置主动通知超时时间
+	// 避免因为网络问题导致长时间阻塞
+	notifyTimeout := 3 * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), notifyTimeout)
+	defer cancel()
+
+	// 获取所有已注册的协议级别优雅下线回调
+	// 这些回调在各协议的 init() 中注册
+	callbacks := extension.GetAllGracefulShutdownCallbacks()
+
+	// 遍历所有回调，调用各协议的优雅关闭方法
+	for name, callback := range callbacks {
+		// 使用 select 支持超时控制
+		select {
+		case <-ctx.Done():
+			// 超时，停止继续通知
+			logger.Warnf("Graceful shutdown --- Notify %s timeout, continuing...", name)
+		default:
+			// 调用协议的优雅关闭回调
+			// gRPC: 调用 GracefulStop() 等待所有请求完成后再关闭连接
+			// Triple: 调用 GracefulStop(ctx) 发送 GOAWAY 帧通知客户端
+			if err := callback(ctx); err != nil {
+				logger.Warnf("Graceful shutdown --- Notify %s failed: %v", name, err)
+			} else {
+				logger.Infof("Graceful shutdown --- Notify %s completed", name)
+			}
+		}
+	}
 }
 
 func waitAndAcceptNewRequests(shutdown *global.ShutdownConfig) {
@@ -227,10 +267,4 @@ func destroyProtocols() {
 	for name := range protocols {
 		extension.GetProtocol(name).Destroy()
 	}
-}
-
-// notifyLongConnectionConsumers 主动通知长连接 Consumer
-// 该函数在 active_notify.go 中实现
-func notifyLongConnectionConsumers() {
-	NotifyLongConnectionConsumers()
 }

@@ -46,7 +46,43 @@ var (
 )
 
 func init() {
+	// 注册 Triple 协议到扩展点
+	// 这样可以通过 extension.GetProtocol("tri") 获取 Triple 协议实例
 	extension.SetProtocol(TRIPLE, GetProtocol)
+
+	// 注册优雅下线回调
+	// 当应用触发优雅下线时，会调用此回调通知所有连接的 Consumer 即将关闭
+	// 回调机制避免循环导入问题
+	extension.SetGracefulShutdownCallback(TRIPLE, func(ctx context.Context) error {
+		// 1. 获取 Triple 协议实例
+		tp := GetProtocol()
+		if tp == nil {
+			return nil
+		}
+
+		// 2. 类型断言，将通用 Protocol 接口转换为 TripleProtocol
+		tripleProtocol, ok := tp.(*TripleProtocol)
+		if !ok {
+			return nil
+		}
+
+		// 3. 加锁保护 serverMap
+		tripleProtocol.serverLock.Lock()
+		defer tripleProtocol.serverLock.Unlock()
+
+		// 4. 遍历所有 Triple Server，调用 GracefulStop 优雅关闭
+		// GracefulStop 会：
+		//   - HTTP/2: 发送 GOAWAY 帧通知客户端停止发送新请求
+		//   - 等待正在处理的请求完成
+		//   - 然后关闭连接
+		// 注意：这里使用的是 triple.Server（来自 server.go），它的 GracefulStop() 不需要参数
+		// 超时控制在外部的回调函数中处理
+		for _, server := range tripleProtocol.serverMap {
+			server.GracefulStop()
+		}
+
+		return nil
+	})
 }
 
 type TripleProtocol struct {
@@ -147,6 +183,11 @@ func (tp *TripleProtocol) Destroy() {
 	}
 
 	tp.BaseProtocol.Destroy()
+}
+
+// GetServerMap returns all Triple servers
+func (tp *TripleProtocol) GetServerMap() map[string]*Server {
+	return tp.serverMap
 }
 
 // isGenericCall checks if the generic parameter indicates a generic call

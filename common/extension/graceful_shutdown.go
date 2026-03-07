@@ -19,35 +19,43 @@ package extension
 
 import (
 	"container/list"
+	"context"
 )
 
-var customShutdownCallbacks = list.New()
+// GracefulShutdownCallback 优雅下线回调函数
+// name: 协议名称，如 "grpc", "tri", "dubbo"
+// 返回 error 表示通知失败
+type GracefulShutdownCallback func(ctx context.Context) error
 
-/**
- * AddCustomShutdownCallback
- * you should not make any assumption about the order.
- * For example, if you have more than one callbacks, and you wish the order is:
- * callback1()
- * callback2()
- * ...
- * callbackN()
- * Then you should put then together:
- * func callback() {
- *     callback1()
- *     callback2()
- *     ...
- *     callbackN()
- * }
- * I think the order of custom callbacks should be decided by the users.
- * Even though I can design a mechanism to support the ordered custom callbacks,
- * the benefit of that mechanism is low.
- * And it may introduce much complication for another users.
- */
+var (
+	customShutdownCallbacks = list.New()
+	gracefulShutdownCallbacks = make(map[string]GracefulShutdownCallback)
+)
+
+// AddCustomShutdownCallback 添加自定义关闭回调
+// 注意：回调顺序不保证
 func AddCustomShutdownCallback(callback func()) {
 	customShutdownCallbacks.PushBack(callback)
 }
 
-// GetAllCustomShutdownCallbacks gets all custom shutdown callbacks
+// GetAllCustomShutdownCallbacks 获取所有自定义关闭回调
 func GetAllCustomShutdownCallbacks() *list.List {
 	return customShutdownCallbacks
+}
+
+// SetGracefulShutdownCallback 设置协议级别的优雅下线回调
+// name: 协议名称，如 "grpc", "tri", "dubbo"
+func SetGracefulShutdownCallback(name string, f GracefulShutdownCallback) {
+	gracefulShutdownCallbacks[name] = f
+}
+
+// GetGracefulShutdownCallback 获取指定协议的优雅下线回调
+func GetGracefulShutdownCallback(name string) (GracefulShutdownCallback, bool) {
+	f, ok := gracefulShutdownCallbacks[name]
+	return f, ok
+}
+
+// GetAllGracefulShutdownCallbacks 获取所有协议的优雅下线回调
+func GetAllGracefulShutdownCallbacks() map[string]GracefulShutdownCallback {
+	return gracefulShutdownCallbacks
 }

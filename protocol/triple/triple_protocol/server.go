@@ -336,6 +336,16 @@ func (s *Server) GracefulStop(ctx context.Context) error {
 	return eg.Wait()
 }
 
+// GetHTTPServer returns the underlying HTTP/2 server
+func (s *Server) GetHTTPServer() *http.Server {
+	return s.httpSrv
+}
+
+// GetHTTP3Server returns the underlying HTTP/3 server
+func (s *Server) GetHTTP3Server() *http3.Server {
+	return s.http3Srv
+}
+
 func NewServer(addr string, tripleConf *global.TripleConfig) *Server {
 	return &Server{
 		mux:          http.NewServeMux(),

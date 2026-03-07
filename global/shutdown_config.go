@@ -69,9 +69,6 @@ type ShutdownConfig struct {
 
 	// Closing Invoker 过期时间
 	ClosingInvokerExpireTime time.Duration `default:"30s" yaml:"closing-invoker-expire-time" json:"closingInvokerExpireTime,omitempty" property:"closingInvokerExpireTime"`
-
-	// 是否启用主动通知
-	EnableActiveNotify *bool `default:"true" yaml:"enable-active-notify" json:"enableActiveNotify,omitempty" property:"enableActiveNotify"`
 }
 
 func DefaultShutdownConfig() *ShutdownConfig {
@@ -93,12 +90,6 @@ func (c *ShutdownConfig) Clone() *ShutdownConfig {
 		*newInternalSignal = *c.InternalSignal
 	}
 
-	var newEnableActiveNotify *bool
-	if c.EnableActiveNotify != nil {
-		newEnableActiveNotify = new(bool)
-		*newEnableActiveNotify = *c.EnableActiveNotify
-	}
-
 	newShutdownConfig := &ShutdownConfig{
 		Timeout:                     c.Timeout,
 		StepTimeout:                 c.StepTimeout,
@@ -107,7 +98,6 @@ func (c *ShutdownConfig) Clone() *ShutdownConfig {
 		InternalSignal:              newInternalSignal,
 		OfflineRequestWindowTimeout: c.OfflineRequestWindowTimeout,
 		ClosingInvokerExpireTime:    c.ClosingInvokerExpireTime,
-		EnableActiveNotify:          newEnableActiveNotify,
 	}
 
 	newShutdownConfig.RejectRequest.Store(c.RejectRequest.Load())
