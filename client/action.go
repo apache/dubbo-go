@@ -38,9 +38,9 @@ import (
 	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
+	"dubbo.apache.org/dubbo-go/v3/internal"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	"dubbo.apache.org/dubbo-go/v3/proxy"
@@ -176,7 +176,7 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 	updateOrCreateMeshURL(refOpts)
 
 	// retrieving urls from config, and appending the urls to refOpts.urls
-	urls, err := processURL(ref, refOpts.registriesCompat, cfgURL)
+	urls, err := processURL(ref, refOpts.Registries, cfgURL)
 	if err != nil {
 		panic(err)
 	}
@@ -207,7 +207,7 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 	graceful_shutdown.RegisterProtocol(ref.Protocol)
 }
 
-func processURL(ref *global.ReferenceConfig, regsCompat map[string]*config.RegistryConfig, cfgURL *common.URL) ([]*common.URL, error) {
+func processURL(ref *global.ReferenceConfig, registries map[string]*global.RegistryConfig, cfgURL *common.URL) ([]*common.URL, error) {
 	var urls []*common.URL
 	if ref.URL != "" { // use user-specific urls
 		/*
@@ -242,7 +242,7 @@ func processURL(ref *global.ReferenceConfig, regsCompat map[string]*config.Regis
 			}
 		}
 	} else { // use registry configs
-		urls = config.LoadRegistries(ref.RegistryIDs, regsCompat, common.CONSUMER)
+		urls = internal.LoadRegistries(ref.RegistryIDs, registries, common.CONSUMER)
 		// set url to regURLs
 		for _, regURL := range urls {
 			regURL.SubURL = cfgURL
@@ -348,7 +348,7 @@ func (refOpts *ReferenceOptions) GetProxy() *proxy.Proxy {
 
 func (refOpts *ReferenceOptions) getURLMap() url.Values {
 	ref := refOpts.Reference
-	app := refOpts.applicationCompat
+	app := refOpts.Application
 	metrics := refOpts.Metrics
 	tracing := refOpts.Otel.TracingConfig
 
