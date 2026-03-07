@@ -18,6 +18,8 @@
 package global
 
 import (
+	"time"
+
 	"github.com/creasty/defaults"
 
 	"go.uber.org/atomic"
@@ -60,6 +62,10 @@ type ShutdownConfig struct {
 
 	// provider last received request timestamp
 	ProviderLastReceivedRequestTime atomic.Time
+
+	Closing atomic.Bool
+
+	ClosingInvokerExpireTime time.Duration `default:"30s" yaml:"closing-invoker-expire-time" json:"closingInvokerExpireTime,omitempty" property:"closingInvokerExpireTime"`
 }
 
 func DefaultShutdownConfig() *ShutdownConfig {
@@ -88,12 +94,14 @@ func (c *ShutdownConfig) Clone() *ShutdownConfig {
 		RejectRequestHandler:        c.RejectRequestHandler,
 		InternalSignal:              newInternalSignal,
 		OfflineRequestWindowTimeout: c.OfflineRequestWindowTimeout,
+		ClosingInvokerExpireTime:    c.ClosingInvokerExpireTime,
 	}
 
 	newShutdownConfig.RejectRequest.Store(c.RejectRequest.Load())
 	newShutdownConfig.ConsumerActiveCount.Store(c.ConsumerActiveCount.Load())
 	newShutdownConfig.ProviderActiveCount.Store(c.ProviderActiveCount.Load())
 	newShutdownConfig.ProviderLastReceivedRequestTime.Store(c.ProviderLastReceivedRequestTime.Load())
+	newShutdownConfig.Closing.Store(c.Closing.Load())
 
 	return newShutdownConfig
 }
