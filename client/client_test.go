@@ -91,7 +91,7 @@ func TestGenerateInvocation(t *testing.T) {
 	require.Equal(t, []any{"foo", 1, &resp}, inv.ParameterRawValues())
 }
 
-func TestGenerateInvocationWithContextAttachments(t *testing.T) {
+func TestGenerateInvocationWithContextAttachmentsAndAnyType(t *testing.T) {
 	var resp int
 	opts := &CallOptions{RequestTimeout: "1s", Retries: "2"}
 
@@ -112,6 +112,30 @@ func TestGenerateInvocationWithContextAttachments(t *testing.T) {
 
 	require.Equal(t, "userValue1", inv.GetAttachmentInterface("userKey1"))
 	require.Equal(t, 12345, inv.GetAttachmentInterface("userKey2"))
+	require.Equal(t, "abc-123", inv.GetAttachmentInterface("traceID"))
+}
+
+func TestGenerateInvocationWithContextAttachmentsAndStringType(t *testing.T) {
+	var resp int
+	opts := &CallOptions{RequestTimeout: "1s", Retries: "2"}
+
+	userAttachments := map[string]string{
+		"userKey1": "userValue1",
+		"userKey2": "12345",
+		"traceID":  "abc-123",
+	}
+	ctx := context.WithValue(context.Background(), constant.AttachmentKey, userAttachments)
+
+	inv, err := generateInvocation(ctx, "Echo", []any{"foo", 1}, &resp, constant.CallUnary, opts)
+	require.NoError(t, err)
+
+	timeout, _ := inv.GetAttachment(constant.TimeoutKey)
+	retries, _ := inv.GetAttachment(constant.RetriesKey)
+	require.Equal(t, "1s", timeout)
+	require.Equal(t, "2", retries)
+
+	require.Equal(t, "userValue1", inv.GetAttachmentInterface("userKey1"))
+	require.Equal(t, "12345", inv.GetAttachmentInterface("userKey2"))
 	require.Equal(t, "abc-123", inv.GetAttachmentInterface("traceID"))
 }
 

@@ -244,6 +244,9 @@ func (c *Client) Close() {
 
 // Request send request
 func (c *Client) Request(request *remoting.Request, timeout time.Duration, response *remoting.PendingResponse) error {
+	if timeout <= 0 {
+		timeout = c.opts.RequestTimeout
+	}
 	_, session, err := c.selectSession(c.addr)
 	if err != nil {
 		return perrors.WithStack(err)

@@ -38,6 +38,11 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
+var (
+	newNacosNamingClient = nacosClient.NewNacosNamingClient
+	newNacosConfigClient = nacosClient.NewNacosConfigClient
+)
+
 // NewNacosConfigClientByUrl read the config from url and build an instance
 func NewNacosConfigClientByUrl(url *common.URL) (*nacosClient.NacosConfigClient, error) {
 	sc, cc, err := GetNacosConfig(url)
@@ -48,7 +53,7 @@ func NewNacosConfigClientByUrl(url *common.URL) (*nacosClient.NacosConfigClient,
 	if len(clientName) <= 0 {
 		return nil, perrors.New("nacos client name must set")
 	}
-	return nacosClient.NewNacosConfigClient(clientName, true, sc, cc)
+	return newNacosConfigClient(clientName, true, sc, cc)
 }
 
 // GetNacosConfig will return the nacos config
@@ -82,6 +87,9 @@ func GetNacosConfig(url *common.URL) ([]nacosConstant.ServerConfig, nacosConstan
 			var contextPath string
 			if len(portContextPath) > 1 {
 				contextPath = constant.PathSeparator + strings.Join(portContextPath[1:], constant.PathSeparator)
+			}
+			if contextPath == "" && len(url.Path) > 0 {
+				contextPath = url.Path
 			}
 			serverConfigs = append(serverConfigs, nacosConstant.ServerConfig{IpAddr: ip, Port: uint64(port), ContextPath: contextPath})
 		}
@@ -126,5 +134,5 @@ func NewNacosClientByURL(url *common.URL) (*nacosClient.NacosNamingClient, error
 	if len(namespaceID) > 0 {
 		clientName += namespaceID
 	}
-	return nacosClient.NewNacosNamingClient(clientName, true, scs, cc)
+	return newNacosNamingClient(clientName, true, scs, cc)
 }

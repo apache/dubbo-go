@@ -52,6 +52,6 @@ func NewAppConditionRouterFactory() router.PriorityRouterFactory {
 }
 
 // NewPriorityRouter constructs a new ApplicationRouter
-func (a *AppConditionRouterFactory) NewPriorityRouter(_ *common.URL) (router.PriorityRouter, error) {
-	return NewApplicationRouter(), nil
+func (a *AppConditionRouterFactory) NewPriorityRouter(url *common.URL) (router.PriorityRouter, error) {
+	return NewApplicationRouter(url), nil
 }

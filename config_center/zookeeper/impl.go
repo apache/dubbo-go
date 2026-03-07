@@ -39,7 +39,6 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/config_center/parser"
 	"dubbo.apache.org/dubbo-go/v3/remoting/zookeeper"
@@ -67,13 +66,13 @@ type zookeeperDynamicConfiguration struct {
 }
 
 func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfiguration, error) {
+	rootPath := url.GetParam(constant.ConfigRootPathParamKey, "/dubbo/config")
 	c := &zookeeperDynamicConfiguration{
-		url: url,
-		// TODO adapt config center config
-		rootPath: "/dubbo/config",
+		url:      url,
+		rootPath: rootPath,
 	}
 	logger.Infof("[Zookeeper ConfigCenter] New Zookeeper ConfigCenter with Configuration: %+v, url = %+v", c, c.GetURL())
-	if v, ok := config.GetRootConfig().ConfigCenter.Params["base64"]; ok {
+	if v := url.GetParam("base64", ""); v != "" {
 		base64Enabled, err := strconv.ParseBool(v)
 		if err != nil {
 			panic("value of base64 must be bool, error=" + err.Error())

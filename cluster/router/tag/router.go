@@ -52,8 +52,9 @@ func (p *PriorityRouter) Route(invokers []base.Invoker, url *common.URL, invocat
 		logger.Warnf("[tag router] invokers from previous router is empty")
 		return invokers
 	}
-	// tag is valid in application
-	key := strings.Join([]string{url.GetParam(constant.ApplicationKey, ""), constant.TagRouterRuleSuffix}, "")
+	// get prefix from invoker
+	application := invokers[0].GetURL().GetParam(constant.Tagkey, "")
+	key := strings.Join([]string{application, constant.TagRouterRuleSuffix}, "")
 	value, ok := p.routerConfigs.Load(key)
 	if !ok {
 		return staticTag(invokers, url, invocation)

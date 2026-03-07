@@ -18,24 +18,24 @@
 package extension
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config/interfaces"
+	"dubbo.apache.org/dubbo-go/v3/common/config"
 )
 
-var processors = make(map[string]interfaces.ConfigPostProcessor)
+var processors = make(map[string]config.ConfigPostProcessor)
 
 // SetConfigPostProcessor registers a ConfigPostProcessor with the given name.
-func SetConfigPostProcessor(name string, processor interfaces.ConfigPostProcessor) {
+func SetConfigPostProcessor(name string, processor config.ConfigPostProcessor) {
 	processors[name] = processor
 }
 
 // GetConfigPostProcessor finds a ConfigPostProcessor by name.
-func GetConfigPostProcessor(name string) interfaces.ConfigPostProcessor {
+func GetConfigPostProcessor(name string) config.ConfigPostProcessor {
 	return processors[name]
 }
 
 // GetConfigPostProcessors returns all registered instances of ConfigPostProcessor.
-func GetConfigPostProcessors() []interfaces.ConfigPostProcessor {
-	ret := make([]interfaces.ConfigPostProcessor, 0, len(processors))
+func GetConfigPostProcessors() []config.ConfigPostProcessor {
+	ret := make([]config.ConfigPostProcessor, 0, len(processors))
 	for _, v := range processors {
 		ret = append(ret, v)
 	}

@@ -40,7 +40,6 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
@@ -68,8 +67,7 @@ type DubboInvoker struct {
 
 // NewDubbo3Invoker constructor
 func NewDubbo3Invoker(url *common.URL) (*DubboInvoker, error) {
-	// TODO: Temporary compatibility with old APIs, can be removed later
-	rt := config.GetConsumerConfig().RequestTimeout
+	var rt string
 	if consumerConfRaw, ok := url.GetAttribute(constant.ConsumerConfigKey); ok {
 		if consumerConf, ok := consumerConfRaw.(*global.ConsumerConfig); ok {
 			rt = consumerConf.RequestTimeout
@@ -77,15 +75,9 @@ func NewDubbo3Invoker(url *common.URL) (*DubboInvoker, error) {
 	}
 
 	timeout := url.GetParamDuration(constant.TimeoutKey, rt)
-	// for triple pb serialization. The bean name from provider is the provider reference key,
-	// which can't locate the target consumer stub, so we use interface key..
-	interfaceKey := url.GetParam(constant.InterfaceKey, "")
-	//TODO: Temporary compatibility with old APIs, can be removed later
-	consumerService := config.GetConsumerServiceByInterfaceName(interfaceKey)
-	if consumerService == nil {
-		if rpcService, ok := url.GetAttribute(constant.RpcServiceKey); ok {
-			consumerService = rpcService
-		}
+	var consumerService any
+	if rpcService, ok := url.GetAttribute(constant.RpcServiceKey); ok {
+		consumerService = rpcService
 	}
 
 	dubboSerializerType := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
@@ -127,14 +119,9 @@ func NewDubbo3Invoker(url *common.URL) (*DubboInvoker, error) {
 	opts = append(opts, triConfig.WithGRPCKeepAliveTimeInterval(keepAliveInterval))
 	opts = append(opts, triConfig.WithGRPCKeepAliveTimeout(keepAliveTimeout))
 
-	tracingKey := url.GetParam(constant.TracingConfigKey, "")
-	if tracingKey != "" {
-		tracingConfig := config.GetTracingConfig(tracingKey)
-		if tracingConfig != nil {
+	if tracingConfRaw, ok := url.GetAttribute(constant.TracingConfigKey); ok {
+		if tracingConfig, ok := tracingConfRaw.(*global.TracingConfig); ok && tracingConfig != nil {
 			if tracingConfig.Name == "jaeger" {
-				if tracingConfig.ServiceName == "" {
-					tracingConfig.ServiceName = config.GetApplicationConfig().Name
-				}
 				opts = append(opts, triConfig.WithJaegerConfig(
 					tracingConfig.Address,
 					tracingConfig.ServiceName,
@@ -148,16 +135,7 @@ func NewDubbo3Invoker(url *common.URL) (*DubboInvoker, error) {
 
 	triOption := triConfig.NewTripleOption(opts...)
 
-	// TODO: remove config TLSConfig
-	// delete this branch
-	tlsConfig := config.GetRootConfig().TLSConfig
-	if tlsConfig != nil {
-		triOption.CACertFile = tlsConfig.CACertFile
-		triOption.TLSCertFile = tlsConfig.TLSCertFile
-		triOption.TLSKeyFile = tlsConfig.TLSKeyFile
-		triOption.TLSServerName = tlsConfig.TLSServerName
-		logger.Infof("DUBBO3 Client initialized the TLSConfig configuration")
-	} else if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
+	if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
 		// use global TLSConfig handle tls
 		tlsConf, ok := tlsConfRaw.(*global.TLSConfig)
 		if !ok {

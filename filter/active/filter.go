@@ -28,6 +28,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
@@ -38,6 +39,7 @@ import (
 
 const (
 	dubboInvokeStartTime = "dubboInvokeStartTime"
+	dubboInvokeURL       = "dubboInvokeURL"
 )
 
 var (
@@ -63,22 +65,46 @@ func newActiveFilter() filter.Filter {
 
 // Invoke starts to record the requests status
 func (f *activeFilter) Invoke(ctx context.Context, invoker base.Invoker, inv base.Invocation) result.Result {
-	inv.(*invocation.RPCInvocation).SetAttachment(dubboInvokeStartTime, strconv.FormatInt(base.CurrentTimeMillis(), 10))
-	base.BeginCount(invoker.GetURL(), inv.MethodName())
+	rpcInv := inv.(*invocation.RPCInvocation)
+
+	// Record the start time
+	rpcInv.SetAttachment(dubboInvokeStartTime, strconv.FormatInt(base.CurrentTimeMillis(), 10))
+
+	// Cache the URL object to ensure BeginCount and EndCount use the same URL instance
+	// This prevents statistics inconsistency when the invoker is destroyed concurrently
+	url := invoker.GetURL()
+	rpcInv.SetAttribute(dubboInvokeURL, url)
+	base.BeginCount(url, inv.MethodName())
 	return invoker.Invoke(ctx, inv)
 }
 
 // OnResponse update the active count base on the request result.
 func (f *activeFilter) OnResponse(ctx context.Context, result result.Result, invoker base.Invoker, inv base.Invocation) result.Result {
-	startTime, err := strconv.ParseInt(inv.(*invocation.RPCInvocation).GetAttachmentWithDefaultValue(dubboInvokeStartTime, "0"), 10, 64)
+	rpcInv := inv.(*invocation.RPCInvocation)
+
+	/// Retrieve the cached URL from Invoke phase with a nil default value
+	rawUrl := rpcInv.GetAttributeWithDefaultValue(dubboInvokeURL, nil)
+
+	// Safely assert the type. If rawUrl is nil, ok will be false and panic is avoided.
+	url, ok := rawUrl.(*common.URL)
+
+	// If the URL is missing or invalid, it means the Invoke phase was likely interrupted.
+	// Skip EndCount to prevent statistic inconsistency or panics.
+	if !ok || url == nil {
+		logger.Warnf("activeFilter cannot get cached URL from attribute, skip EndCount. Invoker may not have passed Invoke phase.")
+		return result
+	}
+
+	startTime, err := strconv.ParseInt(rpcInv.GetAttachmentWithDefaultValue(dubboInvokeStartTime, "0"), 10, 64)
 	if err != nil {
 		result.SetError(err)
 		logger.Errorf("parse dubbo_invoke_start_time to int64 failed")
 		// When err is not nil, use default elapsed value of 1
-		base.EndCount(invoker.GetURL(), inv.MethodName(), 1, false)
+		base.EndCount(url, inv.MethodName(), 1, false)
 		return result
 	}
+
 	elapsed := base.CurrentTimeMillis() - startTime
-	base.EndCount(invoker.GetURL(), inv.MethodName(), elapsed, result.Error() == nil)
+	base.EndCount(url, inv.MethodName(), elapsed, result.Error() == nil)
 	return result
 }

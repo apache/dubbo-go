@@ -15,15 +15,18 @@
  * limitations under the License.
  */
 
-package internal
+package config
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
-// TODO: After the config is removed, remove the test
-func init() {
-	// for pb client
-	config.SetConsumerServiceByInterfaceName("org.apache.dubbo.DubboGreeterImpl", &GreeterClientImpl{})
-	config.SetConsumerService(&GreeterClientImpl{})
+// ConfigPostProcessor is an extension to give users a chance to customize configs against ReferenceConfig and
+// ServiceConfig during deployment time.
+type ConfigPostProcessor interface {
+	// PostProcessReferenceConfig customizes ReferenceConfig's params.
+	PostProcessReferenceConfig(*common.URL)
+
+	// PostProcessServiceConfig customizes ServiceConfig's params.
+	PostProcessServiceConfig(*common.URL)
 }

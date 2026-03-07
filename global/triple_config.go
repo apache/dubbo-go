@@ -34,6 +34,9 @@ type TripleConfig struct {
 	// the config of http3 transport
 	Http3 *Http3Config `yaml:"http3" json:"http3,omitempty"`
 
+	// Cors configures CORS for Triple protocol handlers
+	Cors *CorsConfig `yaml:"cors" json:"cors,omitempty"`
+
 	//
 	// for client
 	//
@@ -46,6 +49,7 @@ type TripleConfig struct {
 func DefaultTripleConfig() *TripleConfig {
 	return &TripleConfig{
 		Http3: DefaultHttp3Config(),
+		Cors:  DefaultCorsConfig(),
 	}
 }
 
@@ -59,6 +63,7 @@ func (t *TripleConfig) Clone() *TripleConfig {
 		MaxServerSendMsgSize: t.MaxServerSendMsgSize,
 		MaxServerRecvMsgSize: t.MaxServerRecvMsgSize,
 		Http3:                t.Http3.Clone(),
+		Cors:                 t.Cors.Clone(),
 
 		KeepAliveInterval: t.KeepAliveInterval,
 		KeepAliveTimeout:  t.KeepAliveTimeout,

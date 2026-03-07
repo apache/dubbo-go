@@ -30,6 +30,8 @@ import (
 	gxstrings "github.com/dubbogo/gost/strings"
 
 	constant2 "github.com/dubbogo/triple/pkg/common/constant"
+
+	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -256,6 +258,11 @@ func buildInvoker(urls []*common.URL, ref *global.ReferenceConfig) (base.Invoker
 		invoker base.Invoker
 		regURL  *common.URL
 	)
+
+	if len(urls) == 0 {
+		return nil, perrors.New("invoker list is empty")
+	}
+
 	invokers := make([]base.Invoker, len(urls))
 	for i, u := range urls {
 		if u.Protocol == constant.ServiceRegistryProtocol {

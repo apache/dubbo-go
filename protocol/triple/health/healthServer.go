@@ -31,7 +31,6 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/internal"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/health/triple_health"
 	"dubbo.apache.org/dubbo-go/v3/server"
@@ -186,9 +185,6 @@ func init() {
 		Priority: constant.DefaultPriority,
 	})
 
-	// In order to adapt config.Load
-	// Plans for future removal
-	config.SetProviderServiceWithInfo(healthServer, &triple_health.Health_ServiceInfo)
 }
 
 func SetServingStatusServing(service string) {

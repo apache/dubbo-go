@@ -238,8 +238,13 @@ func generateInvocation(ctx context.Context, methodName string, reqs []any, resp
 	}
 
 	if attaRaw := ctx.Value(constant.AttachmentKey); attaRaw != nil {
-		if userAtta, ok := attaRaw.(map[string]any); ok {
-			for key, val := range userAtta {
+		switch v := attaRaw.(type) {
+		case map[string]string:
+			for key, val := range v {
+				attachments[key] = val
+			}
+		case map[string]any:
+			for key, val := range v {
 				attachments[key] = val
 			}
 		}

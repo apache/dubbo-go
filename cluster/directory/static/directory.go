@@ -18,6 +18,8 @@
 package static
 
 import (
+	"github.com/dubbogo/gost/log/logger"
+
 	perrors "github.com/pkg/errors"
 )
 
@@ -45,7 +47,12 @@ func NewDirectory(invokers []protocolbase.Invoker) *directory {
 		invokers:  invokers,
 	}
 
-	dir.RouterChain().SetInvokers(invokers)
+	err := dir.BuildRouterChain(invokers, url)
+	if err != nil {
+		logger.Error(err)
+		dir.RouterChain().SetInvokers(invokers)
+	}
+
 	return dir
 }
 

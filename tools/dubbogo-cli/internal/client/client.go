@@ -87,7 +87,7 @@ func NewTelnetClient(host string, port int, protocolName, interfaceID, version, 
 func resolveTCPAddr(addr string) *net.TCPAddr {
 	resolved, error := net.ResolveTCPAddr("tcp", addr)
 	if nil != error {
-		log.Fatalf("Error occured while resolving TCP address \"%v\": %v\n", addr, error)
+		log.Fatalf("Error occurred while resolving TCP address \"%v\": %v\n", addr, error)
 	}
 
 	return resolved
@@ -151,7 +151,7 @@ func (t *TelnetClient) processSingleRequest(req *protocol.Request, userPkg any) 
 			return
 		case request := <-requestDataChannel:
 			if _, err := t.conn.Write(request); nil != err {
-				log.Fatalf("Error occured while writing to TCP socket: %v\n", err)
+				log.Fatalf("Error occurred while writing to TCP socket: %v\n", err)
 			}
 		case response := <-responseDataChannel:
 			rspPkg, _, err := t.proto.Read(response, t.pendingResponses)
@@ -186,7 +186,7 @@ func (t *TelnetClient) readServerData(connection *net.TCPConn, received chan<- [
 
 func (t *TelnetClient) assertEOF(error error) {
 	if "EOF" != error.Error() {
-		log.Fatalf("Error occured while operating on TCP socket: %v\n", error)
+		log.Fatalf("Error occurred while operating on TCP socket: %v\n", error)
 	}
 }
 

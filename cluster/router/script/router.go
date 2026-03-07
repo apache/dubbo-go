@@ -33,8 +33,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	conf "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
@@ -56,9 +56,9 @@ func NewScriptRouter() *ScriptRouter {
 	}
 }
 
-func parseRoute(routeContent string) (*config.RouterConfig, error) {
+func parseRoute(routeContent string) (*global.RouterConfig, error) {
 	routeDecoder := yaml.NewDecoder(strings.NewReader(routeContent))
-	routerConfig := &config.RouterConfig{}
+	routerConfig := &global.RouterConfig{}
 	err := routeDecoder.Decode(routerConfig)
 	if err != nil {
 		return nil, err
