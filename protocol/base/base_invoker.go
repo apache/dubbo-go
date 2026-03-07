@@ -79,6 +79,11 @@ func (bi *BaseInvoker) IsAvailable() bool {
 	return bi.available.Load()
 }
 
+// SetAvailable sets available flag
+func (bi *BaseInvoker) SetAvailable(available bool) {
+	bi.available.Store(available)
+}
+
 // IsDestroyed gets destroyed flag
 func (bi *BaseInvoker) IsDestroyed() bool {
 	return bi.destroyed.Load()

@@ -39,6 +39,10 @@ const (
 	defaultStepTimeout                 = 3 * time.Second
 	defaultConsumerUpdateWaitTime      = 3 * time.Second
 	defaultOfflineRequestWindowTimeout = 3 * time.Second
+	// 重试相关配置
+	defaultMaxRetries     = 3                      // 最大重试次数
+	defaultRetryBaseDelay = 500 * time.Millisecond // 基础重试延迟
+	defaultRetryMaxDelay  = 2 * time.Second        // 最大重试延迟
 
 	timeoutDesc                     = "Timeout"
 	stepTimeoutDesc                 = "StepTimeout"
@@ -173,6 +177,7 @@ func destroyRegistries() {
 //   - 各协议（gRPC、Triple）通过 extension.SetGracefulShutdownCallback 注册回调
 //   - 回调机制避免循环导入问题
 //   - 支持超时控制，失败不影响后续流程（注册中心反注册作为兜底）
+//   - 支持指数退避重试机制
 func notifyLongConnectionConsumers() {
 	logger.Info("Graceful shutdown --- Notify long connection consumers.")
 
@@ -188,22 +193,63 @@ func notifyLongConnectionConsumers() {
 
 	// 遍历所有回调，调用各协议的优雅关闭方法
 	for name, callback := range callbacks {
-		// 使用 select 支持超时控制
+		notifyWithRetry(ctx, name, callback)
+	}
+}
+
+// notifyWithRetry 带指数退避重试的通知
+// 策略：每次重试间隔时间翻倍，直到达到最大延迟
+func notifyWithRetry(ctx context.Context, name string, callback extension.GracefulShutdownCallback) {
+	maxRetries := defaultMaxRetries
+	baseDelay := defaultRetryBaseDelay
+	maxDelay := defaultRetryMaxDelay
+
+	var lastErr error
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		// 检查是否超时
 		select {
 		case <-ctx.Done():
-			// 超时，停止继续通知
-			logger.Warnf("Graceful shutdown --- Notify %s timeout, continuing...", name)
+			logger.Warnf("Graceful shutdown --- Notify %s timeout after %d attempts, continuing...", name, attempt)
+			return
 		default:
-			// 调用协议的优雅关闭回调
-			// gRPC: 调用 GracefulStop() 等待所有请求完成后再关闭连接
-			// Triple: 调用 GracefulStop(ctx) 发送 GOAWAY 帧通知客户端
-			if err := callback(ctx); err != nil {
-				logger.Warnf("Graceful shutdown --- Notify %s failed: %v", name, err)
-			} else {
-				logger.Infof("Graceful shutdown --- Notify %s completed", name)
+		}
+
+		// 调用协议的优雅关闭回调
+		// gRPC: 调用 GracefulStop() 等待所有请求完成后再关闭连接
+		// Triple: 调用 GracefulStop(ctx) 发送 GOAWAY 帧通知客户端
+		err := callback(ctx)
+		if err == nil {
+			logger.Infof("Graceful shutdown --- Notify %s completed", name)
+			return
+		}
+
+		lastErr = err
+		logger.Warnf("Graceful shutdown --- Notify %s attempt %d failed: %v", name, attempt+1, err)
+
+		// 如果还有重试次数，等待后继续
+		if attempt < maxRetries {
+			// 计算指数退避延迟
+			delay := baseDelay
+			for i := 0; i < attempt; i++ {
+				delay *= 2
+				if delay > maxDelay {
+					delay = maxDelay
+					break
+				}
+			}
+			logger.Infof("Graceful shutdown --- Notify %s retrying in %v (attempt %d/%d)", name, delay, attempt+1, maxRetries)
+
+			select {
+			case <-ctx.Done():
+				logger.Warnf("Graceful shutdown --- Notify %s timeout during retry delay", name)
+				return
+			case <-time.After(delay):
 			}
 		}
 	}
+
+	// 所有重试都失败
+	logger.Warnf("Graceful shutdown --- Notify %s failed after %d attempts: %v", name, maxRetries+1, lastErr)
 }
 
 func waitAndAcceptNewRequests(shutdown *global.ShutdownConfig) {

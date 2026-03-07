@@ -20,6 +20,7 @@ package graceful_shutdown
 import (
 	"context"
 	"errors"
+	"strings"
 	"sync"
 	"time"
 )
@@ -85,6 +86,11 @@ func (f *consumerGracefulShutdownFilter) OnResponse(ctx context.Context, result 
 		f.markClosingInvoker(invoker)
 	}
 
+	// 检测请求错误，如果是连接关闭相关的错误，标记 Invoker 为不可用
+	if result.Error() != nil {
+		f.handleRequestError(invoker, result.Error())
+	}
+
 	return result
 }
 
@@ -131,11 +137,22 @@ func (f *consumerGracefulShutdownFilter) isClosingResponse(result result.Result)
 }
 
 // markClosingInvoker 标记 Invoker 为正在关闭
+// 同时设置 invoker.available = false，将实例从可用列表中移除
 func (f *consumerGracefulShutdownFilter) markClosingInvoker(invoker base.Invoker) {
 	key := invoker.GetURL().String()
 	expireTime := time.Now().Add(f.getClosingInvokerExpireTime())
 	f.closingInvokers.Store(key, expireTime)
+
 	logger.Infof("Graceful shutdown: marked invoker as closing: %s, will expire at %v", key, expireTime)
+
+	// 设置 Invoker 为不可用，从可用实例列表中移除
+	// ClusterInvoker 在选择时会自动跳过不可用的 Invoker
+	// 注意：这里调用的是 base.Invoker 的方法
+	// 实际类型可能是 *base.BaseInvoker 或其他实现了 Invoker 接口的类型
+	if bi, ok := invoker.(*base.BaseInvoker); ok {
+		bi.SetAvailable(false)
+		logger.Infof("Graceful shutdown: set invoker unavailable: %s", key)
+	}
 }
 
 func (f *consumerGracefulShutdownFilter) getClosingInvokerExpireTime() time.Duration {
@@ -143,4 +160,37 @@ func (f *consumerGracefulShutdownFilter) getClosingInvokerExpireTime() time.Dura
 		return f.shutdownConfig.ClosingInvokerExpireTime
 	}
 	return 30 * time.Second
+}
+
+// handleRequestError 处理请求错误
+// 当请求失败时（如连接关闭），标记对应的 Invoker 为不可用
+func (f *consumerGracefulShutdownFilter) handleRequestError(invoker base.Invoker, err error) {
+	if err == nil {
+		return
+	}
+
+	// 检查是否是连接关闭相关的错误
+	// ErrClientClosed: 连接已关闭
+	// ErrDestroyedInvoker: Invoker 已销毁
+	errMsg := err.Error()
+	isConnectionError := strings.Contains(errMsg, "client has closed") ||
+		strings.Contains(errMsg, "connection") ||
+		strings.Contains(errMsg, "EOF") ||
+		strings.Contains(errMsg, "broken pipe") ||
+		strings.Contains(errMsg, "gRPC") && strings.Contains(errMsg, "closing") ||
+		strings.Contains(errMsg, "http2") && strings.Contains(errMsg, "close")
+
+	if isConnectionError {
+		key := invoker.GetURL().String()
+		expireTime := time.Now().Add(f.getClosingInvokerExpireTime())
+		f.closingInvokers.Store(key, expireTime)
+
+		logger.Infof("Graceful shutdown: connection error detected for invoker: %s, marking as closing, will expire at %v", key, expireTime)
+
+		// 设置 Invoker 为不可用
+		if bi, ok := invoker.(*base.BaseInvoker); ok {
+			bi.SetAvailable(false)
+			logger.Infof("Graceful shutdown: set invoker unavailable due to connection error: %s", key)
+		}
+	}
 }
