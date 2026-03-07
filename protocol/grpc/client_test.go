@@ -48,8 +48,7 @@ func TestUnaryClient(t *testing.T) {
 	cli, err := NewClient(url)
 	require.NoError(t, err)
 
-	impl := &helloworld.GreeterClientImpl{}
-	client := impl.GetDubboStub(cli.ClientConn)
+	client := helloworld.NewGreeterClient(cli.ClientConn)
 	result, err := client.SayHello(context.Background(), &helloworld.HelloRequest{Name: "request name"})
 	require.NoError(t, err)
 	assert.Equal(t, &helloworld.HelloReply{Message: "Hello request name"}, result)
@@ -67,8 +66,7 @@ func TestStreamClient(t *testing.T) {
 	cli, err := NewClient(url)
 	require.NoError(t, err)
 
-	impl := &routeguide.RouteGuideClientImpl{}
-	client := impl.GetDubboStub(cli.ClientConn)
+	client := routeguide.NewRouteGuideClient(cli.ClientConn)
 
 	result, err := client.GetFeature(context.Background(), &routeguide.Point{Latitude: 409146138, Longitude: -746188906})
 	require.NoError(t, err)

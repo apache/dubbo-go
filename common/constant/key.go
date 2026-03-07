@@ -248,6 +248,7 @@ const (
 	ConfigSecretKey           = "config-center.secret"
 	ConfigBackupConfigKey     = "config-center.isBackupConfig"
 	ConfigBackupConfigPathKey = "config-center.backupConfigPath"
+	ConfigRootPathParamKey    = "dubbo.config-center.root-path"
 )
 
 const (
