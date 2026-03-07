@@ -185,11 +185,6 @@ func (tp *TripleProtocol) Destroy() {
 	tp.BaseProtocol.Destroy()
 }
 
-// GetServerMap returns all Triple servers
-func (tp *TripleProtocol) GetServerMap() map[string]*Server {
-	return tp.serverMap
-}
-
 // isGenericCall checks if the generic parameter indicates a generic call
 func isGenericCall(generic string) bool {
 	if generic == "" {

@@ -158,8 +158,3 @@ func GetProtocol() base.Protocol {
 	}
 	return grpcProtocol
 }
-
-// GetServerMap returns all gRPC servers
-func (gp *GrpcProtocol) GetServerMap() map[string]*Server {
-	return gp.serverMap
-}

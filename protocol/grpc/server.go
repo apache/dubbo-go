@@ -75,11 +75,6 @@ func (s *Server) SetBufferSize(n int) {
 	s.bufferSize = n
 }
 
-// GetGrpcServer returns the underlying gRPC server
-func (s *Server) GetGrpcServer() *grpc.Server {
-	return s.grpcServer
-}
-
 // Start gRPC server with @url
 func (s *Server) Start(url *common.URL) {
 	var (
