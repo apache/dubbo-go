@@ -18,8 +18,6 @@
 package global
 
 import (
-	"time"
-
 	"github.com/creasty/defaults"
 
 	"go.uber.org/atomic"
@@ -65,7 +63,7 @@ type ShutdownConfig struct {
 
 	Closing atomic.Bool
 
-	ClosingInvokerExpireTime time.Duration `default:"30s" yaml:"closing-invoker-expire-time" json:"closingInvokerExpireTime,omitempty" property:"closingInvokerExpireTime"`
+	ClosingInvokerExpireTime string `default:"30s" yaml:"closing-invoker-expire-time" json:"closingInvokerExpireTime,omitempty" property:"closingInvokerExpireTime"`
 }
 
 func DefaultShutdownConfig() *ShutdownConfig {
