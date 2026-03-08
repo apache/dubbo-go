@@ -18,6 +18,7 @@
 package grpc
 
 import (
+	"context"
 	"sync"
 )
 
@@ -38,6 +39,28 @@ const (
 
 func init() {
 	extension.SetProtocol(GRPC, GetProtocol)
+
+	// register graceful shutdown callback
+	extension.SetGracefulShutdownCallback(GRPC, func(ctx context.Context) error {
+		grpcProto := GetProtocol()
+		if grpcProto == nil {
+			return nil
+		}
+
+		gp, ok := grpcProto.(*GrpcProtocol)
+		if !ok {
+			return nil
+		}
+
+		gp.serverLock.Lock()
+		defer gp.serverLock.Unlock()
+
+		for _, server := range gp.serverMap {
+			server.GracefulStop()
+		}
+
+		return nil
+	})
 }
 
 var grpcProtocol *GrpcProtocol

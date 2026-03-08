@@ -18,6 +18,7 @@
 package graceful_shutdown
 
 import (
+	"context"
 	"os"
 	"os/signal"
 	"runtime/debug"
@@ -42,6 +43,10 @@ const (
 	defaultStepTimeout                 = 3 * time.Second
 	defaultConsumerUpdateWaitTime      = 3 * time.Second
 	defaultOfflineRequestWindowTimeout = 3 * time.Second
+	// retry config
+	defaultMaxRetries     = 3
+	defaultRetryBaseDelay = 500 * time.Millisecond
+	defaultRetryMaxDelay  = 2 * time.Second
 
 	timeoutDesc                     = "Timeout"
 	stepTimeoutDesc                 = "StepTimeout"
@@ -88,7 +93,7 @@ func Init(opts ...Option) {
 			go func() {
 				sig := <-signals
 				logger.Infof("get signal %s, applicationConfig will shutdown.", sig)
-				// gracefulShutdownOnce.Do(func() {
+				// fallback timeout
 				time.AfterFunc(totalTimeout(newOpts.Shutdown), func() {
 					logger.Warn("Shutdown gracefully timeout, applicationConfig will shutdown immediately. ")
 					os.Exit(0)
@@ -125,17 +130,29 @@ func totalTimeout(shutdown *global.ShutdownConfig) time.Duration {
 }
 
 func beforeShutdown(shutdown *global.ShutdownConfig) {
+	// 1. mark closing state
+	logger.Info("Graceful shutdown --- Mark closing state.")
+	shutdown.Closing.Store(true)
+
+	// 2. destroy registries (fallback)
 	destroyRegistries()
+
+	// 3. notify long connection consumers
+	notifyLongConnectionConsumers()
+
+	// 4. wait and accept new requests
 	// waiting for a short time so that the clients have enough time to get the notification that server shutdowns
 	// The value of configuration depends on how long the clients will get notification.
 	waitAndAcceptNewRequests(shutdown)
 
+	// 5. reject new requests and wait for in-flight requests
 	// reject sending/receiving the new request but keeping waiting for accepting requests
 	waitForSendingAndReceivingRequests(shutdown)
 
-	// destroy all protocols
+	// 6. destroy protocols
 	destroyProtocols()
 
+	// 7. execute custom callbacks
 	logger.Info("Graceful shutdown --- Execute the custom callbacks.")
 	customCallbacks := extension.GetAllCustomShutdownCallbacks()
 	for callback := customCallbacks.Front(); callback != nil; callback = callback.Next() {
@@ -148,6 +165,71 @@ func destroyRegistries() {
 	logger.Info("Graceful shutdown --- Destroy all registriesConfig. ")
 	registryProtocol := extension.GetProtocol(constant.RegistryProtocol)
 	registryProtocol.Destroy()
+}
+
+// notifyLongConnectionConsumers notifies all connected consumers via long connections
+func notifyLongConnectionConsumers() {
+	logger.Info("Graceful shutdown --- Notify long connection consumers.")
+
+	notifyTimeout := 3 * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), notifyTimeout)
+	defer cancel()
+
+	callbacks := extension.GetAllGracefulShutdownCallbacks()
+
+	for name, callback := range callbacks {
+		notifyWithRetry(ctx, name, callback)
+	}
+}
+
+// notifyWithRetry notifies with exponential backoff retry
+func notifyWithRetry(ctx context.Context, name string, callback extension.GracefulShutdownCallback) {
+	maxRetries := defaultMaxRetries
+	baseDelay := defaultRetryBaseDelay
+	maxDelay := defaultRetryMaxDelay
+
+	var lastErr error
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		// check timeout
+		select {
+		case <-ctx.Done():
+			logger.Warnf("Graceful shutdown --- Notify %s timeout after %d attempts, continuing...", name, attempt)
+			return
+		default:
+		}
+
+		err := callback(ctx)
+		if err == nil {
+			logger.Infof("Graceful shutdown --- Notify %s completed", name)
+			return
+		}
+
+		lastErr = err
+		logger.Warnf("Graceful shutdown --- Notify %s attempt %d failed: %v", name, attempt+1, err)
+
+		// retry with exponential backoff
+		if attempt < maxRetries {
+			delay := baseDelay
+			for i := 0; i < attempt; i++ {
+				delay *= 2
+				if delay > maxDelay {
+					delay = maxDelay
+					break
+				}
+			}
+			logger.Infof("Graceful shutdown --- Notify %s retrying in %v (attempt %d/%d)", name, delay, attempt+1, maxRetries)
+
+			select {
+			case <-ctx.Done():
+				logger.Warnf("Graceful shutdown --- Notify %s timeout during retry delay", name)
+				return
+			case <-time.After(delay):
+			}
+		}
+	}
+
+	// all retries failed
+	logger.Warnf("Graceful shutdown --- Notify %s failed after %d attempts: %v", name, maxRetries+1, lastErr)
 }
 
 func waitAndAcceptNewRequests(shutdown *global.ShutdownConfig) {
