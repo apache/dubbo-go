@@ -21,14 +21,19 @@ import (
 	"context"
 	"reflect"
 	"testing"
+)
 
+import (
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol/grpc/internal/helloworld"
 	"dubbo.apache.org/dubbo-go/v3/protocol/grpc/internal/routeguide"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 const (

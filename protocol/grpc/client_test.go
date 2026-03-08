@@ -21,14 +21,20 @@ import (
 	"context"
 	"fmt"
 	"testing"
+)
 
+import (
+	"github.com/dustin/go-humanize"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol/grpc/internal/helloworld"
 	"dubbo.apache.org/dubbo-go/v3/protocol/grpc/internal/routeguide"
-	"github.com/dustin/go-humanize"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestUnaryClient(t *testing.T) {
