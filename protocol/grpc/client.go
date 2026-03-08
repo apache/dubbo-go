@@ -22,28 +22,19 @@ import (
 	"reflect"
 	"sync"
 	"time"
-)
 
-import (
-	"github.com/dubbogo/gost/log/logger"
-
-	"github.com/dustin/go-humanize"
-
-	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
-
-	"github.com/opentracing/opentracing-go"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/credentials/insecure"
-
-	"gopkg.in/yaml.v2"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"github.com/dubbogo/gost/log/logger"
+	"github.com/dustin/go-humanize"
+	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
+	"github.com/opentracing/opentracing-go"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
+	"gopkg.in/yaml.v2"
+
 	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
 
@@ -88,9 +79,10 @@ func NewClient(url *common.URL) (*Client, error) {
 			grpc.MaxCallRecvMsgSize(maxCallRecvMsgSize),
 			grpc.MaxCallSendMsgSize(maxCallSendMsgSize),
 		),
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 
+	var transportCreds credentials.TransportCredentials
+	transportCreds = insecure.NewCredentials()
 	if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
 		// use global TLSConfig handle tls
 		tlsConf, ok := tlsConfRaw.(*global.TLSConfig)
@@ -106,10 +98,11 @@ func NewClient(url *common.URL) (*Client, error) {
 			}
 			if cfg != nil {
 				logger.Infof("Grpc Client initialized the TLSConfig configuration")
-				dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(cfg)))
+				transportCreds = credentials.NewTLS(cfg)
 			}
 		}
 	}
+	dialOpts = append(dialOpts, grpc.WithTransportCredentials(transportCreds))
 
 	conn, err := grpc.Dial(url.Location, dialOpts...)
 	if err != nil {
