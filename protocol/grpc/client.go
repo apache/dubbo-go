@@ -19,6 +19,7 @@ package grpc
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"sync"
 	"time"
@@ -115,17 +116,15 @@ func NewClient(url *common.URL) (*Client, error) {
 	if rpcService, ok := url.GetAttribute(constant.RpcServiceKey); ok {
 		consumerService = rpcService
 	}
-	invoker := getInvoker(consumerService, conn)
-	invokerValue := reflect.Value{}
-	if invoker != nil {
-		invokerValue = reflect.ValueOf(invoker)
-	} else {
-		logger.Warnf("grpc client invoker is nil, interface=%s", key)
+	if consumerService == nil {
+		conn.Close()
+		return nil, fmt.Errorf("grpc: no rpc service found for interface=%s", key)
 	}
+	invoker := getInvoker(consumerService, conn)
 
 	return &Client{
 		ClientConn: conn,
-		invoker:    invokerValue,
+		invoker:    reflect.ValueOf(invoker),
 	}, nil
 }
 
