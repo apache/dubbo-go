@@ -121,6 +121,12 @@ func NewClient(url *common.URL) (*Client, error) {
 		return nil, fmt.Errorf("grpc: no rpc service found for interface=%s", key)
 	}
 	invoker := getInvoker(consumerService, conn)
+	if invoker == nil {
+		err := fmt.Errorf("grpc client invoker is nil, interface=%s", key)
+		logger.Errorf("failed to get grpc client invoker: %v", err)
+		conn.Close()
+		return nil, err
+	}
 
 	return &Client{
 		ClientConn: conn,
