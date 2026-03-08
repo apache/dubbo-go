@@ -202,7 +202,7 @@ func registerService(providerServices map[string]*global.ServiceConfig, server *
 		}
 
 		ds.SetProxyImpl(invoker)
-		server.RegisterService(ds.ServiceDesc(), service)
+		server.RegisterService(ds.ServiceDesc(), ds)
 	}
 }
 
