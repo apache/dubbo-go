@@ -22,28 +22,20 @@ import (
 	"net"
 	"sync"
 	"time"
-)
 
-import (
-	"github.com/dubbogo/gost/log/logger"
-
-	"github.com/dustin/go-humanize"
-
-	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
-
-	"github.com/opentracing/opentracing-go"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/reflection"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"github.com/dubbogo/gost/log/logger"
+	"github.com/dustin/go-humanize"
+	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
+	"github.com/opentracing/opentracing-go"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/reflection"
+
 	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
 
@@ -102,9 +94,10 @@ func (s *Server) Start(url *common.URL) {
 		grpc.StreamInterceptor(otgrpc.OpenTracingStreamServerInterceptor(tracer)),
 		grpc.MaxRecvMsgSize(maxServerRecvMsgSize),
 		grpc.MaxSendMsgSize(maxServerSendMsgSize),
-		grpc.Creds(insecure.NewCredentials()),
 	)
 
+	var transportCreds credentials.TransportCredentials
+	transportCreds = insecure.NewCredentials()
 	if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
 		// use global TLSConfig handle tls
 		tlsConf, ok := tlsConfRaw.(*global.TLSConfig)
@@ -119,10 +112,11 @@ func (s *Server) Start(url *common.URL) {
 			}
 			if cfg != nil {
 				logger.Infof("gRPC Server initialized the TLSConfig configuration")
-				serverOpts = append(serverOpts, grpc.Creds(credentials.NewTLS(cfg)))
+				transportCreds = credentials.NewTLS(cfg)
 			}
 		}
 	}
+	serverOpts = append(serverOpts, grpc.Creds(transportCreds))
 
 	server := grpc.NewServer(serverOpts...)
 	s.grpcServer = server
