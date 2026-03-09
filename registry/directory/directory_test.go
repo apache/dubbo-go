@@ -151,6 +151,52 @@ func Test_RefreshUrl(t *testing.T) {
 	assert.Empty(t, registryDirectory.cacheInvokers)
 }
 
+func TestRemoveClosingInstanceRemovesExactInstanceKey(t *testing.T) {
+	registryDirectory, mockRegistry := normalRegistryDir(true)
+
+	providerURL1, _ := common.NewURL("dubbo://0.0.0.0:20000/org.apache.dubbo-go.mockService",
+		common.WithParamsValue(constant.ClusterKey, "mock1"),
+		common.WithParamsValue(constant.GroupKey, "group"),
+		common.WithParamsValue(constant.VersionKey, "1.0.0"))
+	providerURL2, _ := common.NewURL("dubbo://0.0.0.0:20001/org.apache.dubbo-go.mockService",
+		common.WithParamsValue(constant.ClusterKey, "mock1"),
+		common.WithParamsValue(constant.GroupKey, "group"),
+		common.WithParamsValue(constant.VersionKey, "1.0.0"))
+
+	event1 := &registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerURL1}
+	event2 := &registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerURL2}
+	key1 := registryDirectory.invokerCacheKey(event1)
+	key2 := registryDirectory.invokerCacheKey(event2)
+
+	mockRegistry.MockEvent(event1)
+	mockRegistry.MockEvent(event2)
+	time.Sleep(1e9)
+
+	assert.Len(t, registryDirectory.cacheInvokers, 2)
+	assert.NotEqual(t, key1, key2)
+
+	removed := registryDirectory.RemoveClosingInstance(key1)
+	require.True(t, removed)
+
+	assert.Len(t, registryDirectory.cacheInvokers, 1)
+	assert.Len(t, registryDirectory.List(&invocation.RPCInvocation{}), 1)
+
+	_, stillExists := registryDirectory.cacheInvokersMap.Load(key1)
+	assert.False(t, stillExists)
+
+	remaining, ok := registryDirectory.cacheInvokersMap.Load(key2)
+	require.True(t, ok)
+	assert.Equal(t, key2, remaining.(interface{ GetURL() *common.URL }).GetURL().GetCacheInvokerMapKey())
+}
+
+func TestRemoveClosingInstanceReturnsFalseForUnknownKey(t *testing.T) {
+	registryDirectory, _ := normalRegistryDir(true)
+
+	removed := registryDirectory.RemoveClosingInstance("missing-instance-key")
+	assert.False(t, removed)
+	assert.Empty(t, registryDirectory.cacheInvokers)
+}
+
 func normalRegistryDir(noMockEvent ...bool) (*RegistryDirectory, *registry.MockRegistry) {
 	extension.SetProtocol(protocolwrapper.FILTER, protocolwrapper.NewMockProtocolFilter)
 

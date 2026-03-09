@@ -462,6 +462,31 @@ func (dir *RegistryDirectory) uncacheInvokerWithKey(key string) protocolbase.Inv
 	return nil
 }
 
+// RemoveClosingInstance removes a single service instance from the directory by instanceKey.
+// It is intended to be called by graceful shutdown logic before registry updates converge.
+func (dir *RegistryDirectory) RemoveClosingInstance(instanceKey string) bool {
+	if instanceKey == "" {
+		return false
+	}
+
+	var removed protocolbase.Invoker
+	func() {
+		dir.registerLock.Lock()
+		defer dir.registerLock.Unlock()
+
+		removed = dir.uncacheInvokerWithKey(instanceKey)
+		if removed != nil {
+			dir.setNewInvokers()
+		}
+	}()
+
+	if removed != nil {
+		removed.Destroy()
+		return true
+	}
+	return false
+}
+
 // cacheInvoker will return abandoned Invoker,if no Invoker to be abandoned,return nil
 func (dir *RegistryDirectory) cacheInvoker(url *common.URL, event *registry.ServiceEvent) protocolbase.Invoker {
 	dir.overrideUrl(dir.GetDirectoryUrl())
