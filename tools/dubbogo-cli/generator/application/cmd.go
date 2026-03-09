@@ -38,20 +38,34 @@ const (
 package main
 
 import (
-	_ "dubbo-go-app/pkg/service"
+	"dubbo-go-app/api"
+	"dubbo-go-app/pkg/service"
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/server"
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
 )
 
-// export DUBBO_GO_CONFIG_PATH=$PATH_TO_APP/conf/dubbogo.yaml
 func main() {
-	if err := config.Load(); err != nil {
+	srv, err := server.NewServer(
+		server.WithServerProtocol(
+			protocol.WithPort(20000),
+			protocol.WithTriple(),
+		),
+	)
+	if err != nil {
 		panic(err)
 	}
-	select {}
+
+	if err := api.RegisterGreeterServer(srv, &service.GreeterServerImpl{}); err != nil {
+		panic(err)
+	}
+
+	if err := srv.Serve(); err != nil {
+		panic(err)
+	}
 }
 
 `
