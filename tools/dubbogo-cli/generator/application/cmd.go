@@ -39,6 +39,7 @@ package main
 
 import (
 	"dubbo-go-app/api"
+
 	"dubbo-go-app/pkg/service"
 )
 
