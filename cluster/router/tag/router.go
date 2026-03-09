@@ -102,6 +102,26 @@ func (p *PriorityRouter) Notify(invokers []base.Invoker) {
 	p.Process(&config_center.ConfigChangeEvent{Key: key, Value: value, ConfigType: remoting.EventTypeAdd})
 }
 
+// SetStaticConfig applies a RouterConfig directly, bypassing YAML parsing.
+// This is the correct entry point for static (code-configured) rules;
+// Process is designed for dynamic config-center updates that arrive as YAML text.
+func (p *PriorityRouter) SetStaticConfig(cfg *global.RouterConfig) {
+	if cfg == nil || len(cfg.Tags) == 0 {
+		return
+	}
+	cfgCopy := cfg.Clone()
+	cfgCopy.Valid = new(bool)
+	*cfgCopy.Valid = len(cfgCopy.Tags) > 0
+	if cfgCopy.Enabled == nil {
+		cfgCopy.Enabled = new(bool)
+		*cfgCopy.Enabled = true
+	}
+	// Derive storage key the same way Notify() does: application + suffix
+	key := strings.Join([]string{cfg.Key, constant.TagRouterRuleSuffix}, "")
+	p.routerConfigs.Store(key, *cfgCopy)
+	logger.Infof("[tag router] Applied static tag router config: key=%s", key)
+}
+
 func (p *PriorityRouter) Process(event *config_center.ConfigChangeEvent) {
 	if event.ConfigType == remoting.EventTypeDel {
 		p.routerConfigs.Delete(event.Key)

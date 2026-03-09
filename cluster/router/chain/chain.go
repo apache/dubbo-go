@@ -35,6 +35,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
@@ -106,6 +107,81 @@ func (c *RouterChain) copyRouters() []router.PriorityRouter {
 	return ret
 }
 
+// getApplicationName gets the application name from URL with fallback to SubURL
+func getApplicationName(url *common.URL) string {
+	appName := url.GetParam(constant.ApplicationKey, "")
+	if appName == "" && url.SubURL != nil {
+		appName = url.SubURL.GetParam(constant.ApplicationKey, "")
+	}
+	return appName
+}
+
+// isRouterMatch checks if router configuration matches the current service/application
+func isRouterMatch(routerCfg *global.RouterConfig, url *common.URL, appName string) bool {
+	switch routerCfg.Scope {
+	case constant.RouterScopeService:
+		if url.SubURL != nil {
+			return routerCfg.Key == url.SubURL.ServiceKey()
+		}
+		return routerCfg.Key == url.ServiceKey()
+	case constant.RouterScopeApplication:
+		return routerCfg.Key == appName
+	default:
+		logger.Warnf("unknown router scope: %s", routerCfg.Scope)
+		return false
+	}
+}
+
+// injectStaticRouters injects static router configurations into the router chain.
+// Called after all routers are created to ensure they exist.
+func (c *RouterChain) injectStaticRouters(url *common.URL) {
+	staticRoutersAttrAny, ok := url.GetAttribute(constant.RoutersConfigKey)
+	if !ok && url.SubURL != nil {
+		staticRoutersAttrAny, ok = url.SubURL.GetAttribute(constant.RoutersConfigKey)
+	}
+	if !ok {
+		return
+	}
+	staticRoutersAttr, ok := staticRoutersAttrAny.([]*global.RouterConfig)
+	if !ok {
+		logger.Warnf("failed to type assert routers config: expected []*global.RouterConfig, got %T", staticRoutersAttrAny)
+		return
+	}
+	if len(staticRoutersAttr) == 0 {
+		return
+	}
+
+	applicationName := getApplicationName(url)
+
+	for _, routerCfg := range staticRoutersAttr {
+		if routerCfg == nil {
+			continue
+		}
+		if routerCfg.Enabled != nil && !*routerCfg.Enabled {
+			continue
+		}
+		if routerCfg.Valid != nil && !*routerCfg.Valid {
+			continue
+		}
+		if !isRouterMatch(routerCfg, url, applicationName) {
+			continue
+		}
+		c.injectRouterConfig(routerCfg)
+	}
+}
+
+// injectRouterConfig injects router configuration into routers that implement StaticConfigSetter.
+// Each router decides whether the config applies to it and no-ops if not.
+func (c *RouterChain) injectRouterConfig(routerCfg *global.RouterConfig) {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+	for _, r := range c.routers {
+		if setter, ok := r.(router.StaticConfigSetter); ok {
+			setter.SetStaticConfig(routerCfg)
+		}
+	}
+}
+
 // NewRouterChain init router chain
 // Loop routerFactories and call NewRouter method
 func NewRouterChain(url *common.URL) (*RouterChain, error) {
@@ -145,6 +221,9 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 		routers:        newRouters,
 		builtinRouters: routers,
 	}
+
+	// Inject static router configurations after all routers are created
+	chain.injectStaticRouters(url)
 
 	return chain, nil
 }
