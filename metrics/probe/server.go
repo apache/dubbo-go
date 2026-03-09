@@ -116,7 +116,7 @@ func BuildProbeConfig(probeCfg *global.ProbeConfig) *Config {
 
 	if port == "" {
 		port = constant.ProbeDefaultPort
-	} else if p, err := strconv.Atoi(port); !(p >= 1 && p <= 65535 && err == nil) {
+	} else if p, err := strconv.Atoi(port); p < 1 || p > 65535 || err != nil {
 		logger.Error("[kubernetes probe] unsupported probe server port, set to default ", constant.ProbeDefaultPort)
 	}
 
