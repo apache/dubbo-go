@@ -18,6 +18,7 @@
 package triple
 
 import (
+	"context"
 	"testing"
 )
 
@@ -27,6 +28,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
 func TestNewTripleProtocol(t *testing.T) {
@@ -57,6 +59,24 @@ func TestTripleProtocolRegistration(t *testing.T) {
 
 func TestTripleConstant(t *testing.T) {
 	assert.Equal(t, "tri", TRIPLE)
+}
+
+func TestTripleGracefulShutdownCallbackRegistration(t *testing.T) {
+	cb, ok := extension.GetGracefulShutdownCallback(TRIPLE)
+	assert.True(t, ok)
+	assert.NotNil(t, cb)
+
+	original := tripleProtocol
+	tp := NewTripleProtocol()
+	tp.serverMap["graceful-test"] = &Server{triServer: tri.NewServer("", nil)}
+	tripleProtocol = tp
+	t.Cleanup(func() {
+		tripleProtocol = original
+	})
+
+	assert.NotPanics(t, func() {
+		assert.NoError(t, cb(context.Background()))
+	})
 }
 
 func TestTripleProtocol_Destroy_EmptyServerMap(t *testing.T) {

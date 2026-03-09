@@ -94,3 +94,55 @@ func TestMarkClosingInvokerSetsEmbeddedInvokerUnavailable(t *testing.T) {
 	assert.True(t, ok)
 	assert.True(t, expireTime.(time.Time).After(time.Now()))
 }
+
+func TestConsumerFilterDoesNotDecrementWithoutIncrement(t *testing.T) {
+	filter := &consumerGracefulShutdownFilter{
+		shutdownConfig: graceful_shutdown.NewOptions().Shutdown,
+	}
+	invoker := newTestEmbeddedInvoker(common.NewURLWithOptions(common.WithParams(url.Values{})))
+	rpcInvocation := invocation.NewRPCInvocation("GetUser", []any{"OK"}, make(map[string]any))
+
+	filter.markClosingInvoker(invoker)
+
+	res := filter.Invoke(context.Background(), invoker, rpcInvocation)
+	assert.Error(t, res.Error())
+	assert.Equal(t, "provider is closing", res.Error().Error())
+
+	filter.OnResponse(context.Background(), res, invoker, rpcInvocation)
+	assert.Equal(t, int32(0), filter.shutdownConfig.ConsumerActiveCount.Load())
+}
+
+func TestClosingInvokerExpiryRestoresAvailability(t *testing.T) {
+	opt := graceful_shutdown.NewOptions()
+	opt.Shutdown.ClosingInvokerExpireTime = "20ms"
+
+	filter := &consumerGracefulShutdownFilter{
+		shutdownConfig: opt.Shutdown,
+	}
+	invoker := newTestEmbeddedInvoker(common.NewURLWithOptions(common.WithParams(url.Values{})))
+
+	filter.markClosingInvoker(invoker)
+	assert.False(t, invoker.IsAvailable())
+	assert.True(t, filter.isClosingInvoker(invoker))
+
+	time.Sleep(40 * time.Millisecond)
+	assert.False(t, filter.isClosingInvoker(invoker))
+	assert.True(t, invoker.IsAvailable())
+}
+
+func TestHandleRequestErrorDoesNotMarkNonClosingErrors(t *testing.T) {
+	filter := &consumerGracefulShutdownFilter{
+		shutdownConfig: graceful_shutdown.NewOptions().Shutdown,
+	}
+	invoker := newTestEmbeddedInvoker(common.NewURLWithOptions(common.WithParams(url.Values{})))
+
+	filter.handleRequestError(invoker, errors.New("EOF"))
+	_, ok := filter.closingInvokers.Load(invoker.GetURL().String())
+	assert.False(t, ok)
+	assert.True(t, invoker.IsAvailable())
+
+	filter.handleRequestError(invoker, errors.New("read tcp: connection reset by peer"))
+	_, ok = filter.closingInvokers.Load(invoker.GetURL().String())
+	assert.False(t, ok)
+	assert.True(t, invoker.IsAvailable())
+}

@@ -57,6 +57,8 @@ type consumerGracefulShutdownFilter struct {
 	closingInvokers sync.Map // map[string]time.Time (url key -> expire time)
 }
 
+const consumerCountMarkedKey = "dubbo-go-graceful-shutdown-consumer-counted"
+
 func newConsumerGracefulShutdownFilter() filter.Filter {
 	if csf == nil {
 		csfOnce.Do(func() {
@@ -73,13 +75,24 @@ func (f *consumerGracefulShutdownFilter) Invoke(ctx context.Context, invoker bas
 		logger.Warnf("Graceful shutdown: skipping closing invoker: %s", invoker.GetURL().String())
 		return &result.RPCResult{Err: errors.New("provider is closing")}
 	}
-	f.shutdownConfig.ConsumerActiveCount.Inc()
-	return invoker.Invoke(ctx, invocation)
+
+	if f.shutdownConfig != nil {
+		f.shutdownConfig.ConsumerActiveCount.Inc()
+	}
+
+	res := invoker.Invoke(ctx, invocation)
+	if f.shutdownConfig == nil {
+		return res
+	}
+
+	return markCountedResult(res)
 }
 
 // OnResponse reduces the number of active processes then return the process result
 func (f *consumerGracefulShutdownFilter) OnResponse(ctx context.Context, result result.Result, invoker base.Invoker, invocation base.Invocation) result.Result {
-	f.shutdownConfig.ConsumerActiveCount.Dec()
+	if f.shutdownConfig != nil && shouldDecrementConsumerActive(result) {
+		f.shutdownConfig.ConsumerActiveCount.Dec()
+	}
 
 	// check closing flag in response
 	if f.isClosingResponse(result) {
@@ -120,6 +133,10 @@ func (f *consumerGracefulShutdownFilter) isClosingInvoker(invoker base.Invoker) 
 			return true
 		}
 		f.closingInvokers.Delete(key)
+		if setter, ok := invoker.(base.AvailabilitySetter); ok {
+			setter.SetAvailable(true)
+			logger.Infof("Graceful shutdown: recovered invoker availability after closing TTL: %s", key)
+		}
 	}
 	return false
 }
@@ -191,4 +208,20 @@ func isClosingError(err error) bool {
 	errMsg := strings.ToLower(err.Error())
 	return strings.Contains(errMsg, "transport is closing") ||
 		strings.Contains(errMsg, "client connection is closing")
+}
+
+func markCountedResult(res result.Result) result.Result {
+	if res == nil {
+		res = &result.RPCResult{}
+	}
+	res.AddAttachment(consumerCountMarkedKey, true)
+	return res
+}
+
+func shouldDecrementConsumerActive(res result.Result) bool {
+	if res == nil {
+		return false
+	}
+	marked, ok := res.Attachment(consumerCountMarkedKey, false).(bool)
+	return ok && marked
 }
