@@ -299,12 +299,17 @@ func (s *Server) exportServices() error {
 
 func (s *Server) Serve() error {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	if s.serve {
+		// release lock in case causing deadlock
+		s.mu.Unlock()
 		return errors.New("server has already been started")
 	}
 	// prevent multiple calls to Serve
 	s.serve = true
+
+	// release lock in case causing deadlock
+	s.mu.Unlock()
+
 	// the registryConfig in ServiceOptions and ServerOptions all need to init a metadataReporter,
 	// when ServiceOptions.init() is called we don't know if a new registry config is set in the future use serviceOption
 	if err := metadata.InitRegistryMetadataReport(s.cfg.Registries); err != nil {
