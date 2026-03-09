@@ -29,9 +29,107 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router"
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
+
+// TestIsRouterMatch_ServiceMatch tests service router matching
+func TestIsRouterMatch_ServiceMatch(t *testing.T) {
+	routerCfg := &global.RouterConfig{
+		Scope: "service",
+		Key:   "test.service",
+	}
+
+	url := common.NewURLWithOptions(
+		common.WithProtocol("consumer"),
+		common.WithPath("test.service"),
+	)
+	url.SubURL = common.NewURLWithOptions(
+		common.WithProtocol("dubbo"),
+		common.WithPath("test.service"),
+	)
+
+	assert.True(t, isRouterMatch(routerCfg, url, ""))
+}
+
+// TestIsRouterMatch_ServiceMismatch tests service router mismatch
+func TestIsRouterMatch_ServiceMismatch(t *testing.T) {
+	routerCfg := &global.RouterConfig{
+		Scope: "service",
+		Key:   "different.service",
+	}
+
+	url := common.NewURLWithOptions(
+		common.WithProtocol("consumer"),
+		common.WithPath("test.service"),
+	)
+	url.SubURL = common.NewURLWithOptions(
+		common.WithProtocol("dubbo"),
+		common.WithPath("test.service"),
+	)
+
+	assert.False(t, isRouterMatch(routerCfg, url, ""))
+}
+
+// TestIsRouterMatch_ApplicationMatch tests application router matching
+func TestIsRouterMatch_ApplicationMatch(t *testing.T) {
+	routerCfg := &global.RouterConfig{
+		Scope: "application",
+		Key:   "test-app",
+	}
+
+	url := common.NewURLWithOptions(
+		common.WithProtocol("consumer"),
+		common.WithPath("test.service"),
+	)
+	url.SetParam(constant.ApplicationKey, "test-app")
+
+	assert.True(t, isRouterMatch(routerCfg, url, "test-app"))
+}
+
+// TestIsRouterMatch_ApplicationMismatch tests application router mismatch
+func TestIsRouterMatch_ApplicationMismatch(t *testing.T) {
+	routerCfg := &global.RouterConfig{
+		Scope: "application",
+		Key:   "different-app",
+	}
+
+	url := common.NewURLWithOptions(
+		common.WithProtocol("consumer"),
+		common.WithPath("test.service"),
+	)
+	url.SetParam(constant.ApplicationKey, "test-app")
+
+	assert.False(t, isRouterMatch(routerCfg, url, "test-app"))
+}
+
+// TestGetApplicationName_FromURL tests getting application name from URL
+func TestGetApplicationName_FromURL(t *testing.T) {
+	url := common.NewURLWithOptions(
+		common.WithProtocol("consumer"),
+		common.WithPath("test.service"),
+	)
+	url.SetParam(constant.ApplicationKey, "my-app")
+
+	assert.Equal(t, "my-app", getApplicationName(url))
+}
+
+// TestGetApplicationName_FromSubURL tests getting application name from SubURL
+func TestGetApplicationName_FromSubURL(t *testing.T) {
+	url := common.NewURLWithOptions(
+		common.WithProtocol("consumer"),
+		common.WithPath("test.service"),
+	)
+	url.SubURL = common.NewURLWithOptions(
+		common.WithProtocol("dubbo"),
+		common.WithPath("test.service"),
+	)
+	url.SubURL.SetParam(constant.ApplicationKey, "my-app")
+
+	assert.Equal(t, "my-app", getApplicationName(url))
+}
 
 const testConsumerServiceURL = "consumer://127.0.0.1/com.demo.Service"
 
