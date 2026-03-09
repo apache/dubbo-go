@@ -21,7 +21,9 @@ import (
 	"dubbo-go-app/api"
 
 	"dubbo-go-app/pkg/service"
+)
 
+import (
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/server"
