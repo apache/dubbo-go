@@ -330,8 +330,11 @@ func (s *Server) Serve() error {
 	if err := exposed_tmp.RegisterServiceInstance(); err != nil {
 		return err
 	}
+
+	// k8s probe ready
 	probe.SetStartupComplete(true)
 	probe.SetReady(true)
+
 	select {}
 }
 

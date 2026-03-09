@@ -20,6 +20,7 @@ package probe
 import (
 	"context"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -80,7 +81,13 @@ func Init(cfg *Config) {
 		if cfg.StartupPath != "" {
 			mux.HandleFunc(cfg.StartupPath, startupHandler)
 		}
-		srv := &http.Server{Addr: ":" + cfg.Port, Handler: mux}
+		srv := &http.Server{
+			Addr:              ":" + cfg.Port,
+			Handler:           mux,
+			ReadHeaderTimeout: constant.ProbeReadHeaderTimeout,
+			WriteTimeout:      constant.ProbeWriteTimeout,
+			IdleTimeout:       constant.ProbeIdleTimeout,
+		}
 		extension.AddCustomShutdownCallback(func() {
 			SetReady(false)
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -106,9 +113,13 @@ func BuildProbeConfig(probeCfg *global.ProbeConfig) *Config {
 
 	useInternal := probeCfg.UseInternalState == nil || *probeCfg.UseInternalState
 	port := probeCfg.Port
+
 	if port == "" {
 		port = constant.ProbeDefaultPort
+	} else if p, err := strconv.Atoi(port); !(p >= 1 && p <= 65535 && err == nil) {
+		logger.Error("[kubernetes probe] unsupported probe server port, set to default ", constant.ProbeDefaultPort)
 	}
+
 	livenessPath := probeCfg.LivenessPath
 	if livenessPath == "" {
 		livenessPath = constant.ProbeDefaultLivenessPath

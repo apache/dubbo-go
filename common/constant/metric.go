@@ -17,6 +17,10 @@
 
 package constant
 
+import (
+	"time"
+)
+
 // metrics type
 const (
 	MetricsRegistry     = "dubbo.metrics.registry"
@@ -57,6 +61,9 @@ const (
 	ProbeDefaultLivenessPath            = "/live"
 	ProbeDefaultReadinessPath           = "/ready"
 	ProbeDefaultStartupPath             = "/startup"
+	ProbeReadHeaderTimeout              = 5 * time.Second
+	ProbeWriteTimeout                   = 10 * time.Second
+	ProbeIdleTimeout                    = 30 * time.Second
 	MetricFilterStartTime               = "metric_filter_start_time"
 )
 

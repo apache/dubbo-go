@@ -68,8 +68,13 @@ func RegisterStartup(name string, fn CheckFunc) {
 
 func runChecks(ctx context.Context, mu *sync.RWMutex, checks map[string]CheckFunc) error {
 	mu.RLock()
-	defer mu.RUnlock()
-	for name, fn := range checks {
+	snapshot := make(map[string]CheckFunc, len(checks))
+	for k, v := range checks {
+		snapshot[k] = v
+	}
+	mu.RUnlock()
+
+	for name, fn := range snapshot {
 		if err := fn(ctx); err != nil {
 			return fmt.Errorf("probe %s: %w", name, err)
 		}

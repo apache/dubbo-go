@@ -28,6 +28,12 @@ var (
 )
 
 func livenessHandler(w http.ResponseWriter, r *http.Request) {
+	// k8s only use GET
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	if err := CheckLiveness(r.Context()); err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
@@ -37,6 +43,12 @@ func livenessHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func readinessHandler(w http.ResponseWriter, r *http.Request) {
+	// k8s only use GET
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	if err := CheckReadiness(r.Context()); err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
@@ -46,6 +58,12 @@ func readinessHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func startupHandler(w http.ResponseWriter, r *http.Request) {
+	// k8s only use GET
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	if err := CheckStartup(r.Context()); err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return

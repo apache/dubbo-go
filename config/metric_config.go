@@ -31,7 +31,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
-	"dubbo.apache.org/dubbo-go/v3/metrics/probe"
 )
 
 // MetricsConfig This is the config struct for all metrics implementation
@@ -105,16 +104,6 @@ func (mc *MetricsConfig) Init(rc *RootConfig) error {
 	mc.rootConfig = rc
 	if *mc.Enable {
 		metrics.Init(mc.toURL())
-	}
-	if mc.Probe != nil && mc.Probe.Enabled != nil && *mc.Probe.Enabled {
-		probe.Init(&probe.Config{
-			Enabled:          true,
-			Port:             mc.Probe.Port,
-			LivenessPath:     mc.Probe.LivenessPath,
-			ReadinessPath:    mc.Probe.ReadinessPath,
-			StartupPath:      mc.Probe.StartupPath,
-			UseInternalState: mc.Probe.UseInternalState == nil || *mc.Probe.UseInternalState,
-		})
 	}
 	return nil
 }
