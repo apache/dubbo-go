@@ -20,7 +20,6 @@ package graceful_shutdown
 import (
 	"context"
 	"errors"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -146,8 +145,8 @@ func (f *consumerGracefulShutdownFilter) markClosingInvoker(invoker base.Invoker
 	logger.Infof("Graceful shutdown: marked invoker as closing: %s, will expire at %v, IsAvailable=%v",
 		key, expireTime, invoker.IsAvailable())
 
-	if bi, ok := invoker.(*base.BaseInvoker); ok {
-		bi.SetAvailable(false)
+	if setter, ok := invoker.(base.AvailabilitySetter); ok {
+		setter.SetAvailable(false)
 		logger.Infof("Graceful shutdown: set invoker unavailable: %s, IsAvailable now=%v",
 			key, invoker.IsAvailable())
 	}
@@ -159,12 +158,6 @@ func (f *consumerGracefulShutdownFilter) getClosingInvokerExpireTime() time.Dura
 			return duration
 		}
 	}
-	// default 30s, also try parsing numeric string as milliseconds
-	if f.shutdownConfig != nil && f.shutdownConfig.ClosingInvokerExpireTime != "" {
-		if ms, err := strconv.ParseInt(f.shutdownConfig.ClosingInvokerExpireTime, 10, 64); err == nil && ms > 0 {
-			return time.Duration(ms) * time.Millisecond
-		}
-	}
 	return 30 * time.Second
 }
 
@@ -174,16 +167,7 @@ func (f *consumerGracefulShutdownFilter) handleRequestError(invoker base.Invoker
 		return
 	}
 
-	// check for connection-related errors
-	errMsg := err.Error()
-	isConnectionError := strings.Contains(errMsg, "client has closed") ||
-		strings.Contains(errMsg, "connection") ||
-		strings.Contains(errMsg, "EOF") ||
-		strings.Contains(errMsg, "broken pipe") ||
-		strings.Contains(errMsg, "gRPC") && strings.Contains(errMsg, "closing") ||
-		strings.Contains(errMsg, "http2") && strings.Contains(errMsg, "close")
-
-	if isConnectionError {
+	if isClosingError(err) {
 		key := invoker.GetURL().String()
 		expireTime := time.Now().Add(f.getClosingInvokerExpireTime())
 		f.closingInvokers.Store(key, expireTime)
@@ -191,10 +175,20 @@ func (f *consumerGracefulShutdownFilter) handleRequestError(invoker base.Invoker
 		logger.Infof("Graceful shutdown: connection error detected for invoker: %s, marking as closing, will expire at %v, IsAvailable=%v",
 			key, expireTime, invoker.IsAvailable())
 
-		if bi, ok := invoker.(*base.BaseInvoker); ok {
-			bi.SetAvailable(false)
+		if setter, ok := invoker.(base.AvailabilitySetter); ok {
+			setter.SetAvailable(false)
 			logger.Infof("Graceful shutdown: set invoker unavailable due to connection error: %s, IsAvailable now=%v",
 				key, invoker.IsAvailable())
 		}
 	}
+}
+
+func isClosingError(err error) bool {
+	if errors.Is(err, base.ErrClientClosed) || errors.Is(err, base.ErrDestroyedInvoker) {
+		return true
+	}
+
+	errMsg := strings.ToLower(err.Error())
+	return strings.Contains(errMsg, "transport is closing") ||
+		strings.Contains(errMsg, "client connection is closing")
 }

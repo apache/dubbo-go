@@ -19,8 +19,10 @@ package graceful_shutdown
 
 import (
 	"context"
+	"errors"
 	"net/url"
 	"testing"
+	"time"
 )
 
 import (
@@ -34,7 +36,22 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
+
+type testEmbeddedInvoker struct {
+	base.BaseInvoker
+}
+
+func newTestEmbeddedInvoker(rawURL *common.URL) *testEmbeddedInvoker {
+	return &testEmbeddedInvoker{
+		BaseInvoker: *base.NewBaseInvoker(rawURL),
+	}
+}
+
+func (i *testEmbeddedInvoker) Invoke(ctx context.Context, invocation base.Invocation) result.Result {
+	return &result.RPCResult{}
+}
 
 func TestConsumerFilterInvokeWithGlobalPackage(t *testing.T) {
 	var (
@@ -53,4 +70,27 @@ func TestConsumerFilterInvokeWithGlobalPackage(t *testing.T) {
 	result := filter.Invoke(context.Background(), base.NewBaseInvoker(baseUrl), rpcInvocation)
 	assert.NotNil(t, result)
 	assert.NoError(t, result.Error())
+}
+
+func TestIsClosingError(t *testing.T) {
+	assert.True(t, isClosingError(base.ErrClientClosed))
+	assert.True(t, isClosingError(errors.New("rpc error: code = Unavailable desc = transport is closing")))
+	assert.False(t, isClosingError(errors.New("EOF")))
+	assert.False(t, isClosingError(errors.New("read tcp: connection reset by peer")))
+}
+
+func TestMarkClosingInvokerSetsEmbeddedInvokerUnavailable(t *testing.T) {
+	filter := &consumerGracefulShutdownFilter{
+		shutdownConfig: graceful_shutdown.NewOptions().Shutdown,
+	}
+	invoker := newTestEmbeddedInvoker(common.NewURLWithOptions(common.WithParams(url.Values{})))
+
+	assert.True(t, invoker.IsAvailable())
+
+	filter.markClosingInvoker(invoker)
+
+	assert.False(t, invoker.IsAvailable())
+	expireTime, ok := filter.closingInvokers.Load(invoker.GetURL().String())
+	assert.True(t, ok)
+	assert.True(t, expireTime.(time.Time).After(time.Now()))
 }
