@@ -35,6 +35,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	gracefulshutdown "dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
@@ -53,8 +54,9 @@ func init() {
 }
 
 type consumerGracefulShutdownFilter struct {
-	shutdownConfig  *global.ShutdownConfig
-	closingInvokers sync.Map // map[string]time.Time (url key -> expire time)
+	shutdownConfig      *global.ShutdownConfig
+	closingEventHandler gracefulshutdown.ClosingEventHandler
+	closingInvokers     sync.Map // map[string]time.Time (url key -> expire time)
 }
 
 const consumerCountMarkedKey = "dubbo-go-graceful-shutdown-consumer-counted"
@@ -62,7 +64,9 @@ const consumerCountMarkedKey = "dubbo-go-graceful-shutdown-consumer-counted"
 func newConsumerGracefulShutdownFilter() filter.Filter {
 	if csf == nil {
 		csfOnce.Do(func() {
-			csf = &consumerGracefulShutdownFilter{}
+			csf = &consumerGracefulShutdownFilter{
+				closingEventHandler: gracefulshutdown.DefaultClosingEventHandler(),
+			}
 		})
 	}
 	return csf
@@ -97,6 +101,7 @@ func (f *consumerGracefulShutdownFilter) OnResponse(ctx context.Context, result 
 	// check closing flag in response
 	if f.isClosingResponse(result) {
 		f.markClosingInvoker(invoker)
+		f.handleClosingEvent(invoker, "passive-attachment")
 	}
 
 	// handle request error
@@ -167,6 +172,19 @@ func (f *consumerGracefulShutdownFilter) markClosingInvoker(invoker base.Invoker
 		logger.Infof("Graceful shutdown: set invoker unavailable: %s, IsAvailable now=%v",
 			key, invoker.IsAvailable())
 	}
+}
+
+func (f *consumerGracefulShutdownFilter) handleClosingEvent(invoker base.Invoker, source string) {
+	if f.closingEventHandler == nil || invoker == nil || invoker.GetURL() == nil {
+		return
+	}
+
+	f.closingEventHandler.HandleClosingEvent(gracefulshutdown.ClosingEvent{
+		Source:      source,
+		InstanceKey: invoker.GetURL().GetCacheInvokerMapKey(),
+		ServiceKey:  invoker.GetURL().ServiceKey(),
+		Address:     invoker.GetURL().Location,
+	})
 }
 
 func (f *consumerGracefulShutdownFilter) getClosingInvokerExpireTime() time.Duration {

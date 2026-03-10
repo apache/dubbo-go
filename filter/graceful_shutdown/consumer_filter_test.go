@@ -43,6 +43,15 @@ type testEmbeddedInvoker struct {
 	base.BaseInvoker
 }
 
+type testClosingEventHandler struct {
+	events []graceful_shutdown.ClosingEvent
+}
+
+func (h *testClosingEventHandler) HandleClosingEvent(event graceful_shutdown.ClosingEvent) bool {
+	h.events = append(h.events, event)
+	return true
+}
+
 func newTestEmbeddedInvoker(rawURL *common.URL) *testEmbeddedInvoker {
 	return &testEmbeddedInvoker{
 		BaseInvoker: *base.NewBaseInvoker(rawURL),
@@ -145,4 +154,29 @@ func TestHandleRequestErrorDoesNotMarkNonClosingErrors(t *testing.T) {
 	_, ok = filter.closingInvokers.Load(invoker.GetURL().String())
 	assert.False(t, ok)
 	assert.True(t, invoker.IsAvailable())
+}
+
+func TestClosingResponseDispatchesClosingEvent(t *testing.T) {
+	handler := &testClosingEventHandler{}
+	filter := &consumerGracefulShutdownFilter{
+		shutdownConfig:      graceful_shutdown.NewOptions().Shutdown,
+		closingEventHandler: handler,
+	}
+	invokerURL, _ := common.NewURL(
+		"dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService",
+		common.WithParamsValue(constant.GroupKey, "group"),
+		common.WithParamsValue(constant.VersionKey, "1.0.0"),
+	)
+	invoker := newTestEmbeddedInvoker(invokerURL)
+	res := &result.RPCResult{}
+	res.AddAttachment(constant.GracefulShutdownClosingKey, "true")
+
+	filter.OnResponse(context.Background(), res, invoker, invocation.NewRPCInvocation("GetUser", []any{"OK"}, map[string]any{}))
+
+	if assert.Len(t, handler.events, 1) {
+		assert.Equal(t, invokerURL.GetCacheInvokerMapKey(), handler.events[0].InstanceKey)
+		assert.Equal(t, invokerURL.ServiceKey(), handler.events[0].ServiceKey)
+		assert.Equal(t, invokerURL.Location, handler.events[0].Address)
+		assert.Equal(t, "passive-attachment", handler.events[0].Source)
+	}
 }
