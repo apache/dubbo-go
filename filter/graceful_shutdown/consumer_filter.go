@@ -203,18 +203,8 @@ func (f *consumerGracefulShutdownFilter) handleRequestError(invoker base.Invoker
 	}
 
 	if isClosingError(err) {
-		key := invoker.GetURL().String()
-		expireTime := time.Now().Add(f.getClosingInvokerExpireTime())
-		f.closingInvokers.Store(key, expireTime)
-
-		logger.Infof("Graceful shutdown: connection error detected for invoker: %s, marking as closing, will expire at %v, IsAvailable=%v",
-			key, expireTime, invoker.IsAvailable())
-
-		if setter, ok := invoker.(base.AvailabilitySetter); ok {
-			setter.SetAvailable(false)
-			logger.Infof("Graceful shutdown: set invoker unavailable due to connection error: %s, IsAvailable now=%v",
-				key, invoker.IsAvailable())
-		}
+		f.markClosingInvoker(invoker)
+		f.handleClosingEvent(invoker, "connection-closing-error")
 	}
 }
 

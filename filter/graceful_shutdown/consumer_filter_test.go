@@ -180,3 +180,25 @@ func TestClosingResponseDispatchesClosingEvent(t *testing.T) {
 		assert.Equal(t, "passive-attachment", handler.events[0].Source)
 	}
 }
+
+func TestClosingErrorDispatchesClosingEvent(t *testing.T) {
+	handler := &testClosingEventHandler{}
+	filter := &consumerGracefulShutdownFilter{
+		shutdownConfig:      graceful_shutdown.NewOptions().Shutdown,
+		closingEventHandler: handler,
+	}
+	invokerURL, _ := common.NewURL(
+		"dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService",
+		common.WithParamsValue(constant.GroupKey, "group"),
+		common.WithParamsValue(constant.VersionKey, "1.0.0"),
+	)
+	invoker := newTestEmbeddedInvoker(invokerURL)
+
+	filter.handleRequestError(invoker, errors.New("rpc error: code = Unavailable desc = transport is closing"))
+
+	if assert.Len(t, handler.events, 1) {
+		assert.Equal(t, invokerURL.GetCacheInvokerMapKey(), handler.events[0].InstanceKey)
+		assert.Equal(t, invokerURL.ServiceKey(), handler.events[0].ServiceKey)
+		assert.Equal(t, "connection-closing-error", handler.events[0].Source)
+	}
+}
