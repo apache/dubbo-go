@@ -43,6 +43,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	_ "dubbo.apache.org/dubbo-go/v3/config_center/configurator"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	metricsRegistry "dubbo.apache.org/dubbo-go/v3/metrics/registry"
 	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
@@ -169,6 +170,7 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (director
 	dir.consumerConfigurationListener = newConsumerConfigurationListener(dir, url)
 	dir.consumerConfigurationListener.addNotifyListener(dir)
 	dir.referenceConfigurationListener = newReferenceConfigurationListener(dir, url)
+	graceful_shutdown.DefaultClosingDirectoryRegistry().Register(dir.closingServiceKey(), dir)
 
 	if err := dir.registry.LoadSubscribeInstances(url.SubURL, dir); err != nil {
 		return nil, err
@@ -654,6 +656,7 @@ func (dir *RegistryDirectory) IsAvailable() bool {
 func (dir *RegistryDirectory) Destroy() {
 	// TODO:unregister & unsubscribe
 	dir.DoDestroy(func() {
+		graceful_shutdown.DefaultClosingDirectoryRegistry().Unregister(dir.closingServiceKey(), dir)
 		if dir.RegisteredUrl != nil {
 			err := dir.registry.UnRegister(dir.RegisteredUrl)
 			if err != nil {
@@ -675,6 +678,17 @@ func (dir *RegistryDirectory) Destroy() {
 		}
 	})
 	metrics.Publish(metricsRegistry.NewDirectoryEvent(metricsRegistry.NumAllDec))
+}
+
+func (dir *RegistryDirectory) closingServiceKey() string {
+	if dir.GetURL() == nil {
+		return ""
+	}
+	serviceKey := dir.GetURL().ServiceKey()
+	if serviceKey == "" && dir.GetURL().SubURL != nil {
+		serviceKey = dir.GetURL().SubURL.ServiceKey()
+	}
+	return serviceKey
 }
 
 func (dir *RegistryDirectory) overrideUrl(targetUrl *common.URL) {
