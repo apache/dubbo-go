@@ -74,7 +74,24 @@ type RegistryDirectory struct {
 	registerLock                   sync.Mutex // this lock if for register
 	SubscribedUrl                  *common.URL
 	RegisteredUrl                  *common.URL
+	closingTombstones              *sync.Map // map[string]closingTombstone
+	closingTombstoneTTL            time.Duration
 }
+
+type closingTombstone struct {
+	InstanceKey string
+	ServiceKey  string
+	Address     string
+	Source      string
+	ExpireAt    time.Time
+}
+
+var defaultClosingTombstoneTTL = func() time.Duration {
+	if duration, err := time.ParseDuration(global.DefaultShutdownConfig().ClosingInvokerExpireTime); err == nil && duration > 0 {
+		return duration
+	}
+	return 30 * time.Second
+}()
 
 // NewRegistryDirectory will create a new RegistryDirectory
 func NewRegistryDirectory(url *common.URL, registry registry.Registry) (directory.Directory, error) {
@@ -132,11 +149,13 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (director
 	}
 
 	dir := &RegistryDirectory{
-		Directory:        base.NewDirectory(url),
-		cacheInvokers:    []protocolbase.Invoker{},
-		cacheInvokersMap: &sync.Map{},
-		serviceType:      url.SubURL.Service(),
-		registry:         registry,
+		Directory:           base.NewDirectory(url),
+		cacheInvokers:       []protocolbase.Invoker{},
+		cacheInvokersMap:    &sync.Map{},
+		serviceType:         url.SubURL.Service(),
+		registry:            registry,
+		closingTombstones:   &sync.Map{},
+		closingTombstoneTTL: defaultClosingTombstoneTTL,
 	}
 
 	dir.consumerURL = dir.getConsumerUrl(url.SubURL)
@@ -446,6 +465,7 @@ func (dir *RegistryDirectory) uncacheInvokerWithClusterID(clusterID string) []pr
 // uncacheInvoker will return abandoned Invoker, if no Invoker to be abandoned, return nil
 func (dir *RegistryDirectory) uncacheInvoker(event *registry.ServiceEvent) []protocolbase.Invoker {
 	defer metrics.Publish(metricsRegistry.NewDirectoryEvent(metricsRegistry.NumDisableTotal))
+	dir.clearClosingTombstone(event.Key())
 	if clusterID := event.Service.GetParam(constant.MeshClusterIDKey, ""); event.Service.Location == constant.MeshAnyAddrMatcher && clusterID != "" {
 		dir.uncacheInvokerWithClusterID(clusterID)
 	}
@@ -474,6 +494,10 @@ func (dir *RegistryDirectory) RemoveClosingInstance(instanceKey string) bool {
 		dir.registerLock.Lock()
 		defer dir.registerLock.Unlock()
 
+		if cacheInvoker, ok := dir.cacheInvokersMap.Load(instanceKey); ok {
+			removed = cacheInvoker.(protocolbase.Invoker)
+		}
+		dir.markClosingTombstone(instanceKey, removed, "closing-event")
 		removed = dir.uncacheInvokerWithKey(instanceKey)
 		if removed != nil {
 			dir.setNewInvokers()
@@ -485,6 +509,57 @@ func (dir *RegistryDirectory) RemoveClosingInstance(instanceKey string) bool {
 		return true
 	}
 	return false
+}
+
+func (dir *RegistryDirectory) markClosingTombstone(instanceKey string, invoker protocolbase.Invoker, source string) {
+	if instanceKey == "" {
+		return
+	}
+
+	tombstone := closingTombstone{
+		InstanceKey: instanceKey,
+		Source:      source,
+		ExpireAt:    time.Now().Add(dir.closingTombstoneTTL),
+	}
+	if invoker != nil && invoker.GetURL() != nil {
+		tombstone.ServiceKey = invoker.GetURL().ServiceKey()
+		tombstone.Address = invoker.GetURL().Location
+	}
+	dir.closingTombstones.Store(instanceKey, tombstone)
+}
+
+func (dir *RegistryDirectory) hasActiveClosingTombstone(instanceKey string) bool {
+	if instanceKey == "" {
+		return false
+	}
+	tombstoneValue, ok := dir.closingTombstones.Load(instanceKey)
+	if !ok {
+		return false
+	}
+	tombstone := tombstoneValue.(closingTombstone)
+	if time.Now().After(tombstone.ExpireAt) {
+		dir.closingTombstones.Delete(instanceKey)
+		return false
+	}
+	return true
+}
+
+func (dir *RegistryDirectory) clearClosingTombstone(instanceKey string) {
+	if instanceKey == "" {
+		return
+	}
+	dir.closingTombstones.Delete(instanceKey)
+}
+
+func (dir *RegistryDirectory) cleanupExpiredClosingTombstones() {
+	now := time.Now()
+	dir.closingTombstones.Range(func(key, value any) bool {
+		tombstone := value.(closingTombstone)
+		if now.After(tombstone.ExpireAt) {
+			dir.closingTombstones.Delete(key)
+		}
+		return true
+	})
 }
 
 // cacheInvoker will return abandoned Invoker,if no Invoker to be abandoned,return nil
@@ -515,6 +590,11 @@ func (dir *RegistryDirectory) cacheInvoker(url *common.URL, event *registry.Serv
 
 func (dir *RegistryDirectory) doCacheInvoker(newUrl *common.URL, event *registry.ServiceEvent) (protocolbase.Invoker, bool) {
 	key := event.Key()
+	dir.cleanupExpiredClosingTombstones()
+	if dir.hasActiveClosingTombstone(key) {
+		logger.Infof("[Registry Directory] skip rebuilding closing instance due to tombstone, instance key: %s", key)
+		return nil, true
+	}
 	if cacheInvoker, ok := dir.cacheInvokersMap.Load(key); !ok {
 		logger.Debugf("service will be added in cache invokers: invokers url is  %s!", newUrl)
 		newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(newUrl)
