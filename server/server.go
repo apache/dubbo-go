@@ -288,6 +288,9 @@ func enhanceServiceInfo(info *common.ServiceInfo) *common.ServiceInfo {
 }
 
 func (s *Server) exportServices() error {
+	// add read lock to protect svcOptsMap data
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	for _, svcOpts := range s.svcOptsMap {
 		if err := svcOpts.Export(); err != nil {
 			logger.Errorf("export %s service failed, err: %s", svcOpts.Service.Interface, err)
