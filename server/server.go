@@ -105,9 +105,6 @@ func (s *Server) genSvcOpts(handler any, info *common.ServiceInfo, opts ...Servi
 	}
 	var svcOpts []ServiceOption
 
-	// add read lock for value copy and svcOpts to initialize.
-	s.mu.RLock()
-	defer s.mu.RUnlock()
 	appCfg := s.cfg.Application
 	proCfg := s.cfg.Provider
 	prosCfg := s.cfg.Protocols
@@ -349,12 +346,10 @@ func (s *Server) Serve() error {
 func (s *Server) exportInternalServices() error {
 	cfg := &ServiceOptions{}
 
-	s.mu.RLock()
 	cfg.Application = s.cfg.Application
 	cfg.Provider = s.cfg.Provider
 	cfg.Protocols = s.cfg.Protocols
 	cfg.Registries = s.cfg.Registries
-	s.mu.RUnlock()
 
 	services := make([]*InternalService, 0, len(internalProServices))
 
