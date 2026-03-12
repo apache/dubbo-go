@@ -77,10 +77,10 @@ func gracefulShutdownInit() {
 
 		go func() {
 			sig := <-signals
-			logger.Infof("get signal %s, applicationConfig will shutdown.", sig)
+			logger.Infof("Received signal: %v, application is shutting down gracefully", sig)
 			// gracefulShutdownOnce.Do(func() {
 			time.AfterFunc(totalTimeout(), func() {
-				logger.Warn("Shutdown gracefully timeout, applicationConfig will shutdown immediately. ")
+				logger.Warn("Graceful shutdown timeout, application will shutdown immediately")
 				os.Exit(0)
 			})
 			BeforeShutdown()
