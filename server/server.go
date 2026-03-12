@@ -104,10 +104,15 @@ func (s *Server) genSvcOpts(handler any, info *common.ServiceInfo, opts ...Servi
 		return nil, errors.New("Server has not been initialized, please use NewServer() to create Server")
 	}
 	var svcOpts []ServiceOption
+
+	// add read lock for value copy and svcOpts to initialize.
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	appCfg := s.cfg.Application
 	proCfg := s.cfg.Provider
 	prosCfg := s.cfg.Protocols
 	regsCfg := s.cfg.Registries
+
 	// todo(DMwangnima): record the registered service
 	// Record the registered service for debugging and monitoring
 	interfaceName := common.GetReference(handler)
@@ -116,7 +121,7 @@ func (s *Server) genSvcOpts(handler any, info *common.ServiceInfo, opts ...Servi
 	newSvcOpts := defaultServiceOptions()
 	if appCfg != nil {
 		svcOpts = append(svcOpts,
-			SetApplication(s.cfg.Application),
+			SetApplication(appCfg),
 		)
 	}
 	if proCfg != nil {
@@ -343,10 +348,13 @@ func (s *Server) Serve() error {
 // In order to expose internal services
 func (s *Server) exportInternalServices() error {
 	cfg := &ServiceOptions{}
+
+	s.mu.RLock()
 	cfg.Application = s.cfg.Application
 	cfg.Provider = s.cfg.Provider
 	cfg.Protocols = s.cfg.Protocols
 	cfg.Registries = s.cfg.Registries
+	s.mu.RUnlock()
 
 	services := make([]*InternalService, 0, len(internalProServices))
 
