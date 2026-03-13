@@ -153,11 +153,7 @@ func beforeShutdown(shutdown *global.ShutdownConfig) {
 	destroyProtocols()
 
 	// 7. execute custom callbacks
-	logger.Info("Graceful shutdown --- Execute the custom callbacks.")
-	customCallbacks := extension.GetAllCustomShutdownCallbacks()
-	for callback := customCallbacks.Front(); callback != nil; callback = callback.Next() {
-		callback.Value.(func())()
-	}
+	executeCustomShutdownCallbacks()
 }
 
 // destroyRegistries destroys RegistryProtocol directly.
@@ -172,14 +168,18 @@ func notifyLongConnectionConsumers() {
 	logger.Info("Graceful shutdown --- Notify long connection consumers.")
 
 	notifyTimeout := 3 * time.Second
-	ctx, cancel := context.WithTimeout(context.Background(), notifyTimeout)
-	defer cancel()
-
 	callbacks := extension.GetAllGracefulShutdownCallbacks()
-
+	var wg sync.WaitGroup
 	for name, callback := range callbacks {
-		notifyWithRetry(ctx, name, callback)
+		wg.Add(1)
+		go func(name string, callback extension.GracefulShutdownCallback) {
+			defer wg.Done()
+			ctx, cancel := context.WithTimeout(context.Background(), notifyTimeout)
+			defer cancel()
+			notifyWithRetry(ctx, name, callback)
+		}(name, callback)
 	}
+	wg.Wait()
 }
 
 // notifyWithRetry notifies with exponential backoff retry
@@ -287,10 +287,26 @@ func waitingConsumerProcessedTimeout(shutdown *global.ShutdownConfig) {
 func destroyProtocols() {
 	logger.Info("Graceful shutdown --- Destroy protocols. ")
 
-	proMu.Lock()
-	// extension.GetProtocol might panic
-	defer proMu.Unlock()
-	for name := range protocols {
+	for _, name := range registeredProtocolsSnapshot() {
 		extension.GetProtocol(name).Destroy()
+	}
+}
+
+func registeredProtocolsSnapshot() []string {
+	proMu.Lock()
+	defer proMu.Unlock()
+
+	names := make([]string, 0, len(protocols))
+	for name := range protocols {
+		names = append(names, name)
+	}
+	return names
+}
+
+func executeCustomShutdownCallbacks() {
+	logger.Info("Graceful shutdown --- Execute the custom callbacks.")
+	customCallbacks := extension.GetAllCustomShutdownCallbacks()
+	for callback := customCallbacks.Front(); callback != nil; callback = callback.Next() {
+		callback.Value.(func())()
 	}
 }

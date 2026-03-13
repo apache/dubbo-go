@@ -19,7 +19,9 @@ package graceful_shutdown
 
 import (
 	"context"
+	"errors"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -30,6 +32,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
@@ -41,6 +44,36 @@ import (
 // MockFilter implements filter.Filter and config.Setter for testing
 type MockFilter struct {
 	mock.Mock
+}
+
+type testProtocol struct {
+	destroy func()
+}
+
+func (p *testProtocol) Export(invoker base.Invoker) base.Exporter {
+	return nil
+}
+
+func (p *testProtocol) Refer(url *common.URL) base.Invoker {
+	return nil
+}
+
+func (p *testProtocol) Destroy() {
+	if p.destroy != nil {
+		p.destroy()
+	}
+}
+
+func getProtocolIfPresent(name string) (protocol base.Protocol, ok bool) {
+	defer func() {
+		if recover() != nil {
+			protocol = nil
+			ok = false
+		}
+	}()
+	protocol = extension.GetProtocol(name)
+	ok = protocol != nil
+	return protocol, ok
 }
 
 func (m *MockFilter) Set(key string, value any) {
@@ -189,4 +222,158 @@ func TestWaitForSendingAndReceivingRequests(t *testing.T) {
 
 	// Should return immediately
 	assert.Less(t, elapsed, 50*time.Millisecond)
+}
+
+func TestNotifyLongConnectionConsumersUsesIndependentTimeouts(t *testing.T) {
+	firstName := "shutdown-timeout-first"
+	secondName := "shutdown-timeout-second"
+
+	originalFirst, firstExists := extension.GetGracefulShutdownCallback(firstName)
+	originalSecond, secondExists := extension.GetGracefulShutdownCallback(secondName)
+	t.Cleanup(func() {
+		if firstExists {
+			extension.SetGracefulShutdownCallback(firstName, originalFirst)
+		} else {
+			extension.SetGracefulShutdownCallback(firstName, func(context.Context) error { return nil })
+		}
+		if secondExists {
+			extension.SetGracefulShutdownCallback(secondName, originalSecond)
+		} else {
+			extension.SetGracefulShutdownCallback(secondName, func(context.Context) error { return nil })
+		}
+	})
+
+	var secondCalled atomic.Bool
+	extension.SetGracefulShutdownCallback(firstName, func(ctx context.Context) error {
+		<-ctx.Done()
+		return ctx.Err()
+	})
+	extension.SetGracefulShutdownCallback(secondName, func(ctx context.Context) error {
+		secondCalled.Store(true)
+		return nil
+	})
+
+	notifyLongConnectionConsumers()
+
+	assert.True(t, secondCalled.Load())
+}
+
+func TestNotifyLongConnectionConsumersRunsCallbacksInParallel(t *testing.T) {
+	firstName := "shutdown-parallel-first"
+	secondName := "shutdown-parallel-second"
+
+	originalFirst, firstExists := extension.GetGracefulShutdownCallback(firstName)
+	originalSecond, secondExists := extension.GetGracefulShutdownCallback(secondName)
+	t.Cleanup(func() {
+		if firstExists {
+			extension.SetGracefulShutdownCallback(firstName, originalFirst)
+		} else {
+			extension.SetGracefulShutdownCallback(firstName, func(context.Context) error { return nil })
+		}
+		if secondExists {
+			extension.SetGracefulShutdownCallback(secondName, originalSecond)
+		} else {
+			extension.SetGracefulShutdownCallback(secondName, func(context.Context) error { return nil })
+		}
+	})
+
+	started := make(chan struct{}, 2)
+	release := make(chan struct{})
+	extension.SetGracefulShutdownCallback(firstName, func(ctx context.Context) error {
+		started <- struct{}{}
+		select {
+		case <-release:
+			return nil
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	})
+	extension.SetGracefulShutdownCallback(secondName, func(ctx context.Context) error {
+		started <- struct{}{}
+		select {
+		case <-release:
+			return nil
+		case <-ctx.Done():
+			return errors.New("unexpected timeout")
+		}
+	})
+
+	done := make(chan struct{})
+	go func() {
+		notifyLongConnectionConsumers()
+		close(done)
+	}()
+
+	for i := 0; i < 2; i++ {
+		select {
+		case <-started:
+		case <-time.After(time.Second):
+			t.Fatal("callbacks did not start in parallel")
+		}
+	}
+	close(release)
+
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("notifyLongConnectionConsumers did not finish")
+	}
+}
+
+func TestBeforeShutdownNotifiesProtocolsBeforeDestroy(t *testing.T) {
+	initOnce = sync.Once{}
+	protocols = make(map[string]struct{})
+	proMu = sync.Mutex{}
+
+	events := make([]string, 0, 3)
+	var eventsMu sync.Mutex
+	record := func(event string) {
+		eventsMu.Lock()
+		defer eventsMu.Unlock()
+		events = append(events, event)
+	}
+
+	originalRegistryProtocol, registryProtocolExists := getProtocolIfPresent(constant.RegistryProtocol)
+	extension.SetProtocol(constant.RegistryProtocol, func() base.Protocol {
+		return &testProtocol{destroy: func() { record("destroy-registry") }}
+	})
+	t.Cleanup(func() {
+		if registryProtocolExists {
+			extension.SetProtocol(constant.RegistryProtocol, func() base.Protocol { return originalRegistryProtocol })
+			return
+		}
+		extension.UnregisterProtocol(constant.RegistryProtocol)
+	})
+
+	testProtocolName := "shutdown-order-test-protocol"
+	extension.SetProtocol(testProtocolName, func() base.Protocol {
+		return &testProtocol{destroy: func() { record("destroy-protocol") }}
+	})
+	t.Cleanup(func() {
+		extension.UnregisterProtocol(testProtocolName)
+	})
+
+	originalCallback, callbackExists := extension.GetGracefulShutdownCallback(testProtocolName)
+	extension.SetGracefulShutdownCallback(testProtocolName, func(ctx context.Context) error {
+		record("notify-protocol")
+		return nil
+	})
+	t.Cleanup(func() {
+		if callbackExists {
+			extension.SetGracefulShutdownCallback(testProtocolName, originalCallback)
+		}
+	})
+
+	RegisterProtocol(testProtocolName)
+
+	config := global.DefaultShutdownConfig()
+	config.ConsumerUpdateWaitTime = "0s"
+	config.StepTimeout = "0s"
+	config.OfflineRequestWindowTimeout = "0s"
+	config.ProviderActiveCount.Store(0)
+	config.ConsumerActiveCount.Store(0)
+
+	beforeShutdown(config)
+
+	assert.Equal(t, []string{"destroy-registry", "notify-protocol", "destroy-protocol"}, events)
 }
