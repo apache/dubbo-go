@@ -36,8 +36,10 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	gracefulshutdown "dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
+	grpc_health_v1 "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 var errNoReply = errors.New("request need @response")
@@ -49,15 +51,18 @@ type GrpcInvoker struct {
 	quitOnce    sync.Once
 	clientGuard *sync.RWMutex
 	client      *Client
+	watchCancel context.CancelFunc
 }
 
 // NewGrpcInvoker returns a Grpc invoker instance
 func NewGrpcInvoker(url *common.URL, client *Client) *GrpcInvoker {
-	return &GrpcInvoker{
+	invoker := &GrpcInvoker{
 		BaseInvoker: *base.NewBaseInvoker(url),
 		clientGuard: &sync.RWMutex{},
 		client:      client,
 	}
+	invoker.startHealthWatch(gracefulshutdown.DefaultClosingEventHandler())
+	return invoker
 }
 
 func (gi *GrpcInvoker) setClient(client *Client) {
@@ -148,11 +153,66 @@ func (gi *GrpcInvoker) IsDestroyed() bool {
 // Destroy will destroy gRPC's invoker and client, so it is only called once
 func (gi *GrpcInvoker) Destroy() {
 	gi.quitOnce.Do(func() {
+		if gi.watchCancel != nil {
+			gi.watchCancel()
+		}
 		gi.BaseInvoker.Destroy()
 		client := gi.getClient()
 		if client != nil {
 			gi.setClient(nil)
 			client.Close()
 		}
+	})
+}
+
+func (gi *GrpcInvoker) startHealthWatch(handler gracefulshutdown.ClosingEventHandler) {
+	if handler == nil || gi.GetURL() == nil || gi.GetURL().ServiceKey() == "" || gi.GetURL().Interface() == "" {
+		return
+	}
+
+	client := gi.getClient()
+	if client == nil {
+		return
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	gi.watchCancel = cancel
+
+	go func() {
+		healthClient := grpc_health_v1.NewHealthClient(client.ClientConn)
+		stream, err := healthClient.Watch(ctx, &grpc_health_v1.HealthCheckRequest{Service: gi.GetURL().ServiceKey()})
+		if err != nil {
+			logger.Debugf("[GRPC Protocol] health watch start failed for %s: %v", gi.GetURL().String(), err)
+			return
+		}
+
+		for {
+			resp, recvErr := stream.Recv()
+			if recvErr != nil {
+				if ctx.Err() == nil {
+					logger.Debugf("[GRPC Protocol] health watch recv failed for %s: %v", gi.GetURL().String(), recvErr)
+				}
+				return
+			}
+			if gi.handleHealthStatus(resp.GetStatus(), handler) {
+				return
+			}
+		}
+	}()
+}
+
+func (gi *GrpcInvoker) handleHealthStatus(status grpc_health_v1.HealthCheckResponse_ServingStatus, handler gracefulshutdown.ClosingEventHandler) bool {
+	if handler == nil || gi.GetURL() == nil {
+		return false
+	}
+	if status != grpc_health_v1.HealthCheckResponse_NOT_SERVING {
+		return false
+	}
+
+	return handler.HandleClosingEvent(gracefulshutdown.ClosingEvent{
+		Source:      "grpc-health-watch",
+		InstanceKey: gi.GetURL().GetCacheInvokerMapKey(),
+		ServiceKey:  gi.GetURL().ServiceKey(),
+		Address:     gi.GetURL().Location,
 	})
 }

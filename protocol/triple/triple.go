@@ -60,13 +60,14 @@ func init() {
 			return nil
 		}
 
-		tp.serverLock.Lock()
-		defer tp.serverLock.Unlock()
-
-		// call GracefulStop on all servers
-		for _, server := range tp.serverMap {
-			server.GracefulStop()
-		}
+		tp.ExporterMap().Range(func(key, value any) bool {
+			serviceKey, ok := key.(string)
+			if !ok || serviceKey == "" {
+				return true
+			}
+			internal.HealthSetServingStatusNotServing(serviceKey)
+			return true
+		})
 
 		return nil
 	})
@@ -91,7 +92,7 @@ func (tp *TripleProtocol) Export(invoker base.Invoker) base.Exporter {
 	tp.SetExporterMap(serviceKey, exporter)
 	logger.Infof("[TRIPLE Protocol] Export service: %s", url.String())
 	tp.openServer(invoker, info)
-	internal.HealthSetServingStatusServing(url.Service())
+	internal.HealthSetServingStatusServing(serviceKey)
 	return exporter
 }
 
