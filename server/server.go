@@ -38,6 +38,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/dubboutil"
 	"dubbo.apache.org/dubbo-go/v3/metadata"
+	"dubbo.apache.org/dubbo-go/v3/metrics/probe"
 	"dubbo.apache.org/dubbo-go/v3/registry/exposed_tmp"
 )
 
@@ -339,6 +340,11 @@ func (s *Server) Serve() error {
 	if err := exposed_tmp.RegisterServiceInstance(); err != nil {
 		return err
 	}
+
+	// k8s probe ready
+	probe.SetStartupComplete(true)
+	probe.SetReady(true)
+
 	select {}
 }
 

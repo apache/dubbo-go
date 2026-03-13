@@ -379,6 +379,21 @@ func compatMetricConfig(c *global.MetricsConfig) *config.MetricsConfig {
 		EnableMetadata:     c.EnableMetadata,
 		EnableRegistry:     c.EnableRegistry,
 		EnableConfigCenter: c.EnableConfigCenter,
+		Probe:              compatMetricProbeConfig(c.Probe),
+	}
+}
+
+func compatMetricProbeConfig(c *global.ProbeConfig) *config.ProbeConfig {
+	if c == nil {
+		return nil
+	}
+	return &config.ProbeConfig{
+		Enabled:          c.Enabled,
+		Port:             c.Port,
+		LivenessPath:     c.LivenessPath,
+		ReadinessPath:    c.ReadinessPath,
+		StartupPath:      c.StartupPath,
+		UseInternalState: c.UseInternalState,
 	}
 }
 
@@ -916,6 +931,21 @@ func compatGlobalMetricConfig(c *config.MetricsConfig) *global.MetricsConfig {
 		EnableMetadata:     c.EnableMetadata,
 		EnableRegistry:     c.EnableRegistry,
 		EnableConfigCenter: c.EnableConfigCenter,
+		Probe:              compatGlobalMetricProbeConfig(c.Probe),
+	}
+}
+
+func compatGlobalMetricProbeConfig(c *config.ProbeConfig) *global.ProbeConfig {
+	if c == nil {
+		return nil
+	}
+	return &global.ProbeConfig{
+		Enabled:          c.Enabled,
+		Port:             c.Port,
+		LivenessPath:     c.LivenessPath,
+		ReadinessPath:    c.ReadinessPath,
+		StartupPath:      c.StartupPath,
+		UseInternalState: c.UseInternalState,
 	}
 }
 
