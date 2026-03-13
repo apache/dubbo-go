@@ -18,6 +18,10 @@
 package etcdv3
 
 import (
+	"context"
+)
+
+import (
 	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
 	"github.com/dubbogo/gost/log/logger"
 
@@ -36,7 +40,7 @@ func ValidateClient(container clientFacade, opts ...gxetcd.Option) error {
 
 	// new Client
 	if container.Client() == nil {
-		newClient, err := gxetcd.NewClient(options.Name, options.Endpoints, options.Timeout, options.Heartbeat)
+		newClient, err := gxetcd.NewClientWithOptions(context.Background(), options)
 		if err != nil {
 			logger.Warnf("new etcd client (name{%s}, etcd addresses{%v}, timeout{%s}) = error{%v}",
 				options.Name, options.Endpoints, options.Timeout.String(), err)
@@ -47,7 +51,7 @@ func ValidateClient(container clientFacade, opts ...gxetcd.Option) error {
 
 	// Client lose connection with etcd server
 	if container.Client().GetRawClient() == nil {
-		newClient, err := gxetcd.NewClient(options.Name, options.Endpoints, options.Timeout, options.Heartbeat)
+		newClient, err := gxetcd.NewClientWithOptions(context.Background(), options)
 		if err != nil {
 			logger.Warnf("new etcd client (name{%s}, etcd addresses{%v}, timeout{%s}) = error{%v}",
 				options.Name, options.Endpoints, options.Timeout.String(), err)
@@ -68,7 +72,7 @@ func NewServiceDiscoveryClient(opts ...gxetcd.Option) *gxetcd.Client {
 		opt(options)
 	}
 
-	newClient, err := gxetcd.NewClient(options.Name, options.Endpoints, options.Timeout, options.Heartbeat)
+	newClient, err := gxetcd.NewClientWithOptions(context.Background(), options)
 	if err != nil {
 		logger.Errorf("new etcd client (name{%s}, etcd addresses{%v}, timeout{%s}) = error{%v}",
 			options.Name, options.Endpoints, options.Timeout.String(), err)
