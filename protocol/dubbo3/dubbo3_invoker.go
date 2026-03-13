@@ -71,11 +71,16 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 		rt              string
 		consumerService any
 	)
-	rt = global.DefaultConsumerConfig().RequestTimeout
-	if consumerConfRaw, ok := url.GetAttribute(constant.ConsumerConfigKey); ok {
-		if consumerConf, ok := consumerConfRaw.(*global.ConsumerConfig); ok {
-			rt = consumerConf.RequestTimeout
+	rt = url.GetParam(constant.TimeoutKey, "")
+	if rt == "" {
+		if consumerConfRaw, ok := url.GetAttribute(constant.ConsumerConfigKey); ok {
+			if consumerConf, ok := consumerConfRaw.(*global.ConsumerConfig); ok && consumerConf.RequestTimeout != "" {
+				rt = consumerConf.RequestTimeout
+			}
 		}
+	}
+	if rt == "" {
+		rt = global.DefaultConsumerConfig().RequestTimeout
 	}
 	timeout := url.GetParamDuration(constant.TimeoutKey, rt)
 	// for triple pb serialization. The bean name from provider is the provider reference key,
