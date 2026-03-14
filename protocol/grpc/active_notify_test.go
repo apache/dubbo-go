@@ -18,16 +18,25 @@
 package grpc
 
 import (
+	"fmt"
+	"net"
+	"sync"
 	"testing"
+	"time"
 )
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	grpcgo "google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	grpc_health "google.golang.org/grpc/health"
 	grpc_health_v1 "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	gracefulshutdown "dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
@@ -72,4 +81,57 @@ func TestGrpcServerSetAllServicesNotServing(t *testing.T) {
 	assert.NoError(t, errB)
 	assert.Equal(t, grpc_health_v1.HealthCheckResponse_NOT_SERVING, respA.GetStatus())
 	assert.Equal(t, grpc_health_v1.HealthCheckResponse_NOT_SERVING, respB.GetStatus())
+}
+
+func TestGrpcHealthWatchEmitsClosingEvent(t *testing.T) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	defer listener.Close()
+
+	serviceKey := common.ServiceKey(constant.HealthCheckServiceInterface, "group", "1.0.0")
+	healthServer := grpc_health.NewServer()
+	healthServer.SetServingStatus(serviceKey, grpc_health_v1.HealthCheckResponse_SERVING)
+
+	server := grpcgo.NewServer()
+	grpc_health_v1.RegisterHealthServer(server, healthServer)
+	go func() {
+		_ = server.Serve(listener)
+	}()
+	defer server.Stop()
+
+	url, err := common.NewURL(fmt.Sprintf(
+		"grpc://%s/%s?interface=%s&group=group&version=1.0.0",
+		listener.Addr().String(),
+		constant.HealthCheckServiceInterface,
+		constant.HealthCheckServiceInterface,
+	))
+	require.NoError(t, err)
+
+	conn, err := grpcgo.Dial(
+		listener.Addr().String(),
+		grpcgo.WithTransportCredentials(insecure.NewCredentials()),
+		grpcgo.WithBlock(),
+		grpcgo.WithTimeout(3*time.Second),
+	)
+	require.NoError(t, err)
+	defer conn.Close()
+
+	invoker := &GrpcInvoker{
+		BaseInvoker: *base.NewBaseInvoker(url),
+		clientGuard: &sync.RWMutex{},
+		client:      &Client{ClientConn: conn},
+	}
+	handler := &testClosingEventHandler{}
+	invoker.startHealthWatch(handler)
+	defer invoker.Destroy()
+
+	healthServer.SetServingStatus(serviceKey, grpc_health_v1.HealthCheckResponse_NOT_SERVING)
+
+	require.Eventually(t, func() bool {
+		return len(handler.events) == 1
+	}, 3*time.Second, 20*time.Millisecond)
+
+	assert.Equal(t, "grpc-health-watch", handler.events[0].Source)
+	assert.Equal(t, url.GetCacheInvokerMapKey(), handler.events[0].InstanceKey)
+	assert.Equal(t, serviceKey, handler.events[0].ServiceKey)
 }

@@ -18,17 +18,25 @@
 package triple
 
 import (
+	"context"
+	"fmt"
+	"net"
+	"sync"
 	"testing"
+	"time"
 )
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	gracefulshutdown "dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	grpc_health_v1 "google.golang.org/grpc/health/grpc_health_v1"
 )
 
@@ -57,4 +65,89 @@ func TestTripleInvokerHandleHealthStatusNotServing(t *testing.T) {
 		assert.Equal(t, url.GetCacheInvokerMapKey(), handler.events[0].InstanceKey)
 		assert.Equal(t, url.ServiceKey(), handler.events[0].ServiceKey)
 	}
+}
+
+func TestTripleHealthWatchEmitsClosingEvent(t *testing.T) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	addr := listener.Addr().String()
+	_ = listener.Close()
+
+	serviceKey := common.ServiceKey(constant.HealthCheckServiceInterface, "group", "1.0.0")
+	notServing := make(chan struct{})
+
+	server := tri.NewServer(addr, nil)
+	err = server.RegisterServerStreamHandler(
+		"/grpc.health.v1.Health/Watch",
+		func() any { return new(grpc_health_v1.HealthCheckRequest) },
+		func(ctx context.Context, req *tri.Request, stream *tri.ServerStream) error {
+			request, ok := req.Msg.(*grpc_health_v1.HealthCheckRequest)
+			if !ok {
+				return fmt.Errorf("unexpected request type %T", req.Msg)
+			}
+			if request.GetService() != serviceKey {
+				return fmt.Errorf("unexpected service %s", request.GetService())
+			}
+			if err := stream.Send(&grpc_health_v1.HealthCheckResponse{
+				Status: grpc_health_v1.HealthCheckResponse_SERVING,
+			}); err != nil {
+				return err
+			}
+			select {
+			case <-notServing:
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+			return stream.Send(&grpc_health_v1.HealthCheckResponse{
+				Status: grpc_health_v1.HealthCheckResponse_NOT_SERVING,
+			})
+		},
+	)
+	require.NoError(t, err)
+
+	go func() {
+		_ = server.Run(constant.CallHTTP2, nil)
+	}()
+	defer func() {
+		_ = server.Stop()
+	}()
+
+	require.Eventually(t, func() bool {
+		conn, dialErr := net.DialTimeout("tcp", addr, 100*time.Millisecond)
+		if dialErr != nil {
+			return false
+		}
+		_ = conn.Close()
+		return true
+	}, 3*time.Second, 20*time.Millisecond)
+
+	url, err := common.NewURL(fmt.Sprintf(
+		"tri://%s/%s?interface=%s&group=group&version=1.0.0&timeout=1s",
+		addr,
+		constant.HealthCheckServiceInterface,
+		constant.HealthCheckServiceInterface,
+	))
+	require.NoError(t, err)
+
+	cm, err := newClientManager(url)
+	require.NoError(t, err)
+	invoker := &TripleInvoker{
+		BaseInvoker:   *base.NewBaseInvoker(url),
+		clientGuard:   &sync.RWMutex{},
+		clientManager: cm,
+	}
+	defer invoker.Destroy()
+
+	handler := &testTripleClosingEventHandler{}
+	invoker.startHealthWatch(handler)
+
+	close(notServing)
+
+	require.Eventually(t, func() bool {
+		return len(handler.events) == 1
+	}, 3*time.Second, 20*time.Millisecond)
+
+	assert.Equal(t, "triple-health-watch", handler.events[0].Source)
+	assert.Equal(t, url.GetCacheInvokerMapKey(), handler.events[0].InstanceKey)
+	assert.Equal(t, serviceKey, handler.events[0].ServiceKey)
 }
