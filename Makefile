@@ -37,9 +37,8 @@ help:
 
 # Run unit tests
 test: clean
-	go env -w GOTOOLCHAIN=go1.25.0+auto
-	go test ./... -coverprofile=coverage.txt -covermode=atomic
-	cd $(CLI_DIR) && go test ./...
+	GOTOOLCHAIN=go1.25.0+auto go test ./... -coverprofile=coverage.txt -covermode=atomic
+	cd $(CLI_DIR) && GOTOOLCHAIN=go1.25.0+auto go test ./...
 
 fmt: install-imports-formatter
 	# replace interface{} with any
