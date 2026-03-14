@@ -77,8 +77,52 @@ func TestClosingEventHandlerDispatchesByServiceKey(t *testing.T) {
 func TestClosingEventHandlerRejectsIncompleteEvent(t *testing.T) {
 	registry := newClosingDirectoryRegistry()
 	handler := &closingEventHandler{registry: registry}
+	defaultClosingAckTracker.reset()
 
 	assert.False(t, handler.HandleClosingEvent(ClosingEvent{}))
 	assert.False(t, handler.HandleClosingEvent(ClosingEvent{ServiceKey: "svc"}))
 	assert.False(t, handler.HandleClosingEvent(ClosingEvent{InstanceKey: "instance"}))
+}
+
+func TestClosingEventHandlerRecordsActiveAckStats(t *testing.T) {
+	registry := newClosingDirectoryRegistry()
+	handler := &closingEventHandler{registry: registry}
+	defaultClosingAckTracker.reset()
+
+	remover := &testClosingInstanceRemover{result: true}
+	registry.Register("org.apache.dubbo-go.TargetService:1.0.0", remover)
+
+	assert.True(t, handler.HandleClosingEvent(ClosingEvent{
+		Source:      "grpc-health-watch",
+		ServiceKey:  "org.apache.dubbo-go.TargetService:1.0.0",
+		InstanceKey: "target-instance",
+		Address:     "127.0.0.1:20000",
+	}))
+
+	stats := DefaultClosingAckStats()
+	assert.Equal(t, ClosingAckStats{
+		Received: 1,
+		Removed:  1,
+		Missed:   0,
+	}, stats["grpc-health-watch"])
+}
+
+func TestClosingEventHandlerRecordsActiveAckMisses(t *testing.T) {
+	registry := newClosingDirectoryRegistry()
+	handler := &closingEventHandler{registry: registry}
+	defaultClosingAckTracker.reset()
+
+	assert.False(t, handler.HandleClosingEvent(ClosingEvent{
+		Source:      "triple-health-watch",
+		ServiceKey:  "org.apache.dubbo-go.TargetService:1.0.0",
+		InstanceKey: "missing-instance",
+		Address:     "127.0.0.1:20000",
+	}))
+
+	stats := DefaultClosingAckStats()
+	assert.Equal(t, ClosingAckStats{
+		Received: 1,
+		Removed:  0,
+		Missed:   1,
+	}, stats["triple-health-watch"])
 }

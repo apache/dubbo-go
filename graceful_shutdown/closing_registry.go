@@ -21,12 +21,15 @@ import (
 	"reflect"
 	"sync"
 
+	"github.com/dubbogo/gost/log/logger"
+
 	clusterdirectory "dubbo.apache.org/dubbo-go/v3/cluster/directory"
 )
 
+// implement ClosingDirectoryRegistry
 type closingDirectoryRegistry struct {
-	mu       sync.RWMutex
-	removers map[string]map[uintptr]clusterdirectory.ClosingInstanceRemover
+	mu       sync.RWMutex                                                   // protects removers
+	removers map[string]map[uintptr]clusterdirectory.ClosingInstanceRemover // serviceKey -> removerKey -> remover
 }
 
 type closingEventHandler struct {
@@ -121,6 +124,7 @@ func (r *closingDirectoryRegistry) Find(serviceKey string) []clusterdirectory.Cl
 
 func (h *closingEventHandler) HandleClosingEvent(event ClosingEvent) bool {
 	if h.registry == nil || event.InstanceKey == "" || event.ServiceKey == "" {
+		defaultClosingAckTracker.record(event, false)
 		return false
 	}
 
@@ -128,6 +132,17 @@ func (h *closingEventHandler) HandleClosingEvent(event ClosingEvent) bool {
 	for _, remover := range h.registry.Find(event.ServiceKey) {
 		if remover.RemoveClosingInstance(event.InstanceKey) {
 			removed = true
+		}
+	}
+
+	defaultClosingAckTracker.record(event, removed)
+	if isActiveClosingSource(event.Source) {
+		if removed {
+			logger.Infof("Graceful shutdown --- Active closing ack handled, source=%s service=%s address=%s instance=%s",
+				event.Source, event.ServiceKey, event.Address, event.InstanceKey)
+		} else {
+			logger.Warnf("Graceful shutdown --- Active closing ack missed local directory, source=%s service=%s address=%s instance=%s",
+				event.Source, event.ServiceKey, event.Address, event.InstanceKey)
 		}
 	}
 	return removed
