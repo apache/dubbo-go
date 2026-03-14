@@ -135,7 +135,6 @@ func (rc *RootConfig) Init() error {
 			return err
 		}
 	}
-
 	if err := rc.Application.Init(); err != nil {
 		return err
 	}
@@ -175,6 +174,7 @@ func (rc *RootConfig) Init() error {
 	if err := rc.MetadataReport.Init(rc); err != nil {
 		return err
 	}
+
 	if err := rc.Otel.Init(rc.Application); err != nil {
 		return err
 	}
@@ -189,6 +189,7 @@ func (rc *RootConfig) Init() error {
 	if err := initRouterConfig(rc); err != nil {
 		return err
 	}
+
 	// provider、consumer must last init
 	if err := rc.Provider.Init(rc); err != nil {
 		return err
@@ -208,6 +209,7 @@ func (rc *RootConfig) Init() error {
 func (rc *RootConfig) Start() {
 	startOnce.Do(func() {
 		gracefulShutdownInit()
+
 		rc.Consumer.Load()
 		rc.Provider.Load()
 		if err := initMetadata(rc); err != nil {

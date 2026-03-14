@@ -47,6 +47,30 @@ var (
 
 func init() {
 	extension.SetProtocol(TRIPLE, GetProtocol)
+
+	// register graceful shutdown callback
+	extension.SetGracefulShutdownCallback(TRIPLE, func(ctx context.Context) error {
+		tp := GetProtocol()
+		if tp == nil {
+			return nil
+		}
+
+		var ok bool
+		tripleProtocol = tp.(*TripleProtocol)
+		if !ok {
+			return nil
+		}
+
+		tripleProtocol.serverLock.Lock()
+		defer tripleProtocol.serverLock.Unlock()
+
+		// call GracefulStop on all servers
+		for _, server := range tripleProtocol.serverMap {
+			server.GracefulStop()
+		}
+
+		return nil
+	})
 }
 
 type TripleProtocol struct {

@@ -19,35 +19,41 @@ package extension
 
 import (
 	"container/list"
+	"context"
 )
 
-var customShutdownCallbacks = list.New()
+// GracefulShutdownCallback is the callback for graceful shutdown
+// name: protocol name such as "grpc", "tri", "dubbo"
+// returns error if notify failed
+type GracefulShutdownCallback func(ctx context.Context) error
 
-/**
- * AddCustomShutdownCallback
- * you should not make any assumption about the order.
- * For example, if you have more than one callbacks, and you wish the order is:
- * callback1()
- * callback2()
- * ...
- * callbackN()
- * Then you should put then together:
- * func callback() {
- *     callback1()
- *     callback2()
- *     ...
- *     callbackN()
- * }
- * I think the order of custom callbacks should be decided by the users.
- * Even though I can design a mechanism to support the ordered custom callbacks,
- * the benefit of that mechanism is low.
- * And it may introduce much complication for another users.
- */
+var (
+	customShutdownCallbacks   = list.New()
+	gracefulShutdownCallbacks = make(map[string]GracefulShutdownCallback)
+)
+
+// AddCustomShutdownCallback adds custom shutdown callback
 func AddCustomShutdownCallback(callback func()) {
 	customShutdownCallbacks.PushBack(callback)
 }
 
-// GetAllCustomShutdownCallbacks gets all custom shutdown callbacks
+// GetAllCustomShutdownCallbacks returns all custom shutdown callbacks
 func GetAllCustomShutdownCallbacks() *list.List {
 	return customShutdownCallbacks
+}
+
+// SetGracefulShutdownCallback sets protocol-level graceful shutdown callback
+func SetGracefulShutdownCallback(name string, f GracefulShutdownCallback) {
+	gracefulShutdownCallbacks[name] = f
+}
+
+// GetGracefulShutdownCallback returns protocol's graceful shutdown callback
+func GetGracefulShutdownCallback(name string) (GracefulShutdownCallback, bool) {
+	f, ok := gracefulShutdownCallbacks[name]
+	return f, ok
+}
+
+// GetAllGracefulShutdownCallbacks returns all protocol's graceful shutdown callbacks
+func GetAllGracefulShutdownCallbacks() map[string]GracefulShutdownCallback {
+	return gracefulShutdownCallbacks
 }
