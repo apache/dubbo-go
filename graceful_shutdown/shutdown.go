@@ -135,8 +135,8 @@ func beforeShutdown(shutdown *global.ShutdownConfig) {
 	logger.Info("Graceful shutdown --- Mark closing state.")
 	shutdown.Closing.Store(true)
 
-	// 2. destroy registries (fallback)
-	destroyRegistries()
+	// 2. unregister services from registries
+	unregisterRegistries()
 
 	// 3. notify long connection consumers
 	notifyLongConnectionConsumers()
@@ -157,14 +157,22 @@ func beforeShutdown(shutdown *global.ShutdownConfig) {
 	executeCustomShutdownCallbacks()
 }
 
-// destroyRegistries destroys RegistryProtocol directly.
-func destroyRegistries() {
-	logger.Info("Graceful shutdown --- Destroy all registriesConfig. ")
+// unregisterRegistries unregisters exported services from registries during graceful shutdown.
+// If the registry protocol does not expose a narrower unregister capability, it falls back to Destroy.
+func unregisterRegistries() {
+	logger.Info("Graceful shutdown --- Unregister exported services from registries.")
 	registryProtocol, ok := getProtocolSafely(constant.RegistryProtocol)
 	if !ok {
-		logger.Warnf("Graceful shutdown --- Registry protocol %s is not registered, skip destroying registries.", constant.RegistryProtocol)
+		logger.Warnf("Graceful shutdown --- Registry protocol %s is not registered, skip unregistering registries.", constant.RegistryProtocol)
 		return
 	}
+
+	if unregisterer, ok := registryProtocol.(protocolbase.RegistryUnregisterer); ok {
+		unregisterer.UnregisterRegistries()
+		return
+	}
+
+	logger.Warnf("Graceful shutdown --- Registry protocol %s does not support unregister-only shutdown, falling back to Destroy().", constant.RegistryProtocol)
 	registryProtocol.Destroy()
 }
 

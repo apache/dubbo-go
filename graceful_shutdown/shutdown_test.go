@@ -64,6 +64,17 @@ func (p *testProtocol) Destroy() {
 	}
 }
 
+type testRegistryProtocol struct {
+	testProtocol
+	unregister func()
+}
+
+func (p *testRegistryProtocol) UnregisterRegistries() {
+	if p.unregister != nil {
+		p.unregister()
+	}
+}
+
 func getProtocolIfPresent(name string) (protocol base.Protocol, ok bool) {
 	defer func() {
 		if recover() != nil {
@@ -335,7 +346,7 @@ func TestBeforeShutdownNotifiesProtocolsBeforeDestroy(t *testing.T) {
 
 	originalRegistryProtocol, registryProtocolExists := getProtocolIfPresent(constant.RegistryProtocol)
 	extension.SetProtocol(constant.RegistryProtocol, func() base.Protocol {
-		return &testProtocol{destroy: func() { record("destroy-registry") }}
+		return &testRegistryProtocol{unregister: func() { record("unregister-registry") }}
 	})
 	t.Cleanup(func() {
 		if registryProtocolExists {
@@ -375,10 +386,10 @@ func TestBeforeShutdownNotifiesProtocolsBeforeDestroy(t *testing.T) {
 
 	beforeShutdown(config)
 
-	assert.Equal(t, []string{"destroy-registry", "notify-protocol", "destroy-protocol"}, events)
+	assert.Equal(t, []string{"unregister-registry", "notify-protocol", "destroy-protocol"}, events)
 }
 
-func TestDestroyRegistriesSkipsMissingRegistryProtocol(t *testing.T) {
+func TestUnregisterRegistriesSkipsMissingRegistryProtocol(t *testing.T) {
 	originalRegistryProtocol, registryProtocolExists := getProtocolIfPresent(constant.RegistryProtocol)
 	extension.UnregisterProtocol(constant.RegistryProtocol)
 	t.Cleanup(func() {
@@ -388,8 +399,61 @@ func TestDestroyRegistriesSkipsMissingRegistryProtocol(t *testing.T) {
 	})
 
 	assert.NotPanics(t, func() {
-		destroyRegistries()
+		unregisterRegistries()
 	})
+}
+
+func TestUnregisterRegistriesPrefersUnregisterOnlyCapability(t *testing.T) {
+	originalRegistryProtocol, registryProtocolExists := getProtocolIfPresent(constant.RegistryProtocol)
+	defer func() {
+		if registryProtocolExists {
+			extension.SetProtocol(constant.RegistryProtocol, func() base.Protocol { return originalRegistryProtocol })
+			return
+		}
+		extension.UnregisterProtocol(constant.RegistryProtocol)
+	}()
+
+	called := make([]string, 0, 2)
+	extension.SetProtocol(constant.RegistryProtocol, func() base.Protocol {
+		return &testRegistryProtocol{
+			testProtocol: testProtocol{
+				destroy: func() {
+					called = append(called, "destroy")
+				},
+			},
+			unregister: func() {
+				called = append(called, "unregister")
+			},
+		}
+	})
+
+	unregisterRegistries()
+
+	assert.Equal(t, []string{"unregister"}, called)
+}
+
+func TestUnregisterRegistriesFallsBackToDestroy(t *testing.T) {
+	originalRegistryProtocol, registryProtocolExists := getProtocolIfPresent(constant.RegistryProtocol)
+	defer func() {
+		if registryProtocolExists {
+			extension.SetProtocol(constant.RegistryProtocol, func() base.Protocol { return originalRegistryProtocol })
+			return
+		}
+		extension.UnregisterProtocol(constant.RegistryProtocol)
+	}()
+
+	called := false
+	extension.SetProtocol(constant.RegistryProtocol, func() base.Protocol {
+		return &testProtocol{
+			destroy: func() {
+				called = true
+			},
+		}
+	})
+
+	unregisterRegistries()
+
+	assert.True(t, called)
 }
 
 func TestDestroyProtocolsSkipsMissingProtocol(t *testing.T) {
