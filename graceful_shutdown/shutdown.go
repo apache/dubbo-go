@@ -35,6 +35,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 const (
@@ -159,7 +160,11 @@ func beforeShutdown(shutdown *global.ShutdownConfig) {
 // destroyRegistries destroys RegistryProtocol directly.
 func destroyRegistries() {
 	logger.Info("Graceful shutdown --- Destroy all registriesConfig. ")
-	registryProtocol := extension.GetProtocol(constant.RegistryProtocol)
+	registryProtocol, ok := getProtocolSafely(constant.RegistryProtocol)
+	if !ok {
+		logger.Warnf("Graceful shutdown --- Registry protocol %s is not registered, skip destroying registries.", constant.RegistryProtocol)
+		return
+	}
 	registryProtocol.Destroy()
 }
 
@@ -288,7 +293,12 @@ func destroyProtocols() {
 	logger.Info("Graceful shutdown --- Destroy protocols. ")
 
 	for _, name := range registeredProtocolsSnapshot() {
-		extension.GetProtocol(name).Destroy()
+		protocol, ok := getProtocolSafely(name)
+		if !ok {
+			logger.Warnf("Graceful shutdown --- Protocol %s is not registered, skip destroying it.", name)
+			continue
+		}
+		protocol.Destroy()
 	}
 }
 
@@ -309,4 +319,16 @@ func executeCustomShutdownCallbacks() {
 	for callback := customCallbacks.Front(); callback != nil; callback = callback.Next() {
 		callback.Value.(func())()
 	}
+}
+
+func getProtocolSafely(name string) (protocol protocolbase.Protocol, ok bool) {
+	defer func() {
+		if recover() != nil {
+			protocol = nil
+			ok = false
+		}
+	}()
+	protocol = extension.GetProtocol(name)
+	ok = protocol != nil
+	return protocol, ok
 }

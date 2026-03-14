@@ -377,3 +377,26 @@ func TestBeforeShutdownNotifiesProtocolsBeforeDestroy(t *testing.T) {
 
 	assert.Equal(t, []string{"destroy-registry", "notify-protocol", "destroy-protocol"}, events)
 }
+
+func TestDestroyRegistriesSkipsMissingRegistryProtocol(t *testing.T) {
+	originalRegistryProtocol, registryProtocolExists := getProtocolIfPresent(constant.RegistryProtocol)
+	extension.UnregisterProtocol(constant.RegistryProtocol)
+	t.Cleanup(func() {
+		if registryProtocolExists {
+			extension.SetProtocol(constant.RegistryProtocol, func() base.Protocol { return originalRegistryProtocol })
+		}
+	})
+
+	assert.NotPanics(t, func() {
+		destroyRegistries()
+	})
+}
+
+func TestDestroyProtocolsSkipsMissingProtocol(t *testing.T) {
+	protocols = map[string]struct{}{"missing-shutdown-protocol": {}}
+	proMu = sync.Mutex{}
+
+	assert.NotPanics(t, func() {
+		destroyProtocols()
+	})
+}
