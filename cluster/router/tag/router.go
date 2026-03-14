@@ -52,8 +52,8 @@ func (p *PriorityRouter) Route(invokers []base.Invoker, url *common.URL, invocat
 		logger.Warnf("[tag router] invokers from previous router is empty")
 		return invokers
 	}
-	// get prefix from invoker
-	application := invokers[0].GetURL().GetParam(constant.Tagkey, "")
+	// get application name from invoker to look up tag routing config
+	application := invokers[0].GetURL().GetParam(constant.ApplicationKey, "")
 	key := strings.Join([]string{application, constant.TagRouterRuleSuffix}, "")
 	value, ok := p.routerConfigs.Load(key)
 	if !ok {
