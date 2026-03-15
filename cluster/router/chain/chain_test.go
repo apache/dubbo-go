@@ -30,8 +30,14 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
+const (
+	testServiceURL     = "dubbo://127.0.0.1:20000/com.xxx.Service?interface=com.xxx.Service"
+	testServiceURLMain = testServiceURL + "&application=main-app"
+	testSubURLSub      = "dubbo://127.0.0.1:20000/com.xxx.Service?application=sub-app"
+)
+
 func TestNewRouterChainApplicationKeyFromSubURL(t *testing.T) {
-	mainURL, err := common.NewURL("dubbo://127.0.0.1:20000/com.xxx.Service?interface=com.xxx.Service")
+	mainURL, err := common.NewURL(testServiceURL)
 	require.NoError(t, err)
 	require.Empty(t, mainURL.GetParam(constant.ApplicationKey, ""))
 
@@ -46,11 +52,11 @@ func TestNewRouterChainApplicationKeyFromSubURL(t *testing.T) {
 }
 
 func TestNewRouterChainApplicationKeyFromMainURL(t *testing.T) {
-	mainURL, err := common.NewURL("dubbo://127.0.0.1:20000/com.xxx.Service?interface=com.xxx.Service&application=main-app")
+	mainURL, err := common.NewURL(testServiceURLMain)
 	require.NoError(t, err)
 	require.Equal(t, "main-app", mainURL.GetParam(constant.ApplicationKey, ""))
 
-	subURL, err := common.NewURL("dubbo://127.0.0.1:20000/com.xxx.Service?application=sub-app")
+	subURL, err := common.NewURL(testSubURLSub)
 	require.NoError(t, err)
 
 	mainURL.SubURL = subURL
@@ -61,11 +67,11 @@ func TestNewRouterChainApplicationKeyFromMainURL(t *testing.T) {
 }
 
 func TestNewRouterChainNoApplicationKey(t *testing.T) {
-	mainURL, err := common.NewURL("dubbo://127.0.0.1:20000/com.xxx.Service?interface=com.xxx.Service")
+	mainURL, err := common.NewURL(testServiceURL)
 	require.NoError(t, err)
 	require.Empty(t, mainURL.GetParam(constant.ApplicationKey, ""))
 
-	subURL, err := common.NewURL("dubbo://127.0.0.1:20000/com.xxx.Service?interface=com.xxx.Service")
+	subURL, err := common.NewURL(testServiceURL)
 	require.NoError(t, err)
 
 	mainURL.SubURL = subURL
