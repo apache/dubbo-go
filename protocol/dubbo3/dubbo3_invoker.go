@@ -71,12 +71,10 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 		rt              string
 		consumerService any
 	)
-	rt = url.GetParam(constant.TimeoutKey, "")
-	if rt == "" {
-		if consumerConfRaw, ok := url.GetAttribute(constant.ConsumerConfigKey); ok {
-			if consumerConf, ok := consumerConfRaw.(*global.ConsumerConfig); ok && consumerConf.RequestTimeout != "" {
-				rt = consumerConf.RequestTimeout
-			}
+	rt = ""
+	if consumerConfRaw, ok := url.GetAttribute(constant.ConsumerConfigKey); ok {
+		if consumerConf, ok := consumerConfRaw.(*global.ConsumerConfig); ok && consumerConf.RequestTimeout != "" {
+			rt = consumerConf.RequestTimeout
 		}
 	}
 	if rt == "" {
