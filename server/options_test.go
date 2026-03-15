@@ -872,6 +872,20 @@ func TestWithParam(t *testing.T) {
 	assert.Equal(t, "value1", opts.Service.Params["key1"])
 }
 
+func TestWithMethod(t *testing.T) {
+	opts := defaultServiceOptions()
+	method := &global.MethodConfig{
+		Name:    "testMethod",
+		Retries: "3",
+	}
+
+	opt := WithMethod(method)
+	opt(opts)
+
+	require.Len(t, opts.Service.Methods, 1)
+	assert.Equal(t, method, opts.Service.Methods[0])
+}
+
 // Test WithParam creates params map if nil
 func TestWithParamCreateMap(t *testing.T) {
 	opts := defaultServiceOptions()

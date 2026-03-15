@@ -886,6 +886,18 @@ func WithRegistry(opts ...registry.Option) ServiceOption {
 	}
 }
 
+func WithMethod(method *global.MethodConfig) ServiceOption {
+	return func(opts *ServiceOptions) {
+		if method == nil {
+			return
+		}
+		if opts.Service.Methods == nil {
+			opts.Service.Methods = make([]*global.MethodConfig, 0)
+		}
+		opts.Service.Methods = append(opts.Service.Methods, method)
+	}
+}
+
 func WithParam(k, v string) ServiceOption {
 	return func(opts *ServiceOptions) {
 		if opts.Service.Params == nil {
