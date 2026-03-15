@@ -83,6 +83,12 @@ func (s *Server) Start(url *common.URL) {
 	if err != nil {
 		panic(err)
 	}
+	success := false
+	defer func() {
+		if !success {
+			_ = lis.Close()
+		}
+	}()
 
 	maxServerRecvMsgSize := constant.DefaultMaxServerRecvMsgSize
 	if recvMsgSize, convertErr := humanize.ParseBytes(url.GetParam(constant.MaxServerRecvMsgSize, "")); convertErr == nil && recvMsgSize != 0 {
@@ -128,6 +134,7 @@ func (s *Server) Start(url *common.URL) {
 
 	server := grpc.NewServer(serverOpts...)
 	s.grpcServer = server
+	success = true
 
 	go func() {
 		providerServices := getProviderServices(url)
