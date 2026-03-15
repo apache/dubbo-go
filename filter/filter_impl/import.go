@@ -28,7 +28,6 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/filter/exec_limit"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/generic"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/graceful_shutdown"
-	_ "dubbo.apache.org/dubbo-go/v3/filter/hystrix"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/metrics"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/polaris/limit"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/seata"
