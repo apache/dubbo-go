@@ -109,9 +109,13 @@ func (c *RouterChain) copyRouters() []router.PriorityRouter {
 // NewRouterChain init router chain
 // Loop routerFactories and call NewRouter method
 func NewRouterChain(url *common.URL) (*RouterChain, error) {
-	if url.SubURL != nil {
-		if appName := url.SubURL.GetParam(constant.ApplicationKey, ""); appName != "" {
-			url.CompareAndSwapParam(constant.ApplicationKey, "", appName)
+	// Ensure application key exists in main URL before creating routers,
+	// as polaris router requires application name to be present.
+	if url.GetParam(constant.ApplicationKey, "") == "" {
+		if url.SubURL != nil {
+			if appName := url.SubURL.GetParam(constant.ApplicationKey, ""); appName != "" {
+				url.CompareAndSwapParam(constant.ApplicationKey, "", appName)
+			}
 		}
 	}
 
