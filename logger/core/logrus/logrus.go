@@ -83,5 +83,13 @@ func instantiate(config *common.URL) (log logger.Logger, err error) {
 		formatter = &logrus.TextFormatter{}
 	}
 	lg.SetFormatter(formatter)
-	return &dubbogoLogger.DubboLogger{Logger: lg}, err
+
+	baseLogger := &dubbogoLogger.DubboLogger{Logger: lg}
+	traceEnabled := config.GetParamBool(constant.LoggerTraceEnabledKey, false)
+	if traceEnabled {
+		recordErrorToSpan := config.GetParamBool(constant.LoggerTraceRecordErrorKey, true)
+		return NewLogrusCtxLogger(baseLogger, recordErrorToSpan), err
+	}
+
+	return baseLogger, err
 }
