@@ -28,6 +28,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
 )
@@ -96,4 +97,49 @@ func TestUpdateOrCreateMeshURL(t *testing.T) {
 			updateOrCreateMeshURL(refOpts)
 		})
 	})
+}
+
+func TestProcessURLPropagatesRegistryError(t *testing.T) {
+	ref := &global.ReferenceConfig{
+		InterfaceName: "com.example.Service",
+		RegistryIDs:   []string{"bad"},
+	}
+	cfgURL := common.NewURLWithOptions(common.WithPath(ref.InterfaceName))
+	registries := map[string]*global.RegistryConfig{
+		"bad": {
+			Protocol: "mock",
+			Address:  "127.0.0.1:bad",
+		},
+	}
+
+	urls, err := processURL(ref, registries, cfgURL)
+	require.Nil(t, urls)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), `registry id "bad" url is invalid`)
+}
+
+func TestProcessURLRejectsEmptyRegistryURLs(t *testing.T) {
+	ref := &global.ReferenceConfig{
+		InterfaceName: "com.example.Service",
+		RegistryIDs:   []string{"empty"},
+	}
+	cfgURL := common.NewURLWithOptions(common.WithPath(ref.InterfaceName))
+	registries := map[string]*global.RegistryConfig{
+		"empty": {
+			Protocol: "mock",
+			Address:  constant.NotAvailable,
+		},
+	}
+
+	urls, err := processURL(ref, registries, cfgURL)
+	require.Nil(t, urls)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "no registry urls available")
+}
+
+func TestBuildInvokerRejectsEmptyURLs(t *testing.T) {
+	invoker, err := buildInvoker(nil, &global.ReferenceConfig{})
+	require.Nil(t, invoker)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "no urls available")
 }

@@ -18,6 +18,7 @@
 package client
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 )
@@ -32,6 +33,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
+	"dubbo.apache.org/dubbo-go/v3/internal"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/proxy"
@@ -95,6 +97,12 @@ func (refOpts *ReferenceOptions) init(opts ...ReferenceOption) error {
 	// init method
 	if refConf.MethodsConfig == nil {
 		refConf.MethodsConfig = make([]*global.MethodConfig, 0)
+	} else {
+		for _, method := range refConf.MethodsConfig {
+			if err := internal.ValidateMethodConfig(method); err != nil {
+				return err
+			}
+		}
 	}
 
 	// init cluster
@@ -112,14 +120,9 @@ func (refOpts *ReferenceOptions) init(opts ...ReferenceOption) error {
 			}
 		}
 		refConf.RegistryIDs = commonCfg.TranslateIds(refConf.RegistryIDs)
-
-		newRegs := make(map[string]*global.RegistryConfig)
-		for _, id := range refConf.RegistryIDs {
-			if reg, ok := regs[id]; ok {
-				newRegs[id] = reg
-			}
+		if err := validateRegistryIDs(refConf.RegistryIDs, regs); err != nil {
+			return err
 		}
-		refOpts.Registries = newRegs
 	}
 
 	// init protocol
@@ -557,14 +560,9 @@ func (cliOpts *ClientOptions) init(opts ...ClientOption) error {
 			}
 		}
 		consumerConf.RegistryIDs = commonCfg.TranslateIds(consumerConf.RegistryIDs)
-
-		newRegs := make(map[string]*global.RegistryConfig)
-		for _, id := range consumerConf.RegistryIDs {
-			if reg, ok := regs[id]; ok {
-				newRegs[id] = reg
-			}
+		if err := validateRegistryIDs(consumerConf.RegistryIDs, regs); err != nil {
+			return err
 		}
-		cliOpts.Registries = newRegs
 	}
 
 	// init cluster
@@ -966,6 +964,15 @@ type CallOption func(*CallOptions)
 
 func newDefaultCallOptions() *CallOptions {
 	return &CallOptions{}
+}
+
+func validateRegistryIDs(ids []string, regs map[string]*global.RegistryConfig) error {
+	for _, id := range ids {
+		if _, ok := regs[id]; !ok {
+			return fmt.Errorf("registry id %q not found", id)
+		}
+	}
+	return nil
 }
 
 // WithCallRequestTimeout the maximum waiting time for one specific call, only works for 'tri' and 'dubbo' protocol

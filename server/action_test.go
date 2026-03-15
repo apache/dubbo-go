@@ -499,6 +499,26 @@ func TestSetRegistrySubURL(t *testing.T) {
 	assert.NotNil(t, regURL.SubURL)
 }
 
+func TestExportReturnsRegistryLoadError(t *testing.T) {
+	svcOpts := &ServiceOptions{
+		Service: &global.ServiceConfig{
+			Interface:   "com.example.Service",
+			RegistryIDs: []string{"bad"},
+			NotRegister: false,
+		},
+		Registries: map[string]*global.RegistryConfig{
+			"bad": {
+				Protocol: "mock",
+				Address:  "127.0.0.1:bad",
+			},
+		},
+	}
+
+	err := svcOpts.Export()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), `registry id "bad" url is invalid`)
+}
+
 // Test Unexport when exported
 func TestUnexportWhenExported(t *testing.T) {
 	svcOpts := &ServiceOptions{

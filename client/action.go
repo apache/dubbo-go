@@ -242,7 +242,14 @@ func processURL(ref *global.ReferenceConfig, registries map[string]*global.Regis
 			}
 		}
 	} else { // use registry configs
-		urls = internal.LoadRegistries(ref.RegistryIDs, registries, common.CONSUMER)
+		var err error
+		urls, err = internal.LoadRegistries(ref.RegistryIDs, registries, common.CONSUMER)
+		if err != nil {
+			return nil, err
+		}
+		if len(urls) == 0 {
+			return nil, fmt.Errorf("no registry urls available for registry ids %v", ref.RegistryIDs)
+		}
 		// set url to regURLs
 		for _, regURL := range urls {
 			regURL.SubURL = cfgURL
@@ -252,6 +259,10 @@ func processURL(ref *global.ReferenceConfig, registries map[string]*global.Regis
 }
 
 func buildInvoker(urls []*common.URL, ref *global.ReferenceConfig) (base.Invoker, error) {
+	if len(urls) == 0 {
+		return nil, fmt.Errorf("no urls available to build invoker")
+	}
+
 	var (
 		invoker base.Invoker
 		regURL  *common.URL

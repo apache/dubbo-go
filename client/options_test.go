@@ -169,9 +169,9 @@ func TestWithClientRegistry(t *testing.T) {
 				ncReg, ok := cli.cliOpts.Registries["nacos_test"]
 				assert.True(t, ok)
 				assert.Equal(t, "127.0.0.1:8848", ncReg.Address)
-				assert.Len(t, cli.cliOpts.Registries, 1)
+				assert.Len(t, cli.cliOpts.Registries, 2)
 				_, ok = cli.cliOpts.Registries[constant.ZookeeperKey]
-				assert.False(t, ok)
+				assert.True(t, ok)
 				assert.Equal(t, []string{"nacos_test"}, cli.cliOpts.Consumer.RegistryIDs)
 			},
 		},
@@ -1236,4 +1236,60 @@ func TestInitWithConsumer(t *testing.T) {
 		ref.Check == nil || *ref.Check != true {
 		t.Errorf("fields not copied as expected: %+v", ref)
 	}
+}
+
+func TestClientOptionsInitKeepsOriginalRegistries(t *testing.T) {
+	cliOpts := &ClientOptions{
+		Consumer: &global.ConsumerConfig{
+			RegistryIDs: []string{"r1"},
+		},
+		Registries: map[string]*global.RegistryConfig{
+			"r1": {Protocol: "mock", Address: "127.0.0.1:2181"},
+			"r2": {Protocol: "mock", Address: "127.0.0.2:2181"},
+		},
+		overallReference: &global.ReferenceConfig{},
+	}
+
+	err := cliOpts.init()
+	require.NoError(t, err)
+	assert.Len(t, cliOpts.Registries, 2)
+	assert.Contains(t, cliOpts.Registries, "r1")
+	assert.Contains(t, cliOpts.Registries, "r2")
+}
+
+func TestClientOptionsInitFailsOnMissingRegistryID(t *testing.T) {
+	cliOpts := &ClientOptions{
+		Consumer: &global.ConsumerConfig{
+			RegistryIDs: []string{"missing"},
+		},
+		Registries: map[string]*global.RegistryConfig{
+			"r1": {Protocol: "mock", Address: "127.0.0.1:2181"},
+		},
+		overallReference: &global.ReferenceConfig{},
+	}
+
+	err := cliOpts.init()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `registry id "missing" not found`)
+}
+
+func TestReferenceOptionsInitFailsOnMissingRegistryID(t *testing.T) {
+	refOpts := defaultReferenceOptions()
+	refOpts.Registries = map[string]*global.RegistryConfig{
+		"r1": {Protocol: "mock", Address: "127.0.0.1:2181"},
+	}
+
+	err := refOpts.init(WithRegistryIDs("missing"))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `registry id "missing" not found`)
+}
+
+func TestReferenceOptionsInitFailsOnInvalidMethodConfig(t *testing.T) {
+	refOpts := defaultReferenceOptions()
+	err := refOpts.init(WithMethod(&global.MethodConfig{
+		Name:         "testMethod",
+		TpsLimitRate: "-1",
+	}))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "tps.limit.rate")
 }
