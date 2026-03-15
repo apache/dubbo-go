@@ -242,11 +242,15 @@ func (dp *DubboProtocol) openServer(url *common.URL, tripleCodecType tripleConst
 				if tracingConfig.UseAgent != nil {
 					useAgent = *tracingConfig.UseAgent
 				}
-				opts = append(opts, triConfig.WithJaegerConfig(
-					tracingConfig.Address,
-					serviceName,
-					useAgent,
-				))
+				if serviceName == "" {
+					logger.Warnf("jaeger tracing skipped: no service name available for %s", url.String())
+				} else {
+					opts = append(opts, triConfig.WithJaegerConfig(
+						tracingConfig.Address,
+						serviceName,
+						useAgent,
+					))
+				}
 			} else {
 				logger.Warnf("unsupported tracing name %s, now triple only support jaeger", tracingConfig.Name)
 			}
