@@ -130,9 +130,7 @@ func TestWithClientRegistry(t *testing.T) {
 				reg, ok := cli.cliOpts.Registries[constant.ZookeeperKey]
 				assert.True(t, ok)
 				assert.Equal(t, "127.0.0.1:2181", reg.Address)
-				regCompat, ok := cli.cliOpts.registriesCompat[constant.ZookeeperKey]
-				assert.True(t, ok)
-				assert.Equal(t, "127.0.0.1:2181", regCompat.Address)
+				assert.Equal(t, []string{constant.ZookeeperKey}, cli.cliOpts.Consumer.RegistryIDs)
 			},
 		},
 		{
@@ -149,9 +147,7 @@ func TestWithClientRegistry(t *testing.T) {
 				reg, ok := cli.cliOpts.Registries["zk"]
 				assert.True(t, ok)
 				assert.Equal(t, "127.0.0.1:2181", reg.Address)
-				regCompat, ok := cli.cliOpts.registriesCompat["zk"]
-				assert.True(t, ok)
-				assert.Equal(t, "127.0.0.1:2181", regCompat.Address)
+				assert.Equal(t, []string{"zk"}, cli.cliOpts.Consumer.RegistryIDs)
 			},
 		},
 		{
@@ -170,18 +166,34 @@ func TestWithClientRegistry(t *testing.T) {
 			},
 			verify: func(t *testing.T, cli *Client, err error) {
 				require.NoError(t, err)
-				zkReg, ok := cli.cliOpts.Registries[constant.ZookeeperKey]
-				assert.True(t, ok)
-				assert.Equal(t, "127.0.0.1:2181", zkReg.Address)
 				ncReg, ok := cli.cliOpts.Registries["nacos_test"]
 				assert.True(t, ok)
 				assert.Equal(t, "127.0.0.1:8848", ncReg.Address)
-
-				_, ok = cli.cliOpts.registriesCompat[constant.ZookeeperKey]
+				assert.Len(t, cli.cliOpts.Registries, 1)
+				_, ok = cli.cliOpts.Registries[constant.ZookeeperKey]
 				assert.False(t, ok)
-				ncCompat, ok := cli.cliOpts.registriesCompat["nacos_test"]
-				assert.True(t, ok)
-				assert.Equal(t, "127.0.0.1:8848", ncCompat.Address)
+				assert.Equal(t, []string{"nacos_test"}, cli.cliOpts.Consumer.RegistryIDs)
+			},
+		},
+		{
+			desc: "config multiple registries without setting RegistryIds",
+			opts: []ClientOption{
+				WithClientRegistry(
+					registry.WithZookeeper(),
+					registry.WithAddress("127.0.0.1:2181"),
+				),
+				WithClientRegistry(
+					registry.WithID("nacos_test"),
+					registry.WithNacos(),
+					registry.WithAddress("127.0.0.1:8848"),
+				),
+			},
+			verify: func(t *testing.T, cli *Client, err error) {
+				require.NoError(t, err)
+				assert.Len(t, cli.cliOpts.Registries, 2)
+				assert.Contains(t, cli.cliOpts.Registries, constant.ZookeeperKey)
+				assert.Contains(t, cli.cliOpts.Registries, "nacos_test")
+				assert.ElementsMatch(t, []string{constant.ZookeeperKey, "nacos_test"}, cli.cliOpts.Consumer.RegistryIDs)
 			},
 		},
 	}
