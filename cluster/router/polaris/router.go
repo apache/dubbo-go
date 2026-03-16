@@ -53,13 +53,40 @@ var (
 
 func newPolarisRouter(url *common.URL) (*polarisRouter, error) {
 
-	// get application name from url param
-	applicationName := url.GetParam(constant.ApplicationKey, "")
+	var applicationName string
+	// first try URL param (backward compat)
+	applicationName = url.GetParam(constant.ApplicationKey, "")
+	// then try attribute (current storage path)
 	if applicationName == "" {
+		if appConfRaw, ok := url.GetAttribute(constant.ApplicationKey); ok {
+			switch appConf := appConfRaw.(type) {
+			case *global.ApplicationConfig:
+				if appConf != nil {
+					applicationName = appConf.Name
+				}
+			case global.ApplicationConfig:
+				applicationName = appConf.Name
+			}
+		}
+	}
+	// fallback to SubURL
+	if applicationName == "" && url.SubURL != nil {
 		applicationName = url.SubURL.GetParam(constant.ApplicationKey, "")
 		if applicationName == "" {
-			return nil, fmt.Errorf("polaris router must set application name")
+			if appConfRaw, ok := url.SubURL.GetAttribute(constant.ApplicationKey); ok {
+				switch appConf := appConfRaw.(type) {
+				case *global.ApplicationConfig:
+					if appConf != nil {
+						applicationName = appConf.Name
+					}
+				case global.ApplicationConfig:
+					applicationName = appConf.Name
+				}
+			}
 		}
+	}
+	if applicationName == "" {
+		return nil, fmt.Errorf("polaris router must set application name")
 	}
 
 	// get from url attr
