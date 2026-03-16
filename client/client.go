@@ -27,6 +27,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/filter/generic"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
@@ -187,15 +188,10 @@ func (cli *Client) DialWithDefinition(interfaceName string, definition *ClientDe
 }
 
 func (cli *Client) dial(interfaceName string, info *ClientInfo, srv any, opts ...ReferenceOption) (*Connection, error) {
-	if err := metadata.InitRegistryMetadataReport(cli.cliOpts.Registries); err != nil {
-		return nil, err
-	}
 	newRefOpts := defaultReferenceOptions()
 	finalOpts := []ReferenceOption{
 		setReference(cli.cliOpts.overallReference),
 		setApplication(cli.cliOpts.Application),
-		setApplicationCompat(cli.cliOpts.applicationCompat),
-		setRegistriesCompat(cli.cliOpts.registriesCompat),
 		setRegistries(cli.cliOpts.Registries),
 		setConsumer(cli.cliOpts.Consumer),
 		setShutdown(cli.cliOpts.Shutdown),
@@ -211,6 +207,11 @@ func (cli *Client) dial(interfaceName string, info *ClientInfo, srv any, opts ..
 	if err := newRefOpts.init(finalOpts...); err != nil {
 		return nil, err
 	}
+	effectiveRegistries := filterRegistriesByIDs(newRefOpts.Reference.RegistryIDs, newRefOpts.Registries)
+	if err := metadata.InitRegistryMetadataReport(effectiveRegistries); err != nil {
+		return nil, err
+	}
+	newRefOpts.Registries = effectiveRegistries
 
 	if info != nil {
 		newRefOpts.ReferWithInfo(info)
@@ -221,6 +222,23 @@ func (cli *Client) dial(interfaceName string, info *ClientInfo, srv any, opts ..
 	}
 
 	return &Connection{refOpts: newRefOpts}, nil
+}
+
+func filterRegistriesByIDs(ids []string, regs map[string]*global.RegistryConfig) map[string]*global.RegistryConfig {
+	if len(regs) == 0 {
+		return regs
+	}
+	if len(ids) == 0 || (len(ids) == 1 && ids[0] == "") {
+		return regs
+	}
+
+	filtered := make(map[string]*global.RegistryConfig, len(ids))
+	for _, id := range ids {
+		if reg, ok := regs[id]; ok {
+			filtered[id] = reg
+		}
+	}
+	return filtered
 }
 
 func generateInvocation(ctx context.Context, methodName string, reqs []any, resp any, callType string, opts *CallOptions) (base.Invocation, error) {

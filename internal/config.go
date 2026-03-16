@@ -21,6 +21,7 @@
 package internal
 
 import (
+	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
@@ -33,16 +34,26 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
-func LoadRegistries(registryIds []string, registries map[string]*global.RegistryConfig, roleType common.RoleType) []*common.URL {
+func LoadRegistries(registryIds []string, registries map[string]*global.RegistryConfig, roleType common.RoleType) ([]*common.URL, error) {
 	var registryURLs []*common.URL
+	targetAll := len(registryIds) == 0 || (len(registryIds) == 1 && registryIds[0] == "")
+
+	if !targetAll {
+		for _, id := range registryIds {
+			if _, ok := registries[id]; !ok {
+				return nil, fmt.Errorf("registry id %q not found", id)
+			}
+		}
+	}
 
 	for k, registryConf := range registries {
 		target := false
 
-		if len(registryIds) == 0 || (len(registryIds) == 1 && registryIds[0] == "") {
+		if targetAll {
 			target = true
 		} else {
 			for _, tr := range registryIds {
@@ -56,8 +67,7 @@ func LoadRegistries(registryIds []string, registries map[string]*global.Registry
 		if target {
 			urls, err := toURLs(registryConf, roleType)
 			if err != nil {
-				logger.Errorf("The registry id: %s url is invalid, error: %#v", k, err)
-				continue
+				return nil, fmt.Errorf("registry id %q url is invalid: %w", k, err)
 			}
 
 			for _, u := range urls {
@@ -72,7 +82,7 @@ func LoadRegistries(registryIds []string, registries map[string]*global.Registry
 		}
 	}
 
-	return registryURLs
+	return registryURLs, nil
 }
 
 func toURLs(registriesConfig *global.RegistryConfig, roleType common.RoleType) ([]*common.URL, error) {
@@ -160,4 +170,39 @@ func getUrlMap(registriesConfig *global.RegistryConfig, roleType common.RoleType
 
 func clientNameID(protocol, address string) string {
 	return strings.Join([]string{constant.RegistryConfigPrefix, protocol, address}, "-")
+}
+
+func ValidateMethodConfig(method *global.MethodConfig) error {
+	if method == nil {
+		return nil
+	}
+
+	qualifiedMethodName := method.InterfaceName + "#" + method.Name
+	if method.TpsLimitStrategy != "" {
+		if _, err := extension.GetTpsLimitStrategyCreator(method.TpsLimitStrategy); err != nil {
+			return err
+		}
+	}
+
+	if method.TpsLimitInterval != "" {
+		tpsLimitInterval, err := strconv.ParseInt(method.TpsLimitInterval, 0, 0)
+		if err != nil {
+			return fmt.Errorf("[MethodConfig] Cannot parse the configuration tps.limit.interval for method %s, please check your configuration", qualifiedMethodName)
+		}
+		if tpsLimitInterval < 0 {
+			return fmt.Errorf("[MethodConfig] The configuration tps.limit.interval for %s must be positive, please check your configuration", qualifiedMethodName)
+		}
+	}
+
+	if method.TpsLimitRate != "" {
+		tpsLimitRate, err := strconv.ParseInt(method.TpsLimitRate, 0, 0)
+		if err != nil {
+			return fmt.Errorf("[MethodConfig] Cannot parse the configuration tps.limit.rate for method %s, please check your configuration", qualifiedMethodName)
+		}
+		if tpsLimitRate < 0 {
+			return fmt.Errorf("[MethodConfig] The configuration tps.limit.rate for method %s must be positive, please check your configuration", qualifiedMethodName)
+		}
+	}
+
+	return nil
 }

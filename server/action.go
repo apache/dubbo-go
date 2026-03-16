@@ -141,7 +141,11 @@ func (svcOpts *ServiceOptions) Export() error {
 
 	regUrls := make([]*common.URL, 0)
 	if !svcConf.NotRegister {
-		regUrls = internal.LoadRegistries(svcConf.RegistryIDs, svcOpts.Registries, common.PROVIDER)
+		var err error
+		regUrls, err = internal.LoadRegistries(svcConf.RegistryIDs, svcOpts.Registries, common.PROVIDER)
+		if err != nil {
+			return err
+		}
 	}
 
 	urlMap := svcOpts.getUrlMap()

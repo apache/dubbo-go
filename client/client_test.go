@@ -31,6 +31,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
@@ -240,4 +241,28 @@ func requireCallType(t *testing.T, inv base.Invocation, callType string) {
 	attr, ok := inv.GetAttribute(constant.CallTypeKey)
 	require.True(t, ok)
 	require.Equal(t, callType, attr)
+}
+
+func TestFilterRegistriesByIDs(t *testing.T) {
+	regs := map[string]*global.RegistryConfig{
+		"r1": {Protocol: "mock", Address: "127.0.0.1:2181"},
+		"r2": {Protocol: "mock", Address: "127.0.0.2:2181"},
+	}
+
+	filtered := filterRegistriesByIDs([]string{"r2"}, regs)
+	require.Len(t, filtered, 1)
+	require.Contains(t, filtered, "r2")
+	require.NotContains(t, filtered, "r1")
+}
+
+func TestFilterRegistriesByIDsReturnsAllWhenIDsEmpty(t *testing.T) {
+	regs := map[string]*global.RegistryConfig{
+		"r1": {Protocol: "mock", Address: "127.0.0.1:2181"},
+		"r2": {Protocol: "mock", Address: "127.0.0.2:2181"},
+	}
+
+	filtered := filterRegistriesByIDs(nil, regs)
+	require.Len(t, filtered, 2)
+	require.Contains(t, filtered, "r1")
+	require.Contains(t, filtered, "r2")
 }

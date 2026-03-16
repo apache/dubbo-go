@@ -18,6 +18,7 @@
 package server
 
 import (
+	"fmt"
 	"reflect"
 	"strconv"
 	"sync"
@@ -42,6 +43,7 @@ import (
 	aslimiter "dubbo.apache.org/dubbo-go/v3/filter/adaptivesvc/limiter"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
+	"dubbo.apache.org/dubbo-go/v3/internal"
 	"dubbo.apache.org/dubbo-go/v3/metrics/probe"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
@@ -86,6 +88,9 @@ func (srvOpts *ServerOptions) init(opts ...ServerOption) error {
 	providerConf.RegistryIDs = commonCfg.TranslateIds(providerConf.RegistryIDs)
 	if len(providerConf.RegistryIDs) <= 0 {
 		providerConf.RegistryIDs = getRegistryIds(srvOpts.Registries)
+	}
+	if err := validateRegistryIDs(providerConf.RegistryIDs, srvOpts.Registries); err != nil {
+		return err
 	}
 
 	providerConf.ProtocolIDs = commonCfg.TranslateIds(providerConf.ProtocolIDs)
@@ -558,6 +563,8 @@ func (svcOpts *ServiceOptions) init(srv *Server, opts ...ServiceOption) error {
 	}
 	if len(svc.RegistryIDs) <= 0 {
 		svc.NotRegister = true
+	} else if err := validateRegistryIDs(svc.RegistryIDs, svc.RCRegistriesMap); err != nil {
+		return err
 	}
 
 	svc.ProtocolIDs = commonCfg.TranslateIds(svc.ProtocolIDs)
@@ -572,6 +579,11 @@ func (svcOpts *ServiceOptions) init(srv *Server, opts ...ServiceOption) error {
 
 	if svc.TracingKey == "" {
 		svc.TracingKey = svcOpts.Provider.TracingKey
+	}
+	for _, method := range svc.Methods {
+		if err := internal.ValidateMethodConfig(method); err != nil {
+			return err
+		}
 	}
 
 	err := svcOpts.check()
@@ -621,6 +633,15 @@ func WithFilter(filter string) ServiceOption {
 	return func(cfg *ServiceOptions) {
 		cfg.Service.Filter = filter
 	}
+}
+
+func validateRegistryIDs(ids []string, regs map[string]*global.RegistryConfig) error {
+	for _, id := range ids {
+		if _, ok := regs[id]; !ok {
+			return fmt.Errorf("registry id %q not found", id)
+		}
+	}
+	return nil
 }
 
 // todo(DMwangnima): think about a more ideal configuration style
@@ -868,6 +889,18 @@ func WithRegistry(opts ...registry.Option) ServiceOption {
 			opts.Registries = make(map[string]*global.RegistryConfig)
 		}
 		opts.Registries[regOpts.ID] = regOpts.Registry
+	}
+}
+
+func WithMethod(method *global.MethodConfig) ServiceOption {
+	return func(opts *ServiceOptions) {
+		if method == nil {
+			return
+		}
+		if opts.Service.Methods == nil {
+			opts.Service.Methods = make([]*global.MethodConfig, 0)
+		}
+		opts.Service.Methods = append(opts.Service.Methods, method)
 	}
 }
 

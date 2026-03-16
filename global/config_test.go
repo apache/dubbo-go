@@ -1798,6 +1798,7 @@ func TestMethodConfigFields(t *testing.T) {
 		assert.Equal(t, "10s", method.RequestTimeout)
 	})
 }
+
 func TestMetricConfigClone(t *testing.T) {
 	t.Run("clone_metrics_config", func(t *testing.T) {
 		metrics := DefaultMetricsConfig()

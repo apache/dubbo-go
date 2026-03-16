@@ -18,6 +18,7 @@
 package client
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 )
@@ -30,9 +31,9 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
+	"dubbo.apache.org/dubbo-go/v3/internal"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/proxy"
@@ -57,10 +58,6 @@ type ReferenceOptions struct {
 	urls         []*common.URL
 	metaDataType string
 	info         *ClientInfo
-
-	methodsCompat     []*config.MethodConfig
-	applicationCompat *config.ApplicationConfig
-	registriesCompat  map[string]*config.RegistryConfig
 }
 
 func defaultReferenceOptions() *ReferenceOptions {
@@ -86,7 +83,7 @@ func (refOpts *ReferenceOptions) init(opts ...ReferenceOption) error {
 
 	refConf := refOpts.Reference
 
-	app := refOpts.applicationCompat
+	app := refOpts.Application
 	if app != nil {
 		refOpts.metaDataType = app.MetadataType
 		if refConf.Group == "" {
@@ -98,12 +95,11 @@ func (refOpts *ReferenceOptions) init(opts ...ReferenceOption) error {
 	}
 
 	// init method
-	methods := refConf.MethodsConfig
-	if length := len(methods); length > 0 {
-		refOpts.methodsCompat = make([]*config.MethodConfig, length)
-		for i, method := range methods {
-			refOpts.methodsCompat[i] = compatMethodConfig(method)
-			if err := refOpts.methodsCompat[i].Init(); err != nil {
+	if refConf.MethodsConfig == nil {
+		refConf.MethodsConfig = make([]*global.MethodConfig, 0)
+	} else {
+		for _, method := range refConf.MethodsConfig {
+			if err := internal.ValidateMethodConfig(method); err != nil {
 				return err
 			}
 		}
@@ -115,36 +111,18 @@ func (refOpts *ReferenceOptions) init(opts ...ReferenceOption) error {
 	}
 
 	// init registries
-	// convert Registries to registriesCompat
 	if len(refOpts.Registries) > 0 {
-		if refOpts.registriesCompat == nil {
-			refOpts.registriesCompat = make(map[string]*config.RegistryConfig)
-		}
-		for id, reg := range refOpts.Registries {
-			refOpts.registriesCompat[id] = compatRegistryConfig(reg)
-			if err := refOpts.registriesCompat[id].Init(); err != nil {
-				return err
-			}
-		}
-	}
-
-	if len(refOpts.registriesCompat) > 0 {
-		regs := refOpts.registriesCompat
+		regs := refOpts.Registries
 		if len(refConf.RegistryIDs) <= 0 {
-			refConf.RegistryIDs = make([]string, len(regs))
+			refConf.RegistryIDs = make([]string, 0, len(regs))
 			for key := range regs {
 				refConf.RegistryIDs = append(refConf.RegistryIDs, key)
 			}
 		}
 		refConf.RegistryIDs = commonCfg.TranslateIds(refConf.RegistryIDs)
-
-		newRegs := make(map[string]*config.RegistryConfig)
-		for _, id := range refConf.RegistryIDs {
-			if reg, ok := regs[id]; ok {
-				newRegs[id] = reg
-			}
+		if err := validateRegistryIDs(refConf.RegistryIDs, regs); err != nil {
+			return err
 		}
-		refOpts.registriesCompat = newRegs
 	}
 
 	// init protocol
@@ -447,14 +425,15 @@ func WithMeshProviderPort(port int) ReferenceOption {
 	}
 }
 
-func WithMethod(opts ...config.MethodOption) ReferenceOption {
-	regOpts := config.NewMethodOptions(opts...)
-
+func WithMethod(method *global.MethodConfig) ReferenceOption {
 	return func(opts *ReferenceOptions) {
-		if len(opts.Reference.MethodsConfig) == 0 {
+		if method == nil {
+			return
+		}
+		if opts.Reference.MethodsConfig == nil {
 			opts.Reference.MethodsConfig = make([]*global.MethodConfig, 0)
 		}
-		opts.Reference.MethodsConfig = append(opts.Reference.MethodsConfig, regOpts.Method)
+		opts.Reference.MethodsConfig = append(opts.Reference.MethodsConfig, method)
 	}
 }
 
@@ -479,18 +458,6 @@ func setReference(reference *global.ReferenceConfig) ReferenceOption {
 func setInterfaceName(interfaceName string) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.InterfaceName = interfaceName
-	}
-}
-
-func setApplicationCompat(app *config.ApplicationConfig) ReferenceOption {
-	return func(opts *ReferenceOptions) {
-		opts.applicationCompat = app
-	}
-}
-
-func setRegistriesCompat(regs map[string]*config.RegistryConfig) ReferenceOption {
-	return func(opts *ReferenceOptions) {
-		opts.registriesCompat = regs
 	}
 }
 
@@ -556,9 +523,7 @@ type ClientOptions struct {
 	TLS         *global.TLSConfig
 	Protocols   map[string]*global.ProtocolConfig
 
-	overallReference  *global.ReferenceConfig
-	applicationCompat *config.ApplicationConfig
-	registriesCompat  map[string]*config.RegistryConfig
+	overallReference *global.ReferenceConfig
 }
 
 func defaultClientOptions() *ClientOptions {
@@ -585,34 +550,18 @@ func (cliOpts *ClientOptions) init(opts ...ClientOption) error {
 
 	consumerConf := cliOpts.Consumer
 
-	// init application
-	application := cliOpts.Application
-	if application != nil {
-		cliOpts.applicationCompat = compatApplicationConfig(application)
-		if err := cliOpts.applicationCompat.Init(); err != nil {
-			return err
-		}
-	}
-
 	// init registries
 	regs := cliOpts.Registries
-	if regs != nil {
-		cliOpts.registriesCompat = make(map[string]*config.RegistryConfig)
+	if len(regs) > 0 {
 		if len(consumerConf.RegistryIDs) <= 0 {
-			consumerConf.RegistryIDs = make([]string, len(regs))
+			consumerConf.RegistryIDs = make([]string, 0, len(regs))
 			for key := range regs {
 				consumerConf.RegistryIDs = append(consumerConf.RegistryIDs, key)
 			}
 		}
 		consumerConf.RegistryIDs = commonCfg.TranslateIds(consumerConf.RegistryIDs)
-
-		for _, id := range consumerConf.RegistryIDs {
-			if reg, ok := regs[id]; ok {
-				cliOpts.registriesCompat[id] = compatRegistryConfig(reg)
-				if err := cliOpts.registriesCompat[id].Init(); err != nil {
-					return err
-				}
-			}
+		if err := validateRegistryIDs(consumerConf.RegistryIDs, regs); err != nil {
+			return err
 		}
 	}
 
@@ -1015,6 +964,15 @@ type CallOption func(*CallOptions)
 
 func newDefaultCallOptions() *CallOptions {
 	return &CallOptions{}
+}
+
+func validateRegistryIDs(ids []string, regs map[string]*global.RegistryConfig) error {
+	for _, id := range ids {
+		if _, ok := regs[id]; !ok {
+			return fmt.Errorf("registry id %q not found", id)
+		}
+	}
+	return nil
 }
 
 // WithCallRequestTimeout the maximum waiting time for one specific call, only works for 'tri' and 'dubbo' protocol
