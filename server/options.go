@@ -18,7 +18,6 @@
 package server
 
 import (
-	"fmt"
 	"reflect"
 	"strconv"
 	"sync"
@@ -633,15 +632,6 @@ func WithFilter(filter string) ServiceOption {
 	return func(cfg *ServiceOptions) {
 		cfg.Service.Filter = filter
 	}
-}
-
-func validateRegistryIDs(ids []string, regs map[string]*global.RegistryConfig) error {
-	for _, id := range ids {
-		if _, ok := regs[id]; !ok {
-			return fmt.Errorf("registry id %q not found", id)
-		}
-	}
-	return nil
 }
 
 // todo(DMwangnima): think about a more ideal configuration style
