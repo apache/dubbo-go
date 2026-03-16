@@ -50,16 +50,18 @@ func mustNewURL(t *testing.T, rawURL string) *common.URL {
 func TestNewPolarisRouterApplicationNameFromParam(t *testing.T) {
 	url := mustNewURL(t, serviceURLWithApp)
 
-	_, err := newPolarisRouter(url)
+	r, err := newPolarisRouter(url)
 	require.NoError(t, err)
+	require.Equal(t, "param-app", r.currentApplication)
 }
 
 func TestNewPolarisRouterApplicationNameFromAttribute(t *testing.T) {
 	url := mustNewURL(t, baseServiceURL)
 	url.SetAttribute(constant.ApplicationKey, &global.ApplicationConfig{Name: attrAppName})
 
-	_, err := newPolarisRouter(url)
+	r, err := newPolarisRouter(url)
 	require.NoError(t, err)
+	require.Equal(t, attrAppName, r.currentApplication)
 }
 
 func TestNewPolarisRouterApplicationNameFromSubURLAttribute(t *testing.T) {
@@ -68,8 +70,9 @@ func TestNewPolarisRouterApplicationNameFromSubURLAttribute(t *testing.T) {
 	subURL.SetAttribute(constant.ApplicationKey, &global.ApplicationConfig{Name: subAttrAppName})
 	url.SubURL = subURL
 
-	_, err := newPolarisRouter(url)
+	r, err := newPolarisRouter(url)
 	require.NoError(t, err)
+	require.Equal(t, subAttrAppName, r.currentApplication)
 }
 
 func TestNewPolarisRouterApplicationNameMissing(t *testing.T) {
@@ -84,6 +87,7 @@ func TestNewPolarisRouterApplicationNameFromSubURLParam(t *testing.T) {
 	subURL := mustNewURL(t, serviceURLWithApp)
 	url.SubURL = subURL
 
-	_, err := newPolarisRouter(url)
+	r, err := newPolarisRouter(url)
 	require.NoError(t, err)
+	require.Equal(t, "param-app", r.currentApplication)
 }

@@ -97,7 +97,9 @@ func newPolarisRouter(url *common.URL) (*polarisRouter, error) {
 
 	if err := remotingpolaris.Check(); errors.Is(err, remotingpolaris.ErrorNoOpenPolarisAbility) {
 		return &polarisRouter{
-			openRoute: false,
+			openRoute:          false,
+			currentApplication: applicationName,
+			Registries:         registries.(map[string]*global.RegistryConfig),
 		}, nil
 	}
 
