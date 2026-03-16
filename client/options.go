@@ -18,6 +18,7 @@
 package client
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 )
@@ -963,6 +964,15 @@ type CallOption func(*CallOptions)
 
 func newDefaultCallOptions() *CallOptions {
 	return &CallOptions{}
+}
+
+func validateRegistryIDs(ids []string, regs map[string]*global.RegistryConfig) error {
+	for _, id := range ids {
+		if _, ok := regs[id]; !ok {
+			return fmt.Errorf("registry id %q not found", id)
+		}
+	}
+	return nil
 }
 
 // WithCallRequestTimeout the maximum waiting time for one specific call, only works for 'tri' and 'dubbo' protocol
