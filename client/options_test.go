@@ -1063,6 +1063,76 @@ func TestWithParams(t *testing.T) {
 	processReferenceOptionsInitCases(t, cases)
 }
 
+func TestWithRouter(t *testing.T) {
+	router1 := &global.RouterConfig{Key: "svc-a"}
+	router2 := &global.RouterConfig{Key: "svc-b"}
+
+	cases := []referenceOptionsInitCase{
+		{
+			desc: "append router configs",
+			opts: []ReferenceOption{
+				WithRouter(router1, router2),
+			},
+			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
+				require.NoError(t, err)
+				assert.Equal(t, []*global.RouterConfig{router1, router2}, refOpts.Routers)
+			},
+		},
+		{
+			desc: "ignore empty router configs",
+			opts: []ReferenceOption{
+				WithRouter(),
+			},
+			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
+				require.NoError(t, err)
+				assert.Nil(t, refOpts.Routers)
+			},
+		},
+		{
+			desc: "framework setter appends router configs",
+			opts: []ReferenceOption{
+				setRouters([]*global.RouterConfig{router1}),
+				setRouters([]*global.RouterConfig{router2}),
+			},
+			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
+				require.NoError(t, err)
+				assert.Equal(t, []*global.RouterConfig{router1, router2}, refOpts.Routers)
+			},
+		},
+	}
+	processReferenceOptionsInitCases(t, cases)
+}
+
+func TestClientRouterOptions(t *testing.T) {
+	router1 := &global.RouterConfig{Key: "app-a"}
+	router2 := &global.RouterConfig{Key: "app-b"}
+
+	cases := []newClientCase{
+		{
+			desc: "append client router configs",
+			opts: []ClientOption{
+				WithClientRouter(router1),
+				WithClientRouter(router2),
+			},
+			verify: func(t *testing.T, cli *Client, err error) {
+				require.NoError(t, err)
+				assert.Equal(t, []*global.RouterConfig{router1, router2}, cli.cliOpts.Routers)
+			},
+		},
+		{
+			desc: "framework setter replaces client router configs",
+			opts: []ClientOption{
+				SetClientRouters([]*global.RouterConfig{router1, router2}),
+			},
+			verify: func(t *testing.T, cli *Client, err error) {
+				require.NoError(t, err)
+				assert.Equal(t, []*global.RouterConfig{router1, router2}, cli.cliOpts.Routers)
+			},
+		},
+	}
+	processNewClientCases(t, cases)
+}
+
 //func TestWithClientParam(t *testing.T) {
 //	cases := []newClientCase{
 //		{

@@ -419,3 +419,60 @@ tags:
 		assert.Nil(t, value)
 	})
 }
+
+func TestSetStaticConfig(t *testing.T) {
+	t.Run("empty tag config is ignored", func(t *testing.T) {
+		p, err := NewTagPriorityRouter()
+		require.NoError(t, err)
+
+		p.SetStaticConfig(&global.RouterConfig{Key: "test-app"})
+
+		value, ok := p.routerConfigs.Load("test-app" + constant.TagRouterRuleSuffix)
+		assert.False(t, ok)
+		assert.Nil(t, value)
+	})
+
+	t.Run("static tag config is cloned and stored with default enabled", func(t *testing.T) { // NOSONAR
+		p, err := NewTagPriorityRouter()
+		require.NoError(t, err)
+
+		cfg := &global.RouterConfig{
+			Key: "test-app",
+			Tags: []global.Tag{{
+				Name:      "gray",
+				Addresses: []string{"192.168.0.1:20000"}, // NOSONAR
+			}},
+		}
+
+		p.SetStaticConfig(cfg)
+		cfg.Tags[0].Addresses[0] = "192.168.0.9:20000" // NOSONAR
+
+		value, ok := p.routerConfigs.Load("test-app" + constant.TagRouterRuleSuffix)
+		require.True(t, ok)
+		routerCfg := value.(global.RouterConfig)
+		assert.True(t, *routerCfg.Enabled)
+		assert.True(t, *routerCfg.Valid)
+		assert.Equal(t, "192.168.0.1:20000", routerCfg.Tags[0].Addresses[0]) // NOSONAR
+	})
+}
+
+func TestParseRoute(t *testing.T) {
+	t.Run("route with tags is valid", func(t *testing.T) {
+		cfg, err := parseRoute(`
+key: test-app
+tags:
+ - name: gray
+   addresses: [192.168.0.1:20000]
+`)
+		require.NoError(t, err)
+		require.NotNil(t, cfg.Valid)
+		assert.True(t, *cfg.Valid)
+	})
+
+	t.Run("route without tags is invalid", func(t *testing.T) {
+		cfg, err := parseRoute("key: test-app")
+		require.NoError(t, err)
+		require.NotNil(t, cfg.Valid)
+		assert.False(t, *cfg.Valid)
+	})
+}

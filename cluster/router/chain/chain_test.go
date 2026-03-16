@@ -35,6 +35,46 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
+type mockStaticRouter struct {
+	configs []*global.RouterConfig
+}
+
+func (m *mockStaticRouter) Route(invokers []base.Invoker, _ *common.URL, _ base.Invocation) []base.Invoker {
+	return invokers
+}
+
+func (m *mockStaticRouter) URL() *common.URL {
+	return nil
+}
+
+func (m *mockStaticRouter) Priority() int64 {
+	return 0
+}
+
+func (m *mockStaticRouter) Notify(_ []base.Invoker) {
+}
+
+func (m *mockStaticRouter) SetStaticConfig(cfg *global.RouterConfig) {
+	m.configs = append(m.configs, cfg)
+}
+
+type mockRouter struct{}
+
+func (m *mockRouter) Route(invokers []base.Invoker, _ *common.URL, _ base.Invocation) []base.Invoker {
+	return invokers
+}
+
+func (m *mockRouter) URL() *common.URL {
+	return nil
+}
+
+func (m *mockRouter) Priority() int64 {
+	return 0
+}
+
+func (m *mockRouter) Notify(_ []base.Invoker) {
+}
+
 // TestIsRouterMatch_ServiceMatch tests service router matching
 func TestIsRouterMatch_ServiceMatch(t *testing.T) {
 	routerCfg := &global.RouterConfig{
@@ -129,6 +169,108 @@ func TestGetApplicationName_FromSubURL(t *testing.T) {
 	url.SubURL.SetParam(constant.ApplicationKey, "my-app")
 
 	assert.Equal(t, "my-app", getApplicationName(url))
+}
+
+func TestIsRouterMatch_ServiceMatchWithoutSubURL(t *testing.T) {
+	routerCfg := &global.RouterConfig{
+		Scope: constant.RouterScopeService,
+		Key:   "test.service",
+	}
+
+	url := common.NewURLWithOptions(
+		common.WithProtocol("consumer"),
+		common.WithPath("test.service"),
+	)
+
+	assert.True(t, isRouterMatch(routerCfg, url, ""))
+}
+
+func TestIsRouterMatch_UnknownScope(t *testing.T) {
+	routerCfg := &global.RouterConfig{
+		Scope: "unknown",
+		Key:   "test.service",
+	}
+
+	url := common.NewURLWithOptions(
+		common.WithProtocol("consumer"),
+		common.WithPath("test.service"),
+	)
+
+	assert.False(t, isRouterMatch(routerCfg, url, "test-app"))
+}
+
+func TestInjectStaticRouters(t *testing.T) {
+	trueValue := true
+	falseValue := false
+
+	staticRouter := &mockStaticRouter{}
+	chain := &RouterChain{
+		routers: []router.PriorityRouter{
+			staticRouter,
+			&mockRouter{},
+		},
+	}
+
+	url := common.NewURLWithOptions(
+		common.WithProtocol("consumer"),
+		common.WithPath("consumer.path"),
+	)
+	url.SubURL = common.NewURLWithOptions(
+		common.WithProtocol("dubbo"),
+		common.WithPath("svc.test"),
+	)
+	url.SubURL.SetParam(constant.ApplicationKey, "app.test")
+	url.SubURL.SetAttribute(constant.RoutersConfigKey, []*global.RouterConfig{
+		nil,
+		{
+			Scope:   constant.RouterScopeService,
+			Key:     "svc.test",
+			Enabled: &trueValue,
+			Valid:   &trueValue,
+		},
+		{
+			Scope: constant.RouterScopeApplication,
+			Key:   "app.test",
+		},
+		{
+			Scope:   constant.RouterScopeApplication,
+			Key:     "disabled",
+			Enabled: &falseValue,
+		},
+		{
+			Scope: constant.RouterScopeApplication,
+			Key:   "invalid",
+			Valid: &falseValue,
+		},
+		{
+			Scope: constant.RouterScopeApplication,
+			Key:   "other-app",
+		},
+	})
+
+	chain.injectStaticRouters(url)
+
+	if assert.Len(t, staticRouter.configs, 2) {
+		assert.Equal(t, "svc.test", staticRouter.configs[0].Key)
+		assert.Equal(t, "app.test", staticRouter.configs[1].Key)
+	}
+}
+
+func TestInjectStaticRouters_InvalidAttributeType(t *testing.T) {
+	staticRouter := &mockStaticRouter{}
+	chain := &RouterChain{
+		routers: []router.PriorityRouter{staticRouter},
+	}
+
+	url := common.NewURLWithOptions(
+		common.WithProtocol("consumer"),
+		common.WithPath("svc.test"),
+	)
+	url.SetAttribute(constant.RoutersConfigKey, "invalid")
+
+	chain.injectStaticRouters(url)
+
+	assert.Empty(t, staticRouter.configs)
 }
 
 const testConsumerServiceURL = "consumer://127.0.0.1/com.demo.Service"
