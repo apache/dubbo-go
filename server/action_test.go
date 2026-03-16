@@ -23,6 +23,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.uber.org/atomic"
 )
@@ -515,7 +516,7 @@ func TestExportReturnsRegistryLoadError(t *testing.T) {
 	}
 
 	err := svcOpts.Export()
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), `registry id "bad" url is invalid`)
 }
 
