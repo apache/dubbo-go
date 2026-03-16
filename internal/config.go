@@ -206,3 +206,12 @@ func ValidateMethodConfig(method *global.MethodConfig) error {
 
 	return nil
 }
+
+func ValidateRegistryIDs(ids []string, regs map[string]*global.RegistryConfig) error {
+	for _, id := range ids {
+		if _, ok := regs[id]; !ok {
+			return fmt.Errorf("registry id %q not found", id)
+		}
+	}
+	return nil
+}

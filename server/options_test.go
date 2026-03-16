@@ -75,6 +75,19 @@ func TestServerOptionsInitFailsOnMissingRegistryID(t *testing.T) {
 	assert.Contains(t, err.Error(), `registry id "missing" not found`)
 }
 
+func TestServerOptionsInitTranslatesRegistryIDs(t *testing.T) {
+	opts := defaultServerOptions()
+	opts.Provider.RegistryIDs = []string{"r1,r2", "r2"}
+	opts.Registries = map[string]*global.RegistryConfig{
+		"r1": {Protocol: "mock", Address: "127.0.0.1:2181"},
+		"r2": {Protocol: "mock", Address: "127.0.0.2:2181"},
+	}
+
+	err := opts.init()
+	require.NoError(t, err)
+	assert.Equal(t, []string{"r1", "r2"}, opts.Provider.RegistryIDs)
+}
+
 func TestServiceOptionsInitFailsOnMissingRegistryID(t *testing.T) {
 	srv := &Server{
 		cfg: &ServerOptions{
@@ -100,6 +113,34 @@ func TestServiceOptionsInitFailsOnMissingRegistryID(t *testing.T) {
 	})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), `registry id "missing" not found`)
+}
+
+func TestServiceOptionsInitTranslatesRegistryIDs(t *testing.T) {
+	srv := &Server{
+		cfg: &ServerOptions{
+			Provider: &global.ProviderConfig{
+				ProtocolIDs: []string{"triple"},
+			},
+			Registries: map[string]*global.RegistryConfig{
+				"r1": {Protocol: "mock", Address: "127.0.0.1:2181"},
+				"r2": {Protocol: "mock", Address: "127.0.0.2:2181"},
+			},
+			Protocols: map[string]*global.ProtocolConfig{
+				"triple": {Name: "triple"},
+			},
+			Application: global.DefaultApplicationConfig(),
+		},
+	}
+	svcOpts := defaultServiceOptions()
+	svcOpts.Registries = srv.cfg.Registries
+	svcOpts.Protocols = srv.cfg.Protocols
+	svcOpts.Provider = srv.cfg.Provider
+
+	err := svcOpts.init(srv, func(opts *ServiceOptions) {
+		opts.Service.RegistryIDs = []string{"r1,r2", "r2"}
+	})
+	require.NoError(t, err)
+	assert.Equal(t, []string{"r1", "r2"}, svcOpts.Service.RegistryIDs)
 }
 
 func TestServiceOptionsInitFailsOnInvalidMethodConfig(t *testing.T) {
