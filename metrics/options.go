@@ -152,3 +152,41 @@ func WithPath(path string) Option {
 		opts.Metrics.Path = path
 	}
 }
+
+// Below are options for probe
+func WithProbeEnabled() Option {
+	return func(opts *Options) {
+		b := true
+		opts.Metrics.Probe.Enabled = &b
+	}
+}
+
+func WithProbePort(port int) Option {
+	return func(opts *Options) {
+		opts.Metrics.Probe.Port = strconv.Itoa(port)
+	}
+}
+
+func WithProbeLivenessPath(path string) Option {
+	return func(opts *Options) {
+		opts.Metrics.Probe.LivenessPath = path
+	}
+}
+
+func WithProbeReadinessPath(path string) Option {
+	return func(opts *Options) {
+		opts.Metrics.Probe.ReadinessPath = path
+	}
+}
+
+func WithProbeStartupPath(path string) Option {
+	return func(opts *Options) {
+		opts.Metrics.Probe.StartupPath = path
+	}
+}
+
+func WithProbeUseInternalState(use bool) Option {
+	return func(opts *Options) {
+		opts.Metrics.Probe.UseInternalState = &use
+	}
+}

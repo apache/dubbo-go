@@ -710,9 +710,10 @@ func TestRegistryConfigClone(t *testing.T) {
 		assert.Equal(t, reg.UseAsMetaReport, cloned.UseAsMetaReport)
 		assert.Equal(t, reg.UseAsConfigCenter, cloned.UseAsConfigCenter)
 		assert.NotSame(t, reg, cloned)
-		assert.NotSame(t, reg.Params, cloned.Params)
 		assert.Equal(t, "value1", cloned.Params["key1"])
 		assert.Equal(t, "value2", cloned.Params["key2"])
+		cloned.Params["key1"] = "changed"
+		assert.Equal(t, "value1", reg.Params["key1"])
 	})
 
 	t.Run("clone_nil_registry_config", func(t *testing.T) {
@@ -736,7 +737,8 @@ func TestRegistryConfigClone(t *testing.T) {
 		cloned := reg.Clone()
 		assert.NotNil(t, cloned)
 		assert.Empty(t, cloned.Params)
-		assert.NotSame(t, reg.Params, cloned.Params)
+		cloned.Params["new"] = "value"
+		assert.Empty(t, reg.Params)
 	})
 }
 
@@ -801,7 +803,8 @@ func TestCloneRegistriesConfig(t *testing.T) {
 		cloned := CloneRegistriesConfig(regs)
 		assert.NotNil(t, cloned)
 		assert.Empty(t, cloned)
-		assert.NotSame(t, regs, cloned)
+		cloned["reg"] = &RegistryConfig{Protocol: "nacos"}
+		assert.Empty(t, regs)
 	})
 
 	t.Run("clone_single_registry", func(t *testing.T) {
@@ -866,14 +869,16 @@ func TestRouterConfigClone(t *testing.T) {
 		assert.Equal(t, router.ScriptType, cloned.ScriptType)
 		assert.Equal(t, router.Script, cloned.Script)
 		assert.NotSame(t, router, cloned)
-		assert.NotSame(t, router.Conditions, cloned.Conditions)
-		assert.NotSame(t, router.Tags, cloned.Tags)
 		assert.Len(t, cloned.Conditions, 2)
 		assert.Len(t, cloned.Tags, 2)
 		assert.Equal(t, "tag1", cloned.Tags[0].Name)
 		assert.Equal(t, "tag2", cloned.Tags[1].Name)
 		assert.Len(t, cloned.Tags[0].Addresses, 2)
 		assert.Len(t, cloned.Tags[1].Addresses, 1)
+		cloned.Conditions[0] = "changed"
+		assert.Equal(t, "condition1", router.Conditions[0])
+		cloned.Tags[0].Name = "changed"
+		assert.Equal(t, "tag1", router.Tags[0].Name)
 	})
 
 	t.Run("clone_nil_router_config", func(t *testing.T) {
@@ -1217,9 +1222,10 @@ func TestConsumerConfigClone(t *testing.T) {
 		assert.Equal(t, consumer.Check, cloned.Check)
 		assert.Equal(t, consumer.AdaptiveService, cloned.AdaptiveService)
 		assert.NotSame(t, consumer, cloned)
-		assert.NotSame(t, consumer.References, cloned.References)
 		assert.Len(t, cloned.References, 2)
 		assert.Equal(t, "com.test.Service1", cloned.References["ref1"].InterfaceName)
+		cloned.References["ref1"] = &ReferenceConfig{InterfaceName: "changed"}
+		assert.Equal(t, "com.test.Service1", consumer.References["ref1"].InterfaceName)
 	})
 
 	t.Run("clone_nil_consumer_config", func(t *testing.T) {
@@ -1350,10 +1356,11 @@ func TestServiceConfigClone(t *testing.T) {
 		assert.Equal(t, service.Group, cloned.Group)
 		assert.Equal(t, service.Version, cloned.Version)
 		assert.NotSame(t, service, cloned)
-		assert.NotSame(t, service.Params, cloned.Params)
 		assert.Equal(t, "value", cloned.Params["key"])
 		assert.Len(t, cloned.ProtocolIDs, 1)
 		assert.Len(t, cloned.RegistryIDs, 1)
+		cloned.Params["key"] = "changed"
+		assert.Equal(t, "value", service.Params["key"])
 	})
 
 	t.Run("clone_nil_service_config", func(t *testing.T) {
@@ -1384,8 +1391,10 @@ func TestServiceConfigClone(t *testing.T) {
 		cloned := service.Clone()
 		assert.Len(t, cloned.RCProtocolsMap, 2)
 		assert.Len(t, cloned.RCRegistriesMap, 2)
-		assert.NotSame(t, service.RCProtocolsMap, cloned.RCProtocolsMap)
-		assert.NotSame(t, service.RCRegistriesMap, cloned.RCRegistriesMap)
+		cloned.RCProtocolsMap["proto1"] = &ProtocolConfig{Name: "changed"}
+		assert.Equal(t, "tri", service.RCProtocolsMap["proto1"].Name)
+		cloned.RCRegistriesMap["reg1"] = &RegistryConfig{Protocol: "changed"}
+		assert.Equal(t, "zookeeper", service.RCRegistriesMap["reg1"].Protocol)
 	})
 }
 
@@ -1509,7 +1518,8 @@ func TestProviderConfigClone(t *testing.T) {
 		assert.Equal(t, provider.Filter, cloned.Filter)
 		assert.Equal(t, provider.Register, cloned.Register)
 		assert.NotSame(t, provider, cloned)
-		assert.NotSame(t, provider.Services, cloned.Services)
+		cloned.Services["service1"] = &ServiceConfig{Interface: "changed"}
+		assert.Equal(t, "com.test.Service1", provider.Services["service1"].Interface)
 
 		// Verify RegistryIDs is a true deep copy by mutating the clone
 		assert.Len(t, cloned.RegistryIDs, len(provider.RegistryIDs))
@@ -1719,7 +1729,8 @@ func TestCustomConfigClone(t *testing.T) {
 		assert.NotNil(t, cloned)
 		assert.NotSame(t, custom, cloned)
 		if custom.ConfigMap != nil {
-			assert.NotSame(t, custom.ConfigMap, cloned.ConfigMap)
+			cloned.ConfigMap["key1"] = "changed"
+			assert.Equal(t, "value1", custom.ConfigMap["key1"])
 		}
 	})
 

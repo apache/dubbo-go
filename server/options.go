@@ -44,6 +44,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/internal"
+	"dubbo.apache.org/dubbo-go/v3/metrics/probe"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/registry"
@@ -111,6 +112,11 @@ func (srvOpts *ServerOptions) init(opts ...ServerOption) error {
 
 	// init graceful_shutdown
 	graceful_shutdown.Init(graceful_shutdown.SetShutdownConfig(srvOpts.Shutdown))
+
+	// init probe
+	if probeCfg := probe.BuildProbeConfig(srvOpts.Metrics.Probe); probeCfg != nil {
+		probe.Init(probeCfg)
+	}
 
 	return nil
 }

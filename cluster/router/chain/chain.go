@@ -33,6 +33,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router"
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
@@ -108,6 +109,12 @@ func (c *RouterChain) copyRouters() []router.PriorityRouter {
 // NewRouterChain init router chain
 // Loop routerFactories and call NewRouter method
 func NewRouterChain(url *common.URL) (*RouterChain, error) {
+	if url.SubURL != nil {
+		if appName := url.SubURL.GetParam(constant.ApplicationKey, ""); appName != "" {
+			url.CompareAndSwapParam(constant.ApplicationKey, "", appName)
+		}
+	}
+
 	routerFactories := extension.GetRouterFactories()
 	if len(routerFactories) == 0 {
 		return nil, perrors.Errorf("No routerFactory exits , create one please")

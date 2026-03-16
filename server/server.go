@@ -38,6 +38,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/dubboutil"
 	"dubbo.apache.org/dubbo-go/v3/metadata"
+	"dubbo.apache.org/dubbo-go/v3/metrics/probe"
 	"dubbo.apache.org/dubbo-go/v3/registry/exposed_tmp"
 )
 
@@ -104,10 +105,12 @@ func (s *Server) genSvcOpts(handler any, info *common.ServiceInfo, opts ...Servi
 		return nil, errors.New("Server has not been initialized, please use NewServer() to create Server")
 	}
 	var svcOpts []ServiceOption
+
 	appCfg := s.cfg.Application
 	proCfg := s.cfg.Provider
 	prosCfg := s.cfg.Protocols
 	regsCfg := s.cfg.Registries
+
 	// todo(DMwangnima): record the registered service
 	// Record the registered service for debugging and monitoring
 	interfaceName := common.GetReference(handler)
@@ -116,7 +119,7 @@ func (s *Server) genSvcOpts(handler any, info *common.ServiceInfo, opts ...Servi
 	newSvcOpts := defaultServiceOptions()
 	if appCfg != nil {
 		svcOpts = append(svcOpts,
-			SetApplication(s.cfg.Application),
+			SetApplication(appCfg),
 		)
 	}
 	if proCfg != nil {
@@ -288,6 +291,9 @@ func enhanceServiceInfo(info *common.ServiceInfo) *common.ServiceInfo {
 }
 
 func (s *Server) exportServices() error {
+	// add read lock to protect svcOptsMap data
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	for _, svcOpts := range s.svcOptsMap {
 		if err := svcOpts.Export(); err != nil {
 			logger.Errorf("export %s service failed, err: %s", svcOpts.Service.Interface, err)
@@ -299,12 +305,17 @@ func (s *Server) exportServices() error {
 
 func (s *Server) Serve() error {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	if s.serve {
+		// release lock in case causing deadlock
+		s.mu.Unlock()
 		return errors.New("server has already been started")
 	}
 	// prevent multiple calls to Serve
 	s.serve = true
+
+	// release lock in case causing deadlock
+	s.mu.Unlock()
+
 	// the registryConfig in ServiceOptions and ServerOptions all need to init a metadataReporter,
 	// when ServiceOptions.init() is called we don't know if a new registry config is set in the future use serviceOption
 	if err := metadata.InitRegistryMetadataReport(s.cfg.Registries); err != nil {
@@ -329,12 +340,18 @@ func (s *Server) Serve() error {
 	if err := exposed_tmp.RegisterServiceInstance(); err != nil {
 		return err
 	}
+
+	// k8s probe ready
+	probe.SetStartupComplete(true)
+	probe.SetReady(true)
+
 	select {}
 }
 
 // In order to expose internal services
 func (s *Server) exportInternalServices() error {
 	cfg := &ServiceOptions{}
+
 	cfg.Application = s.cfg.Application
 	cfg.Provider = s.cfg.Provider
 	cfg.Protocols = s.cfg.Protocols
