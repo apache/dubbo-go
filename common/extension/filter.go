@@ -31,7 +31,7 @@ var (
 )
 
 // SetFilter sets the filter extension with @name
-// For example: hystrix/metrics/token/tracing/limit/...
+// For example: metrics/token/tracing/limit/...
 func SetFilter(name string, v func() filter.Filter) {
 	filters[name] = v
 }

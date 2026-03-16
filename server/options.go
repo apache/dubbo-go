@@ -389,12 +389,6 @@ func WithServerProtocol(opts ...protocol.ServerOption) ServerOption {
 	}
 }
 
-func WithServerFilterConf(conf any) ServerOption {
-	return func(opts *ServerOptions) {
-		opts.Provider.FilterConf = conf
-	}
-}
-
 func WithServerAdaptiveService() ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.AdaptiveService = true

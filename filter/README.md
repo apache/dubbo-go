@@ -29,7 +29,6 @@ import _ "dubbo.apache.org/dubbo-go/v3/filter/filter_impl"
 - execlmt: Execute Limit Filter(https://github.com/apache/dubbo-go/pull/246)
 - generic: Generic Filter(https://github.com/apache/dubbo-go/pull/291)
 - gshutdown: Graceful Shutdown Filter
-- hystrix: Hystrix Filter(https://github.com/apache/dubbo-go/pull/133)
 - metrics: Metrics Filter(https://github.com/apache/dubbo-go/pull/342)
 - seata: Seata Filter
 - sentinel: Sentinel Filter
