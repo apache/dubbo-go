@@ -137,6 +137,89 @@ func TestProcessURLRejectsEmptyRegistryURLs(t *testing.T) {
 	require.Contains(t, err.Error(), "no registry urls available")
 }
 
+func TestProcessURLWithDirectUserURL(t *testing.T) {
+	ref := &global.ReferenceConfig{
+		InterfaceName: "com.example.Service",
+		Protocol:      constant.TriProtocol,
+		URL:           "tri://localhost:20000",
+	}
+	cfgURL := common.NewURLWithOptions(
+		common.WithPath(ref.InterfaceName),
+		common.WithParamsValue(constant.GroupKey, "test-group"),
+	)
+
+	urls, err := processURL(ref, nil, cfgURL)
+	require.NoError(t, err)
+	require.Len(t, urls, 1)
+	require.Equal(t, constant.TriProtocol, urls[0].Protocol)
+	require.Equal(t, "/"+ref.InterfaceName, urls[0].Path)
+	require.Equal(t, "test-group", urls[0].GetParam(constant.GroupKey, ""))
+	require.Equal(t, "true", urls[0].GetParam("peer", ""))
+}
+
+func TestProcessURLWithMultipleDirectUserURLs(t *testing.T) {
+	ref := &global.ReferenceConfig{
+		InterfaceName: "com.example.Service",
+		Protocol:      constant.TriProtocol,
+		URL:           "tri://localhost:20000;tri://localhost:20001",
+	}
+	cfgURL := common.NewURLWithOptions(common.WithPath(ref.InterfaceName))
+
+	urls, err := processURL(ref, nil, cfgURL)
+	require.NoError(t, err)
+	require.Len(t, urls, 2)
+	require.Equal(t, constant.TriProtocol, urls[0].Protocol)
+	require.Equal(t, "true", urls[0].GetParam("peer", ""))
+	require.Equal(t, constant.TriProtocol, urls[1].Protocol)
+	require.Equal(t, "true", urls[1].GetParam("peer", ""))
+}
+
+func TestProcessURLRejectsInvalidUserURL(t *testing.T) {
+	ref := &global.ReferenceConfig{
+		InterfaceName: "com.example.Service",
+		Protocol:      constant.TriProtocol,
+		URL:           "://bad-url",
+	}
+	cfgURL := common.NewURLWithOptions(common.WithPath(ref.InterfaceName))
+
+	urls, err := processURL(ref, nil, cfgURL)
+	require.Nil(t, urls)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "url configuration error")
+}
+
+func TestBuildReferenceURLWithRegistryProtocol(t *testing.T) {
+	ref := &global.ReferenceConfig{InterfaceName: "com.example.Service"}
+	cfgURL := common.NewURLWithOptions(common.WithPath(ref.InterfaceName))
+	serviceURL := common.NewURLWithOptions(common.WithProtocol(constant.RegistryProtocol))
+
+	result := buildReferenceURL(serviceURL, ref, cfgURL)
+
+	require.Same(t, serviceURL, result)
+	require.Same(t, cfgURL, result.SubURL)
+}
+
+func TestLoadRegistryURLsAssignsSubURL(t *testing.T) {
+	ref := &global.ReferenceConfig{
+		InterfaceName: "com.example.Service",
+		RegistryIDs:   []string{"valid"},
+	}
+	cfgURL := common.NewURLWithOptions(common.WithPath(ref.InterfaceName))
+	registries := map[string]*global.RegistryConfig{
+		"valid": {
+			Protocol: "zookeeper",
+			Address:  "127.0.0.1:2181",
+		},
+	}
+
+	urls, err := loadRegistryURLs(ref, registries, cfgURL)
+	require.NoError(t, err)
+	require.NotEmpty(t, urls)
+	for _, regURL := range urls {
+		require.Same(t, cfgURL, regURL.SubURL)
+	}
+}
+
 func TestBuildInvokerRejectsEmptyURLs(t *testing.T) {
 	invoker, err := buildInvoker(nil, &global.ReferenceConfig{})
 	require.Nil(t, invoker)
