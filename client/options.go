@@ -18,7 +18,6 @@
 package client
 
 import (
-	"fmt"
 	"strconv"
 	"time"
 )
@@ -120,7 +119,7 @@ func (refOpts *ReferenceOptions) init(opts ...ReferenceOption) error {
 			}
 		}
 		refConf.RegistryIDs = commonCfg.TranslateIds(refConf.RegistryIDs)
-		if err := validateRegistryIDs(refConf.RegistryIDs, regs); err != nil {
+		if err := internal.ValidateRegistryIDs(refConf.RegistryIDs, regs); err != nil {
 			return err
 		}
 	}
@@ -560,7 +559,7 @@ func (cliOpts *ClientOptions) init(opts ...ClientOption) error {
 			}
 		}
 		consumerConf.RegistryIDs = commonCfg.TranslateIds(consumerConf.RegistryIDs)
-		if err := validateRegistryIDs(consumerConf.RegistryIDs, regs); err != nil {
+		if err := internal.ValidateRegistryIDs(consumerConf.RegistryIDs, regs); err != nil {
 			return err
 		}
 	}
@@ -964,15 +963,6 @@ type CallOption func(*CallOptions)
 
 func newDefaultCallOptions() *CallOptions {
 	return &CallOptions{}
-}
-
-func validateRegistryIDs(ids []string, regs map[string]*global.RegistryConfig) error {
-	for _, id := range ids {
-		if _, ok := regs[id]; !ok {
-			return fmt.Errorf("registry id %q not found", id)
-		}
-	}
-	return nil
 }
 
 // WithCallRequestTimeout the maximum waiting time for one specific call, only works for 'tri' and 'dubbo' protocol

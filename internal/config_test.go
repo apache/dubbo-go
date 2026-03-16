@@ -132,6 +132,28 @@ func TestLoadRegistries_MissingRegistryID(t *testing.T) {
 	assert.Contains(t, err.Error(), `registry id "missing" not found`)
 }
 
+func TestValidateRegistryIDs(t *testing.T) {
+	t.Run("valid ids", func(t *testing.T) {
+		regs := map[string]*global.RegistryConfig{
+			"r1": {Protocol: "mock", Address: "127.0.0.1:2181"},
+			"r2": {Protocol: "mock", Address: "127.0.0.2:2181"},
+		}
+
+		err := ValidateRegistryIDs([]string{"r1", "r2"}, regs)
+		require.NoError(t, err)
+	})
+
+	t.Run("missing id", func(t *testing.T) {
+		regs := map[string]*global.RegistryConfig{
+			"r1": {Protocol: "mock", Address: "127.0.0.1:2181"},
+		}
+
+		err := ValidateRegistryIDs([]string{"r1", "missing"}, regs)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), `registry id "missing" not found`)
+	})
+}
+
 func TestToURLs_EmptyOrNA(t *testing.T) {
 	tests := []struct {
 		name    string

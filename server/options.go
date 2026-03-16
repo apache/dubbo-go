@@ -18,7 +18,6 @@
 package server
 
 import (
-	"fmt"
 	"reflect"
 	"strconv"
 	"sync"
@@ -89,7 +88,7 @@ func (srvOpts *ServerOptions) init(opts ...ServerOption) error {
 	if len(providerConf.RegistryIDs) <= 0 {
 		providerConf.RegistryIDs = getRegistryIds(srvOpts.Registries)
 	}
-	if err := validateRegistryIDs(providerConf.RegistryIDs, srvOpts.Registries); err != nil {
+	if err := internal.ValidateRegistryIDs(providerConf.RegistryIDs, srvOpts.Registries); err != nil {
 		return err
 	}
 
@@ -563,7 +562,7 @@ func (svcOpts *ServiceOptions) init(srv *Server, opts ...ServiceOption) error {
 	}
 	if len(svc.RegistryIDs) <= 0 {
 		svc.NotRegister = true
-	} else if err := validateRegistryIDs(svc.RegistryIDs, svc.RCRegistriesMap); err != nil {
+	} else if err := internal.ValidateRegistryIDs(svc.RegistryIDs, svc.RCRegistriesMap); err != nil {
 		return err
 	}
 
@@ -633,15 +632,6 @@ func WithFilter(filter string) ServiceOption {
 	return func(cfg *ServiceOptions) {
 		cfg.Service.Filter = filter
 	}
-}
-
-func validateRegistryIDs(ids []string, regs map[string]*global.RegistryConfig) error {
-	for _, id := range ids {
-		if _, ok := regs[id]; !ok {
-			return fmt.Errorf("registry id %q not found", id)
-		}
-	}
-	return nil
 }
 
 // todo(DMwangnima): think about a more ideal configuration style

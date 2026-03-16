@@ -1273,6 +1273,23 @@ func TestClientOptionsInitFailsOnMissingRegistryID(t *testing.T) {
 	assert.Contains(t, err.Error(), `registry id "missing" not found`)
 }
 
+func TestClientOptionsInitTranslatesRegistryIDs(t *testing.T) {
+	cliOpts := &ClientOptions{
+		Consumer: &global.ConsumerConfig{
+			RegistryIDs: []string{"r1,r2", "r2"},
+		},
+		Registries: map[string]*global.RegistryConfig{
+			"r1": {Protocol: "mock", Address: "127.0.0.1:2181"},
+			"r2": {Protocol: "mock", Address: "127.0.0.2:2181"},
+		},
+		overallReference: &global.ReferenceConfig{},
+	}
+
+	err := cliOpts.init()
+	require.NoError(t, err)
+	assert.Equal(t, []string{"r1", "r2"}, cliOpts.Consumer.RegistryIDs)
+}
+
 func TestReferenceOptionsInitFailsOnMissingRegistryID(t *testing.T) {
 	refOpts := defaultReferenceOptions()
 	refOpts.Registries = map[string]*global.RegistryConfig{
@@ -1282,6 +1299,18 @@ func TestReferenceOptionsInitFailsOnMissingRegistryID(t *testing.T) {
 	err := refOpts.init(WithRegistryIDs("missing"))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), `registry id "missing" not found`)
+}
+
+func TestReferenceOptionsInitTranslatesRegistryIDs(t *testing.T) {
+	refOpts := defaultReferenceOptions()
+	refOpts.Registries = map[string]*global.RegistryConfig{
+		"r1": {Protocol: "mock", Address: "127.0.0.1:2181"},
+		"r2": {Protocol: "mock", Address: "127.0.0.2:2181"},
+	}
+
+	err := refOpts.init(WithRegistryIDs("r1,r2", "r2"))
+	require.NoError(t, err)
+	assert.Equal(t, []string{"r1", "r2"}, refOpts.Reference.RegistryIDs)
 }
 
 func TestReferenceOptionsInitFailsOnInvalidMethodConfig(t *testing.T) {
