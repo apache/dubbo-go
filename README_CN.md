@@ -98,6 +98,16 @@ func main() {
 * **高可用策略**: 故障转移 (Failover)、快速失败 (Failfast)、失败安全/失败自动恢复 (Failsafe/Failback)、广播 (Broadcast)、并行调用 (Forking)。
 * **跨语言互通**: 通过 Triple 协议泛化调用、版本通配符匹配等技术，实现与 Java 版 Dubbo 的完美互通。
 
+## 扩展生态
+
+### [dubbo-go-extensions](https://github.com/apache/dubbo-go-extensions)（建设中）
+
+该仓库提供 Dubbo-go 的扩展模块，包括**过滤器**、**注册中心**和**配置中心**等。
+
+它承载由社区维护的可选集成能力，可在保持核心运行时精简稳定的同时，持续扩展 Dubbo-go 的生态能力，并方便业务按需集成。
+
+有关使用详情，请参阅 [dubbo-go-extensions README](https://github.com/apache/dubbo-go-extensions)。
+
 ## ️ 工具生态
 
 `tools/` 目录和 `dubbogo/tools` 仓库提供了一些实用工具，以简化您的 Dubbo-Go 开发体验。
@@ -153,6 +163,7 @@ func main() {
 
 ## 生态系统
 
+- [dubbo-go-extensions](https://github.com/apache/dubbo-go-extensions)，建设中
 - [dubbo-go-samples](https://github.com/apache/dubbo-go-samples)
 - [dubbo-go-pixiu: 作为代理解决 Dubbo 多语言互通问题](https://github.com/apache/dubbo-go-pixiu)
 - [与 Dubbo Java 互通](https://cn.dubbo.apache.org/zh-cn/overview/mannual/golang-sdk/tutorial/interop-dubbo/)

@@ -106,6 +106,17 @@ Dubbo-go provides robust service governance capabilities:
 - **HA Strategy**: Failover, Failfast, Failsafe/Failback, Available, Broadcast, Forking.
 - **Interoperability**: Full compatibility with Apache Dubbo (Java) via Triple protocol generic calls, group/version wildcard matching, and TLS API redesign.
 
+## Extensions
+
+### [dubbo-go-extensions](https://github.com/apache/dubbo-go-extensions) (under development)
+
+This repository provides Dubbo-go extension modules, including **filters**,
+**registries**, and **config centers**.
+
+It serves as the home for community-maintained optional integrations, allowing the core runtime to remain lean and stable while continuing to expand the Dubbo-go ecosystem and making on-demand adoption easier for applications.
+
+For usage details, see the [dubbo-go-extensions README](https://github.com/apache/dubbo-go-extensions).
+
 
 ## ️ Tools
 
@@ -163,6 +174,7 @@ This is a plugin for dubbo-go developers. A code formatting tool that organizes 
 For usage details, see the [imports-formatter README](https://github.com/dubbogo/tools?tab=readme-ov-file#imports-formatter).
 
 ## Ecosystem
+- [dubbo-go-extensions](https://github.com/apache/dubbo-go-extensions), under development
 - [dubbo-go-samples](https://github.com/apache/dubbo-go-samples)
 - [dubbo-go-pixiu which acting as a proxy to solve Dubbo multi-language interoperability](https://github.com/apache/dubbo-go-pixiu)
 - [Interoperability with Dubbo Java](https://cn.dubbo.apache.org/zh-cn/overview/mannual/golang-sdk/tutorial/interop-dubbo/)
