@@ -19,9 +19,11 @@ package extension
 
 import (
 	"container/list"
+	"sync"
 )
 
 var customShutdownCallbacks = list.New()
+var customShutdownCallbacksLock sync.Mutex
 
 /**
  * AddCustomShutdownCallback
@@ -44,10 +46,20 @@ var customShutdownCallbacks = list.New()
  * And it may introduce much complication for another users.
  */
 func AddCustomShutdownCallback(callback func()) {
+	customShutdownCallbacksLock.Lock()
+	defer customShutdownCallbacksLock.Unlock()
+
 	customShutdownCallbacks.PushBack(callback)
 }
 
 // GetAllCustomShutdownCallbacks gets all custom shutdown callbacks
 func GetAllCustomShutdownCallbacks() *list.List {
-	return customShutdownCallbacks
+	customShutdownCallbacksLock.Lock()
+	defer customShutdownCallbacksLock.Unlock()
+
+	ret := list.New()
+	for e := customShutdownCallbacks.Front(); e != nil; e = e.Next() {
+		ret.PushBack(e.Value)
+	}
+	return ret
 }

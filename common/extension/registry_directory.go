@@ -22,6 +22,8 @@ import (
 )
 
 import (
+	"sync/atomic"
+
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/registry"
@@ -29,25 +31,26 @@ import (
 
 type registryDirectory func(url *common.URL, registry registry.Registry) (directory.Directory, error)
 
-var directories = make(map[string]registryDirectory)
-var defaultDirectory registryDirectory
+var directories = NewRegistry[registryDirectory]("registry directory")
+var defaultDirectory atomic.Value
 
 // SetDefaultRegistryDirectory sets the default registryDirectory
 func SetDefaultRegistryDirectory(v registryDirectory) {
-	defaultDirectory = v
+	defaultDirectory.Store(v)
 }
 
 // SetDirectory sets the default registryDirectory
 func SetDirectory(key string, v registryDirectory) {
-	directories[key] = v
+	directories.Register(key, v)
 }
 
 // GetDefaultRegistryDirectory finds the registryDirectory with url and registry
 func GetDefaultRegistryDirectory(url *common.URL, registry registry.Registry) (directory.Directory, error) {
-	if defaultDirectory == nil {
+	v := defaultDirectory.Load()
+	if v == nil {
 		panic("registry directory is not existing, make sure you have import the package.")
 	}
-	return defaultDirectory(url, registry)
+	return v.(registryDirectory)(url, registry)
 }
 
 // GetDirectoryInstance finds the registryDirectory with url and registry
@@ -56,9 +59,10 @@ func GetDirectoryInstance(url *common.URL, registry registry.Registry) (director
 	if key == "" {
 		return GetDefaultRegistryDirectory(url, registry)
 	}
-	if directories[key] == nil {
+	v, ok := directories.Get(key)
+	if !ok {
 		logger.Warn("registry directory " + key + " does not exist, make sure you have import the package, will use the default directory type.")
 		return GetDefaultRegistryDirectory(url, registry)
 	}
-	return directories[key](url, registry)
+	return v(url, registry)
 }

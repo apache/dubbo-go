@@ -18,17 +18,23 @@
 package extension
 
 import (
+	"sync/atomic"
+
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 )
 
 type ServiceNameMappingCreator func() mapping.ServiceNameMapping
 
-var globalNameMappingCreator ServiceNameMappingCreator
+var globalNameMappingCreator atomic.Value
 
 func SetGlobalServiceNameMapping(nameMappingCreator ServiceNameMappingCreator) {
-	globalNameMappingCreator = nameMappingCreator
+	globalNameMappingCreator.Store(nameMappingCreator)
 }
 
 func GetGlobalServiceNameMapping() mapping.ServiceNameMapping {
-	return globalNameMappingCreator()
+	v := globalNameMappingCreator.Load()
+	if v == nil {
+		panic("global service name mapping creator is not existing")
+	}
+	return v.(ServiceNameMappingCreator)()
 }
