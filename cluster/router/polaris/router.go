@@ -23,22 +23,18 @@ import (
 	"strings"
 	"sync"
 	"time"
-)
 
-import (
 	"github.com/dubbogo/gost/log/logger"
-
 	"github.com/polarismesh/polaris-go"
 	"github.com/polarismesh/polaris-go/pkg/model"
-	v1 "github.com/polarismesh/polaris-go/pkg/model/pb/v1"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	v1 "github.com/polarismesh/polaris-go/pkg/model/pb/v1"
+
 	remotingpolaris "dubbo.apache.org/dubbo-go/v3/remoting/polaris"
 	"dubbo.apache.org/dubbo-go/v3/remoting/polaris/parser"
 )
@@ -53,9 +49,7 @@ var (
 
 func newPolarisRouter(url *common.URL) (*polarisRouter, error) {
 
-	var applicationName string
-	// first try URL param (backward compat)
-	applicationName = url.GetParam(constant.ApplicationKey, "")
+	applicationName := url.GetParam(constant.ApplicationKey, "")
 	// then try attribute (current storage path)
 	if applicationName == "" {
 		if appConfRaw, ok := url.GetAttribute(constant.ApplicationKey); ok {
