@@ -187,14 +187,14 @@ func normalRegistryDir(noMockEvent ...bool) (*RegistryDirectory, *registry.MockR
 	return dir.(*RegistryDirectory), mockRegistry.(*registry.MockRegistry)
 }
 
-// Test_CrossProtocol_ProviderDiscovery_Issue3173 is a regression test for
+// TestCrossProtocolProviderDiscoveryIssue3173 is a regression test for
 // https://github.com/apache/dubbo-go/issues/3173.
 // A Go consumer configured with "tri" (the default for client.NewClient) must
 // be able to discover and cache a Java Dubbo 2.x provider that registered in
 // ZooKeeper with protocol="dubbo".  Before the fix, the protocol guard in
 // cacheInvoker silently dropped the provider and the consumer always received
 // "No provider available".
-func Test_CrossProtocol_ProviderDiscovery_Issue3173(t *testing.T) {
+func TestCrossProtocolProviderDiscoveryIssue3173(t *testing.T) {
 	extension.SetProtocol(protocolwrapper.FILTER, protocolwrapper.NewMockProtocolFilter)
 
 	applicationConfig := &global.ApplicationConfig{Name: "test-application"}
