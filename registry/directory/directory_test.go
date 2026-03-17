@@ -187,6 +187,55 @@ func normalRegistryDir(noMockEvent ...bool) (*RegistryDirectory, *registry.MockR
 	return dir.(*RegistryDirectory), mockRegistry.(*registry.MockRegistry)
 }
 
+// Test_CrossProtocol_ProviderDiscovery_Issue3173 is a regression test for
+// https://github.com/apache/dubbo-go/issues/3173.
+// A Go consumer configured with "tri" (the default for client.NewClient) must
+// be able to discover and cache a Java Dubbo 2.x provider that registered in
+// ZooKeeper with protocol="dubbo".  Before the fix, the protocol guard in
+// cacheInvoker silently dropped the provider and the consumer always received
+// "No provider available".
+func Test_CrossProtocol_ProviderDiscovery_Issue3173(t *testing.T) {
+	extension.SetProtocol(protocolwrapper.FILTER, protocolwrapper.NewMockProtocolFilter)
+
+	applicationConfig := &global.ApplicationConfig{Name: "test-application"}
+	url, _ := common.NewURL("mock://127.0.0.1:1111")
+	// Consumer uses "tri" — the default protocol when using client.NewClient().
+	suburl, _ := common.NewURL(
+		"tri://127.0.0.1:20000/org.apache.dubbo-go.mockService",
+		common.WithParamsValue(constant.ClusterKey, "mock"),
+		common.WithParamsValue(constant.GroupKey, "group"),
+		common.WithParamsValue(constant.VersionKey, "1.0.0"),
+		common.WithParamsValue(constant.ApplicationKey, applicationConfig.Name),
+	)
+	url.SubURL = suburl
+	mockRegistry, _ := registry.NewMockRegistry(&common.URL{})
+	dir, _ := NewRegistryDirectory(url, mockRegistry)
+	go dir.(*RegistryDirectory).Subscribe(suburl)
+
+	// Java Dubbo 2.x provider registers in ZooKeeper with protocol="dubbo".
+	providerUrl, _ := common.NewURL(
+		"dubbo://192.168.1.100:20880/org.apache.dubbo-go.mockService",
+		common.WithParamsValue(constant.GroupKey, "group"),
+		common.WithParamsValue(constant.VersionKey, "1.0.0"),
+	)
+	mockRegistry.(*registry.MockRegistry).MockEvent(
+		&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerUrl},
+	)
+	time.Sleep(1e9)
+
+	registryDirectory := dir.(*RegistryDirectory)
+	// Provider must be discovered — cacheInvokers must not be empty.
+	assert.Len(t, registryDirectory.cacheInvokers, 1,
+		"Java dubbo provider must be discoverable by a tri consumer (issue #3173)")
+	// The invoker's URL must retain the provider's "dubbo" protocol so that the
+	// actual RPC connection is established over the dubbo protocol.
+	if len(registryDirectory.cacheInvokers) > 0 {
+		assert.Equal(t, constant.DubboProtocol,
+			registryDirectory.cacheInvokers[0].GetURL().Protocol,
+			"merged URL must retain the provider's dubbo protocol for correct invocation")
+	}
+}
+
 func TestToGroupInvokers(t *testing.T) {
 	t.Run("SameGroup", func(t *testing.T) {
 		registryDirectory, mockRegistry := normalRegistryDir(true)

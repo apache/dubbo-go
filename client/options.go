@@ -126,6 +126,12 @@ func (refOpts *ReferenceOptions) init(opts ...ReferenceOption) error {
 	}
 
 	// init protocol
+	// The default protocol is Triple ("tri"). Before the fix for issue #3173,
+	// this default caused the discovery-phase protocol guard in cacheInvoker to
+	// silently discard Java Dubbo 2.x providers (which register with
+	// protocol="dubbo"), resulting in "No provider available". Callers targeting
+	// Java Dubbo 2.x providers should use WithClientProtocolDubbo() to set the
+	// protocol explicitly.
 	if refConf.Protocol == "" {
 		refConf.Protocol = constant.TriProtocol
 		if refOpts.Consumer != nil && refOpts.Consumer.Protocol != "" {

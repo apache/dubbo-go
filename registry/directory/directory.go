@@ -476,14 +476,23 @@ func (dir *RegistryDirectory) cacheInvoker(url *common.URL, event *registry.Serv
 		logger.Error("URL is nil ,pls check if service url is subscribe successfully!")
 		return nil
 	}
-	// check the url's protocol is equal to the protocol which is configured in reference config or referenceUrl is not care about protocol
-	if url.Protocol == referenceUrl.Protocol || referenceUrl.Protocol == "" {
-		newUrl := url.MergeURL(referenceUrl)
-		dir.overrideUrl(newUrl)
-		event.Update(newUrl)
-		if v, ok := dir.doCacheInvoker(newUrl, event); ok {
-			return v
-		}
+	// Protocol filtering at this layer is intentionally removed.
+	//
+	// Registry-based discovery (ZooKeeper, Nacos, …) already scopes provider
+	// lookup to interface + group + version.  Filtering by protocol here caused
+	// a silent mismatch: when a Go consumer is created with client.NewClient the
+	// reference protocol defaults to "tri" (Triple), but Java Dubbo 2.x providers
+	// register in ZooKeeper with protocol="dubbo".  The old guard therefore
+	// discarded every Java provider and the consumer always saw "No provider
+	// available" (see GitHub issue #3173).
+	//
+	// Protocol selection is correctly handled later in the invoker/protocol
+	// layer via the merged URL, so there is no need to pre-filter here.
+	newUrl := url.MergeURL(referenceUrl)
+	dir.overrideUrl(newUrl)
+	event.Update(newUrl)
+	if v, ok := dir.doCacheInvoker(newUrl, event); ok {
+		return v
 	}
 	return nil
 }
