@@ -21,7 +21,9 @@ import (
 	"strconv"
 	"sync"
 	"testing"
+)
 
+import (
 	"github.com/stretchr/testify/assert"
 )
 

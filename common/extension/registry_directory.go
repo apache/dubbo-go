@@ -18,12 +18,14 @@
 package extension
 
 import (
+	"sync/atomic"
+)
+
+import (
 	"github.com/dubbogo/gost/log/logger"
 )
 
 import (
-	"sync/atomic"
-
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/registry"

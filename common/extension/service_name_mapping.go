@@ -19,7 +19,9 @@ package extension
 
 import (
 	"sync/atomic"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 )
 

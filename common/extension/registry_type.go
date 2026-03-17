@@ -17,7 +17,9 @@
 
 package extension
 
-import "sync"
+import (
+	"sync"
+)
 
 // Registry is a thread-safe generic container for extension registrations.
 type Registry[T any] struct {
