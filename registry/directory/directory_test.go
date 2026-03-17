@@ -214,7 +214,7 @@ func Test_CrossProtocol_ProviderDiscovery_Issue3173(t *testing.T) {
 
 	// Java Dubbo 2.x provider registers in ZooKeeper with protocol="dubbo".
 	providerUrl, _ := common.NewURL(
-		"dubbo://192.168.1.100:20880/org.apache.dubbo-go.mockService",
+		"dubbo://0.0.0.0:20880/org.apache.dubbo-go.mockService",
 		common.WithParamsValue(constant.GroupKey, "group"),
 		common.WithParamsValue(constant.VersionKey, "1.0.0"),
 	)
