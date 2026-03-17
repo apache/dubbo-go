@@ -21,32 +21,25 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
-var protocols = make(map[string]func() base.Protocol)
+var protocols = NewRegistry[func() base.Protocol]("protocol")
 
 // SetProtocol sets the protocol extension with @name
 func SetProtocol(name string, v func() base.Protocol) {
-	protocols[name] = v
+	protocols.Register(name, v)
 }
 
 // GetProtocol finds the protocol extension with @name
 func GetProtocol(name string) base.Protocol {
-	if protocols[name] == nil {
-		panic("protocol for [" + name + "] is not existing, make sure you have import the package.")
-	}
-	return protocols[name]()
+	return protocols.MustGet(name)()
 }
 
 // UnregisterProtocol removes the protocol extension with @name
 // This helps prevent memory leaks in dynamic extension scenarios
 func UnregisterProtocol(name string) {
-	delete(protocols, name)
+	protocols.Unregister(name)
 }
 
 // GetAllProtocolNames returns all registered protocol names
 func GetAllProtocolNames() []string {
-	names := make([]string, 0, len(protocols))
-	for name := range protocols {
-		names = append(names, name)
-	}
-	return names
+	return protocols.Names()
 }
