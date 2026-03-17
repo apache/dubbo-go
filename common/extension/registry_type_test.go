@@ -50,7 +50,7 @@ func TestRegistryBasicOps(t *testing.T) {
 	assert.Equal(t, 1, v)
 
 	names := r.Names()
-	assert.Equal(t, 1, len(names))
+	assert.Len(t, names, 1)
 	assert.Equal(t, "a", names[0])
 
 	r.Unregister("a")
