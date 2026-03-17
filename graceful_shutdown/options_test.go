@@ -38,7 +38,7 @@ func TestDefaultOptions(t *testing.T) {
 	assert.Equal(t, "3s", opts.Shutdown.StepTimeout)
 	assert.Equal(t, "5s", opts.Shutdown.NotifyTimeout)
 	assert.Equal(t, "3s", opts.Shutdown.ConsumerUpdateWaitTime)
-	assert.Empty(t, opts.Shutdown.OfflineRequestWindowTimeout) // No default value
+	assert.Equal(t, "3s", opts.Shutdown.OfflineRequestWindowTimeout)
 	assert.True(t, *opts.Shutdown.InternalSignal)
 }
 

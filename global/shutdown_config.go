@@ -58,7 +58,7 @@ type ShutdownConfig struct {
 	// internal listen kill signal，the default is true.
 	InternalSignal *bool `default:"true" yaml:"internal-signal" json:"internal.signal,omitempty" property:"internal.signal"`
 	// offline request window length
-	OfflineRequestWindowTimeout string `yaml:"offline-request-window-timeout" json:"offlineRequestWindowTimeout,omitempty" property:"offlineRequestWindowTimeout"`
+	OfflineRequestWindowTimeout string `default:"3s" yaml:"offline-request-window-timeout" json:"offlineRequestWindowTimeout,omitempty" property:"offlineRequestWindowTimeout"`
 	// true -> new request will be rejected.
 	RejectRequest atomic.Bool
 	// active invocation
