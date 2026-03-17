@@ -26,17 +26,17 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 )
 
-var configCenters = make(map[string]func(config *common.URL) (config_center.DynamicConfiguration, error))
+var configCenters = NewRegistry[func(config *common.URL) (config_center.DynamicConfiguration, error)]("config center")
 
 // SetConfigCenter sets the DynamicConfiguration with @name
 func SetConfigCenter(name string, v func(*common.URL) (config_center.DynamicConfiguration, error)) {
-	configCenters[name] = v
+	configCenters.Register(name, v)
 }
 
 // GetConfigCenter finds the DynamicConfiguration with @name
 func GetConfigCenter(name string, config *common.URL) (config_center.DynamicConfiguration, error) {
-	configCenterFactory := configCenters[name]
-	if configCenterFactory == nil {
+	configCenterFactory, ok := configCenters.Get(name)
+	if !ok {
 		return nil, errors.New("config center for " + name + " is not existing, make sure you have import the package.")
 	}
 	configCenter, err := configCenterFactory(config)
