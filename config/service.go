@@ -89,7 +89,14 @@ func GetProviderService(name string) common.RPCService {
 
 // GetProviderServiceMap gets ProviderServiceMap
 func GetProviderServiceMap() map[string]common.RPCService {
-	return proServices
+	proServicesLock.Lock()
+	defer proServicesLock.Unlock()
+
+	m := make(map[string]common.RPCService, len(proServices))
+	for k, v := range proServices {
+		m[k] = v
+	}
+	return m
 }
 
 func GetProviderServiceInfo(name string) any {
@@ -100,7 +107,14 @@ func GetProviderServiceInfo(name string) any {
 
 // GetConsumerServiceMap gets ProviderServiceMap
 func GetConsumerServiceMap() map[string]common.RPCService {
-	return conServices
+	conServicesLock.Lock()
+	defer conServicesLock.Unlock()
+
+	m := make(map[string]common.RPCService, len(conServices))
+	for k, v := range conServices {
+		m[k] = v
+	}
+	return m
 }
 
 // SetConsumerServiceByInterfaceName is used by pb serialization
