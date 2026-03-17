@@ -153,6 +153,19 @@ func TestRegisterProtocol(t *testing.T) {
 	assert.Len(t, protocols, 3)
 }
 
+func TestRegisterProtocolInitializesMapWhenNeeded(t *testing.T) {
+	protocols = nil
+	proMu = sync.Mutex{}
+
+	assert.NotPanics(t, func() {
+		RegisterProtocol("grpc")
+	})
+
+	proMu.Lock()
+	defer proMu.Unlock()
+	assert.Contains(t, protocols, "grpc")
+}
+
 func TestTotalTimeout(t *testing.T) {
 	// Test with default timeout
 	config := global.DefaultShutdownConfig()
@@ -239,58 +252,84 @@ func TestNotifyLongConnectionConsumersUsesIndependentTimeouts(t *testing.T) {
 	firstName := "shutdown-timeout-first"
 	secondName := "shutdown-timeout-second"
 
-	originalFirst, firstExists := extension.GetGracefulShutdownCallback(firstName)
-	originalSecond, secondExists := extension.GetGracefulShutdownCallback(secondName)
+	originalFirst, firstExists := extension.LookupGracefulShutdownCallback(firstName)
+	originalSecond, secondExists := extension.LookupGracefulShutdownCallback(secondName)
 	t.Cleanup(func() {
+		extension.UnregisterGracefulShutdownCallback(firstName)
+		extension.UnregisterGracefulShutdownCallback(secondName)
 		if firstExists {
-			extension.SetGracefulShutdownCallback(firstName, originalFirst)
-		} else {
-			extension.SetGracefulShutdownCallback(firstName, func(context.Context) error { return nil })
+			extension.RegisterGracefulShutdownCallback(firstName, originalFirst)
 		}
 		if secondExists {
-			extension.SetGracefulShutdownCallback(secondName, originalSecond)
-		} else {
-			extension.SetGracefulShutdownCallback(secondName, func(context.Context) error { return nil })
+			extension.RegisterGracefulShutdownCallback(secondName, originalSecond)
 		}
 	})
 
 	var secondCalled atomic.Bool
-	extension.SetGracefulShutdownCallback(firstName, func(ctx context.Context) error {
+	extension.RegisterGracefulShutdownCallback(firstName, func(ctx context.Context) error {
 		<-ctx.Done()
 		return ctx.Err()
 	})
-	extension.SetGracefulShutdownCallback(secondName, func(ctx context.Context) error {
+	extension.RegisterGracefulShutdownCallback(secondName, func(ctx context.Context) error {
 		secondCalled.Store(true)
 		return nil
 	})
 
-	notifyLongConnectionConsumers()
+	config := global.DefaultShutdownConfig()
+	config.NotifyTimeout = "100ms"
+
+	notifyLongConnectionConsumers(config)
 
 	assert.True(t, secondCalled.Load())
+}
+
+func TestNotifyLongConnectionConsumersUsesShutdownNotifyTimeout(t *testing.T) {
+	name := "shutdown-step-timeout"
+
+	original, exists := extension.LookupGracefulShutdownCallback(name)
+	t.Cleanup(func() {
+		extension.UnregisterGracefulShutdownCallback(name)
+		if exists {
+			extension.RegisterGracefulShutdownCallback(name, original)
+		}
+	})
+
+	extension.RegisterGracefulShutdownCallback(name, func(ctx context.Context) error {
+		<-ctx.Done()
+		return ctx.Err()
+	})
+
+	config := global.DefaultShutdownConfig()
+	config.NotifyTimeout = "100ms"
+
+	start := time.Now()
+	notifyLongConnectionConsumers(config)
+	elapsed := time.Since(start)
+
+	assert.GreaterOrEqual(t, elapsed, 100*time.Millisecond)
+	assert.Less(t, elapsed, time.Second)
 }
 
 func TestNotifyLongConnectionConsumersRunsCallbacksInParallel(t *testing.T) {
 	firstName := "shutdown-parallel-first"
 	secondName := "shutdown-parallel-second"
 
-	originalFirst, firstExists := extension.GetGracefulShutdownCallback(firstName)
-	originalSecond, secondExists := extension.GetGracefulShutdownCallback(secondName)
+	originalFirst, firstExists := extension.LookupGracefulShutdownCallback(firstName)
+	originalSecond, secondExists := extension.LookupGracefulShutdownCallback(secondName)
 	t.Cleanup(func() {
+		extension.UnregisterGracefulShutdownCallback(firstName)
+		extension.UnregisterGracefulShutdownCallback(secondName)
 		if firstExists {
-			extension.SetGracefulShutdownCallback(firstName, originalFirst)
-		} else {
-			extension.SetGracefulShutdownCallback(firstName, func(context.Context) error { return nil })
+			extension.RegisterGracefulShutdownCallback(firstName, originalFirst)
 		}
 		if secondExists {
-			extension.SetGracefulShutdownCallback(secondName, originalSecond)
-		} else {
-			extension.SetGracefulShutdownCallback(secondName, func(context.Context) error { return nil })
+			extension.RegisterGracefulShutdownCallback(secondName, originalSecond)
 		}
 	})
 
 	started := make(chan struct{}, 2)
 	release := make(chan struct{})
-	extension.SetGracefulShutdownCallback(firstName, func(ctx context.Context) error {
+	extension.RegisterGracefulShutdownCallback(firstName, func(ctx context.Context) error {
 		started <- struct{}{}
 		select {
 		case <-release:
@@ -299,7 +338,7 @@ func TestNotifyLongConnectionConsumersRunsCallbacksInParallel(t *testing.T) {
 			return ctx.Err()
 		}
 	})
-	extension.SetGracefulShutdownCallback(secondName, func(ctx context.Context) error {
+	extension.RegisterGracefulShutdownCallback(secondName, func(ctx context.Context) error {
 		started <- struct{}{}
 		select {
 		case <-release:
@@ -311,7 +350,9 @@ func TestNotifyLongConnectionConsumersRunsCallbacksInParallel(t *testing.T) {
 
 	done := make(chan struct{})
 	go func() {
-		notifyLongConnectionConsumers()
+		config := global.DefaultShutdownConfig()
+		config.NotifyTimeout = "1s"
+		notifyLongConnectionConsumers(config)
 		close(done)
 	}()
 
@@ -364,14 +405,15 @@ func TestBeforeShutdownNotifiesProtocolsBeforeDestroy(t *testing.T) {
 		extension.UnregisterProtocol(testProtocolName)
 	})
 
-	originalCallback, callbackExists := extension.GetGracefulShutdownCallback(testProtocolName)
-	extension.SetGracefulShutdownCallback(testProtocolName, func(ctx context.Context) error {
+	originalCallback, callbackExists := extension.LookupGracefulShutdownCallback(testProtocolName)
+	extension.RegisterGracefulShutdownCallback(testProtocolName, func(ctx context.Context) error {
 		record("notify-protocol")
 		return nil
 	})
 	t.Cleanup(func() {
+		extension.UnregisterGracefulShutdownCallback(testProtocolName)
 		if callbackExists {
-			extension.SetGracefulShutdownCallback(testProtocolName, originalCallback)
+			extension.RegisterGracefulShutdownCallback(testProtocolName, originalCallback)
 		}
 	})
 
@@ -379,7 +421,7 @@ func TestBeforeShutdownNotifiesProtocolsBeforeDestroy(t *testing.T) {
 
 	config := global.DefaultShutdownConfig()
 	config.ConsumerUpdateWaitTime = "0s"
-	config.StepTimeout = "0s"
+	config.StepTimeout = "100ms"
 	config.OfflineRequestWindowTimeout = "0s"
 	config.ProviderActiveCount.Store(0)
 	config.ConsumerActiveCount.Store(0)
@@ -463,4 +505,17 @@ func TestDestroyProtocolsSkipsMissingProtocol(t *testing.T) {
 	assert.NotPanics(t, func() {
 		destroyProtocols()
 	})
+}
+
+func TestInvokeCustomShutdownCallbackDoesNotBlockForever(t *testing.T) {
+	block := make(chan struct{})
+	callback := func() {
+		<-block
+	}
+
+	start := time.Now()
+	invokeCustomShutdownCallback(100*time.Millisecond, callback)
+	elapsed := time.Since(start)
+
+	assert.Less(t, elapsed, time.Second)
 }

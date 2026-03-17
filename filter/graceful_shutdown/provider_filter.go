@@ -52,6 +52,8 @@ type providerGracefulShutdownFilter struct {
 	shutdownConfig *global.ShutdownConfig
 }
 
+const providerCountMarkedKey = "dubbo-go-graceful-shutdown-provider-counted"
+
 func newProviderGracefulShutdownFilter() filter.Filter {
 	if psf == nil {
 		psfOnce.Do(func() {
@@ -63,6 +65,10 @@ func newProviderGracefulShutdownFilter() filter.Filter {
 
 // Invoke adds the requests count and blocks the new requests if application is closing
 func (f *providerGracefulShutdownFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
+	if f.shutdownConfig == nil {
+		return invoker.Invoke(ctx, invocation)
+	}
+
 	if f.rejectNewRequest() {
 		logger.Info("The application is closing, new request will be rejected.")
 		handler := constant.DefaultKey
@@ -78,19 +84,28 @@ func (f *providerGracefulShutdownFilter) Invoke(ctx context.Context, invoker bas
 	}
 	f.shutdownConfig.ProviderActiveCount.Inc()
 	f.shutdownConfig.ProviderLastReceivedRequestTime.Store(time.Now())
-	return invoker.Invoke(ctx, invocation)
+	return markProviderCountedResult(invoker.Invoke(ctx, invocation))
 }
 
 // OnResponse reduces the number of active processes then return the process result
-func (f *providerGracefulShutdownFilter) OnResponse(ctx context.Context, result result.Result, invoker base.Invoker, invocation base.Invocation) result.Result {
-	f.shutdownConfig.ProviderActiveCount.Dec()
+func (f *providerGracefulShutdownFilter) OnResponse(ctx context.Context, res result.Result, invoker base.Invoker, invocation base.Invocation) result.Result {
+	if f.shutdownConfig == nil {
+		return res
+	}
+
+	if shouldDecrementProviderActive(res) {
+		f.shutdownConfig.ProviderActiveCount.Dec()
+	}
 
 	// add closing flag to response
 	if f.isClosing() {
-		result.AddAttachment(constant.GracefulShutdownClosingKey, "true")
+		if res == nil {
+			res = &result.RPCResult{}
+		}
+		res.AddAttachment(constant.GracefulShutdownClosingKey, "true")
 	}
 
-	return result
+	return res
 }
 
 func (f *providerGracefulShutdownFilter) Set(name string, conf any) {
@@ -123,4 +138,20 @@ func (f *providerGracefulShutdownFilter) isClosing() bool {
 		return false
 	}
 	return f.shutdownConfig.Closing.Load()
+}
+
+func markProviderCountedResult(res result.Result) result.Result {
+	if res == nil {
+		res = &result.RPCResult{}
+	}
+	res.AddAttachment(providerCountMarkedKey, true)
+	return res
+}
+
+func shouldDecrementProviderActive(res result.Result) bool {
+	if res == nil {
+		return false
+	}
+	marked, ok := res.Attachment(providerCountMarkedKey, false).(bool)
+	return ok && marked
 }

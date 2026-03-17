@@ -42,7 +42,7 @@ func init() {
 	extension.SetProtocol(GRPC, GetProtocol)
 
 	// register graceful shutdown callback
-	extension.SetGracefulShutdownCallback(GRPC, func(ctx context.Context) error {
+	extension.RegisterGracefulShutdownCallback(GRPC, func(ctx context.Context) error {
 		grpcProto := GetProtocol()
 		if grpcProto == nil {
 			return nil
@@ -65,6 +65,10 @@ func init() {
 }
 
 var grpcProtocol *GrpcProtocol
+
+var grpcServerGracefulStop = func(server *Server) {
+	server.GracefulStop()
+}
 
 // GrpcProtocol is gRPC protocol
 type GrpcProtocol struct {
@@ -128,14 +132,23 @@ func (gp *GrpcProtocol) Refer(url *common.URL) base.Invoker {
 func (gp *GrpcProtocol) Destroy() {
 	logger.Infof("GrpcProtocol destroy.")
 
-	gp.serverLock.Lock()
-	defer gp.serverLock.Unlock()
-	for key, server := range gp.serverMap {
-		delete(gp.serverMap, key)
-		server.GracefulStop()
+	for _, server := range gp.drainServers() {
+		grpcServerGracefulStop(server)
 	}
 
 	gp.BaseProtocol.Destroy()
+}
+
+func (gp *GrpcProtocol) drainServers() []*Server {
+	gp.serverLock.Lock()
+	defer gp.serverLock.Unlock()
+
+	servers := make([]*Server, 0, len(gp.serverMap))
+	for key, server := range gp.serverMap {
+		delete(gp.serverMap, key)
+		servers = append(servers, server)
+	}
+	return servers
 }
 
 // GetProtocol gets gRPC protocol, will create if null.

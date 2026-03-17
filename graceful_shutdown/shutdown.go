@@ -19,6 +19,7 @@ package graceful_shutdown
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"runtime/debug"
@@ -27,6 +28,7 @@ import (
 )
 
 import (
+	"github.com/cenkalti/backoff/v4"
 	"github.com/dubbogo/gost/log/logger"
 )
 
@@ -42,8 +44,10 @@ const (
 	// todo(DMwangnima): these descriptions and defaults could be wrapped by functions of Options
 	defaultTimeout                     = 60 * time.Second
 	defaultStepTimeout                 = 3 * time.Second
+	defaultNotifyTimeout               = 5 * time.Second
 	defaultConsumerUpdateWaitTime      = 3 * time.Second
 	defaultOfflineRequestWindowTimeout = 3 * time.Second
+	
 	// retry config
 	defaultMaxRetries     = 3
 	defaultRetryBaseDelay = 500 * time.Millisecond
@@ -51,6 +55,7 @@ const (
 
 	timeoutDesc                     = "Timeout"
 	stepTimeoutDesc                 = "StepTimeout"
+	notifyTimeoutDesc               = "NotifyTimeout"
 	consumerUpdateWaitTimeDesc      = "ConsumerUpdateWaitTime"
 	offlineRequestWindowTimeoutDesc = "OfflineRequestWindowTimeout"
 )
@@ -117,6 +122,9 @@ func Init(opts ...Option) {
 // function would not make any sense.
 func RegisterProtocol(name string) {
 	proMu.Lock()
+	if protocols == nil {
+		protocols = make(map[string]struct{})
+	}
 	protocols[name] = struct{}{}
 	proMu.Unlock()
 }
@@ -139,7 +147,7 @@ func beforeShutdown(shutdown *global.ShutdownConfig) {
 	unregisterRegistries()
 
 	// 3. notify long connection consumers
-	notifyLongConnectionConsumers()
+	notifyLongConnectionConsumers(shutdown)
 
 	// 4. wait and accept new requests
 	// waiting for a short time so that the clients have enough time to get the notification that server shutdowns
@@ -154,7 +162,7 @@ func beforeShutdown(shutdown *global.ShutdownConfig) {
 	destroyProtocols()
 
 	// 7. execute custom callbacks
-	executeCustomShutdownCallbacks()
+	executeCustomShutdownCallbacks(shutdown)
 }
 
 // unregisterRegistries unregisters exported services from registries during graceful shutdown.
@@ -177,11 +185,11 @@ func unregisterRegistries() {
 }
 
 // notifyLongConnectionConsumers notifies all connected consumers via long connections
-func notifyLongConnectionConsumers() {
+func notifyLongConnectionConsumers(shutdown *global.ShutdownConfig) {
 	logger.Info("Graceful shutdown --- Notify long connection consumers.")
 
-	notifyTimeout := 3 * time.Second
-	callbacks := extension.GetAllGracefulShutdownCallbacks()
+	notifyTimeout := parseDuration(shutdown.NotifyTimeout, notifyTimeoutDesc, defaultNotifyTimeout)
+	callbacks := extension.GracefulShutdownCallbacks()
 	var wg sync.WaitGroup
 	for name, callback := range callbacks {
 		wg.Add(1)
@@ -197,52 +205,57 @@ func notifyLongConnectionConsumers() {
 
 // notifyWithRetry notifies with exponential backoff retry
 func notifyWithRetry(ctx context.Context, name string, callback extension.GracefulShutdownCallback) {
-	maxRetries := defaultMaxRetries
-	baseDelay := defaultRetryBaseDelay
-	maxDelay := defaultRetryMaxDelay
+	backOff := backoff.NewExponentialBackOff()
+	backOff.InitialInterval = defaultRetryBaseDelay
+	backOff.MaxInterval = defaultRetryMaxDelay
+	backOff.MaxElapsedTime = 0
 
-	var lastErr error
-	for attempt := 0; attempt <= maxRetries; attempt++ {
-		// check timeout
-		select {
-		case <-ctx.Done():
-			logger.Warnf("Graceful shutdown --- Notify %s timeout after %d attempts, continuing...", name, attempt)
-			return
-		default:
-		}
-
-		err := callback(ctx)
+	var attempts int
+	operation := func() error {
+		attempts++
+		err := invokeGracefulShutdownCallback(ctx, name, callback)
 		if err == nil {
 			logger.Infof("Graceful shutdown --- Notify %s completed", name)
+			return nil
+		}
+
+		logger.Warnf("Graceful shutdown --- Notify %s attempt %d failed --- %v", name, attempts, err)
+		return err
+	}
+
+	notify := func(err error, delay time.Duration) {
+		logger.Infof("Graceful shutdown --- Notify %s retrying in %v (attempt %d/%d)", name, delay, attempts, defaultMaxRetries)
+	}
+
+	retryPolicy := backoff.WithContext(backoff.WithMaxRetries(backOff, uint64(defaultMaxRetries)), ctx)
+	if err := backoff.RetryNotify(operation, retryPolicy, notify); err != nil {
+		if ctx.Err() != nil {
+			logger.Warnf("Graceful shutdown --- Notify %s timeout after %d attempts, continuing...", name, attempts)
 			return
 		}
 
-		lastErr = err
-		logger.Warnf("Graceful shutdown --- Notify %s attempt %d failed: %v", name, attempt+1, err)
-
-		// retry with exponential backoff
-		if attempt < maxRetries {
-			delay := baseDelay
-			for i := 0; i < attempt; i++ {
-				delay *= 2
-				if delay > maxDelay {
-					delay = maxDelay
-					break
-				}
-			}
-			logger.Infof("Graceful shutdown --- Notify %s retrying in %v (attempt %d/%d)", name, delay, attempt+1, maxRetries)
-
-			select {
-			case <-ctx.Done():
-				logger.Warnf("Graceful shutdown --- Notify %s timeout during retry delay", name)
-				return
-			case <-time.After(delay):
-			}
-		}
+		logger.Warnf("Graceful shutdown --- Notify %s failed after %d attempts --- %v", name, attempts, err)
 	}
+}
 
-	// all retries failed
-	logger.Warnf("Graceful shutdown --- Notify %s failed after %d attempts: %v", name, maxRetries+1, lastErr)
+func invokeGracefulShutdownCallback(ctx context.Context, name string, callback extension.GracefulShutdownCallback) error {
+	done := make(chan error, 1)
+	go func() {
+		defer func() {
+			if recovered := recover(); recovered != nil {
+				logger.Warnf("Graceful shutdown --- Notify %s panicked --- %v", name, recovered)
+				done <- fmt.Errorf("graceful shutdown callback panic: %v", recovered)
+			}
+		}()
+		done <- callback(ctx)
+	}()
+
+	select {
+	case err := <-done:
+		return err
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 func waitAndAcceptNewRequests(shutdown *global.ShutdownConfig) {
@@ -321,11 +334,31 @@ func registeredProtocolsSnapshot() []string {
 	return names
 }
 
-func executeCustomShutdownCallbacks() {
+func executeCustomShutdownCallbacks(shutdown *global.ShutdownConfig) {
 	logger.Info("Graceful shutdown --- Execute the custom callbacks.")
+	callbackTimeout := totalTimeout(shutdown)
 	customCallbacks := extension.GetAllCustomShutdownCallbacks()
 	for callback := customCallbacks.Front(); callback != nil; callback = callback.Next() {
-		callback.Value.(func())()
+		invokeCustomShutdownCallback(callbackTimeout, callback.Value.(func()))
+	}
+}
+
+func invokeCustomShutdownCallback(timeout time.Duration, callback func()) {
+	done := make(chan struct{}, 1)
+	go func() {
+		defer func() {
+			if recovered := recover(); recovered != nil {
+				logger.Warnf("Graceful shutdown --- Custom shutdown callback panicked --- %v", recovered)
+			}
+			done <- struct{}{}
+		}()
+		callback()
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(timeout):
+		logger.Warnf("Graceful shutdown --- Custom shutdown callback timed out after %v", timeout)
 	}
 }
 

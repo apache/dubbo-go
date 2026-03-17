@@ -36,6 +36,7 @@ func TestDefaultOptions(t *testing.T) {
 	assert.NotNil(t, opts.Shutdown)
 	assert.Equal(t, "60s", opts.Shutdown.Timeout)
 	assert.Equal(t, "3s", opts.Shutdown.StepTimeout)
+	assert.Equal(t, "5s", opts.Shutdown.NotifyTimeout)
 	assert.Equal(t, "3s", opts.Shutdown.ConsumerUpdateWaitTime)
 	assert.Empty(t, opts.Shutdown.OfflineRequestWindowTimeout) // No default value
 	assert.True(t, *opts.Shutdown.InternalSignal)
@@ -50,12 +51,14 @@ func TestNewOptions(t *testing.T) {
 	// Test with custom options
 	customTimeout := 120 * time.Second
 	customStepTimeout := 10 * time.Second
+	customNotifyTimeout := 4 * time.Second
 	customConsumerUpdateWaitTime := 5 * time.Second
 	customOfflineRequestWindowTimeout := 2 * time.Second
 
 	opts = NewOptions(
 		WithTimeout(customTimeout),
 		WithStepTimeout(customStepTimeout),
+		WithNotifyTimeout(customNotifyTimeout),
 		WithConsumerUpdateWaitTime(customConsumerUpdateWaitTime),
 		WithOfflineRequestWindowTimeout(customOfflineRequestWindowTimeout),
 		WithoutInternalSignal(),
@@ -63,6 +66,7 @@ func TestNewOptions(t *testing.T) {
 
 	assert.Equal(t, customTimeout.String(), opts.Shutdown.Timeout)
 	assert.Equal(t, customStepTimeout.String(), opts.Shutdown.StepTimeout)
+	assert.Equal(t, customNotifyTimeout.String(), opts.Shutdown.NotifyTimeout)
 	assert.Equal(t, customConsumerUpdateWaitTime.String(), opts.Shutdown.ConsumerUpdateWaitTime)
 	assert.Equal(t, customOfflineRequestWindowTimeout.String(), opts.Shutdown.OfflineRequestWindowTimeout)
 	assert.False(t, *opts.Shutdown.InternalSignal)
@@ -77,6 +81,10 @@ func TestOptionFunctions(t *testing.T) {
 	// Test WithStepTimeout
 	WithStepTimeout(5 * time.Second)(opts)
 	assert.Equal(t, "5s", opts.Shutdown.StepTimeout)
+
+	// Test WithNotifyTimeout
+	WithNotifyTimeout(7 * time.Second)(opts)
+	assert.Equal(t, "7s", opts.Shutdown.NotifyTimeout)
 
 	// Test WithConsumerUpdateWaitTime
 	WithConsumerUpdateWaitTime(10 * time.Second)(opts)

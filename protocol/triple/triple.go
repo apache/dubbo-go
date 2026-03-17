@@ -45,11 +45,15 @@ var (
 	tripleProtocol *TripleProtocol
 )
 
+var tripleServerGracefulStop = func(server *Server) {
+	server.GracefulStop()
+}
+
 func init() {
 	extension.SetProtocol(TRIPLE, GetProtocol)
 
 	// register graceful shutdown callback
-	extension.SetGracefulShutdownCallback(TRIPLE, func(ctx context.Context) error {
+	extension.RegisterGracefulShutdownCallback(TRIPLE, func(ctx context.Context) error {
 		p := GetProtocol()
 		if p == nil {
 			return nil
@@ -163,14 +167,23 @@ func (tp *TripleProtocol) Refer(url *common.URL) base.Invoker {
 func (tp *TripleProtocol) Destroy() {
 	logger.Infof("TripleProtocol destroy.")
 
-	tp.serverLock.Lock()
-	defer tp.serverLock.Unlock()
-	for key, server := range tp.serverMap {
-		delete(tp.serverMap, key)
-		server.GracefulStop()
+	for _, server := range tp.drainServers() {
+		tripleServerGracefulStop(server)
 	}
 
 	tp.BaseProtocol.Destroy()
+}
+
+func (tp *TripleProtocol) drainServers() []*Server {
+	tp.serverLock.Lock()
+	defer tp.serverLock.Unlock()
+
+	servers := make([]*Server, 0, len(tp.serverMap))
+	for key, server := range tp.serverMap {
+		delete(tp.serverMap, key)
+		servers = append(servers, server)
+	}
+	return servers
 }
 
 // isGenericCall checks if the generic parameter indicates a generic call

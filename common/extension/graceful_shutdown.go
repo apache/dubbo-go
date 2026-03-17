@@ -23,6 +23,10 @@ import (
 	"sync"
 )
 
+import (
+	"github.com/dubbogo/gost/log/logger"
+)
+
 // GracefulShutdownCallback is the callback for graceful shutdown
 // name: protocol name such as "grpc", "tri", "dubbo"
 // returns error if notify failed
@@ -30,6 +34,7 @@ type GracefulShutdownCallback func(ctx context.Context) error
 
 var (
 	customShutdownCallbacks     = list.New()
+	customShutdownCallbacksMu   sync.RWMutex
 	gracefulShutdownCallbacksMu sync.RWMutex
 	gracefulShutdownCallbacks   = make(map[string]GracefulShutdownCallback)
 )
@@ -56,31 +61,53 @@ var (
  */
 // AddCustomShutdownCallback adds custom shutdown callback
 func AddCustomShutdownCallback(callback func()) {
+	customShutdownCallbacksMu.Lock()
+	defer customShutdownCallbacksMu.Unlock()
 	customShutdownCallbacks.PushBack(callback)
 }
 
 // GetAllCustomShutdownCallbacks returns all custom shutdown callbacks
 func GetAllCustomShutdownCallbacks() *list.List {
-	return customShutdownCallbacks
+	customShutdownCallbacksMu.RLock()
+	defer customShutdownCallbacksMu.RUnlock()
+
+	callbacks := list.New()
+	for callback := customShutdownCallbacks.Front(); callback != nil; callback = callback.Next() {
+		callbacks.PushBack(callback.Value)
+	}
+	return callbacks
 }
 
-// SetGracefulShutdownCallback sets protocol-level graceful shutdown callback
-func SetGracefulShutdownCallback(name string, f GracefulShutdownCallback) {
+// RegisterGracefulShutdownCallback registers a protocol-level graceful shutdown callback.
+func RegisterGracefulShutdownCallback(name string, f GracefulShutdownCallback) {
 	gracefulShutdownCallbacksMu.Lock()
 	defer gracefulShutdownCallbacksMu.Unlock()
+
+	if _, exists := gracefulShutdownCallbacks[name]; exists {
+		logger.Warnf("graceful shutdown callback %q already registered, duplicate registration ignored", name)
+		return
+	}
+
 	gracefulShutdownCallbacks[name] = f
 }
 
-// GetGracefulShutdownCallback returns protocol's graceful shutdown callback
-func GetGracefulShutdownCallback(name string) (GracefulShutdownCallback, bool) {
+// LookupGracefulShutdownCallback returns a protocol graceful shutdown callback by name.
+func LookupGracefulShutdownCallback(name string) (GracefulShutdownCallback, bool) {
 	gracefulShutdownCallbacksMu.RLock()
 	defer gracefulShutdownCallbacksMu.RUnlock()
 	f, ok := gracefulShutdownCallbacks[name]
 	return f, ok
 }
 
-// GetAllGracefulShutdownCallbacks returns all protocol's graceful shutdown callbacks
-func GetAllGracefulShutdownCallbacks() map[string]GracefulShutdownCallback {
+// UnregisterGracefulShutdownCallback removes a protocol graceful shutdown callback by name.
+func UnregisterGracefulShutdownCallback(name string) {
+	gracefulShutdownCallbacksMu.Lock()
+	defer gracefulShutdownCallbacksMu.Unlock()
+	delete(gracefulShutdownCallbacks, name)
+}
+
+// GracefulShutdownCallbacks returns a snapshot of all protocol graceful shutdown callbacks.
+func GracefulShutdownCallbacks() map[string]GracefulShutdownCallback {
 	gracefulShutdownCallbacksMu.RLock()
 	defer gracefulShutdownCallbacksMu.RUnlock()
 

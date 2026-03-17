@@ -42,6 +42,13 @@ type ShutdownConfig struct {
 	StepTimeout string `default:"3s" yaml:"step-timeout" json:"step.timeout,omitempty" property:"step.timeout"`
 
 	/*
+	 * NotifyTimeout means the timeout budget for actively notifying long-connection consumers
+	 * during graceful shutdown. It only controls the notify step and should not be coupled to
+	 * request draining timeouts.
+	 */
+	NotifyTimeout string `default:"5s" yaml:"notify-timeout" json:"notify.timeout,omitempty" property:"notify.timeout"`
+
+	/*
 	 * ConsumerUpdateWaitTime means when provider is shutting down, after the unregister, time to wait for client to
 	 * update invokers. During this time, incoming invocation can be treated normally.
 	 */
@@ -88,6 +95,7 @@ func (c *ShutdownConfig) Clone() *ShutdownConfig {
 	newShutdownConfig := &ShutdownConfig{
 		Timeout:                     c.Timeout,
 		StepTimeout:                 c.StepTimeout,
+		NotifyTimeout:               c.NotifyTimeout,
 		ConsumerUpdateWaitTime:      c.ConsumerUpdateWaitTime,
 		RejectRequestHandler:        c.RejectRequestHandler,
 		InternalSignal:              newInternalSignal,

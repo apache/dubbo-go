@@ -36,6 +36,7 @@ import (
 const (
 	defaultTimeout                     = 60 * time.Second
 	defaultStepTimeout                 = 3 * time.Second
+	defaultNotifyTimeout               = 5 * time.Second
 	defaultConsumerUpdateWaitTime      = 3 * time.Second
 	defaultOfflineRequestWindowTimeout = 3 * time.Second
 )
@@ -57,6 +58,13 @@ type ShutdownConfig struct {
 	 * maybe (10 + 2*3) * 1000ms is a good choice.
 	 */
 	StepTimeout string `default:"3s" yaml:"step-timeout" json:"step.timeout,omitempty" property:"step.timeout"`
+
+	/*
+	 * NotifyTimeout means the timeout budget for actively notifying long-connection consumers
+	 * during graceful shutdown. It only controls the notify step and should not be coupled to
+	 * request draining timeouts.
+	 */
+	NotifyTimeout string `default:"5s" yaml:"notify-timeout" json:"notify.timeout,omitempty" property:"notify.timeout"`
 
 	/*
 	 * ConsumerUpdateWaitTime means when provider is shutting down, after the unregister, time to wait for client to
@@ -100,6 +108,16 @@ func (config *ShutdownConfig) GetStepTimeout() time.Duration {
 		logger.Errorf("The StepTimeout configuration is invalid: %s, and we will use the default value: %s, err: %v",
 			config.StepTimeout, defaultStepTimeout.String(), err)
 		return defaultStepTimeout
+	}
+	return result
+}
+
+func (config *ShutdownConfig) GetNotifyTimeout() time.Duration {
+	result, err := time.ParseDuration(config.NotifyTimeout)
+	if err != nil {
+		logger.Errorf("The NotifyTimeout configuration is invalid: %s, and we will use the default value: %s, err: %v",
+			config.NotifyTimeout, defaultNotifyTimeout.String(), err)
+		return defaultNotifyTimeout
 	}
 	return result
 }
@@ -150,6 +168,11 @@ func (scb *ShutdownConfigBuilder) SetTimeout(timeout string) *ShutdownConfigBuil
 
 func (scb *ShutdownConfigBuilder) SetStepTimeout(stepTimeout string) *ShutdownConfigBuilder {
 	scb.shutdownConfig.StepTimeout = stepTimeout
+	return scb
+}
+
+func (scb *ShutdownConfigBuilder) SetNotifyTimeout(notifyTimeout string) *ShutdownConfigBuilder {
+	scb.shutdownConfig.NotifyTimeout = notifyTimeout
 	return scb
 }
 
