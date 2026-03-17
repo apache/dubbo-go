@@ -21,17 +21,18 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 )
 
-var metaDataReportFactories = make(map[string]func() report.MetadataReportFactory, 8)
+var metaDataReportFactories = NewRegistry[func() report.MetadataReportFactory]("metadata report factory")
 
 // SetMetadataReportFactory sets the MetadataReportFactory with @name
 func SetMetadataReportFactory(name string, v func() report.MetadataReportFactory) {
-	metaDataReportFactories[name] = v
+	metaDataReportFactories.Register(name, v)
 }
 
 // GetMetadataReportFactory finds the MetadataReportFactory with @name
 func GetMetadataReportFactory(name string) report.MetadataReportFactory {
-	if metaDataReportFactories[name] == nil {
+	v, ok := metaDataReportFactories.Get(name)
+	if !ok {
 		return nil
 	}
-	return metaDataReportFactories[name]()
+	return v()
 }
