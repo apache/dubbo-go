@@ -18,11 +18,13 @@
 package dubbo
 
 import (
+	"maps"
 	"testing"
 )
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -31,6 +33,22 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/server"
 )
+
+type testRPCService struct {
+	ref string
+}
+
+func (s *testRPCService) Reference() string {
+	return s.ref
+}
+
+func cloneClientDefinitions(src map[string]*client.ClientDefinition) map[string]*client.ClientDefinition {
+	return maps.Clone(src)
+}
+
+func cloneServiceDefinitions(src map[string]*server.ServiceDefinition) map[string]*server.ServiceDefinition {
+	return maps.Clone(src)
+}
 
 // TestIndependentConfig tests the configurations of the `instance`, `client`, and `server` are independent.
 func TestIndependentConfig(t *testing.T) {
@@ -95,4 +113,56 @@ func TestIndependentConfig(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func TestSetProviderServiceRegistersByReference(t *testing.T) {
+	proLock.Lock()
+	original := cloneServiceDefinitions(providerServices)
+	providerServices = make(map[string]*server.ServiceDefinition)
+	proLock.Unlock()
+
+	defer func() {
+		proLock.Lock()
+		providerServices = original
+		proLock.Unlock()
+	}()
+
+	svc := &testRPCService{ref: "provider.test.Service"}
+	SetProviderService(svc)
+
+	proLock.RLock()
+	defer proLock.RUnlock()
+	def, ok := providerServices[svc.Reference()]
+	require.True(t, ok)
+	require.NotNil(t, def)
+	assert.Equal(t, svc, def.Handler)
+}
+
+func TestGetConsumerConnectionFromConsumerServices(t *testing.T) {
+	conLock.Lock()
+	original := cloneClientDefinitions(consumerServices)
+	consumerServices = make(map[string]*client.ClientDefinition)
+	conLock.Unlock()
+
+	defer func() {
+		conLock.Lock()
+		consumerServices = original
+		conLock.Unlock()
+	}()
+
+	svc := &testRPCService{ref: "consumer.test.Service"}
+	SetConsumerService(svc)
+
+	conn, err := GetConsumerConnection(svc.Reference())
+	require.Error(t, err)
+	require.Nil(t, conn)
+
+	expectedConn := &client.Connection{}
+	conLock.Lock()
+	consumerServices[svc.Reference()].SetConnection(expectedConn)
+	conLock.Unlock()
+
+	conn, err = GetConsumerConnection(svc.Reference())
+	require.NoError(t, err)
+	assert.Equal(t, expectedConn, conn)
 }

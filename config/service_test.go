@@ -18,12 +18,22 @@
 package config
 
 import (
+	"maps"
 	"testing"
 )
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+)
+
+func cloneRPCServiceMap(src map[string]common.RPCService) map[string]common.RPCService {
+	return maps.Clone(src)
+}
 
 func TestGetConsumerService(t *testing.T) {
 
@@ -42,4 +52,67 @@ func TestGetConsumerService(t *testing.T) {
 
 	callback := GetCallback(reference)
 	assert.Nil(t, callback)
+}
+
+func TestGetProviderServiceMapReturnsCopy(t *testing.T) {
+	proServicesLock.Lock()
+	originalProServices := cloneRPCServiceMap(proServices)
+	originalProServicesInfo := maps.Clone(proServicesInfo)
+	proServices = map[string]common.RPCService{}
+	proServicesInfo = map[string]any{}
+	proServicesLock.Unlock()
+
+	defer func() {
+		proServicesLock.Lock()
+		proServices = originalProServices
+		proServicesInfo = originalProServicesInfo
+		proServicesLock.Unlock()
+	}()
+
+	svc := &HelloService{}
+	SetProviderService(svc)
+
+	got := GetProviderServiceMap()
+	require.Len(t, got, 1)
+
+	got["Injected"] = &HelloService{}
+	got["HelloService"] = &HelloService{}
+
+	proServicesLock.Lock()
+	_, hasInjected := proServices["Injected"]
+	_, hasHelloService := proServices["HelloService"]
+	proServicesLock.Unlock()
+
+	assert.False(t, hasInjected)
+	assert.True(t, hasHelloService)
+}
+
+func TestGetConsumerServiceMapReturnsCopy(t *testing.T) {
+	conServicesLock.Lock()
+	originalConServices := cloneRPCServiceMap(conServices)
+	conServices = map[string]common.RPCService{}
+	conServicesLock.Unlock()
+
+	defer func() {
+		conServicesLock.Lock()
+		conServices = originalConServices
+		conServicesLock.Unlock()
+	}()
+
+	svc := &HelloService{}
+	SetConsumerService(svc)
+
+	got := GetConsumerServiceMap()
+	require.Len(t, got, 1)
+
+	got["Injected"] = &HelloService{}
+	got["HelloService"] = &HelloService{}
+
+	conServicesLock.Lock()
+	_, hasInjected := conServices["Injected"]
+	stored := conServices["HelloService"]
+	conServicesLock.Unlock()
+
+	assert.False(t, hasInjected)
+	assert.Equal(t, svc, stored)
 }
