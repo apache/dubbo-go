@@ -1089,14 +1089,14 @@ func TestWithRouter(t *testing.T) {
 			},
 		},
 		{
-			desc: "framework setter appends router configs",
+			desc: "framework setter replaces router configs",
 			opts: []ReferenceOption{
 				setRouters([]*global.RouterConfig{router1}),
 				setRouters([]*global.RouterConfig{router2}),
 			},
 			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
 				require.NoError(t, err)
-				assert.Equal(t, []*global.RouterConfig{router1, router2}, refOpts.Routers)
+				assert.Equal(t, []*global.RouterConfig{router2}, refOpts.Routers)
 			},
 		},
 	}

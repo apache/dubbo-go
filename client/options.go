@@ -523,12 +523,7 @@ func setRegistries(regs map[string]*global.RegistryConfig) ReferenceOption {
 
 func setRouters(routers []*global.RouterConfig) ReferenceOption {
 	return func(opts *ReferenceOptions) {
-		if len(routers) > 0 {
-			if opts.Routers == nil {
-				opts.Routers = make([]*global.RouterConfig, 0)
-			}
-			opts.Routers = append(opts.Routers, routers...)
-		}
+		opts.Routers = routers
 	}
 }
 
