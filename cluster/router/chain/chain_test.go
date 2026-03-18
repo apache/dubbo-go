@@ -33,12 +33,15 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
+const testConsumerServiceURL = "consumer://127.0.0.1/com.demo.Service"
+
 type testPriorityRouter struct {
 	priority int64
 	called   int
 	lastSize int
 
-	routeFn func([]base.Invoker, *common.URL, base.Invocation) []base.Invoker
+	notifyFn func([]base.Invoker)
+	routeFn  func([]base.Invoker, *common.URL, base.Invocation) []base.Invoker
 }
 
 func (r *testPriorityRouter) Route(invokers []base.Invoker, url *common.URL, inv base.Invocation) []base.Invoker {
@@ -58,7 +61,11 @@ func (r *testPriorityRouter) Priority() int64 {
 	return r.priority
 }
 
-func (r *testPriorityRouter) Notify(invokers []base.Invoker) {}
+func (r *testPriorityRouter) Notify(invokers []base.Invoker) {
+	if r.notifyFn != nil {
+		r.notifyFn(invokers)
+	}
+}
 
 func buildInvoker(t *testing.T, rawURL string) base.Invoker {
 	u, err := common.NewURL(rawURL)
@@ -67,7 +74,7 @@ func buildInvoker(t *testing.T, rawURL string) base.Invoker {
 }
 
 func TestRouteUsesServiceKeyMatchWhenAvailable(t *testing.T) {
-	consumerURL, err := common.NewURL("consumer://127.0.0.1/com.demo.Service")
+	consumerURL, err := common.NewURL(testConsumerServiceURL)
 	require.NoError(t, err)
 
 	match := buildInvoker(t, "dubbo://127.0.0.1:20000/com.demo.Service")
@@ -87,7 +94,7 @@ func TestRouteUsesServiceKeyMatchWhenAvailable(t *testing.T) {
 }
 
 func TestRouteFallsBackToAllInvokersWhenNoMatch(t *testing.T) {
-	consumerURL, err := common.NewURL("consumer://127.0.0.1/com.demo.Service")
+	consumerURL, err := common.NewURL(testConsumerServiceURL)
 	require.NoError(t, err)
 
 	invokerA := buildInvoker(t, "dubbo://127.0.0.1:20000/com.foo.Service")
@@ -106,7 +113,7 @@ func TestRouteFallsBackToAllInvokersWhenNoMatch(t *testing.T) {
 }
 
 func TestRouteAppliesRoutersOnSnapshot(t *testing.T) {
-	consumerURL, err := common.NewURL("consumer://127.0.0.1/com.demo.Service")
+	consumerURL, err := common.NewURL(testConsumerServiceURL)
 	require.NoError(t, err)
 
 	invokerA := buildInvoker(t, "dubbo://127.0.0.1:20000/com.demo.Service")
