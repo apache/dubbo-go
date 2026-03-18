@@ -25,7 +25,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 )
 
-var configCenterFactories = NewRegistry[func() config_center.DynamicConfigurationFactory]("config center")
+var configCenterFactories = NewRegistry[func() config_center.DynamicConfigurationFactory]("config center factory")
 
 // SetConfigCenterFactory sets the DynamicConfigurationFactory with @name
 func SetConfigCenterFactory(name string, v func() config_center.DynamicConfigurationFactory) {
