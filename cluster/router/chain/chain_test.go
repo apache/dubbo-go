@@ -58,6 +58,37 @@ func (m *mockStaticRouter) SetStaticConfig(cfg *global.RouterConfig) {
 	m.configs = append(m.configs, cfg)
 }
 
+type mutatingStaticRouter struct {
+	configs []*global.RouterConfig
+}
+
+func (m *mutatingStaticRouter) Route(invokers []base.Invoker, _ *common.URL, _ base.Invocation) []base.Invoker {
+	return invokers
+}
+
+func (m *mutatingStaticRouter) URL() *common.URL {
+	return nil
+}
+
+func (m *mutatingStaticRouter) Priority() int64 {
+	return 0
+}
+
+func (m *mutatingStaticRouter) Notify(_ []base.Invoker) {
+}
+
+func (m *mutatingStaticRouter) SetStaticConfig(cfg *global.RouterConfig) {
+	if cfg != nil {
+		if cfg.Force != nil {
+			*cfg.Force = !*cfg.Force // NOSONAR
+		}
+		if len(cfg.Conditions) > 0 {
+			cfg.Conditions[0] = "mutated" // NOSONAR
+		}
+	}
+	m.configs = append(m.configs, cfg)
+}
+
 type mockRouter struct{}
 
 func (m *mockRouter) Route(invokers []base.Invoker, _ *common.URL, _ base.Invocation) []base.Invoker {
@@ -271,6 +302,38 @@ func TestInjectStaticRouters_InvalidAttributeType(t *testing.T) {
 	chain.injectStaticRouters(url)
 
 	assert.Empty(t, staticRouter.configs)
+}
+
+func TestInjectRouterConfig_ClonePerSetter(t *testing.T) {
+	trueValue := true
+	mutatingRouter := &mutatingStaticRouter{}
+	observingRouter := &mockStaticRouter{}
+	chain := &RouterChain{
+		routers: []router.PriorityRouter{
+			mutatingRouter,
+			observingRouter,
+		},
+	}
+
+	routerCfg := &global.RouterConfig{
+		Force:      &trueValue,
+		Conditions: []string{"original"}, // NOSONAR
+	}
+
+	chain.injectRouterConfig(routerCfg)
+
+	if assert.Len(t, mutatingRouter.configs, 1) && assert.Len(t, observingRouter.configs, 1) {
+		assert.NotSame(t, routerCfg, mutatingRouter.configs[0])
+		assert.NotSame(t, routerCfg, observingRouter.configs[0])
+		assert.NotSame(t, mutatingRouter.configs[0], observingRouter.configs[0])
+		assert.False(t, *mutatingRouter.configs[0].Force)
+		assert.Equal(t, "mutated", mutatingRouter.configs[0].Conditions[0]) // NOSONAR
+		assert.True(t, *observingRouter.configs[0].Force)
+		assert.Equal(t, "original", observingRouter.configs[0].Conditions[0]) // NOSONAR
+	}
+
+	assert.True(t, *routerCfg.Force)
+	assert.Equal(t, "original", routerCfg.Conditions[0]) // NOSONAR
 }
 
 const testConsumerServiceURL = "consumer://127.0.0.1/com.demo.Service"

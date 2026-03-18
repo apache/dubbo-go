@@ -177,11 +177,13 @@ func (c *RouterChain) injectStaticRouters(url *common.URL) {
 // injectRouterConfig injects router configuration into routers that implement StaticConfigSetter.
 // Each router decides whether the config applies to it and no-ops if not.
 func (c *RouterChain) injectRouterConfig(routerCfg *global.RouterConfig) {
+	routerCfgCopy := routerCfg.Clone()
+
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 	for _, r := range c.routers {
 		if setter, ok := r.(router.StaticConfigSetter); ok {
-			setter.SetStaticConfig(routerCfg)
+			setter.SetStaticConfig(routerCfgCopy.Clone())
 		}
 	}
 }
