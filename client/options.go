@@ -521,6 +521,9 @@ func setRegistries(regs map[string]*global.RegistryConfig) ReferenceOption {
 	}
 }
 
+// setRouters sets the routers configuration for the service reference.
+// This is an internal framework function for applying router settings to
+// reference options. It replaces the current router slice.
 func setRouters(routers []*global.RouterConfig) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Routers = routers
@@ -851,6 +854,9 @@ func WithClientParam(k, v string) ClientOption {
 	}
 }
 
+// WithClientRouter appends router configurations to the client options.
+// This is a user-facing option for incrementally adding routers.
+// It appends to the current router slice instead of replacing it.
 func WithClientRouter(routers ...*global.RouterConfig) ClientOption {
 	return func(opts *ClientOptions) {
 		if len(routers) > 0 {
@@ -981,8 +987,10 @@ func SetClientProtocols(protocols map[string]*global.ProtocolConfig) ClientOptio
 }
 
 // SetClientRouters sets the routers configuration for the client.
-// This function is used by the framework to configure router settings from global configuration.
-// It accepts a slice of router configurations.
+// This is an internal framework function for applying router settings to
+// client options.
+// End users should not use this function for configuration.
+// It replaces the current router slice instead of appending to it.
 func SetClientRouters(routers []*global.RouterConfig) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.Routers = routers
