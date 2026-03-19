@@ -339,6 +339,7 @@ type overrideSubscribeListener struct {
 	url           *common.URL
 	originInvoker base.Invoker
 	protocol      *registryProtocol
+	configLock    sync.RWMutex
 	configurator  config_center.Configurator
 }
 
@@ -349,7 +350,7 @@ func newOverrideSubscribeListener(overriderUrl *common.URL, invoker base.Invoker
 // Notify will be triggered when a service change notification is received.
 func (nl *overrideSubscribeListener) Notify(event *registry.ServiceEvent) {
 	if isMatched(event.Service, nl.url) && event.Action == remoting.EventTypeAdd {
-		nl.configurator = extension.GetDefaultConfigurator(event.Service)
+		nl.setConfigurator(extension.GetDefaultConfigurator(event.Service))
 		nl.doOverrideIfNecessary()
 	}
 }
@@ -370,8 +371,8 @@ func (nl *overrideSubscribeListener) doOverrideIfNecessary() {
 	if exporter, ok := nl.protocol.bounds.Load(key); ok {
 		currentUrl := exporter.(base.Exporter).GetInvoker().GetURL()
 		// Compatible with the 2.6.x
-		if nl.configurator != nil {
-			nl.configurator.Configure(providerUrl)
+		if configurator := nl.getConfigurator(); configurator != nil {
+			configurator.Configure(providerUrl)
 		}
 		// provider application level  management in 2.7.x
 		for _, v := range nl.protocol.providerConfigurationListener.Configurators() {
@@ -391,6 +392,18 @@ func (nl *overrideSubscribeListener) doOverrideIfNecessary() {
 			nl.protocol.reExport(nl.originInvoker, newRegUrl)
 		}
 	}
+}
+
+func (nl *overrideSubscribeListener) setConfigurator(configurator config_center.Configurator) {
+	nl.configLock.Lock()
+	defer nl.configLock.Unlock()
+	nl.configurator = configurator
+}
+
+func (nl *overrideSubscribeListener) getConfigurator() config_center.Configurator {
+	nl.configLock.RLock()
+	defer nl.configLock.RUnlock()
+	return nl.configurator
 }
 
 func isMatched(providerUrl *common.URL, consumerUrl *common.URL) bool {
