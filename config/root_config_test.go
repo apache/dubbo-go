@@ -18,6 +18,8 @@
 package config
 
 import (
+	"fmt"
+	"sync"
 	"testing"
 )
 
@@ -89,4 +91,25 @@ func TestNewRootConfigBuilder(t *testing.T) {
 	registerPOJO()
 	config := GetRootConfig()
 	assert.Equal(t, rootConfig, config)
+}
+
+func TestRootConfigConcurrentSetAndGet(t *testing.T) {
+	SetRootConfig(*NewRootConfigBuilder().Build())
+
+	var wg sync.WaitGroup
+	for i := 0; i < 200; i++ {
+		wg.Add(2)
+		go func(idx int) {
+			defer wg.Done()
+			cfg := NewRootConfigBuilder().Build()
+			cfg.Application.Name = fmt.Sprintf("app-%d", idx)
+			SetRootConfig(*cfg)
+		}(i)
+		go func() {
+			defer wg.Done()
+			_ = GetRootConfig()
+		}()
+	}
+	wg.Wait()
+	assert.NotNil(t, GetRootConfig())
 }

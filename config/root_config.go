@@ -64,7 +64,8 @@ type RootConfig struct {
 }
 
 func SetRootConfig(r RootConfig) {
-	rootConfig = &r
+	rc := r
+	setRootConfigInternal(&rc)
 }
 
 // Prefix dubbo
@@ -73,37 +74,41 @@ func (rc *RootConfig) Prefix() string {
 }
 
 func GetRootConfig() *RootConfig {
-	return rootConfig
+	return getRootConfigInternal()
 }
 
 func GetProviderConfig() *ProviderConfig {
-	if err := check(); err == nil && rootConfig.Provider != nil {
-		return rootConfig.Provider
+	rc := GetRootConfig()
+	if err := check(); err == nil && rc.Provider != nil {
+		return rc.Provider
 	}
 	return NewProviderConfigBuilder().Build()
 }
 
 func GetConsumerConfig() *ConsumerConfig {
-	if err := check(); err == nil && rootConfig.Consumer != nil {
-		return rootConfig.Consumer
+	rc := GetRootConfig()
+	if err := check(); err == nil && rc.Consumer != nil {
+		return rc.Consumer
 	}
 	return NewConsumerConfigBuilder().Build()
 }
 
 func GetApplicationConfig() *ApplicationConfig {
-	return rootConfig.Application
+	return GetRootConfig().Application
 }
 
 func GetShutDown() *ShutdownConfig {
-	if err := check(); err == nil && rootConfig.Shutdown != nil {
-		return rootConfig.Shutdown
+	rc := GetRootConfig()
+	if err := check(); err == nil && rc.Shutdown != nil {
+		return rc.Shutdown
 	}
 	return NewShutDownConfigBuilder().Build()
 }
 
 func GetTLSConfig() *TLSConfig {
-	if err := check(); err == nil && rootConfig.TLSConfig != nil {
-		return rootConfig.TLSConfig
+	rc := GetRootConfig()
+	if err := check(); err == nil && rc.TLSConfig != nil {
+		return rc.TLSConfig
 	}
 	return NewTLSConfigBuilder().Build()
 }

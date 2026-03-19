@@ -19,6 +19,7 @@ package config
 
 import (
 	"errors"
+	"sync"
 )
 
 import (
@@ -34,8 +35,21 @@ import (
 )
 
 var (
-	rootConfig = NewRootConfigBuilder().Build()
+	rootConfigMu sync.RWMutex
+	rootConfig   = NewRootConfigBuilder().Build()
 )
+
+func getRootConfigInternal() *RootConfig {
+	rootConfigMu.RLock()
+	defer rootConfigMu.RUnlock()
+	return rootConfig
+}
+
+func setRootConfigInternal(rc *RootConfig) {
+	rootConfigMu.Lock()
+	defer rootConfigMu.Unlock()
+	rootConfig = rc
+}
 
 func init() {
 	log := zap.NewDefault()
@@ -45,25 +59,26 @@ func init() {
 func Load(opts ...LoaderConfOption) error {
 	// conf
 	conf := NewLoaderConf(opts...)
+	loadConfig := conf.rc
+
 	if conf.rc == nil {
+		loadConfig = NewRootConfigBuilder().Build()
 		koan := GetConfigResolver(conf)
 		koan = conf.MergeConfig(koan)
-		if err := koan.UnmarshalWithConf(rootConfig.Prefix(),
-			rootConfig, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
+		if err := koan.UnmarshalWithConf(loadConfig.Prefix(),
+			loadConfig, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
 			return err
 		}
-	} else {
-		rootConfig = conf.rc
 	}
 
-	if err := rootConfig.Init(); err != nil {
+	if err := loadConfig.Init(); err != nil {
 		return err
 	}
 	return nil
 }
 
 func check() error {
-	if rootConfig == nil {
+	if GetRootConfig() == nil {
 		return errors.New("execute the config.Load() method first")
 	}
 	return nil
@@ -71,13 +86,13 @@ func check() error {
 
 // GetRPCService get rpc service for consumer
 func GetRPCService(name string) common.RPCService {
-	return rootConfig.Consumer.References[name].GetRPCService()
+	return GetRootConfig().Consumer.References[name].GetRPCService()
 }
 
 // RPCService create rpc service for consumer
 func RPCService(service common.RPCService) {
 	ref := common.GetReference(service)
-	rootConfig.Consumer.References[ref].Implement(service)
+	GetRootConfig().Consumer.References[ref].Implement(service)
 }
 
 // GetMetricConfig find the MetricsConfig
@@ -95,17 +110,17 @@ func GetMetricConfig() *MetricsConfig {
 	//	}
 	//}
 	//return GetBaseConfig().Metrics
-	return rootConfig.Metrics
+	return GetRootConfig().Metrics
 }
 
 func GetTracingConfig(tracingKey string) *TracingConfig {
-	return rootConfig.Tracing[tracingKey]
+	return GetRootConfig().Tracing[tracingKey]
 }
 
 func GetMetadataReportConfg() *MetadataReportConfig {
-	return rootConfig.MetadataReport
+	return GetRootConfig().MetadataReport
 }
 
 func IsProvider() bool {
-	return len(rootConfig.Provider.Services) > 0
+	return len(GetRootConfig().Provider.Services) > 0
 }
