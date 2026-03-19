@@ -19,6 +19,7 @@ package impl
 
 import (
 	"errors"
+	"sync"
 	"testing"
 	"time"
 )
@@ -327,6 +328,23 @@ func TestIsSupportResponseAttachment(t *testing.T) {
 	t.Run("invalid version", func(t *testing.T) {
 		assert.False(t, isSupportResponseAttachment("invalid"))
 	})
+}
+
+func TestIsSupportResponseAttachmentConcurrent(t *testing.T) {
+	versions := []string{"", "2.0.10", "2.6.2", "2.7.0", "3.0.0", "invalid"}
+	var wg sync.WaitGroup
+
+	for i := 0; i < 200; i++ {
+		for _, version := range versions {
+			wg.Add(1)
+			go func(v string) {
+				defer wg.Done()
+				_ = isSupportResponseAttachment(v)
+			}(version)
+		}
+	}
+
+	wg.Wait()
 }
 
 func TestMarshalRequestWithTypedNilPointer(t *testing.T) {

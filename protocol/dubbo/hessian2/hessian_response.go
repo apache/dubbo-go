@@ -402,8 +402,6 @@ func ReflectResponse(in any, out any) error {
 	return nil
 }
 
-var versionInt = make(map[string]int)
-
 // https://github.com/apache/dubbo/blob/dubbo-2.7.1/dubbo-common/src/main/java/org/apache/dubbo/common/Version.java#L96
 // isSupportResponseAttachment is for compatibility among some dubbo version
 func isSupportResponseAttachment(ver any) bool {
@@ -412,12 +410,9 @@ func isSupportResponseAttachment(ver any) bool {
 		return false
 	}
 
-	v, ok := versionInt[version]
-	if !ok {
-		v = version2Int(version)
-		if v == -1 {
-			return false
-		}
+	v := version2Int(version)
+	if v == -1 {
+		return false
 	}
 
 	if v >= 2001000 && v <= 2060200 { // 2.0.10 ~ 2.6.2
