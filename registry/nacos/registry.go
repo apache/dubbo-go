@@ -231,9 +231,16 @@ func (nr *nacosRegistry) subscribeUntilSuccess(url *common.URL, notifyListener r
 }
 
 func (nr *nacosRegistry) scheduledLookUp(url *common.URL, notifyListener registry.NotifyListener) {
+	ticker := time.NewTicker(LookupInterval)
+	defer ticker.Stop()
+
 	for nr.IsAvailable() {
 		nr.subscribeAll(url, notifyListener)
-		time.Sleep(LookupInterval)
+		select {
+		case <-nr.done:
+			return
+		case <-ticker.C:
+		}
 	}
 }
 
