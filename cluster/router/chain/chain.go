@@ -138,6 +138,8 @@ func isRouterMatch(routerCfg *global.RouterConfig, url *common.URL, appName stri
 
 // injectStaticRouters injects static router configurations into the router chain.
 // Called after all routers are created to ensure they exist.
+// The injected static configs act as bootstrap state only during initialization. For the shared
+// static and dynamic lifecycle semantics, see router.StaticConfigSetter.
 func (c *RouterChain) injectStaticRouters(url *common.URL) {
 	staticRoutersAttrAny, ok := url.GetAttribute(constant.RoutersConfigKey)
 	if !ok && url.SubURL != nil {
@@ -228,7 +230,9 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 		builtinRouters: routers,
 	}
 
-	// Inject static router configurations after all routers are created
+	// Inject static router configurations after all routers are created.
+	// This happens before the first registry notification triggers dynamic Notify/Process
+	// updates on builtin routers.
 	chain.injectStaticRouters(url)
 
 	return chain, nil
