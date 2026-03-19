@@ -19,11 +19,14 @@ package directory
 
 import (
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 )
 
 import (
+	"github.com/golang/mock/gomock"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -35,7 +38,9 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	protocolmock "dubbo.apache.org/dubbo-go/v3/protocol/mock"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
@@ -329,4 +334,113 @@ func TestToGroupInvokers(t *testing.T) {
 		time.Sleep(1e9)
 		assert.Len(t, registryDirectory.toGroupInvokers(), 2)
 	})
+}
+
+func TestRegistryDirectoryIsAvailableConcurrentWithCacheUpdates(t *testing.T) {
+	dir := newRegistryDirectoryForConcurrencyTest(t)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	invoker := protocolmock.NewMockInvoker(ctrl)
+	invoker.EXPECT().IsAvailable().AnyTimes().Return(true)
+
+	dir.invokersLock.Lock()
+	dir.cacheInvokers = []protocolbase.Invoker{invoker}
+	dir.invokersLock.Unlock()
+
+	var wg sync.WaitGroup
+	for i := 0; i < 200; i++ {
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
+			_ = dir.IsAvailable()
+		}()
+		go func() {
+			defer wg.Done()
+			dir.invokersLock.Lock()
+			dir.cacheInvokers = []protocolbase.Invoker{invoker}
+			dir.invokersLock.Unlock()
+		}()
+	}
+	wg.Wait()
+}
+
+func TestRegistryDirectoryConfiguratorConcurrentAccess(t *testing.T) {
+	dir := newRegistryDirectoryForConcurrencyTest(t)
+	overrideURL, err := common.NewURL(
+		"override://127.0.0.1:20000/org.apache.dubbo-go.mockService",
+		common.WithParamsValue(constant.CategoryKey, constant.ConfiguratorsCategory),
+	)
+	require.NoError(t, err)
+
+	var wg sync.WaitGroup
+	for i := 0; i < 50; i++ {
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
+			event := &registry.ServiceEvent{
+				Action:  remoting.EventTypeAdd,
+				Service: overrideURL,
+			}
+			_ = dir.convertUrl(event)
+		}()
+		go func() {
+			defer wg.Done()
+			targetURL, _ := common.NewURL("dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService")
+			dir.overrideUrl(targetURL)
+		}()
+	}
+	wg.Wait()
+}
+
+func TestRegistryDirectorySubscribedURLConcurrentAccess(t *testing.T) {
+	dir := &RegistryDirectory{}
+	subscribedURL, err := common.NewURL("consumer://127.0.0.1:20000/org.apache.dubbo-go.mockService")
+	require.NoError(t, err)
+	registeredURL, err := common.NewURL("registry://127.0.0.1:20000/org.apache.dubbo-go.mockService")
+	require.NoError(t, err)
+	dir.RegisteredUrl = registeredURL
+
+	var wg sync.WaitGroup
+	for i := 0; i < 200; i++ {
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
+			dir.setSubscribedURL(subscribedURL)
+		}()
+		go func() {
+			defer wg.Done()
+			gotRegisteredURL, gotSubscribedURL := dir.snapshotRegistryURLs()
+			_ = gotRegisteredURL
+			_ = gotSubscribedURL
+		}()
+	}
+	wg.Wait()
+}
+
+func newRegistryDirectoryForConcurrencyTest(t *testing.T) *RegistryDirectory {
+	t.Helper()
+
+	applicationConfig := &global.ApplicationConfig{
+		Name: "test-application",
+	}
+
+	url, err := common.NewURL("mock://127.0.0.1:1111")
+	require.NoError(t, err)
+	suburl, err := common.NewURL(
+		"dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService",
+		common.WithParamsValue(constant.ClusterKey, "mock"),
+		common.WithParamsValue(constant.GroupKey, "group"),
+		common.WithParamsValue(constant.VersionKey, "1.0.0"),
+		common.WithParamsValue(constant.ApplicationKey, applicationConfig.Name),
+	)
+	require.NoError(t, err)
+	url.SubURL = suburl
+
+	mockRegistry, err := registry.NewMockRegistry(&common.URL{})
+	require.NoError(t, err)
+
+	dir, err := NewRegistryDirectory(url, mockRegistry)
+	require.NoError(t, err)
+	return dir.(*RegistryDirectory)
 }
