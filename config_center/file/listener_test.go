@@ -57,6 +57,7 @@ func TestCacheListenerCallbacks(t *testing.T) {
 		t.Fatalf("write file error %v", err)
 	}
 	waitEvent(t, rec.ch, remoting.EventTypeUpdate)
+	drainEvents(rec.ch)
 
 	// remove listener then cleanup
 	cl.RemoveListener(filePath, rec)
@@ -66,12 +67,7 @@ func TestCacheListenerCallbacks(t *testing.T) {
 	if err := os.Remove(filePath); err != nil {
 		t.Fatalf("remove file error %v", err)
 	}
-	select {
-	case <-rec.ch:
-		// should not receive after removal
-		t.Fatalf("unexpected event after remove")
-	case <-time.After(200 * time.Millisecond):
-	}
+	assertNoEvent(t, rec.ch, 200*time.Millisecond)
 }
 
 func waitEvent(t *testing.T, ch <-chan *config_center.ConfigChangeEvent, expect remoting.EventType) {
@@ -83,5 +79,39 @@ func waitEvent(t *testing.T, ch <-chan *config_center.ConfigChangeEvent, expect 
 		}
 	case <-time.After(2 * time.Second):
 		t.Fatalf("timeout waiting for event %v", expect)
+	}
+}
+
+func drainEvents(ch <-chan *config_center.ConfigChangeEvent) {
+	for {
+		select {
+		case <-ch:
+		default:
+			return
+		}
+	}
+}
+
+func assertNoEvent(t *testing.T, ch <-chan *config_center.ConfigChangeEvent, duration time.Duration) {
+	t.Helper()
+
+	grace := time.NewTimer(50 * time.Millisecond)
+	defer grace.Stop()
+
+	timer := time.NewTimer(duration)
+	defer timer.Stop()
+	allowStale := true
+	for {
+		select {
+		case ev := <-ch:
+			if allowStale {
+				continue
+			}
+			t.Fatalf("unexpected event after remove: %v", ev.ConfigType)
+		case <-grace.C:
+			allowStale = false
+		case <-timer.C:
+			return
+		}
 	}
 }
