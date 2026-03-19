@@ -60,7 +60,9 @@ func (p *PriorityRouter) Route(invokers []base.Invoker, url *common.URL, invocat
 		return staticTag(invokers, url, invocation)
 	}
 	routerCfg := value.(global.RouterConfig)
-	if !*routerCfg.Enabled || !*routerCfg.Valid {
+	enabled := routerCfg.Enabled == nil || *routerCfg.Enabled
+	valid := (routerCfg.Valid != nil && *routerCfg.Valid) || (routerCfg.Valid == nil && len(routerCfg.Tags) > 0)
+	if !enabled || !valid {
 		return staticTag(invokers, url, invocation)
 	}
 	return dynamicTag(invokers, url, invocation, routerCfg)

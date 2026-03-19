@@ -476,3 +476,52 @@ tags:
 		assert.False(t, *cfg.Valid)
 	})
 }
+
+func TestRequestTagNilForceFallback(t *testing.T) {
+	initUrl()
+
+	ivk := base.NewBaseInvoker(url1)
+	ivk1 := base.NewBaseInvoker(url2)
+	ivk2 := base.NewBaseInvoker(url3)
+	invokerList := []base.Invoker{ivk, ivk1, ivk2}
+
+	result := requestTag(
+		invokerList,
+		consumerUrl,
+		invocation.NewRPCInvocation("GetUser", nil, map[string]any{constant.Tagkey: "gray"}),
+		global.RouterConfig{
+			Tags: []global.Tag{{
+				Name: "gray",
+			}},
+		},
+		"gray",
+	)
+
+	assert.Len(t, result, 3)
+}
+
+func TestRouteNilDefaults(t *testing.T) {
+	initUrl()
+
+	p, err := NewTagPriorityRouter()
+	require.NoError(t, err)
+
+	ivk := base.NewBaseInvoker(url1)
+	ivk1 := base.NewBaseInvoker(url2)
+	ivk2 := base.NewBaseInvoker(url3)
+	invokerList := []base.Invoker{ivk, ivk1, ivk2}
+
+	p.routerConfigs.Store(constant.TagRouterRuleSuffix, global.RouterConfig{
+		Tags: []global.Tag{{
+			Name: "gray",
+		}},
+	})
+
+	result := p.Route(
+		invokerList,
+		consumerUrl,
+		invocation.NewRPCInvocation("GetUser", nil, map[string]any{constant.Tagkey: "gray"}),
+	)
+
+	assert.Len(t, result, 3)
+}
