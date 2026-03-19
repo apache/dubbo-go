@@ -446,6 +446,9 @@ func WithParam(k, v string) ReferenceOption {
 	}
 }
 
+// WithRouter appends router configurations to the reference options.
+// This is a user-facing option for incrementally adding routers.
+// It appends to the current router config slice instead of replacing it.
 func WithRouter(routers ...*global.RouterConfig) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		if len(routers) > 0 {
