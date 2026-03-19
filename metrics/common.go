@@ -18,6 +18,10 @@
 package metrics
 
 import (
+	"sync"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
@@ -43,19 +47,25 @@ type ApplicationMetricLevel struct {
 	HostName        string
 }
 
-var applicationName string
-var applicationVersion string
+var (
+	appInfoLock        sync.RWMutex
+	applicationName    string
+	applicationVersion string
+)
 
 // cannot import rootConfig,may cause cycle import,so be it
 func InitAppInfo(appName string, appVersion string) {
+	appInfoLock.Lock()
+	defer appInfoLock.Unlock()
 	applicationName = appName
 	applicationVersion = appVersion
 }
 
 func GetApplicationLevel() *ApplicationMetricLevel {
+	appName, appVersion := getAppInfo()
 	return &ApplicationMetricLevel{
-		ApplicationName: applicationName,
-		Version:         applicationVersion,
+		ApplicationName: appName,
+		Version:         appVersion,
 		Ip:              common.GetLocalIp(),
 		HostName:        common.GetLocalHostName(),
 		GitCommitId:     "",
@@ -113,8 +123,9 @@ type ConfigCenterLevel struct {
 }
 
 func NewConfigCenterLevel(key string, group string, configCenter string, changeType string) *ConfigCenterLevel {
+	appName, _ := getAppInfo()
 	return &ConfigCenterLevel{
-		ApplicationName: applicationName,
+		ApplicationName: appName,
 		Ip:              common.GetLocalIp(),
 		HostName:        common.GetLocalHostName(),
 		Key:             key,
@@ -122,6 +133,12 @@ func NewConfigCenterLevel(key string, group string, configCenter string, changeT
 		ConfigCenter:    configCenter,
 		ChangeType:      changeType,
 	}
+}
+
+func getAppInfo() (name string, version string) {
+	appInfoLock.RLock()
+	defer appInfoLock.RUnlock()
+	return applicationName, applicationVersion
 }
 
 func (l ConfigCenterLevel) Tags() map[string]string {

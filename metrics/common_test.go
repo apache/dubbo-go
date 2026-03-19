@@ -19,6 +19,7 @@ package metrics
 
 import (
 	"os"
+	"sync"
 	"testing"
 )
 
@@ -101,4 +102,22 @@ func TestConfigCenterLevelTags(t *testing.T) {
 	assert.Equal(t, "added", tags[constant.TagChangeType])
 	assert.NotEmpty(t, tags[constant.TagIp])
 	assert.NotEmpty(t, tags[constant.TagHostname])
+}
+
+func TestAppInfoConcurrentAccess(t *testing.T) {
+	var wg sync.WaitGroup
+	for i := 0; i < 400; i++ {
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
+			InitAppInfo("test-app", "1.0.0")
+		}()
+		go func() {
+			defer wg.Done()
+			name, version := getAppInfo()
+			_ = name
+			_ = version
+		}()
+	}
+	wg.Wait()
 }
