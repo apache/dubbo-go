@@ -70,9 +70,11 @@ type RegistryDirectory struct {
 	consumerURL                    *common.URL
 	cacheOriginUrl                 *common.URL
 	configurators                  []config_center.Configurator
+	configuratorsLock              sync.RWMutex
 	consumerConfigurationListener  *consumerConfigurationListener
 	referenceConfigurationListener *referenceConfigurationListener
 	registerLock                   sync.Mutex // this lock if for register
+	subscribedURLLock              sync.RWMutex
 	SubscribedUrl                  *common.URL
 	RegisteredUrl                  *common.URL
 	closingTombstones              *sync.Map // map[string]closingTombstone
@@ -182,14 +184,7 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (director
 // subscribe from registry
 func (dir *RegistryDirectory) Subscribe(url *common.URL) error {
 	logger.Infof("Start subscribing for service :%s with a new go routine.", url.Key())
-
-	go func() {
-		dir.SubscribedUrl = url
-		if err := dir.registry.Subscribe(url, dir); err != nil {
-			logger.Error("registry.Subscribe(url:%v, dir:%v) = error:%v", url, dir, err)
-		}
-
-	}()
+	dir.setSubscribedURL(url)
 
 	// Get the timeout time from the registration center configuration (default time 5s)
 	registerUrl := dir.registry.GetURL()
@@ -208,26 +203,47 @@ func (dir *RegistryDirectory) Subscribe(url *common.URL) error {
 		timeout, _ = time.ParseDuration(constant.DefaultRegTimeout)
 	}
 
-	done := make(chan struct{})
+	serviceKey := url.Key()
+	if err := dir.registerConsumerWithTimeout(url, timeout, serviceKey); err != nil {
+		return err
+	}
 
 	go func() {
-		urlToReg := getConsumerUrlToRegistry(url)
-		err := dir.registry.Register(urlToReg)
-		if err != nil {
-			logger.Errorf("consumer service %v register registry %v error, error message is %v",
-				url.String(), dir.registry.GetURL().String(), err)
+		if err := dir.registry.Subscribe(url, dir); err != nil {
+			logger.Error("registry.Subscribe(url:%v, dir:%v) = error:%v", url, dir, err)
 		}
-
-		close(done)
 	}()
 
+	logger.Infof("register completed successfully for service: %s", serviceKey)
+	return nil
+}
+
+func (dir *RegistryDirectory) registerConsumerWithTimeout(url *common.URL, timeout time.Duration, serviceKey string) error {
+	registerErrCh := make(chan error, 1)
+	go func() {
+		urlToReg := getConsumerUrlToRegistry(url.Clone())
+		registerErrCh <- dir.registry.Register(urlToReg)
+	}()
+
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+
 	select {
-	case <-done:
-		logger.Infof("register completed successfully for service: %s", url.Key())
+	case err := <-registerErrCh:
+		if err != nil {
+			registryURL := dir.registry.GetURL()
+			registryURLString := ""
+			if registryURL != nil {
+				registryURLString = registryURL.String()
+			}
+			logger.Errorf("consumer service %v register registry %v error, error message is %v",
+				url.String(), registryURLString, err)
+			return err
+		}
 		return nil
-	case <-time.After(timeout):
-		logger.Errorf("register timed out for service: %s", url.Key())
-		return fmt.Errorf("register timed out for service: %s", url.Key())
+	case <-timer.C:
+		logger.Errorf("register timed out for service: %s", serviceKey)
+		return fmt.Errorf("register timed out for service: %s", serviceKey)
 	}
 }
 
@@ -397,7 +413,7 @@ func (dir *RegistryDirectory) convertUrl(res *registry.ServiceEvent) *common.URL
 	ret := res.Service
 	if ret.Protocol == constant.OverrideProtocol || // 1.for override url in 2.6.x
 		ret.GetParam(constant.CategoryKey, constant.DefaultCategory) == constant.ConfiguratorsCategory {
-		dir.configurators = append(dir.configurators, extension.GetDefaultConfigurator(ret))
+		dir.appendConfigurator(extension.GetDefaultConfigurator(ret))
 		ret = nil
 	} else if ret.Protocol == constant.RouterProtocol || // 2.for router
 		ret.GetParam(constant.CategoryKey, constant.DefaultCategory) == constant.RouterCategory {
@@ -630,9 +646,7 @@ func (dir *RegistryDirectory) List(invocation protocolbase.Invocation) []protoco
 	routerChain := dir.RouterChain()
 
 	if routerChain == nil {
-		dir.invokersLock.RLock()
-		defer dir.invokersLock.RUnlock()
-		return dir.cacheInvokers
+		return dir.snapshotCacheInvokers()
 	}
 	return routerChain.Route(dir.consumerURL, invocation)
 }
@@ -643,7 +657,7 @@ func (dir *RegistryDirectory) IsAvailable() bool {
 		return false
 	}
 
-	for _, ivk := range dir.cacheInvokers {
+	for _, ivk := range dir.snapshotCacheInvokers() {
 		if ivk.IsAvailable() {
 			return true
 		}
@@ -657,22 +671,23 @@ func (dir *RegistryDirectory) Destroy() {
 	// TODO:unregister & unsubscribe
 	dir.DoDestroy(func() {
 		graceful_shutdown.DefaultClosingDirectoryRegistry().Unregister(dir.closingServiceKey(), dir)
-		if dir.RegisteredUrl != nil {
-			err := dir.registry.UnRegister(dir.RegisteredUrl)
+		registeredURL, subscribedURL := dir.snapshotRegistryURLs()
+
+		if registeredURL != nil {
+			err := dir.registry.UnRegister(registeredURL)
 			if err != nil {
-				logger.Warnf("Unregister consumer url failed, %s, error: %v", dir.RegisteredUrl.String(), err)
+				logger.Warnf("Unregister consumer url failed, %s, error: %v", registeredURL.String(), err)
 			}
 		}
 
-		if dir.SubscribedUrl != nil {
-			err := dir.registry.UnSubscribe(dir.SubscribedUrl, dir)
+		if subscribedURL != nil {
+			err := dir.registry.UnSubscribe(subscribedURL, dir)
 			if err != nil {
-				logger.Warnf("Unsubscribe consumer url failed, %s, error: %v", dir.RegisteredUrl.String(), err)
+				logger.Warnf("Unsubscribe consumer url failed, %s, error: %v", subscribedURL.String(), err)
 			}
 		}
 
-		invokers := dir.cacheInvokers
-		dir.cacheInvokers = []protocolbase.Invoker{}
+		invokers := dir.swapCacheInvokers()
 		for _, ivk := range invokers {
 			ivk.Destroy()
 		}
@@ -692,9 +707,52 @@ func (dir *RegistryDirectory) closingServiceKey() string {
 }
 
 func (dir *RegistryDirectory) overrideUrl(targetUrl *common.URL) {
-	doOverrideUrl(dir.configurators, targetUrl)
+	doOverrideUrl(dir.snapshotConfigurators(), targetUrl)
 	doOverrideUrl(dir.consumerConfigurationListener.Configurators(), targetUrl)
 	doOverrideUrl(dir.referenceConfigurationListener.Configurators(), targetUrl)
+}
+
+func (dir *RegistryDirectory) snapshotCacheInvokers() []protocolbase.Invoker {
+	dir.invokersLock.RLock()
+	defer dir.invokersLock.RUnlock()
+	invokers := make([]protocolbase.Invoker, len(dir.cacheInvokers))
+	copy(invokers, dir.cacheInvokers)
+	return invokers
+}
+
+func (dir *RegistryDirectory) swapCacheInvokers() []protocolbase.Invoker {
+	dir.invokersLock.Lock()
+	defer dir.invokersLock.Unlock()
+	invokers := make([]protocolbase.Invoker, len(dir.cacheInvokers))
+	copy(invokers, dir.cacheInvokers)
+	dir.cacheInvokers = []protocolbase.Invoker{}
+	return invokers
+}
+
+func (dir *RegistryDirectory) appendConfigurator(configurator config_center.Configurator) {
+	dir.configuratorsLock.Lock()
+	defer dir.configuratorsLock.Unlock()
+	dir.configurators = append(dir.configurators, configurator)
+}
+
+func (dir *RegistryDirectory) snapshotConfigurators() []config_center.Configurator {
+	dir.configuratorsLock.RLock()
+	defer dir.configuratorsLock.RUnlock()
+	configurators := make([]config_center.Configurator, len(dir.configurators))
+	copy(configurators, dir.configurators)
+	return configurators
+}
+
+func (dir *RegistryDirectory) setSubscribedURL(url *common.URL) {
+	dir.subscribedURLLock.Lock()
+	defer dir.subscribedURLLock.Unlock()
+	dir.SubscribedUrl = url
+}
+
+func (dir *RegistryDirectory) snapshotRegistryURLs() (registeredURL *common.URL, subscribedURL *common.URL) {
+	dir.subscribedURLLock.RLock()
+	defer dir.subscribedURLLock.RUnlock()
+	return dir.RegisteredUrl, dir.SubscribedUrl
 }
 
 func (dir *RegistryDirectory) getConsumerUrl(c *common.URL) *common.URL {
