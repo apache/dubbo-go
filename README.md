@@ -184,9 +184,8 @@ Contributions, issues, and discussions are welcome. Please visit [CONTRIBUTING](
 
 ## Contact
 
-Join our discussion group through Ding talk, WeChat, or Discord.
+Join our discussion group through Ding talk or WeChat.
 
-discord https://discord.gg/C5ywvytg
 ![invite.png](./doc/imgs/invite.png)
 
 

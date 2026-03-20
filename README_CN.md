@@ -169,9 +169,8 @@ func main() {
 
 ## 联系我们
 
-通过钉钉、微信或 Discord 加入我们的讨论组。
+通过钉钉或微信加入我们的讨论组。
 
-discord https://discord.gg/C5ywvytg
 ![invite.png](./doc/imgs/invite.png)
 
 
