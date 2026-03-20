@@ -61,7 +61,8 @@ func TestLoadRegistries_AllOrEmptyIDs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			urls := LoadRegistries(tt.ids, registries, common.CONSUMER)
+			urls, err := LoadRegistries(tt.ids, registries, common.CONSUMER)
+			require.NoError(t, err)
 			require.Len(t, urls, 3)
 
 			counts := map[string]int{}
@@ -92,14 +93,15 @@ func TestLoadRegistries_FilteredIDs(t *testing.T) {
 		},
 	}
 
-	urls := LoadRegistries([]string{"r1"}, registries, common.CONSUMER)
+	urls, err := LoadRegistries([]string{"r1"}, registries, common.CONSUMER)
+	require.NoError(t, err)
 	require.Len(t, urls, 1)
 	for _, u := range urls {
 		assert.Equal(t, "r1", u.GetParam(constant.RegistryIdKey, ""))
 	}
 }
 
-func TestLoadRegistries_SkipInvalidURL(t *testing.T) {
+func TestLoadRegistries_InvalidURL(t *testing.T) {
 	registries := map[string]*global.RegistryConfig{
 		"bad": {
 			Protocol: "mock",
@@ -109,8 +111,47 @@ func TestLoadRegistries_SkipInvalidURL(t *testing.T) {
 		},
 	}
 
-	urls := LoadRegistries([]string{"bad"}, registries, common.CONSUMER)
-	assert.Empty(t, urls)
+	urls, err := LoadRegistries([]string{"bad"}, registries, common.CONSUMER)
+	assert.Nil(t, urls)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `registry id "bad" url is invalid`)
+}
+
+func TestLoadRegistries_MissingRegistryID(t *testing.T) {
+	registries := map[string]*global.RegistryConfig{
+		"r1": {
+			Protocol: "mock",
+			Timeout:  "2s",
+			Address:  "127.0.0.1:2181",
+		},
+	}
+
+	urls, err := LoadRegistries([]string{"missing"}, registries, common.CONSUMER)
+	assert.Nil(t, urls)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `registry id "missing" not found`)
+}
+
+func TestValidateRegistryIDs(t *testing.T) {
+	t.Run("valid ids", func(t *testing.T) {
+		regs := map[string]*global.RegistryConfig{
+			"r1": {Protocol: "mock", Address: "127.0.0.1:2181"},
+			"r2": {Protocol: "mock", Address: "127.0.0.2:2181"},
+		}
+
+		err := ValidateRegistryIDs([]string{"r1", "r2"}, regs)
+		require.NoError(t, err)
+	})
+
+	t.Run("missing id", func(t *testing.T) {
+		regs := map[string]*global.RegistryConfig{
+			"r1": {Protocol: "mock", Address: "127.0.0.1:2181"},
+		}
+
+		err := ValidateRegistryIDs([]string{"r1", "missing"}, regs)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), `registry id "missing" not found`)
+	})
 }
 
 func TestToURLs_EmptyOrNA(t *testing.T) {
@@ -253,4 +294,35 @@ func TestCreateNewURL_SetsFields(t *testing.T) {
 func TestClientNameID(t *testing.T) {
 	got := clientNameID("nacos", "127.0.0.1:8848")
 	assert.Equal(t, "dubbo.registries-nacos-127.0.0.1:8848", got)
+}
+
+func TestValidateMethodConfig(t *testing.T) {
+	t.Run("valid method config", func(t *testing.T) {
+		method := &global.MethodConfig{
+			Name:             "testMethod",
+			TpsLimitRate:     "1",
+			TpsLimitInterval: "10",
+		}
+		require.NoError(t, ValidateMethodConfig(method))
+	})
+
+	t.Run("negative tps rate", func(t *testing.T) {
+		method := &global.MethodConfig{
+			Name:         "testMethod",
+			TpsLimitRate: "-1",
+		}
+		err := ValidateMethodConfig(method)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "tps.limit.rate")
+	})
+
+	t.Run("invalid tps interval", func(t *testing.T) {
+		method := &global.MethodConfig{
+			Name:             "testMethod",
+			TpsLimitInterval: "bad",
+		}
+		err := ValidateMethodConfig(method)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "tps.limit.interval")
+	})
 }

@@ -42,6 +42,8 @@ import (
 	aslimiter "dubbo.apache.org/dubbo-go/v3/filter/adaptivesvc/limiter"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
+	"dubbo.apache.org/dubbo-go/v3/internal"
+	"dubbo.apache.org/dubbo-go/v3/metrics/probe"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/registry"
@@ -86,6 +88,9 @@ func (srvOpts *ServerOptions) init(opts ...ServerOption) error {
 	if len(providerConf.RegistryIDs) <= 0 {
 		providerConf.RegistryIDs = getRegistryIds(srvOpts.Registries)
 	}
+	if err := internal.ValidateRegistryIDs(providerConf.RegistryIDs, srvOpts.Registries); err != nil {
+		return err
+	}
 
 	providerConf.ProtocolIDs = commonCfg.TranslateIds(providerConf.ProtocolIDs)
 
@@ -106,6 +111,11 @@ func (srvOpts *ServerOptions) init(opts ...ServerOption) error {
 
 	// init graceful_shutdown
 	graceful_shutdown.Init(graceful_shutdown.SetShutdownConfig(srvOpts.Shutdown))
+
+	// init probe
+	if probeCfg := probe.BuildProbeConfig(srvOpts.Metrics.Probe); probeCfg != nil {
+		probe.Init(probeCfg)
+	}
 
 	return nil
 }
@@ -552,6 +562,8 @@ func (svcOpts *ServiceOptions) init(srv *Server, opts ...ServiceOption) error {
 	}
 	if len(svc.RegistryIDs) <= 0 {
 		svc.NotRegister = true
+	} else if err := internal.ValidateRegistryIDs(svc.RegistryIDs, svc.RCRegistriesMap); err != nil {
+		return err
 	}
 
 	svc.ProtocolIDs = commonCfg.TranslateIds(svc.ProtocolIDs)
@@ -566,6 +578,11 @@ func (svcOpts *ServiceOptions) init(srv *Server, opts ...ServiceOption) error {
 
 	if svc.TracingKey == "" {
 		svc.TracingKey = svcOpts.Provider.TracingKey
+	}
+	for _, method := range svc.Methods {
+		if err := internal.ValidateMethodConfig(method); err != nil {
+			return err
+		}
 	}
 
 	err := svcOpts.check()
@@ -862,6 +879,18 @@ func WithRegistry(opts ...registry.Option) ServiceOption {
 			opts.Registries = make(map[string]*global.RegistryConfig)
 		}
 		opts.Registries[regOpts.ID] = regOpts.Registry
+	}
+}
+
+func WithMethod(method *global.MethodConfig) ServiceOption {
+	return func(opts *ServiceOptions) {
+		if method == nil {
+			return
+		}
+		if opts.Service.Methods == nil {
+			opts.Service.Methods = make([]*global.MethodConfig, 0)
+		}
+		opts.Service.Methods = append(opts.Service.Methods, method)
 	}
 }
 

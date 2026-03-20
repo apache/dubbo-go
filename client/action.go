@@ -40,9 +40,9 @@ import (
 	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
+	"dubbo.apache.org/dubbo-go/v3/internal"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	"dubbo.apache.org/dubbo-go/v3/proxy"
@@ -178,7 +178,7 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 	updateOrCreateMeshURL(refOpts)
 
 	// retrieving urls from config, and appending the urls to refOpts.urls
-	urls, err := processURL(ref, refOpts.registriesCompat, cfgURL)
+	urls, err := processURL(ref, refOpts.Registries, cfgURL)
 	if err != nil {
 		panic(err)
 	}
@@ -209,51 +209,82 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 	graceful_shutdown.RegisterProtocol(ref.Protocol)
 }
 
-func processURL(ref *global.ReferenceConfig, regsCompat map[string]*config.RegistryConfig, cfgURL *common.URL) ([]*common.URL, error) {
-	var urls []*common.URL
-	if ref.URL != "" { // use user-specific urls
-		/*
-			 Two types of URL are allowed for refOpts.URL:
-				1. direct url: server IP, that is, no need for a registry anymore
-				2. registry url
-			 They will be handled in different ways:
-			 For example, we have a direct url and a registry url:
-				1. "tri://localhost:10000" is a direct url
-				2. "registry://localhost:2181" is a registry url.
-			 Then, refOpts.URL looks like a string separated by semicolon: "tri://localhost:10000;registry://localhost:2181".
-			 The result of urlStrings is a string array: []string{"tri://localhost:10000", "registry://localhost:2181"}.
-		*/
-		urlStrings := gxstrings.RegSplit(ref.URL, "\\s*[;]+\\s*")
-		for _, urlStr := range urlStrings {
-			serviceURL, err := common.NewURL(urlStr, common.WithProtocol(ref.Protocol))
-			if err != nil {
-				return nil, fmt.Errorf("url configuration error,  please check your configuration, user specified URL %v refer error, error message is %v ", urlStr, err.Error())
-			}
-			if serviceURL.Protocol == constant.RegistryProtocol { // serviceURL in this branch is a registry protocol
-				serviceURL.SubURL = cfgURL
-				urls = append(urls, serviceURL)
-			} else { // serviceURL in this branch is the target endpoint IP address
-				if serviceURL.Path == "" {
-					serviceURL.Path = "/" + ref.InterfaceName
-				}
-				// replace params of serviceURL with params of cfgUrl
-				// other stuff, e.g. IP, port, etc., are same as serviceURL
-				newURL := serviceURL.MergeURL(cfgURL)
-				newURL.AddParam("peer", "true")
-				urls = append(urls, newURL)
-			}
-		}
-	} else { // use registry configs
-		urls = config.LoadRegistries(ref.RegistryIDs, regsCompat, common.CONSUMER)
-		// set url to regURLs
-		for _, regURL := range urls {
-			regURL.SubURL = cfgURL
-		}
+func processURL(ref *global.ReferenceConfig, registries map[string]*global.RegistryConfig, cfgURL *common.URL) ([]*common.URL, error) {
+	if ref.URL != "" {
+		return processUserSpecifiedURLs(ref, cfgURL)
 	}
+
+	return loadRegistryURLs(ref, registries, cfgURL)
+}
+
+func processUserSpecifiedURLs(ref *global.ReferenceConfig, cfgURL *common.URL) ([]*common.URL, error) {
+	/*
+		 Two types of URL are allowed for refOpts.URL:
+			1. direct url: server IP, that is, no need for a registry anymore
+			2. registry url
+		 They will be handled in different ways:
+		 For example, we have a direct url and a registry url:
+			1. "tri://localhost:10000" is a direct url
+			2. "registry://localhost:2181" is a registry url.
+		 Then, refOpts.URL looks like a string separated by semicolon: "tri://localhost:10000;registry://localhost:2181".
+		 The result of urlStrings is a string array: []string{"tri://localhost:10000", "registry://localhost:2181"}.
+	*/
+	var urls []*common.URL
+	urlStrings := gxstrings.RegSplit(ref.URL, "\\s*[;]+\\s*")
+
+	for _, urlStr := range urlStrings {
+		serviceURL, err := common.NewURL(urlStr, common.WithProtocol(ref.Protocol))
+		if err != nil {
+			return nil, fmt.Errorf("url configuration error,  please check your configuration, user specified URL %v refer error, error message is %v ", urlStr, err.Error())
+		}
+
+		urls = append(urls, buildReferenceURL(serviceURL, ref, cfgURL))
+	}
+
 	return urls, nil
 }
 
+func buildReferenceURL(serviceURL *common.URL, ref *global.ReferenceConfig, cfgURL *common.URL) *common.URL {
+	if serviceURL.Protocol == constant.RegistryProtocol {
+		serviceURL.SubURL = cfgURL
+		return serviceURL
+	}
+
+	if serviceURL.Path == "" {
+		serviceURL.Path = "/" + ref.InterfaceName
+	}
+
+	// replace params of serviceURL with params of cfgUrl
+	// other stuff, e.g. IP, port, etc., are same as serviceURL
+	newURL := serviceURL.MergeURL(cfgURL)
+	newURL.AddParam("peer", "true")
+	return newURL
+}
+
+func loadRegistryURLs(ref *global.ReferenceConfig, registries map[string]*global.RegistryConfig, cfgURL *common.URL) ([]*common.URL, error) {
+	urls, err := internal.LoadRegistries(ref.RegistryIDs, registries, common.CONSUMER)
+	if err != nil {
+		return nil, err
+	}
+	if len(urls) == 0 {
+		return nil, fmt.Errorf("no registry urls available for registry ids %v", ref.RegistryIDs)
+	}
+
+	attachSubURL(urls, cfgURL)
+	return urls, nil
+}
+
+func attachSubURL(urls []*common.URL, cfgURL *common.URL) {
+	for _, regURL := range urls {
+		regURL.SubURL = cfgURL
+	}
+}
+
 func buildInvoker(urls []*common.URL, ref *global.ReferenceConfig) (base.Invoker, error) {
+	if len(urls) == 0 {
+		return nil, fmt.Errorf("no urls available to build invoker")
+	}
+
 	var (
 		invoker base.Invoker
 		regURL  *common.URL
@@ -355,7 +386,7 @@ func (refOpts *ReferenceOptions) GetProxy() *proxy.Proxy {
 
 func (refOpts *ReferenceOptions) getURLMap() url.Values {
 	ref := refOpts.Reference
-	app := refOpts.applicationCompat
+	app := refOpts.Application
 	metrics := refOpts.Metrics
 	tracing := refOpts.Otel.TracingConfig
 

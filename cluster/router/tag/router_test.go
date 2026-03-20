@@ -334,6 +334,26 @@ func TestRouter(t *testing.T) {
 		result := p.Route(invokerList, url3, invocation.NewRPCInvocation("GetUser", nil, nil))
 		assert.Len(t, result, 3)
 	})
+
+	t.Run("dynamicTag_withApplicationKey", func(t *testing.T) { //NOSONAR
+		p, _ := NewTagPriorityRouter()
+		ivk1 := base.NewBaseInvoker(url1)
+		ivk1.GetURL().SetParam(constant.ApplicationKey, "test-app") //NOSONAR
+		ivk2 := base.NewBaseInvoker(url2)
+		ivk2.GetURL().SetParam(constant.ApplicationKey, "test-app") //NOSONAR
+
+		configKey := "test-app" + constant.TagRouterRuleSuffix //NOSONAR
+		p.routerConfigs.Store(configKey, global.RouterConfig{
+			Enabled: truePointer,
+			Valid:   truePointer,
+			Tags: []global.Tag{{
+				Addresses: []string{"192.168.0.1:20000"}, //NOSONAR
+			}},
+		})
+
+		result := p.Route([]base.Invoker{ivk1, ivk2}, consumerUrl, invocation.NewRPCInvocation("GetUser", nil, nil))
+		assert.Len(t, result, 1)
+	})
 }
 
 func TestNotify(t *testing.T) {

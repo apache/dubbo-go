@@ -44,6 +44,7 @@ type MetricsConfig struct {
 	EnableConfigCenter *bool             `default:"false" yaml:"enable-config-center" json:"enable-config-center,omitempty" property:"enable-config-center"`
 	Prometheus         *PrometheusConfig `yaml:"prometheus" json:"prometheus" property:"prometheus"`
 	Aggregation        *AggregateConfig  `yaml:"aggregation" json:"aggregation" property:"aggregation"`
+	Probe              *ProbeConfig      `yaml:"probe" json:"probe" property:"probe"`
 	rootConfig         *RootConfig
 }
 
@@ -56,6 +57,15 @@ type AggregateConfig struct {
 type PrometheusConfig struct {
 	Exporter    *Exporter          `yaml:"exporter" json:"exporter,omitempty" property:"exporter"`
 	Pushgateway *PushgatewayConfig `yaml:"pushgateway" json:"pushgateway,omitempty" property:"pushgateway"`
+}
+
+type ProbeConfig struct {
+	Enabled          *bool  `default:"false" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
+	Port             string `default:"22222" yaml:"port" json:"port,omitempty" property:"port"`
+	LivenessPath     string `default:"/live" yaml:"liveness-path" json:"liveness-path,omitempty" property:"liveness-path"`
+	ReadinessPath    string `default:"/ready" yaml:"readiness-path" json:"readiness-path,omitempty" property:"readiness-path"`
+	StartupPath      string `default:"/startup" yaml:"startup-path" json:"startup-path,omitempty" property:"startup-path"`
+	UseInternalState *bool  `default:"true" yaml:"use-internal-state" json:"use-internal-state,omitempty" property:"use-internal-state"`
 }
 
 type Exporter struct {

@@ -15,36 +15,44 @@
  * limitations under the License.
  */
 
-package main
+package probe
 
 import (
-	"dubbo-go-app/api"
-
-	"dubbo-go-app/pkg/service"
+	"sync/atomic"
 )
 
-import (
-	_ "dubbo.apache.org/dubbo-go/v3/imports"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
-	"dubbo.apache.org/dubbo-go/v3/server"
+var (
+	internalStateEnabled atomic.Bool
+	readyFlag            atomic.Bool
+	startupFlag          atomic.Bool
 )
 
-func main() {
-	srv, err := server.NewServer(
-		server.WithServerProtocol(
-			protocol.WithPort(20000),
-			protocol.WithTriple(),
-		),
-	)
-	if err != nil {
-		panic(err)
-	}
+// EnableInternalState controls whether readiness/startup checks
+// should validate internal state flags.
+func EnableInternalState(enabled bool) {
+	internalStateEnabled.Store(enabled)
+}
 
-	if err := api.RegisterGreeterServer(srv, &service.GreeterServerImpl{}); err != nil {
-		panic(err)
-	}
+// SetReady sets readiness state used by the internal readiness check.
+func SetReady(ready bool) {
+	readyFlag.Store(ready)
+}
 
-	if err := srv.Serve(); err != nil {
-		panic(err)
+// SetStartupComplete sets startup state used by the internal startup check.
+func SetStartupComplete(ready bool) {
+	startupFlag.Store(ready)
+}
+
+func internalReady() bool {
+	if !internalStateEnabled.Load() {
+		return true
 	}
+	return readyFlag.Load()
+}
+
+func internalStartup() bool {
+	if !internalStateEnabled.Load() {
+		return true
+	}
+	return startupFlag.Load()
 }
