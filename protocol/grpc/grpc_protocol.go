@@ -24,13 +24,14 @@ import (
 
 import (
 	"github.com/dubbogo/gost/log/logger"
+
+	grpc_health_v1 "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
-	grpc_health_v1 "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 const (

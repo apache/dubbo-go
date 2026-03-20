@@ -29,6 +29,8 @@ import (
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	grpc_health_v1 "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 import (
@@ -37,7 +39,6 @@ import (
 	gracefulshutdown "dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
-	grpc_health_v1 "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 type testTripleClosingEventHandler struct {

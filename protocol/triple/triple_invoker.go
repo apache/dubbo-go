@@ -26,6 +26,8 @@ import (
 
 import (
 	"github.com/dubbogo/gost/log/logger"
+
+	grpc_health_v1 "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 import (
@@ -35,7 +37,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
-	grpc_health_v1 "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 var triAttachmentKeys = []string{

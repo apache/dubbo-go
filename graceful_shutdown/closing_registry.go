@@ -20,9 +20,13 @@ package graceful_shutdown
 import (
 	"reflect"
 	"sync"
+)
 
+import (
 	"github.com/dubbogo/gost/log/logger"
+)
 
+import (
 	clusterdirectory "dubbo.apache.org/dubbo-go/v3/cluster/directory"
 )
 

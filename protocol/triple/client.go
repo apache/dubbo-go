@@ -37,6 +37,8 @@ import (
 	"github.com/quic-go/quic-go/http3"
 
 	"golang.org/x/net/http2"
+
+	grpc_health_v1 "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 import (
@@ -45,7 +47,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
-	grpc_health_v1 "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 const (
