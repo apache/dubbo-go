@@ -15,36 +15,36 @@
  * limitations under the License.
  */
 
-package main
+package probe
 
 import (
-	"dubbo-go-app/api"
-
-	"dubbo-go-app/pkg/service"
+	"testing"
 )
 
-import (
-	_ "dubbo.apache.org/dubbo-go/v3/imports"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
-	"dubbo.apache.org/dubbo-go/v3/server"
-)
+func TestStateDefaultsAndToggle(t *testing.T) {
+	resetProbeState()
 
-func main() {
-	srv, err := server.NewServer(
-		server.WithServerProtocol(
-			protocol.WithPort(20000),
-			protocol.WithTriple(),
-		),
-	)
-	if err != nil {
-		panic(err)
+	if internalReady() != true {
+		t.Fatalf("expected internalReady true when internal state disabled")
+	}
+	if internalStartup() != true {
+		t.Fatalf("expected internalStartup true when internal state disabled")
 	}
 
-	if err := api.RegisterGreeterServer(srv, &service.GreeterServerImpl{}); err != nil {
-		panic(err)
+	EnableInternalState(true)
+	if internalReady() {
+		t.Fatalf("expected internalReady false when enabled and not ready")
+	}
+	if internalStartup() {
+		t.Fatalf("expected internalStartup false when enabled and not started")
 	}
 
-	if err := srv.Serve(); err != nil {
-		panic(err)
+	SetReady(true)
+	SetStartupComplete(true)
+	if !internalReady() {
+		t.Fatalf("expected internalReady true after SetReady(true)")
+	}
+	if !internalStartup() {
+		t.Fatalf("expected internalStartup true after SetStartupComplete(true)")
 	}
 }
