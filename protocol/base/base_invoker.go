@@ -58,6 +58,11 @@ type Invoker interface {
 	Invoke(context.Context, Invocation) result.Result
 }
 
+// AvailabilitySetter is implemented by invokers that support toggling availability.
+type AvailabilitySetter interface {
+	SetAvailable(bool)
+}
+
 // BaseInvoker provides default invoker implements Invoker
 type BaseInvoker struct {
 	url       uatomic.Pointer[common.URL]

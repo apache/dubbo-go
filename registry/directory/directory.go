@@ -43,6 +43,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	_ "dubbo.apache.org/dubbo-go/v3/config_center/configurator"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	metricsRegistry "dubbo.apache.org/dubbo-go/v3/metrics/registry"
 	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
@@ -74,7 +75,24 @@ type RegistryDirectory struct {
 	registerLock                   sync.Mutex // this lock if for register
 	SubscribedUrl                  *common.URL
 	RegisteredUrl                  *common.URL
+	closingTombstones              *sync.Map // map[string]closingTombstone
+	closingTombstoneTTL            time.Duration
 }
+
+type closingTombstone struct {
+	InstanceKey string
+	ServiceKey  string
+	Address     string
+	Source      string
+	ExpireAt    time.Time
+}
+
+var defaultClosingTombstoneTTL = func() time.Duration {
+	if duration, err := time.ParseDuration(global.DefaultShutdownConfig().ClosingInvokerExpireTime); err == nil && duration > 0 {
+		return duration
+	}
+	return 30 * time.Second
+}()
 
 // NewRegistryDirectory will create a new RegistryDirectory
 func NewRegistryDirectory(url *common.URL, registry registry.Registry) (directory.Directory, error) {
@@ -132,11 +150,13 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (director
 	}
 
 	dir := &RegistryDirectory{
-		Directory:        base.NewDirectory(url),
-		cacheInvokers:    []protocolbase.Invoker{},
-		cacheInvokersMap: &sync.Map{},
-		serviceType:      url.SubURL.Service(),
-		registry:         registry,
+		Directory:           base.NewDirectory(url),
+		cacheInvokers:       []protocolbase.Invoker{},
+		cacheInvokersMap:    &sync.Map{},
+		serviceType:         url.SubURL.Service(),
+		registry:            registry,
+		closingTombstones:   &sync.Map{},
+		closingTombstoneTTL: defaultClosingTombstoneTTL,
 	}
 
 	dir.consumerURL = dir.getConsumerUrl(url.SubURL)
@@ -150,6 +170,7 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (director
 	dir.consumerConfigurationListener = newConsumerConfigurationListener(dir, url)
 	dir.consumerConfigurationListener.addNotifyListener(dir)
 	dir.referenceConfigurationListener = newReferenceConfigurationListener(dir, url)
+	graceful_shutdown.DefaultClosingDirectoryRegistry().Register(dir.closingServiceKey(), dir)
 
 	if err := dir.registry.LoadSubscribeInstances(url.SubURL, dir); err != nil {
 		return nil, err
@@ -446,6 +467,7 @@ func (dir *RegistryDirectory) uncacheInvokerWithClusterID(clusterID string) []pr
 // uncacheInvoker will return abandoned Invoker, if no Invoker to be abandoned, return nil
 func (dir *RegistryDirectory) uncacheInvoker(event *registry.ServiceEvent) []protocolbase.Invoker {
 	defer metrics.Publish(metricsRegistry.NewDirectoryEvent(metricsRegistry.NumDisableTotal))
+	dir.clearClosingTombstone(event.Key())
 	if clusterID := event.Service.GetParam(constant.MeshClusterIDKey, ""); event.Service.Location == constant.MeshAnyAddrMatcher && clusterID != "" {
 		dir.uncacheInvokerWithClusterID(clusterID)
 	}
@@ -460,6 +482,86 @@ func (dir *RegistryDirectory) uncacheInvokerWithKey(key string) protocolbase.Inv
 		return cacheInvoker.(protocolbase.Invoker)
 	}
 	return nil
+}
+
+// RemoveClosingInstance removes a single service instance from the directory by instanceKey.
+// It is intended to be called by graceful shutdown logic before registry updates converge.
+func (dir *RegistryDirectory) RemoveClosingInstance(instanceKey string) bool {
+	if instanceKey == "" {
+		return false
+	}
+
+	var removed protocolbase.Invoker
+	func() {
+		dir.registerLock.Lock()
+		defer dir.registerLock.Unlock()
+
+		if cacheInvoker, ok := dir.cacheInvokersMap.Load(instanceKey); ok {
+			removed = cacheInvoker.(protocolbase.Invoker)
+		}
+		dir.markClosingTombstone(instanceKey, removed, "closing-event")
+		removed = dir.uncacheInvokerWithKey(instanceKey)
+		if removed != nil {
+			dir.setNewInvokers()
+		}
+	}()
+
+	if removed != nil {
+		removed.Destroy()
+		return true
+	}
+	return false
+}
+
+func (dir *RegistryDirectory) markClosingTombstone(instanceKey string, invoker protocolbase.Invoker, source string) {
+	if instanceKey == "" {
+		return
+	}
+
+	tombstone := closingTombstone{
+		InstanceKey: instanceKey,
+		Source:      source,
+		ExpireAt:    time.Now().Add(dir.closingTombstoneTTL),
+	}
+	if invoker != nil && invoker.GetURL() != nil {
+		tombstone.ServiceKey = invoker.GetURL().ServiceKey()
+		tombstone.Address = invoker.GetURL().Location
+	}
+	dir.closingTombstones.Store(instanceKey, tombstone)
+}
+
+func (dir *RegistryDirectory) hasActiveClosingTombstone(instanceKey string) bool {
+	if instanceKey == "" {
+		return false
+	}
+	tombstoneValue, ok := dir.closingTombstones.Load(instanceKey)
+	if !ok {
+		return false
+	}
+	tombstone := tombstoneValue.(closingTombstone)
+	if time.Now().After(tombstone.ExpireAt) {
+		dir.closingTombstones.Delete(instanceKey)
+		return false
+	}
+	return true
+}
+
+func (dir *RegistryDirectory) clearClosingTombstone(instanceKey string) {
+	if instanceKey == "" {
+		return
+	}
+	dir.closingTombstones.Delete(instanceKey)
+}
+
+func (dir *RegistryDirectory) cleanupExpiredClosingTombstones() {
+	now := time.Now()
+	dir.closingTombstones.Range(func(key, value any) bool {
+		tombstone := value.(closingTombstone)
+		if now.After(tombstone.ExpireAt) {
+			dir.closingTombstones.Delete(key)
+		}
+		return true
+	})
 }
 
 // cacheInvoker will return abandoned Invoker,if no Invoker to be abandoned,return nil
@@ -490,6 +592,11 @@ func (dir *RegistryDirectory) cacheInvoker(url *common.URL, event *registry.Serv
 
 func (dir *RegistryDirectory) doCacheInvoker(newUrl *common.URL, event *registry.ServiceEvent) (protocolbase.Invoker, bool) {
 	key := event.Key()
+	dir.cleanupExpiredClosingTombstones()
+	if dir.hasActiveClosingTombstone(key) {
+		logger.Infof("[Registry Directory] skip rebuilding closing instance due to tombstone, instance key: %s", key)
+		return nil, true
+	}
 	if cacheInvoker, ok := dir.cacheInvokersMap.Load(key); !ok {
 		logger.Debugf("service will be added in cache invokers: invokers url is  %s!", newUrl)
 		newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(newUrl)
@@ -549,6 +656,7 @@ func (dir *RegistryDirectory) IsAvailable() bool {
 func (dir *RegistryDirectory) Destroy() {
 	// TODO:unregister & unsubscribe
 	dir.DoDestroy(func() {
+		graceful_shutdown.DefaultClosingDirectoryRegistry().Unregister(dir.closingServiceKey(), dir)
 		if dir.RegisteredUrl != nil {
 			err := dir.registry.UnRegister(dir.RegisteredUrl)
 			if err != nil {
@@ -570,6 +678,17 @@ func (dir *RegistryDirectory) Destroy() {
 		}
 	})
 	metrics.Publish(metricsRegistry.NewDirectoryEvent(metricsRegistry.NumAllDec))
+}
+
+func (dir *RegistryDirectory) closingServiceKey() string {
+	if dir.GetURL() == nil {
+		return ""
+	}
+	serviceKey := dir.GetURL().ServiceKey()
+	if serviceKey == "" && dir.GetURL().SubURL != nil {
+		serviceKey = dir.GetURL().SubURL.ServiceKey()
+	}
+	return serviceKey
 }
 
 func (dir *RegistryDirectory) overrideUrl(targetUrl *common.URL) {

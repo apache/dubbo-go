@@ -151,6 +151,110 @@ func Test_RefreshUrl(t *testing.T) {
 	assert.Empty(t, registryDirectory.cacheInvokers)
 }
 
+func TestRemoveClosingInstanceRemovesExactInstanceKey(t *testing.T) {
+	registryDirectory, mockRegistry := normalRegistryDir(true)
+
+	providerURL1, _ := common.NewURL("dubbo://0.0.0.0:20000/org.apache.dubbo-go.mockService",
+		common.WithParamsValue(constant.ClusterKey, "mock1"),
+		common.WithParamsValue(constant.GroupKey, "group"),
+		common.WithParamsValue(constant.VersionKey, "1.0.0"))
+	providerURL2, _ := common.NewURL("dubbo://0.0.0.0:20001/org.apache.dubbo-go.mockService",
+		common.WithParamsValue(constant.ClusterKey, "mock1"),
+		common.WithParamsValue(constant.GroupKey, "group"),
+		common.WithParamsValue(constant.VersionKey, "1.0.0"))
+
+	event1 := &registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerURL1}
+	event2 := &registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerURL2}
+	key1 := registryDirectory.invokerCacheKey(event1)
+	key2 := registryDirectory.invokerCacheKey(event2)
+
+	mockRegistry.MockEvent(event1)
+	mockRegistry.MockEvent(event2)
+	time.Sleep(1e9)
+
+	assert.Len(t, registryDirectory.cacheInvokers, 2)
+	assert.NotEqual(t, key1, key2)
+
+	removed := registryDirectory.RemoveClosingInstance(key1)
+	require.True(t, removed)
+
+	assert.Len(t, registryDirectory.cacheInvokers, 1)
+	assert.Len(t, registryDirectory.List(&invocation.RPCInvocation{}), 1)
+
+	_, stillExists := registryDirectory.cacheInvokersMap.Load(key1)
+	assert.False(t, stillExists)
+
+	remaining, ok := registryDirectory.cacheInvokersMap.Load(key2)
+	require.True(t, ok)
+	assert.Equal(t, key2, remaining.(interface{ GetURL() *common.URL }).GetURL().GetCacheInvokerMapKey())
+}
+
+func TestRemoveClosingInstanceReturnsFalseForUnknownKey(t *testing.T) {
+	registryDirectory, _ := normalRegistryDir(true)
+
+	removed := registryDirectory.RemoveClosingInstance("missing-instance-key")
+	assert.False(t, removed)
+	assert.Empty(t, registryDirectory.cacheInvokers)
+}
+
+func TestClosingTombstonePreventsRebuildUntilDeleteEvent(t *testing.T) {
+	registryDirectory, mockRegistry := normalRegistryDir(true)
+
+	providerURL, _ := common.NewURL("dubbo://0.0.0.0:20000/org.apache.dubbo-go.mockService",
+		common.WithParamsValue(constant.ClusterKey, "mock1"),
+		common.WithParamsValue(constant.GroupKey, "group"),
+		common.WithParamsValue(constant.VersionKey, "1.0.0"))
+	event := &registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerURL}
+	key := registryDirectory.invokerCacheKey(event)
+
+	mockRegistry.MockEvent(event)
+	time.Sleep(1e9)
+	assert.Len(t, registryDirectory.cacheInvokers, 1)
+
+	removed := registryDirectory.RemoveClosingInstance(key)
+	require.True(t, removed)
+	assert.Len(t, registryDirectory.cacheInvokers, 0)
+	assert.True(t, registryDirectory.hasActiveClosingTombstone(key))
+
+	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerURL})
+	time.Sleep(1e9)
+	assert.Len(t, registryDirectory.cacheInvokers, 0)
+
+	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeDel, Service: providerURL})
+	time.Sleep(1e9)
+	assert.False(t, registryDirectory.hasActiveClosingTombstone(key))
+
+	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerURL})
+	time.Sleep(1e9)
+	assert.Len(t, registryDirectory.cacheInvokers, 1)
+}
+
+func TestExpiredClosingTombstoneAllowsRebuild(t *testing.T) {
+	registryDirectory, mockRegistry := normalRegistryDir(true)
+	registryDirectory.closingTombstoneTTL = 20 * time.Millisecond
+
+	providerURL, _ := common.NewURL("dubbo://0.0.0.0:20000/org.apache.dubbo-go.mockService",
+		common.WithParamsValue(constant.ClusterKey, "mock1"),
+		common.WithParamsValue(constant.GroupKey, "group"),
+		common.WithParamsValue(constant.VersionKey, "1.0.0"))
+	event := &registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerURL}
+	key := registryDirectory.invokerCacheKey(event)
+
+	mockRegistry.MockEvent(event)
+	time.Sleep(1e9)
+	require.Len(t, registryDirectory.cacheInvokers, 1)
+
+	require.True(t, registryDirectory.RemoveClosingInstance(key))
+	assert.Len(t, registryDirectory.cacheInvokers, 0)
+
+	time.Sleep(40 * time.Millisecond)
+	assert.False(t, registryDirectory.hasActiveClosingTombstone(key))
+
+	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerURL})
+	time.Sleep(1e9)
+	assert.Len(t, registryDirectory.cacheInvokers, 1)
+}
+
 func normalRegistryDir(noMockEvent ...bool) (*RegistryDirectory, *registry.MockRegistry) {
 	extension.SetProtocol(protocolwrapper.FILTER, protocolwrapper.NewMockProtocolFilter)
 

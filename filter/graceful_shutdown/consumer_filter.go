@@ -20,7 +20,6 @@ package graceful_shutdown
 import (
 	"context"
 	"errors"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -36,6 +35,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	gracefulshutdown "dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
@@ -54,14 +54,19 @@ func init() {
 }
 
 type consumerGracefulShutdownFilter struct {
-	shutdownConfig  *global.ShutdownConfig
-	closingInvokers sync.Map // map[string]time.Time (url key -> expire time)
+	shutdownConfig      *global.ShutdownConfig
+	closingEventHandler gracefulshutdown.ClosingEventHandler
+	closingInvokers     sync.Map // map[string]time.Time (url key -> expire time)
 }
+
+const consumerCountMarkedKey = "dubbo-go-graceful-shutdown-consumer-counted"
 
 func newConsumerGracefulShutdownFilter() filter.Filter {
 	if csf == nil {
 		csfOnce.Do(func() {
-			csf = &consumerGracefulShutdownFilter{}
+			csf = &consumerGracefulShutdownFilter{
+				closingEventHandler: gracefulshutdown.DefaultClosingEventHandler(),
+			}
 		})
 	}
 	return csf
@@ -71,20 +76,32 @@ func newConsumerGracefulShutdownFilter() filter.Filter {
 func (f *consumerGracefulShutdownFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
 	// check if invoker is closing
 	if f.isClosingInvoker(invoker) {
-		logger.Warnf("Graceful shutdown: skipping closing invoker: %s", invoker.GetURL().String())
+		logger.Warnf("Graceful shutdown --- Skipping closing invoker --- %s", invoker.GetURL().String())
 		return &result.RPCResult{Err: errors.New("provider is closing")}
 	}
-	f.shutdownConfig.ConsumerActiveCount.Inc()
-	return invoker.Invoke(ctx, invocation)
+
+	if f.shutdownConfig != nil {
+		f.shutdownConfig.ConsumerActiveCount.Inc()
+	}
+
+	res := invoker.Invoke(ctx, invocation)
+	if f.shutdownConfig == nil {
+		return res
+	}
+
+	return markCountedResult(res)
 }
 
 // OnResponse reduces the number of active processes then return the process result
 func (f *consumerGracefulShutdownFilter) OnResponse(ctx context.Context, result result.Result, invoker base.Invoker, invocation base.Invocation) result.Result {
-	f.shutdownConfig.ConsumerActiveCount.Dec()
+	if f.shutdownConfig != nil && shouldDecrementConsumerActive(result) {
+		f.shutdownConfig.ConsumerActiveCount.Dec()
+	}
 
 	// check closing flag in response
 	if f.isClosingResponse(result) {
 		f.markClosingInvoker(invoker)
+		f.handleClosingEvent(invoker, "passive-attachment")
 	}
 
 	// handle request error
@@ -121,6 +138,10 @@ func (f *consumerGracefulShutdownFilter) isClosingInvoker(invoker base.Invoker) 
 			return true
 		}
 		f.closingInvokers.Delete(key)
+		if setter, ok := invoker.(base.AvailabilitySetter); ok {
+			setter.SetAvailable(true)
+			logger.Infof("Graceful shutdown --- Recovered invoker availability after closing TTL --- %s", key)
+		}
 	}
 	return false
 }
@@ -143,26 +164,33 @@ func (f *consumerGracefulShutdownFilter) markClosingInvoker(invoker base.Invoker
 	expireTime := time.Now().Add(f.getClosingInvokerExpireTime())
 	f.closingInvokers.Store(key, expireTime)
 
-	logger.Infof("Graceful shutdown: marked invoker as closing: %s, will expire at %v, IsAvailable=%v",
+	logger.Infof("Graceful shutdown --- Marked invoker as closing --- %s, will expire at %v, IsAvailable=%v",
 		key, expireTime, invoker.IsAvailable())
 
-	if bi, ok := invoker.(*base.BaseInvoker); ok {
-		bi.SetAvailable(false)
-		logger.Infof("Graceful shutdown: set invoker unavailable: %s, IsAvailable now=%v",
+	if setter, ok := invoker.(base.AvailabilitySetter); ok {
+		setter.SetAvailable(false)
+		logger.Infof("Graceful shutdown --- Set invoker unavailable --- %s, IsAvailable now=%v",
 			key, invoker.IsAvailable())
 	}
+}
+
+func (f *consumerGracefulShutdownFilter) handleClosingEvent(invoker base.Invoker, source string) {
+	if f.closingEventHandler == nil || invoker == nil || invoker.GetURL() == nil {
+		return
+	}
+
+	f.closingEventHandler.HandleClosingEvent(gracefulshutdown.ClosingEvent{
+		Source:      source,
+		InstanceKey: invoker.GetURL().GetCacheInvokerMapKey(),
+		ServiceKey:  invoker.GetURL().ServiceKey(),
+		Address:     invoker.GetURL().Location,
+	})
 }
 
 func (f *consumerGracefulShutdownFilter) getClosingInvokerExpireTime() time.Duration {
 	if f.shutdownConfig != nil && f.shutdownConfig.ClosingInvokerExpireTime != "" {
 		if duration, err := time.ParseDuration(f.shutdownConfig.ClosingInvokerExpireTime); err == nil && duration > 0 {
 			return duration
-		}
-	}
-	// default 30s, also try parsing numeric string as milliseconds
-	if f.shutdownConfig != nil && f.shutdownConfig.ClosingInvokerExpireTime != "" {
-		if ms, err := strconv.ParseInt(f.shutdownConfig.ClosingInvokerExpireTime, 10, 64); err == nil && ms > 0 {
-			return time.Duration(ms) * time.Millisecond
 		}
 	}
 	return 30 * time.Second
@@ -174,27 +202,34 @@ func (f *consumerGracefulShutdownFilter) handleRequestError(invoker base.Invoker
 		return
 	}
 
-	// check for connection-related errors
-	errMsg := err.Error()
-	isConnectionError := strings.Contains(errMsg, "client has closed") ||
-		strings.Contains(errMsg, "connection") ||
-		strings.Contains(errMsg, "EOF") ||
-		strings.Contains(errMsg, "broken pipe") ||
-		strings.Contains(errMsg, "gRPC") && strings.Contains(errMsg, "closing") ||
-		strings.Contains(errMsg, "http2") && strings.Contains(errMsg, "close")
-
-	if isConnectionError {
-		key := invoker.GetURL().String()
-		expireTime := time.Now().Add(f.getClosingInvokerExpireTime())
-		f.closingInvokers.Store(key, expireTime)
-
-		logger.Infof("Graceful shutdown: connection error detected for invoker: %s, marking as closing, will expire at %v, IsAvailable=%v",
-			key, expireTime, invoker.IsAvailable())
-
-		if bi, ok := invoker.(*base.BaseInvoker); ok {
-			bi.SetAvailable(false)
-			logger.Infof("Graceful shutdown: set invoker unavailable due to connection error: %s, IsAvailable now=%v",
-				key, invoker.IsAvailable())
-		}
+	if isClosingError(err) {
+		f.markClosingInvoker(invoker)
+		f.handleClosingEvent(invoker, "connection-closing-error")
 	}
+}
+
+func isClosingError(err error) bool {
+	if errors.Is(err, base.ErrClientClosed) || errors.Is(err, base.ErrDestroyedInvoker) {
+		return true
+	}
+
+	errMsg := strings.ToLower(err.Error())
+	return strings.Contains(errMsg, "transport is closing") ||
+		strings.Contains(errMsg, "client connection is closing")
+}
+
+func markCountedResult(res result.Result) result.Result {
+	if res == nil {
+		res = &result.RPCResult{}
+	}
+	res.AddAttachment(consumerCountMarkedKey, true)
+	return res
+}
+
+func shouldDecrementConsumerActive(res result.Result) bool {
+	if res == nil {
+		return false
+	}
+	marked, ok := res.Attachment(consumerCountMarkedKey, false).(bool)
+	return ok && marked
 }

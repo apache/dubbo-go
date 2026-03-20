@@ -69,6 +69,25 @@ func TestProviderFilterInvokeWithGlobalPackage(t *testing.T) {
 	assert.NotNil(t, invokeResult.Error().Error(), "Rejected")
 }
 
+func TestProviderFilterOnResponseDoesNotDecrementRejectedRequest(t *testing.T) {
+	baseURL := common.NewURLWithOptions(common.WithParams(url.Values{}))
+	rpcInvocation := invocation.NewRPCInvocation("GetUser", []any{"OK"}, make(map[string]any))
+	opt := graceful_shutdown.NewOptions()
+	extension.SetRejectedExecutionHandler("provider-count-test", func() filter.RejectedExecutionHandler {
+		return &TestRejectedExecutionHandler{}
+	})
+	opt.Shutdown.RejectRequestHandler = "provider-count-test"
+
+	providerFilter := newProviderGracefulShutdownFilter().(*providerGracefulShutdownFilter)
+	providerFilter.Set(constant.GracefulShutdownFilterShutdownConfig, opt.Shutdown)
+	opt.Shutdown.RejectRequest.Store(true)
+
+	res := providerFilter.Invoke(context.Background(), base.NewBaseInvoker(baseURL), rpcInvocation)
+	providerFilter.OnResponse(context.Background(), res, base.NewBaseInvoker(baseURL), rpcInvocation)
+
+	assert.Equal(t, int32(0), opt.Shutdown.ProviderActiveCount.Load())
+}
+
 type TestRejectedExecutionHandler struct{}
 
 // RejectedExecution will do nothing, it only log the invocation.
@@ -78,4 +97,18 @@ func (handler *TestRejectedExecutionHandler) RejectedExecution(url *common.URL,
 	return &result.RPCResult{
 		Err: perrors.New("Rejected"),
 	}
+}
+
+func TestProviderFilterWithoutShutdownConfigPassThrough(t *testing.T) {
+	baseURL := common.NewURLWithOptions(common.WithParams(url.Values{}))
+	rpcInvocation := invocation.NewRPCInvocation("GetUser", []any{"OK"}, make(map[string]any))
+	providerFilter := &providerGracefulShutdownFilter{}
+
+	res := providerFilter.Invoke(context.Background(), base.NewBaseInvoker(baseURL), rpcInvocation)
+	assert.NotNil(t, res)
+	assert.NoError(t, res.Error())
+
+	assert.NotPanics(t, func() {
+		providerFilter.OnResponse(context.Background(), res, base.NewBaseInvoker(baseURL), rpcInvocation)
+	})
 }

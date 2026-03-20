@@ -18,7 +18,10 @@
 package triple
 
 import (
+	"context"
+	"sync/atomic"
 	"testing"
+	"time"
 )
 
 import (
@@ -27,6 +30,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
 func TestNewTripleProtocol(t *testing.T) {
@@ -59,6 +63,24 @@ func TestTripleConstant(t *testing.T) {
 	assert.Equal(t, "tri", TRIPLE)
 }
 
+func TestTripleGracefulShutdownCallbackRegistration(t *testing.T) {
+	cb, ok := extension.LookupGracefulShutdownCallback(TRIPLE)
+	assert.True(t, ok)
+	assert.NotNil(t, cb)
+
+	original := tripleProtocol
+	tp := NewTripleProtocol()
+	tp.serverMap["graceful-test"] = &Server{triServer: tri.NewServer("", nil)}
+	tripleProtocol = tp
+	t.Cleanup(func() {
+		tripleProtocol = original
+	})
+
+	assert.NotPanics(t, func() {
+		assert.NoError(t, cb(context.Background()))
+	})
+}
+
 func TestTripleProtocol_Destroy_EmptyServerMap(t *testing.T) {
 	tp := NewTripleProtocol()
 
@@ -66,6 +88,61 @@ func TestTripleProtocol_Destroy_EmptyServerMap(t *testing.T) {
 	assert.NotPanics(t, func() {
 		tp.Destroy()
 	})
+}
+
+func TestTripleProtocolDestroyDoesNotHoldServerLockWhileGracefulStopping(t *testing.T) {
+	tp := NewTripleProtocol()
+	tp.serverMap["127.0.0.1:20000"] = &Server{}
+
+	originalStop := tripleServerGracefulStop
+	t.Cleanup(func() {
+		tripleServerGracefulStop = originalStop
+	})
+
+	entered := make(chan struct{})
+	release := make(chan struct{})
+	var stopCalls atomic.Int32
+	tripleServerGracefulStop = func(server *Server) {
+		stopCalls.Add(1)
+		close(entered)
+		<-release
+	}
+
+	done := make(chan struct{})
+	go func() {
+		tp.Destroy()
+		close(done)
+	}()
+
+	select {
+	case <-entered:
+	case <-time.After(time.Second):
+		t.Fatal("Destroy did not reach graceful stop")
+	}
+
+	lockAcquired := make(chan struct{})
+	go func() {
+		tp.serverLock.Lock()
+		tp.serverLock.Unlock()
+		close(lockAcquired)
+	}()
+
+	select {
+	case <-lockAcquired:
+	case <-time.After(time.Second):
+		t.Fatal("serverLock remained held during graceful stop")
+	}
+
+	close(release)
+
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("Destroy did not finish")
+	}
+
+	assert.Equal(t, int32(1), stopCalls.Load())
+	assert.Empty(t, tp.serverMap)
 }
 
 // Test isGenericCall checks if the generic parameter indicates a generic call

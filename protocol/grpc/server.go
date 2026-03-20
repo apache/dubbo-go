@@ -37,6 +37,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
+	grpc_health "google.golang.org/grpc/health"
+	grpc_health_v1 "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
 )
 
@@ -62,13 +64,19 @@ type DubboGrpcService interface {
 
 // Server is a gRPC server
 type Server struct {
-	grpcServer *grpc.Server
-	bufferSize int
+	grpcServer   *grpc.Server
+	healthServer *grpc_health.Server
+	bufferSize   int
+	serviceLock  sync.Mutex
+	services     map[string]struct{}
 }
 
 // NewServer creates a new server
 func NewServer() *Server {
-	return &Server{}
+	return &Server{
+		healthServer: grpc_health.NewServer(),
+		services:     make(map[string]struct{}),
+	}
 }
 
 func (s *Server) SetBufferSize(n int) {
@@ -149,6 +157,7 @@ func (s *Server) Start(url *common.URL) {
 
 	server := grpc.NewServer(serverOpts...)
 	s.grpcServer = server
+	grpc_health_v1.RegisterHealthServer(server, s.healthServer)
 
 	go func() {
 		providerServices := getProviderServices(url)
@@ -164,6 +173,29 @@ func (s *Server) Start(url *common.URL) {
 			logger.Errorf("server serve failed with err: %v", err)
 		}
 	}()
+}
+
+func (s *Server) SetServingStatus(service string, status grpc_health_v1.HealthCheckResponse_ServingStatus) {
+	if s.healthServer == nil || service == "" {
+		return
+	}
+
+	s.serviceLock.Lock()
+	s.services[service] = struct{}{}
+	s.serviceLock.Unlock()
+	s.healthServer.SetServingStatus(service, status)
+}
+
+func (s *Server) SetAllServicesNotServing() {
+	if s.healthServer == nil {
+		return
+	}
+
+	s.serviceLock.Lock()
+	defer s.serviceLock.Unlock()
+	for service := range s.services {
+		s.healthServer.SetServingStatus(service, grpc_health_v1.HealthCheckResponse_NOT_SERVING)
+	}
 }
 
 // getProviderServices retrieves provider services from config or URL attributes
