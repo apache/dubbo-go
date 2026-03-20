@@ -213,12 +213,12 @@ func TestClosingTombstonePreventsRebuildUntilDeleteEvent(t *testing.T) {
 
 	removed := registryDirectory.RemoveClosingInstance(key)
 	require.True(t, removed)
-	assert.Len(t, registryDirectory.cacheInvokers, 0)
+	assert.Empty(t, registryDirectory.cacheInvokers)
 	assert.True(t, registryDirectory.hasActiveClosingTombstone(key))
 
 	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerURL})
 	time.Sleep(1e9)
-	assert.Len(t, registryDirectory.cacheInvokers, 0)
+	assert.Empty(t, registryDirectory.cacheInvokers)
 
 	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeDel, Service: providerURL})
 	time.Sleep(1e9)
@@ -245,7 +245,7 @@ func TestExpiredClosingTombstoneAllowsRebuild(t *testing.T) {
 	require.Len(t, registryDirectory.cacheInvokers, 1)
 
 	require.True(t, registryDirectory.RemoveClosingInstance(key))
-	assert.Len(t, registryDirectory.cacheInvokers, 0)
+	assert.Empty(t, registryDirectory.cacheInvokers)
 
 	time.Sleep(40 * time.Millisecond)
 	assert.False(t, registryDirectory.hasActiveClosingTombstone(key))

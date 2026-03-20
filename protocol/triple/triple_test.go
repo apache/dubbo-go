@@ -123,6 +123,7 @@ func TestTripleProtocolDestroyDoesNotHoldServerLockWhileGracefulStopping(t *test
 	lockAcquired := make(chan struct{})
 	go func() {
 		tp.serverLock.Lock()
+		_ = tp.serverMap
 		tp.serverLock.Unlock()
 		close(lockAcquired)
 	}()

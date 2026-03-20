@@ -18,6 +18,7 @@
 package grpc
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"sync"
@@ -76,8 +77,8 @@ func TestGrpcServerSetAllServicesNotServing(t *testing.T) {
 
 	server.SetAllServicesNotServing()
 
-	respA, errA := server.healthServer.Check(nil, &grpc_health_v1.HealthCheckRequest{Service: "svc-a"})
-	respB, errB := server.healthServer.Check(nil, &grpc_health_v1.HealthCheckRequest{Service: "svc-b"})
+	respA, errA := server.healthServer.Check(context.TODO(), &grpc_health_v1.HealthCheckRequest{Service: "svc-a"})
+	respB, errB := server.healthServer.Check(context.TODO(), &grpc_health_v1.HealthCheckRequest{Service: "svc-b"})
 	assert.NoError(t, errA)
 	assert.NoError(t, errB)
 	assert.Equal(t, grpc_health_v1.HealthCheckResponse_NOT_SERVING, respA.GetStatus())

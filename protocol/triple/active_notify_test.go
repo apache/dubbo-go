@@ -89,10 +89,10 @@ func TestTripleHealthWatchEmitsClosingEvent(t *testing.T) {
 			if request.GetService() != serviceKey {
 				return fmt.Errorf("unexpected service %s", request.GetService())
 			}
-			if err := stream.Send(&grpc_health_v1.HealthCheckResponse{
+			if sendErr := stream.Send(&grpc_health_v1.HealthCheckResponse{
 				Status: grpc_health_v1.HealthCheckResponse_SERVING,
-			}); err != nil {
-				return err
+			}); sendErr != nil {
+				return sendErr
 			}
 			select {
 			case <-notServing:

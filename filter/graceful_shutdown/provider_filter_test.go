@@ -106,7 +106,7 @@ func TestProviderFilterWithoutShutdownConfigPassThrough(t *testing.T) {
 
 	res := providerFilter.Invoke(context.Background(), base.NewBaseInvoker(baseURL), rpcInvocation)
 	assert.NotNil(t, res)
-	assert.NoError(t, res.Error())
+	require.NoError(t, res.Error())
 
 	assert.NotPanics(t, func() {
 		providerFilter.OnResponse(context.Background(), res, base.NewBaseInvoker(baseURL), rpcInvocation)

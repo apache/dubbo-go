@@ -90,6 +90,7 @@ func TestGrpcProtocolDestroyDoesNotHoldServerLockWhileGracefulStopping(t *testin
 	lockAcquired := make(chan struct{})
 	go func() {
 		proto.serverLock.Lock()
+		_ = proto.serverMap
 		proto.serverLock.Unlock()
 		close(lockAcquired)
 	}()

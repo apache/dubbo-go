@@ -27,6 +27,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -114,7 +115,7 @@ func TestConsumerFilterDoesNotDecrementWithoutIncrement(t *testing.T) {
 	filter.markClosingInvoker(invoker)
 
 	res := filter.Invoke(context.Background(), invoker, rpcInvocation)
-	assert.Error(t, res.Error())
+	require.Error(t, res.Error())
 	assert.Equal(t, "provider is closing", res.Error().Error())
 
 	filter.OnResponse(context.Background(), res, invoker, rpcInvocation)
