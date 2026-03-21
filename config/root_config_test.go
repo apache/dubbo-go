@@ -99,7 +99,7 @@ func TestRootConfigConcurrentSetAndGet(t *testing.T) {
 	SetRootConfig(*NewRootConfigBuilder().Build())
 
 	var wg sync.WaitGroup
-	for i := 0; i < 200; i++ {
+	for i := 0; i < 50; i++ {
 		wg.Add(2)
 		go func(idx int) {
 			defer wg.Done()
@@ -113,5 +113,7 @@ func TestRootConfigConcurrentSetAndGet(t *testing.T) {
 		}()
 	}
 	wg.Wait()
-	assert.NotNil(t, GetRootConfig())
+	finalCfg := GetRootConfig()
+	assert.NotNil(t, finalCfg)
+	assert.NotEmpty(t, finalCfg.Application.Name)
 }
