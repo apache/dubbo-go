@@ -74,7 +74,7 @@ type RegistryDirectory struct {
 	consumerConfigurationListener  *consumerConfigurationListener
 	referenceConfigurationListener *referenceConfigurationListener
 	registerLock                   sync.Mutex // this lock if for register
-	subscribedURLLock              sync.RWMutex
+	subscribedUrlLock              sync.RWMutex
 	SubscribedUrl                  *common.URL
 	RegisteredUrl                  *common.URL
 	closingTombstones              *sync.Map // map[string]closingTombstone
