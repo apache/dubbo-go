@@ -104,24 +104,13 @@ func main() {
 
 ### [dubbo-go-schema](https://github.com/apache/dubbo-go/tree/main/tools/dubbo-go-schema)
 
-该工具为 Dubbo-Go 配置文件提供 JSON Schema，通过编辑器辅助功能简化配置过程。
-
-**功能：**
-
-* **智能辅助：** 在支持的 IDE 中为配置文件启用代码补全、提示和实时校验。
-* **简化配置：** 帮助您轻松编写有效且准确的配置。
+该工具为 Dubbo-Go 配置文件提供 JSON Schema，支持编辑器中的代码补全、提示和实时校验。
 
 有关使用详情，请参阅 [dubbo-go-schema README](./tools/dubbo-go-schema/README.md)。
 
 ### [dubbogo-cli](https://github.com/apache/dubbo-go/tree/main/tools/dubbogo-cli)
 
-一个功能全面的命令行工具，用于引导、管理和调试您的 Dubbo-Go 应用。
-
-**功能：**
-
-* **项目脚手架：** 快速创建新的应用模板。
-* **工具管理：** 安装和管理必要的开发工具。
-* **接口调试：** 提供命令来调试您的服务。
+一个用于引导、管理和调试 Dubbo-Go 应用的命令行工具。
 
 - [dubbogo-cli](https://github.com/apache/dubbo-go/tree/main/tools/dubbogo-cli)
 - [dubbogo-cli-v2](https://github.com/dubbogo/tools/tree/master/cmd/dubbogo-cli-v2)
@@ -129,12 +118,7 @@ func main() {
 
 ### [protoc-gen-go-triple](https://github.com/dubbogo/protoc-gen-go-triple)
 
-一个 `protoc` 插件，用于从您的 `.proto` (Protocol Buffer) 定义文件为 Triple 协议生成 Golang 代码。
-
-**功能：**
-
-* **代码生成：** 为 Triple 协议生成 Golang 客户端和服务器存根（stub）。
-* **无缝集成：** 与官方的 `protoc-gen-go` 协同工作，同时生成 Protobuf 消息代码（`.pb.go`）和 Triple 接口代码（`.triple.go`）。
+一个 `protoc` 插件，用于从 `.proto` 定义文件生成 Triple 协议的 Golang 客户端和服务端代码。
 
 *注意：该工具取代了已废弃的 [protoc-gen-dubbo3grpc](https://github.com/dubbogo/tools/tree/master/cmd/protoc-gen-dubbo3grpc) 和已废弃的 [protoc-gen-go-triple](https://github.com/dubbogo/tools/tree/master/cmd/protoc-gen-go-triple)。*
 
@@ -142,12 +126,7 @@ func main() {
 
 ### [imports-formatter](https://github.com/dubbogo/tools?tab=readme-ov-file#imports-formatter)
 
-这是一个面向 Dubbo-Go 开发者的插件，它是一款代码格式化工具，它根据 Dubbo-Go 社区的风格指南来组织 Golang 的 `import` 代码块。
-
-**功能：**
-
-* **自动格式化：** 将 `import` 语句分为三个独立的组：Golang 标准库、第三方库和项目内部包。
-* **代码一致性：** 在整个代码库中强制执行干净、一致的导入风格。
+这是一个面向 Dubbo-Go 开发者的格式化工具，用于按照社区风格指南整理 Golang 的 `import` 代码块。
 
 有关使用详情，请参阅 [imports-formatter README](https://github.com/dubbogo/tools?tab=readme-ov-file#imports-formatter)。
 
@@ -158,6 +137,7 @@ func main() {
 - [与 Dubbo Java 互通](https://cn.dubbo.apache.org/zh-cn/overview/mannual/golang-sdk/tutorial/interop-dubbo/)
 - [Protoc-gen-go-triple](https://github.com/dubbogo/protoc-gen-go-triple/)
 - [控制台 (Console)](https://github.com/apache/dubbo-kubernetes)，开发中
+- [dubbo-go-extensions](https://github.com/apache/dubbo-go-extensions)，建设中
 
 ## 社区与文档
 
