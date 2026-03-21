@@ -298,13 +298,15 @@ func SetConsumerService(svc common.RPCService) {
 }
 
 func SetProviderService(svc common.RPCService) {
-	conLock.Lock()
-	defer conLock.Unlock()
+	proLock.Lock()
+	defer proLock.Unlock()
 	providerServices[common.GetReference(svc)] = &server.ServiceDefinition{
 		Handler: svc,
 	}
 }
 
 func GetConsumerConnection(interfaceName string) (*client.Connection, error) {
+	conLock.RLock()
+	defer conLock.RUnlock()
 	return consumerServices[interfaceName].GetConnection()
 }
