@@ -60,7 +60,7 @@ func TestNewRootConfigBuilder(t *testing.T) {
 		SetName("dubbo").
 		SetPort("20000").
 		Build()
-	rootConfig = NewRootConfigBuilder().
+	newConfig := NewRootConfigBuilder().
 		SetConfigCenter(NewConfigCenterConfigBuilder().Build()).
 		SetMetadataReport(NewMetadataReportConfigBuilder().Build()).
 		AddProtocol("dubbo", protocolConfig).
@@ -78,8 +78,10 @@ func TestNewRootConfigBuilder(t *testing.T) {
 		SetCacheFile("abc=123").
 		Build()
 
-	assert.Equal(t, constant.Dubbo, rootConfig.Prefix())
-	ids := rootConfig.getRegistryIds()
+	SetRootConfig(*newConfig)
+
+	assert.Equal(t, constant.Dubbo, newConfig.Prefix())
+	ids := newConfig.getRegistryIds()
 	assert.Equal(t, "nacos", ids[0])
 
 	down := GetShutDown()
@@ -90,7 +92,7 @@ func TestNewRootConfigBuilder(t *testing.T) {
 
 	registerPOJO()
 	config := GetRootConfig()
-	assert.Equal(t, rootConfig, config)
+	assert.Equal(t, newConfig, config)
 }
 
 func TestRootConfigConcurrentSetAndGet(t *testing.T) {

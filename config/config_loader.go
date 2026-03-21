@@ -19,7 +19,7 @@ package config
 
 import (
 	"errors"
-	"sync"
+	"sync/atomic"
 )
 
 import (
@@ -35,20 +35,19 @@ import (
 )
 
 var (
-	rootConfigMu sync.RWMutex
-	rootConfig   = NewRootConfigBuilder().Build()
+	rootConfigStore = func() *atomic.Pointer[RootConfig] {
+		store := &atomic.Pointer[RootConfig]{}
+		store.Store(NewRootConfigBuilder().Build())
+		return store
+	}()
 )
 
 func getRootConfigInternal() *RootConfig {
-	rootConfigMu.RLock()
-	defer rootConfigMu.RUnlock()
-	return rootConfig
+	return rootConfigStore.Load()
 }
 
 func setRootConfigInternal(rc *RootConfig) {
-	rootConfigMu.Lock()
-	defer rootConfigMu.Unlock()
-	rootConfig = rc
+	rootConfigStore.Store(rc)
 }
 
 func init() {
