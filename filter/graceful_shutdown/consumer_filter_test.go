@@ -28,6 +28,10 @@ import (
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"google.golang.org/grpc/codes"
+
+	"google.golang.org/grpc/status"
 )
 
 import (
@@ -84,6 +88,8 @@ func TestConsumerFilterInvokeWithGlobalPackage(t *testing.T) {
 
 func TestIsClosingError(t *testing.T) {
 	assert.True(t, isClosingError(base.ErrClientClosed))
+	assert.True(t, isClosingError(status.Error(codes.Unavailable, "server shutting down")))
+	assert.True(t, isClosingError(status.Error(codes.Canceled, "request canceled during shutdown")))
 	assert.True(t, isClosingError(errors.New("rpc error: code = Unavailable desc = transport is closing")))
 	assert.False(t, isClosingError(errors.New("EOF")))
 	assert.False(t, isClosingError(errors.New("read tcp: connection reset by peer")))

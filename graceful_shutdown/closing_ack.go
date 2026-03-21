@@ -86,7 +86,10 @@ func (t *closingAckTracker) snapshot() map[string]ClosingAckStats {
 }
 
 func (t *closingAckTracker) reset() {
-	t.counters = sync.Map{}
+	t.counters.Range(func(key, _ any) bool {
+		t.counters.Delete(key)
+		return true
+	})
 }
 
 // DefaultClosingAckStats returns the process-wide active-notice ack statistics.
