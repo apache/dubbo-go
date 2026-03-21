@@ -187,8 +187,7 @@ func (cc *ConsumerConfig) Load() {
 func SetConsumerConfig(c ConsumerConfig) {
 	rc := GetRootConfig()
 	if rc == nil {
-		SetRootConfig(RootConfig{Consumer: &c})
-		return
+		rc = NewRootConfigBuilder().Build()
 	}
 	next := *rc
 	next.Consumer = &c
