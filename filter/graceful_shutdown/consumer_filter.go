@@ -27,6 +27,10 @@ import (
 
 import (
 	"github.com/dubbogo/gost/log/logger"
+
+	"google.golang.org/grpc/codes"
+
+	"google.golang.org/grpc/status"
 )
 
 import (
@@ -211,6 +215,13 @@ func (f *consumerGracefulShutdownFilter) handleRequestError(invoker base.Invoker
 func isClosingError(err error) bool {
 	if errors.Is(err, base.ErrClientClosed) || errors.Is(err, base.ErrDestroyedInvoker) {
 		return true
+	}
+
+	if grpcStatus, ok := status.FromError(err); ok {
+		switch grpcStatus.Code() {
+		case codes.Unavailable, codes.Canceled:
+			return true
+		}
 	}
 
 	errMsg := strings.ToLower(err.Error())

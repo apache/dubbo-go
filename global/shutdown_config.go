@@ -70,6 +70,8 @@ type ShutdownConfig struct {
 
 	Closing atomic.Bool
 
+	// ClosingInvokerExpireTime controls how long the consumer keeps an invoker
+	// marked as closing after receiving an active/passive closing signal.
 	ClosingInvokerExpireTime string `default:"30s" yaml:"closing-invoker-expire-time" json:"closingInvokerExpireTime,omitempty" property:"closingInvokerExpireTime"`
 }
 
