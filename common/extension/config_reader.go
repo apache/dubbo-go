@@ -22,29 +22,26 @@ import (
 )
 
 var (
-	configReaders = make(map[string]func() interfaces.ConfigReader)
-	defaults      = make(map[string]string)
+	configReaders = NewRegistry[func() interfaces.ConfigReader]("config reader")
+	defaults      = NewRegistry[string]("default config reader")
 )
 
 // SetConfigReaders sets a creator of config reader with @name
 func SetConfigReaders(name string, v func() interfaces.ConfigReader) {
-	configReaders[name] = v
+	configReaders.Register(name, v)
 }
 
 // GetConfigReaders gets a config reader with @name
 func GetConfigReaders(name string) interfaces.ConfigReader {
-	if configReaders[name] == nil {
-		panic("config reader for " + name + " is not existing, make sure you have imported the package.")
-	}
-	return configReaders[name]()
+	return configReaders.MustGet(name)()
 }
 
 // SetDefaultConfigReader sets @name for @module in default config reader
 func SetDefaultConfigReader(module, name string) {
-	defaults[module] = name
+	defaults.Register(module, name)
 }
 
 // GetDefaultConfigReader gets default config reader
 func GetDefaultConfigReader() map[string]string {
-	return defaults
+	return defaults.Snapshot()
 }

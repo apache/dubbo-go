@@ -26,18 +26,18 @@ import (
 )
 
 var (
-	tpsLimitStrategy = make(map[string]filter.TpsLimitStrategyCreator)
-	tpsLimiter       = make(map[string]func() filter.TpsLimiter)
+	tpsLimitStrategy = NewRegistry[filter.TpsLimitStrategyCreator]("tps limit strategy")
+	tpsLimiter       = NewRegistry[func() filter.TpsLimiter]("tps limiter")
 )
 
 // SetTpsLimiter sets the TpsLimiter with @name
 func SetTpsLimiter(name string, creator func() filter.TpsLimiter) {
-	tpsLimiter[name] = creator
+	tpsLimiter.Register(name, creator)
 }
 
 // GetTpsLimiter finds the TpsLimiter with @name
 func GetTpsLimiter(name string) (filter.TpsLimiter, error) {
-	creator, ok := tpsLimiter[name]
+	creator, ok := tpsLimiter.Get(name)
 	if !ok {
 		return nil, errors.New("TpsLimiter for " + name + " is not existing, make sure you have import the package " +
 			"and you have register it by invoking extension.SetTpsLimiter.")
@@ -47,12 +47,12 @@ func GetTpsLimiter(name string) (filter.TpsLimiter, error) {
 
 // SetTpsLimitStrategy sets the TpsLimitStrategyCreator with @name
 func SetTpsLimitStrategy(name string, creator filter.TpsLimitStrategyCreator) {
-	tpsLimitStrategy[name] = creator
+	tpsLimitStrategy.Register(name, creator)
 }
 
 // GetTpsLimitStrategyCreator finds the TpsLimitStrategyCreator with @name
 func GetTpsLimitStrategyCreator(name string) (filter.TpsLimitStrategyCreator, error) {
-	creator, ok := tpsLimitStrategy[name]
+	creator, ok := tpsLimitStrategy.Get(name)
 	if !ok {
 		return nil, errors.New("TpsLimitStrategy for " + name + " is not existing, make sure you have import the package " +
 			"and you have register it by invoking extension.SetTpsLimitStrategy.")

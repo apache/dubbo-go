@@ -26,34 +26,35 @@ import (
 )
 
 var (
-	authenticators    = make(map[string]func() filter.Authenticator)
-	accessKeyStorages = make(map[string]func() filter.AccessKeyStorage)
+	authenticators    = NewRegistry[func() filter.Authenticator]("authenticator")
+	accessKeyStorages = NewRegistry[func() filter.AccessKeyStorage]("access key storage")
 )
 
 // SetAuthenticator puts the @fcn into map with name
 func SetAuthenticator(name string, fcn func() filter.Authenticator) {
-	authenticators[name] = fcn
+	authenticators.Register(name, fcn)
 }
 
 // GetAuthenticator finds the Authenticator with @name
 // Panic if not found
 func GetAuthenticator(name string) (filter.Authenticator, bool) {
-	if authenticators[name] == nil {
+	fcn, ok := authenticators.Get(name)
+	if !ok {
 		return nil, false
 	}
-	return authenticators[name](), true
+	return fcn(), true
 }
 
 // SetAccessKeyStorages will set the @fcn into map with this name
 func SetAccessKeyStorages(name string, fcn func() filter.AccessKeyStorage) {
-	accessKeyStorages[name] = fcn
+	accessKeyStorages.Register(name, fcn)
 }
 
 // GetAccessKeyStorages finds the storage with the @name.
 // Panic if not found
 func GetAccessKeyStorages(name string) (filter.AccessKeyStorage, error) {
-	f := accessKeyStorages[name]
-	if f == nil {
+	f, ok := accessKeyStorages.Get(name)
+	if !ok {
 		return nil, errors.New("accessKeyStorages for " + name + " is not existing, make sure you have import the package.")
 	}
 	return f(), nil

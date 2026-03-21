@@ -18,7 +18,7 @@
 package extension
 
 var (
-	configs = map[string]Config{}
+	configs = NewRegistry[Config]("config")
 )
 
 type Config interface {
@@ -26,5 +26,5 @@ type Config interface {
 }
 
 func SetConfig(c Config) {
-	configs[c.Prefix()] = c
+	configs.Register(c.Prefix(), c)
 }

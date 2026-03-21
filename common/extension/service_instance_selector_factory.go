@@ -25,17 +25,17 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery/instance"
 )
 
-var serviceInstanceSelectorMappings = make(map[string]func() instance.ServiceInstanceSelector, 2)
+var serviceInstanceSelectorMappings = NewRegistry[func() instance.ServiceInstanceSelector]("service instance selector")
 
 // SetServiceInstanceSelector registers a factory for ServiceInstanceSelector.
 func SetServiceInstanceSelector(name string, f func() instance.ServiceInstanceSelector) {
-	serviceInstanceSelectorMappings[name] = f
+	serviceInstanceSelectorMappings.Register(name, f)
 }
 
 // GetServiceInstanceSelector will create an instance
 // it will panic if selector with the @name not found
 func GetServiceInstanceSelector(name string) (instance.ServiceInstanceSelector, error) {
-	serviceInstanceSelector, ok := serviceInstanceSelectorMappings[name]
+	serviceInstanceSelector, ok := serviceInstanceSelectorMappings.Get(name)
 	if !ok {
 		return nil, perrors.New("Could not find service instance selector with" +
 			"name:" + name)
