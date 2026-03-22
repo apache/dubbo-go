@@ -18,7 +18,6 @@
 package grpc
 
 import (
-	"crypto/tls"
 	"fmt"
 	"net"
 	"sync"
@@ -41,10 +40,8 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
@@ -86,6 +83,12 @@ func (s *Server) Start(url *common.URL) {
 	if err != nil {
 		panic(err)
 	}
+	success := false
+	defer func() {
+		if !success {
+			_ = lis.Close()
+		}
+	}()
 
 	maxServerRecvMsgSize := constant.DefaultMaxServerRecvMsgSize
 	if recvMsgSize, convertErr := humanize.ParseBytes(url.GetParam(constant.MaxServerRecvMsgSize, "")); convertErr == nil && recvMsgSize != 0 {
@@ -107,23 +110,9 @@ func (s *Server) Start(url *common.URL) {
 		grpc.MaxSendMsgSize(maxServerSendMsgSize),
 	)
 
-	// TODO: remove config TLSConfig
-	// delete this branch
-	tlsConfig := config.GetRootConfig().TLSConfig
-	if tlsConfig != nil {
-		var cfg *tls.Config
-		cfg, err = config.GetServerTlsConfig(&config.TLSConfig{
-			CACertFile:    tlsConfig.CACertFile,
-			TLSCertFile:   tlsConfig.TLSCertFile,
-			TLSKeyFile:    tlsConfig.TLSKeyFile,
-			TLSServerName: tlsConfig.TLSServerName,
-		})
-		if err != nil {
-			return
-		}
-		logger.Infof("gRPC Server initialized the TLSConfig configuration")
-		serverOpts = append(serverOpts, grpc.Creds(credentials.NewTLS(cfg)))
-	} else if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
+	var transportCreds credentials.TransportCredentials
+	transportCreds = insecure.NewCredentials()
+	if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
 		// use global TLSConfig handle tls
 		tlsConf, ok := tlsConfRaw.(*global.TLSConfig)
 		if !ok {
@@ -137,18 +126,15 @@ func (s *Server) Start(url *common.URL) {
 			}
 			if cfg != nil {
 				logger.Infof("gRPC Server initialized the TLSConfig configuration")
-				serverOpts = append(serverOpts, grpc.Creds(credentials.NewTLS(cfg)))
+				transportCreds = credentials.NewTLS(cfg)
 			}
-		} else {
-			serverOpts = append(serverOpts, grpc.Creds(insecure.NewCredentials()))
 		}
-	} else {
-		// TODO: remove this else
-		serverOpts = append(serverOpts, grpc.Creds(insecure.NewCredentials()))
 	}
+	serverOpts = append(serverOpts, grpc.Creds(transportCreds))
 
 	server := grpc.NewServer(serverOpts...)
 	s.grpcServer = server
+	success = true
 
 	go func() {
 		providerServices := getProviderServices(url)
@@ -166,13 +152,8 @@ func (s *Server) Start(url *common.URL) {
 	}()
 }
 
-// getProviderServices retrieves provider services from config or URL attributes
+// getProviderServices retrieves provider services from URL attributes.
 func getProviderServices(url *common.URL) map[string]*global.ServiceConfig {
-	providerServices := config.GetProviderConfig().Services
-	if len(providerServices) > 0 {
-		return convertServiceMap(providerServices)
-	}
-	// TODO #2741 old config compatibility
 	if providerConfRaw, ok := url.GetAttribute(constant.ProviderConfigKey); ok {
 		if providerConf, ok := providerConfRaw.(*global.ProviderConfig); ok && providerConf != nil {
 			return providerConf.Services
@@ -193,16 +174,7 @@ func getSyncMapLen(m *sync.Map) int {
 	return length
 }
 
-func convertServiceMap(providerServices map[string]*config.ServiceConfig) map[string]*global.ServiceConfig {
-	result := make(map[string]*global.ServiceConfig)
-	for k, v := range providerServices {
-		result[k] = dubbo.CompatGlobalServiceConfig(v)
-	}
-	return result
-}
-
 // waitGrpcExporter wait until len(providerServices) = len(ExporterMap)
-// TODO #2741 old config compatibility
 func waitGrpcExporter(providerServices map[string]*global.ServiceConfig) {
 	t := time.NewTicker(50 * time.Millisecond)
 	defer t.Stop()
@@ -224,16 +196,8 @@ func waitGrpcExporter(providerServices map[string]*global.ServiceConfig) {
 }
 
 // registerService SetProxyImpl invoker and grpc service
-// TODO #2741 old config compatibility
 func registerService(providerServices map[string]*global.ServiceConfig, server *grpc.Server) {
-	for key, providerService := range providerServices {
-
-		//TODO: Temporary compatibility with old APIs, can be removed later
-		service := config.GetProviderService(key)
-		ds, ok := service.(DubboGrpcService)
-		if !ok {
-			panic("illegal service type registered")
-		}
+	for _, providerService := range providerServices {
 		serviceKey := common.ServiceKey(providerService.Interface, providerService.Group, providerService.Version)
 		exporter, _ := grpcProtocol.ExporterMap().Load(serviceKey)
 		if exporter == nil {
@@ -243,9 +207,17 @@ func registerService(providerServices map[string]*global.ServiceConfig, server *
 		if invoker == nil {
 			panic(fmt.Sprintf("no invoker found for servicekey: %v", serviceKey))
 		}
+		service, ok := invoker.GetURL().GetAttribute(constant.RpcServiceKey)
+		if !ok {
+			panic(fmt.Sprintf("no rpc service found in url attribute %s for servicekey: %v", constant.RpcServiceKey, serviceKey))
+		}
+		ds, ok := service.(DubboGrpcService)
+		if !ok {
+			panic("illegal service type registered")
+		}
 
 		ds.SetProxyImpl(invoker)
-		server.RegisterService(ds.ServiceDesc(), service)
+		server.RegisterService(ds.ServiceDesc(), ds)
 	}
 }
 
