@@ -542,3 +542,31 @@ func Test_isReflectValueNil_UnsafePointer(t *testing.T) {
 		assert.False(t, isReflectValueNil(v))
 	})
 }
+
+// TestHandleServiceWithInfo_SaveServiceInfo_OnlyOriginalMethods verifies that
+// saveServiceInfo only records the original method names so registry and
+// gRPC-reflection metadata stay clean.
+func TestHandleServiceWithInfo_SaveServiceInfo_OnlyOriginalMethods(t *testing.T) {
+	server := NewServer(nil)
+	info := &common.ServiceInfo{
+		Methods: []common.MethodInfo{
+			{Name: "GetUser", Type: constant.CallUnary},
+			{Name: "ListUsers", Type: constant.CallServerStream},
+		},
+	}
+	server.saveServiceInfo("com.example.UserService", info)
+
+	svcInfo := server.GetServiceInfo()
+	svc, ok := svcInfo["com.example.UserService"]
+	assert.True(t, ok)
+	// Only the two original methods; no "getUser" / "listUsers" aliases.
+	assert.Len(t, svc.Methods, 2)
+	names := make([]string, 0, len(svc.Methods))
+	for _, m := range svc.Methods {
+		names = append(names, m.Name)
+	}
+	assert.Contains(t, names, "GetUser")
+	assert.Contains(t, names, "ListUsers")
+	assert.NotContains(t, names, "getUser")
+	assert.NotContains(t, names, "listUsers")
+}
