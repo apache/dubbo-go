@@ -19,6 +19,7 @@ package extension
 
 import (
 	"sort"
+	"sync"
 )
 
 import (
@@ -26,10 +27,14 @@ import (
 )
 
 var customizers = make([]registry.ServiceInstanceCustomizer, 0, 8)
+var customizersLock sync.RWMutex
 
 // AddCustomizers will put the customizer into slices and then sort them;
 // this method will be invoked several time, so we sort them here.
 func AddCustomizers(cus registry.ServiceInstanceCustomizer) {
+	customizersLock.Lock()
+	defer customizersLock.Unlock()
+
 	customizers = append(customizers, cus)
 	sort.Stable(customizerSlice(customizers))
 }
@@ -37,7 +42,12 @@ func AddCustomizers(cus registry.ServiceInstanceCustomizer) {
 // GetCustomizers will return the sorted customizer
 // the result won't be nil
 func GetCustomizers() []registry.ServiceInstanceCustomizer {
-	return customizers
+	customizersLock.RLock()
+	defer customizersLock.RUnlock()
+
+	ret := make([]registry.ServiceInstanceCustomizer, len(customizers))
+	copy(ret, customizers)
+	return ret
 }
 
 type customizerSlice []registry.ServiceInstanceCustomizer

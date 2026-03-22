@@ -32,6 +32,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol/grpc/internal/helloworld"
 	"dubbo.apache.org/dubbo-go/v3/protocol/grpc/internal/routeguide"
 )
@@ -44,6 +45,7 @@ func TestUnaryClient(t *testing.T) {
 
 	url, err := common.NewURL(helloworldURL)
 	require.NoError(t, err)
+	url.SetAttribute(constant.RpcServiceKey, &helloworld.GrpcGreeterImpl{})
 
 	cli, err := NewClient(url)
 	require.NoError(t, err)
@@ -62,6 +64,7 @@ func TestStreamClient(t *testing.T) {
 
 	url, err := common.NewURL(routeguideURL)
 	require.NoError(t, err)
+	url.SetAttribute(constant.RpcServiceKey, &routeguide.RouteGuideClientImpl{})
 
 	cli, err := NewClient(url)
 	require.NoError(t, err)

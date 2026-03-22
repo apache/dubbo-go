@@ -30,6 +30,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol/grpc/internal/helloworld"
 )
 
@@ -41,6 +42,7 @@ func TestGrpcProtocolRefer(t *testing.T) {
 
 	url, err := common.NewURL(helloworldURL)
 	require.NoError(t, err)
+	url.SetAttribute(constant.RpcServiceKey, &helloworld.GrpcGreeterImpl{})
 
 	proto := GetProtocol()
 	invoker := proto.Refer(url)

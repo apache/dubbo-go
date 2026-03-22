@@ -34,7 +34,8 @@ type GracefulShutdownCallback func(ctx context.Context) error
 
 var (
 	customShutdownCallbacks     = list.New()
-	customShutdownCallbacksMu   sync.RWMutex
+	customShutdownCallbacksLock sync.RWMutex
+	customShutdownCallbacksMu   = &customShutdownCallbacksLock
 	gracefulShutdownCallbacksMu sync.RWMutex
 	gracefulShutdownCallbacks   = make(map[string]GracefulShutdownCallback)
 )

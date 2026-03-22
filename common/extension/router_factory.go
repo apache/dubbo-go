@@ -22,23 +22,20 @@ import (
 )
 
 var (
-	routers = make(map[string]func() router.PriorityRouterFactory)
+	routers = NewRegistry[func() router.PriorityRouterFactory]("router factory")
 )
 
 // SetRouterFactory sets create router factory function with @name
 func SetRouterFactory(name string, fun func() router.PriorityRouterFactory) {
-	routers[name] = fun
+	routers.Register(name, fun)
 }
 
 // GetRouterFactory gets create router factory function by @name
 func GetRouterFactory(name string) router.PriorityRouterFactory {
-	if routers[name] == nil {
-		panic("router_factory for " + name + " is not existing, make sure you have import the package.")
-	}
-	return routers[name]()
+	return routers.MustGet(name)()
 }
 
 // GetRouterFactories gets all create router factory function
 func GetRouterFactories() map[string]func() router.PriorityRouterFactory {
-	return routers
+	return routers.Snapshot()
 }

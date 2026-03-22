@@ -26,15 +26,15 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/logger"
 )
 
-var logs = make(map[string]func(config *common.URL) (logger.Logger, error))
+var logs = NewRegistry[func(config *common.URL) (logger.Logger, error)]("logger")
 
 func SetLogger(driver string, log func(config *common.URL) (logger.Logger, error)) {
-	logs[driver] = log
+	logs.Register(driver, log)
 }
 
 func GetLogger(driver string, config *common.URL) (logger.Logger, error) {
-	if logs[driver] != nil {
-		return logs[driver](config)
+	if logCreator, ok := logs.Get(driver); ok {
+		return logCreator(config)
 	} else {
 		return nil, errors.Errorf("logger for %s does not exist. "+
 			"please make sure that you have imported the package "+

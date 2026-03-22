@@ -22,17 +22,18 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
-var registries = make(map[string]func(config *common.URL) (registry.Registry, error))
+var registries = NewRegistry[func(config *common.URL) (registry.Registry, error)]("registry")
 
 // SetRegistry sets the registry extension with @name
 func SetRegistry(name string, v func(_ *common.URL) (registry.Registry, error)) {
-	registries[name] = v
+	registries.Register(name, v)
 }
 
 // GetRegistry finds the registry extension with @name
 func GetRegistry(name string, config *common.URL) (registry.Registry, error) {
-	if registries[name] == nil {
+	v, ok := registries.Get(name)
+	if !ok {
 		panic("registry for " + name + " does not exist. please make sure that you have imported the package dubbo.apache.org/dubbo-go/v3/registry/" + name + ".")
 	}
-	return registries[name](config)
+	return v(config)
 }

@@ -40,7 +40,6 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
@@ -72,20 +71,19 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 		rt              string
 		consumerService any
 	)
-	// TODO: Temporary compatibility with old APIs, can be removed later
-	rt = config.GetConsumerConfig().RequestTimeout
+	rt = ""
 	if consumerConfRaw, ok := url.GetAttribute(constant.ConsumerConfigKey); ok {
-		if consumerConf, ok := consumerConfRaw.(*global.ConsumerConfig); ok {
+		if consumerConf, ok := consumerConfRaw.(*global.ConsumerConfig); ok && consumerConf.RequestTimeout != "" {
 			rt = consumerConf.RequestTimeout
 		}
 	}
-	// TODO: If you do not need to be compatible with the old API, you can directly use url.GetAttribute(constant.ConsumerConfigKey) as the timeout
+	if rt == "" {
+		rt = global.DefaultConsumerConfig().RequestTimeout
+	}
 	timeout := url.GetParamDuration(constant.TimeoutKey, rt)
 	// for triple pb serialization. The bean name from provider is the provider reference key,
 	// which can't locate the target consumer stub, so we use interface key.
-	interfaceKey := url.GetParam(constant.InterfaceKey, "")
-	//TODO: Temporary compatibility with old APIs, can be removed later
-	consumerService = config.GetConsumerServiceByInterfaceName(interfaceKey)
+	consumerService = nil
 	if rpcService, ok := url.GetAttribute(constant.RpcServiceKey); ok {
 		consumerService = rpcService
 	}
@@ -112,20 +110,29 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 	opts = append(opts, triConfig.WithGRPCMaxCallRecvMessageSize(maxCallRecvMsgSize))
 	opts = append(opts, triConfig.WithGRPCMaxCallSendMessageSize(maxCallSendMsgSize))
 
-	//TODO: Temporary compatibility with old APIs, can be removed later
-	tracingKey := url.GetParam(constant.TracingConfigKey, "")
-	if tracingKey != "" {
-		tracingConfig := config.GetTracingConfig(tracingKey)
-		if tracingConfig != nil {
+	if tracingConfRaw, ok := url.GetAttribute(constant.TracingConfigKey); ok {
+		tracingConfig, ok := tracingConfRaw.(*global.TracingConfig)
+		if !ok {
+			logger.Warnf("invalid tracing config type %T, expected *global.TracingConfig", tracingConfRaw)
+		} else if tracingConfig != nil {
 			if tracingConfig.Name == "jaeger" {
-				if tracingConfig.ServiceName == "" {
-					tracingConfig.ServiceName = config.GetApplicationConfig().Name
+				serviceName := tracingConfig.ServiceName
+				if serviceName == "" {
+					serviceName = url.GetParam(constant.ApplicationKey, "")
 				}
-				opts = append(opts, triConfig.WithJaegerConfig(
-					tracingConfig.Address,
-					tracingConfig.ServiceName,
-					*tracingConfig.UseAgent,
-				))
+				useAgent := false
+				if tracingConfig.UseAgent != nil {
+					useAgent = *tracingConfig.UseAgent
+				}
+				if serviceName == "" {
+					logger.Warnf("jaeger tracing skipped: no service name available for %s", url.String())
+				} else {
+					opts = append(opts, triConfig.WithJaegerConfig(
+						tracingConfig.Address,
+						serviceName,
+						useAgent,
+					))
+				}
 			} else {
 				logger.Warnf("unsupported tracing name %s, now triple only support jaeger", tracingConfig.Name)
 			}
@@ -134,16 +141,7 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 
 	triOption := triConfig.NewTripleOption(opts...)
 
-	// TODO: remove config TLSConfig
-	// delete this branch
-	tlsConfig := config.GetRootConfig().TLSConfig
-	if tlsConfig != nil {
-		triOption.CACertFile = tlsConfig.CACertFile
-		triOption.TLSCertFile = tlsConfig.TLSCertFile
-		triOption.TLSKeyFile = tlsConfig.TLSKeyFile
-		triOption.TLSServerName = tlsConfig.TLSServerName
-		logger.Infof("DUBBO3 Client initialized the TLSConfig configuration")
-	} else if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
+	if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
 		// use global TLSConfig handle tls
 		tlsConf, ok := tlsConfRaw.(*global.TLSConfig)
 		if !ok {

@@ -21,22 +21,24 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/config"
 )
 
-var processors = make(map[string]config.ConfigPostProcessor)
+var processors = NewRegistry[config.ConfigPostProcessor]("config post processor")
 
 // SetConfigPostProcessor registers a ConfigPostProcessor with the given name.
 func SetConfigPostProcessor(name string, processor config.ConfigPostProcessor) {
-	processors[name] = processor
+	processors.Register(name, processor)
 }
 
 // GetConfigPostProcessor finds a ConfigPostProcessor by name.
 func GetConfigPostProcessor(name string) config.ConfigPostProcessor {
-	return processors[name]
+	v, _ := processors.Get(name)
+	return v
 }
 
 // GetConfigPostProcessors returns all registered instances of ConfigPostProcessor.
 func GetConfigPostProcessors() []config.ConfigPostProcessor {
-	ret := make([]config.ConfigPostProcessor, 0, len(processors))
-	for _, v := range processors {
+	snapshot := processors.Snapshot()
+	ret := make([]config.ConfigPostProcessor, 0, len(snapshot))
+	for _, v := range snapshot {
 		ret = append(ret, v)
 	}
 	return ret
