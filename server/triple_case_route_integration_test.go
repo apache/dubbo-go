@@ -37,6 +37,9 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/accesslog"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/echo"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/exec_limit"
@@ -44,10 +47,6 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/filter/graceful_shutdown"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/token"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/tps"
-
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/triple"

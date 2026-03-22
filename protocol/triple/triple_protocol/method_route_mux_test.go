@@ -21,7 +21,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+)
 
+import (
 	"github.com/stretchr/testify/assert"
 )
 
