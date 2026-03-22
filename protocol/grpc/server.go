@@ -144,7 +144,6 @@ func (s *Server) Start(url *common.URL) {
 	s.grpcServer = server
 	grpc_health_v1.RegisterHealthServer(server, s.healthServer)
 	success = true
-	success = true
 
 	go func() {
 		providerServices := getProviderServices(url)
