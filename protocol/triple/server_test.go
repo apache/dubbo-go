@@ -607,6 +607,13 @@ type tripleServerTestConn struct {
 	sent        []any
 }
 
+const (
+	tripleServerTestFromClientMessage = "from-client"
+	tripleServerTestServerToken       = "server-token"
+	tripleServerTestBidiToken         = "bidi-token"
+	tripleServerTestBidiValue         = "bidi-v"
+)
+
 func newTripleServerTestConn() *tripleServerTestConn {
 	return &tripleServerTestConn{
 		reqHeader:   make(http.Header),
@@ -748,8 +755,8 @@ func TestServerRegisterServerStreamMethodHandler(t *testing.T) {
 			require.Len(t, invocation.Arguments(), 2)
 			req, ok := invocation.Arguments()[0].(*serverStreamReq)
 			require.True(t, ok)
-			assert.Equal(t, "from-client", req.Message)
-			assert.Equal(t, "server-token", invocation.Arguments()[1])
+			assert.Equal(t, tripleServerTestFromClientMessage, req.Message)
+			assert.Equal(t, tripleServerTestServerToken, invocation.Arguments()[1])
 			assert.Equal(t, []string{"v"}, invocation.Attachments()["x-stream"])
 			_, ok = ctx.Value(constant.AttachmentKey).(map[string]any)
 			assert.True(t, ok)
@@ -765,7 +772,7 @@ func TestServerRegisterServerStreamMethodHandler(t *testing.T) {
 		StreamInitFunc: func(baseStream any) any {
 			_, ok := baseStream.(*tri.ServerStream)
 			require.True(t, ok)
-			return "server-token"
+			return tripleServerTestServerToken
 		},
 	}
 	procedure := "/svc/ServerStreamMethod"
@@ -776,7 +783,7 @@ func TestServerRegisterServerStreamMethodHandler(t *testing.T) {
 	conn.receiveFn = func(msg any) {
 		req, ok := msg.(*serverStreamReq)
 		require.True(t, ok)
-		req.Message = "from-client"
+		req.Message = tripleServerTestFromClientMessage
 	}
 	require.NoError(t, invokeRegisteredHandlerImplementation(server.triServer, procedure, conn))
 	assert.Empty(t, conn.sent)
@@ -787,8 +794,8 @@ func TestServerRegisterBidiStreamMethodHandler(t *testing.T) {
 	invoker := &tripleServerTestInvoker{
 		invokeFn: func(ctx context.Context, invocation base.Invocation) result.Result {
 			assert.Equal(t, "BidiStreamMethod", invocation.MethodName())
-			assert.Equal(t, []any{"bidi-token"}, invocation.Arguments())
-			assert.Equal(t, []string{"bidi-v"}, invocation.Attachments()["x-bidi"])
+			assert.Equal(t, []any{tripleServerTestBidiToken}, invocation.Arguments())
+			assert.Equal(t, []string{tripleServerTestBidiValue}, invocation.Attachments()["x-bidi"])
 			_, ok := ctx.Value(constant.AttachmentKey).(map[string]any)
 			assert.True(t, ok)
 			return &result.RPCResult{}
@@ -800,14 +807,14 @@ func TestServerRegisterBidiStreamMethodHandler(t *testing.T) {
 		StreamInitFunc: func(baseStream any) any {
 			_, ok := baseStream.(*tri.BidiStream)
 			require.True(t, ok)
-			return "bidi-token"
+			return tripleServerTestBidiToken
 		},
 	}
 	procedure := "/svc/BidiStreamMethod"
 	server.registerMethodHandler(procedure, method, invoker)
 
 	conn := newTripleServerTestConn()
-	conn.reqHeader.Set("X-Bidi", "bidi-v")
+	conn.reqHeader.Set("X-Bidi", tripleServerTestBidiValue)
 	require.NoError(t, invokeRegisteredHandlerImplementation(server.triServer, procedure, conn))
 	assert.Empty(t, conn.sent)
 }
@@ -839,13 +846,13 @@ func TestServerHandleServiceWithInfoFallbackHitsStreamingHandlers(t *testing.T) 
 				require.Len(t, invocation.Arguments(), 2)
 				req, ok := invocation.Arguments()[0].(*streamReq)
 				require.True(t, ok)
-				assert.Equal(t, "from-client", req.Message)
-				assert.Equal(t, "server-token", invocation.Arguments()[1])
+				assert.Equal(t, tripleServerTestFromClientMessage, req.Message)
+				assert.Equal(t, tripleServerTestServerToken, invocation.Arguments()[1])
 				assert.Equal(t, []string{"stream-v"}, invocation.Attachments()["x-stream"])
 			case "CumSum":
 				require.Len(t, invocation.Arguments(), 1)
-				assert.Equal(t, "bidi-token", invocation.Arguments()[0])
-				assert.Equal(t, []string{"bidi-v"}, invocation.Attachments()["x-bidi"])
+				assert.Equal(t, tripleServerTestBidiToken, invocation.Arguments()[0])
+				assert.Equal(t, []string{tripleServerTestBidiValue}, invocation.Attachments()["x-bidi"])
 			default:
 				t.Fatalf("unexpected method: %s", invocation.MethodName())
 			}
@@ -867,7 +874,7 @@ func TestServerHandleServiceWithInfoFallbackHitsStreamingHandlers(t *testing.T) 
 				StreamInitFunc: func(baseStream any) any {
 					_, ok := baseStream.(*tri.ServerStream)
 					require.True(t, ok)
-					return "server-token"
+					return tripleServerTestServerToken
 				},
 			},
 			{
@@ -876,7 +883,7 @@ func TestServerHandleServiceWithInfoFallbackHitsStreamingHandlers(t *testing.T) 
 				StreamInitFunc: func(baseStream any) any {
 					_, ok := baseStream.(*tri.BidiStream)
 					require.True(t, ok)
-					return "bidi-token"
+					return tripleServerTestBidiToken
 				},
 			},
 		},
@@ -888,7 +895,7 @@ func TestServerHandleServiceWithInfoFallbackHitsStreamingHandlers(t *testing.T) 
 	serverStreamConn.receiveFn = func(msg any) {
 		req, ok := msg.(*streamReq)
 		require.True(t, ok)
-		req.Message = "from-client"
+		req.Message = tripleServerTestFromClientMessage
 	}
 	pattern, err := invokeRegisteredHandlerImplementationByRequestPath(
 		server.triServer,
@@ -899,7 +906,7 @@ func TestServerHandleServiceWithInfoFallbackHitsStreamingHandlers(t *testing.T) 
 	assert.Equal(t, "/svc.Fallback/CountUp", pattern)
 
 	bidiConn := newTripleServerTestConn()
-	bidiConn.reqHeader.Set("X-Bidi", "bidi-v")
+	bidiConn.reqHeader.Set("X-Bidi", tripleServerTestBidiValue)
 	pattern, err = invokeRegisteredHandlerImplementationByRequestPath(
 		server.triServer,
 		"/svc.Fallback/cumSum",
