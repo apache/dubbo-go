@@ -91,3 +91,22 @@ func TestNewPolarisRouterApplicationNameFromSubURLParam(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "param-app", r.currentApplication)
 }
+
+func TestNewPolarisRouterInvalidRegistriesTypeShouldFallback(t *testing.T) {
+	url := mustNewURL(t, serviceURLWithApp)
+	url.SetAttribute(constant.RegistriesConfigKey, map[string]global.RegistryConfig{
+		"test": {},
+	})
+
+	var (
+		r   *polarisRouter
+		err error
+	)
+	require.NotPanics(t, func() {
+		r, err = newPolarisRouter(url)
+	})
+	require.NoError(t, err)
+	require.NotNil(t, r)
+	require.NotNil(t, r.Registries)
+	require.Empty(t, r.Registries)
+}

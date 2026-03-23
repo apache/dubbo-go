@@ -87,17 +87,19 @@ func newPolarisRouter(url *common.URL) (*polarisRouter, error) {
 		return nil, fmt.Errorf("polaris router must set application name")
 	}
 
-	// get from url attr
-	registries, ok := url.GetAttribute(constant.RegistriesConfigKey)
-	if !ok {
-		registries = make(map[string]*global.RegistryConfig)
+	// get from url attr with safe type assertion
+	registriesMap := make(map[string]*global.RegistryConfig)
+	if registriesRaw, ok := url.GetAttribute(constant.RegistriesConfigKey); ok {
+		if typedRegistries, ok := registriesRaw.(map[string]*global.RegistryConfig); ok && typedRegistries != nil {
+			registriesMap = typedRegistries
+		}
 	}
 
 	if err := remotingpolaris.Check(); errors.Is(err, remotingpolaris.ErrorNoOpenPolarisAbility) {
 		return &polarisRouter{
 			openRoute:          false,
 			currentApplication: applicationName,
-			Registries:         registries.(map[string]*global.RegistryConfig),
+			Registries:         registriesMap,
 		}, nil
 	}
 
@@ -115,7 +117,7 @@ func newPolarisRouter(url *common.URL) (*polarisRouter, error) {
 		routerAPI:          routerAPI,
 		consumerAPI:        consumerAPI,
 		currentApplication: applicationName,
-		Registries:         registries.(map[string]*global.RegistryConfig),
+		Registries:         registriesMap,
 	}, nil
 }
 
