@@ -51,7 +51,7 @@ func TestSubscribe(t *testing.T) {
 	registryDirectory, _ := normalRegistryDir()
 
 	time.Sleep(1e9)
-	assert.Len(t, registryDirectory.cacheInvokers, 3)
+	assert.Len(t, registryDirectory.snapshotCacheInvokers(), 3)
 }
 
 func TestSubscribe_InvalidUrl(t *testing.T) {
@@ -65,11 +65,11 @@ func Test_Destroy(t *testing.T) {
 	registryDirectory, _ := normalRegistryDir()
 
 	time.Sleep(3e9)
-	assert.Len(t, registryDirectory.cacheInvokers, 3)
+	assert.Len(t, registryDirectory.snapshotCacheInvokers(), 3)
 	assert.True(t, registryDirectory.IsAvailable())
 
 	registryDirectory.Destroy()
-	assert.Empty(t, registryDirectory.cacheInvokers)
+	assert.Empty(t, registryDirectory.snapshotCacheInvokers())
 	assert.False(t, registryDirectory.IsAvailable())
 }
 
@@ -89,9 +89,10 @@ func Test_MergeProviderUrl(t *testing.T) {
 		common.WithParamsValue(constant.VersionKey, "1.0.0"))
 	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerUrl})
 	time.Sleep(1e9)
-	assert.Len(t, registryDirectory.cacheInvokers, 1)
-	if len(registryDirectory.cacheInvokers) > 0 {
-		assert.Equal(t, "mock1", registryDirectory.cacheInvokers[0].GetURL().GetParam(constant.ClusterKey, ""))
+	assert.Len(t, registryDirectory.snapshotCacheInvokers(), 1)
+	invokers := registryDirectory.snapshotCacheInvokers()
+	if len(invokers) > 0 {
+		assert.Equal(t, "mock1", invokers[0].GetURL().GetParam(constant.ClusterKey, ""))
 	}
 }
 
@@ -104,7 +105,7 @@ func Test_MergeOverrideUrl(t *testing.T) {
 	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerUrl})
 Loop1:
 	for {
-		if len(registryDirectory.cacheInvokers) > 0 {
+		if len(registryDirectory.snapshotCacheInvokers()) > 0 {
 			overrideUrl, _ := common.NewURL("override://0.0.0.0:20000/org.apache.dubbo-go.mockService",
 				common.WithParamsValue(constant.ClusterKey, "mock1"),
 				common.WithParamsValue(constant.GroupKey, "group"),
@@ -112,9 +113,10 @@ Loop1:
 			mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: overrideUrl})
 		Loop2:
 			for {
-				if len(registryDirectory.cacheInvokers) > 0 {
-					if registryDirectory.cacheInvokers[0].GetURL().GetParam(constant.ClusterKey, "") == "mock1" {
-						assert.Len(t, registryDirectory.cacheInvokers, 1)
+				invokers := registryDirectory.snapshotCacheInvokers()
+				if len(invokers) > 0 {
+					if invokers[0].GetURL().GetParam(constant.ClusterKey, "") == "mock1" {
+						assert.Len(t, invokers, 1)
 
 						break Loop2
 					} else {
@@ -138,23 +140,23 @@ func Test_RefreshUrl(t *testing.T) {
 		common.WithParamsValue(constant.GroupKey, "group"),
 		common.WithParamsValue(constant.VersionKey, "1.0.0"))
 	time.Sleep(1e9)
-	assert.Len(t, registryDirectory.cacheInvokers, 3)
+	assert.Len(t, registryDirectory.snapshotCacheInvokers(), 3)
 	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerUrl})
 	time.Sleep(1e9)
-	assert.Len(t, registryDirectory.cacheInvokers, 4)
+	assert.Len(t, registryDirectory.snapshotCacheInvokers(), 4)
 	mockRegistry.MockEvents([]*registry.ServiceEvent{{Action: remoting.EventTypeUpdate, Service: providerUrl}})
 	time.Sleep(1e9)
-	assert.Len(t, registryDirectory.cacheInvokers, 1)
+	assert.Len(t, registryDirectory.snapshotCacheInvokers(), 1)
 	mockRegistry.MockEvents([]*registry.ServiceEvent{
 		{Action: remoting.EventTypeUpdate, Service: providerUrl},
 		{Action: remoting.EventTypeUpdate, Service: providerUrl2},
 	})
 	time.Sleep(1e9)
-	assert.Len(t, registryDirectory.cacheInvokers, 2)
+	assert.Len(t, registryDirectory.snapshotCacheInvokers(), 2)
 	// clear all address
 	mockRegistry.MockEvents([]*registry.ServiceEvent{})
 	time.Sleep(1e9)
-	assert.Empty(t, registryDirectory.cacheInvokers)
+	assert.Empty(t, registryDirectory.snapshotCacheInvokers())
 }
 
 func TestRemoveClosingInstanceRemovesExactInstanceKey(t *testing.T) {
