@@ -57,6 +57,7 @@ var (
 func InitAppInfo(appName string, appVersion string) {
 	appInfoLock.Lock()
 	defer appInfoLock.Unlock()
+	// Update name/version in one critical section to avoid mixed snapshots.
 	applicationName = appName
 	applicationVersion = appVersion
 }
