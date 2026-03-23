@@ -422,7 +422,7 @@ func TestRegistryDirectorySubscribedURLConcurrentAccess(t *testing.T) {
 func TestRegistryDirectorySubscribeTimeoutSkipsSubscribeStart(t *testing.T) {
 	registryURL, err := common.NewURL(
 		"registry://127.0.0.1:20000",
-		common.WithParamsValue(constant.RegistryTimeoutKey, "20ms"),
+		common.WithParamsValue(constant.RegistryTimeoutKey, "100ms"),
 	)
 	require.NoError(t, err)
 	subscribeURL, err := common.NewURL("consumer://127.0.0.1:20000/org.apache.dubbo-go.mockService")

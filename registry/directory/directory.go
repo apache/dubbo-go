@@ -204,6 +204,8 @@ func (dir *RegistryDirectory) Subscribe(url *common.URL) error {
 	}
 
 	serviceKey := url.Key()
+	// Registration is bounded by registry timeout (default 5s).
+	// On timeout, we return immediately and skip starting subscribe goroutine.
 	if err := dir.registerConsumerWithTimeout(url, timeout, serviceKey); err != nil {
 		return err
 	}
@@ -707,6 +709,7 @@ func (dir *RegistryDirectory) closingServiceKey() string {
 }
 
 func (dir *RegistryDirectory) overrideUrl(targetUrl *common.URL) {
+	// Use a read-only snapshot to avoid sharing mutable configurator slice during overrides.
 	doOverrideUrl(dir.snapshotConfigurators(), targetUrl)
 	doOverrideUrl(dir.consumerConfigurationListener.Configurators(), targetUrl)
 	doOverrideUrl(dir.referenceConfigurationListener.Configurators(), targetUrl)
