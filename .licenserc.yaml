@@ -38,6 +38,7 @@ header:
     - '**/*.properties'
     - '**/*.proto'
     - '**/*.tpl'
+    - '**/*.txt'
     - '**/go.mod'
     - '**/go.sum'
     - '.git/'
