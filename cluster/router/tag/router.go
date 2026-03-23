@@ -107,6 +107,7 @@ func (p *PriorityRouter) Notify(invokers []base.Invoker) {
 // SetStaticConfig applies a RouterConfig directly, bypassing YAML parsing.
 // This is the correct entry point for static (code-configured) rules;
 // Process is designed for dynamic config-center updates that arrive as YAML text.
+// Static and dynamic rules are not merged: later Process updates replace the current state built here.
 func (p *PriorityRouter) SetStaticConfig(cfg *global.RouterConfig) {
 	if cfg == nil || len(cfg.Tags) == 0 {
 		return
@@ -124,6 +125,9 @@ func (p *PriorityRouter) SetStaticConfig(cfg *global.RouterConfig) {
 	logger.Infof("[tag router] Applied static tag router config: key=%s", key)
 }
 
+// Process applies config-center updates as the authoritative rule source at runtime.
+// It does not merge with static rules bootstrapped via SetStaticConfig; any later
+// dynamic update replaces the current static-derived state.
 func (p *PriorityRouter) Process(event *config_center.ConfigChangeEvent) {
 	if event.ConfigType == remoting.EventTypeDel {
 		p.routerConfigs.Delete(event.Key)

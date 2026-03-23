@@ -137,6 +137,7 @@ func (d *DynamicRouter) URL() *common.URL {
 // SetStaticConfig applies a RouterConfig with string conditions directly, bypassing YAML parsing.
 // This is the correct entry point for static (code-configured) rules;
 // Process is designed for dynamic config-center updates that arrive as YAML text.
+// Static and dynamic rules are not merged: later Process updates replace the current state built here.
 func (d *DynamicRouter) SetStaticConfig(cfg *global.RouterConfig) {
 	if cfg == nil || len(cfg.Conditions) == 0 {
 		return
@@ -172,6 +173,9 @@ func (d *DynamicRouter) SetStaticConfig(cfg *global.RouterConfig) {
 	d.force, d.enable, d.conditionRouter = force, enable, stateRouters(conditionRouters)
 }
 
+// Process applies config-center updates as the authoritative rule source at runtime.
+// It does not merge with static rules bootstrapped via SetStaticConfig; any later
+// dynamic update replaces the current static-derived state.
 func (d *DynamicRouter) Process(event *config_center.ConfigChangeEvent) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
