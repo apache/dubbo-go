@@ -393,14 +393,6 @@ func WithServerProtocol(opts ...protocol.ServerOption) ServerOption {
 	}
 }
 
-// todo(DMwangnima): this configuration would be used by filter/hystrix
-// think about a more ideal way to configure
-func WithServerFilterConf(conf any) ServerOption {
-	return func(opts *ServerOptions) {
-		opts.Provider.FilterConf = conf
-	}
-}
-
 func WithServerAdaptiveService() ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.AdaptiveService = true
