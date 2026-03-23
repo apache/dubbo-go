@@ -29,6 +29,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"google.golang.org/grpc"
 )
@@ -37,6 +38,9 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
+	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
 func Test_generateAttachments(t *testing.T) {
@@ -569,4 +573,350 @@ func TestHandleServiceWithInfoSaveServiceInfoOnlyOriginalMethods(t *testing.T) {
 	assert.Contains(t, names, "ListUsers")
 	assert.NotContains(t, names, "getUser")
 	assert.NotContains(t, names, "listUsers")
+}
+
+type tripleServerTestInvoker struct {
+	invokeFn func(context.Context, base.Invocation) result.Result
+}
+
+func (m *tripleServerTestInvoker) GetURL() *common.URL {
+	return common.NewURLWithOptions()
+}
+
+func (m *tripleServerTestInvoker) IsAvailable() bool {
+	return true
+}
+
+func (m *tripleServerTestInvoker) Destroy() {}
+
+func (m *tripleServerTestInvoker) Invoke(ctx context.Context, invocation base.Invocation) result.Result {
+	if m.invokeFn == nil {
+		return &result.RPCResult{}
+	}
+	return m.invokeFn(ctx, invocation)
+}
+
+type tripleServerTestConn struct {
+	reqHeader   http.Header
+	respHeader  http.Header
+	respTrailer http.Header
+	receiveFn   func(any)
+	sent        []any
+}
+
+func newTripleServerTestConn() *tripleServerTestConn {
+	return &tripleServerTestConn{
+		reqHeader:   make(http.Header),
+		respHeader:  make(http.Header),
+		respTrailer: make(http.Header),
+	}
+}
+
+func (c *tripleServerTestConn) Spec() tri.Spec {
+	return tri.Spec{}
+}
+
+func (c *tripleServerTestConn) Peer() tri.Peer {
+	return tri.Peer{}
+}
+
+func (c *tripleServerTestConn) Receive(msg any) error {
+	if c.receiveFn != nil {
+		c.receiveFn(msg)
+	}
+	return nil
+}
+
+func (c *tripleServerTestConn) RequestHeader() http.Header {
+	return c.reqHeader
+}
+
+func (c *tripleServerTestConn) ExportableHeader() http.Header {
+	return c.reqHeader
+}
+
+func (c *tripleServerTestConn) Send(msg any) error {
+	c.sent = append(c.sent, msg)
+	return nil
+}
+
+func (c *tripleServerTestConn) ResponseHeader() http.Header {
+	return c.respHeader
+}
+
+func (c *tripleServerTestConn) ResponseTrailer() http.Header {
+	return c.respTrailer
+}
+
+func TestServerRegisterUnaryMethodHandler(t *testing.T) {
+	server := newServerForMethodHandlerTest()
+	invoker := &tripleServerTestInvoker{
+		invokeFn: func(ctx context.Context, invocation base.Invocation) result.Result {
+			assert.Equal(t, "UnaryMethod", invocation.MethodName())
+			assert.Equal(t, []any{"alice", 7}, invocation.Arguments())
+			assert.Equal(t, []string{"v1", "v2"}, invocation.Attachments()["x-test"])
+
+			ctxAttachments, ok := ctx.Value(constant.AttachmentKey).(map[string]any)
+			require.True(t, ok)
+			assert.Equal(t, []string{"v1", "v2"}, ctxAttachments["x-test"])
+
+			res := &result.RPCResult{}
+			res.SetResult("unary-ok")
+			res.SetAttachments(map[string]any{
+				"resp-one":   "val",
+				"resp-multi": []string{"a", "b"},
+				"resp-omit":  123,
+			})
+			return res
+		},
+	}
+	method := common.MethodInfo{
+		Name: "UnaryMethod",
+		Type: constant.CallUnary,
+		ReqInitFunc: func() any {
+			var name string
+			var age int
+			return []any{&name, &age}
+		},
+	}
+	procedure := "/svc/UnaryMethod"
+	server.registerMethodHandler(procedure, method, invoker)
+
+	conn := newTripleServerTestConn()
+	conn.reqHeader.Add("X-Test", "v1")
+	conn.reqHeader.Add("X-Test", "v2")
+	conn.receiveFn = func(msg any) {
+		args, ok := msg.([]any)
+		require.True(t, ok)
+		*(args[0].(*string)) = "alice"
+		*(args[1].(*int)) = 7
+	}
+	require.NoError(t, invokeRegisteredHandlerImplementation(server.triServer, procedure, conn))
+	require.Len(t, conn.sent, 1)
+	assert.Equal(t, []any{"unary-ok"}, conn.sent[0])
+	assert.Equal(t, []string{"val"}, conn.respTrailer.Values("resp-one"))
+	assert.Equal(t, []string{"a", "b"}, conn.respTrailer.Values("resp-multi"))
+	assert.Empty(t, conn.respTrailer.Values("resp-omit"))
+}
+
+func TestServerRegisterClientStreamMethodHandler(t *testing.T) {
+	server := newServerForMethodHandlerTest()
+	invoker := &tripleServerTestInvoker{
+		invokeFn: func(ctx context.Context, invocation base.Invocation) result.Result {
+			assert.Equal(t, "ClientStreamMethod", invocation.MethodName())
+			assert.Equal(t, []any{"client-token"}, invocation.Arguments())
+			assert.Equal(t, []string{"trace-123"}, invocation.Attachments()["trace-id"])
+			_, ok := ctx.Value(constant.AttachmentKey).(map[string]any)
+			assert.True(t, ok)
+
+			res := &result.RPCResult{}
+			res.SetResult("client-ok")
+			return res
+		},
+	}
+	method := common.MethodInfo{
+		Name: "ClientStreamMethod",
+		Type: constant.CallClientStream,
+		StreamInitFunc: func(baseStream any) any {
+			_, ok := baseStream.(*tri.ClientStream)
+			require.True(t, ok)
+			return "client-token"
+		},
+	}
+	procedure := "/svc/ClientStreamMethod"
+	server.registerMethodHandler(procedure, method, invoker)
+
+	conn := newTripleServerTestConn()
+	conn.reqHeader.Set("Trace-Id", "trace-123")
+	require.NoError(t, invokeRegisteredHandlerImplementation(server.triServer, procedure, conn))
+	require.Len(t, conn.sent, 1)
+	assert.Equal(t, []any{"client-ok"}, conn.sent[0])
+}
+
+func TestServerRegisterServerStreamMethodHandler(t *testing.T) {
+	type serverStreamReq struct {
+		Message string
+	}
+
+	server := newServerForMethodHandlerTest()
+	invoker := &tripleServerTestInvoker{
+		invokeFn: func(ctx context.Context, invocation base.Invocation) result.Result {
+			assert.Equal(t, "ServerStreamMethod", invocation.MethodName())
+			require.Len(t, invocation.Arguments(), 2)
+			req, ok := invocation.Arguments()[0].(*serverStreamReq)
+			require.True(t, ok)
+			assert.Equal(t, "from-client", req.Message)
+			assert.Equal(t, "server-token", invocation.Arguments()[1])
+			assert.Equal(t, []string{"v"}, invocation.Attachments()["x-stream"])
+			_, ok = ctx.Value(constant.AttachmentKey).(map[string]any)
+			assert.True(t, ok)
+			return &result.RPCResult{}
+		},
+	}
+	method := common.MethodInfo{
+		Name: "ServerStreamMethod",
+		Type: constant.CallServerStream,
+		ReqInitFunc: func() any {
+			return &serverStreamReq{}
+		},
+		StreamInitFunc: func(baseStream any) any {
+			_, ok := baseStream.(*tri.ServerStream)
+			require.True(t, ok)
+			return "server-token"
+		},
+	}
+	procedure := "/svc/ServerStreamMethod"
+	server.registerMethodHandler(procedure, method, invoker)
+
+	conn := newTripleServerTestConn()
+	conn.reqHeader.Set("X-Stream", "v")
+	conn.receiveFn = func(msg any) {
+		req, ok := msg.(*serverStreamReq)
+		require.True(t, ok)
+		req.Message = "from-client"
+	}
+	require.NoError(t, invokeRegisteredHandlerImplementation(server.triServer, procedure, conn))
+	assert.Empty(t, conn.sent)
+}
+
+func TestServerRegisterBidiStreamMethodHandler(t *testing.T) {
+	server := newServerForMethodHandlerTest()
+	invoker := &tripleServerTestInvoker{
+		invokeFn: func(ctx context.Context, invocation base.Invocation) result.Result {
+			assert.Equal(t, "BidiStreamMethod", invocation.MethodName())
+			assert.Equal(t, []any{"bidi-token"}, invocation.Arguments())
+			assert.Equal(t, []string{"bidi-v"}, invocation.Attachments()["x-bidi"])
+			_, ok := ctx.Value(constant.AttachmentKey).(map[string]any)
+			assert.True(t, ok)
+			return &result.RPCResult{}
+		},
+	}
+	method := common.MethodInfo{
+		Name: "BidiStreamMethod",
+		Type: constant.CallBidiStream,
+		StreamInitFunc: func(baseStream any) any {
+			_, ok := baseStream.(*tri.BidiStream)
+			require.True(t, ok)
+			return "bidi-token"
+		},
+	}
+	procedure := "/svc/BidiStreamMethod"
+	server.registerMethodHandler(procedure, method, invoker)
+
+	conn := newTripleServerTestConn()
+	conn.reqHeader.Set("X-Bidi", "bidi-v")
+	require.NoError(t, invokeRegisteredHandlerImplementation(server.triServer, procedure, conn))
+	assert.Empty(t, conn.sent)
+}
+
+func TestServerRegisterMethodHandlerUnknownType(t *testing.T) {
+	server := newServerForMethodHandlerTest()
+	procedure := "/svc/Unknown"
+	server.registerMethodHandler(procedure, common.MethodInfo{
+		Name: "UnknownMethod",
+		Type: "unknown",
+	}, &tripleServerTestInvoker{})
+
+	_, ok := getServerHandler(server.triServer, procedure)
+	assert.False(t, ok)
+}
+
+func newServerForMethodHandlerTest() *Server {
+	return &Server{triServer: tri.NewServer("127.0.0.1:0", nil)}
+}
+
+func TestExtractUnaryInvocationArgs(t *testing.T) {
+	t.Run("from non-idl argument slice", func(t *testing.T) {
+		name := "alice"
+		age := 18
+		args := extractUnaryInvocationArgs([]any{&name, &age})
+		assert.Equal(t, []any{"alice", 18}, args)
+	})
+
+	t.Run("from single message in idl mode", func(t *testing.T) {
+		msg := struct{ Name string }{Name: "idl"}
+		args := extractUnaryInvocationArgs(msg)
+		assert.Equal(t, []any{msg}, args)
+	})
+}
+
+func TestWrapTripleResponse(t *testing.T) {
+	resp := tri.NewResponse("already-wrapped")
+	assert.Same(t, resp, wrapTripleResponse(resp))
+
+	wrapped := wrapTripleResponse("plain-result")
+	assert.Equal(t, []any{"plain-result"}, wrapped.Msg)
+}
+
+func TestAppendTripleOutgoingAttachments(t *testing.T) {
+	ctx := tri.NewOutgoingContext(context.Background(), make(http.Header))
+	appendTripleOutgoingAttachments(ctx, map[string]any{
+		"one":   "1",
+		"multi": []string{"a", "b"},
+		"omit":  100,
+	})
+
+	outgoing := tri.ExtractFromOutgoingContext(ctx)
+	require.NotNil(t, outgoing)
+	assert.Equal(t, []string{"1"}, outgoing.Values("one"))
+	assert.Equal(t, []string{"a", "b"}, outgoing.Values("multi"))
+	assert.Empty(t, outgoing.Values("omit"))
+}
+
+const tripleServerDefaultImplementationKey = "/"
+
+// These helpers execute the default registered implementation directly so the
+// tests can verify registerMethodHandler's invocation wiring without depending
+// on protocol-specific HTTP framing details.
+func invokeRegisteredHandlerImplementation(triServer *tri.Server, procedure string, conn tri.StreamingHandlerConn) error {
+	handler, ok := getServerHandler(triServer, procedure)
+	if !ok {
+		return fmt.Errorf("handler for procedure %s not found", procedure)
+	}
+	implementation, ok := getDefaultHandlerImplementation(handler)
+	if !ok {
+		return fmt.Errorf("default implementation for procedure %s not found", procedure)
+	}
+	return implementation(context.Background(), conn)
+}
+
+func getServerHandler(triServer *tri.Server, procedure string) (*tri.Handler, bool) {
+	if triServer == nil {
+		return nil, false
+	}
+	handlersField := reflect.ValueOf(triServer).Elem().FieldByName("handlers")
+	handlersValue, ok := extractUnexportedValue(handlersField)
+	if !ok {
+		return nil, false
+	}
+	handlers, ok := handlersValue.Interface().(map[string]*tri.Handler)
+	if !ok {
+		return nil, false
+	}
+	handler, ok := handlers[procedure]
+	return handler, ok
+}
+
+func getDefaultHandlerImplementation(handler *tri.Handler) (tri.StreamingHandlerFunc, bool) {
+	if handler == nil {
+		return nil, false
+	}
+	implField := reflect.ValueOf(handler).Elem().FieldByName("implementations")
+	implValue, ok := extractUnexportedValue(implField)
+	if !ok {
+		return nil, false
+	}
+	implementations, ok := implValue.Interface().(map[string]tri.StreamingHandlerFunc)
+	if !ok {
+		return nil, false
+	}
+	implementation, ok := implementations[tripleServerDefaultImplementationKey]
+	return implementation, ok
+}
+
+func extractUnexportedValue(field reflect.Value) (reflect.Value, bool) {
+	if !field.IsValid() || !field.CanAddr() {
+		return reflect.Value{}, false
+	}
+	return reflect.NewAt(field.Type(), unsafe.Pointer(field.UnsafeAddr())).Elem(), true
 }

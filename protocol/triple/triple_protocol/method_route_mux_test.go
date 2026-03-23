@@ -136,3 +136,44 @@ func TestMethodRouteMux(t *testing.T) {
 		})
 	}
 }
+
+func TestNormalizeMethodRouteKeyEdgeCases(t *testing.T) {
+	tests := []struct {
+		name string
+		path string
+		want string
+	}{
+		{
+			name: "path without slash remains unchanged",
+			path: "GetUser",
+			want: "GetUser",
+		},
+		{
+			name: "path ending with slash remains unchanged",
+			path: "/Service/",
+			want: "/Service/",
+		},
+		{
+			name: "root path remains unchanged",
+			path: "/",
+			want: "/",
+		},
+		{
+			name: "normal path lowercases first rune of method only",
+			path: "/Service/GetUser",
+			want: "/Service/getUser",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, normalizeMethodRouteKey(tt.path))
+		})
+	}
+}
+
+func TestLowerFirstRuneEdgeCases(t *testing.T) {
+	assert.Empty(t, lowerFirstRune(""))
+	assert.Equal(t, "abc", lowerFirstRune("Abc"))
+	assert.Equal(t, "äbc", lowerFirstRune("Äbc"))
+}
