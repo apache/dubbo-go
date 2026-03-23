@@ -110,9 +110,6 @@ func normalizeMethodRouteKey(path string) string {
 }
 
 func lowerFirstRune(s string) string {
-	if s == "" {
-		return s
-	}
 	r, size := utf8.DecodeRuneInString(s)
 	if r == utf8.RuneError && size == 0 {
 		return s
