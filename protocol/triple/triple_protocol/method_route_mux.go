@@ -57,13 +57,16 @@ func (m *methodRouteMux) Handle(pattern string, handler http.Handler) {
 
 	lowerKey := normalizeMethodRouteKey(pattern)
 	m.mu.Lock()
+	defer m.mu.Unlock()
+	// Keep the first registration for a collided fallback key so mixed-case
+	// registrations from different generators (for example Go/Java stubs) keep
+	// deterministic behavior.
 	if _, exists := m.lower[lowerKey]; !exists {
 		m.lower[lowerKey] = methodRouteEntry{
 			pattern: pattern,
 			handler: handler,
 		}
 	}
-	m.mu.Unlock()
 }
 
 func (m *methodRouteMux) Handler(r *http.Request) (http.Handler, string) {

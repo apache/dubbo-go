@@ -28,8 +28,9 @@ import (
 )
 
 const (
-	methodRouteMuxGetUserPath  = "/Service/GetUser"
-	methodRouteMuxNotFoundBody = "404 page not found\n"
+	methodRouteMuxGetUserPath      = "/Service/GetUser"
+	methodRouteMuxGetUserLowerPath = "/Service/getUser"
+	methodRouteMuxNotFoundBody     = "404 page not found\n"
 )
 
 func TestMethodRouteMux(t *testing.T) {
@@ -58,18 +59,18 @@ func TestMethodRouteMux(t *testing.T) {
 					_, _ = w.Write([]byte("fallback"))
 				}))
 			},
-			requestPath:    "/Service/getUser",
+			requestPath:    methodRouteMuxGetUserLowerPath,
 			wantStatusCode: http.StatusOK,
 			wantBody:       "fallback",
 		},
 		{
 			name: "uppercase first rune fallback",
 			register: func(m *methodRouteMux) {
-				m.Handle("/Service/getUser", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				m.Handle(methodRouteMuxGetUserLowerPath, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					_, _ = w.Write([]byte("fallback"))
 				}))
 			},
-			requestPath:    "/Service/GetUser",
+			requestPath:    methodRouteMuxGetUserPath,
 			wantStatusCode: http.StatusOK,
 			wantBody:       "fallback",
 		},
@@ -160,8 +161,8 @@ func TestNormalizeMethodRouteKeyEdgeCases(t *testing.T) {
 		},
 		{
 			name: "normal path lowercases first rune of method only",
-			path: "/Service/GetUser",
-			want: "/Service/getUser",
+			path: methodRouteMuxGetUserPath,
+			want: methodRouteMuxGetUserLowerPath,
 		},
 	}
 
@@ -176,4 +177,32 @@ func TestLowerFirstRuneEdgeCases(t *testing.T) {
 	assert.Empty(t, lowerFirstRune(""))
 	assert.Equal(t, "abc", lowerFirstRune("Abc"))
 	assert.Equal(t, "äbc", lowerFirstRune("Äbc"))
+}
+
+func TestMethodRouteMuxFallbackCollisionFirstRegistrationWins(t *testing.T) {
+	mux := newMethodRouteMux()
+	firstPattern := methodRouteMuxGetUserPath
+	secondPattern := methodRouteMuxGetUserLowerPath
+
+	mux.Handle(firstPattern, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("first"))
+	}))
+	mux.Handle(secondPattern, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("second"))
+	}))
+
+	lowerKey := normalizeMethodRouteKey(firstPattern)
+	mux.mu.RLock()
+	entry, ok := mux.lower[lowerKey]
+	mux.mu.RUnlock()
+
+	if !assert.True(t, ok) {
+		return
+	}
+	assert.Equal(t, firstPattern, entry.pattern)
+
+	req := httptest.NewRequest(http.MethodPost, firstPattern, nil)
+	resp := httptest.NewRecorder()
+	entry.handler.ServeHTTP(resp, req)
+	assert.Equal(t, "first", resp.Body.String())
 }

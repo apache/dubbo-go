@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"reflect"
 	"sync"
 	"testing"
@@ -587,7 +588,9 @@ func (m *tripleServerTestInvoker) IsAvailable() bool {
 	return true
 }
 
-func (m *tripleServerTestInvoker) Destroy() {}
+func (m *tripleServerTestInvoker) Destroy() {
+	// No-op: this test double does not own lifecycle resources.
+}
 
 func (m *tripleServerTestInvoker) Invoke(ctx context.Context, invocation base.Invocation) result.Result {
 	if m.invokeFn == nil {
@@ -821,6 +824,93 @@ func TestServerRegisterMethodHandlerUnknownType(t *testing.T) {
 	assert.False(t, ok)
 }
 
+func TestServerHandleServiceWithInfoFallbackHitsStreamingHandlers(t *testing.T) {
+	type streamReq struct {
+		Message string
+	}
+
+	server := newServerForMethodHandlerTest()
+	calledMethods := make([]string, 0, 2)
+	invoker := &tripleServerTestInvoker{
+		invokeFn: func(ctx context.Context, invocation base.Invocation) result.Result {
+			calledMethods = append(calledMethods, invocation.MethodName())
+			switch invocation.MethodName() {
+			case "CountUp":
+				require.Len(t, invocation.Arguments(), 2)
+				req, ok := invocation.Arguments()[0].(*streamReq)
+				require.True(t, ok)
+				assert.Equal(t, "from-client", req.Message)
+				assert.Equal(t, "server-token", invocation.Arguments()[1])
+				assert.Equal(t, []string{"stream-v"}, invocation.Attachments()["x-stream"])
+			case "CumSum":
+				require.Len(t, invocation.Arguments(), 1)
+				assert.Equal(t, "bidi-token", invocation.Arguments()[0])
+				assert.Equal(t, []string{"bidi-v"}, invocation.Attachments()["x-bidi"])
+			default:
+				t.Fatalf("unexpected method: %s", invocation.MethodName())
+			}
+
+			ctxAttachments, ok := ctx.Value(constant.AttachmentKey).(map[string]any)
+			require.True(t, ok)
+			assert.NotEmpty(t, ctxAttachments)
+			return &result.RPCResult{}
+		},
+	}
+	info := &common.ServiceInfo{
+		Methods: []common.MethodInfo{
+			{
+				Name: "CountUp",
+				Type: constant.CallServerStream,
+				ReqInitFunc: func() any {
+					return &streamReq{}
+				},
+				StreamInitFunc: func(baseStream any) any {
+					_, ok := baseStream.(*tri.ServerStream)
+					require.True(t, ok)
+					return "server-token"
+				},
+			},
+			{
+				Name: "CumSum",
+				Type: constant.CallBidiStream,
+				StreamInitFunc: func(baseStream any) any {
+					_, ok := baseStream.(*tri.BidiStream)
+					require.True(t, ok)
+					return "bidi-token"
+				},
+			},
+		},
+	}
+	server.handleServiceWithInfo("svc.Fallback", invoker, info)
+
+	serverStreamConn := newTripleServerTestConn()
+	serverStreamConn.reqHeader.Set("X-Stream", "stream-v")
+	serverStreamConn.receiveFn = func(msg any) {
+		req, ok := msg.(*streamReq)
+		require.True(t, ok)
+		req.Message = "from-client"
+	}
+	pattern, err := invokeRegisteredHandlerImplementationByRequestPath(
+		server.triServer,
+		"/svc.Fallback/countUp",
+		serverStreamConn,
+	)
+	require.NoError(t, err)
+	assert.Equal(t, "/svc.Fallback/CountUp", pattern)
+
+	bidiConn := newTripleServerTestConn()
+	bidiConn.reqHeader.Set("X-Bidi", "bidi-v")
+	pattern, err = invokeRegisteredHandlerImplementationByRequestPath(
+		server.triServer,
+		"/svc.Fallback/cumSum",
+		bidiConn,
+	)
+	require.NoError(t, err)
+	assert.Equal(t, "/svc.Fallback/CumSum", pattern)
+
+	assert.Equal(t, []string{"CountUp", "CumSum"}, calledMethods)
+}
+
 func newServerForMethodHandlerTest() *Server {
 	return &Server{triServer: tri.NewServer("127.0.0.1:0", nil)}
 }
@@ -880,6 +970,22 @@ func invokeRegisteredHandlerImplementation(triServer *tri.Server, procedure stri
 	return implementation(context.Background(), conn)
 }
 
+func invokeRegisteredHandlerImplementationByRequestPath(
+	triServer *tri.Server,
+	requestPath string,
+	conn tri.StreamingHandlerConn,
+) (string, error) {
+	handler, pattern, ok := getServerHandlerByRequestPath(triServer, requestPath)
+	if !ok {
+		return "", fmt.Errorf("handler for request path %s not found", requestPath)
+	}
+	implementation, ok := getDefaultHandlerImplementation(handler)
+	if !ok {
+		return "", fmt.Errorf("default implementation for request path %s not found", requestPath)
+	}
+	return pattern, implementation(context.Background(), conn)
+}
+
 func getServerHandler(triServer *tri.Server, procedure string) (*tri.Handler, bool) {
 	if triServer == nil {
 		return nil, false
@@ -895,6 +1001,42 @@ func getServerHandler(triServer *tri.Server, procedure string) (*tri.Handler, bo
 	}
 	handler, ok := handlers[procedure]
 	return handler, ok
+}
+
+func getServerHandlerByRequestPath(triServer *tri.Server, requestPath string) (*tri.Handler, string, bool) {
+	if triServer == nil {
+		return nil, "", false
+	}
+	muxField := reflect.ValueOf(triServer).Elem().FieldByName("mux")
+	muxValue, ok := extractUnexportedValue(muxField)
+	if !ok || !muxValue.IsValid() || muxValue.IsNil() {
+		return nil, "", false
+	}
+
+	handlerMethod := muxValue.MethodByName("Handler")
+	if !handlerMethod.IsValid() {
+		return nil, "", false
+	}
+	req := httptest.NewRequest(http.MethodPost, requestPath, nil)
+	results := handlerMethod.Call([]reflect.Value{reflect.ValueOf(req)})
+	if len(results) != 2 {
+		return nil, "", false
+	}
+
+	handler, ok := results[0].Interface().(http.Handler)
+	if !ok || handler == nil {
+		return nil, "", false
+	}
+	pattern, ok := results[1].Interface().(string)
+	if !ok || pattern == "" {
+		return nil, "", false
+	}
+	triHandler, ok := handler.(*tri.Handler)
+	if !ok {
+		return nil, "", false
+	}
+
+	return triHandler, pattern, true
 }
 
 func getDefaultHandlerImplementation(handler *tri.Handler) (tri.StreamingHandlerFunc, bool) {
