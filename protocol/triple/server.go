@@ -438,7 +438,7 @@ func wrapTripleResponse(result any) *tri.Response {
 	return tri.NewResponse([]any{result})
 }
 
-func appendTripleOutgoingAttachments(ctx context.Context, attachments map[string]interface{}) {
+func appendTripleOutgoingAttachments(ctx context.Context, attachments map[string]any) {
 	for k, v := range attachments {
 		switch val := v.(type) {
 		case string:
