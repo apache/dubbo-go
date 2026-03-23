@@ -6,6 +6,8 @@
 - License: Apache-2.0
 - Website: https://dubbo.apache.org/
 - Samples: https://github.com/apache/dubbo-go-samples
+- Extensions: https://github.com/apache/dubbo-go-extensions
+- Go Standard Library: https://github.com/dubbogo/gost
 - Go Reference: https://pkg.go.dev/github.com/apache/dubbo-go/v3
 
 ## Getting Started
@@ -24,7 +26,7 @@
 - Protobuf Service Definition: Services are defined using Protocol Buffers, then registered with a Dubbo-go server
 - Provider: A server that exposes RPC services, registered to a registry for discovery
 - Consumer: A client that discovers and calls remote RPC services through a registry
-- Registry: Service discovery layer supporting Nacos, ZooKeeper, Etcd, and PolarIs
+- Registry: Service discovery layer supporting Nacos, ZooKeeper, Etcd, and Polaris
 - Protocol: Transport layer supporting Triple (gRPC-compatible), Dubbo, gRPC, JSONRPC, HTTP, HTTP/2, HTTP/3
 - Filter: Interceptor chain for cross-cutting concerns (access log, auth, rate limiting, tracing, metrics)
 - Router: Traffic routing rules for conditional, script-based, and tag-based routing
@@ -36,7 +38,7 @@
 - client/: Consumer-side logic, service reference, and invocation
 - server/: Provider-side logic and service export
 - protocol/: Protocol implementations (Triple, Dubbo, gRPC, JSONRPC, REST, HTTP/2)
-- registry/: Service discovery adapters (Nacos, ZooKeeper, Etcd, PolarIs, service discovery)
+- registry/: Service discovery adapters (Nacos, ZooKeeper, Etcd, Polaris, service discovery)
 - config_center/: Dynamic configuration adapters (Nacos, ZooKeeper, Apollo, file)
 - filter/: Built-in filters (access log, authentication, rate limiting, tracing, metrics, token, graceful shutdown)
 - cluster/: Cluster behavior (failover, failfast, failsafe, forking, available, mergeable)
@@ -51,6 +53,11 @@
 - proxy/: Generic service proxy for non-Protobuf invocations
 - imports/: Dependency import management
 - tools/: CLI tools and code generation utilities
+
+## Related Repositories
+
+- dubbo-go-extensions: Community extension implementations for filters, registries, protocols, metadata reporters, and more (https://github.com/apache/dubbo-go-extensions)
+- gost: Dubbo-go standard library providing common utilities, generic service invocation, and base abstractions (https://github.com/dubbogo/gost)
 
 ## Provider Example
 
