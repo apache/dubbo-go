@@ -543,10 +543,10 @@ func Test_isReflectValueNil_UnsafePointer(t *testing.T) {
 	})
 }
 
-// TestHandleServiceWithInfo_SaveServiceInfo_OnlyOriginalMethods verifies that
+// TestHandleServiceWithInfoSaveServiceInfoOnlyOriginalMethods verifies that
 // saveServiceInfo only records the original method names so registry and
 // gRPC-reflection metadata stay clean.
-func TestHandleServiceWithInfo_SaveServiceInfo_OnlyOriginalMethods(t *testing.T) {
+func TestHandleServiceWithInfoSaveServiceInfoOnlyOriginalMethods(t *testing.T) {
 	server := NewServer(nil)
 	info := &common.ServiceInfo{
 		Methods: []common.MethodInfo{

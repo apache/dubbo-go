@@ -315,10 +315,10 @@ func (g *greetServiceForTest) Greet(ctx context.Context, req string) (string, er
 
 func (g *greetServiceForTest) Reference() string { return "greetServiceForTest" }
 
-// TestEnhanceServiceInfo_MethodFuncBackfill_ExactName verifies that
+// TestEnhanceServiceInfoMethodFuncBackfillExactName verifies that
 // enhanceServiceInfo fills in MethodFunc when the ServiceInfo method name
 // matches the Go exported method name exactly (PascalCase).
-func TestEnhanceServiceInfo_MethodFuncBackfill_ExactName(t *testing.T) {
+func TestEnhanceServiceInfoMethodFuncBackfillExactName(t *testing.T) {
 	svc := &greetServiceForTest{}
 	info := &common.ServiceInfo{
 		ServiceType: svc,
@@ -334,10 +334,10 @@ func TestEnhanceServiceInfo_MethodFuncBackfill_ExactName(t *testing.T) {
 		"MethodFunc must be filled in for exact-name match to avoid nil-func panic")
 }
 
-// TestEnhanceServiceInfo_MethodFuncBackfill_JavaStyleName verifies that
+// TestEnhanceServiceInfoMethodFuncBackfillJavaStyleName verifies that
 // enhanceServiceInfo still fills in MethodFunc for lowercase-first method names
 // so reflection-based invocation can reach the exported Go method.
-func TestEnhanceServiceInfo_MethodFuncBackfill_JavaStyleName(t *testing.T) {
+func TestEnhanceServiceInfoMethodFuncBackfillJavaStyleName(t *testing.T) {
 	svc := &greetServiceForTest{}
 	info := &common.ServiceInfo{
 		ServiceType: svc,

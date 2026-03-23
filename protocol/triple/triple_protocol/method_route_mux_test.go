@@ -27,6 +27,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	methodRouteMuxGetUserPath  = "/Service/GetUser"
+	methodRouteMuxNotFoundBody = "404 page not found\n"
+)
+
 func TestMethodRouteMux(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -38,18 +43,18 @@ func TestMethodRouteMux(t *testing.T) {
 		{
 			name: "exact match",
 			register: func(m *methodRouteMux) {
-				m.Handle("/Service/GetUser", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				m.Handle(methodRouteMuxGetUserPath, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					_, _ = w.Write([]byte("exact"))
 				}))
 			},
-			requestPath:    "/Service/GetUser",
+			requestPath:    methodRouteMuxGetUserPath,
 			wantStatusCode: http.StatusOK,
 			wantBody:       "exact",
 		},
 		{
 			name: "lowercase first rune fallback",
 			register: func(m *methodRouteMux) {
-				m.Handle("/Service/GetUser", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				m.Handle(methodRouteMuxGetUserPath, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					_, _ = w.Write([]byte("fallback"))
 				}))
 			},
@@ -71,24 +76,24 @@ func TestMethodRouteMux(t *testing.T) {
 		{
 			name: "full lowercase fallback",
 			register: func(m *methodRouteMux) {
-				m.Handle("/Service/GetUser", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				m.Handle(methodRouteMuxGetUserPath, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					_, _ = w.Write([]byte("fallback"))
 				}))
 			},
 			requestPath:    "/service/getuser",
 			wantStatusCode: http.StatusNotFound,
-			wantBody:       "404 page not found\n",
+			wantBody:       methodRouteMuxNotFoundBody,
 		},
 		{
 			name: "not found",
 			register: func(m *methodRouteMux) {
-				m.Handle("/Service/GetUser", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				m.Handle(methodRouteMuxGetUserPath, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					_, _ = w.Write([]byte("unexpected"))
 				}))
 			},
 			requestPath:    "/Service/Delete",
 			wantStatusCode: http.StatusNotFound,
-			wantBody:       "404 page not found\n",
+			wantBody:       methodRouteMuxNotFoundBody,
 		},
 		{
 			name: "methods differing beyond first rune remain distinct",
@@ -107,13 +112,13 @@ func TestMethodRouteMux(t *testing.T) {
 		{
 			name: "service path remains case sensitive",
 			register: func(m *methodRouteMux) {
-				m.Handle("/Service/GetUser", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				m.Handle(methodRouteMuxGetUserPath, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					_, _ = w.Write([]byte("unexpected"))
 				}))
 			},
 			requestPath:    "/service/getUser",
 			wantStatusCode: http.StatusNotFound,
-			wantBody:       "404 page not found\n",
+			wantBody:       methodRouteMuxNotFoundBody,
 		},
 	}
 

@@ -40,18 +40,23 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	_ "dubbo.apache.org/dubbo-go/v3/filter/accesslog"
-	_ "dubbo.apache.org/dubbo-go/v3/filter/echo"
-	_ "dubbo.apache.org/dubbo-go/v3/filter/exec_limit"
-	_ "dubbo.apache.org/dubbo-go/v3/filter/generic"
-	_ "dubbo.apache.org/dubbo-go/v3/filter/graceful_shutdown"
-	_ "dubbo.apache.org/dubbo-go/v3/filter/token"
-	_ "dubbo.apache.org/dubbo-go/v3/filter/tps"
+	_ "dubbo.apache.org/dubbo-go/v3/filter/accesslog"         // Register default provider filters for exportServices in this integration test.
+	_ "dubbo.apache.org/dubbo-go/v3/filter/echo"              // Register default provider filters for exportServices in this integration test.
+	_ "dubbo.apache.org/dubbo-go/v3/filter/exec_limit"        // Register default provider filters for exportServices in this integration test.
+	_ "dubbo.apache.org/dubbo-go/v3/filter/generic"           // Register default provider filters for exportServices in this integration test.
+	_ "dubbo.apache.org/dubbo-go/v3/filter/graceful_shutdown" // Register default provider filters for exportServices in this integration test.
+	_ "dubbo.apache.org/dubbo-go/v3/filter/token"             // Register default provider filters for exportServices in this integration test.
+	_ "dubbo.apache.org/dubbo-go/v3/filter/tps"               // Register default provider filters for exportServices in this integration test.
 	"dubbo.apache.org/dubbo-go/v3/protocol"
-	_ "dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
-	_ "dubbo.apache.org/dubbo-go/v3/protocol/triple"
+	_ "dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper" // Register protocol wrappers used by exportServices in this integration test.
+	_ "dubbo.apache.org/dubbo-go/v3/protocol/triple"          // Register the Triple protocol used by exportServices in this integration test.
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
-	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
+	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory" // Register the default proxy factory used during export in this integration test.
+)
+
+const (
+	tripleCaseRouteHelloBody    = "\"Hello test\""
+	tripleCaseRouteNotFoundBody = "404 page not found\n"
 )
 
 type TripleCaseRouteService struct{}
@@ -76,19 +81,19 @@ func TestTripleCaseInsensitiveRoute(t *testing.T) {
 					name:       "canonical method name",
 					path:       "/com.example.GreetService/SayHello",
 					wantStatus: http.StatusOK,
-					wantBody:   "\"Hello test\"",
+					wantBody:   tripleCaseRouteHelloBody,
 				},
 				{
 					name:       "lowercase method name fallback",
 					path:       "/com.example.GreetService/sayHello",
 					wantStatus: http.StatusOK,
-					wantBody:   "\"Hello test\"",
+					wantBody:   tripleCaseRouteHelloBody,
 				},
 				{
 					name:       "unknown method remains not found",
 					path:       "/com.example.GreetService/DeleteUser",
 					wantStatus: http.StatusNotFound,
-					wantBody:   "404 page not found\n",
+					wantBody:   tripleCaseRouteNotFoundBody,
 				},
 			},
 		)
@@ -105,19 +110,19 @@ func TestTripleCaseInsensitiveRoute(t *testing.T) {
 					name:       "registered camel case method name",
 					path:       "/com.example.JavaStyleGreetService/sayHello",
 					wantStatus: http.StatusOK,
-					wantBody:   "\"Hello test\"",
+					wantBody:   tripleCaseRouteHelloBody,
 				},
 				{
 					name:       "uppercase method name fallback",
 					path:       "/com.example.JavaStyleGreetService/SayHello",
 					wantStatus: http.StatusOK,
-					wantBody:   "\"Hello test\"",
+					wantBody:   tripleCaseRouteHelloBody,
 				},
 				{
 					name:       "unknown method remains not found",
 					path:       "/com.example.JavaStyleGreetService/DeleteUser",
 					wantStatus: http.StatusNotFound,
-					wantBody:   "404 page not found\n",
+					wantBody:   tripleCaseRouteNotFoundBody,
 				},
 			},
 		)
@@ -163,9 +168,9 @@ func runTripleCaseRouteIntegration(
 				},
 				MethodFunc: func(ctx context.Context, args []any, handler any) (any, error) {
 					req := args[0].(*emptypb.Empty)
-					res, err := handler.(*TripleCaseRouteService).SayHello(ctx, req)
-					if err != nil {
-						return nil, err
+					res, callErr := handler.(*TripleCaseRouteService).SayHello(ctx, req)
+					if callErr != nil {
+						return nil, callErr
 					}
 					return tri.NewResponse(res), nil
 				},
@@ -240,7 +245,7 @@ func waitTripleRouteReady(t *testing.T, client *http.Client, url string) {
 
 	for time.Now().Before(deadline) {
 		lastStatus, lastBody, lastErr = tripleRouteRequest(client, url)
-		if lastErr == nil && lastStatus == http.StatusOK && lastBody == "\"Hello test\"" {
+		if lastErr == nil && lastStatus == http.StatusOK && lastBody == tripleCaseRouteHelloBody {
 			return
 		}
 		time.Sleep(50 * time.Millisecond)
