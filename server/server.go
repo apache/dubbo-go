@@ -23,7 +23,6 @@ import (
 	"reflect"
 	"sort"
 	"strconv"
-	"strings"
 	"sync"
 )
 
@@ -237,32 +236,33 @@ func createReflectionMethodFunc(method reflect.Method) func(ctx context.Context,
 	}
 }
 
-// Add a method with a name of a different first-letter case
-// to achieve interoperability with java
-// TODO: The method name case sensitivity in Dubbo-java should be addressed.
-// We ought to make changes to handle this issue.
+// enhanceServiceInfo fills in missing MethodFunc entries via reflection.
+// Case-insensitive Triple routing is handled in the transport-layer route mux,
+// but lowercase-first ServiceInfo method names still need MethodFunc backfill so
+// reflection-based invocation can reach the exported Go method.
 func enhanceServiceInfo(info *common.ServiceInfo) *common.ServiceInfo {
 	if info == nil {
 		return info
 	}
 
-	// Get service type for reflection-based method calls
 	var svcType reflect.Type
 	if info.ServiceType != nil {
 		svcType = reflect.TypeOf(info.ServiceType)
 	}
 
-	// Build method map for reflection lookup
+	// Build method map for reflection lookup.
+	// Keep the first-rune-swapped alias for lowercase-first ServiceInfo names
+	// (for example "sayHello" -> "SayHello") without duplicating metadata.
 	methodMap := make(map[string]reflect.Method)
 	if svcType != nil {
 		for i := 0; i < svcType.NumMethod(); i++ {
 			m := svcType.Method(i)
 			methodMap[m.Name] = m
-			methodMap[strings.ToLower(m.Name)] = m
+			methodMap[dubboutil.SwapCaseFirstRune(m.Name)] = m
 		}
 	}
 
-	// Add MethodFunc to methods that don't have it
+	// Fill in MethodFunc for methods that don't already have one.
 	for i := range info.Methods {
 		if info.Methods[i].MethodFunc == nil && svcType != nil {
 			if reflectMethod, ok := methodMap[info.Methods[i].Name]; ok {
@@ -270,22 +270,6 @@ func enhanceServiceInfo(info *common.ServiceInfo) *common.ServiceInfo {
 			}
 		}
 	}
-
-	// Create additional methods with swapped-case names for Java interoperability
-	var additionalMethods []common.MethodInfo
-	for _, method := range info.Methods {
-		newMethod := method
-		newMethod.Name = dubboutil.SwapCaseFirstRune(method.Name)
-		if method.MethodFunc != nil {
-			newMethod.MethodFunc = method.MethodFunc
-		} else if svcType != nil {
-			if reflectMethod, ok := methodMap[dubboutil.SwapCaseFirstRune(method.Name)]; ok {
-				newMethod.MethodFunc = createReflectionMethodFunc(reflectMethod)
-			}
-		}
-		additionalMethods = append(additionalMethods, newMethod)
-	}
-	info.Methods = append(info.Methods, additionalMethods...)
 
 	return info
 }

@@ -45,7 +45,7 @@ import (
 
 type Server struct {
 	addr         string
-	mux          *http.ServeMux
+	mux          *methodRouteMux
 	handlers     map[string]*Handler
 	httpSrv      *http.Server
 	http3Srv     *http3.Server
@@ -338,7 +338,7 @@ func (s *Server) GracefulStop(ctx context.Context) error {
 
 func NewServer(addr string, tripleConf *global.TripleConfig) *Server {
 	return &Server{
-		mux:          http.NewServeMux(),
+		mux:          newMethodRouteMux(),
 		addr:         addr,
 		handlers:     make(map[string]*Handler),
 		tripleConfig: tripleConf,
