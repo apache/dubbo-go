@@ -222,8 +222,8 @@ func (dir *RegistryDirectory) Subscribe(url *common.URL) error {
 
 func (dir *RegistryDirectory) registerConsumerWithTimeout(url *common.URL, timeout time.Duration, serviceKey string) error {
 	registerErrCh := make(chan error, 1)
+	urlToReg := getConsumerUrlToRegistry(url.Clone())
 	go func() {
-		urlToReg := getConsumerUrlToRegistry(url.Clone())
 		registerErrCh <- dir.registry.Register(urlToReg)
 	}()
 
@@ -245,6 +245,15 @@ func (dir *RegistryDirectory) registerConsumerWithTimeout(url *common.URL, timeo
 		return nil
 	case <-timer.C:
 		logger.Errorf("register timed out for service: %s", serviceKey)
+		go func() {
+			err := <-registerErrCh
+			if err != nil {
+				return
+			}
+			if unRegErr := dir.registry.UnRegister(urlToReg.Clone()); unRegErr != nil {
+				logger.Warnf("register timed out for service %s, but late unregister failed: %v", serviceKey, unRegErr)
+			}
+		}()
 		return fmt.Errorf("register timed out for service: %s", serviceKey)
 	}
 }

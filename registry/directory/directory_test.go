@@ -446,10 +446,40 @@ func TestRegistryDirectorySubscribeTimeoutSkipsSubscribeStart(t *testing.T) {
 	assert.Equal(t, int32(0), blockingRegistry.subscribeCalls.Load())
 }
 
+func TestRegistryDirectorySubscribeTimeoutLateRegisterRollback(t *testing.T) {
+	registryURL, err := common.NewURL(
+		"registry://127.0.0.1:20000",
+		common.WithParamsValue(constant.RegistryTimeoutKey, "100ms"),
+	)
+	require.NoError(t, err)
+	subscribeURL, err := common.NewURL("consumer://127.0.0.1:20000/org.apache.dubbo-go.mockService")
+	require.NoError(t, err)
+
+	blockingRegistry := &blockingRegistryForSubscribeTest{
+		url:           registryURL,
+		registerBlock: make(chan struct{}),
+	}
+
+	dir := &RegistryDirectory{
+		registry: blockingRegistry,
+	}
+
+	err = dir.Subscribe(subscribeURL)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "timed out")
+	assert.Equal(t, int32(0), blockingRegistry.subscribeCalls.Load())
+
+	close(blockingRegistry.registerBlock)
+	assert.Eventually(t, func() bool {
+		return blockingRegistry.unregisterCalls.Load() == 1
+	}, time.Second, 10*time.Millisecond)
+}
+
 type blockingRegistryForSubscribeTest struct {
-	url            *common.URL
-	registerBlock  chan struct{}
-	subscribeCalls atomic.Int32
+	url             *common.URL
+	registerBlock   chan struct{}
+	subscribeCalls  atomic.Int32
+	unregisterCalls atomic.Int32
 }
 
 func (r *blockingRegistryForSubscribeTest) Register(_ *common.URL) error {
@@ -458,6 +488,7 @@ func (r *blockingRegistryForSubscribeTest) Register(_ *common.URL) error {
 }
 
 func (r *blockingRegistryForSubscribeTest) UnRegister(_ *common.URL) error {
+	r.unregisterCalls.Add(1)
 	return nil
 }
 
