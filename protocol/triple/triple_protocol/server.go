@@ -41,6 +41,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/openapi"
 )
 
 type Server struct {
@@ -337,10 +338,26 @@ func (s *Server) GracefulStop(ctx context.Context) error {
 }
 
 func NewServer(addr string, tripleConf *global.TripleConfig) *Server {
-	return &Server{
+	s := &Server{
 		mux:          newMethodRouteMux(),
 		addr:         addr,
 		handlers:     make(map[string]*Handler),
 		tripleConfig: tripleConf,
 	}
+
+	openapiHandler := openapi.NewHTTPHandler()
+	basePath := "/dubbo/openapi"
+	if tripleConf != nil && tripleConf.OpenAPI != nil && tripleConf.OpenAPI.Path != "" {
+		basePath = tripleConf.OpenAPI.Path
+	}
+	s.mux.Handle(basePath, openapiHandler)
+	s.mux.Handle(basePath+"/", openapiHandler)
+	s.mux.Handle(basePath+"/swagger-ui/", openapiHandler)
+	s.mux.Handle(basePath+"/redoc/", openapiHandler)
+	s.mux.Handle(basePath+"/openapi.json", openapiHandler)
+	s.mux.Handle(basePath+"/openapi.yaml", openapiHandler)
+	s.mux.Handle(basePath+"/openapi.yml", openapiHandler)
+	s.mux.Handle(basePath+"/api-docs/", openapiHandler)
+
+	return s
 }

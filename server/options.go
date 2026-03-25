@@ -500,6 +500,9 @@ type ServiceOptions struct {
 	// consider put here or global.ServiceConfig
 	// string for url
 	IDLMode string
+
+	// openapi group for documentation
+	openapiGroup string
 }
 
 func defaultServiceOptions() *ServiceOptions {
@@ -892,6 +895,12 @@ func WithParam(k, v string) ServiceOption {
 			opts.Service.Params = make(map[string]string)
 		}
 		opts.Service.Params[k] = v
+	}
+}
+
+func WithOpenAPIGroup(group string) ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.openapiGroup = group
 	}
 }
 
