@@ -18,8 +18,8 @@
 package openapi
 
 const (
-	DefaultGroup = "default"
-	DefaultVersion      = "1.0.0"
+	DefaultGroup   = "default"
+	DefaultVersion = "1.0.0"
 
 	DefaultSwaggerUICDN = "https://unpkg.com/swagger-ui-dist@5.18.2"
 	DefaultRedocCDN     = "https://cdn.redoc.ly/redoc/latest/bundles"

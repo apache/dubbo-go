@@ -51,8 +51,8 @@ type TripleConfig struct {
 // DefaultTripleConfig returns a default TripleConfig instance.
 func DefaultTripleConfig() *TripleConfig {
 	return &TripleConfig{
-		Http3: DefaultHttp3Config(),
-		Cors:  DefaultCorsConfig(),
+		Http3:   DefaultHttp3Config(),
+		Cors:    DefaultCorsConfig(),
 		OpenAPI: DefaultOpenAPIConfig(),
 	}
 }
