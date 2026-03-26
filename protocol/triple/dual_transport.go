@@ -43,8 +43,9 @@ const (
 )
 
 type originState struct {
-	mode     originMode
-	failures int
+	mode          originMode
+	failures      int
+	cooldownUntil time.Time
 }
 
 // dualTransport is a transport that can handle both HTTP/2 and HTTP/3
@@ -57,7 +58,11 @@ type dualTransport struct {
 
 	state originState
 
-	mu sync.RWMutex
+	mu sync.Mutex
+
+	probeTimeout time.Duration
+	baseCooldown time.Duration
+	maxCooldown  time.Duration
 }
 
 // newDualTransport creates a new dual transport that supports both HTTP/2 and HTTP/3
@@ -80,6 +85,9 @@ func newDualTransport(tlsConfig *tls.Config, keepAliveInterval, keepAliveTimeout
 		http2Transport: http2Transport,
 		http3Transport: http3Transport,
 		altSvcCache:    tri.NewAltSvcCache(),
+		probeTimeout:   3 * time.Second,
+		baseCooldown:   4 * time.Second,
+		maxCooldown:    1 * time.Minute,
 	}
 }
 
@@ -90,6 +98,7 @@ func (dt *dualTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if dt.shouldUseH3(host) {
 		resp, err := dt.http3Transport.RoundTrip(req)
 		if err == nil {
+			dt.altSvcCache.UpdateFromHeaders(host, resp.Header)
 			dt.markH3Success(host)
 			return resp, nil
 		}
@@ -116,16 +125,27 @@ func (dt *dualTransport) shouldUseH3(host string) bool {
 		return false
 	}
 
+	now := time.Now()
+
 	dt.mu.Lock()
 	defer dt.mu.Unlock()
 
 	switch dt.state.mode {
 	case originH3Healthy:
 		return true
+
 	case originCooldown:
+		if now.Before(dt.state.cooldownUntil) {
+			return false
+		}
+
+		dt.state.mode = originCandidate
+		dt.state.cooldownUntil = time.Time{}
+		return false
 
 	case originUnknown, originCandidate, originProbing:
 		return false
+
 	default:
 		return false
 	}
@@ -141,6 +161,8 @@ func (dt *dualTransport) markH3Success(host string) {
 	defer dt.mu.Unlock()
 
 	dt.state.mode = originH3Healthy
+	dt.state.failures = 0
+	dt.state.cooldownUntil = time.Time{}
 }
 
 func (dt *dualTransport) markH3Failure(host string) {
@@ -151,11 +173,13 @@ func (dt *dualTransport) markH3Failure(host string) {
 	dt.mu.Lock()
 	defer dt.mu.Unlock()
 
+	dt.state.failures++
 	dt.state.mode = originCooldown
+	dt.state.cooldownUntil = time.Now().Add(dt.nextCooldown(dt.state.failures))
 }
 
 func (dt *dualTransport) observeH2Response(u *url.URL, headers http.Header) {
-	if u.Host == "" {
+	if u == nil || u.Host == "" {
 		return
 	}
 
@@ -166,12 +190,18 @@ func (dt *dualTransport) observeH2Response(u *url.URL, headers http.Header) {
 		return
 	}
 
+	now := time.Now()
+
 	dt.mu.Lock()
 	switch dt.state.mode {
 	case originUnknown:
 		dt.state.mode = originCandidate
 
 	case originCooldown:
+		if !now.Before(dt.state.cooldownUntil) {
+			dt.state.mode = originCandidate
+			dt.state.cooldownUntil = time.Time{}
+		}
 
 	case originCandidate, originProbing, originH3Healthy:
 
@@ -182,10 +212,16 @@ func (dt *dualTransport) observeH2Response(u *url.URL, headers http.Header) {
 }
 
 func (dt *dualTransport) maybeStartProbe(host string, u *url.URL) {
-	altSvc := dt.altSvcCache.Get(u.Host)
+	if host == "" || u == nil {
+		return
+	}
+
+	altSvc := dt.altSvcCache.Get(host)
 	if altSvc == nil || altSvc.Protocol != "h3" {
 		return
 	}
+
+	now := time.Now()
 
 	dt.mu.Lock()
 	switch dt.state.mode {
@@ -193,7 +229,12 @@ func (dt *dualTransport) maybeStartProbe(host string, u *url.URL) {
 		dt.mu.Unlock()
 		return
 	case originCooldown:
-
+		if now.Before(dt.state.cooldownUntil) {
+			dt.mu.Unlock()
+			return
+		}
+		dt.state.mode = originCandidate
+		dt.state.cooldownUntil = time.Time{}
 	case originUnknown:
 		dt.state.mode = originCandidate
 
@@ -202,7 +243,7 @@ func (dt *dualTransport) maybeStartProbe(host string, u *url.URL) {
 
 	probeURL := &url.URL{
 		Scheme: u.Scheme,
-		Host:   u.Host,
+		Host:   host,
 		Path:   "/",
 	}
 	dt.state.mode = originProbing
@@ -212,10 +253,14 @@ func (dt *dualTransport) maybeStartProbe(host string, u *url.URL) {
 }
 
 func (dt *dualTransport) runProbe(host string, probeURL *url.URL) {
-	ctx, cancel := context.WithTimeout(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), dt.probeTimeout)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodOptions, probeURL.String(), nil)
+	if err != nil {
+		dt.markH3Failure(host)
+		return
+	}
 	resp, err := dt.http3Transport.RoundTrip(req)
 	if err != nil {
 		dt.markH3Failure(host)
@@ -226,4 +271,18 @@ func (dt *dualTransport) runProbe(host string, probeURL *url.URL) {
 	_, _ = io.Copy(io.Discard, resp.Body)
 
 	dt.markH3Success(host)
+}
+
+func (dt *dualTransport) nextCooldown(failures int) time.Duration {
+	if failures <= 1 {
+		return dt.baseCooldown
+	}
+	d := dt.baseCooldown
+	for i := 1; i < failures; i++ {
+		d *= 2
+		if d >= dt.maxCooldown {
+			return dt.maxCooldown
+		}
+	}
+	return d
 }
