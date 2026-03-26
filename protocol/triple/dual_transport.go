@@ -35,13 +35,19 @@ import (
 type originMode int
 
 const (
+	// originUnknown means the origin has not advertised HTTP/3 yet.
 	originUnknown originMode = iota
+	// originCandidate means the origin advertised HTTP/3 and is waiting for validation.
 	originCandidate
+	// originProbing means an out-of-band HTTP/3 probe is in flight.
 	originProbing
+	// originH3Healthy means later requests may be sent over HTTP/3.
 	originH3Healthy
+	// originCooldown means HTTP/3 recently failed and should be avoided for a while.
 	originCooldown
 )
 
+// originState tracks whether the current upstream origin is ready for HTTP/3.
 type originState struct {
 	mode          originMode
 	failures      int
@@ -96,6 +102,9 @@ func (dt *dualTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	host := req.URL.Host
 
 	if dt.shouldUseH3(host) {
+		// Only use HTTP/3 after a separate probe marks the origin healthy.
+		// If the HTTP/3 request fails, return the error directly instead of
+		// replaying the same request over HTTP/2 with a partially consumed body.
 		resp, err := dt.http3Transport.RoundTrip(req)
 		if err == nil {
 			dt.altSvcCache.UpdateFromHeaders(host, resp.Header)
@@ -111,6 +120,8 @@ func (dt *dualTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		return nil, err
 	}
 
+	// Learn HTTP/3 availability from HTTP/2 responses and validate it with
+	// an independent probe before routing later requests over HTTP/3.
 	dt.observeH2Response(req.URL, resp.Header)
 	return resp, nil
 }
@@ -135,6 +146,7 @@ func (dt *dualTransport) shouldUseH3(host string) bool {
 		return true
 
 	case originCooldown:
+		// Wait for the cooldown window to expire before probing HTTP/3 again.
 		if now.Before(dt.state.cooldownUntil) {
 			return false
 		}
@@ -246,6 +258,8 @@ func (dt *dualTransport) maybeStartProbe(host string, u *url.URL) {
 		Host:   host,
 		Path:   "/",
 	}
+	// Validate HTTP/3 readiness out of band so the current business request
+	// can stay on HTTP/2.
 	dt.state.mode = originProbing
 	dt.mu.Unlock()
 
@@ -256,6 +270,8 @@ func (dt *dualTransport) runProbe(host string, probeURL *url.URL) {
 	ctx, cancel := context.WithTimeout(context.Background(), dt.probeTimeout)
 	defer cancel()
 
+	// Probe with an independent request so business request bodies never need
+	// to be replayed across transports.
 	req, err := http.NewRequestWithContext(ctx, http.MethodOptions, probeURL.String(), nil)
 	if err != nil {
 		dt.markH3Failure(host)
@@ -277,6 +293,7 @@ func (dt *dualTransport) nextCooldown(failures int) time.Duration {
 	if failures <= 1 {
 		return dt.baseCooldown
 	}
+	// Increase the cooldown window after repeated HTTP/3 failures, capped by maxCooldown.
 	d := dt.baseCooldown
 	for i := 1; i < failures; i++ {
 		d *= 2

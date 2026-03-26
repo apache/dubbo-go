@@ -1,0 +1,169 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package triple
+
+import (
+	"errors"
+	"io"
+	"net/http"
+	"strings"
+	"sync/atomic"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
+)
+
+type roundTripperFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
+}
+
+func newTestResponse(status int, headers http.Header) *http.Response {
+	if headers == nil {
+		headers = make(http.Header)
+	}
+	return &http.Response{
+		StatusCode: status,
+		Header:     headers,
+		Body:       io.NopCloser(strings.NewReader("")),
+	}
+}
+
+func TestDualTransport_H2AltSvcStartsProbeAndPromotesH3Healthy(t *testing.T) {
+	t.Parallel()
+
+	dt := &dualTransport{
+		http2Transport: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+			headers := make(http.Header)
+			headers.Set("Alt-Svc", `h3=":443"; ma=86400`)
+			return newTestResponse(http.StatusOK, headers), nil
+		}),
+		altSvcCache:  tri.NewAltSvcCache(),
+		probeTimeout: 100 * time.Millisecond,
+		baseCooldown: 4 * time.Second,
+		maxCooldown:  1 * time.Minute,
+	}
+
+	probeCalled := make(chan struct{}, 1)
+	dt.http3Transport = roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+		assert.Equal(t, http.MethodOptions, req.Method)
+		assert.Equal(t, "/", req.URL.Path)
+		probeCalled <- struct{}{}
+		return newTestResponse(http.StatusMethodNotAllowed, nil), nil
+	})
+
+	req, err := http.NewRequest(http.MethodPost, "https://example.com/service", nil)
+	require.NoError(t, err)
+
+	resp, err := dt.RoundTrip(req)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	select {
+	case <-probeCalled:
+	case <-time.After(time.Second):
+		t.Fatal("probe was not triggered")
+	}
+
+	require.Eventually(t, func() bool {
+		dt.mu.Lock()
+		defer dt.mu.Unlock()
+		return dt.state.mode == originH3Healthy
+	}, time.Second, 10*time.Millisecond)
+}
+
+func TestDualTransport_H3HealthyFailureDoesNotFallbackToHTTP2(t *testing.T) {
+	t.Parallel()
+
+	var h2Calls atomic.Int32
+	var h3Calls atomic.Int32
+
+	dt := &dualTransport{
+		http2Transport: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+			h2Calls.Add(1)
+			return newTestResponse(http.StatusOK, nil), nil
+		}),
+		http3Transport: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+			h3Calls.Add(1)
+			return nil, errors.New("h3 failed")
+		}),
+		altSvcCache:  tri.NewAltSvcCache(),
+		baseCooldown: 4 * time.Second,
+		maxCooldown:  1 * time.Minute,
+	}
+	dt.altSvcCache.Set("example.com", &tri.AltSvcInfo{
+		Protocol: "h3",
+		Expires:  time.Now().Add(time.Hour),
+	})
+	dt.state.mode = originH3Healthy
+
+	req, err := http.NewRequest(http.MethodPost, "https://example.com/service", nil)
+	require.NoError(t, err)
+
+	resp, err := dt.RoundTrip(req)
+	require.Error(t, err)
+	assert.Nil(t, resp)
+	assert.Equal(t, int32(1), h3Calls.Load())
+	assert.Equal(t, int32(0), h2Calls.Load())
+
+	dt.mu.Lock()
+	defer dt.mu.Unlock()
+	assert.Equal(t, originCooldown, dt.state.mode)
+	assert.False(t, dt.state.cooldownUntil.IsZero())
+}
+
+func TestDualTransport_CooldownUsesHTTP2(t *testing.T) {
+	t.Parallel()
+
+	var h2Calls atomic.Int32
+	var h3Calls atomic.Int32
+
+	dt := &dualTransport{
+		http2Transport: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+			h2Calls.Add(1)
+			return newTestResponse(http.StatusOK, nil), nil
+		}),
+		http3Transport: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+			h3Calls.Add(1)
+			return newTestResponse(http.StatusOK, nil), nil
+		}),
+		altSvcCache:  tri.NewAltSvcCache(),
+		baseCooldown: 4 * time.Second,
+		maxCooldown:  1 * time.Minute,
+	}
+	dt.altSvcCache.Set("example.com", &tri.AltSvcInfo{
+		Protocol: "h3",
+		Expires:  time.Now().Add(time.Hour),
+	})
+	dt.state.mode = originCooldown
+	dt.state.cooldownUntil = time.Now().Add(time.Minute)
+
+	req, err := http.NewRequest(http.MethodPost, "https://example.com/service", nil)
+	require.NoError(t, err)
+
+	resp, err := dt.RoundTrip(req)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, int32(1), h2Calls.Load())
+	assert.Equal(t, int32(0), h3Calls.Load())
+}
