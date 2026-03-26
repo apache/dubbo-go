@@ -18,8 +18,11 @@
 package triple
 
 import (
+	"context"
 	"crypto/tls"
+	"io"
 	"net/http"
+	"net/url"
 	"sync"
 	"time"
 
@@ -99,7 +102,7 @@ func (dt *dualTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		return nil, err
 	}
 
-	dt.observeH2Response(host, resp.Header)
+	dt.observeH2Response(req.URL, resp.Header)
 	return resp, nil
 }
 
@@ -151,14 +154,14 @@ func (dt *dualTransport) markH3Failure(host string) {
 	dt.state.mode = originCooldown
 }
 
-func (dt *dualTransport) observeH2Response(host string, headers http.Header) {
-	if host == "" {
+func (dt *dualTransport) observeH2Response(u *url.URL, headers http.Header) {
+	if u.Host == "" {
 		return
 	}
 
-	dt.altSvcCache.UpdateFromHeaders(host, headers)
+	dt.altSvcCache.UpdateFromHeaders(u.Host, headers)
 
-	altSvc := dt.altSvcCache.Get(host)
+	altSvc := dt.altSvcCache.Get(u.Host)
 	if altSvc == nil || altSvc.Protocol != "h3" {
 		return
 	}
@@ -175,7 +178,52 @@ func (dt *dualTransport) observeH2Response(host string, headers http.Header) {
 	}
 	dt.mu.Unlock()
 
-	dt.maybeStartProbe()
+	dt.maybeStartProbe(u.Host, u)
 }
 
-func (dt *dualTransport) maybeStartProbe()
+func (dt *dualTransport) maybeStartProbe(host string, u *url.URL) {
+	altSvc := dt.altSvcCache.Get(u.Host)
+	if altSvc == nil || altSvc.Protocol != "h3" {
+		return
+	}
+
+	dt.mu.Lock()
+	switch dt.state.mode {
+	case originH3Healthy, originProbing:
+		dt.mu.Unlock()
+		return
+	case originCooldown:
+
+	case originUnknown:
+		dt.state.mode = originCandidate
+
+	case originCandidate:
+	}
+
+	probeURL := &url.URL{
+		Scheme: u.Scheme,
+		Host:   u.Host,
+		Path:   "/",
+	}
+	dt.state.mode = originProbing
+	dt.mu.Unlock()
+
+	go dt.runProbe(host, probeURL)
+}
+
+func (dt *dualTransport) runProbe(host string, probeURL *url.URL) {
+	ctx, cancel := context.WithTimeout(context.Background())
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodOptions, probeURL.String(), nil)
+	resp, err := dt.http3Transport.RoundTrip(req)
+	if err != nil {
+		dt.markH3Failure(host)
+		return
+	}
+	defer resp.Body.Close()
+
+	_, _ = io.Copy(io.Discard, resp.Body)
+
+	dt.markH3Success(host)
+}
