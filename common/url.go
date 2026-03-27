@@ -667,9 +667,29 @@ func (c *URL) GetNonDefaultParam(s string) (string, bool) {
 	return r, r != ""
 }
 
-// GetParams gets values
+// GetParams gets values.
+// Deprecated: use CopyParams instead.
 func (c *URL) GetParams() url.Values {
-	return c.params
+	return c.CopyParams()
+}
+
+// CopyParams returns a deep copy of params.
+func (c *URL) CopyParams() url.Values {
+	c.paramsLock.RLock()
+	defer c.paramsLock.RUnlock()
+
+	if c.params == nil {
+		return nil
+	}
+
+	params := make(url.Values, len(c.params))
+	for k, vs := range c.params {
+		copied := make([]string, len(vs))
+		copy(copied, vs)
+		params[k] = copied
+	}
+
+	return params
 }
 
 // GetParamAndDecoded gets values and decode

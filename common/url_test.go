@@ -878,6 +878,18 @@ func TestAddParam(t *testing.T) {
 	assert.Len(t, params["key1"], 2)
 }
 
+func TestGetParamsReturnsCopy(t *testing.T) {
+	u, err := NewURL("dubbo://127.0.0.1:20000?key1=value1&key2=value2&key2=value3")
+	assert.NoError(t, err)
+
+	params := u.GetParams()
+	delete(params, "key1")
+	params["key2"][0] = "changed"
+
+	assert.Equal(t, "value1", u.GetParam("key1", ""))
+	assert.Equal(t, "value2", u.GetParam("key2", ""))
+}
+
 func TestAddParamAvoidNil(t *testing.T) {
 	u := &URL{}
 	u.AddParamAvoidNil("key1", "value1")
