@@ -596,6 +596,20 @@ func (c *URL) GetAttribute(key string) (any, bool) {
 	return r, ok
 }
 
+func (c *URL) DeleteAttribute(key string) {
+	c.attributesLock.Lock()
+	defer c.attributesLock.Unlock()
+	if c.attributes != nil {
+		delete(c.attributes, key)
+	}
+}
+
+func (c *URL) ClearAttributes() {
+	c.attributesLock.Lock()
+	defer c.attributesLock.Unlock()
+	c.attributes = nil
+}
+
 // DelParam will delete the given key from the URL
 func (c *URL) DelParam(key string) {
 	c.paramsLock.Lock()

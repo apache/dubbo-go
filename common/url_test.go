@@ -358,6 +358,34 @@ func TestURLGetAttribute(t *testing.T) {
 	assert.Nil(t, rawVal)
 }
 
+func TestURLDeleteAttribute(t *testing.T) {
+	u := URL{}
+	u.SetAttribute("key1", "value1")
+	u.SetAttribute("key2", 123)
+
+	u.DeleteAttribute("key1")
+
+	_, ok := u.GetAttribute("key1")
+	assert.False(t, ok)
+
+	v, ok := u.GetAttribute("key2")
+	assert.True(t, ok)
+	assert.Equal(t, 123, v)
+}
+
+func TestURLClearAttributes(t *testing.T) {
+	u := URL{}
+	u.SetAttribute("key1", "value1")
+	u.SetAttribute("key2", 123)
+
+	u.ClearAttributes()
+
+	_, ok := u.GetAttribute("key1")
+	assert.False(t, ok)
+	_, ok = u.GetAttribute("key2")
+	assert.False(t, ok)
+}
+
 func TestMergeUrl(t *testing.T) {
 	referenceUrlParams := url.Values{}
 	referenceUrlParams.Set(constant.ClusterKey, "random")
