@@ -21,19 +21,16 @@ import (
 	"strconv"
 	"testing"
 	"time"
-)
 
-import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-)
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/tag"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/config_center/configurator"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
@@ -255,6 +252,86 @@ func TestExpiredClosingTombstoneAllowsRebuild(t *testing.T) {
 	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerURL})
 	time.Sleep(1e9)
 	assert.Len(t, registryDirectory.cacheInvokers, 1)
+}
+
+func TestRefreshConfiguratorsUseLatestBatch(t *testing.T) {
+	realConfigurator := extension.GetDefaultConfiguratorFunc()
+
+	t.Run("single event replaces previous config", func(t *testing.T) {
+		extension.SetDefaultConfigurator(configurator.NewMockConfigurator)
+		defer extension.SetDefaultConfigurator(realConfigurator)
+
+		registryDirectory, _ := normalRegistryDir(true)
+
+		overrideURL1, _ := common.NewURL(
+			"override://0.0.0.0/org.apache.dubbo-go.mockService",
+			common.WithParamsValue(constant.ClusterKey, "mock1"),
+		)
+		registryDirectory.refreshInvokers(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: overrideURL1})
+		require.Len(t, registryDirectory.configurators, 1)
+		assert.Equal(t, "mock1", registryDirectory.configurators[0].GetUrl().GetParam(constant.ClusterKey, ""))
+
+		overrideURL2, _ := common.NewURL(
+			"override://0.0.0.0/org.apache.dubbo-go.mockService",
+			common.WithParamsValue(constant.ClusterKey, "mock2"),
+		)
+		registryDirectory.refreshInvokers(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: overrideURL2})
+		require.Len(t, registryDirectory.configurators, 1)
+		assert.Equal(t, "mock2", registryDirectory.configurators[0].GetUrl().GetParam(constant.ClusterKey, ""))
+	})
+
+	t.Run("same batch keeps param union", func(t *testing.T) {
+		extension.SetDefaultConfigurator(realConfigurator)
+
+		registryDirectory, _ := normalRegistryDir(true)
+		registryDirectory.refreshAllInvokers([]*registry.ServiceEvent{
+			{Action: remoting.EventTypeAdd, Service: mustURL(t,
+				"override://0.0.0.0:0/org.apache.dubbo-go.mockService?timeout=2s",
+			)},
+			{Action: remoting.EventTypeAdd, Service: mustURL(t,
+				"override://0.0.0.0:0/org.apache.dubbo-go.mockService?cluster=mock2",
+			)},
+		}, func() {})
+
+		target := mustURL(t, "dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService")
+		registryDirectory.overrideUrl(target)
+
+		assert.Equal(t, "2s", target.GetParam("timeout", ""))
+		assert.Equal(t, "mock2", target.GetParam(constant.ClusterKey, ""))
+	})
+
+	t.Run("new batch replaces previous batch", func(t *testing.T) {
+		extension.SetDefaultConfigurator(realConfigurator)
+
+		registryDirectory, _ := normalRegistryDir(true)
+		registryDirectory.refreshAllInvokers([]*registry.ServiceEvent{
+			{Action: remoting.EventTypeAdd, Service: mustURL(t,
+				"override://0.0.0.0:0/org.apache.dubbo-go.mockService?timeout=2s",
+			)},
+			{Action: remoting.EventTypeAdd, Service: mustURL(t,
+				"override://0.0.0.0:0/org.apache.dubbo-go.mockService?cluster=mock2",
+			)},
+		}, func() {})
+
+		registryDirectory.refreshAllInvokers([]*registry.ServiceEvent{
+			{Action: remoting.EventTypeAdd, Service: mustURL(t,
+				"override://0.0.0.0:0/org.apache.dubbo-go.mockService?cluster=mock3",
+			)},
+		}, func() {})
+
+		target := mustURL(t, "dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService")
+		registryDirectory.overrideUrl(target)
+
+		assert.Empty(t, target.GetParam("timeout", ""))
+		assert.Equal(t, "mock3", target.GetParam(constant.ClusterKey, ""))
+	})
+}
+
+func mustURL(t *testing.T, rawURL string) *common.URL {
+	t.Helper()
+	u, err := common.NewURL(rawURL)
+	require.NoError(t, err)
+	return u
 }
 
 func normalRegistryDir(noMockEvent ...bool) (*RegistryDirectory, *registry.MockRegistry) {

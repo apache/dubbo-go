@@ -271,18 +271,35 @@ func (dir *RegistryDirectory) refreshInvokers(event *registry.ServiceEvent) {
 // not in the incoming list can be removed.  The Action of serviceEvent should be EventTypeUpdate or EventTypeAdd.
 func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent, callback func()) {
 	var (
-		oldInvokers []protocolbase.Invoker
-		addEvents   []*registry.ServiceEvent
+		oldInvokers      []protocolbase.Invoker
+		addEvents        []*registry.ServiceEvent
+		providerEvents   []*registry.ServiceEvent
+		configuratorURLs []*common.URL
 	)
-	dir.overrideUrl(dir.GetDirectoryUrl())
-	referenceUrl := dir.GetDirectoryUrl().SubURL
-
-	// loop the events to check the Action should be EventTypeUpdate.
 	for _, event := range events {
 		if event.Action != remoting.EventTypeUpdate && event.Action != remoting.EventTypeAdd {
 			panic("Your implements of register center is wrong, " +
 				"please check the Action of ServiceEvent should be EventTypeUpdate")
 		}
+		if isConfiguratorURL(event.Service) {
+			configuratorURLs = append(configuratorURLs, event.Service)
+			continue
+		}
+		providerEvents = append(providerEvents, event)
+	}
+	if configuratorURLs != nil {
+		dir.replaceConfigurators(configuratorURLs)
+	}
+	defer callback()
+	if len(providerEvents) == 0 && len(events) > 0 {
+		return
+	}
+
+	dir.overrideUrl(dir.GetDirectoryUrl())
+	referenceUrl := dir.GetDirectoryUrl().SubURL
+
+	// loop the events to check the Action should be EventTypeUpdate.
+	for _, event := range providerEvents {
 		// Originally it will Merge URL many times, now we just execute once.
 		// MergeURL is executed once and put the result into Event. After this, the key will get from Event.Key().
 		newUrl := dir.convertUrl(event)
@@ -290,15 +307,13 @@ func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent
 		dir.overrideUrl(newUrl)
 		event.Update(newUrl)
 	}
-	// After notify all addresses, do some callback.
-	defer callback()
 	func() {
 		// this lock is work at batch update of InvokeCache
 		dir.registerLock.Lock()
 		defer dir.registerLock.Unlock()
 		// get need clear invokers from original invoker list
 		dir.cacheInvokersMap.Range(func(k, v any) bool {
-			if !dir.eventMatched(k.(string), events) {
+			if !dir.eventMatched(k.(string), providerEvents) {
 				// delete unused invoker from cache
 				if invoker := dir.uncacheInvokerWithKey(k.(string)); invoker != nil {
 					oldInvokers = append(oldInvokers, invoker)
@@ -307,7 +322,7 @@ func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent
 			return true
 		})
 		// get need add invokers from events
-		for _, event := range events {
+		for _, event := range providerEvents {
 			// Get the key from Event.Key()
 			if _, ok := dir.cacheInvokersMap.Load(event.Key()); !ok {
 				addEvents = append(addEvents, event)
@@ -372,7 +387,13 @@ func (dir *RegistryDirectory) cacheInvokerByEvent(event *registry.ServiceEvent) 
 
 		switch event.Action {
 		case remoting.EventTypeAdd, remoting.EventTypeUpdate:
+			if isConfiguratorURL(event.Service) {
+				dir.replaceConfigurators([]*common.URL{event.Service})
+			}
 			u := dir.convertUrl(event)
+			if u == nil && dir.cacheOriginUrl == nil {
+				return nil, nil
+			}
 			logger.Infof("[Registry Directory] selector add service url{%s}", event.Service)
 			if u != nil && constant.RouterProtocol == u.Protocol {
 				dir.configRouters()
@@ -397,13 +418,21 @@ func (dir *RegistryDirectory) convertUrl(res *registry.ServiceEvent) *common.URL
 	ret := res.Service
 	if ret.Protocol == constant.OverrideProtocol || // 1.for override url in 2.6.x
 		ret.GetParam(constant.CategoryKey, constant.DefaultCategory) == constant.ConfiguratorsCategory {
-		dir.configurators = append(dir.configurators, extension.GetDefaultConfigurator(ret))
 		ret = nil
 	} else if ret.Protocol == constant.RouterProtocol || // 2.for router
 		ret.GetParam(constant.CategoryKey, constant.DefaultCategory) == constant.RouterCategory {
 		ret = nil
 	}
 	return ret
+}
+
+func isConfiguratorURL(url *common.URL) bool {
+	return url != nil && (url.Protocol == constant.OverrideProtocol ||
+		url.GetParam(constant.CategoryKey, constant.DefaultCategory) == constant.ConfiguratorsCategory)
+}
+
+func (dir *RegistryDirectory) replaceConfigurators(urls []*common.URL) {
+	dir.configurators = registry.ToConfigurators(urls, extension.GetDefaultConfiguratorFunc())
 }
 
 func (dir *RegistryDirectory) toGroupInvokers() []protocolbase.Invoker {
