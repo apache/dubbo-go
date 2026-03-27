@@ -1194,6 +1194,59 @@ func TestMergeURLWithAttributes(t *testing.T) {
 	assert.Equal(t, "attrValue2", v2)
 }
 
+func TestMergeURLCopiesMutableAttributes(t *testing.T) {
+	u1, _ := NewURL("dubbo://127.0.0.1:20000?key1=value1")
+	u2, _ := NewURL("dubbo://127.0.0.1:20001?key2=value2")
+
+	attr := map[string]string{"key": "value1"}
+	u2.SetAttribute("attr", attr)
+
+	merged := u1.MergeURL(u2)
+	attr["key"] = "value2"
+
+	raw, ok := merged.GetAttribute("attr")
+	require.True(t, ok)
+	require.IsType(t, map[string]string{}, raw)
+	assert.Equal(t, "value1", raw.(map[string]string)["key"])
+}
+
+func TestMergeURLAttributeAccessRace(t *testing.T) {
+	u1, _ := NewURL("dubbo://127.0.0.1:20000?key1=value1")
+	u2, _ := NewURL("dubbo://127.0.0.1:20001?key2=value2")
+
+	var wg sync.WaitGroup
+	stop := make(chan struct{})
+
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		for i := 0; ; i++ {
+			select {
+			case <-stop:
+				return
+			default:
+			}
+			u2.SetAttribute("attr", i)
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		for {
+			select {
+			case <-stop:
+				return
+			default:
+			}
+			_ = u1.MergeURL(u2)
+		}
+	}()
+
+	time.Sleep(50 * time.Millisecond)
+	close(stop)
+	wg.Wait()
+}
+
 func TestURLEqualWithCategory(t *testing.T) {
 	// test category matching with RemoveValuePrefix
 	u1, _ := NewURL("dubbo://127.0.0.1:20000/com.test.Service?interface=com.test.Service&category=providers")

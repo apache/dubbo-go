@@ -29,20 +29,14 @@ import (
 	"strings"
 	"sync"
 	"time"
-)
 
-import (
 	cm "github.com/Workiva/go-datastructures/common"
 
 	gxset "github.com/dubbogo/gost/container/set"
-
 	"github.com/google/uuid"
 
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	perrors "github.com/pkg/errors"
 )
 
 // dubbo role type constant
@@ -911,14 +905,12 @@ func (c *URL) MergeURL(anotherUrl *URL) *URL {
 		}
 	}
 	// merge attributes
-	if mergedURL.attributes == nil {
-		mergedURL.attributes = make(map[string]any, len(anotherUrl.attributes))
-	}
-	for attrK, attrV := range anotherUrl.attributes {
+	anotherUrl.RangeAttributes(func(attrK string, attrV any) bool {
 		if _, ok := mergedURL.GetAttribute(attrK); !ok {
-			mergedURL.attributes[attrK] = attrV
+			mergedURL.SetAttribute(attrK, attrV)
 		}
-	}
+		return true
+	})
 	// In this way, we will raise some performance.
 	mergedURL.ReplaceParams(params)
 	return mergedURL
