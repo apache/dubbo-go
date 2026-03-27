@@ -488,6 +488,9 @@ func (proto *registryProtocol) Destroy() {
 					return
 				}
 			}
+
+			exporter.UnExport()
+			proto.bounds.Delete(key)
 		}()
 		return true
 	})
