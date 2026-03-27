@@ -22,21 +22,17 @@ import (
 	"strings"
 	"sync"
 	"time"
-)
 
-import (
 	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/log/logger"
 
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
+	perrors "github.com/pkg/errors"
+
 	_ "dubbo.apache.org/dubbo-go/v3/config_center/configurator"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
@@ -404,7 +400,7 @@ func isMatched(providerUrl *common.URL, consumerUrl *common.URL) bool {
 	// Compatible with the 2.6.x
 	if len(providerUrl.GetParam(constant.CategoryKey, "")) == 0 &&
 		providerUrl.Protocol == constant.OverrideProtocol {
-		providerUrl.AddParam(constant.CategoryKey, constant.ConfiguratorsCategory)
+		providerUrl.SetParam(constant.CategoryKey, constant.ConfiguratorsCategory)
 	}
 	consumerInterface := consumerUrl.GetParam(constant.InterfaceKey, consumerUrl.Path)
 	providerInterface := providerUrl.GetParam(constant.InterfaceKey, providerUrl.Path)

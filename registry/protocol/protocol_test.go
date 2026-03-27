@@ -414,6 +414,15 @@ func TestExportWithApplicationConfig(t *testing.T) {
 	assert.NotNil(t, v2)
 }
 
+func TestIsMatchedDoesNotAccumulateCategory(t *testing.T) {
+	providerURL, _ := common.NewURL("override://127.0.0.1:20000/org.apache.dubbo-go.mockService?interface=org.apache.dubbo-go.mockService")
+	consumerURL, _ := common.NewURL("consumer://127.0.0.1/org.apache.dubbo-go.mockService?interface=org.apache.dubbo-go.mockService&category=configurators")
+
+	assert.True(t, isMatched(providerURL, consumerURL))
+	assert.True(t, isMatched(providerURL, consumerURL))
+	assert.Equal(t, []string{constant.ConfiguratorsCategory}, providerURL.GetParams()[constant.CategoryKey])
+}
+
 func TestGetProviderUrlWithHideKey(t *testing.T) {
 	url, _ := common.NewURL("dubbo://127.0.0.1:1111?a=a1&b=b1&.c=c1&.d=d1&e=e1&protocol=registry")
 	providerUrl := getUrlToRegistry(url, url)
