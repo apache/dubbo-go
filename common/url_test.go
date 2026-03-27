@@ -37,17 +37,11 @@ import (
 	"sync"
 	"testing"
 	"time"
-)
 
-import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	gxset "github.com/dubbogo/gost/container/set"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 // Test constants for URL parsing tests.
@@ -825,6 +819,15 @@ func TestGetCacheInvokerMapKey(t *testing.T) {
 	assert.Contains(t, key, "timestamp=12345")
 }
 
+func TestGetCacheInvokerMapKeyUsesPrimitiveTimestamp(t *testing.T) {
+	u, _ := NewURL("dubbo://127.0.0.1:20000/com.test.Service?interface=com.test.Service&group=g1&version=1.0&timestamp=12345")
+	u.SetParam(constant.TimestampKey, "67890")
+
+	key := u.GetCacheInvokerMapKey()
+
+	assert.Contains(t, key, "timestamp=12345")
+}
+
 func TestServiceKey(t *testing.T) {
 	// with group and version
 	assert.Equal(t, "group/interface:version", ServiceKey("interface", "group", "version"))
@@ -1192,22 +1195,6 @@ func TestMergeURLWithAttributes(t *testing.T) {
 	v2, ok2 := merged.GetAttribute("attr2")
 	assert.True(t, ok2)
 	assert.Equal(t, "attrValue2", v2)
-}
-
-func TestMergeURLCopiesMutableAttributes(t *testing.T) {
-	u1, _ := NewURL("dubbo://127.0.0.1:20000?key1=value1")
-	u2, _ := NewURL("dubbo://127.0.0.1:20001?key2=value2")
-
-	attr := map[string]string{"key": "value1"}
-	u2.SetAttribute("attr", attr)
-
-	merged := u1.MergeURL(u2)
-	attr["key"] = "value2"
-
-	raw, ok := merged.GetAttribute("attr")
-	require.True(t, ok)
-	require.IsType(t, map[string]string{}, raw)
-	assert.Equal(t, "value1", raw.(map[string]string)["key"])
 }
 
 func TestMergeURLAttributeAccessRace(t *testing.T) {

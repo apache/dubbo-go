@@ -96,6 +96,7 @@ type URL struct {
 	Port     string
 
 	PrimitiveURL string
+	primitiveTS  string
 	// url.Values is not safe map, add to avoid concurrent map read and map write error
 	paramsLock sync.RWMutex
 	params     url.Values
@@ -288,6 +289,7 @@ func NewURL(urlString string, opts ...Option) (*URL, error) {
 	}
 
 	s.PrimitiveURL = urlString
+	s.primitiveTS = s.params.Get(constant.TimestampKey)
 	s.Protocol = serviceURL.Scheme
 	s.Username = serviceURL.User.Username()
 	s.Password, _ = serviceURL.User.Password()
@@ -410,12 +412,10 @@ func (c *URL) Key() string {
 
 // GetCacheInvokerMapKey get directory cacheInvokerMap key
 func (c *URL) GetCacheInvokerMapKey() string {
-	urlNew, _ := NewURL(c.PrimitiveURL)
-
 	buildString := fmt.Sprintf(
 		"%s://%s:%s@%s:%s/?interface=%s&group=%s&version=%s&timestamp=%s&"+constant.MeshClusterIDKey+"=%s",
 		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Service(), c.GetParam(constant.GroupKey, ""),
-		c.GetParam(constant.VersionKey, ""), urlNew.GetParam(constant.TimestampKey, ""),
+		c.GetParam(constant.VersionKey, ""), c.primitiveTS,
 		c.GetParam(constant.MeshClusterIDKey, ""),
 	)
 	return buildString
@@ -926,6 +926,7 @@ func (c *URL) CloneWithFilter(excludeParams *gxset.HashSet, reserveParams []stri
 		Ip:           c.Ip,
 		Port:         c.Port,
 		PrimitiveURL: c.PrimitiveURL,
+		primitiveTS:  c.primitiveTS,
 		Path:         c.Path,
 		Username:     c.Username,
 		Password:     c.Password,
