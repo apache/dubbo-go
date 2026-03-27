@@ -20,16 +20,25 @@ package triple
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"io"
 	"net/http"
 	"net/url"
 	"sync"
 	"time"
+)
 
-	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
+import (
+	"github.com/dubbogo/gost/log/logger"
+
 	"github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/http3"
+
 	"golang.org/x/net/http2"
+)
+
+import (
+	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
 type originMode int
@@ -47,6 +56,12 @@ const (
 	originCooldown
 )
 
+const (
+	defaultH3ProbeTimeout = 3 * time.Second
+	defaultH3BaseCooldown = 4 * time.Second
+	defaultH3MaxCooldown  = 1 * time.Minute
+)
+
 // originState tracks whether the current upstream origin is ready for HTTP/3.
 type originState struct {
 	mode          originMode
@@ -54,8 +69,7 @@ type originState struct {
 	cooldownUntil time.Time
 }
 
-// dualTransport is a transport that can handle both HTTP/2 and HTTP/3
-// It uses HTTP Alternative Services (Alt-Svc) for protocol negotiation
+// dualTransport keeps HTTP/2 as the stable path and only uses HTTP/3 after discovery and probe.
 type dualTransport struct {
 	http2Transport http.RoundTripper
 	http3Transport http.RoundTripper
@@ -91,9 +105,9 @@ func newDualTransport(tlsConfig *tls.Config, keepAliveInterval, keepAliveTimeout
 		http2Transport: http2Transport,
 		http3Transport: http3Transport,
 		altSvcCache:    tri.NewAltSvcCache(),
-		probeTimeout:   3 * time.Second,
-		baseCooldown:   4 * time.Second,
-		maxCooldown:    1 * time.Minute,
+		probeTimeout:   defaultH3ProbeTimeout,
+		baseCooldown:   defaultH3BaseCooldown,
+		maxCooldown:    defaultH3MaxCooldown,
 	}
 }
 
@@ -107,11 +121,13 @@ func (dt *dualTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		// replaying the same request over HTTP/2 with a partially consumed body.
 		resp, err := dt.http3Transport.RoundTrip(req)
 		if err == nil {
-			dt.altSvcCache.UpdateFromHeaders(host, resp.Header)
 			dt.markH3Success(host)
 			return resp, nil
 		}
-		dt.markH3Failure(host)
+		if dt.shouldMarkH3Failure(req, err) {
+			logger.Warnf("HTTP/3 request failed for %s: %v", req.URL.String(), err)
+			dt.markH3Failure(host)
+		}
 		return nil, err
 	}
 
@@ -126,6 +142,7 @@ func (dt *dualTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return resp, nil
 }
 
+// shouldUseH3 only decides whether the current request may use HTTP/3.
 func (dt *dualTransport) shouldUseH3(host string) bool {
 	if host == "" {
 		return false
@@ -151,17 +168,28 @@ func (dt *dualTransport) shouldUseH3(host string) bool {
 			return false
 		}
 
+		logger.Debugf("HTTP/3 cooldown expired for %s", host)
 		dt.state.mode = originCandidate
 		dt.state.cooldownUntil = time.Time{}
 		return false
 
 	case originUnknown, originCandidate, originProbing:
 		return false
+	}
+	return false
+}
 
-	default:
+func (dt *dualTransport) shouldMarkH3Failure(req *http.Request, err error) bool {
+	if err == nil {
 		return false
 	}
-
+	if req != nil && req.Context() != nil && req.Context().Err() != nil {
+		return false
+	}
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return false
+	}
+	return true
 }
 
 func (dt *dualTransport) markH3Success(host string) {
@@ -175,6 +203,7 @@ func (dt *dualTransport) markH3Success(host string) {
 	dt.state.mode = originH3Healthy
 	dt.state.failures = 0
 	dt.state.cooldownUntil = time.Time{}
+	logger.Debugf("HTTP/3 ready for %s", host)
 }
 
 func (dt *dualTransport) markH3Failure(host string) {
@@ -188,8 +217,15 @@ func (dt *dualTransport) markH3Failure(host string) {
 	dt.state.failures++
 	dt.state.mode = originCooldown
 	dt.state.cooldownUntil = time.Now().Add(dt.nextCooldown(dt.state.failures))
+	logger.Debugf(
+		"HTTP/3 cooldown for %s until %s after %d failure(s)",
+		host,
+		dt.state.cooldownUntil.Format(time.RFC3339),
+		dt.state.failures,
+	)
 }
 
+// observeH2Response learns Alt-Svc from the current HTTP/2 response for later requests.
 func (dt *dualTransport) observeH2Response(u *url.URL, headers http.Header) {
 	if u == nil || u.Host == "" {
 		return
@@ -208,25 +244,28 @@ func (dt *dualTransport) observeH2Response(u *url.URL, headers http.Header) {
 	switch dt.state.mode {
 	case originUnknown:
 		dt.state.mode = originCandidate
+		logger.Debugf("HTTP/3 advertised by %s", u.Host)
 
 	case originCooldown:
 		if !now.Before(dt.state.cooldownUntil) {
 			dt.state.mode = originCandidate
 			dt.state.cooldownUntil = time.Time{}
+			logger.Debugf("HTTP/3 reprobe enabled for %s", u.Host)
 		}
 
 	case originCandidate, originProbing, originH3Healthy:
-
+		// Already aware of HTTP/3, nothing to do
 	}
 	dt.mu.Unlock()
 
-	dt.maybeStartProbe(u.Host, u)
+	dt.maybeStartProbe(u)
 }
 
-func (dt *dualTransport) maybeStartProbe(host string, u *url.URL) {
-	if host == "" || u == nil {
+func (dt *dualTransport) maybeStartProbe(u *url.URL) {
+	if u == nil || u.Host == "" {
 		return
 	}
+	host := u.Host
 
 	altSvc := dt.altSvcCache.Get(host)
 	if altSvc == nil || altSvc.Protocol != "h3" {
@@ -247,10 +286,8 @@ func (dt *dualTransport) maybeStartProbe(host string, u *url.URL) {
 		}
 		dt.state.mode = originCandidate
 		dt.state.cooldownUntil = time.Time{}
-	case originUnknown:
+	case originUnknown, originCandidate:
 		dt.state.mode = originCandidate
-
-	case originCandidate:
 	}
 
 	probeURL := &url.URL{
@@ -263,10 +300,16 @@ func (dt *dualTransport) maybeStartProbe(host string, u *url.URL) {
 	dt.state.mode = originProbing
 	dt.mu.Unlock()
 
-	go dt.runProbe(host, probeURL)
+	logger.Debugf("Start HTTP/3 probe for %s via %s", host, probeURL.String())
+	go dt.runProbe(probeURL)
 }
 
-func (dt *dualTransport) runProbe(host string, probeURL *url.URL) {
+func (dt *dualTransport) runProbe(probeURL *url.URL) {
+	if probeURL == nil || probeURL.Host == "" {
+		return
+	}
+	host := probeURL.Host
+
 	ctx, cancel := context.WithTimeout(context.Background(), dt.probeTimeout)
 	defer cancel()
 
@@ -274,11 +317,13 @@ func (dt *dualTransport) runProbe(host string, probeURL *url.URL) {
 	// to be replayed across transports.
 	req, err := http.NewRequestWithContext(ctx, http.MethodOptions, probeURL.String(), nil)
 	if err != nil {
+		logger.Debugf("Create HTTP/3 probe request failed for %s: %v", host, err)
 		dt.markH3Failure(host)
 		return
 	}
 	resp, err := dt.http3Transport.RoundTrip(req)
 	if err != nil {
+		logger.Debugf("HTTP/3 probe failed for %s: %v", host, err)
 		dt.markH3Failure(host)
 		return
 	}
