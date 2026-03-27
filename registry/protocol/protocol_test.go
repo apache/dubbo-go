@@ -18,7 +18,6 @@
 package protocol
 
 import (
-	"sync"
 	"testing"
 	"time"
 )
@@ -298,13 +297,13 @@ func TestDestroyCleansConfigurationListeners(t *testing.T) {
 	regProtocol := newRegistryProtocol()
 	exporterNormal(t, regProtocol)
 
-	assert.Equal(t, 1, countSyncMap(regProtocol.overrideListeners))
-	assert.Equal(t, 1, countSyncMap(regProtocol.serviceConfigurationListeners))
+	assert.Equal(t, 1, registry.CountSyncMapEntries(regProtocol.overrideListeners))
+	assert.Equal(t, 1, registry.CountSyncMapEntries(regProtocol.serviceConfigurationListeners))
 
 	regProtocol.Destroy()
 
-	assert.Equal(t, 0, countSyncMap(regProtocol.overrideListeners))
-	assert.Equal(t, 0, countSyncMap(regProtocol.serviceConfigurationListeners))
+	assert.Equal(t, 0, registry.CountSyncMapEntries(regProtocol.overrideListeners))
+	assert.Equal(t, 0, registry.CountSyncMapEntries(regProtocol.serviceConfigurationListeners))
 }
 
 func TestReExportReplacesConfigurationListeners(t *testing.T) {
@@ -313,8 +312,8 @@ func TestReExportReplacesConfigurationListeners(t *testing.T) {
 	regProtocol := newRegistryProtocol()
 	url := exporterNormal(t, regProtocol)
 
-	assert.Equal(t, 1, countSyncMap(regProtocol.overrideListeners))
-	assert.Equal(t, 1, countSyncMap(regProtocol.serviceConfigurationListeners))
+	assert.Equal(t, 1, registry.CountSyncMapEntries(regProtocol.overrideListeners))
+	assert.Equal(t, 1, registry.CountSyncMapEntries(regProtocol.serviceConfigurationListeners))
 
 	regI, loaded := regProtocol.registries.Load(url.PrimitiveURL)
 	if !loaded {
@@ -337,8 +336,8 @@ func TestReExportReplacesConfigurationListeners(t *testing.T) {
 		return ok
 	}, 5*time.Second, 100*time.Millisecond)
 
-	assert.Equal(t, 1, countSyncMap(regProtocol.overrideListeners))
-	assert.Equal(t, 1, countSyncMap(regProtocol.serviceConfigurationListeners))
+	assert.Equal(t, 1, registry.CountSyncMapEntries(regProtocol.overrideListeners))
+	assert.Equal(t, 1, registry.CountSyncMapEntries(regProtocol.serviceConfigurationListeners))
 }
 
 func TestExportWithOverrideListener(t *testing.T) {
@@ -421,19 +420,6 @@ func TestGetProviderUrlWithHideKey(t *testing.T) {
 	assert.NotContains(t, providerUrl.GetParams(), ".c")
 	assert.NotContains(t, providerUrl.GetParams(), ".d")
 	assert.Contains(t, providerUrl.GetParams(), "a")
-}
-
-func countSyncMap(m *sync.Map) int {
-	if m == nil {
-		return 0
-	}
-
-	count := 0
-	m.Range(func(key, value any) bool {
-		count++
-		return true
-	})
-	return count
 }
 
 // MockRPCService is a mock RPC service for testing

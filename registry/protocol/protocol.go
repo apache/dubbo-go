@@ -22,17 +22,21 @@ import (
 	"strings"
 	"sync"
 	"time"
+)
 
+import (
 	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/log/logger"
 
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
-	perrors "github.com/pkg/errors"
-
 	_ "dubbo.apache.org/dubbo-go/v3/config_center/configurator"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
@@ -272,8 +276,8 @@ func (proto *registryProtocol) reExport(invoker base.Invoker, newUrl *common.URL
 		oldExporter.(base.Exporter).UnExport()
 		proto.bounds.Delete(key)
 
-		oldProviderURL:=getProviderUrl(invoker)
-		oldOverrideURL := getSubscribedOverrideUrl(oldProviderURL)		
+		oldProviderURL := getProviderUrl(invoker)
+		oldOverrideURL := getSubscribedOverrideUrl(oldProviderURL)
 		oldOverrideKey := oldOverrideURL.String()
 		proto.overrideListeners.Delete(oldOverrideKey)
 		proto.serviceConfigurationListeners.Delete(oldProviderURL.ServiceKey())

@@ -676,6 +676,10 @@ func (dir *RegistryDirectory) Destroy() {
 		for _, ivk := range invokers {
 			ivk.Destroy()
 		}
+		dir.cacheInvokersMap.Range(func(key, value any) bool {
+			dir.cacheInvokersMap.Delete(key)
+			return true
+		})
 	})
 	metrics.Publish(metricsRegistry.NewDirectoryEvent(metricsRegistry.NumAllDec))
 }

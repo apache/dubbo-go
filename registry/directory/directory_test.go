@@ -60,10 +60,12 @@ func Test_Destroy(t *testing.T) {
 
 	time.Sleep(3e9)
 	assert.Len(t, registryDirectory.cacheInvokers, 3)
+	assert.Equal(t, 3, registry.CountSyncMapEntries(registryDirectory.cacheInvokersMap))
 	assert.True(t, registryDirectory.IsAvailable())
 
 	registryDirectory.Destroy()
 	assert.Empty(t, registryDirectory.cacheInvokers)
+	assert.Zero(t, registry.CountSyncMapEntries(registryDirectory.cacheInvokersMap))
 	assert.False(t, registryDirectory.IsAvailable())
 }
 

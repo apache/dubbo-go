@@ -19,6 +19,7 @@ package registry
 
 import (
 	"fmt"
+	"sync"
 	"time"
 )
 
@@ -48,6 +49,20 @@ func NewMockRegistry(url *common.URL) (Registry, error) {
 	listener := &listener{count: 0, registry: registry, listenChan: make(chan *ServiceEvent)}
 	registry.listener = listener
 	return registry, nil
+}
+
+// CountSyncMapEntries returns the number of entries in a sync.Map.
+func CountSyncMapEntries(m *sync.Map) int {
+	if m == nil {
+		return 0
+	}
+
+	count := 0
+	m.Range(func(_, _ any) bool {
+		count++
+		return true
+	})
+	return count
 }
 
 // Register is used as a mock registry
