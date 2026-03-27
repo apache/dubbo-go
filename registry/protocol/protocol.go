@@ -22,21 +22,17 @@ import (
 	"strings"
 	"sync"
 	"time"
-)
 
-import (
 	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/log/logger"
 
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
+	perrors "github.com/pkg/errors"
+
 	_ "dubbo.apache.org/dubbo-go/v3/config_center/configurator"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
@@ -215,7 +211,7 @@ func (proto *registryProtocol) Export(originInvoker base.Invoker) base.Exporter 
 	overriderUrl := getSubscribedOverrideUrl(providerUrl)
 	// Deprecated! subscribe to override rules in 2.6.x or before.
 	overrideSubscribeListener := newOverrideSubscribeListener(overriderUrl, originInvoker, proto)
-	proto.overrideListeners.Store(overriderUrl, overrideSubscribeListener)
+	proto.overrideListeners.Store(overriderUrl.String(), overrideSubscribeListener)
 	proto.providerConfigurationListener.OverrideUrl(providerUrl)
 	serviceConfigurationListener := newServiceConfigurationListener(overrideSubscribeListener, providerUrl)
 	proto.serviceConfigurationListeners.Store(providerUrl.ServiceKey(), serviceConfigurationListener)
@@ -275,6 +271,13 @@ func (proto *registryProtocol) reExport(invoker base.Invoker, newUrl *common.URL
 		wrappedNewInvoker := newInvokerDelegate(invoker, newUrl)
 		oldExporter.(base.Exporter).UnExport()
 		proto.bounds.Delete(key)
+
+		oldProviderURL:=getProviderUrl(invoker)
+		oldOverrideURL := getSubscribedOverrideUrl(oldProviderURL)		
+		oldOverrideKey := oldOverrideURL.String()
+		proto.overrideListeners.Delete(oldOverrideKey)
+		proto.serviceConfigurationListeners.Delete(oldProviderURL.ServiceKey())
+
 		// oldExporter UnExport function unRegister rpcService from the serviceMap, so need register it again as far as possible
 		if err := registerServiceMap(invoker); err != nil {
 			logger.Error(err.Error())
@@ -493,6 +496,15 @@ func (proto *registryProtocol) Destroy() {
 		proto.registries.Delete(key)
 		return true
 	})
+	proto.overrideListeners.Range(func(key, value any) bool {
+		proto.overrideListeners.Delete(key)
+		return true
+	})
+	proto.serviceConfigurationListeners.Range(func(key, value any) bool {
+		proto.serviceConfigurationListeners.Delete(key)
+		return true
+	})
+
 }
 
 // UnregisterRegistries only unregisters exported services from registries during graceful shutdown.

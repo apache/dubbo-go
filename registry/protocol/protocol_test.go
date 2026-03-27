@@ -18,6 +18,7 @@
 package protocol
 
 import (
+	"sync"
 	"testing"
 	"time"
 )
@@ -293,6 +294,53 @@ func TestDestroy(t *testing.T) {
 	assert.Equal(t, 0, count)
 }
 
+func TestDestroyCleansConfigurationListeners(t *testing.T) {
+	regProtocol := newRegistryProtocol()
+	exporterNormal(t, regProtocol)
+
+	assert.Equal(t, 1, countSyncMap(regProtocol.overrideListeners))
+	assert.Equal(t, 1, countSyncMap(regProtocol.serviceConfigurationListeners))
+
+	regProtocol.Destroy()
+
+	assert.Equal(t, 0, countSyncMap(regProtocol.overrideListeners))
+	assert.Equal(t, 0, countSyncMap(regProtocol.serviceConfigurationListeners))
+}
+
+func TestReExportReplacesConfigurationListeners(t *testing.T) {
+	extension.SetDefaultConfigurator(configurator.NewMockConfigurator)
+
+	regProtocol := newRegistryProtocol()
+	url := exporterNormal(t, regProtocol)
+
+	assert.Equal(t, 1, countSyncMap(regProtocol.overrideListeners))
+	assert.Equal(t, 1, countSyncMap(regProtocol.serviceConfigurationListeners))
+
+	regI, loaded := regProtocol.registries.Load(url.PrimitiveURL)
+	if !loaded {
+		assert.Fail(t, "regProtocol.registries.Load can not be loaded")
+		return
+	}
+	reg := regI.(*registry.MockRegistry)
+
+	overrideURL, _ := common.NewURL(
+		"override://0:0:0:0/org.apache.dubbo-go.mockService?cluster=mock1&&group=group&&version=1.0.0",
+	)
+	reg.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: overrideURL})
+
+	assert.Eventually(t, func() bool {
+		newURL := url.SubURL.Clone()
+		newURL.SetParam(constant.ClusterKey, "mock1")
+		delKeys := gxset.NewSet("dynamic", "enabled")
+		key := newURL.CloneExceptParams(delKeys).String()
+		_, ok := regProtocol.bounds.Load(key)
+		return ok
+	}, 5*time.Second, 100*time.Millisecond)
+
+	assert.Equal(t, 1, countSyncMap(regProtocol.overrideListeners))
+	assert.Equal(t, 1, countSyncMap(regProtocol.serviceConfigurationListeners))
+}
+
 func TestExportWithOverrideListener(t *testing.T) {
 	extension.SetDefaultConfigurator(configurator.NewMockConfigurator)
 
@@ -373,6 +421,19 @@ func TestGetProviderUrlWithHideKey(t *testing.T) {
 	assert.NotContains(t, providerUrl.GetParams(), ".c")
 	assert.NotContains(t, providerUrl.GetParams(), ".d")
 	assert.Contains(t, providerUrl.GetParams(), "a")
+}
+
+func countSyncMap(m *sync.Map) int {
+	if m == nil {
+		return 0
+	}
+
+	count := 0
+	m.Range(func(key, value any) bool {
+		count++
+		return true
+	})
+	return count
 }
 
 // MockRPCService is a mock RPC service for testing
