@@ -863,9 +863,6 @@ func WithClientParam(k, v string) ClientOption {
 func WithClientRouter(routers ...*global.RouterConfig) ClientOption {
 	return func(opts *ClientOptions) {
 		if len(routers) > 0 {
-			if opts.Routers == nil {
-				opts.Routers = make([]*global.RouterConfig, 0)
-			}
 			opts.Routers = append(opts.Routers, routers...)
 		}
 	}
