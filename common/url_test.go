@@ -37,11 +37,17 @@ import (
 	"sync"
 	"testing"
 	"time"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
+import (
 	gxset "github.com/dubbogo/gost/container/set"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 // Test constants for URL parsing tests.

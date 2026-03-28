@@ -21,11 +21,15 @@ import (
 	"strconv"
 	"testing"
 	"time"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/cluster/cluster"
+import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+)
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/tag"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
