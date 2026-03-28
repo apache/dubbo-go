@@ -109,7 +109,7 @@ func (p *PriorityRouter) Notify(invokers []base.Invoker) {
 // Process is designed for dynamic config-center updates that arrive as YAML text.
 // Static and dynamic rules are not merged: later Process updates replace the current state built here.
 func (p *PriorityRouter) SetStaticConfig(cfg *global.RouterConfig) {
-	if cfg == nil || len(cfg.Tags) == 0 {
+	if cfg == nil || cfg.Scope != constant.RouterScopeApplication || len(cfg.Tags) == 0 {
 		return
 	}
 	cfgCopy := cfg.Clone()

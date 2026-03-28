@@ -425,9 +425,29 @@ func TestSetStaticConfig(t *testing.T) {
 		p, err := NewTagPriorityRouter()
 		require.NoError(t, err)
 
-		p.SetStaticConfig(&global.RouterConfig{Key: "test-app"})
+		p.SetStaticConfig(&global.RouterConfig{
+			Scope: constant.RouterScopeApplication,
+			Key:   "test-app",
+		})
 
 		value, ok := p.routerConfigs.Load("test-app" + constant.TagRouterRuleSuffix)
+		assert.False(t, ok)
+		assert.Nil(t, value)
+	})
+
+	t.Run("service-scope tag config is ignored", func(t *testing.T) {
+		p, err := NewTagPriorityRouter()
+		require.NoError(t, err)
+
+		p.SetStaticConfig(&global.RouterConfig{
+			Scope: constant.RouterScopeService,
+			Key:   "svc.test",
+			Tags: []global.Tag{{
+				Name: "gray",
+			}},
+		})
+
+		value, ok := p.routerConfigs.Load("svc.test" + constant.TagRouterRuleSuffix)
 		assert.False(t, ok)
 		assert.Nil(t, value)
 	})
@@ -437,7 +457,8 @@ func TestSetStaticConfig(t *testing.T) {
 		require.NoError(t, err)
 
 		cfg := &global.RouterConfig{
-			Key: "test-app",
+			Scope: constant.RouterScopeApplication,
+			Key:   "test-app",
 			Tags: []global.Tag{{
 				Name:      "gray",
 				Addresses: []string{"192.168.0.1:20000"}, // NOSONAR
