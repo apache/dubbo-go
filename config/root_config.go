@@ -74,7 +74,7 @@ func (rc *RootConfig) Prefix() string {
 }
 
 func GetRootConfig() *RootConfig {
-	return getRootConfigInternal()
+	return rootConfigStore.Load()
 }
 
 func GetProviderConfig() *ProviderConfig {
@@ -364,19 +364,40 @@ func (rc *RootConfig) Process(event *config_center.ConfigChangeEvent) {
 		logger.Errorf("CenterConfig process unmarshalConf failed, got error %#v", err)
 		return
 	}
+	nextRootConfig := cloneRootConfigForDynamicUpdate(rc)
 	// dynamically update register
 	for registerId, updateRegister := range updateRootConfig.Registries {
-		register := rc.Registries[registerId]
-		register.DynamicUpdateProperties(updateRegister)
+		if register := nextRootConfig.Registries[registerId]; register != nil {
+			register.DynamicUpdateProperties(updateRegister)
+		}
 	}
 	// dynamically update consumer
-	rc.Consumer.DynamicUpdateProperties(updateRootConfig.Consumer)
+	if nextRootConfig.Consumer != nil {
+		nextRootConfig.Consumer.DynamicUpdateProperties(updateRootConfig.Consumer)
+	}
 
-	// dynamically update logger
-	rc.Logger.DynamicUpdateProperties(updateRootConfig.Logger)
+	setRootConfigInternal(nextRootConfig)
+}
 
-	// dynamically update metric
-	rc.Metrics.DynamicUpdateProperties(updateRootConfig.Metrics)
+func cloneRootConfigForDynamicUpdate(rc *RootConfig) *RootConfig {
+	next := *rc
+	if rc.Registries != nil {
+		next.Registries = make(map[string]*RegistryConfig, len(rc.Registries))
+		for registryID, registryConfig := range rc.Registries {
+			if registryConfig == nil {
+				next.Registries[registryID] = nil
+				continue
+			}
+			registryCopy := *registryConfig
+			next.Registries[registryID] = &registryCopy
+		}
+	}
+
+	if rc.Consumer != nil {
+		consumerCopy := *rc.Consumer
+		next.Consumer = &consumerCopy
+	}
+	return &next
 }
 
 // TODO：When config is migrated later, the impact of this will be migrated to the global module

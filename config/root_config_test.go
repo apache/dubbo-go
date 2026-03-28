@@ -38,19 +38,20 @@ func TestGoConfigProcess(t *testing.T) {
 	rc := &RootConfigBuilder{rootConfig: newEmptyRootConfig()}
 	r := &RegistryConfig{Protocol: "zookeeper", Timeout: "10s", Address: "127.0.0.1:2181"}
 	rc.AddRegistry("demoZK", r)
+	SetRootConfig(*rc.rootConfig)
 
 	// test koan.UnmarshalWithConf error
 	b := "dubbo:\n  registries:\n    demoZK:\n      protocol: zookeeper\n      timeout: 11s\n      address: 127.0.0.1:2181\n      simplified: abc123"
 	c2 := &config_center.ConfigChangeEvent{Key: "test", Value: b}
-	rc.rootConfig.Process(c2)
-	assert.Equal(t, "10s", rc.rootConfig.Registries["demoZK"].Timeout)
+	GetRootConfig().Process(c2)
+	assert.Equal(t, "10s", GetRootConfig().Registries["demoZK"].Timeout)
 
 	// test update registry time out
 	bs, _ := yaml.LoadYMLConfig("./testdata/root_config_test.yml")
 	c := &config_center.ConfigChangeEvent{Key: "test", Value: string(bs)}
-	rc.rootConfig.Process(c)
-	assert.Equal(t, "11s", rc.rootConfig.Registries["demoZK"].Timeout)
-	assert.Equal(t, "6s", rc.rootConfig.Consumer.RequestTimeout)
+	GetRootConfig().Process(c)
+	assert.Equal(t, "11s", GetRootConfig().Registries["demoZK"].Timeout)
+	assert.Equal(t, "6s", GetRootConfig().Consumer.RequestTimeout)
 
 }
 
@@ -116,4 +117,26 @@ func TestRootConfigConcurrentSetAndGet(t *testing.T) {
 	finalCfg := GetRootConfig()
 	assert.NotNil(t, finalCfg)
 	assert.NotEmpty(t, finalCfg.Application.Name)
+}
+
+func TestRootConfigProcessCopyOnWrite(t *testing.T) {
+	base := NewRootConfigBuilder().Build()
+	base.Registries["demoZK"] = &RegistryConfig{
+		Protocol: "zookeeper",
+		Timeout:  "10s",
+		Address:  "127.0.0.1:2181",
+	}
+	base.Consumer.RequestTimeout = "3s"
+	SetRootConfig(*base)
+
+	oldSnapshot := GetRootConfig()
+	eventValue := "dubbo:\n  registries:\n    demoZK:\n      protocol: zookeeper\n      timeout: 11s\n      address: 127.0.0.1:2181\n  consumer:\n    request-timeout: 6s\n"
+	oldSnapshot.Process(&config_center.ConfigChangeEvent{Key: "test", Value: eventValue})
+
+	newSnapshot := GetRootConfig()
+	assert.NotSame(t, oldSnapshot, newSnapshot)
+	assert.Equal(t, "10s", oldSnapshot.Registries["demoZK"].Timeout)
+	assert.Equal(t, "3s", oldSnapshot.Consumer.RequestTimeout)
+	assert.Equal(t, "11s", newSnapshot.Registries["demoZK"].Timeout)
+	assert.Equal(t, "6s", newSnapshot.Consumer.RequestTimeout)
 }

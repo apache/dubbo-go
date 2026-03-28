@@ -42,10 +42,6 @@ var (
 	}()
 )
 
-func getRootConfigInternal() *RootConfig {
-	return rootConfigStore.Load()
-}
-
 func setRootConfigInternal(rc *RootConfig) {
 	rootConfigStore.Store(rc)
 }
