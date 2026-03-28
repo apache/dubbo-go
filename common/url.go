@@ -29,20 +29,14 @@ import (
 	"strings"
 	"sync"
 	"time"
-)
 
-import (
 	cm "github.com/Workiva/go-datastructures/common"
 
 	gxset "github.com/dubbogo/gost/container/set"
-
 	"github.com/google/uuid"
 
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	perrors "github.com/pkg/errors"
 )
 
 // dubbo role type constant
@@ -607,7 +601,7 @@ func (c *URL) DeleteAttribute(key string) {
 func (c *URL) ClearAttributes() {
 	c.attributesLock.Lock()
 	defer c.attributesLock.Unlock()
-	c.attributes = nil
+	c.attributes = make(map[string]any)
 }
 
 // DelParam will delete the given key from the URL

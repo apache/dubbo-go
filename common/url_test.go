@@ -889,7 +889,7 @@ func TestAddParam(t *testing.T) {
 
 func TestGetParamsReturnsCopy(t *testing.T) {
 	u, err := NewURL("dubbo://127.0.0.1:20000?key1=value1&key2=value2&key2=value3")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	params := u.GetParams()
 	delete(params, "key1")
