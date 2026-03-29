@@ -158,11 +158,11 @@ func TestNewConfigAPI_CompatRoundTripHandlesNilOptionalFields(t *testing.T) {
 
 	assert.Nil(t, dst.Application)
 	assert.NotNil(t, dst.Protocols)
-	assert.Len(t, dst.Protocols, 0)
+	assert.Empty(t, dst.Protocols)
 	assert.NotNil(t, dst.Registries)
-	assert.Len(t, dst.Registries, 0)
+	assert.Empty(t, dst.Registries)
 	assert.NotNil(t, dst.Router)
-	assert.Len(t, dst.Router, 0)
+	assert.Empty(t, dst.Router)
 }
 
 func buildNewConfigAPICompatFixture() *InstanceOptions {
