@@ -35,20 +35,13 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/client"
-	_ "dubbo.apache.org/dubbo-go/v3/cluster/cluster_impl"
-	_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/random"
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/cluster/available"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	_ "dubbo.apache.org/dubbo-go/v3/filter/accesslog"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/echo"
-	_ "dubbo.apache.org/dubbo-go/v3/filter/exec_limit"
-	_ "dubbo.apache.org/dubbo-go/v3/filter/generic"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/graceful_shutdown"
-	_ "dubbo.apache.org/dubbo-go/v3/filter/token"
-	_ "dubbo.apache.org/dubbo-go/v3/filter/tps"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
-	_ "dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/triple"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
@@ -109,7 +102,13 @@ func TestNewConfigAPI_InstanceNewServerNewClientCallUnary(t *testing.T) {
 		},
 	}
 
-	err = srv.Register(svc, svcInfo, server.WithInterface(newConfigAPIServiceName), server.WithNotRegister())
+	err = srv.Register(
+		svc,
+		svcInfo,
+		server.WithInterface(newConfigAPIServiceName),
+		server.WithNotRegister(),
+		server.WithFilter("echo"),
+	)
 	require.NoError(t, err)
 
 	svcOpts := srv.GetServiceOptions(svc.Reference())
@@ -130,6 +129,7 @@ func TestNewConfigAPI_InstanceNewServerNewClientCallUnary(t *testing.T) {
 			InterfaceName: newConfigAPIServiceName,
 			MethodNames:   []string{"SayHello"},
 		},
+		client.WithClusterAvailable(),
 		client.WithProtocolTriple(),
 		client.WithURL("tri://127.0.0.1:"+strconv.Itoa(port)),
 	)
