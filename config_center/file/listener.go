@@ -69,7 +69,7 @@ func (ls *listenerSet) Remove(listener config_center.ConfigurationListener) (emp
 }
 
 // Snapshot returns a read-only listener snapshot for safe iteration.
-// Callers must not mutate listeners through this snapshot.
+// Callers must treat both the returned slice and its listeners as immutable.
 func (ls *listenerSet) Snapshot() []config_center.ConfigurationListener {
 	ls.mu.RLock()
 	defer ls.mu.RUnlock()
