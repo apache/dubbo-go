@@ -58,6 +58,12 @@ func WithStepTimeout(timeout time.Duration) Option {
 	}
 }
 
+func WithNotifyTimeout(timeout time.Duration) Option {
+	return func(opts *Options) {
+		opts.Shutdown.NotifyTimeout = timeout.String()
+	}
+}
+
 func WithConsumerUpdateWaitTime(duration time.Duration) Option {
 	return func(opts *Options) {
 		opts.Shutdown.ConsumerUpdateWaitTime = duration.String()

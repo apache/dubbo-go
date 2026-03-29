@@ -18,29 +18,25 @@
 package graceful_shutdown
 
 import (
-	"go.uber.org/atomic"
+	clusterdirectory "dubbo.apache.org/dubbo-go/v3/cluster/directory"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/global"
-)
+// ClosingEvent represents a single closing signal on the consumer side.
+type ClosingEvent struct {
+	Source      string
+	InstanceKey string
+	ServiceKey  string
+	Address     string
+}
 
-func compatGlobalShutdownConfig(c *config.ShutdownConfig) *global.ShutdownConfig {
-	if c == nil {
-		return nil
-	}
-	cfg := &global.ShutdownConfig{
-		Timeout:                     c.Timeout,
-		StepTimeout:                 c.StepTimeout,
-		NotifyTimeout:               c.NotifyTimeout,
-		ConsumerUpdateWaitTime:      c.ConsumerUpdateWaitTime,
-		RejectRequestHandler:        c.RejectRequestHandler,
-		InternalSignal:              c.InternalSignal,
-		OfflineRequestWindowTimeout: c.OfflineRequestWindowTimeout,
-		RejectRequest:               atomic.Bool{},
-	}
-	cfg.RejectRequest.Store(c.RejectRequest.Load())
+// ClosingEventHandler handles closing signals from active and passive notification paths.
+type ClosingEventHandler interface {
+	HandleClosingEvent(event ClosingEvent) bool
+}
 
-	return cfg
+// ClosingDirectoryRegistry resolves directory-level removers by service key.
+type ClosingDirectoryRegistry interface {
+	Register(serviceKey string, remover clusterdirectory.ClosingInstanceRemover)
+	Unregister(serviceKey string, remover clusterdirectory.ClosingInstanceRemover)
+	Find(serviceKey string) []clusterdirectory.ClosingInstanceRemover
 }

@@ -447,6 +447,7 @@ func compatShutdownConfig(c *global.ShutdownConfig) *config.ShutdownConfig {
 	cfg := &config.ShutdownConfig{
 		Timeout:                     c.Timeout,
 		StepTimeout:                 c.StepTimeout,
+		NotifyTimeout:               c.NotifyTimeout,
 		ConsumerUpdateWaitTime:      c.ConsumerUpdateWaitTime,
 		RejectRequestHandler:        c.RejectRequestHandler,
 		InternalSignal:              c.InternalSignal,
@@ -1043,6 +1044,7 @@ func compatGlobalShutdownConfig(c *config.ShutdownConfig) *global.ShutdownConfig
 	cfg := &global.ShutdownConfig{
 		Timeout:                     c.Timeout,
 		StepTimeout:                 c.StepTimeout,
+		NotifyTimeout:               c.NotifyTimeout,
 		ConsumerUpdateWaitTime:      c.ConsumerUpdateWaitTime,
 		RejectRequestHandler:        c.RejectRequestHandler,
 		InternalSignal:              c.InternalSignal,

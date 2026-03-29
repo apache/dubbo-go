@@ -19,11 +19,18 @@ package graceful_shutdown
 
 import (
 	"context"
+	"errors"
+	"strings"
 	"sync"
+	"time"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
+
+	"google.golang.org/grpc/codes"
+
+	"google.golang.org/grpc/status"
 )
 
 import (
@@ -32,6 +39,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	gracefulshutdown "dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
@@ -50,27 +58,61 @@ func init() {
 }
 
 type consumerGracefulShutdownFilter struct {
-	shutdownConfig *global.ShutdownConfig
+	shutdownConfig      *global.ShutdownConfig
+	closingEventHandler gracefulshutdown.ClosingEventHandler
+	closingInvokers     sync.Map // map[string]time.Time (url key -> expire time)
 }
+
+const consumerCountMarkedKey = "dubbo-go-graceful-shutdown-consumer-counted"
 
 func newConsumerGracefulShutdownFilter() filter.Filter {
 	if csf == nil {
 		csfOnce.Do(func() {
-			csf = &consumerGracefulShutdownFilter{}
+			csf = &consumerGracefulShutdownFilter{
+				closingEventHandler: gracefulshutdown.DefaultClosingEventHandler(),
+			}
 		})
 	}
 	return csf
 }
 
-// Invoke adds the requests count and block the new requests if application is closing
+// Invoke adds the requests count and checks if invoker is closing
 func (f *consumerGracefulShutdownFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
-	f.shutdownConfig.ConsumerActiveCount.Inc()
-	return invoker.Invoke(ctx, invocation)
+	// check if invoker is closing
+	if f.isClosingInvoker(invoker) {
+		logger.Warnf("Graceful shutdown --- Skipping closing invoker --- %s", invoker.GetURL().String())
+		return &result.RPCResult{Err: errors.New("provider is closing")}
+	}
+
+	if f.shutdownConfig != nil {
+		f.shutdownConfig.ConsumerActiveCount.Inc()
+	}
+
+	res := invoker.Invoke(ctx, invocation)
+	if f.shutdownConfig == nil {
+		return res
+	}
+
+	return markCountedResult(res)
 }
 
 // OnResponse reduces the number of active processes then return the process result
 func (f *consumerGracefulShutdownFilter) OnResponse(ctx context.Context, result result.Result, invoker base.Invoker, invocation base.Invocation) result.Result {
-	f.shutdownConfig.ConsumerActiveCount.Dec()
+	if f.shutdownConfig != nil && shouldDecrementConsumerActive(result) {
+		f.shutdownConfig.ConsumerActiveCount.Dec()
+	}
+
+	// check closing flag in response
+	if f.isClosingResponse(result) {
+		f.markClosingInvoker(invoker)
+		f.handleClosingEvent(invoker, "passive-attachment")
+	}
+
+	// handle request error
+	if result.Error() != nil {
+		f.handleRequestError(invoker, result.Error())
+	}
+
 	return result
 }
 
@@ -90,4 +132,115 @@ func (f *consumerGracefulShutdownFilter) Set(name string, conf any) {
 	default:
 		// do nothing
 	}
+}
+
+// isClosingInvoker checks if invoker is in closing list
+func (f *consumerGracefulShutdownFilter) isClosingInvoker(invoker base.Invoker) bool {
+	key := invoker.GetURL().String()
+	if expireTime, ok := f.closingInvokers.Load(key); ok {
+		if time.Now().Before(expireTime.(time.Time)) {
+			return true
+		}
+		f.closingInvokers.Delete(key)
+		if setter, ok := invoker.(base.AvailabilitySetter); ok {
+			setter.SetAvailable(true)
+			logger.Infof("Graceful shutdown --- Recovered invoker availability after closing TTL --- %s", key)
+		}
+	}
+	return false
+}
+
+// isClosingResponse checks if response contains closing flag
+func (f *consumerGracefulShutdownFilter) isClosingResponse(result result.Result) bool {
+	if result != nil && result.Attachments() != nil {
+		if v, ok := result.Attachments()[constant.GracefulShutdownClosingKey]; ok {
+			if v == "true" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// markClosingInvoker marks invoker as closing and sets available=false
+func (f *consumerGracefulShutdownFilter) markClosingInvoker(invoker base.Invoker) {
+	key := invoker.GetURL().String()
+	expireTime := time.Now().Add(f.getClosingInvokerExpireTime())
+	f.closingInvokers.Store(key, expireTime)
+
+	logger.Infof("Graceful shutdown --- Marked invoker as closing --- %s, will expire at %v, IsAvailable=%v",
+		key, expireTime, invoker.IsAvailable())
+
+	if setter, ok := invoker.(base.AvailabilitySetter); ok {
+		setter.SetAvailable(false)
+		logger.Infof("Graceful shutdown --- Set invoker unavailable --- %s, IsAvailable now=%v",
+			key, invoker.IsAvailable())
+	}
+}
+
+func (f *consumerGracefulShutdownFilter) handleClosingEvent(invoker base.Invoker, source string) {
+	if f.closingEventHandler == nil || invoker == nil || invoker.GetURL() == nil {
+		return
+	}
+
+	f.closingEventHandler.HandleClosingEvent(gracefulshutdown.ClosingEvent{
+		Source:      source,
+		InstanceKey: invoker.GetURL().GetCacheInvokerMapKey(),
+		ServiceKey:  invoker.GetURL().ServiceKey(),
+		Address:     invoker.GetURL().Location,
+	})
+}
+
+func (f *consumerGracefulShutdownFilter) getClosingInvokerExpireTime() time.Duration {
+	if f.shutdownConfig != nil && f.shutdownConfig.ClosingInvokerExpireTime != "" {
+		if duration, err := time.ParseDuration(f.shutdownConfig.ClosingInvokerExpireTime); err == nil && duration > 0 {
+			return duration
+		}
+	}
+	return 30 * time.Second
+}
+
+// handleRequestError handles request errors and marks invoker as unavailable for connection errors
+func (f *consumerGracefulShutdownFilter) handleRequestError(invoker base.Invoker, err error) {
+	if err == nil {
+		return
+	}
+
+	if isClosingError(err) {
+		f.markClosingInvoker(invoker)
+		f.handleClosingEvent(invoker, "connection-closing-error")
+	}
+}
+
+func isClosingError(err error) bool {
+	if errors.Is(err, base.ErrClientClosed) || errors.Is(err, base.ErrDestroyedInvoker) {
+		return true
+	}
+
+	if grpcStatus, ok := status.FromError(err); ok {
+		switch grpcStatus.Code() {
+		case codes.Unavailable, codes.Canceled:
+			return true
+		}
+	}
+
+	errMsg := strings.ToLower(err.Error())
+	return strings.Contains(errMsg, "transport is closing") ||
+		strings.Contains(errMsg, "client connection is closing")
+}
+
+func markCountedResult(res result.Result) result.Result {
+	if res == nil {
+		res = &result.RPCResult{}
+	}
+	res.AddAttachment(consumerCountMarkedKey, true)
+	return res
+}
+
+func shouldDecrementConsumerActive(res result.Result) bool {
+	if res == nil {
+		return false
+	}
+	marked, ok := res.Attachment(consumerCountMarkedKey, false).(bool)
+	return ok && marked
 }

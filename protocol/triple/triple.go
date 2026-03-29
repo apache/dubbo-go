@@ -45,8 +45,36 @@ var (
 	tripleProtocol *TripleProtocol
 )
 
+var tripleServerGracefulStop = func(server *Server) {
+	server.GracefulStop()
+}
+
 func init() {
 	extension.SetProtocol(TRIPLE, GetProtocol)
+
+	// register graceful shutdown callback
+	extension.RegisterGracefulShutdownCallback(TRIPLE, func(ctx context.Context) error {
+		p := GetProtocol()
+		if p == nil {
+			return nil
+		}
+
+		tp, ok := p.(*TripleProtocol)
+		if !ok {
+			return nil
+		}
+
+		tp.ExporterMap().Range(func(key, value any) bool {
+			serviceKey, ok := key.(string)
+			if !ok || serviceKey == "" {
+				return true
+			}
+			internal.HealthSetServingStatusNotServing(serviceKey)
+			return true
+		})
+
+		return nil
+	})
 }
 
 type TripleProtocol struct {
@@ -68,7 +96,7 @@ func (tp *TripleProtocol) Export(invoker base.Invoker) base.Exporter {
 	tp.SetExporterMap(serviceKey, exporter)
 	logger.Infof("[TRIPLE Protocol] Export service: %s", url.String())
 	tp.openServer(invoker, info)
-	internal.HealthSetServingStatusServing(url.Service())
+	internal.HealthSetServingStatusServing(serviceKey)
 	return exporter
 }
 
@@ -139,14 +167,23 @@ func (tp *TripleProtocol) Refer(url *common.URL) base.Invoker {
 func (tp *TripleProtocol) Destroy() {
 	logger.Infof("TripleProtocol destroy.")
 
-	tp.serverLock.Lock()
-	defer tp.serverLock.Unlock()
-	for key, server := range tp.serverMap {
-		delete(tp.serverMap, key)
-		server.GracefulStop()
+	for _, server := range tp.drainServers() {
+		tripleServerGracefulStop(server)
 	}
 
 	tp.BaseProtocol.Destroy()
+}
+
+func (tp *TripleProtocol) drainServers() []*Server {
+	tp.serverLock.Lock()
+	defer tp.serverLock.Unlock()
+
+	servers := make([]*Server, 0, len(tp.serverMap))
+	for key, server := range tp.serverMap {
+		delete(tp.serverMap, key)
+		servers = append(servers, server)
+	}
+	return servers
 }
 
 // isGenericCall checks if the generic parameter indicates a generic call

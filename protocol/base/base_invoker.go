@@ -58,6 +58,11 @@ type Invoker interface {
 	Invoke(context.Context, Invocation) result.Result
 }
 
+// AvailabilitySetter is implemented by invokers that support toggling availability.
+type AvailabilitySetter interface {
+	SetAvailable(bool)
+}
+
 // BaseInvoker provides default invoker implements Invoker
 type BaseInvoker struct {
 	url       uatomic.Pointer[common.URL]
@@ -87,6 +92,11 @@ func (bi *BaseInvoker) GetURL() *common.URL {
 // IsAvailable gets available flag
 func (bi *BaseInvoker) IsAvailable() bool {
 	return bi.available.Load()
+}
+
+// SetAvailable sets available flag
+func (bi *BaseInvoker) SetAvailable(available bool) {
+	bi.available.Store(available)
 }
 
 // IsDestroyed gets destroyed flag

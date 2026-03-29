@@ -35,6 +35,13 @@ type Protocol interface {
 	Destroy()
 }
 
+// RegistryUnregisterer is an optional protocol capability used during graceful shutdown.
+// Implementations should only unregister exported services from the registry and must not
+// destroy protocol servers or unexport providers as part of this step.
+type RegistryUnregisterer interface {
+	UnregisterRegistries()
+}
+
 // BaseProtocol is default protocol implement.
 type BaseProtocol struct {
 	exporterMap *sync.Map

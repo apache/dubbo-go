@@ -18,11 +18,14 @@
 package grpc
 
 import (
+	"context"
 	"sync"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
+
+	grpc_health_v1 "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 import (
@@ -38,9 +41,35 @@ const (
 
 func init() {
 	extension.SetProtocol(GRPC, GetProtocol)
+
+	// register graceful shutdown callback
+	extension.RegisterGracefulShutdownCallback(GRPC, func(ctx context.Context) error {
+		grpcProto := GetProtocol()
+		if grpcProto == nil {
+			return nil
+		}
+
+		gp, ok := grpcProto.(*GrpcProtocol)
+		if !ok {
+			return nil
+		}
+
+		gp.serverLock.Lock()
+		defer gp.serverLock.Unlock()
+
+		for _, server := range gp.serverMap {
+			server.SetAllServicesNotServing()
+		}
+
+		return nil
+	})
 }
 
 var grpcProtocol *GrpcProtocol
+
+var grpcServerGracefulStop = func(server *Server) {
+	server.GracefulStop()
+}
 
 // GrpcProtocol is gRPC protocol
 type GrpcProtocol struct {
@@ -64,16 +93,17 @@ func (gp *GrpcProtocol) Export(invoker base.Invoker) base.Exporter {
 	exporter := NewGrpcExporter(serviceKey, invoker, gp.ExporterMap())
 	gp.SetExporterMap(serviceKey, exporter)
 	logger.Infof("[GRPC Protocol] Export service: %s", url.String())
-	gp.openServer(url)
+	srv := gp.openServer(url)
+	srv.SetServingStatus(serviceKey, grpc_health_v1.HealthCheckResponse_SERVING)
 	return exporter
 }
 
-func (gp *GrpcProtocol) openServer(url *common.URL) {
+func (gp *GrpcProtocol) openServer(url *common.URL) *Server {
 	gp.serverLock.Lock()
 	defer gp.serverLock.Unlock()
 
-	if _, ok := gp.serverMap[url.Location]; ok {
-		return
+	if srv, ok := gp.serverMap[url.Location]; ok {
+		return srv
 	}
 
 	if _, ok := gp.ExporterMap().Load(url.ServiceKey()); !ok {
@@ -83,6 +113,7 @@ func (gp *GrpcProtocol) openServer(url *common.URL) {
 	srv := NewServer()
 	gp.serverMap[url.Location] = srv
 	srv.Start(url)
+	return srv
 }
 
 // Refer a remote gRPC service
@@ -102,14 +133,23 @@ func (gp *GrpcProtocol) Refer(url *common.URL) base.Invoker {
 func (gp *GrpcProtocol) Destroy() {
 	logger.Infof("GrpcProtocol destroy.")
 
-	gp.serverLock.Lock()
-	defer gp.serverLock.Unlock()
-	for key, server := range gp.serverMap {
-		delete(gp.serverMap, key)
-		server.GracefulStop()
+	for _, server := range gp.drainServers() {
+		grpcServerGracefulStop(server)
 	}
 
 	gp.BaseProtocol.Destroy()
+}
+
+func (gp *GrpcProtocol) drainServers() []*Server {
+	gp.serverLock.Lock()
+	defer gp.serverLock.Unlock()
+
+	servers := make([]*Server, 0, len(gp.serverMap))
+	for key, server := range gp.serverMap {
+		delete(gp.serverMap, key)
+		servers = append(servers, server)
+	}
+	return servers
 }
 
 // GetProtocol gets gRPC protocol, will create if null.

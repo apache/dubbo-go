@@ -43,7 +43,6 @@ var (
 )
 
 func init() {
-	// `init()` is performed before config.Load(), so shutdownConfig will be retrieved after config was loaded.
 	extension.SetFilter(constant.GracefulShutdownProviderFilterKey, func() filter.Filter {
 		return newProviderGracefulShutdownFilter()
 	})
@@ -52,6 +51,8 @@ func init() {
 type providerGracefulShutdownFilter struct {
 	shutdownConfig *global.ShutdownConfig
 }
+
+const providerCountMarkedKey = "dubbo-go-graceful-shutdown-provider-counted"
 
 func newProviderGracefulShutdownFilter() filter.Filter {
 	if psf == nil {
@@ -64,6 +65,10 @@ func newProviderGracefulShutdownFilter() filter.Filter {
 
 // Invoke adds the requests count and blocks the new requests if application is closing
 func (f *providerGracefulShutdownFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
+	if f.shutdownConfig == nil {
+		return invoker.Invoke(ctx, invocation)
+	}
+
 	if f.rejectNewRequest() {
 		logger.Info("The application is closing, new request will be rejected.")
 		handler := constant.DefaultKey
@@ -79,13 +84,28 @@ func (f *providerGracefulShutdownFilter) Invoke(ctx context.Context, invoker bas
 	}
 	f.shutdownConfig.ProviderActiveCount.Inc()
 	f.shutdownConfig.ProviderLastReceivedRequestTime.Store(time.Now())
-	return invoker.Invoke(ctx, invocation)
+	return markProviderCountedResult(invoker.Invoke(ctx, invocation))
 }
 
 // OnResponse reduces the number of active processes then return the process result
-func (f *providerGracefulShutdownFilter) OnResponse(ctx context.Context, result result.Result, invoker base.Invoker, invocation base.Invocation) result.Result {
-	f.shutdownConfig.ProviderActiveCount.Dec()
-	return result
+func (f *providerGracefulShutdownFilter) OnResponse(ctx context.Context, res result.Result, invoker base.Invoker, invocation base.Invocation) result.Result {
+	if f.shutdownConfig == nil {
+		return res
+	}
+
+	if shouldDecrementProviderActive(res) {
+		f.shutdownConfig.ProviderActiveCount.Dec()
+	}
+
+	// add closing flag to response
+	if f.isClosing() {
+		if res == nil {
+			res = &result.RPCResult{}
+		}
+		res.AddAttachment(constant.GracefulShutdownClosingKey, "true")
+	}
+
+	return res
 }
 
 func (f *providerGracefulShutdownFilter) Set(name string, conf any) {
@@ -111,4 +131,27 @@ func (f *providerGracefulShutdownFilter) rejectNewRequest() bool {
 		return false
 	}
 	return f.shutdownConfig.RejectRequest.Load()
+}
+
+func (f *providerGracefulShutdownFilter) isClosing() bool {
+	if f.shutdownConfig == nil {
+		return false
+	}
+	return f.shutdownConfig.Closing.Load()
+}
+
+func markProviderCountedResult(res result.Result) result.Result {
+	if res == nil {
+		res = &result.RPCResult{}
+	}
+	res.AddAttachment(providerCountMarkedKey, true)
+	return res
+}
+
+func shouldDecrementProviderActive(res result.Result) bool {
+	if res == nil {
+		return false
+	}
+	marked, ok := res.Attachment(providerCountMarkedKey, false).(bool)
+	return ok && marked
 }
