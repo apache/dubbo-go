@@ -140,10 +140,21 @@ func TestNewConfigAPI_InstanceNewServerNewClientCallUnary(t *testing.T) {
 	var callErr error
 	resp := new(wrapperspb.StringValue)
 	deadline := time.Now().Add(5 * time.Second)
+	const attemptTimeout = 500 * time.Millisecond
 
 	for time.Now().Before(deadline) {
+		timeout := attemptTimeout
+		if remaining := time.Until(deadline); remaining < timeout {
+			timeout = remaining
+		}
+		if timeout <= 0 {
+			break
+		}
+
+		attemptCtx, cancel := context.WithTimeout(context.Background(), timeout)
 		resp = new(wrapperspb.StringValue)
-		callErr = conn.CallUnary(context.Background(), []any{&emptypb.Empty{}}, resp, "SayHello")
+		callErr = conn.CallUnary(attemptCtx, []any{&emptypb.Empty{}}, resp, "SayHello")
+		cancel()
 		if callErr == nil && resp.Value == newConfigAPIHelloBody {
 			break
 		}
