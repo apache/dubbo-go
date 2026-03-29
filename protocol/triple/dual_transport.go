@@ -38,6 +38,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
@@ -76,8 +77,10 @@ type dualTransport struct {
 	// Cache for alternative services to avoid repeated lookups
 	altSvcCache *tri.AltSvcCache
 
+	// state tracks HTTP/3 readiness for the bound upstream origin.
 	state originState
 
+	// mu protects state and serializes transitions between unknown/probing/healthy/cooldown.
 	mu sync.Mutex
 
 	probeTimeout time.Duration
@@ -149,7 +152,7 @@ func (dt *dualTransport) shouldUseH3(host string) bool {
 	}
 
 	altSvc := dt.altSvcCache.Get(host)
-	if altSvc == nil || altSvc.Protocol != "h3" {
+	if altSvc == nil || altSvc.Protocol != constant.AltSvcProtocolH3 {
 		return false
 	}
 
@@ -234,7 +237,7 @@ func (dt *dualTransport) observeH2Response(u *url.URL, headers http.Header) {
 	dt.altSvcCache.UpdateFromHeaders(u.Host, headers)
 
 	altSvc := dt.altSvcCache.Get(u.Host)
-	if altSvc == nil || altSvc.Protocol != "h3" {
+	if altSvc == nil || altSvc.Protocol != constant.AltSvcProtocolH3 {
 		return
 	}
 
@@ -268,7 +271,7 @@ func (dt *dualTransport) maybeStartProbe(u *url.URL) {
 	host := u.Host
 
 	altSvc := dt.altSvcCache.Get(host)
-	if altSvc == nil || altSvc.Protocol != "h3" {
+	if altSvc == nil || altSvc.Protocol != constant.AltSvcProtocolH3 {
 		return
 	}
 

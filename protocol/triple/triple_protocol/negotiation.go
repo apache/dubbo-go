@@ -31,6 +31,10 @@ import (
 	"github.com/quic-go/quic-go/http3"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+)
+
 // AltSvcInfo represents cached alternative service information
 // This struct stores the parsed information from Alt-Svc HTTP headers
 // according to RFC 7838 (HTTP Alternative Services)
@@ -113,10 +117,10 @@ func (c *AltSvcCache) UpdateFromHeaders(host string, headers http.Header) {
 	// Prefer HTTP/3 over HTTP/2
 	var preferredAltSvc *AltSvcInfo
 	for _, altSvc := range altSvcs {
-		if altSvc.Protocol == "h3" {
+		if altSvc.Protocol == constant.AltSvcProtocolH3 {
 			preferredAltSvc = altSvc
 			break
-		} else if altSvc.Protocol == "h2" && preferredAltSvc == nil {
+		} else if altSvc.Protocol == constant.AltSvcProtocolH2 && preferredAltSvc == nil {
 			preferredAltSvc = altSvc
 		}
 	}
@@ -160,7 +164,7 @@ func parseAltSvcPart(part string) *AltSvcInfo {
 	}
 
 	protocol := strings.TrimSpace(part[:eqIndex])
-	if protocol != "h3" && protocol != "h2" {
+	if protocol != constant.AltSvcProtocolH3 && protocol != constant.AltSvcProtocolH2 {
 		return nil
 	}
 
