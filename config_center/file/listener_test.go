@@ -70,6 +70,37 @@ func TestCacheListenerCallbacks(t *testing.T) {
 	assertNoEvent(t, rec.ch, 200*time.Millisecond)
 }
 
+func TestDrainEvents(t *testing.T) {
+	ch := make(chan *config_center.ConfigChangeEvent, 4)
+	ch <- &config_center.ConfigChangeEvent{ConfigType: remoting.EventTypeAdd}
+	ch <- &config_center.ConfigChangeEvent{ConfigType: remoting.EventTypeUpdate}
+
+	drainEvents(ch)
+
+	select {
+	case ev := <-ch:
+		t.Fatalf("expected channel drained, got %v", ev.ConfigType)
+	default:
+	}
+}
+
+func TestAssertNoEvent(t *testing.T) {
+	t.Run("allow stale event before grace window", func(t *testing.T) {
+		ch := make(chan *config_center.ConfigChangeEvent, 2)
+		ch <- &config_center.ConfigChangeEvent{ConfigType: remoting.EventTypeUpdate}
+		assertNoEvent(t, ch, 120*time.Millisecond)
+	})
+
+	t.Run("return when no event arrives", func(t *testing.T) {
+		ch := make(chan *config_center.ConfigChangeEvent, 1)
+		start := time.Now()
+		assertNoEvent(t, ch, 120*time.Millisecond)
+		if elapsed := time.Since(start); elapsed < 100*time.Millisecond {
+			t.Fatalf("assertNoEvent returned too early, elapsed=%v", elapsed)
+		}
+	})
+}
+
 func waitEvent(t *testing.T, ch <-chan *config_center.ConfigChangeEvent, expect remoting.EventType) {
 	t.Helper()
 	select {
