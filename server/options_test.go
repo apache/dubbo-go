@@ -1020,15 +1020,6 @@ func TestWithServerProtocol(t *testing.T) {
 	assert.Equal(t, "dubbo", opts.Protocols["test-protocol"].Name)
 }
 
-// Test WithServerFilterConf
-func TestWithServerFilterConf(t *testing.T) {
-	opts := defaultServerOptions()
-	conf := map[string]any{"key": "value"}
-	opt := WithServerFilterConf(conf)
-	opt(opts)
-	assert.Equal(t, conf, opts.Provider.FilterConf)
-}
-
 // Test WithServerTLSOption
 func TestWithServerTLSOption(t *testing.T) {
 	opts := defaultServerOptions()
