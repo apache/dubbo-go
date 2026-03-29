@@ -63,6 +63,8 @@ func (s *NewConfigAPIService) SayHello(context.Context, *emptypb.Empty) (*wrappe
 	return wrapperspb.String(newConfigAPIHelloBody), nil
 }
 
+// TestNewConfigAPI_InstanceNewServerNewClientCallUnary verifies the main new-config API
+// path: NewInstance -> NewServer/NewClient -> real unary invocation.
 func TestNewConfigAPI_InstanceNewServerNewClientCallUnary(t *testing.T) {
 	port := freePortForNewConfigAPITest(t)
 

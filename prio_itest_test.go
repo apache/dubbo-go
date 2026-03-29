@@ -52,6 +52,9 @@ type newConfigAPIReferenceSnapshot struct {
 	Protocol string
 }
 
+// TestNewConfigAPI_Priority_ServerOverridesInstanceDefaults verifies that
+// server-level options override instance defaults, and the override does not
+// leak into later server creations.
 func TestNewConfigAPI_Priority_ServerOverridesInstanceDefaults(t *testing.T) {
 	ins, err := NewInstance(
 		WithName("new-config-api-prio-server"),
@@ -82,6 +85,9 @@ func TestNewConfigAPI_Priority_ServerOverridesInstanceDefaults(t *testing.T) {
 	assert.Equal(t, newConfigAPIPriorityInstanceVersion, verifyServiceOpts.Service.Version)
 }
 
+// TestNewConfigAPI_Priority_ClientOverridesInstanceDefaults verifies that
+// client-level options override instance defaults, and the override does not
+// leak into later client creations.
 func TestNewConfigAPI_Priority_ClientOverridesInstanceDefaults(t *testing.T) {
 	ins, err := NewInstance(
 		WithName("new-config-api-prio-client"),
@@ -119,6 +125,8 @@ func TestNewConfigAPI_Priority_ClientOverridesInstanceDefaults(t *testing.T) {
 	assert.Equal(t, constant.TriProtocol, verifySnapshot.Protocol)
 }
 
+// captureNewConfigAPIEffectiveReference captures the effective reference
+// values after client option initialization.
 func captureNewConfigAPIEffectiveReference(t *testing.T, cli *client.Client) newConfigAPIReferenceSnapshot {
 	t.Helper()
 
@@ -158,6 +166,8 @@ func (s *newConfigAPIPriorityService) Ping(context.Context, string) (string, err
 	return "ok", nil
 }
 
+// registerNewConfigAPIPriorityService registers a minimal non-IDL service and
+// returns its resolved service options for assertions.
 func registerNewConfigAPIPriorityService(t *testing.T, srv *server.Server) *server.ServiceOptions {
 	t.Helper()
 
