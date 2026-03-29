@@ -69,7 +69,7 @@ func TestNewConfigAPI_InstanceNewServerNewClientCallUnary(t *testing.T) {
 	port := freePortForNewConfigAPITest(t)
 
 	ins, err := NewInstance(
-		WithName("new-config-api-itest"),
+		WithName("new-config-api-integration"),
 		WithProtocol(
 			protocol.WithTriple(),
 			protocol.WithIp("127.0.0.1"),
