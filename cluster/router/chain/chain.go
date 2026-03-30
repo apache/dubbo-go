@@ -125,7 +125,7 @@ func (c *RouterChain) injectStaticRouters(url *common.URL) {
 	}
 	staticRoutersAttr, ok := staticRoutersAttrAny.([]*global.RouterConfig)
 	if !ok {
-		logger.Warnf("failed to type assert routers config: expected []*global.RouterConfig, got %T", staticRoutersAttrAny)
+		logger.Errorf("failed to type assert routers config: expected []*global.RouterConfig, got %T", staticRoutersAttrAny)
 		return
 	}
 	if len(staticRoutersAttr) == 0 {
