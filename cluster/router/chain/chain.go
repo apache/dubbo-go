@@ -111,31 +111,6 @@ func (c *RouterChain) copyRouters() []router.PriorityRouter {
 	return ret
 }
 
-// getApplicationName gets the application name from URL with fallback to SubURL
-func getApplicationName(url *common.URL) string {
-	appName := url.GetParam(constant.ApplicationKey, "")
-	if appName == "" && url.SubURL != nil {
-		appName = url.SubURL.GetParam(constant.ApplicationKey, "")
-	}
-	return appName
-}
-
-// isRouterMatch checks if router configuration matches the current service/application
-func isRouterMatch(routerCfg *global.RouterConfig, url *common.URL, appName string) bool {
-	switch routerCfg.Scope {
-	case constant.RouterScopeService:
-		if url.SubURL != nil {
-			return routerCfg.Key == url.SubURL.ServiceKey()
-		}
-		return routerCfg.Key == url.ServiceKey()
-	case constant.RouterScopeApplication:
-		return routerCfg.Key == appName
-	default:
-		logger.Warnf("unknown router scope: %s", routerCfg.Scope)
-		return false
-	}
-}
-
 // injectStaticRouters injects static router configurations into the router chain.
 // Called after all routers are created to ensure they exist.
 // The injected static configs act as bootstrap state only during initialization. For the shared
@@ -157,8 +132,6 @@ func (c *RouterChain) injectStaticRouters(url *common.URL) {
 		return
 	}
 
-	applicationName := getApplicationName(url)
-
 	for _, routerCfg := range staticRoutersAttr {
 		if routerCfg == nil {
 			continue
@@ -167,9 +140,6 @@ func (c *RouterChain) injectStaticRouters(url *common.URL) {
 			continue
 		}
 		if routerCfg.Valid != nil && !*routerCfg.Valid {
-			continue
-		}
-		if !isRouterMatch(routerCfg, url, applicationName) {
 			continue
 		}
 		c.injectRouterConfig(routerCfg)

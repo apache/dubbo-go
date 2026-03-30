@@ -106,130 +106,6 @@ func (m *mockRouter) Priority() int64 {
 func (m *mockRouter) Notify(_ []base.Invoker) {
 }
 
-// TestIsRouterMatch_ServiceMatch tests service router matching
-func TestIsRouterMatch_ServiceMatch(t *testing.T) {
-	routerCfg := &global.RouterConfig{
-		Scope: "service",
-		Key:   "test.service",
-	}
-
-	url := common.NewURLWithOptions(
-		common.WithProtocol("consumer"),
-		common.WithPath("test.service"),
-	)
-	url.SubURL = common.NewURLWithOptions(
-		common.WithProtocol("dubbo"),
-		common.WithPath("test.service"),
-	)
-
-	assert.True(t, isRouterMatch(routerCfg, url, ""))
-}
-
-// TestIsRouterMatch_ServiceMismatch tests service router mismatch
-func TestIsRouterMatch_ServiceMismatch(t *testing.T) {
-	routerCfg := &global.RouterConfig{
-		Scope: "service",
-		Key:   "different.service",
-	}
-
-	url := common.NewURLWithOptions(
-		common.WithProtocol("consumer"),
-		common.WithPath("test.service"),
-	)
-	url.SubURL = common.NewURLWithOptions(
-		common.WithProtocol("dubbo"),
-		common.WithPath("test.service"),
-	)
-
-	assert.False(t, isRouterMatch(routerCfg, url, ""))
-}
-
-// TestIsRouterMatch_ApplicationMatch tests application router matching
-func TestIsRouterMatch_ApplicationMatch(t *testing.T) {
-	routerCfg := &global.RouterConfig{
-		Scope: "application",
-		Key:   "test-app",
-	}
-
-	url := common.NewURLWithOptions(
-		common.WithProtocol("consumer"),
-		common.WithPath("test.service"),
-	)
-	url.SetParam(constant.ApplicationKey, "test-app")
-
-	assert.True(t, isRouterMatch(routerCfg, url, "test-app"))
-}
-
-// TestIsRouterMatch_ApplicationMismatch tests application router mismatch
-func TestIsRouterMatch_ApplicationMismatch(t *testing.T) {
-	routerCfg := &global.RouterConfig{
-		Scope: "application",
-		Key:   "different-app",
-	}
-
-	url := common.NewURLWithOptions(
-		common.WithProtocol("consumer"),
-		common.WithPath("test.service"),
-	)
-	url.SetParam(constant.ApplicationKey, "test-app")
-
-	assert.False(t, isRouterMatch(routerCfg, url, "test-app"))
-}
-
-// TestGetApplicationName_FromURL tests getting application name from URL
-func TestGetApplicationName_FromURL(t *testing.T) {
-	url := common.NewURLWithOptions(
-		common.WithProtocol("consumer"),
-		common.WithPath("test.service"),
-	)
-	url.SetParam(constant.ApplicationKey, "my-app")
-
-	assert.Equal(t, "my-app", getApplicationName(url))
-}
-
-// TestGetApplicationName_FromSubURL tests getting application name from SubURL
-func TestGetApplicationName_FromSubURL(t *testing.T) {
-	url := common.NewURLWithOptions(
-		common.WithProtocol("consumer"),
-		common.WithPath("test.service"),
-	)
-	url.SubURL = common.NewURLWithOptions(
-		common.WithProtocol("dubbo"),
-		common.WithPath("test.service"),
-	)
-	url.SubURL.SetParam(constant.ApplicationKey, "my-app")
-
-	assert.Equal(t, "my-app", getApplicationName(url))
-}
-
-func TestIsRouterMatch_ServiceMatchWithoutSubURL(t *testing.T) {
-	routerCfg := &global.RouterConfig{
-		Scope: constant.RouterScopeService,
-		Key:   "test.service",
-	}
-
-	url := common.NewURLWithOptions(
-		common.WithProtocol("consumer"),
-		common.WithPath("test.service"),
-	)
-
-	assert.True(t, isRouterMatch(routerCfg, url, ""))
-}
-
-func TestIsRouterMatch_UnknownScope(t *testing.T) {
-	routerCfg := &global.RouterConfig{
-		Scope: "unknown",
-		Key:   "test.service",
-	}
-
-	url := common.NewURLWithOptions(
-		common.WithProtocol("consumer"),
-		common.WithPath("test.service"),
-	)
-
-	assert.False(t, isRouterMatch(routerCfg, url, "test-app"))
-}
-
 func TestInjectStaticRouters(t *testing.T) {
 	trueValue := true
 	falseValue := false
@@ -281,9 +157,10 @@ func TestInjectStaticRouters(t *testing.T) {
 
 	chain.injectStaticRouters(url)
 
-	if assert.Len(t, staticRouter.configs, 2) {
+	if assert.Len(t, staticRouter.configs, 3) {
 		assert.Equal(t, "svc.test", staticRouter.configs[0].Key)
 		assert.Equal(t, "app.test", staticRouter.configs[1].Key)
+		assert.Equal(t, "other-app", staticRouter.configs[2].Key)
 	}
 }
 
@@ -302,6 +179,32 @@ func TestInjectStaticRouters_InvalidAttributeType(t *testing.T) {
 	chain.injectStaticRouters(url)
 
 	assert.Empty(t, staticRouter.configs)
+}
+
+func TestInjectStaticRouters_RegistryURLUsesSubURLConfig(t *testing.T) {
+	staticRouter := &mockStaticRouter{}
+	chain := &RouterChain{
+		routers: []router.PriorityRouter{staticRouter},
+	}
+
+	registryURL := common.NewURLWithOptions(
+		common.WithProtocol(constant.RegistryProtocol),
+		common.WithPath("registry"),
+	)
+	registryURL.SubURL = common.NewURLWithOptions(
+		common.WithProtocol("consumer"),
+		common.WithPath("consumer.path"),
+	)
+	registryURL.SubURL.SetAttribute(constant.RoutersConfigKey, []*global.RouterConfig{{
+		Scope: constant.RouterScopeApplication,
+		Key:   "provider-app",
+	}})
+
+	chain.injectStaticRouters(registryURL)
+
+	if assert.Len(t, staticRouter.configs, 1) {
+		assert.Equal(t, "provider-app", staticRouter.configs[0].Key)
+	}
 }
 
 func TestInjectRouterConfig_ClonePerSetter(t *testing.T) {
