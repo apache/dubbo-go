@@ -23,6 +23,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -89,6 +90,78 @@ func TestDualTransport_H2AltSvcStartsProbeAndPromotesH3Healthy(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("probe was not triggered")
 	}
+
+	require.Eventually(t, func() bool {
+		dt.mu.Lock()
+		defer dt.mu.Unlock()
+		return dt.state.mode == originH3Healthy
+	}, time.Second, 10*time.Millisecond)
+}
+
+func TestDualTransport_ConcurrentH2DiscoveryStartsSingleProbe(t *testing.T) {
+	t.Parallel()
+
+	const numRequests = 8
+
+	var h2Calls atomic.Int32
+	var h3Calls atomic.Int32
+
+	dt := &dualTransport{
+		http2Transport: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+			h2Calls.Add(1)
+			headers := make(http.Header)
+			headers.Set("Alt-Svc", `h3=":443"; ma=86400`)
+			return newTestResponse(http.StatusOK, headers), nil
+		}),
+		altSvcCache:  tri.NewAltSvcCache(),
+		probeTimeout: 100 * time.Millisecond,
+		baseCooldown: 4 * time.Second,
+		maxCooldown:  1 * time.Minute,
+	}
+
+	probeStarted := make(chan struct{}, 1)
+	releaseProbe := make(chan struct{})
+	dt.http3Transport = roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+		h3Calls.Add(1)
+		assert.Equal(t, http.MethodOptions, req.Method)
+		select {
+		case probeStarted <- struct{}{}:
+		default:
+		}
+		<-releaseProbe
+		return newTestResponse(http.StatusMethodNotAllowed, nil), nil
+	})
+
+	var wg sync.WaitGroup
+	wg.Add(numRequests)
+	for i := 0; i < numRequests; i++ {
+		req, err := http.NewRequest(http.MethodPost, "https://example.com/service", nil)
+		require.NoError(t, err)
+
+		go func(req *http.Request) {
+			defer wg.Done()
+
+			resp, err := dt.RoundTrip(req)
+			if !assert.NoError(t, err) {
+				return
+			}
+			if assert.NotNil(t, resp) {
+				assert.Equal(t, http.StatusOK, resp.StatusCode)
+			}
+		}(req)
+	}
+
+	select {
+	case <-probeStarted:
+	case <-time.After(time.Second):
+		t.Fatal("probe was not triggered")
+	}
+
+	wg.Wait()
+	assert.Equal(t, int32(numRequests), h2Calls.Load())
+	assert.Equal(t, int32(1), h3Calls.Load())
+
+	close(releaseProbe)
 
 	require.Eventually(t, func() bool {
 		dt.mu.Lock()

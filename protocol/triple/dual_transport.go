@@ -183,10 +183,7 @@ func (dt *dualTransport) shouldUseH3(host string) bool {
 }
 
 func (dt *dualTransport) shouldMarkH3Failure(req *http.Request, err error) bool {
-	if err == nil {
-		return false
-	}
-	if req != nil && req.Context() != nil && req.Context().Err() != nil {
+	if req.Context().Err() != nil {
 		return false
 	}
 	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
@@ -196,10 +193,6 @@ func (dt *dualTransport) shouldMarkH3Failure(req *http.Request, err error) bool 
 }
 
 func (dt *dualTransport) markH3Success(host string) {
-	if host == "" {
-		return
-	}
-
 	dt.mu.Lock()
 	defer dt.mu.Unlock()
 
@@ -210,10 +203,6 @@ func (dt *dualTransport) markH3Success(host string) {
 }
 
 func (dt *dualTransport) markH3Failure(host string) {
-	if host == "" {
-		return
-	}
-
 	dt.mu.Lock()
 	defer dt.mu.Unlock()
 
