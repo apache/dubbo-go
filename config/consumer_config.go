@@ -133,7 +133,7 @@ func (cc *ConsumerConfig) Load() {
 				// use interface name defined by pb
 				refConfig.InterfaceName = triplePBService.XXX_InterfaceName()
 			}
-			if err := refConfig.Init(rootConfig); err != nil {
+			if err := refConfig.Init(GetRootConfig()); err != nil {
 				logger.Errorf(fmt.Sprintf("reference with registeredTypeName = %s init failed! err: %#v", registeredTypeName, err))
 				continue
 			}
@@ -185,7 +185,13 @@ func (cc *ConsumerConfig) Load() {
 
 // SetConsumerConfig sets consumerConfig by @c
 func SetConsumerConfig(c ConsumerConfig) {
-	rootConfig.Consumer = &c
+	rc := GetRootConfig()
+	if rc == nil {
+		rc = NewRootConfigBuilder().Build()
+	}
+	next := *rc
+	next.Consumer = &c
+	SetRootConfig(next)
 }
 
 func newEmptyConsumerConfig() *ConsumerConfig {

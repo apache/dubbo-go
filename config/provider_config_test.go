@@ -34,7 +34,7 @@ import (
 func TestProviderConfigEmptyRegistry(t *testing.T) {
 	err := Load(WithPath("./testdata/config/provider/empty_registry_application.yaml"))
 	require.NoError(t, err)
-	provider := rootConfig.Provider
+	provider := GetRootConfig().Provider
 	assert.Len(t, provider.RegistryIDs, 1)
 	assert.Equal(t, "nacos", provider.RegistryIDs[0])
 }
@@ -42,7 +42,7 @@ func TestProviderConfigEmptyRegistry(t *testing.T) {
 func TestProviderConfigRootRegistry(t *testing.T) {
 	err := Load(WithPath("./testdata/config/provider/registry_application.yaml"))
 	require.NoError(t, err)
-	provider := rootConfig.Provider
+	provider := GetRootConfig().Provider
 	assert.NotNil(t, provider)
 	assert.NotNil(t, provider.Services["HelloService"])
 	assert.NotNil(t, provider.Services["OrderService"])
