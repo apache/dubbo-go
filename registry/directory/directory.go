@@ -204,17 +204,17 @@ func (dir *RegistryDirectory) Subscribe(url *common.URL) error {
 	}
 
 	serviceKey := url.Key()
-	// Registration is bounded by registry timeout (default 5s).
-	// On timeout, we return immediately and skip starting subscribe goroutine.
-	if err := dir.registerConsumerWithTimeout(url, timeout, serviceKey); err != nil {
-		return err
-	}
-
 	go func() {
 		if err := dir.registry.Subscribe(url, dir); err != nil {
 			logger.Error("registry.Subscribe(url:%v, dir:%v) = error:%v", url, dir, err)
 		}
 	}()
+
+	// Registration is bounded by registry timeout (default 5s), but subscription
+	// stays decoupled from registration so discovery can continue even on register error.
+	if err := dir.registerConsumerWithTimeout(url, timeout, serviceKey); err != nil {
+		return err
+	}
 
 	logger.Infof("register completed successfully for service: %s", serviceKey)
 	return nil

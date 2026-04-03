@@ -180,13 +180,13 @@ func TestRemoveClosingInstanceRemovesExactInstanceKey(t *testing.T) {
 	mockRegistry.MockEvent(event2)
 	time.Sleep(1e9)
 
-	assert.Len(t, registryDirectory.cacheInvokers, 2)
+	assert.Len(t, registryDirectory.snapshotCacheInvokers(), 2)
 	assert.NotEqual(t, key1, key2)
 
 	removed := registryDirectory.RemoveClosingInstance(key1)
 	require.True(t, removed)
 
-	assert.Len(t, registryDirectory.cacheInvokers, 1)
+	assert.Len(t, registryDirectory.snapshotCacheInvokers(), 1)
 	assert.Len(t, registryDirectory.List(&invocation.RPCInvocation{}), 1)
 
 	_, stillExists := registryDirectory.cacheInvokersMap.Load(key1)
@@ -202,7 +202,7 @@ func TestRemoveClosingInstanceReturnsFalseForUnknownKey(t *testing.T) {
 
 	removed := registryDirectory.RemoveClosingInstance("missing-instance-key")
 	assert.False(t, removed)
-	assert.Empty(t, registryDirectory.cacheInvokers)
+	assert.Empty(t, registryDirectory.snapshotCacheInvokers())
 }
 
 func TestClosingTombstonePreventsRebuildUntilDeleteEvent(t *testing.T) {
@@ -217,16 +217,16 @@ func TestClosingTombstonePreventsRebuildUntilDeleteEvent(t *testing.T) {
 
 	mockRegistry.MockEvent(event)
 	time.Sleep(1e9)
-	assert.Len(t, registryDirectory.cacheInvokers, 1)
+	assert.Len(t, registryDirectory.snapshotCacheInvokers(), 1)
 
 	removed := registryDirectory.RemoveClosingInstance(key)
 	require.True(t, removed)
-	assert.Empty(t, registryDirectory.cacheInvokers)
+	assert.Empty(t, registryDirectory.snapshotCacheInvokers())
 	assert.True(t, registryDirectory.hasActiveClosingTombstone(key))
 
 	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerURL})
 	time.Sleep(1e9)
-	assert.Empty(t, registryDirectory.cacheInvokers)
+	assert.Empty(t, registryDirectory.snapshotCacheInvokers())
 
 	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeDel, Service: providerURL})
 	time.Sleep(1e9)
@@ -234,7 +234,7 @@ func TestClosingTombstonePreventsRebuildUntilDeleteEvent(t *testing.T) {
 
 	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerURL})
 	time.Sleep(1e9)
-	assert.Len(t, registryDirectory.cacheInvokers, 1)
+	assert.Len(t, registryDirectory.snapshotCacheInvokers(), 1)
 }
 
 func TestExpiredClosingTombstoneAllowsRebuild(t *testing.T) {
@@ -250,17 +250,17 @@ func TestExpiredClosingTombstoneAllowsRebuild(t *testing.T) {
 
 	mockRegistry.MockEvent(event)
 	time.Sleep(1e9)
-	require.Len(t, registryDirectory.cacheInvokers, 1)
+	require.Len(t, registryDirectory.snapshotCacheInvokers(), 1)
 
 	require.True(t, registryDirectory.RemoveClosingInstance(key))
-	assert.Empty(t, registryDirectory.cacheInvokers)
+	assert.Empty(t, registryDirectory.snapshotCacheInvokers())
 
 	time.Sleep(40 * time.Millisecond)
 	assert.False(t, registryDirectory.hasActiveClosingTombstone(key))
 
 	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerURL})
 	time.Sleep(1e9)
-	assert.Len(t, registryDirectory.cacheInvokers, 1)
+	assert.Len(t, registryDirectory.snapshotCacheInvokers(), 1)
 }
 
 func normalRegistryDir(noMockEvent ...bool) (*RegistryDirectory, *registry.MockRegistry) {
@@ -282,7 +282,7 @@ func normalRegistryDir(noMockEvent ...bool) (*RegistryDirectory, *registry.MockR
 	mockRegistry, _ := registry.NewMockRegistry(&common.URL{})
 	dir, _ := NewRegistryDirectory(url, mockRegistry)
 
-	go dir.(*RegistryDirectory).Subscribe(suburl)
+	_ = dir.(*RegistryDirectory).Subscribe(suburl)
 	if len(noMockEvent) == 0 {
 		for i := 0; i < 3; i++ {
 			mockRegistry.(*registry.MockRegistry).MockEvent(
@@ -421,7 +421,7 @@ func TestRegistryDirectorySubscribedURLConcurrentAccess(t *testing.T) {
 	wg.Wait()
 }
 
-func TestRegistryDirectorySubscribeTimeoutSkipsSubscribeStart(t *testing.T) {
+func TestRegistryDirectorySubscribeTimeoutStillStartsSubscribe(t *testing.T) {
 	registryURL, err := common.NewURL(
 		"registry://127.0.0.1:20000",
 		common.WithParamsValue(constant.RegistryTimeoutKey, "100ms"),
@@ -443,7 +443,9 @@ func TestRegistryDirectorySubscribeTimeoutSkipsSubscribeStart(t *testing.T) {
 	err = dir.Subscribe(subscribeURL)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "timed out")
-	assert.Equal(t, int32(0), blockingRegistry.subscribeCalls.Load())
+	assert.Eventually(t, func() bool {
+		return blockingRegistry.subscribeCalls.Load() == 1
+	}, time.Second, 10*time.Millisecond)
 }
 
 func TestRegistryDirectorySubscribeTimeoutLateRegisterRollback(t *testing.T) {
@@ -467,7 +469,9 @@ func TestRegistryDirectorySubscribeTimeoutLateRegisterRollback(t *testing.T) {
 	err = dir.Subscribe(subscribeURL)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "timed out")
-	assert.Equal(t, int32(0), blockingRegistry.subscribeCalls.Load())
+	assert.Eventually(t, func() bool {
+		return blockingRegistry.subscribeCalls.Load() == 1
+	}, time.Second, 10*time.Millisecond)
 
 	close(blockingRegistry.registerBlock)
 	assert.Eventually(t, func() bool {
