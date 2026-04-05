@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package dubbo
+package client_test
 
 import (
 	"context"
@@ -28,6 +28,7 @@ import (
 )
 
 import (
+	dubbo "dubbo.apache.org/dubbo-go/v3"
 	"dubbo.apache.org/dubbo-go/v3/client"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/cluster/available"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
@@ -56,10 +57,10 @@ type newConfigAPIReferenceSnapshot struct {
 // server-level options override instance defaults, and the override does not
 // leak into later server creations.
 func TestNewConfigAPI_Priority_ServerOverridesInstanceDefaults(t *testing.T) {
-	ins, err := NewInstance(
-		WithName("new-config-api-prio-server"),
-		WithGroup(newConfigAPIPriorityInstanceGroup),
-		WithVersion(newConfigAPIPriorityInstanceVersion),
+	ins, err := dubbo.NewInstance(
+		dubbo.WithName("new-config-api-prio-server"),
+		dubbo.WithGroup(newConfigAPIPriorityInstanceGroup),
+		dubbo.WithVersion(newConfigAPIPriorityInstanceVersion),
 	)
 	require.NoError(t, err)
 
@@ -89,10 +90,10 @@ func TestNewConfigAPI_Priority_ServerOverridesInstanceDefaults(t *testing.T) {
 // client-level options override instance defaults, and the override does not
 // leak into later client creations.
 func TestNewConfigAPI_Priority_ClientOverridesInstanceDefaults(t *testing.T) {
-	ins, err := NewInstance(
-		WithName("new-config-api-prio-client"),
-		WithGroup(newConfigAPIPriorityInstanceGroup),
-		WithVersion(newConfigAPIPriorityInstanceVersion),
+	ins, err := dubbo.NewInstance(
+		dubbo.WithName("new-config-api-prio-client"),
+		dubbo.WithGroup(newConfigAPIPriorityInstanceGroup),
+		dubbo.WithVersion(newConfigAPIPriorityInstanceVersion),
 	)
 	require.NoError(t, err)
 

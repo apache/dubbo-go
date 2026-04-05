@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package dubbo
+package server_test
 
 import (
 	"context"
@@ -34,6 +34,7 @@ import (
 )
 
 import (
+	dubbo "dubbo.apache.org/dubbo-go/v3"
 	"dubbo.apache.org/dubbo-go/v3/client"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/cluster/available"
 	"dubbo.apache.org/dubbo-go/v3/common"
@@ -45,7 +46,7 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/protocol/triple"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
-	"dubbo.apache.org/dubbo-go/v3/server"
+	dubboserver "dubbo.apache.org/dubbo-go/v3/server"
 )
 
 const (
@@ -68,9 +69,9 @@ func (s *NewConfigAPIService) SayHello(context.Context, *emptypb.Empty) (*wrappe
 func TestNewConfigAPI_InstanceNewServerNewClientCallUnary(t *testing.T) {
 	port := freePortForNewConfigAPITest(t)
 
-	ins, err := NewInstance(
-		WithName("new-config-api-integration"),
-		WithProtocol(
+	ins, err := dubbo.NewInstance(
+		dubbo.WithName("new-config-api-integration"),
+		dubbo.WithProtocol(
 			protocol.WithTriple(),
 			protocol.WithIp("127.0.0.1"),
 			protocol.WithPort(port),
@@ -107,9 +108,9 @@ func TestNewConfigAPI_InstanceNewServerNewClientCallUnary(t *testing.T) {
 	err = srv.Register(
 		svc,
 		svcInfo,
-		server.WithInterface(newConfigAPIServiceName),
-		server.WithNotRegister(),
-		server.WithFilter("echo"),
+		dubboserver.WithInterface(newConfigAPIServiceName),
+		dubboserver.WithNotRegister(),
+		dubboserver.WithFilter("echo"),
 	)
 	require.NoError(t, err)
 
