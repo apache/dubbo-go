@@ -102,7 +102,7 @@ type URL struct {
 	Port     string
 
 	PrimitiveURL string
-	primitiveTS  string
+	primitiveTS  string // primitiveTS caches the original provider timestamp so GetCacheInvokerMapKey stays stable when configurator refreshes rebuild invoker URLs.
 	// url.Values is not safe map, add to avoid concurrent map read and map write error
 	paramsLock sync.RWMutex
 	params     url.Values
