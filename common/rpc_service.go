@@ -132,6 +132,11 @@ func (m *MethodType) ReplyType() reflect.Type {
 	return m.replyType
 }
 
+// IsVariadic returns true if the method has a variadic (...T) final parameter.
+func (m *MethodType) IsVariadic() bool {
+	return m.method.Type.IsVariadic()
+}
+
 // SuiteContext transfers @ctx to reflect.Value type or get it from @m.ctxType.
 func (m *MethodType) SuiteContext(ctx context.Context) reflect.Value {
 	if ctxV := reflect.ValueOf(ctx); ctxV.IsValid() {

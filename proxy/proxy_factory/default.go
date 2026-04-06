@@ -130,7 +130,24 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation base.Invocation) 
 	}
 
 	// prepare argv
-	if (len(method.ArgsType()) == 1 || len(method.ArgsType()) == 2 && method.ReplyType() == nil) && method.ArgsType()[0].String() == "[]interface {}" {
+	// NOTE: variadic check must come before the []interface{} passthrough check below,
+	// because a variadic method like func(args ...interface{}) also has argsType[0] == []interface{},
+	// and the passthrough branch would incorrectly wrap the pre-packed slice in another layer.
+	if method.IsVariadic() && len(args) == len(method.ArgsType()) {
+		// Variadic method with pre-packed slice arg (e.g. from generic filter).
+		// The last arg is already a typed slice — pass it directly so CallSlice can handle it.
+		for i := 0; i < len(args); i++ {
+			t := reflect.ValueOf(args[i])
+			if !t.IsValid() {
+				at := method.ArgsType()[i]
+				if at.Kind() == reflect.Ptr {
+					at = at.Elem()
+				}
+				t = reflect.New(at)
+			}
+			in = append(in, t)
+		}
+	} else if (len(method.ArgsType()) == 1 || len(method.ArgsType()) == 2 && method.ReplyType() == nil) && method.ArgsType()[0].String() == "[]interface {}" {
 		in = append(in, reflect.ValueOf(args))
 	} else {
 		for i := 0; i < len(args); i++ {
