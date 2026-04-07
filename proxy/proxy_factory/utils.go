@@ -26,21 +26,13 @@ import (
 	perrors "github.com/pkg/errors"
 )
 
-// callLocalMethod invokes method with the given arguments, recovering from panics.
-// For variadic methods where the last argument is already a typed slice, it uses
-// CallSlice to correctly expand the slice into variadic parameters.
-func callLocalMethod(method reflect.Method, in []reflect.Value) ([]reflect.Value, error) {
+// callLocalMethod invokes a local method and recovers panics.
+// useCallSlice is reserved for generic calls that already carry a packed variadic tail.
+func callLocalMethod(method reflect.Method, in []reflect.Value, useCallSlice bool) ([]reflect.Value, error) {
 	var (
 		returnValues []reflect.Value
 		retErr       error
 	)
-	useCallSlice := false
-	if method.Type.IsVariadic() && len(in) == method.Type.NumIn() {
-		lastIdx := len(in) - 1
-		if in[lastIdx].IsValid() && (in[lastIdx].Kind() == reflect.Slice || in[lastIdx].Kind() == reflect.Array) {
-			useCallSlice = true
-		}
-	}
 
 	func() {
 		defer func() {

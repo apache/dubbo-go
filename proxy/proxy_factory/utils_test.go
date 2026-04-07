@@ -45,19 +45,25 @@ func (s *callLocalMethodSample) PanicUnknown() {
 	panic(123)
 }
 
+func (s *callLocalMethodSample) EchoVariadic(args ...any) []any {
+	return args
+}
+
 func TestCallLocalMethod(t *testing.T) {
 	sample := &callLocalMethodSample{}
 	cases := []struct {
-		name      string
-		method    string
-		in        []reflect.Value
-		assertErr func(t *testing.T, err error)
-		assertOut func(t *testing.T, out []reflect.Value)
+		name         string
+		method       string
+		in           []reflect.Value
+		useCallSlice bool
+		assertErr    func(t *testing.T, err error)
+		assertOut    func(t *testing.T, out []reflect.Value)
 	}{
 		{
-			name:   "call success",
-			method: "Sum",
-			in:     []reflect.Value{reflect.ValueOf(sample), reflect.ValueOf(1), reflect.ValueOf(2)},
+			name:         "call success",
+			method:       "Sum",
+			in:           []reflect.Value{reflect.ValueOf(sample), reflect.ValueOf(1), reflect.ValueOf(2)},
+			useCallSlice: false,
 			assertErr: func(t *testing.T, err error) {
 				assert.NoError(t, err)
 			},
@@ -67,27 +73,56 @@ func TestCallLocalMethod(t *testing.T) {
 			},
 		},
 		{
-			name:   "panic with error",
-			method: "PanicError",
-			in:     []reflect.Value{reflect.ValueOf(sample)},
+			name:         "panic with error",
+			method:       "PanicError",
+			in:           []reflect.Value{reflect.ValueOf(sample)},
+			useCallSlice: false,
 			assertErr: func(t *testing.T, err error) {
 				assert.EqualError(t, err, "boom")
 			},
 		},
 		{
-			name:   "panic with string",
-			method: "PanicString",
-			in:     []reflect.Value{reflect.ValueOf(sample)},
+			name:         "panic with string",
+			method:       "PanicString",
+			in:           []reflect.Value{reflect.ValueOf(sample)},
+			useCallSlice: false,
 			assertErr: func(t *testing.T, err error) {
 				assert.EqualError(t, err, "boom str")
 			},
 		},
 		{
-			name:   "panic with unknown type",
-			method: "PanicUnknown",
-			in:     []reflect.Value{reflect.ValueOf(sample)},
+			name:         "panic with unknown type",
+			method:       "PanicUnknown",
+			in:           []reflect.Value{reflect.ValueOf(sample)},
+			useCallSlice: false,
 			assertErr: func(t *testing.T, err error) {
 				assert.EqualError(t, err, "invoke function error, unknow exception: 123")
+			},
+		},
+		{
+			name:         "variadic slice stays packed without call slice",
+			method:       "EchoVariadic",
+			in:           []reflect.Value{reflect.ValueOf(sample), reflect.ValueOf([]any{"alice", "bob"})},
+			useCallSlice: false,
+			assertErr: func(t *testing.T, err error) {
+				assert.NoError(t, err)
+			},
+			assertOut: func(t *testing.T, out []reflect.Value) {
+				assert.Len(t, out, 1)
+				assert.Equal(t, []any{[]any{"alice", "bob"}}, out[0].Interface())
+			},
+		},
+		{
+			name:         "variadic slice expands with call slice",
+			method:       "EchoVariadic",
+			in:           []reflect.Value{reflect.ValueOf(sample), reflect.ValueOf([]any{"alice", "bob"})},
+			useCallSlice: true,
+			assertErr: func(t *testing.T, err error) {
+				assert.NoError(t, err)
+			},
+			assertOut: func(t *testing.T, out []reflect.Value) {
+				assert.Len(t, out, 1)
+				assert.Equal(t, []any{"alice", "bob"}, out[0].Interface())
 			},
 		},
 	}
@@ -98,7 +133,7 @@ func TestCallLocalMethod(t *testing.T) {
 			if !ok {
 				t.Fatalf("method %s not found", tt.method)
 			}
-			out, err := callLocalMethod(m, tt.in)
+			out, err := callLocalMethod(m, tt.in, tt.useCallSlice)
 			if tt.assertErr != nil {
 				tt.assertErr(t, err)
 			}
