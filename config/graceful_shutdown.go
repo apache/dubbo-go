@@ -63,11 +63,12 @@ func gracefulShutdownInit() {
 	if !exist {
 		return
 	}
-	if filter, ok := gracefulShutdownConsumerFilter.(Setter); ok && rootConfig.Shutdown != nil {
+	rc := GetRootConfig()
+	if filter, ok := gracefulShutdownConsumerFilter.(Setter); ok && rc != nil && rc.Shutdown != nil {
 		filter.Set(constant.GracefulShutdownFilterShutdownConfig, GetShutDown())
 	}
 
-	if filter, ok := gracefulShutdownProviderFilter.(Setter); ok && rootConfig.Shutdown != nil {
+	if filter, ok := gracefulShutdownProviderFilter.(Setter); ok && rc != nil && rc.Shutdown != nil {
 		filter.Set(constant.GracefulShutdownFilterShutdownConfig, GetShutDown())
 	}
 
@@ -77,10 +78,10 @@ func gracefulShutdownInit() {
 
 		go func() {
 			sig := <-signals
-			logger.Infof("Received signal: %v, application is shutting down gracefully", sig)
+			logger.Infof("get signal %s, applicationConfig will shutdown.", sig)
 			// gracefulShutdownOnce.Do(func() {
 			time.AfterFunc(totalTimeout(), func() {
-				logger.Warn("Graceful shutdown timeout, application will shutdown immediately")
+				logger.Warn("Shutdown gracefully timeout, applicationConfig will shutdown immediately. ")
 				os.Exit(0)
 			})
 			BeforeShutdown()
@@ -127,21 +128,22 @@ func destroyAllRegistries() {
 func destroyProtocols() {
 	logger.Info("Graceful shutdown --- Destroy protocols. ")
 
-	if rootConfig.Protocols == nil {
+	rc := GetRootConfig()
+	if rc == nil || rc.Protocols == nil {
 		return
 	}
 
-	consumerProtocols := getConsumerProtocols()
+	consumerProtocols := getConsumerProtocols(rc)
 
-	destroyProviderProtocols(consumerProtocols)
+	destroyProviderProtocols(rc, consumerProtocols)
 	destroyConsumerProtocols(consumerProtocols)
 }
 
 // destroyProviderProtocols destroys the provider's protocol.
 // if the protocol is consumer's protocol too, we will keep it
-func destroyProviderProtocols(consumerProtocols *gxset.HashSet) {
+func destroyProviderProtocols(rc *RootConfig, consumerProtocols *gxset.HashSet) {
 	logger.Info("Graceful shutdown --- First destroy provider's protocols. ")
-	for _, protocol := range rootConfig.Protocols {
+	for _, protocol := range rc.Protocols {
 		// the protocol is the consumer's protocol too, we can not destroy it.
 		if consumerProtocols.Contains(protocol.Name) {
 			continue
@@ -159,18 +161,19 @@ func destroyConsumerProtocols(consumerProtocols *gxset.HashSet) {
 
 func waitAndAcceptNewRequests() {
 	logger.Info("Graceful shutdown --- Keep waiting and accept new requests for a short time. ")
-	if rootConfig.Shutdown == nil {
+	rc := GetRootConfig()
+	if rc == nil || rc.Shutdown == nil {
 		return
 	}
 
-	time.Sleep(rootConfig.Shutdown.GetConsumerUpdateWaitTime())
+	time.Sleep(rc.Shutdown.GetConsumerUpdateWaitTime())
 
-	timeout := rootConfig.Shutdown.GetStepTimeout()
+	timeout := rc.Shutdown.GetStepTimeout()
 	// ignore this step
 	if timeout < 0 {
 		return
 	}
-	waitingProviderProcessedTimeout(rootConfig.Shutdown)
+	waitingProviderProcessedTimeout(rc.Shutdown)
 }
 
 func waitingProviderProcessedTimeout(shutdownConfig *ShutdownConfig) {
@@ -193,12 +196,13 @@ func waitingProviderProcessedTimeout(shutdownConfig *ShutdownConfig) {
 // for provider. It will wait for processing receiving requests
 func waitForSendingAndReceivingRequests() {
 	logger.Info("Graceful shutdown --- Keep waiting until sending/accepting requests finish or timeout. ")
-	if rootConfig == nil || rootConfig.Shutdown == nil {
+	rc := GetRootConfig()
+	if rc == nil || rc.Shutdown == nil {
 		// ignore this step
 		return
 	}
-	rootConfig.Shutdown.RejectRequest.Store(true)
-	waitingConsumerProcessedTimeout(rootConfig.Shutdown)
+	rc.Shutdown.RejectRequest.Store(true)
+	waitingConsumerProcessedTimeout(rc.Shutdown)
 }
 
 func waitingConsumerProcessedTimeout(shutdownConfig *ShutdownConfig) {
@@ -217,21 +221,22 @@ func waitingConsumerProcessedTimeout(shutdownConfig *ShutdownConfig) {
 
 func totalTimeout() time.Duration {
 	timeout := defaultShutDownTime
-	if rootConfig.Shutdown != nil && rootConfig.Shutdown.GetTimeout() > timeout {
-		timeout = rootConfig.Shutdown.GetTimeout()
+	rc := GetRootConfig()
+	if rc != nil && rc.Shutdown != nil && rc.Shutdown.GetTimeout() > timeout {
+		timeout = rc.Shutdown.GetTimeout()
 	}
 
 	return timeout
 }
 
 // we can not get the protocols from consumerConfig because some protocol don't have configuration, like jsonrpc.
-func getConsumerProtocols() *gxset.HashSet {
+func getConsumerProtocols(rc *RootConfig) *gxset.HashSet {
 	result := gxset.NewSet()
-	if rootConfig.Consumer == nil || rootConfig.Consumer.References == nil {
+	if rc == nil || rc.Consumer == nil || rc.Consumer.References == nil {
 		return result
 	}
 
-	for _, reference := range rootConfig.Consumer.References {
+	for _, reference := range rc.Consumer.References {
 		result.Add(reference.Protocol)
 	}
 	return result

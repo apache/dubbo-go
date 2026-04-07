@@ -299,11 +299,9 @@ func TestEnhanceServiceInfo(t *testing.T) {
 
 	result := enhanceServiceInfo(info)
 	assert.NotNil(t, result)
-	// Should have doubled methods (original + case-swapped)
-	assert.Len(t, result.Methods, 2)
+	// enhanceServiceInfo only backfills MethodFunc, does not generate swapped-case aliases
+	assert.Len(t, result.Methods, 1)
 	assert.Equal(t, "sayHello", result.Methods[0].Name)
-	// The swapped version should have capitalized first letter
-	assert.Equal(t, "SayHello", result.Methods[1].Name)
 }
 
 // Test getMetadataPort with default protocol

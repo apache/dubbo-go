@@ -26,7 +26,6 @@ import (
 	"runtime/debug"
 	"sort"
 	"strconv"
-	"strings"
 	"sync"
 )
 
@@ -108,10 +107,12 @@ func (s *Server) genSvcOpts(handler any, info *common.ServiceInfo, opts ...Servi
 		return nil, errors.New("Server has not been initialized, please use NewServer() to create Server")
 	}
 	var svcOpts []ServiceOption
+
 	appCfg := s.cfg.Application
 	proCfg := s.cfg.Provider
 	prosCfg := s.cfg.Protocols
 	regsCfg := s.cfg.Registries
+
 	// todo(DMwangnima): record the registered service
 	// Record the registered service for debugging and monitoring
 	interfaceName := common.GetReference(handler)
@@ -120,7 +121,7 @@ func (s *Server) genSvcOpts(handler any, info *common.ServiceInfo, opts ...Servi
 	newSvcOpts := defaultServiceOptions()
 	if appCfg != nil {
 		svcOpts = append(svcOpts,
-			SetApplication(s.cfg.Application),
+			SetApplication(appCfg),
 		)
 	}
 	if proCfg != nil {
@@ -238,32 +239,33 @@ func createReflectionMethodFunc(method reflect.Method) func(ctx context.Context,
 	}
 }
 
-// Add a method with a name of a different first-letter case
-// to achieve interoperability with java
-// TODO: The method name case sensitivity in Dubbo-java should be addressed.
-// We ought to make changes to handle this issue.
+// enhanceServiceInfo fills in missing MethodFunc entries via reflection.
+// Case-insensitive Triple routing is handled in the transport-layer route mux,
+// but lowercase-first ServiceInfo method names still need MethodFunc backfill so
+// reflection-based invocation can reach the exported Go method.
 func enhanceServiceInfo(info *common.ServiceInfo) *common.ServiceInfo {
 	if info == nil {
 		return info
 	}
 
-	// Get service type for reflection-based method calls
 	var svcType reflect.Type
 	if info.ServiceType != nil {
 		svcType = reflect.TypeOf(info.ServiceType)
 	}
 
-	// Build method map for reflection lookup
+	// Build method map for reflection lookup.
+	// Keep the first-rune-swapped alias for lowercase-first ServiceInfo names
+	// (for example "sayHello" -> "SayHello") without duplicating metadata.
 	methodMap := make(map[string]reflect.Method)
 	if svcType != nil {
 		for i := 0; i < svcType.NumMethod(); i++ {
 			m := svcType.Method(i)
 			methodMap[m.Name] = m
-			methodMap[strings.ToLower(m.Name)] = m
+			methodMap[dubboutil.SwapCaseFirstRune(m.Name)] = m
 		}
 	}
 
-	// Add MethodFunc to methods that don't have it
+	// Fill in MethodFunc for methods that don't already have one.
 	for i := range info.Methods {
 		if info.Methods[i].MethodFunc == nil && svcType != nil {
 			if reflectMethod, ok := methodMap[info.Methods[i].Name]; ok {
@@ -272,26 +274,13 @@ func enhanceServiceInfo(info *common.ServiceInfo) *common.ServiceInfo {
 		}
 	}
 
-	// Create additional methods with swapped-case names for Java interoperability
-	var additionalMethods []common.MethodInfo
-	for _, method := range info.Methods {
-		newMethod := method
-		newMethod.Name = dubboutil.SwapCaseFirstRune(method.Name)
-		if method.MethodFunc != nil {
-			newMethod.MethodFunc = method.MethodFunc
-		} else if svcType != nil {
-			if reflectMethod, ok := methodMap[dubboutil.SwapCaseFirstRune(method.Name)]; ok {
-				newMethod.MethodFunc = createReflectionMethodFunc(reflectMethod)
-			}
-		}
-		additionalMethods = append(additionalMethods, newMethod)
-	}
-	info.Methods = append(info.Methods, additionalMethods...)
-
 	return info
 }
 
 func (s *Server) exportServices() error {
+	// add read lock to protect svcOptsMap data
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	for _, svcOpts := range s.svcOptsMap {
 		if err := svcOpts.Export(); err != nil {
 			logger.Errorf("export %s service failed, err: %s", svcOpts.Service.Interface, err)
@@ -304,16 +293,19 @@ func (s *Server) exportServices() error {
 func (s *Server) Serve() error {
 	s.mu.Lock()
 	if s.serve {
+		// release lock in case causing deadlock
 		s.mu.Unlock()
 		return errors.New("server has already been started")
 	}
 	// prevent multiple calls to Serve
 	s.serve = true
 
+	// release lock in case causing deadlock
+	s.mu.Unlock()
+
 	// the registryConfig in ServiceOptions and ServerOptions all need to init a metadataReporter,
 	// when ServiceOptions.init() is called we don't know if a new registry config is set in the future use serviceOption
 	if err := metadata.InitRegistryMetadataReport(s.cfg.Registries); err != nil {
-		s.mu.Unlock()
 		return err
 	}
 	metadataOpts := metadata.NewOptions(
@@ -323,30 +315,22 @@ func (s *Server) Serve() error {
 		metadata.WithMetadataProtocol(s.cfg.Application.MetadataServiceProtocol),
 	)
 	if err := metadataOpts.Init(); err != nil {
-		s.mu.Unlock()
 		return err
 	}
 
 	if err := s.exportServices(); err != nil {
-		s.mu.Unlock()
 		return err
 	}
 	if err := s.exportInternalServices(); err != nil {
-		s.mu.Unlock()
 		return err
 	}
 	if err := exposed_tmp.RegisterServiceInstance(); err != nil {
-		s.mu.Unlock()
 		return err
 	}
 
-	// Release the lock before entering the blocking wait to avoid starving
-	// read operations (health checks, dynamic routing, GetServiceOptions, etc.)
-	shutdown := s.cfg.Shutdown
-	s.mu.Unlock()
-
 	// Listen for shutdown signals to enable graceful shutdown.
 	// Use the same signal set as the graceful_shutdown package for consistency.
+	shutdown := s.cfg.Shutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, graceful_shutdown.ShutdownSignals...)
 	defer signal.Stop(sigChan)
@@ -376,6 +360,7 @@ func (s *Server) Serve() error {
 // In order to expose internal services
 func (s *Server) exportInternalServices() error {
 	cfg := &ServiceOptions{}
+
 	cfg.Application = s.cfg.Application
 	cfg.Provider = s.cfg.Provider
 	cfg.Protocols = s.cfg.Protocols
