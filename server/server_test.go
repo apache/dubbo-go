@@ -18,6 +18,7 @@
 package server
 
 import (
+	"context"
 	"reflect"
 	"strconv"
 	"sync"
@@ -299,11 +300,57 @@ func TestEnhanceServiceInfo(t *testing.T) {
 
 	result := enhanceServiceInfo(info)
 	assert.NotNil(t, result)
-	// Should have doubled methods (original + case-swapped)
-	assert.Len(t, result.Methods, 2)
+	// ServiceInfo.Methods must only contain original method names.
+	// Swapped-case aliases are registered at the transport layer, not here.
+	assert.Len(t, result.Methods, 1)
 	assert.Equal(t, "sayHello", result.Methods[0].Name)
-	// The swapped version should have capitalized first letter
-	assert.Equal(t, "SayHello", result.Methods[1].Name)
+}
+
+// greetServiceForTest is a minimal service used to verify MethodFunc backfill.
+type greetServiceForTest struct{}
+
+func (g *greetServiceForTest) Greet(ctx context.Context, req string) (string, error) {
+	return req, nil
+}
+
+func (g *greetServiceForTest) Reference() string { return "greetServiceForTest" }
+
+// TestEnhanceServiceInfoMethodFuncBackfillExactName verifies that
+// enhanceServiceInfo fills in MethodFunc when the ServiceInfo method name
+// matches the Go exported method name exactly (PascalCase).
+func TestEnhanceServiceInfoMethodFuncBackfillExactName(t *testing.T) {
+	svc := &greetServiceForTest{}
+	info := &common.ServiceInfo{
+		ServiceType: svc,
+		Methods: []common.MethodInfo{
+			{Name: "Greet"}, // exact Go name — must be found
+		},
+	}
+
+	result := enhanceServiceInfo(info)
+	assert.NotNil(t, result)
+	assert.Len(t, result.Methods, 1)
+	assert.NotNil(t, result.Methods[0].MethodFunc,
+		"MethodFunc must be filled in for exact-name match to avoid nil-func panic")
+}
+
+// TestEnhanceServiceInfoMethodFuncBackfillJavaStyleName verifies that
+// enhanceServiceInfo still fills in MethodFunc for lowercase-first method names
+// so reflection-based invocation can reach the exported Go method.
+func TestEnhanceServiceInfoMethodFuncBackfillJavaStyleName(t *testing.T) {
+	svc := &greetServiceForTest{}
+	info := &common.ServiceInfo{
+		ServiceType: svc,
+		Methods: []common.MethodInfo{
+			{Name: "greet"}, // Java/Dubbo-style lowercase-first name
+		},
+	}
+
+	result := enhanceServiceInfo(info)
+	assert.NotNil(t, result)
+	assert.Len(t, result.Methods, 1)
+	assert.NotNil(t, result.Methods[0].MethodFunc,
+		"MethodFunc must be found via swapped-case lookup to avoid nil-func panic on lowercase-first method names")
 }
 
 // Test getMetadataPort with default protocol

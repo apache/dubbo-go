@@ -495,6 +495,19 @@ func (proto *registryProtocol) Destroy() {
 	})
 }
 
+// UnregisterRegistries only unregisters exported services from registries during graceful shutdown.
+// Protocol servers keep running until the later destroy phase.
+func (proto *registryProtocol) UnregisterRegistries() {
+	proto.bounds.Range(func(_, value any) bool {
+		exporter := value.(*exporterChangeableWrapper)
+		reg := proto.getRegistry(getRegistryUrl(exporter.originInvoker))
+		if err := reg.UnRegister(exporter.registerUrl); err != nil {
+			logger.Warnf("Unregister consumer url failed, %s, error: %w", exporter.registerUrl.String(), err)
+		}
+		return true
+	})
+}
+
 func getRegistryUrl(invoker base.Invoker) *common.URL {
 	// here add * for return a new url
 	url := invoker.GetURL()

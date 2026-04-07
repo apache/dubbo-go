@@ -106,32 +106,20 @@ Dubbo-go provides robust service governance capabilities:
 - **HA Strategy**: Failover, Failfast, Failsafe/Failback, Available, Broadcast, Forking.
 - **Interoperability**: Full compatibility with Apache Dubbo (Java) via Triple protocol generic calls, group/version wildcard matching, and TLS API redesign.
 
-
 ## ️ Tools
 
 The `tools/` directory and the `dubbogo/tools` repository provide several utilities to streamline your Dubbo-Go development experience.
 
 ### [dubbo-go-schema](https://github.com/apache/dubbo-go/tree/main/tools/dubbo-go-schema)
 
-A tool that provides JSON Schema for Dubbo-Go configuration files. This simplifies the configuration process by enabling editor assistance.
-
-**Features:**
-
-* **Intelligent Assistance:** Enables code completion, hints, and real-time validation for configuration files in supported IDEs.
-* **Simplified Configuration:** Helps you write valid and accurate configurations with ease.
+A tool that provides JSON Schema for Dubbo-Go configuration files, enabling editor assistance such as completion, hints, and validation.
 
 For usage details, see the [dubbo-go-schema README](./tools/dubbo-go-schema/README.md).
 
 
 ### [dubbogo-cli](https://github.com/apache/dubbo-go/tree/main/tools/dubbogo-cli)
 
-A comprehensive command-line tool for bootstrapping, managing, and debugging your Dubbo-Go applications.
-
-**Features:**
-
-* **Project Scaffolding:** Quickly create new application templates.
-* **Tool Management:** Install and manage essential development tools.
-* **Interface Debugging:** Provides commands to debug your services.
+A command-line tool for bootstrapping, managing, and debugging Dubbo-Go applications.
 
 - [dubbogo-cli](https://github.com/apache/dubbo-go/tree/main/tools/dubbogo-cli)
 - [dubbogo-cli-v2](https://github.com/dubbogo/tools/tree/master/cmd/dubbogo-cli-v2)
@@ -139,12 +127,7 @@ A comprehensive command-line tool for bootstrapping, managing, and debugging you
 
 ### [protoc-gen-go-triple](https://github.com/dubbogo/protoc-gen-go-triple)
 
-A `protoc` plugin that generates golang code for the Triple protocol from your `.proto` (Protocol Buffer) definition files.
-
-**Features:**
-
-* **Code Generation:** Generates golang client and server stubs for the Triple protocol.
-* **Seamless Integration:** Works alongside the official `protoc-gen-go` to produce both Protobuf message code (`.pb.go`) and Triple interface code (`.triple.go`).
+A `protoc` plugin that generates Go client and server code for the Triple protocol from `.proto` definition files.
 
 *Note: This tool replaces the deprecated [protoc-gen-dubbo3grpc](https://github.com/dubbogo/tools/tree/master/cmd/protoc-gen-dubbo3grpc) and deprecated [protoc-gen-go-triple](https://github.com/dubbogo/tools/tree/master/cmd/protoc-gen-go-triple).*
 
@@ -153,12 +136,7 @@ For usage details, see the [protoc-gen-go-triple README](https://github.com/dubb
 
 ### [imports-formatter](https://github.com/dubbogo/tools?tab=readme-ov-file#imports-formatter)
 
-This is a plugin for dubbo-go developers. A code formatting tool that organizes golang `import` blocks according to the Dubbo-Go community style guide.
-
-**Features:**
-
-* **Automatic Formatting:** Splits `import` statements into three distinct groups: golang standard library, third-party libraries, and internal project packages.
-* **Code Consistency:** Enforces a clean and consistent import style across the codebase.
+A formatting tool for Dubbo-Go developers that organizes Go `import` blocks according to the community style guide.
 
 For usage details, see the [imports-formatter README](https://github.com/dubbogo/tools?tab=readme-ov-file#imports-formatter).
 
@@ -168,6 +146,7 @@ For usage details, see the [imports-formatter README](https://github.com/dubbogo
 - [Interoperability with Dubbo Java](https://cn.dubbo.apache.org/zh-cn/overview/mannual/golang-sdk/tutorial/interop-dubbo/)
 - [Protoc-gen-go-triple](https://github.com/dubbogo/protoc-gen-go-triple/)
 - [Console](https://github.com/apache/dubbo-kubernetes), under development
+- [dubbo-go-extensions](https://github.com/apache/dubbo-go-extensions), under development
 
 ## Documentation
 
@@ -184,9 +163,8 @@ Contributions, issues, and discussions are welcome. Please visit [CONTRIBUTING](
 
 ## Contact
 
-Join our discussion group through Ding talk, WeChat, or Discord.
+Join our discussion group through Ding talk or WeChat.
 
-discord https://discord.gg/C5ywvytg
 ![invite.png](./doc/imgs/invite.png)
 
 

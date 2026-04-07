@@ -21,33 +21,25 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 )
 
-var loadbalances = make(map[string]func() loadbalance.LoadBalance)
+var loadbalances = NewRegistry[func() loadbalance.LoadBalance]("loadbalance")
 
 // SetLoadbalance sets the loadbalance extension with @name
 // For example: random/round_robin/consistent_hash/least_active/...
 func SetLoadbalance(name string, fcn func() loadbalance.LoadBalance) {
-	loadbalances[name] = fcn
+	loadbalances.Register(name, fcn)
 }
 
 // GetLoadbalance finds the loadbalance extension with @name
 func GetLoadbalance(name string) loadbalance.LoadBalance {
-	if loadbalances[name] == nil {
-		panic("loadbalance for " + name + " is not existing, make sure you have import the package.")
-	}
-
-	return loadbalances[name]()
+	return loadbalances.MustGet(name)()
 }
 
 // UnregisterLoadbalance removes the loadbalance extension with @name
 func UnregisterLoadbalance(name string) {
-	delete(loadbalances, name)
+	loadbalances.Unregister(name)
 }
 
 // GetAllLoadbalanceNames returns all registered loadbalance names
 func GetAllLoadbalanceNames() []string {
-	names := make([]string, 0, len(loadbalances))
-	for name := range loadbalances {
-		names = append(names, name)
-	}
-	return names
+	return loadbalances.Names()
 }

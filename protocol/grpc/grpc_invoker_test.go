@@ -30,6 +30,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol/grpc/internal/helloworld"
 	"dubbo.apache.org/dubbo-go/v3/protocol/grpc/internal/routeguide"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
@@ -57,10 +58,10 @@ func TestUnaryInvoke(t *testing.T) {
 
 	url, err := common.NewURL(helloworldURL)
 	require.NoError(t, err)
+	url.SetAttribute(constant.RpcServiceKey, &helloworld.GrpcGreeterImpl{})
 
 	cli, err := NewClient(url)
 	require.NoError(t, err)
-	cli.invoker = reflect.ValueOf(helloworld.NewGreeterClient(cli.ClientConn))
 
 	var args []reflect.Value
 	args = append(args, reflect.ValueOf(&helloworld.HelloRequest{Name: "request name"}))
@@ -86,10 +87,10 @@ func TestStreamInvoke(t *testing.T) {
 
 	url, err := common.NewURL(routeguideURL)
 	require.NoError(t, err)
+	url.SetAttribute(constant.RpcServiceKey, &routeguide.RouteGuideClientImpl{})
 
 	cli, err := NewClient(url)
 	require.NoError(t, err)
-	cli.invoker = reflect.ValueOf(routeguide.NewRouteGuideClient(cli.ClientConn))
 
 	invoker := NewGrpcInvoker(url, cli)
 

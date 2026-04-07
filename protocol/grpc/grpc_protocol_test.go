@@ -18,7 +18,9 @@
 package grpc
 
 import (
+	"sync/atomic"
 	"testing"
+	"time"
 )
 
 import (
@@ -28,6 +30,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol/grpc/internal/helloworld"
 )
 
@@ -39,6 +42,7 @@ func TestGrpcProtocolRefer(t *testing.T) {
 
 	url, err := common.NewURL(helloworldURL)
 	require.NoError(t, err)
+	url.SetAttribute(constant.RpcServiceKey, &helloworld.GrpcGreeterImpl{})
 
 	proto := GetProtocol()
 	invoker := proto.Refer(url)
@@ -53,4 +57,60 @@ func TestGrpcProtocolRefer(t *testing.T) {
 	proto.Destroy()
 	invokersLen = len(proto.(*GrpcProtocol).Invokers())
 	assert.Equal(t, 0, invokersLen)
+}
+
+func TestGrpcProtocolDestroyDoesNotHoldServerLockWhileGracefulStopping(t *testing.T) {
+	proto := NewGRPCProtocol()
+	proto.serverMap["127.0.0.1:20000"] = &Server{}
+
+	originalStop := grpcServerGracefulStop
+	t.Cleanup(func() {
+		grpcServerGracefulStop = originalStop
+	})
+
+	entered := make(chan struct{})
+	release := make(chan struct{})
+	var stopCalls atomic.Int32
+	grpcServerGracefulStop = func(server *Server) {
+		stopCalls.Add(1)
+		close(entered)
+		<-release
+	}
+
+	done := make(chan struct{})
+	go func() {
+		proto.Destroy()
+		close(done)
+	}()
+
+	select {
+	case <-entered:
+	case <-time.After(time.Second):
+		t.Fatal("Destroy did not reach graceful stop")
+	}
+
+	lockAcquired := make(chan struct{})
+	go func() {
+		proto.serverLock.Lock()
+		_ = proto.serverMap
+		proto.serverLock.Unlock()
+		close(lockAcquired)
+	}()
+
+	select {
+	case <-lockAcquired:
+	case <-time.After(time.Second):
+		t.Fatal("serverLock remained held during graceful stop")
+	}
+
+	close(release)
+
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("Destroy did not finish")
+	}
+
+	assert.Equal(t, int32(1), stopCalls.Load())
+	assert.Empty(t, proto.serverMap)
 }

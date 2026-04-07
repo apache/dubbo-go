@@ -28,11 +28,14 @@ import (
 
 import (
 	"github.com/dubbogo/gost/log/logger"
+
+	grpc_health_v1 "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	gracefulshutdown "dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
@@ -47,6 +50,7 @@ type TripleInvoker struct {
 	quitOnce      sync.Once
 	clientGuard   *sync.RWMutex
 	clientManager *clientManager
+	watchCancel   context.CancelFunc
 }
 
 func (ti *TripleInvoker) setClientManager(cm *clientManager) {
@@ -238,6 +242,9 @@ func (ti *TripleInvoker) IsDestroyed() bool {
 // Destroy will destroy Triple's invoker and client, so it is only called once
 func (ti *TripleInvoker) Destroy() {
 	ti.quitOnce.Do(func() {
+		if ti.watchCancel != nil {
+			ti.watchCancel()
+		}
 		ti.BaseInvoker.Destroy()
 		if cm := ti.getClientManager(); cm != nil {
 			ti.setClientManager(nil)
@@ -252,10 +259,63 @@ func NewTripleInvoker(url *common.URL) (*TripleInvoker, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &TripleInvoker{
+	invoker := &TripleInvoker{
 		BaseInvoker:   *base.NewBaseInvoker(url),
 		quitOnce:      sync.Once{},
 		clientGuard:   &sync.RWMutex{},
 		clientManager: cm,
-	}, nil
+	}
+	invoker.startHealthWatch(gracefulshutdown.DefaultClosingEventHandler())
+	return invoker, nil
+}
+
+func (ti *TripleInvoker) startHealthWatch(handler gracefulshutdown.ClosingEventHandler) {
+	if handler == nil || ti.GetURL() == nil || ti.GetURL().ServiceKey() == "" {
+		return
+	}
+
+	cm := ti.getClientManager()
+	if cm == nil {
+		return
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	ti.watchCancel = cancel
+
+	go func() {
+		stream, err := cm.callHealthWatch(ctx, ti.GetURL().ServiceKey())
+		if err != nil {
+			logger.Debugf("[TRIPLE Protocol] health watch start failed for %s: %v", ti.GetURL().String(), err)
+			return
+		}
+
+		for {
+			resp := new(grpc_health_v1.HealthCheckResponse)
+			if ok := stream.Receive(resp); !ok {
+				if ctx.Err() == nil {
+					logger.Debugf("[TRIPLE Protocol] health watch recv failed for %s: %v", ti.GetURL().String(), stream.Err())
+				}
+				return
+			}
+			if ti.handleHealthStatus(resp.GetStatus(), handler) {
+				return
+			}
+		}
+	}()
+}
+
+func (ti *TripleInvoker) handleHealthStatus(status grpc_health_v1.HealthCheckResponse_ServingStatus, handler gracefulshutdown.ClosingEventHandler) bool {
+	if handler == nil || ti.GetURL() == nil {
+		return false
+	}
+	if status != grpc_health_v1.HealthCheckResponse_NOT_SERVING {
+		return false
+	}
+
+	return handler.HandleClosingEvent(gracefulshutdown.ClosingEvent{
+		Source:      "triple-health-watch",
+		InstanceKey: ti.GetURL().GetCacheInvokerMapKey(),
+		ServiceKey:  ti.GetURL().ServiceKey(),
+		Address:     ti.GetURL().Location,
+	})
 }

@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -790,8 +791,17 @@ func TestGRPCMissingTrailersError(t *testing.T) {
 
 func TestUnavailableIfHostInvalid(t *testing.T) {
 	t.Parallel()
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.Proxy = nil
+	transport.DialContext = func(_ context.Context, _, _ string) (net.Conn, error) {
+		return nil, &net.DNSError{
+			Err:        "no such host",
+			Name:       "api.invalid",
+			IsNotFound: true,
+		}
+	}
 	client := pingv1connect.NewPingServiceClient(
-		http.DefaultClient,
+		&http.Client{Transport: transport},
 		"https://api.invalid/",
 	)
 	err := client.Ping(

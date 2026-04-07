@@ -19,12 +19,19 @@ package graceful_shutdown
 
 import (
 	"context"
+	"errors"
 	"net/url"
 	"testing"
+	"time"
 )
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"google.golang.org/grpc/codes"
+
+	"google.golang.org/grpc/status"
 )
 
 import (
@@ -34,7 +41,31 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
+
+type testEmbeddedInvoker struct {
+	base.BaseInvoker
+}
+
+type testClosingEventHandler struct {
+	events []graceful_shutdown.ClosingEvent
+}
+
+func (h *testClosingEventHandler) HandleClosingEvent(event graceful_shutdown.ClosingEvent) bool {
+	h.events = append(h.events, event)
+	return true
+}
+
+func newTestEmbeddedInvoker(rawURL *common.URL) *testEmbeddedInvoker {
+	return &testEmbeddedInvoker{
+		BaseInvoker: *base.NewBaseInvoker(rawURL),
+	}
+}
+
+func (i *testEmbeddedInvoker) Invoke(ctx context.Context, invocation base.Invocation) result.Result {
+	return &result.RPCResult{}
+}
 
 func TestConsumerFilterInvokeWithGlobalPackage(t *testing.T) {
 	var (
@@ -53,4 +84,128 @@ func TestConsumerFilterInvokeWithGlobalPackage(t *testing.T) {
 	result := filter.Invoke(context.Background(), base.NewBaseInvoker(baseUrl), rpcInvocation)
 	assert.NotNil(t, result)
 	assert.NoError(t, result.Error())
+}
+
+func TestIsClosingError(t *testing.T) {
+	assert.True(t, isClosingError(base.ErrClientClosed))
+	assert.True(t, isClosingError(status.Error(codes.Unavailable, "server shutting down")))
+	assert.True(t, isClosingError(status.Error(codes.Canceled, "request canceled during shutdown")))
+	assert.True(t, isClosingError(errors.New("rpc error: code = Unavailable desc = transport is closing")))
+	assert.False(t, isClosingError(errors.New("EOF")))
+	assert.False(t, isClosingError(errors.New("read tcp: connection reset by peer")))
+}
+
+func TestMarkClosingInvokerSetsEmbeddedInvokerUnavailable(t *testing.T) {
+	filter := &consumerGracefulShutdownFilter{
+		shutdownConfig: graceful_shutdown.NewOptions().Shutdown,
+	}
+	invoker := newTestEmbeddedInvoker(common.NewURLWithOptions(common.WithParams(url.Values{})))
+
+	assert.True(t, invoker.IsAvailable())
+
+	filter.markClosingInvoker(invoker)
+
+	assert.False(t, invoker.IsAvailable())
+	expireTime, ok := filter.closingInvokers.Load(invoker.GetURL().String())
+	assert.True(t, ok)
+	assert.True(t, expireTime.(time.Time).After(time.Now()))
+}
+
+func TestConsumerFilterDoesNotDecrementWithoutIncrement(t *testing.T) {
+	filter := &consumerGracefulShutdownFilter{
+		shutdownConfig: graceful_shutdown.NewOptions().Shutdown,
+	}
+	invoker := newTestEmbeddedInvoker(common.NewURLWithOptions(common.WithParams(url.Values{})))
+	rpcInvocation := invocation.NewRPCInvocation("GetUser", []any{"OK"}, make(map[string]any))
+
+	filter.markClosingInvoker(invoker)
+
+	res := filter.Invoke(context.Background(), invoker, rpcInvocation)
+	require.Error(t, res.Error())
+	assert.Equal(t, "provider is closing", res.Error().Error())
+
+	filter.OnResponse(context.Background(), res, invoker, rpcInvocation)
+	assert.Equal(t, int32(0), filter.shutdownConfig.ConsumerActiveCount.Load())
+}
+
+func TestClosingInvokerExpiryRestoresAvailability(t *testing.T) {
+	opt := graceful_shutdown.NewOptions()
+	opt.Shutdown.ClosingInvokerExpireTime = "20ms"
+
+	filter := &consumerGracefulShutdownFilter{
+		shutdownConfig: opt.Shutdown,
+	}
+	invoker := newTestEmbeddedInvoker(common.NewURLWithOptions(common.WithParams(url.Values{})))
+
+	filter.markClosingInvoker(invoker)
+	assert.False(t, invoker.IsAvailable())
+	assert.True(t, filter.isClosingInvoker(invoker))
+
+	time.Sleep(40 * time.Millisecond)
+	assert.False(t, filter.isClosingInvoker(invoker))
+	assert.True(t, invoker.IsAvailable())
+}
+
+func TestHandleRequestErrorDoesNotMarkNonClosingErrors(t *testing.T) {
+	filter := &consumerGracefulShutdownFilter{
+		shutdownConfig: graceful_shutdown.NewOptions().Shutdown,
+	}
+	invoker := newTestEmbeddedInvoker(common.NewURLWithOptions(common.WithParams(url.Values{})))
+
+	filter.handleRequestError(invoker, errors.New("EOF"))
+	_, ok := filter.closingInvokers.Load(invoker.GetURL().String())
+	assert.False(t, ok)
+	assert.True(t, invoker.IsAvailable())
+
+	filter.handleRequestError(invoker, errors.New("read tcp: connection reset by peer"))
+	_, ok = filter.closingInvokers.Load(invoker.GetURL().String())
+	assert.False(t, ok)
+	assert.True(t, invoker.IsAvailable())
+}
+
+func TestClosingResponseDispatchesClosingEvent(t *testing.T) {
+	handler := &testClosingEventHandler{}
+	filter := &consumerGracefulShutdownFilter{
+		shutdownConfig:      graceful_shutdown.NewOptions().Shutdown,
+		closingEventHandler: handler,
+	}
+	invokerURL, _ := common.NewURL(
+		"dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService",
+		common.WithParamsValue(constant.GroupKey, "group"),
+		common.WithParamsValue(constant.VersionKey, "1.0.0"),
+	)
+	invoker := newTestEmbeddedInvoker(invokerURL)
+	res := &result.RPCResult{}
+	res.AddAttachment(constant.GracefulShutdownClosingKey, "true")
+
+	filter.OnResponse(context.Background(), res, invoker, invocation.NewRPCInvocation("GetUser", []any{"OK"}, map[string]any{}))
+
+	if assert.Len(t, handler.events, 1) {
+		assert.Equal(t, invokerURL.GetCacheInvokerMapKey(), handler.events[0].InstanceKey)
+		assert.Equal(t, invokerURL.ServiceKey(), handler.events[0].ServiceKey)
+		assert.Equal(t, invokerURL.Location, handler.events[0].Address)
+		assert.Equal(t, "passive-attachment", handler.events[0].Source)
+	}
+}
+
+func TestClosingErrorDispatchesClosingEvent(t *testing.T) {
+	handler := &testClosingEventHandler{}
+	filter := &consumerGracefulShutdownFilter{
+		shutdownConfig:      graceful_shutdown.NewOptions().Shutdown,
+		closingEventHandler: handler,
+	}
+	invokerURL, _ := common.NewURL(
+		"dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService",
+		common.WithParamsValue(constant.GroupKey, "group"),
+		common.WithParamsValue(constant.VersionKey, "1.0.0"),
+	)
+	invoker := newTestEmbeddedInvoker(invokerURL)
+
+	filter.handleRequestError(invoker, errors.New("rpc error: code = Unavailable desc = transport is closing"))
+
+	if assert.Len(t, handler.events, 1) {
+		assert.Equal(t, invokerURL.GetCacheInvokerMapKey(), handler.events[0].InstanceKey)
+		assert.Equal(t, invokerURL.ServiceKey(), handler.events[0].ServiceKey)
+		assert.Equal(t, "connection-closing-error", handler.events[0].Source)
+	}
 }

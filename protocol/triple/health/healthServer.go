@@ -172,6 +172,7 @@ func (srv *HealthTripleServer) Resume() {
 func init() {
 	healthServer = NewServer()
 	internal.HealthSetServingStatusServing = SetServingStatusServing
+	internal.HealthSetServingStatusNotServing = SetServingStatusNotServing
 	server.SetProviderServices(&server.InternalService{
 		Name: "healthCheck",
 		Init: func(options *server.ServiceOptions) (*server.ServiceDefinition, bool) {

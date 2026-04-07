@@ -29,14 +29,14 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/otel/trace"
 )
 
-var traceExporterMap = make(map[string]func(config *trace.ExporterConfig) (trace.Exporter, error), 4)
+var traceExporterMap = NewRegistry[func(config *trace.ExporterConfig) (trace.Exporter, error)]("trace exporter")
 
 func SetTraceExporter(name string, createFunc func(config *trace.ExporterConfig) (trace.Exporter, error)) {
-	traceExporterMap[name] = createFunc
+	traceExporterMap.Register(name, createFunc)
 }
 
 func GetTraceExporter(name string, config *trace.ExporterConfig) (trace.Exporter, error) {
-	createFunc, ok := traceExporterMap[name]
+	createFunc, ok := traceExporterMap.Get(name)
 	if !ok {
 		panic("Cannot find the trace provider with name " + name)
 	}
@@ -45,10 +45,10 @@ func GetTraceExporter(name string, config *trace.ExporterConfig) (trace.Exporter
 
 func GetTraceShutdownCallback() func() {
 	return func() {
-		for name, createFunc := range traceExporterMap {
+		for name, createFunc := range traceExporterMap.Snapshot() {
 			if exporter, err := createFunc(nil); err == nil {
 				if err := exporter.GetTracerProvider().Shutdown(context.Background()); err != nil {
-					logger.Errorf("Graceful shutdown --- Failed to shutdown trace provider %s, error: %s", name, err.Error())
+					logger.Errorf("Graceful shutdown --- Failed to shutdown trace provider %s, error --- %s", name, err.Error())
 				} else {
 					logger.Infof("Graceful shutdown --- Tracer provider of %s", name)
 				}
