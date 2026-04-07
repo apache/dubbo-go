@@ -119,15 +119,29 @@ func NewOutgoingContext(ctx context.Context, data http.Header) context.Context {
 	var header = http.Header{}
 
 	for key, vals := range data {
-		header[strings.ToLower(key)] = vals
+		header[strings.ToLower(key)] = append([]string(nil), vals...)
 	}
 
 	extraData, ok := ctx.Value(extraDataKey{}).(map[string]http.Header)
 	if !ok {
 		extraData = map[string]http.Header{}
+	} else {
+		extraData = cloneExtraData(extraData)
 	}
 	extraData[headerOutgoingKey] = header
 	return context.WithValue(ctx, extraDataKey{}, extraData)
+}
+
+func cloneExtraData(data map[string]http.Header) map[string]http.Header {
+	cloned := make(map[string]http.Header, len(data))
+	for extraKey, header := range data {
+		headerClone := make(http.Header, len(header))
+		for headerKey, vals := range header {
+			headerClone[headerKey] = append([]string(nil), vals...)
+		}
+		cloned[extraKey] = headerClone
+	}
+	return cloned
 }
 
 // AppendToOutgoingContext merges kv pairs from user and existing headers.
