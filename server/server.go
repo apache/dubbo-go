@@ -21,6 +21,7 @@ package server
 import (
 	"context"
 	stderrors "errors"
+	"net/http"
 	"reflect"
 	"sort"
 	"strconv"
@@ -59,6 +60,8 @@ type Server struct {
 	interfaceNameServices map[string]*ServiceOptions
 	// indicate whether the server is already started
 	serve bool
+
+	mountedHTTPHandler http.Handler
 }
 
 // ServiceInfo Deprecated： common.ServiceInfo type alias, just for compatible with old generate pb.go file
@@ -378,6 +381,10 @@ func (s *Server) ServeContext(ctx context.Context) error {
 	}
 	if err := ctx.Err(); err != nil {
 		return err
+	}
+
+	if err := s.mountHTTPHandlers(); err != nil {
+		return s.rollbackServeStartWithCause(err, serviceInstanceRegistered)
 	}
 
 	if err := s.exportServices(ctx); err != nil {

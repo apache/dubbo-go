@@ -457,6 +457,13 @@ func extractUnaryInvocationArgs(msg any) []any {
 	return []any{msg}
 }
 
+func (s *Server) SetMountedHTTPHandler(handler http.Handler) {
+	if s == nil || handler == nil || s.triServer == nil {
+		return
+	}
+	s.triServer.SetFallbackHTTPHandler(handler)
+}
+
 func wrapTripleResponse(result any) *tri.Response {
 	if existingResp, ok := result.(*tri.Response); ok {
 		return existingResp
