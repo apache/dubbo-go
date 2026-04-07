@@ -50,7 +50,8 @@ const (
 )
 
 var (
-	initOnce sync.Once
+	initOnce     sync.Once
+	shutdownOnce sync.Once
 
 	proMu     sync.Mutex
 	protocols map[string]struct{}
@@ -131,38 +132,36 @@ func totalTimeout(shutdown *global.ShutdownConfig) time.Duration {
 // - Executing custom shutdown callbacks
 // This function can be called manually when InternalSignal is disabled.
 func BeforeShutdown(shutdown *global.ShutdownConfig) {
-	destroyRegistries()
-	// waiting for a short time so that the clients have enough time to get the notification that server shutdowns
-	// The value of configuration depends on how long the clients will get notification.
-	waitAndAcceptNewRequests(shutdown)
+	shutdownOnce.Do(func() {
+		destroyRegistries()
+		// waiting for a short time so that the clients have enough time to get the notification that server shutdowns
+		// The value of configuration depends on how long the clients will get notification.
+		waitAndAcceptNewRequests(shutdown)
 
-	// reject sending/receiving the new request but keeping waiting for accepting requests
-	waitForSendingAndReceivingRequests(shutdown)
+		// reject sending/receiving the new request but keeping waiting for accepting requests
+		waitForSendingAndReceivingRequests(shutdown)
 
-	// destroy all protocols
-	destroyProtocols()
+		// destroy all protocols
+		destroyProtocols()
 
-	logger.Info("Graceful shutdown --- Execute the custom callbacks.")
-	customCallbacks := extension.GetAllCustomShutdownCallbacks()
-	for callback := customCallbacks.Front(); callback != nil; callback = callback.Next() {
-		callback.Value.(func())()
-	}
+		logger.Info("Graceful shutdown --- Execute the custom callbacks.")
+		customCallbacks := extension.GetAllCustomShutdownCallbacks()
+		for callback := customCallbacks.Front(); callback != nil; callback = callback.Next() {
+			callback.Value.(func())()
+		}
+	})
 }
 
 // destroyRegistries destroys RegistryProtocol directly.
 func destroyRegistries() {
 	logger.Info("Graceful shutdown --- Destroy all registriesConfig. ")
-	// In test environments, the registry protocol might not be registered
-	// Use recover to handle this gracefully
 	defer func() {
 		if r := recover(); r != nil {
-			logger.Warnf("Failed to destroy registries (this is normal in test environments): %v", r)
+			logger.Errorf("Failed to destroy registries: %v", r)
 		}
 	}()
 	registryProtocol := extension.GetProtocol(constant.RegistryProtocol)
-	if registryProtocol != nil {
-		registryProtocol.Destroy()
-	}
+	registryProtocol.Destroy()
 }
 
 func waitAndAcceptNewRequests(shutdown *global.ShutdownConfig) {
@@ -224,17 +223,13 @@ func destroyProtocols() {
 	// extension.GetProtocol might panic
 	defer proMu.Unlock()
 	for name := range protocols {
-		// Use recover to handle cases where protocol is not registered (e.g., in test environments)
 		func() {
 			defer func() {
 				if r := recover(); r != nil {
-					logger.Warnf("Failed to destroy protocol %s (this is normal in test environments): %v", name, r)
+					logger.Errorf("Failed to destroy protocol %s: %v", name, r)
 				}
 			}()
-			protocol := extension.GetProtocol(name)
-			if protocol != nil {
-				protocol.Destroy()
-			}
+			extension.GetProtocol(name).Destroy()
 		}()
 	}
 }

@@ -23,11 +23,11 @@ import (
 	"os"
 	"os/signal"
 	"reflect"
+	"runtime/debug"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 )
 
 import (
@@ -303,15 +303,17 @@ func (s *Server) exportServices() error {
 
 func (s *Server) Serve() error {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	if s.serve {
+		s.mu.Unlock()
 		return errors.New("server has already been started")
 	}
 	// prevent multiple calls to Serve
 	s.serve = true
+
 	// the registryConfig in ServiceOptions and ServerOptions all need to init a metadataReporter,
 	// when ServiceOptions.init() is called we don't know if a new registry config is set in the future use serviceOption
 	if err := metadata.InitRegistryMetadataReport(s.cfg.Registries); err != nil {
+		s.mu.Unlock()
 		return err
 	}
 	metadataOpts := metadata.NewOptions(
@@ -321,43 +323,54 @@ func (s *Server) Serve() error {
 		metadata.WithMetadataProtocol(s.cfg.Application.MetadataServiceProtocol),
 	)
 	if err := metadataOpts.Init(); err != nil {
+		s.mu.Unlock()
 		return err
 	}
 
 	if err := s.exportServices(); err != nil {
+		s.mu.Unlock()
 		return err
 	}
 	if err := s.exportInternalServices(); err != nil {
+		s.mu.Unlock()
 		return err
 	}
 	if err := exposed_tmp.RegisterServiceInstance(); err != nil {
+		s.mu.Unlock()
 		return err
 	}
 
-	// Check if graceful_shutdown package is handling signals internally
-	// If InternalSignal is true (default), graceful_shutdown.Init() already set up signal handling
-	// and will call os.Exit(0) after cleanup, so we just block here.
-	// If InternalSignal is false, we need to handle signals ourselves and call cleanup.
-	if s.cfg.Shutdown != nil && s.cfg.Shutdown.InternalSignal != nil && *s.cfg.Shutdown.InternalSignal {
-		// graceful_shutdown package is handling signals, just block until shutdown
-		select {}
-	}
+	// Release the lock before entering the blocking wait to avoid starving
+	// read operations (health checks, dynamic routing, GetServiceOptions, etc.)
+	shutdown := s.cfg.Shutdown
+	s.mu.Unlock()
 
-	// Listen for interrupt signals to enable graceful shutdown
-	// This replaces the previous select{} which blocked indefinitely and did not provide a way to gracefully shut down or clean up resources when the process received a signal
+	// Listen for shutdown signals to enable graceful shutdown.
+	// Use the same signal set as the graceful_shutdown package for consistency.
 	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
+	signal.Notify(sigChan, graceful_shutdown.ShutdownSignals...)
+	defer signal.Stop(sigChan)
 
-	// Wait for a signal to shutdown gracefully
+	// Block until a shutdown signal is received.
 	sig := <-sigChan
 	logger.Infof("Received signal: %v, application is shutting down gracefully", sig)
 
-	// Call graceful shutdown cleanup manually since InternalSignal is disabled
-	if s.cfg.Shutdown != nil {
-		graceful_shutdown.BeforeShutdown(s.cfg.Shutdown)
+	// Perform graceful shutdown cleanup.
+	// BeforeShutdown is protected by sync.Once, so even if graceful_shutdown.Init()
+	// (InternalSignal=true) also calls it concurrently, only one execution will run.
+	if shutdown != nil {
+		graceful_shutdown.BeforeShutdown(shutdown)
 	}
 
-	return nil
+	// Handle signals that require heap dump (e.g., SIGQUIT, SIGILL, SIGTRAP, SIGABRT, SIGSYS)
+	for _, dumpSignal := range graceful_shutdown.DumpHeapShutdownSignals {
+		if sig == dumpSignal {
+			debug.WriteHeapDump(os.Stdout.Fd())
+		}
+	}
+
+	os.Exit(0)
+	return nil // unreachable, but satisfies the compiler
 }
 
 // In order to expose internal services
