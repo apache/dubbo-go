@@ -20,6 +20,7 @@ package server
 
 import (
 	"context"
+	"net/http"
 	"reflect"
 	"sort"
 	"strconv"
@@ -57,6 +58,8 @@ type Server struct {
 	interfaceNameServices map[string]*ServiceOptions
 	// indicate whether the server is already started
 	serve bool
+
+	mountedHTTPHandler http.Handler
 }
 
 // ServiceInfo Deprecated： common.ServiceInfo type alias, just for compatible with old generate pb.go file
@@ -339,6 +342,10 @@ func (s *Server) Serve() error {
 		metadata.WithMetadataProtocol(s.cfg.Application.MetadataServiceProtocol),
 	)
 	if err := metadataOpts.Init(); err != nil {
+		return err
+	}
+
+	if err := s.mountHTTPHandlers(); err != nil {
 		return err
 	}
 

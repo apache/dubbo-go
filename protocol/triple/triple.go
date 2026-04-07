@@ -19,6 +19,8 @@ package triple
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 	"strings"
 	"sync"
 )
@@ -184,6 +186,24 @@ func (tp *TripleProtocol) drainServers() []*Server {
 		servers = append(servers, server)
 	}
 	return servers
+}
+
+func (tp *TripleProtocol) MountHTTPHandler(url *common.URL, handler http.Handler) error {
+	if handler == nil {
+		return fmt.Errorf("mounted HTTP handler must not be nil")
+	}
+
+	tp.serverLock.Lock()
+	defer tp.serverLock.Unlock()
+
+	if srv, ok := tp.serverMap[url.Location]; ok {
+		srv.SetMountedHTTPHandler(handler)
+		return nil
+	}
+
+	// start a new server
+
+	return nil
 }
 
 // isGenericCall checks if the generic parameter indicates a generic call
