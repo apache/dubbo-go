@@ -23,7 +23,7 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/openapi/model"
 )
@@ -32,13 +32,13 @@ type DefinitionResolver struct {
 	config *global.OpenAPIConfig
 }
 
-func NewDefinitionResolver(cfg *global.OpenAPIConfig, _ *SchemaResolver) *DefinitionResolver {
+func NewDefinitionResolver(cfg *global.OpenAPIConfig) *DefinitionResolver {
 	return &DefinitionResolver{
 		config: cfg,
 	}
 }
 
-func (r *DefinitionResolver) Resolve(interfaceName string, info *common.ServiceInfo) *model.OpenAPI {
+func (r *DefinitionResolver) Resolve(interfaceName string, info *serviceInfo) *model.OpenAPI {
 	openAPI := model.NewOpenAPI()
 	schemaResolver := NewSchemaResolver(r.config)
 
@@ -61,30 +61,6 @@ func (r *DefinitionResolver) Resolve(interfaceName string, info *common.ServiceI
 			pathItem := openAPI.GetOrAddPath(path)
 			pathItem.SetOperation(strings.ToUpper(httpMethod), op)
 		}
-
-		reqSchema := r.resolveRequestSchema(method, schemaResolver)
-		if reqSchema != nil && reqSchema.Ref != "" {
-			if openAPI.Components == nil {
-				openAPI.Components = model.NewComponents()
-			}
-			schemaName := schemaResolver.GetSchemaName(reqSchema)
-			schemaDef := schemaResolver.GetSchemaDefinition(reqSchema)
-			if schemaName != "" && schemaDef != nil {
-				openAPI.Components.AddSchema(schemaName, schemaDef)
-			}
-		}
-
-		respSchema := r.resolveResponseSchema(method, schemaResolver)
-		if respSchema != nil && respSchema.Ref != "" {
-			if openAPI.Components == nil {
-				openAPI.Components = model.NewComponents()
-			}
-			schemaName := schemaResolver.GetSchemaName(respSchema)
-			schemaDef := schemaResolver.GetSchemaDefinition(respSchema)
-			if schemaName != "" && schemaDef != nil {
-				openAPI.Components.AddSchema(schemaName, schemaDef)
-			}
-		}
 	}
 
 	allSchemas := schemaResolver.GetSchemas()
@@ -100,7 +76,7 @@ func (r *DefinitionResolver) Resolve(interfaceName string, info *common.ServiceI
 	return openAPI
 }
 
-func (r *DefinitionResolver) resolveOperation(method common.MethodInfo, httpMethod string, tagName string, schemaResolver *SchemaResolver) *model.Operation {
+func (r *DefinitionResolver) resolveOperation(method serviceMethodInfo, httpMethod string, tagName string, schemaResolver *SchemaResolver) *model.Operation {
 	op := model.NewOperation()
 	op.SetOperationId(method.Name)
 	op.SetGoMethod(method.Name)
@@ -157,7 +133,7 @@ func (r *DefinitionResolver) resolveOperation(method common.MethodInfo, httpMeth
 	return op
 }
 
-func (r *DefinitionResolver) resolveRequestSchema(method common.MethodInfo, schemaResolver *SchemaResolver) *model.Schema {
+func (r *DefinitionResolver) resolveRequestSchema(method serviceMethodInfo, schemaResolver *SchemaResolver) *model.Schema {
 	if method.Meta != nil {
 		if reqType, ok := method.Meta["request.type"]; ok {
 			if t, ok := reqType.(reflect.Type); ok {
@@ -186,7 +162,7 @@ func (r *DefinitionResolver) resolveRequestSchema(method common.MethodInfo, sche
 	if reqType.Kind() == reflect.Slice {
 		elemType := reqType.Elem()
 		if elemType.Kind() == reflect.Interface {
-			return model.NewSchema().SetType(model.SchemaTypeObject)
+			return nil
 		}
 		if elemType.Kind() == reflect.Ptr {
 			elemType = elemType.Elem()
@@ -200,7 +176,7 @@ func (r *DefinitionResolver) resolveRequestSchema(method common.MethodInfo, sche
 	return schemaResolver.Resolve(reqType)
 }
 
-func (r *DefinitionResolver) resolveResponseSchema(method common.MethodInfo, schemaResolver *SchemaResolver) *model.Schema {
+func (r *DefinitionResolver) resolveResponseSchema(method serviceMethodInfo, schemaResolver *SchemaResolver) *model.Schema {
 	if method.Meta != nil {
 		if respType, ok := method.Meta["response.type"]; ok {
 			if t, ok := respType.(reflect.Type); ok {
@@ -212,7 +188,7 @@ func (r *DefinitionResolver) resolveResponseSchema(method common.MethodInfo, sch
 		}
 	}
 
-	return model.NewSchema().SetType(model.SchemaTypeObject)
+	return nil
 }
 
 func (r *DefinitionResolver) determineHttpMethods() []string {
@@ -220,9 +196,7 @@ func (r *DefinitionResolver) determineHttpMethods() []string {
 }
 
 func (r *DefinitionResolver) buildPath(interfaceName, methodName string) string {
-	parts := strings.Split(interfaceName, ".")
-	serviceName := parts[len(parts)-1]
-	return "/" + serviceName + "/" + methodName
+	return "/" + interfaceName + "/" + methodName
 }
 
 func (r *DefinitionResolver) getStatusDescription(code string) string {
@@ -248,5 +222,5 @@ func (r *DefinitionResolver) resolveVersion() string {
 	if r.config.InfoVersion != "" {
 		return r.config.InfoVersion
 	}
-	return DefaultVersion
+	return constant.OpenAPIDefaultVersion
 }

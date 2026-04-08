@@ -39,18 +39,20 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/openapi"
 )
 
 type Server struct {
-	addr         string
-	mux          *methodRouteMux
-	handlers     map[string]*Handler
-	httpSrv      *http.Server
-	http3Srv     *http3.Server
-	tripleConfig *global.TripleConfig // Configuration for the triple protocol
+	addr               string
+	mux                *methodRouteMux
+	handlers           map[string]*Handler
+	httpSrv            *http.Server
+	http3Srv           *http3.Server
+	tripleConfig       *global.TripleConfig
+	openapiIntegration *openapi.OpenAPIIntegration
 }
 
 func (s *Server) RegisterUnaryHandler(
@@ -345,7 +347,13 @@ func NewServer(addr string, tripleConf *global.TripleConfig) *Server {
 		tripleConfig: tripleConf,
 	}
 
-	openapiHandler := openapi.NewHTTPHandler()
+	var openapiIntegration *openapi.OpenAPIIntegration
+	if tripleConf != nil && tripleConf.OpenAPI != nil && tripleConf.OpenAPI.Enabled {
+		openapiIntegration = openapi.NewOpenAPIIntegration(tripleConf.OpenAPI)
+	}
+	s.openapiIntegration = openapiIntegration
+
+	openapiHandler := openapi.NewHTTPHandler(openapiIntegration)
 	basePath := "/dubbo/openapi"
 	if tripleConf != nil && tripleConf.OpenAPI != nil && tripleConf.OpenAPI.Path != "" {
 		basePath = tripleConf.OpenAPI.Path
@@ -360,4 +368,10 @@ func NewServer(addr string, tripleConf *global.TripleConfig) *Server {
 	s.mux.Handle(basePath+"/api-docs/", openapiHandler)
 
 	return s
+}
+
+func (s *Server) RegisterOpenAPIService(interfaceName string, info *common.ServiceInfo, openapiGroup string, dubboGroup string, dubboVersion string) {
+	if s.openapiIntegration != nil {
+		s.openapiIntegration.RegisterService(interfaceName, info, openapiGroup, dubboGroup, dubboVersion)
+	}
 }

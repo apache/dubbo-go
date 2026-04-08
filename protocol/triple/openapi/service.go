@@ -27,19 +27,40 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/openapi/model"
 )
 
 type OpenAPIRequest struct {
-	Group  string
-	Format string
+	Group string
 }
 
-type Service interface {
-	GetOpenAPI(req *OpenAPIRequest) *model.OpenAPI
-	GetOpenAPIGroups() []string
-	Refresh()
+// serviceKey is a composite key that uniquely identifies a registered service
+// at the OpenAPI document level. Using only interfaceName as the key would cause
+// collisions when the same interface is exported into multiple OpenAPI groups,
+// or appears under different Dubbo group/version combinations.
+type serviceKey struct {
+	interfaceName string
+	group         string
+	dubboGroup    string
+	dubboVersion  string
+}
+
+// serviceInfo holds a snapshot of the data needed from common.ServiceInfo
+// for OpenAPI generation. By copying only the necessary fields at registration
+// time, we decouple from the original ServiceInfo and avoid side-effects if
+// the caller later mutates its Methods or Meta.
+type serviceInfo struct {
+	Methods []serviceMethodInfo
+}
+
+// serviceMethodInfo holds a snapshot of the data needed from common.MethodInfo
+// for OpenAPI generation.
+type serviceMethodInfo struct {
+	Name        string
+	ReqInitFunc func() any
+	Meta        map[string]any
 }
 
 type DefaultService struct {
@@ -49,8 +70,7 @@ type DefaultService struct {
 
 	mu       sync.RWMutex
 	openAPIs map[string]*model.OpenAPI
-	services map[string]*common.ServiceInfo
-	groups   map[string]string
+	services map[serviceKey]*serviceInfo
 }
 
 func NewDefaultService(cfg *global.OpenAPIConfig) *DefaultService {
@@ -59,22 +79,26 @@ func NewDefaultService(cfg *global.OpenAPIConfig) *DefaultService {
 	}
 	s := &DefaultService{
 		config:   cfg,
-		services: make(map[string]*common.ServiceInfo),
+		services: make(map[serviceKey]*serviceInfo),
 		openAPIs: make(map[string]*model.OpenAPI),
-		groups:   make(map[string]string),
 	}
-	s.defResolver = NewDefinitionResolver(s.config, nil)
+	s.defResolver = NewDefinitionResolver(s.config)
 	s.encoder = NewEncoder()
 	return s
 }
 
-func (s *DefaultService) RegisterService(interfaceName string, info *common.ServiceInfo, group string) {
+func (s *DefaultService) RegisterService(interfaceName string, info *common.ServiceInfo, openapiGroup string, dubboGroup string, dubboVersion string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.services[interfaceName] = info
-	if group != "" {
-		s.groups[interfaceName] = group
+	if openapiGroup == "" {
+		openapiGroup = constant.OpenAPIDefaultGroup
 	}
+	s.services[serviceKey{
+		interfaceName: interfaceName,
+		group:         openapiGroup,
+		dubboGroup:    dubboGroup,
+		dubboVersion:  dubboVersion,
+	}] = snapshotServiceInfo(info)
 	s.openAPIs = nil
 }
 
@@ -87,21 +111,21 @@ func (s *DefaultService) GetOpenAPI(req *OpenAPIRequest) *model.OpenAPI {
 
 	group := req.Group
 	if group == "" {
-		group = DefaultGroup
+		group = constant.OpenAPIDefaultGroup
 	}
 
 	if openAPI, ok := openAPIs[group]; ok {
 		return openAPI
 	}
 
-	merged := s.mergeOpenAPIs(openAPIs, req)
+	merged := s.mergeOpenAPIs(openAPIs)
 	return merged
 }
 
 func (s *DefaultService) GetOpenAPIGroups() []string {
 	openAPIs := s.getOpenAPIs()
-	groups := []string{DefaultGroup}
-	seen := map[string]bool{DefaultGroup: true}
+	groups := []string{constant.OpenAPIDefaultGroup}
+	seen := map[string]bool{constant.OpenAPIDefaultGroup: true}
 
 	for _, openAPI := range openAPIs {
 		if openAPI.Group != "" && !seen[openAPI.Group] {
@@ -141,12 +165,12 @@ func (s *DefaultService) getOpenAPIs() map[string]*model.OpenAPI {
 func (s *DefaultService) resolveOpenAPIs() map[string]*model.OpenAPI {
 	result := make(map[string]*model.OpenAPI)
 
-	for interfaceName, info := range s.services {
-		openAPI := s.defResolver.Resolve(interfaceName, info)
+	for key, info := range s.services {
+		openAPI := s.defResolver.Resolve(key.interfaceName, info)
 		if openAPI != nil {
-			group := s.groups[interfaceName]
+			group := key.group
 			if group == "" {
-				group = DefaultGroup
+				group = constant.OpenAPIDefaultGroup
 			}
 			openAPI.Group = group
 			if existing, ok := result[group]; ok {
@@ -160,7 +184,7 @@ func (s *DefaultService) resolveOpenAPIs() map[string]*model.OpenAPI {
 	return result
 }
 
-func (s *DefaultService) mergeOpenAPIs(openAPIs map[string]*model.OpenAPI, _ *OpenAPIRequest) *model.OpenAPI {
+func (s *DefaultService) mergeOpenAPIs(openAPIs map[string]*model.OpenAPI) *model.OpenAPI {
 	merged := model.NewOpenAPI()
 	merged.Info = &model.Info{
 		Title:       s.config.InfoTitle,
@@ -201,4 +225,29 @@ func (s *DefaultService) GetEncoder() *Encoder {
 
 func (s *DefaultService) GetConfig() *global.OpenAPIConfig {
 	return s.config
+}
+
+// snapshotServiceInfo creates a defensive copy of only the fields from
+// common.ServiceInfo that are needed for OpenAPI generation.
+func snapshotServiceInfo(info *common.ServiceInfo) *serviceInfo {
+	if info == nil {
+		return nil
+	}
+	si := &serviceInfo{}
+	if len(info.Methods) > 0 {
+		si.Methods = make([]serviceMethodInfo, len(info.Methods))
+		for i, m := range info.Methods {
+			si.Methods[i] = serviceMethodInfo{
+				Name:        m.Name,
+				ReqInitFunc: m.ReqInitFunc,
+			}
+			if len(m.Meta) > 0 {
+				si.Methods[i].Meta = make(map[string]any, len(m.Meta))
+				for k, v := range m.Meta {
+					si.Methods[i].Meta[k] = v
+				}
+			}
+		}
+	}
+	return si
 }

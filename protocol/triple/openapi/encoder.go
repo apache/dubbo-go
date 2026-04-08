@@ -230,7 +230,11 @@ func (e *Encoder) schemaToMap(s *model.Schema) map[string]any {
 		m["properties"] = props
 	}
 	if s.AdditionalProperties != nil {
-		m["additionalProperties"] = s.AdditionalProperties
+		if apSchema, ok := s.AdditionalProperties.(*model.Schema); ok {
+			m["additionalProperties"] = e.schemaToMap(apSchema)
+		} else {
+			m["additionalProperties"] = s.AdditionalProperties
+		}
 	}
 	if s.Example != nil {
 		m["example"] = s.Example

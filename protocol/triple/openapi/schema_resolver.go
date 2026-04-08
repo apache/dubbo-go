@@ -21,7 +21,6 @@ import (
 	"reflect"
 	"strings"
 	"sync"
-	"time"
 )
 
 import (
@@ -41,6 +40,44 @@ func NewSchemaResolver(config *global.OpenAPIConfig) *SchemaResolver {
 		schemaMap:    &sync.Map{},
 		nameToSchema: &sync.Map{},
 	}
+}
+
+func (r *SchemaResolver) toSchemaName(t reflect.Type) string {
+	if t.PkgPath() != "" {
+		return sanitizeSchemaName(t.PkgPath()) + "_" + t.Name()
+	}
+	name := t.Name()
+	if name == "" {
+		name = t.String()
+	}
+	return name
+}
+
+func sanitizeSchemaName(s string) string {
+	var b strings.Builder
+	for _, c := range s {
+		if isAlphaNum(c) {
+			b.WriteRune(c)
+		} else {
+			b.WriteByte('_')
+		}
+	}
+	return b.String()
+}
+
+func isAlphaNum(c rune) bool {
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
+}
+
+// parseSchemaRef extracts the schema name from a $ref string in the format
+// "#/components/schemas/<name>". It returns an empty string if the ref does
+// not match the expected format.
+func parseSchemaRef(ref string) string {
+	parts := strings.Split(ref, "/")
+	if len(parts) == 4 && parts[0] == "#" && parts[1] == "components" && parts[2] == "schemas" {
+		return parts[3]
+	}
+	return ""
 }
 
 func (r *SchemaResolver) Resolve(t reflect.Type) *model.Schema {
@@ -117,13 +154,15 @@ func (r *SchemaResolver) resolveStruct(t reflect.Type) *model.Schema {
 		}
 	}
 
+	schemaName := r.toSchemaName(t)
+
 	schema := model.NewSchema().
 		SetType(model.SchemaTypeObject).
-		SetTitle(t.Name()).
+		SetTitle(schemaName).
 		SetGoType(t.String())
 
 	r.schemaMap.Store(t, schema)
-	r.nameToSchema.Store(t.Name(), schema)
+	r.nameToSchema.Store(schemaName, schema)
 
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
@@ -174,10 +213,7 @@ func (r *SchemaResolver) GetSchemas() map[string]*model.Schema {
 	r.schemaMap.Range(func(key, value any) bool {
 		if t, ok := key.(reflect.Type); ok {
 			if s, ok := value.(*model.Schema); ok {
-				name := t.Name()
-				if name == "" {
-					name = t.String()
-				}
+				name := r.toSchemaName(t)
 				schemas[name] = s
 			}
 		}
@@ -190,11 +226,7 @@ func (r *SchemaResolver) GetSchemaName(schema *model.Schema) string {
 	if schema == nil || schema.Ref == "" {
 		return ""
 	}
-	parts := strings.Split(schema.Ref, "/")
-	if len(parts) == 4 && parts[0] == "#" && parts[1] == "components" && parts[2] == "schemas" {
-		return parts[3]
-	}
-	return ""
+	return parseSchemaRef(schema.Ref)
 }
 
 func (r *SchemaResolver) GetSchemaDefinition(schema *model.Schema) *model.Schema {
@@ -204,9 +236,8 @@ func (r *SchemaResolver) GetSchemaDefinition(schema *model.Schema) *model.Schema
 	if schema.Ref == "" {
 		return schema
 	}
-	parts := strings.Split(schema.Ref, "/")
-	if len(parts) == 4 && parts[0] == "#" && parts[1] == "components" && parts[2] == "schemas" {
-		schemaName := parts[3]
+	schemaName := parseSchemaRef(schema.Ref)
+	if schemaName != "" {
 		if s, ok := r.nameToSchema.Load(schemaName); ok {
 			if resolvedSchema, ok := s.(*model.Schema); ok {
 				return resolvedSchema
@@ -216,18 +247,30 @@ func (r *SchemaResolver) GetSchemaDefinition(schema *model.Schema) *model.Schema
 	return nil
 }
 
+const maxExampleDepth = 15
+
 func (r *SchemaResolver) GenerateExample(schema *model.Schema) any {
+	return r.generateExample(schema, make(map[string]struct{}), 0)
+}
+
+func (r *SchemaResolver) generateExample(schema *model.Schema, visiting map[string]struct{}, depth int) any {
 	if schema == nil {
 		return nil
 	}
 
+	if depth > maxExampleDepth {
+		return make(map[string]any)
+	}
+
 	if schema.Ref != "" {
-		parts := strings.Split(schema.Ref, "/")
-		if len(parts) == 4 && parts[0] == "#" && parts[1] == "components" && parts[2] == "schemas" {
-			schemaName := parts[3]
+		schemaName := parseSchemaRef(schema.Ref)
+		if schemaName != "" {
+			if _, ok := visiting[schemaName]; ok {
+				return make(map[string]any)
+			}
 			if s, ok := r.nameToSchema.Load(schemaName); ok {
 				if resolvedSchema, ok := s.(*model.Schema); ok {
-					return r.GenerateExample(resolvedSchema)
+					return r.generateExample(resolvedSchema, visiting, depth+1)
 				}
 			}
 		}
@@ -248,14 +291,18 @@ func (r *SchemaResolver) GenerateExample(schema *model.Schema) any {
 		return false
 	case model.SchemaTypeArray:
 		if schema.Items != nil {
-			return []any{r.GenerateExample(schema.Items)}
+			return []any{r.generateExample(schema.Items, visiting, depth+1)}
 		}
 		return []any{}
 	case model.SchemaTypeObject:
 		if len(schema.Properties) > 0 {
+			if schema.Title != "" {
+				visiting[schema.Title] = struct{}{}
+				defer delete(visiting, schema.Title)
+			}
 			example := make(map[string]any)
 			for name, prop := range schema.Properties {
-				example[name] = r.GenerateExample(prop)
+				example[name] = r.generateExample(prop, visiting, depth+1)
 			}
 			return example
 		}
@@ -263,8 +310,4 @@ func (r *SchemaResolver) GenerateExample(schema *model.Schema) any {
 	}
 
 	return nil
-}
-
-func init() {
-	_ = time.Time{}
 }

@@ -25,6 +25,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
@@ -50,7 +51,7 @@ func (h *SwaggerUIHandler) Handle(req *http.Request) (string, string, bool) {
 
 	resPath := strings.TrimPrefix(path, swaggerUIPath)
 	if resPath == "" || resPath == "/" {
-		return h.handleIndex(), ContentTypeHTML, true
+		return h.handleIndex(), constant.OpenAPIContentTypeHTML, true
 	}
 
 	resPath = strings.TrimPrefix(resPath, "/")
@@ -59,18 +60,18 @@ func (h *SwaggerUIHandler) Handle(req *http.Request) (string, string, bool) {
 
 	switch requestPath {
 	case "index":
-		return h.handleIndex(), ContentTypeHTML, true
+		return h.handleIndex(), constant.OpenAPIContentTypeHTML, true
 	case "swagger-config":
-		return h.handleSwaggerConfig(), ContentTypeJSON, true
+		return h.handleSwaggerConfig(), constant.OpenAPIContentTypeJSON, true
 	default:
 		return "", "", false
 	}
 }
 
 func (h *SwaggerUIHandler) handleIndex() string {
-	cdn := h.config.GetSetting(SettingKeySwaggerUICDN)
+	cdn := h.config.GetSetting(constant.OpenAPISettingKeySwaggerUICDN)
 	if cdn == "" {
-		cdn = DefaultSwaggerUICDN
+		cdn = constant.OpenAPIDefaultSwaggerUICDN
 	}
 
 	settings := h.buildSettings()
@@ -133,8 +134,8 @@ func (h *SwaggerUIHandler) handleIndex() string {
 func (h *SwaggerUIHandler) buildSettings() string {
 	var sb strings.Builder
 	for key, value := range h.config.Settings {
-		if strings.HasPrefix(key, SettingKeySwaggerUISettings) {
-			settingKey := strings.TrimPrefix(key, SettingKeySwaggerUISettings)
+		if strings.HasPrefix(key, constant.OpenAPISettingKeySwaggerUISettings) {
+			settingKey := strings.TrimPrefix(key, constant.OpenAPISettingKeySwaggerUISettings)
 			sb.WriteString(fmt.Sprintf(",\n            \"%s\": %s", settingKey, value))
 		}
 	}

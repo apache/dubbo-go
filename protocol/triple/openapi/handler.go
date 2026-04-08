@@ -23,6 +23,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
@@ -43,11 +44,11 @@ func (h *RequestHandler) Handle(req *http.Request) (string, string, bool) {
 	basePath := h.config.Path
 
 	apiDocsPath := basePath + "/api-docs"
-	if strings.HasPrefix(path, apiDocsPath) {
+	if path == apiDocsPath || strings.HasPrefix(path, apiDocsPath+"/") {
 		return h.handleAPIDocs(path, basePath)
 	}
 
-	if strings.HasPrefix(path, basePath) {
+	if path == basePath || path == basePath+"/" || strings.HasPrefix(path, basePath+"/") {
 		return h.handleOpenAPI(path, basePath)
 	}
 
@@ -60,7 +61,7 @@ func (h *RequestHandler) handleAPIDocs(path, basePath string) (string, string, b
 	format := "json"
 
 	if path == apiDocsPath || path == apiDocsPath+"/" {
-		group = DefaultGroup
+		group = constant.OpenAPIDefaultGroup
 	} else {
 		pathPart := strings.TrimPrefix(path, apiDocsPath+"/")
 		if strings.HasSuffix(pathPart, ".json") {
@@ -76,7 +77,7 @@ func (h *RequestHandler) handleAPIDocs(path, basePath string) (string, string, b
 	}
 
 	if group == "" {
-		group = DefaultGroup
+		group = constant.OpenAPIDefaultGroup
 	}
 
 	return h.getOpenAPIContent(group, format)
@@ -92,15 +93,15 @@ func (h *RequestHandler) handleOpenAPI(path, basePath string) (string, string, b
 
 	switch path {
 	case basePath, basePath + "/":
-		group = DefaultGroup
+		group = constant.OpenAPIDefaultGroup
 	case openAPIPathJSON:
-		group = DefaultGroup
+		group = constant.OpenAPIDefaultGroup
 		format = "json"
 	case openAPIPathYAML:
-		group = DefaultGroup
+		group = constant.OpenAPIDefaultGroup
 		format = "yaml"
 	case openAPIPathYML:
-		group = DefaultGroup
+		group = constant.OpenAPIDefaultGroup
 		format = "yaml"
 	default:
 		pathPart := strings.TrimPrefix(path, basePath+"/")
@@ -117,7 +118,7 @@ func (h *RequestHandler) handleOpenAPI(path, basePath string) (string, string, b
 	}
 
 	if group == "" {
-		group = DefaultGroup
+		group = constant.OpenAPIDefaultGroup
 	}
 
 	return h.getOpenAPIContent(group, format)
@@ -125,8 +126,7 @@ func (h *RequestHandler) handleOpenAPI(path, basePath string) (string, string, b
 
 func (h *RequestHandler) getOpenAPIContent(group, format string) (string, string, bool) {
 	openAPI := h.service.GetOpenAPI(&OpenAPIRequest{
-		Group:  group,
-		Format: format,
+		Group: group,
 	})
 
 	content, err := h.service.GetEncoder().Encode(openAPI, format, true)
@@ -134,9 +134,9 @@ func (h *RequestHandler) getOpenAPIContent(group, format string) (string, string
 		return "", "", false
 	}
 
-	contentType := ContentTypeJSON
+	contentType := constant.OpenAPIContentTypeJSON
 	if format == "yaml" || format == "yml" {
-		contentType = ContentTypeYAML
+		contentType = constant.OpenAPIContentTypeYAML
 	}
 
 	return content, contentType, true

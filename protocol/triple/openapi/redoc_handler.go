@@ -24,6 +24,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
@@ -51,9 +52,9 @@ func (h *RedocHandler) Handle(req *http.Request) (string, string, bool) {
 	if resPath == "" || resPath == "/" {
 		group := req.URL.Query().Get("group")
 		if group == "" {
-			group = DefaultGroup
+			group = constant.OpenAPIDefaultGroup
 		}
-		return h.handleIndex(group), ContentTypeHTML, true
+		return h.handleIndex(group), constant.OpenAPIContentTypeHTML, true
 	}
 
 	resPath = strings.TrimPrefix(resPath, "/")
@@ -62,18 +63,18 @@ func (h *RedocHandler) Handle(req *http.Request) (string, string, bool) {
 	if requestPath == "index" {
 		group := req.URL.Query().Get("group")
 		if group == "" {
-			group = DefaultGroup
+			group = constant.OpenAPIDefaultGroup
 		}
-		return h.handleIndex(group), ContentTypeHTML, true
+		return h.handleIndex(group), constant.OpenAPIContentTypeHTML, true
 	}
 
 	return "", "", false
 }
 
 func (h *RedocHandler) handleIndex(group string) string {
-	cdn := h.config.GetSetting(SettingKeyRedocCDN)
+	cdn := h.config.GetSetting(constant.OpenAPISettingKeyRedocCDN)
 	if cdn == "" {
-		cdn = DefaultRedocCDN
+		cdn = constant.OpenAPIDefaultRedocCDN
 	}
 
 	return fmt.Sprintf(`<!-- Under a "MIT License" license, see https://github.com/Redocly/redoc/blob/main/LICENSE -->

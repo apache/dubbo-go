@@ -19,7 +19,6 @@ package openapi
 
 import (
 	"net/http"
-	"sync"
 )
 
 import (
@@ -31,59 +30,65 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
-var (
-	globalService   *DefaultService
-	globalHandler   *RequestHandler
-	swaggerHandler  *SwaggerUIHandler
-	redocHandler    *RedocHandler
-	serviceInitOnce sync.Once
-)
-
-func InitService(cfg *global.OpenAPIConfig) {
-	serviceInitOnce.Do(func() {
-		globalService = NewDefaultService(cfg)
-		globalHandler = NewRequestHandler(globalService, cfg)
-		swaggerHandler = NewSwaggerUIHandler(globalService, cfg)
-		redocHandler = NewRedocHandler(globalService, cfg)
-		logger.Info("OpenAPI service initialized")
-	})
+type OpenAPIIntegration struct {
+	service        *DefaultService
+	requestHandler *RequestHandler
+	swaggerHandler *SwaggerUIHandler
+	redocHandler   *RedocHandler
 }
 
-func RegisterService(interfaceName string, info *common.ServiceInfo, openapiGroup string) {
-	if globalService != nil {
-		globalService.RegisterService(interfaceName, info, openapiGroup)
+func NewOpenAPIIntegration(cfg *global.OpenAPIConfig) *OpenAPIIntegration {
+	if cfg == nil || !cfg.Enabled {
+		return nil
+	}
+	svc := NewDefaultService(cfg)
+	integration := &OpenAPIIntegration{
+		service:        svc,
+		requestHandler: NewRequestHandler(svc, cfg),
+		swaggerHandler: NewSwaggerUIHandler(svc, cfg),
+		redocHandler:   NewRedocHandler(svc, cfg),
+	}
+	logger.Info("OpenAPI service initialized")
+	return integration
+}
+
+func (o *OpenAPIIntegration) RegisterService(interfaceName string, info *common.ServiceInfo, openapiGroup string, dubboGroup string, dubboVersion string) {
+	if o != nil && o.service != nil {
+		o.service.RegisterService(interfaceName, info, openapiGroup, dubboGroup, dubboVersion)
 	}
 }
 
-type HTTPHandler struct{}
+type HTTPHandler struct {
+	integration *OpenAPIIntegration
+}
 
-func NewHTTPHandler() *HTTPHandler {
-	return &HTTPHandler{}
+func NewHTTPHandler(integration *OpenAPIIntegration) *HTTPHandler {
+	return &HTTPHandler{integration: integration}
 }
 
 func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if globalService == nil || !globalService.config.Enabled {
+	if h.integration == nil || h.integration.service == nil || !h.integration.service.config.Enabled {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
 		_, _ = w.Write([]byte(`{"message":"OpenAPI is not available","status":"404"}`))
 		return
 	}
 
-	if content, contentType, ok := swaggerHandler.Handle(r); ok {
+	if content, contentType, ok := h.integration.swaggerHandler.Handle(r); ok {
 		w.Header().Set("Content-Type", contentType)
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(content))
 		return
 	}
 
-	if content, contentType, ok := redocHandler.Handle(r); ok {
+	if content, contentType, ok := h.integration.redocHandler.Handle(r); ok {
 		w.Header().Set("Content-Type", contentType)
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(content))
 		return
 	}
 
-	if content, contentType, ok := globalHandler.Handle(r); ok {
+	if content, contentType, ok := h.integration.requestHandler.Handle(r); ok {
 		w.Header().Set("Content-Type", contentType)
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(content))

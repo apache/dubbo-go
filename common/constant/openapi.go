@@ -15,22 +15,22 @@
  * limitations under the License.
  */
 
-package openapi
+package constant
 
 const (
-	DefaultGroup   = "default"
-	DefaultVersion = "1.0.0"
+	OpenAPIDefaultGroup   = "default"
+	OpenAPIDefaultVersion = "1.0.0"
 
-	DefaultSwaggerUICDN = "https://unpkg.com/swagger-ui-dist@5.18.2"
-	DefaultRedocCDN     = "https://cdn.redoc.ly/redoc/latest/bundles"
+	OpenAPIDefaultSwaggerUICDN = "https://unpkg.com/swagger-ui-dist@5.18.2"
+	OpenAPIDefaultRedocCDN     = "https://cdn.redoc.ly/redoc/latest/bundles"
 
-	SettingKeySwaggerUICDN      = "swagger-ui.cdn"
-	SettingKeySwaggerUISettings = "swagger-ui.settings."
-	SettingKeyRedocCDN          = "redoc.cdn"
+	OpenAPISettingKeySwaggerUICDN      = "swagger-ui.cdn"
+	OpenAPISettingKeySwaggerUISettings = "swagger-ui.settings."
+	OpenAPISettingKeyRedocCDN          = "redoc.cdn"
 
-	ContentTypeJSON = "application/json"
-	ContentTypeYAML = "application/yaml"
-	ContentTypeHTML = "text/html"
+	OpenAPIContentTypeJSON = "application/json"
+	OpenAPIContentTypeYAML = "application/yaml"
+	OpenAPIContentTypeHTML = "text/html"
 
-	MetaKeyOpenAPIGroup = "openapi.group"
+	OpenAPIMetaKeyOpenAPIGroup = "openapi.group"
 )

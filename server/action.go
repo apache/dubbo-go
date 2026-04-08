@@ -45,7 +45,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/internal"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
-	"dubbo.apache.org/dubbo-go/v3/protocol/triple/openapi"
 )
 
 // Prefix returns dubbo.service.${InterfaceName}.
@@ -229,7 +228,7 @@ func (svcOpts *ServiceOptions) Export() error {
 		}
 
 		if svcOpts.openapiGroup != "" {
-			ivkURL.SetAttribute(openapi.MetaKeyOpenAPIGroup, svcOpts.openapiGroup)
+			ivkURL.SetAttribute(constant.OpenAPIMetaKeyOpenAPIGroup, svcOpts.openapiGroup)
 		}
 
 		if len(svcConf.Tag) > 0 {
