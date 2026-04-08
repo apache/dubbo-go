@@ -37,6 +37,9 @@ func DefaultOpenAPIConfig() *OpenAPIConfig {
 	return &OpenAPIConfig{
 		Enabled:                   false,
 		Path:                      "/dubbo/openapi",
+		InfoTitle:                 "Dubbo-go OpenAPI",
+		InfoDescription:           "Dubbo-go OpenAPI",
+		InfoVersion:               "1.0.0",
 		DefaultConsumesMediaTypes: []string{"application/json"},
 		DefaultProducesMediaTypes: []string{"application/json"},
 		DefaultHttpStatusCodes:    []string{"200", "400", "500"},
