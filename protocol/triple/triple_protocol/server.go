@@ -51,7 +51,7 @@ type Server struct {
 	handlers           map[string]*Handler
 	httpSrv            *http.Server
 	http3Srv           *http3.Server
-	tripleConfig       *global.TripleConfig
+	tripleConfig       *global.TripleConfig // Configuration for the triple protocol
 	openapiIntegration *openapi.OpenAPIIntegration
 }
 
