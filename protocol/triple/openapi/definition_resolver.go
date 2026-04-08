@@ -78,7 +78,7 @@ func (r *DefinitionResolver) Resolve(interfaceName string, info *serviceInfo) *m
 
 func (r *DefinitionResolver) resolveOperation(method serviceMethodInfo, httpMethod string, tagName string, schemaResolver *SchemaResolver) *model.Operation {
 	op := model.NewOperation()
-	op.SetOperationId(method.Name)
+	op.SetOperationId(tagName + "." + method.Name)
 	op.SetGoMethod(method.Name)
 	op.SetHttpMethod(strings.ToUpper(httpMethod))
 	op.AddTag(tagName)

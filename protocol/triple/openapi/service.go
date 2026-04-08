@@ -118,8 +118,13 @@ func (s *DefaultService) GetOpenAPI(req *OpenAPIRequest) *model.OpenAPI {
 		return openAPI
 	}
 
-	merged := s.mergeOpenAPIs(openAPIs)
-	return merged
+	// Group not found — return an empty OpenAPI document instead of the merged spec.
+	empty := model.NewOpenAPI()
+	empty.Info = &model.Info{
+		Title:   s.config.InfoTitle,
+		Version: s.config.InfoVersion,
+	}
+	return empty
 }
 
 func (s *DefaultService) GetOpenAPIGroups() []string {

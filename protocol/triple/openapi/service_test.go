@@ -153,9 +153,9 @@ func TestDefaultService_GetOpenAPI_DefaultGroup(t *testing.T) {
 	}
 }
 
-func TestDefaultService_GetOpenAPI_NonExistentGroup_MergesAll(t *testing.T) {
+func TestDefaultService_GetOpenAPI_NonExistentGroup_ReturnsEmpty(t *testing.T) {
 	cfg := global.DefaultOpenAPIConfig()
-	cfg.InfoTitle = "Merged API"
+	cfg.InfoTitle = "Test API"
 	svc := NewDefaultService(cfg)
 
 	info := newTestServiceInfo([]common.MethodInfo{
@@ -168,14 +168,16 @@ func TestDefaultService_GetOpenAPI_NonExistentGroup_MergesAll(t *testing.T) {
 	svc.RegisterService("Svc1", info, "group1", "", "")
 	svc.RegisterService("Svc2", info, "group2", "", "")
 
-	// Requesting a non-existent group should trigger merge
+	// Requesting a non-existent group should return an empty OpenAPI document
 	openAPI := svc.GetOpenAPI(&OpenAPIRequest{Group: "nonexistent"})
 	if openAPI == nil {
-		t.Fatal("GetOpenAPI with non-existent group should return merged result")
+		t.Fatal("GetOpenAPI with non-existent group should not return nil")
 	}
-	// Merged result should have paths from both groups
-	if len(openAPI.Paths) == 0 {
-		t.Error("merged OpenAPI should contain paths")
+	if len(openAPI.Paths) != 0 {
+		t.Error("non-existent group should return empty paths")
+	}
+	if openAPI.Info == nil || openAPI.Info.Title != "Test API" {
+		t.Error("non-existent group should still have configured info title")
 	}
 }
 

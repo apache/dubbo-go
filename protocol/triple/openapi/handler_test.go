@@ -150,6 +150,9 @@ func TestRequestHandler_handleAPIDocs_GroupExtraction(t *testing.T) {
 		{"named group yaml", "/dubbo/openapi/api-docs/mygroup.yaml", true},
 		{"named group yml", "/dubbo/openapi/api-docs/mygroup.yml", true},
 		{"named group no extension", "/dubbo/openapi/api-docs/mygroup", true},
+		// paths containing "/" are not valid group names
+		{"nested path", "/dubbo/openapi/api-docs/foo/bar", false},
+		{"nested path with extension", "/dubbo/openapi/api-docs/foo/bar.json", false},
 	}
 
 	for _, tt := range tests {
@@ -180,6 +183,16 @@ func TestRequestHandler_handleOpenAPI_GroupExtraction(t *testing.T) {
 		{"group.json", "/dubbo/openapi/v2.json", true},
 		{"group.yaml", "/dubbo/openapi/v2.yaml", true},
 		{"group no extension", "/dubbo/openapi/v2", true},
+		// reserved sub-paths should be rejected
+		{"swagger-ui", "/dubbo/openapi/swagger-ui", false},
+		{"swagger-ui sub-path", "/dubbo/openapi/swagger-ui/typo", false},
+		{"redoc", "/dubbo/openapi/redoc", false},
+		{"redoc sub-path", "/dubbo/openapi/redoc/typo", false},
+		{"api-docs", "/dubbo/openapi/api-docs", false},
+		{"api-docs sub-path", "/dubbo/openapi/api-docs/default.json", false},
+		// paths containing "/" are not valid group names
+		{"nested path", "/dubbo/openapi/foo/bar", false},
+		{"nested path with extension", "/dubbo/openapi/foo/bar.json", false},
 	}
 
 	for _, tt := range tests {

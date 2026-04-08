@@ -108,8 +108,8 @@ func TestDefinitionResolver_Resolve_OperationGeneration(t *testing.T) {
 	if pathItem.Post == nil {
 		t.Fatal("POST operation should be generated")
 	}
-	if pathItem.Post.OperationId != "Greet" {
-		t.Errorf("OperationId = %q, want %q", pathItem.Post.OperationId, "Greet")
+	if pathItem.Post.OperationId != "GreetService.Greet" {
+		t.Errorf("OperationId = %q, want %q", pathItem.Post.OperationId, "GreetService.Greet")
 	}
 }
 
@@ -433,8 +433,8 @@ func TestDefinitionResolver_resolveOperation(t *testing.T) {
 
 	op := r.resolveOperation(method, "POST", "GreetService", schemaResolver)
 
-	if op.OperationId != "Greet" {
-		t.Errorf("OperationId = %q, want %q", op.OperationId, "Greet")
+	if op.OperationId != "GreetService.Greet" {
+		t.Errorf("OperationId = %q, want %q", op.OperationId, "GreetService.Greet")
 	}
 	if op.RequestBody == nil {
 		t.Error("RequestBody should not be nil")

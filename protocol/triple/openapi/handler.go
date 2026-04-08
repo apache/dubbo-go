@@ -64,6 +64,10 @@ func (h *RequestHandler) handleAPIDocs(path, basePath string) (string, string, b
 		group = constant.OpenAPIDefaultGroup
 	} else {
 		pathPart := strings.TrimPrefix(path, apiDocsPath+"/")
+		// Reject paths containing "/" — group names must be a single segment.
+		if strings.Contains(pathPart, "/") {
+			return "", "", false
+		}
 		if strings.HasSuffix(pathPart, ".json") {
 			group = strings.TrimSuffix(pathPart, ".json")
 			format = "json"
@@ -105,6 +109,14 @@ func (h *RequestHandler) handleOpenAPI(path, basePath string) (string, string, b
 		format = "yaml"
 	default:
 		pathPart := strings.TrimPrefix(path, basePath+"/")
+		// Reject reserved sub-paths and paths containing "/" — these are
+		// not valid group names and should not fall through to the spec.
+		if strings.Contains(pathPart, "/") ||
+			pathPart == "swagger-ui" || strings.HasPrefix(pathPart, "swagger-ui/") ||
+			pathPart == "redoc" || strings.HasPrefix(pathPart, "redoc/") ||
+			pathPart == "api-docs" || strings.HasPrefix(pathPart, "api-docs/") {
+			return "", "", false
+		}
 		if strings.HasSuffix(pathPart, ".json") {
 			group = strings.TrimSuffix(pathPart, ".json")
 			format = "json"
