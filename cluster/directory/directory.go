@@ -35,3 +35,9 @@ type Directory interface {
 	// Subscribe listen to registry instances
 	Subscribe(url *common.URL) error
 }
+
+// ClosingInstanceRemover is an optional directory capability used by graceful shutdown.
+// Implementations remove a single cached service instance identified by instanceKey.
+type ClosingInstanceRemover interface {
+	RemoveClosingInstance(instanceKey string) bool
+}

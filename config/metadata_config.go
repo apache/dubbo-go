@@ -63,7 +63,7 @@ func initMetadata(rc *RootConfig) error {
 func getMetadataPort(rc *RootConfig) int {
 	port := rc.Application.MetadataServicePort
 	if port == "" {
-		protocolConfig, ok := rootConfig.Protocols[constant.DefaultProtocol]
+		protocolConfig, ok := rc.Protocols[constant.DefaultProtocol]
 		if ok {
 			port = protocolConfig.Port
 		} else {

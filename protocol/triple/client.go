@@ -37,6 +37,8 @@ import (
 	"github.com/quic-go/quic-go/http3"
 
 	"golang.org/x/net/http2"
+
+	grpc_health_v1 "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 import (
@@ -56,8 +58,9 @@ const (
 // callUnary, callClientStream, callServerStream, callBidiStream.
 // A Reference has a clientManager.
 type clientManager struct {
-	isIDL     bool
-	triClient *tri.Client
+	isIDL        bool
+	triClient    *tri.Client
+	healthClient *tri.Client
 }
 
 // TODO: code a triple client between clientManager and triple_protocol client
@@ -265,11 +268,29 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	}
 
 	triClient := tri.NewClient(httpClient, triURL, cliOpts...)
+	healthURL, err := joinPath(baseTriURL, constant.HealthCheckServiceInterface)
+	if err != nil {
+		return nil, fmt.Errorf("JoinPath failed for base %s, health interface %s", baseTriURL, constant.HealthCheckServiceInterface)
+	}
+	healthClient := tri.NewClient(httpClient, healthURL, tri.WithTimeout(timeout))
 
 	return &clientManager{
-		isIDL:     isIDL,
-		triClient: triClient,
+		isIDL:        isIDL,
+		triClient:    triClient,
+		healthClient: healthClient,
 	}, nil
+}
+
+func (cm *clientManager) callHealthWatch(ctx context.Context, service string) (*tri.ServerStreamForClient, error) {
+	if cm.healthClient == nil {
+		return nil, errors.New("triple health client is not initialized")
+	}
+	req := tri.NewRequest(&grpc_health_v1.HealthCheckRequest{Service: service})
+	stream, err := cm.healthClient.CallServerStream(ctx, req, "Watch")
+	if err != nil {
+		return nil, err
+	}
+	return stream, nil
 }
 
 func genKeepAliveOptions(url *common.URL, tripleConf *global.TripleConfig) ([]tri.ClientOption, time.Duration, time.Duration, error) {

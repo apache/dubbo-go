@@ -36,8 +36,8 @@ func TestCustomInit(t *testing.T) {
 	t.Run("empty use default", func(t *testing.T) {
 		err := Load(WithPath("./testdata/config/custom/empty.yaml"))
 		require.NoError(t, err)
-		assert.NotNil(t, rootConfig)
-		customConfig := rootConfig.Custom
+		assert.NotNil(t, GetRootConfig())
+		customConfig := GetRootConfig().Custom
 		assert.NotNil(t, customConfig)
 		assert.Equal(t, customConfig.ConfigMap, map[string]any(nil))
 		assert.Equal(t, "test", customConfig.GetDefineValue("test", "test"))
@@ -47,8 +47,8 @@ func TestCustomInit(t *testing.T) {
 	t.Run("use config", func(t *testing.T) {
 		err := Load(WithPath("./testdata/config/custom/custom.yaml"))
 		require.NoError(t, err)
-		assert.NotNil(t, rootConfig)
-		customConfig := rootConfig.Custom
+		assert.NotNil(t, GetRootConfig())
+		customConfig := GetRootConfig().Custom
 		assert.NotNil(t, customConfig)
 		assert.Equal(t, map[string]any{"test-config": true}, customConfig.ConfigMap)
 		assert.Equal(t, true, customConfig.GetDefineValue("test-config", false))
@@ -65,7 +65,7 @@ func TestCustomInit(t *testing.T) {
 		assert.Equal(t, true, customConfig.GetDefineValue("test-build", false))
 		assert.Equal(t, false, customConfig.GetDefineValue("test-no-build", false))
 		// todo @(laurence) now we should guarantee rootConfig ptr can't be changed during test
-		tempRootConfig := rootConfig
+		tempRootConfig := GetRootConfig()
 		rt := NewRootConfigBuilder().SetCustom(customConfig).Build()
 		SetRootConfig(*rt)
 		assert.Equal(t, true, GetDefineValue("test-build", false))

@@ -48,7 +48,7 @@ func GetTraceShutdownCallback() func() {
 		for name, createFunc := range traceExporterMap.Snapshot() {
 			if exporter, err := createFunc(nil); err == nil {
 				if err := exporter.GetTracerProvider().Shutdown(context.Background()); err != nil {
-					logger.Errorf("Graceful shutdown --- Failed to shutdown trace provider %s, error: %s", name, err.Error())
+					logger.Errorf("Graceful shutdown --- Failed to shutdown trace provider %s, error --- %s", name, err.Error())
 				} else {
 					logger.Infof("Graceful shutdown --- Tracer provider of %s", name)
 				}

@@ -64,7 +64,8 @@ type RootConfig struct {
 }
 
 func SetRootConfig(r RootConfig) {
-	rootConfig = &r
+	rc := r
+	setRootConfigInternal(&rc)
 }
 
 // Prefix dubbo
@@ -73,37 +74,41 @@ func (rc *RootConfig) Prefix() string {
 }
 
 func GetRootConfig() *RootConfig {
-	return rootConfig
+	return rootConfigStore.Load()
 }
 
 func GetProviderConfig() *ProviderConfig {
-	if err := check(); err == nil && rootConfig.Provider != nil {
-		return rootConfig.Provider
+	rc := GetRootConfig()
+	if err := check(); err == nil && rc.Provider != nil {
+		return rc.Provider
 	}
 	return NewProviderConfigBuilder().Build()
 }
 
 func GetConsumerConfig() *ConsumerConfig {
-	if err := check(); err == nil && rootConfig.Consumer != nil {
-		return rootConfig.Consumer
+	rc := GetRootConfig()
+	if err := check(); err == nil && rc.Consumer != nil {
+		return rc.Consumer
 	}
 	return NewConsumerConfigBuilder().Build()
 }
 
 func GetApplicationConfig() *ApplicationConfig {
-	return rootConfig.Application
+	return GetRootConfig().Application
 }
 
 func GetShutDown() *ShutdownConfig {
-	if err := check(); err == nil && rootConfig.Shutdown != nil {
-		return rootConfig.Shutdown
+	rc := GetRootConfig()
+	if err := check(); err == nil && rc.Shutdown != nil {
+		return rc.Shutdown
 	}
 	return NewShutDownConfigBuilder().Build()
 }
 
 func GetTLSConfig() *TLSConfig {
-	if err := check(); err == nil && rootConfig.TLSConfig != nil {
-		return rootConfig.TLSConfig
+	rc := GetRootConfig()
+	if err := check(); err == nil && rc.TLSConfig != nil {
+		return rc.TLSConfig
 	}
 	return NewTLSConfigBuilder().Build()
 }
@@ -135,7 +140,6 @@ func (rc *RootConfig) Init() error {
 			return err
 		}
 	}
-
 	if err := rc.Application.Init(); err != nil {
 		return err
 	}
@@ -175,6 +179,7 @@ func (rc *RootConfig) Init() error {
 	if err := rc.MetadataReport.Init(rc); err != nil {
 		return err
 	}
+
 	if err := rc.Otel.Init(rc.Application); err != nil {
 		return err
 	}
@@ -189,6 +194,7 @@ func (rc *RootConfig) Init() error {
 	if err := initRouterConfig(rc); err != nil {
 		return err
 	}
+
 	// provider、consumer must last init
 	if err := rc.Provider.Init(rc); err != nil {
 		return err
@@ -208,6 +214,7 @@ func (rc *RootConfig) Init() error {
 func (rc *RootConfig) Start() {
 	startOnce.Do(func() {
 		gracefulShutdownInit()
+
 		rc.Consumer.Load()
 		rc.Provider.Load()
 		if err := initMetadata(rc); err != nil {
@@ -359,19 +366,40 @@ func (rc *RootConfig) Process(event *config_center.ConfigChangeEvent) {
 		logger.Errorf("CenterConfig process unmarshalConf failed, got error %#v", err)
 		return
 	}
+	nextRootConfig := cloneRootConfigForDynamicUpdate(rc)
 	// dynamically update register
 	for registerId, updateRegister := range updateRootConfig.Registries {
-		register := rc.Registries[registerId]
-		register.DynamicUpdateProperties(updateRegister)
+		if register := nextRootConfig.Registries[registerId]; register != nil {
+			register.DynamicUpdateProperties(updateRegister)
+		}
 	}
 	// dynamically update consumer
-	rc.Consumer.DynamicUpdateProperties(updateRootConfig.Consumer)
+	if nextRootConfig.Consumer != nil {
+		nextRootConfig.Consumer.DynamicUpdateProperties(updateRootConfig.Consumer)
+	}
 
-	// dynamically update logger
-	rc.Logger.DynamicUpdateProperties(updateRootConfig.Logger)
+	setRootConfigInternal(nextRootConfig)
+}
 
-	// dynamically update metric
-	rc.Metrics.DynamicUpdateProperties(updateRootConfig.Metrics)
+func cloneRootConfigForDynamicUpdate(rc *RootConfig) *RootConfig {
+	next := *rc
+	if rc.Registries != nil {
+		next.Registries = make(map[string]*RegistryConfig, len(rc.Registries))
+		for registryID, registryConfig := range rc.Registries {
+			if registryConfig == nil {
+				next.Registries[registryID] = nil
+				continue
+			}
+			registryCopy := *registryConfig
+			next.Registries[registryID] = &registryCopy
+		}
+	}
+
+	if rc.Consumer != nil {
+		consumerCopy := *rc.Consumer
+		next.Consumer = &consumerCopy
+	}
+	return &next
 }
 
 // TODO：When config is migrated later, the impact of this will be migrated to the global module
