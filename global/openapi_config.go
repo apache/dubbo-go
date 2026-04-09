@@ -17,6 +17,11 @@
 
 package global
 
+import (
+	"path"
+	"strings"
+)
+
 type OpenAPIConfig struct {
 	Enabled bool `yaml:"enabled" json:"enabled" default:"false"`
 
@@ -75,4 +80,21 @@ func (c *OpenAPIConfig) GetSetting(key string) string {
 		return ""
 	}
 	return c.Settings[key]
+}
+
+// Init normalizes the config fields.
+func (c *OpenAPIConfig) Init() {
+	if c == nil {
+		return
+	}
+	// Normalize Path:
+	//  1. path.Clean collapses duplicate slashes and resolves ".." / "." segments
+	//  2. Trim trailing slash (preserve "/" as root)
+	if c.Path != "" && c.Path != "/" {
+		c.Path = path.Clean(c.Path)
+		c.Path = strings.TrimRight(c.Path, "/")
+		if c.Path == "" {
+			c.Path = "/"
+		}
+	}
 }

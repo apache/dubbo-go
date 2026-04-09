@@ -41,6 +41,7 @@ func NewOpenAPIIntegration(cfg *global.OpenAPIConfig) *OpenAPIIntegration {
 	if cfg == nil || !cfg.Enabled {
 		return nil
 	}
+	cfg.Init()
 	svc := NewDefaultService(cfg)
 	integration := &OpenAPIIntegration{
 		service:        svc,

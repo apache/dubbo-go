@@ -155,12 +155,6 @@ func (h *SwaggerUIHandler) handleSwaggerConfig() string {
 
 	config := map[string]any{
 		"urls": urls,
-		"links": []map[string]string{
-			{
-				"url":  h.config.Path + "/redoc",
-				"name": "ReDoc",
-			},
-		},
 	}
 
 	data, _ := json.MarshalIndent(config, "", "  ")

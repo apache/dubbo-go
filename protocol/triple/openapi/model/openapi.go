@@ -152,11 +152,17 @@ func (c *Components) AddSchema(name string, schema *Schema) *Components {
 	return c
 }
 
+type ExternalDocs struct {
+	Description string `json:"description,omitempty"`
+	URL         string `json:"url,omitempty"`
+}
+
 type OpenAPI struct {
-	OpenAPI    string               `json:"openapi"`
-	Info       *Info                `json:"info"`
-	Paths      map[string]*PathItem `json:"paths,omitempty"`
-	Components *Components          `json:"components,omitempty"`
+	OpenAPI      string               `json:"openapi"`
+	Info         *Info                `json:"info"`
+	Paths        map[string]*PathItem `json:"paths,omitempty"`
+	Components   *Components          `json:"components,omitempty"`
+	ExternalDocs *ExternalDocs        `json:"externalDocs,omitempty"`
 
 	Group string `json:"-"`
 }

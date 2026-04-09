@@ -178,6 +178,7 @@ func (s *DefaultService) resolveOpenAPIs() map[string]*model.OpenAPI {
 				group = constant.OpenAPIDefaultGroup
 			}
 			openAPI.Group = group
+			s.completeModel(openAPI, group)
 			if existing, ok := result[group]; ok {
 				s.mergeOpenAPI(existing, openAPI)
 			} else {
@@ -202,6 +203,27 @@ func (s *DefaultService) mergeOpenAPIs(openAPIs map[string]*model.OpenAPI) *mode
 	}
 
 	return merged
+}
+
+func (s *DefaultService) completeModel(openAPI *model.OpenAPI, group string) {
+	if openAPI.Info == nil {
+		openAPI.Info = &model.Info{}
+	}
+	if openAPI.Info.Title == "" {
+		openAPI.Info.Title = "Dubbo-go OpenAPI"
+	}
+	if openAPI.Info.Version == "" {
+		openAPI.Info.Version = "1.0.0"
+	}
+	if len(openAPI.Paths) == 0 {
+		return
+	}
+	if openAPI.ExternalDocs == nil {
+		openAPI.ExternalDocs = &model.ExternalDocs{
+			Description: "ReDoc",
+			URL:         s.config.Path + "/redoc/index.html?group=" + group,
+		}
+	}
 }
 
 func (s *DefaultService) mergeOpenAPI(target, source *model.OpenAPI) {

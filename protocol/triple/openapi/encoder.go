@@ -77,6 +77,10 @@ func (e *Encoder) toMap(openAPI *model.OpenAPI) map[string]any {
 		result["components"] = e.componentsToMap(openAPI.Components)
 	}
 
+	if openAPI.ExternalDocs != nil {
+		result["externalDocs"] = e.externalDocsToMap(openAPI.ExternalDocs)
+	}
+
 	return result
 }
 
@@ -240,6 +244,17 @@ func (e *Encoder) schemaToMap(s *model.Schema) map[string]any {
 		m["example"] = s.Example
 	}
 
+	return m
+}
+
+func (e *Encoder) externalDocsToMap(docs *model.ExternalDocs) map[string]any {
+	m := make(map[string]any)
+	if docs.Description != "" {
+		m["description"] = docs.Description
+	}
+	if docs.URL != "" {
+		m["url"] = docs.URL
+	}
 	return m
 }
 
