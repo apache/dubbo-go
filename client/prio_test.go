@@ -53,9 +53,7 @@ type prioRefSnapshot struct {
 	Protocol string
 }
 
-// TestPrio_ServerOverride verifies that
-// server-level options override instance defaults, and the override does not
-// leak into later server creations.
+// TestPrio_ServerOverride verifies that server-level options override instance defaults, and the override does no leak into later server creations.
 func TestPrio_ServerOverride(t *testing.T) {
 	ins, err := dubbo.NewInstance(
 		dubbo.WithName("new-config-api-prio-server"),
