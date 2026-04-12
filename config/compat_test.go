@@ -18,25 +18,19 @@
 package config_test
 
 import (
-	"testing"
-)
-
-import (
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-)
-
-import (
 	dubbo "dubbo.apache.org/dubbo-go/v3"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"testing"
 )
 
 const (
-	compatProtoID    = "tri-compat"
-	compatRegID      = "nacos-compat"
-	compatSvcID      = "com.example.CompatProviderService"
-	compatRefID      = "com.example.CompatReferenceService"
+	compatProtoID = "tri-compat"
+	compatRegID   = "nacos-compat"
+	compatSvcID   = "com.example.CompatProviderService"
+	compatRefID   = "com.example.CompatReferenceService"
 )
 
 func TestCompatApp(t *testing.T) {
