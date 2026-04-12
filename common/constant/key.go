@@ -73,6 +73,7 @@ const (
 	TripleConfigKey     = "triple-config"
 	ConsumerConfigKey   = "consumer-config"
 	RegistriesConfigKey = "registries-config"
+	RoutersConfigKey    = "routers-config"
 )
 
 // TODO: remove this after old triple removed
@@ -349,6 +350,8 @@ const (
 	ConditionAppRouterFactoryKey      = "provider.condition"
 	ConditionServiceRouterFactoryKey  = "service.condition"
 	ScriptRouterFactoryKey            = "consumer.script"
+	RouterScopeService                = "service"
+	RouterScopeApplication            = "application"
 	ForceKey                          = "force"
 	TrafficDisableKey                 = "trafficDisable"
 	Arguments                         = "arguments"

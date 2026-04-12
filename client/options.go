@@ -50,6 +50,7 @@ type ReferenceOptions struct {
 	TLS         *global.TLSConfig
 	Protocols   map[string]*global.ProtocolConfig
 	Registries  map[string]*global.RegistryConfig
+	Routers     []*global.RouterConfig
 
 	pxy          *proxy.Proxy
 	id           string
@@ -445,6 +446,17 @@ func WithParam(k, v string) ReferenceOption {
 	}
 }
 
+// WithRouter appends router configurations to the reference options.
+// This is a user-facing option for incrementally adding routers.
+// It appends to the current router config slice instead of replacing it.
+func WithRouter(routers ...*global.RouterConfig) ReferenceOption {
+	return func(opts *ReferenceOptions) {
+		if len(routers) > 0 {
+			opts.Routers = append(opts.Routers, routers...)
+		}
+	}
+}
+
 // ---------- For framework ----------
 // These functions should not be invoked by users
 
@@ -512,6 +524,15 @@ func setRegistries(regs map[string]*global.RegistryConfig) ReferenceOption {
 	}
 }
 
+// setRouters sets the routers configuration for the service reference.
+// This is an internal framework function for applying router settings to
+// reference options. It replaces the current router slice.
+func setRouters(routers []*global.RouterConfig) ReferenceOption {
+	return func(opts *ReferenceOptions) {
+		opts.Routers = routers
+	}
+}
+
 type ClientOptions struct {
 	Consumer    *global.ConsumerConfig
 	Application *global.ApplicationConfig
@@ -521,6 +542,7 @@ type ClientOptions struct {
 	Otel        *global.OtelConfig
 	TLS         *global.TLSConfig
 	Protocols   map[string]*global.ProtocolConfig
+	Routers     []*global.RouterConfig
 
 	overallReference *global.ReferenceConfig
 }
@@ -835,6 +857,17 @@ func WithClientParam(k, v string) ClientOption {
 	}
 }
 
+// WithClientRouter appends router configurations to the client options.
+// This is a user-facing option for incrementally adding routers.
+// It appends to the current router slice instead of replacing it.
+func WithClientRouter(routers ...*global.RouterConfig) ClientOption {
+	return func(opts *ClientOptions) {
+		if len(routers) > 0 {
+			opts.Routers = append(opts.Routers, routers...)
+		}
+	}
+}
+
 // todo(DMwangnima): implement this functionality
 // func WithClientGeneric(generic bool) ClientOption {
 //	return func(opts *ClientOptions) {
@@ -950,6 +983,17 @@ func SetClientTLS(tls *global.TLSConfig) ClientOption {
 func SetClientProtocols(protocols map[string]*global.ProtocolConfig) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.Protocols = protocols
+	}
+}
+
+// SetClientRouters sets the routers configuration for the client.
+// This is an internal framework function for applying router settings to
+// client options.
+// End users should not use this function for configuration.
+// It replaces the current router slice instead of appending to it.
+func SetClientRouters(routers []*global.RouterConfig) ClientOption {
+	return func(opts *ClientOptions) {
+		opts.Routers = routers
 	}
 }
 
