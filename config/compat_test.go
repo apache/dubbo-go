@@ -33,28 +33,27 @@ import (
 )
 
 const (
-	newConfigAPICompatProtocolID    = "tri-compat"
-	newConfigAPICompatRegistryID    = "nacos-compat"
-	newConfigAPICompatProviderSvcID = "com.example.CompatProviderService"
-	newConfigAPICompatReferenceID   = "com.example.CompatReferenceService"
+	compatProtoID    = "tri-compat"
+	compatRegID      = "nacos-compat"
+	compatSvcID      = "com.example.CompatProviderService"
+	compatRefID      = "com.example.CompatReferenceService"
 )
 
-// TestNewConfigAPI_CompatRoundTripPreservesKeyFields verifies that the
-// compatibility bridge keeps key fields consistent in root config.
-func TestNewConfigAPI_CompatRoundTripPreservesKeyFields(t *testing.T) {
-	_, err := dubbo.NewInstance(buildNewConfigAPICompatFixture())
-	require.NoError(t, err)
+func TestCompatApp(t *testing.T) {
+	root := compatRoot(t)
 
-	root := config.GetRootConfig()
-	require.NotNil(t, root)
 	require.NotNil(t, root.Application)
 	assert.Equal(t, "compat-app", root.Application.Name)
 	assert.Equal(t, "compat-group", root.Application.Group)
 	assert.Equal(t, "1.0.0", root.Application.Version)
 	assert.Equal(t, "gray", root.Application.Tag)
+}
+
+func TestCompatProto(t *testing.T) {
+	root := compatRoot(t)
 
 	require.Len(t, root.Protocols, 1)
-	protocolCfg := root.Protocols[newConfigAPICompatProtocolID]
+	protocolCfg := root.Protocols[compatProtoID]
 	require.NotNil(t, protocolCfg)
 	assert.Equal(t, "tri", protocolCfg.Name)
 	assert.Equal(t, "127.0.0.1", protocolCfg.Ip)
@@ -67,23 +66,31 @@ func TestNewConfigAPI_CompatRoundTripPreservesKeyFields(t *testing.T) {
 	require.NotNil(t, protocolCfg.TripleConfig.Http3)
 	assert.True(t, protocolCfg.TripleConfig.Http3.Enable)
 	assert.False(t, protocolCfg.TripleConfig.Http3.Negotiation)
+}
+
+func TestCompatRegistry(t *testing.T) {
+	root := compatRoot(t)
 
 	require.Len(t, root.Registries, 1)
-	registryCfg := root.Registries[newConfigAPICompatRegistryID]
+	registryCfg := root.Registries[compatRegID]
 	require.NotNil(t, registryCfg)
 	assert.Equal(t, "nacos", registryCfg.Protocol)
 	assert.Equal(t, "127.0.0.1:8848", registryCfg.Address)
 	assert.Equal(t, "compat-ns", registryCfg.Namespace)
 	assert.Equal(t, "true", registryCfg.UseAsConfigCenter)
+}
+
+func TestCompatProvider(t *testing.T) {
+	root := compatRoot(t)
 
 	require.NotNil(t, root.Provider)
 	assert.Equal(t, "echo", root.Provider.Filter)
-	assert.Equal(t, []string{newConfigAPICompatRegistryID}, root.Provider.RegistryIDs)
-	assert.Equal(t, []string{newConfigAPICompatProtocolID}, root.Provider.ProtocolIDs)
-	assert.Contains(t, root.Provider.Services, newConfigAPICompatProviderSvcID)
-	providerSvc := root.Provider.Services[newConfigAPICompatProviderSvcID]
+	assert.Equal(t, []string{compatRegID}, root.Provider.RegistryIDs)
+	assert.Equal(t, []string{compatProtoID}, root.Provider.ProtocolIDs)
+	assert.Contains(t, root.Provider.Services, compatSvcID)
+	providerSvc := root.Provider.Services[compatSvcID]
 	require.NotNil(t, providerSvc)
-	assert.Equal(t, newConfigAPICompatProviderSvcID, providerSvc.Interface)
+	assert.Equal(t, compatSvcID, providerSvc.Interface)
 	assert.Equal(t, "provider-group", providerSvc.Group)
 	assert.Equal(t, "provider-v1", providerSvc.Version)
 	assert.Equal(t, "failover", providerSvc.Cluster)
@@ -91,15 +98,19 @@ func TestNewConfigAPI_CompatRoundTripPreservesKeyFields(t *testing.T) {
 	require.Len(t, providerSvc.Methods, 1)
 	assert.Equal(t, "SayHello", providerSvc.Methods[0].Name)
 	assert.Equal(t, "2s", providerSvc.Methods[0].RequestTimeout)
+}
+
+func TestCompatConsumer(t *testing.T) {
+	root := compatRoot(t)
 
 	require.NotNil(t, root.Consumer)
 	assert.Equal(t, "cshutdown", root.Consumer.Filter)
 	assert.Equal(t, "tri", root.Consumer.Protocol)
 	assert.Equal(t, "5s", root.Consumer.RequestTimeout)
-	assert.Contains(t, root.Consumer.References, newConfigAPICompatReferenceID)
-	refCfg := root.Consumer.References[newConfigAPICompatReferenceID]
+	assert.Contains(t, root.Consumer.References, compatRefID)
+	refCfg := root.Consumer.References[compatRefID]
 	require.NotNil(t, refCfg)
-	assert.Equal(t, newConfigAPICompatReferenceID, refCfg.InterfaceName)
+	assert.Equal(t, compatRefID, refCfg.InterfaceName)
 	assert.Equal(t, "tri://127.0.0.1:20000", refCfg.URL)
 	assert.Equal(t, "ref-group", refCfg.Group)
 	assert.Equal(t, "ref-v1", refCfg.Version)
@@ -107,6 +118,10 @@ func TestNewConfigAPI_CompatRoundTripPreservesKeyFields(t *testing.T) {
 	require.Len(t, refCfg.MethodsConfig, 1)
 	assert.Equal(t, "Query", refCfg.MethodsConfig[0].Name)
 	assert.Equal(t, "1s", refCfg.MethodsConfig[0].RequestTimeout)
+}
+
+func TestCompatMetricsOtel(t *testing.T) {
+	root := compatRoot(t)
 
 	require.NotNil(t, root.Metrics)
 	require.NotNil(t, root.Metrics.Enable)
@@ -121,6 +136,10 @@ func TestNewConfigAPI_CompatRoundTripPreservesKeyFields(t *testing.T) {
 	assert.False(t, *root.Otel.TraceConfig.Enable)
 	assert.Equal(t, "stdout", root.Otel.TraceConfig.Exporter)
 	assert.Equal(t, "http://127.0.0.1:4318", root.Otel.TraceConfig.Endpoint)
+}
+
+func TestCompatShutdown(t *testing.T) {
+	root := compatRoot(t)
 
 	require.NotNil(t, root.Shutdown)
 	assert.Equal(t, "60s", root.Shutdown.Timeout)
@@ -130,13 +149,13 @@ func TestNewConfigAPI_CompatRoundTripPreservesKeyFields(t *testing.T) {
 	assert.True(t, *root.Shutdown.InternalSignal)
 }
 
-// TestNewConfigAPI_CompatHandlesEmptyCollections verifies nil-tolerant behavior
+// TestCompatEmptyCollections verifies nil-tolerant behavior
 // for optional sections and empty collections in compat conversion.
-func TestNewConfigAPI_CompatHandlesEmptyCollections(t *testing.T) {
+func TestCompatEmptyCollections(t *testing.T) {
 	_, err := dubbo.NewInstance(func(opts *dubbo.InstanceOptions) {
 		opts.Application.Name = "compat-empty"
 		opts.Protocols = map[string]*global.ProtocolConfig{
-			newConfigAPICompatProtocolID: {
+			compatProtoID: {
 				Name: "tri",
 				Ip:   "127.0.0.1",
 				Port: "20001",
@@ -157,7 +176,22 @@ func TestNewConfigAPI_CompatHandlesEmptyCollections(t *testing.T) {
 	assert.Empty(t, root.Router)
 }
 
-func buildNewConfigAPICompatFixture() dubbo.InstanceOption {
+func compatRoot(t *testing.T, opts ...dubbo.InstanceOption) *config.RootConfig {
+	t.Helper()
+
+	allOpts := make([]dubbo.InstanceOption, 0, len(opts)+1)
+	allOpts = append(allOpts, compatFixture())
+	allOpts = append(allOpts, opts...)
+
+	_, err := dubbo.NewInstance(allOpts...)
+	require.NoError(t, err)
+
+	root := config.GetRootConfig()
+	require.NotNil(t, root)
+	return root
+}
+
+func compatFixture() dubbo.InstanceOption {
 	return func(opts *dubbo.InstanceOptions) {
 		metricEnabled := true
 		traceEnabled := false
@@ -172,7 +206,7 @@ func buildNewConfigAPICompatFixture() dubbo.InstanceOption {
 		}
 
 		opts.Protocols = map[string]*global.ProtocolConfig{
-			newConfigAPICompatProtocolID: {
+			compatProtoID: {
 				Name:                 "tri",
 				Ip:                   "127.0.0.1",
 				Port:                 "20000",
@@ -190,7 +224,7 @@ func buildNewConfigAPICompatFixture() dubbo.InstanceOption {
 		}
 
 		opts.Registries = map[string]*global.RegistryConfig{
-			newConfigAPICompatRegistryID: {
+			compatRegID: {
 				Protocol:          "nacos",
 				Address:           "127.0.0.1:8848",
 				Namespace:         "compat-ns",
@@ -200,11 +234,11 @@ func buildNewConfigAPICompatFixture() dubbo.InstanceOption {
 
 		opts.Provider = &global.ProviderConfig{
 			Filter:      "echo",
-			RegistryIDs: []string{newConfigAPICompatRegistryID},
-			ProtocolIDs: []string{newConfigAPICompatProtocolID},
+			RegistryIDs: []string{compatRegID},
+			ProtocolIDs: []string{compatProtoID},
 			Services: map[string]*global.ServiceConfig{
-				newConfigAPICompatProviderSvcID: {
-					Interface:   newConfigAPICompatProviderSvcID,
+				compatSvcID: {
+					Interface:   compatSvcID,
 					Group:       "provider-group",
 					Version:     "provider-v1",
 					Cluster:     "failover",
@@ -225,8 +259,8 @@ func buildNewConfigAPICompatFixture() dubbo.InstanceOption {
 			RequestTimeout: "5s",
 			Check:          true,
 			References: map[string]*global.ReferenceConfig{
-				newConfigAPICompatReferenceID: {
-					InterfaceName: newConfigAPICompatReferenceID,
+				compatRefID: {
+					InterfaceName: compatRefID,
 					Check:         &referenceCheck,
 					URL:           "tri://127.0.0.1:20000",
 					Protocol:      "tri",
