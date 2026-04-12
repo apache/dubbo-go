@@ -349,3 +349,74 @@ func validateWildcardOrigin(origin string) error {
 
 	return nil
 }
+
+type OpenAPIOption func(*global.OpenAPIConfig)
+
+func WithOpenAPI(opts ...OpenAPIOption) Option {
+	openapi := global.DefaultOpenAPIConfig()
+	for _, opt := range opts {
+		opt(openapi)
+	}
+	return func(opts *Options) {
+		opts.Triple.OpenAPI = openapi
+	}
+}
+
+func OpenAPIEnable() OpenAPIOption {
+	return func(o *global.OpenAPIConfig) {
+		o.Enabled = true
+	}
+}
+
+func OpenAPIInfoTitle(title string) OpenAPIOption {
+	return func(o *global.OpenAPIConfig) {
+		o.InfoTitle = title
+	}
+}
+
+func OpenAPIInfoVersion(version string) OpenAPIOption {
+	return func(o *global.OpenAPIConfig) {
+		o.InfoVersion = version
+	}
+}
+
+func OpenAPIInfoDescription(description string) OpenAPIOption {
+	return func(o *global.OpenAPIConfig) {
+		o.InfoDescription = description
+	}
+}
+
+func OpenAPIDefaultConsumesMediaTypes(types ...string) OpenAPIOption {
+	return func(o *global.OpenAPIConfig) {
+		o.DefaultConsumesMediaTypes = append(o.DefaultConsumesMediaTypes, types...)
+	}
+}
+
+func OpenAPIDefaultProducesMediaTypes(types ...string) OpenAPIOption {
+	return func(o *global.OpenAPIConfig) {
+		o.DefaultProducesMediaTypes = append(o.DefaultProducesMediaTypes, types...)
+	}
+}
+
+func OpenAPIDefaultHttpStatusCodes(codes ...string) OpenAPIOption {
+	return func(o *global.OpenAPIConfig) {
+		o.DefaultHttpStatusCodes = append(o.DefaultHttpStatusCodes, codes...)
+	}
+}
+
+func OpenAPIPath(path string) OpenAPIOption {
+	return func(o *global.OpenAPIConfig) {
+		o.Path = path
+	}
+}
+
+func OpenAPISettings(settings map[string]string) OpenAPIOption {
+	return func(o *global.OpenAPIConfig) {
+		if o.Settings == nil {
+			o.Settings = make(map[string]string)
+		}
+		for k, v := range settings {
+			o.Settings[k] = v
+		}
+	}
+}

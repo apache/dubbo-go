@@ -140,6 +140,7 @@ const ImportTpl = `
 
 import (
 	"context"
+	"reflect"
 	{{if .IsStream}}"net/http"{{end}}
 )
 
@@ -458,6 +459,10 @@ var {{.ServiceName}}_ServiceInfo = server.ServiceInfo{
 				}
 				return nil, nil
 			},
+			Meta: map[string]interface{}{
+				"request.type":  reflect.TypeOf(new({{.RequestType}})),
+				"response.type": reflect.TypeOf(new({{.ReturnType}})),
+			},
 		},{{else}}
 		{
 			Name: "{{.MethodName}}",
@@ -472,6 +477,10 @@ var {{.ServiceName}}_ServiceInfo = server.ServiceInfo{
 					return nil, err
 				}
 				return triple_protocol.NewResponse(res), nil
+			},
+			Meta: map[string]interface{}{
+				"request.type":  reflect.TypeOf(new({{.RequestType}})),
+				"response.type": reflect.TypeOf(new({{.ReturnType}})),
 			},
 		},{{end}}{{else}}{{if .StreamsReturn}}
 		{
@@ -491,6 +500,9 @@ var {{.ServiceName}}_ServiceInfo = server.ServiceInfo{
 				}
 				return nil, nil
 			},
+			Meta: map[string]interface{}{
+				"response.type": reflect.TypeOf(new({{.ReturnType}})),
+			},
 		},{{else}}
 		{
 			Name: "{{.MethodName}}",
@@ -505,6 +517,9 @@ var {{.ServiceName}}_ServiceInfo = server.ServiceInfo{
 					return nil, err
 				}
 				return triple_protocol.NewResponse(res), nil
+			},
+			Meta: map[string]interface{}{
+				"response.type": reflect.TypeOf(new({{.ReturnType}})),
 			},
 		},{{end}}{{end}}{{end}}
 	},

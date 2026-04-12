@@ -142,15 +142,24 @@ func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
 	hanOpts = append(hanOpts, tri.WithExpectedCodecName(serialization))
 
 	intfName := url.Interface()
+
+	//OpenAPI group
+	var openapiGroup string
+	if g, ok := url.GetAttribute(constant.OpenAPIMetaKeyOpenAPIGroup); ok {
+		if gs, ok := g.(string); ok && gs != "" {
+			openapiGroup = gs
+		}
+	}
+
 	if info != nil {
 		// new triple idl mode
 		s.handleServiceWithInfo(intfName, invoker, info, hanOpts...)
-		s.saveServiceInfo(intfName, info)
+		s.saveServiceInfo(intfName, info, openapiGroup, url.Group(), url.Version())
 	} else if IDLMode == constant.NONIDL {
 		// new triple non-idl mode
 		reflectInfo := createServiceInfoWithReflection(service)
 		s.handleServiceWithInfo(intfName, invoker, reflectInfo, hanOpts...)
-		s.saveServiceInfo(intfName, reflectInfo)
+		s.saveServiceInfo(intfName, reflectInfo, openapiGroup, url.Group(), url.Version())
 	} else {
 		s.compatHandleService(url, intfName, url.Group(), url.Version(), hanOpts...)
 	}
@@ -180,9 +189,27 @@ func (s *Server) RefreshService(invoker base.Invoker, info *common.ServiceInfo) 
 	//Set expected codec name from serviceinfo
 	hanOpts = append(hanOpts, tri.WithExpectedCodecName(serialization))
 	intfName := URL.Interface()
+
+	IDLMode := URL.GetParam(constant.IDLMode, "")
+	var service common.RPCService
+	if IDLMode == constant.NONIDL {
+		service, _ = URL.GetAttribute(constant.RpcServiceKey)
+	}
+
+	var openapiGroup string
+	if g, ok := URL.GetAttribute(constant.OpenAPIMetaKeyOpenAPIGroup); ok {
+		if gs, ok := g.(string); ok && gs != "" {
+			openapiGroup = gs
+		}
+	}
+
 	if info != nil {
 		s.handleServiceWithInfo(intfName, invoker, info, hanOpts...)
-		s.saveServiceInfo(intfName, info)
+		s.saveServiceInfo(intfName, info, openapiGroup, URL.Group(), URL.Version())
+	} else if IDLMode == constant.NONIDL {
+		reflectInfo := createServiceInfoWithReflection(service)
+		s.handleServiceWithInfo(intfName, invoker, reflectInfo, hanOpts...)
+		s.saveServiceInfo(intfName, reflectInfo, openapiGroup, URL.Group(), URL.Version())
 	} else {
 		s.compatHandleService(URL, intfName, URL.Group(), URL.Version(), hanOpts...)
 	}
@@ -282,7 +309,7 @@ func (s *Server) compatHandleService(url *common.URL, interfaceName string, grou
 		if !ok {
 			info := createServiceInfoWithReflection(service)
 			s.handleServiceWithInfo(interfaceName, invoker, info, opts...)
-			s.saveServiceInfo(interfaceName, info)
+			s.saveServiceInfo(interfaceName, info, "", "", "")
 			continue
 		}
 		s.compatSaveServiceInfo(ds.XXX_ServiceDesc())
@@ -451,7 +478,7 @@ func appendTripleOutgoingAttachments(ctx context.Context, attachments map[string
 	}
 }
 
-func (s *Server) saveServiceInfo(interfaceName string, info *common.ServiceInfo) {
+func (s *Server) saveServiceInfo(interfaceName string, info *common.ServiceInfo, openapiGroup string, dubboGroup string, dubboVersion string) {
 	ret := grpc.ServiceInfo{}
 	ret.Methods = make([]grpc.MethodInfo, 0, len(info.Methods))
 	for _, method := range info.Methods {
@@ -478,6 +505,10 @@ func (s *Server) saveServiceInfo(interfaceName string, info *common.ServiceInfo)
 	defer s.mu.Unlock()
 	// todo(DMwangnima): using interfaceName is not enough, we need to consider group and version
 	s.services[interfaceName] = ret
+
+	if s.triServer != nil {
+		s.triServer.RegisterOpenAPIService(interfaceName, info, openapiGroup, dubboGroup, dubboVersion)
+	}
 }
 
 func (s *Server) compatSaveServiceInfo(desc *grpc_go.ServiceDesc) {
@@ -574,11 +605,37 @@ func buildMethodInfoWithReflection(methodType reflect.Method) *common.MethodInfo
 		paramsTypes[j-2] = methodType.Type.In(j)
 	}
 
+	// Extract return types for OpenAPI schema generation.
+	// Only record response.type when the signature is a reliable unary shape:
+	// exactly 2 return values where the second implements error.
+	// This avoids:
+	//   - methods returning only error getting a synthetic response type
+	//   - non-standard signatures producing misleading OpenAPI schemas
+	returnsNum := methodType.Type.NumOut()
+	var respType reflect.Type
+	if returnsNum == 2 {
+		errorType := reflect.TypeOf((*error)(nil)).Elem()
+		if methodType.Type.Out(1).Implements(errorType) {
+			respType = methodType.Type.Out(0)
+		}
+	}
+
+	// Build Meta for OpenAPI schema generation.
+	// Only set request.type / response.type when they can be determined reliably.
+	meta := make(map[string]any)
+	if len(paramsTypes) == 1 {
+		meta["request.type"] = paramsTypes[0]
+	}
+	if respType != nil {
+		meta["response.type"] = respType
+	}
+
 	// Capture method for closure
 	method := methodType
 	return &common.MethodInfo{
 		Name: methodType.Name,
 		Type: constant.CallUnary, // only support Unary invocation now
+		Meta: meta,
 		ReqInitFunc: func() any {
 			params := make([]any, len(paramsTypes))
 			for k, paramType := range paramsTypes {
