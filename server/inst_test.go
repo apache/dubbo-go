@@ -142,8 +142,10 @@ func TestNewConfigAPI_InstanceNewServerNewClientCallUnary(t *testing.T) {
 	resp := new(wrapperspb.StringValue)
 	deadline := time.Now().Add(5 * time.Second)
 	const attemptTimeout = 500 * time.Millisecond
+	attempt := 0
 
 	for time.Now().Before(deadline) {
+		attempt++
 		timeout := attemptTimeout
 		if remaining := time.Until(deadline); remaining < timeout {
 			timeout = remaining
@@ -159,9 +161,17 @@ func TestNewConfigAPI_InstanceNewServerNewClientCallUnary(t *testing.T) {
 		if callErr == nil && resp.Value == newConfigAPIHelloBody {
 			break
 		}
+		if callErr != nil {
+			t.Logf("attempt %d failed: call unary error=%v, timeout=%s, remaining=%s", attempt, callErr, timeout, time.Until(deadline))
+		} else {
+			t.Logf("attempt %d got unexpected response: value=%q, expect=%q, timeout=%s, remaining=%s", attempt, resp.Value, newConfigAPIHelloBody, timeout, time.Until(deadline))
+		}
 		time.Sleep(50 * time.Millisecond)
 	}
 
+	if callErr != nil {
+		t.Logf("final failure after %d attempts: last error=%v, last response=%q", attempt, callErr, resp.Value)
+	}
 	require.NoError(t, callErr)
 	assert.Equal(t, newConfigAPIHelloBody, resp.Value)
 }
