@@ -154,13 +154,7 @@ func TestCompatShutdown(t *testing.T) {
 func TestCompatEmptyCollections(t *testing.T) {
 	_, err := dubbo.NewInstance(func(opts *dubbo.InstanceOptions) {
 		opts.Application.Name = "compat-empty"
-		opts.Protocols = map[string]*global.ProtocolConfig{
-			compatProtoID: {
-				Name: "tri",
-				Ip:   "127.0.0.1",
-				Port: "20001",
-			},
-		}
+		opts.Protocols = compatProtocols("20001")
 		opts.Registries = map[string]*global.RegistryConfig{}
 		opts.Router = nil
 	})
@@ -193,118 +187,153 @@ func compatRoot(t *testing.T, opts ...dubbo.InstanceOption) *config.RootConfig {
 
 func compatFixture() dubbo.InstanceOption {
 	return func(opts *dubbo.InstanceOptions) {
-		metricEnabled := true
-		traceEnabled := false
-		internalSignal := true
-		referenceCheck := true
+		opts.Application = compatApplication()
+		opts.Protocols = compatProtocols("20000")
+		opts.Registries = compatRegistries()
+		opts.Provider = compatProvider()
+		opts.Consumer = compatConsumer()
+		opts.Metrics = compatMetrics()
+		opts.Otel = compatOtel()
+		opts.Shutdown = compatShutdown()
+		opts.Router = compatRouter()
+		opts.Custom = compatCustom()
+		opts.Profiles = compatProfiles()
+	}
+}
 
-		opts.Application = &global.ApplicationConfig{
-			Name:    "compat-app",
-			Group:   "compat-group",
-			Version: "1.0.0",
-			Tag:     "gray",
-		}
+func compatApplication() *global.ApplicationConfig {
+	return &global.ApplicationConfig{
+		Name:    "compat-app",
+		Group:   "compat-group",
+		Version: "1.0.0",
+		Tag:     "gray",
+	}
+}
 
-		opts.Protocols = map[string]*global.ProtocolConfig{
-			compatProtoID: {
-				Name:                 "tri",
-				Ip:                   "127.0.0.1",
-				Port:                 "20000",
-				MaxServerSendMsgSize: "8mib",
-				MaxServerRecvMsgSize: "6mib",
-				TripleConfig: &global.TripleConfig{
-					KeepAliveInterval: "30s",
-					KeepAliveTimeout:  "10s",
-					Http3: &global.Http3Config{
-						Enable:      true,
-						Negotiation: false,
+func compatProtocols(port string) map[string]*global.ProtocolConfig {
+	return map[string]*global.ProtocolConfig{
+		compatProtoID: {
+			Name:                 "tri",
+			Ip:                   "127.0.0.1",
+			Port:                 port,
+			MaxServerSendMsgSize: "8mib",
+			MaxServerRecvMsgSize: "6mib",
+			TripleConfig: &global.TripleConfig{
+				KeepAliveInterval: "30s",
+				KeepAliveTimeout:  "10s",
+				Http3: &global.Http3Config{
+					Enable:      true,
+					Negotiation: false,
+				},
+			},
+		},
+	}
+}
+
+func compatRegistries() map[string]*global.RegistryConfig {
+	return map[string]*global.RegistryConfig{
+		compatRegID: {
+			Protocol:          "nacos",
+			Address:           "127.0.0.1:8848",
+			Namespace:         "compat-ns",
+			UseAsConfigCenter: "true",
+		},
+	}
+}
+
+func compatProvider() *global.ProviderConfig {
+	return &global.ProviderConfig{
+		Filter:      "echo",
+		RegistryIDs: []string{compatRegID},
+		ProtocolIDs: []string{compatProtoID},
+		Services: map[string]*global.ServiceConfig{
+			compatSvcID: {
+				Interface:   compatSvcID,
+				Group:       "provider-group",
+				Version:     "provider-v1",
+				Cluster:     "failover",
+				Loadbalance: "random",
+				Methods: []*global.MethodConfig{
+					{
+						Name:           "SayHello",
+						RequestTimeout: "2s",
 					},
 				},
 			},
-		}
+		},
+	}
+}
 
-		opts.Registries = map[string]*global.RegistryConfig{
-			compatRegID: {
-				Protocol:          "nacos",
-				Address:           "127.0.0.1:8848",
-				Namespace:         "compat-ns",
-				UseAsConfigCenter: "true",
-			},
-		}
-
-		opts.Provider = &global.ProviderConfig{
-			Filter:      "echo",
-			RegistryIDs: []string{compatRegID},
-			ProtocolIDs: []string{compatProtoID},
-			Services: map[string]*global.ServiceConfig{
-				compatSvcID: {
-					Interface:   compatSvcID,
-					Group:       "provider-group",
-					Version:     "provider-v1",
-					Cluster:     "failover",
-					Loadbalance: "random",
-					Methods: []*global.MethodConfig{
-						{
-							Name:           "SayHello",
-							RequestTimeout: "2s",
-						},
+func compatConsumer() *global.ConsumerConfig {
+	referenceCheck := true
+	return &global.ConsumerConfig{
+		Filter:         "cshutdown",
+		Protocol:       "tri",
+		RequestTimeout: "5s",
+		Check:          true,
+		References: map[string]*global.ReferenceConfig{
+			compatRefID: {
+				InterfaceName: compatRefID,
+				Check:         &referenceCheck,
+				URL:           "tri://127.0.0.1:20000",
+				Protocol:      "tri",
+				Group:         "ref-group",
+				Version:       "ref-v1",
+				MethodsConfig: []*global.MethodConfig{
+					{
+						Name:           "Query",
+						RequestTimeout: "1s",
 					},
 				},
 			},
-		}
+		},
+	}
+}
 
-		opts.Consumer = &global.ConsumerConfig{
-			Filter:         "cshutdown",
-			Protocol:       "tri",
-			RequestTimeout: "5s",
-			Check:          true,
-			References: map[string]*global.ReferenceConfig{
-				compatRefID: {
-					InterfaceName: compatRefID,
-					Check:         &referenceCheck,
-					URL:           "tri://127.0.0.1:20000",
-					Protocol:      "tri",
-					Group:         "ref-group",
-					Version:       "ref-v1",
-					MethodsConfig: []*global.MethodConfig{
-						{
-							Name:           "Query",
-							RequestTimeout: "1s",
-						},
-					},
-				},
-			},
-		}
+func compatMetrics() *global.MetricsConfig {
+	metricEnabled := true
+	return &global.MetricsConfig{
+		Enable:   &metricEnabled,
+		Protocol: "prometheus",
+		Probe: &global.ProbeConfig{
+			Port: "22333",
+		},
+	}
+}
 
-		opts.Metrics = &global.MetricsConfig{
-			Enable:   &metricEnabled,
-			Protocol: "prometheus",
-			Probe: &global.ProbeConfig{
-				Port: "22333",
-			},
-		}
+func compatOtel() *global.OtelConfig {
+	traceEnabled := false
+	return &global.OtelConfig{
+		TracingConfig: &global.OtelTraceConfig{
+			Enable:   &traceEnabled,
+			Exporter: "stdout",
+			Endpoint: "http://127.0.0.1:4318",
+		},
+	}
+}
 
-		opts.Otel = &global.OtelConfig{
-			TracingConfig: &global.OtelTraceConfig{
-				Enable:   &traceEnabled,
-				Exporter: "stdout",
-				Endpoint: "http://127.0.0.1:4318",
-			},
-		}
+func compatShutdown() *global.ShutdownConfig {
+	internalSignal := true
+	return &global.ShutdownConfig{
+		Timeout:                "60s",
+		StepTimeout:            "3s",
+		ConsumerUpdateWaitTime: "2s",
+		InternalSignal:         &internalSignal,
+	}
+}
 
-		opts.Shutdown = &global.ShutdownConfig{
-			Timeout:                "60s",
-			StepTimeout:            "3s",
-			ConsumerUpdateWaitTime: "2s",
-			InternalSignal:         &internalSignal,
-		}
+func compatRouter() []*global.RouterConfig {
+	return []*global.RouterConfig{}
+}
 
-		opts.Router = []*global.RouterConfig{}
-		opts.Custom = &global.CustomConfig{
-			ConfigMap: map[string]any{"k": "v"},
-		}
-		opts.Profiles = &global.ProfilesConfig{
-			Active: "test",
-		}
+func compatCustom() *global.CustomConfig {
+	return &global.CustomConfig{
+		ConfigMap: map[string]any{"k": "v"},
+	}
+}
+
+func compatProfiles() *global.ProfilesConfig {
+	return &global.ProfilesConfig{
+		Active: "test",
 	}
 }
