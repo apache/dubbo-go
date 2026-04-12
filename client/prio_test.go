@@ -37,14 +37,14 @@ import (
 )
 
 const (
-	newConfigAPIPriorityInstanceGroup   = "new-config-instance-group"
-	newConfigAPIPriorityInstanceVersion = "new-config-instance-version"
-	newConfigAPIPriorityServerGroup     = "new-config-server-group"
-	newConfigAPIPriorityServerVersion   = "new-config-server-version"
-	newConfigAPIPriorityClientGroup     = "new-config-client-group"
-	newConfigAPIPriorityClientVersion   = "new-config-client-version"
-	newConfigAPIPriorityServiceName     = "com.example.NewConfigAPIPriorityService"
-	newConfigAPIPriorityServiceMethod   = "Ping"
+	prioTestInstanceGroup   = "new-config-instance-group"
+	prioTestInstanceVersion = "new-config-instance-version"
+	prioTestServerGroup     = "new-config-server-group"
+	prioTestServerVersion   = "new-config-server-version"
+	prioTestClientGroup     = "new-config-client-group"
+	prioTestClientVersion   = "new-config-client-version"
+	prioTestServiceName     = "com.example.NewConfigAPIPriorityService"
+	prioTestServiceMethod   = "Ping"
 )
 
 type newConfigAPIReferenceSnapshot struct {
@@ -59,31 +59,31 @@ type newConfigAPIReferenceSnapshot struct {
 func TestNewConfigAPI_Priority_ServerOverridesInstanceDefaults(t *testing.T) {
 	ins, err := dubbo.NewInstance(
 		dubbo.WithName("new-config-api-prio-server"),
-		dubbo.WithGroup(newConfigAPIPriorityInstanceGroup),
-		dubbo.WithVersion(newConfigAPIPriorityInstanceVersion),
+		dubbo.WithGroup(prioTestInstanceGroup),
+		dubbo.WithVersion(prioTestInstanceVersion),
 	)
 	require.NoError(t, err)
 
 	srvDefault, err := ins.NewServer()
 	require.NoError(t, err)
 	defaultServiceOpts := registerNewConfigAPIPriorityService(t, srvDefault)
-	assert.Equal(t, newConfigAPIPriorityInstanceGroup, defaultServiceOpts.Service.Group)
-	assert.Equal(t, newConfigAPIPriorityInstanceVersion, defaultServiceOpts.Service.Version)
+	assert.Equal(t, prioTestInstanceGroup, defaultServiceOpts.Service.Group)
+	assert.Equal(t, prioTestInstanceVersion, defaultServiceOpts.Service.Version)
 
 	srvOverride, err := ins.NewServer(
-		server.WithServerGroup(newConfigAPIPriorityServerGroup),
-		server.WithServerVersion(newConfigAPIPriorityServerVersion),
+		server.WithServerGroup(prioTestServerGroup),
+		server.WithServerVersion(prioTestServerVersion),
 	)
 	require.NoError(t, err)
 	overrideServiceOpts := registerNewConfigAPIPriorityService(t, srvOverride)
-	assert.Equal(t, newConfigAPIPriorityServerGroup, overrideServiceOpts.Service.Group)
-	assert.Equal(t, newConfigAPIPriorityServerVersion, overrideServiceOpts.Service.Version)
+	assert.Equal(t, prioTestServerGroup, overrideServiceOpts.Service.Group)
+	assert.Equal(t, prioTestServerVersion, overrideServiceOpts.Service.Version)
 
 	srvVerify, err := ins.NewServer()
 	require.NoError(t, err)
 	verifyServiceOpts := registerNewConfigAPIPriorityService(t, srvVerify)
-	assert.Equal(t, newConfigAPIPriorityInstanceGroup, verifyServiceOpts.Service.Group)
-	assert.Equal(t, newConfigAPIPriorityInstanceVersion, verifyServiceOpts.Service.Version)
+	assert.Equal(t, prioTestInstanceGroup, verifyServiceOpts.Service.Group)
+	assert.Equal(t, prioTestInstanceVersion, verifyServiceOpts.Service.Version)
 }
 
 // TestNewConfigAPI_Priority_ClientOverridesInstanceDefaults verifies that
@@ -92,8 +92,8 @@ func TestNewConfigAPI_Priority_ServerOverridesInstanceDefaults(t *testing.T) {
 func TestNewConfigAPI_Priority_ClientOverridesInstanceDefaults(t *testing.T) {
 	ins, err := dubbo.NewInstance(
 		dubbo.WithName("new-config-api-prio-client"),
-		dubbo.WithGroup(newConfigAPIPriorityInstanceGroup),
-		dubbo.WithVersion(newConfigAPIPriorityInstanceVersion),
+		dubbo.WithGroup(prioTestInstanceGroup),
+		dubbo.WithVersion(prioTestInstanceVersion),
 	)
 	require.NoError(t, err)
 
@@ -101,28 +101,28 @@ func TestNewConfigAPI_Priority_ClientOverridesInstanceDefaults(t *testing.T) {
 	require.NoError(t, err)
 
 	defaultSnapshot := captureNewConfigAPIEffectiveReference(t, cliDefault)
-	assert.Equal(t, newConfigAPIPriorityInstanceGroup, defaultSnapshot.Group)
-	assert.Equal(t, newConfigAPIPriorityInstanceVersion, defaultSnapshot.Version)
+	assert.Equal(t, prioTestInstanceGroup, defaultSnapshot.Group)
+	assert.Equal(t, prioTestInstanceVersion, defaultSnapshot.Version)
 	assert.Equal(t, constant.TriProtocol, defaultSnapshot.Protocol)
 
 	cliOverride, err := ins.NewClient(
-		client.WithClientGroup(newConfigAPIPriorityClientGroup),
-		client.WithClientVersion(newConfigAPIPriorityClientVersion),
+		client.WithClientGroup(prioTestClientGroup),
+		client.WithClientVersion(prioTestClientVersion),
 		client.WithClientProtocolTriple(),
 	)
 	require.NoError(t, err)
 
 	overrideSnapshot := captureNewConfigAPIEffectiveReference(t, cliOverride)
-	assert.Equal(t, newConfigAPIPriorityClientGroup, overrideSnapshot.Group)
-	assert.Equal(t, newConfigAPIPriorityClientVersion, overrideSnapshot.Version)
+	assert.Equal(t, prioTestClientGroup, overrideSnapshot.Group)
+	assert.Equal(t, prioTestClientVersion, overrideSnapshot.Version)
 	assert.Equal(t, constant.TriProtocol, overrideSnapshot.Protocol)
 
 	cliVerify, err := ins.NewClient()
 	require.NoError(t, err)
 
 	verifySnapshot := captureNewConfigAPIEffectiveReference(t, cliVerify)
-	assert.Equal(t, newConfigAPIPriorityInstanceGroup, verifySnapshot.Group)
-	assert.Equal(t, newConfigAPIPriorityInstanceVersion, verifySnapshot.Version)
+	assert.Equal(t, prioTestInstanceGroup, verifySnapshot.Group)
+	assert.Equal(t, prioTestInstanceVersion, verifySnapshot.Version)
 	assert.Equal(t, constant.TriProtocol, verifySnapshot.Protocol)
 }
 
@@ -135,10 +135,10 @@ func captureNewConfigAPIEffectiveReference(t *testing.T, cli *client.Client) new
 	var refOpts *client.ReferenceOptions
 
 	_, err := cli.DialWithInfo(
-		newConfigAPIPriorityServiceName,
+		prioTestServiceName,
 		&client.ClientInfo{
-			InterfaceName: newConfigAPIPriorityServiceName,
-			MethodNames:   []string{newConfigAPIPriorityServiceMethod},
+			InterfaceName: prioTestServiceName,
+			MethodNames:   []string{prioTestServiceMethod},
 		},
 		client.WithClusterAvailable(),
 		client.WithProtocolTriple(),
@@ -160,7 +160,7 @@ func captureNewConfigAPIEffectiveReference(t *testing.T, cli *client.Client) new
 type newConfigAPIPriorityService struct{}
 
 func (s *newConfigAPIPriorityService) Reference() string {
-	return newConfigAPIPriorityServiceName
+	return prioTestServiceName
 }
 
 func (s *newConfigAPIPriorityService) Ping(context.Context, string) (string, error) {
@@ -175,12 +175,12 @@ func registerNewConfigAPIPriorityService(t *testing.T, srv *server.Server) *serv
 	svc := &newConfigAPIPriorityService{}
 	err := srv.RegisterService(
 		svc,
-		server.WithInterface(newConfigAPIPriorityServiceName),
+		server.WithInterface(prioTestServiceName),
 		server.WithNotRegister(),
 	)
 	require.NoError(t, err)
 
-	svcOpts := srv.GetServiceOptionsByInterfaceName(newConfigAPIPriorityServiceName)
+	svcOpts := srv.GetServiceOptionsByInterfaceName(prioTestServiceName)
 	require.NotNil(t, svcOpts)
 
 	return svcOpts
