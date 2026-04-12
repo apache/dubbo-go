@@ -64,9 +64,44 @@ func (s *NewConfigAPIService) SayHello(context.Context, *emptypb.Empty) (*wrappe
 	return wrapperspb.String(newConfigAPIHelloBody), nil
 }
 
-// TestNewConfigAPI_InstanceNewServerNewClientCallUnary verifies the main new-config API
-// path: NewInstance -> NewServer/NewClient -> real unary invocation.
-func TestNewConfigAPI_InstanceNewServerNewClientCallUnary(t *testing.T) {
+type newConfigAPITestSetup struct {
+	ins  *dubbo.Instance
+	srv  *dubboserver.Server
+	port int
+}
+
+// TestCfgAPI_Create verifies instance construction and
+// object creation for NewServer/NewClient.
+func TestCfgAPI_Create(t *testing.T) {
+	setup := setupNewConfigAPITest(t)
+
+	cli, err := setup.ins.NewClient()
+	require.NoError(t, err)
+	require.NotNil(t, cli)
+}
+
+// TestCfgAPI_Export verifies service registration and
+// export path only, isolated from client invocation.
+func TestCfgAPI_Export(t *testing.T) {
+	setup := setupNewConfigAPITest(t)
+
+	svcOpts := registerAndExportNewConfigAPIService(t, setup.srv)
+	require.NotNil(t, svcOpts)
+}
+
+// TestCfgAPI_Call verifies the end-to-end
+// invocation path: NewInstance -> NewServer/NewClient -> unary call.
+func TestCfgAPI_Call(t *testing.T) {
+	setup := setupNewConfigAPITest(t)
+	_ = registerAndExportNewConfigAPIService(t, setup.srv)
+
+	conn := dialNewConfigAPIConnection(t, setup.ins, setup.port)
+	assertNewConfigAPIUnaryHello(t, conn)
+}
+
+func setupNewConfigAPITest(t *testing.T) *newConfigAPITestSetup {
+	t.Helper()
+
 	port := freePortForNewConfigAPITest(t)
 
 	ins, err := dubbo.NewInstance(
@@ -81,6 +116,16 @@ func TestNewConfigAPI_InstanceNewServerNewClientCallUnary(t *testing.T) {
 
 	srv, err := ins.NewServer()
 	require.NoError(t, err)
+
+	return &newConfigAPITestSetup{
+		ins:  ins,
+		srv:  srv,
+		port: port,
+	}
+}
+
+func registerAndExportNewConfigAPIService(t *testing.T, srv *dubboserver.Server) *dubboserver.ServiceOptions {
+	t.Helper()
 
 	svc := &NewConfigAPIService{}
 	svcInfo := &common.ServiceInfo{
@@ -105,7 +150,7 @@ func TestNewConfigAPI_InstanceNewServerNewClientCallUnary(t *testing.T) {
 		},
 	}
 
-	err = srv.Register(
+	err := srv.Register(
 		svc,
 		svcInfo,
 		dubboserver.WithInterface(newConfigAPIServiceName),
@@ -123,6 +168,12 @@ func TestNewConfigAPI_InstanceNewServerNewClientCallUnary(t *testing.T) {
 		extension.GetProtocol(constant.TriProtocol).Destroy()
 	})
 
+	return svcOpts
+}
+
+func dialNewConfigAPIConnection(t *testing.T, ins *dubbo.Instance, port int) *client.Connection {
+	t.Helper()
+
 	cli, err := ins.NewClient()
 	require.NoError(t, err)
 
@@ -137,6 +188,12 @@ func TestNewConfigAPI_InstanceNewServerNewClientCallUnary(t *testing.T) {
 		client.WithURL("tri://127.0.0.1:"+strconv.Itoa(port)),
 	)
 	require.NoError(t, err)
+
+	return conn
+}
+
+func assertNewConfigAPIUnaryHello(t *testing.T, conn *client.Connection) {
+	t.Helper()
 
 	var callErr error
 	resp := new(wrapperspb.StringValue)
