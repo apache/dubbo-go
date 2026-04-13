@@ -644,32 +644,7 @@ func buildMethodInfoWithReflection(methodType reflect.Method) *common.MethodInfo
 			return params
 		},
 		MethodFunc: func(ctx context.Context, args []any, handler any) (any, error) {
-			in := []reflect.Value{reflect.ValueOf(handler)}
-			in = append(in, reflect.ValueOf(ctx))
-			for _, arg := range args {
-				in = append(in, reflect.ValueOf(arg))
-			}
-			returnValues := method.Func.Call(in)
-			if len(returnValues) == 1 {
-				if isReflectValueNil(returnValues[0]) {
-					return nil, nil
-				}
-				if err, ok := returnValues[0].Interface().(error); ok {
-					return nil, err
-				}
-				return nil, nil
-			}
-			var result any
-			var err error
-			if !isReflectValueNil(returnValues[0]) {
-				result = returnValues[0].Interface()
-			}
-			if len(returnValues) > 1 && !isReflectValueNil(returnValues[1]) {
-				if e, ok := returnValues[1].Interface().(error); ok {
-					err = e
-				}
-			}
-			return result, err
+			return callMethodByReflection(ctx, method, handler, args)
 		},
 	}
 }
@@ -698,6 +673,64 @@ func isReflectValueNil(v reflect.Value) bool {
 	default:
 		return false
 	}
+}
+
+func callMethodByReflection(ctx context.Context, method reflect.Method, handler any, args []any) (any, error) {
+	in := []reflect.Value{reflect.ValueOf(handler)}
+	in = append(in, reflect.ValueOf(ctx))
+	for _, arg := range args {
+		in = append(in, reflect.ValueOf(arg))
+	}
+
+	var returnValues []reflect.Value
+	if shouldUseGenericVariadicCallSlice(ctx, method, args) {
+		returnValues = method.Func.CallSlice(in)
+	} else {
+		returnValues = method.Func.Call(in)
+	}
+
+	if len(returnValues) == 1 {
+		if isReflectValueNil(returnValues[0]) {
+			return nil, nil
+		}
+		if err, ok := returnValues[0].Interface().(error); ok {
+			return nil, err
+		}
+		return nil, nil
+	}
+	var result any
+	var err error
+	if !isReflectValueNil(returnValues[0]) {
+		result = returnValues[0].Interface()
+	}
+	if len(returnValues) > 1 && !isReflectValueNil(returnValues[1]) {
+		if e, ok := returnValues[1].Interface().(error); ok {
+			err = e
+		}
+	}
+	return result, err
+}
+
+// shouldUseGenericVariadicCallSlice mirrors the ServiceInfo reflection gate for
+// Triple's reflection-based method dispatch.
+func shouldUseGenericVariadicCallSlice(ctx context.Context, method reflect.Method, args []any) bool {
+	if !method.Type.IsVariadic() || len(args) == 0 || len(args) != method.Type.NumIn()-2 {
+		return false
+	}
+
+	value, ok := ctx.Value(constant.DubboCtxKey(constant.GenericVariadicCallSliceKey)).(bool)
+	if !ok || !value {
+		return false
+	}
+
+	lastArg := args[len(args)-1]
+	if lastArg == nil {
+		return false
+	}
+
+	lastArgType := reflect.TypeOf(lastArg)
+	variadicSliceType := method.Type.In(method.Type.NumIn() - 1)
+	return lastArgType.AssignableTo(variadicSliceType) || lastArgType.ConvertibleTo(variadicSliceType)
 }
 
 // generateAttachments transfer http.Header to map[string]any and make all keys lowercase

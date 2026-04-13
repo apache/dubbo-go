@@ -18,17 +18,21 @@
 package proxy_factory
 
 import (
+	"context"
 	"fmt"
 	"testing"
 )
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
 func TestGetProxy(t *testing.T) {
@@ -57,4 +61,32 @@ func TestGetInvoker(t *testing.T) {
 	url := common.NewURLWithOptions()
 	invoker := proxyFactory.GetInvoker(url)
 	assert.True(t, invoker.IsAvailable())
+}
+
+func TestInfoProxyInvoker_InvokePropagatesGenericVariadicMarker(t *testing.T) {
+	info := &common.ServiceInfo{
+		Methods: []common.MethodInfo{
+			{
+				Name: "HelloVariadic",
+				MethodFunc: func(ctx context.Context, args []any, handler any) (any, error) {
+					marked, ok := ctx.Value(constant.DubboCtxKey(constant.GenericVariadicCallSliceKey)).(bool)
+					require.True(t, ok)
+					assert.True(t, marked)
+					assert.Equal(t, []any{"hello", []string{"alice", "bob"}}, args)
+					return "ok", nil
+				},
+			},
+		},
+	}
+
+	invoker := newInfoInvoker(common.NewURLWithOptions(), info, struct{}{})
+	inv := invocation.NewRPCInvocationWithOptions(
+		invocation.WithMethodName("HelloVariadic"),
+		invocation.WithArguments([]any{"hello", []string{"alice", "bob"}}),
+	)
+	inv.SetAttribute(constant.GenericVariadicCallSliceKey, true)
+
+	res := invoker.Invoke(context.Background(), inv)
+	require.NoError(t, res.Error())
+	assert.Equal(t, "ok", res.Result())
 }
