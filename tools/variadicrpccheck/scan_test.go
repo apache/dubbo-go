@@ -30,10 +30,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	goModFileName              = "go.mod"
+	serviceFileName            = "service.go"
+	variadicCheckModulePath    = "example.com/variadicrpccheck"
+	variadicCheckModuleContent = "module example.com/variadicrpccheck\n\ngo 1.25.0\n"
+)
+
 func TestScanFindsVariadicRPCContracts(t *testing.T) {
 	dir := t.TempDir()
-	writeTempFile(t, dir, "go.mod", "module example.com/variadicrpccheck\n\ngo 1.25.0\n")
-	writeTempFile(t, dir, "service.go", `package sample
+	writeTempFile(t, dir, goModFileName, variadicCheckModuleContent)
+	writeTempFile(t, dir, serviceFileName, `package sample
 
 import "context"
 
@@ -120,7 +127,7 @@ func (s *TestOnlyService) MultiArgs(ctx context.Context, args ...string) error {
 
 func TestScanFindsEmbeddedImportedVariadicInterface(t *testing.T) {
 	baseDir := t.TempDir()
-	writeTempFile(t, baseDir, "go.mod", "module example.com/base\n\ngo 1.25.0\n")
+	writeTempFile(t, baseDir, goModFileName, goModuleContent("example.com/base"))
 	writeTempFile(t, baseDir, "base.go", `package base
 
 import "context"
@@ -128,18 +135,16 @@ import "context"
 type BaseService interface {
 	MultiArgs(ctx context.Context, args ...string) error
 }
-`)
+	`)
 
 	dir := t.TempDir()
-	writeTempFile(t, dir, "go.mod", fmt.Sprintf(`module example.com/local
+	writeTempFile(t, dir, goModFileName, fmt.Sprintf(`%s
 
-go 1.25.0
+	require example.com/base v0.0.0
 
-require example.com/base v0.0.0
-
-replace example.com/base => %s
-`, baseDir))
-	writeTempFile(t, dir, "service.go", `package local
+	replace example.com/base => %s
+`, goModuleContent("example.com/local"), baseDir))
+	writeTempFile(t, dir, serviceFileName, `package local
 
 import "example.com/base"
 
@@ -160,8 +165,8 @@ type WrappedService interface {
 
 func TestRunPrintsWarningsButReturnsZero(t *testing.T) {
 	dir := t.TempDir()
-	writeTempFile(t, dir, "go.mod", "module example.com/variadicrpccheck\n\ngo 1.25.0\n")
-	writeTempFile(t, dir, "service.go", `package sample
+	writeTempFile(t, dir, goModFileName, variadicCheckModuleContent)
+	writeTempFile(t, dir, serviceFileName, `package sample
 
 import "context"
 
@@ -183,7 +188,7 @@ func (s *VariadicService) MultiArgs(ctx context.Context, args ...string) error {
 
 func TestRunReportsScanErrorButReturnsZero(t *testing.T) {
 	dir := t.TempDir()
-	writeTempFile(t, dir, "go.mod", "module example.com/variadicrpccheck\n\ngo 1.25.0\n")
+	writeTempFile(t, dir, goModFileName, variadicCheckModuleContent)
 	writeTempFile(t, dir, "broken.go", "package sample\n\nfunc broken(\n")
 
 	var stdout bytes.Buffer
@@ -193,6 +198,13 @@ func TestRunReportsScanErrorButReturnsZero(t *testing.T) {
 	assert.Equal(t, 0, code)
 	assert.Empty(t, stdout.String())
 	assert.Contains(t, stderr.String(), "variadicrpccheck:")
+}
+
+func goModuleContent(modulePath string) string {
+	if modulePath == variadicCheckModulePath {
+		return variadicCheckModuleContent
+	}
+	return fmt.Sprintf("module %s\n\ngo 1.25.0\n", modulePath)
 }
 
 func writeTempFile(t *testing.T, dir, name, content string) {

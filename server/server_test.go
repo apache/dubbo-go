@@ -29,6 +29,7 @@ import (
 
 import (
 	gostlogger "github.com/dubbogo/gost/log/logger"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -447,21 +448,13 @@ func (m *variadicServerRPCService) Reference() string {
 
 // captureWarnLogger records warning logs for assertions.
 type captureWarnLogger struct {
+	gostlogger.Logger
 	warns []string
 }
 
-func (l *captureWarnLogger) Debug(args ...any)                   {}
-func (l *captureWarnLogger) Debugf(template string, args ...any) {}
-func (l *captureWarnLogger) Info(args ...any)                    {}
-func (l *captureWarnLogger) Infof(template string, args ...any)  {}
-func (l *captureWarnLogger) Warn(args ...any)                    {}
 func (l *captureWarnLogger) Warnf(template string, args ...any) {
 	l.warns = append(l.warns, fmt.Sprintf(template, args...))
 }
-func (l *captureWarnLogger) Error(args ...any)                   {}
-func (l *captureWarnLogger) Errorf(template string, args ...any) {}
-func (l *captureWarnLogger) Fatal(args ...any)                   {}
-func (l *captureWarnLogger) Fatalf(template string, args ...any) {}
 
 // Test concurrency: multiple goroutines registering services
 func TestConcurrentServiceRegistration(t *testing.T) {
@@ -530,8 +523,8 @@ func TestRegisterServiceWarnsOnVariadicRPCMethods(t *testing.T) {
 	srv, err := NewServer()
 	require.NoError(t, err)
 
-	capture := &captureWarnLogger{}
 	prev := gostlogger.GetLogger()
+	capture := &captureWarnLogger{Logger: prev}
 	gostlogger.SetLogger(capture)
 	t.Cleanup(func() {
 		gostlogger.SetLogger(prev)
@@ -554,8 +547,8 @@ func TestRegisterServiceDoesNotWarnOnNonVariadicRPCMethods(t *testing.T) {
 	srv, err := NewServer()
 	require.NoError(t, err)
 
-	capture := &captureWarnLogger{}
 	prev := gostlogger.GetLogger()
+	capture := &captureWarnLogger{Logger: prev}
 	gostlogger.SetLogger(capture)
 	t.Cleanup(func() {
 		gostlogger.SetLogger(prev)

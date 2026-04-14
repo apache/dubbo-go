@@ -53,14 +53,36 @@ func (f Finding) String() string {
 	)
 }
 
-// Scan uses syntax plus type information because interface declarations cannot
-// be discovered from runtime reflection, and exported implementations need type
-// checks to distinguish RPC-style variadics from option-style helper APIs.
+// Scan loads the requested packages, finds exported variadic RPC contracts,
+// keeps the output order stable, and returns any package-load errors together
+// with the findings collected before the error was seen.
 func Scan(dir string, patterns []string) ([]Finding, error) {
-	if len(patterns) == 0 {
-		patterns = []string{"./..."}
+	pkgs, err := loadPackages(dir, normalizePatterns(patterns))
+	if err != nil {
+		return nil, err
 	}
 
+	findings, loadErrs := collectFindingsAndErrors(pkgs)
+	sortFindings(findings)
+	if len(loadErrs) > 0 {
+		return findings, errors.New(strings.Join(loadErrs, "; "))
+	}
+
+	return findings, nil
+}
+
+// normalizePatterns falls back to the usual recursive package scan when the
+// caller does not pass an explicit pattern list.
+func normalizePatterns(patterns []string) []string {
+	if len(patterns) == 0 {
+		return []string{"./..."}
+	}
+	return patterns
+}
+
+// loadPackages asks go/packages for the syntax and type information needed to
+// inspect both interface declarations and concrete methods.
+func loadPackages(dir string, patterns []string) ([]*packages.Package, error) {
 	cfg := &packages.Config{
 		Mode: packages.NeedName |
 			packages.NeedFiles |
@@ -70,21 +92,37 @@ func Scan(dir string, patterns []string) ([]Finding, error) {
 			packages.NeedTypesInfo,
 		Dir: dir,
 	}
+	return packages.Load(cfg, patterns...)
+}
 
-	pkgs, err := packages.Load(cfg, patterns...)
-	if err != nil {
-		return nil, err
-	}
-
+// collectFindingsAndErrors scans every loaded package and keeps loader errors
+// separate so we can still emit useful warnings before returning the error.
+func collectFindingsAndErrors(pkgs []*packages.Package) ([]Finding, []string) {
 	findings := make([]Finding, 0)
 	loadErrs := make([]string, 0)
 	for _, pkg := range pkgs {
-		for _, pkgErr := range pkg.Errors {
-			loadErrs = append(loadErrs, pkgErr.Error())
-		}
+		loadErrs = append(loadErrs, packageErrors(pkg)...)
 		findings = append(findings, collectPackageFindings(pkg)...)
 	}
+	return findings, loadErrs
+}
 
+// packageErrors flattens go/packages errors into strings so Scan can combine
+// them into one returned error value.
+func packageErrors(pkg *packages.Package) []string {
+	if pkg == nil || len(pkg.Errors) == 0 {
+		return nil
+	}
+
+	loadErrs := make([]string, 0, len(pkg.Errors))
+	for _, pkgErr := range pkg.Errors {
+		loadErrs = append(loadErrs, pkgErr.Error())
+	}
+	return loadErrs
+}
+
+// sortFindings keeps warning output stable across runs.
+func sortFindings(findings []Finding) {
 	sort.Slice(findings, func(i, j int) bool {
 		if findings[i].Position.Filename != findings[j].Position.Filename {
 			return findings[i].Position.Filename < findings[j].Position.Filename
@@ -103,12 +141,6 @@ func Scan(dir string, patterns []string) ([]Finding, error) {
 		}
 		return findings[i].MethodName < findings[j].MethodName
 	})
-
-	if len(loadErrs) > 0 {
-		return findings, errors.New(strings.Join(loadErrs, "; "))
-	}
-
-	return findings, nil
 }
 
 // collectPackageFindings walks compiled files so build tags and generated-file
@@ -149,57 +181,89 @@ func collectInterfaceFindings(pkg *packages.Package, decl *ast.GenDecl) []Findin
 
 	findings := make([]Finding, 0)
 	for _, spec := range decl.Specs {
-		typeSpec, ok := spec.(*ast.TypeSpec)
-		if !ok || !typeSpec.Name.IsExported() {
-			continue
-		}
-
-		iface, ok := typeSpec.Type.(*ast.InterfaceType)
+		typeSpec, iface, ok := exportedInterfaceSpec(spec)
 		if !ok {
 			continue
 		}
 
-		obj := pkg.TypesInfo.Defs[typeSpec.Name]
-		if obj == nil {
-			continue
-		}
-
-		ifaceType, ok := obj.Type().Underlying().(*types.Interface)
-		if !ok {
-			continue
-		}
-
-		methodPositions := interfaceMethodPositions(pkg, iface)
-		ifaceType.Complete()
-		for i := 0; i < ifaceType.NumMethods(); i++ {
-			method := ifaceType.Method(i)
-			if !method.Exported() {
-				continue
-			}
-			if !isCandidateRPCMethodName(method.Name()) {
-				continue
-			}
-
-			sig, ok := method.Type().(*types.Signature)
-			if !ok || !isVariadicRPCSignature(sig) {
-				continue
-			}
-
-			pos := methodPositions[method.Name()]
-			if !pos.IsValid() {
-				pos = typeSpec.Name.Pos()
-			}
-
-			findings = append(findings, Finding{
-				Position:   pkg.Fset.Position(pos),
-				Kind:       "interface",
-				TypeName:   typeSpec.Name.Name,
-				MethodName: method.Name(),
-			})
-		}
+		findings = append(findings, typeSpecInterfaceFindings(pkg, typeSpec, iface)...)
 	}
 
 	return findings
+}
+
+// exportedInterfaceSpec keeps only exported interface declarations and skips
+// unexported or non-interface type specs early.
+func exportedInterfaceSpec(spec ast.Spec) (*ast.TypeSpec, *ast.InterfaceType, bool) {
+	typeSpec, ok := spec.(*ast.TypeSpec)
+	if !ok || !typeSpec.Name.IsExported() {
+		return nil, nil, false
+	}
+
+	iface, ok := typeSpec.Type.(*ast.InterfaceType)
+	if !ok {
+		return nil, nil, false
+	}
+
+	return typeSpec, iface, true
+}
+
+// typeSpecInterfaceFindings runs the RPC-style variadic check for one exported
+// interface and preserves positions for both direct and embedded methods.
+func typeSpecInterfaceFindings(pkg *packages.Package, typeSpec *ast.TypeSpec, iface *ast.InterfaceType) []Finding {
+	ifaceType, ok := interfaceTypeForSpec(pkg, typeSpec)
+	if !ok {
+		return nil
+	}
+
+	methodPositions := interfaceMethodPositions(pkg, iface)
+	ifaceType.Complete()
+
+	findings := make([]Finding, 0, ifaceType.NumMethods())
+	for i := 0; i < ifaceType.NumMethods(); i++ {
+		if finding, ok := interfaceMethodFinding(pkg, typeSpec, ifaceType.Method(i), methodPositions); ok {
+			findings = append(findings, finding)
+		}
+	}
+	return findings
+}
+
+// interfaceTypeForSpec resolves the go/types interface backing one AST type
+// declaration so later checks can use normalized method signatures.
+func interfaceTypeForSpec(pkg *packages.Package, typeSpec *ast.TypeSpec) (*types.Interface, bool) {
+	obj := pkg.TypesInfo.Defs[typeSpec.Name]
+	if obj == nil {
+		return nil, false
+	}
+
+	ifaceType, ok := obj.Type().Underlying().(*types.Interface)
+	return ifaceType, ok
+}
+
+// interfaceMethodFinding returns one finding for an exported variadic RPC-style
+// interface method and falls back to the interface declaration position when a
+// more precise method position is unavailable.
+func interfaceMethodFinding(pkg *packages.Package, typeSpec *ast.TypeSpec, method *types.Func, methodPositions map[string]token.Pos) (Finding, bool) {
+	if !method.Exported() || !isCandidateRPCMethodName(method.Name()) {
+		return Finding{}, false
+	}
+
+	sig, ok := method.Type().(*types.Signature)
+	if !ok || !isVariadicRPCSignature(sig) {
+		return Finding{}, false
+	}
+
+	pos := methodPositions[method.Name()]
+	if !pos.IsValid() {
+		pos = typeSpec.Name.Pos()
+	}
+
+	return Finding{
+		Position:   pkg.Fset.Position(pos),
+		Kind:       "interface",
+		TypeName:   typeSpec.Name.Name,
+		MethodName: method.Name(),
+	}, true
 }
 
 // collectImplementationFinding covers struct receiver methods used as direct
@@ -240,6 +304,9 @@ func signatureForIdent(pkg *packages.Package, ident *ast.Ident) (*types.Signatur
 	return sig, ok
 }
 
+// interfaceMethodPositions maps exported method names to the source line we
+// want to report. Direct methods use their own line; embedded methods use the
+// local embedding line.
 func interfaceMethodPositions(pkg *packages.Package, iface *ast.InterfaceType) map[string]token.Pos {
 	positions := make(map[string]token.Pos)
 	if iface == nil || iface.Methods == nil {
@@ -247,31 +314,55 @@ func interfaceMethodPositions(pkg *packages.Package, iface *ast.InterfaceType) m
 	}
 
 	for _, field := range iface.Methods.List {
-		if len(field.Names) == 1 {
-			methodName := field.Names[0]
-			if methodName.IsExported() {
-				positions[methodName.Name] = methodName.Pos()
-			}
-			continue
-		}
-
-		embeddedIface := embeddedInterfaceType(pkg, field.Type)
-		if embeddedIface == nil {
-			continue
-		}
-
-		embeddedIface.Complete()
-		for i := 0; i < embeddedIface.NumMethods(); i++ {
-			method := embeddedIface.Method(i)
-			if method.Exported() {
-				if _, exists := positions[method.Name()]; !exists {
-					positions[method.Name()] = field.Type.Pos()
-				}
-			}
-		}
+		recordInterfaceMethodPositions(pkg, positions, field)
 	}
 
 	return positions
+}
+
+// recordInterfaceMethodPositions handles one interface field entry, whether it
+// is a named method or an embedded interface.
+func recordInterfaceMethodPositions(pkg *packages.Package, positions map[string]token.Pos, field *ast.Field) {
+	if len(field.Names) == 1 {
+		recordNamedMethodPosition(positions, field.Names[0])
+		return
+	}
+
+	recordEmbeddedMethodPositions(pkg, positions, field.Type)
+}
+
+// recordNamedMethodPosition stores the declared position for one exported
+// method listed directly in the interface body.
+func recordNamedMethodPosition(positions map[string]token.Pos, methodName *ast.Ident) {
+	if methodName != nil && methodName.IsExported() {
+		positions[methodName.Name] = methodName.Pos()
+	}
+}
+
+// recordEmbeddedMethodPositions records exported methods contributed by an
+// embedded interface, but reports them at the local embedding site so the
+// warning points to the contract introduced in this file.
+func recordEmbeddedMethodPositions(pkg *packages.Package, positions map[string]token.Pos, expr ast.Expr) {
+	embeddedIface := embeddedInterfaceType(pkg, expr)
+	if embeddedIface == nil {
+		return
+	}
+
+	embeddedIface.Complete()
+	for i := 0; i < embeddedIface.NumMethods(); i++ {
+		method := embeddedIface.Method(i)
+		if method.Exported() {
+			recordEmbeddedMethodPosition(positions, method.Name(), expr.Pos())
+		}
+	}
+}
+
+// recordEmbeddedMethodPosition keeps the first local embedding position seen
+// for a method name when multiple embedded interfaces contribute it.
+func recordEmbeddedMethodPosition(positions map[string]token.Pos, methodName string, pos token.Pos) {
+	if _, exists := positions[methodName]; !exists {
+		positions[methodName] = pos
+	}
 }
 
 func embeddedInterfaceType(pkg *packages.Package, expr ast.Expr) *types.Interface {
