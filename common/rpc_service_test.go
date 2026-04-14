@@ -91,6 +91,28 @@ func (s *TestService1) Reference() string {
 	return referenceTestPathDistinct
 }
 
+// VariadicRPCService exposes variadic RPC methods for detection tests.
+type VariadicRPCService struct{}
+
+func (s *VariadicRPCService) Fanout(ctx context.Context, names ...string) error {
+	return nil
+}
+
+func (s *VariadicRPCService) Merge(ctx context.Context, prefix string, values ...int) (any, error) {
+	return values, nil
+}
+
+func (s *VariadicRPCService) LocalOnly(values ...string) int {
+	return len(values)
+}
+
+// NonRPCVariadicService exposes only local variadic helpers.
+type NonRPCVariadicService struct{}
+
+func (s *NonRPCVariadicService) LocalOnly(values ...string) int {
+	return len(values)
+}
+
 func TestServiceMapRegister(t *testing.T) {
 	// lowercase
 	s0 := &testService{}
@@ -218,6 +240,21 @@ func TestSuiteMethod(t *testing.T) {
 	assert.True(t, ok)
 	methodType = suiteMethod(method)
 	assert.Nil(t, methodType)
+}
+
+// Test VariadicRPCMethodNames returns exported variadic RPC methods only
+func TestVariadicRPCMethodNames(t *testing.T) {
+	t.Run("returns variadic rpc methods only", func(t *testing.T) {
+		assert.Equal(t, []string{"Fanout", "Merge"}, VariadicRPCMethodNames(&VariadicRPCService{}))
+	})
+
+	t.Run("ignores non-rpc variadic methods", func(t *testing.T) {
+		assert.Empty(t, VariadicRPCMethodNames(&NonRPCVariadicService{}))
+	})
+
+	t.Run("handles nil services", func(t *testing.T) {
+		assert.Empty(t, VariadicRPCMethodNames(nil))
+	})
 }
 
 type ServiceWithoutRef struct{}

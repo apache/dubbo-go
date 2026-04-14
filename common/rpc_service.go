@@ -20,6 +20,7 @@ package common
 import (
 	"context"
 	"reflect"
+	"sort"
 	"strings"
 	"sync"
 	"unicode"
@@ -327,6 +328,47 @@ func isExportedOrBuiltinType(t reflect.Type) bool {
 	// PkgPath will be non-empty even for an exported type,
 	// so we need to check the type name as well.
 	return isExported(t.Name()) || t.PkgPath() == ""
+}
+
+// VariadicRPCMethodNames returns exported RPC method names whose final
+// parameter uses Go variadic syntax (...T). The detection reuses suiteMethod so
+// only methods Dubbo-go would export as RPC methods are included.
+func VariadicRPCMethodNames(svc RPCService) []string {
+	return variadicRPCMethodNames(reflect.TypeOf(svc))
+}
+
+// WarnVariadicRPCMethods emits guidance for exported variadic RPC methods while
+// keeping existing services compatible.
+func WarnVariadicRPCMethods(serviceName string, svc RPCService) {
+	methodNames := VariadicRPCMethodNames(svc)
+	if len(methodNames) == 0 {
+		return
+	}
+
+	logger.Warnf(
+		"Service %s exports variadic RPC method(s): %s. Existing services remain supported, but new cross-language or generic contracts should avoid variadic (...T); prefer []T, request structs, or Triple + Protobuf IDL.",
+		serviceName,
+		strings.Join(methodNames, ", "),
+	)
+}
+
+// variadicRPCMethodNames keeps the result sorted so warnings and tests stay
+// stable regardless of reflection iteration order.
+func variadicRPCMethodNames(typ reflect.Type) []string {
+	if typ == nil {
+		return nil
+	}
+
+	methodNames := make([]string, 0)
+	for i := 0; i < typ.NumMethod(); i++ {
+		method := typ.Method(i)
+		if suiteMethod(method) != nil && method.Type.IsVariadic() {
+			methodNames = append(methodNames, method.Name)
+		}
+	}
+
+	sort.Strings(methodNames)
+	return methodNames
 }
 
 // suitableMethods returns suitable Rpc methods of typ

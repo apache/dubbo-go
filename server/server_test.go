@@ -19,6 +19,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"strconv"
 	"sync"
@@ -27,6 +28,7 @@ import (
 )
 
 import (
+	gostlogger "github.com/dubbogo/gost/log/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -432,6 +434,35 @@ func (m *mockServerRPCService) Reference() string {
 	return "com.example.MockService"
 }
 
+// variadicServerRPCService exposes a variadic RPC method for warning tests.
+type variadicServerRPCService struct{}
+
+func (m *variadicServerRPCService) Broadcast(ctx context.Context, names ...string) error {
+	return nil
+}
+
+func (m *variadicServerRPCService) Reference() string {
+	return "com.example.VariadicService"
+}
+
+// captureWarnLogger records warning logs for assertions.
+type captureWarnLogger struct {
+	warns []string
+}
+
+func (l *captureWarnLogger) Debug(args ...any)                   {}
+func (l *captureWarnLogger) Debugf(template string, args ...any) {}
+func (l *captureWarnLogger) Info(args ...any)                    {}
+func (l *captureWarnLogger) Infof(template string, args ...any)  {}
+func (l *captureWarnLogger) Warn(args ...any)                    {}
+func (l *captureWarnLogger) Warnf(template string, args ...any) {
+	l.warns = append(l.warns, fmt.Sprintf(template, args...))
+}
+func (l *captureWarnLogger) Error(args ...any)                   {}
+func (l *captureWarnLogger) Errorf(template string, args ...any) {}
+func (l *captureWarnLogger) Fatal(args ...any)                   {}
+func (l *captureWarnLogger) Fatalf(template string, args ...any) {}
+
 // Test concurrency: multiple goroutines registering services
 func TestConcurrentServiceRegistration(t *testing.T) {
 	srv, err := NewServer()
@@ -492,6 +523,48 @@ func TestRegisterService(t *testing.T) {
 	// Service should be registered with handler reference name
 	svcOpts := srv.GetServiceOptions(handler.Reference())
 	assert.NotNil(t, svcOpts)
+}
+
+// Test RegisterService warns on variadic RPC methods
+func TestRegisterServiceWarnsOnVariadicRPCMethods(t *testing.T) {
+	srv, err := NewServer()
+	require.NoError(t, err)
+
+	capture := &captureWarnLogger{}
+	prev := gostlogger.GetLogger()
+	gostlogger.SetLogger(capture)
+	t.Cleanup(func() {
+		gostlogger.SetLogger(prev)
+	})
+
+	handler := &variadicServerRPCService{}
+	err = srv.RegisterService(handler)
+	require.NoError(t, err)
+
+	svcOpts := srv.GetServiceOptions(handler.Reference())
+	assert.NotNil(t, svcOpts)
+	require.Len(t, capture.warns, 1)
+	assert.Contains(t, capture.warns[0], handler.Reference())
+	assert.Contains(t, capture.warns[0], "Broadcast")
+	assert.Contains(t, capture.warns[0], "[]T")
+}
+
+// Test RegisterService does not warn on non-variadic RPC methods
+func TestRegisterServiceDoesNotWarnOnNonVariadicRPCMethods(t *testing.T) {
+	srv, err := NewServer()
+	require.NoError(t, err)
+
+	capture := &captureWarnLogger{}
+	prev := gostlogger.GetLogger()
+	gostlogger.SetLogger(capture)
+	t.Cleanup(func() {
+		gostlogger.SetLogger(prev)
+	})
+
+	handler := &mockServerRPCService{}
+	err = srv.RegisterService(handler)
+	require.NoError(t, err)
+	assert.Empty(t, capture.warns)
 }
 
 // Test Register with handler that has method config
