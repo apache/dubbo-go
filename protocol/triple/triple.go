@@ -188,7 +188,14 @@ func (tp *TripleProtocol) drainServers() []*Server {
 	return servers
 }
 
+// MountHTTPHandler attaches a root HTTP handler to the Triple listener at the
+// given location. If the listener already exists, the handler is applied to the
+// existing server; otherwise the Triple transport is started eagerly so later
+// service export can reuse the same listener.
 func (tp *TripleProtocol) MountHTTPHandler(url *common.URL, handler http.Handler) error {
+	if url == nil {
+		return fmt.Errorf("triple server url must not be nil")
+	}
 	if handler == nil {
 		return fmt.Errorf("mounted HTTP handler must not be nil")
 	}
@@ -197,12 +204,30 @@ func (tp *TripleProtocol) MountHTTPHandler(url *common.URL, handler http.Handler
 	defer tp.serverLock.Unlock()
 
 	if srv, ok := tp.serverMap[url.Location]; ok {
+		// If service export already created the listener, mounting only needs to
+		// attach the root handler to the existing server instance.
 		srv.SetMountedHTTPHandler(handler)
 		return nil
 	}
 
-	// start a new server
+	var tripleConf *global.TripleConfig
+	if tripleConfRaw, ok := url.GetAttribute(constant.TripleConfigKey); ok {
+		typed, ok := tripleConfRaw.(*global.TripleConfig)
+		if !ok {
+			return fmt.Errorf("invalid triple config type %T", tripleConfRaw)
+		}
+		tripleConf = typed
+	}
 
+	srv := NewServer(tripleConf)
+	srv.SetMountedHTTPHandler(handler)
+	// Boot transport eagerly so HTTP-only and mount-before-export scenarios
+	// reuse the same Triple listener once services are exported later.
+	if err := srv.StartHTTPTransport(url); err != nil {
+		return err
+	}
+
+	tp.serverMap[url.Location] = srv
 	return nil
 }
 

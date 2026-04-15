@@ -25,10 +25,21 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+)
 
+import (
 	hessian "github.com/apache/dubbo-go-hessian2"
+
 	"github.com/dubbogo/gost/log/logger"
 
+	grpc_go "github.com/dubbogo/grpc-go"
+
+	"github.com/dustin/go-humanize"
+
+	"google.golang.org/grpc"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
@@ -36,12 +47,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo3"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
-	grpc_go "github.com/dubbogo/grpc-go"
-	"github.com/dustin/go-humanize"
-	"google.golang.org/grpc"
-
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
-
 	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
 
@@ -64,13 +70,16 @@ func NewServer(cfg *global.TripleConfig) *Server {
 	}
 }
 
-// Start TRIPLE server
+// Start prepares the Triple transport for one exported service. It resolves the
+// listener configuration, ensures the underlying tri.Server exists, registers
+// the service handlers, and finally starts the shared transport.
 func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
 	url := invoker.GetURL()
 
 	callProtocol, tripleConf, tlsConf, err := resolveServerTransport(url)
 	if err != nil {
 		logger.Errorf("TRIPLE server init failed: %v", err)
+		return
 	}
 
 	s.ensureTriServer(url.Location, tripleConf)
@@ -79,15 +88,21 @@ func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
 
 }
 
+// resolveServerTransport extracts transport-level Triple configuration from the
+// export URL and converts it into the concrete listener settings used by the
+// adaptation layer.
 func resolveServerTransport(url *common.URL) (string, *global.TripleConfig, *tls.Config, error) {
 	if url == nil {
 		return "", nil, nil, fmt.Errorf("triple server url must not be nil")
 	}
 
 	var tripleConf *global.TripleConfig
-	tripleConfRaw, ok := url.GetAttribute(constant.TripleConfigKey)
-	if ok {
-		tripleConf = tripleConfRaw.(*global.TripleConfig)
+	if tripleConfRaw, ok := url.GetAttribute(constant.TripleConfigKey); ok {
+		typed, ok := tripleConfRaw.(*global.TripleConfig)
+		if !ok {
+			return "", nil, nil, fmt.Errorf("invalid triple config type %T", tripleConfRaw)
+		}
+		tripleConf = typed
 	}
 
 	callProtocol := constant.CallHTTP2
@@ -100,13 +115,12 @@ func resolveServerTransport(url *common.URL) (string, *global.TripleConfig, *tls
 	// TODO: move tls config to handleService
 
 	var globalTlsConf *global.TLSConfig
-	tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey)
-	if ok {
-		globalTlsConf, ok = tlsConfRaw.(*global.TLSConfig)
+	if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
+		typed, ok := tlsConfRaw.(*global.TLSConfig)
 		if !ok {
 			return "", nil, nil, fmt.Errorf("invalid tls config type %T", tlsConfRaw)
-
 		}
+		globalTlsConf = typed
 	}
 
 	var tlsConf *tls.Config
@@ -122,19 +136,36 @@ func resolveServerTransport(url *common.URL) (string, *global.TripleConfig, *tls
 	return callProtocol, tripleConf, tlsConf, nil
 }
 
+// ensureTriServer lazily creates the shared tri.Server for one listener
+// address. Service export and mount-first startup both converge here so they
+// share the same transport lifecycle and reflection registration.
 func (s *Server) ensureTriServer(addr string, tripleConf *global.TripleConfig) {
 	if tripleConf != nil {
 		s.cfg = tripleConf
 	}
-	if s.triServer == nil {
-		s.triServer = tri.NewServer(addr, s.cfg)
-		if s.mountedHTTPHandler != nil {
-			s.triServer.SetFallbackHTTPHandler(s.mountedHTTPHandler)
-		}
-		internal.ReflectionRegister(s)
+
+	if s.triServer != nil {
+		return
 	}
+
+	s.triServer = tri.NewServer(addr, s.cfg)
+	// MountHTTPHandler may initialize transport before any Triple service is
+	// exported, so the first tri.Server instance must inherit the root handler.
+	if handler := s.mountedHTTPHandlerSnapshot(); handler != nil {
+		s.triServer.SetFallbackHTTPHandler(handler)
+	}
+	internal.ReflectionRegister(s)
 }
 
+func (s *Server) mountedHTTPHandlerSnapshot() http.Handler {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.mountedHTTPHandler
+}
+
+// SetMountedHTTPHandler updates the root HTTP fallback on the Triple server.
+// When transport is already running, the new handler is applied immediately to
+// the underlying route mux.
 func (s *Server) SetMountedHTTPHandler(handler http.Handler) {
 	if handler == nil {
 		return
@@ -146,8 +177,24 @@ func (s *Server) SetMountedHTTPHandler(handler http.Handler) {
 	s.mu.Unlock()
 
 	if triServer != nil {
-		s.triServer.SetFallbackHTTPHandler(handler)
+		triServer.SetFallbackHTTPHandler(handler)
 	}
+}
+
+// StartHTTPTransport starts the shared Triple listener without requiring any
+// exported service handlers first. This is used by mount-first and HTTP-only
+// flows to bring up the listener before service export happens later.
+func (s *Server) StartHTTPTransport(url *common.URL) error {
+	callProtocol, tripleConf, tlsConf, err := resolveServerTransport(url)
+	if err != nil {
+		return err
+	}
+
+	// Reuse the same transport bootstrap path as normal service export so mount-
+	// first and export-first flows converge on one listener lifecycle.
+	s.ensureTriServer(url.Location, tripleConf)
+	s.startTransport(callProtocol, tlsConf)
+	return nil
 }
 
 func (s *Server) startTransport(callProtocol string, tlsConf *tls.Config) {
