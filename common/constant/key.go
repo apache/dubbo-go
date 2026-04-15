@@ -170,7 +170,6 @@ const (
 	ServiceInfoKey                     = "service-info"
 	RpcServiceKey                      = "rpc-service"
 	ClientInfoKey                      = "client-info"
-	MountedHTTPHandlerKey              = "mounted-http-handler"
 	TLSConfigKey                       = "tls-config"
 	ProviderConfigKey                  = "provider-config"
 	ProtocolConfigKey                  = "protocol-config"
