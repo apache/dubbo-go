@@ -33,6 +33,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
@@ -315,6 +316,12 @@ func (g *greetServiceForTest) Greet(ctx context.Context, req string) (string, er
 
 func (g *greetServiceForTest) Reference() string { return "greetServiceForTest" }
 
+type variadicReflectionServiceForTest struct{}
+
+func (s *variadicReflectionServiceForTest) HelloVariadic(ctx context.Context, prefix string, names ...string) (string, error) {
+	return prefix + ":" + strconv.Itoa(len(names)), nil
+}
+
 // TestEnhanceServiceInfoMethodFuncBackfillExactName verifies that
 // enhanceServiceInfo fills in MethodFunc when the ServiceInfo method name
 // matches the Go exported method name exactly (PascalCase).
@@ -351,6 +358,25 @@ func TestEnhanceServiceInfoMethodFuncBackfillJavaStyleName(t *testing.T) {
 	assert.Len(t, result.Methods, 1)
 	assert.NotNil(t, result.Methods[0].MethodFunc,
 		"MethodFunc must be found via swapped-case lookup to avoid nil-func panic on lowercase-first method names")
+}
+
+func TestCallMethodByReflectionVariadic(t *testing.T) {
+	svc := &variadicReflectionServiceForTest{}
+	method, ok := reflect.TypeOf(svc).MethodByName("HelloVariadic")
+	require.True(t, ok)
+
+	t.Run("generic packed variadic tail uses call slice", func(t *testing.T) {
+		ctx := context.WithValue(context.Background(), constant.DubboCtxKey(constant.GenericVariadicCallSliceKey), true)
+		res, err := CallMethodByReflection(ctx, method, svc, []any{"hello", []string{"alice", "bob"}})
+		require.NoError(t, err)
+		assert.Equal(t, "hello:2", res)
+	})
+
+	t.Run("ordinary discrete variadic call remains unchanged", func(t *testing.T) {
+		res, err := CallMethodByReflection(context.Background(), method, svc, []any{"hello", "alice", "bob"})
+		require.NoError(t, err)
+		assert.Equal(t, "hello:2", res)
+	})
 }
 
 // Test getMetadataPort with default protocol

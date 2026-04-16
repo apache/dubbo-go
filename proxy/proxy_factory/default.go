@@ -130,7 +130,8 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation base.Invocation) 
 	}
 
 	// prepare argv
-	if (len(method.ArgsType()) == 1 || len(method.ArgsType()) == 2 && method.ReplyType() == nil) && method.ArgsType()[0].String() == "[]interface {}" {
+	useCallSlice := shouldUseGenericVariadicCallSlice(invocation, method, args)
+	if !useCallSlice && (len(method.ArgsType()) == 1 || len(method.ArgsType()) == 2 && method.ReplyType() == nil) && method.ArgsType()[0].String() == "[]interface {}" {
 		in = append(in, reflect.ValueOf(args))
 	} else {
 		for i := 0; i < len(args); i++ {
@@ -150,7 +151,7 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation base.Invocation) 
 	var replyv reflect.Value
 	var retErr any
 
-	returnValues, callErr := callLocalMethod(method.Method(), in)
+	returnValues, callErr := callLocalMethod(method.Method(), in, useCallSlice)
 
 	if callErr != nil {
 		logger.Errorf("Invoke function error: %+v, service: %#v", callErr, url)
@@ -174,6 +175,33 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation base.Invocation) 
 	}
 
 	return result
+}
+
+// shouldUseGenericVariadicCallSlice only enables CallSlice for the generic variadic path
+// after the filter has already packed the variadic tail into the declared slice type.
+func shouldUseGenericVariadicCallSlice(invocation base.Invocation, method *common.MethodType, args []any) bool {
+	if !method.IsVariadic() || len(args) != len(method.ArgsType()) || len(args) == 0 {
+		return false
+	}
+
+	value, ok := invocation.GetAttribute(constant.GenericVariadicCallSliceKey)
+	if !ok {
+		return false
+	}
+
+	useCallSlice, ok := value.(bool)
+	if !ok || !useCallSlice {
+		return false
+	}
+
+	lastArg := args[len(args)-1]
+	if lastArg == nil {
+		return true
+	}
+
+	lastArgType := reflect.TypeOf(lastArg)
+	variadicSliceType := method.ArgsType()[len(method.ArgsType())-1]
+	return lastArgType.AssignableTo(variadicSliceType) || lastArgType.ConvertibleTo(variadicSliceType)
 }
 
 func getProviderURL(url *common.URL) *common.URL {
@@ -203,6 +231,13 @@ func (tpi *infoProxyInvoker) Invoke(ctx context.Context, invocation base.Invocat
 	args := invocation.Arguments()
 	result := new(result.RPCResult)
 	if method, ok := tpi.methodMap[name]; ok {
+		// ServiceInfo reflection paths only receive ctx/args, so carry the generic
+		// variadic marker through ctx for the downstream CallSlice check.
+		if marked, ok := invocation.GetAttribute(constant.GenericVariadicCallSliceKey); ok {
+			if useCallSlice, ok := marked.(bool); ok && useCallSlice {
+				ctx = context.WithValue(ctx, constant.DubboCtxKey(constant.GenericVariadicCallSliceKey), true)
+			}
+		}
 		res, err := method.MethodFunc(ctx, args, tpi.svc)
 		result.SetResult(res)
 		if err != nil {
