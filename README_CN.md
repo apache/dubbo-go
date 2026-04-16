@@ -130,6 +130,12 @@ func main() {
 
 有关使用详情，请参阅 [imports-formatter README](https://github.com/dubbogo/tools?tab=readme-ov-file#imports-formatter)。
 
+### variadicrpccheck
+
+一个 warning-only 的扫描工具，用于检测导出的 variadic RPC 契约，并给出跨语言场景下的迁移建议。
+
+可以通过 `make rpc-contract-check` 在本地运行。
+
 ## 生态系统
 
 - [dubbo-go-samples](https://github.com/apache/dubbo-go-samples)

@@ -19,11 +19,14 @@ package common
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"testing"
 )
 
 import (
+	gostlogger "github.com/dubbogo/gost/log/logger"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -111,6 +114,15 @@ type NonRPCVariadicService struct{}
 
 func (s *NonRPCVariadicService) LocalOnly(values ...string) int {
 	return len(values)
+}
+
+type captureCommonWarnLogger struct {
+	gostlogger.Logger
+	warns []string
+}
+
+func (l *captureCommonWarnLogger) Warnf(template string, args ...any) {
+	l.warns = append(l.warns, fmt.Sprintf(template, args...))
 }
 
 func TestServiceMapRegister(t *testing.T) {
@@ -255,6 +267,24 @@ func TestVariadicRPCMethodNames(t *testing.T) {
 	t.Run("handles nil services", func(t *testing.T) {
 		assert.Empty(t, VariadicRPCMethodNames(nil))
 	})
+}
+
+func TestWarnVariadicRPCMethods(t *testing.T) {
+	prev := gostlogger.GetLogger()
+	capture := &captureCommonWarnLogger{Logger: prev}
+	gostlogger.SetLogger(capture)
+	t.Cleanup(func() {
+		gostlogger.SetLogger(prev)
+	})
+
+	WarnVariadicRPCMethods("com.example.VariadicService", &VariadicRPCService{})
+	require.Len(t, capture.warns, 1)
+	assert.Contains(t, capture.warns[0], "com.example.VariadicService")
+	assert.Contains(t, capture.warns[0], "Fanout, Merge")
+	assert.Contains(t, capture.warns[0], "[]T")
+
+	WarnVariadicRPCMethods("com.example.LocalOnlyService", &NonRPCVariadicService{})
+	assert.Len(t, capture.warns, 1)
 }
 
 type ServiceWithoutRef struct{}

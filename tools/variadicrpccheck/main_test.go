@@ -18,27 +18,43 @@
 package main
 
 import (
-	"fmt"
-	"io"
 	"os"
+	"testing"
 )
 
-var exitFunc = os.Exit
+import (
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
 
-func main() {
-	exitFunc(run(os.Stdout, os.Stderr, ".", os.Args[1:]))
+func TestMainUsesRunExitCode(t *testing.T) {
+	dir := t.TempDir()
+	writeTempFile(t, dir, goModFileName, variadicCheckModuleContent)
+	writeTempFile(t, dir, serviceFileName, `package sample
+
+func Echo(name string) string {
+	return name
 }
+`)
 
-// run prints every collected finding and always returns zero so the tool remains
-// guidance-only in local checks and CI. Package-load errors are still mirrored
-// to stderr to explain partial scan coverage.
-func run(stdout, stderr io.Writer, dir string, patterns []string) int {
-	findings, err := Scan(dir, patterns)
-	for _, finding := range findings {
-		_, _ = fmt.Fprintln(stdout, finding.String())
+	oldExitFunc := exitFunc
+	oldArgs := os.Args
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+
+	var gotCode int
+	exitFunc = func(code int) {
+		gotCode = code
 	}
-	if err != nil {
-		_, _ = fmt.Fprintf(stderr, "variadicrpccheck: %v\n", err)
-	}
-	return 0
+	os.Args = []string{"variadicrpccheck", "./..."}
+	require.NoError(t, os.Chdir(dir))
+	t.Cleanup(func() {
+		exitFunc = oldExitFunc
+		os.Args = oldArgs
+		_ = os.Chdir(oldWd)
+	})
+
+	main()
+
+	assert.Equal(t, 0, gotCode)
 }

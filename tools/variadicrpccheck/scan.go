@@ -32,6 +32,8 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
+var packagesLoad = packages.Load
+
 type Finding struct {
 	Position   token.Position
 	Kind       string
@@ -92,7 +94,7 @@ func loadPackages(dir string, patterns []string) ([]*packages.Package, error) {
 			packages.NeedTypesInfo,
 		Dir: dir,
 	}
-	return packages.Load(cfg, patterns...)
+	return packagesLoad(cfg, patterns...)
 }
 
 // collectFindingsAndErrors scans every loaded package and keeps loader errors
@@ -428,9 +430,6 @@ func isVariadicRPCSignature(sig *types.Signature) bool {
 	}
 
 	params := sig.Params()
-	if params.Len() == 0 {
-		return false
-	}
 	for i := 0; i < params.Len(); i++ {
 		if !isExportedOrBuiltinGoType(params.At(i).Type()) {
 			return false

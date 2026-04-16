@@ -70,9 +70,6 @@ jobs:
     - name: Lint
       run: make lint
 
-    - name: RPC Contract Guidance
-      run: make rpc-contract-check
-
     - name: Codecov
       uses: codecov/codecov-action@v5 #NOSONAR
       with:

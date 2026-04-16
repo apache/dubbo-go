@@ -140,6 +140,12 @@ A formatting tool for Dubbo-Go developers that organizes Go `import` blocks acco
 
 For usage details, see the [imports-formatter README](https://github.com/dubbogo/tools?tab=readme-ov-file#imports-formatter).
 
+### variadicrpccheck
+
+A warning-only scanner that detects exported variadic RPC contracts and prints migration guidance for cross-language scenarios.
+
+Run `make rpc-contract-check` to use it locally.
+
 ## Ecosystem
 - [dubbo-go-samples](https://github.com/apache/dubbo-go-samples)
 - [dubbo-go-pixiu which acting as a proxy to solve Dubbo multi-language interoperability](https://github.com/apache/dubbo-go-pixiu)
