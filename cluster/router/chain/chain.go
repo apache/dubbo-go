@@ -115,6 +115,8 @@ func (c *RouterChain) snapshotInvokers() []base.Invoker {
 	ret := make([]base.Invoker, len(c.invokers))
 	copy(ret, c.invokers)
 	return ret
+}
+
 // injectStaticRouters injects static router configurations into the router chain.
 // Called after all routers are created to ensure they exist.
 // The injected static configs act as bootstrap state only during initialization. For the shared
