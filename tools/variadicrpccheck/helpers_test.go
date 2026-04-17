@@ -166,7 +166,7 @@ func TestAstAndTypeHelpers(t *testing.T) {
 		pkg := &packages.Package{
 			Syntax: []*ast.File{{}},
 		}
-		assert.Empty(t, collectPackageFindings(pkg))
+		assert.Empty(t, collectPackageFindings(pkg, nil))
 	})
 
 	t.Run("embeddedInterfaceType handles nil missing and valid type info", func(t *testing.T) {
@@ -220,26 +220,267 @@ func TestAstAndTypeHelpers(t *testing.T) {
 	t.Run("collectImplementationFinding rejects invalid declarations", func(t *testing.T) {
 		pkg := &packages.Package{TypesInfo: &types.Info{Defs: map[*ast.Ident]types.Object{}}}
 
-		_, ok := collectImplementationFinding(pkg, &ast.FuncDecl{Name: &ast.Ident{Name: "MultiArgs"}})
+		_, ok := collectImplementationFinding(pkg, &ast.FuncDecl{Name: &ast.Ident{Name: "MultiArgs"}}, nil)
 		assert.False(t, ok)
 
 		_, ok = collectImplementationFinding(pkg, &ast.FuncDecl{
 			Name: &ast.Ident{Name: "multiArgs"},
 			Recv: &ast.FieldList{List: []*ast.Field{{Type: &ast.Ident{Name: "Service"}}}},
-		})
+		}, nil)
 		assert.False(t, ok)
 
 		_, ok = collectImplementationFinding(pkg, &ast.FuncDecl{
 			Name: &ast.Ident{Name: "Reference"},
 			Recv: &ast.FieldList{List: []*ast.Field{{Type: &ast.Ident{Name: "Service"}}}},
-		})
+		}, nil)
 		assert.False(t, ok)
 
 		_, ok = collectImplementationFinding(pkg, &ast.FuncDecl{
 			Name: &ast.Ident{Name: "MultiArgs"},
 			Recv: &ast.FieldList{List: []*ast.Field{{Type: &ast.ArrayType{}}}},
-		})
+		}, nil)
 		assert.False(t, ok)
+
+		_, ok = collectImplementationFinding(pkg, &ast.FuncDecl{
+			Name: &ast.Ident{Name: "MultiArgs"},
+			Recv: &ast.FieldList{List: []*ast.Field{{Type: &ast.Ident{Name: "Service"}}}},
+		}, map[registeredTypeKey]struct{}{{pkgPath: "example.com/test", typeName: "Other"}: {}})
+		assert.False(t, ok)
+
+		_, ok = collectImplementationFinding(pkg, &ast.FuncDecl{
+			Name: &ast.Ident{Name: "MultiArgs"},
+			Recv: &ast.FieldList{List: []*ast.Field{{Type: &ast.Ident{Name: "Service"}}}},
+		}, map[registeredTypeKey]struct{}{{pkgPath: "", typeName: "Service"}: {}})
+		assert.False(t, ok)
+	})
+
+	// Lock the method-style registration paths used by implementation tracing.
+	t.Run("selectedMethodHandlerArgumentIndex matches registration methods", func(t *testing.T) {
+		serverPkg := types.NewPackage("dubbo.apache.org/dubbo-go/v3/server", "server")
+		serverType := types.NewNamed(types.NewTypeName(token.NoPos, serverPkg, "Server", nil), types.NewStruct(nil, nil), nil)
+		serverType.AddMethod(types.NewFunc(token.NoPos, serverPkg, "RegisterService", testSignature(false, []types.Type{types.NewInterfaceType(nil, nil)}, []types.Type{types.Universe.Lookup("error").Type()})))
+		serverType.AddMethod(types.NewFunc(token.NoPos, serverPkg, "Register", testSignature(false, []types.Type{types.NewInterfaceType(nil, nil)}, []types.Type{types.Universe.Lookup("error").Type()})))
+		serviceOptionsType := types.NewNamed(types.NewTypeName(token.NoPos, serverPkg, "ServiceOptions", nil), types.NewStruct(nil, nil), nil)
+		serviceOptionsType.AddMethod(types.NewFunc(token.NoPos, serverPkg, "Implement", testSignature(false, []types.Type{types.NewInterfaceType(nil, nil)}, nil)))
+		proxyType := types.NewNamed(types.NewTypeName(token.NoPos, serverPkg, "Proxy", nil), types.NewStruct(nil, nil), nil)
+		proxyType.AddMethod(types.NewFunc(token.NoPos, serverPkg, "Implement", testSignature(false, []types.Type{types.NewInterfaceType(nil, nil)}, nil)))
+
+		configPkg := types.NewPackage("dubbo.apache.org/dubbo-go/v3/config", "config")
+		serviceConfigType := types.NewNamed(types.NewTypeName(token.NoPos, configPkg, "ServiceConfig", nil), types.NewStruct(nil, nil), nil)
+		serviceConfigType.AddMethod(types.NewFunc(token.NoPos, configPkg, "Implement", testSignature(false, []types.Type{types.NewInterfaceType(nil, nil)}, nil)))
+
+		commonPkg := types.NewPackage("dubbo.apache.org/dubbo-go/v3/common", "common")
+		serviceMapType := types.NewNamed(types.NewTypeName(token.NoPos, commonPkg, "serviceMap", nil), types.NewStruct(nil, nil), nil)
+		serviceMapType.AddMethod(types.NewFunc(token.NoPos, commonPkg, "Register", testSignature(false, []types.Type{types.NewInterfaceType(nil, nil), types.NewInterfaceType(nil, nil), types.NewInterfaceType(nil, nil), types.NewInterfaceType(nil, nil), types.NewInterfaceType(nil, nil)}, []types.Type{types.Universe.Lookup("error").Type()})))
+
+		idx, ok := selectedMethodHandlerArgumentIndex(types.NewMethodSet(types.NewPointer(serverType)).Lookup(serverPkg, "RegisterService"))
+		require.True(t, ok)
+		assert.Equal(t, 0, idx)
+
+		idx, ok = selectedMethodHandlerArgumentIndex(types.NewMethodSet(types.NewPointer(serverType)).Lookup(serverPkg, "Register"))
+		require.True(t, ok)
+		assert.Equal(t, 0, idx)
+
+		idx, ok = selectedMethodHandlerArgumentIndex(types.NewMethodSet(types.NewPointer(serviceOptionsType)).Lookup(serverPkg, "Implement"))
+		require.True(t, ok)
+		assert.Equal(t, 0, idx)
+
+		idx, ok = selectedMethodHandlerArgumentIndex(types.NewMethodSet(types.NewPointer(serviceConfigType)).Lookup(configPkg, "Implement"))
+		require.True(t, ok)
+		assert.Equal(t, 0, idx)
+
+		idx, ok = selectedMethodHandlerArgumentIndex(types.NewMethodSet(types.NewPointer(serviceMapType)).Lookup(commonPkg, "Register"))
+		require.True(t, ok)
+		assert.Equal(t, 4, idx)
+
+		_, ok = selectedMethodHandlerArgumentIndex(types.NewMethodSet(types.NewPointer(proxyType)).Lookup(serverPkg, "Implement"))
+		assert.False(t, ok)
+
+		otherPkg := types.NewPackage("example.com/other", "other")
+		otherType := types.NewNamed(types.NewTypeName(token.NoPos, otherPkg, "Service", nil), types.NewStruct(nil, nil), nil)
+		otherType.AddMethod(types.NewFunc(token.NoPos, otherPkg, "Call", testSignature(false, nil, nil)))
+		_, ok = selectedMethodHandlerArgumentIndex(types.NewMethodSet(types.NewPointer(otherType)).Lookup(otherPkg, "Call"))
+		assert.False(t, ok)
+	})
+
+	// Package-level helpers cover config registration, root dubbo helpers, and generated Register* entry points.
+	t.Run("calledObjectHandlerArgumentIndex matches config helpers and generated handlers", func(t *testing.T) {
+		analyzer := newRegistrationAnalyzer(nil)
+		configPkg := types.NewPackage("dubbo.apache.org/dubbo-go/v3/config", "config")
+		dubboPkg := types.NewPackage("dubbo.apache.org/dubbo-go/v3", "dubbo")
+
+		idx, ok := analyzer.calledObjectHandlerArgumentIndex(types.NewFunc(token.NoPos, configPkg, "SetProviderService", testSignature(false, []types.Type{types.NewInterfaceType(nil, nil)}, nil)))
+		require.True(t, ok)
+		assert.Equal(t, 0, idx)
+
+		idx, ok = analyzer.calledObjectHandlerArgumentIndex(types.NewFunc(token.NoPos, configPkg, "SetProviderServiceWithInfo", testSignature(false, []types.Type{types.NewInterfaceType(nil, nil), types.NewInterfaceType(nil, nil)}, nil)))
+		require.True(t, ok)
+		assert.Equal(t, 0, idx)
+
+		idx, ok = analyzer.calledObjectHandlerArgumentIndex(types.NewFunc(token.NoPos, dubboPkg, "SetProviderService", testSignature(false, []types.Type{types.NewInterfaceType(nil, nil)}, nil)))
+		require.True(t, ok)
+		assert.Equal(t, 0, idx)
+
+		idx, ok = analyzer.calledObjectHandlerArgumentIndex(types.NewFunc(token.NoPos, dubboPkg, "SetProviderServiceWithInfo", testSignature(false, []types.Type{types.NewInterfaceType(nil, nil), types.NewInterfaceType(nil, nil)}, nil)))
+		require.True(t, ok)
+		assert.Equal(t, 0, idx)
+
+		idx, ok = analyzer.calledObjectHandlerArgumentIndex(types.NewFunc(token.NoPos, types.NewPackage("example.com/test", "test"), "RegisterGreeterHandler", testSignature(false, []types.Type{types.NewInterfaceType(nil, nil), types.NewInterfaceType(nil, nil)}, nil)))
+		require.True(t, ok)
+		assert.Equal(t, 1, idx)
+
+		_, ok = analyzer.calledObjectHandlerArgumentIndex(types.NewFunc(token.NoPos, types.NewPackage("example.com/test", "test"), "Call", testSignature(false, nil, nil)))
+		assert.False(t, ok)
+		_, ok = analyzer.calledObjectHandlerArgumentIndex(nil)
+		assert.False(t, ok)
+	})
+
+	// handlerArgumentIndex is the bridge between AST call shapes and the registration allowlist above.
+	t.Run("handlerArgumentIndex dispatches selector ident and default calls", func(t *testing.T) {
+		analyzer := newRegistrationAnalyzer(nil)
+		serverPkg := types.NewPackage("dubbo.apache.org/dubbo-go/v3/server", "server")
+		serverType := types.NewNamed(types.NewTypeName(token.NoPos, serverPkg, "Server", nil), types.NewStruct(nil, nil), nil)
+		serverType.AddMethod(types.NewFunc(token.NoPos, serverPkg, "RegisterService", testSignature(false, []types.Type{types.NewInterfaceType(nil, nil)}, []types.Type{types.Universe.Lookup("error").Type()})))
+		selection := types.NewMethodSet(types.NewPointer(serverType)).Lookup(serverPkg, "RegisterService")
+		configPkg := types.NewPackage("dubbo.apache.org/dubbo-go/v3/config", "config")
+
+		selector := &ast.SelectorExpr{X: &ast.Ident{Name: "srv"}, Sel: &ast.Ident{Name: "RegisterService"}}
+		packageSelector := &ast.SelectorExpr{X: &ast.Ident{Name: "config"}, Sel: &ast.Ident{Name: "SetProviderService"}}
+		ident := &ast.Ident{Name: "RegisterGreeterHandler"}
+		pkg := &packages.Package{
+			TypesInfo: &types.Info{
+				Selections: map[*ast.SelectorExpr]*types.Selection{selector: selection},
+				Uses: map[*ast.Ident]types.Object{
+					packageSelector.Sel: types.NewFunc(token.NoPos, configPkg, "SetProviderService", testSignature(false, nil, nil)),
+					ident:               types.NewFunc(token.NoPos, types.NewPackage("example.com/test", "test"), "RegisterGreeterHandler", testSignature(false, nil, nil)),
+				},
+			},
+		}
+
+		idx, ok := analyzer.handlerArgumentIndex(pkg, &ast.CallExpr{Fun: selector, Args: []ast.Expr{&ast.Ident{Name: "svc"}}})
+		require.True(t, ok)
+		assert.Equal(t, 0, idx)
+
+		idx, ok = analyzer.handlerArgumentIndex(pkg, &ast.CallExpr{Fun: ident, Args: []ast.Expr{&ast.Ident{Name: "srv"}, &ast.Ident{Name: "svc"}}})
+		require.True(t, ok)
+		assert.Equal(t, 1, idx)
+
+		idx, ok = analyzer.handlerArgumentIndex(pkg, &ast.CallExpr{Fun: packageSelector, Args: []ast.Expr{&ast.Ident{Name: "svc"}}})
+		require.True(t, ok)
+		assert.Equal(t, 0, idx)
+
+		_, ok = analyzer.handlerArgumentIndex(pkg, &ast.CallExpr{Fun: &ast.BasicLit{}})
+		assert.False(t, ok)
+	})
+
+	t.Run("registeredTypeKeyForType and packagePath keep only exported named types", func(t *testing.T) {
+		localPkg := types.NewPackage("example.com/test", "test")
+		otherPkg := types.NewPackage("example.com/other", "other")
+		exported := types.NewNamed(types.NewTypeName(token.NoPos, localPkg, "Service", nil), types.NewStruct(nil, nil), nil)
+		unexported := types.NewNamed(types.NewTypeName(token.NoPos, localPkg, "service", nil), types.NewStruct(nil, nil), nil)
+		imported := types.NewNamed(types.NewTypeName(token.NoPos, otherPkg, "Service", nil), types.NewStruct(nil, nil), nil)
+		alias := types.NewAlias(types.NewTypeName(token.NoPos, localPkg, "AliasService", nil), exported)
+		noPkg := types.NewNamed(types.NewTypeName(token.NoPos, nil, "Service", nil), types.NewStruct(nil, nil), nil)
+
+		key, ok := registeredTypeKeyForType(types.NewPointer(exported))
+		require.True(t, ok)
+		assert.Equal(t, registeredTypeKey{pkgPath: "example.com/test", typeName: "Service"}, key)
+
+		_, ok = registeredTypeKeyForType(unexported)
+		assert.False(t, ok)
+		key, ok = registeredTypeKeyForType(imported)
+		require.True(t, ok)
+		assert.Equal(t, registeredTypeKey{pkgPath: "example.com/other", typeName: "Service"}, key)
+		key, ok = registeredTypeKeyForType(alias)
+		require.True(t, ok)
+		assert.Equal(t, registeredTypeKey{pkgPath: "example.com/test", typeName: "Service"}, key)
+		_, ok = registeredTypeKeyForType(noPkg)
+		assert.False(t, ok)
+		_, ok = registeredTypeKeyForType(types.Typ[types.String])
+		assert.False(t, ok)
+		_, ok = registeredTypeKeyForType(nil)
+		assert.False(t, ok)
+
+		assert.Equal(t, "example.com/test", packagePath(&packages.Package{Types: localPkg}))
+		assert.Equal(t, "example.com/fallback", packagePath(&packages.Package{PkgPath: "example.com/fallback"}))
+		assert.Empty(t, packagePath(nil))
+	})
+
+	t.Run("registeredImplementationTypes ignores registration calls without handler args", func(t *testing.T) {
+		call := &ast.CallExpr{Fun: &ast.Ident{Name: "RegisterGreeterHandler"}}
+		file := &ast.File{Decls: []ast.Decl{
+			&ast.FuncDecl{
+				Name: &ast.Ident{Name: "register"},
+				Type: &ast.FuncType{Params: &ast.FieldList{}},
+				Body: &ast.BlockStmt{List: []ast.Stmt{&ast.ExprStmt{X: call}}},
+			},
+		}}
+		pkg := &packages.Package{
+			Syntax:          []*ast.File{file},
+			CompiledGoFiles: []string{"service.go"},
+			TypesInfo: &types.Info{
+				Uses: map[*ast.Ident]types.Object{
+					call.Fun.(*ast.Ident): types.NewFunc(token.NoPos, types.NewPackage("example.com/test", "test"), "RegisterGreeterHandler", testSignature(false, nil, nil)),
+				},
+			},
+		}
+
+		assert.Empty(t, registeredImplementationTypes([]*packages.Package{pkg}))
+	})
+
+	// Generated Triple wrappers should participate in tracing, but generated contract methods should still stay silent.
+	t.Run("skip policy keeps triple helpers but still suppresses generated findings", func(t *testing.T) {
+		assert.True(t, shouldSkipFindingFile("generated.triple.go"))
+		assert.False(t, shouldSkipRegistrationFile("generated.triple.go"))
+		assert.True(t, shouldSkipRegistrationFile("generated.pb.go"))
+		assert.True(t, shouldSkipRegistrationFile("generated_test.go"))
+	})
+
+	// Interface-typed service vars should resolve to the concrete implementation visible at the registration site.
+	t.Run("registeredTypeKeyForExpr resolves interface typed variables", func(t *testing.T) {
+		localPkg := types.NewPackage("example.com/test", "test")
+		serviceType := types.NewNamed(types.NewTypeName(token.NoPos, localPkg, "Service", nil), types.NewStruct(nil, nil), nil)
+		varObj := types.NewVar(token.NoPos, localPkg, "svc", types.NewInterfaceType(nil, nil))
+		file := token.NewFileSet().AddFile("service.go", -1, 64)
+		ident := &ast.Ident{Name: "svc", NamePos: file.Pos(20)}
+		initExpr := &ast.UnaryExpr{Op: token.AND, X: &ast.CompositeLit{}}
+		pkg := &packages.Package{
+			Types: localPkg,
+			TypesInfo: &types.Info{
+				Types: map[ast.Expr]types.TypeAndValue{
+					initExpr: {Type: types.NewPointer(serviceType)},
+				},
+				Uses: map[*ast.Ident]types.Object{
+					ident: varObj,
+				},
+			},
+		}
+		analyzer := &registrationAnalyzer{
+			varInitializers: map[string]map[types.Object][]assignmentRef{
+				"example.com/test": {varObj: {{pos: file.Pos(10), expr: initExpr}}},
+			},
+		}
+
+		key, ok := analyzer.registeredTypeKeyForExpr(pkg, ident, ident.Pos(), nil)
+		require.True(t, ok)
+		assert.Equal(t, registeredTypeKey{pkgPath: "example.com/test", typeName: "Service"}, key)
+	})
+
+	// Reassignments after registration must not override the concrete type used at the call site.
+	t.Run("latestAssignmentBefore uses the nearest assignment before the call site", func(t *testing.T) {
+		file := token.NewFileSet().AddFile("service.go", -1, 64)
+		assignments := []assignmentRef{
+			{pos: file.Pos(10), expr: &ast.Ident{Name: "First"}},
+			{pos: file.Pos(30), expr: &ast.Ident{Name: "Second"}},
+		}
+
+		assignment, ok := latestAssignmentBefore(assignments, file.Pos(20))
+		require.True(t, ok)
+		assert.Equal(t, "First", assignment.expr.(*ast.Ident).Name)
+
+		assignment, ok = latestAssignmentBefore(assignments, file.Pos(40))
+		require.True(t, ok)
+		assert.Equal(t, "Second", assignment.expr.(*ast.Ident).Name)
 	})
 
 	t.Run("interfaceMethodPositions handles empty and embedded interfaces", func(t *testing.T) {

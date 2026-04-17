@@ -34,6 +34,36 @@ import (
 
 var packagesLoad = packages.Load
 
+type registeredTypeKey struct {
+	pkgPath  string
+	typeName string
+}
+
+type functionKey struct {
+	pkgPath string
+	name    string
+}
+
+// functionDeclRef keeps the owning package with the helper body so wrapper
+// tracing can inspect forwarded parameters.
+type functionDeclRef struct {
+	pkg  *packages.Package
+	decl *ast.FuncDecl
+}
+
+// assignmentRef records one initializer or reassignment with its source
+// position for call-site-sensitive lookup.
+type assignmentRef struct {
+	pos  token.Pos
+	expr ast.Expr
+}
+
+type wrapperResolution struct {
+	argIndex  int
+	resolving bool
+	resolved  bool
+}
+
 type Finding struct {
 	Position   token.Position
 	Kind       string
@@ -102,9 +132,10 @@ func loadPackages(dir string, patterns []string) ([]*packages.Package, error) {
 func collectFindingsAndErrors(pkgs []*packages.Package) ([]Finding, []string) {
 	findings := make([]Finding, 0)
 	loadErrs := make([]string, 0)
+	registeredTypes := registeredImplementationTypes(pkgs)
 	for _, pkg := range pkgs {
 		loadErrs = append(loadErrs, packageErrors(pkg)...)
-		findings = append(findings, collectPackageFindings(pkg)...)
+		findings = append(findings, collectPackageFindings(pkg, registeredTypes)...)
 	}
 	return findings, loadErrs
 }
@@ -147,7 +178,7 @@ func sortFindings(findings []Finding) {
 
 // collectPackageFindings walks compiled files so build tags and generated-file
 // selection stay aligned with the package loader.
-func collectPackageFindings(pkg *packages.Package) []Finding {
+func collectPackageFindings(pkg *packages.Package, registeredTypes map[registeredTypeKey]struct{}) []Finding {
 	findings := make([]Finding, 0)
 	for fileIdx, file := range pkg.Syntax {
 		if fileIdx >= len(pkg.CompiledGoFiles) {
@@ -155,7 +186,7 @@ func collectPackageFindings(pkg *packages.Package) []Finding {
 		}
 
 		filename := pkg.CompiledGoFiles[fileIdx]
-		if shouldSkipFile(filename) {
+		if shouldSkipFindingFile(filename) {
 			continue
 		}
 
@@ -164,7 +195,7 @@ func collectPackageFindings(pkg *packages.Package) []Finding {
 			case *ast.GenDecl:
 				findings = append(findings, collectInterfaceFindings(pkg, typedDecl)...)
 			case *ast.FuncDecl:
-				if finding, ok := collectImplementationFinding(pkg, typedDecl); ok {
+				if finding, ok := collectImplementationFinding(pkg, typedDecl, registeredTypes); ok {
 					findings = append(findings, finding)
 				}
 			}
@@ -270,7 +301,7 @@ func interfaceMethodFinding(pkg *packages.Package, typeSpec *ast.TypeSpec, metho
 
 // collectImplementationFinding covers struct receiver methods used as direct
 // service implementations in non-interface registration flows.
-func collectImplementationFinding(pkg *packages.Package, decl *ast.FuncDecl) (Finding, bool) {
+func collectImplementationFinding(pkg *packages.Package, decl *ast.FuncDecl, registeredTypes map[registeredTypeKey]struct{}) (Finding, bool) {
 	if decl.Recv == nil || len(decl.Recv.List) == 0 || !decl.Name.IsExported() {
 		return Finding{}, false
 	}
@@ -280,6 +311,9 @@ func collectImplementationFinding(pkg *packages.Package, decl *ast.FuncDecl) (Fi
 
 	receiverName := receiverTypeName(decl.Recv.List[0].Type)
 	if receiverName == "" || !ast.IsExported(receiverName) {
+		return Finding{}, false
+	}
+	if _, ok := registeredTypes[registeredTypeKey{pkgPath: packagePath(pkg), typeName: receiverName}]; !ok {
 		return Finding{}, false
 	}
 
@@ -304,6 +338,433 @@ func signatureForIdent(pkg *packages.Package, ident *ast.Ident) (*types.Signatur
 
 	sig, ok := obj.Type().(*types.Signature)
 	return sig, ok
+}
+
+// registeredImplementationTypes collects exported concrete types that appear as
+// handlers in known registration or export calls across the loaded packages.
+func registeredImplementationTypes(pkgs []*packages.Package) map[registeredTypeKey]struct{} {
+	registeredTypes := make(map[registeredTypeKey]struct{})
+	analyzer := newRegistrationAnalyzer(pkgs)
+	for _, pkg := range pkgs {
+		for fileIdx, file := range pkg.Syntax {
+			if fileIdx >= len(pkg.CompiledGoFiles) {
+				continue
+			}
+
+			filename := pkg.CompiledGoFiles[fileIdx]
+			if shouldSkipRegistrationFile(filename) {
+				continue
+			}
+
+			ast.Inspect(file, func(node ast.Node) bool {
+				call, ok := node.(*ast.CallExpr)
+				if !ok {
+					return true
+				}
+
+				argIndex, ok := analyzer.handlerArgumentIndex(pkg, call)
+				if !ok || argIndex >= len(call.Args) {
+					return true
+				}
+
+				analyzer.recordRegisteredImplementationType(pkg, registeredTypes, call.Args[argIndex], call.Pos())
+				return true
+			})
+		}
+	}
+	return registeredTypes
+}
+
+// registrationAnalyzer holds the shared indexes used to trace concrete
+// implementation types through registration helpers and wrappers.
+type registrationAnalyzer struct {
+	functionDecls      map[functionKey]functionDeclRef
+	wrapperResolutions map[functionKey]*wrapperResolution
+	varInitializers    map[string]map[types.Object][]assignmentRef
+}
+
+// newRegistrationAnalyzer precomputes the indexes reused across registration
+// tracing.
+func newRegistrationAnalyzer(pkgs []*packages.Package) *registrationAnalyzer {
+	return &registrationAnalyzer{
+		functionDecls:      functionDecls(pkgs),
+		wrapperResolutions: make(map[functionKey]*wrapperResolution),
+		varInitializers:    variableInitializers(pkgs),
+	}
+}
+
+// handlerArgumentIndex returns the argument slot that carries the service
+// implementation for one known registration call shape.
+func (a *registrationAnalyzer) handlerArgumentIndex(pkg *packages.Package, call *ast.CallExpr) (int, bool) {
+	switch typedFun := call.Fun.(type) {
+	case *ast.SelectorExpr:
+		if selection := pkg.TypesInfo.Selections[typedFun]; selection != nil {
+			return selectedMethodHandlerArgumentIndex(selection)
+		}
+
+		obj := pkg.TypesInfo.Uses[typedFun.Sel]
+		return a.calledObjectHandlerArgumentIndex(obj)
+	case *ast.Ident:
+		obj := pkg.TypesInfo.Uses[typedFun]
+		return a.calledObjectHandlerArgumentIndex(obj)
+	default:
+		return 0, false
+	}
+}
+
+// selectedMethodHandlerArgumentIndex matches method-style registration paths
+// such as srv.RegisterService(...) and cfg.Implement(...).
+func selectedMethodHandlerArgumentIndex(selection *types.Selection) (int, bool) {
+	obj := selection.Obj()
+	if obj == nil || obj.Pkg() == nil {
+		return 0, false
+	}
+
+	path := obj.Pkg().Path()
+	switch {
+	case path == "dubbo.apache.org/dubbo-go/v3/server" && obj.Name() == "Register":
+		return 0, true
+	case path == "dubbo.apache.org/dubbo-go/v3/server" && obj.Name() == "RegisterService":
+		return 0, true
+	case path == "dubbo.apache.org/dubbo-go/v3/server" && obj.Name() == "Implement":
+		return 0, types.TypeString(selection.Recv(), nil) == "*dubbo.apache.org/dubbo-go/v3/server.ServiceOptions"
+	case path == "dubbo.apache.org/dubbo-go/v3/config" && obj.Name() == "Implement":
+		return 0, types.TypeString(selection.Recv(), nil) == "*dubbo.apache.org/dubbo-go/v3/config.ServiceConfig"
+	case path == "dubbo.apache.org/dubbo-go/v3/common" && obj.Name() == "Register":
+		return 4, strings.HasSuffix(types.TypeString(selection.Recv(), nil), ".serviceMap")
+	default:
+		return 0, false
+	}
+}
+
+// calledObjectHandlerArgumentIndex matches package-level registration helpers
+// and generated Register*Handler entry points.
+func (a *registrationAnalyzer) calledObjectHandlerArgumentIndex(obj types.Object) (int, bool) {
+	if obj == nil {
+		return 0, false
+	}
+	if obj.Pkg() != nil {
+		switch obj.Pkg().Path() {
+		case "dubbo.apache.org/dubbo-go/v3/config", "dubbo.apache.org/dubbo-go/v3":
+			switch obj.Name() {
+			case "SetProviderService":
+				return 0, true
+			case "SetProviderServiceWithInfo":
+				return 0, true
+			}
+		}
+	}
+
+	if strings.HasPrefix(obj.Name(), "Register") && strings.HasSuffix(obj.Name(), "Handler") {
+		return 1, true
+	}
+
+	if key, ok := functionKeyForObject(obj); ok {
+		if argIndex, ok := a.wrapperHandlerArgumentIndex(key); ok {
+			return argIndex, true
+		}
+	}
+
+	return 0, false
+}
+
+// recordRegisteredImplementationType stores the named concrete type behind one
+// registration argument when it resolves to an exported implementation.
+func (a *registrationAnalyzer) recordRegisteredImplementationType(pkg *packages.Package, registeredTypes map[registeredTypeKey]struct{}, expr ast.Expr, callPos token.Pos) {
+	if pkg == nil || pkg.TypesInfo == nil {
+		return
+	}
+
+	if key, ok := a.registeredTypeKeyForExpr(pkg, expr, callPos, nil); ok {
+		registeredTypes[key] = struct{}{}
+	}
+}
+
+// registeredTypeKeyForExpr resolves one registration argument to the concrete
+// exported type visible at that call site.
+func (a *registrationAnalyzer) registeredTypeKeyForExpr(pkg *packages.Package, expr ast.Expr, callPos token.Pos, seen map[types.Object]struct{}) (registeredTypeKey, bool) {
+	if key, ok := registeredTypeKeyForType(pkg.TypesInfo.TypeOf(expr)); ok {
+		return key, true
+	}
+
+	ident, ok := expr.(*ast.Ident)
+	if !ok {
+		return registeredTypeKey{}, false
+	}
+
+	obj := pkg.TypesInfo.ObjectOf(ident)
+	if obj == nil {
+		return registeredTypeKey{}, false
+	}
+
+	if seen == nil {
+		seen = make(map[types.Object]struct{})
+	}
+	if _, seenBefore := seen[obj]; seenBefore {
+		return registeredTypeKey{}, false
+	}
+	seen[obj] = struct{}{}
+
+	initExprs := a.varInitializers[packagePath(pkg)]
+	if initExprs == nil {
+		return registeredTypeKey{}, false
+	}
+
+	assignment, ok := latestAssignmentBefore(initExprs[obj], callPos)
+	if !ok {
+		return registeredTypeKey{}, false
+	}
+
+	return a.registeredTypeKeyForExpr(pkg, assignment.expr, assignment.pos, seen)
+}
+
+// wrapperHandlerArgumentIndex recognizes simple passthrough wrappers that
+// forward one parameter into a known registration helper.
+func (a *registrationAnalyzer) wrapperHandlerArgumentIndex(key functionKey) (int, bool) {
+	state := a.wrapperResolutions[key]
+	if state != nil {
+		if state.resolved {
+			return state.argIndex, true
+		}
+		if state.resolving {
+			return 0, false
+		}
+	} else {
+		state = &wrapperResolution{}
+		a.wrapperResolutions[key] = state
+	}
+
+	ref, ok := a.functionDecls[key]
+	if !ok || ref.decl == nil || ref.decl.Body == nil {
+		return 0, false
+	}
+
+	state.resolving = true
+	defer func() {
+		state.resolving = false
+	}()
+
+	params := parameterIndexes(ref.pkg, ref.decl)
+	if len(params) == 0 {
+		return 0, false
+	}
+
+	for _, stmt := range ref.decl.Body.List {
+		ast.Inspect(stmt, func(node ast.Node) bool {
+			call, ok := node.(*ast.CallExpr)
+			if !ok || state.resolved {
+				return !state.resolved
+			}
+
+			argIndex, ok := a.handlerArgumentIndex(ref.pkg, call)
+			if !ok || argIndex >= len(call.Args) {
+				return true
+			}
+
+			ident, ok := call.Args[argIndex].(*ast.Ident)
+			if !ok {
+				return true
+			}
+
+			obj := ref.pkg.TypesInfo.ObjectOf(ident)
+			paramIndex, ok := params[obj]
+			if !ok {
+				return true
+			}
+
+			state.argIndex = paramIndex
+			state.resolved = true
+			return false
+		})
+		if state.resolved {
+			return state.argIndex, true
+		}
+	}
+
+	return 0, false
+}
+
+// functionDecls indexes package-level helpers that may wrap a known
+// registration path.
+func functionDecls(pkgs []*packages.Package) map[functionKey]functionDeclRef {
+	decls := make(map[functionKey]functionDeclRef)
+	for _, pkg := range pkgs {
+		for fileIdx, file := range pkg.Syntax {
+			if fileIdx >= len(pkg.CompiledGoFiles) {
+				continue
+			}
+			if shouldSkipRegistrationFile(pkg.CompiledGoFiles[fileIdx]) {
+				continue
+			}
+			for _, decl := range file.Decls {
+				funcDecl, ok := decl.(*ast.FuncDecl)
+				if !ok || funcDecl.Recv != nil {
+					continue
+				}
+				obj := pkg.TypesInfo.Defs[funcDecl.Name]
+				key, ok := functionKeyForObject(obj)
+				if !ok {
+					continue
+				}
+				decls[key] = functionDeclRef{pkg: pkg, decl: funcDecl}
+			}
+		}
+	}
+	return decls
+}
+
+// variableInitializers stores ordered initializers and reassignments for
+// interface-typed handler variables.
+func variableInitializers(pkgs []*packages.Package) map[string]map[types.Object][]assignmentRef {
+	initializers := make(map[string]map[types.Object][]assignmentRef)
+	for _, pkg := range pkgs {
+		for fileIdx, file := range pkg.Syntax {
+			if fileIdx >= len(pkg.CompiledGoFiles) {
+				continue
+			}
+			if shouldSkipRegistrationFile(pkg.CompiledGoFiles[fileIdx]) {
+				continue
+			}
+
+			pkgInits := initializers[packagePath(pkg)]
+			if pkgInits == nil {
+				pkgInits = make(map[types.Object][]assignmentRef)
+				initializers[packagePath(pkg)] = pkgInits
+			}
+
+			recordValueSpecInitializers(pkg, pkgInits, file)
+			recordAssignInitializers(pkg, pkgInits, file)
+		}
+	}
+	return initializers
+}
+
+// recordValueSpecInitializers captures var declarations with explicit values
+// for later call-site lookup.
+func recordValueSpecInitializers(pkg *packages.Package, initializers map[types.Object][]assignmentRef, file *ast.File) {
+	ast.Inspect(file, func(node ast.Node) bool {
+		genDecl, ok := node.(*ast.GenDecl)
+		if !ok || genDecl.Tok != token.VAR {
+			return true
+		}
+		for _, spec := range genDecl.Specs {
+			valueSpec, ok := spec.(*ast.ValueSpec)
+			if !ok || len(valueSpec.Values) != len(valueSpec.Names) {
+				continue
+			}
+			for i, name := range valueSpec.Names {
+				if obj := pkg.TypesInfo.Defs[name]; obj != nil {
+					initializers[obj] = append(initializers[obj], assignmentRef{
+						pos:  name.Pos(),
+						expr: valueSpec.Values[i],
+					})
+				}
+			}
+		}
+		return true
+	})
+}
+
+// recordAssignInitializers appends later reassignments so call-site lookup can
+// choose the visible value.
+func recordAssignInitializers(pkg *packages.Package, initializers map[types.Object][]assignmentRef, file *ast.File) {
+	ast.Inspect(file, func(node ast.Node) bool {
+		assign, ok := node.(*ast.AssignStmt)
+		if !ok || len(assign.Lhs) != len(assign.Rhs) {
+			return true
+		}
+		for i, lhs := range assign.Lhs {
+			ident, ok := lhs.(*ast.Ident)
+			if !ok {
+				continue
+			}
+			if obj := pkg.TypesInfo.ObjectOf(ident); obj != nil {
+				initializers[obj] = append(initializers[obj], assignmentRef{
+					pos:  ident.Pos(),
+					expr: assign.Rhs[i],
+				})
+			}
+		}
+		return true
+	})
+}
+
+// latestAssignmentBefore returns the nearest initializer or reassignment
+// visible before the registration call site.
+func latestAssignmentBefore(assignments []assignmentRef, pos token.Pos) (assignmentRef, bool) {
+	for i := len(assignments) - 1; i >= 0; i-- {
+		if pos == token.NoPos || assignments[i].pos < pos {
+			return assignments[i], true
+		}
+	}
+	return assignmentRef{}, false
+}
+
+// parameterIndexes maps named parameters to their ordinal positions for
+// wrapper forwarding checks.
+func parameterIndexes(pkg *packages.Package, decl *ast.FuncDecl) map[types.Object]int {
+	params := make(map[types.Object]int)
+	if decl.Type == nil || decl.Type.Params == nil {
+		return params
+	}
+
+	index := 0
+	for _, field := range decl.Type.Params.List {
+		for _, name := range field.Names {
+			if obj := pkg.TypesInfo.Defs[name]; obj != nil {
+				params[obj] = index
+			}
+			index++
+		}
+	}
+	return params
+}
+
+// functionKeyForObject turns a package-level function object into the stable
+// lookup key used by wrapper tracing.
+func functionKeyForObject(obj types.Object) (functionKey, bool) {
+	if obj == nil || obj.Pkg() == nil {
+		return functionKey{}, false
+	}
+	_, ok := obj.(*types.Func)
+	if !ok {
+		return functionKey{}, false
+	}
+	return functionKey{pkgPath: obj.Pkg().Path(), name: obj.Name()}, true
+}
+
+// registeredTypeKeyForType unwraps aliases and pointers until it reaches the
+// exported named type that should be tracked for implementation findings.
+func registeredTypeKeyForType(typ types.Type) (registeredTypeKey, bool) {
+	for typ != nil {
+		typ = types.Unalias(typ)
+		switch typedType := typ.(type) {
+		case *types.Pointer:
+			typ = typedType.Elem()
+		case *types.Named:
+			obj := typedType.Obj()
+			if obj == nil || obj.Pkg() == nil {
+				return registeredTypeKey{}, false
+			}
+			if !token.IsExported(obj.Name()) {
+				return registeredTypeKey{}, false
+			}
+			return registeredTypeKey{pkgPath: obj.Pkg().Path(), typeName: obj.Name()}, true
+		default:
+			return registeredTypeKey{}, false
+		}
+	}
+	return registeredTypeKey{}, false
+}
+
+func packagePath(pkg *packages.Package) string {
+	if pkg != nil && pkg.Types != nil {
+		return pkg.Types.Path()
+	}
+	if pkg != nil {
+		return pkg.PkgPath
+	}
+	return ""
 }
 
 // interfaceMethodPositions maps exported method names to the source line we
@@ -396,13 +857,22 @@ func receiverTypeName(expr ast.Expr) string {
 	}
 }
 
-// shouldSkipFile filters generated and test sources so the tool focuses on
-// user-authored service contracts instead of stubs and test scaffolding.
-func shouldSkipFile(filename string) bool {
+// shouldSkipFindingFile filters generated and test sources so the tool focuses
+// reported findings on user-authored service contracts instead of stubs.
+func shouldSkipFindingFile(filename string) bool {
 	base := filepath.Base(filename)
 	return strings.HasSuffix(base, "_test.go") ||
 		strings.HasSuffix(base, ".pb.go") ||
 		strings.HasSuffix(base, ".triple.go")
+}
+
+// shouldSkipRegistrationFile keeps helper discovery out of tests and protobuf
+// stubs, but still allows generated Triple wrappers to participate in
+// registration tracing.
+func shouldSkipRegistrationFile(filename string) bool {
+	base := filepath.Base(filename)
+	return strings.HasSuffix(base, "_test.go") ||
+		strings.HasSuffix(base, ".pb.go")
 }
 
 func isCandidateRPCMethodName(methodName string) bool {

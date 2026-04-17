@@ -446,6 +446,14 @@ func (m *variadicServerRPCService) Reference() string {
 	return "com.example.VariadicService"
 }
 
+// NoReferenceVariadicServerRPCService relies on the default reference fallback
+// for warning-path tests.
+type NoReferenceVariadicServerRPCService struct{}
+
+func (m *NoReferenceVariadicServerRPCService) Broadcast(ctx context.Context, names ...string) error {
+	return nil
+}
+
 // captureWarnLogger records warning logs for assertions.
 type captureWarnLogger struct {
 	gostlogger.Logger
@@ -540,6 +548,31 @@ func TestRegisterServiceWarnsOnVariadicRPCMethods(t *testing.T) {
 	assert.Contains(t, capture.warns[0], handler.Reference())
 	assert.Contains(t, capture.warns[0], "Broadcast")
 	assert.Contains(t, capture.warns[0], "[]T")
+}
+
+// Test RegisterService warns on variadic RPC methods even when the handler
+// uses the default reference name.
+func TestRegisterServiceWarnsOnVariadicRPCMethodsWithoutReference(t *testing.T) {
+	srv, err := NewServer()
+	require.NoError(t, err)
+
+	prev := gostlogger.GetLogger()
+	capture := &captureWarnLogger{Logger: prev}
+	gostlogger.SetLogger(capture)
+	t.Cleanup(func() {
+		gostlogger.SetLogger(prev)
+	})
+
+	handler := &NoReferenceVariadicServerRPCService{}
+	err = srv.RegisterService(handler)
+	require.NoError(t, err)
+
+	interfaceName := common.GetReference(handler)
+	svcOpts := srv.GetServiceOptions(interfaceName)
+	assert.NotNil(t, svcOpts)
+	require.Len(t, capture.warns, 1)
+	assert.Contains(t, capture.warns[0], interfaceName)
+	assert.Contains(t, capture.warns[0], "Broadcast")
 }
 
 // Test RegisterService does not warn on non-variadic RPC methods
