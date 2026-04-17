@@ -165,6 +165,8 @@ const (
 	CallHTTP2                          = "http2"
 	CallHTTP3                          = "http3"
 	CallHTTP2AndHTTP3                  = "http2-and-http3"
+	AltSvcProtocolH2                   = "h2"
+	AltSvcProtocolH3                   = "h3"
 	ServiceInfoKey                     = "service-info"
 	RpcServiceKey                      = "rpc-service"
 	ClientInfoKey                      = "client-info"
