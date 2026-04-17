@@ -162,6 +162,42 @@ func TestVariadicSignatureChecks(t *testing.T) {
 }
 
 func TestAstAndTypeHelpers(t *testing.T) {
+	// Guard-path coverage keeps missing type info from turning registration tracing into false positives.
+	t.Run("recordRegisteredImplementationType and registeredTypeKeyForExpr handle guard paths", func(t *testing.T) {
+		analyzer := &registrationAnalyzer{}
+		registeredTypes := make(map[registeredTypeKey]struct{})
+
+		analyzer.recordRegisteredImplementationType(nil, registeredTypes, &ast.Ident{Name: "svc"}, token.NoPos)
+		analyzer.recordRegisteredImplementationType(&packages.Package{}, registeredTypes, &ast.Ident{Name: "svc"}, token.NoPos)
+		assert.Empty(t, registeredTypes)
+
+		pkg := &packages.Package{TypesInfo: &types.Info{}}
+		_, ok := analyzer.registeredTypeKeyForExpr(pkg, &ast.BasicLit{}, token.NoPos, nil)
+		assert.False(t, ok)
+
+		localPkg := types.NewPackage("example.com/test", "test")
+		varObj := types.NewVar(token.NoPos, localPkg, "svc", types.NewInterfaceType(nil, nil))
+		ident := &ast.Ident{Name: "svc"}
+		pkg = &packages.Package{
+			Types: localPkg,
+			TypesInfo: &types.Info{
+				Uses: map[*ast.Ident]types.Object{ident: varObj},
+			},
+		}
+
+		_, ok = analyzer.registeredTypeKeyForExpr(pkg, &ast.Ident{Name: "missing"}, token.NoPos, nil)
+		assert.False(t, ok)
+
+		_, ok = analyzer.registeredTypeKeyForExpr(pkg, ident, token.NoPos, map[types.Object]struct{}{varObj: {}})
+		assert.False(t, ok)
+
+		analyzer.varInitializers = map[string]map[types.Object][]assignmentRef{
+			"example.com/test": {varObj: nil},
+		}
+		_, ok = analyzer.registeredTypeKeyForExpr(pkg, ident, token.NoPos, nil)
+		assert.False(t, ok)
+	})
+
 	t.Run("collectPackageFindings skips syntax entries without compiled files", func(t *testing.T) {
 		pkg := &packages.Package{
 			Syntax: []*ast.File{{}},
@@ -251,6 +287,94 @@ func TestAstAndTypeHelpers(t *testing.T) {
 			Name: &ast.Ident{Name: "MultiArgs"},
 			Recv: &ast.FieldList{List: []*ast.Field{{Type: &ast.Ident{Name: "Service"}}}},
 		}, map[registeredTypeKey]struct{}{{pkgPath: "", typeName: "Service"}: {}})
+		assert.False(t, ok)
+	})
+
+	// Wrapper-resolution helpers should fail closed when helper bodies or forwarded parameters cannot be resolved.
+	t.Run("wrapper resolution helpers cover cache and reject paths", func(t *testing.T) {
+		key := functionKey{pkgPath: "example.com/test", name: "Register"}
+		analyzer := newRegistrationAnalyzer(nil)
+
+		state, ok, done := analyzer.cachedWrapperResolution(key)
+		require.NotNil(t, state)
+		assert.False(t, ok)
+		assert.False(t, done)
+
+		state.resolved = true
+		state.argIndex = 2
+		state, ok, done = analyzer.cachedWrapperResolution(key)
+		require.NotNil(t, state)
+		assert.True(t, ok)
+		assert.True(t, done)
+		assert.Equal(t, 2, state.argIndex)
+
+		state.resolved = false
+		state.resolving = true
+		_, ok, done = analyzer.cachedWrapperResolution(key)
+		assert.False(t, ok)
+		assert.True(t, done)
+
+		state.resolving = false
+		_, ok, done = analyzer.cachedWrapperResolution(key)
+		assert.False(t, ok)
+		assert.False(t, done)
+
+		analyzer.wrapperResolutions[key] = &wrapperResolution{argIndex: 1, resolved: true}
+		idx, ok := analyzer.wrapperHandlerArgumentIndex(key)
+		require.True(t, ok)
+		assert.Equal(t, 1, idx)
+
+		assert.False(t, shouldSkipPackageFile(&packages.Package{CompiledGoFiles: []string{"service.go"}}, 0, func(string) bool { return false }))
+		assert.True(t, shouldSkipPackageFile(&packages.Package{}, 1, func(string) bool { return false }))
+		assert.True(t, shouldSkipPackageFile(&packages.Package{CompiledGoFiles: []string{"service.go"}}, 0, func(string) bool { return true }))
+
+		ref := functionDeclRef{
+			pkg: &packages.Package{TypesInfo: &types.Info{}},
+			decl: &ast.FuncDecl{
+				Name: &ast.Ident{Name: "Register"},
+				Type: &ast.FuncType{Params: &ast.FieldList{}},
+				Body: &ast.BlockStmt{List: []ast.Stmt{&ast.ExprStmt{X: &ast.CallExpr{Fun: &ast.Ident{Name: "Call"}}}}},
+			},
+		}
+		params := map[types.Object]int{}
+		state = &wrapperResolution{}
+		_, ok = analyzer.resolveWrapperHandlerArgument(ref, params, state)
+		assert.False(t, ok)
+
+		_, ok = analyzer.wrapperHandlerArgumentIndex(functionKey{pkgPath: "example.com/test", name: "Missing"})
+		assert.False(t, ok)
+
+		analyzer.functionDecls = map[functionKey]functionDeclRef{
+			key: {
+				pkg:  &packages.Package{TypesInfo: &types.Info{}},
+				decl: &ast.FuncDecl{Name: &ast.Ident{Name: "Register"}, Body: &ast.BlockStmt{}},
+			},
+		}
+		delete(analyzer.wrapperResolutions, key)
+		_, ok = analyzer.wrapperHandlerArgumentIndex(key)
+		assert.False(t, ok)
+
+		analyzer.functionDecls[key] = functionDeclRef{
+			pkg:  &packages.Package{TypesInfo: &types.Info{}},
+			decl: &ast.FuncDecl{Name: &ast.Ident{Name: "Register"}},
+		}
+		_, ok = analyzer.wrapperHandlerArgumentIndex(key)
+		assert.False(t, ok)
+
+		_, ok = analyzer.wrapperParamIndexFromCall(ref.pkg, params, &ast.CallExpr{Fun: &ast.BasicLit{}})
+		assert.False(t, ok)
+		configPkg := types.NewPackage("dubbo.apache.org/dubbo-go/v3/config", "config")
+		helperSel := &ast.SelectorExpr{X: &ast.Ident{Name: "config"}, Sel: &ast.Ident{Name: "SetProviderService"}}
+		helperPkg := &packages.Package{
+			TypesInfo: &types.Info{
+				Uses: map[*ast.Ident]types.Object{
+					helperSel.Sel: types.NewFunc(token.NoPos, configPkg, "SetProviderService", testSignature(false, nil, nil)),
+				},
+			},
+		}
+		_, ok = analyzer.wrapperParamIndexFromCall(helperPkg, params, &ast.CallExpr{Fun: helperSel, Args: []ast.Expr{&ast.BasicLit{}}})
+		assert.False(t, ok)
+		_, ok = analyzer.wrapperParamIndexFromCall(helperPkg, params, &ast.CallExpr{Fun: helperSel, Args: []ast.Expr{&ast.Ident{Name: "svc"}}})
 		assert.False(t, ok)
 	})
 
@@ -481,6 +605,78 @@ func TestAstAndTypeHelpers(t *testing.T) {
 		assignment, ok = latestAssignmentBefore(assignments, file.Pos(40))
 		require.True(t, ok)
 		assert.Equal(t, "Second", assignment.expr.(*ast.Ident).Name)
+	})
+
+	t.Run("recordAssignInitializers, appendInitializer, parameterIndexes, and functionKeyForObject handle edge cases", func(t *testing.T) {
+		localPkg := types.NewPackage("example.com/test", "test")
+		obj := types.NewVar(token.NoPos, localPkg, "svc", types.NewInterfaceType(nil, nil))
+		file := token.NewFileSet().AddFile("service.go", -1, 64)
+		assignIdent := &ast.Ident{Name: "svc", NamePos: file.Pos(10)}
+		assignFile := &ast.File{Decls: []ast.Decl{
+			&ast.FuncDecl{
+				Name: &ast.Ident{Name: "register"},
+				Type: &ast.FuncType{Params: &ast.FieldList{}},
+				Body: &ast.BlockStmt{List: []ast.Stmt{
+					&ast.AssignStmt{
+						Lhs: []ast.Expr{assignIdent},
+						Rhs: []ast.Expr{&ast.Ident{Name: "rhs"}},
+					},
+					&ast.AssignStmt{
+						Lhs: []ast.Expr{assignIdent},
+						Rhs: []ast.Expr{},
+					},
+				}},
+			},
+		}}
+		pkg := &packages.Package{
+			TypesInfo: &types.Info{
+				Uses: map[*ast.Ident]types.Object{assignIdent: obj},
+			},
+		}
+		initializers := map[types.Object][]assignmentRef{}
+		recordAssignInitializers(pkg, initializers, assignFile)
+		require.Len(t, initializers[obj], 1)
+		assert.Equal(t, file.Pos(10), initializers[obj][0].pos)
+
+		recordAssignInitializers(pkg, initializers, &ast.File{Decls: []ast.Decl{
+			&ast.FuncDecl{
+				Name: &ast.Ident{Name: "register2"},
+				Type: &ast.FuncType{Params: &ast.FieldList{}},
+				Body: &ast.BlockStmt{List: []ast.Stmt{
+					&ast.AssignStmt{
+						Lhs: []ast.Expr{&ast.SelectorExpr{X: &ast.Ident{Name: "svc"}, Sel: &ast.Ident{Name: "Field"}}},
+						Rhs: []ast.Expr{&ast.Ident{Name: "rhs"}},
+					},
+				}},
+			},
+		}})
+		require.Len(t, initializers[obj], 1)
+
+		appendInitializer(pkg, initializers, nil, token.NoPos, &ast.Ident{Name: "rhs"})
+		appendInitializer(pkg, initializers, &ast.Ident{Name: "missing"}, token.NoPos, &ast.Ident{Name: "rhs"})
+		require.Len(t, initializers[obj], 1)
+
+		assert.Empty(t, parameterIndexes(&packages.Package{}, &ast.FuncDecl{}))
+		assert.Empty(t, parameterIndexes(&packages.Package{}, &ast.FuncDecl{Type: &ast.FuncType{Params: &ast.FieldList{}}}))
+
+		paramName := &ast.Ident{Name: "svc"}
+		paramObj := types.NewVar(token.NoPos, localPkg, "svc", types.Typ[types.String])
+		params := parameterIndexes(&packages.Package{
+			TypesInfo: &types.Info{Defs: map[*ast.Ident]types.Object{paramName: paramObj}},
+		}, &ast.FuncDecl{
+			Type: &ast.FuncType{Params: &ast.FieldList{List: []*ast.Field{
+				{Type: &ast.Ident{Name: "string"}},
+				{Names: []*ast.Ident{paramName}, Type: &ast.Ident{Name: "string"}},
+			}}},
+		})
+		assert.Equal(t, 0, params[paramObj])
+
+		_, ok := functionKeyForObject(nil)
+		assert.False(t, ok)
+		_, ok = functionKeyForObject(types.NewVar(token.NoPos, localPkg, "svc", types.Typ[types.String]))
+		assert.False(t, ok)
+		_, ok = functionKeyForObject(types.NewFunc(token.NoPos, nil, "Call", testSignature(false, nil, nil)))
+		assert.False(t, ok)
 	})
 
 	t.Run("interfaceMethodPositions handles empty and embedded interfaces", func(t *testing.T) {

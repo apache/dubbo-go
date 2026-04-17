@@ -20,7 +20,6 @@ package common
 import (
 	"context"
 	"reflect"
-	"sort"
 	"strings"
 	"sync"
 	"unicode"
@@ -352,8 +351,6 @@ func WarnVariadicRPCMethods(serviceName string, svc RPCService) {
 	)
 }
 
-// variadicRPCMethodNames keeps the result sorted so warnings and tests stay
-// stable regardless of reflection iteration order.
 func variadicRPCMethodNames(typ reflect.Type) []string {
 	if typ == nil {
 		return nil
@@ -367,7 +364,6 @@ func variadicRPCMethodNames(typ reflect.Type) []string {
 		}
 	}
 
-	sort.Strings(methodNames)
 	return methodNames
 }
 

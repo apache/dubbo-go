@@ -34,6 +34,16 @@ import (
 
 var packagesLoad = packages.Load
 
+const (
+	dubboRootPkgPath   = "dubbo.apache.org/dubbo-go/v3"
+	dubboCommonPkgPath = dubboRootPkgPath + "/common"
+	dubboConfigPkgPath = dubboRootPkgPath + "/config"
+	dubboServerPkgPath = dubboRootPkgPath + "/server"
+
+	serverServiceOptionsType = "*" + dubboServerPkgPath + ".ServiceOptions"
+	configServiceConfigType  = "*" + dubboConfigPkgPath + ".ServiceConfig"
+)
+
 type registeredTypeKey struct {
 	pkgPath  string
 	typeName string
@@ -346,31 +356,7 @@ func registeredImplementationTypes(pkgs []*packages.Package) map[registeredTypeK
 	registeredTypes := make(map[registeredTypeKey]struct{})
 	analyzer := newRegistrationAnalyzer(pkgs)
 	for _, pkg := range pkgs {
-		for fileIdx, file := range pkg.Syntax {
-			if fileIdx >= len(pkg.CompiledGoFiles) {
-				continue
-			}
-
-			filename := pkg.CompiledGoFiles[fileIdx]
-			if shouldSkipRegistrationFile(filename) {
-				continue
-			}
-
-			ast.Inspect(file, func(node ast.Node) bool {
-				call, ok := node.(*ast.CallExpr)
-				if !ok {
-					return true
-				}
-
-				argIndex, ok := analyzer.handlerArgumentIndex(pkg, call)
-				if !ok || argIndex >= len(call.Args) {
-					return true
-				}
-
-				analyzer.recordRegisteredImplementationType(pkg, registeredTypes, call.Args[argIndex], call.Pos())
-				return true
-			})
-		}
+		analyzer.collectPackageRegistrations(pkg, registeredTypes)
 	}
 	return registeredTypes
 }
@@ -391,6 +377,45 @@ func newRegistrationAnalyzer(pkgs []*packages.Package) *registrationAnalyzer {
 		wrapperResolutions: make(map[functionKey]*wrapperResolution),
 		varInitializers:    variableInitializers(pkgs),
 	}
+}
+
+// collectPackageRegistrations walks one package and records concrete handler
+// types used in known registration calls.
+func (a *registrationAnalyzer) collectPackageRegistrations(pkg *packages.Package, registeredTypes map[registeredTypeKey]struct{}) {
+	for fileIdx, file := range pkg.Syntax {
+		if shouldSkipPackageFile(pkg, fileIdx, shouldSkipRegistrationFile) {
+			continue
+		}
+		a.collectFileRegistrations(pkg, file, registeredTypes)
+	}
+}
+
+// collectFileRegistrations scans a single file for registration calls.
+func (a *registrationAnalyzer) collectFileRegistrations(pkg *packages.Package, file *ast.File, registeredTypes map[registeredTypeKey]struct{}) {
+	ast.Inspect(file, func(node ast.Node) bool {
+		call, ok := node.(*ast.CallExpr)
+		if !ok {
+			return true
+		}
+
+		handlerArg, ok := a.registrationHandlerArg(pkg, call)
+		if !ok {
+			return true
+		}
+
+		a.recordRegisteredImplementationType(pkg, registeredTypes, handlerArg, call.Pos())
+		return true
+	})
+}
+
+// registrationHandlerArg returns the AST expression that carries the service
+// implementation for a recognized registration call.
+func (a *registrationAnalyzer) registrationHandlerArg(pkg *packages.Package, call *ast.CallExpr) (ast.Expr, bool) {
+	argIndex, ok := a.handlerArgumentIndex(pkg, call)
+	if !ok || argIndex >= len(call.Args) {
+		return nil, false
+	}
+	return call.Args[argIndex], true
 }
 
 // handlerArgumentIndex returns the argument slot that carries the service
@@ -421,16 +446,17 @@ func selectedMethodHandlerArgumentIndex(selection *types.Selection) (int, bool) 
 	}
 
 	path := obj.Pkg().Path()
+	name := obj.Name()
 	switch {
-	case path == "dubbo.apache.org/dubbo-go/v3/server" && obj.Name() == "Register":
+	case path == dubboServerPkgPath && name == "Register":
 		return 0, true
-	case path == "dubbo.apache.org/dubbo-go/v3/server" && obj.Name() == "RegisterService":
+	case path == dubboServerPkgPath && name == "RegisterService":
 		return 0, true
-	case path == "dubbo.apache.org/dubbo-go/v3/server" && obj.Name() == "Implement":
-		return 0, types.TypeString(selection.Recv(), nil) == "*dubbo.apache.org/dubbo-go/v3/server.ServiceOptions"
-	case path == "dubbo.apache.org/dubbo-go/v3/config" && obj.Name() == "Implement":
-		return 0, types.TypeString(selection.Recv(), nil) == "*dubbo.apache.org/dubbo-go/v3/config.ServiceConfig"
-	case path == "dubbo.apache.org/dubbo-go/v3/common" && obj.Name() == "Register":
+	case path == dubboServerPkgPath && name == "Implement":
+		return 0, types.TypeString(selection.Recv(), nil) == serverServiceOptionsType
+	case path == dubboConfigPkgPath && name == "Implement":
+		return 0, types.TypeString(selection.Recv(), nil) == configServiceConfigType
+	case path == dubboCommonPkgPath && name == "Register":
 		return 4, strings.HasSuffix(types.TypeString(selection.Recv(), nil), ".serviceMap")
 	default:
 		return 0, false
@@ -445,7 +471,7 @@ func (a *registrationAnalyzer) calledObjectHandlerArgumentIndex(obj types.Object
 	}
 	if obj.Pkg() != nil {
 		switch obj.Pkg().Path() {
-		case "dubbo.apache.org/dubbo-go/v3/config", "dubbo.apache.org/dubbo-go/v3":
+		case dubboConfigPkgPath, dubboRootPkgPath:
 			switch obj.Name() {
 			case "SetProviderService":
 				return 0, true
@@ -521,21 +547,18 @@ func (a *registrationAnalyzer) registeredTypeKeyForExpr(pkg *packages.Package, e
 // wrapperHandlerArgumentIndex recognizes simple passthrough wrappers that
 // forward one parameter into a known registration helper.
 func (a *registrationAnalyzer) wrapperHandlerArgumentIndex(key functionKey) (int, bool) {
-	state := a.wrapperResolutions[key]
-	if state != nil {
-		if state.resolved {
-			return state.argIndex, true
-		}
-		if state.resolving {
-			return 0, false
-		}
-	} else {
-		state = &wrapperResolution{}
-		a.wrapperResolutions[key] = state
+	state, ok, done := a.cachedWrapperResolution(key)
+	if done {
+		return state.argIndex, ok
 	}
 
 	ref, ok := a.functionDecls[key]
 	if !ok || ref.decl == nil || ref.decl.Body == nil {
+		return 0, false
+	}
+
+	params := parameterIndexes(ref.pkg, ref.decl)
+	if len(params) == 0 {
 		return 0, false
 	}
 
@@ -544,44 +567,83 @@ func (a *registrationAnalyzer) wrapperHandlerArgumentIndex(key functionKey) (int
 		state.resolving = false
 	}()
 
-	params := parameterIndexes(ref.pkg, ref.decl)
-	if len(params) == 0 {
+	return a.resolveWrapperHandlerArgument(ref, params, state)
+}
+
+// cachedWrapperResolution avoids re-walking wrapper bodies once a helper has
+// been resolved or rejected.
+func (a *registrationAnalyzer) cachedWrapperResolution(key functionKey) (*wrapperResolution, bool, bool) {
+	state := a.wrapperResolutions[key]
+	if state == nil {
+		state = &wrapperResolution{}
+		a.wrapperResolutions[key] = state
+		return state, false, false
+	}
+	if state.resolved {
+		return state, true, true
+	}
+	if state.resolving {
+		return state, false, true
+	}
+	return state, false, false
+}
+
+// resolveWrapperHandlerArgument looks for the forwarded parameter that reaches
+// a known registration helper inside one wrapper body.
+func (a *registrationAnalyzer) resolveWrapperHandlerArgument(ref functionDeclRef, params map[types.Object]int, state *wrapperResolution) (int, bool) {
+	for _, stmt := range ref.decl.Body.List {
+		if paramIndex, ok := a.forwardedWrapperParamIndex(ref.pkg, params, stmt); ok {
+			state.argIndex = paramIndex
+			state.resolved = true
+			return paramIndex, true
+		}
+	}
+	return 0, false
+}
+
+// forwardedWrapperParamIndex searches one statement subtree for a forwarded
+// registration parameter.
+func (a *registrationAnalyzer) forwardedWrapperParamIndex(pkg *packages.Package, params map[types.Object]int, stmt ast.Node) (int, bool) {
+	paramIndex := 0
+	matched := false
+	ast.Inspect(stmt, func(node ast.Node) bool {
+		call, ok := node.(*ast.CallExpr)
+		if !ok || matched {
+			return !matched
+		}
+
+		idx, ok := a.wrapperParamIndexFromCall(pkg, params, call)
+		if !ok {
+			return true
+		}
+
+		paramIndex = idx
+		matched = true
+		return false
+	})
+	return paramIndex, matched
+}
+
+// wrapperParamIndexFromCall maps one nested registration call back to the
+// wrapper parameter it forwards.
+func (a *registrationAnalyzer) wrapperParamIndexFromCall(pkg *packages.Package, params map[types.Object]int, call *ast.CallExpr) (int, bool) {
+	handlerArg, ok := a.registrationHandlerArg(pkg, call)
+	if !ok {
 		return 0, false
 	}
 
-	for _, stmt := range ref.decl.Body.List {
-		ast.Inspect(stmt, func(node ast.Node) bool {
-			call, ok := node.(*ast.CallExpr)
-			if !ok || state.resolved {
-				return !state.resolved
-			}
-
-			argIndex, ok := a.handlerArgumentIndex(ref.pkg, call)
-			if !ok || argIndex >= len(call.Args) {
-				return true
-			}
-
-			ident, ok := call.Args[argIndex].(*ast.Ident)
-			if !ok {
-				return true
-			}
-
-			obj := ref.pkg.TypesInfo.ObjectOf(ident)
-			paramIndex, ok := params[obj]
-			if !ok {
-				return true
-			}
-
-			state.argIndex = paramIndex
-			state.resolved = true
-			return false
-		})
-		if state.resolved {
-			return state.argIndex, true
-		}
+	ident, ok := handlerArg.(*ast.Ident)
+	if !ok {
+		return 0, false
 	}
 
-	return 0, false
+	obj := pkg.TypesInfo.ObjectOf(ident)
+	paramIndex, ok := params[obj]
+	if !ok {
+		return 0, false
+	}
+
+	return paramIndex, true
 }
 
 // functionDecls indexes package-level helpers that may wrap a known
@@ -589,28 +651,43 @@ func (a *registrationAnalyzer) wrapperHandlerArgumentIndex(key functionKey) (int
 func functionDecls(pkgs []*packages.Package) map[functionKey]functionDeclRef {
 	decls := make(map[functionKey]functionDeclRef)
 	for _, pkg := range pkgs {
-		for fileIdx, file := range pkg.Syntax {
-			if fileIdx >= len(pkg.CompiledGoFiles) {
-				continue
-			}
-			if shouldSkipRegistrationFile(pkg.CompiledGoFiles[fileIdx]) {
-				continue
-			}
-			for _, decl := range file.Decls {
-				funcDecl, ok := decl.(*ast.FuncDecl)
-				if !ok || funcDecl.Recv != nil {
-					continue
-				}
-				obj := pkg.TypesInfo.Defs[funcDecl.Name]
-				key, ok := functionKeyForObject(obj)
-				if !ok {
-					continue
-				}
-				decls[key] = functionDeclRef{pkg: pkg, decl: funcDecl}
-			}
-		}
+		collectPackageFunctionDecls(pkg, decls)
 	}
 	return decls
+}
+
+// collectPackageFunctionDecls indexes package-level helpers from one package.
+func collectPackageFunctionDecls(pkg *packages.Package, decls map[functionKey]functionDeclRef) {
+	for fileIdx, file := range pkg.Syntax {
+		if shouldSkipPackageFile(pkg, fileIdx, shouldSkipRegistrationFile) {
+			continue
+		}
+		collectFileFunctionDecls(pkg, file, decls)
+	}
+}
+
+// collectFileFunctionDecls records package-level helper declarations from one file.
+func collectFileFunctionDecls(pkg *packages.Package, file *ast.File, decls map[functionKey]functionDeclRef) {
+	for _, decl := range file.Decls {
+		recordFunctionDecl(pkg, decls, decl)
+	}
+}
+
+// recordFunctionDecl stores one package-level function under the stable key
+// used by wrapper tracing.
+func recordFunctionDecl(pkg *packages.Package, decls map[functionKey]functionDeclRef, decl ast.Decl) {
+	funcDecl, ok := decl.(*ast.FuncDecl)
+	if !ok || funcDecl.Recv != nil {
+		return
+	}
+
+	obj := pkg.TypesInfo.Defs[funcDecl.Name]
+	key, ok := functionKeyForObject(obj)
+	if !ok {
+		return
+	}
+
+	decls[key] = functionDeclRef{pkg: pkg, decl: funcDecl}
 }
 
 // variableInitializers stores ordered initializers and reassignments for
@@ -619,10 +696,7 @@ func variableInitializers(pkgs []*packages.Package) map[string]map[types.Object]
 	initializers := make(map[string]map[types.Object][]assignmentRef)
 	for _, pkg := range pkgs {
 		for fileIdx, file := range pkg.Syntax {
-			if fileIdx >= len(pkg.CompiledGoFiles) {
-				continue
-			}
-			if shouldSkipRegistrationFile(pkg.CompiledGoFiles[fileIdx]) {
+			if shouldSkipPackageFile(pkg, fileIdx, shouldSkipRegistrationFile) {
 				continue
 			}
 
@@ -643,26 +717,43 @@ func variableInitializers(pkgs []*packages.Package) map[string]map[types.Object]
 // for later call-site lookup.
 func recordValueSpecInitializers(pkg *packages.Package, initializers map[types.Object][]assignmentRef, file *ast.File) {
 	ast.Inspect(file, func(node ast.Node) bool {
-		genDecl, ok := node.(*ast.GenDecl)
-		if !ok || genDecl.Tok != token.VAR {
+		genDecl, ok := varGenDecl(node)
+		if !ok {
 			return true
 		}
-		for _, spec := range genDecl.Specs {
-			valueSpec, ok := spec.(*ast.ValueSpec)
-			if !ok || len(valueSpec.Values) != len(valueSpec.Names) {
-				continue
-			}
-			for i, name := range valueSpec.Names {
-				if obj := pkg.TypesInfo.Defs[name]; obj != nil {
-					initializers[obj] = append(initializers[obj], assignmentRef{
-						pos:  name.Pos(),
-						expr: valueSpec.Values[i],
-					})
-				}
-			}
-		}
+		recordVarDeclInitializers(pkg, initializers, genDecl)
 		return true
 	})
+}
+
+// varGenDecl keeps only var declarations for initializer indexing.
+func varGenDecl(node ast.Node) (*ast.GenDecl, bool) {
+	genDecl, ok := node.(*ast.GenDecl)
+	if !ok || genDecl.Tok != token.VAR {
+		return nil, false
+	}
+	return genDecl, true
+}
+
+// recordVarDeclInitializers records every explicit initializer from one var
+// declaration block.
+func recordVarDeclInitializers(pkg *packages.Package, initializers map[types.Object][]assignmentRef, genDecl *ast.GenDecl) {
+	for _, spec := range genDecl.Specs {
+		recordValueSpecInitializer(pkg, initializers, spec)
+	}
+}
+
+// recordValueSpecInitializer stores the initializer expressions for one value
+// spec when names and values line up.
+func recordValueSpecInitializer(pkg *packages.Package, initializers map[types.Object][]assignmentRef, spec ast.Spec) {
+	valueSpec, ok := spec.(*ast.ValueSpec)
+	if !ok || len(valueSpec.Values) != len(valueSpec.Names) {
+		return
+	}
+
+	for i, name := range valueSpec.Names {
+		appendInitializer(pkg, initializers, name, name.Pos(), valueSpec.Values[i])
+	}
 }
 
 // recordAssignInitializers appends later reassignments so call-site lookup can
@@ -678,15 +769,31 @@ func recordAssignInitializers(pkg *packages.Package, initializers map[types.Obje
 			if !ok {
 				continue
 			}
-			if obj := pkg.TypesInfo.ObjectOf(ident); obj != nil {
-				initializers[obj] = append(initializers[obj], assignmentRef{
-					pos:  ident.Pos(),
-					expr: assign.Rhs[i],
-				})
-			}
+			appendInitializer(pkg, initializers, ident, ident.Pos(), assign.Rhs[i])
 		}
 		return true
 	})
+}
+
+// appendInitializer records one initializer or reassignment for later
+// call-site lookup.
+func appendInitializer(pkg *packages.Package, initializers map[types.Object][]assignmentRef, ident *ast.Ident, pos token.Pos, expr ast.Expr) {
+	if ident == nil {
+		return
+	}
+
+	if obj := pkg.TypesInfo.ObjectOf(ident); obj != nil {
+		initializers[obj] = append(initializers[obj], assignmentRef{pos: pos, expr: expr})
+	}
+}
+
+// shouldSkipPackageFile centralizes the compiled-file bounds check used by the
+// registration and helper indexes.
+func shouldSkipPackageFile(pkg *packages.Package, fileIdx int, skip func(string) bool) bool {
+	if fileIdx >= len(pkg.CompiledGoFiles) {
+		return true
+	}
+	return skip(pkg.CompiledGoFiles[fileIdx])
 }
 
 // latestAssignmentBefore returns the nearest initializer or reassignment
