@@ -54,10 +54,7 @@ type RouterChain struct {
 
 // Route Loop routers in RouterChain and call Route method to determine the target invokers list.
 func (c *RouterChain) Route(url *common.URL, invocation base.Invocation) []base.Invoker {
-	c.mutex.RLock()
-	invokers := c.invokers
-	c.mutex.RUnlock()
-
+	invokers := c.snapshotInvokers()
 	finalInvokers := make([]base.Invoker, 0, len(invokers))
 	// multiple invoker may include different methods, find correct invoker otherwise
 	// will return the invoker without methods
@@ -108,6 +105,15 @@ func (c *RouterChain) copyRouters() []router.PriorityRouter {
 	defer c.mutex.RUnlock()
 	ret := make([]router.PriorityRouter, 0, len(c.routers))
 	ret = append(ret, c.routers...)
+	return ret
+}
+
+// snapshotInvokers returns a copy of current invokers under lock.
+func (c *RouterChain) snapshotInvokers() []base.Invoker {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+	ret := make([]base.Invoker, len(c.invokers))
+	copy(ret, c.invokers)
 	return ret
 }
 
