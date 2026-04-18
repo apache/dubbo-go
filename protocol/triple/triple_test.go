@@ -27,12 +27,16 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
+	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
 func resetTripleProtocolForTest(t *testing.T) {
@@ -126,6 +130,33 @@ func TestTripleGracefulShutdownCallbackRegistration(t *testing.T) {
 	assert.NotPanics(t, func() {
 		assert.NoError(t, cb(context.Background()))
 	})
+}
+
+func TestTripleProtocolOpenServerRejectsConflictingTransportSettings(t *testing.T) {
+	tp := NewTripleProtocol()
+	location := "127.0.0.1:20000"
+	tp.serverMap[location] = &Server{
+		transportSettings: &transportSettings{
+			location:     location,
+			callProtocol: constant.CallHTTP2,
+			rawTLSConfig: global.DefaultTLSConfig(),
+		},
+	}
+
+	invoker := &tripleServerTestInvoker{
+		url: common.NewURLWithOptions(
+			common.WithProtocol(TRIPLE),
+			common.WithIp("127.0.0.1"),
+			common.WithPort("20000"),
+			common.WithAttribute(constant.TripleConfigKey, &global.TripleConfig{
+				Http3: &global.Http3Config{Enable: true},
+			}),
+			common.WithAttribute(constant.TLSConfigKey, global.DefaultTLSConfig()),
+		),
+	}
+
+	err := tp.openServer(invoker, nil)
+	require.ErrorContains(t, err, "already uses protocol")
 }
 
 func TestTripleProtocol_Destroy_EmptyServerMap(t *testing.T) {
