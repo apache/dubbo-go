@@ -157,7 +157,7 @@ func TestServer_HTTP3PathsUseQUICConfigHelper(t *testing.T) {
 
 		err := srv.startHttp3(&tls.Config{})
 		require.Error(t, err)
-		assert.ErrorContains(t, err, "keep-alive-period")
+		require.ErrorContains(t, err, "keep-alive-period")
 		assert.Nil(t, srv.http3Srv)
 	})
 
@@ -170,7 +170,7 @@ func TestServer_HTTP3PathsUseQUICConfigHelper(t *testing.T) {
 
 		err := srv.startHttp2AndHttp3(&tls.Config{})
 		require.Error(t, err)
-		assert.ErrorContains(t, err, "max-idle-timeout")
+		require.ErrorContains(t, err, "max-idle-timeout")
 		assert.Nil(t, srv.http3Srv)
 		assert.Nil(t, srv.httpSrv)
 	})
