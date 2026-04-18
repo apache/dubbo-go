@@ -74,7 +74,7 @@ type RegistryDirectory struct {
 	consumerConfigurationListener  *consumerConfigurationListener
 	referenceConfigurationListener *referenceConfigurationListener
 	registerLock                   sync.Mutex // this lock if for register
-	subscribedURLLock              sync.RWMutex
+	subscribedUrlLock              sync.RWMutex
 	SubscribedUrl                  *common.URL
 	RegisteredUrl                  *common.URL
 	closingTombstones              *sync.Map // map[string]closingTombstone
@@ -730,14 +730,14 @@ func (dir *RegistryDirectory) snapshotConfigurators() []config_center.Configurat
 }
 
 func (dir *RegistryDirectory) setSubscribedURL(url *common.URL) {
-	dir.subscribedURLLock.Lock()
-	defer dir.subscribedURLLock.Unlock()
+	dir.subscribedUrlLock.Lock()
+	defer dir.subscribedUrlLock.Unlock()
 	dir.SubscribedUrl = url
 }
 
 func (dir *RegistryDirectory) snapshotRegistryURLs() (registeredURL *common.URL, subscribedURL *common.URL) {
-	dir.subscribedURLLock.RLock()
-	defer dir.subscribedURLLock.RUnlock()
+	dir.subscribedUrlLock.RLock()
+	defer dir.subscribedUrlLock.RUnlock()
 	return dir.RegisteredUrl, dir.SubscribedUrl
 }
 
