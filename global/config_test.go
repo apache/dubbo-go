@@ -1160,13 +1160,22 @@ func TestDefaultTripleConfig(t *testing.T) {
 func TestHttp3ConfigClone(t *testing.T) {
 	t.Run("clone_http3_config", func(t *testing.T) {
 		http3 := &Http3Config{
-			Enable:      true,
-			Negotiation: false,
+			Enable:                true,
+			Negotiation:           false,
+			KeepAlivePeriod:       "15s",
+			MaxIdleTimeout:        "30s",
+			MaxIncomingStreams:    128,
+			MaxIncomingUniStreams: 64,
 		}
 		cloned := http3.Clone()
 		assert.NotNil(t, cloned)
+		assert.NotSame(t, http3, cloned)
 		assert.Equal(t, http3.Enable, cloned.Enable)
 		assert.Equal(t, http3.Negotiation, cloned.Negotiation)
+		assert.Equal(t, http3.KeepAlivePeriod, cloned.KeepAlivePeriod)
+		assert.Equal(t, http3.MaxIdleTimeout, cloned.MaxIdleTimeout)
+		assert.Equal(t, http3.MaxIncomingStreams, cloned.MaxIncomingStreams)
+		assert.Equal(t, http3.MaxIncomingUniStreams, cloned.MaxIncomingUniStreams)
 	})
 
 	t.Run("clone_nil_http3_config", func(t *testing.T) {
@@ -1179,8 +1188,13 @@ func TestHttp3ConfigClone(t *testing.T) {
 		http3 := DefaultHttp3Config()
 		cloned := http3.Clone()
 		assert.NotNil(t, cloned)
+		assert.NotSame(t, http3, cloned)
 		assert.Equal(t, http3.Enable, cloned.Enable)
 		assert.Equal(t, http3.Negotiation, cloned.Negotiation)
+		assert.Equal(t, http3.KeepAlivePeriod, cloned.KeepAlivePeriod)
+		assert.Equal(t, http3.MaxIdleTimeout, cloned.MaxIdleTimeout)
+		assert.Equal(t, http3.MaxIncomingStreams, cloned.MaxIncomingStreams)
+		assert.Equal(t, http3.MaxIncomingUniStreams, cloned.MaxIncomingUniStreams)
 	})
 }
 
@@ -1189,6 +1203,12 @@ func TestDefaultHttp3Config(t *testing.T) {
 	t.Run("default_http3_config", func(t *testing.T) {
 		http3 := DefaultHttp3Config()
 		assert.NotNil(t, http3)
+		assert.False(t, http3.Enable)
+		assert.True(t, http3.Negotiation)
+		assert.Empty(t, http3.KeepAlivePeriod)
+		assert.Empty(t, http3.MaxIdleTimeout)
+		assert.Zero(t, http3.MaxIncomingStreams)
+		assert.Zero(t, http3.MaxIncomingUniStreams)
 	})
 }
 func TestConsumerConfigClone(t *testing.T) {

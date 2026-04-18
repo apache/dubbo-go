@@ -29,7 +29,6 @@ import (
 
 	"github.com/dubbogo/grpc-go"
 
-	"github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/http3"
 
 	"golang.org/x/net/http2"
@@ -214,15 +213,24 @@ func (s *Server) startHttp3(tlsConf *tls.Config) error {
 		return fmt.Errorf("TRIPLE HTTP/3 Server must have TLS config, but TLS config is nil")
 	}
 
+	var http3Config *global.Http3Config
+	if s.tripleConfig != nil {
+		http3Config = s.tripleConfig.Http3
+	}
+
+	quicConfig, err := newQUICConfig(http3Config)
+	if err != nil {
+		return err
+	}
+
 	s.http3Srv = &http3.Server{
 		Addr:    s.addr,
 		Handler: s.mux,
 		// Adapt and enhance a generic tls.Config object into a configuration
 		// specifically for HTTP/3 services.
 		// ref: https://quic-go.net/docs/http3/server/#setting-up-a-http3server
-		TLSConfig: http3.ConfigureTLSConfig(tlsConf),
-		// TODO: Detailed QUIC configuration.
-		QUICConfig: &quic.Config{},
+		TLSConfig:  http3.ConfigureTLSConfig(tlsConf),
+		QUICConfig: quicConfig,
 	}
 
 	logger.Debugf("TRIPLE HTTP/3 Server starting on %v", s.addr)
@@ -236,12 +244,22 @@ func (s *Server) startHttp2AndHttp3(tlsConf *tls.Config) error {
 		return fmt.Errorf("TRIPLE HTTP/2 and HTTP/3 Server must have TLS config, but TLS config is nil")
 	}
 
+	var http3Config *global.Http3Config
+	if s.tripleConfig != nil {
+		http3Config = s.tripleConfig.Http3
+	}
+
+	quicConfig, err := newQUICConfig(http3Config)
+	if err != nil {
+		return err
+	}
+
 	// Start HTTP/3 server first to get its configuration
 	s.http3Srv = &http3.Server{
 		Addr:       s.addr,
 		Handler:    s.mux,
 		TLSConfig:  http3.ConfigureTLSConfig(tlsConf),
-		QUICConfig: &quic.Config{},
+		QUICConfig: quicConfig,
 	}
 
 	// Create Alt-Svc handler wrapper for HTTP/2 server

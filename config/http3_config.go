@@ -34,5 +34,15 @@ type Http3Config struct {
 	// ref: https://quic-go.net/docs/http3/server/#advertising-http3-via-alt-svc
 	Negotiation bool `yaml:"negotiation" json:"negotiation,omitempty"`
 
-	// TODO: add more params about http3
+	// KeepAlivePeriod defines how often to send keep-alive packets.
+	KeepAlivePeriod string `yaml:"keep-alive-period" json:"keepAlivePeriod,omitempty"`
+
+	// MaxIdleTimeout defines the maximum idle timeout for QUIC connections.
+	MaxIdleTimeout string `yaml:"max-idle-timeout" json:"maxIdleTimeout,omitempty"`
+
+	// MaxIncomingStreams defines the maximum number of concurrent bidirectional streams.
+	MaxIncomingStreams int64 `yaml:"max-incoming-streams" json:"maxIncomingStreams,omitempty"`
+
+	// MaxIncomingUniStreams defines the maximum number of concurrent unidirectional streams.
+	MaxIncomingUniStreams int64 `yaml:"max-incoming-uni-streams" json:"maxIncomingUniStreams,omitempty"`
 }

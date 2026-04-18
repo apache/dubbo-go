@@ -34,14 +34,28 @@ type Http3Config struct {
 	// ref: https://quic-go.net/docs/http3/server/#advertising-http3-via-alt-svc
 	Negotiation bool `yaml:"negotiation" json:"negotiation,omitempty"`
 
-	// TODO: add more params about http3
+	// KeepAlivePeriod defines how often to send keep-alive packets.
+	KeepAlivePeriod string `yaml:"keep-alive-period" json:"keepAlivePeriod,omitempty"`
+
+	// MaxIdleTimeout defines the maximum idle timeout for QUIC connections.
+	MaxIdleTimeout string `yaml:"max-idle-timeout" json:"maxIdleTimeout,omitempty"`
+
+	// MaxIncomingStreams defines the maximum number of concurrent bidirectional streams.
+	MaxIncomingStreams int64 `yaml:"max-incoming-streams" json:"maxIncomingStreams,omitempty"`
+
+	// MaxIncomingUniStreams defines the maximum number of concurrent unidirectional streams.
+	MaxIncomingUniStreams int64 `yaml:"max-incoming-uni-streams" json:"maxIncomingUniStreams,omitempty"`
 }
 
 // DefaultHttp3Config returns a default Http3Config instance.
 func DefaultHttp3Config() *Http3Config {
 	return &Http3Config{
-		Enable:      false,
-		Negotiation: true,
+		Enable:                false,
+		Negotiation:           true,
+		KeepAlivePeriod:       "",
+		MaxIdleTimeout:        "",
+		MaxIncomingStreams:    0,
+		MaxIncomingUniStreams: 0,
 	}
 }
 
@@ -52,7 +66,11 @@ func (t *Http3Config) Clone() *Http3Config {
 	}
 
 	return &Http3Config{
-		Enable:      t.Enable,
-		Negotiation: t.Negotiation,
+		Enable:                t.Enable,
+		Negotiation:           t.Negotiation,
+		KeepAlivePeriod:       t.KeepAlivePeriod,
+		MaxIdleTimeout:        t.MaxIdleTimeout,
+		MaxIncomingStreams:    t.MaxIncomingStreams,
+		MaxIncomingUniStreams: t.MaxIncomingUniStreams,
 	}
 }
