@@ -33,7 +33,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/internal"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
@@ -97,40 +96,42 @@ func (tp *TripleProtocol) Export(invoker base.Invoker) base.Exporter {
 	exporter := NewTripleExporter(serviceKey, invoker, tp.ExporterMap())
 	tp.SetExporterMap(serviceKey, exporter)
 	logger.Infof("[TRIPLE Protocol] Export service: %s", url.String())
-	tp.openServer(invoker, info)
-	internal.HealthSetServingStatusServing(serviceKey)
+	if err := tp.openServer(invoker, info); err != nil {
+		exporter.UnExport()
+		panic(err)
+	}
+	internal.HealthSetServingStatusServing(url.Service())
 	return exporter
 }
 
-func (tp *TripleProtocol) openServer(invoker base.Invoker, info *common.ServiceInfo) {
+func (tp *TripleProtocol) openServer(invoker base.Invoker, info *common.ServiceInfo) error {
 	url := invoker.GetURL()
 	tp.serverLock.Lock()
 	defer tp.serverLock.Unlock()
 
-	if _, ok := tp.serverMap[url.Location]; ok {
-		tp.serverMap[url.Location].RefreshService(invoker, info)
-		return
+	if srv, ok := tp.serverMap[url.Location]; ok {
+		if err := srv.ValidateTransportURL(url); err != nil {
+			return err
+		}
+		if err := srv.refreshService(invoker, info); err != nil {
+			return err
+		}
+		return nil
 	}
 
 	if _, ok := tp.ExporterMap().Load(url.ServiceKey()); !ok {
 		panic("[TRIPLE Protocol]" + url.Key() + "is not existing")
 	}
 
-	tripleConfRaw, ok := url.GetAttribute(constant.TripleConfigKey)
-	if !ok {
-		// NOTE: sometimes happened on old triple
-		logger.Warnf("Triple config is not found for url: %s", url.Key())
+	// Do not freeze listener configuration at construction time. The shared
+	// transport must be resolved from the current export URL so mount-first and
+	// export-first flows converge on the same bootstrap path.
+	srv := NewServer(nil)
+	if err := srv.Start(invoker, info); err != nil {
+		return err
 	}
-
-	tripleConf, ok := tripleConfRaw.(*global.TripleConfig)
-	if !ok || tripleConf == nil {
-		// NOTE: sometimes happened on old triple
-		logger.Warnf("Triple config obtained from url: %s is not of type *global.TripleConfig or is nil", url.Key())
-	}
-
-	srv := NewServer(tripleConf)
-	srv.Start(invoker, info)
 	tp.serverMap[url.Location] = srv
+	return nil
 }
 
 // Refer a remote triple service
@@ -204,22 +205,18 @@ func (tp *TripleProtocol) MountHTTPHandler(url *common.URL, handler http.Handler
 	defer tp.serverLock.Unlock()
 
 	if srv, ok := tp.serverMap[url.Location]; ok {
+		if err := srv.ValidateTransportURL(url); err != nil {
+			return err
+		}
 		// If service export already created the listener, mounting only needs to
 		// attach the root handler to the existing server instance.
 		srv.SetMountedHTTPHandler(handler)
 		return nil
 	}
 
-	var tripleConf *global.TripleConfig
-	if tripleConfRaw, ok := url.GetAttribute(constant.TripleConfigKey); ok {
-		typed, ok := tripleConfRaw.(*global.TripleConfig)
-		if !ok {
-			return fmt.Errorf("invalid triple config type %T", tripleConfRaw)
-		}
-		tripleConf = typed
-	}
-
-	srv := NewServer(tripleConf)
+	// Keep construction side-effect free and let StartHTTPTransport resolve
+	// the actual listener settings from the mount URL.
+	srv := NewServer(nil)
 	srv.SetMountedHTTPHandler(handler)
 	// Boot transport eagerly so HTTP-only and mount-before-export scenarios
 	// reuse the same Triple listener once services are exported later.

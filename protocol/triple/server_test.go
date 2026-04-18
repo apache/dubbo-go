@@ -577,10 +577,14 @@ func TestHandleServiceWithInfoSaveServiceInfoOnlyOriginalMethods(t *testing.T) {
 }
 
 type tripleServerTestInvoker struct {
+	url      *common.URL
 	invokeFn func(context.Context, base.Invocation) result.Result
 }
 
 func (m *tripleServerTestInvoker) GetURL() *common.URL {
+	if m.url != nil {
+		return m.url
+	}
 	return common.NewURLWithOptions()
 }
 
@@ -656,6 +660,75 @@ func (c *tripleServerTestConn) ResponseHeader() http.Header {
 
 func (c *tripleServerTestConn) ResponseTrailer() http.Header {
 	return c.respTrailer
+}
+
+func TestServerValidateTransportSettingsAllowsCompatibleSettings(t *testing.T) {
+	server := NewServer(nil)
+	server.transportSettings = &transportSettings{
+		location:     "127.0.0.1:20000",
+		callProtocol: constant.CallHTTP2,
+		rawTLSConfig: global.DefaultTLSConfig(),
+	}
+
+	err := server.validateTransportSettings(&transportSettings{
+		location:     "127.0.0.1:20000",
+		callProtocol: constant.CallHTTP2,
+		rawTLSConfig: global.DefaultTLSConfig(),
+	})
+	require.NoError(t, err)
+}
+
+func TestServerValidateTransportSettingsRejectsConflictingProtocol(t *testing.T) {
+	server := NewServer(nil)
+	server.transportSettings = &transportSettings{
+		location:     "127.0.0.1:20000",
+		callProtocol: constant.CallHTTP2,
+		rawTLSConfig: global.DefaultTLSConfig(),
+	}
+
+	err := server.validateTransportSettings(&transportSettings{
+		location:     "127.0.0.1:20000",
+		callProtocol: constant.CallHTTP2AndHTTP3,
+		rawTLSConfig: global.DefaultTLSConfig(),
+	})
+	require.ErrorContains(t, err, "already uses protocol")
+}
+
+func TestServerValidateTransportSettingsRejectsConflictingTLS(t *testing.T) {
+	server := NewServer(nil)
+	server.transportSettings = &transportSettings{
+		location:     "127.0.0.1:20000",
+		callProtocol: constant.CallHTTP2,
+		rawTLSConfig: global.DefaultTLSConfig(),
+	}
+
+	err := server.validateTransportSettings(&transportSettings{
+		location:     "127.0.0.1:20000",
+		callProtocol: constant.CallHTTP2,
+		rawTLSConfig: &global.TLSConfig{TLSCertFile: "server.crt", TLSKeyFile: "server.key"},
+	})
+	require.ErrorContains(t, err, "different TLS settings")
+}
+
+func TestResolveHandlerOptionsRejectsUnsupportedSerialization(t *testing.T) {
+	url := common.NewURLWithOptions(
+		common.WithParamsValue(constant.SerializationKey, "yaml"),
+	)
+
+	_, err := resolveHandlerOptions(url)
+	require.ErrorContains(t, err, "unsupported serialization: yaml")
+}
+
+func TestServerRefreshServiceRejectsInvalidHandlerTripleConfig(t *testing.T) {
+	server := NewServer(nil)
+	invoker := &tripleServerTestInvoker{
+		url: common.NewURLWithOptions(
+			common.WithAttribute(constant.TripleConfigKey, "invalid"),
+		),
+	}
+
+	err := server.refreshService(invoker, nil)
+	require.ErrorContains(t, err, "invalid triple config type string")
 }
 
 func TestServerRegisterUnaryMethodHandler(t *testing.T) {
