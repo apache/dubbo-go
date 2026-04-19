@@ -661,8 +661,8 @@ func TestTripleClientOTELTraceparentIsolation(t *testing.T) {
 	assert.NotEqual(t, invoker.calls[0].outgoingTraceparent, invoker.calls[1].outgoingTraceparent)
 	assert.Equal(t, "seed", firstHeaderValue(afterBHeader, "x-seed"))
 	assert.Equal(t, "seed", firstHeaderValue(afterCHeader, "x-seed"))
-	assert.Empty(t, afterBHeader["traceparent"])
-	assert.Empty(t, afterCHeader["traceparent"])
+	assert.Empty(t, headerValues(afterBHeader, "traceparent"))
+	assert.Empty(t, headerValues(afterCHeader, "traceparent"))
 
 	t.Logf("incoming traceparent = %s", incomingTraceparent)
 	t.Logf(
