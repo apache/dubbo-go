@@ -29,9 +29,215 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router"
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
+
+type mockStaticRouter struct {
+	configs []*global.RouterConfig
+}
+
+func (m *mockStaticRouter) Route(invokers []base.Invoker, _ *common.URL, _ base.Invocation) []base.Invoker {
+	return invokers
+}
+
+func (m *mockStaticRouter) URL() *common.URL {
+	return nil
+}
+
+func (m *mockStaticRouter) Priority() int64 {
+	return 0
+}
+
+func (m *mockStaticRouter) Notify(_ []base.Invoker) {
+}
+
+func (m *mockStaticRouter) SetStaticConfig(cfg *global.RouterConfig) {
+	m.configs = append(m.configs, cfg)
+}
+
+type mutatingStaticRouter struct {
+	configs []*global.RouterConfig
+}
+
+func (m *mutatingStaticRouter) Route(invokers []base.Invoker, _ *common.URL, _ base.Invocation) []base.Invoker {
+	return invokers
+}
+
+func (m *mutatingStaticRouter) URL() *common.URL {
+	return nil
+}
+
+func (m *mutatingStaticRouter) Priority() int64 {
+	return 0
+}
+
+func (m *mutatingStaticRouter) Notify(_ []base.Invoker) {
+}
+
+func (m *mutatingStaticRouter) SetStaticConfig(cfg *global.RouterConfig) {
+	if cfg != nil {
+		if cfg.Force != nil {
+			*cfg.Force = !*cfg.Force // NOSONAR
+		}
+		if len(cfg.Conditions) > 0 {
+			cfg.Conditions[0] = "mutated" // NOSONAR
+		}
+	}
+	m.configs = append(m.configs, cfg)
+}
+
+type mockRouter struct{}
+
+func (m *mockRouter) Route(invokers []base.Invoker, _ *common.URL, _ base.Invocation) []base.Invoker {
+	return invokers
+}
+
+func (m *mockRouter) URL() *common.URL {
+	return nil
+}
+
+func (m *mockRouter) Priority() int64 {
+	return 0
+}
+
+func (m *mockRouter) Notify(_ []base.Invoker) {
+}
+
+func TestInjectStaticRouters(t *testing.T) {
+	trueValue := true
+	falseValue := false
+
+	staticRouter := &mockStaticRouter{}
+	chain := &RouterChain{
+		routers: []router.PriorityRouter{
+			staticRouter,
+			&mockRouter{},
+		},
+	}
+
+	url := common.NewURLWithOptions(
+		common.WithProtocol("consumer"),
+		common.WithPath("consumer.path"),
+	)
+	url.SubURL = common.NewURLWithOptions(
+		common.WithProtocol("dubbo"),
+		common.WithPath("svc.test"),
+	)
+	url.SubURL.SetParam(constant.ApplicationKey, "app.test")
+	url.SubURL.SetAttribute(constant.RoutersConfigKey, []*global.RouterConfig{
+		nil,
+		{
+			Scope:   constant.RouterScopeService,
+			Key:     "svc.test",
+			Enabled: &trueValue,
+			Valid:   &trueValue,
+		},
+		{
+			Scope: constant.RouterScopeApplication,
+			Key:   "app.test",
+		},
+		{
+			Scope:   constant.RouterScopeApplication,
+			Key:     "disabled",
+			Enabled: &falseValue,
+		},
+		{
+			Scope: constant.RouterScopeApplication,
+			Key:   "invalid",
+			Valid: &falseValue,
+		},
+		{
+			Scope: constant.RouterScopeApplication,
+			Key:   "other-app",
+		},
+	})
+
+	chain.injectStaticRouters(url)
+
+	if assert.Len(t, staticRouter.configs, 3) {
+		assert.Equal(t, "svc.test", staticRouter.configs[0].Key)
+		assert.Equal(t, "app.test", staticRouter.configs[1].Key)
+		assert.Equal(t, "other-app", staticRouter.configs[2].Key)
+	}
+}
+
+func TestInjectStaticRouters_InvalidAttributeType(t *testing.T) {
+	staticRouter := &mockStaticRouter{}
+	chain := &RouterChain{
+		routers: []router.PriorityRouter{staticRouter},
+	}
+
+	url := common.NewURLWithOptions(
+		common.WithProtocol("consumer"),
+		common.WithPath("svc.test"),
+	)
+	url.SetAttribute(constant.RoutersConfigKey, "invalid")
+
+	chain.injectStaticRouters(url)
+
+	assert.Empty(t, staticRouter.configs)
+}
+
+func TestInjectStaticRouters_RegistryURLUsesSubURLConfig(t *testing.T) {
+	staticRouter := &mockStaticRouter{}
+	chain := &RouterChain{
+		routers: []router.PriorityRouter{staticRouter},
+	}
+
+	registryURL := common.NewURLWithOptions(
+		common.WithProtocol(constant.RegistryProtocol),
+		common.WithPath("registry"),
+	)
+	registryURL.SubURL = common.NewURLWithOptions(
+		common.WithProtocol("consumer"),
+		common.WithPath("consumer.path"),
+	)
+	registryURL.SubURL.SetAttribute(constant.RoutersConfigKey, []*global.RouterConfig{{
+		Scope: constant.RouterScopeApplication,
+		Key:   "provider-app",
+	}})
+
+	chain.injectStaticRouters(registryURL)
+
+	if assert.Len(t, staticRouter.configs, 1) {
+		assert.Equal(t, "provider-app", staticRouter.configs[0].Key)
+	}
+}
+
+func TestInjectRouterConfig_ClonePerSetter(t *testing.T) {
+	trueValue := true
+	mutatingRouter := &mutatingStaticRouter{}
+	observingRouter := &mockStaticRouter{}
+	chain := &RouterChain{
+		routers: []router.PriorityRouter{
+			mutatingRouter,
+			observingRouter,
+		},
+	}
+
+	routerCfg := &global.RouterConfig{
+		Force:      &trueValue,
+		Conditions: []string{"original"}, // NOSONAR
+	}
+
+	chain.injectRouterConfig(routerCfg)
+
+	if assert.Len(t, mutatingRouter.configs, 1) && assert.Len(t, observingRouter.configs, 1) {
+		assert.NotSame(t, routerCfg, mutatingRouter.configs[0])
+		assert.NotSame(t, routerCfg, observingRouter.configs[0])
+		assert.NotSame(t, mutatingRouter.configs[0], observingRouter.configs[0])
+		assert.False(t, *mutatingRouter.configs[0].Force)
+		assert.Equal(t, "mutated", mutatingRouter.configs[0].Conditions[0]) // NOSONAR
+		assert.True(t, *observingRouter.configs[0].Force)
+		assert.Equal(t, "original", observingRouter.configs[0].Conditions[0]) // NOSONAR
+	}
+
+	assert.True(t, *routerCfg.Force)
+	assert.Equal(t, "original", routerCfg.Conditions[0]) // NOSONAR
+}
 
 const testConsumerServiceURL = "consumer://127.0.0.1/com.demo.Service"
 

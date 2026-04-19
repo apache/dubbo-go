@@ -36,7 +36,7 @@ func TestApplicationConfig(t *testing.T) {
 	err := Load(WithPath("./testdata/config/application/application.yaml"))
 	require.NoError(t, err)
 
-	center := rootConfig.Registries
+	center := GetRootConfig().Registries
 	assert.NotNil(t, center)
 }
 

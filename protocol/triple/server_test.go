@@ -330,7 +330,7 @@ func TestServer_SaveServiceInfo(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
 			server := NewServer(nil)
-			server.saveServiceInfo(test.interfaceName, test.info)
+			server.saveServiceInfo(test.interfaceName, test.info, "", "", "")
 			test.expect(t, server)
 		})
 	}
@@ -350,7 +350,7 @@ func TestServer_SaveServiceInfo_Concurrent(t *testing.T) {
 					{Name: "Method", Type: constant.CallUnary},
 				},
 			}
-			server.saveServiceInfo(fmt.Sprintf("test.Service%d", idx), info)
+			server.saveServiceInfo(fmt.Sprintf("test.Service%d", idx), info, "", "", "")
 		}(i)
 	}
 
@@ -559,7 +559,7 @@ func TestHandleServiceWithInfoSaveServiceInfoOnlyOriginalMethods(t *testing.T) {
 			{Name: "ListUsers", Type: constant.CallServerStream},
 		},
 	}
-	server.saveServiceInfo("com.example.UserService", info)
+	server.saveServiceInfo("com.example.UserService", info, "", "", "")
 
 	svcInfo := server.GetServiceInfo()
 	svc, ok := svcInfo["com.example.UserService"]

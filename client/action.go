@@ -155,6 +155,7 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 		common.WithAttribute(constant.ConsumerConfigKey, refOpts.Consumer),
 		common.WithAttribute(constant.ProtocolConfigKey, ref.Protocol),
 		common.WithAttribute(constant.RegistriesConfigKey, refOpts.Registries),
+		common.WithAttribute(constant.RoutersConfigKey, refOpts.Routers),
 	)
 
 	// for new triple IDL mode
