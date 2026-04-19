@@ -17,7 +17,9 @@
 
 package global
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 // Http3Config represents the config of http3
 type Http3Config struct {
