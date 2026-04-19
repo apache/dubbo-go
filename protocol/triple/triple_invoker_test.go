@@ -48,6 +48,13 @@ import (
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
+func headerValues(header http.Header, key string) []string {
+	if vals, ok := header[http.CanonicalHeaderKey(key)]; ok {
+		return vals
+	}
+	return header[strings.ToLower(key)]
+}
+
 func Test_parseInvocation(t *testing.T) {
 	tests := []struct {
 		desc   string
@@ -441,7 +448,7 @@ func Test_mergeAttachmentToOutgoing(t *testing.T) {
 			expect: func(t *testing.T, ctx context.Context, err error) {
 				require.NoError(t, err)
 				header := http.Header(tri.ExtractFromOutgoingContext(ctx))
-				assert.Equal(t, []string{"custom-value"}, header["custom-key"])
+				assert.Equal(t, []string{"custom-value"}, headerValues(header, "custom-key"))
 			},
 		},
 		{
@@ -456,7 +463,7 @@ func Test_mergeAttachmentToOutgoing(t *testing.T) {
 			expect: func(t *testing.T, ctx context.Context, err error) {
 				require.NoError(t, err)
 				header := http.Header(tri.ExtractFromOutgoingContext(ctx))
-				assert.Equal(t, []string{"val1", "val2"}, header["multi-key"])
+				assert.Equal(t, []string{"val1", "val2"}, headerValues(header, "multi-key"))
 			},
 		},
 		{
@@ -472,8 +479,8 @@ func Test_mergeAttachmentToOutgoing(t *testing.T) {
 			expect: func(t *testing.T, ctx context.Context, err error) {
 				require.NoError(t, err)
 				header := http.Header(tri.ExtractFromOutgoingContext(ctx))
-				assert.Equal(t, []string{"existing-value"}, header["existing-header"])
-				assert.Equal(t, []string{"custom-value"}, header["custom-key"])
+				assert.Equal(t, []string{"existing-value"}, headerValues(header, "existing-header"))
+				assert.Equal(t, []string{"custom-value"}, headerValues(header, "custom-key"))
 			},
 		},
 		{
@@ -489,7 +496,7 @@ func Test_mergeAttachmentToOutgoing(t *testing.T) {
 			expect: func(t *testing.T, ctx context.Context, err error) {
 				require.NoError(t, err)
 				header := http.Header(tri.ExtractFromOutgoingContext(ctx))
-				assert.Equal(t, []string{"new-traceparent"}, header["traceparent"])
+				assert.Equal(t, []string{"new-traceparent"}, headerValues(header, "traceparent"))
 			},
 		},
 		{
@@ -543,8 +550,8 @@ func Test_mergeAttachmentToOutgoing_DoesNotMutatePreviousContext(t *testing.T) {
 	header1 := http.Header(tri.ExtractFromOutgoingContext(ctx1))
 	header2 := http.Header(tri.ExtractFromOutgoingContext(ctx2))
 
-	assert.Equal(t, []string{"first-traceparent"}, header1["traceparent"])
-	assert.Equal(t, []string{"second-traceparent"}, header2["traceparent"])
+	assert.Equal(t, []string{"first-traceparent"}, headerValues(header1, "traceparent"))
+	assert.Equal(t, []string{"second-traceparent"}, headerValues(header2, "traceparent"))
 }
 
 type capturedTripleCall struct {
