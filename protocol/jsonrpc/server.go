@@ -22,6 +22,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"mime"
 	"net"
 	"net/http"
 	"runtime"
@@ -150,9 +151,9 @@ func (s *Server) handlePkg(conn net.Conn) {
 
 		httpTimeout := s.timeout
 		contentType := reqHeader["Content-Type"]
-		if contentType != "application/json" && contentType != "application/json-rpc" {
+		mediaType, _, parseErr := mime.ParseMediaType(contentType)
+		if parseErr != nil || (mediaType != "application/json" && mediaType != "application/json-rpc") {
 			setTimeout(conn, httpTimeout)
-			r.Header.Set("Content-Type", "text/plain")
 			errMsg := "unsupported content type: " + contentType
 			if errRsp := sendErrorResp(r.Header, []byte(errMsg)); errRsp != nil {
 				logger.Warnf("sendErrorResp(header:%#v, error:%v) = error:%s",
