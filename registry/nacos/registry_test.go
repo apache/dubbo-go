@@ -24,6 +24,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
 
 import (
@@ -649,4 +650,38 @@ func TestNacosRegistrySubscribeUntilSuccessWithBackoff(t *testing.T) {
 		nr.subscribeUntilSuccess(testURL, nil)
 		// If we reach here without hanging, the test passes
 	})
+}
+
+func TestNacosRegistryScheduledLookUpStopsWhenDoneClosed(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockNamingClient := NewMockINamingClient(ctrl)
+	nc := &nacosClient.NacosNamingClient{}
+	nc.SetClient(mockNamingClient)
+
+	regURL, _ := common.NewURL("registry://127.0.0.1:8848?registry.group=testgroup")
+	nr := &nacosRegistry{
+		URL:          regURL,
+		namingClient: nc,
+		done:         make(chan struct{}),
+		registryUrls: []*common.URL{},
+	}
+	mockNamingClient.EXPECT().GetAllServicesInfo(gomock.Any()).Return(model.ServiceList{}, nil).AnyTimes()
+
+	testURL, _ := common.NewURL("consumer://127.0.0.1:20000/com.test.ScheduledService")
+	finished := make(chan struct{})
+	go func() {
+		nr.scheduledLookUp(testURL, nil)
+		close(finished)
+	}()
+
+	time.Sleep(20 * time.Millisecond)
+	close(nr.done)
+
+	select {
+	case <-finished:
+	case <-time.After(time.Second):
+		t.Fatalf("scheduledLookUp should exit quickly after done is closed")
+	}
 }

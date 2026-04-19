@@ -77,6 +77,7 @@ func (ins *Instance) NewClient(opts ...client.ClientOption) (*client.Client, err
 	otelCfg := ins.insOpts.CloneOtel()
 	tlsCfg := ins.insOpts.CloneTLSConfig()
 	protocolsCfg := ins.insOpts.CloneProtocols()
+	routersCfg := ins.insOpts.CloneRouter()
 
 	if conCfg != nil {
 		if !conCfg.Check {
@@ -112,6 +113,9 @@ func (ins *Instance) NewClient(opts ...client.ClientOption) (*client.Client, err
 	}
 	if protocolsCfg != nil {
 		cliOpts = append(cliOpts, client.SetClientProtocols(protocolsCfg))
+	}
+	if routersCfg != nil {
+		cliOpts = append(cliOpts, client.SetClientRouters(routersCfg))
 	}
 
 	// options passed by users has higher priority

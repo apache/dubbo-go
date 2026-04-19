@@ -23,6 +23,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
@@ -46,6 +47,23 @@ type PriorityRouter interface {
 
 	// Notify the router the invoker list
 	Notify(invokers []base.Invoker)
+}
+
+// StaticConfigSetter is implemented by routers that accept static router config injection.
+//
+// The chain passes every static config to every router that implements this interface, so that
+// the chain does not need to know which config type (condition/tag/script/...) belongs to which
+// router. Each router must approve only configs that apply to it: at the start of SetStaticConfig,
+// if cfg is nil or does not match this router's type (e.g. no Conditions for condition router,
+// no Tags for tag router), return immediately without modifying state. Only apply when the config
+// is intended for this router.
+//
+// Static config injection happens once during RouterChain initialization and serves as bootstrap
+// state for builtin routers. The chain does not merge static and dynamic rules. Later dynamic
+// updates still go through each router's own Notify/Process path and override the router's
+// current rule.
+type StaticConfigSetter interface {
+	SetStaticConfig(cfg *global.RouterConfig)
 }
 
 // Poolable caches address pool and address metadata for a router instance which will be used later in Router's Route.

@@ -32,15 +32,15 @@ func TestLoggerInit(t *testing.T) {
 	t.Run("empty use default", func(t *testing.T) {
 		err := Load(WithPath("./testdata/config/logger/empty_log.yaml"))
 		require.NoError(t, err)
-		assert.NotNil(t, rootConfig)
-		loggerConfig := rootConfig.Logger
+		assert.NotNil(t, GetRootConfig())
+		loggerConfig := GetRootConfig().Logger
 		assert.NotNil(t, loggerConfig)
 	})
 
 	t.Run("use config", func(t *testing.T) {
 		err := Load(WithPath("./testdata/config/logger/log.yaml"))
 		require.NoError(t, err)
-		loggerConfig := rootConfig.Logger
+		loggerConfig := GetRootConfig().Logger
 		assert.NotNil(t, loggerConfig)
 		// default
 		logger.Info("hello")
@@ -49,7 +49,7 @@ func TestLoggerInit(t *testing.T) {
 	t.Run("use config with file", func(t *testing.T) {
 		err := Load(WithPath("./testdata/config/logger/file_log.yaml"))
 		require.NoError(t, err)
-		loggerConfig := rootConfig.Logger
+		loggerConfig := GetRootConfig().Logger
 		assert.NotNil(t, loggerConfig)
 		logger.Debug("debug")
 		logger.Info("info")

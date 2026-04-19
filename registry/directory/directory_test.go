@@ -20,6 +20,7 @@ package directory
 import (
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -50,7 +51,7 @@ func TestSubscribe(t *testing.T) {
 	registryDirectory, _ := normalRegistryDir()
 
 	time.Sleep(1e9)
-	assert.Len(t, registryDirectory.cacheInvokers, 3)
+	assert.Len(t, registryDirectory.snapshotCacheInvokers(), 3)
 }
 
 func TestSubscribe_InvalidUrl(t *testing.T) {
@@ -64,11 +65,11 @@ func Test_Destroy(t *testing.T) {
 	registryDirectory, _ := normalRegistryDir()
 
 	time.Sleep(3e9)
-	assert.Len(t, registryDirectory.cacheInvokers, 3)
+	assert.Len(t, registryDirectory.snapshotCacheInvokers(), 3)
 	assert.True(t, registryDirectory.IsAvailable())
 
 	registryDirectory.Destroy()
-	assert.Empty(t, registryDirectory.cacheInvokers)
+	assert.Empty(t, registryDirectory.snapshotCacheInvokers())
 	assert.False(t, registryDirectory.IsAvailable())
 }
 
@@ -88,9 +89,10 @@ func Test_MergeProviderUrl(t *testing.T) {
 		common.WithParamsValue(constant.VersionKey, "1.0.0"))
 	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerUrl})
 	time.Sleep(1e9)
-	assert.Len(t, registryDirectory.cacheInvokers, 1)
-	if len(registryDirectory.cacheInvokers) > 0 {
-		assert.Equal(t, "mock1", registryDirectory.cacheInvokers[0].GetURL().GetParam(constant.ClusterKey, ""))
+	assert.Len(t, registryDirectory.snapshotCacheInvokers(), 1)
+	invokers := registryDirectory.snapshotCacheInvokers()
+	if len(invokers) > 0 {
+		assert.Equal(t, "mock1", invokers[0].GetURL().GetParam(constant.ClusterKey, ""))
 	}
 }
 
@@ -103,7 +105,7 @@ func Test_MergeOverrideUrl(t *testing.T) {
 	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerUrl})
 Loop1:
 	for {
-		if len(registryDirectory.cacheInvokers) > 0 {
+		if len(registryDirectory.snapshotCacheInvokers()) > 0 {
 			overrideUrl, _ := common.NewURL("override://0.0.0.0:20000/org.apache.dubbo-go.mockService",
 				common.WithParamsValue(constant.ClusterKey, "mock1"),
 				common.WithParamsValue(constant.GroupKey, "group"),
@@ -111,9 +113,10 @@ Loop1:
 			mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: overrideUrl})
 		Loop2:
 			for {
-				if len(registryDirectory.cacheInvokers) > 0 {
-					if registryDirectory.cacheInvokers[0].GetURL().GetParam(constant.ClusterKey, "") == "mock1" {
-						assert.Len(t, registryDirectory.cacheInvokers, 1)
+				invokers := registryDirectory.snapshotCacheInvokers()
+				if len(invokers) > 0 {
+					if invokers[0].GetURL().GetParam(constant.ClusterKey, "") == "mock1" {
+						assert.Len(t, invokers, 1)
 
 						break Loop2
 					} else {
@@ -137,23 +140,23 @@ func Test_RefreshUrl(t *testing.T) {
 		common.WithParamsValue(constant.GroupKey, "group"),
 		common.WithParamsValue(constant.VersionKey, "1.0.0"))
 	time.Sleep(1e9)
-	assert.Len(t, registryDirectory.cacheInvokers, 3)
+	assert.Len(t, registryDirectory.snapshotCacheInvokers(), 3)
 	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerUrl})
 	time.Sleep(1e9)
-	assert.Len(t, registryDirectory.cacheInvokers, 4)
+	assert.Len(t, registryDirectory.snapshotCacheInvokers(), 4)
 	mockRegistry.MockEvents([]*registry.ServiceEvent{{Action: remoting.EventTypeUpdate, Service: providerUrl}})
 	time.Sleep(1e9)
-	assert.Len(t, registryDirectory.cacheInvokers, 1)
+	assert.Len(t, registryDirectory.snapshotCacheInvokers(), 1)
 	mockRegistry.MockEvents([]*registry.ServiceEvent{
 		{Action: remoting.EventTypeUpdate, Service: providerUrl},
 		{Action: remoting.EventTypeUpdate, Service: providerUrl2},
 	})
 	time.Sleep(1e9)
-	assert.Len(t, registryDirectory.cacheInvokers, 2)
+	assert.Len(t, registryDirectory.snapshotCacheInvokers(), 2)
 	// clear all address
 	mockRegistry.MockEvents([]*registry.ServiceEvent{})
 	time.Sleep(1e9)
-	assert.Empty(t, registryDirectory.cacheInvokers)
+	assert.Empty(t, registryDirectory.snapshotCacheInvokers())
 }
 
 func TestRemoveClosingInstanceRemovesExactInstanceKey(t *testing.T) {
@@ -177,13 +180,13 @@ func TestRemoveClosingInstanceRemovesExactInstanceKey(t *testing.T) {
 	mockRegistry.MockEvent(event2)
 	time.Sleep(1e9)
 
-	assert.Len(t, registryDirectory.cacheInvokers, 2)
+	assert.Len(t, registryDirectory.snapshotCacheInvokers(), 2)
 	assert.NotEqual(t, key1, key2)
 
 	removed := registryDirectory.RemoveClosingInstance(key1)
 	require.True(t, removed)
 
-	assert.Len(t, registryDirectory.cacheInvokers, 1)
+	assert.Len(t, registryDirectory.snapshotCacheInvokers(), 1)
 	assert.Len(t, registryDirectory.List(&invocation.RPCInvocation{}), 1)
 
 	_, stillExists := registryDirectory.cacheInvokersMap.Load(key1)
@@ -199,7 +202,7 @@ func TestRemoveClosingInstanceReturnsFalseForUnknownKey(t *testing.T) {
 
 	removed := registryDirectory.RemoveClosingInstance("missing-instance-key")
 	assert.False(t, removed)
-	assert.Empty(t, registryDirectory.cacheInvokers)
+	assert.Empty(t, registryDirectory.snapshotCacheInvokers())
 }
 
 func TestClosingTombstonePreventsRebuildUntilDeleteEvent(t *testing.T) {
@@ -214,16 +217,16 @@ func TestClosingTombstonePreventsRebuildUntilDeleteEvent(t *testing.T) {
 
 	mockRegistry.MockEvent(event)
 	time.Sleep(1e9)
-	assert.Len(t, registryDirectory.cacheInvokers, 1)
+	assert.Len(t, registryDirectory.snapshotCacheInvokers(), 1)
 
 	removed := registryDirectory.RemoveClosingInstance(key)
 	require.True(t, removed)
-	assert.Empty(t, registryDirectory.cacheInvokers)
+	assert.Empty(t, registryDirectory.snapshotCacheInvokers())
 	assert.True(t, registryDirectory.hasActiveClosingTombstone(key))
 
 	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerURL})
 	time.Sleep(1e9)
-	assert.Empty(t, registryDirectory.cacheInvokers)
+	assert.Empty(t, registryDirectory.snapshotCacheInvokers())
 
 	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeDel, Service: providerURL})
 	time.Sleep(1e9)
@@ -231,7 +234,7 @@ func TestClosingTombstonePreventsRebuildUntilDeleteEvent(t *testing.T) {
 
 	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerURL})
 	time.Sleep(1e9)
-	assert.Len(t, registryDirectory.cacheInvokers, 1)
+	assert.Len(t, registryDirectory.snapshotCacheInvokers(), 1)
 }
 
 func TestExpiredClosingTombstoneAllowsRebuild(t *testing.T) {
@@ -247,17 +250,17 @@ func TestExpiredClosingTombstoneAllowsRebuild(t *testing.T) {
 
 	mockRegistry.MockEvent(event)
 	time.Sleep(1e9)
-	require.Len(t, registryDirectory.cacheInvokers, 1)
+	require.Len(t, registryDirectory.snapshotCacheInvokers(), 1)
 
 	require.True(t, registryDirectory.RemoveClosingInstance(key))
-	assert.Empty(t, registryDirectory.cacheInvokers)
+	assert.Empty(t, registryDirectory.snapshotCacheInvokers())
 
 	time.Sleep(40 * time.Millisecond)
 	assert.False(t, registryDirectory.hasActiveClosingTombstone(key))
 
 	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerURL})
 	time.Sleep(1e9)
-	assert.Len(t, registryDirectory.cacheInvokers, 1)
+	assert.Len(t, registryDirectory.snapshotCacheInvokers(), 1)
 }
 
 func normalRegistryDir(noMockEvent ...bool) (*RegistryDirectory, *registry.MockRegistry) {
@@ -279,7 +282,7 @@ func normalRegistryDir(noMockEvent ...bool) (*RegistryDirectory, *registry.MockR
 	mockRegistry, _ := registry.NewMockRegistry(&common.URL{})
 	dir, _ := NewRegistryDirectory(url, mockRegistry)
 
-	go dir.(*RegistryDirectory).Subscribe(suburl)
+	_ = dir.(*RegistryDirectory).Subscribe(suburl)
 	if len(noMockEvent) == 0 {
 		for i := 0; i < 3; i++ {
 			mockRegistry.(*registry.MockRegistry).MockEvent(
@@ -417,6 +420,104 @@ func TestRegistryDirectorySubscribedURLConcurrentAccess(t *testing.T) {
 	}
 	wg.Wait()
 }
+
+func TestRegistryDirectorySubscribeTimeoutStillStartsSubscribe(t *testing.T) {
+	registryURL, err := common.NewURL(
+		"registry://127.0.0.1:20000",
+		common.WithParamsValue(constant.RegistryTimeoutKey, "100ms"),
+	)
+	require.NoError(t, err)
+	subscribeURL, err := common.NewURL("consumer://127.0.0.1:20000/org.apache.dubbo-go.mockService")
+	require.NoError(t, err)
+
+	blockingRegistry := &blockingRegistryForSubscribeTest{
+		url:           registryURL,
+		registerBlock: make(chan struct{}),
+	}
+	defer close(blockingRegistry.registerBlock)
+
+	dir := &RegistryDirectory{
+		registry: blockingRegistry,
+	}
+
+	err = dir.Subscribe(subscribeURL)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "timed out")
+	assert.Eventually(t, func() bool {
+		return blockingRegistry.subscribeCalls.Load() == 1
+	}, time.Second, 10*time.Millisecond)
+}
+
+func TestRegistryDirectorySubscribeTimeoutLateRegisterRollback(t *testing.T) {
+	registryURL, err := common.NewURL(
+		"registry://127.0.0.1:20000",
+		common.WithParamsValue(constant.RegistryTimeoutKey, "100ms"),
+	)
+	require.NoError(t, err)
+	subscribeURL, err := common.NewURL("consumer://127.0.0.1:20000/org.apache.dubbo-go.mockService")
+	require.NoError(t, err)
+
+	blockingRegistry := &blockingRegistryForSubscribeTest{
+		url:           registryURL,
+		registerBlock: make(chan struct{}),
+	}
+
+	dir := &RegistryDirectory{
+		registry: blockingRegistry,
+	}
+
+	err = dir.Subscribe(subscribeURL)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "timed out")
+	assert.Eventually(t, func() bool {
+		return blockingRegistry.subscribeCalls.Load() == 1
+	}, time.Second, 10*time.Millisecond)
+
+	close(blockingRegistry.registerBlock)
+	assert.Eventually(t, func() bool {
+		return blockingRegistry.unregisterCalls.Load() == 1
+	}, time.Second, 10*time.Millisecond)
+}
+
+type blockingRegistryForSubscribeTest struct {
+	url             *common.URL
+	registerBlock   chan struct{}
+	subscribeCalls  atomic.Int32
+	unregisterCalls atomic.Int32
+}
+
+func (r *blockingRegistryForSubscribeTest) Register(_ *common.URL) error {
+	<-r.registerBlock
+	return nil
+}
+
+func (r *blockingRegistryForSubscribeTest) UnRegister(_ *common.URL) error {
+	r.unregisterCalls.Add(1)
+	return nil
+}
+
+func (r *blockingRegistryForSubscribeTest) Subscribe(_ *common.URL, _ registry.NotifyListener) error {
+	r.subscribeCalls.Add(1)
+	return nil
+}
+
+func (r *blockingRegistryForSubscribeTest) UnSubscribe(_ *common.URL, _ registry.NotifyListener) error {
+	return nil
+}
+
+func (r *blockingRegistryForSubscribeTest) LoadSubscribeInstances(_ *common.URL, _ registry.NotifyListener) error {
+	return nil
+}
+
+func (r *blockingRegistryForSubscribeTest) GetURL() *common.URL {
+	return r.url
+}
+
+func (r *blockingRegistryForSubscribeTest) IsAvailable() bool {
+	return true
+}
+
+func (r *blockingRegistryForSubscribeTest) Destroy() {}
 
 func newRegistryDirectoryForConcurrencyTest(t *testing.T) *RegistryDirectory {
 	t.Helper()

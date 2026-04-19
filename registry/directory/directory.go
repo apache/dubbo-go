@@ -186,13 +186,6 @@ func (dir *RegistryDirectory) Subscribe(url *common.URL) error {
 	logger.Infof("Start subscribing for service :%s with a new go routine.", url.Key())
 	dir.setSubscribedURL(url)
 
-	go func() {
-		if err := dir.registry.Subscribe(url, dir); err != nil {
-			logger.Error("registry.Subscribe(url:%v, dir:%v) = error:%v", url, dir, err)
-		}
-
-	}()
-
 	// Get the timeout time from the registration center configuration (default time 5s)
 	registerUrl := dir.registry.GetURL()
 
@@ -210,26 +203,58 @@ func (dir *RegistryDirectory) Subscribe(url *common.URL) error {
 		timeout, _ = time.ParseDuration(constant.DefaultRegTimeout)
 	}
 
-	done := make(chan struct{})
-
+	serviceKey := url.Key()
 	go func() {
-		urlToReg := getConsumerUrlToRegistry(url)
-		err := dir.registry.Register(urlToReg)
-		if err != nil {
-			logger.Errorf("consumer service %v register registry %v error, error message is %v",
-				url.String(), dir.registry.GetURL().String(), err)
+		if err := dir.registry.Subscribe(url, dir); err != nil {
+			logger.Error("registry.Subscribe(url:%v, dir:%v) = error:%v", url, dir, err)
 		}
-
-		close(done)
 	}()
 
+	// Registration is bounded by registry timeout (default 5s), but subscription
+	// stays decoupled from registration so discovery can continue even on register error.
+	if err := dir.registerConsumerWithTimeout(url, timeout, serviceKey); err != nil {
+		return err
+	}
+
+	logger.Infof("register completed successfully for service: %s", serviceKey)
+	return nil
+}
+
+func (dir *RegistryDirectory) registerConsumerWithTimeout(url *common.URL, timeout time.Duration, serviceKey string) error {
+	registerErrCh := make(chan error, 1)
+	urlToReg := getConsumerUrlToRegistry(url.Clone())
+	go func() {
+		registerErrCh <- dir.registry.Register(urlToReg)
+	}()
+
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+
 	select {
-	case <-done:
-		logger.Infof("register completed successfully for service: %s", url.Key())
+	case err := <-registerErrCh:
+		if err != nil {
+			registryURL := dir.registry.GetURL()
+			registryURLString := ""
+			if registryURL != nil {
+				registryURLString = registryURL.String()
+			}
+			logger.Errorf("consumer service %v register registry %v error, error message is %v",
+				url.String(), registryURLString, err)
+			return err
+		}
 		return nil
-	case <-time.After(timeout):
-		logger.Errorf("register timed out for service: %s", url.Key())
-		return fmt.Errorf("register timed out for service: %s", url.Key())
+	case <-timer.C:
+		logger.Errorf("register timed out for service: %s", serviceKey)
+		go func() {
+			err := <-registerErrCh
+			if err != nil {
+				return
+			}
+			if unRegErr := dir.registry.UnRegister(urlToReg.Clone()); unRegErr != nil {
+				logger.Warnf("register timed out for service %s, but late unregister failed: %v", serviceKey, unRegErr)
+			}
+		}()
+		return fmt.Errorf("register timed out for service: %s", serviceKey)
 	}
 }
 
@@ -693,6 +718,7 @@ func (dir *RegistryDirectory) closingServiceKey() string {
 }
 
 func (dir *RegistryDirectory) overrideUrl(targetUrl *common.URL) {
+	// Use a read-only snapshot to avoid sharing mutable configurator slice during overrides.
 	doOverrideUrl(dir.snapshotConfigurators(), targetUrl)
 	doOverrideUrl(dir.consumerConfigurationListener.Configurators(), targetUrl)
 	doOverrideUrl(dir.referenceConfigurationListener.Configurators(), targetUrl)

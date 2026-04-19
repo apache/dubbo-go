@@ -187,7 +187,7 @@ func (c *ProviderConfig) Load() {
 			serviceConfig = NewServiceConfigBuilder().Build()
 			// use interface name defined by pb
 			serviceConfig.Interface = supportPBPackagerNameService.XXX_InterfaceName()
-			if err := serviceConfig.Init(rootConfig); err != nil {
+			if err := serviceConfig.Init(GetRootConfig()); err != nil {
 				logger.Errorf("Service with registeredTypeName = %s init failed with error = %#v", registeredTypeName, err)
 			}
 			serviceConfig.adaptiveService = c.AdaptiveService

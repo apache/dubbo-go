@@ -31,7 +31,7 @@ func TestGetProtocolsConfig(t *testing.T) {
 	t.Run("empty use default", func(t *testing.T) {
 		err := Load(WithPath("./testdata/config/protocol/empty_application.yaml"))
 		require.NoError(t, err)
-		protocols := rootConfig.Protocols
+		protocols := GetRootConfig().Protocols
 		assert.NotNil(t, protocols)
 		// default
 		assert.Equal(t, "tri", protocols["tri"].Name)
@@ -42,7 +42,7 @@ func TestGetProtocolsConfig(t *testing.T) {
 	t.Run("use config", func(t *testing.T) {
 		err := Load(WithPath("./testdata/config/protocol/application.yaml"))
 		require.NoError(t, err)
-		protocols := rootConfig.Protocols
+		protocols := GetRootConfig().Protocols
 		assert.NotNil(t, protocols)
 		// default
 		assert.Equal(t, "dubbo", protocols["dubbo"].Name)
