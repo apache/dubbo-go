@@ -55,17 +55,13 @@ func (s *Server) MountHTTPHandler(handler http.Handler) error {
 	return nil
 }
 
-func (s *Server) mountedHTTPHandlerSnapshot() http.Handler {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return s.mountedHTTPHandler
-}
-
 // mountHTTPHandlers boots HTTP-capable protocols that support hosting an
 // existing root handler on the same listener as framework-managed routes.
 // Today that means Triple running on an explicit, user-selected port.
 func (s *Server) mountHTTPHandlers() error {
-	handler := s.mountedHTTPHandlerSnapshot()
+	s.mu.RLock()
+	handler := s.mountedHTTPHandler
+	s.mu.RUnlock()
 	if handler == nil {
 		return nil
 	}
