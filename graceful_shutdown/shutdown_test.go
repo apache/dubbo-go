@@ -39,6 +39,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/metrics/probe"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
@@ -193,6 +194,27 @@ func TestShutdownClosesDoneAndRunsOnce(t *testing.T) {
 	default:
 		t.Fatal("Done channel was not closed after Shutdown completed")
 	}
+}
+
+func TestBeforeShutdownMarksNotReady(t *testing.T) {
+	probe.Init(&probe.Config{
+		Enabled:          true,
+		Port:             "0",
+		UseInternalState: true,
+	})
+	probe.SetReady(true)
+	t.Cleanup(func() {
+		probe.SetReady(false)
+		probe.SetStartupComplete(false)
+		probe.EnableInternalState(false)
+	})
+
+	require.NoError(t, probe.CheckReadiness(context.Background()))
+
+	cfg := global.DefaultShutdownConfig()
+	beforeShutdown(cfg)
+
+	require.Error(t, probe.CheckReadiness(context.Background()))
 }
 
 func TestRegisterProtocol(t *testing.T) {

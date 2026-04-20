@@ -39,6 +39,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/metrics/probe"
 	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
@@ -172,6 +173,7 @@ func beforeShutdown(shutdown *global.ShutdownConfig) {
 	// 1. mark closing state
 	logger.Info("Graceful shutdown --- Mark closing state.")
 	shutdown.Closing.Store(true)
+	probe.SetReady(false)
 
 	// 2. unregister services from registries
 	unregisterRegistries()
