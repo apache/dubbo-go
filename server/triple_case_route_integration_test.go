@@ -180,7 +180,8 @@ func runTripleCaseRouteIntegration(
 
 	err = srv.Register(service, info, WithInterface(info.InterfaceName), WithNotRegister())
 	require.NoError(t, err)
-	err = srv.exportServices()
+	ctx := context.Background()
+	err = srv.exportServices(ctx)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {

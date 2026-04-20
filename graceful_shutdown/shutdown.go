@@ -24,6 +24,7 @@ import (
 	"os/signal"
 	"runtime/debug"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -66,6 +67,16 @@ var (
 
 	proMu     sync.Mutex
 	protocols map[string]struct{}
+
+	shutdownConfigMu sync.RWMutex
+	shutdownConfig   *global.ShutdownConfig
+
+	shutdownOnce    sync.Once
+	shutdownStarted atomic.Bool
+	shutdownDone    = make(chan struct{})
+	shutdownResult  error
+
+	signalNotify = signal.Notify
 )
 
 func Init(opts ...Option) {
@@ -76,26 +87,23 @@ func Init(opts ...Option) {
 			opt(newOpts)
 		}
 
-		// retrieve ShutdownConfig for gracefulShutdownFilter
-		gracefulShutdownConsumerFilter, exist := extension.GetFilter(constant.GracefulShutdownConsumerFilterKey)
-		if !exist {
-			return
-		}
-		gracefulShutdownProviderFilter, exist := extension.GetFilter(constant.GracefulShutdownProviderFilterKey)
-		if !exist {
-			return
-		}
-		if filter, ok := gracefulShutdownConsumerFilter.(config.Setter); ok {
-			filter.Set(constant.GracefulShutdownFilterShutdownConfig, newOpts.Shutdown)
-		}
+		storeShutdownConfig(newOpts.Shutdown)
 
-		if filter, ok := gracefulShutdownProviderFilter.(config.Setter); ok {
-			filter.Set(constant.GracefulShutdownFilterShutdownConfig, newOpts.Shutdown)
+		// retrieve ShutdownConfig for gracefulShutdownFilter
+		if gracefulShutdownConsumerFilter, exist := extension.GetFilter(constant.GracefulShutdownConsumerFilterKey); exist {
+			if filter, ok := gracefulShutdownConsumerFilter.(config.Setter); ok {
+				filter.Set(constant.GracefulShutdownFilterShutdownConfig, newOpts.Shutdown)
+			}
+		}
+		if gracefulShutdownProviderFilter, exist := extension.GetFilter(constant.GracefulShutdownProviderFilterKey); exist {
+			if filter, ok := gracefulShutdownProviderFilter.(config.Setter); ok {
+				filter.Set(constant.GracefulShutdownFilterShutdownConfig, newOpts.Shutdown)
+			}
 		}
 
 		if newOpts.Shutdown.InternalSignal != nil && *newOpts.Shutdown.InternalSignal {
 			signals := make(chan os.Signal, 1)
-			signal.Notify(signals, ShutdownSignals...)
+			signalNotify(signals, ShutdownSignals...)
 
 			go func() {
 				sig := <-signals
@@ -105,7 +113,9 @@ func Init(opts ...Option) {
 					logger.Warn("Shutdown gracefully timeout, applicationConfig will shutdown immediately. ")
 					os.Exit(0)
 				})
-				beforeShutdown(newOpts.Shutdown)
+				if err := Shutdown(context.Background()); err != nil {
+					logger.Warnf("Graceful shutdown --- shutdown completed with error: %v", err)
+				}
 				// those signals' original behavior is exit with dump ths stack, so we try to keep the behavior
 				for _, dumpSignal := range DumpHeapShutdownSignals {
 					if sig == dumpSignal {
@@ -116,6 +126,25 @@ func Init(opts ...Option) {
 			}()
 		}
 	})
+}
+
+func Done() <-chan struct{} {
+	return shutdownDone
+}
+
+func Shutdown(ctx context.Context) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	startShutdownOnce()
+
+	select {
+	case <-shutdownDone:
+		return shutdownResult
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 // RegisterProtocol registers protocol which would be destroyed before shutdown.
@@ -164,6 +193,25 @@ func beforeShutdown(shutdown *global.ShutdownConfig) {
 
 	// 7. execute custom callbacks
 	executeCustomShutdownCallbacks(shutdown)
+}
+
+func startShutdownOnce() {
+	shutdownOnce.Do(func() {
+		shutdownStarted.Store(true)
+		go func() {
+			defer func() {
+				if recovered := recover(); recovered != nil {
+					logger.Warnf("Graceful shutdown --- shutdown panicked --- %v", recovered)
+					shutdownResult = fmt.Errorf("graceful shutdown panic: %v", recovered)
+				}
+				close(shutdownDone)
+			}()
+
+			cfg := loadShutdownConfig()
+			beforeShutdown(cfg)
+			shutdownResult = nil
+		}()
+	})
 }
 
 // unregisterRegistries unregisters exported services from registries during graceful shutdown.
@@ -373,4 +421,21 @@ func getProtocolSafely(name string) (protocol protocolbase.Protocol, ok bool) {
 	protocol = extension.GetProtocol(name)
 	ok = protocol != nil
 	return protocol, ok
+}
+
+func storeShutdownConfig(cfg *global.ShutdownConfig) {
+	shutdownConfigMu.Lock()
+	defer shutdownConfigMu.Unlock()
+	shutdownConfig = cfg
+}
+
+func loadShutdownConfig() *global.ShutdownConfig {
+	shutdownConfigMu.RLock()
+	cfg := shutdownConfig
+	shutdownConfigMu.RUnlock()
+
+	if cfg != nil {
+		return cfg
+	}
+	return global.DefaultShutdownConfig()
 }
