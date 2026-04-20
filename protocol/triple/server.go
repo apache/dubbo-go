@@ -165,28 +165,30 @@ func (s *Server) ensureTriServer(settings *transportSettings) error {
 	s.triServer = tri.NewServer(settings.location, settings.tripleConfig)
 	// MountHTTPHandler may initialize transport before any Triple service is
 	// exported, so the first tri.Server instance must inherit the root handler.
-	if handler := s.mountedHTTPHandlerSnapshot(); handler != nil {
+	s.mu.RLock()
+	handler := s.mountedHTTPHandler
+	s.mu.RUnlock()
+	if handler != nil {
 		s.triServer.SetFallbackHTTPHandler(handler)
 	}
 	internal.ReflectionRegister(s)
 	return nil
 }
 
-func (s *Server) mountedHTTPHandlerSnapshot() http.Handler {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return s.mountedHTTPHandler
-}
-
-// SetMountedHTTPHandler updates the root HTTP fallback on the Triple server.
-// When transport is already running, the new handler is applied immediately to
-// the underlying route mux.
-func (s *Server) SetMountedHTTPHandler(handler http.Handler) {
+// MountHTTPHandler attaches a single root HTTP fallback to the Triple server.
+// The mounted handler follows the same single-root semantics as server.Server:
+// once a handler has been attached for one listener, later mounts must fail
+// fast instead of silently replacing the existing fallback.
+func (s *Server) MountHTTPHandler(handler http.Handler) error {
 	if handler == nil {
-		return
+		return fmt.Errorf("mounted HTTP handler must not be nil")
 	}
 
 	s.mu.Lock()
+	if s.mountedHTTPHandler != nil {
+		s.mu.Unlock()
+		return fmt.Errorf("an HTTP handler has already been mounted")
+	}
 	s.mountedHTTPHandler = handler
 	triServer := s.triServer
 	s.mu.Unlock()
@@ -194,6 +196,7 @@ func (s *Server) SetMountedHTTPHandler(handler http.Handler) {
 	if triServer != nil {
 		triServer.SetFallbackHTTPHandler(handler)
 	}
+	return nil
 }
 
 func (s *Server) ValidateTransportURL(url *common.URL) error {
@@ -263,9 +266,9 @@ func (s *Server) registerServiceHandlers(invoker base.Invoker, info *common.Serv
 		s.saveServiceInfo(intfName, info, openapiGroup, url.Group(), url.Version())
 	} else if IDLMode == constant.NONIDL {
 		// new triple non-idl mode
-			reflectInfo := createServiceInfoWithReflection(service)
-			s.handleServiceWithInfo(intfName, invoker, reflectInfo, hanOpts...)
-			s.saveServiceInfo(intfName, reflectInfo, openapiGroup, url.Group(), url.Version())
+		reflectInfo := createServiceInfoWithReflection(service)
+		s.handleServiceWithInfo(intfName, invoker, reflectInfo, hanOpts...)
+		s.saveServiceInfo(intfName, reflectInfo, openapiGroup, url.Group(), url.Version())
 	} else {
 		s.compatHandleService(url, intfName, url.Group(), url.Version(), hanOpts...)
 	}

@@ -19,6 +19,7 @@ package triple
 
 import (
 	"context"
+	"net/http"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -33,8 +34,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
 func TestNewTripleProtocol(t *testing.T) {
@@ -110,6 +111,29 @@ func TestTripleProtocolOpenServerRejectsConflictingTransportSettings(t *testing.
 
 	err := tp.openServer(invoker, nil)
 	require.ErrorContains(t, err, "already uses protocol")
+}
+
+func TestTripleProtocolMountHTTPHandlerRejectsDuplicateOnExistingListener(t *testing.T) {
+	tp := NewTripleProtocol()
+	location := "127.0.0.1:20000"
+	tp.serverMap[location] = &Server{
+		mountedHTTPHandler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}),
+		transportSettings: &transportSettings{
+			location:     location,
+			callProtocol: constant.CallHTTP2,
+			rawTLSConfig: global.DefaultTLSConfig(),
+		},
+	}
+
+	url := common.NewURLWithOptions(
+		common.WithProtocol(TRIPLE),
+		common.WithIp("127.0.0.1"),
+		common.WithPort("20000"),
+		common.WithAttribute(constant.TLSConfigKey, global.DefaultTLSConfig()),
+	)
+
+	err := tp.MountHTTPHandler(url, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	require.ErrorContains(t, err, "already been mounted")
 }
 
 func TestTripleProtocol_Destroy_EmptyServerMap(t *testing.T) {

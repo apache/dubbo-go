@@ -210,14 +210,15 @@ func (tp *TripleProtocol) MountHTTPHandler(url *common.URL, handler http.Handler
 		}
 		// If service export already created the listener, mounting only needs to
 		// attach the root handler to the existing server instance.
-		srv.SetMountedHTTPHandler(handler)
-		return nil
+		return srv.MountHTTPHandler(handler)
 	}
 
 	// Keep construction side-effect free and let StartHTTPTransport resolve
 	// the actual listener settings from the mount URL.
 	srv := NewServer(nil)
-	srv.SetMountedHTTPHandler(handler)
+	if err := srv.MountHTTPHandler(handler); err != nil {
+		return err
+	}
 	// Boot transport eagerly so HTTP-only and mount-before-export scenarios
 	// reuse the same Triple listener once services are exported later.
 	if err := srv.StartHTTPTransport(url); err != nil {

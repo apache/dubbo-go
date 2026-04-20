@@ -44,7 +44,7 @@ func TestServerMountHTTPHandler(t *testing.T) {
 	err = srv.MountHTTPHandler(handler)
 	require.NoError(t, err)
 
-	assert.Same(t, handler, srv.mountedHTTPHandlerSnapshot())
+	assert.Same(t, handler, srv.mountedHTTPHandler)
 }
 
 func TestServerMountHTTPHandlerRejectsNil(t *testing.T) {

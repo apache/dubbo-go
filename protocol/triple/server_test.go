@@ -710,6 +710,15 @@ func TestServerValidateTransportSettingsRejectsConflictingTLS(t *testing.T) {
 	require.ErrorContains(t, err, "different TLS settings")
 }
 
+func TestServerMountHTTPHandlerRejectsDuplicate(t *testing.T) {
+	server := NewServer(nil)
+
+	require.NoError(t, server.MountHTTPHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})))
+
+	err := server.MountHTTPHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	require.ErrorContains(t, err, "already been mounted")
+}
+
 func TestResolveHandlerOptionsRejectsUnsupportedSerialization(t *testing.T) {
 	url := common.NewURLWithOptions(
 		common.WithParamsValue(constant.SerializationKey, "yaml"),
