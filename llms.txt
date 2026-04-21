@@ -1,0 +1,106 @@
+# Apache Dubbo-go
+
+> Apache Dubbo-go is a high-performance RPC and microservice framework for Go, compatible with other Dubbo language implementations (Java, Rust, Node.js, etc.). It provides service governance including service discovery, load balancing, traffic management, and observability.
+
+- Module: dubbo.apache.org/dubbo-go/v3
+- License: Apache-2.0
+- Website: https://dubbo.apache.org/
+- Samples: https://github.com/apache/dubbo-go-samples
+- Extensions: https://github.com/apache/dubbo-go-extensions
+- Go Standard Library: https://github.com/dubbogo/gost
+- Go Reference: https://pkg.go.dev/github.com/apache/dubbo-go/v3
+
+## Getting Started
+
+- Quick Start: https://github.com/apache/dubbo-go-samples/tree/main/helloworld
+- Installation: go get dubbo.apache.org/dubbo-go/v3@latest
+
+## Documentation
+
+- Official Docs (English): https://dubbo.apache.org/en/docs3-v2/golang/sdk/quickstart/
+- Official Docs (Chinese): https://dubbo.apache.org/zh-cn/docs3-v2/golang/sdk/quickstart/
+- API Reference: https://pkg.go.dev/github.com/apache/dubbo-go/v3
+
+## Core Concepts
+
+- Protobuf Service Definition: Services are defined using Protocol Buffers, then registered with a Dubbo-go server
+- Provider: A server that exposes RPC services, registered to a registry for discovery
+- Consumer: A client that discovers and calls remote RPC services through a registry
+- Registry: Service discovery layer supporting Nacos, ZooKeeper, Etcd, and Polaris
+- Protocol: Transport layer supporting Triple (gRPC-compatible), Dubbo, gRPC, JSONRPC, HTTP, HTTP/2, HTTP/3
+- Filter: Interceptor chain for cross-cutting concerns (access log, auth, rate limiting, tracing, metrics)
+- Router: Traffic routing rules for conditional, script-based, and tag-based routing
+- Load Balance: Strategies including random, round-robin, consistent hashing, least active, and adaptive
+- Config Center: Dynamic configuration management supporting Nacos, ZooKeeper, Apollo, and file-based config
+
+## Key Source Directories
+
+- client/: Consumer-side logic, service reference, and invocation
+- server/: Provider-side logic and service export
+- protocol/: Protocol implementations (Triple, Dubbo, gRPC, JSONRPC, REST, HTTP/2)
+- registry/: Service discovery adapters (Nacos, ZooKeeper, Etcd, Polaris, service discovery)
+- config_center/: Dynamic configuration adapters (Nacos, ZooKeeper, Apollo, file)
+- filter/: Built-in filters (access log, authentication, rate limiting, tracing, metrics, token, graceful shutdown)
+- cluster/: Cluster behavior (failover, failfast, failsafe, forking, available, mergeable)
+- common/: Shared constants, error codes, and utility types
+- config/: Application configuration parsing and initialization
+- metadata/: Service metadata management and reporting
+- remoting/: Network transport layer (buffer pool, exchange, Telnet)
+- graceful_shutdown/: Graceful shutdown lifecycle management
+- tls/: TLS certificate and secure transport support
+- otel/: OpenTelemetry integration for distributed tracing
+- metrics/: Prometheus-compatible metrics export
+- proxy/: Generic service proxy for non-Protobuf invocations
+- imports/: Dependency import management
+- tools/: CLI tools and code generation utilities
+
+## Related Repositories
+
+- dubbo-go-extensions: Community extension implementations for filters, registries, protocols, metadata reporters, and more (https://github.com/apache/dubbo-go-extensions)
+- gost: Dubbo-go standard library providing common utilities, generic service invocation, and base abstractions (https://github.com/dubbogo/gost)
+
+## Provider Example
+
+```go
+// Define service with Protobuf, implement it, register and serve:
+func (srv *GreetTripleServer) Greet(ctx context.Context, req *greet.GreetRequest) (*greet.GreetResponse, error) {
+    return &greet.GreetResponse{Greeting: req.Name}, nil
+}
+
+func main() {
+    srv, _ := server.NewServer(
+        server.WithServerProtocol(protocol.WithPort(20000), protocol.WithTriple()),
+    )
+    greet.RegisterGreetServiceHandler(srv, &GreetTripleServer{})
+    srv.Serve()
+}
+```
+
+## Consumer Example
+
+```go
+func main() {
+    cli, _ := client.NewClient(client.WithClientURL("127.0.0.1:20000"))
+    svc, _ := greet.NewGreetService(cli)
+    resp, _ := svc.Greet(context.Background(), &greet.GreetRequest{Name: "hello"})
+}
+```
+
+## Extension Points
+
+Dubbo-go follows a SPI (Service Provider Interface) pattern. Extension points include:
+- Protocol: Implement protocol.Protocol interface
+- Registry: Implement registry.Registry interface
+- Config Center: Implement config_center.DynamicConfiguration interface
+- Filter: Implement filter.Filter interface
+- Load Balance: Implement cluster.Loadbalance interface
+- Router: Implement router.Router interface
+- Metadata: Implement metadata.MetadataService interface
+
+## Protobuf IDL Generation
+
+Use the dubbo-go code generation tool to generate Go stubs from .proto files:
+```bash
+go install dubbo.apache.org/dubbo-go/v3/tools/protoc-gen-go-triple@latest
+protoc --go_out=. --go-grpc_out=. --go-triple_out=. your_service.proto
+```
