@@ -25,9 +25,9 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
-// HTTPHandlerMountable is an optional protocol capability for protocols
-// backed by net/http that can host an existing HTTP handler on the same
-// listener as framework-managed routes.
-type HTTPHandlerMountable interface {
-	MountHTTPHandler(url *common.URL, handler http.Handler) error
+// HTTPHandlerHost is an optional protocol capability for protocols backed by
+// net/http that can host an existing HTTP handler on the same listener as
+// framework-managed routes.
+type HTTPHandlerHost interface {
+	HostHTTPHandler(url *common.URL, handler http.Handler) error
 }

@@ -36,48 +36,48 @@ type httpMountTestHandler struct{}
 
 func (h *httpMountTestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {}
 
-func TestServerMountHTTPHandler(t *testing.T) {
+func TestServerAttachHTTPHandler(t *testing.T) {
 	srv, err := NewServer()
 	require.NoError(t, err)
 
 	handler := &httpMountTestHandler{}
-	err = srv.MountHTTPHandler(handler)
+	err = srv.AttachHTTPHandler(handler)
 	require.NoError(t, err)
 
-	assert.Same(t, handler, srv.mountedHTTPHandler)
+	assert.Same(t, handler, srv.attachedHTTPHandler)
 }
 
-func TestServerMountHTTPHandlerRejectsNil(t *testing.T) {
+func TestServerAttachHTTPHandlerRejectsNil(t *testing.T) {
 	srv, err := NewServer()
 	require.NoError(t, err)
 
-	err = srv.MountHTTPHandler(nil)
+	err = srv.AttachHTTPHandler(nil)
 	require.ErrorContains(t, err, "must not be nil")
 }
 
-func TestServerMountHTTPHandlerRejectsDuplicate(t *testing.T) {
+func TestServerAttachHTTPHandlerRejectsDuplicate(t *testing.T) {
 	srv, err := NewServer()
 	require.NoError(t, err)
 
 	first := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
 	second := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
 
-	require.NoError(t, srv.MountHTTPHandler(first))
+	require.NoError(t, srv.AttachHTTPHandler(first))
 
-	err = srv.MountHTTPHandler(second)
-	require.ErrorContains(t, err, "already been mounted")
+	err = srv.AttachHTTPHandler(second)
+	require.ErrorContains(t, err, "already been attached")
 }
 
-func TestServerMountHTTPHandlerRejectsAfterServe(t *testing.T) {
+func TestServerAttachHTTPHandlerRejectsAfterServe(t *testing.T) {
 	srv, err := NewServer()
 	require.NoError(t, err)
 
 	srv.serve = true
-	err = srv.MountHTTPHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	err = srv.AttachHTTPHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 	require.ErrorContains(t, err, "before Serve")
 }
 
-func TestMountHTTPHandlersRequiresTripleProtocol(t *testing.T) {
+func TestHostAttachedHTTPHandlerRequiresTripleProtocol(t *testing.T) {
 	srv, err := NewServer(
 		WithServerProtocol(
 			protocol.WithDubbo(),
@@ -85,13 +85,13 @@ func TestMountHTTPHandlersRequiresTripleProtocol(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	require.NoError(t, srv.MountHTTPHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})))
+	require.NoError(t, srv.AttachHTTPHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})))
 
-	err = srv.mountHTTPHandlers()
+	err = srv.hostAttachedHTTPHandler()
 	require.ErrorContains(t, err, "requires at least one triple protocol")
 }
 
-func TestMountHTTPHandlersRequiresExplicitPort(t *testing.T) {
+func TestHostAttachedHTTPHandlerRequiresExplicitPort(t *testing.T) {
 	srv, err := NewServer(
 		WithServerProtocol(
 			protocol.WithTriple(),
@@ -100,8 +100,8 @@ func TestMountHTTPHandlersRequiresExplicitPort(t *testing.T) {
 	require.NoError(t, err)
 
 	srv.cfg.Protocols[constant.TriProtocol].Port = ""
-	require.NoError(t, srv.MountHTTPHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})))
+	require.NoError(t, srv.AttachHTTPHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})))
 
-	err = srv.mountHTTPHandlers()
+	err = srv.hostAttachedHTTPHandler()
 	require.ErrorContains(t, err, "requires an explicit triple port")
 }

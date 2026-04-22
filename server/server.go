@@ -61,7 +61,7 @@ type Server struct {
 	// indicate whether the server is already started
 	serve bool
 
-	mountedHTTPHandler http.Handler
+	attachedHTTPHandler http.Handler
 }
 
 // ServiceInfo Deprecated： common.ServiceInfo type alias, just for compatible with old generate pb.go file
@@ -383,7 +383,7 @@ func (s *Server) ServeContext(ctx context.Context) error {
 		return err
 	}
 
-	if err := s.mountHTTPHandlers(); err != nil {
+	if err := s.hostAttachedHTTPHandler(); err != nil {
 		return s.rollbackServeStartWithCause(err, serviceInstanceRegistered)
 	}
 

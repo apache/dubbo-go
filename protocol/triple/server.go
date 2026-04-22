@@ -54,13 +54,13 @@ import (
 // Server is TRIPLE adaptation layer representation. It makes use of tri.Server to
 // provide functionality.
 type Server struct {
-	triServer          *tri.Server
-	cfg                *global.TripleConfig
-	mu                 sync.RWMutex
-	services           map[string]grpc.ServiceInfo
-	transportStarted   bool
-	mountedHTTPHandler http.Handler
-	transportSettings  *transportSettings
+	triServer           *tri.Server
+	cfg                 *global.TripleConfig
+	mu                  sync.RWMutex
+	services            map[string]grpc.ServiceInfo
+	transportStarted    bool
+	attachedHTTPHandler http.Handler
+	transportSettings   *transportSettings
 }
 
 type transportSettings struct {
@@ -163,33 +163,38 @@ func (s *Server) ensureTriServer(settings *transportSettings) error {
 	s.mu.Unlock()
 
 	s.triServer = tri.NewServer(settings.location, settings.tripleConfig)
-	// MountHTTPHandler may initialize transport before any Triple service is
-	// exported, so the first tri.Server instance must inherit the root handler.
-	s.mu.RLock()
-	handler := s.mountedHTTPHandler
-	s.mu.RUnlock()
-	if handler != nil {
-		s.triServer.SetFallbackHTTPHandler(handler)
-	}
+	s.wireAttachedHTTPFallback()
 	internal.ReflectionRegister(s)
 	return nil
 }
 
-// MountHTTPHandler attaches a single root HTTP fallback to the Triple server.
-// The mounted handler follows the same single-root semantics as server.Server:
-// once a handler has been attached for one listener, later mounts must fail
-// fast instead of silently replacing the existing fallback.
-func (s *Server) MountHTTPHandler(handler http.Handler) error {
+// wireAttachedHTTPFallback keeps the tri.Server route mux as the main listener
+// handler and connects an attached external HTTP handler through the
+// transport-level fallback slot so Triple routes keep higher priority.
+func (s *Server) wireAttachedHTTPFallback() {
+	s.mu.RLock()
+	handler := s.attachedHTTPHandler
+	s.mu.RUnlock()
+	if handler != nil && s.triServer != nil {
+		s.triServer.SetFallbackHTTPHandler(handler)
+	}
+}
+
+// AttachHTTPHandler attaches a single root HTTP handler to the Triple server.
+// The attached handler follows the same single-root semantics as server.Server:
+// once a handler has been attached for one listener, later attaches must fail
+// fast instead of silently replacing the existing handler.
+func (s *Server) AttachHTTPHandler(handler http.Handler) error {
 	if handler == nil {
-		return fmt.Errorf("mounted HTTP handler must not be nil")
+		return fmt.Errorf("attached HTTP handler must not be nil")
 	}
 
 	s.mu.Lock()
-	if s.mountedHTTPHandler != nil {
+	if s.attachedHTTPHandler != nil {
 		s.mu.Unlock()
-		return fmt.Errorf("an HTTP handler has already been mounted")
+		return fmt.Errorf("an HTTP handler has already been attached")
 	}
-	s.mountedHTTPHandler = handler
+	s.attachedHTTPHandler = handler
 	triServer := s.triServer
 	s.mu.Unlock()
 

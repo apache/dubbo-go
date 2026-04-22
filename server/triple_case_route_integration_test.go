@@ -295,10 +295,10 @@ func waitSimpleHTTPReady(t *testing.T, client *http.Client, method string, url s
 	t.Fatalf("http handler not ready: status=%d body=%q err=%v", lastStatus, lastBody, lastErr)
 }
 
-// TestMountedHTTPHandlerStartsTransportWithoutTripleServices covers the
-// mount-first flow where the shared listener is started for plain HTTP traffic
+// TestAttachedHTTPHandlerStartsTransportWithoutTripleServices covers the
+// attach-first flow where the shared listener is started for plain HTTP traffic
 // before any Triple service has been exported.
-func TestMountedHTTPHandlerStartsTransportWithoutTripleServices(t *testing.T) {
+func TestAttachedHTTPHandlerStartsTransportWithoutTripleServices(t *testing.T) {
 	port := testFreePort(t)
 
 	srv, err := NewServer(
@@ -310,9 +310,9 @@ func TestMountedHTTPHandlerStartsTransportWithoutTripleServices(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	// Mount-only startup should bring up the shared listener even before any
+	// Attach-only startup should bring up the shared listener even before any
 	// Triple service has been exported.
-	err = srv.MountHTTPHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	err = srv.AttachHTTPHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/healthz":
 			_, _ = w.Write([]byte("healthy"))
@@ -322,7 +322,7 @@ func TestMountedHTTPHandlerStartsTransportWithoutTripleServices(t *testing.T) {
 	}))
 	require.NoError(t, err)
 
-	err = srv.mountHTTPHandlers()
+	err = srv.hostAttachedHTTPHandler()
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -340,10 +340,10 @@ func TestMountedHTTPHandlerStartsTransportWithoutTripleServices(t *testing.T) {
 	assert.Equal(t, tripleCaseRouteNotFoundBody, body)
 }
 
-// TestMountedHTTPHandlerCoexistsWithTripleRoutes verifies that the mounted HTTP
+// TestAttachedHTTPHandlerCoexistsWithTripleRoutes verifies that the attached HTTP
 // handler remains a transport-level fallback and does not preempt registered
 // Triple procedures on the same listener.
-func TestMountedHTTPHandlerCoexistsWithTripleRoutes(t *testing.T) {
+func TestAttachedHTTPHandlerCoexistsWithTripleRoutes(t *testing.T) {
 	port := testFreePort(t)
 
 	srv, err := NewServer(
@@ -355,9 +355,9 @@ func TestMountedHTTPHandlerCoexistsWithTripleRoutes(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	// The mounted handler is the transport-level fallback; Triple routes should
+	// The attached handler is the transport-level fallback; Triple routes should
 	// still win whenever the request matches a registered procedure.
-	err = srv.MountHTTPHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	err = srv.AttachHTTPHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/healthz":
 			_, _ = w.Write([]byte("healthy"))
@@ -393,10 +393,10 @@ func TestMountedHTTPHandlerCoexistsWithTripleRoutes(t *testing.T) {
 	err = srv.Register(service, info, WithInterface(info.InterfaceName), WithNotRegister())
 	require.NoError(t, err)
 
-	err = srv.mountHTTPHandlers()
+	err = srv.hostAttachedHTTPHandler()
 	require.NoError(t, err)
 
-	err = srv.exportServices()
+	err = srv.exportServices(context.Background())
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
