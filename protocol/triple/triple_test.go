@@ -113,11 +113,11 @@ func TestTripleProtocolOpenServerRejectsConflictingTransportSettings(t *testing.
 	require.ErrorContains(t, err, "already uses protocol")
 }
 
-func TestTripleProtocolMountHTTPHandlerRejectsDuplicateOnExistingListener(t *testing.T) {
+func TestTripleProtocolHostHTTPHandlerRejectsDuplicateOnExistingListener(t *testing.T) {
 	tp := NewTripleProtocol()
 	location := "127.0.0.1:20000"
 	tp.serverMap[location] = &Server{
-		mountedHTTPHandler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}),
+		attachedHTTPHandler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}),
 		transportSettings: &transportSettings{
 			location:     location,
 			callProtocol: constant.CallHTTP2,
@@ -132,8 +132,8 @@ func TestTripleProtocolMountHTTPHandlerRejectsDuplicateOnExistingListener(t *tes
 		common.WithAttribute(constant.TLSConfigKey, global.DefaultTLSConfig()),
 	)
 
-	err := tp.MountHTTPHandler(url, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
-	require.ErrorContains(t, err, "already been mounted")
+	err := tp.HostHTTPHandler(url, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	require.ErrorContains(t, err, "already been attached")
 }
 
 func TestTripleProtocol_Destroy_EmptyServerMap(t *testing.T) {

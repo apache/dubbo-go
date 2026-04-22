@@ -30,37 +30,38 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
-// MountHTTPHandler attaches an existing HTTP root handler to the server before
-// Serve starts. The mounted handler acts as the transport-level fallback after
-// Triple route lookup, so callers should aggregate any HTTP sub-services behind
-// their own mux/router before mounting.
-func (s *Server) MountHTTPHandler(handler http.Handler) error {
+// AttachHTTPHandler records an existing HTTP root handler on the server before
+// Serve starts. The attached handler is later hosted on the selected protocol
+// listener and acts as the transport-level fallback after Triple route lookup,
+// so callers should aggregate any HTTP sub-services behind their own mux/router
+// before attaching.
+func (s *Server) AttachHTTPHandler(handler http.Handler) error {
 	if handler == nil {
-		return fmt.Errorf("mounted HTTP handler must not be nil")
+		return fmt.Errorf("attached HTTP handler must not be nil")
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if s.serve {
-		return fmt.Errorf("mounted HTTP handler must be configured before Serve")
+		return fmt.Errorf("attached HTTP handler must be configured before Serve")
 	}
 	// Server-level HTTP integration is a single root handler. Callers that need
 	// multiple HTTP services should compose them behind their own mux/router.
-	if s.mountedHTTPHandler != nil {
-		return fmt.Errorf("an HTTP handler has already been mounted")
+	if s.attachedHTTPHandler != nil {
+		return fmt.Errorf("an HTTP handler has already been attached")
 	}
 
-	s.mountedHTTPHandler = handler
+	s.attachedHTTPHandler = handler
 	return nil
 }
 
-// mountHTTPHandlers boots HTTP-capable protocols that support hosting an
-// existing root handler on the same listener as framework-managed routes.
-// Today that means Triple running on an explicit, user-selected port.
-func (s *Server) mountHTTPHandlers() error {
+// hostAttachedHTTPHandler asks an HTTP-capable protocol to host the attached
+// root handler on the same listener as framework-managed routes. Today that
+// means Triple running on an explicit, user-selected port.
+func (s *Server) hostAttachedHTTPHandler() error {
 	s.mu.RLock()
-	handler := s.mountedHTTPHandler
+	handler := s.attachedHTTPHandler
 	s.mu.RUnlock()
 	if handler == nil {
 		return nil
@@ -83,15 +84,15 @@ func (s *Server) mountHTTPHandlers() error {
 			continue
 		}
 		if protocolConf.Port == "" {
-			// Mounting needs a stable listener up front; unlike normal service
+			// Hosting needs a stable listener up front; unlike normal service
 			// export we should not silently start on an implicit/random port here.
-			return fmt.Errorf("mounting an HTTP handler requires an explicit triple port")
+			return fmt.Errorf("hosting an attached HTTP handler requires an explicit triple port")
 		}
 
 		proto := extension.GetProtocol(protocolConf.Name)
-		mountable, ok := proto.(base.HTTPHandlerMountable)
+		host, ok := proto.(base.HTTPHandlerHost)
 		if !ok {
-			return fmt.Errorf("protocol %s does not support mounting HTTP handlers", protocolConf.Name)
+			return fmt.Errorf("protocol %s does not support hosting attached HTTP handlers", protocolConf.Name)
 		}
 
 		u := common.NewURLWithOptions(
@@ -101,14 +102,14 @@ func (s *Server) mountHTTPHandlers() error {
 			common.WithAttribute(constant.TripleConfigKey, protocolConf.TripleConfig),
 			common.WithAttribute(constant.TLSConfigKey, s.cfg.TLS),
 		)
-		if err := mountable.MountHTTPHandler(u, handler); err != nil {
+		if err := host.HostHTTPHandler(u, handler); err != nil {
 			return err
 		}
 		mounted = true
 	}
 
 	if !mounted {
-		return fmt.Errorf("mounted HTTP handler requires at least one triple protocol")
+		return fmt.Errorf("attached HTTP handler requires at least one triple protocol")
 	}
 	return nil
 }
