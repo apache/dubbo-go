@@ -84,3 +84,47 @@ func TestNewLoggerConfigBuilder(t *testing.T) {
 	assert.True(t, *config.File.Compress)
 	assert.Equal(t, 5, config.File.MaxBackups)
 }
+
+func TestLoggerConfigBuilder_TraceIntegration(t *testing.T) {
+	t.Run("with trace integration enabled", func(t *testing.T) {
+		config := NewLoggerConfigBuilder().
+			SetDriver("zap").
+			SetLevel("info").
+			SetTraceIntegrationEnabled(true).
+			SetRecordErrorToSpan(false).
+			Build()
+
+		assert.NotNil(t, config)
+		assert.NotNil(t, config.TraceIntegration)
+		assert.NotNil(t, config.TraceIntegration.Enabled)
+		assert.True(t, *config.TraceIntegration.Enabled)
+		assert.NotNil(t, config.TraceIntegration.RecordErrorToSpan)
+		assert.False(t, *config.TraceIntegration.RecordErrorToSpan)
+	})
+
+	t.Run("with trace integration disabled", func(t *testing.T) {
+		config := NewLoggerConfigBuilder().
+			SetDriver("zap").
+			SetTraceIntegrationEnabled(false).
+			SetRecordErrorToSpan(true).
+			Build()
+
+		assert.NotNil(t, config)
+		assert.NotNil(t, config.TraceIntegration)
+		assert.NotNil(t, config.TraceIntegration.Enabled)
+		assert.False(t, *config.TraceIntegration.Enabled)
+		assert.NotNil(t, config.TraceIntegration.RecordErrorToSpan)
+		assert.True(t, *config.TraceIntegration.RecordErrorToSpan)
+	})
+
+	t.Run("without trace integration config", func(t *testing.T) {
+		config := NewLoggerConfigBuilder().
+			SetDriver("zap").
+			SetLevel("info").
+			Build()
+
+		assert.NotNil(t, config)
+		// TraceIntegration should be nil if not configured
+		assert.Nil(t, config.TraceIntegration)
+	})
+}
