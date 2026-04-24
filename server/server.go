@@ -383,10 +383,6 @@ func (s *Server) ServeContext(ctx context.Context) error {
 		return err
 	}
 
-	if err := s.hostAttachedHTTPHandler(); err != nil {
-		return s.rollbackServeStartWithCause(err, serviceInstanceRegistered)
-	}
-
 	if err := s.exportServices(ctx); err != nil {
 		return s.rollbackServeStartWithCause(err, serviceInstanceRegistered)
 	}
@@ -397,6 +393,9 @@ func (s *Server) ServeContext(ctx context.Context) error {
 		return s.rollbackServeStartWithCause(err, serviceInstanceRegistered)
 	}
 	serviceInstanceRegistered = true
+	if err := s.hostAttachedHTTPHandler(); err != nil {
+		return s.rollbackServeStartWithCause(err, serviceInstanceRegistered)
+	}
 
 	// k8s probe ready
 	probe.SetStartupComplete(true)
