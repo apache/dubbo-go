@@ -19,7 +19,9 @@ package server
 
 import (
 	"net/http"
+	"strconv"
 	"testing"
+	"time"
 )
 
 import (
@@ -29,7 +31,9 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	_ "dubbo.apache.org/dubbo-go/v3/protocol/triple"
 )
 
 type httpMountTestHandler struct{}
@@ -104,4 +108,55 @@ func TestHostAttachedHTTPHandlerRequiresExplicitPort(t *testing.T) {
 
 	err = srv.hostAttachedHTTPHandler()
 	require.ErrorContains(t, err, "requires an explicit triple port")
+}
+
+func TestServeDoesNotHostAttachedHTTPHandlerBeforeLaterStartupFailures(t *testing.T) {
+	port := testFreePort(t)
+	srv, err := NewServer(
+		WithServerProtocol(
+			protocol.WithTriple(),
+			protocol.WithIp("127.0.0.1"),
+			protocol.WithPort(port),
+		),
+	)
+	require.NoError(t, err)
+
+	require.NoError(t, srv.AttachHTTPHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/healthz":
+			_, _ = w.Write([]byte("healthy"))
+		default:
+			http.NotFound(w, r)
+		}
+	})))
+
+	internalProLock.Lock()
+	originalInternalServices := internalProServices
+	internalProServices = []*InternalService{
+		{Name: "broken-internal-service"},
+	}
+	internalProLock.Unlock()
+	t.Cleanup(func() {
+		internalProLock.Lock()
+		internalProServices = originalInternalServices
+		internalProLock.Unlock()
+	})
+
+	t.Cleanup(func() {
+		extension.GetProtocol(constant.TriProtocol).Destroy()
+	})
+
+	err = srv.Serve()
+	require.ErrorContains(t, err, "internal service init func is empty")
+
+	client := &http.Client{Timeout: 100 * time.Millisecond}
+	baseURL := "http://127.0.0.1:" + strconv.Itoa(port)
+	deadline := time.Now().Add(time.Second)
+	for time.Now().Before(deadline) {
+		status, body, reqErr := simpleHTTPRequest(client, http.MethodGet, baseURL+"/healthz")
+		if reqErr == nil {
+			t.Fatalf("attached HTTP handler started after Serve failure: status=%d body=%q", status, body)
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
 }

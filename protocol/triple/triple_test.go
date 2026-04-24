@@ -35,6 +35,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/internal"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
@@ -111,6 +112,47 @@ func TestTripleProtocolOpenServerRejectsConflictingTransportSettings(t *testing.
 
 	err := tp.openServer(invoker, nil)
 	require.ErrorContains(t, err, "already uses protocol")
+}
+
+func TestTripleProtocolExportPublishesServingStatusByServiceKey(t *testing.T) {
+	tp := NewTripleProtocol()
+	url := common.NewURLWithOptions(
+		common.WithProtocol(TRIPLE),
+		common.WithIp("127.0.0.1"),
+		common.WithPort("20000"),
+		common.WithPath("com.example.GreetService"),
+		common.WithParamsValue(constant.InterfaceKey, "com.example.GreetService"),
+		common.WithParamsValue(constant.GroupKey, "test-group"),
+		common.WithParamsValue(constant.VersionKey, "1.0.0"),
+	)
+	tp.serverMap[url.Location] = &Server{
+		triServer: tri.NewServer(url.Location, nil),
+		transportSettings: &transportSettings{
+			location:     url.Location,
+			callProtocol: constant.CallHTTP2,
+		},
+	}
+
+	originalSetServing := internal.HealthSetServingStatusServing
+	t.Cleanup(func() {
+		internal.HealthSetServingStatusServing = originalSetServing
+	})
+
+	published := make(chan string, 1)
+	internal.HealthSetServingStatusServing = func(service string) {
+		published <- service
+	}
+
+	exporter := tp.Export(&tripleServerTestInvoker{url: url})
+	require.NotNil(t, exporter)
+
+	select {
+	case got := <-published:
+		assert.Equal(t, url.ServiceKey(), got)
+		assert.NotEqual(t, url.Service(), got)
+	case <-time.After(time.Second):
+		t.Fatal("export did not publish serving status")
+	}
 }
 
 func TestTripleProtocolHostHTTPHandlerRejectsDuplicateOnExistingListener(t *testing.T) {

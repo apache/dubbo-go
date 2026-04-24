@@ -345,10 +345,6 @@ func (s *Server) Serve() error {
 		return err
 	}
 
-	if err := s.hostAttachedHTTPHandler(); err != nil {
-		return err
-	}
-
 	if err := s.exportServices(); err != nil {
 		return err
 	}
@@ -356,6 +352,9 @@ func (s *Server) Serve() error {
 		return err
 	}
 	if err := exposed_tmp.RegisterServiceInstance(); err != nil {
+		return err
+	}
+	if err := s.hostAttachedHTTPHandler(); err != nil {
 		return err
 	}
 

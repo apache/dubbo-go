@@ -101,7 +101,7 @@ func (tp *TripleProtocol) Export(invoker base.Invoker) base.Exporter {
 		exporter.UnExport()
 		panic(err)
 	}
-	internal.HealthSetServingStatusServing(url.Service())
+	internal.HealthSetServingStatusServing(serviceKey)
 	return exporter
 }
 
