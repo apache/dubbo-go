@@ -37,6 +37,9 @@ type TripleConfig struct {
 	// Cors configures CORS for Triple protocol handlers
 	Cors *CorsConfig `yaml:"cors" json:"cors,omitempty"`
 
+	// OpenAPI configures OpenAPI documentation generation
+	OpenAPI *OpenAPIConfig `yaml:"openapi" json:"openapi,omitempty"`
+
 	//
 	// for client
 	//
@@ -48,8 +51,9 @@ type TripleConfig struct {
 // DefaultTripleConfig returns a default TripleConfig instance.
 func DefaultTripleConfig() *TripleConfig {
 	return &TripleConfig{
-		Http3: DefaultHttp3Config(),
-		Cors:  DefaultCorsConfig(),
+		Http3:   DefaultHttp3Config(),
+		Cors:    DefaultCorsConfig(),
+		OpenAPI: DefaultOpenAPIConfig(),
 	}
 }
 
@@ -64,6 +68,7 @@ func (t *TripleConfig) Clone() *TripleConfig {
 		MaxServerRecvMsgSize: t.MaxServerRecvMsgSize,
 		Http3:                t.Http3.Clone(),
 		Cors:                 t.Cors.Clone(),
+		OpenAPI:              t.OpenAPI.Clone(),
 
 		KeepAliveInterval: t.KeepAliveInterval,
 		KeepAliveTimeout:  t.KeepAliveTimeout,

@@ -204,7 +204,12 @@ func CallMethodByReflection(ctx context.Context, method reflect.Method, handler 
 	for _, arg := range args {
 		in = append(in, reflect.ValueOf(arg))
 	}
-	returnValues := method.Func.Call(in)
+	var returnValues []reflect.Value
+	if shouldUseGenericVariadicCallSlice(ctx, method, args) {
+		returnValues = method.Func.CallSlice(in)
+	} else {
+		returnValues = method.Func.Call(in)
+	}
 
 	// Process return values
 	if len(returnValues) == 1 {
@@ -227,6 +232,28 @@ func CallMethodByReflection(ctx context.Context, method reflect.Method, handler 
 		}
 	}
 	return result, err
+}
+
+// shouldUseGenericVariadicCallSlice is the ServiceInfo reflection-side gate for
+// generic variadic calls whose tail has already been packed into the declared slice type.
+func shouldUseGenericVariadicCallSlice(ctx context.Context, method reflect.Method, args []any) bool {
+	if !method.Type.IsVariadic() || len(args) == 0 || len(args) != method.Type.NumIn()-2 {
+		return false
+	}
+
+	value, ok := ctx.Value(constant.DubboCtxKey(constant.GenericVariadicCallSliceKey)).(bool)
+	if !ok || !value {
+		return false
+	}
+
+	lastArg := args[len(args)-1]
+	if lastArg == nil {
+		return false
+	}
+
+	lastArgType := reflect.TypeOf(lastArg)
+	variadicSliceType := method.Type.In(method.Type.NumIn() - 1)
+	return lastArgType.AssignableTo(variadicSliceType) || lastArgType.ConvertibleTo(variadicSliceType)
 }
 
 // createReflectionMethodFunc creates a MethodFunc that calls the given method via reflection.

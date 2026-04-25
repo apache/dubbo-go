@@ -137,6 +137,94 @@ func TestRouteMatchWhen(t *testing.T) {
 	}
 }
 
+func TestDynamicRouterSetStaticConfig(t *testing.T) {
+	t.Run("enabled config builds condition routers", func(t *testing.T) {
+		d := &DynamicRouter{}
+		force := true
+		enabled := true
+
+		d.SetStaticConfig(&global.RouterConfig{
+			Force:      &force,
+			Enabled:    &enabled,
+			Conditions: []string{"host = 127.0.0.1 => host = dubbo.apache.org"},
+		})
+
+		assert.True(t, d.force)
+		assert.True(t, d.enable)
+		routers, ok := d.conditionRouter.(stateRouters)
+		require.True(t, ok)
+		assert.Len(t, routers, 1)
+	})
+
+	t.Run("disabled config clears router", func(t *testing.T) {
+		d := &DynamicRouter{}
+		force := true
+		enabled := false
+
+		d.SetStaticConfig(&global.RouterConfig{
+			Force:      &force,
+			Enabled:    &enabled,
+			Conditions: []string{"host = 127.0.0.1 => host = dubbo.apache.org"},
+		})
+
+		assert.True(t, d.force)
+		assert.False(t, d.enable)
+		assert.Nil(t, d.conditionRouter)
+	})
+
+	t.Run("empty condition is ignored without corrupting state", func(t *testing.T) {
+		d := &DynamicRouter{}
+
+		d.SetStaticConfig(&global.RouterConfig{
+			Conditions: []string{""},
+		})
+
+		assert.False(t, d.force)
+		assert.True(t, d.enable)
+		routers, ok := d.conditionRouter.(stateRouters)
+		require.True(t, ok)
+		assert.Empty(t, routers)
+	})
+}
+
+func TestScopedStaticConfigSetters(t *testing.T) {
+	t.Run("service router only accepts service scope", func(t *testing.T) {
+		router := NewServiceRouter()
+
+		router.SetStaticConfig(&global.RouterConfig{
+			Scope:      constant.RouterScopeApplication,
+			Conditions: []string{"host = 127.0.0.1 => host = dubbo.apache.org"},
+		})
+		assert.Nil(t, router.conditionRouter)
+
+		router.SetStaticConfig(&global.RouterConfig{
+			Scope:      constant.RouterScopeService,
+			Conditions: []string{"host = 127.0.0.1 => host = dubbo.apache.org"},
+		})
+		assert.NotNil(t, router.conditionRouter)
+	})
+
+	t.Run("application router only accepts application scope", func(t *testing.T) {
+		url := common.NewURLWithOptions(
+			common.WithProtocol("consumer"),
+			common.WithPath("com.foo.BarService"),
+		)
+		router := NewApplicationRouter(url)
+
+		router.SetStaticConfig(&global.RouterConfig{
+			Scope:      constant.RouterScopeService,
+			Conditions: []string{"host = 127.0.0.1 => host = dubbo.apache.org"},
+		})
+		assert.Nil(t, router.conditionRouter)
+
+		router.SetStaticConfig(&global.RouterConfig{
+			Scope:      constant.RouterScopeApplication,
+			Conditions: []string{"host = 127.0.0.1 => host = dubbo.apache.org"},
+		})
+		assert.NotNil(t, router.conditionRouter)
+	})
+}
+
 // TestRouteMatchFilter also tests pattern_value.WildcardValuePattern's Match method
 func TestRouteMatchFilter(t *testing.T) {
 

@@ -227,6 +227,10 @@ func (svcOpts *ServiceOptions) Export() error {
 			ivkURL.SetAttribute(constant.ServiceInfoKey, info)
 		}
 
+		if svcOpts.openapiGroup != "" {
+			ivkURL.SetAttribute(constant.OpenAPIMetaKeyOpenAPIGroup, svcOpts.openapiGroup)
+		}
+
 		if len(svcConf.Tag) > 0 {
 			ivkURL.AddParam(constant.Tagkey, svcConf.Tag)
 		}

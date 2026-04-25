@@ -112,7 +112,7 @@ func (pi *PassThroughProxyInvoker) Invoke(ctx context.Context, invocation base.I
 	var replyv reflect.Value
 	var retErr any
 
-	returnValues, callErr := callLocalMethod(method.Method(), in)
+	returnValues, callErr := callLocalMethod(method.Method(), in, false)
 
 	if callErr != nil {
 		logger.Errorf("Invoke function error: %+v, service: %#v", callErr, url)

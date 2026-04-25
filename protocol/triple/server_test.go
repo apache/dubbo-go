@@ -330,7 +330,7 @@ func TestServer_SaveServiceInfo(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
 			server := NewServer(nil)
-			server.saveServiceInfo(test.interfaceName, test.info)
+			server.saveServiceInfo(test.interfaceName, test.info, "", "", "")
 			test.expect(t, server)
 		})
 	}
@@ -350,7 +350,7 @@ func TestServer_SaveServiceInfo_Concurrent(t *testing.T) {
 					{Name: "Method", Type: constant.CallUnary},
 				},
 			}
-			server.saveServiceInfo(fmt.Sprintf("test.Service%d", idx), info)
+			server.saveServiceInfo(fmt.Sprintf("test.Service%d", idx), info, "", "", "")
 		}(i)
 	}
 
@@ -559,7 +559,7 @@ func TestHandleServiceWithInfoSaveServiceInfoOnlyOriginalMethods(t *testing.T) {
 			{Name: "ListUsers", Type: constant.CallServerStream},
 		},
 	}
-	server.saveServiceInfo("com.example.UserService", info)
+	server.saveServiceInfo("com.example.UserService", info, "", "", "")
 
 	svcInfo := server.GetServiceInfo()
 	svc, ok := svcInfo["com.example.UserService"]
@@ -922,6 +922,12 @@ func newServerForMethodHandlerTest() *Server {
 	return &Server{triServer: tri.NewServer("127.0.0.1:0", nil)}
 }
 
+type tripleVariadicReflectionServiceForTest struct{}
+
+func (s *tripleVariadicReflectionServiceForTest) HelloVariadic(ctx context.Context, prefix string, names ...string) (string, error) {
+	return prefix + ":" + fmt.Sprint(len(names)), nil
+}
+
 func TestExtractUnaryInvocationArgs(t *testing.T) {
 	t.Run("from non-idl argument slice", func(t *testing.T) {
 		name := "alice"
@@ -934,6 +940,28 @@ func TestExtractUnaryInvocationArgs(t *testing.T) {
 		msg := struct{ Name string }{Name: "idl"}
 		args := extractUnaryInvocationArgs(msg)
 		assert.Equal(t, []any{msg}, args)
+	})
+}
+
+func TestBuildMethodInfoWithReflectionVariadic(t *testing.T) {
+	svc := &tripleVariadicReflectionServiceForTest{}
+	method, ok := reflect.TypeOf(svc).MethodByName("HelloVariadic")
+	require.True(t, ok)
+
+	methodInfo := buildMethodInfoWithReflection(method)
+	require.NotNil(t, methodInfo)
+
+	t.Run("generic packed variadic tail uses call slice", func(t *testing.T) {
+		ctx := context.WithValue(context.Background(), constant.DubboCtxKey(constant.GenericVariadicCallSliceKey), true)
+		res, err := methodInfo.MethodFunc(ctx, []any{"hello", []string{"alice", "bob"}}, svc)
+		require.NoError(t, err)
+		assert.Equal(t, "hello:2", res)
+	})
+
+	t.Run("ordinary discrete variadic call remains unchanged", func(t *testing.T) {
+		res, err := methodInfo.MethodFunc(context.Background(), []any{"hello", "alice", "bob"}, svc)
+		require.NoError(t, err)
+		assert.Equal(t, "hello:2", res)
 	})
 }
 

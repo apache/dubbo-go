@@ -134,6 +134,48 @@ func (d *DynamicRouter) URL() *common.URL {
 	return nil
 }
 
+// SetStaticConfig applies a RouterConfig with string conditions directly, bypassing YAML parsing.
+// This is the correct entry point for static (code-configured) rules;
+// Process is designed for dynamic config-center updates that arrive as YAML text.
+// Static and dynamic rules are not merged: later Process updates replace the current state built here.
+func (d *DynamicRouter) SetStaticConfig(cfg *global.RouterConfig) {
+	if cfg == nil || len(cfg.Conditions) == 0 {
+		return
+	}
+
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	force := cfg.Force != nil && *cfg.Force
+	enable := cfg.Enabled == nil || *cfg.Enabled
+
+	if !enable {
+		d.force, d.enable, d.conditionRouter = force, false, nil
+		return
+	}
+
+	conditionRouters := make([]*StateRouter, 0, len(cfg.Conditions))
+	for _, conditionRule := range cfg.Conditions {
+		url, err := common.NewURL("condition://")
+		if err != nil {
+			logger.Warnf("[condition router] failed to create condition URL: %v", err)
+			continue
+		}
+		url.AddParam(constant.RuleKey, conditionRule)
+		url.AddParam(constant.ForceKey, strconv.FormatBool(force))
+		conditionRoute, err := NewConditionStateRouter(url)
+		if err != nil {
+			logger.Warnf("[condition router] failed to parse condition rule %q: %v", conditionRule, err)
+			continue
+		}
+		conditionRouters = append(conditionRouters, conditionRoute)
+	}
+	d.force, d.enable, d.conditionRouter = force, enable, stateRouters(conditionRouters)
+}
+
+// Process applies config-center updates as the authoritative rule source at runtime.
+// It does not merge with static rules bootstrapped via SetStaticConfig; any later
+// dynamic update replaces the current static-derived state.
 func (d *DynamicRouter) Process(event *config_center.ConfigChangeEvent) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -282,6 +324,14 @@ func NewServiceRouter() *ServiceRouter {
 	return &ServiceRouter{}
 }
 
+// SetStaticConfig applies config only when scope is service and Conditions are present.
+func (s *ServiceRouter) SetStaticConfig(cfg *global.RouterConfig) {
+	if cfg == nil || cfg.Scope != constant.RouterScopeService || len(cfg.Conditions) == 0 {
+		return
+	}
+	s.DynamicRouter.SetStaticConfig(cfg)
+}
+
 func (s *ServiceRouter) Priority() int64 {
 	return 140
 }
@@ -338,6 +388,14 @@ func NewApplicationRouter(url *common.URL) *ApplicationRouter {
 		dynamicConfiguration.AddListener(strings.Join([]string{applicationName, constant.ConditionRouterRuleSuffix}, ""), a)
 	}
 	return a
+}
+
+// SetStaticConfig applies config only when scope is application and Conditions are present.
+func (a *ApplicationRouter) SetStaticConfig(cfg *global.RouterConfig) {
+	if cfg == nil || cfg.Scope != constant.RouterScopeApplication || len(cfg.Conditions) == 0 {
+		return
+	}
+	a.DynamicRouter.SetStaticConfig(cfg)
 }
 
 func (a *ApplicationRouter) Priority() int64 {

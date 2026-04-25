@@ -43,6 +43,14 @@ func (s *ProxyInvokerService) Hello(_ context.Context, name string) (string, err
 	return "hello:" + name, nil
 }
 
+func (s *ProxyInvokerService) EchoVariadic(args ...any) ([]any, error) {
+	return args, nil
+}
+
+func (s *ProxyInvokerService) CountByteSlices(args ...[]byte) (int, error) {
+	return len(args), nil
+}
+
 type PassThroughService struct{}
 
 func (s *PassThroughService) Service(method string, argTypes []string, args [][]byte, attachments map[string]any) (any, error) {
@@ -146,5 +154,38 @@ func TestPassThroughProxyInvoker_Invoke(t *testing.T) {
 		)
 		result := invoker.Invoke(context.Background(), inv)
 		assert.EqualError(t, result.Error(), "the param type is not []byte")
+	})
+}
+
+func TestProxyInvoker_InvokeVariadicCallSliceGating(t *testing.T) {
+	const (
+		protocol      = "test-variadic-protocol"
+		interfaceName = "ProxyInvokerVariadicService"
+	)
+	registerService(t, protocol, interfaceName, &ProxyInvokerService{})
+	u := newURL(protocol, interfaceName)
+	invoker := &ProxyInvoker{BaseInvoker: *base.NewBaseInvoker(u)}
+
+	t.Run("generic variadic marker expands packed slice", func(t *testing.T) {
+		inv := invocation.NewRPCInvocationWithOptions(
+			invocation.WithMethodName("EchoVariadic"),
+			invocation.WithArguments([]any{[]any{"alice", "bob"}}),
+		)
+		inv.SetAttribute(constant.GenericVariadicCallSliceKey, true)
+
+		res := invoker.Invoke(context.Background(), inv)
+		require.NoError(t, res.Error())
+		assert.Equal(t, []any{"alice", "bob"}, res.Result())
+	})
+
+	t.Run("ordinary slice variadic element does not trigger call slice", func(t *testing.T) {
+		inv := invocation.NewRPCInvocationWithOptions(
+			invocation.WithMethodName("CountByteSlices"),
+			invocation.WithArguments([]any{[]byte("alice")}),
+		)
+
+		res := invoker.Invoke(context.Background(), inv)
+		require.NoError(t, res.Error())
+		assert.Equal(t, 1, res.Result())
 	})
 }

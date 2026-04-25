@@ -26,8 +26,9 @@ import (
 	perrors "github.com/pkg/errors"
 )
 
-// CallLocalMethod is used to handle invoke exception in user func.
-func callLocalMethod(method reflect.Method, in []reflect.Value) ([]reflect.Value, error) {
+// callLocalMethod invokes a local method and recovers panics.
+// useCallSlice is reserved for generic calls that already carry a packed variadic tail.
+func callLocalMethod(method reflect.Method, in []reflect.Value, useCallSlice bool) ([]reflect.Value, error) {
 	var (
 		returnValues []reflect.Value
 		retErr       error
@@ -46,7 +47,11 @@ func callLocalMethod(method reflect.Method, in []reflect.Value) ([]reflect.Value
 			}
 		}()
 
-		returnValues = method.Func.Call(in)
+		if useCallSlice {
+			returnValues = method.Func.CallSlice(in)
+		} else {
+			returnValues = method.Func.Call(in)
+		}
 	}()
 
 	if retErr != nil {

@@ -71,6 +71,22 @@ func (s *MockHelloService) HelloPB(req *generalizer.RequestType) (*generalizer.R
 	return nil, perrors.Errorf("people not found")
 }
 
+func (s *MockHelloService) HelloVariadic(prefix string, names ...string) (string, error) {
+	return prefix, nil
+}
+
+func (s *MockHelloService) EchoVariadic(args ...any) ([]any, error) {
+	return args, nil
+}
+
+func (s *MockHelloService) BytesVariadic(args ...[]byte) ([][]byte, error) {
+	return args, nil
+}
+
+func (s *MockHelloService) NestedStringVariadic(args ...[]string) ([][]string, error) {
+	return args, nil
+}
+
 func TestServiceFilter_Invoke(t *testing.T) {
 	filter := &genericServiceFilter{}
 
@@ -213,4 +229,253 @@ func TestServiceFilter_OnResponse(t *testing.T) {
 
 	response := filter.OnResponse(context.Background(), rpcResult, nil, invocation1)
 	assert.Equal(t, "result", response.Result())
+}
+
+func TestServiceFilter_InvokeVariadic(t *testing.T) {
+	filter := &genericServiceFilter{}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockInvoker := mock.NewMockInvoker(ctrl)
+	service := &MockHelloService{}
+	ivkURL := common.NewURLWithOptions(
+		common.WithProtocol("test-variadic"),
+		common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.InterfaceKey, service.Reference()),
+		common.WithParamsValue(constant.GenericKey, constant.GenericSerializationDefault),
+	)
+	_, err := common.ServiceMap.Register(ivkURL.GetParam(constant.InterfaceKey, ""),
+		ivkURL.Protocol,
+		"",
+		"",
+		service)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_ = common.ServiceMap.UnRegister(ivkURL.GetParam(constant.InterfaceKey, ""), ivkURL.Protocol, ivkURL.ServiceKey())
+	})
+
+	mockInvoker.EXPECT().GetURL().Return(ivkURL).AnyTimes()
+
+	cases := []struct {
+		name             string
+		inv              *invocation.RPCInvocation
+		assertInvocation func(t *testing.T, inv base.Invocation)
+	}{
+		{
+			name: "fixed plus discrete variadic args",
+			inv: invocation.NewRPCInvocation(constant.Generic, []any{
+				"HelloVariadic",
+				[]string{"java.lang.String", "java.lang.String", "java.lang.String"},
+				[]hessian.Object{"hello", "alice", "bob"},
+			}, map[string]any{
+				constant.GenericKey: constant.GenericSerializationDefault,
+			}),
+			assertInvocation: func(t *testing.T, inv base.Invocation) {
+				assert.Equal(t, "HelloVariadic", inv.MethodName())
+				assert.Equal(t, []any{"hello", []string{"alice", "bob"}}, inv.Arguments())
+			},
+		},
+		{
+			name: "fixed plus single scalar variadic arg",
+			inv: invocation.NewRPCInvocation(constant.Generic, []any{
+				"HelloVariadic",
+				[]string{"java.lang.String", "java.lang.String"},
+				[]hessian.Object{"hello", "alice"},
+			}, map[string]any{
+				constant.GenericKey: constant.GenericSerializationDefault,
+			}),
+			assertInvocation: func(t *testing.T, inv base.Invocation) {
+				assert.Equal(t, "HelloVariadic", inv.MethodName())
+				assert.Equal(t, []any{"hello", []string{"alice"}}, inv.Arguments())
+			},
+		},
+		{
+			name: "fixed plus packed variadic array",
+			inv: invocation.NewRPCInvocation(constant.Generic, []any{
+				"HelloVariadic",
+				[]string{"java.lang.String", "[Ljava.lang.String;"},
+				[]hessian.Object{"hello", []any{"alice", "bob"}},
+			}, map[string]any{
+				constant.GenericKey: constant.GenericSerializationDefault,
+			}),
+			assertInvocation: func(t *testing.T, inv base.Invocation) {
+				assert.Equal(t, "HelloVariadic", inv.MethodName())
+				assert.Equal(t, []any{"hello", []string{"alice", "bob"}}, inv.Arguments())
+			},
+		},
+		{
+			name: "fixed plus packed variadic array without types",
+			inv: invocation.NewRPCInvocation(constant.Generic, []any{
+				"HelloVariadic",
+				nil,
+				[]hessian.Object{"hello", []string{"alice", "bob"}},
+			}, map[string]any{
+				constant.GenericKey: constant.GenericSerializationDefault,
+			}),
+			assertInvocation: func(t *testing.T, inv base.Invocation) {
+				assert.Equal(t, "HelloVariadic", inv.MethodName())
+				assert.Equal(t, []any{"hello", []string{"alice", "bob"}}, inv.Arguments())
+			},
+		},
+		{
+			name: "fixed plus packed nil variadic array",
+			inv: invocation.NewRPCInvocation(constant.Generic, []any{
+				"HelloVariadic",
+				[]string{"java.lang.String", "[Ljava.lang.String;"},
+				[]hessian.Object{"hello", nil},
+			}, map[string]any{
+				constant.GenericKey: constant.GenericSerializationDefault,
+			}),
+			assertInvocation: func(t *testing.T, inv base.Invocation) {
+				assert.Equal(t, "HelloVariadic", inv.MethodName())
+				assert.Equal(t, []any{"hello", []string{}}, inv.Arguments())
+			},
+		},
+		{
+			name: "zero variadic args",
+			inv: invocation.NewRPCInvocation(constant.Generic, []any{
+				"HelloVariadic",
+				[]string{"java.lang.String"},
+				[]hessian.Object{"hello"},
+			}, map[string]any{
+				constant.GenericKey: constant.GenericSerializationDefault,
+			}),
+			assertInvocation: func(t *testing.T, inv base.Invocation) {
+				assert.Equal(t, "HelloVariadic", inv.MethodName())
+				assert.Equal(t, []any{"hello", []string{}}, inv.Arguments())
+			},
+		},
+		{
+			name: "interface variadic keeps nil element",
+			inv: invocation.NewRPCInvocation(constant.Generic, []any{
+				"EchoVariadic",
+				[]string{"java.lang.Object", "java.lang.Object"},
+				[]hessian.Object{nil, "tail"},
+			}, map[string]any{
+				constant.GenericKey: constant.GenericSerializationDefault,
+			}),
+			assertInvocation: func(t *testing.T, inv base.Invocation) {
+				assert.Equal(t, "EchoVariadic", inv.MethodName())
+				assert.Equal(t, []any{[]any{nil, "tail"}}, inv.Arguments())
+			},
+		},
+		{
+			name: "interface variadic keeps a single nil element",
+			inv: invocation.NewRPCInvocation(constant.Generic, []any{
+				"EchoVariadic",
+				[]string{"java.lang.Object"},
+				[]hessian.Object{nil},
+			}, map[string]any{
+				constant.GenericKey: constant.GenericSerializationDefault,
+			}),
+			assertInvocation: func(t *testing.T, inv base.Invocation) {
+				assert.Equal(t, "EchoVariadic", inv.MethodName())
+				assert.Equal(t, []any{[]any{nil}}, inv.Arguments())
+			},
+		},
+		{
+			name: "slice variadic keeps a single slice element",
+			inv: invocation.NewRPCInvocation(constant.Generic, []any{
+				"BytesVariadic",
+				[]string{"[B"},
+				[]hessian.Object{[]byte("tail")},
+			}, map[string]any{
+				constant.GenericKey: constant.GenericSerializationDefault,
+			}),
+			assertInvocation: func(t *testing.T, inv base.Invocation) {
+				assert.Equal(t, "BytesVariadic", inv.MethodName())
+				assert.Equal(t, []any{[][]byte{[]byte("tail")}}, inv.Arguments())
+			},
+		},
+		{
+			name: "slice variadic unwraps packed values without types",
+			inv: invocation.NewRPCInvocation(constant.Generic, []any{
+				"BytesVariadic",
+				nil,
+				[]hessian.Object{[][]byte{[]byte("a"), []byte("b")}},
+			}, map[string]any{
+				constant.GenericKey: constant.GenericSerializationDefault,
+			}),
+			assertInvocation: func(t *testing.T, inv base.Invocation) {
+				assert.Equal(t, "BytesVariadic", inv.MethodName())
+				assert.Equal(t, []any{[][]byte{[]byte("a"), []byte("b")}}, inv.Arguments())
+			},
+		},
+		{
+			name: "slice variadic unwraps nested byte descriptor",
+			inv: invocation.NewRPCInvocation(constant.Generic, []any{
+				"BytesVariadic",
+				[]string{"[[B"},
+				[]hessian.Object{[][]byte{[]byte("a"), []byte("b")}},
+			}, map[string]any{
+				constant.GenericKey: constant.GenericSerializationDefault,
+			}),
+			assertInvocation: func(t *testing.T, inv base.Invocation) {
+				assert.Equal(t, "BytesVariadic", inv.MethodName())
+				assert.Equal(t, []any{[][]byte{[]byte("a"), []byte("b")}}, inv.Arguments())
+			},
+		},
+		{
+			name: "nested string variadic unwraps nested string descriptor",
+			inv: invocation.NewRPCInvocation(constant.Generic, []any{
+				"NestedStringVariadic",
+				[]string{"[[Ljava.lang.String;"},
+				[]hessian.Object{[][]string{{"a", "b"}, {"c"}}},
+			}, map[string]any{
+				constant.GenericKey: constant.GenericSerializationDefault,
+			}),
+			assertInvocation: func(t *testing.T, inv base.Invocation) {
+				assert.Equal(t, "NestedStringVariadic", inv.MethodName())
+				assert.Equal(t, []any{[][]string{{"a", "b"}, {"c"}}}, inv.Arguments())
+			},
+		},
+		{
+			name: "interface variadic unwraps a packed object array",
+			inv: invocation.NewRPCInvocation(constant.Generic, []any{
+				"EchoVariadic",
+				[]string{"[Ljava.lang.Object;"},
+				[]hessian.Object{[]any{"alice", "bob"}},
+			}, map[string]any{
+				constant.GenericKey: constant.GenericSerializationDefault,
+			}),
+			assertInvocation: func(t *testing.T, inv base.Invocation) {
+				assert.Equal(t, "EchoVariadic", inv.MethodName())
+				assert.Equal(t, []any{[]any{"alice", "bob"}}, inv.Arguments())
+			},
+		},
+		{
+			name: "interface variadic keeps packed nil object array empty",
+			inv: invocation.NewRPCInvocation(constant.Generic, []any{
+				"EchoVariadic",
+				[]string{"[Ljava.lang.Object;"},
+				[]hessian.Object{nil},
+			}, map[string]any{
+				constant.GenericKey: constant.GenericSerializationDefault,
+			}),
+			assertInvocation: func(t *testing.T, inv base.Invocation) {
+				assert.Equal(t, "EchoVariadic", inv.MethodName())
+				assert.Equal(t, []any{[]any{}}, inv.Arguments())
+			},
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			mockInvoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
+				func(_ context.Context, inv base.Invocation) result.Result {
+					marked, ok := inv.GetAttribute(constant.GenericVariadicCallSliceKey)
+					require.True(t, ok)
+					useCallSlice, ok := marked.(bool)
+					require.True(t, ok)
+					assert.True(t, useCallSlice)
+					tt.assertInvocation(t, inv)
+					return &result.RPCResult{}
+				},
+			).Times(1)
+
+			invokeResult := filter.Invoke(context.Background(), mockInvoker, tt.inv)
+			require.NoError(t, invokeResult.Error())
+		})
+	}
 }
