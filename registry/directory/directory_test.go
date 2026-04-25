@@ -329,6 +329,51 @@ func TestRefreshConfiguratorsUseLatestBatch(t *testing.T) {
 		assert.Empty(t, target.GetParam("timeout", ""))
 		assert.Equal(t, "mock3", target.GetParam(constant.ClusterKey, ""))
 	})
+
+	t.Run("configurator-only notify all refreshes cached invokers immediately", func(t *testing.T) {
+		extension.SetDefaultConfigurator(realConfigurator)
+
+		registryDirectory, _ := normalRegistryDir(true)
+		registryDirectory.refreshAllInvokers([]*registry.ServiceEvent{
+			{Action: remoting.EventTypeAdd, Service: mustURL(t,
+				"dubbo://0.0.0.0:20011/org.apache.dubbo-go.mockService?cluster=mock1&group=group&version=1.0.0",
+			)},
+			{Action: remoting.EventTypeAdd, Service: mustURL(t,
+				"dubbo://0.0.0.0:20012/org.apache.dubbo-go.mockService?cluster=mock1&group=group&version=1.0.0",
+			)},
+		}, func() {})
+
+		require.Len(t, registryDirectory.cacheInvokers, 2)
+		assert.Equal(t, "mock1", findInvokerURLByPort(t, registryDirectory, "20011").GetParam(constant.ClusterKey, ""))
+		assert.Equal(t, "mock1", findInvokerURLByPort(t, registryDirectory, "20012").GetParam(constant.ClusterKey, ""))
+
+		registryDirectory.refreshAllInvokers([]*registry.ServiceEvent{
+			{Action: remoting.EventTypeAdd, Service: mustURL(t,
+				"override://0.0.0.0:0/org.apache.dubbo-go.mockService?timeout=2s",
+			)},
+			{Action: remoting.EventTypeAdd, Service: mustURL(t,
+				"override://0.0.0.0:0/org.apache.dubbo-go.mockService?cluster=mock2",
+			)},
+		}, func() {})
+
+		require.Len(t, registryDirectory.cacheInvokers, 2)
+		assert.Equal(t, "mock2", findInvokerURLByPort(t, registryDirectory, "20011").GetParam(constant.ClusterKey, ""))
+		assert.Equal(t, "2s", findInvokerURLByPort(t, registryDirectory, "20011").GetParam("timeout", ""))
+		assert.Equal(t, "mock2", findInvokerURLByPort(t, registryDirectory, "20012").GetParam(constant.ClusterKey, ""))
+		assert.Equal(t, "2s", findInvokerURLByPort(t, registryDirectory, "20012").GetParam("timeout", ""))
+
+		registryDirectory.refreshAllInvokers([]*registry.ServiceEvent{
+			{Action: remoting.EventTypeAdd, Service: mustURL(t,
+				"override://0.0.0.0:0/org.apache.dubbo-go.mockService?cluster=mock3",
+			)},
+		}, func() {})
+
+		require.Len(t, registryDirectory.cacheInvokers, 2)
+		assert.Equal(t, "mock3", findInvokerURLByPort(t, registryDirectory, "20011").GetParam(constant.ClusterKey, ""))
+		assert.Empty(t, findInvokerURLByPort(t, registryDirectory, "20011").GetParam("timeout", ""))
+		assert.Equal(t, "mock3", findInvokerURLByPort(t, registryDirectory, "20012").GetParam(constant.ClusterKey, ""))
+		assert.Empty(t, findInvokerURLByPort(t, registryDirectory, "20012").GetParam("timeout", ""))
+	})
 }
 
 func mustURL(t *testing.T, rawURL string) *common.URL {
@@ -336,6 +381,17 @@ func mustURL(t *testing.T, rawURL string) *common.URL {
 	u, err := common.NewURL(rawURL)
 	require.NoError(t, err)
 	return u
+}
+
+func findInvokerURLByPort(t *testing.T, dir *RegistryDirectory, port string) *common.URL {
+	t.Helper()
+	for _, invoker := range dir.cacheInvokers {
+		if invoker.GetURL().Port == port {
+			return invoker.GetURL()
+		}
+	}
+	require.FailNowf(t, "missing invoker", "no cached invoker found for port %s", port)
+	return nil
 }
 
 func normalRegistryDir(noMockEvent ...bool) (*RegistryDirectory, *registry.MockRegistry) {

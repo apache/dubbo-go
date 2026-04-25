@@ -69,6 +69,7 @@ type RegistryDirectory struct {
 	cacheInvokersMap               *sync.Map // use sync.map
 	consumerURL                    *common.URL
 	cacheOriginUrl                 *common.URL
+	cachedProviderEvents           []*registry.ServiceEvent
 	configurators                  []config_center.Configurator
 	consumerConfigurationListener  *consumerConfigurationListener
 	referenceConfigurationListener *referenceConfigurationListener
@@ -271,10 +272,10 @@ func (dir *RegistryDirectory) refreshInvokers(event *registry.ServiceEvent) {
 // not in the incoming list can be removed.  The Action of serviceEvent should be EventTypeUpdate or EventTypeAdd.
 func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent, callback func()) {
 	var (
-		oldInvokers      []protocolbase.Invoker
-		addEvents        []*registry.ServiceEvent
-		providerEvents   []*registry.ServiceEvent
-		configuratorURLs []*common.URL
+		oldInvokers       []protocolbase.Invoker
+		incomingProviders []*registry.ServiceEvent
+		providerEvents    []*registry.ServiceEvent
+		configuratorURLs  []*common.URL
 	)
 	for _, event := range events {
 		if event.Action != remoting.EventTypeUpdate && event.Action != remoting.EventTypeAdd {
@@ -285,12 +286,20 @@ func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent
 			configuratorURLs = append(configuratorURLs, event.Service)
 			continue
 		}
-		providerEvents = append(providerEvents, event)
+		incomingProviders = append(incomingProviders, event)
 	}
 	if configuratorURLs != nil {
 		dir.replaceConfigurators(configuratorURLs)
 	}
 	defer callback()
+	if len(incomingProviders) > 0 {
+		providerEvents = incomingProviders
+		dir.cacheProviderEvents(providerEvents)
+	} else if len(events) > 0 {
+		providerEvents = dir.cachedProviderEventsSnapshot()
+	} else {
+		dir.cacheProviderEvents(nil)
+	}
 	if len(providerEvents) == 0 && len(events) > 0 {
 		return
 	}
@@ -321,15 +330,8 @@ func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent
 			}
 			return true
 		})
-		// get need add invokers from events
-		for _, event := range providerEvents {
-			// Get the key from Event.Key()
-			if _, ok := dir.cacheInvokersMap.Load(event.Key()); !ok {
-				addEvents = append(addEvents, event)
-			}
-		}
 		// loop the serviceEvents
-		for _, event := range addEvents {
+		for _, event := range providerEvents {
 			logger.Debugf("[Registry Directory] registry changed, result{%s}", event)
 			if event != nil && event.Service != nil {
 				logger.Infof("[Registry Directory] selector add service url{%s}", event.Service.String())
@@ -433,6 +435,40 @@ func isConfiguratorURL(url *common.URL) bool {
 
 func (dir *RegistryDirectory) replaceConfigurators(urls []*common.URL) {
 	dir.configurators = registry.ToConfigurators(urls, extension.GetDefaultConfiguratorFunc())
+}
+
+func (dir *RegistryDirectory) cacheProviderEvents(events []*registry.ServiceEvent) {
+	dir.registerLock.Lock()
+	defer dir.registerLock.Unlock()
+	dir.cachedProviderEvents = cloneServiceEvents(events)
+}
+
+func (dir *RegistryDirectory) cachedProviderEventsSnapshot() []*registry.ServiceEvent {
+	dir.registerLock.Lock()
+	defer dir.registerLock.Unlock()
+	return cloneServiceEvents(dir.cachedProviderEvents)
+}
+
+func cloneServiceEvents(events []*registry.ServiceEvent) []*registry.ServiceEvent {
+	if len(events) == 0 {
+		return nil
+	}
+
+	cloned := make([]*registry.ServiceEvent, 0, len(events))
+	for _, event := range events {
+		if event == nil {
+			continue
+		}
+		clonedEvent := &registry.ServiceEvent{
+			Action:  event.Action,
+			KeyFunc: event.KeyFunc,
+		}
+		if event.Service != nil {
+			clonedEvent.Service = event.Service.Clone()
+		}
+		cloned = append(cloned, clonedEvent)
+	}
+	return cloned
 }
 
 func (dir *RegistryDirectory) toGroupInvokers() []protocolbase.Invoker {
@@ -709,6 +745,9 @@ func (dir *RegistryDirectory) Destroy() {
 			dir.cacheInvokersMap.Delete(key)
 			return true
 		})
+		dir.registerLock.Lock()
+		dir.cachedProviderEvents = nil
+		dir.registerLock.Unlock()
 	})
 	metrics.Publish(metricsRegistry.NewDirectoryEvent(metricsRegistry.NumAllDec))
 }
