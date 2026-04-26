@@ -42,12 +42,26 @@ import (
 )
 
 type testTripleClosingEventHandler struct {
+	lock   sync.Mutex
 	events []gracefulshutdown.ClosingEvent
 }
 
 func (h *testTripleClosingEventHandler) HandleClosingEvent(event gracefulshutdown.ClosingEvent) bool {
+	h.lock.Lock()
+	defer h.lock.Unlock()
+
 	h.events = append(h.events, event)
 	return true
+}
+
+// Events returns a snapshot because health-watch callbacks run in a goroutine.
+func (h *testTripleClosingEventHandler) Events() []gracefulshutdown.ClosingEvent {
+	h.lock.Lock()
+	defer h.lock.Unlock()
+
+	events := make([]gracefulshutdown.ClosingEvent, len(h.events))
+	copy(events, h.events)
+	return events
 }
 
 func TestTripleInvokerHandleHealthStatusNotServing(t *testing.T) {
@@ -61,10 +75,11 @@ func TestTripleInvokerHandleHealthStatusNotServing(t *testing.T) {
 	handled := invoker.handleHealthStatus(grpc_health_v1.HealthCheckResponse_NOT_SERVING, handler)
 
 	assert.True(t, handled)
-	if assert.Len(t, handler.events, 1) {
-		assert.Equal(t, "triple-health-watch", handler.events[0].Source)
-		assert.Equal(t, url.GetCacheInvokerMapKey(), handler.events[0].InstanceKey)
-		assert.Equal(t, url.ServiceKey(), handler.events[0].ServiceKey)
+	events := handler.Events()
+	if assert.Len(t, events, 1) {
+		assert.Equal(t, "triple-health-watch", events[0].Source)
+		assert.Equal(t, url.GetCacheInvokerMapKey(), events[0].InstanceKey)
+		assert.Equal(t, url.ServiceKey(), events[0].ServiceKey)
 	}
 }
 
@@ -145,10 +160,11 @@ func TestTripleHealthWatchEmitsClosingEvent(t *testing.T) {
 	close(notServing)
 
 	require.Eventually(t, func() bool {
-		return len(handler.events) == 1
+		return len(handler.Events()) == 1
 	}, 3*time.Second, 20*time.Millisecond)
 
-	assert.Equal(t, "triple-health-watch", handler.events[0].Source)
-	assert.Equal(t, url.GetCacheInvokerMapKey(), handler.events[0].InstanceKey)
-	assert.Equal(t, serviceKey, handler.events[0].ServiceKey)
+	events := handler.Events()
+	assert.Equal(t, "triple-health-watch", events[0].Source)
+	assert.Equal(t, url.GetCacheInvokerMapKey(), events[0].InstanceKey)
+	assert.Equal(t, serviceKey, events[0].ServiceKey)
 }
