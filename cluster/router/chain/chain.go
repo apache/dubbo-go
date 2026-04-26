@@ -49,6 +49,7 @@ type RouterChain struct {
 	// instance will never delete or recreate.
 	builtinRouters []router.PriorityRouter
 
+	cache *routerCache
 	mutex sync.RWMutex
 }
 
@@ -94,9 +95,22 @@ func (c *RouterChain) SetInvokers(invokers []base.Invoker) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	c.invokers = invokers
+	c.rebuildCache(invokers)
 	for _, v := range c.routers {
 		v.Notify(c.invokers)
 	}
+}
+
+func (c *RouterChain) rebuildCache(invokers []base.Invoker) {
+	if c.cache == nil {
+		c.cache = newRouterCache()
+		for _, r := range c.routers {
+			if accessor, ok := r.(router.CacheAccessor); ok {
+				accessor.SetCache(c.cache)
+			}
+		}
+	}
+	c.cache.rebuild(invokers, c.routers)
 }
 
 // copyRouters make a snapshot copy from RouterChain's router list.

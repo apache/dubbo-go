@@ -100,4 +100,14 @@ type Cache interface {
 
 	// FindAddrMeta returns address metadata associated with the given Poolable instance.
 	FindAddrMeta(Poolable) AddrMetadata
+
+	// FindAddrPoolWithInvokers returns the invoker snapshot and address pool.
+	FindAddrPoolWithInvokers(Poolable) ([]base.Invoker, AddrPool)
+}
+
+// CacheAccessor allow routers to receive the invoker-snapshot cache.
+// Implemented by Poolable routers so that RouterChain can pass the cache
+// reference after it is built in SetInvokers.
+type CacheAccessor interface {
+	SetCache(Cache)
 }
