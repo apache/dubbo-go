@@ -19,7 +19,6 @@ package failover
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 )
 
@@ -97,17 +96,15 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 	invokerSvc := invoker.GetURL().Service()
 	invokerUrl := invoker.Directory.GetURL()
 	if ivk == nil {
-		logger.Errorf("Failed to invoke the method %s of the service %s .No provider is available.", methodName, invokerSvc)
+		logger.Errorf("[Failover] no provider available, method=%s service=%s", methodName, invokerSvc)
 		return &result.RPCResult{
 			Err: perrors.Errorf("Failed to invoke the method %s of the service %s .No provider is available because can't connect server.",
 				methodName, invokerSvc),
 		}
 	}
 
-	logger.Errorf(fmt.Sprintf("Failed to invoke the method %v in the service %v. "+
-		"Tried %v times of the providers %v (%v/%v) from the registry %v on the consumer %v using the dubbo version %v. "+
-		"Last error is %+v.", methodName, invokerSvc, retries, providers, len(providers), len(invokers),
-		invokerUrl, ip, constant.Version, res.Error().Error()))
+	logger.Errorf("[Failover] invoke failed after retries, method=%s service=%s retries=%d providers=%d/%d registry=%s consumer=%s version=%s lastErr=%v",
+		methodName, invokerSvc, retries, len(providers), len(invokers), invokerUrl, ip, constant.Version, res.Error().Error())
 
 	return res
 }

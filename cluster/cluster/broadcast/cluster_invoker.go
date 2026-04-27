@@ -58,7 +58,7 @@ func (invoker *broadcastClusterInvoker) Invoke(ctx context.Context, invocation p
 	for _, ivk := range invokers {
 		res = ivk.Invoke(ctx, invocation)
 		if res.Error() != nil {
-			logger.Warnf("broadcast invoker invoke err: %v when use invoker: %v\n", res.Error(), ivk)
+			logger.Warnf("[Broadcast] invoke failed, err=%v invoker=%v", res.Error(), ivk)
 			err = res.Error()
 		}
 	}

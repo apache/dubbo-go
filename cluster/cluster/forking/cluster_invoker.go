@@ -76,7 +76,7 @@ func (invoker *forkingClusterInvoker) Invoke(ctx context.Context, invocation pro
 		go func(k protocolbase.Invoker) {
 			result := k.Invoke(ctx, invocation)
 			if err := resultQ.Put(result); err != nil {
-				logger.Errorf("resultQ put failed with exception: %v.\n", err)
+				logger.Errorf("[Forking] resultQ put failed with exception err=%v", err)
 			}
 		}(ivk)
 	}
