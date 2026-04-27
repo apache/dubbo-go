@@ -80,7 +80,7 @@ func NewServiceInstancesChangedListener(app string, services *gxset.HashSet) reg
 	}
 }
 
-// OnEvent on ServiceInstancesChangedEvent the service instances change event
+// OnEvent handles service instance change events by refreshing metadata, rebuilding service URLs, and notifying listeners.
 func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error {
 	ce, ok := e.(*registry.ServiceInstancesChangedEvent)
 	if !ok {
@@ -93,8 +93,9 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 	lstn.allInstances[ce.ServiceName] = ce.Instances
 	revisionToInstances := make(map[string][]registry.ServiceInstance)
 	newRevisionToMetadata := make(map[string]*info.MetadataInfo)
-	localServiceToRevisions := make(map[*info.ServiceInfo]*gxset.HashSet)
-	protocolRevisionsToUrls := make(map[string]map[*gxset.HashSet][]*common.URL)
+	// The same service match key can be exported by several revisions.
+	// Keep each revision's ServiceInfo so provider-specific params are not collapsed.
+	serviceToRevisionServices := make(map[string]map[string]*info.ServiceInfo)
 	newServiceURLs := make(map[string][]*common.URL)
 
 	logger.Infof("Received instance notification event of service %s, instance list size %d", ce.ServiceName, len(ce.Instances))
@@ -127,44 +128,38 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 				}
 				metadataInfo = meta
 			}
+			if metadataInfo == nil {
+				logger.Warnf("Metadata info is nil for instance %s (revision %s), skipping this instance",
+					instance.GetHost(), revision)
+				continue
+			}
 			instance.SetServiceMetadata(metadataInfo)
 			for _, service := range metadataInfo.Services {
-				if localServiceToRevisions[service] == nil {
-					localServiceToRevisions[service] = gxset.NewSet()
+				matchKey := service.GetMatchKey()
+				if serviceToRevisionServices[matchKey] == nil {
+					serviceToRevisionServices[matchKey] = make(map[string]*info.ServiceInfo)
 				}
-				localServiceToRevisions[service].Add(revision)
+				serviceToRevisionServices[matchKey][revision] = service
 			}
 
 			newRevisionToMetadata[revision] = metadataInfo
 		}
-		lstn.revisionToMetadata = newRevisionToMetadata
-		for revision, metadataInfo := range newRevisionToMetadata {
-			metaCache.Set(revision, metadataInfo)
-		}
+	}
+	lstn.revisionToMetadata = newRevisionToMetadata
+	for revision, metadataInfo := range newRevisionToMetadata {
+		metaCache.Set(revision, metadataInfo)
+	}
 
-		for serviceInfo, revisions := range localServiceToRevisions {
-			revisionsToUrls := protocolRevisionsToUrls[serviceInfo.Protocol]
-			if revisionsToUrls == nil {
-				protocolRevisionsToUrls[serviceInfo.Protocol] = make(map[*gxset.HashSet][]*common.URL)
-				revisionsToUrls = protocolRevisionsToUrls[serviceInfo.Protocol]
-			}
-			urls := revisionsToUrls[revisions]
-			if urls != nil {
-				newServiceURLs[serviceInfo.GetMatchKey()] = urls
-			} else {
-				urls = make([]*common.URL, 0, 8)
-				for _, v := range revisions.Values() {
-					r := v.(string)
-					for _, i := range revisionToInstances[r] {
-						if i != nil {
-							urls = append(urls, i.ToURLs(serviceInfo)...)
-						}
-					}
+	for serviceKey, revisionServices := range serviceToRevisionServices {
+		urls := make([]*common.URL, 0, 8)
+		for revision, serviceInfo := range revisionServices {
+			for _, i := range revisionToInstances[revision] {
+				if i != nil {
+					urls = append(urls, toInstanceServiceURLs(i, serviceInfo)...)
 				}
-				revisionsToUrls[revisions] = urls
-				newServiceURLs[serviceInfo.GetMatchKey()] = urls
 			}
 		}
+		newServiceURLs[serviceKey] = urls
 	}
 
 	lstn.serviceUrls = newServiceURLs
@@ -181,6 +176,22 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 	}
 
 	return nil
+}
+
+func toInstanceServiceURLs(instance registry.ServiceInstance, serviceInfo *info.ServiceInfo) []*common.URL {
+	urls := instance.ToURLs(serviceInfo)
+	metadata := instance.GetMetadata()
+	if metadata == nil {
+		return urls
+	}
+	// Environment is instance-level routing metadata and is not part of the revision hash.
+	// Prefer the fresh instance value so same-revision restarts do not reuse stale metadata.
+	if environment := metadata[constant.EnvironmentKey]; environment != "" {
+		for _, url := range urls {
+			url.SetParam(constant.EnvironmentKey, environment)
+		}
+	}
+	return urls
 }
 
 // AddListenerAndNotify add notify listener and notify to listen service event
