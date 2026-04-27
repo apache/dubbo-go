@@ -33,6 +33,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 var (
@@ -126,6 +127,19 @@ func TestServiceInfoGetMethods(t *testing.T) {
 func TestServiceInfoGetParams(t *testing.T) {
 	service := NewServiceInfoWithURL(serviceUrl)
 	assert.Equal(t, []string{"random"}, service.GetParams()["loadbalance"])
+}
+
+func TestServiceInfoGetParamsIncludesEnvironment(t *testing.T) {
+	serviceURL, err := common.NewURL("tri://127.0.0.1:20000/org.apache.dubbo.samples.proto.GreetService",
+		common.WithInterface("org.apache.dubbo.samples.proto.GreetService"),
+		common.WithParamsValue(constant.EnvironmentKey, "pre"),
+		common.WithMethods([]string{"Greet"}),
+	)
+	require.NoError(t, err)
+
+	service := NewServiceInfoWithURL(serviceURL)
+
+	assert.Equal(t, []string{"pre"}, service.GetParams()[constant.EnvironmentKey])
 }
 
 func TestServiceInfoGetMatchKey(t *testing.T) {

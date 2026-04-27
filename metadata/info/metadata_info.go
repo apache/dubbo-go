@@ -52,6 +52,7 @@ var IncludeKeys = gxset.NewSet(
 	constant.VersionKey,
 	constant.WarmupKey,
 	constant.WeightKey,
+	constant.EnvironmentKey,
 	constant.ReleaseKey)
 
 // MetadataInfo the metadata information of instance
