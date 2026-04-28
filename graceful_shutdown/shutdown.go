@@ -133,6 +133,15 @@ func Done() <-chan struct{} {
 	return shutdownDone
 }
 
+func IsDone() bool {
+	select {
+	case <-shutdownDone:
+		return true
+	default:
+		return false
+	}
+}
+
 func Shutdown(ctx context.Context) error {
 	if ctx == nil {
 		ctx = context.Background()

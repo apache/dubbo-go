@@ -339,6 +339,9 @@ func (s *Server) ServeContext(ctx context.Context) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
+	if graceful_shutdown.IsDone() {
+		return errors.New("server cannot be started after graceful shutdown completed")
+	}
 
 	s.mu.Lock()
 	if s.serve {

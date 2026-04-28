@@ -443,6 +443,65 @@ func TestServeContextRollsBackWhenCanceledDuringStartup(t *testing.T) {
 	assert.Equal(t, int32(1), unregisterCount.Load())
 }
 
+func TestServeContextDoesNotRestartAfterGracefulShutdownCompletes(t *testing.T) {
+	resetGracefulShutdownStateForTest(t)
+	t.Cleanup(func() {
+		resetGracefulShutdownStateForTest(t)
+	})
+	resetInternalProviderServicesForTest(t)
+
+	var exportCount, unexportCount, registerCount, unregisterCount atomic.Int32
+	registerCountingServeTestProtocols(t, &exportCount, &unexportCount, &registerCount, &unregisterCount, nil)
+
+	internalSignal := false
+	shutdownCfg := global.DefaultShutdownConfig()
+	shutdownCfg.InternalSignal = &internalSignal
+	shutdownCfg.ConsumerUpdateWaitTime = "0s"
+	shutdownCfg.StepTimeout = "0s"
+	shutdownCfg.NotifyTimeout = "0s"
+	shutdownCfg.OfflineRequestWindowTimeout = "0s"
+
+	srv, err := NewServer(SetServerShutdown(shutdownCfg))
+	require.NoError(t, err)
+	require.NoError(t, srv.Register(&MockServerRPCService{}, nil))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	serveDone := make(chan error, 1)
+	go func() {
+		serveDone <- srv.ServeContext(ctx)
+	}()
+
+	require.Eventually(t, func() bool {
+		return registerCount.Load() == 1
+	}, time.Second, 10*time.Millisecond)
+
+	cancel()
+	select {
+	case err := <-serveDone:
+		require.ErrorIs(t, err, context.Canceled)
+	case <-time.After(time.Second):
+		t.Fatal("ServeContext did not return after context cancellation")
+	}
+	select {
+	case <-graceful_shutdown.Done():
+	case <-time.After(time.Second):
+		t.Fatal("process-level graceful shutdown did not finish after context cancellation")
+	}
+
+	exportCountAfterShutdown := exportCount.Load()
+	unexportCountAfterShutdown := unexportCount.Load()
+	registerCountAfterShutdown := registerCount.Load()
+	unregisterCountAfterShutdown := unregisterCount.Load()
+
+	err = srv.ServeContext(context.Background())
+	require.Error(t, err)
+	assert.Equal(t, int32(1), registerCountAfterShutdown)
+	assert.Equal(t, exportCountAfterShutdown, exportCount.Load())
+	assert.Equal(t, unexportCountAfterShutdown, unexportCount.Load())
+	assert.Equal(t, registerCountAfterShutdown, registerCount.Load())
+	assert.Equal(t, unregisterCountAfterShutdown, unregisterCount.Load())
+}
+
 // Test NewServer creates a server successfully
 func TestNewServer(t *testing.T) {
 	srv, err := NewServer()
