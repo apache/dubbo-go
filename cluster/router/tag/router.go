@@ -49,7 +49,7 @@ func NewTagPriorityRouter() (*PriorityRouter, error) {
 // Route Determine the target invokers list.
 func (p *PriorityRouter) Route(invokers []base.Invoker, url *common.URL, invocation base.Invocation) []base.Invoker {
 	if len(invokers) == 0 {
-		logger.Warnf("[tag router] invokers from previous router is empty")
+		logger.Warn("[Router] [Tag] invokers from previous router is empty")
 		return invokers
 	}
 	// get application name from invoker to look up tag routing config
@@ -82,23 +82,23 @@ func (p *PriorityRouter) Notify(invokers []base.Invoker) {
 	}
 	application := invokers[0].GetURL().GetParam(constant.ApplicationKey, "")
 	if application == "" {
-		logger.Warn("url application is empty, tag router will not be enabled")
+		logger.Warn("[Router] [Tag] url application is empty, tag router will not be enabled")
 		return
 	}
 	dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
 	if dynamicConfiguration == nil {
-		logger.Infof("Config center does not start, Tag router will not be enabled")
+		logger.Info("Config center does not start, Tag router will not be enabled")
 		return
 	}
 	key := strings.Join([]string{application, constant.TagRouterRuleSuffix}, "")
 	dynamicConfiguration.AddListener(key, p)
 	value, err := dynamicConfiguration.GetRule(key)
 	if err != nil {
-		logger.Errorf("query router rule fail,key=%s,err=%v", key, err)
+		logger.Errorf("[Router] [Tag] query router rule failed, key=%s error=%v", key, err)
 		return
 	}
 	if value == "" {
-		logger.Infof("router rule is empty,key=%s", key)
+		logger.Info("router rule is empty")
 		return
 	}
 	p.Process(&config_center.ConfigChangeEvent{Key: key, Value: value, ConfigType: remoting.EventTypeAdd})
@@ -122,7 +122,7 @@ func (p *PriorityRouter) SetStaticConfig(cfg *global.RouterConfig) {
 	// Derive storage key the same way Notify() does: application + suffix
 	key := strings.Join([]string{cfg.Key, constant.TagRouterRuleSuffix}, "")
 	p.routerConfigs.Store(key, *cfgCopy)
-	logger.Infof("[tag router] Applied static tag router config: key=%s", key)
+	logger.Infof("applied static tag router config, key=%s", key)
 }
 
 // Process applies config-center updates as the authoritative rule source at runtime.
@@ -135,12 +135,11 @@ func (p *PriorityRouter) Process(event *config_center.ConfigChangeEvent) {
 	}
 	routerConfig, err := parseRoute(event.Value.(string))
 	if err != nil {
-		logger.Warnf("[tag router]Parse new tag route config error, %+v "+
-			"and we will use the original tag rule configuration.", err)
+		logger.Warnf("[Router] [Tag] parse new tag route config failed, error=%+v", err)
 		return
 	}
 	p.routerConfigs.Store(event.Key, *routerConfig)
-	logger.Infof("[tag router]Parse tag router config success,routerConfig=%+v", routerConfig)
+	logger.Infof("parse tag router config success, routerConfig=%+v", routerConfig)
 }
 
 func parseRoute(routeContent string) (*global.RouterConfig, error) {

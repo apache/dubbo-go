@@ -118,7 +118,7 @@ func doPatternMatch(pattern string, value string, url *common.URL, invocation ba
 		}
 	}
 	// If no value matcher is available, will force to use wildcard value matcher
-	logger.Error("Executing condition rule value match expression error, will force to use wildcard value matcher")
+	logger.Errorf("[Matcher] no matching value pattern found, using wildcard: pattern=%s", pattern)
 
 	valuePattern := pattern_value.GetValuePattern(constant.Wildcard)
 	return valuePattern.Match(pattern, value, url, invocation, isWhenCondition)

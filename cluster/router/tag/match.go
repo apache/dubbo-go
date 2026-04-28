@@ -57,7 +57,7 @@ func staticTag(invokers []base.Invoker, url *common.URL, invocation base.Invocat
 			return invoker.GetURL().GetParam(constant.Tagkey, "") != ""
 		})
 	}
-	logger.Debugf("[tag router] filter static tag, invokers=%+v", result)
+	logger.Debugf("[Router] [Tag] filter static tag, invokers=%+v", result)
 	return result
 }
 
@@ -85,9 +85,9 @@ func requestEmptyTag(invokers []base.Invoker, cfg global.RouterConfig) []base.In
 			continue
 		}
 		result = filterInvokers(result, tagCfg.Addresses, getAddressPredicate(true))
-		logger.Debugf("[tag router]filter empty tag address, invokers=%+v", result)
+		logger.Debugf("[Router] [Tag] filter empty tag address, invokers=%+v", result)
 	}
-	logger.Debugf("[tag router]filter empty tag, invokers=%+v", result)
+	logger.Debugf("[Router] [Tag] filter empty tag, invokers=%+v", result)
 	return result
 }
 
@@ -125,11 +125,11 @@ func requestTag(invokers []base.Invoker, url *common.URL, invocation base.Invoca
 			result = filterInvokers(invokers, tag, func(invoker base.Invoker, tag any) bool {
 				return invoker.GetURL().GetParam(constant.Tagkey, "") != tag
 			})
-			logger.Debugf("[tag router] filter dynamic tag, tag=%s, invokers=%+v", tag, result)
+			logger.Debugf("[Router] [Tag] filter dynamic tag, tag=%s invokers=%+v", tag, result)
 		} else {
 			// filter address does not match
 			result = filterInvokers(invokers, addresses, getAddressPredicate(false))
-			logger.Debugf("[tag router] filter dynamic tag address, invokers=%+v", result)
+			logger.Debugf("[Router] [Tag] filter dynamic tag address, invokers=%+v", result)
 		}
 	}
 	// returns the result directly
@@ -147,7 +147,7 @@ func requestTag(invokers []base.Invoker, url *common.URL, invocation base.Invoca
 		return result
 	}
 	result = filterInvokers(invokers, addresses, getAddressPredicate(true))
-	logger.Debugf("[tag router] failover match all providers without any tags, invokers=%+v", result)
+	logger.Debugf("[Router] [Tag] failover match all providers without any tags, invokers=%+v", result)
 	return result
 }
 
@@ -168,7 +168,7 @@ func requestIsForce(url *common.URL, invocation base.Invocation) bool {
 	force := invocation.GetAttachmentWithDefaultValue(constant.ForceUseTag, url.GetParam(constant.ForceUseTag, "false"))
 	ok, err := strconv.ParseBool(force)
 	if err != nil {
-		logger.Errorf("parse force param fail,force=%s,err=%v", force, err)
+		logger.Errorf("[Router] [Tag] parse force param failed, force=%s error=%v", force, err)
 	}
 	return ok
 }

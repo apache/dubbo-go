@@ -32,8 +32,7 @@ import (
 )
 
 var (
-	attachmentPattern       = regexp.MustCompile(`attachments\[([a-zA-Z0-9_]+)\]`)
-	notFoundAttachmentValue = "dubbo internal not found attachment condition value"
+	attachmentPattern = regexp.MustCompile(`attachments\[([a-zA-Z0-9_]+)\]`)
 )
 
 // AttachmentConditionMatcher analysis the attachments in the rule.
@@ -55,13 +54,13 @@ func (a *AttachmentConditionMatcher) GetValue(sample map[string]string, url *com
 	attachmentExpress := expressArray[0]
 	matcher := attachmentPattern.FindStringSubmatch(attachmentExpress)
 	if len(matcher) == 0 {
-		logger.Warn(notFoundAttachmentValue)
+		logger.Warn("[Attachment] attachment key not found")
 		return ""
 	}
 	// extract the attachment key
 	attachmentKey := matcher[1]
 	if attachmentKey == "" {
-		logger.Warn(notFoundAttachmentValue)
+		logger.Warn("[Attachment] attachment key is empty")
 		return ""
 	}
 	// extract the attachment value

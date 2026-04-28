@@ -55,13 +55,13 @@ func (s *ServiceAffinityRoute) Notify(invokers []base.Invoker) {
 
 	url := invokers[0].GetURL()
 	if url == nil {
-		logger.Error("Failed to notify a Service Affinity rule, because url is empty")
+		logger.Error("[Affinity] failed to notify service affinity rule: url is empty")
 		return
 	}
 
 	dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
 	if dynamicConfiguration == nil {
-		logger.Infof("Config center does not start, Affinity router will not be enabled")
+		logger.Infof("[Affinity] config center not started, affinity router disabled")
 		return
 	}
 
@@ -69,7 +69,7 @@ func (s *ServiceAffinityRoute) Notify(invokers []base.Invoker) {
 	dynamicConfiguration.AddListener(key, s)
 	value, err := dynamicConfiguration.GetRule(key)
 	if err != nil {
-		logger.Errorf("Failed to query affinity rule, key=%s, err=%v", key, err)
+		logger.Errorf("[Affinity] query affinity rule failed: key=%s, err=%v", key, err)
 		return
 	}
 
@@ -87,7 +87,7 @@ func newApplicationAffinityRouter(url *common.URL) *ApplicationAffinityRoute {
 	applicationName := url.GetParam(constant.ApplicationKey, "")
 
 	if applicationName == "" {
-		logger.Errorf("Application affinity router must set application name")
+		logger.Errorf("[Affinity] application name is required")
 		return nil
 	}
 
@@ -108,19 +108,19 @@ func (s *ApplicationAffinityRoute) Notify(invokers []base.Invoker) {
 	}
 	url := invokers[0].GetURL()
 	if url == nil {
-		logger.Error("Failed to notify a dynamically affinity rule, because url is empty")
+		logger.Error("[Affinity] failed to notify dynamic affinity rule: url is empty")
 		return
 	}
 
 	dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
 	if dynamicConfiguration == nil {
-		logger.Infof("Config center does not start, Affinity router will not be enabled")
+		logger.Infof("[Affinity] config center not started, affinity router disabled")
 		return
 	}
 
 	providerApplication := url.GetParam("application", "")
 	if providerApplication == "" || providerApplication == s.currentApplication {
-		logger.Warn("Affinity router get providerApplication is empty, will not subscribe to provider app rules.")
+		logger.Warnf("[Affinity] provider application is empty or equals to current, will not subscribe")
 		return
 	}
 
@@ -134,7 +134,7 @@ func (s *ApplicationAffinityRoute) Notify(invokers []base.Invoker) {
 		dynamicConfiguration.AddListener(key, s)
 		value, err := dynamicConfiguration.GetRule(key)
 		if err != nil {
-			logger.Errorf("Failed to query affinity rule, key=%s, err=%v", key, err)
+			logger.Errorf("[Affinity] query affinity rule failed: key=%s, err=%v", key, err)
 			return
 		}
 
@@ -160,12 +160,12 @@ func (a *affinityRoute) Process(event *config_center.ConfigChangeEvent) {
 	case remoting.EventTypeAdd, remoting.EventTypeUpdate:
 		cfg, err := parseConfig(event.Value.(string))
 		if err != nil {
-			logger.Errorf("Failed to parse affinity config, key=%s, err=%v", a.key, err)
+			logger.Errorf("[Affinity] parse affinity config failed: key=%s, err=%v", a.key, err)
 			return
 		}
 
 		if cfg.AffinityAware.Ratio < 0 || cfg.AffinityAware.Ratio > 100 {
-			logger.Errorf("Failed to parse affinity config, affinity.ratio=%d, expect 0-100", a.ratio)
+			logger.Errorf("[Affinity] invalid affinity ratio: ratio=%d, expected=0-100", cfg.AffinityAware.Ratio)
 			return
 		}
 
@@ -176,7 +176,7 @@ func (a *affinityRoute) Process(event *config_center.ConfigChangeEvent) {
 		rule := strings.Join([]string{key, key}, "=$")
 		f, err := condition.NewFieldMatcher(rule)
 		if err != nil {
-			logger.Errorf("Failed to parse affinity config, key=%s, rule=%s ,err=%v", a.key, rule, err)
+			logger.Errorf("[Affinity] parse affinity rule failed: key=%s, rule=%s, err=%v", a.key, rule, err)
 			return
 		}
 
