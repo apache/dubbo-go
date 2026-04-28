@@ -83,7 +83,7 @@ func (m *multiplyConditionRoute) route(invokers []base.Invoker, url *common.URL,
 			if len(invokers) == 0 {
 				routeChains, ok := invocation.Attributes()["condition-chain"].([]string)
 				if ok {
-						logger.Errorf("[Condition] route returned empty set: chain=%s", strings.Join(routeChains, "-->"))
+					logger.Errorf("[Condition] route returned empty set: chain=%s", strings.Join(routeChains, "-->"))
 				}
 				return []base.Invoker{}
 			}
