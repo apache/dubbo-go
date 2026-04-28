@@ -27,6 +27,7 @@ import (
 	gxset "github.com/dubbogo/gost/container/set"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -503,14 +504,14 @@ func newRegistryProtocolWithSubscribedExporter(
 	extension.SetProtocol(protocolwrapper.FILTER, protocolwrapper.NewMockProtocolFilter)
 
 	registryURL, err := common.NewURL("recording://127.0.0.1:1111")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	providerURL, err := common.NewURL(
 		"dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService",
 		common.WithParamsValue(constant.ClusterKey, "mock"),
 		common.WithParamsValue(constant.GroupKey, "group"),
 		common.WithParamsValue(constant.VersionKey, "1.0.0"),
 	)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	registryURL.SubURL = providerURL
 
 	originInvoker := base.NewBaseInvoker(registryURL)
