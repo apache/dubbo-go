@@ -19,11 +19,14 @@ package config
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 )
 
 import (
+	gostlogger "github.com/dubbogo/gost/log/logger"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -46,6 +49,25 @@ func (hs *HelloService) Reference() string {
 
 func (hs *HelloService) JavaClassName() string {
 	return "org.apache.dubbo.HelloService"
+}
+
+type VariadicHelloService struct{}
+
+func (hs *VariadicHelloService) Fanout(ctx context.Context, names ...string) error {
+	return nil
+}
+
+func (hs *VariadicHelloService) Reference() string {
+	return "VariadicHelloService"
+}
+
+type serviceConfigCaptureWarnLogger struct {
+	gostlogger.Logger
+	warns []string
+}
+
+func (l *serviceConfigCaptureWarnLogger) Warnf(template string, args ...any) {
+	l.warns = append(l.warns, fmt.Sprintf(template, args...))
 }
 
 func TestNewServiceConfigBuilder(t *testing.T) {
@@ -124,4 +146,46 @@ func TestNewServiceConfigBuilder(t *testing.T) {
 		//err := serviceConfig.Export()
 		assert.NotNil(t, serviceConfig.rpcService)
 	})
+}
+
+func TestServiceConfigExportWarnsOnVariadicRPCMethods(t *testing.T) {
+	prev := gostlogger.GetLogger()
+	capture := &serviceConfigCaptureWarnLogger{Logger: prev}
+	gostlogger.SetLogger(capture)
+	t.Cleanup(func() {
+		gostlogger.SetLogger(prev)
+	})
+
+	serviceConfig := newEmptyServiceConfig()
+	serviceConfig.Interface = "com.example.VariadicHelloService"
+	serviceConfig.NotRegister = true
+	serviceConfig.rpcService = &VariadicHelloService{}
+
+	err := serviceConfig.Export()
+	require.NoError(t, err)
+
+	warns := strings.Join(capture.warns, "\n")
+	assert.Contains(t, warns, serviceConfig.Interface)
+	assert.Contains(t, warns, "Fanout")
+}
+
+func TestServiceConfigExportDoesNotWarnOnNonVariadicRPCMethods(t *testing.T) {
+	prev := gostlogger.GetLogger()
+	capture := &serviceConfigCaptureWarnLogger{Logger: prev}
+	gostlogger.SetLogger(capture)
+	t.Cleanup(func() {
+		gostlogger.SetLogger(prev)
+	})
+
+	serviceConfig := newEmptyServiceConfig()
+	serviceConfig.Interface = "org.apache.dubbo.HelloService"
+	serviceConfig.NotRegister = true
+	serviceConfig.rpcService = &HelloService{}
+
+	err := serviceConfig.Export()
+	require.NoError(t, err)
+
+	for _, warn := range capture.warns {
+		assert.NotContains(t, warn, "variadic RPC method")
+	}
 }

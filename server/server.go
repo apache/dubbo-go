@@ -178,7 +178,17 @@ func (s *Server) genSvcOpts(handler any, info *common.ServiceInfo, opts ...Servi
 	newSvcOpts.Id = interfaceName
 	newSvcOpts.Implement(handler)
 	newSvcOpts.info = enhanceServiceInfo(info)
+	// Warn on exported variadic RPC methods without blocking registration.
+	common.WarnVariadicRPCMethods(serviceNameForWarning(interfaceName, svcConf.Interface), handler)
 	return newSvcOpts, nil
+}
+
+// serviceNameForWarning prefers the configured interface name in warning output.
+func serviceNameForWarning(reference, configuredInterface string) string {
+	if configuredInterface != "" {
+		return configuredInterface
+	}
+	return reference
 }
 
 // isNillable checks if a reflect.Value's kind supports nil checking.
