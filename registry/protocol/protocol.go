@@ -278,8 +278,7 @@ func (proto *registryProtocol) reExport(invoker base.Invoker, newUrl *common.URL
 
 		oldProviderURL := getProviderUrl(invoker)
 		oldOverrideURL := getSubscribedOverrideUrl(oldProviderURL)
-		oldOverrideKey := oldOverrideURL.String()
-		proto.overrideListeners.Delete(oldOverrideKey)
+		proto.unsubscribeOverrideListener(proto.getRegistry(getRegistryUrl(invoker)), oldOverrideURL)
 		proto.serviceConfigurationListeners.Delete(oldProviderURL.ServiceKey())
 
 		// oldExporter UnExport function unRegister rpcService from the serviceMap, so need register it again as far as possible
@@ -483,7 +482,8 @@ func (proto *registryProtocol) Destroy() {
 		if err := reg.UnRegister(exporter.registerUrl); err != nil {
 			logger.Warnf("Unregister consumer url failed, %s, error: %w", exporter.registerUrl.String(), err)
 		}
-		// TODO unsubscribeUrl
+		proto.unsubscribeOverrideListener(reg, exporter.subscribeUrl)
+		proto.serviceConfigurationListeners.Delete(getProviderUrl(exporter.originInvoker).ServiceKey())
 
 		// close all protocol server after consumerUpdateWait + stepTimeout(max time wait during
 		// waitAndAcceptNewRequests procedure)
@@ -538,6 +538,30 @@ func (proto *registryProtocol) UnregisterRegistries() {
 		}
 		return true
 	})
+}
+
+func (proto *registryProtocol) unsubscribeOverrideListener(reg registry.Registry, overrideURL *common.URL) {
+	if reg == nil || overrideURL == nil {
+		return
+	}
+
+	overrideKey := overrideURL.String()
+	listener, ok := proto.overrideListeners.Load(overrideKey)
+	if !ok {
+		return
+	}
+
+	overrideListener, ok := listener.(*overrideSubscribeListener)
+	if !ok {
+		logger.Warnf("Unexpected override listener type %T for %s", listener, overrideKey)
+		return
+	}
+
+	if err := reg.UnSubscribe(overrideURL, overrideListener); err != nil {
+		logger.Warnf("Unsubscribe override url failed, %s, error: %v", overrideKey, err)
+		return
+	}
+	proto.overrideListeners.CompareAndDelete(overrideKey, listener)
 }
 
 func getRegistryUrl(invoker base.Invoker) *common.URL {

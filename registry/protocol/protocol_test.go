@@ -18,6 +18,7 @@
 package protocol
 
 import (
+	"sync"
 	"testing"
 	"time"
 )
@@ -306,6 +307,19 @@ func TestDestroyCleansConfigurationListeners(t *testing.T) {
 	assert.Equal(t, 0, registry.CountSyncMapEntries(regProtocol.serviceConfigurationListeners))
 }
 
+func TestDestroyUnsubscribesOverrideListener(t *testing.T) {
+	regProtocol, recordingRegistry, originInvoker, exporter, listener := newRegistryProtocolWithSubscribedExporter(t)
+	regProtocol.bounds.Store(getCacheKey(originInvoker), exporter)
+
+	regProtocol.Destroy()
+
+	assert.Equal(t, 1, recordingRegistry.unSubscribeCount)
+	assert.Equal(t, exporter.subscribeUrl.String(), recordingRegistry.unSubscribeURL.String())
+	assert.Same(t, listener, recordingRegistry.unSubscribeListener)
+	assert.Equal(t, 0, registry.CountSyncMapEntries(regProtocol.overrideListeners))
+	assert.Equal(t, 0, registry.CountSyncMapEntries(regProtocol.serviceConfigurationListeners))
+}
+
 func TestReExportReplacesConfigurationListeners(t *testing.T) {
 	extension.SetDefaultConfigurator(configurator.NewMockConfigurator)
 
@@ -338,6 +352,33 @@ func TestReExportReplacesConfigurationListeners(t *testing.T) {
 
 	assert.Equal(t, 1, registry.CountSyncMapEntries(regProtocol.overrideListeners))
 	assert.Equal(t, 1, registry.CountSyncMapEntries(regProtocol.serviceConfigurationListeners))
+}
+
+func TestReExportUnsubscribesOldOverrideListener(t *testing.T) {
+	regProtocol, recordingRegistry, originInvoker, exporter, listener := newRegistryProtocolWithSubscribedExporter(t)
+	regProtocol.bounds.Store(getCacheKey(originInvoker), exporter)
+
+	newURL := originInvoker.GetURL().Clone()
+	newURL.SubURL = originInvoker.GetURL().SubURL.Clone()
+	newURL.SubURL.SetParam(constant.ClusterKey, "mock1")
+	regProtocol.reExport(originInvoker, newURL)
+
+	assert.Equal(t, 1, recordingRegistry.unSubscribeCount)
+	assert.Equal(t, exporter.subscribeUrl.String(), recordingRegistry.unSubscribeURL.String())
+	assert.Same(t, listener, recordingRegistry.unSubscribeListener)
+	assert.Equal(t, 1, registry.CountSyncMapEntries(regProtocol.overrideListeners))
+	assert.Equal(t, 1, registry.CountSyncMapEntries(regProtocol.serviceConfigurationListeners))
+}
+
+func TestUnsubscribeOverrideListenerKeepsUnexpectedListenerType(t *testing.T) {
+	regProtocol, recordingRegistry, _, exporter, _ := newRegistryProtocolWithSubscribedExporter(t)
+	regProtocol.overrideListeners.Store(exporter.subscribeUrl.String(), "unexpected-listener")
+
+	regProtocol.unsubscribeOverrideListener(recordingRegistry, exporter.subscribeUrl)
+
+	assert.Equal(t, 0, recordingRegistry.unSubscribeCount)
+	_, ok := regProtocol.overrideListeners.Load(exporter.subscribeUrl.String())
+	assert.True(t, ok)
 }
 
 func TestExportWithOverrideListener(t *testing.T) {
@@ -429,6 +470,65 @@ func TestGetProviderUrlWithHideKey(t *testing.T) {
 	assert.NotContains(t, providerUrl.GetParams(), ".c")
 	assert.NotContains(t, providerUrl.GetParams(), ".d")
 	assert.Contains(t, providerUrl.GetParams(), "a")
+}
+
+type unsubscribeRecordingRegistry struct {
+	*registry.MockRegistry
+	unSubscribeURL      *common.URL
+	unSubscribeListener registry.NotifyListener
+	unSubscribeCount    int
+}
+
+func (r *unsubscribeRecordingRegistry) UnSubscribe(url *common.URL, notifyListener registry.NotifyListener) error {
+	r.unSubscribeCount++
+	r.unSubscribeURL = url
+	r.unSubscribeListener = notifyListener
+	return nil
+}
+
+func newRegistryProtocolWithSubscribedExporter(
+	t *testing.T,
+) (*registryProtocol, *unsubscribeRecordingRegistry, base.Invoker, *exporterChangeableWrapper, *overrideSubscribeListener) {
+	t.Helper()
+
+	var recordingRegistry *unsubscribeRecordingRegistry
+	extension.SetRegistry("recording", func(url *common.URL) (registry.Registry, error) {
+		mockRegistry, err := registry.NewMockRegistry(url)
+		if err != nil {
+			return nil, err
+		}
+		recordingRegistry = &unsubscribeRecordingRegistry{MockRegistry: mockRegistry.(*registry.MockRegistry)}
+		return recordingRegistry, nil
+	})
+	extension.SetProtocol(protocolwrapper.FILTER, protocolwrapper.NewMockProtocolFilter)
+
+	registryURL, err := common.NewURL("recording://127.0.0.1:1111")
+	assert.NoError(t, err)
+	providerURL, err := common.NewURL(
+		"dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService",
+		common.WithParamsValue(constant.ClusterKey, "mock"),
+		common.WithParamsValue(constant.GroupKey, "group"),
+		common.WithParamsValue(constant.VersionKey, "1.0.0"),
+	)
+	assert.NoError(t, err)
+	registryURL.SubURL = providerURL
+
+	originInvoker := base.NewBaseInvoker(registryURL)
+	regProtocol := newRegistryProtocol()
+	regProtocol.initConfigurationListeners(providerURL)
+	regProtocol.getRegistry(registryURL)
+
+	overrideURL := getSubscribedOverrideUrl(providerURL)
+	listener := newOverrideSubscribeListener(overrideURL, originInvoker, regProtocol)
+	regProtocol.overrideListeners.Store(overrideURL.String(), listener)
+	serviceConfigurationListener := newServiceConfigurationListener(listener, providerURL)
+	regProtocol.serviceConfigurationListeners.Store(providerURL.ServiceKey(), serviceConfigurationListener)
+
+	exporter := newExporterChangeableWrapper(originInvoker, base.NewBaseExporter("recording-key", base.NewBaseInvoker(providerURL), &sync.Map{}))
+	exporter.SetRegisterUrl(getUrlToRegistry(providerURL, registryURL))
+	exporter.SetSubscribeUrl(overrideURL)
+
+	return regProtocol, recordingRegistry, originInvoker, exporter, listener
 }
 
 // MockRPCService is a mock RPC service for testing
