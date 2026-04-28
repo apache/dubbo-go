@@ -477,8 +477,8 @@ func TestServeContextDoesNotRestartAfterGracefulShutdownCompletes(t *testing.T) 
 
 	cancel()
 	select {
-	case err := <-serveDone:
-		require.ErrorIs(t, err, context.Canceled)
+	case serveErr := <-serveDone:
+		require.ErrorIs(t, serveErr, context.Canceled)
 	case <-time.After(time.Second):
 		t.Fatal("ServeContext did not return after context cancellation")
 	}
