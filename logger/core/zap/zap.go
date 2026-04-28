@@ -84,7 +84,15 @@ func instantiate(config *common.URL) (log logger.Logger, err error) {
 	log = zap.New(zapcore.NewCore(
 		encoder, zapcore.NewMultiWriteSyncer(sync...), zapAtomicLevel,
 	), zap.AddCaller(), zap.AddCallerSkip(1)).Sugar()
-	return &dubbogoLogger.DubboLogger{Logger: log, DynamicLevel: zapAtomicLevel}, nil
+
+	baseLogger := &dubbogoLogger.DubboLogger{Logger: log, DynamicLevel: zapAtomicLevel}
+	traceEnabled := config.GetParamBool(constant.LoggerTraceEnabledKey, false)
+	if traceEnabled {
+		recordErrorToSpan := config.GetParamBool(constant.LoggerTraceRecordErrorKey, true)
+		return NewZapCtxLogger(baseLogger, recordErrorToSpan), nil
+	}
+
+	return baseLogger, nil
 }
 
 func NewDefault() *dubbogoLogger.DubboLogger {
