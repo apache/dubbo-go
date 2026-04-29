@@ -188,6 +188,11 @@ func (p *polarisRouter) Route(invokers []base.Invoker, url *common.URL,
 		}
 	}
 
+	if len(ret) == 0 {
+		logger.Warnf("[Router][Polaris] route rule not match for service %s, fallback to original invokers", service)
+		return invokers
+	}
+
 	return ret
 }
 
