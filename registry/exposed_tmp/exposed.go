@@ -18,6 +18,10 @@
 package exposed_tmp
 
 import (
+	"context"
+)
+
+import (
 	"github.com/dubbogo/gost/log/logger"
 )
 
@@ -29,6 +33,11 @@ import (
 
 // RegisterServiceInstance register service instance
 func RegisterServiceInstance() error {
+	return RegisterServiceInstanceContext(context.Background())
+}
+
+// RegisterServiceInstanceContext registers service instances and checks cancellation between registries.
+func RegisterServiceInstanceContext(ctx context.Context) error {
 	defer func() {
 		// TODO: remove this recover func, this just to avoid some unit test failed, this will not happen in user side mostly
 		// config test -> metadata exporter -> dubbo protocol/remoting -> config, cycle import will occur
@@ -40,8 +49,31 @@ func RegisterServiceInstance() error {
 	protocol := extension.GetProtocol(constant.RegistryKey)
 	if rf, ok := protocol.(registry.RegistryFactory); ok {
 		for _, r := range rf.GetRegistries() {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
 			if sdr, ok := r.(registry.ServiceDiscoveryRegistry); ok {
 				if err := sdr.RegisterService(); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// UnregisterServiceInstance unregisters the current service instance from all service discovery registries.
+func UnregisterServiceInstance() error {
+	defer func() {
+		if err := recover(); err != nil {
+			logger.Errorf("unregister service instance failed,please check if registry protocol is imported, error: %v", err)
+		}
+	}()
+	protocol := extension.GetProtocol(constant.RegistryKey)
+	if rf, ok := protocol.(registry.RegistryFactory); ok {
+		for _, r := range rf.GetRegistries() {
+			if sdr, ok := r.(registry.ServiceDiscoveryRegistry); ok {
+				if err := sdr.UnRegisterService(); err != nil {
 					return err
 				}
 			}
