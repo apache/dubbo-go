@@ -69,6 +69,7 @@ type RegistryDirectory struct {
 	cacheInvokersMap               *sync.Map // use sync.map
 	consumerURL                    *common.URL
 	cacheOriginUrl                 *common.URL
+	cachedProviderEvents           []*registry.ServiceEvent
 	configurators                  []config_center.Configurator
 	configuratorsLock              sync.RWMutex
 	consumerConfigurationListener  *consumerConfigurationListener
@@ -298,18 +299,43 @@ func (dir *RegistryDirectory) refreshInvokers(event *registry.ServiceEvent) {
 // not in the incoming list can be removed.  The Action of serviceEvent should be EventTypeUpdate or EventTypeAdd.
 func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent, callback func()) {
 	var (
-		oldInvokers []protocolbase.Invoker
-		addEvents   []*registry.ServiceEvent
+		oldInvokers       []protocolbase.Invoker
+		incomingProviders []*registry.ServiceEvent
+		providerEvents    []*registry.ServiceEvent
+		configuratorURLs  []*common.URL
 	)
-	dir.overrideUrl(dir.GetDirectoryUrl())
-	referenceUrl := dir.GetDirectoryUrl().SubURL
-
-	// loop the events to check the Action should be EventTypeUpdate.
 	for _, event := range events {
 		if event.Action != remoting.EventTypeUpdate && event.Action != remoting.EventTypeAdd {
 			panic("Your implements of register center is wrong, " +
 				"please check the Action of ServiceEvent should be EventTypeUpdate")
 		}
+		if isConfiguratorURL(event.Service) {
+			configuratorURLs = append(configuratorURLs, event.Service)
+			continue
+		}
+		incomingProviders = append(incomingProviders, event)
+	}
+	if configuratorURLs != nil {
+		dir.replaceConfigurators(configuratorURLs)
+	}
+	defer callback()
+	if len(incomingProviders) > 0 {
+		providerEvents = incomingProviders
+		dir.cacheProviderEvents(providerEvents)
+	} else if len(events) > 0 {
+		providerEvents = dir.cachedProviderEventsSnapshot()
+	} else {
+		dir.cacheProviderEvents(nil)
+	}
+	if len(providerEvents) == 0 && len(events) > 0 {
+		return
+	}
+
+	dir.overrideUrl(dir.GetDirectoryUrl())
+	referenceUrl := dir.GetDirectoryUrl().SubURL
+
+	// loop the events to check the Action should be EventTypeUpdate.
+	for _, event := range providerEvents {
 		// Originally it will Merge URL many times, now we just execute once.
 		// MergeURL is executed once and put the result into Event. After this, the key will get from Event.Key().
 		newUrl := dir.convertUrl(event)
@@ -317,15 +343,13 @@ func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent
 		dir.overrideUrl(newUrl)
 		event.Update(newUrl)
 	}
-	// After notify all addresses, do some callback.
-	defer callback()
 	func() {
 		// this lock is work at batch update of InvokeCache
 		dir.registerLock.Lock()
 		defer dir.registerLock.Unlock()
 		// get need clear invokers from original invoker list
 		dir.cacheInvokersMap.Range(func(k, v any) bool {
-			if !dir.eventMatched(k.(string), events) {
+			if !dir.eventMatched(k.(string), providerEvents) {
 				// delete unused invoker from cache
 				if invoker := dir.uncacheInvokerWithKey(k.(string)); invoker != nil {
 					oldInvokers = append(oldInvokers, invoker)
@@ -333,15 +357,8 @@ func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent
 			}
 			return true
 		})
-		// get need add invokers from events
-		for _, event := range events {
-			// Get the key from Event.Key()
-			if _, ok := dir.cacheInvokersMap.Load(event.Key()); !ok {
-				addEvents = append(addEvents, event)
-			}
-		}
 		// loop the serviceEvents
-		for _, event := range addEvents {
+		for _, event := range providerEvents {
 			logger.Debugf("[Registry Directory] registry changed, result{%s}", event)
 			if event != nil && event.Service != nil {
 				logger.Infof("[Registry Directory] selector add service url{%s}", event.Service.String())
@@ -400,6 +417,9 @@ func (dir *RegistryDirectory) cacheInvokerByEvent(event *registry.ServiceEvent) 
 		switch event.Action {
 		case remoting.EventTypeAdd, remoting.EventTypeUpdate:
 			u := dir.convertUrl(event)
+			if u == nil && dir.cacheOriginUrl == nil {
+				return nil, nil
+			}
 			logger.Infof("[Registry Directory] selector add service url{%s}", event.Service)
 			if u != nil && constant.RouterProtocol == u.Protocol {
 				dir.configRouters()
@@ -431,6 +451,51 @@ func (dir *RegistryDirectory) convertUrl(res *registry.ServiceEvent) *common.URL
 		ret = nil
 	}
 	return ret
+}
+
+func isConfiguratorURL(url *common.URL) bool {
+	return url != nil && (url.Protocol == constant.OverrideProtocol ||
+		url.GetParam(constant.CategoryKey, constant.DefaultCategory) == constant.ConfiguratorsCategory)
+}
+
+func (dir *RegistryDirectory) replaceConfigurators(urls []*common.URL) {
+	dir.configuratorsLock.Lock()
+	defer dir.configuratorsLock.Unlock()
+	dir.configurators = registry.ToConfigurators(urls, extension.GetDefaultConfiguratorFunc())
+}
+
+func (dir *RegistryDirectory) cacheProviderEvents(events []*registry.ServiceEvent) {
+	dir.registerLock.Lock()
+	defer dir.registerLock.Unlock()
+	dir.cachedProviderEvents = cloneServiceEvents(events)
+}
+
+func (dir *RegistryDirectory) cachedProviderEventsSnapshot() []*registry.ServiceEvent {
+	dir.registerLock.Lock()
+	defer dir.registerLock.Unlock()
+	return cloneServiceEvents(dir.cachedProviderEvents)
+}
+
+func cloneServiceEvents(events []*registry.ServiceEvent) []*registry.ServiceEvent {
+	if len(events) == 0 {
+		return nil
+	}
+
+	cloned := make([]*registry.ServiceEvent, 0, len(events))
+	for _, event := range events {
+		if event == nil {
+			continue
+		}
+		clonedEvent := &registry.ServiceEvent{
+			Action:  event.Action,
+			KeyFunc: event.KeyFunc,
+		}
+		if event.Service != nil {
+			clonedEvent.Service = event.Service.Clone()
+		}
+		cloned = append(cloned, clonedEvent)
+	}
+	return cloned
 }
 
 func (dir *RegistryDirectory) toGroupInvokers() []protocolbase.Invoker {
@@ -702,6 +767,13 @@ func (dir *RegistryDirectory) Destroy() {
 		for _, ivk := range invokers {
 			ivk.Destroy()
 		}
+		dir.cacheInvokersMap.Range(func(key, value any) bool {
+			dir.cacheInvokersMap.Delete(key)
+			return true
+		})
+		dir.registerLock.Lock()
+		dir.cachedProviderEvents = nil
+		dir.registerLock.Unlock()
 	})
 	metrics.Publish(metricsRegistry.NewDirectoryEvent(metricsRegistry.NumAllDec))
 }
