@@ -175,6 +175,13 @@ func (s *Server) RegisterCompatStreamHandler(
 	return nil
 }
 
+func (s *Server) SetFallbackHTTPHandler(h http.Handler) {
+	if s.mux == nil {
+		return
+	}
+	s.mux.SetFallbackHandler(h)
+}
+
 func (s *Server) Run(callProtocol string, tlsConf *tls.Config) error {
 	// Support for starting HTTP/2 and HTTP/3 servers simultaneously.
 	switch callProtocol {

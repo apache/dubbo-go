@@ -30,6 +30,7 @@ import (
 const (
 	methodRouteMuxGetUserPath      = "/Service/GetUser"
 	methodRouteMuxGetUserLowerPath = "/Service/getUser"
+	methodRouteMuxHealthPath       = "/healthz"
 	methodRouteMuxNotFoundBody     = "404 page not found\n"
 )
 
@@ -205,4 +206,55 @@ func TestMethodRouteMuxFallbackCollisionFirstRegistrationWins(t *testing.T) {
 	resp := httptest.NewRecorder()
 	entry.handler.ServeHTTP(resp, req)
 	assert.Equal(t, "first", resp.Body.String())
+}
+
+func TestMethodRouteMuxUsesFallbackHandlerOnMiss(t *testing.T) {
+	mux := newMethodRouteMux()
+	mux.SetFallbackHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("http-fallback"))
+	}))
+
+	req := httptest.NewRequest(http.MethodGet, methodRouteMuxHealthPath, nil)
+	resp := httptest.NewRecorder()
+
+	mux.ServeHTTP(resp, req)
+
+	assert.Equal(t, http.StatusOK, resp.Code)
+	assert.Equal(t, "http-fallback", resp.Body.String())
+}
+
+func TestMethodRouteMuxTripleMatchWinsOverFallback(t *testing.T) {
+	mux := newMethodRouteMux()
+	mux.Handle(methodRouteMuxGetUserPath, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("triple"))
+	}))
+	mux.SetFallbackHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("http-fallback"))
+	}))
+
+	req := httptest.NewRequest(http.MethodPost, methodRouteMuxGetUserPath, nil)
+	resp := httptest.NewRecorder()
+
+	mux.ServeHTTP(resp, req)
+
+	assert.Equal(t, http.StatusOK, resp.Code)
+	assert.Equal(t, "triple", resp.Body.String())
+}
+
+func TestMethodRouteMuxCaseFallbackWinsOverHTTPFallback(t *testing.T) {
+	mux := newMethodRouteMux()
+	mux.Handle(methodRouteMuxGetUserPath, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("triple-case-fallback"))
+	}))
+	mux.SetFallbackHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("http-fallback"))
+	}))
+
+	req := httptest.NewRequest(http.MethodPost, methodRouteMuxGetUserLowerPath, nil)
+	resp := httptest.NewRecorder()
+
+	mux.ServeHTTP(resp, req)
+
+	assert.Equal(t, http.StatusOK, resp.Code)
+	assert.Equal(t, "triple-case-fallback", resp.Body.String())
 }

@@ -235,6 +235,27 @@ func tripleRouteRequest(client *http.Client, url string) (int, string, error) {
 	return resp.StatusCode, string(body), nil
 }
 
+func simpleHTTPRequest(client *http.Client, method string, url string) (int, string, error) {
+	req, err := http.NewRequest(method, url, nil)
+	if err != nil {
+		return 0, "", err
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return 0, "", err
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return 0, "", err
+	}
+	return resp.StatusCode, string(body), nil
+}
+
 func waitTripleRouteReady(t *testing.T, client *http.Client, url string) {
 	t.Helper()
 
@@ -252,4 +273,147 @@ func waitTripleRouteReady(t *testing.T, client *http.Client, url string) {
 	}
 
 	t.Fatalf("triple route not ready: status=%d body=%q err=%v", lastStatus, lastBody, lastErr)
+}
+
+func waitSimpleHTTPReady(t *testing.T, client *http.Client, method string, url string, wantBody string) {
+	t.Helper()
+
+	deadline := time.Now().Add(5 * time.Second)
+	var lastStatus int
+	var lastBody string
+	var lastErr error
+
+	for time.Now().Before(deadline) {
+		lastStatus, lastBody, lastErr = simpleHTTPRequest(client, method, url)
+		if lastErr == nil && lastStatus == http.StatusOK && lastBody == wantBody {
+			return
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+
+	t.Fatalf("http handler not ready: status=%d body=%q err=%v", lastStatus, lastBody, lastErr)
+}
+
+// TestMountedHTTPHandlerStartsTransportWithoutTripleServices covers the
+// mount-first flow where the shared listener is started for plain HTTP traffic
+// before any Triple service has been exported.
+func TestAttachedHTTPHandlerStartsTransportWithoutTripleServices(t *testing.T) {
+	port := testFreePort(t)
+
+	srv, err := NewServer(
+		WithServerProtocol(
+			protocol.WithTriple(),
+			protocol.WithIp("127.0.0.1"),
+			protocol.WithPort(port),
+		),
+	)
+	require.NoError(t, err)
+
+	// Attach-only startup should bring up the shared listener even before any
+	// Triple service has been exported.
+	err = srv.AttachHTTPHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/healthz":
+			_, _ = w.Write([]byte("healthy"))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	require.NoError(t, err)
+
+	err = srv.hostAttachedHTTPHandler()
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		extension.GetProtocol(constant.TriProtocol).Destroy()
+	})
+
+	client := &http.Client{Timeout: 2 * time.Second}
+	baseURL := "http://127.0.0.1:" + strconv.Itoa(port)
+
+	waitSimpleHTTPReady(t, client, http.MethodGet, baseURL+"/healthz", "healthy")
+
+	status, body, reqErr := simpleHTTPRequest(client, http.MethodGet, baseURL+"/unknown")
+	require.NoError(t, reqErr)
+	assert.Equal(t, http.StatusNotFound, status)
+	assert.Equal(t, tripleCaseRouteNotFoundBody, body)
+}
+
+// TestAttachedHTTPHandlerCoexistsWithTripleRoutes verifies that the attached HTTP
+// handler remains a transport-level fallback and does not preempt registered
+// Triple procedures on the same listener.
+func TestAttachedHTTPHandlerCoexistsWithTripleRoutes(t *testing.T) {
+	port := testFreePort(t)
+
+	srv, err := NewServer(
+		WithServerProtocol(
+			protocol.WithTriple(),
+			protocol.WithIp("127.0.0.1"),
+			protocol.WithPort(port),
+		),
+	)
+	require.NoError(t, err)
+
+	// The attached handler is the transport-level fallback; Triple routes should
+	// still win whenever the request matches a registered procedure.
+	err = srv.AttachHTTPHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/healthz":
+			_, _ = w.Write([]byte("healthy"))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	require.NoError(t, err)
+
+	service := &TripleCaseRouteService{}
+	info := &common.ServiceInfo{
+		InterfaceName: "com.example.GreetService",
+		ServiceType:   service,
+		Methods: []common.MethodInfo{
+			{
+				Name: "SayHello",
+				Type: constant.CallUnary,
+				ReqInitFunc: func() any {
+					return &emptypb.Empty{}
+				},
+				MethodFunc: func(ctx context.Context, args []any, handler any) (any, error) {
+					req := args[0].(*emptypb.Empty)
+					res, callErr := handler.(*TripleCaseRouteService).SayHello(ctx, req)
+					if callErr != nil {
+						return nil, callErr
+					}
+					return tri.NewResponse(res), nil
+				},
+			},
+		},
+	}
+
+	err = srv.Register(service, info, WithInterface(info.InterfaceName), WithNotRegister())
+	require.NoError(t, err)
+
+	err = srv.hostAttachedHTTPHandler()
+	require.NoError(t, err)
+
+	err = srv.exportServices()
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		extension.GetProtocol(constant.TriProtocol).Destroy()
+	})
+
+	client := &http.Client{Timeout: 2 * time.Second}
+	baseURL := "http://127.0.0.1:" + strconv.Itoa(port)
+
+	waitTripleRouteReady(t, client, baseURL+"/com.example.GreetService/SayHello")
+
+	status, body, reqErr := simpleHTTPRequest(client, http.MethodGet, baseURL+"/healthz")
+	require.NoError(t, reqErr)
+	assert.Equal(t, http.StatusOK, status)
+	assert.Equal(t, "healthy", body)
+
+	status, body, reqErr = tripleRouteRequest(client, baseURL+"/com.example.GreetService/sayHello")
+	require.NoError(t, reqErr)
+	assert.Equal(t, http.StatusOK, status)
+	assert.Equal(t, tripleCaseRouteHelloBody, body)
 }
