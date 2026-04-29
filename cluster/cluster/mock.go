@@ -102,7 +102,7 @@ func (bi *MockInvoker) Invoke(c context.Context, invocation base.Invocation) res
 }
 
 func (bi *MockInvoker) Destroy() {
-	logger.Infof("Destroy invoker: %v", bi.GetURL().String())
+	logger.Infof("[Mock] Destroy invoker url=%s", bi.GetURL().String())
 	bi.destroyed = true
 	bi.available = false
 }

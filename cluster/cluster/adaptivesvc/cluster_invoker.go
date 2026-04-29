@@ -86,21 +86,21 @@ func (ivk *adaptiveServiceClusterInvoker) Invoke(ctx context.Context, invocation
 		}
 	}
 	if remainingStr == "" {
-		logger.Errorf("[adasvc cluster] The %s field type of value %v should be string.",
-			constant.AdaptiveServiceRemainingKey, remainingIface)
+		logger.Errorf("[AdaptiveSvc] %s field type invalid, key=%s value=%v",
+			constant.AdaptiveServiceRemainingKey, constant.AdaptiveServiceRemainingKey, remainingIface)
 		return res
 	}
 	remaining, err := strconv.Atoi(remainingStr)
 	if err != nil {
-		logger.Warnf("the remaining is unexpected, we need a int type, but we got %s, err: %v.", remainingStr, err)
+		logger.Warnf("[AdaptiveSvc] parse remaining failed, remaining=%s err=%v", remainingStr, err)
 		return res
 	}
-	logger.Debugf("[adasvc cluster] The server status was received successfully, %s: %#v",
+	logger.Debugf("[AdaptiveSvc] received server status, %s=%s",
 		constant.AdaptiveServiceRemainingKey, remainingStr)
 	err = metrics.LocalMetrics.SetMethodMetrics(invoker.GetURL(),
 		invocation.MethodName(), metrics.HillClimbing, uint64(remaining))
 	if err != nil {
-		logger.Warnf("adaptive service metrics update is failed, err: %v", err)
+		logger.Warnf("[AdaptiveSvc] update metrics failed, err=%v", err)
 		return &result.RPCResult{Err: err}
 	}
 

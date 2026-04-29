@@ -122,5 +122,5 @@ func convertToIntRange(rawStart, rawEnd string) (int, int, error) {
 }
 
 func logError(pattern, value string) {
-	logger.Errorf("Parse integer error, Invalid condition rule '%s' or value '%s', will ignore.", pattern, value)
+	logger.Errorf("[Scope] parse integer failed: pattern=%s, value=%s", pattern, value)
 }

@@ -127,7 +127,7 @@ func (invoker *BaseClusterInvoker) doSelectInvoker(lb loadbalance.LoadBalance, i
 			return invokers[0]
 		}
 		base.SetInvokerUnhealthyStatus(invokers[0])
-		logger.Errorf("the invokers of %s is nil. ", invokers[0].GetURL().ServiceKey())
+		logger.Errorf("[Cluster] invoker unavailable, serviceKey=%s", invokers[0].GetURL().ServiceKey())
 		return nil
 	}
 
@@ -149,8 +149,7 @@ func (invoker *BaseClusterInvoker) doSelectInvoker(lb loadbalance.LoadBalance, i
 				continue
 			}
 			if !reselectedInvoker.IsAvailable() {
-				logger.Infof("the invoker of %s is not available, maybe some network error happened or the server is shutdown.",
-					invoker.GetURL().Ip)
+				logger.Infof("[Cluster] invoker unavailable, ip=%s", invoker.GetURL().Ip)
 				base.SetInvokerUnhealthyStatus(reselectedInvoker)
 				otherInvokers = getOtherInvokers(otherInvokers, reselectedInvoker)
 				continue

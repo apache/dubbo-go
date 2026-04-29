@@ -131,7 +131,7 @@ func (c *RouterChain) injectStaticRouters(url *common.URL) {
 	}
 	staticRoutersAttr, ok := staticRoutersAttrAny.([]*global.RouterConfig)
 	if !ok {
-		logger.Errorf("failed to type assert routers config: expected []*global.RouterConfig, got %T", staticRoutersAttrAny)
+		logger.Errorf("[Chain] failed to type assert routers config: expected type=%T", staticRoutersAttrAny)
 		return
 	}
 	if len(staticRoutersAttr) == 0 {
@@ -183,7 +183,7 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 	for key, routerFactory := range routerFactories {
 		r, err := routerFactory().NewPriorityRouter(url)
 		if err != nil {
-			logger.Errorf("Build router chain failed with routerFactories key:%s and error:%v", key, err)
+			logger.Errorf("[Chain] build router chain failed: key=%s, error=%v", key, err)
 			continue
 		} else if r == nil {
 			continue
