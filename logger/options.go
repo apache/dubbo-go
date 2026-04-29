@@ -99,3 +99,21 @@ func WithFileCompress() Option {
 		opts.Logger.File.Compress = &b
 	}
 }
+
+func WithTraceIntegration(enabled bool) Option {
+	return func(opts *Options) {
+		if opts.Logger.TraceIntegration == nil {
+			opts.Logger.TraceIntegration = &global.TraceIntegrationConfig{}
+		}
+		opts.Logger.TraceIntegration.Enabled = &enabled
+	}
+}
+
+func WithRecordErrorToSpan(enabled bool) Option {
+	return func(opts *Options) {
+		if opts.Logger.TraceIntegration == nil {
+			opts.Logger.TraceIntegration = &global.TraceIntegrationConfig{}
+		}
+		opts.Logger.TraceIntegration.RecordErrorToSpan = &enabled
+	}
+}

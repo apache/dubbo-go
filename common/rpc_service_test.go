@@ -19,11 +19,14 @@ package common
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"testing"
 )
 
 import (
+	gostlogger "github.com/dubbogo/gost/log/logger"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -89,6 +92,37 @@ type TestService1 struct{}
 
 func (s *TestService1) Reference() string {
 	return referenceTestPathDistinct
+}
+
+// VariadicRPCService exposes variadic RPC methods for detection tests.
+type VariadicRPCService struct{}
+
+func (s *VariadicRPCService) Fanout(ctx context.Context, names ...string) error {
+	return nil
+}
+
+func (s *VariadicRPCService) Merge(ctx context.Context, prefix string, values ...int) (any, error) {
+	return values, nil
+}
+
+func (s *VariadicRPCService) LocalOnly(values ...string) int {
+	return len(values)
+}
+
+// NonRPCVariadicService exposes only local variadic helpers.
+type NonRPCVariadicService struct{}
+
+func (s *NonRPCVariadicService) LocalOnly(values ...string) int {
+	return len(values)
+}
+
+type captureCommonWarnLogger struct {
+	gostlogger.Logger
+	warns []string
+}
+
+func (l *captureCommonWarnLogger) Warnf(template string, args ...any) {
+	l.warns = append(l.warns, fmt.Sprintf(template, args...))
 }
 
 func TestServiceMapRegister(t *testing.T) {
@@ -218,6 +252,39 @@ func TestSuiteMethod(t *testing.T) {
 	assert.True(t, ok)
 	methodType = suiteMethod(method)
 	assert.Nil(t, methodType)
+}
+
+// Test VariadicRPCMethodNames returns exported variadic RPC methods only
+func TestVariadicRPCMethodNames(t *testing.T) {
+	t.Run("returns variadic rpc methods only", func(t *testing.T) {
+		assert.Equal(t, []string{"Fanout", "Merge"}, VariadicRPCMethodNames(&VariadicRPCService{}))
+	})
+
+	t.Run("ignores non-rpc variadic methods", func(t *testing.T) {
+		assert.Empty(t, VariadicRPCMethodNames(&NonRPCVariadicService{}))
+	})
+
+	t.Run("handles nil services", func(t *testing.T) {
+		assert.Empty(t, VariadicRPCMethodNames(nil))
+	})
+}
+
+func TestWarnVariadicRPCMethods(t *testing.T) {
+	prev := gostlogger.GetLogger()
+	capture := &captureCommonWarnLogger{Logger: prev}
+	gostlogger.SetLogger(capture)
+	t.Cleanup(func() {
+		gostlogger.SetLogger(prev)
+	})
+
+	WarnVariadicRPCMethods("com.example.VariadicService", &VariadicRPCService{})
+	require.Len(t, capture.warns, 1)
+	assert.Contains(t, capture.warns[0], "com.example.VariadicService")
+	assert.Contains(t, capture.warns[0], "Fanout, Merge")
+	assert.Contains(t, capture.warns[0], "[]T")
+
+	WarnVariadicRPCMethods("com.example.LocalOnlyService", &NonRPCVariadicService{})
+	assert.Len(t, capture.warns, 1)
 }
 
 type ServiceWithoutRef struct{}

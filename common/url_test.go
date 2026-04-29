@@ -358,6 +358,34 @@ func TestURLGetAttribute(t *testing.T) {
 	assert.Nil(t, rawVal)
 }
 
+func TestURLDeleteAttribute(t *testing.T) {
+	u := URL{}
+	u.SetAttribute("key1", "value1")
+	u.SetAttribute("key2", 123)
+
+	u.DeleteAttribute("key1")
+
+	_, ok := u.GetAttribute("key1")
+	assert.False(t, ok)
+
+	v, ok := u.GetAttribute("key2")
+	assert.True(t, ok)
+	assert.Equal(t, 123, v)
+}
+
+func TestURLClearAttributes(t *testing.T) {
+	u := URL{}
+	u.SetAttribute("key1", "value1")
+	u.SetAttribute("key2", 123)
+
+	u.ClearAttributes()
+
+	_, ok := u.GetAttribute("key1")
+	assert.False(t, ok)
+	_, ok = u.GetAttribute("key2")
+	assert.False(t, ok)
+}
+
 func TestMergeUrl(t *testing.T) {
 	referenceUrlParams := url.Values{}
 	referenceUrlParams.Set(constant.ClusterKey, "random")
@@ -797,6 +825,15 @@ func TestGetCacheInvokerMapKey(t *testing.T) {
 	assert.Contains(t, key, "timestamp=12345")
 }
 
+func TestGetCacheInvokerMapKeyUsesPrimitiveTimestamp(t *testing.T) {
+	u, _ := NewURL("dubbo://127.0.0.1:20000/com.test.Service?interface=com.test.Service&group=g1&version=1.0&timestamp=12345")
+	u.SetParam(constant.TimestampKey, "67890")
+
+	key := u.GetCacheInvokerMapKey()
+
+	assert.Contains(t, key, "timestamp=12345")
+}
+
 func TestServiceKey(t *testing.T) {
 	// with group and version
 	assert.Equal(t, "group/interface:version", ServiceKey("interface", "group", "version"))
@@ -848,6 +885,18 @@ func TestAddParam(t *testing.T) {
 	u.AddParam("key1", "value2")
 	params := u.GetParams()
 	assert.Len(t, params["key1"], 2)
+}
+
+func TestGetParamsReturnsCopy(t *testing.T) {
+	u, err := NewURL("dubbo://127.0.0.1:20000?key1=value1&key2=value2&key2=value3")
+	require.NoError(t, err)
+
+	params := u.GetParams()
+	delete(params, "key1")
+	params["key2"][0] = "changed"
+
+	assert.Equal(t, "value1", u.GetParam("key1", ""))
+	assert.Equal(t, "value2", u.GetParam("key2", ""))
 }
 
 func TestAddParamAvoidNil(t *testing.T) {
@@ -1152,6 +1201,43 @@ func TestMergeURLWithAttributes(t *testing.T) {
 	v2, ok2 := merged.GetAttribute("attr2")
 	assert.True(t, ok2)
 	assert.Equal(t, "attrValue2", v2)
+}
+
+func TestMergeURLAttributeAccessRace(t *testing.T) {
+	u1, _ := NewURL("dubbo://127.0.0.1:20000?key1=value1")
+	u2, _ := NewURL("dubbo://127.0.0.1:20001?key2=value2")
+
+	var wg sync.WaitGroup
+	stop := make(chan struct{})
+
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		for i := 0; ; i++ {
+			select {
+			case <-stop:
+				return
+			default:
+			}
+			u2.SetAttribute("attr", i)
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		for {
+			select {
+			case <-stop:
+				return
+			default:
+			}
+			_ = u1.MergeURL(u2)
+		}
+	}()
+
+	time.Sleep(50 * time.Millisecond)
+	close(stop)
+	wg.Wait()
 }
 
 func TestURLEqualWithCategory(t *testing.T) {
