@@ -21,6 +21,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"sync"
 )
 
@@ -161,6 +162,11 @@ func mergeAttachmentToOutgoing(ctx context.Context, inv base.Invocation) (contex
 	if timeout, ok := inv.GetAttachment(constant.TimeoutKey); ok {
 		ctx = context.WithValue(ctx, tri.TimeoutKey{}, timeout)
 	}
+	// Reset outgoing headers with a fresh empty header before appending.
+	// Without this, AppendToOutgoingContext mutates a shared http.Header pointer
+	// from the parent context, causing traceparent accumulation when the same
+	// parent ctx is reused across serial RPCs (e.g. Service A → B then A → C).
+	ctx = tri.NewOutgoingContext(ctx, http.Header{})
 	for key, valRaw := range inv.Attachments() {
 		if str, ok := valRaw.(string); ok {
 			ctx = tri.AppendToOutgoingContext(ctx, key, str)
@@ -202,6 +208,15 @@ func parseInvocation(ctx context.Context, url *common.URL, invocation base.Invoc
 	return callType, inRaw, method, nil
 }
 
+// tracePropagationKeys lists header keys managed by trace propagators (e.g. W3C TraceContext).
+// These must not be copied from user-supplied ctx attachments into the invocation because the
+// OTEL filter has already injected the correct values for the current span.  Allowing the copy
+// would silently overwrite them with stale upstream values.
+var tracePropagationKeys = map[string]struct{}{
+	"traceparent": {},
+	"tracestate":  {},
+}
+
 // parseAttachments retrieves attachments from users passed-in and URL, then injects them into ctx
 func parseAttachments(ctx context.Context, url *common.URL, invocation base.Invocation) {
 	// retrieve users passed-in attachment
@@ -209,6 +224,10 @@ func parseAttachments(ctx context.Context, url *common.URL, invocation base.Invo
 	if attaRaw != nil {
 		if userAtta, ok := attaRaw.(map[string]any); ok {
 			for key, val := range userAtta {
+				// Skip trace-propagation keys to preserve values injected by the OTEL filter.
+				if _, skip := tracePropagationKeys[key]; skip {
+					continue
+				}
 				invocation.SetAttachment(key, val)
 			}
 		}
