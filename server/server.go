@@ -20,6 +20,7 @@ package server
 
 import (
 	"context"
+	stderrors "errors"
 	"reflect"
 	"sort"
 	"strconv"
@@ -36,6 +37,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/dubboutil"
+	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/metrics/probe"
 	"dubbo.apache.org/dubbo-go/v3/registry/exposed_tmp"
@@ -311,11 +313,13 @@ func enhanceServiceInfo(info *common.ServiceInfo) *common.ServiceInfo {
 	return info
 }
 
-func (s *Server) exportServices() error {
-	// add read lock to protect svcOptsMap data
+func (s *Server) exportServices(ctx context.Context) error {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	for _, svcOpts := range s.svcOptsMap {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 		if err := svcOpts.Export(); err != nil {
 			logger.Errorf("export %s service failed, err: %s", svcOpts.Service.Interface, err)
 			return errors.Wrapf(err, "failed to export service %s", svcOpts.Service.Interface)
@@ -325,6 +329,20 @@ func (s *Server) exportServices() error {
 }
 
 func (s *Server) Serve() error {
+	return s.ServeContext(context.Background())
+}
+
+func (s *Server) ServeContext(ctx context.Context) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if graceful_shutdown.IsDone() {
+		return errors.New("server cannot be started after graceful shutdown completed")
+	}
+
 	s.mu.Lock()
 	if s.serve {
 		// release lock in case causing deadlock
@@ -336,6 +354,13 @@ func (s *Server) Serve() error {
 
 	// release lock in case causing deadlock
 	s.mu.Unlock()
+	defer func() {
+		s.mu.Lock()
+		s.serve = false
+		s.mu.Unlock()
+	}()
+
+	serviceInstanceRegistered := false
 
 	// the registryConfig in ServiceOptions and ServerOptions all need to init a metadataReporter,
 	// when ServiceOptions.init() is called we don't know if a new registry config is set in the future use serviceOption
@@ -351,26 +376,85 @@ func (s *Server) Serve() error {
 	if err := metadataOpts.Init(); err != nil {
 		return err
 	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 
-	if err := s.exportServices(); err != nil {
-		return err
+	if err := s.exportServices(ctx); err != nil {
+		return s.rollbackServeStartWithCause(err, serviceInstanceRegistered)
 	}
-	if err := s.exportInternalServices(); err != nil {
-		return err
+	if err := s.exportInternalServices(ctx); err != nil {
+		return s.rollbackServeStartWithCause(err, serviceInstanceRegistered)
 	}
-	if err := exposed_tmp.RegisterServiceInstance(); err != nil {
-		return err
+	if err := exposed_tmp.RegisterServiceInstanceContext(ctx); err != nil {
+		return s.rollbackServeStartWithCause(err, serviceInstanceRegistered)
 	}
+	serviceInstanceRegistered = true
 
 	// k8s probe ready
 	probe.SetStartupComplete(true)
 	probe.SetReady(true)
+	if err := ctx.Err(); err != nil {
+		return s.rollbackServeStartWithCause(err, serviceInstanceRegistered)
+	}
 
-	select {}
+	if done := ctx.Done(); done != nil {
+		select {
+		case <-graceful_shutdown.Done():
+			return graceful_shutdown.Shutdown(context.Background())
+		case <-done:
+			return graceful_shutdown.Shutdown(ctx)
+		}
+	}
+
+	<-graceful_shutdown.Done()
+	return graceful_shutdown.Shutdown(context.Background())
+}
+
+func (s *Server) rollbackServeStartWithCause(cause error, serviceInstanceRegistered bool) error {
+	if rollbackErr := s.rollbackServeStart(serviceInstanceRegistered); rollbackErr != nil {
+		return stderrors.Join(cause, errors.Wrap(rollbackErr, "startup rollback failed"))
+	}
+	return cause
+}
+
+func (s *Server) rollbackServeStart(serviceInstanceRegistered bool) error {
+	probe.SetReady(false)
+	probe.SetStartupComplete(false)
+
+	s.unexportInternalServices()
+	s.unexportServices()
+
+	if serviceInstanceRegistered {
+		if err := exposed_tmp.UnregisterServiceInstance(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Server) unexportServices() {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	for _, svcOpts := range s.svcOptsMap {
+		if svcOpts != nil {
+			svcOpts.Unexport()
+		}
+	}
+}
+
+func (s *Server) unexportInternalServices() {
+	internalProLock.Lock()
+	defer internalProLock.Unlock()
+	for _, service := range internalProServices {
+		if service != nil && service.svcOpts != nil {
+			service.svcOpts.Unexport()
+		}
+	}
 }
 
 // In order to expose internal services
-func (s *Server) exportInternalServices() error {
+func (s *Server) exportInternalServices(ctx context.Context) error {
 	cfg := &ServiceOptions{}
 
 	cfg.Application = s.cfg.Application
@@ -383,6 +467,9 @@ func (s *Server) exportInternalServices() error {
 	internalProLock.Lock()
 	defer internalProLock.Unlock()
 	for _, service := range internalProServices {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		if service.Init == nil {
 			return errors.New("[internal service]internal service init func is empty, please set the init func correctly")
 		}
@@ -405,6 +492,9 @@ func (s *Server) exportInternalServices() error {
 	})
 
 	for _, service := range services {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		if service.BeforeExport != nil {
 			service.BeforeExport(service.svcOpts)
 		}
