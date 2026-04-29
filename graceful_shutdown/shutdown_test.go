@@ -20,6 +20,7 @@ package graceful_shutdown
 import (
 	"context"
 	"errors"
+	"os"
 	"os/signal"
 	"sync"
 	"sync/atomic"
@@ -146,6 +147,32 @@ func TestInit(t *testing.T) {
 	// Remove mock filters
 	extension.UnregisterFilter(constant.GracefulShutdownConsumerFilterKey)
 	extension.UnregisterFilter(constant.GracefulShutdownProviderFilterKey)
+}
+
+func TestInitReturnsWhenGracefulShutdownFilterMissing(t *testing.T) {
+	resetShutdownTestState()
+
+	mockConsumerFilter := &MockFilter{}
+	mockConsumerFilter.On("Set", mock.Anything, mock.Anything).Return()
+
+	extension.SetFilter(constant.GracefulShutdownConsumerFilterKey, func() filter.Filter {
+		return mockConsumerFilter
+	})
+	extension.UnregisterFilter(constant.GracefulShutdownProviderFilterKey)
+	t.Cleanup(func() {
+		extension.UnregisterFilter(constant.GracefulShutdownConsumerFilterKey)
+	})
+
+	notifyCalled := atomic.Bool{}
+	signalNotify = func(chan<- os.Signal, ...os.Signal) {
+		notifyCalled.Store(true)
+	}
+
+	Init()
+
+	mockConsumerFilter.AssertNotCalled(t, "Set", mock.Anything, mock.Anything)
+	assert.False(t, notifyCalled.Load())
+	assert.Nil(t, shutdownConfig)
 }
 
 func TestShutdownClosesDoneAndRunsOnce(t *testing.T) {

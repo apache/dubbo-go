@@ -88,18 +88,23 @@ func Init(opts ...Option) {
 			opt(newOpts)
 		}
 
+		// retrieve ShutdownConfig for gracefulShutdownFilter
+		gracefulShutdownConsumerFilter, exist := extension.GetFilter(constant.GracefulShutdownConsumerFilterKey)
+		if !exist {
+			return
+		}
+		gracefulShutdownProviderFilter, exist := extension.GetFilter(constant.GracefulShutdownProviderFilterKey)
+		if !exist {
+			return
+		}
+
 		storeShutdownConfig(newOpts.Shutdown)
 
-		// retrieve ShutdownConfig for gracefulShutdownFilter
-		if gracefulShutdownConsumerFilter, exist := extension.GetFilter(constant.GracefulShutdownConsumerFilterKey); exist {
-			if filter, ok := gracefulShutdownConsumerFilter.(config.Setter); ok {
-				filter.Set(constant.GracefulShutdownFilterShutdownConfig, newOpts.Shutdown)
-			}
+		if filter, ok := gracefulShutdownConsumerFilter.(config.Setter); ok {
+			filter.Set(constant.GracefulShutdownFilterShutdownConfig, newOpts.Shutdown)
 		}
-		if gracefulShutdownProviderFilter, exist := extension.GetFilter(constant.GracefulShutdownProviderFilterKey); exist {
-			if filter, ok := gracefulShutdownProviderFilter.(config.Setter); ok {
-				filter.Set(constant.GracefulShutdownFilterShutdownConfig, newOpts.Shutdown)
-			}
+		if filter, ok := gracefulShutdownProviderFilter.(config.Setter); ok {
+			filter.Set(constant.GracefulShutdownFilterShutdownConfig, newOpts.Shutdown)
 		}
 
 		if newOpts.Shutdown.InternalSignal != nil && *newOpts.Shutdown.InternalSignal {
