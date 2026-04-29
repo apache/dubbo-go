@@ -19,6 +19,7 @@ package triple
 
 import (
 	"context"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -30,8 +31,24 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
+
+func resetTripleProtocolForTest(t *testing.T) {
+	t.Helper()
+
+	tripleProtocol = nil
+	tripleProtocolOnce = sync.Once{}
+}
+
+func setTripleProtocolForTest(t *testing.T, protocol *TripleProtocol) {
+	t.Helper()
+
+	tripleProtocol = protocol
+	tripleProtocolOnce = sync.Once{}
+	tripleProtocolOnce.Do(func() {})
+}
 
 func TestNewTripleProtocol(t *testing.T) {
 	tp := NewTripleProtocol()
@@ -42,8 +59,7 @@ func TestNewTripleProtocol(t *testing.T) {
 }
 
 func TestGetProtocol(t *testing.T) {
-	// reset singleton for test isolation
-	tripleProtocol = nil
+	resetTripleProtocolForTest(t)
 
 	p1 := GetProtocol()
 	assert.NotNil(t, p1)
@@ -51,6 +67,38 @@ func TestGetProtocol(t *testing.T) {
 	// should return same instance (singleton)
 	p2 := GetProtocol()
 	assert.Same(t, p1, p2)
+}
+
+func TestGetProtocolConcurrent(t *testing.T) {
+	resetTripleProtocolForTest(t)
+
+	const goroutines = 128
+	start := make(chan struct{})
+	results := make(chan base.Protocol, goroutines)
+
+	var wg sync.WaitGroup
+	for i := 0; i < goroutines; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			results <- GetProtocol()
+		}()
+	}
+
+	close(start)
+	wg.Wait()
+	close(results)
+
+	var first base.Protocol
+	for protocol := range results {
+		assert.NotNil(t, protocol)
+		if first == nil {
+			first = protocol
+			continue
+		}
+		assert.Same(t, first, protocol)
+	}
 }
 
 func TestTripleProtocolRegistration(t *testing.T) {
@@ -68,12 +116,11 @@ func TestTripleGracefulShutdownCallbackRegistration(t *testing.T) {
 	assert.True(t, ok)
 	assert.NotNil(t, cb)
 
-	original := tripleProtocol
 	tp := NewTripleProtocol()
 	tp.serverMap["graceful-test"] = &Server{triServer: tri.NewServer("", nil)}
-	tripleProtocol = tp
+	setTripleProtocolForTest(t, tp)
 	t.Cleanup(func() {
-		tripleProtocol = original
+		resetTripleProtocolForTest(t)
 	})
 
 	assert.NotPanics(t, func() {

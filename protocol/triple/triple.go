@@ -42,7 +42,8 @@ const (
 )
 
 var (
-	tripleProtocol *TripleProtocol
+	tripleProtocol     *TripleProtocol
+	tripleProtocolOnce sync.Once
 )
 
 var tripleServerGracefulStop = func(server *Server) {
@@ -204,10 +205,12 @@ func NewTripleProtocol() *TripleProtocol {
 	}
 }
 
+// GetProtocol returns the shared Triple protocol instance.
+// The protocol is initialized lazily because extension registration stores this factory callback.
 func GetProtocol() base.Protocol {
-	if tripleProtocol == nil {
+	tripleProtocolOnce.Do(func() {
 		tripleProtocol = NewTripleProtocol()
-	}
+	})
 	return tripleProtocol
 }
 
