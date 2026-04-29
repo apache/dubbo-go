@@ -102,6 +102,7 @@ type URL struct {
 	Port     string
 
 	PrimitiveURL string
+	primitiveTS  string // primitiveTS caches the original provider timestamp so GetCacheInvokerMapKey stays stable when configurator refreshes rebuild invoker URLs.
 	// url.Values is not safe map, add to avoid concurrent map read and map write error
 	paramsLock sync.RWMutex
 	params     url.Values
@@ -294,6 +295,7 @@ func NewURL(urlString string, opts ...Option) (*URL, error) {
 	}
 
 	s.PrimitiveURL = urlString
+	s.primitiveTS = s.params.Get(constant.TimestampKey)
 	s.Protocol = serviceURL.Scheme
 	s.Username = serviceURL.User.Username()
 	s.Password, _ = serviceURL.User.Password()
@@ -416,12 +418,10 @@ func (c *URL) Key() string {
 
 // GetCacheInvokerMapKey get directory cacheInvokerMap key
 func (c *URL) GetCacheInvokerMapKey() string {
-	urlNew, _ := NewURL(c.PrimitiveURL)
-
 	buildString := fmt.Sprintf(
 		"%s://%s:%s@%s:%s/?interface=%s&group=%s&version=%s&timestamp=%s&"+constant.MeshClusterIDKey+"=%s",
 		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Service(), c.GetParam(constant.GroupKey, ""),
-		c.GetParam(constant.VersionKey, ""), urlNew.GetParam(constant.TimestampKey, ""),
+		c.GetParam(constant.VersionKey, ""), c.primitiveTS,
 		c.GetParam(constant.MeshClusterIDKey, ""),
 	)
 	return buildString
@@ -596,6 +596,20 @@ func (c *URL) GetAttribute(key string) (any, bool) {
 	return r, ok
 }
 
+func (c *URL) DeleteAttribute(key string) {
+	c.attributesLock.Lock()
+	defer c.attributesLock.Unlock()
+	if c.attributes != nil {
+		delete(c.attributes, key)
+	}
+}
+
+func (c *URL) ClearAttributes() {
+	c.attributesLock.Lock()
+	defer c.attributesLock.Unlock()
+	c.attributes = make(map[string]any)
+}
+
 // DelParam will delete the given key from the URL
 func (c *URL) DelParam(key string) {
 	c.paramsLock.Lock()
@@ -653,9 +667,29 @@ func (c *URL) GetNonDefaultParam(s string) (string, bool) {
 	return r, r != ""
 }
 
-// GetParams gets values
+// GetParams gets values.
+// Deprecated: use CopyParams instead.
 func (c *URL) GetParams() url.Values {
-	return c.params
+	return c.CopyParams()
+}
+
+// CopyParams returns a deep copy of params.
+func (c *URL) CopyParams() url.Values {
+	c.paramsLock.RLock()
+	defer c.paramsLock.RUnlock()
+
+	if c.params == nil {
+		return nil
+	}
+
+	params := make(url.Values, len(c.params))
+	for k, vs := range c.params {
+		copied := make([]string, len(vs))
+		copy(copied, vs)
+		params[k] = copied
+	}
+
+	return params
 }
 
 // GetParamAndDecoded gets values and decode
@@ -877,14 +911,12 @@ func (c *URL) MergeURL(anotherUrl *URL) *URL {
 		}
 	}
 	// merge attributes
-	if mergedURL.attributes == nil {
-		mergedURL.attributes = make(map[string]any, len(anotherUrl.attributes))
-	}
-	for attrK, attrV := range anotherUrl.attributes {
+	anotherUrl.RangeAttributes(func(attrK string, attrV any) bool {
 		if _, ok := mergedURL.GetAttribute(attrK); !ok {
-			mergedURL.attributes[attrK] = attrV
+			mergedURL.SetAttribute(attrK, attrV)
 		}
-	}
+		return true
+	})
 	// In this way, we will raise some performance.
 	mergedURL.ReplaceParams(params)
 	return mergedURL
@@ -900,6 +932,7 @@ func (c *URL) CloneWithFilter(excludeParams *gxset.HashSet, reserveParams []stri
 		Ip:           c.Ip,
 		Port:         c.Port,
 		PrimitiveURL: c.PrimitiveURL,
+		primitiveTS:  c.primitiveTS,
 		Path:         c.Path,
 		Username:     c.Username,
 		Password:     c.Password,
