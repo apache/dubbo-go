@@ -22,6 +22,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -49,6 +50,53 @@ func sendHTTPRequest(t *testing.T, conn net.Conn, contentType string) (*http.Res
 
 	resp, err := http.ReadResponse(bufio.NewReader(conn), nil)
 	return resp, err
+}
+
+// TestHandlePkg_UnregisteredPath verifies that a valid JSON-RPC request sent
+// to a path with no registered exporter returns an error response instead of
+// panicking with a nil pointer dereference (issue #3310).
+func TestHandlePkg_UnregisteredPath(t *testing.T) {
+	// Ensure the package-level jsonrpcProtocol is initialized, as it would be
+	// in production when the protocol is loaded via extension.
+	GetProtocol()
+
+	serverConn, clientConn := net.Pipe()
+	defer func() {
+		_ = clientConn.Close()
+	}()
+	defer func() {
+		_ = serverConn.Close()
+	}()
+
+	s := NewServer()
+	go s.handlePkg(serverConn)
+
+	jsonBody := `{"jsonrpc":"2.0","method":"SayHello","params":["hello"],"id":1}`
+
+	err := clientConn.SetReadDeadline(time.Now().Add(3 * time.Second))
+	require.NoError(t, err)
+
+	req := "POST /UnregisteredService HTTP/1.1\r\n" +
+		"Host: localhost\r\n" +
+		"Content-Type: application/json\r\n" +
+		"Content-Length: " + strconv.Itoa(len(jsonBody)) + "\r\n" +
+		"\r\n" +
+		jsonBody
+	_, err = clientConn.Write([]byte(req))
+	require.NoError(t, err)
+
+	resp, err := http.ReadResponse(bufio.NewReader(clientConn), nil)
+	require.NoError(t, err, "server should respond without panicking")
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	require.Equal(t, 500, resp.StatusCode)
+	require.Contains(t, string(body), "service not found",
+		"response body should indicate the service was not found")
 }
 
 func TestHandlePkg_ContentType(t *testing.T) {
