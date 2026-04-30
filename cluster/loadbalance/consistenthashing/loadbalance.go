@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"hash/crc32"
 	"regexp"
+	"sync"
 )
 
 import (
@@ -38,8 +39,9 @@ const (
 )
 
 var (
-	selectors = make(map[string]*selector)
-	re        = regexp.MustCompile(constant.CommaSplitPattern)
+	selectors   = make(map[string]*selector)
+	selectorsMu sync.RWMutex
+	re          = regexp.MustCompile(constant.CommaSplitPattern)
 )
 
 func init() {
@@ -71,10 +73,19 @@ func (lb *conshashLoadBalance) Select(invokers []base.Invoker, invocation base.I
 		bs = append(bs, b...)
 	}
 	hashCode := crc32.ChecksumIEEE(bs)
+
+	selectorsMu.RLock()
 	selector, ok := selectors[key]
+	selectorsMu.RUnlock()
+
 	if !ok || selector.hashCode != hashCode {
-		selectors[key] = newSelector(invokers, methodName, hashCode)
+		selectorsMu.Lock()
+		selector, ok = selectors[key]
+		if !ok || selector.hashCode != hashCode {
+			selectors[key] = newSelector(invokers, methodName, hashCode)
+		}
 		selector = selectors[key]
+		selectorsMu.Unlock()
 	}
 	return selector.Select(invocation)
 }
