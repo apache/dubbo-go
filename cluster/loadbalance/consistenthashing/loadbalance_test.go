@@ -19,6 +19,7 @@ package consistenthashing
 
 import (
 	"fmt"
+	"sync"
 	"testing"
 )
 
@@ -119,4 +120,22 @@ func (s *consistentHashLoadBalanceSuite) TestSelect() {
 	args = []any{"ok", "abc"}
 	invoker = s.lb.Select(s.invokers, invocation.NewRPCInvocation("echo", args, nil))
 	s.Equal(fmt.Sprintf("%s:%d", ip, port8080), invoker.GetURL().Location)
+}
+
+// TestConcurrentSelect reproduces the race condition on the global `selectors` map.
+// Run with: go test -race -run TestConsistentHashLoadBalanceSuite/TestConcurrentSelect -count=1 ./cluster/loadbalance/consistenthashing/
+func (s *consistentHashLoadBalanceSuite) TestConcurrentSelect() {
+	const goroutines = 10
+
+	var wg sync.WaitGroup
+	wg.Add(goroutines)
+	for i := range goroutines {
+		go func(id int) {
+			defer wg.Done()
+			args := []any{fmt.Sprintf("user-%d", id), "password"}
+			invoker := s.lb.Select(s.invokers, invocation.NewRPCInvocation("echo", args, nil))
+			s.NotNilf(invoker, "Select returned nil for goroutine %d", id)
+		}(i)
+	}
+	wg.Wait()
 }
