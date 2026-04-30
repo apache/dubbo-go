@@ -503,3 +503,84 @@ func Test_mergeAttachmentToOutgoing(t *testing.T) {
 		})
 	}
 }
+
+// TestParseAttachments_TraceparentNotOverwritten verifies that parseAttachments does NOT
+// copy traceparent/tracestate from ctx attachments into the invocation, preserving the
+// values injected by the OTEL filter. (Regression test for issue #3240, Root Cause 1)
+func TestParseAttachments_TraceparentNotOverwritten(t *testing.T) {
+	// Simulate: OTEL filter has already injected the correct traceparent into invocation
+	otelTraceparent := "00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01"
+	otelTracestate := "vendor=opaque"
+
+	inv := invocation.NewRPCInvocationWithOptions(
+		invocation.WithAttachment("traceparent", otelTraceparent),
+		invocation.WithAttachment("tracestate", otelTracestate),
+	)
+
+	// Simulate: upstream request ctx carries a DIFFERENT (stale) traceparent
+	upstreamTraceparent := "00-cccccccccccccccccccccccccccccccc-dddddddddddddddd-01"
+	upstreamTracestate := "vendor=stale"
+	userAtta := map[string]any{
+		"traceparent": upstreamTraceparent,
+		"tracestate":  upstreamTracestate,
+		"user-key":    "user-val", // normal user key should still be copied
+	}
+	ctx := context.WithValue(context.Background(), constant.AttachmentKey, userAtta)
+
+	url := common.NewURLWithOptions()
+	parseAttachments(ctx, url, inv)
+
+	// traceparent and tracestate must remain as the OTEL filter set them
+	tp, _ := inv.GetAttachment("traceparent")
+	assert.Equal(t, otelTraceparent, tp, "traceparent must not be overwritten by ctx attachment")
+
+	ts, _ := inv.GetAttachment("tracestate")
+	assert.Equal(t, otelTracestate, ts, "tracestate must not be overwritten by ctx attachment")
+
+	// normal user key must still be copied
+	uk, _ := inv.GetAttachment("user-key")
+	assert.Equal(t, "user-val", uk, "non-trace user attachment must still be copied")
+}
+
+// TestMergeAttachmentToOutgoing_HeaderIsolation verifies that serial calls to
+// mergeAttachmentToOutgoing from the same parent context produce independent outgoing
+// headers. (Regression test for issue #3240, Root Cause 2)
+func TestMergeAttachmentToOutgoing_HeaderIsolation(t *testing.T) {
+	parentCtx := context.Background()
+
+	// First RPC: traceparent for call B
+	invB := invocation.NewRPCInvocationWithOptions(
+		invocation.WithAttachment("traceparent", "00-aaaa-bbbb-01"),
+		invocation.WithAttachment("shared-key", "valueB"),
+	)
+	ctxB, err := mergeAttachmentToOutgoing(parentCtx, invB)
+	require.NoError(t, err)
+
+	headerB := http.Header(tri.ExtractFromOutgoingContext(ctxB))
+	assert.Equal(t, "00-aaaa-bbbb-01", headerB.Get("traceparent"))
+	assert.Equal(t, "valueB", headerB.Get("shared-key"))
+
+	// Second RPC: traceparent for call C — uses same parentCtx
+	invC := invocation.NewRPCInvocationWithOptions(
+		invocation.WithAttachment("traceparent", "00-cccc-dddd-01"),
+		invocation.WithAttachment("shared-key", "valueC"),
+	)
+	ctxC, err := mergeAttachmentToOutgoing(parentCtx, invC)
+	require.NoError(t, err)
+
+	headerC := http.Header(tri.ExtractFromOutgoingContext(ctxC))
+	assert.Equal(t, "00-cccc-dddd-01", headerC.Get("traceparent"),
+		"second RPC must carry its own traceparent, not the first RPC's value")
+	assert.Equal(t, "valueC", headerC.Get("shared-key"))
+
+	// Verify the two headers are completely independent
+	assert.NotEqual(t, headerB.Get("traceparent"), headerC.Get("traceparent"),
+		"serial RPCs must have independent traceparent values")
+
+	// Verify headerB was not mutated by the second call
+	assert.Equal(t, "00-aaaa-bbbb-01", headerB.Get("traceparent"),
+		"first RPC's header must not be mutated by second RPC")
+	// Verify no accumulation: each header should have exactly one traceparent value
+	assert.Len(t, headerB.Values("traceparent"), 1, "headerB must have exactly one traceparent")
+	assert.Len(t, headerC.Values("traceparent"), 1, "headerC must have exactly one traceparent")
+}
