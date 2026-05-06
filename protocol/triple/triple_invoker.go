@@ -21,6 +21,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"strings"
 	"sync"
 )
 
@@ -161,20 +163,28 @@ func mergeAttachmentToOutgoing(ctx context.Context, inv base.Invocation) (contex
 	if timeout, ok := inv.GetAttachment(constant.TimeoutKey); ok {
 		ctx = context.WithValue(ctx, tri.TimeoutKey{}, timeout)
 	}
+	header := cloneOutgoingHeader(tri.ExtractFromOutgoingContext(ctx))
 	for key, valRaw := range inv.Attachments() {
+		lowerKey := strings.ToLower(key)
 		if str, ok := valRaw.(string); ok {
-			ctx = tri.AppendToOutgoingContext(ctx, key, str)
+			header[lowerKey] = []string{str}
 			continue
 		}
 		if strs, ok := valRaw.([]string); ok {
-			for _, str := range strs {
-				ctx = tri.AppendToOutgoingContext(ctx, key, str)
-			}
+			header[lowerKey] = append([]string(nil), strs...)
 			continue
 		}
 		return ctx, fmt.Errorf("triple attachments value with key = %s is invalid, which should be string or []string", key)
 	}
-	return ctx, nil
+	return tri.NewOutgoingContext(ctx, header), nil
+}
+
+func cloneOutgoingHeader(header http.Header) http.Header {
+	cloned := make(http.Header, len(header))
+	for key, vals := range header {
+		cloned[strings.ToLower(key)] = append([]string(nil), vals...)
+	}
+	return cloned
 }
 
 // parseInvocation retrieves information from invocation.
@@ -202,18 +212,8 @@ func parseInvocation(ctx context.Context, url *common.URL, invocation base.Invoc
 	return callType, inRaw, method, nil
 }
 
-// parseAttachments retrieves attachments from users passed-in and URL, then injects them into ctx
+// parseAttachments injects pre-defined URL attachments into invocation.
 func parseAttachments(ctx context.Context, url *common.URL, invocation base.Invocation) {
-	// retrieve users passed-in attachment
-	attaRaw := ctx.Value(constant.AttachmentKey)
-	if attaRaw != nil {
-		if userAtta, ok := attaRaw.(map[string]any); ok {
-			for key, val := range userAtta {
-				invocation.SetAttachment(key, val)
-			}
-		}
-	}
-	// set pre-defined attachments
 	for _, key := range triAttachmentKeys {
 		if val := url.GetParam(key, ""); len(val) > 0 {
 			invocation.SetAttachment(key, val)
