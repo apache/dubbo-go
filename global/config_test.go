@@ -18,6 +18,7 @@
 package global
 
 import (
+	"encoding/json"
 	"reflect"
 	"testing"
 )
@@ -1160,13 +1161,22 @@ func TestDefaultTripleConfig(t *testing.T) {
 func TestHttp3ConfigClone(t *testing.T) {
 	t.Run("clone_http3_config", func(t *testing.T) {
 		http3 := &Http3Config{
-			Enable:      true,
-			Negotiation: false,
+			Enable:                true,
+			Negotiation:           false,
+			KeepAlivePeriod:       "15s",
+			MaxIdleTimeout:        "30s",
+			MaxIncomingStreams:    128,
+			MaxIncomingUniStreams: 64,
 		}
 		cloned := http3.Clone()
 		assert.NotNil(t, cloned)
+		assert.NotSame(t, http3, cloned)
 		assert.Equal(t, http3.Enable, cloned.Enable)
 		assert.Equal(t, http3.Negotiation, cloned.Negotiation)
+		assert.Equal(t, http3.KeepAlivePeriod, cloned.KeepAlivePeriod)
+		assert.Equal(t, http3.MaxIdleTimeout, cloned.MaxIdleTimeout)
+		assert.Equal(t, http3.MaxIncomingStreams, cloned.MaxIncomingStreams)
+		assert.Equal(t, http3.MaxIncomingUniStreams, cloned.MaxIncomingUniStreams)
 	})
 
 	t.Run("clone_nil_http3_config", func(t *testing.T) {
@@ -1179,8 +1189,13 @@ func TestHttp3ConfigClone(t *testing.T) {
 		http3 := DefaultHttp3Config()
 		cloned := http3.Clone()
 		assert.NotNil(t, cloned)
+		assert.NotSame(t, http3, cloned)
 		assert.Equal(t, http3.Enable, cloned.Enable)
 		assert.Equal(t, http3.Negotiation, cloned.Negotiation)
+		assert.Equal(t, http3.KeepAlivePeriod, cloned.KeepAlivePeriod)
+		assert.Equal(t, http3.MaxIdleTimeout, cloned.MaxIdleTimeout)
+		assert.Equal(t, http3.MaxIncomingStreams, cloned.MaxIncomingStreams)
+		assert.Equal(t, http3.MaxIncomingUniStreams, cloned.MaxIncomingUniStreams)
 	})
 }
 
@@ -1189,8 +1204,91 @@ func TestDefaultHttp3Config(t *testing.T) {
 	t.Run("default_http3_config", func(t *testing.T) {
 		http3 := DefaultHttp3Config()
 		assert.NotNil(t, http3)
+		assert.False(t, http3.Enable)
+		assert.True(t, http3.Negotiation)
+		assert.Empty(t, http3.KeepAlivePeriod)
+		assert.Empty(t, http3.MaxIdleTimeout)
+		assert.Zero(t, http3.MaxIncomingStreams)
+		assert.Zero(t, http3.MaxIncomingUniStreams)
 	})
 }
+
+func TestHttp3ConfigJSONTags(t *testing.T) {
+	http3 := &Http3Config{
+		Enable:                true,
+		Negotiation:           true,
+		KeepAlivePeriod:       "15s",
+		MaxIdleTimeout:        "30s",
+		MaxIncomingStreams:    128,
+		MaxIncomingUniStreams: 64,
+	}
+
+	data, err := json.Marshal(http3)
+	require.NoError(t, err)
+	assert.Contains(t, string(data), "\"keep-alive-period\":\"15s\"")
+	assert.Contains(t, string(data), "\"max-idle-timeout\":\"30s\"")
+	assert.Contains(t, string(data), "\"max-incoming-streams\":128")
+	assert.Contains(t, string(data), "\"max-incoming-uni-streams\":64")
+
+	var decoded Http3Config
+	err = json.Unmarshal([]byte(`{
+		"enable": true,
+		"negotiation": true,
+		"keep-alive-period": "15s",
+		"max-idle-timeout": "30s",
+		"max-incoming-streams": 128,
+		"max-incoming-uni-streams": 64
+	}`), &decoded)
+	require.NoError(t, err)
+	assert.Equal(t, http3, &decoded)
+
+	var compatDecoded Http3Config
+	err = json.Unmarshal([]byte(`{
+		"enable": true,
+		"negotiation": true,
+		"keepAlivePeriod": "15s",
+		"maxIdleTimeout": "30s",
+		"maxIncomingStreams": 128,
+		"maxIncomingUniStreams": 64
+	}`), &compatDecoded)
+	require.NoError(t, err)
+	assert.Equal(t, http3, &compatDecoded)
+
+	var preferCanonical Http3Config
+	err = json.Unmarshal([]byte(`{
+		"keep-alive-period": "15s",
+		"keepAlivePeriod": "99s",
+		"max-idle-timeout": "30s",
+		"maxIdleTimeout": "99s",
+		"max-incoming-streams": 128,
+		"maxIncomingStreams": 999,
+		"max-incoming-uni-streams": 64,
+		"maxIncomingUniStreams": 999
+	}`), &preferCanonical)
+	require.NoError(t, err)
+	assert.Equal(t, "15s", preferCanonical.KeepAlivePeriod)
+	assert.Equal(t, "30s", preferCanonical.MaxIdleTimeout)
+	assert.Equal(t, int64(128), preferCanonical.MaxIncomingStreams)
+	assert.Equal(t, int64(64), preferCanonical.MaxIncomingUniStreams)
+
+	var nullCanonical Http3Config
+	err = json.Unmarshal([]byte(`{
+		"keep-alive-period": null,
+		"keepAlivePeriod": "99s",
+		"max-idle-timeout": null,
+		"maxIdleTimeout": "99s",
+		"max-incoming-streams": null,
+		"maxIncomingStreams": 999,
+		"max-incoming-uni-streams": null,
+		"maxIncomingUniStreams": 999
+	}`), &nullCanonical)
+	require.NoError(t, err)
+	assert.Empty(t, nullCanonical.KeepAlivePeriod)
+	assert.Empty(t, nullCanonical.MaxIdleTimeout)
+	assert.Zero(t, nullCanonical.MaxIncomingStreams)
+	assert.Zero(t, nullCanonical.MaxIncomingUniStreams)
+}
+
 func TestConsumerConfigClone(t *testing.T) {
 	t.Run("clone_full_consumer_config", func(t *testing.T) {
 		consumer := &ConsumerConfig{
