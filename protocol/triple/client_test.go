@@ -83,7 +83,7 @@ func TestDualTransport(t *testing.T) {
 	keepAliveTimeout := 5 * time.Second
 
 	// Test newDualTransport function
-	transport := newDualTransport(nil, keepAliveInterval, keepAliveTimeout)
+	transport := newDualTransport(nil, keepAliveInterval, keepAliveTimeout, 3*time.Second)
 	assert.NotNil(t, transport)
 
 	// Verify that transport implements http.RoundTripper interface
@@ -193,7 +193,7 @@ func Test_genKeepAliveOptions(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			opts, interval, timeout, err := genKeepAliveOptions(test.url, test.tripleConf)
+			opts, interval, timeout, _, _, err := genKeepAliveOptions(test.url, test.tripleConf)
 			if test.expectErr {
 				require.Error(t, err)
 			} else {
@@ -390,7 +390,7 @@ func TestDualTransport_Structure(t *testing.T) {
 	keepAliveInterval := 30 * time.Second
 	keepAliveTimeout := 5 * time.Second
 
-	transport := newDualTransport(nil, keepAliveInterval, keepAliveTimeout)
+	transport := newDualTransport(nil, keepAliveInterval, keepAliveTimeout, 3*time.Second)
 	assert.NotNil(t, transport)
 
 	dt, ok := transport.(*dualTransport)
@@ -553,6 +553,79 @@ func Test_newClientManager_InterfaceName(t *testing.T) {
 		common.WithInterface("com.example.ITestService"),
 		common.WithMethods([]string{"TestMethod"}),
 	)
+
+	cm, err := newClientManager(url)
+	require.NoError(t, err)
+	assert.NotNil(t, cm)
+}
+
+// ---------------------------------------------------------------------------
+// AC-1: connect timeout — a connect attempt to a closed port should fail
+//        within the configured timeout (plus small OS scheduling margin).
+// ---------------------------------------------------------------------------
+func TestGenKeepAliveOptions_ConnectTimeout_Default(t *testing.T) {
+	// AC-5: When TripleConfig.ConnectTimeout is not set, the default 3s is used.
+	url := common.NewURLWithOptions(
+		common.WithLocation("localhost:20000"),
+		common.WithPath("com.example.TestService"),
+		common.WithMethods([]string{"TestMethod"}),
+	)
+
+	tripleConfig := &global.TripleConfig{} // No ConnectTimeout set
+	_, _, _, connectTimeout, maxRetries, err := genKeepAliveOptions(url, tripleConfig)
+
+	require.NoError(t, err)
+	assert.Equal(t, 3*time.Second, connectTimeout, "default connect timeout should be 3s")
+	assert.Equal(t, constant.DefaultMaxRetries, maxRetries, "default max retries should match constant")
+}
+
+// AC-5: Explicit TripleConfig.ConnectTimeout is parsed and respected.
+func TestGenKeepAliveOptions_ConnectTimeout_Custom(t *testing.T) {
+	url := common.NewURLWithOptions(
+		common.WithLocation("localhost:20000"),
+		common.WithPath("com.example.TestService"),
+		common.WithMethods([]string{"TestMethod"}),
+	)
+
+	tripleConfig := &global.TripleConfig{
+		ConnectTimeout: "500ms",
+		MaxRetries:     3,
+	}
+	_, _, _, connectTimeout, maxRetries, err := genKeepAliveOptions(url, tripleConfig)
+
+	require.NoError(t, err)
+	assert.Equal(t, 500*time.Millisecond, connectTimeout)
+	assert.Equal(t, 3, maxRetries)
+}
+
+// AC-6: Backward compatibility — nil TripleConfig falls back to URL / default values.
+func TestGenKeepAliveOptions_ConnectTimeout_NilTripleConfig(t *testing.T) {
+	url := common.NewURLWithOptions(
+		common.WithLocation("localhost:20000"),
+		common.WithPath("com.example.TestService"),
+		common.WithMethods([]string{"TestMethod"}),
+	)
+
+	_, _, _, connectTimeout, maxRetries, err := genKeepAliveOptions(url, nil)
+
+	require.NoError(t, err)
+	assert.Equal(t, 3*time.Second, connectTimeout, "should use DefaultConnectTimeout when TripleConfig is nil")
+	assert.Equal(t, constant.DefaultMaxRetries, maxRetries)
+}
+
+// AC-5: newClientManager with ConnectTimeout set builds without error.
+func Test_newClientManager_WithConnectTimeout(t *testing.T) {
+	url := common.NewURLWithOptions(
+		common.WithLocation("localhost:20000"),
+		common.WithPath("com.example.TestService"),
+		common.WithMethods([]string{"TestMethod"}),
+	)
+
+	tripleConfig := &global.TripleConfig{
+		ConnectTimeout: "1s",
+		MaxRetries:     1,
+	}
+	url.SetAttribute(constant.TripleConfigKey, tripleConfig)
 
 	cm, err := newClientManager(url)
 	require.NoError(t, err)

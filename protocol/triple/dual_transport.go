@@ -19,6 +19,7 @@ package triple
 
 import (
 	"context"
+	"net"
 	"crypto/tls"
 	"errors"
 	"io"
@@ -89,11 +90,19 @@ type dualTransport struct {
 }
 
 // newDualTransport creates a new dual transport that supports both HTTP/2 and HTTP/3
-func newDualTransport(tlsConfig *tls.Config, keepAliveInterval, keepAliveTimeout time.Duration) http.RoundTripper {
+func newDualTransport(tlsConfig *tls.Config, keepAliveInterval, keepAliveTimeout, connectTimeout time.Duration) http.RoundTripper {
 	http2Transport := &http2.Transport{
 		TLSClientConfig: tlsConfig,
 		ReadIdleTimeout: keepAliveInterval,
 		PingTimeout:     keepAliveTimeout,
+		DialTLSContext: func(ctx context.Context, network, addr string, tlsConfig *tls.Config) (net.Conn, error) {
+			return (&tls.Dialer{
+				Config: tlsConfig,
+				NetDialer: &net.Dialer{
+					Timeout: connectTimeout,
+				},
+			}).DialContext(ctx, network, addr)
+		},
 	}
 
 	http3Transport := &http3.Transport{

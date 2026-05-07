@@ -68,6 +68,10 @@ const (
 	KeepAliveInterval = "keep-alive-interval"
 	KeepAliveTimeout  = "keep-alive-timeout"
 
+	// http2 connection config
+	ConnectTimeout = "connect-timeout"
+	MaxRetries     = "max-retries"
+
 	// TODO: remove IDLMode after old triple removed
 	IDLMode = "IDL-mode"
 

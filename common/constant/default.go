@@ -113,6 +113,10 @@ const (
 	DefaultKeepAliveTimeout  = "20s"
 	MinKeepAliveInterval     = 10 * time.Second // KeepAliveMinInterval is the minimum ping interval to invoid too many ping
 
+	// http2 connect timeout and retry
+	DefaultConnectTimeout = "3s"
+	DefaultMaxRetries     = 2
+
 	// graceful shutdown
 	DefaultGracefulShutdownTimeout = 10 * time.Second
 

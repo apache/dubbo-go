@@ -46,6 +46,15 @@ type TripleConfig struct {
 
 	KeepAliveInterval string `yaml:"keep-alive-interval" json:"keep-alive-interval,omitempty" property:"keep-alive-interval"`
 	KeepAliveTimeout  string `yaml:"keep-alive-timeout" json:"keep-alive-timeout,omitempty" property:"keep-alive-timeout"`
+
+	// ConnectTimeout is the timeout for establishing a new HTTP/2 TCP dial phase.
+	// Accepts Go duration strings, e.g. "3s". Defaults to constant.DefaultConnectTimeout (3s).
+	ConnectTimeout string `yaml:"connect-timeout" json:"connect-timeout,omitempty" property:"connect-timeout"`
+
+	// MaxRetries is the maximum number of automatic retries on connection-level errors
+	// (EOF, connection reset, GOAWAY, ErrNoCachedConn). Only safe-to-retry requests are retried.
+	// Defaults to constant.DefaultMaxRetries (2). Set to 0 to disable retries.
+	MaxRetries int `yaml:"max-retries" json:"max-retries,omitempty" property:"max-retries"`
 }
 
 // DefaultTripleConfig returns a default TripleConfig instance.
@@ -72,5 +81,7 @@ func (t *TripleConfig) Clone() *TripleConfig {
 
 		KeepAliveInterval: t.KeepAliveInterval,
 		KeepAliveTimeout:  t.KeepAliveTimeout,
+		ConnectTimeout:    t.ConnectTimeout,
+		MaxRetries:        t.MaxRetries,
 	}
 }

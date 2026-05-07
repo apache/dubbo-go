@@ -171,8 +171,8 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		tripleConf = tripleConfRaw.(*global.TripleConfig)
 	}
 
-	// handle keepalive options
-	cliKeepAliveOpts, keepAliveInterval, keepAliveTimeout, genKeepAliveOptsErr := genKeepAliveOptions(url, tripleConf)
+	// handle keepalive options, connect timeout, and max retries
+	cliKeepAliveOpts, keepAliveInterval, keepAliveTimeout, connectTimeout, maxRetries, genKeepAliveOptsErr := genKeepAliveOptions(url, tripleConf)
 	if genKeepAliveOptsErr != nil {
 		logger.Errorf("genKeepAliveOpts err: %v", genKeepAliveOptsErr)
 		return nil, genKeepAliveOptsErr
@@ -200,26 +200,35 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		}
 		cliOpts = append(cliOpts, tri.WithTriple())
 	case constant.CallHTTP2:
-		// TODO: Enrich the http2 transport config for triple protocol.
+		// Build an http2.Transport with connect timeout applied to the TCP dial phase.
+		var h2t http.RoundTripper
 		if tlsFlag {
-			transport = &http2.Transport{
+			h2t = &http2.Transport{
 				TLSClientConfig: cfg,
 				ReadIdleTimeout: keepAliveInterval,
 				PingTimeout:     keepAliveTimeout,
 				DialTLSContext: func(ctx context.Context, network, addr string, tlsConfig *tls.Config) (net.Conn, error) {
-					return (&tls.Dialer{Config: tlsConfig}).DialContext(ctx, network, addr)
+					return (&tls.Dialer{
+						Config: tlsConfig,
+						NetDialer: &net.Dialer{
+							Timeout: connectTimeout,
+						},
+					}).DialContext(ctx, network, addr)
 				},
 			}
 		} else {
-			transport = &http2.Transport{
+			h2t = &http2.Transport{
 				DialTLSContext: func(ctx context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
-					return (&net.Dialer{}).DialContext(ctx, network, addr)
+					return (&net.Dialer{
+						Timeout: connectTimeout,
+					}).DialContext(ctx, network, addr)
 				},
 				AllowHTTP:       true,
 				ReadIdleTimeout: keepAliveInterval,
 				PingTimeout:     keepAliveTimeout,
 			}
 		}
+		transport = newRetryTransport(h2t, maxRetries)
 	case constant.CallHTTP3:
 		if !tlsFlag {
 			return nil, fmt.Errorf("TRIPLE http3 client must have TLS config, but TLS config is nil")
@@ -243,7 +252,7 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		}
 
 		// Create a dual transport that can handle both HTTP/2 and HTTP/3
-		transport = newDualTransport(cfg, keepAliveInterval, keepAliveTimeout)
+		transport = newDualTransport(cfg, keepAliveInterval, keepAliveTimeout, connectTimeout)
 		logger.Infof("Triple HTTP/2 and HTTP/3 client transport init successfully")
 	default:
 		return nil, fmt.Errorf("unsupported http protocol: %s", callProtocol)
@@ -293,45 +302,65 @@ func (cm *clientManager) callHealthWatch(ctx context.Context, service string) (*
 	return stream, nil
 }
 
-func genKeepAliveOptions(url *common.URL, tripleConf *global.TripleConfig) ([]tri.ClientOption, time.Duration, time.Duration, error) {
-	var cliKeepAliveOpts []tri.ClientOption
-
+// genKeepAliveOptions parses keepalive, connect timeout and retry settings from the URL
+// and TripleConfig, returning them as structured values ready for transport construction.
+func genKeepAliveOptions(url *common.URL, tripleConf *global.TripleConfig) (
+	opts []tri.ClientOption,
+	keepAliveInterval time.Duration,
+	keepAliveTimeout time.Duration,
+	connectTimeout time.Duration,
+	maxRetries int,
+	err error,
+) {
 	// set max send and recv msg size
 	maxCallRecvMsgSize := constant.DefaultMaxCallRecvMsgSize
-	if recvMsgSize, err := humanize.ParseBytes(url.GetParam(constant.MaxCallRecvMsgSize, "")); err == nil && recvMsgSize > 0 {
+	if recvMsgSize, parseErr := humanize.ParseBytes(url.GetParam(constant.MaxCallRecvMsgSize, "")); parseErr == nil && recvMsgSize > 0 {
 		maxCallRecvMsgSize = int(recvMsgSize)
 	}
-	cliKeepAliveOpts = append(cliKeepAliveOpts, tri.WithReadMaxBytes(maxCallRecvMsgSize))
+	opts = append(opts, tri.WithReadMaxBytes(maxCallRecvMsgSize))
 	maxCallSendMsgSize := constant.DefaultMaxCallSendMsgSize
-	if sendMsgSize, err := humanize.ParseBytes(url.GetParam(constant.MaxCallSendMsgSize, "")); err == nil && sendMsgSize > 0 {
+	if sendMsgSize, parseErr := humanize.ParseBytes(url.GetParam(constant.MaxCallSendMsgSize, "")); parseErr == nil && sendMsgSize > 0 {
 		maxCallSendMsgSize = int(sendMsgSize)
 	}
-	cliKeepAliveOpts = append(cliKeepAliveOpts, tri.WithSendMaxBytes(maxCallSendMsgSize))
+	opts = append(opts, tri.WithSendMaxBytes(maxCallSendMsgSize))
 
 	// set keepalive interval and keepalive timeout
-	// Deprecated：use tripleconfig
-	// TODO: remove KeepAliveInterval and KeepAliveInterval in version 4.0.0
-	keepAliveInterval := url.GetParamDuration(constant.KeepAliveInterval, constant.DefaultKeepAliveInterval)
-	keepAliveTimeout := url.GetParamDuration(constant.KeepAliveTimeout, constant.DefaultKeepAliveTimeout)
+	// Deprecated: use TripleConfig
+	// TODO: remove KeepAliveInterval and KeepAliveTimeout in version 4.0.0
+	keepAliveInterval = url.GetParamDuration(constant.KeepAliveInterval, constant.DefaultKeepAliveInterval)
+	keepAliveTimeout = url.GetParamDuration(constant.KeepAliveTimeout, constant.DefaultKeepAliveTimeout)
+
+	// connect timeout: how long to wait for a new TCP/TLS connection to be established
+	connectTimeout = url.GetParamDuration(constant.ConnectTimeout, constant.DefaultConnectTimeout)
+
+	// max retries for connection-level errors (0 = disabled)
+	maxRetries = constant.DefaultMaxRetries
 
 	if tripleConf == nil {
-		return cliKeepAliveOpts, keepAliveInterval, keepAliveTimeout, nil
+		return opts, keepAliveInterval, keepAliveTimeout, connectTimeout, maxRetries, nil
 	}
 
-	var parseErr error
-
 	if tripleConf.KeepAliveInterval != "" {
-		keepAliveInterval, parseErr = time.ParseDuration(tripleConf.KeepAliveInterval)
-		if parseErr != nil {
-			return nil, 0, 0, parseErr
+		keepAliveInterval, err = time.ParseDuration(tripleConf.KeepAliveInterval)
+		if err != nil {
+			return nil, 0, 0, 0, 0, err
 		}
 	}
 	if tripleConf.KeepAliveTimeout != "" {
-		keepAliveTimeout, parseErr = time.ParseDuration(tripleConf.KeepAliveTimeout)
-		if parseErr != nil {
-			return nil, 0, 0, parseErr
+		keepAliveTimeout, err = time.ParseDuration(tripleConf.KeepAliveTimeout)
+		if err != nil {
+			return nil, 0, 0, 0, 0, err
 		}
 	}
+	if tripleConf.ConnectTimeout != "" {
+		connectTimeout, err = time.ParseDuration(tripleConf.ConnectTimeout)
+		if err != nil {
+			return nil, 0, 0, 0, 0, err
+		}
+	}
+	if tripleConf.MaxRetries > 0 {
+		maxRetries = tripleConf.MaxRetries
+	}
 
-	return cliKeepAliveOpts, keepAliveInterval, keepAliveTimeout, nil
+	return opts, keepAliveInterval, keepAliveTimeout, connectTimeout, maxRetries, nil
 }
