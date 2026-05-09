@@ -21,6 +21,7 @@ package server
 import (
 	"context"
 	stderrors "errors"
+	"net/http"
 	"reflect"
 	"sort"
 	"strconv"
@@ -59,6 +60,8 @@ type Server struct {
 	interfaceNameServices map[string]*ServiceOptions
 	// indicate whether the server is already started
 	serve bool
+
+	attachedHTTPHandler http.Handler
 }
 
 // ServiceInfo Deprecated： common.ServiceInfo type alias, just for compatible with old generate pb.go file
@@ -390,6 +393,9 @@ func (s *Server) ServeContext(ctx context.Context) error {
 		return s.rollbackServeStartWithCause(err, serviceInstanceRegistered)
 	}
 	serviceInstanceRegistered = true
+	if err := s.hostAttachedHTTPHandler(); err != nil {
+		return s.rollbackServeStartWithCause(err, serviceInstanceRegistered)
+	}
 
 	// k8s probe ready
 	probe.SetStartupComplete(true)
