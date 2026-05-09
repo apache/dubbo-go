@@ -29,7 +29,6 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
@@ -157,7 +156,7 @@ func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 	if err := rcCompat.Shutdown.Init(); err != nil {
 		return err
 	}
-	config.SetRootConfig(*rcCompat)
+	setCompatRootConfig(rcCompat)
 
 	if err := rc.initMetadataReport(); err != nil {
 		return err
@@ -165,8 +164,6 @@ func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 	if err := metadata.InitRegistryMetadataReport(rc.Registries); err != nil {
 		return err
 	}
-
-	compatInstanceOptions(rcCompat, rc) // overrider options config because some config are changed after init
 
 	return nil
 }

@@ -619,6 +619,13 @@ func compatInstanceOptions(cr *config.RootConfig, rc *InstanceOptions) {
 	rc.Profiles = compatGlobalProfilesConfig(cr.Profiles)
 }
 
+func setCompatRootConfig(rc *config.RootConfig) {
+	if rc == nil {
+		return
+	}
+	config.SetRootConfig(*rc)
+}
+
 func CompatGlobalProtocolConfig(c *config.ProtocolConfig) *global.ProtocolConfig {
 	if c == nil {
 		return nil

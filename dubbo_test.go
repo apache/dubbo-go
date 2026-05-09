@@ -30,6 +30,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/client"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/server"
 )
@@ -113,6 +114,20 @@ func TestIndependentConfig(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func TestInstanceInitKeepsGlobalOnlyConfig(t *testing.T) {
+	ins, err := NewInstance(func(opts *InstanceOptions) {
+		opts.Shutdown = global.DefaultShutdownConfig()
+		opts.Shutdown.ClosingInvokerExpireTime = "7s"
+	})
+	require.NoError(t, err)
+
+	_, err = ins.NewServer(func(options *server.ServerOptions) {
+		require.NotNil(t, options.Shutdown)
+		assert.Equal(t, "7s", options.Shutdown.ClosingInvokerExpireTime)
+	})
+	require.NoError(t, err)
 }
 
 func TestSetProviderServiceRegistersByReference(t *testing.T) {
