@@ -67,10 +67,13 @@ func (c *RouterChain) Route(url *common.URL, invocation base.Invocation) []base.
 
 	if len(finalInvokers) == 0 {
 		finalInvokers = invokers
+	} else if len(finalInvokers) != len(invokers) {
+		invocation.SetAttribute(constant.RouterCacheDisable, true)
 	}
 
 	for _, r := range c.copyRouters() {
 		finalInvokers = r.Route(finalInvokers, url, invocation)
+		invocation.SetAttribute(constant.RouterCacheDisable, true)
 	}
 	return finalInvokers
 }

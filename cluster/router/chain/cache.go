@@ -69,18 +69,6 @@ func (c *routerCache) FindAddrMeta(p router.Poolable) router.AddrMetadata {
 	return nil
 }
 
-func (c *routerCache) FindAddrPoolWithInvokers(p router.Poolable) ([]base.Invoker, router.AddrPool) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	ret := make([]base.Invoker, len(c.invokers))
-	copy(ret, c.invokers)
-	entry, ok := c.pools[p.Name()]
-	if !ok {
-		return ret, nil
-	}
-	return ret, entry.pool
-}
-
 // rebuild iterates all Poolable routers whose ShouldPool returns true,
 // calls Pool on each with current invokers, and atomically swaps in the
 // new pools under write lock.

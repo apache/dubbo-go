@@ -357,6 +357,7 @@ const (
 	RouterScopeApplication            = "application"
 	ForceKey                          = "force"
 	TrafficDisableKey                 = "trafficDisable"
+	RouterCacheDisable                = "routerCacheDisable"
 	Arguments                         = "arguments"
 	Attachments                       = "attachments"
 	Param                             = "param"

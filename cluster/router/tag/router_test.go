@@ -556,9 +556,6 @@ type mockCache struct {
 func (m *mockCache) GetInvokers() []base.Invoker                        { return m.invokers }
 func (m *mockCache) FindAddrPool(_ router.Poolable) router.AddrPool     { return m.pool }
 func (m *mockCache) FindAddrMeta(_ router.Poolable) router.AddrMetadata { return nil }
-func (m *mockCache) FindAddrPoolWithInvokers(_ router.Poolable) ([]base.Invoker, router.AddrPool) {
-	return m.invokers, m.pool
-}
 
 func newCacheRouter() *PriorityRouter {
 	initUrl()

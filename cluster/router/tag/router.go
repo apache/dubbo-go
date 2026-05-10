@@ -59,9 +59,11 @@ func (p *PriorityRouter) Route(invokers []base.Invoker, url *common.URL, invocat
 	}
 
 	if p.cache != nil {
-		fullInvokers, pool := p.cache.FindAddrPoolWithInvokers(p)
-		if pool != nil && len(invokers) == len(fullInvokers) {
-			return p.routeWithPool(fullInvokers, pool, url, invocation)
+		if !invocation.GetAttributeWithDefaultValue(constant.RouterCacheDisable, false).(bool) {
+			pool := p.cache.FindAddrPool(p)
+			if pool != nil {
+				return p.routeWithPool(p.cache.GetInvokers(), pool, url, invocation)
+			}
 		}
 	}
 
