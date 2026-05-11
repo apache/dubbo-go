@@ -57,6 +57,9 @@ type Server struct {
 	interfaceNameServices map[string]*ServiceOptions
 	// indicate whether the server is already started
 	serve bool
+	// stopCh is used to signal graceful shutdown of Serve().
+	// Closing this channel causes Serve() to return instead of blocking forever with select{}.
+	stopCh chan struct{}
 }
 
 // ServiceInfo Deprecated： common.ServiceInfo type alias, just for compatible with old generate pb.go file
@@ -323,6 +326,13 @@ func (s *Server) Serve() error {
 	}
 	// prevent multiple calls to Serve
 	s.serve = true
+	// re-create stopCh if it was closed by a previous Stop(),
+	// allowing Serve() to be called again after graceful shutdown.
+	select {
+	case <-s.stopCh:
+		s.stopCh = make(chan struct{})
+	default:
+	}
 
 	// release lock in case causing deadlock
 	s.mu.Unlock()
@@ -356,7 +366,24 @@ func (s *Server) Serve() error {
 	probe.SetStartupComplete(true)
 	probe.SetReady(true)
 
-	select {}
+	// Block until Stop() is called or the stopCh is closed,
+	// enabling graceful shutdown instead of an unrecoverable hard spin.
+	<-s.stopCh
+	return nil
+}
+
+// Stop signals the server to shut down gracefully.
+// It is safe to call multiple times; only the first call has effect.
+// After Stop, Serve() will return and the server can be started again
+// by calling Serve() (if desired).
+func (s *Server) Stop() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if !s.serve {
+		return
+	}
+	s.serve = false
+	close(s.stopCh)
 }
 
 // In order to expose internal services
@@ -463,6 +490,7 @@ func NewServer(opts ...ServerOption) (*Server, error) {
 		cfg:                   newSrvOpts,
 		svcOptsMap:            make(map[string]*ServiceOptions),
 		interfaceNameServices: make(map[string]*ServiceOptions),
+		stopCh:                make(chan struct{}),
 	}
 	return srv, nil
 }
