@@ -59,6 +59,14 @@ func logConfigCenterStartFailure(err error) {
 }
 
 func (rc *InstanceOptions) finalizeGlobalOptions() error {
+	return rc.finalizeGlobalOptionsWithRuntimeActivation(true)
+}
+
+func (rc *InstanceOptions) finalizeGlobalOptionsForDynamicUpdate() error {
+	return rc.finalizeGlobalOptionsWithRuntimeActivation(false)
+}
+
+func (rc *InstanceOptions) finalizeGlobalOptionsWithRuntimeActivation(activateRuntime bool) error {
 	if err := rc.initGlobalApplication(); err != nil {
 		return err
 	}
@@ -71,16 +79,16 @@ func (rc *InstanceOptions) finalizeGlobalOptions() error {
 	if err := rc.initGlobalRegistries(); err != nil {
 		return err
 	}
-	if err := rc.initGlobalMetrics(); err != nil {
+	if err := rc.initGlobalMetrics(activateRuntime); err != nil {
 		return err
 	}
-	if err := rc.initGlobalOtel(); err != nil {
+	if err := rc.initGlobalOtel(activateRuntime); err != nil {
 		return err
 	}
 	if err := rc.initGlobalRouters(); err != nil {
 		return err
 	}
-	if err := rc.initGlobalProvider(); err != nil {
+	if err := rc.initGlobalProvider(activateRuntime); err != nil {
 		return err
 	}
 	if err := rc.initGlobalConsumer(); err != nil {
@@ -219,7 +227,7 @@ func validateGlobalRegistryAddresses(registries map[string]*global.RegistryConfi
 	return nil
 }
 
-func (rc *InstanceOptions) initGlobalMetrics() error {
+func (rc *InstanceOptions) initGlobalMetrics(activateRuntime bool) error {
 	if rc.Metrics == nil {
 		rc.Metrics = global.DefaultMetricsConfig()
 	}
@@ -230,7 +238,7 @@ func (rc *InstanceOptions) initGlobalMetrics() error {
 	if err := commonCfg.Verify(rc.Metrics); err != nil {
 		return err
 	}
-	if rc.Metrics.Enable != nil && *rc.Metrics.Enable {
+	if activateRuntime && rc.Metrics.Enable != nil && *rc.Metrics.Enable {
 		metrics.Init(metricsURL(rc))
 	}
 	return nil
@@ -289,7 +297,7 @@ func metricsURL(rc *InstanceOptions) *common.URL {
 	return u
 }
 
-func (rc *InstanceOptions) initGlobalOtel() error {
+func (rc *InstanceOptions) initGlobalOtel(activateRuntime bool) error {
 	if rc.Otel == nil {
 		rc.Otel = global.DefaultOtelConfig()
 	}
@@ -303,6 +311,9 @@ func (rc *InstanceOptions) initGlobalOtel() error {
 		return err
 	}
 	if rc.Otel.TracingConfig.Enable != nil && *rc.Otel.TracingConfig.Enable {
+		if !activateRuntime {
+			return nil
+		}
 		extension.AddCustomShutdownCallback(extension.GetTraceShutdownCallback())
 		return initGlobalTrace(rc.Otel.TracingConfig, rc.Application)
 	}
@@ -362,7 +373,7 @@ func (rc *InstanceOptions) initGlobalRouters() error {
 	return nil
 }
 
-func (rc *InstanceOptions) initGlobalProvider() error {
+func (rc *InstanceOptions) initGlobalProvider(activateRuntime bool) error {
 	if rc.Provider == nil {
 		rc.Provider = global.DefaultProviderConfig()
 	}
@@ -393,9 +404,11 @@ func (rc *InstanceOptions) initGlobalProvider() error {
 		if !rc.Provider.AdaptiveService {
 			return fmt.Errorf("the adaptive service is disabled, adaptive service verbose should be disabled either")
 		}
-		gostlog.Infof("adaptive service verbose is enabled.")
-		gostlog.Debugf("debug-level info could be shown.")
-		aslimiter.Verbose = true
+		if activateRuntime {
+			gostlog.Infof("adaptive service verbose is enabled.")
+			gostlog.Debugf("debug-level info could be shown.")
+			aslimiter.Verbose = true
+		}
 	}
 	return nil
 }
@@ -516,7 +529,7 @@ func (rc *InstanceOptions) initGlobalReference(referenceConfig *global.Reference
 	if referenceConfig.Cluster == "" {
 		referenceConfig.Cluster = constant.ClusterKeyFailover
 	}
-	if len(referenceConfig.RegistryIDs) > 0 {
+	if referenceConfig.URL == "" && len(referenceConfig.RegistryIDs) > 0 {
 		if err := internal.ValidateRegistryIDs(referenceConfig.RegistryIDs, rc.Registries); err != nil {
 			return err
 		}
@@ -710,6 +723,31 @@ func clientNameID(prefix, protocol, address string) string {
 	return strings.Join([]string{prefix, protocol, address}, "-")
 }
 
+func cloneInstanceOptions(rc *InstanceOptions) *InstanceOptions {
+	if rc == nil {
+		return nil
+	}
+	return &InstanceOptions{
+		Application:         rc.CloneApplication(),
+		Protocols:           rc.CloneProtocols(),
+		Registries:          rc.CloneRegistries(),
+		ConfigCenter:        rc.CloneConfigCenter(),
+		MetadataReport:      rc.CloneMetadataReport(),
+		Provider:            rc.CloneProvider(),
+		Consumer:            rc.CloneConsumer(),
+		Metrics:             rc.CloneMetrics(),
+		Otel:                rc.CloneOtel(),
+		Logger:              rc.CloneLogger(),
+		Shutdown:            rc.CloneShutdown(),
+		Router:              rc.CloneRouter(),
+		EventDispatcherType: rc.EventDispatcherType,
+		CacheFile:           rc.CacheFile,
+		Custom:              rc.CloneCustom(),
+		Profiles:            rc.CloneProfiles(),
+		TLSConfig:           rc.CloneTLSConfig(),
+	}
+}
+
 func (rc *InstanceOptions) Process(event *config_center.ConfigChangeEvent) {
 	gostlog.Infof("CenterConfig process event:\n%+v", event)
 	if event == nil {
@@ -722,13 +760,15 @@ func (rc *InstanceOptions) Process(event *config_center.ConfigChangeEvent) {
 	}
 	conf := NewLoaderConf(WithBytes([]byte(value)))
 	koan := GetConfigResolver(conf)
-	if err := koan.UnmarshalWithConf(rc.Prefix(), rc, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
+	next := cloneInstanceOptions(rc)
+	if err := koan.UnmarshalWithConf(next.Prefix(), next, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
 		gostlog.Errorf("CenterConfig process unmarshalConf failed, got error %#v", err)
 		return
 	}
-	if err := rc.finalizeGlobalOptions(); err != nil {
+	if err := next.finalizeGlobalOptionsForDynamicUpdate(); err != nil {
 		gostlog.Errorf("CenterConfig process global init failed, got error %#v", err)
 		return
 	}
+	*rc = *next
 	setCompatRootConfig(compatRootConfig(rc))
 }

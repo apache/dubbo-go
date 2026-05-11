@@ -25,6 +25,9 @@ import (
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/otel/propagation"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
 import (
@@ -35,6 +38,7 @@ import (
 	legacyconfig "dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/otel/trace"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/server"
 )
@@ -331,6 +335,78 @@ dubbo:
 	assert.Equal(t, "dynamic-app", root.Application.Name)
 	require.NotNil(t, root.TLSConfig)
 	assert.Equal(t, "dubbo.example", root.TLSConfig.TLSServerName)
+}
+
+func TestInstanceProcessDoesNotMutateLiveOptionsWhenFinalizationFails(t *testing.T) {
+	restoreCompatRootConfig(t)
+
+	ins, err := NewInstance(WithName("stable-app"))
+	require.NoError(t, err)
+	rootBefore := legacyconfig.GetRootConfig()
+	require.NotNil(t, rootBefore)
+	assert.Equal(t, "stable-app", rootBefore.Application.Name)
+
+	ins.insOpts.Process(&config_center.ConfigChangeEvent{Value: `
+dubbo:
+  application:
+    name: bad-dynamic-app
+  registries:
+    zk-a:
+      protocol: zookeeper
+      address: 127.0.0.1:2181
+    zk-b:
+      protocol: zookeeper
+      address: 127.0.0.1:2181
+`})
+
+	assert.Equal(t, "stable-app", ins.insOpts.Application.Name)
+	rootAfter := legacyconfig.GetRootConfig()
+	require.NotNil(t, rootAfter)
+	assert.Equal(t, "stable-app", rootAfter.Application.Name)
+}
+
+func TestInstanceProcessDoesNotDuplicateTraceShutdownCallback(t *testing.T) {
+	extension.SetTraceExporter("test-trace", func(config *trace.ExporterConfig) (trace.Exporter, error) {
+		return &trace.DefaultExporter{
+			TracerProvider: sdktrace.NewTracerProvider(),
+			Propagator:     propagation.TraceContext{},
+		}, nil
+	})
+
+	enabled := true
+	before := extension.GetAllCustomShutdownCallbacks().Len()
+	ins, err := NewInstance(func(opts *InstanceOptions) {
+		opts.Otel = &global.OtelConfig{
+			TracingConfig: &global.OtelTraceConfig{
+				Enable:   &enabled,
+				Exporter: "test-trace",
+			},
+		}
+	})
+	require.NoError(t, err)
+	afterInit := extension.GetAllCustomShutdownCallbacks().Len()
+	require.Equal(t, before+1, afterInit)
+
+	ins.insOpts.Process(&config_center.ConfigChangeEvent{Value: `
+dubbo:
+  application:
+    name: dynamic-app
+`})
+
+	assert.Equal(t, afterInit, extension.GetAllCustomShutdownCallbacks().Len())
+	assert.Equal(t, "dynamic-app", ins.insOpts.Application.Name)
+}
+
+func TestInstanceInitAllowsDirectURLReferenceWithUnusedRegistryIDs(t *testing.T) {
+	_, err := NewInstance(func(opts *InstanceOptions) {
+		opts.Consumer = global.DefaultConsumerConfig()
+		opts.Consumer.References["direct"] = &global.ReferenceConfig{
+			InterfaceName: "org.apache.dubbo.DirectService",
+			URL:           "tri://127.0.0.1:50051",
+			RegistryIDs:   []string{"missing"},
+		}
+	})
+	require.NoError(t, err)
 }
 
 func TestSetCompatRootConfigIgnoresNil(t *testing.T) {
