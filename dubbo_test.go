@@ -29,7 +29,11 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/client"
+	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	legacyconfig "dubbo.apache.org/dubbo-go/v3/config"
+	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/server"
@@ -130,6 +134,120 @@ func TestInstanceInitKeepsGlobalOnlyConfig(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestInstanceInitKeepsGlobalOnlyConfigWithConfigCenter(t *testing.T) {
+	resetDynamicConfiguration(t)
+
+	const configCenterProtocol = "mock-global-init"
+	extension.SetConfigCenterFactory(configCenterProtocol, func() config_center.DynamicConfigurationFactory {
+		return &config_center.MockDynamicConfigurationFactory{
+			Content: `
+dubbo:
+  application:
+    name: remote-app
+`,
+		}
+	})
+
+	ins, err := NewInstance(func(opts *InstanceOptions) {
+		opts.ConfigCenter = &global.CenterConfig{
+			Protocol:      configCenterProtocol,
+			Address:       "127.0.0.1:8848",
+			DataId:        "dubbo.yaml",
+			Group:         "dubbo",
+			FileExtension: "yaml",
+		}
+		opts.Shutdown = global.DefaultShutdownConfig()
+		opts.Shutdown.ClosingInvokerExpireTime = "7s"
+		opts.Protocols = map[string]*global.ProtocolConfig{
+			constant.TriProtocol: {
+				Name: constant.TriProtocol,
+				Port: defaultTripleProtocolPort,
+				TripleConfig: &global.TripleConfig{
+					Cors: &global.CorsConfig{
+						AllowOrigins: []string{"https://example.com"},
+					},
+					OpenAPI: &global.OpenAPIConfig{
+						Enabled: true,
+						Path:    "/dubbo/openapi/",
+					},
+				},
+			},
+		}
+	})
+	require.NoError(t, err)
+
+	assert.Equal(t, "remote-app", ins.insOpts.Application.Name)
+	assert.Equal(t, "7s", ins.insOpts.Shutdown.ClosingInvokerExpireTime)
+	tri := ins.insOpts.Protocols[constant.TriProtocol]
+	require.NotNil(t, tri)
+	require.NotNil(t, tri.TripleConfig)
+	require.NotNil(t, tri.TripleConfig.Cors)
+	require.NotNil(t, tri.TripleConfig.OpenAPI)
+	assert.Equal(t, []string{"https://example.com"}, tri.TripleConfig.Cors.AllowOrigins)
+	assert.Equal(t, "/dubbo/openapi", tri.TripleConfig.OpenAPI.Path)
+}
+
+func TestInstanceInitDefaultsGlobalProtocolBeforeNewServer(t *testing.T) {
+	ins, err := NewInstance(func(opts *InstanceOptions) {
+		opts.Protocols = map[string]*global.ProtocolConfig{
+			constant.TriProtocol: {},
+		}
+	})
+	require.NoError(t, err)
+
+	tri := ins.insOpts.Protocols[constant.TriProtocol]
+	require.NotNil(t, tri)
+	assert.Equal(t, constant.TriProtocol, tri.Name)
+	assert.Equal(t, defaultTripleProtocolPort, tri.Port)
+
+	_, err = ins.NewServer(func(options *server.ServerOptions) {
+		tri := options.Protocols[constant.TriProtocol]
+		require.NotNil(t, tri)
+		assert.Equal(t, constant.TriProtocol, tri.Name)
+		assert.Equal(t, defaultTripleProtocolPort, tri.Port)
+	})
+	require.NoError(t, err)
+}
+
+func TestInstanceInitTranslatesGlobalRegistryAddress(t *testing.T) {
+	ins, err := NewInstance(func(opts *InstanceOptions) {
+		opts.Registries = map[string]*global.RegistryConfig{
+			"zk": {
+				Address:         "zookeeper://127.0.0.1:2181",
+				UseAsMetaReport: "false",
+			},
+		}
+	})
+	require.NoError(t, err)
+
+	reg := ins.insOpts.Registries["zk"]
+	require.NotNil(t, reg)
+	assert.Equal(t, constant.ZookeeperKey, reg.Protocol)
+	assert.Equal(t, "127.0.0.1:2181", reg.Address)
+}
+
+func TestInstanceInitMirrorsTLSConfigToCompatRootConfig(t *testing.T) {
+	restoreCompatRootConfig(t)
+
+	_, err := NewInstance(func(opts *InstanceOptions) {
+		opts.TLSConfig = &global.TLSConfig{
+			CACertFile:    "ca.pem",
+			TLSCertFile:   "cert.pem",
+			TLSKeyFile:    "key.pem",
+			TLSServerName: "dubbo.example",
+		}
+	})
+	require.NoError(t, err)
+
+	root := legacyconfig.GetRootConfig()
+	require.NotNil(t, root)
+	require.NotNil(t, root.TLSConfig)
+	assert.Equal(t, "ca.pem", root.TLSConfig.CACertFile)
+	assert.Equal(t, "cert.pem", root.TLSConfig.TLSCertFile)
+	assert.Equal(t, "key.pem", root.TLSConfig.TLSKeyFile)
+	assert.Equal(t, "dubbo.example", root.TLSConfig.TLSServerName)
+}
+
 func TestSetProviderServiceRegistersByReference(t *testing.T) {
 	proLock.Lock()
 	original := cloneServiceDefinitions(providerServices)
@@ -180,4 +298,26 @@ func TestGetConsumerConnectionFromConsumerServices(t *testing.T) {
 	conn, err = GetConsumerConnection(svc.Reference())
 	require.NoError(t, err)
 	assert.Equal(t, expectedConn, conn)
+}
+
+func resetDynamicConfiguration(t *testing.T) {
+	t.Helper()
+	env := commonCfg.GetEnvInstance()
+	original := env.GetDynamicConfiguration()
+	env.SetDynamicConfiguration(nil)
+	t.Cleanup(func() {
+		env.SetDynamicConfiguration(original)
+	})
+}
+
+func restoreCompatRootConfig(t *testing.T) {
+	t.Helper()
+	original := legacyconfig.GetRootConfig()
+	if original == nil {
+		return
+	}
+	originalValue := *original
+	t.Cleanup(func() {
+		legacyconfig.SetRootConfig(originalValue)
+	})
 }

@@ -23,10 +23,6 @@ import (
 )
 
 import (
-	log "github.com/dubbogo/gost/log/logger"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
@@ -87,76 +83,21 @@ func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 		opt(rc)
 	}
 
-	// remaining procedure is like RootConfig.Init() without RootConfig.Start()
-	// tasks of RootConfig.Start() would be decomposed to Client and Server
-	rcCompat := compatRootConfig(rc)
-
-	if err := rcCompat.Logger.Init(); err != nil { // init default logger
+	if err := rc.initGlobalLogger(); err != nil {
 		return err
 	}
-	if err := rcCompat.ConfigCenter.Init(rcCompat); err != nil {
-		log.Infof("[Config Center] Config center doesn't start")
-		log.Debugf("config center doesn't start because %s", err)
+	if err := rc.initGlobalConfigCenter(); err != nil {
+		logConfigCenterStartFailure(err)
 	} else {
-		compatInstanceOptions(rcCompat, rc)
-		if err = rcCompat.Logger.Init(); err != nil { // init logger using config from config center again
+		if err := rc.initGlobalLogger(); err != nil {
 			return err
 		}
 	}
 
-	if err := rcCompat.Application.Init(); err != nil {
+	if err := rc.finalizeGlobalOptions(); err != nil {
 		return err
 	}
-
-	// init user define
-	if err := rcCompat.Custom.Init(); err != nil {
-		return err
-	}
-
-	// init protocol
-	for _, protocolConfig := range rcCompat.Protocols {
-		if err := protocolConfig.Init(); err != nil {
-			return err
-		}
-	}
-
-	// init registry
-	registries := rcCompat.Registries
-
-	for _, reg := range registries {
-		if err := reg.Init(); err != nil {
-			return err
-		}
-	}
-
-	if err := rcCompat.Metrics.Init(rcCompat); err != nil {
-		return err
-	}
-	if err := rcCompat.Otel.Init(rcCompat.Application); err != nil {
-		return err
-	}
-
-	routers := rcCompat.Router
-	if len(routers) > 0 {
-		for _, r := range routers {
-			if err := r.Init(); err != nil {
-				return err
-			}
-		}
-		rcCompat.Router = routers
-	}
-
-	// provider、consumer must last init
-	if err := rcCompat.Provider.Init(rcCompat); err != nil {
-		return err
-	}
-	if err := rcCompat.Consumer.Init(rcCompat); err != nil {
-		return err
-	}
-	if err := rcCompat.Shutdown.Init(); err != nil {
-		return err
-	}
-	setCompatRootConfig(rcCompat)
+	setCompatRootConfig(compatRootConfig(rc))
 
 	if err := rc.initMetadataReport(); err != nil {
 		return err

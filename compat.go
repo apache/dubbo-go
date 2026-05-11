@@ -62,6 +62,7 @@ func compatRootConfig(c *InstanceOptions) *config.RootConfig {
 		CacheFile:           c.CacheFile,
 		Custom:              compatCustomConfig(c.Custom),
 		Profiles:            compatProfilesConfig(c.Profiles),
+		TLSConfig:           compatTLSConfig(c.TLSConfig),
 	}
 }
 
@@ -617,6 +618,7 @@ func compatInstanceOptions(cr *config.RootConfig, rc *InstanceOptions) {
 	rc.CacheFile = cr.CacheFile
 	rc.Custom = compatGlobalCustomConfig(cr.Custom)
 	rc.Profiles = compatGlobalProfilesConfig(cr.Profiles)
+	rc.TLSConfig = CompatGlobalTLSConfig(cr.TLSConfig)
 }
 
 func setCompatRootConfig(rc *config.RootConfig) {
@@ -1146,6 +1148,18 @@ func compatGlobalProfilesConfig(c *config.ProfilesConfig) *global.ProfilesConfig
 	}
 	return &global.ProfilesConfig{
 		Active: c.Active,
+	}
+}
+
+func compatTLSConfig(c *global.TLSConfig) *config.TLSConfig {
+	if c == nil {
+		return nil
+	}
+	return &config.TLSConfig{
+		CACertFile:    c.CACertFile,
+		TLSCertFile:   c.TLSCertFile,
+		TLSKeyFile:    c.TLSKeyFile,
+		TLSServerName: c.TLSServerName,
 	}
 }
 
