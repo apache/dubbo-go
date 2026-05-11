@@ -209,6 +209,23 @@ func TestInstanceInitDefaultsGlobalProtocolBeforeNewServer(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestInstanceInitAddsDefaultGlobalProtocolWhenEmpty(t *testing.T) {
+	ins, err := NewInstance()
+	require.NoError(t, err)
+
+	tri := ins.insOpts.Protocols[constant.TriProtocol]
+	require.NotNil(t, tri)
+	assert.Equal(t, constant.TriProtocol, tri.Name)
+	assert.Equal(t, defaultTripleProtocolPort, tri.Port)
+	assert.Equal(t, "4mib", tri.MaxServerRecvMsgSize)
+
+	root := legacyconfig.GetRootConfig()
+	require.NotNil(t, root)
+	require.NotNil(t, root.Protocols[constant.TriProtocol])
+	assert.Equal(t, constant.TriProtocol, root.Protocols[constant.TriProtocol].Name)
+	assert.Equal(t, defaultTripleProtocolPort, root.Protocols[constant.TriProtocol].Port)
+}
+
 func TestInstanceInitTranslatesGlobalRegistryAddress(t *testing.T) {
 	ins, err := NewInstance(func(opts *InstanceOptions) {
 		opts.Registries = map[string]*global.RegistryConfig{
@@ -224,6 +241,23 @@ func TestInstanceInitTranslatesGlobalRegistryAddress(t *testing.T) {
 	require.NotNil(t, reg)
 	assert.Equal(t, constant.ZookeeperKey, reg.Protocol)
 	assert.Equal(t, "127.0.0.1:2181", reg.Address)
+}
+
+func TestInstanceInitRejectsDuplicateGlobalRegistryAddress(t *testing.T) {
+	_, err := NewInstance(func(opts *InstanceOptions) {
+		opts.Registries = map[string]*global.RegistryConfig{
+			"zk-a": {
+				Protocol: "zookeeper",
+				Address:  "127.0.0.1:2181",
+			},
+			"zk-b": {
+				Protocol: "zookeeper",
+				Address:  "127.0.0.1:2181",
+			},
+		}
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "duplicate registry address")
 }
 
 func TestInstanceInitMirrorsTLSConfigToCompatRootConfig(t *testing.T) {
@@ -246,6 +280,63 @@ func TestInstanceInitMirrorsTLSConfigToCompatRootConfig(t *testing.T) {
 	assert.Equal(t, "cert.pem", root.TLSConfig.TLSCertFile)
 	assert.Equal(t, "key.pem", root.TLSConfig.TLSKeyFile)
 	assert.Equal(t, "dubbo.example", root.TLSConfig.TLSServerName)
+}
+
+func TestInstanceProcessKeepsGlobalOnlyConfigAndRefreshesCompatRootConfig(t *testing.T) {
+	restoreCompatRootConfig(t)
+
+	ins, err := NewInstance(func(opts *InstanceOptions) {
+		opts.Shutdown = global.DefaultShutdownConfig()
+		opts.Shutdown.ClosingInvokerExpireTime = "7s"
+		opts.TLSConfig = &global.TLSConfig{
+			CACertFile:    "ca.pem",
+			TLSCertFile:   "cert.pem",
+			TLSKeyFile:    "key.pem",
+			TLSServerName: "dubbo.example",
+		}
+		opts.Protocols = map[string]*global.ProtocolConfig{
+			constant.TriProtocol: {
+				TripleConfig: &global.TripleConfig{
+					Cors: &global.CorsConfig{
+						AllowOrigins: []string{"https://example.com"},
+					},
+					OpenAPI: &global.OpenAPIConfig{
+						Enabled: true,
+						Path:    "/dubbo/openapi/",
+					},
+				},
+			},
+		}
+	})
+	require.NoError(t, err)
+
+	ins.insOpts.Process(&config_center.ConfigChangeEvent{Value: `
+dubbo:
+  application:
+    name: dynamic-app
+`})
+
+	assert.Equal(t, "dynamic-app", ins.insOpts.Application.Name)
+	assert.Equal(t, "7s", ins.insOpts.Shutdown.ClosingInvokerExpireTime)
+	tri := ins.insOpts.Protocols[constant.TriProtocol]
+	require.NotNil(t, tri)
+	require.NotNil(t, tri.TripleConfig)
+	require.NotNil(t, tri.TripleConfig.Cors)
+	require.NotNil(t, tri.TripleConfig.OpenAPI)
+	assert.Equal(t, []string{"https://example.com"}, tri.TripleConfig.Cors.AllowOrigins)
+	assert.Equal(t, "/dubbo/openapi", tri.TripleConfig.OpenAPI.Path)
+
+	root := legacyconfig.GetRootConfig()
+	require.NotNil(t, root)
+	assert.Equal(t, "dynamic-app", root.Application.Name)
+	require.NotNil(t, root.TLSConfig)
+	assert.Equal(t, "dubbo.example", root.TLSConfig.TLSServerName)
+}
+
+func TestSetCompatRootConfigIgnoresNil(t *testing.T) {
+	require.NotPanics(t, func() {
+		setCompatRootConfig(nil)
+	})
 }
 
 func TestSetProviderServiceRegistersByReference(t *testing.T) {

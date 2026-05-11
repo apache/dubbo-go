@@ -116,8 +116,10 @@ func (rc *InstanceOptions) initGlobalCustom() error {
 }
 
 func (rc *InstanceOptions) initGlobalProtocols() error {
-	if rc.Protocols == nil {
-		rc.Protocols = make(map[string]*global.ProtocolConfig)
+	if len(rc.Protocols) <= 0 {
+		rc.Protocols = map[string]*global.ProtocolConfig{
+			constant.TriProtocol: {},
+		}
 	}
 	for key, protocolConfig := range rc.Protocols {
 		if protocolConfig == nil {
@@ -183,7 +185,7 @@ func (rc *InstanceOptions) initGlobalRegistries() error {
 			return err
 		}
 	}
-	return nil
+	return validateGlobalRegistryAddresses(rc.Registries)
 }
 
 func translateGlobalRegistryAddress(reg *global.RegistryConfig) error {
@@ -196,6 +198,24 @@ func translateGlobalRegistryAddress(reg *global.RegistryConfig) error {
 	}
 	reg.Protocol = u.Scheme
 	reg.Address = u.Host + u.Path
+	return nil
+}
+
+func validateGlobalRegistryAddresses(registries map[string]*global.RegistryConfig) error {
+	cacheKeyMap := make(map[string]string, len(registries))
+	for id, reg := range registries {
+		if reg == nil {
+			continue
+		}
+		cacheKey := reg.Address
+		if reg.Namespace != "" {
+			cacheKey = cacheKey + "?" + constant.NacosNamespaceID + "=" + reg.Namespace
+		}
+		if existingID, exists := cacheKeyMap[cacheKey]; exists {
+			return fmt.Errorf("duplicate registry address: [%s] used by both [%s] and [%s]", cacheKey, existingID, id)
+		}
+		cacheKeyMap[cacheKey] = id
+	}
 	return nil
 }
 
