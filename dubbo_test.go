@@ -147,7 +147,7 @@ dubbo:
 		opts.Protocols = map[string]*global.ProtocolConfig{
 			constant.TriProtocol: {
 				Name: constant.TriProtocol,
-				Port: defaultTripleProtocolPort,
+				Port: constant.DefaultTripleProtocolPort,
 				TripleConfig: &global.TripleConfig{
 					Cors: &global.CorsConfig{
 						AllowOrigins: []string{"https://example.com"},
@@ -198,13 +198,13 @@ func TestInstanceInitDefaultsGlobalProtocolBeforeNewServer(t *testing.T) {
 	tri := ins.insOpts.Protocols[constant.TriProtocol]
 	require.NotNil(t, tri)
 	assert.Equal(t, constant.TriProtocol, tri.Name)
-	assert.Equal(t, defaultTripleProtocolPort, tri.Port)
+	assert.Equal(t, constant.DefaultTripleProtocolPort, tri.Port)
 
 	_, err = ins.NewServer(func(options *server.ServerOptions) {
 		tri := options.Protocols[constant.TriProtocol]
 		require.NotNil(t, tri)
 		assert.Equal(t, constant.TriProtocol, tri.Name)
-		assert.Equal(t, defaultTripleProtocolPort, tri.Port)
+		assert.Equal(t, constant.DefaultTripleProtocolPort, tri.Port)
 	})
 	require.NoError(t, err)
 }
@@ -216,14 +216,14 @@ func TestInstanceInitAddsDefaultGlobalProtocolWhenEmpty(t *testing.T) {
 	tri := ins.insOpts.Protocols[constant.TriProtocol]
 	require.NotNil(t, tri)
 	assert.Equal(t, constant.TriProtocol, tri.Name)
-	assert.Equal(t, defaultTripleProtocolPort, tri.Port)
+	assert.Equal(t, constant.DefaultTripleProtocolPort, tri.Port)
 	assert.Equal(t, "4mib", tri.MaxServerRecvMsgSize)
 
 	root := legacyconfig.GetRootConfig()
 	require.NotNil(t, root)
 	require.NotNil(t, root.Protocols[constant.TriProtocol])
 	assert.Equal(t, constant.TriProtocol, root.Protocols[constant.TriProtocol].Name)
-	assert.Equal(t, defaultTripleProtocolPort, root.Protocols[constant.TriProtocol].Port)
+	assert.Equal(t, constant.DefaultTripleProtocolPort, root.Protocols[constant.TriProtocol].Port)
 }
 
 func TestInstanceInitTranslatesGlobalRegistryAddress(t *testing.T) {
@@ -298,10 +298,66 @@ func TestInstanceInitMirrorsTLSConfigToCompatRootConfig(t *testing.T) {
 	assert.Equal(t, "dubbo.example", root.TLSConfig.TLSServerName)
 }
 
-func TestInstanceProcessKeepsGlobalOnlyConfigAndRefreshesCompatRootConfig(t *testing.T) {
+func TestInstanceInitUsesLegacyMetricsDefaults(t *testing.T) {
+	enabled := true
+	rc := defaultInstanceOptions()
+	rc.Metrics = &global.MetricsConfig{Enable: &enabled}
+
+	require.NoError(t, rc.finalizeGlobalOptionsWithRuntimeActivation(false))
+
+	require.NotNil(t, rc.Metrics.EnableMetadata)
+	require.NotNil(t, rc.Metrics.EnableRegistry)
+	require.NotNil(t, rc.Metrics.EnableConfigCenter)
+	require.NotNil(t, rc.Metrics.Prometheus)
+	require.NotNil(t, rc.Metrics.Prometheus.Exporter)
+	require.NotNil(t, rc.Metrics.Prometheus.Exporter.Enabled)
+	assert.False(t, *rc.Metrics.EnableMetadata)
+	assert.False(t, *rc.Metrics.EnableRegistry)
+	assert.False(t, *rc.Metrics.EnableConfigCenter)
+	assert.True(t, *rc.Metrics.Prometheus.Exporter.Enabled)
+}
+
+func TestInstanceInitPreservesLegacyTracingConfig(t *testing.T) {
 	restoreCompatRootConfig(t)
 
 	ins, err := NewInstance(func(opts *InstanceOptions) {
+		opts.Tracing = map[string]*global.TracingConfig{
+			"jaeger": {
+				Address: "127.0.0.1:6831",
+			},
+		}
+	})
+	require.NoError(t, err)
+
+	assert.Equal(t, "jaeger", ins.insOpts.Provider.TracingKey)
+	assert.Equal(t, "jaeger", ins.insOpts.Consumer.TracingKey)
+
+	tracing := legacyconfig.GetTracingConfig("jaeger")
+	require.NotNil(t, tracing)
+	assert.Equal(t, "jaeger", tracing.Name)
+	assert.Equal(t, "127.0.0.1:6831", tracing.Address)
+	require.NotNil(t, tracing.UseAgent)
+	assert.False(t, *tracing.UseAgent)
+}
+
+func TestInstanceProcessAppliesLegacyDynamicUpdatesAndRefreshesCompatRootConfig(t *testing.T) {
+	restoreCompatRootConfig(t)
+
+	ins, err := NewInstance(func(opts *InstanceOptions) {
+		opts.Application = &global.ApplicationConfig{
+			Name:    "stable-app",
+			Version: "1.0.0",
+		}
+		opts.Consumer = global.DefaultConsumerConfig()
+		opts.Consumer.RequestTimeout = "3s"
+		opts.Registries = map[string]*global.RegistryConfig{
+			"zk": {
+				Protocol:        "zookeeper",
+				Address:         "127.0.0.1:2181",
+				Timeout:         "5s",
+				UseAsMetaReport: "false",
+			},
+		}
 		opts.Shutdown = global.DefaultShutdownConfig()
 		opts.Shutdown.ClosingInvokerExpireTime = "7s"
 		opts.TLSConfig = &global.TLSConfig{
@@ -310,19 +366,6 @@ func TestInstanceProcessKeepsGlobalOnlyConfigAndRefreshesCompatRootConfig(t *tes
 			TLSKeyFile:    "key.pem",
 			TLSServerName: "dubbo.example",
 		}
-		opts.Protocols = map[string]*global.ProtocolConfig{
-			constant.TriProtocol: {
-				TripleConfig: &global.TripleConfig{
-					Cors: &global.CorsConfig{
-						AllowOrigins: []string{"https://example.com"},
-					},
-					OpenAPI: &global.OpenAPIConfig{
-						Enabled: true,
-						Path:    "/dubbo/openapi/",
-					},
-				},
-			},
-		}
 	})
 	require.NoError(t, err)
 
@@ -330,26 +373,34 @@ func TestInstanceProcessKeepsGlobalOnlyConfigAndRefreshesCompatRootConfig(t *tes
 dubbo:
   application:
     name: dynamic-app
+  registries:
+    zk:
+      timeout: 9s
+  consumer:
+    request-timeout: 11s
+  shutdown:
+    closing-invoker-expire-time: 2s
 `})
 
-	assert.Equal(t, "dynamic-app", ins.insOpts.Application.Name)
+	assert.Equal(t, "stable-app", ins.insOpts.Application.Name)
+	assert.Equal(t, "1.0.0", ins.insOpts.Application.Version)
+	assert.Equal(t, "9s", ins.insOpts.Registries["zk"].Timeout)
+	assert.Equal(t, "11s", ins.insOpts.Consumer.RequestTimeout)
 	assert.Equal(t, "7s", ins.insOpts.Shutdown.ClosingInvokerExpireTime)
-	tri := ins.insOpts.Protocols[constant.TriProtocol]
-	require.NotNil(t, tri)
-	require.NotNil(t, tri.TripleConfig)
-	require.NotNil(t, tri.TripleConfig.Cors)
-	require.NotNil(t, tri.TripleConfig.OpenAPI)
-	assert.Equal(t, []string{"https://example.com"}, tri.TripleConfig.Cors.AllowOrigins)
-	assert.Equal(t, "/dubbo/openapi", tri.TripleConfig.OpenAPI.Path)
+	require.NotNil(t, ins.insOpts.TLSConfig)
+	assert.Equal(t, "dubbo.example", ins.insOpts.TLSConfig.TLSServerName)
 
 	root := legacyconfig.GetRootConfig()
 	require.NotNil(t, root)
-	assert.Equal(t, "dynamic-app", root.Application.Name)
+	assert.Equal(t, "stable-app", root.Application.Name)
+	require.NotNil(t, root.Registries["zk"])
+	assert.Equal(t, "9s", root.Registries["zk"].Timeout)
+	assert.Equal(t, "11s", root.Consumer.RequestTimeout)
 	require.NotNil(t, root.TLSConfig)
 	assert.Equal(t, "dubbo.example", root.TLSConfig.TLSServerName)
 }
 
-func TestInstanceProcessDoesNotMutateLiveOptionsWhenFinalizationFails(t *testing.T) {
+func TestInstanceProcessDoesNotMutateLiveOptionsOnInvalidPayload(t *testing.T) {
 	restoreCompatRootConfig(t)
 
 	ins, err := NewInstance(WithName("stable-app"))
@@ -358,18 +409,7 @@ func TestInstanceProcessDoesNotMutateLiveOptionsWhenFinalizationFails(t *testing
 	require.NotNil(t, rootBefore)
 	assert.Equal(t, "stable-app", rootBefore.Application.Name)
 
-	ins.insOpts.Process(&config_center.ConfigChangeEvent{Value: `
-dubbo:
-  application:
-    name: bad-dynamic-app
-  registries:
-    zk-a:
-      protocol: zookeeper
-      address: 127.0.0.1:2181
-    zk-b:
-      protocol: zookeeper
-      address: 127.0.0.1:2181
-`})
+	ins.insOpts.Process(&config_center.ConfigChangeEvent{Value: 123})
 
 	assert.Equal(t, "stable-app", ins.insOpts.Application.Name)
 	rootAfter := legacyconfig.GetRootConfig()

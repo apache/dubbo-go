@@ -45,6 +45,19 @@ func compatRootConfig(c *InstanceOptions) *config.RootConfig {
 	for _, v := range c.Router {
 		routeCompat = append(routeCompat, compatRouterConfig(v))
 	}
+	tracingCompat := make(map[string]*config.TracingConfig)
+	for k, v := range c.Tracing {
+		if v == nil {
+			tracingCompat[k] = nil
+			continue
+		}
+		tracingCompat[k] = &config.TracingConfig{
+			Name:        v.Name,
+			ServiceName: v.ServiceName,
+			Address:     v.Address,
+			UseAgent:    v.UseAgent,
+		}
+	}
 	return &config.RootConfig{
 		Application:         compatApplicationConfig(c.Application),
 		Protocols:           proCompat,
@@ -54,6 +67,7 @@ func compatRootConfig(c *InstanceOptions) *config.RootConfig {
 		Provider:            compatProviderConfig(c.Provider),
 		Consumer:            compatConsumerConfig(c.Consumer),
 		Metrics:             compatMetricConfig(c.Metrics),
+		Tracing:             tracingCompat,
 		Otel:                compatOtelConfig(c.Otel),
 		Logger:              compatLoggerConfig(c.Logger),
 		Shutdown:            compatShutdownConfig(c.Shutdown),

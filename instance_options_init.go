@@ -29,7 +29,7 @@ import (
 
 	"github.com/creasty/defaults"
 
-	gostlog "github.com/dubbogo/gost/log/logger"
+	"github.com/dubbogo/gost/log/logger"
 
 	"github.com/knadh/koanf"
 
@@ -51,19 +51,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
-const defaultTripleProtocolPort = "50051"
-
-func logConfigCenterStartFailure(err error) {
-	gostlog.Infof("[Config Center] Config center doesn't start")
-	gostlog.Debugf("config center doesn't start because %s", err)
-}
-
 func (rc *InstanceOptions) finalizeGlobalOptions() error {
 	return rc.finalizeGlobalOptionsWithRuntimeActivation(true)
-}
-
-func (rc *InstanceOptions) finalizeGlobalOptionsForDynamicUpdate() error {
-	return rc.finalizeGlobalOptionsWithRuntimeActivation(false)
 }
 
 func (rc *InstanceOptions) finalizeGlobalOptionsWithRuntimeActivation(activateRuntime bool) error {
@@ -87,6 +76,17 @@ func (rc *InstanceOptions) finalizeGlobalOptionsWithRuntimeActivation(activateRu
 	}
 	if err := rc.initGlobalRouters(); err != nil {
 		return err
+	}
+	for _, tracingConfig := range rc.Tracing {
+		if tracingConfig == nil {
+			continue
+		}
+		if err := defaults.Set(tracingConfig); err != nil {
+			return err
+		}
+		if err := commonCfg.Verify(tracingConfig); err != nil {
+			return err
+		}
 	}
 	if err := rc.initGlobalProvider(activateRuntime); err != nil {
 		return err
@@ -149,27 +149,23 @@ func initGlobalProtocol(protocolConfig *global.ProtocolConfig) error {
 		protocolConfig.Name = constant.TriProtocol
 	}
 	if protocolConfig.Port == "" {
-		protocolConfig.Port = defaultTripleProtocolPort
+		protocolConfig.Port = constant.DefaultTripleProtocolPort
 	}
-	initGlobalTriple(protocolConfig)
-	return commonCfg.Verify(protocolConfig)
-}
-
-func initGlobalTriple(protocolConfig *global.ProtocolConfig) {
 	if protocolConfig.TripleConfig == nil {
 		protocolConfig.TripleConfig = global.DefaultTripleConfig()
-		return
+	} else {
+		if protocolConfig.TripleConfig.Http3 == nil {
+			protocolConfig.TripleConfig.Http3 = global.DefaultHttp3Config()
+		}
+		if protocolConfig.TripleConfig.Cors == nil {
+			protocolConfig.TripleConfig.Cors = global.DefaultCorsConfig()
+		}
+		if protocolConfig.TripleConfig.OpenAPI == nil {
+			protocolConfig.TripleConfig.OpenAPI = global.DefaultOpenAPIConfig()
+		}
+		protocolConfig.TripleConfig.OpenAPI.Init()
 	}
-	if protocolConfig.TripleConfig.Http3 == nil {
-		protocolConfig.TripleConfig.Http3 = global.DefaultHttp3Config()
-	}
-	if protocolConfig.TripleConfig.Cors == nil {
-		protocolConfig.TripleConfig.Cors = global.DefaultCorsConfig()
-	}
-	if protocolConfig.TripleConfig.OpenAPI == nil {
-		protocolConfig.TripleConfig.OpenAPI = global.DefaultOpenAPIConfig()
-	}
-	protocolConfig.TripleConfig.OpenAPI.Init()
+	return commonCfg.Verify(protocolConfig)
 }
 
 func (rc *InstanceOptions) initGlobalRegistries() error {
@@ -186,7 +182,9 @@ func (rc *InstanceOptions) initGlobalRegistries() error {
 		if err := defaults.Set(reg); err != nil {
 			return err
 		}
-		if err := translateGlobalRegistryAddress(reg); err != nil {
+		var err error
+		reg.Protocol, reg.Address, err = translateGlobalAddress(reg.Protocol, reg.Address)
+		if err != nil {
 			return err
 		}
 		if err := commonCfg.Verify(reg); err != nil {
@@ -196,17 +194,15 @@ func (rc *InstanceOptions) initGlobalRegistries() error {
 	return validateGlobalRegistryAddresses(rc.Registries)
 }
 
-func translateGlobalRegistryAddress(reg *global.RegistryConfig) error {
-	if !strings.Contains(reg.Address, "://") {
-		return nil
+func translateGlobalAddress(protocol, address string) (string, string, error) {
+	if !strings.Contains(address, "://") {
+		return protocol, address, nil
 	}
-	u, err := url.Parse(reg.Address)
+	u, err := url.Parse(address)
 	if err != nil {
-		return err
+		return "", "", err
 	}
-	reg.Protocol = u.Scheme
-	reg.Address = u.Host + u.Path
-	return nil
+	return u.Scheme, strings.ReplaceAll(address, u.Scheme+"://", ""), nil
 }
 
 func validateGlobalRegistryAddresses(registries map[string]*global.RegistryConfig) error {
@@ -231,7 +227,21 @@ func (rc *InstanceOptions) initGlobalMetrics(activateRuntime bool) error {
 	if rc.Metrics == nil {
 		rc.Metrics = global.DefaultMetricsConfig()
 	}
-	ensureGlobalMetricsNested(rc.Metrics)
+	if rc.Metrics.Prometheus == nil {
+		rc.Metrics.Prometheus = &global.PrometheusConfig{}
+	}
+	if rc.Metrics.Prometheus.Exporter == nil {
+		rc.Metrics.Prometheus.Exporter = &global.Exporter{}
+	}
+	if rc.Metrics.Prometheus.Pushgateway == nil {
+		rc.Metrics.Prometheus.Pushgateway = &global.PushgatewayConfig{}
+	}
+	if rc.Metrics.Aggregation == nil {
+		rc.Metrics.Aggregation = &global.AggregateConfig{}
+	}
+	if rc.Metrics.Probe == nil {
+		rc.Metrics.Probe = &global.ProbeConfig{}
+	}
 	if err := defaults.Set(rc.Metrics); err != nil {
 		return err
 	}
@@ -242,24 +252,6 @@ func (rc *InstanceOptions) initGlobalMetrics(activateRuntime bool) error {
 		metrics.Init(metricsURL(rc))
 	}
 	return nil
-}
-
-func ensureGlobalMetricsNested(mc *global.MetricsConfig) {
-	if mc.Prometheus == nil {
-		mc.Prometheus = &global.PrometheusConfig{}
-	}
-	if mc.Prometheus.Exporter == nil {
-		mc.Prometheus.Exporter = &global.Exporter{}
-	}
-	if mc.Prometheus.Pushgateway == nil {
-		mc.Prometheus.Pushgateway = &global.PushgatewayConfig{}
-	}
-	if mc.Aggregation == nil {
-		mc.Aggregation = &global.AggregateConfig{}
-	}
-	if mc.Probe == nil {
-		mc.Probe = &global.ProbeConfig{}
-	}
 }
 
 func metricsURL(rc *InstanceOptions) *common.URL {
@@ -315,29 +307,24 @@ func (rc *InstanceOptions) initGlobalOtel(activateRuntime bool) error {
 			return nil
 		}
 		extension.AddCustomShutdownCallback(extension.GetTraceShutdownCallback())
-		return initGlobalTrace(rc.Otel.TracingConfig, rc.Application)
-	}
-	return nil
-}
+		c := rc.Otel.TracingConfig
+		exporter, err := extension.GetTraceExporter(c.Exporter, traceProviderConfig(c, rc.Application))
+		if err != nil {
+			return err
+		}
+		otel.SetTracerProvider(exporter.GetTracerProvider())
+		otel.SetTextMapPropagator(exporter.GetPropagator())
 
-func initGlobalTrace(c *global.OtelTraceConfig, appConfig *global.ApplicationConfig) error {
-	exporter, err := extension.GetTraceExporter(c.Exporter, traceProviderConfig(c, appConfig))
-	if err != nil {
-		return err
+		if c.Exporter == "stdout" {
+			logger.Infof("enable %s trace provider with propagator: %s", c.Exporter, c.Propagator)
+		} else {
+			logger.Infof("enable %s trace provider with endpoint: %s, propagator: %s", c.Exporter, c.Endpoint, c.Propagator)
+		}
+		logger.Infof("sample mode: %s", c.SampleMode)
+		if c.SampleMode == "ratio" {
+			logger.Infof("sample ratio: %.2f", c.SampleRatio)
+		}
 	}
-	otel.SetTracerProvider(exporter.GetTracerProvider())
-	otel.SetTextMapPropagator(exporter.GetPropagator())
-
-	if c.Exporter == "stdout" {
-		gostlog.Infof("enable %s trace provider with propagator: %s", c.Exporter, c.Propagator)
-	} else {
-		gostlog.Infof("enable %s trace provider with endpoint: %s, propagator: %s", c.Exporter, c.Endpoint, c.Propagator)
-	}
-	gostlog.Infof("sample mode: %s", c.SampleMode)
-	if c.SampleMode == "ratio" {
-		gostlog.Infof("sample ratio: %.2f", c.SampleRatio)
-	}
-
 	return nil
 }
 
@@ -388,6 +375,12 @@ func (rc *InstanceOptions) initGlobalProvider(activateRuntime bool) error {
 		rc.Provider.RegistryIDs = globalRegistryIDs(rc.Registries)
 	}
 	rc.Provider.ProtocolIDs = commonCfg.TranslateIds(rc.Provider.ProtocolIDs)
+	if rc.Provider.TracingKey == "" && len(rc.Tracing) > 0 {
+		for key := range rc.Tracing {
+			rc.Provider.TracingKey = key
+			break
+		}
+	}
 
 	for _, serviceConfig := range rc.Provider.Services {
 		if serviceConfig == nil {
@@ -405,8 +398,8 @@ func (rc *InstanceOptions) initGlobalProvider(activateRuntime bool) error {
 			return fmt.Errorf("the adaptive service is disabled, adaptive service verbose should be disabled either")
 		}
 		if activateRuntime {
-			gostlog.Infof("adaptive service verbose is enabled.")
-			gostlog.Debugf("debug-level info could be shown.")
+			logger.Infof("adaptive service verbose is enabled.")
+			logger.Debugf("debug-level info could be shown.")
 			aslimiter.Verbose = true
 		}
 	}
@@ -475,6 +468,12 @@ func (rc *InstanceOptions) initGlobalConsumer() error {
 	rc.Consumer.RegistryIDs = commonCfg.TranslateIds(rc.Consumer.RegistryIDs)
 	if len(rc.Consumer.RegistryIDs) <= 0 {
 		rc.Consumer.RegistryIDs = globalRegistryIDs(rc.Registries)
+	}
+	if rc.Consumer.TracingKey == "" && len(rc.Tracing) > 0 {
+		for key := range rc.Tracing {
+			rc.Consumer.TracingKey = key
+			break
+		}
 	}
 	for _, referenceConfig := range rc.Consumer.References {
 		if referenceConfig == nil {
@@ -577,7 +576,7 @@ func (rc *InstanceOptions) initGlobalLogger() error {
 	if err != nil {
 		return err
 	}
-	gostlog.SetLogger(log)
+	logger.SetLogger(log)
 	getty.SetLogger(log)
 	return nil
 }
@@ -619,7 +618,9 @@ func (rc *InstanceOptions) initGlobalConfigCenter() error {
 	if err := defaults.Set(cc); err != nil {
 		return err
 	}
-	if err := translateGlobalConfigAddress(cc); err != nil {
+	var err error
+	cc.Protocol, cc.Address, err = translateGlobalAddress(cc.Protocol, cc.Address)
+	if err != nil {
 		return err
 	}
 	if err := commonCfg.Verify(cc); err != nil {
@@ -628,35 +629,22 @@ func (rc *InstanceOptions) initGlobalConfigCenter() error {
 	return rc.startGlobalConfigCenter()
 }
 
-func translateGlobalConfigAddress(cc *global.CenterConfig) error {
-	if !strings.Contains(cc.Address, "://") {
-		return nil
-	}
-	translatedURL, err := url.Parse(cc.Address)
-	if err != nil {
-		return err
-	}
-	cc.Protocol = translatedURL.Scheme
-	cc.Address = strings.ReplaceAll(cc.Address, translatedURL.Scheme+"://", "")
-	return nil
-}
-
 func (rc *InstanceOptions) startGlobalConfigCenter() error {
 	cc := rc.ConfigCenter
 	dynamicConfig, err := getGlobalDynamicConfiguration(cc)
 	if err != nil {
-		gostlog.Errorf("[Config Center] Start dynamic configuration center error, error message is %v", err)
+		logger.Errorf("[Config Center] Start dynamic configuration center error, error message is %v", err)
 		return err
 	}
 
 	strConf, err := dynamicConfig.GetProperties(cc.DataId, config_center.WithGroup(cc.Group))
 	if err != nil {
-		gostlog.Warnf("[Config Center] Dynamic config center has started, but config may not be initialized, because: %s", err)
+		logger.Warnf("[Config Center] Dynamic config center has started, but config may not be initialized, because: %s", err)
 		return nil
 	}
 	defer metrics.Publish(metricsConfigCenter.NewIncMetricEvent(cc.DataId, cc.Group, remoting.EventTypeAdd, cc.Protocol))
 	if len(strConf) == 0 {
-		gostlog.Warnf("[Config Center] Dynamic config center has started, but got empty config with config-center configuration %+v\n"+
+		logger.Warnf("[Config Center] Dynamic config center has started, but got empty config with config-center configuration %+v\n"+
 			"Please check if your config-center config is correct.", cc)
 		return nil
 	}
@@ -736,6 +724,7 @@ func cloneInstanceOptions(rc *InstanceOptions) *InstanceOptions {
 		Provider:            rc.CloneProvider(),
 		Consumer:            rc.CloneConsumer(),
 		Metrics:             rc.CloneMetrics(),
+		Tracing:             rc.CloneTracing(),
 		Otel:                rc.CloneOtel(),
 		Logger:              rc.CloneLogger(),
 		Shutdown:            rc.CloneShutdown(),
@@ -749,26 +738,38 @@ func cloneInstanceOptions(rc *InstanceOptions) *InstanceOptions {
 }
 
 func (rc *InstanceOptions) Process(event *config_center.ConfigChangeEvent) {
-	gostlog.Infof("CenterConfig process event:\n%+v", event)
+	logger.Infof("CenterConfig process event:\n%+v", event)
 	if event == nil {
 		return
 	}
 	value, ok := event.Value.(string)
 	if !ok {
-		gostlog.Errorf("CenterConfig process event value is not string")
+		logger.Errorf("CenterConfig process event value is not string")
 		return
 	}
 	conf := NewLoaderConf(WithBytes([]byte(value)))
 	koan := GetConfigResolver(conf)
+	update := &InstanceOptions{}
+	if err := koan.UnmarshalWithConf(rc.Prefix(), update, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
+		logger.Errorf("CenterConfig process unmarshalConf failed, got error %#v", err)
+		return
+	}
+
 	next := cloneInstanceOptions(rc)
-	if err := koan.UnmarshalWithConf(next.Prefix(), next, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
-		gostlog.Errorf("CenterConfig process unmarshalConf failed, got error %#v", err)
-		return
+	for registryID, updateRegistry := range update.Registries {
+		if updateRegistry == nil {
+			continue
+		}
+		if registryConfig := next.Registries[registryID]; registryConfig != nil && updateRegistry.Timeout != registryConfig.Timeout {
+			registryConfig.Timeout = updateRegistry.Timeout
+			logger.Infof("RegistryConfigs Timeout was dynamically updated, new value:%v", registryConfig.Timeout)
+		}
 	}
-	if err := next.finalizeGlobalOptionsForDynamicUpdate(); err != nil {
-		gostlog.Errorf("CenterConfig process global init failed, got error %#v", err)
-		return
+	if next.Consumer != nil && update.Consumer != nil && update.Consumer.RequestTimeout != next.Consumer.RequestTimeout {
+		next.Consumer.RequestTimeout = update.Consumer.RequestTimeout
+		logger.Infof("ConsumerConfig's RequestTimeout was dynamically updated, new value:%v", next.Consumer.RequestTimeout)
 	}
+
 	*rc = *next
 	setCompatRootConfig(compatRootConfig(rc))
 }

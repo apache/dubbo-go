@@ -23,12 +23,16 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/log/logger"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
-	"dubbo.apache.org/dubbo-go/v3/logger"
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	"dubbo.apache.org/dubbo-go/v3/otel/trace"
@@ -46,6 +50,7 @@ type InstanceOptions struct {
 	Provider       *global.ProviderConfig            `yaml:"provider" json:"provider" property:"provider"`
 	Consumer       *global.ConsumerConfig            `yaml:"consumer" json:"consumer" property:"consumer"`
 	Metrics        *global.MetricsConfig             `yaml:"metrics" json:"metrics,omitempty" property:"metrics"`
+	Tracing        map[string]*global.TracingConfig  `yaml:"tracing" json:"tracing,omitempty" property:"tracing"`
 	Otel           *global.OtelConfig                `yaml:"otel" json:"otel,omitempty" property:"otel"`
 	Logger         *global.LoggerConfig              `yaml:"logger" json:"logger,omitempty" property:"logger"`
 	Shutdown       *global.ShutdownConfig            `yaml:"shutdown" json:"shutdown,omitempty" property:"shutdown"`
@@ -68,6 +73,7 @@ func defaultInstanceOptions() *InstanceOptions {
 		Provider:       global.DefaultProviderConfig(),
 		Consumer:       global.DefaultConsumerConfig(),
 		Metrics:        global.DefaultMetricsConfig(),
+		Tracing:        make(map[string]*global.TracingConfig),
 		Otel:           global.DefaultOtelConfig(),
 		Logger:         global.DefaultLoggerConfig(),
 		Shutdown:       global.DefaultShutdownConfig(),
@@ -87,8 +93,10 @@ func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 		return err
 	}
 	if err := rc.initGlobalConfigCenter(); err != nil {
-		logConfigCenterStartFailure(err)
+		logger.Infof("[Config Center] Config center doesn't start")
+		logger.Debugf("config center doesn't start because %s", err)
 	} else {
+		// Config center may refresh logger settings.
 		if err := rc.initGlobalLogger(); err != nil {
 			return err
 		}
@@ -209,6 +217,30 @@ func (rc *InstanceOptions) CloneMetrics() *global.MetricsConfig {
 		return nil
 	}
 	return rc.Metrics.Clone()
+}
+
+func (rc *InstanceOptions) CloneTracing() map[string]*global.TracingConfig {
+	if rc.Tracing == nil {
+		return nil
+	}
+	tracing := make(map[string]*global.TracingConfig, len(rc.Tracing))
+	for key, cfg := range rc.Tracing {
+		if cfg == nil {
+			continue
+		}
+		var useAgent *bool
+		if cfg.UseAgent != nil {
+			useAgent = new(bool)
+			*useAgent = *cfg.UseAgent
+		}
+		tracing[key] = &global.TracingConfig{
+			Name:        cfg.Name,
+			ServiceName: cfg.ServiceName,
+			Address:     cfg.Address,
+			UseAgent:    useAgent,
+		}
+	}
+	return tracing
 }
 
 func (rc *InstanceOptions) CloneOtel() *global.OtelConfig {
@@ -406,8 +438,8 @@ func WithMetrics(opts ...metrics.Option) InstanceOption {
 	}
 }
 
-func WithLogger(opts ...logger.Option) InstanceOption {
-	loggerOpts := logger.NewOptions(opts...)
+func WithLogger(opts ...dubboLogger.Option) InstanceOption {
+	loggerOpts := dubboLogger.NewOptions(opts...)
 
 	return func(cfg *InstanceOptions) {
 		cfg.Logger = loggerOpts.Logger
