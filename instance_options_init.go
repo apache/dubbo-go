@@ -183,7 +183,7 @@ func (rc *InstanceOptions) initGlobalRegistries() error {
 			return err
 		}
 		var err error
-		reg.Protocol, reg.Address, err = translateGlobalAddress(reg.Protocol, reg.Address)
+		reg.Protocol, reg.Address, err = translateGlobalAddress(reg.Protocol, reg.Address, false)
 		if err != nil {
 			return err
 		}
@@ -194,7 +194,7 @@ func (rc *InstanceOptions) initGlobalRegistries() error {
 	return validateGlobalRegistryAddresses(rc.Registries)
 }
 
-func translateGlobalAddress(protocol, address string) (string, string, error) {
+func translateGlobalAddress(protocol, address string, preserveQuery bool) (string, string, error) {
 	if !strings.Contains(address, "://") {
 		return protocol, address, nil
 	}
@@ -202,7 +202,10 @@ func translateGlobalAddress(protocol, address string) (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
-	return u.Scheme, strings.ReplaceAll(address, u.Scheme+"://", ""), nil
+	if preserveQuery {
+		return u.Scheme, strings.TrimPrefix(address, u.Scheme+"://"), nil
+	}
+	return u.Scheme, u.Host + u.Path, nil
 }
 
 func validateGlobalRegistryAddresses(registries map[string]*global.RegistryConfig) error {
@@ -619,7 +622,7 @@ func (rc *InstanceOptions) initGlobalConfigCenter() error {
 		return err
 	}
 	var err error
-	cc.Protocol, cc.Address, err = translateGlobalAddress(cc.Protocol, cc.Address)
+	cc.Protocol, cc.Address, err = translateGlobalAddress(cc.Protocol, cc.Address, true)
 	if err != nil {
 		return err
 	}

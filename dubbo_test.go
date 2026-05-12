@@ -230,7 +230,7 @@ func TestInstanceInitTranslatesGlobalRegistryAddress(t *testing.T) {
 	ins, err := NewInstance(func(opts *InstanceOptions) {
 		opts.Registries = map[string]*global.RegistryConfig{
 			"zk": {
-				Address:         "zookeeper://127.0.0.1:2181",
+				Address:         "zookeeper://127.0.0.1:2181?unused=true",
 				UseAsMetaReport: "false",
 			},
 		}
