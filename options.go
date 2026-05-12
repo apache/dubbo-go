@@ -92,17 +92,17 @@ func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 	if err := rc.initGlobalLogger(); err != nil {
 		return err
 	}
-	if err := rc.initGlobalConfigCenter(); err != nil {
+	if loadedRemoteConfig, err := rc.initGlobalConfigCenter(); err != nil {
 		logger.Infof("[Config Center] Config center doesn't start")
 		logger.Debugf("config center doesn't start because %s", err)
-	} else {
+	} else if loadedRemoteConfig {
 		// Config center may refresh logger settings.
 		if err := rc.initGlobalLogger(); err != nil {
 			return err
 		}
 	}
 
-	if err := rc.finalizeGlobalOptions(); err != nil {
+	if err := rc.finalizeGlobalOptionsWithRuntimeActivation(true); err != nil {
 		return err
 	}
 	setCompatRootConfig(compatRootConfig(rc))
@@ -217,30 +217,6 @@ func (rc *InstanceOptions) CloneMetrics() *global.MetricsConfig {
 		return nil
 	}
 	return rc.Metrics.Clone()
-}
-
-func (rc *InstanceOptions) CloneTracing() map[string]*global.TracingConfig {
-	if rc.Tracing == nil {
-		return nil
-	}
-	tracing := make(map[string]*global.TracingConfig, len(rc.Tracing))
-	for key, cfg := range rc.Tracing {
-		if cfg == nil {
-			continue
-		}
-		var useAgent *bool
-		if cfg.UseAgent != nil {
-			useAgent = new(bool)
-			*useAgent = *cfg.UseAgent
-		}
-		tracing[key] = &global.TracingConfig{
-			Name:        cfg.Name,
-			ServiceName: cfg.ServiceName,
-			Address:     cfg.Address,
-			UseAgent:    useAgent,
-		}
-	}
-	return tracing
 }
 
 func (rc *InstanceOptions) CloneOtel() *global.OtelConfig {

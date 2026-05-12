@@ -417,18 +417,6 @@ func TestInstanceProcessDoesNotMutateLiveOptionsOnInvalidPayload(t *testing.T) {
 	assert.Equal(t, "stable-app", rootAfter.Application.Name)
 }
 
-func TestInstanceInitAllowsDirectURLReferenceWithUnusedRegistryIDs(t *testing.T) {
-	_, err := NewInstance(func(opts *InstanceOptions) {
-		opts.Consumer = global.DefaultConsumerConfig()
-		opts.Consumer.References["direct"] = &global.ReferenceConfig{
-			InterfaceName: "org.apache.dubbo.DirectService",
-			URL:           "tri://127.0.0.1:50051",
-			RegistryIDs:   []string{"missing"},
-		}
-	})
-	require.NoError(t, err)
-}
-
 func TestSetProviderServiceRegistersByReference(t *testing.T) {
 	proLock.Lock()
 	original := cloneServiceDefinitions(providerServices)

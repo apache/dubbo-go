@@ -51,10 +51,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
-func (rc *InstanceOptions) finalizeGlobalOptions() error {
-	return rc.finalizeGlobalOptionsWithRuntimeActivation(true)
-}
-
 func (rc *InstanceOptions) finalizeGlobalOptionsWithRuntimeActivation(activateRuntime bool) error {
 	if err := rc.initGlobalApplication(); err != nil {
 		return err
@@ -311,7 +307,23 @@ func (rc *InstanceOptions) initGlobalOtel(activateRuntime bool) error {
 		}
 		extension.AddCustomShutdownCallback(extension.GetTraceShutdownCallback())
 		c := rc.Otel.TracingConfig
-		exporter, err := extension.GetTraceExporter(c.Exporter, traceProviderConfig(c, rc.Application))
+		serviceNamespace, serviceName, serviceVersion := "", "", ""
+		if rc.Application != nil {
+			serviceNamespace = rc.Application.Organization
+			serviceName = rc.Application.Name
+			serviceVersion = rc.Application.Version
+		}
+		exporter, err := extension.GetTraceExporter(c.Exporter, &trace.ExporterConfig{
+			Exporter:         c.Exporter,
+			Endpoint:         c.Endpoint,
+			SampleMode:       c.SampleMode,
+			SampleRatio:      c.SampleRatio,
+			Propagator:       c.Propagator,
+			Insecure:         c.Insecure,
+			ServiceNamespace: serviceNamespace,
+			ServiceName:      serviceName,
+			ServiceVersion:   serviceVersion,
+		})
 		if err != nil {
 			return err
 		}
@@ -329,23 +341,6 @@ func (rc *InstanceOptions) initGlobalOtel(activateRuntime bool) error {
 		}
 	}
 	return nil
-}
-
-func traceProviderConfig(c *global.OtelTraceConfig, appConfig *global.ApplicationConfig) *trace.ExporterConfig {
-	tpc := &trace.ExporterConfig{
-		Exporter:    c.Exporter,
-		Endpoint:    c.Endpoint,
-		SampleMode:  c.SampleMode,
-		SampleRatio: c.SampleRatio,
-		Propagator:  c.Propagator,
-		Insecure:    c.Insecure,
-	}
-	if appConfig != nil {
-		tpc.ServiceNamespace = appConfig.Organization
-		tpc.ServiceName = appConfig.Name
-		tpc.ServiceVersion = appConfig.Version
-	}
-	return tpc
 }
 
 func (rc *InstanceOptions) initGlobalRouters() error {
@@ -435,17 +430,15 @@ func (rc *InstanceOptions) initGlobalService(serviceConfig *global.ServiceConfig
 	if len(serviceConfig.RegistryIDs) <= 0 {
 		serviceConfig.RegistryIDs = rc.Provider.RegistryIDs
 	}
-	if len(serviceConfig.RegistryIDs) > 0 {
-		if err := internal.ValidateRegistryIDs(serviceConfig.RegistryIDs, serviceConfig.RCRegistriesMap); err != nil {
-			return err
-		}
-	}
 	serviceConfig.ProtocolIDs = commonCfg.TranslateIds(serviceConfig.ProtocolIDs)
 	if len(serviceConfig.ProtocolIDs) <= 0 {
 		serviceConfig.ProtocolIDs = rc.Provider.ProtocolIDs
 	}
 	if len(serviceConfig.ProtocolIDs) <= 0 {
-		serviceConfig.ProtocolIDs = globalProtocolIDs(rc.Protocols)
+		serviceConfig.ProtocolIDs = make([]string, 0, len(rc.Protocols))
+		for key := range rc.Protocols {
+			serviceConfig.ProtocolIDs = append(serviceConfig.ProtocolIDs, key)
+		}
 	}
 	if serviceConfig.TracingKey == "" {
 		serviceConfig.TracingKey = rc.Provider.TracingKey
@@ -531,11 +524,6 @@ func (rc *InstanceOptions) initGlobalReference(referenceConfig *global.Reference
 	if referenceConfig.Cluster == "" {
 		referenceConfig.Cluster = constant.ClusterKeyFailover
 	}
-	if referenceConfig.URL == "" && len(referenceConfig.RegistryIDs) > 0 {
-		if err := internal.ValidateRegistryIDs(referenceConfig.RegistryIDs, rc.Registries); err != nil {
-			return err
-		}
-	}
 	return commonCfg.Verify(referenceConfig)
 }
 
@@ -549,14 +537,6 @@ func (rc *InstanceOptions) initGlobalShutdown() error {
 func globalRegistryIDs(regs map[string]*global.RegistryConfig) []string {
 	ids := make([]string, 0, len(regs))
 	for key := range regs {
-		ids = append(ids, key)
-	}
-	return ids
-}
-
-func globalProtocolIDs(protocols map[string]*global.ProtocolConfig) []string {
-	ids := make([]string, 0, len(protocols))
-	for key := range protocols {
 		ids = append(ids, key)
 	}
 	return ids
@@ -610,55 +590,55 @@ func loggerURL(l *global.LoggerConfig) *common.URL {
 	return u
 }
 
-func (rc *InstanceOptions) initGlobalConfigCenter() error {
+func (rc *InstanceOptions) initGlobalConfigCenter() (bool, error) {
 	if rc.ConfigCenter == nil {
-		return nil
+		return false, nil
 	}
 	cc := rc.ConfigCenter
 	if cc.Params == nil {
 		cc.Params = make(map[string]string)
 	}
 	if err := defaults.Set(cc); err != nil {
-		return err
+		return false, err
 	}
 	var err error
 	cc.Protocol, cc.Address, err = translateGlobalAddress(cc.Protocol, cc.Address, true)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if err := commonCfg.Verify(cc); err != nil {
-		return err
+		return false, err
 	}
 	return rc.startGlobalConfigCenter()
 }
 
-func (rc *InstanceOptions) startGlobalConfigCenter() error {
+func (rc *InstanceOptions) startGlobalConfigCenter() (bool, error) {
 	cc := rc.ConfigCenter
 	dynamicConfig, err := getGlobalDynamicConfiguration(cc)
 	if err != nil {
 		logger.Errorf("[Config Center] Start dynamic configuration center error, error message is %v", err)
-		return err
+		return false, err
 	}
 
 	strConf, err := dynamicConfig.GetProperties(cc.DataId, config_center.WithGroup(cc.Group))
 	if err != nil {
 		logger.Warnf("[Config Center] Dynamic config center has started, but config may not be initialized, because: %s", err)
-		return nil
+		return false, nil
 	}
 	defer metrics.Publish(metricsConfigCenter.NewIncMetricEvent(cc.DataId, cc.Group, remoting.EventTypeAdd, cc.Protocol))
 	if len(strConf) == 0 {
 		logger.Warnf("[Config Center] Dynamic config center has started, but got empty config with config-center configuration %+v\n"+
 			"Please check if your config-center config is correct.", cc)
-		return nil
+		return false, nil
 	}
 	conf := NewLoaderConf(WithDelim("."), WithGenre(cc.FileExtension), WithBytes([]byte(strConf)))
 	koan := GetConfigResolver(conf)
 	if err = koan.UnmarshalWithConf(rc.Prefix(), rc, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
-		return err
+		return false, err
 	}
 
 	dynamicConfig.AddListener(cc.DataId, rc, config_center.WithGroup(cc.Group))
-	return nil
+	return true, nil
 }
 
 func getGlobalDynamicConfiguration(cc *global.CenterConfig) (config_center.DynamicConfiguration, error) {
@@ -666,15 +646,6 @@ func getGlobalDynamicConfiguration(cc *global.CenterConfig) (config_center.Dynam
 	if envInstance.GetDynamicConfiguration() != nil {
 		return envInstance.GetDynamicConfiguration(), nil
 	}
-	dynamicConfig, err := createGlobalDynamicConfiguration(cc)
-	if err != nil {
-		return nil, err
-	}
-	envInstance.SetDynamicConfiguration(dynamicConfig)
-	return dynamicConfig, nil
-}
-
-func createGlobalDynamicConfiguration(cc *global.CenterConfig) (config_center.DynamicConfiguration, error) {
 	configCenterURL, err := globalConfigCenterURL(cc)
 	if err != nil {
 		return nil, err
@@ -683,7 +654,12 @@ func createGlobalDynamicConfiguration(cc *global.CenterConfig) (config_center.Dy
 	if err != nil {
 		return nil, err
 	}
-	return factory.GetDynamicConfiguration(configCenterURL)
+	dynamicConfig, err := factory.GetDynamicConfiguration(configCenterURL)
+	if err != nil {
+		return nil, err
+	}
+	envInstance.SetDynamicConfiguration(dynamicConfig)
+	return dynamicConfig, nil
 }
 
 func globalConfigCenterURL(cc *global.CenterConfig) (*common.URL, error) {
@@ -702,42 +678,12 @@ func globalConfigCenterURLMap(cc *global.CenterConfig) url.Values {
 	urlMap.Set(constant.ConfigClusterKey, cc.Cluster)
 	urlMap.Set(constant.ConfigAppIDKey, cc.AppID)
 	urlMap.Set(constant.ConfigTimeoutKey, cc.Timeout)
-	urlMap.Set(constant.ClientNameKey, clientNameID(constant.ConfigCenterPrefix, cc.Protocol, cc.Address))
+	urlMap.Set(constant.ClientNameKey, strings.Join([]string{constant.ConfigCenterPrefix, cc.Protocol, cc.Address}, "-"))
 
 	for key, val := range cc.Params {
 		urlMap.Set(key, val)
 	}
 	return urlMap
-}
-
-func clientNameID(prefix, protocol, address string) string {
-	return strings.Join([]string{prefix, protocol, address}, "-")
-}
-
-func cloneInstanceOptions(rc *InstanceOptions) *InstanceOptions {
-	if rc == nil {
-		return nil
-	}
-	return &InstanceOptions{
-		Application:         rc.CloneApplication(),
-		Protocols:           rc.CloneProtocols(),
-		Registries:          rc.CloneRegistries(),
-		ConfigCenter:        rc.CloneConfigCenter(),
-		MetadataReport:      rc.CloneMetadataReport(),
-		Provider:            rc.CloneProvider(),
-		Consumer:            rc.CloneConsumer(),
-		Metrics:             rc.CloneMetrics(),
-		Tracing:             rc.CloneTracing(),
-		Otel:                rc.CloneOtel(),
-		Logger:              rc.CloneLogger(),
-		Shutdown:            rc.CloneShutdown(),
-		Router:              rc.CloneRouter(),
-		EventDispatcherType: rc.EventDispatcherType,
-		CacheFile:           rc.CacheFile,
-		Custom:              rc.CloneCustom(),
-		Profiles:            rc.CloneProfiles(),
-		TLSConfig:           rc.CloneTLSConfig(),
-	}
 }
 
 func (rc *InstanceOptions) Process(event *config_center.ConfigChangeEvent) {
@@ -758,21 +704,19 @@ func (rc *InstanceOptions) Process(event *config_center.ConfigChangeEvent) {
 		return
 	}
 
-	next := cloneInstanceOptions(rc)
 	for registryID, updateRegistry := range update.Registries {
 		if updateRegistry == nil {
 			continue
 		}
-		if registryConfig := next.Registries[registryID]; registryConfig != nil && updateRegistry.Timeout != registryConfig.Timeout {
+		if registryConfig := rc.Registries[registryID]; registryConfig != nil && updateRegistry.Timeout != registryConfig.Timeout {
 			registryConfig.Timeout = updateRegistry.Timeout
 			logger.Infof("RegistryConfigs Timeout was dynamically updated, new value:%v", registryConfig.Timeout)
 		}
 	}
-	if next.Consumer != nil && update.Consumer != nil && update.Consumer.RequestTimeout != next.Consumer.RequestTimeout {
-		next.Consumer.RequestTimeout = update.Consumer.RequestTimeout
-		logger.Infof("ConsumerConfig's RequestTimeout was dynamically updated, new value:%v", next.Consumer.RequestTimeout)
+	if rc.Consumer != nil && update.Consumer != nil && update.Consumer.RequestTimeout != rc.Consumer.RequestTimeout {
+		rc.Consumer.RequestTimeout = update.Consumer.RequestTimeout
+		logger.Infof("ConsumerConfig's RequestTimeout was dynamically updated, new value:%v", rc.Consumer.RequestTimeout)
 	}
 
-	*rc = *next
 	setCompatRootConfig(compatRootConfig(rc))
 }
