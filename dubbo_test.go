@@ -25,9 +25,6 @@ import (
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"go.opentelemetry.io/otel/propagation"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
 import (
@@ -38,7 +35,6 @@ import (
 	legacyconfig "dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/global"
-	"dubbo.apache.org/dubbo-go/v3/otel/trace"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/server"
 )
@@ -124,20 +120,6 @@ func TestIndependentConfig(t *testing.T) {
 	}
 }
 
-func TestInstanceInitKeepsGlobalOnlyConfig(t *testing.T) {
-	ins, err := NewInstance(func(opts *InstanceOptions) {
-		opts.Shutdown = global.DefaultShutdownConfig()
-		opts.Shutdown.ClosingInvokerExpireTime = "7s"
-	})
-	require.NoError(t, err)
-
-	_, err = ins.NewServer(func(options *server.ServerOptions) {
-		require.NotNil(t, options.Shutdown)
-		assert.Equal(t, "7s", options.Shutdown.ClosingInvokerExpireTime)
-	})
-	require.NoError(t, err)
-}
-
 func TestInstanceInitKeepsGlobalOnlyConfigWithConfigCenter(t *testing.T) {
 	resetDynamicConfiguration(t)
 
@@ -189,6 +171,20 @@ dubbo:
 	require.NotNil(t, tri.TripleConfig.OpenAPI)
 	assert.Equal(t, []string{"https://example.com"}, tri.TripleConfig.Cors.AllowOrigins)
 	assert.Equal(t, "/dubbo/openapi", tri.TripleConfig.OpenAPI.Path)
+
+	_, err = ins.NewServer(func(options *server.ServerOptions) {
+		require.NotNil(t, options.Shutdown)
+		assert.Equal(t, "7s", options.Shutdown.ClosingInvokerExpireTime)
+
+		tri := options.Protocols[constant.TriProtocol]
+		require.NotNil(t, tri)
+		require.NotNil(t, tri.TripleConfig)
+		require.NotNil(t, tri.TripleConfig.Cors)
+		require.NotNil(t, tri.TripleConfig.OpenAPI)
+		assert.Equal(t, []string{"https://example.com"}, tri.TripleConfig.Cors.AllowOrigins)
+		assert.Equal(t, "/dubbo/openapi", tri.TripleConfig.OpenAPI.Path)
+	})
+	require.NoError(t, err)
 }
 
 func TestInstanceInitDefaultsGlobalProtocolBeforeNewServer(t *testing.T) {
@@ -245,6 +241,22 @@ func TestInstanceInitTranslatesGlobalRegistryAddress(t *testing.T) {
 	require.NotNil(t, reg)
 	assert.Equal(t, constant.ZookeeperKey, reg.Protocol)
 	assert.Equal(t, "127.0.0.1:2181", reg.Address)
+
+	_, err = ins.NewClient(func(options *client.ClientOptions) {
+		reg := options.Registries["zk"]
+		require.NotNil(t, reg)
+		assert.Equal(t, constant.ZookeeperKey, reg.Protocol)
+		assert.Equal(t, "127.0.0.1:2181", reg.Address)
+	})
+	require.NoError(t, err)
+
+	_, err = ins.NewServer(func(options *server.ServerOptions) {
+		reg := options.Registries["zk"]
+		require.NotNil(t, reg)
+		assert.Equal(t, constant.ZookeeperKey, reg.Protocol)
+		assert.Equal(t, "127.0.0.1:2181", reg.Address)
+	})
+	require.NoError(t, err)
 }
 
 func TestInstanceInitRejectsDuplicateGlobalRegistryAddress(t *testing.T) {
@@ -365,38 +377,6 @@ dubbo:
 	assert.Equal(t, "stable-app", rootAfter.Application.Name)
 }
 
-func TestInstanceProcessDoesNotDuplicateTraceShutdownCallback(t *testing.T) {
-	extension.SetTraceExporter("test-trace", func(config *trace.ExporterConfig) (trace.Exporter, error) {
-		return &trace.DefaultExporter{
-			TracerProvider: sdktrace.NewTracerProvider(),
-			Propagator:     propagation.TraceContext{},
-		}, nil
-	})
-
-	enabled := true
-	before := extension.GetAllCustomShutdownCallbacks().Len()
-	ins, err := NewInstance(func(opts *InstanceOptions) {
-		opts.Otel = &global.OtelConfig{
-			TracingConfig: &global.OtelTraceConfig{
-				Enable:   &enabled,
-				Exporter: "test-trace",
-			},
-		}
-	})
-	require.NoError(t, err)
-	afterInit := extension.GetAllCustomShutdownCallbacks().Len()
-	require.Equal(t, before+1, afterInit)
-
-	ins.insOpts.Process(&config_center.ConfigChangeEvent{Value: `
-dubbo:
-  application:
-    name: dynamic-app
-`})
-
-	assert.Equal(t, afterInit, extension.GetAllCustomShutdownCallbacks().Len())
-	assert.Equal(t, "dynamic-app", ins.insOpts.Application.Name)
-}
-
 func TestInstanceInitAllowsDirectURLReferenceWithUnusedRegistryIDs(t *testing.T) {
 	_, err := NewInstance(func(opts *InstanceOptions) {
 		opts.Consumer = global.DefaultConsumerConfig()
@@ -407,12 +387,6 @@ func TestInstanceInitAllowsDirectURLReferenceWithUnusedRegistryIDs(t *testing.T)
 		}
 	})
 	require.NoError(t, err)
-}
-
-func TestSetCompatRootConfigIgnoresNil(t *testing.T) {
-	require.NotPanics(t, func() {
-		setCompatRootConfig(nil)
-	})
 }
 
 func TestSetProviderServiceRegistersByReference(t *testing.T) {

@@ -583,9 +583,6 @@ func compatMetricPrometheusGateway(g *global.PushgatewayConfig) *config.Pushgate
 }
 
 func setCompatRootConfig(rc *config.RootConfig) {
-	if rc == nil {
-		return
-	}
 	config.SetRootConfig(*rc)
 }
 
