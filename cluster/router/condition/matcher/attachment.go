@@ -54,13 +54,13 @@ func (a *AttachmentConditionMatcher) GetValue(sample map[string]string, url *com
 	attachmentExpress := expressArray[0]
 	matcher := attachmentPattern.FindStringSubmatch(attachmentExpress)
 	if len(matcher) == 0 {
-		logger.Warn("[Attachment] attachment key not found")
+		logger.Warn("[Router][Condition] attachment key not found")
 		return ""
 	}
 	// extract the attachment key
 	attachmentKey := matcher[1]
 	if attachmentKey == "" {
-		logger.Warn("[Attachment] attachment key is empty")
+		logger.Warn("[Router][Condition] attachment key is empty")
 		return ""
 	}
 	// extract the attachment value

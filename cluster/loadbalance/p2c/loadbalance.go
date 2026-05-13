@@ -113,7 +113,7 @@ func (l *p2cLoadBalance) Select(invokers []base.Invoker, invocation base.Invocat
 	m := metrics.LocalMetrics
 	// picks two nodes randomly
 	i, j := l.randomPicker(len(invokers))
-	logger.Debugf("[P2C] select two invokers i=%d j=%d", i, j)
+	logger.Debugf("[Loadbalance][P2C] select two invokers i=%d j=%d", i, j)
 
 	methodName := invocation.ActualMethodName()
 	// remainingIIface, remainingJIface means remaining capacity of node i and node j.
@@ -121,10 +121,10 @@ func (l *p2cLoadBalance) Select(invokers []base.Invoker, invocation base.Invocat
 	remainingIIface, err := m.GetMethodMetrics(invokers[i].GetURL(), methodName, metrics.HillClimbing)
 	if err != nil {
 		if errors.Is(err, metrics.ErrMetricsNotFound) {
-			logger.Debugf("[P2C] select invoker i=%d (no prior metrics)", i)
+			logger.Debugf("[Loadbalance][P2C] select invoker i=%d (no prior metrics)", i)
 			return invokers[i]
 		}
-		logger.Warnf("[P2C] get method metrics err=%v", err)
+		logger.Warnf("[Loadbalance][P2C] get method metrics err=%v", err)
 		return nil
 	}
 
@@ -132,34 +132,34 @@ func (l *p2cLoadBalance) Select(invokers []base.Invoker, invocation base.Invocat
 	remainingJIface, err := m.GetMethodMetrics(invokers[j].GetURL(), methodName, metrics.HillClimbing)
 	if err != nil {
 		if errors.Is(err, metrics.ErrMetricsNotFound) {
-			logger.Debugf("[P2C] select invoker j=%d (no prior metrics)", j)
+			logger.Debugf("[Loadbalance][P2C] select invoker j=%d (no prior metrics)", j)
 			return invokers[j]
 		}
-		logger.Warnf("[P2C] get method metrics err=%v", err)
+		logger.Warnf("[Loadbalance][P2C] get method metrics err=%v", err)
 		return nil
 	}
 
 	// Convert interface to int, if the type is unexpected, panic immediately
 	remainingI, ok := remainingIIface.(uint64)
 	if !ok {
-		panic(fmt.Sprintf("[P2C] type check failed: key=%s expected=uint64 actual=%T",
+		panic(fmt.Sprintf("[Loadbalance][P2C] type check failed: key=%s expected=uint64 actual=%T",
 			metrics.HillClimbing, remainingIIface))
 	}
 
 	remainingJ, ok := remainingJIface.(uint64)
 	if !ok {
-		panic(fmt.Sprintf("[P2C] type check failed: key=%s expected=uint64 actual=%T",
+		panic(fmt.Sprintf("[Loadbalance][P2C] type check failed: key=%s expected=uint64 actual=%T",
 			metrics.HillClimbing, remainingJIface))
 	}
 
-	logger.Debugf("[P2C] compare remaining capacity i=%d val=%d j=%d val=%d", i, remainingI, j, remainingJ)
+	logger.Debugf("[Loadbalance][P2C] compare remaining capacity i=%d val=%d j=%d val=%d", i, remainingI, j, remainingJ)
 
 	// For the remaining capacity, the bigger, the better.
 	if remainingI > remainingJ {
-		logger.Debugf("[P2C] select invoker i=%d", i)
+		logger.Debugf("[Loadbalance][P2C] select invoker i=%d", i)
 		return invokers[i]
 	}
 
-	logger.Debugf("[P2C] select invoker j=%d", j)
+	logger.Debugf("[Loadbalance][P2C] select invoker j=%d", j)
 	return invokers[j]
 }

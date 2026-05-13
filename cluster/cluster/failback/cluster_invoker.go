@@ -65,7 +65,7 @@ func newFailbackClusterInvoker(directory directory.Directory) protocolbase.Invok
 	retriesConfig := invoker.GetURL().GetParam(constant.RetriesKey, constant.DefaultFailbackTimes)
 	retries, err := strconv.Atoi(retriesConfig)
 	if err != nil || retries < 0 {
-		logger.Error("[Failback] retries config invalid, using default")
+		logger.Error("[Cluster][Failback] retries config invalid, using default")
 		retries = constant.DefaultFailbackTimesInt
 	}
 
@@ -112,7 +112,7 @@ func (invoker *failbackClusterInvoker) process(ctx context.Context) {
 
 			// ignore return. the get must success.
 			if _, err = invoker.taskList.Get(1); err != nil {
-				logger.Warnf("[Failback] get task failed, err=%v", err)
+				logger.Warnf("[Cluster][Failback] get task failed, err=%v", err)
 				break
 			}
 			go invoker.tryTimerTaskProc(ctx, retryTask)
@@ -124,7 +124,7 @@ func (invoker *failbackClusterInvoker) process(ctx context.Context) {
 func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation protocolbase.Invocation) result.Result {
 	invokers := invoker.Directory.List(invocation)
 	if err := invoker.CheckInvokers(invokers, invocation); err != nil {
-		logger.Errorf("[Failback] check invokers failed, method=%s service=%s err=%v",
+		logger.Errorf("[Cluster][Failback] check invokers failed, method=%s service=%s err=%v",
 			invocation.MethodName(), invoker.GetURL().Service(), err)
 		return &result.RPCResult{}
 	}
@@ -151,14 +151,14 @@ func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation pr
 
 		taskLen := invoker.taskList.Len()
 		if taskLen >= invoker.failbackTasks {
-			logger.Warnf("[Failback] task list full, len=%d", taskLen)
+			logger.Warnf("[Cluster][Failback] task list full, len=%d", taskLen)
 			return &result.RPCResult{}
 		}
 
 		timerTask := newRetryTimerTask(loadBalance, invocation, invokers, ivk, invoker)
 		invoker.taskList.Put(timerTask)
 
-		logger.Errorf("[Failback] invoke failed, method=%s service=%s err=%v",
+		logger.Errorf("[Cluster][Failback] invoke failed, method=%s service=%s err=%v",
 			methodName, url.Service(), res.Error().Error())
 		// ignore
 		return &result.RPCResult{}
@@ -192,21 +192,21 @@ type retryTimerTask struct {
 }
 
 func (t *retryTimerTask) checkRetry() {
-	logger.Errorf("[Failback] retry failed, method=%s service=%s err=%v",
+	logger.Errorf("[Cluster][Failback] retry failed, method=%s service=%s err=%v",
 		t.invocation.MethodName(), t.clusterInvoker.GetURL().Service(), t.lastErr)
 	t.retries++
 	t.nextBackoff = t.backoff.NextBackOff() // calculate next exponential backoff wait time
 
 	if t.retries > t.maxRetries || t.nextBackoff == backoff.Stop {
-		logger.Errorf("[Failback] retry exceeded, retries=%d invocation=%v",
+		logger.Errorf("[Cluster][Failback] retry exceeded, retries=%d invocation=%v",
 			t.retries, t.invocation)
 		return
 	}
 
-	logger.Infof("[Failback] retry scheduled, backoff=%v method=%s", t.nextBackoff, t.invocation.MethodName())
+	logger.Infof("[Cluster][Failback] retry scheduled, backoff=%v method=%s", t.nextBackoff, t.invocation.MethodName())
 
 	if err := t.clusterInvoker.taskList.Put(t); err != nil {
-		logger.Errorf("[Failback] put task failed, task=%v err=%v", t, err)
+		logger.Errorf("[Cluster][Failback] put task failed, task=%v err=%v", t, err)
 		return
 	}
 	t.lastT = time.Now() // update lastT after successful Put

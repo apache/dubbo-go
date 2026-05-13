@@ -127,7 +127,7 @@ func (invoker *BaseClusterInvoker) doSelectInvoker(lb loadbalance.LoadBalance, i
 			return invokers[0]
 		}
 		base.SetInvokerUnhealthyStatus(invokers[0])
-		logger.Errorf("[Cluster] invoker unavailable, serviceKey=%s", invokers[0].GetURL().ServiceKey())
+		logger.Errorf("[Cluster] invoker unavailable, serviceKey=%s, reason=nil", invokers[0].GetURL().ServiceKey())
 		return nil
 	}
 

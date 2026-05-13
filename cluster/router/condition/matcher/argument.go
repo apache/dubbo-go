@@ -57,19 +57,19 @@ func (a *ArgumentConditionMatcher) GetValue(sample map[string]string, url *commo
 	argumentExpress := expressArray[0]
 	matcher := argumentsPattern.FindStringSubmatch(argumentExpress)
 	if len(matcher) == 0 {
-		logger.Warn("[Argument] argument not found")
+		logger.Warn("[Router][Condition] argument not found")
 		return ""
 	}
 
 	// extract the argument index
 	index, err := strconv.Atoi(matcher[1])
 	if err != nil {
-		logger.Warnf("[Argument] argument not found: index=%d", index)
+		logger.Warnf("[Router][Condition] argument not found: index=%d", index)
 		return ""
 	}
 
 	if index < 0 || index > len(invocation.Arguments()) {
-		logger.Warnf("[Argument] argument not found: index=%d", index)
+		logger.Warnf("[Router][Condition] argument not found: index=%d", index)
 		return ""
 	}
 	return fmt.Sprint(invocation.Arguments()[index])

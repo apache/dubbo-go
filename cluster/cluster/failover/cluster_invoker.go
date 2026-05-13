@@ -96,14 +96,14 @@ func (invoker *failoverClusterInvoker) Invoke(ctx context.Context, invocation pr
 	invokerSvc := invoker.GetURL().Service()
 	invokerUrl := invoker.Directory.GetURL()
 	if ivk == nil {
-		logger.Errorf("[Failover] no provider available, method=%s service=%s", methodName, invokerSvc)
+		logger.Errorf("[Cluster][Failover] no provider available, method=%s service=%s", methodName, invokerSvc)
 		return &result.RPCResult{
 			Err: perrors.Errorf("Failed to invoke the method %s of the service %s .No provider is available because can't connect server.",
 				methodName, invokerSvc),
 		}
 	}
 
-	logger.Errorf("[Failover] invoke failed after retries, method=%s service=%s retries=%d providers=%d/%d registry=%s consumer=%s version=%s lastErr=%v",
+	logger.Errorf("[Cluster][Failover] invoke failed after retries, method=%s service=%s retries=%d providers=%d/%d registry=%s consumer=%s version=%s lastErr=%v",
 		methodName, invokerSvc, retries, len(providers), len(invokers), invokerUrl, ip, constant.Version, res.Error().Error())
 
 	return res

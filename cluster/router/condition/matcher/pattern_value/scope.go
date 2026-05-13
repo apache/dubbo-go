@@ -122,5 +122,5 @@ func convertToIntRange(rawStart, rawEnd string) (int, int, error) {
 }
 
 func logError(pattern, value string) {
-	logger.Errorf("[Scope] parse integer failed: pattern=%s, value=%s", pattern, value)
+	logger.Errorf("[Router][Condition] parse integer failed: pattern=%s, value=%s", pattern, value)
 }
