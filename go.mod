@@ -45,7 +45,6 @@ require (
 	github.com/prometheus/common v0.48.0
 	github.com/quic-go/quic-go v0.52.0
 	github.com/sirupsen/logrus v1.9.4
-	github.com/spf13/viper v1.8.1
 	github.com/stretchr/testify v1.10.0
 	github.com/ugorji/go/codec v1.2.6
 	go.etcd.io/etcd/api/v3 v3.5.7
@@ -68,6 +67,7 @@ require (
 	google.golang.org/protobuf v1.33.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v2 v2.4.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -127,6 +127,7 @@ require (
 	github.com/spf13/cast v1.3.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/spf13/viper v1.8.1 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.10 // indirect
@@ -149,5 +150,4 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20230822172742-b8732ec3820d // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230822172742-b8732ec3820d // indirect
 	gopkg.in/ini.v1 v1.66.2 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
