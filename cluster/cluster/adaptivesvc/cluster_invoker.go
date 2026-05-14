@@ -86,13 +86,13 @@ func (ivk *adaptiveServiceClusterInvoker) Invoke(ctx context.Context, invocation
 		}
 	}
 	if remainingStr == "" {
-		logger.Errorf("[AdaptiveSvc] %s field type invalid, key=%s value=%v, expected string" ,
+		logger.Errorf("[AdaptiveSvc] %s field type invalid, key=%s value=%v, expected string",
 			constant.AdaptiveServiceRemainingKey, constant.AdaptiveServiceRemainingKey, remainingIface)
 		return res
 	}
 	remaining, err := strconv.Atoi(remainingStr)
 	if err != nil {
-		logger.Warnf("[AdaptiveSvc] parse remaining failed, remaining=%s err=%v, expected int" , remainingStr, err)
+		logger.Warnf("[AdaptiveSvc] parse remaining failed, remaining=%s err=%v, expected int", remainingStr, err)
 		return res
 	}
 	logger.Debugf("[AdaptiveSvc] received server status, %s=%s",
