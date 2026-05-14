@@ -49,7 +49,7 @@ func NewDirectory(invokers []protocolbase.Invoker) *directory {
 
 	err := dir.BuildRouterChain(invokers, url)
 	if err != nil {
-		logger.Error(err)
+		logger.Error("[Directory] build router chain failed, err=%v", err)
 		dir.RouterChain().SetInvokers(invokers)
 	}
 
