@@ -171,6 +171,13 @@ dubbo:
 	require.NotNil(t, tri.TripleConfig.OpenAPI)
 	assert.Equal(t, []string{"https://example.com"}, tri.TripleConfig.Cors.AllowOrigins)
 	assert.Equal(t, "/dubbo/openapi", tri.TripleConfig.OpenAPI.Path)
+	defaultOpenAPI := global.DefaultOpenAPIConfig()
+	assert.Equal(t, defaultOpenAPI.InfoTitle, tri.TripleConfig.OpenAPI.InfoTitle)
+	assert.Equal(t, defaultOpenAPI.InfoVersion, tri.TripleConfig.OpenAPI.InfoVersion)
+	assert.Equal(t, defaultOpenAPI.DefaultConsumesMediaTypes, tri.TripleConfig.OpenAPI.DefaultConsumesMediaTypes)
+	assert.Equal(t, defaultOpenAPI.DefaultProducesMediaTypes, tri.TripleConfig.OpenAPI.DefaultProducesMediaTypes)
+	assert.Equal(t, defaultOpenAPI.DefaultHttpStatusCodes, tri.TripleConfig.OpenAPI.DefaultHttpStatusCodes)
+	require.NotNil(t, tri.TripleConfig.OpenAPI.Settings)
 
 	_, err = ins.NewServer(func(options *server.ServerOptions) {
 		require.NotNil(t, options.Shutdown)
@@ -183,6 +190,12 @@ dubbo:
 		require.NotNil(t, tri.TripleConfig.OpenAPI)
 		assert.Equal(t, []string{"https://example.com"}, tri.TripleConfig.Cors.AllowOrigins)
 		assert.Equal(t, "/dubbo/openapi", tri.TripleConfig.OpenAPI.Path)
+		assert.Equal(t, defaultOpenAPI.InfoTitle, tri.TripleConfig.OpenAPI.InfoTitle)
+		assert.Equal(t, defaultOpenAPI.InfoVersion, tri.TripleConfig.OpenAPI.InfoVersion)
+		assert.Equal(t, defaultOpenAPI.DefaultConsumesMediaTypes, tri.TripleConfig.OpenAPI.DefaultConsumesMediaTypes)
+		assert.Equal(t, defaultOpenAPI.DefaultProducesMediaTypes, tri.TripleConfig.OpenAPI.DefaultProducesMediaTypes)
+		assert.Equal(t, defaultOpenAPI.DefaultHttpStatusCodes, tri.TripleConfig.OpenAPI.DefaultHttpStatusCodes)
+		require.NotNil(t, tri.TripleConfig.OpenAPI.Settings)
 	})
 	require.NoError(t, err)
 }
