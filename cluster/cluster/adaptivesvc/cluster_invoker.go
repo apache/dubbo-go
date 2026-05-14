@@ -86,21 +86,21 @@ func (ivk *adaptiveServiceClusterInvoker) Invoke(ctx context.Context, invocation
 		}
 	}
 	if remainingStr == "" {
-		logger.Errorf("[AdaptiveSvc] %s field type invalid, key=%s value=%v, expected string",
+		logger.Errorf("[Cluster][AdaptiveSvc] %s field type invalid, key=%s value=%v, expected string",
 			constant.AdaptiveServiceRemainingKey, constant.AdaptiveServiceRemainingKey, remainingIface)
 		return res
 	}
 	remaining, err := strconv.Atoi(remainingStr)
 	if err != nil {
-		logger.Warnf("[AdaptiveSvc] parse remaining failed, remaining=%s err=%v, expected int", remainingStr, err)
+		logger.Warnf("[Cluster][AdaptiveSvc] parse remaining failed, remaining=%s err=%v, expected int", remainingStr, err)
 		return res
 	}
-	logger.Debugf("[AdaptiveSvc] received server status, %s=%s",
+	logger.Debugf("[Cluster][AdaptiveSvc] received server status, %s=%s",
 		constant.AdaptiveServiceRemainingKey, remainingStr)
 	err = metrics.LocalMetrics.SetMethodMetrics(invoker.GetURL(),
 		invocation.MethodName(), metrics.HillClimbing, uint64(remaining))
 	if err != nil {
-		logger.Warnf("[AdaptiveSvc] update metrics failed, err=%v", err)
+		logger.Warnf("[Cluster][AdaptiveSvc] update metrics failed, err=%v", err)
 		return &result.RPCResult{Err: err}
 	}
 
