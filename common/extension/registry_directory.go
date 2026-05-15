@@ -19,16 +19,11 @@ package extension
 
 import (
 	"sync/atomic"
-)
 
-import (
-	"github.com/dubbogo/gost/log/logger"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	"github.com/dubbogo/gost/log/logger"
 )
 
 type registryDirectory func(url *common.URL, registry registry.Registry) (directory.Directory, error)
@@ -63,7 +58,7 @@ func GetDirectoryInstance(url *common.URL, registry registry.Registry) (director
 	}
 	v, ok := directories.Get(key)
 	if !ok {
-		logger.Warn("registry directory " + key + " does not exist, make sure you have import the package, will use the default directory type.")
+		logger.Warnf("[RegistryDir] registry directory %s does not exist, make sure you have import the package, will use the default directory type", key)
 		return GetDefaultRegistryDirectory(url, registry)
 	}
 	return v(url, registry)
