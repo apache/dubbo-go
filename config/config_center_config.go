@@ -151,7 +151,7 @@ func startConfigCenter(rc *RootConfig) error {
 	}
 	defer metrics.Publish(metricsConfigCenter.NewIncMetricEvent(cc.DataId, cc.Group, remoting.EventTypeAdd, cc.Protocol))
 	if len(strConf) == 0 {
-			logger.Warnf("[Config Center] dynamic config center has started, but got empty config, protocol=%s address=%s, Please check if your config-center config is correct.", cc.Protocol, cc.Address)
+		logger.Warnf("[Config Center] dynamic config center has started, but got empty config, protocol=%s address=%s, Please check if your config-center config is correct.", cc.Protocol, cc.Address)
 		return nil
 	}
 	config := NewLoaderConf(WithDelim("."), WithGenre(cc.FileExtension), WithBytes([]byte(strConf)))
