@@ -113,7 +113,7 @@ func (c *CenterConfig) translateConfigAddress() string {
 	if strings.Contains(c.Address, "://") {
 		translatedUrl, err := url.Parse(c.Address)
 		if err != nil {
-			logger.Errorf("The config address:%s is invalid, error: %#v", c.Address, err)
+			logger.Errorf("[Config Center] config address invalid, address=%s err=%v", c.Address, err)
 			panic(err)
 		}
 		c.Protocol = translatedUrl.Scheme
@@ -140,19 +140,18 @@ func startConfigCenter(rc *RootConfig) error {
 	cc := rc.ConfigCenter
 	dynamicConfig, err := cc.GetDynamicConfiguration()
 	if err != nil {
-		logger.Errorf("[Config Center] Start dynamic configuration center error, error message is %v", err)
+		logger.Errorf("[Config Center] start dynamic configuration center failed, err=%v", err)
 		return err
 	}
 
 	strConf, err := dynamicConfig.GetProperties(cc.DataId, config_center.WithGroup(cc.Group))
 	if err != nil {
-		logger.Warnf("[Config Center] Dynamic config center has started, but config may not be initialized, because: %s", err)
+		logger.Warnf("[Config Center] dynamic config center started but config may not be initialized, err=%v", err)
 		return nil
 	}
 	defer metrics.Publish(metricsConfigCenter.NewIncMetricEvent(cc.DataId, cc.Group, remoting.EventTypeAdd, cc.Protocol))
 	if len(strConf) == 0 {
-		logger.Warnf("[Config Center] Dynamic config center has started, but got empty config with config-center configuration %+v\n"+
-			"Please check if your config-center config is correct.", cc)
+			logger.Warnf("[Config Center] dynamic config center has started, but got empty config, protocol=%s address=%s, Please check if your config-center config is correct.", cc.Protocol, cc.Address)
 		return nil
 	}
 	config := NewLoaderConf(WithDelim("."), WithGenre(cc.FileExtension), WithBytes([]byte(strConf)))

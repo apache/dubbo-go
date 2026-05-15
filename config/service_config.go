@@ -233,11 +233,11 @@ func (s *ServiceConfig) Export() error {
 	// TODO: delay export
 	if s.unexported != nil && s.unexported.Load() {
 		err := perrors.Errorf("The service %v has already unexported!", s.Interface)
-		logger.Errorf(err.Error())
+		logger.Errorf("[Service] service unexport error, err=%v", err)
 		return err
 	}
 	if s.exported != nil && s.exported.Load() {
-		logger.Warnf("The service %v has already exported!", s.Interface)
+		logger.Warnf("[Service] service already exported, interface=%v", s.Interface)
 		return nil
 	}
 
@@ -251,7 +251,7 @@ func (s *ServiceConfig) Export() error {
 	urlMap := s.getUrlMap()
 	protocolConfigs := loadProtocol(s.ProtocolIDs, s.RCProtocolsMap)
 	if len(protocolConfigs) == 0 {
-		logger.Warnf("The service %v's '%v' protocols don't has right protocolConfigs, Please check your configuration center and transfer protocol ", s.Interface, s.ProtocolIDs)
+		logger.Warnf("[Service] The service %v's '%v' protocols don't has right protocolConfigs, Please check your configuration center and transfer protocol", s.Interface, s.ProtocolIDs)
 		return nil
 	}
 
@@ -265,7 +265,7 @@ func (s *ServiceConfig) Export() error {
 		if err != nil {
 			formatErr := perrors.Errorf("The service %v export the protocol %v error! Error message is %v.",
 				s.Interface, protocolConf.Name, err.Error())
-			logger.Errorf(formatErr.Error())
+			logger.Errorf("[Service] service export failed, err=%v", formatErr)
 			return formatErr
 		}
 
@@ -309,7 +309,7 @@ func (s *ServiceConfig) Export() error {
 		if len(regUrls) > 0 {
 			s.cacheMutex.Lock()
 			if s.cacheProtocol == nil {
-				logger.Debugf(fmt.Sprintf("First load the registry protocol, url is {%v}!", ivkURL))
+				logger.Debugf("[Service] first load of registry protocol, url=%v", ivkURL)
 				s.cacheProtocol = extension.GetProtocol(constant.RegistryProtocol)
 			}
 			s.cacheMutex.Unlock()

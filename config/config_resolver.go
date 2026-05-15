@@ -22,7 +22,7 @@ import (
 )
 
 import (
-	log "github.com/dubbogo/gost/log/logger"
+	"github.com/dubbogo/gost/log/logger"
 
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/json"
@@ -89,7 +89,7 @@ func resolvePlaceholder(resolver *koanf.Koanf) *koanf.Koanf {
 	}
 	err := resolver.Load(confmap.Provider(m, resolver.Delim()), nil)
 	if err != nil {
-		log.Errorf("resolvePlaceholder error %s", err)
+		logger.Errorf("[ConfigResolver] resolve placeholder failed, err=%v", err)
 	}
 	return resolver
 }

@@ -73,7 +73,7 @@ func (cc *ConsumerConfig) Init(rc *RootConfig) error {
 		}
 		return strings.Join(consumerNames, ", ")
 	}
-	logger.Debugf("Registered consumer clients are %v", buildDebugMsg())
+	logger.Debugf("[Consumer] registered consumer clients: %v", buildDebugMsg())
 
 	cc.RegistryIDs = translateIds(cc.RegistryIDs)
 	if len(cc.RegistryIDs) <= 0 {
@@ -91,7 +91,7 @@ func (cc *ConsumerConfig) Init(rc *RootConfig) error {
 			// try to use interface name defined by pb
 			triplePBService, ok := reference.(common.TriplePBService)
 			if !ok {
-				logger.Errorf("Dubbo-go cannot get interface name with reference = %s."+
+				logger.Errorf("[Consumer] Dubbo-go cannot get interface name, reference=%s."+
 					"Please run the command 'go install github.com/dubbogo/dubbogo-cli/cmd/protoc-gen-go-triple@latest' to get the latest "+
 					"protoc-gen-go-triple,  and then re-generate your pb file again by this tool."+
 					"If you are not using pb serialization, please set 'interfaceName' field in reference config to let dubbogo get the interface name.", key)
@@ -124,7 +124,7 @@ func (cc *ConsumerConfig) Load() {
 			refConfig = NewReferenceConfigBuilder().SetProtocol(tripleConstant.TRIPLE).Build()
 			triplePBService, ok := refRPCService.(common.TriplePBService)
 			if !ok {
-				logger.Errorf("Dubbo-go cannot get interface name with registeredTypeName = %s."+
+				logger.Errorf("[Consumer] Dubbo-go cannot get interface name, registeredTypeName=%s."+
 					"Please run the command 'go install github.com/dubbogo/dubbogo-cli/cmd/protoc-gen-go-triple@latest' to get the latest "+
 					"protoc-gen-go-triple,  and then re-generate your pb file again by this tool."+
 					"If you are not using pb serialization, please set 'interfaceName' field in reference config to let dubbogo get the interface name.", registeredTypeName)
@@ -134,7 +134,7 @@ func (cc *ConsumerConfig) Load() {
 				refConfig.InterfaceName = triplePBService.XXX_InterfaceName()
 			}
 			if err := refConfig.Init(GetRootConfig()); err != nil {
-				logger.Errorf(fmt.Sprintf("reference with registeredTypeName = %s init failed! err: %#v", registeredTypeName, err))
+				logger.Errorf("[Consumer] reference init failed, registeredTypeName=%s err=%v", registeredTypeName, err)
 				continue
 			}
 		}
@@ -146,7 +146,7 @@ func (cc *ConsumerConfig) Load() {
 	var maxWait int
 
 	if maxWaitDuration, err := time.ParseDuration(cc.MaxWaitTimeForServiceDiscovery); err != nil {
-		logger.Warnf("Invalid consumer max wait time for service discovery: %s, fallback to 3s", cc.MaxWaitTimeForServiceDiscovery)
+		logger.Warnf("[Consumer] invalid max wait time for service discovery, maxWaitTime=%s, fallback to 3s", cc.MaxWaitTimeForServiceDiscovery)
 		maxWait = 3
 	} else {
 		maxWait = int(maxWaitDuration.Seconds())
@@ -166,14 +166,14 @@ func (cc *ConsumerConfig) Load() {
 					count++
 					if count > maxWait {
 						errMsg := fmt.Sprintf("No provider available of the service %v.please check configuration.", ref.InterfaceName)
-						logger.Error(errMsg)
+						logger.Error("[Consumer] " + errMsg)
 						panic(errMsg)
 					}
 					time.Sleep(time.Second * 1)
 					break
 				}
 				if ref.invoker == nil {
-					logger.Warnf("The interface %s invoker not exist, may you should check your interface config.", ref.InterfaceName)
+					logger.Warnf("[Consumer] The interface %s invoker not exist, may you should check your interface config.", ref.InterfaceName)
 				}
 			}
 		}
@@ -274,6 +274,6 @@ func (ccb *ConsumerConfigBuilder) Build() *ConsumerConfig {
 func (cc *ConsumerConfig) DynamicUpdateProperties(newConsumerConfig *ConsumerConfig) {
 	if newConsumerConfig != nil && newConsumerConfig.RequestTimeout != cc.RequestTimeout {
 		cc.RequestTimeout = newConsumerConfig.RequestTimeout
-		logger.Infof("ConsumerConfig's RequestTimeout was dynamically updated, new value:%v", cc.RequestTimeout)
+		logger.Infof("[Consumer] ConsumerConfig's RequestTimeout was dynamically updated, new value:%v", cc.RequestTimeout)
 	}
 }

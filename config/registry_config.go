@@ -121,7 +121,7 @@ func (c *RegistryConfig) translateRegistryAddress() string {
 	if strings.Contains(c.Address, "://") {
 		u, err := url.Parse(c.Address)
 		if err != nil {
-			logger.Errorf("The registry url is invalid, error: %#v", err)
+			logger.Errorf("[Registry] registry url is invalid, err=%v", err)
 			panic(err)
 		}
 		c.Protocol = u.Scheme
@@ -174,8 +174,8 @@ func (c *RegistryConfig) toURLs(roleType common.RoleType) ([]*common.URL, error)
 	var registryURL *common.URL
 
 	if !isValid(c.Address) {
-		logger.Infof("Empty or N/A registry address found, the process will work with no registry enabled " +
-			"which means that the address of this instance will not be registered and not able to be found by other consumer instances.")
+		logger.Infof("[Registry] empty or N/A registry address found, the process will work with no registry enabled "+
+			"which means that the address of this instance will not be registered and not able to be found by other consumer instances")
 		return urls, nil
 	}
 	switch c.RegistryType {
@@ -229,7 +229,7 @@ func LoadRegistries(registryIds []string, registries map[string]*RegistryConfig,
 
 		if target {
 			if urls, err := registryConf.toURLs(roleType); err != nil {
-				logger.Errorf("The registry id: %s url is invalid, error: %#v", k, err)
+				logger.Errorf("[Registry] registry url is invalid, id=%s err=%v", k, err)
 				panic(err)
 			} else {
 				for _, u := range urls {
@@ -486,6 +486,6 @@ func (c *RegistryConfig) DynamicUpdateProperties(updateRegistryConfig *RegistryC
 	// if nacos's registry timeout not equal local root config's registry timeout , update.
 	if updateRegistryConfig != nil && updateRegistryConfig.Timeout != c.Timeout {
 		c.Timeout = updateRegistryConfig.Timeout
-		logger.Infof("RegistryConfigs Timeout was dynamically updated, new value:%v", c.Timeout)
+		logger.Infof("[Registry] registry timeout dynamically updated, timeout=%v", c.Timeout)
 	}
 }

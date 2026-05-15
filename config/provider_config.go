@@ -18,7 +18,6 @@
 package config
 
 import (
-	"fmt"
 	"strings"
 )
 
@@ -86,7 +85,7 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 		}
 		return strings.Join(providerNames, ", ")
 	}
-	logger.Debugf("Registered provider services are %v", buildDebugMsg())
+	logger.Debugf("[Provider] registered provider services: %v", buildDebugMsg())
 
 	c.RegistryIDs = translateIds(c.RegistryIDs)
 	if len(c.RegistryIDs) <= 0 {
@@ -106,7 +105,7 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 			// try to use interface name defined by pb
 			supportPBPackagerNameService, ok := service.(common.TriplePBService)
 			if !ok {
-				logger.Errorf("Service with reference = %s is not support read interface name from it."+
+				logger.Errorf("[Provider] service with reference = %s is not support read interface name from it."+
 					"Please run go install github.com/dubbogo/dubbogo-cli/cmd/protoc-gen-go-triple@latest to update your "+
 					"protoc-gen-go-triple and re-generate your pb file again."+
 					"If you are not using pb serialization, please set 'interface' field in service config.", key)
@@ -160,8 +159,8 @@ func (c *ProviderConfig) Init(rc *RootConfig) error {
 			return perrors.Errorf("The adaptive service is disabled, " +
 				"adaptive service verbose should be disabled either.")
 		}
-		logger.Infof("adaptive service verbose is enabled.")
-		logger.Debugf("debug-level info could be shown.")
+		logger.Infof("[Provider] adaptive service verbose enabled")
+		logger.Debugf("[Provider] debug-level info could be shown")
 		aslimiter.Verbose = true
 	}
 	return nil
@@ -180,7 +179,7 @@ func (c *ProviderConfig) Load() {
 			supportPBPackagerNameService, ok := service.(common.TriplePBService)
 			if !ok {
 				logger.Warnf(
-					"The provider service %s is ignored: neither the config is found, nor it is a valid Triple service.",
+					"[Provider] service ignored: neither config found nor valid Triple service, service=%s",
 					registeredTypeName)
 				continue
 			}
@@ -188,14 +187,14 @@ func (c *ProviderConfig) Load() {
 			// use interface name defined by pb
 			serviceConfig.Interface = supportPBPackagerNameService.XXX_InterfaceName()
 			if err := serviceConfig.Init(GetRootConfig()); err != nil {
-				logger.Errorf("Service with registeredTypeName = %s init failed with error = %#v", registeredTypeName, err)
+				logger.Errorf("[Provider] service init failed, registeredTypeName=%s err=%v", registeredTypeName, err)
 			}
 			serviceConfig.adaptiveService = c.AdaptiveService
 		}
 		serviceConfig.id = registeredTypeName
 		serviceConfig.Implement(service)
 		if err := serviceConfig.Export(); err != nil {
-			logger.Errorf(fmt.Sprintf("service with registeredTypeName = %s export failed! err: %#v", registeredTypeName, err))
+			logger.Errorf("[Provider] service export failed, registeredTypeName=%s err=%v", registeredTypeName, err)
 		}
 	}
 }

@@ -74,13 +74,13 @@ func (c *OtelTraceConfig) init(appConfig *ApplicationConfig) error {
 
 	// print trace exporter configuration
 	if c.Exporter == "stdout" {
-		logger.Infof("enable %s trace provider with propagator: %s", c.Exporter, c.Propagator)
+		logger.Infof("[OTel] trace provider enabled, exporter=%s propagator=%s", c.Exporter, c.Propagator)
 	} else {
-		logger.Infof("enable %s trace provider with endpoint: %s, propagator: %s", c.Exporter, c.Endpoint, c.Propagator)
+		logger.Infof("[OTel] trace provider enabled, exporter=%s endpoint=%s propagator=%s", c.Exporter, c.Endpoint, c.Propagator)
 	}
-	logger.Infof("sample mode: %s", c.SampleMode)
+	logger.Infof("[OTel] sample mode: %s", c.SampleMode)
 	if c.SampleMode == "ratio" {
-		logger.Infof("sample ratio: %.2f", c.SampleRatio)
+		logger.Infof("[OTel] sample ratio: %.2f", c.SampleRatio)
 	}
 
 	return nil

@@ -133,8 +133,8 @@ func (rc *RootConfig) Init() error {
 		return err
 	}
 	if err := rc.ConfigCenter.Init(rc); err != nil {
-		logger.Infof("[Config Center] Config center doesn't start")
-		logger.Debugf("config center doesn't start because %s", err)
+		logger.Info("[Config Center] Config center does not start")
+		logger.Debugf("[Config Center] config center not started, err=%v", err)
 	} else {
 		if err = rc.Logger.Init(); err != nil { // init logger using config from config center again
 			return err
@@ -356,14 +356,14 @@ func (rb *RootConfigBuilder) Build() *RootConfig {
 
 // Process receive changing listener's event, dynamic update config
 func (rc *RootConfig) Process(event *config_center.ConfigChangeEvent) {
-	logger.Infof("CenterConfig process event:\n%+v", event)
+	logger.Infof("[Config Center] process event, key=%s", event.Key)
 	config := NewLoaderConf(WithBytes([]byte(event.Value.(string))))
 	koan := GetConfigResolver(config)
 
 	updateRootConfig := &RootConfig{}
 	if err := koan.UnmarshalWithConf(rc.Prefix(),
 		updateRootConfig, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
-		logger.Errorf("CenterConfig process unmarshalConf failed, got error %#v", err)
+		logger.Errorf("[Config Center] process unmarshal conf failed, err=%v", err)
 		return
 	}
 	nextRootConfig := cloneRootConfigForDynamicUpdate(rc)
@@ -418,7 +418,7 @@ func validateRegistryAddresses(registries map[string]*RegistryConfig) error {
 
 		if existingID, exists := cacheKeyMap[cacheKey]; exists {
 			err := fmt.Errorf("duplicate registry address: [%s] used by both [%s] and [%s]", cacheKey, existingID, id)
-			logger.Errorf("duplicate registry address: [%s] used by both [%s] and [%s]", cacheKey, existingID, id)
+			logger.Errorf("[RegistryConfig] duplicate registry address, cacheKey=%s existingID=%s newID=%s", cacheKey, existingID, id)
 			return err
 		}
 

@@ -45,7 +45,7 @@ func SetConsumerService(service common.RPCService) {
 	conServicesLock.Lock()
 	defer func() {
 		conServicesLock.Unlock()
-		logger.Debugf("A consumer service %s was registered successfully.", ref)
+		logger.Debugf("[Service] A consumer service registered successfully, ref=%s", ref)
 	}()
 	conServices[ref] = service
 }
@@ -56,7 +56,7 @@ func SetProviderService(service common.RPCService) {
 	proServicesLock.Lock()
 	defer func() {
 		proServicesLock.Unlock()
-		logger.Debugf("A provider service %s was registered successfully.", ref)
+		logger.Debugf("[Service] A provider service registered successfully, ref=%s", ref)
 	}()
 	proServices[ref] = service
 }
@@ -67,7 +67,7 @@ func SetProviderServiceWithInfo(service common.RPCService, info any) {
 	proServicesLock.Lock()
 	defer func() {
 		proServicesLock.Unlock()
-		logger.Debugf("A provider service %s was registered successfully.", ref)
+		logger.Debugf("[Service] A provider service registered successfully, ref=%s", ref)
 	}()
 	proServices[ref] = service
 	proServicesInfo[ref] = info

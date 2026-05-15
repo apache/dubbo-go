@@ -197,17 +197,17 @@ func (conf *loaderConf) MergeConfig(koan *koanf.Koanf) *koanf.Koanf {
 	)
 	active := koan.String("dubbo.profiles.active")
 	active = getLegalActive(active)
-	logger.Infof("The following profiles are active: %s", active)
+	logger.Infof("[ConfigLoader] active profiles: %s", active)
 	if defaultActive != active {
 		path := conf.getActiveFilePath(active)
 		if !pathExists(path) {
-			logger.Debugf("Config file:%s not exist skip config merge", path)
+			logger.Debugf("[ConfigLoader] config file not exist, skip config merge, path=%s", path)
 			return koan
 		}
 		activeConf = NewLoaderConf(WithPath(path))
 		activeKoan = GetConfigResolver(activeConf)
 		if err := koan.Merge(activeKoan); err != nil {
-			logger.Debugf("Config merge err %s", err)
+			logger.Debugf("[ConfigLoader] config merge failed, err=%v", err)
 		}
 	}
 	return koan
