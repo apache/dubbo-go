@@ -23,17 +23,16 @@ import (
 )
 
 import (
-	log "github.com/dubbogo/gost/log/logger"
+	"github.com/dubbogo/gost/log/logger"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
-	"dubbo.apache.org/dubbo-go/v3/logger"
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/logger"
 	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	"dubbo.apache.org/dubbo-go/v3/otel/trace"
@@ -51,6 +50,7 @@ type InstanceOptions struct {
 	Provider       *global.ProviderConfig            `yaml:"provider" json:"provider" property:"provider"`
 	Consumer       *global.ConsumerConfig            `yaml:"consumer" json:"consumer" property:"consumer"`
 	Metrics        *global.MetricsConfig             `yaml:"metrics" json:"metrics,omitempty" property:"metrics"`
+	Tracing        map[string]*global.TracingConfig  `yaml:"tracing" json:"tracing,omitempty" property:"tracing"`
 	Otel           *global.OtelConfig                `yaml:"otel" json:"otel,omitempty" property:"otel"`
 	Logger         *global.LoggerConfig              `yaml:"logger" json:"logger,omitempty" property:"logger"`
 	Shutdown       *global.ShutdownConfig            `yaml:"shutdown" json:"shutdown,omitempty" property:"shutdown"`
@@ -73,6 +73,7 @@ func defaultInstanceOptions() *InstanceOptions {
 		Provider:       global.DefaultProviderConfig(),
 		Consumer:       global.DefaultConsumerConfig(),
 		Metrics:        global.DefaultMetricsConfig(),
+		Tracing:        make(map[string]*global.TracingConfig),
 		Otel:           global.DefaultOtelConfig(),
 		Logger:         global.DefaultLoggerConfig(),
 		Shutdown:       global.DefaultShutdownConfig(),
@@ -88,76 +89,23 @@ func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 		opt(rc)
 	}
 
-	// remaining procedure is like RootConfig.Init() without RootConfig.Start()
-	// tasks of RootConfig.Start() would be decomposed to Client and Server
-	rcCompat := compatRootConfig(rc)
-
-	if err := rcCompat.Logger.Init(); err != nil { // init default logger
+	if err := rc.initGlobalLogger(); err != nil {
 		return err
 	}
-	if err := rcCompat.ConfigCenter.Init(rcCompat); err != nil {
-		log.Infof("[Config Center] Config center doesn't start")
-		log.Debugf("config center doesn't start because %s", err)
-	} else {
-		compatInstanceOptions(rcCompat, rc)
-		if err = rcCompat.Logger.Init(); err != nil { // init logger using config from config center again
+	if loadedRemoteConfig, err := rc.initGlobalConfigCenter(); err != nil {
+		logger.Infof("[Config Center] Config center doesn't start")
+		logger.Debugf("config center doesn't start because %s", err)
+	} else if loadedRemoteConfig {
+		// Config center may refresh logger settings.
+		if err := rc.initGlobalLogger(); err != nil {
 			return err
 		}
 	}
 
-	if err := rcCompat.Application.Init(); err != nil {
+	if err := rc.finalizeGlobalOptionsWithRuntimeActivation(true); err != nil {
 		return err
 	}
-
-	// init user define
-	if err := rcCompat.Custom.Init(); err != nil {
-		return err
-	}
-
-	// init protocol
-	for _, protocolConfig := range rcCompat.Protocols {
-		if err := protocolConfig.Init(); err != nil {
-			return err
-		}
-	}
-
-	// init registry
-	registries := rcCompat.Registries
-
-	for _, reg := range registries {
-		if err := reg.Init(); err != nil {
-			return err
-		}
-	}
-
-	if err := rcCompat.Metrics.Init(rcCompat); err != nil {
-		return err
-	}
-	if err := rcCompat.Otel.Init(rcCompat.Application); err != nil {
-		return err
-	}
-
-	routers := rcCompat.Router
-	if len(routers) > 0 {
-		for _, r := range routers {
-			if err := r.Init(); err != nil {
-				return err
-			}
-		}
-		rcCompat.Router = routers
-	}
-
-	// provider、consumer must last init
-	if err := rcCompat.Provider.Init(rcCompat); err != nil {
-		return err
-	}
-	if err := rcCompat.Consumer.Init(rcCompat); err != nil {
-		return err
-	}
-	if err := rcCompat.Shutdown.Init(); err != nil {
-		return err
-	}
-	config.SetRootConfig(*rcCompat)
+	setCompatRootConfig(compatRootConfig(rc))
 
 	if err := rc.initMetadataReport(); err != nil {
 		return err
@@ -165,8 +113,6 @@ func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 	if err := metadata.InitRegistryMetadataReport(rc.Registries); err != nil {
 		return err
 	}
-
-	compatInstanceOptions(rcCompat, rc) // overrider options config because some config are changed after init
 
 	return nil
 }
@@ -468,8 +414,8 @@ func WithMetrics(opts ...metrics.Option) InstanceOption {
 	}
 }
 
-func WithLogger(opts ...logger.Option) InstanceOption {
-	loggerOpts := logger.NewOptions(opts...)
+func WithLogger(opts ...dubboLogger.Option) InstanceOption {
+	loggerOpts := dubboLogger.NewOptions(opts...)
 
 	return func(cfg *InstanceOptions) {
 		cfg.Logger = loggerOpts.Logger
