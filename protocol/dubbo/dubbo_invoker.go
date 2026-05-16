@@ -34,7 +34,6 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
@@ -57,10 +56,9 @@ type DubboInvoker struct {
 
 // NewDubboInvoker constructor
 func NewDubboInvoker(url *common.URL, client *remoting.ExchangeClient) *DubboInvoker {
-	// TODO: Temporary compatibility with old APIs, can be removed later
-	rt := config.GetConsumerConfig().RequestTimeout
+	rt := global.DefaultConsumerConfig().RequestTimeout
 	if consumerConfRaw, ok := url.GetAttribute(constant.ConsumerConfigKey); ok {
-		if consumerConf, ok := consumerConfRaw.(*global.ConsumerConfig); ok {
+		if consumerConf, ok := consumerConfRaw.(*global.ConsumerConfig); ok && consumerConf.RequestTimeout != "" {
 			rt = consumerConf.RequestTimeout
 		}
 	}

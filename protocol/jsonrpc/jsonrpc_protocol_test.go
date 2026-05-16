@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 )
 
 import (
@@ -76,7 +77,7 @@ func TestJsonrpcProtocolRefer(t *testing.T) {
 		"side=provider&timeout=3000&timestamp=1556509797245")
 	require.NoError(t, err)
 
-	// Pass ConsumerConfig via URL attribute instead of using config.SetConsumerConfig()
+	// Pass ConsumerConfig via URL attribute.
 	consumerConf := &global.ConsumerConfig{
 		RequestTimeout: "5s",
 	}
@@ -94,4 +95,31 @@ func TestJsonrpcProtocolRefer(t *testing.T) {
 	proto.Destroy()
 	invokersLen = len(proto.(*JsonrpcProtocol).Invokers())
 	assert.Equal(t, 0, invokersLen)
+}
+
+func TestJsonrpcProtocolReferUsesGlobalDefaultTimeout(t *testing.T) {
+	proto := NewJsonrpcProtocol()
+	url, err := common.NewURL("jsonrpc://127.0.0.1:20000/com.ikurento.user.UserProvider")
+	require.NoError(t, err)
+
+	invoker := proto.Refer(url)
+
+	jsonrpcInvoker, ok := invoker.(*JsonrpcInvoker)
+	require.True(t, ok)
+	assert.Equal(t, 3*time.Second, jsonrpcInvoker.client.options.HTTPTimeout)
+}
+
+func TestJsonrpcProtocolReferUsesConsumerAttributeTimeout(t *testing.T) {
+	proto := NewJsonrpcProtocol()
+	url, err := common.NewURL("jsonrpc://127.0.0.1:20000/com.ikurento.user.UserProvider")
+	require.NoError(t, err)
+	url.SetAttribute(constant.ConsumerConfigKey, &global.ConsumerConfig{
+		RequestTimeout: "5s",
+	})
+
+	invoker := proto.Refer(url)
+
+	jsonrpcInvoker, ok := invoker.(*JsonrpcInvoker)
+	require.True(t, ok)
+	assert.Equal(t, 5*time.Second, jsonrpcInvoker.client.options.HTTPTimeout)
 }

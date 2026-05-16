@@ -31,7 +31,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
@@ -80,18 +79,17 @@ func (jp *JsonrpcProtocol) Export(invoker base.Invoker) base.Exporter {
 
 // Refer a remote JSON PRC service from registry
 func (jp *JsonrpcProtocol) Refer(url *common.URL) base.Invoker {
-	// TODO: Temporary compatibility with old APIs, can be removed later
-	rt := config.GetConsumerConfig().RequestTimeout
+	rt := global.DefaultConsumerConfig().RequestTimeout
 	if consumerConfRaw, ok := url.GetAttribute(constant.ConsumerConfigKey); ok {
-		if consumerConf, ok := consumerConfRaw.(*global.ConsumerConfig); ok {
+		if consumerConf, ok := consumerConfRaw.(*global.ConsumerConfig); ok && consumerConf.RequestTimeout != "" {
 			rt = consumerConf.RequestTimeout
 		}
 	}
-	// the read order of requestTimeout is from url , if nil then from consumer config , if nil then default 3s. requestTimeout can be dynamically updated from config center.
+	// The read order of request timeout is URL params, URL consumer config attribute, then global default.
 	requestTimeout := url.GetParamDuration(constant.TimeoutKey, rt)
 	// New Json rpc Invoker
 	invoker := NewJsonrpcInvoker(url, NewHTTPClient(&HTTPOptions{
-		HandshakeTimeout: time.Second, // todo config timeout config.GetConsumerConfig().ConnectTimeout,
+		HandshakeTimeout: time.Second, // todo support configurable handshake timeout
 		HTTPTimeout:      requestTimeout,
 	}))
 	jp.SetInvokers(invoker)
