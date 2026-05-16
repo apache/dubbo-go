@@ -95,7 +95,7 @@ func (config *ShutdownConfig) Prefix() string {
 func (config *ShutdownConfig) GetTimeout() time.Duration {
 	result, err := time.ParseDuration(config.Timeout)
 	if err != nil {
-		logger.Errorf("[GracefulShutdown] The Timeout configuration is invalid: %s, and we will use the default value: %s, err=%v",
+		logger.Errorf("The Timeout configuration is invalid: %s, and we will use the default value: %s, err: %v",
 			config.Timeout, defaultTimeout.String(), err)
 		return defaultTimeout
 	}
@@ -105,7 +105,7 @@ func (config *ShutdownConfig) GetTimeout() time.Duration {
 func (config *ShutdownConfig) GetStepTimeout() time.Duration {
 	result, err := time.ParseDuration(config.StepTimeout)
 	if err != nil {
-		logger.Errorf("[GracefulShutdown] The StepTimeout configuration is invalid: %s, and we will use the default value: %s, err=%v",
+		logger.Errorf("The StepTimeout configuration is invalid: %s, and we will use the default value: %s, err: %v",
 			config.StepTimeout, defaultStepTimeout.String(), err)
 		return defaultStepTimeout
 	}
@@ -115,7 +115,7 @@ func (config *ShutdownConfig) GetStepTimeout() time.Duration {
 func (config *ShutdownConfig) GetNotifyTimeout() time.Duration {
 	result, err := time.ParseDuration(config.NotifyTimeout)
 	if err != nil {
-		logger.Errorf("[GracefulShutdown] The NotifyTimeout configuration is invalid: %s, and we will use the default value: %s, err=%v",
+		logger.Errorf("The NotifyTimeout configuration is invalid: %s, and we will use the default value: %s, err: %v",
 			config.NotifyTimeout, defaultNotifyTimeout.String(), err)
 		return defaultNotifyTimeout
 	}
@@ -125,7 +125,7 @@ func (config *ShutdownConfig) GetNotifyTimeout() time.Duration {
 func (config *ShutdownConfig) GetOfflineRequestWindowTimeout() time.Duration {
 	result, err := time.ParseDuration(config.OfflineRequestWindowTimeout)
 	if err != nil {
-		logger.Errorf("[GracefulShutdown] The OfflineRequestWindowTimeout configuration is invalid: %s, and we will use the default value: %s, err=%v",
+		logger.Errorf("The OfflineRequestWindowTimeout configuration is invalid: %s, and we will use the default value: %s, err: %v",
 			config.OfflineRequestWindowTimeout, defaultOfflineRequestWindowTimeout.String(), err)
 		return defaultOfflineRequestWindowTimeout
 	}
@@ -135,7 +135,7 @@ func (config *ShutdownConfig) GetOfflineRequestWindowTimeout() time.Duration {
 func (config *ShutdownConfig) GetConsumerUpdateWaitTime() time.Duration {
 	result, err := time.ParseDuration(config.ConsumerUpdateWaitTime)
 	if err != nil {
-		logger.Errorf("[GracefulShutdown] The ConsumerUpdateTimeout configuration is invalid: %s, and we will use the default value: %s, err=%v",
+		logger.Errorf("The ConsumerUpdateTimeout configuration is invalid: %s, and we will use the default value: %s, err: %v",
 			config.ConsumerActiveCount.Load(), defaultConsumerUpdateWaitTime.String(), err)
 		return defaultConsumerUpdateWaitTime
 	}

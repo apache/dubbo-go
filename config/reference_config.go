@@ -143,7 +143,7 @@ func getEnv(key, fallback string) string {
 
 func updateOrCreateMeshURL(rc *ReferenceConfig) {
 	if rc.URL != "" {
-		logger.Infof("[Reference] URL specified explicitly, url=%v", rc.URL)
+		logger.Infof("URL specified explicitly %v", rc.URL)
 	}
 
 	if !rc.rootConfig.Consumer.MeshEnabled {
@@ -270,12 +270,12 @@ func (rc *ReferenceConfig) Refer(srv any) {
 			}
 			cluster, err := extension.GetCluster(hitClu)
 			if err != nil {
-				logger.Errorf("[Reference] get cluster failed, cluster=%s err=%v, skipping invoker",
+				logger.Errorf("reference config get cluster %s error, error message is %w, will skip this invoker",
 					hitClu, err)
 				return
 			}
 			if cluster == nil {
-				logger.Errorf("[Reference] cluster is nil, cluster=%s, skipping invoker", hitClu)
+				logger.Errorf("reference config cluster is nil for key %s, will skip this invoker", hitClu)
 				return
 			}
 			rc.invoker = cluster.Join(static.NewDirectory(invokers))
@@ -294,12 +294,12 @@ func (rc *ReferenceConfig) Refer(srv any) {
 		}
 		cluster, err := extension.GetCluster(hitClu)
 		if err != nil {
-			logger.Errorf("[Reference] get cluster failed, cluster=%s err=%v, skipping invoker",
+			logger.Errorf("reference config get cluster %s error, error message is %w, will skip this invoker",
 				hitClu, err)
 			return
 		}
 		if cluster == nil {
-			logger.Errorf("[Reference] cluster is nil, cluster=%s, skipping invoker", hitClu)
+			logger.Errorf("reference config cluster is nil for key %s, will skip this invoker", hitClu)
 			return
 		}
 		rc.invoker = cluster.Join(static.NewDirectory(invokers))

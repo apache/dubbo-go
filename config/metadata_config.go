@@ -77,7 +77,7 @@ func getMetadataPort(rc *RootConfig) int {
 	}
 	p, err := strconv.Atoi(port)
 	if err != nil {
-		logger.Errorf("[Metadata Service] metadata service port parse failed, err=%v, using random port", err)
+		logger.Error("MetadataService port parse error %v, MetadataService will use random port", err)
 		return 0
 	}
 	return p

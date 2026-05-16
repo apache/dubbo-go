@@ -78,10 +78,10 @@ func gracefulShutdownInit() {
 
 		go func() {
 			sig := <-signals
-			logger.Infof("[GracefulShutdown] get signal %s, applicationConfig will shutdown.", sig)
+			logger.Infof("get signal %s, applicationConfig will shutdown.", sig)
 			// gracefulShutdownOnce.Do(func() {
 			time.AfterFunc(totalTimeout(), func() {
-				logger.Warn("[GracefulShutdown] shutdown timed out, applicationConfig will shutdown immediately")
+				logger.Warn("Shutdown gracefully timeout, applicationConfig will shutdown immediately. ")
 				os.Exit(0)
 			})
 			BeforeShutdown()
@@ -110,7 +110,7 @@ func BeforeShutdown() {
 	// destroy all protocols
 	destroyProtocols()
 
-	logger.Info("[GracefulShutdown] executing custom callbacks")
+	logger.Info("Graceful shutdown --- Execute the custom callbacks.")
 	customCallbacks := extension.GetAllCustomShutdownCallbacks()
 	for callback := customCallbacks.Front(); callback != nil; callback = callback.Next() {
 		callback.Value.(func())()
@@ -118,7 +118,7 @@ func BeforeShutdown() {
 }
 
 func destroyAllRegistries() {
-	logger.Info("[GracefulShutdown] destroying all registries")
+	logger.Info("Graceful shutdown --- Destroy all registriesConfig. ")
 	registryProtocol := extension.GetProtocol(constant.RegistryProtocol)
 	registryProtocol.Destroy()
 }
@@ -126,7 +126,7 @@ func destroyAllRegistries() {
 // destroyProtocols destroys protocols.
 // First we destroy provider's protocols, and then we destroy the consumer protocols.
 func destroyProtocols() {
-	logger.Info("[GracefulShutdown] destroying protocols")
+	logger.Info("Graceful shutdown --- Destroy protocols. ")
 
 	rc := GetRootConfig()
 	if rc == nil || rc.Protocols == nil {
@@ -142,7 +142,7 @@ func destroyProtocols() {
 // destroyProviderProtocols destroys the provider's protocol.
 // if the protocol is consumer's protocol too, we will keep it
 func destroyProviderProtocols(rc *RootConfig, consumerProtocols *gxset.HashSet) {
-	logger.Info("[GracefulShutdown] First destroy provider protocols")
+	logger.Info("Graceful shutdown --- First destroy provider's protocols. ")
 	for _, protocol := range rc.Protocols {
 		// the protocol is the consumer's protocol too, we can not destroy it.
 		if consumerProtocols.Contains(protocol.Name) {
@@ -153,14 +153,14 @@ func destroyProviderProtocols(rc *RootConfig, consumerProtocols *gxset.HashSet) 
 }
 
 func destroyConsumerProtocols(consumerProtocols *gxset.HashSet) {
-	logger.Info("[GracefulShutdown] Second destroy consumer protocols")
+	logger.Info("Graceful shutdown --- Second Destroy consumer's protocols. ")
 	for name := range consumerProtocols.Items {
 		extension.GetProtocol(name.(string)).Destroy()
 	}
 }
 
 func waitAndAcceptNewRequests() {
-	logger.Info("[GracefulShutdown] waiting and accepting new requests for a short time")
+	logger.Info("Graceful shutdown --- Keep waiting and accept new requests for a short time. ")
 	rc := GetRootConfig()
 	if rc == nil || rc.Shutdown == nil {
 		return
@@ -188,14 +188,14 @@ func waitingProviderProcessedTimeout(shutdownConfig *ShutdownConfig) {
 		(shutdownConfig.ProviderActiveCount.Load() > 0 || time.Now().Before(shutdownConfig.ProviderLastReceivedRequestTime.Load().Add(offlineRequestWindowTimeout))) {
 		// sleep 10 ms and then we check it again
 		time.Sleep(10 * time.Millisecond)
-		logger.Infof("[GracefulShutdown] waiting for provider invocation count = %d, provider last received request time: %v",
+		logger.Infof("waiting for provider active invocation count = %d, provider last received request time: %v",
 			shutdownConfig.ProviderActiveCount.Load(), shutdownConfig.ProviderLastReceivedRequestTime.Load())
 	}
 }
 
 // for provider. It will wait for processing receiving requests
 func waitForSendingAndReceivingRequests() {
-	logger.Info("[GracefulShutdown] waiting until sending/accepting requests finish or timeout")
+	logger.Info("Graceful shutdown --- Keep waiting until sending/accepting requests finish or timeout. ")
 	rc := GetRootConfig()
 	if rc == nil || rc.Shutdown == nil {
 		// ignore this step
@@ -215,7 +215,7 @@ func waitingConsumerProcessedTimeout(shutdownConfig *ShutdownConfig) {
 	for time.Now().Before(deadline) && shutdownConfig.ConsumerActiveCount.Load() > 0 {
 		// sleep 10 ms and then we check it again
 		time.Sleep(10 * time.Millisecond)
-		logger.Infof("[GracefulShutdown] waiting for consumer requests to complete, active=%d", shutdownConfig.ConsumerActiveCount.Load())
+		logger.Infof("waiting for consumer active invocation count = %d", shutdownConfig.ConsumerActiveCount.Load())
 	}
 }
 
