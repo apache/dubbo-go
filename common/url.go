@@ -397,11 +397,14 @@ func (c *URL) String() string {
 	defer c.paramsLock.Unlock()
 	var buf strings.Builder
 	if len(c.Username) == 0 && len(c.Password) == 0 {
-		buf.WriteString(fmt.Sprintf("%s://%s:%s%s?", c.Protocol, c.Ip, c.Port, c.Path))
+		buf.WriteString(fmt.Sprintf("%s://%s:%s%s", c.Protocol, c.Ip, c.Port, c.Path))
 	} else {
-		buf.WriteString(fmt.Sprintf("%s://%s:%s@%s:%s%s?", c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Path))
+		buf.WriteString(fmt.Sprintf("%s://%s:%s@%s:%s%s", c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Path))
 	}
-	buf.WriteString(c.params.Encode())
+	if encoded := c.params.Encode(); encoded != "" {
+		buf.WriteByte('?')
+		buf.WriteString(encoded)
+	}
 	return buf.String()
 }
 

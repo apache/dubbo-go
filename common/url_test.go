@@ -1209,6 +1209,12 @@ func TestURLStringWithoutAuth(t *testing.T) {
 	assert.NotContains(t, str, "@")
 }
 
+func TestURLStringWithoutQuery(t *testing.T) {
+	u, err := NewURL("dubbo://127.0.0.1:20000/com.test.Service")
+	require.NoError(t, err)
+	assert.Equal(t, "dubbo://127.0.0.1:20000/com.test.Service", u.String())
+}
+
 func TestGetParamAndDecodedError(t *testing.T) {
 	u := &URL{}
 	params := url.Values{}
