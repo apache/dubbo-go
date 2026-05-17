@@ -123,3 +123,15 @@ func TestJsonrpcProtocolReferUsesConsumerAttributeTimeout(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, 5*time.Second, jsonrpcInvoker.client.options.HTTPTimeout)
 }
+
+func TestJsonrpcProtocolReferUsesTimeoutParam(t *testing.T) {
+	proto := NewJsonrpcProtocol()
+	url, err := common.NewURL("jsonrpc://127.0.0.1:20000/com.ikurento.user.UserProvider?timeout=5s")
+	require.NoError(t, err)
+
+	invoker := proto.Refer(url)
+
+	jsonrpcInvoker, ok := invoker.(*JsonrpcInvoker)
+	require.True(t, ok)
+	assert.Equal(t, 5*time.Second, jsonrpcInvoker.client.options.HTTPTimeout)
+}

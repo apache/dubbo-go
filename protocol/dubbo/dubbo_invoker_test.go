@@ -54,6 +54,15 @@ func TestNewDubboInvokerUsesConsumerAttributeTimeout(t *testing.T) {
 	assert.Equal(t, 5*time.Second, invoker.timeout)
 }
 
+func TestNewDubboInvokerUsesTimeoutParam(t *testing.T) {
+	url, err := common.NewURL("dubbo://127.0.0.1:20880/org.apache.dubbo.UserProvider?timeout=5s")
+	require.NoError(t, err)
+
+	invoker := NewDubboInvoker(url, nil)
+
+	assert.Equal(t, 5*time.Second, invoker.timeout)
+}
+
 //
 //import (
 //	"bytes"

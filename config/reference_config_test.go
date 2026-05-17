@@ -467,3 +467,16 @@ func TestReferenceConfigInitWithoutConsumerConfig(t *testing.T) {
 	err := NewReferenceConfigBuilder().Build().Init(testRootConfig)
 	assert.NoError(t, err)
 }
+
+func TestReferenceConfigInitInheritsConsumerRequestTimeout(t *testing.T) {
+	root := NewRootConfigBuilder().
+		SetApplication(NewApplicationConfigBuilder().SetName("test-app").Build()).
+		SetConsumer(NewConsumerConfigBuilder().SetRequestTimeout("5s").Build()).
+		Build()
+
+	ref := NewReferenceConfigBuilder().Build()
+	err := ref.Init(root)
+	assert.NoError(t, err)
+	assert.Equal(t, "5s", ref.RequestTimeout)
+	assert.Equal(t, "5s", ref.getURLMap().Get(constant.TimeoutKey))
+}
