@@ -79,13 +79,12 @@ func (jp *JsonrpcProtocol) Export(invoker base.Invoker) base.Exporter {
 
 // Refer a remote JSON PRC service from registry
 func (jp *JsonrpcProtocol) Refer(url *common.URL) base.Invoker {
-	rt := global.DefaultConsumerConfig().RequestTimeout
+	rt := ""
 	if consumerConfRaw, ok := url.GetAttribute(constant.ConsumerConfigKey); ok {
 		if consumerConf, ok := consumerConfRaw.(*global.ConsumerConfig); ok && consumerConf.RequestTimeout != "" {
 			rt = consumerConf.RequestTimeout
 		}
 	}
-	// The read order of request timeout is URL params, URL consumer config attribute, then global default.
 	requestTimeout := url.GetParamDuration(constant.TimeoutKey, rt)
 	// New Json rpc Invoker
 	invoker := NewJsonrpcInvoker(url, NewHTTPClient(&HTTPOptions{

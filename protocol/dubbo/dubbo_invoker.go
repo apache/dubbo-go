@@ -56,7 +56,7 @@ type DubboInvoker struct {
 
 // NewDubboInvoker constructor
 func NewDubboInvoker(url *common.URL, client *remoting.ExchangeClient) *DubboInvoker {
-	rt := global.DefaultConsumerConfig().RequestTimeout
+	rt := ""
 	if consumerConfRaw, ok := url.GetAttribute(constant.ConsumerConfigKey); ok {
 		if consumerConf, ok := consumerConfRaw.(*global.ConsumerConfig); ok && consumerConf.RequestTimeout != "" {
 			rt = consumerConf.RequestTimeout
