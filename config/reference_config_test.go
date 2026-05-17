@@ -23,6 +23,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -476,7 +477,7 @@ func TestReferenceConfigInitInheritsConsumerRequestTimeout(t *testing.T) {
 
 	ref := NewReferenceConfigBuilder().Build()
 	err := ref.Init(root)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "5s", ref.RequestTimeout)
 	assert.Equal(t, "5s", ref.getURLMap().Get(constant.TimeoutKey))
 }
