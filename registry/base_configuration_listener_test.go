@@ -19,6 +19,7 @@ package registry
 
 import (
 	"net/url"
+	"sync"
 	"testing"
 )
 
@@ -30,6 +31,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/config_center/parser"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 type testConfigurator struct {
@@ -44,6 +47,16 @@ func (c *testConfigurator) GetUrl() *common.URL {
 func (c *testConfigurator) Configure(_ *common.URL) {
 	c.configured = true
 }
+
+type noopTestConfigurator struct {
+	url *common.URL
+}
+
+func (c *noopTestConfigurator) GetUrl() *common.URL {
+	return c.url
+}
+
+func (*noopTestConfigurator) Configure(*common.URL) {}
 
 func TestToConfigurators(t *testing.T) {
 	makeConfigurator := func(u *common.URL) config_center.Configurator {
@@ -76,4 +89,74 @@ func TestBaseConfigurationListenerOverrideUrl(t *testing.T) {
 
 	bcl.OverrideUrl(target)
 	assert.True(t, cfg.configured)
+}
+
+func TestBaseConfigurationListenerConfiguratorsSnapshot(t *testing.T) {
+	cfg := &testConfigurator{}
+	bcl := &BaseConfigurationListener{configurators: []config_center.Configurator{cfg}}
+
+	configurators := bcl.Configurators()
+	configurators[0] = &testConfigurator{}
+
+	assert.Equal(t, cfg, bcl.Configurators()[0])
+}
+
+func TestBaseConfigurationListenerConfiguratorsConcurrentAccess(t *testing.T) {
+	t.Run("should keep configurator snapshots safe if config updates concurrently", func(t *testing.T) {
+		dynamicConfiguration := &config_center.MockDynamicConfiguration{}
+		dynamicConfiguration.SetParser(&parser.DefaultConfigurationParser{})
+		bcl := &BaseConfigurationListener{
+			dynamicConfiguration: dynamicConfiguration,
+			defaultConfiguratorFunc: func(u *common.URL) config_center.Configurator {
+				return &noopTestConfigurator{url: u}
+			},
+		}
+		rawConfig := `configVersion: 2.7.1
+scope: notApplication
+key: groupA/test:1
+enabled: true
+configs:
+- type: application
+  enabled: true
+  addresses:
+  - 0.0.0.0
+  providerAddresses: []
+  services:
+  - org.apache.dubbo-go.mockService
+  applications: []
+  parameters:
+    cluster: mock1
+  side: provider`
+		target := common.NewURLWithOptions()
+
+		assert.NoError(t, bcl.genConfiguratorFromRawRule(rawConfig))
+		assert.Len(t, bcl.Configurators(), 1)
+
+		var wg sync.WaitGroup
+		for i := 0; i < 100; i++ {
+			wg.Add(4)
+			go func() {
+				defer wg.Done()
+				bcl.Process(&config_center.ConfigChangeEvent{
+					ConfigType: remoting.EventTypeUpdate,
+					Value:      rawConfig,
+				})
+			}()
+			go func() {
+				defer wg.Done()
+				bcl.Process(&config_center.ConfigChangeEvent{
+					ConfigType: remoting.EventTypeDel,
+				})
+			}()
+			go func() {
+				defer wg.Done()
+				_ = bcl.Configurators()
+			}()
+			go func() {
+				defer wg.Done()
+				bcl.OverrideUrl(target)
+			}()
+		}
+		wg.Wait()
+	})
 }
