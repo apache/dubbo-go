@@ -17,9 +17,7 @@
 
 package global
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-)
+const DefaultConsumerRequestTimeout = "3s"
 
 type ConsumerConfig struct {
 	Filter          string   `yaml:"filter" json:"filter,omitempty" property:"filter"`
@@ -39,7 +37,7 @@ type ConsumerConfig struct {
 
 func DefaultConsumerConfig() *ConsumerConfig {
 	return &ConsumerConfig{
-		RequestTimeout: constant.DefaultConsumerRequestTimeout,
+		RequestTimeout: DefaultConsumerRequestTimeout,
 		Check:          true,
 		References:     make(map[string]*ReferenceConfig),
 	}
