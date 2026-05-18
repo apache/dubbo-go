@@ -199,6 +199,18 @@ func TestBaseConfigurationListenerInitWith(t *testing.T) {
 
 		assert.Len(t, bcl.Configurators(), 1)
 	})
+
+	t.Run("should ignore initial rule if it cannot be parsed", func(t *testing.T) {
+		resetDynamicConfiguration(t, &testDynamicConfiguration{
+			parser: &parser.DefaultConfigurationParser{},
+			raw:    "invalid: [",
+		})
+		bcl := &BaseConfigurationListener{}
+
+		bcl.InitWith("key", bcl, newNoopConfigurator)
+
+		assert.Nil(t, bcl.Configurators())
+	})
 }
 
 func TestBaseConfigurationListenerProcessInvalidConfig(t *testing.T) {
