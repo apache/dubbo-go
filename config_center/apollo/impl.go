@@ -224,8 +224,11 @@ func (c *apolloConfiguration) getAddressWithProtocolPrefix(url *common.URL) stri
 		addrs := make([]string, 0)
 		for _, part := range parts {
 			addr := part
+			if url.Path != "" {
+				addr = strings.TrimRight(addr, "/") + "/" + strings.TrimLeft(url.Path, "/")
+			}
 			if !strings.HasPrefix(part, apolloProtocolPrefix) {
-				addr = apolloProtocolPrefix + part
+				addr = apolloProtocolPrefix + addr
 			}
 			addrs = append(addrs, addr)
 		}
