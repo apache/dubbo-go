@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -129,7 +130,7 @@ configs:
   side: provider`
 		target := common.NewURLWithOptions()
 
-		assert.NoError(t, bcl.genConfiguratorFromRawRule(rawConfig))
+		require.NoError(t, bcl.genConfiguratorFromRawRule(rawConfig))
 		assert.Len(t, bcl.Configurators(), 1)
 
 		var wg sync.WaitGroup
