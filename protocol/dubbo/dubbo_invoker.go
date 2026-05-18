@@ -45,6 +45,8 @@ var attachmentKey = []string{
 	constant.InterfaceKey, constant.GroupKey, constant.TokenKey, constant.VersionKey,
 }
 
+const defaultConsumerRequestTimeout = "3s"
+
 // DubboInvoker is implement of protocol.Invoker. A dubboInvoker refers to one service and ip.
 type DubboInvoker struct {
 	base.BaseInvoker
@@ -56,7 +58,7 @@ type DubboInvoker struct {
 
 // NewDubboInvoker constructor
 func NewDubboInvoker(url *common.URL, client *remoting.ExchangeClient) *DubboInvoker {
-	rt := ""
+	rt := defaultConsumerRequestTimeout
 	if consumerConfRaw, ok := url.GetAttribute(constant.ConsumerConfigKey); ok {
 		if consumerConf, ok := consumerConfRaw.(*global.ConsumerConfig); ok && consumerConf.RequestTimeout != "" {
 			rt = consumerConf.RequestTimeout
