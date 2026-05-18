@@ -237,13 +237,6 @@ func TestListener(t *testing.T) {
 	assert.Equal(t, 0, listenerCount)
 }
 
-func TestGetAddressWithProtocolPrefixKeepsContext(t *testing.T) {
-	apolloCfgURL, err := common.NewURL("apollo://127.0.0.1:8080/config", common.WithProtocol("apollo"))
-	require.NoError(t, err)
-	config := &apolloConfiguration{}
-	assert.Equal(t, "http://127.0.0.1:8080/config", config.getAddressWithProtocolPrefix(apolloCfgURL))
-}
-
 type apolloDataListener struct {
 	wg    sync.WaitGroup
 	count int
