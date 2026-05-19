@@ -350,7 +350,10 @@ func serveRequest(ctx context.Context, header map[string]string, body []byte, co
 	logger.Debugf("args: %v", args)
 
 	// exporter invoke
-	exporter, _ := jsonrpcProtocol.ExporterMap().Load(path)
+	exporter, ok := jsonrpcProtocol.ExporterMap().Load(path)
+	if !ok {
+		return perrors.Errorf("service not found: %s", path)
+	}
 	invoker := exporter.(*JsonrpcExporter).GetInvoker()
 	if invoker != nil {
 		result := invoker.Invoke(ctx, invocation.NewRPCInvocation(methodName, args, map[string]any{

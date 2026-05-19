@@ -108,12 +108,12 @@ func ToConfigurators(urls []*common.URL, f func(url *common.URL) config_center.C
 			break
 		}
 
-		override := url.GetParams()
-		delete(override, constant.AnyhostKey)
-		if len(override) == 0 {
+		configuratorURL := url.Clone()
+		configuratorURL.DelParam(constant.AnyhostKey)
+		if len(configuratorURL.GetParams()) == 0 {
 			continue
 		}
-		configurators = append(configurators, f(url))
+		configurators = append(configurators, f(configuratorURL))
 	}
 	return configurators
 }

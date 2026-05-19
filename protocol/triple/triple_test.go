@@ -19,6 +19,8 @@ package triple
 
 import (
 	"context"
+	"net/http"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -26,12 +28,33 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/internal"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
+
+func resetTripleProtocolForTest(t *testing.T) {
+	t.Helper()
+
+	tripleProtocol = nil
+	tripleProtocolOnce = sync.Once{}
+}
+
+func setTripleProtocolForTest(t *testing.T, protocol *TripleProtocol) {
+	t.Helper()
+
+	tripleProtocol = protocol
+	tripleProtocolOnce = sync.Once{}
+	tripleProtocolOnce.Do(func() {})
+}
 
 func TestNewTripleProtocol(t *testing.T) {
 	tp := NewTripleProtocol()
@@ -42,8 +65,7 @@ func TestNewTripleProtocol(t *testing.T) {
 }
 
 func TestGetProtocol(t *testing.T) {
-	// reset singleton for test isolation
-	tripleProtocol = nil
+	resetTripleProtocolForTest(t)
 
 	p1 := GetProtocol()
 	assert.NotNil(t, p1)
@@ -51,6 +73,38 @@ func TestGetProtocol(t *testing.T) {
 	// should return same instance (singleton)
 	p2 := GetProtocol()
 	assert.Same(t, p1, p2)
+}
+
+func TestGetProtocolConcurrent(t *testing.T) {
+	resetTripleProtocolForTest(t)
+
+	const goroutines = 128
+	start := make(chan struct{})
+	results := make(chan base.Protocol, goroutines)
+
+	var wg sync.WaitGroup
+	for i := 0; i < goroutines; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			results <- GetProtocol()
+		}()
+	}
+
+	close(start)
+	wg.Wait()
+	close(results)
+
+	var first base.Protocol
+	for protocol := range results {
+		assert.NotNil(t, protocol)
+		if first == nil {
+			first = protocol
+			continue
+		}
+		assert.Same(t, first, protocol)
+	}
 }
 
 func TestTripleProtocolRegistration(t *testing.T) {
@@ -68,17 +122,107 @@ func TestTripleGracefulShutdownCallbackRegistration(t *testing.T) {
 	assert.True(t, ok)
 	assert.NotNil(t, cb)
 
-	original := tripleProtocol
 	tp := NewTripleProtocol()
 	tp.serverMap["graceful-test"] = &Server{triServer: tri.NewServer("", nil)}
-	tripleProtocol = tp
+	setTripleProtocolForTest(t, tp)
 	t.Cleanup(func() {
-		tripleProtocol = original
+		resetTripleProtocolForTest(t)
 	})
 
 	assert.NotPanics(t, func() {
 		assert.NoError(t, cb(context.Background()))
 	})
+}
+
+func TestTripleProtocolOpenServerRejectsConflictingTransportSettings(t *testing.T) {
+	tp := NewTripleProtocol()
+	location := "127.0.0.1:20000"
+	tp.serverMap[location] = &Server{
+		transportSettings: &transportSettings{
+			location:     location,
+			callProtocol: constant.CallHTTP2,
+			rawTLSConfig: global.DefaultTLSConfig(),
+		},
+	}
+
+	invoker := &tripleServerTestInvoker{
+		url: common.NewURLWithOptions(
+			common.WithProtocol(TRIPLE),
+			common.WithIp("127.0.0.1"),
+			common.WithPort("20000"),
+			common.WithAttribute(constant.TripleConfigKey, &global.TripleConfig{
+				Http3: &global.Http3Config{Enable: true},
+			}),
+			common.WithAttribute(constant.TLSConfigKey, global.DefaultTLSConfig()),
+		),
+	}
+
+	err := tp.openServer(invoker, nil)
+	require.ErrorContains(t, err, "already uses protocol")
+}
+
+func TestTripleProtocolExportPublishesServingStatusByServiceKey(t *testing.T) {
+	tp := NewTripleProtocol()
+	url := common.NewURLWithOptions(
+		common.WithProtocol(TRIPLE),
+		common.WithIp("127.0.0.1"),
+		common.WithPort("20000"),
+		common.WithPath("com.example.GreetService"),
+		common.WithParamsValue(constant.InterfaceKey, "com.example.GreetService"),
+		common.WithParamsValue(constant.GroupKey, "test-group"),
+		common.WithParamsValue(constant.VersionKey, "1.0.0"),
+	)
+	tp.serverMap[url.Location] = &Server{
+		triServer: tri.NewServer(url.Location, nil),
+		transportSettings: &transportSettings{
+			location:     url.Location,
+			callProtocol: constant.CallHTTP2,
+		},
+	}
+
+	originalSetServing := internal.HealthSetServingStatusServing
+	t.Cleanup(func() {
+		internal.HealthSetServingStatusServing = originalSetServing
+	})
+
+	published := make(chan string, 1)
+	internal.HealthSetServingStatusServing = func(service string) {
+		published <- service
+	}
+
+	exporter := tp.Export(&tripleServerTestInvoker{url: url})
+	require.NotNil(t, exporter)
+
+	select {
+	case got := <-published:
+		assert.Equal(t, url.ServiceKey(), got)
+		assert.NotEqual(t, url.Service(), got)
+	case <-time.After(time.Second):
+		t.Fatal("export did not publish serving status")
+	}
+}
+
+func TestTripleProtocolHostHTTPHandlerRejectsDuplicateOnExistingListener(t *testing.T) {
+	tp := NewTripleProtocol()
+	location := "127.0.0.1:20000"
+	tp.serverMap[location] = &Server{
+		attachedHTTPHandler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}),
+		transportSettings: &transportSettings{
+			location:     location,
+			callProtocol: constant.CallHTTP2,
+			rawTLSConfig: global.DefaultTLSConfig(),
+		},
+	}
+
+	url := common.NewURLWithOptions(
+		common.WithProtocol(TRIPLE),
+		common.WithIp("127.0.0.1"),
+		common.WithPort("20000"),
+		common.WithAttribute(constant.TLSConfigKey, global.DefaultTLSConfig()),
+	)
+
+	err := tp.HostHTTPHandler(url, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	require.ErrorContains(t, err, "already been attached")
 }
 
 func TestTripleProtocol_Destroy_EmptyServerMap(t *testing.T) {

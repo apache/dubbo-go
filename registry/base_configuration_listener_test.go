@@ -66,7 +66,10 @@ func TestToConfigurators(t *testing.T) {
 	}))
 	configurators := ToConfigurators([]*common.URL{validURL}, makeConfigurator)
 	assert.Len(t, configurators, 1)
-	assert.Equal(t, validURL, configurators[0].GetUrl())
+	assert.NotSame(t, validURL, configurators[0].GetUrl())
+	assert.Empty(t, configurators[0].GetUrl().GetParam(constant.AnyhostKey, ""))
+	assert.Equal(t, "2s", configurators[0].GetUrl().GetParam("timeout", ""))
+	assert.Equal(t, "true", validURL.GetParam(constant.AnyhostKey, ""))
 }
 
 func TestBaseConfigurationListenerOverrideUrl(t *testing.T) {

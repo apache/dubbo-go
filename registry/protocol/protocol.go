@@ -215,7 +215,7 @@ func (proto *registryProtocol) Export(originInvoker base.Invoker) base.Exporter 
 	overriderUrl := getSubscribedOverrideUrl(providerUrl)
 	// Deprecated! subscribe to override rules in 2.6.x or before.
 	overrideSubscribeListener := newOverrideSubscribeListener(overriderUrl, originInvoker, proto)
-	proto.overrideListeners.Store(overriderUrl, overrideSubscribeListener)
+	proto.overrideListeners.Store(overriderUrl.String(), overrideSubscribeListener)
 	proto.providerConfigurationListener.OverrideUrl(providerUrl)
 	serviceConfigurationListener := newServiceConfigurationListener(overrideSubscribeListener, providerUrl)
 	proto.serviceConfigurationListeners.Store(providerUrl.ServiceKey(), serviceConfigurationListener)
@@ -275,6 +275,12 @@ func (proto *registryProtocol) reExport(invoker base.Invoker, newUrl *common.URL
 		wrappedNewInvoker := newInvokerDelegate(invoker, newUrl)
 		oldExporter.(base.Exporter).UnExport()
 		proto.bounds.Delete(key)
+
+		oldProviderURL := getProviderUrl(invoker)
+		oldOverrideURL := getSubscribedOverrideUrl(oldProviderURL)
+		proto.unsubscribeOverrideListener(proto.getRegistry(getRegistryUrl(invoker)), oldOverrideURL)
+		proto.serviceConfigurationListeners.Delete(oldProviderURL.ServiceKey())
+
 		// oldExporter UnExport function unRegister rpcService from the serviceMap, so need register it again as far as possible
 		if err := registerServiceMap(invoker); err != nil {
 			logger.Error(err.Error())
@@ -410,7 +416,7 @@ func isMatched(providerUrl *common.URL, consumerUrl *common.URL) bool {
 	// Compatible with the 2.6.x
 	if len(providerUrl.GetParam(constant.CategoryKey, "")) == 0 &&
 		providerUrl.Protocol == constant.OverrideProtocol {
-		providerUrl.AddParam(constant.CategoryKey, constant.ConfiguratorsCategory)
+		providerUrl.SetParam(constant.CategoryKey, constant.ConfiguratorsCategory)
 	}
 	consumerInterface := consumerUrl.GetParam(constant.InterfaceKey, consumerUrl.Path)
 	providerInterface := providerUrl.GetParam(constant.InterfaceKey, providerUrl.Path)
@@ -476,7 +482,8 @@ func (proto *registryProtocol) Destroy() {
 		if err := reg.UnRegister(exporter.registerUrl); err != nil {
 			logger.Warnf("Unregister consumer url failed, %s, error: %w", exporter.registerUrl.String(), err)
 		}
-		// TODO unsubscribeUrl
+		proto.unsubscribeOverrideListener(reg, exporter.subscribeUrl)
+		proto.serviceConfigurationListeners.Delete(getProviderUrl(exporter.originInvoker).ServiceKey())
 
 		// close all protocol server after consumerUpdateWait + stepTimeout(max time wait during
 		// waitAndAcceptNewRequests procedure)
@@ -498,6 +505,9 @@ func (proto *registryProtocol) Destroy() {
 					return
 				}
 			}
+
+			exporter.UnExport()
+			proto.bounds.Delete(key)
 		}()
 		return true
 	})
@@ -506,6 +516,15 @@ func (proto *registryProtocol) Destroy() {
 		proto.registries.Delete(key)
 		return true
 	})
+	proto.overrideListeners.Range(func(key, value any) bool {
+		proto.overrideListeners.Delete(key)
+		return true
+	})
+	proto.serviceConfigurationListeners.Range(func(key, value any) bool {
+		proto.serviceConfigurationListeners.Delete(key)
+		return true
+	})
+
 }
 
 // UnregisterRegistries only unregisters exported services from registries during graceful shutdown.
@@ -519,6 +538,30 @@ func (proto *registryProtocol) UnregisterRegistries() {
 		}
 		return true
 	})
+}
+
+func (proto *registryProtocol) unsubscribeOverrideListener(reg registry.Registry, overrideURL *common.URL) {
+	if reg == nil || overrideURL == nil {
+		return
+	}
+
+	overrideKey := overrideURL.String()
+	listener, ok := proto.overrideListeners.Load(overrideKey)
+	if !ok {
+		return
+	}
+
+	overrideListener, ok := listener.(*overrideSubscribeListener)
+	if !ok {
+		logger.Warnf("Unexpected override listener type %T for %s", listener, overrideKey)
+		return
+	}
+
+	if err := reg.UnSubscribe(overrideURL, overrideListener); err != nil {
+		logger.Warnf("Unsubscribe override url failed, %s, error: %v", overrideKey, err)
+		return
+	}
+	proto.overrideListeners.CompareAndDelete(overrideKey, listener)
 }
 
 func getRegistryUrl(invoker base.Invoker) *common.URL {

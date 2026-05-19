@@ -54,10 +54,21 @@ import (
 // Server is TRIPLE adaptation layer representation. It makes use of tri.Server to
 // provide functionality.
 type Server struct {
-	triServer *tri.Server
-	cfg       *global.TripleConfig
-	mu        sync.RWMutex
-	services  map[string]grpc.ServiceInfo
+	triServer           *tri.Server
+	cfg                 *global.TripleConfig
+	mu                  sync.RWMutex
+	services            map[string]grpc.ServiceInfo
+	transportStarted    bool
+	attachedHTTPHandler http.Handler
+	transportSettings   *transportSettings
+}
+
+type transportSettings struct {
+	location     string
+	callProtocol string
+	tripleConfig *global.TripleConfig
+	tlsConfig    *tls.Config
+	rawTLSConfig *global.TLSConfig
 }
 
 // NewServer creates a new TRIPLE server.
@@ -68,63 +79,172 @@ func NewServer(cfg *global.TripleConfig) *Server {
 	}
 }
 
-// Start TRIPLE server
-func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
+// Start prepares the Triple transport for one exported service. It resolves the
+// listener configuration, ensures the underlying tri.Server exists, registers
+// the service handlers, and finally starts the shared transport.
+func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) error {
 	url := invoker.GetURL()
-	addr := url.Location
 
-	var tripleConf *global.TripleConfig
-
-	tripleConfRaw, ok := url.GetAttribute(constant.TripleConfigKey)
-	if ok {
-		tripleConf = tripleConfRaw.(*global.TripleConfig)
+	settings, err := resolveServerTransport(url)
+	if err != nil {
+		return fmt.Errorf("TRIPLE server init failed: %w", err)
 	}
 
-	var callProtocol string
+	if err := s.ensureTriServer(settings); err != nil {
+		return err
+	}
+	if err := s.refreshService(invoker, info); err != nil {
+		return err
+	}
+	s.startTransport(settings.callProtocol, settings.tlsConfig)
+	return nil
+}
+
+// resolveServerTransport extracts transport-level Triple configuration from the
+// export URL and converts it into the concrete listener settings used by the
+// adaptation layer.
+func resolveServerTransport(url *common.URL) (*transportSettings, error) {
+	if url == nil {
+		return nil, fmt.Errorf("triple server url must not be nil")
+	}
+
+	tripleConf, err := resolveTripleConfig(url)
+	if err != nil {
+		return nil, err
+	}
+
+	callProtocol := constant.CallHTTP2
 	if tripleConf != nil && tripleConf.Http3 != nil && tripleConf.Http3.Enable {
 		callProtocol = constant.CallHTTP2AndHTTP3
-	} else {
-		// HTTP default type is HTTP/2.
-		callProtocol = constant.CallHTTP2
 	}
 
-	// initialize tri.Server
-	s.triServer = tri.NewServer(addr, tripleConf)
-
-	serialization := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
-	switch serialization {
-	case constant.ProtobufSerialization:
-	case constant.JSONSerialization:
-	case constant.Hessian2Serialization:
-	case constant.MsgpackSerialization:
-	default:
-		panic(fmt.Sprintf("Unsupported serialization: %s", serialization))
-	}
 	// todo: support opentracing interceptor
 
 	// TODO: move tls config to handleService
 
-	var globalTlsConf *global.TLSConfig
-	var tlsConf *tls.Config
-	var err error
-
-	// handle tls
-	tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey)
-	if ok {
-		globalTlsConf, ok = tlsConfRaw.(*global.TLSConfig)
-		if !ok {
-			logger.Errorf("TRIPLE Server initialized the TLSConfig configuration failed")
-			return
-		}
+	rawTLSConfig, err := resolveRawTLSConfig(url)
+	if err != nil {
+		return nil, err
 	}
-	if dubbotls.IsServerTLSValid(globalTlsConf) {
-		tlsConf, err = dubbotls.GetServerTlSConfig(globalTlsConf)
+
+	var tlsConf *tls.Config
+	if dubbotls.IsServerTLSValid(rawTLSConfig) {
+		tlsConf, err = dubbotls.GetServerTlSConfig(rawTLSConfig)
 		if err != nil {
-			logger.Errorf("TRIPLE Server initialized the TLSConfig configuration failed. err: %v", err)
-			return
+			return nil, fmt.Errorf("TRIPLE server initialized the TLSConfig configuration failed: %w", err)
 		}
 		logger.Infof("TRIPLE Server initialized the TLSConfig configuration")
 	}
+
+	return &transportSettings{
+		location:     url.Location,
+		callProtocol: callProtocol,
+		tripleConfig: tripleConf,
+		tlsConfig:    tlsConf,
+		rawTLSConfig: rawTLSConfig,
+	}, nil
+}
+
+// ensureTriServer lazily creates the shared tri.Server for one listener
+// address. Service export and mount-first startup both converge here so they
+// share the same transport lifecycle and reflection registration.
+func (s *Server) ensureTriServer(settings *transportSettings) error {
+	if err := s.validateTransportSettings(settings); err != nil {
+		return err
+	}
+
+	if s.triServer != nil {
+		return nil
+	}
+
+	s.mu.Lock()
+	s.transportSettings = settings
+	s.cfg = settings.tripleConfig
+	s.mu.Unlock()
+
+	s.triServer = tri.NewServer(settings.location, settings.tripleConfig)
+	s.wireAttachedHTTPFallback()
+	internal.ReflectionRegister(s)
+	return nil
+}
+
+// wireAttachedHTTPFallback keeps the tri.Server route mux as the main listener
+// handler and connects an attached external HTTP handler through the
+// transport-level fallback slot so Triple routes keep higher priority.
+func (s *Server) wireAttachedHTTPFallback() {
+	s.mu.RLock()
+	handler := s.attachedHTTPHandler
+	s.mu.RUnlock()
+	if handler != nil && s.triServer != nil {
+		s.triServer.SetFallbackHTTPHandler(handler)
+	}
+}
+
+// AttachHTTPHandler attaches a single root HTTP handler to the Triple server.
+// The attached handler follows the same single-root semantics as server.Server:
+// once a handler has been attached for one listener, later attaches must fail
+// fast instead of silently replacing the existing handler.
+func (s *Server) AttachHTTPHandler(handler http.Handler) error {
+	if handler == nil {
+		return fmt.Errorf("attached HTTP handler must not be nil")
+	}
+
+	s.mu.Lock()
+	if s.attachedHTTPHandler != nil {
+		s.mu.Unlock()
+		return fmt.Errorf("an HTTP handler has already been attached")
+	}
+	s.attachedHTTPHandler = handler
+	triServer := s.triServer
+	s.mu.Unlock()
+
+	if triServer != nil {
+		triServer.SetFallbackHTTPHandler(handler)
+	}
+	return nil
+}
+
+func (s *Server) ValidateTransportURL(url *common.URL) error {
+	settings, err := resolveServerTransport(url)
+	if err != nil {
+		return err
+	}
+	return s.validateTransportSettings(settings)
+}
+
+// StartHTTPTransport starts the shared Triple listener without requiring any
+// exported service handlers first. This is used by mount-first and HTTP-only
+// flows to bring up the listener before service export happens later.
+func (s *Server) StartHTTPTransport(url *common.URL) error {
+	settings, err := resolveServerTransport(url)
+	if err != nil {
+		return err
+	}
+
+	// Reuse the same transport bootstrap path as normal service export so mount-
+	// first and export-first flows converge on one listener lifecycle.
+	if err := s.ensureTriServer(settings); err != nil {
+		return err
+	}
+	s.startTransport(settings.callProtocol, settings.tlsConfig)
+	return nil
+}
+
+func (s *Server) startTransport(callProtocol string, tlsConf *tls.Config) {
+	if s.transportStarted {
+		return
+	}
+	s.transportStarted = true
+
+	go func() {
+		if runErr := s.triServer.Run(callProtocol, tlsConf); runErr != nil {
+			logger.Errorf("server serve failed with err: %v", runErr)
+		}
+	}()
+}
+
+func (s *Server) registerServiceHandlers(invoker base.Invoker, info *common.ServiceInfo, hanOpts []tri.HandlerOption) {
+	url := invoker.GetURL()
 
 	// IDLMode means that this will only be set when
 	// the new triple is started in non-IDL mode.
@@ -136,13 +256,7 @@ func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
 		service, _ = url.GetAttribute(constant.RpcServiceKey)
 	}
 
-	hanOpts := getHanOpts(url, tripleConf)
-
-	//Set expected codec name from serviceinfo
-	hanOpts = append(hanOpts, tri.WithExpectedCodecName(serialization))
-
 	intfName := url.Interface()
-
 	//OpenAPI group
 	var openapiGroup string
 	if g, ok := url.GetAttribute(constant.OpenAPIMetaKeyOpenAPIGroup); ok {
@@ -163,56 +277,111 @@ func (s *Server) Start(invoker base.Invoker, info *common.ServiceInfo) {
 	} else {
 		s.compatHandleService(url, intfName, url.Group(), url.Version(), hanOpts...)
 	}
-	internal.ReflectionRegister(s)
-
-	go func() {
-		if runErr := s.triServer.Run(callProtocol, tlsConf); runErr != nil {
-			logger.Errorf("server serve failed with err: %v", runErr)
-		}
-	}()
 }
 
-// todo(DMwangnima): extract a common function
-// RefreshService refreshes Triple Service
+// RefreshService refreshes Triple service.
+// The exported wrapper preserves the historical panic-on-invalid-export behavior
+// for direct callers, while internal paths use refreshService to surface errors
+// so export and mount flows can share one explicit failure path.
 func (s *Server) RefreshService(invoker base.Invoker, info *common.ServiceInfo) {
-	URL := invoker.GetURL()
-	serialization := URL.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
+	if err := s.refreshService(invoker, info); err != nil {
+		panic(err)
+	}
+}
+
+func (s *Server) refreshService(invoker base.Invoker, info *common.ServiceInfo) error {
+	url := invoker.GetURL()
+
+	hanOpts, err := resolveHandlerOptions(url)
+	if err != nil {
+		return err
+	}
+
+	s.registerServiceHandlers(invoker, info, hanOpts)
+	return nil
+}
+
+// validateTransportSettings only guards listener-fixed settings. Handler-level
+// Triple options may still vary per exported service, but protocol and TLS
+// configuration must remain stable once one listener has been created.
+func (s *Server) validateTransportSettings(next *transportSettings) error {
+	if next == nil {
+		return nil
+	}
+
+	s.mu.RLock()
+	current := s.transportSettings
+	s.mu.RUnlock()
+	if current == nil {
+		return nil
+	}
+
+	if current.callProtocol != next.callProtocol {
+		return fmt.Errorf("triple transport at %s already uses protocol %s, cannot switch to %s", next.location, current.callProtocol, next.callProtocol)
+	}
+	if !reflect.DeepEqual(current.rawTLSConfig, next.rawTLSConfig) {
+		return fmt.Errorf("triple transport at %s already uses different TLS settings", next.location)
+	}
+	return nil
+}
+
+func resolveTripleConfig(url *common.URL) (*global.TripleConfig, error) {
+	if url == nil {
+		return nil, fmt.Errorf("triple server url must not be nil")
+	}
+
+	tripleConfRaw, ok := url.GetAttribute(constant.TripleConfigKey)
+	if !ok || tripleConfRaw == nil {
+		return nil, nil
+	}
+
+	tripleConf, ok := tripleConfRaw.(*global.TripleConfig)
+	if !ok {
+		return nil, fmt.Errorf("invalid triple config type %T", tripleConfRaw)
+	}
+	return tripleConf.Clone(), nil
+}
+
+func resolveRawTLSConfig(url *common.URL) (*global.TLSConfig, error) {
+	if url == nil {
+		return nil, fmt.Errorf("triple server url must not be nil")
+	}
+
+	tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey)
+	if !ok || tlsConfRaw == nil {
+		return nil, nil
+	}
+
+	tlsConf, ok := tlsConfRaw.(*global.TLSConfig)
+	if !ok {
+		return nil, fmt.Errorf("invalid tls config type %T", tlsConfRaw)
+	}
+	return tlsConf.Clone(), nil
+}
+
+func resolveHandlerOptions(url *common.URL) ([]tri.HandlerOption, error) {
+	if url == nil {
+		return nil, fmt.Errorf("triple server url must not be nil")
+	}
+
+	serialization := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	switch serialization {
 	case constant.ProtobufSerialization:
 	case constant.JSONSerialization:
 	case constant.Hessian2Serialization:
 	case constant.MsgpackSerialization:
 	default:
-		panic(fmt.Sprintf("Unsupported serialization: %s", serialization))
+		return nil, fmt.Errorf("unsupported serialization: %s", serialization)
 	}
-	hanOpts := getHanOpts(URL, s.cfg)
-	//Set expected codec name from serviceinfo
+
+	tripleConf, err := resolveTripleConfig(url)
+	if err != nil {
+		return nil, err
+	}
+
+	hanOpts := getHanOpts(url, tripleConf)
 	hanOpts = append(hanOpts, tri.WithExpectedCodecName(serialization))
-	intfName := URL.Interface()
-
-	IDLMode := URL.GetParam(constant.IDLMode, "")
-	var service common.RPCService
-	if IDLMode == constant.NONIDL {
-		service, _ = URL.GetAttribute(constant.RpcServiceKey)
-	}
-
-	var openapiGroup string
-	if g, ok := URL.GetAttribute(constant.OpenAPIMetaKeyOpenAPIGroup); ok {
-		if gs, ok := g.(string); ok && gs != "" {
-			openapiGroup = gs
-		}
-	}
-
-	if info != nil {
-		s.handleServiceWithInfo(intfName, invoker, info, hanOpts...)
-		s.saveServiceInfo(intfName, info, openapiGroup, URL.Group(), URL.Version())
-	} else if IDLMode == constant.NONIDL {
-		reflectInfo := createServiceInfoWithReflection(service)
-		s.handleServiceWithInfo(intfName, invoker, reflectInfo, hanOpts...)
-		s.saveServiceInfo(intfName, reflectInfo, openapiGroup, URL.Group(), URL.Version())
-	} else {
-		s.compatHandleService(URL, intfName, URL.Group(), URL.Version(), hanOpts...)
-	}
+	return hanOpts, nil
 }
 
 func getHanOpts(url *common.URL, tripleConf *global.TripleConfig) (hanOpts []tri.HandlerOption) {

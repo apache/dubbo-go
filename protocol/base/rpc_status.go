@@ -204,20 +204,20 @@ func CleanAllStatus() {
 
 // GetInvokerHealthyStatus get invoker's conn healthy status
 func GetInvokerHealthyStatus(invoker Invoker) bool {
-	_, found := invokerBlackList.Load(invoker.GetURL().Key())
+	_, found := invokerBlackList.Load(invoker.GetURL().GetCacheInvokerMapKey())
 	return !found
 }
 
 // SetInvokerUnhealthyStatus add target invoker to black list
 func SetInvokerUnhealthyStatus(invoker Invoker) {
-	invokerBlackList.Store(invoker.GetURL().Key(), invoker)
+	invokerBlackList.Store(invoker.GetURL().GetCacheInvokerMapKey(), invoker)
 	logger.Info("Add invoker ip = ", invoker.GetURL().Location, " to black list")
 	blackListCacheDirty.Store(true)
 }
 
 // RemoveInvokerUnhealthyStatus remove unhealthy status of target invoker from blacklist
 func RemoveInvokerUnhealthyStatus(invoker Invoker) {
-	invokerBlackList.Delete(invoker.GetURL().Key())
+	invokerBlackList.Delete(invoker.GetURL().GetCacheInvokerMapKey())
 	logger.Info("Remove invoker ip = ", invoker.GetURL().Location, " from black list")
 	blackListCacheDirty.Store(true)
 }

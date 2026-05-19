@@ -19,6 +19,7 @@ package triple_protocol
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"testing"
 )
@@ -98,4 +99,19 @@ func TestServer_RegisterMuxHandle(t *testing.T) {
 		})
 		assert.Equal(t, test.path, pattern)
 	}
+}
+
+func TestServerSetFallbackHTTPHandler(t *testing.T) {
+	srv := NewServer("127.0.0.1:0", nil)
+	srv.SetFallbackHTTPHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("ok"))
+	}))
+
+	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
+	resp := httptest.NewRecorder()
+
+	srv.mux.ServeHTTP(resp, req)
+
+	assert.Equal(t, http.StatusOK, resp.Code)
+	assert.Equal(t, "ok", resp.Body.String())
 }
