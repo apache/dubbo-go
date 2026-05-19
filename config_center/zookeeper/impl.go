@@ -71,7 +71,7 @@ func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfigu
 		url:      url,
 		rootPath: rootPath,
 	}
-	logger.Infof("[Zookeeper ConfigCenter] New Zookeeper ConfigCenter with Configuration: %+v, url = %+v", c, c.GetURL())
+	logger.Infof("[ConfigCenter][Zookeeper] New Zookeeper ConfigCenter with Configuration, zkConfig=%v url=%v", c, c.GetURL())
 	if v := url.GetParam("base64", ""); v != "" {
 		base64Enabled, err := strconv.ParseBool(v)
 		if err != nil {
@@ -82,7 +82,7 @@ func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfigu
 
 	err := zookeeper.ValidateZookeeperClient(c, url.Location)
 	if err != nil {
-		logger.Errorf("zookeeper client start error ,error message is %v", err)
+		logger.Errorf("[ConfigCenter][Zookeeper] zookeeper client start error, err=%v", err)
 		return nil, err
 	}
 	err = c.client.Create(c.rootPath)
@@ -136,7 +136,7 @@ func (c *zookeeperDynamicConfiguration) GetProperties(key string, opts ...config
 	}
 	content, _, err := c.client.GetContent(c.rootPath + "/" + key)
 	if errors.Is(err, zk.ErrNoNode) {
-		logger.Warnf("query rule fail, key=%s, err=%v", key, err)
+		logger.Warnf("[ConfigCenter][Zookeeper] query rule fail, key=%s err=%v", key, err)
 		return "", nil
 	}
 	if err != nil {
@@ -266,7 +266,7 @@ func (c *zookeeperDynamicConfiguration) IsAvailable() bool {
 }
 
 func (c *zookeeperDynamicConfiguration) closeConfigs() {
-	logger.Infof("begin to close provider zk client")
+	logger.Info("[ConfigCenter][Zookeeper] begin to close provider zk client")
 	c.cltLock.Lock()
 	defer c.cltLock.Unlock()
 	c.client.Close()

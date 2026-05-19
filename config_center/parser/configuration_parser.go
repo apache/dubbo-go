@@ -108,7 +108,7 @@ func (c *ConditionMatch) IsMatch(host string, url *common.URL) bool {
 func (parser *DefaultConfigurationParser) Parse(content string) (map[string]string, error) {
 	pps, err := properties.LoadString(content)
 	if err != nil {
-		logger.Errorf("Parse the content {%v} in DefaultConfigurationParser error ,error message is {%v}", content, err)
+		logger.Errorf("[ConfigCenter][Parser] Parse the content in DefaultConfigurationParser error, content=%v err=%v", content, err)
 		return nil, err
 	}
 	return pps.Map(), nil
