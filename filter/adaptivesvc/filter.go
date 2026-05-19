@@ -122,33 +122,33 @@ func (f *adaptiveServiceProviderFilter) OnResponse(_ context.Context, res result
 	// get updater from the attributes
 	updaterIface, _ := invocation.GetAttribute(constant.AdaptiveServiceUpdaterKey)
 	if updaterIface == nil {
-		logger.Errorf("[adasvc filter] The updater is not found on the attributes: %#v",
+		logger.Errorf("[Filter][AdaptiveSvc] The updater is not found on the attributes, attrs=%#v",
 			invocation.Attributes())
 		return &result.RPCResult{Err: ErrUpdaterNotFound}
 	}
 	updater, ok := updaterIface.(limiter.Updater)
 	if !ok {
-		logger.Errorf("[adasvc filter] The type of the updater is not unexpected, we got %#v", updaterIface)
+		logger.Errorf("[Filter][AdaptiveSvc] The type of the updater is not unexpected, we got %#v", updaterIface)
 		return &result.RPCResult{Err: ErrUnexpectedUpdaterType}
 	}
 
 	err := updater.DoUpdate()
 	if err != nil {
-		logger.Errorf("[adasvc filter] The DoUpdate method was failed, err: %s.", err)
+		logger.Errorf("[Filter][AdaptiveSvc] The DoUpdate method failed, err=%v", err)
 		return &result.RPCResult{Err: err}
 	}
 
 	// get limiter for the mapper
 	l, err := limiterMapperSingleton.getMethodLimiter(invoker.GetURL(), invocation.MethodName())
 	if err != nil {
-		logger.Errorf("[adasvc filter] The method limiter for \"%s\" is not found.", invocation.MethodName())
+		logger.Errorf("[Filter][AdaptiveSvc] The method limiter for %q is not found.", invocation.MethodName())
 		return &result.RPCResult{Err: err}
 	}
 
 	// set attachments to inform consumer of provider status
 	res.AddAttachment(constant.AdaptiveServiceRemainingKey, fmt.Sprintf("%d", l.Remaining()))
 	res.AddAttachment(constant.AdaptiveServiceInflightKey, fmt.Sprintf("%d", l.Inflight()))
-	logger.Debugf("[adasvc filter] The attachments are set, %s: %d, %s: %d.",
+	logger.Debugf("[Filter][AdaptiveSvc] The attachments are set, %s=%d %s=%d.",
 		constant.AdaptiveServiceRemainingKey, l.Remaining(),
 		constant.AdaptiveServiceInflightKey, l.Inflight())
 

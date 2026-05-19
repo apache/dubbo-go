@@ -79,17 +79,17 @@ func (t *tpsLimitFilter) Invoke(ctx context.Context, invoker base.Invoker, invoc
 	if len(tpsLimiter) > 0 {
 		limiter, err := extension.GetTpsLimiter(tpsLimiter)
 		if err != nil {
-			logger.Warn(err)
+			logger.Warnf("[Filter][TPS] get TPS limiter failed, err=%v", err)
 			return invoker.Invoke(ctx, invocation)
 		}
 		allow := limiter.IsAllowable(invoker.GetURL(), invocation)
 		if allow {
 			return invoker.Invoke(ctx, invocation)
 		}
-		logger.Errorf("The invocation was rejected due to over the limiter limitation, url: %s ", url.String())
+		logger.Errorf("[Filter][TPS] The invocation was rejected due to over the limiter limitation, url=%s", url.String())
 		rejectedExecutionHandler, err := extension.GetRejectedExecutionHandler(rejectedExeHandler)
 		if err != nil {
-			logger.Warn(err)
+			logger.Warnf("[Filter][TPS] get rejected execution handler failed, err=%v", err)
 		} else {
 			return rejectedExecutionHandler.RejectedExecution(url, invocation)
 		}

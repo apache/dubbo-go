@@ -127,7 +127,7 @@ func (f *Filter) logIntoChannel(accessLogData Data) {
 	case f.logChan <- accessLogData:
 		return
 	default:
-		logger.Warn("The channel is full and the access logIntoChannel data will be dropped")
+		logger.Warn("[Filter][AccessLog] The channel is full and the access logIntoChannel data will be dropped")
 		return
 	}
 }
@@ -193,7 +193,7 @@ func (f *Filter) OnResponse(_ context.Context, result result.Result, _ base.Invo
 func (f *Filter) processLogs() {
 	defer func() {
 		if r := recover(); r != nil {
-			logger.Errorf("AccessLog processLogs panic: %v", r)
+			logger.Errorf("[Filter][AccessLog] AccessLog processLogs panic, err=%v", r)
 		}
 		f.drainLogs()
 	}()
@@ -222,7 +222,7 @@ func (f *Filter) drainLogs() {
 			}
 			f.writeLogToFileWithTimeout(accessLogData, 1*time.Second)
 		case <-timeout:
-			logger.Warnf("AccessLog drain timeout, some logs may be lost")
+			logger.Warn("[Filter][AccessLog] AccessLog drain timeout, some logs may be lost")
 			return
 		default:
 			return
@@ -240,9 +240,9 @@ func (f *Filter) writeLogToFileWithTimeout(data Data, timeout time.Duration) {
 
 	select {
 	case <-done:
-		logger.Debugf("AccessLog successfully written for: %s", data.accessLog)
+		logger.Debugf("[Filter][AccessLog] AccessLog successfully written for, accessLog=%s", data.accessLog)
 	case <-time.After(timeout):
-		logger.Warnf("AccessLog writeLogToFile timeout for: %s", data.accessLog)
+		logger.Warnf("[Filter][AccessLog] AccessLog writeLogToFile timeout, accessLog=%s", data.accessLog)
 	}
 }
 
@@ -250,7 +250,7 @@ func (f *Filter) writeLogToFileWithTimeout(data Data, timeout time.Duration) {
 func (f *Filter) writeLogToFile(data Data) {
 	accessLog := data.accessLog
 	if isDefault(accessLog) {
-		logger.Info(data.toLogMessage())
+		logger.Infof("[Filter][AccessLog] %s", data.toLogMessage())
 		return
 	}
 
@@ -259,12 +259,12 @@ func (f *Filter) writeLogToFile(data Data) {
 		logger.Warnf("Can not open the access log file: %s, %v", accessLog, err)
 		return
 	}
-	logger.Debugf("Append log to %s", accessLog)
+	logger.Debugf("[Filter][AccessLog] Append log to %s", accessLog)
 	message := data.toLogMessage()
 	message = message + "\n"
 	_, err = logFile.WriteString(message)
 	if err != nil {
-		logger.Warnf("Can not write the log into access log file: %s, %v", accessLog, err)
+		logger.Warnf("[Filter][AccessLog] Can not write the log into access log file, accessLog=%s err=%v", accessLog, err)
 	}
 }
 
@@ -301,7 +301,7 @@ func (f *Filter) getOrOpenLogFile(accessLog string) (*os.File, error) {
 		}
 		// Close the old file before rotation
 		if err := logFile.Close(); err != nil {
-			logger.Warnf("Failed to close old log file %s: %v", accessLog, err)
+			logger.Warnf("[Filter][AccessLog] Failed to close old log file, accessLog=%s err=%v", accessLog, err)
 		}
 		delete(f.fileCache, accessLog)
 	}
@@ -321,13 +321,13 @@ func (f *Filter) getOrOpenLogFile(accessLog string) (*os.File, error) {
 func (f *Filter) openLogFile(accessLog string) (*os.File, error) {
 	logFile, err := os.OpenFile(accessLog, os.O_CREATE|os.O_APPEND|os.O_RDWR, LogFileMode)
 	if err != nil {
-		logger.Warnf("Can not open the access log file: %s, %v", accessLog, err)
+		logger.Warnf("[Filter][AccessLog] Can not open the access log file, accessLog=%s err=%v", accessLog, err)
 		return nil, err
 	}
 	now := time.Now().Format(FileDateFormat)
 	fileInfo, err := logFile.Stat()
 	if err != nil {
-		logger.Warnf("Can not get the info of access log file: %s, %v", accessLog, err)
+		logger.Warnf("[Filter][AccessLog] Can not get the info of access log file, accessLog=%s err=%v", accessLog, err)
 		return nil, err
 	}
 	last := fileInfo.ModTime().Format(FileDateFormat)
@@ -341,7 +341,7 @@ func (f *Filter) openLogFile(accessLog string) (*os.File, error) {
 	if now != last {
 		err = os.Rename(accessLog, accessLog+"."+now)
 		if err != nil {
-			logger.Warnf("Can not rename access log file: %s, %v", accessLog, err)
+			logger.Warnf("[Filter][AccessLog] Can not rename access log file, accessLog=%s err=%v", accessLog, err)
 			return nil, err
 		}
 		logFile, err = os.OpenFile(accessLog, os.O_CREATE|os.O_APPEND|os.O_RDWR, LogFileMode)
@@ -422,7 +422,7 @@ func (f *Filter) shutdown() {
 		defer f.fileLock.Unlock()
 		for path, file := range f.fileCache {
 			if err := file.Close(); err != nil {
-				logger.Warnf("Error closing access log file %s: %v", path, err)
+				logger.Warnf("[Filter][AccessLog] Error closing access log file, path=%s err=%v", path, err)
 			}
 			delete(f.fileCache, path)
 		}

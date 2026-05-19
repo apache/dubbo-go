@@ -71,7 +71,7 @@ type OnlyLogRejectedExecutionHandler struct{}
 func (handler *OnlyLogRejectedExecutionHandler) RejectedExecution(url *common.URL,
 	_ base.Invocation) result.Result {
 
-	logger.Errorf("The invocation was rejected. url: %s", url.String())
+	logger.Errorf("[Filter][Handler] The invocation was rejected, url=%s", url.String())
 	return &result.RPCResult{}
 }
 

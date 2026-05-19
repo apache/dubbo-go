@@ -70,14 +70,14 @@ func (f *providerGracefulShutdownFilter) Invoke(ctx context.Context, invoker bas
 	}
 
 	if f.rejectNewRequest() {
-		logger.Info("The application is closing, new request will be rejected.")
+		logger.Info("[Filter][GracefulShutdown] The application is closing, new request will be rejected.")
 		handler := constant.DefaultKey
 		if f.shutdownConfig != nil && len(f.shutdownConfig.RejectRequestHandler) > 0 {
 			handler = f.shutdownConfig.RejectRequestHandler
 		}
 		rejectedExecutionHandler, err := extension.GetRejectedExecutionHandler(handler)
 		if err != nil {
-			logger.Warn(err)
+			logger.Warnf("[Filter][GracefulShutdown] get rejected execution handler failed, err=%v", err)
 		} else {
 			return rejectedExecutionHandler.RejectedExecution(invoker.GetURL(), invocation)
 		}
@@ -118,7 +118,7 @@ func (f *providerGracefulShutdownFilter) Set(name string, conf any) {
 		case *config.ShutdownConfig:
 			f.shutdownConfig = compatGlobalShutdownConfig(ct)
 		default:
-			logger.Warnf("the type of config for {%s} should be *global.ShutdownConfig", constant.GracefulShutdownFilterShutdownConfig)
+			logger.Warnf("[Filter][GracefulShutdown] the type of config for %s should be *global.ShutdownConfig", constant.GracefulShutdownFilterShutdownConfig)
 		}
 		return
 	default:

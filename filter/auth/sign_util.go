@@ -60,7 +60,7 @@ func toBytes(data []any) ([]byte, error) {
 func doSign(bytes []byte, key string) string {
 	mac := hmac.New(sha256.New, []byte(key))
 	if _, err := mac.Write(bytes); err != nil {
-		logger.Error(err)
+		logger.Errorf("[Filter][Auth] sign HMAC write failed, err=%v", err)
 	}
 	signature := mac.Sum(nil)
 	return base64.URLEncoding.EncodeToString(signature)
