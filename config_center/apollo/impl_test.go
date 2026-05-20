@@ -201,6 +201,39 @@ func initMockApollo(t *testing.T) *apolloConfiguration {
 	return configuration
 }
 
+func TestGetAddressWithProtocolPrefix(t *testing.T) {
+	tests := []struct {
+		name    string
+		rawURL  string
+		want    string
+	}{
+		{
+			name:   "with context path",
+			rawURL: "apollo://127.0.0.1:8080/config",
+			want:   "http://127.0.0.1:8080/config",
+		},
+		{
+			name:   "without context path",
+			rawURL: "apollo://127.0.0.1:8080",
+			want:   "http://127.0.0.1:8080",
+		},
+		{
+			name:   "multiple addresses with context path",
+			rawURL: "apollo://127.0.0.1:8080,192.168.1.1:8080/config",
+			want:   "http://127.0.0.1:8080/config,http://192.168.1.1:8080/config",
+		},
+	}
+
+	config := &apolloConfiguration{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			apolloCfgURL, err := common.NewURL(tt.rawURL, common.WithProtocol("apollo"))
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, config.getAddressWithProtocolPrefix(apolloCfgURL))
+		})
+	}
+}
+
 func TestListener(t *testing.T) {
 	listener := &apolloDataListener{}
 	listener.wg.Add(2)
