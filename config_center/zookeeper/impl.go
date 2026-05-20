@@ -71,7 +71,7 @@ func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfigu
 		url:      url,
 		rootPath: rootPath,
 	}
-	logger.Infof("[ConfigCenter][Zookeeper] New Zookeeper ConfigCenter with Configuration, zkConfig=%v url=%v", c, c.GetURL())
+	logger.Infof("[ConfigCenter][Zookeeper] new Zookeeper ConfigCenter with Configuration, zkConfig=%v url=%v", c, c.GetURL())
 	if v := url.GetParam("base64", ""); v != "" {
 		base64Enabled, err := strconv.ParseBool(v)
 		if err != nil {

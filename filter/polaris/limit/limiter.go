@@ -46,7 +46,7 @@ type polarisTpsLimiter struct {
 
 func (pl *polarisTpsLimiter) IsAllowable(url *common.URL, invocation base.Invocation) bool {
 	if err := remotingpolaris.Check(); errors.Is(err, remotingpolaris.ErrorNoOpenPolarisAbility) {
-		logger.Debug("[Filter][Polaris] not open polaris ratelimit ability")
+		logger.Debug("[Filter][Polaris][TPS] not open polaris ratelimit ability")
 		return true
 	}
 
@@ -54,7 +54,7 @@ func (pl *polarisTpsLimiter) IsAllowable(url *common.URL, invocation base.Invoca
 
 	pl.limitAPI, err = remotingpolaris.GetLimiterAPI()
 	if err != nil {
-		logger.Errorf("[Filter][Polaris] create polaris LimitAPI fail, err=%+v", err)
+		logger.Errorf("[Filter][Polaris][TPS] create polaris LimitAPI fail, err=%+v", err)
 		return true
 	}
 
@@ -62,11 +62,11 @@ func (pl *polarisTpsLimiter) IsAllowable(url *common.URL, invocation base.Invoca
 	if req == nil {
 		return true
 	}
-	logger.Debugf("[Filter][Polaris] quota req: %+v", req)
+	logger.Debugf("[Filter][Polaris][TPS] quota req: %+v", req)
 
 	resp, err := pl.limitAPI.GetQuota(req)
 	if err != nil {
-		logger.Errorf("[Filter][Polaris] ns=%s svc=%s get quota fail, err=%+v", remotingpolaris.GetNamespace(), url.Service(), err)
+		logger.Errorf("[Filter][Polaris][TPS] ns=%s svc=%s get quota fail, err=%+v", remotingpolaris.GetNamespace(), url.Service(), err)
 		return true
 	}
 
@@ -143,19 +143,19 @@ func (pl *polarisTpsLimiter) buildArguments(req *model.QuotaRequestImpl) ([]*v1.
 	}
 
 	if err := engine.SyncGetResources(getRuleReq); err != nil {
-		logger.Errorf("[Filter][Polaris] ns=%s svc=%s get RateLimit Rule fail, err=%+v", req.GetNamespace(), req.GetService(), err)
+		logger.Errorf("[Filter][Polaris][TPS] ns=%s svc=%s get RateLimit Rule fail, err=%+v", req.GetNamespace(), req.GetService(), err)
 		return nil, false
 	}
 
 	svcRule := getRuleReq.RateLimitRule
 	if svcRule == nil || svcRule.GetValue() == nil {
-		logger.Warnf("[Filter][Polaris] ns=%s svc=%s get RateLimit Rule is nil", req.GetNamespace(), req.GetService())
+		logger.Warnf("[Filter][Polaris][TPS] ns=%s svc=%s get RateLimit Rule is nil", req.GetNamespace(), req.GetService())
 		return nil, false
 	}
 
 	rules, ok := svcRule.GetValue().(*v1.RateLimit)
 	if !ok {
-		logger.Errorf("[Filter][Polaris] ns:%s svc:%s get RateLimit Rule invalid", req.GetNamespace(), req.GetService())
+		logger.Errorf("[Filter][Polaris][TPS] ns:%s svc:%s get RateLimit Rule invalid", req.GetNamespace(), req.GetService())
 		return nil, false
 	}
 

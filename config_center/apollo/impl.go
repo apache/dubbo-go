@@ -71,7 +71,7 @@ func newApolloConfiguration(url *common.URL) (*apolloConfiguration, error) {
 		IsBackupConfig:   url.GetParamBool(constant.ConfigBackupConfigKey, true),
 		BackupConfigPath: url.GetParam(constant.ConfigBackupConfigPathKey, ""),
 	}
-	logger.Infof("[ConfigCenter][Apollo] New Apollo ConfigCenter with Configuration, appConf=%v url=%v", c.appConf, c.url)
+	logger.Infof("[ConfigCenter][Apollo] new Apollo ConfigCenter with Configuration, appConf=%v url=%v", c.appConf, c.url)
 	client, err := agollo.StartWithConfig(func() (*config.AppConfig, error) {
 		return c.appConf, nil
 	})

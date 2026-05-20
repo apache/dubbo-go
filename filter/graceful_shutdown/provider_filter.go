@@ -70,7 +70,7 @@ func (f *providerGracefulShutdownFilter) Invoke(ctx context.Context, invoker bas
 	}
 
 	if f.rejectNewRequest() {
-		logger.Info("[Filter][GracefulShutdown] The application is closing, new request will be rejected.")
+		logger.Info("[Filter][GracefulShutdown] the application is closing, new request will be rejected.")
 		handler := constant.DefaultKey
 		if f.shutdownConfig != nil && len(f.shutdownConfig.RejectRequestHandler) > 0 {
 			handler = f.shutdownConfig.RejectRequestHandler

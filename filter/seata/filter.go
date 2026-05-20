@@ -64,7 +64,7 @@ func newSeataFilter() filter.Filter {
 func (f *seataFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
 	xid := invocation.GetAttachmentWithDefaultValue(string(SEATA_XID), "")
 	if len(strings.TrimSpace(xid)) > 0 {
-		logger.Debugf("[Filter][Seata] Method and XID, method=%v xid=%v", invocation.MethodName(), xid)
+		logger.Debugf("[Filter][Seata] method and XID, method=%v xid=%v", invocation.MethodName(), xid)
 		return invoker.Invoke(context.WithValue(ctx, SEATA_XID, xid), invocation)
 	}
 	return invoker.Invoke(ctx, invocation)

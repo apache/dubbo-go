@@ -80,7 +80,7 @@ func newConsumerGracefulShutdownFilter() filter.Filter {
 func (f *consumerGracefulShutdownFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
 	// check if invoker is closing
 	if f.isClosingInvoker(invoker) {
-		logger.Warnf("[Filter][GracefulShutdown] Graceful shutdown, skipping closing invoker, url=%s", invoker.GetURL().String())
+		logger.Warnf("[Filter][GracefulShutdown] skipping closing invoker, url=%s", invoker.GetURL().String())
 		return &result.RPCResult{Err: errors.New("provider is closing")}
 	}
 
@@ -144,7 +144,7 @@ func (f *consumerGracefulShutdownFilter) isClosingInvoker(invoker base.Invoker) 
 		f.closingInvokers.Delete(key)
 		if setter, ok := invoker.(base.AvailabilitySetter); ok {
 			setter.SetAvailable(true)
-			logger.Infof("[Filter][GracefulShutdown] Graceful shutdown, recovered invoker availability after closing TTL, key=%s", key)
+			logger.Infof("[Filter][GracefulShutdown] recovered invoker availability after closing TTL, key=%s", key)
 		}
 	}
 	return false
@@ -168,12 +168,12 @@ func (f *consumerGracefulShutdownFilter) markClosingInvoker(invoker base.Invoker
 	expireTime := time.Now().Add(f.getClosingInvokerExpireTime())
 	f.closingInvokers.Store(key, expireTime)
 
-	logger.Infof("[Filter][GracefulShutdown] Graceful shutdown, marked invoker as closing, key=%s expireTime=%v isAvailable=%v",
+	logger.Infof("[Filter][GracefulShutdown] marked invoker as closing, key=%s expireTime=%v isAvailable=%v",
 		key, expireTime, invoker.IsAvailable())
 
 	if setter, ok := invoker.(base.AvailabilitySetter); ok {
 		setter.SetAvailable(false)
-		logger.Infof("[Filter][GracefulShutdown] Graceful shutdown, set invoker unavailable, key=%s isAvailable=%v",
+		logger.Infof("[Filter][GracefulShutdown] set invoker unavailable, key=%s isAvailable=%v",
 			key, invoker.IsAvailable())
 	}
 }

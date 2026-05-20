@@ -151,7 +151,7 @@ func (limiter MethodServiceTpsLimiter) IsAllowable(url *common.URL, invocation b
 
 	if limitRate < 0 {
 		// the limitTarget is not necessary to be limited.
-		logger.Errorf("[Filter][TPS] Found error configuration value of tps.limit.rate for the invocation, ignores TPS Limiter, invocation=%s", url.ServiceKey()+"#"+invocation.MethodName())
+		logger.Errorf("[Filter][TPS] found error configuration value of tps.limit.rate for the invocation, ignores TPS Limiter, invocation=%s", url.ServiceKey()+"#"+invocation.MethodName())
 		return true
 	}
 
@@ -159,7 +159,7 @@ func (limiter MethodServiceTpsLimiter) IsAllowable(url *common.URL, invocation b
 		constant.TPSLimitIntervalKey,
 		constant.DefaultTPSLimitInterval)
 	if limitInterval <= 0 {
-		logger.Errorf("[Filter][TPS] Found error configuration value of tps.limit.interval for the invocation, ignores TPS Limiter, invocation=%s", url.ServiceKey()+"#"+invocation.MethodName())
+		logger.Errorf("[Filter][TPS] found error configuration value of tps.limit.interval for the invocation, ignores TPS Limiter, invocation=%s", url.ServiceKey()+"#"+invocation.MethodName())
 		return true
 	}
 
@@ -190,7 +190,7 @@ func getLimitConfig(methodLevelConfig string,
 	if len(methodLevelConfig) > 0 {
 		result, err := strconv.ParseInt(methodLevelConfig, 0, 0)
 		if err != nil {
-			logger.Errorf("[Filter][TPS] The %s for invocation must be positive, please check your configuration, configKey=%s serviceKey=%s methodName=%s",
+			logger.Errorf("[Filter][TPS] the %s for invocation must be positive, please check your configuration, configKey=%s serviceKey=%s methodName=%s",
 				configKey, configKey, url.ServiceKey(), invocation.MethodName())
 			return defaultVal
 		}
@@ -201,7 +201,7 @@ func getLimitConfig(methodLevelConfig string,
 
 	result, err := strconv.ParseInt(url.GetParam(configKey, ""), 0, 0)
 	if err != nil {
-		logger.Errorf("[Filter][TPS] Cannot parse the configuration, please check your configuration, configKey=%s", configKey)
+		logger.Errorf("[Filter][TPS] can not parse the configuration, please check your configuration, configKey=%s", configKey)
 		return defaultVal
 	}
 	return result
