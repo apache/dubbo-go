@@ -92,10 +92,10 @@ func (GsonGeneralizer) GetType(obj any) (typ string, err error) {
 
 	typ = "java.lang.Object"
 	if err == hessian2.NilError {
-		logger.Debugf("the type of nil object couldn't be inferred, use the default value(\"%s\")", typ)
+		logger.Debugf("[Filter][Generic] the type of nil object couldn't be inferred, use the default value, type=%s", typ)
 		return
 	}
 
-	logger.Debugf("the type of object(=%T) couldn't be recognized as a POJO, use the default value(\"%s\")", obj, typ)
+	logger.Debugf("[Filter][Generic] the type of object couldn't be recognized as a POJO, use the default value, objType=%T type=%s", obj, typ)
 	return
 }

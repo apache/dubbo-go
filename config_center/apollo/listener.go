@@ -49,8 +49,7 @@ func (a *apolloListener) OnChange(changeEvent *storage.ChangeEvent) {
 func (a *apolloListener) OnNewestChange(changeEvent *storage.FullChangeEvent) {
 	b, err := yaml.Marshal(changeEvent.Changes)
 	if err != nil {
-		logger.Errorf("apollo onNewestChange err %+v",
-			err)
+		logger.Errorf("[ConfigCenter][Apollo] onNewestChange err=%v", err)
 		return
 	}
 	content := string(b)

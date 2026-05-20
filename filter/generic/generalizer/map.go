@@ -85,11 +85,11 @@ func (g *MapGeneralizer) GetType(obj any) (typ string, err error) {
 
 	typ = "java.lang.Object"
 	if err == hessian2.NilError {
-		logger.Debugf("the type of nil object couldn't be inferred, use the default value(\"%s\")", typ)
+		logger.Debugf("[Filter][Generic] the type of nil object couldn't be inferred, use the default value, type=%q", typ)
 		return
 	}
 
-	logger.Debugf("the type of object(=%T) couldn't be recognized as a POJO, use the default value(\"%s\")", obj, typ)
+	logger.Debugf("[Filter][Generic] the type of object couldn't be recognized as a POJO, use the default value, objType=%T type=%q", obj, typ)
 	return
 }
 
@@ -105,7 +105,7 @@ func getGenericIncludeClass() bool {
 		if exist, val := conf.GetProperty(constant.GenericIncludeClassKey); exist {
 			parsed, err := strconv.ParseBool(val)
 			if err != nil {
-				logger.Warnf("generic.include.class value %q is invalid, fallback to true", val)
+				logger.Warnf("[Filter][Generic] generic.include.class value is invalid, fallback to true, val=%q", val)
 				return true
 			}
 			return parsed
@@ -177,7 +177,7 @@ func objToMap(obj any) any {
 			value := v.Field(i)
 			kind := value.Kind()
 			if !value.CanInterface() {
-				logger.Debugf("objToMap for %v is skipped because it couldn't be converted to interface", field)
+				logger.Debugf("[Filter][Generic] objToMap is skipped because it couldn't be converted to interface, field=%v", field)
 				continue
 			}
 			valueIface := value.Interface()
@@ -190,9 +190,7 @@ func objToMap(obj any) any {
 				setInMap(result, field, objToMap(valueIface))
 			case reflect.Struct, reflect.Slice, reflect.Map:
 				if isPrimitive(valueIface) {
-					logger.Warnf("\"%s\" is primitive. The application may crash if it's transferred between "+
-						"systems implemented by different languages, e.g. dubbo-go <-> dubbo-java. We recommend "+
-						"you represent the object by basic types, like string.", value.Type())
+					logger.Warnf("[Filter][Generic] %q is primitive. Cross-language transfer (e.g., dubbo-go <-> dubbo-java) may crash. Use basic types like string.", value.Type())
 					setInMap(result, field, valueIface)
 					continue
 				}

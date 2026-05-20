@@ -75,11 +75,7 @@ func (f *genericServiceFilter) Invoke(ctx context.Context, invoker base.Invoker,
 	types := inv.Arguments()[1]
 	args := inv.Arguments()[2].([]hessian.Object)
 
-	logger.Debugf(`received a generic invocation:
-		MethodName: %s,
-		Types: %s,
-		Args: %s
-	`, mtdName, types, args)
+	logger.Debugf("[Filter][Generic] received a generic invocation, methodName=%s types=%v args=%v", mtdName, types, args)
 
 	// get the type of the argument
 	ivkURL := invoker.GetURL()
