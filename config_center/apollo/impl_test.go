@@ -203,9 +203,9 @@ func initMockApollo(t *testing.T) *apolloConfiguration {
 
 func TestGetAddressWithProtocolPrefix(t *testing.T) {
 	tests := []struct {
-		name    string
-		rawURL  string
-		want    string
+		name   string
+		rawURL string
+		want   string
 	}{
 		{
 			name:   "with context path",
@@ -221,6 +221,26 @@ func TestGetAddressWithProtocolPrefix(t *testing.T) {
 			name:   "multiple addresses with context path",
 			rawURL: "apollo://127.0.0.1:8080,192.168.1.1:8080/config",
 			want:   "http://127.0.0.1:8080/config,http://192.168.1.1:8080/config",
+		},
+		{
+			name:   "trailing slash without context path",
+			rawURL: "apollo://127.0.0.1:8080/",
+			want:   "http://127.0.0.1:8080",
+		},
+		{
+			name:   "all slashes path treated as empty",
+			rawURL: "apollo://127.0.0.1:8080///",
+			want:   "http://127.0.0.1:8080",
+		},
+		{
+			name:   "context path with trailing slash",
+			rawURL: "apollo://127.0.0.1:8080/config/",
+			want:   "http://127.0.0.1:8080/config",
+		},
+		{
+			name:   "multiple addresses with trailing slash and no context path",
+			rawURL: "apollo://127.0.0.1:8080,192.168.1.1:8080/",
+			want:   "http://127.0.0.1:8080,http://192.168.1.1:8080",
 		},
 	}
 
