@@ -222,10 +222,11 @@ func (c *apolloConfiguration) getAddressWithProtocolPrefix(url *common.URL) stri
 		addr := regexp.MustCompile(`\s+`).ReplaceAllString(address, "")
 		parts := strings.Split(addr, ",")
 		addrs := make([]string, 0)
+		path := strings.Trim(url.Path, "/")
 		for _, part := range parts {
 			addr := part
-			if url.Path != "" {
-				addr = strings.TrimRight(addr, "/") + "/" + strings.TrimLeft(url.Path, "/")
+			if path != "" {
+				addr = strings.TrimRight(addr, "/") + "/" + path
 			}
 			if !strings.HasPrefix(part, apolloProtocolPrefix) {
 				addr = apolloProtocolPrefix + addr
