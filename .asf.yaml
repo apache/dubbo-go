@@ -16,50 +16,37 @@
 #
 
 notifications:
-  commits: commits@dubbo.apache.org
-  issues: notifications@dubbo.apache.org
-  pullrequests: notifications@dubbo.apache.org
-  jira_options: link label link label
-  discussions: notifications@dubbo.apache.org
+    commits:      commits@dubbo.apache.org
+    issues:       notifications@dubbo.apache.org
+    pullrequests: notifications@dubbo.apache.org
+    jira_options: link label link label
+    discussions: notifications@dubbo.apache.org
 github:
-  homepage: https://dubbo.apache.org/
-  description: "Go Implementation For Apache Dubbo ."
-  labels:
-    - go
-    - rpc
-    - microservices
-    - http2
-    - service-mesh
-  features:
+    homepage: https://dubbo.apache.org/
+    description: "Go Implementation For Apache Dubbo ."
+    labels:
+        - go
+        - rpc
+        - microservices
+        - http2
+        - service-mesh
+    features:
         # Enable wiki for documentation
-    wiki: true
+        wiki: true
         # Enable issue management
-    issues: true
+        issues: true
         # Enable projects for project management boards
-    projects: true
+        projects: true
         # Enable GitHub Discussions for community discussions
-    discussions: true
-  protected_branches:
-    master: {}     # only disable force push
-    3.0: {}     # only disable force push
-    3.1: {}      # only disable force push
-  enabled_merge_buttons:
+        discussions: true
+    protected_branches:
+        master: {} # only disable force push
+        3.0: {} # only disable force push
+        3.1:  {} # only disable force push
+    enabled_merge_buttons:
         # enable squash button:
-    squash: true
+        squash: true
         # enable merge button:
-    merge: false
+        merge: false
         # disable rebase button:
-    rebase: false
-  rulesets:
-    - name: "Default Branch Protection"
-      type: branch
-      branches:
-        includes:
-          - "~DEFAULT_BRANCH"
-          - "release/*"
-          - "rel/*"
-        excludes: []
-      bypass_teams:
-        - root
-      restrict_deletion: true
-      restrict_force_push: true
+        rebase: false
