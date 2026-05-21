@@ -64,7 +64,7 @@ func (n *nacosDynamicConfiguration) addListener(key string, listener config_cent
 			})
 			if err != nil {
 				n.keyListeners.Delete(key)
-				logger.Errorf("nacos : listen config fail, error:%v ", err)
+				logger.Errorf("[ConfigCenter][Nacos] listen config fail, err=%v", err)
 				return
 			}
 			return
@@ -78,7 +78,7 @@ func (n *nacosDynamicConfiguration) addListener(key string, listener config_cent
 func (n *nacosDynamicConfiguration) removeListener(key string, listener config_center.ConfigurationListener) {
 	rawListenersMap, loaded := n.keyListeners.Load(key)
 	if !loaded {
-		logger.Errorf("nacos : key:%s is not be listened", key)
+		logger.Errorf("[ConfigCenter][Nacos] key is not be listened, key=%s", key)
 	} else {
 		listenersMap := rawListenersMap.(*sync.Map)
 		listenersMap.Delete(listener)

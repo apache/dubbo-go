@@ -19,7 +19,9 @@ package triple
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"testing"
 )
@@ -27,15 +29,31 @@ import (
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	_ "dubbo.apache.org/dubbo-go/v3/filter/otel/trace"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
+
+func headerValues(header http.Header, key string) []string {
+	if vals, ok := header[http.CanonicalHeaderKey(key)]; ok {
+		return vals
+	}
+	return header[strings.ToLower(key)]
+}
 
 func Test_parseInvocation(t *testing.T) {
 	tests := []struct {
@@ -107,7 +125,7 @@ func Test_parseAttachments(t *testing.T) {
 		ctx    func() context.Context
 		url    *common.URL
 		invo   func() base.Invocation
-		expect func(t *testing.T, ctx context.Context, err error)
+		expect func(t *testing.T, inv base.Invocation)
 	}{
 		{
 			desc: "url has pre-defined keys in triAttachmentKeys",
@@ -121,48 +139,28 @@ func Test_parseAttachments(t *testing.T) {
 			invo: func() base.Invocation {
 				return invocation.NewRPCInvocationWithOptions()
 			},
-			expect: func(t *testing.T, ctx context.Context, err error) {
-				require.NoError(t, err)
-				header := http.Header(tri.ExtractFromOutgoingContext(ctx))
-				assert.NotNil(t, header)
-				assert.Equal(t, "interface", header.Get(constant.InterfaceKey))
-				assert.Equal(t, "token", header.Get(constant.TokenKey))
+			expect: func(t *testing.T, inv base.Invocation) {
+				assert.Equal(t, "interface", inv.GetAttachmentInterface(constant.InterfaceKey))
+				assert.Equal(t, "token", inv.GetAttachmentInterface(constant.TokenKey))
 			},
 		},
 		{
-			desc: "user passed-in legal attachments",
+			desc: "ctx attachments are ignored",
 			ctx: func() context.Context {
 				userDefined := make(map[string]any)
 				userDefined["key1"] = "val1"
-				userDefined["key2"] = []string{"key2_1", "key2_2"}
+				userDefined["traceparent"] = "old-trace"
 				return context.WithValue(context.Background(), constant.AttachmentKey, userDefined)
 			},
 			url: common.NewURLWithOptions(),
 			invo: func() base.Invocation {
 				return invocation.NewRPCInvocationWithOptions()
 			},
-			expect: func(t *testing.T, ctx context.Context, err error) {
-				require.NoError(t, err)
-				header := http.Header(tri.ExtractFromOutgoingContext(ctx))
-				assert.NotNil(t, header)
-				assert.Equal(t, "val1", header.Get("key1"))
-				assert.Equal(t, []string{"key2_1", "key2_2"}, header.Values("key2"))
-			},
-		},
-		{
-			desc: "user passed-in illegal attachments",
-			ctx: func() context.Context {
-				userDefined := make(map[string]any)
-				userDefined["key1"] = 1
-				return context.WithValue(context.Background(), constant.AttachmentKey, userDefined)
-			},
-			url: common.NewURLWithOptions(),
-			invo: func() base.Invocation {
-				return invocation.NewRPCInvocationWithOptions()
-			},
-			expect: func(t *testing.T, ctx context.Context, err error) {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), "invalid")
+			expect: func(t *testing.T, inv base.Invocation) {
+				_, ok := inv.GetAttachment("key1")
+				assert.False(t, ok)
+				_, ok = inv.GetAttachment("traceparent")
+				assert.False(t, ok)
 			},
 		},
 	}
@@ -172,8 +170,7 @@ func Test_parseAttachments(t *testing.T) {
 			ctx := test.ctx()
 			inv := test.invo()
 			parseAttachments(ctx, test.url, inv)
-			ctx, err := mergeAttachmentToOutgoing(ctx, inv)
-			test.expect(t, ctx, err)
+			test.expect(t, inv)
 		})
 	}
 }
@@ -451,7 +448,7 @@ func Test_mergeAttachmentToOutgoing(t *testing.T) {
 			expect: func(t *testing.T, ctx context.Context, err error) {
 				require.NoError(t, err)
 				header := http.Header(tri.ExtractFromOutgoingContext(ctx))
-				assert.Equal(t, "custom-value", header.Get("custom-key"))
+				assert.Equal(t, []string{"custom-value"}, headerValues(header, "custom-key"))
 			},
 		},
 		{
@@ -466,7 +463,40 @@ func Test_mergeAttachmentToOutgoing(t *testing.T) {
 			expect: func(t *testing.T, ctx context.Context, err error) {
 				require.NoError(t, err)
 				header := http.Header(tri.ExtractFromOutgoingContext(ctx))
-				assert.Equal(t, []string{"val1", "val2"}, header.Values("multi-key"))
+				assert.Equal(t, []string{"val1", "val2"}, headerValues(header, "multi-key"))
+			},
+		},
+		{
+			desc: "preserves unrelated existing outgoing header",
+			ctx: tri.NewOutgoingContext(context.Background(), http.Header{
+				"existing-header": []string{"existing-value"},
+			}),
+			invo: func() base.Invocation {
+				return invocation.NewRPCInvocationWithOptions(
+					invocation.WithAttachment("custom-key", "custom-value"),
+				)
+			},
+			expect: func(t *testing.T, ctx context.Context, err error) {
+				require.NoError(t, err)
+				header := http.Header(tri.ExtractFromOutgoingContext(ctx))
+				assert.Equal(t, []string{"existing-value"}, headerValues(header, "existing-header"))
+				assert.Equal(t, []string{"custom-value"}, headerValues(header, "custom-key"))
+			},
+		},
+		{
+			desc: "overwrites existing traceparent instead of appending",
+			ctx: tri.NewOutgoingContext(context.Background(), http.Header{
+				"traceparent": []string{"old-traceparent"},
+			}),
+			invo: func() base.Invocation {
+				return invocation.NewRPCInvocationWithOptions(
+					invocation.WithAttachment("traceparent", "new-traceparent"),
+				)
+			},
+			expect: func(t *testing.T, ctx context.Context, err error) {
+				require.NoError(t, err)
+				header := http.Header(tri.ExtractFromOutgoingContext(ctx))
+				assert.Equal(t, []string{"new-traceparent"}, headerValues(header, "traceparent"))
 			},
 		},
 		{
@@ -502,4 +532,218 @@ func Test_mergeAttachmentToOutgoing(t *testing.T) {
 			test.expect(t, ctx, err)
 		})
 	}
+}
+
+func Test_mergeAttachmentToOutgoing_DoesNotMutatePreviousContext(t *testing.T) {
+	inv1 := invocation.NewRPCInvocationWithOptions(
+		invocation.WithAttachment("traceparent", "first-traceparent"),
+	)
+	ctx1, err := mergeAttachmentToOutgoing(context.Background(), inv1)
+	require.NoError(t, err)
+
+	inv2 := invocation.NewRPCInvocationWithOptions(
+		invocation.WithAttachment("traceparent", "second-traceparent"),
+	)
+	ctx2, err := mergeAttachmentToOutgoing(ctx1, inv2)
+	require.NoError(t, err)
+
+	header1 := http.Header(tri.ExtractFromOutgoingContext(ctx1))
+	header2 := http.Header(tri.ExtractFromOutgoingContext(ctx2))
+
+	assert.Equal(t, []string{"first-traceparent"}, headerValues(header1, "traceparent"))
+	assert.Equal(t, []string{"second-traceparent"}, headerValues(header2, "traceparent"))
+}
+
+type capturedTripleCall struct {
+	method              string
+	activeSpanContext   oteltrace.SpanContext
+	outgoingTraceparent string
+}
+
+type traceCaptureInvoker struct {
+	base.BaseInvoker
+	calls []capturedTripleCall
+}
+
+func newTraceCaptureInvoker(url *common.URL) *traceCaptureInvoker {
+	return &traceCaptureInvoker{
+		BaseInvoker: *base.NewBaseInvoker(url),
+	}
+}
+
+func (i *traceCaptureInvoker) Invoke(ctx context.Context, inv base.Invocation) result.Result {
+	_, _, _, err := parseInvocation(ctx, i.GetURL(), inv)
+	if err != nil {
+		return &result.RPCResult{Err: err}
+	}
+
+	ctx, err = mergeAttachmentToOutgoing(ctx, inv)
+	if err != nil {
+		return &result.RPCResult{Err: err}
+	}
+
+	header := cloneOutgoingHeader(tri.ExtractFromOutgoingContext(ctx))
+	i.calls = append(i.calls, capturedTripleCall{
+		method:              inv.MethodName(),
+		activeSpanContext:   oteltrace.SpanContextFromContext(ctx),
+		outgoingTraceparent: firstHeaderValue(header, "traceparent"),
+	})
+	return &result.RPCResult{}
+}
+
+func TestTripleClientOTELTraceparentIsolation(t *testing.T) {
+	spanRecorder := tracetest.NewSpanRecorder()
+	tracerProvider := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder))
+	defer func() {
+		_ = tracerProvider.Shutdown(context.Background())
+	}()
+
+	oldTracerProvider := otel.GetTracerProvider()
+	oldPropagator := otel.GetTextMapPropagator()
+	otel.SetTracerProvider(tracerProvider)
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+	defer func() {
+		otel.SetTracerProvider(oldTracerProvider)
+		otel.SetTextMapPropagator(oldPropagator)
+	}()
+
+	clientFilter, ok := extension.GetFilter(constant.OTELClientTraceKey)
+	require.True(t, ok)
+
+	incomingTraceparent := "00-4bf92f3577b34da6a3ce929d0e0e4736-1111111111111111-01"
+	upstreamCtx := propagation.TraceContext{}.Extract(
+		context.Background(),
+		propagation.MapCarrier{"traceparent": incomingTraceparent},
+	)
+
+	serverTracer := tracerProvider.Tracer("triple-otel-repro")
+	serverCtx, serverSpan := serverTracer.Start(upstreamCtx, "service-a-handler", oteltrace.WithSpanKind(oteltrace.SpanKindServer))
+	serverCtx = context.WithValue(serverCtx, constant.AttachmentKey, map[string]any{
+		"traceparent": incomingTraceparent,
+	})
+	serverCtx = tri.NewOutgoingContext(serverCtx, http.Header{
+		"x-seed": []string{"seed"},
+	})
+
+	invoker := newTraceCaptureInvoker(common.NewURLWithOptions(
+		common.WithProtocol("tri"),
+		common.WithInterface("org.apache.dubbo.test.DownstreamService"),
+	))
+
+	callB := newTraceInvocation("CallServiceB")
+	callC := newTraceInvocation("CallServiceC")
+
+	resB := clientFilter.Invoke(serverCtx, invoker, callB)
+	require.NoError(t, resB.Error())
+	afterBHeader := cloneOutgoingHeader(tri.ExtractFromOutgoingContext(serverCtx))
+
+	resC := clientFilter.Invoke(serverCtx, invoker, callC)
+	require.NoError(t, resC.Error())
+	afterCHeader := cloneOutgoingHeader(tri.ExtractFromOutgoingContext(serverCtx))
+
+	serverSpan.End()
+
+	require.Len(t, invoker.calls, 2)
+	endedSpans := spanRecorder.Ended()
+	serverReadOnly := findEndedSpanByName(t, endedSpans, "service-a-handler")
+	clientBReadOnly := findEndedSpanByName(t, endedSpans, "CallServiceB")
+	clientCReadOnly := findEndedSpanByName(t, endedSpans, "CallServiceC")
+
+	clientBOutgoing := parseTraceparent(t, invoker.calls[0].outgoingTraceparent)
+	clientCOutgoing := parseTraceparent(t, invoker.calls[1].outgoingTraceparent)
+
+	assert.Equal(t, incomingTraceparent, contextAttachmentTraceparent(serverCtx))
+	assert.Equal(t, serverReadOnly.SpanContext().SpanID(), clientBReadOnly.Parent().SpanID())
+	assert.Equal(t, serverReadOnly.SpanContext().SpanID(), clientCReadOnly.Parent().SpanID())
+	assert.Equal(t, clientBReadOnly.SpanContext().SpanID().String(), clientBOutgoing.spanID)
+	assert.Equal(t, clientCReadOnly.SpanContext().SpanID().String(), clientCOutgoing.spanID)
+	assert.NotEqual(t, incomingTraceparent, invoker.calls[0].outgoingTraceparent)
+	assert.NotEqual(t, invoker.calls[0].outgoingTraceparent, invoker.calls[1].outgoingTraceparent)
+	assert.Equal(t, "seed", firstHeaderValue(afterBHeader, "x-seed"))
+	assert.Equal(t, "seed", firstHeaderValue(afterCHeader, "x-seed"))
+	assert.Empty(t, headerValues(afterBHeader, "traceparent"))
+	assert.Empty(t, headerValues(afterCHeader, "traceparent"))
+
+	t.Logf("incoming traceparent = %s", incomingTraceparent)
+	t.Logf(
+		"service A server span: trace_id=%s span_id=%s parent_span_id=%s",
+		serverReadOnly.SpanContext().TraceID(),
+		serverReadOnly.SpanContext().SpanID(),
+		serverReadOnly.Parent().SpanID(),
+	)
+	t.Logf(
+		"call B client span: trace_id=%s span_id=%s parent_span_id=%s outgoing_traceparent=%s",
+		clientBReadOnly.SpanContext().TraceID(),
+		clientBReadOnly.SpanContext().SpanID(),
+		clientBReadOnly.Parent().SpanID(),
+		invoker.calls[0].outgoingTraceparent,
+	)
+	t.Logf(
+		"call C client span: trace_id=%s span_id=%s parent_span_id=%s outgoing_traceparent=%s",
+		clientCReadOnly.SpanContext().TraceID(),
+		clientCReadOnly.SpanContext().SpanID(),
+		clientCReadOnly.Parent().SpanID(),
+		invoker.calls[1].outgoingTraceparent,
+	)
+	t.Logf("base ctx outgoing header after call B = %v", afterBHeader)
+	t.Logf("base ctx outgoing header after call C = %v", afterCHeader)
+}
+
+func newTraceInvocation(method string) *invocation.RPCInvocation {
+	inv := invocation.NewRPCInvocationWithOptions(
+		invocation.WithMethodName(method),
+	)
+	inv.SetAttribute(constant.CallTypeKey, constant.CallUnary)
+	return inv
+}
+
+func findEndedSpanByName(t *testing.T, spans []sdktrace.ReadOnlySpan, name string) sdktrace.ReadOnlySpan {
+	t.Helper()
+	for _, span := range spans {
+		if span.Name() == name {
+			return span
+		}
+	}
+	t.Fatalf("span %q not found", name)
+	return nil
+}
+
+type parsedTraceparent struct {
+	traceID string
+	spanID  string
+	flags   string
+}
+
+func parseTraceparent(t *testing.T, traceparent string) parsedTraceparent {
+	t.Helper()
+	parts := strings.Split(traceparent, "-")
+	require.Len(t, parts, 4, "invalid traceparent: %s", traceparent)
+	return parsedTraceparent{
+		traceID: parts[1],
+		spanID:  parts[2],
+		flags:   parts[3],
+	}
+}
+
+func firstHeaderValue(header http.Header, key string) string {
+	values := header[strings.ToLower(key)]
+	if len(values) == 0 {
+		return ""
+	}
+	return values[0]
+}
+
+func contextAttachmentTraceparent(ctx context.Context) string {
+	raw := ctx.Value(constant.AttachmentKey)
+	if raw == nil {
+		return ""
+	}
+	attachments, ok := raw.(map[string]any)
+	if !ok {
+		return fmt.Sprintf("%v", raw)
+	}
+	if value, ok := attachments["traceparent"].(string); ok {
+		return value
+	}
+	return ""
 }
