@@ -232,7 +232,7 @@ func TestInvokerBlackList(t *testing.T) {
 	// Test GetBlackListInvokers
 	blackListInvokers := GetBlackListInvokers(10)
 	assert.Len(t, blackListInvokers, 1)
-	assert.Equal(t, invoker.GetURL().Key(), blackListInvokers[0].GetURL().Key())
+	assert.Equal(t, invoker.GetURL().GetCacheInvokerMapKey(), blackListInvokers[0].GetURL().GetCacheInvokerMapKey())
 
 	// Test with blockSize smaller than actual size
 	blackListInvokers = GetBlackListInvokers(0)
@@ -245,8 +245,28 @@ func TestInvokerBlackList(t *testing.T) {
 	// Test RemoveUrlKeyUnhealthyStatus
 	SetInvokerUnhealthyStatus(invoker)
 	assert.False(t, GetInvokerHealthyStatus(invoker))
-	RemoveUrlKeyUnhealthyStatus(invoker.GetURL().Key())
+	RemoveUrlKeyUnhealthyStatus(invoker.GetURL().GetCacheInvokerMapKey())
 	assert.True(t, GetInvokerHealthyStatus(invoker))
+}
+
+func TestRemoveUrlKeyUnhealthyStatusWithCacheInvokerMapKey(t *testing.T) {
+	defer CleanAllStatus()
+
+	url, _ := common.NewURL(
+		"dubbo://localhost:20000/com.ikurento.user.UserProvider?interface=com.ikurento.user.UserProvider&group=g1&version=1.0.0&timestamp=12345&meshClusterID=cluster-a",
+	)
+	invoker := NewBaseInvoker(url)
+
+	SetInvokerUnhealthyStatus(invoker)
+	assert.False(t, GetInvokerHealthyStatus(invoker))
+
+	cacheKey := invoker.GetURL().GetCacheInvokerMapKey()
+	assert.NotEqual(t, invoker.GetURL().Key(), cacheKey)
+
+	RemoveUrlKeyUnhealthyStatus(cacheKey)
+
+	assert.True(t, GetInvokerHealthyStatus(invoker))
+	assert.Empty(t, GetBlackListInvokers(10))
 }
 
 func TestGetAndRefreshState(t *testing.T) {

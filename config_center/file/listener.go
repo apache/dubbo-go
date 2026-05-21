@@ -86,7 +86,7 @@ func NewCacheListener(rootPath string) *CacheListener {
 	// start watcher
 	watch, err := fsnotify.NewWatcher()
 	if err != nil {
-		logger.Errorf("file : listen config fail, error:%v ", err)
+		logger.Errorf("[ConfigCenter][File] listen config fail, err=%v", err)
 	}
 	go func() {
 		for {
@@ -99,7 +99,7 @@ func NewCacheListener(rootPath string) *CacheListener {
 				if key == "" {
 					continue
 				}
-				logger.Debugf("watcher %s, event %v", cl.rootPath, event)
+				logger.Debugf("[ConfigCenter][File] watcher event, rootPath=%s event=%v", cl.rootPath, event)
 				if event.Op&fsnotify.Remove == fsnotify.Remove {
 					cl.contentCache.Delete(key)
 					if l, ok := cl.keyListeners.Load(key); ok {
@@ -137,7 +137,7 @@ func NewCacheListener(rootPath string) *CacheListener {
 					return
 				}
 				if err != nil {
-					logger.Warnf("file : listen watch fail:%+v", err)
+					logger.Warnf("[ConfigCenter][File] listen watch fail, err=%v", err)
 				}
 			}
 		}
@@ -153,7 +153,7 @@ func NewCacheListener(rootPath string) *CacheListener {
 
 func removeCallback(listeners []config_center.ConfigurationListener, key string, event remoting.EventType) {
 	if len(listeners) == 0 {
-		logger.Warnf("file watch callback but configuration listener is empty, key:%s, event:%v", key, event)
+		logger.Warnf("[ConfigCenter][File] file watch callback but configuration listener is empty, key=%s event=%v", key, event)
 		return
 	}
 	for _, l := range listeners {
@@ -163,7 +163,7 @@ func removeCallback(listeners []config_center.ConfigurationListener, key string,
 
 func dataChangeCallback(listeners []config_center.ConfigurationListener, key, content string, event remoting.EventType) {
 	if len(listeners) == 0 {
-		logger.Warnf("file watch callback but configuration listener is empty, key:%s, event:%v", key, event)
+		logger.Warnf("[ConfigCenter][File] file watch callback but configuration listener is empty, key=%s event=%v", key, event)
 		return
 	}
 	for _, l := range listeners {
@@ -195,7 +195,7 @@ func (cl *CacheListener) AddListener(key string, listener config_center.Configur
 		return
 	}
 	if err := cl.watch.Add(key); err != nil {
-		logger.Errorf("watcher add path:%s err:%v", key, err)
+		logger.Errorf("[ConfigCenter][File] watcher add path, path=%s err=%v", key, err)
 	}
 }
 
@@ -209,7 +209,7 @@ func (cl *CacheListener) RemoveListener(key string, listener config_center.Confi
 		cl.keyListeners.Delete(key)
 		cl.contentCache.Delete(key)
 		if err := cl.watch.Remove(key); err != nil {
-			logger.Errorf("watcher remove path:%s err:%v", key, err)
+			logger.Errorf("[ConfigCenter][File] watcher remove path, path=%s err=%v", key, err)
 		}
 	}
 }
@@ -217,7 +217,7 @@ func (cl *CacheListener) RemoveListener(key string, listener config_center.Confi
 func getFileContent(path string) string {
 	c, err := os.ReadFile(path)
 	if err != nil {
-		logger.Errorf("read file path:%s err:%v", path, err)
+		logger.Errorf("[ConfigCenter][File] read file, path=%s err=%v", path, err)
 		return ""
 	}
 

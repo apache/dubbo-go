@@ -25,7 +25,7 @@ import (
 import (
 	gxset "github.com/dubbogo/gost/container/set"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 import (

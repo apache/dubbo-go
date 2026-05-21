@@ -115,6 +115,10 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 func createInstance(meta *info.MetadataInfo, url *common.URL) registry.ServiceInstance {
 	params := make(map[string]string, 8)
 	params[constant.MetadataStorageTypePropertyName] = metadata.GetMetadataType()
+	// Keep routing attributes visible on the registered instance as well as in service metadata.
+	if environment := url.GetParam(constant.EnvironmentKey, ""); len(environment) > 0 {
+		params[constant.EnvironmentKey] = environment
+	}
 	port, err := strconv.Atoi(url.Port)
 	if err != nil {
 		logger.Warnf("Parse port %s failed, err: %v", url.Port, err)

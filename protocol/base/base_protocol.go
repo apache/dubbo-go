@@ -44,8 +44,10 @@ type RegistryUnregisterer interface {
 
 // BaseProtocol is default protocol implement.
 type BaseProtocol struct {
-	exporterMap *sync.Map
-	invokers    []Invoker
+	exporterMap  *sync.Map
+	invokersLock sync.RWMutex
+	// invokers is protected by invokersLock; never expose the backing slice to callers.
+	invokers []Invoker
 }
 
 // NewBaseProtocol creates a new BaseProtocol
@@ -67,12 +69,20 @@ func (bp *BaseProtocol) ExporterMap() *sync.Map {
 
 // SetInvokers sets invoker into local memory
 func (bp *BaseProtocol) SetInvokers(invoker Invoker) {
+	bp.invokersLock.Lock()
+	defer bp.invokersLock.Unlock()
+
 	bp.invokers = append(bp.invokers, invoker)
 }
 
-// Invokers gets all invokers
+// Invokers gets a snapshot of all invokers.
 func (bp *BaseProtocol) Invokers() []Invoker {
-	return bp.invokers
+	bp.invokersLock.RLock()
+	defer bp.invokersLock.RUnlock()
+
+	invokers := make([]Invoker, len(bp.invokers))
+	copy(invokers, bp.invokers)
+	return invokers
 }
 
 // Export is default export implement.
@@ -87,13 +97,19 @@ func (bp *BaseProtocol) Refer(url *common.URL) Invoker {
 
 // Destroy will destroy all invoker and exporter, so it only is called once.
 func (bp *BaseProtocol) Destroy() {
+	// Do not hold invokersLock while calling Invoker.Destroy(); implementations may run protocol callbacks.
+	bp.invokersLock.Lock()
+	invokers := make([]Invoker, len(bp.invokers))
+	copy(invokers, bp.invokers)
+	bp.invokers = []Invoker{}
+	bp.invokersLock.Unlock()
+
 	// destroy invokers
-	for _, invoker := range bp.invokers {
+	for _, invoker := range invokers {
 		if invoker != nil {
 			invoker.Destroy()
 		}
 	}
-	bp.invokers = []Invoker{}
 
 	// un export exporters
 	bp.exporterMap.Range(func(key, exporter any) bool {

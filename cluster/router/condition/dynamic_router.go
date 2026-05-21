@@ -27,7 +27,7 @@ import (
 import (
 	"github.com/dubbogo/gost/log/logger"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 import (
@@ -66,7 +66,7 @@ func (m *multiplyConditionRoute) route(invokers []base.Invoker, url *common.URL,
 	if len(m.trafficDisabled) != 0 {
 		for _, cond := range m.trafficDisabled {
 			if cond.MatchRequest(url, invocation) {
-				logger.Warnf("Request has been disabled %s by Condition.trafficDisable.match=\"%s\"", url.String(), cond.rule)
+				logger.Warnf("[Router][Condition] request traffic disabled: url=%s, rule=%s", url.String(), cond.rule)
 				invocation.SetAttachment(constant.TrafficDisableKey, struct{}{})
 				return []base.Invoker{}
 			}
@@ -83,7 +83,7 @@ func (m *multiplyConditionRoute) route(invokers []base.Invoker, url *common.URL,
 			if len(invokers) == 0 {
 				routeChains, ok := invocation.Attributes()["condition-chain"].([]string)
 				if ok {
-					logger.Errorf("request[%s] route an empty set in condition-route:: %s", url.String(), strings.Join(routeChains, "-->"))
+					logger.Errorf("[Router][Condition] route returned empty set: chain=%s", strings.Join(routeChains, "-->"))
 				}
 				return []base.Invoker{}
 			}
@@ -158,14 +158,14 @@ func (d *DynamicRouter) SetStaticConfig(cfg *global.RouterConfig) {
 	for _, conditionRule := range cfg.Conditions {
 		url, err := common.NewURL("condition://")
 		if err != nil {
-			logger.Warnf("[condition router] failed to create condition URL: %v", err)
+			logger.Warnf("[Router][Condition] failed to create condition URL: err=%v", err)
 			continue
 		}
 		url.AddParam(constant.RuleKey, conditionRule)
 		url.AddParam(constant.ForceKey, strconv.FormatBool(force))
 		conditionRoute, err := NewConditionStateRouter(url)
 		if err != nil {
-			logger.Warnf("[condition router] failed to parse condition rule %q: %v", conditionRule, err)
+			logger.Warnf("[Router][Condition] failed to parse condition rule: rule=%s, err=%v", conditionRule, err)
 			continue
 		}
 		conditionRouters = append(conditionRouters, conditionRoute)
@@ -185,7 +185,7 @@ func (d *DynamicRouter) Process(event *config_center.ConfigChangeEvent) {
 	} else {
 		rc, force, enable, err := generateCondition(event.Value.(string))
 		if err != nil {
-			logger.Errorf("generate condition error: %v", err)
+			logger.Errorf("[Router][Condition] failed to generate condition: err=%v", err)
 			d.conditionRouter = nil
 		} else {
 			d.force, d.enable, d.conditionRouter = force, enable, rc
@@ -239,7 +239,7 @@ func generateCondition(rawConfig string) (condRouter, bool, bool, error) {
 func generateMultiConditionRoute(rawConfig string) (*multiplyConditionRoute, bool, bool, error) {
 	routerConfig, err := parseMultiConditionRoute(rawConfig)
 	if err != nil {
-		logger.Warnf("[condition router]Build a new condition route config error, %s and we will use the original condition rule configuration.", err.Error())
+		logger.Warnf("[Router][Condition] failed to build condition route config: err=%s", err.Error())
 		return nil, false, false, err
 	}
 
@@ -289,7 +289,7 @@ func generateMultiConditionRoute(rawConfig string) (*multiplyConditionRoute, boo
 func generateConditionsRoute(rawConfig string) (stateRouters, bool, bool, error) {
 	routerConfig, err := parseConditionRoute(rawConfig)
 	if err != nil {
-		logger.Warnf("[condition router]Build a new condition route config error, %s and we will use the original condition rule configuration.", err.Error())
+		logger.Warnf("[Router][Condition] failed to build condition route config: err=%s", err.Error())
 		return nil, false, false, err
 	}
 
@@ -342,24 +342,24 @@ func (s *ServiceRouter) Notify(invokers []base.Invoker) {
 	}
 	url := invokers[0].GetURL()
 	if url == nil {
-		logger.Error("Failed to notify a dynamically condition rule, because url is empty")
+		logger.Error("[Router][Condition] failed to notify condition router: url is empty")
 		return
 	}
 
 	dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
 	if dynamicConfiguration == nil {
-		logger.Infof("Config center does not start, Condition router will not be enabled")
+		logger.Infof("[Router][Condition] Config center does not start, Condition router will not be enabled")
 		return
 	}
 	key := strings.Join([]string{url.ColonSeparatedKey(), constant.ConditionRouterRuleSuffix}, "")
 	dynamicConfiguration.AddListener(key, s)
 	value, err := dynamicConfiguration.GetRule(key)
 	if err != nil {
-		logger.Errorf("Failed to query condition rule, key=%s, err=%v", key, err)
+		logger.Errorf("[Router][Condition] Failed to query condition rule, key=%s, err=%v", key, err)
 		return
 	}
 	if value == "" {
-		logger.Infof("Condition rule is empty, key=%s", key)
+		logger.Infof("[Router][Condition] Condition rule is empty, key=%s", key)
 		return
 	}
 	s.Process(&config_center.ConfigChangeEvent{Key: key, Value: value, ConfigType: remoting.EventTypeAdd})
@@ -408,19 +408,19 @@ func (a *ApplicationRouter) Notify(invokers []base.Invoker) {
 	}
 	url := invokers[0].GetURL()
 	if url == nil {
-		logger.Error("Failed to notify a dynamically condition rule, because url is empty")
+		logger.Error("[Router][Condition] failed to notify condition router: url is empty")
 		return
 	}
 
 	dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
 	if dynamicConfiguration == nil {
-		logger.Infof("Config center does not start, Condition router will not be enabled")
+		logger.Infof("[Router][Condition] Config center does not start, Condition router will not be enabled")
 		return
 	}
 
 	providerApplication := url.GetParam("application", "")
 	if providerApplication == "" || providerApplication == a.currentApplication {
-		logger.Warn("condition router get providerApplication is empty, will not subscribe to provider app rules.")
+		logger.Warnf("[Router][Condition] provider application is empty, will not subscribe to provider app rules")
 		return
 	}
 
@@ -434,11 +434,11 @@ func (a *ApplicationRouter) Notify(invokers []base.Invoker) {
 		a.application = providerApplication
 		value, err := dynamicConfiguration.GetRule(key)
 		if err != nil {
-			logger.Errorf("Failed to query condition rule, key=%s, err=%v", key, err)
+			logger.Errorf("[Router][Condition] failed to query condition rule: key=%s, err=%v", key, err)
 			return
 		}
 		if value == "" {
-			logger.Infof("Condition rule is empty, key=%s", key)
+			logger.Infof("[Router][Condition] Condition rule is empty, key=%s", key)
 			return
 		}
 		a.Process(&config_center.ConfigChangeEvent{Key: key, Value: value, ConfigType: remoting.EventTypeUpdate})

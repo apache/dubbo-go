@@ -241,6 +241,8 @@ func (s *ServiceConfig) Export() error {
 		return nil
 	}
 
+	common.WarnVariadicRPCMethods(s.Interface, s.rpcService)
+
 	regUrls := make([]*common.URL, 0)
 	if !s.NotRegister {
 		regUrls = LoadRegistries(s.RegistryIDs, s.RCRegistriesMap, common.PROVIDER)
