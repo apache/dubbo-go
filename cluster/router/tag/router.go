@@ -284,15 +284,11 @@ func (p *PriorityRouter) requestTagMatchBM(pool router.AddrPool, url *common.URL
 		return emptyBM
 	}
 	addrBM := p.addressesBM(pool, addresses)
-	if addrBM != nil && !addrBM.IsEmpty() {
-		allBM := pool["*"]
-		if allBM != nil {
-			result := allBM.Clone()
-			result.AndNot(addrBM)
-			return result
-		}
+	result := emptyBM.Clone()
+	if addrBM != nil {
+		result.AndNot(addrBM)
 	}
-	return pool["*"]
+	return result
 }
 
 func (p *PriorityRouter) emptyTagMatchBM(pool router.AddrPool, cfg global.RouterConfig) *roaring.Bitmap {
