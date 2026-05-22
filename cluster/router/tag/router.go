@@ -390,7 +390,9 @@ func collectInvokers(invokers []base.Invoker, bm *roaring.Bitmap) []base.Invoker
 		return []base.Invoker{}
 	}
 	result := make([]base.Invoker, 0, bm.GetCardinality())
-	for _, idx := range bm.ToArray() {
+	it := bm.Iterator()
+	for it.HasNext() {
+		idx := it.Next()
 		if int(idx) < len(invokers) {
 			result = append(result, invokers[int(idx)])
 		}
