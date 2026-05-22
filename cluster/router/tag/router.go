@@ -21,6 +21,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"sync/atomic"
 )
 
 import (
@@ -44,7 +45,7 @@ import (
 
 type PriorityRouter struct {
 	routerConfigs sync.Map
-	cache         router.Cache
+	cache         atomic.Value // router.Cache
 }
 
 func NewTagPriorityRouter() (*PriorityRouter, error) {
@@ -60,9 +61,10 @@ func (p *PriorityRouter) Route(invokers []base.Invoker, url *common.URL, invocat
 
 	// Cache only takes effect when TagRouter is the first router in the chain.
 	// RouterChain sets RouterCacheDisable=true after each router, so later routers always skip cache.
-	if p.cache != nil {
+	if v := p.cache.Load(); v != nil {
 		if !invocation.GetAttributeWithDefaultValue(constant.RouterCacheDisable, false).(bool) {
-			pool, fullInvokers := p.cache.FindAddrPool(p)
+			c := v.(router.Cache)
+			pool, fullInvokers := c.FindAddrPool(p)
 			if pool != nil && fullInvokers != nil {
 				return p.routeWithPool(fullInvokers, pool, url, invocation)
 			}
@@ -208,7 +210,9 @@ func (p *PriorityRouter) Pool(invokers []base.Invoker) (router.AddrPool, router.
 }
 
 func (p *PriorityRouter) SetCache(cache router.Cache) {
-	p.cache = cache
+	if cache != nil {
+		p.cache.Store(cache)
+	}
 }
 
 func (p *PriorityRouter) routeWithPool(invokers []base.Invoker, pool router.AddrPool, url *common.URL, invocation base.Invocation) []base.Invoker {

@@ -587,7 +587,7 @@ func makeInvokers(tag1, tag2, tag3 string) []base.Invoker {
 
 func withCache(p *PriorityRouter, invokers []base.Invoker) {
 	pool, _ := p.Pool(invokers)
-	p.cache = &mockCache{invokers: invokers, pool: pool}
+	p.cache.Store(&mockCache{invokers: invokers, pool: pool})
 }
 
 func boolPtr(v bool) *bool { return &v }
