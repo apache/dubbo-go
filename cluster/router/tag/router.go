@@ -58,6 +58,8 @@ func (p *PriorityRouter) Route(invokers []base.Invoker, url *common.URL, invocat
 		return invokers
 	}
 
+	// Cache only takes effect when TagRouter is the first router in the chain.
+	// RouterChain sets RouterCacheDisable=true after each router, so later routers always skip cache.
 	if p.cache != nil {
 		if !invocation.GetAttributeWithDefaultValue(constant.RouterCacheDisable, false).(bool) {
 			pool, fullInvokers := p.cache.FindAddrPool(p)
