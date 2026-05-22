@@ -95,8 +95,9 @@ type Cache interface {
 	// GetInvokers returns the snapshot of received invokers.
 	GetInvokers() []base.Invoker
 
-	// FindAddrPool returns address pool associated with the given Poolable instance.
-	FindAddrPool(Poolable) AddrPool
+	// FindAddrPool returns address pool and invoker snapshot associated with the given Poolable instance
+	// in a single locked read, ensuring the bitmap indices stay aligned with the invoker slice.
+	FindAddrPool(Poolable) (AddrPool, []base.Invoker)
 
 	// FindAddrMeta returns address metadata associated with the given Poolable instance.
 	FindAddrMeta(Poolable) AddrMetadata

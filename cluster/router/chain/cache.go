@@ -54,14 +54,16 @@ func (c *routerCache) GetInvokers() []base.Invoker {
 	return ret
 }
 
-func (c *routerCache) FindAddrPool(p router.Poolable) router.AddrPool {
+func (c *routerCache) FindAddrPool(p router.Poolable) (router.AddrPool, []base.Invoker) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	entry, ok := c.pools[p.Name()]
 	if !ok {
-		return nil
+		return nil, nil
 	}
-	return entry.pool
+	invokers := make([]base.Invoker, len(c.invokers))
+	copy(invokers, c.invokers)
+	return entry.pool, invokers
 }
 
 // FindAddrMeta is a no-op, reserved for future use.
