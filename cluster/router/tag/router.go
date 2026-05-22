@@ -184,25 +184,28 @@ func (p *PriorityRouter) ShouldPool() bool {
 	return true
 }
 
+// Pool builds bitmap indices for tag, address, port, and param keys.
+// Key space uses "\x00" as separator.
+// Other Poolable routers should use different prefixes to avoid conflicts.
 func (p *PriorityRouter) Pool(invokers []base.Invoker) (router.AddrPool, router.AddrMetadata) {
 	pool := make(router.AddrPool)
 	for i, invoker := range invokers {
 		url := invoker.GetURL()
-		upsertBM(pool, "*", i)
+		upsertBM(pool, constant.PoolKeyAll, i)
 		tag := url.GetParam(constant.Tagkey, "")
-		upsertBM(pool, "tag\x00"+tag, i)
+		upsertBM(pool, constant.PoolKeyTagPrefix+tag, i)
 		addr := url.Location
 		if addr != "" {
-			upsertBM(pool, "addr\x00"+addr, i)
+			upsertBM(pool, constant.PoolKeyAddrPrefix+addr, i)
 			if idx := strings.LastIndex(addr, ":"); idx > 0 {
-				upsertBM(pool, "port\x00"+addr[idx+1:], i)
+				upsertBM(pool, constant.PoolKeyPortPrefix+addr[idx+1:], i)
 			}
 		}
 		for _, key := range []string{"version", "group"} {
 			if v := url.GetParam(key, ""); v != "" {
-				upsertBM(pool, "param\x00"+key+"\x00"+v, i)
+				upsertBM(pool, constant.PoolKeyParamPrefix+key+"\x00"+v, i)
 			} else {
-				upsertBM(pool, "param\x00"+key+"\x00\x00", i)
+				upsertBM(pool, constant.PoolKeyParamPrefix+key+"\x00\x00", i)
 			}
 		}
 	}
@@ -245,14 +248,14 @@ func (p *PriorityRouter) routeWithPool(invokers []base.Invoker, pool router.Addr
 
 func (p *PriorityRouter) staticTagMatchBM(pool router.AddrPool, tag string, url *common.URL, invocation base.Invocation) *roaring.Bitmap {
 	if tag != "" {
-		if bm := pool["tag\x00"+tag]; bm != nil && !bm.IsEmpty() {
+		if bm := pool[constant.PoolKeyTagPrefix+tag]; bm != nil && !bm.IsEmpty() {
 			return bm
 		}
 		if requestIsForce(url, invocation) {
 			return nil
 		}
 	}
-	return pool["tag\x00"]
+	return pool[constant.PoolKeyTagPrefix]
 }
 
 func (p *PriorityRouter) requestTagMatchBM(pool router.AddrPool, url *common.URL, invocation base.Invocation,
@@ -275,7 +278,7 @@ func (p *PriorityRouter) requestTagMatchBM(pool router.AddrPool, url *common.URL
 	} else if len(addresses) != 0 {
 		resultBM = p.addressesBM(pool, addresses)
 	} else {
-		resultBM = pool["tag\x00"+tag]
+		resultBM = pool[constant.PoolKeyTagPrefix+tag]
 	}
 
 	if (cfg.Force != nil && *cfg.Force) || requestIsForce(url, invocation) {
@@ -285,7 +288,7 @@ func (p *PriorityRouter) requestTagMatchBM(pool router.AddrPool, url *common.URL
 		return resultBM
 	}
 
-	emptyBM := pool["tag\x00"]
+	emptyBM := pool[constant.PoolKeyTagPrefix]
 	if emptyBM == nil {
 		return nil
 	}
@@ -301,7 +304,7 @@ func (p *PriorityRouter) requestTagMatchBM(pool router.AddrPool, url *common.URL
 }
 
 func (p *PriorityRouter) emptyTagMatchBM(pool router.AddrPool, cfg global.RouterConfig) *roaring.Bitmap {
-	bm := pool["tag\x00"]
+	bm := pool[constant.PoolKeyTagPrefix]
 	if bm == nil || bm.IsEmpty() {
 		return bm
 	}
@@ -322,11 +325,11 @@ func (p *PriorityRouter) emptyTagMatchBM(pool router.AddrPool, cfg global.Router
 func (p *PriorityRouter) addressesBM(pool router.AddrPool, addrs []string) *roaring.Bitmap {
 	bm := roaring.NewBitmap()
 	for _, addr := range addrs {
-		if ab := pool["addr\x00"+addr]; ab != nil {
+		if ab := pool[constant.PoolKeyAddrPrefix+addr]; ab != nil {
 			bm.Or(ab)
 		}
 		if idx := strings.LastIndex(addr, ":"); idx > 0 && addr[:idx] == constant.AnyHostValue {
-			if pb := pool["port\x00"+addr[idx+1:]]; pb != nil {
+			if pb := pool[constant.PoolKeyPortPrefix+addr[idx+1:]]; pb != nil {
 				bm.Or(pb)
 			}
 		}
@@ -354,13 +357,13 @@ func (p *PriorityRouter) matchBM(pool router.AddrPool, matches []*common.ParamMa
 }
 
 func (p *PriorityRouter) paramMatchBM(pool router.AddrPool, pm *common.ParamMatch) *roaring.Bitmap {
-	prefix := "param\x00" + pm.Key + "\x00"
+	prefix := constant.PoolKeyParamPrefix + pm.Key + "\x00"
 	switch {
 	case pm.Value.Exact != "":
 		return pool[prefix+pm.Value.Exact]
 	case pm.Value.Wildcard != "":
 		if pm.Value.Wildcard == constant.AnyValue {
-			return pool["*"]
+			return pool[constant.PoolKeyAll]
 		}
 		return pool[prefix+pm.Value.Wildcard]
 	case pm.Value.Prefix != "":
@@ -371,7 +374,7 @@ func (p *PriorityRouter) paramMatchBM(pool router.AddrPool, pm *common.ParamMatc
 		return pool[prefix+"\x00"]
 	case pm.Value.Noempty != "":
 		emptyBM := pool[prefix+"\x00"]
-		allBM := pool["*"]
+		allBM := pool[constant.PoolKeyAll]
 		if allBM == nil {
 			return roaring.NewBitmap()
 		}

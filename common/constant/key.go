@@ -365,6 +365,13 @@ const (
 	Wildcard                          = "wildcard"
 	MeshRouterFactoryKey              = "mesh"
 	DefaultRouteConditionSubSetWeight = 100
+
+	// Poolable router bitmap key prefixes
+	PoolKeyTagPrefix   = "tag\x00"
+	PoolKeyAddrPrefix  = "addr\x00"
+	PoolKeyPortPrefix  = "port\x00"
+	PoolKeyParamPrefix = "param\x00"
+	PoolKeyAll         = "*"
 )
 
 // Auth filter
