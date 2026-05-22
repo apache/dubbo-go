@@ -56,6 +56,7 @@ func newBenchConsumerURL(app string) *common.URL {
 // cached:    pool["tag\x00"+tag] single map lookup + bitmap iteration
 // no_cache:  filterInvokers linear scan with GetURL().GetParam per invoker
 func BenchmarkRouteStaticTag(b *testing.B) {
+	b.ReportAllocs()
 	for _, n := range []int{10, 100, 1000} {
 		tagged := n * 30 / 100
 		invokers := makeBenchInvokers(n, tagged, "bench-static")
@@ -94,6 +95,7 @@ func BenchmarkRouteStaticTag(b *testing.B) {
 // cached:    requestTagMatchBM -> addressesBM map lookups + bitmap OR
 // no_cache:  requestTag -> filterInvokers + getAddressPredicate O(N*A) nested loop
 func BenchmarkRouteDynamicTagAddr(b *testing.B) {
+	b.ReportAllocs()
 	for _, n := range []int{10, 100, 1000} {
 		tagged := n * 30 / 100
 		app := "bench-dynaddr"
@@ -159,6 +161,7 @@ func BenchmarkRouteDynamicTagAddr(b *testing.B) {
 // the cached path directly locates a small bitmap (O(result_size)).
 // At high tagged ratio the result set is large and the gap narrows.
 func BenchmarkRouteCacheHitBenefit(b *testing.B) {
+	b.ReportAllocs()
 	n := 100
 	for _, tagged := range []int{10, 50, 90} {
 		app := "bench-hitbenefit"
