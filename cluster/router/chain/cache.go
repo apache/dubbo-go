@@ -54,6 +54,8 @@ func (c *routerCache) GetInvokers() []base.Invoker {
 	return ret
 }
 
+// FindAddrPool returns the address pool and invoker snapshot for the given Poolable.
+// The returned invokers slice is shared and must not be modified by the caller.
 func (c *routerCache) FindAddrPool(p router.Poolable) (router.AddrPool, []base.Invoker) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -61,9 +63,7 @@ func (c *routerCache) FindAddrPool(p router.Poolable) (router.AddrPool, []base.I
 	if !ok {
 		return nil, nil
 	}
-	invokers := make([]base.Invoker, len(c.invokers))
-	copy(invokers, c.invokers)
-	return entry.pool, invokers
+	return entry.pool, c.invokers
 }
 
 // FindAddrMeta is a no-op, reserved for future use.
