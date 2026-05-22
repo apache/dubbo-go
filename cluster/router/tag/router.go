@@ -216,6 +216,9 @@ func (p *PriorityRouter) SetCache(cache router.Cache) {
 }
 
 func (p *PriorityRouter) routeWithPool(invokers []base.Invoker, pool router.AddrPool, url *common.URL, invocation base.Invocation) []base.Invoker {
+	if len(invokers) == 0 {
+		return invokers
+	}
 	tag := invocation.GetAttachmentWithDefaultValue(constant.Tagkey, url.GetParam(constant.Tagkey, ""))
 
 	application := invokers[0].GetURL().GetParam(constant.ApplicationKey, "")

@@ -81,7 +81,7 @@ func (c *routerCache) rebuild(invokers []base.Invoker, routers []router.Priority
 		if !ok || !p.ShouldPool() {
 			continue
 		}
-		pool, _ := p.Pool(invokers)
+		pool, _ := p.Pool(invokers) // TODO: store AddrMetadata when needed
 		newPools[p.Name()] = &poolEntry{pool: pool}
 	}
 
