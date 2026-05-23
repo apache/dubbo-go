@@ -18,7 +18,6 @@
 package tag
 
 import (
-	"regexp"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -201,13 +200,6 @@ func (p *PriorityRouter) Pool(invokers []base.Invoker) (router.AddrPool, router.
 				upsertBM(pool, constant.PoolKeyPortPrefix+addr[idx+1:], i)
 			}
 		}
-		for _, key := range []string{"version", "group"} {
-			if v := url.GetParam(key, ""); v != "" {
-				upsertBM(pool, constant.PoolKeyParamPrefix+key+"\x00"+v, i)
-			} else {
-				upsertBM(pool, constant.PoolKeyParamPrefix+key+"\x00\x00", i)
-			}
-		}
 	}
 	return pool, nil
 }
@@ -272,10 +264,12 @@ func (p *PriorityRouter) requestTagMatchBM(pool router.AddrPool, url *common.URL
 		}
 	}
 
-	var resultBM *roaring.Bitmap
 	if len(match) != 0 {
-		resultBM = p.matchBM(pool, match)
-	} else if len(addresses) != 0 {
+		return nil // not bitmap-cached; fall back to requestTag
+	}
+
+	var resultBM *roaring.Bitmap
+	if len(addresses) != 0 {
 		resultBM = p.addressesBM(pool, addresses)
 	} else {
 		resultBM = pool[constant.PoolKeyTagPrefix+tag]
@@ -337,57 +331,6 @@ func (p *PriorityRouter) addressesBM(pool router.AddrPool, addrs []string) *roar
 	return bm
 }
 
-func (p *PriorityRouter) matchBM(pool router.AddrPool, matches []*common.ParamMatch) *roaring.Bitmap {
-	var result *roaring.Bitmap
-	for _, m := range matches {
-		bm := p.paramMatchBM(pool, m)
-		if bm == nil {
-			return nil
-		}
-		if result == nil {
-			result = bm.Clone()
-		} else {
-			result.And(bm)
-		}
-		if result.IsEmpty() {
-			return result
-		}
-	}
-	return result
-}
-
-func (p *PriorityRouter) paramMatchBM(pool router.AddrPool, pm *common.ParamMatch) *roaring.Bitmap {
-	prefix := constant.PoolKeyParamPrefix + pm.Key + "\x00"
-	switch {
-	case pm.Value.Exact != "":
-		return pool[prefix+pm.Value.Exact]
-	case pm.Value.Wildcard != "":
-		if pm.Value.Wildcard == constant.AnyValue {
-			return pool[constant.PoolKeyAll]
-		}
-		return pool[prefix+pm.Value.Wildcard]
-	case pm.Value.Prefix != "":
-		return scanPrefixBM(pool, prefix, pm.Value.Prefix)
-	case pm.Value.Regex != "":
-		return scanRegexBM(pool, prefix, pm.Value.Regex)
-	case pm.Value.Empty != "":
-		return pool[prefix+"\x00"]
-	case pm.Value.Noempty != "":
-		emptyBM := pool[prefix+"\x00"]
-		allBM := pool[constant.PoolKeyAll]
-		if allBM == nil {
-			return roaring.NewBitmap()
-		}
-		if emptyBM != nil {
-			result := allBM.Clone()
-			result.AndNot(emptyBM)
-			return result
-		}
-		return allBM
-	}
-	return roaring.NewBitmap()
-}
-
 func collectInvokers(invokers []base.Invoker, bm *roaring.Bitmap) []base.Invoker {
 	if bm == nil || bm.IsEmpty() {
 		return []base.Invoker{}
@@ -408,42 +351,4 @@ func upsertBM(pool router.AddrPool, key string, idx int) {
 		pool[key] = roaring.NewBitmap()
 	}
 	pool[key].Add(uint32(idx))
-}
-
-func scanPrefixBM(pool router.AddrPool, prefix string, value string) *roaring.Bitmap {
-	bm := roaring.NewBitmap()
-	for key, entry := range pool {
-		if !strings.HasPrefix(key, prefix) {
-			continue
-		}
-		if strings.HasSuffix(key, "\x00") {
-			continue
-		}
-		val := key[len(prefix):]
-		if strings.HasPrefix(val, value) {
-			bm.Or(entry)
-		}
-	}
-	return bm
-}
-
-func scanRegexBM(pool router.AddrPool, prefix string, pattern string) *roaring.Bitmap {
-	re, err := regexp.Compile(pattern)
-	if err != nil {
-		return roaring.NewBitmap()
-	}
-	bm := roaring.NewBitmap()
-	for key, entry := range pool {
-		if !strings.HasPrefix(key, prefix) {
-			continue
-		}
-		if strings.HasSuffix(key, "\x00") {
-			continue
-		}
-		val := key[len(prefix):]
-		if re.MatchString(val) {
-			bm.Or(entry)
-		}
-	}
-	return bm
 }

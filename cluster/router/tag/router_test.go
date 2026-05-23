@@ -690,7 +690,7 @@ func TestRouteBitmapDynamicEmptyTag(t *testing.T) {
 	})
 }
 
-func TestRouteBitmapDynamicParamExact(t *testing.T) {
+func TestRouteDynamicParamExactFallback(t *testing.T) {
 	p := newCacheRouter()
 	invokers := makeInvokers("gray", "gray", "")
 	invokers[1].GetURL().SetParam("version", "v2")
@@ -709,7 +709,7 @@ func TestRouteBitmapDynamicParamExact(t *testing.T) {
 		}},
 	})
 
-	t.Run("indexed param exact match via bitmap", func(t *testing.T) {
+	t.Run("match falls back to requestTag and filters correctly", func(t *testing.T) {
 		attachments := map[string]any{constant.Tagkey: "gray"}
 		result := p.Route(invokers, consumerUrl, invocation.NewRPCInvocation("GetUser", nil, attachments))
 		assert.Len(t, result, 1)
