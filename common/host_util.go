@@ -54,7 +54,7 @@ func GetLocalHostName() string {
 	}
 	hostname, err := os.Hostname()
 	if err != nil {
-		logger.Errorf("can not get local hostname")
+		logger.Errorf("can not get local hostname, err=%v", err)
 	}
 	localHostname = hostname
 	return localHostname

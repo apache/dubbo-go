@@ -82,11 +82,42 @@ func (c *OpenAPIConfig) GetSetting(key string) string {
 	return c.Settings[key]
 }
 
-// Init normalizes the config fields.
+// Init fills missing defaults and normalizes the config fields.
 func (c *OpenAPIConfig) Init() {
 	if c == nil {
 		return
 	}
+	defaultConfig := DefaultOpenAPIConfig()
+	if c.Path == "" {
+		c.Path = defaultConfig.Path
+	}
+	if c.InfoTitle == "" {
+		c.InfoTitle = defaultConfig.InfoTitle
+	}
+	if c.InfoDescription == "" {
+		c.InfoDescription = defaultConfig.InfoDescription
+	}
+	if c.InfoVersion == "" {
+		c.InfoVersion = defaultConfig.InfoVersion
+	}
+	if c.DefaultConsumesMediaTypes == nil {
+		c.DefaultConsumesMediaTypes = append([]string{}, defaultConfig.DefaultConsumesMediaTypes...)
+	}
+	if c.DefaultProducesMediaTypes == nil {
+		c.DefaultProducesMediaTypes = append([]string{}, defaultConfig.DefaultProducesMediaTypes...)
+	}
+	if c.DefaultHttpStatusCodes == nil {
+		c.DefaultHttpStatusCodes = append([]string{}, defaultConfig.DefaultHttpStatusCodes...)
+	}
+	if c.Settings == nil {
+		c.Settings = make(map[string]string, len(defaultConfig.Settings))
+	}
+	for k, v := range defaultConfig.Settings {
+		if _, ok := c.Settings[k]; !ok {
+			c.Settings[k] = v
+		}
+	}
+
 	// Normalize Path:
 	//  1. path.Clean collapses duplicate slashes and resolves ".." / "." segments
 	//  2. Trim trailing slash (preserve "/" as root)

@@ -79,11 +79,11 @@ func (f *genericFilter) Invoke(ctx context.Context, invoker base.Invoker, inv ba
 			// use the default generalizer(MapGeneralizer)
 			typ, err := g.GetType(arg)
 			if err != nil {
-				logger.Errorf("failed to get type, %v", err)
+				logger.Errorf("[Filter][Generic] failed to get type, err=%v", err)
 			}
 			obj, err := g.Generalize(arg)
 			if err != nil {
-				logger.Errorf("generalization failed, %v", err)
+				logger.Errorf("[Filter][Generic] generalization failed, err=%v", err)
 				return invoker.Invoke(ctx, inv)
 			}
 			types = append(types, typ)
@@ -203,7 +203,7 @@ func (f *genericFilter) OnResponse(_ context.Context, res result.Result, invoker
 	// Realize the map/slice to the target struct using shared helper
 	realized, err := realizeResult(data, replyElemType, g)
 	if err != nil {
-		logger.Warnf("failed to deserialize generic result: %v", err)
+		logger.Warnf("[Filter][Generic] failed to deserialize generic result, err=%v", err)
 		return res
 	}
 

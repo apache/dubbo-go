@@ -49,7 +49,7 @@ func init() {
 	extension.SetFilter(constant.SentinelConsumerFilterKey, newSentinelConsumerFilter)
 	extension.SetFilter(constant.SentinelProviderFilterKey, newSentinelProviderFilter)
 	if err := logging.ResetGlobalLogger(DubboLoggerWrapper{Logger: logger.GetLogger()}); err != nil {
-		logger.Errorf("[Sentinel Filter] fail to ingest dubbo logger into sentinel")
+		logger.Error("[Filter][Sentinel] fail to ingest dubbo logger into sentinel")
 	}
 }
 

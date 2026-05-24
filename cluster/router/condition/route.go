@@ -30,7 +30,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 import (
@@ -85,7 +85,7 @@ func (s *StateRouter) Route(invokers []base.Invoker, url *common.URL, invocation
 	}
 
 	if len(s.thenCondition) == 0 {
-		logger.Warn("condition state router thenCondition is empty")
+		logger.Warn("[Router][Condition] thenCondition is empty")
 		return []base.Invoker{}
 	}
 
@@ -392,7 +392,7 @@ func (m MultiDestRouter) Route(invokers []base.Invoker, url *common.URL, invocat
 	}
 
 	if len(m.thenCondition) == 0 {
-		logger.Warn("condition state router thenCondition is empty")
+		logger.Warn("[Router][Condition] thenCondition is empty")
 		return []base.Invoker{}, true
 	}
 
