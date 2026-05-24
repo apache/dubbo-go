@@ -1,0 +1,20 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "dubbo-go-agent-skills",
+  "description": "Agent skills bundled with Apache dubbo-go for framework users and contributors",
+  "owner": {
+    "name": "Apache Dubbo"
+  },
+  "plugins": [
+    {
+      "name": "dubbo-go",
+      "description": "AI skills for Apache dubbo-go contributors and v3 users: repository development, scaffolding, extensions, Java interop, debugging, guidance, and migration.",
+      "category": "development",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/apache/dubbo-go.git"
+      },
+      "homepage": "https://github.com/apache/dubbo-go/tree/develop/.agents"
+    }
+  ]
+}
