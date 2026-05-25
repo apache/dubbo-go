@@ -19,67 +19,117 @@ limitations under the License.
 
 [English](README.md) | [中文](README_CN.md)
 
-This directory contains AI agent skills bundled with [Apache dubbo-go](https://github.com/apache/dubbo-go). The skills help coding agents work with the dubbo-go repository, dubbo-go v3 applications, examples, extension points, Java interoperability, debugging, and migration tasks.
+AI agent skills bundled with [Apache dubbo-go](https://github.com/apache/dubbo-go) — make your coding assistant fluent in dubbo-go v3.
 
-The package lives under `.agents/` so it can include multi-agent distribution metadata without overwriting dubbo-go repository root files.
+## What This Gives You
 
-> Note: All skills target dubbo-go v3. v1 and v2 are deprecated.
+When you're using dubbo-go, your AI assistant now actually knows what it's doing.
 
-## Layout
+Ask it to scaffold a new provider or consumer and it picks the current code-API style (`dubbo.NewInstance` + `server.WithServerProtocol`), wires up the registry you actually use, and produces something that compiles on the first try. Need a custom filter or load balancer? It knows the SPI pattern — `extension.SetXxx` registration, blank imports, per-service or per-reference activation. Calling a Java Dubbo service? It picks Triple+Protobuf or Dubbo+Hessian2 based on whether you have a `.proto` or a Java interface, and gets the POJO class names right.
 
-- `skills/`: Codex-compatible skills. Codex reads this directory when working in this repository.
-- `.codex/INSTALL.md`: manual Codex installation notes for using these skills outside this checkout.
-- `.claude-plugin/marketplace.json`: Claude Code plugin marketplace metadata for this `.agents` package.
-- `.opencode/plugins/dubbo-go-agent-skills.js`: OpenCode adapter that exposes the bundled skills.
-- `GEMINI.md` and `gemini-extension.json`: Gemini CLI extension entry points.
-- `plugin.json` and `package.json`: generic plugin/package metadata for tools that can consume a package rooted at `.agents`.
+Ask why your service won't connect, and it triages by structured checklist — registry, protocol, serialization, filter chain — instead of guessing. Migrating from gRPC-Go or Spring Cloud? It maps the concepts side by side.
 
-## Using These Skills
+Skills activate automatically when the conversation matches; you don't invoke them by name.
 
-When working inside an Apache dubbo-go checkout, Codex can load the repository-local skills from `.agents/skills` directly. No separate clone of a skills repository is required.
+> All skills target dubbo-go **v3**. v1 and v2 are deprecated.
 
-For global Codex usage outside this checkout, follow [.codex/INSTALL.md](.codex/INSTALL.md).
+## Install
 
-For OpenCode, Gemini CLI, or Claude Code packaging, treat `.agents` as the package root. The metadata files in this directory are intentionally relative to `.agents`.
+Install paths vary by AI tool. Claude Code and Cursor read a marketplace; Codex and OpenCode are manual.
+
+### Claude Code / Cursor
+
+```bash
+/plugin marketplace add apache/dubbo-go
+/plugin install dubbo-go@dubbo-go-agent-skills
+```
+
+### Codex
+
+Tell Codex:
+
+```
+Fetch and follow instructions from https://raw.githubusercontent.com/apache/dubbo-go/main/.agents/.codex/INSTALL.md
+```
+
+Full instructions: [.codex/INSTALL.md](.codex/INSTALL.md)
+
+### OpenCode
+
+Add to `opencode.json`:
+
+```json
+{
+  "plugin": ["dubbo-go-agent-skills@git+https://github.com/apache/dubbo-go.git#path:.agents"]
+}
+```
+
+### Gemini CLI
+
+```bash
+gemini extensions install https://github.com/apache/dubbo-go --path .agents
+```
+
+Update later with:
+
+```bash
+gemini extensions update dubbo-go-agent-skills
+```
+
+### Verify
+
+Open a new session and try one of these:
+
+- "Scaffold a dubbo-go provider with Nacos"
+- "Why does my consumer log 'no provider available'?"
+- "How do I call a Java Dubbo service from Go?"
+
+The assistant should auto-trigger the matching skill.
 
 ## Skills
 
-### development
-
-Guides agents modifying the apache/dubbo-go repository itself. It covers current Go/toolchain expectations, package boundaries, validation commands, generated files, and repository-specific do-not rules.
-
 ### scaffolding
 
-Generates provider or consumer skeletons in the current dubbo-go v3 code-API style. It covers direct mode, registry-backed services, Protobuf generation, OpenAPI, HTTP handler mounting, HTTP/3, and current sample patterns.
+Generates provider or consumer skeletons in v3 code-API style (`dubbo.NewInstance` / `server.NewServer` / `client.NewClient`). Asks about protocol (Triple / Dubbo / gRPC) and registry (Nacos / ZooKeeper / etcd / direct) first, then produces a complete, compilable skeleton matching the official samples. Covers OpenAPI, HTTP handler attachment, and HTTP/3.
 
 ### extensions
 
-Guides custom SPI extensions such as Filter, LoadBalance, Router, Registry, Protocol, ConfigCenter, and Logger. It covers the `extension.SetXxx` registration pattern, blank imports, activation options, and common failure modes.
+Custom SPI extensions — Filter, LoadBalance, Registry, Protocol, Router, Logger. Explains the uniform pattern (`extension.SetXxx` + blank import + `WithFilter` / `WithLoadBalance`), with runnable templates and the silent-failure modes that catch newcomers.
 
 ### java-interop
 
-Guides interoperability between dubbo-go and dubbo-java. It helps choose Triple+Protobuf or Dubbo+Hessian2, handle service discovery mapping, and debug cross-language serialization.
+Cross-language RPC between dubbo-go and dubbo-java. Picks Triple+Protobuf for new services, Dubbo+Hessian2 for existing Java-defined ones, and gets POJO class names, method-name casing, and the curl-friendly HTTP route format right.
 
 ### debug
 
-Provides structured diagnosis for runtime issues such as missing providers, registry mapping, connection failures, serialization mismatches, timeouts, OpenAPI issues, attached HTTP handlers, shutdown behavior, and filter panics.
+Structured diagnosis for runtime errors. Matches your error or log against known patterns — "no provider available", connection refused, serialization mismatch, timeout, filter panic, OpenAPI 404, AttachHTTPHandler failure, slow shutdown — and gives a targeted checklist.
 
 ### guide
 
-Explains current dubbo-go architecture, extension points, and best practices. It covers Instance, Protocol, Registry, Metadata, Filter, Cluster, LoadBalance, Router, Triple OpenAPI, HTTP/3, CORS, graceful shutdown, observability, and sample locations.
+Architecture, extension points, and best practices. Covers Instance, Protocol, Registry, Filter, Cluster, LoadBalance, Router, Triple OpenAPI, HTTP/3, CORS, graceful shutdown, observability, and points to the relevant `dubbo-go-samples` directory through `samples-index.md`.
 
 ### migrate
 
-Guides migration from gRPC-Go, Spring Cloud, Gin/plain HTTP, older dubbo-go v1/v2 usage, YAML-heavy apps, Java Dubbo, and Hessian2 services to current dubbo-go v3 patterns.
+Step-by-step migration guidance:
+
+- **gRPC-Go** — concept mapping, proto reuse, direct mode parallels
+- **Spring Cloud (Java)** — registry sharing, Java/Go coexistence path
+- **Gin / plain HTTP** — coexistence options and Triple REST mode
+- **dubbo-go v1/v2 → v3** — breaking-change table, minimum migration path
+- **YAML-heavy v3** — incremental move to the code API
+
+### development
+
+For contributors modifying the `apache/dubbo-go` repository itself — Go toolchain, package boundaries, validation commands, generated files, repository-level do-not rules. Not for application-side scaffolding.
 
 ## Contributing
 
-Skills live in `.agents/skills`.
+Skills live in `.agents/skills/<name>/SKILL.md`.
 
-1. Add or edit a skill under `.agents/skills/<name>/SKILL.md`.
-2. Keep `SKILL.md` frontmatter concise and trigger-focused.
-3. Update this directory's metadata only when install paths, skill names, or supported agents change.
-4. Submit the change through the normal dubbo-go contribution workflow.
+1. Edit or add a skill in place.
+2. Keep the frontmatter `description` trigger-focused — that line is what the agent reads to decide whether to use the skill.
+3. Update `.agents/` metadata only when install paths, skill names, or supported agents change.
+4. Submit through the normal dubbo-go contribution workflow.
 
 ## License
 

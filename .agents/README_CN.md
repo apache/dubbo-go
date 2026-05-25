@@ -19,66 +19,116 @@ limitations under the License.
 
 [English](README.md) | 中文
 
-本目录存放随 [Apache dubbo-go](https://github.com/apache/dubbo-go) 仓库一起维护的 AI Agent Skills。这些 skills 用于帮助编码 Agent 处理 dubbo-go 仓库源码、dubbo-go v3 应用、示例生成、扩展点、Java 互通、问题排查和迁移任务。
+随 [Apache dubbo-go](https://github.com/apache/dubbo-go) 一起维护的 AI Agent Skills——让你的编码助手真正会写 dubbo-go v3。
 
-这套包放在 `.agents/` 下，是为了把多 Agent 分发元数据集中在一起，同时避免覆盖 dubbo-go 仓库根目录已有文件。
+## 它能给你什么
 
-> 注意：所有 skills 都面向 dubbo-go v3。v1 和 v2 已废弃。
+你在用 dubbo-go 时，AI 助手现在知道自己在做什么了。
 
-## 目录结构
+让它搭一个新的 provider 或 consumer，它会选对当前的 code-API 风格（`dubbo.NewInstance` + `server.WithServerProtocol`），接上你实际用的注册中心，第一次就能编译过。要写自定义 filter 或负载均衡？它懂 SPI 模式——`extension.SetXxx` 注册、blank import、按 service 或 reference 启用。要和 Java Dubbo 服务互通？它会根据你有的是 `.proto` 还是 Java 接口，正确选 Triple+Protobuf 或 Dubbo+Hessian2，POJO 类名也能对齐。
 
-- `skills/`：Codex 可直接加载的 skills。Codex 在本仓库工作时会读取该目录。
-- `.codex/INSTALL.md`：在本仓库外全局使用这些 skills 的 Codex 手动安装说明。
-- `.claude-plugin/marketplace.json`：面向 Claude Code 插件市场的元数据。
-- `.opencode/plugins/dubbo-go-agent-skills.js`：OpenCode 适配器，用于暴露本目录内的 skills。
-- `GEMINI.md` 和 `gemini-extension.json`：Gemini CLI 扩展入口。
-- `plugin.json` 和 `package.json`：供能够以 `.agents` 为包根目录的工具读取的通用元数据。
+问它服务为什么连不上，它按结构化清单逐步排查——注册中心、协议匹配、序列化、filter 链——而不是瞎猜。要从 gRPC-Go 或 Spring Cloud 迁移？它会把概念逐一映射。
 
-## 使用方式
+Skill 在上下文匹配时自动触发，不需要手动调用。
 
-在 Apache dubbo-go 仓库内工作时，Codex 可以直接从 `.agents/skills` 加载仓库内置 skills，不需要再单独克隆一个 skills 仓库。
+> 所有 skill 仅支持 dubbo-go **v3**，v1/v2 已废弃。
 
-如果要在本仓库外全局使用这套 Codex skills，请参考 [.codex/INSTALL.md](.codex/INSTALL.md)。
+## 安装
 
-如果用于 OpenCode、Gemini CLI 或 Claude Code 的插件包装，请把 `.agents` 视为包根目录。本目录中的元数据路径都按 `.agents` 为根来组织。
+不同 AI 工具安装方式不同。Claude Code 和 Cursor 内置市场，Codex 和 OpenCode 需要手动安装。
+
+### Claude Code / Cursor
+
+```bash
+/plugin marketplace add apache/dubbo-go
+/plugin install dubbo-go@dubbo-go-agent-skills
+```
+
+### Codex
+
+告诉 Codex：
+
+```
+Fetch and follow instructions from https://raw.githubusercontent.com/apache/dubbo-go/main/.agents/.codex/INSTALL.md
+```
+
+详细文档：[.codex/INSTALL.md](.codex/INSTALL.md)
+
+### OpenCode
+
+在 `opencode.json` 中加：
+
+```json
+{
+  "plugin": ["dubbo-go-agent-skills@git+https://github.com/apache/dubbo-go.git#path:.agents"]
+}
+```
+
+### Gemini CLI
+
+```bash
+gemini extensions install https://github.com/apache/dubbo-go --path .agents
+```
+
+更新：
+
+```bash
+gemini extensions update dubbo-go-agent-skills
+```
+
+### 验证
+
+新开一个会话，试试这些：
+
+- "帮我搭一个用 Nacos 的 dubbo-go provider"
+- "consumer 报 'no provider available' 是什么原因"
+- "怎么从 Go 调一个 Java Dubbo 服务？"
+
+助手应该会自动触发对应的 skill。
 
 ## Skills
 
-### development
-
-指导 Agent 修改 apache/dubbo-go 仓库本身，覆盖当前 Go/toolchain 要求、包边界、验证命令、生成文件和仓库级禁止事项。
-
 ### scaffolding
 
-生成当前 dubbo-go v3 code API 风格的 provider 或 consumer 骨架，覆盖直连模式、注册中心服务、Protobuf 生成、OpenAPI、HTTP handler 挂载、HTTP/3 和当前示例模式。
+按 v3 code-API 风格（`dubbo.NewInstance` / `server.NewServer` / `client.NewClient`）生成 provider 或 consumer 骨架。先确认协议（Triple / Dubbo / gRPC）和注册中心（Nacos / ZooKeeper / etcd / 直连），再生成与官方 samples 一致、可直接编译运行的骨架。覆盖 OpenAPI、HTTP handler 挂载、HTTP/3。
 
 ### extensions
 
-指导编写自定义 SPI 扩展，例如 Filter、LoadBalance、Router、Registry、Protocol、ConfigCenter、Logger。覆盖 `extension.SetXxx` 注册模式、blank import、启用方式和常见失败原因。
+自定义 SPI 扩展——Filter、LoadBalance、Registry、Protocol、Router、Logger。讲清统一模式（`extension.SetXxx` + blank import + `WithFilter` / `WithLoadBalance`），附可运行模板和新人最常踩的"静默失败"陷阱。
 
 ### java-interop
 
-指导 dubbo-go 和 dubbo-java 互通。根据服务形态和兼容性需求，在 Triple+Protobuf 与 Dubbo+Hessian2 之间做选择，并处理服务发现映射和跨语言序列化问题。
+dubbo-go 与 dubbo-java 的跨语言 RPC。新服务选 Triple+Protobuf，老 Java 接口选 Dubbo+Hessian2，POJO 类名、方法名大小写、curl 友好的 HTTP 路由格式都对齐好。
 
 ### debug
 
-为运行时问题提供结构化排查流程，例如 provider 找不到、注册中心映射、连接失败、序列化不匹配、超时、OpenAPI、HTTP handler 挂载、shutdown 和 filter panic。
+运行时报错的结构化排查。把错误或日志和已知模式匹配——"no provider available"、连接被拒、序列化不匹配、超时、filter panic、OpenAPI 404、AttachHTTPHandler 失败、shutdown 偏慢——给出针对性的检查清单。
 
 ### guide
 
-解释当前 dubbo-go 架构、扩展点和最佳实践，覆盖 Instance、Protocol、Registry、Metadata、Filter、Cluster、LoadBalance、Router、Triple OpenAPI、HTTP/3、CORS、graceful shutdown、可观测性和示例位置。
+架构、扩展点、最佳实践。覆盖 Instance、Protocol、Registry、Filter、Cluster、LoadBalance、Router、Triple OpenAPI、HTTP/3、CORS、graceful shutdown、可观测性，并通过 `samples-index.md` 指向对应的 `dubbo-go-samples` 目录。
 
 ### migrate
 
-指导从 gRPC-Go、Spring Cloud、Gin/纯 HTTP、dubbo-go v1/v2、YAML-heavy 应用、Java Dubbo 和 Hessian2 服务迁移到当前 dubbo-go v3 模式。
+分步骤迁移指引：
+
+- **gRPC-Go**——概念映射、proto 复用、直连模式对照
+- **Spring Cloud（Java）**——注册中心复用、Java/Go 共存
+- **Gin / 纯 HTTP**——共存方案和 Triple REST 模式
+- **dubbo-go v1/v2 → v3**——breaking-change 对照、最小迁移路径
+- **YAML 重度依赖的 v3**——平滑迁移到 code API
+
+### development
+
+面向 `apache/dubbo-go` 仓库本身的贡献者——Go 工具链、包边界、校验命令、生成文件、仓库级禁止事项。**不**用于应用侧脚手架。
 
 ## 贡献
 
-Skills 位于 `.agents/skills`。
+Skill 文件位于 `.agents/skills/<name>/SKILL.md`。
 
-1. 在 `.agents/skills/<name>/SKILL.md` 下新增或修改 skill。
-2. 保持 `SKILL.md` frontmatter 简洁，并聚焦触发场景。
-3. 只有当安装路径、skill 名称或支持的 Agent 发生变化时，才更新本目录的元数据。
+1. 直接修改或新增 skill。
+2. 保持 frontmatter 的 `description` 聚焦触发场景——Agent 就是靠这一行决定要不要使用该 skill。
+3. 只有当安装路径、skill 名称或支持的 Agent 发生变化时，才修改 `.agents/` 下的元数据。
 4. 按 dubbo-go 正常贡献流程提交修改。
 
 ## License

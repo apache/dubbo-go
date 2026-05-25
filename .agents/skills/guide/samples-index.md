@@ -17,103 +17,69 @@ limitations under the License.
 
 # dubbo-go-samples Index
 
-Use this index when a user asks which example to follow. Paths refer to `https://github.com/apache/dubbo-go-samples/tree/main/<path>`.
+Each entry links to a directory under [apache/dubbo-go-samples](https://github.com/apache/dubbo-go-samples).
 
 ## Quick Start
-
-- `helloworld` - minimal Triple/Protobuf provider and consumer
-- `direct` - direct URL connection without registry
-- `config_yaml` - YAML-driven provider and consumer
-- `context` - context propagation
-- `error` - error behavior
+- [helloworld](https://github.com/apache/dubbo-go-samples/tree/main/helloworld) — minimal Triple/Protobuf provider + consumer
+- [direct](https://github.com/apache/dubbo-go-samples/tree/main/direct) — direct URL connection, no registry
 
 ## Protocols
-
-- `rpc/triple/pb` - Triple with Protobuf
-- `rpc/triple/pb2` - additional Triple Protobuf variant
-- `rpc/triple/pb-json` - Triple JSON behavior
-- `rpc/triple/instance` - `dubbo.NewInstance` style
-- `rpc/triple/registry` - Triple with registry
-- `rpc/triple/reflection` - reflection
-- `rpc/triple/stream` - Triple streaming
-- `rpc/triple/openapi` - runtime OpenAPI docs for Triple
-- `rpc/triple/old_triple` - old Triple compatibility
-- `rpc/grpc` - gRPC interop pattern
-- `rpc/multi-protocols` - multiple protocols on one server
-- `http3` - experimental Triple HTTP/3
+- [rpc/triple](https://github.com/apache/dubbo-go-samples/tree/main/rpc/triple) — Triple variants (Protobuf, JSON, streaming, reflection, OpenAPI)
+- [rpc/grpc](https://github.com/apache/dubbo-go-samples/tree/main/rpc/grpc) — gRPC interop
+- [rpc/multi-protocols](https://github.com/apache/dubbo-go-samples/tree/main/rpc/multi-protocols) — multiple protocols on one server
+- [http3](https://github.com/apache/dubbo-go-samples/tree/main/http3) — Triple over HTTP/3 (experimental)
 
 ## Service Discovery
+- [registry/nacos](https://github.com/apache/dubbo-go-samples/tree/main/registry/nacos)
+- [registry/zookeeper](https://github.com/apache/dubbo-go-samples/tree/main/registry/zookeeper)
+- [registry/etcd](https://github.com/apache/dubbo-go-samples/tree/main/registry/etcd)
+- [registry/polaris](https://github.com/apache/dubbo-go-samples/tree/main/registry/polaris)
 
-- `registry/nacos`
-- `registry/zookeeper`
-- `registry/etcd`
-- `registry/polaris`
-- `config_center/nacos`
-- `config_center/zookeeper`
-- `config_center/apollo`
+## Configuration
+- [config_yaml](https://github.com/apache/dubbo-go-samples/tree/main/config_yaml)
+- [config_center/nacos](https://github.com/apache/dubbo-go-samples/tree/main/config_center/nacos)
+- [config_center/zookeeper](https://github.com/apache/dubbo-go-samples/tree/main/config_center/zookeeper)
+- [config_center/apollo](https://github.com/apache/dubbo-go-samples/tree/main/config_center/apollo)
 
-## Filters and Resilience
-
-- `filter/custom` - custom filters
-- `filter/token` - token filter
-- `filter/tpslimit` - TPS limiting
-- `filter/sentinel` - Sentinel flow control
-- `filter/hystrix` - Hystrix-style circuit breaker
-- `filter/polaris/limit` - Polaris limit integration
-- `retry` - retry behavior
-- `timeout` - timeout behavior
-- `graceful_shutdown` - graceful shutdown behavior
+## Filters & Resilience
+- [filter/custom](https://github.com/apache/dubbo-go-samples/tree/main/filter/custom) — writing custom filters
+- [filter/sentinel](https://github.com/apache/dubbo-go-samples/tree/main/filter/sentinel) — flow control
+- [filter/hystrix](https://github.com/apache/dubbo-go-samples/tree/main/filter/hystrix) — circuit breaker
+- [filter/token](https://github.com/apache/dubbo-go-samples/tree/main/filter/token)
+- [filter/tpslimit](https://github.com/apache/dubbo-go-samples/tree/main/filter/tpslimit)
+- [retry](https://github.com/apache/dubbo-go-samples/tree/main/retry)
+- [timeout](https://github.com/apache/dubbo-go-samples/tree/main/timeout)
+- [graceful_shutdown](https://github.com/apache/dubbo-go-samples/tree/main/graceful_shutdown)
 
 ## Traffic Management
+- [router/tag](https://github.com/apache/dubbo-go-samples/tree/main/router/tag)
+- [router/condition](https://github.com/apache/dubbo-go-samples/tree/main/router/condition)
+- [router/script](https://github.com/apache/dubbo-go-samples/tree/main/router/script)
+- [mesh](https://github.com/apache/dubbo-go-samples/tree/main/mesh) — proxyless mesh
+- [apisix](https://github.com/apache/dubbo-go-samples/tree/main/apisix) — APISIX gateway
 
-- `router/tag` - tag routing
-- `router/condition` - condition routing
-- `router/script` - script routing
-- `router/static_config/tag` - static tag router config
-- `router/static_config/condition` - static condition router config
-- `router/polaris` - Polaris router integration
-- `mesh` - proxyless mesh scenario
-- `apisix` - APISIX gateway integration
+## Streaming
+- [streaming](https://github.com/apache/dubbo-go-samples/tree/main/streaming)
 
-## Streaming and Async
-
-- `streaming`
-- `async`
-
-## Observability and Operations
-
-- `metrics/prometheus_grafana`
-- `metrics/probe`
-- `otel/tracing/jaeger`
-- `otel/tracing/otlp_http_exporter`
-- `otel/tracing/stdout`
-- `logger/default`
-- `logger/level`
-- `logger/rolling`
-- `logger/custom`
-- `logger/trace-integration`
-- `healthcheck`
+## Observability
+- [metrics/prometheus_grafana](https://github.com/apache/dubbo-go-samples/tree/main/metrics/prometheus_grafana)
+- [metrics/probe](https://github.com/apache/dubbo-go-samples/tree/main/metrics/probe) — Kubernetes health probes
+- [otel/tracing](https://github.com/apache/dubbo-go-samples/tree/main/otel/tracing) — Jaeger / OTLP / stdout exporters
+- [logger](https://github.com/apache/dubbo-go-samples/tree/main/logger) — default, level, rolling, custom, trace integration
 
 ## Security
-
-- `tls`
-- `filter/token`
+- [tls](https://github.com/apache/dubbo-go-samples/tree/main/tls)
+- [filter/token](https://github.com/apache/dubbo-go-samples/tree/main/filter/token)
 
 ## Java Interop
-
-- `java_interop/protobuf-triple`
-- `java_interop/non-protobuf-dubbo`
-- `java_interop/non-protobuf-triple`
-- `java_interop/service_discovery`
-- `helloworld` - includes Go and Java sides
-- `direct` - includes Go and Java direct mode
-- `http3` - includes Java HTTP/3 sample
+- [java_interop/protobuf-triple](https://github.com/apache/dubbo-go-samples/tree/main/java_interop/protobuf-triple)
+- [java_interop/non-protobuf-dubbo](https://github.com/apache/dubbo-go-samples/tree/main/java_interop/non-protobuf-dubbo)
+- [java_interop/non-protobuf-triple](https://github.com/apache/dubbo-go-samples/tree/main/java_interop/non-protobuf-triple)
+- [java_interop/service_discovery](https://github.com/apache/dubbo-go-samples/tree/main/java_interop/service_discovery)
 
 ## Advanced
-
-- `generic` - generic invocation
-- `llm` - LLM-related sample
-- `book-flight-ai-agent` - AI agent sample
-- `game`
-- `online_boutique`
-- `transcation/seata-go` - Seata transaction sample; upstream directory name is intentionally misspelled `transcation`
+- [generic](https://github.com/apache/dubbo-go-samples/tree/main/generic) — generic invocation
+- [async](https://github.com/apache/dubbo-go-samples/tree/main/async)
+- [llm](https://github.com/apache/dubbo-go-samples/tree/main/llm) — LLM integration
+- [book-flight-ai-agent](https://github.com/apache/dubbo-go-samples/tree/main/book-flight-ai-agent) — AI agent
+- [transcation/seata-go](https://github.com/apache/dubbo-go-samples/tree/main/transcation/seata-go) — Seata distributed transactions <!-- upstream directory is named "transcation" (typo in dubbo-go-samples); kept as-is to match actual path -->

@@ -1,6 +1,6 @@
 ---
 name: dubbo-go-debugging
-description: Use when diagnosing dubbo-go runtime failures, logs, startup errors, missing providers, registry problems, serialization errors, timeouts, filter panics, OpenAPI issues, HTTP handler mounting, or graceful shutdown behavior.
+description: Structured diagnosis for dubbo-go v3 runtime errors. Use when the user reports an error, pastes logs, mentions timeout/panic/connection refused/no provider/serialization mismatch, or asks why their dubbo-go service isn't working.
 ---
 
 <!--
@@ -20,210 +20,177 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-
 # Debugging dubbo-go
 
-## Overview
+When the user shares an error or log, match it to a pattern below. If unclear, ask for:
 
-Most dubbo-go runtime failures collapse into a small set of root causes: name/contract mismatch, registry/discovery mode mismatch, protocol mismatch, blocking filter, or missing blank import. Diagnose by symptom first, then verify the contract on both sides (provider and consumer).
+1. Full error message or stack trace
+2. Registry type (Nacos / ZooKeeper / etcd / Polaris / direct)
+3. Protocol (Triple / Dubbo / gRPC / JSONRPC)
+4. Whether provider and consumer are separate processes
 
 ## Quick Triage
 
 | Symptom in logs | Jump to |
 |---|---|
-| `no provider available`, `no route`, `Should has at least one way to know` | [Missing Provider or No Route](#missing-provider-or-no-route) |
-| `dial tcp ... connection refused`, `i/o timeout` on connect | [Connection Refused or Dial Error](#connection-refused-or-dial-error) |
-| `hessian: failed to decode`, `protobuf: cannot parse invalid wire-format data` | [Serialization or Decode Error](#serialization-or-decode-error) |
+| `no provider available`, `no route`, `Should has at least one way to know` | [No provider / no route](#no-provider--no-route) |
+| `dial tcp ... connection refused`, `i/o timeout` on connect | [Connection refused / dial error](#connection-refused--dial-error) |
+| `hessian: failed to decode`, `protobuf: cannot parse invalid wire-format data` | [Serialization / decode error](#serialization--decode-error) |
 | `context deadline exceeded`, `invoke timeout` | [Timeout](#timeout) |
-| `filter not found`, panic inside a filter | [Filter Not Found or Filter Panic](#filter-not-found-or-filter-panic) |
-| Provider process exits seconds after start | [Provider Starts Then Exits](#provider-starts-then-exits) |
-| `404` at `/dubbo/openapi/...`, empty spec | [OpenAPI 404 or Empty Spec](#openapi-404-or-empty-spec) |
-| `AttachHTTPHandler` returns error | [Attached HTTP Handler Errors](#attached-http-handler-errors) |
-| Pods drain slowly, in-flight requests truncated on shutdown | [Graceful Shutdown Issues](#graceful-shutdown-issues) |
+| `filter not found`, panic inside a filter | [Filter not found / filter panic](#filter-not-found--filter-panic) |
+| Provider exits seconds after start | [Provider starts but immediately exits](#provider-starts-but-immediately-exits) |
+| `404` at `/dubbo/openapi/...`, empty spec | [OpenAPI 404 / empty spec](#openapi-404--empty-spec) |
+| `AttachHTTPHandler` returns error | [AttachHTTPHandler errors](#attachhttphandler-errors) |
+| Pods drain slowly, in-flight requests truncated on shutdown | [Graceful shutdown](#graceful-shutdown) |
 
-## Collect First
+## No provider / no route
 
-Before diving in, gather:
+**Cause**: Consumer cannot find a provider in the registry.
 
-1. Full error message and stack trace
-2. Protocol: Triple, Dubbo, JSONRPC, REST, or gRPC-compatible path
-3. Discovery mode: direct URL, Nacos, ZooKeeper, etcd, Polaris, mesh
-4. Provider and consumer snippets for `NewInstance`, `NewServer`, `NewClient`, and `Register/NewService`
-5. Whether the service uses Protobuf IDL, non-IDL, Hessian2, generic, OpenAPI, HTTP/3, or attached HTTP handlers
-
-## Missing Provider or No Route
-
-Common logs:
-
-```text
-no provider available
-No provider available
-no route
-Should has at least one way to know which services this interface belongs to
-```
-
-Check:
-
-- Provider reached `srv.Serve()` and did not exit.
-- Provider registered the service: `pb.RegisterXxxHandler(srv, impl, ...)` returned nil.
-- Consumer constructed the generated client with the same interface name. Override with `client.WithInterface("...")` if provider used `server.WithInterface("...")`.
-- Registry addresses and IDs match. Multiple registries require `registry.WithID(...)` plus `client.WithRegistryIDs(...)` or server equivalents.
-- Application-level discovery can resolve interface-to-application mapping. If metadata mapping is unavailable, set `client.WithProvidedBy("provider-app-name")`.
-- Registry registration mode is correct: `registry.WithRegisterService`, `registry.WithRegisterInterface`, or `registry.WithRegisterServiceAndInterface`.
-- Registry is not disabled by `server.WithNotRegister()` or service `server.WithNotRegister()`.
-- Protocol matches. Triple consumers default to `tri`; Dubbo/Hessian2 consumers must use Dubbo protocol explicitly.
-
-For Nacos, inspect by application name for service-discovery mode and by interface if interface registration is enabled.
-
-## Connection Refused or Dial Error
-
-Check:
-
-- Provider is listening on the expected IP and port.
-- For direct mode, `client.WithClientURL("127.0.0.1:20000")` or `tri://127.0.0.1:20000` points to the provider.
-- Docker/Kubernetes clients are not using `localhost` to reach another container/pod.
-- Triple server configured an explicit port if using `AttachHTTPHandler`.
-- TLS/HTTP3 clients match server TLS and HTTP/3 setup.
-
-Useful commands:
+Checklist:
+- [ ] Provider started successfully? Look for `dubbo server started` and `A provider service ... was registered successfully` in provider logs.
+- [ ] Same registry address on both sides (`dubbo.WithRegistry(registry.WithAddress(...))` / YAML `dubbo.registries.xxx.address`)?
+- [ ] Same application name on both sides (`dubbo.WithName(...)`)? v3 defaults to **application-level** discovery — the registry stores the app name, not the interface FQN.
+- [ ] Same `interface` name passed to `pb.RegisterXxxHandler` and `pb.NewXxxService`?
+- [ ] Same protocol on both sides (both `tri` or both `dubbo`)?
+- [ ] Provider visible in the registry?
 
 ```bash
-lsof -i :20000
-curl -v http://127.0.0.1:20000/greet.GreetService/Greet \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Dubbo"}'
+# Nacos — application-level discovery, query by app name
+curl "http://127.0.0.1:8848/nacos/v1/ns/instance/list?serviceName=<your-app-name>"
+
+# ZooKeeper
+zkCli.sh ls /services
+
+# etcd
+etcdctl get --prefix /services
 ```
 
-## Serialization or Decode Error
+If the consumer cannot map an interface to an application, hint with `client.WithProvidedBy("<app-name>")`.
 
-Examples:
+## Connection refused / dial error
 
-```text
+**Cause**: Network or port misconfiguration.
+
+Checklist:
+- [ ] Provider port (`protocol.WithPort(...)`) matches what the consumer is dialing?
+- [ ] Firewall / Docker network allows the port?
+- [ ] Inside Docker: using container/service name instead of `localhost`?
+- [ ] Provider actually listening? `lsof -i :20000` on the provider host.
+
+## Serialization / decode error
+
+```
 hessian: failed to decode
 protobuf: cannot parse invalid wire-format data
 ```
 
-Check:
+**Cause**: Provider and consumer using different serialization formats.
 
-- Triple path uses Protobuf-generated code and the same `.proto` contract.
-- Dubbo protocol with Hessian2 registers every POJO through `dubbo-go-hessian2.RegisterPOJO`.
-- Java class names from `JavaClassName()` exactly match the Java fully-qualified class.
-- Client protocol and provider protocol match.
-- Generic calls use the expected generic type: `"true"`, `"gson"`, `"protobuf"`, or `"protobuf-json"`.
+Checklist:
+- [ ] Both sides on the same protocol (both `tri` or both `dubbo`)?
+- [ ] Protobuf: same `.proto` compiled on both sides? Same `go_package`?
+- [ ] Hessian2: POJO `JavaClassName()` matches the Java class FQN exactly? `RegisterPOJO` called in an `init()` that actually runs?
+
+For Hessian2 specifics, see `dubbo-go-java-interop`.
 
 ## Timeout
 
-Examples:
-
-```text
+```
 context deadline exceeded
 invoke timeout
 ```
 
-Check:
+**Cause**: Provider too slow, filter blocking, network delay, or low timeout.
 
-- Provider receives the request.
-- Filters are not blocking, rate-limiting, or waiting on external systems.
-- Consumer timeout is long enough.
-
-Per-reference timeout:
+Checklist:
+- [ ] Provider actually receiving the request? Add a log line at the top of the handler.
+- [ ] Any filter that may block? (auth, token, tps-limit)
+- [ ] Timeout high enough?
 
 ```go
+// per-reference
 svc, _ := pb.NewGreetService(cli, client.WithRequestTimeout(10*time.Second))
-```
 
-Client-wide timeout:
-
-```go
-cli, _ := client.NewClient(client.WithClientRequestTimeout(10*time.Second))
-```
-
-Call-site timeout:
-
-```go
+// per-call
 ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 defer cancel()
+resp, err := svc.Greet(ctx, req)
 ```
 
-## Filter Not Found or Filter Panic
+## Filter not found / filter panic
 
-Check:
+**Cause**: Filter imported but `init()` not registered, or name mismatch between `extension.SetFilter` and `WithFilter`.
 
-- The filter package is imported with `_ "path/to/filter"`.
-- `extension.SetFilter("name", ...)` matches `server.WithFilter("name")`, `client.WithFilter("name")`, or YAML config.
-- If using built-ins in examples, `_ "dubbo.apache.org/dubbo-go/v3/imports"` is present.
-- Panic is not from filter order or nil attachment assumptions.
+Checklist:
+- [ ] Blank import present? e.g. `_ "dubbo.apache.org/dubbo-go/v3/filter/token"` or `_ "github.com/yourorg/yourapp/filter/myfilter"`
+- [ ] String passed to `server.WithFilter("xxx")` / `client.WithFilter("xxx")` matches the name in `extension.SetFilter("xxx", ...)`?
+- [ ] Built-ins not pulled in? Use `_ "dubbo.apache.org/dubbo-go/v3/imports"` during development to auto-import all built-ins.
 
-## Provider Starts Then Exits
+## Provider starts but immediately exits
 
-`srv.Serve()` is blocking and should not be launched in a goroutine unless something else blocks the process.
+**Cause**: Missing blocking call or wrong shutdown setup.
 
 ```go
-if err := srv.Serve(); err != nil {
-    logger.Fatalf("failed to serve: %v", err)
-}
+// Correct: blocking
+if err := srv.Serve(); err != nil { panic(err) }
+
+// Wrong: non-blocking, process exits immediately
+go srv.Serve()
 ```
 
-## OpenAPI 404 or Empty Spec
+For graceful shutdown:
+```go
+import _ "dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
+```
 
-Check:
+## OpenAPI 404 / empty spec
 
-- OpenAPI was enabled through `triple.WithOpenAPI(triple.OpenAPIEnable(), ...)`.
-- Service was registered after OpenAPI-enabled Triple protocol was configured.
-- Correct path is used. Defaults include:
-  - `/dubbo/openapi/openapi.json`
-  - `/dubbo/openapi/openapi.yaml`
-  - `/dubbo/openapi/api-docs/default.json`
-  - `/dubbo/openapi/swagger-ui`
-  - `/dubbo/openapi/redoc`
-- Group-specific services use `server.WithOpenAPIGroup("group")` and can be requested with `/dubbo/openapi/api-docs/<group>.json`.
+Triple-only feature. Checklist:
+- [ ] `triple.OpenAPIEnable(true)` set in the protocol options?
+- [ ] Hitting the right route? Default is `/dubbo/openapi/openapi.json`. See `triple.OpenAPIPath(...)` to customize.
+- [ ] Visiting the right port? OpenAPI lives on the Triple port, not a separate one.
 
-## Attached HTTP Handler Errors
+## AttachHTTPHandler errors
 
-`srv.AttachHTTPHandler(handler)` rules:
+Checklist:
+- [ ] Protocol is Triple? Triple is the only protocol that hosts plain HTTP handlers.
+- [ ] Called *before* `srv.Serve()`?
+- [ ] Path conflicts with the Triple-reserved namespace (`/dubbo/...`)?
 
-- Handler must not be nil.
-- Attach before `Serve`.
-- Only one root handler can be attached.
-- At least one Triple protocol must be configured.
-- Triple protocol needs an explicit port.
+## Graceful shutdown
 
-Use a mux for multiple HTTP subroutes.
+Checklist:
+- [ ] `_ "dubbo.apache.org/dubbo-go/v3/graceful_shutdown"` blank-imported?
+- [ ] Shutdown timeout long enough for in-flight calls to drain?
+- [ ] If running behind Kubernetes: container `terminationGracePeriodSeconds` longer than dubbo-go's shutdown timeout?
 
-## Graceful Shutdown Issues
-
-Current shutdown config includes total timeout, step timeout, notify timeout, consumer update wait time, offline request window timeout, internal signal handling, and closing invoker expiry.
-
-Check:
-
-- Graceful shutdown filters are imported or included through `_ "dubbo.apache.org/dubbo-go/v3/imports"`.
-- Shutdown config is passed through `dubbo.NewInstance`, `client.WithClientShutdown`, or root YAML.
-- Long-running calls fit within `step-timeout` and `timeout`.
-- `internal-signal` is disabled only if the application handles OS signals itself.
-
-## Logs
+## Reading dubbo-go logs
 
 Enable debug logging:
 
 ```go
+import "dubbo.apache.org/dubbo-go/v3/logger"
+
 ins, _ := dubbo.NewInstance(
-    dubbo.WithLogger(
-        logger.WithZap(),
-        logger.WithLevel("debug"),
-        logger.WithFormat("text"),
-    ),
+    dubbo.WithLogger(logger.WithLevel("debug")),
 )
 ```
 
-Trace integration can inject trace IDs into logs when OpenTelemetry tracing is configured:
+Inject trace IDs into logs (when OpenTelemetry tracing is configured):
 
 ```go
 dubbo.WithLogger(logger.WithTraceIntegration(true))
 ```
 
+Key log lines:
+- `Registering service: <interface>` — service registration starting
+- `A provider service ... was registered successfully` — provider ready
+- `export <interface> service failed` — registration error
+- `No provider available` / `no route` — consumer lookup failed
+
 ## Related Skills
 
-- `dubbo-go-extensions` - when a missing/registered SPI is the root cause (filter, LB, registry not found)
-- `dubbo-go-java-interop` - when the symptom is Hessian2 decode failure or cross-language discovery
-- `dubbo-go-guide` - for the conceptual map (Instance / Server / Client / Protocol / Registry / Filter)
-- `dubbo-go-development` - when the issue is reproducible only inside the `apache/dubbo-go` repo and may need a fix or test there
+- `dubbo-go-extensions` — when a missing/registered SPI is the root cause
+- `dubbo-go-java-interop` — for Hessian2 decode failures and cross-language discovery
+- `dubbo-go-guide` — for the conceptual map (Instance / Server / Client / Protocol / Registry / Filter)

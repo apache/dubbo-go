@@ -56,4 +56,4 @@ Restart Codex after updating.
 
 ## Usage
 
-The installed skills cover repository development, scaffolding, extensions, Java interoperability, debugging, guidance, and migration for dubbo-go.
+The installed skills cover scaffolding, custom SPI extensions, Java interoperability, runtime debugging, conceptual guidance, and migration for dubbo-go v3 — plus a contributor-focused skill for modifying the `apache/dubbo-go` repository itself.

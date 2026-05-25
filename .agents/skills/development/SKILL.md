@@ -1,6 +1,6 @@
 ---
 name: dubbo-go-development
-description: Use when modifying, reviewing, testing, debugging, or documenting the apache/dubbo-go repository itself, including Go code, generated code, config structs, tools, CI, tests, or repository-local agent skills.
+description: Use when modifying, reviewing, testing, or debugging the apache/dubbo-go repository itself - including framework Go code, generated stubs, config structs, tools, CI, tests, or repository-local agent skills. Not for application-side scaffolding.
 ---
 
 <!--
@@ -20,123 +20,85 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
+# Contributing to apache/dubbo-go
 
-# dubbo-go Repository Development
+This skill is for working **inside** the dubbo-go repository, not for using the framework from an application. For app-side work, use `dubbo-go-scaffolding`.
 
-## Overview
-
-Working inside `apache/dubbo-go` itself, not just using the framework from an application. Treat package boundaries, public APIs, and generated files as load-bearing - break them only with explicit user intent.
-
-## When to Use
-
-- Editing files under `apache/dubbo-go` (`client/`, `server/`, `protocol/`, `registry/`, `cluster/`, `filter/`, `metadata/`, `tools/`, etc.)
-- Adding or updating unit tests, mocks, or fixtures inside this repo
-- Touching `Makefile`, CI config, generated Protobuf/Triple stubs, or `tools/imports-formatter`
-- Modifying `.agents/skills/*` documentation
-
-For application-side changes, use `dubbo-go-scaffolding`. For runtime failures, use `dubbo-go-debugging`.
-
-## Current Branch Facts
+## Branch Facts
 
 - Module path: `dubbo.apache.org/dubbo-go/v3`
-- Go version in `go.mod`: `1.25.0`
-- Makefile test command uses `GOTOOLCHAIN=go1.25.0+auto`
-- CI still runs `make check-fmt`, `make test`, and `make lint`
-- Import style is enforced by `tools/imports-formatter`
-- `make fmt` also runs the Go modernize analyzer to replace eligible `interface{}` with `any`
+- Default branch: `main`
+- `go.mod` Go version: `1.25.0`
+- Toolchain: `GOTOOLCHAIN=go1.25.0+auto` (referenced by the Makefile)
+- Import-block format is enforced by `tools/imports-formatter`
+- `make fmt` also runs the Go `modernize` analyzer to replace eligible `interface{}` with `any`
 
-## Workflow
+## Validation
 
-1. Read the owning package and nearby tests before editing.
-2. Keep changes scoped to the owning module boundary.
-3. Prefer current code API patterns over old YAML/config globals for new examples.
-4. Preserve compatibility in public APIs unless the user explicitly asks for a breaking change.
-5. Add or update focused tests for behavior changes.
-6. Run the smallest meaningful validation first, then broader commands when risk is higher.
-7. Summarize changed files, behavior, and validation results.
-
-## Important Package Boundaries
-
-- `dubbo.go`, `options.go`, `instance_options_init.go`: instance-level option initialization and root config bridging
-- `client/`: reference options, consumer URL construction, invoker creation
-- `server/`: provider options, service registration, `AttachHTTPHandler`, service metadata
-- `protocol/base`, `protocol/result`, `protocol/invocation`: core invocation interfaces
-- `protocol/triple`: main protocol implementation, reflection, HTTP/3, CORS, OpenAPI, attached HTTP hosting
-- `registry/`: registry interfaces, service discovery, application-level mapping
-- `metadata/`: metadata report and service name mapping
-- `cluster/`: cluster strategies, directory, load balance, router chain
-- `filter/`: provider/consumer filters; most runtime interception belongs here
-- `config/`, `global/`, `config_center/`: YAML/config models and dynamic config loading
-- `graceful_shutdown/`: shutdown runtime state and options
-- `logger/`, `metrics/`, `otel/`: observability
-- `tools/`: CLI, schema, generators, imports formatter, variadic RPC scanner
-
-## Current Implementation Notes
-
-- Config loading uses koanf. Do not introduce viper-based assumptions into new code.
-- Triple config now includes CORS, HTTP/3, and OpenAPI sections.
-- `server.AttachHTTPHandler` hosts one existing `http.Handler` on an explicit Triple port before `Serve`.
-- Graceful shutdown has separate total timeout, step timeout, notify timeout, consumer update wait time, offline request window, and closing invoker expiry.
-- Application-level service discovery may require metadata mapping or explicit `client.WithProvidedBy`.
-- Registry config can choose service/interface/all registration through registry options.
-- Router config supports static injection for routers that implement `router.StaticConfigSetter`.
-- New extension code should import `protocol/base` and `protocol/result`, not old aliases.
-
-## Validation Commands
-
-Use the command that matches the scope.
+Pick the smallest scope that covers the change:
 
 ```bash
-# format repository code
-make fmt
-
-# check formatting exactly like CI
-make check-fmt
+make fmt              # format the tree
+make check-fmt        # exactly what CI runs
+make lint             # golangci-lint
+make test             # full suite + dubbogo-cli submodule
+make rpc-contract-check  # warn on exported variadic RPC contracts
 
 # targeted package tests
 GOTOOLCHAIN=go1.25.0+auto go test ./protocol/triple/...
 GOTOOLCHAIN=go1.25.0+auto go test ./server/...
-
-# full repository tests plus dubbogo-cli submodule tests
-make test
-
-# lint
-make lint
-
-# warn about exported variadic RPC contracts
-make rpc-contract-check
 ```
 
-If only `.agents` documentation changes, validate skill metadata and adapters instead of running the Go suite.
+For `.agents/` doc-only changes, skip the Go suite and validate the skill frontmatter and adapter (`.agents/.opencode/plugins/dubbo-go-agent-skills.js`) instead.
+
+## Package Boundaries
+
+| Path | Scope |
+|---|---|
+| `dubbo.go`, `options.go`, `instance_options_init.go` | Instance-level options and root config bridging |
+| `client/` | Reference options, consumer URL, invoker creation |
+| `server/` | Provider options, service registration, `AttachHTTPHandler` |
+| `protocol/base`, `protocol/result`, `protocol/invocation` | Core invocation interfaces |
+| `protocol/triple` | Triple impl: HTTP/2, HTTP/3, CORS, OpenAPI, reflection, attached HTTP |
+| `registry/`, `metadata/` | Registry, service discovery, app-to-interface mapping |
+| `cluster/` | Cluster strategies, directory, load balance, router chain |
+| `filter/` | Provider/consumer filters |
+| `config/`, `global/`, `config_center/` | YAML/koanf config models, dynamic config loading |
+| `graceful_shutdown/` | Shutdown timeouts and lifecycle |
+| `logger/`, `metrics/`, `otel/` | Observability |
+| `tools/` | CLI, schema, generators, imports formatter, RPC contract scanner |
+
+## Current Implementation Notes
+
+- Config loading uses **koanf**. Do not introduce viper-style assumptions in new code.
+- Triple config now includes CORS, HTTP/3, and OpenAPI sub-options.
+- `server.AttachHTTPHandler` hosts one `http.Handler` on an explicit Triple port and must be called before `Serve`.
+- Graceful shutdown has separate total / step / notify / consumer-update / offline-request / closing-invoker timeouts.
+- Application-level discovery may need metadata mapping or explicit `client.WithProvidedBy`.
+- Registry config can choose service / interface / all registration via registry options.
+- Routers implementing `router.StaticConfigSetter` accept static injection.
+- New code should import `protocol/base` and `protocol/result` directly, not the older aliases.
 
 ## Generated and Tooling Files
 
-- Do not hand-edit generated Protobuf or Triple files unless the generator source is also in scope.
-- For user services, generate with `protoc-gen-go` and `protoc-gen-go-triple/v3`.
-- For OpenAPI generation, use runtime Triple OpenAPI or `tools/protoc-gen-triple-openapi` depending on the task.
-- `tools/dubbogo-cli` has its own module and tests; run tests from that directory when editing it.
+- Do not hand-edit generated Protobuf / Triple files unless the generator source is also in scope.
+- User-side stubs come from `protoc-gen-go` and `github.com/dubbogo/protoc-gen-go-triple/v3`.
+- For OpenAPI: runtime Triple OpenAPI or `tools/protoc-gen-triple-openapi`, depending on task.
+- `tools/dubbogo-cli` has its own module — run tests from that directory when editing it.
 
-## Do Not
+## Red Flags
 
-- Do not remove tests to make validation pass.
-- Do not change public option names casually.
-- Do not flatten package boundaries with unrelated refactors.
-- Do not overwrite generated files without explaining the generator source.
-- Do not introduce new dependencies unless the existing packages cannot reasonably solve the problem.
+Stop and surface the tradeoff before doing any of these:
 
-## Red Flags - Stop and Reconsider
-
-- About to delete or skip a failing test to "unblock" CI
-- About to rename or remove an exported option/function in `client/`, `server/`, `protocol/`, or `registry/` without a migration note
-- About to bypass `tools/imports-formatter` by hand-editing import groupings
-- About to replace koanf-based config loading with a viper-style assumption
-- About to `--no-verify` a commit, or skip `make check-fmt` / `make lint`
-- About to introduce a third-party dependency to do something `gost`, `koanf`, or stdlib already covers
-
-If any of these fire, stop and surface the tradeoff to the user before proceeding.
+- Removing or skipping a failing test to "unblock" CI
+- Renaming or removing an exported option/function in `client/`, `server/`, `protocol/`, or `registry/` without a migration note
+- Bypassing `tools/imports-formatter` with hand-edited import groupings
+- Replacing koanf-based config with a different config library
+- `--no-verify` on a commit, or skipping `make check-fmt` / `make lint`
+- Introducing a third-party dependency for something `gost`, `koanf`, or stdlib already covers
 
 ## Related Skills
 
-- `dubbo-go-guide` - conceptual map of packages, options, and current capabilities
-- `dubbo-go-extensions` - when the work is adding or fixing an SPI registration in this repo
-- `dubbo-go-debugging` - when reproducing a user-reported failure to find the fix point
+- `dubbo-go-guide` — conceptual map of packages and options
+- `dubbo-go-extensions` — when adding or fixing an SPI in this repo
+- `dubbo-go-debugging` — when reproducing a user-reported failure

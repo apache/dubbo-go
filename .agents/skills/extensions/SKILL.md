@@ -1,6 +1,6 @@
 ---
 name: dubbo-go-extensions
-description: Use when implementing or explaining dubbo-go extension points such as filters, load balancers, registries, protocols, routers, loggers, config centers, metrics, tracing, or custom SPI integration.
+description: Guides writing custom dubbo-go v3 extensions — Filter, LoadBalance, Registry, Protocol, Router, Logger, ConfigCenter — through the SPI pattern. Use when the user asks how to write a filter, custom interceptor, custom load balancer, plug in a new registry, or hook into dubbo-go's extension points.
 ---
 
 <!--
@@ -20,45 +20,38 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-
 # Writing dubbo-go Extensions
 
-## Overview
+dubbo-go exposes nearly every runtime behavior through a uniform SPI pattern:
 
-Every dubbo-go extension follows the same four-step pattern: implement the interface, register a factory in `init()` through `dubbo.apache.org/dubbo-go/v3/common/extension`, blank-import the package, then activate by name. The string passed to `extension.SetXxx("name", ...)` is the contract - code-API options and YAML must use the exact same name.
+1. Implement an interface
+2. Call `extension.SetXxx(name, factory)` in an `init()`
+3. Blank-import the package so `init()` runs
+4. Enable the extension by name at the call site (`server.WithFilter`, `client.WithFilter`, etc.)
 
-## When to Use
+The extension point you pick depends on **what you want to intercept**:
 
-- Adding a custom Filter, LoadBalance, Router, Registry, Protocol, ConfigCenter, or Logger backend
-- Wiring an existing SPI into an application via blank import
-- Diagnosing "filter not found", "loadbalance not found", or similar registration errors
-
-## When NOT to Use
-
-- Built-in filters/load balancers/routers already cover the use case (prefer config over code)
-- The user only needs canary/tag/condition routing - use static or dynamic router config from `dubbo-go-guide`
-- The change is application boilerplate - use `dubbo-go-scaffolding`
-
-## Pick the Extension Point
-
-| Need | Extension point | Register with |
+| You want to... | Extension point | `extension.Set*` fn |
 |---|---|---|
-| Intercept RPC calls | `filter.Filter` | `extension.SetFilter` |
-| Choose one provider | `loadbalance.LoadBalance` | `extension.SetLoadbalance` |
-| Filter provider lists | `router.PriorityRouterFactory` | `extension.SetRouterFactory` |
-| Add service discovery backend | `registry.Registry` | `extension.SetRegistry` |
-| Add wire protocol | `base.Protocol` | `extension.SetProtocol` |
-| Add config center | `config_center.DynamicConfigurationFactory` | `extension.SetConfigCenterFactory` |
-| Add logger backend | `logger.Logger` | `extension.SetLogger` |
+| Intercept every RPC call (auth, logging, metrics) | Filter | `SetFilter` |
+| Choose which provider instance to call | LoadBalance | `SetLoadbalance` |
+| Prune the provider list before LB (canary, A/B) | Router | `SetRouterFactory` (rules usually pushed via config center) |
+| Plug in a new service-discovery backend | Registry | `SetRegistry` |
+| Add a new wire protocol | Protocol | `SetProtocol` |
+| Replace the logger backend | Logger | `SetLogger` |
 
-The name string is the contract. The string in `SetXxx("name", ...)` must match the string used in code API or YAML.
+## Filter (the 90% case)
 
-## Filter
+Filters run on every RPC. They're the right extension point for auth, token injection, metrics, tracing, rate limiting, and request/response logging.
 
-Use filters for auth, token injection, tracing, metrics, rate limiting, logging, and graceful shutdown behavior.
+**Package layout**:
+```
+yourapp/filter/myfilter/myfilter.go
+```
 
+**myfilter.go**:
 ```go
-package timing
+package myfilter
 
 import (
     "context"
@@ -66,14 +59,12 @@ import (
 )
 
 import (
-    "github.com/dubbogo/gost/log/logger"
-)
-
-import (
     "dubbo.apache.org/dubbo-go/v3/common/extension"
     "dubbo.apache.org/dubbo-go/v3/filter"
     "dubbo.apache.org/dubbo-go/v3/protocol/base"
     "dubbo.apache.org/dubbo-go/v3/protocol/result"
+
+    "github.com/dubbogo/gost/log/logger"
 )
 
 func init() {
@@ -94,104 +85,92 @@ func (f *timingFilter) OnResponse(ctx context.Context, res result.Result, invoke
 }
 ```
 
-Activate:
-
+**Activate in main.go**:
 ```go
-import _ "github.com/yourorg/yourapp/filter/timing"
+import _ "github.com/yourorg/yourapp/filter/myfilter" // triggers init()
 
-_ = pb.RegisterGreetServiceHandler(srv, impl, server.WithFilter("timing"))
+// Server side, per service
+pb.RegisterGreetServiceHandler(srv, impl, server.WithFilter("timing"))
+
+// Client side, per reference
 svc, _ := pb.NewGreetService(cli, client.WithFilter("timing"))
+
+// Or globally on the server/client:
+//   server.WithServerFilter("timing")
+//   client.WithClientFilter("timing")
 ```
 
-Server-wide and client-wide defaults also exist:
+**Chain multiple filters** with comma separation: `server.WithFilter("timing,auth")`. Filters run in order on the way in, reverse order on `OnResponse`.
 
+**Modify attachments** (e.g. add a request ID) in `Invoke` via `inv.SetAttachment(key, val)`; read on the other side with `inv.Attachment(key)`.
+
+**Short-circuit a call** by returning a result without invoking the next link:
 ```go
-server.NewServer(server.WithServerFilter("timing"))
-client.NewClient(client.WithClientFilter("timing"))
+func (f *authFilter) Invoke(ctx context.Context, invoker base.Invoker, inv base.Invocation) result.Result {
+    if !isAuthorized(inv) {
+        return &result.RPCResult{Err: errors.New("unauthorized")}
+    }
+    return invoker.Invoke(ctx, inv)
+}
 ```
 
-Multiple filters use comma-separated names, for example `server.WithFilter("timing,auth")`.
+See [filter/custom](https://github.com/apache/dubbo-go-samples/tree/main/filter/custom) for the canonical example.
 
 ## LoadBalance
 
-Implement this interface:
+Choose one provider out of a list. Built-ins: Random (default), RoundRobin, LeastActive, ConsistentHash, P2C.
+
+Write a custom one only when the built-ins do not cover your selection rule (e.g. pick by request header, pick by tenant ID).
 
 ```go
-type LoadBalance interface {
-    Select([]base.Invoker, base.Invocation) base.Invoker
-}
-```
+package affinityLB
 
-Example:
+import (
+    "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
+    "dubbo.apache.org/dubbo-go/v3/common/extension"
+    "dubbo.apache.org/dubbo-go/v3/protocol/base"
+)
 
-```go
 func init() {
     extension.SetLoadbalance("tenant-affinity", func() loadbalance.LoadBalance {
-        return &tenantAffinity{}
+        return &tenantAffinityLB{}
     })
 }
 
-type tenantAffinity struct{}
+type tenantAffinityLB struct{}
 
-func (lb *tenantAffinity) Select(invokers []base.Invoker, inv base.Invocation) base.Invoker {
+func (lb *tenantAffinityLB) Select(invokers []base.Invoker, inv base.Invocation) base.Invoker {
     tenant := inv.Attachment("tenant-id")
     for _, iv := range invokers {
         if iv.GetURL().GetParam("tenant", "") == tenant {
             return iv
         }
     }
-    if len(invokers) == 0 {
-        return nil
-    }
     return invokers[0]
 }
 ```
 
-Activate per reference or client:
-
+Activate per reference:
 ```go
 svc, _ := pb.NewGreetService(cli, client.WithLoadBalance("tenant-affinity"))
+```
+
+Or as the client default:
+```go
 cli, _ := client.NewClient(client.WithClientLoadBalance("tenant-affinity"))
 ```
 
-Built-ins include Random, RoundRobin, LeastActive, ConsistentHashing, P2C, and adaptive strategies.
+## Registry (new service-discovery backend)
 
-## Router
-
-Routers run before load balancing and can prune the invoker list. Current built-ins include condition, tag, script, affinity, and Polaris routers.
-
-Custom routers are uncommon. If the user only wants canary, tags, condition rules, or traffic split, prefer built-in routers and static/dynamic router config.
-
-Custom router shape:
+Only needed when the built-in set (Nacos, ZooKeeper, etcd, Polaris, Kubernetes) does not cover your platform.
 
 ```go
-type PriorityRouterFactory interface {
-    NewPriorityRouter(url *common.URL) (router.PriorityRouter, error)
-}
+import (
+    "dubbo.apache.org/dubbo-go/v3/common"
+    "dubbo.apache.org/dubbo-go/v3/common/extension"
+    "dubbo.apache.org/dubbo-go/v3/registry"
+)
 
-type PriorityRouter interface {
-    Route([]base.Invoker, *common.URL, base.Invocation) []base.Invoker
-    URL() *common.URL
-    Priority() int64
-    Notify([]base.Invoker)
-}
-```
-
-Register with:
-
-```go
-extension.SetRouterFactory("my-router", func() router.PriorityRouterFactory {
-    return &myFactory{}
-})
-```
-
-Routers that accept static config can also implement `router.StaticConfigSetter`.
-
-## Registry
-
-Only write a registry if Nacos, ZooKeeper, etcd v3, or Polaris do not fit.
-
-```go
 func init() {
     extension.SetRegistry("myregistry", func(url *common.URL) (registry.Registry, error) {
         return newMyRegistry(url)
@@ -199,71 +178,44 @@ func init() {
 }
 ```
 
-Implement `registry.Registry`: `Register`, `UnRegister`, `Subscribe`, `UnSubscribe`, and `LoadSubscribeInstances`. Study `registry/nacos`, `registry/zookeeper`, or `registry/etcdv3` before creating a new backend.
+Implementing the full `registry.Registry` interface is a non-trivial undertaking — read `registry/nacos` or `registry/zookeeper` for reference.
 
-Activate:
-
+Enable:
 ```go
-dubbo.WithRegistry(
-    registry.WithRegistry("myregistry"),
-    registry.WithAddress("127.0.0.1:1234"),
-)
+dubbo.WithRegistry(registry.WithRegistry("myregistry"), registry.WithAddress("..."))
 ```
 
-Registry options now also control metadata/config-center use and registration mode:
+## Router (traffic-shaping)
 
-```go
-registry.WithRegisterService()
-registry.WithRegisterInterface()
-registry.WithRegisterServiceAndInterface()
-registry.WithoutUseAsMetaReport()
-registry.WithoutUseAsConfigCenter()
-```
+Routers prune the provider list before the load balancer runs. Built-ins: tag, condition, script.
 
-## Protocol
+**Custom routers are uncommon.** The shipped routers read rules from the config center at runtime, so what users usually want is *rule authoring*, not a new router. See:
+- [router/tag](https://github.com/apache/dubbo-go-samples/tree/main/router/tag) — tag-based canary
+- [router/condition](https://github.com/apache/dubbo-go-samples/tree/main/router/condition) — predicate-based
+- [router/script](https://github.com/apache/dubbo-go-samples/tree/main/router/script) — scripted rules
 
-Most users should not implement a protocol. Use Triple, Dubbo, JSONRPC, REST, or gRPC-compatible Triple unless there is a strong reason.
+If you genuinely need a new routing algorithm, implement `router.PriorityRouter` and register via `extension.SetRouterFactory`.
 
-Protocol interface:
+## Protocol (new wire protocol)
 
-```go
-type Protocol interface {
-    Export(base.Invoker) base.Exporter
-    Refer(*common.URL) base.Invoker
-    Destroy()
-}
-```
-
-HTTP-backed protocols can optionally implement `base.HTTPHandlerHost` to support `server.AttachHTTPHandler`.
-
-## Config Center and Logger
-
-Config centers use `extension.SetConfigCenterFactory` or `extension.SetConfigCenter`. Existing backends include file, Nacos, ZooKeeper, and Apollo.
-
-Logger backends use:
-
-```go
-extension.SetLogger("driver", func(url *common.URL) (logger.Logger, error) {
-    return newLogger(url)
-})
-```
-
-Current logger config supports driver, level, format, appender, file rolling config, and trace integration.
+Rarely needed. Implement `base.Protocol`: `Export(invoker)`, `Refer(url)`, `Destroy()`. Register with `extension.SetProtocol(name, factory)`. Most users should stick with Triple, Dubbo, JSONRPC, or REST.
 
 ## Troubleshooting
 
-| Symptom | Check |
+| Symptom | Likely cause |
 |---|---|
-| `filter not found` | Missing blank import or name mismatch |
-| Filter never runs | The package containing `init()` is not imported |
-| Custom LB ignored | Use `client.WithLoadBalance` or `client.WithClientLoadBalance` with the registered name |
-| Router rule ignored | Confirm router factory name and whether rule is static, dynamic, service-scope, or application-scope |
-| Registry not selected | Check registry ID and `WithRegistryIDs` |
-| Metadata mapping missing | Use metadata report or set `client.WithProvidedBy` |
-| Attached HTTP handler fails | Only Triple supports hosting it; attach before `Serve` and use an explicit port |
+| `filter not found` at startup | Blank import missing, or string in `WithFilter("x")` does not match `SetFilter("x", ...)` |
+| Filter registered but never called | `init()` lives in a file that is never imported — check the blank-import path |
+| LoadBalance not used | Built-in LB took precedence; ensure the name in `WithLoadBalance(...)` matches your registered name |
+| Filter modifies attachment but not visible on the other side | Triple attachments travel as HTTP/2 headers; reserved header names may be dropped |
+| Custom registry not picked up | `extension.SetRegistry("name", ...)` must match `registry.WithRegistry("name")` exactly |
+
+## Key Rule of Thumb
+
+The **name string is the contract**. Whatever you pass to `extension.SetFilter("timing", ...)` must be the exact string passed to `server.WithFilter("timing")` or `client.WithFilter("timing")`. Typos here produce silent failures — the extension simply does not run.
 
 ## Related Skills
 
-- `dubbo-go-guide` - when deciding whether a built-in already covers the need before writing custom SPI
-- `dubbo-go-scaffolding` - when the user also needs the surrounding provider/consumer skeleton
-- `dubbo-go-debugging` - when an SPI is registered but does not run (missing blank import, name mismatch)
+- `dubbo-go-guide` — when deciding whether a built-in already covers the need
+- `dubbo-go-scaffolding` — when the user also needs the surrounding provider/consumer skeleton
+- `dubbo-go-debugging` — when an SPI is registered but does not run

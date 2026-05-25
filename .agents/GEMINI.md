@@ -15,10 +15,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-@./skills/development/SKILL.md
 @./skills/scaffolding/SKILL.md
 @./skills/extensions/SKILL.md
 @./skills/java-interop/SKILL.md
 @./skills/debug/SKILL.md
 @./skills/guide/SKILL.md
 @./skills/migrate/SKILL.md
+@./skills/development/SKILL.md

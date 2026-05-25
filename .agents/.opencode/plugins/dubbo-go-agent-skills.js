@@ -22,7 +22,7 @@ import { fileURLToPath } from 'url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pluginRoot = join(__dirname, '..', '..');
 
-const skillNames = ['development', 'scaffolding', 'extensions', 'java-interop', 'debug', 'guide', 'migrate'];
+const skillNames = ['scaffolding', 'extensions', 'java-interop', 'debug', 'guide', 'migrate', 'development'];
 
 export const skills = skillNames.map(name => {
   const skillPath = join(pluginRoot, 'skills', name, 'SKILL.md');

@@ -2,7 +2,7 @@
   "name": "dubbo-go-agent-skills",
   "version": "0.2.0",
   "type": "module",
-  "description": "Agent skills bundled with Apache dubbo-go for repository development, v3 scaffolding, extensions, Java interop, debugging, guidance, and migration.",
+  "description": "Agent skills bundled with Apache dubbo-go for v3 framework users — scaffolding, extensions, Java interop, debugging, guidance, migration, plus contributor support.",
   "author": "Apache Dubbo contributors",
   "license": "Apache-2.0",
   "repository": {
@@ -10,6 +10,6 @@
     "url": "https://github.com/apache/dubbo-go.git",
     "directory": ".agents"
   },
-  "homepage": "https://github.com/apache/dubbo-go/tree/develop/.agents",
+  "homepage": "https://github.com/apache/dubbo-go/tree/main/.agents",
   "main": ".opencode/plugins/dubbo-go-agent-skills.js"
 }

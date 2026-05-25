@@ -1,6 +1,6 @@
 ---
 name: dubbo-go-migration
-description: Use when migrating to dubbo-go v3 from gRPC-Go, Spring Cloud, Gin, plain HTTP, older dubbo-go versions, YAML-based apps, Java Dubbo, or legacy Hessian2 services.
+description: Guides migration to dubbo-go v3 from gRPC-Go, Spring Cloud, Gin / plain HTTP, dubbo-go v1/v2, YAML-heavy v3 apps, and Java-interface Hessian2 services. Use when the user asks how to migrate, port, or upgrade an existing service to dubbo-go v3.
 ---
 
 <!--
@@ -20,171 +20,154 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-
 # Migrating to dubbo-go
 
-## Overview
-
-Migration is mostly mechanical: the source framework decides the concept-mapping table, then dubbo-go v3 code-API patterns slot in. Triple + Protobuf is the default target; Dubbo + Hessian2 is reserved for Java-interface services without a `.proto`.
-
-## Source-System Decision Table
+First question: **where are you migrating from?**
 
 | User says | Jump to |
 |---|---|
 | "We're on gRPC-Go" | [From gRPC-Go](#from-grpc-go) |
-| "Spring Cloud / Java Dubbo" | [From Spring Cloud or Java Dubbo](#from-spring-cloud-or-java-dubbo) |
-| "Gin / chi / net/http" | [From Gin or Plain HTTP](#from-gin-or-plain-http) |
-| "Old dubbo-go v1/v2 or YAML-heavy v3" | [From dubbo-go v1/v2 or Old v3 YAML](#from-dubbo-go-v1v2-or-old-v3-yaml) |
-| "Java owns the contract, no proto" | [From Java-interface Hessian2](#from-java-interface-hessian2) |
+| "Spring Cloud / Java microservices" | [From Spring Cloud](#from-spring-cloud-java) |
+| "Gin / chi / net/http" | [From Gin or plain HTTP](#from-gin--plain-http) |
+| "dubbo-go v1 or v2" | [From dubbo-go v1/v2 → v3](#from-dubbo-go-v1v2--v3) |
+| "YAML-heavy v3 app" | [From YAML-heavy v3](#from-yaml-heavy-v3) |
 
-Use code API for new work and keep YAML only when preserving an existing deployment model.
+For Java-interface Hessian2 services, see `dubbo-go-java-interop`.
+
+Use the code API for new work; keep YAML only when preserving an existing deployment model.
 
 ## From gRPC-Go
 
-Concept mapping:
+**Concept mapping**
 
-| gRPC-Go | dubbo-go v3 |
+| gRPC-Go | dubbo-go |
 |---|---|
-| `grpc.NewServer()` | `server.NewServer()` |
-| `pb.RegisterXxxServer(srv, impl)` | `pb.RegisterXxxHandler(srv, impl)` |
-| `grpc.Dial` / `grpc.NewClient` | `client.NewClient()` + `pb.NewXxxService(cli)` |
-| Unary interceptor | Filter |
-| Service config / resolver | Registry + cluster + load balance |
-| Reflection | Triple reflection sample and OpenAPI support |
+| `grpc.NewServer()` | `server.NewServer()` (or `ins.NewServer()` with `dubbo.NewInstance`) |
+| `pb.RegisterXxxServer(srv, impl)` | `pb.RegisterXxxHandler(srv, impl)` (Triple) |
+| `grpc.Dial(addr)` | `client.NewClient()` → `pb.NewXxxService(cli)` |
+| `UnaryServerInterceptor` | Filter |
+| `grpc.WithUnaryInterceptor(...)` | `server.WithFilter("my-filter")` + blank import |
+| Service reflection | Built-in with Triple |
 
-Protobuf can usually be reused. Generate Triple bindings:
+**Proto file**: no changes needed. Triple is wire-compatible with gRPC.
 
-```bash
-go install github.com/dubbogo/protoc-gen-go-triple/v3@latest
-protoc --go_out=. --go_opt=paths=source_relative \
-  --go-triple_out=. --go-triple_opt=paths=source_relative \
-  proto/*.proto
-```
-
-Direct-mode consumer:
+**Key difference**: dubbo-go adds service discovery on top of gRPC. For direct connection, use direct mode — no registry needed.
 
 ```go
-cli, err := client.NewClient(
-    client.WithClientURL("127.0.0.1:20000"),
-)
-svc, err := pb.NewGreetService(cli)
+// gRPC-Go
+conn, _ := grpc.NewClient("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+client := pb.NewGreetClient(conn)
+
+// dubbo-go (direct mode)
+cli, _ := client.NewClient(client.WithClientURL("127.0.0.1:20000"))
+svc, _ := pb.NewGreetService(cli)
 ```
 
-Add a registry later with `dubbo.NewInstance` and `dubbo.WithRegistry`.
+See [rpc/grpc](https://github.com/apache/dubbo-go-samples/tree/main/rpc/grpc) and [direct](https://github.com/apache/dubbo-go-samples/tree/main/direct).
 
-## From Spring Cloud or Java Dubbo
+## From Spring Cloud (Java)
 
-Concept mapping:
+**Concept mapping**
 
-| Spring Cloud / Dubbo Java | dubbo-go v3 |
+| Spring Cloud | dubbo-go |
 |---|---|
-| Discovery client | `dubbo.WithRegistry(...)` |
-| Feign/Dubbo reference | generated `pb.NewXxxService(cli, ...)` |
-| Controller or Dubbo provider | `pb.RegisterXxxHandler(srv, impl, ...)` |
-| Hystrix / Sentinel | Hystrix or Sentinel filters |
-| Sleuth / tracing | OpenTelemetry integration |
-| Actuator health | `metrics/probe` sample |
-| Java interface + POJO | Dubbo protocol + Hessian2 |
+| `@EnableDiscoveryClient` | `dubbo.WithRegistry(registry.WithNacos(), registry.WithAddress(...))` |
+| `@FeignClient` | `client.NewClient()` + generated `pb.NewXxxService(cli)` |
+| `@RestController` | `pb.RegisterXxxHandler(srv, impl)` + Triple/REST |
+| Spring Cloud Gateway | Apache APISIX or direct |
+| Hystrix / Resilience4j | Hystrix filter / Sentinel filter |
+| Sleuth / Zipkin | OpenTelemetry filter |
+| Actuator `/health` | `metrics/probe` (`/live`, `/ready`) |
 
-Migration path:
+**Migration path**:
+1. Keep Java services running.
+2. Add dubbo-go providers for new Go services using Triple + Protobuf.
+3. Java consumers can call Go providers via Triple (wire-compatible).
+4. Migrate Java consumers to Go one by one.
 
-1. Keep existing Java services running.
-2. Use Triple + Protobuf for new Go services where possible.
-3. Use Dubbo + Hessian2 only when the Java side has no proto contract.
-4. Share registry and metadata mapping. If mapping is not available, use `client.WithProvidedBy`.
-5. During transition, use `registry.WithRegisterServiceAndInterface()` when both app-level and interface-level discovery are needed.
+See [java_interop](https://github.com/apache/dubbo-go-samples/tree/main/java_interop) and `dubbo-go-java-interop`.
 
-## From Gin or Plain HTTP
+## From Gin / plain HTTP
 
-dubbo-go is primarily an RPC and service governance framework, but current develop provides three practical migration options.
+**Concept mapping**
 
-Option A: keep HTTP externally, add dubbo-go internally.
+| Gin / HTTP | dubbo-go |
+|---|---|
+| `gin.Default()` + `r.POST(...)` | `server.NewServer()` + `pb.RegisterXxxHandler(...)` |
+| `http.Get(url)` / `http.Client` | `client.NewClient()` + `pb.NewXxxService(cli)` |
+| Gin middleware | Filter |
+| `r.Run(":8080")` | `srv.Serve()` |
+| Route handler func | Method on a service struct |
 
-- Gin/http handles public REST.
-- dubbo-go handles service-to-service RPC.
-- Run both in one process if lifecycle is clear.
+dubbo-go is an RPC framework, not an HTTP framework. Two coexistence options:
 
-Option B: attach existing HTTP routes to the Triple listener.
+**Option A — Keep Gin for HTTP, add dubbo-go for internal RPC**. No conflict; run both in the same process.
+
+**Option B — Mount the HTTP handler on the Triple port**:
 
 ```go
-mux := http.NewServeMux()
-mux.HandleFunc("/healthz", healthz)
-
-srv, _ := server.NewServer(
-    server.WithServerProtocol(
-        protocol.WithTriple(),
-        protocol.WithIp("127.0.0.1"),
-        protocol.WithPort(20000),
-    ),
-)
-_ = srv.AttachHTTPHandler(mux)
+srv.AttachHTTPHandler("/api", r) // r is your Gin router
 ```
 
-Rules: attach before `Serve`, attach one root handler, and use an explicit Triple port.
-
-Option C: move APIs to Protobuf + Triple and expose JSON-over-HTTP plus OpenAPI.
+**Option C — Use Triple's OpenAPI / REST mode** to expose RPC methods as HTTP/JSON:
 
 ```go
 server.WithServerProtocol(
-    protocol.WithPort(20000),
-    protocol.WithTriple(
-        triple.WithOpenAPI(triple.OpenAPIEnable()),
-    ),
+    protocol.WithTriple(triple.OpenAPIEnable(true)),
 )
 ```
 
-OpenAPI endpoints default to `/dubbo/openapi`.
+```bash
+# Triple supports JSON over HTTP/1.1 — call any method without a generated client
+curl -H "Content-Type: application/json" \
+     -d '{"name":"world"}' \
+     http://localhost:20000/greet.GreetService/Greet
+```
 
-## From dubbo-go v1/v2 or Old v3 YAML
+See [rpc/triple/openapi](https://github.com/apache/dubbo-go-samples/tree/main/rpc/triple/openapi).
 
-Important changes:
+## From dubbo-go v1/v2 → v3
 
-| Old style | Current v3 develop |
+**Breaking-change summary**
+
+| v1/v2 | v3 |
 |---|---|
-| Mostly YAML/config globals | Code API preferred |
-| `config.Load()` as main entry | `dubbo.NewInstance()` for new apps; `dubbo.Load()`/`config.Load()` for compatibility |
-| Interface-based Hessian2 default | Protobuf + Triple preferred |
-| Global provider/consumer service registration | Generated `RegisterXxxHandler` and `NewXxxService` helpers |
-| viper assumptions | koanf-based loading in current config path |
-| Older `protocol` aliases | Prefer `protocol/base` and `protocol/result` packages in new extension code |
+| `config.Load()` | `dubbo.NewInstance()` (code API, recommended) or `dubbo.Load()` (YAML, legacy) |
+| `hessian.RegisterPOJO()` + Java-interface | Protobuf + generated Triple stubs (recommended) |
+| `config.SetProviderService()` | `pb.RegisterGreetServiceHandler(srv, impl)` |
+| `config.ConsumerConfig.References` | `client.NewClient()` → `pb.NewGreetService(cli)` |
+| `getty` as default transport | Triple (HTTP/2) as default |
+| Interface-level discovery | Application-level discovery |
 
-Migration sequence:
+**Recommended path**: migrate to the code API. YAML via `dubbo.Load()` still works, but the YAML key structure is not guaranteed identical across versions — expect to rewrite `registries`, `protocols`, and service registration.
 
-1. Move service contracts to `.proto` when possible.
-2. Generate `*.pb.go` and `*.triple.go`.
-3. Replace global registration with generated server/client helpers.
-4. Move registry/protocol/application config to `dubbo.NewInstance`.
-5. Keep YAML only for externally managed config and test it with `config_yaml` patterns.
-6. Run `make rpc-contract-check` if exposed RPC methods use variadic parameters.
+`getty`-style v1/v2 Dubbo+Hessian2 services can keep working with `protocol.WithDubbo()` while interfaces are rebuilt as `.proto` for Triple. See `dubbo-go-java-interop` for the Hessian2 POJO bridge.
 
-## From Java-interface Hessian2
+## From YAML-heavy v3
 
-If Java owns the contract and there is no `.proto`, do not invent a partial proto. Mirror Java request/response POJOs in Go, implement `JavaClassName()`, register them with `dubbo-go-hessian2`, and use Dubbo protocol.
+You don't have to abandon YAML. `dubbo.Load()` is still supported. Migration to code API is incremental:
 
-See the Java interop skill for exact POJO and protocol rules.
+1. Move shared config (registries, protocols) into `dubbo.NewInstance(...)`.
+2. Replace `dubbo.Load()` with `ins.NewServer()` / `ins.NewClient()` per service.
+3. Keep YAML for environment-specific overrides via the config center.
+
+See [config_yaml](https://github.com/apache/dubbo-go-samples/tree/main/config_yaml).
 
 ## Validation
 
-For application migration:
-
 ```bash
 go mod tidy
+go build ./...
 go test ./...
 ```
 
-For changes inside the dubbo-go repository:
+## Reference
 
-```bash
-make fmt
-GOTOOLCHAIN=go1.25.0+auto go test ./...
-make rpc-contract-check
-```
-
-Use targeted package tests first when the migration touches only one area.
+Official guide: [dubbo-go v3 user manual](https://cn.dubbo.apache.org/zh-cn/overview/mannual/golang-sdk/) (also available in English on the same site).
 
 ## Related Skills
 
-- `dubbo-go-scaffolding` - for the target-side provider/consumer skeleton after the source-side mapping is decided
-- `dubbo-go-java-interop` - when the migration crosses the Java/Go boundary (Hessian2 POJO rules live there)
-- `dubbo-go-extensions` - when porting a custom filter/LB/registry from gRPC-Go interceptors or Spring Cloud beans
-- `dubbo-go-debugging` - when the migrated service starts but does not register, route, or decode
+- `dubbo-go-scaffolding` — for the target-side provider/consumer skeleton
+- `dubbo-go-java-interop` — when the migration crosses the Java/Go boundary
+- `dubbo-go-extensions` — when porting custom interceptors / filters
+- `dubbo-go-debugging` — when the migrated service starts but does not register, route, or decode

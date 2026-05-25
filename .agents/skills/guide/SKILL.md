@@ -1,6 +1,6 @@
 ---
 name: dubbo-go-guide
-description: Use when explaining dubbo-go concepts, architecture, current v3 APIs, protocols, registries, routers, filters, OpenAPI, graceful shutdown, observability, samples, or best practices.
+description: Explains dubbo-go v3 architecture, extension points, and best practices. Use when the user asks how dubbo-go works, what a concept means (Instance, Protocol, Registry, Filter, Cluster, LoadBalance, Router, OpenAPI, graceful shutdown), which sample to look at, or asks for best practices.
 ---
 
 <!--
@@ -20,199 +20,82 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-
 # Guiding dubbo-go Development
-
-## Overview
-
-Develop-branch map for dubbo-go v3: code API first, Triple as the default wire protocol, application-level discovery as the default registration mode. Reach for this skill when the user asks "how does X work" or "which sample should I follow"; switch to `dubbo-go-scaffolding` when generating an app, `dubbo-go-extensions` when adding an SPI, or `dubbo-go-debugging` when troubleshooting a runtime failure.
-
-## When to Use
-
-- Conceptual questions: instance/server/client/protocol/registry/cluster/router/filter
-- Choosing between Triple, Dubbo, JSONRPC, REST, gRPC-compatible Triple, HTTP/3
-- Pointing the user to the right `dubbo-go-samples` directory
-- Explaining OpenAPI, CORS, AttachHTTPHandler, graceful shutdown, observability defaults
-
-## Project Snapshot
-
-- Module: `dubbo.apache.org/dubbo-go/v3`
-- Go version in `go.mod`: `1.25.0`
-- Main entry points: `dubbo.NewInstance`, `server.NewServer`, `client.NewClient`
-- Preferred user style: code API
-- Legacy/compat style: YAML-driven `dubbo.Load()` / `config.Load()` still exists and now uses koanf-based loading
-- Preferred wire protocol: Triple
-- Important recent capabilities: Triple OpenAPI, HTTP/3, CORS, attached HTTP handlers, refined graceful shutdown, logger trace integration, router static config, `variadicrpccheck`
-
-## Repository Map
-
-- `client/`: consumer/reference options, URL processing, invoker construction
-- `server/`: provider/server options, service registration, `AttachHTTPHandler`
-- `protocol/`: protocol abstractions and implementations; `protocol/triple` is the primary path
-- `registry/`: registry and application-level service discovery implementations
-- `metadata/`: metadata report and service-to-application mapping
-- `cluster/`: cluster strategies, router chain, load balancing
-- `filter/`: provider and consumer filter implementations
-- `config/`, `global/`: YAML/config structs and runtime config models
-- `config_center/`: Nacos, ZooKeeper, Apollo, and file dynamic config
-- `graceful_shutdown/`: shutdown options and runtime state
-- `metrics/`, `otel/`, `logger/`: observability integrations
-- `tools/`: CLI, schema generator, Triple/OpenAPI generators, imports formatter, RPC contract scanner
 
 ## Core Concepts
 
-**Instance**: global application context. Use `dubbo.NewInstance` when sharing application, registry, protocol, logger, shutdown, metrics, tracing, TLS, or router settings across clients and servers.
+**Instance** — top-level entry point. `dubbo.NewInstance()` configures the application globally; create server and client from it.
 
-**Server**: owns provider-side config and service exports. Register generated Triple handlers with `pb.RegisterXxxHandler`.
+**Protocol** — how bytes travel on the wire. Triple is the default (HTTP/2, gRPC-compatible). Dubbo is for Java interop with Hessian2. JSONRPC and REST are also built-in.
 
-**Client**: owns consumer-side config. Create generated service clients with `pb.NewXxxService`.
+**Registry** — service discovery. Provider registers itself; consumer queries to find providers. Built-ins: Nacos, ZooKeeper, etcd, Polaris, Kubernetes.
 
-**Protocol**: wire transport. Triple is HTTP/2 and gRPC-compatible; Dubbo is for legacy Hessian2 interop; JSONRPC and REST also exist; HTTP/3 is experimental under Triple.
+**Filter** — interceptor chain around every RPC call, on both sides. Used for auth, metrics, tracing, rate limiting.
 
-**Registry**: service discovery. Built-ins include Nacos, ZooKeeper, etcd v3, and Polaris.
+**Cluster** — fault-tolerance strategy when calling a provider group. Failover (default), Failfast, Failsafe, Forking, Broadcast.
 
-**Metadata mapping**: application-level discovery needs a mapping from interface to provider application. If metadata mapping is unavailable, use `client.WithProvidedBy("provider-app")`.
+**LoadBalance** — selects one provider from the candidate list. Random (default), RoundRobin, LeastActive, ConsistentHash, P2C.
 
-**Filter**: interceptor chain around RPC calls. Filters run on provider and consumer paths and are used for auth, metrics, tracing, rate limiting, graceful shutdown, logging, and generic calls.
+**Router** — prunes the provider list before load balancing. Tag, condition, script. Rules typically come from the config center, not from custom code.
 
-**Cluster**: fault-tolerance strategy such as Failover, Failfast, Failsafe, Failback, Available, Broadcast, Forking, ZoneAware, and AdaptiveService.
+**MetadataReport / ConfigCenter** — application-level metadata storage and dynamic configuration. Same backend as the registry in most setups.
 
-**LoadBalance**: provider selection. Built-ins include Random, RoundRobin, LeastActive, ConsistentHashing, P2C, and adaptive strategies.
+## SPI Extension Pattern
 
-**Router**: filters providers before load balancing. Built-ins include tag, condition, script, affinity, and Polaris routers. Static router config can be supplied through client/root router options; dynamic rules can come from config centers.
-
-## Current API Patterns
-
-Direct server:
+Every dubbo-go extension follows the same shape:
 
 ```go
-srv, err := server.NewServer(
-    server.WithServerProtocol(
-        protocol.WithPort(20000),
-        protocol.WithTriple(),
-    ),
-)
+// 1. Implement the interface
+type myFilter struct{}
+func (f *myFilter) Invoke(ctx context.Context, invoker base.Invoker, inv base.Invocation) result.Result {
+    res := invoker.Invoke(ctx, inv)
+    return res
+}
+func (f *myFilter) OnResponse(ctx context.Context, res result.Result, invoker base.Invoker, inv base.Invocation) result.Result {
+    return res
+}
+
+// 2. Register in init()
+func init() {
+    extension.SetFilter("my-filter", func() filter.Filter { return &myFilter{} })
+}
+
+// 3. Activate with a blank import in main.go
+//    import _ "github.com/yourorg/yourapp/filter/myfilter"
+
+// 4. Enable per-service via the code API
+//    pb.RegisterGreetServiceHandler(srv, impl, server.WithFilter("my-filter"))
 ```
 
-Registry-backed instance:
+The same pattern applies to Protocol, Registry, LoadBalance, Router, ConfigCenter, MetadataReport, Logger.
 
-```go
-ins, err := dubbo.NewInstance(
-    dubbo.WithName("orders-provider"),
-    dubbo.WithRegistry(registry.WithNacos(), registry.WithAddress("127.0.0.1:8848")),
-    dubbo.WithProtocol(protocol.WithTriple(), protocol.WithPort(20000)),
-)
-```
-
-Reference options:
-
-```go
-svc, err := pb.NewOrderService(
-    cli,
-    client.WithInterface("shop.OrderService"),
-    client.WithProvidedBy("orders-provider"),
-    client.WithRequestTimeout(3*time.Second),
-)
-```
-
-Service options:
-
-```go
-err := pb.RegisterOrderServiceHandler(
-    srv,
-    impl,
-    server.WithInterface("shop.OrderService"),
-    server.WithGroup("beta"),
-    server.WithVersion("v2"),
-    server.WithOpenAPIGroup("orders-v2"),
-)
-```
-
-## Extension Pattern
-
-Most extension points follow:
-
-1. Implement the interface.
-2. Register a factory in `init()` through `common/extension`.
-3. Blank-import the package so `init()` runs.
-4. Activate by name through code API or config.
-
-Examples:
-
-- Filter: `extension.SetFilter("name", func() filter.Filter { ... })`
-- LoadBalance: `extension.SetLoadbalance("name", func() loadbalance.LoadBalance { ... })`
-- Registry: `extension.SetRegistry("name", func(*common.URL) (registry.Registry, error) { ... })`
-- Protocol: `extension.SetProtocol("name", func() base.Protocol { ... })`
-- Router: `extension.SetRouterFactory("name", func() router.PriorityRouterFactory { ... })`
-
-The string name is the contract. Keep registration and activation names identical.
-
-## Triple Extras
-
-OpenAPI:
-
-```go
-protocol.WithTriple(
-    triple.WithOpenAPI(
-        triple.OpenAPIEnable(),
-        triple.OpenAPIPath("/dubbo/openapi"),
-    ),
-)
-```
-
-CORS:
-
-```go
-protocol.WithTriple(
-    triple.WithCORS(
-        triple.CORSAllowOrigins("https://example.com"),
-        triple.CORSAllowMethods("POST", "GET", "OPTIONS"),
-    ),
-)
-```
-
-HTTP/3:
-
-```go
-protocol.WithTriple(triple.Http3Enable())
-```
-
-Attached HTTP handler:
-
-```go
-_ = srv.AttachHTTPHandler(mux)
-```
-
-Attach before `Serve`, use one root handler, and configure an explicit Triple port.
-
-## Samples
-
-See [samples-index.md](samples-index.md) for the current dubbo-go-samples map.
-
-Start with:
-
-- `helloworld`: minimal direct Triple
-- `direct`: direct URL connection
-- `registry/nacos`: Nacos service discovery
-- `rpc/triple/openapi`: runtime Triple OpenAPI
-- `http3`: experimental HTTP/3
-- `graceful_shutdown`: shutdown flow
-- `logger/trace-integration`: trace IDs in logs
+> Note: older samples still show `protocol.Invoker/Invocation/Result` aliases. They resolve to the same types in `protocol/base` and `protocol/result` — prefer the new packages in new code.
 
 ## Best Practices
 
-- Prefer Protobuf plus Triple for new services.
-- Use `_ "dubbo.apache.org/dubbo-go/v3/imports"` for examples and local demos; use selective blank imports in production when binary size matters.
-- Use code API for new code; keep YAML only for existing config-driven applications.
-- Use `client.WithProvidedBy` when application-level discovery cannot resolve interface-to-application mapping.
-- Do not assume viper APIs in config work; current loading is koanf-centered.
-- Run repository validation commands from the development skill before finishing code changes.
+- Use `_ "dubbo.apache.org/dubbo-go/v3/imports"` in development for convenience; switch to selective imports in production for smaller binaries.
+- Define Triple services with Protobuf for cross-language interop.
+- Configure via the code API: `dubbo.NewInstance(dubbo.WithRegistry(...), dubbo.WithProtocol(...))`. YAML via `dubbo.Load()` is the legacy path.
+- Enable graceful shutdown by blank-importing `_ "dubbo.apache.org/dubbo-go/v3/graceful_shutdown"`.
+- Use `client.WithProvidedBy` when application-level discovery cannot resolve which application owns the interface.
+- Apply per-reference timeouts: `client.WithRequestTimeout(...)` or a `context.WithTimeout` at the call site.
+
+## Triple-Only Capabilities
+
+- **OpenAPI** — `triple.OpenAPIEnable(true)` publishes a runtime OpenAPI spec.
+- **HTTP handler attachment** — `srv.AttachHTTPHandler("/path", handler)` mounts plain HTTP on the same port.
+- **HTTP/3** — `triple.Http3Enable()` (experimental, TLS required).
+- **CORS** — `triple.CORSAllowOrigins(...)` etc.
+- **Reflection** — gRPC reflection is on by default; tools like `grpcurl` work without extra config.
+
+## Samples Index
+
+See [samples-index.md](samples-index.md) for the full `dubbo-go-samples` directory organized by scenario (Quick Start, Protocols, Service Discovery, Filters, Routing, Streaming, Observability, Security, Java Interop, Advanced).
 
 ## Related Skills
 
-- `dubbo-go-scaffolding` - when the user wants to generate a provider/consumer instead of read about it
-- `dubbo-go-extensions` - when explaining a built-in is not enough and the user needs a custom SPI
-- `dubbo-go-java-interop` - when the question involves dubbo-java compatibility
-- `dubbo-go-debugging` - when the question is "why is X failing" rather than "how does X work"
-- `dubbo-go-migration` - when the question is "how do I move from Y to dubbo-go"
-- `dubbo-go-development` - when the explanation must dig into the `apache/dubbo-go` repo internals
+- `dubbo-go-scaffolding` — when the user wants to generate a provider/consumer
+- `dubbo-go-extensions` — when a built-in is not enough and the user needs a custom SPI
+- `dubbo-go-java-interop` — when the question involves dubbo-java compatibility
+- `dubbo-go-debugging` — when the question is "why is X failing"
+- `dubbo-go-migration` — when the question is "how do I move from Y to dubbo-go"

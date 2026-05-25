@@ -1,6 +1,6 @@
 ---
 name: dubbo-go-scaffolding
-description: Use when creating, bootstrapping, or updating a dubbo-go v3 provider, consumer, sample, proto-based service, direct connection demo, registry-backed service, OpenAPI service, or HTTP-mounted Triple service.
+description: Generates dubbo-go v3 provider or consumer skeletons in the code-API style (dubbo.NewInstance / server.NewServer / client.NewClient). Use when the user asks to create, bootstrap, or scaffold a new dubbo-go service, provider, or consumer, including direct mode, registry-backed, OpenAPI, HTTP-mounted, or HTTP/3 variants.
 ---
 
 <!--
@@ -20,107 +20,66 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-
 # Scaffolding dubbo-go Services
 
-## Overview
+dubbo-go v3 has two entry styles. Use the **code API** by default — it is the style the samples repo has converged on. Fall back to YAML-driven `dubbo.Load()` only if the user is migrating an existing YAML project.
 
-Generate dubbo-go v3 provider/consumer skeletons in the current code-API style: `server.NewServer`, `client.NewClient`, and `dubbo.NewInstance`. Reach for YAML only when migrating an existing config-driven app.
+Before generating code, confirm three things:
+1. **Protocol** — Triple (default, HTTP/2, gRPC-compatible) / Dubbo (Java interop with Hessian2) / JSONRPC / REST. Pick Triple unless the user has a reason.
+2. **Registry** — Nacos / ZooKeeper / etcd / Polaris / direct (no registry). Pick direct for local demos, Nacos for production Apache stacks.
+3. **Service definition** — does the user already have a `.proto` file?
 
-## When to Use
+## Project Layout
 
-- New provider, consumer, sample, or `.proto`-based service
-- Adding direct mode, registry-backed, OpenAPI, HTTP/3, CORS, or HTTP-handler-mounted variants
-- Generating Triple bindings from a fresh `.proto`
+Mirror the [samples repo](https://github.com/apache/dubbo-go-samples) layout so the user can cross-reference:
 
-## When NOT to Use
-
-- The repo already has the skeleton and you only need to add a method or option - edit in place
-- The user wants to write a custom SPI extension - use `dubbo-go-extensions`
-- The user is migrating from another framework - use `dubbo-go-migration`
-
-## Current Defaults
-
-- Module path: `dubbo.apache.org/dubbo-go/v3`
-- Go version in `go.mod`: `1.25.0`
-- Preferred protocol: Triple (`protocol.WithTriple()`), gRPC-compatible and HTTP-friendly
-- Default direct server port in samples: `20000`
-- Generated Triple files: `*.pb.go` and `*.triple.go`
-- Recommended sample baseline: `dubbo-go-samples/helloworld`
-
-## Ask First
-
-Clarify these before generating files:
-
-1. Protocol: Triple by default; Dubbo/Hessian2 for legacy Java interface interop; gRPC only when explicitly required.
-2. Discovery mode: direct URL for local demos; Nacos, ZooKeeper, etcd, or Polaris for service discovery.
-3. Service definition: reuse an existing `.proto` if available; otherwise create one with stable `package` and `go_package`.
-4. Extras: OpenAPI docs, HTTP/3, CORS, TLS, metrics/probe, or an attached existing `http.Handler`.
-
-## Layout
-
-Mirror the sample repository shape:
-
-```text
+```
 myservice/
-|-- go.mod
-|-- proto/
-|   |-- greet.proto
-|   |-- greet.pb.go
-|   `-- greet.triple.go
-|-- go-server/cmd/main.go
-`-- go-client/cmd/main.go
+├── go.mod
+├── proto/
+│   ├── greet.proto
+│   ├── greet.pb.go          # protoc-gen-go
+│   └── greet.triple.go      # protoc-gen-go-triple
+├── go-server/cmd/main.go
+└── go-client/cmd/main.go
 ```
 
-`dubbogo-cli newDemo .` can generate a direct-mode demo. Use `dubbogo-cli newApp .` for a larger application template with `api`, `cmd`, `conf`, `pkg`, `build`, and `chart`.
-
-## Proto
+## Step 1: Proto Definition
 
 ```protobuf
 syntax = "proto3";
-
 package greet;
-
 option go_package = "github.com/yourorg/myservice/proto;greet";
 
-message GreetRequest {
-  string name = 1;
-}
-
-message GreetResponse {
-  string greeting = 1;
-}
+message GreetRequest  { string name = 1; }
+message GreetResponse { string greeting = 1; }
 
 service GreetService {
   rpc Greet(GreetRequest) returns (GreetResponse);
 }
 ```
 
-Install generators:
-
+Install codegen plugins (one-time):
 ```bash
 go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 go install github.com/dubbogo/protoc-gen-go-triple/v3@latest
 ```
 
 Generate:
-
 ```bash
 protoc --go_out=. --go_opt=paths=source_relative \
-  --go-triple_out=. --go-triple_opt=paths=source_relative \
-  proto/greet.proto
+       --go-triple_out=. --go-triple_opt=paths=source_relative \
+       proto/greet.proto
 ```
 
-The `.proto` `package` is part of the Triple HTTP path. For the example above, JSON-over-HTTP requests use `/greet.GreetService/Greet`.
+## Step 2: Provider
 
-## Direct Provider
+**Direct mode** (no registry, simplest local demo):
 
 ```go
 package main
 
-import (
-    "context"
-)
+import "context"
 
 import (
     _ "dubbo.apache.org/dubbo-go/v3/imports"
@@ -130,14 +89,12 @@ import (
     "github.com/dubbogo/gost/log/logger"
 )
 
-import (
-    greet "github.com/yourorg/myservice/proto"
-)
+import greet "github.com/yourorg/myservice/proto"
 
 type GreetTripleServer struct{}
 
 func (s *GreetTripleServer) Greet(ctx context.Context, req *greet.GreetRequest) (*greet.GreetResponse, error) {
-    return &greet.GreetResponse{Greeting: req.Name}, nil
+    return &greet.GreetResponse{Greeting: "hello " + req.Name}, nil
 }
 
 func main() {
@@ -148,20 +105,57 @@ func main() {
         ),
     )
     if err != nil {
-        logger.Fatalf("failed to create server: %v", err)
+        logger.Fatalf("new server: %v", err)
     }
 
     if err := greet.RegisterGreetServiceHandler(srv, &GreetTripleServer{}); err != nil {
-        logger.Fatalf("failed to register greet service handler: %v", err)
+        logger.Fatalf("register handler: %v", err)
     }
 
     if err := srv.Serve(); err != nil {
-        logger.Fatalf("failed to serve: %v", err)
+        logger.Fatalf("serve: %v", err)
     }
 }
 ```
 
-## Direct Consumer
+**Registry-backed** — wrap with `dubbo.NewInstance` so registry and protocol are applied globally:
+
+```go
+import (
+    "dubbo.apache.org/dubbo-go/v3"
+    "dubbo.apache.org/dubbo-go/v3/registry"
+)
+
+func main() {
+    ins, err := dubbo.NewInstance(
+        dubbo.WithName("myservice-provider"),
+        dubbo.WithRegistry(
+            registry.WithNacos(),
+            registry.WithAddress("127.0.0.1:8848"),
+        ),
+        dubbo.WithProtocol(
+            protocol.WithTriple(),
+            protocol.WithPort(20000),
+        ),
+    )
+    if err != nil { panic(err) }
+
+    srv, err := ins.NewServer()
+    if err != nil { panic(err) }
+    if err := greet.RegisterGreetServiceHandler(srv, &GreetTripleServer{}); err != nil { panic(err) }
+    if err := srv.Serve(); err != nil { panic(err) }
+}
+```
+
+Swap registries by changing two lines:
+- Nacos: `registry.WithNacos()` + `registry.WithAddress("127.0.0.1:8848")`
+- ZooKeeper: `registry.WithZookeeper()` + `registry.WithAddress("127.0.0.1:2181")`
+- etcd: `registry.WithEtcdV3()` + `registry.WithAddress("127.0.0.1:2379")`
+- Polaris: `registry.WithPolaris()` + `registry.WithAddress("127.0.0.1:8091")`
+
+## Step 3: Consumer
+
+**Direct mode**:
 
 ```go
 package main
@@ -178,146 +172,111 @@ import (
     "github.com/dubbogo/gost/log/logger"
 )
 
-import (
-    greet "github.com/yourorg/myservice/proto"
-)
+import greet "github.com/yourorg/myservice/proto"
 
 func main() {
-    cli, err := client.NewClient(
-        client.WithClientURL("127.0.0.1:20000"),
-    )
-    if err != nil {
-        logger.Fatalf("failed to create client: %v", err)
-    }
+    cli, err := client.NewClient(client.WithClientURL("127.0.0.1:20000"))
+    if err != nil { logger.Fatalf("new client: %v", err) }
 
     svc, err := greet.NewGreetService(cli)
-    if err != nil {
-        logger.Fatalf("failed to create greet service: %v", err)
-    }
+    if err != nil { logger.Fatalf("new service: %v", err) }
 
     ctx, cancel := context.WithTimeout(context.Background(), time.Second)
     defer cancel()
 
     resp, err := svc.Greet(ctx, &greet.GreetRequest{Name: "world"})
-    if err != nil {
-        logger.Fatalf("failed to call greet: %v", err)
-    }
-    logger.Infof("Greet response: %s", resp.Greeting)
+    if err != nil { logger.Fatalf("call: %v", err) }
+    logger.Infof("resp: %s", resp.Greeting)
 }
 ```
 
-## Registry-backed Provider and Consumer
-
-Use `dubbo.NewInstance` when provider and consumer should share application, registry, protocol, logger, shutdown, metrics, or tracing config.
+**With registry** — drop `WithClientURL`, attach the same registry to an `Instance`:
 
 ```go
-ins, err := dubbo.NewInstance(
-    dubbo.WithName("myservice-provider"),
-    dubbo.WithRegistry(
-        registry.WithNacos(),
-        registry.WithAddress("127.0.0.1:8848"),
-    ),
-    dubbo.WithProtocol(
-        protocol.WithTriple(),
-        protocol.WithPort(20000),
-    ),
+ins, _ := dubbo.NewInstance(
+    dubbo.WithName("myservice-consumer"),
+    dubbo.WithRegistry(registry.WithNacos(), registry.WithAddress("127.0.0.1:8848")),
 )
-if err != nil {
-    logger.Fatalf("new instance: %v", err)
-}
-
-srv, err := ins.NewServer()
-if err != nil {
-    logger.Fatalf("new server: %v", err)
-}
+cli, _ := ins.NewClient()
+svc, _ := greet.NewGreetService(cli)
 ```
 
-Registry options:
-
-- Nacos: `registry.WithNacos()`
-- ZooKeeper: `registry.WithZookeeper()`
-- etcd v3: `registry.WithEtcdV3()`
-- Polaris: `registry.WithPolaris()`
-- Multiple registries: use `registry.WithID("nacos")` and select with `client.WithRegistryIDs("nacos")` or `server.WithRegistryIDs([]string{"nacos"})`
-
-For application-level service discovery, a consumer can use metadata mapping or set the provider application explicitly:
+If application-level discovery cannot resolve which application owns the interface, hint with:
 
 ```go
-svc, err := greet.NewGreetService(
-    cli,
-    client.WithInterface("greet.GreetService"),
-    client.WithProvidedBy("myservice-provider"),
-)
+svc, _ := greet.NewGreetService(cli, client.WithProvidedBy("myservice-provider"))
 ```
 
-## OpenAPI, CORS, HTTP/3, HTTP Handler Mount
+## Triple Extras
 
-Enable runtime OpenAPI docs on Triple:
+**OpenAPI docs** — Triple can publish a runtime OpenAPI spec:
 
 ```go
 server.WithServerProtocol(
     protocol.WithPort(20000),
     protocol.WithTriple(
-        triple.WithOpenAPI(
-            triple.OpenAPIEnable(),
-            triple.OpenAPIInfoTitle("My Service"),
-            triple.OpenAPIInfoVersion("1.0.0"),
-        ),
+        triple.OpenAPIEnable(true),
+        triple.OpenAPIInfoTitle("Greet API"),
     ),
 )
 ```
 
-Useful endpoints:
+See [rpc/triple/openapi](https://github.com/apache/dubbo-go-samples/tree/main/rpc/triple/openapi).
 
-- `/dubbo/openapi/openapi.json`
-- `/dubbo/openapi/openapi.yaml`
-- `/dubbo/openapi/api-docs/default.json`
-- `/dubbo/openapi/swagger-ui`
-- `/dubbo/openapi/redoc`
-
-Assign services to a docs group with `server.WithOpenAPIGroup("group-name")`.
-
-Attach an existing HTTP handler to the same Triple listener:
+**Mount an HTTP handler** on the same Triple port (Triple-only):
 
 ```go
-mux := http.NewServeMux()
-mux.HandleFunc("/healthz", healthz)
-
-srv, _ := server.NewServer(
-    server.WithServerProtocol(
-        protocol.WithTriple(),
-        protocol.WithIp("127.0.0.1"),
-        protocol.WithPort(20000),
-    ),
-)
-if err := srv.AttachHTTPHandler(mux); err != nil {
-    logger.Fatalf("attach http handler: %v", err)
-}
+srv.AttachHTTPHandler("/healthz", http.HandlerFunc(healthz))
 ```
 
-Rules: call `AttachHTTPHandler` before `Serve`, attach only one root handler, and configure an explicit Triple port.
-
-HTTP/3 is experimental and requires TLS-capable setup:
+**HTTP/3** — experimental, requires TLS:
 
 ```go
 protocol.WithTriple(triple.Http3Enable())
 ```
 
-## Validation
+See [http3](https://github.com/apache/dubbo-go-samples/tree/main/http3).
 
-For generated app skeletons:
+## Conventions
+
+These are non-obvious rules the samples repo follows; preserve them when scaffolding:
+
+- **Three import blocks**: stdlib, third-party, same-module — separated by blank lines. The repo's `tools/imports-formatter` enforces this.
+- **Blank-import `imports` during development**: `_ "dubbo.apache.org/dubbo-go/v3/imports"` pulls in every built-in filter, protocol, registry, serializer. Switch to selective imports for production builds.
+- **Fail fast on startup** — samples `panic` or `logger.Fatalf` on `NewInstance` / `NewServer` / `NewClient` / `Register*Handler` errors. Do not swallow them.
+- **Application name matters** — v3 defaults to **application-level** service discovery, so `dubbo.WithName("...")` is what appears in the registry, not the interface FQN.
+
+## Quick Decision Table
+
+| User says | Use |
+|---|---|
+| "just want to try it" / "local demo" | direct mode, no registry |
+| "production" / "service discovery" | `dubbo.NewInstance` + Nacos or ZK |
+| "talk to Java Dubbo" | Triple + Protobuf — see `dubbo-go-java-interop` |
+| "expose REST or curl-friendly endpoint" | Triple + OpenAPI, or Triple REST mode |
+| "existing YAML config" | `dubbo.Load()` (legacy) — see `config_yaml` sample |
+
+## Reference Samples
+
+- [helloworld](https://github.com/apache/dubbo-go-samples/tree/main/helloworld) — minimal Triple, direct mode
+- [direct](https://github.com/apache/dubbo-go-samples/tree/main/direct) — explicit `tri://` URL
+- [registry/nacos](https://github.com/apache/dubbo-go-samples/tree/main/registry/nacos)
+- [registry/zookeeper](https://github.com/apache/dubbo-go-samples/tree/main/registry/zookeeper)
+- [registry/etcd](https://github.com/apache/dubbo-go-samples/tree/main/registry/etcd)
+- [rpc/triple/openapi](https://github.com/apache/dubbo-go-samples/tree/main/rpc/triple/openapi) — runtime OpenAPI
+- [http3](https://github.com/apache/dubbo-go-samples/tree/main/http3) — Triple over HTTP/3
+
+## Validation
 
 ```bash
 go mod tidy
+go build ./...
 go test ./...
 ```
 
-For changes inside the dubbo-go repository, use the repository development skill and prefer `make fmt`, targeted `go test`, then broader `make test` when relevant.
-
 ## Related Skills
 
-- `dubbo-go-guide` - for the broader concept map and current capabilities
-- `dubbo-go-extensions` - when scaffolding a service that also needs a custom Filter/LB/Registry
-- `dubbo-go-java-interop` - when the new service must talk to dubbo-java
-- `dubbo-go-migration` - when the user is moving from gRPC-Go, Spring Cloud, Gin, or older dubbo-go
-- `dubbo-go-debugging` - when the new skeleton fails to start, register, or connect
+- `dubbo-go-guide` — broader concept map and best practices
+- `dubbo-go-extensions` — when the new service needs a custom Filter/LB/Registry
+- `dubbo-go-java-interop` — when the new service must talk to dubbo-java
+- `dubbo-go-debugging` — when the new skeleton fails to start, register, or connect

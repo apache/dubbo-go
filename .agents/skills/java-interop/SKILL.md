@@ -1,6 +1,6 @@
 ---
 name: dubbo-go-java-interop
-description: Use when connecting dubbo-go v3 with dubbo-java, choosing Triple versus Dubbo protocol, sharing Protobuf contracts, mirroring Java interfaces, handling Hessian2 POJOs, or debugging cross-language discovery and serialization.
+description: Guides interoperability between dubbo-go v3 and dubbo-java — cross-language RPC using Triple+Protobuf or Dubbo+Hessian2. Use when the user asks how to call a Java Dubbo service from Go, expose a Go service to Java clients, share a proto/interface across languages, or pick between Triple and Dubbo for interop.
 ---
 
 <!--
@@ -20,29 +20,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
+# Dubbo Java and Go Interop
 
-# Dubbo Java and Go Interoperability
+A single service definition can be served by Go and consumed by Java (or vice versa) without a gateway. Two viable paths:
 
-## Overview
-
-Two interop paths, one decision: Triple + Protobuf for everything new and polyglot; Dubbo + Hessian2 only when the Java side already owns a non-proto interface. Picking the wrong path locks the team into bespoke serialization code.
-
-## When to Use
-
-- Bridging a Go service to existing Java Dubbo providers/consumers
-- Choosing protocol/serialization for a new cross-language service
-- Diagnosing `hessian: failed to decode`, missing-provider, or class-name-mismatch errors across languages
-
-## Path Selection
-
-| Path | Protocol | Serialization | Use when |
+| Path | Wire format | Serialization | When to use |
 |---|---|---|---|
-| Triple + Protobuf | Triple over HTTP/2 | Protobuf | New services, polyglot teams, gRPC-compatible clients, OpenAPI docs |
-| Dubbo + Hessian2 | Dubbo TCP | Hessian2 | Existing Java Dubbo interfaces with POJO request/response classes |
+| **Triple + Protobuf** (recommended) | HTTP/2 | Protobuf | New services, polyglot teams, gRPC-compatible clients |
+| **Dubbo + Hessian2** | TCP (dubbo) | Hessian2 | Calling existing Java services that were originally defined as Java interfaces (no `.proto`) |
 
-## Triple + Protobuf
+Pick Triple unless integrating with an existing Hessian2 Java codebase.
 
-Shared `.proto`:
+## Path 1: Triple + Protobuf (recommended)
+
+A shared `.proto` file drives both sides. Set both `go_package` and `java_package`:
 
 ```protobuf
 syntax = "proto3";
@@ -57,69 +48,59 @@ service Greeter {
   rpc SayHello(HelloRequest) returns (HelloReply);
 }
 
-message HelloRequest {
-  string name = 1;
-}
-
-message HelloReply {
-  string message = 1;
-}
+message HelloRequest  { string name = 1; }
+message HelloReply    { string message = 1; }
 ```
 
-Go server:
+**Go server** — nothing interop-specific, just Triple:
 
 ```go
-srv, err := server.NewServer(
+srv, _ := server.NewServer(
     server.WithServerProtocol(
         protocol.WithPort(20000),
         protocol.WithTriple(),
     ),
 )
-if err != nil {
-    return err
-}
-
-if err := greet.RegisterGreeterHandler(srv, &impl{}); err != nil {
-    return err
-}
-return srv.Serve()
+greet.RegisterGreeterHandler(srv, &impl{})
+srv.Serve()
 ```
 
-Triple exposes JSON-over-HTTP, which is useful for smoke tests:
+**Test interop with curl** — Triple supports JSON over HTTP/1.1:
 
 ```bash
 curl -H "Content-Type: application/json" \
-  -d '{"name":"Dubbo"}' \
-  http://127.0.0.1:20000/org.apache.dubbo.sample.Greeter/SayHello
+     -d '{"name":"Dubbo"}' \
+     http://localhost:20000/org.apache.dubbo.sample.Greeter/sayHello
 ```
 
-The path is `/<proto package>.<service>/<rpc method>`. Use the method name from the `.proto` file, for example `Greet` or `SayHello`.
+The path is `/<java_package>.<service>/<method>` — the Java side uses lowercase-first-letter method names by convention.
 
-## Triple Interop Rules
+**Java client** uses standard dubbo-java APIs; no Go-specific code. See [java_interop/protobuf-triple](https://github.com/apache/dubbo-go-samples/tree/main/java_interop/protobuf-triple) for the working pair.
 
-- `package` in `.proto` controls the Triple service path.
-- `go_package` controls Go package path and package name.
-- `java_package` controls Java generated classes and interface package.
-- Renaming proto package, service, or method names is a wire-level breaking change.
-- Use the same `.proto` source for Go and Java generation.
-- Triple supports reflection and HTTP-friendly testing; use OpenAPI when documenting REST-like access for humans.
+### Rules of thumb for Triple interop
 
-## Dubbo + Hessian2
+- **Method-name casing**: Protobuf generators emit `SayHello` in Go and `sayHello` on the Java wire. The HTTP route uses the lowercase-first form.
+- **Package matters**: `java_package` in the proto becomes the Java interface FQN — pick deliberately, renaming later is breaking.
+- **Reflection**: Triple exposes gRPC reflection automatically; tools like `grpcurl` and `bloomrpc` work without extra config.
 
-Use this for Java-defined services without Protobuf. The Go side must mirror Java classes and register POJOs.
+## Path 2: Dubbo + Hessian2 (Java-defined services)
+
+Use this when the service is **defined by a Java interface** (no `.proto`) and you need to add a Go side.
+
+The Go side mirrors the Java POJO via Hessian2 registration. Field names, types, and `JavaClassName()` must match the Java class.
 
 ```go
 package greet
 
 import (
-    dubbohessian "github.com/apache/dubbo-go-hessian2"
+    dubbo_go_hessian2 "github.com/apache/dubbo-go-hessian2"
 )
 
 type GreetRequest struct {
     Name string
 }
 
-func (*GreetRequest) JavaClassName() string {
+func (x *GreetRequest) JavaClassName() string {
     return "org.apache.dubbo.hessian2.api.GreetRequest"
 }
 
@@ -127,106 +108,77 @@ type GreetResponse struct {
     Greeting string
 }
 
-func (*GreetResponse) JavaClassName() string {
+func (x *GreetResponse) JavaClassName() string {
     return "org.apache.dubbo.hessian2.api.GreetResponse"
 }
 
 func init() {
-    dubbohessian.RegisterPOJO(new(GreetRequest))
-    dubbohessian.RegisterPOJO(new(GreetResponse))
+    dubbo_go_hessian2.RegisterPOJO(new(GreetRequest))
+    dubbo_go_hessian2.RegisterPOJO(new(GreetResponse))
 }
 ```
 
-Server protocol:
+**Go server** — pick the Dubbo protocol, not Triple:
 
 ```go
-srv, err := server.NewServer(
+srv, _ := server.NewServer(
     server.WithServerProtocol(
         protocol.WithPort(20000),
         protocol.WithDubbo(),
     ),
 )
+greet.RegisterGreetServiceHandler(srv, &impl{})
+srv.Serve()
 ```
 
-Consumer reference:
+See [java_interop/non-protobuf-dubbo](https://github.com/apache/dubbo-go-samples/tree/main/java_interop/non-protobuf-dubbo) for the canonical end-to-end example.
 
-```go
-svc, err := greet.NewGreetingsService(
-    cli,
-    client.WithProtocolDubbo(),
-    client.WithSerialization("hessian2"),
-)
-```
+### Hessian2 gotchas
 
-## Hessian2 Rules
-
-- Every POJO type must implement `JavaClassName()` and be registered with `RegisterPOJO`.
-- Fully-qualified Java class names must match exactly.
-- Prefer primitives, strings, slices, maps, and registered nested POJOs.
-- Avoid Go-only shapes such as channels, functions, and generics in RPC DTOs.
-- Java enum mapping depends on Java-side serialization; verify before assuming string values.
-- `hessian: failed to decode` usually means class name mismatch, missing `RegisterPOJO`, field/type mismatch, or wrong protocol/serialization.
+- **Field names are case-sensitive on the wire** — Go's exported names are serialized lowercase-first to match Java conventions. The hessian2 library handles this; custom struct tags can break it.
+- **Unsupported types**: Go generics, channels, functions will not serialize. Stick to primitives, slices, maps, and other registered POJOs.
+- **Unregistered POJOs** → `hessian: failed to decode` at runtime. Always `RegisterPOJO` in the package's `init()`.
+- **Java `enum` maps to Go `int`** (the ordinal), not a string — unless the Java side customized serialization.
+- **Time**: Java `Date` ↔ Go `time.Time` generally works; `java.time.*` types need extra care.
 
 ## Service Discovery Across Languages
 
-Use the same registry cluster and compatible registry mode on both sides.
-
-Provider:
+When both sides use the **same registry** (Nacos / ZooKeeper), they discover each other automatically — the registry entry is language-agnostic, just a URL with protocol + address.
 
 ```go
-ins, err := dubbo.NewInstance(
-    dubbo.WithName("polyglot-provider"),
+dubbo.NewInstance(
+    dubbo.WithName("polyglot-service"), // same application name as the Java side
     dubbo.WithRegistry(registry.WithNacos(), registry.WithAddress("127.0.0.1:8848")),
     dubbo.WithProtocol(protocol.WithTriple(), protocol.WithPort(20000)),
 )
 ```
 
-Consumer:
+If application-level discovery cannot resolve which application owns the interface, hint with `client.WithProvidedBy("<java-app-name>")`.
 
-```go
-svc, err := greet.NewGreeterService(
-    cli,
-    client.WithInterface("org.apache.dubbo.sample.Greeter"),
-    client.WithProvidedBy("polyglot-provider"),
-)
-```
-
-`WithProvidedBy` is useful when application-level service discovery cannot load interface-to-application mapping from the metadata center.
-
-Registry modes:
-
-```go
-registry.WithRegisterService()
-registry.WithRegisterInterface()
-registry.WithRegisterServiceAndInterface()
-```
-
-Use `WithRegisterServiceAndInterface` when bridging old interface-level discovery and newer application-level discovery during migration.
+See [java_interop/service_discovery](https://github.com/apache/dubbo-go-samples/tree/main/java_interop/service_discovery).
 
 ## Decision Table
 
-| Scenario | Choice |
+| Scenario | Path |
 |---|---|
-| New Go and Java service | Triple + Protobuf |
-| Java service already has `.proto` | Triple + Protobuf |
-| Existing Java interface only, no proto | Dubbo + Hessian2 |
-| Need browser/curl smoke tests or OpenAPI docs | Triple + Protobuf |
-| Need to preserve old Java POJOs exactly | Dubbo + Hessian2 |
-| Metadata mapping is missing | Add metadata report or set `client.WithProvidedBy` |
+| New service, Go and Java teams both need clients | **Triple + Protobuf** |
+| Calling an existing Java Dubbo service defined by a Java interface | **Dubbo + Hessian2** |
+| Legacy Java service exports both Triple and Dubbo endpoints | **Triple + Protobuf** on the Go side |
+| Need a gRPC-compatible wire | **Triple + Protobuf** |
+| Cannot touch the Java side, and it is not Protobuf | **Dubbo + Hessian2** |
 
 ## Reference Samples
 
-- `dubbo-go-samples/java_interop/protobuf-triple`
-- `dubbo-go-samples/java_interop/non-protobuf-dubbo`
-- `dubbo-go-samples/java_interop/non-protobuf-triple`
-- `dubbo-go-samples/java_interop/service_discovery`
-- `dubbo-go-samples/helloworld`
-- `dubbo-go-samples/direct`
-- `dubbo-go-samples/http3`
+- [java_interop/protobuf-triple](https://github.com/apache/dubbo-go-samples/tree/main/java_interop/protobuf-triple) — both directions, Triple + Protobuf
+- [java_interop/non-protobuf-dubbo](https://github.com/apache/dubbo-go-samples/tree/main/java_interop/non-protobuf-dubbo) — Hessian2 POJO bridge
+- [java_interop/non-protobuf-triple](https://github.com/apache/dubbo-go-samples/tree/main/java_interop/non-protobuf-triple) — Triple without Protobuf (rare)
+- [java_interop/service_discovery](https://github.com/apache/dubbo-go-samples/tree/main/java_interop/service_discovery) — Nacos-based cross-language discovery
+
+Official guide: [Interoperability with Dubbo Java](https://cn.dubbo.apache.org/zh-cn/overview/mannual/golang-sdk/tutorial/interop-dubbo/).
 
 ## Related Skills
 
-- `dubbo-go-scaffolding` - when generating the Go side of a polyglot service
-- `dubbo-go-extensions` - when adding a Hessian2 codec, Java-aware filter, or custom registry shared with Java
-- `dubbo-go-migration` - when porting an existing Java Dubbo service or splitting a Spring Cloud monolith
-- `dubbo-go-debugging` - when the symptom is `hessian: failed to decode`, missing provider across languages, or registry-mode mismatch
+- `dubbo-go-scaffolding` — for the Go side of a polyglot service
+- `dubbo-go-extensions` — when adding a Hessian2 codec, Java-aware filter, or shared registry
+- `dubbo-go-migration` — when porting an existing Java service or splitting a Spring Cloud monolith
+- `dubbo-go-debugging` — when the symptom is `hessian: failed to decode`, missing-provider across languages, or registry-mode mismatch
