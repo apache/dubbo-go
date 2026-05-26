@@ -34,10 +34,17 @@ const (
 type Limiter interface {
 	Inflight() uint64
 	Remaining() uint64
+	Snapshot() Snapshot
 	// Acquire inspects the current status of the system:
 	// - if reaches the limitation, reject the request immediately.
 	// - if not, grant this request and return an Updater defined below.
 	Acquire() (Updater, error)
+}
+
+type Snapshot struct {
+	Inflight   uint64
+	Remaining  uint64
+	Limitation uint64
 }
 
 type Updater interface {
