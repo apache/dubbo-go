@@ -584,6 +584,7 @@ func (svcOpts *ServiceOptions) init(srv *Server, opts ...ServiceOption) error {
 	if err != nil {
 		panic(err)
 	}
+	svcOpts.adaptiveService = svcOpts.Provider.AdaptiveService
 	svcOpts.needExport = true
 	return commonCfg.Verify(svcOpts)
 }

@@ -15,32 +15,22 @@
  * limitations under the License.
  */
 
-package utils
+syntax = "proto3";
 
-import (
-	"fmt"
-	"strings"
-)
+package adaptive.protect;
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/filter/adaptivesvc"
-	adasvcfilter "dubbo.apache.org/dubbo-go/v3/filter/adaptivesvc/limiter"
-)
+option go_package = "dubbo.apache.org/dubbo-go/v3/samples/adaptive_service/protect_provider/proto;protectpb";
 
-var ReachLimitationErrorString = fmt.Sprintf("%s: %s",
-	adaptivesvc.ErrAdaptiveSvcInterrupted.Error(),
-	adasvcfilter.ErrReachLimitation.Error())
-
-func DoesAdaptiveServiceReachLimitation(err error) bool {
-	if err == nil {
-		return false
-	}
-	return strings.HasSuffix(err.Error(), ReachLimitationErrorString)
+message WorkRequest {
+  string name = 1;
+  int32 payload_bytes = 2;
 }
 
-func IsAdaptiveServiceFailed(err error) bool {
-	if err == nil {
-		return false
-	}
-	return strings.Contains(err.Error(), adaptivesvc.ErrAdaptiveSvcInterrupted.Error())
+message WorkResponse {
+  string message = 1;
+  int64 sequence = 2;
+}
+
+service ProtectService {
+  rpc Work(WorkRequest) returns (WorkResponse) {}
 }

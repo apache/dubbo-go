@@ -143,6 +143,33 @@ func TestServiceOptionsInitTranslatesRegistryIDs(t *testing.T) {
 	assert.Equal(t, []string{"r1", "r2"}, svcOpts.Service.RegistryIDs)
 }
 
+func TestServiceOptionsInitCopiesProviderAdaptiveService(t *testing.T) {
+	srv := &Server{
+		cfg: &ServerOptions{
+			Provider: &global.ProviderConfig{
+				AdaptiveService: true,
+				ProtocolIDs:     []string{"triple"},
+			},
+			Protocols: map[string]*global.ProtocolConfig{
+				"triple": {Name: "triple"},
+			},
+			Application: global.DefaultApplicationConfig(),
+			Metrics:     global.DefaultMetricsConfig(),
+			Otel:        global.DefaultOtelConfig(),
+		},
+	}
+	svcOpts := defaultServiceOptions()
+	svcOpts.Protocols = srv.cfg.Protocols
+	svcOpts.Provider = srv.cfg.Provider
+
+	err := svcOpts.init(srv)
+	require.NoError(t, err)
+	assert.True(t, svcOpts.adaptiveService)
+
+	urlMap := svcOpts.getUrlMap()
+	assert.Contains(t, urlMap.Get(constant.ServiceFilterKey), constant.AdaptiveServiceProviderFilterKey)
+}
+
 func TestServiceOptionsInitFailsOnInvalidMethodConfig(t *testing.T) {
 	srv := &Server{
 		cfg: &ServerOptions{
