@@ -83,7 +83,7 @@ func (m *zookeeperMetadataReport) PublishAppMetadata(application, revision strin
 	}
 	err = m.client.CreateWithValue(k, data)
 	if perrors.Is(err, zk.ErrNodeExists) {
-		logger.Debug("[MetadataReport][Zookeeper] try to create the node data failed. In most cases, it's not a problem. ")
+		logger.Debug("[Metadata][Zookeeper] try to create the node data failed. In most cases, it's not a problem. ")
 		return nil
 	}
 	return err
