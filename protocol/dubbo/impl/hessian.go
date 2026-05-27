@@ -133,7 +133,7 @@ func marshalRequest(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 	args, ok := request.Params.([]any)
 
 	if !ok {
-		logger.Infof("request args are: %+v", request.Params)
+		logger.Infof("[Dubbo][Impl] request args, params=%v", request.Params)
 		return nil, perrors.Errorf("@params is not of type: []any")
 	}
 	types, err := GetArgsTypeList(args)

@@ -124,7 +124,7 @@ func (s *Server) Start(url *common.URL) {
 		// use global TLSConfig handle tls
 		tlsConf, ok := tlsConfRaw.(*global.TLSConfig)
 		if !ok {
-			logger.Errorf("gRPC Server initialized the TLSConfig configuration failed")
+			logger.Error("[GRPC][Server] gRPC server initialized the TLSConfig configuration failed")
 			return
 		}
 		if dubbotls.IsServerTLSValid(tlsConf) {
@@ -133,7 +133,7 @@ func (s *Server) Start(url *common.URL) {
 				return
 			}
 			if cfg != nil {
-				logger.Infof("gRPC Server initialized the TLSConfig configuration")
+				logger.Info("[GRPC][Server] gRPC server initialized the TLSConfig configuration")
 				transportCreds = credentials.NewTLS(cfg)
 			}
 		}
@@ -148,7 +148,7 @@ func (s *Server) Start(url *common.URL) {
 	go func() {
 		providerServices := getProviderServices(url)
 		if providerServices == nil {
-			logger.Error("no provider service found")
+			logger.Error("[GRPC][Server] no provider service found")
 			return
 		}
 		// wait all exporter ready, then set proxy impl and grpc registerService
@@ -156,7 +156,7 @@ func (s *Server) Start(url *common.URL) {
 		registerService(providerServices, server)
 		reflection.Register(server)
 		if err := server.Serve(lis); err != nil {
-			logger.Errorf("server serve failed with err: %v", err)
+			logger.Errorf("[GRPC][Server] server serve failed, err=%v", err)
 		}
 	}()
 }
@@ -190,7 +190,7 @@ func getProviderServices(url *common.URL) map[string]*global.ServiceConfig {
 		if providerConf, ok := providerConfRaw.(*global.ProviderConfig); ok && providerConf != nil {
 			return providerConf.Services
 		}
-		logger.Error("illegal provider config")
+		logger.Error("[GRPC][Server] illegal provider config")
 	}
 	return nil
 }

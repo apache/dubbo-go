@@ -120,7 +120,7 @@ func (srv *HealthTripleServer) SetServingStatus(service string, servingStatus tr
 	srv.mu.Lock()
 	defer srv.mu.Unlock()
 	if srv.shutdown {
-		logger.Infof("health: status changing for %s to %v is ignored because health service is shutdown", service, servingStatus)
+		logger.Infof("[Triple][Health] health: status changing for %s to %v is ignored because health service is shutdown", service, servingStatus)
 		return
 	}
 
