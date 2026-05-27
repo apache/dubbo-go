@@ -125,7 +125,7 @@ func (n *nacosMetadataReport) storeMetadata(param vo.ConfigParam) error {
 func (n *nacosMetadataReport) getConfig(param vo.ConfigParam) (string, error) {
 	cfg, err := n.client.Client().GetConfig(param)
 	if err != nil {
-		logger.Errorf("Finding the configuration failed: %v", param)
+		logger.Errorf("[MetadataReport][Nacos] finding the configuration failed, param=%v", param)
 		return "", err
 	}
 	return cfg, nil
@@ -148,7 +148,7 @@ func callback(notify mapping.MappingListener, dataId, data string) {
 		set.Add(app)
 	}
 	if err := notify.OnEvent(registry.NewServiceMappingChangedEvent(dataId, set)); err != nil {
-		logger.Errorf("serviceMapping callback err: %s", err.Error())
+		logger.Errorf("[MetadataReport][Nacos] serviceMapping callback err=%v", err)
 	}
 }
 
@@ -188,7 +188,7 @@ func (n *nacosMetadataReport) GetServiceAppMapping(key string, group string, lis
 	// add service mapping listener
 	if listener != nil {
 		if err := n.addListener(key, group, listener); err != nil {
-			logger.Errorf("add serviceMapping listener err: %s", err.Error())
+			logger.Errorf("[MetadataReport][Nacos] add serviceMapping listener err=%v", err)
 		}
 	}
 	v, err := n.getConfig(vo.ConfigParam{
@@ -226,7 +226,7 @@ func (n *nacosMetadataReportFactory) CreateMetadataReport(url *common.URL) repor
 	url.SetParam(constant.NacosPassword, url.Password)
 	client, err := nacos.NewNacosConfigClientByUrl(url)
 	if err != nil {
-		logger.Errorf("Could not create nacos metadata report. URL: %s", url.String())
+		logger.Errorf("[MetadataReport][Nacos] could not create nacos metadata report, url=%s", url.String())
 		return nil
 	}
 	return &nacosMetadataReport{client: client, group: group}
