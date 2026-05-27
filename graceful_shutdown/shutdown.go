@@ -113,14 +113,14 @@ func Init(opts ...Option) {
 
 			go func() {
 				sig := <-signals
-				logger.Infof("get signal %s, applicationConfig will shutdown.", sig)
+				logger.Infof("[GracefulShutdown] get signal %s, applicationConfig will shutdown.", sig)
 				// fallback timeout
 				time.AfterFunc(totalTimeout(newOpts.Shutdown), func() {
-					logger.Warn("Shutdown gracefully timeout, applicationConfig will shutdown immediately. ")
+					logger.Warn("[GracefulShutdown] shutdown gracefully timeout, applicationConfig will shutdown immediately. ")
 					os.Exit(0)
 				})
 				if err := Shutdown(context.Background()); err != nil {
-					logger.Warnf("Graceful shutdown --- shutdown completed with error: %v", err)
+					logger.Warnf("[GracefulShutdown] shutdown completed, err=%v", err)
 				}
 				// those signals' original behavior is exit with dump ths stack, so we try to keep the behavior
 				for _, dumpSignal := range DumpHeapShutdownSignals {
@@ -185,7 +185,7 @@ func totalTimeout(shutdown *global.ShutdownConfig) time.Duration {
 
 func beforeShutdown(shutdown *global.ShutdownConfig) {
 	// 1. mark closing state
-	logger.Info("Graceful shutdown --- Mark closing state.")
+	logger.Info("[GracefulShutdown] mark closing state.")
 	shutdown.Closing.Store(true)
 	probe.SetReady(false)
 
@@ -217,7 +217,7 @@ func startShutdownOnce() {
 		go func() {
 			defer func() {
 				if recovered := recover(); recovered != nil {
-					logger.Warnf("Graceful shutdown --- shutdown panicked --- %v", recovered)
+					logger.Warnf("[GracefulShutdown] shutdown panicked, err=%v", recovered)
 					shutdownResult = fmt.Errorf("graceful shutdown panic: %v", recovered)
 				}
 				close(shutdownDone)
@@ -233,10 +233,10 @@ func startShutdownOnce() {
 // unregisterRegistries unregisters exported services from registries during graceful shutdown.
 // If the registry protocol does not expose a narrower unregister capability, it falls back to Destroy.
 func unregisterRegistries() {
-	logger.Info("Graceful shutdown --- Unregister exported services from registries.")
+	logger.Info("[GracefulShutdown] unregister exported services from registries.")
 	registryProtocol, ok := getProtocolSafely(constant.RegistryProtocol)
 	if !ok {
-		logger.Warnf("Graceful shutdown --- Registry protocol %s is not registered, skip unregistering registries.", constant.RegistryProtocol)
+		logger.Warnf("[GracefulShutdown] registry protocol %s is not registered, skip unregistering registries.", constant.RegistryProtocol)
 		return
 	}
 
@@ -245,13 +245,13 @@ func unregisterRegistries() {
 		return
 	}
 
-	logger.Warnf("Graceful shutdown --- Registry protocol %s does not support unregister-only shutdown, falling back to Destroy().", constant.RegistryProtocol)
+	logger.Warnf("[GracefulShutdown] registry protocol %s does not support unregister-only shutdown, falling back to Destroy().", constant.RegistryProtocol)
 	registryProtocol.Destroy()
 }
 
 // notifyLongConnectionConsumers notifies all connected consumers via long connections
 func notifyLongConnectionConsumers(shutdown *global.ShutdownConfig) {
-	logger.Info("Graceful shutdown --- Notify long connection consumers.")
+	logger.Info("[GracefulShutdown] notify long connection consumers.")
 
 	notifyTimeout := parseDuration(shutdown.NotifyTimeout, notifyTimeoutDesc, defaultNotifyTimeout)
 	callbacks := extension.GracefulShutdownCallbacks()
@@ -280,26 +280,26 @@ func notifyWithRetry(ctx context.Context, name string, callback extension.Gracef
 		attempts++
 		err := invokeGracefulShutdownCallback(ctx, name, callback)
 		if err == nil {
-			logger.Infof("Graceful shutdown --- Notify %s completed", name)
+			logger.Infof("[GracefulShutdown] notify %s completed", name)
 			return nil
 		}
 
-		logger.Warnf("Graceful shutdown --- Notify %s attempt %d failed --- %v", name, attempts, err)
+		logger.Warnf("[GracefulShutdown] notify %s attempt %d failed, err=%v", name, attempts, err)
 		return err
 	}
 
 	notify := func(err error, delay time.Duration) {
-		logger.Infof("Graceful shutdown --- Notify %s retrying in %v (attempt %d/%d)", name, delay, attempts, defaultMaxRetries)
+		logger.Infof("[GracefulShutdown] notify %s retrying in %v (attempt %d/%d)", name, delay, attempts, defaultMaxRetries)
 	}
 
 	retryPolicy := backoff.WithContext(backoff.WithMaxRetries(backOff, uint64(defaultMaxRetries)), ctx)
 	if err := backoff.RetryNotify(operation, retryPolicy, notify); err != nil {
 		if ctx.Err() != nil {
-			logger.Warnf("Graceful shutdown --- Notify %s timeout after %d attempts, continuing...", name, attempts)
+			logger.Warnf("[GracefulShutdown] notify %s timeout after %d attempts, continuing...", name, attempts)
 			return
 		}
 
-		logger.Warnf("Graceful shutdown --- Notify %s failed after %d attempts --- %v", name, attempts, err)
+		logger.Warnf("[GracefulShutdown] notify %s failed after %d attempts, err=%v", name, attempts, err)
 	}
 }
 
@@ -308,7 +308,7 @@ func invokeGracefulShutdownCallback(ctx context.Context, name string, callback e
 	go func() {
 		defer func() {
 			if recovered := recover(); recovered != nil {
-				logger.Warnf("Graceful shutdown --- Notify %s panicked --- %v", name, recovered)
+				logger.Warnf("[GracefulShutdown] notify %s panicked, err=%v", name, recovered)
 				done <- fmt.Errorf("graceful shutdown callback panic: %v", recovered)
 			}
 		}()
@@ -324,7 +324,7 @@ func invokeGracefulShutdownCallback(ctx context.Context, name string, callback e
 }
 
 func waitAndAcceptNewRequests(shutdown *global.ShutdownConfig) {
-	logger.Info("Graceful shutdown --- Keep waiting and accept new requests for a short time. ")
+	logger.Info("[GracefulShutdown] keep waiting and accept new requests for a short time. ")
 
 	updateWaitTime := parseDuration(shutdown.ConsumerUpdateWaitTime, consumerUpdateWaitTimeDesc, defaultConsumerUpdateWaitTime)
 	time.Sleep(updateWaitTime)
@@ -347,14 +347,14 @@ func waitingProviderProcessedTimeout(shutdown *global.ShutdownConfig, timeout ti
 		(shutdown.ProviderActiveCount.Load() > 0 || time.Now().Before(shutdown.ProviderLastReceivedRequestTime.Load().Add(offlineRequestWindowTimeout))) {
 		// sleep 10 ms and then we check it again
 		time.Sleep(10 * time.Millisecond)
-		logger.Infof("waiting for provider active invocation count = %d, provider last received request time: %v",
+		logger.Infof("[GracefulShutdown] waiting for provider active invocation count = %d, provider last received request time=%v",
 			shutdown.ProviderActiveCount.Load(), shutdown.ProviderLastReceivedRequestTime.Load())
 	}
 }
 
 // For provider. It will wait for processing receiving requests
 func waitForSendingAndReceivingRequests(shutdown *global.ShutdownConfig) {
-	logger.Info("Graceful shutdown --- Keep waiting until sending/accepting requests finish or timeout. ")
+	logger.Info("[GracefulShutdown] keep waiting until sending/accepting requests finish or timeout. ")
 	shutdown.RejectRequest.Store(true)
 	waitingConsumerProcessedTimeout(shutdown)
 }
@@ -370,18 +370,18 @@ func waitingConsumerProcessedTimeout(shutdown *global.ShutdownConfig) {
 	for time.Now().Before(deadline) && shutdown.ConsumerActiveCount.Load() > 0 {
 		// sleep 10 ms and then we check it again
 		time.Sleep(10 * time.Millisecond)
-		logger.Infof("waiting for consumer active invocation count = %d", shutdown.ConsumerActiveCount.Load())
+		logger.Infof("[GracefulShutdown] waiting for consumer active invocation count = %d", shutdown.ConsumerActiveCount.Load())
 	}
 }
 
 // destroyProtocols destroys protocols that have been registered.
 func destroyProtocols() {
-	logger.Info("Graceful shutdown --- Destroy protocols. ")
+	logger.Info("[GracefulShutdown] destroy protocols. ")
 
 	for _, name := range registeredProtocolsSnapshot() {
 		protocol, ok := getProtocolSafely(name)
 		if !ok {
-			logger.Warnf("Graceful shutdown --- Protocol %s is not registered, skip destroying it.", name)
+			logger.Warnf("[GracefulShutdown] protocol %s is not registered, skip destroying it.", name)
 			continue
 		}
 		protocol.Destroy()
@@ -400,7 +400,7 @@ func registeredProtocolsSnapshot() []string {
 }
 
 func executeCustomShutdownCallbacks(shutdown *global.ShutdownConfig) {
-	logger.Info("Graceful shutdown --- Execute the custom callbacks.")
+	logger.Info("[GracefulShutdown] execute the custom callbacks.")
 	callbackTimeout := totalTimeout(shutdown)
 	customCallbacks := extension.GetAllCustomShutdownCallbacks()
 	for callback := customCallbacks.Front(); callback != nil; callback = callback.Next() {
@@ -413,7 +413,7 @@ func invokeCustomShutdownCallback(timeout time.Duration, callback func()) {
 	go func() {
 		defer func() {
 			if recovered := recover(); recovered != nil {
-				logger.Warnf("Graceful shutdown --- Custom shutdown callback panicked --- %v", recovered)
+				logger.Warnf("[GracefulShutdown] custom shutdown callback panicked, err=%v", recovered)
 			}
 			done <- struct{}{}
 		}()
@@ -423,7 +423,7 @@ func invokeCustomShutdownCallback(timeout time.Duration, callback func()) {
 	select {
 	case <-done:
 	case <-time.After(timeout):
-		logger.Warnf("Graceful shutdown --- Custom shutdown callback timed out after %v", timeout)
+		logger.Warnf("[GracefulShutdown] custom shutdown callback timed out after %v", timeout)
 	}
 }
 
