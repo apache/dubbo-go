@@ -23,13 +23,14 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
+	gostLogger "github.com/dubbogo/gost/log/logger"
 
 	"github.com/knadh/koanf"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/logger"
 	_ "dubbo.apache.org/dubbo-go/v3/logger/core/logrus"
 	"dubbo.apache.org/dubbo-go/v3/logger/core/zap"
 )
@@ -48,7 +49,8 @@ func setRootConfigInternal(rc *RootConfig) {
 
 func init() {
 	log := zap.NewDefault()
-	logger.SetLogger(log)
+	dubboLogger.SetLogger(log)
+	gostLogger.SetLogger(log)
 }
 
 func Load(opts ...LoaderConfOption) error {
