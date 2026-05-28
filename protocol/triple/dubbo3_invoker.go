@@ -128,7 +128,7 @@ func NewDubbo3Invoker(url *common.URL) (*DubboInvoker, error) {
 					*tracingConfig.UseAgent,
 				))
 			} else {
-				logger.Warnf("unsupported tracing name %s, now triple only support jaeger", tracingConfig.Name)
+				logger.Warnf("[Triple][Invoker] unsupported tracing name %s, now triple only support jaeger", tracingConfig.Name)
 			}
 		}
 	}
@@ -146,7 +146,7 @@ func NewDubbo3Invoker(url *common.URL) (*DubboInvoker, error) {
 			triOption.TLSCertFile = tlsConf.TLSCertFile
 			triOption.TLSKeyFile = tlsConf.TLSKeyFile
 			triOption.TLSServerName = tlsConf.TLSServerName
-			logger.Infof("DUBBO3 Client initialized the TLSConfig configuration")
+			logger.Info("[Triple][Invoker] DUBBO3 Client initialized the TLSConfig configuration")
 		}
 	}
 
@@ -187,7 +187,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation base.Invocation) 
 	if !di.BaseInvoker.IsAvailable() {
 		// Generally, the case will not happen, because the invoker has been removed
 		// from the invoker list before destroy,so no new request will enter the destroyed invoker
-		logger.Warnf("this dubboInvoker is destroyed")
+		logger.Warn("[Triple][Invoker] this dubboInvoker is destroyed")
 		result.SetError(base.ErrDestroyedInvoker)
 		return &result
 	}
@@ -226,7 +226,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation base.Invocation) 
 			gRPCMD.Set(k, str...)
 			continue
 		}
-		logger.Warnf("[Triple Protocol]Triple attachment value with key = %s is invalid, which should be string or []string", k)
+		logger.Warnf("[Triple][Invoker] triple attachment value with key=%s is invalid, which should be string or []string", k)
 	}
 	ctx = metadata.NewOutgoingContext(ctx, gRPCMD)
 	ctx = context.WithValue(ctx, tripleConstant.InterfaceKey, di.BaseInvoker.GetURL().GetParam(constant.InterfaceKey, ""))

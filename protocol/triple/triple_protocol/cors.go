@@ -74,7 +74,7 @@ func buildCorsPolicy(cfg *CorsConfig, handlers []protocolHandler) *CorsConfig {
 	}
 
 	if built.hasWildcard() && !cfg.AllowCredentials && len(cfg.AllowOrigins) > 1 {
-		logger.Warnf("[TRIPLE] CORS: wildcard \"*\" will override other origins when allowCredentials=false")
+		logger.Warnf("[Triple][CORS] CORS: wildcard \"*\" will override other origins when allowCredentials=false")
 	}
 
 	return built
@@ -231,7 +231,7 @@ func (c *CorsConfig) handlePreflight(w http.ResponseWriter, r *http.Request) boo
 	origin := r.Header.Get(corsOrigin)
 	if origin == "" || !c.matchOrigin(origin) {
 		if origin != "" {
-			logger.Debugf("[TRIPLE] CORS forbidden origin: %s", origin)
+			logger.Debugf("[Triple][CORS] CORS forbidden origin: %s", origin)
 		}
 		w.Header().Add(corsVary, corsOrigin)
 		w.WriteHeader(http.StatusForbidden)
@@ -240,7 +240,7 @@ func (c *CorsConfig) handlePreflight(w http.ResponseWriter, r *http.Request) boo
 
 	requestedMethod := r.Header.Get(corsRequestMethod)
 	if requestedMethod != "" && !c.containsMethod(requestedMethod) {
-		logger.Debugf("[TRIPLE] CORS forbidden method: %s (origin: %s)", requestedMethod, origin)
+		logger.Debugf("[Triple][CORS] CORS forbidden method: %s (origin: %s)", requestedMethod, origin)
 		w.Header().Add(corsVary, corsOrigin)
 		w.WriteHeader(http.StatusForbidden)
 		return true

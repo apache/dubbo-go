@@ -113,7 +113,7 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 	if tracingConfRaw, ok := url.GetAttribute(constant.TracingConfigKey); ok {
 		tracingConfig, ok := tracingConfRaw.(*global.TracingConfig)
 		if !ok {
-			logger.Warnf("invalid tracing config type %T, expected *global.TracingConfig", tracingConfRaw)
+			logger.Warnf("[Dubbo3] invalid tracing config type %T, expected *global.TracingConfig", tracingConfRaw)
 		} else if tracingConfig != nil {
 			if tracingConfig.Name == "jaeger" {
 				serviceName := tracingConfig.ServiceName
@@ -125,7 +125,7 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 					useAgent = *tracingConfig.UseAgent
 				}
 				if serviceName == "" {
-					logger.Warnf("jaeger tracing skipped: no service name available for %s", url.String())
+					logger.Warnf("[Dubbo3] jaeger tracing skipped: no service name available for %s", url.String())
 				} else {
 					opts = append(opts, triConfig.WithJaegerConfig(
 						tracingConfig.Address,
@@ -134,7 +134,7 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 					))
 				}
 			} else {
-				logger.Warnf("unsupported tracing name %s, now triple only support jaeger", tracingConfig.Name)
+				logger.Warnf("[Dubbo3] unsupported tracing name %s, now triple only support jaeger", tracingConfig.Name)
 			}
 		}
 	}
@@ -145,7 +145,7 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 		// use global TLSConfig handle tls
 		tlsConf, ok := tlsConfRaw.(*global.TLSConfig)
 		if !ok {
-			logger.Errorf("DUBBO3 Client initialized the TLSConfig configuration failed")
+			logger.Errorf("[Dubbo3] DUBBO3 Client initialized the TLSConfig configuration failed")
 			return nil, errors.New("DUBBO3 Client initialized the TLSConfig configuration failed")
 		}
 		if dubbotls.IsClientTLSValid(tlsConf) {
@@ -153,7 +153,7 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 			triOption.TLSCertFile = tlsConf.TLSCertFile
 			triOption.TLSKeyFile = tlsConf.TLSKeyFile
 			triOption.TLSServerName = tlsConf.TLSServerName
-			logger.Infof("DUBBO3 Server initialized the TLSConfig configuration")
+			logger.Infof("[Dubbo3] DUBBO3 Server initialized the TLSConfig configuration")
 		}
 	}
 	client, err := triple.NewTripleClient(consumerService, triOption)
@@ -193,7 +193,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation base.Invocation) 
 	if !di.BaseInvoker.IsAvailable() {
 		// Generally, the case will not happen, because the invoker has been removed
 		// from the invoker list before destroy,so no new request will enter the destroyed invoker
-		logger.Warnf("this dubboInvoker is destroyed")
+		logger.Warnf("[Dubbo3] this dubboInvoker is destroyed")
 		result.Err = base.ErrDestroyedInvoker
 		return &result
 	}
@@ -209,7 +209,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation base.Invocation) 
 	if !di.BaseInvoker.IsAvailable() {
 		// Generally, the case will not happen, because the invoker has been removed
 		// from the invoker list before destroy,so no new request will enter the destroyed invoker
-		logger.Warnf("this grpcInvoker is destroying")
+		logger.Warnf("[Dubbo3] this grpcInvoker is destroying")
 		result.Err = base.ErrDestroyedInvoker
 		return &result
 	}
@@ -242,7 +242,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation base.Invocation) 
 			gRPCMD.Set(k, str...)
 			continue
 		}
-		logger.Warnf("[Triple Protocol]Triple attachment value with key = %s is invalid, which should be string or []string", k)
+		logger.Warnf("[Dubbo3] triple attachment value with key=%s is invalid, which should be string or []string", k)
 	}
 	ctx = metadata.NewOutgoingContext(ctx, gRPCMD)
 	ctx = context.WithValue(ctx, tripleConstant.InterfaceKey, di.BaseInvoker.GetURL().GetParam(constant.InterfaceKey, ""))

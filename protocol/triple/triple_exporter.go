@@ -48,7 +48,7 @@ func (te *TripleExporter) UnExport() {
 	// todo: move UnRegister logic to a better place
 	err := common.ServiceMap.UnRegister(interfaceName, TRIPLE, te.GetInvoker().GetURL().ServiceKey())
 	if err != nil {
-		logger.Errorf("[GrpcNewExporter.UnExport] error: %v", err)
+		logger.Errorf("[Triple][Exporter] unexport failed, err=%v", err)
 	}
 	te.BaseExporter.UnExport()
 }

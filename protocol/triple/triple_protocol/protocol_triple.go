@@ -497,7 +497,7 @@ func (m *tripleUnaryMarshaler) Marshal(message any) *Error {
 	data, err := m.codec.Marshal(message)
 	if err != nil {
 		if m.backupCodec != nil && m.codec.Name() != m.backupCodec.Name() {
-			logger.Warnf("failed to marshal message with primary codec %s, trying fallback codec %s", m.codec.Name(), m.backupCodec.Name())
+			logger.Warnf("[Triple] failed to marshal message with primary codec %s, trying fallback codec %s", m.codec.Name(), m.backupCodec.Name())
 			data, err = m.backupCodec.Marshal(message)
 		}
 		if err != nil {
@@ -557,7 +557,7 @@ func (u *tripleUnaryUnmarshaler) Unmarshal(message any) *Error {
 	err := u.UnmarshalFunc(message, u.codec.Unmarshal)
 	if err != nil {
 		if u.backupCodec != nil && u.codec.Name() != u.backupCodec.Name() {
-			logger.Warnf("failed to unmarshal message with primary codec %s, trying fallback codec %s", u.codec.Name(), u.backupCodec.Name())
+			logger.Warnf("[Triple] failed to unmarshal message with primary codec %s, trying fallback codec %s", u.codec.Name(), u.backupCodec.Name())
 			err = u.UnmarshalFunc(message, u.backupCodec.Unmarshal)
 		}
 	}

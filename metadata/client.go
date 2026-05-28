@@ -85,7 +85,7 @@ func (m *triMetadataServiceV2) getMetadataInfo(ctx context.Context, revision str
 	inv, _ := generateInvocation(m.invoker.GetURL(), methodName, req, metadataInfo, constant.CallUnary)
 	res := m.invoker.Invoke(context.Background(), inv)
 	if res.Error() != nil {
-		logger.Errorf("could not get the metadata info from remote provider: %v", res.Error())
+		logger.Errorf("[Metadata] could not get the metadata info from remote provider, err=%v", res.Error())
 		return nil, res.Error()
 	}
 	return convertMetadataInfoV2(metadataInfo), nil
@@ -156,7 +156,7 @@ func (m *remoteMetadataServiceV1) getMetadataInfo(ctx context.Context, revision 
 
 	res := m.invoker.Invoke(context.Background(), inv)
 	if res.Error() != nil {
-		logger.Errorf("[MetadataRPC] RPC call failed to %s: %v", m.invoker.GetURL().Location, res.Error())
+		logger.Errorf("[Metadata] RPC call failed to %s, err=%v", m.invoker.GetURL().Location, res.Error())
 		return nil, res.Error()
 	}
 
@@ -164,7 +164,7 @@ func (m *remoteMetadataServiceV1) getMetadataInfo(ctx context.Context, revision 
 
 	// Handle nil response (e.g., Java service not fully initialized)
 	if rawResult == nil {
-		logger.Warnf("[MetadataRPC] Provider %s returned nil metadata (service may not be ready), revision: %s",
+		logger.Warnf("[Metadata] Provider %s returned nil metadata (service may not be ready), revision=%s",
 			m.invoker.GetURL().Location, revision)
 		return nil, perrors.Errorf("metadata is nil from %s, revision: %s", m.invoker.GetURL().Location, revision)
 	}
@@ -177,18 +177,18 @@ func (m *remoteMetadataServiceV1) getMetadataInfo(ctx context.Context, revision 
 	} else if strValue, ok := rawResult.(string); ok {
 		// Old Java Dubbo version returns JSON string instead of MetadataInfo object
 		// Try to parse it as JSON for backward compatibility
-		logger.Warnf("[MetadataRPC] Provider %s returned string type (old Dubbo version), attempting JSON parse", m.invoker.GetURL().Location)
+		logger.Warnf("[Metadata] Provider %s returned string type (old Dubbo version), attempting JSON parse", m.invoker.GetURL().Location)
 
 		metadataInfo = &info.MetadataInfo{}
 		if err := json.Unmarshal([]byte(strValue), metadataInfo); err != nil {
-			logger.Errorf("[MetadataRPC] Failed to parse JSON string from provider %s: %v", m.invoker.GetURL().Location, err)
-			logger.Errorf("[MetadataRPC]   - String content: %s", truncateString(strValue, 1000))
+			logger.Errorf("[Metadata] failed to parse JSON string from provider %s, err=%v", m.invoker.GetURL().Location, err)
+			logger.Errorf("[Metadata]   - String content: %s", truncateString(strValue, 1000))
 			return nil, perrors.Errorf("failed to parse metadata JSON from %s: %v", m.invoker.GetURL().Location, err)
 		}
 
 	} else {
 		// Neither MetadataInfo nor String - this is unexpected
-		logger.Errorf("[MetadataRPC] Unexpected metadata type from %s: got %T, expected *info.MetadataInfo or string",
+		logger.Errorf("[Metadata] unexpected metadata type from %s: got %T, expected *info.MetadataInfo or string",
 			m.invoker.GetURL().Location, rawResult)
 		return nil, perrors.Errorf("unexpected metadata type from %s: got %T, expected *info.MetadataInfo or string",
 			m.invoker.GetURL().Location, rawResult)
@@ -254,7 +254,7 @@ func getMetadataServiceUrlParams(ins registry.ServiceInstance) map[string]string
 	if str, ok := ps[constant.MetadataServiceURLParamsPropertyName]; ok && len(str) > 0 {
 		err := json.Unmarshal([]byte(str), &res)
 		if err != nil {
-			logger.Errorf("could not parse the metadata service url parameters to map: %v", err)
+			logger.Errorf("[Metadata] could not parse the metadata service url parameters to map, err=%v", err)
 		}
 	}
 
