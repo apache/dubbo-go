@@ -32,8 +32,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const testModuleContent = "module example.com/loggercheck\n\ngo 1.25.0\n"
-
 func TestScanFindsNonFormattedWithFormatArgs(t *testing.T) {
 	dir := t.TempDir()
 	writeTempFile(t, dir, "go.mod", goModuleContentWithReplace("example.com/loggercheck", repoRoot(t)))

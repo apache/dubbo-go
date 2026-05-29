@@ -62,8 +62,6 @@ var formattedMethods = map[string]bool{
 	"Debugf": true,
 }
 
-var fmtSprintfSelectorRegex = regexp.MustCompile(`^fmt\.Sprintf$`)
-
 type Finding struct {
 	Position token.Position
 	Message  string
