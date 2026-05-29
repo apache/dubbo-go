@@ -77,7 +77,7 @@ func (sd *ServiceDiscovery) registerService(instance *ServiceInstance) error {
 
 	err = sd.client.Delete(path)
 	if err != nil {
-		logger.Infof("Failed when trying to delete node %s, will continue with the registration process. "+
+		logger.Infof("[Remoting][Zookeeper] failed when trying to delete node %s, will continue with the registration process. "+
 			"This is designed to avoid previous ephemeral node hold the position,"+
 			" so it's normal for this action to fail because the node might not exist or has been deleted, error msg is %s.", path, err.Error())
 	}
@@ -88,7 +88,7 @@ func (sd *ServiceDiscovery) registerService(instance *ServiceInstance) error {
 		if state != nil {
 			_, err = sd.client.SetContent(path, data, state.Version+1)
 			if err != nil {
-				logger.Debugf("Try to update the node data failed. In most cases, it's not a problem. ")
+				logger.Debugf("[Remoting][Zookeeper] try to update the node data failed. In most cases, it's not a problem")
 			}
 		}
 		return nil
@@ -104,7 +104,7 @@ func (sd *ServiceDiscovery) RegisterService(instance *ServiceInstance) error {
 	value, loaded := sd.services.LoadOrStore(instance.ID, &Entry{})
 	entry, ok := value.(*Entry)
 	if !ok {
-		return perrors.New("[ServiceDiscovery] services value not entry")
+		return perrors.New("[Remoting][Zookeeper] services value not entry")
 	}
 	entry.Lock()
 	defer entry.Unlock()
@@ -123,11 +123,11 @@ func (sd *ServiceDiscovery) RegisterService(instance *ServiceInstance) error {
 func (sd *ServiceDiscovery) UpdateService(instance *ServiceInstance) error {
 	value, ok := sd.services.Load(instance.ID)
 	if !ok {
-		return perrors.Errorf("[ServiceDiscovery] Service{%s} not registered", instance.ID)
+		return perrors.Errorf("[Remoting][Zookeeper] Service{%s} not registered", instance.ID)
 	}
 	entry, ok := value.(*Entry)
 	if !ok {
-		return perrors.New("[ServiceDiscovery] services value not entry")
+		return perrors.New("[Remoting][Zookeeper] services value not entry")
 	}
 	data, err := json.Marshal(instance)
 	if err != nil {
@@ -160,7 +160,7 @@ func (sd *ServiceDiscovery) updateInternalService(name, id string) {
 	defer entry.Unlock()
 	instance, err := sd.QueryForInstance(name, id)
 	if err != nil {
-		logger.Infof("[zkServiceDiscovery] UpdateInternalService{%s} error = err{%v}", id, err)
+		logger.Infof("[Remoting][Zookeeper] updateInternalService{%s} error = err{%v}", id, err)
 		return
 	}
 	entry.instance = instance
@@ -194,7 +194,7 @@ func (sd *ServiceDiscovery) ReRegisterServices() {
 		instance := entry.instance
 		err := sd.registerService(instance)
 		if err != nil {
-			logger.Errorf("[zkServiceDiscovery] registerService{%s} error = err{%v}", instance.ID, perrors.WithStack(err))
+			logger.Errorf("[Remoting][Zookeeper] registerService{%s} error = err{%v}", instance.ID, perrors.WithStack(err))
 			return true
 		}
 		sd.ListenServiceInstanceEvent(instance.Name, instance.ID, sd)
@@ -257,7 +257,7 @@ func (sd *ServiceDiscovery) DataChange(eventType remoting.Event) bool {
 	path := eventType.Path
 	name, id, err := sd.getNameAndID(path)
 	if err != nil {
-		logger.Errorf("[ServiceDiscovery] data change error = {%v}", err)
+		logger.Errorf("[Remoting][Zookeeper] data change error = {%v}", err)
 		return true
 	}
 	sd.updateInternalService(name, id)
@@ -270,7 +270,7 @@ func (sd *ServiceDiscovery) getNameAndID(path string) (string, string, error) {
 	path = strings.TrimPrefix(path, constant.PathSeparator)
 	pathSlice := strings.Split(path, constant.PathSeparator)
 	if len(pathSlice) < 2 {
-		return "", "", perrors.Errorf("[ServiceDiscovery] path{%s} dont contain name and id", path)
+		return "", "", perrors.Errorf("[Remoting][Zookeeper] path{%s} dont contain name and id", path)
 	}
 	name := pathSlice[0]
 	id := pathSlice[1]

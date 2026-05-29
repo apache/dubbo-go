@@ -81,11 +81,11 @@ func initClient(url *common.URL) {
 		if protocolConfRaw, ok := url.GetAttribute(constant.ProtocolConfigKey); ok {
 			protocolConfig, ok := protocolConfRaw.(map[string]*global.ProtocolConfig)
 			if !ok {
-				logger.Warnf("protocolConfig assert failed")
+				logger.Warn("[Remoting][Getty] protocolConfig assert failed")
 				return
 			}
 			if protocolConfig == nil {
-				logger.Warnf("protocolConfig is nil")
+				logger.Warn("[Remoting][Getty] protocolConfig is nil")
 				return
 			}
 			protocolConfMap = protocolConfig
@@ -94,7 +94,7 @@ func initClient(url *common.URL) {
 
 	protocolConf := protocolConfMap[url.Protocol]
 	if protocolConf == nil {
-		logger.Info("use default getty client config")
+		logger.Info("[Remoting][Getty] use default getty client config")
 		return
 	} else {
 		//client tls config
@@ -104,7 +104,7 @@ func initClient(url *common.URL) {
 			if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
 				tlsConf, ok := tlsConfRaw.(*global.TLSConfig)
 				if !ok {
-					logger.Errorf("Getty client initialized the TLSConfig configuration failed")
+					logger.Error("[Remoting][Getty] getty client initialized the TLSConfig configuration failed")
 					return
 				}
 				tlsConfig = tlsConf
@@ -122,7 +122,7 @@ func initClient(url *common.URL) {
 			// use global TLSConfig handle tls
 			tlsConf, ok := tlsConfRaw.(*global.TLSConfig)
 			if !ok {
-				logger.Errorf("Getty client initialized the TLSConfig configuration failed")
+				logger.Error("[Remoting][Getty] getty client initialized the TLSConfig configuration failed")
 				return
 			}
 			if dubbotls.IsClientTLSValid(tlsConf) {
@@ -132,13 +132,13 @@ func initClient(url *common.URL) {
 					ClientPrivateKeyPath:          tlsConf.TLSKeyFile,
 					ClientTrustCertCollectionPath: tlsConf.CACertFile,
 				}
-				logger.Infof("Getty client initialized the TLSConfig configuration")
+				logger.Info("[Remoting][Getty] getty client initialized the TLSConfig configuration")
 			}
 		}
 		//getty params
 		gettyClientConfig := protocolConf.Params
 		if gettyClientConfig == nil {
-			logger.Debugf("gettyClientConfig is nil")
+			logger.Debug("[Remoting][Getty] gettyClientConfig is nil")
 			return
 		}
 		gettyClientConfigBytes, err := yaml.Marshal(gettyClientConfig)
@@ -151,7 +151,7 @@ func initClient(url *common.URL) {
 		}
 	}
 	if err := clientConf.CheckValidity(); err != nil {
-		logger.Warnf("[CheckValidity] error: %v", err)
+		logger.Warnf("[Remoting][Getty] checkValidity error, err=%v", err)
 		return
 	}
 	setClientGrPool()
@@ -164,7 +164,7 @@ func SetClientConf(c ClientConfig) {
 	clientConf = &c
 	err := clientConf.CheckValidity()
 	if err != nil {
-		logger.Warnf("[ClientConfig CheckValidity] error: %v", err)
+		logger.Warnf("[Remoting][Getty] clientConfig checkValidity error, err=%v", err)
 		return
 	}
 	setClientGrPool()
@@ -225,7 +225,7 @@ func (c *Client) Connect(url *common.URL) error {
 	c.addr = url.Location
 	_, _, err := c.selectSession(c.addr)
 	if err != nil {
-		logger.Errorf("try to connect server %v failed for : %v", url.Location, err)
+		logger.Errorf("[Remoting][Getty] try to connect server %v failed, err=%v", url.Location, err)
 	}
 	return err
 }
@@ -260,7 +260,7 @@ func (c *Client) Request(request *remoting.Request, timeout time.Duration, respo
 	)
 	if totalLen, sendLen, err = c.transfer(session, request, timeout); err != nil {
 		if sendLen != 0 && totalLen != sendLen {
-			logger.Warnf("start to close the session at request because %d of %d bytes data is sent success. err:%+v", sendLen, totalLen, err)
+			logger.Warnf("[Remoting][Getty] start to close the session at request because %d of %d bytes data is sent success. err=%+v", sendLen, totalLen, err)
 			go c.Close()
 		}
 		return perrors.WithStack(err)

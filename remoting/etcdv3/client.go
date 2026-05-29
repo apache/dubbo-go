@@ -38,7 +38,7 @@ func ValidateClient(container clientFacade, opts ...gxetcd.Option) error {
 	if container.Client() == nil {
 		newClient, err := gxetcd.NewClient(options.Name, options.Endpoints, options.Timeout, options.Heartbeat)
 		if err != nil {
-			logger.Warnf("new etcd client (name{%s}, etcd addresses{%v}, timeout{%s}) = error{%v}",
+			logger.Warnf("[Remoting][Etcdv3] new etcd client, name=%s addresses=%v timeout=%s err=%v",
 				options.Name, options.Endpoints, options.Timeout.String(), err)
 			return perrors.WithMessagef(err, "new client (address:%+v)", options.Endpoints)
 		}
@@ -49,7 +49,7 @@ func ValidateClient(container clientFacade, opts ...gxetcd.Option) error {
 	if container.Client().GetRawClient() == nil {
 		newClient, err := gxetcd.NewClient(options.Name, options.Endpoints, options.Timeout, options.Heartbeat)
 		if err != nil {
-			logger.Warnf("new etcd client (name{%s}, etcd addresses{%v}, timeout{%s}) = error{%v}",
+			logger.Warnf("[Remoting][Etcdv3] new etcd client, name=%s addresses=%v timeout=%s err=%v",
 				options.Name, options.Endpoints, options.Timeout.String(), err)
 			return perrors.WithMessagef(err, "new client (address:%+v)", options.Endpoints)
 		}
@@ -70,7 +70,7 @@ func NewServiceDiscoveryClient(opts ...gxetcd.Option) *gxetcd.Client {
 
 	newClient, err := gxetcd.NewClient(options.Name, options.Endpoints, options.Timeout, options.Heartbeat)
 	if err != nil {
-		logger.Errorf("new etcd client (name{%s}, etcd addresses{%v}, timeout{%s}) = error{%v}",
+		logger.Errorf("[Remoting][Etcdv3] new etcd client, name=%s addresses=%v timeout=%s err=%v",
 			options.Name, options.Endpoints, options.Timeout.String(), err)
 	}
 	return newClient
