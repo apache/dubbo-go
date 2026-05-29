@@ -145,7 +145,7 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 		// use global TLSConfig handle tls
 		tlsConf, ok := tlsConfRaw.(*global.TLSConfig)
 		if !ok {
-			logger.Errorf("[Dubbo3] DUBBO3 Client initialized the TLSConfig configuration failed")
+			logger.Error("[Dubbo3] DUBBO3 Client initialized the TLSConfig configuration failed")
 			return nil, errors.New("DUBBO3 Client initialized the TLSConfig configuration failed")
 		}
 		if dubbotls.IsClientTLSValid(tlsConf) {
@@ -153,7 +153,7 @@ func NewDubboInvoker(url *common.URL) (*DubboInvoker, error) {
 			triOption.TLSCertFile = tlsConf.TLSCertFile
 			triOption.TLSKeyFile = tlsConf.TLSKeyFile
 			triOption.TLSServerName = tlsConf.TLSServerName
-			logger.Infof("[Dubbo3] DUBBO3 Server initialized the TLSConfig configuration")
+			logger.Info("[Dubbo3] DUBBO3 Server initialized the TLSConfig configuration")
 		}
 	}
 	client, err := triple.NewTripleClient(consumerService, triOption)
@@ -193,7 +193,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation base.Invocation) 
 	if !di.BaseInvoker.IsAvailable() {
 		// Generally, the case will not happen, because the invoker has been removed
 		// from the invoker list before destroy,so no new request will enter the destroyed invoker
-		logger.Warnf("[Dubbo3] this dubboInvoker is destroyed")
+		logger.Warn("[Dubbo3] this dubboInvoker is destroyed")
 		result.Err = base.ErrDestroyedInvoker
 		return &result
 	}
@@ -209,7 +209,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation base.Invocation) 
 	if !di.BaseInvoker.IsAvailable() {
 		// Generally, the case will not happen, because the invoker has been removed
 		// from the invoker list before destroy,so no new request will enter the destroyed invoker
-		logger.Warnf("[Dubbo3] this grpcInvoker is destroying")
+		logger.Warn("[Dubbo3] this grpcInvoker is destroying")
 		result.Err = base.ErrDestroyedInvoker
 		return &result
 	}

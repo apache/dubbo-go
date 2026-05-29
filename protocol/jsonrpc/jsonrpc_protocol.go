@@ -98,7 +98,7 @@ func (jp *JsonrpcProtocol) Refer(url *common.URL) base.Invoker {
 
 // Destroy will destroy all invoker and exporter, so it only is called once.
 func (jp *JsonrpcProtocol) Destroy() {
-	logger.Infof("[Jsonrpc] jsonrpcProtocol destroy.")
+	logger.Info("[Jsonrpc] jsonrpcProtocol destroy")
 
 	jp.BaseProtocol.Destroy()
 

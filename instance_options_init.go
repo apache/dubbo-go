@@ -397,8 +397,8 @@ func (rc *InstanceOptions) initGlobalProvider(activateRuntime bool) error {
 			return fmt.Errorf("the adaptive service is disabled, adaptive service verbose should be disabled either")
 		}
 		if activateRuntime {
-			gostLogger.Infof("adaptive service verbose is enabled.")
-			gostLogger.Debugf("debug-level info could be shown.")
+			gostLogger.Info("adaptive service verbose is enabled")
+			gostLogger.Debug("debug-level info could be shown")
 			aslimiter.Verbose = true
 		}
 	}
@@ -695,7 +695,7 @@ func (rc *InstanceOptions) Process(event *config_center.ConfigChangeEvent) {
 	}
 	value, ok := event.Value.(string)
 	if !ok {
-		gostLogger.Errorf("CenterConfig process event value is not string")
+		gostLogger.Error("CenterConfig process event value is not string")
 		return
 	}
 	conf := NewLoaderConf(WithBytes([]byte(value)))

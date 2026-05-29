@@ -74,7 +74,7 @@ func (ti *TripleInvoker) Invoke(ctx context.Context, invocation base.Invocation)
 	if !ti.BaseInvoker.IsAvailable() {
 		// Generally, the case will not happen, because the invoker has been removed
 		// from the invoker list before destroy,so no new request will enter the destroyed invoker
-		logger.Warnf("[Triple][Invoker] TripleInvoker is destroyed")
+		logger.Warn("[Triple][Invoker] tripleInvoker is destroyed")
 		result.SetError(base.ErrDestroyedInvoker)
 		return &result
 	}

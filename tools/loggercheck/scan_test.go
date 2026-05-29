@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -45,6 +46,7 @@ func main() {
 	logger.Error("something failed, err=%v", err)
 }
 `)
+	tidyModule(t, dir)
 	findings, err := Scan(dir, []string{"./..."})
 	require.NoError(t, err)
 	require.Len(t, findings, 1)
@@ -63,6 +65,7 @@ func main() {
 	logger.Infof("no format args here")
 }
 `)
+	tidyModule(t, dir)
 	findings, err := Scan(dir, []string{"./..."})
 	require.NoError(t, err)
 	require.Len(t, findings, 1)
@@ -83,6 +86,7 @@ func main() {
 	logger.Infof(fmt.Sprintf("value is %v", 42))
 }
 `)
+	tidyModule(t, dir)
 	findings, err := Scan(dir, []string{"./..."})
 	require.NoError(t, err)
 	require.Len(t, findings, 1)
@@ -100,6 +104,7 @@ func main() {
 	logger.Info("service exported\n")
 }
 `)
+	tidyModule(t, dir)
 	findings, err := Scan(dir, []string{"./..."})
 	require.NoError(t, err)
 	require.Len(t, findings, 1)
@@ -117,6 +122,7 @@ func main() {
 	logger.Info("file watcher is stopping...")
 }
 `)
+	tidyModule(t, dir)
 	findings, err := Scan(dir, []string{"./..."})
 	require.NoError(t, err)
 	require.Len(t, findings, 1)
@@ -134,6 +140,7 @@ func main() {
 	logger.Info("hot reload completed successfully!")
 }
 `)
+	tidyModule(t, dir)
 	findings, err := Scan(dir, []string{"./..."})
 	require.NoError(t, err)
 	require.Len(t, findings, 1)
@@ -151,6 +158,7 @@ func main() {
 	logger.Infof("[Server] registering service=%s", "demo")
 }
 `)
+	tidyModule(t, dir)
 	findings, err := Scan(dir, []string{"./..."})
 	require.NoError(t, err)
 	require.Empty(t, findings)
@@ -167,6 +175,7 @@ func main() {
 	logger.Info("[Server] service exported")
 }
 `)
+	tidyModule(t, dir)
 	findings, err := Scan(dir, []string{"./..."})
 	require.NoError(t, err)
 	require.Empty(t, findings)
@@ -183,6 +192,7 @@ func main() {
 	fmt.Printf("hello %s\n", "world")
 }
 `)
+	tidyModule(t, dir)
 	findings, err := Scan(dir, []string{"./..."})
 	require.NoError(t, err)
 	require.Empty(t, findings)
@@ -201,6 +211,7 @@ func main() {
 	logger.Infof("no args")
 }
 `)
+	tidyModule(t, dir)
 	findings, err := Scan(dir, []string{"./..."})
 	require.NoError(t, err)
 	assert.Len(t, findings, 2)
@@ -217,6 +228,7 @@ func main() {
 	logger.Infof("no args here")
 }
 `)
+	tidyModule(t, dir)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	code := run(&stdout, &stderr, dir, []string{"./..."})
@@ -230,16 +242,8 @@ func goModuleContentWithReplace(modulePath, dubboGoPath string) string {
 
 go 1.25.0
 
-require (
-	github.com/dubbogo/gost v0.0.0
-	dubbo.apache.org/dubbo-go/v3 v3.0.0
-)
-
-replace (
-	github.com/dubbogo/gost => %s
-	dubbo.apache.org/dubbo-go/v3 => %s
-)
-`, modulePath, filepath.Join(dubboGoPath, "..", "gost"), dubboGoPath)
+require github.com/dubbogo/gost v1.14.3
+`, modulePath)
 }
 
 func writeTempFile(t *testing.T, dir, name, content string) {
@@ -247,6 +251,14 @@ func writeTempFile(t *testing.T, dir, name, content string) {
 	path := filepath.Join(dir, name)
 	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
 	require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
+}
+
+func tidyModule(t *testing.T, dir string) {
+	t.Helper()
+	cmd := exec.Command("go", "mod", "tidy")
+	cmd.Dir = dir
+	out, err := cmd.CombinedOutput()
+	require.NoError(t, err, "go mod tidy failed: %s", string(out))
 }
 
 func repoRoot(t *testing.T) string {

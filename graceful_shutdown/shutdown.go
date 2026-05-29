@@ -295,7 +295,7 @@ func notifyWithRetry(ctx context.Context, name string, callback extension.Gracef
 	retryPolicy := backoff.WithContext(backoff.WithMaxRetries(backOff, uint64(defaultMaxRetries)), ctx)
 	if err := backoff.RetryNotify(operation, retryPolicy, notify); err != nil {
 		if ctx.Err() != nil {
-			logger.Warnf("[GracefulShutdown] notify %s timeout after %d attempts, continuing...", name, attempts)
+			logger.Warnf("[GracefulShutdown] notify %s timeout after %d attempts, continuing", name, attempts)
 			return
 		}
 

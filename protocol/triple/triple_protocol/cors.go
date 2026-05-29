@@ -74,7 +74,7 @@ func buildCorsPolicy(cfg *CorsConfig, handlers []protocolHandler) *CorsConfig {
 	}
 
 	if built.hasWildcard() && !cfg.AllowCredentials && len(cfg.AllowOrigins) > 1 {
-		logger.Warnf("[Triple][CORS] CORS: wildcard \"*\" will override other origins when allowCredentials=false")
+		logger.Warn("[Triple][CORS] CORS: wildcard \"*\" will override other origins when allowCredentials=false")
 	}
 
 	return built

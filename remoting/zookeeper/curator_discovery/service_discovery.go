@@ -88,7 +88,7 @@ func (sd *ServiceDiscovery) registerService(instance *ServiceInstance) error {
 		if state != nil {
 			_, err = sd.client.SetContent(path, data, state.Version+1)
 			if err != nil {
-				logger.Debugf("[Remoting][Zookeeper] try to update the node data failed. In most cases, it's not a problem")
+				logger.Debug("[Remoting][Zookeeper] try to update the node data failed. In most cases, it's not a problem")
 			}
 		}
 		return nil

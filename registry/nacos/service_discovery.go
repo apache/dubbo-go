@@ -292,7 +292,7 @@ func (n *nacosServiceDiscovery) AddListener(listener registry.ServiceInstancesCh
 			GroupName:   n.group,
 			SubscribeCallback: func(services []model.Instance, err error) {
 				if err != nil {
-					logger.Errorf("[Registry][Nacos] could not handle the subscribe notification because the err is not nil, " +
+					logger.Errorf("[Registry][Nacos] could not handle the subscribe notification because the err is not nil, "+
 						"serviceName=%s err=%v", serviceName, err)
 				}
 				instances := make([]registry.ServiceInstance, 0, len(services))

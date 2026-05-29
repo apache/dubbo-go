@@ -97,7 +97,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, ivc base.Invocation) result.
 	if !di.BaseInvoker.IsAvailable() {
 		// Generally, the case will not happen, because the invoker has been removed
 		// from the invoker list before destroy,so no new request will enter the destroyed invoker
-		logger.Warnf("[Dubbo][Invoker] this dubbo invoker is destroyed")
+		logger.Warn("[Dubbo][Invoker] this dubbo invoker is destroyed")
 		res.SetError(base.ErrDestroyedInvoker)
 		return &res
 	}
@@ -105,7 +105,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, ivc base.Invocation) result.
 	client := di.getClient()
 	if client == nil {
 		res.SetError(base.ErrClientClosed)
-		logger.Debug("[Dubbo][Invoker] result err, err=%v", res.Error())
+		logger.Debugf("[Dubbo][Invoker] result err, err=%v", res.Error())
 		return &res
 	}
 

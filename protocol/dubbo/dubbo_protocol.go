@@ -103,7 +103,7 @@ func (dp *DubboProtocol) Refer(url *common.URL) base.Invoker {
 
 // Destroy destroy dubbo service.
 func (dp *DubboProtocol) Destroy() {
-	logger.Infof("[Dubbo] dubbo protocol destroy.")
+	logger.Info("[Dubbo] dubbo protocol destroy")
 
 	dp.BaseProtocol.Destroy()
 

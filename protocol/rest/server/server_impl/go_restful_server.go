@@ -113,7 +113,7 @@ func (grs *GoRestfulServer) Destroy() {
 	if err := grs.srv.Shutdown(ctx); err != nil {
 		logger.Errorf("[Rest][Server] server shutdown failed, err=%v", err)
 	}
-	logger.Infof("[Rest][Server] server exiting")
+	logger.Info("[Rest][Server] server exiting")
 }
 
 // AddGoRestfulServerFilter let user add the http server of go-restful
