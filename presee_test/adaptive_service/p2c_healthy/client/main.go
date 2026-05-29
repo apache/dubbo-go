@@ -42,7 +42,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/client"
 	clsutils "dubbo.apache.org/dubbo-go/v3/cluster/utils"
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
-	protectpb "dubbo.apache.org/dubbo-go/v3/samples/adaptive_service/protect_provider/proto"
+	protectpb "dubbo.apache.org/dubbo-go/v3/presee_test/adaptive_service/protect_provider/proto"
 )
 
 type clientConfig struct {
@@ -274,11 +274,14 @@ func pollServerStats(ctx context.Context, index int, statsURL string, interval t
 			}
 			continue
 		}
-		if closeErr != nil && !warned {
-			logger.Warnf("close stats response failed for %s: %v", statsURL, closeErr)
+		if closeErr != nil {
+			if !warned {
+				logger.Warnf("close stats response failed for %s: %v", statsURL, closeErr)
+			}
 			warned = true
+		} else {
+			warned = false
 		}
-		warned = false
 
 		select {
 		case sink <- snapshotUpdate{index: index, snapshot: snapshot}:

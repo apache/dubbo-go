@@ -9,7 +9,7 @@ The verification does not depend on log files or response attachments. The serve
 Start the provider:
 
 ```bash
-go run ./samples/adaptive_service/rtt_shrink/server \
+go run ./presee_test/adaptive_service/rtt_shrink/server \
   -port 20002 \
   -stats-port 21002 \
   -stages fast:20:30s,medium:100:20s,slow:500:30s
@@ -18,7 +18,7 @@ go run ./samples/adaptive_service/rtt_shrink/server \
 Start the client:
 
 ```bash
-go run ./samples/adaptive_service/rtt_shrink/client \
+go run ./presee_test/adaptive_service/rtt_shrink/client \
   -url 127.0.0.1:20002 \
   -stats-url http://127.0.0.1:21002/stats \
   -concurrency 200 \
@@ -30,7 +30,7 @@ The client writes `rtt_shrink_result.csv` by default. Use `-out ""` to disable C
 For backward-compatible two-stage runs, the server also supports:
 
 ```bash
-go run ./samples/adaptive_service/rtt_shrink/server \
+go run ./presee_test/adaptive_service/rtt_shrink/server \
   -port 20002 \
   -stats-port 21002 \
   -work-ms 50 \

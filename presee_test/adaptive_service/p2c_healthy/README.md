@@ -19,7 +19,7 @@ remaining = limitation - inflight
 Start three providers with different handler costs:
 
 ```bash
-go run ./samples/adaptive_service/p2c_healthy/server \
+go run ./presee_test/adaptive_service/p2c_healthy/server \
   -id fast \
   -port 20101 \
   -stats-port 21101 \
@@ -27,7 +27,7 @@ go run ./samples/adaptive_service/p2c_healthy/server \
 ```
 
 ```bash
-go run ./samples/adaptive_service/p2c_healthy/server \
+go run ./presee_test/adaptive_service/p2c_healthy/server \
   -id medium \
   -port 20102 \
   -stats-port 21102 \
@@ -35,7 +35,7 @@ go run ./samples/adaptive_service/p2c_healthy/server \
 ```
 
 ```bash
-go run ./samples/adaptive_service/p2c_healthy/server \
+go run ./presee_test/adaptive_service/p2c_healthy/server \
   -id slow \
   -port 20103 \
   -stats-port 21103 \
@@ -45,7 +45,7 @@ go run ./samples/adaptive_service/p2c_healthy/server \
 Start the client:
 
 ```bash
-go run ./samples/adaptive_service/p2c_healthy/client \
+go run ./presee_test/adaptive_service/p2c_healthy/client \
   -urls 'tri://127.0.0.1:20101;tri://127.0.0.1:20102;tri://127.0.0.1:20103' \
   -stats-urls 'http://127.0.0.1:21101/stats;http://127.0.0.1:21102/stats;http://127.0.0.1:21103/stats' \
   -concurrency 200 \

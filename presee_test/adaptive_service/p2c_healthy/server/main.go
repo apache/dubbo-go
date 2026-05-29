@@ -32,13 +32,15 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/filter/adaptivesvc"
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
+	protectpb "dubbo.apache.org/dubbo-go/v3/presee_test/adaptive_service/protect_provider/proto"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
-	protectpb "dubbo.apache.org/dubbo-go/v3/samples/adaptive_service/protect_provider/proto"
 	"dubbo.apache.org/dubbo-go/v3/server"
 )
 
-type ProtectServer struct {
+type HealthyServer struct {
+	id        string
 	workDelay time.Duration
 	stats     *serverStats
 }
@@ -52,15 +54,20 @@ type serverStats struct {
 }
 
 type statsResponse struct {
+	ID                  string  `json:"id"`
+	WorkMS              int64   `json:"work_ms"`
 	Active              int64   `json:"active"`
 	MaxActive           int64   `json:"max_active"`
 	Started             int64   `json:"started"`
 	Completed           int64   `json:"completed"`
-	WorkMS              int64   `json:"work_ms"`
 	AvgHandlerLatencyMS float64 `json:"avg_handler_latency_ms"`
+	LimiterFound        bool    `json:"limiter_found"`
+	LimiterLimitation   uint64  `json:"limiter_limitation"`
+	LimiterRemaining    uint64  `json:"limiter_remaining"`
+	LimiterInflight     uint64  `json:"limiter_inflight"`
 }
 
-func (s *ProtectServer) Work(_ context.Context, req *protectpb.WorkRequest) (*protectpb.WorkResponse, error) {
+func (s *HealthyServer) Work(_ context.Context, req *protectpb.WorkRequest) (*protectpb.WorkResponse, error) {
 	start := time.Now()
 	seq := s.stats.started.Add(1)
 	s.stats.begin()
@@ -69,7 +76,7 @@ func (s *ProtectServer) Work(_ context.Context, req *protectpb.WorkRequest) (*pr
 	time.Sleep(s.workDelay)
 
 	return &protectpb.WorkResponse{
-		Message:  "ok:" + req.GetName(),
+		Message:  fmt.Sprintf("%s:ok:%s", s.id, req.GetName()),
 		Sequence: seq,
 	}, nil
 }
@@ -93,23 +100,29 @@ func (s *serverStats) end(start time.Time) {
 	s.totalLatencyNS.Add(time.Since(start).Nanoseconds())
 }
 
-func serveStats(addr string, stats *serverStats, workDelay time.Duration) error {
+func serveStats(addr string, provider *HealthyServer) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/stats", func(w http.ResponseWriter, _ *http.Request) {
-		completed := stats.completed.Load()
+		completed := provider.stats.completed.Load()
 		var avgHandlerLatencyMS float64
 		if completed > 0 {
-			avgHandlerLatencyMS = float64(stats.totalLatencyNS.Load()) / float64(completed) / float64(time.Millisecond)
+			avgHandlerLatencyMS = float64(provider.stats.totalLatencyNS.Load()) / float64(completed) / float64(time.Millisecond)
 		}
 
+		limiterSnapshot, limiterFound := adaptivesvc.GetMethodLimiterSnapshot(protectpb.ProtectServiceName, "Work")
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(statsResponse{
-			Active:              stats.active.Load(),
-			MaxActive:           stats.maxActive.Load(),
-			Started:             stats.started.Load(),
+			ID:                  provider.id,
+			WorkMS:              provider.workDelay.Milliseconds(),
+			Active:              provider.stats.active.Load(),
+			MaxActive:           provider.stats.maxActive.Load(),
+			Started:             provider.stats.started.Load(),
 			Completed:           completed,
-			WorkMS:              workDelay.Milliseconds(),
 			AvgHandlerLatencyMS: avgHandlerLatencyMS,
+			LimiterFound:        limiterFound,
+			LimiterLimitation:   limiterSnapshot.Limitation,
+			LimiterRemaining:    limiterSnapshot.Remaining,
+			LimiterInflight:     limiterSnapshot.Inflight,
 		}); err != nil {
 			logger.Warnf("write stats response failed: %v", err)
 		}
@@ -119,22 +132,22 @@ func serveStats(addr string, stats *serverStats, workDelay time.Duration) error 
 }
 
 func main() {
-	port := flag.Int("port", 20001, "Triple service port")
-	statsPort := flag.Int("stats-port", 21001, "HTTP stats port")
-	workMS := flag.Int("work-ms", 200, "handler work duration in milliseconds")
+	id := flag.String("id", "provider-1", "provider ID returned in WorkResponse.Message")
+	port := flag.Int("port", 20101, "Triple service port")
+	statsPort := flag.Int("stats-port", 21101, "HTTP stats port")
+	workMS := flag.Int("work-ms", 20, "handler work duration in milliseconds")
 	flag.Parse()
 
-	workDelay := time.Duration(*workMS) * time.Millisecond
-	stats := &serverStats{}
-	provider := &ProtectServer{
-		workDelay: workDelay,
-		stats:     stats,
+	provider := &HealthyServer{
+		id:        *id,
+		workDelay: time.Duration(*workMS) * time.Millisecond,
+		stats:     &serverStats{},
 	}
 
 	statsAddr := fmt.Sprintf("127.0.0.1:%d", *statsPort)
 	go func() {
 		logger.Infof("stats listening at http://%s/stats", statsAddr)
-		if err := serveStats(statsAddr, stats, workDelay); err != nil {
+		if err := serveStats(statsAddr, provider); err != nil {
 			logger.Errorf("stats server stopped: %v", err)
 		}
 	}()
@@ -154,7 +167,7 @@ func main() {
 		panic(err)
 	}
 
-	logger.Infof("protect provider listening at tri://127.0.0.1:%d", *port)
+	logger.Infof("p2c healthy provider %s listening at tri://127.0.0.1:%d", *id, *port)
 	if err := srv.Serve(); err != nil {
 		panic(err)
 	}

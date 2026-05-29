@@ -19,7 +19,7 @@ syntax = "proto3";
 
 package adaptive.protect;
 
-option go_package = "dubbo.apache.org/dubbo-go/v3/samples/adaptive_service/protect_provider/proto;protectpb";
+option go_package = "dubbo.apache.org/dubbo-go/v3/presee_test/adaptive_service/protect_provider/proto;protectpb";
 
 message WorkRequest {
   string name = 1;

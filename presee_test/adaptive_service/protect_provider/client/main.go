@@ -41,7 +41,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/client"
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
-	protectpb "dubbo.apache.org/dubbo-go/v3/samples/adaptive_service/protect_provider/proto"
+	protectpb "dubbo.apache.org/dubbo-go/v3/presee_test/adaptive_service/protect_provider/proto"
 )
 
 type clientConfig struct {
@@ -215,11 +215,14 @@ func pollServerStats(ctx context.Context, statsURL string, interval time.Duratio
 			}
 			continue
 		}
-		if closeErr != nil && !warned {
-			logger.Warnf("close stats response failed: %v", closeErr)
+		if closeErr != nil {
+			if !warned {
+				logger.Warnf("close stats response failed: %v", closeErr)
+			}
 			warned = true
+		} else {
+			warned = false
 		}
-		warned = false
 
 		select {
 		case sink <- snapshot:

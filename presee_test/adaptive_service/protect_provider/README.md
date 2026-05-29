@@ -11,7 +11,7 @@ protoc \
   --go_out=. --go_opt=paths=source_relative \
   --plugin=protoc-gen-go-triple=./tools/protoc-gen-go-triple/protoc-gen-go-triple \
   --go-triple_out=. \
-  samples/adaptive_service/protect_provider/proto/protect.proto
+  presee_test/adaptive_service/protect_provider/proto/protect.proto
 ```
 
 ## Run
@@ -19,13 +19,13 @@ protoc \
 Start the provider:
 
 ```bash
-go run ./samples/adaptive_service/protect_provider/server -port 20001 -stats-port 21001 -work-ms 200
+go run ./presee_test/adaptive_service/protect_provider/server -port 20001 -stats-port 21001 -work-ms 200
 ```
 
 Start the load client:
 
 ```bash
-go run ./samples/adaptive_service/protect_provider/client \
+go run ./presee_test/adaptive_service/protect_provider/client \
   -url 127.0.0.1:20001 \
   -stats-url http://127.0.0.1:21001/stats \
   -concurrency 200 \

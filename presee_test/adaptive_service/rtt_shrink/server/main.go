@@ -36,8 +36,8 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/filter/adaptivesvc"
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
+	protectpb "dubbo.apache.org/dubbo-go/v3/presee_test/adaptive_service/protect_provider/proto"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
-	protectpb "dubbo.apache.org/dubbo-go/v3/samples/adaptive_service/protect_provider/proto"
 	"dubbo.apache.org/dubbo-go/v3/server"
 )
 
@@ -183,8 +183,8 @@ func main() {
 	statsAddr := fmt.Sprintf("127.0.0.1:%d", *statsPort)
 	go func() {
 		logger.Infof("stats listening at http://%s/stats", statsAddr)
-		if err := serveStats(statsAddr, provider); err != nil {
-			logger.Errorf("stats server stopped: %v", err)
+		if serveErr := serveStats(statsAddr, provider); serveErr != nil {
+			logger.Errorf("stats server stopped: %v", serveErr)
 		}
 	}()
 

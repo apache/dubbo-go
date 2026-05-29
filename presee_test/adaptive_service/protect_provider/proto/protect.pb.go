@@ -18,7 +18,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v3.12.4
-// source: samples/adaptive_service/protect_provider/proto/protect.proto
+// source: presee_test/adaptive_service/protect_provider/proto/protect.proto
 
 package protectpb
 
@@ -47,7 +47,7 @@ type WorkRequest struct {
 
 func (x *WorkRequest) Reset() {
 	*x = WorkRequest{}
-	mi := &file_samples_adaptive_service_protect_provider_proto_protect_proto_msgTypes[0]
+	mi := &file_presee_test_adaptive_service_protect_provider_proto_protect_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -59,7 +59,7 @@ func (x *WorkRequest) String() string {
 func (*WorkRequest) ProtoMessage() {}
 
 func (x *WorkRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_samples_adaptive_service_protect_provider_proto_protect_proto_msgTypes[0]
+	mi := &file_presee_test_adaptive_service_protect_provider_proto_protect_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -72,7 +72,7 @@ func (x *WorkRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkRequest.ProtoReflect.Descriptor instead.
 func (*WorkRequest) Descriptor() ([]byte, []int) {
-	return file_samples_adaptive_service_protect_provider_proto_protect_proto_rawDescGZIP(), []int{0}
+	return file_presee_test_adaptive_service_protect_provider_proto_protect_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *WorkRequest) GetName() string {
@@ -99,7 +99,7 @@ type WorkResponse struct {
 
 func (x *WorkResponse) Reset() {
 	*x = WorkResponse{}
-	mi := &file_samples_adaptive_service_protect_provider_proto_protect_proto_msgTypes[1]
+	mi := &file_presee_test_adaptive_service_protect_provider_proto_protect_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -111,7 +111,7 @@ func (x *WorkResponse) String() string {
 func (*WorkResponse) ProtoMessage() {}
 
 func (x *WorkResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_samples_adaptive_service_protect_provider_proto_protect_proto_msgTypes[1]
+	mi := &file_presee_test_adaptive_service_protect_provider_proto_protect_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -124,7 +124,7 @@ func (x *WorkResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkResponse.ProtoReflect.Descriptor instead.
 func (*WorkResponse) Descriptor() ([]byte, []int) {
-	return file_samples_adaptive_service_protect_provider_proto_protect_proto_rawDescGZIP(), []int{1}
+	return file_presee_test_adaptive_service_protect_provider_proto_protect_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *WorkResponse) GetMessage() string {
@@ -141,11 +141,11 @@ func (x *WorkResponse) GetSequence() int64 {
 	return 0
 }
 
-var File_samples_adaptive_service_protect_provider_proto_protect_proto protoreflect.FileDescriptor
+var File_presee_test_adaptive_service_protect_provider_proto_protect_proto protoreflect.FileDescriptor
 
-const file_samples_adaptive_service_protect_provider_proto_protect_proto_rawDesc = "" +
+const file_presee_test_adaptive_service_protect_provider_proto_protect_proto_rawDesc = "" +
 	"\n" +
-	"=samples/adaptive_service/protect_provider/proto/protect.proto\x12\x10adaptive.protect\"F\n" +
+	"=presee_test/adaptive_service/protect_provider/proto/protect.proto\x12\x10adaptive.protect\"F\n" +
 	"\vWorkRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12#\n" +
 	"\rpayload_bytes\x18\x02 \x01(\x05R\fpayloadBytes\"D\n" +
@@ -153,26 +153,26 @@ const file_samples_adaptive_service_protect_provider_proto_protect_proto_rawDesc
 	"\amessage\x18\x01 \x01(\tR\amessage\x12\x1a\n" +
 	"\bsequence\x18\x02 \x01(\x03R\bsequence2Y\n" +
 	"\x0eProtectService\x12G\n" +
-	"\x04Work\x12\x1d.adaptive.protect.WorkRequest\x1a\x1e.adaptive.protect.WorkResponse\"\x00BXZVdubbo.apache.org/dubbo-go/v3/samples/adaptive_service/protect_provider/proto;protectpbb\x06proto3"
+	"\x04Work\x12\x1d.adaptive.protect.WorkRequest\x1a\x1e.adaptive.protect.WorkResponse\"\x00BXZVdubbo.apache.org/dubbo-go/v3/presee_test/adaptive_service/protect_provider/proto;protectpbb\x06proto3"
 
 var (
-	file_samples_adaptive_service_protect_provider_proto_protect_proto_rawDescOnce sync.Once
-	file_samples_adaptive_service_protect_provider_proto_protect_proto_rawDescData []byte
+	file_presee_test_adaptive_service_protect_provider_proto_protect_proto_rawDescOnce sync.Once
+	file_presee_test_adaptive_service_protect_provider_proto_protect_proto_rawDescData []byte
 )
 
-func file_samples_adaptive_service_protect_provider_proto_protect_proto_rawDescGZIP() []byte {
-	file_samples_adaptive_service_protect_provider_proto_protect_proto_rawDescOnce.Do(func() {
-		file_samples_adaptive_service_protect_provider_proto_protect_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_samples_adaptive_service_protect_provider_proto_protect_proto_rawDesc), len(file_samples_adaptive_service_protect_provider_proto_protect_proto_rawDesc)))
+func file_presee_test_adaptive_service_protect_provider_proto_protect_proto_rawDescGZIP() []byte {
+	file_presee_test_adaptive_service_protect_provider_proto_protect_proto_rawDescOnce.Do(func() {
+		file_presee_test_adaptive_service_protect_provider_proto_protect_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_presee_test_adaptive_service_protect_provider_proto_protect_proto_rawDesc), len(file_presee_test_adaptive_service_protect_provider_proto_protect_proto_rawDesc)))
 	})
-	return file_samples_adaptive_service_protect_provider_proto_protect_proto_rawDescData
+	return file_presee_test_adaptive_service_protect_provider_proto_protect_proto_rawDescData
 }
 
-var file_samples_adaptive_service_protect_provider_proto_protect_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
-var file_samples_adaptive_service_protect_provider_proto_protect_proto_goTypes = []any{
+var file_presee_test_adaptive_service_protect_provider_proto_protect_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_presee_test_adaptive_service_protect_provider_proto_protect_proto_goTypes = []any{
 	(*WorkRequest)(nil),  // 0: adaptive.protect.WorkRequest
 	(*WorkResponse)(nil), // 1: adaptive.protect.WorkResponse
 }
-var file_samples_adaptive_service_protect_provider_proto_protect_proto_depIdxs = []int32{
+var file_presee_test_adaptive_service_protect_provider_proto_protect_proto_depIdxs = []int32{
 	0, // 0: adaptive.protect.ProtectService.Work:input_type -> adaptive.protect.WorkRequest
 	1, // 1: adaptive.protect.ProtectService.Work:output_type -> adaptive.protect.WorkResponse
 	1, // [1:2] is the sub-list for method output_type
@@ -182,26 +182,26 @@ var file_samples_adaptive_service_protect_provider_proto_protect_proto_depIdxs =
 	0, // [0:0] is the sub-list for field type_name
 }
 
-func init() { file_samples_adaptive_service_protect_provider_proto_protect_proto_init() }
-func file_samples_adaptive_service_protect_provider_proto_protect_proto_init() {
-	if File_samples_adaptive_service_protect_provider_proto_protect_proto != nil {
+func init() { file_presee_test_adaptive_service_protect_provider_proto_protect_proto_init() }
+func file_presee_test_adaptive_service_protect_provider_proto_protect_proto_init() {
+	if File_presee_test_adaptive_service_protect_provider_proto_protect_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_samples_adaptive_service_protect_provider_proto_protect_proto_rawDesc), len(file_samples_adaptive_service_protect_provider_proto_protect_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_presee_test_adaptive_service_protect_provider_proto_protect_proto_rawDesc), len(file_presee_test_adaptive_service_protect_provider_proto_protect_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_samples_adaptive_service_protect_provider_proto_protect_proto_goTypes,
-		DependencyIndexes: file_samples_adaptive_service_protect_provider_proto_protect_proto_depIdxs,
-		MessageInfos:      file_samples_adaptive_service_protect_provider_proto_protect_proto_msgTypes,
+		GoTypes:           file_presee_test_adaptive_service_protect_provider_proto_protect_proto_goTypes,
+		DependencyIndexes: file_presee_test_adaptive_service_protect_provider_proto_protect_proto_depIdxs,
+		MessageInfos:      file_presee_test_adaptive_service_protect_provider_proto_protect_proto_msgTypes,
 	}.Build()
-	File_samples_adaptive_service_protect_provider_proto_protect_proto = out.File
-	file_samples_adaptive_service_protect_provider_proto_protect_proto_goTypes = nil
-	file_samples_adaptive_service_protect_provider_proto_protect_proto_depIdxs = nil
+	File_presee_test_adaptive_service_protect_provider_proto_protect_proto = out.File
+	file_presee_test_adaptive_service_protect_provider_proto_protect_proto_goTypes = nil
+	file_presee_test_adaptive_service_protect_provider_proto_protect_proto_depIdxs = nil
 }
