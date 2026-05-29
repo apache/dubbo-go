@@ -112,7 +112,7 @@ func (r *MockRegistry) Subscribe(url *common.URL, notifyListener NotifyListener)
 					return
 				}
 
-				logger.Infof("[Mock Registry] update begin, service event: %v", serviceEvent.String())
+				logger.Infof("[Registry] update begin, event=%v", serviceEvent.String())
 				notifyListener.Notify(serviceEvent)
 			}
 		}
@@ -171,7 +171,7 @@ func (r *MockRegistry) MockEvents(events []*ServiceEvent) {
 
 func (r *MockRegistry) checkLoopSubscribe(url *common.URL) (int, Listener) {
 	if !r.IsAvailable() {
-		logger.Warnf("event listener game over.")
+		logger.Warn("[Registry] event listener game over")
 		time.Sleep(time.Duration(3) * time.Second)
 		return -1, nil
 	}
@@ -179,7 +179,7 @@ func (r *MockRegistry) checkLoopSubscribe(url *common.URL) (int, Listener) {
 	listener, err := r.subscribe(url)
 	if err != nil {
 		if !r.IsAvailable() {
-			logger.Warnf("event listener game over.")
+			logger.Warn("[Registry] event listener game over")
 			return -1, nil
 		}
 		time.Sleep(time.Duration(3) * time.Second)

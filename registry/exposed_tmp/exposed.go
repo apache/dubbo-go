@@ -43,7 +43,7 @@ func RegisterServiceInstanceContext(ctx context.Context) error {
 		// config test -> metadata exporter -> dubbo protocol/remoting -> config, cycle import will occur
 		// some day we fix the cycle import then can remove this recover
 		if err := recover(); err != nil {
-			logger.Errorf("register service instance failed,please check if registry protocol is imported, error: %v", err)
+			logger.Errorf("[Registry][Exposed] register service instance failed, please check if registry protocol is imported, err=%v", err)
 		}
 	}()
 	protocol := extension.GetProtocol(constant.RegistryKey)
@@ -66,7 +66,7 @@ func RegisterServiceInstanceContext(ctx context.Context) error {
 func UnregisterServiceInstance() error {
 	defer func() {
 		if err := recover(); err != nil {
-			logger.Errorf("unregister service instance failed,please check if registry protocol is imported, error: %v", err)
+			logger.Errorf("[Registry][Exposed] unregister service instance failed, please check if registry protocol is imported, err=%v", err)
 		}
 	}()
 	protocol := extension.GetProtocol(constant.RegistryKey)

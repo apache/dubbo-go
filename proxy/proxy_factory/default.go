@@ -110,7 +110,7 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation base.Invocation) 
 	// get service
 	svc := common.ServiceMap.GetServiceByServiceKey(proto, url.ServiceKey())
 	if svc == nil {
-		logger.Errorf("cannot find service [%s] in %s", path, proto)
+		logger.Errorf("[Proxy] cannot find service [%s] in %s", path, proto)
 		result.SetError(perrors.Errorf("cannot find service [%s] in %s", path, proto))
 		return result
 	}
@@ -118,7 +118,7 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation base.Invocation) 
 	// get method
 	method := svc.Method()[methodName]
 	if method == nil {
-		logger.Errorf("cannot find method [%s] of service [%s] in %s", methodName, path, proto)
+		logger.Errorf("[Proxy] cannot find method [%s] of service [%s] in %s", methodName, path, proto)
 		result.SetError(perrors.Errorf("cannot find method [%s] of service [%s] in %s", methodName, path, proto))
 		return result
 	}
@@ -154,7 +154,7 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation base.Invocation) 
 	returnValues, callErr := callLocalMethod(method.Method(), in, useCallSlice)
 
 	if callErr != nil {
-		logger.Errorf("Invoke function error: %+v, service: %#v", callErr, url)
+		logger.Errorf("[Proxy] invoke function error, err=%v service=%v", callErr, url)
 		result.SetError(callErr)
 		return result
 	}
