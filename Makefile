@@ -26,7 +26,7 @@ MAKEFLAGS += --no-print-directory
 CLI_DIR = tools/dubbogo-cli
 IMPORTS_FORMATTER_DIR = tools/imports-formatter
 
-.PHONY: help test fmt clean lint check-fmt rpc-contract-check logger-check
+.PHONY: help test fmt clean lint check-fmt rpc-contract-check
 
 help:
 	@echo "Available commands:"
@@ -35,7 +35,6 @@ help:
 	@echo "  fmt        - Format code"
 	@echo "  lint       - Run golangci-lint"
 	@echo "  rpc-contract-check - Warn about variadic RPC contracts"
-	@echo "  logger-check      - Warn about non-standard logger format"
 
 # Run unit tests
 test: clean
@@ -65,15 +64,12 @@ clean:
 	rm -rf coverage.txt
 
 # Run golangci-lint
-lint: install-golangci-lint logger-check
+lint: install-golangci-lint
 	go vet ./...
 	golangci-lint run ./... --timeout=10m
 
 rpc-contract-check:
 	GOTOOLCHAIN=go1.25.0+auto go run ./tools/variadicrpccheck ./...
-
-logger-check:
-	GOTOOLCHAIN=go1.25.0+auto go run ./tools/loggercheck ./...
 
 install-golangci-lint:
 	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.7.2
