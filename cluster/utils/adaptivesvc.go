@@ -35,12 +35,12 @@ func DoesAdaptiveServiceReachLimitation(err error) bool {
 	if err == nil {
 		return false
 	}
-	return err.Error() == ReachLimitationErrorString
+	return strings.HasSuffix(err.Error(), ReachLimitationErrorString)
 }
 
 func IsAdaptiveServiceFailed(err error) bool {
 	if err == nil {
 		return false
 	}
-	return strings.HasPrefix(err.Error(), adaptivesvc.ErrAdaptiveSvcInterrupted.Error())
+	return strings.Contains(err.Error(), adaptivesvc.ErrAdaptiveSvcInterrupted.Error())
 }

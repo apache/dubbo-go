@@ -19,6 +19,7 @@ package adaptivesvc
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 )
 
@@ -51,7 +52,7 @@ func newLimiterMapper() *limiterMapper {
 }
 
 func (m *limiterMapper) newAndSetMethodLimiter(url *common.URL, methodName string, limiterType int) (limiter.Limiter, error) {
-	key := fmt.Sprintf("%s%s", url.Path, methodName)
+	key := methodLimiterKey(url.Path, methodName)
 
 	var (
 		l  limiter.Limiter
@@ -75,7 +76,7 @@ func (m *limiterMapper) newAndSetMethodLimiter(url *common.URL, methodName strin
 
 func (m *limiterMapper) getMethodLimiter(url *common.URL, methodName string) (
 	limiter.Limiter, error) {
-	key := fmt.Sprintf("%s%s", url.Path, methodName)
+	key := methodLimiterKey(url.Path, methodName)
 	m.rwMutex.RLock()
 	l, ok := limiterMapperSingleton.mapper[key]
 	m.rwMutex.RUnlock()
@@ -83,4 +84,21 @@ func (m *limiterMapper) getMethodLimiter(url *common.URL, methodName string) (
 		return nil, ErrLimiterNotFoundOnMapper
 	}
 	return l, nil
+}
+
+func GetMethodLimiterSnapshot(interfaceName string, methodName string) (limiter.Snapshot, bool) {
+	limiterMapperSingleton.rwMutex.RLock()
+	l, ok := limiterMapperSingleton.mapper[methodLimiterKey(interfaceName, methodName)]
+	if !ok && !strings.HasPrefix(interfaceName, "/") {
+		l, ok = limiterMapperSingleton.mapper[methodLimiterKey("/"+interfaceName, methodName)]
+	}
+	limiterMapperSingleton.rwMutex.RUnlock()
+	if !ok {
+		return limiter.Snapshot{}, false
+	}
+	return l.Snapshot(), true
+}
+
+func methodLimiterKey(interfaceName string, methodName string) string {
+	return fmt.Sprintf("%s%s", interfaceName, methodName)
 }

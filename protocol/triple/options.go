@@ -108,7 +108,7 @@ func WithCORS(opts ...CORSOption) Option {
 		opt(cors)
 	}
 	if err := validateCorsConfig(cors); err != nil {
-		logger.Errorf("[TRIPLE] invalid CORS config: %v", err)
+		logger.Errorf("[Triple] invalid CORS config, err=%v", err)
 		// Return a no-op function to ignore invalid CORS configuration
 		return func(*Options) {}
 	}

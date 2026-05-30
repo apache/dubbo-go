@@ -76,7 +76,7 @@ func (w *envelopeWriter) Marshal(message any) *Error {
 	raw, err := w.codec.Marshal(message)
 	if err != nil {
 		if w.backupCodec != nil && w.codec.Name() != w.backupCodec.Name() {
-			logger.Debugf("failed to marshal message with primary codec %s, trying fallback codec %s", w.codec.Name(), w.backupCodec.Name())
+			logger.Debugf("[Triple][Codec] failed to marshal message with primary codec %s, trying fallback codec %s", w.codec.Name(), w.backupCodec.Name())
 			raw, err = w.backupCodec.Marshal(message)
 		}
 		if err != nil {
@@ -202,7 +202,7 @@ func (r *envelopeReader) Unmarshal(message any) *Error {
 
 	if err := r.codec.Unmarshal(data.Bytes(), message); err != nil {
 		if r.backupCodec != nil && r.backupCodec.Name() != r.codec.Name() {
-			logger.Debugf("failed to unmarshal message with primary codec %s, trying fallback codec %s", r.codec.Name(), r.backupCodec.Name())
+			logger.Debugf("[Triple][Codec] failed to unmarshal message with primary codec %s, trying fallback codec %s", r.codec.Name(), r.backupCodec.Name())
 			err = r.backupCodec.Unmarshal(data.Bytes(), message)
 		}
 		if err != nil {

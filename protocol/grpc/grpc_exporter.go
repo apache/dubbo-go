@@ -48,7 +48,7 @@ func (gg *GrpcExporter) UnExport() {
 	interfaceName := gg.GetInvoker().GetURL().GetParam(constant.InterfaceKey, "")
 	err := common.ServiceMap.UnRegister(interfaceName, GRPC, gg.GetInvoker().GetURL().ServiceKey())
 	if err != nil {
-		logger.Errorf("[GrpcExporter.UnExport] error: %v", err)
+		logger.Errorf("[GRPC][Exporter] unexport failed, err=%v", err)
 	}
 	gg.BaseExporter.UnExport()
 }

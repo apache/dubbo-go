@@ -141,7 +141,7 @@ func packResponse(header DubboHeader, ret any) ([]byte, error) {
 	if header.ResponseStatus == Response_OK {
 		if hb {
 			if err := encoder.Encode(nil); err != nil {
-				logger.Warnf("Encode(nil) = %v", err)
+				logger.Warnf("[Dubbo][Hessian2] encode nil failed, err=%v", err)
 			}
 		} else {
 			atta := isSupportResponseAttachment(response.Attachments[DUBBO_VERSION_KEY])
@@ -213,7 +213,7 @@ func packResponse(header DubboHeader, ret any) ([]byte, error) {
 	byteArray = hessian.EncNull(byteArray) // if not, "java client" will throw exception  "unexpected end of file"
 	pkgLen := len(byteArray)
 	if pkgLen > int(DEFAULT_LEN) { // recommand 8M
-		logger.Warnf("Data length %d too large, recommand max payload %d. "+
+		logger.Warnf("[Dubbo][Hessian2] data length %d too large, recommand max payload %d. "+
 			"Dubbo java can't handle the package whose size greater than %d!!!", pkgLen, DEFAULT_LEN, DEFAULT_LEN)
 	}
 	// byteArray{body length}

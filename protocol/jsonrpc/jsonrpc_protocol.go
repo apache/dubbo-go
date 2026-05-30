@@ -69,7 +69,7 @@ func (jp *JsonrpcProtocol) Export(invoker base.Invoker) base.Exporter {
 
 	exporter := NewJsonrpcExporter(serviceKey, invoker, jp.ExporterMap())
 	jp.SetExporterMap(serviceKey, exporter)
-	logger.Infof("[JSONRPC protocol] Export service: %s", url.String())
+	logger.Infof("[Jsonrpc] Export service: %s", url.String())
 
 	// start server
 	jp.openServer(url)
@@ -92,13 +92,13 @@ func (jp *JsonrpcProtocol) Refer(url *common.URL) base.Invoker {
 		HTTPTimeout:      requestTimeout,
 	}))
 	jp.SetInvokers(invoker)
-	logger.Infof("[JSONRPC Protocol] Refer service: %s", url.String())
+	logger.Infof("[Jsonrpc] Refer service: %s", url.String())
 	return invoker
 }
 
 // Destroy will destroy all invoker and exporter, so it only is called once.
 func (jp *JsonrpcProtocol) Destroy() {
-	logger.Infof("jsonrpcProtocol destroy.")
+	logger.Infof("[Jsonrpc] jsonrpcProtocol destroy.")
 
 	jp.BaseProtocol.Destroy()
 

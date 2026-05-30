@@ -145,7 +145,7 @@ func (s *DefaultService) Refresh() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.openAPIs = nil
-	logger.Debug("OpenAPI documents refreshed")
+	logger.Debugf("[Triple][OpenAPI] OpenAPI documents refreshed")
 }
 
 func (s *DefaultService) getOpenAPIs() map[string]*model.OpenAPI {

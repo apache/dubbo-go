@@ -44,7 +44,7 @@ var (
 func addMetadataReport(registryId string, url *common.URL) error {
 	fac := extension.GetMetadataReportFactory(url.Protocol)
 	if fac == nil {
-		logger.Warnf("no metadata report factory of protocol %s found, please check if the metadata report factory is imported", url.Protocol)
+		logger.Warnf("[Metadata] no metadata report factory of protocol %s found, please check if the metadata report factory is imported", url.Protocol)
 		return nil
 	}
 	instances[registryId] = &DelegateMetadataReport{instance: fac.CreateMetadataReport(url)}

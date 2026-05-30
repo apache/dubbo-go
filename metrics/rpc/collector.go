@@ -65,7 +65,7 @@ func (c *rpcCollector) start() {
 			default:
 			}
 		} else {
-			logger.Error("Bad metrics event found in RPC collector")
+			logger.Error("[Metrics][RPC] bad metrics event found in RPC collector")
 		}
 	}
 }

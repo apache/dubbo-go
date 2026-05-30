@@ -100,7 +100,9 @@ func TestAdaptiveServiceProviderFilter_OnResponse(t *testing.T) {
 	})
 
 	t.Run("InterruptedErrorShouldSkip", func(t *testing.T) {
-		invoc := invocation.NewRPCInvocation(methodName, nil, nil)
+		invoc := invocation.NewRPCInvocation(methodName, nil, map[string]any{
+			constant.AdaptiveServiceEnabledKey: constant.AdaptiveServiceIsEnabled,
+		})
 		res := &result.RPCResult{Err: wrapErrAdaptiveSvcInterrupted("limit exceeded")}
 		invoker := mock.NewMockInvoker(ctrl)
 
@@ -109,12 +111,13 @@ func TestAdaptiveServiceProviderFilter_OnResponse(t *testing.T) {
 	})
 
 	t.Run("SuccessWithAttachments", func(t *testing.T) {
-		invoc := invocation.NewRPCInvocation(methodName, nil, nil)
+		invoc := invocation.NewRPCInvocation(methodName, nil, map[string]any{
+			constant.AdaptiveServiceEnabledKey: constant.AdaptiveServiceIsEnabled,
+		})
 		updater := &mockUpdater{}
 		invoc.SetAttribute(constant.AdaptiveServiceUpdaterKey, updater)
 
 		res := &result.RPCResult{Rest: "ok"}
-		res.AddAttachment(constant.AdaptiveServiceEnabledKey, constant.AdaptiveServiceIsEnabled)
 
 		invoker := mock.NewMockInvoker(ctrl)
 		invoker.EXPECT().GetURL().Return(u).AnyTimes()
