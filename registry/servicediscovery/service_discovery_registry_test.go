@@ -127,9 +127,11 @@ func TestServiceDiscoveryRegistrySubscribe(t *testing.T) {
 func TestServiceDiscoveryRegistryUnSubscribe(t *testing.T) {
 	mockSD, mockMapping := setupEnvironment(t)
 	mockMapping.data[testInterface] = gxset.NewSet(testApp)
+	regID := fmt.Sprintf("mock-reg-%d", time.Now().UnixNano())
 
 	registryURL, _ := common.NewURL(testRegistryURL,
-		common.WithParamsValue(constant.RegistryKey, "mock"))
+		common.WithParamsValue(constant.RegistryKey, "mock"),
+		common.WithParamsValue(constant.RegistryIdKey, regID))
 
 	reg, err := newServiceDiscoveryRegistry(registryURL)
 	require.NoError(t, err)
@@ -143,9 +145,72 @@ func TestServiceDiscoveryRegistryUnSubscribe(t *testing.T) {
 	_ = reg.Subscribe(consumerURL, &mockNotifyListener{})
 	mockSD.wg.Wait()
 
+	metaInfo := metadata.GetMetadataInfo(regID)
+	require.NotNil(t, metaInfo)
+	assert.Len(t, metaInfo.GetSubscribedURLs(), 1)
+
 	err = reg.UnSubscribe(consumerURL, &mockNotifyListener{})
 	require.NoError(t, err)
 	assert.True(t, mockMapping.removeCalled)
+	assert.Empty(t, metaInfo.GetSubscribedURLs())
+}
+
+func TestServiceDiscoveryRegistryUnRegisterRemovesMetadataAndRefreshesRevision(t *testing.T) {
+	mockSD, mockMapping := setupEnvironment(t)
+	regID := fmt.Sprintf("mock-reg-%d", time.Now().UnixNano())
+
+	registryURL, err := common.NewURL(testRegistryURL,
+		common.WithParamsValue(constant.RegistryKey, "mock"),
+		common.WithParamsValue(constant.RegistryIdKey, regID))
+	require.NoError(t, err)
+
+	reg, err := newServiceDiscoveryRegistry(registryURL)
+	require.NoError(t, err)
+
+	providerURL1, err := common.NewURL("dubbo://127.0.0.1:20880/org.apache.dubbo.test.TestService",
+		common.WithParamsValue(constant.ApplicationKey, testApp),
+		common.WithInterface(testInterface),
+		common.WithMethods([]string{"MethodA"}),
+		common.WithParamsValue(constant.SideKey, constant.SideProvider),
+	)
+	require.NoError(t, err)
+	providerURL2, err := common.NewURL("tri://127.0.0.1:20881/org.apache.dubbo.test.TestService",
+		common.WithParamsValue(constant.ApplicationKey, testApp),
+		common.WithInterface(testInterface),
+		common.WithMethods([]string{"MethodB"}),
+		common.WithParamsValue(constant.SideKey, constant.SideProvider),
+	)
+	require.NoError(t, err)
+
+	err = reg.Register(providerURL1)
+	require.NoError(t, err)
+	err = reg.Register(providerURL2)
+	require.NoError(t, err)
+	assert.True(t, mockMapping.mapCalled)
+
+	sdReg, ok := reg.(*serviceDiscoveryRegistry)
+	require.True(t, ok)
+
+	err = sdReg.RegisterService()
+	require.NoError(t, err)
+
+	metaInfo := metadata.GetMetadataInfo(regID)
+	require.NotNil(t, metaInfo)
+	require.Len(t, metaInfo.GetExportedServiceURLs(), 2)
+	oldRevision := metaInfo.Revision
+	require.NotEmpty(t, oldRevision)
+
+	err = sdReg.UnRegister(providerURL1)
+	require.NoError(t, err)
+
+	require.Len(t, metaInfo.GetExportedServiceURLs(), 1)
+	assert.Equal(t, providerURL2, metaInfo.GetExportedServiceURLs()[0])
+	assert.Len(t, metaInfo.Services, 1)
+
+	expectedRevision := createInstance(metaInfo, providerURL2).GetMetadata()[constant.ExportedServicesRevisionPropertyName]
+	assert.Equal(t, expectedRevision, metaInfo.Revision)
+	assert.NotEqual(t, oldRevision, metaInfo.Revision)
+	assert.True(t, mockSD.unregisterCalled)
 }
 
 // setupEnvironment initializes the test environment.

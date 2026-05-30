@@ -166,12 +166,22 @@ func (s *serviceDiscoveryRegistry) UnRegister(url *common.URL) error {
 	if !shouldRegister(url) {
 		return nil
 	}
+	if id, exist := s.url.GetNonDefaultParam(constant.RegistryIdKey); exist {
+		metadata.RemoveService(id, url)
+		if metadataInfo := metadata.GetMetadataInfo(id); metadataInfo != nil {
+			instance := createInstance(metadataInfo, url)
+			metadataInfo.Revision = instance.GetMetadata()[constant.ExportedServicesRevisionPropertyName]
+		}
+	}
 	return s.UnRegisterService()
 }
 
 func (s *serviceDiscoveryRegistry) UnSubscribe(url *common.URL, listener registry.NotifyListener) error {
 	if !shouldSubscribe(url) {
 		return nil
+	}
+	if id, exist := s.url.GetNonDefaultParam(constant.RegistryIdKey); exist {
+		metadata.RemoveSubscribeURL(id, url)
 	}
 	services := s.getServices(url, nil)
 	if services == nil {
