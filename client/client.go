@@ -161,6 +161,24 @@ func (cli *Client) NewGenericService(referenceStr string, opts ...ReferenceOptio
 	return genericService, nil
 }
 
+// NewGenericService2 creates a GenericService2 for making generic calls and reading response attachments.
+func (cli *Client) NewGenericService2(referenceStr string, opts ...ReferenceOption) (*generic.GenericService2, error) {
+	finalOpts := []ReferenceOption{
+		WithIDL(constant.NONIDL),
+		WithGeneric(),
+		WithSerialization(constant.Hessian2Serialization),
+	}
+	finalOpts = append(finalOpts, opts...)
+
+	genericService := generic.NewGenericService2(referenceStr)
+	_, err := cli.DialWithService(referenceStr, genericService, finalOpts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return genericService, nil
+}
+
 func (cli *Client) Dial(interfaceName string, opts ...ReferenceOption) (*Connection, error) {
 	return cli.dial(interfaceName, nil, nil, opts...)
 }

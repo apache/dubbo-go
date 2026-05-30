@@ -47,6 +47,57 @@ func TestGenericService(t *testing.T) {
 	assert.Equal(t, "HelloService", reference)
 }
 
+func TestGenericService2(t *testing.T) {
+	service := NewGenericService2("HelloService")
+	reference := service.Reference()
+	assert.Equal(t, "HelloService", reference)
+}
+
+func TestGenericServiceResponseAttachments(t *testing.T) {
+	type testCtxKey struct{}
+
+	service := NewGenericService("HelloService")
+	service2 := NewGenericService2("HelloService")
+
+	testCases := []struct {
+		name         string
+		getter       func(context.Context) map[string]any
+		setter       func(context.Context, map[string]any)
+		expectedAttr map[string]any
+	}{
+		{
+			name:   "generic service",
+			getter: service.GetResponseAttachments,
+			setter: service.SetResponseAttachments,
+			expectedAttr: map[string]any{
+				"test-key": "test-value-1",
+			},
+		},
+		{
+			name:   "generic service2",
+			getter: service2.GetResponseAttachments,
+			setter: service2.SetResponseAttachments,
+			expectedAttr: map[string]any{
+				"test-key": "test-value-2",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.WithValue(context.Background(), testCtxKey{}, tc.name)
+
+			tc.setter(ctx, tc.expectedAttr)
+			attachments := tc.getter(ctx)
+			require.Equal(t, tc.expectedAttr, attachments)
+
+			attachments["test-key"] = "changed"
+			require.Equal(t, tc.expectedAttr, tc.getter(ctx))
+			require.Nil(t, tc.getter(context.Background()))
+		})
+	}
+}
+
 func TestGenericService_InvokeWithType(t *testing.T) {
 	t.Run("simple struct", func(t *testing.T) {
 		service := NewGenericService("TestService")

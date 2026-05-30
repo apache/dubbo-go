@@ -27,6 +27,14 @@ import (
 // Deprecated: Use dubbo.apache.org/dubbo-go/v3/filter/generic.GenericService instead.
 type GenericService = generic.GenericService
 
+// GenericService2 is an alias for backward compatibility.
+// Deprecated: Use dubbo.apache.org/dubbo-go/v3/filter/generic.GenericService2 instead.
+type GenericService2 = generic.GenericService2
+
 // NewGenericService is an alias for backward compatibility.
 // Deprecated: Use dubbo.apache.org/dubbo-go/v3/filter/generic.NewGenericService instead.
 var NewGenericService = generic.NewGenericService
+
+// NewGenericService2 is an alias for backward compatibility.
+// Deprecated: Use dubbo.apache.org/dubbo-go/v3/filter/generic.NewGenericService2 instead.
+var NewGenericService2 = generic.NewGenericService2

@@ -201,6 +201,11 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 			}
 
 			result := p.invoke.Invoke(invCtx, inv)
+			if setter, ok := v.(interface {
+				SetResponseAttachments(context.Context, map[string]any)
+			}); ok {
+				setter.SetResponseAttachments(invCtx, result.Attachments())
+			}
 			err = result.Error()
 			// cause is raw user level error
 			cause := perrors.Cause(err)
