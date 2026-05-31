@@ -50,7 +50,7 @@ func initCache(app string) {
 	fileName := constant.DefaultMetaFileName + app
 	cache, err := store.NewCacheManager(constant.DefaultMetaCacheName, fileName, time.Minute*10, constant.DefaultEntrySize, true)
 	if err != nil {
-		logger.Fatal("[Registry][ServiceDiscovery] failed to create cache [%s],the err is %v", constant.DefaultMetaCacheName, err)
+		logger.Fatalf("[Registry][ServiceDiscovery] failed to create cache [%s],the err is %v", constant.DefaultMetaCacheName, err)
 	}
 	metaCache = cache
 }

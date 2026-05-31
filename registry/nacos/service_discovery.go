@@ -268,7 +268,7 @@ func (n *nacosServiceDiscovery) registerInstanceListener(listener registry.Servi
 	for _, t := range listener.GetServiceNames().Values() {
 		serviceName, ok := t.(string)
 		if !ok {
-			logger.Errorf("[Registry][Nacos] service name error, name=%s", t)
+			logger.Errorf("[Registry][Nacos] service name error, name=%v", t)
 			continue
 		}
 		listenerSet, found := n.instanceListenerMap[serviceName]
@@ -323,7 +323,7 @@ func (n *nacosServiceDiscovery) AddListener(listener registry.ServiceInstancesCh
 				}
 
 				if e != nil {
-					logger.Errorf("[Registry][Nacos] dispatching event got exception, serviceName=%s err=%v", serviceName, err)
+					logger.Errorf("[Registry][Nacos] dispatching event got exception, serviceName=%s err=%v", serviceName, e)
 				}
 			},
 		})

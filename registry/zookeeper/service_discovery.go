@@ -241,7 +241,7 @@ func (zksd *zookeeperServiceDiscovery) AddListener(listener registry.ServiceInst
 	for _, t := range listener.GetServiceNames().Values() {
 		serviceName, ok := t.(string)
 		if !ok {
-			logger.Errorf("[Registry][Zookeeper] service name error, name=%s", t)
+			logger.Errorf("[Registry][Zookeeper] service name error, name=%v", t)
 			continue
 		}
 		zksd.listenNames = append(zksd.listenNames, serviceName)
@@ -258,7 +258,7 @@ func (zksd *zookeeperServiceDiscovery) AddListener(listener registry.ServiceInst
 	for _, t := range listener.GetServiceNames().Values() {
 		serviceName, ok := t.(string)
 		if !ok {
-			logger.Errorf("[Registry][Zookeeper] service name error, name=%s", t)
+			logger.Errorf("[Registry][Zookeeper] service name error, name=%v", t)
 			continue
 		}
 		zksd.csd.ListenServiceEvent(serviceName, zksd)

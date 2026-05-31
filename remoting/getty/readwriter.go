@@ -82,7 +82,7 @@ func (p *RpcClientPackageHandler) Write(ss getty.Session, pkg any) ([]byte, erro
 	if ok {
 		buf, err := (p.client.codec).EncodeResponse(res)
 		if err != nil {
-			logger.Warnf("[Remoting][Getty] binary.Write(res=%#v) = err=%#v", req, perrors.WithStack(err))
+			logger.Warnf("[Remoting][Getty] binary.Write(res=%#v) = err=%#v", res, perrors.WithStack(err))
 			return nil, perrors.WithStack(err)
 		}
 		bufLength := buf.Len()
@@ -149,7 +149,7 @@ func (p *RpcServerPackageHandler) Write(ss getty.Session, pkg any) ([]byte, erro
 			return nil, perrors.Errorf("Data length %d too large, max payload %d", bufLength-impl.HEADER_LENGTH, srvConf.GettySessionParam.MaxMsgLen)
 		}
 		if err != nil {
-			logger.Warnf("[Remoting][Getty] binary.Write(req=%#v) = err=%#v", res, perrors.WithStack(err))
+			logger.Warnf("[Remoting][Getty] binary.Write(req=%#v) = err=%#v", req, perrors.WithStack(err))
 			return nil, perrors.WithStack(err)
 		}
 		return buf.Bytes(), nil

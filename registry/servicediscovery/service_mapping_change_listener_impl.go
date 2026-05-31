@@ -95,7 +95,7 @@ func (lstn *ServiceMappingChangedListenerImpl) OnEvent(e observer.Event) error {
 	}
 	for _, service := range newServiceNames.Values() {
 		if !oldServiceNames.Contains(service) {
-			logger.Infof("[Registry][ServiceDiscovery] service-application mapping changed for service=%s, newApp=%q oldApp=%q", lstn.serviceUrl.ServiceKey(), oldServiceNames, newServiceNames)
+			logger.Infof("[Registry][ServiceDiscovery] service-application mapping changed for service=%s, newApp=%q oldApp=%q", lstn.serviceUrl.ServiceKey(), newServiceNames, oldServiceNames)
 			lstn.mappingCache.Delete(oldServiceNames.String())
 			lstn.mappingCache.Store(newServiceNames.String(), newServiceNames)
 			if reg, err = extension.GetRegistry(lstn.registryUrl.Protocol, lstn.registryUrl); err != nil {
