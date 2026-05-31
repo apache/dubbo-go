@@ -300,6 +300,54 @@ func TestServiceDiscoveryRegistryUnRegisterServicePartialFailSyncsMetadata(t *te
 	assert.Contains(t, mockSD.updatedIDs, providerURL1.Address())
 }
 
+func TestServiceDiscoveryRegistryUnRegisterWithoutTrackedInstancesReconcilesMetadata(t *testing.T) {
+	_, mockMapping := setupEnvironment(t)
+	regID := fmt.Sprintf("mock-reg-%d", time.Now().UnixNano())
+
+	registryURL, err := common.NewURL(testRegistryURL,
+		common.WithParamsValue(constant.RegistryKey, "mock"),
+		common.WithParamsValue(constant.RegistryIdKey, regID))
+	require.NoError(t, err)
+
+	reg, err := newServiceDiscoveryRegistry(registryURL)
+	require.NoError(t, err)
+
+	providerURL1, err := common.NewURL("dubbo://127.0.0.1:20880/org.apache.dubbo.test.TestService",
+		common.WithParamsValue(constant.ApplicationKey, testApp),
+		common.WithInterface(testInterface),
+		common.WithMethods([]string{"MethodA"}),
+		common.WithParamsValue(constant.SideKey, constant.SideProvider),
+	)
+	require.NoError(t, err)
+	providerURL2, err := common.NewURL("tri://127.0.0.1:20881/org.apache.dubbo.test.TestService",
+		common.WithParamsValue(constant.ApplicationKey, testApp),
+		common.WithInterface(testInterface),
+		common.WithMethods([]string{"MethodB"}),
+		common.WithParamsValue(constant.SideKey, constant.SideProvider),
+	)
+	require.NoError(t, err)
+
+	err = reg.Register(providerURL1)
+	require.NoError(t, err)
+	err = reg.Register(providerURL2)
+	require.NoError(t, err)
+	assert.True(t, mockMapping.mapCalled)
+
+	metaInfo := metadata.GetMetadataInfo(regID)
+	require.NotNil(t, metaInfo)
+	require.Len(t, metaInfo.GetExportedServiceURLs(), 2)
+
+	err = reg.UnRegister(providerURL1.Clone())
+	require.NoError(t, err)
+
+	require.Len(t, metaInfo.GetExportedServiceURLs(), 1)
+	assert.Equal(t, providerURL2, metaInfo.GetExportedServiceURLs()[0])
+	assert.Len(t, metaInfo.Services, 1)
+
+	expectedRevision := createInstance(metaInfo, providerURL2).GetMetadata()[constant.ExportedServicesRevisionPropertyName]
+	assert.Equal(t, expectedRevision, metaInfo.Revision)
+}
+
 // setupEnvironment initializes the test environment.
 func setupEnvironment(_ *testing.T) (*mockServiceDiscovery, *mockServiceNameMapping) {
 	appConfig := global.DefaultApplicationConfig()

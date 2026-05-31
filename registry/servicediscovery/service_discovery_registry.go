@@ -144,37 +144,36 @@ func createInstance(meta *info.MetadataInfo, url *common.URL) registry.ServiceIn
 }
 
 func (s *serviceDiscoveryRegistry) UnRegisterService() error {
+	return s.unregisterService(nil)
+}
+
+func (s *serviceDiscoveryRegistry) unregisterService(targetURL *common.URL) error {
 	s.lock.Lock()
 	keep := s.instances[:0]
 	origin := s.instances[:]
 	s.lock.Unlock()
 
 	var errs []error
-	var removed []registry.ServiceInstance
-	var removedURLs []*common.URL
+	keepInstanceURLs := make(map[registry.ServiceInstance]*common.URL)
 
 	for _, v := range origin {
 		if err := s.serviceDiscovery.Unregister(v); err != nil {
 			// fail to unregister
 			keep = append(keep, v)
 			errs = append(errs, err)
-			continue
+			s.lock.RLock()
+			if sourceURL, ok := s.instanceURLs[v]; ok {
+				keepInstanceURLs[v] = sourceURL
+			}
+			s.lock.RUnlock()
 		}
-		removed = append(removed, v)
-		s.lock.RLock()
-		if sourceURL, ok := s.instanceURLs[v]; ok {
-			removedURLs = append(removedURLs, sourceURL)
-		}
-		s.lock.RUnlock()
 	}
 
 	s.lock.Lock()
 	s.instances = keep
-	for _, instance := range removed {
-		delete(s.instanceURLs, instance)
-	}
+	s.instanceURLs = keepInstanceURLs
 	s.lock.Unlock()
-	if err := s.syncExportedMetadataAfterUnregister(removedURLs, keep); err != nil {
+	if err := s.syncExportedMetadataAfterUnregister(targetURL, origin, keep); err != nil {
 		errs = append(errs, err)
 	}
 	return errors.Join(errs...)
@@ -184,7 +183,7 @@ func (s *serviceDiscoveryRegistry) UnRegister(url *common.URL) error {
 	if !shouldRegister(url) {
 		return nil
 	}
-	return s.UnRegisterService()
+	return s.unregisterService(url)
 }
 
 func (s *serviceDiscoveryRegistry) UnSubscribe(url *common.URL, listener registry.NotifyListener) error {
@@ -212,10 +211,7 @@ func (s *serviceDiscoveryRegistry) UnSubscribe(url *common.URL, listener registr
 	return nil
 }
 
-func (s *serviceDiscoveryRegistry) syncExportedMetadataAfterUnregister(removedURLs []*common.URL, keep []registry.ServiceInstance) error {
-	if len(removedURLs) == 0 {
-		return nil
-	}
+func (s *serviceDiscoveryRegistry) syncExportedMetadataAfterUnregister(targetURL *common.URL, origin []registry.ServiceInstance, keep []registry.ServiceInstance) error {
 	registryID, exist := s.url.GetNonDefaultParam(constant.RegistryIdKey)
 	if !exist {
 		return nil
@@ -224,8 +220,12 @@ func (s *serviceDiscoveryRegistry) syncExportedMetadataAfterUnregister(removedUR
 	if metadataInfo == nil {
 		return nil
 	}
-	for _, removedURL := range removedURLs {
-		metadata.RemoveService(registryID, removedURL)
+
+	keepURLs := s.getInstanceURLs(keep)
+	if len(origin) > 0 {
+		metadataInfo.ReplaceExportedServices(keepURLs)
+	} else if targetURL != nil {
+		metadata.RemoveService(registryID, targetURL)
 	}
 	remainingURLs := metadataInfo.GetExportedServiceURLs()
 	if len(remainingURLs) == 0 {
@@ -235,6 +235,9 @@ func (s *serviceDiscoveryRegistry) syncExportedMetadataAfterUnregister(removedUR
 	instance := createInstance(metadataInfo, remainingURLs[0])
 	revision := instance.GetMetadata()[constant.ExportedServicesRevisionPropertyName]
 	metadataInfo.Revision = revision
+	if len(keepURLs) == 0 {
+		return nil
+	}
 	if metadata.GetMetadataType() == constant.RemoteMetadataStorageType {
 		if s.metadataReport == nil {
 			return perrors.New("can not publish app metadata cause report instance not found")
@@ -251,6 +254,18 @@ func (s *serviceDiscoveryRegistry) syncExportedMetadataAfterUnregister(removedUR
 		}
 	}
 	return nil
+}
+
+func (s *serviceDiscoveryRegistry) getInstanceURLs(instances []registry.ServiceInstance) []*common.URL {
+	urls := make([]*common.URL, 0, len(instances))
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	for _, instance := range instances {
+		if sourceURL, ok := s.instanceURLs[instance]; ok {
+			urls = append(urls, sourceURL)
+		}
+	}
+	return urls
 }
 
 func parseServices(literalServices string) *gxset.HashSet {

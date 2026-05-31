@@ -78,6 +78,22 @@ func TestMetadataInfoRemoveServiceWithClonedURL(t *testing.T) {
 	assert.Empty(t, metadataInfo.GetExportedServiceURLs())
 }
 
+func TestMetadataInfoRemoveServiceKeepsRemainingMatchKeyService(t *testing.T) {
+	metadataInfo := NewMetadataInfo("foo", "")
+	url1, err := common.NewURL("dubbo://127.0.0.1:20000?application=foo&interface=com.foo.Bar&methods=GetPetByID&side=provider&version=1.0.0")
+	require.NoError(t, err)
+	url2, err := common.NewURL("dubbo://127.0.0.1:20001?application=foo&interface=com.foo.Bar&methods=GetPetByID&side=provider&version=1.0.0")
+	require.NoError(t, err)
+
+	metadataInfo.AddService(url1)
+	metadataInfo.AddService(url2)
+	metadataInfo.RemoveService(url1.Clone())
+
+	require.Len(t, metadataInfo.Services, 1)
+	assert.Len(t, metadataInfo.GetExportedServiceURLs(), 1)
+	assert.Equal(t, url2, metadataInfo.GetExportedServiceURLs()[0])
+}
+
 func TestHessian(t *testing.T) {
 	metadataInfo := &MetadataInfo{
 		App:                   "test",
