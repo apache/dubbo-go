@@ -124,7 +124,7 @@ func createInstance(meta *info.MetadataInfo, url *common.URL) registry.ServiceIn
 	}
 	port, err := strconv.Atoi(url.Port)
 	if err != nil {
-		logger.Warnf("Parse port %s failed, err: %v", url.Port, err)
+		logger.Warnf("[Registry][ServiceDiscovery] parse port %s failed, err=%v", url.Port, err)
 	}
 	instance := &registry.DefaultServiceInstance{
 		ID:              url.Address(),
@@ -300,7 +300,7 @@ func (s *serviceDiscoveryRegistry) IsAvailable() bool {
 func (s *serviceDiscoveryRegistry) Destroy() {
 	err := s.serviceDiscovery.Destroy()
 	if err != nil {
-		logger.Errorf("destroy serviceDiscovery catch error:%s", err.Error())
+		logger.Errorf("[Registry][ServiceDiscovery] destroy serviceDiscovery catch error, err=%s", err.Error())
 	}
 }
 
@@ -321,13 +321,13 @@ func shouldRegister(url *common.URL) bool {
 	if side == constant.SideProvider {
 		return true
 	}
-	logger.Debugf("The URL should not be register.", url.String())
+	logger.Debugf("[Registry][ServiceDiscovery] the URL should not be register, url=%s", url.String())
 	return false
 }
 
 func (s *serviceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.NotifyListener) error {
 	if !shouldSubscribe(url) {
-		logger.Infof("Service %s is set to not subscribe to instances.", url.ServiceKey())
+		logger.Infof("[Registry][ServiceDiscovery] service %s is set to not subscribe to instances", url.ServiceKey())
 		return nil
 	}
 	if id, exist := s.url.GetNonDefaultParam(constant.RegistryIdKey); exist {
@@ -336,14 +336,14 @@ func (s *serviceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.No
 	mappingListener := NewMappingListener(s.url, url, parseServices(url.GetParam(constant.ProvidedBy, "")), notify)
 	services := s.getServices(url, mappingListener)
 	if services.Empty() {
-		logger.Infof("Should has at least one way to know which services this interface belongs to,"+
+		logger.Infof("[Registry][ServiceDiscovery] should has at least one way to know which services this interface belongs to,"+
 			" either specify 'provided-by' for reference or enable metadata-report center subscription url:%s", url.String())
 	} else {
-		logger.Infof("Find initial mapping applications %q for service %s.", services, url.ServiceKey())
+		logger.Infof("[Registry][ServiceDiscovery] find initial mapping applications %q for service %s", services, url.ServiceKey())
 		// first notify
 		err := mappingListener.OnEvent(registry.NewServiceMappingChangedEvent(url.ServiceKey(), services))
 		if err != nil {
-			logger.Errorf("[ServiceDiscoveryRegistry] ServiceInstancesChangedListenerImpl handle error:%v", err)
+			logger.Errorf("[Registry][ServiceDiscovery] ServiceInstancesChangedListenerImpl handle error, err=%v", err)
 		}
 	}
 	return nil
@@ -364,13 +364,13 @@ func (s *serviceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry
 		for _, serviceNameTmp := range services.Values() {
 			serviceName := serviceNameTmp.(string)
 			instances := s.serviceDiscovery.GetInstances(serviceName)
-			logger.Infof("Synchronized instance notification on application %s subscription, instance list size %s", serviceName, len(instances))
+			logger.Infof("[Registry][ServiceDiscovery] synchronized instance notification on application %s subscription, instance list size %s", serviceName, len(instances))
 			err = listener.OnEvent(&registry.ServiceInstancesChangedEvent{
 				ServiceName: serviceName,
 				Instances:   instances,
 			})
 			if err != nil {
-				logger.Warnf("[ServiceDiscoveryRegistry] ServiceInstancesChangedListenerImpl handle error:%v", err)
+				logger.Warnf("[Registry][ServiceDiscovery] ServiceInstancesChangedListenerImpl handle error, err=%v", err)
 			}
 		}
 	}
@@ -378,7 +378,7 @@ func (s *serviceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry
 	listener.AddListenerAndNotify(protocolServiceKey, notify)
 	event := metricsMetadata.NewMetadataMetricTimeEvent(metricsMetadata.SubscribeServiceRt)
 
-	logger.Infof("Start subscribing to registry for applications :%s with a new go routine.", serviceNamesKey)
+	logger.Infof("[Registry][ServiceDiscovery] start subscribing to registry for applications=%s with a new go routine", serviceNamesKey)
 	go func() {
 		err = s.serviceDiscovery.AddListener(listener)
 		event.Succ = err != nil
@@ -387,7 +387,7 @@ func (s *serviceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry
 		metrics.Publish(event)
 		metrics.Publish(metricsRegistry.NewServerSubscribeEvent(err == nil))
 		if err != nil {
-			logger.Errorf("add instance listener catch error,url:%s err:%s", url.String(), err.Error())
+			logger.Errorf("[Registry][ServiceDiscovery] add instance listener catch error, url=%s err=%s", url.String(), err.Error())
 		}
 	}()
 }
@@ -416,7 +416,7 @@ func (s *serviceDiscoveryRegistry) getServices(url *common.URL, listener mapping
 func (s *serviceDiscoveryRegistry) findMappedServices(url *common.URL, listener mapping.MappingListener) *gxset.HashSet {
 	serviceNames, err := s.serviceNameMapping.Get(url, listener)
 	if err != nil {
-		logger.Errorf("get service names catch error, url:%s, err:%s ", url.String(), err.Error())
+		logger.Errorf("[Registry][ServiceDiscovery] get service names catch error, url=%s err=%s", url.String(), err.Error())
 		return gxset.NewSet()
 	}
 	if listener != nil {

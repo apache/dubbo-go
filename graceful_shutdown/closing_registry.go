@@ -142,10 +142,10 @@ func (h *closingEventHandler) HandleClosingEvent(event ClosingEvent) bool {
 	defaultClosingAckTracker.record(event, removed)
 	if isActiveClosingSource(event.Source) {
 		if removed {
-			logger.Infof("Graceful shutdown --- Active closing ack handled, source=%s service=%s address=%s instance=%s",
+			logger.Infof("[GracefulShutdown] active closing ack handled, source=%s service=%s address=%s instance=%s",
 				event.Source, event.ServiceKey, event.Address, event.InstanceKey)
 		} else {
-			logger.Warnf("Graceful shutdown --- Active closing ack missed local directory, source=%s service=%s address=%s instance=%s",
+			logger.Warnf("[GracefulShutdown] active closing ack missed local directory, source=%s service=%s address=%s instance=%s",
 				event.Source, event.ServiceKey, event.Address, event.InstanceKey)
 		}
 	}
