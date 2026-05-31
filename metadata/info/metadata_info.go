@@ -19,7 +19,6 @@ package info
 
 import (
 	"net/url"
-	"slices"
 	"strconv"
 	"strings"
 )
@@ -114,7 +113,7 @@ func addUrl(m map[string][]*common.URL, url *common.URL) {
 func removeUrl(m map[string][]*common.URL, url *common.URL) {
 	if urls, ok := m[url.ServiceKey()]; ok {
 		for i, u := range urls {
-			if urlEqual(u, url) {
+			if u.URLEqual(url) {
 				m[url.ServiceKey()] = deleteItem(urls, i)
 				break
 			}
@@ -123,13 +122,6 @@ func removeUrl(m map[string][]*common.URL, url *common.URL) {
 			delete(m, url.ServiceKey())
 		}
 	}
-}
-
-func urlEqual(left, right *common.URL) bool {
-	if left == nil || right == nil {
-		return left == right
-	}
-	return left.String() == right.String() && slices.Equal(left.Methods, right.Methods)
 }
 
 func deleteItem(slice []*common.URL, index int) []*common.URL {
