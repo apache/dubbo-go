@@ -64,7 +64,7 @@ func NewCacheManager(name, cacheFile string, dumpInterval time.Duration, maxCach
 	// Check if the cache file exists and load the cache if it does
 	if _, err := os.Stat(cacheFile); err == nil {
 		if err = cm.loadCache(); err != nil {
-			logger.Warnf("Failed to load the cache file:[%s].The err is %v", cm.cacheFile, err)
+			logger.Warnf("[Registry][ServiceDiscovery] failed to load the cache file=%s, err=%v", cm.cacheFile, err)
 		}
 	}
 
@@ -163,9 +163,9 @@ func (cm *CacheManager) runDumpTask() {
 				// Dump the cache to the file
 				if err := cm.dumpCache(); err != nil {
 					// Handle error
-					logger.Warnf("Failed to dump cache,the err is %v", err)
+					logger.Warnf("[Registry][ServiceDiscovery] failed to dump cache, err=%v", err)
 				} else {
-					logger.Infof("Dumping [%s] caches, latest entries %d", cm.name, cm.cache.Len())
+					logger.Infof("[Registry][ServiceDiscovery] dumping [%s] caches, latest entries=%d", cm.name, cm.cache.Len())
 				}
 			case <-cm.stop:
 				ticker.Stop()
@@ -192,7 +192,7 @@ func (cm *CacheManager) destroy() {
 	// Delete the cache file if it exists
 	if _, err := os.Stat(cm.cacheFile); err == nil {
 		if err := os.Remove(cm.cacheFile); err == nil {
-			logger.Infof("The cacheFile [%s] was cleared", cm.cacheFile)
+			logger.Infof("[Registry][ServiceDiscovery] the cacheFile [%s] was cleared", cm.cacheFile)
 		}
 	}
 }

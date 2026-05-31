@@ -50,10 +50,10 @@ func ValidateZookeeperClient(container ZkClientFacade, zkName string) error {
 		timeout := url.GetParamDuration(constant.ConfigTimeoutKey, constant.DefaultRegTimeout)
 
 		zkAddresses := strings.Split(url.Location, ",")
-		logger.Infof("[Zookeeper Client] New zookeeper client with name = %s, zkAddress = %s, timeout = %s", zkName, url.Location, timeout.String())
+		logger.Infof("[Remoting][Zookeeper] new zookeeper client, name=%s zkAddress=%s timeout=%s", zkName, url.Location, timeout.String())
 		newClient, cltErr := gxzookeeper.NewZookeeperClient(zkName, zkAddresses, true, gxzookeeper.WithZkTimeOut(timeout))
 		if cltErr != nil {
-			logger.Warnf("newZookeeperClient(name{%s}, zk address{%v}, timeout{%s}) = error{%v}",
+			logger.Warnf("[Remoting][Zookeeper] newZookeeperClient, name=%s zkAddress=%s timeout=%s err=%v",
 				zkName, url.Location, timeout.String(), cltErr)
 			return perrors.WithMessagef(cltErr, "newZookeeperClient(address:%+v)", url.Location)
 		}

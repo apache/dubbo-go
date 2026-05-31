@@ -93,8 +93,8 @@ func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 		return err
 	}
 	if loadedRemoteConfig, err := rc.initGlobalConfigCenter(); err != nil {
-		logger.Infof("[Config Center] Config center doesn't start")
-		logger.Debugf("config center doesn't start because %s", err)
+		logger.Info("[ConfigCenter] config center doesn't start")
+		logger.Debugf("[ConfigCenter] config center doesn't start, err=%v", err)
 	} else if loadedRemoteConfig {
 		// Config center may refresh logger settings.
 		if err := rc.initGlobalLogger(); err != nil {

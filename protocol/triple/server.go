@@ -133,7 +133,7 @@ func resolveServerTransport(url *common.URL) (*transportSettings, error) {
 		if err != nil {
 			return nil, fmt.Errorf("TRIPLE server initialized the TLSConfig configuration failed: %w", err)
 		}
-		logger.Infof("TRIPLE Server initialized the TLSConfig configuration")
+		logger.Info("[Triple][Server] triple Server initialized the TLSConfig configuration")
 	}
 
 	return &transportSettings{
@@ -238,7 +238,7 @@ func (s *Server) startTransport(callProtocol string, tlsConf *tls.Config) {
 
 	go func() {
 		if runErr := s.triServer.Run(callProtocol, tlsConf); runErr != nil {
-			logger.Errorf("server serve failed with err: %v", runErr)
+			logger.Errorf("[Triple][Server] server serve failed, err=%v", runErr)
 		}
 	}()
 }
@@ -410,7 +410,7 @@ func getHanOpts(url *common.URL, tripleConf *global.TripleConfig) (hanOpts []tri
 	}
 
 	if tripleConf.MaxServerRecvMsgSize != "" {
-		logger.Debugf("MaxServerRecvMsgSize: %v", tripleConf.MaxServerRecvMsgSize)
+		logger.Debugf("[Triple][Server] MaxServerRecvMsgSize=%v", tripleConf.MaxServerRecvMsgSize)
 		if recvMsgSize, convertErr := humanize.ParseBytes(tripleConf.MaxServerRecvMsgSize); convertErr == nil && recvMsgSize != 0 {
 			maxServerRecvMsgSize = int(recvMsgSize)
 		}
@@ -418,7 +418,7 @@ func getHanOpts(url *common.URL, tripleConf *global.TripleConfig) (hanOpts []tri
 	}
 
 	if tripleConf.MaxServerSendMsgSize != "" {
-		logger.Debugf("MaxServerSendMsgSize: %v", tripleConf.MaxServerSendMsgSize)
+		logger.Debugf("[Triple][Server] MaxServerSendMsgSize=%v", tripleConf.MaxServerSendMsgSize)
 		if sendMsgSize, convertErr := humanize.ParseBytes(tripleConf.MaxServerSendMsgSize); convertErr == nil && sendMsgSize != 0 {
 			maxServerSendMsgSize = int(sendMsgSize)
 		}
@@ -452,7 +452,7 @@ func (s *Server) compatHandleService(url *common.URL, interfaceName string, grou
 		}
 	}
 	if len(providerServices) == 0 {
-		logger.Info("Provider service map is null, please register ProviderServices")
+		logger.Info("[Triple][Server] provider service map is null, please register ProviderServices")
 		return
 	}
 	for key, providerService := range providerServices {
@@ -461,13 +461,13 @@ func (s *Server) compatHandleService(url *common.URL, interfaceName string, grou
 		}
 		service, _ := url.GetAttribute(constant.RpcServiceKey)
 		if service == nil {
-			logger.Warnf("no rpc service found for key: %v", key)
+			logger.Warnf("[Triple][Server] no rpc service found for key=%v", key)
 			continue
 		}
 		serviceKey := common.ServiceKey(providerService.Interface, providerService.Group, providerService.Version)
 		exporter, _ := tripleProtocol.ExporterMap().Load(serviceKey)
 		if exporter == nil {
-			logger.Warnf("no exporter found for serviceKey: %v", serviceKey)
+			logger.Warnf("[Triple][Server] no exporter found for serviceKey=%v", serviceKey)
 			continue
 		}
 		invoker := exporter.(base.Exporter).GetInvoker()
@@ -726,7 +726,7 @@ func (s *Server) GracefulStop() {
 	defer cancel()
 
 	if err := s.triServer.GracefulStop(shutdownCtx); err != nil {
-		logger.Errorf("Triple server shutdown error: %v", err)
+		logger.Errorf("[Triple][Server] triple server shutdown failed, err=%v", err)
 	}
 }
 
@@ -764,7 +764,7 @@ func buildMethodInfoWithReflection(methodType reflect.Method) *common.MethodInfo
 	paramsNum := methodType.Type.NumIn()
 	// the first param is receiver itself, the second param is ctx
 	if paramsNum < 2 {
-		logger.Fatalf("TRIPLE does not support %s method that does not have any parameter", methodType.Name)
+		logger.Fatalf("[Triple][Server] triple does not support %s method that does not have any parameter", methodType.Name)
 		return nil
 	}
 

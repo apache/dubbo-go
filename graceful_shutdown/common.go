@@ -38,7 +38,7 @@ func init() {
 func parseDuration(timeout string, desc string, def time.Duration) time.Duration {
 	res, err := time.ParseDuration(timeout)
 	if err != nil {
-		logger.Errorf("The %s configuration is invalid: %s, and we will use the default value: %s, err: %v",
+		logger.Errorf("[GracefulShutdown] the %s configuration is invalid: %s, and we will use the default value: %s, err=%v",
 			desc, timeout, def.String(), err)
 		res = def
 	}

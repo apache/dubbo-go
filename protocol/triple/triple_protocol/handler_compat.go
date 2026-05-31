@@ -66,12 +66,12 @@ func (t *tripleCompatInterceptor) compatUnaryServerInterceptor(ctx context.Conte
 		}
 		dubbo3RespRaw, err := handler(ctx, typed.Any())
 		if dubbo3RespRaw == nil && err == nil {
-			logger.Errorf("Procedure %s unexpectedly returned both nil response and nil error, which should not happen", t.procedure)
+			logger.Errorf("[Triple][Handler] procedure %s unexpectedly returned both nil response and nil error, which should not happen", t.procedure)
 			return nil, errorf(CodeInternal, "Procedure %s unexpectedly returned both nil response and nil error, which should not happen", t.procedure)
 		}
 		dubbo3Resp, ok := dubbo3RespRaw.(*dubbo_protocol.RPCResult)
 		if !ok {
-			logger.Errorf("Procedure %s returned an unexpected response type. Expected *dubbo_protocol.RPCResult, but got %T", t.procedure, dubbo3RespRaw)
+			logger.Errorf("[Triple][Handler] procedure %s returned an unexpected response type, expected *dubbo_protocol.RPCResult, but got %T", t.procedure, dubbo3RespRaw)
 			return nil, errorf(CodeInternal, "Procedure %s returned an unexpected response type. Expected *dubbo_protocol.RPCResult, but got %T", t.procedure, dubbo3RespRaw)
 		}
 		dubbo3Err, ok := compatError(err)
