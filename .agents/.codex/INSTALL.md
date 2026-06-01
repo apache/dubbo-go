@@ -17,39 +17,48 @@ limitations under the License.
 
 # Installing dubbo-go Agent Skills for Codex
 
-## Quick install
+## Install
 
-Tell Codex:
-
-```text
-Fetch and follow instructions from https://raw.githubusercontent.com/apache/dubbo-go/main/.agents/.codex/INSTALL.md
-```
-
-## Manual installation
-
-Install the skills globally when you want Codex to use them outside an Apache dubbo-go checkout.
+Install these skills globally when the user asks to install dubbo-go skills for Codex.
 
 ```bash
-git clone https://github.com/apache/dubbo-go.git ~/.codex/dubbo-go
+if [ -d ~/.codex/dubbo-go/.git ]; then
+  git -C ~/.codex/dubbo-go pull --ff-only
+else
+  git clone https://github.com/apache/dubbo-go.git ~/.codex/dubbo-go
+fi
+
 mkdir -p ~/.agents/skills
+rm -rf ~/.agents/skills/dubbo-go
 ln -s ~/.codex/dubbo-go/.agents/skills ~/.agents/skills/dubbo-go
 ```
 
-Restart Codex.
+Restart Codex after installation.
 
 ### Windows
 
 ```powershell
-git clone https://github.com/apache/dubbo-go.git "$env:USERPROFILE\.codex\dubbo-go"
+$repo = "$env:USERPROFILE\.codex\dubbo-go"
+if (Test-Path "$repo\.git") {
+  git -C $repo pull --ff-only
+} else {
+  git clone https://github.com/apache/dubbo-go.git $repo
+}
+
 New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.agents\skills"
+Remove-Item -Recurse -Force "$env:USERPROFILE\.agents\skills\dubbo-go" -ErrorAction SilentlyContinue
 cmd /c mklink /J "$env:USERPROFILE\.agents\skills\dubbo-go" "$env:USERPROFILE\.codex\dubbo-go\.agents\skills"
 ```
 
-## Updating
+Restart Codex after installation.
+
+## Update
 
 ```bash
 cd ~/.codex/dubbo-go
 git pull --ff-only
+rm -rf ~/.agents/skills/dubbo-go
+ln -s ~/.codex/dubbo-go/.agents/skills ~/.agents/skills/dubbo-go
 ```
 
 Restart Codex after updating.

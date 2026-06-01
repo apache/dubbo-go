@@ -51,6 +51,7 @@ Checklist:
 - [ ] Provider started successfully? Look for `dubbo server started` and `A provider service ... was registered successfully` in provider logs.
 - [ ] Same registry address on both sides (`dubbo.WithRegistry(registry.WithAddress(...))` / YAML `dubbo.registries.xxx.address`)?
 - [ ] Same application name on both sides (`dubbo.WithName(...)`)? v3 defaults to **application-level** discovery — the registry stores the app name, not the interface FQN.
+- [ ] Same service discovery level on both sides? Latest dubbo-go defaults to **application-level** discovery, while older dubbo-go versions commonly defaulted to **interface-level** discovery; application-level and interface-level discovery do not interoperate.
 - [ ] Same `interface` name passed to `pb.RegisterXxxHandler` and `pb.NewXxxService`?
 - [ ] Same protocol on both sides (both `tri` or both `dubbo`)?
 - [ ] Provider visible in the registry?
@@ -92,7 +93,7 @@ Checklist:
 - [ ] Protobuf: same `.proto` compiled on both sides? Same `go_package`?
 - [ ] Hessian2: POJO `JavaClassName()` matches the Java class FQN exactly? `RegisterPOJO` called in an `init()` that actually runs?
 
-For Hessian2 specifics, see `dubbo-go-java-interop`.
+For Hessian2 specifics, see [dubbo-go-java-interop](../java-interop/SKILL.md).
 
 ## Timeout
 
@@ -123,7 +124,7 @@ resp, err := svc.Greet(ctx, req)
 **Cause**: Filter imported but `init()` not registered, or name mismatch between `extension.SetFilter` and `WithFilter`.
 
 Checklist:
-- [ ] Blank import present? e.g. `_ "dubbo.apache.org/dubbo-go/v3/filter/token"` or `_ "github.com/yourorg/yourapp/filter/myfilter"`
+- [ ] Blank import present? e.g. `_ "dubbo.apache.org/dubbo-go/v3/filter/token"`, `_ "github.com/apache/dubbo-go-extensions/filter/hystrix"`, or `_ "github.com/yourorg/yourapp/filter/myfilter"`
 - [ ] String passed to `server.WithFilter("xxx")` / `client.WithFilter("xxx")` matches the name in `extension.SetFilter("xxx", ...)`?
 - [ ] Built-ins not pulled in? Use `_ "dubbo.apache.org/dubbo-go/v3/imports"` during development to auto-import all built-ins.
 
@@ -137,11 +138,6 @@ if err := srv.Serve(); err != nil { panic(err) }
 
 // Wrong: non-blocking, process exits immediately
 go srv.Serve()
-```
-
-For graceful shutdown:
-```go
-import _ "dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 ```
 
 ## OpenAPI 404 / empty spec
@@ -161,7 +157,7 @@ Checklist:
 ## Graceful shutdown
 
 Checklist:
-- [ ] `_ "dubbo.apache.org/dubbo-go/v3/graceful_shutdown"` blank-imported?
+- [ ] Built-in graceful shutdown filters registered? `_ "dubbo.apache.org/dubbo-go/v3/imports"` includes them; with selective imports, add `_ "dubbo.apache.org/dubbo-go/v3/filter/graceful_shutdown"` so `pshutdown` / `cshutdown` are registered.
 - [ ] Shutdown timeout long enough for in-flight calls to drain?
 - [ ] If running behind Kubernetes: container `terminationGracePeriodSeconds` longer than dubbo-go's shutdown timeout?
 
@@ -192,5 +188,5 @@ Key log lines:
 ## Related Skills
 
 - `dubbo-go-extensions` — when a missing/registered SPI is the root cause
-- `dubbo-go-java-interop` — for Hessian2 decode failures and cross-language discovery
+- [dubbo-go-java-interop](../java-interop/SKILL.md) — for Hessian2 decode failures and cross-language discovery
 - `dubbo-go-guide` — for the conceptual map (Instance / Server / Client / Protocol / Registry / Filter)

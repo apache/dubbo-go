@@ -76,7 +76,7 @@ The same pattern applies to Protocol, Registry, LoadBalance, Router, ConfigCente
 - Use `_ "dubbo.apache.org/dubbo-go/v3/imports"` in development for convenience; switch to selective imports in production for smaller binaries.
 - Define Triple services with Protobuf for cross-language interop.
 - Configure via the code API: `dubbo.NewInstance(dubbo.WithRegistry(...), dubbo.WithProtocol(...))`. YAML via `dubbo.Load()` is the legacy path.
-- Enable graceful shutdown by blank-importing `_ "dubbo.apache.org/dubbo-go/v3/graceful_shutdown"`.
+- Keep `srv.Serve()` as the blocking entry point for process-level shutdown. `_ "dubbo.apache.org/dubbo-go/v3/imports"` registers the default graceful shutdown filters; with selective imports, include `_ "dubbo.apache.org/dubbo-go/v3/filter/graceful_shutdown"`.
 - Use `client.WithProvidedBy` when application-level discovery cannot resolve which application owns the interface.
 - Apply per-reference timeouts: `client.WithRequestTimeout(...)` or a `context.WithTimeout` at the call site.
 
@@ -88,9 +88,9 @@ The same pattern applies to Protocol, Registry, LoadBalance, Router, ConfigCente
 - **CORS** — `triple.CORSAllowOrigins(...)` etc.
 - **Reflection** — gRPC reflection is on by default; tools like `grpcurl` work without extra config.
 
-## Samples Index
+## Finding Samples
 
-See [samples-index.md](samples-index.md) for the full `dubbo-go-samples` directory organized by scenario (Quick Start, Protocols, Service Discovery, Filters, Routing, Streaming, Observability, Security, Java Interop, Advanced).
+When the user asks which sample to follow, read the current [apache/dubbo-go-samples](https://github.com/apache/dubbo-go-samples) README and relevant directories instead of relying on a copied index. The samples repository changes independently of dubbo-go; prefer its live README, directory names, and nearby sample code as the source of truth.
 
 ## Related Skills
 

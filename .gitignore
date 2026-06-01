@@ -21,6 +21,7 @@ classes
 
 # go mod, go test
 .go-version
+node_modules/
 vendor/
 logs/
 .vscode/

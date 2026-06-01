@@ -86,6 +86,12 @@ Open a new session and try one of these:
 
 The assistant should auto-trigger the matching skill.
 
+## Reference Docs
+
+Use the official Dubbo Golang SDK documentation as the primary reference for user-facing behavior and tutorials:
+
+- [Dubbo Golang SDK documentation](https://github.com/apache/dubbo-website/tree/master/content/zh-cn/overview/mannual/golang-sdk)
+
 ## Skills
 
 ### scaffolding
@@ -106,7 +112,7 @@ Structured diagnosis for runtime errors. Matches your error or log against known
 
 ### guide
 
-Architecture, extension points, and best practices. Covers Instance, Protocol, Registry, Filter, Cluster, LoadBalance, Router, Triple OpenAPI, HTTP/3, CORS, graceful shutdown, observability, and points to the relevant `dubbo-go-samples` directory through `samples-index.md`.
+Architecture, extension points, and best practices. Covers Instance, Protocol, Registry, Filter, Cluster, LoadBalance, Router, Triple OpenAPI, HTTP/3, CORS, graceful shutdown, observability, and tells agents to read the current `apache/dubbo-go-samples` README and directories when choosing examples.
 
 ### migrate
 

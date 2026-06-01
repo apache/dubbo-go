@@ -86,6 +86,12 @@ gemini extensions update dubbo-go-agent-skills
 
 助手应该会自动触发对应的 skill。
 
+## 参考文档
+
+面向用户的行为说明和教程，以官方 Dubbo Golang SDK 文档为主要参考：
+
+- [Dubbo Golang SDK 文档](https://github.com/apache/dubbo-website/tree/master/content/zh-cn/overview/mannual/golang-sdk)
+
 ## Skills
 
 ### scaffolding
@@ -106,7 +112,7 @@ dubbo-go 与 dubbo-java 的跨语言 RPC。新服务选 Triple+Protobuf，老 Ja
 
 ### guide
 
-架构、扩展点、最佳实践。覆盖 Instance、Protocol、Registry、Filter、Cluster、LoadBalance、Router、Triple OpenAPI、HTTP/3、CORS、graceful shutdown、可观测性，并通过 `samples-index.md` 指向对应的 `dubbo-go-samples` 目录。
+架构、扩展点、最佳实践。覆盖 Instance、Protocol、Registry、Filter、Cluster、LoadBalance、Router、Triple OpenAPI、HTTP/3、CORS、graceful shutdown、可观测性，并要求 Agent 在选择示例时读取当前 `apache/dubbo-go-samples` README 和目录。
 
 ### migrate
 
