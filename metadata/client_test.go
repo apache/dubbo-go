@@ -309,3 +309,37 @@ func (m *mockExporter) GetInvoker() base.Invoker {
 func (m *mockExporter) UnExport() {
 	m.Called()
 }
+
+func TestGetMetadataFromRpcMissingProtocol(t *testing.T) {
+	oldProtocol, oldErr := extension.GetProtocolWithError(constant.DefaultProtocol)
+	extension.UnregisterProtocol(constant.DefaultProtocol)
+	if oldErr == nil {
+		defer extension.SetProtocol(constant.DefaultProtocol, func() base.Protocol {
+			return oldProtocol
+		})
+	}
+
+	ins := &registry.DefaultServiceInstance{
+		ID: "test-id",
+		Metadata: map[string]string{
+			constant.MetadataServiceURLParamsPropertyName: `{
+				"application": "dubbo-go",
+				"group": "test-group",
+				"interface": "org.apache.dubbo.metadata.MetadataService",
+				"port": "20000",
+				"protocol": "dubbo",
+				"version": "1.0.0"
+			}`,
+		},
+		Host:        "127.0.0.1",
+		ServiceName: "dubbo_rest_basic_server",
+	}
+
+	metadataInfo, err := GetMetadataFromRpc("rev1", ins)
+
+	assert.Error(t, err)
+	assert.Nil(t, metadataInfo)
+	assert.Contains(t, err.Error(), "metadata service uses dubbo protocol")
+	assert.Contains(t, err.Error(), "please import dubbo.apache.org/dubbo-go/v3/protocol/dubbo")
+	assert.Contains(t, err.Error(), "protocol dubbo is not found")
+}
