@@ -2,7 +2,7 @@
 
 ## Getting Started
 
-Recommended way: import only the filters you need. See also [dubbo-go/imports](https://github.com/dubbogo/imports).
+Recommended Way: import only the filters you need. See also [dubbo-go/imports](https://github.com/dubbogo/imports).
 
 ```go
 package demo
