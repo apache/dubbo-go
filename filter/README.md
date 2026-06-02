@@ -2,7 +2,7 @@
 
 ## Getting Started
 
-Recommended Way: import what you needs, see also [dubbo-go/imports](https://github.com/dubbogo/imports).
+Recommended way: import only the filters you need. See also [dubbo-go/imports](https://github.com/dubbogo/imports).
 
 ```go
 package demo
@@ -24,13 +24,16 @@ import _ "dubbo.apache.org/dubbo-go/v3/filter/filter_impl"
 
 - accesslog: Access Log Filter(https://github.com/apache/dubbo-go/pull/214)
 - active
+- adaptivesvc: Adaptive Service Filter
 - auth: Auth/Sign Filter(https://github.com/apache/dubbo-go/pull/323)
 - echo: Echo Health Check Filter
-- execlmt: Execute Limit Filter(https://github.com/apache/dubbo-go/pull/246)
+- exec_limit: Execute Limit Filter(https://github.com/apache/dubbo-go/pull/246)
 - generic: Generic Filter(https://github.com/apache/dubbo-go/pull/291)
-- gshutdown: Graceful Shutdown Filter
+- graceful_shutdown: Graceful Shutdown Filter
 - hystrix: Moved to [dubbo-go-extensions](https://github.com/apache/dubbo-go-extensions/tree/main/filter/hystrix)
 - metrics: Metrics Filter(https://github.com/apache/dubbo-go/pull/342)
+- otel/trace: OpenTelemetry Tracing Filter
+- polaris/limit: Polaris Rate Limit Filter
 - seata: Seata Filter
 - sentinel: Sentinel Filter
 - token: Token Filter(https://github.com/apache/dubbo-go/pull/202)
