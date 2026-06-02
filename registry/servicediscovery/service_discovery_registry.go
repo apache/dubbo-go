@@ -19,20 +19,15 @@ package servicediscovery
 
 import (
 	"errors"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
-)
 
-import (
 	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/log/logger"
 
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -41,9 +36,13 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
+	perrors "github.com/pkg/errors"
+
 	metricsMetadata "dubbo.apache.org/dubbo-go/v3/metrics/metadata"
+
 	metricsRegistry "dubbo.apache.org/dubbo-go/v3/metrics/registry"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+
 	_ "dubbo.apache.org/dubbo-go/v3/registry/servicediscovery/customizer"
 )
 
@@ -194,8 +193,7 @@ func (s *serviceDiscoveryRegistry) UnSubscribe(url *common.URL, listener registr
 	if services == nil {
 		return nil
 	}
-	// FIXME ServiceNames.String() is not good
-	serviceNamesKey := services.String()
+	serviceNamesKey := sortServices(services)
 	l := s.serviceListeners[serviceNamesKey]
 	if l != nil {
 		l.RemoveListener(url.ServiceKey())
@@ -350,9 +348,8 @@ func (s *serviceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.No
 }
 
 func (s *serviceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry.NotifyListener, services *gxset.HashSet) {
-	// FIXME ServiceNames.String() is not good
 	var err error
-	serviceNamesKey := services.String()
+	serviceNamesKey := sortServices(services)
 	protocol := constant.TriProtocol // consume "tri" protocol by default, other protocols need to be specified on reference/consumer explicitly
 	if url.Protocol != "" {
 		protocol = url.Protocol
@@ -390,6 +387,17 @@ func (s *serviceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry
 			logger.Errorf("[Registry][ServiceDiscovery] add instance listener catch error, url=%s err=%s", url.String(), err.Error())
 		}
 	}()
+}
+
+func sortServices(services *gxset.HashSet) string {
+	list := make([]string, 0, services.Size())
+	for _, v := range services.Values() {
+		if s, ok := v.(string); ok && s != "" {
+			list = append(list, s)
+		}
+	}
+	sort.Strings(list)
+	return strings.Join(list, ",")
 }
 
 // LoadSubscribeInstances load subscribe instance
