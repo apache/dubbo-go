@@ -53,15 +53,7 @@ func GetMetadataFromMetadataReport(revision string, instance registry.ServiceIns
 func GetMetadataFromRpc(revision string, instance registry.ServiceInstance) (*info.MetadataInfo, error) {
 	url := buildStandardMetadataServiceURL(instance)
 	url.SetParam(constant.TimeoutKey, defaultTimeout)
-	p, err := extension.GetProtocolWithError(url.Protocol)
-	if err != nil {
-		if url.Protocol == constant.DubboProtocol {
-			err = perrors.Wrap(err, "metadata service uses dubbo protocol, please import dubbo.apache.org/dubbo-go/v3/protocol/dubbo")
-		} else {
-			err = perrors.Wrapf(err, "metadata service protocol %s is not registered, please import the corresponding protocol extension", url.Protocol)
-		}
-		return nil, err
-	}
+	p := extension.GetProtocol(url.Protocol)
 	invoker := p.Refer(url)
 	if invoker == nil { // can't connect instance
 		return nil, perrors.New("can not connect to remote metadata service host: " + url.Ip)

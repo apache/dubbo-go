@@ -18,10 +18,6 @@
 package extension
 
 import (
-	"fmt"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
@@ -35,15 +31,6 @@ func SetProtocol(name string, v func() base.Protocol) {
 // GetProtocol finds the protocol extension with @name
 func GetProtocol(name string) base.Protocol {
 	return protocols.MustGet(name)()
-}
-
-// GetProtocolWithError finds the Protocol extension with @name, returns error if not found
-func GetProtocolWithError(name string) (base.Protocol, error) {
-	creator, ok := protocols.Get(name)
-	if !ok {
-		return nil, fmt.Errorf("protocol %s is not found", name)
-	}
-	return creator(), nil
 }
 
 // UnregisterProtocol removes the protocol extension with @name
