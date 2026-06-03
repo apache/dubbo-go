@@ -18,6 +18,7 @@
 package metadata
 
 import (
+	"sync"
 	"time"
 )
 
@@ -38,7 +39,8 @@ import (
 )
 
 var (
-	instances = make(map[string]report.MetadataReport)
+	instances    = make(map[string]report.MetadataReport)
+	instancesMu sync.RWMutex
 )
 
 func addMetadataReport(registryId string, url *common.URL) error {
@@ -47,11 +49,19 @@ func addMetadataReport(registryId string, url *common.URL) error {
 		logger.Warnf("no metadata report factory of protocol %s found, please check if the metadata report factory is imported", url.Protocol)
 		return nil
 	}
+	instancesMu.Lock()
 	instances[registryId] = &DelegateMetadataReport{instance: fac.CreateMetadataReport(url)}
+	instancesMu.Unlock()
 	return nil
 }
 
 func GetMetadataReport() report.MetadataReport {
+	instancesMu.RLock()
+	defer instancesMu.RUnlock()
+	return getMetadataReportUnsafe()
+}
+
+func getMetadataReportUnsafe() report.MetadataReport {
 	for _, v := range instances {
 		return v
 	}
@@ -62,13 +72,17 @@ func GetMetadataReportByRegistry(registry string) report.MetadataReport {
 	if len(registry) == 0 {
 		registry = constant.DefaultKey
 	}
+	instancesMu.RLock()
+	defer instancesMu.RUnlock()
 	if r, ok := instances[registry]; ok {
 		return r
 	}
-	return GetMetadataReport()
+	return getMetadataReportUnsafe()
 }
 
 func GetMetadataReports() []report.MetadataReport {
+	instancesMu.RLock()
+	defer instancesMu.RUnlock()
 	reports := make([]report.MetadataReport, len(instances))
 	index := 0
 	for _, r := range instances {

@@ -19,6 +19,8 @@
 package metadata
 
 import (
+	"sync"
+
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
@@ -26,6 +28,7 @@ import (
 
 var (
 	registryMetadataInfo                 = make(map[string]*info.MetadataInfo)
+	registryMetadataLock sync.RWMutex
 	metadataService      MetadataService = &DefaultMetadataService{metadataMap: registryMetadataInfo}
 )
 
@@ -34,25 +37,33 @@ func GetMetadataService() MetadataService {
 }
 
 func GetMetadataInfo(registryId string) *info.MetadataInfo {
+	registryMetadataLock.RLock()
+	defer registryMetadataLock.RUnlock()
 	return registryMetadataInfo[registryId]
 }
 
 func AddService(registryId string, url *common.URL) {
+	registryMetadataLock.Lock()
 	if _, exist := registryMetadataInfo[registryId]; !exist {
 		registryMetadataInfo[registryId] = info.NewMetadataInfo(
 			url.GetParam(constant.ApplicationKey, ""),
 			url.GetParam(constant.ApplicationTagKey, ""),
 		)
 	}
+	registryMetadataLock.Unlock()
+
 	registryMetadataInfo[registryId].AddService(url)
 }
 
 func AddSubscribeURL(registryId string, url *common.URL) {
+	registryMetadataLock.Lock()
 	if _, exist := registryMetadataInfo[registryId]; !exist {
 		registryMetadataInfo[registryId] = info.NewMetadataInfo(
 			url.GetParam(constant.ApplicationKey, ""),
 			url.GetParam(constant.ApplicationTagKey, ""),
 		)
 	}
+	registryMetadataLock.Unlock()
+
 	registryMetadataInfo[registryId].AddSubscribeURL(url)
 }
