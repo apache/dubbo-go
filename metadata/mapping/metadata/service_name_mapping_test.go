@@ -19,6 +19,7 @@ package metadata
 
 import (
 	"errors"
+	"sync"
 	"testing"
 )
 
@@ -137,6 +138,43 @@ func initMock() (*mockMetadataReport, error) {
 	)
 	err := opts.Init()
 	return metadataReport, err
+}
+
+func initMockWithId(t *testing.T, registryId string) *mockMetadataReport {
+	t.Helper()
+	mockReport := new(mockMetadataReport)
+	extension.SetMetadataReportFactory(registryId, func() report.MetadataReportFactory {
+		return mockReport
+	})
+	opts := metadata.NewReportOptions(
+		metadata.WithRegistryId(registryId),
+		metadata.WithProtocol(registryId),
+		metadata.WithAddress("127.0.0.1"),
+	)
+	require.NoError(t, opts.Init())
+	return mockReport
+}
+
+func TestServiceNameMappingRemoveFansOutToAllReports(t *testing.T) {
+	serviceNameMappingOnce = sync.Once{}
+	serviceNameMappingInstance = nil
+
+	r1 := initMockWithId(t, "reg-a")
+	r2 := initMockWithId(t, "reg-b")
+
+	ins := GetNameMappingInstance()
+	serviceUrl := common.NewURLWithOptions(
+		common.WithInterface("org.example.FooService"),
+		common.WithParamsValue(constant.ApplicationKey, "foo-app"),
+	)
+
+	r1.On("RemoveServiceAppMappingListener").Return(nil).Once()
+	r2.On("RemoveServiceAppMappingListener").Return(nil).Once()
+
+	err := ins.Remove(serviceUrl)
+	require.NoError(t, err)
+	r1.AssertExpectations(t)
+	r2.AssertExpectations(t)
 }
 
 type listener struct {

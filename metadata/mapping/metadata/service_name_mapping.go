@@ -98,9 +98,15 @@ func (d *ServiceNameMapping) Get(url *common.URL, listener mapping.MappingListen
 
 func (d *ServiceNameMapping) Remove(url *common.URL) error {
 	serviceInterface := url.GetParam(constant.InterfaceKey, "")
-	metadataReport := metadata.GetMetadataReport()
-	if metadataReport == nil {
+	metadataReports := metadata.GetMetadataReports()
+	if len(metadataReports) == 0 {
 		return perrors.New("can not remove mapping in remote cause no metadata report instance found")
 	}
-	return metadataReport.RemoveServiceAppMappingListener(serviceInterface, DefaultGroup)
+	var lastErr error
+	for _, metadataReport := range metadataReports {
+		if err := metadataReport.RemoveServiceAppMappingListener(serviceInterface, DefaultGroup); err != nil {
+			lastErr = err
+		}
+	}
+	return lastErr
 }
