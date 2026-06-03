@@ -21,6 +21,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 import (
@@ -63,6 +64,7 @@ type MetadataInfo struct {
 	Services              map[string]*ServiceInfo  `json:"services,omitempty" hessian:"services"`
 	exportedServiceURLs   map[string][]*common.URL `hessian:"-"` // server exported service urls
 	subscribedServiceURLs map[string][]*common.URL `hessian:"-"` // client subscribed service urls
+	mu                    sync.RWMutex             `json:"-" hessian:"-"`
 }
 
 func NewAppMetadataInfo(app string) *MetadataInfo {
@@ -95,6 +97,9 @@ func (info *MetadataInfo) JavaClassName() string {
 
 // AddService add provider service info to MetadataInfo
 func (info *MetadataInfo) AddService(url *common.URL) {
+	info.mu.Lock()
+	defer info.mu.Unlock()
+
 	service := NewServiceInfoWithURL(url)
 	info.Services[service.GetMatchKey()] = service
 	addUrl(info.exportedServiceURLs, url)
@@ -131,6 +136,9 @@ func deleteItem(slice []*common.URL, index int) []*common.URL {
 }
 
 func (info *MetadataInfo) RemoveService(url *common.URL) {
+	info.mu.Lock()
+	defer info.mu.Unlock()
+
 	service := NewServiceInfoWithURL(url)
 	delete(info.Services, service.GetMatchKey())
 	removeUrl(info.exportedServiceURLs, url)
@@ -138,15 +146,24 @@ func (info *MetadataInfo) RemoveService(url *common.URL) {
 
 // AddSubscribeURL client subscribe a service url
 func (info *MetadataInfo) AddSubscribeURL(url *common.URL) {
+	info.mu.Lock()
+	defer info.mu.Unlock()
+
 	addUrl(info.subscribedServiceURLs, url)
 }
 
 // RemoveSubscribeURL client unsubscribe a service url
 func (info *MetadataInfo) RemoveSubscribeURL(url *common.URL) {
+	info.mu.Lock()
+	defer info.mu.Unlock()
+
 	removeUrl(info.subscribedServiceURLs, url)
 }
 
 func (info *MetadataInfo) GetExportedServiceURLs() []*common.URL {
+	info.mu.RLock()
+	defer info.mu.RUnlock()
+
 	res := make([]*common.URL, 0)
 	for _, urls := range info.exportedServiceURLs {
 		res = append(res, urls...)
@@ -155,11 +172,26 @@ func (info *MetadataInfo) GetExportedServiceURLs() []*common.URL {
 }
 
 func (info *MetadataInfo) GetSubscribedURLs() []*common.URL {
+	info.mu.RLock()
+	defer info.mu.RUnlock()
+
 	res := make([]*common.URL, 0)
 	for _, urls := range info.subscribedServiceURLs {
 		res = append(res, urls...)
 	}
 	return res
+}
+
+// GetServices returns a copy of the Services map for safe iteration by external callers.
+func (info *MetadataInfo) GetServices() map[string]*ServiceInfo {
+	info.mu.RLock()
+	defer info.mu.RUnlock()
+
+	cp := make(map[string]*ServiceInfo, len(info.Services))
+	for k, v := range info.Services {
+		cp[k] = v
+	}
+	return cp
 }
 
 // ServiceInfo the information of service
