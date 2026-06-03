@@ -18,6 +18,7 @@
 package metadata
 
 import (
+	"sort"
 	"time"
 )
 
@@ -51,9 +52,21 @@ func addMetadataReport(registryId string, url *common.URL) error {
 	return nil
 }
 
+// GetMetadataReport returns a single metadata report for callers that lack
+// registry context. It prefers the "default" registry's report; when absent
+// it falls back to the lexicographically first registry id so the selection
+// is always stable across calls.
 func GetMetadataReport() report.MetadataReport {
-	for _, v := range instances {
-		return v
+	if r, ok := instances[constant.DefaultKey]; ok {
+		return r
+	}
+	keys := make([]string, 0, len(instances))
+	for k := range instances {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	if len(keys) > 0 {
+		return instances[keys[0]]
 	}
 	return nil
 }
