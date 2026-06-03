@@ -29,7 +29,7 @@ import (
 )
 
 var (
-	registryMetadataInfo                 = make(map[string]*info.MetadataInfo)
+	registryMetadataInfo = make(map[string]*info.MetadataInfo)
 	registryMetadataLock sync.RWMutex
 	metadataService      MetadataService = &DefaultMetadataService{metadataMap: registryMetadataInfo}
 )

@@ -39,7 +39,7 @@ import (
 )
 
 var (
-	instances    = make(map[string]report.MetadataReport)
+	instances   = make(map[string]report.MetadataReport)
 	instancesMu sync.RWMutex
 )
 
