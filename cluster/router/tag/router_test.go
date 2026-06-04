@@ -549,13 +549,14 @@ func TestRouteNilDefaults(t *testing.T) {
 }
 
 type mockCache struct {
-	invokers []base.Invoker
-	pool     router.AddrPool
+	invokers   []base.Invoker
+	pool       router.AddrPool
+	generation uint64
 }
 
 func (m *mockCache) GetInvokers() []base.Invoker { return m.invokers }
-func (m *mockCache) FindAddrPool(_ router.Poolable) (router.AddrPool, []base.Invoker) {
-	return m.pool, m.invokers
+func (m *mockCache) FindAddrPool(_ router.Poolable) (router.AddrPool, []base.Invoker, uint64) {
+	return m.pool, m.invokers, m.generation
 }
 func (m *mockCache) FindAddrMeta(_ router.Poolable) router.AddrMetadata { return nil }
 
@@ -783,5 +784,51 @@ func TestRouteBitmapEquivalence(t *testing.T) {
 		for i := range rCache {
 			assert.Equal(t, rCache[i].GetURL().Location, rFallback[i].GetURL().Location)
 		}
+	})
+}
+
+// withCacheGen stores a cache built from invokers at the given generation, mirroring what
+// RouterChain.SetInvokers does so a test can simulate a specific cache generation.
+func withCacheGen(p *PriorityRouter, invokers []base.Invoker, generation uint64) {
+	pool, _ := p.Pool(invokers)
+	p.cache.Store(&mockCache{invokers: invokers, pool: pool, generation: generation})
+}
+
+// TestRouteGenerationGuard reproduces the race Alan flagged: the cache is built on [a,b,c],
+// but Route is called with the chain's current snapshot [a]. When the invocation's published
+// generation does not match the cache generation (a concurrent SetInvokers rebuilt the cache
+// between the chain snapshot and this lookup), the bitmap fast path must be skipped so the
+// route stays confined to the invokers passed in.
+func TestRouteGenerationGuard(t *testing.T) {
+	p := newCacheRouter()
+	full := makeInvokers("gray", "gray", "") // [a(gray), b(gray), c()]
+	withCacheGen(p, full, 5)                 // cache snapshot is generation 5
+	subset := []base.Invoker{full[0]}        // chain snapshot for this call is just [a]
+
+	newInvoc := func(gen uint64) base.Invocation {
+		inv := invocation.NewRPCInvocation("GetUser", nil, map[string]any{constant.Tagkey: "gray"})
+		inv.SetAttribute(constant.RouterChainCacheGeneration, gen)
+		return inv
+	}
+
+	t.Run("stale generation falls back to the invokers passed in", func(t *testing.T) {
+		// snapshot generation 4 != cache generation 5 -> must not use the [a,b,c] cache.
+		result := p.Route(subset, consumerUrl, newInvoc(4))
+		assert.Len(t, result, 1)
+		assert.Equal(t, full[0].GetURL().Location, result[0].GetURL().Location)
+	})
+
+	t.Run("missing generation falls back to the invokers passed in", func(t *testing.T) {
+		// No RouterChainCacheGeneration published -> default 0 != cache generation 5 -> fall back.
+		inv := invocation.NewRPCInvocation("GetUser", nil, map[string]any{constant.Tagkey: "gray"})
+		result := p.Route(subset, consumerUrl, inv)
+		assert.Len(t, result, 1)
+		assert.Equal(t, full[0].GetURL().Location, result[0].GetURL().Location)
+	})
+
+	t.Run("matching generation takes the bitmap path over the cached snapshot", func(t *testing.T) {
+		// snapshot generation 5 == cache generation 5 -> bitmap path over [a,b,c] -> [a,b].
+		result := p.Route(subset, consumerUrl, newInvoc(5))
+		assert.Len(t, result, 2)
 	})
 }

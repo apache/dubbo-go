@@ -358,6 +358,7 @@ const (
 	ForceKey                          = "force"
 	TrafficDisableKey                 = "trafficDisable"
 	RouterCacheDisable                = "routerCacheDisable"
+	RouterChainCacheGeneration        = "routerChainCacheGeneration"
 	Arguments                         = "arguments"
 	Attachments                       = "attachments"
 	Param                             = "param"

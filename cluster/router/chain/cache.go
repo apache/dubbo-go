@@ -31,9 +31,13 @@ import (
 // SetInvokers call so that bitmap indices stay aligned with the current
 // invoker snapshot.
 type routerCache struct {
-	mu       sync.RWMutex
-	invokers []base.Invoker
-	pools    map[string]*poolEntry
+	mu sync.RWMutex
+	// generation identifies the invoker snapshot this cache was built from. It mirrors
+	// RouterChain.generation and is set under the same write lock as invokers/pools so that
+	// FindAddrPool can hand all three out as one consistent snapshot.
+	generation uint64
+	invokers   []base.Invoker
+	pools      map[string]*poolEntry
 }
 
 type poolEntry struct {
@@ -54,16 +58,18 @@ func (c *routerCache) GetInvokers() []base.Invoker {
 	return ret
 }
 
-// FindAddrPool returns the address pool and invoker snapshot for the given Poolable.
-// The returned invokers slice is shared and must not be modified by the caller.
-func (c *routerCache) FindAddrPool(p router.Poolable) (router.AddrPool, []base.Invoker) {
+// FindAddrPool returns the address pool, the invoker snapshot, and the generation of that
+// snapshot for the given Poolable. The returned invokers slice is shared and must not be
+// modified by the caller. The generation is always returned (even on a miss) so callers can
+// detect a snapshot rebuilt by a concurrent SetInvokers.
+func (c *routerCache) FindAddrPool(p router.Poolable) (router.AddrPool, []base.Invoker, uint64) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	entry, ok := c.pools[p.Name()]
 	if !ok {
-		return nil, nil
+		return nil, nil, c.generation
 	}
-	return entry.pool, c.invokers
+	return entry.pool, c.invokers, c.generation
 }
 
 // FindAddrMeta is a no-op, reserved for future use.
@@ -73,8 +79,9 @@ func (c *routerCache) FindAddrMeta(p router.Poolable) router.AddrMetadata {
 
 // rebuild iterates all Poolable routers whose ShouldPool returns true,
 // calls Pool on each with current invokers, and atomically swaps in the
-// new pools under write lock.
-func (c *routerCache) rebuild(invokers []base.Invoker, routers []router.PriorityRouter) {
+// new pools and generation under write lock. The generation must match the
+// RouterChain.generation produced by the same SetInvokers call.
+func (c *routerCache) rebuild(generation uint64, invokers []base.Invoker, routers []router.PriorityRouter) {
 	newPools := make(map[string]*poolEntry, len(routers))
 	for _, r := range routers {
 		p, ok := r.(router.Poolable)
@@ -86,6 +93,7 @@ func (c *routerCache) rebuild(invokers []base.Invoker, routers []router.Priority
 	}
 
 	c.mu.Lock()
+	c.generation = generation
 	c.invokers = invokers
 	c.pools = newPools
 	c.mu.Unlock()

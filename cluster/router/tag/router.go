@@ -61,8 +61,13 @@ func (p *PriorityRouter) Route(invokers []base.Invoker, url *common.URL, invocat
 	if v := p.cache.Load(); v != nil {
 		if !invocation.GetAttributeWithDefaultValue(constant.RouterCacheDisable, false).(bool) {
 			c := v.(router.Cache)
-			pool, fullInvokers := c.FindAddrPool(p)
-			if pool != nil && fullInvokers != nil {
+			pool, fullInvokers, cacheGen := c.FindAddrPool(p)
+			snapshotGen := invocation.GetAttributeWithDefaultValue(constant.RouterChainCacheGeneration, uint64(0)).(uint64)
+			// Only take the bitmap fast path when the cache snapshot is the same generation the
+			// chain snapshotted for this call. Otherwise a concurrent SetInvokers may have rebuilt
+			// the cache between the chain snapshot and this lookup, so fall through to the original
+			// matcher over the invokers passed in (finalInvokers).
+			if pool != nil && fullInvokers != nil && cacheGen == snapshotGen {
 				return p.routeWithPool(fullInvokers, pool, url, invocation)
 			}
 		}
