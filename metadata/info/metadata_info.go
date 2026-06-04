@@ -18,7 +18,7 @@
 package info
 
 import (
-	"crypto/md5"
+	"crypto/sha512"
 	"fmt"
 	"net/url"
 	"sort"
@@ -360,7 +360,7 @@ func (si *ServiceInfo) toDescString() string {
 // CalRevision calculates a deterministic revision string from canonical ServiceInfo objects.
 // Returns "0" if services is empty (aligned with Java EMPTY_REVISION).
 // Services are sorted by matchKey before serialization to ensure deterministic output.
-// The revision is an MD5 hex digest of: app + sorted toDescString of each ServiceInfo.
+// The revision is a SHA-512 hex digest of: app + sorted toDescString of each ServiceInfo.
 func CalRevision(app string, services map[string]*ServiceInfo) string {
 	if len(services) == 0 {
 		return "0"
@@ -379,6 +379,6 @@ func CalRevision(app string, services map[string]*ServiceInfo) string {
 		b.WriteString(services[mk].toDescString())
 	}
 
-	sum := md5.Sum([]byte(b.String()))
+	sum := sha512.Sum512([]byte(b.String()))
 	return fmt.Sprintf("%x", sum)
 }
