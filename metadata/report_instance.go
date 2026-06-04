@@ -20,14 +20,7 @@ package metadata
 import (
 	"sort"
 	"time"
-)
 
-import (
-	"github.com/dubbogo/gost/container/set"
-	"github.com/dubbogo/gost/log/logger"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -35,12 +28,21 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
+	gxset "github.com/dubbogo/gost/container/set"
+	"github.com/dubbogo/gost/log/logger"
+
 	metadataMetrics "dubbo.apache.org/dubbo-go/v3/metrics/metadata"
 )
 
 var (
 	instances = make(map[string]report.MetadataReport)
 )
+
+// ClearMetadataReportInstances resets the package-level instances map.
+// Intended for test isolation only; do not call in production code.
+func ClearMetadataReportInstances() {
+	instances = make(map[string]report.MetadataReport)
+}
 
 func addMetadataReport(registryId string, url *common.URL) error {
 	fac := extension.GetMetadataReportFactory(url.Protocol)
@@ -71,14 +73,21 @@ func GetMetadataReport() report.MetadataReport {
 	return nil
 }
 
+// GetMetadataReportByRegistry returns the metadata report bound to the given
+// registry id. When registry is empty the caller has no registry context, so
+// the stable default returned by GetMetadataReport is used. When a specific
+// (non-empty) registry id is given but is not registered, nil is returned so
+// the caller receives an explicit failure rather than silently operating
+// against the wrong registry's report.
 func GetMetadataReportByRegistry(registry string) report.MetadataReport {
 	if len(registry) == 0 {
-		registry = constant.DefaultKey
+		return GetMetadataReport()
 	}
 	if r, ok := instances[registry]; ok {
 		return r
 	}
-	return GetMetadataReport()
+	logger.Warnf("[Metadata] no metadata report found for registryId=%s", registry)
+	return nil
 }
 
 func GetMetadataReports() []report.MetadataReport {
