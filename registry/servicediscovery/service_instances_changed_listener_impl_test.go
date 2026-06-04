@@ -145,7 +145,7 @@ func TestCreateInstanceCarriesEnvironmentMetadata(t *testing.T) {
 	meta := info.NewMetadataInfo(testApp, "")
 	providerURL := newTestProviderURL(t, 20001, "pre")
 
-	instance := createInstance(meta, providerURL)
+	instance := createInstance(meta, providerURL, constant.DefaultKey)
 
 	assert.Equal(t, "pre", instance.GetMetadata()[constant.EnvironmentKey])
 }

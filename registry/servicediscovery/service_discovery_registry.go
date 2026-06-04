@@ -90,9 +90,10 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 	if metaInfo == nil {
 		panic("no metada info found of registry id " + s.url.GetParam(constant.RegistryIdKey, ""))
 	}
+	registryId := s.url.GetParam(constant.RegistryIdKey, constant.DefaultKey)
 	urls := metaInfo.GetExportedServiceURLs()
 	for _, url := range urls {
-		instance := createInstance(metaInfo, url)
+		instance := createInstance(metaInfo, url, registryId)
 		metaInfo.Revision = instance.GetMetadata()[constant.ExportedServicesRevisionPropertyName]
 		if metadata.GetMetadataType() == constant.RemoteMetadataStorageType {
 			if s.metadataReport == nil {
@@ -115,9 +116,12 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 	return nil
 }
 
-func createInstance(meta *info.MetadataInfo, url *common.URL) registry.ServiceInstance {
+func createInstance(meta *info.MetadataInfo, url *common.URL, registryId string) registry.ServiceInstance {
 	params := make(map[string]string, 8)
 	params[constant.MetadataStorageTypePropertyName] = metadata.GetMetadataType()
+	// Expose the registry this instance belongs to so that customizers (e.g. revision
+	// calculators) can scope their work to the correct per-registry service set.
+	params[constant.RegistryIdKey] = registryId
 	// Keep routing attributes visible on the registered instance as well as in service metadata.
 	if environment := url.GetParam(constant.EnvironmentKey, ""); len(environment) > 0 {
 		params[constant.EnvironmentKey] = environment
@@ -212,11 +216,11 @@ func (s *serviceDiscoveryRegistry) UnSubscribe(url *common.URL, listener registr
 }
 
 func (s *serviceDiscoveryRegistry) syncExportedMetadataAfterUnregister(targetURL *common.URL, origin []registry.ServiceInstance, keep []registry.ServiceInstance) error {
-	registryID, exist := s.url.GetNonDefaultParam(constant.RegistryIdKey)
+	registryId, exist := s.url.GetNonDefaultParam(constant.RegistryIdKey)
 	if !exist {
 		return nil
 	}
-	metadataInfo := metadata.GetMetadataInfo(registryID)
+	metadataInfo := metadata.GetMetadataInfo(registryId)
 	if metadataInfo == nil {
 		return nil
 	}
@@ -225,14 +229,14 @@ func (s *serviceDiscoveryRegistry) syncExportedMetadataAfterUnregister(targetURL
 	if len(origin) > 0 {
 		metadataInfo.ReplaceExportedServices(keepURLs)
 	} else if targetURL != nil {
-		metadata.RemoveService(registryID, targetURL)
+		metadata.RemoveService(registryId, targetURL)
 	}
 	remainingURLs := metadataInfo.GetExportedServiceURLs()
 	if len(remainingURLs) == 0 {
 		metadataInfo.Revision = "0"
 		return nil
 	}
-	instance := createInstance(metadataInfo, remainingURLs[0])
+	instance := createInstance(metadataInfo, remainingURLs[0], registryId)
 	revision := instance.GetMetadata()[constant.ExportedServicesRevisionPropertyName]
 	metadataInfo.Revision = revision
 	if len(keepURLs) == 0 {

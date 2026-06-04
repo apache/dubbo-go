@@ -49,12 +49,17 @@ func (e *exportedServicesRevisionMetadataCustomizer) GetPriority() int {
 	return 1
 }
 
-// Customize calculate the revision for exported urls and then put it into instance metadata
+// Customize 按注册中心范围计算 exported services 的 revision，
+// 避免多注册中心时不同 instance 因使用跨注册中心合并的服务列表而得到相同 revision。
 func (e *exportedServicesRevisionMetadataCustomizer) Customize(instance registry.ServiceInstance) {
-	urls, err := metadata.GetMetadataService().GetExportedServiceURLs()
-	if err != nil {
-		logger.Errorf("[Registry][ServiceDiscovery] get metadata service url is error, err=%v", err)
-		return
+	registryId := instance.GetMetadata()[constant.RegistryIdKey]
+	if len(registryId) == 0 {
+		logger.Warnf("[Registry][ServiceDiscovery] instance has no registryId in metadata, exported revision will be empty")
+	}
+	metaInfo := metadata.GetMetadataInfo(registryId)
+	var urls []*common.URL
+	if metaInfo != nil {
+		urls = metaInfo.GetExportedServiceURLs()
 	}
 	revision := resolveRevision(urls)
 	if len(revision) == 0 {
@@ -70,12 +75,16 @@ func (e *subscribedServicesRevisionMetadataCustomizer) GetPriority() int {
 	return 2
 }
 
-// Customize calculate the revision for subscribed urls and then put it into instance metadata
+// Customize 按注册中心范围计算 subscribed services 的 revision。
 func (e *subscribedServicesRevisionMetadataCustomizer) Customize(instance registry.ServiceInstance) {
-	urls, err := metadata.GetMetadataService().GetSubscribedURLs()
-	if err != nil {
-		logger.Errorf("[Registry][ServiceDiscovery] get metadata subscribed url is error, err=%v", err)
-		return
+	registryId := instance.GetMetadata()[constant.RegistryIdKey]
+	if len(registryId) == 0 {
+		logger.Warnf("[Registry][ServiceDiscovery] instance has no registryId in metadata, subscribed revision will be empty")
+	}
+	metaInfo := metadata.GetMetadataInfo(registryId)
+	var urls []*common.URL
+	if metaInfo != nil {
+		urls = metaInfo.GetSubscribedURLs()
 	}
 	revision := resolveRevision(urls)
 	if len(revision) == 0 {

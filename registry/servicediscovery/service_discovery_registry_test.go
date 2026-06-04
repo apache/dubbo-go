@@ -294,7 +294,7 @@ func TestServiceDiscoveryRegistryUnRegisterServicePartialFailSyncsMetadata(t *te
 	assert.Equal(t, providerURL1, metaInfo.GetExportedServiceURLs()[0])
 	assert.Len(t, metaInfo.Services, 1)
 
-	expectedRevision := createInstance(metaInfo, providerURL1).GetMetadata()[constant.ExportedServicesRevisionPropertyName]
+	expectedRevision := createInstance(metaInfo, providerURL1, regID).GetMetadata()[constant.ExportedServicesRevisionPropertyName]
 	assert.Equal(t, expectedRevision, metaInfo.Revision)
 	assert.True(t, mockSD.updateCalled)
 	assert.Contains(t, mockSD.updatedIDs, providerURL1.Address())
@@ -344,7 +344,7 @@ func TestServiceDiscoveryRegistryUnRegisterWithoutTrackedInstancesReconcilesMeta
 	assert.Equal(t, providerURL2, metaInfo.GetExportedServiceURLs()[0])
 	assert.Len(t, metaInfo.Services, 1)
 
-	expectedRevision := createInstance(metaInfo, providerURL2).GetMetadata()[constant.ExportedServicesRevisionPropertyName]
+	expectedRevision := createInstance(metaInfo, providerURL2, regID).GetMetadata()[constant.ExportedServicesRevisionPropertyName]
 	assert.Equal(t, expectedRevision, metaInfo.Revision)
 }
 
