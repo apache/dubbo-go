@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -37,7 +37,7 @@ import (
 )
 
 func TestServiceInstancesChangedListenerAggregatesSameServiceAcrossRevisions(t *testing.T) {
-	listener := NewServiceInstancesChangedListener(testApp, gxset.NewSet(testApp))
+	listener := NewServiceInstancesChangedListener(testApp, constant.DefaultKey, gxset.NewSet(testApp))
 	notify := &capturingNotifyListener{}
 	listener.AddListenerAndNotify(common.MatchKey(testInterface, constant.TriProtocol), notify)
 
@@ -52,7 +52,7 @@ func TestServiceInstancesChangedListenerAggregatesSameServiceAcrossRevisions(t *
 }
 
 func TestServiceInstancesChangedListenerRefreshesURLsOnProviderRemoveAndRestart(t *testing.T) {
-	listener := NewServiceInstancesChangedListener(testApp, gxset.NewSet(testApp))
+	listener := NewServiceInstancesChangedListener(testApp, constant.DefaultKey, gxset.NewSet(testApp))
 	notify := &capturingNotifyListener{}
 	listener.AddListenerAndNotify(common.MatchKey(testInterface, constant.TriProtocol), notify)
 
@@ -83,7 +83,7 @@ func TestServiceInstancesChangedListenerRefreshesURLsOnProviderRemoveAndRestart(
 }
 
 func TestServiceInstancesChangedListenerRefreshesAndClearsEnvironmentWhenRevisionIsUnchanged(t *testing.T) {
-	listener := NewServiceInstancesChangedListener(testApp, gxset.NewSet(testApp))
+	listener := NewServiceInstancesChangedListener(testApp, constant.DefaultKey, gxset.NewSet(testApp))
 	notify := &capturingNotifyListener{}
 	listener.AddListenerAndNotify(common.MatchKey(testInterface, constant.TriProtocol), notify)
 
@@ -119,7 +119,7 @@ func TestServiceInstancesChangedListenerRefreshesAndClearsEnvironmentWhenRevisio
 }
 
 func TestServiceInstancesChangedListenerSkipsNilMetadataWithoutPanic(t *testing.T) {
-	listener := NewServiceInstancesChangedListener(testApp, gxset.NewSet(testApp))
+	listener := NewServiceInstancesChangedListener(testApp, constant.DefaultKey, gxset.NewSet(testApp))
 	notify := &capturingNotifyListener{}
 	listener.AddListenerAndNotify(common.MatchKey(testInterface, constant.TriProtocol), notify)
 

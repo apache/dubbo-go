@@ -42,8 +42,8 @@ import (
 
 const defaultTimeout = "5s" // s
 
-func GetMetadataFromMetadataReport(revision string, instance registry.ServiceInstance) (*info.MetadataInfo, error) {
-	report := GetMetadataReport()
+func GetMetadataFromMetadataReport(revision string, instance registry.ServiceInstance, registryId string) (*info.MetadataInfo, error) {
+	report := GetMetadataReportByRegistry(registryId)
 	if report == nil {
 		return nil, perrors.New("no metadata report instance found,please check ")
 	}

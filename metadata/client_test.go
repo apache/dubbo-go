@@ -63,7 +63,7 @@ var (
 
 func TestGetMetadataFromMetadataReport(t *testing.T) {
 	t.Run("no report instance", func(t *testing.T) {
-		_, err := GetMetadataFromMetadataReport("1", ins)
+		_, err := GetMetadataFromMetadataReport("1", ins, "default")
 		require.Error(t, err)
 	})
 	mockReport := new(mockMetadataReport)
@@ -71,13 +71,13 @@ func TestGetMetadataFromMetadataReport(t *testing.T) {
 	instances["default"] = mockReport
 	t.Run("normal", func(t *testing.T) {
 		mockReport.On("GetAppMetadata").Return(metadataInfo, nil).Once()
-		got, err := GetMetadataFromMetadataReport("1", ins)
+		got, err := GetMetadataFromMetadataReport("1", ins, "default")
 		require.NoError(t, err)
 		assert.Equal(t, metadataInfo, got)
 	})
 	t.Run("error", func(t *testing.T) {
 		mockReport.On("GetAppMetadata").Return(metadataInfo, errors.New("mock error")).Once()
-		_, err := GetMetadataFromMetadataReport("1", ins)
+		_, err := GetMetadataFromMetadataReport("1", ins, "default")
 		require.Error(t, err)
 	})
 }
