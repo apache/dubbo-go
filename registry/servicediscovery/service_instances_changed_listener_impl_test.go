@@ -26,13 +26,18 @@ import (
 	gxset "github.com/dubbogo/gost/container/set"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/metadata"
+	metadatareport "dubbo.apache.org/dubbo-go/v3/metadata/report"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
+	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
@@ -148,6 +153,110 @@ func TestCreateInstanceCarriesEnvironmentMetadata(t *testing.T) {
 	instance := createInstance(meta, providerURL, constant.DefaultKey)
 
 	assert.Equal(t, "pre", instance.GetMetadata()[constant.EnvironmentKey])
+}
+
+// TestListenerUsesRegistryIdToFetchRemoteMetadata verifies that when a listener is
+// created with a specific registryId, GetMetadataInfo threads that id through to
+// GetMetadataFromMetadataReport so the correct per-registry metadata report is used.
+func TestListenerUsesRegistryIdToFetchRemoteMetadata(t *testing.T) {
+	const listenerRegistryId = "remote-reg-test"
+	const revision = "rev-remote-reg-test"
+
+	// Register a mock metadata report under the listener's registry id
+	mockReport := new(listenerMockMetadataReport)
+	extension.SetMetadataReportFactory(listenerRegistryId, func() metadatareport.MetadataReportFactory {
+		return mockReport
+	})
+	opts := metadata.NewReportOptions(
+		metadata.WithRegistryId(listenerRegistryId),
+		metadata.WithProtocol(listenerRegistryId),
+		metadata.WithAddress("127.0.0.1"),
+	)
+	require.NoError(t, opts.Init())
+	t.Cleanup(metadata.ClearMetadataReportInstances)
+
+	// Build the MetadataInfo that the mock report will return
+	serviceURL, err := common.NewURL(
+		fmt.Sprintf("tri://127.0.0.1:20099/%s", testInterface),
+		common.WithInterface(testInterface),
+		common.WithMethods([]string{"Greet"}),
+		common.WithParamsValue(constant.ApplicationKey, testApp),
+	)
+	require.NoError(t, err)
+	svc := info.NewServiceInfoWithURL(serviceURL)
+	expectedMeta := info.NewMetadataInfoWithParams(testApp, revision, map[string]*info.ServiceInfo{
+		svc.GetMatchKey(): svc,
+	})
+	mockReport.On("GetAppMetadata").Return(expectedMeta, nil).Once()
+
+	// Create a service instance that requests remote metadata storage
+	remoteInstance := &registry.DefaultServiceInstance{
+		ID:          "127.0.0.1:20099",
+		ServiceName: testApp,
+		Host:        "127.0.0.1",
+		Port:        20099,
+		Enable:      true,
+		Healthy:     true,
+		Metadata: map[string]string{
+			constant.ExportedServicesRevisionPropertyName: revision,
+			constant.MetadataStorageTypePropertyName:      constant.RemoteMetadataStorageType,
+			constant.ServiceInstanceEndpoints:             `[{"port":20099,"protocol":"tri"}]`,
+		},
+	}
+
+	// Create listener with the specific registry id. Remove the revision from
+	// the cache after the test so it doesn't bleed into other tests.
+	t.Cleanup(func() {
+		if metaCache != nil {
+			metaCache.Delete(revision)
+		}
+	})
+
+	listener := NewServiceInstancesChangedListener(testApp, listenerRegistryId, gxset.NewSet(testApp))
+	notify := &capturingNotifyListener{}
+	listener.AddListenerAndNotify(common.MatchKey(testInterface, constant.TriProtocol), notify)
+
+	require.NoError(t, listener.OnEvent(registry.NewServiceInstancesChangedEvent(testApp, []registry.ServiceInstance{remoteInstance})))
+
+	// The mock report must have been called exactly once, proving the correct report was used
+	mockReport.AssertExpectations(t)
+	// The notify listener must have received the service from the fetched metadata
+	assert.NotEmpty(t, notify.events, "expected service events from the remote metadata fetch")
+}
+
+// listenerMockMetadataReport is a mock MetadataReport (and its factory) for
+// TestListenerUsesRegistryIdToFetchRemoteMetadata.
+type listenerMockMetadataReport struct {
+	mock.Mock
+}
+
+func (m *listenerMockMetadataReport) CreateMetadataReport(*common.URL) metadatareport.MetadataReport {
+	return m
+}
+
+func (m *listenerMockMetadataReport) GetAppMetadata(string, string) (*info.MetadataInfo, error) {
+	args := m.Called()
+	return args.Get(0).(*info.MetadataInfo), args.Error(1)
+}
+
+func (m *listenerMockMetadataReport) PublishAppMetadata(string, string, *info.MetadataInfo) error {
+	args := m.Called()
+	return args.Error(0)
+}
+
+func (m *listenerMockMetadataReport) RegisterServiceAppMapping(string, string, string) error {
+	args := m.Called()
+	return args.Error(0)
+}
+
+func (m *listenerMockMetadataReport) GetServiceAppMapping(string, string, mapping.MappingListener) (*gxset.HashSet, error) {
+	args := m.Called()
+	return args.Get(0).(*gxset.HashSet), args.Error(1)
+}
+
+func (m *listenerMockMetadataReport) RemoveServiceAppMappingListener(string, string) error {
+	args := m.Called()
+	return args.Error(0)
 }
 
 func newTestServiceInstance(t *testing.T, port int, environment string) registry.ServiceInstance {
