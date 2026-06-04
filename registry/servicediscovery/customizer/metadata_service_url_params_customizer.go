@@ -56,6 +56,11 @@ func (m *metadataServiceURLParamsMetadataCustomizer) GetPriority() int {
 }
 
 func (m *metadataServiceURLParamsMetadataCustomizer) Customize(instance registry.ServiceInstance) {
+	// TODO: in a multi-instance deployment each registry should expose its own
+	// metadata service URL; currently GetMetadataService() returns a global
+	// singleton so all instances receive the same URL regardless of which
+	// registry they belong to. Fixing this requires per-registry MetadataService
+	// support and is tracked separately.
 	url, _ := metadata.GetMetadataService().GetMetadataServiceURL()
 	if url == nil {
 		// when metadata service is not exported the url will be nil,this is because metadata type is remote
