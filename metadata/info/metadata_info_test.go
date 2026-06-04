@@ -153,6 +153,27 @@ func TestServiceInfoGetMatchKey(t *testing.T) {
 	assert.NotEmpty(t, si.GetMatchKey())
 }
 
+func TestMetadataInfoGetServices(t *testing.T) {
+	metadataInfo := &MetadataInfo{
+		Services:              make(map[string]*ServiceInfo),
+		exportedServiceURLs:   make(map[string][]*common.URL),
+		subscribedServiceURLs: make(map[string][]*common.URL),
+	}
+	url, _ := common.NewURL("dubbo://127.0.0.1:20000?application=foo&category=providers&check=false&dubbo=dubbo-go+v1.5.0&interface=com.foo.Bar&methods=GetPetByID%2CGetPetTypes&organization=Apache&owner=foo&revision=1.0.0&side=provider&version=1.0.0")
+	metadataInfo.AddService(url)
+
+	services := metadataInfo.GetServices()
+	require.Len(t, services, 1)
+	assert.NotEmpty(t, services)
+
+	// GetServices returns a copy: modifying the original does not affect the snapshot
+	metadataInfo.RemoveService(url)
+	assert.Len(t, services, 1)
+
+	// A fresh call reflects the removal
+	assert.Empty(t, metadataInfo.GetServices())
+}
+
 func TestServiceInfoJavaClassName(t *testing.T) {
 	assert.Equalf(t, "org.apache.dubbo.metadata.MetadataInfo", NewAppMetadataInfo("dubbo").JavaClassName(), "JavaClassName()")
 }

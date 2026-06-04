@@ -261,3 +261,15 @@ func (c *capturingNotifyListener) NotifyAll(events []*registry.ServiceEvent, cal
 		callback()
 	}
 }
+
+func TestServiceInstancesChangedListenerRemoveListener(t *testing.T) {
+	listener := NewServiceInstancesChangedListener(testApp, gxset.NewSet(testApp)).(*ServiceInstancesChangedListenerImpl)
+	notify := &capturingNotifyListener{}
+	key := common.MatchKey(testInterface, constant.TriProtocol)
+
+	listener.AddListenerAndNotify(key, notify)
+	require.Len(t, listener.listeners, 1)
+
+	listener.RemoveListener(key)
+	require.Empty(t, listener.listeners)
+}

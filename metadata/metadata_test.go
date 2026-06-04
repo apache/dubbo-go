@@ -18,6 +18,7 @@
 package metadata
 
 import (
+	"sync"
 	"testing"
 )
 
@@ -137,4 +138,37 @@ func TestGetMetadataService(t *testing.T) {
 			assert.Equalf(t, tt.want, GetMetadataService(), "GetMetadataService()")
 		})
 	}
+}
+
+func TestAddServiceConcurrent(t *testing.T) {
+	var wg sync.WaitGroup
+	for i := 0; i < 20; i++ {
+		registryId := "concurrent-reg"
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			url := common.NewURLWithOptions(
+				common.WithProtocol("dubbo"),
+				common.WithParamsValue(constant.ApplicationKey, "dubbo"),
+				common.WithParamsValue(constant.ApplicationTagKey, "v1"),
+			)
+			AddService(registryId, url)
+		}(i)
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			url := common.NewURLWithOptions(
+				common.WithProtocol("dubbo"),
+				common.WithParamsValue(constant.ApplicationKey, "dubbo"),
+				common.WithParamsValue(constant.ApplicationTagKey, "v1"),
+			)
+			AddSubscribeURL(registryId, url)
+		}(i)
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			_ = GetMetadataInfo(registryId)
+		}(i)
+	}
+	wg.Wait()
 }
