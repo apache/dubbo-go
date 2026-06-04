@@ -375,21 +375,21 @@ func TestDefaultMetadataServiceConcurrentReadAccess(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			urls, err := mts.GetExportedServiceURLs()
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			assert.NotEmpty(t, urls)
 		}()
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			urls, err := mts.GetSubscribedURLs()
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			assert.NotEmpty(t, urls)
 		}()
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			info, err := mts.GetMetadataInfo("1")
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			assert.NotNil(t, info)
 		}()
 	}
