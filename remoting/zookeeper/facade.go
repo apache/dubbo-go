@@ -51,7 +51,7 @@ func HandleClientRestart(r ZkClientFacade) {
 			r.RestartCallBack()
 			time.Sleep(10 * time.Microsecond)
 		case <-r.Done():
-			logger.Warnf("receive registry destroy event, quit client restart handler")
+			logger.Warn("[Remoting][Zookeeper] receive registry destroy event, quit client restart handler")
 			return
 		}
 	}

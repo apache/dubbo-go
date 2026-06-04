@@ -168,7 +168,7 @@ func (d *DefaultServiceInstance) ToURLs(service *info.ServiceInfo) []*common.URL
 	if d.endpoints == nil {
 		err := json.Unmarshal([]byte(d.Metadata[constant.ServiceInstanceEndpoints]), &d.endpoints)
 		if err != nil {
-			logger.Errorf("Error parsing endpoints of service instance v%, multiple protocol services might not be able to work properly, err is v%.", d, err)
+			logger.Errorf("[Registry] error parsing endpoints of service instance %v, multiple protocol services might not be able to work properly, err=%v", d, err)
 		}
 	}
 
@@ -205,7 +205,7 @@ func (d *DefaultServiceInstance) GetEndPoints() []*Endpoint {
 	var endpoints []*Endpoint
 	err := json.Unmarshal([]byte(rawEndpoints), &endpoints)
 	if err != nil {
-		logger.Errorf("json umarshal rawEndpoints[%s] catch error:%s", rawEndpoints, err.Error())
+		logger.Errorf("[Registry] json unmarshal rawEndpoints[%s] catch error, err=%v", rawEndpoints, err)
 		return nil
 	}
 	return endpoints

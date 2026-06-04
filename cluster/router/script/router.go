@@ -93,15 +93,15 @@ func (s *ScriptRouter) Process(event *config_center.ConfigChangeEvent) {
 		}
 		// check new config
 		if cfg.ScriptType == "" {
-			logger.Errorf("[Router][Script] type field must be set in config")
+			logger.Error("[Router][Script] type field must be set in config")
 			return
 		}
 		if cfg.Script == "" {
-			logger.Errorf("[Router][Script] script field must be set in config")
+			logger.Error("[Router][Script] script field must be set in config")
 			return
 		}
 		if cfg.Key == "" {
-			logger.Errorf("[Router][Script] applicationName field must be set in config")
+			logger.Error("[Router][Script] applicationName field must be set in config")
 			return
 		}
 		if !*cfg.Enabled {

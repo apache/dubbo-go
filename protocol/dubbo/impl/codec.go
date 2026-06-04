@@ -166,7 +166,7 @@ func (c *ProtocolCodec) Decode(p *DubboPackage) error {
 		return err
 	}
 	if p.IsResponseWithException() {
-		logger.Infof("response with exception: %+v", p.Header)
+		logger.Infof("[Dubbo] response with exception, header=%v", p.Header)
 		decoder := hessian.NewDecoder(body)
 		p.Body = &ResponsePayload{}
 		exception, err := decoder.Decode()
@@ -234,7 +234,7 @@ func packRequest(p DubboPackage, serializer Serializer) ([]byte, error) {
 		}
 		pkgLen = len(body)
 		if pkgLen > int(DEFAULT_LEN) { // recommand 8M
-			logger.Warnf("Data length %d too large, recommand max payload %d. "+
+			logger.Warnf("[Dubbo] data length %d too large, recommand max payload %d. "+
 				"Dubbo java can't handle the package whose size is greater than %d!!!", pkgLen, DEFAULT_LEN, DEFAULT_LEN)
 		}
 		byteArray = append(byteArray, body...)
@@ -272,7 +272,7 @@ func packResponse(p DubboPackage, serializer Serializer) ([]byte, error) {
 
 	pkgLen := len(body)
 	if pkgLen > int(DEFAULT_LEN) { // recommand 8M
-		logger.Warnf("Data length %d too large, recommand max payload %d. "+
+		logger.Warnf("[Dubbo] data length %d too large, recommand max payload %d. "+
 			"Dubbo java can't handle the package whose size is greater than %d!!!", pkgLen, DEFAULT_LEN, DEFAULT_LEN)
 	}
 	// byteArray{body length}

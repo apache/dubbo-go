@@ -48,7 +48,7 @@ func (re *RestExporter) UnExport() {
 	interfaceName := re.GetInvoker().GetURL().GetParam(constant.InterfaceKey, "")
 	err := common.ServiceMap.UnRegister(interfaceName, REST, re.GetInvoker().GetURL().ServiceKey())
 	if err != nil {
-		logger.Errorf("[RestExporter.UnExport] error: %v", err)
+		logger.Errorf("[Rest][Exporter] unexport failed, err=%v", err)
 	}
 	re.BaseExporter.UnExport()
 }

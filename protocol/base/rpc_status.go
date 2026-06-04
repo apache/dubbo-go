@@ -211,14 +211,14 @@ func GetInvokerHealthyStatus(invoker Invoker) bool {
 // SetInvokerUnhealthyStatus add target invoker to black list
 func SetInvokerUnhealthyStatus(invoker Invoker) {
 	invokerBlackList.Store(invoker.GetURL().GetCacheInvokerMapKey(), invoker)
-	logger.Info("Add invoker ip = ", invoker.GetURL().Location, " to black list")
+	logger.Infof("[Protocol] add invoker to black list, ip=%s", invoker.GetURL().Location)
 	blackListCacheDirty.Store(true)
 }
 
 // RemoveInvokerUnhealthyStatus remove unhealthy status of target invoker from blacklist
 func RemoveInvokerUnhealthyStatus(invoker Invoker) {
 	invokerBlackList.Delete(invoker.GetURL().GetCacheInvokerMapKey())
-	logger.Info("Remove invoker ip = ", invoker.GetURL().Location, " from black list")
+	logger.Infof("[Protocol] remove invoker from black list, ip=%s", invoker.GetURL().Location)
 	blackListCacheDirty.Store(true)
 }
 
@@ -238,7 +238,7 @@ func GetBlackListInvokers(blockSize int) []Invoker {
 // RemoveUrlKeyUnhealthyStatus called when event of provider unregister, delete from black list
 func RemoveUrlKeyUnhealthyStatus(key string) {
 	invokerBlackList.Delete(key)
-	logger.Info("Remove invoker key = ", key, " from black list")
+	logger.Infof("[Protocol] remove invoker from black list, key=%s", key)
 	blackListCacheDirty.Store(true)
 }
 
@@ -258,7 +258,7 @@ func TryRefreshBlackList() {
 		}()
 
 		ivks := GetBlackListInvokers(constant.DefaultBlackListRecoverBlock)
-		logger.Debug("blackList len = ", len(ivks))
+		logger.Debugf("[Protocol] blackList len=%d", len(ivks))
 
 		for i := 0; i < 3; i++ {
 			wg.Add(1)

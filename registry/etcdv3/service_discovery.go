@@ -90,7 +90,7 @@ func (e *etcdV3ServiceDiscovery) Register(instance registry.ServiceInstance) err
 		if err == nil {
 			err = e.client.RegisterTemp(path, string(ins))
 			if err != nil {
-				logger.Errorf("cannot register the instance: %s", string(ins), err)
+				logger.Errorf("[Registry][Etcdv3] cannot register the instance, instance=%s err=%v", string(ins), err)
 			} else {
 				e.services.Add(instance.GetServiceName())
 			}
@@ -108,7 +108,7 @@ func (e *etcdV3ServiceDiscovery) Update(instance registry.ServiceInstance) error
 		ins, err := jsonutil.EncodeJSON(instance)
 		if err == nil {
 			if err = e.client.RegisterTemp(path, string(ins)); err != nil {
-				logger.Warnf("etcdV3ServiceDiscovery.client.RegisterTemp(path:%v, instance:%v) = error:%v",
+				logger.Warnf("[Registry][Etcdv3] etcdV3ServiceDiscovery.client.RegisterTemp(path=%v instance=%v) = err=%v",
 					path, string(ins), err)
 			}
 			e.services.Add(instance.GetServiceName())
@@ -158,7 +158,7 @@ func (e *etcdV3ServiceDiscovery) GetInstances(serviceName string) []registry.Ser
 			}
 			return serviceInstances
 		}
-		logger.Infof("could not getChildrenKVList the err is:%v", err)
+		logger.Infof("[Registry][Etcdv3] could not getChildrenKVList, err=%v", err)
 	}
 
 	return make([]registry.ServiceInstance, 0)
@@ -307,7 +307,7 @@ func newEtcdV3ServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, erro
 
 	timeout := url.GetParamDuration(constant.RegistryTimeoutKey, constant.DefaultRegTimeout)
 
-	logger.Infof("etcd address is: %v,timeout is:%s", url.Location, timeout.String())
+	logger.Infof("[Registry][Etcdv3] etcd address=%v timeout=%s", url.Location, timeout.String())
 
 	client := etcdv3.NewServiceDiscoveryClient(
 		gxetcd.WithName(gxetcd.RegistryETCDV3Client),

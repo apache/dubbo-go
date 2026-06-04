@@ -69,11 +69,11 @@ func (pl *polarisListener) Next() (*registry.ServiceEvent, error) {
 	for {
 		select {
 		case <-pl.closeCh:
-			logger.Warnf("polaris listener is close")
+			logger.Warn("[Registry][Polaris] polaris listener is close")
 			return nil, perrors.New("listener stopped")
 		case val := <-pl.events.Out():
 			e, _ := val.(*config_center.ConfigChangeEvent)
-			logger.Debugf("got polaris event %s", e)
+			logger.Debugf("[Registry][Polaris] got polaris event %s", e)
 			instance := e.Value.(model.Instance)
 			return &registry.ServiceEvent{Action: e.ConfigType, Service: generateUrl(instance)}, nil
 		}
@@ -88,13 +88,13 @@ func (pl *polarisListener) Close() {
 
 func generateUrl(instance model.Instance) *common.URL {
 	if instance.GetMetadata() == nil {
-		logger.Errorf("polaris instance metadata is empty,instance:%+v", instance)
+		logger.Errorf("[Registry][Polaris] polaris instance metadata is empty, instance=%+v", instance)
 		return nil
 	}
 	path := instance.GetMetadata()["path"]
 	myInterface := instance.GetMetadata()["interface"]
 	if len(path) == 0 && len(myInterface) == 0 {
-		logger.Errorf("polaris instance metadata does not have  both path key and interface key,instance:%+v", instance)
+		logger.Errorf("[Registry][Polaris] polaris instance metadata does not have both path key and interface key, instance=%+v", instance)
 		return nil
 	}
 	if len(path) == 0 && len(myInterface) != 0 {
@@ -102,7 +102,7 @@ func generateUrl(instance model.Instance) *common.URL {
 	}
 	protocol := instance.GetProtocol()
 	if len(protocol) == 0 {
-		logger.Errorf("polaris instance metadata does not have protocol key,instance:%+v", instance)
+		logger.Errorf("[Registry][Polaris] polaris instance metadata does not have protocol key, instance=%+v", instance)
 		return nil
 	}
 	urlMap := url.Values{}
