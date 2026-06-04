@@ -248,7 +248,8 @@ func GetMetadataInfo(app string, instance registry.ServiceInstance, revision str
 	cacheOnce.Do(func() {
 		initCache(app)
 	})
-	if metadataInfo, ok := metaCache.Get(revision); ok {
+	cacheKey := registryId + ":" + revision
+	if metadataInfo, ok := metaCache.Get(cacheKey); ok {
 		return metadataInfo.(*info.MetadataInfo), nil
 	}
 
@@ -271,6 +272,6 @@ func GetMetadataInfo(app string, instance registry.ServiceInstance, revision str
 			return nil, err
 		}
 	}
-	metaCache.Set(revision, metadataInfo)
+	metaCache.Set(cacheKey, metadataInfo)
 	return metadataInfo, nil
 }

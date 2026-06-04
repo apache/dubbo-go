@@ -93,7 +93,7 @@ func TestServiceInstancesChangedListenerRefreshesAndClearsEnvironmentWhenRevisio
 	listener.AddListenerAndNotify(common.MatchKey(testInterface, constant.TriProtocol), notify)
 
 	revision := "rev-20001-same-environment-change"
-	metaCache.Set(revision, newTestMetadataInfo(t, revision, 20001, "pre"))
+	metaCache.Set(constant.DefaultKey+":"+revision, newTestMetadataInfo(t, revision, 20001, "pre"))
 
 	pre := newTestServiceInstanceOnly(20001, "pre", revision)
 	require.NoError(t, listener.OnEvent(registry.NewServiceInstancesChangedEvent(testApp, []registry.ServiceInstance{
@@ -130,9 +130,10 @@ func TestServiceInstancesChangedListenerSkipsNilMetadataWithoutPanic(t *testing.
 
 	revision := "rev-20003-nil-metadata"
 	var metadataInfo *info.MetadataInfo
-	metaCache.Set(revision, metadataInfo)
+	cacheKey := constant.DefaultKey + ":" + revision
+	metaCache.Set(cacheKey, metadataInfo)
 	t.Cleanup(func() {
-		metaCache.Delete(revision)
+		metaCache.Delete(cacheKey)
 	})
 
 	instance := newTestServiceInstanceOnly(20003, "pre", revision)
@@ -204,11 +205,10 @@ func TestListenerUsesRegistryIdToFetchRemoteMetadata(t *testing.T) {
 		},
 	}
 
-	// Create listener with the specific registry id. Remove the revision from
-	// the cache after the test so it doesn't bleed into other tests.
+	// Remove the cache entry after the test so it doesn't bleed into other tests.
 	t.Cleanup(func() {
 		if metaCache != nil {
-			metaCache.Delete(revision)
+			metaCache.Delete(listenerRegistryId + ":" + revision)
 		}
 	})
 
@@ -268,7 +268,9 @@ func newTestServiceInstance(t *testing.T, port int, environment string) registry
 func newTestServiceInstanceWithRevision(t *testing.T, port int, environment string, revision string) registry.ServiceInstance {
 	t.Helper()
 
-	metaCache.Set(revision, newTestMetadataInfo(t, revision, port, environment))
+	// Pre-populate the cache under the composite key used by GetMetadataInfo.
+	// All test listeners use constant.DefaultKey as their registryId.
+	metaCache.Set(constant.DefaultKey+":"+revision, newTestMetadataInfo(t, revision, port, environment))
 	return newTestServiceInstanceOnly(port, environment, revision)
 }
 
