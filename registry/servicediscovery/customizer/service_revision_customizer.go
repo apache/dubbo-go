@@ -49,8 +49,8 @@ func (e *exportedServicesRevisionMetadataCustomizer) GetPriority() int {
 	return 1
 }
 
-// Customize 按注册中心范围计算 exported services 的 revision，
-// 避免多注册中心时不同 instance 因使用跨注册中心合并的服务列表而得到相同 revision。
+// Customize calculates the revision of exported services scoped to the registry,
+// preventing different instances from getting the same revision due to a merged cross-registry service list in multi-registry setups.
 func (e *exportedServicesRevisionMetadataCustomizer) Customize(instance registry.ServiceInstance) {
 	registryId := instance.GetMetadata()[constant.RegistryIdKey]
 	if len(registryId) == 0 {
@@ -75,7 +75,7 @@ func (e *subscribedServicesRevisionMetadataCustomizer) GetPriority() int {
 	return 2
 }
 
-// Customize 按注册中心范围计算 subscribed services 的 revision。
+// Customize calculates the revision of subscribed services scoped to the registry.
 func (e *subscribedServicesRevisionMetadataCustomizer) Customize(instance registry.ServiceInstance) {
 	registryId := instance.GetMetadata()[constant.RegistryIdKey]
 	if len(registryId) == 0 {

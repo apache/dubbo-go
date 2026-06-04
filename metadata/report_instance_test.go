@@ -180,21 +180,21 @@ func TestGetMetadataReportIsDeterministic(t *testing.T) {
 	instances = make(map[string]report.MetadataReport)
 	r1 := new(mockMetadataReport)
 	r2 := new(mockMetadataReport)
-	// "aaa" 字母序在 "zzz" 之前，两者均不是 "default"
+	// "aaa" sorts before "zzz" alphabetically, neither is "default"
 	instances["zzz"] = r1
 	instances["aaa"] = r2
 
-	// 没有 "default" key 时，必须始终返回字母序第一个（r2）
+	// without a "default" key, must always return the alphabetically first entry (r2)
 	for range 20 {
 		got := GetMetadataReport()
-		assert.Equal(t, r2, got, "期望返回 'aaa' 对应的 report")
+		assert.Equal(t, r2, got, "expected the report for 'aaa'")
 	}
 
-	// 存在 "default" key 时，必须始终返回它（r1），优先级高于字母序
+	// when the "default" key exists, must always return it (r1), taking priority over alphabetical order
 	instances[constant.DefaultKey] = r1
 	for range 20 {
 		got := GetMetadataReport()
-		assert.Equal(t, r1, got, "期望返回 'default' 对应的 report")
+		assert.Equal(t, r1, got, "expected the report for 'default'")
 	}
 }
 
