@@ -54,7 +54,10 @@ func (e *exportedServicesRevisionMetadataCustomizer) GetPriority() int {
 func (e *exportedServicesRevisionMetadataCustomizer) Customize(instance registry.ServiceInstance) {
 	registryId := instance.GetMetadata()[constant.RegistryIdKey]
 	if len(registryId) == 0 {
-		logger.Warnf("[Registry][ServiceDiscovery] instance has no registryId in metadata, exported revision will be empty")
+		// revision will be "0" (no services found for empty key), which causes OnEvent to skip
+		// this instance entirely — ensure RegistryIdKey is set before customizers run.
+		logger.Errorf("[Registry][ServiceDiscovery] instance has no registryId in metadata; "+
+			"exported revision will be \"0\" and this instance will be invisible to consumers")
 	}
 	metaInfo := metadata.GetMetadataInfo(registryId)
 	var urls []*common.URL
@@ -79,7 +82,10 @@ func (e *subscribedServicesRevisionMetadataCustomizer) GetPriority() int {
 func (e *subscribedServicesRevisionMetadataCustomizer) Customize(instance registry.ServiceInstance) {
 	registryId := instance.GetMetadata()[constant.RegistryIdKey]
 	if len(registryId) == 0 {
-		logger.Warnf("[Registry][ServiceDiscovery] instance has no registryId in metadata, subscribed revision will be empty")
+		// revision will be "0" (no subscriptions found for empty key), which causes OnEvent to skip
+		// this instance entirely — ensure RegistryIdKey is set before customizers run.
+		logger.Errorf("[Registry][ServiceDiscovery] instance has no registryId in metadata; "+
+			"subscribed revision will be \"0\" and this instance will be invisible to consumers")
 	}
 	metaInfo := metadata.GetMetadataInfo(registryId)
 	var urls []*common.URL
