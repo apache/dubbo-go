@@ -156,6 +156,8 @@ func initMockWithId(t *testing.T, registryId string) *mockMetadataReport {
 }
 
 func TestServiceNameMappingRemoveFansOutToAllReports(t *testing.T) {
+	metadata.ClearMetadataReportInstances()
+	t.Cleanup(metadata.ClearMetadataReportInstances)
 	serviceNameMappingOnce = sync.Once{}
 	serviceNameMappingInstance = nil
 
@@ -173,6 +175,66 @@ func TestServiceNameMappingRemoveFansOutToAllReports(t *testing.T) {
 
 	err := ins.Remove(serviceUrl)
 	require.NoError(t, err)
+	r1.AssertExpectations(t)
+	r2.AssertExpectations(t)
+}
+
+func TestServiceNameMappingRemoveCollectsAllErrors(t *testing.T) {
+	metadata.ClearMetadataReportInstances()
+	t.Cleanup(metadata.ClearMetadataReportInstances)
+	serviceNameMappingOnce = sync.Once{}
+	serviceNameMappingInstance = nil
+
+	r1 := initMockWithId(t, "reg-c")
+	r2 := initMockWithId(t, "reg-d")
+
+	ins := GetNameMappingInstance()
+	serviceUrl := common.NewURLWithOptions(
+		common.WithInterface("org.example.BarService"),
+		common.WithParamsValue(constant.ApplicationKey, "bar-app"),
+	)
+
+	err1 := errors.New("r1 failure")
+	err2 := errors.New("r2 failure")
+
+	// both reports fail
+	r1.On("RemoveServiceAppMappingListener").Return(err1).Once()
+	r2.On("RemoveServiceAppMappingListener").Return(err2).Once()
+
+	err := ins.Remove(serviceUrl)
+	require.Error(t, err)
+	// both individual errors must be present in the returned error
+	require.ErrorIs(t, err, err1)
+	require.ErrorIs(t, err, err2)
+	r1.AssertExpectations(t)
+	r2.AssertExpectations(t)
+}
+
+func TestServiceNameMappingRemoveContinuesAfterPartialFailure(t *testing.T) {
+	metadata.ClearMetadataReportInstances()
+	t.Cleanup(metadata.ClearMetadataReportInstances)
+	serviceNameMappingOnce = sync.Once{}
+	serviceNameMappingInstance = nil
+
+	r1 := initMockWithId(t, "reg-e")
+	r2 := initMockWithId(t, "reg-f")
+
+	ins := GetNameMappingInstance()
+	serviceUrl := common.NewURLWithOptions(
+		common.WithInterface("org.example.BazService"),
+		common.WithParamsValue(constant.ApplicationKey, "baz-app"),
+	)
+
+	removeErr := errors.New("r1 partial failure")
+
+	// r1 fails, r2 succeeds — the loop must not short-circuit
+	r1.On("RemoveServiceAppMappingListener").Return(removeErr).Once()
+	r2.On("RemoveServiceAppMappingListener").Return(nil).Once()
+
+	err := ins.Remove(serviceUrl)
+	// the joined error only contains r1's error; the call should error
+	require.ErrorIs(t, err, removeErr)
+	// both reports must have been called despite r1's failure
 	r1.AssertExpectations(t)
 	r2.AssertExpectations(t)
 }

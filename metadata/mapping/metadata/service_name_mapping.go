@@ -18,6 +18,7 @@
 package metadata
 
 import (
+	"errors"
 	"sync"
 )
 
@@ -96,17 +97,23 @@ func (d *ServiceNameMapping) Get(url *common.URL, listener mapping.MappingListen
 	return metadataReport.GetServiceAppMapping(serviceInterface, DefaultGroup, listener)
 }
 
+// Remove removes the service-to-app mapping for the given URL from all
+// registered metadata reports. Unlike Map (which stops on the first failure),
+// Remove is best-effort: it attempts every report and returns all errors
+// joined together so the caller can see the full failure picture. The
+// intent is to avoid leaving stale entries in any registry due to a transient
+// error in one of the others.
 func (d *ServiceNameMapping) Remove(url *common.URL) error {
 	serviceInterface := url.GetParam(constant.InterfaceKey, "")
 	metadataReports := metadata.GetMetadataReports()
 	if len(metadataReports) == 0 {
 		return perrors.New("can not remove mapping in remote cause no metadata report instance found")
 	}
-	var lastErr error
+	var errs []error
 	for _, metadataReport := range metadataReports {
 		if err := metadataReport.RemoveServiceAppMappingListener(serviceInterface, DefaultGroup); err != nil {
-			lastErr = err
+			errs = append(errs, err)
 		}
 	}
-	return lastErr
+	return errors.Join(errs...)
 }
