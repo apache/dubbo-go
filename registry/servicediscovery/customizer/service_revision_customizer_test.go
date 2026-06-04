@@ -148,7 +148,6 @@ func TestRevisionOrderingIndependent(t *testing.T) {
 	r1 := resolveRevision([]*common.URL{u1, u2})
 	r2 := resolveRevision([]*common.URL{u2, u1})
 
-	assert.Equal(t, "0", "0") // dummy assertion for baseline
 	assert.Equal(t, r1, r2, "revision should be the same regardless of URL order")
 }
 
