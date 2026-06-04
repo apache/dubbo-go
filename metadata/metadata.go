@@ -52,9 +52,10 @@ func AddService(registryId string, url *common.URL) {
 			url.GetParam(constant.ApplicationTagKey, ""),
 		)
 	}
+	metaInfo := registryMetadataInfo[registryId]
 	registryMetadataLock.Unlock()
 
-	registryMetadataInfo[registryId].AddService(url)
+	metaInfo.AddService(url)
 }
 
 func AddSubscribeURL(registryId string, url *common.URL) {
@@ -65,7 +66,8 @@ func AddSubscribeURL(registryId string, url *common.URL) {
 			url.GetParam(constant.ApplicationTagKey, ""),
 		)
 	}
+	metaInfo := registryMetadataInfo[registryId]
 	registryMetadataLock.Unlock()
 
-	registryMetadataInfo[registryId].AddSubscribeURL(url)
+	metaInfo.AddSubscribeURL(url)
 }
