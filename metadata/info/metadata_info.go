@@ -57,7 +57,6 @@ var IncludeKeys = gxset.NewSet(
 	constant.WeightKey,
 	constant.ReleaseKey)
 
-
 // MetadataInfo the metadata information of instance
 type MetadataInfo struct {
 	App                   string `json:"app,omitempty" hessian:"app"`
