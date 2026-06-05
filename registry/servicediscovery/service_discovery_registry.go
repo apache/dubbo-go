@@ -19,7 +19,7 @@ package servicediscovery
 
 import (
 	"errors"
-	"math/rand"
+	"math/rand/v2"
 	"strconv"
 	"strings"
 	"sync"
@@ -384,7 +384,7 @@ func (s *serviceDiscoveryRegistry) calculateRenewAppMetadataDelay() time.Duratio
 	// Next day 2:00 AM
 	nextDay2AM := time.Date(now.Year(), now.Month(), now.Day()+1, 2, 0, 0, 0, now.Location())
 	// Add random offset 0~4 hours to avoid thundering herd
-	randomOffset := time.Duration(rand.Int63n(int64(4 * time.Hour)))
+	randomOffset := time.Duration(rand.Int64N(int64(4 * time.Hour)))
 	return time.Until(nextDay2AM) + randomOffset
 }
 
@@ -412,7 +412,11 @@ func (s *serviceDiscoveryRegistry) doGarbageCollect() {
 	}
 
 	// Step 2: Filter stale candidates (exceed GC window in days)
-	gcWindowDays := int(s.url.GetParamInt(constant.MetadataGCWindowKey, 5))
+	gcWindowRaw := s.url.GetParamInt(constant.MetadataGCWindowKey, 5)
+	if gcWindowRaw <= 0 || gcWindowRaw > 365 {
+		gcWindowRaw = 5
+	}
+	gcWindowDays := int(gcWindowRaw)
 	cutoff := time.Now().AddDate(0, 0, -gcWindowDays).UnixMilli()
 	candidates := make(map[string]bool)
 	for _, rev := range revisions {
