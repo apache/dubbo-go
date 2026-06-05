@@ -39,7 +39,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	_ "dubbo.apache.org/dubbo-go/v3/config_center/configurator"
 	"dubbo.apache.org/dubbo-go/v3/global"
@@ -97,6 +96,109 @@ var defaultClosingTombstoneTTL = func() time.Duration {
 	return 30 * time.Second
 }()
 
+func ensureApplicationAttribute(url *common.URL) *global.ApplicationConfig {
+	if application, ok := applicationFromAttribute(url); ok {
+		url.SetAttribute(constant.ApplicationKey, application)
+		return application
+	}
+	if application, ok := applicationFromAttribute(url.SubURL); ok {
+		url.SetAttribute(constant.ApplicationKey, application)
+		return application
+	}
+	if application := applicationFromParam(url); application != nil {
+		url.SetAttribute(constant.ApplicationKey, application)
+		return application
+	}
+	if application := applicationFromParam(url.SubURL); application != nil {
+		url.SetAttribute(constant.ApplicationKey, application)
+		return application
+	}
+
+	application := &global.ApplicationConfig{Name: constant.DefaultDubboApp}
+	url.SetAttribute(constant.ApplicationKey, application)
+	return application
+}
+
+func applicationFromAttribute(url *common.URL) (*global.ApplicationConfig, bool) {
+	if url == nil {
+		return nil, false
+	}
+
+	applicationRaw, ok := url.GetAttribute(constant.ApplicationKey)
+	if !ok {
+		return nil, false
+	}
+
+	switch application := applicationRaw.(type) {
+	case *global.ApplicationConfig:
+		if application != nil && application.Name != "" {
+			return application, true
+		}
+	case global.ApplicationConfig:
+		if application.Name != "" {
+			applicationCopy := application
+			return &applicationCopy, true
+		}
+	case string:
+		if application != "" {
+			return &global.ApplicationConfig{Name: application}, true
+		}
+	}
+	return nil, false
+}
+
+func applicationFromParam(url *common.URL) *global.ApplicationConfig {
+	if url == nil {
+		return nil
+	}
+	if applicationName := url.GetParam(constant.ApplicationKey, ""); applicationName != "" {
+		return &global.ApplicationConfig{Name: applicationName}
+	}
+	return nil
+}
+
+func ensureRegistriesAttribute(url *common.URL) {
+	if registries, ok := registriesFromAttribute(url); ok {
+		url.SetAttribute(constant.RegistriesConfigKey, registries)
+		return
+	}
+	if registries, ok := registriesFromAttribute(url.SubURL); ok {
+		url.SetAttribute(constant.RegistriesConfigKey, registries)
+		return
+	}
+	url.SetAttribute(constant.RegistriesConfigKey, map[string]*global.RegistryConfig{
+		constant.DefaultKey: global.DefaultRegistryConfig(),
+	})
+}
+
+func registriesFromAttribute(url *common.URL) (map[string]*global.RegistryConfig, bool) {
+	if url == nil {
+		return nil, false
+	}
+
+	registriesRaw, ok := url.GetAttribute(constant.RegistriesConfigKey)
+	if !ok {
+		return nil, false
+	}
+
+	switch registries := registriesRaw.(type) {
+	case map[string]*global.RegistryConfig:
+		if registries != nil {
+			return registries, true
+		}
+	case map[string]global.RegistryConfig:
+		if registries != nil {
+			converted := make(map[string]*global.RegistryConfig, len(registries))
+			for key, registryConfig := range registries {
+				registryConfigCopy := registryConfig
+				converted[key] = &registryConfigCopy
+			}
+			return converted, true
+		}
+	}
+	return nil, false
+}
+
 // NewRegistryDirectory will create a new RegistryDirectory
 func NewRegistryDirectory(url *common.URL, registry registry.Registry) (directory.Directory, error) {
 	if url.SubURL == nil {
@@ -104,53 +206,8 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (director
 	}
 	logger.Debugf("new RegistryDirectory for service :%s.", url.Key())
 
-	// TODO: Temporary compatibility with old APIs, can be removed later
-
-	// set application if not exist
-	if _, ok := url.GetAttribute(constant.ApplicationKey); !ok {
-		application := config.GetRootConfig().Application
-		if application == nil {
-			defaultAppConfig := global.DefaultApplicationConfig()
-			url.SetAttribute(constant.ApplicationKey, defaultAppConfig)
-		} else {
-			url.SetAttribute(constant.ApplicationKey, application)
-		}
-	}
-	// set registry if not exist
-	if _, ok := url.GetAttribute(constant.RegistriesConfigKey); !ok {
-		configRegistries := config.GetRootConfig().Registries
-		if configRegistries == nil {
-			defaultRegistryConfig := global.DefaultRegistryConfig()
-			url.SetAttribute(constant.RegistriesConfigKey, map[string]*global.RegistryConfig{
-				constant.DefaultKey: defaultRegistryConfig,
-			})
-		} else {
-			// convert config.RegistryConfig to global.RegistryConfig
-			globalRegistries := make(map[string]*global.RegistryConfig, len(configRegistries))
-			for key, configRegistry := range configRegistries {
-				globalRegistry := &global.RegistryConfig{
-					Protocol:          configRegistry.Protocol,
-					Timeout:           configRegistry.Timeout,
-					Group:             configRegistry.Group,
-					Namespace:         configRegistry.Namespace,
-					TTL:               configRegistry.TTL,
-					Address:           configRegistry.Address,
-					Username:          configRegistry.Username,
-					Password:          configRegistry.Password,
-					Simplified:        configRegistry.Simplified,
-					Preferred:         configRegistry.Preferred,
-					Zone:              configRegistry.Zone,
-					Weight:            configRegistry.Weight,
-					Params:            configRegistry.Params,
-					RegistryType:      configRegistry.RegistryType,
-					UseAsMetaReport:   configRegistry.UseAsMetaReport,
-					UseAsConfigCenter: configRegistry.UseAsConfigCenter,
-				}
-				globalRegistries[key] = globalRegistry
-			}
-			url.SetAttribute(constant.RegistriesConfigKey, globalRegistries)
-		}
-	}
+	ensureApplicationAttribute(url)
+	ensureRegistriesAttribute(url)
 
 	dir := &RegistryDirectory{
 		Directory:           base.NewDirectory(url),
@@ -894,24 +951,12 @@ type consumerConfigurationListener struct {
 
 func newConsumerConfigurationListener(dir *RegistryDirectory, url *common.URL) *consumerConfigurationListener {
 	listener := &consumerConfigurationListener{directory: dir}
-
-	// TODO: Temporary compatibility with old APIs, can be removed later
-	application := config.GetRootConfig().Application
+	application := ensureApplicationAttribute(url)
 	listener.InitWith(
 		application.Name+constant.ConfiguratorSuffix,
 		listener,
 		extension.GetDefaultConfiguratorFunc(),
 	)
-
-	if ApplicationConfRaw, ok := url.GetAttribute(constant.ApplicationKey); ok {
-		if ApplicationConfig, ok := ApplicationConfRaw.(*global.ApplicationConfig); ok {
-			listener.InitWith(
-				ApplicationConfig.Name+constant.ConfiguratorSuffix,
-				listener,
-				extension.GetDefaultConfiguratorFunc(),
-			)
-		}
-	}
 
 	return listener
 }
