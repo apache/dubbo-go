@@ -55,8 +55,14 @@ var IncludeKeys = gxset.NewSet(
 	constant.VersionKey,
 	constant.WarmupKey,
 	constant.WeightKey,
-	constant.EnvironmentKey,
 	constant.ReleaseKey)
+
+// EnvironmentKey is intentionally excluded from IncludeKeys because
+// environment is instance-level routing metadata, not service-level.
+// Consumer code in service_instances_changed_listener_impl.go overrides
+// environment from the current instance metadata, so including it in
+// the revision would cause unnecessary revision changes between
+// instances with different environment tags.
 
 // MetadataInfo the metadata information of instance
 type MetadataInfo struct {
