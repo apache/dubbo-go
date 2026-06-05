@@ -412,11 +412,10 @@ func (s *serviceDiscoveryRegistry) doGarbageCollect() {
 	}
 
 	// Step 2: Filter stale candidates (exceed GC window in days)
-	gcWindowRaw := s.url.GetParamInt(constant.MetadataGCWindowKey, 5)
-	if gcWindowRaw <= 0 || gcWindowRaw > 365 {
-		gcWindowRaw = 5
+	gcWindowDays := s.url.GetParamByIntValue(constant.MetadataGCWindowKey, 5)
+	if gcWindowDays <= 0 || gcWindowDays > 365 {
+		gcWindowDays = 5
 	}
-	gcWindowDays := int(gcWindowRaw)
 	cutoff := time.Now().AddDate(0, 0, -gcWindowDays).UnixMilli()
 	candidates := make(map[string]bool)
 	for _, rev := range revisions {
