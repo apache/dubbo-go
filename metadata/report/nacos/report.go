@@ -237,6 +237,70 @@ func (n *nacosMetadataReport) RemoveServiceAppMappingListener(key string, group 
 	return n.removeServiceMappingListener(key, group)
 }
 
+// UnPublishAppMetadata removes metadata for a specific revision from nacos.
+// This operation is idempotent — deleting a non-existent config returns false but no error.
+func (n *nacosMetadataReport) UnPublishAppMetadata(application, revision string) error {
+	// Delete primary config (compatible with java impl)
+	_, err := n.client.Client().DeleteConfig(vo.ConfigParam{
+		DataId: application,
+		Group:  revision,
+	})
+	if err != nil {
+		return perrors.WithMessage(err, "Could not delete the metadata")
+	}
+	// Delete legacy config (compatible with dubbo-go 3.1.x).
+	if _, err = n.client.Client().DeleteConfig(vo.ConfigParam{
+		DataId: application + constant.KeySeparator + revision,
+		Group:  n.group,
+	}); err != nil {
+		logger.Warnf("[Metadata][Nacos] could not delete legacy metadata for app=%s rev=%s: %v",
+			application, revision, err)
+	}
+	return nil
+}
+
+// ListAppRevisions lists all stored revisions for an application from nacos.
+func (n *nacosMetadataReport) ListAppRevisions(application string) ([]report.AppRevision, error) {
+	pageNo, pageSize := 1, 500
+	configs, err := n.client.Client().SearchConfig(vo.SearchConfigParam{
+		Search:   "accurate",
+		DataId:   application,
+		Group:    "",
+		PageNo:   pageNo,
+		PageSize: pageSize,
+	})
+	if err != nil {
+		return nil, perrors.WithMessage(err, "Could not search configs for ListAppRevisions")
+	}
+	if configs == nil || len(configs.PageItems) == 0 {
+		return nil, nil
+	}
+	if int(configs.TotalCount) > len(configs.PageItems) {
+		logger.Warnf("ListAppRevisions for app=%s: total configs (%d) exceeds page size (%d), "+
+			"some revisions may be silently dropped. Consider implementing pagination.",
+			application, configs.TotalCount, len(configs.PageItems))
+	}
+
+	result := make([]report.AppRevision, 0, len(configs.PageItems))
+	for _, item := range configs.PageItems {
+		if item.Group == "" || item.Group == n.group {
+			// Skip legacy format entries — they use group=n.group and dataId=app:revision
+			// We only want the Java-compatible format where group=revision and dataId=application
+			continue
+		}
+		rev := item.Group
+		var modifyTime int64
+		if item.Content != "" {
+			modifyTime = report.ParseMetadataLastUpdatedTime([]byte(item.Content))
+		}
+		result = append(result, report.AppRevision{
+			Revision:   rev,
+			ModifyTime: modifyTime,
+		})
+	}
+	return result, nil
+}
+
 type nacosMetadataReportFactory struct{}
 
 // CreateMetadataReport creates the nacos-based metadata report implementation.

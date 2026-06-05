@@ -121,3 +121,13 @@ func (d *DelegateMetadataReport) RegisterServiceAppMapping(interfaceName, group 
 func (d *DelegateMetadataReport) RemoveServiceAppMappingListener(interfaceName, group string) error {
 	return d.instance.RemoveServiceAppMappingListener(interfaceName, group)
 }
+
+// UnPublishAppMetadata delegate unpublish metadata info
+func (d *DelegateMetadataReport) UnPublishAppMetadata(application, revision string) error {
+	return d.instance.UnPublishAppMetadata(application, revision)
+}
+
+// ListAppRevisions delegate list app revisions
+func (d *DelegateMetadataReport) ListAppRevisions(application string) ([]report.AppRevision, error) {
+	return d.instance.ListAppRevisions(application)
+}

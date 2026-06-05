@@ -169,6 +169,43 @@ func TestDelegateMetadataReportRemoveServiceAppMappingListener(t *testing.T) {
 	})
 }
 
+func TestDelegateMetadataReportUnPublishAppMetadata(t *testing.T) {
+	mockReport := new(mockMetadataReport)
+	defer mockReport.AssertExpectations(t)
+	delegate := &DelegateMetadataReport{instance: mockReport}
+	t.Run("normal", func(t *testing.T) {
+		mockReport.On("UnPublishAppMetadata").Return(nil).Once()
+		err := delegate.UnPublishAppMetadata("application", "revision")
+		require.NoError(t, err)
+	})
+	t.Run("error", func(t *testing.T) {
+		mockReport.On("UnPublishAppMetadata").Return(errors.New("mock error")).Once()
+		err := delegate.UnPublishAppMetadata("application", "revision")
+		require.Error(t, err)
+	})
+}
+
+func TestDelegateMetadataReportListAppRevisions(t *testing.T) {
+	mockReport := new(mockMetadataReport)
+	defer mockReport.AssertExpectations(t)
+	delegate := &DelegateMetadataReport{instance: mockReport}
+	t.Run("normal", func(t *testing.T) {
+		expected := []report.AppRevision{
+			{Revision: "rev1", ModifyTime: 3000},
+			{Revision: "rev2", ModifyTime: 1000},
+		}
+		mockReport.On("ListAppRevisions").Return(expected, nil).Once()
+		got, err := delegate.ListAppRevisions("application")
+		require.NoError(t, err)
+		assert.Equal(t, expected, got)
+	})
+	t.Run("error", func(t *testing.T) {
+		mockReport.On("ListAppRevisions").Return([]report.AppRevision(nil), errors.New("mock error")).Once()
+		_, err := delegate.ListAppRevisions("application")
+		require.Error(t, err)
+	})
+}
+
 func TestGetMetadataReport(t *testing.T) {
 	instances = make(map[string]report.MetadataReport)
 	assert.Nil(t, GetMetadataReport())
@@ -249,6 +286,16 @@ func (m *mockMetadataReport) GetServiceAppMapping(string, string, mapping.Mappin
 func (m *mockMetadataReport) RemoveServiceAppMappingListener(string, string) error {
 	args := m.Called()
 	return args.Error(0)
+}
+
+func (m *mockMetadataReport) UnPublishAppMetadata(string, string) error {
+	args := m.Called()
+	return args.Error(0)
+}
+
+func (m *mockMetadataReport) ListAppRevisions(string) ([]report.AppRevision, error) {
+	args := m.Called()
+	return args.Get(0).([]report.AppRevision), args.Error(1)
 }
 
 type listener struct {

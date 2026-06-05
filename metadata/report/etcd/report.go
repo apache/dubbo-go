@@ -40,6 +40,23 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 )
 
+// etcdClient abstracts the etcd Client operations used by etcdMetadataReport.
+type etcdClient interface {
+	Get(key string) (string, error)
+	Put(key, value string) error
+	Delete(key string) error
+	GetChildren(key string) ([]string, []string, error)
+}
+
+// etcdClientWrapper wraps *gxetcd.Client to implement etcdClient.
+type etcdClientWrapper struct {
+	*gxetcd.Client
+}
+
+func (w etcdClientWrapper) Put(key, value string) error {
+	return w.Client.Put(key, value)
+}
+
 const DEFAULT_ROOT = "dubbo"
 
 func init() {
@@ -50,13 +67,13 @@ func init() {
 
 // etcdMetadataReport is the implementation of MetadataReport based etcd
 type etcdMetadataReport struct {
-	client  *gxetcd.Client
+	client  etcdClient
 	rootDir string
 }
 
 // GetAppMetadata get metadata info from etcd
 func (e *etcdMetadataReport) GetAppMetadata(application, revision string) (*info.MetadataInfo, error) {
-	key := e.rootDir + application + constant.PathSeparator + revision
+	key := e.rootDir + constant.PathSeparator + application + constant.PathSeparator + revision
 	data, err := e.client.Get(key)
 	if err != nil {
 		return nil, err
@@ -68,7 +85,7 @@ func (e *etcdMetadataReport) GetAppMetadata(application, revision string) (*info
 
 // PublishAppMetadata publish metadata info to etcd
 func (e *etcdMetadataReport) PublishAppMetadata(application, revision string, info *info.MetadataInfo) error {
-	key := e.rootDir + application + constant.PathSeparator + revision
+	key := e.rootDir + constant.PathSeparator + application + constant.PathSeparator + revision
 	value, err := json.Marshal(info)
 	if err == nil {
 		err = e.client.Put(key, string(value))
@@ -125,6 +142,39 @@ func (e *etcdMetadataReport) RemoveServiceAppMappingListener(key string, group s
 	return nil
 }
 
+// UnPublishAppMetadata removes metadata for a specific revision from etcd.
+// This operation is idempotent.
+func (e *etcdMetadataReport) UnPublishAppMetadata(application, revision string) error {
+	key := e.rootDir + constant.PathSeparator + application + constant.PathSeparator + revision
+	return e.client.Delete(key)
+}
+
+func (e *etcdMetadataReport) ListAppRevisions(application string) ([]report.AppRevision, error) {
+	prefix := e.rootDir + constant.PathSeparator + application + constant.PathSeparator
+	keys, _, err := e.client.GetChildren(prefix)
+	if err != nil {
+		if perrors.Cause(err) == gxetcd.ErrKVPairNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	result := make([]report.AppRevision, 0, len(keys))
+	for _, key := range keys {
+		// Extract revision from key suffix (key is full path, revision is last segment)
+		revision := key[strings.LastIndex(key, constant.PathSeparator)+1:]
+		val, err := e.client.Get(key)
+		if err != nil {
+			continue // skip if key disappeared between listing and reading
+		}
+		result = append(result, report.AppRevision{
+			Revision:   revision,
+			ModifyTime: report.ParseMetadataLastUpdatedTime([]byte(val)),
+		})
+	}
+	return result, nil
+}
+
 type etcdMetadataReportFactory struct{}
 
 // CreateMetadataReport get the MetadataReport instance of etcd
@@ -138,5 +188,5 @@ func (e *etcdMetadataReportFactory) CreateMetadataReport(url *common.URL) report
 	}
 	group := url.GetParam(constant.MetadataReportGroupKey, DEFAULT_ROOT)
 	group = constant.PathSeparator + strings.TrimPrefix(group, constant.PathSeparator)
-	return &etcdMetadataReport{client: client, rootDir: group}
+	return &etcdMetadataReport{client: etcdClientWrapper{client}, rootDir: group}
 }

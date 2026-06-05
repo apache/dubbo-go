@@ -40,7 +40,9 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/metadata"
+	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
+	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/proxy"
@@ -504,6 +506,229 @@ func (m *mockProxyFactory) GetAsyncProxy(invoker base.Invoker, callBack any, url
 }
 
 func (m *mockProxyFactory) GetInvoker(url *common.URL) protocol.Invoker { return &mockInvoker{} }
+
+// ========== Metadata Lifecycle Tests ==========
+
+// mockMetadataReportForGC is a lightweight mock for testing GC logic
+type mockMetadataReportForGC struct {
+	revisions []report.AppRevision
+	deleted   []string // tracks deleted revisions
+	published int      // tracks publish calls
+}
+
+func (m *mockMetadataReportForGC) GetAppMetadata(string, string) (*info.MetadataInfo, error) {
+	return nil, nil
+}
+func (m *mockMetadataReportForGC) PublishAppMetadata(string, string, *info.MetadataInfo) error {
+	m.published++
+	return nil
+}
+func (m *mockMetadataReportForGC) RegisterServiceAppMapping(string, string, string) error {
+	return nil
+}
+func (m *mockMetadataReportForGC) GetServiceAppMapping(string, string, mapping.MappingListener) (*gxset.HashSet, error) {
+	return gxset.NewSet(), nil
+}
+func (m *mockMetadataReportForGC) RemoveServiceAppMappingListener(string, string) error {
+	return nil
+}
+func (m *mockMetadataReportForGC) UnPublishAppMetadata(application, revision string) error {
+	m.deleted = append(m.deleted, revision)
+	return nil
+}
+func (m *mockMetadataReportForGC) ListAppRevisions(application string) ([]report.AppRevision, error) {
+	return m.revisions, nil
+}
+
+// mockServiceDiscoveryWithInstances returns configurable instances for GC tests
+type mockServiceDiscoveryWithInstances struct {
+	*mockServiceDiscovery
+	instances []registry.ServiceInstance
+}
+
+func (m *mockServiceDiscoveryWithInstances) GetInstances(name string) []registry.ServiceInstance {
+	return m.instances
+}
+
+func TestServiceDiscoveryRegistry_DoGarbageCollect_CleansStaleRevisions(t *testing.T) {
+	mockReport := &mockMetadataReportForGC{
+		revisions: []report.AppRevision{
+			{Revision: "stale-rev1", ModifyTime: time.Now().Add(-96 * time.Hour).UnixMilli()}, // 4 days old
+			{Revision: "stale-rev2", ModifyTime: time.Now().Add(-48 * time.Hour).UnixMilli()}, // 2 days old, but < 72h window
+			{Revision: "fresh-rev", ModifyTime: time.Now().UnixMilli()},                       // current
+		},
+	}
+
+	sd := &mockServiceDiscoveryWithInstances{
+		mockServiceDiscovery: &mockServiceDiscovery{},
+		instances: []registry.ServiceInstance{
+			&registry.DefaultServiceInstance{
+				Metadata: map[string]string{
+					constant.ExportedServicesRevisionPropertyName: "fresh-rev",
+				},
+			},
+		},
+	}
+
+	regID := fmt.Sprintf("gc-reg-%d", time.Now().UnixNano())
+	url := common.NewURLWithOptions(
+		common.WithParamsValue(constant.RegistryIdKey, regID),
+		common.WithParamsValue(constant.ApplicationKey, "test-app"),
+		common.WithParamsValue(constant.MetadataGCWindowKey, "3"),
+	)
+
+	reg := &serviceDiscoveryRegistry{
+		url:              url,
+		serviceDiscovery: sd,
+		metadataReport:   mockReport,
+	}
+
+	// Set up metadata info so doGarbageCollect can find the app name
+	serviceURL, _ := common.NewURL("dubbo://127.0.0.1:20880/org.test.GCStale",
+		common.WithParamsValue(constant.ApplicationKey, "test-app"),
+	)
+	metadata.AddService(regID, serviceURL)
+
+	reg.doGarbageCollect()
+
+	// Only stale-rev1 should be deleted (stale-rev2 is within 72h window, fresh-rev is alive)
+	assert.Equal(t, []string{"stale-rev1"}, mockReport.deleted)
+}
+
+func TestServiceDiscoveryRegistry_DoGarbageCollect_SkipsWhenNoStaleRevisions(t *testing.T) {
+	mockReport := &mockMetadataReportForGC{
+		revisions: []report.AppRevision{
+			{Revision: "fresh-rev", ModifyTime: time.Now().UnixMilli()},
+		},
+	}
+
+	sd := &mockServiceDiscoveryWithInstances{
+		mockServiceDiscovery: &mockServiceDiscovery{},
+		instances:            nil,
+	}
+
+	regID := fmt.Sprintf("gc-nostale-reg-%d", time.Now().UnixNano())
+	url := common.NewURLWithOptions(
+		common.WithParamsValue(constant.RegistryIdKey, regID),
+		common.WithParamsValue(constant.ApplicationKey, "test-app"),
+		common.WithParamsValue(constant.MetadataGCWindowKey, "3"),
+	)
+
+	reg := &serviceDiscoveryRegistry{
+		url:              url,
+		serviceDiscovery: sd,
+		metadataReport:   mockReport,
+	}
+
+	serviceURL, _ := common.NewURL("dubbo://127.0.0.1:20880/org.test.GCNoStale",
+		common.WithParamsValue(constant.ApplicationKey, "test-app"),
+	)
+	metadata.AddService(regID, serviceURL)
+
+	reg.doGarbageCollect()
+
+	assert.Empty(t, mockReport.deleted)
+}
+
+func TestServiceDiscoveryRegistry_DoGarbageCollect_SkipsReferencedStaleRevision(t *testing.T) {
+	staleTime := time.Now().Add(-96 * time.Hour).UnixMilli()
+	mockReport := &mockMetadataReportForGC{
+		revisions: []report.AppRevision{
+			{Revision: "stale-but-alive", ModifyTime: staleTime},
+		},
+	}
+
+	sd := &mockServiceDiscoveryWithInstances{
+		mockServiceDiscovery: &mockServiceDiscovery{},
+		instances: []registry.ServiceInstance{
+			&registry.DefaultServiceInstance{
+				Metadata: map[string]string{
+					constant.ExportedServicesRevisionPropertyName: "stale-but-alive",
+				},
+			},
+		},
+	}
+
+	regID := fmt.Sprintf("gc-ref-reg-%d", time.Now().UnixNano())
+	url := common.NewURLWithOptions(
+		common.WithParamsValue(constant.RegistryIdKey, regID),
+		common.WithParamsValue(constant.ApplicationKey, "test-app"),
+		common.WithParamsValue(constant.MetadataGCWindowKey, "3"),
+	)
+
+	reg := &serviceDiscoveryRegistry{
+		url:              url,
+		serviceDiscovery: sd,
+		metadataReport:   mockReport,
+	}
+
+	serviceURL, _ := common.NewURL("dubbo://127.0.0.1:20880/org.test.GCRefStale",
+		common.WithParamsValue(constant.ApplicationKey, "test-app"),
+	)
+	metadata.AddService(regID, serviceURL)
+
+	reg.doGarbageCollect()
+
+	// stale-but-alive is referenced by a live instance, should NOT be deleted
+	assert.Empty(t, mockReport.deleted)
+}
+
+func TestServiceDiscoveryRegistry_DoRenewAppMetadata(t *testing.T) {
+	mockReport := &mockMetadataReportForGC{}
+
+	regID := fmt.Sprintf("renew-reg-%d", time.Now().UnixNano())
+	url := common.NewURLWithOptions(
+		common.WithParamsValue(constant.RegistryIdKey, regID),
+	)
+
+	reg := &serviceDiscoveryRegistry{
+		url:            url,
+		metadataReport: mockReport,
+	}
+
+	// Set up metadata info via AddService (which populates registryMetadataInfo)
+	serviceURL, _ := common.NewURL("dubbo://127.0.0.1:20880/org.test.RenewAppMetadata",
+		common.WithParamsValue(constant.ApplicationKey, "test-app"),
+		common.WithParamsValue(constant.SideKey, constant.SideProvider),
+	)
+	metadata.AddService(regID, serviceURL)
+	metaInfo := metadata.GetMetadataInfo(regID)
+	require.NotNil(t, metaInfo)
+	metaInfo.Revision = "abc123"
+
+	reg.doRenewAppMetadata()
+	assert.Equal(t, 1, mockReport.published)
+}
+
+func TestServiceDiscoveryRegistry_Destroy_StopsTimers(t *testing.T) {
+	url := common.NewURLWithOptions()
+	sd := &mockServiceDiscovery{}
+
+	reg := &serviceDiscoveryRegistry{
+		url:              url,
+		serviceDiscovery: sd,
+	}
+
+	// Simulate running timer
+	reg.renewAppMetadataTimer = time.AfterFunc(1*time.Hour, func() {})
+
+	reg.Destroy()
+
+	assert.Nil(t, reg.renewAppMetadataTimer)
+}
+
+func TestServiceDiscoveryRegistry_CalculateRenewAppMetadataDelay(t *testing.T) {
+	url := common.NewURLWithOptions()
+	reg := &serviceDiscoveryRegistry{url: url}
+
+	delay := reg.calculateRenewAppMetadataDelay()
+
+	// Delay should be between ~14h and ~28h (next day 2AM + 0~4h random offset)
+	// Minimum: if now is 23:59, next 2AM is ~2h + 0 = 2h
+	// Maximum: if now is 00:01, next 2AM is ~26h + 4h = 30h
+	assert.GreaterOrEqual(t, delay, 1*time.Hour, "delay should be at least 1 hour")
+	assert.LessOrEqual(t, delay, 32*time.Hour, "delay should be at most 32 hours")
+}
 
 type mockInvoker struct{}
 

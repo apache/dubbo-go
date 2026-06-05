@@ -63,6 +63,7 @@ type MetadataInfo struct {
 	Services              map[string]*ServiceInfo  `json:"services,omitempty" hessian:"services"`
 	exportedServiceURLs   map[string][]*common.URL `hessian:"-"` // server exported service urls
 	subscribedServiceURLs map[string][]*common.URL `hessian:"-"` // client subscribed service urls
+	LastUpdatedTime       int64                    `json:"lastUpdatedTime,omitempty" hessian:"-"`
 }
 
 func NewAppMetadataInfo(app string) *MetadataInfo {

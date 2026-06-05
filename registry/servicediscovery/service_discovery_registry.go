@@ -19,6 +19,7 @@ package servicediscovery
 
 import (
 	"errors"
+	"math/rand"
 	"strconv"
 	"strings"
 	"sync"
@@ -66,6 +67,7 @@ type serviceDiscoveryRegistry struct {
 	metadataReport          report.MetadataReport
 	serviceListeners        map[string]registry.ServiceInstancesChangedListener
 	serviceMappingListeners map[string]mapping.MappingListener
+	renewAppMetadataTimer   *time.Timer
 }
 
 func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
@@ -85,6 +87,18 @@ func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
 	}, nil
 }
 
+// startMetadataTimers starts the renewAppMetadata timer if metadata type is remote.
+// GC runs after each renew cycle inside doRenewAppMetadata.
+func (s *serviceDiscoveryRegistry) startMetadataTimers() {
+	if metadata.GetMetadataType() != constant.RemoteMetadataStorageType {
+		return
+	}
+	if s.metadataReport == nil {
+		return
+	}
+	s.startRenewAppMetadataTimer()
+}
+
 func (s *serviceDiscoveryRegistry) RegisterService() error {
 	metaInfo := metadata.GetMetadataInfo(s.url.GetParam(constant.RegistryIdKey, ""))
 	if metaInfo == nil {
@@ -98,6 +112,7 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 			if s.metadataReport == nil {
 				return perrors.New("can not publish app metadata cause report instance not found")
 			}
+			metaInfo.LastUpdatedTime = time.Now().UnixMilli()
 			err := s.metadataReport.PublishAppMetadata(metaInfo.App, metaInfo.Revision, metaInfo)
 			if err != nil {
 				return err
@@ -112,6 +127,13 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 		s.instanceURLs[instance] = url
 		s.lock.Unlock()
 	}
+
+	s.lock.Lock()
+	if s.renewAppMetadataTimer == nil {
+		s.startMetadataTimers()
+	}
+	s.lock.Unlock()
+
 	return nil
 }
 
@@ -298,9 +320,136 @@ func (s *serviceDiscoveryRegistry) IsAvailable() bool {
 }
 
 func (s *serviceDiscoveryRegistry) Destroy() {
+	s.stopMetadataTimers()
 	err := s.serviceDiscovery.Destroy()
 	if err != nil {
 		logger.Errorf("[Registry][ServiceDiscovery] destroy serviceDiscovery catch error, err=%s", err.Error())
+	}
+}
+
+func (s *serviceDiscoveryRegistry) stopMetadataTimers() {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	if s.renewAppMetadataTimer != nil {
+		s.renewAppMetadataTimer.Stop()
+		s.renewAppMetadataTimer = nil
+	}
+}
+
+// ========== renewAppMetadata: daily app-level metadata re-publish ==========
+
+func (s *serviceDiscoveryRegistry) startRenewAppMetadataTimer() {
+	if !s.url.GetParamBool(constant.CycleReportKey, true) {
+		return
+	}
+
+	// Run immediately on start
+	if s.url.GetParamBool(constant.MetadataRenewOnStartupKey, true) {
+		go s.doRenewAppMetadata()
+	}
+
+	delay := s.calculateRenewAppMetadataDelay()
+	s.renewAppMetadataTimer = time.AfterFunc(delay, func() {
+		s.doRenewAppMetadata()
+		// Reschedule for next day
+		s.lock.Lock()
+		if s.renewAppMetadataTimer != nil {
+			s.renewAppMetadataTimer.Reset(24 * time.Hour)
+		}
+		s.lock.Unlock()
+	})
+}
+
+func (s *serviceDiscoveryRegistry) doRenewAppMetadata() {
+	registryID := s.url.GetParam(constant.RegistryIdKey, "")
+	metaInfo := metadata.GetMetadataInfo(registryID)
+	if metaInfo == nil || metaInfo.Revision == "0" {
+		return
+	}
+	metaInfo.LastUpdatedTime = time.Now().UnixMilli()
+	if err := s.metadataReport.PublishAppMetadata(metaInfo.App, metaInfo.Revision, metaInfo); err != nil {
+		logger.Errorf("[Metadata][renewAppMetadata] failed to re-publish metadata for app=%s revision=%s: %v", metaInfo.App, metaInfo.Revision, err)
+	} else {
+		logger.Infof("[Metadata][renewAppMetadata] refreshed metadata for app=%s revision=%s", metaInfo.App, metaInfo.Revision)
+	}
+
+	// Run garbage collection if enabled, after each renew cycle
+	if s.url.GetParamBool(constant.MetadataGCEnabledKey, true) {
+		s.doGarbageCollect()
+	}
+}
+
+func (s *serviceDiscoveryRegistry) calculateRenewAppMetadataDelay() time.Duration {
+	now := time.Now()
+	// Next day 2:00 AM
+	nextDay2AM := time.Date(now.Year(), now.Month(), now.Day()+1, 2, 0, 0, 0, now.Location())
+	// Add random offset 0~4 hours to avoid thundering herd
+	randomOffset := time.Duration(rand.Int63n(int64(4 * time.Hour)))
+	return time.Until(nextDay2AM) + randomOffset
+}
+
+// ========== GC: stale revision cleanup ==========
+
+func (s *serviceDiscoveryRegistry) doGarbageCollect() {
+	registryID := s.url.GetParam(constant.RegistryIdKey, "")
+	metaInfo := metadata.GetMetadataInfo(registryID)
+	if metaInfo == nil {
+		return
+	}
+	app := metaInfo.App
+	if app == "" {
+		return
+	}
+
+	// Step 1: List all revisions for this app
+	revisions, err := s.metadataReport.ListAppRevisions(app)
+	if err != nil {
+		logger.Warnf("[Metadata][GC] failed to list app revisions: %v", err)
+		return
+	}
+	if len(revisions) == 0 {
+		return
+	}
+
+	// Step 2: Filter stale candidates (exceed GC window in days)
+	gcWindowDays := int(s.url.GetParamInt(constant.MetadataGCWindowKey, 5))
+	cutoff := time.Now().AddDate(0, 0, -gcWindowDays).UnixMilli()
+	candidates := make(map[string]bool)
+	for _, rev := range revisions {
+		// Skip special revisions
+		if rev.Revision == "0" || rev.Revision == "N/A" || rev.Revision == "" || rev.Revision == metaInfo.Revision {
+			continue
+		}
+		// ModifyTime == 0 means old metadata produced by a version that does not set
+		// lastUpdatedTime — never garbage-collect such entries. Only delete when the
+		// revision is older than gcWindow and no alive instance references it.
+		if rev.ModifyTime > 0 && rev.ModifyTime < cutoff {
+			candidates[rev.Revision] = true
+		}
+	}
+	if len(candidates) == 0 {
+		return
+	}
+
+	// Step 3: Get alive instances and their revisions
+	instances := s.serviceDiscovery.GetInstances(app)
+	aliveRevisions := make(map[string]bool)
+	for _, inst := range instances {
+		rev := inst.GetMetadata()[constant.ExportedServicesRevisionPropertyName]
+		if rev != "" {
+			aliveRevisions[rev] = true
+		}
+	}
+
+	// Step 4: Clean up stale revisions not referenced by any alive instance
+	for rev := range candidates {
+		if aliveRevisions[rev] {
+			continue // still referenced, skip
+		}
+		logger.Infof("[Metadata][GC] cleaning up stale revision: app=%s revision=%s", app, rev)
+		if err := s.metadataReport.UnPublishAppMetadata(app, rev); err != nil {
+			logger.Warnf("[Metadata][GC] failed to unpublish revision %s: %v", rev, err)
+		}
 	}
 }
 
