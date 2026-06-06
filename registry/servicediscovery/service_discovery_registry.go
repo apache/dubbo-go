@@ -112,7 +112,6 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 			if s.metadataReport == nil {
 				return perrors.New("can not publish app metadata cause report instance not found")
 			}
-			metaInfo.LastUpdatedTime = time.Now().UnixMilli()
 			err := s.metadataReport.PublishAppMetadata(metaInfo.App, metaInfo.Revision, metaInfo)
 			if err != nil {
 				return err
@@ -338,13 +337,22 @@ func (s *serviceDiscoveryRegistry) stopMetadataTimers() {
 
 // ========== renewAppMetadata: daily app-level metadata re-publish ==========
 
+// metadataReportURL returns the URL from the metadata report instance.
+func (s *serviceDiscoveryRegistry) metadataReportURL() *common.URL {
+	if s.metadataReport == nil {
+		return nil
+	}
+	return s.metadataReport.URL()
+}
+
 func (s *serviceDiscoveryRegistry) startRenewAppMetadataTimer() {
-	if !s.url.GetParamBool(constant.CycleReportKey, true) {
+	reportURL := s.metadataReportURL()
+	if reportURL == nil || !reportURL.GetParamBool(constant.CycleReportKey, true) {
 		return
 	}
 
 	// Run immediately on start
-	if s.url.GetParamBool(constant.MetadataRenewOnStartupKey, true) {
+	if reportURL.GetParamBool(constant.MetadataRenewOnStartupKey, true) {
 		go s.doRenewAppMetadata()
 	}
 
@@ -366,15 +374,19 @@ func (s *serviceDiscoveryRegistry) doRenewAppMetadata() {
 	if metaInfo == nil || metaInfo.Revision == "0" {
 		return
 	}
-	metaInfo.LastUpdatedTime = time.Now().UnixMilli()
-	if err := s.metadataReport.PublishAppMetadata(metaInfo.App, metaInfo.Revision, metaInfo); err != nil {
-		logger.Errorf("[Metadata][renewAppMetadata] failed to re-publish metadata for app=%s revision=%s: %v", metaInfo.App, metaInfo.Revision, err)
+
+	// Copy snapshot to avoid data race
+	snapshot := metaInfo.Snapshot()
+	snapshot.LastUpdatedTime = time.Now().UnixMilli()
+	if err := s.metadataReport.PublishAppMetadata(snapshot.App, snapshot.Revision, &snapshot); err != nil {
+		logger.Errorf("[Metadata][renewAppMetadata] failed to re-publish metadata for app=%s revision=%s: %v", snapshot.App, snapshot.Revision, err)
 	} else {
-		logger.Infof("[Metadata][renewAppMetadata] refreshed metadata for app=%s revision=%s", metaInfo.App, metaInfo.Revision)
+		logger.Infof("[Metadata][renewAppMetadata] refreshed metadata for app=%s revision=%s", snapshot.App, snapshot.Revision)
 	}
 
 	// Run garbage collection if enabled, after each renew cycle
-	if s.url.GetParamBool(constant.MetadataGCEnabledKey, true) {
+	reportURL := s.metadataReportURL()
+	if reportURL != nil && reportURL.GetParamBool(constant.MetadataGCEnabledKey, true) {
 		s.doGarbageCollect()
 	}
 }
@@ -412,7 +424,11 @@ func (s *serviceDiscoveryRegistry) doGarbageCollect() {
 	}
 
 	// Step 2: Filter stale candidates (exceed GC window in days)
-	gcWindowDays := s.url.GetParamByIntValue(constant.MetadataGCWindowKey, 5)
+	reportURL := s.metadataReportURL()
+	if reportURL == nil {
+		return
+	}
+	gcWindowDays := reportURL.GetParamByIntValue(constant.MetadataGCWindowKey, 5)
 	if gcWindowDays <= 0 || gcWindowDays > 365 {
 		gcWindowDays = 5
 	}
@@ -423,9 +439,8 @@ func (s *serviceDiscoveryRegistry) doGarbageCollect() {
 		if rev.Revision == "0" || rev.Revision == "N/A" || rev.Revision == "" || rev.Revision == metaInfo.Revision {
 			continue
 		}
-		// ModifyTime == 0 means old metadata produced by a version that does not set
-		// lastUpdatedTime — never garbage-collect such entries. Only delete when the
-		// revision is older than gcWindow and no alive instance references it.
+		// ModifyTime == 0 means metadata produced by versions that did not set lastUpdatedTime.
+		// Since we can't reliably determine staleness for those entries, skip GC for them.
 		if rev.ModifyTime > 0 && rev.ModifyTime < cutoff {
 			candidates[rev.Revision] = true
 		}

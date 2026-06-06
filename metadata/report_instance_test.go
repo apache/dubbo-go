@@ -298,6 +298,11 @@ func (m *mockMetadataReport) ListAppRevisions(string) ([]report.AppRevision, err
 	return args.Get(0).([]report.AppRevision), args.Error(1)
 }
 
+func (m *mockMetadataReport) URL() *common.URL {
+	u, _ := common.NewURL("mock://127.0.0.1:8848")
+	return u
+}
+
 type listener struct {
 }
 

@@ -77,6 +77,9 @@ func (m *mockZkClient) CreateWithValue(path string, data []byte) error {
 	if err, ok := m.errors["CreateWithValue:"+path]; ok {
 		return err
 	}
+	if _, exists := m.data[path]; exists {
+		return zk.ErrNodeExists
+	}
 	m.data[path] = data
 	stat := &zk.Stat{Version: 0, Mtime: 0}
 	m.stats[path] = stat

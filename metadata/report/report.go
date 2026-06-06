@@ -26,6 +26,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 )
@@ -69,4 +70,7 @@ type MetadataReport interface {
 	// ListAppRevisions lists all stored revisions for an application.
 	// Each AppRevision contains the revision string and the last modification time (unix ms).
 	ListAppRevisions(application string) ([]AppRevision, error)
+
+	// URL returns the URL used to create this metadata report instance.
+	URL() *common.URL
 }

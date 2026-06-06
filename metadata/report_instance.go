@@ -90,6 +90,11 @@ type DelegateMetadataReport struct {
 	instance report.MetadataReport
 }
 
+// URL returns the URL of the underlying metadata report instance.
+func (d *DelegateMetadataReport) URL() *common.URL {
+	return d.instance.URL()
+}
+
 // PublishAppMetadata delegate publish metadata info
 func (d *DelegateMetadataReport) PublishAppMetadata(application, revision string, meta *info.MetadataInfo) error {
 	event := metadataMetrics.NewMetadataMetricTimeEvent(metadataMetrics.MetadataPush)

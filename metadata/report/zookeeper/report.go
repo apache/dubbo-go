@@ -21,16 +21,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-)
 
-import (
 	"github.com/dubbogo/go-zookeeper/zk"
 
 	gxset "github.com/dubbogo/gost/container/set"
-	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
-)
 
-import (
+	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
+
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -39,6 +36,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping/metadata"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 	"dubbo.apache.org/dubbo-go/v3/remoting/zookeeper"
+	perrors "github.com/pkg/errors"
 )
 
 // zkClient abstracts the ZookeeperClient operations used by zookeeperMetadataReport.
@@ -84,6 +82,12 @@ type zookeeperMetadataReport struct {
 	rootDir       string
 	listener      *zookeeper.ZkEventListener
 	cacheListener *CacheListener
+	url           *common.URL
+}
+
+// URL returns the URL used to create this metadata report.
+func (m *zookeeperMetadataReport) URL() *common.URL {
+	return m.url
 }
 
 // GetAppMetadata get metadata info from zookeeper
@@ -109,7 +113,7 @@ func (m *zookeeperMetadataReport) PublishAppMetadata(application, revision strin
 		return err
 	}
 	err = m.client.CreateWithValue(k, data)
-	if err == zk.ErrNodeExists {
+	if perrors.Is(err, zk.ErrNodeExists) {
 		_, err = m.client.SetContent(k, data, -1)
 	}
 	return err
@@ -120,7 +124,7 @@ func (m *zookeeperMetadataReport) PublishAppMetadata(application, revision strin
 func (m *zookeeperMetadataReport) UnPublishAppMetadata(application, revision string) error {
 	k := m.rootDir + application + constant.PathSeparator + revision
 	err := m.client.Delete(k)
-	if err == zk.ErrNoNode {
+	if perrors.Is(err, zk.ErrNoNode) {
 		return nil
 	}
 	return err
@@ -131,7 +135,7 @@ func (m *zookeeperMetadataReport) ListAppRevisions(application string) ([]report
 	parent := m.rootDir + application
 	children, _, err := m.client.Children(parent)
 	if err != nil {
-		if err == zk.ErrNoNode {
+		if perrors.Is(err, zk.ErrNoNode) {
 			return nil, nil
 		}
 		return nil, err
@@ -155,7 +159,7 @@ func (m *zookeeperMetadataReport) ListAppRevisions(application string) ([]report
 func (m *zookeeperMetadataReport) RegisterServiceAppMapping(key string, group string, value string) error {
 	path := m.rootDir + group + constant.PathSeparator + key
 	v, state, err := m.client.GetContent(path)
-	if err == zk.ErrNoNode {
+	if perrors.Is(err, zk.ErrNoNode) {
 		if cErr := m.client.CreateWithValue(path, []byte(value)); cErr != nil {
 			if perrors.Is(cErr, zk.ErrNodeExists) {
 				return fmt.Errorf("create mapping %s: %w", path, report.ErrMappingCASConflict)
@@ -227,6 +231,7 @@ func (mf *zookeeperMetadataReportFactory) CreateMetadataReport(url *common.URL) 
 		client:   zkClientWrapper{client},
 		rootDir:  rootDir,
 		listener: zookeeper.NewZkEventListener(client),
+		url:      url,
 	}
 
 	reporter.cacheListener = NewCacheListener(rootDir, reporter.listener)

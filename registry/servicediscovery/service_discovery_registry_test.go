@@ -514,6 +514,7 @@ type mockMetadataReportForGC struct {
 	revisions []report.AppRevision
 	deleted   []string // tracks deleted revisions
 	published int      // tracks publish calls
+	reportURL *common.URL
 }
 
 func (m *mockMetadataReportForGC) GetAppMetadata(string, string) (*info.MetadataInfo, error) {
@@ -539,6 +540,13 @@ func (m *mockMetadataReportForGC) UnPublishAppMetadata(application, revision str
 func (m *mockMetadataReportForGC) ListAppRevisions(application string) ([]report.AppRevision, error) {
 	return m.revisions, nil
 }
+func (m *mockMetadataReportForGC) URL() *common.URL {
+	if m.reportURL != nil {
+		return m.reportURL
+	}
+	u, _ := common.NewURL("mock://127.0.0.1:8848")
+	return u
+}
 
 // mockServiceDiscoveryWithInstances returns configurable instances for GC tests
 type mockServiceDiscoveryWithInstances struct {
@@ -557,6 +565,9 @@ func TestServiceDiscoveryRegistry_DoGarbageCollect_CleansStaleRevisions(t *testi
 			{Revision: "stale-rev2", ModifyTime: time.Now().Add(-48 * time.Hour).UnixMilli()}, // 2 days old, but < 72h window
 			{Revision: "fresh-rev", ModifyTime: time.Now().UnixMilli()},                       // current
 		},
+		reportURL: common.NewURLWithOptions(
+			common.WithParamsValue(constant.MetadataGCWindowKey, "3"),
+		),
 	}
 
 	sd := &mockServiceDiscoveryWithInstances{
@@ -574,7 +585,6 @@ func TestServiceDiscoveryRegistry_DoGarbageCollect_CleansStaleRevisions(t *testi
 	url := common.NewURLWithOptions(
 		common.WithParamsValue(constant.RegistryIdKey, regID),
 		common.WithParamsValue(constant.ApplicationKey, "test-app"),
-		common.WithParamsValue(constant.MetadataGCWindowKey, "3"),
 	)
 
 	reg := &serviceDiscoveryRegistry{
@@ -600,6 +610,9 @@ func TestServiceDiscoveryRegistry_DoGarbageCollect_SkipsWhenNoStaleRevisions(t *
 		revisions: []report.AppRevision{
 			{Revision: "fresh-rev", ModifyTime: time.Now().UnixMilli()},
 		},
+		reportURL: common.NewURLWithOptions(
+			common.WithParamsValue(constant.MetadataGCWindowKey, "3"),
+		),
 	}
 
 	sd := &mockServiceDiscoveryWithInstances{
@@ -611,7 +624,6 @@ func TestServiceDiscoveryRegistry_DoGarbageCollect_SkipsWhenNoStaleRevisions(t *
 	url := common.NewURLWithOptions(
 		common.WithParamsValue(constant.RegistryIdKey, regID),
 		common.WithParamsValue(constant.ApplicationKey, "test-app"),
-		common.WithParamsValue(constant.MetadataGCWindowKey, "3"),
 	)
 
 	reg := &serviceDiscoveryRegistry{
@@ -636,6 +648,9 @@ func TestServiceDiscoveryRegistry_DoGarbageCollect_SkipsReferencedStaleRevision(
 		revisions: []report.AppRevision{
 			{Revision: "stale-but-alive", ModifyTime: staleTime},
 		},
+		reportURL: common.NewURLWithOptions(
+			common.WithParamsValue(constant.MetadataGCWindowKey, "3"),
+		),
 	}
 
 	sd := &mockServiceDiscoveryWithInstances{
@@ -653,7 +668,6 @@ func TestServiceDiscoveryRegistry_DoGarbageCollect_SkipsReferencedStaleRevision(
 	url := common.NewURLWithOptions(
 		common.WithParamsValue(constant.RegistryIdKey, regID),
 		common.WithParamsValue(constant.ApplicationKey, "test-app"),
-		common.WithParamsValue(constant.MetadataGCWindowKey, "3"),
 	)
 
 	reg := &serviceDiscoveryRegistry{

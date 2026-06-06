@@ -57,6 +57,12 @@ func init() {
 type nacosMetadataReport struct {
 	client *nacosClient.NacosConfigClient
 	group  string
+	url    *common.URL
+}
+
+// URL returns the URL used to create this metadata report.
+func (n *nacosMetadataReport) URL() *common.URL {
+	return n.url
 }
 
 // GetAppMetadata get metadata info from nacos
@@ -262,41 +268,41 @@ func (n *nacosMetadataReport) UnPublishAppMetadata(application, revision string)
 // ListAppRevisions lists all stored revisions for an application from nacos.
 func (n *nacosMetadataReport) ListAppRevisions(application string) ([]report.AppRevision, error) {
 	pageNo, pageSize := 1, 500
-	configs, err := n.client.Client().SearchConfig(vo.SearchConfigParam{
-		Search:   "accurate",
-		DataId:   application,
-		Group:    "",
-		PageNo:   pageNo,
-		PageSize: pageSize,
-	})
-	if err != nil {
-		return nil, perrors.WithMessage(err, "Could not search configs for ListAppRevisions")
-	}
-	if configs == nil || len(configs.PageItems) == 0 {
-		return nil, nil
-	}
-	if int(configs.TotalCount) > len(configs.PageItems) {
-		logger.Warnf("ListAppRevisions for app=%s: total configs (%d) exceeds page size (%d), "+
-			"some revisions may be silently dropped. Consider implementing pagination.",
-			application, configs.TotalCount, len(configs.PageItems))
-	}
-
-	result := make([]report.AppRevision, 0, len(configs.PageItems))
-	for _, item := range configs.PageItems {
-		if item.Group == "" || item.Group == n.group {
-			// Skip legacy format entries — they use group=n.group and dataId=app:revision
-			// We only want the Java-compatible format where group=revision and dataId=application
-			continue
-		}
-		rev := item.Group
-		var modifyTime int64
-		if item.Content != "" {
-			modifyTime = report.ParseMetadataLastUpdatedTime([]byte(item.Content))
-		}
-		result = append(result, report.AppRevision{
-			Revision:   rev,
-			ModifyTime: modifyTime,
+	var result []report.AppRevision
+	for {
+		configs, err := n.client.Client().SearchConfig(vo.SearchConfigParam{
+			Search:   "accurate",
+			DataId:   application,
+			Group:    "",
+			PageNo:   pageNo,
+			PageSize: pageSize,
 		})
+		if err != nil {
+			return nil, perrors.WithMessage(err, "Could not search configs for ListAppRevisions")
+		}
+		if configs == nil || len(configs.PageItems) == 0 {
+			break
+		}
+		for _, item := range configs.PageItems {
+			if item.Group == "" || item.Group == n.group {
+				// Skip legacy format entries — they use group=n.group and dataId=app:revision
+				// We only want the Java-compatible format where group=revision and dataId=application
+				continue
+			}
+			rev := item.Group
+			var modifyTime int64
+			if item.Content != "" {
+				modifyTime = report.ParseMetadataLastUpdatedTime([]byte(item.Content))
+			}
+			result = append(result, report.AppRevision{
+				Revision:   rev,
+				ModifyTime: modifyTime,
+			})
+		}
+		if pageNo*pageSize >= int(configs.TotalCount) {
+			break
+		}
+		pageNo++
 	}
 	return result, nil
 }
@@ -316,5 +322,5 @@ func (n *nacosMetadataReportFactory) CreateMetadataReport(url *common.URL) repor
 		logger.Errorf("[Metadata][Nacos] could not create nacos metadata report, url=%s", url.String())
 		return nil
 	}
-	return &nacosMetadataReport{client: client, group: group}
+	return &nacosMetadataReport{client: client, group: group, url: url}
 }

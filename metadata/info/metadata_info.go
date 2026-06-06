@@ -175,6 +175,22 @@ func (info *MetadataInfo) ReplaceExportedServices(urls []*common.URL) {
 	}
 }
 
+// Snapshot creates a deep copy of the MetadataInfo for safe concurrent access.
+// The caller can modify the snapshot without affecting the original.
+func (info *MetadataInfo) Snapshot() MetadataInfo {
+	services := make(map[string]*ServiceInfo, len(info.Services))
+	for k, v := range info.Services {
+		si := *v
+		services[k] = &si
+	}
+	return MetadataInfo{
+		App:      info.App,
+		Revision: info.Revision,
+		Tag:      info.Tag,
+		Services: services,
+	}
+}
+
 func (info *MetadataInfo) findExportedServiceURL(matchKey string) *common.URL {
 	for _, urls := range info.exportedServiceURLs {
 		for _, serviceURL := range urls {

@@ -19,25 +19,22 @@ package etcd
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
-)
 
-import (
 	gxset "github.com/dubbogo/gost/container/set"
+
 	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
 	"github.com/dubbogo/gost/log/logger"
 
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
+	perrors "github.com/pkg/errors"
 )
 
 // etcdClient abstracts the etcd Client operations used by etcdMetadataReport.
@@ -69,6 +66,12 @@ func init() {
 type etcdMetadataReport struct {
 	client  etcdClient
 	rootDir string
+	url     *common.URL
+}
+
+// URL returns the URL used to create this metadata report.
+func (e *etcdMetadataReport) URL() *common.URL {
+	return e.url
 }
 
 // GetAppMetadata get metadata info from etcd
@@ -151,25 +154,21 @@ func (e *etcdMetadataReport) UnPublishAppMetadata(application, revision string) 
 
 func (e *etcdMetadataReport) ListAppRevisions(application string) ([]report.AppRevision, error) {
 	prefix := e.rootDir + constant.PathSeparator + application + constant.PathSeparator
-	keys, _, err := e.client.GetChildren(prefix)
+	keys, values, err := e.client.GetChildren(prefix)
 	if err != nil {
-		if perrors.Cause(err) == gxetcd.ErrKVPairNotFound {
+		if errors.Is(perrors.Cause(err), gxetcd.ErrKVPairNotFound) {
 			return nil, nil
 		}
 		return nil, err
 	}
 
 	result := make([]report.AppRevision, 0, len(keys))
-	for _, key := range keys {
+	for i, key := range keys {
 		// Extract revision from key suffix (key is full path, revision is last segment)
 		revision := key[strings.LastIndex(key, constant.PathSeparator)+1:]
-		val, err := e.client.Get(key)
-		if err != nil {
-			continue // skip if key disappeared between listing and reading
-		}
 		result = append(result, report.AppRevision{
 			Revision:   revision,
-			ModifyTime: report.ParseMetadataLastUpdatedTime([]byte(val)),
+			ModifyTime: report.ParseMetadataLastUpdatedTime([]byte(values[i])),
 		})
 	}
 	return result, nil
@@ -188,5 +187,5 @@ func (e *etcdMetadataReportFactory) CreateMetadataReport(url *common.URL) report
 	}
 	group := url.GetParam(constant.MetadataReportGroupKey, DEFAULT_ROOT)
 	group = constant.PathSeparator + strings.TrimPrefix(group, constant.PathSeparator)
-	return &etcdMetadataReport{client: etcdClientWrapper{client}, rootDir: group}
+	return &etcdMetadataReport{client: etcdClientWrapper{client}, rootDir: group, url: url}
 }
