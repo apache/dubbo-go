@@ -122,8 +122,9 @@ func (p *PriorityRouter) requestTagMatchBM(pool router.AddrPool, url *common.URL
 		}
 	}
 
+	// ParamMatch is not bitmap-cached; fall back to requestTag.
 	if len(match) != 0 {
-		return nil // not bitmap-cached; fall back to requestTag
+		return nil
 	}
 
 	var resultBM *roaring.Bitmap

@@ -119,10 +119,11 @@ func (c *RouterChain) SetInvokers(invokers []base.Invoker) {
 func (c *RouterChain) rebuildCache(invokers []base.Invoker) {
 	if c.cache == nil {
 		c.cache = newRouterCache()
-		for _, r := range c.routers {
-			if accessor, ok := r.(router.CacheAccessor); ok {
-				accessor.SetCache(c.cache)
-			}
+	}
+	// Re-inject cache so routers added via AddRouters can receive it.
+	for _, r := range c.routers {
+		if accessor, ok := r.(router.CacheAccessor); ok {
+			accessor.SetCache(c.cache)
 		}
 	}
 	c.cache.rebuild(c.generation, invokers, c.routers)
