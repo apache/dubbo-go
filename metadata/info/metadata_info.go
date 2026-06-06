@@ -372,12 +372,11 @@ func CalRevision(app string, services map[string]*ServiceInfo) string {
 	}
 	sort.Strings(matchKeys)
 
-	var b strings.Builder
-	b.WriteString(app)
+	h := sha512.New()
+	h.Write([]byte(app))
 	for _, mk := range matchKeys {
-		b.WriteString(services[mk].toDescString())
+		h.Write([]byte(services[mk].toDescString()))
 	}
 
-	sum := sha512.Sum512([]byte(b.String()))
-	return fmt.Sprintf("%x", sum)
+	return fmt.Sprintf("%x", h.Sum(nil))
 }
