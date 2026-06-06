@@ -453,7 +453,11 @@ func (s *serviceDiscoveryRegistry) doGarbageCollect() {
 	instances := s.serviceDiscovery.GetInstances(app)
 	aliveRevisions := make(map[string]bool)
 	for _, inst := range instances {
-		rev := inst.GetMetadata()[constant.ExportedServicesRevisionPropertyName]
+		metadata := inst.GetMetadata()
+		if metadata == nil {
+			continue
+		}
+		rev := metadata[constant.ExportedServicesRevisionPropertyName]
 		if rev != "" {
 			aliveRevisions[rev] = true
 		}
