@@ -21,6 +21,7 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
+	"strings"
 )
 
 import (
@@ -142,6 +143,13 @@ func (n *nacosMetadataReport) addListener(key string, group string, notify mappi
 	})
 }
 
+// isConfigNotExistErr reports whether err is Nacos's "config data not exist" signal, which it
+// returns (rather than an empty value) for a key that has never been written. It must be treated
+// as an empty old value so the first registration can create the mapping.
+func isConfigNotExistErr(err error) bool {
+	return err != nil && strings.Contains(strings.ToLower(err.Error()), "config data not exist")
+}
+
 func callback(notify mapping.MappingListener, dataId, data string) {
 	set := report.DecodeServiceAppNames(data)
 	if err := notify.OnEvent(registry.NewServiceMappingChangedEvent(dataId, set)); err != nil {
@@ -162,9 +170,10 @@ func (n *nacosMetadataReport) RegisterServiceAppMapping(key string, group string
 		DataId: key,
 		Group:  group,
 	})
-	if err != nil {
-		// Do not treat a read failure as an empty value: that would publish only our app and
-		// overwrite an existing set. Fail instead so the mapping is never clobbered.
+	if err != nil && !isConfigNotExistErr(err) {
+		// A real read failure (network/auth/server): do not treat it as an empty value, or we
+		// would publish only our app and overwrite an existing set. "config data not exist" is
+		// Nacos's not-found signal, which is fine here and proceeds to the first write.
 		return err
 	}
 	merged, changed := report.MergeServiceAppMapping(oldVal, value)
