@@ -23,13 +23,13 @@ import (
 )
 
 import (
-	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/log/logger"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
+	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 	"dubbo.apache.org/dubbo-go/v3/remoting/zookeeper"
@@ -128,11 +128,7 @@ func (l *CacheListener) RemoveKeyListeners(key string) {
 // DataChange changes all listeners' event
 func (l *CacheListener) DataChange(event remoting.Event) bool {
 	if listeners, ok := l.keyListeners.Load(event.Path); ok {
-		appNames := strings.Split(event.Content, constant.CommaSeparator)
-		set := gxset.NewSet()
-		for _, e := range appNames {
-			set.Add(e)
-		}
+		set := report.DecodeServiceAppNames(event.Content)
 		err := listeners.(*ListenerSet).ForEach(func(listener mapping.MappingListener) error {
 			return listener.OnEvent(registry.NewServiceMappingChangedEvent(l.pathToKey(event.Path), set))
 		})

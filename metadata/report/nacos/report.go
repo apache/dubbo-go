@@ -158,10 +158,15 @@ func (n *nacosMetadataReport) removeServiceMappingListener(key string, group str
 
 // RegisterServiceAppMapping map the specified Dubbo service interface to current Dubbo app name
 func (n *nacosMetadataReport) RegisterServiceAppMapping(key string, group string, value string) error {
-	oldVal, _ := n.getConfig(vo.ConfigParam{
+	oldVal, err := n.getConfig(vo.ConfigParam{
 		DataId: key,
 		Group:  group,
 	})
+	if err != nil {
+		// Do not treat a read failure as an empty value: that would publish only our app and
+		// overwrite an existing set. Fail instead so the mapping is never clobbered.
+		return err
+	}
 	merged, changed := report.MergeServiceAppMapping(oldVal, value)
 	if !changed {
 		return nil
