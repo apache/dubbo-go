@@ -219,8 +219,8 @@ func (lstn *ServiceInstancesChangedListenerImpl) AddListenerAndNotify(serviceKey
 // RemoveListener remove notify listener
 func (lstn *ServiceInstancesChangedListenerImpl) RemoveListener(serviceKey string) {
 	lstn.mutex.Lock()
+	defer lstn.mutex.Unlock()
 	delete(lstn.listeners, serviceKey)
-	lstn.mutex.Unlock()
 }
 
 // GetServiceNames return all listener service names

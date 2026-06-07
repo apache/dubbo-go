@@ -49,8 +49,9 @@ func addMetadataReport(registryId string, url *common.URL) error {
 		logger.Warnf("no metadata report factory of protocol %s found, please check if the metadata report factory is imported", url.Protocol)
 		return nil
 	}
+	mr := &DelegateMetadataReport{instance: fac.CreateMetadataReport(url)}
 	instancesMu.Lock()
-	instances[registryId] = &DelegateMetadataReport{instance: fac.CreateMetadataReport(url)}
+	instances[registryId] = mr
 	instancesMu.Unlock()
 	return nil
 }

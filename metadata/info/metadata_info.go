@@ -182,14 +182,15 @@ func (info *MetadataInfo) GetSubscribedURLs() []*common.URL {
 	return res
 }
 
-// GetServices returns a copy of the Services map for safe iteration by external callers.
+// GetServices returns a deep copy of the Services map for safe iteration by external callers.
+// Each ServiceInfo is fully copied with lazy fields eagerly populated to prevent write-on-read races.
 func (info *MetadataInfo) GetServices() map[string]*ServiceInfo {
-	info.mu.RLock()
-	defer info.mu.RUnlock()
+	info.mu.Lock()
+	defer info.mu.Unlock()
 
 	cp := make(map[string]*ServiceInfo, len(info.Services))
 	for k, v := range info.Services {
-		cp[k] = v
+		cp[k] = v.DeepCopy()
 	}
 	return cp
 }
@@ -291,4 +292,24 @@ func (si *ServiceInfo) GetServiceKey() string {
 	}
 	si.ServiceKey = common.ServiceKey(si.Name, si.Group, si.Version)
 	return si.ServiceKey
+}
+
+// DeepCopy returns a fully independent copy of ServiceInfo with lazy fields eagerly populated.
+func (si *ServiceInfo) DeepCopy() *ServiceInfo {
+	params := make(map[string]string, len(si.Params))
+	for k, v := range si.Params {
+		params[k] = v
+	}
+	return &ServiceInfo{
+		Name:       si.Name,
+		Group:      si.Group,
+		Version:    si.Version,
+		Protocol:   si.Protocol,
+		Port:       si.Port,
+		Path:       si.Path,
+		Params:     params,
+		ServiceKey: si.GetServiceKey(),
+		MatchKey:   si.GetMatchKey(),
+		URL:        si.URL,
+	}
 }
