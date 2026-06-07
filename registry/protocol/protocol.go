@@ -33,6 +33,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	commonConfig "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
@@ -170,67 +171,6 @@ func shutdownFromAttribute(url *common.URL) (*global.ShutdownConfig, bool) {
 	return shutdownConfig, ok && shutdownConfig != nil
 }
 
-func ensureApplicationAttribute(url *common.URL, fallbackURL *common.URL) *global.ApplicationConfig {
-	if application, ok := applicationFromAttribute(url); ok {
-		url.SetAttribute(constant.ApplicationKey, application)
-		return application
-	}
-	if application, ok := applicationFromAttribute(fallbackURL); ok {
-		url.SetAttribute(constant.ApplicationKey, application)
-		return application
-	}
-	if application := applicationFromParam(url); application != nil {
-		url.SetAttribute(constant.ApplicationKey, application)
-		return application
-	}
-	if application := applicationFromParam(fallbackURL); application != nil {
-		url.SetAttribute(constant.ApplicationKey, application)
-		return application
-	}
-
-	application := &global.ApplicationConfig{Name: constant.DefaultDubboApp}
-	url.SetAttribute(constant.ApplicationKey, application)
-	return application
-}
-
-func applicationFromAttribute(url *common.URL) (*global.ApplicationConfig, bool) {
-	if url == nil {
-		return nil, false
-	}
-
-	applicationRaw, ok := url.GetAttribute(constant.ApplicationKey)
-	if !ok {
-		return nil, false
-	}
-
-	switch application := applicationRaw.(type) {
-	case *global.ApplicationConfig:
-		if application != nil && application.Name != "" {
-			return application, true
-		}
-	case global.ApplicationConfig:
-		if application.Name != "" {
-			applicationCopy := application
-			return &applicationCopy, true
-		}
-	case string:
-		if application != "" {
-			return &global.ApplicationConfig{Name: application}, true
-		}
-	}
-	return nil, false
-}
-
-func applicationFromParam(url *common.URL) *global.ApplicationConfig {
-	if url == nil {
-		return nil
-	}
-	if applicationName := url.GetParam(constant.ApplicationKey, ""); applicationName != "" {
-		return &global.ApplicationConfig{Name: applicationName}
-	}
-	return nil
-}
-
 // GetRegistries returns all underlying registry instances.
 func (proto *registryProtocol) GetRegistries() []registry.Registry {
 	var rs []registry.Registry
@@ -291,7 +231,7 @@ func (proto *registryProtocol) Export(originInvoker base.Invoker) base.Exporter 
 	providerUrl := getProviderUrl(originInvoker)
 
 	ensureShutdownAttributes(registryUrl, providerUrl)
-	ensureApplicationAttribute(registryUrl, providerUrl)
+	commonConfig.EnsureApplicationAttribute(registryUrl, providerUrl)
 
 	proto.once.Do(func() {
 		proto.initConfigurationListeners(providerUrl)
@@ -734,7 +674,7 @@ type providerConfigurationListener struct {
 func newProviderConfigurationListener(overrideListeners *sync.Map, url *common.URL) *providerConfigurationListener {
 	listener := &providerConfigurationListener{}
 	listener.overrideListeners = overrideListeners
-	application := ensureApplicationAttribute(url, nil)
+	application := commonConfig.EnsureApplicationAttribute(url)
 	listener.InitWith(
 		application.Name+constant.ConfiguratorSuffix,
 		listener,

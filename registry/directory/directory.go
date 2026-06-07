@@ -37,6 +37,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory/static"
 	"dubbo.apache.org/dubbo-go/v3/cluster/router/chain"
 	"dubbo.apache.org/dubbo-go/v3/common"
+	commonConfig "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
@@ -96,67 +97,6 @@ var defaultClosingTombstoneTTL = func() time.Duration {
 	return 30 * time.Second
 }()
 
-func ensureApplicationAttribute(url *common.URL) *global.ApplicationConfig {
-	if application, ok := applicationFromAttribute(url); ok {
-		url.SetAttribute(constant.ApplicationKey, application)
-		return application
-	}
-	if application, ok := applicationFromAttribute(url.SubURL); ok {
-		url.SetAttribute(constant.ApplicationKey, application)
-		return application
-	}
-	if application := applicationFromParam(url); application != nil {
-		url.SetAttribute(constant.ApplicationKey, application)
-		return application
-	}
-	if application := applicationFromParam(url.SubURL); application != nil {
-		url.SetAttribute(constant.ApplicationKey, application)
-		return application
-	}
-
-	application := &global.ApplicationConfig{Name: constant.DefaultDubboApp}
-	url.SetAttribute(constant.ApplicationKey, application)
-	return application
-}
-
-func applicationFromAttribute(url *common.URL) (*global.ApplicationConfig, bool) {
-	if url == nil {
-		return nil, false
-	}
-
-	applicationRaw, ok := url.GetAttribute(constant.ApplicationKey)
-	if !ok {
-		return nil, false
-	}
-
-	switch application := applicationRaw.(type) {
-	case *global.ApplicationConfig:
-		if application != nil && application.Name != "" {
-			return application, true
-		}
-	case global.ApplicationConfig:
-		if application.Name != "" {
-			applicationCopy := application
-			return &applicationCopy, true
-		}
-	case string:
-		if application != "" {
-			return &global.ApplicationConfig{Name: application}, true
-		}
-	}
-	return nil, false
-}
-
-func applicationFromParam(url *common.URL) *global.ApplicationConfig {
-	if url == nil {
-		return nil
-	}
-	if applicationName := url.GetParam(constant.ApplicationKey, ""); applicationName != "" {
-		return &global.ApplicationConfig{Name: applicationName}
-	}
-	return nil
-}
-
 func ensureRegistriesAttribute(url *common.URL) {
 	if registries, ok := registriesFromAttribute(url); ok {
 		url.SetAttribute(constant.RegistriesConfigKey, registries)
@@ -206,7 +146,7 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (director
 	}
 	logger.Debugf("new RegistryDirectory for service :%s.", url.Key())
 
-	ensureApplicationAttribute(url)
+	commonConfig.EnsureApplicationAttribute(url, url.SubURL)
 	ensureRegistriesAttribute(url)
 
 	dir := &RegistryDirectory{
@@ -951,7 +891,7 @@ type consumerConfigurationListener struct {
 
 func newConsumerConfigurationListener(dir *RegistryDirectory, url *common.URL) *consumerConfigurationListener {
 	listener := &consumerConfigurationListener{directory: dir}
-	application := ensureApplicationAttribute(url)
+	application := commonConfig.EnsureApplicationAttribute(url, url.SubURL)
 	listener.InitWith(
 		application.Name+constant.ConfiguratorSuffix,
 		listener,
