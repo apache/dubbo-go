@@ -90,11 +90,32 @@ func (d *ServiceNameMapping) Map(url *common.URL) error {
 // Get will return the application-level services. If not found, the empty set will be returned.
 func (d *ServiceNameMapping) Get(url *common.URL, listener mapping.MappingListener) (*gxset.HashSet, error) {
 	serviceInterface := url.GetParam(constant.InterfaceKey, "")
-	metadataReport := metadata.GetMetadataReport()
-	if metadataReport == nil {
-		return nil, perrors.New("can not get mapping in remote cause no metadata report instance found")
+	metadataReports := metadata.GetMetadataReports()
+	if len(metadataReports) == 0 {
+          return nil, perrors.New("can not get mapping in remote cause no metadata report instance found")
+    }
+    var result *gxset.HashSet
+    var errs []error	
+	for i, metadataReport := range metadataReports {
+		var reportListener mapping.MappingListener
+		if i == 0 {
+			reportListener = listener
+		}
+		set, err := metadataReport.GetServiceAppMapping(serviceInterface, DefaultGroup, reportListener)
+		if err != nil {
+			errs = append(errs, err)
+			continue;
+		}
+		if result == nil {
+			result = set
+		} else {
+			result.Add(set.Values()...)
+		}
 	}
-	return metadataReport.GetServiceAppMapping(serviceInterface, DefaultGroup, listener)
+	if result == nil {
+		return nil, errors.Join(errs...)
+	}
+	return result, nil
 }
 
 // Remove removes the service-to-app mapping for the given URL from all
@@ -106,7 +127,7 @@ func (d *ServiceNameMapping) Get(url *common.URL, listener mapping.MappingListen
 func (d *ServiceNameMapping) Remove(url *common.URL) error {
 	serviceInterface := url.GetParam(constant.InterfaceKey, "")
 	metadataReports := metadata.GetMetadataReports()
-	if len(metadataReports) == 0 {
+	if metadataReports == nil || len(metadataReports) == 0 {
 		return perrors.New("can not remove mapping in remote cause no metadata report instance found")
 	}
 	var errs []error

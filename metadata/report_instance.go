@@ -90,6 +90,10 @@ func GetMetadataReportByRegistry(registry string) report.MetadataReport {
 	if r, ok := instances[registry]; ok {
 		return r
 	}
+	if r, ok := instances[constant.DefaultKey]; ok {
+        logger.Infof("[Metadata] no metadata report bound to registryId=%s, falling back to default", registry)
+        return r
+      }
 	logger.Warnf("[Metadata] no metadata report found for registryId=%s", registry)
 	return nil
 }
