@@ -28,6 +28,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+import (
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/logger"
+)
+
 func TestLoggerInit(t *testing.T) {
 	t.Run("empty use default", func(t *testing.T) {
 		err := Load(WithPath("./testdata/config/logger/empty_log.yaml"))
@@ -127,4 +131,46 @@ func TestLoggerConfigBuilder_TraceIntegration(t *testing.T) {
 		// TraceIntegration should be nil if not configured
 		assert.Nil(t, config.TraceIntegration)
 	})
+}
+
+func TestLoggerConfigInit_SyncsDubboFacade_Zap(t *testing.T) {
+	config := NewLoggerConfigBuilder().
+		SetDriver("zap").
+		SetLevel("info").
+		Build()
+
+	require.NoError(t, config.Init())
+	assert.NotNil(t, dubboLogger.GetLogger(), "dubbo-go logger facade should not be nil after LoggerConfig.Init()")
+}
+
+func TestLoggerConfigInit_SyncsDubboFacade_Logrus(t *testing.T) {
+	config := NewLoggerConfigBuilder().
+		SetDriver("logrus").
+		SetLevel("info").
+		Build()
+
+	require.NoError(t, config.Init())
+	assert.NotNil(t, dubboLogger.GetLogger(), "dubbo-go logger facade should not be nil after LoggerConfig.Init() with logrus driver")
+}
+
+func TestLoggerConfigInit_SetLoggerLevel_WorksAfterInit(t *testing.T) {
+	config := NewLoggerConfigBuilder().
+		SetDriver("zap").
+		SetLevel("info").
+		Build()
+
+	require.NoError(t, config.Init())
+	assert.True(t, dubboLogger.SetLoggerLevel("debug"), "SetLoggerLevel should return true after LoggerConfig.Init() with zap driver")
+}
+
+func TestLoggerConfigInit_TraceIntegration_FacadeNotNil(t *testing.T) {
+	config := NewLoggerConfigBuilder().
+		SetDriver("zap").
+		SetLevel("info").
+		SetTraceIntegrationEnabled(true).
+		Build()
+
+	require.NoError(t, config.Init())
+	assert.NotNil(t, dubboLogger.GetLogger(), "dubbo-go logger facade should not be nil after Init() with trace-integration enabled")
+	assert.True(t, dubboLogger.SetLoggerLevel("debug"), "SetLoggerLevel should work through ZapCtxLogger wrapper with trace-integration enabled")
 }

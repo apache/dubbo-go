@@ -81,7 +81,7 @@ func (grs *GoRestfulServer) Start(url *common.URL) {
 	go func() {
 		err := grs.srv.Serve(ln)
 		if err != nil && err != http.ErrServerClosed {
-			logger.Errorf("[Go Restful] http.server.Serve(addr{%s}) = err{%+v}", url.Location, err)
+			logger.Errorf("[Rest][Server] http.server.Serve failed, addr=%s, err=%v", url.Location, err)
 		}
 	}()
 }
@@ -102,7 +102,7 @@ func (grs *GoRestfulServer) Deploy(restMethodConfig *config.RestMethodConfig, ro
 func (grs *GoRestfulServer) UnDeploy(restMethodConfig *config.RestMethodConfig) {
 	err := grs.ws.RemoveRoute(restMethodConfig.Path, restMethodConfig.MethodType)
 	if err != nil {
-		logger.Warnf("[Go restful] Remove web service error:%v", err)
+		logger.Warnf("[Rest][Server] remove web service failed, err=%v", err)
 	}
 }
 
@@ -111,9 +111,9 @@ func (grs *GoRestfulServer) Destroy() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := grs.srv.Shutdown(ctx); err != nil {
-		logger.Errorf("[Go Restful] Server Shutdown:", err)
+		logger.Errorf("[Rest][Server] server shutdown failed, err=%v", err)
 	}
-	logger.Infof("[Go Restful] Server exiting")
+	logger.Info("[Rest][Server] server exiting")
 }
 
 // AddGoRestfulServerFilter let user add the http server of go-restful

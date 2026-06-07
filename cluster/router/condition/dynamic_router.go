@@ -348,7 +348,7 @@ func (s *ServiceRouter) Notify(invokers []base.Invoker) {
 
 	dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
 	if dynamicConfiguration == nil {
-		logger.Infof("[Router][Condition] Config center does not start, Condition router will not be enabled")
+		logger.Info("[Router][Condition] Config center does not start, Condition router will not be enabled")
 		return
 	}
 	key := strings.Join([]string{url.ColonSeparatedKey(), constant.ConditionRouterRuleSuffix}, "")
@@ -414,13 +414,13 @@ func (a *ApplicationRouter) Notify(invokers []base.Invoker) {
 
 	dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
 	if dynamicConfiguration == nil {
-		logger.Infof("[Router][Condition] Config center does not start, Condition router will not be enabled")
+		logger.Info("[Router][Condition] Config center does not start, Condition router will not be enabled")
 		return
 	}
 
 	providerApplication := url.GetParam("application", "")
 	if providerApplication == "" || providerApplication == a.currentApplication {
-		logger.Warnf("[Router][Condition] provider application is empty, will not subscribe to provider app rules")
+		logger.Warn("[Router][Condition] provider application is empty, will not subscribe to provider app rules")
 		return
 	}
 

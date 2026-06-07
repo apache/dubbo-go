@@ -54,7 +54,7 @@ func (p *MetadtaServiceVersionCustomizer) Customize(instance registry.ServiceIns
 	params := make(map[string]string)
 	err := json.Unmarshal([]byte(metadata), &params)
 	if err != nil {
-		logger.Errorf("json unmarshal error %v", err)
+		logger.Errorf("[Registry][ServiceDiscovery] json unmarshal error, err=%v", err)
 		return
 	}
 	if (params[constant.ProtocolKey]) == constant.TriProtocol {

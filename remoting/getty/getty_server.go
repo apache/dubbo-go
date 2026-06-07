@@ -73,11 +73,11 @@ func initServer(url *common.URL) {
 		if protocolConfRaw, ok := url.GetAttribute(constant.ProtocolConfigKey); ok {
 			protocolConfig, ok := protocolConfRaw.(map[string]*global.ProtocolConfig)
 			if !ok {
-				logger.Warnf("protocolConfig assert failed")
+				logger.Warn("[Remoting][Getty] protocolConfig assert failed")
 				return
 			}
 			if protocolConfig == nil {
-				logger.Warnf("protocolConfig is nil")
+				logger.Warn("[Remoting][Getty] protocolConfig is nil")
 				return
 			}
 			protocolConfMap = protocolConfig
@@ -86,7 +86,7 @@ func initServer(url *common.URL) {
 
 	protocolConf := protocolConfMap[url.Protocol]
 	if protocolConf == nil {
-		logger.Debug("use default getty server config")
+		logger.Debug("[Remoting][Getty] use default getty server config")
 		return
 	} else {
 		//server tls config
@@ -96,7 +96,7 @@ func initServer(url *common.URL) {
 			if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
 				tlsConf, ok := tlsConfRaw.(*global.TLSConfig)
 				if !ok {
-					logger.Errorf("Getty Server initialized the TLSConfig configuration failed")
+					logger.Error("[Remoting][Getty] getty server initialized the TLSConfig configuration failed")
 					return
 				}
 				tlsConfig = tlsConf
@@ -110,12 +110,12 @@ func initServer(url *common.URL) {
 				ServerPrivateKeyPath:          tlsConfig.TLSKeyFile,
 				ServerTrustCertCollectionPath: tlsConfig.CACertFile,
 			}
-			logger.Infof("Getty Server initialized the TLSConfig configuration")
+			logger.Info("[Remoting][Getty] getty server initialized the TLSConfig configuration")
 		}
 		//getty params
 		gettyServerConfig := protocolConf.Params
 		if gettyServerConfig == nil {
-			logger.Debug("gettyServerConfig is nil")
+			logger.Debug("[Remoting][Getty] gettyServerConfig is nil")
 			return
 		}
 
@@ -139,7 +139,7 @@ func SetServerConfig(s ServerConfig) {
 	srvConf = &s
 	err := srvConf.CheckValidity()
 	if err != nil {
-		logger.Warnf("[ServerConfig CheckValidity] error: %v", err)
+		logger.Warnf("[Remoting][Getty] serverConfig checkValidity, err=%v", err)
 		return
 	}
 }
@@ -195,7 +195,7 @@ func (s *Server) newSession(session getty.Session) error {
 		session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
 		session.SetCronPeriod((int)(conf.heartbeatPeriod.Nanoseconds() / 1e6))
 		session.SetWaitTime(conf.GettySessionParam.waitTimeout)
-		logger.Debugf("server accepts new session:%s\n", session.Stat())
+		logger.Debugf("[Remoting][Getty] server accepts new session=%s", session.Stat())
 		return nil
 	}
 	if _, ok = session.Conn().(*net.TCPConn); !ok {
@@ -234,7 +234,7 @@ func (s *Server) newSession(session getty.Session) error {
 	session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
 	session.SetCronPeriod((int)(conf.heartbeatPeriod.Nanoseconds() / 1e6))
 	session.SetWaitTime(conf.GettySessionParam.waitTimeout)
-	logger.Debugf("server accepts new session: %s", session.Stat())
+	logger.Debugf("[Remoting][Getty] server accepts new session=%s", session.Stat())
 	return nil
 }
 
@@ -250,14 +250,14 @@ func (s *Server) Start() {
 	if s.conf.SSLEnabled {
 		serverOpts = append(serverOpts, getty.WithServerSslEnabled(s.conf.SSLEnabled),
 			getty.WithServerTlsConfigBuilder(srvConf.TLSBuilder))
-		logger.Infof("Getty Server initialized the TLSConfig configuration")
+		logger.Info("[Remoting][Getty] getty server initialized the TLSConfig configuration")
 	}
 
 	serverOpts = append(serverOpts, getty.WithServerTaskPool(gxsync.NewTaskPoolSimple(s.conf.GrPoolSize)))
 
 	tcpServer = getty.NewTCPServer(serverOpts...)
 	tcpServer.RunEventLoop(s.newSession)
-	logger.Debugf("s bind addr{%s} ok!", s.addr)
+	logger.Debugf("[Remoting][Getty] s bind addr=%s ok", s.addr)
 	s.tcpServer = tcpServer
 }
 

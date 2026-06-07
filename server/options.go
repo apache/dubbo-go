@@ -104,8 +104,8 @@ func (srvOpts *ServerOptions) init(opts ...ServerOption) error {
 			return perrors.Errorf("The adaptive service is disabled, " +
 				"adaptive service verbose should be disabled either.")
 		}
-		logger.Infof("adaptive service verbose is enabled.")
-		logger.Debugf("debug-level info could be shown.")
+		logger.Info("[Server] adaptive service verbose is enabled")
+		logger.Debug("[Server] debug-level info could be shown")
 		aslimiter.Verbose = true
 	}
 

@@ -118,7 +118,7 @@ func (s *Server) genSvcOpts(handler any, info *common.ServiceInfo, opts ...Servi
 	// todo(DMwangnima): record the registered service
 	// Record the registered service for debugging and monitoring
 	interfaceName := common.GetReference(handler)
-	logger.Infof("Registering service: %s", interfaceName)
+	logger.Infof("[Server] registering service=%s", interfaceName)
 
 	newSvcOpts := defaultServiceOptions()
 	if appCfg != nil {
@@ -159,12 +159,12 @@ func (s *Server) genSvcOpts(handler any, info *common.ServiceInfo, opts ...Servi
 			svcOpts = append(svcOpts,
 				SetService(svcCfg),
 			)
-			logger.Infof("Injected options from provider.services for %s", interfaceName)
+			logger.Infof("[Server] injected options from provider.services for %s", interfaceName)
 		} else {
 			// Only warn if there are actually services configured but none match
 			// This avoids unnecessary warnings when using new server API without config files
 			if len(proCfg.Services) > 0 {
-				logger.Warnf("No matching service config found for [%s]", interfaceName)
+				logger.Warnf("[Server] no matching service config found for [%s]", interfaceName)
 			}
 		}
 	}
@@ -324,7 +324,7 @@ func (s *Server) exportServices(ctx context.Context) error {
 			return ctx.Err()
 		}
 		if err := svcOpts.Export(); err != nil {
-			logger.Errorf("export %s service failed, err: %s", svcOpts.Service.Interface, err)
+			logger.Errorf("[Server] export %s service failed, err=%s", svcOpts.Service.Interface, err)
 			return errors.Wrapf(err, "failed to export service %s", svcOpts.Service.Interface)
 		}
 	}
@@ -481,7 +481,7 @@ func (s *Server) exportInternalServices(ctx context.Context) error {
 		}
 		sd, ok := service.Init(cfg)
 		if !ok {
-			logger.Infof("[internal service]%s service will not expose", service.Name)
+			logger.Infof("[Server] %s internal service will not expose", service.Name)
 			continue
 		}
 		newSvcOpts, err := s.genSvcOpts(sd.Handler, sd.Info, sd.Opts...)
@@ -509,7 +509,7 @@ func (s *Server) exportInternalServices(ctx context.Context) error {
 			service.AfterExport(service.svcOpts, err)
 		}
 		if err != nil {
-			logger.Errorf("[internal service]export %s service failed, err: %s", service.Name, err)
+			logger.Errorf("[Server] export %s internal service failed, err=%s", service.Name, err)
 			return err
 		}
 	}
@@ -553,7 +553,7 @@ func getMetadataPort(opts *ServerOptions) int {
 	}
 	p, err := strconv.Atoi(port)
 	if err != nil {
-		logger.Error("MetadataService port parse error %v, MetadataService will use random port", err)
+		logger.Errorf("[Server] metadataService port parse error, err=%v, MetadataService will use random port", err)
 		return 0
 	}
 	return p
@@ -575,7 +575,7 @@ func NewServer(opts ...ServerOption) (*Server, error) {
 
 func SetProviderServices(sd *InternalService) {
 	if sd.Name == "" {
-		logger.Warnf("[internal service]internal name is empty, please set internal name")
+		logger.Warn("[Server] internal name is empty, please set internal name")
 		return
 	}
 	internalProLock.Lock()
@@ -586,7 +586,7 @@ func SetProviderServices(sd *InternalService) {
 func (s *Server) registerServiceOptions(serviceOptions *ServiceOptions) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	logger.Infof("A provider service %s was registered successfully.", serviceOptions.Id)
+	logger.Infof("[Server] a provider service %s was registered successfully", serviceOptions.Id)
 	s.svcOptsMap[serviceOptions.Id] = serviceOptions
 	if serviceOptions.Service != nil && serviceOptions.Service.Interface != "" {
 		s.interfaceNameServices[serviceOptions.Service.Interface] = serviceOptions

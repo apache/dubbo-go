@@ -102,7 +102,7 @@ func (mts *DefaultMetadataService) GetMetadataInfo(revision string) (*info.Metad
 			return metadataInfo, nil
 		}
 	}
-	logger.Warnf("metadata not found for revision: %s", revision)
+	logger.Warnf("[Metadata] metadata not found for revision=%s", revision)
 	return nil, nil
 }
 
@@ -193,7 +193,7 @@ func (e *serviceExporter) exportDubbo(port string) error {
 	if err != nil {
 		formatErr := perrors.Errorf("The service %v needExport the protocol %v error! Error message is %v.",
 			ivkURL.Interface(), ivkURL.Protocol, err.Error())
-		logger.Errorf(formatErr.Error())
+		logger.Error("[Metadata] " + formatErr.Error())
 		return formatErr
 	}
 	ivkURL.Methods = strings.Split(methods, ",")

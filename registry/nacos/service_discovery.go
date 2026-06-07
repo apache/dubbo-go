@@ -81,9 +81,9 @@ type nacosServiceDiscovery struct {
 func (n *nacosServiceDiscovery) Destroy() error {
 	for _, inst := range n.registryInstances {
 		err := n.Unregister(inst)
-		logger.Infof("Unregister nacos instance:%+v", inst)
+		logger.Infof("[Registry][Nacos] unRegister nacos instance=%+v", inst)
 		if err != nil {
-			logger.Errorf("Unregister nacos instance:%+v, err:%+v", inst, err)
+			logger.Errorf("[Registry][Nacos] unRegister nacos instance=%+v, err=%+v", inst, err)
 		}
 	}
 
@@ -97,7 +97,7 @@ func (n *nacosServiceDiscovery) Destroy() error {
 			GroupName:   n.group,
 		})
 		if err != nil {
-			logger.Warnf("Failed to unsubscribe from service %s: %v", serviceName, err)
+			logger.Warnf("[Registry][Nacos] failed to unsubscribe from service, service=%s err=%v", serviceName, err)
 		}
 	}
 	// Clear the listener map
@@ -164,7 +164,7 @@ func (n *nacosServiceDiscovery) GetServices() *gxset.HashSet {
 			GroupName: n.group,
 		})
 		if err != nil {
-			logger.Errorf("Could not query the services: %v", err)
+			logger.Errorf("[Registry][Nacos] could not query the services, err=%v", err)
 			return res
 		}
 		for _, e := range services.Doms {
@@ -186,7 +186,7 @@ func (n *nacosServiceDiscovery) GetInstances(serviceName string) []registry.Serv
 		GroupName:   n.group,
 	})
 	if err != nil {
-		logger.Errorf("Could not query the instances for service: %+v, group: %+v . It happened err %+v",
+		logger.Errorf("[Registry][Nacos] could not query the instances for service, service=%+v group=%+v err=%+v",
 			serviceName, n.group, err)
 		return make([]registry.ServiceInstance, 0)
 	}
@@ -268,7 +268,7 @@ func (n *nacosServiceDiscovery) registerInstanceListener(listener registry.Servi
 	for _, t := range listener.GetServiceNames().Values() {
 		serviceName, ok := t.(string)
 		if !ok {
-			logger.Errorf("service name error %s", t)
+			logger.Errorf("[Registry][Nacos] service name error, name=%v", t)
 			continue
 		}
 		listenerSet, found := n.instanceListenerMap[serviceName]
@@ -292,8 +292,8 @@ func (n *nacosServiceDiscovery) AddListener(listener registry.ServiceInstancesCh
 			GroupName:   n.group,
 			SubscribeCallback: func(services []model.Instance, err error) {
 				if err != nil {
-					logger.Errorf("Could not handle the subscribe notification because the err is not nil."+
-						" service name: %s, err: %v", serviceName, err)
+					logger.Errorf("[Registry][Nacos] could not handle the subscribe notification because the err is not nil, "+
+						"serviceName=%s err=%v", serviceName, err)
 				}
 				instances := make([]registry.ServiceInstance, 0, len(services))
 				for _, service := range services {
@@ -323,7 +323,7 @@ func (n *nacosServiceDiscovery) AddListener(listener registry.ServiceInstancesCh
 				}
 
 				if e != nil {
-					logger.Errorf("Dispatching event got exception, service name: %s, err: %v", serviceName, err)
+					logger.Errorf("[Registry][Nacos] dispatching event got exception, serviceName=%s err=%v", serviceName, e)
 				}
 			},
 		})
@@ -351,7 +351,7 @@ func (n *nacosServiceDiscovery) toRegisterInstance(instance registry.ServiceInst
 		if f, err := strconv.ParseFloat(urlW, 64); err == nil {
 			w = int64(f)
 		} else {
-			logger.Warnf("Invalid weight override value '%s': %v. Using default weight.", urlW, err)
+			logger.Warnf("[Registry][Nacos] invalid weight override value '%s', err=%v, using default weight.", urlW, err)
 		}
 	}
 
@@ -387,7 +387,7 @@ func (n *nacosServiceDiscovery) toBatchRegisterInstances(instances []registry.Se
 		rins = append(rins, n.toRegisterInstance(instance))
 	}
 	if len(rins) == 0 {
-		logger.Warnf("No batch register instances found")
+		logger.Warn("[Registry][Nacos] no batch register instances found")
 		return vo.BatchRegisterInstanceParam{}
 	}
 	brins.ServiceName = rins[0].ServiceName

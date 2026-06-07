@@ -82,7 +82,7 @@ func (dp *DubboProtocol) Export(invoker base.Invoker) base.Exporter {
 	serviceKey := url.ServiceKey()
 	exporter := NewDubboExporter(serviceKey, invoker, dp.ExporterMap())
 	dp.SetExporterMap(serviceKey, exporter)
-	logger.Infof("[DUBBO Protocol] Export service: %s", url.String())
+	logger.Infof("[Dubbo] export service, url=%s", url.String())
 	// start server
 	dp.openServer(url)
 	return exporter
@@ -92,18 +92,18 @@ func (dp *DubboProtocol) Export(invoker base.Invoker) base.Exporter {
 func (dp *DubboProtocol) Refer(url *common.URL) base.Invoker {
 	exchangeClient := getExchangeClient(url)
 	if exchangeClient == nil {
-		logger.Warnf("can't dial the server: %+v", url.Location)
+		logger.Warnf("[Dubbo] can't dial the server, location=%v", url.Location)
 		return nil
 	}
 	invoker := NewDubboInvoker(url, exchangeClient)
 	dp.SetInvokers(invoker)
-	logger.Infof("[DUBBO Protocol] Refer service: %s", url.String())
+	logger.Infof("[Dubbo] refer service, url=%s", url.String())
 	return invoker
 }
 
 // Destroy destroy dubbo service.
 func (dp *DubboProtocol) Destroy() {
-	logger.Infof("DubboProtocol destroy.")
+	logger.Info("[Dubbo] dubbo protocol destroy")
 
 	dp.BaseProtocol.Destroy()
 
@@ -149,7 +149,7 @@ func doHandleRequest(rpcInvocation *invocation.RPCInvocation) result.RPCResult {
 	result := result.RPCResult{}
 	if exporter == nil {
 		err := fmt.Errorf("don't have this exporter, key: %s", rpcInvocation.ServiceKey())
-		logger.Errorf(err.Error())
+		logger.Errorf("[Dubbo] decode failed, err=%v", err)
 		result.Err = err
 		// reply(session, p, hessian.PackageResponse)
 		return result

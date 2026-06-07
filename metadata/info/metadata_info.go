@@ -118,7 +118,7 @@ func addUrl(m map[string][]*common.URL, url *common.URL) {
 func removeUrl(m map[string][]*common.URL, url *common.URL) {
 	if urls, ok := m[url.ServiceKey()]; ok {
 		for i, u := range urls {
-			if u == url {
+			if u.URLEqual(url) {
 				m[url.ServiceKey()] = deleteItem(urls, i)
 				break
 			}
@@ -140,8 +140,12 @@ func (info *MetadataInfo) RemoveService(url *common.URL) {
 	defer info.mu.Unlock()
 
 	service := NewServiceInfoWithURL(url)
-	delete(info.Services, service.GetMatchKey())
 	removeUrl(info.exportedServiceURLs, url)
+	if replacement := info.findExportedServiceURL(service.GetMatchKey()); replacement != nil {
+		info.Services[service.GetMatchKey()] = NewServiceInfoWithURL(replacement)
+		return
+	}
+	delete(info.Services, service.GetMatchKey())
 }
 
 // AddSubscribeURL client subscribe a service url
@@ -193,6 +197,25 @@ func (info *MetadataInfo) GetServices() map[string]*ServiceInfo {
 		cp[k] = v.DeepCopy()
 	}
 	return cp
+}
+
+func (info *MetadataInfo) ReplaceExportedServices(urls []*common.URL) {
+	info.Services = make(map[string]*ServiceInfo)
+	info.exportedServiceURLs = make(map[string][]*common.URL)
+	for _, serviceURL := range urls {
+		info.AddService(serviceURL)
+	}
+}
+
+func (info *MetadataInfo) findExportedServiceURL(matchKey string) *common.URL {
+	for _, urls := range info.exportedServiceURLs {
+		for _, serviceURL := range urls {
+			if NewServiceInfoWithURL(serviceURL).GetMatchKey() == matchKey {
+				return serviceURL
+			}
+		}
+	}
+	return nil
 }
 
 // ServiceInfo the information of service

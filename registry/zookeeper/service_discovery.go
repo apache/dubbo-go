@@ -166,7 +166,7 @@ func (zksd *zookeeperServiceDiscovery) GetServices() *gxset.HashSet {
 	services, err := zksd.csd.QueryForNames()
 	res := gxset.NewSet()
 	if err != nil {
-		logger.Errorf("[zkServiceDiscovery] Could not query the services: %v", err)
+		logger.Errorf("[Registry][Zookeeper] could not query the services, err=%v", err)
 		return res
 	}
 	for _, service := range services {
@@ -179,7 +179,7 @@ func (zksd *zookeeperServiceDiscovery) GetServices() *gxset.HashSet {
 func (zksd *zookeeperServiceDiscovery) GetInstances(serviceName string) []registry.ServiceInstance {
 	criss, err := zksd.csd.QueryForInstances(serviceName)
 	if err != nil {
-		logger.Errorf("[zkServiceDiscovery] Could not query the instances for service{%s}, error = err{%v} ",
+		logger.Errorf("[Registry][Zookeeper] could not query the instances for service{%s}, err=%v",
 			serviceName, err)
 		return make([]registry.ServiceInstance, 0)
 	}
@@ -241,7 +241,7 @@ func (zksd *zookeeperServiceDiscovery) AddListener(listener registry.ServiceInst
 	for _, t := range listener.GetServiceNames().Values() {
 		serviceName, ok := t.(string)
 		if !ok {
-			logger.Errorf("service name error %s", t)
+			logger.Errorf("[Registry][Zookeeper] service name error, name=%v", t)
 			continue
 		}
 		zksd.listenNames = append(zksd.listenNames, serviceName)
@@ -258,7 +258,7 @@ func (zksd *zookeeperServiceDiscovery) AddListener(listener registry.ServiceInst
 	for _, t := range listener.GetServiceNames().Values() {
 		serviceName, ok := t.(string)
 		if !ok {
-			logger.Errorf("service name error %s", t)
+			logger.Errorf("[Registry][Zookeeper] service name error, name=%v", t)
 			continue
 		}
 		zksd.csd.ListenServiceEvent(serviceName, zksd)
@@ -282,7 +282,7 @@ func (zksd *zookeeperServiceDiscovery) DataChange(eventType remoting.Event) bool
 	}
 
 	if err != nil {
-		logger.Errorf("[zkServiceDiscovery] DispatchEventByServiceName{%s} error = err{%v}", serviceName, err)
+		logger.Errorf("[Registry][Zookeeper] DispatchEventByServiceName{%s}, err=%v", serviceName, err)
 		return false
 	}
 	return true
@@ -312,12 +312,12 @@ func (zksd *zookeeperServiceDiscovery) toCuratorInstance(instance registry.Servi
 func toZookeeperInstance(cris *curator_discovery.ServiceInstance) registry.ServiceInstance {
 	pl, ok := cris.Payload.(map[string]any)
 	if !ok {
-		logger.Errorf("[zkServiceDiscovery] toZookeeperInstance{%s} payload is not map[string]any", cris.ID)
+		logger.Errorf("[Registry][Zookeeper] toZookeeperInstance{%s} payload is not map[string]any", cris.ID)
 		return nil
 	}
 	mdi, ok := pl["metadata"].(map[string]any)
 	if !ok {
-		logger.Errorf("[zkServiceDiscovery] toZookeeperInstance{%s} metadata is not map[string]any", cris.ID)
+		logger.Errorf("[Registry][Zookeeper] toZookeeperInstance{%s} metadata is not map[string]any", cris.ID)
 		return nil
 	}
 	md := make(map[string]string, len(mdi))

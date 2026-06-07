@@ -71,3 +71,19 @@ func AddSubscribeURL(registryId string, url *common.URL) {
 
 	metaInfo.AddSubscribeURL(url)
 }
+
+func RemoveService(registryId string, url *common.URL) {
+	metadataInfo, exist := registryMetadataInfo[registryId]
+	if !exist {
+		return
+	}
+	metadataInfo.RemoveService(url)
+}
+
+func RemoveSubscribeURL(registryId string, url *common.URL) {
+	metadataInfo, exist := registryMetadataInfo[registryId]
+	if !exist {
+		return
+	}
+	metadataInfo.RemoveSubscribeURL(url)
+}

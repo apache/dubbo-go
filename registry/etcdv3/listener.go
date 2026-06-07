@@ -55,13 +55,13 @@ func (l *dataListener) AddInterestedURL(url *common.URL) {
 func (l *dataListener) DataChange(eventType remoting.Event) bool {
 	index := strings.Index(eventType.Path, "/providers/")
 	if index == -1 {
-		logger.Warnf("Listen with no url, event.path={%v}", eventType.Path)
+		logger.Warnf("[Registry][Etcdv3] listen with no url, event.path=%v", eventType.Path)
 		return false
 	}
 	url := eventType.Path[index+len("/providers/"):]
 	serviceURL, err := common.NewURL(url)
 	if err != nil {
-		logger.Warnf("Listen NewURL(r{%s}) = error{%v}", eventType.Path, err)
+		logger.Warnf("[Registry][Etcdv3] listen NewURL, path=%s err=%v", eventType.Path, err)
 		return false
 	}
 
@@ -103,16 +103,16 @@ func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 	for {
 		select {
 		case <-l.registry.Done():
-			logger.Warnf("listener's etcd client connection is broken, so etcd event listener exit now.")
+			logger.Warn("[Registry][Etcdv3] listener's etcd client connection is broken, so etcd event listener exit now")
 			return nil, perrors.New("listener stopped")
 
 		case val := <-l.events.Out():
 			e, _ := val.(*config_center.ConfigChangeEvent)
-			logger.Infof("got etcd event %#v", e)
+			logger.Infof("[Registry][Etcdv3] got etcd event %#v", e)
 			if e.ConfigType == remoting.EventTypeDel && l.registry.client.Valid() {
 				select {
 				case <-l.registry.Done():
-					logger.Warnf("update @result{%s}. But its connection to registry is invalid", e.Value)
+					logger.Warnf("[Registry][Etcdv3] update @result{%s}. But its connection to registry is invalid", e.Value)
 				default:
 				}
 				continue

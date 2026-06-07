@@ -74,7 +74,7 @@ func (ti *TripleInvoker) Invoke(ctx context.Context, invocation base.Invocation)
 	if !ti.BaseInvoker.IsAvailable() {
 		// Generally, the case will not happen, because the invoker has been removed
 		// from the invoker list before destroy,so no new request will enter the destroyed invoker
-		logger.Warnf("TripleInvoker is destroyed")
+		logger.Warn("[Triple][Invoker] tripleInvoker is destroyed")
 		result.SetError(base.ErrDestroyedInvoker)
 		return &result
 	}
@@ -285,7 +285,7 @@ func (ti *TripleInvoker) startHealthWatch(handler gracefulshutdown.ClosingEventH
 	go func() {
 		stream, err := cm.callHealthWatch(ctx, ti.GetURL().ServiceKey())
 		if err != nil {
-			logger.Debugf("[TRIPLE Protocol] health watch start failed for %s: %v", ti.GetURL().String(), err)
+			logger.Debugf("[Triple][Invoker] health watch start failed for %s, err=%v", ti.GetURL().String(), err)
 			return
 		}
 
@@ -293,7 +293,7 @@ func (ti *TripleInvoker) startHealthWatch(handler gracefulshutdown.ClosingEventH
 			resp := new(grpc_health_v1.HealthCheckResponse)
 			if ok := stream.Receive(resp); !ok {
 				if ctx.Err() == nil {
-					logger.Debugf("[TRIPLE Protocol] health watch recv failed for %s: %v", ti.GetURL().String(), stream.Err())
+					logger.Debugf("[Triple][Invoker] health watch recv failed for %s, err=%v", ti.GetURL().String(), stream.Err())
 				}
 				return
 			}

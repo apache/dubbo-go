@@ -104,23 +104,23 @@ func GetRouteFunc(invoker base.Invoker, methodConfig *rest_config.RestMethodConf
 			args, err = getArgsFromRequest(req, argsTypes, methodConfig)
 		}
 		if err != nil {
-			logger.Errorf("[Go Restful] parsing http parameters error:%v", err)
+			logger.Errorf("[Rest][Server] parsing http parameters error, err=%v", err)
 			err = resp.WriteError(http.StatusInternalServerError, errors.New(parseParameterErrorStr))
 			if err != nil {
-				logger.Errorf("[Go Restful] WriteErrorString error:%v", err)
+				logger.Errorf("[Rest][Server] write error string failed, err=%v", err)
 			}
 		}
 		result := invoker.Invoke(context.Background(), invocation.NewRPCInvocation(methodConfig.MethodName, args, make(map[string]any)))
 		if result.Error() != nil {
 			err = resp.WriteError(http.StatusInternalServerError, result.Error())
 			if err != nil {
-				logger.Errorf("[Go Restful] WriteError error:%v", err)
+				logger.Errorf("[Rest][Server] write error failed, err=%v", err)
 			}
 			return
 		}
 		err = resp.WriteEntity(result.Result())
 		if err != nil {
-			logger.Errorf("[Go Restful] WriteEntity error:%v", err)
+			logger.Errorf("[Rest][Server] write entity failed, err=%v", err)
 		}
 	}
 }
@@ -160,7 +160,7 @@ func getArgsInterfaceFromRequest(req RestServerRequest, methodConfig *rest_confi
 		m := make(map[string]any)
 		// TODO read as a slice
 		if err := req.ReadEntity(&m); err != nil {
-			return nil, perrors.Errorf("[Go restful] Read body entity as map[string]any error:%v", err)
+			return nil, perrors.Errorf("[Rest][Server] read body entity as map[string]any, err=%v", err)
 		}
 		argsMap[methodConfig.Body] = m
 	}
@@ -200,7 +200,7 @@ func assembleArgsFromHeaders(methodConfig *rest_config.RestMethodConfig, req Res
 	for k, v := range methodConfig.HeadersMap {
 		param := req.HeaderParameter(v)
 		if k < 0 || k >= argsLength {
-			return perrors.Errorf("[Go restful] Header param parse error, the index %v args of method:%v doesn't exist", k, methodConfig.MethodName)
+			return perrors.Errorf("[Rest][Server] header param parse error, the index %v args of method:%v doesn't exist", k, methodConfig.MethodName)
 		}
 		t := argsTypes[k]
 		if t.Kind() == reflect.Ptr {
@@ -209,7 +209,7 @@ func assembleArgsFromHeaders(methodConfig *rest_config.RestMethodConfig, req Res
 		if t.Kind() == reflect.String {
 			args[k] = param
 		} else {
-			return perrors.Errorf("[Go restful] Header param parse error, the index %v args's type isn't string", k)
+			return perrors.Errorf("[Rest][Server] header param parse error, the index %v args's type isn't string", k)
 		}
 	}
 	return nil
@@ -235,7 +235,7 @@ func assembleArgsFromBody(methodConfig *rest_config.RestMethodConfig, argsTypes 
 			}
 		}
 		if err := req.ReadEntity(&ni); err != nil {
-			return perrors.Errorf("[Go restful] Read body entity error, error is %v", perrors.WithStack(err))
+			return perrors.Errorf("[Rest][Server] read body entity error, err=%v", perrors.WithStack(err))
 		}
 		args[methodConfig.Body] = ni
 	}
@@ -251,7 +251,7 @@ func assembleArgsFromQueryParams(methodConfig *rest_config.RestMethodConfig, arg
 	)
 	for k, v := range methodConfig.QueryParamsMap {
 		if k < 0 || k >= argsLength {
-			return perrors.Errorf("[Go restful] Query param parse error, the index %v args of method:%v doesn't exist", k, methodConfig.MethodName)
+			return perrors.Errorf("[Rest][Server] query param parse error, the index %v args of method:%v doesn't exist", k, methodConfig.MethodName)
 		}
 		t := argsTypes[k]
 		kind := t.Kind()
@@ -274,11 +274,11 @@ func assembleArgsFromQueryParams(methodConfig *rest_config.RestMethodConfig, arg
 		case reflect.Int64:
 			param, err = strconv.ParseInt(req.QueryParameter(v), 10, 64)
 		default:
-			return perrors.Errorf("[Go restful] Query param parse error, the index %v args's type isn't int or string or slice", k)
+			return perrors.Errorf("[Rest][Server] query param parse error, the index %v args's type isn't int or string or slice", k)
 		}
 
 		if err != nil {
-			return perrors.Errorf("[Go restful] Query param parse error, error:%v", perrors.WithStack(err))
+			return perrors.Errorf("[Rest][Server] query param parse error, err=%v", perrors.WithStack(err))
 		}
 		args[k] = param
 	}
@@ -294,7 +294,7 @@ func assembleArgsFromPathParams(methodConfig *rest_config.RestMethodConfig, args
 	)
 	for k, v := range methodConfig.PathParamsMap {
 		if k < 0 || k >= argsLength {
-			return perrors.Errorf("[Go restful] Path param parse error, the index %v args of method:%v doesn't exist", k, methodConfig.MethodName)
+			return perrors.Errorf("[Rest][Server] path param parse error, the index %v args of method:%v doesn't exist", k, methodConfig.MethodName)
 		}
 		t := argsTypes[k]
 		kind := t.Kind()
@@ -316,11 +316,11 @@ func assembleArgsFromPathParams(methodConfig *rest_config.RestMethodConfig, args
 		case reflect.String:
 			param = req.PathParameter(v)
 		default:
-			return perrors.Errorf("[Go restful] Path param parse error, the index %v args's type isn't int or string", k)
+			return perrors.Errorf("[Rest][Server] path param parse error, the index %v args's type isn't int or string", k)
 		}
 
 		if err != nil {
-			return perrors.Errorf("[Go restful] Path param parse error, error is %v", perrors.WithStack(err))
+			return perrors.Errorf("[Rest][Server] path param parse error, err=%v", perrors.WithStack(err))
 		}
 		args[k] = param
 	}

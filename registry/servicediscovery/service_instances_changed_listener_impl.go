@@ -50,7 +50,7 @@ func initCache(app string) {
 	fileName := constant.DefaultMetaFileName + app
 	cache, err := store.NewCacheManager(constant.DefaultMetaCacheName, fileName, time.Minute*10, constant.DefaultEntrySize, true)
 	if err != nil {
-		logger.Fatal("Failed to create cache [%s],the err is %v", constant.DefaultMetaCacheName, err)
+		logger.Fatalf("[Registry][ServiceDiscovery] failed to create cache [%s],the err is %v", constant.DefaultMetaCacheName, err)
 	}
 	metaCache = cache
 }
@@ -98,17 +98,17 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 	serviceToRevisionServices := make(map[string]map[string]*info.ServiceInfo)
 	newServiceURLs := make(map[string][]*common.URL)
 
-	logger.Infof("Received instance notification event of service %s, instance list size %d", ce.ServiceName, len(ce.Instances))
+	logger.Infof("[Registry][ServiceDiscovery] received instance notification event, service=%s size=%d", ce.ServiceName, len(ce.Instances))
 
 	for _, instances := range lstn.allInstances {
 		for _, instance := range instances {
 			if instance.GetMetadata() == nil {
-				logger.Warnf("Instance metadata is nil: %s", instance.GetHost())
+				logger.Warnf("[Registry][ServiceDiscovery] instance metadata is nil, host=%s", instance.GetHost())
 				continue
 			}
 			revision := instance.GetMetadata()[constant.ExportedServicesRevisionPropertyName]
 			if revision == "0" {
-				logger.Infof("Find instance without valid service metadata: %s", instance.GetHost())
+				logger.Infof("[Registry][ServiceDiscovery] find instance without valid service metadata, host=%s", instance.GetHost())
 				continue
 			}
 			subInstances := revisionToInstances[revision]
@@ -122,14 +122,14 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 				if err != nil {
 					// Skip this instance if metadata fetch fails (e.g., old Java Dubbo version)
 					// Try next instance with same revision
-					logger.Warnf("Failed to get metadata from instance %s (revision %s): %v, skipping this instance",
+					logger.Warnf("[Registry][ServiceDiscovery] failed to get metadata from instance %s (revision %s), err=%v, skipping this instance",
 						instance.GetHost(), revision, err)
 					continue
 				}
 				metadataInfo = meta
 			}
 			if metadataInfo == nil {
-				logger.Warnf("Metadata info is nil for instance %s (revision %s), skipping this instance",
+				logger.Warnf("[Registry][ServiceDiscovery] metadata info is nil for instance %s (revision %s), skipping this instance",
 					instance.GetHost(), revision)
 				continue
 			}
