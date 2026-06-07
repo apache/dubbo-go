@@ -111,7 +111,7 @@ func (bi *BaseInvoker) Invoke(context context.Context, invocation Invocation) re
 
 // Destroy changes available and destroyed flag and release the url's allocated memory
 func (bi *BaseInvoker) Destroy() {
-	logger.Infof("Destroy invoker: %s", bi.GetURL())
+	logger.Infof("[Protocol][Invoker] destroy invoker, url=%s", bi.GetURL())
 	bi.destroyed.Store(true)
 	bi.available.Store(false)
 	if url := bi.url.Load(); url != nil {

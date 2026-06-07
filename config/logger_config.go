@@ -27,13 +27,14 @@ import (
 
 	"github.com/creasty/defaults"
 
-	"github.com/dubbogo/gost/log/logger"
+	gostLogger "github.com/dubbogo/gost/log/logger"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/logger"
 )
 
 type LoggerConfig struct {
@@ -88,7 +89,7 @@ func (l *LoggerConfig) Prefix() string {
 
 func (l *LoggerConfig) Init() error {
 	var (
-		log logger.Logger
+		log gostLogger.Logger
 		err error
 	)
 	if err = l.check(); err != nil {
@@ -99,7 +100,8 @@ func (l *LoggerConfig) Init() error {
 		return err
 	}
 	// set log
-	logger.SetLogger(log)
+	gostLogger.SetLogger(log)
+	dubboLogger.SetLogger(log)
 	getty.SetLogger(log)
 	return nil
 }

@@ -89,7 +89,7 @@ func (proto *registryProtocol) getRegistry(registryUrl *common.URL) registry.Reg
 	actualReg, _ := proto.registries.LoadOrStore(cacheKey, func() any {
 		reg, err := extension.GetRegistry(registryUrl.Protocol, registryUrl)
 		if err != nil {
-			logger.Errorf("Registry cannot connect successfully. Error: %s", err.Error())
+			logger.Errorf("[Registry] registry cannot connect successfully, err=%s", err.Error())
 			panic(err)
 		}
 		return reg
@@ -196,7 +196,7 @@ func (proto *registryProtocol) Refer(url *common.URL) base.Invoker {
 	// new registry directory for store service url from registry
 	dic, err := extension.GetDirectoryInstance(registryUrl, reg)
 	if err != nil {
-		logger.Errorf("consumer service %v create registry directory error, error message is %s, and will return nil invoker!",
+		logger.Errorf("[Registry] consumer service %v create registry directory error, err=%s, and will return nil invoker",
 			serviceUrl.String(), err.Error())
 		return nil
 	}
@@ -204,7 +204,7 @@ func (proto *registryProtocol) Refer(url *common.URL) base.Invoker {
 	// This will start a new routine and listen to instance changes.
 	err = dic.Subscribe(registryUrl.SubURL)
 	if err != nil {
-		logger.Errorf("consumer service %v register registry %v error, error message is %s",
+		logger.Errorf("[Registry] consumer service %v register registry %v error, err=%s",
 			serviceUrl.String(), registryUrl.String(), err.Error())
 	}
 
@@ -212,12 +212,12 @@ func (proto *registryProtocol) Refer(url *common.URL) base.Invoker {
 	clusterKey := serviceUrl.GetParam(constant.ClusterKey, constant.DefaultCluster)
 	cluster, err := extension.GetCluster(clusterKey)
 	if err != nil {
-		logger.Errorf("consumer service %v get cluster %s error, error message is %s, will return nil invoker!",
+		logger.Errorf("[Registry] consumer service %v get cluster %s error, err=%s, will return nil invoker",
 			serviceUrl.String(), clusterKey, err.Error())
 		return nil
 	}
 	if cluster == nil {
-		logger.Errorf("consumer service %v cluster is nil for key %s, will return nil invoker!",
+		logger.Errorf("[Registry] consumer service %v cluster is nil for key %s, will return nil invoker",
 			serviceUrl.String(), clusterKey)
 		return nil
 	}
@@ -259,14 +259,14 @@ func (proto *registryProtocol) Export(originInvoker base.Invoker) base.Exporter 
 
 		err := reg.Register(registeredProviderUrl)
 		if err != nil {
-			logger.Errorf("provider service %v register registry %v error, error message is %s",
+			logger.Errorf("[Registry] provider service %v register registry %v error, err=%s",
 				providerUrl.Key(), registryUrl.Key(), err.Error())
 			return nil
 		}
 
 		go func() {
 			if err := reg.Subscribe(overriderUrl, overrideSubscribeListener); err != nil {
-				logger.Warnf("reg.subscribe(overriderUrl:%v) = error:%v", overriderUrl, err)
+				logger.Warnf("[Registry] reg.subscribe(overriderUrl=%v) = err=%v", overriderUrl, err)
 			}
 		}()
 
@@ -274,7 +274,7 @@ func (proto *registryProtocol) Export(originInvoker base.Invoker) base.Exporter 
 		exporter.SetSubscribeUrl(overriderUrl)
 
 	} else {
-		logger.Warnf("provider service %v do not regist to registry %v. possible direct connection provider",
+		logger.Warnf("[Registry] provider service %v do not regist to registry %v, possible direct connection provider",
 			providerUrl.Key(), registryUrl.Key())
 	}
 
@@ -308,7 +308,7 @@ func (proto *registryProtocol) reExport(invoker base.Invoker, newUrl *common.URL
 
 		// oldExporter UnExport function unRegister rpcService from the serviceMap, so need register it again as far as possible
 		if err := registerServiceMap(invoker); err != nil {
-			logger.Error(err.Error())
+			logger.Errorf("[Registry] reExport failed, err=%s", err.Error())
 		}
 		proto.Export(wrappedNewInvoker)
 		// TODO:  unregister & unsubscribe
@@ -497,7 +497,7 @@ func (proto *registryProtocol) Destroy() {
 		exporter := value.(*exporterChangeableWrapper)
 		reg := proto.getRegistry(getRegistryUrl(exporter.originInvoker))
 		if err := reg.UnRegister(exporter.registerUrl); err != nil {
-			logger.Warnf("Unregister consumer url failed, %s, error: %w", exporter.registerUrl.String(), err)
+			logger.Warnf("[Registry] unRegister consumer url failed, url=%s err=%v", exporter.registerUrl.String(), err)
 		}
 		proto.unsubscribeOverrideListener(reg, exporter.subscribeUrl)
 		proto.serviceConfigurationListeners.Delete(getProviderUrl(exporter.originInvoker).ServiceKey())
@@ -560,7 +560,7 @@ func (proto *registryProtocol) UnregisterRegistries() {
 		exporter := value.(*exporterChangeableWrapper)
 		reg := proto.getRegistry(getRegistryUrl(exporter.originInvoker))
 		if err := reg.UnRegister(exporter.registerUrl); err != nil {
-			logger.Warnf("Unregister consumer url failed, %s, error: %w", exporter.registerUrl.String(), err)
+			logger.Warnf("[Registry] unRegister consumer url failed, url=%s err=%v", exporter.registerUrl.String(), err)
 		}
 		return true
 	})
@@ -579,12 +579,12 @@ func (proto *registryProtocol) unsubscribeOverrideListener(reg registry.Registry
 
 	overrideListener, ok := listener.(*overrideSubscribeListener)
 	if !ok {
-		logger.Warnf("Unexpected override listener type %T for %s", listener, overrideKey)
+		logger.Warnf("[Registry] unexpected override listener type %T for %s", listener, overrideKey)
 		return
 	}
 
 	if err := reg.UnSubscribe(overrideURL, overrideListener); err != nil {
-		logger.Warnf("Unsubscribe override url failed, %s, error: %v", overrideKey, err)
+		logger.Warnf("[Registry] unsubscribe override url failed, url=%s err=%v", overrideKey, err)
 		return
 	}
 	proto.overrideListeners.CompareAndDelete(overrideKey, listener)

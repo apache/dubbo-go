@@ -59,7 +59,7 @@ func newGettyRPCClientConn(rpcClient *Client, addr string) (*gettyRPCClient, err
 		getty.WithReconnectInterval(rpcClient.conf.ReconnectInterval),
 	}
 	if sslEnabled {
-		logger.Infof("Getty client initialized the TLS configuration")
+		logger.Info("[Remoting][Getty] getty client initialized the TLS configuration")
 		clientOpts = append(clientOpts, getty.WithClientSslEnabled(sslEnabled), getty.WithClientTlsConfigBuilder(rpcClient.conf.TLSBuilder))
 	}
 
@@ -95,7 +95,7 @@ func newGettyRPCClientConn(rpcClient *Client, addr string) (*gettyRPCClient, err
 		}
 		time.Sleep(interval)
 	}
-	logger.Debug("client init ok")
+	logger.Debug("[Remoting][Getty] client init ok")
 	c.updateActive(time.Now().Unix())
 
 	return c, nil
@@ -129,7 +129,7 @@ func (c *gettyRPCClient) newSession(session getty.Session) error {
 		session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
 		session.SetCronPeriod((int)(conf.heartbeatPeriod.Nanoseconds() / 1e6))
 		session.SetWaitTime(conf.GettySessionParam.waitTimeout)
-		logger.Debugf("client new session:%s\n", session.Stat())
+		logger.Debugf("[Remoting][Getty] client new session=%s", session.Stat())
 		return nil
 	}
 	if tcpConn, ok = session.Conn().(*net.TCPConn); !ok {
@@ -137,21 +137,21 @@ func (c *gettyRPCClient) newSession(session getty.Session) error {
 	}
 
 	if err := tcpConn.SetNoDelay(conf.GettySessionParam.TcpNoDelay); err != nil {
-		logger.Error("tcpConn.SetNoDelay() = error:%v", err)
+		logger.Errorf("[Remoting][Getty] tcpConn.SetNoDelay() failed, err=%v", err)
 	}
 	if err := tcpConn.SetKeepAlive(conf.GettySessionParam.TcpKeepAlive); err != nil {
-		logger.Error("tcpConn.SetKeepAlive() = error:%v", err)
+		logger.Errorf("[Remoting][Getty] tcpConn.SetKeepAlive() failed, err=%v", err)
 	}
 	if conf.GettySessionParam.TcpKeepAlive {
 		if err := tcpConn.SetKeepAlivePeriod(conf.GettySessionParam.keepAlivePeriod); err != nil {
-			logger.Error("tcpConn.SetKeepAlivePeriod() = error:%v", err)
+			logger.Errorf("[Remoting][Getty] tcpConn.SetKeepAlivePeriod() failed, err=%v", err)
 		}
 	}
 	if err := tcpConn.SetReadBuffer(conf.GettySessionParam.TcpRBufSize); err != nil {
-		logger.Error("tcpConn.SetReadBuffer() = error:%v", err)
+		logger.Errorf("[Remoting][Getty] tcpConn.SetReadBuffer() failed, err=%v", err)
 	}
 	if err := tcpConn.SetWriteBuffer(conf.GettySessionParam.TcpWBufSize); err != nil {
-		logger.Error("tcpConn.SetWriteBuffer() = error:%v", err)
+		logger.Errorf("[Remoting][Getty] tcpConn.SetWriteBuffer() failed, err=%v", err)
 	}
 
 	session.SetName(conf.GettySessionParam.SessionName)
@@ -162,7 +162,7 @@ func (c *gettyRPCClient) newSession(session getty.Session) error {
 	session.SetWriteTimeout(conf.GettySessionParam.tcpWriteTimeout)
 	session.SetCronPeriod((int)(conf.heartbeatPeriod.Nanoseconds() / 1e6))
 	session.SetWaitTime(conf.GettySessionParam.waitTimeout)
-	logger.Debugf("client new session:%s\n", session.Stat())
+	logger.Debugf("[Remoting][Getty] client new session=%s", session.Stat())
 	return nil
 }
 
@@ -181,7 +181,7 @@ func (c *gettyRPCClient) selectSession() getty.Session {
 }
 
 func (c *gettyRPCClient) addSession(session getty.Session) {
-	logger.Debugf("add session{%s}", session.Stat())
+	logger.Debugf("[Remoting][Getty] add session=%s", session.Stat())
 	if session == nil {
 		return
 	}
@@ -210,11 +210,11 @@ func (c *gettyRPCClient) removeSession(session getty.Session) {
 		for i, s := range c.sessions {
 			if s.session == session {
 				c.sessions = append(c.sessions[:i], c.sessions[i+1:]...)
-				logger.Debugf("delete session{%s}, its index{%d}", session.Stat(), i)
+				logger.Debugf("[Remoting][Getty] delete session=%s index=%d", session.Stat(), i)
 				break
 			}
 		}
-		logger.Infof("after remove session{%s}, left session number:%d", session.Stat(), len(c.sessions))
+		logger.Infof("[Remoting][Getty] after remove session=%s, left session number=%d", session.Stat(), len(c.sessions))
 		if len(c.sessions) == 0 {
 			removeFlag = true
 		}
@@ -303,7 +303,7 @@ func (c *gettyRPCClient) close() error {
 				gettyClient.Close()
 			}
 			for _, s := range sessions {
-				logger.Infof("close client session{%s, last active:%s, request number:%d}",
+				logger.Infof("[Remoting][Getty] close client session=%s, lastActive=%s, requestNum=%d",
 					s.session.Stat(), s.session.GetActive().String(), s.GetReqNum())
 				s.session.Close()
 			}

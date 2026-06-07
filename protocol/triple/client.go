@@ -159,7 +159,7 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 			return nil, err
 		}
 		if cfg != nil {
-			logger.Infof("TRIPLE clientManager initialized the TLSConfig configuration")
+			logger.Info("[Triple][Client] triple clientManager initialized the TLSConfig configuration")
 			tlsFlag = true
 		}
 	}
@@ -174,7 +174,7 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	// handle keepalive options
 	cliKeepAliveOpts, keepAliveInterval, keepAliveTimeout, genKeepAliveOptsErr := genKeepAliveOptions(url, tripleConf)
 	if genKeepAliveOptsErr != nil {
-		logger.Errorf("genKeepAliveOpts err: %v", genKeepAliveOptsErr)
+		logger.Errorf("[Triple][Client] genKeepAliveOpts failed, err=%v", genKeepAliveOptsErr)
 		return nil, genKeepAliveOptsErr
 	}
 	cliOpts = append(cliOpts, cliKeepAliveOpts...)
@@ -236,7 +236,7 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 			},
 		}
 
-		logger.Infof("Triple http3 client transport init successfully")
+		logger.Info("[Triple][Client] triple http3 client transport init successfully")
 	case constant.CallHTTP2AndHTTP3:
 		if !tlsFlag {
 			return nil, fmt.Errorf("TRIPLE HTTP/2 and HTTP/3 client must have TLS config, but TLS config is nil")
@@ -244,7 +244,7 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 
 		// Create a dual transport that can handle both HTTP/2 and HTTP/3
 		transport = newDualTransport(cfg, keepAliveInterval, keepAliveTimeout)
-		logger.Infof("Triple HTTP/2 and HTTP/3 client transport init successfully")
+		logger.Info("[Triple][Client] triple HTTP/2 and HTTP/3 client transport init successfully")
 	default:
 		return nil, fmt.Errorf("unsupported http protocol: %s", callProtocol)
 	}
