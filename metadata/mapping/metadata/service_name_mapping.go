@@ -18,7 +18,10 @@
 package metadata
 
 import (
+	"errors"
+	"math/rand"
 	"sync"
+	"time"
 )
 
 import (
@@ -33,11 +36,17 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
+	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 )
 
-const (
-	DefaultGroup = "mapping"
-	retryTimes   = 10
+const DefaultGroup = "mapping"
+
+// retry policy for mapping registration. These are vars rather than consts so they can be
+// tuned (and made near-instant in tests).
+var (
+	retryTimes        = 10
+	retryBaseInterval = 100 * time.Millisecond
+	retryMaxInterval  = 2 * time.Second
 )
 
 func init() {
@@ -73,17 +82,40 @@ func (d *ServiceNameMapping) Map(url *common.URL) error {
 		return perrors.New("can not registering mapping to remote cause no metadata report instance found")
 	}
 	for _, metadataReport := range metadataReports {
-		var err error
-		for i := 0; i < retryTimes; i++ {
-			if err = metadataReport.RegisterServiceAppMapping(serviceInterface, DefaultGroup, appName); err == nil {
-				break
-			}
-		}
-		if err != nil {
+		if err := registerWithRetry(metadataReport, serviceInterface, DefaultGroup, appName); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// registerWithRetry registers the interface-to-app mapping, retrying only on CAS conflicts
+// (report.ErrMappingCASConflict) with exponential backoff. Any other error is returned
+// immediately, since retrying it would not help.
+func registerWithRetry(r report.MetadataReport, serviceInterface, group, appName string) error {
+	var err error
+	for i := 0; i < retryTimes; i++ {
+		err = r.RegisterServiceAppMapping(serviceInterface, group, appName)
+		if err == nil {
+			return nil
+		}
+		if !errors.Is(err, report.ErrMappingCASConflict) {
+			return err
+		}
+		time.Sleep(backoff(i))
+	}
+	return err
+}
+
+// backoff returns the delay before retry attempt i: retryBaseInterval*2^i capped at
+// retryMaxInterval, plus up to 50% random jitter to spread out writers contending on the
+// same key.
+func backoff(attempt int) time.Duration {
+	d := retryBaseInterval << attempt
+	if d <= 0 || d > retryMaxInterval {
+		d = retryMaxInterval
+	}
+	return d/2 + time.Duration(rand.Int63n(int64(d)/2+1))
 }
 
 // Get will return the application-level services. If not found, the empty set will be returned.

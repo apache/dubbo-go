@@ -19,6 +19,7 @@ package zookeeper
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 )
 
@@ -94,17 +95,27 @@ func (m *zookeeperMetadataReport) RegisterServiceAppMapping(key string, group st
 	path := m.rootDir + group + constant.PathSeparator + key
 	v, state, err := m.client.GetContent(path)
 	if err == zk.ErrNoNode {
-		return m.client.CreateWithValue(path, []byte(value))
+		if cErr := m.client.CreateWithValue(path, []byte(value)); cErr != nil {
+			if perrors.Is(cErr, zk.ErrNodeExists) {
+				return fmt.Errorf("create mapping %s: %w", path, report.ErrMappingCASConflict)
+			}
+			return cErr
+		}
+		return nil
 	} else if err != nil {
 		return err
 	}
-	oldValue := string(v)
-	if strings.Contains(oldValue, value) {
+	merged, changed := report.MergeServiceAppMapping(string(v), value)
+	if !changed {
 		return nil
 	}
-	value = oldValue + constant.CommaSeparator + value
-	_, err = m.client.SetContent(path, []byte(value), state.Version)
-	return err
+	if _, sErr := m.client.SetContent(path, []byte(merged), state.Version); sErr != nil {
+		if perrors.Is(sErr, zk.ErrBadVersion) {
+			return fmt.Errorf("update mapping %s: %w", path, report.ErrMappingCASConflict)
+		}
+		return sErr
+	}
+	return nil
 }
 
 // GetServiceAppMapping get the app names from the specified Dubbo service interface
@@ -120,15 +131,12 @@ func (m *zookeeperMetadataReport) GetServiceAppMapping(key string, group string,
 	if err != nil {
 		return nil, err
 	}
-	appNames := strings.Split(string(v), constant.CommaSeparator)
-	set := gxset.NewSet()
-	for _, e := range appNames {
-		set.Add(e)
-	}
-	return set, nil
+	return report.DecodeServiceAppNames(string(v)), nil
 }
 
 func (m *zookeeperMetadataReport) RemoveServiceAppMappingListener(key string, group string) error {
+	path := m.rootDir + group + constant.PathSeparator + key
+	m.cacheListener.RemoveKeyListeners(path)
 	return nil
 }
 

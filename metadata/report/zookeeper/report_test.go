@@ -19,7 +19,6 @@ package zookeeper
 
 import (
 	"encoding/json"
-	"strings"
 	"testing"
 )
 
@@ -32,6 +31,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
+	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 )
 
 func TestMetadataInfoSerialization(t *testing.T) {
@@ -62,19 +62,19 @@ func TestMetadataInfoSerialization(t *testing.T) {
 func TestRegisterServiceAppMappingValueMerge(t *testing.T) {
 	tests := []struct {
 		oldValue, newValue, expected string
+		wantChanged                  bool
 	}{
-		{"app1", "app2", "app1,app2"},
-		{"app1,app2", "app1", "app1,app2"},
-		{"", "app1", ",app1"},
+		{"app1", "app2", "app1,app2", true},
+		{"app1,app2", "app1", "app1,app2", false},
+		// empty old value must not produce a leading comma (was ",app1")
+		{"", "app1", "app1", true},
+		// substring must not be mistaken for membership (was wrongly treated as present)
+		{"app1-extra", "app1", "app1-extra,app1", true},
 	}
 	for _, tt := range tests {
-		var result string
-		if strings.Contains(tt.oldValue, tt.newValue) {
-			result = tt.oldValue
-		} else {
-			result = tt.oldValue + "," + tt.newValue
-		}
+		result, changed := report.MergeServiceAppMapping(tt.oldValue, tt.newValue)
 		assert.Equal(t, tt.expected, result)
+		assert.Equal(t, tt.wantChanged, changed)
 	}
 }
 

@@ -18,8 +18,9 @@
 package nacos
 
 import (
+	"crypto/md5"
 	"encoding/json"
-	"strings"
+	"fmt"
 )
 
 import (
@@ -142,11 +143,7 @@ func (n *nacosMetadataReport) addListener(key string, group string, notify mappi
 }
 
 func callback(notify mapping.MappingListener, dataId, data string) {
-	appNames := strings.Split(data, constant.CommaSeparator)
-	set := gxset.NewSet()
-	for _, app := range appNames {
-		set.Add(app)
-	}
+	set := report.DecodeServiceAppNames(data)
 	if err := notify.OnEvent(registry.NewServiceMappingChangedEvent(dataId, set)); err != nil {
 		logger.Errorf("serviceMapping callback err: %s", err.Error())
 	}
@@ -165,22 +162,34 @@ func (n *nacosMetadataReport) RegisterServiceAppMapping(key string, group string
 		DataId: key,
 		Group:  group,
 	})
-	if oldVal != "" {
-		oldApps := strings.Split(oldVal, constant.CommaSeparator)
-		if len(oldApps) > 0 {
-			for _, app := range oldApps {
-				if app == value {
-					return nil
-				}
-			}
-		}
-		value = oldVal + constant.CommaSeparator + value
+	merged, changed := report.MergeServiceAppMapping(oldVal, value)
+	if !changed {
+		return nil
 	}
-	return n.storeMetadata(vo.ConfigParam{
+	param := vo.ConfigParam{
 		DataId:  key,
 		Group:   group,
-		Content: value,
-	})
+		Content: merged,
+	}
+	if oldVal != "" {
+		// CasMd5 is an optimistic UPDATE: Nacos publishes only if the server content still
+		// matches what we read, detecting concurrent appends. It cannot guard the first INSERT
+		// (Nacos has no create-if-absent), so the initial concurrent registration of a
+		// brand-new interface can still race. This is a known Nacos-only limitation; the
+		// etcd and zookeeper reports do not have it.
+		param.CasMd5 = fmt.Sprintf("%x", md5.Sum([]byte(oldVal)))
+	}
+	if err := n.storeMetadata(param); err != nil {
+		if param.CasMd5 != "" {
+			// Nacos surfaces a CAS rejection and a transport error the same way, so they
+			// cannot be told apart here. Treat the failure as a retriable conflict rather
+			// than risk dropping a real concurrent update; the underlying error is preserved
+			// for diagnosis.
+			return fmt.Errorf("publish mapping %s (%v): %w", key, err, report.ErrMappingCASConflict)
+		}
+		return err
+	}
+	return nil
 }
 
 // GetServiceAppMapping get the app names from the specified Dubbo service interface
@@ -201,12 +210,7 @@ func (n *nacosMetadataReport) GetServiceAppMapping(key string, group string, lis
 	if v == "" {
 		return nil, perrors.New("There is no service app mapping data.")
 	}
-	appNames := strings.Split(v, constant.CommaSeparator)
-	set := gxset.NewSet()
-	for _, e := range appNames {
-		set.Add(e)
-	}
-	return set, nil
+	return report.DecodeServiceAppNames(v), nil
 }
 
 // RemoveServiceAppMappingListener remove the serviceMapping listener from metadata center

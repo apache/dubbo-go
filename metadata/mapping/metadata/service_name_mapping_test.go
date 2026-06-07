@@ -97,10 +97,18 @@ func TestServiceNameMappingMap(t *testing.T) {
 		err = ins.Map(serviceUrl)
 		require.NoError(t, err)
 	})
-	t.Run("test error", func(t *testing.T) {
-		mockReport.On("RegisterServiceAppMapping").Return(errors.New("mock error")).Times(retryTimes)
+	t.Run("non-conflict error returns immediately", func(t *testing.T) {
+		// a generic error is not retriable, so RegisterServiceAppMapping is called exactly once
+		mockReport.On("RegisterServiceAppMapping").Return(errors.New("mock error")).Once()
 		err = ins.Map(serviceUrl)
 		require.Error(t, err, "test mapping error")
+	})
+	t.Run("CAS conflict retries up to retryTimes", func(t *testing.T) {
+		const conflictRetries = 3
+		defer fastRetry(conflictRetries)()
+		mockReport.On("RegisterServiceAppMapping").Return(report.ErrMappingCASConflict).Times(conflictRetries)
+		err = ins.Map(serviceUrl)
+		require.Error(t, err, "conflict exhausts the retry budget")
 	})
 	mockReport.AssertExpectations(t)
 }

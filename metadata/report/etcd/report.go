@@ -19,6 +19,7 @@ package etcd
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 )
 
@@ -79,34 +80,47 @@ func (e *etcdMetadataReport) PublishAppMetadata(application, revision string, in
 // RegisterServiceAppMapping map the specified Dubbo service interface to current Dubbo app name
 func (e *etcdMetadataReport) RegisterServiceAppMapping(key string, group string, value string) error {
 	path := e.rootDir + constant.PathSeparator + group + constant.PathSeparator + key
-	oldVal, err := e.client.Get(path)
+	oldVal, rev, err := e.client.GetValAndRev(path)
 	if perrors.Cause(err) == gxetcd.ErrKVPairNotFound {
-		return e.client.Put(path, value)
+		if cErr := e.client.Create(path, value); cErr != nil {
+			if perrors.Cause(cErr) == gxetcd.ErrCompareFail {
+				return fmt.Errorf("create mapping %s: %w", path, report.ErrMappingCASConflict)
+			}
+			return cErr
+		}
+		return nil
 	} else if err != nil {
 		return err
 	}
-	if strings.Contains(oldVal, value) {
+	merged, changed := report.MergeServiceAppMapping(oldVal, value)
+	if !changed {
 		return nil
 	}
-	value = oldVal + constant.CommaSeparator + value
-	return e.client.Put(path, value)
+	if uErr := e.client.UpdateWithRev(path, merged, rev); uErr != nil {
+		if perrors.Cause(uErr) == gxetcd.ErrCompareFail {
+			return fmt.Errorf("update mapping %s: %w", path, report.ErrMappingCASConflict)
+		}
+		return uErr
+	}
+	return nil
 }
 
 // GetServiceAppMapping get the app names from the specified Dubbo service interface
 func (e *etcdMetadataReport) GetServiceAppMapping(key string, group string, listener mapping.MappingListener) (*gxset.HashSet, error) {
 	path := e.rootDir + constant.PathSeparator + group + constant.PathSeparator + key
+	if listener != nil {
+		logger.Warnf("etcd metadata report does not support service mapping listener, "+
+			"mapping changes of %s will not be notified", path)
+	}
 	v, err := e.client.Get(path)
 	if err != nil {
 		return nil, err
 	}
-	appNames := strings.Split(v, constant.CommaSeparator)
-	set := gxset.NewSet()
-	for _, app := range appNames {
-		set.Add(app)
-	}
-	return set, nil
+	return report.DecodeServiceAppNames(v), nil
 }
 
+// RemoveServiceAppMappingListener is a no-op: etcd metadata report does not register a mapping
+// listener (see GetServiceAppMapping), so there is nothing to remove.
 func (e *etcdMetadataReport) RemoveServiceAppMappingListener(key string, group string) error {
 	return nil
 }
