@@ -15,9 +15,18 @@
  * limitations under the License.
  */
 
-// Package echo providers health check filter.
-// RPCService need a Echo method in consumer, if you want to use Filter
-// eg: Echo func(ctx context.Context, arg any, rsp *Xxx) error
+// Package echo provides the health check filter.
+//
+// The filter reserves the Echo method name: when an invocation method is Echo
+// and it has exactly one argument, the filter returns that argument directly.
+// Application services should avoid defining business methods named Echo when
+// this filter is enabled, otherwise the invocation is handled as a built-in
+// echo health check instead of reaching the provider implementation.
+//
+// RPCService needs an Echo method in the consumer if it wants to use this
+// filter, for example:
+//
+//	Echo func(ctx context.Context, arg any, rsp *Xxx) error
 package echo
 
 import (
