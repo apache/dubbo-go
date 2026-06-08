@@ -19,7 +19,6 @@ package metadata
 
 import (
 	"errors"
-	"math/rand"
 	"sync"
 	"time"
 )
@@ -108,14 +107,13 @@ func registerWithRetry(r report.MetadataReport, serviceInterface, group, appName
 }
 
 // backoff returns the delay before retry attempt i: retryBaseInterval*2^i capped at
-// retryMaxInterval, plus up to 50% random jitter to spread out writers contending on the
-// same key.
+// retryMaxInterval.
 func backoff(attempt int) time.Duration {
 	d := retryBaseInterval << attempt
 	if d <= 0 || d > retryMaxInterval {
 		d = retryMaxInterval
 	}
-	return d/2 + time.Duration(rand.Int63n(int64(d)/2+1))
+	return d
 }
 
 // Get will return the application-level services. If not found, the empty set will be returned.
