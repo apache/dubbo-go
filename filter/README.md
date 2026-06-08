@@ -20,6 +20,37 @@ package demo
 import _ "dubbo.apache.org/dubbo-go/v3/filter/filter_impl"
 ```
 
+## Passing HTTP Headers
+
+Dubbo filters operate on Dubbo invocations, so a client filter cannot read
+HTTP framework headers directly. If an HTTP gateway such as Gin needs to pass
+headers to a Dubbo provider, copy the required headers in the HTTP layer and
+make them available to a custom Dubbo client filter through `context.Context`.
+The filter can then copy those values into Dubbo attachments.
+
+```go
+type requestIDKey struct{}
+
+func handler(c *gin.Context) {
+	req := &UserRequest{}
+	ctx := context.WithValue(c.Request.Context(), requestIDKey{}, c.GetHeader("X-Request-ID"))
+
+	resp, err := userProvider.GetUser(ctx, req)
+	// handle resp and err
+}
+```
+
+Custom client filters can also add or normalize attachments on the invocation:
+
+```go
+func (f *MyClientFilter) Invoke(ctx context.Context, invoker protocol.Invoker, invocation protocol.Invocation) protocol.Result {
+	if requestID, ok := ctx.Value(requestIDKey{}).(string); ok && requestID != "" {
+		invocation.SetAttachment("x-request-id", requestID)
+	}
+	return invoker.Invoke(ctx, invocation)
+}
+```
+
 ## Contents
 
 - accesslog: Access Log Filter(https://github.com/apache/dubbo-go/pull/214)
