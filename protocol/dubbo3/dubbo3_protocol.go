@@ -84,7 +84,7 @@ func (dp *DubboProtocol) Export(invoker base.Invoker) base.Exporter {
 		service = rpcService
 	}
 	if service == nil {
-		panic(fmt.Sprintf("[Triple Protocol] no rpc service found in url attribute %s for service key: %s", constant.RpcServiceKey, key))
+		panic(fmt.Sprintf("[Dubbo3] no rpc service found in url attribute %s for service key: %s", constant.RpcServiceKey, key))
 	}
 
 	serializationType := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
@@ -93,7 +93,7 @@ func (dp *DubboProtocol) Export(invoker base.Invoker) base.Exporter {
 	if serializationType == constant.ProtobufSerialization {
 		m, ok := reflect.TypeOf(service).MethodByName("XXX_SetProxyImpl")
 		if !ok {
-			logger.Errorf("PB service with key = %s is not support XXX_SetProxyImpl to pb."+
+			logger.Errorf("[Dubbo3] PB service with key=%s is not support XXX_SetProxyImpl to pb. "+
 				"Please run go install github.com/dubbogo/dubbogo-cli/cmd/protoc-gen-go-triple@latest to update your "+
 				"protoc-gen-go-triple and re-generate your pb file again.", key)
 			return nil
@@ -128,7 +128,7 @@ func (dp *DubboProtocol) Export(invoker base.Invoker) base.Exporter {
 
 	exporter := NewDubboExporter(serviceKey, invoker, dp.ExporterMap(), dp.serviceMap)
 	dp.SetExporterMap(serviceKey, exporter)
-	logger.Infof("[Triple Protocol] Export service: %s", url.String())
+	logger.Infof("[Dubbo3] Export service: %s", url.String())
 
 	dp.serviceMap.Store(url.GetParam(constant.InterfaceKey, ""), service)
 
@@ -141,11 +141,11 @@ func (dp *DubboProtocol) Export(invoker base.Invoker) base.Exporter {
 func (dp *DubboProtocol) Refer(url *common.URL) base.Invoker {
 	invoker, err := NewDubboInvoker(url)
 	if err != nil {
-		logger.Errorf("Refer url = %+v, with error = %s", url, err.Error())
+		logger.Errorf("[Dubbo3] Refer url=%v, err=%v", url, err)
 		return nil
 	}
 	dp.SetInvokers(invoker)
-	logger.Infof("[Triple Protocol] Refer service: %s", url.String())
+	logger.Infof("[Dubbo3] Refer service: %s", url.String())
 	return invoker
 }
 
@@ -231,7 +231,7 @@ func (dp *DubboProtocol) openServer(url *common.URL, tripleCodecType tripleConst
 	if tracingConfRaw, tracingAttrOk := url.GetAttribute(constant.TracingConfigKey); tracingAttrOk {
 		tracingConfig, tracingConfigOk := tracingConfRaw.(*global.TracingConfig)
 		if !tracingConfigOk {
-			logger.Warnf("invalid tracing config type %T, expected *global.TracingConfig", tracingConfRaw)
+			logger.Warnf("[Dubbo3] invalid tracing config type %T, expected *global.TracingConfig", tracingConfRaw)
 		} else if tracingConfig != nil {
 			if tracingConfig.Name == "jaeger" {
 				serviceName := tracingConfig.ServiceName
@@ -243,7 +243,7 @@ func (dp *DubboProtocol) openServer(url *common.URL, tripleCodecType tripleConst
 					useAgent = *tracingConfig.UseAgent
 				}
 				if serviceName == "" {
-					logger.Warnf("jaeger tracing skipped: no service name available for %s", url.String())
+					logger.Warnf("[Dubbo3] jaeger tracing skipped: no service name available for %s", url.String())
 				} else {
 					opts = append(opts, triConfig.WithJaegerConfig(
 						tracingConfig.Address,
@@ -252,7 +252,7 @@ func (dp *DubboProtocol) openServer(url *common.URL, tripleCodecType tripleConst
 					))
 				}
 			} else {
-				logger.Warnf("unsupported tracing name %s, now triple only support jaeger", tracingConfig.Name)
+				logger.Warnf("[Dubbo3] unsupported tracing name %s, now triple only support jaeger", tracingConfig.Name)
 			}
 		}
 	}
@@ -274,7 +274,7 @@ func (dp *DubboProtocol) openServer(url *common.URL, tripleCodecType tripleConst
 		// use global TLSConfig handle tls
 		tlsConf, RawOk := tlsConfRaw.(*global.TLSConfig)
 		if !RawOk {
-			logger.Errorf("DUBBO3 Server initialized the TLSConfig configuration failed")
+			logger.Error("[Dubbo3] DUBBO3 Server initialized the TLSConfig configuration failed")
 			return
 		}
 		if dubbotls.IsServerTLSValid(tlsConf) {
@@ -282,7 +282,7 @@ func (dp *DubboProtocol) openServer(url *common.URL, tripleCodecType tripleConst
 			triOption.TLSCertFile = tlsConf.TLSCertFile
 			triOption.TLSKeyFile = tlsConf.TLSKeyFile
 			triOption.TLSServerName = tlsConf.TLSServerName
-			logger.Infof("DUBBO3 Server initialized the TLSConfig configuration")
+			logger.Info("[Dubbo3] DUBBO3 Server initialized the TLSConfig configuration")
 		}
 	}
 

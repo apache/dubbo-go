@@ -54,7 +54,7 @@ func (de *DubboExporter) UnExport() {
 	interfaceName := url.GetParam(constant.InterfaceKey, "")
 	err := common.ServiceMap.UnRegister(interfaceName, tripleConstant.TRIPLE, url.ServiceKey())
 	if err != nil {
-		logger.Errorf("[DubboExporter.UnExport] error: %v", err)
+		logger.Errorf("[Dubbo3][Exporter] unexport failed, err=%v", err)
 	}
 	de.serviceMap.Delete(interfaceName)
 	de.BaseExporter.UnExport()

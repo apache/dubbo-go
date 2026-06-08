@@ -27,6 +27,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+)
+
 // TestCloneConfig tests the Clone method of the *_config.go files
 func TestCloneConfig(t *testing.T) {
 	t.Run("ApplicationConfig", func(t *testing.T) {
@@ -1062,7 +1066,8 @@ func TestDefaultProtocolConfig(t *testing.T) {
 		proto := DefaultProtocolConfig()
 		assert.NotNil(t, proto)
 		assert.NotEmpty(t, proto.Name)
-		assert.NotEmpty(t, proto.Port)
+		assert.Equal(t, constant.TriProtocol, proto.Name)
+		assert.Equal(t, constant.DefaultTripleProtocolPort, proto.Port)
 		assert.NotNil(t, proto.TripleConfig)
 	})
 }

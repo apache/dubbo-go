@@ -49,7 +49,7 @@ func NewOpenAPIIntegration(cfg *global.OpenAPIConfig) *OpenAPIIntegration {
 		swaggerHandler: NewSwaggerUIHandler(svc, cfg),
 		redocHandler:   NewRedocHandler(svc, cfg),
 	}
-	logger.Info("OpenAPI service initialized")
+	logger.Info("[Triple][OpenAPI] OpenAPI service initialized")
 	return integration
 }
 

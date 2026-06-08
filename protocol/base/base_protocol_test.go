@@ -18,6 +18,8 @@
 package base
 
 import (
+	"strconv"
+	"sync"
 	"testing"
 )
 
@@ -32,7 +34,6 @@ import (
 func TestNewBaseProtocol(t *testing.T) {
 	protocol := NewBaseProtocol()
 
-	assert.NotNil(t, protocol)
 	assert.NotNil(t, protocol.exporterMap)
 	assert.Empty(t, protocol.invokers)
 }
@@ -75,6 +76,54 @@ func TestBaseProtocol_SetInvokers(t *testing.T) {
 	assert.Contains(t, invokers, invoker2)
 }
 
+func TestBaseProtocol_SetInvokersConcurrent(t *testing.T) {
+	protocol := NewBaseProtocol()
+	const goroutines = 128
+
+	start := make(chan struct{})
+	var writers sync.WaitGroup
+	for i := 0; i < goroutines; i++ {
+		i := i
+		writers.Add(1)
+		go func() {
+			defer writers.Done()
+			<-start
+			url := common.NewURLWithOptions(
+				common.WithProtocol("dubbo"),
+				common.WithIp("localhost"),
+				common.WithPort(strconv.Itoa(9000+i)),
+			)
+			protocol.SetInvokers(NewBaseInvoker(url))
+		}()
+	}
+
+	const readers = 8
+	stopReaders := make(chan struct{})
+	var readerWG sync.WaitGroup
+	for i := 0; i < readers; i++ {
+		readerWG.Add(1)
+		go func() {
+			defer readerWG.Done()
+			<-start
+			for {
+				select {
+				case <-stopReaders:
+					return
+				default:
+					_ = protocol.Invokers()
+				}
+			}
+		}()
+	}
+
+	close(start)
+	writers.Wait()
+	close(stopReaders)
+	readerWG.Wait()
+
+	assert.Len(t, protocol.Invokers(), goroutines)
+}
+
 func TestBaseProtocol_Invokers(t *testing.T) {
 	protocol := NewBaseProtocol()
 	url, _ := common.NewURL("dubbo://localhost:9090")
@@ -85,6 +134,21 @@ func TestBaseProtocol_Invokers(t *testing.T) {
 
 	assert.Len(t, invokers, 1)
 	assert.Equal(t, invoker, invokers[0])
+}
+
+func TestBaseProtocol_InvokersReturnsSnapshot(t *testing.T) {
+	protocol := NewBaseProtocol()
+	url1, _ := common.NewURL("dubbo://localhost:9090")
+	invoker1 := NewBaseInvoker(url1)
+	url2, _ := common.NewURL("dubbo://localhost:9091")
+	invoker2 := NewBaseInvoker(url2)
+
+	protocol.SetInvokers(invoker1)
+
+	invokers := protocol.Invokers()
+	invokers[0] = invoker2
+
+	assert.Equal(t, invoker1, protocol.Invokers()[0])
 }
 
 func TestBaseProtocol_Export(t *testing.T) {

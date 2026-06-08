@@ -223,12 +223,12 @@ func (sm *serviceMap) Register(interfaceName, protocol, group, version string, s
 	sname := reflect.Indirect(s.svc).Type().Name()
 	if sname == "" {
 		s := "no service name for type " + s.svcType.String()
-		logger.Errorf(s)
+		logger.Errorf("[RPCService] %s", s)
 		return "", perrors.New(s)
 	}
 	if !isExported(sname) {
 		s := "type " + sname + " is not exported"
-		logger.Errorf(s)
+		logger.Errorf("[RPCService] %s", s)
 		return "", perrors.New(s)
 	}
 
@@ -245,7 +245,7 @@ func (sm *serviceMap) Register(interfaceName, protocol, group, version string, s
 
 	if len(s.methods) == 0 {
 		s := "type " + sname + " has no exported methods of suitable type"
-		logger.Errorf(s)
+		logger.Errorf("[RPCService] %s", s)
 		return "", perrors.New(s)
 	}
 	sm.mutex.Lock()
@@ -329,11 +329,49 @@ func isExportedOrBuiltinType(t reflect.Type) bool {
 	return isExported(t.Name()) || t.PkgPath() == ""
 }
 
+// VariadicRPCMethodNames returns exported RPC method names whose final
+// parameter uses Go variadic syntax (...T). The detection reuses suiteMethod so
+// only methods Dubbo-go would export as RPC methods are included.
+func VariadicRPCMethodNames(svc RPCService) []string {
+	return variadicRPCMethodNames(reflect.TypeOf(svc))
+}
+
+// WarnVariadicRPCMethods emits guidance for exported variadic RPC methods while
+// keeping existing services compatible.
+func WarnVariadicRPCMethods(serviceName string, svc RPCService) {
+	methodNames := VariadicRPCMethodNames(svc)
+	if len(methodNames) == 0 {
+		return
+	}
+
+	logger.Warnf(
+		"[RPCService] service %s exports variadic RPC method(s): %s. Existing services remain supported, but new cross-language or generic contracts should avoid variadic (...T); prefer []T, request structs, or Triple + Protobuf IDL.",
+		serviceName,
+		strings.Join(methodNames, ", "),
+	)
+}
+
+func variadicRPCMethodNames(typ reflect.Type) []string {
+	if typ == nil {
+		return nil
+	}
+
+	methodNames := make([]string, 0)
+	for i := 0; i < typ.NumMethod(); i++ {
+		method := typ.Method(i)
+		if suiteMethod(method) != nil && method.Type.IsVariadic() {
+			methodNames = append(methodNames, method.Name)
+		}
+	}
+
+	return methodNames
+}
+
 // suitableMethods returns suitable Rpc methods of typ
 func suitableMethods(typ reflect.Type) (string, map[string]*MethodType) {
 	methods := make(map[string]*MethodType)
 	var mts []string
-	logger.Debugf("[%s] NumMethod is %d", typ.String(), typ.NumMethod())
+	logger.Debugf("[RPCService] NumMethod is %d, type=%s", typ.NumMethod(), typ.String())
 	method, ok := typ.MethodByName(METHOD_MAPPER)
 	var methodMapper map[string]string
 	if ok && method.Type.NumIn() == 1 && method.Type.NumOut() == 1 && method.Type.Out(0).String() == "map[string]string" {
@@ -387,14 +425,14 @@ func suiteMethod(method reflect.Method) *MethodType {
 	}
 
 	if outNum != 1 && outNum != 2 {
-		logger.Warnf("method %s of mtype %v has wrong number of in out parameters %d; needs exactly 1/2",
+		logger.Warnf("[RPCService] method %s of mtype %v has wrong number of in out parameters %d; needs exactly 1/2",
 			mname, mtype.String(), outNum)
 		return nil
 	}
 
 	// The latest return type of the method must be error.
 	if returnType := mtype.Out(outNum - 1); returnType != typeOfError {
-		logger.Debugf(`"%s" method will not be exported because its last return type %v doesn't have error`, mname, returnType)
+		logger.Debugf(`[RPCService] "%s" method will not be exported because its last return type %v doesn't have error`, mname, returnType)
 		return nil
 	}
 
@@ -402,7 +440,7 @@ func suiteMethod(method reflect.Method) *MethodType {
 	if outNum == 2 {
 		replyType = mtype.Out(0)
 		if !isExportedOrBuiltinType(replyType) {
-			logger.Errorf("reply type of method %s not exported{%v}", mname, replyType)
+			logger.Errorf("[RPCService] reply type of method %s not exported, type=%v", mname, replyType)
 			return nil
 		}
 	}
@@ -419,7 +457,7 @@ func suiteMethod(method reflect.Method) *MethodType {
 		argsType = append(argsType, mtype.In(index))
 		// need not be a pointer.
 		if !isExportedOrBuiltinType(mtype.In(index)) {
-			logger.Errorf("argument type of method %q is not exported %v", mname, mtype.In(index))
+			logger.Errorf("[RPCService] argument type of method %q is not exported, type=%v", mname, mtype.In(index))
 			return nil
 		}
 	}

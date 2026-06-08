@@ -78,20 +78,20 @@ const (
 func ParseArgumentsByExpression(key string, parameters []any) any {
 	index, key := resolveIndex(key)
 	if index == -1 || index >= len(parameters) {
-		logger.Errorf("[Parser][Polaris] invalid expression for : %s", key)
+		logger.Errorf("[Remoting][Polaris] invalid expression for : %s", key)
 		return nil
 	}
 
 	data, err := json.Marshal(parameters[index])
 	if err != nil {
-		logger.Errorf("[Parser][Polaris] marshal parameter %+v fail : %+v", parameters[index], err)
+		logger.Errorf("[Remoting][Polaris] marshal parameter %+v fail, err=%v", parameters[index], err)
 		return nil
 	}
 	var searchVal any
 	_ = json.Unmarshal(data, &searchVal)
 	res, err := jsonpath.JsonPathLookup(searchVal, key)
 	if err != nil {
-		logger.Errorf("[Parser][Polaris] invalid do json path lookup by key : %s, err : %+v", key, err)
+		logger.Errorf("[Remoting][Polaris] invalid do json path lookup, key=%s err=%v", key, err)
 	}
 
 	return res

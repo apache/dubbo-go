@@ -81,7 +81,7 @@ func NewServer() *Server {
 func (s *Server) handlePkg(conn net.Conn) {
 	defer func() {
 		if r := recover(); r != nil {
-			logger.Warnf("connection{local:%v, remote:%v} panic error:%#v, debug stack:%s",
+			logger.Warnf("[Jsonrpc][Server] connection panic, local=%v, remote=%v, err=%v, debug stack=%s",
 				conn.LocalAddr(), conn.RemoteAddr(), r, string(debug.Stack()))
 		}
 
@@ -95,7 +95,7 @@ func (s *Server) handlePkg(conn net.Conn) {
 		}
 
 		if err := conn.SetDeadline(t); err != nil {
-			logger.Error("connection.SetDeadline(t:%v) = error:%v", t, err)
+			logger.Errorf("[Jsonrpc][Server] connection.SetDeadline failed, t=%v, err=%v", t, err)
 		}
 	}
 
@@ -129,7 +129,7 @@ func (s *Server) handlePkg(conn net.Conn) {
 		}
 		r, err := http.ReadRequest(bufReader)
 		if err != nil {
-			logger.Warnf("[ReadRequest] error: %v", err)
+			logger.Warnf("[Jsonrpc][Server] read request failed, err=%v", err)
 			return
 		}
 
@@ -156,7 +156,7 @@ func (s *Server) handlePkg(conn net.Conn) {
 			setTimeout(conn, httpTimeout)
 			errMsg := "unsupported content type: " + contentType
 			if errRsp := sendErrorResp(r.Header, []byte(errMsg)); errRsp != nil {
-				logger.Warnf("sendErrorResp(header:%#v, error:%v) = error:%s",
+				logger.Warnf("[Jsonrpc][Server] sendErrorResp failed, header=%v, err_msg=%v, send_err=%v",
 					r.Header, errMsg, errRsp)
 			}
 			return
@@ -184,11 +184,11 @@ func (s *Server) handlePkg(conn net.Conn) {
 
 		if err := serveRequest(ctx, reqHeader, reqBody, conn); err != nil {
 			if errRsp := sendErrorResp(r.Header, []byte(perrors.WithStack(err).Error())); errRsp != nil {
-				logger.Warnf("sendErrorResp(header:%#v, error:%v) = error:%s",
+				logger.Warnf("[Jsonrpc][Server] sendErrorResp failed, header=%v, err=%v, send_err=%v",
 					r.Header, perrors.WithStack(err), errRsp)
 			}
 
-			logger.Infof("Unexpected error serving request, closing socket: %v", err)
+			logger.Infof("[Jsonrpc][Server] unexpected error serving request, closing socket, err=%v", err)
 			return
 		}
 	}
@@ -213,7 +213,7 @@ func accept(listener net.Listener, fn func(net.Conn)) error {
 				if tmpDelay > DefaultMaxSleepTime {
 					tmpDelay = DefaultMaxSleepTime
 				}
-				logger.Infof("http: Accept error: %v; retrying in %v\n", err, tmpDelay)
+				logger.Infof("[Jsonrpc][Server] http accept error, retrying, err=%v, retry_in=%v", err, tmpDelay)
 				time.Sleep(tmpDelay)
 				continue
 			}
@@ -226,7 +226,7 @@ func accept(listener net.Listener, fn func(net.Conn)) error {
 					const size = 64 << 10
 					buf := make([]byte, size)
 					buf = buf[:runtime.Stack(buf, false)]
-					logger.Errorf("http: panic serving %v: %v\n%s", c.RemoteAddr(), r, buf)
+					logger.Errorf("[Jsonrpc][Server] http panic serving, remote=%v, err=%v\n%s", c.RemoteAddr(), r, buf)
 					c.Close()
 				}
 			}()
@@ -240,15 +240,15 @@ func accept(listener net.Listener, fn func(net.Conn)) error {
 func (s *Server) Start(url *common.URL) {
 	listener, err := net.Listen("tcp", url.Location)
 	if err != nil {
-		logger.Errorf("jsonrpc server [%s] start failed: %v", url.Path, err)
+		logger.Errorf("[Jsonrpc][Server] jsonrpc server start failed, path=%s, err=%v", url.Path, err)
 		return
 	}
-	logger.Infof("rpc server start to listen on %s", listener.Addr())
+	logger.Infof("[Jsonrpc][Server] rpc server start to listen on %s", listener.Addr())
 
 	s.wg.Add(1)
 	go func() {
 		if err := accept(listener, func(conn net.Conn) { s.handlePkg(conn) }); err != nil {
-			logger.Error("accept() = error:%v", err)
+			logger.Errorf("[Jsonrpc][Server] accept failed, err=%v", err)
 		}
 		s.wg.Done()
 	}()
@@ -259,7 +259,7 @@ func (s *Server) Start(url *common.URL) {
 		<-s.done               // step1: block to wait for done channel(wait Server.Stop step2)
 		err = listener.Close() // step2: and then close listener
 		if err != nil {
-			logger.Warnf("listener{addr:%s}.Close() = error{%#v}", listener.Addr(), err)
+			logger.Warnf("[Jsonrpc][Server] listener close failed, addr=%s, err=%v", listener.Addr(), err)
 		}
 		s.wg.Done()
 	}()
@@ -347,10 +347,13 @@ func serveRequest(ctx context.Context, header map[string]string, body []byte, co
 	if err = codec.ReadBody(&args); err != nil {
 		return perrors.WithStack(err)
 	}
-	logger.Debugf("args: %v", args)
+	logger.Debugf("[Jsonrpc][Server] args=%v", args)
 
 	// exporter invoke
-	exporter, _ := jsonrpcProtocol.ExporterMap().Load(path)
+	exporter, ok := jsonrpcProtocol.ExporterMap().Load(path)
+	if !ok {
+		return perrors.Errorf("service not found: %s", path)
+	}
 	invoker := exporter.(*JsonrpcExporter).GetInvoker()
 	if invoker != nil {
 		result := invoker.Invoke(ctx, invocation.NewRPCInvocation(methodName, args, map[string]any{
@@ -363,7 +366,7 @@ func serveRequest(ctx context.Context, header map[string]string, body []byte, co
 				return perrors.WithStack(codecErr)
 			}
 			if errRsp := sendErrorResp(header, rspStream); errRsp != nil {
-				logger.Warnf("Exporter: sendErrorResp(header:%#v, error:%v) = error:%s",
+				logger.Warnf("[Jsonrpc][Server] sendErrorResp failed, header=%v, err=%v, send_err=%v",
 					header, err, errRsp)
 			}
 		} else {
@@ -373,7 +376,7 @@ func serveRequest(ctx context.Context, header map[string]string, body []byte, co
 				return perrors.WithStack(err)
 			}
 			if errRsp := sendResp(header, rspStream); errRsp != nil {
-				logger.Warnf("Exporter: sendResp(header:%#v, error:%v) = error:%s",
+				logger.Warnf("[Jsonrpc][Server] sendResp failed, header=%v, err=%v, send_err=%v",
 					header, err, errRsp)
 			}
 		}

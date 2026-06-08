@@ -21,6 +21,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"strings"
 	"sync"
 )
 
@@ -72,7 +74,7 @@ func (ti *TripleInvoker) Invoke(ctx context.Context, invocation base.Invocation)
 	if !ti.BaseInvoker.IsAvailable() {
 		// Generally, the case will not happen, because the invoker has been removed
 		// from the invoker list before destroy,so no new request will enter the destroyed invoker
-		logger.Warnf("TripleInvoker is destroyed")
+		logger.Warn("[Triple][Invoker] tripleInvoker is destroyed")
 		result.SetError(base.ErrDestroyedInvoker)
 		return &result
 	}
@@ -161,20 +163,28 @@ func mergeAttachmentToOutgoing(ctx context.Context, inv base.Invocation) (contex
 	if timeout, ok := inv.GetAttachment(constant.TimeoutKey); ok {
 		ctx = context.WithValue(ctx, tri.TimeoutKey{}, timeout)
 	}
+	header := cloneOutgoingHeader(tri.ExtractFromOutgoingContext(ctx))
 	for key, valRaw := range inv.Attachments() {
+		lowerKey := strings.ToLower(key)
 		if str, ok := valRaw.(string); ok {
-			ctx = tri.AppendToOutgoingContext(ctx, key, str)
+			header[lowerKey] = []string{str}
 			continue
 		}
 		if strs, ok := valRaw.([]string); ok {
-			for _, str := range strs {
-				ctx = tri.AppendToOutgoingContext(ctx, key, str)
-			}
+			header[lowerKey] = append([]string(nil), strs...)
 			continue
 		}
 		return ctx, fmt.Errorf("triple attachments value with key = %s is invalid, which should be string or []string", key)
 	}
-	return ctx, nil
+	return tri.NewOutgoingContext(ctx, header), nil
+}
+
+func cloneOutgoingHeader(header http.Header) http.Header {
+	cloned := make(http.Header, len(header))
+	for key, vals := range header {
+		cloned[strings.ToLower(key)] = append([]string(nil), vals...)
+	}
+	return cloned
 }
 
 // parseInvocation retrieves information from invocation.
@@ -202,18 +212,8 @@ func parseInvocation(ctx context.Context, url *common.URL, invocation base.Invoc
 	return callType, inRaw, method, nil
 }
 
-// parseAttachments retrieves attachments from users passed-in and URL, then injects them into ctx
+// parseAttachments injects pre-defined URL attachments into invocation.
 func parseAttachments(ctx context.Context, url *common.URL, invocation base.Invocation) {
-	// retrieve users passed-in attachment
-	attaRaw := ctx.Value(constant.AttachmentKey)
-	if attaRaw != nil {
-		if userAtta, ok := attaRaw.(map[string]any); ok {
-			for key, val := range userAtta {
-				invocation.SetAttachment(key, val)
-			}
-		}
-	}
-	// set pre-defined attachments
 	for _, key := range triAttachmentKeys {
 		if val := url.GetParam(key, ""); len(val) > 0 {
 			invocation.SetAttachment(key, val)
@@ -285,7 +285,7 @@ func (ti *TripleInvoker) startHealthWatch(handler gracefulshutdown.ClosingEventH
 	go func() {
 		stream, err := cm.callHealthWatch(ctx, ti.GetURL().ServiceKey())
 		if err != nil {
-			logger.Debugf("[TRIPLE Protocol] health watch start failed for %s: %v", ti.GetURL().String(), err)
+			logger.Debugf("[Triple][Invoker] health watch start failed for %s, err=%v", ti.GetURL().String(), err)
 			return
 		}
 
@@ -293,7 +293,7 @@ func (ti *TripleInvoker) startHealthWatch(handler gracefulshutdown.ClosingEventH
 			resp := new(grpc_health_v1.HealthCheckResponse)
 			if ok := stream.Receive(resp); !ok {
 				if ctx.Err() == nil {
-					logger.Debugf("[TRIPLE Protocol] health watch recv failed for %s: %v", ti.GetURL().String(), stream.Err())
+					logger.Debugf("[Triple][Invoker] health watch recv failed for %s, err=%v", ti.GetURL().String(), stream.Err())
 				}
 				return
 			}

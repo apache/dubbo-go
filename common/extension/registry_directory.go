@@ -63,7 +63,7 @@ func GetDirectoryInstance(url *common.URL, registry registry.Registry) (director
 	}
 	v, ok := directories.Get(key)
 	if !ok {
-		logger.Warn("registry directory " + key + " does not exist, make sure you have import the package, will use the default directory type.")
+		logger.Warnf("[RegistryDir] registry directory %s does not exist, make sure you have import the package, will use the default directory type", key)
 		return GetDefaultRegistryDirectory(url, registry)
 	}
 	return v(url, registry)

@@ -23,6 +23,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -466,4 +467,17 @@ func TestReferenceConfigInitWithoutConsumerConfig(t *testing.T) {
 	testRootConfig.Consumer = nil
 	err := NewReferenceConfigBuilder().Build().Init(testRootConfig)
 	assert.NoError(t, err)
+}
+
+func TestReferenceConfigInitInheritsConsumerRequestTimeout(t *testing.T) {
+	root := NewRootConfigBuilder().
+		SetApplication(NewApplicationConfigBuilder().SetName("test-app").Build()).
+		SetConsumer(NewConsumerConfigBuilder().SetRequestTimeout("5s").Build()).
+		Build()
+
+	ref := NewReferenceConfigBuilder().Build()
+	err := ref.Init(root)
+	require.NoError(t, err)
+	assert.Equal(t, "5s", ref.RequestTimeout)
+	assert.Equal(t, "5s", ref.getURLMap().Get(constant.TimeoutKey))
 }

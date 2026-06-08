@@ -128,7 +128,7 @@ func (l *CacheListener) DataChange(event remoting.Event) bool {
 			return listener.OnEvent(registry.NewServiceMappingChangedEvent(l.pathToKey(event.Path), set))
 		})
 		if err != nil {
-			logger.Error("Error notify mapping change event.", err)
+			logger.Errorf("[Metadata][Zookeeper] error notify mapping change event, err=%v", err)
 			return false
 		}
 		return true

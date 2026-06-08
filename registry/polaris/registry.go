@@ -105,7 +105,7 @@ func (pr *polarisRegistry) Register(url *common.URL) error {
 	}
 
 	if resp.Existed {
-		logger.Warnf("instance already regist, namespace:%+v, service:%+v, host:%+v, port:%+v",
+		logger.Warnf("[Registry][Polaris] instance already regist, namespace=%+v service=%+v host=%+v port=%+v",
 			request.Namespace, request.Service, request.Host, request.Port)
 	}
 	url.SetParam(constant.PolarisInstanceID, resp.InstanceID)
@@ -141,7 +141,7 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 		serviceName := url.Interface()
 		watcher, err := pr.createPolarisWatcher(serviceName)
 		if err != nil {
-			logger.Warnf("getwatcher() = err:%v", perrors.WithStack(err))
+			logger.Warnf("[Registry][Polaris] getwatcher() = err=%v", perrors.WithStack(err))
 			<-timer.C
 			timer.Reset(time.Duration(RegistryConnDelay) * time.Second)
 			continue
@@ -149,7 +149,7 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 
 		listener, err := NewPolarisListener(watcher)
 		if err != nil {
-			logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
+			logger.Warnf("[Registry][Polaris] getListener() = err=%v", perrors.WithStack(err))
 			<-timer.C
 			timer.Reset(time.Duration(RegistryConnDelay) * time.Second)
 			continue
@@ -159,11 +159,11 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 			serviceEvent, err := listener.Next()
 
 			if err != nil {
-				logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
+				logger.Warnf("[Registry][Polaris] Selector.watch() = err=%v", perrors.WithStack(err))
 				listener.Close()
 				return err
 			}
-			logger.Infof("update begin, service event: %v", serviceEvent.String())
+			logger.Infof("[Registry][Polaris] update begin, event=%v", serviceEvent.String())
 			notifyListener.Notify(serviceEvent)
 		}
 	}
@@ -231,9 +231,9 @@ func (pr *polarisRegistry) Destroy() {
 	for i := range pr.registryUrls {
 		url := pr.registryUrls[i]
 		err := pr.UnRegister(url)
-		logger.Infof("DeRegister Polaris URL:%+v", url)
+		logger.Infof("[Registry][Polaris] deRegister URL=%+v", url)
 		if err != nil {
-			logger.Errorf("Deregister Polaris URL:%+v err:%v", url, err.Error())
+			logger.Errorf("[Registry][Polaris] deRegister URL=%+v err=%v", url, err)
 		}
 	}
 }

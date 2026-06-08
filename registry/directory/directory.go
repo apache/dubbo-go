@@ -69,6 +69,7 @@ type RegistryDirectory struct {
 	cacheInvokersMap               *sync.Map // use sync.map
 	consumerURL                    *common.URL
 	cacheOriginUrl                 *common.URL
+	cachedProviderEvents           []*registry.ServiceEvent
 	configurators                  []config_center.Configurator
 	configuratorsLock              sync.RWMutex
 	consumerConfigurationListener  *consumerConfigurationListener
@@ -101,7 +102,7 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (director
 	if url.SubURL == nil {
 		return nil, perrors.Errorf("url is invalid, suburl can not be nil")
 	}
-	logger.Debugf("new RegistryDirectory for service :%s.", url.Key())
+	logger.Debugf("[Registry][Directory] new RegistryDirectory for service=%s", url.Key())
 
 	// TODO: Temporary compatibility with old APIs, can be removed later
 
@@ -166,7 +167,7 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (director
 	if routerChain, err := chain.NewRouterChain(url); err == nil {
 		dir.SetRouterChain(routerChain)
 	} else {
-		logger.Warnf("fail to create router chain with url: %s, err is: %v", url.SubURL, err)
+		logger.Warnf("[Registry][Directory] fail to create router chain, url=%s err=%v", url.SubURL, err)
 	}
 
 	dir.consumerConfigurationListener = newConsumerConfigurationListener(dir, url)
@@ -183,7 +184,7 @@ func NewRegistryDirectory(url *common.URL, registry registry.Registry) (director
 
 // subscribe from registry
 func (dir *RegistryDirectory) Subscribe(url *common.URL) error {
-	logger.Infof("Start subscribing for service :%s with a new go routine.", url.Key())
+	logger.Infof("[Registry][Directory] start subscribing for service=%s with a new go routine", url.Key())
 	dir.setSubscribedURL(url)
 
 	// Get the timeout time from the registration center configuration (default time 5s)
@@ -199,14 +200,14 @@ func (dir *RegistryDirectory) Subscribe(url *common.URL) error {
 
 	timeout, err := time.ParseDuration(timeoutStr)
 	if err != nil {
-		logger.Warnf("Invalid timeout value %s, using default %s", timeoutStr, constant.DefaultRegTimeout)
+		logger.Warnf("[Registry][Directory] invalid timeout value=%s, using default=%s", timeoutStr, constant.DefaultRegTimeout)
 		timeout, _ = time.ParseDuration(constant.DefaultRegTimeout)
 	}
 
 	serviceKey := url.Key()
 	go func() {
 		if err := dir.registry.Subscribe(url, dir); err != nil {
-			logger.Error("registry.Subscribe(url:%v, dir:%v) = error:%v", url, dir, err)
+			logger.Errorf("[Registry][Directory] registry.Subscribe(url=%v dir=%v) = err=%v", url, dir, err)
 		}
 	}()
 
@@ -216,7 +217,7 @@ func (dir *RegistryDirectory) Subscribe(url *common.URL) error {
 		return err
 	}
 
-	logger.Infof("register completed successfully for service: %s", serviceKey)
+	logger.Infof("[Registry][Directory] register completed successfully for service=%s", serviceKey)
 	return nil
 }
 
@@ -238,20 +239,20 @@ func (dir *RegistryDirectory) registerConsumerWithTimeout(url *common.URL, timeo
 			if registryURL != nil {
 				registryURLString = registryURL.String()
 			}
-			logger.Errorf("consumer service %v register registry %v error, error message is %v",
+			logger.Errorf("[Registry][Directory] consumer service %v register registry %v error, err=%v",
 				url.String(), registryURLString, err)
 			return err
 		}
 		return nil
 	case <-timer.C:
-		logger.Errorf("register timed out for service: %s", serviceKey)
+		logger.Errorf("[Registry][Directory] register timed out for service=%s", serviceKey)
 		go func() {
 			err := <-registerErrCh
 			if err != nil {
 				return
 			}
 			if unRegErr := dir.registry.UnRegister(urlToReg.Clone()); unRegErr != nil {
-				logger.Warnf("register timed out for service %s, but late unregister failed: %v", serviceKey, unRegErr)
+				logger.Warnf("[Registry][Directory] register timed out for service=%s, but late unregister failed, err=%v", serviceKey, unRegErr)
 			}
 		}()
 		return fmt.Errorf("register timed out for service: %s", serviceKey)
@@ -277,9 +278,9 @@ func (dir *RegistryDirectory) NotifyAll(events []*registry.ServiceEvent, callbac
 // refreshInvokers refreshes service's events.
 func (dir *RegistryDirectory) refreshInvokers(event *registry.ServiceEvent) {
 	if event != nil {
-		logger.Debugf("refresh invokers with %+v", event)
+		logger.Debugf("[Registry][Directory] refresh invokers with %+v", event)
 	} else {
-		logger.Debug("refresh invokers with nil")
+		logger.Debug("[Registry][Directory] refresh invokers with nil")
 	}
 
 	var oldInvoker []protocolbase.Invoker
@@ -298,18 +299,43 @@ func (dir *RegistryDirectory) refreshInvokers(event *registry.ServiceEvent) {
 // not in the incoming list can be removed.  The Action of serviceEvent should be EventTypeUpdate or EventTypeAdd.
 func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent, callback func()) {
 	var (
-		oldInvokers []protocolbase.Invoker
-		addEvents   []*registry.ServiceEvent
+		oldInvokers       []protocolbase.Invoker
+		incomingProviders []*registry.ServiceEvent
+		providerEvents    []*registry.ServiceEvent
+		configuratorURLs  []*common.URL
 	)
-	dir.overrideUrl(dir.GetDirectoryUrl())
-	referenceUrl := dir.GetDirectoryUrl().SubURL
-
-	// loop the events to check the Action should be EventTypeUpdate.
 	for _, event := range events {
 		if event.Action != remoting.EventTypeUpdate && event.Action != remoting.EventTypeAdd {
 			panic("Your implements of register center is wrong, " +
 				"please check the Action of ServiceEvent should be EventTypeUpdate")
 		}
+		if isConfiguratorURL(event.Service) {
+			configuratorURLs = append(configuratorURLs, event.Service)
+			continue
+		}
+		incomingProviders = append(incomingProviders, event)
+	}
+	if configuratorURLs != nil {
+		dir.replaceConfigurators(configuratorURLs)
+	}
+	defer callback()
+	if len(incomingProviders) > 0 {
+		providerEvents = incomingProviders
+		dir.cacheProviderEvents(providerEvents)
+	} else if len(events) > 0 {
+		providerEvents = dir.cachedProviderEventsSnapshot()
+	} else {
+		dir.cacheProviderEvents(nil)
+	}
+	if len(providerEvents) == 0 && len(events) > 0 {
+		return
+	}
+
+	dir.overrideUrl(dir.GetDirectoryUrl())
+	referenceUrl := dir.GetDirectoryUrl().SubURL
+
+	// loop the events to check the Action should be EventTypeUpdate.
+	for _, event := range providerEvents {
 		// Originally it will Merge URL many times, now we just execute once.
 		// MergeURL is executed once and put the result into Event. After this, the key will get from Event.Key().
 		newUrl := dir.convertUrl(event)
@@ -317,15 +343,13 @@ func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent
 		dir.overrideUrl(newUrl)
 		event.Update(newUrl)
 	}
-	// After notify all addresses, do some callback.
-	defer callback()
 	func() {
 		// this lock is work at batch update of InvokeCache
 		dir.registerLock.Lock()
 		defer dir.registerLock.Unlock()
 		// get need clear invokers from original invoker list
 		dir.cacheInvokersMap.Range(func(k, v any) bool {
-			if !dir.eventMatched(k.(string), events) {
+			if !dir.eventMatched(k.(string), providerEvents) {
 				// delete unused invoker from cache
 				if invoker := dir.uncacheInvokerWithKey(k.(string)); invoker != nil {
 					oldInvokers = append(oldInvokers, invoker)
@@ -333,18 +357,11 @@ func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent
 			}
 			return true
 		})
-		// get need add invokers from events
-		for _, event := range events {
-			// Get the key from Event.Key()
-			if _, ok := dir.cacheInvokersMap.Load(event.Key()); !ok {
-				addEvents = append(addEvents, event)
-			}
-		}
 		// loop the serviceEvents
-		for _, event := range addEvents {
-			logger.Debugf("[Registry Directory] registry changed, result{%s}", event)
+		for _, event := range providerEvents {
+			logger.Debugf("[Registry][Directory] registry changed, result{%s}", event)
 			if event != nil && event.Service != nil {
-				logger.Infof("[Registry Directory] selector add service url{%s}", event.Service.String())
+				logger.Infof("[Registry][Directory] selector add service url{%s}", event.Service.String())
 			}
 			if event != nil && event.Service != nil && constant.RouterProtocol == event.Service.Protocol {
 				dir.configRouters()
@@ -400,13 +417,16 @@ func (dir *RegistryDirectory) cacheInvokerByEvent(event *registry.ServiceEvent) 
 		switch event.Action {
 		case remoting.EventTypeAdd, remoting.EventTypeUpdate:
 			u := dir.convertUrl(event)
-			logger.Infof("[Registry Directory] selector add service url{%s}", event.Service)
+			if u == nil && dir.cacheOriginUrl == nil {
+				return nil, nil
+			}
+			logger.Infof("[Registry][Directory] selector add service url{%s}", event.Service)
 			if u != nil && constant.RouterProtocol == u.Protocol {
 				dir.configRouters()
 			}
 			return []protocolbase.Invoker{dir.cacheInvoker(u, event)}, nil
 		case remoting.EventTypeDel:
-			logger.Infof("[Registry Directory] selector delete service url{%s}", event.Service)
+			logger.Infof("[Registry][Directory] selector delete service url{%s}", event.Service)
 			return dir.uncacheInvoker(event), nil
 		default:
 			return nil, fmt.Errorf("illegal event type: %v", event.Action)
@@ -433,6 +453,51 @@ func (dir *RegistryDirectory) convertUrl(res *registry.ServiceEvent) *common.URL
 	return ret
 }
 
+func isConfiguratorURL(url *common.URL) bool {
+	return url != nil && (url.Protocol == constant.OverrideProtocol ||
+		url.GetParam(constant.CategoryKey, constant.DefaultCategory) == constant.ConfiguratorsCategory)
+}
+
+func (dir *RegistryDirectory) replaceConfigurators(urls []*common.URL) {
+	dir.configuratorsLock.Lock()
+	defer dir.configuratorsLock.Unlock()
+	dir.configurators = registry.ToConfigurators(urls, extension.GetDefaultConfiguratorFunc())
+}
+
+func (dir *RegistryDirectory) cacheProviderEvents(events []*registry.ServiceEvent) {
+	dir.registerLock.Lock()
+	defer dir.registerLock.Unlock()
+	dir.cachedProviderEvents = cloneServiceEvents(events)
+}
+
+func (dir *RegistryDirectory) cachedProviderEventsSnapshot() []*registry.ServiceEvent {
+	dir.registerLock.Lock()
+	defer dir.registerLock.Unlock()
+	return cloneServiceEvents(dir.cachedProviderEvents)
+}
+
+func cloneServiceEvents(events []*registry.ServiceEvent) []*registry.ServiceEvent {
+	if len(events) == 0 {
+		return nil
+	}
+
+	cloned := make([]*registry.ServiceEvent, 0, len(events))
+	for _, event := range events {
+		if event == nil {
+			continue
+		}
+		clonedEvent := &registry.ServiceEvent{
+			Action:  event.Action,
+			KeyFunc: event.KeyFunc,
+		}
+		if event.Service != nil {
+			clonedEvent.Service = event.Service.Clone()
+		}
+		cloned = append(cloned, clonedEvent)
+	}
+	return cloned
+}
+
 func (dir *RegistryDirectory) toGroupInvokers() []protocolbase.Invoker {
 	groupInvokersMap := make(map[string][]protocolbase.Invoker)
 
@@ -455,17 +520,17 @@ func (dir *RegistryDirectory) toGroupInvokers() []protocolbase.Invoker {
 			clusterKey := dir.GetURL().SubURL.GetParam(constant.ClusterKey, constant.DefaultCluster)
 			cluster, err := extension.GetCluster(clusterKey)
 			if err != nil {
-				logger.Errorf("directory get cluster %s error, error message is %w, will skip this group",
+				logger.Errorf("[Registry][Directory] directory get cluster %s error, err=%w, will skip this group",
 					clusterKey, err)
 				continue
 			}
 			if cluster == nil {
-				logger.Errorf("directory cluster is nil for key %s, will skip this group", clusterKey)
+				logger.Errorf("[Registry][Directory] directory cluster is nil for key %s, will skip this group", clusterKey)
 				continue
 			}
 			err = staticDir.BuildRouterChain(invokers, dir.GetURL())
 			if err != nil {
-				logger.Error(err)
+				logger.Errorf("[Registry][Directory] buildRouterChain error, err=%v", err)
 				continue
 			}
 			groupInvokersList = append(groupInvokersList, cluster.Join(staticDir))
@@ -476,7 +541,7 @@ func (dir *RegistryDirectory) toGroupInvokers() []protocolbase.Invoker {
 }
 
 func (dir *RegistryDirectory) uncacheInvokerWithClusterID(clusterID string) []protocolbase.Invoker {
-	logger.Debugf("All service will be deleted in cache invokers with clusterID %s!", clusterID)
+	logger.Debugf("[Registry][Directory] all service will be deleted in cache invokers with clusterID=%s", clusterID)
 	invokerKeys := make([]string, 0)
 	dir.cacheInvokersMap.Range(func(key, cacheInvoker any) bool {
 		if cacheInvoker.(protocolbase.Invoker).GetURL().GetParam(constant.MeshClusterIDKey, "") == clusterID {
@@ -502,7 +567,7 @@ func (dir *RegistryDirectory) uncacheInvoker(event *registry.ServiceEvent) []pro
 }
 
 func (dir *RegistryDirectory) uncacheInvokerWithKey(key string) protocolbase.Invoker {
-	logger.Debugf("service will be deleted in cache invokers: invokers key is  %s!", key)
+	logger.Debugf("[Registry][Directory] service will be deleted in cache invokers, key=%s", key)
 	protocolbase.RemoveUrlKeyUnhealthyStatus(key)
 	if cacheInvoker, ok := dir.cacheInvokersMap.Load(key); ok {
 		dir.cacheInvokersMap.Delete(key)
@@ -602,7 +667,7 @@ func (dir *RegistryDirectory) cacheInvoker(url *common.URL, event *registry.Serv
 		dir.cacheOriginUrl = url
 	}
 	if url == nil {
-		logger.Error("URL is nil ,pls check if service url is subscribe successfully!")
+		logger.Error("[Registry][Directory] url is nil, pls check if service url is subscribe successfully")
 		return nil
 	}
 	// check the url's protocol is equal to the protocol which is configured in reference config or referenceUrl is not care about protocol
@@ -621,16 +686,16 @@ func (dir *RegistryDirectory) doCacheInvoker(newUrl *common.URL, event *registry
 	key := event.Key()
 	dir.cleanupExpiredClosingTombstones()
 	if dir.hasActiveClosingTombstone(key) {
-		logger.Infof("[Registry Directory] skip rebuilding closing instance due to tombstone, instance key: %s", key)
+		logger.Infof("[Registry][Directory] skip rebuilding closing instance due to tombstone, instance key: %s", key)
 		return nil, true
 	}
 	if cacheInvoker, ok := dir.cacheInvokersMap.Load(key); !ok {
-		logger.Debugf("service will be added in cache invokers: invokers url is  %s!", newUrl)
+		logger.Debugf("[Registry][Directory] service will be added in cache invokers, url=%s", newUrl)
 		newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(newUrl)
 		if newInvoker != nil {
 			dir.cacheInvokersMap.Store(key, newInvoker)
 		} else {
-			logger.Warnf("service will be added in cache invokers fail, result is null, invokers url is %+v", newUrl.String())
+			logger.Warnf("[Registry][Directory] service will be added in cache invokers fail, result is null, url=%s", newUrl.String())
 		}
 	} else {
 		metrics.Publish(metricsRegistry.NewDirectoryEvent(metricsRegistry.NumValidTotal))
@@ -640,13 +705,13 @@ func (dir *RegistryDirectory) doCacheInvoker(newUrl *common.URL, event *registry
 			return nil, true
 		}
 
-		logger.Debugf("service will be updated in cache invokers: new invoker url is %s, old invoker url is %s", newUrl, cacheInvoker.(protocolbase.Invoker).GetURL())
+		logger.Debugf("[Registry][Directory] service will be updated in cache invokers, newUrl=%s oldUrl=%s", newUrl, cacheInvoker.(protocolbase.Invoker).GetURL())
 		newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(newUrl)
 		if newInvoker != nil {
 			dir.cacheInvokersMap.Store(key, newInvoker)
 			return cacheInvoker.(protocolbase.Invoker), true
 		} else {
-			logger.Warnf("service will be updated in cache invokers fail, result is null, invokers url is %+v", newUrl.String())
+			logger.Warnf("[Registry][Directory] service will be updated in cache invokers fail, result is null, url=%s", newUrl.String())
 		}
 	}
 	return nil, false
@@ -687,14 +752,14 @@ func (dir *RegistryDirectory) Destroy() {
 		if registeredURL != nil {
 			err := dir.registry.UnRegister(registeredURL)
 			if err != nil {
-				logger.Warnf("Unregister consumer url failed, %s, error: %v", registeredURL.String(), err)
+				logger.Warnf("[Registry][Directory] unregister consumer url failed, url=%s err=%v", registeredURL.String(), err)
 			}
 		}
 
 		if subscribedURL != nil {
 			err := dir.registry.UnSubscribe(subscribedURL, dir)
 			if err != nil {
-				logger.Warnf("Unsubscribe consumer url failed, %s, error: %v", subscribedURL.String(), err)
+				logger.Warnf("[Registry][Directory] unsubscribe consumer url failed, url=%s err=%v", subscribedURL.String(), err)
 			}
 		}
 
@@ -702,6 +767,13 @@ func (dir *RegistryDirectory) Destroy() {
 		for _, ivk := range invokers {
 			ivk.Destroy()
 		}
+		dir.cacheInvokersMap.Range(func(key, value any) bool {
+			dir.cacheInvokersMap.Delete(key)
+			return true
+		})
+		dir.registerLock.Lock()
+		dir.cachedProviderEvents = nil
+		dir.registerLock.Unlock()
 	})
 	metrics.Publish(metricsRegistry.NewDirectoryEvent(metricsRegistry.NumAllDec))
 }
@@ -875,14 +947,14 @@ func NewServiceDiscoveryRegistryDirectory(url *common.URL, registry registry.Reg
 // Subscribe do subscribe from registry
 func (dir *ServiceDiscoveryRegistryDirectory) Subscribe(url *common.URL) error {
 	if err := dir.registry.Subscribe(url, dir); err != nil {
-		logger.Error("registry.Subscribe(url:%v, dir:%v) = error:%v", url, dir, err)
+		logger.Errorf("[Registry][Directory] registry.Subscribe(url=%v dir=%v) = err=%v", url, dir, err)
 		return err
 	}
 
 	urlToReg := getConsumerUrlToRegistry(url)
 	err := dir.registry.Register(urlToReg)
 	if err != nil {
-		logger.Errorf("consumer service %v register registry %v error, error message is %v",
+		logger.Errorf("[Registry][Directory] consumer service %v register registry %v error, err=%v",
 			url.String(), dir.registry.GetURL().String(), err)
 		return err
 	}

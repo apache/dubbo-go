@@ -48,7 +48,7 @@ func (je *JsonrpcExporter) UnExport() {
 	interfaceName := je.GetInvoker().GetURL().GetParam(constant.InterfaceKey, "")
 	err := common.ServiceMap.UnRegister(interfaceName, JSONRPC, je.GetInvoker().GetURL().ServiceKey())
 	if err != nil {
-		logger.Errorf("[JsonrpcExporter.UnExport] error: %v", err)
+		logger.Errorf("[Jsonrpc][Exporter] unexport failed, err=%v", err)
 	}
 	je.BaseExporter.UnExport()
 }

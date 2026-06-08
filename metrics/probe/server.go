@@ -93,14 +93,14 @@ func Init(cfg *Config) {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 			if err := srv.Shutdown(ctx); err != nil {
-				logger.Errorf("[kubernetes probe] probe server shutdown failed: %v", err)
+				logger.Errorf("[Metrics][Probe] probe server shutdown failed, err=%v", err)
 			}
 		})
 
 		go func() {
-			logger.Infof("[kubernetes probe] probe server listening on :%s", cfg.Port)
+			logger.Infof("[Metrics][Probe] probe server listening on :%s", cfg.Port)
 			if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-				logger.Errorf("[kubernetes probe] probe server stopped with error: %v", err)
+				logger.Errorf("[Metrics][Probe] probe server stopped with err=%v", err)
 			}
 		}()
 	})
@@ -117,7 +117,7 @@ func BuildProbeConfig(probeCfg *global.ProbeConfig) *Config {
 	if port == "" {
 		port = constant.ProbeDefaultPort
 	} else if p, err := strconv.Atoi(port); p < 1 || p > 65535 || err != nil {
-		logger.Error("[kubernetes probe] unsupported probe server port, set to default ", constant.ProbeDefaultPort)
+		logger.Errorf("[Metrics][Probe] unsupported probe server port, set to default %s", constant.ProbeDefaultPort)
 	}
 
 	livenessPath := probeCfg.LivenessPath
