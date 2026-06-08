@@ -15,5 +15,18 @@
  * limitations under the License.
  */
 
-// Package config_center provides Config Center definition and implementations for listening service governance rules.
+// Package config_center provides Config Center definition and implementations
+// for listening service governance rules.
+//
+// When a config center is enabled, Dubbo-go subscribes to dynamic governance
+// rule keys for both application-level and service-level configuration. These
+// keys use the configured application or service key plus the configurators
+// suffix. For example, an application named "dubbo.io" may subscribe to
+// "dubbo.io.configurators", and a service interface named "dubbo.model" may
+// subscribe to "dubbo.model.configurators".
+//
+// These governance rules are optional. If the config center reports that such
+// a key does not exist, it means no dynamic override rule has been configured
+// for that application or service. The absence of these optional keys should
+// not be treated as an application startup failure.
 package config_center
