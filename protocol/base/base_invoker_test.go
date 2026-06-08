@@ -113,6 +113,21 @@ func TestBaseInvokerMultipleDestroy(t *testing.T) {
 	assert.False(t, ivk.IsAvailable())
 }
 
+func TestBaseInvokerDestroyClearsURLAttributes(t *testing.T) {
+	url, err := common.NewURL("dubbo://localhost:9090")
+	require.NoError(t, err)
+	url.SetAttribute("key1", "value1")
+	url.SetAttribute("key2", 123)
+
+	ivk := NewBaseInvoker(url)
+	ivk.Destroy()
+
+	_, ok := url.GetAttribute("key1")
+	assert.False(t, ok)
+	_, ok = url.GetAttribute("key2")
+	assert.False(t, ok)
+}
+
 func TestBaseInvokerStringWithDifferentURLs(t *testing.T) {
 	tests := []struct {
 		name     string

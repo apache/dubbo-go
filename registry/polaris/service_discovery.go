@@ -105,9 +105,9 @@ type polarisServiceDiscovery struct {
 func (polaris *polarisServiceDiscovery) Destroy() error {
 	for _, inst := range polaris.registryInstances {
 		err := polaris.Unregister(inst.instance)
-		logger.Infof("Unregister polaris instance:%+v", inst)
+		logger.Infof("[Registry][Polaris] unRegister instance=%+v", inst)
 		if err != nil {
-			logger.Errorf("Unregister polaris instance:%+v, err:%+v", inst, err)
+			logger.Errorf("[Registry][Polaris] unRegister instance=%+v, err=%+v", inst, err)
 		}
 	}
 	polaris.provider.Destroy()
@@ -125,7 +125,7 @@ func (polaris *polarisServiceDiscovery) Register(instance registry.ServiceInstan
 	}
 
 	if resp.Existed {
-		logger.Warnf("instance already regist, namespace:%+v, service:%+v, host:%+v, port:%+v",
+		logger.Warnf("[Registry][Polaris] instance already regist, namespace=%+v service=%+v host=%+v port=%+v",
 			polaris.namespace, instance.GetServiceName(), instance.GetHost(), instance.GetPort())
 	}
 
@@ -187,7 +187,7 @@ func (polaris *polarisServiceDiscovery) GetInstances(serviceName string) []regis
 	})
 
 	if err != nil {
-		logger.Errorf("Could not query the instances for service: %+v . It happened err %+v", serviceName, err)
+		logger.Errorf("[Registry][Polaris] could not query the instances for service, service=%+v err=%v", serviceName, err)
 		return make([]registry.ServiceInstance, 0)
 	}
 	res := make([]registry.ServiceInstance, 0, len(resp.Instances))

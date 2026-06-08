@@ -69,7 +69,7 @@ func getGeneralizer(generic string) (g generalizer.Generalizer) {
 	case strings.EqualFold(generic, constant.GenericSerializationBean):
 		g = generalizer.GetBeanGeneralizer()
 	default:
-		logger.Debugf("\"%s\" is not supported, use the default generalizer(MapGeneralizer)", generic)
+		logger.Debugf("[Filter][Generic] generic type not supported, use the default generalizer, generic=%s", generic)
 		g = generalizer.GetMapGeneralizer()
 	}
 	return

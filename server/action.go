@@ -131,11 +131,11 @@ func (svcOpts *ServiceOptions) Export() error {
 	// TODO: delay needExport
 	if svcOpts.unexported != nil && svcOpts.unexported.Load() {
 		err := perrors.Errorf("The service %v has already unexported!", svcConf.Interface)
-		logger.Errorf(err.Error())
+		logger.Errorf("[Server] the service %v has already unexported", svcConf.Interface)
 		return err
 	}
 	if svcOpts.exported != nil && svcOpts.exported.Load() {
-		logger.Warnf("The service %v has already exported!", svcConf.Interface)
+		logger.Warnf("[Server] the service %v has already exported", svcConf.Interface)
 		return nil
 	}
 
@@ -151,7 +151,7 @@ func (svcOpts *ServiceOptions) Export() error {
 	urlMap := svcOpts.getUrlMap()
 	protocolConfigs := loadProtocol(svcConf.ProtocolIDs, svcOpts.Protocols)
 	if len(protocolConfigs) == 0 {
-		logger.Warnf("The service %v'svcOpts '%v' protocols don't has right protocolConfigs, Please check your configuration center and transfer protocol ", svcConf.Interface, svcConf.ProtocolIDs)
+		logger.Warnf("[Server] the service %v'svcOpts '%v' protocols don't has right protocolConfigs, please check your configuration center and transfer protocol", svcConf.Interface, svcConf.ProtocolIDs)
 		return nil
 	}
 
@@ -168,7 +168,7 @@ func (svcOpts *ServiceOptions) Export() error {
 		if err != nil {
 			formatErr := perrors.Errorf("The service %v needExport the protocol %v error! Error message is %v.",
 				svcConf.Interface, protocolConf.Name, err.Error())
-			logger.Errorf(formatErr.Error())
+			logger.Errorf("[Server] failed to validate protocol, err=%v", formatErr)
 			return formatErr
 		}
 
@@ -245,7 +245,7 @@ func (svcOpts *ServiceOptions) Export() error {
 		if len(regUrls) > 0 {
 			svcOpts.cacheMutex.Lock()
 			if svcOpts.cacheProtocol == nil {
-				logger.Debugf(fmt.Sprintf("First load the registry protocol, url is {%v}!", ivkURL))
+				logger.Debugf("[Server] first load the registry protocol, url=%v", ivkURL)
 				svcOpts.cacheProtocol = extension.GetProtocol(constant.RegistryProtocol)
 			}
 			svcOpts.cacheMutex.Unlock()

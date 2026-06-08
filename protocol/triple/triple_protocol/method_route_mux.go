@@ -33,8 +33,9 @@ import (
 type methodRouteMux struct {
 	exact *http.ServeMux
 
-	mu    sync.RWMutex
-	lower map[string]methodRouteEntry
+	mu       sync.RWMutex
+	lower    map[string]methodRouteEntry
+	fallback http.Handler
 }
 
 type methodRouteEntry struct {
@@ -92,7 +93,21 @@ func (m *methodRouteMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	m.mu.RLock()
+	fallback := m.fallback
+	m.mu.RUnlock()
+	if fallback != nil {
+		fallback.ServeHTTP(w, r)
+		return
+	}
+
 	http.NotFound(w, r)
+}
+
+func (m *methodRouteMux) SetFallbackHandler(handler http.Handler) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.fallback = handler
 }
 
 func normalizeMethodRouteKey(path string) string {

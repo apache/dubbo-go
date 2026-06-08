@@ -65,7 +65,7 @@ func (m *metadataServiceURLParamsMetadataCustomizer) Customize(instance registry
 	ps := m.convertToParams(url)
 	str, err := json.Marshal(ps)
 	if err != nil {
-		logger.Errorf("could not transfer the map to json", err)
+		logger.Errorf("[Registry][ServiceDiscovery] could not transfer the map to json, err=%v", err)
 		return
 	}
 	instance.GetMetadata()[constant.MetadataServiceURLParamsPropertyName] = string(str)

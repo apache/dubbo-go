@@ -117,6 +117,9 @@ func (rc *ReferenceConfig) Init(root *RootConfig) error {
 		if rc.Protocol == "" {
 			rc.Protocol = root.Consumer.Protocol
 		}
+		if rc.RequestTimeout == "" && root.Consumer.RequestTimeout != "" {
+			rc.RequestTimeout = root.Consumer.RequestTimeout
+		}
 		if rc.TracingKey == "" {
 			rc.TracingKey = root.Consumer.TracingKey
 		}

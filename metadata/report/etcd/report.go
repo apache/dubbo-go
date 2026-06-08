@@ -133,7 +133,7 @@ func (e *etcdMetadataReportFactory) CreateMetadataReport(url *common.URL) report
 	addresses := strings.Split(url.Location, ",")
 	client, err := gxetcd.NewClient(gxetcd.MetadataETCDV3Client, addresses, timeout, 1)
 	if err != nil {
-		logger.Errorf("Could not create etcd metadata report. URL: %s,error:{%v}", url.String(), err)
+		logger.Errorf("[Metadata][Etcd] could not create etcd metadata report, url=%s, err=%v", url.String(), err)
 		return nil
 	}
 	group := url.GetParam(constant.MetadataReportGroupKey, DEFAULT_ROOT)

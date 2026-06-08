@@ -112,7 +112,7 @@ func (f *executeLimitFilter) Invoke(ctx context.Context, invoker base.Invoker, i
 
 	limitRate, err := strconv.ParseInt(limitRateConfig, 0, 0)
 	if err != nil {
-		logger.Errorf("The configuration of execute.limit is invalid: %s", limitRateConfig)
+		logger.Errorf("[Filter][ExecLimit] the configuration of execute.limit is invalid, limitRateConfig=%s", limitRateConfig)
 		return &result.RPCResult{}
 	}
 
@@ -127,12 +127,12 @@ func (f *executeLimitFilter) Invoke(ctx context.Context, invoker base.Invoker, i
 	concurrentCount := state.(*ExecuteState).increase()
 	defer state.(*ExecuteState).decrease()
 	if concurrentCount > limitRate {
-		logger.Errorf("The invocation was rejected due to over the execute limitation, url: %s ", ivkURL.String())
+		logger.Errorf("[Filter][ExecLimit] the invocation was rejected due to over the execute limitation, url=%s", ivkURL.String())
 		rejectedHandlerConfig := ivkURL.GetParam(methodConfigPrefix+constant.ExecuteRejectedExecutionHandlerKey,
 			ivkURL.GetParam(constant.ExecuteRejectedExecutionHandlerKey, constant.DefaultKey))
 		rejectedExecutionHandler, err := extension.GetRejectedExecutionHandler(rejectedHandlerConfig)
 		if err != nil {
-			logger.Warn(err)
+			logger.Warnf("[Filter][ExecLimit] get rejected execution handler failed, err=%v", err)
 		} else {
 			return rejectedExecutionHandler.RejectedExecution(ivkURL, invocation)
 		}

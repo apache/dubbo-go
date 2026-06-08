@@ -85,7 +85,7 @@ func RegisterGracefulShutdownCallback(name string, f GracefulShutdownCallback) {
 	defer gracefulShutdownCallbacksMu.Unlock()
 
 	if _, exists := gracefulShutdownCallbacks[name]; exists {
-		logger.Warnf("graceful shutdown callback %q already registered, duplicate registration ignored", name)
+		logger.Warnf("[GracefulShutdown] graceful shutdown callback %q already registered, duplicate registration ignored", name)
 		return
 	}
 

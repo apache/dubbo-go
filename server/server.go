@@ -20,6 +20,8 @@ package server
 
 import (
 	"context"
+	stderrors "errors"
+	"net/http"
 	"reflect"
 	"sort"
 	"strconv"
@@ -36,6 +38,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/dubboutil"
+	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/metrics/probe"
 	"dubbo.apache.org/dubbo-go/v3/registry/exposed_tmp"
@@ -57,6 +60,8 @@ type Server struct {
 	interfaceNameServices map[string]*ServiceOptions
 	// indicate whether the server is already started
 	serve bool
+
+	attachedHTTPHandler http.Handler
 }
 
 // ServiceInfo Deprecated： common.ServiceInfo type alias, just for compatible with old generate pb.go file
@@ -113,7 +118,7 @@ func (s *Server) genSvcOpts(handler any, info *common.ServiceInfo, opts ...Servi
 	// todo(DMwangnima): record the registered service
 	// Record the registered service for debugging and monitoring
 	interfaceName := common.GetReference(handler)
-	logger.Infof("Registering service: %s", interfaceName)
+	logger.Infof("[Server] registering service=%s", interfaceName)
 
 	newSvcOpts := defaultServiceOptions()
 	if appCfg != nil {
@@ -154,12 +159,12 @@ func (s *Server) genSvcOpts(handler any, info *common.ServiceInfo, opts ...Servi
 			svcOpts = append(svcOpts,
 				SetService(svcCfg),
 			)
-			logger.Infof("Injected options from provider.services for %s", interfaceName)
+			logger.Infof("[Server] injected options from provider.services for %s", interfaceName)
 		} else {
 			// Only warn if there are actually services configured but none match
 			// This avoids unnecessary warnings when using new server API without config files
 			if len(proCfg.Services) > 0 {
-				logger.Warnf("No matching service config found for [%s]", interfaceName)
+				logger.Warnf("[Server] no matching service config found for [%s]", interfaceName)
 			}
 		}
 	}
@@ -178,7 +183,17 @@ func (s *Server) genSvcOpts(handler any, info *common.ServiceInfo, opts ...Servi
 	newSvcOpts.Id = interfaceName
 	newSvcOpts.Implement(handler)
 	newSvcOpts.info = enhanceServiceInfo(info)
+	// Warn on exported variadic RPC methods without blocking registration.
+	common.WarnVariadicRPCMethods(serviceNameForWarning(interfaceName, svcConf.Interface), handler)
 	return newSvcOpts, nil
+}
+
+// serviceNameForWarning prefers the configured interface name in warning output.
+func serviceNameForWarning(reference, configuredInterface string) string {
+	if configuredInterface != "" {
+		return configuredInterface
+	}
+	return reference
 }
 
 // isNillable checks if a reflect.Value's kind supports nil checking.
@@ -301,13 +316,15 @@ func enhanceServiceInfo(info *common.ServiceInfo) *common.ServiceInfo {
 	return info
 }
 
-func (s *Server) exportServices() error {
-	// add read lock to protect svcOptsMap data
+func (s *Server) exportServices(ctx context.Context) error {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	for _, svcOpts := range s.svcOptsMap {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 		if err := svcOpts.Export(); err != nil {
-			logger.Errorf("export %s service failed, err: %s", svcOpts.Service.Interface, err)
+			logger.Errorf("[Server] export %s service failed, err=%s", svcOpts.Service.Interface, err)
 			return errors.Wrapf(err, "failed to export service %s", svcOpts.Service.Interface)
 		}
 	}
@@ -315,6 +332,20 @@ func (s *Server) exportServices() error {
 }
 
 func (s *Server) Serve() error {
+	return s.ServeContext(context.Background())
+}
+
+func (s *Server) ServeContext(ctx context.Context) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if graceful_shutdown.IsDone() {
+		return errors.New("server cannot be started after graceful shutdown completed")
+	}
+
 	s.mu.Lock()
 	if s.serve {
 		// release lock in case causing deadlock
@@ -326,6 +357,13 @@ func (s *Server) Serve() error {
 
 	// release lock in case causing deadlock
 	s.mu.Unlock()
+	defer func() {
+		s.mu.Lock()
+		s.serve = false
+		s.mu.Unlock()
+	}()
+
+	serviceInstanceRegistered := false
 
 	// the registryConfig in ServiceOptions and ServerOptions all need to init a metadataReporter,
 	// when ServiceOptions.init() is called we don't know if a new registry config is set in the future use serviceOption
@@ -341,26 +379,88 @@ func (s *Server) Serve() error {
 	if err := metadataOpts.Init(); err != nil {
 		return err
 	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 
-	if err := s.exportServices(); err != nil {
-		return err
+	if err := s.exportServices(ctx); err != nil {
+		return s.rollbackServeStartWithCause(err, serviceInstanceRegistered)
 	}
-	if err := s.exportInternalServices(); err != nil {
-		return err
+	if err := s.exportInternalServices(ctx); err != nil {
+		return s.rollbackServeStartWithCause(err, serviceInstanceRegistered)
 	}
-	if err := exposed_tmp.RegisterServiceInstance(); err != nil {
-		return err
+	if err := exposed_tmp.RegisterServiceInstanceContext(ctx); err != nil {
+		return s.rollbackServeStartWithCause(err, serviceInstanceRegistered)
+	}
+	serviceInstanceRegistered = true
+	if err := s.hostAttachedHTTPHandler(); err != nil {
+		return s.rollbackServeStartWithCause(err, serviceInstanceRegistered)
 	}
 
 	// k8s probe ready
 	probe.SetStartupComplete(true)
 	probe.SetReady(true)
+	if err := ctx.Err(); err != nil {
+		return s.rollbackServeStartWithCause(err, serviceInstanceRegistered)
+	}
 
-	select {}
+	if done := ctx.Done(); done != nil {
+		select {
+		case <-graceful_shutdown.Done():
+			return graceful_shutdown.Shutdown(context.Background())
+		case <-done:
+			return graceful_shutdown.Shutdown(ctx)
+		}
+	}
+
+	<-graceful_shutdown.Done()
+	return graceful_shutdown.Shutdown(context.Background())
+}
+
+func (s *Server) rollbackServeStartWithCause(cause error, serviceInstanceRegistered bool) error {
+	if rollbackErr := s.rollbackServeStart(serviceInstanceRegistered); rollbackErr != nil {
+		return stderrors.Join(cause, errors.Wrap(rollbackErr, "startup rollback failed"))
+	}
+	return cause
+}
+
+func (s *Server) rollbackServeStart(serviceInstanceRegistered bool) error {
+	probe.SetReady(false)
+	probe.SetStartupComplete(false)
+
+	s.unexportInternalServices()
+	s.unexportServices()
+
+	if serviceInstanceRegistered {
+		if err := exposed_tmp.UnregisterServiceInstance(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Server) unexportServices() {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	for _, svcOpts := range s.svcOptsMap {
+		if svcOpts != nil {
+			svcOpts.Unexport()
+		}
+	}
+}
+
+func (s *Server) unexportInternalServices() {
+	internalProLock.Lock()
+	defer internalProLock.Unlock()
+	for _, service := range internalProServices {
+		if service != nil && service.svcOpts != nil {
+			service.svcOpts.Unexport()
+		}
+	}
 }
 
 // In order to expose internal services
-func (s *Server) exportInternalServices() error {
+func (s *Server) exportInternalServices(ctx context.Context) error {
 	cfg := &ServiceOptions{}
 
 	cfg.Application = s.cfg.Application
@@ -373,12 +473,15 @@ func (s *Server) exportInternalServices() error {
 	internalProLock.Lock()
 	defer internalProLock.Unlock()
 	for _, service := range internalProServices {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		if service.Init == nil {
 			return errors.New("[internal service]internal service init func is empty, please set the init func correctly")
 		}
 		sd, ok := service.Init(cfg)
 		if !ok {
-			logger.Infof("[internal service]%s service will not expose", service.Name)
+			logger.Infof("[Server] %s internal service will not expose", service.Name)
 			continue
 		}
 		newSvcOpts, err := s.genSvcOpts(sd.Handler, sd.Info, sd.Opts...)
@@ -395,6 +498,9 @@ func (s *Server) exportInternalServices() error {
 	})
 
 	for _, service := range services {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		if service.BeforeExport != nil {
 			service.BeforeExport(service.svcOpts)
 		}
@@ -403,7 +509,7 @@ func (s *Server) exportInternalServices() error {
 			service.AfterExport(service.svcOpts, err)
 		}
 		if err != nil {
-			logger.Errorf("[internal service]export %s service failed, err: %s", service.Name, err)
+			logger.Errorf("[Server] export %s internal service failed, err=%s", service.Name, err)
 			return err
 		}
 	}
@@ -447,7 +553,7 @@ func getMetadataPort(opts *ServerOptions) int {
 	}
 	p, err := strconv.Atoi(port)
 	if err != nil {
-		logger.Error("MetadataService port parse error %v, MetadataService will use random port", err)
+		logger.Errorf("[Server] metadataService port parse error, err=%v, MetadataService will use random port", err)
 		return 0
 	}
 	return p
@@ -469,7 +575,7 @@ func NewServer(opts ...ServerOption) (*Server, error) {
 
 func SetProviderServices(sd *InternalService) {
 	if sd.Name == "" {
-		logger.Warnf("[internal service]internal name is empty, please set internal name")
+		logger.Warn("[Server] internal name is empty, please set internal name")
 		return
 	}
 	internalProLock.Lock()
@@ -480,7 +586,7 @@ func SetProviderServices(sd *InternalService) {
 func (s *Server) registerServiceOptions(serviceOptions *ServiceOptions) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	logger.Infof("A provider service %s was registered successfully.", serviceOptions.Id)
+	logger.Infof("[Server] a provider service %s was registered successfully", serviceOptions.Id)
 	s.svcOptsMap[serviceOptions.Id] = serviceOptions
 	if serviceOptions.Service != nil && serviceOptions.Service.Interface != "" {
 		s.interfaceNameServices[serviceOptions.Service.Interface] = serviceOptions
