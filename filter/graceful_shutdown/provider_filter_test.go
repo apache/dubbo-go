@@ -34,6 +34,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
@@ -86,6 +87,15 @@ func TestProviderFilterOnResponseDoesNotDecrementRejectedRequest(t *testing.T) {
 	providerFilter.OnResponse(context.Background(), res, base.NewBaseInvoker(baseURL), rpcInvocation)
 
 	assert.Equal(t, int32(0), opt.Shutdown.ProviderActiveCount.Load())
+}
+
+func TestProviderFilterAcceptsConfigPackageShutdownConfigAlias(t *testing.T) {
+	providerFilter := &providerGracefulShutdownFilter{}
+	shutdownConfig := config.NewShutDownConfigBuilder().Build()
+
+	providerFilter.Set(constant.GracefulShutdownFilterShutdownConfig, shutdownConfig)
+
+	assert.Same(t, shutdownConfig, providerFilter.shutdownConfig)
 }
 
 type TestRejectedExecutionHandler struct{}

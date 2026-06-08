@@ -18,9 +18,27 @@
 package global
 
 import (
+	"time"
+)
+
+import (
 	"github.com/creasty/defaults"
 
+	"github.com/dubbogo/gost/log/logger"
+
 	"go.uber.org/atomic"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+)
+
+const (
+	defaultShutdownTimeout                     = 60 * time.Second
+	defaultShutdownStepTimeout                 = 3 * time.Second
+	defaultShutdownNotifyTimeout               = 5 * time.Second
+	defaultShutdownConsumerUpdateWaitTime      = 3 * time.Second
+	defaultShutdownOfflineRequestWindowTimeout = 3 * time.Second
 )
 
 // ShutdownConfig is used as configuration for graceful shutdown
@@ -80,6 +98,72 @@ func DefaultShutdownConfig() *ShutdownConfig {
 	defaults.MustSet(cfg)
 
 	return cfg
+}
+
+// Prefix dubbo.shutdown
+func (c *ShutdownConfig) Prefix() string {
+	return constant.ShutdownConfigPrefix
+}
+
+func (c *ShutdownConfig) GetTimeout() time.Duration {
+	result, err := time.ParseDuration(c.Timeout)
+	if err != nil {
+		logger.Errorf("The Timeout configuration is invalid: %s, and we will use the default value: %s, err: %v",
+			c.Timeout, defaultShutdownTimeout.String(), err)
+		return defaultShutdownTimeout
+	}
+	return result
+}
+
+func (c *ShutdownConfig) GetStepTimeout() time.Duration {
+	result, err := time.ParseDuration(c.StepTimeout)
+	if err != nil {
+		logger.Errorf("The StepTimeout configuration is invalid: %s, and we will use the default value: %s, err: %v",
+			c.StepTimeout, defaultShutdownStepTimeout.String(), err)
+		return defaultShutdownStepTimeout
+	}
+	return result
+}
+
+func (c *ShutdownConfig) GetNotifyTimeout() time.Duration {
+	result, err := time.ParseDuration(c.NotifyTimeout)
+	if err != nil {
+		logger.Errorf("The NotifyTimeout configuration is invalid: %s, and we will use the default value: %s, err: %v",
+			c.NotifyTimeout, defaultShutdownNotifyTimeout.String(), err)
+		return defaultShutdownNotifyTimeout
+	}
+	return result
+}
+
+func (c *ShutdownConfig) GetOfflineRequestWindowTimeout() time.Duration {
+	result, err := time.ParseDuration(c.OfflineRequestWindowTimeout)
+	if err != nil {
+		logger.Errorf("The OfflineRequestWindowTimeout configuration is invalid: %s, and we will use the default value: %s, err: %v",
+			c.OfflineRequestWindowTimeout, defaultShutdownOfflineRequestWindowTimeout.String(), err)
+		return defaultShutdownOfflineRequestWindowTimeout
+	}
+	return result
+}
+
+func (c *ShutdownConfig) GetConsumerUpdateWaitTime() time.Duration {
+	result, err := time.ParseDuration(c.ConsumerUpdateWaitTime)
+	if err != nil {
+		logger.Errorf("The ConsumerUpdateTimeout configuration is invalid: %s, and we will use the default value: %s, err: %v",
+			c.ConsumerActiveCount.Load(), defaultShutdownConsumerUpdateWaitTime.String(), err)
+		return defaultShutdownConsumerUpdateWaitTime
+	}
+	return result
+}
+
+func (c *ShutdownConfig) GetInternalSignal() bool {
+	if c.InternalSignal == nil {
+		return false
+	}
+	return *c.InternalSignal
+}
+
+func (c *ShutdownConfig) Init() error {
+	return defaults.Set(c)
 }
 
 // Clone a new ShutdownConfig

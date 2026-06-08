@@ -17,6 +17,76 @@
 
 package config
 
+import (
+	"context"
+	"testing"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/filter"
+	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
+)
+
+type captureShutdownConfigFilter struct {
+	captured any
+}
+
+func (f *captureShutdownConfigFilter) Invoke(context.Context, base.Invoker, base.Invocation) result.Result {
+	return &result.RPCResult{}
+}
+
+func (f *captureShutdownConfigFilter) OnResponse(context.Context, result.Result, base.Invoker, base.Invocation) result.Result {
+	return &result.RPCResult{}
+}
+
+func (f *captureShutdownConfigFilter) Set(_ string, config any) {
+	f.captured = config
+}
+
+func TestGracefulShutdownInitPassesGlobalShutdownConfigToFilters(t *testing.T) {
+	internalSignal := false
+	SetRootConfig(RootConfig{
+		Shutdown: &ShutdownConfig{
+			Timeout:        "11s",
+			StepTimeout:    "2s",
+			NotifyTimeout:  "4s",
+			InternalSignal: &internalSignal,
+		},
+	})
+
+	consumerFilter := &captureShutdownConfigFilter{}
+	providerFilter := &captureShutdownConfigFilter{}
+	extension.SetFilter(constant.GracefulShutdownConsumerFilterKey, func() filter.Filter {
+		return consumerFilter
+	})
+	extension.SetFilter(constant.GracefulShutdownProviderFilterKey, func() filter.Filter {
+		return providerFilter
+	})
+
+	gracefulShutdownInit()
+
+	consumerShutdown, ok := consumerFilter.captured.(*global.ShutdownConfig)
+	require.True(t, ok)
+	assert.Equal(t, "11s", consumerShutdown.Timeout)
+	assert.Equal(t, "2s", consumerShutdown.StepTimeout)
+	assert.Equal(t, "4s", consumerShutdown.NotifyTimeout)
+
+	providerShutdown, ok := providerFilter.captured.(*global.ShutdownConfig)
+	require.True(t, ok)
+	assert.Equal(t, "11s", providerShutdown.Timeout)
+	assert.Equal(t, "2s", providerShutdown.StepTimeout)
+	assert.Equal(t, "4s", providerShutdown.NotifyTimeout)
+}
+
 //
 //import (
 //	"dubbo.apache.org/dubbo-go/v3/config"

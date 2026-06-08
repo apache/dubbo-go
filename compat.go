@@ -18,10 +18,6 @@
 package dubbo
 
 import (
-	"go.uber.org/atomic"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
@@ -471,19 +467,7 @@ func compatShutdownConfig(c *global.ShutdownConfig) *config.ShutdownConfig {
 	if c == nil {
 		return nil
 	}
-	cfg := &config.ShutdownConfig{
-		Timeout:                     c.Timeout,
-		StepTimeout:                 c.StepTimeout,
-		NotifyTimeout:               c.NotifyTimeout,
-		ConsumerUpdateWaitTime:      c.ConsumerUpdateWaitTime,
-		RejectRequestHandler:        c.RejectRequestHandler,
-		InternalSignal:              c.InternalSignal,
-		OfflineRequestWindowTimeout: c.OfflineRequestWindowTimeout,
-		RejectRequest:               atomic.Bool{},
-	}
-	cfg.RejectRequest.Store(c.RejectRequest.Load())
-
-	return cfg
+	return c.Clone()
 }
 
 func compatRouterConfig(c *global.RouterConfig) *config.RouterConfig {
