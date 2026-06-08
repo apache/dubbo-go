@@ -18,6 +18,8 @@
 package hessian2
 
 import (
+	"bufio"
+	"bytes"
 	"reflect"
 	"sync"
 	"testing"
@@ -25,6 +27,7 @@ import (
 
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
+	"github.com/apache/dubbo-go-hessian2/java_exception"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -203,6 +206,180 @@ func TestIsSupportResponseAttachmentConcurrent(t *testing.T) {
 	}
 
 	wg.Wait()
+}
+
+func TestToGenericExceptionUsesHessianExceptionType(t *testing.T) {
+	exception, ok := ToGenericException(java_exception.DubboGenericException{
+		ExceptionClass:   "com.example.UserNotFoundException",
+		ExceptionMessage: "user not found",
+	})
+
+	require.True(t, ok)
+	require.IsType(t, &java_exception.DubboGenericException{}, exception)
+	assert.Equal(t, "com.example.UserNotFoundException", exception.ExceptionClass)
+	assert.Equal(t, "user not found", exception.ExceptionMessage)
+}
+
+func TestToGenericExceptionConversions(t *testing.T) {
+	pointerException := java_exception.NewDubboGenericException("com.example.PointerException", "pointer message")
+
+	tests := []struct {
+		name             string
+		input            any
+		wantOK           bool
+		wantClass        string
+		wantMessage      string
+		wantDetailString string
+	}{
+		{
+			name:        "generic exception pointer",
+			input:       pointerException,
+			wantOK:      true,
+			wantClass:   "com.example.PointerException",
+			wantMessage: "pointer message",
+		},
+		{
+			name:             "throwable",
+			input:            java_exception.NewThrowable("throwable message"),
+			wantOK:           true,
+			wantClass:        "java.lang.Throwable",
+			wantMessage:      "throwable message",
+			wantDetailString: "java exception: java.lang.Throwable - throwable message",
+		},
+		{
+			name:             "legacy exception string",
+			input:            "java exception: user not found",
+			wantOK:           true,
+			wantClass:        "java.lang.Exception",
+			wantMessage:      "user not found",
+			wantDetailString: "java exception: java.lang.Exception - user not found",
+		},
+		{
+			name:             "plain string",
+			input:            "plain failure",
+			wantOK:           true,
+			wantClass:        "java.lang.Exception",
+			wantMessage:      "plain failure",
+			wantDetailString: "java exception: java.lang.Exception - plain failure",
+		},
+		{
+			name:   "unsupported type",
+			input:  42,
+			wantOK: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			exception, ok := ToGenericException(test.input)
+			assert.Equal(t, test.wantOK, ok)
+			if !test.wantOK {
+				assert.Nil(t, exception)
+				return
+			}
+
+			require.NotNil(t, exception)
+			assert.Equal(t, test.wantClass, exception.ExceptionClass)
+			assert.Equal(t, test.wantMessage, exception.ExceptionMessage)
+			assert.Equal(t, test.wantDetailString, exception.Error())
+		})
+	}
+}
+
+func TestNewGenericExceptionDetailMessage(t *testing.T) {
+	tests := []struct {
+		name        string
+		class       string
+		message     string
+		wantDetails string
+	}{
+		{
+			name:        "message only",
+			message:     "message only",
+			wantDetails: "message only",
+		},
+		{
+			name:        "class only",
+			class:       "com.example.EmptyMessage",
+			wantDetails: "com.example.EmptyMessage",
+		},
+		{
+			name:        "class and message",
+			class:       "com.example.UserNotFoundException",
+			message:     "user not found",
+			wantDetails: "java exception: com.example.UserNotFoundException - user not found",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			exception := newGenericException(test.class, test.message)
+			assert.Equal(t, test.class, exception.ExceptionClass)
+			assert.Equal(t, test.message, exception.ExceptionMessage)
+			assert.Equal(t, test.wantDetails, exception.Error())
+		})
+	}
+}
+
+func TestPackResponseWithGenericExceptionPointer(t *testing.T) {
+	tests := []struct {
+		name        string
+		exception   error
+		wantClass   string
+		wantMessage string
+	}{
+		{
+			name: "generic exception pointer",
+			exception: java_exception.NewDubboGenericException(
+				"com.example.UserNotFoundException",
+				"user not found",
+			),
+			wantClass:   "com.example.UserNotFoundException",
+			wantMessage: "user not found",
+		},
+		{
+			name: "generic exception value",
+			exception: java_exception.DubboGenericException{
+				ExceptionClass:   "com.example.IllegalStateException",
+				ExceptionMessage: "illegal state",
+			},
+			wantClass:   "com.example.IllegalStateException",
+			wantMessage: "illegal state",
+		},
+		{
+			name:        "throwable",
+			exception:   java_exception.NewThrowable("throwable message"),
+			wantClass:   "java.lang.Throwable",
+			wantMessage: "throwable message",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			body := NewResponse(nil, test.exception, map[string]any{})
+			data, err := packResponse(DubboHeader{
+				SerialID:       2,
+				Type:           PackageResponse,
+				ID:             1,
+				ResponseStatus: Response_OK,
+			}, body)
+			require.NoError(t, err)
+
+			codecR := NewHessianCodec(bufio.NewReader(bytes.NewReader(data)))
+			header := &DubboHeader{}
+			require.NoError(t, codecR.ReadHeader(header))
+			assert.Equal(t, PackageResponse, header.Type&PackageResponse)
+			assert.Equal(t, Response_OK, header.ResponseStatus)
+
+			decodedResponse := &DubboResponse{}
+			require.NoError(t, codecR.ReadBody(decodedResponse))
+
+			ge, ok := decodedResponse.Exception.(*java_exception.DubboGenericException)
+			require.True(t, ok)
+			assert.Equal(t, test.wantClass, ge.ExceptionClass)
+			assert.Equal(t, test.wantMessage, ge.ExceptionMessage)
+		})
+	}
 }
 
 func TestVersion2Int(t *testing.T) {

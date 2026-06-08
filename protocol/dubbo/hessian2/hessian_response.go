@@ -41,49 +41,40 @@ type DubboResponse struct {
 	Attachments map[string]any
 }
 
-// GenericException keeps Java exception class and message.
-type GenericException struct {
-	ExceptionClass   string
-	ExceptionMessage string
-}
-
-// Error returns a readable error string.
-func (e GenericException) Error() string {
-	if e.ExceptionClass == "" {
-		return e.ExceptionMessage
-	}
-	if e.ExceptionMessage == "" {
-		return e.ExceptionClass
-	}
-	return "java exception: " + e.ExceptionClass + " - " + e.ExceptionMessage
-}
-
-// ToGenericException converts decoded exception to GenericException when possible.
-func ToGenericException(expt any) (*GenericException, bool) {
+// ToGenericException converts decoded exception to DubboGenericException when possible.
+func ToGenericException(expt any) (*java_exception.DubboGenericException, bool) {
 	switch v := expt.(type) {
-	case *GenericException:
-		return v, true
-	case GenericException:
-		return &v, true
 	case *java_exception.DubboGenericException:
-		return &GenericException{ExceptionClass: v.ExceptionClass, ExceptionMessage: v.ExceptionMessage}, true
+		return v, true
 	case java_exception.DubboGenericException:
-		return &GenericException{ExceptionClass: v.ExceptionClass, ExceptionMessage: v.ExceptionMessage}, true
+		return &v, true
 	case java_exception.Throwabler:
-		return &GenericException{ExceptionClass: v.JavaClassName(), ExceptionMessage: v.Error()}, true
+		return newGenericException(v.JavaClassName(), v.Error()), true
 	case string:
 		return parseLegacyException(v), true
 	}
 	return nil, false
 }
 
-func parseLegacyException(exStr string) *GenericException {
+func parseLegacyException(exStr string) *java_exception.DubboGenericException {
 	const prefix = "java exception:"
 	msg := strings.TrimSpace(exStr)
 	if strings.HasPrefix(msg, prefix) {
 		msg = strings.TrimSpace(strings.TrimPrefix(msg, prefix))
 	}
-	return &GenericException{ExceptionClass: "java.lang.Exception", ExceptionMessage: msg}
+	return newGenericException("java.lang.Exception", msg)
+}
+
+func newGenericException(exceptionClass, exceptionMessage string) *java_exception.DubboGenericException {
+	exception := java_exception.NewDubboGenericException(exceptionClass, exceptionMessage)
+	if exceptionClass == "" {
+		exception.DetailMessage = exceptionMessage
+	} else if exceptionMessage == "" {
+		exception.DetailMessage = exceptionClass
+	} else {
+		exception.DetailMessage = "java exception: " + exceptionClass + " - " + exceptionMessage
+	}
+	return exception
 }
 
 // NewResponse create a new DubboResponse
@@ -163,10 +154,10 @@ func packResponse(header DubboHeader, ret any) ([]byte, error) {
 					return nil, perrors.Errorf("encoding response failed: %v", err)
 				}
 				switch ex := response.Exception.(type) {
-				case *GenericException:
-					err = encoder.Encode(java_exception.NewDubboGenericException(ex.ExceptionClass, ex.ExceptionMessage))
-				case GenericException:
-					err = encoder.Encode(java_exception.NewDubboGenericException(ex.ExceptionClass, ex.ExceptionMessage))
+				case *java_exception.DubboGenericException:
+					err = encoder.Encode(ex)
+				case java_exception.DubboGenericException:
+					err = encoder.Encode(ex)
 				case java_exception.Throwabler:
 					err = encoder.Encode(ex)
 				default:

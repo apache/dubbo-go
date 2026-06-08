@@ -34,7 +34,6 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/hessian2"
 )
 
 const (
@@ -512,7 +511,7 @@ func TestMarshalResponse(t *testing.T) {
 				ResponseStatus: Response_OK,
 			},
 			Body: &ResponsePayload{
-				Exception: hessian2.GenericException{
+				Exception: java_exception.DubboGenericException{
 					ExceptionClass:   "com.example.UserNotFoundException",
 					ExceptionMessage: "user not found",
 				},
@@ -541,6 +540,39 @@ func TestMarshalResponse(t *testing.T) {
 		default:
 			require.Failf(t, "unexpected exception type", "%T", expt)
 		}
+	})
+
+	t.Run("response with generic exception pointer", func(t *testing.T) {
+		encoder := hessian.NewEncoder()
+		pkg := DubboPackage{
+			Header: DubboHeader{
+				Type:           PackageResponse,
+				ResponseStatus: Response_OK,
+			},
+			Body: &ResponsePayload{
+				Exception: java_exception.NewDubboGenericException(
+					"com.example.UserNotFoundException",
+					"user not found",
+				),
+				Attachments: map[string]any{},
+			},
+		}
+
+		data, err := marshalResponse(encoder, pkg)
+		require.NoError(t, err)
+		assert.NotNil(t, data)
+
+		decoder := hessian.NewDecoder(data)
+		rspType, err := decoder.Decode()
+		require.NoError(t, err)
+		assert.EqualValues(t, RESPONSE_WITH_EXCEPTION, rspType)
+
+		expt, err := decoder.Decode()
+		require.NoError(t, err)
+		ge, ok := expt.(*java_exception.DubboGenericException)
+		require.True(t, ok)
+		assert.Equal(t, "com.example.UserNotFoundException", ge.ExceptionClass)
+		assert.Equal(t, "user not found", ge.ExceptionMessage)
 	})
 
 	t.Run("response with throwable exception", func(t *testing.T) {
@@ -721,7 +753,7 @@ func TestUnmarshalResponseBody(t *testing.T) {
 		require.NoError(t, err)
 
 		response := EnsureResponsePayload(pkg.Body)
-		ge, ok := response.Exception.(*hessian2.GenericException)
+		ge, ok := response.Exception.(*java_exception.DubboGenericException)
 		require.True(t, ok)
 		assert.Equal(t, "com.example.UserNotFoundException", ge.ExceptionClass)
 		assert.Equal(t, "user not found", ge.ExceptionMessage)
@@ -787,7 +819,7 @@ func TestUnmarshalResponseBody(t *testing.T) {
 		require.NoError(t, err)
 
 		response := EnsureResponsePayload(pkg.Body)
-		ge, ok := response.Exception.(*hessian2.GenericException)
+		ge, ok := response.Exception.(*java_exception.DubboGenericException)
 		require.True(t, ok)
 		assert.Equal(t, "java.lang.Exception", ge.ExceptionClass)
 		assert.Equal(t, "user not found", ge.ExceptionMessage)
