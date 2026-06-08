@@ -37,7 +37,6 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/metrics/probe"
 	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
@@ -80,6 +79,10 @@ var (
 	signalNotify = signal.Notify
 )
 
+type shutdownConfigSetter interface {
+	Set(name string, config any)
+}
+
 func Init(opts ...Option) {
 	initOnce.Do(func() {
 		protocols = make(map[string]struct{})
@@ -100,10 +103,10 @@ func Init(opts ...Option) {
 
 		storeShutdownConfig(newOpts.Shutdown)
 
-		if filter, ok := gracefulShutdownConsumerFilter.(config.Setter); ok {
+		if filter, ok := gracefulShutdownConsumerFilter.(shutdownConfigSetter); ok {
 			filter.Set(constant.GracefulShutdownFilterShutdownConfig, newOpts.Shutdown)
 		}
-		if filter, ok := gracefulShutdownProviderFilter.(config.Setter); ok {
+		if filter, ok := gracefulShutdownProviderFilter.(shutdownConfigSetter); ok {
 			filter.Set(constant.GracefulShutdownFilterShutdownConfig, newOpts.Shutdown)
 		}
 

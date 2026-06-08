@@ -45,7 +45,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
-// MockFilter implements filter.Filter and config.Setter for testing
+// MockFilter implements filter.Filter and shutdownConfigSetter for testing.
 type MockFilter struct {
 	mock.Mock
 }
