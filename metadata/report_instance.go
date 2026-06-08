@@ -78,11 +78,13 @@ func GetMetadataReport() report.MetadataReport {
 }
 
 // GetMetadataReportByRegistry returns the metadata report bound to the given
-// registry id. When registry is empty the caller has no registry context, so
-// the stable default returned by GetMetadataReport is used. When a specific
-// (non-empty) registry id is given but is not registered, nil is returned so
-// the caller receives an explicit failure rather than silently operating
-// against the wrong registry's report.
+// registry id. When the registry id is empty the caller has no registry context,
+// so the stable default returned by GetMetadataReport is used. When a specific
+// (non-empty) registry id is not found, it falls back to the "default" report
+// if one exists. This handles the common case where a standalone metadata-report
+// config is registered under "default" while named registries (e.g. nacos, zk)
+// need to use it. nil is returned only when neither the specific id nor "default"
+// is registered.
 func GetMetadataReportByRegistry(registry string) report.MetadataReport {
 	if len(registry) == 0 {
 		return GetMetadataReport()

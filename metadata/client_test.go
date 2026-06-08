@@ -99,15 +99,18 @@ func TestGetMetadataFromMetadataReport(t *testing.T) {
 		assert.Equal(t, metadataInfo, got)
 	})
 
-	t.Run("unknown registryId returns error instead of silently using wrong report", func(t *testing.T) {
+	t.Run("unknown registryId falls back to default report", func(t *testing.T) {
 		instances = make(map[string]report.MetadataReport)
 		defaultReport := new(mockMetadataReport)
 		defer defaultReport.AssertExpectations(t)
 		instances["default"] = defaultReport
 
-		// defaultReport must NOT be called — GetMetadataReportByRegistry returns nil for unknown id
-		_, err := GetMetadataFromMetadataReport("1", ins, "nonexistent-registry")
-		require.Error(t, err, "should error when the specific registryId has no registered report")
+		// When the specific registryId is not found, it falls back to "default"
+		// so the default report's GetAppMetadata is called
+		defaultReport.On("GetAppMetadata").Return(metadataInfo, nil).Once()
+		got, err := GetMetadataFromMetadataReport("1", ins, "nonexistent-registry")
+		require.NoError(t, err)
+		assert.Equal(t, metadataInfo, got)
 	})
 
 	t.Run("report error propagated", func(t *testing.T) {

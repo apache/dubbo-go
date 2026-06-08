@@ -211,8 +211,8 @@ func TestGetMetadataReportByRegistry(t *testing.T) {
 	assert.Equal(t, defaultReport, GetMetadataReportByRegistry("default"))
 	// empty string → no registry context → falls through to GetMetadataReport() → "default"
 	assert.Equal(t, defaultReport, GetMetadataReportByRegistry(""))
-	// specific but unknown id → nil (not a silent wrong-registry fallback)
-	assert.Nil(t, GetMetadataReportByRegistry("reg"))
+	// specific but unknown id → falls back to "default"
+	assert.Equal(t, defaultReport, GetMetadataReportByRegistry("reg"))
 }
 
 func TestGetMetadataReportByRegistryFallsBackDeterministically(t *testing.T) {
@@ -226,7 +226,7 @@ func TestGetMetadataReportByRegistryFallsBackDeterministically(t *testing.T) {
 	assert.Equal(t, rA, GetMetadataReportByRegistry("aaa"))
 	assert.Equal(t, rB, GetMetadataReportByRegistry("zzz"))
 
-	// unknown specific id → nil, not the lex-first fallback
+	// unknown specific id → nil when no "default" is registered
 	assert.Nil(t, GetMetadataReportByRegistry("unknown-registry"))
 
 	// empty string → falls through to GetMetadataReport() → lex-first ("aaa" → rA)
