@@ -106,6 +106,23 @@ Dubbo-go provides robust service governance capabilities:
 - **HA Strategy**: Failover, Failfast, Failsafe/Failback, Available, Broadcast, Forking.
 - **Interoperability**: Full compatibility with Apache Dubbo (Java) via Triple protocol generic calls, group/version wildcard matching, and TLS API redesign.
 
+## Java Interoperability Notes
+
+Go RPC methods must be exported, so their names usually start with an uppercase
+letter. When interoperating with Java services that use lower camel case method
+names, dubbo-go registers the reflected method name and its first-letter case
+variant. For example, a Go method named `GetUser` can match Java `getUser`.
+
+For explicit mappings, define `MethodMapper` on the service:
+
+```go
+func (s *UserService) MethodMapper() map[string]string {
+	return map[string]string{
+		"GetUser": "getUser",
+	}
+}
+```
+
 ## ️ Tools
 
 The `tools/` directory and the `dubbogo/tools` repository provide several utilities to streamline your Dubbo-Go development experience.
