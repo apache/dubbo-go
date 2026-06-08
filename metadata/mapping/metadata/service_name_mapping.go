@@ -92,10 +92,10 @@ func (d *ServiceNameMapping) Get(url *common.URL, listener mapping.MappingListen
 	serviceInterface := url.GetParam(constant.InterfaceKey, "")
 	metadataReports := metadata.GetMetadataReports()
 	if len(metadataReports) == 0 {
-          return nil, perrors.New("can not get mapping in remote cause no metadata report instance found")
-    }
-    var result *gxset.HashSet
-    var errs []error	
+		return nil, perrors.New("can not get mapping in remote cause no metadata report instance found")
+	}
+	var result *gxset.HashSet
+	var errs []error
 	for i, metadataReport := range metadataReports {
 		var reportListener mapping.MappingListener
 		if i == 0 {
@@ -104,7 +104,7 @@ func (d *ServiceNameMapping) Get(url *common.URL, listener mapping.MappingListen
 		set, err := metadataReport.GetServiceAppMapping(serviceInterface, DefaultGroup, reportListener)
 		if err != nil {
 			errs = append(errs, err)
-			continue;
+			continue
 		}
 		if result == nil {
 			result = set
@@ -127,7 +127,7 @@ func (d *ServiceNameMapping) Get(url *common.URL, listener mapping.MappingListen
 func (d *ServiceNameMapping) Remove(url *common.URL) error {
 	serviceInterface := url.GetParam(constant.InterfaceKey, "")
 	metadataReports := metadata.GetMetadataReports()
-	if metadataReports == nil || len(metadataReports) == 0 {
+	if len(metadataReports) == 0 {
 		return perrors.New("can not remove mapping in remote cause no metadata report instance found")
 	}
 	var errs []error
