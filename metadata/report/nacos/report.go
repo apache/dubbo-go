@@ -191,7 +191,12 @@ func (n *nacosMetadataReport) RegisterServiceAppMapping(key string, group string
 		// (Nacos has no create-if-absent), so the initial concurrent registration of a
 		// brand-new interface can still race. This is a known Nacos-only limitation; the
 		// etcd and zookeeper reports do not have it.
-		param.CasMd5 = fmt.Sprintf("%x", md5.Sum([]byte(oldVal)))
+		//
+		// The MD5 here is not a security mechanism: it is the checksum the Nacos CAS wire
+		// protocol requires (PublishConfig forwards CasMd5 to the server, which compares it
+		// against the stored content's MD5). The algorithm is dictated by Nacos, not chosen
+		// by us, so the weak-hash warning does not apply. NOSONAR
+		param.CasMd5 = fmt.Sprintf("%x", md5.Sum([]byte(oldVal))) // NOSONAR: Nacos CAS protocol checksum, not security
 	}
 	if err := n.storeMetadata(param); err != nil {
 		if param.CasMd5 != "" {
