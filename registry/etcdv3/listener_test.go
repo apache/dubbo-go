@@ -20,10 +20,14 @@ package etcdv3
 import (
 	"net/url"
 	"testing"
+)
 
+import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/remoting"

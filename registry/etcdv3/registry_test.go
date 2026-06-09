@@ -20,115 +20,16 @@ package etcdv3
 
 import (
 	"testing"
+)
 
+import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+)
 
+import (
 	remotingEtcdv3 "dubbo.apache.org/dubbo-go/v3/remoting/etcdv3"
 )
-
-/*
-import (
-	"reflect"
-	"sync"
-	"testing"
-)
-
-import (
-	"github.com/agiledragon/gomonkey"
-
-	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/registry"
-	"dubbo.apache.org/dubbo-go/v3/remoting"
-	"dubbo.apache.org/dubbo-go/v3/remoting/etcdv3"
-)
-
-type fields struct {
-	BaseRegistry   registry.BaseRegistry
-	cltLock        sync.Mutex
-	client         *gxetcd.Client
-	listenerLock   sync.RWMutex
-	listener       *etcdv3.EventListener
-	dataListener   *dataListener
-	configListener *configurationListener
-}
-type args struct {
-	root      string
-	node      string
-	eventType remoting.Event
-}
-
-func newEtcdV3Registry(f fields) *etcdV3Registry {
-	return &etcdV3Registry{
-		client:         f.client,
-		listener:       f.listener,
-		dataListener:   f.dataListener,
-		configListener: f.configListener,
-	}
-}
-
-func Test_etcdV3Registry_DoRegister(t *testing.T) {
-	var client *gxetcd.Client
-	patches := gomonkey.NewPatches()
-	patches = patches.ApplyMethod(reflect.TypeOf(client), "RegisterTemp", func(_ *gxetcd.Client, k, v string) error {
-		return nil
-	})
-	defer patches.Reset()
-
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "test",
-			fields: fields{
-				client: client,
-			},
-			args: args{
-				root: "/dubbo",
-				node: "/go",
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r := newEtcdV3Registry(tt.fields)
-			if err := r.DoRegister(tt.args.root, tt.args.node); (err != nil) != tt.wantErr {
-				t.Errorf("DoRegister() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func Test_etcdV3Registry_DoUnregister(t *testing.T) {
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		{
-			name:    "test",
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r := newEtcdV3Registry(tt.fields)
-			if err := r.DoUnregister(tt.args.root, tt.args.node); (err != nil) != tt.wantErr {
-				t.Errorf("DoUnregister() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-*/
 
 func TestEtcdV3RegistryDoUnregisterRejectsInvalidClient(t *testing.T) {
 	reg := newTestEtcdRegistry(t)
