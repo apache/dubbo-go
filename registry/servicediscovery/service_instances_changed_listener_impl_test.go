@@ -93,7 +93,8 @@ func TestServiceInstancesChangedListenerRefreshesAndClearsEnvironmentWhenRevisio
 	listener.AddListenerAndNotify(common.MatchKey(testInterface, constant.TriProtocol), notify)
 
 	revision := "rev-20001-same-environment-change"
-	metaCache.Set(testApp+":"+constant.DefaultKey+":"+revision, newTestMetadataInfo(t, revision, 20001, "pre"))
+	cacheKey := testApp + ":" + constant.DefaultKey + ":" + revision
+	metaCache.Set(cacheKey, newTestMetadataInfo(t, revision, 20001, "pre"))
 
 	pre := newTestServiceInstanceOnly(20001, "pre", revision)
 	require.NoError(t, listener.OnEvent(registry.NewServiceInstancesChangedEvent(testApp, []registry.ServiceInstance{
@@ -129,11 +130,11 @@ func TestServiceInstancesChangedListenerSkipsNilMetadataWithoutPanic(t *testing.
 	listener.AddListenerAndNotify(common.MatchKey(testInterface, constant.TriProtocol), notify)
 
 	revision := "rev-20003-nil-metadata"
+	nilCacheKey := testApp + ":" + constant.DefaultKey + ":" + revision
 	var metadataInfo *info.MetadataInfo
-	cacheKey := testApp + ":" + constant.DefaultKey + ":" + revision
-	metaCache.Set(cacheKey, metadataInfo)
+	metaCache.Set(nilCacheKey, metadataInfo)
 	t.Cleanup(func() {
-		metaCache.Delete(cacheKey)
+		metaCache.Delete(nilCacheKey)
 	})
 
 	instance := newTestServiceInstanceOnly(20003, "pre", revision)
@@ -208,7 +209,7 @@ func TestListenerUsesRegistryIdToFetchRemoteMetadata(t *testing.T) {
 	// Remove the cache entry after the test so it doesn't bleed into other tests.
 	t.Cleanup(func() {
 		if metaCache != nil {
-			metaCache.Delete(listenerRegistryId + ":" + revision)
+			metaCache.Delete(testApp + ":" + listenerRegistryId + ":" + revision)
 		}
 	})
 
@@ -268,9 +269,8 @@ func newTestServiceInstance(t *testing.T, port int, environment string) registry
 func newTestServiceInstanceWithRevision(t *testing.T, port int, environment string, revision string) registry.ServiceInstance {
 	t.Helper()
 
-	// Pre-populate the cache under the composite key used by GetMetadataInfo.
-	// All test listeners use constant.DefaultKey as their registryId.
-	metaCache.Set(testApp+":"+constant.DefaultKey+":"+revision, newTestMetadataInfo(t, revision, port, environment))
+	cacheKey := testApp + ":" + constant.DefaultKey + ":" + revision
+	metaCache.Set(cacheKey, newTestMetadataInfo(t, revision, port, environment))
 	return newTestServiceInstanceOnly(port, environment, revision)
 }
 
@@ -371,4 +371,94 @@ func (c *capturingNotifyListener) NotifyAll(events []*registry.ServiceEvent, cal
 	if callback != nil {
 		callback()
 	}
+}
+
+func TestGetMetadataInfo_CacheKeyFormat(t *testing.T) {
+	// Ensure cache is initialized (normally done by NewServiceInstancesChangedListener)
+	_ = NewServiceInstancesChangedListener(testApp, constant.DefaultKey, gxset.NewSet(testApp))
+
+	revision := "rev-cache-key-test"
+	// Pre-populate cache with the expected composite key
+	expectedKey := testApp + ":" + constant.DefaultKey + ":" + revision
+	expectedMeta := newTestMetadataInfo(t, revision, 20000, "dev")
+	metaCache.Set(expectedKey, expectedMeta)
+	t.Cleanup(func() {
+		metaCache.Delete(expectedKey)
+	})
+
+	instance := &registry.DefaultServiceInstance{
+		ID:          "127.0.0.1:20000",
+		ServiceName: testApp,
+		Host:        "127.0.0.1",
+		Port:        20000,
+		Enable:      true,
+		Healthy:     true,
+		Metadata: map[string]string{
+			constant.ExportedServicesRevisionPropertyName: revision,
+			constant.ServiceInstanceEndpoints:             `[{"port":20000,"protocol":"tri"}]`,
+		},
+	}
+
+	// Should hit the cache and return the pre-populated metadata
+	meta, err := GetMetadataInfo(testApp, instance, revision, constant.DefaultKey)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedMeta, meta)
+}
+
+func TestGetMetadataInfo_LocalStorageGoesDirectlyToRPC(t *testing.T) {
+	// Ensure cache is initialized
+	_ = NewServiceInstancesChangedListener(testApp, constant.DefaultKey, gxset.NewSet(testApp))
+
+	// Instance with no MetadataStorageTypePropertyName (i.e. local/default path)
+	// should go directly to RPC without touching the metadata report.
+	// RPC will fail with a URL error because there are no URL params — that's
+	// enough to confirm the correct branch was taken.
+	instance := &registry.DefaultServiceInstance{
+		ID:          "127.0.0.1:20003",
+		ServiceName: testApp,
+		Host:        "127.0.0.1",
+		Port:        20003,
+		Enable:      true,
+		Healthy:     true,
+		Metadata: map[string]string{
+			constant.ExportedServicesRevisionPropertyName: "rev-local-rpc",
+			// MetadataStorageTypePropertyName intentionally absent → local path
+			constant.ServiceInstanceEndpoints: `[{"port":20003,"protocol":"tri"}]`,
+		},
+	}
+
+	_, err := GetMetadataInfo(testApp, instance, "rev-local-rpc", constant.DefaultKey)
+	require.Error(t, err)
+	// Must be a URL/RPC error, not a report error, confirming the local path
+	// skips the report entirely and goes straight to RPC.
+	assert.Contains(t, err.Error(), "[Metadata-URL]",
+		"local storage path should go directly to RPC, not touch the metadata report")
+}
+
+func TestGetMetadataInfo_FallbackToRPC(t *testing.T) {
+	// Ensure cache is initialized
+	_ = NewServiceInstancesChangedListener(testApp, constant.DefaultKey, gxset.NewSet(testApp))
+
+	// remote storage type without a report registered → report will fail
+	// should fall through to RPC, which will fail with url error (no URL params)
+	instance := &registry.DefaultServiceInstance{
+		ID:          "127.0.0.1:20002",
+		ServiceName: testApp,
+		Host:        "127.0.0.1",
+		Port:        20002,
+		Enable:      true,
+		Healthy:     true,
+		Metadata: map[string]string{
+			constant.ExportedServicesRevisionPropertyName: "rev-fallback-to-rpc",
+			constant.MetadataStorageTypePropertyName:      constant.RemoteMetadataStorageType,
+			constant.ServiceInstanceEndpoints:             `[{"port":20002,"protocol":"tri"}]`,
+		},
+	}
+
+	_, err := GetMetadataInfo(testApp, instance, "rev-fallback-to-rpc", constant.DefaultKey)
+	require.Error(t, err)
+	// Error must originate from the RPC/URL layer, not the report layer,
+	// proving that the fallback was actually executed.
+	assert.Contains(t, err.Error(), "[Metadata-URL]",
+		"fallback should reach RPC layer, not return the report error directly")
 }
