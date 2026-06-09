@@ -262,16 +262,20 @@ func GetMetadataInfo(app string, instance registry.ServiceInstance, revision str
 	} else {
 		metadataStorageType = instance.GetMetadata()[constant.MetadataStorageTypePropertyName]
 	}
+
 	if metadataStorageType == constant.RemoteMetadataStorageType {
 		metadataInfo, err = metadata.GetMetadataFromMetadataReport(revision, instance, registryId)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			metaCache.Set(cacheKey, metadataInfo)
+			return metadataInfo, nil
 		}
-	} else {
-		metadataInfo, err = metadata.GetMetadataFromRpc(revision, instance)
-		if err != nil {
-			return nil, err
-		}
+		logger.Errorf("[Metadata-Fallback] report failed, fallback to RPC app=%s registry=%s revision=%s err=%v",
+			app, registryId, revision, err)
+	}
+
+	metadataInfo, err = metadata.GetMetadataFromRpc(revision, instance)
+	if err != nil {
+		return nil, err
 	}
 	metaCache.Set(cacheKey, metadataInfo)
 	return metadataInfo, nil

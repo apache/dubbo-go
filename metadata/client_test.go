@@ -165,6 +165,18 @@ func TestGetMetadataFromRpc(t *testing.T) {
 	})
 }
 
+func TestGetMetadataFromRpc_NilURL(t *testing.T) {
+	// Instance without metadata service URL params → buildStandardMetadataServiceURL returns nil
+	insNoProto := &registry.DefaultServiceInstance{
+		ID:          "2",
+		ServiceName: "dubbo-app",
+		Host:        "dubbo.io",
+		Metadata:    map[string]string{},
+	}
+	_, err := GetMetadataFromRpc("1", insNoProto)
+	require.Error(t, err)
+}
+
 func Test_buildMetadataServiceURL(t *testing.T) {
 	type args struct {
 		ins registry.ServiceInstance
