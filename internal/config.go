@@ -76,7 +76,7 @@ func LoadRegistries(registryIds []string, registries map[string]*global.Registry
 				}
 
 				clonedURL := u.Clone()
-				clonedURL.AddParam(constant.RegistryIdKey, k)
+				clonedURL.SetParam(constant.RegistryIdKey, k)
 				registryURLs = append(registryURLs, clonedURL)
 			}
 		}

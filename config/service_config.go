@@ -296,7 +296,7 @@ func (s *ServiceConfig) Export() error {
 		}
 
 		if len(s.Tag) > 0 {
-			ivkURL.AddParam(constant.Tagkey, s.Tag)
+			ivkURL.SetParam(constant.Tagkey, s.Tag)
 		}
 
 		// post process the URL to be exported
@@ -348,7 +348,7 @@ func (s *ServiceConfig) generatorInvoker(url *common.URL, info any) base.Invoker
 
 // setRegistrySubURL set registry sub url is ivkURl
 func setRegistrySubURL(ivkURL *common.URL, regUrl *common.URL) {
-	ivkURL.AddParam(constant.RegistryKey, regUrl.GetParam(constant.RegistryKey, ""))
+	ivkURL.SetParam(constant.RegistryKey, regUrl.GetParam(constant.RegistryKey, ""))
 	regUrl.SubURL = ivkURL
 }
 
