@@ -36,8 +36,7 @@ var (
 	customShutdownCallbacks     = list.New()
 	customShutdownCallbacksLock sync.RWMutex
 	customShutdownCallbacksMu   = &customShutdownCallbacksLock
-	gracefulShutdownCallbacksMu sync.RWMutex
-	gracefulShutdownCallbacks   = make(map[string]GracefulShutdownCallback)
+	gracefulShutdownCallbacks   = NewRegistry[GracefulShutdownCallback]("graceful shutdown callback")
 )
 
 /**
@@ -81,41 +80,22 @@ func GetAllCustomShutdownCallbacks() *list.List {
 
 // RegisterGracefulShutdownCallback registers a protocol-level graceful shutdown callback.
 func RegisterGracefulShutdownCallback(name string, f GracefulShutdownCallback) {
-	gracefulShutdownCallbacksMu.Lock()
-	defer gracefulShutdownCallbacksMu.Unlock()
-
-	if _, exists := gracefulShutdownCallbacks[name]; exists {
+	if ok := gracefulShutdownCallbacks.RegisterIfAbsent(name, f); !ok {
 		logger.Warnf("[GracefulShutdown] graceful shutdown callback %q already registered, duplicate registration ignored", name)
-		return
 	}
-
-	gracefulShutdownCallbacks[name] = f
 }
 
 // LookupGracefulShutdownCallback returns a protocol graceful shutdown callback by name.
 func LookupGracefulShutdownCallback(name string) (GracefulShutdownCallback, bool) {
-	gracefulShutdownCallbacksMu.RLock()
-	defer gracefulShutdownCallbacksMu.RUnlock()
-	f, ok := gracefulShutdownCallbacks[name]
-	return f, ok
+	return gracefulShutdownCallbacks.Get(name)
 }
 
 // UnregisterGracefulShutdownCallback removes a protocol graceful shutdown callback by name.
 func UnregisterGracefulShutdownCallback(name string) {
-	gracefulShutdownCallbacksMu.Lock()
-	defer gracefulShutdownCallbacksMu.Unlock()
-	delete(gracefulShutdownCallbacks, name)
+	gracefulShutdownCallbacks.Unregister(name)
 }
 
 // GracefulShutdownCallbacks returns a snapshot of all protocol graceful shutdown callbacks.
 func GracefulShutdownCallbacks() map[string]GracefulShutdownCallback {
-	gracefulShutdownCallbacksMu.RLock()
-	defer gracefulShutdownCallbacksMu.RUnlock()
-
-	callbacks := make(map[string]GracefulShutdownCallback, len(gracefulShutdownCallbacks))
-	for name, callback := range gracefulShutdownCallbacks {
-		callbacks[name] = callback
-	}
-
-	return callbacks
+	return gracefulShutdownCallbacks.Snapshot()
 }
