@@ -26,11 +26,12 @@ MAKEFLAGS += --no-print-directory
 CLI_DIR = tools/dubbogo-cli
 IMPORTS_FORMATTER_DIR = tools/imports-formatter
 
-.PHONY: help test fmt clean lint check-fmt rpc-contract-check
+.PHONY: help test test-race-core fmt clean lint check-fmt rpc-contract-check
 
 help:
 	@echo "Available commands:"
 	@echo "  test       - Run unit tests"
+	@echo "  test-race-core - Run race detector tests for core packages"
 	@echo "  clean      - Clean test generate files"
 	@echo "  fmt        - Format code"
 	@echo "  lint       - Run golangci-lint"
@@ -40,6 +41,10 @@ help:
 test: clean
 	GOTOOLCHAIN=go1.25.0+auto go test ./... -coverprofile=coverage.txt -covermode=atomic
 	cd $(CLI_DIR) && GOTOOLCHAIN=go1.25.0+auto go test ./...
+
+# Run race detector tests for packages that guard shared framework state.
+test-race-core: clean
+	GOTOOLCHAIN=go1.25.0+auto go test -race ./common/... ./cluster/router/chain ./protocol/base ./registry/directory
 
 fmt: install-imports-formatter
 	# replace interface{} with any

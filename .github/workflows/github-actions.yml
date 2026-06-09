@@ -77,6 +77,39 @@ jobs:
         token: ${{ secrets.CODECOV_TOKEN }}
         verbose: true # optional (default = false)
 
+  Race-Test:
+    name: Race Test (${{ matrix.os }} - Go ${{ matrix.go_version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        go_version:
+          - '1.23'
+        os:
+          - ubuntu-latest
+
+    steps:
+    - name: Setup Go ${{ matrix.go_version }}
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go_version }}
+
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Cache dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-race-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-race-
+          ${{ runner.os }}-go-
+
+    - name: Race Test
+      run: make test-race-core
+
   Integration-Test:
     name: Integration Test (${{ matrix.os }} - Go ${{ matrix.go_version }})
     runs-on: ${{ matrix.os }}
