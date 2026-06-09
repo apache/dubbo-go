@@ -536,8 +536,8 @@ func (c *URL) Service() string {
 	return ""
 }
 
-// AddParam will add the key-value pair
-func (c *URL) AddParam(key string, value string) {
+// AppendParam appends the key-value pair without replacing existing values.
+func (c *URL) AppendParam(key string, value string) {
 	c.paramsLock.Lock()
 	defer c.paramsLock.Unlock()
 	if c.params == nil {
@@ -546,14 +546,16 @@ func (c *URL) AddParam(key string, value string) {
 	c.params.Add(key, value)
 }
 
-// AddParamAvoidNil will add key-value pair
+// AddParam will add the key-value pair.
+// Deprecated: use SetParam to replace an existing value or AppendParam to preserve multiple values.
+func (c *URL) AddParam(key string, value string) {
+	c.AppendParam(key, value)
+}
+
+// AddParamAvoidNil will add key-value pair.
+// Deprecated: use AppendParam instead.
 func (c *URL) AddParamAvoidNil(key string, value string) {
-	c.paramsLock.Lock()
-	defer c.paramsLock.Unlock()
-	if c.params == nil {
-		c.params = url.Values{}
-	}
-	c.params.Add(key, value)
+	c.AppendParam(key, value)
 }
 
 // SetParam will put the key-value pair into URL
