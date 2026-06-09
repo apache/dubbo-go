@@ -43,6 +43,8 @@ const (
 	Name = "etcdv3"
 )
 
+var listenServiceEvent = (*etcdv3.EventListener).ListenServiceEvent
+
 func init() {
 	extension.SetRegistry(Name, newETCDV3Registry)
 }
@@ -112,7 +114,7 @@ func (r *etcdV3Registry) InitListeners() {
 			etcdListener.Close()
 			newListener := NewConfigurationListener(r, etcdListener.subscribeURL)
 			newDataListener.SubscribeURL(etcdListener.subscribeURL, newListener)
-			go r.listener.ListenServiceEvent(etcdProviderPath(etcdListener.subscribeURL), newDataListener)
+			go listenServiceEvent(r.listener, etcdProviderPath(etcdListener.subscribeURL), newDataListener)
 		}
 	}
 	r.dataListener = newDataListener
@@ -191,7 +193,7 @@ func (r *etcdV3Registry) DoSubscribe(svc *common.URL) (registry.Listener, error)
 	// register the svc to dataListener
 	configListener := NewConfigurationListener(r, svc)
 	r.dataListener.SubscribeURL(svc, configListener)
-	go r.listener.ListenServiceEvent(etcdProviderPath(svc), r.dataListener)
+	go listenServiceEvent(r.listener, etcdProviderPath(svc), r.dataListener)
 
 	return configListener, nil
 }

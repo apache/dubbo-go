@@ -88,6 +88,104 @@ func TestDataListenerCloseClosesSubscriptions(t *testing.T) {
 	require.True(t, listener.isClosed)
 }
 
+func TestDataListenerIgnoresClosedSubscriptions(t *testing.T) {
+	reg := newTestEtcdRegistry(t)
+	serviceURL := mustURL(t, "dubbo://127.0.0.1:20000/org.apache.demo.UserProvider?group=g&version=v")
+	listener := NewConfigurationListener(reg, serviceURL)
+	defer listener.Close()
+
+	dataListener := NewRegistryDataListener()
+	dataListener.Close()
+
+	dataListener.SubscribeURL(serviceURL, listener)
+
+	assert.Empty(t, dataListener.subscribed)
+	assert.Nil(t, dataListener.UnSubscribeURL(serviceURL))
+	assert.False(t, dataListener.DataChange(remoting.Event{
+		Path:   "/dubbo/org.apache.demo.UserProvider/providers/" + url.QueryEscape(serviceURL.String()),
+		Action: remoting.EventTypeAdd,
+	}))
+}
+
+func TestDataListenerDataChangeRejectsInvalidEvents(t *testing.T) {
+	reg := newTestEtcdRegistry(t)
+	serviceURL := mustURL(t, "dubbo://127.0.0.1:20000/org.apache.demo.UserProvider?group=g&version=v")
+	listener := NewConfigurationListener(reg, serviceURL)
+	defer listener.Close()
+
+	dataListener := NewRegistryDataListener()
+	dataListener.SubscribeURL(serviceURL, listener)
+
+	assert.False(t, dataListener.DataChange(remoting.Event{
+		Path:   "/dubbo/org.apache.demo.UserProvider/consumers/" + url.QueryEscape(serviceURL.String()),
+		Action: remoting.EventTypeAdd,
+	}))
+	assert.False(t, dataListener.DataChange(remoting.Event{
+		Path:   "/dubbo/org.apache.demo.UserProvider/providers/%",
+		Action: remoting.EventTypeAdd,
+	}))
+
+	otherServiceURL := mustURL(t, "dubbo://127.0.0.1:20000/org.apache.demo.OtherProvider?group=g&version=v")
+	assert.False(t, dataListener.DataChange(remoting.Event{
+		Path:   "/dubbo/org.apache.demo.OtherProvider/providers/" + url.QueryEscape(otherServiceURL.String()),
+		Action: remoting.EventTypeAdd,
+	}))
+}
+
+func TestDataListenerDataChangeDispatchesWildcardSubscription(t *testing.T) {
+	reg := newTestEtcdRegistry(t)
+	serviceURL := mustURL(t, "dubbo://127.0.0.1:20000/org.apache.demo.UserProvider?group=g&version=v")
+	wildcardURL := mustURL(t, "dubbo://127.0.0.1:20000/*?group=*&version=*")
+	listener := NewConfigurationListener(reg, wildcardURL)
+	defer listener.Close()
+
+	dataListener := NewRegistryDataListener()
+	dataListener.SubscribeURL(wildcardURL, listener)
+
+	ok := dataListener.DataChange(remoting.Event{
+		Path:   "/dubbo/org.apache.demo.UserProvider/providers/" + url.QueryEscape(serviceURL.String()),
+		Action: remoting.EventTypeUpdate,
+	})
+	require.True(t, ok)
+
+	event, err := listener.Next()
+	require.NoError(t, err)
+	assert.Equal(t, remoting.EventTypeUpdate, event.Action)
+	assert.Equal(t, serviceURL.ServiceKey(), event.Service.ServiceKey())
+}
+
+func TestConfigurationListenerCloseStopsProcessAndNext(t *testing.T) {
+	reg := newTestEtcdRegistry(t)
+	serviceURL := mustURL(t, "dubbo://127.0.0.1:20000/org.apache.demo.UserProvider?group=g&version=v")
+	listener := NewConfigurationListener(reg, serviceURL)
+
+	listener.Close()
+	listener.Process(&config_center.ConfigChangeEvent{
+		Key:        serviceURL.String(),
+		Value:      serviceURL,
+		ConfigType: remoting.EventTypeAdd,
+	})
+	event, err := listener.Next()
+
+	require.Error(t, err)
+	assert.Nil(t, event)
+	assert.ErrorContains(t, err, "listener has been closed")
+}
+
+func TestConfigurationListenerNextStopsWhenRegistryDone(t *testing.T) {
+	reg := newTestEtcdRegistry(t)
+	serviceURL := mustURL(t, "dubbo://127.0.0.1:20000/org.apache.demo.UserProvider?group=g&version=v")
+	listener := NewConfigurationListener(reg, serviceURL)
+	defer listener.Close()
+
+	close(reg.Done())
+	event, err := listener.Next()
+
+	require.Error(t, err)
+	assert.Nil(t, event)
+	assert.ErrorContains(t, err, "listener stopped")
+}
+
 func newTestEtcdRegistry(t *testing.T) *etcdV3Registry {
 	t.Helper()
 	registryURL := mustURL(t, "etcdv3://127.0.0.1:2379")
