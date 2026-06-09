@@ -25,6 +25,10 @@ import (
 )
 
 import (
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/gof/observer"
 	"github.com/dubbogo/gost/log/logger"
@@ -261,21 +265,52 @@ func GetMetadataInfo(app string, instance registry.ServiceInstance, revision str
 		metadataStorageType = constant.DefaultMetadataStorageType
 	} else {
 		metadataStorageType = instance.GetMetadata()[constant.MetadataStorageTypePropertyName]
+		if metadataStorageType == "" {
+			// MetadataStorageTypePropertyName absent (e.g. old Java provider); treat as local
+			logger.Warnf("[Metadata] MetadataStorageType not set for instance %s, defaulting to RPC", instance.GetID())
+			metadataStorageType = constant.DefaultMetadataStorageType
+		}
 	}
 
 	if metadataStorageType == constant.RemoteMetadataStorageType {
-		metadataInfo, err = metadata.GetMetadataFromMetadataReport(revision, instance, registryId)
-		if err == nil {
+		var reportErr error
+		metadataInfo, reportErr = metadata.GetMetadataFromMetadataReport(revision, instance, registryId)
+		if reportErr == nil && metadataInfo != nil {
 			metaCache.Set(cacheKey, metadataInfo)
 			return metadataInfo, nil
 		}
-		logger.Errorf("[Metadata-Fallback] report failed, fallback to RPC app=%s registry=%s revision=%s err=%v",
-			app, registryId, revision, err)
+		if reportErr != nil {
+			logger.Errorf("[Metadata-Fallback] report failed, fallback to RPC app=%s registry=%s revision=%s err=%v",
+				app, registryId, revision, reportErr)
+		} else {
+			logger.Warnf("[Metadata-Fallback] report returned nil metadata, fallback to RPC app=%s registry=%s revision=%s",
+				app, registryId, revision)
+		}
+
+		metadataInfo, err = metadata.GetMetadataFromRpc(revision, instance)
+		if err != nil {
+			if reportErr != nil {
+				return nil, perrors.Errorf("[Metadata-Fallback] both report and RPC failed: reportErr=%v, rpcErr=%v",
+					reportErr, err)
+			}
+			return nil, err
+		}
+		if metadataInfo == nil {
+			return nil, perrors.Errorf("[Metadata-RPC] got nil metadata from RPC app=%s registry=%s revision=%s",
+				app, registryId, revision)
+		}
+		metaCache.Set(cacheKey, metadataInfo)
+		return metadataInfo, nil
 	}
 
+	// local / default storage path
 	metadataInfo, err = metadata.GetMetadataFromRpc(revision, instance)
 	if err != nil {
 		return nil, err
+	}
+	if metadataInfo == nil {
+		return nil, perrors.Errorf("[Metadata-RPC] got nil metadata from RPC app=%s registry=%s revision=%s",
+			app, registryId, revision)
 	}
 	metaCache.Set(cacheKey, metadataInfo)
 	return metadataInfo, nil

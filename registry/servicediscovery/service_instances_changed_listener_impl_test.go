@@ -271,6 +271,7 @@ func newTestServiceInstanceWithRevision(t *testing.T, port int, environment stri
 
 	cacheKey := testApp + ":" + constant.DefaultKey + ":" + revision
 	metaCache.Set(cacheKey, newTestMetadataInfo(t, revision, port, environment))
+	t.Cleanup(func() { metaCache.Delete(cacheKey) })
 	return newTestServiceInstanceOnly(port, environment, revision)
 }
 
@@ -457,8 +458,10 @@ func TestGetMetadataInfo_FallbackToRPC(t *testing.T) {
 
 	_, err := GetMetadataInfo(testApp, instance, "rev-fallback-to-rpc", constant.DefaultKey)
 	require.Error(t, err)
-	// Error must originate from the RPC/URL layer, not the report layer,
-	// proving that the fallback was actually executed.
+	// Both report and RPC fail: error should be a combined Fallback error containing both causes.
+	// [Metadata-Fallback] prefix proves the fallback path was taken.
+	assert.Contains(t, err.Error(), "[Metadata-Fallback]",
+		"fallback path should produce a [Metadata-Fallback] error")
 	assert.Contains(t, err.Error(), "[Metadata-URL]",
-		"fallback should reach RPC layer, not return the report error directly")
+		"fallback error should include the RPC/URL failure cause")
 }

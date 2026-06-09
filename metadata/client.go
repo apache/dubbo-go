@@ -93,7 +93,7 @@ func (m *triMetadataServiceV2) getMetadataInfo(ctx context.Context, revision str
 	res := m.invoker.Invoke(context.Background(), inv)
 	if res.Error() != nil {
 		logger.Errorf("[Metadata-RPC] could not get the metadata info from remote provider, err=%v", res.Error())
-		return nil, perrors.Errorf("[Metadata-RPC] %v", res.Error())
+		return nil, perrors.Wrapf(res.Error(), "[Metadata-RPC] remote metadata call failed")
 	}
 	return convertMetadataInfoV2(metadataInfo), nil
 }
@@ -164,7 +164,7 @@ func (m *remoteMetadataServiceV1) getMetadataInfo(ctx context.Context, revision 
 	res := m.invoker.Invoke(context.Background(), inv)
 	if res.Error() != nil {
 		logger.Errorf("[Metadata-RPC] RPC call failed to %s, err=%v", m.invoker.GetURL().Location, res.Error())
-		return nil, perrors.Errorf("[Metadata-RPC] %v", res.Error())
+		return nil, perrors.Wrapf(res.Error(), "[Metadata-RPC] RPC call failed to %s", m.invoker.GetURL().Location)
 	}
 
 	// rawResult now contains the deserialized value - could be *MetadataInfo, string, or nil

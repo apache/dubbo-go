@@ -175,6 +175,7 @@ func TestGetMetadataFromRpc_NilURL(t *testing.T) {
 	}
 	_, err := GetMetadataFromRpc("1", insNoProto)
 	require.Error(t, err)
+	assert.Contains(t, err.Error(), "[Metadata-URL]", "nil URL should produce a URL-layer error")
 }
 
 func Test_buildMetadataServiceURL(t *testing.T) {
