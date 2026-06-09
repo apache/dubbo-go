@@ -43,13 +43,6 @@ import (
 )
 
 const (
-	// todo(DMwangnima): these descriptions and defaults could be wrapped by functions of Options
-	defaultTimeout                     = 60 * time.Second
-	defaultStepTimeout                 = 3 * time.Second
-	defaultNotifyTimeout               = 5 * time.Second
-	defaultConsumerUpdateWaitTime      = 3 * time.Second
-	defaultOfflineRequestWindowTimeout = 3 * time.Second
-
 	// retry config
 	defaultMaxRetries     = 3
 	defaultRetryBaseDelay = 500 * time.Millisecond
@@ -178,9 +171,9 @@ func RegisterProtocol(name string) {
 }
 
 func totalTimeout(shutdown *global.ShutdownConfig) time.Duration {
-	timeout := parseDuration(shutdown.Timeout, timeoutDesc, defaultTimeout)
-	if timeout < defaultTimeout {
-		timeout = defaultTimeout
+	timeout := parseDuration(shutdown.Timeout, timeoutDesc, constant.DefaultShutdownConfigTimeout)
+	if timeout < constant.DefaultShutdownConfigTimeout {
+		timeout = constant.DefaultShutdownConfigTimeout
 	}
 
 	return timeout
@@ -256,7 +249,7 @@ func unregisterRegistries() {
 func notifyLongConnectionConsumers(shutdown *global.ShutdownConfig) {
 	logger.Info("[GracefulShutdown] notify long connection consumers.")
 
-	notifyTimeout := parseDuration(shutdown.NotifyTimeout, notifyTimeoutDesc, defaultNotifyTimeout)
+	notifyTimeout := parseDuration(shutdown.NotifyTimeout, notifyTimeoutDesc, constant.DefaultShutdownConfigNotifyTimeout)
 	callbacks := extension.GracefulShutdownCallbacks()
 	var wg sync.WaitGroup
 	for name, callback := range callbacks {
@@ -329,10 +322,10 @@ func invokeGracefulShutdownCallback(ctx context.Context, name string, callback e
 func waitAndAcceptNewRequests(shutdown *global.ShutdownConfig) {
 	logger.Info("[GracefulShutdown] keep waiting and accept new requests for a short time. ")
 
-	updateWaitTime := parseDuration(shutdown.ConsumerUpdateWaitTime, consumerUpdateWaitTimeDesc, defaultConsumerUpdateWaitTime)
+	updateWaitTime := parseDuration(shutdown.ConsumerUpdateWaitTime, consumerUpdateWaitTimeDesc, constant.DefaultShutdownConfigConsumerUpdateWaitTime)
 	time.Sleep(updateWaitTime)
 
-	stepTimeout := parseDuration(shutdown.StepTimeout, stepTimeoutDesc, defaultStepTimeout)
+	stepTimeout := parseDuration(shutdown.StepTimeout, stepTimeoutDesc, constant.DefaultShutdownConfigStepTimeout)
 
 	// ignore this step
 	if stepTimeout < 0 {
@@ -344,7 +337,7 @@ func waitAndAcceptNewRequests(shutdown *global.ShutdownConfig) {
 func waitingProviderProcessedTimeout(shutdown *global.ShutdownConfig, timeout time.Duration) {
 	deadline := time.Now().Add(timeout)
 
-	offlineRequestWindowTimeout := parseDuration(shutdown.OfflineRequestWindowTimeout, offlineRequestWindowTimeoutDesc, defaultOfflineRequestWindowTimeout)
+	offlineRequestWindowTimeout := parseDuration(shutdown.OfflineRequestWindowTimeout, offlineRequestWindowTimeoutDesc, constant.DefaultShutdownConfigOfflineRequestWindowTimeout)
 
 	for time.Now().Before(deadline) &&
 		(shutdown.ProviderActiveCount.Load() > 0 || time.Now().Before(shutdown.ProviderLastReceivedRequestTime.Load().Add(offlineRequestWindowTimeout))) {
@@ -363,7 +356,7 @@ func waitForSendingAndReceivingRequests(shutdown *global.ShutdownConfig) {
 }
 
 func waitingConsumerProcessedTimeout(shutdown *global.ShutdownConfig) {
-	stepTimeout := parseDuration(shutdown.StepTimeout, stepTimeoutDesc, defaultStepTimeout)
+	stepTimeout := parseDuration(shutdown.StepTimeout, stepTimeoutDesc, constant.DefaultShutdownConfigStepTimeout)
 
 	if stepTimeout <= 0 {
 		return

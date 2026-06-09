@@ -38,7 +38,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
@@ -85,15 +84,6 @@ func TestConsumerFilterInvokeWithGlobalPackage(t *testing.T) {
 	result := filter.Invoke(context.Background(), base.NewBaseInvoker(baseUrl), rpcInvocation)
 	assert.NotNil(t, result)
 	assert.NoError(t, result.Error())
-}
-
-func TestConsumerFilterAcceptsConfigPackageShutdownConfigAlias(t *testing.T) {
-	filter := &consumerGracefulShutdownFilter{}
-	shutdownConfig := config.NewShutDownConfigBuilder().Build()
-
-	filter.Set(constant.GracefulShutdownFilterShutdownConfig, shutdownConfig)
-
-	assert.Same(t, shutdownConfig, filter.shutdownConfig)
 }
 
 func TestIsClosingError(t *testing.T) {

@@ -281,7 +281,7 @@ func TestTotalTimeout(t *testing.T) {
 	// Test with default timeout
 	config := global.DefaultShutdownConfig()
 	timeout := totalTimeout(config)
-	assert.Equal(t, defaultTimeout, timeout)
+	assert.Equal(t, constant.DefaultShutdownConfigTimeout, timeout)
 
 	// Test with custom timeout
 	config.Timeout = "120s"
@@ -291,12 +291,12 @@ func TestTotalTimeout(t *testing.T) {
 	// Test with invalid timeout
 	config.Timeout = "invalid"
 	timeout = totalTimeout(config)
-	assert.Equal(t, defaultTimeout, timeout)
+	assert.Equal(t, constant.DefaultShutdownConfigTimeout, timeout)
 
 	// Test with timeout less than default
 	config.Timeout = "30s"
 	timeout = totalTimeout(config)
-	assert.Equal(t, defaultTimeout, timeout) // Should use default if less than default
+	assert.Equal(t, constant.DefaultShutdownConfigTimeout, timeout) // Should use default if less than default
 }
 
 func TestParseDuration(t *testing.T) {
