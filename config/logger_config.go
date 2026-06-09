@@ -130,10 +130,10 @@ func (l *LoggerConfig) toURL() *common.URL {
 	// Add trace integration parameters if configured
 	if l.TraceIntegration != nil {
 		if l.TraceIntegration.Enabled != nil {
-			url.AddParam(constant.LoggerTraceEnabledKey, strconv.FormatBool(*l.TraceIntegration.Enabled))
+			url.SetParam(constant.LoggerTraceEnabledKey, strconv.FormatBool(*l.TraceIntegration.Enabled))
 		}
 		if l.TraceIntegration.RecordErrorToSpan != nil {
-			url.AddParam(constant.LoggerTraceRecordErrorKey, strconv.FormatBool(*l.TraceIntegration.RecordErrorToSpan))
+			url.SetParam(constant.LoggerTraceRecordErrorKey, strconv.FormatBool(*l.TraceIntegration.RecordErrorToSpan))
 		}
 	}
 
