@@ -43,7 +43,11 @@ const (
 	Name = "etcdv3"
 )
 
-var listenServiceEvent = (*etcdv3.EventListener).ListenServiceEvent
+var (
+	listenServiceEvent = (*etcdv3.EventListener).ListenServiceEvent
+	validEtcdClient    = (*gxetcd.Client).Valid
+	deleteEtcdKey      = (*gxetcd.Client).Delete
+)
 
 func init() {
 	extension.SetRegistry(Name, newETCDV3Registry)
@@ -129,10 +133,10 @@ func (r *etcdV3Registry) DoRegister(root string, node string) error {
 func (r *etcdV3Registry) DoUnregister(root string, node string) error {
 	r.cltLock.Lock()
 	defer r.cltLock.Unlock()
-	if r.client == nil || !r.client.Valid() {
+	if r.client == nil || !validEtcdClient(r.client) {
 		return perrors.New("etcd client is not valid")
 	}
-	return r.client.Delete(path.Join(root, node))
+	return deleteEtcdKey(r.client, path.Join(root, node))
 }
 
 // CloseAndNilClient closes listeners and clear client

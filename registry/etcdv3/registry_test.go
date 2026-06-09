@@ -43,6 +43,27 @@ func TestEtcdV3RegistryDoUnregisterRejectsInvalidClient(t *testing.T) {
 	assert.ErrorContains(t, err, "etcd client is not valid")
 }
 
+func TestEtcdV3RegistryDoUnregisterDeletesValidClientKey(t *testing.T) {
+	reg := newTestEtcdRegistry(t)
+	reg.client = &gxetcd.Client{}
+	restoreValid := stubValidEtcdClient(true)
+	defer restoreValid()
+	originalDelete := deleteEtcdKey
+	var deletedKey string
+	deleteEtcdKey = func(_ *gxetcd.Client, key string) error {
+		deletedKey = key
+		return nil
+	}
+	defer func() {
+		deleteEtcdKey = originalDelete
+	}()
+
+	err := reg.DoUnregister("/dubbo", "org.apache.demo.UserProvider")
+
+	require.NoError(t, err)
+	assert.Equal(t, "/dubbo/org.apache.demo.UserProvider", deletedKey)
+}
+
 func TestEtcdV3RegistryDoUnsubscribeClosesServiceListener(t *testing.T) {
 	reg := newTestEtcdRegistry(t)
 	reg.listener = remotingEtcdv3.NewEventListener(nil)
@@ -236,5 +257,15 @@ func stubListenServiceEvent() func() {
 	listenServiceEvent = func(_ *remotingEtcdv3.EventListener, _ string, _ remoting.DataListener) {}
 	return func() {
 		listenServiceEvent = original
+	}
+}
+
+func stubValidEtcdClient(valid bool) func() {
+	original := validEtcdClient
+	validEtcdClient = func(_ *gxetcd.Client) bool {
+		return valid
+	}
+	return func() {
+		validEtcdClient = original
 	}
 }

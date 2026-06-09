@@ -23,6 +23,8 @@ import (
 )
 
 import (
+	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -184,6 +186,50 @@ func TestConfigurationListenerNextStopsWhenRegistryDone(t *testing.T) {
 	require.Error(t, err)
 	assert.Nil(t, event)
 	assert.ErrorContains(t, err, "listener stopped")
+}
+
+func TestConfigurationListenerNextSkipsDeleteEventWhenClientValid(t *testing.T) {
+	reg := newTestEtcdRegistry(t)
+	reg.client = &gxetcd.Client{}
+	restore := stubValidEtcdClient(true)
+	defer restore()
+	serviceURL := mustURL(t, "dubbo://127.0.0.1:20000/org.apache.demo.UserProvider?group=g&version=v")
+	listener := NewConfigurationListener(reg, serviceURL)
+	defer listener.Close()
+
+	listener.Process(&config_center.ConfigChangeEvent{
+		Key:        serviceURL.String(),
+		Value:      serviceURL,
+		ConfigType: remoting.EventTypeDel,
+	})
+	listener.Process(&config_center.ConfigChangeEvent{
+		Key:        serviceURL.String(),
+		Value:      serviceURL,
+		ConfigType: remoting.EventTypeAdd,
+	})
+	event, err := listener.Next()
+
+	require.NoError(t, err)
+	assert.Equal(t, remoting.EventTypeAdd, event.Action)
+}
+
+func TestConfigurationListenerShouldIgnoreDeleteEventAfterRegistryDone(t *testing.T) {
+	reg := newTestEtcdRegistry(t)
+	reg.client = &gxetcd.Client{}
+	restore := stubValidEtcdClient(true)
+	defer restore()
+	serviceURL := mustURL(t, "dubbo://127.0.0.1:20000/org.apache.demo.UserProvider?group=g&version=v")
+	listener := NewConfigurationListener(reg, serviceURL)
+	defer listener.Close()
+	close(reg.Done())
+
+	ignore := listener.shouldIgnoreDeleteEvent(&config_center.ConfigChangeEvent{
+		Key:        serviceURL.String(),
+		Value:      serviceURL,
+		ConfigType: remoting.EventTypeDel,
+	})
+
+	assert.True(t, ignore)
 }
 
 func newTestEtcdRegistry(t *testing.T) *etcdV3Registry {

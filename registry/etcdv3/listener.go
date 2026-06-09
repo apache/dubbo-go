@@ -161,17 +161,24 @@ func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 		case val := <-l.events.Out():
 			e, _ := val.(*config_center.ConfigChangeEvent)
 			logger.Infof("[Registry][Etcdv3] got etcd event %#v", e)
-			if e.ConfigType == remoting.EventTypeDel && l.registry.client != nil && l.registry.client.Valid() {
-				select {
-				case <-l.registry.Done():
-					logger.Warnf("[Registry][Etcdv3] update @result{%s}. But its connection to registry is invalid", e.Value)
-				default:
-				}
+			if l.shouldIgnoreDeleteEvent(e) {
 				continue
 			}
 			return &registry.ServiceEvent{Action: e.ConfigType, Service: e.Value.(*common.URL)}, nil
 		}
 	}
+}
+
+func (l *configurationListener) shouldIgnoreDeleteEvent(e *config_center.ConfigChangeEvent) bool {
+	if e.ConfigType != remoting.EventTypeDel || l.registry.client == nil || !validEtcdClient(l.registry.client) {
+		return false
+	}
+	select {
+	case <-l.registry.Done():
+		logger.Warnf("[Registry][Etcdv3] update @result{%s}. But its connection to registry is invalid", e.Value)
+	default:
+	}
+	return true
 }
 
 // Close etcd registry center
