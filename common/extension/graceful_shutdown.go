@@ -80,7 +80,7 @@ func GetAllCustomShutdownCallbacks() *list.List {
 
 // RegisterGracefulShutdownCallback registers a protocol-level graceful shutdown callback.
 func RegisterGracefulShutdownCallback(name string, f GracefulShutdownCallback) {
-	if ok := gracefulShutdownCallbacks.RegisterIfAbsent(name, f); !ok {
+	if !gracefulShutdownCallbacks.RegisterIfAbsent(name, f) {
 		logger.Warnf("[GracefulShutdown] graceful shutdown callback %q already registered, duplicate registration ignored", name)
 	}
 }
