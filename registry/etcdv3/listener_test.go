@@ -18,43 +18,83 @@
 package etcdv3
 
 import (
+	"net/url"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 type MockDataListener struct{}
 
 func (*MockDataListener) Process(configType *config_center.ConfigChangeEvent) {}
 
-/*
-func Test_dataListener_DataChange(t *testing.T) {
-	tests := []struct {
-		name   string
-		fields dataListenerFields
-		args   args
-		want   bool
-	}{
-		{
-			name: "test",
-			fields: dataListenerFields{
-				interestedURL: nil,
-				listener:      &MockDataListener{},
-			},
-			args: args{
-				eventType: remoting.Event{
-					Path: "com.ikurento.user.UserProvider/providers/jsonrpc%3A%2F%2F127.0.0.1%3A20001%2Fcom.ikurento.user.UserProvider%3Fanyhost%3Dtrue%26app.version%3D0.0.1%26application%3DBDTService%26category%3Dproviders%26cluster%3Dfailover%26dubbo%3Ddubbo-provider-golang-2.6.0%26environment%3Ddev%26group%3D%26interface%3Dcom.ikurento.user.UserProvider%26ip%3D10.32.20.124%26loadbalance%3Drandom%26methods.GetUser.loadbalance%3Drandom%26methods.GetUser.retries%3D1%26methods.GetUser.weight%3D0%26module%3Ddubbogo%2Buser-info%2Bserver%26name%3DBDTService%26organization%3Dikurento.com%26owner%3DZX%26pid%3D74500%26retries%3D0%26service.filter%3Decho%26side%3Dprovider%26timestamp%3D1560155407%26version%3D%26warmup%3D100",
-				},
-			},
-			want: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			l := newDataListener(tt.fields)
-			if got := l.DataChange(tt.args.eventType); got != tt.want {
-				t.Errorf("DataChange() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+func TestDataListenerDataChangeDispatchesToSubscribedService(t *testing.T) {
+	reg := newTestEtcdRegistry(t)
+	serviceURL := mustURL(t, "dubbo://127.0.0.1:20000/org.apache.demo.UserProvider?group=g&version=v")
+	listener := NewConfigurationListener(reg, serviceURL)
+	defer listener.Close()
+
+	dataListener := NewRegistryDataListener()
+	dataListener.SubscribeURL(serviceURL, listener)
+
+	ok := dataListener.DataChange(remoting.Event{
+		Path:   "/dubbo/org.apache.demo.UserProvider/providers/" + url.QueryEscape(serviceURL.String()),
+		Action: remoting.EventTypeAdd,
+	})
+	require.True(t, ok)
+
+	event, err := listener.Next()
+	require.NoError(t, err)
+	assert.Equal(t, remoting.EventTypeAdd, event.Action)
+	assert.Equal(t, serviceURL.ServiceKey(), event.Service.ServiceKey())
 }
 
-*/
+func TestDataListenerUnsubscribeStopsDispatch(t *testing.T) {
+	reg := newTestEtcdRegistry(t)
+	serviceURL := mustURL(t, "dubbo://127.0.0.1:20000/org.apache.demo.UserProvider?group=g&version=v")
+	listener := NewConfigurationListener(reg, serviceURL)
+
+	dataListener := NewRegistryDataListener()
+	dataListener.SubscribeURL(serviceURL, listener)
+	removed := dataListener.UnSubscribeURL(serviceURL)
+
+	require.Same(t, listener, removed)
+	require.True(t, listener.isClosed)
+	assert.False(t, dataListener.DataChange(remoting.Event{
+		Path:   "/dubbo/org.apache.demo.UserProvider/providers/" + url.QueryEscape(serviceURL.String()),
+		Action: remoting.EventTypeAdd,
+	}))
+}
+
+func TestDataListenerCloseClosesSubscriptions(t *testing.T) {
+	reg := newTestEtcdRegistry(t)
+	serviceURL := mustURL(t, "dubbo://127.0.0.1:20000/org.apache.demo.UserProvider?group=g&version=v")
+	listener := NewConfigurationListener(reg, serviceURL)
+
+	dataListener := NewRegistryDataListener()
+	dataListener.SubscribeURL(serviceURL, listener)
+	dataListener.Close()
+
+	require.True(t, dataListener.closed)
+	require.True(t, listener.isClosed)
+}
+
+func newTestEtcdRegistry(t *testing.T) *etcdV3Registry {
+	t.Helper()
+	registryURL := mustURL(t, "etcdv3://127.0.0.1:2379")
+	reg := &etcdV3Registry{}
+	reg.InitBaseRegistry(registryURL, reg)
+	return reg
+}
+
+func mustURL(t *testing.T, rawURL string) *common.URL {
+	t.Helper()
+	parsedURL, err := common.NewURL(rawURL)
+	require.NoError(t, err)
+	return parsedURL
+}

@@ -18,6 +18,15 @@
 // Package etcdv3 contains tests for etcdv3 registry components.
 package etcdv3
 
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	remotingEtcdv3 "dubbo.apache.org/dubbo-go/v3/remoting/etcdv3"
+)
+
 /*
 import (
 	"reflect"
@@ -120,3 +129,30 @@ func Test_etcdV3Registry_DoUnregister(t *testing.T) {
 }
 
 */
+
+func TestEtcdV3RegistryDoUnregisterRejectsInvalidClient(t *testing.T) {
+	reg := newTestEtcdRegistry(t)
+
+	err := reg.DoUnregister("/dubbo", "org.apache.demo.UserProvider")
+
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "etcd client is not valid")
+}
+
+func TestEtcdV3RegistryDoUnsubscribeClosesServiceListener(t *testing.T) {
+	reg := newTestEtcdRegistry(t)
+	reg.listener = remotingEtcdv3.NewEventListener(nil)
+	reg.dataListener = NewRegistryDataListener()
+
+	serviceURL := mustURL(t, "dubbo://127.0.0.1:20000/org.apache.demo.UserProvider?group=g&version=v")
+	listener := NewConfigurationListener(reg, serviceURL)
+	reg.dataListener.SubscribeURL(serviceURL, listener)
+
+	removed, err := reg.DoUnsubscribe(serviceURL)
+
+	require.NoError(t, err)
+	require.Same(t, listener, removed)
+	assert.True(t, listener.isClosed)
+	_, ok := reg.dataListener.subscribed[serviceURL.ServiceKey()]
+	assert.False(t, ok)
+}
