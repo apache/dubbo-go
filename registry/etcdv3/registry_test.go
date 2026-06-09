@@ -153,7 +153,7 @@ func TestEtcdV3RegistryDoSubscribeRejectsBrokenClient(t *testing.T) {
 
 	require.Error(t, err)
 	assert.Nil(t, listener)
-	assert.ErrorContains(t, err, "etcd client broken")
+	require.ErrorContains(t, err, "etcd client broken")
 	require.NotNil(t, reg.dataListener)
 }
 
