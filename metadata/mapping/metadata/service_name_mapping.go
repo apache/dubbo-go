@@ -119,18 +119,56 @@ func backoff(attempt int) time.Duration {
 // Get will return the application-level services. If not found, the empty set will be returned.
 func (d *ServiceNameMapping) Get(url *common.URL, listener mapping.MappingListener) (*gxset.HashSet, error) {
 	serviceInterface := url.GetParam(constant.InterfaceKey, "")
-	metadataReport := metadata.GetMetadataReport()
-	if metadataReport == nil {
+	metadataReports := metadata.GetMetadataReports()
+	if len(metadataReports) == 0 {
 		return nil, perrors.New("can not get mapping in remote cause no metadata report instance found")
 	}
-	return metadataReport.GetServiceAppMapping(serviceInterface, DefaultGroup, listener)
+	// Attach the listener to the stable primary report only (GetMetadataReport uses
+	// a deterministic selection: prefer "default", otherwise lexicographic first).
+	// GetMetadataReports() iterates a map so its order is non-deterministic; using
+	// i==0 as the anchor would bind the listener to a random backend each run.
+	primaryReport := metadata.GetMetadataReport()
+	var result *gxset.HashSet
+	var errs []error
+	for _, metadataReport := range metadataReports {
+		var reportListener mapping.MappingListener
+		if metadataReport == primaryReport {
+			reportListener = listener
+		}
+		set, err := metadataReport.GetServiceAppMapping(serviceInterface, DefaultGroup, reportListener)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		if result == nil {
+			result = set
+		} else {
+			result.Add(set.Values()...)
+		}
+	}
+	if result == nil {
+		return nil, errors.Join(errs...)
+	}
+	return result, nil
 }
 
+// Remove removes the service-to-app mapping for the given URL from all
+// registered metadata reports. Unlike Map (which stops on the first failure),
+// Remove is best-effort: it attempts every report and returns all errors
+// joined together so the caller can see the full failure picture. The
+// intent is to avoid leaving stale entries in any registry due to a transient
+// error in one of the others.
 func (d *ServiceNameMapping) Remove(url *common.URL) error {
 	serviceInterface := url.GetParam(constant.InterfaceKey, "")
-	metadataReport := metadata.GetMetadataReport()
-	if metadataReport == nil {
+	metadataReports := metadata.GetMetadataReports()
+	if len(metadataReports) == 0 {
 		return perrors.New("can not remove mapping in remote cause no metadata report instance found")
 	}
-	return metadataReport.RemoveServiceAppMappingListener(serviceInterface, DefaultGroup)
+	var errs []error
+	for _, metadataReport := range metadataReports {
+		if err := metadataReport.RemoveServiceAppMappingListener(serviceInterface, DefaultGroup); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errors.Join(errs...)
 }
