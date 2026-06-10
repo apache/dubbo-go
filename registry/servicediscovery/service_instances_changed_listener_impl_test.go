@@ -93,7 +93,7 @@ func TestServiceInstancesChangedListenerRefreshesAndClearsEnvironmentWhenRevisio
 	listener.AddListenerAndNotify(common.MatchKey(testInterface, constant.TriProtocol), notify)
 
 	revision := "rev-20001-same-environment-change"
-	metaCache.Set(constant.DefaultKey+":"+revision, newTestMetadataInfo(t, revision, 20001, "pre"))
+	metaCache.Set(testApp+":"+constant.DefaultKey+":"+revision, newTestMetadataInfo(t, revision, 20001, "pre"))
 
 	pre := newTestServiceInstanceOnly(20001, "pre", revision)
 	require.NoError(t, listener.OnEvent(registry.NewServiceInstancesChangedEvent(testApp, []registry.ServiceInstance{
@@ -130,7 +130,7 @@ func TestServiceInstancesChangedListenerSkipsNilMetadataWithoutPanic(t *testing.
 
 	revision := "rev-20003-nil-metadata"
 	var metadataInfo *info.MetadataInfo
-	cacheKey := constant.DefaultKey + ":" + revision
+	cacheKey := testApp + ":" + constant.DefaultKey + ":" + revision
 	metaCache.Set(cacheKey, metadataInfo)
 	t.Cleanup(func() {
 		metaCache.Delete(cacheKey)
@@ -270,7 +270,7 @@ func newTestServiceInstanceWithRevision(t *testing.T, port int, environment stri
 
 	// Pre-populate the cache under the composite key used by GetMetadataInfo.
 	// All test listeners use constant.DefaultKey as their registryId.
-	metaCache.Set(constant.DefaultKey+":"+revision, newTestMetadataInfo(t, revision, port, environment))
+	metaCache.Set(testApp+":"+constant.DefaultKey+":"+revision, newTestMetadataInfo(t, revision, port, environment))
 	return newTestServiceInstanceOnly(port, environment, revision)
 }
 
