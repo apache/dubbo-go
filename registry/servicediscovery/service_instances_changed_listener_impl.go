@@ -149,7 +149,8 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 	}
 	lstn.revisionToMetadata = newRevisionToMetadata
 	for revision, metadataInfo := range newRevisionToMetadata {
-		metaCache.Set(revision, metadataInfo)
+		cacheKey := lstn.app + ":" + lstn.registryId + ":" + revision
+		metaCache.Set(cacheKey, metadataInfo)
 	}
 
 	for serviceKey, revisionServices := range serviceToRevisionServices {
@@ -248,7 +249,7 @@ func GetMetadataInfo(app string, instance registry.ServiceInstance, revision str
 	cacheOnce.Do(func() {
 		initCache(app)
 	})
-	cacheKey := registryId + ":" + revision
+	cacheKey := app + ":" + registryId + ":" + revision
 	if metadataInfo, ok := metaCache.Get(cacheKey); ok {
 		return metadataInfo.(*info.MetadataInfo), nil
 	}

@@ -45,7 +45,7 @@ const defaultTimeout = "5s" // s
 func GetMetadataFromMetadataReport(revision string, instance registry.ServiceInstance, registryId string) (*info.MetadataInfo, error) {
 	report := GetMetadataReportByRegistry(registryId)
 	if report == nil {
-		return nil, perrors.New("no metadata report instance found,please check ")
+		return nil, perrors.Errorf("no metadata report instance found for registryId=%s, please check metadata-report configuration", registryId)
 	}
 	return report.GetAppMetadata(instance.GetServiceName(), revision)
 }

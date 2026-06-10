@@ -53,6 +53,10 @@ func TestExportedRevisionIsRegistryScoped(t *testing.T) {
 
 	metadata.AddService("rev-reg-a", urlA)
 	metadata.AddService("rev-reg-b", urlB)
+	t.Cleanup(func() {
+		metadata.RemoveService("rev-reg-a", urlA)
+		metadata.RemoveService("rev-reg-b", urlB)
+	})
 
 	cus := &exportedServicesRevisionMetadataCustomizer{}
 
@@ -87,6 +91,9 @@ func TestExportedRevisionMissingRegistryIdYieldsZero(t *testing.T) {
 		common.WithPort("20880"),
 	)
 	metadata.AddService("some-registry", urlA)
+	t.Cleanup(func() {
+		metadata.RemoveService("some-registry", urlA)
+	})
 
 	cus := &exportedServicesRevisionMetadataCustomizer{}
 
@@ -118,6 +125,10 @@ func TestSubscribedRevisionIsRegistryScoped(t *testing.T) {
 
 	metadata.AddSubscribeURL("sub-reg-a", urlA)
 	metadata.AddSubscribeURL("sub-reg-b", urlB)
+	t.Cleanup(func() {
+		metadata.RemoveSubscribeURL("sub-reg-a", urlA)
+		metadata.RemoveSubscribeURL("sub-reg-b", urlB)
+	})
 
 	cus := &subscribedServicesRevisionMetadataCustomizer{}
 
@@ -147,6 +158,9 @@ func TestSubscribedRevisionMissingRegistryIdYieldsZero(t *testing.T) {
 		common.WithPort("20880"),
 	)
 	metadata.AddSubscribeURL("some-registry", urlA)
+	t.Cleanup(func() {
+		metadata.RemoveSubscribeURL("some-registry", urlA)
+	})
 
 	cus := &subscribedServicesRevisionMetadataCustomizer{}
 	inst := &registry.DefaultServiceInstance{

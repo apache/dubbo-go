@@ -94,11 +94,16 @@ func (d *ServiceNameMapping) Get(url *common.URL, listener mapping.MappingListen
 	if len(metadataReports) == 0 {
 		return nil, perrors.New("can not get mapping in remote cause no metadata report instance found")
 	}
+	// Attach the listener to the stable primary report only (GetMetadataReport uses
+	// a deterministic selection: prefer "default", otherwise lexicographic first).
+	// GetMetadataReports() iterates a map so its order is non-deterministic; using
+	// i==0 as the anchor would bind the listener to a random backend each run.
+	primaryReport := metadata.GetMetadataReport()
 	var result *gxset.HashSet
 	var errs []error
-	for i, metadataReport := range metadataReports {
+	for _, metadataReport := range metadataReports {
 		var reportListener mapping.MappingListener
-		if i == 0 {
+		if metadataReport == primaryReport {
 			reportListener = listener
 		}
 		set, err := metadataReport.GetServiceAppMapping(serviceInterface, DefaultGroup, reportListener)

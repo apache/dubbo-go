@@ -86,11 +86,11 @@ func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
 }
 
 func (s *serviceDiscoveryRegistry) RegisterService() error {
-	metaInfo := metadata.GetMetadataInfo(s.url.GetParam(constant.RegistryIdKey, ""))
-	if metaInfo == nil {
-		panic("no metada info found of registry id " + s.url.GetParam(constant.RegistryIdKey, ""))
-	}
 	registryId := s.url.GetParam(constant.RegistryIdKey, constant.DefaultKey)
+	metaInfo := metadata.GetMetadataInfo(registryId)
+	if metaInfo == nil {
+		panic("no metada info found of registry id " + registryId)
+	}
 	urls := metaInfo.GetExportedServiceURLs()
 	for _, url := range urls {
 		instance := createInstance(metaInfo, url, registryId)
