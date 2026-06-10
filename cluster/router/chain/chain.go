@@ -49,12 +49,24 @@ type RouterChain struct {
 	// instance will never delete or recreate.
 	builtinRouters []router.PriorityRouter
 
-	mutex sync.RWMutex
+	cache *routerCache
+	// generation is bumped under mutex on every SetInvokers and identifies the current
+	// invoker snapshot. It is handed to Route callers (via invocation attribute) and stored
+	// in the cache so a router can prove the cached pool belongs to the snapshot it is routing
+	// for. 0 means SetInvokers has never run, so no cache exists yet.
+	generation uint64
+	mutex      sync.RWMutex
 }
 
 // Route Loop routers in RouterChain and call Route method to determine the target invokers list.
 func (c *RouterChain) Route(url *common.URL, invocation base.Invocation) []base.Invoker {
-	invokers := c.snapshotInvokers()
+	invokers, generation := c.snapshotInvokers()
+	// Publish the snapshot generation so Poolable routers can verify their cache was built
+	// from this same snapshot before taking the bitmap fast path. generation == 0 means no
+	// SetInvokers has run yet, hence no cache exists, so there is nothing to publish.
+	if generation > 0 {
+		invocation.SetAttribute(constant.RouterChainCacheGeneration, generation)
+	}
 	finalInvokers := make([]base.Invoker, 0, len(invokers))
 	// multiple invoker may include different methods, find correct invoker otherwise
 	// will return the invoker without methods
@@ -66,10 +78,13 @@ func (c *RouterChain) Route(url *common.URL, invocation base.Invocation) []base.
 
 	if len(finalInvokers) == 0 {
 		finalInvokers = invokers
+	} else if len(finalInvokers) != len(invokers) {
+		invocation.SetAttribute(constant.RouterCacheDisable, true)
 	}
 
 	for _, r := range c.copyRouters() {
 		finalInvokers = r.Route(finalInvokers, url, invocation)
+		invocation.SetAttribute(constant.RouterCacheDisable, true)
 	}
 	return finalInvokers
 }
@@ -93,10 +108,25 @@ func (c *RouterChain) AddRouters(routers []router.PriorityRouter) {
 func (c *RouterChain) SetInvokers(invokers []base.Invoker) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
+	c.generation++
 	c.invokers = invokers
+	c.rebuildCache(invokers)
 	for _, v := range c.routers {
 		v.Notify(c.invokers)
 	}
+}
+
+func (c *RouterChain) rebuildCache(invokers []base.Invoker) {
+	if c.cache == nil {
+		c.cache = newRouterCache()
+	}
+	// Re-inject cache so routers added via AddRouters can receive it.
+	for _, r := range c.routers {
+		if accessor, ok := r.(router.CacheAccessor); ok {
+			accessor.SetCache(c.cache)
+		}
+	}
+	c.cache.rebuild(c.generation, invokers, c.routers)
 }
 
 // copyRouters make a snapshot copy from RouterChain's router list.
@@ -108,13 +138,13 @@ func (c *RouterChain) copyRouters() []router.PriorityRouter {
 	return ret
 }
 
-// snapshotInvokers returns a copy of current invokers under lock.
-func (c *RouterChain) snapshotInvokers() []base.Invoker {
+// snapshotInvokers returns a copy of current invokers and their generation under lock.
+func (c *RouterChain) snapshotInvokers() ([]base.Invoker, uint64) {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 	ret := make([]base.Invoker, len(c.invokers))
 	copy(ret, c.invokers)
-	return ret
+	return ret, c.generation
 }
 
 // injectStaticRouters injects static router configurations into the router chain.
