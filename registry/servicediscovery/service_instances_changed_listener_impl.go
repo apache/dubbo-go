@@ -25,13 +25,11 @@ import (
 )
 
 import (
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/gof/observer"
 	"github.com/dubbogo/gost/log/logger"
+
+	perrors "github.com/pkg/errors"
 )
 
 import (
