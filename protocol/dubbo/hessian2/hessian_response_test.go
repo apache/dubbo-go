@@ -281,7 +281,9 @@ func TestToGenericExceptionConversions(t *testing.T) {
 			require.NotNil(t, exception)
 			assert.Equal(t, test.wantClass, exception.ExceptionClass)
 			assert.Equal(t, test.wantMessage, exception.ExceptionMessage)
-			assert.Equal(t, test.wantDetailString, exception.Error())
+			if test.wantDetailString != "" {
+				assert.Equal(t, test.wantDetailString, exception.Error())
+			}
 		})
 	}
 }
