@@ -53,6 +53,27 @@ func (f *captureShutdownConfigFilter) Set(_ string, config any) {
 }
 
 func TestGracefulShutdownInitPassesGlobalShutdownConfigToFilters(t *testing.T) {
+	oldRoot := GetRootConfig()
+	oldConsumerFilter, hadConsumerFilter := extension.GetFilter(constant.GracefulShutdownConsumerFilterKey)
+	oldProviderFilter, hadProviderFilter := extension.GetFilter(constant.GracefulShutdownProviderFilterKey)
+	t.Cleanup(func() {
+		setRootConfigInternal(oldRoot)
+		if hadConsumerFilter {
+			extension.SetFilter(constant.GracefulShutdownConsumerFilterKey, func() filter.Filter {
+				return oldConsumerFilter
+			})
+		} else {
+			extension.UnregisterFilter(constant.GracefulShutdownConsumerFilterKey)
+		}
+		if hadProviderFilter {
+			extension.SetFilter(constant.GracefulShutdownProviderFilterKey, func() filter.Filter {
+				return oldProviderFilter
+			})
+		} else {
+			extension.UnregisterFilter(constant.GracefulShutdownProviderFilterKey)
+		}
+	})
+
 	internalSignal := false
 	SetRootConfig(RootConfig{
 		Shutdown: &ShutdownConfig{
