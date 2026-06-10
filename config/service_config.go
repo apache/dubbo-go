@@ -284,6 +284,8 @@ func (s *ServiceConfig) Export() error {
 			common.WithParamsValue(constant.ApplicationTagKey, s.rc.Application.Tag),
 			//common.WithParamsValue(constant.SslEnabledKey, strconv.FormatBool(config.GetSslEnabled())),
 			common.WithMethods(strings.Split(methods, ",")),
+			common.WithAttribute(constant.RpcServiceKey, s.rpcService),
+			common.WithAttribute(constant.ProviderConfigKey, s.rc.Provider),
 			common.WithToken(s.Token),
 			common.WithParamsValue(constant.MetadataTypeKey, s.metadataType),
 			// fix https://github.com/apache/dubbo-go/issues/2176
