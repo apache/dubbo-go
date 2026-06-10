@@ -30,6 +30,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 import (
@@ -40,11 +42,14 @@ import (
 // mockEtcdClient implements etcdClient for testing.
 type mockEtcdClient struct {
 	data map[string]string // key -> value
+	rev  map[string]int64  // key -> revision (monotonic counter)
+	seq  int64             // global revision counter
 }
 
 func newMockEtcdClient() *mockEtcdClient {
 	return &mockEtcdClient{
 		data: make(map[string]string),
+		rev:  make(map[string]int64),
 	}
 }
 
@@ -58,6 +63,8 @@ func (m *mockEtcdClient) Get(key string) (string, error) {
 
 func (m *mockEtcdClient) Put(key, value string) error {
 	m.data[key] = value
+	m.seq++
+	m.rev[key] = m.seq
 	return nil
 }
 
@@ -81,6 +88,35 @@ func (m *mockEtcdClient) GetChildren(key string) ([]string, []string, error) {
 		return nil, nil, gxetcd.ErrKVPairNotFound
 	}
 	return keys, values, nil
+}
+
+func (m *mockEtcdClient) GetValAndRev(key string) (string, int64, error) {
+	v, ok := m.data[key]
+	if !ok {
+		return "", 0, gxetcd.ErrKVPairNotFound
+	}
+	return v, m.rev[key], nil
+}
+
+func (m *mockEtcdClient) Create(key, value string) error {
+	if _, ok := m.data[key]; ok {
+		return gxetcd.ErrCompareFail
+	}
+	m.data[key] = value
+	m.seq++
+	m.rev[key] = m.seq
+	return nil
+}
+
+func (m *mockEtcdClient) UpdateWithRev(key, value string, rev int64, _ ...clientv3.OpOption) error {
+	cur := m.rev[key] // zero value (0) if missing
+	if cur != rev {
+		return gxetcd.ErrCompareFail
+	}
+	m.data[key] = value
+	m.seq++
+	m.rev[key] = m.seq
+	return nil
 }
 
 // --- Helper ---

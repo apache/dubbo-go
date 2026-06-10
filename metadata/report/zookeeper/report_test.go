@@ -19,6 +19,7 @@ package zookeeper
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 )
 

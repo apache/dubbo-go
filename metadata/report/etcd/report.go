@@ -22,19 +22,25 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+)
 
+import (
 	gxset "github.com/dubbogo/gost/container/set"
-
 	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
 	"github.com/dubbogo/gost/log/logger"
 
+	perrors "github.com/pkg/errors"
+
+	clientv3 "go.etcd.io/etcd/client/v3"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
-	perrors "github.com/pkg/errors"
 )
 
 // etcdClient abstracts the etcd Client operations used by etcdMetadataReport.
@@ -43,6 +49,9 @@ type etcdClient interface {
 	Put(key, value string) error
 	Delete(key string) error
 	GetChildren(key string) ([]string, []string, error)
+	GetValAndRev(key string) (string, int64, error)
+	Create(key, value string) error
+	UpdateWithRev(key, value string, rev int64, opts ...clientv3.OpOption) error
 }
 
 // etcdClientWrapper wraps *gxetcd.Client to implement etcdClient.

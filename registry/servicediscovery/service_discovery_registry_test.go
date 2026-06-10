@@ -744,6 +744,108 @@ func TestServiceDiscoveryRegistry_CalculateRenewAppMetadataDelay(t *testing.T) {
 	assert.LessOrEqual(t, delay, 32*time.Hour, "delay should be at most 32 hours")
 }
 
+// TestServiceDiscoveryRegistry_DoGarbageCollect_SkipsSpecialRevisions verifies that
+// special revisions ("0", "N/A", "") and entries with ModifyTime==0 are never GC'd,
+// while genuinely stale revisions are cleaned up.
+func TestServiceDiscoveryRegistry_DoGarbageCollect_SkipsSpecialRevisions(t *testing.T) {
+	staleTime := time.Now().Add(-240 * time.Hour).UnixMilli() // 10 days old
+	mockReport := &mockMetadataReportForGC{
+		revisions: []report.AppRevision{
+			{Revision: "0", ModifyTime: staleTime},               // special — skip
+			{Revision: "N/A", ModifyTime: staleTime},             // special — skip
+			{Revision: "", ModifyTime: staleTime},                // special — skip
+			{Revision: "no-timestamp", ModifyTime: 0},            // ModifyTime==0 — skip
+			{Revision: "genuinely-stale", ModifyTime: staleTime}, // stale, no alive ref — delete
+		},
+		reportURL: common.NewURLWithOptions(
+			common.WithParamsValue(constant.MetadataGCWindowKey, "5"),
+		),
+	}
+
+	sd := &mockServiceDiscoveryWithInstances{
+		mockServiceDiscovery: &mockServiceDiscovery{},
+		instances:            nil, // no alive instances
+	}
+
+	regID := fmt.Sprintf("gc-special-reg-%d", time.Now().UnixNano())
+	url := common.NewURLWithOptions(
+		common.WithParamsValue(constant.RegistryIdKey, regID),
+		common.WithParamsValue(constant.ApplicationKey, "test-app"),
+	)
+
+	reg := &serviceDiscoveryRegistry{
+		url:              url,
+		serviceDiscovery: sd,
+		metadataReport:   mockReport,
+	}
+
+	serviceURL, _ := common.NewURL("dubbo://127.0.0.1:20880/org.test.GCSpecial",
+		common.WithParamsValue(constant.ApplicationKey, "test-app"),
+	)
+	metadata.AddService(regID, serviceURL)
+
+	reg.doGarbageCollect()
+
+	// Only "genuinely-stale" should be deleted; all special/zero-timestamp revisions skipped
+	assert.Equal(t, []string{"genuinely-stale"}, mockReport.deleted)
+}
+
+// TestServiceDiscoveryRegistry_DoGarbageCollect_MixedAliveAndStale verifies the core
+// GC branch: stale revisions with no alive reference are cleaned, while stale revisions
+// still referenced by alive instances are preserved.
+func TestServiceDiscoveryRegistry_DoGarbageCollect_MixedAliveAndStale(t *testing.T) {
+	staleTime := time.Now().Add(-240 * time.Hour).UnixMilli() // 10 days old, well beyond 5-day window
+
+	mockReport := &mockMetadataReportForGC{
+		revisions: []report.AppRevision{
+			{Revision: "stale-unreferenced", ModifyTime: staleTime},     // stale, no ref — delete
+			{Revision: "stale-but-referenced", ModifyTime: staleTime},   // stale, but alive ref — keep
+			{Revision: "fresh-rev", ModifyTime: time.Now().UnixMilli()}, // fresh — keep
+		},
+		reportURL: common.NewURLWithOptions(
+			common.WithParamsValue(constant.MetadataGCWindowKey, "5"),
+		),
+	}
+
+	sd := &mockServiceDiscoveryWithInstances{
+		mockServiceDiscovery: &mockServiceDiscovery{},
+		instances: []registry.ServiceInstance{
+			&registry.DefaultServiceInstance{
+				Metadata: map[string]string{
+					constant.ExportedServicesRevisionPropertyName: "stale-but-referenced",
+				},
+			},
+			&registry.DefaultServiceInstance{
+				Metadata: map[string]string{
+					constant.ExportedServicesRevisionPropertyName: "fresh-rev",
+				},
+			},
+		},
+	}
+
+	regID := fmt.Sprintf("gc-mixed-reg-%d", time.Now().UnixNano())
+	url := common.NewURLWithOptions(
+		common.WithParamsValue(constant.RegistryIdKey, regID),
+		common.WithParamsValue(constant.ApplicationKey, "test-app"),
+	)
+
+	reg := &serviceDiscoveryRegistry{
+		url:              url,
+		serviceDiscovery: sd,
+		metadataReport:   mockReport,
+	}
+
+	serviceURL, _ := common.NewURL("dubbo://127.0.0.1:20880/org.test.GCMixed",
+		common.WithParamsValue(constant.ApplicationKey, "test-app"),
+	)
+	metadata.AddService(regID, serviceURL)
+
+	reg.doGarbageCollect()
+
+	// Only "stale-unreferenced" should be deleted
+	assert.Equal(t, []string{"stale-unreferenced"}, mockReport.deleted)
+}
+
 type mockInvoker struct{}
 
 func (m *mockInvoker) GetURL() *common.URL { return nil }
