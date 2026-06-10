@@ -248,7 +248,10 @@ func (lstn *ServiceInstancesChangedListenerImpl) GetEventType() reflect.Type {
 	return reflect.TypeOf(&registry.ServiceInstancesChangedEvent{})
 }
 
-// GetMetadataInfo get metadata info when MetadataStorageTypePropertyName is null
+// GetMetadataInfo retrieves the MetadataInfo for a service instance by revision.
+// Results are cached by app+registryId+revision. For "remote" storage type, it
+// fetches from the metadata report and falls back to RPC if the report fails or
+// returns nil. For all other storage types (including absent), it uses RPC directly.
 func GetMetadataInfo(app string, instance registry.ServiceInstance, revision string, registryId string) (*info.MetadataInfo, error) {
 	cacheOnce.Do(func() {
 		initCache(app)
@@ -262,12 +265,13 @@ func GetMetadataInfo(app string, instance registry.ServiceInstance, revision str
 	var metadataInfo *info.MetadataInfo
 	var err error
 	if instance.GetMetadata() == nil {
+		// No metadata map at all; treat as default (local/RPC) storage type.
 		metadataStorageType = constant.DefaultMetadataStorageType
 	} else {
 		metadataStorageType = instance.GetMetadata()[constant.MetadataStorageTypePropertyName]
 		if metadataStorageType == "" {
-			// MetadataStorageTypePropertyName absent (e.g. old Java provider); treat as local
-			logger.Warnf("[Metadata] MetadataStorageType not set for instance %s, defaulting to RPC", instance.GetID())
+			// MetadataStorageTypePropertyName absent (e.g. old Java provider); default to local storage type.
+			logger.Warnf("[Metadata] MetadataStorageType not set for instance %s, defaulting to local", instance.GetID())
 			metadataStorageType = constant.DefaultMetadataStorageType
 		}
 	}
@@ -290,10 +294,14 @@ func GetMetadataInfo(app string, instance registry.ServiceInstance, revision str
 		metadataInfo, err = metadata.GetMetadataFromRpc(revision, instance)
 		if err != nil {
 			if reportErr != nil {
-				return nil, perrors.Errorf("[Metadata-Fallback] both report and RPC failed: reportErr=%v, rpcErr=%v",
-					reportErr, err)
+				// Wrap rpcErr so callers can use errors.Is/As on the primary failure;
+				// reportErr is annotated as context since it triggered the fallback.
+				return nil, perrors.Wrapf(err,
+					"[Metadata-Fallback] both paths failed, reportErr: %v", reportErr)
 			}
-			return nil, err
+			// reportErr was nil — the report returned nil metadata and RPC also failed.
+			return nil, perrors.Wrapf(err,
+				"[Metadata-Fallback] RPC fallback failed after report returned nil metadata")
 		}
 		if metadataInfo == nil {
 			return nil, perrors.Errorf("[Metadata-RPC] got nil metadata from RPC app=%s registry=%s revision=%s",
@@ -303,10 +311,11 @@ func GetMetadataInfo(app string, instance registry.ServiceInstance, revision str
 		return metadataInfo, nil
 	}
 
-	// local / default storage path
+	// Non-remote storage type ("local" or absent): fetch metadata via RPC directly.
 	metadataInfo, err = metadata.GetMetadataFromRpc(revision, instance)
 	if err != nil {
-		return nil, err
+		return nil, perrors.Wrapf(err,
+			"[Metadata-RPC] failed app=%s registry=%s revision=%s", app, registryId, revision)
 	}
 	if metadataInfo == nil {
 		return nil, perrors.Errorf("[Metadata-RPC] got nil metadata from RPC app=%s registry=%s revision=%s",

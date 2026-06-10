@@ -77,15 +77,19 @@ func GetMetadataFromRpc(revision string, instance registry.ServiceInstance) (*in
 	return remoteService.getMetadataInfo(context.Background(), revision)
 }
 
+// remoteMetadataService is the internal interface for fetching MetadataInfo via RPC.
+// The context parameter is accepted for future cancellation support but is not yet propagated.
 type remoteMetadataService interface {
-	getMetadataInfo(context context.Context, revision string) (*info.MetadataInfo, error)
+	getMetadataInfo(_ context.Context, revision string) (*info.MetadataInfo, error)
 }
 
 type triMetadataServiceV2 struct {
 	invoker base.Invoker
 }
 
-func (m *triMetadataServiceV2) getMetadataInfo(ctx context.Context, revision string) (*info.MetadataInfo, error) {
+// getMetadataInfo fetches metadata via RPC using the Triple v2 protocol.
+// TODO(context-propagation): ctx is not yet forwarded to the invoker; cancellation is not respected.
+func (m *triMetadataServiceV2) getMetadataInfo(_ context.Context, revision string) (*info.MetadataInfo, error) {
 	const methodName = "GetMetadataInfo"
 	req := &tripleapi.MetadataRequest{Revision: revision}
 	metadataInfo := &tripleapi.MetadataInfoV2{}
@@ -154,7 +158,9 @@ type remoteMetadataServiceV1 struct {
 	invoker base.Invoker
 }
 
-func (m *remoteMetadataServiceV1) getMetadataInfo(ctx context.Context, revision string) (*info.MetadataInfo, error) {
+// getMetadataInfo fetches metadata via RPC using the Dubbo v1 protocol.
+// TODO(context-propagation): ctx is not yet forwarded to the invoker; cancellation is not respected.
+func (m *remoteMetadataServiceV1) getMetadataInfo(_ context.Context, revision string) (*info.MetadataInfo, error) {
 	const methodName = "getMetadataInfo"
 	// Use interface{} as reply parameter to accept any type (MetadataInfo or string)
 	// This avoids panic when Java returns String instead of MetadataInfo
