@@ -77,6 +77,21 @@ func TestDataListenerUnsubscribeStopsDispatch(t *testing.T) {
 	}))
 }
 
+func TestDataListenerUnsubscribeHandlesNonConfigurationListener(t *testing.T) {
+	serviceURL := mustURL(t, "dubbo://127.0.0.1:20000/org.apache.demo.UserProvider?group=g&version=v")
+	listener := &MockDataListener{}
+	dataListener := NewRegistryDataListener()
+	dataListener.SubscribeURL(serviceURL, listener)
+
+	var removed config_center.ConfigurationListener
+	require.NotPanics(t, func() {
+		removed = dataListener.UnSubscribeURL(serviceURL)
+	})
+
+	require.Same(t, listener, removed)
+	assert.Empty(t, dataListener.subscribed)
+}
+
 func TestDataListenerCloseClosesSubscriptions(t *testing.T) {
 	reg := newTestEtcdRegistry(t)
 	serviceURL := mustURL(t, "dubbo://127.0.0.1:20000/org.apache.demo.UserProvider?group=g&version=v")
@@ -88,6 +103,15 @@ func TestDataListenerCloseClosesSubscriptions(t *testing.T) {
 
 	require.True(t, dataListener.closed)
 	require.True(t, listener.isClosed)
+}
+
+func TestDataListenerCloseHandlesNonConfigurationListener(t *testing.T) {
+	serviceURL := mustURL(t, "dubbo://127.0.0.1:20000/org.apache.demo.UserProvider?group=g&version=v")
+	dataListener := NewRegistryDataListener()
+	dataListener.SubscribeURL(serviceURL, &MockDataListener{})
+
+	require.NotPanics(t, dataListener.Close)
+	assert.True(t, dataListener.closed)
 }
 
 func TestDataListenerIgnoresClosedSubscriptions(t *testing.T) {
@@ -188,7 +212,7 @@ func TestConfigurationListenerNextStopsWhenRegistryDone(t *testing.T) {
 	assert.ErrorContains(t, err, "listener stopped")
 }
 
-func TestConfigurationListenerNextSkipsDeleteEventWhenClientValid(t *testing.T) {
+func TestConfigurationListenerNextReturnsDeleteEventWhenClientValid(t *testing.T) {
 	reg := newTestEtcdRegistry(t)
 	reg.client = &gxetcd.Client{}
 	restore := stubValidEtcdClient(true)
@@ -202,15 +226,10 @@ func TestConfigurationListenerNextSkipsDeleteEventWhenClientValid(t *testing.T) 
 		Value:      serviceURL,
 		ConfigType: remoting.EventTypeDel,
 	})
-	listener.Process(&config_center.ConfigChangeEvent{
-		Key:        serviceURL.String(),
-		Value:      serviceURL,
-		ConfigType: remoting.EventTypeAdd,
-	})
 	event, err := listener.Next()
 
 	require.NoError(t, err)
-	assert.Equal(t, remoting.EventTypeAdd, event.Action)
+	assert.Equal(t, remoting.EventTypeDel, event.Action)
 }
 
 func TestConfigurationListenerShouldIgnoreDeleteEventAfterRegistryDone(t *testing.T) {

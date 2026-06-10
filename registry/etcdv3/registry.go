@@ -175,7 +175,7 @@ func (r *etcdV3Registry) DoSubscribe(svc *common.URL) (registry.Listener, error)
 	if listener := r.dataListener.subscribed[svc.ServiceKey()]; listener != nil {
 		etcdListener, _ := listener.(*configurationListener)
 		if etcdListener != nil {
-			if etcdListener.isClosed {
+			if etcdListener.closed() {
 				return nil, perrors.New("configListener already been closed")
 			}
 			return etcdListener, nil
@@ -196,7 +196,7 @@ func (r *etcdV3Registry) DoSubscribe(svc *common.URL) (registry.Listener, error)
 
 	// register the svc to dataListener
 	configListener := NewConfigurationListener(r, svc)
-	r.dataListener.SubscribeURL(svc, configListener)
+	r.dataListener.subscribeURLLocked(svc, configListener)
 	go listenServiceEvent(r.listener, etcdProviderPath(svc), r.dataListener)
 
 	return configListener, nil
@@ -210,12 +210,12 @@ func (r *etcdV3Registry) DoUnsubscribe(conf *common.URL) (registry.Listener, err
 	subscribedListener := r.dataListener.subscribed[conf.ServiceKey()]
 	if subscribedListener != nil {
 		etcdListener, _ := subscribedListener.(*configurationListener)
-		if etcdListener != nil && etcdListener.isClosed {
+		if etcdListener != nil && etcdListener.closed() {
 			r.dataListener.mutex.Unlock()
 			return nil, perrors.Errorf("configListener for service %s has already been closed", conf.ServiceKey())
 		}
 	}
-	listener := r.dataListener.UnSubscribeURL(conf)
+	listener := r.dataListener.unsubscribeURLLocked(conf)
 	r.dataListener.mutex.Unlock()
 
 	if r.listener == nil {
@@ -225,7 +225,11 @@ func (r *etcdV3Registry) DoUnsubscribe(conf *common.URL) (registry.Listener, err
 	if listener == nil {
 		return nil, nil
 	}
-	return listener.(registry.Listener), nil
+	registryListener, ok := listener.(registry.Listener)
+	if !ok {
+		return nil, perrors.Errorf("listener for service %s is not a registry listener", conf.ServiceKey())
+	}
+	return registryListener, nil
 }
 
 // LoadSubscribeInstances load subscribe instance

@@ -246,6 +246,20 @@ func TestEtcdV3RegistryDoUnsubscribeRejectsClosedSubscription(t *testing.T) {
 	assert.ErrorContains(t, err, "has already been closed")
 }
 
+func TestEtcdV3RegistryDoUnsubscribeRejectsNonRegistryListener(t *testing.T) {
+	reg := newTestEtcdRegistry(t)
+	reg.listener = remotingEtcdv3.NewEventListener(nil)
+	reg.dataListener = NewRegistryDataListener()
+	serviceURL := mustURL(t, "dubbo://127.0.0.1:20000/org.apache.demo.UserProvider?group=g&version=v")
+	reg.dataListener.SubscribeURL(serviceURL, &MockDataListener{})
+
+	listener, err := reg.DoUnsubscribe(serviceURL)
+
+	require.Error(t, err)
+	assert.Nil(t, listener)
+	assert.ErrorContains(t, err, "not a registry listener")
+}
+
 func TestEtcdProviderPath(t *testing.T) {
 	serviceURL := mustURL(t, "dubbo://127.0.0.1:20000/org.apache.demo.UserProvider?group=g&version=v")
 

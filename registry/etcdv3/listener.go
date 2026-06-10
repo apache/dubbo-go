@@ -37,8 +37,8 @@ import (
 )
 
 type dataListener struct {
-	subscribed map[string]config_center.ConfigurationListener
 	mutex      sync.Mutex
+	subscribed map[string]config_center.ConfigurationListener
 	closed     bool
 }
 
@@ -51,6 +51,12 @@ func NewRegistryDataListener() *dataListener {
 
 // SubscribeURL sets a watch listener for url.
 func (l *dataListener) SubscribeURL(url *common.URL, listener config_center.ConfigurationListener) {
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+	l.subscribeURLLocked(url, listener)
+}
+
+func (l *dataListener) subscribeURLLocked(url *common.URL, listener config_center.ConfigurationListener) {
 	if l.closed {
 		return
 	}
@@ -59,12 +65,18 @@ func (l *dataListener) SubscribeURL(url *common.URL, listener config_center.Conf
 
 // UnSubscribeURL unsets a watch listener for url.
 func (l *dataListener) UnSubscribeURL(url *common.URL) config_center.ConfigurationListener {
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+	return l.unsubscribeURLLocked(url)
+}
+
+func (l *dataListener) unsubscribeURLLocked(url *common.URL) config_center.ConfigurationListener {
 	if l.closed {
 		return nil
 	}
 	listener := l.subscribed[url.ServiceKey()]
 	if listener != nil {
-		listener.(*configurationListener).Close()
+		closeConfigurationListener(listener)
 		delete(l.subscribed, url.ServiceKey())
 	}
 	return listener
@@ -112,7 +124,14 @@ func (l *dataListener) Close() {
 	defer l.mutex.Unlock()
 	l.closed = true
 	for _, listener := range l.subscribed {
-		listener.(*configurationListener).Close()
+		closeConfigurationListener(listener)
+	}
+}
+
+func closeConfigurationListener(listener config_center.ConfigurationListener) {
+	etcdListener, ok := listener.(*configurationListener)
+	if ok && etcdListener != nil {
+		etcdListener.Close()
 	}
 }
 
@@ -170,15 +189,25 @@ func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 }
 
 func (l *configurationListener) shouldIgnoreDeleteEvent(e *config_center.ConfigChangeEvent) bool {
-	if e.ConfigType != remoting.EventTypeDel || l.registry.client == nil || !validEtcdClient(l.registry.client) {
+	if e.ConfigType != remoting.EventTypeDel {
 		return false
 	}
 	select {
 	case <-l.registry.Done():
 		logger.Warnf("[Registry][Etcdv3] update @result{%s}. But its connection to registry is invalid", e.Value)
+		return true
 	default:
 	}
-	return true
+	return l.registry.client == nil || !validEtcdClient(l.registry.client)
+}
+
+func (l *configurationListener) closed() bool {
+	select {
+	case <-l.close:
+		return true
+	default:
+		return false
+	}
 }
 
 // Close etcd registry center
