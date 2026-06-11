@@ -199,7 +199,7 @@ func makeBenchmarkURLWithSubURL(paramCount int) *URL {
 	return u
 }
 
-func makeBenchmarkURLWithParamStart(paramCount int, genericStart int) *URL {
+func makeBenchmarkURLWithParamStart(paramCount, genericStart int) *URL {
 	u := NewURLWithOptions(
 		WithProtocol(benchmarkURLProtocol),
 		WithIp(benchmarkURLIP),
@@ -213,38 +213,28 @@ func makeBenchmarkURLWithParamStart(paramCount int, genericStart int) *URL {
 }
 
 func makeBenchmarkMergeHalfOverlapPair(paramCount int) (*URL, *URL) {
-	genericCount := paramCount - len(benchmarkURLIdentityParams)
-	if genericCount < 0 {
-		genericCount = 0
-	}
-	return makeBenchmarkURL(paramCount), makeBenchmarkURLWithParamStart(paramCount, genericCount/2)
+	return makeBenchmarkURL(paramCount), makeBenchmarkURLWithParamStart(paramCount, paramCount/2)
 }
 
-func makeBenchmarkParams(paramCount int, genericStart int) url.Values {
-	params := make(url.Values, paramCount)
-	for i, param := range benchmarkURLIdentityParams {
-		if i >= paramCount {
-			return params
-		}
+func makeBenchmarkParams(paramCount, genericStart int) url.Values {
+	params := make(url.Values, len(benchmarkURLIdentityParams)+paramCount)
+	for _, param := range benchmarkURLIdentityParams {
 		params.Set(param.key, param.value)
 	}
-	for i := len(benchmarkURLIdentityParams); i < paramCount; i++ {
-		genericIndex := genericStart + i - len(benchmarkURLIdentityParams)
+	for i := 0; i < paramCount; i++ {
+		genericIndex := genericStart + i
 		params.Set(fmt.Sprintf("key%d", genericIndex), fmt.Sprintf("value%d", genericIndex))
 	}
 	return params
 }
 
 func makeBenchmarkParamKeys(paramCount int) []string {
-	keys := make([]string, 0, paramCount)
-	for i, param := range benchmarkURLIdentityParams {
-		if i >= paramCount {
-			return keys
-		}
+	keys := make([]string, 0, len(benchmarkURLIdentityParams)+paramCount)
+	for _, param := range benchmarkURLIdentityParams {
 		keys = append(keys, param.key)
 	}
-	for i := len(benchmarkURLIdentityParams); i < paramCount; i++ {
-		keys = append(keys, fmt.Sprintf("key%d", i-len(benchmarkURLIdentityParams)))
+	for i := 0; i < paramCount; i++ {
+		keys = append(keys, fmt.Sprintf("key%d", i))
 	}
 	return keys
 }
@@ -264,7 +254,7 @@ func makeBenchmarkReserveKeys(paramCount int) []string {
 
 func makeBenchmarkFilterKeys(paramCount int) []string {
 	keys := makeBenchmarkParamKeys(paramCount)
-	filterCount := paramCount / 5
+	filterCount := len(keys) / 5
 	if filterCount < 1 {
 		filterCount = 1
 	}
