@@ -39,3 +39,46 @@ import _ "dubbo.apache.org/dubbo-go/v3/filter/filter_impl"
 - token: Token Filter(https://github.com/apache/dubbo-go/pull/202)
 - tps: Tps Limit Filter(https://github.com/apache/dubbo-go/pull/237)
 - tracing: Tracing Filter(https://github.com/apache/dubbo-go/pull/335)
+
+## Generic response attachments
+
+In dubbo-go 3.x, `GenericService2` is no longer the response attachment access
+point used by older 1.5.x applications. For Triple generic calls, provider-side
+result attachments are written back as response trailers and can be read from
+the call context after the generic invocation returns.
+
+Initialize the context with Triple outgoing metadata before the call. This also
+enables the client-side Triple transport to copy response trailers back into
+the context.
+
+```go
+package demo
+
+import (
+	"context"
+	"net/http"
+
+	hessian "github.com/apache/dubbo-go-hessian2"
+
+	"dubbo.apache.org/dubbo-go/v3/filter/generic"
+	triple "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
+)
+
+func invokeWithResponseAttachments(genericService *generic.GenericService) (http.Header, error) {
+	ctx := triple.NewOutgoingContext(context.Background(), http.Header{})
+
+	_, err := genericService.Invoke(ctx, "echo", []string{"java.lang.String"}, []hessian.Object{"hello"})
+	if err != nil {
+		return nil, err
+	}
+
+	trailers, ok := triple.FromIncomingContext(ctx)
+	if !ok {
+		return nil, nil
+	}
+	return trailers, nil
+}
+```
+
+On the provider side, attachments set on the invocation result are propagated to
+the Triple response trailers for unary calls.

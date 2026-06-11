@@ -49,12 +49,20 @@ func (e *exportedServicesRevisionMetadataCustomizer) GetPriority() int {
 	return 1
 }
 
-// Customize calculate the revision for exported urls and then put it into instance metadata
+// Customize calculates the revision of exported services scoped to the registry,
+// preventing different instances from getting the same revision due to a merged cross-registry service list in multi-registry setups.
 func (e *exportedServicesRevisionMetadataCustomizer) Customize(instance registry.ServiceInstance) {
-	urls, err := metadata.GetMetadataService().GetExportedServiceURLs()
-	if err != nil {
-		logger.Errorf("[Registry][ServiceDiscovery] get metadata service url is error, err=%v", err)
-		return
+	registryId := instance.GetMetadata()[constant.RegistryIdKey]
+	if len(registryId) == 0 {
+		// revision will be "0" (no services found for empty key), which causes OnEvent to skip
+		// this instance entirely — ensure RegistryIdKey is set before customizers run.
+		logger.Errorf("[Registry][ServiceDiscovery] instance has no registryId in metadata; " +
+			"exported revision will be \"0\" and this instance will be invisible to consumers")
+	}
+	metaInfo := metadata.GetMetadataInfo(registryId)
+	var urls []*common.URL
+	if metaInfo != nil {
+		urls = metaInfo.GetExportedServiceURLs()
 	}
 	revision := resolveRevision(urls)
 	if len(revision) == 0 {
@@ -70,12 +78,19 @@ func (e *subscribedServicesRevisionMetadataCustomizer) GetPriority() int {
 	return 2
 }
 
-// Customize calculate the revision for subscribed urls and then put it into instance metadata
+// Customize calculates the revision of subscribed services scoped to the registry.
 func (e *subscribedServicesRevisionMetadataCustomizer) Customize(instance registry.ServiceInstance) {
-	urls, err := metadata.GetMetadataService().GetSubscribedURLs()
-	if err != nil {
-		logger.Errorf("[Registry][ServiceDiscovery] get metadata subscribed url is error, err=%v", err)
-		return
+	registryId := instance.GetMetadata()[constant.RegistryIdKey]
+	if len(registryId) == 0 {
+		// revision will be "0" (no subscriptions found for empty key), which causes OnEvent to skip
+		// this instance entirely — ensure RegistryIdKey is set before customizers run.
+		logger.Errorf("[Registry][ServiceDiscovery] instance has no registryId in metadata; " +
+			"subscribed revision will be \"0\" and this instance will be invisible to consumers")
+	}
+	metaInfo := metadata.GetMetadataInfo(registryId)
+	var urls []*common.URL
+	if metaInfo != nil {
+		urls = metaInfo.GetSubscribedURLs()
 	}
 	revision := resolveRevision(urls)
 	if len(revision) == 0 {

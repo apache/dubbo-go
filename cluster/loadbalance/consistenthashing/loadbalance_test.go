@@ -76,7 +76,7 @@ func (s *consistentHashSelectorSuite) TestSelectForKey() {
 	s.selector.virtualInvokers[9999945] = base.NewBaseInvoker(url2)
 	s.selector.keys = []uint32{99874, 9999945}
 	result := s.selector.selectForKey(9999944)
-	s.Equal(url8081Short+"?", result.GetURL().String())
+	s.Equal(url8081Short, result.GetURL().String())
 }
 
 func TestConsistentHashLoadBalanceSuite(t *testing.T) {

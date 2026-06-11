@@ -171,7 +171,7 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 	}
 
 	if ref.ForceTag {
-		cfgURL.AddParam(constant.ForceUseTag, "true")
+		cfgURL.SetParam(constant.ForceUseTag, "true")
 	}
 	refOpts.postProcessConfig(cfgURL)
 
@@ -258,7 +258,7 @@ func buildReferenceURL(serviceURL *common.URL, ref *global.ReferenceConfig, cfgU
 	// replace params of serviceURL with params of cfgUrl
 	// other stuff, e.g. IP, port, etc., are same as serviceURL
 	newURL := serviceURL.MergeURL(cfgURL)
-	newURL.AddParam("peer", "true")
+	newURL.SetParam("peer", "true")
 	return newURL
 }
 

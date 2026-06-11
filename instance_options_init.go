@@ -582,10 +582,10 @@ func loggerURL(l *global.LoggerConfig) *common.URL {
 
 	if l.TraceIntegration != nil {
 		if l.TraceIntegration.Enabled != nil {
-			u.AddParam(constant.LoggerTraceEnabledKey, strconv.FormatBool(*l.TraceIntegration.Enabled))
+			u.SetParam(constant.LoggerTraceEnabledKey, strconv.FormatBool(*l.TraceIntegration.Enabled))
 		}
 		if l.TraceIntegration.RecordErrorToSpan != nil {
-			u.AddParam(constant.LoggerTraceRecordErrorKey, strconv.FormatBool(*l.TraceIntegration.RecordErrorToSpan))
+			u.SetParam(constant.LoggerTraceRecordErrorKey, strconv.FormatBool(*l.TraceIntegration.RecordErrorToSpan))
 		}
 	}
 

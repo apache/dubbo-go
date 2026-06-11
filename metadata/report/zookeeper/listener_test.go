@@ -26,6 +26,7 @@ import (
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/gof/observer"
 
 	"github.com/stretchr/testify/assert"
@@ -36,6 +37,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
+	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
@@ -43,6 +45,7 @@ type mockMappingListener struct {
 	eventCount atomic.Int32
 	mu         sync.Mutex
 	onEventErr error
+	lastNames  *gxset.HashSet
 }
 
 func newMockMappingListener() *mockMappingListener { return &mockMappingListener{} }
@@ -51,6 +54,9 @@ func (m *mockMappingListener) OnEvent(e observer.Event) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.eventCount.Add(1)
+	if sm, ok := e.(*registry.ServiceMappingChangeEvent); ok {
+		m.lastNames = sm.GetServiceNames()
+	}
 	return m.onEventErr
 }
 
@@ -163,4 +169,24 @@ func TestCacheListenerPathToKey(t *testing.T) {
 	cl := NewCacheListener("/dubbo", nil)
 	assert.Equal(t, "com.example.Service", cl.pathToKey("/dubbo/mapping/com.example.Service"))
 	assert.Empty(t, cl.pathToKey(""))
+}
+
+// TestCacheListenerDataChangeFiltersEmptyAppNames ensures a change event built from a
+// malformed/legacy comma-separated value (stray separators) does not surface empty app names
+// to the listener.
+func TestCacheListenerDataChangeFiltersEmptyAppNames(t *testing.T) {
+	cl := NewCacheListener("/dubbo", nil)
+	key := "/dubbo/mapping/com.example.Service"
+
+	ml := newMockMappingListener()
+	listenerSet := NewListenerSet()
+	listenerSet.Add(ml)
+	cl.keyListeners.Store(key, listenerSet)
+
+	assert.True(t, cl.DataChange(remoting.Event{Path: key, Action: remoting.EventTypeUpdate, Content: ",appA,,appB,"}))
+	require.NotNil(t, ml.lastNames)
+	assert.Equal(t, 2, ml.lastNames.Size())
+	assert.True(t, ml.lastNames.Contains("appA"))
+	assert.True(t, ml.lastNames.Contains("appB"))
+	assert.False(t, ml.lastNames.Contains(""))
 }

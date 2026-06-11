@@ -399,11 +399,14 @@ func (c *URL) String() string {
 	defer c.paramsLock.Unlock()
 	var buf strings.Builder
 	if len(c.Username) == 0 && len(c.Password) == 0 {
-		buf.WriteString(fmt.Sprintf("%s://%s:%s%s?", c.Protocol, c.Ip, c.Port, c.Path))
+		buf.WriteString(fmt.Sprintf("%s://%s:%s%s", c.Protocol, c.Ip, c.Port, c.Path))
 	} else {
-		buf.WriteString(fmt.Sprintf("%s://%s:%s@%s:%s%s?", c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Path))
+		buf.WriteString(fmt.Sprintf("%s://%s:%s@%s:%s%s", c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Path))
 	}
-	buf.WriteString(c.params.Encode())
+	if encoded := c.params.Encode(); encoded != "" {
+		buf.WriteByte('?')
+		buf.WriteString(encoded)
+	}
 	return buf.String()
 }
 
@@ -533,8 +536,8 @@ func (c *URL) Service() string {
 	return ""
 }
 
-// AddParam will add the key-value pair
-func (c *URL) AddParam(key string, value string) {
+// AppendParam appends the key-value pair without replacing existing values.
+func (c *URL) AppendParam(key, value string) {
 	c.paramsLock.Lock()
 	defer c.paramsLock.Unlock()
 	if c.params == nil {
@@ -543,14 +546,16 @@ func (c *URL) AddParam(key string, value string) {
 	c.params.Add(key, value)
 }
 
-// AddParamAvoidNil will add key-value pair
-func (c *URL) AddParamAvoidNil(key string, value string) {
-	c.paramsLock.Lock()
-	defer c.paramsLock.Unlock()
-	if c.params == nil {
-		c.params = url.Values{}
-	}
-	c.params.Add(key, value)
+// AddParam will add the key-value pair.
+// Deprecated: use SetParam to replace an existing value or AppendParam to preserve multiple values.
+func (c *URL) AddParam(key, value string) {
+	c.AppendParam(key, value)
+}
+
+// AddParamAvoidNil will add key-value pair.
+// Deprecated: use AppendParam instead.
+func (c *URL) AddParamAvoidNil(key, value string) {
+	c.AppendParam(key, value)
 }
 
 // SetParam will put the key-value pair into URL

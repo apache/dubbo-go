@@ -876,15 +876,24 @@ func TestServiceWithSubURL(t *testing.T) {
 	assert.Equal(t, "com.path.Service", u3.Service())
 }
 
-func TestAddParam(t *testing.T) {
+func TestAppendParam(t *testing.T) {
 	u := &URL{}
-	u.AddParam("key1", "value1")
+	u.AppendParam("key1", "value1")
 	assert.Equal(t, "value1", u.GetParam("key1", ""))
 
 	// add another value to same key
-	u.AddParam("key1", "value2")
+	u.AppendParam("key1", "value2")
 	params := u.GetParams()
 	assert.Len(t, params["key1"], 2)
+}
+
+func TestAddParamCompatibility(t *testing.T) {
+	u := &URL{}
+	u.AddParam("key1", "value1")
+	u.AddParam("key1", "value2")
+
+	params := u.GetParams()
+	assert.Equal(t, []string{"value1", "value2"}, params["key1"])
 }
 
 func TestGetParamsReturnsCopy(t *testing.T) {
@@ -1293,6 +1302,12 @@ func TestURLStringWithoutAuth(t *testing.T) {
 	str := u.String()
 	assert.Contains(t, str, "dubbo://127.0.0.1:20000")
 	assert.NotContains(t, str, "@")
+}
+
+func TestURLStringWithoutQuery(t *testing.T) {
+	u, err := NewURL("dubbo://127.0.0.1:20000/com.test.Service")
+	require.NoError(t, err)
+	assert.Equal(t, "dubbo://127.0.0.1:20000/com.test.Service", u.String())
 }
 
 func TestGetParamAndDecodedError(t *testing.T) {

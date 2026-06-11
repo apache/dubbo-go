@@ -18,10 +18,15 @@
 package chain
 
 import (
+	"strconv"
+	"sync"
+	"sync/atomic"
 	"testing"
 )
 
 import (
+	"github.com/RoaringBitmap/roaring"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -341,4 +346,133 @@ func TestRouteAppliesRoutersOnSnapshot(t *testing.T) {
 	assert.Equal(t, 1, r1.called)
 	assert.Equal(t, 1, r2.called)
 	assert.Equal(t, 1, r2.lastSize)
+}
+
+// TestSetInvokersIncrementsAndPublishesGeneration verifies that each SetInvokers bumps the
+// chain generation and that Route publishes the current generation into the invocation so
+// Poolable routers can validate their cache against it.
+func TestSetInvokersIncrementsAndPublishesGeneration(t *testing.T) {
+	consumerURL, err := common.NewURL(testConsumerServiceURL)
+	require.NoError(t, err)
+
+	var publishedGen uint64
+	r := &testPriorityRouter{priority: 1, routeFn: func(invokers []base.Invoker, _ *common.URL, inv base.Invocation) []base.Invoker {
+		publishedGen = inv.GetAttributeWithDefaultValue(constant.RouterChainCacheGeneration, uint64(0)).(uint64)
+		return invokers
+	}}
+	chain := &RouterChain{routers: []router.PriorityRouter{r}}
+
+	invoker := buildInvoker(t, "dubbo://127.0.0.1:20000/com.demo.Service")
+	for i := 1; i <= 3; i++ {
+		chain.SetInvokers([]base.Invoker{invoker})
+		assert.Equal(t, uint64(i), chain.generation)
+	}
+
+	chain.Route(consumerURL, invocation.NewRPCInvocation("Say", nil, nil))
+	assert.Equal(t, uint64(3), publishedGen, "Route should publish the current chain generation")
+}
+
+// genCheckRouter is a Poolable router that mirrors TagRouter's cache guard. On the fast path it
+// asserts the invoker snapshot it received from the cache belongs to the same generation the
+// chain published, catching any snapshot/generation skew under concurrency.
+type genCheckRouter struct {
+	cache      router.Cache
+	violations int64
+	fastPaths  int64
+}
+
+func (r *genCheckRouter) Name() string            { return "gen-check" }
+func (r *genCheckRouter) ShouldPool() bool        { return true }
+func (r *genCheckRouter) SetCache(c router.Cache) { r.cache = c }
+func (r *genCheckRouter) URL() *common.URL        { return nil }
+func (r *genCheckRouter) Priority() int64         { return 0 }
+func (r *genCheckRouter) Notify(_ []base.Invoker) {}
+
+func (r *genCheckRouter) Pool(invokers []base.Invoker) (router.AddrPool, router.AddrMetadata) {
+	// Index every invoker under a single key; the test only needs FindAddrPool to hit.
+	bm := roaring.New()
+	for i := range invokers {
+		bm.Add(uint32(i))
+	}
+	return router.AddrPool{"all": bm}, nil
+}
+
+func (r *genCheckRouter) Route(invokers []base.Invoker, _ *common.URL, inv base.Invocation) []base.Invoker {
+	if r.cache == nil {
+		return invokers
+	}
+	pool, full, cacheGen := r.cache.FindAddrPool(r)
+	snapGen := inv.GetAttributeWithDefaultValue(constant.RouterChainCacheGeneration, uint64(0)).(uint64)
+	if pool == nil || cacheGen != snapGen {
+		return invokers // fall back, exactly like TagRouter
+	}
+	atomic.AddInt64(&r.fastPaths, 1)
+	// On the fast path every invoker in the cache snapshot must carry the published generation.
+	// A mismatch would mean the guard let a snapshot from a concurrent SetInvokers through.
+	for _, ivk := range full {
+		if ivk.GetURL().GetParam("snapgen", "") != strconv.FormatUint(snapGen, 10) {
+			atomic.AddInt64(&r.violations, 1)
+		}
+	}
+	return full
+}
+
+// TestRouteCacheGenerationRace hammers SetInvokers and Route concurrently. Each invoker set is
+// tagged with the generation that produced it, so the Poolable router can detect any skew
+// between the published generation and the cache snapshot it routes over. Run with -race.
+func TestRouteCacheGenerationRace(t *testing.T) {
+	consumerURL, err := common.NewURL(testConsumerServiceURL)
+	require.NoError(t, err)
+
+	r := &genCheckRouter{}
+	chain := &RouterChain{routers: []router.PriorityRouter{r}}
+
+	makeSet := func(gen uint64, n int) []base.Invoker {
+		out := make([]base.Invoker, 0, n)
+		for i := 0; i < n; i++ {
+			u, _ := common.NewURL("dubbo://127.0.0.1:2000" + strconv.Itoa(i) + "/com.demo.Service")
+			u.SetParam("snapgen", strconv.FormatUint(gen, 10))
+			out = append(out, base.NewBaseInvoker(u))
+		}
+		return out
+	}
+
+	// Seed generation 1 so the cache exists before readers start.
+	chain.SetInvokers(makeSet(1, 3))
+
+	stop := make(chan struct{})
+	var writer sync.WaitGroup
+	writer.Add(1)
+	go func() {
+		defer writer.Done()
+		gen := uint64(1)
+		for {
+			select {
+			case <-stop:
+				return
+			default:
+				gen++
+				size := 2 + int(gen%4)
+				chain.SetInvokers(makeSet(gen, size))
+			}
+		}
+	}()
+
+	var readers sync.WaitGroup
+	for i := 0; i < 4; i++ {
+		readers.Add(1)
+		go func() {
+			defer readers.Done()
+			for j := 0; j < 2000; j++ {
+				chain.Route(consumerURL, invocation.NewRPCInvocation("Say", nil, nil))
+			}
+		}()
+	}
+
+	readers.Wait()
+	close(stop)
+	writer.Wait()
+
+	assert.Equal(t, int64(0), atomic.LoadInt64(&r.violations),
+		"cache snapshot generation must always match the published generation on the fast path")
 }
