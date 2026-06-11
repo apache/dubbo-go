@@ -126,8 +126,34 @@ func BenchmarkURLCloneWithFilter(b *testing.B) {
 
 	for _, paramCount := range benchmarkURLParamSizes {
 		paramCount := paramCount
+		b.Run(fmt.Sprintf("params_%d_exclude_20_percent_with_suburl", paramCount), func(b *testing.B) {
+			u := makeBenchmarkURLWithSubURL(paramCount)
+			excludeParams := makeBenchmarkExcludeSet(paramCount)
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				benchmarkURLSink = u.CloneWithFilter(excludeParams, nil)
+			}
+		})
+	}
+
+	for _, paramCount := range benchmarkURLParamSizes {
+		paramCount := paramCount
 		b.Run(fmt.Sprintf("params_%d_reserve_20_percent", paramCount), func(b *testing.B) {
 			u := makeBenchmarkURL(paramCount)
+			reserveParams := makeBenchmarkReserveKeys(paramCount)
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				benchmarkURLSink = u.CloneWithFilter(nil, reserveParams)
+			}
+		})
+	}
+
+	for _, paramCount := range benchmarkURLParamSizes {
+		paramCount := paramCount
+		b.Run(fmt.Sprintf("params_%d_reserve_20_percent_with_suburl", paramCount), func(b *testing.B) {
+			u := makeBenchmarkURLWithSubURL(paramCount)
 			reserveParams := makeBenchmarkReserveKeys(paramCount)
 			b.ReportAllocs()
 			b.ResetTimer()
