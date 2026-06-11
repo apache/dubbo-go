@@ -176,15 +176,6 @@ func (info *MetadataInfo) ReplaceExportedServices(urls []*common.URL) {
 	}
 }
 
-// CalAndGetRevision calculates and updates the revision for this MetadataInfo.
-// The revision is derived from the canonical ServiceInfo representation,
-// ensuring strong binding between revision and serialized metadata content.
-// Aligned with Java dubbo MetadataInfo.calAndGetRevision().
-func (info *MetadataInfo) CalAndGetRevision() string {
-	info.Revision = CalRevision(info.App, info.Services)
-	return info.Revision
-}
-
 func (info *MetadataInfo) findExportedServiceURL(matchKey string) *common.URL {
 	for _, urls := range info.exportedServiceURLs {
 		for _, serviceURL := range urls {

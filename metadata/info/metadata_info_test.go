@@ -193,27 +193,3 @@ func TestServiceInfoGetMatchKey(t *testing.T) {
 func TestServiceInfoJavaClassName(t *testing.T) {
 	assert.Equalf(t, "org.apache.dubbo.metadata.MetadataInfo", NewAppMetadataInfo("dubbo").JavaClassName(), "JavaClassName()")
 }
-
-func TestMetadataInfoCalAndGetRevision(t *testing.T) {
-	svcURL, err := common.NewURL(
-		"dubbo://127.0.0.1:20880/com.example.TestService",
-		common.WithParamsValue(constant.ApplicationKey, "test-app"),
-		common.WithParamsValue(constant.GroupKey, "groupA"),
-		common.WithParamsValue(constant.VersionKey, "1.0.0"),
-		common.WithMethods([]string{"sayHello"}),
-	)
-	require.NoError(t, err)
-
-	info := NewAppMetadataInfo("")
-	info.AddService(svcURL)
-
-	// 1. Call CalAndGetRevision — should update info.Revision in-place
-	rev := info.CalAndGetRevision()
-
-	assert.NotEmpty(t, rev)
-	assert.Equal(t, rev, info.Revision, "CalAndGetRevision should update info.Revision in-place")
-
-	// 2. Result should match CalRevision for the same input
-	assert.Equal(t, CalRevision(info.App, info.Services), rev,
-		"CalAndGetRevision should return the same result as CalRevision")
-}
