@@ -100,6 +100,12 @@ func (info *MetadataInfo) AddService(url *common.URL) {
 	info.mu.Lock()
 	defer info.mu.Unlock()
 
+	info.addServiceWithoutLock(url)
+}
+
+// addServiceWithoutLock adds a service URL without acquiring the lock.
+// The caller must hold info.mu.Lock() before calling this method.
+func (info *MetadataInfo) addServiceWithoutLock(url *common.URL) {
 	service := NewServiceInfoWithURL(url)
 	info.Services[service.GetMatchKey()] = service
 	addUrl(info.exportedServiceURLs, url)
@@ -200,10 +206,13 @@ func (info *MetadataInfo) GetServices() map[string]*ServiceInfo {
 }
 
 func (info *MetadataInfo) ReplaceExportedServices(urls []*common.URL) {
+	info.mu.Lock()
+	defer info.mu.Unlock()
+
 	info.Services = make(map[string]*ServiceInfo)
 	info.exportedServiceURLs = make(map[string][]*common.URL)
 	for _, serviceURL := range urls {
-		info.AddService(serviceURL)
+		info.addServiceWithoutLock(serviceURL)
 	}
 }
 
