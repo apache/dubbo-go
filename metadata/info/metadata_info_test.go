@@ -66,6 +66,21 @@ func TestMetadataInfoAddService(t *testing.T) {
 	assert.Empty(t, metadataInfo.GetExportedServiceURLs())
 }
 
+func TestMetadataInfoAddServiceBackfillsApplicationTag(t *testing.T) {
+	metadataInfo := &MetadataInfo{
+		Services:              make(map[string]*ServiceInfo),
+		exportedServiceURLs:   make(map[string][]*common.URL),
+		subscribedServiceURLs: make(map[string][]*common.URL),
+	}
+	url, err := common.NewURL("tri://127.0.0.1:20000?application=foo&application.tag=gray&interface=com.foo.Bar&methods=GetPetByID")
+	require.NoError(t, err)
+
+	metadataInfo.AddService(url)
+
+	assert.Equal(t, "foo", metadataInfo.App)
+	assert.Equal(t, "gray", metadataInfo.Tag)
+}
+
 func TestMetadataInfoRemoveServiceWithClonedURL(t *testing.T) {
 	metadataInfo := NewMetadataInfo("foo", "")
 	url, err := common.NewURL("dubbo://127.0.0.1:20000?application=foo&interface=com.foo.Bar&methods=GetPetByID%2CGetPetTypes&side=provider&version=1.0.0")

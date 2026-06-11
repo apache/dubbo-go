@@ -57,9 +57,9 @@ var IncludeKeys = gxset.NewSet(
 
 // MetadataInfo the metadata information of instance
 type MetadataInfo struct {
-	App                   string `json:"app,omitempty" hessian:"app"`
-	Revision              string `json:"revision,omitempty" hessian:"revision"`
-	Tag                   string
+	App                   string                   `json:"app,omitempty" hessian:"app"`
+	Revision              string                   `json:"revision,omitempty" hessian:"revision"`
+	Tag                   string                   `json:"tag,omitempty" hessian:"tag"`
 	Services              map[string]*ServiceInfo  `json:"services,omitempty" hessian:"services"`
 	exportedServiceURLs   map[string][]*common.URL `hessian:"-"` // server exported service urls
 	subscribedServiceURLs map[string][]*common.URL `hessian:"-"` // client subscribed service urls
@@ -100,6 +100,9 @@ func (info *MetadataInfo) AddService(url *common.URL) {
 	addUrl(info.exportedServiceURLs, url)
 	if info.App == "" {
 		info.App = url.GetParam(constant.ApplicationKey, "")
+	}
+	if info.Tag == "" {
+		info.Tag = url.GetParam(constant.ApplicationTagKey, "")
 	}
 }
 
