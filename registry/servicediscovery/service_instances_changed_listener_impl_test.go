@@ -374,7 +374,7 @@ func (c *capturingNotifyListener) NotifyAll(events []*registry.ServiceEvent, cal
 }
 
 func TestServiceInstancesChangedListenerRemoveListener(t *testing.T) {
-	listener := NewServiceInstancesChangedListener(testApp, gxset.NewSet(testApp)).(*ServiceInstancesChangedListenerImpl)
+	listener := NewServiceInstancesChangedListener(testApp, constant.DefaultKey, gxset.NewSet(testApp)).(*ServiceInstancesChangedListenerImpl)
 	notify := &capturingNotifyListener{}
 	key := common.MatchKey(testInterface, constant.TriProtocol)
 
