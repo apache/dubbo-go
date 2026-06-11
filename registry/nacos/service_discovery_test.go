@@ -150,7 +150,7 @@ func TestFunction(t *testing.T) {
 	hs := gxset.NewSet()
 	hs.Add(testName)
 
-	sicl := servicediscovery.NewServiceInstancesChangedListener("test_app", hs)
+	sicl := servicediscovery.NewServiceInstancesChangedListener("test_app", constant.DefaultKey, hs)
 	sicl.AddListenerAndNotify(testName, tn)
 	err = sd.AddListener(sicl)
 	require.NoError(t, err)

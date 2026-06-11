@@ -35,6 +35,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
+	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
@@ -62,22 +63,64 @@ var (
 )
 
 func TestGetMetadataFromMetadataReport(t *testing.T) {
+	t.Cleanup(func() { instances = make(map[string]report.MetadataReport) })
+
 	t.Run("no report instance", func(t *testing.T) {
-		_, err := GetMetadataFromMetadataReport("1", ins)
+		instances = make(map[string]report.MetadataReport)
+		_, err := GetMetadataFromMetadataReport("1", ins, "default")
 		require.Error(t, err)
 	})
-	mockReport := new(mockMetadataReport)
-	defer mockReport.AssertExpectations(t)
-	instances["default"] = mockReport
-	t.Run("normal", func(t *testing.T) {
+
+	t.Run("default registry routes to default report", func(t *testing.T) {
+		instances = make(map[string]report.MetadataReport)
+		mockReport := new(mockMetadataReport)
+		defer mockReport.AssertExpectations(t)
+		instances["default"] = mockReport
+
 		mockReport.On("GetAppMetadata").Return(metadataInfo, nil).Once()
-		got, err := GetMetadataFromMetadataReport("1", ins)
+		got, err := GetMetadataFromMetadataReport("1", ins, "default")
 		require.NoError(t, err)
 		assert.Equal(t, metadataInfo, got)
 	})
-	t.Run("error", func(t *testing.T) {
+
+	t.Run("specific registryId routes to its own report", func(t *testing.T) {
+		instances = make(map[string]report.MetadataReport)
+		defaultReport := new(mockMetadataReport)
+		specificReport := new(mockMetadataReport)
+		defer defaultReport.AssertExpectations(t)
+		defer specificReport.AssertExpectations(t)
+		instances["default"] = defaultReport
+		instances["reg-a"] = specificReport
+
+		// specificReport must be called; defaultReport must NOT be called
+		specificReport.On("GetAppMetadata").Return(metadataInfo, nil).Once()
+		got, err := GetMetadataFromMetadataReport("1", ins, "reg-a")
+		require.NoError(t, err)
+		assert.Equal(t, metadataInfo, got)
+	})
+
+	t.Run("unknown registryId falls back to default report", func(t *testing.T) {
+		instances = make(map[string]report.MetadataReport)
+		defaultReport := new(mockMetadataReport)
+		defer defaultReport.AssertExpectations(t)
+		instances["default"] = defaultReport
+
+		// When the specific registryId is not found, it falls back to "default"
+		// so the default report's GetAppMetadata is called
+		defaultReport.On("GetAppMetadata").Return(metadataInfo, nil).Once()
+		got, err := GetMetadataFromMetadataReport("1", ins, "nonexistent-registry")
+		require.NoError(t, err)
+		assert.Equal(t, metadataInfo, got)
+	})
+
+	t.Run("report error propagated", func(t *testing.T) {
+		instances = make(map[string]report.MetadataReport)
+		mockReport := new(mockMetadataReport)
+		defer mockReport.AssertExpectations(t)
+		instances["default"] = mockReport
+
 		mockReport.On("GetAppMetadata").Return(metadataInfo, errors.New("mock error")).Once()
-		_, err := GetMetadataFromMetadataReport("1", ins)
+		_, err := GetMetadataFromMetadataReport("1", ins, "default")
 		require.Error(t, err)
 	})
 }

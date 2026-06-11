@@ -192,7 +192,7 @@ func (rc *ReferenceConfig) Refer(srv any) {
 
 	SetConsumerServiceByInterfaceName(rc.InterfaceName, srv)
 	if rc.ForceTag {
-		cfgURL.AddParam(constant.ForceUseTag, "true")
+		cfgURL.SetParam(constant.ForceUseTag, "true")
 	}
 	rc.postProcessConfig(cfgURL)
 
@@ -228,7 +228,7 @@ func (rc *ReferenceConfig) Refer(srv any) {
 				// replace params of serviceURL with params of cfgUrl
 				// other stuff, e.g. IP, port, etc., are same as serviceURL
 				newURL := serviceURL.MergeURL(cfgURL)
-				newURL.AddParam("peer", "true")
+				newURL.SetParam("peer", "true")
 				rc.urls = append(rc.urls, newURL)
 			}
 		}

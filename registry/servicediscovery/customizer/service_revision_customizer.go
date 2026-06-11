@@ -25,6 +25,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
@@ -43,14 +44,20 @@ func (e *exportedServicesRevisionMetadataCustomizer) GetPriority() int {
 	return 1
 }
 
-// Customize calculate the revision for exported urls and then put it into instance metadata
+// Customize calculates the revision of exported services scoped to the registry,
+// preventing different instances from getting the same revision due to a merged cross-registry service list in multi-registry setups.
 func (e *exportedServicesRevisionMetadataCustomizer) Customize(instance registry.ServiceInstance) {
-	metaInfo := instance.GetServiceMetadata()
-	if metaInfo == nil {
-		logger.Warn("[Registry][ServiceDiscovery] exportedServicesRevision customizer: instance service metadata is nil")
-		return
+	registryId := instance.GetMetadata()[constant.RegistryIdKey]
+	if len(registryId) == 0 {
+		logger.Errorf("[Registry][ServiceDiscovery] instance has no registryId in metadata; " +
+			"exported revision will be \"0\" and this instance will be invisible to consumers")
 	}
-	revision := resolveRevision(metaInfo.GetExportedServiceURLs())
+	metaInfo := metadata.GetMetadataInfo(registryId)
+	var urls []*common.URL
+	if metaInfo != nil {
+		urls = metaInfo.GetExportedServiceURLs()
+	}
+	revision := resolveRevision(urls)
 	if len(revision) == 0 {
 		revision = defaultRevision
 	}
@@ -64,14 +71,19 @@ func (e *subscribedServicesRevisionMetadataCustomizer) GetPriority() int {
 	return 2
 }
 
-// Customize calculate the revision for subscribed urls and then put it into instance metadata
+// Customize calculates the revision of subscribed services scoped to the registry.
 func (e *subscribedServicesRevisionMetadataCustomizer) Customize(instance registry.ServiceInstance) {
-	metaInfo := instance.GetServiceMetadata()
-	if metaInfo == nil {
-		logger.Warn("[Registry][ServiceDiscovery] subscribedServicesRevision customizer: instance service metadata is nil")
-		return
+	registryId := instance.GetMetadata()[constant.RegistryIdKey]
+	if len(registryId) == 0 {
+		logger.Errorf("[Registry][ServiceDiscovery] instance has no registryId in metadata; " +
+			"subscribed revision will be \"0\" and this instance will be invisible to consumers")
 	}
-	revision := resolveRevision(metaInfo.GetSubscribedURLs())
+	metaInfo := metadata.GetMetadataInfo(registryId)
+	var urls []*common.URL
+	if metaInfo != nil {
+		urls = metaInfo.GetSubscribedURLs()
+	}
+	revision := resolveRevision(urls)
 	if len(revision) == 0 {
 		revision = defaultRevision
 	}

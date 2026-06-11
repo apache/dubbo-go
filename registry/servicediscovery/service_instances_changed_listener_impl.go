@@ -58,6 +58,7 @@ func initCache(app string) {
 // ServiceInstancesChangedListenerImpl The Service Discovery Changed  Event Listener
 type ServiceInstancesChangedListenerImpl struct {
 	app                string
+	registryId         string
 	serviceNames       *gxset.HashSet
 	listeners          map[string]registry.NotifyListener
 	serviceUrls        map[string][]*common.URL
@@ -66,12 +67,13 @@ type ServiceInstancesChangedListenerImpl struct {
 	mutex              sync.Mutex
 }
 
-func NewServiceInstancesChangedListener(app string, services *gxset.HashSet) registry.ServiceInstancesChangedListener {
+func NewServiceInstancesChangedListener(app string, registryId string, services *gxset.HashSet) registry.ServiceInstancesChangedListener {
 	cacheOnce.Do(func() {
 		initCache(app)
 	})
 	return &ServiceInstancesChangedListenerImpl{
 		app:                app,
+		registryId:         registryId,
 		serviceNames:       services,
 		listeners:          make(map[string]registry.NotifyListener),
 		serviceUrls:        make(map[string][]*common.URL),
@@ -118,7 +120,7 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 			revisionToInstances[revision] = append(subInstances, instance)
 			metadataInfo := lstn.revisionToMetadata[revision]
 			if metadataInfo == nil {
-				meta, err := GetMetadataInfo(lstn.app, instance, revision)
+				meta, err := GetMetadataInfo(lstn.app, instance, revision, lstn.registryId)
 				if err != nil {
 					// Skip this instance if metadata fetch fails (e.g., old Java Dubbo version)
 					// Try next instance with same revision
@@ -147,7 +149,8 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 	}
 	lstn.revisionToMetadata = newRevisionToMetadata
 	for revision, metadataInfo := range newRevisionToMetadata {
-		metaCache.Set(revision, metadataInfo)
+		cacheKey := lstn.app + ":" + lstn.registryId + ":" + revision
+		metaCache.Set(cacheKey, metadataInfo)
 	}
 
 	for serviceKey, revisionServices := range serviceToRevisionServices {
@@ -242,11 +245,12 @@ func (lstn *ServiceInstancesChangedListenerImpl) GetEventType() reflect.Type {
 }
 
 // GetMetadataInfo get metadata info when MetadataStorageTypePropertyName is null
-func GetMetadataInfo(app string, instance registry.ServiceInstance, revision string) (*info.MetadataInfo, error) {
+func GetMetadataInfo(app string, instance registry.ServiceInstance, revision string, registryId string) (*info.MetadataInfo, error) {
 	cacheOnce.Do(func() {
 		initCache(app)
 	})
-	if metadataInfo, ok := metaCache.Get(revision); ok {
+	cacheKey := app + ":" + registryId + ":" + revision
+	if metadataInfo, ok := metaCache.Get(cacheKey); ok {
 		return metadataInfo.(*info.MetadataInfo), nil
 	}
 
@@ -259,7 +263,7 @@ func GetMetadataInfo(app string, instance registry.ServiceInstance, revision str
 		metadataStorageType = instance.GetMetadata()[constant.MetadataStorageTypePropertyName]
 	}
 	if metadataStorageType == constant.RemoteMetadataStorageType {
-		metadataInfo, err = metadata.GetMetadataFromMetadataReport(revision, instance)
+		metadataInfo, err = metadata.GetMetadataFromMetadataReport(revision, instance, registryId)
 		if err != nil {
 			return nil, err
 		}
@@ -269,6 +273,6 @@ func GetMetadataInfo(app string, instance registry.ServiceInstance, revision str
 			return nil, err
 		}
 	}
-	metaCache.Set(revision, metadataInfo)
+	metaCache.Set(cacheKey, metadataInfo)
 	return metadataInfo, nil
 }

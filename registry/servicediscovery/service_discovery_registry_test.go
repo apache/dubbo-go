@@ -57,7 +57,7 @@ const (
 // TestServiceDiscoveryRegistryRegister verifies the registration process.
 func TestServiceDiscoveryRegistryRegister(t *testing.T) {
 	mockSD, mockMapping := setupEnvironment(t)
-	regID := fmt.Sprintf("mock-reg-%d", time.Now().UnixNano())
+	regID := fmt.Sprintf("mock-reg-%s-%d", t.Name(), time.Now().UnixNano())
 
 	registryURL, err := common.NewURL(testRegistryURL,
 		common.WithParamsValue(constant.RegistryKey, "mock"),
@@ -127,7 +127,7 @@ func TestServiceDiscoveryRegistrySubscribe(t *testing.T) {
 func TestServiceDiscoveryRegistryUnSubscribe(t *testing.T) {
 	mockSD, mockMapping := setupEnvironment(t)
 	mockMapping.data[testInterface] = gxset.NewSet(testApp)
-	regID := fmt.Sprintf("mock-reg-%d", time.Now().UnixNano())
+	regID := fmt.Sprintf("mock-reg-%s-%d", t.Name(), time.Now().UnixNano())
 
 	registryURL, _ := common.NewURL(testRegistryURL,
 		common.WithParamsValue(constant.RegistryKey, "mock"),
@@ -159,7 +159,7 @@ func TestServiceDiscoveryRegistryUnSubscribeKeepsMetadataOnRemoveFailure(t *test
 	mockSD, mockMapping := setupEnvironment(t)
 	mockMapping.data[testInterface] = gxset.NewSet(testApp)
 	mockMapping.removeErr = errors.New("mock remove failed")
-	regID := fmt.Sprintf("mock-reg-%d", time.Now().UnixNano())
+	regID := fmt.Sprintf("mock-reg-%s-%d", t.Name(), time.Now().UnixNano())
 
 	registryURL, _ := common.NewURL(testRegistryURL,
 		common.WithParamsValue(constant.RegistryKey, "mock"),
@@ -188,7 +188,7 @@ func TestServiceDiscoveryRegistryUnSubscribeKeepsMetadataOnRemoveFailure(t *test
 
 func TestServiceDiscoveryRegistryUnRegisterSyncsBulkMetadataCleanup(t *testing.T) {
 	mockSD, mockMapping := setupEnvironment(t)
-	regID := fmt.Sprintf("mock-reg-%d", time.Now().UnixNano())
+	regID := fmt.Sprintf("mock-reg-%s-%d", t.Name(), time.Now().UnixNano())
 
 	registryURL, err := common.NewURL(testRegistryURL,
 		common.WithParamsValue(constant.RegistryKey, "mock"),
@@ -244,7 +244,7 @@ func TestServiceDiscoveryRegistryUnRegisterSyncsBulkMetadataCleanup(t *testing.T
 
 func TestServiceDiscoveryRegistryUnRegisterServicePartialFailSyncsMetadata(t *testing.T) {
 	mockSD, mockMapping := setupEnvironment(t)
-	regID := fmt.Sprintf("mock-reg-%d", time.Now().UnixNano())
+	regID := fmt.Sprintf("mock-reg-%s-%d", t.Name(), time.Now().UnixNano())
 
 	registryURL, err := common.NewURL(testRegistryURL,
 		common.WithParamsValue(constant.RegistryKey, "mock"),
@@ -294,7 +294,7 @@ func TestServiceDiscoveryRegistryUnRegisterServicePartialFailSyncsMetadata(t *te
 	assert.Equal(t, providerURL1, metaInfo.GetExportedServiceURLs()[0])
 	assert.Len(t, metaInfo.Services, 1)
 
-	expectedRevision := createInstance(metaInfo, providerURL1).GetMetadata()[constant.ExportedServicesRevisionPropertyName]
+	expectedRevision := createInstance(metaInfo, providerURL1, regID).GetMetadata()[constant.ExportedServicesRevisionPropertyName]
 	assert.Equal(t, expectedRevision, metaInfo.Revision)
 	assert.True(t, mockSD.updateCalled)
 	assert.Contains(t, mockSD.updatedIDs, providerURL1.Address())
@@ -302,7 +302,7 @@ func TestServiceDiscoveryRegistryUnRegisterServicePartialFailSyncsMetadata(t *te
 
 func TestServiceDiscoveryRegistryUnRegisterWithoutTrackedInstancesReconcilesMetadata(t *testing.T) {
 	_, mockMapping := setupEnvironment(t)
-	regID := fmt.Sprintf("mock-reg-%d", time.Now().UnixNano())
+	regID := fmt.Sprintf("mock-reg-%s-%d", t.Name(), time.Now().UnixNano())
 
 	registryURL, err := common.NewURL(testRegistryURL,
 		common.WithParamsValue(constant.RegistryKey, "mock"),
@@ -344,7 +344,7 @@ func TestServiceDiscoveryRegistryUnRegisterWithoutTrackedInstancesReconcilesMeta
 	assert.Equal(t, providerURL2, metaInfo.GetExportedServiceURLs()[0])
 	assert.Len(t, metaInfo.Services, 1)
 
-	expectedRevision := createInstance(metaInfo, providerURL2).GetMetadata()[constant.ExportedServicesRevisionPropertyName]
+	expectedRevision := createInstance(metaInfo, providerURL2, regID).GetMetadata()[constant.ExportedServicesRevisionPropertyName]
 	assert.Equal(t, expectedRevision, metaInfo.Revision)
 }
 

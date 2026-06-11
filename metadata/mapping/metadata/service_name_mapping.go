@@ -18,7 +18,9 @@
 package metadata
 
 import (
+	"errors"
 	"sync"
+	"time"
 )
 
 import (
@@ -33,11 +35,17 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
+	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 )
 
-const (
-	DefaultGroup = "mapping"
-	retryTimes   = 10
+const DefaultGroup = "mapping"
+
+// retry policy for mapping registration. These are vars rather than consts so they can be
+// tuned (and made near-instant in tests).
+var (
+	retryTimes        = 10
+	retryBaseInterval = 100 * time.Millisecond
+	retryMaxInterval  = 2 * time.Second
 )
 
 func init() {
@@ -73,34 +81,94 @@ func (d *ServiceNameMapping) Map(url *common.URL) error {
 		return perrors.New("can not registering mapping to remote cause no metadata report instance found")
 	}
 	for _, metadataReport := range metadataReports {
-		var err error
-		for i := 0; i < retryTimes; i++ {
-			if err = metadataReport.RegisterServiceAppMapping(serviceInterface, DefaultGroup, appName); err == nil {
-				break
-			}
-		}
-		if err != nil {
+		if err := registerWithRetry(metadataReport, serviceInterface, DefaultGroup, appName); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
+// registerWithRetry registers the interface-to-app mapping, retrying only on CAS conflicts
+// (report.ErrMappingCASConflict) with exponential backoff. Any other error is returned
+// immediately, since retrying it would not help.
+func registerWithRetry(r report.MetadataReport, serviceInterface, group, appName string) error {
+	var err error
+	for i := 0; i < retryTimes; i++ {
+		err = r.RegisterServiceAppMapping(serviceInterface, group, appName)
+		if err == nil {
+			return nil
+		}
+		if !errors.Is(err, report.ErrMappingCASConflict) {
+			return err
+		}
+		time.Sleep(backoff(i))
+	}
+	return err
+}
+
+// backoff returns the delay before retry attempt i: retryBaseInterval*2^i capped at
+// retryMaxInterval.
+func backoff(attempt int) time.Duration {
+	d := retryBaseInterval << attempt
+	if d <= 0 || d > retryMaxInterval {
+		d = retryMaxInterval
+	}
+	return d
+}
+
 // Get will return the application-level services. If not found, the empty set will be returned.
 func (d *ServiceNameMapping) Get(url *common.URL, listener mapping.MappingListener) (*gxset.HashSet, error) {
 	serviceInterface := url.GetParam(constant.InterfaceKey, "")
-	metadataReport := metadata.GetMetadataReport()
-	if metadataReport == nil {
+	metadataReports := metadata.GetMetadataReports()
+	if len(metadataReports) == 0 {
 		return nil, perrors.New("can not get mapping in remote cause no metadata report instance found")
 	}
-	return metadataReport.GetServiceAppMapping(serviceInterface, DefaultGroup, listener)
+	// Attach the listener to the stable primary report only (GetMetadataReport uses
+	// a deterministic selection: prefer "default", otherwise lexicographic first).
+	// GetMetadataReports() iterates a map so its order is non-deterministic; using
+	// i==0 as the anchor would bind the listener to a random backend each run.
+	primaryReport := metadata.GetMetadataReport()
+	var result *gxset.HashSet
+	var errs []error
+	for _, metadataReport := range metadataReports {
+		var reportListener mapping.MappingListener
+		if metadataReport == primaryReport {
+			reportListener = listener
+		}
+		set, err := metadataReport.GetServiceAppMapping(serviceInterface, DefaultGroup, reportListener)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		if result == nil {
+			result = set
+		} else {
+			result.Add(set.Values()...)
+		}
+	}
+	if result == nil {
+		return nil, errors.Join(errs...)
+	}
+	return result, nil
 }
 
+// Remove removes the service-to-app mapping for the given URL from all
+// registered metadata reports. Unlike Map (which stops on the first failure),
+// Remove is best-effort: it attempts every report and returns all errors
+// joined together so the caller can see the full failure picture. The
+// intent is to avoid leaving stale entries in any registry due to a transient
+// error in one of the others.
 func (d *ServiceNameMapping) Remove(url *common.URL) error {
 	serviceInterface := url.GetParam(constant.InterfaceKey, "")
-	metadataReport := metadata.GetMetadataReport()
-	if metadataReport == nil {
+	metadataReports := metadata.GetMetadataReports()
+	if len(metadataReports) == 0 {
 		return perrors.New("can not remove mapping in remote cause no metadata report instance found")
 	}
-	return metadataReport.RemoveServiceAppMappingListener(serviceInterface, DefaultGroup)
+	var errs []error
+	for _, metadataReport := range metadataReports {
+		if err := metadataReport.RemoveServiceAppMappingListener(serviceInterface, DefaultGroup); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errors.Join(errs...)
 }

@@ -18,11 +18,12 @@
 package metadata
 
 import (
+	"sort"
 	"time"
 )
 
 import (
-	"github.com/dubbogo/gost/container/set"
+	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/log/logger"
 )
 
@@ -41,6 +42,12 @@ var (
 	instances = make(map[string]report.MetadataReport)
 )
 
+// ClearMetadataReportInstances resets the package-level instances map.
+// Intended for test isolation only; do not call in production code.
+func ClearMetadataReportInstances() {
+	instances = make(map[string]report.MetadataReport)
+}
+
 func addMetadataReport(registryId string, url *common.URL) error {
 	fac := extension.GetMetadataReportFactory(url.Protocol)
 	if fac == nil {
@@ -51,21 +58,46 @@ func addMetadataReport(registryId string, url *common.URL) error {
 	return nil
 }
 
+// GetMetadataReport returns a single metadata report for callers that lack
+// registry context. It prefers the "default" registry's report; when absent
+// it falls back to the lexicographically first registry id so the selection
+// is always stable across calls.
 func GetMetadataReport() report.MetadataReport {
-	for _, v := range instances {
-		return v
+	if r, ok := instances[constant.DefaultKey]; ok {
+		return r
+	}
+	keys := make([]string, 0, len(instances))
+	for k := range instances {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	if len(keys) > 0 {
+		return instances[keys[0]]
 	}
 	return nil
 }
 
+// GetMetadataReportByRegistry returns the metadata report bound to the given
+// registry id. When the registry id is empty the caller has no registry context,
+// so the stable default returned by GetMetadataReport is used. When a specific
+// (non-empty) registry id is not found, it falls back to the "default" report
+// if one exists. This handles the common case where a standalone metadata-report
+// config is registered under "default" while named registries (e.g. nacos, zk)
+// need to use it. nil is returned only when neither the specific id nor "default"
+// is registered.
 func GetMetadataReportByRegistry(registry string) report.MetadataReport {
 	if len(registry) == 0 {
-		registry = constant.DefaultKey
+		return GetMetadataReport()
 	}
 	if r, ok := instances[registry]; ok {
 		return r
 	}
-	return GetMetadataReport()
+	if r, ok := instances[constant.DefaultKey]; ok {
+		logger.Infof("[Metadata] no metadata report bound to registryId=%s, falling back to default", registry)
+		return r
+	}
+	logger.Warnf("[Metadata] no metadata report found for registryId=%s", registry)
+	return nil
 }
 
 func GetMetadataReports() []report.MetadataReport {

@@ -284,6 +284,8 @@ func (s *ServiceConfig) Export() error {
 			common.WithParamsValue(constant.ApplicationTagKey, s.rc.Application.Tag),
 			//common.WithParamsValue(constant.SslEnabledKey, strconv.FormatBool(config.GetSslEnabled())),
 			common.WithMethods(strings.Split(methods, ",")),
+			common.WithAttribute(constant.RpcServiceKey, s.rpcService),
+			common.WithAttribute(constant.ProviderConfigKey, s.rc.Provider),
 			common.WithToken(s.Token),
 			common.WithParamsValue(constant.MetadataTypeKey, s.metadataType),
 			// fix https://github.com/apache/dubbo-go/issues/2176
@@ -296,7 +298,7 @@ func (s *ServiceConfig) Export() error {
 		}
 
 		if len(s.Tag) > 0 {
-			ivkURL.AddParam(constant.Tagkey, s.Tag)
+			ivkURL.SetParam(constant.Tagkey, s.Tag)
 		}
 
 		// post process the URL to be exported
@@ -348,7 +350,7 @@ func (s *ServiceConfig) generatorInvoker(url *common.URL, info any) base.Invoker
 
 // setRegistrySubURL set registry sub url is ivkURl
 func setRegistrySubURL(ivkURL *common.URL, regUrl *common.URL) {
-	ivkURL.AddParam(constant.RegistryKey, regUrl.GetParam(constant.RegistryKey, ""))
+	ivkURL.SetParam(constant.RegistryKey, regUrl.GetParam(constant.RegistryKey, ""))
 	regUrl.SubURL = ivkURL
 }
 

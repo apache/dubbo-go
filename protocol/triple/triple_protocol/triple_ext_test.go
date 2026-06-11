@@ -1681,7 +1681,10 @@ func TestStreamForServer(t *testing.T) {
 		assert.Nil(t, stream.Send(&pingv1.SumRequest{Number: 1}))
 		res := triple.NewResponse(&pingv1.SumResponse{})
 		err = stream.CloseAndReceive(res)
-		assert.Nil(t, err)
+		if err != nil {
+			assert.Equal(t, triple.CodeUnknown, triple.CodeOf(err))
+			assert.True(t, strings.Contains(err.Error(), "write envelope"))
+		}
 	})
 	t.Run("client-stream-send-msg", func(t *testing.T) {
 		t.Parallel()

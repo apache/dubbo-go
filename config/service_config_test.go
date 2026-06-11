@@ -34,6 +34,8 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
 	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
 )
 
@@ -188,4 +190,42 @@ func TestServiceConfigExportDoesNotWarnOnNonVariadicRPCMethods(t *testing.T) {
 	for _, warn := range capture.warns {
 		assert.NotContains(t, warn, "variadic RPC method")
 	}
+}
+
+func TestServiceConfigExportCarriesProviderAttributes(t *testing.T) {
+	extension.SetProtocol(protocolwrapper.FILTER, protocolwrapper.NewMockProtocolFilter)
+
+	const interfaceName = "org.apache.dubbo.ProviderAttributeService"
+	serviceConfig := newEmptyServiceConfig()
+	serviceConfig.id = "ProviderAttributeService"
+	serviceConfig.Interface = interfaceName
+	serviceConfig.NotRegister = true
+	serviceConfig.ProtocolIDs = []string{"dubbo"}
+	serviceConfig.rpcService = &HelloService{}
+
+	rc := newEmptyRootConfig()
+	rc.Protocols["dubbo"] = NewProtocolConfigBuilder().
+		SetName("dubbo").
+		SetPort("20000").
+		Build()
+
+	err := serviceConfig.Init(rc)
+	require.NoError(t, err)
+	err = serviceConfig.Export()
+	require.NoError(t, err)
+	t.Cleanup(serviceConfig.Unexport)
+	t.Cleanup(func() {
+		_ = common.ServiceMap.UnRegister(interfaceName, "dubbo", common.ServiceKey(interfaceName, "", ""))
+	})
+
+	urls := serviceConfig.GetExportedUrls()
+	require.Len(t, urls, 1)
+
+	providerRaw, ok := urls[0].GetAttribute(constant.ProviderConfigKey)
+	require.True(t, ok)
+	assert.Same(t, rc.Provider, providerRaw)
+
+	rpcServiceRaw, ok := urls[0].GetAttribute(constant.RpcServiceKey)
+	require.True(t, ok)
+	assert.Same(t, serviceConfig.rpcService, rpcServiceRaw)
 }

@@ -233,7 +233,7 @@ func LoadRegistries(registryIds []string, registries map[string]*RegistryConfig,
 				panic(err)
 			} else {
 				for _, u := range urls {
-					u.AddParam(constant.RegistryIdKey, k)
+					u.SetParam(constant.RegistryIdKey, k)
 				}
 				registryURLs = append(registryURLs, urls...)
 			}
