@@ -1507,3 +1507,82 @@ func TestCloneThreadSafe(t *testing.T) {
 
 	wg.Wait()
 }
+
+// --- Benchmarks for IsEquals and ToMap ---
+
+func BenchmarkIsEquals_SmallParams(b *testing.B) {
+	u1, _ := NewURL("dubbo://127.0.0.1:20000/com.test.Service?key1=value1&key2=value2")
+	u2, _ := NewURL("dubbo://127.0.0.1:20000/com.test.Service?key1=value1&key2=value2")
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		IsEquals(u1, u2)
+	}
+}
+
+func BenchmarkIsEquals_LargeParams(b *testing.B) {
+	base1 := "dubbo://127.0.0.1:20000/com.test.Service?"
+	base2 := "dubbo://127.0.0.1:20000/com.test.Service?"
+	for i := 0; i < 50; i++ {
+		kv := "key" + strconv.Itoa(i) + "=val" + strconv.Itoa(i)
+		if i > 0 {
+			base1 += "&"
+			base2 += "&"
+		}
+		base1 += kv
+		base2 += kv
+	}
+	u1, _ := NewURL(base1)
+	u2, _ := NewURL(base2)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		IsEquals(u1, u2)
+	}
+}
+
+func BenchmarkIsEquals_WithExcludes(b *testing.B) {
+	u1, _ := NewURL("dubbo://127.0.0.1:20000/com.test.Service?key1=value1&key2=different&key3=value3")
+	u2, _ := NewURL("dubbo://127.0.0.1:20000/com.test.Service?key1=value1&key2=other&key3=value3")
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		IsEquals(u1, u2, "key2")
+	}
+}
+
+func BenchmarkToMap_SmallParams(b *testing.B) {
+	u, _ := NewURL("dubbo://127.0.0.1:20000/com.test.Service?key1=value1&key2=value2")
+	u.Username = "user"
+	u.Password = "pass"
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = u.ToMap()
+	}
+}
+
+func BenchmarkToMap_LargeParams(b *testing.B) {
+	base := "dubbo://127.0.0.1:20000/com.test.Service?"
+	for i := 0; i < 50; i++ {
+		if i > 0 {
+			base += "&"
+		}
+		base += "key" + strconv.Itoa(i) + "=val" + strconv.Itoa(i)
+	}
+	u, _ := NewURL(base)
+	u.Username = "user"
+	u.Password = "pass"
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = u.ToMap()
+	}
+}
+
+func BenchmarkToMap_EmptyParams(b *testing.B) {
+	u := &URL{
+		Protocol: "dubbo",
+		Location: "127.0.0.1:20000",
+		Path:     "/com.test.Service",
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = u.ToMap()
+	}
+}

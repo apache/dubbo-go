@@ -820,7 +820,32 @@ func (c *URL) SetParams(m url.Values) {
 
 // ToMap transfer URL to Map
 func (c *URL) ToMap() map[string]string {
-	paramsMap := make(map[string]string)
+	c.paramsLock.RLock()
+	paramCount := len(c.params)
+	c.paramsLock.RUnlock()
+
+	fixedCount := 0
+	if c.Protocol != "" {
+		fixedCount++
+	}
+	if c.Username != "" {
+		fixedCount++
+	}
+	if c.Password != "" {
+		fixedCount++
+	}
+	if c.Location != "" {
+		fixedCount += 2 // host + port
+	}
+	if c.Path != "" {
+		fixedCount++
+	}
+
+	if paramCount == 0 && fixedCount == 0 {
+		return nil
+	}
+
+	paramsMap := make(map[string]string, paramCount+fixedCount)
 
 	c.RangeParams(
 		func(key, value string) bool {
@@ -839,23 +864,17 @@ func (c *URL) ToMap() map[string]string {
 		paramsMap["password"] = c.Password
 	}
 	if c.Location != "" {
-		paramsMap["host"] = strings.Split(c.Location, ":")[0]
-		var port string
-		if strings.Contains(c.Location, ":") {
-			port = strings.Split(c.Location, ":")[1]
+		// Single-pass split avoids repeated string scanning.
+		parts := strings.Split(c.Location, ":")
+		paramsMap["host"] = parts[0]
+		if len(parts) > 1 {
+			paramsMap["port"] = parts[len(parts)-1]
 		} else {
-			port = "0"
+			paramsMap["port"] = "0"
 		}
-		paramsMap["port"] = port
-	}
-	if c.Protocol != "" {
-		paramsMap[PROTOCOL] = c.Protocol
 	}
 	if c.Path != "" {
 		paramsMap["path"] = c.Path
-	}
-	if len(paramsMap) == 0 {
-		return nil
 	}
 	return paramsMap
 }
@@ -1019,23 +1038,76 @@ func IsEquals(left *URL, right *URL, excludes ...string) bool {
 		return false
 	}
 
-	leftMap := left.ToMap()
-	rightMap := right.ToMap()
-	for _, exclude := range excludes {
-		delete(leftMap, exclude)
-		delete(rightMap, exclude)
+	// Build a small lookup set for excluded keys to avoid repeated linear scans
+	// and to avoid materializing two full maps just for comparison.
+	var excludeSet map[string]struct{}
+	if len(excludes) > 0 {
+		excludeSet = make(map[string]struct{}, len(excludes))
+		for _, k := range excludes {
+			excludeSet[k] = struct{}{}
+		}
 	}
 
-	if len(leftMap) != len(rightMap) {
-		return false
-	}
-
-	for lk, lv := range leftMap {
-		if rv, ok := rightMap[lk]; !ok {
-			return false
-		} else if lv != rv {
+	isExcluded := func(key string) bool {
+		if excludeSet == nil {
 			return false
 		}
+		_, ok := excludeSet[key]
+		return ok
+	}
+
+	// Compare scalar fields directly.
+	if left.Protocol != right.Protocol && !isExcluded(PROTOCOL) {
+		return false
+	}
+	if left.Username != right.Username && !isExcluded("username") {
+		return false
+	}
+	if left.Password != right.Password && !isExcluded("password") {
+		return false
+	}
+	if left.Path != right.Path && !isExcluded("path") {
+		return false
+	}
+	if left.Location != right.Location {
+		if isExcluded("host") && isExcluded("port") {
+			// Both excluded, skip Location comparison
+		} else if isExcluded("host") || isExcluded("port") {
+			// Only one side of host:port excluded — fall through to param comparison
+		} else {
+			return false
+		}
+	}
+
+	// Compare params directly without materializing maps.
+	// Build left params (excluding filtered keys), then verify right matches.
+	leftParams := make(map[string]string)
+	left.RangeParams(func(key, value string) bool {
+		if !isExcluded(key) {
+			leftParams[key] = value
+		}
+		return true
+	})
+
+	rightCount := 0
+	mismatch := false
+	right.RangeParams(func(key, value string) bool {
+		if isExcluded(key) {
+			return true
+		}
+		rightCount++
+		if lv, ok := leftParams[key]; !ok || lv != value {
+			mismatch = true
+			return false
+		}
+		return true
+	})
+
+	if mismatch {
+		return false
+	}
+	if rightCount != len(leftParams) {
+		return false
 	}
 
 	return true
