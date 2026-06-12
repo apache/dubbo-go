@@ -678,23 +678,34 @@ func (c *URL) GetParams() url.Values {
 	return c.CopyParams()
 }
 
+func copyURLValues(src url.Values) url.Values {
+	if src == nil {
+		return nil
+	}
+
+	dst := make(url.Values, len(src))
+	for k, vs := range src {
+		copied := make([]string, len(vs))
+		copy(copied, vs)
+		dst[k] = copied
+	}
+
+	return dst
+}
+
+func valuesHasNonDefaultParam(values url.Values, key string) bool {
+	if len(values) == 0 {
+		return false
+	}
+	return values.Get(key) != ""
+}
+
 // CopyParams returns a deep copy of params.
 func (c *URL) CopyParams() url.Values {
 	c.paramsLock.RLock()
 	defer c.paramsLock.RUnlock()
 
-	if c.params == nil {
-		return nil
-	}
-
-	params := make(url.Values, len(c.params))
-	for k, vs := range c.params {
-		copied := make([]string, len(vs))
-		copy(copied, vs)
-		params[k] = copied
-	}
-
-	return params
+	return copyURLValues(c.params)
 }
 
 // GetParamAndDecoded gets values and decode
@@ -880,41 +891,53 @@ func (c *URL) ToMap() map[string]string {
 func (c *URL) MergeURL(anotherUrl *URL) *URL {
 	// After Clone, it is a new URL that there is no thread safe issue.
 	mergedURL := c.Clone()
-	params := mergedURL.GetParams()
-	// iterator the anotherUrl if c not have the key ,merge in
-	// anotherUrl usually will not changed. so change RangeParams to GetParams to avoid the string value copy.// Group get group
-	for key, value := range anotherUrl.GetParams() {
-		if _, ok := mergedURL.GetNonDefaultParam(key); !ok {
-			if len(value) > 0 {
-				params[key] = make([]string, len(value))
-				copy(params[key], value)
+	params := mergedURL.params
+	if params == nil {
+		params = url.Values{}
+		mergedURL.params = params
+	}
+	baseTimestamp := params.Get(constant.TimestampKey)
+	baseHasTimestamp := baseTimestamp != ""
+
+	func() {
+		anotherUrl.paramsLock.RLock()
+		defer anotherUrl.paramsLock.RUnlock()
+
+		// Merge params from anotherUrl under one read lock.
+		for key, value := range anotherUrl.params {
+			if !valuesHasNonDefaultParam(params, key) {
+				if len(value) > 0 {
+					params[key] = make([]string, len(value))
+					copy(params[key], value)
+				}
 			}
 		}
-	}
 
-	// remote timestamp
-	if v, ok := c.GetNonDefaultParam(constant.TimestampKey); !ok {
-		params[constant.RemoteTimestampKey] = []string{v}
-		params[constant.TimestampKey] = []string{anotherUrl.GetParam(constant.TimestampKey, "")}
-	}
-
-	// finally execute methodConfigMergeFcn
-	mergedURL.Methods = make([]string, len(anotherUrl.Methods))
-	for i, method := range anotherUrl.Methods {
-		for _, paramKey := range []string{constant.LoadbalanceKey, constant.ClusterKey, constant.RetriesKey, constant.TimeoutKey} {
-			if v := anotherUrl.GetParam(paramKey, ""); len(v) > 0 {
-				params[paramKey] = []string{v}
-			}
-
-			methodsKey := "methods." + method + "." + paramKey
-			// if len(mergedURL.GetParam(methodsKey, "")) == 0 {
-			if v := anotherUrl.GetParam(methodsKey, ""); len(v) > 0 {
-				params[methodsKey] = []string{v}
-			}
-			// }
-			mergedURL.Methods[i] = method
+		// remote timestamp
+		if !baseHasTimestamp {
+			params[constant.RemoteTimestampKey] = []string{baseTimestamp}
+			params[constant.TimestampKey] = []string{anotherUrl.params.Get(constant.TimestampKey)}
 		}
-	}
+
+		// finally execute methodConfigMergeFcn
+		mergedURL.Methods = make([]string, len(anotherUrl.Methods))
+		for i, method := range anotherUrl.Methods {
+			for _, paramKey := range []string{constant.LoadbalanceKey, constant.ClusterKey, constant.RetriesKey, constant.TimeoutKey} {
+				if v := anotherUrl.params.Get(paramKey); len(v) > 0 {
+					params[paramKey] = []string{v}
+				}
+
+				methodsKey := "methods." + method + "." + paramKey
+				// if len(mergedURL.GetParam(methodsKey, "")) == 0 {
+				if v := anotherUrl.params.Get(methodsKey); len(v) > 0 {
+					params[methodsKey] = []string{v}
+				}
+				// }
+				mergedURL.Methods[i] = method
+			}
+		}
+	}()
+
 	// merge attributes
 	anotherUrl.RangeAttributes(func(attrK string, attrV any) bool {
 		if _, ok := mergedURL.GetAttribute(attrK); !ok {
@@ -931,36 +954,8 @@ func (c *URL) MergeURL(anotherUrl *URL) *URL {
 // excludeParams: the set of parameters to exclude from the cloned URL
 // reserveParams: the set of parameters to retain in the cloned URL
 func (c *URL) CloneWithFilter(excludeParams *gxset.HashSet, reserveParams []string) *URL {
-	newURL := &URL{
-		Protocol:     c.Protocol,
-		Location:     c.Location,
-		Ip:           c.Ip,
-		Port:         c.Port,
-		PrimitiveURL: c.PrimitiveURL,
-		primitiveTS:  c.primitiveTS,
-		Path:         c.Path,
-		Username:     c.Username,
-		Password:     c.Password,
-		Methods:      append(make([]string, 0), c.Methods...),
-		attributes:   make(map[string]any),
-		params:       url.Values{},
-	}
-
-	// Copy and filter params based on excludeParams or reserveParams
-	c.RangeParams(
-		func(key, value string) bool {
-			// If the param is in excludeParams or not in reserveParams, skip it
-			if excludeParams != nil && excludeParams.Contains(key) {
-				return true
-			}
-			if len(reserveParams) > 0 && !slices.Contains(reserveParams, key) {
-				return true
-			}
-			// Set the param if it passes the filter
-			newURL.SetParam(key, value)
-			return true
-		},
-	)
+	newURL := c.newURLForClone()
+	newURL.params = c.copyFilteredParams(newURL.params, excludeParams, reserveParams)
 
 	// Copy attributes
 	c.RangeAttributes(
@@ -976,6 +971,77 @@ func (c *URL) CloneWithFilter(excludeParams *gxset.HashSet, reserveParams []stri
 	}
 
 	return newURL
+}
+
+func (c *URL) newURLForClone() *URL {
+	return &URL{
+		Protocol:     c.Protocol,
+		Location:     c.Location,
+		Ip:           c.Ip,
+		Port:         c.Port,
+		PrimitiveURL: c.PrimitiveURL,
+		primitiveTS:  c.primitiveTS,
+		Path:         c.Path,
+		Username:     c.Username,
+		Password:     c.Password,
+		Methods:      append(make([]string, 0), c.Methods...),
+		attributes:   make(map[string]any),
+		params:       url.Values{},
+	}
+}
+
+func (c *URL) copyFilteredParams(params url.Values, excludeParams *gxset.HashSet, reserveParams []string) url.Values {
+	c.paramsLock.RLock()
+	defer c.paramsLock.RUnlock()
+
+	if excludeParams == nil && len(reserveParams) == 0 {
+		if len(c.params) > 8 {
+			copiedParams := copyURLValues(c.params)
+			if copiedParams != nil {
+				return copiedParams
+			}
+		}
+		for key, values := range c.params {
+			copied := make([]string, len(values))
+			copy(copied, values)
+			params[key] = copied
+		}
+		return params
+	}
+
+	if capacity := paramsCapacityForClone(len(c.params), excludeParams, reserveParams); capacity > 8 {
+		params = make(url.Values, capacity)
+	}
+
+	for key, values := range c.params {
+		if shouldCopyParam(key, excludeParams, reserveParams) {
+			copied := make([]string, len(values))
+			copy(copied, values)
+			params[key] = copied
+		}
+	}
+
+	return params
+}
+
+func paramsCapacityForClone(paramsLen int, excludeParams *gxset.HashSet, reserveParams []string) int {
+	if len(reserveParams) > 0 && len(reserveParams) < paramsLen {
+		paramsLen = len(reserveParams)
+	}
+	if excludeParams != nil {
+		paramsLen -= excludeParams.Size()
+	}
+	if paramsLen < 0 {
+		return 0
+	}
+	return paramsLen
+}
+
+func shouldCopyParam(key string, excludeParams *gxset.HashSet, reserveParams []string) bool {
+	if excludeParams != nil && excludeParams.Contains(key) {
+		return false
+	}
+	return len(reserveParams) == 0 || slices.Contains(reserveParams, key)
 }
 
 // Clone will copy the URL

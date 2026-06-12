@@ -1075,6 +1075,29 @@ func TestCloneWithParams(t *testing.T) {
 	assert.Equal(t, []string{"method1", "method2"}, cloned.Methods)
 }
 
+func TestCloneWithFilterPreservesMultiValueParams(t *testing.T) {
+	u := &URL{}
+	u.SetParams(url.Values{
+		"group": {"a", "b"},
+		"drop":  {"drop-value"},
+		"other": {"other-value"},
+	})
+
+	excludeSet := gxset.NewSet("drop")
+	cloned := u.CloneWithFilter(excludeSet, []string{"group", "drop"})
+
+	clonedParams := cloned.GetParams()
+	assert.Equal(t, []string{"a", "b"}, clonedParams["group"])
+	assert.NotContains(t, clonedParams, "drop")
+	assert.NotContains(t, clonedParams, "other")
+
+	cloned.paramsLock.Lock()
+	cloned.params["group"][0] = "changed"
+	cloned.paramsLock.Unlock()
+
+	assert.Equal(t, []string{"a", "b"}, u.GetParams()["group"])
+}
+
 func TestURLCompare(t *testing.T) {
 	u1, _ := NewURL("dubbo://127.0.0.1:20000/a.Service")
 	u2, _ := NewURL("dubbo://127.0.0.1:20000/b.Service")
@@ -1357,6 +1380,47 @@ func TestMergeURLWithMethodParams(t *testing.T) {
 	mergedUrl := serviceUrl.MergeURL(referenceUrl)
 	assert.Equal(t, "random", mergedUrl.GetParam(constant.LoadbalanceKey, ""))
 	assert.Equal(t, "5000", mergedUrl.GetParam("methods.testMethod."+constant.TimeoutKey, ""))
+}
+
+func TestMergeURLPreservesMultiValueParams(t *testing.T) {
+	local := &URL{}
+	local.SetParams(url.Values{
+		"group": {"local-a", "local-b"},
+	})
+
+	remote := &URL{}
+	remote.SetParams(url.Values{
+		"group":   {"remote-a", "remote-b"},
+		"version": {"remote-v1", "remote-v2"},
+	})
+
+	merged := local.MergeURL(remote)
+	mergedParams := merged.GetParams()
+
+	assert.Equal(t, []string{"local-a", "local-b"}, mergedParams["group"])
+	assert.Equal(t, []string{"remote-v1", "remote-v2"}, mergedParams["version"])
+
+	remote.paramsLock.Lock()
+	remote.params["version"][0] = "changed"
+	remote.paramsLock.Unlock()
+
+	assert.Equal(t, []string{"remote-v1", "remote-v2"}, merged.GetParams()["version"])
+}
+
+func TestMergeURLUsesNonDefaultParamSemantics(t *testing.T) {
+	local := &URL{}
+	local.SetParams(url.Values{
+		"group": {"", "local-b"},
+	})
+
+	remote := &URL{}
+	remote.SetParams(url.Values{
+		"group": {"remote-a", "remote-b"},
+	})
+
+	merged := local.MergeURL(remote)
+
+	assert.Equal(t, []string{"remote-a", "remote-b"}, merged.GetParams()["group"])
 }
 
 func TestURLWithPathAlreadyHasSlash(t *testing.T) {
