@@ -65,10 +65,8 @@ func initClient(url *common.URL) {
 	// Ensure application config is available via URL attribute
 	commonCfg.EnsureApplicationAttribute(url)
 
-	if url.GetParam(constant.ProtocolKey, "") == "" {
-		if _, ok := url.GetAttribute(constant.ProtocolConfigKey); !ok {
-			return
-		}
+	if _, ok := url.GetAttribute(constant.ProtocolConfigKey); !ok {
+		return
 	}
 
 	protocolConfRaw, ok := url.GetAttribute(constant.ProtocolConfigKey)
