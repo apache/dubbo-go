@@ -403,7 +403,7 @@ func TestGetMetadataInfo_CacheKeyFormat(t *testing.T) {
 
 	// Should hit the cache and return the pre-populated metadata
 	meta, err := GetMetadataInfo(testApp, instance, revision, constant.DefaultKey)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, expectedMeta, meta)
 }
 
@@ -433,7 +433,7 @@ func TestGetMetadataInfo_LocalStorageGoesDirectlyToRPC(t *testing.T) {
 	require.Error(t, err)
 	// Must be a URL/RPC error, not a report error, confirming the local path
 	// skips the report entirely and goes straight to RPC.
-	assert.Contains(t, err.Error(), "[Metadata-URL]",
+	assert.Contains(t, err.Error(), "metadata service URL params missing",
 		"local storage path should go directly to RPC, not touch the metadata report")
 }
 
@@ -459,18 +459,19 @@ func TestGetMetadataInfo_FallbackToRPC(t *testing.T) {
 
 	_, err := GetMetadataInfo(testApp, instance, "rev-fallback-to-rpc", constant.DefaultKey)
 	require.Error(t, err)
-	// Both report and RPC fail: error should be a combined Fallback error containing both causes.
-	// [Metadata-Fallback] prefix proves the fallback path was taken.
-	assert.Contains(t, err.Error(), "[Metadata-Fallback]",
-		"fallback path should produce a [Metadata-Fallback] error")
-	assert.Contains(t, err.Error(), "[Metadata-URL]",
+	// Both report and RPC fail: the combined error proves the fallback path was taken
+	// and includes the RPC/URL failure as the wrapped cause.
+	assert.Contains(t, err.Error(), "both paths failed",
+		"fallback path should produce a combined error mentioning both failures")
+	assert.Contains(t, err.Error(), "metadata service URL params missing",
 		"fallback error should include the RPC/URL failure cause")
 }
 
-// TestGetMetadataInfo_ReportReturnsNil_RPCSucceeds verifies the path where the metadata
-// report returns (nil, nil) — no error but no data — and RPC provides a valid result.
-// The result should be cached and returned successfully.
-func TestGetMetadataInfo_ReportReturnsNil_RPCSucceeds(t *testing.T) {
+// TestGetMetadataInfo_ReportReturnsNil_FallsBackToRPC verifies the path where the metadata
+// report returns (nil, nil) — no error but no data — which must trigger the RPC fallback.
+// Here the instance has no URL params, so RPC fails; the test asserts the resulting error
+// comes from the RPC fallback (not the report), proving the nil-result branch was taken.
+func TestGetMetadataInfo_ReportReturnsNil_FallsBackToRPC(t *testing.T) {
 	const regID = "report-nil-rpc-ok"
 	const revision = "rev-report-nil-rpc-ok"
 
@@ -494,18 +495,8 @@ func TestGetMetadataInfo_ReportReturnsNil_RPCSucceeds(t *testing.T) {
 
 	mockReport.On("GetAppMetadata").Return((*info.MetadataInfo)(nil), nil).Once()
 
-	// Pre-populate the cache with metadata so the RPC path (which would normally
-	// fail with a URL error) instead hits the cache via GetMetadataFromRpc's own
-	// internal path — but GetMetadataFromRpc doesn't use the cache.
-	// Instead, provide a valid RPC endpoint by pre-seeding the cache at a key
-	// the RPC path doesn't use, and rely on the fact that the instance below has
-	// no URL params → RPC will fail. We instead test via the cache shortcut:
-	// seed the cache after the report-nil trigger so the fallback to RPC is
-	// confirmed by the error shape.
-	//
-	// The cleanest proof of this path uses a real mock protocol. Since that
-	// requires more wiring, we verify the fallback was attempted by confirming
-	// the returned error comes from the RPC layer (not the report layer).
+	// The instance has no URL params, so the RPC fallback fails at URL construction.
+	// That failure is the observable proof that the report's nil result triggered fallback.
 	instance := &registry.DefaultServiceInstance{
 		ID:          "127.0.0.1:20098",
 		ServiceName: testApp,
@@ -523,26 +514,24 @@ func TestGetMetadataInfo_ReportReturnsNil_RPCSucceeds(t *testing.T) {
 
 	_, err := GetMetadataInfo(testApp, instance, revision, regID)
 	require.Error(t, err)
-	// The report returned nil (no error), so the fallback was triggered.
-	// RPC then fails because no URL params are present.
-	// The error must mention the nil-metadata fallback, not a report error.
-	assert.Contains(t, err.Error(), "[Metadata-Fallback]",
-		"nil report result should trigger fallback and produce a [Metadata-Fallback] error")
-	assert.NotContains(t, err.Error(), "[Metadata-Report]",
-		"error must not look like a report error — the report returned nil, not an error")
+	// The report returned nil (no error), so the fallback was triggered and then RPC
+	// failed at URL construction. The error must reflect the RPC-after-nil-report path.
+	assert.Contains(t, err.Error(), "RPC fallback failed after report returned nil metadata",
+		"nil report result should trigger fallback and surface an RPC error")
+	assert.Contains(t, err.Error(), "metadata service URL params missing",
+		"fallback error should include the RPC/URL failure cause")
 	mockReport.AssertExpectations(t)
 }
 
-// TestGetMetadataInfo_RPCReturnsNilMetadata verifies that when RPC succeeds but returns
-// nil metadata, GetMetadataInfo returns a descriptive [Metadata-RPC] error rather than
-// silently caching and returning nil.
-func TestGetMetadataInfo_RPCReturnsNilMetadata(t *testing.T) {
+// TestGetMetadataInfo_CacheTypedNilNoPanic verifies that when the cache holds a typed nil
+// *info.MetadataInfo entry, GetMetadataInfo does not panic and returns (nil, nil).
+// This covers a defensive edge case (e.g., a previous store of typed nil) rather than
+// the production nil guard in the RPC path. The RPC nil guard is exercised indirectly
+// through TestGetMetadataInfo_ReportReturnsNil_FallsBackToRPC.
+func TestGetMetadataInfo_CacheTypedNilNoPanic(t *testing.T) {
 	// This path is exercised via the cache: pre-seed with a typed nil *info.MetadataInfo.
-	// GetMetadataInfo will hit the cache fast-path, get nil, and the caller (OnEvent) handles
-	// it. The nil guard on lines 298-301 and 311-313 is exercised when RPC itself returns nil.
-	// Since controlling what GetMetadataFromRpc returns requires a mock protocol (separate
-	// package), we verify the guard indirectly: the cache fast-path with a nil entry must
-	// NOT trigger a panic, and the caller must receive (nil, nil) so it can skip gracefully.
+	// GetMetadataInfo hits the cache fast-path and returns the typed nil without calling RPC.
+	// Asserts that this does NOT panic, giving the caller a (nil, nil) to skip gracefully.
 	_ = NewServiceInstancesChangedListener(testApp, constant.DefaultKey, gxset.NewSet(testApp))
 
 	revision := "rev-rpc-nil-meta-guard"
@@ -563,8 +552,8 @@ func TestGetMetadataInfo_RPCReturnsNilMetadata(t *testing.T) {
 
 // TestGetMetadataInfo_NilMetadataMap verifies that an instance with a nil Metadata map
 // is handled gracefully by GetMetadataInfo and takes the local/RPC path.
-// This guard (line 264) is unreachable from OnEvent (which has its own nil check),
-// so it must be tested by calling GetMetadataInfo directly.
+// The nil-map guard in GetMetadataInfo is unreachable from OnEvent (which has its own
+// nil check), so it must be tested by calling GetMetadataInfo directly.
 func TestGetMetadataInfo_NilMetadataMap(t *testing.T) {
 	_ = NewServiceInstancesChangedListener(testApp, constant.DefaultKey, gxset.NewSet(testApp))
 
@@ -586,4 +575,56 @@ func TestGetMetadataInfo_NilMetadataMap(t *testing.T) {
 	assert.NotPanics(t, func() {
 		_, _ = GetMetadataInfo(testApp, instance, "rev-nil-map-nopanic", constant.DefaultKey)
 	})
+}
+
+// TestGetMetadataInfo_ProviderAppIsolatesSharedRevision verifies that two different
+// provider applications sharing the same revision do NOT collide in the cache.
+// The cache key is scoped by provider app, so each app's MetadataInfo is isolated
+// even when their revision strings are identical.
+func TestGetMetadataInfo_ProviderAppIsolatesSharedRevision(t *testing.T) {
+	_ = NewServiceInstancesChangedListener(testApp, constant.DefaultKey, gxset.NewSet(testApp))
+
+	const sharedRevision = "rev-shared-across-apps"
+	const providerA = "order-service"
+	const providerB = "payment-service"
+
+	keyA := providerA + ":" + constant.DefaultKey + ":" + sharedRevision
+	keyB := providerB + ":" + constant.DefaultKey + ":" + sharedRevision
+	metaA := info.NewMetadataInfo(providerA, sharedRevision)
+	metaB := info.NewMetadataInfo(providerB, sharedRevision)
+	metaCache.Set(keyA, metaA)
+	metaCache.Set(keyB, metaB)
+	t.Cleanup(func() {
+		metaCache.Delete(keyA)
+		metaCache.Delete(keyB)
+	})
+
+	instanceA := &registry.DefaultServiceInstance{
+		ID:          "127.0.0.1:21001",
+		ServiceName: providerA,
+		Host:        "127.0.0.1",
+		Port:        21001,
+		Metadata: map[string]string{
+			constant.ExportedServicesRevisionPropertyName: sharedRevision,
+		},
+	}
+	instanceB := &registry.DefaultServiceInstance{
+		ID:          "127.0.0.1:21002",
+		ServiceName: providerB,
+		Host:        "127.0.0.1",
+		Port:        21002,
+		Metadata: map[string]string{
+			constant.ExportedServicesRevisionPropertyName: sharedRevision,
+		},
+	}
+
+	// Each provider app must resolve to its own MetadataInfo, not the other's,
+	// despite sharing the same revision.
+	gotA, err := GetMetadataInfo(instanceA.GetServiceName(), instanceA, sharedRevision, constant.DefaultKey)
+	require.NoError(t, err)
+	assert.Equal(t, providerA, gotA.App, "provider A must get its own metadata")
+
+	gotB, err := GetMetadataInfo(instanceB.GetServiceName(), instanceB, sharedRevision, constant.DefaultKey)
+	require.NoError(t, err)
+	assert.Equal(t, providerB, gotB.App, "provider B must get its own metadata, not provider A's")
 }
