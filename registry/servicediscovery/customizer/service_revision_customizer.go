@@ -18,12 +18,6 @@
 package customizer
 
 import (
-	"fmt"
-	"hash/crc32"
-	"sort"
-)
-
-import (
 	"github.com/dubbogo/gost/log/logger"
 )
 
@@ -32,6 +26,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata"
+	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
@@ -54,8 +49,6 @@ func (e *exportedServicesRevisionMetadataCustomizer) GetPriority() int {
 func (e *exportedServicesRevisionMetadataCustomizer) Customize(instance registry.ServiceInstance) {
 	registryId := instance.GetMetadata()[constant.RegistryIdKey]
 	if len(registryId) == 0 {
-		// revision will be "0" (no services found for empty key), which causes OnEvent to skip
-		// this instance entirely — ensure RegistryIdKey is set before customizers run.
 		logger.Errorf("[Registry][ServiceDiscovery] instance has no registryId in metadata; " +
 			"exported revision will be \"0\" and this instance will be invisible to consumers")
 	}
@@ -82,8 +75,6 @@ func (e *subscribedServicesRevisionMetadataCustomizer) GetPriority() int {
 func (e *subscribedServicesRevisionMetadataCustomizer) Customize(instance registry.ServiceInstance) {
 	registryId := instance.GetMetadata()[constant.RegistryIdKey]
 	if len(registryId) == 0 {
-		// revision will be "0" (no subscriptions found for empty key), which causes OnEvent to skip
-		// this instance entirely — ensure RegistryIdKey is set before customizers run.
 		logger.Errorf("[Registry][ServiceDiscovery] instance has no registryId in metadata; " +
 			"subscribed revision will be \"0\" and this instance will be invisible to consumers")
 	}
@@ -99,33 +90,24 @@ func (e *subscribedServicesRevisionMetadataCustomizer) Customize(instance regist
 	instance.GetMetadata()[constant.SubscribedServicesRevisionPropertyName] = revision
 }
 
-// resolveRevision provides the actual pattern to calculate the revision.
-// please refer to dubbo-java's method, org.apache.dubbo.metadata.Metadata#calAndGetRevision
+// resolveRevision calculates a deterministic revision from the given URLs.
+// It converts URLs to canonical ServiceInfo objects and delegates to info.CalRevision,
+// aligning with Java dubbo's MetadataInfo.calAndGetRevision().
 func resolveRevision(urls []*common.URL) string {
 	if len(urls) == 0 {
 		return "0"
 	}
-	candidates := make([]string, 0, len(urls))
 
+	// build canonical ServiceInfo map from URLs, keyed by MatchKey
+	services := make(map[string]*info.ServiceInfo, len(urls))
+	app := ""
 	for _, u := range urls {
-		desc := u.GetParam(constant.ApplicationKey, "") + u.Path + u.GetParam(constant.VersionKey, "") + u.Port
-
-		if len(u.Methods) == 0 {
-			candidates = append(candidates, desc)
-		} else {
-			for _, m := range u.Methods {
-				// methods are part of candidates
-				candidates = append(candidates, desc+constant.KeySeparator+m)
-			}
+		si := info.NewServiceInfoWithURL(u)
+		services[si.GetMatchKey()] = si
+		if app == "" {
+			app = u.GetParam(constant.ApplicationKey, "")
 		}
-
 	}
-	sort.Strings(candidates)
 
-	// it's nearly impossible to be overflow
-	res := uint64(0)
-	for _, c := range candidates {
-		res += uint64(crc32.ChecksumIEEE([]byte(c)))
-	}
-	return fmt.Sprint(res)
+	return info.CalRevision(app, services)
 }

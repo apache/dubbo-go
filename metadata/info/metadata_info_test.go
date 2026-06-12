@@ -164,7 +164,7 @@ func TestServiceInfoGetParams(t *testing.T) {
 	assert.Equal(t, []string{"random"}, service.GetParams()["loadbalance"])
 }
 
-func TestServiceInfoGetParamsIncludesEnvironment(t *testing.T) {
+func TestServiceInfoExcludesInstanceLevelParams(t *testing.T) {
 	serviceURL, err := common.NewURL("tri://127.0.0.1:20000/org.apache.dubbo.samples.proto.GreetService",
 		common.WithInterface("org.apache.dubbo.samples.proto.GreetService"),
 		common.WithParamsValue(constant.EnvironmentKey, "pre"),
@@ -174,7 +174,9 @@ func TestServiceInfoGetParamsIncludesEnvironment(t *testing.T) {
 
 	service := NewServiceInfoWithURL(serviceURL)
 
-	assert.Equal(t, []string{"pre"}, service.GetParams()[constant.EnvironmentKey])
+	// Environment is instance-level metadata, not service-level.
+	// It should NOT appear in ServiceInfo.Params and thus not affect revision.
+	assert.Empty(t, service.GetParams()[constant.EnvironmentKey])
 }
 
 func TestServiceInfoGetMatchKey(t *testing.T) {
