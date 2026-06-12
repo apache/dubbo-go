@@ -292,7 +292,8 @@ func GetMetadataInfo(app string, instance registry.ServiceInstance, revision str
 	}
 
 	if metadataStorageType == constant.RemoteMetadataStorageType {
-		metadataInfo, reportErr := metadata.GetMetadataFromMetadataReport(revision, instance, registryId)
+		var reportErr error
+		metadataInfo, reportErr = metadata.GetMetadataFromMetadataReport(revision, instance, registryId)
 		if reportErr != nil {
 			logger.Errorf("[Metadata][Fallback] report failed, fallback to RPC app=%s registry=%s revision=%s err=%v",
 				app, registryId, revision, reportErr)
