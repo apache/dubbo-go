@@ -395,17 +395,36 @@ func isMatchCategory(category1 string, category2 string) bool {
 }
 
 func (c *URL) String() string {
-	c.paramsLock.Lock()
-	defer c.paramsLock.Unlock()
+	c.paramsLock.RLock()
+	defer c.paramsLock.RUnlock()
+
+	encodedParams := c.params.Encode()
 	var buf strings.Builder
-	if len(c.Username) == 0 && len(c.Password) == 0 {
-		buf.WriteString(fmt.Sprintf("%s://%s:%s%s", c.Protocol, c.Ip, c.Port, c.Path))
-	} else {
-		buf.WriteString(fmt.Sprintf("%s://%s:%s@%s:%s%s", c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Path))
+
+	size := len(c.Protocol) + len("://") + len(c.Ip) + len(":") + len(c.Port) + len(c.Path)
+	if len(c.Username) != 0 || len(c.Password) != 0 {
+		size += len(c.Username) + len(":") + len(c.Password) + len("@")
 	}
-	if encoded := c.params.Encode(); encoded != "" {
+	if encodedParams != "" {
+		size += len("?") + len(encodedParams)
+	}
+
+	buf.Grow(size)
+	buf.WriteString(c.Protocol)
+	buf.WriteString("://")
+	if len(c.Username) != 0 || len(c.Password) != 0 {
+		buf.WriteString(c.Username)
+		buf.WriteString(":")
+		buf.WriteString(c.Password)
+		buf.WriteString("@")
+	}
+	buf.WriteString(c.Ip)
+	buf.WriteString(":")
+	buf.WriteString(c.Port)
+	buf.WriteString(c.Path)
+	if encodedParams != "" {
 		buf.WriteByte('?')
-		buf.WriteString(encoded)
+		buf.WriteString(encodedParams)
 	}
 	return buf.String()
 }
