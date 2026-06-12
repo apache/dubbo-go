@@ -38,6 +38,7 @@ func TestMetadataInfoSerialization(t *testing.T) {
 	original := &info.MetadataInfo{
 		App:      "test-app",
 		Revision: "1.0.0",
+		Tag:      "gray",
 		Services: map[string]*info.ServiceInfo{
 			"com.example.TestService": {
 				Name: "com.example.TestService", Protocol: "dubbo",
@@ -53,6 +54,7 @@ func TestMetadataInfoSerialization(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, original.App, restored.App)
 	assert.Equal(t, original.Revision, restored.Revision)
+	assert.Equal(t, original.Tag, restored.Tag)
 
 	// Invalid JSON
 	err = json.Unmarshal([]byte(`{invalid}`), &restored)
