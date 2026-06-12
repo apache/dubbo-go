@@ -65,12 +65,8 @@ func initClient(url *common.URL) {
 	// Ensure application config is available via URL attribute
 	commonCfg.EnsureApplicationAttribute(url)
 
-	if _, ok := url.GetAttribute(constant.ProtocolConfigKey); !ok {
-		return
-	}
-
 	protocolConfRaw, ok := url.GetAttribute(constant.ProtocolConfigKey)
-	if !ok {
+	if !ok || protocolConfRaw == nil {
 		logger.Warn("[Remoting][Getty] protocolConfig not found in URL attributes")
 		return
 	}
