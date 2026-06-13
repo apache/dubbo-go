@@ -36,6 +36,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
+	tripleapi "dubbo.apache.org/dubbo-go/v3/metadata/triple_api/proto"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
@@ -61,6 +62,26 @@ var (
 		App: "dubbo-app",
 	}
 )
+
+func TestConvertMetadataInfoV2PreservesTag(t *testing.T) {
+	got := convertMetadataInfoV2(&tripleapi.MetadataInfoV2{
+		App:     "dubbo-app",
+		Version: "revision",
+		Tag:     "gray",
+		Services: map[string]*tripleapi.ServiceInfoV2{
+			"DemoService:tri": {
+				Name:     "DemoService",
+				Protocol: "tri",
+			},
+		},
+	})
+
+	require.NotNil(t, got)
+	assert.Equal(t, "dubbo-app", got.App)
+	assert.Equal(t, "revision", got.Revision)
+	assert.Equal(t, "gray", got.Tag)
+	assert.Contains(t, got.Services, "DemoService:tri")
+}
 
 func TestGetMetadataFromMetadataReport(t *testing.T) {
 	t.Cleanup(func() { instances = make(map[string]report.MetadataReport) })

@@ -18,6 +18,7 @@
 package metadata
 
 import (
+	"context"
 	"strconv"
 	"sync"
 	"testing"
@@ -33,6 +34,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
+	tripleapi "dubbo.apache.org/dubbo-go/v3/metadata/triple_api/proto"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
 )
@@ -262,6 +264,33 @@ func TestDefaultMetadataServiceMethodMapper(t *testing.T) {
 			assert.Equalf(t, tt.want, mts.MethodMapper(), "MethodMapper()")
 		})
 	}
+}
+
+func TestMetadataServiceV2GetMetadataInfoPreservesTag(t *testing.T) {
+	delegate := &DefaultMetadataService{
+		metadataMap: map[string]*info.MetadataInfo{
+			"revision": {
+				App:      "dubbo-app",
+				Revision: "revision",
+				Tag:      "gray",
+				Services: map[string]*info.ServiceInfo{
+					"DemoService:tri": {
+						Name:     "DemoService",
+						Protocol: "tri",
+					},
+				},
+			},
+		},
+	}
+	svc := &MetadataServiceV2{delegate: delegate}
+
+	got, err := svc.GetMetadataInfo(context.TODO(), &tripleapi.MetadataRequest{Revision: "revision"})
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, "dubbo-app", got.App)
+	assert.Equal(t, "revision", got.Version)
+	assert.Equal(t, "gray", got.Tag)
+	assert.Contains(t, got.Services, "DemoService:tri")
 }
 
 func TestDefaultMetadataServiceSetMetadataServiceURL(t *testing.T) {

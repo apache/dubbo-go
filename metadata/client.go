@@ -108,6 +108,7 @@ func convertMetadataInfoV2(v2 *tripleapi.MetadataInfoV2) *info.MetadataInfo {
 	metadataInfo := &info.MetadataInfo{
 		App:      v2.App,
 		Revision: v2.Version,
+		Tag:      v2.Tag,
 		Services: infos,
 	}
 	return metadataInfo

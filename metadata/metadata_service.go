@@ -264,6 +264,7 @@ func (mtsV2 *MetadataServiceV2) GetMetadataInfo(ctx context.Context, req *triple
 		App:      metadataInfo.App,
 		Version:  metadataInfo.Revision,
 		Services: convertV2(metadataInfo.GetServices()),
+		Tag:      metadataInfo.Tag,
 	}, err
 }
 

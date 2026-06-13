@@ -18,7 +18,10 @@
 package info
 
 import (
+	"crypto/sha512"
+	"fmt"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -53,14 +56,13 @@ var IncludeKeys = gxset.NewSet(
 	constant.VersionKey,
 	constant.WarmupKey,
 	constant.WeightKey,
-	constant.EnvironmentKey,
 	constant.ReleaseKey)
 
 // MetadataInfo the metadata information of instance
 type MetadataInfo struct {
-	App                   string `json:"app,omitempty" hessian:"app"`
-	Revision              string `json:"revision,omitempty" hessian:"revision"`
-	Tag                   string
+	App                   string                   `json:"app,omitempty" hessian:"app"`
+	Revision              string                   `json:"revision,omitempty" hessian:"revision"`
+	Tag                   string                   `json:"tag,omitempty" hessian:"tag"`
 	Services              map[string]*ServiceInfo  `json:"services,omitempty" hessian:"services"`
 	exportedServiceURLs   map[string][]*common.URL `hessian:"-"` // server exported service urls
 	subscribedServiceURLs map[string][]*common.URL `hessian:"-"` // client subscribed service urls
@@ -111,6 +113,9 @@ func (info *MetadataInfo) addServiceWithoutLock(url *common.URL) {
 	addUrl(info.exportedServiceURLs, url)
 	if info.App == "" {
 		info.App = url.GetParam(constant.ApplicationKey, "")
+	}
+	if info.Tag == "" {
+		info.Tag = url.GetParam(constant.ApplicationTagKey, "")
 	}
 }
 
@@ -344,4 +349,90 @@ func (si *ServiceInfo) DeepCopy() *ServiceInfo {
 		MatchKey:   si.GetMatchKey(),
 		URL:        si.URL,
 	}
+}
+
+// toDescString returns a deterministic string representation of ServiceInfo
+// for revision calculation. Aligned with Java dubbo ServiceInfo.toDescString().
+//
+// Format: name|group|version|protocol|port|path|params|methods
+//
+// Empty fields use "" as placeholder to keep separator count stable.
+// Params are sorted by key alphabetically, joined as k=v&k=v.
+// The "methods" key is excluded from params and appended separately.
+// Methods are sorted alphabetically and comma-joined.
+// No escaping is performed on param values (aligned with Java behavior).
+func (si *ServiceInfo) toDescString() string {
+	var b strings.Builder
+
+	b.WriteString(si.Name)
+	b.WriteByte('|')
+	b.WriteString(si.Group)
+	b.WriteByte('|')
+	b.WriteString(si.Version)
+	b.WriteByte('|')
+	b.WriteString(si.Protocol)
+	b.WriteByte('|')
+	b.WriteString(strconv.Itoa(si.Port))
+	b.WriteByte('|')
+	b.WriteString(si.Path)
+	b.WriteByte('|')
+
+	// params: sorted keys, exclude methods key
+	keys := make([]string, 0, len(si.Params))
+	for k := range si.Params {
+		if k == constant.MethodsKey {
+			continue
+		}
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for i, k := range keys {
+		if i > 0 {
+			b.WriteByte('&')
+		}
+		b.WriteString(k)
+		b.WriteByte('=')
+		b.WriteString(si.Params[k])
+	}
+
+	b.WriteByte('|')
+
+	// methods: sorted alphabetically, comma-joined
+	if methodsStr, ok := si.Params[constant.MethodsKey]; ok && len(methodsStr) > 0 {
+		methods := strings.Split(methodsStr, ",")
+		sort.Strings(methods)
+		for i, m := range methods {
+			if i > 0 {
+				b.WriteByte(',')
+			}
+			b.WriteString(m)
+		}
+	}
+
+	return b.String()
+}
+
+// CalRevision calculates a deterministic revision string from canonical ServiceInfo objects.
+// Returns "0" if services is empty (aligned with Java EMPTY_REVISION).
+// Services are sorted by matchKey before serialization to ensure deterministic output.
+// The revision is a SHA-512 hex digest of: app + sorted toDescString of each ServiceInfo.
+func CalRevision(app string, services map[string]*ServiceInfo) string {
+	if len(services) == 0 {
+		return "0"
+	}
+
+	// collect and sort matchKeys for deterministic iteration
+	matchKeys := make([]string, 0, len(services))
+	for mk := range services {
+		matchKeys = append(matchKeys, mk)
+	}
+	sort.Strings(matchKeys)
+
+	h := sha512.New()
+	h.Write([]byte(app))
+	for _, mk := range matchKeys {
+		h.Write([]byte(services[mk].toDescString()))
+	}
+
+	return fmt.Sprintf("%x", h.Sum(nil))
 }
