@@ -229,7 +229,7 @@ func TestEtcdV3RegistryDoUnsubscribeKeepsSubscriptionWhenEventListenerNil(t *tes
 
 	require.Error(t, err)
 	assert.Nil(t, removed)
-	assert.ErrorContains(t, err, "etcd event listener is nil")
+	require.ErrorContains(t, err, "etcd event listener is nil")
 	assert.Same(t, listener, reg.dataListener.subscribed[serviceURL.ServiceKey()])
 	assert.False(t, listener.closed())
 }
