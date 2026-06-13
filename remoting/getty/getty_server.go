@@ -75,7 +75,12 @@ func initServer(url *common.URL) {
 	} else {
 		// server tls config
 		if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
-			if tlsConf, ok := tlsConfRaw.(*global.TLSConfig); ok && dubbotls.IsServerTLSValid(tlsConf) {
+			tlsConf, ok := tlsConfRaw.(*global.TLSConfig)
+			if !ok {
+				logger.Error("[Remoting][Getty] getty server initialized the TLSConfig configuration failed")
+				return
+			}
+			if dubbotls.IsServerTLSValid(tlsConf) {
 				srvConf.SSLEnabled = true
 				srvConf.TLSBuilder = &getty.ServerTlsConfigBuilder{
 					ServerKeyCertChainPath:        tlsConf.TLSCertFile,

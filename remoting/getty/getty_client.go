@@ -83,7 +83,12 @@ func initClient(url *common.URL) {
 	} else {
 		// client tls config
 		if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
-			if tlsConf, ok := tlsConfRaw.(*global.TLSConfig); ok && dubbotls.IsClientTLSValid(tlsConf) {
+			tlsConf, ok := tlsConfRaw.(*global.TLSConfig)
+			if !ok {
+				logger.Error("[Remoting][Getty] getty client initialized the TLSConfig configuration failed")
+				return
+			}
+			if dubbotls.IsClientTLSValid(tlsConf) {
 				clientConf.SSLEnabled = true
 				clientConf.TLSBuilder = &getty.ClientTlsConfigBuilder{
 					ClientKeyCertChainPath:        tlsConf.TLSCertFile,
