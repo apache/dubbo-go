@@ -73,7 +73,10 @@ func AddSubscribeURL(registryId string, url *common.URL) {
 }
 
 func RemoveService(registryId string, url *common.URL) {
+	registryMetadataLock.RLock()
 	metadataInfo, exist := registryMetadataInfo[registryId]
+	registryMetadataLock.RUnlock()
+
 	if !exist {
 		return
 	}
@@ -81,7 +84,10 @@ func RemoveService(registryId string, url *common.URL) {
 }
 
 func RemoveSubscribeURL(registryId string, url *common.URL) {
+	registryMetadataLock.RLock()
 	metadataInfo, exist := registryMetadataInfo[registryId]
+	registryMetadataLock.RUnlock()
+
 	if !exist {
 		return
 	}
