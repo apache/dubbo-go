@@ -75,8 +75,7 @@ func initServer(url *common.URL) {
 	} else {
 		// server tls config
 		if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
-			tlsConf, ok := tlsConfRaw.(*global.TLSConfig)
-			if ok && dubbotls.IsServerTLSValid(tlsConf) {
+			if tlsConf, ok := tlsConfRaw.(*global.TLSConfig); ok && dubbotls.IsServerTLSValid(tlsConf) {
 				srvConf.SSLEnabled = true
 				srvConf.TLSBuilder = &getty.ServerTlsConfigBuilder{
 					ServerKeyCertChainPath:        tlsConf.TLSCertFile,

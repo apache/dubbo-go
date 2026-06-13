@@ -83,8 +83,7 @@ func initClient(url *common.URL) {
 	} else {
 		// client tls config
 		if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
-			tlsConf, ok := tlsConfRaw.(*global.TLSConfig)
-			if ok && dubbotls.IsClientTLSValid(tlsConf) {
+			if tlsConf, ok := tlsConfRaw.(*global.TLSConfig); ok && dubbotls.IsClientTLSValid(tlsConf) {
 				clientConf.SSLEnabled = true
 				clientConf.TLSBuilder = &getty.ClientTlsConfigBuilder{
 					ClientKeyCertChainPath:        tlsConf.TLSCertFile,
