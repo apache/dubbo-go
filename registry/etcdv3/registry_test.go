@@ -217,6 +217,23 @@ func TestEtcdV3RegistryDoUnsubscribeRejectsNilEventListener(t *testing.T) {
 	assert.ErrorContains(t, err, "etcd event listener is nil")
 }
 
+func TestEtcdV3RegistryDoUnsubscribeKeepsSubscriptionWhenEventListenerNil(t *testing.T) {
+	reg := newTestEtcdRegistry(t)
+	reg.dataListener = NewRegistryDataListener()
+	serviceURL := mustURL(t, "dubbo://127.0.0.1:20000/org.apache.demo.UserProvider?group=g&version=v")
+	listener := NewConfigurationListener(reg, serviceURL)
+	defer listener.Close()
+	reg.dataListener.SubscribeURL(serviceURL, listener)
+
+	removed, err := reg.DoUnsubscribe(serviceURL)
+
+	require.Error(t, err)
+	assert.Nil(t, removed)
+	assert.ErrorContains(t, err, "etcd event listener is nil")
+	assert.Same(t, listener, reg.dataListener.subscribed[serviceURL.ServiceKey()])
+	assert.False(t, listener.closed())
+}
+
 func TestEtcdV3RegistryDoUnsubscribeIgnoresMissingSubscription(t *testing.T) {
 	reg := newTestEtcdRegistry(t)
 	reg.listener = remotingEtcdv3.NewEventListener(nil)

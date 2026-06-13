@@ -206,6 +206,9 @@ func (r *etcdV3Registry) DoUnsubscribe(conf *common.URL) (registry.Listener, err
 	if r.dataListener == nil {
 		return nil, perrors.New("etcd data listener is nil, can not close")
 	}
+	if r.listener == nil {
+		return nil, perrors.New("etcd event listener is nil, can not close")
+	}
 	r.dataListener.mutex.Lock()
 	subscribedListener := r.dataListener.subscribed[conf.ServiceKey()]
 	if subscribedListener != nil {
@@ -215,20 +218,17 @@ func (r *etcdV3Registry) DoUnsubscribe(conf *common.URL) (registry.Listener, err
 			return nil, perrors.Errorf("configListener for service %s has already been closed", conf.ServiceKey())
 		}
 	}
-	listener := r.dataListener.unsubscribeURLLocked(conf)
-	r.dataListener.mutex.Unlock()
-
-	if r.listener == nil {
-		return nil, perrors.New("etcd event listener is nil, can not close")
-	}
-
-	if listener == nil {
+	if subscribedListener == nil {
+		r.dataListener.mutex.Unlock()
 		return nil, nil
 	}
-	registryListener, ok := listener.(registry.Listener)
+	registryListener, ok := subscribedListener.(registry.Listener)
 	if !ok {
+		r.dataListener.mutex.Unlock()
 		return nil, perrors.Errorf("listener for service %s is not a registry listener", conf.ServiceKey())
 	}
+	r.dataListener.unsubscribeURLLocked(conf)
+	r.dataListener.mutex.Unlock()
 	return registryListener, nil
 }
 
