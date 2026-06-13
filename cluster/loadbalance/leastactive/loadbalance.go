@@ -19,6 +19,7 @@ package leastactive
 
 import (
 	"math/rand"
+	"time"
 )
 
 import (
@@ -66,12 +67,13 @@ func (lb *leastActiveLoadBalance) Select(invokers []base.Invoker, invocation bas
 		weights      = make([]int64, count)      // The weight of every invokers
 	)
 
+	now := time.Now().Unix()
 	for i := 0; i < count; i++ {
 		invoker := invokers[i]
 		// Active number
 		active := base.GetMethodStatus(invoker.GetURL(), invocation.MethodName()).GetActive()
 		// current weight (maybe in warmUp)
-		afterWarmup := loadbalance.GetWeight(invoker, invocation)
+		afterWarmup := loadbalance.GetWeightAt(invoker, invocation, now)
 		// save for later use
 		weights[i] = afterWarmup
 		// There are smaller active services

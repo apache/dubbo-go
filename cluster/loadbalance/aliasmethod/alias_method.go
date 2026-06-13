@@ -20,6 +20,7 @@ package aliasmethod // weighted random with alias-method algorithm
 
 import (
 	"math/rand"
+	"time"
 )
 
 import (
@@ -56,8 +57,9 @@ func (am *aliasMethodPicker) init(invocation base.Invocation) {
 	small := make([]int, 0, n)
 	large := make([]int, 0, n)
 
+	now := time.Now().Unix()
 	for i, invoker := range am.invokers {
-		weight := loadbalance.GetWeight(invoker, invocation)
+		weight := loadbalance.GetWeightAt(invoker, invocation, now)
 		weights[i] = weight
 		totalWeight += weight
 	}

@@ -20,6 +20,7 @@ package loadbalance_test
 import (
 	"fmt"
 	"testing"
+	"time"
 )
 
 import (
@@ -83,4 +84,25 @@ func BenchmarkRandomLoadbalance(b *testing.B) {
 
 func BenchmarkAliasMethodLoadbalance(b *testing.B) {
 	Benchloadbalance(b, extension.GetLoadbalance(constant.LoadBalanceKeyAliasMethod))
+}
+
+func BenchmarkGetWeight(b *testing.B) {
+	invokers := Generate()
+	inv := &invocation.RPCInvocation{}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		loadbalance.GetWeight(invokers[i%len(invokers)], inv)
+	}
+}
+
+func BenchmarkGetWeightAt(b *testing.B) {
+	invokers := Generate()
+	inv := &invocation.RPCInvocation{}
+	now := time.Now().Unix()
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		loadbalance.GetWeightAt(invokers[i%len(invokers)], inv, now)
+	}
 }
