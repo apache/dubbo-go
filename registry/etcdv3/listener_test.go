@@ -232,6 +232,28 @@ func TestConfigurationListenerNextReturnsDeleteEventWhenClientValid(t *testing.T
 	assert.Equal(t, remoting.EventTypeDel, event.Action)
 }
 
+func TestConfigurationListenerNextSkipsDeleteEventWhenClientInvalid(t *testing.T) {
+	reg := newTestEtcdRegistry(t)
+	serviceURL := mustURL(t, "dubbo://127.0.0.1:20000/org.apache.demo.UserProvider?group=g&version=v")
+	listener := NewConfigurationListener(reg, serviceURL)
+	defer listener.Close()
+
+	listener.Process(&config_center.ConfigChangeEvent{
+		Key:        serviceURL.String(),
+		Value:      serviceURL,
+		ConfigType: remoting.EventTypeDel,
+	})
+	listener.Process(&config_center.ConfigChangeEvent{
+		Key:        serviceURL.String(),
+		Value:      serviceURL,
+		ConfigType: remoting.EventTypeAdd,
+	})
+	event, err := listener.Next()
+
+	require.NoError(t, err)
+	assert.Equal(t, remoting.EventTypeAdd, event.Action)
+}
+
 func TestConfigurationListenerShouldIgnoreDeleteEventAfterRegistryDone(t *testing.T) {
 	reg := newTestEtcdRegistry(t)
 	reg.client = &gxetcd.Client{}
