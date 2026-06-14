@@ -29,10 +29,14 @@ func TestCanonicalizeContentType(t *testing.T) {
 		arg  string
 		want string
 	}{
+		// slow path: base type needs case normalization
 		{name: "uppercase should be normalized", arg: "APPLICATION/json", want: "application/json"},
-		{name: "charset param should be treated as lowercase", arg: "application/json; charset=UTF-8", want: "application/json; charset=utf-8"},
-		{name: "non charset param should not be changed", arg: "multipart/form-data; boundary=fooBar", want: "multipart/form-data; boundary=fooBar"},
 		{name: "no parameters should be normalized", arg: "APPLICATION/json;  ", want: "application/json"},
+		// slow path: non-charset parameter
+		{name: "non charset param should not be changed", arg: "multipart/form-data; boundary=fooBar", want: "multipart/form-data; boundary=fooBar"},
+		// fast path: charset parameter normalization
+		{name: "charset param uppercase normalized via fast path", arg: "application/json; charset=UTF-8", want: "application/json; charset=utf-8"},
+		{name: "charset param already lowercase returned as-is", arg: "application/json; charset=utf-8", want: "application/json; charset=utf-8"},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -45,23 +49,30 @@ func TestCanonicalizeContentType(t *testing.T) {
 
 func BenchmarkCanonicalizeContentType(b *testing.B) {
 	b.Run("simple", func(b *testing.B) {
+		b.ReportAllocs()
 		for i := 0; i < b.N; i++ {
 			_ = canonicalizeContentType("application/json")
 		}
-		b.ReportAllocs()
 	})
 
-	b.Run("with charset", func(b *testing.B) {
+	b.Run("charset canonical", func(b *testing.B) {
+		b.ReportAllocs()
 		for i := 0; i < b.N; i++ {
 			_ = canonicalizeContentType("application/json; charset=utf-8")
 		}
-		b.ReportAllocs()
 	})
 
-	b.Run("with other param", func(b *testing.B) {
+	b.Run("charset uppercase", func(b *testing.B) {
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			_ = canonicalizeContentType("application/json; charset=UTF-8")
+		}
+	})
+
+	b.Run("non-charset param", func(b *testing.B) {
+		b.ReportAllocs()
 		for i := 0; i < b.N; i++ {
 			_ = canonicalizeContentType("application/json; foo=utf-8")
 		}
-		b.ReportAllocs()
 	})
 }

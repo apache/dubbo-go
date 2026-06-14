@@ -335,19 +335,31 @@ func canonicalizeContentType(contentType string) string {
 	//
 	// See https://www.rfc-editor.org/rfc/rfc2045.html#section-5.1 for a full
 	// grammar.
-	var slashes int
-	for _, r := range contentType {
-		switch {
-		case r >= 'a' && r <= 'z':
-		case r == '.' || r == '+' || r == '-':
-		case r == '/':
-			slashes++
-		default:
-			return canonicalizeContentTypeSlow(contentType)
+	semi := strings.IndexByte(contentType, ';')
+	if semi < 0 {
+		if isSimpleMediaType(contentType) {
+			return contentType
 		}
+		return canonicalizeContentTypeSlow(contentType)
 	}
-	if slashes == 1 {
-		return contentType
+
+	// Fast path for a single "; charset=<token>" parameter, avoiding
+	// mime.ParseMediaType + mime.FormatMediaType for the common case of
+	// "application/json; charset=utf-8" and its uppercase variants.
+	base := contentType[:semi]
+	rest := contentType[semi+1:]
+	if isSimpleMediaType(base) && strings.IndexByte(rest, ';') < 0 {
+		const charsetParam = " charset="
+		if strings.HasPrefix(rest, charsetParam) {
+			val := rest[len(charsetParam):]
+			if isSimpleToken(val) {
+				lower := strings.ToLower(val)
+				if lower == val {
+					return contentType
+				}
+				return base + "; charset=" + lower
+			}
+		}
 	}
 	return canonicalizeContentTypeSlow(contentType)
 }
@@ -366,4 +378,42 @@ func canonicalizeContentTypeSlow(contentType string) string {
 		params["charset"] = strings.ToLower(charset)
 	}
 	return mime.FormatMediaType(base, params)
+}
+
+// isSimpleMediaType reports whether s is a well-formed, already-lowercase media
+// type without parameters: letters a-z, '.', '+', '-', exactly one '/'.
+func isSimpleMediaType(s string) bool {
+	slashes := 0
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		switch {
+		case c >= 'a' && c <= 'z':
+		case c == '.' || c == '+' || c == '-':
+		case c == '/':
+			slashes++
+		default:
+			return false
+		}
+	}
+	return slashes == 1
+}
+
+// isSimpleToken reports whether s is a non-empty MIME token composed of
+// letters, digits, '-', '_', and '.'.
+func isSimpleToken(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		switch {
+		case c >= 'a' && c <= 'z':
+		case c >= 'A' && c <= 'Z':
+		case c >= '0' && c <= '9':
+		case c == '-' || c == '_' || c == '.':
+		default:
+			return false
+		}
+	}
+	return true
 }
