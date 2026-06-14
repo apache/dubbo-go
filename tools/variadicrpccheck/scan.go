@@ -35,13 +35,10 @@ import (
 var packagesLoad = packages.Load
 
 const (
-	dubboRootPkgPath   = "dubbo.apache.org/dubbo-go/v3"
-	dubboCommonPkgPath = dubboRootPkgPath + "/common"
-	dubboConfigPkgPath = dubboRootPkgPath + "/config"
-	dubboServerPkgPath = dubboRootPkgPath + "/server"
-
+	dubboRootPkgPath         = "dubbo.apache.org/dubbo-go/v3"
+	dubboCommonPkgPath       = dubboRootPkgPath + "/common"
+	dubboServerPkgPath       = dubboRootPkgPath + "/server"
 	serverServiceOptionsType = "*" + dubboServerPkgPath + ".ServiceOptions"
-	configServiceConfigType  = "*" + dubboConfigPkgPath + ".ServiceConfig"
 )
 
 type registeredTypeKey struct {
@@ -454,8 +451,6 @@ func selectedMethodHandlerArgumentIndex(selection *types.Selection) (int, bool) 
 		return 0, true
 	case path == dubboServerPkgPath && name == "Implement":
 		return 0, types.TypeString(selection.Recv(), nil) == serverServiceOptionsType
-	case path == dubboConfigPkgPath && name == "Implement":
-		return 0, types.TypeString(selection.Recv(), nil) == configServiceConfigType
 	case path == dubboCommonPkgPath && name == "Register":
 		return 4, strings.HasSuffix(types.TypeString(selection.Recv(), nil), ".serviceMap")
 	default:
@@ -471,7 +466,7 @@ func (a *registrationAnalyzer) calledObjectHandlerArgumentIndex(obj types.Object
 	}
 	if obj.Pkg() != nil {
 		switch obj.Pkg().Path() {
-		case dubboConfigPkgPath, dubboRootPkgPath:
+		case dubboRootPkgPath:
 			switch obj.Name() {
 			case "SetProviderService":
 				return 0, true
