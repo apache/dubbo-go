@@ -95,12 +95,11 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 	defer lstn.mutex.Unlock()
 
 	lstn.allInstances[ce.ServiceName] = ce.Instances
-	revisionToInstances := make(map[string][]registry.ServiceInstance)
-	newRevisionToMetadata := make(map[string]*info.MetadataInfo)
+	revisionToInstances := make(map[string][]registry.ServiceInstance, len(lstn.revisionToMetadata))
+	newRevisionToMetadata := make(map[string]*info.MetadataInfo, len(lstn.revisionToMetadata))
 	// The same service match key can be exported by several revisions.
 	// Keep each revision's ServiceInfo so provider-specific params are not collapsed.
-	serviceToRevisionServices := make(map[string]map[string]*info.ServiceInfo)
-	newServiceURLs := make(map[string][]*common.URL)
+	serviceToRevisionServices := make(map[string]map[string]*info.ServiceInfo, len(lstn.serviceUrls))
 
 	logger.Infof("[Registry][ServiceDiscovery] received instance notification event, service=%s size=%d", ce.ServiceName, len(ce.Instances))
 
@@ -162,6 +161,7 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 		metaCache.Set(key, metadataInfo)
 	}
 
+	newServiceURLs := make(map[string][]*common.URL, len(serviceToRevisionServices))
 	for serviceKey, revisionServices := range serviceToRevisionServices {
 		urls := make([]*common.URL, 0, 8)
 		for key, serviceInfo := range revisionServices {
