@@ -28,7 +28,14 @@ import (
 
 // GetWeight returns the weight for the load‑balancing strategy.
 func GetWeight(invoker base.Invoker, invocation base.Invocation) int64 {
+	return GetWeightAt(invoker, invocation, time.Now().Unix())
+}
 
+// GetWeightAt returns the weight for the load-balancing strategy using the
+// provided Unix timestamp. Callers that loop over many invokers should compute
+// now once and pass it here to avoid repeated time.Now() calls and to keep the
+// warmup calculation consistent within a single selection.
+func GetWeightAt(invoker base.Invoker, invocation base.Invocation, now int64) int64 {
 	url := invoker.GetURL()
 
 	//  Method‑level or registry‑level weight taken from URL parameters — highest priority.
@@ -46,7 +53,6 @@ func GetWeight(invoker base.Invoker, invocation base.Invocation) int64 {
 
 	// Warm‑up adjustment (same logic as before).
 	if weight > 0 {
-		now := time.Now().Unix()
 		ts := url.GetParamInt(constant.RemoteTimestampKey, now)
 		if uptime := now - ts; uptime > 0 {
 			warm := url.GetParamInt(constant.WarmupKey, constant.DefaultWarmup)

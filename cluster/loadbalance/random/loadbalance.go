@@ -19,6 +19,7 @@ package random
 
 import (
 	"math/rand"
+	"time"
 )
 
 import (
@@ -56,8 +57,9 @@ func (lb *randomLoadBalance) Select(invokers []base.Invoker, invocation base.Inv
 	// The sum of weights
 	var totalWeight int64 = 0
 
+	now := time.Now().Unix()
 	for i := 0; i < length; i++ {
-		weight := loadbalance.GetWeight(invokers[i], invocation)
+		weight := loadbalance.GetWeightAt(invokers[i], invocation, now)
 		//Sum
 		totalWeight += weight
 		// save for later use
