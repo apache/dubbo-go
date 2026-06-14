@@ -53,7 +53,21 @@ func (lb *randomLoadBalance) Select(invokers []base.Invoker, invocation base.Inv
 	// Every invoker has the same weight?
 	sameWeight := true
 	// the maxWeight of every invokers, the minWeight = 0 or the maxWeight of the last invoker
-	weights := make([]int64, length)
+	// Use stack buffers for common small invoker lists to avoid the temporary weights slice allocation.
+	var weights []int64
+	switch {
+	case length <= 8:
+		var weightStack [8]int64
+		weights = weightStack[:length:length]
+	case length <= 16:
+		var weightStack [16]int64
+		weights = weightStack[:length:length]
+	case length <= 32:
+		var weightStack [32]int64
+		weights = weightStack[:length:length]
+	default:
+		weights = make([]int64, length)
+	}
 	// The sum of weights
 	var totalWeight int64 = 0
 
