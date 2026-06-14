@@ -329,39 +329,49 @@ func flushResponseWriter(w http.ResponseWriter) {
 }
 
 func canonicalizeContentType(contentType string) string {
-	// Typically, clients send Content-Type in canonical form, without
-	// parameters. In those cases, we'd like to avoid parsing and
-	// canonicalization overhead.
-	//
-	// See https://www.rfc-editor.org/rfc/rfc2045.html#section-5.1 for a full
-	// grammar.
-	semi := strings.IndexByte(contentType, ';')
-	if semi < 0 {
-		if isSimpleMediaType(contentType) {
-			return contentType
-		}
-		return canonicalizeContentTypeSlow(contentType)
-	}
-
-	// Fast path for a single "; charset=<token>" parameter, avoiding
-	// mime.ParseMediaType + mime.FormatMediaType for the common case of
-	// "application/json; charset=utf-8" and its uppercase variants.
-	base := contentType[:semi]
-	rest := contentType[semi+1:]
-	if isSimpleMediaType(base) && strings.IndexByte(rest, ';') < 0 {
-		const charsetParam = " charset="
-		if strings.HasPrefix(rest, charsetParam) {
-			val := rest[len(charsetParam):]
-			if isSimpleToken(val) {
-				lower := strings.ToLower(val)
-				if lower == val {
-					return contentType
-				}
-				return base + "; charset=" + lower
-			}
-		}
+	if canonical, ok := canonicalizeContentTypeFast(contentType); ok {
+		return canonical
 	}
 	return canonicalizeContentTypeSlow(contentType)
+}
+
+// canonicalizeContentTypeFast handles parameter-free types and the common
+// "; charset=<token>" case without invoking mime.ParseMediaType.
+// See https://www.rfc-editor.org/rfc/rfc2045.html#section-5.1 for a full grammar.
+func canonicalizeContentTypeFast(contentType string) (string, bool) {
+	semi := strings.IndexByte(contentType, ';')
+	if semi < 0 {
+		if isLowercaseMediaType(contentType) {
+			return contentType, true
+		}
+		return "", false
+	}
+
+	base := contentType[:semi]
+	param := contentType[semi+1:]
+
+	if !isLowercaseMediaType(base) {
+		return "", false
+	}
+	if strings.Contains(param, ";") {
+		return "", false
+	}
+
+	const prefix = " charset="
+	if !strings.HasPrefix(param, prefix) {
+		return "", false
+	}
+
+	charset := param[len(prefix):]
+	if !isSimpleCharsetToken(charset) {
+		return "", false
+	}
+
+	lower := strings.ToLower(charset)
+	if lower == charset {
+		return contentType, true
+	}
+	return base + "; charset=" + lower, true
 }
 
 func canonicalizeContentTypeSlow(contentType string) string {
@@ -380,28 +390,42 @@ func canonicalizeContentTypeSlow(contentType string) string {
 	return mime.FormatMediaType(base, params)
 }
 
-// isSimpleMediaType reports whether s is a well-formed, already-lowercase media
-// type without parameters: letters a-z, '.', '+', '-', exactly one '/'.
-func isSimpleMediaType(s string) bool {
-	slashes := 0
+// isLowercaseMediaType reports whether s is a well-formed, already-lowercase
+// media type: both type and subtype non-empty, separated by exactly one '/'.
+func isLowercaseMediaType(s string) bool {
+	slash := strings.IndexByte(s, '/')
+	if slash <= 0 || slash == len(s)-1 {
+		return false
+	}
+	if strings.IndexByte(s[slash+1:], '/') >= 0 {
+		return false
+	}
+	return isLowercaseToken(s[:slash]) && isLowercaseToken(s[slash+1:])
+}
+
+// isLowercaseToken reports whether s is a non-empty token of lowercase letters,
+// digits, '.', '+', and '-'.
+func isLowercaseToken(s string) bool {
+	if s == "" {
+		return false
+	}
 	for i := 0; i < len(s); i++ {
 		c := s[i]
 		switch {
 		case c >= 'a' && c <= 'z':
+		case c >= '0' && c <= '9':
 		case c == '.' || c == '+' || c == '-':
-		case c == '/':
-			slashes++
 		default:
 			return false
 		}
 	}
-	return slashes == 1
+	return true
 }
 
-// isSimpleToken reports whether s is a non-empty MIME token composed of
+// isSimpleCharsetToken reports whether s is a non-empty token composed of
 // letters, digits, '-', '_', and '.'.
-func isSimpleToken(s string) bool {
-	if len(s) == 0 {
+func isSimpleCharsetToken(s string) bool {
+	if s == "" {
 		return false
 	}
 	for i := 0; i < len(s); i++ {

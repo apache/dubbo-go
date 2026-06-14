@@ -37,6 +37,9 @@ func TestCanonicalizeContentType(t *testing.T) {
 		// fast path: charset parameter normalization
 		{name: "charset param uppercase normalized via fast path", arg: "application/json; charset=UTF-8", want: "application/json; charset=utf-8"},
 		{name: "charset param already lowercase returned as-is", arg: "application/json; charset=utf-8", want: "application/json; charset=utf-8"},
+		// malformed: must fall through to slow path unchanged (not rewritten by fast path)
+		{name: "malformed missing type", arg: "/json; charset=UTF-8", want: "/json; charset=UTF-8"},
+		{name: "malformed missing subtype", arg: "application/; charset=UTF-8", want: "application/; charset=UTF-8"},
 	}
 	for _, tt := range tests {
 		tt := tt
