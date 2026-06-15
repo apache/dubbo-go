@@ -336,6 +336,25 @@ func TestScriptRouterSetStaticConfig(t *testing.T) {
 		assert.Equal(t, "20002", got[0].GetURL().Port)
 	})
 
+	t.Run("replace stale config with unsupported script type", func(t *testing.T) {
+		invokers, inv, _ := getRouteCheckArgs()
+		s := &ScriptRouter{
+			enabled:    true,
+			scriptType: "unsupported",
+			rawScript:  "old script",
+		}
+		s.SetStaticConfig(&global.RouterConfig{
+			Scope:      constant.RouterScopeApplication,
+			Key:        "dubbo.io",
+			ScriptType: "javascript",
+			Script:     staticScriptForPort("20001"),
+		})
+
+		got := s.Route(invokers, nil, inv)
+		assert.Len(t, got, 1)
+		assert.Equal(t, "20001", got[0].GetURL().Port)
+	})
+
 	t.Run("disable unsupported script type", func(t *testing.T) {
 		invokers, inv, _ := getRouteCheckArgs()
 		s := NewScriptRouter()
