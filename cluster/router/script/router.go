@@ -66,6 +66,46 @@ func parseRoute(routeContent string) (*global.RouterConfig, error) {
 	return routerConfig, nil
 }
 
+// SetStaticConfig applies a RouterConfig directly, bypassing YAML parsing.
+// Static and dynamic rules are not merged: later Process updates replace the
+// current state built here.
+func (s *ScriptRouter) SetStaticConfig(cfg *global.RouterConfig) {
+	if cfg == nil || cfg.Scope != constant.RouterScopeApplication || cfg.ScriptType == "" || cfg.Script == "" {
+		return
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.enabled && s.scriptType != "" {
+		in, err := ins.GetInstances(s.scriptType)
+		if err != nil {
+			logger.Errorf("[Router][Script] GetInstances failed to destroy static config, error=%v", err)
+		} else {
+			in.Destroy(s.rawScript)
+		}
+	}
+
+	s.scriptType = cfg.ScriptType
+	s.rawScript = cfg.Script
+	s.enabled = cfg.Enabled == nil || *cfg.Enabled
+	if !s.enabled {
+		logger.Infof("[Router][Script] static config is disabled, script=%s", cfg.Script)
+		return
+	}
+
+	in, err := ins.GetInstances(s.scriptType)
+	if err != nil {
+		logger.Errorf("[Router][Script] GetInstances failed for static config, error=%v", err)
+		s.enabled = false
+		return
+	}
+	if err = in.Compile(s.rawScript); err != nil {
+		s.enabled = false
+		logger.Errorf("[Router][Script] compile static script failed, error=%v", err)
+	}
+}
+
 func (s *ScriptRouter) Process(event *config_center.ConfigChangeEvent) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
