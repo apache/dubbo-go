@@ -227,6 +227,17 @@ script: |
 	}
 }
 
+func TestScriptRouterProcessSkipsNonStringConfig(t *testing.T) {
+	s := &ScriptRouter{}
+
+	assert.NotPanics(t, func() {
+		s.Process(&config_center.ConfigChangeEvent{Key: "", Value: 123, ConfigType: remoting.EventTypeUpdate})
+	})
+	assert.False(t, s.enabled)
+	assert.Empty(t, s.scriptType)
+	assert.Empty(t, s.rawScript)
+}
+
 func checkInvokersSame(invokers []base.Invoker, otherInvokers []base.Invoker) bool {
 	k := map[string]struct{}{}
 	for _, invoker := range otherInvokers {

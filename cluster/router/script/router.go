@@ -72,7 +72,8 @@ func (s *ScriptRouter) Process(event *config_center.ConfigChangeEvent) {
 
 	rawConf, ok := event.Value.(string)
 	if !ok {
-		panic(ok)
+		logger.Errorf("[Router][Script] route config value must be string, actualType=%T", event.Value)
+		return
 	}
 	cfg, err := parseRoute(rawConf)
 	if err != nil {
