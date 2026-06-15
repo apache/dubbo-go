@@ -27,6 +27,7 @@ import (
 	"github.com/dubbogo/grpc-go/status"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -53,17 +54,17 @@ func TestCompatUnaryServerInterceptorSkipsUnsupportedAttachmentValue(t *testing.
 		func(context.Context, any) (any, error) {
 			rpcResult := &result.RPCResult{Rest: "response"}
 			rpcResult.SetAttachments(map[string]any{
-				"string-value": "ok",
-				"list-value":   []string{"a", "b"},
-				"bool-value":   true,
+				"String-Value": "ok",
+				"List-Value":   []string{"a", "b"},
+				"Bool-Value":   true,
 			})
 			return rpcResult, nil
 		},
 	)
 
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	resp := respRaw.(*Response)
-	assert.Equal(t, []string{"ok"}, resp.Trailer()["string-value"])
-	assert.Equal(t, []string{"a", "b"}, resp.Trailer()["list-value"])
-	assert.Nil(t, resp.Trailer()["bool-value"])
+	assert.Equal(t, []string{"ok"}, resp.Trailer().Values("String-Value"))
+	assert.Equal(t, []string{"a", "b"}, resp.Trailer().Values("List-Value"))
+	assert.Empty(t, resp.Trailer().Values("Bool-Value"))
 }
