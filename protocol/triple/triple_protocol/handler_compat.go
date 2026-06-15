@@ -20,7 +20,6 @@ package triple_protocol
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 )
 
@@ -88,7 +87,7 @@ func (t *tripleCompatInterceptor) compatUnaryServerInterceptor(ctx context.Conte
 			case []string:
 				trailer[key] = valRaw
 			default:
-				panic(fmt.Sprintf("unsupported attachment value type %T", valRaw))
+				logger.Warnf("[Triple][Handler] procedure %s skips unsupported trailer attachment %s with value type %T", t.procedure, key, valRaw)
 			}
 		}
 		resp.trailer = trailer

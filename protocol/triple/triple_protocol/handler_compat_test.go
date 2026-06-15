@@ -18,6 +18,7 @@
 package triple_protocol
 
 import (
+	"context"
 	"testing"
 )
 
@@ -26,6 +27,8 @@ import (
 	"github.com/dubbogo/grpc-go/status"
 
 	"github.com/stretchr/testify/assert"
+
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 func TestCompatError(t *testing.T) {
@@ -35,4 +38,30 @@ func TestCompatError(t *testing.T) {
 	assert.Equal(t, Code(1234), triErr.Code())
 	assert.Equal(t, "user defined", triErr.Message())
 	assert.Len(t, triErr.Details(), 1)
+}
+
+func TestCompatUnaryServerInterceptorSkipsUnsupportedAttachmentValue(t *testing.T) {
+	t.Parallel()
+
+	interceptor := &tripleCompatInterceptor{procedure: "test.Service/Method"}
+	respRaw, err := interceptor.compatUnaryServerInterceptor(
+		context.Background(),
+		"request",
+		nil,
+		func(context.Context, any) (any, error) {
+			rpcResult := &result.RPCResult{Rest: "response"}
+			rpcResult.SetAttachments(map[string]any{
+				"string-value": "ok",
+				"list-value":   []string{"a", "b"},
+				"bool-value":   true,
+			})
+			return rpcResult, nil
+		},
+	)
+
+	assert.Nil(t, err)
+	resp := respRaw.(*Response)
+	assert.Equal(t, []string{"ok"}, resp.Trailer()["string-value"])
+	assert.Equal(t, []string{"a", "b"}, resp.Trailer()["list-value"])
+	assert.Nil(t, resp.Trailer()["bool-value"])
 }
