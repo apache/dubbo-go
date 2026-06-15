@@ -18,12 +18,111 @@
 package etcdv3
 
 import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
-type MockDataListener struct{}
+type MockDataListener struct {
+	events []*config_center.ConfigChangeEvent
+}
 
-func (*MockDataListener) Process(configType *config_center.ConfigChangeEvent) {}
+func (m *MockDataListener) Process(configType *config_center.ConfigChangeEvent) {
+	m.events = append(m.events, configType)
+}
+
+func TestDataListenerDataChangeDispatchesMatchingService(t *testing.T) {
+	subscribeURL, err := common.NewURL("consumer://127.0.0.1:20000/org.apache.DemoService?group=g&version=1.0.0")
+	require.NoError(t, err)
+	providerURL, err := common.NewURL("dubbo://127.0.0.1:20001/org.apache.DemoService?group=g&version=1.0.0")
+	require.NoError(t, err)
+	listener := &MockDataListener{}
+	dataListener := NewRegistryDataListener()
+	dataListener.SubscribeURL(subscribeURL, listener)
+
+	matched := dataListener.DataChange(remoting.Event{
+		Path:   "/dubbo/org.apache.DemoService/providers/" + providerURL.String(),
+		Action: remoting.EventTypeAdd,
+	})
+
+	require.True(t, matched)
+	require.Len(t, listener.events, 1)
+	assert.Equal(t, remoting.EventTypeAdd, listener.events[0].ConfigType)
+	assert.Equal(t, providerURL.String(), listener.events[0].Value.(*common.URL).String())
+}
+
+func TestDataListenerDataChangeIgnoresUnmatchedService(t *testing.T) {
+	subscribeURL, err := common.NewURL("consumer://127.0.0.1:20000/org.apache.OtherService")
+	require.NoError(t, err)
+	providerURL, err := common.NewURL("dubbo://127.0.0.1:20001/org.apache.DemoService")
+	require.NoError(t, err)
+	listener := &MockDataListener{}
+	dataListener := NewRegistryDataListener()
+	dataListener.SubscribeURL(subscribeURL, listener)
+
+	matched := dataListener.DataChange(remoting.Event{
+		Path:   "/dubbo/org.apache.DemoService/providers/" + providerURL.String(),
+		Action: remoting.EventTypeAdd,
+	})
+
+	assert.False(t, matched)
+	assert.Empty(t, listener.events)
+}
+
+func TestDataListenerUnSubscribeStopsDispatch(t *testing.T) {
+	serviceURL, err := common.NewURL("consumer://127.0.0.1:20000/org.apache.DemoService")
+	require.NoError(t, err)
+	listener := &MockDataListener{}
+	dataListener := NewRegistryDataListener()
+	dataListener.SubscribeURL(serviceURL, listener)
+
+	removed := dataListener.UnSubscribeURL(serviceURL)
+	require.Same(t, listener, removed)
+	assert.Empty(t, dataListener.subscribed)
+}
+
+func TestDataListenerCloseStopsDispatch(t *testing.T) {
+	serviceURL, err := common.NewURL("consumer://127.0.0.1:20000/org.apache.DemoService")
+	require.NoError(t, err)
+	listener := &MockDataListener{}
+	dataListener := NewRegistryDataListener()
+	dataListener.SubscribeURL(serviceURL, listener)
+
+	dataListener.Close()
+	dataListener.SubscribeURL(serviceURL, listener)
+	removed := dataListener.UnSubscribeURL(serviceURL)
+
+	assert.Nil(t, removed)
+	assert.False(t, dataListener.DataChange(remoting.Event{
+		Path:   "/dubbo/org.apache.DemoService/providers/" + serviceURL.String(),
+		Action: remoting.EventTypeAdd,
+	}))
+	assert.Empty(t, listener.events)
+}
+
+func TestConfigurationListenerProcessAndNext(t *testing.T) {
+	reg := newTestRegistry(t)
+	serviceURL, err := common.NewURL("dubbo://127.0.0.1:20000/org.apache.DemoService")
+	require.NoError(t, err)
+	listener := NewConfigurationListener(reg, serviceURL)
+	defer listener.Close()
+
+	listener.Process(&config_center.ConfigChangeEvent{
+		Key:        "key",
+		Value:      serviceURL,
+		ConfigType: remoting.EventTypeAdd,
+	})
+
+	event, err := listener.Next()
+	require.NoError(t, err)
+	assert.Equal(t, remoting.EventTypeAdd, event.Action)
+	assert.Same(t, serviceURL, event.Service)
+}
 
 /*
 func Test_dataListener_DataChange(t *testing.T) {

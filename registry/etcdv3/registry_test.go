@@ -18,105 +18,236 @@
 // Package etcdv3 contains tests for etcdv3 registry components.
 package etcdv3
 
-/*
 import (
-	"reflect"
-	"sync"
+	"errors"
+	"path"
 	"testing"
+	"time"
 )
 
 import (
-	"github.com/agiledragon/gomonkey"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/registry"
-	"dubbo.apache.org/dubbo-go/v3/remoting"
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/remoting/etcdv3"
 )
 
-type fields struct {
-	BaseRegistry   registry.BaseRegistry
-	cltLock        sync.Mutex
-	client         *gxetcd.Client
-	listenerLock   sync.RWMutex
-	listener       *etcdv3.EventListener
-	dataListener   *dataListener
-	configListener *configurationListener
-}
-type args struct {
-	root      string
-	node      string
-	eventType remoting.Event
+func newTestRegistry(t *testing.T) *etcdV3Registry {
+	t.Helper()
+	registryURL, err := common.NewURL("registry://127.0.0.1:2379")
+	require.NoError(t, err)
+	reg := &etcdV3Registry{}
+	reg.InitBaseRegistry(registryURL, reg)
+	reg.dataListener = NewRegistryDataListener()
+	reg.listener = etcdv3.NewEventListener(nil)
+	return reg
 }
 
-func newEtcdV3Registry(f fields) *etcdV3Registry {
-	return &etcdV3Registry{
-		client:         f.client,
-		listener:       f.listener,
-		dataListener:   f.dataListener,
-		configListener: f.configListener,
+func newTestServiceURL(t *testing.T, rawURL string) *common.URL {
+	t.Helper()
+	serviceURL, err := common.NewURL(rawURL)
+	require.NoError(t, err)
+	return serviceURL
+}
+
+func TestEtcdV3RegistryDoUnregisterDeletesNode(t *testing.T) {
+	client := &gxetcd.Client{}
+	reg := newTestRegistry(t)
+	reg.client = client
+
+	oldValid := etcdClientValid
+	oldDelete := etcdClientDelete
+	defer func() {
+		etcdClientValid = oldValid
+		etcdClientDelete = oldDelete
+	}()
+
+	var deletedKey string
+	etcdClientValid = func(got *gxetcd.Client) bool {
+		assert.Same(t, client, got)
+		return true
 	}
-}
-
-func Test_etcdV3Registry_DoRegister(t *testing.T) {
-	var client *gxetcd.Client
-	patches := gomonkey.NewPatches()
-	patches = patches.ApplyMethod(reflect.TypeOf(client), "RegisterTemp", func(_ *gxetcd.Client, k, v string) error {
+	etcdClientDelete = func(got *gxetcd.Client, key string) error {
+		assert.Same(t, client, got)
+		deletedKey = key
 		return nil
-	})
-	defer patches.Reset()
+	}
 
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "test",
-			fields: fields{
-				client: client,
-			},
-			args: args{
-				root: "/dubbo",
-				node: "/go",
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r := newEtcdV3Registry(tt.fields)
-			if err := r.DoRegister(tt.args.root, tt.args.node); (err != nil) != tt.wantErr {
-				t.Errorf("DoRegister() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
+	err := reg.DoUnregister("/dubbo/org.apache.DemoService/providers", "dubbo://127.0.0.1:20000/org.apache.DemoService")
+	require.NoError(t, err)
+	assert.Equal(t, path.Join("/dubbo/org.apache.DemoService/providers", "dubbo://127.0.0.1:20000/org.apache.DemoService"), deletedKey)
 }
 
-func Test_etcdV3Registry_DoUnregister(t *testing.T) {
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		{
-			name:    "test",
-			wantErr: true,
-		},
+func TestEtcdV3RegistryDoUnregisterRequiresValidClient(t *testing.T) {
+	reg := newTestRegistry(t)
+	reg.client = &gxetcd.Client{}
+
+	oldValid := etcdClientValid
+	defer func() {
+		etcdClientValid = oldValid
+	}()
+	etcdClientValid = func(*gxetcd.Client) bool {
+		return false
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r := newEtcdV3Registry(tt.fields)
-			if err := r.DoUnregister(tt.args.root, tt.args.node); (err != nil) != tt.wantErr {
-				t.Errorf("DoUnregister() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
+
+	err := reg.DoUnregister("/dubbo", "node")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "etcd client is not valid")
 }
 
-*/
+func TestEtcdV3RegistryDoUnregisterPropagatesDeleteError(t *testing.T) {
+	reg := newTestRegistry(t)
+	reg.client = &gxetcd.Client{}
+	deleteErr := errors.New("delete failed")
+
+	oldValid := etcdClientValid
+	oldDelete := etcdClientDelete
+	defer func() {
+		etcdClientValid = oldValid
+		etcdClientDelete = oldDelete
+	}()
+	etcdClientValid = func(*gxetcd.Client) bool {
+		return true
+	}
+	etcdClientDelete = func(*gxetcd.Client, string) error {
+		return deleteErr
+	}
+
+	err := reg.DoUnregister("/dubbo", "node")
+	require.ErrorIs(t, err, deleteErr)
+}
+
+func TestEtcdV3RegistryDoUnsubscribeRemovesListener(t *testing.T) {
+	reg := newTestRegistry(t)
+	serviceURL := newTestServiceURL(t, "dubbo://127.0.0.1:20000/org.apache.DemoService?group=g&version=1.0.0")
+	configListener := NewConfigurationListener(reg, serviceURL)
+	reg.dataListener.SubscribeURL(serviceURL, configListener)
+
+	listener, err := reg.DoUnsubscribe(serviceURL)
+	require.NoError(t, err)
+	assert.Same(t, configListener, listener)
+	assert.Empty(t, reg.dataListener.subscribed)
+
+	_, err = configListener.Next()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "listener has been closed")
+}
+
+func TestEtcdV3RegistryDoUnsubscribeMissingListener(t *testing.T) {
+	reg := newTestRegistry(t)
+	serviceURL := newTestServiceURL(t, "dubbo://127.0.0.1:20000/org.apache.DemoService")
+
+	listener, err := reg.DoUnsubscribe(serviceURL)
+	require.NoError(t, err)
+	assert.Nil(t, listener)
+}
+
+func TestEtcdV3RegistryDoSubscribeRegistersListener(t *testing.T) {
+	reg := newTestRegistry(t)
+	serviceURL := newTestServiceURL(t, "dubbo://127.0.0.1:20000/org.apache.DemoService?group=g&version=1.0.0")
+
+	oldListen := listenEtcdServiceEvent
+	defer func() {
+		listenEtcdServiceEvent = oldListen
+	}()
+
+	listened := make(chan string, 1)
+	listenEtcdServiceEvent = func(_ *etcdv3.EventListener, key string, _ *dataListener) {
+		listened <- key
+	}
+
+	listener, err := reg.DoSubscribe(serviceURL)
+	require.NoError(t, err)
+	require.NotNil(t, listener)
+
+	select {
+	case key := <-listened:
+		assert.Equal(t, "/dubbo/org.apache.DemoService/providers", key)
+	case <-time.After(time.Second):
+		t.Fatal("expected subscription to start listening")
+	}
+	assert.Same(t, listener, reg.dataListener.subscribed[serviceURL.ServiceKey()])
+	listener.Close()
+}
+
+func TestEtcdV3RegistryDoSubscribeRebuildsMissingEventListener(t *testing.T) {
+	reg := newTestRegistry(t)
+	reg.listener = nil
+	reg.client = &gxetcd.Client{}
+	serviceURL := newTestServiceURL(t, "dubbo://127.0.0.1:20000/org.apache.DemoService")
+
+	oldListen := listenEtcdServiceEvent
+	defer func() {
+		listenEtcdServiceEvent = oldListen
+	}()
+	listenEtcdServiceEvent = func(_ *etcdv3.EventListener, _ string, _ *dataListener) {}
+
+	listener, err := reg.DoSubscribe(serviceURL)
+	require.NoError(t, err)
+	require.NotNil(t, listener)
+	assert.NotNil(t, reg.listener)
+	listener.Close()
+}
+
+func TestEtcdV3RegistryDoSubscribeFailsWithMissingClient(t *testing.T) {
+	reg := newTestRegistry(t)
+	reg.listener = nil
+	reg.client = nil
+	serviceURL := newTestServiceURL(t, "dubbo://127.0.0.1:20000/org.apache.DemoService")
+
+	listener, err := reg.DoSubscribe(serviceURL)
+	require.Error(t, err)
+	assert.Nil(t, listener)
+	assert.Contains(t, err.Error(), "etcd client broken")
+}
+
+func TestEtcdV3RegistryCloseListenerClosesDataListener(t *testing.T) {
+	reg := newTestRegistry(t)
+	serviceURL := newTestServiceURL(t, "dubbo://127.0.0.1:20000/org.apache.DemoService")
+	configListener := NewConfigurationListener(reg, serviceURL)
+	reg.dataListener.SubscribeURL(serviceURL, configListener)
+
+	reg.CloseListener()
+
+	assert.True(t, reg.dataListener.closed)
+	_, err := configListener.Next()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "listener has been closed")
+}
+
+func TestEtcdV3RegistryInitListenersRecoversSubscriptions(t *testing.T) {
+	reg := newTestRegistry(t)
+	serviceURL := newTestServiceURL(t, "dubbo://127.0.0.1:20000/org.apache.DemoService?group=g&version=1.0.0")
+	oldConfigListener := NewConfigurationListener(reg, serviceURL)
+	reg.dataListener.SubscribeURL(serviceURL, oldConfigListener)
+
+	oldListen := listenEtcdServiceEvent
+	defer func() {
+		listenEtcdServiceEvent = oldListen
+	}()
+
+	listened := make(chan string, 1)
+	listenEtcdServiceEvent = func(_ *etcdv3.EventListener, key string, _ *dataListener) {
+		listened <- key
+	}
+
+	reg.InitListeners()
+
+	select {
+	case key := <-listened:
+		assert.Equal(t, "/dubbo/org.apache.DemoService/providers", key)
+	case <-time.After(time.Second):
+		t.Fatal("expected recovered subscription to restart listening")
+	}
+	assert.NotNil(t, reg.dataListener.subscribed[serviceURL.ServiceKey()])
+	assert.False(t, reg.dataListener.closed)
+
+	_, err := oldConfigListener.Next()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "listener has been closed")
+}
