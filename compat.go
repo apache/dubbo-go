@@ -502,6 +502,10 @@ func compatRouterConfig(c *global.RouterConfig) *config.RouterConfig {
 		Tags:       compatTags(c.Tags),
 		ScriptType: c.ScriptType,
 		Script:     c.Script,
+		AffinityAware: config.AffinityAware{
+			Key:   c.AffinityAware.Key,
+			Ratio: c.AffinityAware.Ratio,
+		},
 	}
 
 }

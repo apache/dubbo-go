@@ -48,6 +48,13 @@ func newServiceAffinityRoute() *ServiceAffinityRoute {
 	return &ServiceAffinityRoute{}
 }
 
+func (s *ServiceAffinityRoute) SetStaticConfig(cfg *global.RouterConfig) {
+	if cfg == nil || cfg.Scope != constant.RouterScopeService {
+		return
+	}
+	s.affinityRoute.SetStaticConfig(cfg)
+}
+
 func (s *ServiceAffinityRoute) Notify(invokers []base.Invoker) {
 	if len(invokers) == 0 {
 		return
@@ -102,6 +109,13 @@ func newApplicationAffinityRouter(url *common.URL) *ApplicationAffinityRoute {
 	return a
 }
 
+func (s *ApplicationAffinityRoute) SetStaticConfig(cfg *global.RouterConfig) {
+	if cfg == nil || cfg.Scope != constant.RouterScopeApplication {
+		return
+	}
+	s.affinityRoute.SetStaticConfig(cfg)
+}
+
 func (s *ApplicationAffinityRoute) Notify(invokers []base.Invoker) {
 	if len(invokers) == 0 {
 		return
@@ -148,6 +162,38 @@ type affinityRoute struct {
 	enabled bool
 	key     string
 	ratio   int32
+}
+
+// SetStaticConfig applies a RouterConfig directly, bypassing YAML parsing.
+// Static and dynamic rules are not merged: later Process updates replace the
+// current state built here.
+func (a *affinityRoute) SetStaticConfig(cfg *global.RouterConfig) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	a.matcher, a.enabled, a.key, a.ratio = nil, false, "", 0
+	if cfg == nil {
+		return
+	}
+	if cfg.AffinityAware.Ratio < 0 || cfg.AffinityAware.Ratio > 100 {
+		logger.Errorf("[Router][Affinity] invalid static affinity ratio: ratio=%d, expected=0-100", cfg.AffinityAware.Ratio)
+		return
+	}
+
+	key := strings.TrimSpace(cfg.AffinityAware.Key)
+	enabled := cfg.Enabled == nil || *cfg.Enabled
+	if !enabled || key == "" {
+		return
+	}
+
+	rule := strings.Join([]string{key, key}, "=$")
+	f, err := condition.NewFieldMatcher(rule)
+	if err != nil {
+		logger.Errorf("[Router][Affinity] parse static affinity rule failed: key=%s, rule=%s, err=%v", a.key, rule, err)
+		return
+	}
+
+	a.matcher, a.enabled, a.key, a.ratio = &f, true, key, cfg.AffinityAware.Ratio
 }
 
 func (a *affinityRoute) Process(event *config_center.ConfigChangeEvent) {

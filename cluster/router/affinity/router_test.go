@@ -30,6 +30,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
@@ -235,6 +236,94 @@ affinityAware:
 		})
 	}
 
+}
+
+func TestAffinityRouteSetStaticConfig(t *testing.T) {
+	invokers := buildInvokers()
+	consumerURL := newUrl("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing")
+	inv := invocation.NewRPCInvocation("getComment", nil, nil)
+	cfg := &global.RouterConfig{
+		Scope: constant.RouterScopeService,
+		Key:   "service.apache.com",
+		AffinityAware: global.AffinityAware{
+			Key:   "region",
+			Ratio: 20,
+		},
+	}
+
+	a := &affinityRoute{}
+	a.SetStaticConfig(cfg)
+
+	got := a.Route(invokers, consumerURL, inv)
+	want := NewINVOKERS_FILTERS().add("region=$region").filtrate(invokers, consumerURL, inv)
+	assert.Equal(t, want, got)
+}
+
+func TestAffinityRouteSetStaticConfigIgnoresInvalidConfig(t *testing.T) {
+	invokers := buildInvokers()
+	consumerURL := newUrl("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing")
+	inv := invocation.NewRPCInvocation("getComment", nil, nil)
+	enabled := false
+
+	tests := []struct {
+		name string
+		cfg  *global.RouterConfig
+	}{
+		{
+			name: "disabled",
+			cfg: &global.RouterConfig{
+				Enabled: &enabled,
+				AffinityAware: global.AffinityAware{
+					Key:   "region",
+					Ratio: 20,
+				},
+			},
+		},
+		{
+			name: "empty affinity key",
+			cfg: &global.RouterConfig{
+				AffinityAware: global.AffinityAware{Ratio: 20},
+			},
+		},
+		{
+			name: "bad ratio",
+			cfg: &global.RouterConfig{
+				AffinityAware: global.AffinityAware{
+					Key:   "region",
+					Ratio: 101,
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &affinityRoute{}
+			a.SetStaticConfig(tt.cfg)
+			assert.Equal(t, invokers, a.Route(invokers, consumerURL, inv))
+		})
+	}
+}
+
+func TestAffinityRouteSetStaticConfigScope(t *testing.T) {
+	cfg := &global.RouterConfig{
+		Scope: constant.RouterScopeService,
+		AffinityAware: global.AffinityAware{
+			Key:   "region",
+			Ratio: 20,
+		},
+	}
+	serviceRouter := newServiceAffinityRoute()
+	serviceRouter.SetStaticConfig(cfg)
+	assert.True(t, serviceRouter.enabled)
+
+	appRouter := &ApplicationAffinityRoute{}
+	appRouter.SetStaticConfig(cfg)
+	assert.False(t, appRouter.enabled)
+
+	cfg.Scope = constant.RouterScopeApplication
+	appRouter.SetStaticConfig(cfg)
+	assert.True(t, appRouter.enabled)
 }
 
 func Test_newApplicationAffinityRouter(t *testing.T) {
