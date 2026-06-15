@@ -194,3 +194,19 @@ func TestCompatTraceIntegrationConfig(t *testing.T) {
 		assert.Nil(t, globalCfg)
 	})
 }
+
+func TestCompatRouterConfigWithAffinityAware(t *testing.T) {
+	router := &global.RouterConfig{
+		Key: "service.apache.com",
+		AffinityAware: global.AffinityAware{
+			Key:   "region",
+			Ratio: 20,
+		},
+	}
+
+	got := compatRouterConfig(router)
+
+	assert.NotNil(t, got)
+	assert.Equal(t, router.AffinityAware.Key, got.AffinityAware.Key)
+	assert.Equal(t, router.AffinityAware.Ratio, got.AffinityAware.Ratio)
+}

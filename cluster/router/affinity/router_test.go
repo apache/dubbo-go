@@ -270,6 +270,9 @@ func TestAffinityRouteSetStaticConfigIgnoresInvalidConfig(t *testing.T) {
 		cfg  *global.RouterConfig
 	}{
 		{
+			name: "nil config",
+		},
+		{
 			name: "disabled",
 			cfg: &global.RouterConfig{
 				Enabled: &enabled,
@@ -294,6 +297,15 @@ func TestAffinityRouteSetStaticConfigIgnoresInvalidConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "invalid matcher key",
+			cfg: &global.RouterConfig{
+				AffinityAware: global.AffinityAware{
+					Key:   "=",
+					Ratio: 20,
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -314,6 +326,14 @@ func TestAffinityRouteSetStaticConfigScope(t *testing.T) {
 		},
 	}
 	serviceRouter := newServiceAffinityRoute()
+	serviceRouter.SetStaticConfig(nil)
+	assert.False(t, serviceRouter.enabled)
+
+	appScopedCfg := *cfg
+	appScopedCfg.Scope = constant.RouterScopeApplication
+	serviceRouter.SetStaticConfig(&appScopedCfg)
+	assert.False(t, serviceRouter.enabled)
+
 	serviceRouter.SetStaticConfig(cfg)
 	assert.True(t, serviceRouter.enabled)
 
