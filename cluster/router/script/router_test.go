@@ -260,15 +260,17 @@ func TestScriptRouterProcessDelSkipsConfigBody(t *testing.T) {
 }
 
 func TestScriptRouterSetStaticConfig(t *testing.T) {
-	staticScript := `(function route(invokers, invocation, context) {
+	staticScriptForPort := func(port string) string {
+		return `(function route(invokers, invocation, context) {
 		var result = [];
 		for (var i = 0; i < invokers.length; i++) {
-			if (invokers[i].GetURL().Port === "20001") {
+			if (invokers[i].GetURL().Port === "` + port + `") {
 				result.push(invokers[i]);
 			}
 		}
 		return result;
 	}(invokers, invocation, context));`
+	}
 
 	t.Run("apply static script config", func(t *testing.T) {
 		invokers, inv, _ := getRouteCheckArgs()
@@ -277,7 +279,7 @@ func TestScriptRouterSetStaticConfig(t *testing.T) {
 			Scope:      constant.RouterScopeApplication,
 			Key:        "dubbo.io",
 			ScriptType: "javascript",
-			Script:     staticScript,
+			Script:     staticScriptForPort("20001"),
 		})
 
 		got := s.Route(invokers, nil, inv)
@@ -294,7 +296,7 @@ func TestScriptRouterSetStaticConfig(t *testing.T) {
 			Key:        "dubbo.io",
 			Enabled:    &enabled,
 			ScriptType: "javascript",
-			Script:     staticScript,
+			Script:     staticScriptForPort("20001"),
 		})
 
 		got := s.Route(invokers, nil, inv)
@@ -307,6 +309,55 @@ func TestScriptRouterSetStaticConfig(t *testing.T) {
 		s.SetStaticConfig(&global.RouterConfig{
 			Scope: constant.RouterScopeApplication,
 			Key:   "dubbo.io",
+		})
+
+		got := s.Route(invokers, nil, inv)
+		assert.True(t, checkInvokersSame(got, invokers))
+	})
+
+	t.Run("replace previous static script config", func(t *testing.T) {
+		invokers, inv, _ := getRouteCheckArgs()
+		s := NewScriptRouter()
+		s.SetStaticConfig(&global.RouterConfig{
+			Scope:      constant.RouterScopeApplication,
+			Key:        "dubbo.io",
+			ScriptType: "javascript",
+			Script:     staticScriptForPort("20001"),
+		})
+		s.SetStaticConfig(&global.RouterConfig{
+			Scope:      constant.RouterScopeApplication,
+			Key:        "dubbo.io",
+			ScriptType: "javascript",
+			Script:     staticScriptForPort("20002"),
+		})
+
+		got := s.Route(invokers, nil, inv)
+		assert.Len(t, got, 1)
+		assert.Equal(t, "20002", got[0].GetURL().Port)
+	})
+
+	t.Run("disable unsupported script type", func(t *testing.T) {
+		invokers, inv, _ := getRouteCheckArgs()
+		s := NewScriptRouter()
+		s.SetStaticConfig(&global.RouterConfig{
+			Scope:      constant.RouterScopeApplication,
+			Key:        "dubbo.io",
+			ScriptType: "unsupported",
+			Script:     staticScriptForPort("20001"),
+		})
+
+		got := s.Route(invokers, nil, inv)
+		assert.True(t, checkInvokersSame(got, invokers))
+	})
+
+	t.Run("disable invalid static script", func(t *testing.T) {
+		invokers, inv, _ := getRouteCheckArgs()
+		s := NewScriptRouter()
+		s.SetStaticConfig(&global.RouterConfig{
+			Scope:      constant.RouterScopeApplication,
+			Key:        "dubbo.io",
+			ScriptType: "javascript",
+			Script:     "bad input",
 		})
 
 		got := s.Route(invokers, nil, inv)
