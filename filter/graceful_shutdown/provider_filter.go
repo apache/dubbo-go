@@ -95,6 +95,7 @@ func (f *providerGracefulShutdownFilter) OnResponse(ctx context.Context, res res
 
 	if shouldDecrementProviderActive(res) {
 		f.shutdownConfig.ProviderActiveCount.Dec()
+		removeCountMarkedAttachment(res, providerCountMarkedKey)
 	}
 
 	// add closing flag to response
@@ -154,4 +155,11 @@ func shouldDecrementProviderActive(res result.Result) bool {
 	}
 	marked, ok := res.Attachment(providerCountMarkedKey, false).(bool)
 	return ok && marked
+}
+
+func removeCountMarkedAttachment(res result.Result, key string) {
+	if res == nil {
+		return
+	}
+	delete(res.Attachments(), key)
 }

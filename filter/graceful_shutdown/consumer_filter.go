@@ -100,6 +100,7 @@ func (f *consumerGracefulShutdownFilter) Invoke(ctx context.Context, invoker bas
 func (f *consumerGracefulShutdownFilter) OnResponse(ctx context.Context, result result.Result, invoker base.Invoker, invocation base.Invocation) result.Result {
 	if f.shutdownConfig != nil && shouldDecrementConsumerActive(result) {
 		f.shutdownConfig.ConsumerActiveCount.Dec()
+		removeCountMarkedAttachment(result, consumerCountMarkedKey)
 	}
 
 	// check closing flag in response

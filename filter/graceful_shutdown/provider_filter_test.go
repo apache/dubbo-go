@@ -88,6 +88,34 @@ func TestProviderFilterOnResponseDoesNotDecrementRejectedRequest(t *testing.T) {
 	assert.Equal(t, int32(0), opt.Shutdown.ProviderActiveCount.Load())
 }
 
+func TestProviderFilterOnResponseRemovesInternalCountMarker(t *testing.T) {
+	opt := graceful_shutdown.NewOptions()
+	providerFilter := newProviderGracefulShutdownFilter().(*providerGracefulShutdownFilter)
+	providerFilter.Set(constant.GracefulShutdownFilterShutdownConfig, opt.Shutdown)
+	opt.Shutdown.ProviderActiveCount.Store(1)
+
+	res := &result.RPCResult{}
+	res.AddAttachment(providerCountMarkedKey, true)
+	res.AddAttachment("user-key", "user-value")
+
+	providerFilter.OnResponse(
+		context.Background(),
+		res,
+		base.NewBaseInvoker(common.NewURLWithOptions(common.WithParams(url.Values{}))),
+		invocation.NewRPCInvocation("GetUser", []any{"OK"}, make(map[string]any)),
+	)
+
+	assert.Equal(t, int32(0), opt.Shutdown.ProviderActiveCount.Load())
+	assert.NotContains(t, res.Attachments(), providerCountMarkedKey)
+	assert.Equal(t, "user-value", res.Attachment("user-key", nil))
+}
+
+func TestRemoveCountMarkedAttachmentAllowsNilResult(t *testing.T) {
+	assert.NotPanics(t, func() {
+		removeCountMarkedAttachment(nil, providerCountMarkedKey)
+	})
+}
+
 type TestRejectedExecutionHandler struct{}
 
 // RejectedExecution will do nothing, it only log the invocation.

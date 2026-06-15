@@ -128,6 +128,23 @@ func TestConsumerFilterDoesNotDecrementWithoutIncrement(t *testing.T) {
 	assert.Equal(t, int32(0), filter.shutdownConfig.ConsumerActiveCount.Load())
 }
 
+func TestConsumerFilterOnResponseRemovesInternalCountMarker(t *testing.T) {
+	filter := &consumerGracefulShutdownFilter{
+		shutdownConfig: graceful_shutdown.NewOptions().Shutdown,
+	}
+	filter.shutdownConfig.ConsumerActiveCount.Store(1)
+	invoker := newTestEmbeddedInvoker(common.NewURLWithOptions(common.WithParams(url.Values{})))
+	res := &result.RPCResult{}
+	res.AddAttachment(consumerCountMarkedKey, true)
+	res.AddAttachment("user-key", "user-value")
+
+	filter.OnResponse(context.Background(), res, invoker, invocation.NewRPCInvocation("GetUser", []any{"OK"}, make(map[string]any)))
+
+	assert.Equal(t, int32(0), filter.shutdownConfig.ConsumerActiveCount.Load())
+	assert.NotContains(t, res.Attachments(), consumerCountMarkedKey)
+	assert.Equal(t, "user-value", res.Attachment("user-key", nil))
+}
+
 func TestClosingInvokerExpiryRestoresAvailability(t *testing.T) {
 	opt := graceful_shutdown.NewOptions()
 	opt.Shutdown.ClosingInvokerExpireTime = "20ms"
