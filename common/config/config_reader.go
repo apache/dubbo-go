@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-package interfaces
+package config
 
 import (
 	"bytes"
 )
 
-// ConfigReader is used to read config from consumer or provider
+// ConfigReader is used to read config from consumer or provider.
 type ConfigReader interface {
 	ReadConsumerConfig(reader *bytes.Buffer) error
 	ReadProviderConfig(reader *bytes.Buffer) error

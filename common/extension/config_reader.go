@@ -18,21 +18,21 @@
 package extension
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config/interfaces"
+	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
 )
 
 var (
-	configReaders = NewRegistry[func() interfaces.ConfigReader]("config reader")
+	configReaders = NewRegistry[func() commonCfg.ConfigReader]("config reader")
 	defaults      = NewRegistry[string]("default config reader")
 )
 
 // SetConfigReaders sets a creator of config reader with @name
-func SetConfigReaders(name string, v func() interfaces.ConfigReader) {
+func SetConfigReaders(name string, v func() commonCfg.ConfigReader) {
 	configReaders.Register(name, v)
 }
 
 // GetConfigReaders gets a config reader with @name
-func GetConfigReaders(name string) interfaces.ConfigReader {
+func GetConfigReaders(name string) commonCfg.ConfigReader {
 	return configReaders.MustGet(name)()
 }
 
