@@ -492,6 +492,7 @@ func (hc *grpcHandlerConn) ExportableHeader() http.Header {
 // reserved by gRPC protocol. Any other headers are classified as the
 // user-specified metadata.
 func IsReservedHeader(hdr string) bool {
+	hdr = strings.ToLower(hdr)
 	if hdr != "" && hdr[0] == ':' {
 		return true
 	}

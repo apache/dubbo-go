@@ -19,7 +19,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
-	"strings"
 )
 
 // EncodeBinaryHeader base64-encodes the data. It always emits unpadded values.
@@ -104,7 +103,7 @@ func newIncomingContext(ctx context.Context, data http.Header) context.Context {
 	}
 
 	for key, vals := range data {
-		header[strings.ToLower(key)] = vals
+		header[http.CanonicalHeaderKey(key)] = vals
 	}
 
 	extraData[headerIncomingKey] = header
@@ -128,7 +127,7 @@ func NewOutgoingContext(ctx context.Context, data http.Header) context.Context {
 	var header = http.Header{}
 
 	for key, vals := range data {
-		header[strings.ToLower(key)] = append([]string(nil), vals...)
+		header[http.CanonicalHeaderKey(key)] = append([]string(nil), vals...)
 	}
 
 	extraData, ok := ctx.Value(extraDataKey{}).(map[string]http.Header)
@@ -182,8 +181,8 @@ func AppendToOutgoingContext(ctx context.Context, kv ...string) context.Context 
 		extraData[headerOutgoingKey] = header
 	}
 	for i := 0; i < len(kv); i += 2 {
-		// todo(DMwangnima): think about lowering
-		header.Add(strings.ToLower(kv[i]), kv[i+1])
+		key := http.CanonicalHeaderKey(kv[i])
+		header[key] = append(header[key], kv[i+1])
 	}
 	return ctx
 }

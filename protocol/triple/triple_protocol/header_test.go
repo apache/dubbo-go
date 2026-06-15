@@ -16,6 +16,8 @@ package triple_protocol
 
 import (
 	"bytes"
+	"context"
+	"fmt"
 	"net/http"
 	"testing"
 	"testing/quick"
@@ -57,4 +59,19 @@ func TestHeaderMerge(t *testing.T) {
 		"Baz": nil,
 	}
 	assert.Equal(t, header, expect)
+}
+
+func ExampleNewOutgoingContext() {
+	ctx := NewOutgoingContext(context.Background(), http.Header{
+		"hello": []string{"triple"},
+	})
+	ctx = AppendToOutgoingContext(ctx, "hello", "dubbo", "hey", "hessian")
+
+	headers := ExtractFromOutgoingContext(ctx)
+	fmt.Println(headers.Values("hello"))
+	fmt.Println(headers.Get("hey"))
+
+	// Output:
+	// [triple dubbo]
+	// hessian
 }
