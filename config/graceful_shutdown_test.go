@@ -17,6 +17,77 @@
 
 package config
 
+import (
+	"context"
+	"testing"
+)
+
+import (
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/filter"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
+)
+
+type mockGracefulShutdownSetterFilter struct {
+	settings map[string]any
+}
+
+func newMockGracefulShutdownSetterFilter() *mockGracefulShutdownSetterFilter {
+	return &mockGracefulShutdownSetterFilter{
+		settings: make(map[string]any),
+	}
+}
+
+func (m *mockGracefulShutdownSetterFilter) Invoke(context.Context, base.Invoker, base.Invocation) result.Result {
+	return nil
+}
+
+func (m *mockGracefulShutdownSetterFilter) OnResponse(context.Context, result.Result, base.Invoker, base.Invocation) result.Result {
+	return nil
+}
+
+func (m *mockGracefulShutdownSetterFilter) Set(name string, conf any) {
+	m.settings[name] = conf
+}
+
+func TestGracefulShutdownInitSetsShutdownConfigOnFilters(t *testing.T) {
+	consumerFilter := newMockGracefulShutdownSetterFilter()
+	providerFilter := newMockGracefulShutdownSetterFilter()
+	extension.SetFilter(constant.GracefulShutdownConsumerFilterKey, func() filter.Filter {
+		return consumerFilter
+	})
+	extension.SetFilter(constant.GracefulShutdownProviderFilterKey, func() filter.Filter {
+		return providerFilter
+	})
+	t.Cleanup(func() {
+		extension.UnregisterFilter(constant.GracefulShutdownConsumerFilterKey)
+		extension.UnregisterFilter(constant.GracefulShutdownProviderFilterKey)
+	})
+
+	shutdownConfig := NewShutDownConfigBuilder().
+		SetInternalSignal(false).
+		Build()
+	SetRootConfig(*NewRootConfigBuilder().
+		SetShutdown(shutdownConfig).
+		Build())
+
+	gracefulShutdownInit()
+
+	consumerShutdownConfig, ok := consumerFilter.settings[constant.GracefulShutdownFilterShutdownConfig]
+	require.True(t, ok)
+	assert.Same(t, shutdownConfig, consumerShutdownConfig)
+	providerShutdownConfig, ok := providerFilter.settings[constant.GracefulShutdownFilterShutdownConfig]
+	require.True(t, ok)
+	assert.Same(t, shutdownConfig, providerShutdownConfig)
+}
+
 //
 //import (
 //	"dubbo.apache.org/dubbo-go/v3/config"

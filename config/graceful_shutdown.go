@@ -32,6 +32,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	gracefulshutdown "dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 )
 
 /*
@@ -64,11 +65,11 @@ func gracefulShutdownInit() {
 		return
 	}
 	rc := GetRootConfig()
-	if filter, ok := gracefulShutdownConsumerFilter.(Setter); ok && rc != nil && rc.Shutdown != nil {
+	if filter, ok := gracefulShutdownConsumerFilter.(gracefulshutdown.Setter); ok && rc != nil && rc.Shutdown != nil {
 		filter.Set(constant.GracefulShutdownFilterShutdownConfig, GetShutDown())
 	}
 
-	if filter, ok := gracefulShutdownProviderFilter.(Setter); ok && rc != nil && rc.Shutdown != nil {
+	if filter, ok := gracefulShutdownProviderFilter.(gracefulshutdown.Setter); ok && rc != nil && rc.Shutdown != nil {
 		filter.Set(constant.GracefulShutdownFilterShutdownConfig, GetShutDown())
 	}
 

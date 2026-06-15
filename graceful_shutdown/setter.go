@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package config
+package graceful_shutdown
 
 type Setter interface {
 	Set(name string, config any)
