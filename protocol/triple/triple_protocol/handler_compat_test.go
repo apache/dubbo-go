@@ -27,7 +27,9 @@ import (
 	"github.com/dubbogo/grpc-go/status"
 
 	"github.com/stretchr/testify/assert"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
