@@ -65,17 +65,18 @@ func TestNewIncomingContextClonesHeaders(t *testing.T) {
 	baseCtx := NewOutgoingContext(context.Background(), http.Header{
 		"Request-Id": []string{"outgoing"},
 	})
+	inputValues := []string{"incoming"}
 	input := http.Header{
-		"request-id": []string{"incoming"},
+		"request-id": inputValues,
 	}
 
 	ctx := newIncomingContext(baseCtx, input)
 	incoming, ok := FromIncomingContext(ctx)
 	assert.True(t, ok)
-	incoming.Set("Request-Id", "changed")
+	incoming.Values("Request-Id")[0] = "changed"
 	incoming.Add("Another", "value")
 
-	assert.Equal(t, []string{"incoming"}, input["request-id"])
+	assert.Equal(t, []string{"incoming"}, inputValues)
 	outgoing := ExtractFromOutgoingContext(baseCtx)
 	assert.Equal(t, []string{"outgoing"}, outgoing.Values("Request-Id"))
 }
