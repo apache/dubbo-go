@@ -228,10 +228,28 @@ script: |
 }
 
 func TestScriptRouterProcessSkipsNonStringConfig(t *testing.T) {
-	s := &ScriptRouter{}
+	s := &ScriptRouter{
+		enabled:    true,
+		scriptType: "javascript",
+		rawScript:  "old script",
+	}
 
 	assert.NotPanics(t, func() {
 		s.Process(&config_center.ConfigChangeEvent{Key: "", Value: 123, ConfigType: remoting.EventTypeUpdate})
+	})
+	assert.True(t, s.enabled)
+	assert.Equal(t, "javascript", s.scriptType)
+	assert.Equal(t, "old script", s.rawScript)
+}
+
+func TestScriptRouterProcessDelSkipsConfigBody(t *testing.T) {
+	s := &ScriptRouter{
+		scriptType: "javascript",
+		rawScript:  "old script",
+	}
+
+	assert.NotPanics(t, func() {
+		s.Process(&config_center.ConfigChangeEvent{Key: "", Value: nil, ConfigType: remoting.EventTypeDel})
 	})
 	assert.False(t, s.enabled)
 	assert.Empty(t, s.scriptType)
