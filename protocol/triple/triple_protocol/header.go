@@ -100,10 +100,12 @@ func newIncomingContext(ctx context.Context, data http.Header) context.Context {
 	extraData, ok := ctx.Value(extraDataKey{}).(map[string]http.Header)
 	if !ok {
 		extraData = map[string]http.Header{}
+	} else {
+		extraData = cloneExtraData(extraData)
 	}
 
 	for key, vals := range data {
-		header[http.CanonicalHeaderKey(key)] = vals
+		header[http.CanonicalHeaderKey(key)] = append([]string(nil), vals...)
 	}
 
 	extraData[headerIncomingKey] = header

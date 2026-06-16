@@ -61,6 +61,25 @@ func TestHeaderMerge(t *testing.T) {
 	assert.Equal(t, header, expect)
 }
 
+func TestNewIncomingContextClonesHeaders(t *testing.T) {
+	baseCtx := NewOutgoingContext(context.Background(), http.Header{
+		"Request-Id": []string{"outgoing"},
+	})
+	input := http.Header{
+		"request-id": []string{"incoming"},
+	}
+
+	ctx := newIncomingContext(baseCtx, input)
+	incoming, ok := FromIncomingContext(ctx)
+	assert.True(t, ok)
+	incoming.Set("Request-Id", "changed")
+	incoming.Add("Another", "value")
+
+	assert.Equal(t, []string{"incoming"}, input["request-id"])
+	outgoing := ExtractFromOutgoingContext(baseCtx)
+	assert.Equal(t, []string{"outgoing"}, outgoing.Values("Request-Id"))
+}
+
 func ExampleNewOutgoingContext() {
 	ctx := NewOutgoingContext(context.Background(), http.Header{
 		"hello": []string{"triple"},
