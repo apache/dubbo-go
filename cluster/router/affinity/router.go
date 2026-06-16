@@ -189,7 +189,7 @@ func (a *affinityRoute) SetStaticConfig(cfg *global.RouterConfig) {
 	rule := strings.Join([]string{key, key}, "=$")
 	f, err := condition.NewFieldMatcher(rule)
 	if err != nil {
-		logger.Errorf("[Router][Affinity] parse static affinity rule failed: key=%s, rule=%s, err=%v", a.key, rule, err)
+		logger.Errorf("[Router][Affinity] parse static affinity rule failed: key=%s, rule=%s, err=%v", key, rule, err)
 		return
 	}
 
