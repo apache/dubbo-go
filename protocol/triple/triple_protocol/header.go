@@ -105,6 +105,7 @@ func newIncomingContext(ctx context.Context, data http.Header) context.Context {
 	}
 
 	for key, vals := range data {
+		// Context headers use canonical keys so http.Header.Get/Values work as expected.
 		header[http.CanonicalHeaderKey(key)] = append([]string(nil), vals...)
 	}
 
@@ -129,6 +130,7 @@ func NewOutgoingContext(ctx context.Context, data http.Header) context.Context {
 	var header = http.Header{}
 
 	for key, vals := range data {
+		// Context headers use canonical keys so http.Header.Get/Values work as expected.
 		header[http.CanonicalHeaderKey(key)] = append([]string(nil), vals...)
 	}
 

@@ -476,6 +476,7 @@ func (hc *grpcHandlerConn) ExportableHeader() http.Header {
 	res := make(http.Header)
 	hdr := hc.request.Header
 	for key, vals := range hdr {
+		// Exported attachments stay lowercase to match Dubbo/gRPC metadata keys.
 		key = strings.ToLower(key)
 		if IsReservedHeader(key) && !IsWhitelistedHeader(key) {
 			continue
