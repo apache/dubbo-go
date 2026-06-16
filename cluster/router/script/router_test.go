@@ -244,6 +244,7 @@ func TestScriptRouterProcessSkipsNonStringConfig(t *testing.T) {
 
 func TestScriptRouterProcessDelSkipsConfigBody(t *testing.T) {
 	s := &ScriptRouter{
+		enabled:    true,
 		scriptType: "javascript",
 		rawScript:  "old script",
 	}
