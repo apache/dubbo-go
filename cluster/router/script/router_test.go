@@ -315,6 +315,19 @@ func TestScriptRouterSetStaticConfig(t *testing.T) {
 		assert.True(t, checkInvokersSame(got, invokers))
 	})
 
+	t.Run("ignore config without key", func(t *testing.T) {
+		invokers, inv, _ := getRouteCheckArgs()
+		s := NewScriptRouter()
+		s.SetStaticConfig(&global.RouterConfig{
+			Scope:      constant.RouterScopeApplication,
+			ScriptType: "javascript",
+			Script:     staticScriptForPort("20001"),
+		})
+
+		got := s.Route(invokers, nil, inv)
+		assert.True(t, checkInvokersSame(got, invokers))
+	})
+
 	t.Run("replace previous static script config", func(t *testing.T) {
 		invokers, inv, _ := getRouteCheckArgs()
 		s := NewScriptRouter()

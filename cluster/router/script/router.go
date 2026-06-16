@@ -70,7 +70,7 @@ func parseRoute(routeContent string) (*global.RouterConfig, error) {
 // Static and dynamic rules are not merged: later Process updates replace the
 // current state built here.
 func (s *ScriptRouter) SetStaticConfig(cfg *global.RouterConfig) {
-	if cfg == nil || cfg.Scope != constant.RouterScopeApplication || cfg.ScriptType == "" || cfg.Script == "" {
+	if cfg == nil || cfg.Scope != constant.RouterScopeApplication || cfg.Key == "" || cfg.ScriptType == "" || cfg.Script == "" {
 		return
 	}
 
@@ -90,7 +90,7 @@ func (s *ScriptRouter) SetStaticConfig(cfg *global.RouterConfig) {
 	s.rawScript = cfg.Script
 	s.enabled = cfg.Enabled == nil || *cfg.Enabled
 	if !s.enabled {
-		logger.Infof("[Router][Script] static config is disabled, script=%s", cfg.Script)
+		logger.Infof("[Router][Script] static config is disabled, key=%s, type=%s", cfg.Key, cfg.ScriptType)
 		return
 	}
 
