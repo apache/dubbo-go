@@ -18,7 +18,6 @@
 package nacos
 
 import (
-	"context"
 	"sync"
 )
 
@@ -48,9 +47,8 @@ func callback(listenersMap *sync.Map, _, group, dataId, data string) {
 func (n *nacosDynamicConfiguration) addListener(key string, listener config_center.ConfigurationListener) {
 	rawListenersMap, loaded := n.keyListeners.Load(key)
 	if !loaded {
-		_, cancel := context.WithCancel(context.Background())
 		listenersMap := &sync.Map{}
-		listenersMap.Store(listener, cancel)
+		listenersMap.Store(listener, struct{}{})
 
 		// double load for invalid race
 		rawListenersMap, loaded = n.keyListeners.LoadOrStore(key, listenersMap)
@@ -70,17 +68,35 @@ func (n *nacosDynamicConfiguration) addListener(key string, listener config_cent
 			return
 		}
 	}
-	_, cancel := context.WithCancel(context.Background())
 	listenersMap := rawListenersMap.(*sync.Map)
-	listenersMap.Store(listener, cancel)
+	listenersMap.Store(listener, struct{}{})
 }
 
 func (n *nacosDynamicConfiguration) removeListener(key string, listener config_center.ConfigurationListener) {
 	rawListenersMap, loaded := n.keyListeners.Load(key)
 	if !loaded {
 		logger.Errorf("[ConfigCenter][Nacos] key is not be listened, key=%s", key)
-	} else {
-		listenersMap := rawListenersMap.(*sync.Map)
-		listenersMap.Delete(listener)
+		return
+	}
+	listenersMap := rawListenersMap.(*sync.Map)
+	listenersMap.Delete(listener)
+
+	// If no listeners remain for this key, cancel the nacos config subscription
+	isEmpty := true
+	listenersMap.Range(func(_, _ any) bool {
+		isEmpty = false
+		return false
+	})
+	if isEmpty {
+		n.keyListeners.Delete(key)
+		if n.client != nil {
+			err := n.client.Client().CancelListenConfig(vo.ConfigParam{
+				DataId: key,
+				Group:  n.resolvedGroup(n.url.GetParam(constant.NacosGroupKey, constant2.DEFAULT_GROUP)),
+			})
+			if err != nil {
+				logger.Errorf("[ConfigCenter][Nacos] cancel listen config fail, key=%s, err=%v", key, err)
+			}
+		}
 	}
 }
