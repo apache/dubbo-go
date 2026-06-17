@@ -374,12 +374,22 @@ func TestAffinityRouteSetStaticConfigScope(t *testing.T) {
 	serviceRouter.SetStaticConfig(cfg)
 	assert.Len(t, serviceRouter.staticRules, 1)
 
+	emptyAffinityCfg := *cfg
+	emptyAffinityCfg.Key = "service.apache.com.empty"
+	emptyAffinityCfg.AffinityAware.Key = ""
+	serviceRouter.SetStaticConfig(&emptyAffinityCfg)
+	assert.Len(t, serviceRouter.staticRules, 1)
+
 	appRouter := &ApplicationAffinityRoute{}
 	appRouter.SetStaticConfig(cfg)
 	assert.Empty(t, appRouter.staticRules)
 
 	cfg.Scope = constant.RouterScopeApplication
 	appRouter.SetStaticConfig(cfg)
+	assert.Len(t, appRouter.staticRules, 1)
+
+	emptyAffinityCfg.Scope = constant.RouterScopeApplication
+	appRouter.SetStaticConfig(&emptyAffinityCfg)
 	assert.Len(t, appRouter.staticRules, 1)
 }
 

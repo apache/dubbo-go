@@ -50,7 +50,7 @@ func newServiceAffinityRoute() *ServiceAffinityRoute {
 }
 
 func (s *ServiceAffinityRoute) SetStaticConfig(cfg *global.RouterConfig) {
-	if cfg == nil || cfg.Scope != constant.RouterScopeService {
+	if cfg == nil || cfg.Scope != constant.RouterScopeService || cfg.AffinityAware.Key == "" {
 		return
 	}
 	s.affinityRoute.SetStaticConfig(cfg)
@@ -111,7 +111,7 @@ func newApplicationAffinityRouter(url *common.URL) *ApplicationAffinityRoute {
 }
 
 func (s *ApplicationAffinityRoute) SetStaticConfig(cfg *global.RouterConfig) {
-	if cfg == nil || cfg.Scope != constant.RouterScopeApplication {
+	if cfg == nil || cfg.Scope != constant.RouterScopeApplication || cfg.AffinityAware.Key == "" {
 		return
 	}
 	s.affinityRoute.SetStaticConfig(cfg)
