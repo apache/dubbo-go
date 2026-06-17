@@ -19,6 +19,7 @@ package remoting
 
 import (
 	"errors"
+	"sync"
 	"time"
 )
 
@@ -61,7 +62,9 @@ type ExchangeClient struct {
 	ConnectTimeout time.Duration  // timeout for connecting server
 	address        string         // server address for dialing. The format: ip:port
 	client         Client         // dealing with the transport
-	init           uatomic.Bool  // the tag for init, protected by atomic operations
+	initState      uatomic.Int32  // init state: 0=uninitialized, 1=initializing, 2=initialized
+	initCond       *sync.Cond     // signals waiters when init completes (success or failure)
+	initErr        error          // stored init error for waiters to observe (guarded by initCond.L)
 	activeNum      uatomic.Uint32 // the number of service using the exchangeClient
 }
 
@@ -71,6 +74,7 @@ func NewExchangeClient(url *common.URL, client Client, connectTimeout time.Durat
 		ConnectTimeout: connectTimeout,
 		address:        url.Location,
 		client:         client,
+		initCond:       sync.NewCond(&sync.Mutex{}),
 	}
 	if !lazyInit {
 		if err := exchangeClient.doInit(url); err != nil {
@@ -82,29 +86,43 @@ func NewExchangeClient(url *common.URL, client Client, connectTimeout time.Durat
 }
 
 func (cl *ExchangeClient) doInit(url *common.URL) error {
-	if cl.init.Load() {
+	// Fast path: already initialized.
+	if cl.initState.Load() == 2 {
 		return nil
 	}
-	// Use CompareAndSwap to ensure only one goroutine performs initialization.
-	// If CAS fails, another goroutine already initialized; spin-wait until init completes.
-	if !cl.init.CAS(false, true) {
-		// Another goroutine is initializing; wait for it to complete.
-		for !cl.init.Load() {
-			time.Sleep(10 * time.Millisecond)
+	// Try to become the initializer: transition 0 -> 1 (uninitialized -> initializing).
+	if !cl.initState.CAS(0, 1) {
+		// Another goroutine is initializing. Wait for it to complete.
+		cl.initCond.L.Lock()
+		for cl.initState.Load() == 1 {
+			cl.initCond.Wait()
 		}
-		return nil
+		err := cl.initErr
+		cl.initCond.L.Unlock()
+		return err
 	}
 	// This goroutine won the CAS — perform the actual initialization.
+	var initErr error
 	if cl.client.Connect(url) != nil {
 		// retry for a while
 		time.Sleep(100 * time.Millisecond)
 		if cl.client.Connect(url) != nil {
 			logger.Errorf("[Remoting] failed to connect server, url=%v", url.Location)
-			cl.init.Store(false) // reset on failure so future calls can retry
-			return errors.New("Failed to connect server " + url.Location)
+			initErr = errors.New("Failed to connect server " + url.Location)
 		}
 	}
-	return nil
+	cl.initCond.L.Lock()
+	if initErr != nil {
+		// Reset to uninitialized so future calls can retry.
+		cl.initState.Store(0)
+		cl.initErr = initErr
+	} else {
+		cl.initState.Store(2)
+		cl.initErr = nil
+	}
+	cl.initCond.L.Unlock()
+	cl.initCond.Broadcast()
+	return initErr
 }
 
 // IncreaseActiveNumber increase number of service using client.
@@ -204,7 +222,11 @@ func (client *ExchangeClient) Send(invocation *base.Invocation, url *common.URL,
 // Close close the client.
 func (client *ExchangeClient) Close() {
 	client.client.Close()
-	client.init.Store(false)
+	client.initCond.L.Lock()
+	client.initState.Store(0)
+	client.initErr = nil
+	client.initCond.L.Unlock()
+	client.initCond.Broadcast()
 }
 
 // IsAvailable to check if the underlying network client is available yet.
