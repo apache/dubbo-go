@@ -19,6 +19,8 @@
 package base
 
 import (
+	stdatomic "sync/atomic"
+
 	"github.com/dubbogo/gost/log/logger"
 
 	perrors "github.com/pkg/errors"
@@ -39,7 +41,7 @@ type BaseClusterInvoker struct {
 	Directory      directory.Directory
 	AvailableCheck bool
 	Destroyed      *atomic.Bool
-	StickyInvoker  base.Invoker
+	stickyInvoker  stdatomic.Value // stores base.Invoker
 }
 
 func NewBaseClusterInvoker(directory directory.Directory) BaseClusterInvoker {
@@ -48,6 +50,20 @@ func NewBaseClusterInvoker(directory directory.Directory) BaseClusterInvoker {
 		AvailableCheck: true,
 		Destroyed:      atomic.NewBool(false),
 	}
+}
+
+// getStickyInvoker returns the current sticky invoker in a race-free manner.
+func (invoker *BaseClusterInvoker) getStickyInvoker() base.Invoker {
+	v := invoker.stickyInvoker.Load()
+	if v == nil {
+		return nil
+	}
+	return v.(base.Invoker)
+}
+
+// setStickyInvoker sets the sticky invoker in a race-free manner.
+func (invoker *BaseClusterInvoker) setStickyInvoker(invokerVal base.Invoker) {
+	invoker.stickyInvoker.Store(invokerVal)
 }
 
 func (invoker *BaseClusterInvoker) GetURL() *common.URL {
@@ -62,8 +78,8 @@ func (invoker *BaseClusterInvoker) Destroy() {
 }
 
 func (invoker *BaseClusterInvoker) IsAvailable() bool {
-	if invoker.StickyInvoker != nil {
-		return invoker.StickyInvoker.IsAvailable()
+	if sticky := invoker.getStickyInvoker(); sticky != nil {
+		return sticky.IsAvailable()
 	}
 	return invoker.Directory.IsAvailable()
 }
@@ -100,19 +116,21 @@ func (invoker *BaseClusterInvoker) DoSelect(lb loadbalance.LoadBalance, invocati
 	// Get the service method sticky config if have
 	sticky = url.GetMethodParamBool(invocation.MethodName(), constant.StickyKey, sticky)
 
-	if invoker.StickyInvoker != nil && !isInvoked(invoker.StickyInvoker, invokers) {
-		invoker.StickyInvoker = nil
+	stickyInvoker := invoker.getStickyInvoker()
+	if stickyInvoker != nil && !isInvoked(stickyInvoker, invokers) {
+		invoker.setStickyInvoker(nil)
+		stickyInvoker = nil
 	}
 
 	if sticky && invoker.AvailableCheck &&
-		invoker.StickyInvoker != nil && invoker.StickyInvoker.IsAvailable() &&
-		(invoked == nil || !isInvoked(invoker.StickyInvoker, invoked)) {
-		return invoker.StickyInvoker
+		stickyInvoker != nil && stickyInvoker.IsAvailable() &&
+		(invoked == nil || !isInvoked(stickyInvoker, invoked)) {
+		return stickyInvoker
 	}
 
 	selectedInvoker = invoker.doSelectInvoker(lb, invocation, invokers, invoked)
 	if sticky {
-		invoker.StickyInvoker = selectedInvoker
+		invoker.setStickyInvoker(selectedInvoker)
 	}
 	return selectedInvoker
 }

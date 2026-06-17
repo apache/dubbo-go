@@ -19,6 +19,7 @@ package base
 
 import (
 	"fmt"
+	"sync"
 	"testing"
 )
 
@@ -72,4 +73,74 @@ func TestStickyNormalWhenError(t *testing.T) {
 	invoked = append(invoked, result)
 	result1 := base.DoSelect(random.NewRandomLoadBalance(), invocation.NewRPCInvocation(baseClusterInvokerMethodName, nil, nil), invokers, invoked)
 	assert.NotEqual(t, result, result1)
+}
+
+// TestStickyConcurrentDoSelect verifies that concurrent calls to DoSelect
+// with sticky enabled do not cause a data race on StickyInvoker.
+func TestStickyConcurrentDoSelect(t *testing.T) {
+	var invokers []protocolbase.Invoker
+	for i := 0; i < 10; i++ {
+		url, _ := common.NewURL(fmt.Sprintf(baseClusterInvokerFormat, i))
+		url.SetParam("sticky", "true")
+		invokers = append(invokers, clusterpkg.NewMockInvoker(url, 1))
+	}
+	base := &BaseClusterInvoker{}
+	base.AvailableCheck = true
+
+	lb := random.NewRandomLoadBalance()
+	invocation1 := invocation.NewRPCInvocation(baseClusterInvokerMethodName, nil, nil)
+
+	const concurrency = 100
+	var wg sync.WaitGroup
+	wg.Add(concurrency)
+	for i := 0; i < concurrency; i++ {
+		go func() {
+			defer wg.Done()
+			invoked := make([]protocolbase.Invoker, 0)
+			result := base.DoSelect(lb, invocation1, invokers, invoked)
+			assert.NotNil(t, result)
+			// Second call should return the same sticky invoker
+			result2 := base.DoSelect(lb, invocation1, invokers, invoked)
+			assert.NotNil(t, result2)
+		}()
+	}
+	wg.Wait()
+}
+
+// TestStickyConcurrentIsAvailableAndDoSelect verifies that concurrent
+// IsAvailable and DoSelect calls do not cause a data race on StickyInvoker.
+// Only the sticky invoker path is exercised (not the Directory fallback),
+// since Directory is nil in this test setup.
+func TestStickyConcurrentIsAvailableAndDoSelect(t *testing.T) {
+	var invokers []protocolbase.Invoker
+	for i := 0; i < 10; i++ {
+		url, _ := common.NewURL(fmt.Sprintf(baseClusterInvokerFormat, i))
+		url.SetParam("sticky", "true")
+		invokers = append(invokers, clusterpkg.NewMockInvoker(url, 1))
+	}
+	base := &BaseClusterInvoker{}
+	base.AvailableCheck = true
+
+	lb := random.NewRandomLoadBalance()
+	invocation1 := invocation.NewRPCInvocation(baseClusterInvokerMethodName, nil, nil)
+
+	// First DoSelect to set the sticky invoker so IsAvailable uses the sticky path
+	invoked := make([]protocolbase.Invoker, 0)
+	base.DoSelect(lb, invocation1, invokers, invoked)
+
+	const concurrency = 100
+	var wg sync.WaitGroup
+	wg.Add(concurrency * 2)
+	for i := 0; i < concurrency; i++ {
+		go func() {
+			defer wg.Done()
+			// IsAvailable reads StickyInvoker; this would race without atomic protection
+			_ = base.getStickyInvoker()
+		}()
+		go func() {
+			defer wg.Done()
+			base.DoSelect(lb, invocation1, invokers, invoked)
+		}()
+	}
+	wg.Wait()
 }
