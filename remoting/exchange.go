@@ -184,6 +184,12 @@ func removePendingResponse(seq SequenceType) *PendingResponse {
 	return nil
 }
 
+// RemovePendingResponse removes and returns the pending response for the given sequence ID.
+// It is the exported version of removePendingResponse for use by external packages.
+func RemovePendingResponse(seq SequenceType) *PendingResponse {
+	return removePendingResponse(seq)
+}
+
 // GetPendingResponse gets the response
 func GetPendingResponse(seq SequenceType) *PendingResponse {
 	if presp, ok := pendingResponses.Load(seq); ok {
