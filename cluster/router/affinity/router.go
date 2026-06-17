@@ -19,6 +19,7 @@ package affinity
 
 import (
 	"math"
+	"slices"
 	"strings"
 	"sync"
 )
@@ -157,9 +158,16 @@ func (s *ApplicationAffinityRoute) Notify(invokers []base.Invoker) {
 }
 
 type affinityRoute struct {
-	mu      sync.RWMutex
+	mu          sync.RWMutex
+	matcher     *condition.FieldMatcher
+	enabled     bool
+	key         string
+	ratio       int32
+	staticRules map[string]affinityRule
+}
+
+type affinityRule struct {
 	matcher *condition.FieldMatcher
-	enabled bool
 	key     string
 	ratio   int32
 }
@@ -168,13 +176,20 @@ type affinityRoute struct {
 // Static and dynamic rules are not merged: later Process updates replace the
 // current state built here.
 func (a *affinityRoute) SetStaticConfig(cfg *global.RouterConfig) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-
-	a.matcher, a.enabled, a.key, a.ratio = nil, false, "", 0
 	if cfg == nil {
 		return
 	}
+
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	storageKey := strings.TrimSpace(cfg.Key)
+	if storageKey == "" {
+		logger.Error("[Router][Affinity] static affinity config key is empty")
+		return
+	}
+	delete(a.staticRules, storageKey)
+
 	if cfg.AffinityAware.Ratio < 0 || cfg.AffinityAware.Ratio > 100 {
 		logger.Errorf("[Router][Affinity] invalid static affinity ratio: ratio=%d, expected=0-100", cfg.AffinityAware.Ratio)
 		return
@@ -193,20 +208,24 @@ func (a *affinityRoute) SetStaticConfig(cfg *global.RouterConfig) {
 		return
 	}
 
-	a.matcher, a.enabled, a.key, a.ratio = &f, true, key, cfg.AffinityAware.Ratio
+	if a.staticRules == nil {
+		a.staticRules = make(map[string]affinityRule)
+	}
+	a.staticRules[storageKey] = affinityRule{matcher: &f, key: key, ratio: cfg.AffinityAware.Ratio}
 }
 
 func (a *affinityRoute) Process(event *config_center.ConfigChangeEvent) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	a.matcher, a.enabled, a.key, a.ratio = nil, false, "", 0
+	a.staticRules = nil
 
 	switch event.ConfigType {
 	case remoting.EventTypeDel:
 	case remoting.EventTypeAdd, remoting.EventTypeUpdate:
 		cfg, err := parseConfig(event.Value.(string))
 		if err != nil {
-			logger.Errorf("[Router][Affinity] parse affinity config failed: key=%s, err=%v", a.key, err)
+			logger.Errorf("[Router][Affinity] parse affinity config failed: key=%s, err=%v", event.Key, err)
 			return
 		}
 
@@ -222,7 +241,7 @@ func (a *affinityRoute) Process(event *config_center.ConfigChangeEvent) {
 		rule := strings.Join([]string{key, key}, "=$")
 		f, err := condition.NewFieldMatcher(rule)
 		if err != nil {
-			logger.Errorf("[Router][Affinity] parse affinity rule failed: key=%s, rule=%s, err=%v", a.key, rule, err)
+			logger.Errorf("[Router][Affinity] parse affinity rule failed: key=%s, rule=%s, err=%v", key, rule, err)
 			return
 		}
 
@@ -237,12 +256,38 @@ func (a *affinityRoute) Route(invokers []base.Invoker, url *common.URL, invocati
 
 	a.mu.RLock()
 	enabled, matcher, ratio := a.enabled, a.matcher, a.ratio
+	staticRules := make(map[string]affinityRule, len(a.staticRules))
+	for key, rule := range a.staticRules {
+		staticRules[key] = rule
+	}
 	a.mu.RUnlock()
 
-	if !enabled {
+	if enabled {
+		return routeByAffinityRule(invokers, url, invocation, matcher, ratio)
+	}
+
+	if len(staticRules) == 0 {
 		return invokers
 	}
 
+	keys := make([]string, 0, len(staticRules))
+	for key := range staticRules {
+		keys = append(keys, key)
+	}
+	slices.Sort(keys)
+
+	res := invokers
+	for _, key := range keys {
+		rule := staticRules[key]
+		res = routeByAffinityRule(res, url, invocation, rule.matcher, rule.ratio)
+	}
+	return res
+}
+
+func routeByAffinityRule(invokers []base.Invoker, url *common.URL, invocation base.Invocation, matcher *condition.FieldMatcher, ratio int32) []base.Invoker {
+	if matcher == nil {
+		return invokers
+	}
 	res := make([]base.Invoker, 0, len(invokers))
 	for _, invoker := range invokers {
 		if matcher.MatchInvoker(url, invoker, invocation) {

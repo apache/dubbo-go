@@ -259,6 +259,38 @@ func TestAffinityRouteSetStaticConfig(t *testing.T) {
 	assert.Equal(t, want, got)
 }
 
+func TestAffinityRouteSetStaticConfigKeepsRulesByConfigKey(t *testing.T) {
+	invokers := buildInvokers()
+	consumerURL := newUrl("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing")
+	inv := invocation.NewRPCInvocation("getComment", nil, nil)
+
+	a := &affinityRoute{}
+	a.SetStaticConfig(&global.RouterConfig{
+		Scope: constant.RouterScopeService,
+		Key:   "service.apache.com.region",
+		AffinityAware: global.AffinityAware{
+			Key:   "region",
+			Ratio: 20,
+		},
+	})
+	a.SetStaticConfig(&global.RouterConfig{
+		Scope: constant.RouterScopeService,
+		Key:   "service.apache.com.env",
+		AffinityAware: global.AffinityAware{
+			Key:   "env",
+			Ratio: 20,
+		},
+	})
+
+	got := a.Route(invokers, consumerURL, inv)
+	want := NewINVOKERS_FILTERS().
+		add("region=$region").
+		add("env=$env").
+		filtrate(invokers, consumerURL, inv)
+	assert.Equal(t, want, got)
+	assert.Len(t, a.staticRules, 2)
+}
+
 func TestAffinityRouteSetStaticConfigIgnoresInvalidConfig(t *testing.T) {
 	invokers := buildInvokers()
 	consumerURL := newUrl("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing")
@@ -276,6 +308,7 @@ func TestAffinityRouteSetStaticConfigIgnoresInvalidConfig(t *testing.T) {
 			name: "disabled",
 			cfg: &global.RouterConfig{
 				Enabled: &enabled,
+				Key:     "service.apache.com",
 				AffinityAware: global.AffinityAware{
 					Key:   "region",
 					Ratio: 20,
@@ -285,12 +318,14 @@ func TestAffinityRouteSetStaticConfigIgnoresInvalidConfig(t *testing.T) {
 		{
 			name: "empty affinity key",
 			cfg: &global.RouterConfig{
+				Key:           "service.apache.com",
 				AffinityAware: global.AffinityAware{Ratio: 20},
 			},
 		},
 		{
 			name: "bad ratio",
 			cfg: &global.RouterConfig{
+				Key: "service.apache.com",
 				AffinityAware: global.AffinityAware{
 					Key:   "region",
 					Ratio: 101,
@@ -300,6 +335,7 @@ func TestAffinityRouteSetStaticConfigIgnoresInvalidConfig(t *testing.T) {
 		{
 			name: "invalid matcher key",
 			cfg: &global.RouterConfig{
+				Key: "service.apache.com",
 				AffinityAware: global.AffinityAware{
 					Key:   "=",
 					Ratio: 20,
@@ -320,6 +356,7 @@ func TestAffinityRouteSetStaticConfigIgnoresInvalidConfig(t *testing.T) {
 func TestAffinityRouteSetStaticConfigScope(t *testing.T) {
 	cfg := &global.RouterConfig{
 		Scope: constant.RouterScopeService,
+		Key:   "service.apache.com",
 		AffinityAware: global.AffinityAware{
 			Key:   "region",
 			Ratio: 20,
@@ -332,18 +369,18 @@ func TestAffinityRouteSetStaticConfigScope(t *testing.T) {
 	appScopedCfg := *cfg
 	appScopedCfg.Scope = constant.RouterScopeApplication
 	serviceRouter.SetStaticConfig(&appScopedCfg)
-	assert.False(t, serviceRouter.enabled)
+	assert.Empty(t, serviceRouter.staticRules)
 
 	serviceRouter.SetStaticConfig(cfg)
-	assert.True(t, serviceRouter.enabled)
+	assert.Len(t, serviceRouter.staticRules, 1)
 
 	appRouter := &ApplicationAffinityRoute{}
 	appRouter.SetStaticConfig(cfg)
-	assert.False(t, appRouter.enabled)
+	assert.Empty(t, appRouter.staticRules)
 
 	cfg.Scope = constant.RouterScopeApplication
 	appRouter.SetStaticConfig(cfg)
-	assert.True(t, appRouter.enabled)
+	assert.Len(t, appRouter.staticRules, 1)
 }
 
 func Test_newApplicationAffinityRouter(t *testing.T) {
