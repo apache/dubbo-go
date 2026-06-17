@@ -92,7 +92,7 @@ func TestExchangeClientClose(t *testing.T) {
 	m := &mockClient{available: true}
 	ec := NewExchangeClient(testURL(), m, 5*time.Second, true)
 	ec.Close()
-	assert.False(t, ec.init)
+	assert.False(t, ec.init.Load())
 }
 
 func TestExchangeClientIsAvailable(t *testing.T) {
@@ -103,4 +103,48 @@ func TestExchangeClientIsAvailable(t *testing.T) {
 	m.available = false
 	m.mu.Unlock()
 	assert.False(t, ec.IsAvailable())
+}
+
+func TestExchangeClientConcurrentDoInit(t *testing.T) {
+	// Verify that concurrent calls to doInit only result in a single Connect call.
+	m := &mockClient{available: true}
+	ec := NewExchangeClient(testURL(), m, 5*time.Second, true)
+
+	var wg sync.WaitGroup
+	const goroutines = 20
+	wg.Add(goroutines)
+	for i := 0; i < goroutines; i++ {
+		go func() {
+			defer wg.Done()
+			// All goroutines trigger lazy init concurrently via Request-like paths
+			if err := ec.doInit(testURL()); err != nil {
+				t.Errorf("doInit failed: %v", err)
+			}
+		}()
+	}
+	wg.Wait()
+
+	m.mu.Lock()
+	count := m.connCount
+	m.mu.Unlock()
+	assert.Equal(t, 1, count, "Connect should be called exactly once despite concurrent doInit")
+	assert.True(t, ec.init.Load(), "init flag should be true after doInit")
+}
+
+func TestExchangeClientDoInitFailureResets(t *testing.T) {
+	// Verify that a failed doInit resets the init flag so future calls can retry.
+	m := &mockClient{connectErr: errors.New("fail")}
+	ec := NewExchangeClient(testURL(), m, 5*time.Second, true)
+
+	err := ec.doInit(testURL())
+	assert.Error(t, err)
+	assert.False(t, ec.init.Load(), "init flag should be reset after failed doInit")
+
+	// Now make Connect succeed and retry
+	m.mu.Lock()
+	m.connectErr = nil
+	m.mu.Unlock()
+	err = ec.doInit(testURL())
+	assert.NoError(t, err)
+	assert.True(t, ec.init.Load(), "init flag should be true after successful retry")
 }

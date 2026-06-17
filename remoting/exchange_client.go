@@ -61,7 +61,7 @@ type ExchangeClient struct {
 	ConnectTimeout time.Duration  // timeout for connecting server
 	address        string         // server address for dialing. The format: ip:port
 	client         Client         // dealing with the transport
-	init           bool           // the tag for init.
+	init           uatomic.Bool  // the tag for init, protected by atomic operations
 	activeNum      uatomic.Uint32 // the number of service using the exchangeClient
 }
 
@@ -82,19 +82,28 @@ func NewExchangeClient(url *common.URL, client Client, connectTimeout time.Durat
 }
 
 func (cl *ExchangeClient) doInit(url *common.URL) error {
-	if cl.init {
+	if cl.init.Load() {
 		return nil
 	}
+	// Use CompareAndSwap to ensure only one goroutine performs initialization.
+	// If CAS fails, another goroutine already initialized; spin-wait until init completes.
+	if !cl.init.CAS(false, true) {
+		// Another goroutine is initializing; wait for it to complete.
+		for !cl.init.Load() {
+			time.Sleep(10 * time.Millisecond)
+		}
+		return nil
+	}
+	// This goroutine won the CAS — perform the actual initialization.
 	if cl.client.Connect(url) != nil {
 		// retry for a while
 		time.Sleep(100 * time.Millisecond)
 		if cl.client.Connect(url) != nil {
 			logger.Errorf("[Remoting] failed to connect server, url=%v", url.Location)
+			cl.init.Store(false) // reset on failure so future calls can retry
 			return errors.New("Failed to connect server " + url.Location)
 		}
 	}
-	// FIXME atomic operation
-	cl.init = true
 	return nil
 }
 
@@ -195,7 +204,7 @@ func (client *ExchangeClient) Send(invocation *base.Invocation, url *common.URL,
 // Close close the client.
 func (client *ExchangeClient) Close() {
 	client.client.Close()
-	client.init = false
+	client.init.Store(false)
 }
 
 // IsAvailable to check if the underlying network client is available yet.
