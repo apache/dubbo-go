@@ -19,6 +19,7 @@ package remoting
 
 import (
 	"bytes"
+	"sync"
 )
 
 // Codec is the interface that wrap EncodeRequest、 EncodeResponse and Decode method
@@ -34,12 +35,19 @@ type DecodeResult struct {
 	Result    any
 }
 
-var codec = make(map[string]Codec, 2)
+var (
+	codecMu sync.RWMutex
+	codec   = make(map[string]Codec, 2)
+)
 
 func RegistryCodec(protocol string, codecTmp Codec) {
+	codecMu.Lock()
+	defer codecMu.Unlock()
 	codec[protocol] = codecTmp
 }
 
 func GetCodec(protocol string) Codec {
+	codecMu.RLock()
+	defer codecMu.RUnlock()
 	return codec[protocol]
 }

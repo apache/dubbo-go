@@ -19,6 +19,7 @@ package remoting
 
 import (
 	"bytes"
+	"sync"
 	"testing"
 )
 
@@ -100,4 +101,29 @@ func TestCodecInterface(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, 9, length)
+}
+
+func TestConcurrentCodecAccess(t *testing.T) {
+	const goroutines = 100
+	var wg sync.WaitGroup
+	wg.Add(goroutines * 2)
+
+	// Concurrent writers
+	for i := 0; i < goroutines; i++ {
+		go func(i int) {
+			defer wg.Done()
+			RegistryCodec("concurrent-"+string(rune('a'+i%26)), &mockCodec{})
+		}(i)
+	}
+
+	// Concurrent readers
+	for i := 0; i < goroutines; i++ {
+		go func(i int) {
+			defer wg.Done()
+			GetCodec("concurrent-" + string(rune('a'+i%26)))
+		}(i)
+	}
+
+	wg.Wait()
+	// If we reach here without a panic, the concurrent access is safe.
 }
