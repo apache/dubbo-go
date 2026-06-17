@@ -200,7 +200,9 @@ func (s *serviceDiscoveryRegistry) UnSubscribe(url *common.URL, listener registr
 	}
 	// FIXME ServiceNames.String() is not good
 	serviceNamesKey := services.String()
+	s.lock.RLock()
 	l := s.serviceListeners[serviceNamesKey]
+	s.lock.RUnlock()
 	if l != nil {
 		l.RemoveListener(url.ServiceKey())
 	}
@@ -362,6 +364,7 @@ func (s *serviceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry
 		protocol = url.Protocol
 	}
 	protocolServiceKey := url.ServiceKey() + ":" + protocol
+	s.lock.Lock()
 	listener := s.serviceListeners[serviceNamesKey]
 	if listener == nil {
 		listener = NewServiceInstancesChangedListener(url.GetParam(constant.ApplicationKey, ""), s.url.GetParam(constant.RegistryIdKey, constant.DefaultKey), services)
@@ -379,6 +382,7 @@ func (s *serviceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry
 		}
 	}
 	s.serviceListeners[serviceNamesKey] = listener
+	s.lock.Unlock()
 	listener.AddListenerAndNotify(protocolServiceKey, notify)
 	event := metricsMetadata.NewMetadataMetricTimeEvent(metricsMetadata.SubscribeServiceRt)
 
