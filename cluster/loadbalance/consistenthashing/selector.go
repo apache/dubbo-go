@@ -83,7 +83,7 @@ func (c *selector) Select(invocation base.Invocation) base.Invoker {
 
 func (c *selector) toKey(args []any) string {
 	var sb strings.Builder
-	for i := range c.argumentIndex {
+	for _, i := range c.argumentIndex {
 		if i >= 0 && i < len(args) {
 			_, _ = fmt.Fprint(&sb, args[i])
 		}
