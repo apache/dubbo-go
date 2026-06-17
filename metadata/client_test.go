@@ -186,14 +186,43 @@ func TestGetMetadataFromRpc(t *testing.T) {
 	})
 }
 
+func TestGetMetadataFromRpc_MissingURLParams(t *testing.T) {
+	t.Run("missing protocol", func(t *testing.T) {
+		insNoProto := &registry.DefaultServiceInstance{
+			ID:          "2",
+			ServiceName: "dubbo-app",
+			Host:        "dubbo.io",
+			Metadata:    map[string]string{},
+		}
+		_, err := GetMetadataFromRpc("1", insNoProto)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "protocol is empty")
+	})
+
+	t.Run("missing port", func(t *testing.T) {
+		insNoPort := &registry.DefaultServiceInstance{
+			ID:          "3",
+			ServiceName: "dubbo-app",
+			Host:        "dubbo.io",
+			Metadata: map[string]string{
+				constant.MetadataServiceURLParamsPropertyName: `{"protocol":"dubbo"}`,
+			},
+		}
+		_, err := GetMetadataFromRpc("1", insNoPort)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "port is empty")
+	})
+}
+
 func Test_buildMetadataServiceURL(t *testing.T) {
 	type args struct {
 		ins registry.ServiceInstance
 	}
 	tests := []struct {
-		name string
-		args args
-		want *common.URL
+		name    string
+		args    args
+		want    *common.URL
+		wantErr string
 	}{
 		{
 			name: "normal",
@@ -239,12 +268,34 @@ func Test_buildMetadataServiceURL(t *testing.T) {
 					Metadata:    map[string]string{},
 				},
 			},
-			want: nil,
+			wantErr: "protocol is empty",
+		},
+		{
+			name: "no port",
+			args: args{
+				&registry.DefaultServiceInstance{
+					ServiceName: "dubbo-app",
+					Host:        "dubbo.io",
+					Metadata: map[string]string{
+						constant.MetadataServiceURLParamsPropertyName: `{
+							"protocol":"dubbo"
+						}`,
+					},
+				},
+			},
+			wantErr: "port is empty",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, buildStandardMetadataServiceURL(tt.args.ins), "buildMetadataServiceURL(%v)", tt.args.ins)
+			got, err := buildStandardMetadataServiceURL(tt.args.ins)
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equalf(t, tt.want, got, "buildMetadataServiceURL(%v)", tt.args.ins)
 		})
 	}
 }
