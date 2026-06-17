@@ -85,7 +85,12 @@ func (c *selector) toKey(args []any) string {
 	var sb strings.Builder
 	for _, i := range c.argumentIndex {
 		if i >= 0 && i < len(args) {
-			_, _ = fmt.Fprint(&sb, args[i])
+			switch v := args[i].(type) {
+			case string:
+				sb.WriteString(v)
+			default:
+				_, _ = fmt.Fprint(&sb, v)
+			}
 		}
 	}
 	return sb.String()
