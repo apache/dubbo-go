@@ -155,8 +155,8 @@ func newMockDirectory(invokers []protocolbase.Invoker) *mockDirectory {
 	return &mockDirectory{invokers: invokers, url: url}
 }
 
-func (d *mockDirectory) GetURL() *common.URL     { return d.url }
-func (d *mockDirectory) IsAvailable() bool       { return true }
-func (d *mockDirectory) Destroy()                {}
+func (d *mockDirectory) GetURL() *common.URL                                 { return d.url }
+func (d *mockDirectory) IsAvailable() bool                                   { return true }
+func (d *mockDirectory) Destroy()                                            {}
 func (d *mockDirectory) List(protocolbase.Invocation) []protocolbase.Invoker { return d.invokers }
-func (d *mockDirectory) Subscribe(*common.URL) error { return nil }
+func (d *mockDirectory) Subscribe(*common.URL) error                         { return nil }
