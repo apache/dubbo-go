@@ -26,6 +26,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -142,7 +143,7 @@ func TestExchangeClientDoInitFailureResets(t *testing.T) {
 	ec := NewExchangeClient(testURL(), m, 5*time.Second, true)
 
 	err := ec.doInit(testURL())
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, int32(0), ec.initState.Load(), "initState should be 0 (uninitialized) after failed doInit")
 
 	// Now make Connect succeed and retry
@@ -150,7 +151,7 @@ func TestExchangeClientDoInitFailureResets(t *testing.T) {
 	m.connectErr = nil
 	m.mu.Unlock()
 	err = ec.doInit(testURL())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, int32(2), ec.initState.Load(), "initState should be 2 (initialized) after successful retry")
 }
 
