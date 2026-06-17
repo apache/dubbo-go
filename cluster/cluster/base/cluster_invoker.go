@@ -20,7 +20,9 @@ package base
 
 import (
 	stdatomic "sync/atomic"
+)
 
+import (
 	"github.com/dubbogo/gost/log/logger"
 
 	perrors "github.com/pkg/errors"
@@ -37,11 +39,18 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
+// stickyInvokerWrapper wraps a base.Invoker so that atomic.Value always
+// stores the same concrete type (avoiding panic on inconsistent types)
+// and can represent a nil invoker (avoiding panic on Store(nil)).
+type stickyInvokerWrapper struct {
+	invoker base.Invoker
+}
+
 type BaseClusterInvoker struct {
 	Directory      directory.Directory
 	AvailableCheck bool
 	Destroyed      *atomic.Bool
-	stickyInvoker  stdatomic.Value // stores base.Invoker
+	stickyInvoker  stdatomic.Value // stores stickyInvokerWrapper
 }
 
 func NewBaseClusterInvoker(directory directory.Directory) BaseClusterInvoker {
@@ -58,12 +67,12 @@ func (invoker *BaseClusterInvoker) getStickyInvoker() base.Invoker {
 	if v == nil {
 		return nil
 	}
-	return v.(base.Invoker)
+	return v.(stickyInvokerWrapper).invoker
 }
 
 // setStickyInvoker sets the sticky invoker in a race-free manner.
 func (invoker *BaseClusterInvoker) setStickyInvoker(invokerVal base.Invoker) {
-	invoker.stickyInvoker.Store(invokerVal)
+	invoker.stickyInvoker.Store(stickyInvokerWrapper{invoker: invokerVal})
 }
 
 func (invoker *BaseClusterInvoker) GetURL() *common.URL {

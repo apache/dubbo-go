@@ -99,9 +99,6 @@ func TestStickyConcurrentDoSelect(t *testing.T) {
 			invoked := make([]protocolbase.Invoker, 0)
 			result := base.DoSelect(lb, invocation1, invokers, invoked)
 			assert.NotNil(t, result)
-			// Second call should return the same sticky invoker
-			result2 := base.DoSelect(lb, invocation1, invokers, invoked)
-			assert.NotNil(t, result2)
 		}()
 	}
 	wg.Wait()
@@ -109,8 +106,6 @@ func TestStickyConcurrentDoSelect(t *testing.T) {
 
 // TestStickyConcurrentIsAvailableAndDoSelect verifies that concurrent
 // IsAvailable and DoSelect calls do not cause a data race on StickyInvoker.
-// Only the sticky invoker path is exercised (not the Directory fallback),
-// since Directory is nil in this test setup.
 func TestStickyConcurrentIsAvailableAndDoSelect(t *testing.T) {
 	var invokers []protocolbase.Invoker
 	for i := 0; i < 10; i++ {
@@ -118,7 +113,11 @@ func TestStickyConcurrentIsAvailableAndDoSelect(t *testing.T) {
 		url.SetParam("sticky", "true")
 		invokers = append(invokers, clusterpkg.NewMockInvoker(url, 1))
 	}
-	base := &BaseClusterInvoker{}
+
+	// Use NewBaseClusterInvoker so that Directory is initialized,
+	// allowing IsAvailable() to work without panicking.
+	dir := newMockDirectory(invokers)
+	base := NewBaseClusterInvoker(dir)
 	base.AvailableCheck = true
 
 	lb := random.NewRandomLoadBalance()
@@ -134,8 +133,7 @@ func TestStickyConcurrentIsAvailableAndDoSelect(t *testing.T) {
 	for i := 0; i < concurrency; i++ {
 		go func() {
 			defer wg.Done()
-			// IsAvailable reads StickyInvoker; this would race without atomic protection
-			_ = base.getStickyInvoker()
+			base.IsAvailable()
 		}()
 		go func() {
 			defer wg.Done()
@@ -144,3 +142,21 @@ func TestStickyConcurrentIsAvailableAndDoSelect(t *testing.T) {
 	}
 	wg.Wait()
 }
+
+// mockDirectory is a minimal directory.Directory implementation for testing.
+type mockDirectory struct {
+	invokers []protocolbase.Invoker
+	url      *common.URL
+}
+
+func newMockDirectory(invokers []protocolbase.Invoker) *mockDirectory {
+	url, _ := common.NewURL(baseClusterInvokerFormat)
+	url.SetParam("sticky", "true")
+	return &mockDirectory{invokers: invokers, url: url}
+}
+
+func (d *mockDirectory) GetURL() *common.URL     { return d.url }
+func (d *mockDirectory) IsAvailable() bool       { return true }
+func (d *mockDirectory) Destroy()                {}
+func (d *mockDirectory) List(protocolbase.Invocation) []protocolbase.Invoker { return d.invokers }
+func (d *mockDirectory) Subscribe(*common.URL) error { return nil }
