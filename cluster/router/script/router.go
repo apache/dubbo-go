@@ -70,9 +70,22 @@ func (s *ScriptRouter) Process(event *config_center.ConfigChangeEvent) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	if event.ConfigType == remoting.EventTypeDel {
+		in, _ := ins.GetInstances(s.scriptType)
+
+		if in != nil && s.enabled {
+			in.Destroy(s.rawScript)
+		}
+		s.enabled = false
+		s.rawScript = ""
+		s.scriptType = ""
+		return
+	}
+
 	rawConf, ok := event.Value.(string)
 	if !ok {
-		panic(ok)
+		logger.Errorf("[Router][Script] route config value must be string, actualType=%T", event.Value)
+		return
 	}
 	cfg, err := parseRoute(rawConf)
 	if err != nil {
@@ -128,15 +141,6 @@ func (s *ScriptRouter) Process(event *config_center.ConfigChangeEvent) {
 			}
 		}
 
-	case remoting.EventTypeDel:
-		in, _ := ins.GetInstances(s.scriptType)
-
-		if in != nil && s.enabled {
-			in.Destroy(s.rawScript)
-		}
-		s.enabled = false
-		s.rawScript = ""
-		s.scriptType = ""
 	}
 }
 

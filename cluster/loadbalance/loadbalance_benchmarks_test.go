@@ -20,6 +20,7 @@ package loadbalance_test
 import (
 	"fmt"
 	"testing"
+	"time"
 )
 
 import (
@@ -42,6 +43,19 @@ func Generate() []base.Invoker {
 	var invokers []base.Invoker
 	for i := 1; i < 256; i++ {
 		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/org.apache.demo.HelloService", i))
+		invokers = append(invokers, base.NewBaseInvoker(url))
+	}
+	return invokers
+}
+
+func generateInvokers(count int, weighted bool) []base.Invoker {
+	invokers := make([]base.Invoker, 0, count)
+	for i := 1; i <= count; i++ {
+		rawURL := fmt.Sprintf("dubbo://192.168.1.%v:20000/org.apache.demo.HelloService", i)
+		if weighted {
+			rawURL = fmt.Sprintf("%s?weight=%d", rawURL, i)
+		}
+		url, _ := common.NewURL(rawURL)
 		invokers = append(invokers, base.NewBaseInvoker(url))
 	}
 	return invokers
@@ -83,4 +97,60 @@ func BenchmarkRandomLoadbalance(b *testing.B) {
 
 func BenchmarkAliasMethodLoadbalance(b *testing.B) {
 	Benchloadbalance(b, extension.GetLoadbalance(constant.LoadBalanceKeyAliasMethod))
+}
+
+func BenchmarkGetWeight(b *testing.B) {
+	invokers := Generate()
+	inv := &invocation.RPCInvocation{}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		loadbalance.GetWeight(invokers[i%len(invokers)], inv)
+	}
+}
+
+func BenchmarkGetWeightAt(b *testing.B) {
+	invokers := Generate()
+	inv := &invocation.RPCInvocation{}
+	now := time.Now().Unix()
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		loadbalance.GetWeightAt(invokers[i%len(invokers)], inv, now)
+	}
+}
+
+func benchmarkLoadBalanceSmallMedium(b *testing.B, lb loadbalance.LoadBalance) {
+	b.Helper()
+	for _, count := range []int{2, 4, 8, 16, 32, 33} {
+		for _, weighted := range []bool{false, true} {
+			name := fmt.Sprintf("invokers=%d", count)
+			if weighted {
+				name += "/weighted"
+			} else {
+				name += "/uniform"
+			}
+			b.Run(name, func(b *testing.B) {
+				invokers := generateInvokers(count, weighted)
+				rpcInvocation := &invocation.RPCInvocation{}
+				b.ReportAllocs()
+				b.ResetTimer()
+				for i := 0; i < b.N; i++ {
+					lb.Select(invokers, rpcInvocation)
+				}
+			})
+		}
+	}
+}
+
+func BenchmarkRandomLoadbalanceSmallMedium(b *testing.B) {
+	benchmarkLoadBalanceSmallMedium(b, extension.GetLoadbalance(constant.LoadBalanceKeyRandom))
+}
+
+func BenchmarkLeastactiveLoadbalanceSmallMedium(b *testing.B) {
+	benchmarkLoadBalanceSmallMedium(b, extension.GetLoadbalance(constant.LoadBalanceKeyLeastActive))
+}
+
+func BenchmarkAliasMethodLoadbalanceSmallMedium(b *testing.B) {
+	benchmarkLoadBalanceSmallMedium(b, extension.GetLoadbalance(constant.LoadBalanceKeyAliasMethod))
 }
