@@ -36,28 +36,75 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
-func callback(listenersMap *sync.Map, _, group, dataId, data string) {
-	listenersMap.Range(func(key, value any) bool {
-		key.(config_center.ConfigurationListener).Process(&config_center.ConfigChangeEvent{Key: dataId, Value: data, ConfigType: remoting.EventTypeUpdate})
+// keyListenerSet holds the listeners for a single config key.
+// The mutex protects the listeners map so that add/remove/check-empty
+// operations are atomic, preventing races between concurrent addListener
+// and removeListener calls for the same key.
+type keyListenerSet struct {
+	mu        sync.Mutex
+	listeners map[config_center.ConfigurationListener]struct{}
+	group     string // resolved group used to register with nacos, stored for consistent cancel
+}
+
+func newKeyListenerSet(group string) *keyListenerSet {
+	return &keyListenerSet{
+		listeners: make(map[config_center.ConfigurationListener]struct{}),
+		group:     group,
+	}
+}
+
+func (s *keyListenerSet) add(listener config_center.ConfigurationListener) {
+	s.mu.Lock()
+	s.listeners[listener] = struct{}{}
+	s.mu.Unlock()
+}
+
+// remove removes a listener and reports whether the set is now empty.
+// The caller must NOT rely on a non-empty result to skip CancelListenConfig,
+// because a concurrent add could re-populate the set after this call returns.
+func (s *keyListenerSet) remove(listener config_center.ConfigurationListener) bool {
+	s.mu.Lock()
+	delete(s.listeners, listener)
+	empty := len(s.listeners) == 0
+	s.mu.Unlock()
+	return empty
+}
+
+// snapshot returns a snapshot of the current listeners for safe iteration.
+func (s *keyListenerSet) snapshot() []config_center.ConfigurationListener {
+	s.mu.Lock()
+	snapshot := make([]config_center.ConfigurationListener, 0, len(s.listeners))
+	for l := range s.listeners {
+		snapshot = append(snapshot, l)
+	}
+	s.mu.Unlock()
+	return snapshot
+}
+
+func callback(set *keyListenerSet, _, group, dataId, data string) {
+	for _, l := range set.snapshot() {
+		l.Process(&config_center.ConfigChangeEvent{Key: dataId, Value: data, ConfigType: remoting.EventTypeUpdate})
 		metrics.Publish(metricsConfigCenter.NewIncMetricEvent(dataId, group, remoting.EventTypeUpdate, metricsConfigCenter.Nacos))
-		return true
-	})
+	}
 }
 
 func (n *nacosDynamicConfiguration) addListener(key string, listener config_center.ConfigurationListener) {
-	rawListenersMap, loaded := n.keyListeners.Load(key)
+	group := n.resolvedGroup(n.url.GetParam(constant.NacosGroupKey, constant2.DEFAULT_GROUP))
+
+	rawSet, loaded := n.keyListeners.Load(key)
 	if !loaded {
-		listenersMap := &sync.Map{}
-		listenersMap.Store(listener, struct{}{})
+		set := newKeyListenerSet(group)
+		set.add(listener)
 
 		// double load for invalid race
-		rawListenersMap, loaded = n.keyListeners.LoadOrStore(key, listenersMap)
+		var actual any
+		actual, loaded = n.keyListeners.LoadOrStore(key, set)
 		if !loaded {
 			err := n.client.Client().ListenConfig(vo.ConfigParam{
 				DataId: key,
-				Group:  n.resolvedGroup(n.url.GetParam(constant.NacosGroupKey, constant2.DEFAULT_GROUP)),
+				Group:  group,
 				OnChange: func(namespace, group, dataId, data string) {
-					go callback(listenersMap, namespace, group, dataId, data)
+					go callback(set, namespace, group, dataId, data)
 				},
 			})
 			if err != nil {
@@ -67,32 +114,28 @@ func (n *nacosDynamicConfiguration) addListener(key string, listener config_cent
 			}
 			return
 		}
+		rawSet = actual
 	}
-	listenersMap := rawListenersMap.(*sync.Map)
-	listenersMap.Store(listener, struct{}{})
+	rawSet.(*keyListenerSet).add(listener)
 }
 
 func (n *nacosDynamicConfiguration) removeListener(key string, listener config_center.ConfigurationListener) {
-	rawListenersMap, loaded := n.keyListeners.Load(key)
+	rawSet, loaded := n.keyListeners.Load(key)
 	if !loaded {
 		logger.Errorf("[ConfigCenter][Nacos] key is not be listened, key=%s", key)
 		return
 	}
-	listenersMap := rawListenersMap.(*sync.Map)
-	listenersMap.Delete(listener)
+	set := rawSet.(*keyListenerSet)
+	isEmpty := set.remove(listener)
 
-	// If no listeners remain for this key, cancel the nacos config subscription
-	isEmpty := true
-	listenersMap.Range(func(_, _ any) bool {
-		isEmpty = false
-		return false
-	})
 	if isEmpty {
+		// Delete from keyListeners first to prevent new addListener from
+		// finding a stale set after we cancel the nacos subscription.
 		n.keyListeners.Delete(key)
 		if n.client != nil {
 			err := n.client.Client().CancelListenConfig(vo.ConfigParam{
 				DataId: key,
-				Group:  n.resolvedGroup(n.url.GetParam(constant.NacosGroupKey, constant2.DEFAULT_GROUP)),
+				Group:  set.group,
 			})
 			if err != nil {
 				logger.Errorf("[ConfigCenter][Nacos] cancel listen config fail, key=%s, err=%v", key, err)
