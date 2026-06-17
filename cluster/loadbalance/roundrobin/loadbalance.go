@@ -74,12 +74,13 @@ func (lb *rrLoadBalance) Select(invokers []base.Invoker, invocation base.Invocat
 		totalWeight         = int64(0)
 		maxCurrentWeight    = int64(math.MinInt64)
 		now                 = time.Now()
+		nowUnix             = now.Unix()
 		selectedInvoker     base.Invoker
 		selectedWeightRobin *weightedRoundRobin
 	)
 
 	for _, invoker := range invokers {
-		weight := max(loadbalance.GetWeight(invoker, invocation), 0)
+		weight := max(loadbalance.GetWeightAt(invoker, invocation, nowUnix), 0)
 
 		identifier := invoker.GetURL().Key()
 		wr := &weightedRoundRobin{weight: weight}

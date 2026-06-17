@@ -124,6 +124,16 @@ func TestGRPCHandlerSender(t *testing.T) {
 	})
 }
 
+func TestIsReservedHeaderCanonicalizesInput(t *testing.T) {
+	t.Parallel()
+
+	for _, header := range []string{"Content-Type", "Grpc-Status", "TE"} {
+		if !IsReservedHeader(header) {
+			t.Fatalf("expected %q to be reserved", header)
+		}
+	}
+}
+
 func testGRPCHandlerConnMetadata(t *testing.T, conn handlerConnCloser) {
 	// Closing the sender shouldn't unpredictably mutate user-visible headers or
 	// trailers.

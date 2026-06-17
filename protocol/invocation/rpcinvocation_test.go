@@ -371,13 +371,9 @@ func TestRPCInvocation_GetAttachmentAsContext(t *testing.T) {
 	header := triple_protocol.ExtractFromOutgoingContext(ctx)
 	assert.NotNil(t, header)
 
-	// Verify that string attachments are in the header
-	// NewOutgoingContext stores keys as lowercase, so check both ways
-	assert.Contains(t, header, "key1")
-	assert.Equal(t, []string{"value1"}, header["key1"]) //nolint:staticcheck
-
-	assert.Contains(t, header, "key2")
-	assert.Equal(t, []string{"value2", "value3"}, header["key2"]) //nolint:staticcheck
+	// Verify that string attachments are in the header.
+	assert.Equal(t, []string{"value1"}, header.Values("key1"))
+	assert.Equal(t, []string{"value2", "value3"}, header.Values("key2"))
 
 	// key3 (int) should not be in the header since it's not a string
 	assert.NotContains(t, header, "key3")

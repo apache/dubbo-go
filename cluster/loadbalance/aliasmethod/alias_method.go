@@ -20,12 +20,15 @@ package aliasmethod // weighted random with alias-method algorithm
 
 import (
 	"math/rand"
+	"time"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
+
+const smallInvokerThreshold = 32
 
 type aliasMethodPicker struct {
 	invokers []base.Invoker // Instance
@@ -46,18 +49,34 @@ func NewAliasMethodPicker(invokers []base.Invoker, invocation base.Invocation) *
 // Alias Method: https://en.wikipedia.org/wiki/Alias_method
 func (am *aliasMethodPicker) init(invocation base.Invocation) {
 	n := len(am.invokers)
-	weights := make([]int64, n)
 	am.alias = make([]int, n)
 	am.prob = make([]float64, n)
 
 	totalWeight := int64(0)
 
-	scaledProb := make([]float64, n)
-	small := make([]int, 0, n)
-	large := make([]int, 0, n)
+	var (
+		weightStack     [smallInvokerThreshold]int64
+		scaledProbStack [smallInvokerThreshold]float64
+		smallStack      [smallInvokerThreshold]int
+		largeStack      [smallInvokerThreshold]int
+	)
+	weights := weightStack[:]
+	scaledProb := scaledProbStack[:]
+	small := smallStack[:0]
+	large := largeStack[:0]
+	if n > smallInvokerThreshold {
+		weights = make([]int64, n)
+		scaledProb = make([]float64, n)
+		small = make([]int, 0, n)
+		large = make([]int, 0, n)
+	} else {
+		weights = weights[:n]
+		scaledProb = scaledProb[:n]
+	}
 
+	now := time.Now().Unix()
 	for i, invoker := range am.invokers {
-		weight := loadbalance.GetWeight(invoker, invocation)
+		weight := loadbalance.GetWeightAt(invoker, invocation, now)
 		weights[i] = weight
 		totalWeight += weight
 	}

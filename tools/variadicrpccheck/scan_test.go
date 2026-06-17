@@ -220,46 +220,6 @@ func register() {
 	assert.Equal(t, filepath.Join(dir, "service", "service.go"), findings[0].Position.Filename)
 }
 
-func TestScanFindsVariadicImplementationRegisteredViaSetProviderServiceWithInfo(t *testing.T) {
-	dir := t.TempDir()
-	writeTempFile(t, dir, goModFileName, goModuleContentWithDubboGoReplace("example.com/providerinfo", repoRoot(t)))
-	writeTempFile(t, filepath.Join(dir, "service"), serviceFileName, `package service
-
-import "context"
-
-type VariadicService struct{}
-
-func (s *VariadicService) MultiArgs(ctx context.Context, args ...string) error {
-	return nil
-}
-
-type Helper struct{}
-
-func (h *Helper) Merge(ctx context.Context, values ...string) error {
-	return nil
-}
-`)
-	writeTempFile(t, filepath.Join(dir, "provider"), "provider.go", `package provider
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/config"
-	"example.com/providerinfo/service"
-)
-
-func init() {
-	config.SetProviderServiceWithInfo(&service.VariadicService{}, nil)
-}
-`)
-
-	findings, err := Scan(dir, []string{"./..."})
-	require.NoError(t, err)
-	require.Len(t, findings, 1)
-	assert.Equal(t, "implementation", findings[0].Kind)
-	assert.Equal(t, "VariadicService", findings[0].TypeName)
-	assert.Equal(t, "MultiArgs", findings[0].MethodName)
-	assert.Equal(t, filepath.Join(dir, "service", "service.go"), findings[0].Position.Filename)
-}
-
 func TestScanFindsVariadicImplementationRegisteredViaRootSetProviderService(t *testing.T) {
 	dir := t.TempDir()
 	writeTempFile(t, dir, goModFileName, goModuleContentWithDubboGoReplace("example.com/rootprovider", repoRoot(t)))
@@ -310,12 +270,12 @@ func (s *VariadicService) MultiArgs(ctx context.Context, args ...string) error {
 	writeTempFile(t, filepath.Join(dir, "generated"), "generated.go", `package generated
 
 import (
+	dubbo "dubbo.apache.org/dubbo-go/v3"
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/config"
 )
 
 func SetProviderService(srv common.RPCService) {
-	config.SetProviderServiceWithInfo(srv, nil)
+	dubbo.SetProviderServiceWithInfo(srv, nil)
 }
 `)
 	writeTempFile(t, filepath.Join(dir, "provider"), "provider.go", `package provider
@@ -400,14 +360,14 @@ func (s *VariadicService) MultiArgs(ctx context.Context, args ...string) error {
 	writeTempFile(t, filepath.Join(dir, "provider"), "provider.go", `package provider
 
 import (
+	dubbo "dubbo.apache.org/dubbo-go/v3"
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"example.com/interfacevar/service"
 )
 
 func init() {
 	var svc common.RPCService = &service.VariadicService{}
-	config.SetProviderServiceWithInfo(svc, nil)
+	dubbo.SetProviderServiceWithInfo(svc, nil)
 }
 `)
 
@@ -442,14 +402,14 @@ func (s *SecondService) MultiArgs(ctx context.Context, args ...string) error {
 	writeTempFile(t, filepath.Join(dir, "provider"), "provider.go", `package provider
 
 import (
+	dubbo "dubbo.apache.org/dubbo-go/v3"
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"example.com/interfacevarreassign/service"
 )
 
 func init() {
 	var svc common.RPCService = &service.FirstService{}
-	config.SetProviderServiceWithInfo(svc, nil)
+	dubbo.SetProviderServiceWithInfo(svc, nil)
 	svc = &service.SecondService{}
 }
 `)
