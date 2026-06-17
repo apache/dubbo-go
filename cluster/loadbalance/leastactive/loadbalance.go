@@ -19,6 +19,7 @@ package leastactive
 
 import (
 	"math/rand"
+	"time"
 )
 
 import (
@@ -31,6 +32,9 @@ import (
 const (
 	// Key is used to set the load balance extension
 	Key = "leastactive"
+
+	minStackInvokerCount = 8
+	maxStackInvokerCount = 32
 )
 
 func init() {
@@ -57,21 +61,33 @@ func (lb *leastActiveLoadBalance) Select(invokers []base.Invoker, invocation bas
 	}
 
 	var (
-		leastActive  int32                  = -1 // The least active value of all invokers
-		totalWeight  int64                       // The number of invokers having the same least active value (LEAST_ACTIVE)
-		firstWeight  int64                       // Initial value, used for comparison
-		leastCount   int                         // The number of invokers having the same least active value (LEAST_ACTIVE)
-		leastIndexes = make([]int, count)        // The index of invokers having the same least active value (LEAST_ACTIVE)
-		sameWeight   = true                      // Every invoker has the same weight value?
-		weights      = make([]int64, count)      // The weight of every invokers
+		leastActive  int32   = -1 // The least active value of all invokers
+		totalWeight  int64        // Sum of weights of invokers having the same least active value (LEAST_ACTIVE)
+		firstWeight  int64        // Initial value, used for comparison
+		leastCount   int          // The number of invokers having the same least active value (LEAST_ACTIVE)
+		leastIndexes []int        // The index of invokers having the same least active value (LEAST_ACTIVE)
+		sameWeight   = true       // Every invoker has the same weight value?
+		weights      []int64      // The weight of every invokers
 	)
+	var (
+		leastIndexStack [maxStackInvokerCount]int
+		weightStack     [maxStackInvokerCount]int64
+	)
+	if count >= minStackInvokerCount && count <= maxStackInvokerCount {
+		leastIndexes = leastIndexStack[:count]
+		weights = weightStack[:count]
+	} else {
+		leastIndexes = make([]int, count)
+		weights = make([]int64, count)
+	}
 
+	now := time.Now().Unix()
 	for i := 0; i < count; i++ {
 		invoker := invokers[i]
 		// Active number
 		active := base.GetMethodStatus(invoker.GetURL(), invocation.MethodName()).GetActive()
 		// current weight (maybe in warmUp)
-		afterWarmup := loadbalance.GetWeight(invoker, invocation)
+		afterWarmup := loadbalance.GetWeightAt(invoker, invocation, now)
 		// save for later use
 		weights[i] = afterWarmup
 		// There are smaller active services

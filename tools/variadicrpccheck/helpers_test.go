@@ -363,12 +363,12 @@ func TestAstAndTypeHelpers(t *testing.T) {
 
 		_, ok = analyzer.wrapperParamIndexFromCall(ref.pkg, params, &ast.CallExpr{Fun: &ast.BasicLit{}})
 		assert.False(t, ok)
-		configPkg := types.NewPackage("dubbo.apache.org/dubbo-go/v3/config", "config")
-		helperSel := &ast.SelectorExpr{X: &ast.Ident{Name: "config"}, Sel: &ast.Ident{Name: "SetProviderService"}}
+		dubboPkg := types.NewPackage("dubbo.apache.org/dubbo-go/v3", "dubbo")
+		helperSel := &ast.SelectorExpr{X: &ast.Ident{Name: "dubbo"}, Sel: &ast.Ident{Name: "SetProviderService"}}
 		helperPkg := &packages.Package{
 			TypesInfo: &types.Info{
 				Uses: map[*ast.Ident]types.Object{
-					helperSel.Sel: types.NewFunc(token.NoPos, configPkg, "SetProviderService", testSignature(false, nil, nil)),
+					helperSel.Sel: types.NewFunc(token.NoPos, dubboPkg, "SetProviderService", testSignature(false, nil, nil)),
 				},
 			},
 		}
@@ -389,10 +389,6 @@ func TestAstAndTypeHelpers(t *testing.T) {
 		proxyType := types.NewNamed(types.NewTypeName(token.NoPos, serverPkg, "Proxy", nil), types.NewStruct(nil, nil), nil)
 		proxyType.AddMethod(types.NewFunc(token.NoPos, serverPkg, "Implement", testSignature(false, []types.Type{types.NewInterfaceType(nil, nil)}, nil)))
 
-		configPkg := types.NewPackage("dubbo.apache.org/dubbo-go/v3/config", "config")
-		serviceConfigType := types.NewNamed(types.NewTypeName(token.NoPos, configPkg, "ServiceConfig", nil), types.NewStruct(nil, nil), nil)
-		serviceConfigType.AddMethod(types.NewFunc(token.NoPos, configPkg, "Implement", testSignature(false, []types.Type{types.NewInterfaceType(nil, nil)}, nil)))
-
 		commonPkg := types.NewPackage("dubbo.apache.org/dubbo-go/v3/common", "common")
 		serviceMapType := types.NewNamed(types.NewTypeName(token.NoPos, commonPkg, "serviceMap", nil), types.NewStruct(nil, nil), nil)
 		serviceMapType.AddMethod(types.NewFunc(token.NoPos, commonPkg, "Register", testSignature(false, []types.Type{types.NewInterfaceType(nil, nil), types.NewInterfaceType(nil, nil), types.NewInterfaceType(nil, nil), types.NewInterfaceType(nil, nil), types.NewInterfaceType(nil, nil)}, []types.Type{types.Universe.Lookup("error").Type()})))
@@ -406,10 +402,6 @@ func TestAstAndTypeHelpers(t *testing.T) {
 		assert.Equal(t, 0, idx)
 
 		idx, ok = selectedMethodHandlerArgumentIndex(types.NewMethodSet(types.NewPointer(serviceOptionsType)).Lookup(serverPkg, "Implement"))
-		require.True(t, ok)
-		assert.Equal(t, 0, idx)
-
-		idx, ok = selectedMethodHandlerArgumentIndex(types.NewMethodSet(types.NewPointer(serviceConfigType)).Lookup(configPkg, "Implement"))
 		require.True(t, ok)
 		assert.Equal(t, 0, idx)
 
@@ -427,21 +419,12 @@ func TestAstAndTypeHelpers(t *testing.T) {
 		assert.False(t, ok)
 	})
 
-	// Package-level helpers cover config registration, root dubbo helpers, and generated Register* entry points.
-	t.Run("calledObjectHandlerArgumentIndex matches config helpers and generated handlers", func(t *testing.T) {
+	// Package-level helpers cover root dubbo helpers and generated Register* entry points.
+	t.Run("calledObjectHandlerArgumentIndex matches root helpers and generated handlers", func(t *testing.T) {
 		analyzer := newRegistrationAnalyzer(nil)
-		configPkg := types.NewPackage("dubbo.apache.org/dubbo-go/v3/config", "config")
 		dubboPkg := types.NewPackage("dubbo.apache.org/dubbo-go/v3", "dubbo")
 
-		idx, ok := analyzer.calledObjectHandlerArgumentIndex(types.NewFunc(token.NoPos, configPkg, "SetProviderService", testSignature(false, []types.Type{types.NewInterfaceType(nil, nil)}, nil)))
-		require.True(t, ok)
-		assert.Equal(t, 0, idx)
-
-		idx, ok = analyzer.calledObjectHandlerArgumentIndex(types.NewFunc(token.NoPos, configPkg, "SetProviderServiceWithInfo", testSignature(false, []types.Type{types.NewInterfaceType(nil, nil), types.NewInterfaceType(nil, nil)}, nil)))
-		require.True(t, ok)
-		assert.Equal(t, 0, idx)
-
-		idx, ok = analyzer.calledObjectHandlerArgumentIndex(types.NewFunc(token.NoPos, dubboPkg, "SetProviderService", testSignature(false, []types.Type{types.NewInterfaceType(nil, nil)}, nil)))
+		idx, ok := analyzer.calledObjectHandlerArgumentIndex(types.NewFunc(token.NoPos, dubboPkg, "SetProviderService", testSignature(false, []types.Type{types.NewInterfaceType(nil, nil)}, nil)))
 		require.True(t, ok)
 		assert.Equal(t, 0, idx)
 
@@ -466,16 +449,16 @@ func TestAstAndTypeHelpers(t *testing.T) {
 		serverType := types.NewNamed(types.NewTypeName(token.NoPos, serverPkg, "Server", nil), types.NewStruct(nil, nil), nil)
 		serverType.AddMethod(types.NewFunc(token.NoPos, serverPkg, "RegisterService", testSignature(false, []types.Type{types.NewInterfaceType(nil, nil)}, []types.Type{types.Universe.Lookup("error").Type()})))
 		selection := types.NewMethodSet(types.NewPointer(serverType)).Lookup(serverPkg, "RegisterService")
-		configPkg := types.NewPackage("dubbo.apache.org/dubbo-go/v3/config", "config")
+		dubboPkg := types.NewPackage("dubbo.apache.org/dubbo-go/v3", "dubbo")
 
 		selector := &ast.SelectorExpr{X: &ast.Ident{Name: "srv"}, Sel: &ast.Ident{Name: "RegisterService"}}
-		packageSelector := &ast.SelectorExpr{X: &ast.Ident{Name: "config"}, Sel: &ast.Ident{Name: "SetProviderService"}}
+		packageSelector := &ast.SelectorExpr{X: &ast.Ident{Name: "dubbo"}, Sel: &ast.Ident{Name: "SetProviderService"}}
 		ident := &ast.Ident{Name: "RegisterGreeterHandler"}
 		pkg := &packages.Package{
 			TypesInfo: &types.Info{
 				Selections: map[*ast.SelectorExpr]*types.Selection{selector: selection},
 				Uses: map[*ast.Ident]types.Object{
-					packageSelector.Sel: types.NewFunc(token.NoPos, configPkg, "SetProviderService", testSignature(false, nil, nil)),
+					packageSelector.Sel: types.NewFunc(token.NoPos, dubboPkg, "SetProviderService", testSignature(false, nil, nil)),
 					ident:               types.NewFunc(token.NoPos, types.NewPackage("example.com/test", "test"), "RegisterGreeterHandler", testSignature(false, nil, nil)),
 				},
 			},
