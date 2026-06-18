@@ -277,6 +277,12 @@ func generateInvocation(ctx context.Context, methodName string, reqs []any, resp
 		invocation.WithAttachments(attachments),
 	)
 	inv.SetAttribute(constant.CallTypeKey, callType)
+	if opts.ResponseHeader != nil {
+		inv.SetAttribute(constant.ResponseHeaderKey, opts.ResponseHeader)
+	}
+	if opts.ResponseTrailer != nil {
+		inv.SetAttribute(constant.ResponseTrailerKey, opts.ResponseTrailer)
+	}
 
 	return inv, nil
 }

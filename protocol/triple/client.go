@@ -66,11 +66,17 @@ type clientManager struct {
 // TODO: code a triple client between clientManager and triple_protocol client
 // TODO: write a NewClient for triple client
 
-func (cm *clientManager) callUnary(ctx context.Context, method string, req, resp any) error {
+func (cm *clientManager) callUnary(ctx context.Context, method string, req, resp any, responseHeader, responseTrailer *http.Header) error {
 	triReq := tri.NewRequest(req)
 	triResp := tri.NewResponse(resp)
 	if err := cm.triClient.CallUnary(ctx, triReq, method, triResp); err != nil {
 		return err
+	}
+	if responseHeader != nil {
+		*responseHeader = triResp.Header().Clone()
+	}
+	if responseTrailer != nil {
+		*responseTrailer = triResp.Trailer().Clone()
 	}
 	return nil
 }
