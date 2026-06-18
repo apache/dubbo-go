@@ -69,16 +69,14 @@ type clientManager struct {
 func (cm *clientManager) callUnary(ctx context.Context, method string, req, resp any, responseHeader, responseTrailer *http.Header) error {
 	triReq := tri.NewRequest(req)
 	triResp := tri.NewResponse(resp)
-	if err := cm.triClient.CallUnary(ctx, triReq, method, triResp); err != nil {
-		return err
-	}
+	err := cm.triClient.CallUnary(ctx, triReq, method, triResp)
 	if responseHeader != nil {
 		*responseHeader = triResp.Header().Clone()
 	}
 	if responseTrailer != nil {
 		*responseTrailer = triResp.Trailer().Clone()
 	}
-	return nil
+	return err
 }
 
 func (cm *clientManager) callClientStream(ctx context.Context, method string) (any, error) {
