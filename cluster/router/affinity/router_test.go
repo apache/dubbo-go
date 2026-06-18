@@ -18,6 +18,7 @@
 package affinity
 
 import (
+	"math"
 	"testing"
 )
 
@@ -351,6 +352,97 @@ func TestAffinityRouteSetStaticConfigIgnoresInvalidConfig(t *testing.T) {
 			assert.Equal(t, invokers, a.Route(invokers, consumerURL, inv))
 		})
 	}
+}
+
+func TestAffinityRouteSetStaticConfigEmptyConfigKeyKeepsExistingRules(t *testing.T) {
+	a := &affinityRoute{}
+	a.SetStaticConfig(&global.RouterConfig{
+		Key: "service.apache.com",
+		AffinityAware: global.AffinityAware{
+			Key:   "region",
+			Ratio: 20,
+		},
+	})
+
+	a.SetStaticConfig(&global.RouterConfig{
+		AffinityAware: global.AffinityAware{
+			Key:   "env",
+			Ratio: 20,
+		},
+	})
+
+	assert.Len(t, a.staticRules, 1)
+	assert.Contains(t, a.staticRules, "service.apache.com")
+}
+
+func TestAffinityRouteProcessIgnoresMalformedAndDisabledRules(t *testing.T) {
+	invokers := buildInvokers()
+	consumerURL := newUrl("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing")
+	inv := invocation.NewRPCInvocation("getComment", nil, nil)
+
+	tests := []struct {
+		name  string
+		value string
+	}{
+		{
+			name:  "malformed yaml",
+			value: "affinityAware: [",
+		},
+		{
+			name: "disabled",
+			value: `configVersion: v3.1
+scope: service
+key: service.apache.com
+enabled: false
+runtime: true
+affinityAware:
+  key: region
+  ratio: 20`,
+		},
+		{
+			name: "empty affinity key",
+			value: `configVersion: v3.1
+scope: service
+key: service.apache.com
+enabled: true
+runtime: true
+affinityAware:
+  ratio: 20`,
+		},
+		{
+			name: "invalid matcher key",
+			value: `configVersion: v3.1
+scope: service
+key: service.apache.com
+enabled: true
+runtime: true
+affinityAware:
+  key: =
+  ratio: 20`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &affinityRoute{}
+			a.Process(&config_center.ConfigChangeEvent{
+				Value:      tt.value,
+				ConfigType: remoting.EventTypeUpdate,
+			})
+
+			assert.Equal(t, invokers, a.Route(invokers, consumerURL, inv))
+		})
+	}
+}
+
+func TestAffinityRouteRouteFallbacks(t *testing.T) {
+	a := &affinityRoute{}
+	assert.Empty(t, a.Route(nil, newUrl("consumer://127.0.0.1/com.foo.BarService"), invocation.NewRPCInvocation("getComment", nil, nil)))
+
+	invokers := buildInvokers()
+	assert.Equal(t, invokers, routeByAffinityRule(invokers, newUrl("consumer://127.0.0.1/com.foo.BarService"), invocation.NewRPCInvocation("getComment", nil, nil), nil, 20))
+	assert.Nil(t, a.URL())
+	assert.Equal(t, int64(math.MinInt64), a.Priority())
 }
 
 func TestAffinityRouteSetStaticConfigScope(t *testing.T) {
