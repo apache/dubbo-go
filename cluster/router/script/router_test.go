@@ -277,7 +277,7 @@ func TestScriptRouterSetStaticConfig(t *testing.T) {
 		s := NewScriptRouter()
 		s.SetStaticConfig(&global.RouterConfig{
 			Scope:      constant.RouterScopeApplication,
-			Key:        "dubbo.io",
+			Key:        "BDTService",
 			ScriptType: "javascript",
 			Script:     staticScriptForPort("20001"),
 		})
@@ -293,7 +293,7 @@ func TestScriptRouterSetStaticConfig(t *testing.T) {
 		s := NewScriptRouter()
 		s.SetStaticConfig(&global.RouterConfig{
 			Scope:      constant.RouterScopeApplication,
-			Key:        "dubbo.io",
+			Key:        "BDTService",
 			Enabled:    &enabled,
 			ScriptType: "javascript",
 			Script:     staticScriptForPort("20001"),
@@ -308,7 +308,7 @@ func TestScriptRouterSetStaticConfig(t *testing.T) {
 		s := NewScriptRouter()
 		s.SetStaticConfig(&global.RouterConfig{
 			Scope: constant.RouterScopeApplication,
-			Key:   "dubbo.io",
+			Key:   "BDTService",
 		})
 
 		got := s.Route(invokers, nil, inv)
@@ -333,13 +333,13 @@ func TestScriptRouterSetStaticConfig(t *testing.T) {
 		s := NewScriptRouter()
 		s.SetStaticConfig(&global.RouterConfig{
 			Scope:      constant.RouterScopeApplication,
-			Key:        "dubbo.io",
+			Key:        "BDTService",
 			ScriptType: "javascript",
 			Script:     staticScriptForPort("20001"),
 		})
 		s.SetStaticConfig(&global.RouterConfig{
 			Scope:      constant.RouterScopeApplication,
-			Key:        "dubbo.io",
+			Key:        "BDTService",
 			ScriptType: "javascript",
 			Script:     staticScriptForPort("20002"),
 		})
@@ -349,16 +349,42 @@ func TestScriptRouterSetStaticConfig(t *testing.T) {
 		assert.Equal(t, "20002", got[0].GetURL().Port)
 	})
 
+	t.Run("select static script config by provider application", func(t *testing.T) {
+		invokers, inv, _ := getRouteCheckArgs()
+		s := NewScriptRouter()
+		s.SetStaticConfig(&global.RouterConfig{
+			Scope:      constant.RouterScopeApplication,
+			Key:        "BDTService",
+			ScriptType: "javascript",
+			Script:     staticScriptForPort("20002"),
+		})
+		s.SetStaticConfig(&global.RouterConfig{
+			Scope:      constant.RouterScopeApplication,
+			Key:        "OtherService",
+			ScriptType: "javascript",
+			Script:     staticScriptForPort("20001"),
+		})
+
+		got := s.Route(invokers, nil, inv)
+		assert.Len(t, got, 1)
+		assert.Equal(t, "20002", got[0].GetURL().Port)
+		assert.Len(t, s.staticRules, 2)
+	})
+
 	t.Run("replace stale config with unsupported script type", func(t *testing.T) {
 		invokers, inv, _ := getRouteCheckArgs()
 		s := &ScriptRouter{
-			enabled:    true,
-			scriptType: "unsupported",
-			rawScript:  "old script",
+			staticRules: map[string]scriptRule{
+				"BDTService" + constant.ScriptRouterRuleSuffix: {
+					enabled:    true,
+					scriptType: "unsupported",
+					rawScript:  "old script",
+				},
+			},
 		}
 		s.SetStaticConfig(&global.RouterConfig{
 			Scope:      constant.RouterScopeApplication,
-			Key:        "dubbo.io",
+			Key:        "BDTService",
 			ScriptType: "javascript",
 			Script:     staticScriptForPort("20001"),
 		})
@@ -373,7 +399,7 @@ func TestScriptRouterSetStaticConfig(t *testing.T) {
 		s := NewScriptRouter()
 		s.SetStaticConfig(&global.RouterConfig{
 			Scope:      constant.RouterScopeApplication,
-			Key:        "dubbo.io",
+			Key:        "BDTService",
 			ScriptType: "unsupported",
 			Script:     staticScriptForPort("20001"),
 		})
@@ -387,7 +413,7 @@ func TestScriptRouterSetStaticConfig(t *testing.T) {
 		s := NewScriptRouter()
 		s.SetStaticConfig(&global.RouterConfig{
 			Scope:      constant.RouterScopeApplication,
-			Key:        "dubbo.io",
+			Key:        "BDTService",
 			ScriptType: "javascript",
 			Script:     "bad input",
 		})

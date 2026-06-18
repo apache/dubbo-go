@@ -43,7 +43,14 @@ import (
 type ScriptRouter struct {
 	applicationName string
 
-	mu         sync.RWMutex
+	mu          sync.RWMutex
+	enabled     bool
+	scriptType  string
+	rawScript   string
+	staticRules map[string]scriptRule
+}
+
+type scriptRule struct {
 	enabled    bool
 	scriptType string
 	rawScript  string
@@ -67,8 +74,6 @@ func parseRoute(routeContent string) (*global.RouterConfig, error) {
 }
 
 // SetStaticConfig applies a RouterConfig directly, bypassing YAML parsing.
-// Static and dynamic rules are not merged: later Process updates replace the
-// current state built here.
 func (s *ScriptRouter) SetStaticConfig(cfg *global.RouterConfig) {
 	if cfg == nil || cfg.Scope != constant.RouterScopeApplication || cfg.Key == "" || cfg.ScriptType == "" || cfg.Script == "" {
 		return
@@ -77,33 +82,36 @@ func (s *ScriptRouter) SetStaticConfig(cfg *global.RouterConfig) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if s.enabled && s.scriptType != "" {
-		in, err := ins.GetInstances(s.scriptType)
+	storageKey := strings.Join([]string{cfg.Key, constant.ScriptRouterRuleSuffix}, "")
+	if oldRule, ok := s.staticRules[storageKey]; ok && oldRule.enabled && oldRule.scriptType != "" {
+		in, err := ins.GetInstances(oldRule.scriptType)
 		if err != nil {
 			logger.Errorf("[Router][Script] GetInstances failed to destroy static config, error=%v", err)
 		} else {
-			in.Destroy(s.rawScript)
+			in.Destroy(oldRule.rawScript)
 		}
 	}
+	delete(s.staticRules, storageKey)
 
-	s.scriptType = cfg.ScriptType
-	s.rawScript = cfg.Script
-	s.enabled = cfg.Enabled == nil || *cfg.Enabled
-	if !s.enabled {
+	enabled := cfg.Enabled == nil || *cfg.Enabled
+	if !enabled {
 		logger.Infof("[Router][Script] static config is disabled, key=%s, type=%s", cfg.Key, cfg.ScriptType)
 		return
 	}
 
-	in, err := ins.GetInstances(s.scriptType)
+	in, err := ins.GetInstances(cfg.ScriptType)
 	if err != nil {
 		logger.Errorf("[Router][Script] GetInstances failed for static config, error=%v", err)
-		s.enabled = false
 		return
 	}
-	if err = in.Compile(s.rawScript); err != nil {
-		s.enabled = false
+	if err = in.Compile(cfg.Script); err != nil {
 		logger.Errorf("[Router][Script] compile static script failed, error=%v", err)
+		return
 	}
+	if s.staticRules == nil {
+		s.staticRules = make(map[string]scriptRule)
+	}
+	s.staticRules[storageKey] = scriptRule{enabled: true, scriptType: cfg.ScriptType, rawScript: cfg.Script}
 }
 
 func (s *ScriptRouter) Process(event *config_center.ConfigChangeEvent) {
@@ -125,6 +133,10 @@ func (s *ScriptRouter) Process(event *config_center.ConfigChangeEvent) {
 	rawConf, ok := event.Value.(string)
 	if !ok {
 		logger.Errorf("[Router][Script] route config value must be string, actualType=%T", event.Value)
+		return
+	}
+	if strings.TrimSpace(rawConf) == "" {
+		logger.Infof("[Router][Script] script rule is empty, key=%s", event.Key)
 		return
 	}
 	cfg, err := parseRoute(rawConf)
@@ -199,9 +211,18 @@ func (s *ScriptRouter) Route(invokers []base.Invoker, _ *common.URL, invocation 
 
 	s.mu.RLock()
 	enabled, scriptType, rawScript := s.enabled, s.scriptType, s.rawScript
+	if !enabled || scriptType == "" || rawScript == "" {
+		if url := invokers[0].GetURL(); url != nil {
+			providerApplication := url.GetParam("application", "")
+			staticKey := strings.Join([]string{providerApplication, constant.ScriptRouterRuleSuffix}, "")
+			if rule, ok := s.staticRules[staticKey]; ok {
+				enabled, scriptType, rawScript = rule.enabled, rule.scriptType, rule.rawScript
+			}
+		}
+	}
 	s.mu.RUnlock()
 
-	if !enabled || s.scriptType == "" || s.rawScript == "" {
+	if !enabled || scriptType == "" || rawScript == "" {
 		return invokers
 	}
 
@@ -258,6 +279,11 @@ func (s *ScriptRouter) Notify(invokers []base.Invoker) {
 		value, err = dynamicConfiguration.GetRule(listenTarget)
 		if err != nil {
 			logger.Errorf("[Router][Script] query script rule failed, applicationName=%s listenTarget=%s error=%v", s.applicationName, listenTarget, err)
+			return
+		}
+		if value == "" {
+			logger.Infof("[Router][Script] script rule is empty, listenTarget=%s", listenTarget)
+			return
 		}
 		s.Process(&config_center.ConfigChangeEvent{Key: listenTarget, Value: value, ConfigType: remoting.EventTypeUpdate})
 	}
