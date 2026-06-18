@@ -20,7 +20,6 @@ package common
 import (
 	"bytes"
 	"encoding/base64"
-	"fmt"
 	"math"
 	"net"
 	"net/url"
@@ -431,22 +430,77 @@ func (c *URL) String() string {
 
 // Key gets key
 func (c *URL) Key() string {
-	buildString := fmt.Sprintf(
-		"%s://%s:%s@%s:%s/?interface=%s&group=%s&version=%s",
-		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Service(), c.GetParam(constant.GroupKey, ""), c.GetParam(constant.VersionKey, ""),
-	)
-	return buildString
+	var buf strings.Builder
+	service := c.Service()
+	group := c.GetParam(constant.GroupKey, "")
+	version := c.GetParam(constant.VersionKey, "")
+
+	size := len(c.Protocol) + len("://") + len(c.Username) +
+		len(":") + len(c.Password) + len("@") +
+		len(c.Ip) + len(":") + len(c.Port) +
+		len("/?interface=") + len(service) +
+		len("&group=") + len(group) +
+		len("&version=") + len(version)
+
+	buf.Grow(size)
+	buf.WriteString(c.Protocol)
+	buf.WriteString("://")
+	buf.WriteString(c.Username)
+	buf.WriteString(":")
+	buf.WriteString(c.Password)
+	buf.WriteString("@")
+	buf.WriteString(c.Ip)
+	buf.WriteString(":")
+	buf.WriteString(c.Port)
+	buf.WriteString("/?interface=")
+	buf.WriteString(service)
+	buf.WriteString("&group=")
+	buf.WriteString(group)
+	buf.WriteString("&version=")
+	buf.WriteString(version)
+
+	return buf.String()
 }
 
 // GetCacheInvokerMapKey get directory cacheInvokerMap key
 func (c *URL) GetCacheInvokerMapKey() string {
-	buildString := fmt.Sprintf(
-		"%s://%s:%s@%s:%s/?interface=%s&group=%s&version=%s&timestamp=%s&"+constant.MeshClusterIDKey+"=%s",
-		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Service(), c.GetParam(constant.GroupKey, ""),
-		c.GetParam(constant.VersionKey, ""), c.primitiveTS,
-		c.GetParam(constant.MeshClusterIDKey, ""),
-	)
-	return buildString
+	var buf strings.Builder
+	service := c.Service()
+	group := c.GetParam(constant.GroupKey, "")
+	version := c.GetParam(constant.VersionKey, "")
+	meshClusterID := c.GetParam(constant.MeshClusterIDKey, "")
+
+	size := len(c.Protocol) + len("://") + len(c.Username) +
+		len(":") + len(c.Password) + len("@") +
+		len(c.Ip) + len(":") + len(c.Port) +
+		len("/?interface=") + len(service) +
+		len("&group=") + len(group) +
+		len("&version=") + len(version) +
+		len("&timestamp=") + len(c.primitiveTS) +
+		len("&meshClusterID=") + len(meshClusterID)
+
+	buf.Grow(size)
+	buf.WriteString(c.Protocol)
+	buf.WriteString("://")
+	buf.WriteString(c.Username)
+	buf.WriteString(":")
+	buf.WriteString(c.Password)
+	buf.WriteString("@")
+	buf.WriteString(c.Ip)
+	buf.WriteString(":")
+	buf.WriteString(c.Port)
+	buf.WriteString("/?interface=")
+	buf.WriteString(service)
+	buf.WriteString("&group=")
+	buf.WriteString(group)
+	buf.WriteString("&version=")
+	buf.WriteString(version)
+	buf.WriteString("&timestamp=")
+	buf.WriteString(c.primitiveTS)
+	buf.WriteString("&meshClusterID=")
+	buf.WriteString(meshClusterID)
+
+	return buf.String()
 }
 
 // ServiceKey gets a unique key of a service.
@@ -461,7 +515,7 @@ func ServiceKey(intf string, group string, version string) string {
 	if intf == "" {
 		return ""
 	}
-	buf := &bytes.Buffer{}
+	var buf strings.Builder
 	if group != "" {
 		buf.WriteString(group)
 		buf.WriteString("/")
