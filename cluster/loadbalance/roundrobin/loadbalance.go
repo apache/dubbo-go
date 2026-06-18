@@ -145,8 +145,8 @@ func (robin *weightedRoundRobin) Weight() int64 {
 }
 
 func (robin *weightedRoundRobin) setWeight(weight int64) {
-	robin.weight = weight
-	robin.current = 0
+	atomic.StoreInt64(&robin.weight, weight)
+	atomic.StoreInt64(&robin.current, 0)
 }
 
 func (robin *weightedRoundRobin) LastUpdate() *time.Time {
@@ -158,7 +158,7 @@ func (robin *weightedRoundRobin) setLastUpdate(time *time.Time) {
 }
 
 func (robin *weightedRoundRobin) increaseCurrent() int64 {
-	return atomic.AddInt64(&robin.current, robin.weight)
+	return atomic.AddInt64(&robin.current, atomic.LoadInt64(&robin.weight))
 }
 
 func (robin *weightedRoundRobin) Current(delta int64) {
