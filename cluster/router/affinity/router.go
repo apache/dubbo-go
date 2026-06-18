@@ -80,6 +80,10 @@ func (s *ServiceAffinityRoute) Notify(invokers []base.Invoker) {
 		logger.Errorf("[Router][Affinity] query affinity rule failed: key=%s, err=%v", key, err)
 		return
 	}
+	if value == "" {
+		logger.Infof("[Router][Affinity] affinity rule is empty: key=%s", key)
+		return
+	}
 
 	s.Process(&config_center.ConfigChangeEvent{Key: key, Value: value, ConfigType: remoting.EventTypeAdd})
 }
@@ -152,6 +156,10 @@ func (s *ApplicationAffinityRoute) Notify(invokers []base.Invoker) {
 			logger.Errorf("[Router][Affinity] query affinity rule failed: key=%s, err=%v", key, err)
 			return
 		}
+		if value == "" {
+			logger.Infof("[Router][Affinity] affinity rule is empty: key=%s", key)
+			return
+		}
 
 		s.Process(&config_center.ConfigChangeEvent{Key: key, Value: value, ConfigType: remoting.EventTypeUpdate})
 	}
@@ -215,6 +223,16 @@ func (a *affinityRoute) SetStaticConfig(cfg *global.RouterConfig) {
 }
 
 func (a *affinityRoute) Process(event *config_center.ConfigChangeEvent) {
+	var value string
+	switch event.ConfigType {
+	case remoting.EventTypeAdd, remoting.EventTypeUpdate:
+		value, _ = event.Value.(string)
+		if strings.TrimSpace(value) == "" {
+			logger.Infof("[Router][Affinity] affinity rule is empty: key=%s", event.Key)
+			return
+		}
+	}
+
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	a.matcher, a.enabled, a.key, a.ratio = nil, false, "", 0
@@ -223,7 +241,7 @@ func (a *affinityRoute) Process(event *config_center.ConfigChangeEvent) {
 	switch event.ConfigType {
 	case remoting.EventTypeDel:
 	case remoting.EventTypeAdd, remoting.EventTypeUpdate:
-		cfg, err := parseConfig(event.Value.(string))
+		cfg, err := parseConfig(value)
 		if err != nil {
 			logger.Errorf("[Router][Affinity] parse affinity config failed: key=%s, err=%v", event.Key, err)
 			return

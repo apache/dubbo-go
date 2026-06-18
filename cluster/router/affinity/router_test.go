@@ -292,6 +292,33 @@ func TestAffinityRouteSetStaticConfigKeepsRulesByConfigKey(t *testing.T) {
 	assert.Len(t, a.staticRules, 2)
 }
 
+func TestAffinityRouteProcessEmptyDynamicRuleKeepsStaticConfig(t *testing.T) {
+	invokers := buildInvokers()
+	consumerURL := newUrl("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing")
+	inv := invocation.NewRPCInvocation("getComment", nil, nil)
+
+	a := &affinityRoute{}
+	a.SetStaticConfig(&global.RouterConfig{
+		Scope: constant.RouterScopeService,
+		Key:   "service.apache.com",
+		AffinityAware: global.AffinityAware{
+			Key:   "region",
+			Ratio: 20,
+		},
+	})
+
+	a.Process(&config_center.ConfigChangeEvent{
+		Key:        "service.apache.com.affinity-router",
+		Value:      "",
+		ConfigType: remoting.EventTypeAdd,
+	})
+
+	got := a.Route(invokers, consumerURL, inv)
+	want := NewINVOKERS_FILTERS().add("region=$region").filtrate(invokers, consumerURL, inv)
+	assert.Equal(t, want, got)
+	assert.Len(t, a.staticRules, 1)
+}
+
 func TestAffinityRouteSetStaticConfigIgnoresInvalidConfig(t *testing.T) {
 	invokers := buildInvokers()
 	consumerURL := newUrl("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing")
