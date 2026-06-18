@@ -42,7 +42,7 @@ import (
  *
  */
 type failsafeClusterInvoker struct {
-	base.BaseClusterInvoker
+	*base.BaseClusterInvoker
 }
 
 func newFailsafeClusterInvoker(directory directory.Directory) protocolbase.Invoker {

@@ -40,7 +40,7 @@ import (
 )
 
 type adaptiveServiceClusterInvoker struct {
-	base.BaseClusterInvoker
+	*base.BaseClusterInvoker
 }
 
 func newAdaptiveServiceClusterInvoker(directory directory.Directory) protocolbase.Invoker {

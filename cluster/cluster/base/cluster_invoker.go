@@ -19,7 +19,7 @@
 package base
 
 import (
-	stdatomic "sync/atomic"
+	"sync/atomic"
 )
 
 import (
@@ -27,7 +27,7 @@ import (
 
 	perrors "github.com/pkg/errors"
 
-	"go.uber.org/atomic"
+	uberatomic "go.uber.org/atomic"
 )
 
 import (
@@ -39,40 +39,19 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
-// stickyInvokerWrapper wraps a base.Invoker so that atomic.Value always
-// stores the same concrete type (avoiding panic on inconsistent types)
-// and can represent a nil invoker (avoiding panic on Store(nil)).
-type stickyInvokerWrapper struct {
-	invoker base.Invoker
-}
-
 type BaseClusterInvoker struct {
 	Directory      directory.Directory
 	AvailableCheck bool
-	Destroyed      *atomic.Bool
-	stickyInvoker  stdatomic.Value // stores stickyInvokerWrapper
+	Destroyed      *uberatomic.Bool
+	StickyInvoker  atomic.Pointer[base.Invoker]
 }
 
-func NewBaseClusterInvoker(directory directory.Directory) BaseClusterInvoker {
-	return BaseClusterInvoker{
+func NewBaseClusterInvoker(directory directory.Directory) *BaseClusterInvoker {
+	return &BaseClusterInvoker{
 		Directory:      directory,
 		AvailableCheck: true,
-		Destroyed:      atomic.NewBool(false),
+		Destroyed:      uberatomic.NewBool(false),
 	}
-}
-
-// getStickyInvoker returns the current sticky invoker in a race-free manner.
-func (invoker *BaseClusterInvoker) getStickyInvoker() base.Invoker {
-	v := invoker.stickyInvoker.Load()
-	if v == nil {
-		return nil
-	}
-	return v.(stickyInvokerWrapper).invoker
-}
-
-// setStickyInvoker sets the sticky invoker in a race-free manner.
-func (invoker *BaseClusterInvoker) setStickyInvoker(invokerVal base.Invoker) {
-	invoker.stickyInvoker.Store(stickyInvokerWrapper{invoker: invokerVal})
 }
 
 func (invoker *BaseClusterInvoker) GetURL() *common.URL {
@@ -87,8 +66,8 @@ func (invoker *BaseClusterInvoker) Destroy() {
 }
 
 func (invoker *BaseClusterInvoker) IsAvailable() bool {
-	if sticky := invoker.getStickyInvoker(); sticky != nil {
-		return sticky.IsAvailable()
+	if sticky := invoker.StickyInvoker.Load(); sticky != nil {
+		return (*sticky).IsAvailable()
 	}
 	return invoker.Directory.IsAvailable()
 }
@@ -125,21 +104,21 @@ func (invoker *BaseClusterInvoker) DoSelect(lb loadbalance.LoadBalance, invocati
 	// Get the service method sticky config if have
 	sticky = url.GetMethodParamBool(invocation.MethodName(), constant.StickyKey, sticky)
 
-	stickyInvoker := invoker.getStickyInvoker()
-	if stickyInvoker != nil && !isInvoked(stickyInvoker, invokers) {
-		invoker.setStickyInvoker(nil)
+	stickyInvoker := invoker.StickyInvoker.Load()
+	if stickyInvoker != nil && !isInvoked(*stickyInvoker, invokers) {
+		invoker.StickyInvoker.Store(nil)
 		stickyInvoker = nil
 	}
 
 	if sticky && invoker.AvailableCheck &&
-		stickyInvoker != nil && stickyInvoker.IsAvailable() &&
-		(invoked == nil || !isInvoked(stickyInvoker, invoked)) {
-		return stickyInvoker
+		stickyInvoker != nil && (*stickyInvoker).IsAvailable() &&
+		(invoked == nil || !isInvoked(*stickyInvoker, invoked)) {
+		return *stickyInvoker
 	}
 
 	selectedInvoker = invoker.doSelectInvoker(lb, invocation, invokers, invoked)
 	if sticky {
-		invoker.setStickyInvoker(selectedInvoker)
+		invoker.StickyInvoker.Store(&selectedInvoker)
 	}
 	return selectedInvoker
 }

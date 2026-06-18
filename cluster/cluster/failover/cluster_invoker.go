@@ -39,7 +39,7 @@ import (
 )
 
 type failoverClusterInvoker struct {
-	base.BaseClusterInvoker
+	*base.BaseClusterInvoker
 }
 
 func newFailoverClusterInvoker(directory directory.Directory) protocolbase.Invoker {
