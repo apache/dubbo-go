@@ -163,12 +163,20 @@ func (ti *TripleInvoker) Invoke(ctx context.Context, invocation base.Invocation)
 func responseMetadataTargets(invocation base.Invocation) (*http.Header, *http.Header) {
 	var responseHeader *http.Header
 	if headerRaw, ok := invocation.GetAttribute(constant.ResponseHeaderKey); ok {
-		responseHeader, _ = headerRaw.(*http.Header)
+		if header, ok := headerRaw.(*http.Header); ok {
+			responseHeader = header
+		} else if headerRaw != nil {
+			logger.Warnf("[Triple][Invoker] invocation attribute %s should be *http.Header, got %T", constant.ResponseHeaderKey, headerRaw)
+		}
 	}
 
 	var responseTrailer *http.Header
 	if trailerRaw, ok := invocation.GetAttribute(constant.ResponseTrailerKey); ok {
-		responseTrailer, _ = trailerRaw.(*http.Header)
+		if trailer, ok := trailerRaw.(*http.Header); ok {
+			responseTrailer = trailer
+		} else if trailerRaw != nil {
+			logger.Warnf("[Triple][Invoker] invocation attribute %s should be *http.Header, got %T", constant.ResponseTrailerKey, trailerRaw)
+		}
 	}
 
 	return responseHeader, responseTrailer

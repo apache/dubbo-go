@@ -1026,22 +1026,18 @@ func WithCallRetries(retries int) CallOption {
 	}
 }
 
-// WithResponseHeader configures a target to receive response headers when the
-// protocol supports it.
-//
-// For Triple unary calls, the header is captured from both successful responses
-// and error responses when response metadata is available.
+// WithResponseHeader configures a target to receive response headers.
+// Currently, only Triple unary calls populate this option (including error
+// responses when metadata is available).
 func WithResponseHeader(header *http.Header) CallOption {
 	return func(opts *CallOptions) {
 		opts.ResponseHeader = header
 	}
 }
 
-// WithResponseTrailer configures a target to receive response trailers when the
-// protocol supports it.
-//
-// For Triple unary calls, the trailer is captured from both successful responses
-// and error responses when response metadata is available.
+// WithResponseTrailer configures a target to receive response trailers.
+// Currently, only Triple unary calls populate this option (including error
+// responses when metadata is available).
 func WithResponseTrailer(trailer *http.Header) CallOption {
 	return func(opts *CallOptions) {
 		opts.ResponseTrailer = trailer
