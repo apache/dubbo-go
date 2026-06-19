@@ -51,7 +51,7 @@ import (
  * The signals are different on different platforms.
  * We define them by using 'package build' feature https://golang.org/pkg/go/build/
  */
-const defaultShutDownTime = time.Second * 60
+const defaultShutDownTime = constant.DefaultShutdownConfigTimeout
 
 func gracefulShutdownInit() {
 	// retrieve ShutdownConfig for gracefulShutdownFilter
