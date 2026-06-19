@@ -522,6 +522,39 @@ func TestServer(t *testing.T) {
 	})
 }
 
+func TestSetHeaderAndSetTrailerInUnaryHandler(t *testing.T) {
+	t.Parallel()
+
+	handler := triple.NewUnaryHandler(
+		"/connect.ping.v1.PingService/Ping",
+		func() any { return new(pingv1.PingRequest) },
+		func(ctx context.Context, req *triple.Request) (*triple.Response, error) {
+			if err := triple.SetHeader(ctx, http.Header{handlerHeader: []string{headerValue}}); err != nil {
+				return nil, err
+			}
+			if err := triple.SetTrailer(ctx, http.Header{handlerTrailer: []string{trailerValue}}); err != nil {
+				return nil, err
+			}
+
+			msg := req.Msg.(*pingv1.PingRequest)
+			return triple.NewResponse(&pingv1.PingResponse{
+				Number: msg.Number,
+				Text:   msg.Text,
+			}), nil
+		},
+	)
+	server := httptest.NewServer(handler)
+	t.Cleanup(server.Close)
+
+	client := pingv1connect.NewPingServiceClient(server.Client(), server.URL)
+	request := triple.NewRequest(&pingv1.PingRequest{Number: 42})
+	response := triple.NewResponse(&pingv1.PingResponse{})
+	err := client.Ping(context.Background(), request, response)
+	assert.Nil(t, err)
+	assert.Equal(t, response.Header().Values(handlerHeader), []string{headerValue})
+	assert.Equal(t, response.Trailer().Values(handlerTrailer), []string{trailerValue})
+}
+
 func TestConcurrentStreams(t *testing.T) {
 	if testing.Short() {
 		t.Skipf("skipping %s test in short mode", t.Name())

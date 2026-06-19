@@ -106,6 +106,7 @@ func generateUnaryHandlerFunc(
 		request.header = conn.RequestHeader()
 		// embed header in context so that user logic could process them via FromIncomingContext
 		ctx = newIncomingContext(ctx, conn.RequestHeader())
+		ctx = context.WithValue(ctx, handlerOutgoingKey{}, conn)
 
 		response, err := untyped(ctx, request)
 
