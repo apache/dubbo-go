@@ -719,6 +719,4 @@ func (rc *InstanceOptions) Process(event *config_center.ConfigChangeEvent) {
 		rc.Consumer.RequestTimeout = update.Consumer.RequestTimeout
 		gostLogger.Infof("ConsumerConfig's RequestTimeout was dynamically updated, new value:%v", rc.Consumer.RequestTimeout)
 	}
-
-	setCompatRootConfig(compatRootConfig(rc))
 }
