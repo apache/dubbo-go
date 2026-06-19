@@ -346,6 +346,10 @@ func receiveUnaryResponse(conn StreamingClientConn, response AnyResponse) error 
 	if !ok {
 		panic(fmt.Sprintf("response %T is not of Response type", response))
 	}
+	defer func() {
+		resp.header = conn.ResponseHeader()
+		resp.trailer = conn.ResponseTrailer()
+	}()
 	if err := conn.Receive(resp.Msg); err != nil {
 		return err
 	}
@@ -357,8 +361,6 @@ func receiveUnaryResponse(conn StreamingClientConn, response AnyResponse) error 
 	} else if !errors.Is(err, io.EOF) {
 		return NewError(CodeUnknown, err)
 	}
-	resp.header = conn.ResponseHeader()
-	resp.trailer = conn.ResponseTrailer()
 	return nil
 }
 
