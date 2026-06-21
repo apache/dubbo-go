@@ -46,6 +46,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/internal"
 	dubboLogger "dubbo.apache.org/dubbo-go/v3/logger"
+	_ "dubbo.apache.org/dubbo-go/v3/logger/core/zap"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	metricsConfigCenter "dubbo.apache.org/dubbo-go/v3/metrics/config_center"
 	"dubbo.apache.org/dubbo-go/v3/otel/trace"
