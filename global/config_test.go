@@ -836,6 +836,10 @@ func TestRouterConfigClone(t *testing.T) {
 			Priority:   10,
 			ScriptType: "javascript",
 			Script:     "1==1",
+			AffinityAware: AffinityAware{
+				Key:   "region",
+				Ratio: 20,
+			},
 			Force: func() *bool {
 				b := true
 				return &b
@@ -872,6 +876,7 @@ func TestRouterConfigClone(t *testing.T) {
 		assert.Equal(t, router.Priority, cloned.Priority)
 		assert.Equal(t, router.ScriptType, cloned.ScriptType)
 		assert.Equal(t, router.Script, cloned.Script)
+		assert.Equal(t, router.AffinityAware, cloned.AffinityAware)
 		assert.NotSame(t, router, cloned)
 		assert.Len(t, cloned.Conditions, 2)
 		assert.Len(t, cloned.Tags, 2)

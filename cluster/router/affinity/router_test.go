@@ -18,6 +18,7 @@
 package affinity
 
 import (
+	"math"
 	"testing"
 )
 
@@ -30,6 +31,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
@@ -235,6 +237,279 @@ affinityAware:
 		})
 	}
 
+}
+
+func TestAffinityRouteSetStaticConfig(t *testing.T) {
+	invokers := buildInvokers()
+	consumerURL := newUrl("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing")
+	inv := invocation.NewRPCInvocation("getComment", nil, nil)
+	cfg := &global.RouterConfig{
+		Scope: constant.RouterScopeService,
+		Key:   "service.apache.com",
+		AffinityAware: global.AffinityAware{
+			Key:   "region",
+			Ratio: 20,
+		},
+	}
+
+	a := &affinityRoute{}
+	a.SetStaticConfig(cfg)
+
+	got := a.Route(invokers, consumerURL, inv)
+	want := NewINVOKERS_FILTERS().add("region=$region").filtrate(invokers, consumerURL, inv)
+	assert.Equal(t, want, got)
+}
+
+func TestAffinityRouteSetStaticConfigKeepsRulesByConfigKey(t *testing.T) {
+	invokers := buildInvokers()
+	consumerURL := newUrl("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing")
+	inv := invocation.NewRPCInvocation("getComment", nil, nil)
+
+	a := &affinityRoute{}
+	a.SetStaticConfig(&global.RouterConfig{
+		Scope: constant.RouterScopeService,
+		Key:   "service.apache.com.region",
+		AffinityAware: global.AffinityAware{
+			Key:   "region",
+			Ratio: 20,
+		},
+	})
+	a.SetStaticConfig(&global.RouterConfig{
+		Scope: constant.RouterScopeService,
+		Key:   "service.apache.com.env",
+		AffinityAware: global.AffinityAware{
+			Key:   "env",
+			Ratio: 20,
+		},
+	})
+
+	got := a.Route(invokers, consumerURL, inv)
+	want := NewINVOKERS_FILTERS().
+		add("region=$region").
+		add("env=$env").
+		filtrate(invokers, consumerURL, inv)
+	assert.Equal(t, want, got)
+	assert.Len(t, a.staticRules, 2)
+}
+
+func TestAffinityRouteProcessEmptyDynamicRuleKeepsStaticConfig(t *testing.T) {
+	invokers := buildInvokers()
+	consumerURL := newUrl("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing")
+	inv := invocation.NewRPCInvocation("getComment", nil, nil)
+
+	a := &affinityRoute{}
+	a.SetStaticConfig(&global.RouterConfig{
+		Scope: constant.RouterScopeService,
+		Key:   "service.apache.com",
+		AffinityAware: global.AffinityAware{
+			Key:   "region",
+			Ratio: 20,
+		},
+	})
+
+	a.Process(&config_center.ConfigChangeEvent{
+		Key:        "service.apache.com.affinity-router",
+		Value:      "",
+		ConfigType: remoting.EventTypeAdd,
+	})
+
+	got := a.Route(invokers, consumerURL, inv)
+	want := NewINVOKERS_FILTERS().add("region=$region").filtrate(invokers, consumerURL, inv)
+	assert.Equal(t, want, got)
+	assert.Len(t, a.staticRules, 1)
+}
+
+func TestAffinityRouteSetStaticConfigIgnoresInvalidConfig(t *testing.T) {
+	invokers := buildInvokers()
+	consumerURL := newUrl("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing")
+	inv := invocation.NewRPCInvocation("getComment", nil, nil)
+	enabled := false
+
+	tests := []struct {
+		name string
+		cfg  *global.RouterConfig
+	}{
+		{
+			name: "nil config",
+		},
+		{
+			name: "disabled",
+			cfg: &global.RouterConfig{
+				Enabled: &enabled,
+				Key:     "service.apache.com",
+				AffinityAware: global.AffinityAware{
+					Key:   "region",
+					Ratio: 20,
+				},
+			},
+		},
+		{
+			name: "empty affinity key",
+			cfg: &global.RouterConfig{
+				Key:           "service.apache.com",
+				AffinityAware: global.AffinityAware{Ratio: 20},
+			},
+		},
+		{
+			name: "bad ratio",
+			cfg: &global.RouterConfig{
+				Key: "service.apache.com",
+				AffinityAware: global.AffinityAware{
+					Key:   "region",
+					Ratio: 101,
+				},
+			},
+		},
+		{
+			name: "invalid matcher key",
+			cfg: &global.RouterConfig{
+				Key: "service.apache.com",
+				AffinityAware: global.AffinityAware{
+					Key:   "=",
+					Ratio: 20,
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &affinityRoute{}
+			a.SetStaticConfig(tt.cfg)
+			assert.Equal(t, invokers, a.Route(invokers, consumerURL, inv))
+		})
+	}
+}
+
+func TestAffinityRouteSetStaticConfigEmptyConfigKeyKeepsExistingRules(t *testing.T) {
+	a := &affinityRoute{}
+	a.SetStaticConfig(&global.RouterConfig{
+		Key: "service.apache.com",
+		AffinityAware: global.AffinityAware{
+			Key:   "region",
+			Ratio: 20,
+		},
+	})
+
+	a.SetStaticConfig(&global.RouterConfig{
+		AffinityAware: global.AffinityAware{
+			Key:   "env",
+			Ratio: 20,
+		},
+	})
+
+	assert.Len(t, a.staticRules, 1)
+	assert.Contains(t, a.staticRules, "service.apache.com")
+}
+
+func TestAffinityRouteProcessIgnoresMalformedAndDisabledRules(t *testing.T) {
+	invokers := buildInvokers()
+	consumerURL := newUrl("consumer://127.0.0.1/com.foo.BarService?env=gray&region=beijing")
+	inv := invocation.NewRPCInvocation("getComment", nil, nil)
+
+	tests := []struct {
+		name  string
+		value string
+	}{
+		{
+			name:  "malformed yaml",
+			value: "affinityAware: [",
+		},
+		{
+			name: "disabled",
+			value: `configVersion: v3.1
+scope: service
+key: service.apache.com
+enabled: false
+runtime: true
+affinityAware:
+  key: region
+  ratio: 20`,
+		},
+		{
+			name: "empty affinity key",
+			value: `configVersion: v3.1
+scope: service
+key: service.apache.com
+enabled: true
+runtime: true
+affinityAware:
+  ratio: 20`,
+		},
+		{
+			name: "invalid matcher key",
+			value: `configVersion: v3.1
+scope: service
+key: service.apache.com
+enabled: true
+runtime: true
+affinityAware:
+  key: =
+  ratio: 20`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &affinityRoute{}
+			a.Process(&config_center.ConfigChangeEvent{
+				Value:      tt.value,
+				ConfigType: remoting.EventTypeUpdate,
+			})
+
+			assert.Equal(t, invokers, a.Route(invokers, consumerURL, inv))
+		})
+	}
+}
+
+func TestAffinityRouteRouteFallbacks(t *testing.T) {
+	a := &affinityRoute{}
+	assert.Empty(t, a.Route(nil, newUrl("consumer://127.0.0.1/com.foo.BarService"), invocation.NewRPCInvocation("getComment", nil, nil)))
+
+	invokers := buildInvokers()
+	assert.Equal(t, invokers, routeByAffinityRule(invokers, newUrl("consumer://127.0.0.1/com.foo.BarService"), invocation.NewRPCInvocation("getComment", nil, nil), nil, 20))
+	assert.Nil(t, a.URL())
+	assert.Equal(t, int64(math.MinInt64), a.Priority())
+}
+
+func TestAffinityRouteSetStaticConfigScope(t *testing.T) {
+	cfg := &global.RouterConfig{
+		Scope: constant.RouterScopeService,
+		Key:   "service.apache.com",
+		AffinityAware: global.AffinityAware{
+			Key:   "region",
+			Ratio: 20,
+		},
+	}
+	serviceRouter := newServiceAffinityRoute()
+	serviceRouter.SetStaticConfig(nil)
+	assert.False(t, serviceRouter.enabled)
+
+	appScopedCfg := *cfg
+	appScopedCfg.Scope = constant.RouterScopeApplication
+	serviceRouter.SetStaticConfig(&appScopedCfg)
+	assert.Empty(t, serviceRouter.staticRules)
+
+	serviceRouter.SetStaticConfig(cfg)
+	assert.Len(t, serviceRouter.staticRules, 1)
+
+	emptyAffinityCfg := *cfg
+	emptyAffinityCfg.Key = "service.apache.com.empty"
+	emptyAffinityCfg.AffinityAware.Key = ""
+	serviceRouter.SetStaticConfig(&emptyAffinityCfg)
+	assert.Len(t, serviceRouter.staticRules, 1)
+
+	appRouter := &ApplicationAffinityRoute{}
+	appRouter.SetStaticConfig(cfg)
+	assert.Empty(t, appRouter.staticRules)
+
+	cfg.Scope = constant.RouterScopeApplication
+	appRouter.SetStaticConfig(cfg)
+	assert.Len(t, appRouter.staticRules, 1)
+
+	emptyAffinityCfg.Scope = constant.RouterScopeApplication
+	appRouter.SetStaticConfig(&emptyAffinityCfg)
+	assert.Len(t, appRouter.staticRules, 1)
 }
 
 func Test_newApplicationAffinityRouter(t *testing.T) {

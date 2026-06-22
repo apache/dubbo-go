@@ -45,6 +45,8 @@ type RouterConfig struct {
 	Tags       []Tag    `yaml:"tags" json:"tags,omitempty" property:"tags"`
 	ScriptType string   `yaml:"type" json:"type,omitempty" property:"type"`
 	Script     string   `yaml:"script" json:"script,omitempty" property:"script"`
+
+	AffinityAware AffinityAware `yaml:"affinityAware" json:"affinityAware,omitempty" property:"affinityAware"`
 }
 
 type Tag struct {
