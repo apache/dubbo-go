@@ -105,7 +105,6 @@ func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 	if err := rc.finalizeGlobalOptionsWithRuntimeActivation(true); err != nil {
 		return err
 	}
-	setCompatRootConfig(compatRootConfig(rc))
 
 	if err := rc.initMetadataReport(); err != nil {
 		return err

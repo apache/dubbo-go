@@ -32,7 +32,6 @@ import (
 	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	legacyconfig "dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/registry"
@@ -231,12 +230,6 @@ func TestInstanceInitAddsDefaultGlobalProtocolWhenEmpty(t *testing.T) {
 	assert.Equal(t, constant.TriProtocol, tri.Name)
 	assert.Equal(t, constant.DefaultTripleProtocolPort, tri.Port)
 	assert.Equal(t, "4mib", tri.MaxServerRecvMsgSize)
-
-	root := legacyconfig.GetRootConfig()
-	require.NotNil(t, root)
-	require.NotNil(t, root.Protocols[constant.TriProtocol])
-	assert.Equal(t, constant.TriProtocol, root.Protocols[constant.TriProtocol].Name)
-	assert.Equal(t, constant.DefaultTripleProtocolPort, root.Protocols[constant.TriProtocol].Port)
 }
 
 func TestInstanceInitTranslatesGlobalRegistryAddress(t *testing.T) {
@@ -289,10 +282,17 @@ func TestInstanceInitRejectsDuplicateGlobalRegistryAddress(t *testing.T) {
 	assert.Contains(t, err.Error(), "duplicate registry address")
 }
 
-func TestInstanceInitMirrorsTLSConfigToCompatRootConfig(t *testing.T) {
-	restoreCompatRootConfig(t)
+func TestInstanceInitPropagatesTLSConfig(t *testing.T) {
+	assertTLS := func(t *testing.T, cfg *global.TLSConfig) {
+		t.Helper()
+		require.NotNil(t, cfg)
+		assert.Equal(t, "ca.pem", cfg.CACertFile)
+		assert.Equal(t, "cert.pem", cfg.TLSCertFile)
+		assert.Equal(t, "key.pem", cfg.TLSKeyFile)
+		assert.Equal(t, "dubbo.example", cfg.TLSServerName)
+	}
 
-	_, err := NewInstance(func(opts *InstanceOptions) {
+	ins, err := NewInstance(func(opts *InstanceOptions) {
 		opts.TLSConfig = &global.TLSConfig{
 			CACertFile:    "ca.pem",
 			TLSCertFile:   "cert.pem",
@@ -301,17 +301,20 @@ func TestInstanceInitMirrorsTLSConfigToCompatRootConfig(t *testing.T) {
 		}
 	})
 	require.NoError(t, err)
+	assertTLS(t, ins.insOpts.TLSConfig)
 
-	root := legacyconfig.GetRootConfig()
-	require.NotNil(t, root)
-	require.NotNil(t, root.TLSConfig)
-	assert.Equal(t, "ca.pem", root.TLSConfig.CACertFile)
-	assert.Equal(t, "cert.pem", root.TLSConfig.TLSCertFile)
-	assert.Equal(t, "key.pem", root.TLSConfig.TLSKeyFile)
-	assert.Equal(t, "dubbo.example", root.TLSConfig.TLSServerName)
+	_, err = ins.NewClient(func(options *client.ClientOptions) {
+		assertTLS(t, options.TLS)
+	})
+	require.NoError(t, err)
+
+	_, err = ins.NewServer(func(options *server.ServerOptions) {
+		assertTLS(t, options.TLS)
+	})
+	require.NoError(t, err)
 }
 
-func TestInstanceInitUsesLegacyMetricsDefaults(t *testing.T) {
+func TestInstanceInitUsesGlobalMetricsDefaults(t *testing.T) {
 	enabled := true
 	rc := defaultInstanceOptions()
 	rc.Metrics = &global.MetricsConfig{Enable: &enabled}
@@ -330,9 +333,7 @@ func TestInstanceInitUsesLegacyMetricsDefaults(t *testing.T) {
 	assert.True(t, *rc.Metrics.Prometheus.Exporter.Enabled)
 }
 
-func TestInstanceInitPreservesLegacyTracingConfig(t *testing.T) {
-	restoreCompatRootConfig(t)
-
+func TestInstanceInitPreservesGlobalTracingConfig(t *testing.T) {
 	ins, err := NewInstance(func(opts *InstanceOptions) {
 		opts.Tracing = map[string]*global.TracingConfig{
 			"jaeger": {
@@ -345,7 +346,7 @@ func TestInstanceInitPreservesLegacyTracingConfig(t *testing.T) {
 	assert.Equal(t, "jaeger", ins.insOpts.Provider.TracingKey)
 	assert.Equal(t, "jaeger", ins.insOpts.Consumer.TracingKey)
 
-	tracing := legacyconfig.GetTracingConfig("jaeger")
+	tracing := ins.insOpts.Tracing["jaeger"]
 	require.NotNil(t, tracing)
 	assert.Equal(t, "jaeger", tracing.Name)
 	assert.Equal(t, "127.0.0.1:6831", tracing.Address)
@@ -353,9 +354,7 @@ func TestInstanceInitPreservesLegacyTracingConfig(t *testing.T) {
 	assert.False(t, *tracing.UseAgent)
 }
 
-func TestInstanceProcessAppliesLegacyDynamicUpdatesAndRefreshesCompatRootConfig(t *testing.T) {
-	restoreCompatRootConfig(t)
-
+func TestInstanceProcessAppliesDynamicUpdatesToLiveOptions(t *testing.T) {
 	ins, err := NewInstance(func(opts *InstanceOptions) {
 		opts.Application = &global.ApplicationConfig{
 			Name:    "stable-app",
@@ -402,32 +401,15 @@ dubbo:
 	assert.Equal(t, "7s", ins.insOpts.Shutdown.ClosingInvokerExpireTime)
 	require.NotNil(t, ins.insOpts.TLSConfig)
 	assert.Equal(t, "dubbo.example", ins.insOpts.TLSConfig.TLSServerName)
-
-	root := legacyconfig.GetRootConfig()
-	require.NotNil(t, root)
-	assert.Equal(t, "stable-app", root.Application.Name)
-	require.NotNil(t, root.Registries["zk"])
-	assert.Equal(t, "9s", root.Registries["zk"].Timeout)
-	assert.Equal(t, "11s", root.Consumer.RequestTimeout)
-	require.NotNil(t, root.TLSConfig)
-	assert.Equal(t, "dubbo.example", root.TLSConfig.TLSServerName)
 }
 
 func TestInstanceProcessDoesNotMutateLiveOptionsOnInvalidPayload(t *testing.T) {
-	restoreCompatRootConfig(t)
-
 	ins, err := NewInstance(WithName("stable-app"))
 	require.NoError(t, err)
-	rootBefore := legacyconfig.GetRootConfig()
-	require.NotNil(t, rootBefore)
-	assert.Equal(t, "stable-app", rootBefore.Application.Name)
 
 	ins.insOpts.Process(&config_center.ConfigChangeEvent{Value: 123})
 
 	assert.Equal(t, "stable-app", ins.insOpts.Application.Name)
-	rootAfter := legacyconfig.GetRootConfig()
-	require.NotNil(t, rootAfter)
-	assert.Equal(t, "stable-app", rootAfter.Application.Name)
 }
 
 func TestSetProviderServiceRegistersByReference(t *testing.T) {
@@ -489,17 +471,5 @@ func resetDynamicConfiguration(t *testing.T) {
 	env.SetDynamicConfiguration(nil)
 	t.Cleanup(func() {
 		env.SetDynamicConfiguration(original)
-	})
-}
-
-func restoreCompatRootConfig(t *testing.T) {
-	t.Helper()
-	original := legacyconfig.GetRootConfig()
-	if original == nil {
-		return
-	}
-	originalValue := *original
-	t.Cleanup(func() {
-		legacyconfig.SetRootConfig(originalValue)
 	})
 }
