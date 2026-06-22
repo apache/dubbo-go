@@ -157,6 +157,8 @@ const (
 	CycleReportKey                     = "cycle.report"
 	DefaultBlackListRecoverBlock       = 16
 	CallTypeKey                        = "call-type"
+	ResponseHeaderKey                  = "response-header"
+	ResponseTrailerKey                 = "response-trailer"
 	CallUnary                          = "unary"
 	CallClientStream                   = "client-stream"
 	CallServerStream                   = "server-stream"

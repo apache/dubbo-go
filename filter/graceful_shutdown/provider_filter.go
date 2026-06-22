@@ -30,7 +30,6 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
@@ -114,9 +113,6 @@ func (f *providerGracefulShutdownFilter) Set(name string, conf any) {
 		switch ct := conf.(type) {
 		case *global.ShutdownConfig:
 			f.shutdownConfig = ct
-		// only for compatibility with old config, able to directly remove after config is deleted
-		case *config.ShutdownConfig:
-			f.shutdownConfig = compatGlobalShutdownConfig(ct)
 		default:
 			logger.Warnf("[Filter][GracefulShutdown] the type of config for %s should be *global.ShutdownConfig", constant.GracefulShutdownFilterShutdownConfig)
 		}

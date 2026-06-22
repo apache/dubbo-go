@@ -378,6 +378,11 @@ func TestServer(t *testing.T) {
 			stream, err := client.CumSum(ctx)
 			assert.Nil(t, err)
 			stream.RequestHeader().Set(clientHeader, headerValue)
+			if !expectSuccess { // server doesn't support HTTP/2
+				failNoHTTP2(t, stream)
+				cancel()
+				return
+			}
 			assert.Nil(t, stream.Send(&pingv1.CumSumRequest{Number: 8}))
 			cancel()
 			// On a subsequent send, ensure that we are still catching context

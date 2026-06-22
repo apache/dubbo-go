@@ -57,9 +57,9 @@ func TestShutdownConfigGetTimeout(t *testing.T) {
 	// test default
 	config = ShutdownConfig{}
 
-	assert.Equal(t, defaultTimeout, config.GetTimeout())
-	assert.Equal(t, defaultStepTimeout, config.GetStepTimeout())
-	assert.Equal(t, defaultOfflineRequestWindowTimeout, config.GetOfflineRequestWindowTimeout())
+	assert.Equal(t, 60*time.Second, config.GetTimeout())
+	assert.Equal(t, 3*time.Second, config.GetStepTimeout())
+	assert.Equal(t, 3*time.Second, config.GetOfflineRequestWindowTimeout())
 }
 
 func TestNewShutDownConfigBuilder(t *testing.T) {
