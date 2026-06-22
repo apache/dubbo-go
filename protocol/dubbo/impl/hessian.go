@@ -87,10 +87,10 @@ func marshalResponse(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 			if response.Exception != nil { // throw error
 				_ = encoder.Encode(resWithException)
 				switch ex := response.Exception.(type) {
-				case *hessian2.GenericException:
-					_ = encoder.Encode(java_exception.NewDubboGenericException(ex.ExceptionClass, ex.ExceptionMessage))
-				case hessian2.GenericException:
-					_ = encoder.Encode(java_exception.NewDubboGenericException(ex.ExceptionClass, ex.ExceptionMessage))
+				case *java_exception.DubboGenericException:
+					_ = encoder.Encode(ex)
+				case java_exception.DubboGenericException:
+					_ = encoder.Encode(ex)
 				case java_exception.Throwabler:
 					_ = encoder.Encode(ex)
 				default:
