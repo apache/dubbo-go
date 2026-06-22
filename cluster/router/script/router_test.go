@@ -28,7 +28,9 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
@@ -255,6 +257,170 @@ func TestScriptRouterProcessDelSkipsConfigBody(t *testing.T) {
 	assert.False(t, s.enabled)
 	assert.Empty(t, s.scriptType)
 	assert.Empty(t, s.rawScript)
+}
+
+func TestScriptRouterSetStaticConfig(t *testing.T) {
+	staticScriptForPort := func(port string) string {
+		return `(function route(invokers, invocation, context) {
+		var result = [];
+		for (var i = 0; i < invokers.length; i++) {
+			if (invokers[i].GetURL().Port === "` + port + `") {
+				result.push(invokers[i]);
+			}
+		}
+		return result;
+	}(invokers, invocation, context));`
+	}
+
+	t.Run("apply static script config", func(t *testing.T) {
+		invokers, inv, _ := getRouteCheckArgs()
+		s := NewScriptRouter()
+		s.SetStaticConfig(&global.RouterConfig{
+			Scope:      constant.RouterScopeApplication,
+			Key:        "BDTService",
+			ScriptType: "javascript",
+			Script:     staticScriptForPort("20001"),
+		})
+
+		got := s.Route(invokers, nil, inv)
+		assert.Len(t, got, 1)
+		assert.Equal(t, "20001", got[0].GetURL().Port)
+	})
+
+	t.Run("ignore disabled static script config", func(t *testing.T) {
+		invokers, inv, _ := getRouteCheckArgs()
+		enabled := false
+		s := NewScriptRouter()
+		s.SetStaticConfig(&global.RouterConfig{
+			Scope:      constant.RouterScopeApplication,
+			Key:        "BDTService",
+			Enabled:    &enabled,
+			ScriptType: "javascript",
+			Script:     staticScriptForPort("20001"),
+		})
+
+		got := s.Route(invokers, nil, inv)
+		assert.True(t, checkInvokersSame(got, invokers))
+	})
+
+	t.Run("ignore config without script", func(t *testing.T) {
+		invokers, inv, _ := getRouteCheckArgs()
+		s := NewScriptRouter()
+		s.SetStaticConfig(&global.RouterConfig{
+			Scope: constant.RouterScopeApplication,
+			Key:   "BDTService",
+		})
+
+		got := s.Route(invokers, nil, inv)
+		assert.True(t, checkInvokersSame(got, invokers))
+	})
+
+	t.Run("ignore config without key", func(t *testing.T) {
+		invokers, inv, _ := getRouteCheckArgs()
+		s := NewScriptRouter()
+		s.SetStaticConfig(&global.RouterConfig{
+			Scope:      constant.RouterScopeApplication,
+			ScriptType: "javascript",
+			Script:     staticScriptForPort("20001"),
+		})
+
+		got := s.Route(invokers, nil, inv)
+		assert.True(t, checkInvokersSame(got, invokers))
+	})
+
+	t.Run("replace previous static script config", func(t *testing.T) {
+		invokers, inv, _ := getRouteCheckArgs()
+		s := NewScriptRouter()
+		s.SetStaticConfig(&global.RouterConfig{
+			Scope:      constant.RouterScopeApplication,
+			Key:        "BDTService",
+			ScriptType: "javascript",
+			Script:     staticScriptForPort("20001"),
+		})
+		s.SetStaticConfig(&global.RouterConfig{
+			Scope:      constant.RouterScopeApplication,
+			Key:        "BDTService",
+			ScriptType: "javascript",
+			Script:     staticScriptForPort("20002"),
+		})
+
+		got := s.Route(invokers, nil, inv)
+		assert.Len(t, got, 1)
+		assert.Equal(t, "20002", got[0].GetURL().Port)
+	})
+
+	t.Run("select static script config by provider application", func(t *testing.T) {
+		invokers, inv, _ := getRouteCheckArgs()
+		s := NewScriptRouter()
+		s.SetStaticConfig(&global.RouterConfig{
+			Scope:      constant.RouterScopeApplication,
+			Key:        "BDTService",
+			ScriptType: "javascript",
+			Script:     staticScriptForPort("20002"),
+		})
+		s.SetStaticConfig(&global.RouterConfig{
+			Scope:      constant.RouterScopeApplication,
+			Key:        "OtherService",
+			ScriptType: "javascript",
+			Script:     staticScriptForPort("20001"),
+		})
+
+		got := s.Route(invokers, nil, inv)
+		assert.Len(t, got, 1)
+		assert.Equal(t, "20002", got[0].GetURL().Port)
+		assert.Len(t, s.staticRules, 2)
+	})
+
+	t.Run("replace stale config with unsupported script type", func(t *testing.T) {
+		invokers, inv, _ := getRouteCheckArgs()
+		s := &ScriptRouter{
+			staticRules: map[string]scriptRule{
+				"BDTService" + constant.ScriptRouterRuleSuffix: {
+					enabled:    true,
+					scriptType: "unsupported",
+					rawScript:  "old script",
+				},
+			},
+		}
+		s.SetStaticConfig(&global.RouterConfig{
+			Scope:      constant.RouterScopeApplication,
+			Key:        "BDTService",
+			ScriptType: "javascript",
+			Script:     staticScriptForPort("20001"),
+		})
+
+		got := s.Route(invokers, nil, inv)
+		assert.Len(t, got, 1)
+		assert.Equal(t, "20001", got[0].GetURL().Port)
+	})
+
+	t.Run("disable unsupported script type", func(t *testing.T) {
+		invokers, inv, _ := getRouteCheckArgs()
+		s := NewScriptRouter()
+		s.SetStaticConfig(&global.RouterConfig{
+			Scope:      constant.RouterScopeApplication,
+			Key:        "BDTService",
+			ScriptType: "unsupported",
+			Script:     staticScriptForPort("20001"),
+		})
+
+		got := s.Route(invokers, nil, inv)
+		assert.True(t, checkInvokersSame(got, invokers))
+	})
+
+	t.Run("disable invalid static script", func(t *testing.T) {
+		invokers, inv, _ := getRouteCheckArgs()
+		s := NewScriptRouter()
+		s.SetStaticConfig(&global.RouterConfig{
+			Scope:      constant.RouterScopeApplication,
+			Key:        "BDTService",
+			ScriptType: "javascript",
+			Script:     "bad input",
+		})
+
+		got := s.Route(invokers, nil, inv)
+		assert.True(t, checkInvokersSame(got, invokers))
+	})
 }
 
 func checkInvokersSame(invokers []base.Invoker, otherInvokers []base.Invoker) bool {
