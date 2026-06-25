@@ -40,6 +40,27 @@ func TestGracefulShutdownCallbacksReturnsSnapshot(t *testing.T) {
 	}
 }
 
+func TestRegisterGracefulShutdownCallbackIgnoresDuplicate(t *testing.T) {
+	t.Cleanup(func() {
+		UnregisterGracefulShutdownCallback("duplicate-test")
+	})
+
+	RegisterGracefulShutdownCallback("duplicate-test", func(context.Context) error {
+		return context.Canceled
+	})
+	RegisterGracefulShutdownCallback("duplicate-test", func(context.Context) error {
+		return context.DeadlineExceeded
+	})
+
+	callback, ok := LookupGracefulShutdownCallback("duplicate-test")
+	if !ok {
+		t.Fatal("expected registered callback")
+	}
+	if err := callback(context.Background()); err != context.Canceled {
+		t.Fatalf("expected first callback to remain registered, got %v", err)
+	}
+}
+
 func TestGetAllCustomShutdownCallbacksReturnsSnapshot(t *testing.T) {
 	customShutdownCallbacksMu.Lock()
 	original := customShutdownCallbacks

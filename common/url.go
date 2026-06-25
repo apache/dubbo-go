@@ -20,7 +20,6 @@ package common
 import (
 	"bytes"
 	"encoding/base64"
-	"fmt"
 	"math"
 	"net"
 	"net/url"
@@ -395,39 +394,113 @@ func isMatchCategory(category1 string, category2 string) bool {
 }
 
 func (c *URL) String() string {
-	c.paramsLock.Lock()
-	defer c.paramsLock.Unlock()
+	c.paramsLock.RLock()
+	defer c.paramsLock.RUnlock()
+
+	encodedParams := c.params.Encode()
 	var buf strings.Builder
-	if len(c.Username) == 0 && len(c.Password) == 0 {
-		buf.WriteString(fmt.Sprintf("%s://%s:%s%s", c.Protocol, c.Ip, c.Port, c.Path))
-	} else {
-		buf.WriteString(fmt.Sprintf("%s://%s:%s@%s:%s%s", c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Path))
+
+	size := len(c.Protocol) + len("://") + len(c.Ip) + len(":") + len(c.Port) + len(c.Path)
+	if len(c.Username) != 0 || len(c.Password) != 0 {
+		size += len(c.Username) + len(":") + len(c.Password) + len("@")
 	}
-	if encoded := c.params.Encode(); encoded != "" {
+	if encodedParams != "" {
+		size += len("?") + len(encodedParams)
+	}
+
+	buf.Grow(size)
+	buf.WriteString(c.Protocol)
+	buf.WriteString("://")
+	if len(c.Username) != 0 || len(c.Password) != 0 {
+		buf.WriteString(c.Username)
+		buf.WriteString(":")
+		buf.WriteString(c.Password)
+		buf.WriteString("@")
+	}
+	buf.WriteString(c.Ip)
+	buf.WriteString(":")
+	buf.WriteString(c.Port)
+	buf.WriteString(c.Path)
+	if encodedParams != "" {
 		buf.WriteByte('?')
-		buf.WriteString(encoded)
+		buf.WriteString(encodedParams)
 	}
 	return buf.String()
 }
 
 // Key gets key
 func (c *URL) Key() string {
-	buildString := fmt.Sprintf(
-		"%s://%s:%s@%s:%s/?interface=%s&group=%s&version=%s",
-		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Service(), c.GetParam(constant.GroupKey, ""), c.GetParam(constant.VersionKey, ""),
-	)
-	return buildString
+	var buf strings.Builder
+	service := c.Service()
+	group := c.GetParam(constant.GroupKey, "")
+	version := c.GetParam(constant.VersionKey, "")
+
+	size := len(c.Protocol) + len("://") + len(c.Username) +
+		len(":") + len(c.Password) + len("@") +
+		len(c.Ip) + len(":") + len(c.Port) +
+		len("/?interface=") + len(service) +
+		len("&group=") + len(group) +
+		len("&version=") + len(version)
+
+	buf.Grow(size)
+	buf.WriteString(c.Protocol)
+	buf.WriteString("://")
+	buf.WriteString(c.Username)
+	buf.WriteString(":")
+	buf.WriteString(c.Password)
+	buf.WriteString("@")
+	buf.WriteString(c.Ip)
+	buf.WriteString(":")
+	buf.WriteString(c.Port)
+	buf.WriteString("/?interface=")
+	buf.WriteString(service)
+	buf.WriteString("&group=")
+	buf.WriteString(group)
+	buf.WriteString("&version=")
+	buf.WriteString(version)
+
+	return buf.String()
 }
 
 // GetCacheInvokerMapKey get directory cacheInvokerMap key
 func (c *URL) GetCacheInvokerMapKey() string {
-	buildString := fmt.Sprintf(
-		"%s://%s:%s@%s:%s/?interface=%s&group=%s&version=%s&timestamp=%s&"+constant.MeshClusterIDKey+"=%s",
-		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Service(), c.GetParam(constant.GroupKey, ""),
-		c.GetParam(constant.VersionKey, ""), c.primitiveTS,
-		c.GetParam(constant.MeshClusterIDKey, ""),
-	)
-	return buildString
+	var buf strings.Builder
+	service := c.Service()
+	group := c.GetParam(constant.GroupKey, "")
+	version := c.GetParam(constant.VersionKey, "")
+	meshClusterID := c.GetParam(constant.MeshClusterIDKey, "")
+
+	size := len(c.Protocol) + len("://") + len(c.Username) +
+		len(":") + len(c.Password) + len("@") +
+		len(c.Ip) + len(":") + len(c.Port) +
+		len("/?interface=") + len(service) +
+		len("&group=") + len(group) +
+		len("&version=") + len(version) +
+		len("&timestamp=") + len(c.primitiveTS) +
+		len("&meshClusterID=") + len(meshClusterID)
+
+	buf.Grow(size)
+	buf.WriteString(c.Protocol)
+	buf.WriteString("://")
+	buf.WriteString(c.Username)
+	buf.WriteString(":")
+	buf.WriteString(c.Password)
+	buf.WriteString("@")
+	buf.WriteString(c.Ip)
+	buf.WriteString(":")
+	buf.WriteString(c.Port)
+	buf.WriteString("/?interface=")
+	buf.WriteString(service)
+	buf.WriteString("&group=")
+	buf.WriteString(group)
+	buf.WriteString("&version=")
+	buf.WriteString(version)
+	buf.WriteString("&timestamp=")
+	buf.WriteString(c.primitiveTS)
+	buf.WriteString("&meshClusterID=")
+	buf.WriteString(meshClusterID)
+
+	return buf.String()
 }
 
 // ServiceKey gets a unique key of a service.
@@ -442,7 +515,7 @@ func ServiceKey(intf string, group string, version string) string {
 	if intf == "" {
 		return ""
 	}
-	buf := &bytes.Buffer{}
+	var buf strings.Builder
 	if group != "" {
 		buf.WriteString(group)
 		buf.WriteString("/")
@@ -678,23 +751,34 @@ func (c *URL) GetParams() url.Values {
 	return c.CopyParams()
 }
 
+func copyURLValues(src url.Values) url.Values {
+	if src == nil {
+		return nil
+	}
+
+	dst := make(url.Values, len(src))
+	for k, vs := range src {
+		copied := make([]string, len(vs))
+		copy(copied, vs)
+		dst[k] = copied
+	}
+
+	return dst
+}
+
+func valuesHasNonDefaultParam(values url.Values, key string) bool {
+	if len(values) == 0 {
+		return false
+	}
+	return values.Get(key) != ""
+}
+
 // CopyParams returns a deep copy of params.
 func (c *URL) CopyParams() url.Values {
 	c.paramsLock.RLock()
 	defer c.paramsLock.RUnlock()
 
-	if c.params == nil {
-		return nil
-	}
-
-	params := make(url.Values, len(c.params))
-	for k, vs := range c.params {
-		copied := make([]string, len(vs))
-		copy(copied, vs)
-		params[k] = copied
-	}
-
-	return params
+	return copyURLValues(c.params)
 }
 
 // GetParamAndDecoded gets values and decode
@@ -880,41 +964,53 @@ func (c *URL) ToMap() map[string]string {
 func (c *URL) MergeURL(anotherUrl *URL) *URL {
 	// After Clone, it is a new URL that there is no thread safe issue.
 	mergedURL := c.Clone()
-	params := mergedURL.GetParams()
-	// iterator the anotherUrl if c not have the key ,merge in
-	// anotherUrl usually will not changed. so change RangeParams to GetParams to avoid the string value copy.// Group get group
-	for key, value := range anotherUrl.GetParams() {
-		if _, ok := mergedURL.GetNonDefaultParam(key); !ok {
-			if len(value) > 0 {
-				params[key] = make([]string, len(value))
-				copy(params[key], value)
+	params := mergedURL.params
+	if params == nil {
+		params = url.Values{}
+		mergedURL.params = params
+	}
+	baseTimestamp := params.Get(constant.TimestampKey)
+	baseHasTimestamp := baseTimestamp != ""
+
+	func() {
+		anotherUrl.paramsLock.RLock()
+		defer anotherUrl.paramsLock.RUnlock()
+
+		// Merge params from anotherUrl under one read lock.
+		for key, value := range anotherUrl.params {
+			if !valuesHasNonDefaultParam(params, key) {
+				if len(value) > 0 {
+					params[key] = make([]string, len(value))
+					copy(params[key], value)
+				}
 			}
 		}
-	}
 
-	// remote timestamp
-	if v, ok := c.GetNonDefaultParam(constant.TimestampKey); !ok {
-		params[constant.RemoteTimestampKey] = []string{v}
-		params[constant.TimestampKey] = []string{anotherUrl.GetParam(constant.TimestampKey, "")}
-	}
-
-	// finally execute methodConfigMergeFcn
-	mergedURL.Methods = make([]string, len(anotherUrl.Methods))
-	for i, method := range anotherUrl.Methods {
-		for _, paramKey := range []string{constant.LoadbalanceKey, constant.ClusterKey, constant.RetriesKey, constant.TimeoutKey} {
-			if v := anotherUrl.GetParam(paramKey, ""); len(v) > 0 {
-				params[paramKey] = []string{v}
-			}
-
-			methodsKey := "methods." + method + "." + paramKey
-			// if len(mergedURL.GetParam(methodsKey, "")) == 0 {
-			if v := anotherUrl.GetParam(methodsKey, ""); len(v) > 0 {
-				params[methodsKey] = []string{v}
-			}
-			// }
-			mergedURL.Methods[i] = method
+		// remote timestamp
+		if !baseHasTimestamp {
+			params[constant.RemoteTimestampKey] = []string{baseTimestamp}
+			params[constant.TimestampKey] = []string{anotherUrl.params.Get(constant.TimestampKey)}
 		}
-	}
+
+		// finally execute methodConfigMergeFcn
+		mergedURL.Methods = make([]string, len(anotherUrl.Methods))
+		for i, method := range anotherUrl.Methods {
+			for _, paramKey := range []string{constant.LoadbalanceKey, constant.ClusterKey, constant.RetriesKey, constant.TimeoutKey} {
+				if v := anotherUrl.params.Get(paramKey); len(v) > 0 {
+					params[paramKey] = []string{v}
+				}
+
+				methodsKey := "methods." + method + "." + paramKey
+				// if len(mergedURL.GetParam(methodsKey, "")) == 0 {
+				if v := anotherUrl.params.Get(methodsKey); len(v) > 0 {
+					params[methodsKey] = []string{v}
+				}
+				// }
+				mergedURL.Methods[i] = method
+			}
+		}
+	}()
+
 	// merge attributes
 	anotherUrl.RangeAttributes(func(attrK string, attrV any) bool {
 		if _, ok := mergedURL.GetAttribute(attrK); !ok {
@@ -931,36 +1027,8 @@ func (c *URL) MergeURL(anotherUrl *URL) *URL {
 // excludeParams: the set of parameters to exclude from the cloned URL
 // reserveParams: the set of parameters to retain in the cloned URL
 func (c *URL) CloneWithFilter(excludeParams *gxset.HashSet, reserveParams []string) *URL {
-	newURL := &URL{
-		Protocol:     c.Protocol,
-		Location:     c.Location,
-		Ip:           c.Ip,
-		Port:         c.Port,
-		PrimitiveURL: c.PrimitiveURL,
-		primitiveTS:  c.primitiveTS,
-		Path:         c.Path,
-		Username:     c.Username,
-		Password:     c.Password,
-		Methods:      append(make([]string, 0), c.Methods...),
-		attributes:   make(map[string]any),
-		params:       url.Values{},
-	}
-
-	// Copy and filter params based on excludeParams or reserveParams
-	c.RangeParams(
-		func(key, value string) bool {
-			// If the param is in excludeParams or not in reserveParams, skip it
-			if excludeParams != nil && excludeParams.Contains(key) {
-				return true
-			}
-			if len(reserveParams) > 0 && !slices.Contains(reserveParams, key) {
-				return true
-			}
-			// Set the param if it passes the filter
-			newURL.SetParam(key, value)
-			return true
-		},
-	)
+	newURL := c.newURLForClone()
+	newURL.params = c.copyFilteredParams(newURL.params, excludeParams, reserveParams)
 
 	// Copy attributes
 	c.RangeAttributes(
@@ -976,6 +1044,77 @@ func (c *URL) CloneWithFilter(excludeParams *gxset.HashSet, reserveParams []stri
 	}
 
 	return newURL
+}
+
+func (c *URL) newURLForClone() *URL {
+	return &URL{
+		Protocol:     c.Protocol,
+		Location:     c.Location,
+		Ip:           c.Ip,
+		Port:         c.Port,
+		PrimitiveURL: c.PrimitiveURL,
+		primitiveTS:  c.primitiveTS,
+		Path:         c.Path,
+		Username:     c.Username,
+		Password:     c.Password,
+		Methods:      append(make([]string, 0), c.Methods...),
+		attributes:   make(map[string]any),
+		params:       url.Values{},
+	}
+}
+
+func (c *URL) copyFilteredParams(params url.Values, excludeParams *gxset.HashSet, reserveParams []string) url.Values {
+	c.paramsLock.RLock()
+	defer c.paramsLock.RUnlock()
+
+	if excludeParams == nil && len(reserveParams) == 0 {
+		if len(c.params) > 8 {
+			copiedParams := copyURLValues(c.params)
+			if copiedParams != nil {
+				return copiedParams
+			}
+		}
+		for key, values := range c.params {
+			copied := make([]string, len(values))
+			copy(copied, values)
+			params[key] = copied
+		}
+		return params
+	}
+
+	if capacity := paramsCapacityForClone(len(c.params), excludeParams, reserveParams); capacity > 8 {
+		params = make(url.Values, capacity)
+	}
+
+	for key, values := range c.params {
+		if shouldCopyParam(key, excludeParams, reserveParams) {
+			copied := make([]string, len(values))
+			copy(copied, values)
+			params[key] = copied
+		}
+	}
+
+	return params
+}
+
+func paramsCapacityForClone(paramsLen int, excludeParams *gxset.HashSet, reserveParams []string) int {
+	if len(reserveParams) > 0 && len(reserveParams) < paramsLen {
+		paramsLen = len(reserveParams)
+	}
+	if excludeParams != nil {
+		paramsLen -= excludeParams.Size()
+	}
+	if paramsLen < 0 {
+		return 0
+	}
+	return paramsLen
+}
+
+func shouldCopyParam(key string, excludeParams *gxset.HashSet, reserveParams []string) bool {
+	if excludeParams != nil && excludeParams.Contains(key) {
+		return false
+	}
+	return len(reserveParams) == 0 || slices.Contains(reserveParams, key)
 }
 
 // Clone will copy the URL

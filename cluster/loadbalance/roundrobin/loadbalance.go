@@ -74,12 +74,13 @@ func (lb *rrLoadBalance) Select(invokers []base.Invoker, invocation base.Invocat
 		totalWeight         = int64(0)
 		maxCurrentWeight    = int64(math.MinInt64)
 		now                 = time.Now()
+		nowUnix             = now.Unix()
 		selectedInvoker     base.Invoker
 		selectedWeightRobin *weightedRoundRobin
 	)
 
 	for _, invoker := range invokers {
-		weight := max(loadbalance.GetWeight(invoker, invocation), 0)
+		weight := max(loadbalance.GetWeightAt(invoker, invocation, nowUnix), 0)
 
 		identifier := invoker.GetURL().Key()
 		wr := &weightedRoundRobin{weight: weight}
@@ -144,8 +145,8 @@ func (robin *weightedRoundRobin) Weight() int64 {
 }
 
 func (robin *weightedRoundRobin) setWeight(weight int64) {
-	robin.weight = weight
-	robin.current = 0
+	atomic.StoreInt64(&robin.weight, weight)
+	atomic.StoreInt64(&robin.current, 0)
 }
 
 func (robin *weightedRoundRobin) LastUpdate() *time.Time {
@@ -157,7 +158,7 @@ func (robin *weightedRoundRobin) setLastUpdate(time *time.Time) {
 }
 
 func (robin *weightedRoundRobin) increaseCurrent() int64 {
-	return atomic.AddInt64(&robin.current, robin.weight)
+	return atomic.AddInt64(&robin.current, atomic.LoadInt64(&robin.weight))
 }
 
 func (robin *weightedRoundRobin) Current(delta int64) {

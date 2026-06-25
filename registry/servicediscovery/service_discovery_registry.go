@@ -20,6 +20,7 @@ package servicediscovery
 import (
 	"errors"
 	"math/rand/v2"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -100,13 +101,14 @@ func (s *serviceDiscoveryRegistry) startMetadataTimers() {
 }
 
 func (s *serviceDiscoveryRegistry) RegisterService() error {
-	metaInfo := metadata.GetMetadataInfo(s.url.GetParam(constant.RegistryIdKey, ""))
+	registryId := s.url.GetParam(constant.RegistryIdKey, constant.DefaultKey)
+	metaInfo := metadata.GetMetadataInfo(registryId)
 	if metaInfo == nil {
-		panic("no metada info found of registry id " + s.url.GetParam(constant.RegistryIdKey, ""))
+		panic("no metada info found of registry id " + registryId)
 	}
 	urls := metaInfo.GetExportedServiceURLs()
 	for _, url := range urls {
-		instance := createInstance(metaInfo, url)
+		instance := createInstance(metaInfo, url, registryId)
 		metaInfo.Revision = instance.GetMetadata()[constant.ExportedServicesRevisionPropertyName]
 		if metadata.GetMetadataType() == constant.RemoteMetadataStorageType {
 			if s.metadataReport == nil {
@@ -136,9 +138,12 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 	return nil
 }
 
-func createInstance(meta *info.MetadataInfo, url *common.URL) registry.ServiceInstance {
+func createInstance(meta *info.MetadataInfo, url *common.URL, registryId string) registry.ServiceInstance {
 	params := make(map[string]string, 8)
 	params[constant.MetadataStorageTypePropertyName] = metadata.GetMetadataType()
+	// Expose the registry this instance belongs to so that customizers (e.g. revision
+	// calculators) can scope their work to the correct per-registry service set.
+	params[constant.RegistryIdKey] = registryId
 	// Keep routing attributes visible on the registered instance as well as in service metadata.
 	if environment := url.GetParam(constant.EnvironmentKey, ""); len(environment) > 0 {
 		params[constant.EnvironmentKey] = environment
@@ -215,8 +220,7 @@ func (s *serviceDiscoveryRegistry) UnSubscribe(url *common.URL, listener registr
 	if services == nil {
 		return nil
 	}
-	// FIXME ServiceNames.String() is not good
-	serviceNamesKey := services.String()
+	serviceNamesKey := sortServices(services)
 	l := s.serviceListeners[serviceNamesKey]
 	if l != nil {
 		l.RemoveListener(url.ServiceKey())
@@ -233,11 +237,11 @@ func (s *serviceDiscoveryRegistry) UnSubscribe(url *common.URL, listener registr
 }
 
 func (s *serviceDiscoveryRegistry) syncExportedMetadataAfterUnregister(targetURL *common.URL, origin []registry.ServiceInstance, keep []registry.ServiceInstance) error {
-	registryID, exist := s.url.GetNonDefaultParam(constant.RegistryIdKey)
+	registryId, exist := s.url.GetNonDefaultParam(constant.RegistryIdKey)
 	if !exist {
 		return nil
 	}
-	metadataInfo := metadata.GetMetadataInfo(registryID)
+	metadataInfo := metadata.GetMetadataInfo(registryId)
 	if metadataInfo == nil {
 		return nil
 	}
@@ -246,14 +250,14 @@ func (s *serviceDiscoveryRegistry) syncExportedMetadataAfterUnregister(targetURL
 	if len(origin) > 0 {
 		metadataInfo.ReplaceExportedServices(keepURLs)
 	} else if targetURL != nil {
-		metadata.RemoveService(registryID, targetURL)
+		metadata.RemoveService(registryId, targetURL)
 	}
 	remainingURLs := metadataInfo.GetExportedServiceURLs()
 	if len(remainingURLs) == 0 {
 		metadataInfo.Revision = "0"
 		return nil
 	}
-	instance := createInstance(metadataInfo, remainingURLs[0])
+	instance := createInstance(metadataInfo, remainingURLs[0], registryId)
 	revision := instance.GetMetadata()[constant.ExportedServicesRevisionPropertyName]
 	metadataInfo.Revision = revision
 	if len(keepURLs) == 0 {
@@ -521,9 +525,8 @@ func (s *serviceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.No
 }
 
 func (s *serviceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry.NotifyListener, services *gxset.HashSet) {
-	// FIXME ServiceNames.String() is not good
 	var err error
-	serviceNamesKey := services.String()
+	serviceNamesKey := sortServices(services)
 	protocol := constant.TriProtocol // consume "tri" protocol by default, other protocols need to be specified on reference/consumer explicitly
 	if url.Protocol != "" {
 		protocol = url.Protocol
@@ -531,7 +534,7 @@ func (s *serviceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry
 	protocolServiceKey := url.ServiceKey() + ":" + protocol
 	listener := s.serviceListeners[serviceNamesKey]
 	if listener == nil {
-		listener = NewServiceInstancesChangedListener(url.GetParam(constant.ApplicationKey, ""), services)
+		listener = NewServiceInstancesChangedListener(url.GetParam(constant.ApplicationKey, ""), s.url.GetParam(constant.RegistryIdKey, constant.DefaultKey), services)
 		for _, serviceNameTmp := range services.Values() {
 			serviceName := serviceNameTmp.(string)
 			instances := s.serviceDiscovery.GetInstances(serviceName)
@@ -561,6 +564,17 @@ func (s *serviceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry
 			logger.Errorf("[Registry][ServiceDiscovery] add instance listener catch error, url=%s err=%s", url.String(), err.Error())
 		}
 	}()
+}
+
+func sortServices(services *gxset.HashSet) string {
+	list := make([]string, 0, services.Size())
+	for _, v := range services.Values() {
+		if s, ok := v.(string); ok && s != "" {
+			list = append(list, s)
+		}
+	}
+	sort.Strings(list)
+	return strings.Join(list, ",")
 }
 
 // LoadSubscribeInstances load subscribe instance

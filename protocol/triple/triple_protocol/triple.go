@@ -230,6 +230,13 @@ func (r *Response) Any() any {
 // Header returns the HTTP headers for this response. Headers beginning with
 // "Triple-" and "Grpc-" are reserved for use by the Triple and gRPC
 // protocols: applications may read them but shouldn't write them.
+//
+// Unary clients can pass a response wrapper to the generated client method,
+// then read response headers after the call returns:
+//
+//	response := NewResponse(&greet.GreetResponse{})
+//	err := client.Greet(ctx, NewRequest(&greet.GreetRequest{}), response)
+//	values := response.Header().Values("hello")
 func (r *Response) Header() http.Header {
 	if r.header == nil {
 		r.header = make(http.Header)
@@ -244,6 +251,13 @@ func (r *Response) Header() http.Header {
 // Trailers beginning with "Triple-" and "Grpc-" are reserved for use by the
 // Triple and gRPC protocols: applications may read them but shouldn't write
 // them.
+//
+// Unary clients can read trailers from the same response wrapper after the
+// generated client method returns:
+//
+//	response := NewResponse(&greet.GreetResponse{})
+//	err := client.Greet(ctx, NewRequest(&greet.GreetRequest{}), response)
+//	values := response.Trailer().Values("end")
 func (r *Response) Trailer() http.Header {
 	if r.trailer == nil {
 		r.trailer = make(http.Header)
@@ -332,6 +346,10 @@ func receiveUnaryResponse(conn StreamingClientConn, response AnyResponse) error 
 	if !ok {
 		panic(fmt.Sprintf("response %T is not of Response type", response))
 	}
+	defer func() {
+		resp.header = conn.ResponseHeader()
+		resp.trailer = conn.ResponseTrailer()
+	}()
 	if err := conn.Receive(resp.Msg); err != nil {
 		return err
 	}
@@ -343,8 +361,6 @@ func receiveUnaryResponse(conn StreamingClientConn, response AnyResponse) error 
 	} else if !errors.Is(err, io.EOF) {
 		return NewError(CodeUnknown, err)
 	}
-	resp.header = conn.ResponseHeader()
-	resp.trailer = conn.ResponseTrailer()
 	return nil
 }
 

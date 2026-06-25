@@ -20,6 +20,7 @@ package tag
 import (
 	"strings"
 	"sync"
+	"sync/atomic"
 )
 
 import (
@@ -29,6 +30,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/router"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	conf "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
@@ -40,6 +42,7 @@ import (
 
 type PriorityRouter struct {
 	routerConfigs sync.Map
+	cache         atomic.Value // router.Cache
 }
 
 func NewTagPriorityRouter() (*PriorityRouter, error) {
@@ -52,6 +55,24 @@ func (p *PriorityRouter) Route(invokers []base.Invoker, url *common.URL, invocat
 		logger.Warn("[Router][Tag] invokers from previous router is empty")
 		return invokers
 	}
+
+	// Cache only takes effect when TagRouter is the first router in the chain.
+	// RouterChain sets RouterCacheDisable=true after each router, so later routers always skip cache.
+	if v := p.cache.Load(); v != nil {
+		if !invocation.GetAttributeWithDefaultValue(constant.RouterCacheDisable, false).(bool) {
+			c := v.(router.Cache)
+			pool, fullInvokers, cacheGen := c.FindAddrPool(p)
+			snapshotGen := invocation.GetAttributeWithDefaultValue(constant.RouterChainCacheGeneration, uint64(0)).(uint64)
+			// Only take the bitmap fast path when the cache snapshot is the same generation the
+			// chain snapshotted for this call. Otherwise a concurrent SetInvokers may have rebuilt
+			// the cache between the chain snapshot and this lookup, so fall through to the original
+			// matcher over the invokers passed in (finalInvokers).
+			if pool != nil && fullInvokers != nil && cacheGen == snapshotGen {
+				return p.routeWithPool(fullInvokers, pool, url, invocation)
+			}
+		}
+	}
+
 	// get application name from invoker to look up tag routing config
 	application := invokers[0].GetURL().GetParam(constant.ApplicationKey, "")
 	key := strings.Join([]string{application, constant.TagRouterRuleSuffix}, "")

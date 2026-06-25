@@ -175,7 +175,7 @@ func newNacosMetadataReport(f fields) *nacosMetadataReport {
 }
 
 func Test_nacosMetadataReport_GetAppMetadata(t *testing.T) {
-	mi := info.MetadataInfo{
+	mi := &info.MetadataInfo{
 		App: "GetAppMetadata",
 	}
 	data, _ := json.Marshal(mi)
@@ -202,7 +202,7 @@ func Test_nacosMetadataReport_GetAppMetadata(t *testing.T) {
 				application: "dubbo",
 				revision:    "revision",
 			},
-			want:    &mi,
+			want:    mi,
 			wantErr: false,
 		},
 	}

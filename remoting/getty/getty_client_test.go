@@ -285,3 +285,49 @@ func TestInitClient(t *testing.T) {
 	url.SetAttribute(constant.ApplicationKey, global.ApplicationConfig{})
 	initClient(url)
 }
+
+func TestInitClientTLS(t *testing.T) {
+	newURL := func() *common.URL {
+		url, err := common.NewURL("dubbo://127.0.0.1:20003/test")
+		require.NoError(t, err)
+		url.SetAttribute(constant.ProtocolConfigKey, map[string]*global.ProtocolConfig{
+			"dubbo": {
+				Name:   "dubbo",
+				Ip:     "127.0.0.1",
+				Port:   "20003",
+				Params: map[string]any{},
+			},
+		})
+		url.SetAttribute(constant.ApplicationKey, global.ApplicationConfig{})
+		return url
+	}
+
+	t.Run("valid TLS config enables SSLEnabled and TLSBuilder", func(t *testing.T) {
+		clientConf = GetDefaultClientConfig()
+		url := newURL()
+		url.SetAttribute(constant.TLSConfigKey, &global.TLSConfig{
+			CACertFile: "/path/to/ca.crt",
+		})
+		initClient(url)
+		assert.True(t, clientConf.SSLEnabled)
+		assert.NotNil(t, clientConf.TLSBuilder)
+	})
+
+	t.Run("invalid TLS config keeps TLS disabled", func(t *testing.T) {
+		clientConf = GetDefaultClientConfig()
+		url := newURL()
+		url.SetAttribute(constant.TLSConfigKey, &global.TLSConfig{
+			CACertFile: "",
+		})
+		initClient(url)
+		assert.False(t, clientConf.SSLEnabled)
+	})
+
+	t.Run("wrong TLSConfigKey type returns early without panic", func(t *testing.T) {
+		clientConf = GetDefaultClientConfig()
+		url := newURL()
+		url.SetAttribute(constant.TLSConfigKey, "not a *global.TLSConfig")
+		initClient(url)
+		assert.False(t, clientConf.SSLEnabled)
+	})
+}

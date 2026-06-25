@@ -34,20 +34,17 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config/interfaces"
 	"dubbo.apache.org/dubbo-go/v3/protocol/rest/config"
 )
 
-const REST = "rest"
-
 func init() {
-	extension.SetConfigReaders(REST, NewRestConfigReader)
-	extension.SetDefaultConfigReader(REST, REST)
+	extension.SetConfigReaders(constant.RESTProtocol, NewRestConfigReader)
+	extension.SetDefaultConfigReader(constant.RESTProtocol, constant.RESTProtocol)
 }
 
 type RestConfigReader struct{}
 
-func NewRestConfigReader() interfaces.ConfigReader {
+func NewRestConfigReader() extension.ConfigReader {
 	return &RestConfigReader{}
 }
 
