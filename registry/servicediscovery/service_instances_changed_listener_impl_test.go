@@ -375,6 +375,18 @@ func (c *capturingNotifyListener) NotifyAll(events []*registry.ServiceEvent, cal
 	}
 }
 
+func TestServiceInstancesChangedListenerRemoveListener(t *testing.T) {
+	listener := NewServiceInstancesChangedListener(testApp, constant.DefaultKey, gxset.NewSet(testApp)).(*ServiceInstancesChangedListenerImpl)
+	notify := &capturingNotifyListener{}
+	key := common.MatchKey(testInterface, constant.TriProtocol)
+
+	listener.AddListenerAndNotify(key, notify)
+	require.Len(t, listener.listeners, 1)
+
+	listener.RemoveListener(key)
+	require.Empty(t, listener.listeners)
+}
+
 func TestGetMetadataInfo_CacheKeyFormat(t *testing.T) {
 	// Ensure cache is initialized (normally done by NewServiceInstancesChangedListener)
 	_ = NewServiceInstancesChangedListener(testApp, constant.DefaultKey, gxset.NewSet(testApp))

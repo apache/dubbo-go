@@ -19,6 +19,7 @@ package metadata
 
 import (
 	"sort"
+	"sync"
 	"time"
 )
 
@@ -39,7 +40,8 @@ import (
 )
 
 var (
-	instances = make(map[string]report.MetadataReport)
+	instances   = make(map[string]report.MetadataReport)
+	instancesMu sync.RWMutex
 )
 
 // ClearMetadataReportInstances resets the package-level instances map.
@@ -54,7 +56,10 @@ func addMetadataReport(registryId string, url *common.URL) error {
 		logger.Warnf("[Metadata] no metadata report factory of protocol %s found, please check if the metadata report factory is imported", url.Protocol)
 		return nil
 	}
-	instances[registryId] = &DelegateMetadataReport{instance: fac.CreateMetadataReport(url)}
+	mr := &DelegateMetadataReport{instance: fac.CreateMetadataReport(url)}
+	instancesMu.Lock()
+	instances[registryId] = mr
+	instancesMu.Unlock()
 	return nil
 }
 
@@ -63,6 +68,9 @@ func addMetadataReport(registryId string, url *common.URL) error {
 // it falls back to the lexicographically first registry id so the selection
 // is always stable across calls.
 func GetMetadataReport() report.MetadataReport {
+	instancesMu.RLock()
+	defer instancesMu.RUnlock()
+
 	if r, ok := instances[constant.DefaultKey]; ok {
 		return r
 	}
@@ -89,6 +97,8 @@ func GetMetadataReportByRegistry(registry string) report.MetadataReport {
 	if len(registry) == 0 {
 		return GetMetadataReport()
 	}
+	instancesMu.RLock()
+	defer instancesMu.RUnlock()
 	if r, ok := instances[registry]; ok {
 		return r
 	}
@@ -101,6 +111,8 @@ func GetMetadataReportByRegistry(registry string) report.MetadataReport {
 }
 
 func GetMetadataReports() []report.MetadataReport {
+	instancesMu.RLock()
+	defer instancesMu.RUnlock()
 	reports := make([]report.MetadataReport, len(instances))
 	index := 0
 	for _, r := range instances {
