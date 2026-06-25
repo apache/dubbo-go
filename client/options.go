@@ -375,13 +375,6 @@ func WithSticky() ReferenceOption {
 	}
 }
 
-// TODO: remove this function after old triple removed
-func WithIDL(IDLMode string) ReferenceOption {
-	return func(opts *ReferenceOptions) {
-		opts.Reference.IDLMode = IDLMode
-	}
-}
-
 // ========== Protocol to consume ==========
 
 func WithProtocolDubbo() ReferenceOption {

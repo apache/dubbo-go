@@ -496,11 +496,6 @@ type ServiceOptions struct {
 	exporters       []base.Exporter
 	adaptiveService bool
 
-	// for triple non-IDL mode
-	// consider put here or global.ServiceConfig
-	// string for url
-	IDLMode string
-
 	// openapi group for documentation
 	openapiGroup string
 }
@@ -901,13 +896,6 @@ func WithParam(k, v string) ServiceOption {
 func WithOpenAPIGroup(group string) ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.openapiGroup = group
-	}
-}
-
-// TODO: remove when config package is removed
-func WithIDLMode(IDLMode string) ServiceOption {
-	return func(opts *ServiceOptions) {
-		opts.IDLMode = IDLMode
 	}
 }
 

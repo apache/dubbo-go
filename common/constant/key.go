@@ -68,20 +68,10 @@ const (
 	KeepAliveInterval = "keep-alive-interval"
 	KeepAliveTimeout  = "keep-alive-timeout"
 
-	// TODO: remove IDLMode after old triple removed
-	IDLMode = "IDL-mode"
-
 	TripleConfigKey     = "triple-config"
 	ConsumerConfigKey   = "consumer-config"
 	RegistriesConfigKey = "registries-config"
 	RoutersConfigKey    = "routers-config"
-)
-
-// TODO: remove this after old triple removed
-// IDLMode
-const (
-	IDL    = "IDL"
-	NONIDL = "non-IDL"
 )
 
 // tls constant

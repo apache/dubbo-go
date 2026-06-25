@@ -243,16 +243,6 @@ func (s *Server) startTransport(callProtocol string, tlsConf *tls.Config) {
 func (s *Server) registerServiceHandlers(invoker base.Invoker, info *common.ServiceInfo, hanOpts []tri.HandlerOption) {
 	url := invoker.GetURL()
 
-	// IDLMode means that this will only be set when
-	// the new triple is started in non-IDL mode.
-	// TODO: remove IDLMode when config package is removed
-	IDLMode := url.GetParam(constant.IDLMode, "")
-
-	var service common.RPCService
-	if IDLMode == constant.NONIDL {
-		service, _ = url.GetAttribute(constant.RpcServiceKey)
-	}
-
 	intfName := url.Interface()
 	//OpenAPI group
 	var openapiGroup string
@@ -266,13 +256,12 @@ func (s *Server) registerServiceHandlers(invoker base.Invoker, info *common.Serv
 		// new triple idl mode
 		s.handleServiceWithInfo(intfName, invoker, info, hanOpts...)
 		s.saveServiceInfo(intfName, info, openapiGroup, url.Group(), url.Version())
-	} else if IDLMode == constant.NONIDL {
+	} else {
 		// new triple non-idl mode
+		service, _ := url.GetAttribute(constant.RpcServiceKey)
 		reflectInfo := createServiceInfoWithReflection(service)
 		s.handleServiceWithInfo(intfName, invoker, reflectInfo, hanOpts...)
 		s.saveServiceInfo(intfName, reflectInfo, openapiGroup, url.Group(), url.Version())
-	} else {
-		logger.Error("[Server][Triple] dubbo3(old triple) and IDL-mode are not supported by dubbo-go any more, please use Triple protocol")
 	}
 }
 
@@ -545,7 +534,7 @@ func extractUnaryInvocationArgs(msg any) []any {
 		}
 		return args
 	}
-	// triple idl mode and old triple idl mode
+	// triple idl mode, req.Msg is a single message
 	return []any{msg}
 }
 
