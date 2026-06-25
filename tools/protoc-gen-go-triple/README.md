@@ -4,11 +4,7 @@
 
 The `protoc-gen-go-triple` tool generates Go language bindings for Dubbo `service`s based on protobuf definition files.
 
-For users of dubbo-go version 3.2.0 and above, please use `protoc-gen-go-triple` version 3.0.0 or higher. It is also recommended for other dubbo-go users to use `protoc-gen-go-triple` version 3.0.0 or higher. To generate stubs compatible with dubbo-go version 3.1.x and below, please set the following option:
-
-```
-protoc --go-triple_out=useOldVersion=true[,other options...]:.
-```
+***Breaking Change: the old Triple generation mode for dubbo-go 3.1.x and below has been removed, including the `useOldVersion=true` and `require_unimplemented_servers` options.***
 
 ## Prerequisites
 
@@ -19,17 +15,17 @@ Before using `protoc-gen-go-triple`, make sure you have the following prerequisi
 
 ## Installation
 
-To install `protoc-gen-go-triple`, you can use the `go get` command:
+To install `protoc-gen-go-triple`, use `go install`:
 
 ```shell
-go install github.com/dubbogo/protoc-gen-go-triple/v3@v3.0.3
+go install dubbo.apache.org/dubbo-go/v3/tools/protoc-gen-go-triple@latest
 ```
 
-Alternatively, you can download the [binary release](https://github.com/dubbogo/protoc-gen-go-triple/releases/tag/v3.0.2) or clone the GitHub repository and build the binary manually:
+Alternatively, clone the Dubbo Go repository and build the binary manually:
 
 ```shell
-git clone https://github.com/dubbogo/protoc-gen-go-triple.git
-cd protoc-gen-go-triple
+git clone https://github.com/apache/dubbo-go.git
+cd dubbo-go/tools/protoc-gen-go-triple
 go build
 ```
 
@@ -98,4 +94,3 @@ protoc --go_out=. --go_opt=paths=source_relative --go-triple_out=. greet.proto
 ```
 
 This will generate the Go code for the Protobuf code in `greet.pb.go` and the Triple code in `greet.triple.go`.
-
