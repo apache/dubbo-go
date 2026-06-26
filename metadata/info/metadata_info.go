@@ -67,6 +67,7 @@ type MetadataInfo struct {
 	exportedServiceURLs   map[string][]*common.URL `hessian:"-"` // server exported service urls
 	subscribedServiceURLs map[string][]*common.URL `hessian:"-"` // client subscribed service urls
 	mu                    sync.RWMutex             `json:"-" hessian:"-"`
+	LastUpdatedTime       int64                    `json:"lastUpdatedTime,omitempty" hessian:"-"`
 }
 
 func NewAppMetadataInfo(app string) *MetadataInfo {
@@ -218,6 +219,25 @@ func (info *MetadataInfo) ReplaceExportedServices(urls []*common.URL) {
 	info.exportedServiceURLs = make(map[string][]*common.URL)
 	for _, serviceURL := range urls {
 		info.addServiceWithoutLock(serviceURL)
+	}
+}
+
+// Snapshot creates a deep copy of the MetadataInfo for safe concurrent access.
+// The caller can modify the snapshot without affecting the original.
+func (info *MetadataInfo) Snapshot() MetadataInfo {
+	info.mu.RLock()
+	defer info.mu.RUnlock()
+
+	services := make(map[string]*ServiceInfo, len(info.Services))
+	for k, v := range info.Services {
+		si := *v
+		services[k] = &si
+	}
+	return MetadataInfo{
+		App:      info.App,
+		Revision: info.Revision,
+		Tag:      info.Tag,
+		Services: services,
 	}
 }
 

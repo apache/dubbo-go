@@ -427,6 +427,11 @@ const (
 	MetadataServiceURLParamsPropertyName   = MetadataServicePrefix + "url-params"
 	MetadataServiceURLsPropertyName        = MetadataServicePrefix + "urls"
 	ServiceDiscoveryKey                    = "service_discovery" // indicate which service discovery instance will be used
+
+	// metadata GC configuration keys
+	MetadataGCEnabledKey      = "metadata.gc.enabled"
+	MetadataGCWindowKey       = "metadata.gc.window"        // GC window in days, aligned with daily renew cycle
+	MetadataRenewOnStartupKey = "metadata.renew-on-startup" // whether to run renewAppMetadata once on startup
 )
 
 // Generic Filter

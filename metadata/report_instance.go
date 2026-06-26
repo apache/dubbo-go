@@ -134,6 +134,11 @@ type DelegateMetadataReport struct {
 	instance report.MetadataReport
 }
 
+// URL returns the URL of the underlying metadata report instance.
+func (d *DelegateMetadataReport) URL() *common.URL {
+	return d.instance.URL()
+}
+
 // PublishAppMetadata delegate publish metadata info
 func (d *DelegateMetadataReport) PublishAppMetadata(application, revision string, meta *info.MetadataInfo) error {
 	event := metadataMetrics.NewMetadataMetricTimeEvent(metadataMetrics.MetadataPush)
@@ -164,4 +169,14 @@ func (d *DelegateMetadataReport) RegisterServiceAppMapping(interfaceName, group 
 
 func (d *DelegateMetadataReport) RemoveServiceAppMappingListener(interfaceName, group string) error {
 	return d.instance.RemoveServiceAppMappingListener(interfaceName, group)
+}
+
+// UnPublishAppMetadata delegate unpublish metadata info
+func (d *DelegateMetadataReport) UnPublishAppMetadata(application, revision string) error {
+	return d.instance.UnPublishAppMetadata(application, revision)
+}
+
+// ListAppRevisions delegate list app revisions
+func (d *DelegateMetadataReport) ListAppRevisions(application string) ([]report.AppRevision, error) {
+	return d.instance.ListAppRevisions(application)
 }

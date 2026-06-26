@@ -261,6 +261,18 @@ func (m *listenerMockMetadataReport) RemoveServiceAppMappingListener(string, str
 	return args.Error(0)
 }
 
+func (m *listenerMockMetadataReport) UnPublishAppMetadata(string, string) error {
+	return nil
+}
+
+func (m *listenerMockMetadataReport) ListAppRevisions(string) ([]metadatareport.AppRevision, error) {
+	return nil, nil
+}
+
+func (m *listenerMockMetadataReport) URL() *common.URL {
+	return nil
+}
+
 func newTestServiceInstance(t *testing.T, port int, environment string) registry.ServiceInstance {
 	t.Helper()
 

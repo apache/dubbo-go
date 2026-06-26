@@ -30,6 +30,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
@@ -86,6 +87,11 @@ func (stubReport) GetServiceAppMapping(string, string, mapping.MappingListener) 
 	return nil, nil
 }
 func (stubReport) RemoveServiceAppMappingListener(string, string) error { return nil }
+func (stubReport) UnPublishAppMetadata(string, string) error            { return nil }
+func (stubReport) ListAppRevisions(string) ([]report.AppRevision, error) {
+	return nil, nil
+}
+func (stubReport) URL() *common.URL { return nil }
 
 // casReport registers mappings with optimistic concurrency against a versionedStore, exactly
 // as the etcd/zk/nacos reports now do, returning report.ErrMappingCASConflict on conflict.

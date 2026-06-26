@@ -19,6 +19,7 @@ package nacos
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -30,6 +31,9 @@ import (
 
 	"github.com/nacos-group/nacos-sdk-go/v2/model"
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -289,4 +293,114 @@ func Test_nacosMetadataReport_RegisterServiceAppMapping(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_nacosMetadataReport_UnPublishAppMetadata(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mnc := NewMockIConfigClient(ctrl)
+	// Expect DeleteConfig for both primary and legacy config
+	mnc.EXPECT().DeleteConfig(gomock.Any()).Times(2).Return(true, nil)
+	nc := &nacosClient.NacosConfigClient{}
+	nc.SetClient(mnc)
+
+	n := &nacosMetadataReport{client: nc, group: "dubbo"}
+	err := n.UnPublishAppMetadata("test-app", "abc123")
+	require.NoError(t, err)
+}
+
+func Test_nacosMetadataReport_UnPublishAppMetadata_Error(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mnc := NewMockIConfigClient(ctrl)
+	mnc.EXPECT().DeleteConfig(gomock.Any()).Return(false, fmt.Errorf("delete error"))
+	nc := &nacosClient.NacosConfigClient{}
+	nc.SetClient(mnc)
+
+	n := &nacosMetadataReport{client: nc, group: "dubbo"}
+	err := n.UnPublishAppMetadata("test-app", "abc123")
+	require.Error(t, err)
+}
+
+func Test_nacosMetadataReport_ListAppRevisions(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mnc := NewMockIConfigClient(ctrl)
+	mnc.EXPECT().SearchConfig(gomock.Any()).Return(&model.ConfigPage{
+		TotalCount: 2,
+		PageItems: []model.ConfigItem{
+			{DataId: "test-app", Group: "rev1", Content: `{"app":"test-app","revision":"rev1","lastUpdatedTime":100}`},
+			{DataId: "test-app", Group: "rev2", Content: `{"app":"test-app","revision":"rev2","lastUpdatedTime":200}`},
+		},
+	}, nil)
+	nc := &nacosClient.NacosConfigClient{}
+	nc.SetClient(mnc)
+
+	n := &nacosMetadataReport{client: nc, group: "dubbo"}
+	revisions, err := n.ListAppRevisions("test-app")
+	require.NoError(t, err)
+	assert.Len(t, revisions, 2)
+
+	names := make(map[string]int64)
+	for _, rev := range revisions {
+		names[rev.Revision] = rev.ModifyTime
+	}
+	assert.Equal(t, int64(100), names["rev1"])
+	assert.Equal(t, int64(200), names["rev2"])
+}
+
+func Test_nacosMetadataReport_ListAppRevisions_Empty(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mnc := NewMockIConfigClient(ctrl)
+	mnc.EXPECT().SearchConfig(gomock.Any()).Return(&model.ConfigPage{
+		TotalCount: 0,
+		PageItems:  nil,
+	}, nil)
+	nc := &nacosClient.NacosConfigClient{}
+	nc.SetClient(mnc)
+
+	n := &nacosMetadataReport{client: nc, group: "dubbo"}
+	revisions, err := n.ListAppRevisions("test-app")
+	require.NoError(t, err)
+	assert.Nil(t, revisions)
+}
+
+func Test_nacosMetadataReport_ListAppRevisions_FilterLegacyEntries(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mnc := NewMockIConfigClient(ctrl)
+	mnc.EXPECT().SearchConfig(gomock.Any()).Return(&model.ConfigPage{
+		TotalCount: 3,
+		PageItems: []model.ConfigItem{
+			{DataId: "test-app", Group: "rev1", Content: `{"app":"test-app","lastUpdatedTime":500}`}, // Java-compatible: keep
+			{DataId: "test-app:rev2", Group: "dubbo"},                                                // Legacy: skip (group == n.group)
+			{DataId: "test-app", Group: ""},                                                          // Empty group: skip
+		},
+	}, nil)
+	nc := &nacosClient.NacosConfigClient{}
+	nc.SetClient(mnc)
+
+	n := &nacosMetadataReport{client: nc, group: "dubbo"}
+	revisions, err := n.ListAppRevisions("test-app")
+	require.NoError(t, err)
+	assert.Len(t, revisions, 1)
+	assert.Equal(t, "rev1", revisions[0].Revision)
+	assert.Equal(t, int64(500), revisions[0].ModifyTime)
+}
+
+func Test_nacosMetadataReport_ListAppRevisions_ZeroLastUpdatedTime(t *testing.T) {
+	// Old data without lastUpdatedTime returns ModifyTime=0; callers guard with > 0.
+	ctrl := gomock.NewController(t)
+	mnc := NewMockIConfigClient(ctrl)
+	mnc.EXPECT().SearchConfig(gomock.Any()).Return(&model.ConfigPage{
+		TotalCount: 1,
+		PageItems: []model.ConfigItem{
+			{DataId: "test-app", Group: "old-rev", Content: `{"app":"test-app","revision":"old-rev"}`},
+		},
+	}, nil)
+	nc := &nacosClient.NacosConfigClient{}
+	nc.SetClient(mnc)
+
+	n := &nacosMetadataReport{client: nc, group: "dubbo"}
+	revisions, err := n.ListAppRevisions("test-app")
+	require.NoError(t, err)
+	assert.Len(t, revisions, 1)
+	assert.Equal(t, "old-rev", revisions[0].Revision)
+	assert.Equal(t, int64(0), revisions[0].ModifyTime)
 }
