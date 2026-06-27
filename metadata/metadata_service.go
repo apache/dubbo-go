@@ -95,6 +95,8 @@ func (mts *DefaultMetadataService) GetMetadataInfo(revision string) (*info.Metad
 	if revision == "" {
 		return nil, nil
 	}
+	registryMetadataLock.RLock()
+	defer registryMetadataLock.RUnlock()
 	for _, metadataInfo := range mts.metadataMap {
 		if metadataInfo.Revision == revision {
 			return metadataInfo, nil
@@ -106,6 +108,8 @@ func (mts *DefaultMetadataService) GetMetadataInfo(revision string) (*info.Metad
 
 // GetExportedServiceURLs get exported service urls
 func (mts *DefaultMetadataService) GetExportedServiceURLs() ([]*common.URL, error) {
+	registryMetadataLock.RLock()
+	defer registryMetadataLock.RUnlock()
 	urls := make([]*common.URL, 0)
 	for _, metadataInfo := range mts.metadataMap {
 		urls = append(urls, metadataInfo.GetExportedServiceURLs()...)
@@ -124,6 +128,8 @@ func (mts *DefaultMetadataService) GetMetadataServiceURL() (*common.URL, error) 
 }
 
 func (mts *DefaultMetadataService) GetSubscribedURLs() ([]*common.URL, error) {
+	registryMetadataLock.RLock()
+	defer registryMetadataLock.RUnlock()
 	urls := make([]*common.URL, 0)
 	for _, metadataInfo := range mts.metadataMap {
 		urls = append(urls, metadataInfo.GetSubscribedURLs()...)
@@ -257,7 +263,7 @@ func (mtsV2 *MetadataServiceV2) GetMetadataInfo(ctx context.Context, req *triple
 	return &tripleapi.MetadataInfoV2{
 		App:      metadataInfo.App,
 		Version:  metadataInfo.Revision,
-		Services: convertV2(metadataInfo.Services),
+		Services: convertV2(metadataInfo.GetServices()),
 		Tag:      metadataInfo.Tag,
 	}, err
 }

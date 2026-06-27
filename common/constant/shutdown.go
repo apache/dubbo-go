@@ -15,32 +15,16 @@
  * limitations under the License.
  */
 
-package graceful_shutdown
+package constant
 
 import (
-	"go.uber.org/atomic"
+	"time"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/config"
-	"dubbo.apache.org/dubbo-go/v3/global"
+const (
+	DefaultShutdownConfigTimeout                     = 60 * time.Second
+	DefaultShutdownConfigStepTimeout                 = 3 * time.Second
+	DefaultShutdownConfigNotifyTimeout               = 5 * time.Second
+	DefaultShutdownConfigConsumerUpdateWaitTime      = 3 * time.Second
+	DefaultShutdownConfigOfflineRequestWindowTimeout = 3 * time.Second
 )
-
-func compatGlobalShutdownConfig(c *config.ShutdownConfig) *global.ShutdownConfig {
-	if c == nil {
-		return nil
-	}
-	cfg := &global.ShutdownConfig{
-		Timeout:                     c.Timeout,
-		StepTimeout:                 c.StepTimeout,
-		NotifyTimeout:               c.NotifyTimeout,
-		ConsumerUpdateWaitTime:      c.ConsumerUpdateWaitTime,
-		RejectRequestHandler:        c.RejectRequestHandler,
-		InternalSignal:              c.InternalSignal,
-		OfflineRequestWindowTimeout: c.OfflineRequestWindowTimeout,
-		RejectRequest:               atomic.Bool{},
-	}
-	cfg.RejectRequest.Store(c.RejectRequest.Load())
-
-	return cfg
-}

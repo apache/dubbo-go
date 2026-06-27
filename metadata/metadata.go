@@ -19,13 +19,18 @@
 package metadata
 
 import (
+	"sync"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 )
 
 var (
-	registryMetadataInfo                 = make(map[string]*info.MetadataInfo)
+	registryMetadataInfo = make(map[string]*info.MetadataInfo)
+	registryMetadataLock sync.RWMutex
 	metadataService      MetadataService = &DefaultMetadataService{metadataMap: registryMetadataInfo}
 )
 
@@ -34,31 +39,44 @@ func GetMetadataService() MetadataService {
 }
 
 func GetMetadataInfo(registryId string) *info.MetadataInfo {
+	registryMetadataLock.RLock()
+	defer registryMetadataLock.RUnlock()
 	return registryMetadataInfo[registryId]
 }
 
 func AddService(registryId string, url *common.URL) {
+	registryMetadataLock.Lock()
 	if _, exist := registryMetadataInfo[registryId]; !exist {
 		registryMetadataInfo[registryId] = info.NewMetadataInfo(
 			url.GetParam(constant.ApplicationKey, ""),
 			url.GetParam(constant.ApplicationTagKey, ""),
 		)
 	}
-	registryMetadataInfo[registryId].AddService(url)
+	metaInfo := registryMetadataInfo[registryId]
+	registryMetadataLock.Unlock()
+
+	metaInfo.AddService(url)
 }
 
 func AddSubscribeURL(registryId string, url *common.URL) {
+	registryMetadataLock.Lock()
 	if _, exist := registryMetadataInfo[registryId]; !exist {
 		registryMetadataInfo[registryId] = info.NewMetadataInfo(
 			url.GetParam(constant.ApplicationKey, ""),
 			url.GetParam(constant.ApplicationTagKey, ""),
 		)
 	}
-	registryMetadataInfo[registryId].AddSubscribeURL(url)
+	metaInfo := registryMetadataInfo[registryId]
+	registryMetadataLock.Unlock()
+
+	metaInfo.AddSubscribeURL(url)
 }
 
 func RemoveService(registryId string, url *common.URL) {
+	registryMetadataLock.RLock()
 	metadataInfo, exist := registryMetadataInfo[registryId]
+	registryMetadataLock.RUnlock()
+
 	if !exist {
 		return
 	}
@@ -66,7 +84,10 @@ func RemoveService(registryId string, url *common.URL) {
 }
 
 func RemoveSubscribeURL(registryId string, url *common.URL) {
+	registryMetadataLock.RLock()
 	metadataInfo, exist := registryMetadataInfo[registryId]
+	registryMetadataLock.RUnlock()
+
 	if !exist {
 		return
 	}
