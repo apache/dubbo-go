@@ -34,20 +34,17 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config/interfaces"
 	"dubbo.apache.org/dubbo-go/v3/protocol/rest/config"
 )
 
-const REST = "rest"
-
 func init() {
-	extension.SetConfigReaders(REST, NewRestConfigReader)
-	extension.SetDefaultConfigReader(REST, REST)
+	extension.SetConfigReaders(constant.RESTProtocol, NewRestConfigReader)
+	extension.SetDefaultConfigReader(constant.RESTProtocol, constant.RESTProtocol)
 }
 
 type RestConfigReader struct{}
 
-func NewRestConfigReader() interfaces.ConfigReader {
+func NewRestConfigReader() extension.ConfigReader {
 	return &RestConfigReader{}
 }
 
@@ -56,7 +53,7 @@ func (cr *RestConfigReader) ReadConsumerConfig(reader *bytes.Buffer) error {
 	restConsumerConfig := &config.RestConsumerConfig{}
 	err := yaml.Unmarshal(reader.Bytes(), restConsumerConfig)
 	if err != nil {
-		return perrors.Errorf("[Rest ShutdownConfig] unmarshal Consumer error %#v", perrors.WithStack(err))
+		return perrors.Errorf("[Rest][Config] unmarshal Consumer error, err=%v", perrors.WithStack(err))
 	}
 
 	restConsumerServiceConfigMap := make(map[string]*config.RestServiceConfig, len(restConsumerConfig.RestServiceConfigsMap))
@@ -74,7 +71,7 @@ func (cr *RestConfigReader) ReadProviderConfig(reader *bytes.Buffer) error {
 	restProviderConfig := &config.RestProviderConfig{}
 	err := yaml.Unmarshal(reader.Bytes(), restProviderConfig)
 	if err != nil {
-		return perrors.Errorf("[Rest ShutdownConfig] unmarshal Provider error %#v", perrors.WithStack(err))
+		return perrors.Errorf("[Rest][Config] unmarshal Provider error, err=%v", perrors.WithStack(err))
 	}
 	restProviderServiceConfigMap := make(map[string]*config.RestServiceConfig, len(restProviderConfig.RestServiceConfigsMap))
 	for key, rc := range restProviderConfig.RestServiceConfigsMap {
@@ -118,7 +115,7 @@ func transformMethodConfig(methodConfig *config.RestMethodConfig) *config.RestMe
 	if len(methodConfig.PathParamsMap) == 0 && len(methodConfig.PathParams) > 0 {
 		paramsMap, err := parseParamsString2Map(methodConfig.PathParams)
 		if err != nil {
-			logger.Warnf("[Rest ShutdownConfig] Path Param parse error:%v", err)
+			logger.Warnf("[Rest][Config] path param parse error, err=%v", err)
 		} else {
 			methodConfig.PathParamsMap = paramsMap
 		}
@@ -126,7 +123,7 @@ func transformMethodConfig(methodConfig *config.RestMethodConfig) *config.RestMe
 	if len(methodConfig.QueryParamsMap) == 0 && len(methodConfig.QueryParams) > 0 {
 		paramsMap, err := parseParamsString2Map(methodConfig.QueryParams)
 		if err != nil {
-			logger.Warnf("[Rest ShutdownConfig] Argument Param parse error:%v", err)
+			logger.Warnf("[Rest][Config] argument param parse error, err=%v", err)
 		} else {
 			methodConfig.QueryParamsMap = paramsMap
 		}
@@ -134,7 +131,7 @@ func transformMethodConfig(methodConfig *config.RestMethodConfig) *config.RestMe
 	if len(methodConfig.HeadersMap) == 0 && len(methodConfig.Headers) > 0 {
 		headersMap, err := parseParamsString2Map(methodConfig.Headers)
 		if err != nil {
-			logger.Warnf("[Rest ShutdownConfig] Argument Param parse error:%v", err)
+			logger.Warnf("[Rest][Config] argument param parse error, err=%v", err)
 		} else {
 			methodConfig.HeadersMap = headersMap
 		}

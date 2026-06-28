@@ -18,7 +18,9 @@
 package metadata
 
 import (
+	"context"
 	"strconv"
+	"sync"
 	"testing"
 )
 
@@ -32,6 +34,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
+	tripleapi "dubbo.apache.org/dubbo-go/v3/metadata/triple_api/proto"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
 )
@@ -263,6 +266,33 @@ func TestDefaultMetadataServiceMethodMapper(t *testing.T) {
 	}
 }
 
+func TestMetadataServiceV2GetMetadataInfoPreservesTag(t *testing.T) {
+	delegate := &DefaultMetadataService{
+		metadataMap: map[string]*info.MetadataInfo{
+			"revision": {
+				App:      "dubbo-app",
+				Revision: "revision",
+				Tag:      "gray",
+				Services: map[string]*info.ServiceInfo{
+					"DemoService:tri": {
+						Name:     "DemoService",
+						Protocol: "tri",
+					},
+				},
+			},
+		},
+	}
+	svc := &MetadataServiceV2{delegate: delegate}
+
+	got, err := svc.GetMetadataInfo(context.TODO(), &tripleapi.MetadataRequest{Revision: "revision"})
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, "dubbo-app", got.App)
+	assert.Equal(t, "revision", got.Version)
+	assert.Equal(t, "gray", got.Tag)
+	assert.Contains(t, got.Services, "DemoService:tri")
+}
+
 func TestDefaultMetadataServiceSetMetadataServiceURL(t *testing.T) {
 	type args struct {
 		url *common.URL
@@ -361,4 +391,36 @@ func Test_serviceExporterExport(t *testing.T) {
 		err = e.Export()
 		require.NoError(t, err)
 	})
+}
+
+func TestDefaultMetadataServiceConcurrentReadAccess(t *testing.T) {
+	mts := &DefaultMetadataService{
+		metadataMap: newMetadataMap(),
+	}
+
+	var wg sync.WaitGroup
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			urls, err := mts.GetExportedServiceURLs()
+			assert.NoError(t, err)
+			assert.NotEmpty(t, urls)
+		}()
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			urls, err := mts.GetSubscribedURLs()
+			assert.NoError(t, err)
+			assert.NotEmpty(t, urls)
+		}()
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			info, err := mts.GetMetadataInfo("1")
+			assert.NoError(t, err)
+			assert.NotNil(t, info)
+		}()
+	}
+	wg.Wait()
 }

@@ -132,16 +132,16 @@ func packRequest(service Service, header DubboHeader, req any) ([]byte, error) {
 
 	// dubbo version + path + version + method
 	if err = encoder.Encode(DEFAULT_DUBBO_PROTOCOL_VERSION); err != nil {
-		logger.Warnf("Encode(DEFAULT_DUBBO_PROTOCOL_VERSION) = error: %v", err)
+		logger.Warnf("[Dubbo][Hessian2] encode default dubbo protocol version failed, err=%v", err)
 	}
 	if err = encoder.Encode(service.Path); err != nil {
-		logger.Warnf("Encode(service.Path) = error: %v", err)
+		logger.Warnf("[Dubbo][Hessian2] encode service path failed, err=%v", err)
 	}
 	if err = encoder.Encode(service.Version); err != nil {
-		logger.Warnf("Encode(service.Version) = error: %v", err)
+		logger.Warnf("[Dubbo][Hessian2] encode service version failed, err=%v", err)
 	}
 	if err = encoder.Encode(service.Method); err != nil {
-		logger.Warnf("Encode(service.Method) = error: %v", err)
+		logger.Warnf("[Dubbo][Hessian2] encode service method failed, err=%v", err)
 	}
 
 	// args = args type list + args value list
@@ -171,7 +171,7 @@ END:
 	byteArray = encoder.Buffer()
 	pkgLen = len(byteArray)
 	if pkgLen > int(DEFAULT_LEN) { // recommand 8M
-		logger.Warnf("Data length %d too large, recommand max payload %d. "+
+		logger.Warnf("[Dubbo][Hessian2] data length %d too large, recommand max payload %d. "+
 			"Dubbo java can't handle the package whose size is greater than %d!!!", pkgLen, DEFAULT_LEN, DEFAULT_LEN)
 	}
 	// byteArray{body length}

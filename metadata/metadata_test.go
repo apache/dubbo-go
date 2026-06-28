@@ -18,6 +18,7 @@
 package metadata
 
 import (
+	"sync"
 	"testing"
 )
 
@@ -122,6 +123,47 @@ func TestGetMetadataInfo(t *testing.T) {
 	}
 }
 
+func TestRemoveService(t *testing.T) {
+	registryID := "reg-remove-service"
+	url := common.NewURLWithOptions(
+		common.WithProtocol("dubbo"),
+		common.WithInterface("org.apache.dubbo.metadata.TestService"),
+		common.WithPath("org.apache.dubbo.metadata.TestService"),
+		common.WithMethods([]string{"Test"}),
+		common.WithPort("20880"),
+		common.WithParamsValue(constant.ApplicationKey, "dubbo"),
+		common.WithParamsValue(constant.ApplicationTagKey, "v1"),
+	)
+	defer delete(registryMetadataInfo, registryID)
+
+	AddService(registryID, url)
+	assert.Len(t, registryMetadataInfo[registryID].GetExportedServiceURLs(), 1)
+
+	RemoveService(registryID, url)
+	assert.Empty(t, registryMetadataInfo[registryID].GetExportedServiceURLs())
+	assert.Empty(t, registryMetadataInfo[registryID].Services)
+}
+
+func TestRemoveSubscribeURL(t *testing.T) {
+	registryID := "reg-remove-subscribe"
+	url := common.NewURLWithOptions(
+		common.WithProtocol("tri"),
+		common.WithInterface("org.apache.dubbo.metadata.TestService"),
+		common.WithPath("org.apache.dubbo.metadata.TestService"),
+		common.WithMethods([]string{"Test"}),
+		common.WithPort("20880"),
+		common.WithParamsValue(constant.ApplicationKey, "dubbo"),
+		common.WithParamsValue(constant.ApplicationTagKey, "v1"),
+	)
+	defer delete(registryMetadataInfo, registryID)
+
+	AddSubscribeURL(registryID, url)
+	assert.Len(t, registryMetadataInfo[registryID].GetSubscribedURLs(), 1)
+
+	RemoveSubscribeURL(registryID, url)
+	assert.Empty(t, registryMetadataInfo[registryID].GetSubscribedURLs())
+}
+
 func TestGetMetadataService(t *testing.T) {
 	tests := []struct {
 		name string
@@ -137,4 +179,37 @@ func TestGetMetadataService(t *testing.T) {
 			assert.Equalf(t, tt.want, GetMetadataService(), "GetMetadataService()")
 		})
 	}
+}
+
+func TestAddServiceConcurrent(t *testing.T) {
+	var wg sync.WaitGroup
+	for i := 0; i < 20; i++ {
+		registryId := "concurrent-reg"
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			url := common.NewURLWithOptions(
+				common.WithProtocol("dubbo"),
+				common.WithParamsValue(constant.ApplicationKey, "dubbo"),
+				common.WithParamsValue(constant.ApplicationTagKey, "v1"),
+			)
+			AddService(registryId, url)
+		}(i)
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			url := common.NewURLWithOptions(
+				common.WithProtocol("dubbo"),
+				common.WithParamsValue(constant.ApplicationKey, "dubbo"),
+				common.WithParamsValue(constant.ApplicationTagKey, "v1"),
+			)
+			AddSubscribeURL(registryId, url)
+		}(i)
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			_ = GetMetadataInfo(registryId)
+		}(i)
+	}
+	wg.Wait()
 }

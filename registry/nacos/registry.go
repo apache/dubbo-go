@@ -117,10 +117,10 @@ func createRegisterParam(url *common.URL, serviceName string, groupName string) 
 	weightStr := url.GetParam(constant.WeightKey, "1.0")
 	weight, err := strconv.ParseFloat(weightStr, 64)
 	if err != nil || weight <= constant.MinNacosWeight {
-		logger.Warnf("Invalid weight value %q, using default 1.0. err: %v", weightStr, err)
+		logger.Warnf("[Registry][Nacos] invalid weight value %q, using default 1.0, err=%v", weightStr, err)
 		weight = constant.DefaultNacosWeight
 	} else if weight > constant.MaxNacosWeight {
-		logger.Warnf("Weight %f exceeds Nacos maximum 10000, setting to 10000", weight)
+		logger.Warnf("[Registry][Nacos] weight %f exceeds Nacos maximum 10000, setting to 10000", weight)
 		weight = constant.MaxNacosWeight
 	}
 
@@ -144,7 +144,7 @@ func (nr *nacosRegistry) Register(url *common.URL) error {
 	serviceName := getServiceName(url)
 	groupName := nr.GetParam(constant.NacosGroupKey, defaultGroup)
 	param := createRegisterParam(url, serviceName, groupName)
-	logger.Infof("[Nacos Registry] Registry instance with param = %+v", param)
+	logger.Infof("[Registry][Nacos] registry instance with param=%+v", param)
 	isRegistry, err := nr.namingClient.Client().RegisterInstance(param)
 	metrics.Publish(metricsRegistry.NewRegisterEvent(err == nil && isRegistry, start))
 	if err != nil {
@@ -222,11 +222,11 @@ func (nr *nacosRegistry) subscribeUntilSuccess(url *common.URL, notifyListener r
 	}
 
 	notify := func(err error, duration time.Duration) {
-		logger.Warnf("[Nacos Registry] subscribe failed, retry after %v: %v", duration, err)
+		logger.Warnf("[Registry][Nacos] subscribe failed, retry=%v err=%v", duration, err)
 	}
 
 	if err := backoff.RetryNotify(operation, backoff.WithContext(bo, ctx), notify); err != nil {
-		logger.Infof("[Nacos Registry] subscribe retry stopped: %v", err)
+		logger.Infof("[Registry][Nacos] subscribe retry stopped, err=%v", err)
 	}
 }
 
@@ -248,11 +248,11 @@ func (nr *nacosRegistry) subscribeAll(url *common.URL, notifyListener registry.N
 	groupName := nr.GetParam(constant.RegistryGroupKey, defaultGroup)
 	serviceNames, err := nr.getAllSubscribeServiceNames(url)
 	if err != nil {
-		logger.Warnf("getAllServices() = err:%v", perrors.WithStack(err))
+		logger.Warnf("[Registry][Nacos] getAllServices() = err=%v", perrors.WithStack(err))
 		return
 	}
 	if len(serviceNames) == 0 {
-		logger.Warnf("No services to listen to.")
+		logger.Warn("[Registry][Nacos] no services to listen to")
 		return
 	}
 	for _, name := range serviceNames {
@@ -263,7 +263,7 @@ func (nr *nacosRegistry) subscribeAll(url *common.URL, notifyListener registry.N
 		// new service
 		err = nr.subscribe(name, notifyListener)
 		if err != nil {
-			logger.Warnf("subscribe service %s err:%v", name, perrors.WithStack(err))
+			logger.Warnf("[Registry][Nacos] subscribe service %s err=%v", name, perrors.WithStack(err))
 		}
 	}
 }
@@ -271,11 +271,11 @@ func (nr *nacosRegistry) subscribeAll(url *common.URL, notifyListener registry.N
 // subscribe subscribe services
 func (nr *nacosRegistry) subscribe(serviceName string, notifyListener registry.NotifyListener) error {
 	if len(serviceName) == 0 {
-		logger.Warnf("can not subscribe because service name is empty")
+		logger.Warn("[Registry][Nacos] can not subscribe because service name is empty")
 		return nil
 	}
 	if !nr.IsAvailable() {
-		logger.Warnf("event listener game over.")
+		logger.Warn("[Registry][Nacos] event listener game over")
 		return perrors.New("nacosRegistry is not available.")
 	}
 	listener := NewNacosListenerWithServiceName(serviceName, nr.URL, nr.namingClient)
@@ -283,7 +283,7 @@ func (nr *nacosRegistry) subscribe(serviceName string, notifyListener registry.N
 	err := listener.listenService(serviceName)
 	metrics.Publish(metricsRegistry.NewSubscribeEvent(err == nil))
 	if err != nil {
-		logger.Warnf("subscribe service %s err:%v", serviceName, perrors.WithStack(err))
+		logger.Warnf("[Registry][Nacos] subscribe service %s err=%v", serviceName, perrors.WithStack(err))
 		return err
 	}
 	// handleServiceEvents will block to wait notify event and exit when error occur
@@ -303,7 +303,7 @@ func (nr *nacosRegistry) getAllSubscribeServiceNames(url *common.URL) ([]string,
 		PageSize:  math.MaxInt32,
 	})
 	if err != nil {
-		logger.Errorf("query services error: %v", err)
+		logger.Errorf("[Registry][Nacos] query services, err=%v", err)
 		return nil, err
 	}
 	var subScribeServiceNames []string
@@ -332,11 +332,11 @@ func (nr *nacosRegistry) handleServiceEvents(listener registry.Listener, notifyL
 
 		serviceEvent, err := listener.Next()
 		if err != nil {
-			logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
+			logger.Warnf("[Registry][Nacos] Selector.watch() = err=%v", perrors.WithStack(err))
 			return
 		}
 
-		logger.Infof("[Nacos Registry] Update begin, service event: %v", serviceEvent.String())
+		logger.Infof("[Registry][Nacos] update begin, event=%v", serviceEvent.String())
 		notifyListener.Notify(serviceEvent)
 	}
 }
@@ -446,9 +446,9 @@ func (nr *nacosRegistry) Destroy() {
 
 	for _, url := range nr.registryUrls {
 		err := nr.UnRegister(url)
-		logger.Infof("DeRegister Nacos URL:%+v", url)
+		logger.Infof("[Registry][Nacos] deRegister URL=%v", url)
 		if err != nil {
-			logger.Errorf("Deregister URL:%+v err:%v", url, err.Error())
+			logger.Errorf("[Registry][Nacos] deRegister URL=%v err=%v", url, err.Error())
 		}
 	}
 
@@ -458,7 +458,7 @@ func (nr *nacosRegistry) Destroy() {
 
 // newNacosRegistry will create new instance
 func newNacosRegistry(url *common.URL) (registry.Registry, error) {
-	logger.Infof("[Nacos Registry] New nacos registry with url = %+v", url.ToMap())
+	logger.Infof("[Registry][Nacos] new nacos registry with url=%+v", url.ToMap())
 	// key transfer: registry -> nacos
 	url.SetParam(constant.NacosNamespaceID, url.GetParam(constant.RegistryNamespaceKey, ""))
 	url.SetParam(constant.NacosUsername, url.Username)

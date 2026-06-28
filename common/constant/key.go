@@ -157,6 +157,8 @@ const (
 	CycleReportKey                     = "cycle.report"
 	DefaultBlackListRecoverBlock       = 16
 	CallTypeKey                        = "call-type"
+	ResponseHeaderKey                  = "response-header"
+	ResponseTrailerKey                 = "response-trailer"
 	CallUnary                          = "unary"
 	CallClientStream                   = "client-stream"
 	CallServerStream                   = "server-stream"
@@ -357,6 +359,8 @@ const (
 	RouterScopeApplication            = "application"
 	ForceKey                          = "force"
 	TrafficDisableKey                 = "trafficDisable"
+	RouterCacheDisable                = "routerCacheDisable"
+	RouterChainCacheGeneration        = "routerChainCacheGeneration"
 	Arguments                         = "arguments"
 	Attachments                       = "attachments"
 	Param                             = "param"
@@ -364,6 +368,12 @@ const (
 	Wildcard                          = "wildcard"
 	MeshRouterFactoryKey              = "mesh"
 	DefaultRouteConditionSubSetWeight = 100
+
+	// Poolable router bitmap key prefixes
+	PoolKeyTagPrefix  = "tag\x00"
+	PoolKeyAddrPrefix = "addr\x00"
+	PoolKeyPortPrefix = "port\x00"
+	PoolKeyAll        = "*"
 )
 
 // Auth filter
@@ -417,6 +427,11 @@ const (
 	MetadataServiceURLParamsPropertyName   = MetadataServicePrefix + "url-params"
 	MetadataServiceURLsPropertyName        = MetadataServicePrefix + "urls"
 	ServiceDiscoveryKey                    = "service_discovery" // indicate which service discovery instance will be used
+
+	// metadata GC configuration keys
+	MetadataGCEnabledKey      = "metadata.gc.enabled"
+	MetadataGCWindowKey       = "metadata.gc.window"        // GC window in days, aligned with daily renew cycle
+	MetadataRenewOnStartupKey = "metadata.renew-on-startup" // whether to run renewAppMetadata once on startup
 )
 
 // Generic Filter

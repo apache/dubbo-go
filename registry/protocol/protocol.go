@@ -33,9 +33,9 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	commonConfig "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	_ "dubbo.apache.org/dubbo-go/v3/config_center/configurator"
 	"dubbo.apache.org/dubbo-go/v3/global"
@@ -89,7 +89,7 @@ func (proto *registryProtocol) getRegistry(registryUrl *common.URL) registry.Reg
 	actualReg, _ := proto.registries.LoadOrStore(cacheKey, func() any {
 		reg, err := extension.GetRegistry(registryUrl.Protocol, registryUrl)
 		if err != nil {
-			logger.Errorf("Registry cannot connect successfully. Error: %s", err.Error())
+			logger.Errorf("[Registry] registry cannot connect successfully, err=%s", err.Error())
 			panic(err)
 		}
 		return reg
@@ -129,6 +129,48 @@ func (proto *registryProtocol) initConfigurationListeners(url *common.URL) {
 	proto.providerConfigurationListener = newProviderConfigurationListener(proto.overrideListeners, url)
 }
 
+// ensureShutdownAttributes resolves shutdown config by priority:
+// url attribute, fallbackURL attribute, then global default.
+// It writes the resolved config to url and, when missing, fallbackURL.
+func ensureShutdownAttributes(url *common.URL, fallbackURL *common.URL) *global.ShutdownConfig {
+	if shutdownConfig, ok := shutdownFromAttribute(url); ok {
+		url.SetAttribute(constant.ShutdownConfigPrefix, shutdownConfig)
+		ensureFallbackShutdownAttribute(fallbackURL, shutdownConfig)
+		return shutdownConfig
+	}
+	if shutdownConfig, ok := shutdownFromAttribute(fallbackURL); ok {
+		url.SetAttribute(constant.ShutdownConfigPrefix, shutdownConfig)
+		return shutdownConfig
+	}
+
+	shutdownConfig := global.DefaultShutdownConfig()
+	url.SetAttribute(constant.ShutdownConfigPrefix, shutdownConfig)
+	ensureFallbackShutdownAttribute(fallbackURL, shutdownConfig)
+	return shutdownConfig
+}
+
+func ensureFallbackShutdownAttribute(url *common.URL, shutdownConfig *global.ShutdownConfig) {
+	if url == nil {
+		return
+	}
+	if _, ok := url.GetAttribute(constant.ShutdownConfigPrefix); !ok {
+		url.SetAttribute(constant.ShutdownConfigPrefix, shutdownConfig)
+	}
+}
+
+func shutdownFromAttribute(url *common.URL) (*global.ShutdownConfig, bool) {
+	if url == nil {
+		return nil, false
+	}
+
+	shutdownRaw, ok := url.GetAttribute(constant.ShutdownConfigPrefix)
+	if !ok {
+		return nil, false
+	}
+	shutdownConfig, ok := shutdownRaw.(*global.ShutdownConfig)
+	return shutdownConfig, ok && shutdownConfig != nil
+}
+
 // GetRegistries returns all underlying registry instances.
 func (proto *registryProtocol) GetRegistries() []registry.Registry {
 	var rs []registry.Registry
@@ -154,7 +196,7 @@ func (proto *registryProtocol) Refer(url *common.URL) base.Invoker {
 	// new registry directory for store service url from registry
 	dic, err := extension.GetDirectoryInstance(registryUrl, reg)
 	if err != nil {
-		logger.Errorf("consumer service %v create registry directory error, error message is %s, and will return nil invoker!",
+		logger.Errorf("[Registry] consumer service %v create registry directory error, err=%s, and will return nil invoker",
 			serviceUrl.String(), err.Error())
 		return nil
 	}
@@ -162,7 +204,7 @@ func (proto *registryProtocol) Refer(url *common.URL) base.Invoker {
 	// This will start a new routine and listen to instance changes.
 	err = dic.Subscribe(registryUrl.SubURL)
 	if err != nil {
-		logger.Errorf("consumer service %v register registry %v error, error message is %s",
+		logger.Errorf("[Registry] consumer service %v register registry %v error, err=%s",
 			serviceUrl.String(), registryUrl.String(), err.Error())
 	}
 
@@ -170,12 +212,12 @@ func (proto *registryProtocol) Refer(url *common.URL) base.Invoker {
 	clusterKey := serviceUrl.GetParam(constant.ClusterKey, constant.DefaultCluster)
 	cluster, err := extension.GetCluster(clusterKey)
 	if err != nil {
-		logger.Errorf("consumer service %v get cluster %s error, error message is %s, will return nil invoker!",
+		logger.Errorf("[Registry] consumer service %v get cluster %s error, err=%s, will return nil invoker",
 			serviceUrl.String(), clusterKey, err.Error())
 		return nil
 	}
 	if cluster == nil {
-		logger.Errorf("consumer service %v cluster is nil for key %s, will return nil invoker!",
+		logger.Errorf("[Registry] consumer service %v cluster is nil for key %s, will return nil invoker",
 			serviceUrl.String(), clusterKey)
 		return nil
 	}
@@ -188,25 +230,8 @@ func (proto *registryProtocol) Export(originInvoker base.Invoker) base.Exporter 
 	registryUrl := getRegistryUrl(originInvoker)
 	providerUrl := getProviderUrl(originInvoker)
 
-	// Copy ShutdownConfig from providerUrl to registryUrl if registryUrl doesn't have it
-	// (server layer sets it in ivkURL, which becomes providerUrl here)
-	if _, ok := registryUrl.GetAttribute(constant.ShutdownConfigPrefix); !ok {
-		if config.GetShutDown() == nil {
-			// Fallback to default if config package doesn't have one
-			registryUrl.SetAttribute(constant.ShutdownConfigPrefix, global.DefaultShutdownConfig())
-		}
-	}
-
-	// Copy ApplicationKey from providerUrl to registryUrl if registryUrl doesn't have it
-	// ApplicationKey is passed as URL parameter (application name string)
-	// (server layer sets it in ivkURL, which becomes providerUrl here)
-	if _, ok := registryUrl.GetAttribute(constant.ApplicationKey); !ok {
-		// Fallback to config package for old API compatibility
-		if config.GetRootConfig().Application == nil {
-			// Use default application name
-			registryUrl.SetAttribute(constant.ApplicationKey, global.DefaultApplicationConfig())
-		}
-	}
+	ensureShutdownAttributes(registryUrl, providerUrl)
+	commonConfig.EnsureApplicationAttribute(registryUrl, providerUrl)
 
 	proto.once.Do(func() {
 		proto.initConfigurationListeners(providerUrl)
@@ -234,14 +259,14 @@ func (proto *registryProtocol) Export(originInvoker base.Invoker) base.Exporter 
 
 		err := reg.Register(registeredProviderUrl)
 		if err != nil {
-			logger.Errorf("provider service %v register registry %v error, error message is %s",
+			logger.Errorf("[Registry] provider service %v register registry %v error, err=%s",
 				providerUrl.Key(), registryUrl.Key(), err.Error())
 			return nil
 		}
 
 		go func() {
 			if err := reg.Subscribe(overriderUrl, overrideSubscribeListener); err != nil {
-				logger.Warnf("reg.subscribe(overriderUrl:%v) = error:%v", overriderUrl, err)
+				logger.Warnf("[Registry] reg.subscribe(overriderUrl=%v) = err=%v", overriderUrl, err)
 			}
 		}()
 
@@ -249,7 +274,7 @@ func (proto *registryProtocol) Export(originInvoker base.Invoker) base.Exporter 
 		exporter.SetSubscribeUrl(overriderUrl)
 
 	} else {
-		logger.Warnf("provider service %v do not regist to registry %v. possible direct connection provider",
+		logger.Warnf("[Registry] provider service %v do not regist to registry %v, possible direct connection provider",
 			providerUrl.Key(), registryUrl.Key())
 	}
 
@@ -283,7 +308,7 @@ func (proto *registryProtocol) reExport(invoker base.Invoker, newUrl *common.URL
 
 		// oldExporter UnExport function unRegister rpcService from the serviceMap, so need register it again as far as possible
 		if err := registerServiceMap(invoker); err != nil {
-			logger.Error(err.Error())
+			logger.Errorf("[Registry] reExport failed, err=%s", err.Error())
 		}
 		proto.Export(wrappedNewInvoker)
 		// TODO:  unregister & unsubscribe
@@ -296,49 +321,41 @@ func registerServiceMap(invoker base.Invoker) error {
 	// such as dubbo://:20000/org.apache.dubbo.UserProvider?bean.name=UserProvider&cluster=failfast...
 	id := providerUrl.GetParam(constant.BeanNameKey, "")
 
-	// TODO: Temporary compatibility with old APIs, can be removed later
-
-	providerConfig := config.GetProviderConfig()
-
-	if providerConfig != nil {
-		if serviceConfig := providerConfig.Services[id]; serviceConfig != nil {
-			rpcService := config.GetProviderService(id)
-			if rpcService == nil {
-				return perrors.New("reExport can not get RPCService")
-			}
-
-			_, err := common.ServiceMap.Register(serviceConfig.Interface,
-				serviceConfig.ProtocolIDs[0], serviceConfig.Group,
-				serviceConfig.Version, rpcService)
-			if err != nil {
-				s := "reExport can not re register ServiceMap. Error message is " + err.Error()
-				return perrors.New(s)
-			}
-			return nil
-		}
+	providerConfRaw, ok := providerUrl.GetAttribute(constant.ProviderConfigKey)
+	if !ok {
+		return perrors.Errorf("reExport can not get provider config from url attribute %s", constant.ProviderConfigKey)
+	}
+	providerConf, ok := providerConfRaw.(*global.ProviderConfig)
+	if !ok || providerConf == nil {
+		return perrors.Errorf("reExport got illegal provider config from url attribute %s", constant.ProviderConfigKey)
 	}
 
-	if providerConfRaw, ok := providerUrl.GetAttribute(constant.ProviderConfigKey); ok {
-		if providerConf, ok := providerConfRaw.(*global.ProviderConfig); ok {
-			if serviceConf, ok := providerConf.Services[id]; ok {
-				if serviceConf == nil {
-					return perrors.New("reExport can not get RPCService")
-				}
-				if rpcService, ok := providerUrl.GetAttribute(constant.RpcServiceKey); ok {
-					_, err := common.ServiceMap.Register(serviceConf.Interface,
-						serviceConf.ProtocolIDs[0], serviceConf.Group,
-						serviceConf.Version, rpcService)
-					if err != nil {
-						s := "reExport can not re register ServiceMap. Error message is " + err.Error()
-						return perrors.New(s)
-					}
-					return nil
-				}
-			}
-		}
+	serviceConf := providerConf.Services[id]
+	if serviceConf == nil {
+		return perrors.Errorf("reExport can not get service config %q from provider config", id)
 	}
 
-	return perrors.New("reExport can not get serviceConfig of config")
+	rpcService, ok := providerUrl.GetAttribute(constant.RpcServiceKey)
+	if !ok || rpcService == nil {
+		return perrors.Errorf("reExport can not get RPCService from url attribute %s", constant.RpcServiceKey)
+	}
+
+	protocol := providerUrl.Protocol
+	if len(serviceConf.ProtocolIDs) > 0 && serviceConf.ProtocolIDs[0] != "" {
+		protocol = serviceConf.ProtocolIDs[0]
+	}
+	if protocol == "" {
+		return perrors.New("reExport can not get protocol")
+	}
+
+	_, err := common.ServiceMap.Register(serviceConf.Interface,
+		protocol, serviceConf.Group,
+		serviceConf.Version, rpcService)
+	if err != nil {
+		s := "reExport can not re register ServiceMap. Error message is " + err.Error()
+		return perrors.New(s)
+	}
+	return nil
 }
 
 type overrideSubscribeListener struct {
@@ -480,7 +497,7 @@ func (proto *registryProtocol) Destroy() {
 		exporter := value.(*exporterChangeableWrapper)
 		reg := proto.getRegistry(getRegistryUrl(exporter.originInvoker))
 		if err := reg.UnRegister(exporter.registerUrl); err != nil {
-			logger.Warnf("Unregister consumer url failed, %s, error: %w", exporter.registerUrl.String(), err)
+			logger.Warnf("[Registry] unRegister consumer url failed, url=%s err=%v", exporter.registerUrl.String(), err)
 		}
 		proto.unsubscribeOverrideListener(reg, exporter.subscribeUrl)
 		proto.serviceConfigurationListeners.Delete(getProviderUrl(exporter.originInvoker).ServiceKey())
@@ -488,24 +505,10 @@ func (proto *registryProtocol) Destroy() {
 		// close all protocol server after consumerUpdateWait + stepTimeout(max time wait during
 		// waitAndAcceptNewRequests procedure)
 		go func() {
-			if configShutdown := config.GetShutDown(); configShutdown != nil {
-				<-time.After(configShutdown.GetStepTimeout() + configShutdown.GetConsumerUpdateWaitTime())
-				exporter.UnExport()
-				proto.bounds.Delete(key)
-				return
+			wait := destroyWaitDuration(exporter.registerUrl)
+			if wait > 0 {
+				<-time.After(wait)
 			}
-
-			if shutdownConfRaw, ok := exporter.registerUrl.GetAttribute(constant.ShutdownConfigPrefix); ok {
-				if shutdownConfig, ok := shutdownConfRaw.(*global.ShutdownConfig); ok {
-					stepTimeout, _ := time.ParseDuration(shutdownConfig.StepTimeout)
-					consumerUpdateWaitTime, _ := time.ParseDuration(shutdownConfig.ConsumerUpdateWaitTime)
-					<-time.After(stepTimeout + consumerUpdateWaitTime)
-					exporter.UnExport()
-					proto.bounds.Delete(key)
-					return
-				}
-			}
-
 			exporter.UnExport()
 			proto.bounds.Delete(key)
 		}()
@@ -527,6 +530,29 @@ func (proto *registryProtocol) Destroy() {
 
 }
 
+func destroyWaitDuration(url *common.URL) time.Duration {
+	if url == nil {
+		return 0
+	}
+	shutdownConfRaw, ok := url.GetAttribute(constant.ShutdownConfigPrefix)
+	if !ok {
+		return 0
+	}
+	shutdownConfig, ok := shutdownConfRaw.(*global.ShutdownConfig)
+	if !ok || shutdownConfig == nil {
+		return 0
+	}
+	stepTimeout, err := time.ParseDuration(shutdownConfig.StepTimeout)
+	if err != nil {
+		stepTimeout = 0
+	}
+	consumerUpdateWaitTime, err := time.ParseDuration(shutdownConfig.ConsumerUpdateWaitTime)
+	if err != nil {
+		consumerUpdateWaitTime = 0
+	}
+	return stepTimeout + consumerUpdateWaitTime
+}
+
 // UnregisterRegistries only unregisters exported services from registries during graceful shutdown.
 // Protocol servers keep running until the later destroy phase.
 func (proto *registryProtocol) UnregisterRegistries() {
@@ -534,7 +560,7 @@ func (proto *registryProtocol) UnregisterRegistries() {
 		exporter := value.(*exporterChangeableWrapper)
 		reg := proto.getRegistry(getRegistryUrl(exporter.originInvoker))
 		if err := reg.UnRegister(exporter.registerUrl); err != nil {
-			logger.Warnf("Unregister consumer url failed, %s, error: %w", exporter.registerUrl.String(), err)
+			logger.Warnf("[Registry] unRegister consumer url failed, url=%s err=%v", exporter.registerUrl.String(), err)
 		}
 		return true
 	})
@@ -553,12 +579,12 @@ func (proto *registryProtocol) unsubscribeOverrideListener(reg registry.Registry
 
 	overrideListener, ok := listener.(*overrideSubscribeListener)
 	if !ok {
-		logger.Warnf("Unexpected override listener type %T for %s", listener, overrideKey)
+		logger.Warnf("[Registry] unexpected override listener type %T for %s", listener, overrideKey)
 		return
 	}
 
 	if err := reg.UnSubscribe(overrideURL, overrideListener); err != nil {
-		logger.Warnf("Unsubscribe override url failed, %s, error: %v", overrideKey, err)
+		logger.Warnf("[Registry] unsubscribe override url failed, url=%s err=%v", overrideKey, err)
 		return
 	}
 	proto.overrideListeners.CompareAndDelete(overrideKey, listener)
@@ -648,24 +674,12 @@ type providerConfigurationListener struct {
 func newProviderConfigurationListener(overrideListeners *sync.Map, url *common.URL) *providerConfigurationListener {
 	listener := &providerConfigurationListener{}
 	listener.overrideListeners = overrideListeners
-
-	// TODO: Temporary compatibility with old APIs, can be removed later
-	application := config.GetRootConfig().Application
+	application := commonConfig.EnsureApplicationAttribute(url)
 	listener.InitWith(
 		application.Name+constant.ConfiguratorSuffix,
 		listener,
 		extension.GetDefaultConfiguratorFunc(),
 	)
-
-	if ApplicationConfRaw, ok := url.GetAttribute(constant.ApplicationKey); ok {
-		if ApplicationConfig, ok := ApplicationConfRaw.(*global.ApplicationConfig); ok {
-			listener.InitWith(
-				ApplicationConfig.Name+constant.ConfiguratorSuffix,
-				listener,
-				extension.GetDefaultConfiguratorFunc(),
-			)
-		}
-	}
 
 	return listener
 }

@@ -18,6 +18,7 @@
 package client
 
 import (
+	"net/http"
 	"strconv"
 	"time"
 )
@@ -999,8 +1000,10 @@ func SetClientRouters(routers []*global.RouterConfig) ClientOption {
 
 // todo: need to be consistent with MethodConfig
 type CallOptions struct {
-	RequestTimeout string
-	Retries        string
+	RequestTimeout  string
+	Retries         string
+	ResponseHeader  *http.Header
+	ResponseTrailer *http.Header
 }
 
 type CallOption func(*CallOptions)
@@ -1020,5 +1023,23 @@ func WithCallRequestTimeout(timeout time.Duration) CallOption {
 func WithCallRetries(retries int) CallOption {
 	return func(opts *CallOptions) {
 		opts.Retries = strconv.Itoa(retries)
+	}
+}
+
+// WithResponseHeader configures a target to receive response headers.
+// Currently, only Triple unary calls populate this option (including error
+// responses when metadata is available).
+func WithResponseHeader(header *http.Header) CallOption {
+	return func(opts *CallOptions) {
+		opts.ResponseHeader = header
+	}
+}
+
+// WithResponseTrailer configures a target to receive response trailers.
+// Currently, only Triple unary calls populate this option (including error
+// responses when metadata is available).
+func WithResponseTrailer(trailer *http.Header) CallOption {
+	return func(opts *CallOptions) {
+		opts.ResponseTrailer = trailer
 	}
 }

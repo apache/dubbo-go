@@ -95,7 +95,7 @@ func (response *Response) IsHeartbeat() bool {
 func (response *Response) Handle() {
 	pendingResponse := removePendingResponse(SequenceType(response.ID))
 	if pendingResponse == nil {
-		logger.Errorf("failed to get pending response context for response package %s", *response)
+		logger.Errorf("[Remoting] failed to get pending response context for response package %s", *response)
 		return
 	}
 

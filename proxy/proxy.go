@@ -207,13 +207,13 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 			if err != nil {
 				// if some error happened, it should be log some info in the separate file.
 				if throwabler, ok := cause.(java_exception.Throwabler); ok {
-					logger.Warnf("[CallProxy] invoke service throw exception: %v , stackTraceElements: %v", cause.Error(), throwabler.GetStackTrace())
+					logger.Warnf("[Proxy] invoke service throw exception, err=%v stackTrace=%v", cause.Error(), throwabler.GetStackTrace())
 				} else {
 					// entire error is only for printing, do not return, because user would not want to deal with massive framework-level error message
-					logger.Warnf("[CallProxy] received rpc err: %v", err)
+					logger.Warnf("[Proxy] received rpc err, err=%v", err)
 				}
 			} else {
-				logger.Debugf("[CallProxy] received rpc result successfully: %s", result)
+				logger.Debugf("[Proxy] received rpc result successfully, result=%s", result)
 			}
 			if len(outs) == 1 {
 				return []reflect.Value{reflect.ValueOf(&cause).Elem()}
@@ -226,7 +226,7 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 	}
 
 	if err := refectAndMakeObjectFunc(valueOfElem, makeDubboCallProxy); err != nil {
-		logger.Errorf("The type or combination type of RPCService %T must be a pointer of a struct. error is %s", v, err)
+		logger.Errorf("[Proxy] the type or combination type of RPCService %T must be a pointer of a struct, err=%v", v, err)
 		return
 	}
 }
@@ -249,14 +249,14 @@ func refectAndMakeObjectFunc(valueOfElem reflect.Value, makeDubboCallProxy func(
 			outNum := t.Type.NumOut()
 
 			if outNum != 1 && outNum != 2 {
-				logger.Warnf("method %s of mtype %v has wrong number of in out parameters %d; needs exactly 1/2",
+				logger.Warnf("[Proxy] method %s of mtype %v has wrong number of in out parameters %d; needs exactly 1/2",
 					t.Name, t.Type.String(), outNum)
 				continue
 			}
 
 			// The latest return type of the method must be error.
 			if returnType := t.Type.Out(outNum - 1); returnType != typError {
-				logger.Warnf("the latest return type %s of method %q is not error", returnType, t.Name)
+				logger.Warnf("[Proxy] the latest return type %s of method %q is not error", returnType, t.Name)
 				continue
 			}
 
@@ -267,7 +267,7 @@ func refectAndMakeObjectFunc(valueOfElem reflect.Value, makeDubboCallProxy func(
 
 			// do method proxy here:
 			f.Set(reflect.MakeFunc(f.Type(), makeDubboCallProxy(methodName, funcOuts)))
-			logger.Debugf("set method [%s]", methodName)
+			logger.Debugf("[Proxy] set method [%s]", methodName)
 		} else if f.IsValid() && f.CanSet() {
 			// for struct combination
 			valueOfSub := reflect.New(t.Type)

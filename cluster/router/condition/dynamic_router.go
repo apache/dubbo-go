@@ -161,8 +161,8 @@ func (d *DynamicRouter) SetStaticConfig(cfg *global.RouterConfig) {
 			logger.Warnf("[Router][Condition] failed to create condition URL: err=%v", err)
 			continue
 		}
-		url.AddParam(constant.RuleKey, conditionRule)
-		url.AddParam(constant.ForceKey, strconv.FormatBool(force))
+		url.SetParam(constant.RuleKey, conditionRule)
+		url.SetParam(constant.ForceKey, strconv.FormatBool(force))
 		conditionRoute, err := NewConditionStateRouter(url)
 		if err != nil {
 			logger.Warnf("[Router][Condition] failed to parse condition rule: rule=%s, err=%v", conditionRule, err)
@@ -304,8 +304,8 @@ func generateConditionsRoute(rawConfig string) (stateRouters, bool, bool, error)
 		if err != nil {
 			return nil, false, false, err
 		}
-		url.AddParam(constant.RuleKey, conditionRule)
-		url.AddParam(constant.ForceKey, strconv.FormatBool(*routerConfig.Force))
+		url.SetParam(constant.RuleKey, conditionRule)
+		url.SetParam(constant.ForceKey, strconv.FormatBool(*routerConfig.Force))
 		conditionRoute, err := NewConditionStateRouter(url)
 		if err != nil {
 			return nil, false, false, err
@@ -348,7 +348,7 @@ func (s *ServiceRouter) Notify(invokers []base.Invoker) {
 
 	dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
 	if dynamicConfiguration == nil {
-		logger.Infof("[Router][Condition] Config center does not start, Condition router will not be enabled")
+		logger.Info("[Router][Condition] Config center does not start, Condition router will not be enabled")
 		return
 	}
 	key := strings.Join([]string{url.ColonSeparatedKey(), constant.ConditionRouterRuleSuffix}, "")
@@ -414,13 +414,13 @@ func (a *ApplicationRouter) Notify(invokers []base.Invoker) {
 
 	dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
 	if dynamicConfiguration == nil {
-		logger.Infof("[Router][Condition] Config center does not start, Condition router will not be enabled")
+		logger.Info("[Router][Condition] Config center does not start, Condition router will not be enabled")
 		return
 	}
 
 	providerApplication := url.GetParam("application", "")
 	if providerApplication == "" || providerApplication == a.currentApplication {
-		logger.Warnf("[Router][Condition] provider application is empty, will not subscribe to provider app rules")
+		logger.Warn("[Router][Condition] provider application is empty, will not subscribe to provider app rules")
 		return
 	}
 

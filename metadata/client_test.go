@@ -35,6 +35,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
+	"dubbo.apache.org/dubbo-go/v3/metadata/report"
+	tripleapi "dubbo.apache.org/dubbo-go/v3/metadata/triple_api/proto"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
@@ -61,23 +63,85 @@ var (
 	}
 )
 
+func TestConvertMetadataInfoV2PreservesTag(t *testing.T) {
+	got := convertMetadataInfoV2(&tripleapi.MetadataInfoV2{
+		App:     "dubbo-app",
+		Version: "revision",
+		Tag:     "gray",
+		Services: map[string]*tripleapi.ServiceInfoV2{
+			"DemoService:tri": {
+				Name:     "DemoService",
+				Protocol: "tri",
+			},
+		},
+	})
+
+	require.NotNil(t, got)
+	assert.Equal(t, "dubbo-app", got.App)
+	assert.Equal(t, "revision", got.Revision)
+	assert.Equal(t, "gray", got.Tag)
+	assert.Contains(t, got.Services, "DemoService:tri")
+}
+
 func TestGetMetadataFromMetadataReport(t *testing.T) {
+	t.Cleanup(func() { instances = make(map[string]report.MetadataReport) })
+
 	t.Run("no report instance", func(t *testing.T) {
-		_, err := GetMetadataFromMetadataReport("1", ins)
+		instances = make(map[string]report.MetadataReport)
+		_, err := GetMetadataFromMetadataReport("1", ins, "default")
 		require.Error(t, err)
 	})
-	mockReport := new(mockMetadataReport)
-	defer mockReport.AssertExpectations(t)
-	instances["default"] = mockReport
-	t.Run("normal", func(t *testing.T) {
+
+	t.Run("default registry routes to default report", func(t *testing.T) {
+		instances = make(map[string]report.MetadataReport)
+		mockReport := new(mockMetadataReport)
+		defer mockReport.AssertExpectations(t)
+		instances["default"] = mockReport
+
 		mockReport.On("GetAppMetadata").Return(metadataInfo, nil).Once()
-		got, err := GetMetadataFromMetadataReport("1", ins)
+		got, err := GetMetadataFromMetadataReport("1", ins, "default")
 		require.NoError(t, err)
 		assert.Equal(t, metadataInfo, got)
 	})
-	t.Run("error", func(t *testing.T) {
+
+	t.Run("specific registryId routes to its own report", func(t *testing.T) {
+		instances = make(map[string]report.MetadataReport)
+		defaultReport := new(mockMetadataReport)
+		specificReport := new(mockMetadataReport)
+		defer defaultReport.AssertExpectations(t)
+		defer specificReport.AssertExpectations(t)
+		instances["default"] = defaultReport
+		instances["reg-a"] = specificReport
+
+		// specificReport must be called; defaultReport must NOT be called
+		specificReport.On("GetAppMetadata").Return(metadataInfo, nil).Once()
+		got, err := GetMetadataFromMetadataReport("1", ins, "reg-a")
+		require.NoError(t, err)
+		assert.Equal(t, metadataInfo, got)
+	})
+
+	t.Run("unknown registryId falls back to default report", func(t *testing.T) {
+		instances = make(map[string]report.MetadataReport)
+		defaultReport := new(mockMetadataReport)
+		defer defaultReport.AssertExpectations(t)
+		instances["default"] = defaultReport
+
+		// When the specific registryId is not found, it falls back to "default"
+		// so the default report's GetAppMetadata is called
+		defaultReport.On("GetAppMetadata").Return(metadataInfo, nil).Once()
+		got, err := GetMetadataFromMetadataReport("1", ins, "nonexistent-registry")
+		require.NoError(t, err)
+		assert.Equal(t, metadataInfo, got)
+	})
+
+	t.Run("report error propagated", func(t *testing.T) {
+		instances = make(map[string]report.MetadataReport)
+		mockReport := new(mockMetadataReport)
+		defer mockReport.AssertExpectations(t)
+		instances["default"] = mockReport
+
 		mockReport.On("GetAppMetadata").Return(metadataInfo, errors.New("mock error")).Once()
-		_, err := GetMetadataFromMetadataReport("1", ins)
+		_, err := GetMetadataFromMetadataReport("1", ins, "default")
 		require.Error(t, err)
 	})
 }
@@ -122,14 +186,43 @@ func TestGetMetadataFromRpc(t *testing.T) {
 	})
 }
 
+func TestGetMetadataFromRpc_MissingURLParams(t *testing.T) {
+	t.Run("missing protocol", func(t *testing.T) {
+		insNoProto := &registry.DefaultServiceInstance{
+			ID:          "2",
+			ServiceName: "dubbo-app",
+			Host:        "dubbo.io",
+			Metadata:    map[string]string{},
+		}
+		_, err := GetMetadataFromRpc("1", insNoProto)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "protocol is empty")
+	})
+
+	t.Run("missing port", func(t *testing.T) {
+		insNoPort := &registry.DefaultServiceInstance{
+			ID:          "3",
+			ServiceName: "dubbo-app",
+			Host:        "dubbo.io",
+			Metadata: map[string]string{
+				constant.MetadataServiceURLParamsPropertyName: `{"protocol":"dubbo"}`,
+			},
+		}
+		_, err := GetMetadataFromRpc("1", insNoPort)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "port is empty")
+	})
+}
+
 func Test_buildMetadataServiceURL(t *testing.T) {
 	type args struct {
 		ins registry.ServiceInstance
 	}
 	tests := []struct {
-		name string
-		args args
-		want *common.URL
+		name    string
+		args    args
+		want    *common.URL
+		wantErr string
 	}{
 		{
 			name: "normal",
@@ -175,12 +268,34 @@ func Test_buildMetadataServiceURL(t *testing.T) {
 					Metadata:    map[string]string{},
 				},
 			},
-			want: nil,
+			wantErr: "protocol is empty",
+		},
+		{
+			name: "no port",
+			args: args{
+				&registry.DefaultServiceInstance{
+					ServiceName: "dubbo-app",
+					Host:        "dubbo.io",
+					Metadata: map[string]string{
+						constant.MetadataServiceURLParamsPropertyName: `{
+							"protocol":"dubbo"
+						}`,
+					},
+				},
+			},
+			wantErr: "port is empty",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, buildStandardMetadataServiceURL(tt.args.ins), "buildMetadataServiceURL(%v)", tt.args.ins)
+			got, err := buildStandardMetadataServiceURL(tt.args.ins)
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equalf(t, tt.want, got, "buildMetadataServiceURL(%v)", tt.args.ins)
 		})
 	}
 }

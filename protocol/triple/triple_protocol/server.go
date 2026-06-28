@@ -203,7 +203,7 @@ func (s *Server) startHttp2(tlsConf *tls.Config) error {
 		TLSConfig: tlsConf,
 	}
 
-	logger.Debugf("TRIPLE HTTP/2 Server starting on %v", s.addr)
+	logger.Debugf("[Triple][Server] triple HTTP/2 Server starting on %v", s.addr)
 
 	var err error
 
@@ -232,7 +232,7 @@ func (s *Server) startHttp3(tlsConf *tls.Config) error {
 		QUICConfig: &quic.Config{},
 	}
 
-	logger.Debugf("TRIPLE HTTP/3 Server starting on %v", s.addr)
+	logger.Debugf("[Triple][Server] triple HTTP/3 Server starting on %v", s.addr)
 
 	return s.http3Srv.ListenAndServe()
 }
@@ -265,7 +265,7 @@ func (s *Server) startHttp2AndHttp3(tlsConf *tls.Config) error {
 		TLSConfig: tlsConf,
 	}
 
-	logger.Debugf("TRIPLE HTTP/2 and HTTP/3 Server starting on %v", s.addr)
+	logger.Debugf("[Triple][Server] triple HTTP/2 and HTTP/3 Server starting on %v", s.addr)
 
 	// Use errgroup to manage concurrent server startup
 	eg := &errgroup.Group{}

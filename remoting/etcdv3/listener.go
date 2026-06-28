@@ -59,7 +59,7 @@ func (l *EventListener) ListenServiceNodeEvent(key string, listener ...remoting.
 	for {
 		wc, err := l.client.Watch(key)
 		if err != nil {
-			logger.Warnf("WatchExist{key:%s} = error{%v}", key, err)
+			logger.Warnf("[Remoting][Etcdv3] WatchExist, key=%s err=%v", key, err)
 			return false
 		}
 
@@ -67,23 +67,23 @@ func (l *EventListener) ListenServiceNodeEvent(key string, listener ...remoting.
 
 		// client stopped
 		case <-l.client.Done():
-			logger.Warnf("etcd client stopped")
+			logger.Warn("[Remoting][Etcdv3] etcd client stopped")
 			return false
 
 		// client ctx stop
 		case <-l.client.GetCtx().Done():
-			logger.Warnf("etcd client ctx cancel")
+			logger.Warn("[Remoting][Etcdv3] etcd client ctx cancel")
 			return false
 
 		// handle etcd events
 		case e, ok := <-wc:
 			if !ok {
-				logger.Warnf("etcd watch-chan closed")
+				logger.Warn("[Remoting][Etcdv3] etcd watch-chan closed")
 				return false
 			}
 
 			if e.Err() != nil {
-				logger.Errorf("etcd watch ERR {err: %s}", e.Err())
+				logger.Errorf("[Remoting][Etcdv3] etcd watch error, err=%s", e.Err())
 				continue
 			}
 			for _, event := range e.Events {
@@ -99,7 +99,7 @@ func (l *EventListener) ListenServiceNodeEvent(key string, listener ...remoting.
 // return true means the event type is DELETE
 // return false means the event type is CREATE || UPDATE
 func (l *EventListener) handleEvents(event *clientv3.Event, listeners ...remoting.DataListener) bool {
-	logger.Infof("got a etcd event {type: %s, key: %s}", event.Type, event.Kv.Key)
+	logger.Infof("[Remoting][Etcdv3] got a etcd event, type=%s key=%s", event.Type, event.Kv.Key)
 
 	switch event.Type {
 	// the etcdv3 event just include PUT && DELETE
@@ -107,14 +107,14 @@ func (l *EventListener) handleEvents(event *clientv3.Event, listeners ...remotin
 		for _, listener := range listeners {
 			switch event.IsCreate() {
 			case true:
-				logger.Infof("etcd get event (key{%s}) = event{EventNodeDataCreated}", event.Kv.Key)
+				logger.Infof("[Remoting][Etcdv3] etcd get event, key=%s action=created", event.Kv.Key)
 				listener.DataChange(remoting.Event{
 					Path:    string(event.Kv.Key),
 					Action:  remoting.EventTypeAdd,
 					Content: string(event.Kv.Value),
 				})
 			case false:
-				logger.Infof("etcd get event (key{%s}) = event{EventNodeDataChanged}", event.Kv.Key)
+				logger.Infof("[Remoting][Etcdv3] etcd get event, key=%s action=changed", event.Kv.Key)
 				listener.DataChange(remoting.Event{
 					Path:    string(event.Kv.Key),
 					Action:  remoting.EventTypeUpdate,
@@ -124,7 +124,7 @@ func (l *EventListener) handleEvents(event *clientv3.Event, listeners ...remotin
 		}
 		return false
 	case mvccpb.DELETE:
-		logger.Warnf("etcd get event (key{%s}) = event{EventNodeDeleted}", event.Kv.Key)
+		logger.Warnf("[Remoting][Etcdv3] etcd get event, key=%s action=deleted", event.Kv.Key)
 		return true
 
 	default:
@@ -138,31 +138,31 @@ func (l *EventListener) ListenServiceNodeEventWithPrefix(prefix string, listener
 	for {
 		wc, err := l.client.WatchWithPrefix(prefix)
 		if err != nil {
-			logger.Warnf("listenDirEvent(key{%s}) = error{%v}", prefix, err)
+			logger.Warnf("[Remoting][Etcdv3] listenDirEvent(key=%s) = err=%v", prefix, err)
 		}
 
 		select {
 
 		// client stopped
 		case <-l.client.Done():
-			logger.Warnf("etcd client stopped")
+			logger.Warn("[Remoting][Etcdv3] etcd client stopped")
 			return
 
 		// client ctx stop
 		case <-l.client.GetCtx().Done():
-			logger.Warnf("etcd client ctx cancel")
+			logger.Warn("[Remoting][Etcdv3] etcd client ctx cancel")
 			return
 
 		// etcd event stream
 		case e, ok := <-wc:
 
 			if !ok {
-				logger.Warnf("etcd watch-chan closed")
+				logger.Warn("[Remoting][Etcdv3] etcd watch-chan closed")
 				return
 			}
 
 			if e.Err() != nil {
-				logger.Errorf("etcd watch ERR {err: %s}", e.Err())
+				logger.Errorf("[Remoting][Etcdv3] etcd watch error, err=%s", e.Err())
 				continue
 			}
 			for _, event := range e.Events {
@@ -180,7 +180,7 @@ func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataLis
 	_, ok := l.keyMap[key]
 	l.keyMapLock.RUnlock()
 	if ok {
-		logger.Warnf("etcdv3 key %s has already been listened.", key)
+		logger.Warnf("[Remoting][Etcdv3] etcdv3 key %s has already been listened", key)
 		return
 	}
 
@@ -190,13 +190,13 @@ func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataLis
 
 	keyList, valueList, err := l.client.GetChildren(key)
 	if err != nil {
-		logger.Warnf("Get new node path {%v} 's content error,message is  {%v}", key, perrors.WithMessage(err, "get children"))
+		logger.Warnf("[Remoting][Etcdv3] get new node path={%v} 's content error,message is  {%v}", key, perrors.WithMessage(err, "get children"))
 	}
 
-	logger.Debugf("get key children list %s, keys %v values %v", key, keyList, valueList)
+	logger.Debugf("[Remoting][Etcdv3] get key children list, key=%s keys=%v values=%v", key, keyList, valueList)
 
 	for i, k := range keyList {
-		logger.Infof("got children list key -> %s", k)
+		logger.Infof("[Remoting][Etcdv3] got children list key=%s", k)
 		listener.DataChange(remoting.Event{
 			Path:    k,
 			Action:  remoting.EventTypeAdd,
@@ -204,20 +204,20 @@ func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataLis
 		})
 	}
 
-	logger.Debugf("[ETCD Listener] listen dubbo provider key{%s} event and wait to get all provider etcdv3 nodes", key)
+	logger.Debugf("[Remoting][Etcdv3] listen dubbo provider key{%s} event and wait to get all provider etcdv3 nodes", key)
 	l.wg.Add(1)
 	go func(key string, listener remoting.DataListener) {
 		l.ListenServiceNodeEventWithPrefix(key, listener)
-		logger.Warnf("listenDirEvent(key{%s}) goroutine exit now", key)
+		logger.Warnf("[Remoting][Etcdv3] listenDirEvent(key=%s) goroutine exit now", key)
 	}(key, listener)
 
-	logger.Infof("[ETCD Listener] listen dubbo service key{%s}", key)
+	logger.Infof("[Remoting][Etcdv3] listen dubbo service key{%s}", key)
 	l.wg.Add(1)
 	go func(key string) {
 		if l.ListenServiceNodeEvent(key) {
 			listener.DataChange(remoting.Event{Path: key, Action: remoting.EventTypeDel})
 		}
-		logger.Warnf("listenSelf(etcd key{%s}) goroutine exit now", key)
+		logger.Warnf("[Remoting][Etcdv3] listenSelf(etcd key=%s) goroutine exit now", key)
 	}(key)
 }
 

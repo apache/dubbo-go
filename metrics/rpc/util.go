@@ -53,8 +53,8 @@ func getRole(url *common.URL) (role string) {
 	} else if isConsumer(url) {
 		role = constant.SideConsumer
 	} else {
-		logger.Warnf("The url belongs neither the consumer nor the provider, "+
-			"so the invocation will be ignored. url: %s", url.String())
+		logger.Warnf("[Metrics][RPC] the url belongs neither the consumer nor the provider, "+
+			"so the invocation will be ignored. url=%s", url.String())
 	}
 	return
 }

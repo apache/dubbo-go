@@ -19,7 +19,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
-	"strings"
 )
 
 // EncodeBinaryHeader base64-encodes the data. It always emits unpadded values.
@@ -101,25 +100,38 @@ func newIncomingContext(ctx context.Context, data http.Header) context.Context {
 	extraData, ok := ctx.Value(extraDataKey{}).(map[string]http.Header)
 	if !ok {
 		extraData = map[string]http.Header{}
+	} else {
+		extraData = cloneExtraData(extraData)
 	}
 
 	for key, vals := range data {
-		header[strings.ToLower(key)] = vals
+		// Context headers use canonical keys so http.Header.Get/Values work as expected.
+		header[http.CanonicalHeaderKey(key)] = append([]string(nil), vals...)
 	}
 
 	extraData[headerIncomingKey] = header
 	return context.WithValue(ctx, extraDataKey{}, extraData)
 }
 
-// NewOutgoingContext sets headers entirely. If there are existing headers, they would be replaced.
-// It is used for passing headers to server-side.
-// It is like grpc.NewOutgoingContext.
-// Please refer to https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md#sending-metadata.
+// NewOutgoingContext sets outgoing request headers on ctx. If ctx already has
+// outgoing headers, they are replaced.
+//
+// For example:
+//
+//	ctx := NewOutgoingContext(context.Background(), http.Header{
+//		"hello": []string{"triple"},
+//	})
+//	resp, err := client.Greet(ctx, &greet.GreetRequest{})
+//
+// Use AppendToOutgoingContext to add more values without replacing existing
+// outgoing headers. These APIs follow the same pattern as grpc metadata:
+// https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md#sending-metadata.
 func NewOutgoingContext(ctx context.Context, data http.Header) context.Context {
 	var header = http.Header{}
 
 	for key, vals := range data {
-		header[strings.ToLower(key)] = append([]string(nil), vals...)
+		// Context headers use canonical keys so http.Header.Get/Values work as expected.
+		header[http.CanonicalHeaderKey(key)] = append([]string(nil), vals...)
 	}
 
 	extraData, ok := ctx.Value(extraDataKey{}).(map[string]http.Header)
@@ -144,10 +156,20 @@ func cloneExtraData(data map[string]http.Header) map[string]http.Header {
 	return cloned
 }
 
-// AppendToOutgoingContext merges kv pairs from user and existing headers.
-// It is used for passing headers to server-side.
-// It is like grpc.AppendToOutgoingContext.
-// Please refer to https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md#sending-metadata.
+// AppendToOutgoingContext appends key-value pairs to outgoing request headers.
+// It panics when kv contains an odd number of strings.
+//
+// For example:
+//
+//	ctx := NewOutgoingContext(context.Background(), http.Header{
+//		"hello": []string{"triple"},
+//	})
+//	ctx = AppendToOutgoingContext(ctx, "hello", "dubbo", "hey", "hessian")
+//	resp, err := client.Greet(ctx, &greet.GreetRequest{})
+//
+// The example sends "hello: triple", "hello: dubbo", and "hey: hessian" to the
+// server. This API follows the same pattern as grpc metadata:
+// https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md#sending-metadata.
 func AppendToOutgoingContext(ctx context.Context, kv ...string) context.Context {
 	if len(kv)%2 == 1 {
 		panic(fmt.Sprintf("AppendToOutgoingContext got an odd number of input pairs for header: %d", len(kv)))
@@ -163,8 +185,8 @@ func AppendToOutgoingContext(ctx context.Context, kv ...string) context.Context 
 		extraData[headerOutgoingKey] = header
 	}
 	for i := 0; i < len(kv); i += 2 {
-		// todo(DMwangnima): think about lowering
-		header.Add(strings.ToLower(kv[i]), kv[i+1])
+		key := http.CanonicalHeaderKey(kv[i])
+		header[key] = append(header[key], kv[i+1])
 	}
 	return ctx
 }
@@ -181,9 +203,21 @@ func ExtractFromOutgoingContext(ctx context.Context) http.Header {
 	}
 }
 
-// FromIncomingContext retrieves headers passed by client-side. It is like grpc.FromIncomingContext.
-// it must call after append/setOutgoingContext to return current value
-// Please refer to https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md#receiving-metadata-1.
+// FromIncomingContext retrieves request headers received by a server handler.
+//
+// For example:
+//
+//	func (srv *Server) Greet(ctx context.Context, req *greet.GreetRequest) (*greet.GreetResponse, error) {
+//		headers, ok := FromIncomingContext(ctx)
+//		if ok {
+//			values := headers.Values("hello")
+//			// Use values.
+//		}
+//		return &greet.GreetResponse{}, nil
+//	}
+//
+// This API follows the same pattern as grpc metadata:
+// https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md#receiving-metadata-1.
 func FromIncomingContext(ctx context.Context) (http.Header, bool) {
 	data, ok := ctx.Value(extraDataKey{}).(map[string]http.Header)
 	if !ok {
@@ -195,9 +229,20 @@ func FromIncomingContext(ctx context.Context) (http.Header, bool) {
 	}
 }
 
-// SetHeader is used for setting response header in server-side. It is like grpc.SendHeader(ctx, header) but
-// not send header.
-// Please refer to https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md#unary-call-2.
+// SetHeader appends response headers from a server handler. The headers are
+// buffered and sent with the response instead of being sent immediately.
+//
+// For example:
+//
+//	func (srv *Server) Greet(ctx context.Context, req *greet.GreetRequest) (*greet.GreetResponse, error) {
+//		if err := SetHeader(ctx, http.Header{"hi": []string{"triple"}}); err != nil {
+//			return nil, err
+//		}
+//		return &greet.GreetResponse{}, nil
+//	}
+//
+// This API follows the same pattern as grpc metadata:
+// https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md#unary-call-2.
 func SetHeader(ctx context.Context, header http.Header) error {
 	conn, ok := ctx.Value(handlerOutgoingKey{}).(StreamingHandlerConn)
 	if !ok {
@@ -208,8 +253,19 @@ func SetHeader(ctx context.Context, header http.Header) error {
 	return nil
 }
 
-// SetTrailer is used for setting response trailers in server-side. It is like grpc.SetTrailer(ctx, header).
-// Please refer to https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md#unary-call-2.
+// SetTrailer appends response trailers from a server handler.
+//
+// For example:
+//
+//	func (srv *Server) Greet(ctx context.Context, req *greet.GreetRequest) (*greet.GreetResponse, error) {
+//		if err := SetTrailer(ctx, http.Header{"end": []string{"end"}}); err != nil {
+//			return nil, err
+//		}
+//		return &greet.GreetResponse{}, nil
+//	}
+//
+// This API follows the same pattern as grpc metadata:
+// https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md#unary-call-2.
 func SetTrailer(ctx context.Context, trailer http.Header) error {
 	conn, ok := ctx.Value(handlerOutgoingKey{}).(StreamingHandlerConn)
 	if !ok {
@@ -220,8 +276,21 @@ func SetTrailer(ctx context.Context, trailer http.Header) error {
 	return nil
 }
 
-// SendHeader is used for setting response headers in server-side and send them directly. It is like grpc.SendHeader(ctx, header).
-// Please refer to https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md#unary-call-2.
+// SendHeader appends response headers from a server handler and sends them
+// immediately. This is useful for streaming handlers that need to flush headers
+// before the first message.
+//
+// For example:
+//
+//	func (srv *Server) GreetStream(ctx context.Context, stream greet.GreetService_GreetStreamServer) error {
+//		if err := SendHeader(ctx, http.Header{"hi": []string{"triple"}}); err != nil {
+//			return err
+//		}
+//		return stream.Send(&greet.GreetResponse{})
+//	}
+//
+// This API follows the same pattern as grpc metadata:
+// https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md#unary-call-2.
 func SendHeader(ctx context.Context, header http.Header) error {
 	conn, ok := ctx.Value(handlerOutgoingKey{}).(StreamingHandlerConn)
 	if !ok {

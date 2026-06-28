@@ -127,7 +127,7 @@ func (c *AltSvcCache) UpdateFromHeaders(host string, headers http.Header) {
 
 	if preferredAltSvc != nil {
 		c.Set(host, preferredAltSvc)
-		logger.Debugf("Updated alt-svc cache for %s: %s", host, preferredAltSvc.Protocol)
+		logger.Debugf("[Triple][Negotiation] updated alt-svc cache for %s, protocol=%s", host, preferredAltSvc.Protocol)
 	}
 }
 
@@ -245,7 +245,7 @@ func (h *AltSvcHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Only add Alt-Svc headers if negotiation is enabled
 	if h.negotiation && r.ProtoMajor < 3 {
 		if err := h.http3Server.SetQUICHeaders(w.Header()); err != nil {
-			logger.Warnf("Failed to set QUIC headers for %s: %v", r.URL.String(), err)
+			logger.Warnf("[Triple][Negotiation] failed to set QUIC headers for %s, err=%v", r.URL.String(), err)
 		}
 	}
 

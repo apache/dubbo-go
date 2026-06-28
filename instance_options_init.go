@@ -29,7 +29,7 @@ import (
 
 	"github.com/creasty/defaults"
 
-	"github.com/dubbogo/gost/log/logger"
+	gostLogger "github.com/dubbogo/gost/log/logger"
 
 	"github.com/knadh/koanf"
 
@@ -45,6 +45,8 @@ import (
 	aslimiter "dubbo.apache.org/dubbo-go/v3/filter/adaptivesvc/limiter"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/internal"
+	dubboLogger "dubbo.apache.org/dubbo-go/v3/logger"
+	_ "dubbo.apache.org/dubbo-go/v3/logger/core/zap"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	metricsConfigCenter "dubbo.apache.org/dubbo-go/v3/metrics/config_center"
 	"dubbo.apache.org/dubbo-go/v3/otel/trace"
@@ -331,13 +333,13 @@ func (rc *InstanceOptions) initGlobalOtel(activateRuntime bool) error {
 		otel.SetTextMapPropagator(exporter.GetPropagator())
 
 		if c.Exporter == "stdout" {
-			logger.Infof("enable %s trace provider with propagator: %s", c.Exporter, c.Propagator)
+			gostLogger.Infof("enable %s trace provider with propagator: %s", c.Exporter, c.Propagator)
 		} else {
-			logger.Infof("enable %s trace provider with endpoint: %s, propagator: %s", c.Exporter, c.Endpoint, c.Propagator)
+			gostLogger.Infof("enable %s trace provider with endpoint: %s, propagator: %s", c.Exporter, c.Endpoint, c.Propagator)
 		}
-		logger.Infof("sample mode: %s", c.SampleMode)
+		gostLogger.Infof("sample mode: %s", c.SampleMode)
 		if c.SampleMode == "ratio" {
-			logger.Infof("sample ratio: %.2f", c.SampleRatio)
+			gostLogger.Infof("sample ratio: %.2f", c.SampleRatio)
 		}
 	}
 	return nil
@@ -396,8 +398,8 @@ func (rc *InstanceOptions) initGlobalProvider(activateRuntime bool) error {
 			return fmt.Errorf("the adaptive service is disabled, adaptive service verbose should be disabled either")
 		}
 		if activateRuntime {
-			logger.Infof("adaptive service verbose is enabled.")
-			logger.Debugf("debug-level info could be shown.")
+			gostLogger.Info("adaptive service verbose is enabled")
+			gostLogger.Debug("debug-level info could be shown")
 			aslimiter.Verbose = true
 		}
 	}
@@ -559,7 +561,8 @@ func (rc *InstanceOptions) initGlobalLogger() error {
 	if err != nil {
 		return err
 	}
-	logger.SetLogger(log)
+	gostLogger.SetLogger(log)
+	dubboLogger.SetLogger(log)
 	getty.SetLogger(log)
 	return nil
 }
@@ -580,10 +583,10 @@ func loggerURL(l *global.LoggerConfig) *common.URL {
 
 	if l.TraceIntegration != nil {
 		if l.TraceIntegration.Enabled != nil {
-			u.AddParam(constant.LoggerTraceEnabledKey, strconv.FormatBool(*l.TraceIntegration.Enabled))
+			u.SetParam(constant.LoggerTraceEnabledKey, strconv.FormatBool(*l.TraceIntegration.Enabled))
 		}
 		if l.TraceIntegration.RecordErrorToSpan != nil {
-			u.AddParam(constant.LoggerTraceRecordErrorKey, strconv.FormatBool(*l.TraceIntegration.RecordErrorToSpan))
+			u.SetParam(constant.LoggerTraceRecordErrorKey, strconv.FormatBool(*l.TraceIntegration.RecordErrorToSpan))
 		}
 	}
 
@@ -616,18 +619,18 @@ func (rc *InstanceOptions) startGlobalConfigCenter() (bool, error) {
 	cc := rc.ConfigCenter
 	dynamicConfig, err := getGlobalDynamicConfiguration(cc)
 	if err != nil {
-		logger.Errorf("[Config Center] Start dynamic configuration center error, error message is %v", err)
+		gostLogger.Errorf("[Config Center] Start dynamic configuration center error, error message is %v", err)
 		return false, err
 	}
 
 	strConf, err := dynamicConfig.GetProperties(cc.DataId, config_center.WithGroup(cc.Group))
 	if err != nil {
-		logger.Warnf("[Config Center] Dynamic config center has started, but config may not be initialized, because: %s", err)
+		gostLogger.Warnf("[Config Center] Dynamic config center has started, but config may not be initialized, because: %s", err)
 		return false, nil
 	}
 	defer metrics.Publish(metricsConfigCenter.NewIncMetricEvent(cc.DataId, cc.Group, remoting.EventTypeAdd, cc.Protocol))
 	if len(strConf) == 0 {
-		logger.Warnf("[Config Center] Dynamic config center has started, but got empty config with config-center configuration %+v\n"+
+		gostLogger.Warnf("[Config Center] Dynamic config center has started, but got empty config with config-center configuration %+v\n"+
 			"Please check if your config-center config is correct.", cc)
 		return false, nil
 	}
@@ -687,20 +690,20 @@ func globalConfigCenterURLMap(cc *global.CenterConfig) url.Values {
 }
 
 func (rc *InstanceOptions) Process(event *config_center.ConfigChangeEvent) {
-	logger.Infof("CenterConfig process event:\n%+v", event)
+	gostLogger.Infof("CenterConfig process event:\n%+v", event)
 	if event == nil {
 		return
 	}
 	value, ok := event.Value.(string)
 	if !ok {
-		logger.Errorf("CenterConfig process event value is not string")
+		gostLogger.Error("CenterConfig process event value is not string")
 		return
 	}
 	conf := NewLoaderConf(WithBytes([]byte(value)))
 	koan := GetConfigResolver(conf)
 	update := &InstanceOptions{}
 	if err := koan.UnmarshalWithConf(rc.Prefix(), update, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
-		logger.Errorf("CenterConfig process unmarshalConf failed, got error %#v", err)
+		gostLogger.Errorf("CenterConfig process unmarshalConf failed, got error %#v", err)
 		return
 	}
 
@@ -710,13 +713,11 @@ func (rc *InstanceOptions) Process(event *config_center.ConfigChangeEvent) {
 		}
 		if registryConfig := rc.Registries[registryID]; registryConfig != nil && updateRegistry.Timeout != registryConfig.Timeout {
 			registryConfig.Timeout = updateRegistry.Timeout
-			logger.Infof("RegistryConfigs Timeout was dynamically updated, new value:%v", registryConfig.Timeout)
+			gostLogger.Infof("RegistryConfigs Timeout was dynamically updated, new value:%v", registryConfig.Timeout)
 		}
 	}
 	if rc.Consumer != nil && update.Consumer != nil && update.Consumer.RequestTimeout != rc.Consumer.RequestTimeout {
 		rc.Consumer.RequestTimeout = update.Consumer.RequestTimeout
-		logger.Infof("ConsumerConfig's RequestTimeout was dynamically updated, new value:%v", rc.Consumer.RequestTimeout)
+		gostLogger.Infof("ConsumerConfig's RequestTimeout was dynamically updated, new value:%v", rc.Consumer.RequestTimeout)
 	}
-
-	setCompatRootConfig(compatRootConfig(rc))
 }

@@ -68,6 +68,24 @@ func (s *consistentHashSelectorSuite) TestToKey() {
 	s.Equal("usernameage", result)
 }
 
+// TestToKeySingleNonZeroIndex verifies that a single non-zero hash.arguments
+// index produces a key from the correct argument position.
+func TestToKeyWithArgumentIndex(t *testing.T) {
+	var invokers []base.Invoker
+	// hash.arguments=1 means only the second argument (index 1) is used
+	url, err := common.NewURL("dubbo://192.168.1.0:20000/org.apache.demo.HelloService?methods.echo.hash.arguments=1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	invokers = append(invokers, base.NewBaseInvoker(url))
+	sel := newSelector(invokers, "echo", 999944)
+
+	key := sel.toKey([]any{"ignored", "used"})
+	if key != "used" {
+		t.Errorf("expected key %q, got %q", "used", key)
+	}
+}
+
 func (s *consistentHashSelectorSuite) TestSelectForKey() {
 	url1, _ := common.NewURL(url8080Short)
 	url2, _ := common.NewURL(url8081Short)
@@ -76,7 +94,7 @@ func (s *consistentHashSelectorSuite) TestSelectForKey() {
 	s.selector.virtualInvokers[9999945] = base.NewBaseInvoker(url2)
 	s.selector.keys = []uint32{99874, 9999945}
 	result := s.selector.selectForKey(9999944)
-	s.Equal(url8081Short+"?", result.GetURL().String())
+	s.Equal(url8081Short, result.GetURL().String())
 }
 
 func TestConsistentHashLoadBalanceSuite(t *testing.T) {

@@ -18,7 +18,9 @@
 package nacos
 
 import (
+	"crypto/md5"
 	"encoding/json"
+	"fmt"
 	"strings"
 )
 
@@ -55,6 +57,12 @@ func init() {
 type nacosMetadataReport struct {
 	client *nacosClient.NacosConfigClient
 	group  string
+	url    *common.URL
+}
+
+// URL returns the URL used to create this metadata report.
+func (n *nacosMetadataReport) URL() *common.URL {
+	return n.url
 }
 
 // GetAppMetadata get metadata info from nacos
@@ -125,7 +133,7 @@ func (n *nacosMetadataReport) storeMetadata(param vo.ConfigParam) error {
 func (n *nacosMetadataReport) getConfig(param vo.ConfigParam) (string, error) {
 	cfg, err := n.client.Client().GetConfig(param)
 	if err != nil {
-		logger.Errorf("Finding the configuration failed: %v", param)
+		logger.Errorf("[Metadata][Nacos] finding the configuration failed, param=%v", param)
 		return "", err
 	}
 	return cfg, nil
@@ -141,14 +149,17 @@ func (n *nacosMetadataReport) addListener(key string, group string, notify mappi
 	})
 }
 
+// isConfigNotExistErr reports whether err is Nacos's "config data not exist" signal, which it
+// returns (rather than an empty value) for a key that has never been written. It must be treated
+// as an empty old value so the first registration can create the mapping.
+func isConfigNotExistErr(err error) bool {
+	return err != nil && strings.Contains(strings.ToLower(err.Error()), "config data not exist")
+}
+
 func callback(notify mapping.MappingListener, dataId, data string) {
-	appNames := strings.Split(data, constant.CommaSeparator)
-	set := gxset.NewSet()
-	for _, app := range appNames {
-		set.Add(app)
-	}
+	set := report.DecodeServiceAppNames(data)
 	if err := notify.OnEvent(registry.NewServiceMappingChangedEvent(dataId, set)); err != nil {
-		logger.Errorf("serviceMapping callback err: %s", err.Error())
+		logger.Errorf("[Metadata][Nacos] serviceMapping callback err=%v", err)
 	}
 }
 
@@ -161,26 +172,49 @@ func (n *nacosMetadataReport) removeServiceMappingListener(key string, group str
 
 // RegisterServiceAppMapping map the specified Dubbo service interface to current Dubbo app name
 func (n *nacosMetadataReport) RegisterServiceAppMapping(key string, group string, value string) error {
-	oldVal, _ := n.getConfig(vo.ConfigParam{
+	oldVal, err := n.getConfig(vo.ConfigParam{
 		DataId: key,
 		Group:  group,
 	})
-	if oldVal != "" {
-		oldApps := strings.Split(oldVal, constant.CommaSeparator)
-		if len(oldApps) > 0 {
-			for _, app := range oldApps {
-				if app == value {
-					return nil
-				}
-			}
-		}
-		value = oldVal + constant.CommaSeparator + value
+	if err != nil && !isConfigNotExistErr(err) {
+		// A real read failure (network/auth/server): do not treat it as an empty value, or we
+		// would publish only our app and overwrite an existing set. "config data not exist" is
+		// Nacos's not-found signal, which is fine here and proceeds to the first write.
+		return err
 	}
-	return n.storeMetadata(vo.ConfigParam{
+	merged, changed := report.MergeServiceAppMapping(oldVal, value)
+	if !changed {
+		return nil
+	}
+	param := vo.ConfigParam{
 		DataId:  key,
 		Group:   group,
-		Content: value,
-	})
+		Content: merged,
+	}
+	if oldVal != "" {
+		// CasMd5 is an optimistic UPDATE: Nacos publishes only if the server content still
+		// matches what we read, detecting concurrent appends. It cannot guard the first INSERT
+		// (Nacos has no create-if-absent), so the initial concurrent registration of a
+		// brand-new interface can still race. This is a known Nacos-only limitation; the
+		// etcd and zookeeper reports do not have it.
+		//
+		// The MD5 here is not a security mechanism: it is the checksum the Nacos CAS wire
+		// protocol requires (PublishConfig forwards CasMd5 to the server, which compares it
+		// against the stored content's MD5). The algorithm is dictated by Nacos, not chosen
+		// by us, so the weak-hash warning does not apply. NOSONAR
+		param.CasMd5 = fmt.Sprintf("%x", md5.Sum([]byte(oldVal))) // NOSONAR: Nacos CAS protocol checksum, not security
+	}
+	if err := n.storeMetadata(param); err != nil {
+		if param.CasMd5 != "" {
+			// Nacos surfaces a CAS rejection and a transport error the same way, so they
+			// cannot be told apart here. Treat the failure as a retriable conflict rather
+			// than risk dropping a real concurrent update; the underlying error is preserved
+			// for diagnosis.
+			return fmt.Errorf("publish mapping %s (%v): %w", key, err, report.ErrMappingCASConflict)
+		}
+		return err
+	}
+	return nil
 }
 
 // GetServiceAppMapping get the app names from the specified Dubbo service interface
@@ -188,7 +222,7 @@ func (n *nacosMetadataReport) GetServiceAppMapping(key string, group string, lis
 	// add service mapping listener
 	if listener != nil {
 		if err := n.addListener(key, group, listener); err != nil {
-			logger.Errorf("add serviceMapping listener err: %s", err.Error())
+			logger.Errorf("[Metadata][Nacos] add serviceMapping listener err=%v", err)
 		}
 	}
 	v, err := n.getConfig(vo.ConfigParam{
@@ -201,17 +235,76 @@ func (n *nacosMetadataReport) GetServiceAppMapping(key string, group string, lis
 	if v == "" {
 		return nil, perrors.New("There is no service app mapping data.")
 	}
-	appNames := strings.Split(v, constant.CommaSeparator)
-	set := gxset.NewSet()
-	for _, e := range appNames {
-		set.Add(e)
-	}
-	return set, nil
+	return report.DecodeServiceAppNames(v), nil
 }
 
 // RemoveServiceAppMappingListener remove the serviceMapping listener from metadata center
 func (n *nacosMetadataReport) RemoveServiceAppMappingListener(key string, group string) error {
 	return n.removeServiceMappingListener(key, group)
+}
+
+// UnPublishAppMetadata removes metadata for a specific revision from nacos.
+// This operation is idempotent — deleting a non-existent config returns false but no error.
+func (n *nacosMetadataReport) UnPublishAppMetadata(application, revision string) error {
+	// Delete primary config (compatible with java impl)
+	_, err := n.client.Client().DeleteConfig(vo.ConfigParam{
+		DataId: application,
+		Group:  revision,
+	})
+	if err != nil {
+		return perrors.WithMessage(err, "Could not delete the metadata")
+	}
+	// Delete legacy config (compatible with dubbo-go 3.1.x).
+	if _, err = n.client.Client().DeleteConfig(vo.ConfigParam{
+		DataId: application + constant.KeySeparator + revision,
+		Group:  n.group,
+	}); err != nil {
+		logger.Warnf("[Metadata][Nacos] could not delete legacy metadata for app=%s rev=%s: %v",
+			application, revision, err)
+	}
+	return nil
+}
+
+// ListAppRevisions lists all stored revisions for an application from nacos.
+func (n *nacosMetadataReport) ListAppRevisions(application string) ([]report.AppRevision, error) {
+	pageNo, pageSize := 1, 500
+	var result []report.AppRevision
+	for {
+		configs, err := n.client.Client().SearchConfig(vo.SearchConfigParam{
+			Search:   "accurate",
+			DataId:   application,
+			Group:    "",
+			PageNo:   pageNo,
+			PageSize: pageSize,
+		})
+		if err != nil {
+			return nil, perrors.WithMessage(err, "Could not search configs for ListAppRevisions")
+		}
+		if configs == nil || len(configs.PageItems) == 0 {
+			break
+		}
+		for _, item := range configs.PageItems {
+			if item.Group == "" || item.Group == n.group {
+				// Skip legacy format entries — they use group=n.group and dataId=app:revision
+				// We only want the Java-compatible format where group=revision and dataId=application
+				continue
+			}
+			rev := item.Group
+			var modifyTime int64
+			if item.Content != "" {
+				modifyTime = report.ParseMetadataLastUpdatedTime([]byte(item.Content))
+			}
+			result = append(result, report.AppRevision{
+				Revision:   rev,
+				ModifyTime: modifyTime,
+			})
+		}
+		if pageNo*pageSize >= int(configs.TotalCount) {
+			break
+		}
+		pageNo++
+	}
+	return result, nil
 }
 
 type nacosMetadataReportFactory struct{}
@@ -226,8 +319,8 @@ func (n *nacosMetadataReportFactory) CreateMetadataReport(url *common.URL) repor
 	url.SetParam(constant.NacosPassword, url.Password)
 	client, err := nacos.NewNacosConfigClientByUrl(url)
 	if err != nil {
-		logger.Errorf("Could not create nacos metadata report. URL: %s", url.String())
+		logger.Errorf("[Metadata][Nacos] could not create nacos metadata report, url=%s", url.String())
 		return nil
 	}
-	return &nacosMetadataReport{client: client, group: group}
+	return &nacosMetadataReport{client: client, group: group, url: url}
 }
