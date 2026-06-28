@@ -64,18 +64,6 @@ Add to `opencode.json`:
 }
 ```
 
-### Gemini CLI
-
-```bash
-gemini extensions install https://github.com/apache/dubbo-go --path .agents
-```
-
-Update later with:
-
-```bash
-gemini extensions update dubbo-go-agent-skills
-```
-
 ### Verify
 
 Open a new session and try one of these:

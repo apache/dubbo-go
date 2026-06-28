@@ -1,6 +1,0 @@
-{
-  "name": "dubbo-go-agent-skills",
-  "description": "Agent skills bundled with Apache dubbo-go for v3 framework users — scaffolding, extensions, Java interop, debugging, guidance, migration, plus contributor support.",
-  "version": "0.2.0",
-  "contextFileName": "GEMINI.md"
-}

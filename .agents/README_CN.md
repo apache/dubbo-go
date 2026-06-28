@@ -64,18 +64,6 @@ Fetch and follow instructions from https://raw.githubusercontent.com/apache/dubb
 }
 ```
 
-### Gemini CLI
-
-```bash
-gemini extensions install https://github.com/apache/dubbo-go --path .agents
-```
-
-更新：
-
-```bash
-gemini extensions update dubbo-go-agent-skills
-```
-
 ### 验证
 
 新开一个会话，试试这些：
