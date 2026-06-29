@@ -190,7 +190,7 @@ func TestForkingInvokeCancelsLosingBranches(t *testing.T) {
 
 	clusterInvoker := registerForking(winner, loser)
 	res := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
-	assert.NoError(t, res.Error())
+	require.NoError(t, res.Error())
 
 	select {
 	case <-loserCtxCanceled:
