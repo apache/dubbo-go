@@ -38,6 +38,10 @@ type duplexHTTPCall struct {
 	// We'll use a pipe as the request body. We hand the read side of the pipe to
 	// net/http, and we write to the write side (naturally). The two ends are
 	// safe to use concurrently.
+	//
+	// requestBodyWriter is assigned once here and never reassigned, so it's
+	// always non-nil; don't move this allocation into a lazy/first-send path
+	// (see connect-go#919 and duplex_http_call_test.go).
 	requestBodyReader *io.PipeReader
 	requestBodyWriter *io.PipeWriter
 
