@@ -163,3 +163,38 @@ func TestForkingInvokeHalfTimeout(t *testing.T) {
 	assert.Equal(t, mockResult, result)
 	wg.Wait()
 }
+
+func TestForkingInvokeCancelsLosingBranches(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	forkingUrl.AddParam(constant.ForksKey, strconv.Itoa(2))
+
+	loserCtxCanceled := make(chan struct{})
+
+	winner := mock.NewMockInvoker(ctrl)
+	winner.EXPECT().IsAvailable().Return(true).AnyTimes()
+	winner.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(_ context.Context, _ base.Invocation) result.Result {
+			return &result.RPCResult{}
+		})
+
+	loser := mock.NewMockInvoker(ctrl)
+	loser.EXPECT().IsAvailable().Return(true).AnyTimes()
+	loser.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(ctx context.Context, _ base.Invocation) result.Result {
+			<-ctx.Done()
+			close(loserCtxCanceled)
+			return &result.RPCResult{}
+		})
+
+	clusterInvoker := registerForking(winner, loser)
+	res := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
+	assert.NoError(t, res.Error())
+
+	select {
+	case <-loserCtxCanceled:
+	case <-time.After(2 * time.Second):
+		t.Fatal("loser branch context was not canceled after winner succeeded")
+	}
+}

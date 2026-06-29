@@ -46,6 +46,10 @@ type jsInstances struct {
 
 type jsInstance struct {
 	rt *goja.Runtime
+	// baseGlobals is the set of global names present in a freshly created
+	// runtime (built-ins). Any global outside this set is treated as
+	// request/script state and removed on reset.
+	baseGlobals map[string]struct{}
 }
 
 type program struct {
@@ -82,6 +86,10 @@ func (i *jsInstances) Run(rawScript string, invokers []base.Invoker, invocation 
 		return invokers, nil
 	}
 	matcher := i.insPool.Get().(*jsInstance)
+	defer func() {
+		matcher.reset()
+		i.insPool.Put(matcher)
+	}()
 
 	packInvokers := make([]base.Invoker, 0, len(invokers))
 	for _, invoker := range invokers {
@@ -179,9 +187,30 @@ func (j jsInstance) initReplyVar() {
 	}
 }
 
+// reset removes every global added since the runtime was created — the request
+// bindings (invokers/invocation/context/result) as well as any globals defined
+// by the executed user script — before returning the instance to the pool. This
+// prevents cross-request state leakage via pooled goja.Runtime globals. Built-in
+// globals captured at construction time are preserved.
+func (j jsInstance) reset() {
+	global := j.rt.GlobalObject()
+	for _, key := range global.Keys() {
+		if _, isBase := j.baseGlobals[key]; isBase {
+			continue
+		}
+		_ = global.Delete(key)
+	}
+}
+
 func newJsInstance() *jsInstance {
+	rt := goja.New()
+	base := make(map[string]struct{})
+	for _, key := range rt.GlobalObject().Keys() {
+		base[key] = struct{}{}
+	}
 	return &jsInstance{
-		rt: goja.New(),
+		rt:          rt,
+		baseGlobals: base,
 	}
 }
 

@@ -113,6 +113,7 @@ func resetShutdownTestState() {
 	shutdownOnce = sync.Once{}
 	shutdownStarted = atomic.Bool{}
 	shutdownDone = make(chan struct{})
+	shutdownResultMu = sync.Mutex{}
 	shutdownResult = nil
 	signalNotify = signal.Notify
 }
@@ -629,4 +630,59 @@ func TestInvokeCustomShutdownCallbackDoesNotBlockForever(t *testing.T) {
 	elapsed := time.Since(start)
 
 	assert.Less(t, elapsed, time.Second)
+}
+
+func TestShutdownResultConsistentUnderConcurrentReaders(t *testing.T) {
+	resetShutdownTestState()
+
+	cfg := global.DefaultShutdownConfig()
+	internalSignal := false
+	cfg.InternalSignal = &internalSignal
+	cfg.ConsumerUpdateWaitTime = "0s"
+	cfg.StepTimeout = "0s"
+	cfg.NotifyTimeout = "10ms"
+	cfg.OfflineRequestWindowTimeout = "0s"
+	Init(SetShutdownConfig(cfg))
+
+	const readers = 50
+	var wg sync.WaitGroup
+	wg.Add(readers)
+	errs := make([]error, readers)
+	for i := 0; i < readers; i++ {
+		idx := i
+		go func() {
+			defer wg.Done()
+			errs[idx] = Shutdown(context.Background())
+		}()
+	}
+	wg.Wait()
+	for _, err := range errs {
+		assert.NoError(t, err)
+	}
+}
+
+func TestShutdownPanicSetsResultError(t *testing.T) {
+	resetShutdownTestState()
+
+	testProtocolName := "shutdown-panic-protocol"
+	extension.SetProtocol(testProtocolName, func() base.Protocol {
+		return &testProtocol{destroy: func() { panic("simulated shutdown panic") }}
+	})
+	t.Cleanup(func() { extension.UnregisterProtocol(testProtocolName) })
+
+	cfg := global.DefaultShutdownConfig()
+	internalSignal := false
+	cfg.InternalSignal = &internalSignal
+	cfg.ConsumerUpdateWaitTime = "0s"
+	cfg.StepTimeout = "0s"
+	cfg.NotifyTimeout = "10ms"
+	cfg.OfflineRequestWindowTimeout = "0s"
+	Init(SetShutdownConfig(cfg))
+
+	// RegisterProtocol must come after Init — Init resets protocols on first call.
+	RegisterProtocol(testProtocolName)
+
+	err := Shutdown(context.Background())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "panic")
 }

@@ -64,10 +64,11 @@ var (
 	shutdownConfigMu sync.RWMutex
 	shutdownConfig   *global.ShutdownConfig
 
-	shutdownOnce    sync.Once
-	shutdownStarted atomic.Bool
-	shutdownDone    = make(chan struct{})
-	shutdownResult  error
+	shutdownOnce     sync.Once
+	shutdownStarted  atomic.Bool
+	shutdownDone     = make(chan struct{})
+	shutdownResultMu sync.Mutex
+	shutdownResult   error
 
 	signalNotify = signal.Notify
 )
@@ -152,7 +153,10 @@ func Shutdown(ctx context.Context) error {
 
 	select {
 	case <-shutdownDone:
-		return shutdownResult
+		shutdownResultMu.Lock()
+		err := shutdownResult
+		shutdownResultMu.Unlock()
+		return err
 	case <-ctx.Done():
 		return ctx.Err()
 	}
@@ -214,14 +218,18 @@ func startShutdownOnce() {
 			defer func() {
 				if recovered := recover(); recovered != nil {
 					logger.Warnf("[GracefulShutdown] shutdown panicked, err=%v", recovered)
+					shutdownResultMu.Lock()
 					shutdownResult = fmt.Errorf("graceful shutdown panic: %v", recovered)
+					shutdownResultMu.Unlock()
 				}
 				close(shutdownDone)
 			}()
 
 			cfg := loadShutdownConfig()
 			beforeShutdown(cfg)
+			shutdownResultMu.Lock()
 			shutdownResult = nil
+			shutdownResultMu.Unlock()
 		}()
 	})
 }

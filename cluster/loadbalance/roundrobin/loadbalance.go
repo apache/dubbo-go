@@ -69,6 +69,12 @@ func (lb *rrLoadBalance) Select(invokers []base.Invoker, invocation base.Invocat
 	cache, _ := methodWeightMap.LoadOrStore(key, &cachedInvokers{})
 	cachedInvokers := cache.(*cachedInvokers)
 
+	// Serialize the full select+update sequence per service+method key so that
+	// concurrent callers cannot observe each other's intermediate currentWeight
+	// state and skew the weighted distribution.
+	cachedInvokers.mu.Lock()
+	defer cachedInvokers.mu.Unlock()
+
 	var (
 		clean               = false
 		totalWeight         = int64(0)
@@ -166,5 +172,6 @@ func (robin *weightedRoundRobin) Current(delta int64) {
 }
 
 type cachedInvokers struct {
+	mu       sync.Mutex
 	sync.Map /*[string]weightedRoundRobin*/
 }

@@ -20,12 +20,12 @@ package limiter
 import (
 	"strconv"
 	"sync"
+	"sync/atomic"
+	"time"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-
-	"github.com/modern-go/concurrent"
 )
 
 import (
@@ -38,7 +38,29 @@ import (
 
 const (
 	name = "method-service"
+
+	tpsLimiterStateTTL        = 10 * time.Minute
+	tpsLimiterCleanupInterval = 5 * time.Minute
 )
+
+// tpsLimitEntry wraps a TpsLimitStrategy with a last-access timestamp so that
+// stale entries (services/methods no longer invoked) can be evicted periodically.
+type tpsLimitEntry struct {
+	strategy   filter.TpsLimitStrategy
+	lastAccess int64 // unix nanoseconds, updated atomically
+}
+
+func newTpsLimitEntry(s filter.TpsLimitStrategy) *tpsLimitEntry {
+	return &tpsLimitEntry{
+		strategy:   s,
+		lastAccess: time.Now().UnixNano(),
+	}
+}
+
+func (e *tpsLimitEntry) IsAllowable() bool {
+	atomic.StoreInt64(&e.lastAccess, time.Now().UnixNano())
+	return e.strategy.IsAllowable()
+}
 
 func init() {
 	extension.SetTpsLimiter(constant.DefaultKey, GetMethodServiceTpsLimiter)
@@ -112,7 +134,7 @@ func init() {
  * In this case, only UpdateUser will be limited by its configuration (70 times in 40000ms)
  */
 type MethodServiceTpsLimiter struct {
-	tpsState *concurrent.Map
+	tpsState sync.Map // map[string]*tpsLimitEntry
 }
 
 // IsAllowable based on method-level and service-level.
@@ -121,7 +143,7 @@ type MethodServiceTpsLimiter struct {
 // The key point is how to keep thread-safe
 // This implementation use concurrent map + loadOrStore to make implementation thread-safe
 // You can image that even multiple threads create limiter, but only one could store the limiter into tpsState
-func (limiter MethodServiceTpsLimiter) IsAllowable(url *common.URL, invocation base.Invocation) bool {
+func (limiter *MethodServiceTpsLimiter) IsAllowable(url *common.URL, invocation base.Invocation) bool {
 	methodConfigPrefix := "methods." + invocation.MethodName() + "."
 
 	methodLimitRateConfig := url.GetParam(methodConfigPrefix+constant.TPSLimitRateKey, "")
@@ -140,7 +162,7 @@ func (limiter MethodServiceTpsLimiter) IsAllowable(url *common.URL, invocation b
 	limitState, found := limiter.tpsState.Load(limitTarget)
 	if found {
 		// the limiter has been cached, we return its result
-		return limitState.(filter.TpsLimitStrategy).IsAllowable()
+		return limitState.(*tpsLimitEntry).IsAllowable()
 	}
 
 	// we could not find the limiter, and try to create one.
@@ -172,10 +194,27 @@ func (limiter MethodServiceTpsLimiter) IsAllowable(url *common.URL, invocation b
 		return true
 	}
 
-	// we using loadOrStore to ensure thread-safe
-	limitState, _ = limiter.tpsState.LoadOrStore(limitTarget, limitStateCreator.Create(int(limitRate), int(limitInterval)))
+	// we using LoadOrStore to ensure thread-safe; wrap in tpsLimitEntry for TTL tracking
+	entry := newTpsLimitEntry(limitStateCreator.Create(int(limitRate), int(limitInterval)))
+	actual, _ := limiter.tpsState.LoadOrStore(limitTarget, entry)
+	return actual.(*tpsLimitEntry).IsAllowable()
+}
 
-	return limitState.(filter.TpsLimitStrategy).IsAllowable()
+// runCleanup periodically evicts limiter entries that have not been accessed
+// within tpsLimiterStateTTL. This prevents unbounded accumulation when
+// services or methods are removed dynamically.
+func (limiter *MethodServiceTpsLimiter) runCleanup() {
+	ticker := time.NewTicker(tpsLimiterCleanupInterval)
+	defer ticker.Stop()
+	for range ticker.C {
+		cutoff := time.Now().Add(-tpsLimiterStateTTL).UnixNano()
+		limiter.tpsState.Range(func(key, val any) bool {
+			if atomic.LoadInt64(&val.(*tpsLimitEntry).lastAccess) < cutoff {
+				limiter.tpsState.Delete(key)
+			}
+			return true
+		})
+	}
 }
 
 // getLimitConfig will try to fetch the configuration from url.
@@ -215,9 +254,9 @@ var (
 // GetMethodServiceTpsLimiter will return an MethodServiceTpsLimiter instance.
 func GetMethodServiceTpsLimiter() filter.TpsLimiter {
 	methodServiceTpsLimiterOnce.Do(func() {
-		methodServiceTpsLimiterInstance = &MethodServiceTpsLimiter{
-			tpsState: concurrent.NewMap(),
-		}
+		inst := &MethodServiceTpsLimiter{}
+		go inst.runCleanup()
+		methodServiceTpsLimiterInstance = inst
 	})
 	return methodServiceTpsLimiterInstance
 }
