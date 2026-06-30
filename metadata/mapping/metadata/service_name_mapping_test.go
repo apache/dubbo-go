@@ -78,9 +78,14 @@ func TestServiceNameMappingGet(t *testing.T) {
 		assert.False(t, apps.Empty())
 	})
 	t.Run("test error", func(t *testing.T) {
-		mockReport.On("GetServiceAppMapping").Return(gxset.NewSet(), errors.New("mock error")).Once()
+		getErr := errors.New("mock error")
+		mockReport.On("GetServiceAppMapping").Return(gxset.NewSet(), getErr).Once()
 		_, err = ins.Get(serviceUrl, lis)
 		require.Error(t, err)
+		require.ErrorIs(t, err, getErr)
+		assert.Contains(t, err.Error(), "mapping_get")
+		assert.Contains(t, err.Error(), "interface=org.apache.dubbo.samples.proto.GreetService")
+		assert.Contains(t, err.Error(), "group=mapping")
 	})
 	mockReport.AssertExpectations(t)
 }
@@ -110,6 +115,11 @@ func TestServiceNameMappingMap(t *testing.T) {
 		mockReport.On("RegisterServiceAppMapping").Return(report.ErrMappingCASConflict).Times(conflictRetries)
 		err = ins.Map(serviceUrl)
 		require.Error(t, err, "conflict exhausts the retry budget")
+		require.ErrorIs(t, err, report.ErrMappingCASConflict)
+		assert.Contains(t, err.Error(), "mapping_register")
+		assert.Contains(t, err.Error(), "interface=org.apache.dubbo.samples.proto.GreetService")
+		assert.Contains(t, err.Error(), "application=dubbo")
+		assert.Contains(t, err.Error(), "group=mapping")
 	})
 	mockReport.AssertExpectations(t)
 }
@@ -128,9 +138,14 @@ func TestServiceNameMappingRemove(t *testing.T) {
 		require.NoError(t, err)
 	})
 	t.Run("test error", func(t *testing.T) {
-		mockReport.On("RemoveServiceAppMappingListener").Return(errors.New("mock error")).Once()
+		removeErr := errors.New("mock error")
+		mockReport.On("RemoveServiceAppMappingListener").Return(removeErr).Once()
 		err = ins.Remove(serviceUrl)
 		require.Error(t, err)
+		require.ErrorIs(t, err, removeErr)
+		assert.Contains(t, err.Error(), "mapping_remove")
+		assert.Contains(t, err.Error(), "interface=org.apache.dubbo.samples.proto.GreetService")
+		assert.Contains(t, err.Error(), "group=mapping")
 	})
 	mockReport.AssertExpectations(t)
 }

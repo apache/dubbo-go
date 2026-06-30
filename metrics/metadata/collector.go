@@ -58,6 +58,12 @@ func (c *MetadataMetricCollector) start() {
 					c.handleMetadataSub(event)
 				case SubscribeServiceRt:
 					c.handleSubscribeService(event)
+				case MetadataMappingRegister:
+					c.handleMetadataMappingRegister(event)
+				case MetadataMappingGet:
+					c.handleMetadataMappingGet(event)
+				case MetadataMappingRemove:
+					c.handleMetadataMappingRemove(event)
 				default:
 				}
 			}
@@ -88,6 +94,24 @@ func (c *MetadataMetricCollector) handleSubscribeService(event *MetadataMetricEv
 	c.R.Rt(metrics.NewMetricId(subscribeServiceRt, level), &metrics.RtOpts{}).Observe(event.CostMs())
 }
 
+func (c *MetadataMetricCollector) handleMetadataMappingRegister(event *MetadataMetricEvent) {
+	level := newMetadataMappingMetricLevel(event.Attachment)
+	c.StateCount(metadataMappingRegisterNum, metadataMappingRegisterSucceed, metadataMappingRegisterFailed, level, event.Succ)
+	c.R.Rt(metrics.NewMetricId(metadataMappingRegisterRt, level), &metrics.RtOpts{}).Observe(event.CostMs())
+}
+
+func (c *MetadataMetricCollector) handleMetadataMappingGet(event *MetadataMetricEvent) {
+	level := newMetadataMappingMetricLevel(event.Attachment)
+	c.StateCount(metadataMappingGetNum, metadataMappingGetSucceed, metadataMappingGetFailed, level, event.Succ)
+	c.R.Rt(metrics.NewMetricId(metadataMappingGetRt, level), &metrics.RtOpts{}).Observe(event.CostMs())
+}
+
+func (c *MetadataMetricCollector) handleMetadataMappingRemove(event *MetadataMetricEvent) {
+	level := newMetadataMappingMetricLevel(event.Attachment)
+	c.StateCount(metadataMappingRemoveNum, metadataMappingRemoveSucceed, metadataMappingRemoveFailed, level, event.Succ)
+	c.R.Rt(metrics.NewMetricId(metadataMappingRemoveRt, level), &metrics.RtOpts{}).Observe(event.CostMs())
+}
+
 type MetadataMetricEvent struct {
 	Name       MetricName
 	Succ       bool
@@ -106,4 +130,28 @@ func (e *MetadataMetricEvent) CostMs() float64 {
 
 func NewMetadataMetricTimeEvent(n MetricName) *MetadataMetricEvent {
 	return &MetadataMetricEvent{Name: n, Start: time.Now(), Attachment: make(map[string]string)}
+}
+
+type metadataMappingMetricLevel struct {
+	*metrics.ApplicationMetricLevel
+	attachment map[string]string
+}
+
+func newMetadataMappingMetricLevel(attachment map[string]string) metadataMappingMetricLevel {
+	return metadataMappingMetricLevel{
+		ApplicationMetricLevel: metrics.GetApplicationLevel(),
+		attachment:             attachment,
+	}
+}
+
+func (m metadataMappingMetricLevel) Tags() map[string]string {
+	tags := m.ApplicationMetricLevel.Tags()
+	tags[constant.TagInterface] = m.attachment[constant.InterfaceKey]
+	tags[constant.TagGroup] = m.attachment[constant.GroupKey]
+	tags[constant.ApplicationKey] = m.attachment[constant.ApplicationKey]
+	tags[MetadataMappingOperationKey] = m.attachment[MetadataMappingOperationKey]
+	if listenerRequested, ok := m.attachment[MetadataMappingListenerRequestedKey]; ok {
+		tags[MetadataMappingListenerRequestedKey] = listenerRequested
+	}
+	return tags
 }

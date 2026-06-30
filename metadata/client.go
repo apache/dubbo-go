@@ -45,11 +45,25 @@ const defaultTimeout = "5s" // s
 func GetMetadataFromMetadataReport(revision string, instance registry.ServiceInstance, registryId string) (*info.MetadataInfo, error) {
 	report := GetMetadataReportByRegistry(registryId)
 	if report == nil {
-		return nil, perrors.Errorf("no metadata report instance found for registryId=%s, please check metadata-report configuration", registryId)
+		return nil, &MetadataError{
+			Kind:       MetadataErrorKindReportLoad,
+			Source:     "metadata_report",
+			App:        instance.GetServiceName(),
+			Revision:   revision,
+			RegistryID: registryId,
+			Err:        perrors.Errorf("no metadata report instance found for registryId=%s, please check metadata-report configuration", registryId),
+		}
 	}
 	meta, err := report.GetAppMetadata(instance.GetServiceName(), revision)
 	if err != nil {
-		return nil, perrors.Wrapf(err, "failed to get app metadata app=%s revision=%s", instance.GetServiceName(), revision)
+		return nil, &MetadataError{
+			Kind:       MetadataErrorKindReportLoad,
+			Source:     "metadata_report",
+			App:        instance.GetServiceName(),
+			Revision:   revision,
+			RegistryID: registryId,
+			Err:        perrors.Wrapf(err, "failed to get app metadata app=%s revision=%s", instance.GetServiceName(), revision),
+		}
 	}
 	return meta, nil
 }
@@ -57,13 +71,19 @@ func GetMetadataFromMetadataReport(revision string, instance registry.ServiceIns
 func GetMetadataFromRpc(revision string, instance registry.ServiceInstance) (*info.MetadataInfo, error) {
 	url, err := buildStandardMetadataServiceURL(instance)
 	if err != nil {
-		return nil, err
+		return nil, withMetadataErrorContext(err, MetadataErrorKindURLBuild, "metadata_url", instance.GetServiceName(), revision, metadataStorageType(instance))
 	}
 	url.SetParam(constant.TimeoutKey, defaultTimeout)
 	p := extension.GetProtocol(url.Protocol)
 	invoker := p.Refer(url)
 	if invoker == nil { // can't connect instance
-		return nil, perrors.New("can not connect to remote metadata service host: " + url.Ip)
+		return nil, &MetadataError{
+			Kind:     MetadataErrorKindRPCLoad,
+			Source:   "rpc_metadata",
+			App:      instance.GetServiceName(),
+			Revision: revision,
+			Err:      perrors.New("can not connect to remote metadata service host: " + url.Ip),
+		}
 	}
 	var remoteService remoteMetadataService
 	if url.Protocol == constant.TriProtocol && instance.GetMetadata()[constant.MetadataVersion] == constant.MetadataServiceV2Version {
@@ -74,7 +94,18 @@ func GetMetadataFromRpc(revision string, instance registry.ServiceInstance) (*in
 	defer func() {
 		invoker.Destroy()
 	}()
-	return remoteService.getMetadataInfo(context.Background(), revision)
+	metadataInfo, err := remoteService.getMetadataInfo(context.Background(), revision)
+	if err != nil {
+		return nil, withMetadataErrorContext(err, MetadataErrorKindRPCLoad, "rpc_metadata", instance.GetServiceName(), revision, metadataStorageType(instance))
+	}
+	return metadataInfo, nil
+}
+
+func metadataStorageType(instance registry.ServiceInstance) string {
+	if instance.GetMetadata() == nil {
+		return ""
+	}
+	return instance.GetMetadata()[constant.MetadataStorageTypePropertyName]
 }
 
 // remoteMetadataService is the internal interface for fetching MetadataInfo via RPC.
@@ -180,7 +211,12 @@ func (m *remoteMetadataServiceV1) getMetadataInfo(_ context.Context, revision st
 	if rawResult == nil {
 		logger.Warnf("[Metadata][RPC] Provider %s returned nil metadata (service may not be ready), revision=%s",
 			m.invoker.GetURL().Location, revision)
-		return nil, perrors.Errorf("metadata is nil from %s, revision: %s", m.invoker.GetURL().Location, revision)
+		return nil, &MetadataError{
+			Kind:     MetadataErrorKindNil,
+			Source:   "rpc_metadata",
+			Revision: revision,
+			Err:      perrors.Errorf("metadata is nil from %s, revision: %s", m.invoker.GetURL().Location, revision),
+		}
 	}
 
 	var metadataInfo *info.MetadataInfo
@@ -222,12 +258,25 @@ func truncateString(s string, maxLen int) string {
 // buildStandardMetadataServiceURL will use standard format to build the metadata service url.
 // Returns an error if required params (protocol or port) are missing.
 func buildStandardMetadataServiceURL(ins registry.ServiceInstance) (*common.URL, error) {
-	ps := getMetadataServiceUrlParams(ins)
+	ps, err := getMetadataServiceUrlParams(ins)
+	if err != nil {
+		return nil, err
+	}
 	if ps[constant.ProtocolKey] == "" {
-		return nil, perrors.New("metadata service URL params missing: protocol is empty")
+		return nil, &MetadataError{
+			Kind:   MetadataErrorKindURLBuild,
+			Source: "metadata_url",
+			App:    ins.GetServiceName(),
+			Err:    perrors.New("metadata service URL params missing: protocol is empty"),
+		}
 	}
 	if ps[constant.PortKey] == "" {
-		return nil, perrors.New("metadata service URL params missing: port is empty")
+		return nil, &MetadataError{
+			Kind:   MetadataErrorKindURLBuild,
+			Source: "metadata_url",
+			App:    ins.GetServiceName(),
+			Err:    perrors.New("metadata service URL params missing: port is empty"),
+		}
 	}
 
 	sn := ins.GetServiceName()
@@ -266,15 +315,21 @@ func buildStandardMetadataServiceURL(ins registry.ServiceInstance) (*common.URL,
 // getMetadataServiceUrlParams this will convertV2 the metadata service url parameters to map structure
 // it looks like:
 // {"dubbo":{"timeout":"10000","version":"1.0.0","dubbo":"2.0.2","release":"2.7.6","port":"20880"}}
-func getMetadataServiceUrlParams(ins registry.ServiceInstance) map[string]string {
+func getMetadataServiceUrlParams(ins registry.ServiceInstance) (map[string]string, error) {
 	ps := ins.GetMetadata()
 	res := make(map[string]string, 2)
 	if str, ok := ps[constant.MetadataServiceURLParamsPropertyName]; ok && len(str) > 0 {
 		err := json.Unmarshal([]byte(str), &res)
 		if err != nil {
 			logger.Errorf("[Metadata][URL] could not parse the metadata service url parameters to map, err=%v", err)
+			return nil, &MetadataError{
+				Kind:   MetadataErrorKindURLBuild,
+				Source: "metadata_url",
+				App:    ins.GetServiceName(),
+				Err:    perrors.Wrap(err, "could not parse metadata service URL params"),
+			}
 		}
 	}
 
-	return res
+	return res, nil
 }
