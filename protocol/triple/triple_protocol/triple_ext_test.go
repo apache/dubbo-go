@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+package triple_protocol_test
 
 import (
 	"bytes"
