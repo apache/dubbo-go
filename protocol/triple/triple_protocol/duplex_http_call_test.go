@@ -15,12 +15,14 @@
 package triple_protocol
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"sync"
 	"testing"
+	"time"
 )
 
 import (
@@ -181,4 +183,92 @@ func TestDuplexHTTPCallConcurrentWriteCloseRace(t *testing.T) {
 		wg.Wait()
 		_ = call.CloseRead()
 	}
+}
+
+// TestDuplexHTTPCallCloseReadDoesNotDrainResponseBody is a regression guard
+// for the stream-close hang fixed upstream in connect-go v1.18.0
+// (connectrpc/connect-go#791).
+//
+// CloseRead is the low-level operation behind CloseResponse and
+// ServerStreamForClient.Close. It is a cleanup path, so it should close the
+// response body without trying to read the rest of the stream. If it drains the
+// body first, a peer that keeps the response stream open can make close block.
+func TestDuplexHTTPCallCloseReadDoesNotDrainResponseBody(t *testing.T) {
+	t.Parallel()
+	body := newBlockingReadCloser()
+	call := &duplexHTTPCall{
+		ctx:           context.Background(),
+		responseReady: make(chan struct{}),
+		response: &http.Response{
+			Body:    body,
+			Trailer: make(http.Header),
+		},
+	}
+	close(call.responseReady)
+
+	done := make(chan error, 1)
+	go func() {
+		done <- call.CloseRead()
+	}()
+
+	select {
+	case err := <-done:
+		assert.Nil(t, err)
+	case <-body.readStarted:
+		body.unblock()
+		assert.Nil(t, <-done)
+		t.Fatal("CloseRead attempted to drain the response body")
+	case <-time.After(200 * time.Millisecond):
+		body.unblock()
+		assert.Nil(t, <-done)
+		t.Fatal("CloseRead blocked while closing the response body")
+	}
+
+	select {
+	case <-body.closed:
+	default:
+		t.Fatal("CloseRead did not close the response body")
+	}
+}
+
+// blockingReadCloser reports if anyone tries to read from it and then blocks.
+// That lets the test distinguish the intended Close-only path from the old
+// drain-before-close behavior without depending on a real transport stall.
+type blockingReadCloser struct {
+	readStarted chan struct{}
+	readUnblock chan struct{}
+	closed      chan struct{}
+
+	startReadOnce sync.Once
+	unblockOnce   sync.Once
+	closeOnce     sync.Once
+}
+
+func newBlockingReadCloser() *blockingReadCloser {
+	return &blockingReadCloser{
+		readStarted: make(chan struct{}),
+		readUnblock: make(chan struct{}),
+		closed:      make(chan struct{}),
+	}
+}
+
+func (b *blockingReadCloser) Read([]byte) (int, error) {
+	b.startReadOnce.Do(func() {
+		close(b.readStarted)
+	})
+	<-b.readUnblock
+	return 0, io.EOF
+}
+
+func (b *blockingReadCloser) Close() error {
+	b.closeOnce.Do(func() {
+		close(b.closed)
+	})
+	return nil
+}
+
+func (b *blockingReadCloser) unblock() {
+	b.unblockOnce.Do(func() {
+		close(b.readUnblock)
+	})
 }
