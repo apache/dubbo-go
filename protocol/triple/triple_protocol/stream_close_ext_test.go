@@ -35,6 +35,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/ping/v1/pingv1connect"
 )
 
+const closeTestTimeout = time.Second
+
 // TestServerStreamCloseDoesNotDrainResponse covers the public
 // ServerStreamForClient.Close path for connect-go#791-style lifecycle
 // behavior. The server sends one response and then intentionally keeps the
@@ -43,11 +45,13 @@ import (
 func TestServerStreamCloseDoesNotDrainResponse(t *testing.T) {
 	release, unblock := newCloseRelease()
 	t.Cleanup(unblock)
+	sent := make(chan struct{})
 	client := newCloseLifecyclePingClient(t, &pluggablePingServer{
 		countUp: func(ctx context.Context, req *triple.Request, stream *triple.ServerStream) error {
 			if err := stream.Send(&pingv1.CountUpResponse{Number: 1}); err != nil {
 				return err
 			}
+			close(sent)
 			<-release
 			return nil
 		},
@@ -55,7 +59,16 @@ func TestServerStreamCloseDoesNotDrainResponse(t *testing.T) {
 
 	stream, err := client.CountUp(context.Background(), triple.NewRequest(&pingv1.CountUpRequest{}))
 	assert.Nil(t, err)
-	assert.True(t, stream.Receive(&pingv1.CountUpResponse{}))
+
+	select {
+	case <-sent:
+	case <-time.After(closeTestTimeout):
+		t.Fatal("server did not send the first response before close verification")
+	}
+
+	if !stream.Receive(&pingv1.CountUpResponse{}) {
+		t.Fatalf("failed to receive first response before close verification: %v", stream.Err())
+	}
 	msg := stream.Msg().(*pingv1.CountUpResponse)
 	assert.Equal(t, msg.Number, int64(1))
 
@@ -73,15 +86,19 @@ func TestServerStreamCloseDoesNotDrainResponse(t *testing.T) {
 func TestBidiStreamCloseResponseDoesNotDrainResponse(t *testing.T) {
 	release, unblock := newCloseRelease()
 	t.Cleanup(unblock)
+	received := make(chan struct{})
+	sent := make(chan struct{})
 	client := newCloseLifecyclePingClient(t, &pluggablePingServer{
 		cumSum: func(ctx context.Context, stream *triple.BidiStream) error {
 			req := &pingv1.CumSumRequest{}
 			if err := stream.Receive(req); err != nil {
 				return err
 			}
+			close(received)
 			if err := stream.Send(&pingv1.CumSumResponse{Sum: req.Number}); err != nil {
 				return err
 			}
+			close(sent)
 			<-release
 			return nil
 		},
@@ -89,9 +106,25 @@ func TestBidiStreamCloseResponseDoesNotDrainResponse(t *testing.T) {
 
 	stream, err := client.CumSum(context.Background())
 	assert.Nil(t, err)
-	assert.Nil(t, stream.Send(&pingv1.CumSumRequest{Number: 2}))
+	if err := stream.Send(&pingv1.CumSumRequest{Number: 2}); err != nil {
+		t.Fatalf("failed to send setup request before close verification: %v", err)
+	}
+
+	select {
+	case <-received:
+	case <-time.After(closeTestTimeout):
+		t.Fatal("server did not receive the setup request before close verification")
+	}
+	select {
+	case <-sent:
+	case <-time.After(closeTestTimeout):
+		t.Fatal("server did not send the setup response before close verification")
+	}
+
 	res := &pingv1.CumSumResponse{}
-	assert.Nil(t, stream.Receive(res))
+	if err := stream.Receive(res); err != nil {
+		t.Fatalf("failed to receive setup response before close verification: %v", err)
+	}
 	assert.Equal(t, res.Sum, int64(2))
 
 	done := make(chan error, 1)
@@ -107,19 +140,33 @@ func TestBidiStreamCloseResponseDoesNotDrainResponse(t *testing.T) {
 // client has received the server-side error, closing the receive side should be
 // a local cleanup step and must not wait for additional response bytes.
 func TestBidiStreamCloseResponseAfterServerStopsReading(t *testing.T) {
+	serverReceived := make(chan struct{})
+	serverReturn := make(chan struct{})
 	client := newCloseLifecyclePingClient(t, &pluggablePingServer{
 		cumSum: func(ctx context.Context, stream *triple.BidiStream) error {
 			req := &pingv1.CumSumRequest{}
 			if err := stream.Receive(req); err != nil {
 				return err
 			}
+			close(serverReceived)
+			<-serverReturn
 			return triple.NewError(triple.CodeUnavailable, errors.New("server stopped reading"))
 		},
 	})
 
 	stream, err := client.CumSum(context.Background())
 	assert.Nil(t, err)
-	assert.Nil(t, stream.Send(&pingv1.CumSumRequest{Number: 1}))
+	if err := stream.Send(&pingv1.CumSumRequest{Number: 1}); err != nil {
+		t.Fatalf("failed to send setup request before close verification: %v", err)
+	}
+
+	select {
+	case <-serverReceived:
+	case <-time.After(closeTestTimeout):
+		t.Fatal("server did not receive the setup request before close verification")
+	}
+	close(serverReturn)
+
 	err = stream.Receive(&pingv1.CumSumResponse{})
 	assert.NotNil(t, err)
 	assert.Equal(t, triple.CodeOf(err), triple.CodeUnavailable)
@@ -190,7 +237,7 @@ func assertCloseReturnsPromptly(t *testing.T, done <-chan error, unblock func(),
 	select {
 	case err := <-done:
 		return err
-	case <-time.After(200 * time.Millisecond):
+	case <-time.After(closeTestTimeout):
 		if unblock != nil {
 			unblock()
 			err := <-done

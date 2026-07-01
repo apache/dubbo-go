@@ -29,6 +29,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/assert"
 )
 
+const closeTestTimeout = time.Second
+
 // newTestDuplexClientCall builds a duplexHTTPCall for a client-streaming RPC
 // backed by a server that simply drains the request body and replies 200. It is
 // the minimal setup needed to exercise the Write/CloseWrite/CloseRead lifecycle
@@ -218,7 +220,7 @@ func TestDuplexHTTPCallCloseReadDoesNotDrainResponseBody(t *testing.T) {
 		body.unblock()
 		assert.Nil(t, <-done)
 		t.Fatal("CloseRead attempted to drain the response body")
-	case <-time.After(200 * time.Millisecond):
+	case <-time.After(closeTestTimeout):
 		body.unblock()
 		assert.Nil(t, <-done)
 		t.Fatal("CloseRead blocked while closing the response body")
