@@ -156,8 +156,8 @@ func TestBidiStreamCloseResponseAfterServerStopsReading(t *testing.T) {
 
 	stream, err := client.CumSum(context.Background())
 	assert.Nil(t, err)
-	if err := stream.Send(&pingv1.CumSumRequest{Number: 1}); err != nil {
-		t.Fatalf("failed to send setup request before close verification: %v", err)
+	if sendErr := stream.Send(&pingv1.CumSumRequest{Number: 1}); sendErr != nil {
+		t.Fatalf("failed to send setup request before close verification: %v", sendErr)
 	}
 
 	select {
