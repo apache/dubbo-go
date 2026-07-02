@@ -187,14 +187,13 @@ func TestDuplexHTTPCallConcurrentWriteCloseRace(t *testing.T) {
 	}
 }
 
-// TestDuplexHTTPCallCloseReadDoesNotDrainResponseBody is a regression guard
-// for the stream-close hang fixed upstream in connect-go v1.18.0
-// (connectrpc/connect-go#791).
+// TestDuplexHTTPCallCloseReadDoesNotDrainResponseBody verifies that CloseRead
+// closes the response body directly instead of reading until EOF. This guards
+// the stream-close hang fixed in connect-go#791.
 //
-// CloseRead is the low-level operation behind CloseResponse and
-// ServerStreamForClient.Close. It is a cleanup path, so it should close the
-// response body without trying to read the rest of the stream. If it drains the
-// body first, a peer that keeps the response stream open can make close block.
+// A streaming peer may keep the response open after it stops sending data, so
+// draining the body during close can block forever. Callers that need final
+// trailers should read to EOF before closing the read side.
 func TestDuplexHTTPCallCloseReadDoesNotDrainResponseBody(t *testing.T) {
 	t.Parallel()
 	body := newBlockingReadCloser()
@@ -233,9 +232,8 @@ func TestDuplexHTTPCallCloseReadDoesNotDrainResponseBody(t *testing.T) {
 	}
 }
 
-// blockingReadCloser reports if anyone tries to read from it and then blocks.
-// That lets the test distinguish the intended Close-only path from the old
-// drain-before-close behavior without depending on a real transport stall.
+// blockingReadCloser records attempted reads and then blocks. It lets the test
+// catch drain-before-close behavior without depending on a real stalled stream.
 type blockingReadCloser struct {
 	readStarted chan struct{}
 	readUnblock chan struct{}

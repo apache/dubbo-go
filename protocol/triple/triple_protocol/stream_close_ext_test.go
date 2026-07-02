@@ -37,11 +37,11 @@ import (
 
 const closeTestTimeout = time.Second
 
-// TestServerStreamCloseDoesNotDrainResponse covers the public
-// ServerStreamForClient.Close path for connect-go#791-style lifecycle
-// behavior. The server sends one response and then intentionally keeps the
-// stream open; client-side Close should still return promptly because it is a
-// cleanup operation, not a request to read the stream to EOF.
+// TestServerStreamCloseDoesNotDrainResponse verifies that Close returns
+// promptly after the client stops reading a server-streaming response.
+//
+// The server sends one message and then keeps the stream open. Close should
+// release the response body without waiting for the stream to reach EOF.
 func TestServerStreamCloseDoesNotDrainResponse(t *testing.T) {
 	release, unblock := newCloseRelease()
 	t.Cleanup(unblock)
@@ -79,10 +79,11 @@ func TestServerStreamCloseDoesNotDrainResponse(t *testing.T) {
 	assert.Nil(t, assertCloseReturnsPromptly(t, done, unblock, "ServerStreamForClient.Close blocked while draining the response"))
 }
 
-// TestBidiStreamCloseResponseDoesNotDrainResponse covers the public
-// BidiStreamForClient.CloseResponse path. After one successful receive, the
-// server keeps the response side open; closing the receive side should close
-// the HTTP response body instead of draining it.
+// TestBidiStreamCloseResponseDoesNotDrainResponse verifies that CloseResponse
+// does not wait for EOF on a bidi response stream.
+//
+// After one successful receive, the server keeps the response side open.
+// Closing the client receive side should still return promptly.
 func TestBidiStreamCloseResponseDoesNotDrainResponse(t *testing.T) {
 	release, unblock := newCloseRelease()
 	t.Cleanup(unblock)
@@ -136,9 +137,10 @@ func TestBidiStreamCloseResponseDoesNotDrainResponse(t *testing.T) {
 }
 
 // TestBidiStreamCloseResponseAfterServerStopsReading covers the case where the
-// server returns before consuming the rest of the request stream. Once the
-// client has received the server-side error, closing the receive side should be
-// a local cleanup step and must not wait for additional response bytes.
+// server returns an error before consuming the rest of the request stream.
+//
+// Once the client has received that error, CloseResponse should be local cleanup
+// and should not wait for the server to continue the stream.
 func TestBidiStreamCloseResponseAfterServerStopsReading(t *testing.T) {
 	serverReceived := make(chan struct{})
 	serverReturn := make(chan struct{})
