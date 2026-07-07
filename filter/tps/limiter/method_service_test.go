@@ -19,7 +19,9 @@ package limiter
 
 import (
 	"net/url"
+	"sync/atomic"
 	"testing"
+	"time"
 )
 
 import (
@@ -155,4 +157,41 @@ func (creator *mockStrategyCreator) Create(rate int, interval int) filter.TpsLim
 	assert.Equal(creator.t, creator.rate, rate)
 	assert.Equal(creator.t, creator.interval, interval)
 	return creator.strategy
+}
+
+type stubAllowStrategy struct{}
+
+func (s *stubAllowStrategy) IsAllowable() bool { return true }
+
+func TestTpsLimitEntryUpdatesLastAccess(t *testing.T) {
+	entry := newTpsLimitEntry(&stubAllowStrategy{})
+	before := atomic.LoadInt64(&entry.lastAccess)
+	time.Sleep(time.Millisecond)
+	entry.IsAllowable()
+	after := atomic.LoadInt64(&entry.lastAccess)
+	assert.Greater(t, after, before)
+}
+
+func TestTpsLimiterStaleEntryEviction(t *testing.T) {
+	limiter := &MethodServiceTpsLimiter{}
+
+	staleEntry := newTpsLimitEntry(&stubAllowStrategy{})
+	atomic.StoreInt64(&staleEntry.lastAccess, time.Now().Add(-tpsLimiterStateTTL-time.Second).UnixNano())
+	limiter.tpsState.Store("stale-key", staleEntry)
+
+	activeEntry := newTpsLimitEntry(&stubAllowStrategy{})
+	limiter.tpsState.Store("active-key", activeEntry)
+
+	cutoff := time.Now().Add(-tpsLimiterStateTTL).UnixNano()
+	limiter.tpsState.Range(func(key, val any) bool {
+		if atomic.LoadInt64(&val.(*tpsLimitEntry).lastAccess) < cutoff {
+			limiter.tpsState.Delete(key)
+		}
+		return true
+	})
+
+	_, staleExists := limiter.tpsState.Load("stale-key")
+	_, activeExists := limiter.tpsState.Load("active-key")
+	assert.False(t, staleExists, "stale entry should be evicted")
+	assert.True(t, activeExists, "active entry should remain")
 }
