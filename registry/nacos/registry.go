@@ -34,6 +34,7 @@ import (
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
 	"github.com/dubbogo/gost/log/logger"
 
+	"github.com/nacos-group/nacos-sdk-go/v2/model"
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 
 	perrors "github.com/pkg/errors"
@@ -61,11 +62,12 @@ func init() {
 
 type nacosRegistry struct {
 	*common.URL
-	namingClient *nacosClient.NacosNamingClient
-	registryUrls []*common.URL
-	done         chan struct{}
-	availability availabilityCache
-	wg           sync.WaitGroup
+	namingClient              *nacosClient.NacosNamingClient
+	registryUrls              []*common.URL
+	initialSubscribeInstances sync.Map
+	done                      chan struct{}
+	availability              availabilityCache
+	wg                        sync.WaitGroup
 }
 
 type availabilityCache struct {
@@ -256,7 +258,7 @@ func (nr *nacosRegistry) subscribeAll(url *common.URL, notifyListener registry.N
 		return
 	}
 	for _, name := range serviceNames {
-		if _, ok := listenerCache.Load(name + groupName); ok {
+		if _, ok := listenerCache.Load(subscribeCacheKey(name, groupName)); ok {
 			// has subscribed ,ignore
 			continue
 		}
@@ -279,6 +281,10 @@ func (nr *nacosRegistry) subscribe(serviceName string, notifyListener registry.N
 		return perrors.New("nacosRegistry is not available.")
 	}
 	listener := NewNacosListenerWithServiceName(serviceName, nr.URL, nr.namingClient)
+	groupName := nr.GetParam(constant.RegistryGroupKey, defaultGroup)
+	if instances, ok := nr.loadInitialSubscribeInstances(serviceName, groupName); ok {
+		listener.setInstanceSnapshot(instances)
+	}
 	// will add to listenerCache when subscribe success
 	err := listener.listenService(serviceName)
 	metrics.Publish(metricsRegistry.NewSubscribeEvent(err == nil))
@@ -286,6 +292,7 @@ func (nr *nacosRegistry) subscribe(serviceName string, notifyListener registry.N
 		logger.Warnf("[Registry][Nacos] subscribe service %s err=%v", serviceName, perrors.WithStack(err))
 		return err
 	}
+	nr.deleteInitialSubscribeInstances(serviceName, groupName)
 	// handleServiceEvents will block to wait notify event and exit when error occur
 	nr.wg.Add(1)
 	go func() {
@@ -343,7 +350,9 @@ func (nr *nacosRegistry) handleServiceEvents(listener registry.Listener, notifyL
 
 // UnSubscribe :
 func (nr *nacosRegistry) UnSubscribe(url *common.URL, _ registry.NotifyListener) error {
-	param := createSubscribeParam(getSubscribeName(url), nr.GetParam(constant.RegistryGroupKey, defaultGroup), nil)
+	serviceName := getSubscribeName(url)
+	groupName := nr.GetParam(constant.RegistryGroupKey, defaultGroup)
+	param := createSubscribeParam(serviceName, groupName, nil)
 	if param == nil {
 		return nil
 	}
@@ -351,6 +360,7 @@ func (nr *nacosRegistry) UnSubscribe(url *common.URL, _ registry.NotifyListener)
 	if err != nil {
 		return perrors.New("UnSubscribe [" + param.ServiceName + "] to nacos failed")
 	}
+	nr.deleteInitialSubscribeInstances(serviceName, groupName)
 	return nil
 }
 
@@ -366,6 +376,7 @@ func (nr *nacosRegistry) LoadSubscribeInstances(url *common.URL, notify registry
 		return perrors.New(fmt.Sprintf("could not query the instances for serviceName=%s,groupName=%s,error=%v",
 			serviceName, groupName, err))
 	}
+	nr.storeInitialSubscribeInstances(serviceName, groupName, instances)
 
 	for i := range instances {
 		if newUrl := generateUrl(instances[i]); newUrl != nil {
@@ -375,9 +386,42 @@ func (nr *nacosRegistry) LoadSubscribeInstances(url *common.URL, notify registry
 	return nil
 }
 
+func (nr *nacosRegistry) storeInitialSubscribeInstances(serviceName string, groupName string, instances []model.Instance) {
+	if len(instances) == 0 {
+		return
+	}
+	copied := make([]model.Instance, len(instances))
+	copy(copied, instances)
+	nr.initialSubscribeInstances.Store(subscribeCacheKey(serviceName, groupName), copied)
+}
+
+func (nr *nacosRegistry) loadInitialSubscribeInstances(serviceName string, groupName string) ([]model.Instance, bool) {
+	value, ok := nr.initialSubscribeInstances.Load(subscribeCacheKey(serviceName, groupName))
+	if !ok {
+		return nil, false
+	}
+	instances, ok := value.([]model.Instance)
+	return instances, ok
+}
+
+func (nr *nacosRegistry) deleteInitialSubscribeInstances(serviceName string, groupName string) {
+	nr.initialSubscribeInstances.Delete(subscribeCacheKey(serviceName, groupName))
+}
+
+func (nr *nacosRegistry) clearInitialSubscribeInstances() {
+	nr.initialSubscribeInstances.Range(func(key any, _ any) bool {
+		nr.initialSubscribeInstances.Delete(key)
+		return true
+	})
+}
+
+func subscribeCacheKey(serviceName string, groupName string) string {
+	return fmt.Sprintf("%d:%s:%s", len(serviceName), serviceName, groupName)
+}
+
 func createSubscribeParam(serviceName string, groupName string, cb callback) *vo.SubscribeParam {
 	if cb == nil {
-		v, ok := listenerCache.Load(serviceName + groupName)
+		v, ok := listenerCache.Load(subscribeCacheKey(serviceName, groupName))
 		if !ok {
 			return nil
 		}
@@ -453,6 +497,7 @@ func (nr *nacosRegistry) Destroy() {
 	}
 
 	nr.registryUrls = nil
+	nr.clearInitialSubscribeInstances()
 	nr.CloseAndNilClient()
 }
 
