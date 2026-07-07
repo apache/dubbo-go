@@ -32,78 +32,78 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v7
+      - name: Checkout
+        uses: actions/checkout@v7
 
-    - name: Setup Go
-      uses: actions/setup-go@v6
-      with:
-        go-version-file: go.mod
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
 
-    - name: Cache dependencies
-      # ref: https://github.com/actions/cache/blob/main/examples.md#go---module
-      uses: actions/cache@v6
-      with:
-        # Cache, works only on Linux
-        path: |
-          ~/.cache/go-build
-          ~/go/pkg/mod
-        # Cache key
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        # An ordered list of keys to use for restoring the cache if no cache hit occurred for key
-        restore-keys: |
-          ${{ runner.os }}-go-
+      - name: Cache dependencies
+        # ref: https://github.com/actions/cache/blob/main/examples.md#go---module
+        uses: actions/cache@v6
+        with:
+          # Cache, works only on Linux
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          # Cache key
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          # An ordered list of keys to use for restoring the cache if no cache hit occurred for key
+          restore-keys: |
+            ${{ runner.os }}-go-
 
-    - name: Check Code Format
-      run: make check-fmt
+      - name: Check Code Format
+        run: make check-fmt
 
-    - name: Unit Test
-      run: make test
+      - name: Unit Test
+        run: make test
 
-    - name: Lint
-      run: make lint
+      - name: Lint
+        run: make lint
 
-    - name: Codecov
-      uses: codecov/codecov-action@v7 #NOSONAR
-      with:
-        fail_ci_if_error: true # optional (default = false)
-        token: ${{ secrets.CODECOV_TOKEN }}
-        verbose: true # optional (default = false)
+      - name: Codecov
+        uses: codecov/codecov-action@v7 #NOSONAR
+        with:
+          fail_ci_if_error: true # optional (default = false)
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true # optional (default = false)
 
   Integration-Test:
     name: Integration Test
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v7
-
-    - name: Setup Go
-      uses: actions/setup-go@v6
-      with:
-        go-version-file: go.mod
-
-    - name: Cache dependencies
-      # ref: https://github.com/actions/cache/blob/main/examples.md#go---module
-      uses: actions/cache@v6
-      with:
-        # Cache, works only on Linux
-        path: |
-          ~/.cache/go-build
-          ~/go/pkg/mod
-        # Cache key
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        # An ordered list of keys to use for restoring the cache if no cache hit occurred for key
-        restore-keys: |
-          ${{ runner.os }}-go-
-
-    - name: Integration Test
-      run: |
-        if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
-            ./integrate_test.sh ${{github.event.pull_request.head.repo.full_name}} ${{github.event.pull_request.head.sha}} main
-        elif [ "$GITHUB_EVENT_NAME" == "push" ]; then
-            ./integrate_test.sh $GITHUB_REPOSITORY $GITHUB_SHA $GITHUB_REF_NAME
-        else
-          echo "$GITHUB_EVENT_NAME is an unsupported event type."
-          exit 1
-        fi
+      - name: Checkout
+        uses: actions/checkout@v7
+  
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+  
+      - name: Cache dependencies
+        # ref: https://github.com/actions/cache/blob/main/examples.md#go---module
+        uses: actions/cache@v6
+        with:
+          # Cache, works only on Linux
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          # Cache key
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          # An ordered list of keys to use for restoring the cache if no cache hit occurred for key
+          restore-keys: |
+            ${{ runner.os }}-go-
+  
+      - name: Integration Test
+        run: |
+          if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
+              ./integrate_test.sh ${{github.event.pull_request.head.repo.full_name}} ${{github.event.pull_request.head.sha}} main
+          elif [ "$GITHUB_EVENT_NAME" == "push" ]; then
+              ./integrate_test.sh $GITHUB_REPOSITORY $GITHUB_SHA $GITHUB_REF_NAME
+          else
+            echo "$GITHUB_EVENT_NAME is an unsupported event type."
+            exit 1
+          fi
