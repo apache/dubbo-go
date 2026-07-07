@@ -62,8 +62,9 @@ func init() {
 
 type nacosRegistry struct {
 	*common.URL
-	namingClient              *nacosClient.NacosNamingClient
-	registryUrls              []*common.URL
+	namingClient *nacosClient.NacosNamingClient
+	registryUrls []*common.URL
+	// initialSubscribeInstances keeps the synchronous LoadSubscribeInstances result as the diff baseline for the first Nacos push.
 	initialSubscribeInstances sync.Map
 	done                      chan struct{}
 	availability              availabilityCache
