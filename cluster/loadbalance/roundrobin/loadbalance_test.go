@@ -20,6 +20,7 @@ package roundrobin
 import (
 	"fmt"
 	"strconv"
+	"sync"
 	"testing"
 )
 
@@ -74,4 +75,28 @@ func TestRoundRobinByWeight(t *testing.T) {
 		w, _ := strconv.Atoi(i.GetURL().GetParam("weight", "-1"))
 		assert.Equal(t, w, selected[i])
 	}
+}
+
+func TestRoundRobinByWeightConcurrent(t *testing.T) {
+	loadBalance := NewRRLoadBalance()
+
+	var invokers []base.Invoker
+	for i := 1; i <= 5; i++ {
+		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/org.apache.demo.HelloService?weight=%v", i, i))
+		invokers = append(invokers, base.NewBaseInvoker(url))
+	}
+
+	const goroutines = 50
+	var wg sync.WaitGroup
+	wg.Add(goroutines)
+	for i := 0; i < goroutines; i++ {
+		go func() {
+			defer wg.Done()
+			for j := 0; j < 30; j++ {
+				invoker := loadBalance.Select(invokers, &invocation.RPCInvocation{})
+				assert.NotNil(t, invoker)
+			}
+		}()
+	}
+	wg.Wait()
 }
