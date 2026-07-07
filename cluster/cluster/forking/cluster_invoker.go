@@ -71,10 +71,15 @@ func (invoker *forkingClusterInvoker) Invoke(ctx context.Context, invocation pro
 		}
 	}
 
+	// forkCtx is canceled when Invoke returns, signaling losing parallel
+	// goroutines to stop rather than running to completion.
+	forkCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	resultQ := queue.New(1)
 	for _, ivk := range selected {
 		go func(k protocolbase.Invoker) {
-			result := k.Invoke(ctx, invocation)
+			result := k.Invoke(forkCtx, invocation)
 			if err := resultQ.Put(result); err != nil {
 				logger.Errorf("[Cluster][Forking] resultQ put failed with exception err=%v", err)
 			}
