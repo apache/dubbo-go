@@ -500,8 +500,8 @@ type ServiceOptions struct {
 	// consider put here or global.ServiceConfig
 	// string for url
 	//
-	// Deprecated: this implemention will be removed in the next version,
-	// IDLMode switch will not supported by dubbo-go any more.
+	// Deprecated: this implementation will be removed in the next release.
+	// The IDLMode switch will no longer be supported by dubbo-go.
 	IDLMode string
 
 	// openapi group for documentation
