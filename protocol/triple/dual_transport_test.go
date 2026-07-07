@@ -27,10 +27,14 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+)
 
+import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+)
 
+import (
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 

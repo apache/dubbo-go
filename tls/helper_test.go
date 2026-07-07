@@ -29,10 +29,15 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/global"
+import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
 // testCertFiles holds paths to generated test certificate files

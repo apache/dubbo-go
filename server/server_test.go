@@ -29,7 +29,16 @@ import (
 	"testing"
 	"time"
 	"unsafe"
+)
 
+import (
+	gostlogger "github.com/dubbogo/gost/log/logger"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -37,9 +46,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/registry"
-	gostlogger "github.com/dubbogo/gost/log/logger"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 //go:linkname extensionProtocols dubbo.apache.org/dubbo-go/v3/common/extension.protocols

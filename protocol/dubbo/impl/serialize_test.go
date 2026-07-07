@@ -21,10 +21,15 @@ import (
 	"bytes"
 	"fmt"
 	"testing"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
+import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 // TestLoadSerializerWithDefaultHessian2 tests LoadSerializer with default Hessian2 serialization

@@ -24,25 +24,27 @@ import (
 	"strings"
 	"sync"
 	"testing"
+)
 
+import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
-
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	oteltrace "go.opentelemetry.io/otel/trace"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	oteltrace "go.opentelemetry.io/otel/trace"
-
 	_ "dubbo.apache.org/dubbo-go/v3/filter/otel/trace"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
-
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 

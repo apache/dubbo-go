@@ -19,10 +19,15 @@ package impl
 
 import (
 	"testing"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
+import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 // TestGetSerializerById tests GetSerializerById with valid and invalid serializer IDs

@@ -21,14 +21,20 @@ import (
 	"fmt"
 	"sync"
 	"testing"
+)
 
+import (
+	gxset "github.com/dubbogo/gost/container/set"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
-	gxset "github.com/dubbogo/gost/container/set"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // versionedStore is an in-memory key/value store with a per-key version, modeling the

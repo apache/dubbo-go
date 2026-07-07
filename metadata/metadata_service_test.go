@@ -22,17 +22,20 @@ import (
 	"strconv"
 	"sync"
 	"testing"
+)
 
+import (
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	tripleapi "dubbo.apache.org/dubbo-go/v3/metadata/triple_api/proto"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
-
 	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
 )
 
