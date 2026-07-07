@@ -17,7 +17,7 @@ jobs:
     name: Check License Header
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Check License Header
         uses: apache/skywalking-eyes/header@main #NOSONAR
@@ -28,28 +28,21 @@ jobs:
           mode: check
 
   CI:
-    name: CI (${{ matrix.os }} - Go ${{ matrix.go_version }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      # If you want to matrix build , you can append the following list.
-      matrix:
-        go_version:
-          - '1.23'
-        os:
-          - ubuntu-latest
+    name: CI
+    runs-on: ubuntu-latest
 
     steps:
-    - name: Setup Go ${{ matrix.go_version }}
-      uses: actions/setup-go@v5
-      with:
-        go-version: ${{ matrix.go_version }}
-
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
+
+    - name: Setup Go
+      uses: actions/setup-go@v6
+      with:
+        go-version-file: go.mod
 
     - name: Cache dependencies
       # ref: https://github.com/actions/cache/blob/main/examples.md#go---module
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         # Cache, works only on Linux
         path: |
@@ -78,28 +71,21 @@ jobs:
         verbose: true # optional (default = false)
 
   Integration-Test:
-    name: Integration Test (${{ matrix.os }} - Go ${{ matrix.go_version }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      # If you want to matrix build , you can append the following list.
-      matrix:
-        go_version:
-          - '1.23'
-        os:
-          - ubuntu-latest
+    name: Integration Test
+    runs-on: ubuntu-latest
 
     steps:
-    - name: Setup Go ${{ matrix.go_version }}
-      uses: actions/setup-go@v5
-      with:
-        go-version: ${{ matrix.go_version }}
-
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
+
+    - name: Setup Go
+      uses: actions/setup-go@v6
+      with:
+        go-version-file: go.mod
 
     - name: Cache dependencies
       # ref: https://github.com/actions/cache/blob/main/examples.md#go---module
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         # Cache, works only on Linux
         path: |
