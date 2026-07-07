@@ -142,9 +142,7 @@ func TestDualTransport_ConcurrentH2DiscoveryStartsSingleProbe(t *testing.T) {
 			defer wg.Done()
 
 			resp, err := dt.RoundTrip(req)
-			if !require.NoError(t, err) {
-				return
-			}
+			require.NoError(t, err)
 			if assert.NotNil(t, resp) {
 				assert.Equal(t, http.StatusOK, resp.StatusCode)
 			}
