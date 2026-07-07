@@ -138,7 +138,7 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation base.Invocation) 
 			t := reflect.ValueOf(args[i])
 			if !t.IsValid() {
 				at := method.ArgsType()[i]
-				if at.Kind() == reflect.Ptr {
+				if at.Kind() == reflect.Pointer {
 					at = at.Elem()
 				}
 				t = reflect.New(at)
@@ -170,7 +170,7 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation base.Invocation) 
 		result.SetError(retErr.(error))
 		return result
 	}
-	if replyv.IsValid() && (replyv.Kind() != reflect.Ptr || replyv.Kind() == reflect.Ptr && replyv.Elem().IsValid()) {
+	if replyv.IsValid() && (replyv.Kind() != reflect.Pointer || replyv.Kind() == reflect.Pointer && replyv.Elem().IsValid()) {
 		result.SetResult(replyv.Interface())
 	}
 

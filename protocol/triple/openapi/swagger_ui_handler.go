@@ -136,7 +136,7 @@ func (h *SwaggerUIHandler) buildSettings() string {
 	for key, value := range h.config.Settings {
 		if after, ok := strings.CutPrefix(key, constant.OpenAPISettingKeySwaggerUISettings); ok {
 			settingKey := after
-			sb.WriteString(fmt.Sprintf(",\n            \"%s\": %s", settingKey, value))
+			fmt.Fprintf(&sb, ",\n            \"%s\": %s", settingKey, value)
 		}
 	}
 	return sb.String()

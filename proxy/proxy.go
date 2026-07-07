@@ -136,7 +136,7 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 			}
 
 			if len(outs) == 2 { // return (reply, error)
-				if outs[0].Kind() == reflect.Ptr {
+				if outs[0].Kind() == reflect.Pointer {
 					reply = reflect.New(outs[0].Elem())
 				} else {
 					reply = reflect.New(outs[0])
@@ -218,7 +218,7 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 			if len(outs) == 1 {
 				return []reflect.Value{reflect.ValueOf(&cause).Elem()}
 			}
-			if len(outs) == 2 && outs[0].Kind() != reflect.Ptr {
+			if len(outs) == 2 && outs[0].Kind() != reflect.Pointer {
 				return []reflect.Value{reply.Elem(), reflect.ValueOf(&cause).Elem()}
 			}
 			return []reflect.Value{reply, reflect.ValueOf(&cause).Elem()}

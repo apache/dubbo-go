@@ -66,7 +66,7 @@ func GetReference(service RPCService) string {
 	switch kind {
 	case reflect.Struct:
 		ref = sType.Name()
-	case reflect.Ptr:
+	case reflect.Pointer:
 		sName := sType.Elem().Name()
 		if sName != "" {
 			ref = sName
@@ -321,7 +321,7 @@ func isExported(name string) bool {
 
 // Is this type exported or a builtin?
 func isExportedOrBuiltinType(t reflect.Type) bool {
-	for t.Kind() == reflect.Ptr {
+	for t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
 	// PkgPath will be non-empty even for an exported type,

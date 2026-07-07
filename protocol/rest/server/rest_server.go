@@ -203,7 +203,7 @@ func assembleArgsFromHeaders(methodConfig *rest_config.RestMethodConfig, req Res
 			return perrors.Errorf("[Rest][Server] header param parse error, the index %v args of method:%v doesn't exist", k, methodConfig.MethodName)
 		}
 		t := argsTypes[k]
-		if t.Kind() == reflect.Ptr {
+		if t.Kind() == reflect.Pointer {
 			t = t.Elem()
 		}
 		if t.Kind() == reflect.String {
@@ -220,7 +220,7 @@ func assembleArgsFromBody(methodConfig *rest_config.RestMethodConfig, argsTypes 
 	if methodConfig.Body >= 0 && methodConfig.Body < len(argsTypes) {
 		t := argsTypes[methodConfig.Body]
 		kind := t.Kind()
-		if kind == reflect.Ptr {
+		if kind == reflect.Pointer {
 			t = t.Elem()
 		}
 		var ni any
@@ -255,7 +255,7 @@ func assembleArgsFromQueryParams(methodConfig *rest_config.RestMethodConfig, arg
 		}
 		t := argsTypes[k]
 		kind := t.Kind()
-		if kind == reflect.Ptr {
+		if kind == reflect.Pointer {
 			t = t.Elem()
 			kind = t.Kind()
 		}
@@ -298,7 +298,7 @@ func assembleArgsFromPathParams(methodConfig *rest_config.RestMethodConfig, args
 		}
 		t := argsTypes[k]
 		kind := t.Kind()
-		if kind == reflect.Ptr {
+		if kind == reflect.Pointer {
 			t = t.Elem()
 			kind = t.Kind()
 		}

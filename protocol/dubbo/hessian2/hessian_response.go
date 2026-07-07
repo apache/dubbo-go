@@ -311,7 +311,7 @@ func CopySlice(inSlice, outSlice reflect.Value) error {
 		return perrors.Errorf("@in is not slice, but %v", inSlice.Kind())
 	}
 
-	for outSlice.Kind() == reflect.Ptr {
+	for outSlice.Kind() == reflect.Pointer {
 		outSlice = outSlice.Elem()
 	}
 
@@ -377,7 +377,7 @@ func ReflectResponse(in any, out any) error {
 	if out == nil {
 		return perrors.Errorf("@out is nil")
 	}
-	if reflect.TypeOf(out).Kind() != reflect.Ptr {
+	if reflect.TypeOf(out).Kind() != reflect.Pointer {
 		return perrors.Errorf("@out should be a pointer")
 	}
 

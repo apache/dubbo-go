@@ -534,7 +534,7 @@ func getArgType(v any) string {
 	//  Serialized tags for complex types
 	default:
 		t := reflect.TypeOf(v)
-		if reflect.Ptr == t.Kind() {
+		if reflect.Pointer == t.Kind() {
 			t = t.Elem()
 		}
 		switch t.Kind() {
@@ -566,7 +566,7 @@ func reflectResponse(in any, out any) error {
 	if out == nil {
 		return perrors.Errorf("@out is nil")
 	}
-	if reflect.TypeOf(out).Kind() != reflect.Ptr {
+	if reflect.TypeOf(out).Kind() != reflect.Pointer {
 		return perrors.Errorf("@out should be a pointer")
 	}
 
@@ -600,7 +600,7 @@ func copySlice(inSlice, outSlice reflect.Value) error {
 		return perrors.Errorf("@in is not slice, but %v", inSlice.Kind())
 	}
 
-	for outSlice.Kind() == reflect.Ptr {
+	for outSlice.Kind() == reflect.Pointer {
 		outSlice = outSlice.Elem()
 	}
 

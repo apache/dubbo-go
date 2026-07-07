@@ -89,7 +89,7 @@ func (r *SchemaResolver) resolveType(t reflect.Type) *model.Schema {
 		return model.NewSchema().SetType(model.SchemaTypeObject)
 	}
 
-	for t.Kind() == reflect.Ptr {
+	for t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
 
