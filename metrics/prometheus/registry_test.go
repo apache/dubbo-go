@@ -18,7 +18,9 @@
 package prometheus
 
 import (
+	"errors"
 	"io"
+	"net"
 	"net/http"
 	"sync"
 	"testing"
@@ -148,20 +150,49 @@ func TestPromMetricRegistryExport(t *testing.T) {
 	// test push
 	var wg sync.WaitGroup
 	wg.Add(1)
-	go func() {
-		err := http.ListenAndServe(url.GetParam(constant.PrometheusPushgatewayBaseUrlKey, ""),
-			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				bodyBytes, err := io.ReadAll(r.Body)
-				require.NoError(t, err)
-				text := string(bodyBytes)
-				assert.Contains(t, text, "dubbo_request_avg")
+	bodyCh := make(chan string, 1)
+	readErrCh := make(chan error, 1)
+	serveErrCh := make(chan error, 1)
+	var pushOnce sync.Once
+	server := &http.Server{
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			bodyBytes, err := io.ReadAll(r.Body)
+			pushOnce.Do(func() {
+				if err != nil {
+					readErrCh <- err
+				} else {
+					bodyCh <- string(bodyBytes)
+				}
 				wg.Done()
-			}))
-		require.NoError(t, err)
+			})
+		}),
+	}
+	listener, err := net.Listen("tcp", url.GetParam(constant.PrometheusPushgatewayBaseUrlKey, ""))
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_ = server.Close()
+	})
+	go func() {
+		if err := server.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			serveErrCh <- err
+		}
 	}()
 	timeout := url.GetParamByIntValue(constant.PrometheusPushgatewayPushIntervalKey, constant.PrometheusDefaultPushInterval)
 	if waitTimeout(&wg, time.Duration(timeout+1)*time.Second) {
 		assert.Fail(t, "wait pushgateway data timeout")
+	}
+	select {
+	case err := <-readErrCh:
+		require.NoError(t, err)
+	case text := <-bodyCh:
+		assert.Contains(t, text, "dubbo_request_avg")
+	default:
+		assert.Fail(t, "pushgateway request body was not captured")
+	}
+	select {
+	case err := <-serveErrCh:
+		require.NoError(t, err)
+	default:
 	}
 	// test pull
 	resp, err := http.Get("http://localhost:" +
