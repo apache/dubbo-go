@@ -193,10 +193,9 @@ func (d *duplexHTTPCall) CloseRead() error {
 	if d.response == nil {
 		return nil
 	}
-	if err := discard(d.response.Body); err != nil {
-		return wrapIfRSTError(err)
-	}
-	// Return incoming data via context, if set outgoing data.
+	// Do not read the response body here. CloseRead must return even when the
+	// peer leaves a streaming response open; callers that need trailers should
+	// read to EOF before closing.
 	if ExtractFromOutgoingContext(d.ctx) != nil {
 		newIncomingContext(d.ctx, d.ResponseTrailer())
 	}

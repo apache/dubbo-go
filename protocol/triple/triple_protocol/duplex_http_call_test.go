@@ -15,17 +15,21 @@
 package triple_protocol
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"sync"
 	"testing"
+	"time"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/assert"
 )
+
+const closeTestTimeout = time.Second
 
 // newTestDuplexClientCall builds a duplexHTTPCall for a client-streaming RPC
 // backed by a server that simply drains the request body and replies 200. It is
@@ -181,4 +185,90 @@ func TestDuplexHTTPCallConcurrentWriteCloseRace(t *testing.T) {
 		wg.Wait()
 		_ = call.CloseRead()
 	}
+}
+
+// TestDuplexHTTPCallCloseReadDoesNotDrainResponseBody verifies that CloseRead
+// closes the response body directly instead of reading until EOF. This guards
+// the stream-close hang fixed in connect-go#791.
+//
+// A streaming peer may keep the response open after it stops sending data, so
+// draining the body during close can block forever. Callers that need final
+// trailers should read to EOF before closing the read side.
+func TestDuplexHTTPCallCloseReadDoesNotDrainResponseBody(t *testing.T) {
+	t.Parallel()
+	body := newBlockingReadCloser()
+	call := &duplexHTTPCall{
+		ctx:           context.Background(),
+		responseReady: make(chan struct{}),
+		response: &http.Response{
+			Body:    body,
+			Trailer: make(http.Header),
+		},
+	}
+	close(call.responseReady)
+
+	done := make(chan error, 1)
+	go func() {
+		done <- call.CloseRead()
+	}()
+
+	select {
+	case err := <-done:
+		assert.Nil(t, err)
+	case <-body.readStarted:
+		body.unblock()
+		assert.Nil(t, <-done)
+		t.Fatal("CloseRead attempted to drain the response body")
+	case <-time.After(closeTestTimeout):
+		body.unblock()
+		assert.Nil(t, <-done)
+		t.Fatal("CloseRead blocked while closing the response body")
+	}
+
+	select {
+	case <-body.closed:
+	default:
+		t.Fatal("CloseRead did not close the response body")
+	}
+}
+
+// blockingReadCloser records attempted reads and then blocks. It lets the test
+// catch drain-before-close behavior without depending on a real stalled stream.
+type blockingReadCloser struct {
+	readStarted chan struct{}
+	readUnblock chan struct{}
+	closed      chan struct{}
+
+	startReadOnce sync.Once
+	unblockOnce   sync.Once
+	closeOnce     sync.Once
+}
+
+func newBlockingReadCloser() *blockingReadCloser {
+	return &blockingReadCloser{
+		readStarted: make(chan struct{}),
+		readUnblock: make(chan struct{}),
+		closed:      make(chan struct{}),
+	}
+}
+
+func (b *blockingReadCloser) Read([]byte) (int, error) {
+	b.startReadOnce.Do(func() {
+		close(b.readStarted)
+	})
+	<-b.readUnblock
+	return 0, io.EOF
+}
+
+func (b *blockingReadCloser) Close() error {
+	b.closeOnce.Do(func() {
+		close(b.closed)
+	})
+	return nil
+}
+
+func (b *blockingReadCloser) unblock() {
+	b.unblockOnce.Do(func() {
+		close(b.readUnblock)
+	})
 }
