@@ -16,4 +16,7 @@
  */
 
 // Package grpc  implements grpc rpc protocol.
+//
+// Deprecated: this implemention will be removed in the next version,
+// use "dubbo.apache.org/dubbo-go/v3/protocol/triple" instead, which is fully compatibale with grpc.
 package grpc

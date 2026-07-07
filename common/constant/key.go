@@ -28,13 +28,14 @@ const (
 )
 
 const (
-	GroupKey                    = "group"
-	VersionKey                  = "version"
-	InterfaceKey                = "interface"
-	MessageSizeKey              = "message_size"
-	PathKey                     = "path"
-	ServiceKey                  = "service"
-	MethodsKey                  = "methods"
+	GroupKey       = "group"
+	VersionKey     = "version"
+	InterfaceKey   = "interface"
+	MessageSizeKey = "message_size"
+	PathKey        = "path"
+	ServiceKey     = "service"
+	MethodsKey     = "methods"
+	// Deprecated: this implemention will be removed in the next version,
 	TimeoutKey                  = "timeout"
 	CategoryKey                 = "category"
 	CheckKey                    = "check"
@@ -60,15 +61,27 @@ const (
 	ParamsTypeKey               = "parameter-type-names" // key used in pass through invoker factory, to define param type
 	MetadataTypeKey             = "metadata-type"
 	MaxCallSendMsgSize          = "max-call-send-msg-size"
-	MaxServerSendMsgSize        = "max-server-send-msg-size"
-	MaxCallRecvMsgSize          = "max-call-recv-msg-size"
-	MaxServerRecvMsgSize        = "max-server-recv-msg-size"
+	// Deprecated: this implemention will be removed in the next version,
+	// use "tripleConfig" instead
+	MaxServerSendMsgSize = "max-server-send-msg-size"
+	MaxCallRecvMsgSize   = "max-call-recv-msg-size"
+	// Deprecated: this implemention will be removed in the next version,
+	// use "tripleConfig" instead
+	MaxServerRecvMsgSize = "max-server-recv-msg-size"
 
 	// TODO: remove KeepAliveInterval and KeepAliveInterval in version 4.0.0
+	//
+	// Deprecated: this implemention will be removed in the next version,
+	// use "tripleConfig" instead
 	KeepAliveInterval = "keep-alive-interval"
-	KeepAliveTimeout  = "keep-alive-timeout"
+	// Deprecated: this implemention will be removed in the next version.
+	// use "tripleConfig" instead
+	KeepAliveTimeout = "keep-alive-timeout"
 
 	// TODO: remove IDLMode after old triple removed
+	//
+	// Deprecated: this implemention will be removed in the next version,
+	// IDLMode switch will not supported by dubbo-go any more.
 	IDLMode = "IDL-mode"
 
 	TripleConfigKey     = "triple-config"
@@ -79,6 +92,9 @@ const (
 
 // TODO: remove this after old triple removed
 // IDLMode
+//
+// Deprecated: this implemention will be removed in the next version,
+// IDLMode switch will not supported by dubbo-go any more.
 const (
 	IDL    = "IDL"
 	NONIDL = "non-IDL"

@@ -48,15 +48,26 @@ type ReferenceConfig struct {
 	// config
 	MethodsConfig []*MethodConfig `yaml:"methods"  json:"methods,omitempty" property:"methods"`
 	// TODO: rename protocol_config to protocol when publish 4.0.0.
+	//
+	// Deprecated: this implemention will be removed in the next version,
+	// use "tripleConfig" instead
 	ProtocolClientConfig *ClientProtocolConfig `yaml:"protocol_config" json:"protocol_config,omitempty" property:"protocol_config"`
 
 	// TODO: Deprecated：use TripleConfig
 	// remove KeepAliveInterval and KeepAliveInterval in version 4.0.0
+	//
+	// Deprecated: this implemention will be removed in the next version,
+	// use "tripleConfig" instead
 	KeepAliveInterval string `yaml:"keep-alive-interval" json:"keep-alive-interval,omitempty" property:"keep-alive-interval"`
-	KeepAliveTimeout  string `yaml:"keep-alive-timeout" json:"keep-alive-timeout,omitempty" property:"keep-alive-timeout"`
+	// Deprecated: this implemention will be removed in the next version,
+	// use "tripleConfig" instead
+	KeepAliveTimeout string `yaml:"keep-alive-timeout" json:"keep-alive-timeout,omitempty" property:"keep-alive-timeout"`
 
 	// just for new triple non-IDL mode
 	// TODO: remove IDLMode when config package is removed
+	//
+	// Deprecated: this implemention will be removed in the next version,
+	// IDLMode switch will not supported by dubbo-go any more.
 	IDLMode string
 }
 

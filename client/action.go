@@ -23,20 +23,17 @@ import (
 	"os"
 	"strconv"
 	"time"
-)
 
-import (
 	"github.com/dubbogo/gost/log/logger"
+
 	gxstrings "github.com/dubbogo/gost/strings"
 
 	constant2 "github.com/dubbogo/triple/pkg/common/constant"
 
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory/static"
 	"dubbo.apache.org/dubbo-go/v3/common"
+	perrors "github.com/pkg/errors"
+
 	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -149,6 +146,8 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 
 		// for new triple non-IDL mode
 		// TODO: remove ISIDL after old triple removed
+		// Deprecated: this implemention will be removed in the next version,
+		// use "dubbo.apache.org/dubbo-go/v3/protocol/triple" instead, which is fully compatibale with grpc.
 		common.WithParamsValue(constant.IDLMode, ref.IDLMode),
 		common.WithAttribute(constant.ApplicationKey, refOpts.Application),
 		common.WithAttribute(constant.ShutdownConfigPrefix, refOpts.Shutdown),

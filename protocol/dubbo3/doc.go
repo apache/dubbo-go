@@ -16,4 +16,7 @@
  */
 
 // Package dubbo3 implements dubbo3.0 rpc protocol.
+//
+// Deprecated: this implemention will be removed in the next version,
+// use "dubbo.apache.org/dubbo-go/v3/protocol/triple" instead.
 package dubbo3
