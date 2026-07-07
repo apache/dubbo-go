@@ -916,7 +916,6 @@ func recordEmbeddedMethodPositions(pkg *packages.Package, positions map[string]t
 
 	embeddedIface.Complete()
 	for method := range embeddedIface.Methods() {
-		method := method
 		if method.Exported() {
 			recordEmbeddedMethodPosition(positions, method.Name(), expr.Pos())
 		}

@@ -83,7 +83,6 @@ func TestBaseProtocol_SetInvokersConcurrent(t *testing.T) {
 	start := make(chan struct{})
 	var writers sync.WaitGroup
 	for i := range goroutines {
-		i := i
 		writers.Go(func() {
 			<-start
 			url := common.NewURLWithOptions(

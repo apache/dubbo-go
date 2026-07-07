@@ -272,10 +272,7 @@ func makeBenchmarkReserveKeys(paramCount int) []string {
 
 func makeBenchmarkFilterKeys(paramCount int) []string {
 	keys := makeBenchmarkParamKeys(paramCount)
-	filterCount := max(len(keys)/5, 1)
-	if filterCount > len(keys) {
-		filterCount = len(keys)
-	}
+	filterCount := min(max(len(keys)/5, 1), len(keys))
 	return keys[:filterCount]
 }
 
