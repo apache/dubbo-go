@@ -80,8 +80,8 @@ func ToGenericException(expt any) (*GenericException, bool) {
 func parseLegacyException(exStr string) *GenericException {
 	const prefix = "java exception:"
 	msg := strings.TrimSpace(exStr)
-	if strings.HasPrefix(msg, prefix) {
-		msg = strings.TrimSpace(strings.TrimPrefix(msg, prefix))
+	if after, ok := strings.CutPrefix(msg, prefix); ok {
+		msg = strings.TrimSpace(after)
 	}
 	return &GenericException{ExceptionClass: "java.lang.Exception", ExceptionMessage: msg}
 }
@@ -318,7 +318,7 @@ func CopySlice(inSlice, outSlice reflect.Value) error {
 	size := inSlice.Len()
 	outSlice.Set(reflect.MakeSlice(outSlice.Type(), size, size))
 
-	for i := 0; i < size; i++ {
+	for i := range size {
 		inSliceValue := inSlice.Index(i)
 		if !inSliceValue.Type().AssignableTo(outSlice.Index(i).Type()) {
 			return perrors.Errorf("in element type [%s] can not assign to out element type [%s]",

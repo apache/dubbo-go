@@ -57,7 +57,7 @@ type (
 	ImplementFunc func(p *Proxy, v common.RPCService)
 )
 
-var typError = reflect.Zero(reflect.TypeOf((*error)(nil)).Elem()).Type()
+var typError = reflect.Zero(reflect.TypeFor[error]()).Type()
 
 // NewProxy create service proxy.
 func NewProxy(invoke base.Invoker, callback any, attachments map[string]string) *Proxy {
@@ -238,7 +238,7 @@ func refectAndMakeObjectFunc(valueOfElem reflect.Value, makeDubboCallProxy func(
 		return errors.New("invalid type kind")
 	}
 	numField := valueOfElem.NumField()
-	for i := 0; i < numField; i++ {
+	for i := range numField {
 		t := typeOf.Field(i)
 		methodName := t.Tag.Get("dubbo")
 		if methodName == "" {
@@ -261,7 +261,7 @@ func refectAndMakeObjectFunc(valueOfElem reflect.Value, makeDubboCallProxy func(
 			}
 
 			funcOuts := make([]reflect.Type, outNum)
-			for i := 0; i < outNum; i++ {
+			for i := range outNum {
 				funcOuts[i] = t.Type.Out(i)
 			}
 

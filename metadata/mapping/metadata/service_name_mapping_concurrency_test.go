@@ -188,10 +188,8 @@ func TestRegisterWithRetryConcurrentNoLostUpdate(t *testing.T) {
 	// see the set get smaller or contain a malformed entry.
 	stop := make(chan struct{})
 	var readerWg sync.WaitGroup
-	for i := 0; i < readers; i++ {
-		readerWg.Add(1)
-		go func() {
-			defer readerWg.Done()
+	for range readers {
+		readerWg.Go(func() {
 			prev := 0
 			for {
 				select {
@@ -205,11 +203,11 @@ func TestRegisterWithRetryConcurrentNoLostUpdate(t *testing.T) {
 					prev = set.Size()
 				}
 			}
-		}()
+		})
 	}
 
 	var writerWg sync.WaitGroup
-	for i := 0; i < writers; i++ {
+	for i := range writers {
 		writerWg.Add(1)
 		go func(i int) {
 			defer writerWg.Done()
@@ -223,7 +221,7 @@ func TestRegisterWithRetryConcurrentNoLostUpdate(t *testing.T) {
 	val, _ := store.get(DefaultGroup + "/Iface")
 	got := report.DecodeServiceAppNames(val)
 	assert.Equal(t, writers, got.Size())
-	for i := 0; i < writers; i++ {
+	for i := range writers {
 		assert.True(t, got.Contains(fmt.Sprintf("app-%d", i)), "app-%d was lost", i)
 	}
 }

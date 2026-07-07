@@ -989,7 +989,7 @@ func TestServiceDiscoveryRegistryUnRegister_Concurrent(t *testing.T) {
 	assert.True(t, ok)
 
 	// prepare initial instances
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		inst := &registry.DefaultServiceInstance{
 			ID:          fmt.Sprintf("init-%d", i),
 			ServiceName: testApp,
@@ -1009,28 +1009,24 @@ func TestServiceDiscoveryRegistryUnRegister_Concurrent(t *testing.T) {
 	panicCh := make(chan any, 2)
 
 	// goroutine 1: unregister
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		defer func() {
 			if r := recover(); r != nil {
 				panicCh <- r
 			}
 		}()
 		_ = sdReg.UnRegisterService()
-	}()
+	})
 
 	// goroutine 2: simulate concurrent register / instance append
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		defer func() {
 			if r := recover(); r != nil {
 				panicCh <- r
 			}
 		}()
 
-		for i := 0; i < 3; i++ {
+		for i := range 3 {
 			inst := &registry.DefaultServiceInstance{
 				ID:          fmt.Sprintf("concurrent-%d", i),
 				ServiceName: testApp,
@@ -1043,7 +1039,7 @@ func TestServiceDiscoveryRegistryUnRegister_Concurrent(t *testing.T) {
 			sdReg.instances = append(sdReg.instances, inst)
 			time.Sleep(10 * time.Millisecond)
 		}
-	}()
+	})
 
 	wg.Wait()
 	close(panicCh)

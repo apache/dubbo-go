@@ -95,7 +95,7 @@ const (
 var (
 	// Precompute the reflect type for error. Can't use error directly
 	// because Typeof takes an empty interface value. This is annoying.
-	typeOfError = reflect.TypeOf((*error)(nil)).Elem()
+	typeOfError = reflect.TypeFor[error]()
 
 	// ServiceMap store description of service.
 	ServiceMap = &serviceMap{

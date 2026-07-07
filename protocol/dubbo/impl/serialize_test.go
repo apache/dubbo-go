@@ -347,7 +347,7 @@ func TestLoadSerializerSequentialCalls(t *testing.T) {
 	mockSerializer := &HessianSerializer{}
 	SetSerializer(constant.Hessian2Serialization, mockSerializer)
 
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		pkg := NewDubboPackage(nil)
 		pkg.Header.SerialID = constant.SHessian2
 		pkg.Header.ID = int64(i)
@@ -455,7 +455,7 @@ func TestLoadSerializerWithMultipleCalls(t *testing.T) {
 	SetSerializer(constant.Hessian2Serialization, mockSerializer)
 
 	// Call LoadSerializer multiple times
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		pkg := NewDubboPackage(nil)
 		pkg.Header.SerialID = constant.SHessian2
 

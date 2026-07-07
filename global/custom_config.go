@@ -17,6 +17,10 @@
 
 package global
 
+import (
+	"maps"
+)
+
 // CustomConfig
 //
 // # Experimental
@@ -40,9 +44,7 @@ func (c *CustomConfig) Clone() *CustomConfig {
 	}
 
 	newConfigMap := make(map[string]any, len(c.ConfigMap))
-	for k, v := range c.ConfigMap {
-		newConfigMap[k] = v
-	}
+	maps.Copy(newConfigMap, c.ConfigMap)
 
 	return &CustomConfig{
 		ConfigMap: newConfigMap,

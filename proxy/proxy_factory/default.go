@@ -134,7 +134,7 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation base.Invocation) 
 	if !useCallSlice && (len(method.ArgsType()) == 1 || len(method.ArgsType()) == 2 && method.ReplyType() == nil) && method.ArgsType()[0].String() == "[]interface {}" {
 		in = append(in, reflect.ValueOf(args))
 	} else {
-		for i := 0; i < len(args); i++ {
+		for i := range args {
 			t := reflect.ValueOf(args[i])
 			if !t.IsValid() {
 				at := method.ArgsType()[i]

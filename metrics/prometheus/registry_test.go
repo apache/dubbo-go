@@ -99,7 +99,7 @@ func TestPromMetricRegistrySummary(t *testing.T) {
 
 func TestPromMetricRegistryRt(t *testing.T) {
 	p := NewPromMetricRegistry(prom.NewRegistry(), url)
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		p.Rt(metricId, &metrics.RtOpts{}).Observe(10 * float64(i))
 	}
 	text, err := p.Scrape()
@@ -111,7 +111,7 @@ func TestPromMetricRegistryRt(t *testing.T) {
 	assert.Contains(t, text, "# HELP dubbo_request_sum Sum request\n# TYPE dubbo_request_sum gauge\ndubbo_request_sum{app=\"dubbo\",version=\"1.0.0\"} 450")
 
 	p = NewPromMetricRegistry(prom.NewRegistry(), url)
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		p.Rt(metricId, &metrics.RtOpts{Aggregate: true, BucketNum: 10, TimeWindowSeconds: 60}).Observe(10 * float64(i))
 	}
 	text, err = p.Scrape()
@@ -124,12 +124,10 @@ func TestPromMetricRegistryRt(t *testing.T) {
 func TestPromMetricRegistryCounterConcurrent(t *testing.T) {
 	p := NewPromMetricRegistry(prom.NewRegistry(), url)
 	var wg sync.WaitGroup
-	for i := 0; i < 10; i++ {
-		wg.Add(1)
-		go func() {
+	for range 10 {
+		wg.Go(func() {
 			p.Counter(metricId).Inc()
-			wg.Done()
-		}()
+		})
 	}
 	wg.Wait()
 	text, err := p.Scrape()

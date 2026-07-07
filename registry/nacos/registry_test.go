@@ -434,13 +434,11 @@ func TestNacosRegistryDestroy(t *testing.T) {
 
 	// Use goroutine to wait for nr.done channel to close
 	var wg sync.WaitGroup
-	wg.Add(1)
 
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		<-nr.done
 		t.Log("nr.done channel closed")
-	}()
+	})
 
 	nr.Destroy()
 
@@ -554,13 +552,11 @@ func TestNacosListenerCloseConcurrent(t *testing.T) {
 	)
 
 	// Start multiple goroutines to test concurrent calls to the Close method
-	for i := 0; i < numGoroutines; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range numGoroutines {
+		wg.Go(func() {
 			<-startSignal
 			nl.Close()
-		}()
+		})
 	}
 
 	//Send a signal after starting goroutine

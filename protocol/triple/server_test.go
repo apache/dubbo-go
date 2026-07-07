@@ -341,7 +341,7 @@ func TestServer_SaveServiceInfo_Concurrent(t *testing.T) {
 	var wg sync.WaitGroup
 	concurrency := 10
 
-	for i := 0; i < concurrency; i++ {
+	for i := range concurrency {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()

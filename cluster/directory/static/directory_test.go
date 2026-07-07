@@ -35,7 +35,7 @@ import (
 
 func TestStaticDirList(t *testing.T) {
 	invokers := []base.Invoker{}
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
 		invokers = append(invokers, base.NewBaseInvoker(url))
 	}
@@ -48,7 +48,7 @@ func TestStaticDirList(t *testing.T) {
 
 func TestStaticDirDestroy(t *testing.T) {
 	invokers := []base.Invoker{}
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
 		invokers = append(invokers, base.NewBaseInvoker(url))
 	}

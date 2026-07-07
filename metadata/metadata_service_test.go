@@ -399,28 +399,22 @@ func TestDefaultMetadataServiceConcurrentReadAccess(t *testing.T) {
 	}
 
 	var wg sync.WaitGroup
-	for i := 0; i < 10; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range 10 {
+		wg.Go(func() {
 			urls, err := mts.GetExportedServiceURLs()
 			assert.NoError(t, err)
 			assert.NotEmpty(t, urls)
-		}()
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		})
+		wg.Go(func() {
 			urls, err := mts.GetSubscribedURLs()
 			assert.NoError(t, err)
 			assert.NotEmpty(t, urls)
-		}()
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		})
+		wg.Go(func() {
 			info, err := mts.GetMetadataInfo("1")
 			assert.NoError(t, err)
 			assert.NotNil(t, info)
-		}()
+		})
 	}
 	wg.Wait()
 }

@@ -134,7 +134,7 @@ func TestDualTransport_ConcurrentH2DiscoveryStartsSingleProbe(t *testing.T) {
 
 	var wg sync.WaitGroup
 	wg.Add(numRequests)
-	for i := 0; i < numRequests; i++ {
+	for range numRequests {
 		req, err := http.NewRequest(http.MethodPost, "https://example.com/service", nil)
 		require.NoError(t, err)
 

@@ -20,6 +20,7 @@ package generic
 import (
 	"context"
 	"reflect"
+	"slices"
 	"strings"
 	"sync"
 )
@@ -275,10 +276,8 @@ func shouldUnwrapPackedVariadicArg(variadicType string, variadicSliceType reflec
 		return false
 	}
 
-	for _, typeName := range javaTypeNamesForType(variadicSliceType) {
-		if variadicType == typeName {
-			return true
-		}
+	if slices.Contains(javaTypeNamesForType(variadicSliceType), variadicType) {
+		return true
 	}
 
 	elemType := variadicSliceType.Elem()
@@ -388,10 +387,8 @@ func jvmLeafDescriptorForType(typ reflect.Type) string {
 }
 
 func appendUniqueString(values []string, value string) []string {
-	for _, existing := range values {
-		if existing == value {
-			return values
-		}
+	if slices.Contains(values, value) {
+		return values
 	}
 	return append(values, value)
 }

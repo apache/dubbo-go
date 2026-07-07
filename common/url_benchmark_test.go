@@ -94,7 +94,6 @@ func BenchmarkURLClone(b *testing.B) {
 	})
 
 	for _, paramCount := range benchmarkURLParamSizes {
-		paramCount := paramCount
 		b.Run(fmt.Sprintf("params_%d_with_suburl", paramCount), func(b *testing.B) {
 			u := makeBenchmarkURLWithSubURL(paramCount)
 			b.ReportAllocs()
@@ -112,7 +111,6 @@ func BenchmarkURLCloneWithFilter(b *testing.B) {
 	})
 
 	for _, paramCount := range benchmarkURLParamSizes {
-		paramCount := paramCount
 		b.Run(fmt.Sprintf("params_%d_exclude_20_percent", paramCount), func(b *testing.B) {
 			u := makeBenchmarkURL(paramCount)
 			excludeParams := makeBenchmarkExcludeSet(paramCount)
@@ -125,7 +123,6 @@ func BenchmarkURLCloneWithFilter(b *testing.B) {
 	}
 
 	for _, paramCount := range benchmarkURLParamSizes {
-		paramCount := paramCount
 		b.Run(fmt.Sprintf("params_%d_exclude_20_percent_with_suburl", paramCount), func(b *testing.B) {
 			u := makeBenchmarkURLWithSubURL(paramCount)
 			excludeParams := makeBenchmarkExcludeSet(paramCount)
@@ -138,7 +135,6 @@ func BenchmarkURLCloneWithFilter(b *testing.B) {
 	}
 
 	for _, paramCount := range benchmarkURLParamSizes {
-		paramCount := paramCount
 		b.Run(fmt.Sprintf("params_%d_reserve_20_percent", paramCount), func(b *testing.B) {
 			u := makeBenchmarkURL(paramCount)
 			reserveParams := makeBenchmarkReserveKeys(paramCount)
@@ -151,7 +147,6 @@ func BenchmarkURLCloneWithFilter(b *testing.B) {
 	}
 
 	for _, paramCount := range benchmarkURLParamSizes {
-		paramCount := paramCount
 		b.Run(fmt.Sprintf("params_%d_reserve_20_percent_with_suburl", paramCount), func(b *testing.B) {
 			u := makeBenchmarkURLWithSubURL(paramCount)
 			reserveParams := makeBenchmarkReserveKeys(paramCount)
@@ -166,7 +161,6 @@ func BenchmarkURLCloneWithFilter(b *testing.B) {
 
 func BenchmarkURLMergeURL(b *testing.B) {
 	for _, paramCount := range benchmarkURLParamSizes {
-		paramCount := paramCount
 		b.Run(fmt.Sprintf("params_%d_with_method_params", paramCount), func(b *testing.B) {
 			left, right := makeBenchmarkMergeHalfOverlapPair(paramCount)
 			addBenchmarkMethodParams(right)
@@ -187,7 +181,6 @@ func BenchmarkURLToMap(b *testing.B) {
 
 func BenchmarkURLIsEquals(b *testing.B) {
 	for _, paramCount := range benchmarkURLParamSizes {
-		paramCount := paramCount
 		b.Run(fmt.Sprintf("params_%d", paramCount), func(b *testing.B) {
 			left := makeBenchmarkURL(paramCount)
 			right := makeBenchmarkURL(paramCount)
@@ -203,7 +196,6 @@ func BenchmarkURLIsEquals(b *testing.B) {
 func runBenchmarkURLByParamSize(b *testing.B, run func(*URL)) {
 	b.Helper()
 	for _, paramCount := range benchmarkURLParamSizes {
-		paramCount := paramCount
 		b.Run(fmt.Sprintf("params_%d", paramCount), func(b *testing.B) {
 			u := makeBenchmarkURL(paramCount)
 			b.ReportAllocs()
@@ -247,7 +239,7 @@ func makeBenchmarkParams(paramCount, genericStart int) url.Values {
 	for _, param := range benchmarkURLIdentityParams {
 		params.Set(param.key, param.value)
 	}
-	for i := 0; i < paramCount; i++ {
+	for i := range paramCount {
 		genericIndex := genericStart + i
 		params.Set(fmt.Sprintf("key%d", genericIndex), fmt.Sprintf("value%d", genericIndex))
 	}
@@ -259,7 +251,7 @@ func makeBenchmarkParamKeys(paramCount int) []string {
 	for _, param := range benchmarkURLIdentityParams {
 		keys = append(keys, param.key)
 	}
-	for i := 0; i < paramCount; i++ {
+	for i := range paramCount {
 		keys = append(keys, fmt.Sprintf("key%d", i))
 	}
 	return keys
@@ -280,10 +272,7 @@ func makeBenchmarkReserveKeys(paramCount int) []string {
 
 func makeBenchmarkFilterKeys(paramCount int) []string {
 	keys := makeBenchmarkParamKeys(paramCount)
-	filterCount := len(keys) / 5
-	if filterCount < 1 {
-		filterCount = 1
-	}
+	filterCount := max(len(keys)/5, 1)
 	if filterCount > len(keys) {
 		filterCount = len(keys)
 	}
