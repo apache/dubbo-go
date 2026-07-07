@@ -93,3 +93,20 @@ func TestInitServerTLS(t *testing.T) {
 		assert.False(t, srvConf.SSLEnabled)
 	})
 }
+
+func TestInitServerDoesNotPanicOnUnmarshalableParams(t *testing.T) {
+	url, err := common.NewURL("dubbo://127.0.0.1:20003/test")
+	require.NoError(t, err)
+	url.SetAttribute(constant.ProtocolConfigKey, map[string]*global.ProtocolConfig{
+		"dubbo": {
+			Name:   "dubbo",
+			Ip:     "127.0.0.1",
+			Port:   "20003",
+			Params: map[string]any{"conn-pool-size": make(chan int)}, // channel is not YAML-serializable
+		},
+	})
+	url.SetAttribute(constant.ApplicationKey, global.ApplicationConfig{})
+	assert.NotPanics(t, func() {
+		initServer(url)
+	})
+}

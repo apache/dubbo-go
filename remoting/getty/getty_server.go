@@ -97,19 +97,33 @@ func initServer(url *common.URL) {
 			return
 		}
 
-		gettyServerConfigBytes, err := yaml.Marshal(gettyServerConfig)
+		gettyServerConfigBytes, err := safeYAMLMarshal(gettyServerConfig)
 		if err != nil {
-			panic(err)
+			logger.Errorf("[Remoting][Getty] failed to marshal getty server config, err=%v", err)
+			return
 		}
 		err = yaml.Unmarshal(gettyServerConfigBytes, srvConf)
 		if err != nil {
-			panic(err)
+			logger.Errorf("[Remoting][Getty] failed to unmarshal getty server config, err=%v", err)
+			return
 		}
 	}
 
 	if err := srvConf.CheckValidity(); err != nil {
-		panic(err)
+		logger.Errorf("[Remoting][Getty] server config is invalid, err=%v", err)
+		return
 	}
+}
+
+// safeYAMLMarshal wraps yaml.Marshal with a recover so that types unsupported by
+// the yaml encoder (e.g. channels, funcs) return an error instead of panicking.
+func safeYAMLMarshal(v any) (out []byte, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("yaml marshal panic: %v", r)
+		}
+	}()
+	return yaml.Marshal(v)
 }
 
 // SetServerConfig set dubbo server config.
@@ -177,7 +191,7 @@ func (s *Server) newSession(session getty.Session) error {
 		return nil
 	}
 	if _, ok = session.Conn().(*net.TCPConn); !ok {
-		panic(fmt.Sprintf("%s, session.conn{%#v} is not tcp connection\n", session.Stat(), session.Conn()))
+		return perrors.New(fmt.Sprintf("%s, session.conn{%#v} is not tcp connection", session.Stat(), session.Conn()))
 	}
 
 	if _, ok = session.Conn().(*tls.Conn); !ok {
