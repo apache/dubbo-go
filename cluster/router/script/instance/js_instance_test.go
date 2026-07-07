@@ -716,3 +716,37 @@ func TestRunScriptInPanic(t *testing.T) {
 `
 	wontPanic(scriptCallWrongArgs3)
 }
+
+func TestJsInstanceResetClearsBindings(t *testing.T) {
+	inst := newJsInstance()
+
+	testify_require.NoError(t, inst.rt.Set("invokers", []string{"test"}))
+	testify_require.NoError(t, inst.rt.Set("invocation", "test-inv"))
+	testify_require.NoError(t, inst.rt.Set("context", "test-ctx"))
+	testify_require.NoError(t, inst.rt.Set(jsScriptResultName, "test-result"))
+	// Global defined by a user script must also be cleared on reset.
+	_, err := inst.rt.RunString("userDefinedGlobal = 42;")
+	testify_require.NoError(t, err)
+	assert.NotNil(t, inst.rt.Get("userDefinedGlobal"))
+
+	inst.reset()
+
+	// Get returns nil for undefined globals after reset.
+	assert.Nil(t, inst.rt.Get("invokers"))
+	assert.Nil(t, inst.rt.Get("invocation"))
+	assert.Nil(t, inst.rt.Get("context"))
+	assert.Nil(t, inst.rt.Get(jsScriptResultName))
+	assert.Nil(t, inst.rt.Get("userDefinedGlobal"))
+}
+
+func TestJsInstanceRunReturnsRuntimeToPool(t *testing.T) {
+	instances := newJsInstances()
+	testify_require.NoError(t, instances.Compile(Func_Script))
+
+	invokers, inv, _ := getRouteArgs()
+	for i := 0; i < 5; i++ {
+		result, err := instances.Run(Func_Script, invokers, inv)
+		testify_require.NoError(t, err)
+		assert.NotEmpty(t, result)
+	}
+}
