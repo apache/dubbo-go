@@ -173,8 +173,8 @@ func TestPromMetricRegistryExport(t *testing.T) {
 		_ = server.Close()
 	})
 	go func() {
-		if err := server.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			serveErrCh <- err
+		if error := server.Serve(listener); error != nil && !errors.Is(error, http.ErrServerClosed) {
+			serveErrCh <- error
 		}
 	}()
 	timeout := url.GetParamByIntValue(constant.PrometheusPushgatewayPushIntervalKey, constant.PrometheusDefaultPushInterval)
@@ -182,7 +182,7 @@ func TestPromMetricRegistryExport(t *testing.T) {
 		assert.Fail(t, "wait pushgateway data timeout")
 	}
 	select {
-	case err := <-readErrCh:
+	case err = <-readErrCh:
 		require.NoError(t, err)
 	case text := <-bodyCh:
 		assert.Contains(t, text, "dubbo_request_avg")
@@ -190,7 +190,7 @@ func TestPromMetricRegistryExport(t *testing.T) {
 		assert.Fail(t, "pushgateway request body was not captured")
 	}
 	select {
-	case err := <-serveErrCh:
+	case err = <-serveErrCh:
 		require.NoError(t, err)
 	default:
 	}
