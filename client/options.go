@@ -21,14 +21,10 @@ import (
 	"net/http"
 	"strconv"
 	"time"
-)
 
-import (
-	"github.com/creasty/defaults"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"github.com/creasty/defaults"
+
 	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
