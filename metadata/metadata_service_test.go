@@ -22,20 +22,17 @@ import (
 	"strconv"
 	"sync"
 	"testing"
-)
 
-import (
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	tripleapi "dubbo.apache.org/dubbo-go/v3/metadata/triple_api/proto"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+
 	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
 )
 
@@ -402,17 +399,17 @@ func TestDefaultMetadataServiceConcurrentReadAccess(t *testing.T) {
 	for range 10 {
 		wg.Go(func() {
 			urls, err := mts.GetExportedServiceURLs()
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.NotEmpty(t, urls)
 		})
 		wg.Go(func() {
 			urls, err := mts.GetSubscribedURLs()
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.NotEmpty(t, urls)
 		})
 		wg.Go(func() {
 			info, err := mts.GetMetadataInfo("1")
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.NotNil(t, info)
 		})
 	}

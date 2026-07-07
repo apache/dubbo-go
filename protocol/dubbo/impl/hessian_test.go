@@ -22,19 +22,13 @@ import (
 	"sync"
 	"testing"
 	"time"
-)
 
-import (
-	hessian "github.com/apache/dubbo-go-hessian2"
-	"github.com/apache/dubbo-go-hessian2/java_exception"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/hessian2"
+	hessian "github.com/apache/dubbo-go-hessian2"
+	"github.com/apache/dubbo-go-hessian2/java_exception"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -656,7 +650,7 @@ func TestUnmarshalRequestBody(t *testing.T) {
 
 		pkg := &DubboPackage{}
 		err := unmarshalRequestBody(encoder.Buffer(), pkg)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 }
 
@@ -748,7 +742,7 @@ func TestUnmarshalResponseBody(t *testing.T) {
 
 		pkg := &DubboPackage{}
 		err := unmarshalResponseBody(encoder.Buffer(), pkg)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 
 	t.Run("response with null value and attachments", func(t *testing.T) {
@@ -902,7 +896,7 @@ func TestHessianSerializer_Unmarshal(t *testing.T) {
 		}
 
 		err := serializer.Unmarshal([]byte{}, pkg)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 
 	t.Run("unmarshal request", func(t *testing.T) {
@@ -921,7 +915,7 @@ func TestHessianSerializer_Unmarshal(t *testing.T) {
 		}
 
 		err := serializer.Unmarshal(encoder.Buffer(), pkg)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 
 	t.Run("unmarshal response", func(t *testing.T) {

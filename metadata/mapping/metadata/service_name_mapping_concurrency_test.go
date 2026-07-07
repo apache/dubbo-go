@@ -21,19 +21,14 @@ import (
 	"fmt"
 	"sync"
 	"testing"
-)
 
-import (
-	gxset "github.com/dubbogo/gost/container/set"
-
-	"github.com/stretchr/testify/assert"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
+	gxset "github.com/dubbogo/gost/container/set"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // versionedStore is an in-memory key/value store with a per-key version, modeling the
@@ -197,7 +192,7 @@ func TestRegisterWithRetryConcurrentNoLostUpdate(t *testing.T) {
 					return
 				default:
 					set, err := r.GetServiceAppMapping("Iface", DefaultGroup, nil)
-					assert.NoError(t, err)
+					require.NoError(t, err)
 					assert.GreaterOrEqual(t, set.Size(), prev)
 					assert.False(t, set.Contains(""))
 					prev = set.Size()

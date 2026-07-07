@@ -23,19 +23,13 @@ import (
 	"sync"
 	"testing"
 	"time"
-)
 
-import (
-	prom "github.com/prometheus/client_golang/prometheus"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
+	prom "github.com/prometheus/client_golang/prometheus"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -152,12 +146,12 @@ func TestPromMetricRegistryExport(t *testing.T) {
 		err := http.ListenAndServe(url.GetParam(constant.PrometheusPushgatewayBaseUrlKey, ""),
 			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				bodyBytes, err := io.ReadAll(r.Body)
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				text := string(bodyBytes)
 				assert.Contains(t, text, "dubbo_request_avg")
 				wg.Done()
 			}))
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}()
 	timeout := url.GetParamByIntValue(constant.PrometheusPushgatewayPushIntervalKey, constant.PrometheusDefaultPushInterval)
 	if waitTimeout(&wg, time.Duration(timeout+1)*time.Second) {

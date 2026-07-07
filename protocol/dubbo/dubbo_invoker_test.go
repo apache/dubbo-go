@@ -20,17 +20,12 @@ package dubbo
 import (
 	"testing"
 	"time"
-)
 
-import (
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewDubboInvokerUsesGlobalDefaultTimeout(t *testing.T) {
@@ -147,7 +142,7 @@ func TestNewDubboInvokerUsesTimeoutParam(t *testing.T) {
 //	hessian.RegisterPOJO(&User{})
 //
 //	methods, err := common.ServiceMap.Register("com.ikurento.user.UserProvider", "dubbo", "", "", &UserProvider{})
-//	assert.NoError(t, err)
+//	require.NoError(t, err)
 //	assert.Equal(t, "GetBigPkg,GetUser,GetUser0,GetUser1,GetUser2,GetUser3,GetUser4,GetUser5,GetUser6", methods)
 //
 //	// config
@@ -194,7 +189,7 @@ func TestNewDubboInvokerUsesTimeoutParam(t *testing.T) {
 //		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
 //		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 //		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
-//	assert.NoError(t, err)
+//	require.NoError(t, err)
 //	proto.Export(&proxy_factory.ProxyInvoker{
 //		BaseInvoker: *protocol.NewBaseInvoker(url),
 //	})

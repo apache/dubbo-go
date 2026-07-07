@@ -19,10 +19,9 @@ package dubbo
 
 import (
 	"testing"
-)
 
-import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestIsRequest tests isRequest with various bit patterns
@@ -74,7 +73,7 @@ func TestDecodeWithInsufficientData(t *testing.T) {
 	decodeResult, length, err := codec.Decode(data)
 	assert.Nil(t, decodeResult)
 	assert.Equal(t, 0, length)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 // TestDecodeWithEmptyData tests decode with empty data
@@ -86,7 +85,7 @@ func TestDecodeWithEmptyData(t *testing.T) {
 	decodeResult, length, err := codec.Decode(data)
 	assert.Nil(t, decodeResult)
 	assert.Equal(t, 0, length)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 // TestCodecType tests that DubboCodec is properly instantiated
@@ -193,7 +192,7 @@ func TestDecodeDataLength(t *testing.T) {
 			if test.shouldReturnNil {
 				assert.Nil(t, decodeResult)
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 		})
 	}
 }

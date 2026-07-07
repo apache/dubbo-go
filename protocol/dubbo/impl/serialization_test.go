@@ -19,15 +19,10 @@ package impl
 
 import (
 	"testing"
-)
 
-import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 // TestGetSerializerById tests GetSerializerById with valid and invalid serializer IDs
@@ -72,7 +67,7 @@ func TestGetSerializerById(t *testing.T) {
 			} else {
 				assert.NotPanics(t, func() {
 					serializer, err := GetSerializerById(test.id)
-					assert.NoError(t, err)
+					require.NoError(t, err)
 					assert.NotNil(t, serializer)
 					assert.Equal(t, mockSerializer, serializer)
 				})

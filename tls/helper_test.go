@@ -29,15 +29,10 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
-)
 
-import (
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
 // testCertFiles holds paths to generated test certificate files
@@ -135,7 +130,7 @@ func generateTestCerts(t *testing.T) *testCertFiles {
 
 	clientKeyFile := filepath.Join(tempDir, "client-key.pem")
 	err = writePEMFile(clientKeyFile, "RSA PRIVATE KEY", x509.MarshalPKCS1PrivateKey(clientKey))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	return &testCertFiles{
 		caCertFile:     caCertFile,

@@ -21,15 +21,10 @@ import (
 	"bytes"
 	"fmt"
 	"testing"
-)
 
-import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-)
-
-import (
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 // TestLoadSerializerWithDefaultHessian2 tests LoadSerializer with default Hessian2 serialization
@@ -108,7 +103,7 @@ func TestLoadSerializerWithNilPackage(t *testing.T) {
 
 	assert.NotPanics(t, func() {
 		err := LoadSerializer(pkg)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 }
 
@@ -180,7 +175,7 @@ func TestLoadSerializerDoesNotPanicWithValidID(t *testing.T) {
 			} else {
 				assert.NotPanics(t, func() {
 					err := LoadSerializer(pkg)
-					assert.NoError(t, err)
+					require.NoError(t, err)
 				})
 			}
 		})
@@ -303,7 +298,7 @@ func TestLoadSerializerErrorHandling(t *testing.T) {
 	// Should not raise error with valid setup
 	assert.NotPanics(t, func() {
 		err := LoadSerializer(pkg)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 }
 
