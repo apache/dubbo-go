@@ -62,6 +62,7 @@ func init() {
 
 type nacosRegistry struct {
 	*common.URL
+	// namingClient is the pooled Nacos client shared by registry operations and listeners.
 	namingClient *nacosClient.NacosNamingClient
 	registryUrls []*common.URL
 	// initialSubscribeInstances keeps the synchronous LoadSubscribeInstances result as the diff baseline for the first Nacos push.
