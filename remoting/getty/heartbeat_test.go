@@ -41,7 +41,7 @@ type mockHeartbeatSession struct {
 	writtenID int64
 }
 
-func (m *mockHeartbeatSession) WritePkg(pkg interface{}, _ time.Duration) (int, int, error) {
+func (m *mockHeartbeatSession) WritePkg(pkg any, _ time.Duration) (int, int, error) {
 	if req, ok := pkg.(*remoting.Request); ok {
 		m.writtenID = req.ID
 	}
