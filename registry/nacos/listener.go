@@ -74,6 +74,29 @@ func NewNacosListenerWithServiceName(serviceName string, regURL *common.URL, nam
 	}
 }
 
+func (nl *nacosListener) setInstanceSnapshot(instances []model.Instance) {
+	nl.cacheLock.Lock()
+	defer nl.cacheLock.Unlock()
+
+	nl.instanceMap = buildInstanceMap(instances)
+}
+
+func buildInstanceMap(instances []model.Instance) map[string]model.Instance {
+	instanceMap := make(map[string]model.Instance, len(instances))
+	for i := range instances {
+		if !instances[i].Enable {
+			continue
+		}
+		host := instanceHost(instances[i])
+		instanceMap[host] = instances[i]
+	}
+	return instanceMap
+}
+
+func instanceHost(instance model.Instance) string {
+	return instance.Ip + ":" + strconv.Itoa(int(instance.Port))
+}
+
 func generateUrl(instance model.Instance) *common.URL {
 	if instance.Metadata == nil {
 		logger.Errorf("[Registry][Nacos] nacos instance metadata is empty, instance=%+v", instance)
@@ -125,7 +148,7 @@ func (nl *nacosListener) Callback(services []model.Instance, err error) {
 			// instance is not available,so ignore it
 			continue
 		}
-		host := services[i].Ip + ":" + strconv.Itoa(int(services[i].Port))
+		host := instanceHost(services[i])
 		instance := services[i]
 		newInstanceMap[host] = instance
 		if old, ok := nl.instanceMap[host]; !ok && instance.Healthy {
@@ -184,7 +207,7 @@ func (nl *nacosListener) listenService(serviceName string) error {
 	}
 	err := nl.namingClient.Client().Subscribe(nl.subscribeParam)
 	if err == nil {
-		listenerCache.Store(nl.subscribeParam.ServiceName+nl.subscribeParam.GroupName, nl)
+		listenerCache.Store(subscribeCacheKey(nl.subscribeParam.ServiceName, nl.subscribeParam.GroupName), nl)
 	}
 	return nil
 }

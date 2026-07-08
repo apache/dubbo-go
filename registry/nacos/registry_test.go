@@ -40,6 +40,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 // MockINamingClient is a mock of INamingClient interface
@@ -426,7 +427,7 @@ func TestNacosRegistryDestroy(t *testing.T) {
 		SubscribeCallback: nl.Callback,
 	}
 	nl.subscribeParam = subscribeParam
-	listenerCache.Store(serviceName+"testgroup", nl)
+	listenerCache.Store(subscribeCacheKey(serviceName, "testgroup"), nl)
 
 	// Simulate unsubscribe and unregister instances
 	mockNamingClient.EXPECT().Unsubscribe(subscribeParam).Return(nil)
@@ -451,7 +452,7 @@ func TestNacosRegistryDestroy(t *testing.T) {
 		t.Errorf("namingClient was not set to nil")
 	}
 
-	if _, ok := listenerCache.Load(serviceName + "testgroup"); ok {
+	if _, ok := listenerCache.Load(subscribeCacheKey(serviceName, "testgroup")); ok {
 		t.Errorf("listenerCache was not cleared")
 	}
 }
@@ -601,7 +602,7 @@ func TestNacosRegistryCloseListener(t *testing.T) {
 		SubscribeCallback: nl.Callback,
 	}
 	nl.subscribeParam = subscribeParam
-	listenerCache.Store(serviceName+"testgroup", nl)
+	listenerCache.Store(subscribeCacheKey(serviceName, "testgroup"), nl)
 
 	mockNamingClient.EXPECT().Unsubscribe(subscribeParam).Return(nil)
 
@@ -610,7 +611,7 @@ func TestNacosRegistryCloseListener(t *testing.T) {
 	nr.CloseListener()
 
 	// Verify whether to clear the entries in the listenerCache
-	if _, ok := listenerCache.Load(serviceName + "testgroup"); ok {
+	if _, ok := listenerCache.Load(subscribeCacheKey(serviceName, "testgroup")); ok {
 		t.Errorf("listenerCache was not cleared")
 	}
 
@@ -683,5 +684,151 @@ func TestNacosRegistryScheduledLookUpStopsWhenDoneClosed(t *testing.T) {
 	case <-finished:
 	case <-time.After(time.Second):
 		t.Fatalf("scheduledLookUp should exit quickly after done is closed")
+	}
+}
+
+func TestNacosRegistryInitialSubscribeSnapshotDiff(t *testing.T) {
+	clearListenerCacheForTest()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockNamingClient := NewMockINamingClient(ctrl)
+	nc := &nacosClient.NacosNamingClient{}
+	nc.SetClient(mockNamingClient)
+
+	regURL, _ := common.NewURL("registry://127.0.0.1:8848?registry.group=testgroup")
+	nr := &nacosRegistry{
+		URL:          regURL,
+		namingClient: nc,
+		done:         make(chan struct{}),
+		registryUrls: []*common.URL{},
+	}
+
+	urlMap := url.Values{}
+	urlMap.Set(constant.RegistryRoleKey, strconv.Itoa(common.CONSUMER))
+	urlMap.Set(constant.InterfaceKey, "com.test.InitialSnapshotService")
+	testURL, _ := common.NewURL("consumer://127.0.0.1/com.test.InitialSnapshotService", common.WithParams(urlMap))
+
+	instanceA := newNacosTestInstance("10.0.0.1", 20001, "com.test.InitialSnapshotService")
+	instanceB := newNacosTestInstance("10.0.0.2", 20002, "com.test.InitialSnapshotService")
+
+	var subscribeParam *vo.SubscribeParam
+	mockNamingClient.EXPECT().SelectAllInstances(gomock.Any()).Return([]model.Instance{instanceA, instanceB}, nil)
+	mockNamingClient.EXPECT().GetAllServicesInfo(gomock.Any()).Return(model.ServiceList{}, nil).AnyTimes()
+	mockNamingClient.EXPECT().Subscribe(gomock.Any()).DoAndReturn(func(param *vo.SubscribeParam) error {
+		subscribeParam = param
+		return nil
+	})
+	mockNamingClient.EXPECT().Unsubscribe(gomock.Any()).AnyTimes()
+
+	notify := newRecordingNotifyListener()
+	if err := nr.LoadSubscribeInstances(testURL, notify); err != nil {
+		t.Fatalf("LoadSubscribeInstances() error = %v", err)
+	}
+	assertRecordedEvent(t, notify.nextEvent(t), remoting.EventTypeAdd, "10.0.0.1", "20001")
+	assertRecordedEvent(t, notify.nextEvent(t), remoting.EventTypeAdd, "10.0.0.2", "20002")
+
+	if err := nr.subscribe(getSubscribeName(testURL), notify); err != nil {
+		t.Fatalf("subscribe() error = %v", err)
+	}
+	if subscribeParam == nil || subscribeParam.SubscribeCallback == nil {
+		t.Fatalf("SubscribeCallback was not captured")
+	}
+
+	subscribeParam.SubscribeCallback([]model.Instance{instanceA}, nil)
+	assertRecordedEvent(t, notify.nextEvent(t), remoting.EventTypeDel, "10.0.0.2", "20002")
+	notify.assertNoEvent(t)
+
+	nr.CloseListener()
+	close(nr.done)
+	nr.wg.Wait()
+}
+
+func clearListenerCacheForTest() {
+	listenerCache.Range(func(key any, _ any) bool {
+		listenerCache.Delete(key)
+		return true
+	})
+}
+
+func newNacosTestInstance(ip string, port uint64, interfaceName string) model.Instance {
+	return model.Instance{
+		Ip:        ip,
+		Port:      port,
+		Enable:    true,
+		Healthy:   true,
+		Ephemeral: true,
+		Metadata: map[string]string{
+			constant.InterfaceKey:           interfaceName,
+			constant.NacosPathKey:           "/" + interfaceName,
+			constant.NacosProtocolKey:       "tri",
+			constant.NacosCategoryKey:       common.DubboNodes[common.PROVIDER],
+			constant.RegistryRoleKey:        strconv.Itoa(common.PROVIDER),
+			constant.RegistryGroupKey:       "testgroup",
+			constant.SerializationKey:       "protobuf",
+			constant.ReleaseKey:             "test",
+			constant.ApplicationKey:         "test-provider",
+			constant.MethodsKey:             "",
+			constant.TimestampKey:           "1",
+			constant.AnyhostKey:             "true",
+			constant.TokenKey:               "",
+			constant.WarmupKey:              "",
+			constant.SideKey:                "provider",
+			constant.NacosGroupKey:          "testgroup",
+			constant.NacosNamespaceID:       "",
+			constant.NacosNotLoadLocalCache: "true",
+		},
+	}
+}
+
+type recordingNotifyListener struct {
+	events chan *registry.ServiceEvent
+}
+
+func newRecordingNotifyListener() *recordingNotifyListener {
+	return &recordingNotifyListener{events: make(chan *registry.ServiceEvent, 8)}
+}
+
+func (r *recordingNotifyListener) Notify(event *registry.ServiceEvent) {
+	r.events <- event
+}
+
+func (r *recordingNotifyListener) NotifyAll(events []*registry.ServiceEvent, callback func()) {
+	for _, event := range events {
+		r.Notify(event)
+	}
+	if callback != nil {
+		callback()
+	}
+}
+
+func (r *recordingNotifyListener) nextEvent(t *testing.T) *registry.ServiceEvent {
+	t.Helper()
+	select {
+	case event := <-r.events:
+		return event
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for notify event")
+		return nil
+	}
+}
+
+func (r *recordingNotifyListener) assertNoEvent(t *testing.T) {
+	t.Helper()
+	select {
+	case event := <-r.events:
+		t.Fatalf("unexpected notify event: action=%s service=%s", event.Action, event.Service)
+	case <-time.After(100 * time.Millisecond):
+	}
+}
+
+func assertRecordedEvent(t *testing.T, event *registry.ServiceEvent, action remoting.EventType, ip string, port string) {
+	t.Helper()
+	if event.Action != action {
+		t.Fatalf("event action = %s, want %s", event.Action, action)
+	}
+	if event.Service.Ip != ip || event.Service.Port != port {
+		t.Fatalf("event service = %s:%s, want %s:%s", event.Service.Ip, event.Service.Port, ip, port)
 	}
 }
