@@ -76,6 +76,8 @@ func (watcher *PolarisServiceWatcher) lazyRun() {
 	})
 }
 
+// setInitialSnapshot stores synchronously loaded instances as the baseline for
+// reconciling the first successful watcher full snapshot.
 func (watcher *PolarisServiceWatcher) setInitialSnapshot(instances []model.Instance) {
 	watcher.initialSnapshotLock.Lock()
 	defer watcher.initialSnapshotLock.Unlock()
@@ -88,6 +90,8 @@ func (watcher *PolarisServiceWatcher) setInitialSnapshot(instances []model.Insta
 	watcher.hasInitialSnapshot = true
 }
 
+// takeInitialSnapshot returns and consumes the baseline for the first successful watcher full snapshot.
+// Failed WatchService attempts do not call it, and a consumed watcher cannot be armed again.
 func (watcher *PolarisServiceWatcher) takeInitialSnapshot() ([]model.Instance, bool) {
 	watcher.initialSnapshotLock.Lock()
 	defer watcher.initialSnapshotLock.Unlock()
@@ -106,6 +110,8 @@ func (watcher *PolarisServiceWatcher) takeInitialSnapshot() ([]model.Instance, b
 	return instances, true
 }
 
+// missingInitialInstances returns initial - current by model.InstanceKey while
+// preserving the order of the initial snapshot.
 func missingInitialInstances(initial []model.Instance, current []model.Instance) []model.Instance {
 	currentInstances := make(map[model.InstanceKey]struct{}, len(current))
 	for _, instance := range current {
@@ -121,6 +127,8 @@ func missingInitialInstances(initial []model.Instance, current []model.Instance)
 	return missing
 }
 
+// handleInitialWatchSnapshot reconciles the first successful watcher full snapshot
+// with the synchronous baseline before publishing the current instances.
 func (watcher *PolarisServiceWatcher) handleInitialWatchSnapshot(current []model.Instance) {
 	if initial, ok := watcher.takeInitialSnapshot(); ok {
 		missing := missingInitialInstances(initial, current)

@@ -21,6 +21,7 @@ import (
 	"reflect"
 	"strconv"
 	"testing"
+	"time"
 )
 
 import (
@@ -44,12 +45,26 @@ const testPolarisNamespace = "test"
 
 type fakePolarisConsumer struct {
 	api.ConsumerAPI
-	instances []model.Instance
+	instances      []model.Instance
+	watchInstances []model.Instance
+	watchCalls     int
 }
 
 func (f *fakePolarisConsumer) GetInstances(_ *api.GetInstancesRequest) (*model.InstancesResponse, error) {
 	instances := append([]model.Instance(nil), f.instances...)
 	return &model.InstancesResponse{Instances: instances}, nil
+}
+
+func (f *fakePolarisConsumer) WatchService(_ *api.WatchServiceRequest) (*model.WatchServiceResponse, error) {
+	f.watchCalls++
+	eventChannel := make(chan model.SubScribeEvent)
+	close(eventChannel)
+	return &model.WatchServiceResponse{
+		EventChannel: eventChannel,
+		GetAllInstancesResp: &model.InstancesResponse{
+			Instances: append([]model.Instance(nil), f.watchInstances...),
+		},
+	}, nil
 }
 
 type recordedPolarisEvent struct {
@@ -59,11 +74,12 @@ type recordedPolarisEvent struct {
 }
 
 type recordingPolarisNotifyListener struct {
-	events []recordedPolarisEvent
+	events  []recordedPolarisEvent
+	eventCh chan recordedPolarisEvent
 }
 
 func (r *recordingPolarisNotifyListener) Notify(event *registry.ServiceEvent) {
-	r.events = append(r.events, recordedPolarisEvent{
+	r.record(recordedPolarisEvent{
 		action: event.Action,
 		host:   event.Service.Ip,
 		port:   event.Service.Port,
@@ -81,11 +97,75 @@ func (r *recordingPolarisNotifyListener) NotifyAll(events []*registry.ServiceEve
 
 func (r *recordingPolarisNotifyListener) recordInstances(action remoting.EventType, instances []model.Instance) {
 	for _, instance := range instances {
-		r.events = append(r.events, recordedPolarisEvent{
+		r.record(recordedPolarisEvent{
 			action: action,
 			host:   instance.GetHost(),
 			port:   strconv.Itoa(int(instance.GetPort())),
 		})
+	}
+}
+
+func (r *recordingPolarisNotifyListener) record(event recordedPolarisEvent) {
+	r.events = append(r.events, event)
+	if r.eventCh != nil {
+		r.eventCh <- event
+	}
+}
+
+func TestPolarisSubscribeInitialSnapshotTransfer(t *testing.T) {
+	serviceName := "com.test.SubscribeSnapshotTransferService"
+	instanceA := newPolarisTestInstance("instance-a", "10.0.0.1", 20001, serviceName, true)
+	instanceB := newPolarisTestInstance("instance-b", "10.0.0.2", 20002, serviceName, true)
+	consumer := &fakePolarisConsumer{
+		instances:      []model.Instance{instanceA},
+		watchInstances: []model.Instance{instanceB},
+	}
+	notify := &recordingPolarisNotifyListener{eventCh: make(chan recordedPolarisEvent, 3)}
+	polarisRegistry := &polarisRegistry{
+		namespace:        testPolarisNamespace,
+		consumer:         consumer,
+		watchers:         make(map[string]*PolarisServiceWatcher),
+		initialSnapshots: make(map[string][]model.Instance),
+	}
+
+	if err := polarisRegistry.LoadSubscribeInstances(newPolarisConsumerURL(serviceName), notify); err != nil {
+		t.Fatalf("LoadSubscribeInstances() error = %v", err)
+	}
+
+	_, err := polarisRegistry.createPolarisListener(serviceName, func(watcher *PolarisServiceWatcher) (*polarisListener, error) {
+		resp, watchErr := watcher.consumer.WatchService(watcher.subscribeParam)
+		if watchErr != nil {
+			return nil, watchErr
+		}
+		watcher.subscribers = append(watcher.subscribers, notify.recordInstances)
+		watcher.handleInitialWatchSnapshot(resp.GetAllInstancesResp.Instances)
+		return &polarisListener{}, nil
+	})
+	if err != nil {
+		t.Fatalf("createPolarisListener() error = %v", err)
+	}
+	if consumer.watchCalls != 1 {
+		t.Fatalf("WatchService() calls = %d, want 1", consumer.watchCalls)
+	}
+
+	expected := []recordedPolarisEvent{
+		{action: remoting.EventTypeAdd, host: "10.0.0.1", port: "20001"},
+		{action: remoting.EventTypeDel, host: "10.0.0.1", port: "20001"},
+		{action: remoting.EventTypeAdd, host: "10.0.0.2", port: "20002"},
+	}
+	actual := make([]recordedPolarisEvent, 0, len(expected))
+	timer := time.NewTimer(time.Second)
+	defer timer.Stop()
+	for range expected {
+		select {
+		case event := <-notify.eventCh:
+			actual = append(actual, event)
+		case <-timer.C:
+			t.Fatalf("timed out waiting for events, got %#v", actual)
+		}
+	}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("events = %#v, want %#v", actual, expected)
 	}
 }
 

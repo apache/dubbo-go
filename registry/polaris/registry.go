@@ -143,18 +143,7 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 
 	for {
 		serviceName := url.Interface()
-		watcher, err := pr.createPolarisWatcher(serviceName)
-		if err != nil {
-			logger.Warnf("[Registry][Polaris] getwatcher() = err=%v", perrors.WithStack(err))
-			<-timer.C
-			timer.Reset(time.Duration(RegistryConnDelay) * time.Second)
-			continue
-		}
-		if initialSnapshot, ok := pr.takeInitialSnapshot(serviceName); ok {
-			watcher.setInitialSnapshot(initialSnapshot)
-		}
-
-		listener, err := NewPolarisListener(watcher)
+		listener, err := pr.createPolarisListener(serviceName, NewPolarisListener)
 		if err != nil {
 			logger.Warnf("[Registry][Polaris] getListener() = err=%v", perrors.WithStack(err))
 			<-timer.C
@@ -174,6 +163,22 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 			notifyListener.Notify(serviceEvent)
 		}
 	}
+}
+
+// createPolarisListener creates or reuses the service watcher, transfers its pending baseline,
+// and only then invokes newListener so the watcher cannot start before snapshot injection.
+func (pr *polarisRegistry) createPolarisListener(
+	serviceName string,
+	newListener func(*PolarisServiceWatcher) (*polarisListener, error),
+) (*polarisListener, error) {
+	watcher, err := pr.createPolarisWatcher(serviceName)
+	if err != nil {
+		return nil, err
+	}
+	if initialSnapshot, ok := pr.takeInitialSnapshot(serviceName); ok {
+		watcher.setInitialSnapshot(initialSnapshot)
+	}
+	return newListener(watcher)
 }
 
 // UnSubscribe returns nil if unsubscribing registry successfully. If not returns an error.
@@ -206,6 +211,8 @@ func (pr *polarisRegistry) LoadSubscribeInstances(url *common.URL, notify regist
 	return nil
 }
 
+// storeInitialSnapshot keeps valid instances notified during synchronous loading
+// until Subscribe transfers the baseline to the service watcher.
 func (pr *polarisRegistry) storeInitialSnapshot(serviceName string, instances []model.Instance) {
 	pr.initialSnapshotLock.Lock()
 	defer pr.initialSnapshotLock.Unlock()
@@ -220,6 +227,8 @@ func (pr *polarisRegistry) storeInitialSnapshot(serviceName string, instances []
 	pr.initialSnapshots[serviceName] = append([]model.Instance(nil), instances...)
 }
 
+// takeInitialSnapshot removes and returns the pending service baseline, transferring it
+// from synchronous LoadSubscribeInstances to the asynchronous watcher exactly once.
 func (pr *polarisRegistry) takeInitialSnapshot(serviceName string) ([]model.Instance, bool) {
 	pr.initialSnapshotLock.Lock()
 	defer pr.initialSnapshotLock.Unlock()
