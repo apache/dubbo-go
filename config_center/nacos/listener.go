@@ -37,9 +37,8 @@ import (
 )
 
 // keyListenerSet holds the listeners for a single config key.
-// The mutex protects the listeners map so that add/remove/check-empty
-// operations are atomic, preventing races between concurrent addListener
-// and removeListener calls for the same key.
+// The mutex protects the listener map while callbacks take snapshots and
+// add/remove paths mutate it.
 type keyListenerSet struct {
 	mu        sync.Mutex
 	listeners map[config_center.ConfigurationListener]struct{}
@@ -60,8 +59,8 @@ func (s *keyListenerSet) add(listener config_center.ConfigurationListener) {
 }
 
 // remove removes a listener and reports whether the set is now empty.
-// The caller must NOT rely on a non-empty result to skip CancelListenConfig,
-// because a concurrent add could re-populate the set after this call returns.
+// Callers that use the empty result to cancel the Nacos subscription must hold
+// nacosDynamicConfiguration.listenerLock.
 func (s *keyListenerSet) remove(listener config_center.ConfigurationListener) bool {
 	s.mu.Lock()
 	delete(s.listeners, listener)
@@ -90,6 +89,13 @@ func callback(set *keyListenerSet, _, group, dataId, data string) {
 
 func (n *nacosDynamicConfiguration) addListener(key string, listener config_center.ConfigurationListener) {
 	group := n.resolvedGroup(n.url.GetParam(constant.NacosGroupKey, constant2.DEFAULT_GROUP))
+
+	// The listener lifecycle lock serializes add/remove bookkeeping with the
+	// corresponding ListenConfig/CancelListenConfig calls. This prevents a
+	// concurrent addListener from slipping in between removeListener's emptiness
+	// check and its CancelListenConfig call.
+	n.listenerLock.Lock()
+	defer n.listenerLock.Unlock()
 
 	rawSet, loaded := n.keyListeners.Load(key)
 	if !loaded {
@@ -120,6 +126,9 @@ func (n *nacosDynamicConfiguration) addListener(key string, listener config_cent
 }
 
 func (n *nacosDynamicConfiguration) removeListener(key string, listener config_center.ConfigurationListener) {
+	n.listenerLock.Lock()
+	defer n.listenerLock.Unlock()
+
 	rawSet, loaded := n.keyListeners.Load(key)
 	if !loaded {
 		logger.Errorf("[ConfigCenter][Nacos] key is not be listened, key=%s", key)
@@ -129,8 +138,11 @@ func (n *nacosDynamicConfiguration) removeListener(key string, listener config_c
 	isEmpty := set.remove(listener)
 
 	if isEmpty {
-		// Delete from keyListeners first to prevent new addListener from
-		// finding a stale set after we cancel the nacos subscription.
+		// Delete from keyListeners and cancel the nacos subscription as a single
+		// atomic step. Because addListener takes the same lock, no concurrent add
+		// can register a fresh subscription between this Delete and the
+		// CancelListenConfig below — the race that previously let a late cancel
+		// drop a just-registered listener.
 		n.keyListeners.Delete(key)
 		if n.client != nil {
 			err := n.client.Client().CancelListenConfig(vo.ConfigParam{

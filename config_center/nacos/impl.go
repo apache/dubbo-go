@@ -58,6 +58,7 @@ type nacosDynamicConfiguration struct {
 	done         chan struct{}
 	client       *nacosClient.NacosConfigClient
 	keyListeners sync.Map // sync.Map[listenKey]*keyListenerSet
+	listenerLock sync.Mutex
 	parser       parser.ConfigurationParser
 }
 
