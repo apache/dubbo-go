@@ -36,11 +36,15 @@ import (
 type item func(remoting.EventType, []model.Instance)
 
 type PolarisServiceWatcher struct {
-	consumer       api.ConsumerAPI
-	subscribeParam *api.WatchServiceRequest
-	lock           *sync.RWMutex
-	subscribers    []item
-	execOnce       *sync.Once
+	consumer                api.ConsumerAPI
+	subscribeParam          *api.WatchServiceRequest
+	lock                    *sync.RWMutex
+	subscribers             []item
+	execOnce                *sync.Once
+	initialSnapshotLock     sync.Mutex
+	initialSnapshot         []model.Instance
+	hasInitialSnapshot      bool
+	initialSnapshotConsumed bool
 }
 
 // newPolarisWatcher create PolarisServiceWatcher to do watch service action
@@ -72,6 +76,68 @@ func (watcher *PolarisServiceWatcher) lazyRun() {
 	})
 }
 
+func (watcher *PolarisServiceWatcher) setInitialSnapshot(instances []model.Instance) {
+	watcher.initialSnapshotLock.Lock()
+	defer watcher.initialSnapshotLock.Unlock()
+
+	// A watcher is reused per service. Never re-arm reconciliation after its first successful snapshot.
+	if watcher.initialSnapshotConsumed {
+		return
+	}
+	watcher.initialSnapshot = append([]model.Instance(nil), instances...)
+	watcher.hasInitialSnapshot = true
+}
+
+func (watcher *PolarisServiceWatcher) takeInitialSnapshot() ([]model.Instance, bool) {
+	watcher.initialSnapshotLock.Lock()
+	defer watcher.initialSnapshotLock.Unlock()
+
+	if watcher.initialSnapshotConsumed {
+		return nil, false
+	}
+	watcher.initialSnapshotConsumed = true
+	if !watcher.hasInitialSnapshot {
+		return nil, false
+	}
+
+	instances := append([]model.Instance(nil), watcher.initialSnapshot...)
+	watcher.initialSnapshot = nil
+	watcher.hasInitialSnapshot = false
+	return instances, true
+}
+
+func missingInitialInstances(initial []model.Instance, current []model.Instance) []model.Instance {
+	currentInstances := make(map[model.InstanceKey]struct{}, len(current))
+	for _, instance := range current {
+		currentInstances[instance.GetInstanceKey()] = struct{}{}
+	}
+
+	missing := make([]model.Instance, 0, len(initial))
+	for _, instance := range initial {
+		if _, ok := currentInstances[instance.GetInstanceKey()]; !ok {
+			missing = append(missing, instance)
+		}
+	}
+	return missing
+}
+
+func (watcher *PolarisServiceWatcher) handleInitialWatchSnapshot(current []model.Instance) {
+	if initial, ok := watcher.takeInitialSnapshot(); ok {
+		missing := missingInitialInstances(initial, current)
+		if len(missing) > 0 {
+			watcher.notifyAllSubscriber(&config_center.ConfigChangeEvent{
+				Value:      missing,
+				ConfigType: remoting.EventTypeDel,
+			})
+		}
+	}
+
+	watcher.notifyAllSubscriber(&config_center.ConfigChangeEvent{
+		Value:      current,
+		ConfigType: remoting.EventTypeAdd,
+	})
+}
+
 // startWatch start run work to watch target service by polaris
 func (watcher *PolarisServiceWatcher) startWatch() {
 	for {
@@ -80,10 +146,7 @@ func (watcher *PolarisServiceWatcher) startWatch() {
 			time.Sleep(time.Duration(500 * time.Millisecond))
 			continue
 		}
-		watcher.notifyAllSubscriber(&config_center.ConfigChangeEvent{
-			Value:      resp.GetAllInstancesResp.Instances,
-			ConfigType: remoting.EventTypeAdd,
-		})
+		watcher.handleInitialWatchSnapshot(resp.GetAllInstancesResp.Instances)
 
 		for event := range resp.EventChannel {
 			eType := event.GetSubScribeEventType()

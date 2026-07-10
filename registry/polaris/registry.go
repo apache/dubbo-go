@@ -68,12 +68,13 @@ func newPolarisRegistry(url *common.URL) (registry.Registry, error) {
 	}
 
 	pRegistry := &polarisRegistry{
-		url:          url,
-		namespace:    url.GetParam(constant.RegistryNamespaceKey, constant.PolarisDefaultNamespace),
-		provider:     providerApi,
-		consumer:     consumerApi,
-		registryUrls: make([]*common.URL, 0, 4),
-		watchers:     map[string]*PolarisServiceWatcher{},
+		url:              url,
+		namespace:        url.GetParam(constant.RegistryNamespaceKey, constant.PolarisDefaultNamespace),
+		provider:         providerApi,
+		consumer:         consumerApi,
+		registryUrls:     make([]*common.URL, 0, 4),
+		watchers:         map[string]*PolarisServiceWatcher{},
+		initialSnapshots: make(map[string][]model.Instance),
 	}
 
 	return pRegistry, nil
@@ -88,6 +89,9 @@ type polarisRegistry struct {
 	registryUrls []*common.URL
 	listenerLock sync.RWMutex
 	watchers     map[string]*PolarisServiceWatcher
+	// initialSnapshots bridges the synchronous load with the first watcher snapshot so disappeared providers can be deleted.
+	initialSnapshotLock sync.Mutex
+	initialSnapshots    map[string][]model.Instance
 }
 
 // Register will register the service @url to its polaris registry center.
@@ -146,6 +150,9 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 			timer.Reset(time.Duration(RegistryConnDelay) * time.Second)
 			continue
 		}
+		if initialSnapshot, ok := pr.takeInitialSnapshot(serviceName); ok {
+			watcher.setInitialSnapshot(initialSnapshot)
+		}
 
 		listener, err := NewPolarisListener(watcher)
 		if err != nil {
@@ -188,12 +195,41 @@ func (pr *polarisRegistry) LoadSubscribeInstances(url *common.URL, notify regist
 		return perrors.New(fmt.Sprintf("could not query the instances for serviceName=%s,namespace=%s,error=%v",
 			serviceName, pr.namespace, err))
 	}
+	initialSnapshot := make([]model.Instance, 0, len(resp.Instances))
 	for i := range resp.Instances {
 		if newUrl := generateUrl(resp.Instances[i]); newUrl != nil {
 			notify.Notify(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: newUrl})
+			initialSnapshot = append(initialSnapshot, resp.Instances[i])
 		}
 	}
+	pr.storeInitialSnapshot(serviceName, initialSnapshot)
 	return nil
+}
+
+func (pr *polarisRegistry) storeInitialSnapshot(serviceName string, instances []model.Instance) {
+	pr.initialSnapshotLock.Lock()
+	defer pr.initialSnapshotLock.Unlock()
+
+	if len(instances) == 0 {
+		delete(pr.initialSnapshots, serviceName)
+		return
+	}
+	if pr.initialSnapshots == nil {
+		pr.initialSnapshots = make(map[string][]model.Instance)
+	}
+	pr.initialSnapshots[serviceName] = append([]model.Instance(nil), instances...)
+}
+
+func (pr *polarisRegistry) takeInitialSnapshot(serviceName string) ([]model.Instance, bool) {
+	pr.initialSnapshotLock.Lock()
+	defer pr.initialSnapshotLock.Unlock()
+
+	instances, ok := pr.initialSnapshots[serviceName]
+	if !ok {
+		return nil, false
+	}
+	delete(pr.initialSnapshots, serviceName)
+	return append([]model.Instance(nil), instances...), true
 }
 
 // GetURL returns polaris registry's url.
