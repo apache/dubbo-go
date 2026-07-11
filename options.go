@@ -18,6 +18,7 @@
 package dubbo
 
 import (
+	"maps"
 	"strconv"
 	"time"
 )
@@ -218,6 +219,17 @@ func (rc *InstanceOptions) CloneMetrics() *global.MetricsConfig {
 	return rc.Metrics.Clone()
 }
 
+func (rc *InstanceOptions) CloneTracing() map[string]*global.TracingConfig {
+	if rc.Tracing == nil {
+		return nil
+	}
+	tracing := make(map[string]*global.TracingConfig, len(rc.Tracing))
+	for k, v := range rc.Tracing {
+		tracing[k] = v.Clone()
+	}
+	return tracing
+}
+
 func (rc *InstanceOptions) CloneOtel() *global.OtelConfig {
 	if rc.Otel == nil {
 		return nil
@@ -269,6 +281,36 @@ func (rc *InstanceOptions) CloneTLSConfig() *global.TLSConfig {
 		return nil
 	}
 	return rc.TLSConfig.Clone()
+}
+
+// Clone returns a snapshot of InstanceOptions. The returned value is detached
+// from the running instance, so callers can inspect or modify it without
+// changing live framework configuration.
+func (rc *InstanceOptions) Clone() *InstanceOptions {
+	if rc == nil {
+		return nil
+	}
+
+	return &InstanceOptions{
+		Application:         rc.CloneApplication(),
+		Protocols:           rc.CloneProtocols(),
+		Registries:          rc.CloneRegistries(),
+		ConfigCenter:        rc.CloneConfigCenter(),
+		MetadataReport:      rc.CloneMetadataReport(),
+		Provider:            rc.CloneProvider(),
+		Consumer:            rc.CloneConsumer(),
+		Metrics:             rc.CloneMetrics(),
+		Tracing:             rc.CloneTracing(),
+		Otel:                rc.CloneOtel(),
+		Logger:              rc.CloneLogger(),
+		Shutdown:            rc.CloneShutdown(),
+		Router:              rc.CloneRouter(),
+		EventDispatcherType: rc.EventDispatcherType,
+		CacheFile:           rc.CacheFile,
+		Custom:              rc.CloneCustom(),
+		Profiles:            rc.CloneProfiles(),
+		TLSConfig:           rc.CloneTLSConfig(),
+	}
 }
 
 type InstanceOption func(*InstanceOptions)
@@ -453,16 +495,13 @@ func WithRouter(opts ...router.Option) InstanceOption {
 //	}
 //}
 
-//func WithCustom(opts ...global.CustomOption) InstanceOption {
-//	cusCfg := new(global.CustomConfig)
-//	for _, opt := range opts {
-//		opt(cusCfg)
-//	}
-//
-//	return func(cfg *InstanceOptions) {
-//		cfg.Custom = cusCfg
-//	}
-//}
+func WithCustom(configMap map[string]any) InstanceOption {
+	return func(cfg *InstanceOptions) {
+		custom := global.DefaultCustomConfig()
+		maps.Copy(custom.ConfigMap, configMap)
+		cfg.Custom = custom
+	}
+}
 
 //func WithProfiles(opts ...global.ProfilesOption) InstanceOption {
 //	proCfg := new(global.ProfilesConfig)
