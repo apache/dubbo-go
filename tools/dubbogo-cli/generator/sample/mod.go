@@ -17,7 +17,9 @@
 
 package sample
 
-import "dubbo.apache.org/dubbo-go/v3/tools/dubbogo-cli/generator/internal/scaffold"
+import (
+	"dubbo.apache.org/dubbo-go/v3/tools/dubbogo-cli/generator/internal/scaffold"
+)
 
 const (
 	modFile = `module helloworld
