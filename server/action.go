@@ -178,12 +178,6 @@ func (svcOpts *ServiceOptions) Export() error {
 			nextPort = nextPort.Next()
 		}
 
-		// Ensure that isIDL does not have any other invalid inputs.
-		isIDL := constant.IDL
-		if svcOpts.IDLMode == constant.NONIDL {
-			isIDL = svcOpts.IDLMode
-		}
-
 		ivkURL := common.NewURLWithOptions(
 			common.WithPath(svcConf.Interface),
 			common.WithProtocol(protocolConf.Name),
@@ -206,9 +200,6 @@ func (svcOpts *ServiceOptions) Export() error {
 			// use TripleConfig to transport arguments
 			common.WithParamsValue(constant.MaxServerSendMsgSize, protocolConf.MaxServerSendMsgSize),
 			common.WithParamsValue(constant.MaxServerRecvMsgSize, protocolConf.MaxServerRecvMsgSize),
-
-			// TODO: remove IDL value when version 4.0.0
-			common.WithParamsValue(constant.IDLMode, isIDL),
 
 			// application name
 			common.WithAttribute(constant.ApplicationKey, svcOpts.Application),

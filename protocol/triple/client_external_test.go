@@ -143,7 +143,6 @@ func testClientInvokeWithTimeout(t *testing.T, tlsConfig *global.TLSConfig) {
 		"tri://"+blackHoleAddress,
 		common.WithMethods([]string{"test"}),
 		common.WithProtocol(triple.TRIPLE),
-		common.WithParamsValue(constant.IDLMode, constant.NONIDL),
 		common.WithParamsValue(constant.SerializationKey, constant.MsgpackSerialization),
 	)
 	require.NoError(t, err)

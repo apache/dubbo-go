@@ -123,7 +123,6 @@ func (cli *Client) NewService(service any, opts ...ReferenceOption) (*Connection
 	interfaceName := common.GetReference(service)
 
 	finalOpts := []ReferenceOption{
-		WithIDL(constant.NONIDL),
 		// default msgpack serialization
 		WithSerialization(constant.MsgpackSerialization),
 	}
@@ -146,7 +145,6 @@ func (cli *Client) NewService(service any, opts ...ReferenceOption) (*Connection
 //	result, err := genericService.Invoke(ctx, "QueryUser", []string{"org.apache.dubbo.samples.User"}, []hessian.Object{user})
 func (cli *Client) NewGenericService(referenceStr string, opts ...ReferenceOption) (*generic.GenericService, error) {
 	finalOpts := []ReferenceOption{
-		WithIDL(constant.NONIDL),
 		WithGeneric(),
 		WithSerialization(constant.Hessian2Serialization),
 	}

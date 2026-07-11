@@ -172,13 +172,14 @@ func TestTripleProtocolExportPublishesServingStatusByServiceKey(t *testing.T) {
 		common.WithParamsValue(constant.GroupKey, "test-group"),
 		common.WithParamsValue(constant.VersionKey, "1.0.0"),
 	)
-	tp.serverMap[url.Location] = &Server{
-		triServer: tri.NewServer(url.Location, nil),
-		transportSettings: &transportSettings{
-			location:     url.Location,
-			callProtocol: constant.CallHTTP2,
-		},
+	url.SetAttribute(constant.ServiceInfoKey, &common.ServiceInfo{})
+	srv := NewServer(nil)
+	srv.triServer = tri.NewServer(url.Location, nil)
+	srv.transportSettings = &transportSettings{
+		location:     url.Location,
+		callProtocol: constant.CallHTTP2,
 	}
+	tp.serverMap[url.Location] = srv
 
 	originalSetServing := internal.HealthSetServingStatusServing
 	t.Cleanup(func() {
@@ -288,42 +289,4 @@ func TestTripleProtocolDestroyDoesNotHoldServerLockWhileGracefulStopping(t *test
 
 	assert.Equal(t, int32(1), stopCalls.Load())
 	assert.Empty(t, tp.serverMap)
-}
-
-// Test isGenericCall checks if the generic parameter indicates a generic call
-func Test_isGenericCall(t *testing.T) {
-	tests := []struct {
-		name     string
-		generic  string
-		expected bool
-	}{
-		// valid generic serialization types
-		{"empty string", "", false},
-		{"true", "true", true},
-		{"TRUE", "TRUE", true},
-		{"True", "True", true},
-		{"gson", "gson", true},
-		{"GSON", "GSON", true},
-		{"Gson", "Gson", true},
-		{"protobuf", "protobuf", true},
-		{"PROTOBUF", "PROTOBUF", true},
-		{"Protobuf", "Protobuf", true},
-		{"protobuf-json", "protobuf-json", true},
-		{"PROTOBUF-JSON", "PROTOBUF-JSON", true},
-		{"Protobuf-Json", "Protobuf-Json", true},
-
-		// invalid generic serialization types
-		{"false", "false", false},
-		{"random", "random", false},
-		{"json", "json", false},
-		{"xml", "xml", false},
-		{"hessian", "hessian", false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := isGenericCall(tt.generic)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
 }

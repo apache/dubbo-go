@@ -46,7 +46,7 @@ dubbogo-cli 支持以下能力
 
     用于整理代码 import 块。
 
-    [import-formatte README](https://github.com/dubbogo/tools#imports-formatter)
+    [import-formatter README](https://github.com/apache/dubbo-go/tree/main/tools/imports-formatter)
 
 
 
@@ -107,7 +107,7 @@ dubbogo-cli newDemo .
 ├── api
 │   ├── samples_api.pb.go
 │   ├── samples_api.proto
-│   └── samples_api_triple.pb.go
+│   └── samples_api.triple.go
 ├── go-client
 │   └── cmd
 │       └── client.go
@@ -161,7 +161,7 @@ dubbogo-cli newApp .
 ├── api
 │   ├── api.pb.go
 │   ├── api.proto
-│   └── api_triple.pb.go
+│   └── api.triple.go
 ├── build
 │   └── Dockerfile
 ├── chart

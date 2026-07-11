@@ -937,14 +937,6 @@ func TestWithParamCreateMap(t *testing.T) {
 	assert.Equal(t, "value1", opts.Service.Params["key1"])
 }
 
-// Test WithIDLMode
-func TestWithIDLMode(t *testing.T) {
-	opts := defaultServiceOptions()
-	opt := WithIDLMode(constant.IDL)
-	opt(opts)
-	assert.Equal(t, constant.IDL, opts.IDLMode)
-}
-
 // Test SetApplication
 func TestSetApplication(t *testing.T) {
 	opts := defaultServiceOptions()

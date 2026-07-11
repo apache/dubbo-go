@@ -78,21 +78,19 @@ type ServiceDefinition struct {
 
 // Register assemble invoker chains like ProviderConfig.Load, init a service per call
 func (s *Server) Register(handler any, info *common.ServiceInfo, opts ...ServiceOption) error {
-	return s.registerWithMode(handler, info, constant.IDL, opts...)
+	return s.registerWithMode(handler, info, opts...)
 }
 
 // RegisterService is for new Triple non-idl mode implement.
 func (s *Server) RegisterService(handler any, opts ...ServiceOption) error {
-	return s.registerWithMode(handler, nil, constant.NONIDL, opts...)
+	return s.registerWithMode(handler, nil, opts...)
 }
 
 // registerWithMode unified service registration logic
-func (s *Server) registerWithMode(handler any, info *common.ServiceInfo, idlMode string, opts ...ServiceOption) error {
-	baseOpts := []ServiceOption{
-		WithIDLMode(idlMode),
-	}
-	// only need to explicitly set interface in NONIDL mode
-	if idlMode == constant.NONIDL {
+func (s *Server) registerWithMode(handler any, info *common.ServiceInfo, opts ...ServiceOption) error {
+	var baseOpts []ServiceOption
+	// only need to explicitly set interface in non-IDL mode
+	if info == nil {
 		baseOpts = append(baseOpts, WithInterface(common.GetReference(handler)))
 	}
 	baseOpts = append(baseOpts, opts...)
