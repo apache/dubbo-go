@@ -21,12 +21,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-  
+
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
-  
+
       - name: Cache dependencies
         # ref: https://github.com/actions/cache/blob/main/examples.md#go---module
         uses: actions/cache@v6
@@ -40,7 +40,7 @@ jobs:
           # An ordered list of keys to use for restoring the cache if no cache hit occurred for key
           restore-keys: |
             ${{ runner.os }}-riscv64-go-
-  
+
       - name: Build for linux/riscv64
         run: |
           GOOS=linux GOARCH=riscv64 CGO_ENABLED=0 go build ./...
