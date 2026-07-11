@@ -1751,8 +1751,10 @@ func TestDefaultCustomConfig(t *testing.T) {
 	t.Run("default_custom_config", func(t *testing.T) {
 		custom := DefaultCustomConfig()
 		assert.NotNil(t, custom)
+		assert.NotNil(t, custom.ConfigMap)
 	})
 }
+
 func TestMethodConfigClone(t *testing.T) {
 	t.Run("clone_full_method_config", func(t *testing.T) {
 		method := &MethodConfig{
