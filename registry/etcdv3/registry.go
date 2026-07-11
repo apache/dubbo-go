@@ -49,12 +49,11 @@ func init() {
 
 type etcdV3Registry struct {
 	registry.BaseRegistry
-	cltLock        sync.Mutex
-	client         *gxetcd.Client
-	listenerLock   sync.RWMutex
-	listener       *etcdv3.EventListener
-	dataListener   *dataListener
-	configListener *configurationListener
+	cltLock      sync.Mutex
+	client       *gxetcd.Client
+	listenerLock sync.RWMutex
+	listener     *etcdv3.EventListener
+	dataListener *dataListener
 }
 
 // Client gets the etcdv3 client
@@ -99,8 +98,7 @@ func newETCDV3Registry(url *common.URL) (registry.Registry, error) {
 // InitListeners init listeners of etcd registry center
 func (r *etcdV3Registry) InitListeners() {
 	r.listener = etcdv3.NewEventListener(r.client)
-	r.configListener = NewConfigurationListener(r)
-	r.dataListener = NewRegistryDataListener(r.configListener)
+	r.dataListener = NewRegistryDataListener()
 }
 
 // DoRegister actually do the register job in the registry center of etcd
@@ -109,9 +107,14 @@ func (r *etcdV3Registry) DoRegister(root string, node string) error {
 	return r.client.RegisterTemp(path.Join(root, node), "")
 }
 
-// DoUnregister is not supported in etcdV3Registry.
+// DoUnregister actually unregister the node from the registry center of etcd.
 func (r *etcdV3Registry) DoUnregister(root string, node string) error {
-	return perrors.New("DoUnregister is not support in etcdV3Registry")
+	r.cltLock.Lock()
+	defer r.cltLock.Unlock()
+	if !r.client.Valid() {
+		return perrors.Errorf("etcd client is not valid.")
+	}
+	return r.client.Delete(path.Join(root, node))
 }
 
 // CloseAndNilClient closes listeners and clear client
@@ -122,8 +125,8 @@ func (r *etcdV3Registry) CloseAndNilClient() {
 
 // CloseListener closes listeners
 func (r *etcdV3Registry) CloseListener() {
-	if r.configListener != nil {
-		r.configListener.Close()
+	if r.dataListener != nil {
+		r.dataListener.Close()
 	}
 }
 
@@ -141,10 +144,32 @@ func (r *etcdV3Registry) CreatePath(k string) error {
 }
 
 // DoSubscribe actually subscribe the provider URL
-func (r *etcdV3Registry) DoSubscribe(svc *common.URL) (registry.Listener, error) {
-	r.listenerLock.RLock()
-	configListener := r.configListener
-	r.listenerLock.RUnlock()
+func (r *etcdV3Registry) DoSubscribe(conf *common.URL) (registry.Listener, error) {
+	return r.getListener(conf)
+}
+
+func (r *etcdV3Registry) DoUnsubscribe(conf *common.URL) (registry.Listener, error) {
+	return r.getCloseListener(conf)
+}
+
+func (r *etcdV3Registry) getListener(conf *common.URL) (*configurationListener, error) {
+	var etcdListener *configurationListener
+	dataListener := r.dataListener
+
+	dataListener.mutex.Lock()
+	defer dataListener.mutex.Unlock()
+
+	if dataListener.subscribed[conf.ServiceKey()] != nil {
+		etcdListener, _ = r.dataListener.subscribed[conf.ServiceKey()].(*configurationListener)
+		if etcdListener != nil {
+			if etcdListener.isClosed {
+				return nil, perrors.New("configListener already been closed")
+			}
+			return etcdListener, nil
+		}
+	}
+
+	etcdListener = NewConfigurationListener(r)
 	if r.listener == nil {
 		r.cltLock.Lock()
 		client := r.client
@@ -153,19 +178,46 @@ func (r *etcdV3Registry) DoSubscribe(svc *common.URL) (registry.Listener, error)
 			return nil, perrors.New("etcd client broken")
 		}
 		r.listenerLock.Lock()
-		r.listener = etcdv3.NewEventListener(r.client) // new client & listener
+		r.listener = etcdv3.NewEventListener(r.client)
 		r.listenerLock.Unlock()
 	}
 
-	// register the svc to dataListener
-	r.dataListener.AddInterestedURL(svc)
-	go r.listener.ListenServiceEvent(fmt.Sprintf("/dubbo/%s/"+constant.DefaultCategory, svc.Service()), r.dataListener)
+	r.dataListener.SubscribeURL(conf, etcdListener)
+	go r.listener.ListenServiceEvent(
+		fmt.Sprintf("/dubbo/%s/"+constant.DefaultCategory, conf.Service()),
+		r.dataListener,
+	)
 
-	return configListener, nil
+	return etcdListener, nil
 }
 
-func (r *etcdV3Registry) DoUnsubscribe(conf *common.URL) (registry.Listener, error) {
-	return nil, perrors.New("DoUnsubscribe is not support in etcdV3Registry")
+func (r *etcdV3Registry) getCloseListener(conf *common.URL) (*configurationListener, error) {
+	var etcdListener *configurationListener
+	r.dataListener.mutex.Lock()
+	configListener := r.dataListener.subscribed[conf.ServiceKey()]
+	if configListener != nil {
+		etcdListener, _ = configListener.(*configurationListener)
+		if etcdListener != nil && etcdListener.isClosed {
+			r.dataListener.mutex.Unlock()
+			return nil, perrors.New(fmt.Sprintf("configListener for service %s has already been closed", conf.ServiceKey()))
+		}
+	}
+
+	if configListener = r.dataListener.UnSubscribeURL(conf); configListener != nil {
+		switch v := configListener.(type) {
+		case *configurationListener:
+			if v != nil {
+				etcdListener = v
+			}
+		}
+	}
+	r.dataListener.mutex.Unlock()
+
+	if r.listener == nil {
+		return nil, perrors.New("etcd event listener is null, can not close.")
+	}
+
+	return etcdListener, nil
 }
 
 // LoadSubscribeInstances load subscribe instance
