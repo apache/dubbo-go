@@ -23,14 +23,18 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+)
 
-	"github.com/stretchr/testify/assert"
-
+import (
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
 
 	"github.com/nacos-group/nacos-sdk-go/v2/model"
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
