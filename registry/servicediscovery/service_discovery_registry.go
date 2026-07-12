@@ -19,6 +19,8 @@ package servicediscovery
 
 import (
 	"errors"
+	"math/rand/v2"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -66,6 +68,7 @@ type serviceDiscoveryRegistry struct {
 	metadataReport          report.MetadataReport
 	serviceListeners        map[string]registry.ServiceInstancesChangedListener
 	serviceMappingListeners map[string]mapping.MappingListener
+	renewAppMetadataTimer   *time.Timer
 }
 
 func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
@@ -83,6 +86,18 @@ func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
 		// cache for mapping listener
 		serviceMappingListeners: make(map[string]mapping.MappingListener),
 	}, nil
+}
+
+// startMetadataTimers starts the renewAppMetadata timer if metadata type is remote.
+// GC runs after each renew cycle inside doRenewAppMetadata.
+func (s *serviceDiscoveryRegistry) startMetadataTimers() {
+	if metadata.GetMetadataType() != constant.RemoteMetadataStorageType {
+		return
+	}
+	if s.metadataReport == nil {
+		return
+	}
+	s.startRenewAppMetadataTimer()
 }
 
 func (s *serviceDiscoveryRegistry) RegisterService() error {
@@ -113,6 +128,13 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 		s.instanceURLs[instance] = url
 		s.lock.Unlock()
 	}
+
+	s.lock.Lock()
+	if s.renewAppMetadataTimer == nil {
+		s.startMetadataTimers()
+	}
+	s.lock.Unlock()
+
 	return nil
 }
 
@@ -198,8 +220,7 @@ func (s *serviceDiscoveryRegistry) UnSubscribe(url *common.URL, listener registr
 	if services == nil {
 		return nil
 	}
-	// FIXME ServiceNames.String() is not good
-	serviceNamesKey := services.String()
+	serviceNamesKey := sortServices(services)
 	l := s.serviceListeners[serviceNamesKey]
 	if l != nil {
 		l.RemoveListener(url.ServiceKey())
@@ -302,9 +323,159 @@ func (s *serviceDiscoveryRegistry) IsAvailable() bool {
 }
 
 func (s *serviceDiscoveryRegistry) Destroy() {
+	s.stopMetadataTimers()
 	err := s.serviceDiscovery.Destroy()
 	if err != nil {
 		logger.Errorf("[Registry][ServiceDiscovery] destroy serviceDiscovery catch error, err=%s", err.Error())
+	}
+}
+
+func (s *serviceDiscoveryRegistry) stopMetadataTimers() {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	if s.renewAppMetadataTimer != nil {
+		s.renewAppMetadataTimer.Stop()
+		s.renewAppMetadataTimer = nil
+	}
+}
+
+// ========== renewAppMetadata: daily app-level metadata re-publish ==========
+
+// metadataReportURL returns the URL from the metadata report instance.
+func (s *serviceDiscoveryRegistry) metadataReportURL() *common.URL {
+	if s.metadataReport == nil {
+		return nil
+	}
+	return s.metadataReport.URL()
+}
+
+func (s *serviceDiscoveryRegistry) startRenewAppMetadataTimer() {
+	reportURL := s.metadataReportURL()
+	if reportURL == nil || !reportURL.GetParamBool(constant.CycleReportKey, true) {
+		return
+	}
+
+	// Run immediately on start
+	if reportURL.GetParamBool(constant.MetadataRenewOnStartupKey, true) {
+		go s.doRenewAppMetadata()
+	}
+
+	delay := s.calculateRenewAppMetadataDelay()
+	s.renewAppMetadataTimer = time.AfterFunc(delay, func() {
+		s.doRenewAppMetadata()
+		// Reschedule for next day
+		s.lock.Lock()
+		if s.renewAppMetadataTimer != nil {
+			s.renewAppMetadataTimer.Reset(24 * time.Hour)
+		}
+		s.lock.Unlock()
+	})
+}
+
+func (s *serviceDiscoveryRegistry) doRenewAppMetadata() {
+	registryID := s.url.GetParam(constant.RegistryIdKey, "")
+	metaInfo := metadata.GetMetadataInfo(registryID)
+	if metaInfo == nil || metaInfo.Revision == "0" {
+		return
+	}
+
+	// Copy snapshot to avoid data race
+	snapshot := metaInfo.Snapshot()
+	snapshot.LastUpdatedTime = time.Now().UnixMilli()
+	if err := s.metadataReport.PublishAppMetadata(snapshot.App, snapshot.Revision, &snapshot); err != nil {
+		logger.Errorf("[Metadata][renewAppMetadata] failed to re-publish metadata for app=%s revision=%s: %v", snapshot.App, snapshot.Revision, err)
+	} else {
+		logger.Infof("[Metadata][renewAppMetadata] refreshed metadata for app=%s revision=%s", snapshot.App, snapshot.Revision)
+	}
+
+	// Run garbage collection if enabled, after each renew cycle
+	reportURL := s.metadataReportURL()
+	if reportURL != nil && reportURL.GetParamBool(constant.MetadataGCEnabledKey, true) {
+		s.doGarbageCollect()
+	}
+}
+
+func (s *serviceDiscoveryRegistry) calculateRenewAppMetadataDelay() time.Duration {
+	now := time.Now()
+	// Next day 2:00 AM
+	nextDay2AM := time.Date(now.Year(), now.Month(), now.Day()+1, 2, 0, 0, 0, now.Location())
+	// Add random offset 0~4 hours to avoid thundering herd
+	randomOffset := time.Duration(rand.Int64N(int64(4 * time.Hour)))
+	return time.Until(nextDay2AM) + randomOffset
+}
+
+// ========== GC: stale revision cleanup ==========
+
+func (s *serviceDiscoveryRegistry) doGarbageCollect() {
+	registryID := s.url.GetParam(constant.RegistryIdKey, "")
+	metaInfo := metadata.GetMetadataInfo(registryID)
+	if metaInfo == nil {
+		return
+	}
+	app := metaInfo.App
+	if app == "" {
+		return
+	}
+
+	// Step 1: List all revisions for this app
+	revisions, err := s.metadataReport.ListAppRevisions(app)
+	if err != nil {
+		logger.Warnf("[Metadata][GC] failed to list app revisions: %v", err)
+		return
+	}
+	if len(revisions) == 0 {
+		return
+	}
+
+	// Step 2: Filter stale candidates (exceed GC window in days)
+	reportURL := s.metadataReportURL()
+	if reportURL == nil {
+		return
+	}
+	gcWindowDays := reportURL.GetParamByIntValue(constant.MetadataGCWindowKey, 5)
+	if gcWindowDays <= 0 || gcWindowDays > 365 {
+		gcWindowDays = 5
+	}
+	cutoff := time.Now().AddDate(0, 0, -gcWindowDays).UnixMilli()
+	candidates := make(map[string]bool)
+	for _, rev := range revisions {
+		// Skip special revisions
+		if rev.Revision == "0" || rev.Revision == "N/A" || rev.Revision == "" || rev.Revision == metaInfo.Revision {
+			continue
+		}
+		// ModifyTime == 0 means metadata produced by versions that did not set lastUpdatedTime.
+		// Since we can't reliably determine staleness for those entries, skip GC for them.
+		if rev.ModifyTime > 0 && rev.ModifyTime < cutoff {
+			candidates[rev.Revision] = true
+		}
+	}
+	if len(candidates) == 0 {
+		return
+	}
+
+	// Step 3: Get alive instances and their revisions
+	instances := s.serviceDiscovery.GetInstances(app)
+	aliveRevisions := make(map[string]bool)
+	for _, inst := range instances {
+		metadata := inst.GetMetadata()
+		if metadata == nil {
+			continue
+		}
+		rev := metadata[constant.ExportedServicesRevisionPropertyName]
+		if rev != "" {
+			aliveRevisions[rev] = true
+		}
+	}
+
+	// Step 4: Clean up stale revisions not referenced by any alive instance
+	for rev := range candidates {
+		if aliveRevisions[rev] {
+			continue // still referenced, skip
+		}
+		logger.Infof("[Metadata][GC] cleaning up stale revision: app=%s revision=%s", app, rev)
+		if err := s.metadataReport.UnPublishAppMetadata(app, rev); err != nil {
+			logger.Warnf("[Metadata][GC] failed to unpublish revision %s: %v", rev, err)
+		}
 	}
 }
 
@@ -354,9 +525,8 @@ func (s *serviceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.No
 }
 
 func (s *serviceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry.NotifyListener, services *gxset.HashSet) {
-	// FIXME ServiceNames.String() is not good
 	var err error
-	serviceNamesKey := services.String()
+	serviceNamesKey := sortServices(services)
 	protocol := constant.TriProtocol // consume "tri" protocol by default, other protocols need to be specified on reference/consumer explicitly
 	if url.Protocol != "" {
 		protocol = url.Protocol
@@ -394,6 +564,17 @@ func (s *serviceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry
 			logger.Errorf("[Registry][ServiceDiscovery] add instance listener catch error, url=%s err=%s", url.String(), err.Error())
 		}
 	}()
+}
+
+func sortServices(services *gxset.HashSet) string {
+	list := make([]string, 0, services.Size())
+	for _, v := range services.Values() {
+		if s, ok := v.(string); ok && s != "" {
+			list = append(list, s)
+		}
+	}
+	sort.Strings(list)
+	return strings.Join(list, ",")
 }
 
 // LoadSubscribeInstances load subscribe instance

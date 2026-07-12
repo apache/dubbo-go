@@ -17,349 +17,307 @@
 
 package etcd
 
-/*
 import (
 	"encoding/json"
-	"reflect"
-	"strconv"
+	"strings"
 	"testing"
 )
 
 import (
-	"github.com/agiledragon/gomonkey"
-
 	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
 
-	"go.etcd.io/etcd/client/v3"
+	perrors "github.com/pkg/errors"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/metadata/identifier"
+	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 )
 
-func newSubscribeMetadataIdentifier() *identifier.SubscriberMetadataIdentifier {
-	return &identifier.SubscriberMetadataIdentifier{
-		Revision: "subscribe",
-		BaseApplicationMetadataIdentifier: identifier.BaseApplicationMetadataIdentifier{
-			Application: "provider",
+// --- Mock etcdClient ---
+// mockEtcdClient implements etcdClient for testing.
+type mockEtcdClient struct {
+	data map[string]string // key -> value
+	rev  map[string]int64  // key -> revision (monotonic counter)
+	seq  int64             // global revision counter
+}
+
+func newMockEtcdClient() *mockEtcdClient {
+	return &mockEtcdClient{
+		data: make(map[string]string),
+		rev:  make(map[string]int64),
+	}
+}
+
+func (m *mockEtcdClient) Get(key string) (string, error) {
+	v, ok := m.data[key]
+	if !ok {
+		return "", gxetcd.ErrKVPairNotFound
+	}
+	return v, nil
+}
+
+func (m *mockEtcdClient) Put(key, value string) error {
+	m.data[key] = value
+	m.seq++
+	m.rev[key] = m.seq
+	return nil
+}
+
+func (m *mockEtcdClient) Delete(key string) error {
+	if _, ok := m.data[key]; !ok {
+		return nil // etcd delete is idempotent
+	}
+	delete(m.data, key)
+	return nil
+}
+
+func (m *mockEtcdClient) GetChildren(key string) ([]string, []string, error) {
+	var keys, values []string
+	for k, v := range m.data {
+		if strings.HasPrefix(k, key) {
+			keys = append(keys, k)
+			values = append(values, v)
+		}
+	}
+	if len(keys) == 0 {
+		return nil, nil, gxetcd.ErrKVPairNotFound
+	}
+	return keys, values, nil
+}
+
+func (m *mockEtcdClient) GetValAndRev(key string) (string, int64, error) {
+	v, ok := m.data[key]
+	if !ok {
+		return "", 0, gxetcd.ErrKVPairNotFound
+	}
+	return v, m.rev[key], nil
+}
+
+func (m *mockEtcdClient) Create(key, value string) error {
+	if _, ok := m.data[key]; ok {
+		return gxetcd.ErrCompareFail
+	}
+	m.data[key] = value
+	m.seq++
+	m.rev[key] = m.seq
+	return nil
+}
+
+func (m *mockEtcdClient) UpdateWithRev(key, value string, rev int64, _ ...clientv3.OpOption) error {
+	cur := m.rev[key] // zero value (0) if missing
+	if cur != rev {
+		return gxetcd.ErrCompareFail
+	}
+	m.data[key] = value
+	m.seq++
+	m.rev[key] = m.seq
+	return nil
+}
+
+// --- Helper ---
+
+func newTestReport() (*etcdMetadataReport, *mockEtcdClient) {
+	mc := newMockEtcdClient()
+	r := &etcdMetadataReport{
+		client:  mc,
+		rootDir: "/dubbo",
+	}
+	return r, mc
+}
+
+// --- Tests ---
+
+func TestPublishAndGetAppMetadata(t *testing.T) {
+	r, _ := newTestReport()
+
+	meta := &info.MetadataInfo{
+		App:      "my-app",
+		Revision: "r1",
+		Services: map[string]*info.ServiceInfo{
+			"com.example.Foo": {Name: "com.example.Foo", Protocol: "dubbo"},
 		},
 	}
+
+	err := r.PublishAppMetadata("my-app", "r1", meta)
+	require.NoError(t, err)
+
+	got, err := r.GetAppMetadata("my-app", "r1")
+	require.NoError(t, err)
+	assert.Equal(t, "my-app", got.App)
+	assert.Equal(t, "r1", got.Revision)
+	assert.Contains(t, got.Services, "com.example.Foo")
+
+	// Get non-existent returns error
+	_, err = r.GetAppMetadata("my-app", "nonexistent")
+	require.Error(t, err)
+	assert.True(t, perrors.Is(err, gxetcd.ErrKVPairNotFound))
 }
 
-func newServiceMetadataIdentifier() *identifier.ServiceMetadataIdentifier {
-	return &identifier.ServiceMetadataIdentifier{
-		Protocol: "nacos",
-		Revision: "a",
-		BaseMetadataIdentifier: identifier.BaseMetadataIdentifier{
-			ServiceInterface: "com.test.MyTest",
-			Version:          "1.0.0",
-			Group:            "test_group",
-			Side:             "service",
+func TestPublishAppMetadata_Update(t *testing.T) {
+	r, _ := newTestReport()
+
+	meta := &info.MetadataInfo{App: "my-app", Revision: "r1"}
+	err := r.PublishAppMetadata("my-app", "r1", meta)
+	require.NoError(t, err)
+
+	meta.Revision = "r2"
+	err = r.PublishAppMetadata("my-app", "r1", meta)
+	require.NoError(t, err)
+
+	got, err := r.GetAppMetadata("my-app", "r1")
+	require.NoError(t, err)
+	assert.Equal(t, "r2", got.Revision)
+}
+
+func TestUnPublishAppMetadata(t *testing.T) {
+	r, _ := newTestReport()
+
+	meta := &info.MetadataInfo{App: "my-app", Revision: "r1"}
+	err := r.PublishAppMetadata("my-app", "r1", meta)
+	require.NoError(t, err)
+
+	err = r.UnPublishAppMetadata("my-app", "r1")
+	require.NoError(t, err)
+
+	_, err = r.GetAppMetadata("my-app", "r1")
+	require.Error(t, err)
+}
+
+func TestUnPublishAppMetadata_Idempotent(t *testing.T) {
+	r, _ := newTestReport()
+
+	// Deleting non-existent key should not error (etcd is idempotent)
+	err := r.UnPublishAppMetadata("my-app", "nonexistent")
+	require.NoError(t, err)
+}
+
+func TestListAppRevisions(t *testing.T) {
+	r, _ := newTestReport()
+
+	// No revisions for unknown app
+	revisions, err := r.ListAppRevisions("unknown-app")
+	require.NoError(t, err)
+	assert.Empty(t, revisions)
+
+	// Publish multiple revisions with explicit lastUpdatedTime values
+	require.NoError(t, r.PublishAppMetadata("my-app", "r1", &info.MetadataInfo{App: "my-app", Revision: "r1", LastUpdatedTime: 1000}))
+	require.NoError(t, r.PublishAppMetadata("my-app", "r2", &info.MetadataInfo{App: "my-app", Revision: "r2", LastUpdatedTime: 3000}))
+	require.NoError(t, r.PublishAppMetadata("my-app", "r3", &info.MetadataInfo{App: "my-app", Revision: "r3", LastUpdatedTime: 2000}))
+
+	revisions, err = r.ListAppRevisions("my-app")
+	require.NoError(t, err)
+	require.Len(t, revisions, 3)
+
+	names := make(map[string]int64)
+	for _, rev := range revisions {
+		names[rev.Revision] = rev.ModifyTime
+	}
+	assert.Equal(t, int64(1000), names["r1"])
+	assert.Equal(t, int64(3000), names["r2"])
+	assert.Equal(t, int64(2000), names["r3"])
+}
+
+func TestListAppRevisions_ReturnsAppRevisionType(t *testing.T) {
+	r, mc := newTestReport()
+
+	mc.data["/dubbo/my-app/rev-abc"] = `{"app":"my-app","revision":"rev-abc","lastUpdatedTime":5000}`
+
+	revisions, err := r.ListAppRevisions("my-app")
+	require.NoError(t, err)
+	require.Len(t, revisions, 1)
+	assert.Equal(t, "rev-abc", revisions[0].Revision)
+	assert.Equal(t, int64(5000), revisions[0].ModifyTime)
+}
+
+func TestListAppRevisions_ZeroLastUpdatedTime(t *testing.T) {
+	// Old data without lastUpdatedTime returns ModifyTime=0; callers guard with > 0.
+	r, mc := newTestReport()
+
+	mc.data["/dubbo/my-app/old-rev"] = `{"app":"my-app","revision":"old-rev"}`
+
+	revisions, err := r.ListAppRevisions("my-app")
+	require.NoError(t, err)
+	require.Len(t, revisions, 1)
+	assert.Equal(t, "old-rev", revisions[0].Revision)
+	assert.Equal(t, int64(0), revisions[0].ModifyTime)
+}
+
+func TestRegisterServiceAppMapping_NewKey(t *testing.T) {
+	r, mc := newTestReport()
+
+	err := r.RegisterServiceAppMapping("com.example.Foo", "mapping", "app1")
+	require.NoError(t, err)
+	assert.Equal(t, "app1", mc.data["/dubbo/mapping/com.example.Foo"])
+}
+
+func TestRegisterServiceAppMapping_Append(t *testing.T) {
+	r, mc := newTestReport()
+
+	mc.data["/dubbo/mapping/com.example.Foo"] = "app1"
+
+	err := r.RegisterServiceAppMapping("com.example.Foo", "mapping", "app2")
+	require.NoError(t, err)
+	assert.Equal(t, "app1,app2", mc.data["/dubbo/mapping/com.example.Foo"])
+}
+
+func TestRegisterServiceAppMapping_Duplicate(t *testing.T) {
+	r, mc := newTestReport()
+
+	mc.data["/dubbo/mapping/com.example.Foo"] = "app1,app2"
+
+	err := r.RegisterServiceAppMapping("com.example.Foo", "mapping", "app1")
+	require.NoError(t, err)
+	assert.Equal(t, "app1,app2", mc.data["/dubbo/mapping/com.example.Foo"])
+}
+
+func TestGetServiceAppMapping(t *testing.T) {
+	r, mc := newTestReport()
+
+	mc.data["/dubbo/mapping/com.example.Foo"] = "app1,app2"
+
+	set, err := r.GetServiceAppMapping("com.example.Foo", "mapping", nil)
+	require.NoError(t, err)
+	assert.True(t, set.Contains("app1"))
+	assert.True(t, set.Contains("app2"))
+}
+
+func TestGetServiceAppMapping_NotFound(t *testing.T) {
+	r, _ := newTestReport()
+
+	_, err := r.GetServiceAppMapping("com.example.Foo", "mapping", nil)
+	require.Error(t, err)
+}
+
+func TestRemoveServiceAppMappingListener(t *testing.T) {
+	r, _ := newTestReport()
+	err := r.RemoveServiceAppMappingListener("key", "group")
+	require.NoError(t, err)
+}
+
+// --- Pure logic test ---
+
+func TestMetadataInfoSerialization(t *testing.T) {
+	original := &info.MetadataInfo{
+		App:      "test-app",
+		Revision: "1.0.0",
+		Services: map[string]*info.ServiceInfo{
+			"com.example.TestService": {
+				Name: "com.example.TestService", Protocol: "dubbo",
+			},
 		},
 	}
+
+	data, err := json.Marshal(original)
+	require.NoError(t, err)
+
+	var restored info.MetadataInfo
+	err = json.Unmarshal(data, &restored)
+	require.NoError(t, err)
+	assert.Equal(t, original.App, restored.App)
+	assert.Equal(t, original.Revision, restored.Revision)
 }
-
-func newMetadataIdentifier(side string) *identifier.MetadataIdentifier {
-	return &identifier.MetadataIdentifier{
-		Application: "test",
-		BaseMetadataIdentifier: identifier.BaseMetadataIdentifier{
-			ServiceInterface: "com.test.MyTest",
-			Version:          "1.0.0",
-			Group:            "test_group",
-			Side:             side,
-		},
-	}
-}
-
-type fields struct {
-	client *gxetcd.Client
-	root   string
-}
-type args struct {
-	subscriberMetadataIdentifier *identifier.SubscriberMetadataIdentifier
-	info                         *common.MetadataInfo
-	providerIdentifier           *identifier.MetadataIdentifier
-	serviceDefinitions           string
-	consumerMetadataIdentifier   *identifier.MetadataIdentifier
-	serviceParameterString       string
-	serviceMetadataIdentifier    *identifier.ServiceMetadataIdentifier
-	url                          *common.URL
-	urls                         string
-}
-
-func newEtcdMetadataReport(f fields) *etcdMetadataReport {
-	return &etcdMetadataReport{
-		client: f.client,
-		root:   f.root,
-	}
-}
-
-func Test_etcdMetadataReport_PublishAppMetadata(t *testing.T) {
-	var client *gxetcd.Client
-	patches := gomonkey.NewPatches()
-	patches = patches.ApplyMethod(reflect.TypeOf(client), "Put", func(_ *gxetcd.Client, k, v string, opts ...clientv3.OpOption) error {
-		return nil
-	})
-	defer patches.Reset()
-
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "test",
-			fields: fields{
-				client: client,
-				root:   "/dubbo",
-			},
-			args: args{
-				subscriberMetadataIdentifier: newSubscribeMetadataIdentifier(),
-				info:                         &common.MetadataInfo{},
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			e := newEtcdMetadataReport(tt.fields)
-			if err := e.PublishAppMetadata(tt.args.subscriberMetadataIdentifier, tt.args.info); (err != nil) != tt.wantErr {
-				t.Errorf("PublishAppMetadata() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func Test_etcdMetadataReport_StoreProviderMetadata(t *testing.T) {
-	var client *gxetcd.Client
-	patches := gomonkey.NewPatches()
-	patches = patches.ApplyMethod(reflect.TypeOf(client), "Put", func(_ *gxetcd.Client, k, v string, opts ...clientv3.OpOption) error {
-		return nil
-	})
-	defer patches.Reset()
-
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "test",
-			fields: fields{
-				client: client,
-				root:   "/dubbo",
-			},
-			args: args{
-				providerIdentifier: newMetadataIdentifier("provuder"),
-				serviceDefinitions: "provider",
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			e := newEtcdMetadataReport(tt.fields)
-			if err := e.StoreProviderMetadata(tt.args.providerIdentifier, tt.args.serviceDefinitions); (err != nil) != tt.wantErr {
-				t.Errorf("StoreProviderMetadata() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func Test_etcdMetadataReport_StoreConsumerMetadata(t *testing.T) {
-	var client *gxetcd.Client
-	patches := gomonkey.NewPatches()
-	patches = patches.ApplyMethod(reflect.TypeOf(client), "Put", func(_ *gxetcd.Client, k, v string, opts ...clientv3.OpOption) error {
-		return nil
-	})
-	defer patches.Reset()
-
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "test",
-			fields: fields{
-				client: client,
-				root:   "/dubbo",
-			},
-			args: args{
-				consumerMetadataIdentifier: newMetadataIdentifier("conusmer"),
-				serviceParameterString:     "conusmer",
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			e := newEtcdMetadataReport(tt.fields)
-			if err := e.StoreConsumerMetadata(tt.args.consumerMetadataIdentifier, tt.args.serviceParameterString); (err != nil) != tt.wantErr {
-				t.Errorf("StoreConsumerMetadata() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func Test_etcdMetadataReport_SaveServiceMetadata(t *testing.T) {
-	var client *gxetcd.Client
-	patches := gomonkey.NewPatches()
-	patches = patches.ApplyMethod(reflect.TypeOf(client), "Put", func(_ *gxetcd.Client, k, v string, opts ...clientv3.OpOption) error {
-		return nil
-	})
-	defer patches.Reset()
-	serviceURL, _ := common.NewURL("registry://localhost:8848", common.WithParamsValue(constant.RegistryRoleKey, strconv.Itoa(common.PROVIDER)))
-
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "test",
-			fields: fields{
-				client: client,
-				root:   "/dubbo",
-			},
-			args: args{
-				serviceMetadataIdentifier: newServiceMetadataIdentifier(),
-				url:                       serviceURL,
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			e := newEtcdMetadataReport(tt.fields)
-			if err := e.SaveServiceMetadata(tt.args.serviceMetadataIdentifier, tt.args.url); (err != nil) != tt.wantErr {
-				t.Errorf("SaveServiceMetadata() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func Test_etcdMetadataReport_SaveSubscribedData(t *testing.T) {
-	var client *gxetcd.Client
-	patches := gomonkey.NewPatches()
-	patches = patches.ApplyMethod(reflect.TypeOf(client), "Put", func(_ *gxetcd.Client, k, v string, opts ...clientv3.OpOption) error {
-		return nil
-	})
-	defer patches.Reset()
-
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "test",
-			fields: fields{
-				client: client,
-				root:   "/dubbo",
-			},
-			args: args{
-				subscriberMetadataIdentifier: newSubscribeMetadataIdentifier(),
-				urls:                         "dubbogo",
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			e := newEtcdMetadataReport(tt.fields)
-			if err := e.SaveSubscribedData(tt.args.subscriberMetadataIdentifier, tt.args.urls); (err != nil) != tt.wantErr {
-				t.Errorf("SaveSubscribedData() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func Test_etcdMetadataReport_RemoveServiceMetadata(t *testing.T) {
-	var client *gxetcd.Client
-	patches := gomonkey.NewPatches()
-	patches = patches.ApplyMethod(reflect.TypeOf(client), "Delete", func(_ *gxetcd.Client, k string) error {
-		return nil
-	})
-	defer patches.Reset()
-
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "test",
-			fields: fields{
-				client: client,
-				root:   DEFAULT_ROOT,
-			},
-			args: args{
-				serviceMetadataIdentifier: newServiceMetadataIdentifier(),
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			e := newEtcdMetadataReport(tt.fields)
-			if err := e.RemoveServiceMetadata(tt.args.serviceMetadataIdentifier); (err != nil) != tt.wantErr {
-				t.Errorf("RemoveServiceMetadata() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func Test_etcdMetadataReport_GetAppMetadata(t *testing.T) {
-	info := &common.MetadataInfo{}
-	target, _ := json.Marshal(info)
-	var client *gxetcd.Client
-	patches := gomonkey.NewPatches()
-	patches = patches.ApplyMethod(reflect.TypeOf(client), "Get", func(_ *gxetcd.Client, k string) (string, error) {
-		return string(target), nil
-	})
-	defer patches.Reset()
-
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    *common.MetadataInfo
-		wantErr bool
-	}{
-		{
-			name: "test",
-			fields: fields{
-				client: client,
-				root:   DEFAULT_ROOT,
-			},
-			args: args{
-				subscriberMetadataIdentifier: newSubscribeMetadataIdentifier(),
-			},
-			want:    &common.MetadataInfo{},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			e := newEtcdMetadataReport(tt.fields)
-			got, err := e.GetAppMetadata(tt.args.subscriberMetadataIdentifier)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GetAppMetadata() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetAppMetadata() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-*/

@@ -106,8 +106,8 @@ func TestAddGetRemovePendingResponse(t *testing.T) {
 	pr := NewPendingResponse(999)
 	AddPendingResponse(pr)
 	assert.Equal(t, pr, GetPendingResponse(SequenceType(999)))
-	assert.Equal(t, pr, removePendingResponse(SequenceType(999)))
-	assert.Nil(t, removePendingResponse(SequenceType(999)))
+	assert.Equal(t, pr, RemovePendingResponse(SequenceType(999)))
+	assert.Nil(t, RemovePendingResponse(SequenceType(999)))
 }
 
 func TestResponseHandle(t *testing.T) {

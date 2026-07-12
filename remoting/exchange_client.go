@@ -159,6 +159,7 @@ func (client *ExchangeClient) Request(invocation *base.Invocation, url *common.U
 	err := client.client.Request(request, timeout, rsp)
 	// request error
 	if err != nil {
+		RemovePendingResponse(SequenceType(request.ID))
 		res.Err = err
 		return err
 	}
@@ -192,6 +193,7 @@ func (client *ExchangeClient) AsyncRequest(invocation *base.Invocation, url *com
 
 	err := client.client.Request(request, timeout, rsp)
 	if err != nil {
+		RemovePendingResponse(SequenceType(request.ID))
 		result.Err = err
 		return err
 	}

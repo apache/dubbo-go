@@ -68,22 +68,26 @@ var watcher = &fileWatcher{
 
 func Load(opts ...LoaderConfOption) error {
 	conf := NewLoaderConf(opts...)
+	newOpts := conf.opts
 	if conf.opts == nil {
+		newOpts = defaultInstanceOptions()
 		koan := GetConfigResolver(conf)
 		koan = conf.MergeConfig(koan)
-		if err := koan.UnmarshalWithConf(instanceOptions.Prefix(),
-			instanceOptions, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
+		if err := koan.UnmarshalWithConf(newOpts.Prefix(),
+			newOpts, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
 			return err
 		}
-	} else {
-		instanceOptions = conf.opts
 	}
 
-	if err := instanceOptions.init(); err != nil {
+	if err := newOpts.init(); err != nil {
 		return err
 	}
 
-	instance := &Instance{insOpts: instanceOptions}
+	instanceOptionsMutex.Lock()
+	instanceOptions = newOpts
+	instanceOptionsMutex.Unlock()
+
+	instance := &Instance{insOpts: newOpts}
 	// start the file watcher
 	once.Do(func() {
 		watcher.watcherWg.Add(1)
