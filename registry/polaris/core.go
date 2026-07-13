@@ -63,9 +63,11 @@ func newPolarisWatcher(param *api.WatchServiceRequest, consumer api.ConsumerAPI)
 }
 
 // AddSubscriber add subscriber into watcher's subscribers
-func (watcher *PolarisServiceWatcher) AddSubscriber(subscriber item) {
+func (watcher *PolarisServiceWatcher) AddSubscriber(
+	subscriber func(remoting.EventType, []model.Instance),
+) {
 	state := &subscriberState{
-		notify:     subscriber,
+		notify:     item(subscriber),
 		reconciled: true,
 	}
 
@@ -157,21 +159,24 @@ func (watcher *PolarisServiceWatcher) reconcileSubscriberLocked(subscriber *subs
 // startWatch start run work to watch target service by polaris
 func (watcher *PolarisServiceWatcher) startWatch() {
 	for {
-		resp, err := watcher.consumer.WatchService(watcher.subscribeParam)
-		if err != nil {
+		if err := watcher.watchOnce(); err != nil {
 			time.Sleep(time.Duration(500 * time.Millisecond))
-			continue
 		}
-		watcher.handleWatchSnapshot(resp.GetAllInstancesResp.Instances)
-
-		for event := range resp.EventChannel {
-			eType := event.GetSubScribeEventType()
-			if eType == internalapi.EventInstance {
-				watcher.handleInstanceEvent(event.(*model.InstanceEvent))
-			}
-		}
-
 	}
+}
+
+func (watcher *PolarisServiceWatcher) watchOnce() error {
+	resp, err := watcher.consumer.WatchService(watcher.subscribeParam)
+	if err != nil {
+		return err
+	}
+	watcher.handleWatchSnapshot(resp.GetAllInstancesResp.Instances)
+	for event := range resp.EventChannel {
+		if event.GetSubScribeEventType() == internalapi.EventInstance {
+			watcher.handleInstanceEvent(event.(*model.InstanceEvent))
+		}
+	}
+	return nil
 }
 
 func (watcher *PolarisServiceWatcher) handleInstanceEvent(event *model.InstanceEvent) {
