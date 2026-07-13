@@ -75,7 +75,7 @@ func TestProxyImplement(t *testing.T) {
 	require.NoError(t, err)
 	assert.Nil(t, ret) // ret is nil, because it doesn't be injection yet
 
-	_, err := p.Get().(*TestService).MethodFour(0, false)
+	_, err = p.Get().(*TestService).MethodFour(0, false)
 	require.NoError(t, err)
 	assert.Equal(t, "*interface {}", reflect.TypeFor[*any]().String())
 	err = p.Get().(*TestService).Echo(nil, nil)
