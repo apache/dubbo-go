@@ -29,22 +29,25 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 type item func(remoting.EventType, []model.Instance)
 
+type subscriberState struct {
+	notify          item
+	initialSnapshot []model.Instance
+	reconciled      bool
+}
+
 type PolarisServiceWatcher struct {
-	consumer                api.ConsumerAPI
-	subscribeParam          *api.WatchServiceRequest
-	lock                    *sync.RWMutex
-	subscribers             []item
-	execOnce                *sync.Once
-	initialSnapshotLock     sync.Mutex
-	initialSnapshot         []model.Instance
-	hasInitialSnapshot      bool
-	initialSnapshotConsumed bool
+	consumer         api.ConsumerAPI
+	subscribeParam   *api.WatchServiceRequest
+	lock             *sync.Mutex
+	subscribers      []*subscriberState
+	execOnce         *sync.Once
+	currentInstances []model.Instance
+	snapshotReady    bool
 }
 
 // newPolarisWatcher create PolarisServiceWatcher to do watch service action
@@ -52,21 +55,28 @@ func newPolarisWatcher(param *api.WatchServiceRequest, consumer api.ConsumerAPI)
 	watcher := &PolarisServiceWatcher{
 		subscribeParam: param,
 		consumer:       consumer,
-		lock:           &sync.RWMutex{},
-		subscribers:    make([]item, 0),
+		lock:           &sync.Mutex{},
+		subscribers:    make([]*subscriberState, 0),
 		execOnce:       &sync.Once{},
 	}
 	return watcher, nil
 }
 
 // AddSubscriber add subscriber into watcher's subscribers
-func (watcher *PolarisServiceWatcher) AddSubscriber(subscriber func(remoting.EventType, []model.Instance)) {
+func (watcher *PolarisServiceWatcher) AddSubscriber(subscriber item) {
+	state := &subscriberState{
+		notify:     subscriber,
+		reconciled: true,
+	}
 
-	watcher.lock.Lock()
+	func() {
+		watcher.lock.Lock()
+		defer watcher.lock.Unlock()
+
+		watcher.subscribers = append(watcher.subscribers, state)
+	}()
+
 	watcher.lazyRun()
-	defer watcher.lock.Unlock()
-
-	watcher.subscribers = append(watcher.subscribers, subscriber)
 }
 
 // lazyRun Delayed execution, only triggered when AddSubscriber is called, and will only be executed once
@@ -76,38 +86,28 @@ func (watcher *PolarisServiceWatcher) lazyRun() {
 	})
 }
 
-// setInitialSnapshot stores synchronously loaded instances as the baseline for
-// reconciling the first successful watcher full snapshot.
-func (watcher *PolarisServiceWatcher) setInitialSnapshot(instances []model.Instance) {
-	watcher.initialSnapshotLock.Lock()
-	defer watcher.initialSnapshotLock.Unlock()
-
-	// A watcher is reused per service. Never re-arm reconciliation after its first successful snapshot.
-	if watcher.initialSnapshotConsumed {
-		return
-	}
-	watcher.initialSnapshot = append([]model.Instance(nil), instances...)
-	watcher.hasInitialSnapshot = true
-}
-
-// takeInitialSnapshot returns and consumes the baseline for the first successful watcher full snapshot.
-// Failed WatchService attempts do not call it, and a consumed watcher cannot be armed again.
-func (watcher *PolarisServiceWatcher) takeInitialSnapshot() ([]model.Instance, bool) {
-	watcher.initialSnapshotLock.Lock()
-	defer watcher.initialSnapshotLock.Unlock()
-
-	if watcher.initialSnapshotConsumed {
-		return nil, false
-	}
-	watcher.initialSnapshotConsumed = true
-	if !watcher.hasInitialSnapshot {
-		return nil, false
+func (watcher *PolarisServiceWatcher) addSubscriberWithInitialSnapshot(
+	initialSnapshot []model.Instance,
+	subscriber item,
+) {
+	state := &subscriberState{
+		notify:          subscriber,
+		initialSnapshot: copyInstances(initialSnapshot),
 	}
 
-	instances := append([]model.Instance(nil), watcher.initialSnapshot...)
-	watcher.initialSnapshot = nil
-	watcher.hasInitialSnapshot = false
-	return instances, true
+	func() {
+		watcher.lock.Lock()
+		defer watcher.lock.Unlock()
+
+		watcher.subscribers = append(watcher.subscribers, state)
+		if watcher.snapshotReady {
+			watcher.reconcileSubscriberLocked(state)
+		}
+	}()
+
+	// Start only after the subscriber is registered and any available current
+	// snapshot has been replayed.
+	watcher.lazyRun()
 }
 
 // missingInitialInstances returns initial - current by model.InstanceKey while
@@ -127,23 +127,31 @@ func missingInitialInstances(initial []model.Instance, current []model.Instance)
 	return missing
 }
 
-// handleInitialWatchSnapshot reconciles the first successful watcher full snapshot
-// with the synchronous baseline before publishing the current instances.
-func (watcher *PolarisServiceWatcher) handleInitialWatchSnapshot(current []model.Instance) {
-	if initial, ok := watcher.takeInitialSnapshot(); ok {
-		missing := missingInitialInstances(initial, current)
-		if len(missing) > 0 {
-			watcher.notifyAllSubscriber(&config_center.ConfigChangeEvent{
-				Value:      missing,
-				ConfigType: remoting.EventTypeDel,
-			})
-		}
-	}
+// handleWatchSnapshot replaces the watcher's current state and reconciles each
+// subscriber's own synchronous-load baseline exactly once.
+func (watcher *PolarisServiceWatcher) handleWatchSnapshot(current []model.Instance) {
+	watcher.lock.Lock()
+	defer watcher.lock.Unlock()
 
-	watcher.notifyAllSubscriber(&config_center.ConfigChangeEvent{
-		Value:      current,
-		ConfigType: remoting.EventTypeAdd,
-	})
+	watcher.currentInstances = copyInstances(current)
+	watcher.snapshotReady = true
+	for _, subscriber := range watcher.subscribers {
+		if subscriber.reconciled {
+			watcher.notifySubscriberLocked(subscriber, remoting.EventTypeAdd, watcher.currentInstances)
+			continue
+		}
+		watcher.reconcileSubscriberLocked(subscriber)
+	}
+}
+
+func (watcher *PolarisServiceWatcher) reconcileSubscriberLocked(subscriber *subscriberState) {
+	missing := missingInitialInstances(subscriber.initialSnapshot, watcher.currentInstances)
+	if len(missing) > 0 {
+		watcher.notifySubscriberLocked(subscriber, remoting.EventTypeDel, missing)
+	}
+	watcher.notifySubscriberLocked(subscriber, remoting.EventTypeAdd, watcher.currentInstances)
+	subscriber.reconciled = true
+	subscriber.initialSnapshot = nil
 }
 
 // startWatch start run work to watch target service by polaris
@@ -154,49 +162,93 @@ func (watcher *PolarisServiceWatcher) startWatch() {
 			time.Sleep(time.Duration(500 * time.Millisecond))
 			continue
 		}
-		watcher.handleInitialWatchSnapshot(resp.GetAllInstancesResp.Instances)
+		watcher.handleWatchSnapshot(resp.GetAllInstancesResp.Instances)
 
 		for event := range resp.EventChannel {
 			eType := event.GetSubScribeEventType()
 			if eType == internalapi.EventInstance {
-				insEvent := event.(*model.InstanceEvent)
-
-				if insEvent.AddEvent != nil {
-					watcher.notifyAllSubscriber(&config_center.ConfigChangeEvent{
-						Value:      insEvent.AddEvent.Instances,
-						ConfigType: remoting.EventTypeAdd,
-					})
-				}
-				if insEvent.UpdateEvent != nil {
-					instances := make([]model.Instance, len(insEvent.UpdateEvent.UpdateList))
-					for i := range insEvent.UpdateEvent.UpdateList {
-						instances[i] = insEvent.UpdateEvent.UpdateList[i].After
-					}
-					watcher.notifyAllSubscriber(&config_center.ConfigChangeEvent{
-						Value:      instances,
-						ConfigType: remoting.EventTypeUpdate,
-					})
-				}
-				if insEvent.DeleteEvent != nil {
-					watcher.notifyAllSubscriber(&config_center.ConfigChangeEvent{
-						Value:      insEvent.DeleteEvent.Instances,
-						ConfigType: remoting.EventTypeDel,
-					})
-				}
+				watcher.handleInstanceEvent(event.(*model.InstanceEvent))
 			}
 		}
 
 	}
 }
 
-// notifyAllSubscriber notify config_center.ConfigChangeEvent to all subscriber
-func (watcher *PolarisServiceWatcher) notifyAllSubscriber(event *config_center.ConfigChangeEvent) {
-	watcher.lock.RLock()
-	defer watcher.lock.RUnlock()
-
-	for i := 0; i < len(watcher.subscribers); i++ {
-		subscriber := watcher.subscribers[i]
-		subscriber(event.ConfigType, event.Value.([]model.Instance))
+func (watcher *PolarisServiceWatcher) handleInstanceEvent(event *model.InstanceEvent) {
+	if event == nil {
+		return
 	}
 
+	watcher.lock.Lock()
+	defer watcher.lock.Unlock()
+
+	if event.AddEvent != nil {
+		instances := copyInstances(event.AddEvent.Instances)
+		for _, instance := range instances {
+			watcher.upsertCurrentInstanceLocked(instance)
+		}
+		watcher.notifyReconciledSubscribersLocked(remoting.EventTypeAdd, instances)
+	}
+	if event.UpdateEvent != nil {
+		instances := make([]model.Instance, 0, len(event.UpdateEvent.UpdateList))
+		for _, update := range event.UpdateEvent.UpdateList {
+			if update.Before.GetInstanceKey() != update.After.GetInstanceKey() {
+				watcher.removeCurrentInstancesLocked([]model.Instance{update.Before})
+			}
+			watcher.upsertCurrentInstanceLocked(update.After)
+			instances = append(instances, update.After)
+		}
+		watcher.notifyReconciledSubscribersLocked(remoting.EventTypeUpdate, instances)
+	}
+	if event.DeleteEvent != nil {
+		instances := copyInstances(event.DeleteEvent.Instances)
+		watcher.removeCurrentInstancesLocked(instances)
+		watcher.notifyReconciledSubscribersLocked(remoting.EventTypeDel, instances)
+	}
+}
+
+func (watcher *PolarisServiceWatcher) upsertCurrentInstanceLocked(instance model.Instance) {
+	key := instance.GetInstanceKey()
+	for i := range watcher.currentInstances {
+		if watcher.currentInstances[i].GetInstanceKey() == key {
+			watcher.currentInstances[i] = instance
+			return
+		}
+	}
+	watcher.currentInstances = append(watcher.currentInstances, instance)
+}
+
+func (watcher *PolarisServiceWatcher) removeCurrentInstancesLocked(instances []model.Instance) {
+	keys := make(map[model.InstanceKey]struct{}, len(instances))
+	for _, instance := range instances {
+		keys[instance.GetInstanceKey()] = struct{}{}
+	}
+
+	current := watcher.currentInstances[:0]
+	for _, instance := range watcher.currentInstances {
+		if _, remove := keys[instance.GetInstanceKey()]; !remove {
+			current = append(current, instance)
+		}
+	}
+	watcher.currentInstances = current
+}
+
+func (watcher *PolarisServiceWatcher) notifyReconciledSubscribersLocked(eventType remoting.EventType, instances []model.Instance) {
+	for _, subscriber := range watcher.subscribers {
+		if subscriber.reconciled {
+			watcher.notifySubscriberLocked(subscriber, eventType, instances)
+		}
+	}
+}
+
+func (watcher *PolarisServiceWatcher) notifySubscriberLocked(
+	subscriber *subscriberState,
+	eventType remoting.EventType,
+	instances []model.Instance,
+) {
+	subscriber.notify(eventType, copyInstances(instances))
+}
+
+func copyInstances(instances []model.Instance) []model.Instance {
+	return append([]model.Instance(nil), instances...)
 }

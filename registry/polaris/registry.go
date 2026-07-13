@@ -19,6 +19,7 @@ package polaris
 
 import (
 	"fmt"
+	"reflect"
 	"strconv"
 	"sync"
 	"time"
@@ -68,16 +69,22 @@ func newPolarisRegistry(url *common.URL) (registry.Registry, error) {
 	}
 
 	pRegistry := &polarisRegistry{
-		url:              url,
-		namespace:        url.GetParam(constant.RegistryNamespaceKey, constant.PolarisDefaultNamespace),
-		provider:         providerApi,
-		consumer:         consumerApi,
-		registryUrls:     make([]*common.URL, 0, 4),
-		watchers:         map[string]*PolarisServiceWatcher{},
-		initialSnapshots: make(map[string][]model.Instance),
+		url:                       url,
+		namespace:                 url.GetParam(constant.RegistryNamespaceKey, constant.PolarisDefaultNamespace),
+		provider:                  providerApi,
+		consumer:                  consumerApi,
+		registryUrls:              make([]*common.URL, 0, 4),
+		watchers:                  map[string]*PolarisServiceWatcher{},
+		initialSubscribeInstances: make(map[initialSubscribeInstancesKey][]model.Instance),
+		initialSubscribeVersions:  make(map[initialSubscribeInstancesKey]uint64),
 	}
 
 	return pRegistry, nil
+}
+
+type initialSubscribeInstancesKey struct {
+	serviceName string
+	notify      registry.NotifyListener
 }
 
 type polarisRegistry struct {
@@ -89,9 +96,13 @@ type polarisRegistry struct {
 	registryUrls []*common.URL
 	listenerLock sync.RWMutex
 	watchers     map[string]*PolarisServiceWatcher
-	// initialSnapshots bridges the synchronous load with the first watcher snapshot so disappeared providers can be deleted.
-	initialSnapshotLock sync.Mutex
-	initialSnapshots    map[string][]model.Instance
+	// initialSubscribeInstances temporarily stores valid LoadSubscribeInstances
+	// results, keyed by service and supported NotifyListener identity. Subscribe
+	// clears the instances, version, and listener reference after a successful
+	// transfer. The watcher does not hold a global initial baseline.
+	initialSubscribeInstancesLock sync.Mutex
+	initialSubscribeInstances     map[initialSubscribeInstancesKey][]model.Instance
+	initialSubscribeVersions      map[initialSubscribeInstancesKey]uint64
 }
 
 // Register will register the service @url to its polaris registry center.
@@ -138,14 +149,14 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 	if role != common.CONSUMER {
 		return nil
 	}
+	serviceName := url.Interface()
 	timer := time.NewTimer(time.Duration(RegistryConnDelay) * time.Second)
 	defer timer.Stop()
 
 	for {
-		serviceName := url.Interface()
-		listener, err := pr.createPolarisListener(serviceName, NewPolarisListener)
+		listener, err := pr.createPolarisListener(serviceName, notifyListener, newPolarisListener)
 		if err != nil {
-			logger.Warnf("[Registry][Polaris] getListener() = err=%v", perrors.WithStack(err))
+			logger.Warnf("[Registry][Polaris] create listener failed, service=%s, err=%v", serviceName, perrors.WithStack(err))
 			<-timer.C
 			timer.Reset(time.Duration(RegistryConnDelay) * time.Second)
 			continue
@@ -165,20 +176,28 @@ func (pr *polarisRegistry) Subscribe(url *common.URL, notifyListener registry.No
 	}
 }
 
-// createPolarisListener creates or reuses the service watcher, transfers its pending baseline,
-// and only then invokes newListener so the watcher cannot start before snapshot injection.
+// createPolarisListener creates or reuses the watcher and binds the pending
+// synchronous-load instances to the newly created listener.
 func (pr *polarisRegistry) createPolarisListener(
 	serviceName string,
-	newListener func(*PolarisServiceWatcher) (*polarisListener, error),
+	notify registry.NotifyListener,
+	newListener func(*PolarisServiceWatcher, []model.Instance) (*polarisListener, error),
 ) (*polarisListener, error) {
+	key := newInitialSubscribeInstancesKey(serviceName, notify)
 	watcher, err := pr.createPolarisWatcher(serviceName)
 	if err != nil {
 		return nil, err
 	}
-	if initialSnapshot, ok := pr.takeInitialSnapshot(serviceName); ok {
-		watcher.setInitialSnapshot(initialSnapshot)
+	initialSubscribeInstances, found, initialSubscribeVersion := pr.takeInitialSubscribeInstancesWithVersion(key)
+	listener, err := newListener(watcher, initialSubscribeInstances)
+	if err != nil {
+		if found {
+			pr.restoreInitialSubscribeInstances(key, initialSubscribeInstances, initialSubscribeVersion)
+		}
+		return nil, err
 	}
-	return newListener(watcher)
+	pr.completeInitialSubscribeInstances(key, initialSubscribeVersion)
+	return listener, nil
 }
 
 // UnSubscribe returns nil if unsubscribing registry successfully. If not returns an error.
@@ -190,6 +209,7 @@ func (pr *polarisRegistry) UnSubscribe(url *common.URL, notifyListener registry.
 // LoadSubscribeInstances load subscribe instance
 func (pr *polarisRegistry) LoadSubscribeInstances(url *common.URL, notify registry.NotifyListener) error {
 	serviceName := url.Interface()
+	key := newInitialSubscribeInstancesKey(serviceName, notify)
 	resp, err := pr.consumer.GetInstances(&api.GetInstancesRequest{
 		GetInstancesRequest: model.GetInstancesRequest{
 			Service:   serviceName,
@@ -200,45 +220,101 @@ func (pr *polarisRegistry) LoadSubscribeInstances(url *common.URL, notify regist
 		return perrors.New(fmt.Sprintf("could not query the instances for serviceName=%s,namespace=%s,error=%v",
 			serviceName, pr.namespace, err))
 	}
-	initialSnapshot := make([]model.Instance, 0, len(resp.Instances))
+	initialSubscribeInstances := make([]model.Instance, 0, len(resp.Instances))
 	for i := range resp.Instances {
 		if newUrl := generateUrl(resp.Instances[i]); newUrl != nil {
 			notify.Notify(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: newUrl})
-			initialSnapshot = append(initialSnapshot, resp.Instances[i])
+			initialSubscribeInstances = append(initialSubscribeInstances, resp.Instances[i])
 		}
 	}
-	pr.storeInitialSnapshot(serviceName, initialSnapshot)
+	pr.storeInitialSubscribeInstances(key, initialSubscribeInstances)
 	return nil
 }
 
-// storeInitialSnapshot keeps valid instances notified during synchronous loading
-// until Subscribe transfers the baseline to the service watcher.
-func (pr *polarisRegistry) storeInitialSnapshot(serviceName string, instances []model.Instance) {
-	pr.initialSnapshotLock.Lock()
-	defer pr.initialSnapshotLock.Unlock()
-
-	if len(instances) == 0 {
-		delete(pr.initialSnapshots, serviceName)
-		return
+func newInitialSubscribeInstancesKey(serviceName string, notify registry.NotifyListener) initialSubscribeInstancesKey {
+	value := reflect.ValueOf(notify)
+	if !value.IsValid() || value.Kind() != reflect.Pointer || value.IsNil() {
+		// This service-scoped fallback provides compatibility and panic safety for
+		// unsupported listener identities. It does not guarantee precise isolation
+		// between multiple unsupported listeners for the same service.
+		return initialSubscribeInstancesKey{serviceName: serviceName}
 	}
-	if pr.initialSnapshots == nil {
-		pr.initialSnapshots = make(map[string][]model.Instance)
-	}
-	pr.initialSnapshots[serviceName] = append([]model.Instance(nil), instances...)
+	return initialSubscribeInstancesKey{serviceName: serviceName, notify: notify}
 }
 
-// takeInitialSnapshot removes and returns the pending service baseline, transferring it
-// from synchronous LoadSubscribeInstances to the asynchronous watcher exactly once.
-func (pr *polarisRegistry) takeInitialSnapshot(serviceName string) ([]model.Instance, bool) {
-	pr.initialSnapshotLock.Lock()
-	defer pr.initialSnapshotLock.Unlock()
+// storeInitialSubscribeInstances keeps valid instances notified by
+// LoadSubscribeInstances until Subscribe transfers them to the same supported
+// notify-listener identity. A successful transfer clears the instances,
+// version, and listener reference. Watchers do not hold a global initial
+// baseline.
+func (pr *polarisRegistry) storeInitialSubscribeInstances(key initialSubscribeInstancesKey, instances []model.Instance) {
+	pr.initialSubscribeInstancesLock.Lock()
+	defer pr.initialSubscribeInstancesLock.Unlock()
 
-	instances, ok := pr.initialSnapshots[serviceName]
-	if !ok {
-		return nil, false
+	if pr.initialSubscribeVersions == nil {
+		pr.initialSubscribeVersions = make(map[initialSubscribeInstancesKey]uint64)
 	}
-	delete(pr.initialSnapshots, serviceName)
-	return append([]model.Instance(nil), instances...), true
+	pr.initialSubscribeVersions[key]++
+	if len(instances) == 0 {
+		delete(pr.initialSubscribeInstances, key)
+		return
+	}
+	if pr.initialSubscribeInstances == nil {
+		pr.initialSubscribeInstances = make(map[initialSubscribeInstancesKey][]model.Instance)
+	}
+	pr.initialSubscribeInstances[key] = append([]model.Instance(nil), instances...)
+}
+
+// takeInitialSubscribeInstances transfers synchronous LoadSubscribeInstances
+// state to the matching asynchronous listener exactly once.
+func (pr *polarisRegistry) takeInitialSubscribeInstances(serviceName string, notify registry.NotifyListener) ([]model.Instance, bool) {
+	key := newInitialSubscribeInstancesKey(serviceName, notify)
+	instances, ok, initialSubscribeVersion := pr.takeInitialSubscribeInstancesWithVersion(key)
+	pr.completeInitialSubscribeInstances(key, initialSubscribeVersion)
+	return instances, ok
+}
+
+func (pr *polarisRegistry) takeInitialSubscribeInstancesWithVersion(key initialSubscribeInstancesKey) ([]model.Instance, bool, uint64) {
+	pr.initialSubscribeInstancesLock.Lock()
+	defer pr.initialSubscribeInstancesLock.Unlock()
+
+	instances, ok := pr.initialSubscribeInstances[key]
+	if !ok {
+		return nil, false, pr.initialSubscribeVersions[key]
+	}
+	delete(pr.initialSubscribeInstances, key)
+	return copyInstances(instances), true, pr.initialSubscribeVersions[key]
+}
+
+func (pr *polarisRegistry) completeInitialSubscribeInstances(key initialSubscribeInstancesKey, initialSubscribeVersion uint64) {
+	pr.initialSubscribeInstancesLock.Lock()
+	defer pr.initialSubscribeInstancesLock.Unlock()
+
+	if pr.initialSubscribeVersions[key] != initialSubscribeVersion {
+		return
+	}
+	if _, pending := pr.initialSubscribeInstances[key]; pending {
+		return
+	}
+	delete(pr.initialSubscribeVersions, key)
+}
+
+// restoreInitialSubscribeInstances puts back instances when listener creation
+// fails. A newer synchronous load wins if it already stored another version.
+func (pr *polarisRegistry) restoreInitialSubscribeInstances(key initialSubscribeInstancesKey, instances []model.Instance, initialSubscribeVersion uint64) {
+	pr.initialSubscribeInstancesLock.Lock()
+	defer pr.initialSubscribeInstancesLock.Unlock()
+
+	if pr.initialSubscribeVersions[key] != initialSubscribeVersion {
+		return
+	}
+	if _, exists := pr.initialSubscribeInstances[key]; exists {
+		return
+	}
+	if pr.initialSubscribeInstances == nil {
+		pr.initialSubscribeInstances = make(map[initialSubscribeInstancesKey][]model.Instance)
+	}
+	pr.initialSubscribeInstances[key] = copyInstances(instances)
 }
 
 // GetURL returns polaris registry's url.
