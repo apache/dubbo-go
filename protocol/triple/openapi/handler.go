@@ -68,8 +68,8 @@ func (h *RequestHandler) handleAPIDocs(path, basePath string) (string, string, b
 		if strings.Contains(pathPart, "/") {
 			return "", "", false
 		}
-		if strings.HasSuffix(pathPart, ".json") {
-			group = strings.TrimSuffix(pathPart, ".json")
+		if before, ok := strings.CutSuffix(pathPart, ".json"); ok {
+			group = before
 			format = "json"
 		} else if strings.HasSuffix(pathPart, ".yaml") || strings.HasSuffix(pathPart, ".yml") {
 			group = strings.TrimSuffix(pathPart, ".yaml")
@@ -117,8 +117,8 @@ func (h *RequestHandler) handleOpenAPI(path, basePath string) (string, string, b
 			pathPart == "api-docs" || strings.HasPrefix(pathPart, "api-docs/") {
 			return "", "", false
 		}
-		if strings.HasSuffix(pathPart, ".json") {
-			group = strings.TrimSuffix(pathPart, ".json")
+		if before, ok := strings.CutSuffix(pathPart, ".json"); ok {
+			group = before
 			format = "json"
 		} else if strings.HasSuffix(pathPart, ".yaml") || strings.HasSuffix(pathPart, ".yml") {
 			group = strings.TrimSuffix(pathPart, ".yaml")

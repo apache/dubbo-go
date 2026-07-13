@@ -72,9 +72,9 @@ func TestSentinelFilter_QPS(t *testing.T) {
 	f := &sentinelProviderFilter{}
 	pass := int64(0)
 	block := int64(0)
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		go func() {
-			for j := 0; j < 30; j++ {
+			for range 30 {
 				result := f.Invoke(context.TODO(), mockInvoker, mockInvocation)
 				if result.Error() == nil {
 					atomic.AddInt64(&pass, 1)
@@ -147,7 +147,7 @@ func TestSentinelFilter_ErrorCount(t *testing.T) {
 	require.NoError(t, err)
 
 	f := &sentinelProviderFilter{}
-	for i := 0; i < 50; i++ {
+	for range 50 {
 		invokeResult := f.Invoke(context.TODO(), mockInvoker, mockInvocation)
 		require.Error(t, invokeResult.Error())
 	}

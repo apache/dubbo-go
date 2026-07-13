@@ -37,8 +37,8 @@ import (
 
 type gettyRPCClient struct {
 	once   sync.Once
-	addr   string // protocol string
-	active int64  // zero, not create or be destroyed
+	addr   string       // protocol string
+	active atomic.Int64 // zero, not create or be destroyed
 
 	rpcClient *Client
 
@@ -102,7 +102,7 @@ func newGettyRPCClientConn(rpcClient *Client, addr string) (*gettyRPCClient, err
 }
 
 func (c *gettyRPCClient) updateActive(active int64) {
-	atomic.StoreInt64(&c.active, active)
+	c.active.Store(active)
 }
 
 func (c *gettyRPCClient) newSession(session getty.Session) error {

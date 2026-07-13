@@ -67,7 +67,7 @@ func TestBroadcastInvokeSuccess(t *testing.T) {
 	invokers := make([]*mock.MockInvoker, 0)
 
 	mockResult := &result.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		invoker := mock.NewMockInvoker(ctrl)
 		invokers = append(invokers, invoker)
 		invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockResult).AnyTimes()
@@ -90,7 +90,7 @@ func TestBroadcastInvokeFailedOver(t *testing.T) {
 	mockFailedResult := &result.RPCResult{Err: errors.New("just failed")}
 
 	// Create 10 invokers that return a successful result
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		invoker := mock.NewMockInvoker(ctrl)
 		invokers = append(invokers, invoker)
 		invoker.EXPECT().IsAvailable().Return(true).AnyTimes() // Mock IsAvailable to return true
@@ -106,7 +106,7 @@ func TestBroadcastInvokeFailedOver(t *testing.T) {
 	}
 
 	// Create 10 more invokers that return successful results
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		invoker := mock.NewMockInvoker(ctrl)
 		invokers = append(invokers, invoker)
 		invoker.EXPECT().IsAvailable().Return(true).AnyTimes() // Mock IsAvailable to return true
