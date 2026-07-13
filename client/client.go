@@ -23,8 +23,6 @@ import (
 	"errors"
 	"maps"
 )
-	"maps"
-)
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
