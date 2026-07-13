@@ -183,7 +183,6 @@ func TestMethodTypeSuiteContext(t *testing.T) {
 }
 
 func TestSuiteMethod(t *testing.T) {
-	s := &TestService{}
 	method, ok := reflect.TypeFor[*TestService]().MethodByName("MethodOne")
 	assert.True(t, ok)
 	methodType := suiteMethod(method)
@@ -223,7 +222,6 @@ func TestSuiteMethod(t *testing.T) {
 	assert.Nil(t, rt)
 
 	// wrong number of in return
-	s1 := &testService{}
 	method, ok = reflect.TypeFor[*testService]().MethodByName("Reference")
 	assert.True(t, ok)
 	methodType = suiteMethod(method)
