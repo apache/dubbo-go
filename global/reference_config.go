@@ -18,6 +18,7 @@
 package global
 
 import (
+	"maps"
 	"strconv"
 )
 
@@ -127,9 +128,7 @@ func (c *ReferenceConfig) GetOptions() []ReferenceOption {
 	}
 	if len(c.Params) > 0 {
 		newParams := make(map[string]string, len(c.Params))
-		for k, v := range c.Params {
-			newParams[k] = v
-		}
+		maps.Copy(newParams, c.Params)
 		refOpts = append(refOpts, WithReference_Params(newParams))
 	}
 	if c.Generic != "" {
@@ -183,9 +182,7 @@ func (c *ReferenceConfig) Clone() *ReferenceConfig {
 	}
 
 	newParams := make(map[string]string, len(c.Params))
-	for k, v := range c.Params {
-		newParams[k] = v
-	}
+	maps.Copy(newParams, c.Params)
 
 	return &ReferenceConfig{
 		InterfaceName:        c.InterfaceName,

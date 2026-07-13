@@ -160,7 +160,7 @@ func objToMap(obj any) any {
 	// if obj is a POJO, get the struct from the pointer (if it is a pointer)
 	pojo, isPojo := obj.(hessian.POJO)
 	if isPojo {
-		for t.Kind() == reflect.Ptr {
+		for t.Kind() == reflect.Pointer {
 			t = t.Elem()
 			v = v.Elem()
 		}
@@ -182,7 +182,7 @@ func objToMap(obj any) any {
 			}
 			valueIface := value.Interface()
 			switch kind {
-			case reflect.Ptr:
+			case reflect.Pointer:
 				if value.IsNil() {
 					setInMap(result, field, nil)
 					continue
@@ -221,7 +221,7 @@ func objToMap(obj any) any {
 			newTempMap[mapKey(key)] = objToMap(mapV)
 		}
 		return newTempMap
-	case reflect.Ptr:
+	case reflect.Pointer:
 		return objToMap(v.Elem().Interface())
 	default:
 		return obj

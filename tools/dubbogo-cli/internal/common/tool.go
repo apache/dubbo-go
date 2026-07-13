@@ -30,7 +30,7 @@ func PrintInterface(v any) {
 	log.Printf("%+v\n", v)
 	nums := val.NumField()
 	for i := 0; i < nums; i++ {
-		if typ.Elem().Field(i).Type.Kind() == reflect.Ptr {
+		if typ.Elem().Field(i).Type.Kind() == reflect.Pointer {
 			log.Printf("%s: ", typ.Elem().Field(i).Name)
 			PrintInterface(val.Field(i).Interface())
 		}

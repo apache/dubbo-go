@@ -55,7 +55,7 @@ func TestHillClimbingUpdater_DoUpdate(t *testing.T) {
 	// Simulate the limiter update with arbitrary values for RTT and inflight
 	// Normally, this would adjust the limiter's limitation based on RTT and inflight metrics
 	err := updater.DoUpdate()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 // Test adjustLimitation method with different options

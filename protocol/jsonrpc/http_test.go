@@ -74,13 +74,13 @@ type (
 //
 //	func TestHTTPClientCall(t *testing.T) {
 //		methods, err := common.ServiceMap.Register("com.ikurento.user.UserProvider", "jsonrpc", "", "", &UserProvider{})
-//		assert.NoError(t, err)
+//		require.NoError(t, err)
 //		assert.Equal(t, "GetUser,GetUser0,GetUser1,GetUser2,GetUser3,GetUser4", methods)
 //
 //		// Export
 //		proto := GetProtocol()
 //		url, err := common.NewURL(mockJsonCommonUrl)
-//		assert.NoError(t, err)
+//		require.NoError(t, err)
 //		proto.Export(&proxy_factory.ProxyInvoker{
 //			BaseInvoker: *protocol.NewBaseInvoker(url),
 //		})
@@ -98,7 +98,7 @@ type (
 //		req := client.NewRequest(url, "GetUser", []any{"1", "username"})
 //		reply := &User{}
 //		err = client.Call(ctx, url, req, reply)
-//		assert.NoError(t, err)
+//		require.NoError(t, err)
 //		assert.Equal(t, "1", reply.ID)
 //		assert.Equal(t, "username", reply.Name)
 //
@@ -111,7 +111,7 @@ type (
 //		req = client.NewRequest(url, "GetUser0", []any{"1", nil, "username"})
 //		reply = &User{}
 //		err = client.Call(ctx, url, req, reply)
-//		assert.NoError(t, err)
+//		require.NoError(t, err)
 //		assert.Equal(t, "1", reply.ID)
 //		assert.Equal(t, "username", reply.Name)
 //
@@ -136,7 +136,7 @@ type (
 //		req = client.NewRequest(url, "GetUser2", []any{"1", "username"})
 //		reply1 := []User{}
 //		err = client.Call(ctx, url, req, &reply1)
-//		assert.NoError(t, err)
+//		require.NoError(t, err)
 //		assert.Equal(t, User{ID: "1", Name: "username"}, reply1[0])
 //
 //		// call GetUser3
@@ -148,7 +148,7 @@ type (
 //		req = client.NewRequest(url, "GetUser3", []any{"1", "username"})
 //		reply1 = []User{}
 //		err = client.Call(ctx, url, req, &reply1)
-//		assert.NoError(t, err)
+//		require.NoError(t, err)
 //		assert.Equal(t, User{ID: "1", Name: "username"}, reply1[0])
 //
 //		// call GetUser4
@@ -160,7 +160,7 @@ type (
 //		req = client.NewRequest(url, "GetUser4", []any{0})
 //		reply = &User{}
 //		err = client.Call(ctx, url, req, reply)
-//		assert.NoError(t, err)
+//		require.NoError(t, err)
 //		assert.Equal(t, &User{ID: "", Name: ""}, reply)
 //
 //		ctx = context.WithValue(context.Background(), constant.DUBBOGO_CTX_KEY, map[string]string{
@@ -175,7 +175,7 @@ type (
 //		req = client.NewRequest(url, "GetUser4", []any{1})
 //		reply = &User{}
 //		err = client.Call(ctx, url, req, reply)
-//		assert.NoError(t, err)
+//		require.NoError(t, err)
 //		assert.Equal(t, &User{ID: "1", Name: ""}, reply)
 //
 //		// destroy

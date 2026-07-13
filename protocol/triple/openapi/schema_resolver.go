@@ -89,7 +89,7 @@ func (r *SchemaResolver) resolveType(t reflect.Type) *model.Schema {
 		return model.NewSchema().SetType(model.SchemaTypeObject)
 	}
 
-	for t.Kind() == reflect.Ptr {
+	for t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
 
@@ -200,7 +200,7 @@ func (r *SchemaResolver) isExported(f reflect.StructField) bool {
 
 func (r *SchemaResolver) getFieldName(f reflect.StructField, jsonTag string) string {
 	if jsonTag != "" {
-		name := strings.Split(jsonTag, ",")[0]
+		name, _, _ := strings.Cut(jsonTag, ",")
 		if name != "" {
 			return name
 		}

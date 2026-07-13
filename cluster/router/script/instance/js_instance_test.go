@@ -495,7 +495,7 @@ func TestFuncWithCompileConcurrent(t *testing.T) {
 	}
 	wg := sync.WaitGroup{}
 	wg.Add(100)
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		go func() {
 			defer wg.Done()
 			rt := goja.New()
@@ -535,7 +535,7 @@ function route(invokers,invocation,context) {
 	_ = rt.Set(`println`, func(args ...any) {
 		//fmt.Println(args...)
 	})
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		rt_link_external_libraries(rt)
 		rt_init_args(rt)
 		re_init_res_recv(rt)

@@ -137,7 +137,7 @@ func (r *DefinitionResolver) resolveRequestSchema(method serviceMethodInfo, sche
 	if method.Meta != nil {
 		if reqType, ok := method.Meta["request.type"]; ok {
 			if t, ok := reqType.(reflect.Type); ok {
-				if t.Kind() == reflect.Ptr {
+				if t.Kind() == reflect.Pointer {
 					t = t.Elem()
 				}
 				return schemaResolver.Resolve(t)
@@ -164,7 +164,7 @@ func (r *DefinitionResolver) resolveRequestSchema(method serviceMethodInfo, sche
 		if elemType.Kind() == reflect.Interface {
 			return nil
 		}
-		if elemType.Kind() == reflect.Ptr {
+		if elemType.Kind() == reflect.Pointer {
 			elemType = elemType.Elem()
 		}
 		if elemType.Kind() == reflect.Struct {
@@ -180,7 +180,7 @@ func (r *DefinitionResolver) resolveResponseSchema(method serviceMethodInfo, sch
 	if method.Meta != nil {
 		if respType, ok := method.Meta["response.type"]; ok {
 			if t, ok := respType.(reflect.Type); ok {
-				if t.Kind() == reflect.Ptr {
+				if t.Kind() == reflect.Pointer {
 					t = t.Elem()
 				}
 				return schemaResolver.Resolve(t)

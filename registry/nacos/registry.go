@@ -299,11 +299,9 @@ func (nr *nacosRegistry) subscribe(serviceName string, notifyListener registry.N
 	}
 	nr.initialSubscribeInstances.Delete(cacheKey)
 	// handleServiceEvents will block to wait notify event and exit when error occur
-	nr.wg.Add(1)
-	go func() {
-		defer nr.wg.Done()
+	nr.wg.Go(func() {
 		nr.handleServiceEvents(listener, notifyListener)
-	}()
+	})
 	return nil
 }
 
@@ -322,7 +320,7 @@ func (nr *nacosRegistry) getAllSubscribeServiceNames(url *common.URL) ([]string,
 	categories := strings.Split(url.GetParam(constant.CategoryKey, constant.DefaultCategory), constant.CommaSeparator)
 	for _, dom := range services.Doms {
 		if strings.Contains(dom, constant.NacosServiceNameSeparator) {
-			realCategory := strings.Split(dom, constant.NacosServiceNameSeparator)[0]
+			realCategory, _, _ := strings.Cut(dom, constant.NacosServiceNameSeparator)
 			for _, item := range categories {
 				if item == realCategory {
 					subScribeServiceNames = append(subScribeServiceNames, dom)
