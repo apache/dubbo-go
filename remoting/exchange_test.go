@@ -43,7 +43,7 @@ func TestSequenceIDConcurrent(t *testing.T) {
 	var wg sync.WaitGroup
 	ids := make(chan int64, 50)
 	for range 50 {
-		wg.Go(func() { ; ids <- SequenceID() })
+		wg.Go(func() { ids <- SequenceID() })
 	}
 	wg.Wait()
 	close(ids)
