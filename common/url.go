@@ -909,7 +909,34 @@ func (c *URL) SetParams(m url.Values) {
 
 // ToMap transfer URL to Map
 func (c *URL) ToMap() map[string]string {
-	paramsMap := make(map[string]string)
+	// Pre-calculate capacity to avoid map growth
+	c.paramsLock.RLock()
+	paramCount := len(c.params)
+	c.paramsLock.RUnlock()
+
+	// Count non-empty scalar fields
+	capacity := paramCount
+	if c.Protocol != "" {
+		capacity++
+	}
+	if c.Username != "" {
+		capacity++
+	}
+	if c.Password != "" {
+		capacity++
+	}
+	if c.Location != "" {
+		capacity += 2 // host + port
+	}
+	if c.Path != "" {
+		capacity++
+	}
+
+	if capacity == 0 {
+		return nil
+	}
+
+	paramsMap := make(map[string]string, capacity)
 
 	c.RangeParams(
 		func(key, value string) bool {
@@ -928,23 +955,17 @@ func (c *URL) ToMap() map[string]string {
 		paramsMap["password"] = c.Password
 	}
 	if c.Location != "" {
-		paramsMap["host"] = strings.Split(c.Location, ":")[0]
-		var port string
-		if strings.Contains(c.Location, ":") {
-			port = strings.Split(c.Location, ":")[1]
+		// Single-pass split avoids repeated string scanning
+		if idx := strings.IndexByte(c.Location, ':'); idx >= 0 {
+			paramsMap["host"] = c.Location[:idx]
+			paramsMap["port"] = c.Location[idx+1:]
 		} else {
-			port = "0"
+			paramsMap["host"] = c.Location
+			paramsMap["port"] = "0"
 		}
-		paramsMap["port"] = port
-	}
-	if c.Protocol != "" {
-		paramsMap[PROTOCOL] = c.Protocol
 	}
 	if c.Path != "" {
 		paramsMap["path"] = c.Path
-	}
-	if len(paramsMap) == 0 {
-		return nil
 	}
 	return paramsMap
 }
@@ -1163,26 +1184,95 @@ func IsEquals(left *URL, right *URL, excludes ...string) bool {
 		return false
 	}
 
-	leftMap := left.ToMap()
-	rightMap := right.ToMap()
-	for _, exclude := range excludes {
-		delete(leftMap, exclude)
-		delete(rightMap, exclude)
+	// Build a lookup set for excluded keys to avoid repeated scans
+	// and to skip materializing two full maps just for comparison
+	excludeSet := make(map[string]struct{}, len(excludes))
+	for _, k := range excludes {
+		excludeSet[k] = struct{}{}
 	}
 
-	if len(leftMap) != len(rightMap) {
+	isExcluded := func(key string) bool {
+		_, ok := excludeSet[key]
+		return ok
+	}
+
+	// Compare scalar fields directly
+	if left.Protocol != right.Protocol && !isExcluded(PROTOCOL) {
+		return false
+	}
+	if left.Username != right.Username && !isExcluded("username") {
+		return false
+	}
+	if left.Password != right.Password && !isExcluded("password") {
+		return false
+	}
+	if left.Path != right.Path && !isExcluded("path") {
 		return false
 	}
 
-	for lk, lv := range leftMap {
-		if rv, ok := rightMap[lk]; !ok {
-			return false
-		} else if lv != rv {
-			return false
+	// Compare Location (host:port)
+	if left.Location != right.Location {
+		hostExcluded := isExcluded("host")
+		portExcluded := isExcluded("port")
+
+		// If both host and port are excluded, skip Location comparison
+		if !hostExcluded || !portExcluded {
+			// Parse and compare host/port separately only if needed
+			leftHost, leftPort := parseLocation(left.Location)
+			rightHost, rightPort := parseLocation(right.Location)
+
+			if !hostExcluded && leftHost != rightHost {
+				return false
+			}
+			if !portExcluded && leftPort != rightPort {
+				return false
+			}
 		}
 	}
 
+	// Compare params directly without materializing full maps
+	// Build left params (excluding filtered keys), then verify right matches
+	leftParams := make(map[string]string)
+	left.RangeParams(func(key, value string) bool {
+		if !isExcluded(key) {
+			leftParams[key] = value
+		}
+		return true
+	})
+
+	rightCount := 0
+	mismatch := false
+	right.RangeParams(func(key, value string) bool {
+		if isExcluded(key) {
+			return true
+		}
+		rightCount++
+		if lv, ok := leftParams[key]; !ok || lv != value {
+			mismatch = true
+			return false
+		}
+		return true
+	})
+
+	if mismatch {
+		return false
+	}
+	if rightCount != len(leftParams) {
+		return false
+	}
+
 	return true
+}
+
+// parseLocation splits "host:port" into host and port
+func parseLocation(location string) (host, port string) {
+	if location == "" {
+		return "", "0"
+	}
+	if idx := strings.IndexByte(location, ':'); idx >= 0 {
+		return location[:idx], location[idx+1:]
+	}
+	return location, "0"
 }
 
 // URLSlice will be used to sort URL instance
