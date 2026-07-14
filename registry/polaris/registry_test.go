@@ -110,7 +110,7 @@ type unsupportedFuncPolarisNotifyListener func()
 type unsupportedChanPolarisNotifyListener chan struct{}
 
 type unsupportedStructPolarisNotifyListener struct {
-	events []recordedPolarisEvent
+	_ []recordedPolarisEvent
 }
 
 type runtimeUnhashablePolarisNotifyListener struct {
