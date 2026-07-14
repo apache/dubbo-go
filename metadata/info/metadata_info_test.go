@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -81,6 +82,83 @@ func TestMetadataInfoAddServiceBackfillsApplicationTag(t *testing.T) {
 	assert.Equal(t, "gray", metadataInfo.Tag)
 }
 
+func TestMetadataInfoCopiesExportedServiceURLs(t *testing.T) {
+	metadataInfo := NewMetadataInfo("foo", "")
+	url := serviceUrl.Clone()
+	expectedPath := url.Path
+	expectedMethods := append([]string(nil), url.Methods...)
+	url.SubURL = common.NewURLWithOptions(common.WithPath("nested"))
+	expectedSubURLPath := url.SubURL.Path
+	sharedAttribute := &struct{ Value string }{Value: "shared"}
+	url.SetParam("snapshot-param", "before")
+	url.SetAttribute("snapshot-attribute", "before")
+	url.SetAttribute("shared-attribute", sharedAttribute)
+
+	metadataInfo.AddService(url)
+	url.Path = "/caller-mutated"
+	url.Methods[0] = "caller-mutated"
+	url.SubURL.Path = "/caller-mutated"
+	url.SetParam("snapshot-param", "caller-mutated")
+	url.SetAttribute("snapshot-attribute", "caller-mutated")
+
+	urls := metadataInfo.GetExportedServiceURLs()
+	require.Len(t, urls, 1)
+	assert.NotSame(t, url, urls[0])
+	assert.Equal(t, expectedPath, urls[0].Path)
+	assert.Equal(t, expectedMethods, urls[0].Methods)
+	require.NotNil(t, urls[0].SubURL)
+	assert.NotSame(t, url.SubURL, urls[0].SubURL)
+	assert.Equal(t, expectedSubURLPath, urls[0].SubURL.Path)
+	assert.Equal(t, "before", urls[0].GetParam("snapshot-param", ""))
+	attribute, ok := urls[0].GetAttribute("snapshot-attribute")
+	require.True(t, ok)
+	assert.Equal(t, "before", attribute)
+	attribute, ok = urls[0].GetAttribute("shared-attribute")
+	require.True(t, ok)
+	assert.Same(t, sharedAttribute, attribute)
+
+	urls[0].Path = "/getter-mutated"
+	urls[0].Methods[0] = "getter-mutated"
+	urls[0].SubURL.Path = "/getter-mutated"
+	urls[0].SetParam("snapshot-param", "getter-mutated")
+	urls[0].SetAttribute("snapshot-attribute", "getter-mutated")
+
+	freshURLs := metadataInfo.GetExportedServiceURLs()
+	require.Len(t, freshURLs, 1)
+	assert.NotSame(t, urls[0], freshURLs[0])
+	assert.Equal(t, expectedPath, freshURLs[0].Path)
+	assert.Equal(t, expectedMethods, freshURLs[0].Methods)
+	require.NotNil(t, freshURLs[0].SubURL)
+	assert.NotSame(t, urls[0].SubURL, freshURLs[0].SubURL)
+	assert.Equal(t, expectedSubURLPath, freshURLs[0].SubURL.Path)
+	assert.Equal(t, "before", freshURLs[0].GetParam("snapshot-param", ""))
+	attribute, ok = freshURLs[0].GetAttribute("snapshot-attribute")
+	require.True(t, ok)
+	assert.Equal(t, "before", attribute)
+}
+
+func TestMetadataInfoReplaceExportedServicesCopiesURLs(t *testing.T) {
+	metadataInfo := NewMetadataInfo("foo", "")
+	url := serviceUrl.Clone()
+	expectedPath := url.Path
+	url.SetParam("snapshot-param", "before")
+
+	metadataInfo.ReplaceExportedServices([]*common.URL{url})
+	url.Path = "/caller-mutated"
+	url.SetParam("snapshot-param", "caller-mutated")
+
+	urls := metadataInfo.GetExportedServiceURLs()
+	require.Len(t, urls, 1)
+	assert.NotSame(t, url, urls[0])
+	assert.Equal(t, expectedPath, urls[0].Path)
+	assert.Equal(t, "before", urls[0].GetParam("snapshot-param", ""))
+
+	service := requireOnlyService(t, metadataInfo.GetServices())
+	assert.NotSame(t, url, service.URL)
+	assert.Equal(t, expectedPath, service.URL.Path)
+	assert.Equal(t, "before", service.URL.GetParam("snapshot-param", ""))
+}
+
 func TestMetadataInfoRemoveServiceWithClonedURL(t *testing.T) {
 	metadataInfo := NewMetadataInfo("foo", "")
 	url, err := common.NewURL("dubbo://127.0.0.1:20000?application=foo&interface=com.foo.Bar&methods=GetPetByID%2CGetPetTypes&side=provider&version=1.0.0")
@@ -105,8 +183,10 @@ func TestMetadataInfoRemoveServiceKeepsRemainingMatchKeyService(t *testing.T) {
 	metadataInfo.RemoveService(url1.Clone())
 
 	require.Len(t, metadataInfo.Services, 1)
-	assert.Len(t, metadataInfo.GetExportedServiceURLs(), 1)
-	assert.Equal(t, url2, metadataInfo.GetExportedServiceURLs()[0])
+	remainingURLs := metadataInfo.GetExportedServiceURLs()
+	require.Len(t, remainingURLs, 1)
+	assert.True(t, url2.URLEqual(remainingURLs[0]))
+	assert.NotSame(t, url2, remainingURLs[0])
 }
 
 func TestHessian(t *testing.T) {
@@ -134,6 +214,32 @@ func TestMetadataInfoAddSubscribeURL(t *testing.T) {
 	assert.NotEmpty(t, info.GetSubscribedURLs())
 	info.RemoveSubscribeURL(serviceUrl)
 	assert.Empty(t, info.GetSubscribedURLs())
+}
+
+func TestMetadataInfoCopiesSubscribedURLs(t *testing.T) {
+	metadataInfo := NewMetadataInfo("foo", "")
+	url := serviceUrl.Clone()
+	expectedPath := url.Path
+	url.SetParam("snapshot-param", "before")
+
+	metadataInfo.AddSubscribeURL(url)
+	url.Path = "/caller-mutated"
+	url.SetParam("snapshot-param", "caller-mutated")
+
+	urls := metadataInfo.GetSubscribedURLs()
+	require.Len(t, urls, 1)
+	assert.NotSame(t, url, urls[0])
+	assert.Equal(t, expectedPath, urls[0].Path)
+	assert.Equal(t, "before", urls[0].GetParam("snapshot-param", ""))
+
+	urls[0].Path = "/getter-mutated"
+	urls[0].SetParam("snapshot-param", "getter-mutated")
+
+	freshURLs := metadataInfo.GetSubscribedURLs()
+	require.Len(t, freshURLs, 1)
+	assert.NotSame(t, urls[0], freshURLs[0])
+	assert.Equal(t, expectedPath, freshURLs[0].Path)
+	assert.Equal(t, "before", freshURLs[0].GetParam("snapshot-param", ""))
 }
 
 func TestMetadataInfoRemoveSubscribeURLWithClonedURL(t *testing.T) {
@@ -224,6 +330,134 @@ func TestMetadataInfoGetServices(t *testing.T) {
 
 	// A fresh call reflects the removal
 	assert.Empty(t, metadataInfo.GetServices())
+}
+
+func TestMetadataInfoServiceSnapshotsCopyURL(t *testing.T) {
+	metadataInfo := NewMetadataInfo("foo", "")
+	url := serviceUrl.Clone()
+	expectedPath := url.Path
+	metadataInfo.AddService(url)
+	url.Path = "/caller-mutated"
+
+	service := requireOnlyService(t, metadataInfo.GetServices())
+	assert.NotSame(t, url, service.URL)
+	assert.Equal(t, expectedPath, service.URL.Path)
+	service.URL.Path = "/getter-mutated"
+	service.Params["caller-mutation"] = "getter"
+
+	freshService := requireOnlyService(t, metadataInfo.GetServices())
+	assert.Equal(t, expectedPath, freshService.URL.Path)
+	assert.NotContains(t, freshService.Params, "caller-mutation")
+
+	snapshotService := requireOnlyService(t, metadataInfo.Snapshot().Services)
+	snapshotService.URL.Path = "/snapshot-mutated"
+	snapshotService.Params["caller-mutation"] = "snapshot"
+
+	freshService = requireOnlyService(t, metadataInfo.GetServices())
+	assert.Equal(t, expectedPath, freshService.URL.Path)
+	assert.NotContains(t, freshService.Params, "caller-mutation")
+}
+
+func TestMetadataInfoSnapshotDoesNotInitializeSourceLazyFields(t *testing.T) {
+	metadataInfo := NewMetadataInfo("foo", "")
+	service := &ServiceInfo{
+		Name:     "com.foo.Bar",
+		Group:    "test",
+		Version:  "1.0.0",
+		Protocol: "tri",
+		Params:   map[string]string{"timeout": "1000"},
+	}
+	metadataInfo.Services["service"] = service
+
+	snapshotService := metadataInfo.Snapshot().Services["service"]
+
+	assert.Empty(t, service.ServiceKey)
+	assert.Empty(t, service.MatchKey)
+	assert.Equal(t, common.ServiceKey(service.Name, service.Group, service.Version), snapshotService.ServiceKey)
+	assert.Equal(t, common.MatchKey(snapshotService.ServiceKey, service.Protocol), snapshotService.MatchKey)
+	assert.Nil(t, snapshotService.URL)
+	snapshotService.Params["timeout"] = "2000"
+	assert.Equal(t, "1000", service.Params["timeout"])
+}
+
+func TestMetadataInfoConcurrentURLSnapshotMutation(t *testing.T) {
+	metadataInfo := NewMetadataInfo("foo", "")
+	metadataInfo.AddService(serviceUrl)
+	metadataInfo.AddSubscribeURL(serviceUrl)
+
+	const iterations = 100
+	var waitGroup sync.WaitGroup
+	waitGroup.Add(2)
+	go func() {
+		defer waitGroup.Done()
+		for i := range iterations {
+			replacement := testServiceURL("replacement." + strconv.Itoa(i))
+			metadataInfo.ReplaceExportedServices([]*common.URL{replacement})
+
+			transient := testServiceURL("transient." + strconv.Itoa(i))
+			metadataInfo.AddService(transient)
+			metadataInfo.RemoveService(transient.Clone())
+
+			subscription := testServiceURL("subscription." + strconv.Itoa(i))
+			metadataInfo.AddSubscribeURL(subscription)
+			metadataInfo.RemoveSubscribeURL(subscription.Clone())
+		}
+	}()
+	go func() {
+		defer waitGroup.Done()
+		for i := range iterations {
+			mutateURLSnapshots(metadataInfo.GetExportedServiceURLs(), i)
+			mutateURLSnapshots(metadataInfo.GetSubscribedURLs(), i)
+			mutateServiceSnapshots(metadataInfo.GetServices(), i)
+			mutateServiceSnapshots(metadataInfo.Snapshot().Services, i)
+		}
+	}()
+	waitGroup.Wait()
+
+	exportedURLs := metadataInfo.GetExportedServiceURLs()
+	require.Len(t, exportedURLs, 1)
+	assert.Equal(t, "replacement.99", exportedURLs[0].Interface())
+	require.Len(t, metadataInfo.GetSubscribedURLs(), 1)
+}
+
+func testServiceURL(service string) *common.URL {
+	url := serviceUrl.Clone()
+	url.Path = "/" + service
+	url.SetParam(constant.InterfaceKey, service)
+	return url
+}
+
+func mutateURLSnapshots(urls []*common.URL, iteration int) {
+	for _, url := range urls {
+		url.Path = "/snapshot-" + strconv.Itoa(iteration)
+		url.SetParam("snapshot-param", strconv.Itoa(iteration))
+		url.SetAttribute("snapshot-attribute", iteration)
+		if len(url.Methods) > 0 {
+			url.Methods[0] = "snapshot-mutated"
+		}
+		if url.SubURL != nil {
+			url.SubURL.Path = "/snapshot-mutated"
+		}
+	}
+}
+
+func mutateServiceSnapshots(services map[string]*ServiceInfo, iteration int) {
+	for _, service := range services {
+		service.Params["snapshot-param"] = strconv.Itoa(iteration)
+		if service.URL != nil {
+			mutateURLSnapshots([]*common.URL{service.URL}, iteration)
+		}
+	}
+}
+
+func requireOnlyService(t *testing.T, services map[string]*ServiceInfo) *ServiceInfo {
+	t.Helper()
+	require.Len(t, services, 1)
+	var onlyService *ServiceInfo
+	for _, service := range services {
+		onlyService = service
+	}
+	return onlyService
 }
 
 func TestServiceInfoJavaClassName(t *testing.T) {

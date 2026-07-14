@@ -43,6 +43,62 @@ var (
 	url, _ = common.NewURL("dubbo://127.0.0.1:20000?application=foo&category=providers&check=false&dubbo=dubbo-go+v1.5.0&interface=com.foo.Bar&methods=GetPetByID%2CGetPetTypes&organization=Apache&owner=foo&revision=1.0.0&side=provider&version=1.0.0")
 )
 
+func assertURLSnapshotEqual(t testing.TB, expected, actual *common.URL) {
+	t.Helper()
+	require.NotNil(t, expected)
+	require.NotNil(t, actual)
+	assert.Equal(t, snapshotURLValue(expected), snapshotURLValue(actual))
+	assert.NotSame(t, expected, actual)
+}
+
+type urlValue struct {
+	Protocol     string
+	Location     string
+	IP           string
+	Port         string
+	PrimitiveURL string
+	Path         string
+	Username     string
+	Password     string
+	Methods      []string
+	Params       map[string][]string
+	Attributes   map[string]any
+	SubURL       *urlValue
+}
+
+func snapshotURLValue(url *common.URL) *urlValue {
+	if url == nil {
+		return nil
+	}
+	attributes := make(map[string]any)
+	url.RangeAttributes(func(key string, value any) bool {
+		attributes[key] = value
+		return true
+	})
+	return &urlValue{
+		Protocol:     url.Protocol,
+		Location:     url.Location,
+		IP:           url.Ip,
+		Port:         url.Port,
+		PrimitiveURL: url.PrimitiveURL,
+		Path:         url.Path,
+		Username:     url.Username,
+		Password:     url.Password,
+		Methods:      append([]string(nil), url.Methods...),
+		Params:       map[string][]string(url.CopyParams()),
+		Attributes:   attributes,
+		SubURL:       snapshotURLValue(url.SubURL),
+	}
+}
+
+func assertURLSnapshotsEqual(t testing.TB, expected, actual []*common.URL) {
+	t.Helper()
+	require.Len(t, actual, len(expected))
+	for i := range expected {
+		assertURLSnapshotEqual(t, expected[i], actual[i])
+	}
+}
+
 func newMetadataMap() map[string]*info.MetadataInfo {
 	metadataInfo := info.NewAppMetadataInfo("dubbo-app")
 	metadataInfo.Revision = "1"
@@ -61,7 +117,7 @@ func TestDefaultMetadataServiceGetExportedServiceURLs(t *testing.T) {
 	got, err := mts.GetExportedServiceURLs()
 	require.NoError(t, err)
 	assert.Len(t, got, 1)
-	assert.Equal(t, url, got[0])
+	assertURLSnapshotEqual(t, url, got[0])
 }
 
 func TestDefaultMetadataServiceGetExportedURLs(t *testing.T) {
@@ -144,7 +200,7 @@ func TestDefaultMetadataServiceGetExportedURLs(t *testing.T) {
 			}
 			got, err := mts.GetExportedURLs(tt.args.serviceInterface, tt.args.group, tt.args.version, tt.args.protocol)
 			require.NoError(t, err)
-			assert.Equalf(t, tt.want, got, "GetExportedURLs(%v, %v, %v, %v)", tt.args.serviceInterface, tt.args.group, tt.args.version, tt.args.protocol)
+			assertURLSnapshotsEqual(t, tt.want, got)
 		})
 	}
 }
@@ -238,7 +294,7 @@ func TestDefaultMetadataServiceGetSubscribedURLs(t *testing.T) {
 			}
 			got, err := mts.GetSubscribedURLs()
 			require.NoError(t, err)
-			assert.Equalf(t, tt.want, got, "GetSubscribedURLs()")
+			assertURLSnapshotsEqual(t, tt.want, got)
 		})
 	}
 }

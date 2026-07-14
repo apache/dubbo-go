@@ -110,9 +110,9 @@ func (info *MetadataInfo) AddService(url *common.URL) {
 // addServiceWithoutLock adds a service URL without acquiring the lock.
 // The caller must hold info.mu.Lock() before calling this method.
 func (info *MetadataInfo) addServiceWithoutLock(url *common.URL) {
+	url = addUrl(info.exportedServiceURLs, url)
 	service := NewServiceInfoWithURL(url)
 	info.Services[service.GetMatchKey()] = service
-	addUrl(info.exportedServiceURLs, url)
 	if info.App == "" {
 		info.App = url.GetParam(constant.ApplicationKey, "")
 	}
@@ -121,11 +121,13 @@ func (info *MetadataInfo) addServiceWithoutLock(url *common.URL) {
 	}
 }
 
-func addUrl(m map[string][]*common.URL, url *common.URL) {
+func addUrl(m map[string][]*common.URL, url *common.URL) *common.URL {
+	url = url.Clone()
 	if _, ok := m[url.ServiceKey()]; !ok {
 		m[url.ServiceKey()] = make([]*common.URL, 0)
 	}
 	m[url.ServiceKey()] = append(m[url.ServiceKey()], url)
+	return url
 }
 
 func removeUrl(m map[string][]*common.URL, url *common.URL) {
@@ -183,7 +185,9 @@ func (info *MetadataInfo) GetExportedServiceURLs() []*common.URL {
 
 	res := make([]*common.URL, 0)
 	for _, urls := range info.exportedServiceURLs {
-		res = append(res, urls...)
+		for _, url := range urls {
+			res = append(res, cloneURL(url))
+		}
 	}
 	return res
 }
@@ -194,16 +198,18 @@ func (info *MetadataInfo) GetSubscribedURLs() []*common.URL {
 
 	res := make([]*common.URL, 0)
 	for _, urls := range info.subscribedServiceURLs {
-		res = append(res, urls...)
+		for _, url := range urls {
+			res = append(res, cloneURL(url))
+		}
 	}
 	return res
 }
 
-// GetServices returns a deep copy of the Services map for safe iteration by external callers.
-// Each ServiceInfo is fully copied with lazy fields eagerly populated to prevent write-on-read races.
+// GetServices returns a detached copy of the Services map for safe iteration by external callers.
+// Each ServiceInfo has detached Params and URL containers, with lazy fields eagerly populated.
 func (info *MetadataInfo) GetServices() map[string]*ServiceInfo {
-	info.mu.Lock()
-	defer info.mu.Unlock()
+	info.mu.RLock()
+	defer info.mu.RUnlock()
 
 	cp := make(map[string]*ServiceInfo, len(info.Services))
 	for k, v := range info.Services {
@@ -223,16 +229,15 @@ func (info *MetadataInfo) ReplaceExportedServices(urls []*common.URL) {
 	}
 }
 
-// Snapshot creates a deep copy of the MetadataInfo for safe concurrent access.
-// The caller can modify the snapshot without affecting the original.
+// Snapshot creates a copy of the MetadataInfo for safe concurrent access.
+// The caller can modify its maps and URL containers without affecting the original.
 func (info *MetadataInfo) Snapshot() MetadataInfo {
 	info.mu.RLock()
 	defer info.mu.RUnlock()
 
 	services := make(map[string]*ServiceInfo, len(info.Services))
 	for k, v := range info.Services {
-		si := *v
-		services[k] = &si
+		services[k] = v.DeepCopy()
 	}
 	return MetadataInfo{
 		App:      info.App,
@@ -352,10 +357,19 @@ func (si *ServiceInfo) GetServiceKey() string {
 	return si.ServiceKey
 }
 
-// DeepCopy returns a fully independent copy of ServiceInfo with lazy fields eagerly populated.
+// DeepCopy returns a copy with detached Params and URL containers.
+// Lazy fields are populated on the copy without mutating the source.
 func (si *ServiceInfo) DeepCopy() *ServiceInfo {
 	params := make(map[string]string, len(si.Params))
 	maps.Copy(params, si.Params)
+	serviceKey := si.ServiceKey
+	if serviceKey == "" {
+		serviceKey = common.ServiceKey(si.Name, si.Group, si.Version)
+	}
+	matchKey := si.MatchKey
+	if matchKey == "" {
+		matchKey = common.MatchKey(serviceKey, si.Protocol)
+	}
 	return &ServiceInfo{
 		Name:       si.Name,
 		Group:      si.Group,
@@ -364,10 +378,17 @@ func (si *ServiceInfo) DeepCopy() *ServiceInfo {
 		Port:       si.Port,
 		Path:       si.Path,
 		Params:     params,
-		ServiceKey: si.GetServiceKey(),
-		MatchKey:   si.GetMatchKey(),
-		URL:        si.URL,
+		ServiceKey: serviceKey,
+		MatchKey:   matchKey,
+		URL:        cloneURL(si.URL),
 	}
+}
+
+func cloneURL(url *common.URL) *common.URL {
+	if url == nil {
+		return nil
+	}
+	return url.Clone()
 }
 
 // toDescString returns a deterministic string representation of ServiceInfo

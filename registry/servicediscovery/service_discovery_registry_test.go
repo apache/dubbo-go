@@ -292,8 +292,10 @@ func TestServiceDiscoveryRegistryUnRegisterServicePartialFailSyncsMetadata(t *te
 
 	metaInfo := metadata.GetMetadataInfo(regID)
 	require.NotNil(t, metaInfo)
-	require.Len(t, metaInfo.GetExportedServiceURLs(), 1)
-	assert.Equal(t, providerURL1, metaInfo.GetExportedServiceURLs()[0])
+	remainingURLs := metaInfo.GetExportedServiceURLs()
+	require.Len(t, remainingURLs, 1)
+	assert.Equal(t, providerURL1.Clone(), remainingURLs[0])
+	assert.NotSame(t, providerURL1, remainingURLs[0])
 	assert.Len(t, metaInfo.Services, 1)
 
 	expectedRevision := createInstance(metaInfo, providerURL1, regID).GetMetadata()[constant.ExportedServicesRevisionPropertyName]
@@ -342,8 +344,10 @@ func TestServiceDiscoveryRegistryUnRegisterWithoutTrackedInstancesReconcilesMeta
 	err = reg.UnRegister(providerURL1.Clone())
 	require.NoError(t, err)
 
-	require.Len(t, metaInfo.GetExportedServiceURLs(), 1)
-	assert.Equal(t, providerURL2, metaInfo.GetExportedServiceURLs()[0])
+	remainingURLs := metaInfo.GetExportedServiceURLs()
+	require.Len(t, remainingURLs, 1)
+	assert.Equal(t, providerURL2.Clone(), remainingURLs[0])
+	assert.NotSame(t, providerURL2, remainingURLs[0])
 	assert.Len(t, metaInfo.Services, 1)
 
 	expectedRevision := createInstance(metaInfo, providerURL2, regID).GetMetadata()[constant.ExportedServicesRevisionPropertyName]

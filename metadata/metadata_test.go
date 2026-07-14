@@ -60,7 +60,7 @@ func TestAddService(t *testing.T) {
 			meta := registryMetadataInfo[tt.args.registryId]
 			meta.App = tt.args.url.GetParam(constant.ApplicationKey, "")
 			meta.Tag = tt.args.url.GetParam(constant.ApplicationTagKey, "")
-			assert.Equal(t, tt.args.url, meta.GetExportedServiceURLs()[0])
+			assertURLSnapshotsEqual(t, []*common.URL{tt.args.url}, meta.GetExportedServiceURLs())
 		})
 	}
 }
@@ -93,7 +93,7 @@ func TestAddSubscribeURL(t *testing.T) {
 			meta := registryMetadataInfo[tt.args.registryId]
 			meta.App = tt.args.url.GetParam(constant.ApplicationKey, "")
 			meta.Tag = tt.args.url.GetParam(constant.ApplicationTagKey, "")
-			assert.Equal(t, tt.args.url, meta.GetSubscribedURLs()[0])
+			assertURLSnapshotsEqual(t, []*common.URL{tt.args.url}, meta.GetSubscribedURLs())
 		})
 	}
 }
