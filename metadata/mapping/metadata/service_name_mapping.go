@@ -19,6 +19,7 @@ package metadata
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 )
@@ -82,7 +83,7 @@ func (d *ServiceNameMapping) Map(url *common.URL) error {
 	}
 	for _, metadataReport := range metadataReports {
 		if err := registerWithRetry(metadataReport, serviceInterface, DefaultGroup, appName); err != nil {
-			return err
+			return fmt.Errorf("mapping_register failed: interface=%s application=%s group=%s: %w", serviceInterface, appName, DefaultGroup, err)
 		}
 	}
 	return nil
@@ -147,7 +148,10 @@ func (d *ServiceNameMapping) Get(url *common.URL, listener mapping.MappingListen
 		}
 	}
 	if result == nil {
-		return nil, errors.Join(errs...)
+		if err := errors.Join(errs...); err != nil {
+			return nil, fmt.Errorf("mapping_get failed: interface=%s group=%s: %w", serviceInterface, DefaultGroup, err)
+		}
+		return nil, nil
 	}
 	return result, nil
 }
@@ -170,5 +174,8 @@ func (d *ServiceNameMapping) Remove(url *common.URL) error {
 			errs = append(errs, err)
 		}
 	}
-	return errors.Join(errs...)
+	if err := errors.Join(errs...); err != nil {
+		return fmt.Errorf("mapping_remove failed: interface=%s group=%s: %w", serviceInterface, DefaultGroup, err)
+	}
+	return nil
 }

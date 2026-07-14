@@ -18,6 +18,7 @@
 package servicediscovery
 
 import (
+	stderrors "errors"
 	"fmt"
 	"testing"
 )
@@ -489,6 +490,13 @@ func TestGetMetadataInfo_FallbackToRPC(t *testing.T) {
 		"fallback path should produce a combined error mentioning both failures")
 	assert.Contains(t, err.Error(), "metadata service URL params missing",
 		"fallback error should include the RPC/URL failure cause")
+	var metadataErr *metadata.MetadataError
+	require.True(t, stderrors.As(err, &metadataErr))
+	assert.Equal(t, metadata.MetadataErrorKindURLBuild, metadataErr.Kind)
+	assert.Equal(t, "metadata_url", metadataErr.Source)
+	assert.Equal(t, testApp, metadataErr.App)
+	assert.Equal(t, "rev-fallback-to-rpc", metadataErr.Revision)
+	assert.Equal(t, constant.RemoteMetadataStorageType, metadataErr.StorageType)
 }
 
 // TestGetMetadataInfo_ReportReturnsNil_FallsBackToRPC verifies the path where the metadata
@@ -544,6 +552,13 @@ func TestGetMetadataInfo_ReportReturnsNil_FallsBackToRPC(t *testing.T) {
 		"nil report result should trigger fallback and surface an RPC error")
 	assert.Contains(t, err.Error(), "metadata service URL params missing",
 		"fallback error should include the RPC/URL failure cause")
+	var metadataErr *metadata.MetadataError
+	require.True(t, stderrors.As(err, &metadataErr))
+	assert.Equal(t, metadata.MetadataErrorKindURLBuild, metadataErr.Kind)
+	assert.Equal(t, "metadata_url", metadataErr.Source)
+	assert.Equal(t, testApp, metadataErr.App)
+	assert.Equal(t, revision, metadataErr.Revision)
+	assert.Equal(t, constant.RemoteMetadataStorageType, metadataErr.StorageType)
 	mockReport.AssertExpectations(t)
 }
 

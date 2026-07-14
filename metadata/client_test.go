@@ -19,11 +19,12 @@ package metadata
 
 import (
 	"context"
+	stderrors "errors"
 	"testing"
 )
 
 import (
-	"github.com/pkg/errors"
+	pkgerrors "github.com/pkg/errors"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -88,8 +89,16 @@ func TestGetMetadataFromMetadataReport(t *testing.T) {
 
 	t.Run("no report instance", func(t *testing.T) {
 		instances = make(map[string]report.MetadataReport)
-		_, err := GetMetadataFromMetadataReport("1", ins, "default")
+		_, err := GetMetadataFromMetadataReport("rev-missing-report", ins, "default")
 		require.Error(t, err)
+
+		var metadataErr *MetadataError
+		require.True(t, stderrors.As(err, &metadataErr))
+		assert.Equal(t, MetadataErrorKindReportLoad, metadataErr.Kind)
+		assert.Equal(t, "metadata_report", metadataErr.Source)
+		assert.Equal(t, "dubbo-app", metadataErr.App)
+		assert.Equal(t, "rev-missing-report", metadataErr.Revision)
+		assert.Equal(t, "default", metadataErr.RegistryID)
 	})
 
 	t.Run("default registry routes to default report", func(t *testing.T) {
@@ -140,9 +149,17 @@ func TestGetMetadataFromMetadataReport(t *testing.T) {
 		defer mockReport.AssertExpectations(t)
 		instances["default"] = mockReport
 
-		mockReport.On("GetAppMetadata").Return(metadataInfo, errors.New("mock error")).Once()
-		_, err := GetMetadataFromMetadataReport("1", ins, "default")
+		mockReport.On("GetAppMetadata").Return(metadataInfo, pkgerrors.New("mock error")).Once()
+		_, err := GetMetadataFromMetadataReport("rev-report-error", ins, "default")
 		require.Error(t, err)
+
+		var metadataErr *MetadataError
+		require.True(t, stderrors.As(err, &metadataErr))
+		assert.Equal(t, MetadataErrorKindReportLoad, metadataErr.Kind)
+		assert.Equal(t, "metadata_report", metadataErr.Source)
+		assert.Equal(t, "dubbo-app", metadataErr.App)
+		assert.Equal(t, "rev-report-error", metadataErr.Revision)
+		assert.Equal(t, "default", metadataErr.RegistryID)
 	})
 }
 
@@ -170,23 +187,94 @@ func TestGetMetadataFromRpc(t *testing.T) {
 	})
 	t.Run("refer error", func(t *testing.T) {
 		mockProtocol.On("Refer").Return(nil).Once()
-		_, err := GetMetadataFromRpc("111", ins)
+		_, err := GetMetadataFromRpc("rev-refer-error", ins)
 		require.Error(t, err)
+
+		var metadataErr *MetadataError
+		require.True(t, stderrors.As(err, &metadataErr))
+		assert.Equal(t, MetadataErrorKindRPCLoad, metadataErr.Kind)
+		assert.Equal(t, "rpc_metadata", metadataErr.Source)
+		assert.Equal(t, "dubbo-app", metadataErr.App)
+		assert.Equal(t, "rev-refer-error", metadataErr.Revision)
 	})
 	t.Run("invoke timeout", func(t *testing.T) {
 		mockProtocol.On("Refer").Return(mockInvoker).Once()
 		mockInvoker.On("Invoke").Return(&result.RPCResult{
 			Attrs: map[string]any{},
-			Err:   errors.New("timeout error"),
+			Err:   pkgerrors.New("timeout error"),
 			Rest:  metadataInfo,
 		}).Once()
 		mockInvoker.On("Destroy").Once()
-		_, err := GetMetadataFromRpc("111", ins)
+		_, err := GetMetadataFromRpc("rev-timeout", ins)
 		require.Error(t, err)
+
+		var metadataErr *MetadataError
+		require.True(t, stderrors.As(err, &metadataErr))
+		assert.Equal(t, MetadataErrorKindRPCLoad, metadataErr.Kind)
+		assert.Equal(t, "rpc_metadata", metadataErr.Source)
+		assert.Equal(t, "dubbo-app", metadataErr.App)
+		assert.Equal(t, "rev-timeout", metadataErr.Revision)
+	})
+	t.Run("nil response", func(t *testing.T) {
+		mockProtocol.On("Refer").Return(mockInvoker).Once()
+		mockInvoker.On("Invoke").Return(&result.RPCResult{
+			Attrs: map[string]any{},
+			Err:   nil,
+			Rest:  nil,
+		}).Once()
+		mockInvoker.On("Destroy").Once()
+		_, err := GetMetadataFromRpc("rev-nil", ins)
+		require.Error(t, err)
+
+		var metadataErr *MetadataError
+		require.True(t, stderrors.As(err, &metadataErr))
+		assert.Equal(t, MetadataErrorKindNil, metadataErr.Kind)
+		assert.Equal(t, "rpc_metadata", metadataErr.Source)
+		assert.Equal(t, "dubbo-app", metadataErr.App)
+		assert.Equal(t, "rev-nil", metadataErr.Revision)
+	})
+	t.Run("unexpected response type", func(t *testing.T) {
+		mockProtocol.On("Refer").Return(mockInvoker).Once()
+		mockInvoker.On("Invoke").Return(&result.RPCResult{
+			Attrs: map[string]any{},
+			Err:   nil,
+			Rest:  123,
+		}).Once()
+		mockInvoker.On("Destroy").Once()
+		_, err := GetMetadataFromRpc("rev-unexpected", ins)
+		require.Error(t, err)
+
+		var metadataErr *MetadataError
+		require.True(t, stderrors.As(err, &metadataErr))
+		assert.Equal(t, MetadataErrorKindRPCLoad, metadataErr.Kind)
+		assert.Equal(t, "rpc_metadata", metadataErr.Source)
+		assert.Equal(t, "dubbo-app", metadataErr.App)
+		assert.Equal(t, "rev-unexpected", metadataErr.Revision)
 	})
 }
 
 func TestGetMetadataFromRpc_MissingURLParams(t *testing.T) {
+	t.Run("malformed params", func(t *testing.T) {
+		insMalformedParams := &registry.DefaultServiceInstance{
+			ID:          "4",
+			ServiceName: "dubbo-app",
+			Host:        "dubbo.io",
+			Metadata: map[string]string{
+				constant.MetadataServiceURLParamsPropertyName: `xxx`,
+			},
+		}
+
+		_, err := GetMetadataFromRpc("rev-malformed-params", insMalformedParams)
+		require.Error(t, err)
+
+		var metadataErr *MetadataError
+		require.True(t, stderrors.As(err, &metadataErr))
+		assert.Equal(t, MetadataErrorKindURLBuild, metadataErr.Kind)
+		assert.Equal(t, "metadata_url", metadataErr.Source)
+		assert.Equal(t, "dubbo-app", metadataErr.App)
+		assert.Equal(t, "rev-malformed-params", metadataErr.Revision)
+	})
+
 	t.Run("missing protocol", func(t *testing.T) {
 		insNoProto := &registry.DefaultServiceInstance{
 			ID:          "2",
@@ -197,6 +285,13 @@ func TestGetMetadataFromRpc_MissingURLParams(t *testing.T) {
 		_, err := GetMetadataFromRpc("1", insNoProto)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "protocol is empty")
+
+		var metadataErr *MetadataError
+		require.True(t, stderrors.As(err, &metadataErr))
+		assert.Equal(t, MetadataErrorKindURLBuild, metadataErr.Kind)
+		assert.Equal(t, "metadata_url", metadataErr.Source)
+		assert.Equal(t, "dubbo-app", metadataErr.App)
+		assert.Equal(t, "1", metadataErr.Revision)
 	})
 
 	t.Run("missing port", func(t *testing.T) {
@@ -211,6 +306,13 @@ func TestGetMetadataFromRpc_MissingURLParams(t *testing.T) {
 		_, err := GetMetadataFromRpc("1", insNoPort)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "port is empty")
+
+		var metadataErr *MetadataError
+		require.True(t, stderrors.As(err, &metadataErr))
+		assert.Equal(t, MetadataErrorKindURLBuild, metadataErr.Kind)
+		assert.Equal(t, "metadata_url", metadataErr.Source)
+		assert.Equal(t, "dubbo-app", metadataErr.App)
+		assert.Equal(t, "1", metadataErr.Revision)
 	})
 }
 
@@ -305,9 +407,10 @@ func Test_getMetadataServiceUrlParams(t *testing.T) {
 		ins registry.ServiceInstance
 	}
 	tests := []struct {
-		name string
-		args args
-		want map[string]string
+		name    string
+		args    args
+		want    map[string]string
+		wantErr bool
 	}{
 		{
 			name: "normal",
@@ -345,12 +448,21 @@ func Test_getMetadataServiceUrlParams(t *testing.T) {
 					},
 				},
 			},
-			want: map[string]string{},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, getMetadataServiceUrlParams(tt.args.ins), "getMetadataServiceUrlParams(%v)", tt.args.ins)
+			got, err := getMetadataServiceUrlParams(tt.args.ins)
+			if tt.wantErr {
+				require.Error(t, err)
+				var metadataErr *MetadataError
+				require.True(t, stderrors.As(err, &metadataErr))
+				assert.Equal(t, MetadataErrorKindURLBuild, metadataErr.Kind)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equalf(t, tt.want, got, "getMetadataServiceUrlParams(%v)", tt.args.ins)
 		})
 	}
 }
@@ -398,8 +510,7 @@ func (m *mockInvoker) Invoke(ctx context.Context, inv base.Invocation) result.Re
 	// Handle both *info.MetadataInfo and *interface{} reply types
 	// This supports the new implementation that uses interface{} to handle different return types
 	if replyPtr, ok := inv.Reply().(*any); ok {
-		// New code path: reply is *interface{}, set it to point to the metadata
-		*replyPtr = res.Result().(*info.MetadataInfo)
+		*replyPtr = res.Result()
 	} else if reply, ok := inv.Reply().(*info.MetadataInfo); ok {
 		// Old code path: reply is *info.MetadataInfo, copy fields
 		meta := res.Result().(*info.MetadataInfo)

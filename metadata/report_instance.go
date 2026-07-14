@@ -159,16 +159,45 @@ func (d *DelegateMetadataReport) GetAppMetadata(application, revision string) (*
 	return meta, err
 }
 
-func (d *DelegateMetadataReport) GetServiceAppMapping(application string, group string, listener mapping.MappingListener) (*gxset.HashSet, error) {
-	return d.instance.GetServiceAppMapping(application, group, listener)
+func (d *DelegateMetadataReport) GetServiceAppMapping(interfaceName string, group string, listener mapping.MappingListener) (*gxset.HashSet, error) {
+	event := metadataMetrics.NewMetadataMetricTimeEvent(metadataMetrics.MetadataMappingGet)
+	event.Attachment[metadataMetrics.MetadataMappingOperationKey] = "get"
+	event.Attachment[constant.InterfaceKey] = interfaceName
+	event.Attachment[constant.GroupKey] = group
+	event.Attachment[metadataMetrics.MetadataMappingListenerRequestedKey] = "false"
+	if listener != nil {
+		event.Attachment[metadataMetrics.MetadataMappingListenerRequestedKey] = "true"
+	}
+	set, err := d.instance.GetServiceAppMapping(interfaceName, group, listener)
+	event.Succ = err == nil
+	event.End = time.Now()
+	metrics.Publish(event)
+	return set, err
 }
 
 func (d *DelegateMetadataReport) RegisterServiceAppMapping(interfaceName, group string, application string) error {
-	return d.instance.RegisterServiceAppMapping(interfaceName, group, application)
+	event := metadataMetrics.NewMetadataMetricTimeEvent(metadataMetrics.MetadataMappingRegister)
+	event.Attachment[metadataMetrics.MetadataMappingOperationKey] = "register"
+	event.Attachment[constant.InterfaceKey] = interfaceName
+	event.Attachment[constant.GroupKey] = group
+	event.Attachment[constant.ApplicationKey] = application
+	err := d.instance.RegisterServiceAppMapping(interfaceName, group, application)
+	event.Succ = err == nil
+	event.End = time.Now()
+	metrics.Publish(event)
+	return err
 }
 
 func (d *DelegateMetadataReport) RemoveServiceAppMappingListener(interfaceName, group string) error {
-	return d.instance.RemoveServiceAppMappingListener(interfaceName, group)
+	event := metadataMetrics.NewMetadataMetricTimeEvent(metadataMetrics.MetadataMappingRemove)
+	event.Attachment[metadataMetrics.MetadataMappingOperationKey] = "remove"
+	event.Attachment[constant.InterfaceKey] = interfaceName
+	event.Attachment[constant.GroupKey] = group
+	err := d.instance.RemoveServiceAppMappingListener(interfaceName, group)
+	event.Succ = err == nil
+	event.End = time.Now()
+	metrics.Publish(event)
+	return err
 }
 
 // UnPublishAppMetadata delegate unpublish metadata info
