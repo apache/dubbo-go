@@ -67,6 +67,28 @@ type registryProtocol struct {
 	serviceConfigurationListeners *sync.Map
 	providerConfigurationListener *providerConfigurationListener
 	once                          sync.Once
+	exportLocksMu                 sync.Mutex
+	exportLocks                   map[string]*keyedExportLock
+	lifecycleMu                   sync.Mutex
+	lifecycleWG                   sync.WaitGroup
+	shutdownMu                    sync.Mutex
+	stopping                      bool
+	destroyed                     bool
+}
+
+type keyedExportLock struct {
+	sync.Mutex
+	references int
+}
+
+type exportPlan struct {
+	originInvoker                base.Invoker
+	registryURL                  *common.URL
+	providerURL                  *common.URL
+	overriderURL                 *common.URL
+	overrideSubscribeListener    *overrideSubscribeListener
+	serviceConfigurationListener *serviceConfigurationListener
+	key                          string
 }
 
 func init() {
@@ -75,8 +97,68 @@ func init() {
 
 func newRegistryProtocol() *registryProtocol {
 	return &registryProtocol{
-		registries: &sync.Map{},
-		bounds:     &sync.Map{},
+		registries:  &sync.Map{},
+		bounds:      &sync.Map{},
+		exportLocks: make(map[string]*keyedExportLock),
+	}
+}
+
+func (proto *registryProtocol) beginLifecycleOperation() bool {
+	proto.lifecycleMu.Lock()
+	defer proto.lifecycleMu.Unlock()
+	if proto.stopping {
+		return false
+	}
+	proto.lifecycleWG.Add(1)
+	return true
+}
+
+func (proto *registryProtocol) isStopping() bool {
+	proto.lifecycleMu.Lock()
+	defer proto.lifecycleMu.Unlock()
+	return proto.stopping
+}
+
+func (proto *registryProtocol) lockExportKeys(firstKey string, secondKey string) func() {
+	keys := []string{firstKey}
+	if secondKey != firstKey {
+		if secondKey < firstKey {
+			keys = []string{secondKey, firstKey}
+		} else {
+			keys = append(keys, secondKey)
+		}
+	}
+
+	proto.exportLocksMu.Lock()
+	locks := make([]*keyedExportLock, 0, len(keys))
+	for _, key := range keys {
+		lock := proto.exportLocks[key]
+		if lock == nil {
+			lock = &keyedExportLock{}
+			proto.exportLocks[key] = lock
+		}
+		lock.references++
+		locks = append(locks, lock)
+	}
+	proto.exportLocksMu.Unlock()
+
+	for _, lock := range locks {
+		lock.Lock()
+	}
+	return func() {
+		for index := len(locks) - 1; index >= 0; index-- {
+			locks[index].Unlock()
+		}
+
+		proto.exportLocksMu.Lock()
+		defer proto.exportLocksMu.Unlock()
+		for index, key := range keys {
+			lock := locks[index]
+			lock.references--
+			if lock.references == 0 && proto.exportLocks[key] == lock {
+				delete(proto.exportLocks, key)
+			}
+		}
 	}
 }
 
@@ -227,79 +309,137 @@ func (proto *registryProtocol) Refer(url *common.URL) base.Invoker {
 
 // Export provider service to registry center
 func (proto *registryProtocol) Export(originInvoker base.Invoker) base.Exporter {
-	registryUrl := getRegistryUrl(originInvoker)
-	providerUrl := getProviderUrl(originInvoker)
+	if !proto.beginLifecycleOperation() {
+		return nil
+	}
+	defer proto.lifecycleWG.Done()
+	return proto.export(originInvoker)
+}
 
-	ensureShutdownAttributes(registryUrl, providerUrl)
-	commonConfig.EnsureApplicationAttribute(registryUrl, providerUrl)
+func (proto *registryProtocol) export(originInvoker base.Invoker) base.Exporter {
+	plan := proto.prepareExport(originInvoker)
+	unlock := proto.lockExportKeys(plan.key, plan.key)
+	defer unlock()
+	if proto.isStopping() {
+		return nil
+	}
+	return proto.exportLocked(plan)
+}
+
+func (proto *registryProtocol) prepareExport(originInvoker base.Invoker) *exportPlan {
+	registryURL := getRegistryUrl(originInvoker)
+	providerURL := getProviderUrl(originInvoker)
+
+	ensureShutdownAttributes(registryURL, providerURL)
+	commonConfig.EnsureApplicationAttribute(registryURL, providerURL)
 
 	proto.once.Do(func() {
-		proto.initConfigurationListeners(providerUrl)
+		proto.initConfigurationListeners(providerURL)
 	})
 
-	overriderUrl := getSubscribedOverrideUrl(providerUrl)
+	overriderURL := getSubscribedOverrideUrl(providerURL)
 	// Deprecated! subscribe to override rules in 2.6.x or before.
-	overrideSubscribeListener := newOverrideSubscribeListener(overriderUrl, originInvoker, proto)
-	proto.overrideListeners.Store(overriderUrl.String(), overrideSubscribeListener)
-	proto.providerConfigurationListener.OverrideUrl(providerUrl)
-	serviceConfigurationListener := newServiceConfigurationListener(overrideSubscribeListener, providerUrl)
-	proto.serviceConfigurationListeners.Store(providerUrl.ServiceKey(), serviceConfigurationListener)
-	serviceConfigurationListener.OverrideUrl(providerUrl)
+	overrideSubscribeListener := newOverrideSubscribeListener(overriderURL, originInvoker, proto)
+	proto.providerConfigurationListener.OverrideUrl(providerURL)
+	serviceConfigurationListener := newServiceConfigurationListener(overrideSubscribeListener, providerURL)
+	serviceConfigurationListener.OverrideUrl(providerURL)
 
+	return &exportPlan{
+		originInvoker:                originInvoker,
+		registryURL:                  registryURL,
+		providerURL:                  providerURL,
+		overriderURL:                 overriderURL,
+		overrideSubscribeListener:    overrideSubscribeListener,
+		serviceConfigurationListener: serviceConfigurationListener,
+		key:                          getCacheKey(originInvoker),
+	}
+}
+
+func (proto *registryProtocol) exportLocked(plan *exportPlan) base.Exporter {
 	// export invoker
-	exporter := proto.doLocalExport(originInvoker, providerUrl)
+	exporter, created := proto.doLocalExport(plan.key, plan.originInvoker, plan.providerURL)
 
 	// update health status
-	// health.SetServingStatusServing(registryUrl.Service())
+	// health.SetServingStatusServing(plan.registryURL.Service())
 
-	if len(registryUrl.Protocol) > 0 {
+	if len(plan.registryURL.Protocol) > 0 {
 		// url to registry
-		reg := proto.getRegistry(registryUrl)
-		registeredProviderUrl := getUrlToRegistry(providerUrl, registryUrl)
+		reg := proto.getRegistry(plan.registryURL)
+		registeredProviderURL := getUrlToRegistry(plan.providerURL, plan.registryURL)
 
-		err := reg.Register(registeredProviderUrl)
+		err := reg.Register(registeredProviderURL)
 		if err != nil {
 			logger.Errorf("[Registry] provider service %v register registry %v error, err=%s",
-				providerUrl.Key(), registryUrl.Key(), err.Error())
+				plan.providerURL.Key(), plan.registryURL.Key(), err.Error())
+			if created {
+				proto.bounds.CompareAndDelete(plan.key, exporter)
+				exporter.UnExport()
+			}
 			return nil
 		}
 
+		proto.overrideListeners.Store(plan.overriderURL.String(), plan.overrideSubscribeListener)
+		proto.serviceConfigurationListeners.Store(plan.providerURL.ServiceKey(), plan.serviceConfigurationListener)
+		exporter.SetLifecycleURLs(registeredProviderURL, plan.overriderURL)
+
 		go func() {
-			if err := reg.Subscribe(overriderUrl, overrideSubscribeListener); err != nil {
-				logger.Warnf("[Registry] reg.subscribe(overriderUrl=%v) = err=%v", overriderUrl, err)
+			if proto.isStopping() {
+				return
+			}
+			if err := reg.Subscribe(plan.overriderURL, plan.overrideSubscribeListener); err != nil {
+				logger.Warnf("[Registry] reg.subscribe(overriderUrl=%v) = err=%v", plan.overriderURL, err)
 			}
 		}()
-
-		exporter.SetRegisterUrl(registeredProviderUrl)
-		exporter.SetSubscribeUrl(overriderUrl)
-
 	} else {
+		proto.overrideListeners.Store(plan.overriderURL.String(), plan.overrideSubscribeListener)
+		proto.serviceConfigurationListeners.Store(plan.providerURL.ServiceKey(), plan.serviceConfigurationListener)
+		exporter.SetLifecycleURLs(nil, nil)
 		logger.Warnf("[Registry] provider service %v do not regist to registry %v, possible direct connection provider",
-			providerUrl.Key(), registryUrl.Key())
+			plan.providerURL.Key(), plan.registryURL.Key())
 	}
 
 	return exporter
 }
 
-func (proto *registryProtocol) doLocalExport(originInvoker base.Invoker, providerUrl *common.URL) *exporterChangeableWrapper {
-	key := getCacheKey(originInvoker)
+func (proto *registryProtocol) doLocalExport(
+	key string,
+	originInvoker base.Invoker,
+	providerUrl *common.URL,
+) (*exporterChangeableWrapper, bool) {
 	cachedExporter, loaded := proto.bounds.Load(key)
-	if !loaded {
-		// new Exporter
-		invokerDelegate := newInvokerDelegate(originInvoker, providerUrl)
-		cachedExporter = newExporterChangeableWrapper(originInvoker,
-			extension.GetProtocol(protocolwrapper.FILTER).Export(invokerDelegate))
-		proto.bounds.Store(key, cachedExporter)
+	if loaded {
+		return cachedExporter.(*exporterChangeableWrapper), false
 	}
-	return cachedExporter.(*exporterChangeableWrapper)
+
+	invokerDelegate := newInvokerDelegate(originInvoker, providerUrl)
+	newExporter := newExporterChangeableWrapper(originInvoker,
+		extension.GetProtocol(protocolwrapper.FILTER).Export(invokerDelegate))
+	cachedExporter, loaded = proto.bounds.LoadOrStore(key, newExporter)
+	if loaded {
+		newExporter.UnExport()
+		return cachedExporter.(*exporterChangeableWrapper), false
+	}
+	return newExporter, true
 }
 
 func (proto *registryProtocol) reExport(invoker base.Invoker, newUrl *common.URL) {
-	key := getCacheKey(invoker)
-	if oldExporter, loaded := proto.bounds.Load(key); loaded {
-		wrappedNewInvoker := newInvokerDelegate(invoker, newUrl)
+	if !proto.beginLifecycleOperation() {
+		return
+	}
+	defer proto.lifecycleWG.Done()
+
+	wrappedNewInvoker := newInvokerDelegate(invoker, newUrl)
+	oldKey := getCacheKey(invoker)
+	newKey := getCacheKey(wrappedNewInvoker)
+	unlock := proto.lockExportKeys(oldKey, newKey)
+	defer unlock()
+	if proto.isStopping() {
+		return
+	}
+
+	if oldExporter, loaded := proto.bounds.Load(oldKey); loaded {
 		oldExporter.(base.Exporter).UnExport()
-		proto.bounds.Delete(key)
+		proto.bounds.CompareAndDelete(oldKey, oldExporter)
 
 		oldProviderURL := getProviderUrl(invoker)
 		oldOverrideURL := getSubscribedOverrideUrl(oldProviderURL)
@@ -310,7 +450,7 @@ func (proto *registryProtocol) reExport(invoker base.Invoker, newUrl *common.URL
 		if err := registerServiceMap(invoker); err != nil {
 			logger.Errorf("[Registry] reExport failed, err=%s", err.Error())
 		}
-		proto.Export(wrappedNewInvoker)
+		proto.exportLocked(proto.prepareExport(wrappedNewInvoker))
 		// TODO:  unregister & unsubscribe
 	}
 }
@@ -491,27 +631,49 @@ func getSubscribedOverrideUrl(providerUrl *common.URL) *common.URL {
 
 // Destroy registry protocol
 func (proto *registryProtocol) Destroy() {
+	proto.shutdownMu.Lock()
+	defer proto.shutdownMu.Unlock()
+
+	proto.lifecycleMu.Lock()
+	if proto.destroyed {
+		proto.lifecycleMu.Unlock()
+		return
+	}
+	proto.stopping = true
+	proto.destroyed = true
+	proto.lifecycleMu.Unlock()
+	proto.lifecycleWG.Wait()
+
 	proto.bounds.Range(func(key, value any) bool {
 		// protocol holds the exporters actually, instead, registry holds them in order to avoid export repeatedly, so
 		// the work for unexport should be finished in protocol.UnExport(), see also config.destroyProviderProtocols().
 		exporter := value.(*exporterChangeableWrapper)
-		reg := proto.getRegistry(getRegistryUrl(exporter.originInvoker))
-		if err := reg.UnRegister(exporter.registerUrl); err != nil {
-			logger.Warnf("[Registry] unRegister consumer url failed, url=%s err=%v", exporter.registerUrl.String(), err)
+		registerUrl, subscribeUrl, unregistered := exporter.LifecycleURLs()
+		var reg registry.Registry
+		registryUrl := getRegistryUrl(exporter.originInvoker)
+		if registerUrl != nil && len(registryUrl.Protocol) > 0 {
+			reg = proto.getRegistry(registryUrl)
+			if !unregistered {
+				if err := reg.UnRegister(registerUrl); err != nil {
+					logger.Warnf("[Registry] unRegister consumer url failed, url=%s err=%v", registerUrl.String(), err)
+				} else {
+					exporter.MarkUnregistered()
+				}
+			}
 		}
-		proto.unsubscribeOverrideListener(reg, exporter.subscribeUrl)
+		proto.unsubscribeOverrideListener(reg, subscribeUrl)
 		proto.serviceConfigurationListeners.Delete(getProviderUrl(exporter.originInvoker).ServiceKey())
 
 		// close all protocol server after consumerUpdateWait + stepTimeout(max time wait during
 		// waitAndAcceptNewRequests procedure)
-		go func() {
-			wait := destroyWaitDuration(exporter.registerUrl)
+		go func(exporter *exporterChangeableWrapper, registerUrl *common.URL, key any) {
+			wait := destroyWaitDuration(registerUrl)
 			if wait > 0 {
 				<-time.After(wait)
 			}
 			exporter.UnExport()
 			proto.bounds.Delete(key)
-		}()
+		}(exporter, registerUrl, key)
 		return true
 	})
 
@@ -527,7 +689,6 @@ func (proto *registryProtocol) Destroy() {
 		proto.serviceConfigurationListeners.Delete(key)
 		return true
 	})
-
 }
 
 func destroyWaitDuration(url *common.URL) time.Duration {
@@ -556,11 +717,33 @@ func destroyWaitDuration(url *common.URL) time.Duration {
 // UnregisterRegistries only unregisters exported services from registries during graceful shutdown.
 // Protocol servers keep running until the later destroy phase.
 func (proto *registryProtocol) UnregisterRegistries() {
+	proto.shutdownMu.Lock()
+	defer proto.shutdownMu.Unlock()
+
+	proto.lifecycleMu.Lock()
+	if proto.destroyed {
+		proto.lifecycleMu.Unlock()
+		return
+	}
+	proto.stopping = true
+	proto.lifecycleMu.Unlock()
+	proto.lifecycleWG.Wait()
+
 	proto.bounds.Range(func(_, value any) bool {
 		exporter := value.(*exporterChangeableWrapper)
-		reg := proto.getRegistry(getRegistryUrl(exporter.originInvoker))
-		if err := reg.UnRegister(exporter.registerUrl); err != nil {
-			logger.Warnf("[Registry] unRegister consumer url failed, url=%s err=%v", exporter.registerUrl.String(), err)
+		registerUrl, _, unregistered := exporter.LifecycleURLs()
+		if registerUrl == nil || unregistered {
+			return true
+		}
+		registryUrl := getRegistryUrl(exporter.originInvoker)
+		if len(registryUrl.Protocol) == 0 {
+			return true
+		}
+		reg := proto.getRegistry(registryUrl)
+		if err := reg.UnRegister(registerUrl); err != nil {
+			logger.Warnf("[Registry] unRegister consumer url failed, url=%s err=%v", registerUrl.String(), err)
+		} else {
+			exporter.MarkUnregistered()
 		}
 		return true
 	})
@@ -639,8 +822,10 @@ type exporterChangeableWrapper struct {
 	base.Exporter
 	originInvoker base.Invoker
 	exporter      base.Exporter
+	lifecycleMu   sync.RWMutex
 	registerUrl   *common.URL
 	subscribeUrl  *common.URL
+	unregistered  bool
 }
 
 func (e *exporterChangeableWrapper) UnExport() {
@@ -648,11 +833,36 @@ func (e *exporterChangeableWrapper) UnExport() {
 }
 
 func (e *exporterChangeableWrapper) SetRegisterUrl(registerUrl *common.URL) {
+	e.lifecycleMu.Lock()
+	defer e.lifecycleMu.Unlock()
 	e.registerUrl = registerUrl
+	e.unregistered = false
 }
 
 func (e *exporterChangeableWrapper) SetSubscribeUrl(subscribeUrl *common.URL) {
+	e.lifecycleMu.Lock()
+	defer e.lifecycleMu.Unlock()
 	e.subscribeUrl = subscribeUrl
+}
+
+func (e *exporterChangeableWrapper) SetLifecycleURLs(registerUrl *common.URL, subscribeUrl *common.URL) {
+	e.lifecycleMu.Lock()
+	defer e.lifecycleMu.Unlock()
+	e.registerUrl = registerUrl
+	e.subscribeUrl = subscribeUrl
+	e.unregistered = false
+}
+
+func (e *exporterChangeableWrapper) LifecycleURLs() (*common.URL, *common.URL, bool) {
+	e.lifecycleMu.RLock()
+	defer e.lifecycleMu.RUnlock()
+	return e.registerUrl, e.subscribeUrl, e.unregistered
+}
+
+func (e *exporterChangeableWrapper) MarkUnregistered() {
+	e.lifecycleMu.Lock()
+	defer e.lifecycleMu.Unlock()
+	e.unregistered = true
 }
 
 func (e *exporterChangeableWrapper) GetInvoker() base.Invoker {

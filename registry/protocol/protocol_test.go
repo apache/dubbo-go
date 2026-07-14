@@ -18,6 +18,7 @@
 package protocol
 
 import (
+	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -220,7 +221,8 @@ func TestExportCopiesProviderAttributesToRegistryURL(t *testing.T) {
 	assert.Same(t, applicationConfig, applicationRaw)
 
 	wrapper := exporter.(*exporterChangeableWrapper)
-	registeredShutdownRaw, ok := wrapper.registerUrl.GetAttribute(constant.ShutdownConfigPrefix)
+	registerURL, _, _ := wrapper.LifecycleURLs()
+	registeredShutdownRaw, ok := registerURL.GetAttribute(constant.ShutdownConfigPrefix)
 	require.True(t, ok)
 	assert.Same(t, shutdownConfig, registeredShutdownRaw)
 }
@@ -393,7 +395,8 @@ func TestDestroyUnsubscribesOverrideListener(t *testing.T) {
 	regProtocol.Destroy()
 
 	assert.Equal(t, 1, recordingRegistry.unSubscribeCount)
-	assert.Equal(t, exporter.subscribeUrl.String(), recordingRegistry.unSubscribeURL.String())
+	_, subscribeURL, _ := exporter.LifecycleURLs()
+	assert.Equal(t, subscribeURL.String(), recordingRegistry.unSubscribeURL.String())
 	assert.Same(t, listener, recordingRegistry.unSubscribeListener)
 	assert.Equal(t, 0, registry.CountSyncMapEntries(regProtocol.overrideListeners))
 	assert.Equal(t, 0, registry.CountSyncMapEntries(regProtocol.serviceConfigurationListeners))
@@ -514,7 +517,8 @@ func TestReExportUnsubscribesOldOverrideListener(t *testing.T) {
 	regProtocol.reExport(originInvoker, newURL)
 
 	assert.Equal(t, 1, recordingRegistry.unSubscribeCount)
-	assert.Equal(t, exporter.subscribeUrl.String(), recordingRegistry.unSubscribeURL.String())
+	_, subscribeURL, _ := exporter.LifecycleURLs()
+	assert.Equal(t, subscribeURL.String(), recordingRegistry.unSubscribeURL.String())
 	assert.Same(t, listener, recordingRegistry.unSubscribeListener)
 	assert.Equal(t, 1, registry.CountSyncMapEntries(regProtocol.overrideListeners))
 	assert.Equal(t, 1, registry.CountSyncMapEntries(regProtocol.serviceConfigurationListeners))
@@ -522,12 +526,13 @@ func TestReExportUnsubscribesOldOverrideListener(t *testing.T) {
 
 func TestUnsubscribeOverrideListenerKeepsUnexpectedListenerType(t *testing.T) {
 	regProtocol, recordingRegistry, _, exporter, _ := newRegistryProtocolWithSubscribedExporter(t)
-	regProtocol.overrideListeners.Store(exporter.subscribeUrl.String(), "unexpected-listener")
+	_, subscribeURL, _ := exporter.LifecycleURLs()
+	regProtocol.overrideListeners.Store(subscribeURL.String(), "unexpected-listener")
 
-	regProtocol.unsubscribeOverrideListener(recordingRegistry, exporter.subscribeUrl)
+	regProtocol.unsubscribeOverrideListener(recordingRegistry, subscribeURL)
 
 	assert.Equal(t, 0, recordingRegistry.unSubscribeCount)
-	_, ok := regProtocol.overrideListeners.Load(exporter.subscribeUrl.String())
+	_, ok := regProtocol.overrideListeners.Load(subscribeURL.String())
 	assert.True(t, ok)
 }
 
@@ -627,6 +632,450 @@ type unsubscribeRecordingRegistry struct {
 	unSubscribeURL      *common.URL
 	unSubscribeListener registry.NotifyListener
 	unSubscribeCount    int
+}
+
+type lifecycleRecordingRegistry struct {
+	*registry.MockRegistry
+	registerStartedOnce sync.Once
+	registerStarted     chan struct{}
+	allowRegister       <-chan struct{}
+	blockRegisterCall   int
+	registerErr         error
+	mu                  sync.Mutex
+	registerCount       int
+	registerURL         *common.URL
+	unregisterURL       *common.URL
+	unregisterCount     int
+	registered          bool
+}
+
+func (r *lifecycleRecordingRegistry) Register(url *common.URL) error {
+	r.mu.Lock()
+	r.registerCount++
+	registerCall := r.registerCount
+	blockRegisterCall := r.blockRegisterCall
+	r.mu.Unlock()
+
+	if blockRegisterCall == 0 || registerCall == blockRegisterCall {
+		if r.registerStarted != nil {
+			r.registerStartedOnce.Do(func() {
+				close(r.registerStarted)
+			})
+		}
+		if r.allowRegister != nil {
+			<-r.allowRegister
+		}
+	}
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.registerErr != nil {
+		return r.registerErr
+	}
+	r.registerURL = url
+	r.registered = true
+	return nil
+}
+
+func (r *lifecycleRecordingRegistry) UnRegister(url *common.URL) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.unregisterURL = url
+	r.unregisterCount++
+	r.registered = false
+	return nil
+}
+
+func (r *lifecycleRecordingRegistry) Subscribe(*common.URL, registry.NotifyListener) error {
+	return nil
+}
+
+func (r *lifecycleRecordingRegistry) UnSubscribe(*common.URL, registry.NotifyListener) error {
+	return nil
+}
+
+func (r *lifecycleRecordingRegistry) snapshot() (*common.URL, *common.URL, int, bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.registerURL, r.unregisterURL, r.unregisterCount, r.registered
+}
+
+func newLifecycleTestInvoker(t *testing.T, registryScheme string, service string) base.Invoker {
+	t.Helper()
+
+	registryURL, err := common.NewURL(registryScheme + "://127.0.0.1:1111")
+	require.NoError(t, err)
+	providerURL, err := common.NewURL(
+		"dubbo://127.0.0.1:20000/"+service,
+		common.WithAttribute(constant.ApplicationKey, &global.ApplicationConfig{Name: "lifecycle-test"}),
+		common.WithAttribute(constant.ShutdownConfigPrefix, &global.ShutdownConfig{
+			StepTimeout:            "0s",
+			ConsumerUpdateWaitTime: "0s",
+		}),
+	)
+	require.NoError(t, err)
+	registryURL.SubURL = providerURL
+	return base.NewBaseInvoker(registryURL)
+}
+
+func installLifecycleRecordingRegistry(
+	t *testing.T,
+	registryScheme string,
+	recordingRegistry *lifecycleRecordingRegistry,
+) {
+	t.Helper()
+	extension.SetRegistry(registryScheme, func(url *common.URL) (registry.Registry, error) {
+		mockRegistry, err := registry.NewMockRegistry(url)
+		if err != nil {
+			return nil, err
+		}
+		recordingRegistry.MockRegistry = mockRegistry.(*registry.MockRegistry)
+		return recordingRegistry, nil
+	})
+	extension.SetProtocol(protocolwrapper.FILTER, protocolwrapper.NewMockProtocolFilter)
+}
+
+type lifecycleRecordingProtocol struct {
+	unexported chan<- time.Time
+}
+
+func (p *lifecycleRecordingProtocol) Export(invoker base.Invoker) base.Exporter {
+	return &recordingExporter{invoker: invoker, unexported: p.unexported}
+}
+
+func (*lifecycleRecordingProtocol) Refer(*common.URL) base.Invoker {
+	return nil
+}
+
+func (*lifecycleRecordingProtocol) Destroy() {}
+
+func TestDestroyWaitsForExporterLifecyclePublication(t *testing.T) {
+	const registryScheme = "lifecycle-blocking"
+	registerStarted := make(chan struct{})
+	allowRegister := make(chan struct{})
+	recordingRegistry := &lifecycleRecordingRegistry{
+		registerStarted: registerStarted,
+		allowRegister:   allowRegister,
+	}
+	installLifecycleRecordingRegistry(t, registryScheme, recordingRegistry)
+
+	regProtocol := newRegistryProtocol()
+	invoker := newLifecycleTestInvoker(t, registryScheme, "org.apache.dubbo-go.lifecycleService")
+	exportDone := make(chan base.Exporter, 1)
+	go func() {
+		exportDone <- regProtocol.Export(invoker)
+	}()
+	select {
+	case <-registerStarted:
+	case <-time.After(time.Second):
+		require.FailNow(t, "registration did not start")
+	}
+
+	destroyDone := make(chan struct{})
+	go func() {
+		regProtocol.Destroy()
+		close(destroyDone)
+	}()
+	require.Eventually(t, func() bool {
+		regProtocol.lifecycleMu.Lock()
+		defer regProtocol.lifecycleMu.Unlock()
+		return regProtocol.stopping
+	}, time.Second, time.Millisecond)
+	select {
+	case <-destroyDone:
+		require.FailNow(t, "destroy observed an exporter before registration completed")
+	default:
+	}
+
+	close(allowRegister)
+	var exporter base.Exporter
+	select {
+	case exporter = <-exportDone:
+	case <-time.After(time.Second):
+		require.FailNow(t, "export did not complete")
+	}
+	require.NotNil(t, exporter)
+	select {
+	case <-destroyDone:
+	case <-time.After(time.Second):
+		require.FailNow(t, "destroy did not complete")
+	}
+
+	wrapper := exporter.(*exporterChangeableWrapper)
+	registerURL, subscribeURL, _ := wrapper.LifecycleURLs()
+	require.NotNil(t, registerURL)
+	require.NotNil(t, subscribeURL)
+	registeredURL, unregisteredURL, unregisterCount, registered := recordingRegistry.snapshot()
+	assert.Same(t, registeredURL, registerURL)
+	assert.Same(t, registeredURL, unregisteredURL)
+	assert.Equal(t, 1, unregisterCount)
+	assert.False(t, registered)
+}
+
+func TestRegistrationFailureRemovesUnpublishedExporter(t *testing.T) {
+	const registryScheme = "lifecycle-failing"
+	recordingRegistry := &lifecycleRecordingRegistry{registerErr: errors.New("register failed")}
+	installLifecycleRecordingRegistry(t, registryScheme, recordingRegistry)
+
+	regProtocol := newRegistryProtocol()
+	exporter := regProtocol.Export(newLifecycleTestInvoker(
+		t,
+		registryScheme,
+		"org.apache.dubbo-go.failedLifecycleService",
+	))
+
+	assert.Nil(t, exporter)
+	assert.Zero(t, registry.CountSyncMapEntries(regProtocol.bounds))
+	assert.Zero(t, registry.CountSyncMapEntries(regProtocol.overrideListeners))
+	assert.Zero(t, registry.CountSyncMapEntries(regProtocol.serviceConfigurationListeners))
+	regProtocol.Destroy()
+}
+
+func TestBlockedExportDoesNotDelayDifferentProvider(t *testing.T) {
+	const (
+		blockingRegistryScheme = "lifecycle-blocked-provider"
+		readyRegistryScheme    = "lifecycle-ready-provider"
+	)
+	registerStarted := make(chan struct{})
+	allowRegister := make(chan struct{})
+	blockingRegistry := &lifecycleRecordingRegistry{
+		registerStarted: registerStarted,
+		allowRegister:   allowRegister,
+	}
+	readyRegistry := &lifecycleRecordingRegistry{}
+	installLifecycleRecordingRegistry(t, blockingRegistryScheme, blockingRegistry)
+	installLifecycleRecordingRegistry(t, readyRegistryScheme, readyRegistry)
+
+	regProtocol := newRegistryProtocol()
+	blockedInvoker := newLifecycleTestInvoker(
+		t,
+		blockingRegistryScheme,
+		"org.apache.dubbo-go.blockedLifecycleService",
+	)
+	readyInvoker := newLifecycleTestInvoker(
+		t,
+		readyRegistryScheme,
+		"org.apache.dubbo-go.readyLifecycleService",
+	)
+	blockedExportDone := make(chan base.Exporter, 1)
+	go func() {
+		blockedExportDone <- regProtocol.Export(blockedInvoker)
+	}()
+	select {
+	case <-registerStarted:
+	case <-time.After(time.Second):
+		require.FailNow(t, "blocking registration did not start")
+	}
+
+	readyExportDone := make(chan base.Exporter, 1)
+	go func() {
+		readyExportDone <- regProtocol.Export(readyInvoker)
+	}()
+	select {
+	case exporter := <-readyExportDone:
+		require.NotNil(t, exporter)
+	case <-time.After(time.Second):
+		require.FailNow(t, "an unrelated provider export was blocked")
+	}
+
+	close(allowRegister)
+	select {
+	case exporter := <-blockedExportDone:
+		require.NotNil(t, exporter)
+	case <-time.After(time.Second):
+		require.FailNow(t, "blocked export did not complete")
+	}
+	regProtocol.Destroy()
+}
+
+func TestReExportWaitsForExporterLifecyclePublication(t *testing.T) {
+	t.Run("different cache keys", func(t *testing.T) {
+		const registryScheme = "lifecycle-reexport-different-key"
+		registerStarted := make(chan struct{})
+		allowRegister := make(chan struct{})
+		var releaseRegister sync.Once
+		release := func() {
+			releaseRegister.Do(func() {
+				close(allowRegister)
+			})
+		}
+		recordingRegistry := &lifecycleRecordingRegistry{
+			registerStarted:   registerStarted,
+			allowRegister:     allowRegister,
+			blockRegisterCall: 2,
+		}
+		installLifecycleRecordingRegistry(t, registryScheme, recordingRegistry)
+		unexported := make(chan time.Time, 4)
+		extension.SetProtocol(protocolwrapper.FILTER, func() base.Protocol {
+			return &lifecycleRecordingProtocol{unexported: unexported}
+		})
+
+		regProtocol := newRegistryProtocol()
+		t.Cleanup(func() {
+			release()
+			regProtocol.Destroy()
+		})
+		invoker := newLifecycleTestInvoker(
+			t,
+			registryScheme,
+			"org.apache.dubbo-go.reexportLifecycleService",
+		)
+		oldExporter := regProtocol.Export(invoker)
+		require.NotNil(t, oldExporter)
+		oldKey := getCacheKey(invoker)
+
+		repeatedExportDone := make(chan base.Exporter, 1)
+		go func() {
+			repeatedExportDone <- regProtocol.Export(invoker)
+		}()
+		select {
+		case <-registerStarted:
+		case <-time.After(time.Second):
+			require.FailNow(t, "repeated registration did not start")
+		}
+
+		newURL := invoker.GetURL().Clone()
+		newURL.SubURL = invoker.GetURL().SubURL.Clone()
+		newURL.SubURL.SetParam(constant.ClusterKey, "reconfigured")
+		newKey := getCacheKey(newInvokerDelegate(invoker, newURL))
+		require.NotEqual(t, oldKey, newKey)
+
+		reExportStarted := make(chan struct{})
+		reExportDone := make(chan struct{})
+		go func() {
+			close(reExportStarted)
+			regProtocol.reExport(invoker, newURL)
+			close(reExportDone)
+		}()
+		<-reExportStarted
+
+		select {
+		case <-unexported:
+			require.FailNow(t, "re-export closed an exporter whose registration was still in progress")
+		case <-time.After(100 * time.Millisecond):
+		}
+		bound, loaded := regProtocol.bounds.Load(oldKey)
+		require.True(t, loaded)
+		require.Same(t, oldExporter, bound)
+
+		release()
+		select {
+		case exporter := <-repeatedExportDone:
+			require.Same(t, oldExporter, exporter)
+		case <-time.After(time.Second):
+			require.FailNow(t, "repeated export did not complete")
+		}
+		select {
+		case <-reExportDone:
+		case <-time.After(time.Second):
+			require.FailNow(t, "re-export did not complete")
+		}
+
+		_, oldLoaded := regProtocol.bounds.Load(oldKey)
+		assert.False(t, oldLoaded)
+		newBound, newLoaded := regProtocol.bounds.Load(newKey)
+		require.True(t, newLoaded)
+		registerURL, subscribeURL, _ := newBound.(*exporterChangeableWrapper).LifecycleURLs()
+		require.NotNil(t, registerURL)
+		require.NotNil(t, subscribeURL)
+		select {
+		case <-unexported:
+		case <-time.After(time.Second):
+			require.FailNow(t, "old exporter was not closed after its registration completed")
+		}
+		select {
+		case <-unexported:
+			require.FailNow(t, "old exporter was closed more than once")
+		default:
+		}
+		regProtocol.exportLocksMu.Lock()
+		assert.Empty(t, regProtocol.exportLocks)
+		regProtocol.exportLocksMu.Unlock()
+	})
+
+	t.Run("same cache key", func(t *testing.T) {
+		const registryScheme = "lifecycle-reexport-same-key"
+		recordingRegistry := &lifecycleRecordingRegistry{}
+		installLifecycleRecordingRegistry(t, registryScheme, recordingRegistry)
+		unexported := make(chan time.Time, 4)
+		extension.SetProtocol(protocolwrapper.FILTER, func() base.Protocol {
+			return &lifecycleRecordingProtocol{unexported: unexported}
+		})
+
+		regProtocol := newRegistryProtocol()
+		t.Cleanup(regProtocol.Destroy)
+		invoker := newLifecycleTestInvoker(
+			t,
+			registryScheme,
+			"org.apache.dubbo-go.sameKeyReexportLifecycleService",
+		)
+		require.NotNil(t, regProtocol.Export(invoker))
+		oldKey := getCacheKey(invoker)
+
+		newURL := invoker.GetURL().Clone()
+		newURL.SubURL = invoker.GetURL().SubURL.Clone()
+		newURL.SubURL.SetParam("dynamic", "false")
+		newKey := getCacheKey(newInvokerDelegate(invoker, newURL))
+		require.Equal(t, oldKey, newKey)
+
+		reExportDone := make(chan struct{})
+		go func() {
+			regProtocol.reExport(invoker, newURL)
+			close(reExportDone)
+		}()
+		select {
+		case <-reExportDone:
+		case <-time.After(time.Second):
+			require.FailNow(t, "same-key re-export deadlocked")
+		}
+
+		newBound, loaded := regProtocol.bounds.Load(newKey)
+		require.True(t, loaded)
+		registerURL, subscribeURL, _ := newBound.(*exporterChangeableWrapper).LifecycleURLs()
+		require.NotNil(t, registerURL)
+		require.NotNil(t, subscribeURL)
+		select {
+		case <-unexported:
+		case <-time.After(time.Second):
+			require.FailNow(t, "same-key re-export did not close the old exporter")
+		}
+		regProtocol.exportLocksMu.Lock()
+		assert.Empty(t, regProtocol.exportLocks)
+		regProtocol.exportLocksMu.Unlock()
+	})
+}
+
+func TestConcurrentUnregisterAndDestroyUnregisterOnlyOnce(t *testing.T) {
+	const registryScheme = "lifecycle-unregister-once"
+	recordingRegistry := &lifecycleRecordingRegistry{}
+	installLifecycleRecordingRegistry(t, registryScheme, recordingRegistry)
+
+	regProtocol := newRegistryProtocol()
+	require.NotNil(t, regProtocol.Export(newLifecycleTestInvoker(
+		t,
+		registryScheme,
+		"org.apache.dubbo-go.unregisterLifecycleService",
+	)))
+
+	start := make(chan struct{})
+	var shutdown sync.WaitGroup
+	shutdown.Add(2)
+	go func() {
+		defer shutdown.Done()
+		<-start
+		regProtocol.UnregisterRegistries()
+	}()
+	go func() {
+		defer shutdown.Done()
+		<-start
+		regProtocol.Destroy()
+	}()
+	close(start)
+	shutdown.Wait()
+
+	_, _, unregisterCount, registered := recordingRegistry.snapshot()
+	assert.Equal(t, 1, unregisterCount)
+	assert.False(t, registered)
 }
 
 func (r *unsubscribeRecordingRegistry) UnSubscribe(url *common.URL, notifyListener registry.NotifyListener) error {
