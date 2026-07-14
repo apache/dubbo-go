@@ -229,12 +229,14 @@ func (watcher *PolarisServiceWatcher) removeCurrentInstancesLocked(instances []m
 		keys[instance.GetInstanceKey()] = struct{}{}
 	}
 
-	current := watcher.currentInstances[:0]
-	for _, instance := range watcher.currentInstances {
+	old := watcher.currentInstances
+	current := old[:0]
+	for _, instance := range old {
 		if _, remove := keys[instance.GetInstanceKey()]; !remove {
 			current = append(current, instance)
 		}
 	}
+	clear(old[len(current):])
 	watcher.currentInstances = current
 }
 

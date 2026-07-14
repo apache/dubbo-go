@@ -19,8 +19,10 @@ package polaris
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 )
@@ -101,9 +103,62 @@ type recordingPolarisNotifyListener struct {
 
 type unsupportedPolarisNotifyListener []recordedPolarisEvent
 
+type unsupportedMapPolarisNotifyListener map[string]int
+
+type unsupportedFuncPolarisNotifyListener func()
+
+type unsupportedChanPolarisNotifyListener chan struct{}
+
+type unsupportedStructPolarisNotifyListener struct {
+	events []recordedPolarisEvent
+}
+
+type runtimeUnhashablePolarisNotifyListener struct {
+	state any
+}
+
+type comparableValuePolarisNotifyListener struct {
+	id       int
+	recorder *recordingPolarisNotifyListener
+}
+
+type nilablePolarisNotifyListener struct{}
+
 func (unsupportedPolarisNotifyListener) Notify(*registry.ServiceEvent) {}
 
 func (unsupportedPolarisNotifyListener) NotifyAll([]*registry.ServiceEvent, func()) {}
+
+func (unsupportedMapPolarisNotifyListener) Notify(*registry.ServiceEvent) {}
+
+func (unsupportedMapPolarisNotifyListener) NotifyAll([]*registry.ServiceEvent, func()) {}
+
+func (unsupportedFuncPolarisNotifyListener) Notify(*registry.ServiceEvent) {}
+
+func (unsupportedFuncPolarisNotifyListener) NotifyAll([]*registry.ServiceEvent, func()) {}
+
+func (unsupportedChanPolarisNotifyListener) Notify(*registry.ServiceEvent) {}
+
+func (unsupportedChanPolarisNotifyListener) NotifyAll([]*registry.ServiceEvent, func()) {}
+
+func (unsupportedStructPolarisNotifyListener) Notify(*registry.ServiceEvent) {}
+
+func (unsupportedStructPolarisNotifyListener) NotifyAll([]*registry.ServiceEvent, func()) {}
+
+func (runtimeUnhashablePolarisNotifyListener) Notify(*registry.ServiceEvent) {}
+
+func (runtimeUnhashablePolarisNotifyListener) NotifyAll([]*registry.ServiceEvent, func()) {}
+
+func (l comparableValuePolarisNotifyListener) Notify(event *registry.ServiceEvent) {
+	l.recorder.Notify(event)
+}
+
+func (l comparableValuePolarisNotifyListener) NotifyAll(events []*registry.ServiceEvent, callback func()) {
+	l.recorder.NotifyAll(events, callback)
+}
+
+func (*nilablePolarisNotifyListener) Notify(*registry.ServiceEvent) {}
+
+func (*nilablePolarisNotifyListener) NotifyAll([]*registry.ServiceEvent, func()) {}
 
 func (r *recordingPolarisNotifyListener) Notify(event *registry.ServiceEvent) {
 	r.record(
@@ -321,11 +376,11 @@ func TestPolarisInitialSubscribeInstancesAreListenerScoped(t *testing.T) {
 		t.Fatalf("LoadSubscribeInstances(first empty) error = %v", err)
 	}
 
-	firstKey := newInitialSubscribeInstancesKey(serviceName, firstNotify)
+	firstKey := mustInitialSubscribeInstancesKey(t, serviceName, firstNotify)
 	if entry, instances := pr.loadInitialSubscribeInstances(firstKey); entry != nil || len(instances) != 0 {
 		t.Fatalf("first pending entry = (%p, %v), want empty", entry, instances)
 	}
-	secondKey := newInitialSubscribeInstancesKey(serviceName, secondNotify)
+	secondKey := mustInitialSubscribeInstancesKey(t, serviceName, secondNotify)
 	secondEntry, instances := pr.loadInitialSubscribeInstances(secondKey)
 	if secondEntry == nil || len(instances) != 1 || instances[0].GetInstanceKey() != instanceB.GetInstanceKey() {
 		t.Fatalf("second pending entry = (%p, %v), want instance B", secondEntry, instances)
@@ -351,6 +406,68 @@ func TestPolarisInitialSubscribeInstancesAreListenerScoped(t *testing.T) {
 	remaining, remainingInstances := pr.loadInitialSubscribeInstances(secondKey)
 	if remaining != newEntry || len(remainingInstances) != 1 || remainingInstances[0].GetInstanceKey() != instanceB.GetInstanceKey() {
 		t.Fatalf("newer pending entry = (%p, %v), want preserved instance B", remaining, remainingInstances)
+	}
+}
+
+func TestPolarisComparableValueNotifyListenersKeepIndependentBaselines(t *testing.T) {
+	serviceName := "com.test.ComparableValueListenerService"
+	instanceA := newPolarisTestInstance("instance-a", "10.0.0.1", 20001, serviceName, true)
+	instanceB := newPolarisTestInstance("instance-b", "10.0.0.2", 20002, serviceName, true)
+	consumer := &fakePolarisConsumer{instanceResponses: [][]model.Instance{{instanceA}, {instanceB}}}
+	pr := newTestPolarisRegistry(consumer)
+	recorder1 := &recordingPolarisNotifyListener{}
+	recorder2 := &recordingPolarisNotifyListener{}
+	listener1 := comparableValuePolarisNotifyListener{id: 1, recorder: recorder1}
+	listener2 := comparableValuePolarisNotifyListener{id: 2, recorder: recorder2}
+	url := newPolarisConsumerURL(serviceName)
+
+	if err := pr.LoadSubscribeInstances(url, listener1); err != nil {
+		t.Fatalf("LoadSubscribeInstances(listener1) error = %v", err)
+	}
+	if err := pr.LoadSubscribeInstances(url, listener2); err != nil {
+		t.Fatalf("LoadSubscribeInstances(listener2) error = %v", err)
+	}
+	if len(pr.initialSubscribeInstances) != 2 {
+		t.Errorf("pending entry count = %d, want 2", len(pr.initialSubscribeInstances))
+	}
+
+	key1 := mustInitialSubscribeInstancesKey(t, serviceName, listener1)
+	key2 := mustInitialSubscribeInstancesKey(t, serviceName, listener2)
+	entry1, pending1 := pr.loadInitialSubscribeInstances(key1)
+	entry2, pending2 := pr.loadInitialSubscribeInstances(key2)
+	if entry1 == nil || len(pending1) != 1 || pending1[0].GetInstanceKey() != instanceA.GetInstanceKey() {
+		t.Errorf("listener1 pending entry = (%p, %v), want instance A", entry1, pending1)
+	}
+	if entry2 == nil || len(pending2) != 1 || pending2[0].GetInstanceKey() != instanceB.GetInstanceKey() {
+		t.Errorf("listener2 pending entry = (%p, %v), want instance B", entry2, pending2)
+	}
+
+	watcher := mustStoppedRegistryWatcher(t, pr, serviceName)
+	watcher.handleWatchSnapshot([]model.Instance{instanceB})
+	polarisListener1, err := pr.createPolarisListener(serviceName, listener1)
+	if err != nil {
+		t.Fatalf("createPolarisListener(listener1) error = %v", err)
+	}
+	defer closeTestPolarisListener(polarisListener1)
+	assertPolarisListenerEvents(t, polarisListener1, []recordedPolarisEvent{
+		{action: remoting.EventTypeDel, host: "10.0.0.1", port: "20001"},
+		{action: remoting.EventTypeAdd, host: "10.0.0.2", port: "20002"},
+	})
+	if pending, _ := pr.loadInitialSubscribeInstances(key1); pending != nil {
+		t.Errorf("listener1 pending entry after listener success = %p, want nil", pending)
+	}
+	if pending, instances := pr.loadInitialSubscribeInstances(key2); pending != entry2 || len(instances) != 1 || instances[0].GetInstanceKey() != instanceB.GetInstanceKey() {
+		t.Errorf("listener2 pending entry = (%p, %v), want preserved instance B", pending, instances)
+	}
+
+	polarisListener2, err := pr.createPolarisListener(serviceName, listener2)
+	if err != nil {
+		t.Fatalf("createPolarisListener(listener2) error = %v", err)
+	}
+	defer closeTestPolarisListener(polarisListener2)
+	assertPolarisListenerEvent(t, polarisListener2, remoting.EventTypeAdd, instanceB)
+	if pending, _ := pr.loadInitialSubscribeInstances(key2); pending != nil {
+		t.Errorf("listener2 pending entry after listener success = %p, want nil", pending)
 	}
 }
 
@@ -433,6 +550,104 @@ func TestPolarisWatcherTracksCurrentState(t *testing.T) {
 	}
 }
 
+func TestPolarisWatcherClearsRemovedInstanceReferences(t *testing.T) {
+	serviceName := "com.test.ClearRemovedReferencesService"
+	instanceA := newPolarisTestInstance("instance-a", "10.0.0.1", 20001, serviceName, true)
+	instanceB := newPolarisTestInstance("instance-b", "10.0.0.2", 20002, serviceName, true)
+	instanceC := newPolarisTestInstance("instance-c", "10.0.0.3", 20003, serviceName, true)
+	missing := newPolarisTestInstance("missing", "10.0.0.9", 20009, serviceName, true)
+
+	t.Run("partial delete clears tail and preserves notification", func(t *testing.T) {
+		watcher := newStoppedPolarisWatcher(t, nil)
+		watcher.handleWatchSnapshot([]model.Instance{instanceA, instanceB, instanceC})
+		backing := watcher.currentInstances
+		notify := &recordingPolarisNotifyListener{}
+		watcher.AddSubscriber(notify.recordInstances)
+
+		watcher.handleInstanceEvent(&model.InstanceEvent{
+			DeleteEvent: &model.InstanceDeleteEvent{Instances: []model.Instance{instanceB, instanceC}},
+		})
+
+		if len(watcher.currentInstances) != 1 {
+			t.Fatalf("current instance count = %d, want 1", len(watcher.currentInstances))
+		}
+		assertPolarisInstanceIdentity(t, watcher.currentInstances[0], instanceA)
+		if &watcher.currentInstances[0] != &backing[0] {
+			t.Fatal("current instances did not reuse the original backing array")
+		}
+		for i, instance := range backing[len(watcher.currentInstances):] {
+			if instance != nil {
+				t.Errorf("removed backing slot %d = %v, want nil", i+len(watcher.currentInstances), instance)
+			}
+		}
+		assertPolarisEventsAddress(t, notify.events, []recordedPolarisEvent{
+			{action: remoting.EventTypeDel, host: "10.0.0.2", port: "20002"},
+			{action: remoting.EventTypeDel, host: "10.0.0.3", port: "20003"},
+		})
+	})
+
+	t.Run("delete all clears every slot", func(t *testing.T) {
+		watcher := newStoppedPolarisWatcher(t, nil)
+		watcher.handleWatchSnapshot([]model.Instance{instanceA, instanceB, instanceC})
+		backing := watcher.currentInstances
+
+		watcher.removeCurrentInstancesLocked([]model.Instance{instanceA, instanceB, instanceC})
+
+		if len(watcher.currentInstances) != 0 {
+			t.Fatalf("current instance count = %d, want 0", len(watcher.currentInstances))
+		}
+		for i, instance := range backing {
+			if instance != nil {
+				t.Errorf("removed backing slot %d = %v, want nil", i, instance)
+			}
+		}
+	})
+
+	t.Run("delete missing instance preserves order and storage", func(t *testing.T) {
+		watcher := newStoppedPolarisWatcher(t, nil)
+		watcher.handleWatchSnapshot([]model.Instance{instanceA, instanceB, instanceC})
+		backing := watcher.currentInstances
+
+		watcher.removeCurrentInstancesLocked([]model.Instance{missing})
+
+		if len(watcher.currentInstances) != 3 {
+			t.Fatalf("current instance count = %d, want 3", len(watcher.currentInstances))
+		}
+		for i, want := range []model.Instance{instanceA, instanceB, instanceC} {
+			assertPolarisInstanceIdentity(t, watcher.currentInstances[i], want)
+		}
+		if &watcher.currentInstances[0] != &backing[0] {
+			t.Fatal("current instances did not preserve the original backing array")
+		}
+	})
+
+	t.Run("empty removal preserves current instances", func(t *testing.T) {
+		watcher := newStoppedPolarisWatcher(t, nil)
+		watcher.handleWatchSnapshot([]model.Instance{instanceA, instanceB})
+		backing := watcher.currentInstances
+
+		watcher.removeCurrentInstancesLocked(nil)
+
+		if len(watcher.currentInstances) != 2 {
+			t.Fatalf("current instance count = %d, want 2", len(watcher.currentInstances))
+		}
+		assertPolarisInstanceIdentity(t, watcher.currentInstances[0], instanceA)
+		assertPolarisInstanceIdentity(t, watcher.currentInstances[1], instanceB)
+		if &watcher.currentInstances[0] != &backing[0] {
+			t.Fatal("current instances did not preserve the original backing array")
+		}
+	})
+
+	t.Run("empty current instances is safe", func(t *testing.T) {
+		watcher := newStoppedPolarisWatcher(t, nil)
+		watcher.removeCurrentInstancesLocked([]model.Instance{instanceA})
+		watcher.removeCurrentInstancesLocked(nil)
+		if len(watcher.currentInstances) != 0 {
+			t.Fatalf("current instance count = %d, want 0", len(watcher.currentInstances))
+		}
+	})
+}
+
 func TestPolarisApplicationSubscriberCompatibility(t *testing.T) {
 	serviceName := "com.test.ApplicationSubscriberService"
 	instanceA := newPolarisTestInstance("instance-a", "10.0.0.1", 20001, serviceName, true)
@@ -511,7 +726,7 @@ func TestPolarisSnapshotsUseDefensiveCopies(t *testing.T) {
 
 	t.Run("pending registry entry", func(t *testing.T) {
 		pr := newTestPolarisRegistry(nil)
-		key := newInitialSubscribeInstancesKey(serviceName, &recordingPolarisNotifyListener{})
+		key := mustInitialSubscribeInstancesKey(t, serviceName, &recordingPolarisNotifyListener{})
 		input := []model.Instance{instanceA}
 		pr.storeInitialSubscribeInstances(key, input)
 		input[0] = instanceB
@@ -524,20 +739,98 @@ func TestPolarisSnapshotsUseDefensiveCopies(t *testing.T) {
 	})
 }
 
-func TestPolarisUnsupportedNotifyListenerFallback(t *testing.T) {
-	serviceName := "com.test.UnsupportedNotifyListenerService"
+func TestPolarisRejectsInvalidNotifyListenerIdentities(t *testing.T) {
+	serviceName := "com.test.InvalidNotifyListenerService"
+	instanceA := newPolarisTestInstance("instance-a", "10.0.0.1", 20001, serviceName, true)
+	var typedNil *nilablePolarisNotifyListener
+	var nilSlice unsupportedPolarisNotifyListener
+	var nilMap unsupportedMapPolarisNotifyListener
+	var nilFunc unsupportedFuncPolarisNotifyListener
+	var nilChan unsupportedChanPolarisNotifyListener
+	tests := []struct {
+		name          string
+		notify        registry.NotifyListener
+		withInstances bool
+	}{
+		{name: "nil interface", notify: nil},
+		{name: "typed nil pointer", notify: typedNil, withInstances: true},
+		{name: "typed nil slice", notify: nilSlice, withInstances: true},
+		{name: "typed nil map", notify: nilMap, withInstances: true},
+		{name: "typed nil func", notify: nilFunc, withInstances: true},
+		{name: "typed nil chan", notify: nilChan, withInstances: true},
+		{name: "non-comparable slice", notify: unsupportedPolarisNotifyListener{}, withInstances: true},
+		{name: "non-comparable map", notify: unsupportedMapPolarisNotifyListener{}, withInstances: true},
+		{name: "non-comparable func", notify: unsupportedFuncPolarisNotifyListener(func() {}), withInstances: true},
+		{name: "non-comparable struct", notify: unsupportedStructPolarisNotifyListener{}, withInstances: true},
+		{
+			name:          "runtime-unhashable interface field",
+			notify:        runtimeUnhashablePolarisNotifyListener{state: []int{1}},
+			withInstances: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name+" load", func(t *testing.T) {
+			var responses [][]model.Instance
+			if tt.withInstances {
+				responses = [][]model.Instance{{instanceA}}
+			}
+			consumer := &fakePolarisConsumer{instanceResponses: responses}
+			pr := newTestPolarisRegistry(consumer)
+			err := callPolarisRegistryWithoutPanic(t, func() error {
+				return pr.LoadSubscribeInstances(newPolarisConsumerURL(serviceName), tt.notify)
+			})
+			if err == nil {
+				t.Errorf("LoadSubscribeInstances() error = nil, want invalid listener error")
+			} else if listenerType := fmt.Sprintf("%T", tt.notify); !strings.Contains(err.Error(), listenerType) {
+				t.Errorf("LoadSubscribeInstances() error = %q, want listener type %q", err, listenerType)
+			}
+			if consumer.getCalls != 0 {
+				t.Errorf("GetInstances() calls = %d, want 0", consumer.getCalls)
+			}
+			if len(pr.initialSubscribeInstances) != 0 {
+				t.Errorf("pending entry count = %d, want 0", len(pr.initialSubscribeInstances))
+			}
+		})
+
+		t.Run(tt.name+" create listener", func(t *testing.T) {
+			pr := newTestPolarisRegistry(nil)
+			mustStoppedRegistryWatcher(t, pr, serviceName)
+			var listener *polarisListener
+			err := callPolarisRegistryWithoutPanic(t, func() error {
+				var createErr error
+				listener, createErr = pr.createPolarisListener(serviceName, tt.notify)
+				return createErr
+			})
+			if listener != nil {
+				closeTestPolarisListener(listener)
+			}
+			if err == nil {
+				t.Errorf("createPolarisListener() error = nil, want invalid listener error")
+			} else if listenerType := fmt.Sprintf("%T", tt.notify); !strings.Contains(err.Error(), listenerType) {
+				t.Errorf("createPolarisListener() error = %q, want listener type %q", err, listenerType)
+			}
+			if len(pr.initialSubscribeInstances) != 0 {
+				t.Errorf("pending entry count = %d, want 0", len(pr.initialSubscribeInstances))
+			}
+		})
+	}
+}
+
+func TestPolarisPointerNotifyListenerKeepsBaseline(t *testing.T) {
+	serviceName := "com.test.PointerNotifyListenerService"
 	instanceA := newPolarisTestInstance("instance-a", "10.0.0.1", 20001, serviceName, true)
 	consumer := &fakePolarisConsumer{instanceResponses: [][]model.Instance{{instanceA}}}
 	pr := newTestPolarisRegistry(consumer)
-	notify := unsupportedPolarisNotifyListener{}
+	notify := &recordingPolarisNotifyListener{}
 
 	if err := pr.LoadSubscribeInstances(newPolarisConsumerURL(serviceName), notify); err != nil {
 		t.Fatalf("LoadSubscribeInstances() error = %v", err)
 	}
-	key := newInitialSubscribeInstancesKey(serviceName, notify)
+	key := mustInitialSubscribeInstancesKey(t, serviceName, notify)
 	entry, instances := pr.loadInitialSubscribeInstances(key)
-	if entry == nil || key.notify != nil || len(instances) != 1 || instances[0].GetInstanceKey() != instanceA.GetInstanceKey() {
-		t.Fatalf("fallback entry = (%#v, %p, %v), want service-scoped instance A", key, entry, instances)
+	if entry == nil || len(instances) != 1 || instances[0].GetInstanceKey() != instanceA.GetInstanceKey() {
+		t.Fatalf("pointer listener pending entry = (%p, %v), want instance A", entry, instances)
 	}
 
 	watcher := mustStoppedRegistryWatcher(t, pr, serviceName)
@@ -548,8 +841,8 @@ func TestPolarisUnsupportedNotifyListenerFallback(t *testing.T) {
 	}
 	defer closeTestPolarisListener(listener)
 	assertPolarisListenerEvent(t, listener, remoting.EventTypeDel, instanceA)
-	if entry, _ := pr.loadInitialSubscribeInstances(key); entry != nil {
-		t.Fatalf("fallback entry after listener success = %p, want nil", entry)
+	if pending, _ := pr.loadInitialSubscribeInstances(key); pending != nil {
+		t.Fatalf("pointer listener pending entry after listener success = %p, want nil", pending)
 	}
 }
 
@@ -559,6 +852,29 @@ func newTestPolarisRegistry(consumer api.ConsumerAPI) *polarisRegistry {
 		consumer:  consumer,
 		watchers:  make(map[string]*PolarisServiceWatcher),
 	}
+}
+
+func callPolarisRegistryWithoutPanic(t *testing.T, call func() error) (err error) {
+	t.Helper()
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			t.Errorf("registry call panicked: %v", recovered)
+		}
+	}()
+	return call()
+}
+
+func mustInitialSubscribeInstancesKey(
+	t *testing.T,
+	serviceName string,
+	notify registry.NotifyListener,
+) initialSubscribeInstancesKey {
+	t.Helper()
+	key, err := newInitialSubscribeInstancesKey(serviceName, notify)
+	if err != nil {
+		t.Fatalf("newInitialSubscribeInstancesKey() error = %v", err)
+	}
+	return key
 }
 
 func assertPolarisAddSubscriberSignature(_ func(func(remoting.EventType, []model.Instance))) {}

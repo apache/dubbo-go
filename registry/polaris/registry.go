@@ -185,7 +185,10 @@ func (pr *polarisRegistry) createPolarisListener(
 	serviceName string,
 	notify registry.NotifyListener,
 ) (*polarisListener, error) {
-	key := newInitialSubscribeInstancesKey(serviceName, notify)
+	key, err := newInitialSubscribeInstancesKey(serviceName, notify)
+	if err != nil {
+		return nil, err
+	}
 	watcher, err := pr.createPolarisWatcher(serviceName)
 	if err != nil {
 		return nil, err
@@ -208,7 +211,10 @@ func (pr *polarisRegistry) UnSubscribe(url *common.URL, notifyListener registry.
 // LoadSubscribeInstances load subscribe instance
 func (pr *polarisRegistry) LoadSubscribeInstances(url *common.URL, notify registry.NotifyListener) error {
 	serviceName := url.Interface()
-	key := newInitialSubscribeInstancesKey(serviceName, notify)
+	key, err := newInitialSubscribeInstancesKey(serviceName, notify)
+	if err != nil {
+		return err
+	}
 	resp, err := pr.consumer.GetInstances(&api.GetInstancesRequest{
 		GetInstancesRequest: model.GetInstancesRequest{
 			Service:   serviceName,
@@ -230,15 +236,33 @@ func (pr *polarisRegistry) LoadSubscribeInstances(url *common.URL, notify regist
 	return nil
 }
 
-func newInitialSubscribeInstancesKey(serviceName string, notify registry.NotifyListener) initialSubscribeInstancesKey {
-	value := reflect.ValueOf(notify)
-	if !value.IsValid() || value.Kind() != reflect.Pointer || value.IsNil() {
-		// This service-scoped fallback provides compatibility and panic safety for
-		// unsupported listener identities. It does not guarantee precise isolation
-		// between multiple unsupported listeners for the same service.
-		return initialSubscribeInstancesKey{serviceName: serviceName}
+func newInitialSubscribeInstancesKey(
+	serviceName string,
+	notify registry.NotifyListener,
+) (initialSubscribeInstancesKey, error) {
+	if isNilNotifyListener(notify) {
+		return initialSubscribeInstancesKey{}, fmt.Errorf("notify listener type %T is nil", notify)
 	}
-	return initialSubscribeInstancesKey{serviceName: serviceName, notify: notify}
+	if !reflect.TypeOf(notify).Comparable() {
+		return initialSubscribeInstancesKey{}, fmt.Errorf("notify listener type %T is not comparable", notify)
+	}
+	if !reflect.ValueOf(notify).Comparable() {
+		return initialSubscribeInstancesKey{}, fmt.Errorf("notify listener type %T is not comparable", notify)
+	}
+	return initialSubscribeInstancesKey{serviceName: serviceName, notify: notify}, nil
+}
+
+func isNilNotifyListener(notify registry.NotifyListener) bool {
+	if notify == nil {
+		return true
+	}
+	value := reflect.ValueOf(notify)
+	switch value.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice:
+		return value.IsNil()
+	default:
+		return false
+	}
 }
 
 // storeInitialSubscribeInstances keeps a defensive copy of the valid instances
