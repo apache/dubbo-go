@@ -17,24 +17,40 @@
 
 package pattern_value
 
+import (
+	"sync"
+)
+
 var (
-	valuePatterns = make(map[string]func() ValuePattern)
+	valuePatternsMu sync.RWMutex
+	valuePatterns   = make(map[string]func() ValuePattern)
 )
 
 // SetValuePattern sets create valuePattern function with @name
 func SetValuePattern(name string, fun func() ValuePattern) {
+	valuePatternsMu.Lock()
+	defer valuePatternsMu.Unlock()
 	valuePatterns[name] = fun
 }
 
 // GetValuePattern gets create valuePattern function by name
 func GetValuePattern(name string) ValuePattern {
-	if valuePatterns[name] == nil {
+	valuePatternsMu.RLock()
+	pattern := valuePatterns[name]
+	valuePatternsMu.RUnlock()
+	if pattern == nil {
 		panic("value_pattern for " + name + " is not existing, make sure you have imported the package.")
 	}
-	return valuePatterns[name]()
+	return pattern()
 }
 
 // GetValuePatterns gets all create valuePattern function
 func GetValuePatterns() map[string]func() ValuePattern {
-	return valuePatterns
+	valuePatternsMu.RLock()
+	defer valuePatternsMu.RUnlock()
+	patterns := make(map[string]func() ValuePattern, len(valuePatterns))
+	for name, pattern := range valuePatterns {
+		patterns[name] = pattern
+	}
+	return patterns
 }

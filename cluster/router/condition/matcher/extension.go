@@ -17,24 +17,40 @@
 
 package matcher
 
+import (
+	"sync"
+)
+
 var (
-	matchers = make(map[string]func() ConditionMatcherFactory)
+	matchersMu sync.RWMutex
+	matchers   = make(map[string]func() ConditionMatcherFactory)
 )
 
 // SetMatcherFactory sets create matcherFactory function with @name
 func SetMatcherFactory(name string, fun func() ConditionMatcherFactory) {
+	matchersMu.Lock()
+	defer matchersMu.Unlock()
 	matchers[name] = fun
 }
 
 // GetMatcherFactory gets create matcherFactory function by name
 func GetMatcherFactory(name string) ConditionMatcherFactory {
-	if matchers[name] == nil {
+	matchersMu.RLock()
+	factory := matchers[name]
+	matchersMu.RUnlock()
+	if factory == nil {
 		panic("matcher_factory for " + name + " is not existing, make sure you have imported the package.")
 	}
-	return matchers[name]()
+	return factory()
 }
 
 // GetMatcherFactories gets all create matcherFactory function
 func GetMatcherFactories() map[string]func() ConditionMatcherFactory {
-	return matchers
+	matchersMu.RLock()
+	defer matchersMu.RUnlock()
+	factories := make(map[string]func() ConditionMatcherFactory, len(matchers))
+	for name, factory := range matchers {
+		factories[name] = factory
+	}
+	return factories
 }
