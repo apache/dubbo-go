@@ -18,11 +18,18 @@
 package config
 
 import (
+	"maps"
+	"sync"
+)
+
+import (
 	"github.com/creasty/defaults"
 )
 
 var (
+	restConsumerServiceConfigMu  sync.RWMutex
 	restConsumerServiceConfigMap map[string]*RestServiceConfig
+	restProviderServiceConfigMu  sync.RWMutex
 	restProviderServiceConfigMap map[string]*RestServiceConfig
 )
 
@@ -124,30 +131,44 @@ func (c *RestMethodConfig) UnmarshalYAML(unmarshal func(any) error) error {
 
 // GetRestConsumerServiceConfig returns consumer service config by id.
 func GetRestConsumerServiceConfig(id string) *RestServiceConfig {
+	restConsumerServiceConfigMu.RLock()
+	defer restConsumerServiceConfigMu.RUnlock()
 	return restConsumerServiceConfigMap[id]
 }
 
 // GetRestProviderServiceConfig returns provider service config by id.
 func GetRestProviderServiceConfig(id string) *RestServiceConfig {
+	restProviderServiceConfigMu.RLock()
+	defer restProviderServiceConfigMu.RUnlock()
 	return restProviderServiceConfigMap[id]
 }
 
 // SetRestConsumerServiceConfigMap sets consumer service configs map.
 func SetRestConsumerServiceConfigMap(configMap map[string]*RestServiceConfig) {
+	configMap = maps.Clone(configMap)
+	restConsumerServiceConfigMu.Lock()
 	restConsumerServiceConfigMap = configMap
+	restConsumerServiceConfigMu.Unlock()
 }
 
 // SetRestProviderServiceConfigMap sets provider service configs map.
 func SetRestProviderServiceConfigMap(configMap map[string]*RestServiceConfig) {
+	configMap = maps.Clone(configMap)
+	restProviderServiceConfigMu.Lock()
 	restProviderServiceConfigMap = configMap
+	restProviderServiceConfigMu.Unlock()
 }
 
 // GetRestConsumerServiceConfigMap returns the consumer service configs map.
 func GetRestConsumerServiceConfigMap() map[string]*RestServiceConfig {
-	return restConsumerServiceConfigMap
+	restConsumerServiceConfigMu.RLock()
+	defer restConsumerServiceConfigMu.RUnlock()
+	return maps.Clone(restConsumerServiceConfigMap)
 }
 
 // GetRestProviderServiceConfigMap returns the provider service configs map.
 func GetRestProviderServiceConfigMap() map[string]*RestServiceConfig {
-	return restProviderServiceConfigMap
+	restProviderServiceConfigMu.RLock()
+	defer restProviderServiceConfigMu.RUnlock()
+	return maps.Clone(restProviderServiceConfigMap)
 }
