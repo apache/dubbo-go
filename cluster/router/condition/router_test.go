@@ -1454,7 +1454,7 @@ conditions:
 					ans[key] += s.weight * sampleSize
 				}
 				res := map[int]int{}
-				for i := 0; i < sampleSize; i++ {
+				for range sampleSize {
 					args := struct {
 						invokers   []base.Invoker
 						url        *common.URL

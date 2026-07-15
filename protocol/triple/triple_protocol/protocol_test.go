@@ -45,7 +45,6 @@ func TestCanonicalizeContentType(t *testing.T) {
 		{name: "malformed missing subtype", arg: "application/; charset=UTF-8", want: "application/; charset=UTF-8"},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			assert.Equal(t, canonicalizeContentType(tt.arg), tt.want)

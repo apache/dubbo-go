@@ -281,7 +281,7 @@ func TestDefaultQpsMetricVec(t *testing.T) {
 	qpsVec := NewQpsMetricVec(registry, key)
 	labels := map[string]string{"app": "dubbo", "version": "1.0.0"}
 
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		qpsVec.Record(labels)
 	}
 
@@ -295,7 +295,7 @@ func TestDefaultAggregateCounterVec(t *testing.T) {
 	aggCounterVec := NewAggregateCounterVec(registry, key)
 	labels := map[string]string{"app": "dubbo", "version": "1.0.0"}
 
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		aggCounterVec.Inc(labels)
 	}
 
@@ -312,7 +312,7 @@ func TestDefaultQuantileMetricVec(t *testing.T) {
 	quantileVec := NewQuantileMetricVec(registry, keys, []float64{0.5, 0.9})
 	labels := map[string]string{"app": "dubbo", "version": "1.0.0"}
 
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		quantileVec.Record(labels, float64(i*10))
 	}
 

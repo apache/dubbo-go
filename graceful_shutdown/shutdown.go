@@ -171,10 +171,7 @@ func RegisterProtocol(name string) {
 }
 
 func totalTimeout(shutdown *global.ShutdownConfig) time.Duration {
-	timeout := parseDuration(shutdown.Timeout, timeoutDesc, constant.DefaultShutdownConfigTimeout)
-	if timeout < constant.DefaultShutdownConfigTimeout {
-		timeout = constant.DefaultShutdownConfigTimeout
-	}
+	timeout := max(parseDuration(shutdown.Timeout, timeoutDesc, constant.DefaultShutdownConfigTimeout), constant.DefaultShutdownConfigTimeout)
 
 	return timeout
 }

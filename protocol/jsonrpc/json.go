@@ -124,7 +124,7 @@ func (c *jsonClientCodec) Write(d *CodecData) ([]byte, error) {
 				param = nil
 			}
 		case reflect.Array, reflect.Struct:
-		case reflect.Ptr:
+		case reflect.Pointer:
 			switch ptrK := reflect.TypeOf(param).Elem().Kind(); ptrK {
 			case reflect.Map:
 				if reflect.TypeOf(param).Elem().Key().Kind() == reflect.String && reflect.ValueOf(param).Elem().IsNil() {

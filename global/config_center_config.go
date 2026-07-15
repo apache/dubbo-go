@@ -17,6 +17,10 @@
 
 package global
 
+import (
+	"maps"
+)
+
 // CenterConfig is configuration for config center
 //
 // ConfigCenter also introduced concepts of namespace and group to better manage Key-Value pairs by group,
@@ -54,9 +58,7 @@ func (c *CenterConfig) Clone() *CenterConfig {
 	}
 
 	newParams := make(map[string]string, len(c.Params))
-	for k, v := range c.Params {
-		newParams[k] = v
-	}
+	maps.Copy(newParams, c.Params)
 
 	return &CenterConfig{
 		Protocol:      c.Protocol,

@@ -72,7 +72,7 @@ func TestGetSerializerById(t *testing.T) {
 			} else {
 				assert.NotPanics(t, func() {
 					serializer, err := GetSerializerById(test.id)
-					assert.NoError(t, err)
+					require.NoError(t, err)
 					assert.NotNil(t, serializer)
 					assert.Equal(t, mockSerializer, serializer)
 				})
