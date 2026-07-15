@@ -82,7 +82,7 @@ func (lb *leastActiveLoadBalance) Select(invokers []base.Invoker, invocation bas
 	}
 
 	now := time.Now().Unix()
-	for i := 0; i < count; i++ {
+	for i := range count {
 		invoker := invokers[i]
 		// Active number
 		active := base.GetMethodStatus(invoker.GetURL(), invocation.MethodName()).GetActive()

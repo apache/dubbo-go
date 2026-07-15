@@ -34,7 +34,6 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config/interfaces"
 	"dubbo.apache.org/dubbo-go/v3/protocol/rest/config"
 )
 
@@ -45,7 +44,7 @@ func init() {
 
 type RestConfigReader struct{}
 
-func NewRestConfigReader() interfaces.ConfigReader {
+func NewRestConfigReader() extension.ConfigReader {
 	return &RestConfigReader{}
 }
 
@@ -145,7 +144,7 @@ func transformMethodConfig(methodConfig *config.RestMethodConfig) *config.RestMe
 // string "0:id,1:name" => map [0:id,1:name]
 func parseParamsString2Map(params string) (map[int]string, error) {
 	m := make(map[int]string, 8)
-	for _, p := range strings.Split(params, ",") {
+	for p := range strings.SplitSeq(params, ",") {
 		pa := strings.Split(p, ":")
 		key, err := strconv.Atoi(pa[0])
 		if err != nil {

@@ -289,3 +289,18 @@ func (m *mockMetadataReport) RemoveServiceAppMappingListener(string, string) err
 	args := m.Called()
 	return args.Error(0)
 }
+
+func (m *mockMetadataReport) UnPublishAppMetadata(string, string) error {
+	args := m.Called()
+	return args.Error(0)
+}
+
+func (m *mockMetadataReport) ListAppRevisions(string) ([]report.AppRevision, error) {
+	args := m.Called()
+	return args.Get(0).([]report.AppRevision), args.Error(1)
+}
+
+func (m *mockMetadataReport) URL() *common.URL {
+	u, _ := common.NewURL("mock://127.0.0.1:8848")
+	return u
+}

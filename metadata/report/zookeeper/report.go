@@ -28,7 +28,6 @@ import (
 
 	gxset "github.com/dubbogo/gost/container/set"
 	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
-	"github.com/dubbogo/gost/log/logger"
 
 	perrors "github.com/pkg/errors"
 )
@@ -44,6 +43,35 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/remoting/zookeeper"
 )
 
+// zkClient abstracts the ZookeeperClient operations used by zookeeperMetadataReport.
+type zkClient interface {
+	GetContent(path string) ([]byte, *zk.Stat, error)
+	SetContent(path string, data []byte, version int32) (*zk.Stat, error)
+	CreateWithValue(path string, data []byte) error
+	Delete(path string) error
+	Exists(path string) (bool, *zk.Stat, error)
+	Children(path string) ([]string, *zk.Stat, error)
+	Get(path string) ([]byte, *zk.Stat, error)
+}
+
+// zkClientWrapper wraps *gxzookeeper.ZookeeperClient to implement zkClient.
+// Methods that exist on Conn (Exists, Children, Get) are delegated.
+type zkClientWrapper struct {
+	*gxzookeeper.ZookeeperClient
+}
+
+func (w zkClientWrapper) Exists(path string) (bool, *zk.Stat, error) {
+	return w.Conn.Exists(path)
+}
+
+func (w zkClientWrapper) Children(path string) ([]string, *zk.Stat, error) {
+	return w.Conn.Children(path)
+}
+
+func (w zkClientWrapper) Get(path string) ([]byte, *zk.Stat, error) {
+	return w.Conn.Get(path)
+}
+
 func init() {
 	mf := &zookeeperMetadataReportFactory{}
 	extension.SetMetadataReportFactory("zookeeper", func() report.MetadataReportFactory {
@@ -54,10 +82,16 @@ func init() {
 // zookeeperMetadataReport is the implementation of
 // MetadataReport based on zookeeper.
 type zookeeperMetadataReport struct {
-	client        *gxzookeeper.ZookeeperClient
+	client        zkClient
 	rootDir       string
 	listener      *zookeeper.ZkEventListener
 	cacheListener *CacheListener
+	url           *common.URL
+}
+
+// URL returns the URL used to create this metadata report.
+func (m *zookeeperMetadataReport) URL() *common.URL {
+	return m.url
 }
 
 // GetAppMetadata get metadata info from zookeeper
@@ -84,17 +118,52 @@ func (m *zookeeperMetadataReport) PublishAppMetadata(application, revision strin
 	}
 	err = m.client.CreateWithValue(k, data)
 	if perrors.Is(err, zk.ErrNodeExists) {
-		logger.Debug("[Metadata][Zookeeper] try to create the node data failed. In most cases, it's not a problem. ")
+		_, err = m.client.SetContent(k, data, -1)
+	}
+	return err
+}
+
+// UnPublishAppMetadata removes metadata for a specific revision from zookeeper.
+// This operation is idempotent.
+func (m *zookeeperMetadataReport) UnPublishAppMetadata(application, revision string) error {
+	k := m.rootDir + application + constant.PathSeparator + revision
+	err := m.client.Delete(k)
+	if perrors.Is(err, zk.ErrNoNode) {
 		return nil
 	}
 	return err
+}
+
+// ListAppRevisions lists all stored revisions for an application from zookeeper.
+func (m *zookeeperMetadataReport) ListAppRevisions(application string) ([]report.AppRevision, error) {
+	parent := m.rootDir + application
+	children, _, err := m.client.Children(parent)
+	if err != nil {
+		if perrors.Is(err, zk.ErrNoNode) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	result := make([]report.AppRevision, 0, len(children))
+	for _, rev := range children {
+		path := parent + constant.PathSeparator + rev
+		data, _, err := m.client.Get(path)
+		if err != nil {
+			continue // skip if node disappeared between listing and reading
+		}
+		result = append(result, report.AppRevision{
+			Revision:   rev,
+			ModifyTime: report.ParseMetadataLastUpdatedTime(data),
+		})
+	}
+	return result, nil
 }
 
 // RegisterServiceAppMapping map the specified Dubbo service interface to current Dubbo app name
 func (m *zookeeperMetadataReport) RegisterServiceAppMapping(key string, group string, value string) error {
 	path := m.rootDir + group + constant.PathSeparator + key
 	v, state, err := m.client.GetContent(path)
-	if err == zk.ErrNoNode {
+	if perrors.Is(err, zk.ErrNoNode) {
 		if cErr := m.client.CreateWithValue(path, []byte(value)); cErr != nil {
 			if perrors.Is(cErr, zk.ErrNodeExists) {
 				return fmt.Errorf("create mapping %s: %w", path, report.ErrMappingCASConflict)
@@ -163,9 +232,10 @@ func (mf *zookeeperMetadataReportFactory) CreateMetadataReport(url *common.URL) 
 	}
 
 	reporter := &zookeeperMetadataReport{
-		client:   client,
+		client:   zkClientWrapper{client},
 		rootDir:  rootDir,
 		listener: zookeeper.NewZkEventListener(client),
+		url:      url,
 	}
 
 	reporter.cacheListener = NewCacheListener(rootDir, reporter.listener)

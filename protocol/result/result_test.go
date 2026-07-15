@@ -708,7 +708,7 @@ func TestRPCResult_ConcurrentOperations(t *testing.T) {
 	done := make(chan bool, 10)
 
 	// Test concurrent operations on different instances
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		go func(idx int) {
 			r := &RPCResult{}
 			r.AddAttachment("key", idx)
@@ -719,7 +719,7 @@ func TestRPCResult_ConcurrentOperations(t *testing.T) {
 	}
 
 	// Wait for all goroutines
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		<-done
 	}
 }
@@ -752,7 +752,7 @@ func TestRPCResult_EdgeCases(t *testing.T) {
 
 	t.Run("large attachment map", func(t *testing.T) {
 		r := &RPCResult{}
-		for i := 0; i < 1000; i++ {
+		for i := range 1000 {
 			r.AddAttachment(fmt.Sprintf("key-%d", i), i)
 		}
 		assert.Len(t, r.Attachments(), 1000)

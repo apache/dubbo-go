@@ -39,21 +39,28 @@ func (s *metadataSupplier) Get(key string) string {
 	if s.metadata == nil {
 		return ""
 	}
-	item, ok := s.metadata[key].([]string)
-	if !ok {
+	val, ok := s.metadata[key]
+	if !ok || val == nil {
 		return ""
 	}
-	if len(item) == 0 {
+	switch v := val.(type) {
+	case []string:
+		if len(v) > 0 {
+			return v[0]
+		}
+		return ""
+	case string:
+		return v
+	default:
 		return ""
 	}
-	return item[0]
 }
 
 func (s *metadataSupplier) Set(key string, value string) {
 	if s.metadata == nil {
 		s.metadata = map[string]any{}
 	}
-	s.metadata[key] = value
+	s.metadata[key] = []string{value}
 }
 
 func (s *metadataSupplier) Keys() []string {

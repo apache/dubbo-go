@@ -46,6 +46,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/internal"
 	dubboLogger "dubbo.apache.org/dubbo-go/v3/logger"
+	_ "dubbo.apache.org/dubbo-go/v3/logger/core/zap"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	metricsConfigCenter "dubbo.apache.org/dubbo-go/v3/metrics/config_center"
 	"dubbo.apache.org/dubbo-go/v3/otel/trace"
@@ -719,6 +720,4 @@ func (rc *InstanceOptions) Process(event *config_center.ConfigChangeEvent) {
 		rc.Consumer.RequestTimeout = update.Consumer.RequestTimeout
 		gostLogger.Infof("ConsumerConfig's RequestTimeout was dynamically updated, new value:%v", rc.Consumer.RequestTimeout)
 	}
-
-	setCompatRootConfig(compatRootConfig(rc))
 }

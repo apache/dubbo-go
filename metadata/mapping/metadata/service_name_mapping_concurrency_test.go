@@ -27,9 +27,11 @@ import (
 	gxset "github.com/dubbogo/gost/container/set"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
@@ -86,6 +88,11 @@ func (stubReport) GetServiceAppMapping(string, string, mapping.MappingListener) 
 	return nil, nil
 }
 func (stubReport) RemoveServiceAppMappingListener(string, string) error { return nil }
+func (stubReport) UnPublishAppMetadata(string, string) error            { return nil }
+func (stubReport) ListAppRevisions(string) ([]report.AppRevision, error) {
+	return nil, nil
+}
+func (stubReport) URL() *common.URL { return nil }
 
 // casReport registers mappings with optimistic concurrency against a versionedStore, exactly
 // as the etcd/zk/nacos reports now do, returning report.ErrMappingCASConflict on conflict.
@@ -182,10 +189,8 @@ func TestRegisterWithRetryConcurrentNoLostUpdate(t *testing.T) {
 	// see the set get smaller or contain a malformed entry.
 	stop := make(chan struct{})
 	var readerWg sync.WaitGroup
-	for i := 0; i < readers; i++ {
-		readerWg.Add(1)
-		go func() {
-			defer readerWg.Done()
+	for range readers {
+		readerWg.Go(func() {
 			prev := 0
 			for {
 				select {
@@ -193,17 +198,17 @@ func TestRegisterWithRetryConcurrentNoLostUpdate(t *testing.T) {
 					return
 				default:
 					set, err := r.GetServiceAppMapping("Iface", DefaultGroup, nil)
-					assert.NoError(t, err)
+					require.NoError(t, err)
 					assert.GreaterOrEqual(t, set.Size(), prev)
 					assert.False(t, set.Contains(""))
 					prev = set.Size()
 				}
 			}
-		}()
+		})
 	}
 
 	var writerWg sync.WaitGroup
-	for i := 0; i < writers; i++ {
+	for i := range writers {
 		writerWg.Add(1)
 		go func(i int) {
 			defer writerWg.Done()
@@ -217,7 +222,7 @@ func TestRegisterWithRetryConcurrentNoLostUpdate(t *testing.T) {
 	val, _ := store.get(DefaultGroup + "/Iface")
 	got := report.DecodeServiceAppNames(val)
 	assert.Equal(t, writers, got.Size())
-	for i := 0; i < writers; i++ {
+	for i := range writers {
 		assert.True(t, got.Contains(fmt.Sprintf("app-%d", i)), "app-%d was lost", i)
 	}
 }

@@ -21,6 +21,7 @@ package client
 import (
 	"context"
 	"errors"
+	"maps"
 )
 
 import (
@@ -263,9 +264,7 @@ func generateInvocation(ctx context.Context, methodName string, reqs []any, resp
 				attachments[key] = val
 			}
 		case map[string]any:
-			for key, val := range v {
-				attachments[key] = val
-			}
+			maps.Copy(attachments, v)
 		}
 	}
 
@@ -277,6 +276,12 @@ func generateInvocation(ctx context.Context, methodName string, reqs []any, resp
 		invocation.WithAttachments(attachments),
 	)
 	inv.SetAttribute(constant.CallTypeKey, callType)
+	if opts.ResponseHeader != nil {
+		inv.SetAttribute(constant.ResponseHeaderKey, opts.ResponseHeader)
+	}
+	if opts.ResponseTrailer != nil {
+		inv.SetAttribute(constant.ResponseTrailerKey, opts.ResponseTrailer)
+	}
 
 	return inv, nil
 }

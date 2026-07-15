@@ -135,7 +135,7 @@ func generateTestCerts(t *testing.T) *testCertFiles {
 
 	clientKeyFile := filepath.Join(tempDir, "client-key.pem")
 	err = writePEMFile(clientKeyFile, "RSA PRIVATE KEY", x509.MarshalPKCS1PrivateKey(clientKey))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	return &testCertFiles{
 		caCertFile:     caCertFile,

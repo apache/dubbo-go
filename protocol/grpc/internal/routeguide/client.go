@@ -48,7 +48,7 @@ func RunRecordRoute(stream RouteGuide_RecordRouteClient) {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	pointCount := int(r.Int31n(100)) + 2 // Traverse at least two points
 	var points []*Point
-	for i := 0; i < pointCount; i++ {
+	for range pointCount {
 		points = append(points, randomPoint(r))
 	}
 	log.Infof("Traversing %d points.", len(points))

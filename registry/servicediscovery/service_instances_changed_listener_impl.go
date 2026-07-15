@@ -144,7 +144,7 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 				continue
 			}
 			instance.SetServiceMetadata(metadataInfo)
-			for _, service := range metadataInfo.Services {
+			for _, service := range metadataInfo.GetServices() {
 				matchKey := service.GetMatchKey()
 				if serviceToRevisionServices[matchKey] == nil {
 					serviceToRevisionServices[matchKey] = make(map[string]*info.ServiceInfo)
@@ -215,8 +215,11 @@ func toInstanceServiceURLs(instance registry.ServiceInstance, serviceInfo *info.
 
 // AddListenerAndNotify add notify listener and notify to listen service event
 func (lstn *ServiceInstancesChangedListenerImpl) AddListenerAndNotify(serviceKey string, notify registry.NotifyListener) {
+	lstn.mutex.Lock()
 	lstn.listeners[serviceKey] = notify
 	urls := lstn.serviceUrls[serviceKey]
+	lstn.mutex.Unlock()
+
 	for _, url := range urls {
 		notify.Notify(&registry.ServiceEvent{
 			Action:  remoting.EventTypeAdd,
@@ -227,6 +230,8 @@ func (lstn *ServiceInstancesChangedListenerImpl) AddListenerAndNotify(serviceKey
 
 // RemoveListener remove notify listener
 func (lstn *ServiceInstancesChangedListenerImpl) RemoveListener(serviceKey string) {
+	lstn.mutex.Lock()
+	defer lstn.mutex.Unlock()
 	delete(lstn.listeners, serviceKey)
 }
 
@@ -250,7 +255,7 @@ func (lstn *ServiceInstancesChangedListenerImpl) GetPriority() int {
 
 // GetEventType returns ServiceInstancesChangedEvent
 func (lstn *ServiceInstancesChangedListenerImpl) GetEventType() reflect.Type {
-	return reflect.TypeOf(&registry.ServiceInstancesChangedEvent{})
+	return reflect.TypeFor[*registry.ServiceInstancesChangedEvent]()
 }
 
 // metadataCacheKey builds the cache key that isolates MetadataInfo by provider

@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type callLocalMethodSample struct{}
@@ -65,7 +66,7 @@ func TestCallLocalMethod(t *testing.T) {
 			in:           []reflect.Value{reflect.ValueOf(sample), reflect.ValueOf(1), reflect.ValueOf(2)},
 			useCallSlice: false,
 			assertErr: func(t *testing.T, err error) {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			},
 			assertOut: func(t *testing.T, out []reflect.Value) {
 				assert.Len(t, out, 1)
@@ -105,7 +106,7 @@ func TestCallLocalMethod(t *testing.T) {
 			in:           []reflect.Value{reflect.ValueOf(sample), reflect.ValueOf([]any{"alice", "bob"})},
 			useCallSlice: false,
 			assertErr: func(t *testing.T, err error) {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			},
 			assertOut: func(t *testing.T, out []reflect.Value) {
 				assert.Len(t, out, 1)
@@ -118,7 +119,7 @@ func TestCallLocalMethod(t *testing.T) {
 			in:           []reflect.Value{reflect.ValueOf(sample), reflect.ValueOf([]any{"alice", "bob"})},
 			useCallSlice: true,
 			assertErr: func(t *testing.T, err error) {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			},
 			assertOut: func(t *testing.T, out []reflect.Value) {
 				assert.Len(t, out, 1)
