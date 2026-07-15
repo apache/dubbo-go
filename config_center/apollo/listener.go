@@ -18,6 +18,10 @@
 package apollo
 
 import (
+	"sync"
+)
+
+import (
 	"github.com/apolloconfig/agollo/v4/storage"
 
 	"github.com/dubbogo/gost/log/logger"
@@ -31,6 +35,7 @@ import (
 )
 
 type apolloListener struct {
+	mu        sync.RWMutex
 	listeners map[config_center.ConfigurationListener]struct{}
 }
 
@@ -53,7 +58,7 @@ func (a *apolloListener) OnNewestChange(changeEvent *storage.FullChangeEvent) {
 		return
 	}
 	content := string(b)
-	for listener := range a.listeners {
+	for _, listener := range a.snapshotListeners() {
 		listener.Process(&config_center.ConfigChangeEvent{
 			ConfigType: remoting.EventTypeUpdate,
 			Key:        changeEvent.Namespace,
@@ -64,17 +69,33 @@ func (a *apolloListener) OnNewestChange(changeEvent *storage.FullChangeEvent) {
 
 // AddListener adds a listener for apollo
 func (a *apolloListener) AddListener(l config_center.ConfigurationListener) {
-	if _, ok := a.listeners[l]; !ok {
-		a.listeners[l] = struct{}{}
-	}
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.listeners[l] = struct{}{}
 }
 
 // RemoveListener removes listeners of apollo
-func (a *apolloListener) RemoveListener(l config_center.ConfigurationListener) {
+func (a *apolloListener) RemoveListener(l config_center.ConfigurationListener) bool {
+	a.mu.Lock()
+	defer a.mu.Unlock()
 	delete(a.listeners, l)
+	return len(a.listeners) == 0
 }
 
 // IsEmpty Check if listeners is empty
 func (a *apolloListener) IsEmpty() bool {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
 	return len(a.listeners) == 0
+}
+
+func (a *apolloListener) snapshotListeners() []config_center.ConfigurationListener {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+
+	listeners := make([]config_center.ConfigurationListener, 0, len(a.listeners))
+	for listener := range a.listeners {
+		listeners = append(listeners, listener)
+	}
+	return listeners
 }

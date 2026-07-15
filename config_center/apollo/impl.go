@@ -52,10 +52,12 @@ type apolloConfiguration struct {
 	cc.BaseDynamicConfiguration
 	url *common.URL
 
-	listeners sync.Map
-	appConf   *config.AppConfig
-	parser    parser.ConfigurationParser
-	client    agollo.Client
+	listenerMu           sync.Mutex
+	listeners            sync.Map
+	registeringListeners map[*apolloListener]struct{}
+	appConf              *config.AppConfig
+	parser               parser.ConfigurationParser
+	client               agollo.Client
 }
 
 func newApolloConfiguration(url *common.URL) (*apolloConfiguration, error) {
@@ -85,24 +87,54 @@ func newApolloConfiguration(url *common.URL) (*apolloConfiguration, error) {
 func (c *apolloConfiguration) AddListener(key string, listener cc.ConfigurationListener, opts ...cc.Option) {
 	tmpOpts := cc.NewOptions(opts...)
 	key = tmpOpts.Center.Group + key
-	al := newApolloListener()
-	l, ok := c.listeners.LoadOrStore(key, al)
-	if !ok {
-		c.client.AddChangeListener(al)
+
+	c.listenerMu.Lock()
+	if l, ok := c.listeners.Load(key); ok {
+		l.(*apolloListener).AddListener(listener)
+		c.listenerMu.Unlock()
+		return
 	}
-	l.(*apolloListener).AddListener(listener)
+	al := newApolloListener()
+	al.AddListener(listener)
+	c.listeners.Store(key, al)
+	if c.registeringListeners == nil {
+		c.registeringListeners = make(map[*apolloListener]struct{})
+	}
+	c.registeringListeners[al] = struct{}{}
+	c.listenerMu.Unlock()
+
+	c.client.AddChangeListener(al)
+
+	c.listenerMu.Lock()
+	delete(c.registeringListeners, al)
+	current, ok := c.listeners.Load(key)
+	shouldUnregister := !ok || current != al || al.IsEmpty()
+	c.listenerMu.Unlock()
+	if shouldUnregister {
+		c.client.RemoveChangeListener(al)
+	}
 }
 
 func (c *apolloConfiguration) RemoveListener(key string, listener cc.ConfigurationListener, opts ...cc.Option) {
 	tmpOpts := cc.NewOptions(opts...)
 	key = tmpOpts.Center.Group + key
+
+	c.listenerMu.Lock()
 	l, ok := c.listeners.Load(key)
-	if ok {
-		al := l.(*apolloListener)
-		al.RemoveListener(listener)
-		if al.IsEmpty() {
-			c.client.RemoveChangeListener(al)
-		}
+	if !ok {
+		c.listenerMu.Unlock()
+		return
+	}
+	al := l.(*apolloListener)
+	if !al.RemoveListener(listener) {
+		c.listenerMu.Unlock()
+		return
+	}
+	c.listeners.Delete(key)
+	_, registering := c.registeringListeners[al]
+	c.listenerMu.Unlock()
+	if !registering {
+		c.client.RemoveChangeListener(al)
 	}
 }
 

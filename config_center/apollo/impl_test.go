@@ -75,15 +75,18 @@ const (
 }`
 )
 
-var mockConfigRes = `{
-	"appId": "testApplication_yang",
-	"cluster": "default",
-	"namespaceName": "mockDubbogo.yaml",
-	"configurations":{
-		"content":"dubbo:\n  application:\n     name: \"demo-server\"\n     version: \"2.0\"\n"
-    },
-	"releaseKey": "20191104105242-0f13805d89f834a4"
-}`
+var (
+	mockConfigResMu sync.RWMutex
+	mockConfigRes   = `{
+		"appId": "testApplication_yang",
+		"cluster": "default",
+		"namespaceName": "mockDubbogo.yaml",
+		"configurations":{
+			"content":"dubbo:\n  application:\n     name: \"demo-server\"\n     version: \"2.0\"\n"
+	    },
+		"releaseKey": "20191104105242-0f13805d89f834a4"
+	}`
+)
 
 func initApollo() *httptest.Server {
 	return runMockConfigServer()
@@ -95,8 +98,23 @@ func configCacheResponse(rw http.ResponseWriter, _ *http.Request) {
 }
 
 func configResponse(rw http.ResponseWriter, _ *http.Request) {
+	mockConfigResMu.RLock()
 	result := mockConfigRes
+	mockConfigResMu.RUnlock()
 	fmt.Fprintf(rw, "%s", result)
+}
+
+func setMockConfigResponse(t *testing.T, response string) {
+	t.Helper()
+	mockConfigResMu.Lock()
+	previous := mockConfigRes
+	mockConfigRes = response
+	mockConfigResMu.Unlock()
+	t.Cleanup(func() {
+		mockConfigResMu.Lock()
+		mockConfigRes = previous
+		mockConfigResMu.Unlock()
+	})
 }
 
 func configCacheJsonResponse(rw http.ResponseWriter, _ *http.Request) {
@@ -193,6 +211,7 @@ func initMockApollo(t *testing.T) *apolloConfiguration {
 	params.Set(constant.ConfigBackupConfigKey, "false")
 
 	apollo := initApollo()
+	t.Cleanup(apollo.Close)
 	apolloUrl := strings.ReplaceAll(apollo.URL, "http", "apollo")
 	apolloCfgURL, err := common.NewURL(apolloUrl, common.WithParams(params))
 	require.NoError(t, err)
@@ -258,7 +277,7 @@ func TestListener(t *testing.T) {
 	listener := &apolloDataListener{}
 	listener.wg.Add(2)
 	apollo := initMockApollo(t)
-	mockConfigRes = `{
+	setMockConfigResponse(t, `{
 	"appId": "testApplication_yang",
 	"cluster": "default",
 	"namespaceName": "mockDubbogo.yaml",
@@ -266,29 +285,24 @@ func TestListener(t *testing.T) {
 		"registries.hangzhouzk.username": "11111"
 	},
 	"releaseKey": "20191104105242-0f13805d89f834a4"
-}`
+}`)
 	// test add
 	apollo.AddListener(mockNamespace, listener)
 	listener.wg.Wait()
-	assert.Equal(t, "mockDubbogo.yaml", listener.event)
-	assert.Positive(t, listener.count)
+	event, count := listener.snapshot()
+	assert.Equal(t, "mockDubbogo.yaml", event)
+	assert.Positive(t, count)
 
 	// test remove
 	apollo.RemoveListener(mockNamespace, listener)
-	listenerCount := 0
-	apollo.listeners.Range(func(_, value any) bool {
-		apolloListener := value.(*apolloListener)
-		for e := range apolloListener.listeners {
-			t.Logf("listener:%v", e)
-			listenerCount++
-		}
-		return true
-	})
-	assert.Equal(t, 0, listenerCount)
+	storedKey := config_center.NewOptions().Center.Group + mockNamespace
+	_, ok := apollo.listeners.Load(storedKey)
+	assert.False(t, ok)
 }
 
 type apolloDataListener struct {
 	wg    sync.WaitGroup
+	mu    sync.Mutex
 	count int
 	event string
 }
@@ -297,9 +311,17 @@ func (l *apolloDataListener) Process(configType *config_center.ConfigChangeEvent
 	if configType.ConfigType != remoting.EventTypeUpdate {
 		return
 	}
-	l.wg.Done()
+	l.mu.Lock()
 	l.count++
 	l.event = configType.Key
+	l.mu.Unlock()
+	l.wg.Done()
+}
+
+func (l *apolloDataListener) snapshot() (string, int) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.event, l.count
 }
 
 // custom parser with concurrent safety
