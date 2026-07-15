@@ -25,3 +25,23 @@ type TracingConfig struct {
 	Address     string `yaml:"address" json:"address,omitempty" property:"address"`
 	UseAgent    *bool  `default:"false" yaml:"use-agent" json:"use-agent,omitempty" property:"use-agent"`
 }
+
+// Clone a new TracingConfig
+func (c *TracingConfig) Clone() *TracingConfig {
+	if c == nil {
+		return nil
+	}
+
+	var useAgent *bool
+	if c.UseAgent != nil {
+		v := *c.UseAgent
+		useAgent = &v
+	}
+
+	return &TracingConfig{
+		Name:        c.Name,
+		ServiceName: c.ServiceName,
+		Address:     c.Address,
+		UseAgent:    useAgent,
+	}
+}

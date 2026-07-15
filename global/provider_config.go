@@ -17,6 +17,10 @@
 
 package global
 
+import (
+	"maps"
+)
+
 // ProviderConfig is the default configuration of service provider
 type ProviderConfig struct {
 	ServiceConfig
@@ -66,9 +70,7 @@ func (c *ProviderConfig) Clone() *ProviderConfig {
 	}
 
 	newConfigType := make(map[string]string, len(c.ConfigType))
-	for k, v := range c.ConfigType {
-		newConfigType[k] = v
-	}
+	maps.Copy(newConfigType, c.ConfigType)
 
 	return &ProviderConfig{
 		ServiceConfig:          *c.ServiceConfig.Clone(),

@@ -45,7 +45,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
-// MockFilter implements filter.Filter and config.Setter for testing
+// MockFilter implements filter.Filter and shutdownConfigSetter for testing.
 type MockFilter struct {
 	mock.Mock
 }
@@ -281,7 +281,7 @@ func TestTotalTimeout(t *testing.T) {
 	// Test with default timeout
 	config := global.DefaultShutdownConfig()
 	timeout := totalTimeout(config)
-	assert.Equal(t, defaultTimeout, timeout)
+	assert.Equal(t, constant.DefaultShutdownConfigTimeout, timeout)
 
 	// Test with custom timeout
 	config.Timeout = "120s"
@@ -291,12 +291,12 @@ func TestTotalTimeout(t *testing.T) {
 	// Test with invalid timeout
 	config.Timeout = "invalid"
 	timeout = totalTimeout(config)
-	assert.Equal(t, defaultTimeout, timeout)
+	assert.Equal(t, constant.DefaultShutdownConfigTimeout, timeout)
 
 	// Test with timeout less than default
 	config.Timeout = "30s"
 	timeout = totalTimeout(config)
-	assert.Equal(t, defaultTimeout, timeout) // Should use default if less than default
+	assert.Equal(t, constant.DefaultShutdownConfigTimeout, timeout) // Should use default if less than default
 }
 
 func TestParseDuration(t *testing.T) {
@@ -467,7 +467,7 @@ func TestNotifyLongConnectionConsumersRunsCallbacksInParallel(t *testing.T) {
 		close(done)
 	}()
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		select {
 		case <-started:
 		case <-time.After(time.Second):

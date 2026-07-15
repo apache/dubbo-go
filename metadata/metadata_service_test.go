@@ -20,6 +20,7 @@ package metadata
 import (
 	"context"
 	"strconv"
+	"sync"
 	"testing"
 )
 
@@ -390,4 +391,30 @@ func Test_serviceExporterExport(t *testing.T) {
 		err = e.Export()
 		require.NoError(t, err)
 	})
+}
+
+func TestDefaultMetadataServiceConcurrentReadAccess(t *testing.T) {
+	mts := &DefaultMetadataService{
+		metadataMap: newMetadataMap(),
+	}
+
+	var wg sync.WaitGroup
+	for range 10 {
+		wg.Go(func() {
+			urls, err := mts.GetExportedServiceURLs()
+			require.NoError(t, err)
+			assert.NotEmpty(t, urls)
+		})
+		wg.Go(func() {
+			urls, err := mts.GetSubscribedURLs()
+			require.NoError(t, err)
+			assert.NotEmpty(t, urls)
+		})
+		wg.Go(func() {
+			info, err := mts.GetMetadataInfo("1")
+			require.NoError(t, err)
+			assert.NotNil(t, info)
+		})
+	}
+	wg.Wait()
 }

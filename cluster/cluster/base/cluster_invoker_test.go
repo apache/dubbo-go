@@ -42,7 +42,7 @@ const (
 
 func TestStickyNormal(t *testing.T) {
 	var invokers []protocolbase.Invoker
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		url, _ := common.NewURL(fmt.Sprintf(baseClusterInvokerFormat, i))
 		url.SetParam("sticky", "true")
 		invokers = append(invokers, clusterpkg.NewMockInvoker(url, 1))
@@ -60,7 +60,7 @@ func TestStickyNormal(t *testing.T) {
 
 func TestStickyNormalWhenError(t *testing.T) {
 	invokers := []protocolbase.Invoker{}
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		url, _ := common.NewURL(fmt.Sprintf(baseClusterInvokerFormat, i))
 		url.SetParam("sticky", "true")
 		invokers = append(invokers, clusterpkg.NewMockInvoker(url, 1))

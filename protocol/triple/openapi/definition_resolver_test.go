@@ -52,7 +52,7 @@ func TestDefinitionResolver_Resolve_BasicService(t *testing.T) {
 				Name:        "Greet",
 				ReqInitFunc: func() any { return &GreetRequest{} },
 				Meta: map[string]any{
-					"response.type": reflect.TypeOf(GreetResponse{}),
+					"response.type": reflect.TypeFor[GreetResponse](),
 				},
 			},
 		},
@@ -123,7 +123,7 @@ func TestDefinitionResolver_Resolve_ComponentsGenerated(t *testing.T) {
 				Name:        "Greet",
 				ReqInitFunc: func() any { return &GreetRequest{} },
 				Meta: map[string]any{
-					"response.type": reflect.TypeOf(GreetResponse{}),
+					"response.type": reflect.TypeFor[GreetResponse](),
 				},
 			},
 		},
@@ -188,7 +188,7 @@ func TestDefinitionResolver_resolveRequestSchema_MetaRequestType(t *testing.T) {
 	method := serviceMethodInfo{
 		Name: "Greet",
 		Meta: map[string]any{
-			"request.type": reflect.TypeOf(GreetRequest{}),
+			"request.type": reflect.TypeFor[GreetRequest](),
 		},
 	}
 
@@ -209,7 +209,7 @@ func TestDefinitionResolver_resolveRequestSchema_PtrMetaRequestType(t *testing.T
 	method := serviceMethodInfo{
 		Name: "Greet",
 		Meta: map[string]any{
-			"request.type": reflect.TypeOf((*GreetRequest)(nil)), // *GreetRequest
+			"request.type": reflect.TypeFor[*GreetRequest](), // *GreetRequest
 		},
 	}
 
@@ -281,7 +281,7 @@ func TestDefinitionResolver_resolveResponseSchema_MetaResponseType(t *testing.T)
 	method := serviceMethodInfo{
 		Name: "Greet",
 		Meta: map[string]any{
-			"response.type": reflect.TypeOf(GreetResponse{}),
+			"response.type": reflect.TypeFor[GreetResponse](),
 		},
 	}
 
@@ -302,7 +302,7 @@ func TestDefinitionResolver_resolveResponseSchema_PtrMetaResponseType(t *testing
 	method := serviceMethodInfo{
 		Name: "Greet",
 		Meta: map[string]any{
-			"response.type": reflect.TypeOf((*GreetResponse)(nil)),
+			"response.type": reflect.TypeFor[*GreetResponse](),
 		},
 	}
 
@@ -427,7 +427,7 @@ func TestDefinitionResolver_resolveOperation(t *testing.T) {
 		Name:        "Greet",
 		ReqInitFunc: func() any { return &GreetRequest{} },
 		Meta: map[string]any{
-			"response.type": reflect.TypeOf(GreetResponse{}),
+			"response.type": reflect.TypeFor[GreetResponse](),
 		},
 	}
 

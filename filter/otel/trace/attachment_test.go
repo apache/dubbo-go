@@ -110,12 +110,28 @@ func Test_metadataSupplier_Get(t *testing.T) {
 			want: "",
 		},
 		{
-			name: "test",
+			name: "slice value",
 			metadata: map[string]any{
 				"key": []string{"test"},
 			},
 			key:  "key",
 			want: "test",
+		},
+		{
+			name: "string value (defensive read)",
+			metadata: map[string]any{
+				"key": "test",
+			},
+			key:  "key",
+			want: "test",
+		},
+		{
+			name: "non-string non-slice value",
+			metadata: map[string]any{
+				"key": 123,
+			},
+			key:  "key",
+			want: "",
 		},
 	}
 	for _, tt := range tests {
@@ -127,5 +143,27 @@ func Test_metadataSupplier_Get(t *testing.T) {
 				t.Errorf("Get() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func Test_metadataSupplier_SetGetRoundTrip(t *testing.T) {
+	// This is the core bug scenario: Set stores a value, Get must be able to read it back.
+	s := &metadataSupplier{
+		metadata: map[string]any{},
+	}
+	s.Set("traceparent", "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01")
+
+	got := s.Get("traceparent")
+	if got != "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01" {
+		t.Errorf("round-trip Get() = %q, want traceparent value", got)
+	}
+
+	// Verify the stored type is []string, consistent with triple's generateAttachments
+	stored, ok := s.metadata["traceparent"].([]string)
+	if !ok {
+		t.Errorf("Set stored type %T, want []string", s.metadata["traceparent"])
+	}
+	if len(stored) != 1 || stored[0] != "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01" {
+		t.Errorf("stored value = %v, want [traceparent]", stored)
 	}
 }

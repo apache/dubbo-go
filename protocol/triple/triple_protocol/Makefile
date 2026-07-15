@@ -7,8 +7,6 @@ MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 MAKEFLAGS += --no-print-directory
 BIN := .tmp/bin
-COPYRIGHT_YEARS := 2021-2023
-LICENSE_IGNORE := --ignore /testdata/
 # Set to use a different compiler. For example, `GO=go1.18rc1 make test`.
 GO ?= go
 
@@ -52,13 +50,9 @@ lintfix: $(BIN)/golangci-lint $(BIN)/buf ## Automatically fix some lint errors
 	$(BIN)/buf format -w
 
 .PHONY: generate
-generate: $(BIN)/buf $(BIN)/protoc-gen-go $(BIN)/protoc-gen-connect-go $(BIN)/license-header ## Regenerate code and licenses
+generate: $(BIN)/buf $(BIN)/protoc-gen-go $(BIN)/protoc-gen-connect-go ## Regenerate code
 	rm -rf internal/gen
 	PATH=$(abspath $(BIN)) $(BIN)/buf generate
-	$(BIN)/license-header \
-		--license-type apache \
-		--copyright-holder "Buf Technologies, Inc." \
-		--year-range "$(COPYRIGHT_YEARS)" $(LICENSE_IGNORE)
 
 .PHONY: upgrade
 upgrade: ## Upgrade dependencies
@@ -77,11 +71,6 @@ $(BIN)/protoc-gen-connect-go:
 $(BIN)/buf: Makefile
 	@mkdir -p $(@D)
 	GOBIN=$(abspath $(@D)) $(GO) install github.com/bufbuild/buf/cmd/buf@v1.13.1
-
-$(BIN)/license-header: Makefile
-	@mkdir -p $(@D)
-	GOBIN=$(abspath $(@D)) $(GO) install \
-		  github.com/bufbuild/buf/private/pkg/licenseheader/cmd/license-header@90fa81df0e9ef86ed505956be1ab1e8ccd49aa52
 
 $(BIN)/golangci-lint: Makefile
 	@mkdir -p $(@D)

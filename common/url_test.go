@@ -1550,10 +1550,10 @@ func TestCloneThreadSafe(t *testing.T) {
 	wg.Add(100)
 
 	// Reader goroutines
-	for i := 0; i < 50; i++ {
+	for range 50 {
 		go func() {
 			defer wg.Done()
-			for j := 0; j < 100; j++ {
+			for range 100 {
 				c := u.Clone()
 				_ = c.String() // Use the clone to avoid optimization
 			}
@@ -1561,10 +1561,10 @@ func TestCloneThreadSafe(t *testing.T) {
 	}
 
 	// Writer goroutines for params
-	for i := 0; i < 25; i++ {
+	for i := range 25 {
 		go func(i int) {
 			defer wg.Done()
-			for j := 0; j < 100; j++ {
+			for j := range 100 {
 				key := "key" + strconv.Itoa(j)
 				val := "val" + strconv.Itoa(i)
 				u.SetParam(key, val)
@@ -1573,10 +1573,10 @@ func TestCloneThreadSafe(t *testing.T) {
 	}
 
 	// Writer goroutines for attributes
-	for i := 0; i < 25; i++ {
+	for i := range 25 {
 		go func(i int) {
 			defer wg.Done()
-			for j := 0; j < 100; j++ {
+			for j := range 100 {
 				key := "attr" + strconv.Itoa(j)
 				val := "attr_val" + strconv.Itoa(i)
 				u.SetAttribute(key, val)

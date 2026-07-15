@@ -261,6 +261,18 @@ func (m *listenerMockMetadataReport) RemoveServiceAppMappingListener(string, str
 	return args.Error(0)
 }
 
+func (m *listenerMockMetadataReport) UnPublishAppMetadata(string, string) error {
+	return nil
+}
+
+func (m *listenerMockMetadataReport) ListAppRevisions(string) ([]metadatareport.AppRevision, error) {
+	return nil, nil
+}
+
+func (m *listenerMockMetadataReport) URL() *common.URL {
+	return nil
+}
+
 func newTestServiceInstance(t *testing.T, port int, environment string) registry.ServiceInstance {
 	t.Helper()
 
@@ -373,6 +385,18 @@ func (c *capturingNotifyListener) NotifyAll(events []*registry.ServiceEvent, cal
 	if callback != nil {
 		callback()
 	}
+}
+
+func TestServiceInstancesChangedListenerRemoveListener(t *testing.T) {
+	listener := NewServiceInstancesChangedListener(testApp, constant.DefaultKey, gxset.NewSet(testApp)).(*ServiceInstancesChangedListenerImpl)
+	notify := &capturingNotifyListener{}
+	key := common.MatchKey(testInterface, constant.TriProtocol)
+
+	listener.AddListenerAndNotify(key, notify)
+	require.Len(t, listener.listeners, 1)
+
+	listener.RemoveListener(key)
+	require.Empty(t, listener.listeners)
 }
 
 func TestGetMetadataInfo_CacheKeyFormat(t *testing.T) {

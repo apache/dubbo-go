@@ -1,16 +1,19 @@
-// Copyright 2021-2023 Buf Technologies, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package triple_protocol
 
@@ -531,7 +534,7 @@ func getArgType(v any) string {
 	//  Serialized tags for complex types
 	default:
 		t := reflect.TypeOf(v)
-		if reflect.Ptr == t.Kind() {
+		if reflect.Pointer == t.Kind() {
 			t = t.Elem()
 		}
 		switch t.Kind() {
@@ -563,7 +566,7 @@ func reflectResponse(in any, out any) error {
 	if out == nil {
 		return perrors.Errorf("@out is nil")
 	}
-	if reflect.TypeOf(out).Kind() != reflect.Ptr {
+	if reflect.TypeOf(out).Kind() != reflect.Pointer {
 		return perrors.Errorf("@out should be a pointer")
 	}
 
@@ -597,14 +600,14 @@ func copySlice(inSlice, outSlice reflect.Value) error {
 		return perrors.Errorf("@in is not slice, but %v", inSlice.Kind())
 	}
 
-	for outSlice.Kind() == reflect.Ptr {
+	for outSlice.Kind() == reflect.Pointer {
 		outSlice = outSlice.Elem()
 	}
 
 	size := inSlice.Len()
 	outSlice.Set(reflect.MakeSlice(outSlice.Type(), size, size))
 
-	for i := 0; i < size; i++ {
+	for i := range size {
 		inSliceValue := inSlice.Index(i)
 		if !inSliceValue.Type().AssignableTo(outSlice.Index(i).Type()) {
 			return perrors.Errorf("in element type [%s] can not assign to out element type [%s]",

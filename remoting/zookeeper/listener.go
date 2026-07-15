@@ -20,6 +20,7 @@ package zookeeper
 import (
 	"net/url"
 	"path"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -187,12 +188,7 @@ func (l *ZkEventListener) listenServiceNodeEvent(zkPath string, listener ...remo
 
 func (l *ZkEventListener) handleZkNodeEvent(zkPath string, children []string, listener remoting.DataListener) {
 	contains := func(s []string, e string) bool {
-		for _, a := range s {
-			if a == e {
-				return true
-			}
-		}
-		return false
+		return slices.Contains(s, e)
 	}
 	newChildren, err := l.Client.GetChildren(zkPath)
 	if err != nil {
@@ -433,10 +429,7 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, li
 func (l *ZkEventListener) startScheduleWatchTask(
 	zkRootPath string, children []string, ttl time.Duration,
 	listener remoting.DataListener, childEventCh <-chan zk.Event) bool {
-	tickerTTL := ttl
-	if tickerTTL > maxScheduleTTL {
-		tickerTTL = maxScheduleTTL
-	}
+	tickerTTL := min(ttl, maxScheduleTTL)
 
 	childrenNode, err := l.Client.GetChildren(zkRootPath)
 	if err == nil {

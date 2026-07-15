@@ -101,11 +101,13 @@ func (ti *TripleInvoker) Invoke(ctx context.Context, invocation base.Invocation)
 
 	inRawLen := len(inRaw)
 
+	responseHeader, responseTrailer := responseMetadataTargets(invocation)
+
 	if !ti.clientManager.isIDL {
 		switch callType {
 		case constant.CallUnary:
 			// todo(DMwangnima): consider inRawLen == 0
-			if err := ti.clientManager.callUnary(ctx, method, inRaw[0:inRawLen-1], inRaw[inRawLen-1]); err != nil {
+			if err := ti.clientManager.callUnary(ctx, method, inRaw[0:inRawLen-1], inRaw[inRawLen-1], responseHeader, responseTrailer); err != nil {
 				result.SetError(err)
 			}
 		default:
@@ -118,7 +120,7 @@ func (ti *TripleInvoker) Invoke(ctx context.Context, invocation base.Invocation)
 		if len(inRaw) != 2 {
 			panic(fmt.Sprintf("Wrong parameter Values number for CallUnary, want 2, but got %d", inRawLen))
 		}
-		if err := ti.clientManager.callUnary(ctx, method, inRaw[0], inRaw[1]); err != nil {
+		if err := ti.clientManager.callUnary(ctx, method, inRaw[0], inRaw[1], responseHeader, responseTrailer); err != nil {
 			result.SetError(err)
 		}
 	case constant.CallClientStream:
@@ -156,6 +158,28 @@ func (ti *TripleInvoker) Invoke(ctx context.Context, invocation base.Invocation)
 	}
 
 	return &result
+}
+
+func responseMetadataTargets(invocation base.Invocation) (*http.Header, *http.Header) {
+	var responseHeader *http.Header
+	if headerRaw, ok := invocation.GetAttribute(constant.ResponseHeaderKey); ok {
+		if header, ok := headerRaw.(*http.Header); ok {
+			responseHeader = header
+		} else if headerRaw != nil {
+			logger.Warnf("[Triple][Invoker] invocation attribute %s should be *http.Header, got %T", constant.ResponseHeaderKey, headerRaw)
+		}
+	}
+
+	var responseTrailer *http.Header
+	if trailerRaw, ok := invocation.GetAttribute(constant.ResponseTrailerKey); ok {
+		if trailer, ok := trailerRaw.(*http.Header); ok {
+			responseTrailer = trailer
+		} else if trailerRaw != nil {
+			logger.Warnf("[Triple][Invoker] invocation attribute %s should be *http.Header, got %T", constant.ResponseTrailerKey, trailerRaw)
+		}
+	}
+
+	return responseHeader, responseTrailer
 }
 
 func mergeAttachmentToOutgoing(ctx context.Context, inv base.Invocation) (context.Context, error) {

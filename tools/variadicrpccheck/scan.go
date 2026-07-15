@@ -24,6 +24,7 @@ import (
 	"go/token"
 	"go/types"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 )
@@ -260,8 +261,8 @@ func typeSpecInterfaceFindings(pkg *packages.Package, typeSpec *ast.TypeSpec, if
 	ifaceType.Complete()
 
 	findings := make([]Finding, 0, ifaceType.NumMethods())
-	for i := 0; i < ifaceType.NumMethods(); i++ {
-		if finding, ok := interfaceMethodFinding(pkg, typeSpec, ifaceType.Method(i), methodPositions); ok {
+	for method := range ifaceType.Methods() {
+		if finding, ok := interfaceMethodFinding(pkg, typeSpec, method, methodPositions); ok {
 			findings = append(findings, finding)
 		}
 	}
@@ -794,9 +795,9 @@ func shouldSkipPackageFile(pkg *packages.Package, fileIdx int, skip func(string)
 // latestAssignmentBefore returns the nearest initializer or reassignment
 // visible before the registration call site.
 func latestAssignmentBefore(assignments []assignmentRef, pos token.Pos) (assignmentRef, bool) {
-	for i := len(assignments) - 1; i >= 0; i-- {
-		if pos == token.NoPos || assignments[i].pos < pos {
-			return assignments[i], true
+	for _, assignment := range slices.Backward(assignments) {
+		if pos == token.NoPos || assignment.pos < pos {
+			return assignment, true
 		}
 	}
 	return assignmentRef{}, false
@@ -914,8 +915,7 @@ func recordEmbeddedMethodPositions(pkg *packages.Package, positions map[string]t
 	}
 
 	embeddedIface.Complete()
-	for i := 0; i < embeddedIface.NumMethods(); i++ {
-		method := embeddedIface.Method(i)
+	for method := range embeddedIface.Methods() {
 		if method.Exported() {
 			recordEmbeddedMethodPosition(positions, method.Name(), expr.Pos())
 		}
@@ -1002,8 +1002,8 @@ func isVariadicRPCSignature(sig *types.Signature) bool {
 	}
 
 	params := sig.Params()
-	for i := 0; i < params.Len(); i++ {
-		if !isExportedOrBuiltinGoType(params.At(i).Type()) {
+	for v := range params.Variables() {
+		if !isExportedOrBuiltinGoType(v.Type()) {
 			return false
 		}
 	}
