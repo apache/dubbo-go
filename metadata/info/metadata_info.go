@@ -20,6 +20,7 @@ package info
 import (
 	"crypto/sha512"
 	"fmt"
+	"maps"
 	"net/url"
 	"sort"
 	"strconv"
@@ -319,7 +320,7 @@ func (si *ServiceInfo) GetParams() url.Values {
 	v := url.Values{}
 	methods := gxset.NewSet()
 	if methodNames, ok := si.Params[constant.MethodsKey]; ok {
-		for _, method := range strings.Split(methodNames, ",") {
+		for method := range strings.SplitSeq(methodNames, ",") {
 			methods.Add(method)
 		}
 	}
@@ -354,9 +355,7 @@ func (si *ServiceInfo) GetServiceKey() string {
 // DeepCopy returns a fully independent copy of ServiceInfo with lazy fields eagerly populated.
 func (si *ServiceInfo) DeepCopy() *ServiceInfo {
 	params := make(map[string]string, len(si.Params))
-	for k, v := range si.Params {
-		params[k] = v
-	}
+	maps.Copy(params, si.Params)
 	return &ServiceInfo{
 		Name:       si.Name,
 		Group:      si.Group,

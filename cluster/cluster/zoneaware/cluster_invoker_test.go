@@ -56,7 +56,7 @@ func TestZoneWareInvokerWithPreferredSuccess(t *testing.T) {
 	}
 
 	var invokers []base.Invoker
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
 		invoker := mock.NewMockInvoker(ctrl)
 		invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
@@ -98,7 +98,7 @@ func TestZoneWareInvokerWithWeightSuccess(t *testing.T) {
 	w2 := "200"
 
 	var invokers []base.Invoker
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
 		invoker := mock.NewMockInvoker(ctrl)
 		invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
@@ -132,7 +132,7 @@ func TestZoneWareInvokerWithWeightSuccess(t *testing.T) {
 
 	var w2Count, w1Count int
 	loop := 50
-	for i := 0; i < loop; i++ {
+	for range loop {
 		result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 		if w2 == result.Attachment(constant.WeightKey, "0") {
 			w2Count++
@@ -155,7 +155,7 @@ func TestZoneWareInvokerWithZoneSuccess(t *testing.T) {
 	// defer ctrl.Finish()
 
 	var invokers []base.Invoker
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		zoneValue := zoneArray[i]
 		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
 		url.SetParam(constant.RegistryKey+"."+constant.RegistryZoneKey, zoneValue)
@@ -194,7 +194,7 @@ func TestZoneWareInvokerWithZoneForceFail(t *testing.T) {
 	// defer ctrl.Finish()
 
 	var invokers []base.Invoker
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
 
 		invoker := mock.NewMockInvoker(ctrl)

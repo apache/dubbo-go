@@ -244,7 +244,7 @@ func unmarshalRequestBody(body []byte, p *DubboPackage) error {
 
 	ats := hessian.DescRegex.FindAllString(argsTypes.(string), -1)
 	var arg any
-	for i := 0; i < len(ats); i++ {
+	for range ats {
 		arg, err = decoder.Decode()
 		if err != nil {
 			return perrors.WithStack(err)
@@ -505,7 +505,7 @@ func getArgType(v any) string {
 	//  Serialized tags for complex types
 	default:
 		t := reflect.TypeOf(v)
-		if reflect.Ptr == t.Kind() {
+		if reflect.Pointer == t.Kind() {
 			t = reflect.TypeOf(reflect.ValueOf(v).Elem())
 		}
 		switch t.Kind() {

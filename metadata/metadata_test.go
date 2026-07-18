@@ -183,7 +183,7 @@ func TestGetMetadataService(t *testing.T) {
 
 func TestAddServiceConcurrent(t *testing.T) {
 	var wg sync.WaitGroup
-	for i := 0; i < 20; i++ {
+	for i := range 20 {
 		registryId := "concurrent-reg"
 		wg.Add(1)
 		go func(idx int) {

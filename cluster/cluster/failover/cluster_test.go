@@ -47,7 +47,7 @@ func normalInvoke(successCount int, urlParam url.Values, invocations ...*invocat
 	failoverCluster := newFailoverCluster()
 
 	var invokers []base.Invoker
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		newUrl, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i), common.WithParams(urlParam))
 		invokers = append(invokers, clusterpkg.NewMockInvoker(newUrl, successCount))
 	}
@@ -98,7 +98,7 @@ func TestFailoverDestroy(t *testing.T) {
 	failoverCluster := newFailoverCluster()
 
 	invokers := []base.Invoker{}
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		u, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
 		invokers = append(invokers, clusterpkg.NewMockInvoker(u, 1))
 	}

@@ -26,6 +26,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"math/rand"
 	"net"
 	"net/http"
@@ -531,6 +532,39 @@ func TestServer(t *testing.T) {
 	})
 }
 
+func TestSetHeaderAndSetTrailerInUnaryHandler(t *testing.T) {
+	t.Parallel()
+
+	handler := triple.NewUnaryHandler(
+		"/connect.ping.v1.PingService/Ping",
+		func() any { return new(pingv1.PingRequest) },
+		func(ctx context.Context, req *triple.Request) (*triple.Response, error) {
+			if err := triple.SetHeader(ctx, http.Header{handlerHeader: []string{headerValue}}); err != nil {
+				return nil, err
+			}
+			if err := triple.SetTrailer(ctx, http.Header{handlerTrailer: []string{trailerValue}}); err != nil {
+				return nil, err
+			}
+
+			msg := req.Msg.(*pingv1.PingRequest)
+			return triple.NewResponse(&pingv1.PingResponse{
+				Number: msg.Number,
+				Text:   msg.Text,
+			}), nil
+		},
+	)
+	server := httptest.NewServer(handler)
+	t.Cleanup(server.Close)
+
+	client := pingv1connect.NewPingServiceClient(server.Client(), server.URL)
+	request := triple.NewRequest(&pingv1.PingRequest{Number: 42})
+	response := triple.NewResponse(&pingv1.PingResponse{})
+	err := client.Ping(context.Background(), request, response)
+	assert.Nil(t, err)
+	assert.Equal(t, response.Header().Values(handlerHeader), []string{headerValue})
+	assert.Equal(t, response.Trailer().Values(handlerTrailer), []string{trailerValue})
+}
+
 func TestConcurrentStreams(t *testing.T) {
 	if testing.Short() {
 		t.Skipf("skipping %s test in short mode", t.Name())
@@ -544,16 +578,14 @@ func TestConcurrentStreams(t *testing.T) {
 	t.Cleanup(server.Close)
 	var done, start sync.WaitGroup
 	start.Add(1)
-	for i := 0; i < 100; i++ {
-		done.Add(1)
-		go func() {
-			defer done.Done()
+	for range 100 {
+		done.Go(func() {
 			client := pingv1connect.NewPingServiceClient(server.Client(), server.URL)
 			var total int64
 			sum, err := client.CumSum(context.Background())
 			assert.Nil(t, err)
 			start.Wait()
-			for i := 0; i < 100; i++ {
+			for range 100 {
 				num := rand.Int63n(1000) //NOSONAR
 				total += num
 				if err := sum.Send(&pingv1.CumSumRequest{Number: num}); err != nil {
@@ -577,7 +609,7 @@ func TestConcurrentStreams(t *testing.T) {
 			if err := sum.CloseResponse(); err != nil {
 				t.Errorf("failed to close response: %v", err)
 			}
-		}()
+		})
 	}
 	start.Done()
 	done.Wait()
@@ -1988,9 +2020,7 @@ func TestTripleProtocolHeaderRequired(t *testing.T) {
 		)
 		assert.Nil(t, err)
 		req.Header.Set("Content-Type", "application/json")
-		for k, v := range test.headers {
-			req.Header[k] = v
-		}
+		maps.Copy(req.Header, test.headers)
 		response, err := server.Client().Do(req)
 		assert.Nil(t, err)
 		assert.Nil(t, response.Body.Close())

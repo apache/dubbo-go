@@ -83,7 +83,7 @@ func TestCheckValidTpsLimiter(t *testing.T) {
 	}
 
 	err := svcOpts.check()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 // Test check with valid TpsLimitRate
@@ -96,7 +96,7 @@ func TestCheckValidTpsLimitRate(t *testing.T) {
 	}
 
 	err := svcOpts.check()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 // Test check with invalid TpsLimitRate
@@ -135,7 +135,7 @@ func TestCheckValidTpsLimitInterval(t *testing.T) {
 	}
 
 	err := svcOpts.check()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 // Test check with invalid TpsLimitInterval

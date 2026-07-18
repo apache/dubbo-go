@@ -55,7 +55,7 @@ func TestDubbo3UnaryService_GetReqParamsInterfaces(t *testing.T) {
 	valueOf := reflect.ValueOf(&MockService{})
 	typeOf := valueOf.Type()
 	numField := valueOf.NumMethod()
-	for i := 0; i < numField; i++ {
+	for i := range numField {
 		ft := typeOf.Method(i)
 		// num in/out is checked in common/rpc_service.go
 		typs := make([]reflect.Type, 0)

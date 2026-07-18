@@ -106,7 +106,7 @@ func TestConfigCenterLevelTags(t *testing.T) {
 
 func TestAppInfoConcurrentAccess(t *testing.T) {
 	var wg sync.WaitGroup
-	for i := 0; i < 400; i++ {
+	for range 400 {
 		wg.Add(2)
 		go func() {
 			defer wg.Done()

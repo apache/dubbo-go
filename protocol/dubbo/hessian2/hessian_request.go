@@ -231,7 +231,7 @@ func unpackRequestBody(decoder *hessian.Decoder, reqObj any) error {
 
 	ats := DescRegex.FindAllString(argsTypes.(string), -1)
 	var arg any
-	for i := 0; i < len(ats); i++ {
+	for range ats {
 		arg, err = decoder.Decode()
 		if err != nil {
 			return perrors.WithStack(err)

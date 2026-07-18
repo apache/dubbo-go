@@ -143,14 +143,14 @@ func TestBeanGeneralizer_Realize_Primitive(t *testing.T) {
 		Properties: map[any]any{"value": "hello"},
 	}
 
-	result, err := g.Realize(desc, reflect.TypeOf(""))
+	result, err := g.Realize(desc, reflect.TypeFor[string]())
 	require.NoError(t, err)
 	assert.Equal(t, "hello", result)
 }
 
 func TestBeanGeneralizer_Realize_Nil(t *testing.T) {
 	g := GetBeanGeneralizer()
-	result, err := g.Realize(nil, reflect.TypeOf(""))
+	result, err := g.Realize(nil, reflect.TypeFor[string]())
 	require.NoError(t, err)
 	assert.Nil(t, result)
 }
@@ -170,7 +170,7 @@ func TestBeanGeneralizer_RoundTrip_Struct(t *testing.T) {
 	generalized, err := g.Generalize(original)
 	require.NoError(t, err)
 
-	realized, err := g.Realize(generalized, reflect.TypeOf(&TestUser{}))
+	realized, err := g.Realize(generalized, reflect.TypeFor[*TestUser]())
 	require.NoError(t, err)
 
 	user := realized.(*TestUser)
@@ -188,7 +188,7 @@ func TestBeanGeneralizer_RoundTrip_Slice(t *testing.T) {
 	generalized, err := g.Generalize(original)
 	require.NoError(t, err)
 
-	realized, err := g.Realize(generalized, reflect.TypeOf([]int{}))
+	realized, err := g.Realize(generalized, reflect.TypeFor[[]int]())
 	require.NoError(t, err)
 
 	slice := realized.([]int)
@@ -203,7 +203,7 @@ func TestBeanGeneralizer_RoundTrip_Map(t *testing.T) {
 	generalized, err := g.Generalize(original)
 	require.NoError(t, err)
 
-	realized, err := g.Realize(generalized, reflect.TypeOf(map[string]string{}))
+	realized, err := g.Realize(generalized, reflect.TypeFor[map[string]string]())
 	require.NoError(t, err)
 
 	m := realized.(map[string]string)
@@ -250,7 +250,7 @@ func TestBeanGeneralizer_Realize_ArrayWithInt32Keys(t *testing.T) {
 		},
 	}
 
-	realized, err := g.Realize(desc, reflect.TypeOf([]string{}))
+	realized, err := g.Realize(desc, reflect.TypeFor[[]string]())
 	require.NoError(t, err)
 
 	slice := realized.([]string)

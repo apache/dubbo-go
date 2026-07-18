@@ -120,16 +120,16 @@ func generateMatcher(url *common.URL) (when, then map[string]matcher.Matcher, er
 	}
 	rule = strings.ReplaceAll(rule, "consumer.", "")
 	rule = strings.ReplaceAll(rule, "provider.", "")
-	i := strings.Index(rule, "=>")
+	before, after, ok := strings.Cut(rule, "=>")
 	// for the case of `{when rule} => {then rule}`
 	var whenRule string
 	var thenRule string
-	if i < 0 {
+	if !ok {
 		whenRule = ""
 		thenRule = strings.Trim(rule, " ")
 	} else {
-		whenRule = strings.Trim(rule[0:i], " ")
-		thenRule = strings.Trim(rule[i+2:], " ")
+		whenRule = strings.Trim(before, " ")
+		thenRule = strings.Trim(after, " ")
 	}
 
 	when, err = parseWhen(whenRule)

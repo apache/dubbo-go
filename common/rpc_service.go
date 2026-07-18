@@ -66,7 +66,7 @@ func GetReference(service RPCService) string {
 	switch kind {
 	case reflect.Struct:
 		ref = sType.Name()
-	case reflect.Ptr:
+	case reflect.Pointer:
 		sName := sType.Elem().Name()
 		if sName != "" {
 			ref = sName
@@ -95,7 +95,7 @@ const (
 var (
 	// Precompute the reflect type for error. Can't use error directly
 	// because Typeof takes an empty interface value. This is annoying.
-	typeOfError = reflect.TypeOf((*error)(nil)).Elem()
+	typeOfError = reflect.TypeFor[error]()
 
 	// ServiceMap store description of service.
 	ServiceMap = &serviceMap{
@@ -321,7 +321,7 @@ func isExported(name string) bool {
 
 // Is this type exported or a builtin?
 func isExportedOrBuiltinType(t reflect.Type) bool {
-	for t.Kind() == reflect.Ptr {
+	for t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
 	// PkgPath will be non-empty even for an exported type,

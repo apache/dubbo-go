@@ -211,8 +211,8 @@ func (c *Code) UnmarshalText(data []byte) error {
 	}
 	// Ensure that non-canonical codes round-trip through MarshalText and
 	// UnmarshalText.
-	if strings.HasPrefix(dataStr, "code_") {
-		dataStr = strings.TrimPrefix(dataStr, "code_")
+	if after, ok := strings.CutPrefix(dataStr, "code_"); ok {
+		dataStr = after
 		code, err := strconv.ParseUint(dataStr, 10 /* base */, 64 /* bitsize */)
 		if err == nil && (code < uint64(minCode) || code > uint64(maxCode)) {
 			*c = Code(code)

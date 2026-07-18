@@ -178,7 +178,7 @@ func GetClassDesc(v any) string {
 	//  Serialized tags for complex types
 	default:
 		t := reflect.TypeOf(v)
-		if reflect.Ptr == t.Kind() {
+		if reflect.Pointer == t.Kind() {
 			t = reflect.TypeOf(reflect.ValueOf(v).Elem())
 		}
 		switch t.Kind() {
