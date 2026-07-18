@@ -242,7 +242,7 @@ func (h *HessianCodec) ReadBody(rspObj any) error {
 		if !ok {
 			return perrors.Errorf("java exception: %v", exception)
 		}
-		if g, ok := ToGenericException(exception); ok {
+		if g, ok := hessian.ToGenericException(exception); ok {
 			rsp.Exception = g
 		} else if e, ok := exception.(error); ok {
 			rsp.Exception = e
