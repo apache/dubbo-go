@@ -67,20 +67,6 @@ func TestServer_RegisterMuxHandle(t *testing.T) {
 				return srv.RegisterBidiStreamHandler(path, nil)
 			},
 		},
-		{
-			desc: "RegisterCompatUnaryHandler_MuxHandle",
-			path: "/CompatUnary",
-			registerFunc: func(srv *Server, path string) error {
-				return srv.RegisterCompatUnaryHandler(path, "", nil, nil)
-			},
-		},
-		{
-			desc: "RegisterCompatStreamHandler_MuxHandle",
-			path: "/CompatStream",
-			registerFunc: func(srv *Server, path string) error {
-				return srv.RegisterCompatStreamHandler(path, nil, StreamTypeBidi, nil)
-			},
-		},
 	}
 
 	srv := NewServer("127.0.0.1:20000", &global.TripleConfig{

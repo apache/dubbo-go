@@ -43,7 +43,7 @@ func main() {
 		panic(err)
 	}
 
-	greeterClient, err := api.NewGreeterClient(cli)
+	greeterClient, err := api.NewGreeter(cli)
 	if err != nil {
 		panic(err)
 	}

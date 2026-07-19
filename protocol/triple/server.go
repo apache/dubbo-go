@@ -33,8 +33,6 @@ import (
 
 	"github.com/dubbogo/gost/log/logger"
 
-	grpc_go "github.com/dubbogo/grpc-go"
-
 	"github.com/dustin/go-humanize"
 
 	"google.golang.org/grpc"
@@ -46,7 +44,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/internal"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
-	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo3"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
@@ -276,7 +273,7 @@ func (s *Server) registerServiceHandlers(invoker base.Invoker, info *common.Serv
 		s.handleServiceWithInfo(intfName, invoker, reflectInfo, hanOpts...)
 		s.saveServiceInfo(intfName, reflectInfo, openapiGroup, url.Group(), url.Version())
 	} else {
-		s.compatHandleService(url, intfName, url.Group(), url.Version(), hanOpts...)
+		logger.Error("[Server][Triple] dubbo3(old triple) and IDL-mode are not supported by dubbo-go any more, please use Triple protocol")
 	}
 }
 
@@ -443,80 +440,6 @@ func getHanOpts(url *common.URL, tripleConf *global.TripleConfig) (hanOpts []tri
 	return hanOpts
 }
 
-// *Important*, this function is responsible for being compatible with old triple-gen code and non-idl code
-// compatHandleService registers handler based on ServiceConfig and provider service.
-func (s *Server) compatHandleService(url *common.URL, interfaceName string, group, version string, opts ...tri.HandlerOption) {
-	var providerServices map[string]*global.ServiceConfig
-	if providerConfRaw, ok := url.GetAttribute(constant.ProviderConfigKey); ok {
-		if providerConf, ok := providerConfRaw.(*global.ProviderConfig); ok && providerConf != nil {
-			providerServices = providerConf.Services
-		}
-	}
-	if len(providerServices) == 0 {
-		logger.Info("[Triple][Server] provider service map is null, please register ProviderServices")
-		return
-	}
-	for key, providerService := range providerServices {
-		if providerService.Interface != interfaceName || providerService.Group != group || providerService.Version != version {
-			continue
-		}
-		service, _ := url.GetAttribute(constant.RpcServiceKey)
-		if service == nil {
-			logger.Warnf("[Triple][Server] no rpc service found for key=%v", key)
-			continue
-		}
-		serviceKey := common.ServiceKey(providerService.Interface, providerService.Group, providerService.Version)
-		exporter, _ := tripleProtocol.ExporterMap().Load(serviceKey)
-		if exporter == nil {
-			logger.Warnf("[Triple][Server] no exporter found for serviceKey=%v", serviceKey)
-			continue
-		}
-		invoker := exporter.(base.Exporter).GetInvoker()
-		if invoker == nil {
-			panic(fmt.Sprintf("no invoker found for servicekey: %v", serviceKey))
-		}
-		ds, ok := service.(dubbo3.Dubbo3GrpcService)
-		if !ok {
-			info := createServiceInfoWithReflection(service)
-			s.handleServiceWithInfo(interfaceName, invoker, info, opts...)
-			s.saveServiceInfo(interfaceName, info, "", "", "")
-			continue
-		}
-		s.compatSaveServiceInfo(ds.XXX_ServiceDesc())
-		// inject invoker, it has all invocation logics
-		ds.XXX_SetProxyImpl(invoker)
-		s.compatRegisterHandler(interfaceName, ds, opts...)
-	}
-}
-
-func (s *Server) compatRegisterHandler(interfaceName string, svc dubbo3.Dubbo3GrpcService, opts ...tri.HandlerOption) {
-	desc := svc.XXX_ServiceDesc()
-	// init unary handlers
-	for _, method := range desc.Methods {
-		// please refer to protocol/triple/internal/proto/triple_gen/greettriple for procedure examples
-		// error could be ignored because base is empty string
-		procedure := joinProcedure(interfaceName, method.MethodName)
-		_ = s.triServer.RegisterCompatUnaryHandler(procedure, method.MethodName, svc, tri.MethodHandler(method.Handler), opts...)
-	}
-
-	// init stream handlers
-	for _, stream := range desc.Streams {
-		// please refer to protocol/triple/internal/proto/triple_gen/greettriple for procedure examples
-		// error could be ignored because base is empty string
-		procedure := joinProcedure(interfaceName, stream.StreamName)
-		var typ tri.StreamType
-		switch {
-		case stream.ClientStreams && stream.ServerStreams:
-			typ = tri.StreamTypeBidi
-		case stream.ClientStreams:
-			typ = tri.StreamTypeClient
-		case stream.ServerStreams:
-			typ = tri.StreamTypeServer
-		}
-		_ = s.triServer.RegisterCompatStreamHandler(procedure, svc, typ, stream.Handler, opts...)
-	}
-}
-
 // handleServiceWithInfo injects invoker and creates handlers based on ServiceInfo.
 // Each method is registered once under its canonical procedure path. Triple's
 // transport-layer route mux performs case-insensitive fallback matching.
@@ -679,31 +602,6 @@ func (s *Server) saveServiceInfo(interfaceName string, info *common.ServiceInfo,
 	if s.triServer != nil {
 		s.triServer.RegisterOpenAPIService(interfaceName, info, openapiGroup, dubboGroup, dubboVersion)
 	}
-}
-
-func (s *Server) compatSaveServiceInfo(desc *grpc_go.ServiceDesc) {
-	ret := grpc.ServiceInfo{}
-	ret.Methods = make([]grpc.MethodInfo, 0, len(desc.Streams)+len(desc.Methods))
-	for _, method := range desc.Methods {
-		md := grpc.MethodInfo{
-			Name:           method.MethodName,
-			IsClientStream: false,
-			IsServerStream: false,
-		}
-		ret.Methods = append(ret.Methods, md)
-	}
-	for _, stream := range desc.Streams {
-		md := grpc.MethodInfo{
-			Name:           stream.StreamName,
-			IsClientStream: stream.ClientStreams,
-			IsServerStream: stream.ServerStreams,
-		}
-		ret.Methods = append(ret.Methods, md)
-	}
-	ret.Metadata = desc.Metadata
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.services[desc.ServiceName] = ret
 }
 
 func (s *Server) GetServiceInfo() map[string]grpc.ServiceInfo {

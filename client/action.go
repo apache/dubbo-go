@@ -29,8 +29,6 @@ import (
 	"github.com/dubbogo/gost/log/logger"
 	gxstrings "github.com/dubbogo/gost/strings"
 
-	constant2 "github.com/dubbogo/triple/pkg/common/constant"
-
 	perrors "github.com/pkg/errors"
 )
 
@@ -66,7 +64,7 @@ func updateOrCreateMeshURL(opts *ReferenceOptions) {
 	if !con.MeshEnabled {
 		return
 	}
-	if ref.Protocol != constant2.TRIPLE {
+	if ref.Protocol != constant.TriProtocol {
 		panic(fmt.Sprintf("Mesh mode enabled, Triple protocol expected but %v protocol found!", ref.Protocol))
 	}
 	if ref.ProvidedBy == "" {

@@ -36,7 +36,6 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/tools/protoc-gen-go-triple/gen/generator"
-	"dubbo.apache.org/dubbo-go/v3/tools/protoc-gen-go-triple/internal/old_triple"
 	"dubbo.apache.org/dubbo-go/v3/tools/protoc-gen-go-triple/internal/version"
 )
 
@@ -59,17 +58,12 @@ func main() {
 	}
 
 	var flags flag.FlagSet
-	useOld := flags.Bool("useOldVersion", false, "print the version and exit")
-	old_triple.RequireUnimplemented = flags.Bool("require_unimplemented_servers", true, "set to false to match legacy behavior")
 
 	protogen.Options{
 		ParamFunc: flags.Set,
 	}.Run(
 		func(plugin *protogen.Plugin) error {
 			plugin.SupportedFeatures = uint64(pluginpb.CodeGeneratorResponse_FEATURE_PROTO3_OPTIONAL)
-			if *useOld {
-				return genOldTriple(plugin)
-			}
 			return genTriple(plugin)
 		},
 	)
@@ -118,15 +112,6 @@ func genTriple(plugin *protogen.Plugin) error {
 			errorMessages = append(errorMessages, err.Error())
 		}
 		return fmt.Errorf("multiple errors occurred:\n%s", strings.Join(errorMessages, "\n"))
-	}
-	return nil
-}
-
-func genOldTriple(plugin *protogen.Plugin) error {
-	for _, file := range plugin.Files {
-		if file.Generate {
-			old_triple.GenerateFile(plugin, file)
-		}
 	}
 	return nil
 }

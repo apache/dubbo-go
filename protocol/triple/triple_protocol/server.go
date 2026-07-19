@@ -27,8 +27,6 @@ import (
 import (
 	"github.com/dubbogo/gost/log/logger"
 
-	"github.com/dubbogo/grpc-go"
-
 	"github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/http3"
 
@@ -127,48 +125,6 @@ func (s *Server) RegisterBidiStreamHandler(
 	} else {
 		config := newHandlerConfig(procedure, options)
 		implementation := generateBidiStreamHandlerFunc(procedure, stream, config.Interceptor)
-		hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
-	}
-
-	return nil
-}
-
-func (s *Server) RegisterCompatUnaryHandler(
-	procedure string,
-	method string,
-	srv any,
-	unary MethodHandler,
-	options ...HandlerOption,
-) error {
-	hdl, ok := s.handlers[procedure]
-	if !ok {
-		hdl = NewCompatUnaryHandler(procedure, method, srv, unary, options...)
-		s.handlers[procedure] = hdl
-		s.mux.Handle(procedure, hdl)
-	} else {
-		config := newHandlerConfig(procedure, options)
-		implementation := generateCompatUnaryHandlerFunc(procedure, method, srv, unary, config.Interceptor)
-		hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
-	}
-
-	return nil
-}
-
-func (s *Server) RegisterCompatStreamHandler(
-	procedure string,
-	srv any,
-	typ StreamType,
-	streamFunc func(srv any, stream grpc.ServerStream) error,
-	options ...HandlerOption,
-) error {
-	hdl, ok := s.handlers[procedure]
-	if !ok {
-		hdl = NewCompatStreamHandler(procedure, srv, typ, streamFunc, options...)
-		s.handlers[procedure] = hdl
-		s.mux.Handle(procedure, hdl)
-	} else {
-		config := newHandlerConfig(procedure, options)
-		implementation := generateCompatStreamHandlerFunc(procedure, srv, streamFunc, config.Interceptor)
 		hdl.processImplementation(getIdentifier(config.Group, config.Version), implementation)
 	}
 

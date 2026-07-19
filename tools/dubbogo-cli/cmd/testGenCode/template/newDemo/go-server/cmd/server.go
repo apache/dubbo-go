@@ -32,9 +32,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/server"
 )
 
-type GreeterProvider struct {
-	api.UnimplementedGreeterServer
-}
+type GreeterProvider struct{}
 
 func (s *GreeterProvider) SayHello(ctx context.Context, in *api.HelloRequest) (*api.User, error) {
 	logger.Infof("Dubbo3 GreeterProvider get user name = %s\n", in.Name)
@@ -52,7 +50,7 @@ func main() {
 		panic(err)
 	}
 
-	if err := api.RegisterGreeterServer(srv, &GreeterProvider{}); err != nil {
+	if err := api.RegisterGreeterHandler(srv, &GreeterProvider{}); err != nil {
 		panic(err)
 	}
 

@@ -29,9 +29,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/logger"
 )
 
-type GreeterServerImpl struct {
-	api.UnimplementedGreeterServer
-}
+type GreeterServerImpl struct{}
 
 func (s *GreeterServerImpl) SayHello(ctx context.Context, in *api.HelloRequest) (*api.User, error) {
 	logger.Infof("Dubbo-go GreeterProvider get user name = %s\n", in.Name)
