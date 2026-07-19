@@ -25,8 +25,6 @@ import (
 )
 
 import (
-	hessian2 "github.com/apache/dubbo-go-hessian2"
-
 	"github.com/dubbogo/gost/log/logger"
 
 	"github.com/pkg/errors"
@@ -40,6 +38,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	gracefulshutdown "dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/hessian2"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
