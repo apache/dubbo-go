@@ -46,6 +46,7 @@ type GenericException = hessian.GenericException
 func ToGenericException(expt any) (*GenericException, bool) {
 	return hessian.ToGenericException(expt)
 }
+
 // DubboResponse dubbo response
 type DubboResponse struct {
 	RspObj      any
