@@ -50,8 +50,13 @@ const (
 	CONFIGURATOR
 	ROUTER
 	PROVIDER
-	PROTOCOL = "protocol"
 )
+
+// PROTOCOL is the canonical key for the protocol in URL maps/params.
+//
+// Deprecated: use constant.ProtocolKey instead. Kept as an alias to preserve
+// backward compatibility for downstream users.
+const PROTOCOL = constant.ProtocolKey
 
 var (
 	DubboNodes          = [...]string{"consumers", "configurators", "routers", "providers"} // Dubbo service node
@@ -791,17 +796,18 @@ func (c *URL) GetParamAndDecoded(key string) (string, error) {
 // GetRawParam gets raw param
 func (c *URL) GetRawParam(key string) string {
 	switch key {
-	case PROTOCOL:
+	case constant.ProtocolKey:
 		return c.Protocol
-	case "username":
+	case constant.UsernameKey:
 		return c.Username
-	case "host":
-		return strings.Split(c.Location, ":")[0]
-	case "password":
+	case constant.HostKey:
+		host, _ := parseLocation(c.Location)
+		return host
+	case constant.PasswordKey:
 		return c.Password
-	case "port":
+	case constant.PortKey:
 		return c.Port
-	case "path":
+	case constant.PathKey:
 		return c.Path
 	default:
 		return c.GetParam(key, "")
@@ -909,7 +915,34 @@ func (c *URL) SetParams(m url.Values) {
 
 // ToMap transfer URL to Map
 func (c *URL) ToMap() map[string]string {
-	paramsMap := make(map[string]string)
+	// Pre-calculate capacity to avoid map growth
+	c.paramsLock.RLock()
+	paramCount := len(c.params)
+	c.paramsLock.RUnlock()
+
+	// Count non-empty scalar fields
+	capacity := paramCount
+	if c.Protocol != "" {
+		capacity++
+	}
+	if c.Username != "" {
+		capacity++
+	}
+	if c.Password != "" {
+		capacity++
+	}
+	if c.Location != "" {
+		capacity += 2 // host + port
+	}
+	if c.Path != "" {
+		capacity++
+	}
+
+	if capacity == 0 {
+		return nil
+	}
+
+	paramsMap := make(map[string]string, capacity)
 
 	c.RangeParams(
 		func(key, value string) bool {
@@ -919,32 +952,21 @@ func (c *URL) ToMap() map[string]string {
 	)
 
 	if c.Protocol != "" {
-		paramsMap[PROTOCOL] = c.Protocol
+		paramsMap[constant.ProtocolKey] = c.Protocol
 	}
 	if c.Username != "" {
-		paramsMap["username"] = c.Username
+		paramsMap[constant.UsernameKey] = c.Username
 	}
 	if c.Password != "" {
-		paramsMap["password"] = c.Password
+		paramsMap[constant.PasswordKey] = c.Password
 	}
 	if c.Location != "" {
-		paramsMap["host"] = strings.Split(c.Location, ":")[0]
-		var port string
-		if strings.Contains(c.Location, ":") {
-			port = strings.Split(c.Location, ":")[1]
-		} else {
-			port = "0"
-		}
-		paramsMap["port"] = port
-	}
-	if c.Protocol != "" {
-		paramsMap[PROTOCOL] = c.Protocol
+		host, port := parseLocation(c.Location)
+		paramsMap[constant.HostKey] = host
+		paramsMap[constant.PortKey] = port
 	}
 	if c.Path != "" {
-		paramsMap["path"] = c.Path
-	}
-	if len(paramsMap) == 0 {
-		return nil
+		paramsMap[constant.PathKey] = c.Path
 	}
 	return paramsMap
 }
@@ -1154,6 +1176,37 @@ func (c *URL) CloneWithParams(reserveParams []string) *URL {
 	return c.CloneWithFilter(nil, reserveParams)
 }
 
+// keySet is a set of URL parameter keys that should be ignored during comparison.
+type keySet map[string]struct{}
+
+func newKeySet(keys []string) keySet {
+	set := make(keySet, len(keys))
+	for _, k := range keys {
+		set[k] = struct{}{}
+	}
+	return set
+}
+
+func (s keySet) contains(key string) bool {
+	_, ok := s[key]
+	return ok
+}
+
+// reservedKeyList are the keys that ToMap materializes from scalar fields (or the
+// "host:port" Location), where a non-empty field overrides the same-named param.
+var reservedKeyList = []string{
+	constant.ProtocolKey,
+	constant.UsernameKey,
+	constant.PasswordKey,
+	constant.HostKey,
+	constant.PortKey,
+	constant.PathKey,
+}
+
+// reservedKeys is reservedKeyList as a set. equalParams skips these keys so that
+// equalReservedKeys can compare them with ToMap's field-overrides-param precedence.
+var reservedKeys = newKeySet(reservedKeyList)
+
 // IsEquals compares if two URLs equals with each other. Excludes are all parameter keys which should ignored.
 func IsEquals(left *URL, right *URL, excludes ...string) bool {
 	if (left == nil && right != nil) || (right == nil && left != nil) {
@@ -1163,26 +1216,126 @@ func IsEquals(left *URL, right *URL, excludes ...string) bool {
 		return false
 	}
 
-	leftMap := left.ToMap()
-	rightMap := right.ToMap()
-	for _, exclude := range excludes {
-		delete(leftMap, exclude)
-		delete(rightMap, exclude)
-	}
+	excluded := newKeySet(excludes)
+	return equalReservedKeys(left, right, excluded) &&
+		equalParams(left, right, excluded)
+}
 
-	if len(leftMap) != len(rightMap) {
-		return false
-	}
+// rawParam reports the first value of a param and whether the key is present in
+// the params map (an empty-valued key still counts as present, matching ToMap).
+func (c *URL) rawParam(key string) (string, bool) {
+	c.paramsLock.RLock()
+	defer c.paramsLock.RUnlock()
 
-	for lk, lv := range leftMap {
-		if rv, ok := rightMap[lk]; !ok {
-			return false
-		} else if lv != rv {
+	if len(c.params) == 0 {
+		return "", false
+	}
+	vs, ok := c.params[key]
+	if !ok || len(vs) == 0 {
+		return "", false
+	}
+	return vs[0], true
+}
+
+// effectiveReserved returns the flattened value of a reserved key and whether it
+// is present, matching ToMap's precedence: a non-empty scalar field (or a
+// non-empty Location for host/port) overrides the same-named param; otherwise the
+// param, if any, is used.
+func effectiveReserved(u *URL, key string) (string, bool) {
+	switch key {
+	case constant.ProtocolKey:
+		if u.Protocol != "" {
+			return u.Protocol, true
+		}
+	case constant.UsernameKey:
+		if u.Username != "" {
+			return u.Username, true
+		}
+	case constant.PasswordKey:
+		if u.Password != "" {
+			return u.Password, true
+		}
+	case constant.PathKey:
+		if u.Path != "" {
+			return u.Path, true
+		}
+	case constant.HostKey:
+		if u.Location != "" {
+			host, _ := parseLocation(u.Location)
+			return host, true
+		}
+	case constant.PortKey:
+		if u.Location != "" {
+			_, port := parseLocation(u.Location)
+			return port, true
+		}
+	}
+	return u.rawParam(key)
+}
+
+// equalReservedKeys compares the reserved keys (protocol/username/password/host/
+// port/path) of two URLs using ToMap precedence, skipping any excluded key.
+func equalReservedKeys(left, right *URL, excluded keySet) bool {
+	for _, key := range reservedKeyList {
+		if excluded.contains(key) {
+			continue
+		}
+		lv, lok := effectiveReserved(left, key)
+		rv, rok := effectiveReserved(right, key)
+		if lok != rok || lv != rv {
 			return false
 		}
 	}
-
 	return true
+}
+
+// equalParams compares the non-reserved params of two URLs, skipping excluded keys.
+// Reserved keys are handled by equalScalars/equalLocation, so they are skipped here
+// to preserve ToMap's "field overrides same-named param" precedence. It avoids
+// materializing both maps by snapshotting only the left side and streaming the right.
+func equalParams(left, right *URL, excluded keySet) bool {
+	leftParams := make(map[string]string)
+	left.RangeParams(func(key, value string) bool {
+		if !reservedKeys.contains(key) && !excluded.contains(key) {
+			leftParams[key] = value
+		}
+		return true
+	})
+
+	rightCount := 0
+	matched := true
+	right.RangeParams(func(key, value string) bool {
+		if reservedKeys.contains(key) || excluded.contains(key) {
+			return true
+		}
+		rightCount++
+		if lv, ok := leftParams[key]; !ok || lv != value {
+			matched = false
+			return false
+		}
+		return true
+	})
+
+	return matched && rightCount == len(leftParams)
+}
+
+// parseLocation splits "host:port" into host and port. The port is the segment
+// between the first and second ':' (equivalent to strings.Split(location, ":")[1]),
+// preserving the historical behavior for locations that contain extra ':'.
+func parseLocation(location string) (host, port string) {
+	if location == "" {
+		return "", "0"
+	}
+	idx := strings.IndexByte(location, ':')
+	if idx < 0 {
+		return location, "0"
+	}
+	host = location[:idx]
+	rest := location[idx+1:]
+	if j := strings.IndexByte(rest, ':'); j >= 0 {
+		return host, rest[:j]
+	}
+	return host, rest
 }
 
 // URLSlice will be used to sort URL instance
