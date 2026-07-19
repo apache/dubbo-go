@@ -34,7 +34,7 @@ import (
 )
 
 type availableClusterInvoker struct {
-	base.BaseClusterInvoker
+	*base.BaseClusterInvoker
 }
 
 // NewClusterInvoker returns a availableCluster invoker instance

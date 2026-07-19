@@ -20,6 +20,7 @@ package base
 
 import (
 	"slices"
+	"sync/atomic"
 )
 
 import (
@@ -27,7 +28,7 @@ import (
 
 	perrors "github.com/pkg/errors"
 
-	"go.uber.org/atomic"
+	uberatomic "go.uber.org/atomic"
 )
 
 import (
@@ -42,15 +43,15 @@ import (
 type BaseClusterInvoker struct {
 	Directory      directory.Directory
 	AvailableCheck bool
-	Destroyed      *atomic.Bool
-	StickyInvoker  base.Invoker
+	Destroyed      *uberatomic.Bool
+	StickyInvoker  atomic.Pointer[base.Invoker]
 }
 
-func NewBaseClusterInvoker(directory directory.Directory) BaseClusterInvoker {
-	return BaseClusterInvoker{
+func NewBaseClusterInvoker(directory directory.Directory) *BaseClusterInvoker {
+	return &BaseClusterInvoker{
 		Directory:      directory,
 		AvailableCheck: true,
-		Destroyed:      atomic.NewBool(false),
+		Destroyed:      uberatomic.NewBool(false),
 	}
 }
 
@@ -66,8 +67,8 @@ func (invoker *BaseClusterInvoker) Destroy() {
 }
 
 func (invoker *BaseClusterInvoker) IsAvailable() bool {
-	if invoker.StickyInvoker != nil {
-		return invoker.StickyInvoker.IsAvailable()
+	if sticky := invoker.StickyInvoker.Load(); sticky != nil {
+		return (*sticky).IsAvailable()
 	}
 	return invoker.Directory.IsAvailable()
 }
@@ -104,19 +105,21 @@ func (invoker *BaseClusterInvoker) DoSelect(lb loadbalance.LoadBalance, invocati
 	// Get the service method sticky config if have
 	sticky = url.GetMethodParamBool(invocation.MethodName(), constant.StickyKey, sticky)
 
-	if invoker.StickyInvoker != nil && !isInvoked(invoker.StickyInvoker, invokers) {
-		invoker.StickyInvoker = nil
+	stickyInvoker := invoker.StickyInvoker.Load()
+	if stickyInvoker != nil && !isInvoked(*stickyInvoker, invokers) {
+		invoker.StickyInvoker.Store(nil)
+		stickyInvoker = nil
 	}
 
 	if sticky && invoker.AvailableCheck &&
-		invoker.StickyInvoker != nil && invoker.StickyInvoker.IsAvailable() &&
-		(invoked == nil || !isInvoked(invoker.StickyInvoker, invoked)) {
-		return invoker.StickyInvoker
+		stickyInvoker != nil && (*stickyInvoker).IsAvailable() &&
+		(invoked == nil || !isInvoked(*stickyInvoker, invoked)) {
+		return *stickyInvoker
 	}
 
 	selectedInvoker = invoker.doSelectInvoker(lb, invocation, invokers, invoked)
 	if sticky {
-		invoker.StickyInvoker = selectedInvoker
+		invoker.StickyInvoker.Store(&selectedInvoker)
 	}
 	return selectedInvoker
 }

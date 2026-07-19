@@ -49,7 +49,7 @@ import (
  * <a href="http://en.wikipedia.org/wiki/Failback">Failback</a>
  */
 type failbackClusterInvoker struct {
-	base.BaseClusterInvoker
+	*base.BaseClusterInvoker
 
 	once          sync.Once
 	ticker        *time.Ticker

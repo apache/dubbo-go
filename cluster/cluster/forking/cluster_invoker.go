@@ -38,7 +38,7 @@ import (
 )
 
 type forkingClusterInvoker struct {
-	base.BaseClusterInvoker
+	*base.BaseClusterInvoker
 }
 
 func newForkingClusterInvoker(directory directory.Directory) protocolbase.Invoker {
