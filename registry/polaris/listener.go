@@ -35,15 +35,28 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
+type polarisNotificationKind uint8
+
+const (
+	incrementalNotification polarisNotificationKind = iota
+	fullSnapshotNotification
+)
+
+type polarisNotification struct {
+	kind      polarisNotificationKind
+	eventType remoting.EventType
+	instances []model.Instance
+}
+
 type polarisListener struct {
-	watcher *PolarisServiceWatcher
-	events  *gxchan.UnboundedChan
-	closeCh chan struct{}
+	watcher       *PolarisServiceWatcher
+	events        *gxchan.UnboundedChan
+	closeCh       chan struct{}
+	pendingEvents []*registry.ServiceEvent
 }
 
 // NewPolarisListener new polaris listener
@@ -53,9 +66,18 @@ func NewPolarisListener(watcher *PolarisServiceWatcher) (*polarisListener, error
 	return listener, nil
 }
 
-func newPolarisListener(watcher *PolarisServiceWatcher, initialSnapshot []model.Instance) (*polarisListener, error) {
+func newPolarisListener(
+	watcher *PolarisServiceWatcher,
+	initialSnapshot []model.Instance,
+	mode initialReconcileMode,
+) (*polarisListener, error) {
 	listener := newPolarisListenerState(watcher)
-	listener.watcher.addSubscriberWithInitialSnapshot(initialSnapshot, listener.notify)
+	listener.watcher.addRegistrySubscriber(
+		initialSnapshot,
+		mode,
+		listener.notify,
+		listener.notifyFullSnapshot,
+	)
 	return listener, nil
 }
 
@@ -68,8 +90,37 @@ func newPolarisListenerState(watcher *PolarisServiceWatcher) *polarisListener {
 }
 
 func (pl *polarisListener) notify(et remoting.EventType, ins []model.Instance) {
-	for i := range ins {
-		pl.events.In() <- &config_center.ConfigChangeEvent{Value: ins[i], ConfigType: et}
+	if len(ins) == 0 {
+		return
+	}
+	pl.events.In() <- &polarisNotification{
+		kind:      incrementalNotification,
+		eventType: et,
+		instances: copyInstances(ins),
+	}
+}
+
+func (pl *polarisListener) notifyFullSnapshot(ins []model.Instance) {
+	pl.events.In() <- &polarisNotification{
+		kind:      fullSnapshotNotification,
+		instances: copyInstances(ins),
+	}
+}
+
+// nextNotification returns the next tagged notification in FIFO order.
+func (pl *polarisListener) nextNotification() (*polarisNotification, error) {
+	for {
+		select {
+		case <-pl.closeCh:
+			logger.Warn("[Registry][Polaris] polaris listener is close")
+			return nil, perrors.New("listener stopped")
+		case val := <-pl.events.Out():
+			notification, ok := val.(*polarisNotification)
+			if !ok || notification == nil {
+				return nil, perrors.Errorf("invalid polaris notification type %T", val)
+			}
+			return notification, nil
+		}
 	}
 }
 
@@ -80,11 +131,33 @@ func (pl *polarisListener) Next() (*registry.ServiceEvent, error) {
 		case <-pl.closeCh:
 			logger.Warn("[Registry][Polaris] polaris listener is close")
 			return nil, perrors.New("listener stopped")
-		case val := <-pl.events.Out():
-			e, _ := val.(*config_center.ConfigChangeEvent)
-			logger.Debugf("[Registry][Polaris] got polaris event %s", e)
-			instance := e.Value.(model.Instance)
-			return &registry.ServiceEvent{Action: e.ConfigType, Service: generateUrl(instance)}, nil
+		default:
+		}
+
+		if len(pl.pendingEvents) > 0 {
+			event := pl.pendingEvents[0]
+			pl.pendingEvents[0] = nil
+			pl.pendingEvents = pl.pendingEvents[1:]
+			return event, nil
+		}
+
+		notification, err := pl.nextNotification()
+		if err != nil {
+			return nil, err
+		}
+		action := notification.eventType
+		if notification.kind == fullSnapshotNotification {
+			action = remoting.EventTypeUpdate
+		}
+		for _, instance := range notification.instances {
+			serviceURL := generateUrl(instance)
+			if serviceURL == nil {
+				continue
+			}
+			pl.pendingEvents = append(pl.pendingEvents, &registry.ServiceEvent{
+				Action:  action,
+				Service: serviceURL,
+			})
 		}
 	}
 }
@@ -96,24 +169,17 @@ func (pl *polarisListener) Close() {
 }
 
 func generateUrl(instance model.Instance) *common.URL {
-	if instance.GetMetadata() == nil {
-		logger.Errorf("[Registry][Polaris] polaris instance metadata is empty, instance=%+v", instance)
+	if validationError := polarisInstanceURLValidationError(instance); validationError != "" {
+		logger.Errorf("[Registry][Polaris] %s, instance=%+v", validationError, instance)
 		return nil
 	}
+
 	path := instance.GetMetadata()["path"]
 	myInterface := instance.GetMetadata()["interface"]
-	if len(path) == 0 && len(myInterface) == 0 {
-		logger.Errorf("[Registry][Polaris] polaris instance metadata does not have both path key and interface key, instance=%+v", instance)
-		return nil
-	}
 	if len(path) == 0 && len(myInterface) != 0 {
 		path = "/" + myInterface
 	}
 	protocol := instance.GetProtocol()
-	if len(protocol) == 0 {
-		logger.Errorf("[Registry][Polaris] polaris instance metadata does not have protocol key, instance=%+v", instance)
-		return nil
-	}
 	urlMap := url.Values{}
 	for k, v := range instance.GetMetadata() {
 		urlMap.Set(k, v)
@@ -129,4 +195,19 @@ func generateUrl(instance model.Instance) *common.URL {
 		common.WithParams(urlMap),
 		common.WithPath(path),
 	)
+}
+
+func polarisInstanceURLValidationError(instance model.Instance) string {
+	if instance.GetMetadata() == nil {
+		return "polaris instance metadata is empty"
+	}
+	path := instance.GetMetadata()["path"]
+	myInterface := instance.GetMetadata()["interface"]
+	if len(path) == 0 && len(myInterface) == 0 {
+		return "polaris instance metadata does not have both path key and interface key"
+	}
+	if len(instance.GetProtocol()) == 0 {
+		return "polaris instance metadata does not have protocol key"
+	}
+	return ""
 }

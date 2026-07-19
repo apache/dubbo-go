@@ -23,6 +23,8 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/log/logger"
+
 	api "github.com/polarismesh/polaris-go"
 	internalapi "github.com/polarismesh/polaris-go/api"
 	"github.com/polarismesh/polaris-go/pkg/model"
@@ -34,10 +36,27 @@ import (
 
 type item func(remoting.EventType, []model.Instance)
 
+type subscriberKind uint8
+
+const (
+	registrySubscriber subscriberKind = iota
+	applicationSubscriber
+)
+
+type initialReconcileMode uint8
+
+const (
+	reconcileWithBaseline initialReconcileMode = iota
+	reconcileWithFullSnapshot
+)
+
 type subscriberState struct {
-	notify          item
-	initialSnapshot []model.Instance
-	reconciled      bool
+	notify             item
+	notifyFullSnapshot func([]model.Instance)
+	initialSnapshot    []model.Instance
+	initialMode        initialReconcileMode
+	reconciled         bool
+	kind               subscriberKind
 }
 
 type PolarisServiceWatcher struct {
@@ -69,6 +88,7 @@ func (watcher *PolarisServiceWatcher) AddSubscriber(
 	state := &subscriberState{
 		notify:     item(subscriber),
 		reconciled: true,
+		kind:       applicationSubscriber,
 	}
 
 	func() {
@@ -88,13 +108,18 @@ func (watcher *PolarisServiceWatcher) lazyRun() {
 	})
 }
 
-func (watcher *PolarisServiceWatcher) addSubscriberWithInitialSnapshot(
+func (watcher *PolarisServiceWatcher) addRegistrySubscriber(
 	initialSnapshot []model.Instance,
+	mode initialReconcileMode,
 	subscriber item,
+	fullSnapshotSubscriber func([]model.Instance),
 ) {
 	state := &subscriberState{
-		notify:          subscriber,
-		initialSnapshot: copyInstances(initialSnapshot),
+		notify:             subscriber,
+		notifyFullSnapshot: fullSnapshotSubscriber,
+		initialSnapshot:    copyInstances(initialSnapshot),
+		initialMode:        mode,
+		kind:               registrySubscriber,
 	}
 
 	func() {
@@ -103,7 +128,7 @@ func (watcher *PolarisServiceWatcher) addSubscriberWithInitialSnapshot(
 
 		watcher.subscribers = append(watcher.subscribers, state)
 		if watcher.snapshotReady {
-			watcher.reconcileSubscriberLocked(state)
+			watcher.reconcileSubscriberLocked(state, notifiableInstances(watcher.currentInstances, true))
 		}
 	}()
 
@@ -112,21 +137,34 @@ func (watcher *PolarisServiceWatcher) addSubscriberWithInitialSnapshot(
 	watcher.lazyRun()
 }
 
-// missingInitialInstances returns initial - current by model.InstanceKey while
-// preserving the order of the initial snapshot.
-func missingInitialInstances(initial []model.Instance, current []model.Instance) []model.Instance {
+// missingInstances returns previous - current by model.InstanceKey while
+// preserving the order of the previous snapshot.
+func missingInstances(previous, current []model.Instance) []model.Instance {
 	currentInstances := make(map[model.InstanceKey]struct{}, len(current))
 	for _, instance := range current {
 		currentInstances[instance.GetInstanceKey()] = struct{}{}
 	}
 
-	missing := make([]model.Instance, 0, len(initial))
-	for _, instance := range initial {
+	missing := make([]model.Instance, 0, len(previous))
+	for _, instance := range previous {
 		if _, ok := currentInstances[instance.GetInstanceKey()]; !ok {
 			missing = append(missing, instance)
 		}
 	}
 	return missing
+}
+
+func notifiableInstances(instances []model.Instance, reportInvalid bool) []model.Instance {
+	valid := make([]model.Instance, 0, len(instances))
+	for _, instance := range instances {
+		validationError := polarisInstanceURLValidationError(instance)
+		if validationError == "" {
+			valid = append(valid, instance)
+		} else if reportInvalid {
+			logger.Errorf("[Registry][Polaris] %s, instance=%+v", validationError, instance)
+		}
+	}
+	return valid
 }
 
 // handleWatchSnapshot replaces the watcher's current state and reconciles each
@@ -135,23 +173,47 @@ func (watcher *PolarisServiceWatcher) handleWatchSnapshot(current []model.Instan
 	watcher.lock.Lock()
 	defer watcher.lock.Unlock()
 
-	watcher.currentInstances = copyInstances(current)
+	registryCurrent := notifiableInstances(current, watcher.hasRegistrySubscriberLocked())
+	previous := watcher.currentInstances
+	hadPreviousSnapshot := watcher.snapshotReady
+	next := copyInstances(current)
+	var removedSincePrevious []model.Instance
+	if hadPreviousSnapshot {
+		registryPrevious := notifiableInstances(previous, false)
+		removedSincePrevious = missingInstances(registryPrevious, registryCurrent)
+	}
+	watcher.currentInstances = next
 	watcher.snapshotReady = true
 	for _, subscriber := range watcher.subscribers {
-		if subscriber.reconciled {
+		if subscriber.kind == applicationSubscriber {
 			watcher.notifySubscriberLocked(subscriber, remoting.EventTypeAdd, watcher.currentInstances)
 			continue
 		}
-		watcher.reconcileSubscriberLocked(subscriber)
+		if subscriber.reconciled {
+			if len(removedSincePrevious) > 0 {
+				watcher.notifySubscriberLocked(subscriber, remoting.EventTypeDel, removedSincePrevious)
+			}
+			watcher.notifySubscriberLocked(subscriber, remoting.EventTypeAdd, registryCurrent)
+			continue
+		}
+		watcher.reconcileSubscriberLocked(subscriber, registryCurrent)
 	}
 }
 
-func (watcher *PolarisServiceWatcher) reconcileSubscriberLocked(subscriber *subscriberState) {
-	missing := missingInitialInstances(subscriber.initialSnapshot, watcher.currentInstances)
-	if len(missing) > 0 {
-		watcher.notifySubscriberLocked(subscriber, remoting.EventTypeDel, missing)
+func (watcher *PolarisServiceWatcher) reconcileSubscriberLocked(
+	subscriber *subscriberState,
+	current []model.Instance,
+) {
+	switch subscriber.initialMode {
+	case reconcileWithBaseline:
+		missing := missingInstances(subscriber.initialSnapshot, current)
+		if len(missing) > 0 {
+			watcher.notifySubscriberLocked(subscriber, remoting.EventTypeDel, missing)
+		}
+		watcher.notifySubscriberLocked(subscriber, remoting.EventTypeAdd, current)
+	case reconcileWithFullSnapshot:
+		subscriber.notifyFullSnapshot(copyInstances(current))
 	}
-	watcher.notifySubscriberLocked(subscriber, remoting.EventTypeAdd, watcher.currentInstances)
 	subscriber.reconciled = true
 	subscriber.initialSnapshot = nil
 }
@@ -195,15 +257,41 @@ func (watcher *PolarisServiceWatcher) handleInstanceEvent(event *model.InstanceE
 		watcher.notifyReconciledSubscribersLocked(remoting.EventTypeAdd, instances)
 	}
 	if event.UpdateEvent != nil {
-		instances := make([]model.Instance, 0, len(event.UpdateEvent.UpdateList))
+		reportInvalid := watcher.hasRegistrySubscriberLocked()
+		applicationUpdates := make([]model.Instance, 0, len(event.UpdateEvent.UpdateList))
+		registryUpdates := make([]model.Instance, 0, len(event.UpdateEvent.UpdateList))
+		registryDeletes := make([]model.Instance, 0, len(event.UpdateEvent.UpdateList))
+		changedKeyBefore := make([]model.Instance, 0, len(event.UpdateEvent.UpdateList))
 		for _, update := range event.UpdateEvent.UpdateList {
 			if update.Before.GetInstanceKey() != update.After.GetInstanceKey() {
-				watcher.removeCurrentInstancesLocked([]model.Instance{update.Before})
+				changedKeyBefore = append(changedKeyBefore, update.Before)
 			}
-			watcher.upsertCurrentInstanceLocked(update.After)
-			instances = append(instances, update.After)
 		}
-		watcher.notifyReconciledSubscribersLocked(remoting.EventTypeUpdate, instances)
+		watcher.removeCurrentInstancesLocked(changedKeyBefore)
+		for _, update := range event.UpdateEvent.UpdateList {
+			beforeValid := polarisInstanceURLValidationError(update.Before) == ""
+			afterValidationError := polarisInstanceURLValidationError(update.After)
+			afterValid := afterValidationError == ""
+			keyChanged := update.Before.GetInstanceKey() != update.After.GetInstanceKey()
+			watcher.upsertCurrentInstanceLocked(update.After)
+			applicationUpdates = append(applicationUpdates, update.After)
+			if keyChanged && beforeValid {
+				registryDeletes = append(registryDeletes, update.Before)
+			}
+			if afterValid {
+				registryUpdates = append(registryUpdates, update.After)
+				continue
+			}
+			if reportInvalid {
+				logger.Errorf("[Registry][Polaris] %s, instance=%+v", afterValidationError, update.After)
+			}
+			if !keyChanged && beforeValid {
+				registryDeletes = append(registryDeletes, update.Before)
+			}
+		}
+		watcher.notifyReconciledSubscribersByKindLocked(applicationSubscriber, remoting.EventTypeUpdate, applicationUpdates)
+		watcher.notifyReconciledSubscribersByKindLocked(registrySubscriber, remoting.EventTypeDel, registryDeletes)
+		watcher.notifyReconciledSubscribersByKindLocked(registrySubscriber, remoting.EventTypeUpdate, registryUpdates)
 	}
 	if event.DeleteEvent != nil {
 		instances := copyInstances(event.DeleteEvent.Instances)
@@ -243,6 +331,30 @@ func (watcher *PolarisServiceWatcher) removeCurrentInstancesLocked(instances []m
 func (watcher *PolarisServiceWatcher) notifyReconciledSubscribersLocked(eventType remoting.EventType, instances []model.Instance) {
 	for _, subscriber := range watcher.subscribers {
 		if subscriber.reconciled {
+			watcher.notifySubscriberLocked(subscriber, eventType, instances)
+		}
+	}
+}
+
+func (watcher *PolarisServiceWatcher) hasRegistrySubscriberLocked() bool {
+	for _, subscriber := range watcher.subscribers {
+		if subscriber.kind == registrySubscriber {
+			return true
+		}
+	}
+	return false
+}
+
+func (watcher *PolarisServiceWatcher) notifyReconciledSubscribersByKindLocked(
+	kind subscriberKind,
+	eventType remoting.EventType,
+	instances []model.Instance,
+) {
+	if len(instances) == 0 {
+		return
+	}
+	for _, subscriber := range watcher.subscribers {
+		if subscriber.reconciled && subscriber.kind == kind {
 			watcher.notifySubscriberLocked(subscriber, eventType, instances)
 		}
 	}
