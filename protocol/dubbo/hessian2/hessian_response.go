@@ -34,6 +34,18 @@ import (
 	perrors "github.com/pkg/errors"
 )
 
+// GenericException is a type alias of hessian.GenericException for backward
+// compatibility.
+//
+// Deprecated: Use hessian.GenericException from github.com/apache/dubbo-go-hessian2 instead.
+type GenericException = hessian.GenericException
+
+// ToGenericException converts decoded exception to GenericException when possible.
+//
+// Deprecated: Use hessian.ToGenericException from github.com/apache/dubbo-go-hessian2 instead.
+func ToGenericException(expt any) (*GenericException, bool) {
+	return hessian.ToGenericException(expt)
+}
 // DubboResponse dubbo response
 type DubboResponse struct {
 	RspObj      any
