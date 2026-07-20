@@ -374,6 +374,117 @@ func TestPolarisWatchServiceReconnectLifecycle(t *testing.T) {
 	})
 }
 
+func TestPolarisWatchSnapshotIsolatedFromInputMutation(t *testing.T) {
+	serviceName := "com.test.InputMutationSnapshotService"
+	instanceA := newPolarisTestInstance("instance-a", "10.0.0.1", 20001, serviceName, true)
+	wantKey := instanceA.GetInstanceKey()
+	wantHost := instanceA.GetHost()
+	wantPort := instanceA.GetPort()
+	wantInterface := instanceA.GetMetadata()["interface"]
+	wantPath := instanceA.GetMetadata()["path"]
+	watcher := newStoppedPolarisWatcher(t, nil)
+	listener, err := newPolarisListener(watcher, nil, reconcileWithBaseline)
+	if err != nil {
+		t.Fatalf("newPolarisListener() error = %v", err)
+	}
+	defer closeTestPolarisListener(listener)
+
+	watcher.handleWatchSnapshot([]model.Instance{instanceA})
+	assertPolarisListenerEvent(t, listener, remoting.EventTypeAdd, instanceA)
+	if len(watcher.currentInstances) != 1 {
+		t.Fatalf("current instance count = %d, want 1", len(watcher.currentInstances))
+	}
+	current := watcher.currentInstances[0]
+	if current == instanceA {
+		t.Fatal("watcher current instance shares the input instance")
+	}
+
+	delete(instanceA.GetMetadata(), "interface")
+	delete(instanceA.GetMetadata(), "path")
+	if current.GetMetadata()["interface"] != wantInterface || current.GetMetadata()["path"] != wantPath {
+		t.Fatalf("watcher metadata = %v, want interface=%q path=%q", current.GetMetadata(), wantInterface, wantPath)
+	}
+
+	watcher.handleWatchSnapshot(nil)
+	select {
+	case value := <-listener.events.Out():
+		notification, ok := value.(*polarisNotification)
+		if !ok || notification == nil {
+			t.Fatalf("listener notification type = %T, want *polarisNotification", value)
+		}
+		if notification.eventType != remoting.EventTypeDel || len(notification.instances) != 1 {
+			t.Fatalf("listener notification = %#v, want one DEL instance", notification)
+		}
+		deleted := notification.instances[0]
+		if deleted.GetInstanceKey() != wantKey || deleted.GetHost() != wantHost || deleted.GetPort() != wantPort {
+			t.Fatalf(
+				"deleted instance = (key=%v host=%s port=%d), want (key=%v host=%s port=%d)",
+				deleted.GetInstanceKey(),
+				deleted.GetHost(),
+				deleted.GetPort(),
+				wantKey,
+				wantHost,
+				wantPort,
+			)
+		}
+		if deleted.GetMetadata()["interface"] != wantInterface || deleted.GetMetadata()["path"] != wantPath {
+			t.Fatalf("deleted instance metadata = %v, want interface=%q path=%q", deleted.GetMetadata(), wantInterface, wantPath)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for DEL after input mutation")
+	}
+	assertNoPolarisListenerEvent(t, listener)
+	if len(watcher.currentInstances) != 0 {
+		t.Fatalf("current instance count = %d, want 0", len(watcher.currentInstances))
+	}
+}
+
+func TestPolarisSubscriberMutationDoesNotAffectWatcherSnapshot(t *testing.T) {
+	serviceName := "com.test.SubscriberMutationSnapshotService"
+	instanceA := newPolarisTestInstance("instance-a", "10.0.0.1", 20001, serviceName, true)
+	wantInterface := instanceA.GetMetadata()["interface"]
+	wantPath := instanceA.GetMetadata()["path"]
+	watcher := newStoppedPolarisWatcher(t, nil)
+	listener, err := newPolarisListener(watcher, nil, reconcileWithBaseline)
+	if err != nil {
+		t.Fatalf("newPolarisListener() error = %v", err)
+	}
+	defer closeTestPolarisListener(listener)
+
+	watcher.AddSubscriber(func(_ remoting.EventType, instances []model.Instance) {
+		if len(instances) == 0 {
+			return
+		}
+		delete(instances[0].GetMetadata(), "interface")
+		delete(instances[0].GetMetadata(), "path")
+	})
+	var secondInterface string
+	var secondPath string
+	watcher.AddSubscriber(func(_ remoting.EventType, instances []model.Instance) {
+		if len(instances) == 0 {
+			return
+		}
+		secondInterface = instances[0].GetMetadata()["interface"]
+		secondPath = instances[0].GetMetadata()["path"]
+	})
+
+	watcher.handleWatchSnapshot([]model.Instance{instanceA})
+	assertPolarisListenerEvent(t, listener, remoting.EventTypeAdd, instanceA)
+	if secondInterface != wantInterface || secondPath != wantPath {
+		t.Fatalf("second subscriber metadata = (interface=%q path=%q), want (interface=%q path=%q)", secondInterface, secondPath, wantInterface, wantPath)
+	}
+	if len(watcher.currentInstances) != 1 {
+		t.Fatalf("current instance count = %d, want 1", len(watcher.currentInstances))
+	}
+	currentMetadata := watcher.currentInstances[0].GetMetadata()
+	if currentMetadata["interface"] != wantInterface || currentMetadata["path"] != wantPath {
+		t.Fatalf("watcher metadata = %v, want interface=%q path=%q", currentMetadata, wantInterface, wantPath)
+	}
+
+	watcher.handleWatchSnapshot(nil)
+	assertPolarisListenerEvent(t, listener, remoting.EventTypeDel, instanceA)
+}
+
 func TestPolarisComparableSubscriberDeletesInstanceThatBecomesInvalid(t *testing.T) {
 	serviceName := "com.test.ValidToInvalidSnapshotService"
 	validA := newPolarisTestInstance("valid-a", "10.0.0.1", 20001, serviceName, true)
@@ -733,6 +844,27 @@ func TestPolarisInitialSubscribeInstancesAreListenerScoped(t *testing.T) {
 		}
 		if !baselineWasReady {
 			t.Fatal("pending baseline was not stored before Notify(ADD)")
+		}
+	})
+
+	t.Run("stored baseline is isolated from input mutation", func(t *testing.T) {
+		baselineA := newPolarisTestInstance("baseline-a", "10.0.0.1", 20001, serviceName, true)
+		wantInterface := baselineA.GetMetadata()["interface"]
+		wantPath := baselineA.GetMetadata()["path"]
+		pr := newTestPolarisRegistry(nil)
+		notify := &recordingPolarisNotifyListener{}
+		key := mustInitialSubscribeInstancesKey(t, serviceName, notify)
+
+		pr.storeInitialSubscribeInstances(key, []model.Instance{baselineA})
+		delete(baselineA.GetMetadata(), "interface")
+		delete(baselineA.GetMetadata(), "path")
+		_, baseline := pr.loadInitialSubscribeInstances(key)
+		if len(baseline) != 1 {
+			t.Fatalf("pending baseline count = %d, want 1", len(baseline))
+		}
+		metadata := baseline[0].GetMetadata()
+		if metadata["interface"] != wantInterface || metadata["path"] != wantPath {
+			t.Fatalf("pending baseline metadata = %v, want interface=%q path=%q", metadata, wantInterface, wantPath)
 		}
 	})
 

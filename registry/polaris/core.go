@@ -173,10 +173,10 @@ func (watcher *PolarisServiceWatcher) handleWatchSnapshot(current []model.Instan
 	watcher.lock.Lock()
 	defer watcher.lock.Unlock()
 
-	registryCurrent := notifiableInstances(current, watcher.hasRegistrySubscriberLocked())
+	next := copyInstances(current)
+	registryCurrent := notifiableInstances(next, watcher.hasRegistrySubscriberLocked())
 	previous := watcher.currentInstances
 	hadPreviousSnapshot := watcher.snapshotReady
-	next := copyInstances(current)
 	var removedSincePrevious []model.Instance
 	if hadPreviousSnapshot {
 		registryPrevious := notifiableInstances(previous, false)
@@ -262,13 +262,17 @@ func (watcher *PolarisServiceWatcher) handleInstanceEvent(event *model.InstanceE
 		registryUpdates := make([]model.Instance, 0, len(event.UpdateEvent.UpdateList))
 		registryDeletes := make([]model.Instance, 0, len(event.UpdateEvent.UpdateList))
 		changedKeyBefore := make([]model.Instance, 0, len(event.UpdateEvent.UpdateList))
+		updates := make([]model.OneInstanceUpdate, 0, len(event.UpdateEvent.UpdateList))
 		for _, update := range event.UpdateEvent.UpdateList {
-			if update.Before.GetInstanceKey() != update.After.GetInstanceKey() {
-				changedKeyBefore = append(changedKeyBefore, update.Before)
+			before := newPolarisInstanceSnapshot(update.Before)
+			after := newPolarisInstanceSnapshot(update.After)
+			updates = append(updates, model.OneInstanceUpdate{Before: before, After: after})
+			if before.GetInstanceKey() != after.GetInstanceKey() {
+				changedKeyBefore = append(changedKeyBefore, before)
 			}
 		}
 		watcher.removeCurrentInstancesLocked(changedKeyBefore)
-		for _, update := range event.UpdateEvent.UpdateList {
+		for _, update := range updates {
 			beforeValid := polarisInstanceURLValidationError(update.Before) == ""
 			afterValidationError := polarisInstanceURLValidationError(update.After)
 			afterValid := afterValidationError == ""
@@ -369,5 +373,167 @@ func (watcher *PolarisServiceWatcher) notifySubscriberLocked(
 }
 
 func copyInstances(instances []model.Instance) []model.Instance {
-	return append([]model.Instance(nil), instances...)
+	if len(instances) == 0 {
+		return nil
+	}
+
+	copied := make([]model.Instance, len(instances))
+	for i, instance := range instances {
+		copied[i] = newPolarisInstanceSnapshot(instance)
+	}
+	return copied
+}
+
+type polarisInstanceSnapshot struct {
+	instanceKey          model.InstanceKey
+	namespace            string
+	service              string
+	id                   string
+	host                 string
+	port                 uint32
+	vpcID                string
+	protocol             string
+	version              string
+	weight               int
+	priority             uint32
+	metadata             map[string]string
+	logicSet             string
+	circuitBreakerStatus model.CircuitBreakerStatus
+	healthy              bool
+	isolated             bool
+	enableHealthCheck    bool
+	region               string
+	zone                 string
+	idc                  string
+	campus               string
+	revision             string
+}
+
+func newPolarisInstanceSnapshot(instance model.Instance) model.Instance {
+	if instance == nil {
+		return nil
+	}
+	return &polarisInstanceSnapshot{
+		instanceKey:          instance.GetInstanceKey(),
+		namespace:            instance.GetNamespace(),
+		service:              instance.GetService(),
+		id:                   instance.GetId(),
+		host:                 instance.GetHost(),
+		port:                 instance.GetPort(),
+		vpcID:                instance.GetVpcId(),
+		protocol:             instance.GetProtocol(),
+		version:              instance.GetVersion(),
+		weight:               instance.GetWeight(),
+		priority:             instance.GetPriority(),
+		metadata:             copyStringMap(instance.GetMetadata()),
+		logicSet:             instance.GetLogicSet(),
+		circuitBreakerStatus: instance.GetCircuitBreakerStatus(),
+		healthy:              instance.IsHealthy(),
+		isolated:             instance.IsIsolated(),
+		enableHealthCheck:    instance.IsEnableHealthCheck(),
+		region:               instance.GetRegion(),
+		zone:                 instance.GetZone(),
+		idc:                  instance.GetIDC(),
+		campus:               instance.GetCampus(),
+		revision:             instance.GetRevision(),
+	}
+}
+
+func copyStringMap(source map[string]string) map[string]string {
+	if source == nil {
+		return nil
+	}
+	copied := make(map[string]string, len(source))
+	for key, value := range source {
+		copied[key] = value
+	}
+	return copied
+}
+
+func (instance *polarisInstanceSnapshot) GetInstanceKey() model.InstanceKey {
+	return instance.instanceKey
+}
+
+func (instance *polarisInstanceSnapshot) GetNamespace() string {
+	return instance.namespace
+}
+
+func (instance *polarisInstanceSnapshot) GetService() string {
+	return instance.service
+}
+
+func (instance *polarisInstanceSnapshot) GetId() string {
+	return instance.id
+}
+
+func (instance *polarisInstanceSnapshot) GetHost() string {
+	return instance.host
+}
+
+func (instance *polarisInstanceSnapshot) GetPort() uint32 {
+	return instance.port
+}
+
+func (instance *polarisInstanceSnapshot) GetVpcId() string {
+	return instance.vpcID
+}
+
+func (instance *polarisInstanceSnapshot) GetProtocol() string {
+	return instance.protocol
+}
+
+func (instance *polarisInstanceSnapshot) GetVersion() string {
+	return instance.version
+}
+
+func (instance *polarisInstanceSnapshot) GetWeight() int {
+	return instance.weight
+}
+
+func (instance *polarisInstanceSnapshot) GetPriority() uint32 {
+	return instance.priority
+}
+
+func (instance *polarisInstanceSnapshot) GetMetadata() map[string]string {
+	return instance.metadata
+}
+
+func (instance *polarisInstanceSnapshot) GetLogicSet() string {
+	return instance.logicSet
+}
+
+func (instance *polarisInstanceSnapshot) GetCircuitBreakerStatus() model.CircuitBreakerStatus {
+	return instance.circuitBreakerStatus
+}
+
+func (instance *polarisInstanceSnapshot) IsHealthy() bool {
+	return instance.healthy
+}
+
+func (instance *polarisInstanceSnapshot) IsIsolated() bool {
+	return instance.isolated
+}
+
+func (instance *polarisInstanceSnapshot) IsEnableHealthCheck() bool {
+	return instance.enableHealthCheck
+}
+
+func (instance *polarisInstanceSnapshot) GetRegion() string {
+	return instance.region
+}
+
+func (instance *polarisInstanceSnapshot) GetZone() string {
+	return instance.zone
+}
+
+func (instance *polarisInstanceSnapshot) GetIDC() string {
+	return instance.idc
+}
+
+func (instance *polarisInstanceSnapshot) GetCampus() string {
+	return instance.campus
+}
+
+func (instance *polarisInstanceSnapshot) GetRevision() string {
+	return instance.revision
 }

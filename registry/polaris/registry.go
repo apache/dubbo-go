@@ -323,6 +323,7 @@ func isNilNotifyListener(notify registry.NotifyListener) bool {
 // instance that successful LoadSubscribeInstances calls may have notified for
 // this listener. Subscribe consumes the merged listener-scoped baseline once.
 func (pr *polarisRegistry) storeInitialSubscribeInstances(key initialSubscribeInstancesKey, instances []model.Instance) {
+	currentSnapshot := copyInstances(instances)
 	pr.initialSubscribeInstancesLock.Lock()
 	defer pr.initialSubscribeInstancesLock.Unlock()
 
@@ -330,7 +331,7 @@ func (pr *polarisRegistry) storeInitialSubscribeInstances(key initialSubscribeIn
 	if entry := pr.initialSubscribeInstances[key]; entry != nil {
 		previous = entry.instances
 	}
-	merged := mergeInitialSubscribeInstances(previous, instances)
+	merged := mergeInitialSubscribeInstances(previous, currentSnapshot)
 	if len(merged) == 0 {
 		return
 	}

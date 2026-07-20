@@ -89,6 +89,8 @@ func newPolarisListenerState(watcher *PolarisServiceWatcher) *polarisListener {
 	}
 }
 
+// The watcher already provides an isolated snapshot for this listener, so the
+// notification queue can take ownership without copying it again.
 func (pl *polarisListener) notify(et remoting.EventType, ins []model.Instance) {
 	if len(ins) == 0 {
 		return
@@ -96,14 +98,14 @@ func (pl *polarisListener) notify(et remoting.EventType, ins []model.Instance) {
 	pl.events.In() <- &polarisNotification{
 		kind:      incrementalNotification,
 		eventType: et,
-		instances: copyInstances(ins),
+		instances: ins,
 	}
 }
 
 func (pl *polarisListener) notifyFullSnapshot(ins []model.Instance) {
 	pl.events.In() <- &polarisNotification{
 		kind:      fullSnapshotNotification,
-		instances: copyInstances(ins),
+		instances: ins,
 	}
 }
 
