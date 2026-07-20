@@ -99,7 +99,7 @@ func TestExchangeClientClose(t *testing.T) {
 	m := &mockClient{available: true}
 	ec := NewExchangeClient(testURL(), m, 5*time.Second, true)
 	ec.Close()
-	assert.False(t, ec.init)
+	assert.Equal(t, int32(0), ec.initState.Load(), "initState should be 0 (uninitialized) after Close")
 }
 
 func TestExchangeClientIsAvailable(t *testing.T) {
@@ -110,6 +110,83 @@ func TestExchangeClientIsAvailable(t *testing.T) {
 	m.available = false
 	m.mu.Unlock()
 	assert.False(t, ec.IsAvailable())
+}
+
+func TestExchangeClientConcurrentDoInit(t *testing.T) {
+	// Verify that concurrent calls to doInit only result in a single Connect call.
+	m := &mockClient{available: true}
+	ec := NewExchangeClient(testURL(), m, 5*time.Second, true)
+
+	var wg sync.WaitGroup
+	const goroutines = 20
+	errCh := make(chan error, goroutines)
+	wg.Add(goroutines)
+	for i := 0; i < goroutines; i++ {
+		go func() {
+			defer wg.Done()
+			if err := ec.doInit(testURL()); err != nil {
+				errCh <- err
+			}
+		}()
+	}
+	wg.Wait()
+	close(errCh)
+
+	for err := range errCh {
+		t.Errorf("doInit failed: %v", err)
+	}
+
+	m.mu.Lock()
+	count := m.connCount
+	m.mu.Unlock()
+	assert.Equal(t, 1, count, "Connect should be called exactly once despite concurrent doInit")
+	assert.Equal(t, int32(2), ec.initState.Load(), "initState should be 2 (initialized) after doInit")
+}
+
+func TestExchangeClientDoInitFailureResets(t *testing.T) {
+	// Verify that a failed doInit resets the init state so future calls can retry.
+	m := &mockClient{connectErr: errors.New("fail")}
+	ec := NewExchangeClient(testURL(), m, 5*time.Second, true)
+
+	err := ec.doInit(testURL())
+	require.Error(t, err)
+	assert.Equal(t, int32(0), ec.initState.Load(), "initState should be 0 (uninitialized) after failed doInit")
+
+	// Now make Connect succeed and retry
+	m.mu.Lock()
+	m.connectErr = nil
+	m.mu.Unlock()
+	err = ec.doInit(testURL())
+	require.NoError(t, err)
+	assert.Equal(t, int32(2), ec.initState.Load(), "initState should be 2 (initialized) after successful retry")
+}
+
+func TestExchangeClientConcurrentDoInitPropagatesError(t *testing.T) {
+	// Verify that when initialization fails, all concurrent waiters receive the same error.
+	m := &mockClient{connectErr: errors.New("connect refused")}
+	ec := NewExchangeClient(testURL(), m, 5*time.Second, true)
+
+	var wg sync.WaitGroup
+	const goroutines = 10
+	errCh := make(chan error, goroutines)
+	wg.Add(goroutines)
+	for i := 0; i < goroutines; i++ {
+		go func() {
+			defer wg.Done()
+			errCh <- ec.doInit(testURL())
+		}()
+	}
+	wg.Wait()
+	close(errCh)
+
+	errorCount := 0
+	for err := range errCh {
+		if err != nil {
+			errorCount++
+		}
+	}
+	assert.Equal(t, goroutines, errorCount, "all goroutines should receive the init error")
+	assert.Equal(t, int32(0), ec.initState.Load(), "initState should be 0 (uninitialized) after failure")
 }
 
 // newTestInvocation builds a *base.Invocation usable by ExchangeClient.Request/AsyncRequest.
