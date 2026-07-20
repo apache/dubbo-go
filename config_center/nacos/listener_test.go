@@ -18,7 +18,6 @@
 package nacos
 
 import (
-	"sync"
 	"testing"
 )
 
@@ -37,10 +36,10 @@ func (r *recordingListener) Process(e *config_center.ConfigChangeEvent) {
 
 func TestCallback(t *testing.T) {
 	l := &recordingListener{}
-	var m sync.Map
-	m.Store(l, struct{}{})
+	set := newKeyListenerSet("test-group")
+	set.add(l)
 
-	callback(&m, "", "g", "data", "payload")
+	callback(set, "", "g", "data", "payload")
 
 	if len(l.events) != 1 {
 		t.Fatalf("expected 1 event, got %d", len(l.events))
@@ -54,13 +53,40 @@ func TestRemoveListener(t *testing.T) {
 	n := &nacosDynamicConfiguration{}
 	key := "k"
 	l := &recordingListener{}
-	inner := &sync.Map{}
-	inner.Store(l, struct{}{})
-	n.keyListeners.Store(key, inner)
+	set := newKeyListenerSet("test-group")
+	set.add(l)
+	n.keyListeners.Store(key, set)
 
 	n.removeListener(key, l)
 
-	if _, ok := inner.Load(l); ok {
+	if _, ok := set.listeners[l]; ok {
 		t.Fatalf("listener should be removed")
+	}
+	// After removing the only listener, the key should be deleted from keyListeners
+	if _, loaded := n.keyListeners.Load(key); loaded {
+		t.Fatalf("key should be deleted from keyListeners after last listener is removed")
+	}
+}
+
+func TestRemoveListenerMultipleListeners(t *testing.T) {
+	n := &nacosDynamicConfiguration{}
+	key := "k"
+	l1 := &recordingListener{}
+	l2 := &recordingListener{}
+	set := newKeyListenerSet("test-group")
+	set.add(l1)
+	set.add(l2)
+	n.keyListeners.Store(key, set)
+
+	// Remove first listener — key should still exist
+	n.removeListener(key, l1)
+	if _, loaded := n.keyListeners.Load(key); !loaded {
+		t.Fatalf("key should still exist after removing one of multiple listeners")
+	}
+
+	// Remove second listener — key should be deleted
+	n.removeListener(key, l2)
+	if _, loaded := n.keyListeners.Load(key); loaded {
+		t.Fatalf("key should be deleted from keyListeners after last listener is removed")
 	}
 }
