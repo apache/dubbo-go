@@ -15,8 +15,7 @@
  * limitations under the License.
  */
 
-// Package dubbo3 implements dubbo3.0 rpc protocol.
+// Package dubbo implements the legacy gRPC code generator plugin.
 //
-// Deprecated: this implementation will be removed in the next version. Use
-// dubbo.apache.org/dubbo-go/v3/protocol/triple instead.
-package dubbo3
+// Deprecated: use dubbo.apache.org/dubbo-go/v3/protocol/triple instead.
+package dubbo

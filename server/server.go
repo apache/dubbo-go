@@ -64,10 +64,14 @@ type Server struct {
 	attachedHTTPHandler http.Handler
 }
 
-// ServiceInfo Deprecated： common.ServiceInfo type alias, just for compatible with old generate pb.go file
+// ServiceInfo is an alias retained for compatibility with old generated code.
+//
+// Deprecated: use common.ServiceInfo instead.
 type ServiceInfo = common.ServiceInfo
 
-// MethodInfo Deprecated： common.MethodInfo type alias， just for compatible with old generate pb.go file
+// MethodInfo is an alias retained for compatibility with old generated code.
+//
+// Deprecated: use common.MethodInfo instead.
 type MethodInfo = common.MethodInfo
 
 type ServiceDefinition struct {

@@ -66,12 +66,13 @@ const (
 	MaxServerSendMsgSize        = "max-server-send-msg-size"
 	MaxCallRecvMsgSize          = "max-call-recv-msg-size"
 	MaxServerRecvMsgSize        = "max-server-recv-msg-size"
-
-	// TODO: remove KeepAliveInterval and KeepAliveInterval in version 4.0.0
-	KeepAliveInterval = "keep-alive-interval"
-	KeepAliveTimeout  = "keep-alive-timeout"
+	KeepAliveInterval           = "keep-alive-interval"
+	KeepAliveTimeout            = "keep-alive-timeout"
 
 	// TODO: remove IDLMode after old triple removed
+	//
+	// Deprecated: this constant will be removed in the next version. The IDL
+	// mode switch is no longer supported by dubbo-go.
 	IDLMode = "IDL-mode"
 
 	TripleConfigKey     = "triple-config"
@@ -82,6 +83,9 @@ const (
 
 // TODO: remove this after old triple removed
 // IDLMode
+//
+// Deprecated: these constants will be removed in the next version. The IDL
+// mode switch is no longer supported by dubbo-go.
 const (
 	IDL    = "IDL"
 	NONIDL = "non-IDL"
