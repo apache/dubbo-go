@@ -909,8 +909,8 @@ func WithOpenAPIGroup(group string) ServiceOption {
 
 // TODO: remove when config package is removed
 //
-// Deprecated: this implemention will be removed in the next version,
-// IDLMode switch will not supported by dubbo-go any more.
+// Deprecated: this option will be removed in the next version. The IDL mode
+// switch is no longer supported by dubbo-go.
 func WithIDLMode(IDLMode string) ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.IDLMode = IDLMode

@@ -26,26 +26,20 @@ import (
 	"net/http"
 	"strings"
 	"time"
-)
 
-import (
 	"github.com/dubbogo/gost/log/logger"
-
 	"github.com/dustin/go-humanize"
-
 	"github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/http3"
-
 	"golang.org/x/net/http2"
 
-	grpc_health_v1 "google.golang.org/grpc/health/grpc_health_v1"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	grpc_health_v1 "google.golang.org/grpc/health/grpc_health_v1"
+
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
+
 	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
 
@@ -313,8 +307,8 @@ func genKeepAliveOptions(url *common.URL, tripleConf *global.TripleConfig) ([]tr
 	cliKeepAliveOpts = append(cliKeepAliveOpts, tri.WithSendMaxBytes(maxCallSendMsgSize))
 
 	// set keepalive interval and keepalive timeout
-	// Deprecated：use tripleconfig
-	// TODO: remove KeepAliveInterval and KeepAliveInterval in version 4.0.0
+	// Compatibility: read legacy URL keepalive parameters.
+	// TODO: remove KeepAliveInterval and KeepAliveTimeout in version 4.0.0.
 	keepAliveInterval := url.GetParamDuration(constant.KeepAliveInterval, constant.DefaultKeepAliveInterval)
 	keepAliveTimeout := url.GetParamDuration(constant.KeepAliveTimeout, constant.DefaultKeepAliveTimeout)
 

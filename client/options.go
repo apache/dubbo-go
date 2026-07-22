@@ -21,14 +21,10 @@ import (
 	"net/http"
 	"strconv"
 	"time"
-)
 
-import (
-	"github.com/creasty/defaults"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"github.com/creasty/defaults"
+
 	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
@@ -377,7 +373,8 @@ func WithSticky() ReferenceOption {
 
 // TODO: remove this function after old triple removed
 //
-// Deprecated: this implemention will be removed in the next version, IDLMode switch will not supported by dubbo-go any more.
+// Deprecated: this option will be removed in the next version. The IDL mode
+// switch is no longer supported by dubbo-go.
 func WithIDL(IDLMode string) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.IDLMode = IDLMode
@@ -745,14 +742,14 @@ func WithClientClusterStrategy(strategy string) ClientOption {
 	}
 }
 
-// Deprecated：use triple.WithKeepAliveInterval()
+// Deprecated: use triple.WithKeepAliveInterval()
 func WithKeepAliveInterval(keepAliveInterval time.Duration) ClientOption {
 	return func(_ *ClientOptions) {
 		panic("use triple.WithKeepAliveInterval()")
 	}
 }
 
-// Deprecated：use triple.WithKeepAliveTimeout()
+// Deprecated: use triple.WithKeepAliveTimeout()
 func WithKeepAliveTimeout(keepAliveTimeout time.Duration) ClientOption {
 	return func(_ *ClientOptions) {
 		panic("use triple.WithKeepAliveTimeout()")

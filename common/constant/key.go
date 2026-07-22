@@ -71,8 +71,8 @@ const (
 
 	// TODO: remove IDLMode after old triple removed
 	//
-	// Deprecated: this implemention will be removed in the next version,
-	// IDLMode switch will not supported by dubbo-go any more.
+	// Deprecated: this constant will be removed in the next version. The IDL
+	// mode switch is no longer supported by dubbo-go.
 	IDLMode = "IDL-mode"
 
 	TripleConfigKey     = "triple-config"
@@ -84,8 +84,8 @@ const (
 // TODO: remove this after old triple removed
 // IDLMode
 //
-// Deprecated: this implemention will be removed in the next version,
-// IDLMode switch will not supported by dubbo-go any more.
+// Deprecated: these constants will be removed in the next version. The IDL
+// mode switch is no longer supported by dubbo-go.
 const (
 	IDL    = "IDL"
 	NONIDL = "non-IDL"

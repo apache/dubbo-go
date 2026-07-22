@@ -26,21 +26,10 @@ import (
 	"reflect"
 	"strings"
 	"sync"
-)
 
-import (
 	hessian "github.com/apache/dubbo-go-hessian2"
-
 	"github.com/dubbogo/gost/log/logger"
 
-	grpc_go "github.com/dubbogo/grpc-go"
-
-	"github.com/dustin/go-humanize"
-
-	"google.golang.org/grpc"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
@@ -48,7 +37,12 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo3"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
+	grpc_go "github.com/dubbogo/grpc-go"
+	"github.com/dustin/go-humanize"
+	"google.golang.org/grpc"
+
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
+
 	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
 
@@ -390,16 +384,16 @@ func getHanOpts(url *common.URL, tripleConf *global.TripleConfig) (hanOpts []tri
 	version := url.GetParam(constant.VersionKey, "")
 	hanOpts = append(hanOpts, tri.WithGroup(group), tri.WithVersion(version))
 
-	// Deprecated：use TripleConfig
-	// TODO: remove MaxServerSendMsgSize and MaxServerRecvMsgSize when version 4.0.0
+	// Compatibility: read the legacy URL receive-size parameter.
+	// TODO: remove MaxServerRecvMsgSize in version 4.0.0.
 	maxServerRecvMsgSize := constant.DefaultMaxServerRecvMsgSize
 	if recvMsgSize, convertErr := humanize.ParseBytes(url.GetParam(constant.MaxServerRecvMsgSize, "")); convertErr == nil && recvMsgSize != 0 {
 		maxServerRecvMsgSize = int(recvMsgSize)
 	}
 	hanOpts = append(hanOpts, tri.WithReadMaxBytes(maxServerRecvMsgSize))
 
-	// Deprecated：use TripleConfig
-	// TODO: remove MaxServerSendMsgSize and MaxServerRecvMsgSize when version 4.0.0
+	// Compatibility: read the legacy URL send-size parameter.
+	// TODO: remove MaxServerSendMsgSize in version 4.0.0.
 	maxServerSendMsgSize := constant.DefaultMaxServerSendMsgSize
 	if sendMsgSize, convertErr := humanize.ParseBytes(url.GetParam(constant.MaxServerSendMsgSize, "")); convertErr == nil && sendMsgSize != 0 {
 		maxServerSendMsgSize = int(sendMsgSize)

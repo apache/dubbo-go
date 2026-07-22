@@ -224,6 +224,7 @@ func (fn loaderConfigFunc) apply(vc *loaderConf) {
 }
 
 // WithGenre set load config file suffix
+//
 // Deprecated: replaced by WithSuffix
 func WithGenre(suffix string) LoaderConfOption {
 	return loaderConfigFunc(func(conf *loaderConf) {

@@ -19,9 +19,7 @@ package protocol
 
 import (
 	"strconv"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple"
@@ -279,7 +277,7 @@ func WithParams(params any) ServerOption {
 	return &paramsOption{params}
 }
 
-// Deprecated：use triple.WithMaxServerSendMsgSize instead.
+// Deprecated: use triple.WithMaxServerSendMsgSize instead.
 func WithMaxServerSendMsgSize(size string) ServerOption {
 	panic("use triple.WithMaxServerSendMsgSize()")
 }

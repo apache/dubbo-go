@@ -26,15 +26,7 @@ import (
 	"sort"
 	"strconv"
 	"sync"
-)
 
-import (
-	"github.com/dubbogo/gost/log/logger"
-
-	"github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/dubboutil"
@@ -42,6 +34,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/metrics/probe"
 	"dubbo.apache.org/dubbo-go/v3/registry/exposed_tmp"
+	"github.com/dubbogo/gost/log/logger"
+	"github.com/pkg/errors"
 )
 
 // proServices are for internal services
@@ -64,10 +58,14 @@ type Server struct {
 	attachedHTTPHandler http.Handler
 }
 
-// ServiceInfo Deprecated： common.ServiceInfo type alias, just for compatible with old generate pb.go file
+// ServiceInfo is an alias retained for compatibility with old generated code.
+//
+// Deprecated: use common.ServiceInfo instead.
 type ServiceInfo = common.ServiceInfo
 
-// MethodInfo Deprecated： common.MethodInfo type alias， just for compatible with old generate pb.go file
+// MethodInfo is an alias retained for compatibility with old generated code.
+//
+// Deprecated: use common.MethodInfo instead.
 type MethodInfo = common.MethodInfo
 
 type ServiceDefinition struct {
