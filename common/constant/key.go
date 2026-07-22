@@ -28,14 +28,13 @@ const (
 )
 
 const (
-	GroupKey       = "group"
-	VersionKey     = "version"
-	InterfaceKey   = "interface"
-	MessageSizeKey = "message_size"
-	PathKey        = "path"
-	ServiceKey     = "service"
-	MethodsKey     = "methods"
-	// Deprecated: this implemention will be removed in the next version,
+	GroupKey                    = "group"
+	VersionKey                  = "version"
+	InterfaceKey                = "interface"
+	MessageSizeKey              = "message_size"
+	PathKey                     = "path"
+	ServiceKey                  = "service"
+	MethodsKey                  = "methods"
 	TimeoutKey                  = "timeout"
 	CategoryKey                 = "category"
 	CheckKey                    = "check"
@@ -64,22 +63,11 @@ const (
 	ParamsTypeKey               = "parameter-type-names" // key used in pass through invoker factory, to define param type
 	MetadataTypeKey             = "metadata-type"
 	MaxCallSendMsgSize          = "max-call-send-msg-size"
-	// Deprecated: this implemention will be removed in the next version,
-	// use "tripleConfig" instead
-	MaxServerSendMsgSize = "max-server-send-msg-size"
-	MaxCallRecvMsgSize   = "max-call-recv-msg-size"
-	// Deprecated: this implemention will be removed in the next version,
-	// use "tripleConfig" instead
-	MaxServerRecvMsgSize = "max-server-recv-msg-size"
-
-	// TODO: remove KeepAliveInterval and KeepAliveInterval in version 4.0.0
-	//
-	// Deprecated: this implemention will be removed in the next version,
-	// use "tripleConfig" instead
-	KeepAliveInterval = "keep-alive-interval"
-	// Deprecated: this implemention will be removed in the next version.
-	// use "tripleConfig" instead
-	KeepAliveTimeout = "keep-alive-timeout"
+	MaxServerSendMsgSize        = "max-server-send-msg-size"
+	MaxCallRecvMsgSize          = "max-call-recv-msg-size"
+	MaxServerRecvMsgSize        = "max-server-recv-msg-size"
+	KeepAliveInterval           = "keep-alive-interval"
+	KeepAliveTimeout            = "keep-alive-timeout"
 
 	// TODO: remove IDLMode after old triple removed
 	//
