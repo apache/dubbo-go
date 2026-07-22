@@ -125,7 +125,7 @@ func TestServiceFilter_Invoke(t *testing.T) {
 	require.NoError(t, err)
 
 	// mock
-	mockInvoker.EXPECT().GetURL().Return(ivkUrl).Times(3)
+	mockInvoker.EXPECT().GetURL().Return(ivkUrl).Times(4)
 
 	// invoke a method without errors using default generalization
 	invocation4 := invocation.NewRPCInvocation(constant.Generic,
@@ -153,6 +153,15 @@ func TestServiceFilter_Invoke(t *testing.T) {
 			[]hessian.Object{"world", "haha"},
 		}, map[string]any{
 			constant.GenericKey: "true",
+		})
+	// invoke a legacy Triple generic call with protobuf transport marker and Hessian args
+	invocation7 := invocation.NewRPCInvocation(constant.Generic,
+		[]any{
+			"Hello",
+			[]string{"java.lang.String"},
+			[]hessian.Object{"world"},
+		}, map[string]any{
+			constant.GenericKey: constant.GenericSerializationProtobuf,
 		})
 	// invoke a method without errors using protobuf-json generalization
 	//invocation7 := invocation.NewRPCInvocation(constant.Generic,
@@ -202,6 +211,10 @@ func TestServiceFilter_Invoke(t *testing.T) {
 		"the number of args(=2) is not matched with \"Hello\" method",
 		fmt.Sprintf("%v", invokeResult.Error()))
 
+	invokeResult = filter.Invoke(context.Background(), mockInvoker, invocation7)
+	require.NoError(t, invokeResult.Error())
+	assert.Equal(t, "hello, world", invokeResult.Result())
+
 	//result = filter.Invoke(context.Background(), mockInvoker, invocation7)
 	//assert.Equal(t, int64(200), result.Result().(*generalizer.ResponseType).GetCode())
 	//assert.Equal(t, int64(1), result.Result().(*generalizer.ResponseType).GetId())
@@ -229,6 +242,127 @@ func TestServiceFilter_OnResponse(t *testing.T) {
 
 	response := filter.OnResponse(context.Background(), rpcResult, nil, invocation1)
 	assert.Equal(t, "result", response.Result())
+}
+
+func TestServiceFilter_InvokeWithUnsupportedGenericMode(t *testing.T) {
+	filter := &genericServiceFilter{}
+	for _, generic := range []string{"unsupported_type"} {
+		t.Run(generic, func(t *testing.T) {
+			inv := invocation.NewRPCInvocation(constant.Generic,
+				[]any{
+					"Hello",
+					[]string{"java.lang.String"},
+					[]hessian.Object{"world"},
+				}, map[string]any{
+					constant.GenericKey: generic,
+				})
+
+			ctrl := gomock.NewController(t)
+			mockInvoker := mock.NewMockInvoker(ctrl)
+			mockInvoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Times(0)
+
+			res := filter.Invoke(context.Background(), mockInvoker, inv)
+
+			require.EqualError(t, res.Error(), `unsupported generic mode "`+generic+`"`)
+			assert.Nil(t, res.Result())
+		})
+	}
+}
+
+func TestServiceFilter_InvokeWithEmptyGenericModeUsesDefault(t *testing.T) {
+	filter := &genericServiceFilter{}
+	service := &MockHelloService{}
+	ivkURL := common.NewURLWithOptions(
+		common.WithProtocol("test-empty-generic"),
+		common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.InterfaceKey, service.Reference()),
+		common.WithParamsValue(constant.GenericKey, constant.GenericSerializationDefault),
+	)
+	_, err := common.ServiceMap.Register(ivkURL.GetParam(constant.InterfaceKey, ""),
+		ivkURL.Protocol,
+		"",
+		"",
+		service)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_ = common.ServiceMap.UnRegister(ivkURL.GetParam(constant.InterfaceKey, ""), ivkURL.Protocol, ivkURL.ServiceKey())
+	})
+
+	inv := invocation.NewRPCInvocation(constant.Generic,
+		[]any{
+			"Hello",
+			[]string{"java.lang.String"},
+			[]hessian.Object{"world"},
+		}, map[string]any{
+			constant.GenericKey: "",
+		})
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockInvoker := mock.NewMockInvoker(ctrl)
+	mockInvoker.EXPECT().GetURL().Return(ivkURL).AnyTimes()
+	mockInvoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(_ context.Context, outgoing base.Invocation) result.Result {
+			assert.Equal(t, "Hello", outgoing.MethodName())
+			assert.Equal(t, "world", outgoing.Arguments()[0])
+			return &result.RPCResult{Rest: "hello, world"}
+		},
+	)
+
+	res := filter.Invoke(context.Background(), mockInvoker, inv)
+
+	require.NoError(t, res.Error())
+	assert.Equal(t, "hello, world", res.Result())
+}
+
+func TestServiceFilter_OnResponseWithUnsupportedGenericMode(t *testing.T) {
+	filter := &genericServiceFilter{}
+	inv := invocation.NewRPCInvocation(constant.Generic,
+		[]any{
+			"Hello",
+			[]string{"java.lang.String"},
+			[]hessian.Object{"world"},
+		}, map[string]any{
+			constant.GenericKey: "unsupported_type",
+		})
+	rpcResult := &result.RPCResult{Rest: "result"}
+
+	res := filter.OnResponse(context.Background(), rpcResult, nil, inv)
+
+	require.EqualError(t, res.Error(), `unsupported generic mode "unsupported_type"`)
+	assert.Nil(t, res.Result())
+}
+
+func TestServiceFilter_OnResponseWithEmptyGenericModeUsesDefault(t *testing.T) {
+	filter := &genericServiceFilter{}
+	inv := invocation.NewRPCInvocation(constant.Generic,
+		[]any{
+			"Hello",
+			[]string{"java.lang.String"},
+			[]hessian.Object{"world"},
+		}, map[string]any{
+			constant.GenericKey: "",
+		})
+	rpcResult := &result.RPCResult{Rest: "result"}
+
+	res := filter.OnResponse(context.Background(), rpcResult, nil, inv)
+
+	require.NoError(t, res.Error())
+	assert.Equal(t, "result", res.Result())
+}
+
+func TestServiceFilter_OnResponseRejectsUnsupportedModeWithNilResult(t *testing.T) {
+	filter := &genericServiceFilter{}
+	inv := invocation.NewRPCInvocation(constant.Generic,
+		[]any{"Hello", []string{"java.lang.String"}, []hessian.Object{"world"}},
+		map[string]any{constant.GenericKey: "unsupported_type"},
+	)
+
+	res := filter.OnResponse(context.Background(), &result.RPCResult{}, nil, inv)
+
+	require.EqualError(t, res.Error(), `unsupported generic mode "unsupported_type"`)
+	assert.Nil(t, res.Result())
 }
 
 func TestServiceFilter_InvokeVariadic(t *testing.T) {

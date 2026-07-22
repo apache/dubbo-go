@@ -23,8 +23,6 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-
 	perrors "github.com/pkg/errors"
 )
 
@@ -52,27 +50,72 @@ func isMakingAGenericCall(invoker base.Invoker, invocation base.Invocation) bool
 
 // isGeneric receives a generic field from url of invoker to determine whether the service is generic or not
 func isGeneric(generic string) bool {
-	return strings.EqualFold(generic, constant.GenericSerializationDefault) ||
-		strings.EqualFold(generic, constant.GenericSerializationGson) ||
-		strings.EqualFold(generic, constant.GenericSerializationProtobufJson) ||
-		strings.EqualFold(generic, constant.GenericSerializationBean)
+	_, err := getGeneralizer(generic)
+	return err == nil
 }
 
-func getGeneralizer(generic string) (g generalizer.Generalizer) {
+func isGenericDisabled(generic string) bool {
+	return generic == "" || strings.EqualFold(generic, "false")
+}
+
+// getGeneralizer resolves a generic mode to its generalizer.
+// Recommended modes are true, gson, bean, and protobuf-json. protobuf keeps
+// the legacy Map/Hessian generic semantics used by Triple generic invocations.
+func getGeneralizer(generic string) (generalizer.Generalizer, error) {
 	switch {
 	case strings.EqualFold(generic, constant.GenericSerializationDefault):
-		g = generalizer.GetMapGeneralizer()
+		return generalizer.GetMapGeneralizer(), nil
 	case strings.EqualFold(generic, constant.GenericSerializationGson):
-		g = generalizer.GetGsonGeneralizer()
+		return generalizer.GetGsonGeneralizer(), nil
 	case strings.EqualFold(generic, constant.GenericSerializationProtobufJson):
-		g = generalizer.GetProtobufJsonGeneralizer()
+		return generalizer.GetProtobufJsonGeneralizer(), nil
+	case strings.EqualFold(generic, constant.GenericSerializationProtobuf):
+		return generalizer.GetMapGeneralizer(), nil
 	case strings.EqualFold(generic, constant.GenericSerializationBean):
-		g = generalizer.GetBeanGeneralizer()
+		return generalizer.GetBeanGeneralizer(), nil
 	default:
-		logger.Debugf("[Filter][Generic] generic type not supported, use the default generalizer, generic=%s", generic)
-		g = generalizer.GetMapGeneralizer()
+		return nil, perrors.Errorf("unsupported generic mode %q", generic)
 	}
-	return
+}
+
+// resolveGeneralizer validates configured generic modes and selects a non-empty invocation mode when present.
+// Invocation generic mode takes precedence over the URL mode; empty or false values do not override URL mode.
+func resolveGeneralizer(configuredGeneric string, invocation base.Invocation) (string, generalizer.Generalizer, error) {
+	if isGenericDisabled(configuredGeneric) {
+		return "", nil, nil
+	}
+
+	var g generalizer.Generalizer
+	var err error
+	g, err = getGeneralizer(configuredGeneric)
+	if err != nil {
+		return "", nil, err
+	}
+
+	if invocationGeneric, ok := invocation.GetAttachment(constant.GenericKey); ok {
+		if isGenericDisabled(invocationGeneric) {
+			return configuredGeneric, g, nil
+		}
+		invocationGeneralizer, err := getGeneralizer(invocationGeneric)
+		if err != nil {
+			return "", nil, err
+		}
+		return invocationGeneric, invocationGeneralizer, nil
+	}
+
+	return configuredGeneric, g, nil
+}
+
+func resolveGenericInvocationGeneralizer(invocation base.Invocation) (string, generalizer.Generalizer, error) {
+	generic := invocation.GetAttachmentWithDefaultValue(constant.GenericKey, constant.GenericSerializationDefault)
+	if generic == "" {
+		generic = constant.GenericSerializationDefault
+	}
+	g, err := getGeneralizer(generic)
+	if err != nil {
+		return "", nil, err
+	}
+	return generic, g, nil
 }
 
 // realizeResult deserializes the data into the target type using the provided generalizer.
