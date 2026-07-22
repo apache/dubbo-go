@@ -311,6 +311,9 @@ func Test_isGenericCall(t *testing.T) {
 		{"protobuf-json", "protobuf-json", true},
 		{"PROTOBUF-JSON", "PROTOBUF-JSON", true},
 		{"Protobuf-Json", "Protobuf-Json", true},
+		{"bean", "bean", true},
+		{"BEAN", "BEAN", true},
+		{"Bean", "Bean", true},
 
 		// invalid generic serialization types
 		{"false", "false", false},

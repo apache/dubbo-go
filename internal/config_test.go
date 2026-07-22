@@ -326,3 +326,32 @@ func TestValidateMethodConfig(t *testing.T) {
 		assert.Contains(t, err.Error(), "tps.limit.interval")
 	})
 }
+
+func TestValidateGenericType(t *testing.T) {
+	tests := []struct {
+		name    string
+		generic string
+		wantErr bool
+	}{
+		{"empty means non-generic", "", false},
+		{"map default", constant.GenericSerializationDefault, false},
+		{"gson", constant.GenericSerializationGson, false},
+		{"protobuf-json", constant.GenericSerializationProtobufJson, false},
+		{"bean", constant.GenericSerializationBean, false},
+		{"protobuf legacy compat", constant.GenericSerializationProtobuf, false},
+		{"case insensitive", "TRUE", false},
+		{"unknown value", "bad-type", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateGenericType(tt.generic)
+			if tt.wantErr {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.generic)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}

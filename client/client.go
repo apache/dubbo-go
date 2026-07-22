@@ -135,6 +135,19 @@ func (cli *Client) NewService(service any, opts ...ReferenceOption) (*Connection
 // NewGenericService creates a GenericService for making generic calls without pre-generated stubs.
 // The referenceStr parameter specifies the service interface name (e.g., "org.apache.dubbo.samples.UserProvider").
 //
+// Defaults:
+//   - generic mode (generalization format): "true" (Map). Override with client.WithGenericType.
+//   - transport serialization: Hessian2. Override with client.WithSerialization.
+//
+// The generic mode and the transport serialization are two independent settings:
+// the former decides how objects are generalized, the latter how they are encoded on
+// the wire. Passing an unknown generic mode returns an error instead of silently
+// falling back to the Map generalizer.
+//
+// Whether the "class" field is kept in Map (generic=true) results is controlled by
+// the global "generic.include.class" configuration (default true). It only affects
+// the Map generalizer and currently has no per-reference override.
+//
 // Example usage:
 //
 //	genericService, err := cli.NewGenericService("org.apache.dubbo.samples.UserProvider",

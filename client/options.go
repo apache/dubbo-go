@@ -138,6 +138,12 @@ func (refOpts *ReferenceOptions) init(opts ...ReferenceOption) error {
 		refConf.Serialization = constant.ProtobufSerialization
 	}
 
+	// validate generic type, fail fast on unknown value instead of
+	// silently falling back to the Map generalizer at runtime
+	if err := internal.ValidateGenericType(refConf.Generic); err != nil {
+		return err
+	}
+
 	return commonCfg.Verify(refOpts)
 }
 
@@ -360,8 +366,17 @@ func WithGeneric() ReferenceOption {
 	}
 }
 
-// WithGenericType sets the generic serialization type for generic call
-// Valid values: "true" (default), "gson", "protobuf", "protobuf-json"
+// WithGenericType sets the generic mode (generalization format), which decides how
+// business objects are generalized into a generic structure.
+//
+// Valid values: "true" (default, Map), "gson", "protobuf-json", "bean".
+// "protobuf" is kept as a legacy compatibility value and is not recommended.
+// An unknown value is rejected when the reference is created (see init()), rather
+// than silently falling back to the Map generalizer.
+//
+// Note: the generic mode is different from the transport serialization set via
+// WithSerialization; the latter controls the on-the-wire encoding (hessian2 /
+// protobuf / json / msgpack).
 func WithGenericType(genericType string) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Generic = genericType
