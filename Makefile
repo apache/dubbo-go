@@ -55,6 +55,9 @@ check-fmt:
 		echo "Error: The following files have formatting changes:"; \
 		git diff --name-only; \
 		echo ""; \
+		echo "Formatting diff:"; \
+		git --no-pager diff --; \
+		echo ""; \
 		echo "Please run 'make fmt' to fix formatting issues and commit the changes."; \
 		exit 1; \
 	fi
