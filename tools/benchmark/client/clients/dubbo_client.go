@@ -20,14 +20,9 @@ package clients
 import (
 	"context"
 	"fmt"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/client"
 	_ "dubbo.apache.org/dubbo-go/v3/imports" // import required for dubbo-go initialization
-)
-
-import (
 	benchmark "dubbo.apache.org/dubbo-go/v3/tools/benchmark/proto/benchmark_gen"
 )
 

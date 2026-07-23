@@ -26,9 +26,7 @@ import (
 	"os"
 	"path/filepath"
 	"time"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/tools/benchmark/client/clients"
 	"dubbo.apache.org/dubbo-go/v3/tools/benchmark/client/engine"
 	"dubbo.apache.org/dubbo-go/v3/tools/benchmark/client/monitor"
