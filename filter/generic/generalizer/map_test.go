@@ -49,6 +49,11 @@ type testPlainObj struct {
 	EeEe int
 }
 
+type testMTagObj struct {
+	UserID string `m:"user_id"`
+	Name   string
+}
+
 func TestObjToMap(t *testing.T) {
 	obj := &testPlainObj{}
 	obj.AaAa = "1"
@@ -69,6 +74,21 @@ func TestObjToMap(t *testing.T) {
 	assert.Equal(t, reflect.Map, reflect.TypeOf(m["caCa"].(map[string]any)["xxYy"]).Kind())
 	assert.Equal(t, "2020-10-29 02:34:00", m["daDa"].(time.Time).Format("2006-01-02 15:04:05"))
 	assert.Equal(t, 100, m["eeEe"].(int))
+}
+
+func TestMTagRoundTrip(t *testing.T) {
+	original := testMTagObj{
+		UserID: "42",
+		Name:   "alice",
+	}
+
+	generalized, err := mockMapGeneralizer.Generalize(original)
+	require.NoError(t, err)
+	assert.Equal(t, "42", generalized.(map[string]any)["user_id"])
+
+	realized, err := mockMapGeneralizer.Realize(generalized, reflect.TypeOf(original))
+	require.NoError(t, err)
+	assert.Equal(t, original, realized)
 }
 
 type testStruct struct {

@@ -68,7 +68,15 @@ func (g *MapGeneralizer) Realize(obj any, typ reflect.Type) (any, error) {
 		obj = removeClass(obj)
 	}
 	newobj := reflect.New(typ).Interface()
-	err := mapstructure.Decode(obj, newobj)
+	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+		Result:  newobj,
+		TagName: "m",
+	})
+	if err != nil {
+		return nil, perrors.Errorf("realizing map failed, %v", err)
+	}
+
+	err = decoder.Decode(obj)
 	if err != nil {
 		return nil, perrors.Errorf("realizing map failed, %v", err)
 	}
