@@ -151,7 +151,7 @@ func (tp *TripleProtocol) Refer(url *common.URL) base.Invoker {
 	// Use NewTripleInvoker for:
 	// 1. New protoc-gen-go-triple stub code (has ClientInfoKey)
 	// 2. Non-IDL mode (IDLMode == NONIDL)
-	// 3. Generic call (generic=true/gson/protobuf/protobuf-json)
+	// 3. Generic call (generic=true/gson/protobuf-json/bean)
 	if ok || IDLMode == constant.NONIDL || isGenericCall {
 		// new triple invoker supporting $invoke for generic calls
 		invoker, err = NewTripleInvoker(url)
@@ -231,15 +231,19 @@ func (tp *TripleProtocol) HostHTTPHandler(url *common.URL, handler http.Handler)
 	return nil
 }
 
-// isGenericCall checks if the generic parameter indicates a generic call
+// isGenericCall reports whether generic is a supported generic mode.
+//
+// Triple accepts the same generic modes as the generic filter: true, gson,
+// protobuf-json, and bean. The legacy protobuf value is intentionally not a
+// generic mode; callers should use protobuf-json instead.
 func isGenericCall(generic string) bool {
 	if generic == "" {
 		return false
 	}
 	return strings.EqualFold(generic, constant.GenericSerializationDefault) ||
 		strings.EqualFold(generic, constant.GenericSerializationGson) ||
-		strings.EqualFold(generic, constant.GenericSerializationProtobuf) ||
-		strings.EqualFold(generic, constant.GenericSerializationProtobufJson)
+		strings.EqualFold(generic, constant.GenericSerializationProtobufJson) ||
+		strings.EqualFold(generic, constant.GenericSerializationBean)
 }
 
 func NewTripleProtocol() *TripleProtocol {
