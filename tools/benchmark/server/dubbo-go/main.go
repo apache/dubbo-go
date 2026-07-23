@@ -29,6 +29,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	_ "dubbo.apache.org/dubbo-go/v3/imports" // import required for dubbo-go initialization
 	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple"
 	"dubbo.apache.org/dubbo-go/v3/server"
 	benchmark "dubbo.apache.org/dubbo-go/v3/tools/benchmark/proto/benchmark_gen"
 )
@@ -65,7 +66,10 @@ func main() {
 
 	srv, err := server.NewServer(
 		server.WithServerProtocol(
-			protocol.WithTriple(),
+			protocol.WithTriple(
+				triple.WithMaxServerRecvMsgSize("16MB"),
+				triple.WithMaxServerSendMsgSize("16MB"),
+			),
 			protocol.WithPort(*port),
 			protocol.WithParams(map[string]string{
 				"serialization": *serialization,
