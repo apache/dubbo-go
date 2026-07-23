@@ -27,7 +27,8 @@ echo "integrate-test root work-space -> ${ROOT_DIR}"
 echo "use dubbo-go-samples $3 branch for integration testing"
 git clone -b $3 https://github.com/apache/dubbo-go-samples.git samples --depth=1 && cd samples
 
-# Use the checked-out dubbo-go source for integration testing.
+# Use the checked-out dubbo-go source for integration testing. This ensures the
+# test exercises the current PR and avoids checksum/proxy failures for fork SHAs.
 go mod edit -replace=dubbo.apache.org/dubbo-go/v3="${ROOT_DIR}"
 
 go mod tidy
