@@ -26,9 +26,14 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+)
 
-	benchmark "dubbo.apache.org/dubbo-go/v3/tools/benchmark/proto/benchmark_gen"
+import (
 	"google.golang.org/grpc"
+)
+
+import (
+	benchmark "dubbo.apache.org/dubbo-go/v3/tools/benchmark/proto/benchmark_gen"
 )
 
 const separator = "========================================"
