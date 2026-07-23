@@ -9,7 +9,7 @@
 - 支持多种序列化协议：protobuf / hessian2 / msgpack
 - 支持多种调用模式：一元调用(unary) / 流式调用(streaming)
 - 支持多档并发数：50/100/500/1000/2000
-- 完整的CI检查：许可证头验证、代码格式化、安全扫描
+- 完整的CI检查：许可证头验证、代码格式化、安全扫描、代码质量分析
 
 ## 输出指标
 
@@ -122,10 +122,38 @@ go run report/generator.go
 
 本项目已通过以下质量检查：
 
-- **SonarCloud**: 代码质量分析
-- **CodeQL**: 安全漏洞扫描
-- **License Header**: Apache-2.0 许可证验证
-- **Code Format**: Go 官方格式化标准
+- **SonarCloud**: 代码质量分析（代码异味、重复代码、复杂度检测）
+- **CodeQL**: 安全漏洞扫描（敏感信息泄露、注入攻击检测）
+- **License Header**: Apache-2.0 许可证验证（所有文件必须包含标准许可证头）
+- **Code Format**: Go 官方格式化标准（`go fmt` + `imports-formatter`）
+
+## 代码规范
+
+### 格式检查
+
+在提交代码前，请确保通过格式检查：
+
+```bash
+# 运行格式化命令
+cd tools/benchmark
+go fmt ./...
+imports-formatter ./...
+
+# 或者从项目根目录运行
+make check-fmt
+```
+
+### 许可证头
+
+所有源代码文件（Go、Java、Proto、YAML、XML）必须包含标准的 Apache-2.0 许可证头。许可证头的格式必须与项目根目录下的 `.licenserc.yaml` 配置完全一致。
+
+### Import 规范
+
+- 所有 import 语句必须放在一个 import 块中，不允许使用多个独立的 import 块
+- import 语句按以下顺序排列，每组之间用空行分隔：
+  1. 标准库（如 `fmt`, `net`, `context`）
+  2. 第三方库（如 `google.golang.org/grpc`）
+  3. 项目内部包（如 `dubbo.apache.org/dubbo-go/v3/...`）
 
 ## 注意事项
 
@@ -134,6 +162,7 @@ go run report/generator.go
 3. 建议关闭防火墙和后台进程，保证测试环境纯净
 4. 服务端进程会在测试结束后自动清理
 5. 测试结果会自动保存到 `data/` 目录
+6. 提交代码前请运行 `make check-fmt` 确保格式正确
 
 ## License
 
