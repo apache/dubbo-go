@@ -134,9 +134,9 @@ func (h *SwaggerUIHandler) handleIndex() string {
 func (h *SwaggerUIHandler) buildSettings() string {
 	var sb strings.Builder
 	for key, value := range h.config.Settings {
-		if strings.HasPrefix(key, constant.OpenAPISettingKeySwaggerUISettings) {
-			settingKey := strings.TrimPrefix(key, constant.OpenAPISettingKeySwaggerUISettings)
-			sb.WriteString(fmt.Sprintf(",\n            \"%s\": %s", settingKey, value))
+		if after, ok := strings.CutPrefix(key, constant.OpenAPISettingKeySwaggerUISettings); ok {
+			settingKey := after
+			fmt.Fprintf(&sb, ",\n            \"%s\": %s", settingKey, value)
 		}
 	}
 	return sb.String()

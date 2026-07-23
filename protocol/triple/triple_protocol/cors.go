@@ -20,6 +20,7 @@ package triple_protocol
 import (
 	"net/http"
 	"net/url"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -85,12 +86,7 @@ func (c *CorsConfig) hasWildcard() bool {
 	if c == nil {
 		return false
 	}
-	for _, origin := range c.AllowOrigins {
-		if origin == constant.AnyValue {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(c.AllowOrigins, constant.AnyValue)
 }
 
 // normalizeMethods normalizes and deduplicates CORS methods.
@@ -279,12 +275,7 @@ func (c *CorsConfig) containsMethod(target string) bool {
 		return false
 	}
 	targetUpper := strings.ToUpper(target)
-	for _, method := range c.AllowMethods {
-		if method == targetUpper {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(c.AllowMethods, targetUpper)
 }
 
 // setAllowMethods sets the Access-Control-Allow-Methods header.

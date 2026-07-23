@@ -246,7 +246,7 @@ func InitCheckCompleteInequality(t *testing.T, origin any) {
 		case reflect.Map:
 			originField.Set(reflect.MakeMap(originField.Type()))
 
-		case reflect.Slice, reflect.Ptr:
+		case reflect.Slice, reflect.Pointer:
 
 		default:
 			// Field '%s' is of unsupported type '%s', skipping checking
@@ -315,7 +315,7 @@ func CheckCompleteInequality(t *testing.T, origin any, clone any) {
 			assert.InEpsilon(t, 2.5, cloneField.Float(), 1e-9)
 			assert.InEpsilon(t, 1.5, originField.Float(), 1e-9)
 
-		case reflect.Map, reflect.Ptr:
+		case reflect.Map, reflect.Pointer:
 			if originField.IsNil() {
 				assert.Zero(t, cloneField.Pointer())
 			} else {

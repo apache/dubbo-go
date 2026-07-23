@@ -377,8 +377,8 @@ func TestSetInvokersIncrementsAndPublishesGeneration(t *testing.T) {
 // chain published, catching any snapshot/generation skew under concurrency.
 type genCheckRouter struct {
 	cache      router.Cache
-	violations int64
-	fastPaths  int64
+	violations atomic.Int64
+	fastPaths  atomic.Int64
 }
 
 func (r *genCheckRouter) Name() string            { return "gen-check" }
@@ -406,12 +406,12 @@ func (r *genCheckRouter) Route(invokers []base.Invoker, _ *common.URL, inv base.
 	if pool == nil || cacheGen != snapGen {
 		return invokers // fall back, exactly like TagRouter
 	}
-	atomic.AddInt64(&r.fastPaths, 1)
+	r.fastPaths.Add(1)
 	// On the fast path every invoker in the cache snapshot must carry the published generation.
 	// A mismatch would mean the guard let a snapshot from a concurrent SetInvokers through.
 	for _, ivk := range full {
 		if ivk.GetURL().GetParam("snapgen", "") != strconv.FormatUint(snapGen, 10) {
-			atomic.AddInt64(&r.violations, 1)
+			r.violations.Add(1)
 		}
 	}
 	return full
@@ -429,7 +429,7 @@ func TestRouteCacheGenerationRace(t *testing.T) {
 
 	makeSet := func(gen uint64, n int) []base.Invoker {
 		out := make([]base.Invoker, 0, n)
-		for i := 0; i < n; i++ {
+		for i := range n {
 			u, _ := common.NewURL("dubbo://127.0.0.1:2000" + strconv.Itoa(i) + "/com.demo.Service")
 			u.SetParam("snapgen", strconv.FormatUint(gen, 10))
 			out = append(out, base.NewBaseInvoker(u))
@@ -442,9 +442,7 @@ func TestRouteCacheGenerationRace(t *testing.T) {
 
 	stop := make(chan struct{})
 	var writer sync.WaitGroup
-	writer.Add(1)
-	go func() {
-		defer writer.Done()
+	writer.Go(func() {
 		gen := uint64(1)
 		for {
 			select {
@@ -456,23 +454,21 @@ func TestRouteCacheGenerationRace(t *testing.T) {
 				chain.SetInvokers(makeSet(gen, size))
 			}
 		}
-	}()
+	})
 
 	var readers sync.WaitGroup
-	for i := 0; i < 4; i++ {
-		readers.Add(1)
-		go func() {
-			defer readers.Done()
-			for j := 0; j < 2000; j++ {
+	for range 4 {
+		readers.Go(func() {
+			for range 2000 {
 				chain.Route(consumerURL, invocation.NewRPCInvocation("Say", nil, nil))
 			}
-		}()
+		})
 	}
 
 	readers.Wait()
 	close(stop)
 	writer.Wait()
 
-	assert.Equal(t, int64(0), atomic.LoadInt64(&r.violations),
+	assert.Equal(t, int64(0), r.violations.Load(),
 		"cache snapshot generation must always match the published generation on the fast path")
 }

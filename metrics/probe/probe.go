@@ -20,6 +20,7 @@ package probe
 import (
 	"context"
 	"fmt"
+	"maps"
 	"sync"
 )
 
@@ -69,9 +70,7 @@ func RegisterStartup(name string, fn CheckFunc) {
 func runChecks(ctx context.Context, mu *sync.RWMutex, checks map[string]CheckFunc) error {
 	mu.RLock()
 	snapshot := make(map[string]CheckFunc, len(checks))
-	for k, v := range checks {
-		snapshot[k] = v
-	}
+	maps.Copy(snapshot, checks)
 	mu.RUnlock()
 
 	for name, fn := range snapshot {

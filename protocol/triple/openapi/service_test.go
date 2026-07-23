@@ -19,6 +19,7 @@ package openapi
 
 import (
 	"reflect"
+	"slices"
 	"sync"
 	"testing"
 )
@@ -220,13 +221,7 @@ func TestDefaultService_GetOpenAPIGroups(t *testing.T) {
 	groups := svc.GetOpenAPIGroups()
 
 	// Should always include "default"
-	found := false
-	for _, g := range groups {
-		if g == constant.OpenAPIDefaultGroup {
-			found = true
-			break
-		}
-	}
+	found := slices.Contains(groups, constant.OpenAPIDefaultGroup)
 	if !found {
 		t.Error("groups should include default group")
 	}
@@ -408,7 +403,7 @@ func TestDefaultService_ConcurrentAccess(t *testing.T) {
 	})
 
 	var wg sync.WaitGroup
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
@@ -445,7 +440,7 @@ func TestDefaultService_resolveOpenAPIs_MultipleGroups(t *testing.T) {
 		{
 			Name:        "Greet",
 			ReqInitFunc: func() any { return &TestReq{} },
-			Meta:        map[string]any{"response.type": reflect.TypeOf(TestResp{})},
+			Meta:        map[string]any{"response.type": reflect.TypeFor[TestResp]()},
 		},
 	})
 

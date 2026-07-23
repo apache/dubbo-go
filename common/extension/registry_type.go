@@ -18,6 +18,7 @@
 package extension
 
 import (
+	"maps"
 	"sync"
 )
 
@@ -78,9 +79,7 @@ func (r *Registry[T]) Snapshot() map[string]T {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	m := make(map[string]T, len(r.items))
-	for k, v := range r.items {
-		m[k] = v
-	}
+	maps.Copy(m, r.items)
 	return m
 }
 

@@ -67,7 +67,7 @@ func (g *ProtobufJsonGeneralizer) Realize(obj any, typ reflect.Type) (any, error
 	}
 
 	// typ represents a struct instead of a pointer
-	for typ.Kind() == reflect.Ptr {
+	for typ.Kind() == reflect.Pointer {
 		typ = typ.Elem()
 	}
 

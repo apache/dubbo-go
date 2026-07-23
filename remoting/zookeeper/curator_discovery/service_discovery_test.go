@@ -53,14 +53,12 @@ func TestEntry(t *testing.T) {
 		entry := &Entry{instance: &ServiceInstance{Name: testServiceName}}
 		var wg sync.WaitGroup
 
-		for i := 0; i < 100; i++ {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+		for range 100 {
+			wg.Go(func() {
 				entry.Lock()
 				entry.instance.Name = "updated"
 				entry.Unlock()
-			}()
+			})
 		}
 		wg.Wait()
 		assert.Equal(t, "updated", entry.instance.Name)
@@ -191,7 +189,7 @@ func TestServiceDiscoveryConcurrentAccess(t *testing.T) {
 	sd := NewServiceDiscovery(nil, testBasePath)
 	var wg sync.WaitGroup
 
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
