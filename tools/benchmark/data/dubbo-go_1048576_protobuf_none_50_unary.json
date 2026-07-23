@@ -1,0 +1,23 @@
+{
+  "framework": "dubbo-go",
+  "payload_size": 1048576,
+  "serialization": "protobuf",
+  "compression": "none",
+  "concurrency": 50,
+  "call_mode": "unary",
+  "timestamp": "2026-07-22 18:17:50",
+  "qps": 379.2334579005619,
+  "success_rate": 99.7808267216061,
+  "total_requests": 22813,
+  "success_requests": 22763,
+  "failure_requests": 50,
+  "latency_p50_ms": 125.331708,
+  "latency_p90_ms": 219.023875,
+  "latency_p95_ms": 250.438458,
+  "latency_p99_ms": 319.345,
+  "latency_min_ms": 11.608417,
+  "latency_max_ms": 580.023542,
+  "latency_avg_ms": 131.734943,
+  "cpu_avg_percent": 833.973913043478,
+  "memory_peak_mb": 633.484375
+}

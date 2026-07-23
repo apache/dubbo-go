@@ -1,0 +1,23 @@
+{
+  "framework": "grpc",
+  "payload_size": 1048576,
+  "serialization": "protobuf",
+  "compression": "none",
+  "concurrency": 100,
+  "call_mode": "unary",
+  "timestamp": "2026-07-22 18:29:08",
+  "qps": 1781.2613285442717,
+  "success_rate": 99.90653943568512,
+  "total_requests": 106997,
+  "success_requests": 106897,
+  "failure_requests": 100,
+  "latency_p50_ms": 57.170125,
+  "latency_p90_ms": 70.052458,
+  "latency_p95_ms": 72.8265,
+  "latency_p99_ms": 78.459875,
+  "latency_min_ms": 3.196333,
+  "latency_max_ms": 120.844166,
+  "latency_avg_ms": 56.112833,
+  "cpu_avg_percent": 295.56857142857154,
+  "memory_peak_mb": 339.078125
+}

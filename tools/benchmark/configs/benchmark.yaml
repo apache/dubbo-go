@@ -1,0 +1,38 @@
+service:
+  name: BenchmarkService
+  port:
+    dubbo-go: 20000
+    dubbo-java: 20001
+    grpc: 50051
+
+payload_sizes:
+  - 128
+  - 1024
+  - 16384
+  - 1048576
+
+serializations:
+  - hessian2
+  - protobuf
+  - msgpack
+
+compressions:
+  - none
+  - default
+  - fastest
+
+call_modes:
+  - unary
+  - streaming
+
+concurrency_levels:
+  - 50
+  - 100
+  - 500
+  - 1000
+  - 2000
+
+benchmark:
+  warmup_duration: 10s
+  test_duration: 60s
+  request_timeout: 30s
