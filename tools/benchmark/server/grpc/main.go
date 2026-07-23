@@ -31,6 +31,8 @@ import (
 	"google.golang.org/grpc"
 )
 
+const separator = "========================================"
+
 var (
 	port = flag.Int("port", 50051, "服务端口")
 )
@@ -58,9 +60,9 @@ func (s *benchmarkServiceImpl) StreamCall(stream benchmark.BenchmarkService_Stre
 func main() {
 	flag.Parse()
 
-	fmt.Println("========================================")
+	fmt.Println(separator)
 	fmt.Println("      gRPC Benchmark Server")
-	fmt.Println("========================================")
+	fmt.Println(separator)
 	fmt.Printf("[INFO] 端口:     %d\n", *port)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))

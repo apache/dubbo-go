@@ -20,6 +20,7 @@ set -e
 
 BASE_DIR=$(cd "$(dirname "$0")/.." && pwd)
 LOG_DIR="$BASE_DIR/logs"
+SEPARATOR="========================================"
 
 mkdir -p "$LOG_DIR"
 
@@ -30,16 +31,16 @@ COMPRESSION="${4:-none}"
 CONCURRENCY="${5:-100}"
 CALL_MODE="${6:-unary}"
 
-echo "========================================"
+echo "$SEPARATOR"
 echo "   Dubbo-Go Benchmark - Single Test"
-echo "========================================"
+echo "$SEPARATOR"
 echo "框架:         $FRAMEWORK"
 echo "报文大小:     $PAYLOAD bytes"
 echo "序列化:       $SERIALIZATION"
 echo "压缩:         $COMPRESSION"
 echo "并发数:       $CONCURRENCY"
 echo "调用模式:     $CALL_MODE"
-echo "========================================"
+echo "$SEPARATOR"
 
 echo "[INFO] 编译服务端..."
 case "$FRAMEWORK" in
@@ -76,6 +77,10 @@ case "$FRAMEWORK" in
     grpc)
         "$SERVER_BIN" --port "$SERVER_PORT" > "$LOG_FILE.server.log" 2>&1 &
         ;;
+    *)
+        echo "[ERROR] 不支持的框架: $FRAMEWORK"
+        exit 1
+        ;;
 esac
 pid=$!
 echo "[INFO] 服务端PID: $pid"
@@ -102,7 +107,7 @@ if kill -0 "$pid" 2>/dev/null; then
 fi
 
 echo ""
-echo "========================================"
+echo "$SEPARATOR"
 echo "   测试完成!"
-echo "========================================"
+echo "$SEPARATOR"
 echo "日志位置: $LOG_FILE"

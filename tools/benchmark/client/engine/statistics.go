@@ -22,18 +22,20 @@ import (
 	"time"
 )
 
+const separator = "========================================"
+
 type Statistics struct {
-	QPS        float64
-	P50        time.Duration
-	P90        time.Duration
-	P95        time.Duration
-	P99        time.Duration
-	Min        time.Duration
-	Max        time.Duration
-	Avg        time.Duration
-	Success    int64
-	Failure    int64
-	Total      int64
+	QPS         float64
+	P50         time.Duration
+	P90         time.Duration
+	P95         time.Duration
+	P99         time.Duration
+	Min         time.Duration
+	Max         time.Duration
+	Avg         time.Duration
+	Success     int64
+	Failure     int64
+	Total       int64
 	SuccessRate float64
 }
 
@@ -85,25 +87,9 @@ func (s *Statistics) percentile(latencies []time.Duration, p float64) time.Durat
 }
 
 func (s *Statistics) String() string {
-	return fmt.Sprintf(`
-========================================
-          性能测试报告
-========================================
-QPS:             %.2f
-成功率:          %.2f%%
-总请求数:        %d
-成功数:          %d
-失败数:          %d
-----------------------------------------
-延迟统计(ms):
-  Min:           %.2f
-  Avg:           %.2f
-  P50:           %.2f
-  P90:           %.2f
-  P95:           %.2f
-  P99:           %.2f
-  Max:           %.2f
-========================================`,
+	return fmt.Sprintf("\n%s\n          性能测试报告\n%s\nQPS:             %.2f\n成功率:          %.2f%%\n总请求数:        %d\n成功数:          %d\n失败数:          %d\n----------------------------------------\n延迟统计(ms):\n  Min:           %.2f\n  Avg:           %.2f\n  P50:           %.2f\n  P90:           %.2f\n  P95:           %.2f\n  P99:           %.2f\n  Max:           %.2f\n%s",
+		separator,
+		separator,
 		s.QPS,
 		s.SuccessRate,
 		s.Total,

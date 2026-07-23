@@ -26,32 +26,30 @@ import (
 type BenchmarkFunc func(ctx context.Context) (duration time.Duration, err error)
 
 type Engine struct {
-	concurrency       int
-	warmupDuration    time.Duration
-	testDuration      time.Duration
-	requestTimeout    time.Duration
-	metricsCollector  *MetricsCollector
-	stats             *Statistics
-	isWarmup          bool
-	wg                sync.WaitGroup
-	stopChan          chan struct{}
-	ctx               context.Context
-	cancel            context.CancelFunc
+	concurrency      int
+	warmupDuration   time.Duration
+	testDuration     time.Duration
+	requestTimeout   time.Duration
+	metricsCollector *MetricsCollector
+	stats            *Statistics
+	isWarmup         bool
+	wg               sync.WaitGroup
+	stopChan         chan struct{}
+	cancel           context.CancelFunc
 }
 
 func NewEngine(concurrency int, warmupDuration, testDuration, requestTimeout time.Duration) *Engine {
-	ctx, cancel := context.WithCancel(context.Background())
+	_, cancel := context.WithCancel(context.Background())
 	return &Engine{
-		concurrency:       concurrency,
-		warmupDuration:    warmupDuration,
-		testDuration:      testDuration,
-		requestTimeout:    requestTimeout,
-		metricsCollector:  NewMetricsCollector(),
-		stats:             NewStatistics(),
-		isWarmup:          true,
-		stopChan:          make(chan struct{}),
-		ctx:               ctx,
-		cancel:            cancel,
+		concurrency:      concurrency,
+		warmupDuration:   warmupDuration,
+		testDuration:     testDuration,
+		requestTimeout:   requestTimeout,
+		metricsCollector: NewMetricsCollector(),
+		stats:            NewStatistics(),
+		isWarmup:         true,
+		stopChan:         make(chan struct{}),
+		cancel:           cancel,
 	}
 }
 
@@ -91,7 +89,7 @@ func (e *Engine) worker(benchmarkFunc BenchmarkFunc) {
 		case <-e.stopChan:
 			return
 		default:
-			ctx, cancel := context.WithTimeout(e.ctx, e.requestTimeout)
+			ctx, cancel := context.WithTimeout(context.Background(), e.requestTimeout)
 			start := time.Now()
 			_, err := benchmarkFunc(ctx)
 			duration := time.Since(start)

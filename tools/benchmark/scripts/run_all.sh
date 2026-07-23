@@ -23,18 +23,19 @@ LOG_DIR="$BASE_DIR/logs"
 REPORT_DIR="$BASE_DIR/report"
 DATA_DIR="$BASE_DIR/data"
 PID_FILE="/tmp/benchmark_server.pid"
+SEPARATOR="========================================"
 
 mkdir -p "$LOG_DIR"
 mkdir -p "$REPORT_DIR"
 mkdir -p "$DATA_DIR"
 
-echo "========================================"
+echo "$SEPARATOR"
 echo "   Dubbo-Go Benchmark - Full Test Suite"
-echo "========================================"
+echo "$SEPARATOR"
 
 echo "[INFO] 检查环境依赖..."
 
-if ! command -v go &> /dev/null; then
+if ! command -v go > /dev/null 2>&1; then
     echo "[ERROR] Go 未安装，请安装 Go 1.23+"
     exit 1
 fi
@@ -122,6 +123,10 @@ for framework in "${FRAMEWORKS[@]}"; do
                             grpc)
                                 "$SERVER_BIN" --port "$SERVER_PORT" > "$LOG_FILE.server.log" 2>&1 &
                                 ;;
+                            *)
+                                echo "[ERROR] 不支持的框架: $framework"
+                                exit 1
+                                ;;
                         esac
                         pid=$!
                         echo "$pid" > "$PID_FILE"
@@ -162,9 +167,9 @@ cd "$BASE_DIR/report"
 go run generator.go
 
 echo ""
-echo "========================================"
+echo "$SEPARATOR"
 echo "   压测完成!"
-echo "========================================"
+echo "$SEPARATOR"
 echo "报告位置: $REPORT_DIR/benchmark_report.md"
 echo "日志位置: $LOG_DIR/"
 echo "数据位置: $DATA_DIR/"

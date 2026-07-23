@@ -22,7 +22,7 @@ import (
 	"fmt"
 
 	"dubbo.apache.org/dubbo-go/v3/client"
-	_ "dubbo.apache.org/dubbo-go/v3/imports"
+	_ "dubbo.apache.org/dubbo-go/v3/imports" // import required for dubbo-go initialization
 	benchmark "dubbo.apache.org/dubbo-go/v3/tools/benchmark/proto/benchmark_gen"
 )
 

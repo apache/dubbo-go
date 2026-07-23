@@ -32,12 +32,12 @@ type SystemMetrics struct {
 }
 
 type SystemMonitor struct {
-	pid         int
-	interval    time.Duration
-	metrics     []SystemMetrics
-	mu          sync.Mutex
-	stopChan    chan struct{}
-	wg          sync.WaitGroup
+	pid      int
+	interval time.Duration
+	metrics  []SystemMetrics
+	mu       sync.Mutex
+	stopChan chan struct{}
+	wg       sync.WaitGroup
 }
 
 func NewSystemMonitor(pid int, interval time.Duration) *SystemMonitor {
@@ -102,7 +102,7 @@ func (sm *SystemMonitor) collectMetrics() (SystemMetrics, error) {
 }
 
 func (sm *SystemMonitor) getCPUUsage() (float64, error) {
-	cmd := exec.Command("ps", "-p", strconv.Itoa(sm.pid), "-o", "%cpu=")
+	cmd := exec.Command("/bin/ps", "-p", strconv.Itoa(sm.pid), "-o", "%cpu=")
 	output, err := cmd.Output()
 	if err != nil {
 		return 0, err
@@ -118,7 +118,7 @@ func (sm *SystemMonitor) getCPUUsage() (float64, error) {
 }
 
 func (sm *SystemMonitor) getMemoryUsage() (uint64, error) {
-	cmd := exec.Command("ps", "-p", strconv.Itoa(sm.pid), "-o", "rss=")
+	cmd := exec.Command("/bin/ps", "-p", strconv.Itoa(sm.pid), "-o", "rss=")
 	output, err := cmd.Output()
 	if err != nil {
 		return 0, err

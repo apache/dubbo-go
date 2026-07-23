@@ -30,9 +30,11 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/server"
 
-	_ "dubbo.apache.org/dubbo-go/v3/imports"
+	_ "dubbo.apache.org/dubbo-go/v3/imports" // import required for dubbo-go initialization
 	benchmark "dubbo.apache.org/dubbo-go/v3/tools/benchmark/proto/benchmark_gen"
 )
+
+const separator = "========================================"
 
 var (
 	serialization = flag.String("serialization", "protobuf", "序列化协议: hessian2 / protobuf / msgpack")
@@ -55,9 +57,9 @@ func (s *BenchmarkServiceImpl) StreamCall(ctx context.Context, stream benchmark.
 func main() {
 	flag.Parse()
 
-	fmt.Println("========================================")
+	fmt.Println(separator)
 	fmt.Println("    Dubbo-Go Benchmark Server")
-	fmt.Println("========================================")
+	fmt.Println(separator)
 	fmt.Printf("[INFO] 序列化:   %s\n", *serialization)
 	fmt.Printf("[INFO] 压缩:     %s\n", *compression)
 	fmt.Printf("[INFO] 端口:     %d\n", *port)

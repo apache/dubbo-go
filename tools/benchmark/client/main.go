@@ -33,8 +33,15 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/tools/benchmark/client/payload"
 )
 
+const (
+	FrameworkDubboGo   = "dubbo-go"
+	FrameworkDubboJava = "dubbo-java"
+	FrameworkGRPC      = "grpc"
+	Separator          = "========================================"
+)
+
 var (
-	framework      = flag.String("framework", "dubbo-go", "测试框架: dubbo-go / dubbo-java / grpc")
+	framework      = flag.String("framework", FrameworkDubboGo, "测试框架: dubbo-go / dubbo-java / grpc")
 	payloadSize    = flag.Int("payload", 1024, "报文大小(字节)")
 	serialization  = flag.String("serialization", "protobuf", "序列化协议: hessian2 / protobuf / msgpack")
 	compression    = flag.String("compression", "none", "压缩策略: none / default / fastest")
@@ -79,9 +86,9 @@ type BenchmarkResult struct {
 func main() {
 	flag.Parse()
 
-	fmt.Println("========================================")
+	fmt.Println(Separator)
 	fmt.Println("       Dubbo-Go Benchmark Client")
-	fmt.Println("========================================")
+	fmt.Println(Separator)
 	fmt.Printf("框架:         %s\n", *framework)
 	fmt.Printf("报文大小:     %d bytes\n", *payloadSize)
 	fmt.Printf("序列化:       %s\n", *serialization)
@@ -96,7 +103,7 @@ func main() {
 	if *serverPID != 0 {
 		fmt.Printf("服务端PID:    %d\n", *serverPID)
 	}
-	fmt.Println("========================================")
+	fmt.Println(Separator)
 
 	testDur, err := time.ParseDuration(*testDuration)
 	if err != nil {
@@ -117,8 +124,6 @@ func main() {
 		log.Fatalf("创建客户端失败: %v", err)
 	}
 	defer caller.Close()
-
-	fmt.Printf("[INFO] 客户端已创建: %s\n", caller)
 
 	var sysMonitor *monitor.SystemMonitor
 	if *serverPID != 0 {
@@ -152,11 +157,11 @@ func createCaller(data []byte) (Caller, error) {
 	addr := *serverAddr
 	if addr == "" {
 		switch *framework {
-		case "dubbo-go":
+		case FrameworkDubboGo:
 			addr = "127.0.0.1:20000"
-		case "dubbo-java":
+		case FrameworkDubboJava:
 			addr = "127.0.0.1:20001"
-		case "grpc":
+		case FrameworkGRPC:
 			addr = "127.0.0.1:50051"
 		default:
 			addr = "127.0.0.1:20000"
@@ -164,9 +169,9 @@ func createCaller(data []byte) (Caller, error) {
 	}
 
 	switch *framework {
-	case "dubbo-go":
+	case FrameworkDubboGo:
 		return clients.NewDubboGoClient(addr, *serialization, *compression, *callMode, data)
-	case "grpc":
+	case FrameworkGRPC:
 		return clients.NewGrpcClient(addr, *callMode, data)
 	default:
 		return nil, fmt.Errorf("不支持的框架: %s", *framework)
