@@ -62,6 +62,16 @@ func newGenericFilter() filter.Filter {
 
 // Invoke turns the parameters to map for generic method
 func (f *genericFilter) Invoke(ctx context.Context, invoker base.Invoker, inv base.Invocation) result.Result {
+	configuredGeneric := invoker.GetURL().GetParam(constant.GenericKey, "")
+	if isGenericDisabled(configuredGeneric) {
+		return invoker.Invoke(ctx, inv)
+	}
+
+	generic, g, err := resolveGeneralizer(configuredGeneric, inv)
+	if err != nil {
+		return &result.RPCResult{Err: err}
+	}
+
 	if isCallingToGenericService(invoker, inv) {
 
 		mtdName := inv.MethodName()
@@ -70,13 +80,7 @@ func (f *genericFilter) Invoke(ctx context.Context, invoker base.Invoker, inv ba
 		types := make([]string, 0, len(oldArgs))
 		args := make([]hessian.Object, 0, len(oldArgs))
 
-		// get generic info from attachments of invocation, the default value is "true"
-		generic := inv.GetAttachmentWithDefaultValue(constant.GenericKey, constant.GenericSerializationDefault)
-		// get generalizer according to value in the `generic`
-		g := getGeneralizer(generic)
-
 		for _, arg := range oldArgs {
-			// use the default generalizer(MapGeneralizer)
 			typ, err := g.GetType(arg)
 			if err != nil {
 				logger.Errorf("[Filter][Generic] failed to get type, err=%v", err)
@@ -111,7 +115,7 @@ func (f *genericFilter) Invoke(ctx context.Context, invoker base.Invoker, inv ba
 			invocation.WithAttachments(inv.Attachments()),
 			invocation.WithReply(reply),
 		)
-		newIvc.Attachments()[constant.GenericKey] = invoker.GetURL().GetParam(constant.GenericKey, "")
+		newIvc.SetAttachment(constant.GenericKey, generic)
 
 		// Copy CallType attribute from original invocation for Triple protocol support
 		// If not present, set default to CallUnary for generic calls
@@ -139,7 +143,7 @@ func (f *genericFilter) Invoke(ctx context.Context, invoker base.Invoker, inv ba
 			invocation.WithAttachments(inv.Attachments()),
 			invocation.WithReply(reply),
 		)
-		newIvc.Attachments()[constant.GenericKey] = invoker.GetURL().GetParam(constant.GenericKey, "")
+		newIvc.SetAttachment(constant.GenericKey, generic)
 
 		// Set CallType for Triple protocol support
 		if callType, ok := inv.GetAttribute(constant.CallTypeKey); ok {
@@ -164,7 +168,14 @@ func (f *genericFilter) OnResponse(_ context.Context, res result.Result, invoker
 	}
 
 	// Check if this is a generic invocation
-	if !isGeneric(invoker.GetURL().GetParam(constant.GenericKey, "")) {
+	configuredGeneric := invoker.GetURL().GetParam(constant.GenericKey, "")
+	if isGenericDisabled(configuredGeneric) {
+		return res
+	}
+	_, g, err := resolveGeneralizer(configuredGeneric, inv)
+	if err != nil {
+		res.SetError(err)
+		res.SetResult(nil)
 		return res
 	}
 
@@ -195,10 +206,6 @@ func (f *genericFilter) OnResponse(_ context.Context, res result.Result, invoker
 
 	// Get the element type that the pointer points to
 	replyElemType := replyValue.Elem().Type()
-
-	// Get the generalizer based on the generic serialization type
-	generic := invoker.GetURL().GetParam(constant.GenericKey, constant.GenericSerializationDefault)
-	g := getGeneralizer(generic)
 
 	// Realize the map/slice to the target struct using shared helper
 	realized, err := realizeResult(data, replyElemType, g)

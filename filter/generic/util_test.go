@@ -25,6 +25,7 @@ import (
 	"github.com/golang/mock/gomock"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -82,25 +83,57 @@ func TestIsGeneric(t *testing.T) {
 	assert.False(t, isGeneric("false"))
 	assert.False(t, isGeneric(""))
 	assert.True(t, isGeneric("bean"))
+	assert.True(t, isGeneric("protobuf"))
 }
 
 func TestGetGeneralizer(t *testing.T) {
-	g1 := getGeneralizer(constant.GenericSerializationDefault)
+	g1, err := getGeneralizer(constant.GenericSerializationDefault)
+	require.NoError(t, err)
 	assert.IsType(t, generalizer.GetMapGeneralizer(), g1)
 
-	g2 := getGeneralizer(constant.GenericSerializationGson)
+	g2, err := getGeneralizer(constant.GenericSerializationGson)
+	require.NoError(t, err)
 	assert.IsType(t, generalizer.GetGsonGeneralizer(), g2)
 
-	g3 := getGeneralizer(constant.GenericSerializationProtobufJson)
+	g3, err := getGeneralizer(constant.GenericSerializationProtobufJson)
+	require.NoError(t, err)
 	assert.IsType(t, generalizer.GetProtobufJsonGeneralizer(), g3)
 
 	// test case insensitive
-	g4 := getGeneralizer("Protobuf-Json")
+	g4, err := getGeneralizer("Protobuf-Json")
+	require.NoError(t, err)
 	assert.IsType(t, generalizer.GetProtobufJsonGeneralizer(), g4)
 
-	g5 := getGeneralizer(constant.GenericSerializationBean)
+	g5, err := getGeneralizer(constant.GenericSerializationBean)
+	require.NoError(t, err)
 	assert.IsType(t, generalizer.GetBeanGeneralizer(), g5)
 
-	g6 := getGeneralizer("unsupported_type")
+	g6, err := getGeneralizer(constant.GenericSerializationProtobuf)
+	require.NoError(t, err)
 	assert.IsType(t, generalizer.GetMapGeneralizer(), g6)
+
+	tests := []struct {
+		name    string
+		generic string
+		err     string
+	}{
+		{
+			name:    "empty",
+			generic: "",
+			err:     `unsupported generic mode ""`,
+		},
+		{
+			name:    "unknown",
+			generic: "unsupported_type",
+			err:     `unsupported generic mode "unsupported_type"`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g, err := getGeneralizer(tt.generic)
+			assert.Nil(t, g)
+			require.EqualError(t, err, tt.err)
+		})
+	}
 }
