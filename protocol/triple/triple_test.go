@@ -295,7 +295,7 @@ func Test_isGenericCall(t *testing.T) {
 		generic  string
 		expected bool
 	}{
-		// valid generic serialization types
+		// valid generic modes
 		{"empty string", "", false},
 		{"true", "true", true},
 		{"TRUE", "TRUE", true},
@@ -303,15 +303,18 @@ func Test_isGenericCall(t *testing.T) {
 		{"gson", "gson", true},
 		{"GSON", "GSON", true},
 		{"Gson", "Gson", true},
-		{"protobuf", "protobuf", true},
-		{"PROTOBUF", "PROTOBUF", true},
-		{"Protobuf", "Protobuf", true},
 		{"protobuf-json", "protobuf-json", true},
 		{"PROTOBUF-JSON", "PROTOBUF-JSON", true},
 		{"Protobuf-Json", "Protobuf-Json", true},
+		{"bean", "bean", true},
+		{"BEAN", "BEAN", true},
+		{"Bean", "Bean", true},
 
-		// invalid generic serialization types
+		// invalid generic modes
 		{"false", "false", false},
+		{"protobuf is unsupported", "protobuf", false},
+		{"PROTOBUF is unsupported", "PROTOBUF", false},
+		{"Protobuf is unsupported", "Protobuf", false},
 		{"random", "random", false},
 		{"json", "json", false},
 		{"xml", "xml", false},
