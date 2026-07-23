@@ -25,7 +25,9 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	_ "dubbo.apache.org/dubbo-go/v3/imports" // import required for dubbo-go initialization
 	"dubbo.apache.org/dubbo-go/v3/protocol"

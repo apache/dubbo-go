@@ -20,7 +20,9 @@ package clients
 import (
 	"context"
 	"fmt"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/client"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	_ "dubbo.apache.org/dubbo-go/v3/imports" // import required for dubbo-go initialization

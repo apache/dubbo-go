@@ -20,10 +20,14 @@ package clients
 import (
 	"context"
 	"fmt"
+)
 
+import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+)
 
+import (
 	benchmark "dubbo.apache.org/dubbo-go/v3/tools/benchmark/proto/benchmark_gen"
 )
 
