@@ -467,7 +467,7 @@ func TestNotifyLongConnectionConsumersRunsCallbacksInParallel(t *testing.T) {
 		close(done)
 	}()
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		select {
 		case <-started:
 		case <-time.After(time.Second):

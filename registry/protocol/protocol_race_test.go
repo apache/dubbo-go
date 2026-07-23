@@ -50,7 +50,7 @@ func TestOverrideSubscribeListenerConfiguratorConcurrentAccess(t *testing.T) {
 	configurator := &noopConfigurator{url: configuratorURL}
 
 	var wg sync.WaitGroup
-	for i := 0; i < 200; i++ {
+	for range 200 {
 		wg.Add(2)
 		go func() {
 			defer wg.Done()

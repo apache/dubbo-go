@@ -152,12 +152,10 @@ func TestRtVecWithConcurrent(t *testing.T) {
 	vecs := [2]*RtVec{NewRtVec(opts, labels), NewAggRtVec(opts, labels)}
 	for _, r := range vecs {
 		var wg sync.WaitGroup
-		for i := 0; i < 10; i++ {
-			wg.Add(1)
-			go func() {
+		for range 10 {
+			wg.Go(func() {
 				r.With(labelValues).Observe(100)
-				wg.Done()
-			}()
+			})
 		}
 		wg.Wait()
 		res := r.With(labelValues).(*Rt).obs.result()

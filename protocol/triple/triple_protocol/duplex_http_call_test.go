@@ -103,16 +103,14 @@ func TestDuplexHTTPCallConcurrentWriteAndCloseWrite(t *testing.T) {
 			wg       sync.WaitGroup
 			panicVal any
 		)
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			defer func() {
 				if r := recover(); r != nil {
 					panicVal = r
 				}
 			}()
 			_, _ = call.Write([]byte{0, 0, 0, 0, 0})
-		}()
+		})
 
 		// Race CloseWrite against the concurrent Write above. The order is
 		// intentionally unspecified: both interleavings are safe once
@@ -161,29 +159,23 @@ func TestDuplexHTTPCallConcurrentWriteCloseRace(t *testing.T) {
 
 		var wg sync.WaitGroup
 		for range writers {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				// After the send side is closed Write returns io.EOF rather
 				// than panicking; any panic here is a real regression and is
 				// allowed to fail the test.
 				_, _ = call.Write([]byte{0, 0, 0, 0, 0})
-			}()
+			})
 		}
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			_ = call.CloseWrite()
-		}()
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		})
+		wg.Go(func() {
 			// These block until the response is ready and then read the
 			// response that makeRequest stored; exercises the response
 			// happens-before edge established by closing responseReady.
 			_ = call.ResponseHeader()
 			_ = call.ResponseTrailer()
-		}()
+		})
 		wg.Wait()
 		_ = call.CloseRead()
 	}

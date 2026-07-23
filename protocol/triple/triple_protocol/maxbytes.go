@@ -1,5 +1,4 @@
 //go:build go1.19
-// +build go1.19
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more

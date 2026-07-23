@@ -27,6 +27,7 @@ import (
 	gxset "github.com/dubbogo/gost/container/set"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -188,10 +189,8 @@ func TestRegisterWithRetryConcurrentNoLostUpdate(t *testing.T) {
 	// see the set get smaller or contain a malformed entry.
 	stop := make(chan struct{})
 	var readerWg sync.WaitGroup
-	for i := 0; i < readers; i++ {
-		readerWg.Add(1)
-		go func() {
-			defer readerWg.Done()
+	for range readers {
+		readerWg.Go(func() {
 			prev := 0
 			for {
 				select {
@@ -199,17 +198,17 @@ func TestRegisterWithRetryConcurrentNoLostUpdate(t *testing.T) {
 					return
 				default:
 					set, err := r.GetServiceAppMapping("Iface", DefaultGroup, nil)
-					assert.NoError(t, err)
+					require.NoError(t, err)
 					assert.GreaterOrEqual(t, set.Size(), prev)
 					assert.False(t, set.Contains(""))
 					prev = set.Size()
 				}
 			}
-		}()
+		})
 	}
 
 	var writerWg sync.WaitGroup
-	for i := 0; i < writers; i++ {
+	for i := range writers {
 		writerWg.Add(1)
 		go func(i int) {
 			defer writerWg.Done()
@@ -223,7 +222,7 @@ func TestRegisterWithRetryConcurrentNoLostUpdate(t *testing.T) {
 	val, _ := store.get(DefaultGroup + "/Iface")
 	got := report.DecodeServiceAppNames(val)
 	assert.Equal(t, writers, got.Size())
-	for i := 0; i < writers; i++ {
+	for i := range writers {
 		assert.True(t, got.Contains(fmt.Sprintf("app-%d", i)), "app-%d was lost", i)
 	}
 }
