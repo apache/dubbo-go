@@ -303,6 +303,9 @@ func Test_isGenericCall(t *testing.T) {
 		{"gson", "gson", true},
 		{"GSON", "GSON", true},
 		{"Gson", "Gson", true},
+		{"protobuf legacy alias", "protobuf", true},
+		{"PROTOBUF legacy alias", "PROTOBUF", true},
+		{"Protobuf legacy alias", "Protobuf", true},
 		{"protobuf-json", "protobuf-json", true},
 		{"PROTOBUF-JSON", "PROTOBUF-JSON", true},
 		{"Protobuf-Json", "Protobuf-Json", true},
@@ -312,9 +315,6 @@ func Test_isGenericCall(t *testing.T) {
 
 		// invalid generic modes
 		{"false", "false", false},
-		{"protobuf is unsupported", "protobuf", false},
-		{"PROTOBUF is unsupported", "PROTOBUF", false},
-		{"Protobuf is unsupported", "Protobuf", false},
 		{"random", "random", false},
 		{"json", "json", false},
 		{"xml", "xml", false},
