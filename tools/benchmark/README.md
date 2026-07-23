@@ -24,6 +24,14 @@
 - **Maven**: 3.6+
 - **protoc**: 3.0+
 
+## 默认端口配置
+
+| 框架 | 默认端口 |
+|------|---------|
+| Dubbo-Go | 20000 |
+| Dubbo-Java | 20001 |
+| gRPC | 50051 |
+
 ## 目录结构
 
 ```
@@ -49,14 +57,18 @@ tools/benchmark
 │   └── grpc/                # gRPC服务端
 │       └── main.go
 ├── proto/                   # 协议定义
+│   ├── benchmark.proto      # Protobuf定义文件
 │   └── benchmark_gen/       # 生成的代码
 ├── scripts/                 # 自动化脚本
+│   ├── gen_code.sh          # Protobuf代码生成
 │   ├── run_all.sh           # 一键全量压测
 │   └── run_single.sh        # 单场景压测
 ├── report/                  # 报告生成工具
 │   └── generator.go         # 报告生成器
 ├── configs/                 # 压测配置
 │   └── benchmark.yaml       # 测试矩阵配置
+├── data/                    # 测试结果数据（自动生成）
+├── logs/                    # 测试日志（自动生成）
 ├── go.mod/go.sum            # Go依赖
 └── README.md                # 使用文档
 ```
@@ -71,6 +83,19 @@ tools/benchmark
 - `call_modes`: 调用模式
 - `concurrency_levels`: 并发数
 - `benchmark`: 压测参数（预热时间、测试时长、超时时间）
+
+## 代码生成
+
+当需要修改 `proto/benchmark.proto` 后，需要重新生成代码：
+
+```bash
+./scripts/gen_code.sh
+```
+
+该脚本会生成：
+- `benchmark.pb.go` - Protobuf基础代码
+- `benchmark.triple.go` - Dubbo Triple协议代码
+- `benchmark_grpc.pb.go` - gRPC协议代码
 
 ## 使用方式
 
@@ -102,6 +127,49 @@ go run client/main.go \
 go run report/generator.go
 ```
 
+报告将生成在 `report/benchmark_report.md`。
+
+## 命令行参数
+
+| 参数 | 说明 | 默认值 |
+|------|------|--------|
+| `--framework` | 测试框架 | dubbo-go |
+| `--payload` | 报文大小(字节) | 1024 |
+| `--serialization` | 序列化协议 | protobuf |
+| `--compression` | 压缩策略 | none |
+| `--concurrency` | 并发数 | 100 |
+| `--mode` | 调用模式 | unary |
+| `--duration` | 测试时长 | 60s |
+| `--warmup` | 预热时长 | 10s |
+| `--addr` | 服务端地址 | 自动选择 |
+| `--pid` | 服务端PID(用于系统监控) | 0 |
+
+### 参数取值范围
+
+| 参数 | 可选值 |
+|------|--------|
+| `--framework` | dubbo-go / dubbo-java / grpc |
+| `--serialization` | hessian2 / protobuf / msgpack |
+| `--compression` | none / default / fastest |
+| `--mode` | unary / streaming |
+
+## 单独启动服务端
+
+```bash
+# Dubbo-Go 服务端
+cd server/dubbo-go
+go run main.go --serialization protobuf --compression none --port 20000
+
+# gRPC 服务端
+cd server/grpc
+go run main.go --port 50051
+
+# Dubbo-Java 服务端
+cd server/dubbo-java
+mvn clean package
+java -jar target/benchmark-dubbo-java.jar
+```
+
 ## 测试结果示例
 
 **128B 包体（Dubbo-Go）：**
@@ -117,6 +185,40 @@ go run report/generator.go
 | QPS | 424 |
 | 成功率 | 99.61% |
 | P99延迟 | 588.68 ms |
+
+## 输出文件说明
+
+### 数据文件
+
+测试结果保存在 `data/` 目录，文件名格式：
+```
+{framework}_{payload}_{serialization}_{compression}_{concurrency}_{mode}.json
+```
+
+JSON结构：
+```json
+{
+  "framework": "dubbo-go",
+  "payload_size": 1024,
+  "serialization": "protobuf",
+  "compression": "none",
+  "concurrency": 100,
+  "call_mode": "unary",
+  "timestamp": "2026-07-23 15:00:00",
+  "qps": 21450.0,
+  "success_rate": 99.99,
+  "latency_p50_ms": 4.65,
+  "latency_p99_ms": 5.53,
+  "cpu_avg_percent": 45.2,
+  "memory_peak_mb": 128.5
+}
+```
+
+### 日志文件
+
+日志保存在 `logs/` 目录，包含：
+- `{场景}.log` - 客户端压测日志
+- `{场景}.server.log` - 服务端运行日志
 
 ## 代码质量
 
@@ -163,6 +265,7 @@ make check-fmt
 4. 服务端进程会在测试结束后自动清理
 5. 测试结果会自动保存到 `data/` 目录
 6. 提交代码前请运行 `make check-fmt` 确保格式正确
+7. 如需监控服务端资源占用，请通过 `--pid` 参数传入服务端进程ID
 
 ## License
 
