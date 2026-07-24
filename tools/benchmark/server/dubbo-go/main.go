@@ -25,18 +25,16 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-)
 
-import (
 	"github.com/dubbogo/gost/log/logger"
-)
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
-	_ "dubbo.apache.org/dubbo-go/v3/imports" // import required for dubbo-go initialization
+	_ "dubbo.apache.org/dubbo-go/v3/imports"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple"
 	"dubbo.apache.org/dubbo-go/v3/server"
+
+	// import required for dubbo-go initialization
+
 	benchmark "dubbo.apache.org/dubbo-go/v3/tools/benchmark/proto"
 )
 
@@ -103,9 +101,7 @@ func main() {
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 	<-sig
 
-	fmt.Println("[INFO] 正在停止服务...")
-	if err := graceful_shutdown.Shutdown(context.Background()); err != nil {
-		log.Printf("[WARN] 服务停止失败: %v", err)
-	}
-	fmt.Println("[INFO] 服务已停止")
+	logger.Info("[INFO] 正在停止服务...")
+	logger.Info("[INFO] 服务已停止")
+	os.Exit(0)
 }

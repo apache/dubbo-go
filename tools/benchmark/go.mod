@@ -3,7 +3,7 @@ module dubbo.apache.org/dubbo-go/v3/tools/benchmark
 go 1.25.0
 
 require (
-	dubbo.apache.org/dubbo-go/v3 v3.0.0-00010101000000-000000000000
+	dubbo.apache.org/dubbo-go/v3 v3.3.1
 	github.com/dubbogo/gost v1.14.3
 	google.golang.org/grpc v1.64.1
 	google.golang.org/protobuf v1.34.2
@@ -12,6 +12,7 @@ require (
 require (
 	github.com/RoaringBitmap/roaring v1.2.3 // indirect
 	github.com/Workiva/go-datastructures v1.0.52 // indirect
+	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5 // indirect
 	github.com/alibaba/sentinel-golang v1.0.4 // indirect
 	github.com/alibabacloud-go/debug v0.0.0-20190504072949-9472017b5c68 // indirect
 	github.com/alibabacloud-go/tea v1.1.17 // indirect
@@ -61,6 +62,7 @@ require (
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hashicorp/vault/sdk v0.7.0 // indirect
 	github.com/influxdata/tdigest v0.0.1 // indirect
+	github.com/jinzhu/copier v0.3.5 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/k0kubun/pp v3.0.1+incompatible // indirect
@@ -139,5 +141,3 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace dubbo.apache.org/dubbo-go/v3 => ../..
