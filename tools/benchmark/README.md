@@ -257,6 +257,38 @@ make check-fmt
   2. 第三方库（如 `google.golang.org/grpc`）
   3. 项目内部包（如 `dubbo.apache.org/dubbo-go/v3/...`）
 
+## 性能优化配置
+
+### Dubbo-Go 客户端优化
+
+为获得最佳性能，Dubbo-Go 客户端使用了以下优化配置：
+
+| 配置项 | 说明 |
+|--------|------|
+| `WithClientNoCheck()` | 跳过服务检查，减少不必要的开销 |
+| `MaxCallRecvMsgSize: 16MB` | 最大接收消息大小，支持大报文测试 |
+| `MaxCallSendMsgSize: 16MB` | 最大发送消息大小，支持大报文测试 |
+
+### Dubbo-Go 服务端优化
+
+服务端配置了以下优化参数：
+
+| 配置项 | 说明 |
+|--------|------|
+| `WithMaxServerRecvMsgSize("16MB")` | 最大接收消息大小 |
+| `WithMaxServerSendMsgSize("16MB")` | 最大发送消息大小 |
+
+## CI 配置
+
+本项目在 GitHub Actions 中配置了国内 Go 镜像代理，以解决依赖下载不稳定的问题：
+
+```yaml
+- name: Set Go Proxy
+  run: |
+    go env -w GOPROXY=https://goproxy.cn,direct
+    go env -w GOSUMDB=sum.golang.google.cn
+```
+
 ## 注意事项
 
 1. 每个测试场景会独立启动/停止服务端，避免缓存干扰
@@ -266,6 +298,8 @@ make check-fmt
 5. 测试结果会自动保存到 `data/` 目录
 6. 提交代码前请运行 `make check-fmt` 确保格式正确
 7. 如需监控服务端资源占用，请通过 `--pid` 参数传入服务端进程ID
+8. 大报文测试（1MiB及以上）需要确保消息大小配置足够大
+9. 清理缓存后需要重新整理依赖：`go clean -modcache && go mod tidy`
 
 ## License
 
