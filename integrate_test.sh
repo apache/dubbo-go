@@ -3,8 +3,6 @@
 #  contributor license agreements.  See the NOTICE file distributed with
 #  this work for additional information regarding copyright ownership.
 #  The ASF licenses this file to You under the Apache License, Version 2.0
-#  (the "License"); you may not use this file except in compliance with
-#  the License.  You may obtain a copy of the License at
 #
 #      http://www.apache.org/licenses/LICENSE-2.0
 #
@@ -23,19 +21,6 @@ echo "start integrate-test: repo = $1, SHA = $2, branch = $3"
 # set root workspace
 ROOT_DIR=$(pwd)
 echo "integrate-test root work-space -> ${ROOT_DIR}"
-
-# update dubbo-go in benchmark module to current commit id
-if [ -d "tools/benchmark" ]; then
-    echo "update dubbo-go in benchmark module"
-    cd tools/benchmark
-    if [ "$1" == "apache/dubbo-go" ]; then
-        go mod edit -replace=dubbo.apache.org/dubbo-go/v3=dubbo.apache.org/dubbo-go/v3@"$2"
-    else
-        go mod edit -replace=dubbo.apache.org/dubbo-go/v3=github.com/"$1"/v3@"$2"
-    fi
-    go mod tidy
-    cd ${ROOT_DIR}
-fi
 
 echo "use dubbo-go-samples $3 branch for integration testing"
 git clone -b $3 https://github.com/apache/dubbo-go-samples.git samples --depth=1 && cd samples
