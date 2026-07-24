@@ -54,6 +54,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
+      - name: Set Go Proxy
+        run: |
+          echo "GOPROXY=https://goproxy.cn,direct" >> $GITHUB_ENV
+          echo "GOSUMDB=sum.golang.google.cn" >> $GITHUB_ENV
+
       - name: Check Code Format
         run: make check-fmt
 
@@ -96,6 +101,11 @@ jobs:
           # An ordered list of keys to use for restoring the cache if no cache hit occurred for key
           restore-keys: |
             ${{ runner.os }}-go-
+
+      - name: Set Go Proxy
+        run: |
+          echo "GOPROXY=https://goproxy.cn,direct" >> $GITHUB_ENV
+          echo "GOSUMDB=sum.golang.google.cn" >> $GITHUB_ENV
 
       - name: Integration Test
         run: |
