@@ -25,6 +25,7 @@ MAKEFLAGS += --no-print-directory
 
 CLI_DIR = tools/dubbogo-cli
 IMPORTS_FORMATTER_DIR = tools/imports-formatter
+BENCHMARK_DIR = tools/benchmark
 
 .PHONY: help test fmt clean lint check-fmt rpc-contract-check
 

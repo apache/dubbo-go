@@ -54,18 +54,22 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
-      - name: Set Go Proxy
-        run: |
-          echo "GOPROXY=https://goproxy.cn,direct" >> $GITHUB_ENV
-          echo "GOSUMDB=sum.golang.google.cn" >> $GITHUB_ENV
-
       - name: Check Code Format
+        env:
+          GOPROXY: https://goproxy.cn,direct
+          GOSUMDB: sum.golang.google.cn
         run: make check-fmt
 
       - name: Unit Test
+        env:
+          GOPROXY: https://goproxy.cn,direct
+          GOSUMDB: sum.golang.google.cn
         run: make test
 
       - name: Lint
+        env:
+          GOPROXY: https://goproxy.cn,direct
+          GOSUMDB: sum.golang.google.cn
         run: make lint
 
       - name: Codecov
@@ -102,12 +106,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
-      - name: Set Go Proxy
-        run: |
-          echo "GOPROXY=https://goproxy.cn,direct" >> $GITHUB_ENV
-          echo "GOSUMDB=sum.golang.google.cn" >> $GITHUB_ENV
-
       - name: Integration Test
+        env:
+          GOPROXY: https://goproxy.cn,direct
+          GOSUMDB: sum.golang.google.cn
         run: |
           if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
               ./integrate_test.sh ${{github.event.pull_request.head.repo.full_name}} ${{github.event.pull_request.head.sha}} main
