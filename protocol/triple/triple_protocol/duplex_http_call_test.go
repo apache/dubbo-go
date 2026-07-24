@@ -37,8 +37,10 @@ const closeTestTimeout = time.Second
 // without pulling in the full codec/stream stack.
 func newTestDuplexClientCall(t *testing.T, client HTTPClient, serverURL *url.URL) *duplexHTTPCall {
 	t.Helper()
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
 	call := newDuplexHTTPCall(
-		t.Context(),
+		ctx,
 		client,
 		serverURL,
 		Spec{StreamType: StreamTypeClient, Procedure: "/triple.test.v1.RaceService/Sum"},
