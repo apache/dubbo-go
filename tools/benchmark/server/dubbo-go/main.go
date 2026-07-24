@@ -25,16 +25,17 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+)
 
+import (
 	"github.com/dubbogo/gost/log/logger"
+)
 
+import (
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple"
 	"dubbo.apache.org/dubbo-go/v3/server"
-
-	// import required for dubbo-go initialization
-
 	benchmark "dubbo.apache.org/dubbo-go/v3/tools/benchmark/proto"
 )
 
