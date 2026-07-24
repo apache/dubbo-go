@@ -30,10 +30,11 @@ if [ -d "tools/benchmark" ]; then
     cd tools/benchmark
     if [ "$1" == "apache/dubbo-go" ]; then
         go mod edit -replace=dubbo.apache.org/dubbo-go/v3=dubbo.apache.org/dubbo-go/v3@"$2"
+        GOPRIVATE=dubbo.apache.org/dubbo-go/v3 go mod tidy
     else
         go mod edit -replace=dubbo.apache.org/dubbo-go/v3=github.com/"$1"/v3@"$2"
+        GOPRIVATE=github.com/"$1"/v3 go mod tidy
     fi
-    go mod tidy
     cd ${ROOT_DIR}
 fi
 
@@ -43,11 +44,11 @@ git clone -b $3 https://github.com/apache/dubbo-go-samples.git samples --depth=1
 # update dubbo-go to current commit id
 if [ "$1" == "apache/dubbo-go" ]; then
     go mod edit -replace=dubbo.apache.org/dubbo-go/v3=dubbo.apache.org/dubbo-go/v3@"$2"
+    GOPRIVATE=dubbo.apache.org/dubbo-go/v3 go mod tidy
 else
     go mod edit -replace=dubbo.apache.org/dubbo-go/v3=github.com/"$1"/v3@"$2"
+    GOPRIVATE=github.com/"$1"/v3 go mod tidy
 fi
-
-go mod tidy
 
 # start integrate test
 ./start_integrate_test.sh
