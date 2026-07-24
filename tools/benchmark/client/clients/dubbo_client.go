@@ -20,12 +20,13 @@ package clients
 import (
 	"context"
 	"fmt"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/client"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	_ "dubbo.apache.org/dubbo-go/v3/imports" // import required for dubbo-go initialization
+
+	_ "dubbo.apache.org/dubbo-go/v3/imports"
+
+	// import required for dubbo-go initialization
 	benchmark "dubbo.apache.org/dubbo-go/v3/tools/benchmark/proto/benchmark_gen"
 )
 
@@ -42,7 +43,7 @@ func NewDubboGoClient(addr string, serialization, compression, callMode string, 
 		client.WithClientParam(constant.SerializationKey, serialization),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("创建Dubbo客户端失败: %v", err)
+		return nil, fmt.Errorf("failed to create Dubbo client: %v", err)
 	}
 
 	service, err := benchmark.NewTripleBenchmarkService(cli,
@@ -52,7 +53,7 @@ func NewDubboGoClient(addr string, serialization, compression, callMode string, 
 		client.WithParam(constant.MaxCallSendMsgSize, "16MB"),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("创建BenchmarkService失败: %v", err)
+		return nil, fmt.Errorf("failed to create BenchmarkService: %v", err)
 	}
 
 	return &DubboGoClient{

@@ -26,9 +26,7 @@ import (
 	"os"
 	"path/filepath"
 	"time"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/tools/benchmark/client/clients"
 	"dubbo.apache.org/dubbo-go/v3/tools/benchmark/client/engine"
 	"dubbo.apache.org/dubbo-go/v3/tools/benchmark/client/monitor"
@@ -43,16 +41,16 @@ const (
 )
 
 var (
-	framework      = flag.String("framework", FrameworkDubboGo, "测试框架: dubbo-go / dubbo-java / grpc")
-	payloadSize    = flag.Int("payload", 1024, "报文大小(字节)")
-	serialization  = flag.String("serialization", "protobuf", "序列化协议: hessian2 / protobuf / msgpack")
-	compression    = flag.String("compression", "none", "压缩策略: none / default / fastest")
-	concurrency    = flag.Int("concurrency", 100, "并发数")
-	callMode       = flag.String("mode", "unary", "调用模式: unary / streaming")
-	testDuration   = flag.String("duration", "60s", "测试时长")
-	warmupDuration = flag.String("warmup", "10s", "预热时长")
-	serverAddr     = flag.String("addr", "", "服务端地址")
-	serverPID      = flag.Int("pid", 0, "服务端进程PID(用于系统监控)")
+	framework      = flag.String("framework", FrameworkDubboGo, "benchmark framework: dubbo-go / dubbo-java / grpc")
+	payloadSize    = flag.Int("payload", 1024, "payload size in bytes")
+	serialization  = flag.String("serialization", "protobuf", "serialization protocol: hessian2 / protobuf / msgpack")
+	compression    = flag.String("compression", "none", "compression strategy: none / default / fastest")
+	concurrency    = flag.Int("concurrency", 100, "concurrency level")
+	callMode       = flag.String("mode", "unary", "call mode: unary / streaming")
+	testDuration   = flag.String("duration", "60s", "test duration")
+	warmupDuration = flag.String("warmup", "10s", "warmup duration")
+	serverAddr     = flag.String("addr", "", "server address")
+	serverPID      = flag.Int("pid", 0, "server process PID (for system monitoring)")
 )
 
 type Caller interface {
@@ -91,39 +89,39 @@ func main() {
 	fmt.Println(Separator)
 	fmt.Println("       Dubbo-Go Benchmark Client")
 	fmt.Println(Separator)
-	fmt.Printf("框架:         %s\n", *framework)
-	fmt.Printf("报文大小:     %d bytes\n", *payloadSize)
-	fmt.Printf("序列化:       %s\n", *serialization)
-	fmt.Printf("压缩:         %s\n", *compression)
-	fmt.Printf("并发数:       %d\n", *concurrency)
-	fmt.Printf("调用模式:     %s\n", *callMode)
-	fmt.Printf("预热时长:     %s\n", *warmupDuration)
-	fmt.Printf("测试时长:     %s\n", *testDuration)
+	fmt.Printf("Framework:    %s\n", *framework)
+	fmt.Printf("Payload:      %d bytes\n", *payloadSize)
+	fmt.Printf("Serialization:%s\n", *serialization)
+	fmt.Printf("Compression:  %s\n", *compression)
+	fmt.Printf("Concurrency:  %d\n", *concurrency)
+	fmt.Printf("Call Mode:    %s\n", *callMode)
+	fmt.Printf("Warmup:       %s\n", *warmupDuration)
+	fmt.Printf("Duration:     %s\n", *testDuration)
 	if *serverAddr != "" {
-		fmt.Printf("服务端地址:   %s\n", *serverAddr)
+		fmt.Printf("Server Addr:  %s\n", *serverAddr)
 	}
 	if *serverPID != 0 {
-		fmt.Printf("服务端PID:    %d\n", *serverPID)
+		fmt.Printf("Server PID:   %d\n", *serverPID)
 	}
 	fmt.Println(Separator)
 
 	testDur, err := time.ParseDuration(*testDuration)
 	if err != nil {
-		log.Fatalf("无效的测试时长: %v", err)
+		log.Fatalf("invalid test duration: %v", err)
 	}
 
 	warmupDur, err := time.ParseDuration(*warmupDuration)
 	if err != nil {
-		log.Fatalf("无效的预热时长: %v", err)
+		log.Fatalf("invalid warmup duration: %v", err)
 	}
 
 	pg := payload.NewPayloadGenerator()
 	data := pg.Generate(*payloadSize)
-	fmt.Printf("[INFO] 报文数据已生成，大小: %d bytes\n", len(data))
+	fmt.Printf("[INFO] payload data generated, size: %d bytes\n", len(data))
 
 	caller, err := createCaller(data)
 	if err != nil {
-		log.Fatalf("创建客户端失败: %v", err)
+		log.Fatalf("failed to create caller: %v", err)
 	}
 	defer caller.Close()
 
@@ -132,12 +130,12 @@ func main() {
 		sysMonitor = monitor.NewSystemMonitor(*serverPID, 1*time.Second)
 		sysMonitor.Start()
 		defer sysMonitor.Stop()
-		fmt.Printf("[INFO] 系统监控已启动，监控PID: %d\n", *serverPID)
+		fmt.Printf("[INFO] system monitor started, monitoring PID: %d\n", *serverPID)
 	}
 
 	benchEngine := engine.NewEngine(*concurrency, warmupDur, testDur, 30*time.Second)
 
-	fmt.Println("\n[INFO] 开始压测...")
+	fmt.Println("\n[INFO] starting benchmark...")
 	stats := benchEngine.Run(func(ctx context.Context) (time.Duration, error) {
 		start := time.Now()
 		err := caller.Call(ctx)
@@ -176,7 +174,7 @@ func createCaller(data []byte) (Caller, error) {
 	case FrameworkGRPC:
 		return clients.NewGrpcClient(addr, *callMode, data)
 	default:
-		return nil, fmt.Errorf("不支持的框架: %s", *framework)
+		return nil, fmt.Errorf("unsupported framework: %s", *framework)
 	}
 }
 
@@ -207,13 +205,13 @@ func saveResults(stats *engine.Statistics, cpuAvg, memoryPeak float64) {
 
 	baseDir, err := filepath.Abs(filepath.Join(".", ".."))
 	if err != nil {
-		fmt.Printf("[WARN] 获取基准目录失败: %v\n", err)
+		fmt.Printf("[WARN] failed to get base directory: %v\n", err)
 		return
 	}
 
 	dataDir := filepath.Join(baseDir, "data")
 	if err := os.MkdirAll(dataDir, 0755); err != nil {
-		fmt.Printf("[WARN] 创建数据目录失败: %v\n", err)
+		fmt.Printf("[WARN] failed to create data directory: %v\n", err)
 		return
 	}
 
@@ -223,14 +221,14 @@ func saveResults(stats *engine.Statistics, cpuAvg, memoryPeak float64) {
 
 	data, err := json.MarshalIndent(result, "", "  ")
 	if err != nil {
-		fmt.Printf("[WARN] 序列化结果失败: %v\n", err)
+		fmt.Printf("[WARN] failed to serialize result: %v\n", err)
 		return
 	}
 
 	if err := os.WriteFile(path, data, 0644); err != nil {
-		fmt.Printf("[WARN] 写入结果文件失败: %v\n", err)
+		fmt.Printf("[WARN] failed to write result file: %v\n", err)
 		return
 	}
 
-	fmt.Printf("[INFO] 测试结果已保存到: %s\n", path)
+	fmt.Printf("[INFO] benchmark result saved to: %s\n", path)
 }

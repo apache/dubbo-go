@@ -29,9 +29,9 @@ public class BenchmarkServer {
         System.out.println("========================================");
         System.out.println("    Dubbo-Java Benchmark Server");
         System.out.println("========================================");
-        System.out.println("[INFO] Dubbo-Java服务端启动中...");
-        System.out.println("[INFO] 服务监听: 127.0.0.1:20001");
+        System.out.println("[INFO] Dubbo-Java server starting...");
+        System.out.println("[INFO] server listening on: 127.0.0.1:20001");
         SpringApplication.run(BenchmarkServer.class, args);
-        System.out.println("[INFO] 服务已启动，等待请求...");
+        System.out.println("[INFO] server started, waiting for requests...");
     }
 }

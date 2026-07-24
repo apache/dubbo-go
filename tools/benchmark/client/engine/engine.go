@@ -55,13 +55,13 @@ func NewEngine(concurrency int, warmupDuration, testDuration, requestTimeout tim
 }
 
 func (e *Engine) Run(benchmarkFunc BenchmarkFunc) *Statistics {
-	fmt.Println("[INFO] 开始预热...")
+	fmt.Println("[INFO] starting warmup...")
 
 	e.startWorkers(benchmarkFunc)
 
 	time.Sleep(e.warmupDuration)
 
-	fmt.Println("[INFO] 预热完成，开始正式压测...")
+	fmt.Println("[INFO] warmup completed, starting benchmark...")
 	e.metricsCollector.Reset()
 	e.isWarmup = false
 
@@ -107,7 +107,7 @@ func (e *Engine) Stop() {
 	close(e.stopChan)
 	e.cancel()
 	e.wg.Wait()
-	fmt.Println("[INFO] 压测完成")
+	fmt.Println("[INFO] benchmark completed")
 }
 
 func (e *Engine) GetMetricsCollector() *MetricsCollector {

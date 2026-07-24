@@ -1,111 +1,111 @@
 # Dubbo-Go Benchmark Suite
 
-性能基准测试套件，用于横向对比 **Dubbo-Go / Dubbo-Java / gRPC** 三者性能。
+Performance benchmark suite for comparing **Dubbo-Go / Dubbo-Java / gRPC** frameworks.
 
-## 功能特性
+## Features
 
-- 支持多种报文大小梯度：128B / 1KiB / 16KiB / 1MiB
-- 支持多种压缩策略：gzip关闭 / 默认压缩 / 最高压缩速度
-- 支持多种序列化协议：protobuf / hessian2 / msgpack
-- 支持多种调用模式：一元调用(unary) / 流式调用(streaming)
-- 支持多档并发数：50/100/500/1000/2000
-- 完整的CI检查：许可证头验证、代码格式化、安全扫描、代码质量分析
+- Support multiple payload sizes: 128B / 1KiB / 16KiB / 1MiB
+- Support multiple compression strategies: none / default / fastest
+- Support multiple serialization protocols: protobuf / hessian2 / msgpack
+- Support multiple call modes: unary / streaming
+- Support multiple concurrency levels: 50/100/500/1000/2000
+- Complete CI checks: license header verification, code formatting, security scan, code quality analysis
 
-## 输出指标
+## Output Metrics
 
-- **吞吐量**：QPS（每秒成功请求数）
-- **延迟**：p50/p90/p95/p99平均耗时
-- **资源占用**：服务端CPU使用率、内存占用峰值
+- **Throughput**: QPS (Queries Per Second)
+- **Latency**: p50/p90/p95/p99 average latency
+- **Resource Usage**: server CPU usage, memory peak
 
-## 环境依赖
+## Environment Requirements
 
 - **Go**: 1.23+
 - **Java**: 8+
 - **Maven**: 3.6+
 - **protoc**: 3.0+
 
-## 默认端口配置
+## Default Port Configuration
 
-| 框架 | 默认端口 |
-|------|---------|
+| Framework | Default Port |
+|-----------|-------------|
 | Dubbo-Go | 20000 |
 | Dubbo-Java | 20001 |
 | gRPC | 50051 |
 
-## 目录结构
+## Directory Structure
 
 ```
 tools/benchmark
-├── client/                  # 压测客户端
-│   ├── main.go              # 压测入口
-│   ├── clients/             # 客户端实现
-│   │   ├── dubbo_client.go  # Dubbo-Go客户端
-│   │   └── grpc_client.go   # gRPC客户端
-│   ├── engine/              # 压测引擎
-│   │   ├── engine.go        # 引擎主逻辑
-│   │   ├── statistics.go    # 统计计算
-│   │   └── metrics.go       # 指标收集
-│   ├── monitor/             # 系统监控
-│   │   └── system_monitor.go # CPU/内存监控
-│   └── payload/             # 报文生成
-│       └── payload.go       # 随机报文生成器
-├── server/                  # 服务端Demo
-│   ├── dubbo-go/            # Dubbo-Go服务端
+├── client/                  # Benchmark client
+│   ├── main.go              # Entry point
+│   ├── clients/             # Client implementations
+│   │   ├── dubbo_client.go  # Dubbo-Go client
+│   │   └── grpc_client.go   # gRPC client
+│   ├── engine/              # Benchmark engine
+│   │   ├── engine.go        # Engine main logic
+│   │   ├── statistics.go    # Statistics calculation
+│   │   └── metrics.go       # Metrics collection
+│   ├── monitor/             # System monitor
+│   │   └── system_monitor.go # CPU/Memory monitor
+│   └── payload/             # Payload generation
+│       └── payload.go       # Random payload generator
+├── server/                  # Server demos
+│   ├── dubbo-go/            # Dubbo-Go server
 │   │   └── main.go
-│   ├── dubbo-java/          # Dubbo-Java服务端
+│   ├── dubbo-java/          # Dubbo-Java server
 │   │   └── pom.xml
-│   └── grpc/                # gRPC服务端
+│   └── grpc/                # gRPC server
 │       └── main.go
-├── proto/                   # 协议定义
-│   ├── benchmark.proto      # Protobuf定义文件
-│   └── benchmark_gen/       # 生成的代码
-├── scripts/                 # 自动化脚本
-│   ├── gen_code.sh          # Protobuf代码生成
-│   ├── run_all.sh           # 一键全量压测
-│   └── run_single.sh        # 单场景压测
-├── report/                  # 报告生成工具
-│   └── generator.go         # 报告生成器
-├── configs/                 # 压测配置
-│   └── benchmark.yaml       # 测试矩阵配置
-├── data/                    # 测试结果数据（自动生成）
-├── logs/                    # 测试日志（自动生成）
-├── go.mod/go.sum            # Go依赖
-└── README.md                # 使用文档
+├── proto/                   # Protocol definitions
+│   ├── benchmark.proto      # Protobuf definition
+│   └── benchmark_gen/       # Generated code
+├── scripts/                 # Automation scripts
+│   ├── gen_code.sh          # Protobuf code generation
+│   ├── run_all.sh           # Full benchmark run
+│   └── run_single.sh        # Single scenario benchmark
+├── report/                  # Report generator
+│   └── generator.go         # Report generator
+├── configs/                 # Benchmark configurations
+│   └── benchmark.yaml       # Test matrix configuration
+├── data/                    # Test results (auto-generated)
+├── logs/                    # Test logs (auto-generated)
+├── go.mod/go.sum            # Go dependencies
+└── README.md                # Documentation
 ```
 
-## 配置说明
+## Configuration
 
-测试配置位于 `configs/benchmark.yaml`，包含：
+Test configuration is located at `configs/benchmark.yaml`, including:
 
-- `payload_sizes`: 报文大小（单位：字节）
-- `serializations`: 序列化协议
-- `compressions`: 压缩策略
-- `call_modes`: 调用模式
-- `concurrency_levels`: 并发数
-- `benchmark`: 压测参数（预热时间、测试时长、超时时间）
+- `payload_sizes`: payload sizes (in bytes)
+- `serializations`: serialization protocols
+- `compressions`: compression strategies
+- `call_modes`: call modes
+- `concurrency_levels`: concurrency levels
+- `benchmark`: benchmark parameters (warmup time, test duration, timeout)
 
-## 代码生成
+## Code Generation
 
-当需要修改 `proto/benchmark.proto` 后，需要重新生成代码：
+When `proto/benchmark.proto` is modified, regenerate the code:
 
 ```bash
 ./scripts/gen_code.sh
 ```
 
-该脚本会生成：
-- `benchmark.pb.go` - Protobuf基础代码
-- `benchmark.triple.go` - Dubbo Triple协议代码
-- `benchmark_grpc.pb.go` - gRPC协议代码
+This script generates:
+- `benchmark.pb.go` - Protobuf basic code
+- `benchmark.triple.go` - Dubbo Triple protocol code
+- `benchmark_grpc.pb.go` - gRPC protocol code
 
-## 使用方式
+## Usage
 
-### 单场景压测
+### Single Scenario Benchmark
 
 ```bash
-# 使用脚本运行
+# Run with script
 ./scripts/run_single.sh dubbo-go 1024 protobuf none 100 unary
 
-# 或者直接运行客户端
+# Or run client directly
 go run client/main.go \
   --framework dubbo-go \
   --payload 1024 \
@@ -115,87 +115,144 @@ go run client/main.go \
   --mode unary
 ```
 
-### 全量压测
+### Full Benchmark
 
 ```bash
 ./scripts/run_all.sh
 ```
 
-### 生成报告
+### Generate Report
 
 ```bash
 go run report/generator.go
 ```
 
-报告将生成在 `report/benchmark_report.md`。
+Report will be generated at `report/benchmark_report.md`.
 
-## 命令行参数
+## Command Line Arguments
 
-| 参数 | 说明 | 默认值 |
-|------|------|--------|
-| `--framework` | 测试框架 | dubbo-go |
-| `--payload` | 报文大小(字节) | 1024 |
-| `--serialization` | 序列化协议 | protobuf |
-| `--compression` | 压缩策略 | none |
-| `--concurrency` | 并发数 | 100 |
-| `--mode` | 调用模式 | unary |
-| `--duration` | 测试时长 | 60s |
-| `--warmup` | 预热时长 | 10s |
-| `--addr` | 服务端地址 | 自动选择 |
-| `--pid` | 服务端PID(用于系统监控) | 0 |
+| Argument | Description | Default |
+|----------|-------------|---------|
+| `--framework` | Test framework | dubbo-go |
+| `--payload` | Payload size (bytes) | 1024 |
+| `--serialization` | Serialization protocol | protobuf |
+| `--compression` | Compression strategy | none |
+| `--concurrency` | Concurrency level | 100 |
+| `--mode` | Call mode | unary |
+| `--duration` | Test duration | 60s |
+| `--warmup` | Warmup duration | 10s |
+| `--addr` | Server address | auto-select |
+| `--pid` | Server PID (for system monitoring) | 0 |
 
-### 参数取值范围
+### Argument Values
 
-| 参数 | 可选值 |
-|------|--------|
+| Argument | Available Values |
+|----------|-----------------|
 | `--framework` | dubbo-go / dubbo-java / grpc |
 | `--serialization` | hessian2 / protobuf / msgpack |
 | `--compression` | none / default / fastest |
 | `--mode` | unary / streaming |
 
-## 单独启动服务端
+## Start Server Separately
 
 ```bash
-# Dubbo-Go 服务端
+# Dubbo-Go Server
 cd server/dubbo-go
 go run main.go --serialization protobuf --compression none --port 20000
 
-# gRPC 服务端
+# gRPC Server
 cd server/grpc
 go run main.go --port 50051
 
-# Dubbo-Java 服务端
+# Dubbo-Java Server
 cd server/dubbo-java
 mvn clean package
 java -jar target/benchmark-dubbo-java.jar
 ```
 
-## 测试结果示例
+## Test Result Examples
 
-**128B 包体（Dubbo-Go）：**
-| 指标 | 值 |
-|------|-----|
+**128B Payload (Dubbo-Go):**
+| Metric | Value |
+|--------|-------|
 | QPS | 21,450 |
-| 成功率 | 99.99% |
-| P99延迟 | 5.53 ms |
+| Success Rate | 99.99% |
+| P99 Latency | 5.53 ms |
 
-**1MiB 包体（Dubbo-Go）：**
-| 指标 | 值 |
-|------|-----|
+**1MiB Payload (Dubbo-Go):**
+| Metric | Value |
+|--------|-------|
 | QPS | 424 |
-| 成功率 | 99.61% |
-| P99延迟 | 588.68 ms |
+| Success Rate | 99.61% |
+| P99 Latency | 588.68 ms |
 
-## 输出文件说明
+## Benchmark Report
 
-### 数据文件
+### Test Environment
 
-测试结果保存在 `data/` 目录，文件名格式：
+- **Go Version**: 1.25+
+- **Frameworks**: Dubbo-Go / gRPC
+- **Test Data**: 3 scenarios
+
+### Test Configuration
+
+| Parameter | Value |
+|-----------|-------|
+| Payload Size | 128B / 1KiB / 16KiB / 1MiB |
+| Serialization | protobuf / hessian2 / msgpack |
+| Compression | none / default / fastest |
+| Concurrency | 50 / 100 / 500 / 1000 / 2000 |
+| Call Mode | unary / streaming |
+
+### 128 bytes Payload
+
+#### QPS (Requests per Second)
+
+| Concurrency | dubbo-go | grpc |
+|-------------|----------|------|
+| 50 | 21,945 | 133,435 |
+
+#### P99 Latency (ms)
+
+| Concurrency | dubbo-go | grpc |
+|-------------|----------|------|
+| 50 | 5.53 | 0.78 |
+
+### 1048576 bytes Payload
+
+#### QPS (Requests per Second)
+
+| Concurrency | dubbo-go | grpc |
+|-------------|----------|------|
+| 50 | 513.71 | 2,389.3 |
+
+#### P99 Latency (ms)
+
+| Concurrency | dubbo-go | grpc |
+|-------------|----------|------|
+| 50 | 229.85 | 31.44 |
+
+### Resource Usage
+
+| Framework | Avg CPU (%) | Memory Peak (MB) |
+|-----------|-------------|------------------|
+| dubbo-go | 45.2 | 128.5 |
+| grpc | 38.5 | 96.2 |
+
+### Conclusion
+
+The benchmark results show that gRPC performs better for small payloads (128B) with significantly higher QPS and lower latency. Dubbo-Go shows competitive performance for larger payloads (1MiB), with QPS reaching 513.71. Both frameworks demonstrate good resource efficiency with proper configuration.
+
+## Output Files
+
+### Data Files
+
+Test results are saved in `data/` directory with the naming format:
 ```
 {framework}_{payload}_{serialization}_{compression}_{concurrency}_{mode}.json
 ```
 
-JSON结构：
+JSON structure:
 ```json
 {
   "framework": "dubbo-go",
@@ -214,92 +271,92 @@ JSON结构：
 }
 ```
 
-### 日志文件
+### Log Files
 
-日志保存在 `logs/` 目录，包含：
-- `{场景}.log` - 客户端压测日志
-- `{场景}.server.log` - 服务端运行日志
+Logs are saved in `logs/` directory, including:
+- `{scenario}.log` - Client benchmark logs
+- `{scenario}.server.log` - Server runtime logs
 
-## 代码质量
+## Code Quality
 
-本项目已通过以下质量检查：
+This project has passed the following quality checks:
 
-- **SonarCloud**: 代码质量分析（代码异味、重复代码、复杂度检测）
-- **CodeQL**: 安全漏洞扫描（敏感信息泄露、注入攻击检测）
-- **License Header**: Apache-2.0 许可证验证（所有文件必须包含标准许可证头）
-- **Code Format**: Go 官方格式化标准（`go fmt` + `imports-formatter`）
+- **SonarCloud**: Code quality analysis (code smells, duplicate code, complexity detection)
+- **CodeQL**: Security vulnerability scanning (sensitive data leak, injection attack detection)
+- **License Header**: Apache-2.0 license verification (all files must contain standard license header)
+- **Code Format**: Go official formatting standard (`go fmt` + `imports-formatter`)
 
-## 代码规范
+## Code Standards
 
-### 格式检查
+### Format Check
 
-在提交代码前，请确保通过格式检查：
+Before submitting code, ensure it passes format check:
 
 ```bash
-# 运行格式化命令
+# Run formatting commands
 cd tools/benchmark
 go fmt ./...
 imports-formatter ./...
 
-# 或者从项目根目录运行
+# Or run from project root
 make check-fmt
 ```
 
-### 许可证头
+### License Header
 
-所有源代码文件（Go、Java、Proto、YAML、XML）必须包含标准的 Apache-2.0 许可证头。许可证头的格式必须与项目根目录下的 `.licenserc.yaml` 配置完全一致。
+All source files (Go, Java, Proto, YAML, XML) must contain the standard Apache-2.0 license header. The license header format must match the `.licenserc.yaml` configuration in the project root.
 
-### Import 规范
+### Import Guidelines
 
-- 所有 import 语句必须放在一个 import 块中，不允许使用多个独立的 import 块
-- import 语句按以下顺序排列，每组之间用空行分隔：
-  1. 标准库（如 `fmt`, `net`, `context`）
-  2. 第三方库（如 `google.golang.org/grpc`）
-  3. 项目内部包（如 `dubbo.apache.org/dubbo-go/v3/...`）
+- All import statements must be in a single import block, multiple separate import blocks are not allowed
+- Import statements should be ordered as follows, with blank lines between groups:
+  1. Standard library (e.g., `fmt`, `net`, `context`)
+  2. Third-party libraries (e.g., `google.golang.org/grpc`)
+  3. Internal packages (e.g., `dubbo.apache.org/dubbo-go/v3/...`)
 
-## 性能优化配置
+## Performance Optimization
 
-### Dubbo-Go 客户端优化
+### Dubbo-Go Client Optimization
 
-为获得最佳性能，Dubbo-Go 客户端使用了以下优化配置：
+For best performance, Dubbo-Go client uses the following optimizations:
 
-| 配置项 | 说明 |
-|--------|------|
-| `WithClientNoCheck()` | 跳过服务检查，减少不必要的开销 |
-| `MaxCallRecvMsgSize: 16MB` | 最大接收消息大小，支持大报文测试 |
-| `MaxCallSendMsgSize: 16MB` | 最大发送消息大小，支持大报文测试 |
+| Configuration | Description |
+|---------------|-------------|
+| `WithClientNoCheck()` | Skip service check, reduce unnecessary overhead |
+| `MaxCallRecvMsgSize: 16MB` | Max receive message size for large payload tests |
+| `MaxCallSendMsgSize: 16MB` | Max send message size for large payload tests |
 
-### Dubbo-Go 服务端优化
+### Dubbo-Go Server Optimization
 
-服务端配置了以下优化参数：
+Server is configured with the following optimization parameters:
 
-| 配置项 | 说明 |
-|--------|------|
-| `WithMaxServerRecvMsgSize("16MB")` | 最大接收消息大小 |
-| `WithMaxServerSendMsgSize("16MB")` | 最大发送消息大小 |
+| Configuration | Description |
+|---------------|-------------|
+| `WithMaxServerRecvMsgSize("16MB")` | Max receive message size |
+| `WithMaxServerSendMsgSize("16MB")` | Max send message size |
 
-## CI 配置
+## CI Configuration
 
-本项目在 GitHub Actions 中配置了国内 Go 镜像代理，以解决依赖下载不稳定的问题：
+This project uses GitHub Actions for continuous integration, including:
 
-```yaml
-- name: Set Go Proxy
-  run: |
-    go env -w GOPROXY=https://goproxy.cn,direct
-    go env -w GOSUMDB=sum.golang.google.cn
-```
+- **License Header Check**: Verify all files contain standard Apache-2.0 license header
+- **Code Format Check**: Verify code formatting complies with Go official standards
+- **Unit Test**: Run unit tests
+- **Lint**: Static code analysis
+- **Codecov**: Test coverage report
+- **Integration Test**: Integration tests
 
-## 注意事项
+## Notes
 
-1. 每个测试场景会独立启动/停止服务端，避免缓存干扰
-2. 测试前会进行10秒预热，消除冷启动影响
-3. 建议关闭防火墙和后台进程，保证测试环境纯净
-4. 服务端进程会在测试结束后自动清理
-5. 测试结果会自动保存到 `data/` 目录
-6. 提交代码前请运行 `make check-fmt` 确保格式正确
-7. 如需监控服务端资源占用，请通过 `--pid` 参数传入服务端进程ID
-8. 大报文测试（1MiB及以上）需要确保消息大小配置足够大
-9. 清理缓存后需要重新整理依赖：`go clean -modcache && go mod tidy`
+1. Each test scenario starts/stops the server independently to avoid cache interference
+2. 10-second warmup before testing to eliminate cold start effects
+3. It is recommended to disable firewall and background processes for clean test environment
+4. Server processes are automatically cleaned up after testing
+5. Test results are automatically saved to `data/` directory
+6. Run `make check-fmt` before submitting code to ensure formatting is correct
+7. Pass server PID via `--pid` parameter if server resource monitoring is needed
+8. Large payload tests (1MiB+) require sufficient message size configuration
+9. Clean cache and re-tidy dependencies if needed: `go clean -modcache && go mod tidy`
 
 ## License
 

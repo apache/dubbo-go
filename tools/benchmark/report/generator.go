@@ -96,20 +96,20 @@ func LoadResults(dataDir string) ([]*BenchmarkResult, error) {
 
 func (r *BenchmarkResult) String() string {
 	return fmt.Sprintf(`
-框架:         %s
-报文大小:     %d bytes
-序列化:       %s
-压缩:         %s
-并发数:       %d
-调用模式:     %s
+Framework:    %s
+Payload:      %d bytes
+Serialization:%s
+Compression:  %s
+Concurrency:  %d
+Call Mode:    %s
 ----------------------------------------
 QPS:          %.2f
-成功率:       %.2f%%
-总请求数:     %d
-成功/失败:    %d/%d
-延迟(ms):     P50=%.2f, P90=%.2f, P95=%.2f, P99=%.2f
+Success Rate: %.2f%%
+Total:        %d
+Success/Fail: %d/%d
+Latency(ms):  P50=%.2f, P90=%.2f, P95=%.2f, P99=%.2f
 CPU:          %.2f%%
-内存峰值:     %.2f MB`,
+Memory Peak:  %.2f MB`,
 		r.Framework,
 		r.PayloadSize,
 		r.Serialization,
@@ -131,18 +131,18 @@ CPU:          %.2f%%
 }
 
 func main() {
-	fmt.Println("[INFO] 正在生成性能报告...")
+	fmt.Println("[INFO] generating benchmark report...")
 
 	baseDir, err := filepath.Abs(filepath.Join(".", ".."))
 	if err != nil {
-		fmt.Printf("[ERROR] 获取基准目录失败: %v\n", err)
+		fmt.Printf("[ERROR] failed to get base directory: %v\n", err)
 		os.Exit(1)
 	}
 
 	dataDir := filepath.Join(filepath.Dir(baseDir), "data")
 	results, err := LoadResults(dataDir)
 	if err != nil {
-		fmt.Printf("[WARN] 读取测试数据失败: %v\n", err)
+		fmt.Printf("[WARN] failed to read test data: %v\n", err)
 		results = []*BenchmarkResult{}
 	}
 
@@ -150,11 +150,11 @@ func main() {
 
 	err = os.WriteFile("../benchmark_report.md", []byte(reportContent), 0644)
 	if err != nil {
-		fmt.Printf("[ERROR] 写入报告失败: %v\n", err)
+		fmt.Printf("[ERROR] failed to write report: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("[INFO] 报告已生成: ../benchmark_report.md (共 %d 条测试数据)\n", len(results))
+	fmt.Printf("[INFO] report generated: ../benchmark_report.md (%d test data records)\n", len(results))
 }
 
 func generateReport(results []*BenchmarkResult) string {
@@ -162,28 +162,28 @@ func generateReport(results []*BenchmarkResult) string {
 
 	report := fmt.Sprintf(`# Dubbo-Go Benchmark Report
 
-生成时间: %s
+Generated: %s
 
-## 测试环境
+## Test Environment
 
-- **Go 版本**: 1.25+
-- **测试框架**: Dubbo-Go / gRPC
-- **测试数据条数**: %d
+- **Go Version**: 1.25+
+- **Frameworks**: Dubbo-Go / gRPC
+- **Test Data**: %d records
 
-## 测试配置
+## Test Configuration
 
-| 参数 | 值 |
-|------|-----|
-| 报文大小 | 128B / 1KiB / 16KiB / 1MiB |
-| 序列化 | protobuf / hessian2 / msgpack |
-| 压缩 | none / default / fastest |
-| 并发数 | 50 / 100 / 500 / 1000 / 2000 |
-| 调用模式 | unary / streaming |
+| Parameter | Value |
+|-----------|-------|
+| Payload Size | 128B / 1KiB / 16KiB / 1MiB |
+| Serialization | protobuf / hessian2 / msgpack |
+| Compression | none / default / fastest |
+| Concurrency | 50 / 100 / 500 / 1000 / 2000 |
+| Call Mode | unary / streaming |
 
 `, timestamp, len(results))
 
 	if len(results) == 0 {
-		report += "\n## 测试结果\n\n暂无测试数据，请先运行压测。\n"
+		report += "\n## Test Results\n\nNo test data available, please run benchmarks first.\n"
 		return report
 	}
 
@@ -192,19 +192,19 @@ func generateReport(results []*BenchmarkResult) string {
 	frameworks := getUniqueFrameworks(results)
 
 	for _, payload := range payloadSizes {
-		report += fmt.Sprintf("\n## %d bytes 报文\n", payload)
+		report += fmt.Sprintf("\n## %d bytes Payload\n", payload)
 
-		report += "\n### QPS (每秒请求数)\n\n"
+		report += "\n### QPS (Requests per Second)\n\n"
 		report += generateQPSTable(results, payload, concurrencyLevels, frameworks)
 
-		report += "\n### P99 延迟 (ms)\n\n"
+		report += "\n### P99 Latency (ms)\n\n"
 		report += generateLatencyTable(results, payload, concurrencyLevels, frameworks, "P99")
 	}
 
-	report += "\n## 资源占用\n\n"
+	report += "\n## Resource Usage\n\n"
 	report += generateResourceTable(results)
 
-	report += "\n## 结论\n\n待补充...\n"
+	report += "\n## Conclusion\n\nTo be added...\n"
 
 	return report
 }
@@ -249,7 +249,7 @@ func getUniqueFrameworks(results []*BenchmarkResult) []string {
 }
 
 func generateQPSTable(results []*BenchmarkResult, payload int, concurrencyLevels []int, frameworks []string) string {
-	table := "| 并发数 | "
+	table := "| Concurrency | "
 	for _, f := range frameworks {
 		table += fmt.Sprintf("%s | ", f)
 	}
@@ -272,7 +272,7 @@ func generateQPSTable(results []*BenchmarkResult, payload int, concurrencyLevels
 }
 
 func generateLatencyTable(results []*BenchmarkResult, payload int, concurrencyLevels []int, frameworks []string, latencyType string) string {
-	table := "| 并发数 | "
+	table := "| Concurrency | "
 	for _, f := range frameworks {
 		table += fmt.Sprintf("%s | ", f)
 	}
@@ -295,7 +295,7 @@ func generateLatencyTable(results []*BenchmarkResult, payload int, concurrencyLe
 }
 
 func generateResourceTable(results []*BenchmarkResult) string {
-	table := "| 框架 | 平均CPU (%) | 内存峰值 (MB) |\n"
+	table := "| Framework | Avg CPU (%) | Memory Peak (MB) |\n"
 	table += "|------|-------------|---------------|\n"
 
 	frameworks := getUniqueFrameworks(results)

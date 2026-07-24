@@ -40,11 +40,6 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Set Go Proxy
-        run: |
-          go env -w GOPROXY=https://goproxy.cn,direct
-          go env -w GOSUMDB=sum.golang.google.cn
-
       - name: Cache dependencies
         # ref: https://github.com/actions/cache/blob/main/examples.md#go---module
         uses: actions/cache@v6
@@ -87,11 +82,6 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
-
-      - name: Set Go Proxy
-        run: |
-          go env -w GOPROXY=https://goproxy.cn,direct
-          go env -w GOSUMDB=sum.golang.google.cn
 
       - name: Cache dependencies
         # ref: https://github.com/actions/cache/blob/main/examples.md#go---module

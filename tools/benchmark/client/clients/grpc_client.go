@@ -20,14 +20,10 @@ package clients
 import (
 	"context"
 	"fmt"
-)
 
-import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-)
 
-import (
 	benchmark "dubbo.apache.org/dubbo-go/v3/tools/benchmark/proto/benchmark_gen"
 )
 
@@ -41,7 +37,7 @@ type GrpcClient struct {
 func NewGrpcClient(addr string, callMode string, payload []byte) (*GrpcClient, error) {
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		return nil, fmt.Errorf("连接gRPC服务失败: %v", err)
+		return nil, fmt.Errorf("failed to connect to gRPC server: %v", err)
 	}
 
 	client := benchmark.NewBenchmarkServiceClient(conn)

@@ -26,20 +26,16 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-)
 
-import (
 	"google.golang.org/grpc"
-)
 
-import (
 	benchmark "dubbo.apache.org/dubbo-go/v3/tools/benchmark/proto/benchmark_gen"
 )
 
 const separator = "========================================"
 
 var (
-	port = flag.Int("port", 50051, "服务端口")
+	port = flag.Int("port", 50051, "server port")
 )
 
 type benchmarkServiceImpl struct {
@@ -68,11 +64,11 @@ func main() {
 	fmt.Println(separator)
 	fmt.Println("      gRPC Benchmark Server")
 	fmt.Println(separator)
-	fmt.Printf("[INFO] 端口:     %d\n", *port)
+	fmt.Printf("[INFO] Port:     %d\n", *port)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
 	if err != nil {
-		log.Fatalf("监听失败: %v", err)
+		log.Fatalf("failed to listen: %v", err)
 	}
 
 	s := grpc.NewServer()
@@ -80,17 +76,17 @@ func main() {
 
 	go func() {
 		if err := s.Serve(lis); err != nil {
-			log.Fatalf("服务启动失败: %v", err)
+			log.Fatalf("failed to serve: %v", err)
 		}
 	}()
 
-	fmt.Printf("[INFO] 服务已启动，监听: 127.0.0.1:%d\n", *port)
+	fmt.Printf("[INFO] server started, listening on: 127.0.0.1:%d\n", *port)
 
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 	<-sig
 
-	fmt.Println("[INFO] 正在停止服务...")
+	fmt.Println("[INFO] stopping server...")
 	s.GracefulStop()
-	fmt.Println("[INFO] 服务已停止")
+	fmt.Println("[INFO] server stopped")
 }

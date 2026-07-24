@@ -24,11 +24,11 @@ OUT_DIR="$PROTO_DIR/benchmark_gen"
 
 mkdir -p "$OUT_DIR"
 
-echo "[INFO] 生成protobuf代码..."
+echo "[INFO] generating protobuf code..."
 protoc --go_out="$OUT_DIR" --go_opt=paths=source_relative "$PROTO_DIR/benchmark.proto"
 
-echo "[INFO] 生成triple代码..."
+echo "[INFO] generating triple code..."
 protoc --go-triple_out="$OUT_DIR" "$PROTO_DIR/benchmark.proto"
 
-echo "[INFO] 代码生成完成"
+echo "[INFO] code generation completed"
 ls -la "$OUT_DIR"
