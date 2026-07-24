@@ -166,8 +166,8 @@ func (sm *SystemMonitor) GetSummary() (avgCPU float64, maxMemory uint64) {
 func (sm *SystemMonitor) String() string {
 	avgCPU, maxMemory := sm.GetSummary()
 	return fmt.Sprintf(`
-System Resource Usage:
-  Avg CPU:        %.2f%%
-  Memory Peak:    %.2f MB
+系统资源使用统计:
+  平均CPU使用率:  %.2f%%
+  内存峰值:      %.2f MB
 `, avgCPU, float64(maxMemory)/1024/1024)
 }

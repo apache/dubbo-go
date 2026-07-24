@@ -7,6 +7,11 @@
 *.jar
 *.log
 
+# Benchmark suite binaries
+tools/benchmark/client/benchmark-client
+tools/benchmark/server/dubbo-go/benchmark-dubbo-go
+tools/benchmark/server/grpc/benchmark-grpc
+
 # Test binary, build with `go test -c`
 *.test
 
@@ -23,6 +28,7 @@ classes
 .go-version
 vendor/
 logs/
+data/
 .vscode/
 cache
 log/

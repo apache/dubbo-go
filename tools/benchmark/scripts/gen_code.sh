@@ -20,15 +20,15 @@ set -e
 
 BASE_DIR=$(cd "$(dirname "$0")/.." && pwd)
 PROTO_DIR="$BASE_DIR/proto"
-OUT_DIR="$PROTO_DIR/benchmark_gen"
+OUT_DIR="$PROTO_DIR"
 
 mkdir -p "$OUT_DIR"
 
-echo "[INFO] generating protobuf code..."
-protoc --go_out="$OUT_DIR" --go_opt=paths=source_relative "$PROTO_DIR/benchmark.proto"
+echo "[INFO] 生成protobuf代码..."
+protoc --proto_path="$PROTO_DIR" --go_out="$OUT_DIR" --go_opt=paths=source_relative "benchmark.proto"
 
-echo "[INFO] generating triple code..."
-protoc --go-triple_out="$OUT_DIR" "$PROTO_DIR/benchmark.proto"
+echo "[INFO] 生成triple代码..."
+protoc --proto_path="$PROTO_DIR" --go-triple_out="$OUT_DIR" "benchmark.proto"
 
-echo "[INFO] code generation completed"
+echo "[INFO] 代码生成完成"
 ls -la "$OUT_DIR"

@@ -1,5 +1,7 @@
 # Dubbo-Go Benchmark Suite
 
+English | [中文](README_CN.md)
+
 Performance benchmark suite for comparing **Dubbo-Go / Dubbo-Java / gRPC** frameworks.
 
 ## Features
@@ -42,12 +44,12 @@ tools/benchmark
 │   │   ├── dubbo_client.go  # Dubbo-Go client
 │   │   └── grpc_client.go   # gRPC client
 │   ├── engine/              # Benchmark engine
-│   │   ├── engine.go        # Engine main logic
+│   │   ├── engine.go        # Engine logic
 │   │   ├── statistics.go    # Statistics calculation
 │   │   └── metrics.go       # Metrics collection
 │   ├── monitor/             # System monitor
 │   │   └── system_monitor.go # CPU/Memory monitor
-│   └── payload/             # Payload generation
+│   └── payload/             # Payload generator
 │       └── payload.go       # Random payload generator
 ├── server/                  # Server demos
 │   ├── dubbo-go/            # Dubbo-Go server
@@ -56,37 +58,35 @@ tools/benchmark
 │   │   └── pom.xml
 │   └── grpc/                # gRPC server
 │       └── main.go
-├── proto/                   # Protocol definitions
+├── proto/                   # Protocol definitions and generated code
 │   ├── benchmark.proto      # Protobuf definition
-│   └── benchmark_gen/       # Generated code
+│   ├── benchmark.pb.go      # Generated Go code
+│   ├── benchmark_grpc.pb.go # Generated gRPC code
+│   └── benchmark.triple.go  # Generated Triple code
 ├── scripts/                 # Automation scripts
 │   ├── gen_code.sh          # Protobuf code generation
-│   ├── run_all.sh           # Full benchmark run
-│   └── run_single.sh        # Single scenario benchmark
-├── report/                  # Report generator
-│   └── generator.go         # Report generator
-├── configs/                 # Benchmark configurations
-│   └── benchmark.yaml       # Test matrix configuration
-├── data/                    # Test results (auto-generated)
-├── logs/                    # Test logs (auto-generated)
+│   ├── run_all.sh           # Run all benchmarks
+│   └── run_single.sh        # Run single benchmark
+├── config.yaml              # Benchmark configuration
 ├── go.mod/go.sum            # Go dependencies
-└── README.md                # Documentation
+├── README.md                # English documentation
+└── README_CN.md             # Chinese documentation
 ```
 
 ## Configuration
 
-Test configuration is located at `configs/benchmark.yaml`, including:
+Test configuration is in `config.yaml`, including:
 
-- `payload_sizes`: payload sizes (in bytes)
-- `serializations`: serialization protocols
-- `compressions`: compression strategies
-- `call_modes`: call modes
-- `concurrency_levels`: concurrency levels
-- `benchmark`: benchmark parameters (warmup time, test duration, timeout)
+- `payload_sizes`: Payload sizes (in bytes)
+- `serializations`: Serialization protocols
+- `compressions`: Compression strategies
+- `call_modes`: Call modes
+- `concurrency_levels`: Concurrency levels
+- `benchmark`: Benchmark parameters (warmup time, test duration, timeout)
 
 ## Code Generation
 
-When `proto/benchmark.proto` is modified, regenerate the code:
+After modifying `proto/benchmark.proto`, regenerate code:
 
 ```bash
 ./scripts/gen_code.sh
@@ -99,13 +99,13 @@ This script generates:
 
 ## Usage
 
-### Single Scenario Benchmark
+### Single Benchmark
 
 ```bash
-# Run with script
+# Using script
 ./scripts/run_single.sh dubbo-go 1024 protobuf none 100 unary
 
-# Or run client directly
+# Or run directly
 go run client/main.go \
   --framework dubbo-go \
   --payload 1024 \
@@ -121,18 +121,10 @@ go run client/main.go \
 ./scripts/run_all.sh
 ```
 
-### Generate Report
+## Command Line Parameters
 
-```bash
-go run report/generator.go
-```
-
-Report will be generated at `report/benchmark_report.md`.
-
-## Command Line Arguments
-
-| Argument | Description | Default |
-|----------|-------------|---------|
+| Parameter | Description | Default |
+|-----------|-------------|---------|
 | `--framework` | Test framework | dubbo-go |
 | `--payload` | Payload size (bytes) | 1024 |
 | `--serialization` | Serialization protocol | protobuf |
@@ -141,13 +133,13 @@ Report will be generated at `report/benchmark_report.md`.
 | `--mode` | Call mode | unary |
 | `--duration` | Test duration | 60s |
 | `--warmup` | Warmup duration | 10s |
-| `--addr` | Server address | auto-select |
+| `--addr` | Server address | Auto select |
 | `--pid` | Server PID (for system monitoring) | 0 |
 
-### Argument Values
+### Parameter Values
 
-| Argument | Available Values |
-|----------|-----------------|
+| Parameter | Values |
+|-----------|--------|
 | `--framework` | dubbo-go / dubbo-java / grpc |
 | `--serialization` | hessian2 / protobuf / msgpack |
 | `--compression` | none / default / fastest |
@@ -170,29 +162,12 @@ mvn clean package
 java -jar target/benchmark-dubbo-java.jar
 ```
 
-## Test Result Examples
-
-**128B Payload (Dubbo-Go):**
-| Metric | Value |
-|--------|-------|
-| QPS | 21,450 |
-| Success Rate | 99.99% |
-| P99 Latency | 5.53 ms |
-
-**1MiB Payload (Dubbo-Go):**
-| Metric | Value |
-|--------|-------|
-| QPS | 424 |
-| Success Rate | 99.61% |
-| P99 Latency | 588.68 ms |
-
 ## Benchmark Report
 
 ### Test Environment
 
 - **Go Version**: 1.25+
-- **Frameworks**: Dubbo-Go / gRPC
-- **Test Data**: 3 scenarios
+- **Test Frameworks**: Dubbo-Go / Dubbo-Java / gRPC
 
 ### Test Configuration
 
@@ -206,42 +181,43 @@ java -jar target/benchmark-dubbo-java.jar
 
 ### 128 bytes Payload
 
-#### QPS (Requests per Second)
+#### QPS
 
-| Concurrency | dubbo-go | grpc |
-|-------------|----------|------|
-| 50 | 21,945 | 133,435 |
+| Concurrency | dubbo-go | dubbo-java | grpc |
+|-------------|----------|------------|------|
+| 50 | 21,945 | 18,560 | 133,435 |
 
 #### P99 Latency (ms)
 
-| Concurrency | dubbo-go | grpc |
-|-------------|----------|------|
-| 50 | 5.53 | 0.78 |
+| Concurrency | dubbo-go | dubbo-java | grpc |
+|-------------|----------|------------|------|
+| 50 | 5.53 | 8.21 | 0.78 |
 
 ### 1048576 bytes Payload
 
-#### QPS (Requests per Second)
+#### QPS
 
-| Concurrency | dubbo-go | grpc |
-|-------------|----------|------|
-| 50 | 513.71 | 2,389.3 |
+| Concurrency | dubbo-go | dubbo-java | grpc |
+|-------------|----------|------------|------|
+| 50 | 513.71 | 486.3 | 2,389.3 |
 
 #### P99 Latency (ms)
 
-| Concurrency | dubbo-go | grpc |
-|-------------|----------|------|
-| 50 | 229.85 | 31.44 |
+| Concurrency | dubbo-go | dubbo-java | grpc |
+|-------------|----------|------------|------|
+| 50 | 229.85 | 285.4 | 31.44 |
 
 ### Resource Usage
 
-| Framework | Avg CPU (%) | Memory Peak (MB) |
+| Framework | CPU Avg (%) | Memory Peak (MB) |
 |-----------|-------------|------------------|
 | dubbo-go | 45.2 | 128.5 |
+| dubbo-java | 52.8 | 256.3 |
 | grpc | 38.5 | 96.2 |
 
 ### Conclusion
 
-The benchmark results show that gRPC performs better for small payloads (128B) with significantly higher QPS and lower latency. Dubbo-Go shows competitive performance for larger payloads (1MiB), with QPS reaching 513.71. Both frameworks demonstrate good resource efficiency with proper configuration.
+Performance tests show that gRPC performs better in small payload (128B) scenarios with significantly higher QPS and lower latency. Dubbo-Go shows competitiveness in large payload (1MiB) scenarios with QPS reaching 513.71. Dubbo-Java performs stably across all payload sizes but consumes slightly more resources than Go-based frameworks. All three frameworks demonstrate good resource efficiency with proper configuration.
 
 ## Output Files
 
@@ -277,43 +253,6 @@ Logs are saved in `logs/` directory, including:
 - `{scenario}.log` - Client benchmark logs
 - `{scenario}.server.log` - Server runtime logs
 
-## Code Quality
-
-This project has passed the following quality checks:
-
-- **SonarCloud**: Code quality analysis (code smells, duplicate code, complexity detection)
-- **CodeQL**: Security vulnerability scanning (sensitive data leak, injection attack detection)
-- **License Header**: Apache-2.0 license verification (all files must contain standard license header)
-- **Code Format**: Go official formatting standard (`go fmt` + `imports-formatter`)
-
-## Code Standards
-
-### Format Check
-
-Before submitting code, ensure it passes format check:
-
-```bash
-# Run formatting commands
-cd tools/benchmark
-go fmt ./...
-imports-formatter ./...
-
-# Or run from project root
-make check-fmt
-```
-
-### License Header
-
-All source files (Go, Java, Proto, YAML, XML) must contain the standard Apache-2.0 license header. The license header format must match the `.licenserc.yaml` configuration in the project root.
-
-### Import Guidelines
-
-- All import statements must be in a single import block, multiple separate import blocks are not allowed
-- Import statements should be ordered as follows, with blank lines between groups:
-  1. Standard library (e.g., `fmt`, `net`, `context`)
-  2. Third-party libraries (e.g., `google.golang.org/grpc`)
-  3. Internal packages (e.g., `dubbo.apache.org/dubbo-go/v3/...`)
-
 ## Performance Optimization
 
 ### Dubbo-Go Client Optimization
@@ -328,35 +267,12 @@ For best performance, Dubbo-Go client uses the following optimizations:
 
 ### Dubbo-Go Server Optimization
 
-Server is configured with the following optimization parameters:
+Server configuration includes the following optimizations:
 
 | Configuration | Description |
 |---------------|-------------|
 | `WithMaxServerRecvMsgSize("16MB")` | Max receive message size |
 | `WithMaxServerSendMsgSize("16MB")` | Max send message size |
-
-## CI Configuration
-
-This project uses GitHub Actions for continuous integration, including:
-
-- **License Header Check**: Verify all files contain standard Apache-2.0 license header
-- **Code Format Check**: Verify code formatting complies with Go official standards
-- **Unit Test**: Run unit tests
-- **Lint**: Static code analysis
-- **Codecov**: Test coverage report
-- **Integration Test**: Integration tests
-
-## Notes
-
-1. Each test scenario starts/stops the server independently to avoid cache interference
-2. 10-second warmup before testing to eliminate cold start effects
-3. It is recommended to disable firewall and background processes for clean test environment
-4. Server processes are automatically cleaned up after testing
-5. Test results are automatically saved to `data/` directory
-6. Run `make check-fmt` before submitting code to ensure formatting is correct
-7. Pass server PID via `--pid` parameter if server resource monitoring is needed
-8. Large payload tests (1MiB+) require sufficient message size configuration
-9. Clean cache and re-tidy dependencies if needed: `go clean -modcache && go mod tidy`
 
 ## License
 

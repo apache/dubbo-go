@@ -34,15 +34,15 @@ CALL_MODE="${6:-unary}"
 echo "$SEPARATOR"
 echo "   Dubbo-Go Benchmark - Single Test"
 echo "$SEPARATOR"
-echo "Framework:    $FRAMEWORK"
-echo "Payload:      $PAYLOAD bytes"
-echo "Serialization:$SERIALIZATION"
-echo "Compression:  $COMPRESSION"
-echo "Concurrency:  $CONCURRENCY"
-echo "Call Mode:    $CALL_MODE"
+echo "框架:         $FRAMEWORK"
+echo "报文大小:     $PAYLOAD bytes"
+echo "序列化:       $SERIALIZATION"
+echo "压缩:         $COMPRESSION"
+echo "并发数:       $CONCURRENCY"
+echo "调用模式:     $CALL_MODE"
 echo "$SEPARATOR"
 
-echo "[INFO] building server..."
+echo "[INFO] 编译服务端..."
 case "$FRAMEWORK" in
     dubbo-go)
         cd "$BASE_DIR/server/dubbo-go"
@@ -57,19 +57,19 @@ case "$FRAMEWORK" in
         SERVER_PORT=50051
         ;;
     *)
-        echo "[ERROR] unsupported framework: $FRAMEWORK"
+        echo "[ERROR] 不支持的框架: $FRAMEWORK"
         exit 1
         ;;
 esac
 
-echo "[INFO] building client..."
+echo "[INFO] 编译客户端..."
 cd "$BASE_DIR/client"
 go build -o benchmark-client main.go
 
 LOG_FILE="$LOG_DIR/${FRAMEWORK}_${PAYLOAD}_${SERIALIZATION}_${COMPRESSION}_${CONCURRENCY}_${CALL_MODE}.log"
 
 echo ""
-echo "[INFO] starting server..."
+echo "[INFO] 启动服务端..."
 case "$FRAMEWORK" in
     dubbo-go)
         "$SERVER_BIN" --serialization "$SERIALIZATION" --compression "$COMPRESSION" --port "$SERVER_PORT" > "$LOG_FILE.server.log" 2>&1 &
@@ -78,17 +78,17 @@ case "$FRAMEWORK" in
         "$SERVER_BIN" --port "$SERVER_PORT" > "$LOG_FILE.server.log" 2>&1 &
         ;;
     *)
-        echo "[ERROR] unsupported framework: $FRAMEWORK"
+        echo "[ERROR] 不支持的框架: $FRAMEWORK"
         exit 1
         ;;
 esac
 pid=$!
-echo "[INFO] server PID: $pid"
+echo "[INFO] 服务端PID: $pid"
 
 sleep 3
 
 echo ""
-echo "[INFO] starting benchmark..."
+echo "[INFO] 开始压测..."
 "$BASE_DIR/client/benchmark-client" \
     --framework "$FRAMEWORK" \
     --payload "$PAYLOAD" \
@@ -99,7 +99,7 @@ echo "[INFO] starting benchmark..."
     --pid "$pid"
 
 echo ""
-echo "[INFO] stopping server..."
+echo "[INFO] 停止服务端..."
 kill "$pid" 2>/dev/null || true
 sleep 2
 if kill -0 "$pid" 2>/dev/null; then
@@ -108,6 +108,6 @@ fi
 
 echo ""
 echo "$SEPARATOR"
-echo "   Test completed!"
+echo "   测试完成!"
 echo "$SEPARATOR"
-echo "Logs: $LOG_FILE"
+echo "日志位置: $LOG_FILE"

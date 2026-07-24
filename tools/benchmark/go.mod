@@ -4,6 +4,7 @@ go 1.25.0
 
 require (
 	dubbo.apache.org/dubbo-go/v3 v3.0.0-00010101000000-000000000000
+	github.com/dubbogo/gost v1.14.3
 	google.golang.org/grpc v1.64.1
 	google.golang.org/protobuf v1.34.2
 )
@@ -33,7 +34,6 @@ require (
 	github.com/dlclark/regexp2 v1.7.0 // indirect
 	github.com/dop251/goja v0.0.0-20240220182346-e401ed450204 // indirect
 	github.com/dubbogo/go-zookeeper v1.0.4-0.20211212162352-f9d2183d89d5 // indirect
-	github.com/dubbogo/gost v1.14.3 // indirect
 	github.com/dubbogo/grpc-go v1.42.10 // indirect
 	github.com/dubbogo/triple v1.2.2-rc4 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect

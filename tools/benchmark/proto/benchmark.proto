@@ -19,7 +19,7 @@ syntax = "proto3";
 
 package benchmark;
 
-option go_package = "dubbo.apache.org/dubbo-go/v3/tools/benchmark/proto/benchmark_gen;benchmark";
+option go_package = "dubbo.apache.org/dubbo-go/v3/tools/benchmark/proto;benchmark";
 option java_package = "org.apache.dubbo.benchmark";
 option java_outer_classname = "BenchmarkProto";
 

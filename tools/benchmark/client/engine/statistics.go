@@ -88,7 +88,7 @@ func (s *Statistics) percentile(latencies []time.Duration, p float64) time.Durat
 }
 
 func (s *Statistics) String() string {
-	return fmt.Sprintf("\n%s\n          Benchmark Report\n%s\nQPS:             %.2f\nSuccess Rate:    %.2f%%\nTotal Requests:  %d\nSuccess:         %d\nFailure:         %d\n----------------------------------------\nLatency (ms):\n  Min:           %.2f\n  Avg:           %.2f\n  P50:           %.2f\n  P90:           %.2f\n  P95:           %.2f\n  P99:           %.2f\n  Max:           %.2f\n%s",
+	return fmt.Sprintf("\n%s\n          Benchmark Report\n%s\nQPS:             %.2f\nSuccess Rate:    %.2f%%\nTotal Requests:  %d\nSuccess:         %d\nFailure:         %d\n----------------------------------------\nLatency(ms):\n  Min:           %.2f\n  Avg:           %.2f\n  P50:           %.2f\n  P90:           %.2f\n  P95:           %.2f\n  P99:           %.2f\n  Max:           %.2f\n%s",
 		separator,
 		separator,
 		s.QPS,
@@ -103,5 +103,6 @@ func (s *Statistics) String() string {
 		float64(s.P95)/float64(time.Millisecond),
 		float64(s.P99)/float64(time.Millisecond),
 		float64(s.Max)/float64(time.Millisecond),
+		separator,
 	)
 }
