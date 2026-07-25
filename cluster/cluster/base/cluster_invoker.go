@@ -20,7 +20,7 @@ package base
 
 import (
 	"slices"
-	"sync/atomic"
+	"sync"
 )
 
 import (
@@ -44,11 +44,16 @@ type BaseClusterInvoker struct {
 	Directory      directory.Directory
 	AvailableCheck bool
 	Destroyed      *uberatomic.Bool
-	StickyInvoker  atomic.Pointer[base.Invoker]
+	StickyInvoker  base.Invoker
+
+	// stickyLock guards StickyInvoker against the data race between IsAvailable
+	// (read) and DoSelect (read/write). It is unexported so the public field and
+	// constructor signatures stay source-compatible across the v3.x line.
+	stickyLock sync.RWMutex
 }
 
-func NewBaseClusterInvoker(directory directory.Directory) *BaseClusterInvoker {
-	return &BaseClusterInvoker{
+func NewBaseClusterInvoker(directory directory.Directory) BaseClusterInvoker {
+	return BaseClusterInvoker{
 		Directory:      directory,
 		AvailableCheck: true,
 		Destroyed:      uberatomic.NewBool(false),
@@ -67,10 +72,24 @@ func (invoker *BaseClusterInvoker) Destroy() {
 }
 
 func (invoker *BaseClusterInvoker) IsAvailable() bool {
-	if sticky := invoker.StickyInvoker.Load(); sticky != nil {
-		return (*sticky).IsAvailable()
+	if sticky := invoker.getStickyInvoker(); sticky != nil {
+		return sticky.IsAvailable()
 	}
 	return invoker.Directory.IsAvailable()
+}
+
+// getStickyInvoker returns the sticky invoker under a read lock.
+func (invoker *BaseClusterInvoker) getStickyInvoker() base.Invoker {
+	invoker.stickyLock.RLock()
+	defer invoker.stickyLock.RUnlock()
+	return invoker.StickyInvoker
+}
+
+// setStickyInvoker replaces the sticky invoker under a write lock.
+func (invoker *BaseClusterInvoker) setStickyInvoker(v base.Invoker) {
+	invoker.stickyLock.Lock()
+	defer invoker.stickyLock.Unlock()
+	invoker.StickyInvoker = v
 }
 
 // CheckInvokers checks invokers' status if is available or not
@@ -105,21 +124,21 @@ func (invoker *BaseClusterInvoker) DoSelect(lb loadbalance.LoadBalance, invocati
 	// Get the service method sticky config if have
 	sticky = url.GetMethodParamBool(invocation.MethodName(), constant.StickyKey, sticky)
 
-	stickyInvoker := invoker.StickyInvoker.Load()
-	if stickyInvoker != nil && !isInvoked(*stickyInvoker, invokers) {
-		invoker.StickyInvoker.Store(nil)
+	stickyInvoker := invoker.getStickyInvoker()
+	if stickyInvoker != nil && !isInvoked(stickyInvoker, invokers) {
+		invoker.setStickyInvoker(nil)
 		stickyInvoker = nil
 	}
 
 	if sticky && invoker.AvailableCheck &&
-		stickyInvoker != nil && (*stickyInvoker).IsAvailable() &&
-		(invoked == nil || !isInvoked(*stickyInvoker, invoked)) {
-		return *stickyInvoker
+		stickyInvoker != nil && stickyInvoker.IsAvailable() &&
+		(invoked == nil || !isInvoked(stickyInvoker, invoked)) {
+		return stickyInvoker
 	}
 
 	selectedInvoker = invoker.doSelectInvoker(lb, invocation, invokers, invoked)
 	if sticky {
-		invoker.StickyInvoker.Store(&selectedInvoker)
+		invoker.setStickyInvoker(selectedInvoker)
 	}
 	return selectedInvoker
 }
