@@ -19,6 +19,10 @@
 package base
 
 import (
+	"slices"
+)
+
+import (
 	"github.com/dubbogo/gost/log/logger"
 
 	perrors "github.com/pkg/errors"
@@ -138,7 +142,7 @@ func (invoker *BaseClusterInvoker) doSelectInvoker(lb loadbalance.LoadBalance, i
 		base.SetInvokerUnhealthyStatus(selectedInvoker)
 		otherInvokers := getOtherInvokers(invokers, selectedInvoker)
 		// do reselect
-		for i := 0; i < 3; i++ {
+		for range 3 {
 			if len(otherInvokers) == 0 {
 				// no other ivk to reselect, return to fallback
 				break
@@ -162,12 +166,7 @@ func (invoker *BaseClusterInvoker) doSelectInvoker(lb loadbalance.LoadBalance, i
 }
 
 func isInvoked(selectedInvoker base.Invoker, invoked []base.Invoker) bool {
-	for _, i := range invoked {
-		if i == selectedInvoker {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(invoked, selectedInvoker)
 }
 
 func GetLoadBalance(invoker base.Invoker, methodName string) loadbalance.LoadBalance {

@@ -82,11 +82,8 @@ func TestBaseProtocol_SetInvokersConcurrent(t *testing.T) {
 
 	start := make(chan struct{})
 	var writers sync.WaitGroup
-	for i := 0; i < goroutines; i++ {
-		i := i
-		writers.Add(1)
-		go func() {
-			defer writers.Done()
+	for i := range goroutines {
+		writers.Go(func() {
 			<-start
 			url := common.NewURLWithOptions(
 				common.WithProtocol("dubbo"),
@@ -94,16 +91,14 @@ func TestBaseProtocol_SetInvokersConcurrent(t *testing.T) {
 				common.WithPort(strconv.Itoa(9000+i)),
 			)
 			protocol.SetInvokers(NewBaseInvoker(url))
-		}()
+		})
 	}
 
 	const readers = 8
 	stopReaders := make(chan struct{})
 	var readerWG sync.WaitGroup
-	for i := 0; i < readers; i++ {
-		readerWG.Add(1)
-		go func() {
-			defer readerWG.Done()
+	for range readers {
+		readerWG.Go(func() {
 			<-start
 			for {
 				select {
@@ -113,7 +108,7 @@ func TestBaseProtocol_SetInvokersConcurrent(t *testing.T) {
 					_ = protocol.Invokers()
 				}
 			}
-		}()
+		})
 	}
 
 	close(start)

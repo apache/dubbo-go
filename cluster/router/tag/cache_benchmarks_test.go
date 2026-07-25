@@ -34,7 +34,7 @@ import (
 // All invokers get the given app as ApplicationKey.
 func makeBenchInvokers(n, tagged int, app string) []base.Invoker {
 	invokers := make([]base.Invoker, n)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		u, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.0.%d:20000/com.xxx.xxx.UserProvider?interface=com.xxx.xxx.UserProvider&group=&version=3.1.0", i+1))
 		u.SetParam(constant.ApplicationKey, app)
 		if i < tagged {

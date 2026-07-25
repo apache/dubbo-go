@@ -943,7 +943,7 @@ func TestConcurrentServiceRegistration(t *testing.T) {
 	require.NoError(t, err)
 
 	var wg sync.WaitGroup
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
@@ -956,7 +956,7 @@ func TestConcurrentServiceRegistration(t *testing.T) {
 	wg.Wait()
 
 	// Verify all services were registered using public API
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		svcID := "service-" + strconv.Itoa(i)
 		retrieved := srv.GetServiceOptions(svcID)
 		assert.NotNil(t, retrieved, "Service %s should be registered", svcID)
@@ -1110,7 +1110,7 @@ func TestExportServicesEmpty(t *testing.T) {
 
 	ctx := context.Background()
 	err = srv.exportServices(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 // Test NewServer with custom group option

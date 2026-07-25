@@ -17,6 +17,10 @@
 
 package application
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/tools/dubbogo-cli/generator/internal/scaffold"
+)
+
 const (
 	gomodFile = `module dubbo-go-app
 
@@ -152,5 +156,10 @@ func init() {
 		path:    ".",
 		file:    "go.mod",
 		context: gomodFile,
+	}
+	fileMap["gosumFile"] = &fileGenerator{
+		path:    ".",
+		file:    "go.sum",
+		context: scaffold.GoSum,
 	}
 }

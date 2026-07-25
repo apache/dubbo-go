@@ -74,11 +74,11 @@ func TestRegistryConcurrentAccess(t *testing.T) {
 	workers := 32
 	iterations := 200
 
-	for i := 0; i < workers; i++ {
+	for i := range workers {
 		wg.Add(1)
 		go func(worker int) {
 			defer wg.Done()
-			for j := 0; j < iterations; j++ {
+			for j := range iterations {
 				key := "k-" + strconv.Itoa(worker) + "-" + strconv.Itoa(j)
 				r.Register(key, j)
 				_, _ = r.Get(key)

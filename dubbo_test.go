@@ -119,6 +119,91 @@ func TestIndependentConfig(t *testing.T) {
 	}
 }
 
+func TestInstanceOptionsSnapshotIsDetached(t *testing.T) {
+	useAgent := false
+	ins, err := NewInstance(func(opts *InstanceOptions) {
+		opts.Application.Name = "snapshot-app"
+		opts.Registries = map[string]*global.RegistryConfig{
+			"zk": {
+				Protocol:        constant.ZookeeperKey,
+				Address:         "127.0.0.1:2181",
+				UseAsMetaReport: "false",
+			},
+		}
+		opts.Tracing = map[string]*global.TracingConfig{
+			"jaeger": {
+				Name:     "jaeger",
+				Address:  "127.0.0.1:6831",
+				UseAgent: &useAgent,
+			},
+		}
+		opts.Custom = &global.CustomConfig{
+			ConfigMap: map[string]any{"k": "v"},
+		}
+	})
+	require.NoError(t, err)
+
+	snapshot := ins.GetInstanceOptionsSnapshot()
+	require.NotNil(t, snapshot)
+	require.NotNil(t, snapshot.Application)
+	require.NotNil(t, snapshot.Registries["zk"])
+	require.NotNil(t, snapshot.Tracing["jaeger"])
+	require.NotNil(t, snapshot.Tracing["jaeger"].UseAgent)
+	require.NotNil(t, snapshot.Custom)
+
+	snapshot.Application.Name = "changed-app"
+	snapshot.Registries["zk"].Address = "127.0.0.1:2182"
+	*snapshot.Tracing["jaeger"].UseAgent = true
+	snapshot.Custom.ConfigMap["k"] = "changed"
+
+	assert.Equal(t, "snapshot-app", ins.insOpts.Application.Name)
+	assert.Equal(t, "127.0.0.1:2181", ins.insOpts.Registries["zk"].Address)
+	assert.False(t, *ins.insOpts.Tracing["jaeger"].UseAgent)
+	assert.Equal(t, "v", ins.insOpts.Custom.ConfigMap["k"])
+}
+
+func TestWithCustom(t *testing.T) {
+	configMap := map[string]any{"k": "v"}
+	ins, err := NewInstance(WithCustom(configMap))
+	require.NoError(t, err)
+
+	configMap["k"] = "changed"
+
+	custom := ins.GetCustomConfigSnapshot()
+	require.NotNil(t, custom)
+	assert.Equal(t, "v", custom.ConfigMap["k"])
+
+	custom.ConfigMap["k"] = "changed-again"
+	assert.Equal(t, "v", ins.insOpts.Custom.ConfigMap["k"])
+}
+
+func TestGlobalInstanceOptionsSnapshotIsDetached(t *testing.T) {
+	prevIns := instanceOptions
+	defer func() { instanceOptions = prevIns }()
+
+	instanceOptions = defaultInstanceOptions()
+	instanceOptions.Application.Name = "global-snapshot-app"
+	instanceOptions.Custom = &global.CustomConfig{
+		ConfigMap: map[string]any{"k": "v"},
+	}
+
+	snapshot := GetInstanceOptionsSnapshot()
+	require.NotNil(t, snapshot)
+	require.NotNil(t, snapshot.Application)
+	require.NotNil(t, snapshot.Custom)
+
+	snapshot.Application.Name = "changed-app"
+	snapshot.Custom.ConfigMap["k"] = "changed"
+
+	assert.Equal(t, "global-snapshot-app", instanceOptions.Application.Name)
+	assert.Equal(t, "v", instanceOptions.Custom.ConfigMap["k"])
+
+	custom := GetCustomConfigSnapshot()
+	require.NotNil(t, custom)
+	custom.ConfigMap["k"] = "changed-again"
+	assert.Equal(t, "v", instanceOptions.Custom.ConfigMap["k"])
+}
+
 func TestInstanceInitKeepsGlobalOnlyConfigWithConfigCenter(t *testing.T) {
 	resetDynamicConfiguration(t)
 

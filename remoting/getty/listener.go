@@ -354,6 +354,7 @@ func heartbeat(session getty.Session, timeout time.Duration, callBack func(err e
 		select {
 		case <-gxtime.After(timeout):
 			err1 = errHeartbeatReadTimeout
+			remoting.RemovePendingResponse(remoting.SequenceType(req.ID))
 		case <-resp.Done:
 			err1 = resp.Err
 		}

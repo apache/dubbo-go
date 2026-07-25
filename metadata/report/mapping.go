@@ -19,6 +19,7 @@ package report
 
 import (
 	"errors"
+	"slices"
 	"strings"
 )
 
@@ -62,10 +63,8 @@ func MergeServiceAppMapping(oldVal, application string) (string, bool) {
 	if oldVal == "" {
 		return application, true
 	}
-	for _, app := range strings.Split(oldVal, constant.CommaSeparator) {
-		if app == application {
-			return oldVal, false
-		}
+	if slices.Contains(strings.Split(oldVal, constant.CommaSeparator), application) {
+		return oldVal, false
 	}
 	return oldVal + constant.CommaSeparator + application, true
 }
@@ -78,7 +77,7 @@ func DecodeServiceAppNames(val string) *gxset.HashSet {
 	if val == "" {
 		return set
 	}
-	for _, app := range strings.Split(val, constant.CommaSeparator) {
+	for app := range strings.SplitSeq(val, constant.CommaSeparator) {
 		if app != "" {
 			set.Add(app)
 		}

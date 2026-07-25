@@ -91,20 +91,20 @@ func TestSchemaResolver_Resolve_BasicTypes(t *testing.T) {
 		wantType model.SchemaType
 		wantFmt  string
 	}{
-		{"string", reflect.TypeOf(""), model.SchemaTypeString, ""},
+		{"string", reflect.TypeFor[string](), model.SchemaTypeString, ""},
 		{"bool", reflect.TypeOf(true), model.SchemaTypeBoolean, ""},
-		{"int", reflect.TypeOf(int(0)), model.SchemaTypeInteger, ""},
-		{"int8", reflect.TypeOf(int8(0)), model.SchemaTypeInteger, ""},
-		{"int16", reflect.TypeOf(int16(0)), model.SchemaTypeInteger, ""},
-		{"int32", reflect.TypeOf(int32(0)), model.SchemaTypeInteger, "int32"},
-		{"int64", reflect.TypeOf(int64(0)), model.SchemaTypeInteger, "int64"},
-		{"uint", reflect.TypeOf(uint(0)), model.SchemaTypeInteger, ""},
-		{"uint8", reflect.TypeOf(uint8(0)), model.SchemaTypeInteger, ""},
-		{"uint16", reflect.TypeOf(uint16(0)), model.SchemaTypeInteger, ""},
-		{"uint32", reflect.TypeOf(uint32(0)), model.SchemaTypeInteger, "int32"},
-		{"uint64", reflect.TypeOf(uint64(0)), model.SchemaTypeInteger, "int64"},
-		{"float32", reflect.TypeOf(float32(0)), model.SchemaTypeNumber, "float"},
-		{"float64", reflect.TypeOf(float64(0)), model.SchemaTypeNumber, "double"},
+		{"int", reflect.TypeFor[int](), model.SchemaTypeInteger, ""},
+		{"int8", reflect.TypeFor[int8](), model.SchemaTypeInteger, ""},
+		{"int16", reflect.TypeFor[int16](), model.SchemaTypeInteger, ""},
+		{"int32", reflect.TypeFor[int32](), model.SchemaTypeInteger, "int32"},
+		{"int64", reflect.TypeFor[int64](), model.SchemaTypeInteger, "int64"},
+		{"uint", reflect.TypeFor[uint](), model.SchemaTypeInteger, ""},
+		{"uint8", reflect.TypeFor[uint8](), model.SchemaTypeInteger, ""},
+		{"uint16", reflect.TypeFor[uint16](), model.SchemaTypeInteger, ""},
+		{"uint32", reflect.TypeFor[uint32](), model.SchemaTypeInteger, "int32"},
+		{"uint64", reflect.TypeFor[uint64](), model.SchemaTypeInteger, "int64"},
+		{"float32", reflect.TypeFor[float32](), model.SchemaTypeNumber, "float"},
+		{"float64", reflect.TypeFor[float64](), model.SchemaTypeNumber, "double"},
 	}
 
 	for _, tt := range tests {
@@ -123,7 +123,7 @@ func TestSchemaResolver_Resolve_BasicTypes(t *testing.T) {
 func TestSchemaResolver_Resolve_PtrDereference(t *testing.T) {
 	r := NewSchemaResolver(global.DefaultOpenAPIConfig())
 
-	schema := r.Resolve(reflect.TypeOf((*string)(nil)).Elem())
+	schema := r.Resolve(reflect.TypeFor[string]())
 	// *string should be dereferenced to string
 	if schema.Type != model.SchemaTypeString {
 		t.Errorf("Resolve(*string).Type = %v, want %v", schema.Type, model.SchemaTypeString)
@@ -133,7 +133,7 @@ func TestSchemaResolver_Resolve_PtrDereference(t *testing.T) {
 func TestSchemaResolver_Resolve_Slice(t *testing.T) {
 	r := NewSchemaResolver(global.DefaultOpenAPIConfig())
 
-	schema := r.Resolve(reflect.TypeOf([]string{}))
+	schema := r.Resolve(reflect.TypeFor[[]string]())
 	if schema.Type != model.SchemaTypeArray {
 		t.Errorf("Resolve([]string).Type = %v, want %v", schema.Type, model.SchemaTypeArray)
 	}
@@ -148,7 +148,7 @@ func TestSchemaResolver_Resolve_Slice(t *testing.T) {
 func TestSchemaResolver_Resolve_Map(t *testing.T) {
 	r := NewSchemaResolver(global.DefaultOpenAPIConfig())
 
-	schema := r.Resolve(reflect.TypeOf(map[string]int{}))
+	schema := r.Resolve(reflect.TypeFor[map[string]int]())
 	if schema.Type != model.SchemaTypeObject {
 		t.Errorf("Resolve(map[string]int).Type = %v, want %v", schema.Type, model.SchemaTypeObject)
 	}
@@ -167,7 +167,7 @@ func TestSchemaResolver_Resolve_Map(t *testing.T) {
 func TestSchemaResolver_Resolve_Interface(t *testing.T) {
 	r := NewSchemaResolver(global.DefaultOpenAPIConfig())
 
-	schema := r.Resolve(reflect.TypeOf((*any)(nil)).Elem())
+	schema := r.Resolve(reflect.TypeFor[any]())
 	if schema.Type != model.SchemaTypeObject {
 		t.Errorf("Resolve(interface{}).Type = %v, want %v", schema.Type, model.SchemaTypeObject)
 	}
@@ -187,13 +187,13 @@ func TestSchemaResolver_Resolve_Nil(t *testing.T) {
 func TestSchemaResolver_Resolve_Struct(t *testing.T) {
 	r := NewSchemaResolver(global.DefaultOpenAPIConfig())
 
-	schema := r.Resolve(reflect.TypeOf(SimpleStruct{}))
+	schema := r.Resolve(reflect.TypeFor[SimpleStruct]())
 
 	// Struct should return a $ref
 	if schema.Ref == "" {
 		t.Fatal("Resolve(SimpleStruct) should return a $ref schema")
 	}
-	if schema.Ref != "#/components/schemas/"+r.toSchemaName(reflect.TypeOf(SimpleStruct{})) {
+	if schema.Ref != "#/components/schemas/"+r.toSchemaName(reflect.TypeFor[SimpleStruct]()) {
 		t.Errorf("Ref = %v, unexpected", schema.Ref)
 	}
 }
@@ -202,10 +202,10 @@ func TestSchemaResolver_Resolve_StructProperties(t *testing.T) {
 	r := NewSchemaResolver(global.DefaultOpenAPIConfig())
 
 	// Resolve to populate the internal schema map
-	r.Resolve(reflect.TypeOf(SimpleStruct{}))
+	r.Resolve(reflect.TypeFor[SimpleStruct]())
 
 	schemas := r.GetSchemas()
-	schemaName := r.toSchemaName(reflect.TypeOf(SimpleStruct{}))
+	schemaName := r.toSchemaName(reflect.TypeFor[SimpleStruct]())
 	schema, ok := schemas[schemaName]
 	if !ok {
 		t.Fatalf("schema %s not found", schemaName)
@@ -232,9 +232,9 @@ func TestSchemaResolver_Resolve_StructProperties(t *testing.T) {
 func TestSchemaResolver_Resolve_StructUnexportedFieldsSkipped(t *testing.T) {
 	r := NewSchemaResolver(global.DefaultOpenAPIConfig())
 
-	r.Resolve(reflect.TypeOf(StructWithUnexported{}))
+	r.Resolve(reflect.TypeFor[StructWithUnexported]())
 	schemas := r.GetSchemas()
-	schemaName := r.toSchemaName(reflect.TypeOf(StructWithUnexported{}))
+	schemaName := r.toSchemaName(reflect.TypeFor[StructWithUnexported]())
 	schema := schemas[schemaName]
 
 	if _, exists := schema.Properties["unexported"]; exists {
@@ -248,9 +248,9 @@ func TestSchemaResolver_Resolve_StructUnexportedFieldsSkipped(t *testing.T) {
 func TestSchemaResolver_Resolve_JsonDashIgnored(t *testing.T) {
 	r := NewSchemaResolver(global.DefaultOpenAPIConfig())
 
-	r.Resolve(reflect.TypeOf(StructWithJsonIgnore{}))
+	r.Resolve(reflect.TypeFor[StructWithJsonIgnore]())
 	schemas := r.GetSchemas()
-	schemaName := r.toSchemaName(reflect.TypeOf(StructWithJsonIgnore{}))
+	schemaName := r.toSchemaName(reflect.TypeFor[StructWithJsonIgnore]())
 	schema := schemas[schemaName]
 
 	if _, exists := schema.Properties["Hidden"]; exists {
@@ -264,7 +264,7 @@ func TestSchemaResolver_Resolve_JsonDashIgnored(t *testing.T) {
 func TestSchemaResolver_Resolve_TimeTime(t *testing.T) {
 	r := NewSchemaResolver(global.DefaultOpenAPIConfig())
 
-	schema := r.Resolve(reflect.TypeOf(time.Time{}))
+	schema := r.Resolve(reflect.TypeFor[time.Time]())
 	// time.Time should produce string + date-time, not a $ref to a struct
 	if schema.Ref != "" {
 		t.Errorf("time.Time should not produce a $ref, got %s", schema.Ref)
@@ -280,9 +280,9 @@ func TestSchemaResolver_Resolve_TimeTime(t *testing.T) {
 func TestSchemaResolver_Resolve_StructWithTime(t *testing.T) {
 	r := NewSchemaResolver(global.DefaultOpenAPIConfig())
 
-	r.Resolve(reflect.TypeOf(StructWithTime{}))
+	r.Resolve(reflect.TypeFor[StructWithTime]())
 	schemas := r.GetSchemas()
-	schemaName := r.toSchemaName(reflect.TypeOf(StructWithTime{}))
+	schemaName := r.toSchemaName(reflect.TypeFor[StructWithTime]())
 	schema := schemas[schemaName]
 
 	createdAt, exists := schema.Properties["created_at"]
@@ -302,7 +302,7 @@ func TestSchemaResolver_Resolve_CircularReference(t *testing.T) {
 	r := NewSchemaResolver(global.DefaultOpenAPIConfig())
 
 	// Resolving a recursive struct should not loop infinitely
-	schema := r.Resolve(reflect.TypeOf(RecursiveStruct{}))
+	schema := r.Resolve(reflect.TypeFor[RecursiveStruct]())
 	if schema.Ref == "" {
 		t.Error("RecursiveStruct should produce a $ref")
 	}
@@ -313,7 +313,7 @@ func TestSchemaResolver_Resolve_CircularReference(t *testing.T) {
 func TestSchemaResolver_toSchemaName(t *testing.T) {
 	r := NewSchemaResolver(global.DefaultOpenAPIConfig())
 
-	typ := reflect.TypeOf(SimpleStruct{})
+	typ := reflect.TypeFor[SimpleStruct]()
 	name := r.toSchemaName(typ)
 
 	if name == "" {
@@ -490,7 +490,7 @@ func TestSchemaResolver_GetSchemas(t *testing.T) {
 	}
 
 	// After resolving a struct
-	r.Resolve(reflect.TypeOf(SimpleStruct{}))
+	r.Resolve(reflect.TypeFor[SimpleStruct]())
 	schemas = r.GetSchemas()
 	if len(schemas) == 0 {
 		t.Error("expected schemas after resolving struct")
@@ -502,7 +502,7 @@ func TestSchemaResolver_GetSchemas(t *testing.T) {
 func TestSchemaResolver_isExported(t *testing.T) {
 	r := NewSchemaResolver(global.DefaultOpenAPIConfig())
 
-	typ := reflect.TypeOf(StructWithUnexported{})
+	typ := reflect.TypeFor[StructWithUnexported]()
 	for i := 0; i < typ.NumField(); i++ {
 		field := typ.Field(i)
 		if field.Name == "Exported" && !r.isExported(field) {
@@ -517,7 +517,7 @@ func TestSchemaResolver_isExported(t *testing.T) {
 func TestSchemaResolver_getFieldName(t *testing.T) {
 	r := NewSchemaResolver(global.DefaultOpenAPIConfig())
 
-	typ := reflect.TypeOf(SimpleStruct{})
+	typ := reflect.TypeFor[SimpleStruct]()
 	for i := 0; i < typ.NumField(); i++ {
 		field := typ.Field(i)
 		jsonTag := field.Tag.Get("json")
@@ -528,7 +528,7 @@ func TestSchemaResolver_getFieldName(t *testing.T) {
 	}
 
 	// Test empty json tag falls back to field name
-	typ2 := reflect.TypeOf(StructWithUnexported{})
+	typ2 := reflect.TypeFor[StructWithUnexported]()
 	exportedField, _ := typ2.FieldByName("Exported")
 	name := r.getFieldName(exportedField, "")
 	if name != "Exported" {

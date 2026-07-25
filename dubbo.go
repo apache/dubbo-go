@@ -29,6 +29,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/client"
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/server"
 )
 
@@ -40,7 +41,7 @@ var (
 	startOnce        sync.Once
 )
 
-// Instance is the highest layer conception that user could touch. It is mapped from RootConfig.
+// Instance is the highest layer conception that user could touch.
 // When users want to inject global configurations and configure common modules for client layer
 // and server layer, user-side code would be like this:
 //
@@ -59,6 +60,39 @@ func NewInstance(opts ...InstanceOption) (*Instance, error) {
 	}
 
 	return &Instance{insOpts: newInsOpts}, nil
+}
+
+// GetOptionsSnapshot returns a detached snapshot of this instance's options.
+func (ins *Instance) GetInstanceOptionsSnapshot() *InstanceOptions {
+	if ins == nil || ins.insOpts == nil {
+		return nil
+	}
+	return ins.insOpts.Clone()
+}
+
+// GetCustomConfig returns a detached snapshot of this instance's custom config.
+func (ins *Instance) GetCustomConfigSnapshot() *global.CustomConfig {
+	if ins == nil || ins.insOpts == nil {
+		return nil
+	}
+	return ins.insOpts.CloneCustom()
+}
+
+// GetInstanceOptionsSnapshot returns a detached snapshot of the options loaded by Load.
+func GetInstanceOptionsSnapshot() *InstanceOptions {
+	instanceOptionsMutex.Lock()
+	defer instanceOptionsMutex.Unlock()
+	return instanceOptions.Clone()
+}
+
+// GetCustomConfig returns a detached snapshot of the custom config loaded by Load.
+func GetCustomConfigSnapshot() *global.CustomConfig {
+	instanceOptionsMutex.Lock()
+	defer instanceOptionsMutex.Unlock()
+	if instanceOptions == nil {
+		return nil
+	}
+	return instanceOptions.CloneCustom()
 }
 
 // NewClient is like client.NewClient, but inject configurations from RootConfig and
