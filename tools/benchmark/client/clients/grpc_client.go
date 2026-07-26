@@ -41,7 +41,7 @@ type GrpcClient struct {
 func NewGrpcClient(addr string, callMode string, payload []byte) (*GrpcClient, error) {
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		return nil, fmt.Errorf("Failed to connect to gRPC service: %v", err)
+		return nil, fmt.Errorf("failed to connect to gRPC service: %v", err)
 	}
 
 	client := benchmark.NewBenchmarkServiceClient(conn)
@@ -79,8 +79,8 @@ func (c *GrpcClient) streamCall(ctx context.Context) error {
 	defer stream.CloseSend()
 
 	req := &benchmark.BenchmarkRequest{Payload: c.payload}
-	if err := stream.Send(req); err != nil {
-		return err
+	if sendErr := stream.Send(req); sendErr != nil {
+		return sendErr
 	}
 
 	_, err = stream.Recv()

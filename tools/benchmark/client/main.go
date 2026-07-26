@@ -176,7 +176,7 @@ func createCaller(data []byte) (Caller, error) {
 	case FrameworkGRPC:
 		return clients.NewGrpcClient(addr, *callMode, data)
 	default:
-		return nil, fmt.Errorf("Unsupported framework: %s", *framework)
+		return nil, fmt.Errorf("unsupported framework: %s", *framework)
 	}
 }
 
@@ -213,8 +213,8 @@ func saveResults(stats *engine.Statistics, cpuAvg, memoryPeak float64) {
 	baseDir := filepath.Dir(filepath.Dir(execPath))
 
 	dataDir := filepath.Join(baseDir, "data")
-	if err := os.MkdirAll(dataDir, 0755); err != nil {
-		logger.Warnf("[WARN] Failed to create data directory: %v", err)
+	if mkdirErr := os.MkdirAll(dataDir, 0755); mkdirErr != nil {
+		logger.Warnf("[WARN] Failed to create data directory: %v", mkdirErr)
 		return
 	}
 

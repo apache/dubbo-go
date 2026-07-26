@@ -43,7 +43,7 @@ func NewDubboGoClient(addr string, serialization, compression, callMode string, 
 		client.WithClientParam(constant.SerializationKey, serialization),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create Dubbo client: %v", err)
+		return nil, fmt.Errorf("failed to create Dubbo client: %v", err)
 	}
 
 	service, err := benchmark.NewTripleBenchmarkService(cli,
@@ -53,7 +53,7 @@ func NewDubboGoClient(addr string, serialization, compression, callMode string, 
 		client.WithParam(constant.MaxCallSendMsgSize, "16MB"),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create BenchmarkService: %v", err)
+		return nil, fmt.Errorf("failed to create BenchmarkService: %v", err)
 	}
 
 	return &DubboGoClient{
