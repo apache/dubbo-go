@@ -20,19 +20,15 @@ set -e
 
 echo "start integrate-test: repo = $1, SHA = $2, branch = $3"
 
-# set root workspace
+# set root workspace (already checked out dubbo-go code)
 ROOT_DIR=$(pwd)
 echo "integrate-test root work-space -> ${ROOT_DIR}"
 
 echo "use dubbo-go-samples $3 branch for integration testing"
 git clone -b $3 https://github.com/apache/dubbo-go-samples.git samples --depth=1 && cd samples
 
-# update dubbo-go to current commit id
-if [ "$1" == "apache/dubbo-go" ]; then
-    go mod edit -replace=dubbo.apache.org/dubbo-go/v3=dubbo.apache.org/dubbo-go/v3@"$2"
-else
-    go mod edit -replace=dubbo.apache.org/dubbo-go/v3=github.com/"$1"/v3@"$2"
-fi
+# use local checked-out dubbo-go code to avoid fork module resolution issues
+go mod edit -replace=dubbo.apache.org/dubbo-go/v3="$ROOT_DIR"
 
 go mod tidy
 
