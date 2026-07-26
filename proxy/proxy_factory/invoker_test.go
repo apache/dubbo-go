@@ -155,6 +155,21 @@ func TestPassThroughProxyInvoker_Invoke(t *testing.T) {
 		result := invoker.Invoke(context.Background(), inv)
 		assert.EqualError(t, result.Error(), "the param type is not []byte")
 	})
+
+	t.Run("service not registered returns error instead of panicking", func(t *testing.T) {
+		// a service key that was never registered in ServiceMap -> GetServiceByServiceKey returns nil.
+		u := newURL("pass-unregistered-protocol", "PassThroughUnregistered")
+		unreg := &PassThroughProxyInvoker{
+			ProxyInvoker: &ProxyInvoker{BaseInvoker: *base.NewBaseInvoker(u)},
+		}
+		inv := invocation.NewRPCInvocationWithOptions(
+			invocation.WithMethodName("RawMethod"),
+			invocation.WithArguments([]any{[]byte("payload")}),
+		)
+		result := unreg.Invoke(context.Background(), inv)
+		require.Error(t, result.Error())
+		assert.Contains(t, result.Error().Error(), "not found")
+	})
 }
 
 func TestProxyInvoker_InvokeVariadicCallSliceGating(t *testing.T) {

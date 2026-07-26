@@ -87,6 +87,10 @@ func (pi *PassThroughProxyInvoker) Invoke(ctx context.Context, invocation base.I
 
 	arguments := invocation.Arguments()
 	srv := common.ServiceMap.GetServiceByServiceKey(url.Protocol, url.ServiceKey())
+	if srv == nil {
+		result.Err = perrors.Errorf("service %s is not found, protocol: %s", url.ServiceKey(), url.Protocol)
+		return result
+	}
 
 	var args [][]byte
 	if len(arguments) > 0 {

@@ -81,6 +81,11 @@ func (f *genericServiceFilter) Invoke(ctx context.Context, invoker base.Invoker,
 	// get the type of the argument
 	ivkURL := invoker.GetURL()
 	svc := common.ServiceMap.GetServiceByServiceKey(ivkURL.Protocol, ivkURL.ServiceKey())
+	if svc == nil {
+		return &result.RPCResult{
+			Err: perrors.Errorf("\"%s\" service is not found, protocol: %s", ivkURL.ServiceKey(), ivkURL.Protocol),
+		}
+	}
 	method := svc.Method()[mtdName]
 	if method == nil {
 		return &result.RPCResult{
