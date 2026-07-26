@@ -114,5 +114,10 @@ func (lstn *ServiceMappingChangedListenerImpl) OnEvent(e observer.Event) error {
 
 // Stop on ServiceMappingChangedEvent the service mapping change event
 func (lstn *ServiceMappingChangedListenerImpl) Stop() {
+	// Guard with the same mux that OnEvent reads `stop` under. The previous
+	// unlocked write raced OnEvent (which reads `stop` under mux) and let a
+	// mapping event be processed after the listener had been stopped. See #3518.
+	lstn.mux.Lock()
+	defer lstn.mux.Unlock()
 	lstn.stop = ServiceMappingListenerStop
 }
