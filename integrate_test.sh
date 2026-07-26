@@ -31,6 +31,7 @@ git clone -b $3 https://github.com/apache/dubbo-go-samples.git samples --depth=1
 if [ "$1" == "apache/dubbo-go" ]; then
     go mod edit -replace=dubbo.apache.org/dubbo-go/v3=dubbo.apache.org/dubbo-go/v3@"$2"
 else
+    export GONOSUMDB="${GONOSUMDB:+${GONOSUMDB},}github.com/$1/v3"
     go mod edit -replace=dubbo.apache.org/dubbo-go/v3=github.com/"$1"/v3@"$2"
 fi
 
