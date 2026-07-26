@@ -277,26 +277,41 @@ func (e *etcdV3ServiceDiscovery) registerServiceWatcher(serviceName string) erro
 
 // DataChange when child data change should DispatchEventByServiceName
 func (e *etcdV3ServiceDiscovery) DataChange(eventType remoting.Event) bool {
-	if eventType.Action == remoting.EventTypeUpdate {
-		instance := &registry.DefaultServiceInstance{}
-		err := jsonutil.DecodeJSON([]byte(eventType.Content), &instance)
-		if err != nil {
-			instance.ServiceName = ""
-		}
-
-		// notify instance listener instance change
-		name := instance.ServiceName
-		instances := e.GetInstances(name)
-		for _, lis := range e.instanceListenerMap[instance.ServiceName].Values() {
-
-			instanceLis := lis.(registry.ServiceInstancesChangedListener)
-			err = instanceLis.OnEvent(registry.NewServiceInstancesChangedEvent(name, instances))
-		}
-		if err != nil {
-			return false
-		}
+	if eventType.Action != remoting.EventTypeUpdate {
+		return true
+	}
+	instance := &registry.DefaultServiceInstance{}
+	if err := jsonutil.DecodeJSON([]byte(eventType.Content), &instance); err != nil {
+		// Previously the decode failure blanked ServiceName to "" and then looked
+		// up instanceListenerMap[""], a silent no-op. Fail fast and log instead.
+		logger.Errorf("[Registry][Etcdv3] decode instance failed, content=%s err=%v", eventType.Content, err)
+		return false
 	}
 
+	// notify instance listener instance change
+	name := instance.ServiceName
+	instances := e.GetInstances(name)
+	// Snapshot the listener set under initLock (the writers
+	// registerServiceInstanceListener/registerServiceWatcher use the same lock)
+	// and dispatch outside the lock: an unlocked read races the writers and
+	// holding the lock across OnEvent would block other listeners. See #3512.
+	initLock.Lock()
+	set, ok := e.instanceListenerMap[name]
+	listeners := make([]registry.ServiceInstancesChangedListener, 0)
+	if ok && set != nil {
+		for _, lis := range set.Values() {
+			listeners = append(listeners, lis.(registry.ServiceInstancesChangedListener))
+		}
+	}
+	initLock.Unlock()
+
+	var err error
+	for _, lis := range listeners {
+		err = lis.OnEvent(registry.NewServiceInstancesChangedEvent(name, instances))
+	}
+	if err != nil {
+		return false
+	}
 	return true
 }
 

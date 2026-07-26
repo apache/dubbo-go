@@ -18,10 +18,15 @@
 package zookeeper
 
 import (
+	"reflect"
+	"sync"
 	"testing"
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
+	"github.com/dubbogo/gost/gof/observer"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -44,4 +49,42 @@ func Test_newZookeeperServiceDiscovery(t *testing.T) {
 func Test_zookeeperServiceDiscovery_DataChange(t *testing.T) {
 	serviceDiscovery := &zookeeperServiceDiscovery{}
 	assert.Equal(t, registry.DefaultPageSize, serviceDiscovery.GetDefaultPageSize())
+}
+
+// mockChangedListener is a minimal ServiceInstancesChangedListener for tests.
+type mockChangedListener struct{ name string }
+
+func (m *mockChangedListener) OnEvent(observer.Event) error                         { return nil }
+func (m *mockChangedListener) AddListenerAndNotify(string, registry.NotifyListener) {}
+func (m *mockChangedListener) RemoveListener(string)                                {}
+func (m *mockChangedListener) GetServiceNames() *gxset.HashSet                      { return gxset.NewSet(m.name) }
+func (m *mockChangedListener) Accept(observer.Event) bool                           { return true }
+func (m *mockChangedListener) GetEventType() reflect.Type                           { return nil }
+func (m *mockChangedListener) GetPriority() int                                     { return 0 }
+
+// TestZookeeperServiceDiscovery_SnapshotListeners verifies the listener map is
+// read under listenLock and a missing key is a safe no-op. Regression for #3512
+// (unlocked map read racing AddListener/Destroy).
+func TestZookeeperServiceDiscovery_SnapshotListeners(t *testing.T) {
+	sd := &zookeeperServiceDiscovery{
+		instanceListenerMap: map[string]*gxset.HashSet{
+			"svc-a": gxset.NewSet(&mockChangedListener{name: "a1"}, &mockChangedListener{name: "a2"}),
+		},
+	}
+	assert.Nil(t, sd.snapshotListeners("missing"))
+	assert.Len(t, sd.snapshotListeners("svc-a"), 2)
+
+	// Concurrent snapshot vs concurrent map mutation under listenLock must be race-free.
+	var wg sync.WaitGroup
+	for range 50 {
+		wg.Add(2)
+		go func() { defer wg.Done(); _ = sd.snapshotListeners("svc-a") }()
+		go func() {
+			defer wg.Done()
+			sd.listenLock.Lock()
+			sd.instanceListenerMap["svc-a"] = gxset.NewSet(&mockChangedListener{name: "x"})
+			sd.listenLock.Unlock()
+		}()
+	}
+	wg.Wait()
 }

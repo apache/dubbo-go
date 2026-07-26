@@ -274,11 +274,15 @@ func (zksd *zookeeperServiceDiscovery) DataChange(eventType remoting.Event) bool
 	// get service name in zk path
 	serviceName, _, _ := strings.Cut(path, constant.PathSeparator)
 
-	var err error
 	instances := zksd.GetInstances(serviceName)
-	for _, lis := range zksd.instanceListenerMap[serviceName].Values() {
-		instanceListener := lis.(registry.ServiceInstancesChangedListener)
-		err = instanceListener.OnEvent(registry.NewServiceInstancesChangedEvent(serviceName, instances))
+	// Snapshot the listener set under listenLock (AddListener/Destroy mutate the
+	// map under the same lock) and dispatch outside the lock: an unlocked read
+	// races the writers (fatal "concurrent map read and map write") and holding
+	// the lock across OnEvent would block other listeners. See #3512.
+	listeners := zksd.snapshotListeners(serviceName)
+	var err error
+	for _, lis := range listeners {
+		err = lis.OnEvent(registry.NewServiceInstancesChangedEvent(serviceName, instances))
 	}
 
 	if err != nil {
@@ -286,6 +290,23 @@ func (zksd *zookeeperServiceDiscovery) DataChange(eventType remoting.Event) bool
 		return false
 	}
 	return true
+}
+
+// snapshotListeners returns a snapshot of the listeners registered for
+// serviceName under listenLock. The returned slice is safe to iterate without
+// the lock.
+func (zksd *zookeeperServiceDiscovery) snapshotListeners(serviceName string) []registry.ServiceInstancesChangedListener {
+	zksd.listenLock.Lock()
+	defer zksd.listenLock.Unlock()
+	set, ok := zksd.instanceListenerMap[serviceName]
+	if !ok || set == nil {
+		return nil
+	}
+	out := make([]registry.ServiceInstancesChangedListener, 0, set.Size())
+	for _, lis := range set.Values() {
+		out = append(out, lis.(registry.ServiceInstancesChangedListener))
+	}
+	return out
 }
 
 // toCuratorInstance convert to curator's service instance

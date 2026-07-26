@@ -316,10 +316,24 @@ func (n *nacosServiceDiscovery) AddListener(listener registry.ServiceInstancesCh
 					})
 				}
 
+				// Snapshot the listener set under listenerLock (registerInstanceListener
+				// and Destroy mutate the map under the same lock) and dispatch outside
+				// the lock: an unlocked read races the writers (Destroy can clear the
+				// map after this callback is scheduled) and holding the lock across
+				// OnEvent would block other listeners. See #3512.
+				n.listenerLock.Lock()
+				set, ok := n.instanceListenerMap[serviceName]
+				listeners := make([]registry.ServiceInstancesChangedListener, 0)
+				if ok && set != nil {
+					for _, lis := range set.Values() {
+						listeners = append(listeners, lis.(registry.ServiceInstancesChangedListener))
+					}
+				}
+				n.listenerLock.Unlock()
+
 				var e error
-				for _, lis := range n.instanceListenerMap[serviceName].Values() {
-					instanceListener := lis.(registry.ServiceInstancesChangedListener)
-					e = instanceListener.OnEvent(registry.NewServiceInstancesChangedEvent(serviceName, instances))
+				for _, lis := range listeners {
+					e = lis.OnEvent(registry.NewServiceInstancesChangedEvent(serviceName, instances))
 				}
 
 				if e != nil {
