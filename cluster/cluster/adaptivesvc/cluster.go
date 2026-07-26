@@ -42,11 +42,12 @@ func init() {
 type adaptiveServiceCluster struct{}
 
 func newAdaptiveServiceCluster() clusterpkg.Cluster {
-	if instance == nil {
-		once.Do(func() {
-			instance = &adaptiveServiceCluster{}
-		})
-	}
+	// Always go through once.Do so the read of `instance` has a happens-before
+	// relation to the write inside Do. The previous `if instance == nil` fast
+	// path read `instance` without synchronization, racing the first-time write.
+	once.Do(func() {
+		instance = &adaptiveServiceCluster{}
+	})
 	return instance
 }
 

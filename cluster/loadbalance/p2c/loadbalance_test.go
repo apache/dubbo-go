@@ -18,6 +18,7 @@
 package p2c
 
 import (
+	"sync"
 	"testing"
 )
 
@@ -204,4 +205,21 @@ func TestLoadBalance(t *testing.T) {
 		assert.Equal(t, ivkArr[1].GetURL().String(), ivk.GetURL().String())
 	})
 
+}
+
+// TestNewP2CLoadBalanceConcurrent verifies the singleton factory is race-free
+// when many goroutines race the first-time initialization. Run with -race.
+// Regression for #3521 (read of `instance` outside once.Do).
+func TestNewP2CLoadBalanceConcurrent(t *testing.T) {
+	var wg sync.WaitGroup
+	const n = 100
+	for range n {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			lb := newP2CLoadBalance(nil)
+			assert.NotNil(t, lb)
+		}()
+	}
+	wg.Wait()
 }

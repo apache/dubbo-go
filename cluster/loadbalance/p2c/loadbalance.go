@@ -90,14 +90,15 @@ func defaultRnd(n int) (i, j int) {
 // randomPicker parameter is designed ONLY FOR TEST purposes.
 // Thread-safe via sync.Once.
 func newP2CLoadBalance(r randomPicker) loadbalance.LoadBalance {
-	if r == nil {
-		r = defaultRnd
-	}
-	if instance == nil {
-		once.Do(func() {
-			instance = &p2cLoadBalance{randomPicker: r}
-		})
-	}
+	// Always go through once.Do so the read of `instance` has a happens-before
+	// relation to the write inside Do. The previous `if instance == nil` fast
+	// path read `instance` without synchronization, racing the first-time write.
+	once.Do(func() {
+		if r == nil {
+			r = defaultRnd
+		}
+		instance = &p2cLoadBalance{randomPicker: r}
+	})
 	return instance
 }
 
