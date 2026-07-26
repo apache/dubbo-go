@@ -104,9 +104,7 @@ func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfigu
 // AddListener add listener for key
 // TODO this method should has a parameter 'group', and it does not now, so we should concat group and key with '/' manually
 func (c *zookeeperDynamicConfiguration) AddListener(key string, listener config_center.ConfigurationListener, options ...config_center.Option) {
-	key = strings.Join([]string{c.GetURL().GetParam(constant.ConfigNamespaceKey, config_center.DefaultGroup), key}, "/")
-	qualifiedKey := buildPath(c.rootPath, key)
-	c.cacheListener.AddListener(qualifiedKey, listener)
+	c.cacheListener.AddListener(c.qualifyKey(key), listener)
 }
 
 // buildPath build path and format
@@ -119,8 +117,18 @@ func buildPath(rootPath, subPath string) string {
 	return path.Clean(fullPath)
 }
 
+// qualifyKey joins the configured namespace with key and builds the full zk
+// path used as the CacheListener key. AddListener and RemoveListener must use
+// the same qualified key; previously RemoveListener passed the raw caller key
+// and never matched the qualified key stored by AddListener, so every remove
+// was a silent no-op (listener leak). See #3536.
+func (c *zookeeperDynamicConfiguration) qualifyKey(key string) string {
+	key = strings.Join([]string{c.GetURL().GetParam(constant.ConfigNamespaceKey, config_center.DefaultGroup), key}, "/")
+	return buildPath(c.rootPath, key)
+}
+
 func (c *zookeeperDynamicConfiguration) RemoveListener(key string, listener config_center.ConfigurationListener, opions ...config_center.Option) {
-	c.cacheListener.RemoveListener(key, listener)
+	c.cacheListener.RemoveListener(c.qualifyKey(key), listener)
 }
 
 func (c *zookeeperDynamicConfiguration) GetProperties(key string, opts ...config_center.Option) (string, error) {

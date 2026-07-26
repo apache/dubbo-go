@@ -33,7 +33,7 @@ import (
 
 // CacheListener defines keyListeners and rootPath
 type CacheListener struct {
-	// key is zkNode Path and value is set of listeners
+	// key is zkNode Path and value is *listenerSet (mutex-guarded set of listeners)
 	keyListeners    sync.Map
 	zkEventListener *zookeeper.ZkEventListener
 	rootPath        string
@@ -44,27 +44,58 @@ func NewCacheListener(rootPath string, listener *zookeeper.ZkEventListener) *Cac
 	return &CacheListener{zkEventListener: listener, rootPath: rootPath}
 }
 
+// listenerSet is a mutex-guarded set of ConfigurationListeners. AddListener and
+// RemoveListener run on router/config goroutines while DataChange runs on the
+// zk event goroutine; guarding the inner map avoids a fatal concurrent map
+// read+write. See #3536.
+type listenerSet struct {
+	mu        sync.Mutex
+	listeners map[config_center.ConfigurationListener]struct{}
+}
+
+func newListenerSet() *listenerSet {
+	return &listenerSet{listeners: make(map[config_center.ConfigurationListener]struct{})}
+}
+
+func (s *listenerSet) add(l config_center.ConfigurationListener) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.listeners[l] = struct{}{}
+}
+
+func (s *listenerSet) remove(l config_center.ConfigurationListener) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.listeners, l)
+}
+
+// snapshot returns a slice copy of the listeners under the lock, safe to
+// iterate outside the lock so listener.Process is not called while holding it.
+func (s *listenerSet) snapshot() []config_center.ConfigurationListener {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := make([]config_center.ConfigurationListener, 0, len(s.listeners))
+	for l := range s.listeners {
+		out = append(out, l)
+	}
+	return out
+}
+
 // AddListener will add a listener if loaded
 func (l *CacheListener) AddListener(key string, listener config_center.ConfigurationListener) {
 	// FIXME do not use Client.ExistW, cause it has a bug(can not watch zk node that do not exist)
 	_, _, _, err := l.zkEventListener.Client.Conn.ExistsW(key)
-	// reference from https://stackoverflow.com/questions/34018908/golang-why-dont-we-have-a-set-datastructure
-	// make a map[your type]struct{} like set in java
 	if err != nil {
 		return
 	}
-	listeners, loaded := l.keyListeners.LoadOrStore(key, map[config_center.ConfigurationListener]struct{}{listener: {}})
-	if loaded {
-		listeners.(map[config_center.ConfigurationListener]struct{})[listener] = struct{}{}
-		l.keyListeners.Store(key, listeners)
-	}
+	actual, _ := l.keyListeners.LoadOrStore(key, newListenerSet())
+	actual.(*listenerSet).add(listener)
 }
 
 // RemoveListener will delete a listener if loaded
 func (l *CacheListener) RemoveListener(key string, listener config_center.ConfigurationListener) {
-	listeners, loaded := l.keyListeners.Load(key)
-	if loaded {
-		delete(listeners.(map[config_center.ConfigurationListener]struct{}), listener)
+	if listeners, ok := l.keyListeners.Load(key); ok {
+		listeners.(*listenerSet).remove(listener)
 	}
 }
 
@@ -78,7 +109,7 @@ func (l *CacheListener) DataChange(event remoting.Event) bool {
 	key, group := l.pathToKeyGroup(event.Path)
 	defer metrics.Publish(metricsConfigCenter.NewIncMetricEvent(key, group, changeType, metricsConfigCenter.Zookeeper))
 	if listeners, ok := l.keyListeners.Load(event.Path); ok {
-		for listener := range listeners.(map[config_center.ConfigurationListener]struct{}) {
+		for _, listener := range listeners.(*listenerSet).snapshot() {
 			listener.Process(&config_center.ConfigChangeEvent{
 				Key:        key,
 				Value:      event.Content,

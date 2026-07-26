@@ -18,6 +18,7 @@
 package zookeeper
 
 import (
+	"sync"
 	"testing"
 )
 
@@ -34,11 +35,25 @@ func (r *recListener) Process(e *config_center.ConfigChangeEvent) {
 	r.events = append(r.events, e)
 }
 
+// safeCountingListener is a ConfigurationListener safe for concurrent Process.
+type safeCountingListener struct {
+	mu  sync.Mutex
+	cnt int
+}
+
+func (s *safeCountingListener) Process(*config_center.ConfigChangeEvent) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.cnt++
+}
+
 func TestCacheListenerDataChange(t *testing.T) {
 	l := &CacheListener{rootPath: "/dubbo/config"}
 	path := "/dubbo/config/group/app"
 	rec := &recListener{}
-	l.keyListeners.Store(path, map[config_center.ConfigurationListener]struct{}{rec: {}})
+	set := newListenerSet()
+	set.add(rec)
+	l.keyListeners.Store(path, set)
 
 	ok := l.DataChange(remoting.Event{Path: path, Action: remoting.EventTypeUpdate, Content: "val"})
 	if !ok {
@@ -53,7 +68,9 @@ func TestCacheListenerDataChangeEmptyContent(t *testing.T) {
 	l := &CacheListener{rootPath: "/dubbo/config"}
 	path := "/dubbo/config/group/app"
 	rec := &recListener{}
-	l.keyListeners.Store(path, map[config_center.ConfigurationListener]struct{}{rec: {}})
+	set := newListenerSet()
+	set.add(rec)
+	l.keyListeners.Store(path, set)
 
 	ok := l.DataChange(remoting.Event{Path: path, Action: remoting.EventTypeAdd})
 	if !ok {
@@ -76,11 +93,37 @@ func TestCacheListenerRemoveListener(t *testing.T) {
 	l := &CacheListener{}
 	key := "k"
 	rec := &recListener{}
-	l.keyListeners.Store(key, map[config_center.ConfigurationListener]struct{}{rec: {}})
+	set := newListenerSet()
+	set.add(rec)
+	l.keyListeners.Store(key, set)
 	l.RemoveListener(key, rec)
-	if m, ok := l.keyListeners.Load(key); ok {
-		if _, exists := m.(map[config_center.ConfigurationListener]struct{})[rec]; exists {
-			t.Fatalf("listener should be removed")
+	if s, ok := l.keyListeners.Load(key); ok {
+		if got := len(s.(*listenerSet).snapshot()); got != 0 {
+			t.Fatalf("listener should be removed, got %d", got)
+		}
+	}
+}
+
+// TestListenerSetConcurrency verifies the mutex-guarded listenerSet is race-free
+// under concurrent add/remove/snapshot (DataChange's read path). Run with -race.
+// Regression for #3536 (inner map had no lock -> fatal concurrent map read+write).
+func TestListenerSetConcurrency(t *testing.T) {
+	s := newListenerSet()
+	a := &safeCountingListener{}
+	b := &safeCountingListener{}
+	var wg sync.WaitGroup
+	for range 100 {
+		wg.Add(4)
+		go func() { defer wg.Done(); s.add(a) }()
+		go func() { defer wg.Done(); s.remove(a) }()
+		go func() { defer wg.Done(); s.add(b) }()
+		go func() { defer wg.Done(); _ = s.snapshot() }()
+	}
+	wg.Wait()
+	// snapshot must only ever reference the registered listeners and not panic.
+	for _, l := range s.snapshot() {
+		if l != a && l != b {
+			t.Fatalf("unexpected listener %v", l)
 		}
 	}
 }

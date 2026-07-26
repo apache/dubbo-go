@@ -31,6 +31,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 )
 
@@ -131,4 +132,24 @@ func mustURL(t *testing.T, raw string) *common.URL {
 	u, err := common.NewURL(raw)
 	require.NoError(t, err)
 	return u
+}
+
+// TestZookeeperDynamicConfigurationQualifyKey verifies AddListener and
+// RemoveListener compute the same qualified key (namespace + buildPath), so
+// remove actually matches the stored entry. Regression for #3536 (RemoveListener
+// passed the raw caller key and never matched AddListener's qualified key).
+func TestZookeeperDynamicConfigurationQualifyKey(t *testing.T) {
+	u, err := common.NewURL("registry://127.0.0.1:2181",
+		common.WithParamsValue(constant.ConfigNamespaceKey, "myns"))
+	require.NoError(t, err)
+	cfg := &zookeeperDynamicConfiguration{rootPath: "/dubbo/config", url: u}
+
+	got := cfg.qualifyKey("app.key")
+	want := buildPath("/dubbo/config", "myns/app.key")
+	require.Equal(t, want, got)
+
+	// default namespace when the param is absent
+	u2, _ := common.NewURL("registry://127.0.0.1:2181")
+	cfg2 := &zookeeperDynamicConfiguration{rootPath: "/dubbo/config", url: u2}
+	require.Equal(t, buildPath("/dubbo/config", config_center.DefaultGroup+"/app.key"), cfg2.qualifyKey("app.key"))
 }
