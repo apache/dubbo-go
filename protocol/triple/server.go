@@ -556,7 +556,7 @@ func (s *Server) registerUnaryMethodHandler(procedure string, m common.MethodInf
 			// todo(DMwangnima): modify InfoInvoker to get a unified processing logic
 			// please refer to server/InfoInvoker.Invoke()
 			triResp := wrapTripleResponse(res.Result())
-			appendTripleOutgoingAttachments(ctx, res.Attachments())
+			appendTripleOutgoingAttachments(triResp, res.Attachments())
 			return triResp, res.Error()
 		},
 		opts...,
@@ -635,15 +635,27 @@ func wrapTripleResponse(result any) *tri.Response {
 	return tri.NewResponse([]any{result})
 }
 
-func appendTripleOutgoingAttachments(ctx context.Context, attachments map[string]any) {
+// appendTripleOutgoingAttachments writes provider response attachments onto the
+// response's trailer/header. The triple handler merges response.Header() and
+// response.Trailer() into the connection's outgoing headers/trailers (see
+// handler.go), so writing here is what actually delivers the attachments to the
+// client. The previous implementation called tri.AppendToOutgoingContext(ctx,
+// ...), which returns a new context that the unary handler closure cannot
+// propagate back to the framework, so the attachments were silently dropped.
+func appendTripleOutgoingAttachments(resp *tri.Response, attachments map[string]any) {
+	if resp == nil || len(attachments) == 0 {
+		return
+	}
 	for k, v := range attachments {
 		switch val := v.(type) {
 		case string:
-			tri.AppendToOutgoingContext(ctx, k, val)
+			resp.Trailer().Set(k, val)
 		case []string:
 			for _, item := range val {
-				tri.AppendToOutgoingContext(ctx, k, item)
+				resp.Trailer().Add(k, item)
 			}
+		default:
+			resp.Header().Set(k, fmt.Sprintf("%v", v))
 		}
 	}
 }
