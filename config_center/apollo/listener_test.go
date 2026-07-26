@@ -18,6 +18,7 @@
 package apollo
 
 import (
+	"sync"
 	"testing"
 )
 
@@ -69,4 +70,41 @@ func TestApolloListener(t *testing.T) {
 	if !l.IsEmpty() {
 		t.Fatalf("listener should be empty after remove")
 	}
+}
+
+// safeRecordingListener is a ConfigurationListener safe for concurrent Process.
+type safeRecordingListener struct {
+	mu  sync.Mutex
+	cnt int
+}
+
+func (s *safeRecordingListener) Process(*config_center.ConfigChangeEvent) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.cnt++
+}
+
+// TestApolloListenerConcurrency verifies the mutex-guarded listener set is
+// race-free under concurrent OnNewestChange (agollo goroutine) vs Add/Remove
+// (router goroutines). Run with -race. Regression for #3541 (unlocked map ->
+// fatal concurrent map read+write).
+func TestApolloListenerConcurrency(t *testing.T) {
+	l := newApolloListener()
+	a := &safeRecordingListener{}
+	b := &safeRecordingListener{}
+	change := &storage.FullChangeEvent{
+		Changes: map[string]any{"k": "v"},
+	}
+	change.Namespace = "application"
+	var wg sync.WaitGroup
+	for range 100 {
+		wg.Add(4)
+		go func() { defer wg.Done(); l.AddListener(a) }()
+		go func() { defer wg.Done(); l.RemoveListener(a) }()
+		go func() { defer wg.Done(); l.AddListener(b) }()
+		go func() { defer wg.Done(); l.OnNewestChange(change) }()
+	}
+	wg.Wait()
+	// no panic, no race; IsEmpty reads under the lock without racing writers.
+	_ = l.IsEmpty()
 }
