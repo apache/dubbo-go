@@ -19,6 +19,7 @@ package static
 
 import (
 	"fmt"
+	"sync"
 	"testing"
 )
 
@@ -57,4 +58,27 @@ func TestStaticDirDestroy(t *testing.T) {
 	assert.True(t, staticDir.IsAvailable())
 	staticDir.Destroy()
 	assert.False(t, staticDir.IsAvailable())
+}
+
+// TestStaticDirListVsDestroyRace verifies that concurrent List/IsAvailable and
+// Destroy do not race on dir.invokers. Run with -race. Regression for #3520.
+func TestStaticDirListVsDestroyRace(t *testing.T) {
+	invokers := []base.Invoker{}
+	for i := range 10 {
+		url, _ := common.NewURL(fmt.Sprintf("dubbo://192.168.1.%v:20000/com.ikurento.user.UserProvider", i))
+		invokers = append(invokers, base.NewBaseInvoker(url))
+	}
+
+	staticDir := NewDirectory(invokers)
+	inv := &invocation.RPCInvocation{}
+
+	var wg sync.WaitGroup
+	const rounds = 50
+	for range rounds {
+		wg.Add(3)
+		go func() { defer wg.Done(); _ = staticDir.List(inv) }()
+		go func() { defer wg.Done(); staticDir.IsAvailable() }()
+		go func() { defer wg.Done(); staticDir.Destroy() }()
+	}
+	wg.Wait()
 }
