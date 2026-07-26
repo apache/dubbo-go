@@ -51,8 +51,12 @@ import (
 type failbackClusterInvoker struct {
 	base.BaseClusterInvoker
 
-	once          sync.Once
+	// mu guards the lazy initialization of ticker/done/taskList so that Destroy
+	// observes a consistent state. See #3525.
+	mu            sync.Mutex
+	initialized   bool
 	ticker        *time.Ticker
+	done          chan struct{}
 	maxRetries    int64
 	failbackTasks int64
 	taskList      *queue.Queue
@@ -92,32 +96,55 @@ func (invoker *failbackClusterInvoker) tryTimerTaskProc(ctx context.Context, ret
 }
 
 func (invoker *failbackClusterInvoker) process(ctx context.Context) {
-	invoker.ticker = time.NewTicker(time.Second * 1)
-	for range invoker.ticker.C {
-		// check each timeout task and re-run
-		for {
-			value, err := invoker.taskList.Peek()
-			if err == queue.ErrDisposed {
-				return
-			}
-			if err == queue.ErrEmptyQueue {
-				break
-			}
+	// ticker is set by ensureInit before this goroutine starts.
+	defer invoker.ticker.Stop()
+	for {
+		select {
+		case <-invoker.ticker.C:
+			// check each timeout task and re-run
+			for {
+				value, err := invoker.taskList.Peek()
+				if err == queue.ErrDisposed {
+					return
+				}
+				if err == queue.ErrEmptyQueue {
+					break
+				}
 
-			retryTask := value.(*retryTimerTask)
-			// use exponential backoff calculated wait time instead of fixed 5 seconds
-			if time.Since(retryTask.lastT) < retryTask.nextBackoff {
-				break
-			}
+				retryTask := value.(*retryTimerTask)
+				// use exponential backoff calculated wait time instead of fixed 5 seconds
+				if time.Since(retryTask.lastT) < retryTask.nextBackoff {
+					break
+				}
 
-			// ignore return. the get must success.
-			if _, err = invoker.taskList.Get(1); err != nil {
-				logger.Warnf("[Cluster][Failback] get task failed, err=%v", err)
-				break
+				// ignore return. the get must success.
+				if _, err = invoker.taskList.Get(1); err != nil {
+					logger.Warnf("[Cluster][Failback] get task failed, err=%v", err)
+					break
+				}
+				go invoker.tryTimerTaskProc(ctx, retryTask)
 			}
-			go invoker.tryTimerTaskProc(ctx, retryTask)
+		case <-invoker.done:
+			// Destroy signaled shutdown; the deferred ticker.Stop() runs on return.
+			return
 		}
 	}
+}
+
+// ensureInit lazily creates the retry queue, ticker and done channel and starts
+// the process goroutine exactly once. Guarded by mu so Destroy observes a
+// consistent state. See #3525.
+func (invoker *failbackClusterInvoker) ensureInit(ctx context.Context) {
+	invoker.mu.Lock()
+	defer invoker.mu.Unlock()
+	if invoker.initialized {
+		return
+	}
+	invoker.taskList = queue.New(invoker.failbackTasks)
+	invoker.ticker = time.NewTicker(time.Second * 1)
+	invoker.done = make(chan struct{})
+	invoker.initialized = true
+	go invoker.process(ctx)
 }
 
 // Invoke executes with failback semantics: schedule retries on failure.
@@ -144,10 +171,7 @@ func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation pr
 	// DO INVOKE
 	res := ivk.Invoke(ctx, invocation)
 	if res.Error() != nil {
-		invoker.once.Do(func() {
-			invoker.taskList = queue.New(invoker.failbackTasks)
-			go invoker.process(ctx)
-		})
+		invoker.ensureInit(ctx)
 
 		taskLen := invoker.taskList.Len()
 		if taskLen >= invoker.failbackTasks {
@@ -169,12 +193,21 @@ func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation pr
 func (invoker *failbackClusterInvoker) Destroy() {
 	invoker.BaseClusterInvoker.Destroy()
 
-	// stop ticker
-	if invoker.ticker != nil {
-		invoker.ticker.Stop()
-	}
+	// Signal the process goroutine to exit and tear down only what was
+	// initialized. taskList may be nil if Invoke never failed (no retry path
+	// ever started); nil-check to avoid a nil-pointer dereference. See #3525.
+	invoker.mu.Lock()
+	initialized := invoker.initialized
+	done := invoker.done
+	taskList := invoker.taskList
+	invoker.mu.Unlock()
 
-	_ = invoker.taskList.Dispose()
+	if initialized && done != nil {
+		close(done)
+	}
+	if taskList != nil {
+		_ = taskList.Dispose()
+	}
 }
 
 type retryTimerTask struct {
@@ -205,11 +238,15 @@ func (t *retryTimerTask) checkRetry() {
 
 	logger.Infof("[Cluster][Failback] retry scheduled, backoff=%v method=%s", t.nextBackoff, t.invocation.MethodName())
 
+	// Set lastT before publishing the task to the queue: process reads lastT
+	// after Peek, and the queue's Put/Peek synchronization only makes pre-Put
+	// writes visible to Peek. Writing lastT after Put raced process's read.
+	// See #3525.
+	t.lastT = time.Now()
 	if err := t.clusterInvoker.taskList.Put(t); err != nil {
 		logger.Errorf("[Cluster][Failback] put task failed, task=%v err=%v", t, err)
 		return
 	}
-	t.lastT = time.Now() // update lastT after successful Put
 }
 
 func newRetryTimerTask(loadbalance loadbalance.LoadBalance, invocation protocolbase.Invocation, invokers []protocolbase.Invoker,

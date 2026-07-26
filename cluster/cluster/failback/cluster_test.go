@@ -261,3 +261,54 @@ func TestFailbackOutOfLimit(t *testing.T) {
 	invoker.EXPECT().Destroy().Return()
 	clusterInvoker.Destroy()
 }
+
+// TestFailbackDestroyWithoutRetry verifies Destroy does not panic when Invoke
+// never failed (taskList never initialized). Regression for #3525.
+func TestFailbackDestroyWithoutRetry(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	invoker := mock.NewMockInvoker(ctrl)
+	clusterInvoker := registerFailback(invoker).(*failbackClusterInvoker)
+
+	invoker.EXPECT().GetURL().Return(failbackUrl).AnyTimes()
+	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
+	mockResult := &result.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
+	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockResult).AnyTimes()
+
+	_ = clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
+	// Invoke succeeded, so the retry path was never initialized.
+	require.Nil(t, clusterInvoker.taskList)
+
+	invoker.EXPECT().Destroy().Return().AnyTimes()
+	assert.NotPanics(t, func() { clusterInvoker.Destroy() })
+}
+
+// TestFailbackDestroyStopsProcess verifies Destroy signals the process goroutine
+// to exit instead of leaving it blocked on the ticker forever. Regression for
+// #3525 (process blocked on range ticker.C after Stop).
+func TestFailbackDestroyStopsProcess(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	invoker := mock.NewMockInvoker(ctrl)
+	clusterInvoker := registerFailback(invoker).(*failbackClusterInvoker)
+
+	invoker.EXPECT().GetURL().Return(failbackUrl).AnyTimes()
+	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
+	mockFailed := &result.RPCResult{Err: perrors.New("error")}
+	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockFailed).AnyTimes()
+
+	_ = clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
+	require.NotNil(t, clusterInvoker.done) // retry path started the process goroutine
+
+	invoker.EXPECT().Destroy().Return().AnyTimes()
+	clusterInvoker.Destroy()
+
+	select {
+	case <-clusterInvoker.done:
+		// process goroutine was signaled to exit
+	default:
+		t.Fatal("process goroutine was not signaled to exit (done not closed)")
+	}
+}
