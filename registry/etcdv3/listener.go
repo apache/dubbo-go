@@ -38,6 +38,7 @@ import (
 )
 
 type dataListener struct {
+	mu            sync.RWMutex
 	interestedURL []*common.URL
 	listener      config_center.ConfigurationListener
 }
@@ -49,6 +50,8 @@ func NewRegistryDataListener(listener config_center.ConfigurationListener) *data
 
 // AddInterestedURL adds a registration @url to listen
 func (l *dataListener) AddInterestedURL(url *common.URL) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
 	l.interestedURL = append(l.interestedURL, url)
 }
 
@@ -66,7 +69,13 @@ func (l *dataListener) DataChange(eventType remoting.Event) bool {
 		return false
 	}
 
-	if slices.ContainsFunc(l.interestedURL, serviceURL.URLEqual) {
+	// AddInterestedURL appends from the consumer subscribe path while DataChange
+	// runs on the etcd watch goroutine; guard the slice read under RLock and
+	// dispatch Process outside the lock. See #3544.
+	l.mu.RLock()
+	matched := slices.ContainsFunc(l.interestedURL, serviceURL.URLEqual)
+	l.mu.RUnlock()
+	if matched {
 		l.listener.Process(
 			&config_center.ConfigChangeEvent{
 				Key:        eventType.Path,

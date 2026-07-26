@@ -18,12 +18,53 @@
 package etcdv3
 
 import (
+	"sync"
+	"testing"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 type MockDataListener struct{}
 
 func (*MockDataListener) Process(configType *config_center.ConfigChangeEvent) {}
+
+// safeMockListener is a ConfigurationListener safe for concurrent Process.
+type safeMockListener struct {
+	mu  sync.Mutex
+	cnt int
+}
+
+func (m *safeMockListener) Process(*config_center.ConfigChangeEvent) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.cnt++
+}
+
+// Test_dataListener_ConcurrentAddAndDataChange verifies the RWMutex guarding
+// interestedURL makes concurrent AddInterestedURL (subscribe path) and DataChange
+// (etcd watch goroutine) race-free. Run with -race. Regression for #3544.
+func Test_dataListener_ConcurrentAddAndDataChange(t *testing.T) {
+	rawURL := "dubbo://127.0.0.1:20880/com.test.Foo"
+	u, err := common.NewURL(rawURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	l := &dataListener{listener: &safeMockListener{}, interestedURL: []*common.URL{u}}
+	event := remoting.Event{Path: "/providers/" + rawURL, Action: remoting.EventTypeAdd}
+
+	var wg sync.WaitGroup
+	for range 100 {
+		wg.Add(2)
+		go func() { defer wg.Done(); l.AddInterestedURL(u) }()
+		go func() { defer wg.Done(); l.DataChange(event) }()
+	}
+	wg.Wait()
+	// No panic, no race; DataChange matched at least once (u is always present).
+}
 
 /*
 func Test_dataListener_DataChange(t *testing.T) {
