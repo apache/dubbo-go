@@ -9,6 +9,8 @@ require (
 	google.golang.org/protobuf v1.34.2
 )
 
+replace dubbo.apache.org/dubbo-go/v3 => ../../
+
 require (
 	github.com/RoaringBitmap/roaring v1.2.3 // indirect
 	github.com/Workiva/go-datastructures v1.0.52 // indirect
