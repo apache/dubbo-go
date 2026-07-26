@@ -170,25 +170,32 @@ func (s *Server) handlePkg(conn net.Conn) {
 			ctx = context.WithValue(ctx, constant.TracingRemoteSpanCtx, spanCtx)
 		}
 
+		var cancel context.CancelFunc
 		if len(reqHeader["Timeout"]) > 0 {
 			timeout, err := time.ParseDuration(reqHeader["Timeout"])
 			if err == nil {
 				httpTimeout = timeout
-				var cancel context.CancelFunc
 				ctx, cancel = context.WithTimeout(ctx, httpTimeout)
-				defer cancel()
 			}
 			delete(reqHeader, "Timeout")
 		}
 		setTimeout(conn, httpTimeout)
 
-		if err := serveRequest(ctx, reqHeader, reqBody, conn); err != nil {
-			if errRsp := sendErrorResp(r.Header, []byte(perrors.WithStack(err).Error())); errRsp != nil {
+		// Cancel the timeout context after serving this request. A defer here
+		// would only fire when handlePkg returns (i.e. when the connection
+		// closes), accumulating one deferred cancel + retained context per
+		// keep-alive request for the connection's lifetime. See #3546.
+		serveErr := serveRequest(ctx, reqHeader, reqBody, conn)
+		if cancel != nil {
+			cancel()
+		}
+		if serveErr != nil {
+			if errRsp := sendErrorResp(r.Header, []byte(perrors.WithStack(serveErr).Error())); errRsp != nil {
 				logger.Warnf("[Jsonrpc][Server] sendErrorResp failed, header=%v, err=%v, send_err=%v",
-					r.Header, perrors.WithStack(err), errRsp)
+					r.Header, perrors.WithStack(serveErr), errRsp)
 			}
 
-			logger.Infof("[Jsonrpc][Server] unexpected error serving request, closing socket, err=%v", err)
+			logger.Infof("[Jsonrpc][Server] unexpected error serving request, closing socket, err=%v", serveErr)
 			return
 		}
 	}
