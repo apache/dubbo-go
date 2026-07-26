@@ -87,7 +87,7 @@ func NewInterleavedweightedRoundRobin(invokers []base.Invoker, invocation base.I
 	offset := rand.Uint64() % size //NOSONAR
 	step := int64(0)
 	now := time.Now().Unix()
-	for idx := uint64(0); idx < size; idx++ {
+	for idx := range size {
 		invoker := invokers[(idx+offset)%size]
 		weight := loadbalance.GetWeightAt(invoker, invocation, now)
 		step = gcdInt(step, weight)
@@ -115,10 +115,7 @@ func (iwrr *interleavedweightedRoundRobin) Pick(invocation base.Invocation) base
 	if entry.weight > 0 {
 		iwrr.current.push(entry)
 	} else {
-		weight := loadbalance.GetWeight(entry.invoker, invocation)
-		if weight < 0 {
-			weight = 0
-		}
+		weight := max(loadbalance.GetWeight(entry.invoker, invocation), 0)
 		entry.weight = weight
 		iwrr.next.push(entry)
 	}

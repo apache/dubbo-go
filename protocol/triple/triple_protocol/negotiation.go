@@ -136,8 +136,8 @@ func ParseAltSvcHeader(altSvcHeader string) []*AltSvcInfo {
 	var altSvcs []*AltSvcInfo
 
 	// Split by comma to get individual alternative services
-	parts := strings.Split(altSvcHeader, ",")
-	for _, part := range parts {
+	parts := strings.SplitSeq(altSvcHeader, ",")
+	for part := range parts {
 		part = strings.TrimSpace(part)
 		if part == "" {
 			continue
@@ -158,12 +158,12 @@ func ParseAltSvcHeader(altSvcHeader string) []*AltSvcInfo {
 // parseAltSvcPart parses a single alternative service part
 func parseAltSvcPart(part string) *AltSvcInfo {
 	// Find the protocol (before the first '=')
-	eqIndex := strings.Index(part, "=")
-	if eqIndex == -1 {
+	before, _, ok := strings.Cut(part, "=")
+	if !ok {
 		return nil
 	}
 
-	protocol := strings.TrimSpace(part[:eqIndex])
+	protocol := strings.TrimSpace(before)
 	if protocol != constant.AltSvcProtocolH3 && protocol != constant.AltSvcProtocolH2 {
 		return nil
 	}
@@ -188,8 +188,8 @@ func parseAltSvcPart(part string) *AltSvcInfo {
 	// The "ma" parameter specifies how long this alternative service is valid
 	// Example: ma=86400 means valid for 86400 seconds (24 hours)
 	maxAge := 24 * time.Hour // Default to 24 hours if no ma parameter is provided
-	if maIndex := strings.Index(part, "ma="); maIndex != -1 {
-		maPart := part[maIndex+3:]
+	if _, after, ok := strings.Cut(part, "ma="); ok {
+		maPart := after
 		if semicolonIndex := strings.Index(maPart, ";"); semicolonIndex != -1 {
 			maPart = maPart[:semicolonIndex]
 		}
@@ -219,10 +219,10 @@ func parseAuthority(authority string) (host, port string) {
 		return "", port
 	}
 
-	if colonIndex := strings.Index(authority, ":"); colonIndex != -1 {
+	if before, after, ok := strings.Cut(authority, ":"); ok {
 		// Both host and port specified
-		host = authority[:colonIndex]
-		port = authority[colonIndex+1:]
+		host = before
+		port = after
 		return host, port
 	}
 

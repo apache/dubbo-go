@@ -392,7 +392,7 @@ func TestGetInterface(t *testing.T) {
 }
 
 func TestMethodTypeSuiteContextInvalid(t *testing.T) {
-	mt := &MethodType{ctxType: reflect.TypeOf((*context.Context)(nil)).Elem()}
+	mt := &MethodType{ctxType: reflect.TypeFor[context.Context]()}
 
 	// Test with nil context (invalid)
 	var nilCtx context.Context = nil
@@ -411,23 +411,23 @@ func TestIsExported(t *testing.T) {
 
 func TestIsExportedOrBuiltinType(t *testing.T) {
 	// Exported type
-	assert.True(t, isExportedOrBuiltinType(reflect.TypeOf(TestService{})))
+	assert.True(t, isExportedOrBuiltinType(reflect.TypeFor[TestService]()))
 
 	// Pointer to exported type
-	assert.True(t, isExportedOrBuiltinType(reflect.TypeOf(&TestService{})))
+	assert.True(t, isExportedOrBuiltinType(reflect.TypeFor[*TestService]()))
 
 	// Builtin type (string)
-	assert.True(t, isExportedOrBuiltinType(reflect.TypeOf("")))
+	assert.True(t, isExportedOrBuiltinType(reflect.TypeFor[string]()))
 
 	// Builtin type (int)
-	assert.True(t, isExportedOrBuiltinType(reflect.TypeOf(0)))
+	assert.True(t, isExportedOrBuiltinType(reflect.TypeFor[int]()))
 
 	// Pointer to builtin
 	var i int
 	assert.True(t, isExportedOrBuiltinType(reflect.TypeOf(&i)))
 
 	// Unexported type
-	assert.False(t, isExportedOrBuiltinType(reflect.TypeOf(testService{})))
+	assert.False(t, isExportedOrBuiltinType(reflect.TypeFor[testService]()))
 }
 
 // Test service with XXX prefix methods (should be skipped)

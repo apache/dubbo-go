@@ -298,8 +298,8 @@ func parseServices(literalServices string) *gxset.HashSet {
 	if len(literalServices) == 0 {
 		return set
 	}
-	splitServices := strings.Split(literalServices, ",")
-	for _, s := range splitServices {
+	splitServices := strings.SplitSeq(literalServices, ",")
+	for s := range splitServices {
 		if len(s) != 0 {
 			set.Add(s)
 		}

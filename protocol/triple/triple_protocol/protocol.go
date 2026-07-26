@@ -342,16 +342,16 @@ func canonicalizeContentType(contentType string) string {
 // "; charset=<token>" case without invoking mime.ParseMediaType.
 // See https://www.rfc-editor.org/rfc/rfc2045.html#section-5.1 for a full grammar.
 func canonicalizeContentTypeFast(contentType string) (string, bool) {
-	semi := strings.IndexByte(contentType, ';')
-	if semi < 0 {
+	before, after, ok := strings.Cut(contentType, ";")
+	if !ok {
 		if isLowercaseMediaType(contentType) {
 			return contentType, true
 		}
 		return "", false
 	}
 
-	base := contentType[:semi]
-	param := contentType[semi+1:]
+	base := before
+	param := after
 
 	if !isLowercaseMediaType(base) {
 		return "", false

@@ -23,6 +23,7 @@ package internal
 import (
 	"fmt"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -56,11 +57,8 @@ func LoadRegistries(registryIds []string, registries map[string]*global.Registry
 		if targetAll {
 			target = true
 		} else {
-			for _, tr := range registryIds {
-				if tr == k {
-					target = true
-					break
-				}
+			if slices.Contains(registryIds, k) {
+				target = true
 			}
 		}
 

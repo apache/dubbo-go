@@ -21,6 +21,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"maps"
 	"net/http"
 	"reflect"
 	"strings"
@@ -709,9 +710,7 @@ func (s *Server) GetServiceInfo() map[string]grpc.ServiceInfo {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	res := make(map[string]grpc.ServiceInfo, len(s.services))
-	for k, v := range s.services {
-		res[k] = v
-	}
+	maps.Copy(res, s.services)
 	return res
 }
 
@@ -783,7 +782,7 @@ func buildMethodInfoWithReflection(methodType reflect.Method) *common.MethodInfo
 	returnsNum := methodType.Type.NumOut()
 	var respType reflect.Type
 	if returnsNum == 2 {
-		errorType := reflect.TypeOf((*error)(nil)).Elem()
+		errorType := reflect.TypeFor[error]()
 		if methodType.Type.Out(1).Implements(errorType) {
 			respType = methodType.Type.Out(0)
 		}

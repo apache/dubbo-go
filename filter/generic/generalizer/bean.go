@@ -111,12 +111,12 @@ func (g *BeanGeneralizer) toDescriptor(obj any, visited map[uintptr]bool) *JavaB
 
 	v := reflect.ValueOf(obj)
 	// Handle typed nil pointer (e.g., (*T)(nil) stored in an any)
-	if v.Kind() == reflect.Ptr && v.IsNil() {
+	if v.Kind() == reflect.Pointer && v.IsNil() {
 		return nil
 	}
 
 	// Check for circular reference
-	if v.Kind() == reflect.Ptr {
+	if v.Kind() == reflect.Pointer {
 		ptr := v.Pointer()
 		if visited[ptr] {
 			return nil // circular reference detected, return nil to break the cycle
@@ -124,7 +124,7 @@ func (g *BeanGeneralizer) toDescriptor(obj any, visited map[uintptr]bool) *JavaB
 		visited[ptr] = true
 	}
 
-	for v.Kind() == reflect.Ptr && !v.IsNil() {
+	for v.Kind() == reflect.Pointer && !v.IsNil() {
 		v = v.Elem()
 	}
 	t := v.Type()

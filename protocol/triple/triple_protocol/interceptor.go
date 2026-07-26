@@ -19,6 +19,7 @@ package triple_protocol
 
 import (
 	"context"
+	"slices"
 )
 
 // UnaryFunc is the generic signature of a unary RPC. Interceptors may wrap
@@ -90,8 +91,8 @@ func newChain(interceptors []Interceptor) *chain {
 	// the slice act first. Rather than doing this dance repeatedly, reverse the
 	// interceptor order now.
 	var c chain
-	for i := len(interceptors) - 1; i >= 0; i-- {
-		if interceptor := interceptors[i]; interceptor != nil {
+	for _, interceptor := range slices.Backward(interceptors) {
+		if interceptor != nil {
 			c.interceptors = append(c.interceptors, interceptor)
 		}
 	}

@@ -19,6 +19,7 @@ package triple
 
 import (
 	"errors"
+	"maps"
 	"net/http"
 	"net/url"
 	"strings"
@@ -415,8 +416,6 @@ func OpenAPISettings(settings map[string]string) OpenAPIOption {
 		if o.Settings == nil {
 			o.Settings = make(map[string]string)
 		}
-		for k, v := range settings {
-			o.Settings[k] = v
-		}
+		maps.Copy(o.Settings, settings)
 	}
 }

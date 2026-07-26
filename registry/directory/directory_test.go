@@ -546,7 +546,7 @@ func normalRegistryDir(noMockEvent ...bool) (*RegistryDirectory, *registry.MockR
 
 	_ = dir.(*RegistryDirectory).Subscribe(suburl)
 	if len(noMockEvent) == 0 {
-		for i := 0; i < 3; i++ {
+		for i := range 3 {
 			mockRegistry.(*registry.MockRegistry).MockEvent(
 				&registry.ServiceEvent{
 					Action: remoting.EventTypeAdd,
@@ -614,7 +614,7 @@ func TestRegistryDirectoryIsAvailableConcurrentWithCacheUpdates(t *testing.T) {
 	dir.invokersLock.Unlock()
 
 	var wg sync.WaitGroup
-	for i := 0; i < 200; i++ {
+	for range 200 {
 		wg.Add(2)
 		go func() {
 			defer wg.Done()
@@ -639,7 +639,7 @@ func TestRegistryDirectoryConfiguratorConcurrentAccess(t *testing.T) {
 	require.NoError(t, err)
 
 	var wg sync.WaitGroup
-	for i := 0; i < 50; i++ {
+	for range 50 {
 		wg.Add(2)
 		go func() {
 			defer wg.Done()
@@ -667,7 +667,7 @@ func TestRegistryDirectorySubscribedURLConcurrentAccess(t *testing.T) {
 	dir.RegisteredUrl = registeredURL
 
 	var wg sync.WaitGroup
-	for i := 0; i < 200; i++ {
+	for range 200 {
 		wg.Add(2)
 		go func() {
 			defer wg.Done()

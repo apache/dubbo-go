@@ -39,7 +39,7 @@ var (
 	serviceStatistic    sync.Map        // url -> RPCStatus
 	invokerBlackList    sync.Map        // store unhealthy url blackList
 	blackListCacheDirty uberAtomic.Bool // store if the cache in chain is not refreshed by blacklist
-	blackListRefreshing int32           // store if the refresing method is processing
+	blackListRefreshing atomic.Int32    // store if the refresing method is processing
 )
 
 func init() {
@@ -48,41 +48,41 @@ func init() {
 
 // RPCStatus is URL statistics.
 type RPCStatus struct {
-	active                        int32
-	failed                        int32
-	total                         int32
-	totalElapsed                  int64
-	failedElapsed                 int64
+	active                        atomic.Int32
+	failed                        atomic.Int32
+	total                         atomic.Int32
+	totalElapsed                  atomic.Int64
+	failedElapsed                 atomic.Int64
 	maxElapsed                    int64
 	failedMaxElapsed              int64
 	succeededMaxElapsed           int64
-	successiveRequestFailureCount int32
-	lastRequestFailedTimestamp    int64
+	successiveRequestFailureCount atomic.Int32
+	lastRequestFailedTimestamp    atomic.Int64
 }
 
 // GetActive gets active.
 func (rpc *RPCStatus) GetActive() int32 {
-	return atomic.LoadInt32(&rpc.active)
+	return rpc.active.Load()
 }
 
 // GetFailed gets failed.
 func (rpc *RPCStatus) GetFailed() int32 {
-	return atomic.LoadInt32(&rpc.failed)
+	return rpc.failed.Load()
 }
 
 // GetTotal gets total.
 func (rpc *RPCStatus) GetTotal() int32 {
-	return atomic.LoadInt32(&rpc.total)
+	return rpc.total.Load()
 }
 
 // GetTotalElapsed gets total elapsed.
 func (rpc *RPCStatus) GetTotalElapsed() int64 {
-	return atomic.LoadInt64(&rpc.totalElapsed)
+	return rpc.totalElapsed.Load()
 }
 
 // GetFailedElapsed gets failed elapsed.
 func (rpc *RPCStatus) GetFailedElapsed() int64 {
-	return atomic.LoadInt64(&rpc.failedElapsed)
+	return rpc.failedElapsed.Load()
 }
 
 // GetMaxElapsed gets max elapsed.
@@ -102,12 +102,12 @@ func (rpc *RPCStatus) GetSucceededMaxElapsed() int64 {
 
 // GetLastRequestFailedTimestamp gets last request failed timestamp.
 func (rpc *RPCStatus) GetLastRequestFailedTimestamp() int64 {
-	return atomic.LoadInt64(&rpc.lastRequestFailedTimestamp)
+	return rpc.lastRequestFailedTimestamp.Load()
 }
 
 // GetSuccessiveRequestFailureCount gets successive request failure count.
 func (rpc *RPCStatus) GetSuccessiveRequestFailureCount() int32 {
-	return atomic.LoadInt32(&rpc.successiveRequestFailureCount)
+	return rpc.successiveRequestFailureCount.Load()
 }
 
 // GetURLStatus get URL RPC status.
@@ -151,13 +151,13 @@ func EndCount(url *common.URL, methodName string, elapsed int64, succeeded bool)
 
 // private methods
 func beginCount0(rpcStatus *RPCStatus) {
-	atomic.AddInt32(&rpcStatus.active, 1)
+	rpcStatus.active.Add(1)
 }
 
 func endCount0(rpcStatus *RPCStatus, elapsed int64, succeeded bool) {
-	atomic.AddInt32(&rpcStatus.active, -1)
-	atomic.AddInt32(&rpcStatus.total, 1)
-	atomic.AddInt64(&rpcStatus.totalElapsed, elapsed)
+	rpcStatus.active.Add(-1)
+	rpcStatus.total.Add(1)
+	rpcStatus.totalElapsed.Add(elapsed)
 
 	if rpcStatus.maxElapsed < elapsed {
 		atomic.StoreInt64(&rpcStatus.maxElapsed, elapsed)
@@ -166,12 +166,12 @@ func endCount0(rpcStatus *RPCStatus, elapsed int64, succeeded bool) {
 		if rpcStatus.succeededMaxElapsed < elapsed {
 			atomic.StoreInt64(&rpcStatus.succeededMaxElapsed, elapsed)
 		}
-		atomic.StoreInt32(&rpcStatus.successiveRequestFailureCount, 0)
+		rpcStatus.successiveRequestFailureCount.Store(0)
 	} else {
-		atomic.StoreInt64(&rpcStatus.lastRequestFailedTimestamp, CurrentTimeMillis())
-		atomic.AddInt32(&rpcStatus.successiveRequestFailureCount, 1)
-		atomic.AddInt32(&rpcStatus.failed, 1)
-		atomic.AddInt64(&rpcStatus.failedElapsed, elapsed)
+		rpcStatus.lastRequestFailedTimestamp.Store(CurrentTimeMillis())
+		rpcStatus.successiveRequestFailureCount.Add(1)
+		rpcStatus.failed.Add(1)
+		rpcStatus.failedElapsed.Add(elapsed)
 		if rpcStatus.failedMaxElapsed < elapsed {
 			atomic.StoreInt64(&rpcStatus.failedMaxElapsed, elapsed)
 		}
@@ -251,16 +251,16 @@ func GetAndRefreshState() bool {
 // TryRefreshBlackList start 3 gr to check at most block=16 invokers in black list
 // if target invoker is available, then remove it from black list
 func TryRefreshBlackList() {
-	if atomic.CompareAndSwapInt32(&blackListRefreshing, 0, 1) {
+	if blackListRefreshing.CompareAndSwap(0, 1) {
 		wg := sync.WaitGroup{}
 		defer func() {
-			atomic.CompareAndSwapInt32(&blackListRefreshing, 1, 0)
+			blackListRefreshing.CompareAndSwap(1, 0)
 		}()
 
 		ivks := GetBlackListInvokers(constant.DefaultBlackListRecoverBlock)
 		logger.Debugf("[Protocol] blackList len=%d", len(ivks))
 
-		for i := 0; i < 3; i++ {
+		for i := range 3 {
 			wg.Add(1)
 			go func(ivks []Invoker, i int) {
 				defer wg.Done()

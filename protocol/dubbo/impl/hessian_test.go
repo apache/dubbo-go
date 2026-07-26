@@ -334,7 +334,7 @@ func TestIsSupportResponseAttachmentConcurrent(t *testing.T) {
 	versions := []string{"", "2.0.10", "2.6.2", "2.7.0", "3.0.0", "invalid"}
 	var wg sync.WaitGroup
 
-	for i := 0; i < 200; i++ {
+	for range 200 {
 		for _, version := range versions {
 			wg.Add(1)
 			go func(v string) {
@@ -656,7 +656,7 @@ func TestUnmarshalRequestBody(t *testing.T) {
 
 		pkg := &DubboPackage{}
 		err := unmarshalRequestBody(encoder.Buffer(), pkg)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 }
 
@@ -748,7 +748,7 @@ func TestUnmarshalResponseBody(t *testing.T) {
 
 		pkg := &DubboPackage{}
 		err := unmarshalResponseBody(encoder.Buffer(), pkg)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 
 	t.Run("response with null value and attachments", func(t *testing.T) {
@@ -902,7 +902,7 @@ func TestHessianSerializer_Unmarshal(t *testing.T) {
 		}
 
 		err := serializer.Unmarshal([]byte{}, pkg)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 
 	t.Run("unmarshal request", func(t *testing.T) {
@@ -921,7 +921,7 @@ func TestHessianSerializer_Unmarshal(t *testing.T) {
 		}
 
 		err := serializer.Unmarshal(encoder.Buffer(), pkg)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 
 	t.Run("unmarshal response", func(t *testing.T) {

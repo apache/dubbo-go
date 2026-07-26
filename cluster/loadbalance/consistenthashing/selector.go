@@ -63,7 +63,7 @@ func newSelector(invokers []base.Invoker, methodName string,
 		address := u.Ip + ":" + u.Port
 		for i := 0; i < selector.replicaNum/4; i++ {
 			digest := md5.Sum([]byte(address + strconv.Itoa(i)))
-			for j := 0; j < 4; j++ {
+			for j := range 4 {
 				key := selector.hash(digest, j)
 				selector.keys = append(selector.keys, key)
 				selector.virtualInvokers[key] = invoker

@@ -136,7 +136,7 @@ func cleanIfRequired(clean bool, invokers *cachedInvokers, now *time.Time) {
 // Record the weight of the invoker
 type weightedRoundRobin struct {
 	weight     int64
-	current    int64
+	current    atomic.Int64
 	lastUpdate atomic.Pointer[time.Time]
 }
 
@@ -146,7 +146,7 @@ func (robin *weightedRoundRobin) Weight() int64 {
 
 func (robin *weightedRoundRobin) setWeight(weight int64) {
 	atomic.StoreInt64(&robin.weight, weight)
-	atomic.StoreInt64(&robin.current, 0)
+	robin.current.Store(0)
 }
 
 func (robin *weightedRoundRobin) LastUpdate() *time.Time {
@@ -158,11 +158,11 @@ func (robin *weightedRoundRobin) setLastUpdate(time *time.Time) {
 }
 
 func (robin *weightedRoundRobin) increaseCurrent() int64 {
-	return atomic.AddInt64(&robin.current, atomic.LoadInt64(&robin.weight))
+	return robin.current.Add(atomic.LoadInt64(&robin.weight))
 }
 
 func (robin *weightedRoundRobin) Current(delta int64) {
-	atomic.AddInt64(&robin.current, -1*delta)
+	robin.current.Add(-1 * delta)
 }
 
 type cachedInvokers struct {

@@ -18,6 +18,7 @@
 package etcdv3
 
 import (
+	"slices"
 	"strings"
 	"sync"
 )
@@ -65,17 +66,15 @@ func (l *dataListener) DataChange(eventType remoting.Event) bool {
 		return false
 	}
 
-	for _, v := range l.interestedURL {
-		if serviceURL.URLEqual(v) {
-			l.listener.Process(
-				&config_center.ConfigChangeEvent{
-					Key:        eventType.Path,
-					Value:      serviceURL,
-					ConfigType: eventType.Action,
-				},
-			)
-			return true
-		}
+	if slices.ContainsFunc(l.interestedURL, serviceURL.URLEqual) {
+		l.listener.Process(
+			&config_center.ConfigChangeEvent{
+				Key:        eventType.Path,
+				Value:      serviceURL,
+				ConfigType: eventType.Action,
+			},
+		)
+		return true
 	}
 	return false
 }
