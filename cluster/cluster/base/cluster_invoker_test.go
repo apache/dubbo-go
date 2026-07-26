@@ -160,3 +160,27 @@ func (d *mockDirectory) IsAvailable() bool                                   { r
 func (d *mockDirectory) Destroy()                                            {}
 func (d *mockDirectory) List(protocolbase.Invocation) []protocolbase.Invoker { return d.invokers }
 func (d *mockDirectory) Subscribe(*common.URL) error                         { return nil }
+
+// nilLoadBalance always returns nil from Select, simulating a transient
+// load-balance failure (P2C metrics error, consistent-hash marshal error, etc.).
+type nilLoadBalance struct{}
+
+func (nilLoadBalance) Select([]protocolbase.Invoker, protocolbase.Invocation) protocolbase.Invoker {
+	return nil
+}
+
+// TestDoSelectDegradesWhenLbReturnsNil verifies doSelectInvoker degrades to the
+// first invoker instead of nil-dereferencing when lb.Select returns nil for a
+// non-empty invoker list. Regression for #3513.
+func TestDoSelectDegradesWhenLbReturnsNil(t *testing.T) {
+	var invokers []protocolbase.Invoker
+	for i := range 3 {
+		url, _ := common.NewURL(fmt.Sprintf(baseClusterInvokerFormat, i))
+		invokers = append(invokers, clusterpkg.NewMockInvoker(url, 1))
+	}
+	b := &BaseClusterInvoker{AvailableCheck: true}
+	inv := invocation.NewRPCInvocation(baseClusterInvokerMethodName, nil, nil)
+	selected := b.DoSelect(nilLoadBalance{}, inv, invokers, nil)
+	assert.NotNil(t, selected)
+	assert.Contains(t, invokers, selected)
+}

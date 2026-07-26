@@ -19,7 +19,6 @@ package p2c
 
 import (
 	"errors"
-	"fmt"
 	"math/rand"
 	"sync"
 	"time"
@@ -139,17 +138,21 @@ func (l *p2cLoadBalance) Select(invokers []base.Invoker, invocation base.Invocat
 		return nil
 	}
 
-	// Convert interface to int, if the type is unexpected, panic immediately
+	// Convert interface to int. An unexpected type means the metrics layer is
+	// corrupted; degrade (return nil) so the cluster layer can fall back to an
+	// available invoker instead of crashing the process. See #3513.
 	remainingI, ok := remainingIIface.(uint64)
 	if !ok {
-		panic(fmt.Sprintf("[Loadbalance][P2C] type check failed: key=%s expected=uint64 actual=%T",
-			metrics.HillClimbing, remainingIIface))
+		logger.Warnf("[Loadbalance][P2C] remaining metrics type invalid, key=%s actual=%T, degrade",
+			metrics.HillClimbing, remainingIIface)
+		return nil
 	}
 
 	remainingJ, ok := remainingJIface.(uint64)
 	if !ok {
-		panic(fmt.Sprintf("[Loadbalance][P2C] type check failed: key=%s expected=uint64 actual=%T",
-			metrics.HillClimbing, remainingJIface))
+		logger.Warnf("[Loadbalance][P2C] remaining metrics type invalid, key=%s actual=%T, degrade",
+			metrics.HillClimbing, remainingJIface)
+		return nil
 	}
 
 	logger.Debugf("[Loadbalance][P2C] compare remaining capacity i=%d val=%d j=%d val=%d", i, remainingI, j, remainingJ)

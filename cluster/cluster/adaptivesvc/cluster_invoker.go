@@ -64,6 +64,12 @@ func (ivk *adaptiveServiceClusterInvoker) Invoke(ctx context.Context, invocation
 
 	// select a node by the loadBalance
 	invoker := lb.Select(invokers, invocation)
+	if invoker == nil {
+		// P2C may return nil on a transient metrics-layer error. Degrade to the
+		// first invoker instead of nil-dereferencing. See #3513.
+		logger.Warnf("[Cluster][AdaptiveSvc] load balance %s returned no invoker, degrade to the first invoker", lbKey)
+		invoker = invokers[0]
+	}
 
 	// invoke
 	invocation.SetAttachment(constant.AdaptiveServiceEnabledKey, constant.AdaptiveServiceIsEnabled)

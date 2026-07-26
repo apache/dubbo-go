@@ -158,6 +158,15 @@ func (invoker *BaseClusterInvoker) doSelectInvoker(lb loadbalance.LoadBalance, i
 	}
 
 	selectedInvoker := lb.Select(invokers, invocation)
+	if selectedInvoker == nil {
+		// A load-balance implementation may return nil on a transient internal
+		// error (e.g. P2C on a metrics-layer error, consistent-hash on a marshal
+		// failure). Degrade to the first invoker instead of nil-dereferencing.
+		// See #3513.
+		logger.Warnf("[Cluster] load balance %T returned nil for serviceKey=%s, degrade to the first invoker",
+			lb, invokers[0].GetURL().ServiceKey())
+		selectedInvoker = invokers[0]
+	}
 
 	// judge if the selected Invoker is invoked and available
 	if (!selectedInvoker.IsAvailable() && invoker.AvailableCheck) || isInvoked(selectedInvoker, invoked) {
@@ -170,6 +179,11 @@ func (invoker *BaseClusterInvoker) doSelectInvoker(lb loadbalance.LoadBalance, i
 				break
 			}
 			reselectedInvoker := lb.Select(otherInvokers, invocation)
+			if reselectedInvoker == nil {
+				// LB transient failure during reselect: stop retrying and fall
+				// through to the (already non-nil) selectedInvoker.
+				break
+			}
 			if isInvoked(reselectedInvoker, invoked) {
 				otherInvokers = getOtherInvokers(otherInvokers, reselectedInvoker)
 				continue
