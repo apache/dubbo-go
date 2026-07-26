@@ -92,7 +92,9 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 	}
 
 	lstn.mutex.Lock()
-	defer lstn.mutex.Unlock()
+	// No early return between Lock and the explicit Unlock below; the metadata
+	// build loop uses `continue`, not `return`. The lock is released before the
+	// NotifyAll dispatch (see below) so it is not held across external callbacks.
 
 	lstn.allInstances[ce.ServiceName] = ce.Instances
 	revisionToInstances := make(map[string][]registry.ServiceInstance, len(lstn.revisionToMetadata))
@@ -175,6 +177,17 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 	}
 
 	lstn.serviceUrls = newServiceURLs
+	// Snapshot each listener and its events under the lock, then dispatch
+	// outside the lock: holding lstn.mutex across the external NotifyAll
+	// callback lets a slow/blocking consumer stall every other OnEvent on this
+	// listener, and a callback that re-enters AddListenerAndNotify/
+	// RemoveListener (both take lstn.mutex) on the same listener self-deadlocks
+	// (sync.Mutex is not reentrant). See #3527.
+	type notifyJob struct {
+		notify registry.NotifyListener
+		events []*registry.ServiceEvent
+	}
+	jobs := make([]notifyJob, 0, len(lstn.listeners))
 	for key, notifyListener := range lstn.listeners {
 		urls := lstn.serviceUrls[key]
 		events := make([]*registry.ServiceEvent, 0, len(urls))
@@ -184,7 +197,12 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 				Service: url,
 			})
 		}
-		notifyListener.NotifyAll(events, func() {})
+		jobs = append(jobs, notifyJob{notify: notifyListener, events: events})
+	}
+	lstn.mutex.Unlock()
+
+	for _, job := range jobs {
+		job.notify.NotifyAll(job.events, func() {})
 	}
 
 	return nil
