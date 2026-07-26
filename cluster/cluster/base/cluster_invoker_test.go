@@ -79,7 +79,7 @@ func TestStickyNormalWhenError(t *testing.T) {
 // with sticky enabled do not cause a data race on StickyInvoker.
 func TestStickyConcurrentDoSelect(t *testing.T) {
 	var invokers []protocolbase.Invoker
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		url, _ := common.NewURL(fmt.Sprintf(baseClusterInvokerFormat, i))
 		url.SetParam("sticky", "true")
 		invokers = append(invokers, clusterpkg.NewMockInvoker(url, 1))
@@ -93,7 +93,7 @@ func TestStickyConcurrentDoSelect(t *testing.T) {
 	const concurrency = 100
 	var wg sync.WaitGroup
 	wg.Add(concurrency)
-	for i := 0; i < concurrency; i++ {
+	for range concurrency {
 		go func() {
 			defer wg.Done()
 			invoked := make([]protocolbase.Invoker, 0)
@@ -108,7 +108,7 @@ func TestStickyConcurrentDoSelect(t *testing.T) {
 // IsAvailable and DoSelect calls do not cause a data race on StickyInvoker.
 func TestStickyConcurrentIsAvailableAndDoSelect(t *testing.T) {
 	var invokers []protocolbase.Invoker
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		url, _ := common.NewURL(fmt.Sprintf(baseClusterInvokerFormat, i))
 		url.SetParam("sticky", "true")
 		invokers = append(invokers, clusterpkg.NewMockInvoker(url, 1))
@@ -130,7 +130,7 @@ func TestStickyConcurrentIsAvailableAndDoSelect(t *testing.T) {
 	const concurrency = 100
 	var wg sync.WaitGroup
 	wg.Add(concurrency * 2)
-	for i := 0; i < concurrency; i++ {
+	for range concurrency {
 		go func() {
 			defer wg.Done()
 			base.IsAvailable()

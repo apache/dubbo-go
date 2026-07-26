@@ -499,6 +499,9 @@ type ServiceOptions struct {
 	// for triple non-IDL mode
 	// consider put here or global.ServiceConfig
 	// string for url
+	//
+	// Deprecated: this implementation will be removed in the next release.
+	// The IDLMode switch will no longer be supported by dubbo-go.
 	IDLMode string
 
 	// openapi group for documentation
@@ -905,6 +908,9 @@ func WithOpenAPIGroup(group string) ServiceOption {
 }
 
 // TODO: remove when config package is removed
+//
+// Deprecated: this option will be removed in the next version. The IDL mode
+// switch is no longer supported by dubbo-go.
 func WithIDLMode(IDLMode string) ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.IDLMode = IDLMode

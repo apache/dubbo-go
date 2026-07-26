@@ -1326,14 +1326,14 @@ func parseLocation(location string) (host, port string) {
 	if location == "" {
 		return "", "0"
 	}
-	idx := strings.IndexByte(location, ':')
-	if idx < 0 {
+	before, after, ok := strings.Cut(location, ":")
+	if !ok {
 		return location, "0"
 	}
-	host = location[:idx]
-	rest := location[idx+1:]
-	if j := strings.IndexByte(rest, ':'); j >= 0 {
-		return host, rest[:j]
+	host = before
+	rest := after
+	if before, _, ok := strings.Cut(rest, ":"); ok {
+		return host, before
 	}
 	return host, rest
 }

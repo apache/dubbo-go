@@ -390,16 +390,16 @@ func getHanOpts(url *common.URL, tripleConf *global.TripleConfig) (hanOpts []tri
 	version := url.GetParam(constant.VersionKey, "")
 	hanOpts = append(hanOpts, tri.WithGroup(group), tri.WithVersion(version))
 
-	// Deprecated：use TripleConfig
-	// TODO: remove MaxServerSendMsgSize and MaxServerRecvMsgSize when version 4.0.0
+	// Compatibility: read the legacy URL receive-size parameter.
+	// TODO: remove MaxServerRecvMsgSize in version 4.0.0.
 	maxServerRecvMsgSize := constant.DefaultMaxServerRecvMsgSize
 	if recvMsgSize, convertErr := humanize.ParseBytes(url.GetParam(constant.MaxServerRecvMsgSize, "")); convertErr == nil && recvMsgSize != 0 {
 		maxServerRecvMsgSize = int(recvMsgSize)
 	}
 	hanOpts = append(hanOpts, tri.WithReadMaxBytes(maxServerRecvMsgSize))
 
-	// Deprecated：use TripleConfig
-	// TODO: remove MaxServerSendMsgSize and MaxServerRecvMsgSize when version 4.0.0
+	// Compatibility: read the legacy URL send-size parameter.
+	// TODO: remove MaxServerSendMsgSize in version 4.0.0.
 	maxServerSendMsgSize := constant.DefaultMaxServerSendMsgSize
 	if sendMsgSize, convertErr := humanize.ParseBytes(url.GetParam(constant.MaxServerSendMsgSize, "")); convertErr == nil && sendMsgSize != 0 {
 		maxServerSendMsgSize = int(sendMsgSize)

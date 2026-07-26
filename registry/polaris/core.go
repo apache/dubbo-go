@@ -18,6 +18,7 @@
 package polaris
 
 import (
+	"maps"
 	"sync"
 	"time"
 )
@@ -444,9 +445,7 @@ func copyStringMap(source map[string]string) map[string]string {
 		return nil
 	}
 	copied := make(map[string]string, len(source))
-	for key, value := range source {
-		copied[key] = value
-	}
+	maps.Copy(copied, source)
 	return copied
 }
 
