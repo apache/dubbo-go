@@ -37,7 +37,7 @@ package jsonrpc
 //
 //func TestJsonrpcInvokerInvoke(t *testing.T) {
 //	methods, err := common.ServiceMap.Register("com.ikurento.user.UserProvider", "jsonrpc", "", "", &UserProvider{})
-//	assert.NoError(t, err)
+//	require.NoError(t, err)
 //	assert.Equal(t, "GetUser,GetUser0,GetUser1,GetUser2,GetUser3,GetUser4", methods)
 //
 //	// Export
@@ -47,7 +47,7 @@ package jsonrpc
 //		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
 //		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
 //		"side=provider&timeout=3000&timestamp=1556509797245&bean.name=UserProvider")
-//	assert.NoError(t, err)
+//	require.NoError(t, err)
 //	proto.Export(&proxy_factory.ProxyInvoker{
 //		BaseInvoker: *protocol.NewBaseInvoker(url),
 //	})

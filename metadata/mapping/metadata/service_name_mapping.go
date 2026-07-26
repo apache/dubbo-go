@@ -93,7 +93,7 @@ func (d *ServiceNameMapping) Map(url *common.URL) error {
 // immediately, since retrying it would not help.
 func registerWithRetry(r report.MetadataReport, serviceInterface, group, appName string) error {
 	var err error
-	for i := 0; i < retryTimes; i++ {
+	for i := range retryTimes {
 		err = r.RegisterServiceAppMapping(serviceInterface, group, appName)
 		if err == nil {
 			return nil

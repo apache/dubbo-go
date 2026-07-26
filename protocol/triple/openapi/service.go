@@ -18,6 +18,7 @@
 package openapi
 
 import (
+	"maps"
 	"sync"
 )
 
@@ -231,9 +232,7 @@ func (s *DefaultService) mergeOpenAPI(target, source *model.OpenAPI) {
 		if target.Paths == nil {
 			target.Paths = make(map[string]*model.PathItem)
 		}
-		for path, item := range source.Paths {
-			target.Paths[path] = item
-		}
+		maps.Copy(target.Paths, source.Paths)
 	}
 
 	if source.Components != nil {
@@ -270,9 +269,7 @@ func snapshotServiceInfo(info *common.ServiceInfo) *serviceInfo {
 			}
 			if len(m.Meta) > 0 {
 				si.Methods[i].Meta = make(map[string]any, len(m.Meta))
-				for k, v := range m.Meta {
-					si.Methods[i].Meta[k] = v
-				}
+				maps.Copy(si.Methods[i].Meta, m.Meta)
 			}
 		}
 	}

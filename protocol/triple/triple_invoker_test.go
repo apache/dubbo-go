@@ -402,13 +402,11 @@ func TestTripleInvoker_Invoke_Concurrent(t *testing.T) {
 	var wg sync.WaitGroup
 	concurrency := 10
 
-	for i := 0; i < concurrency; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range concurrency {
+		wg.Go(func() {
 			inv := invocation.NewRPCInvocationWithOptions()
 			_ = ti.Invoke(context.Background(), inv)
-		}()
+		})
 	}
 
 	wg.Wait()
@@ -520,7 +518,7 @@ func Test_mergeAttachmentToOutgoing(t *testing.T) {
 				return invocation.NewRPCInvocationWithOptions()
 			},
 			expect: func(t *testing.T, ctx context.Context, err error) {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			},
 		},
 	}

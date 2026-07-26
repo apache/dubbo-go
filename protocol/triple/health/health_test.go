@@ -56,7 +56,7 @@ func TestShutdown(t *testing.T) {
 	wg.Add(2)
 	// Run SetServingStatus and Shutdown in parallel.
 	go func() {
-		for i := 0; i < 1000; i++ {
+		for range 1000 {
 			s.SetServingStatus(testService, healthpb.HealthCheckResponse_SERVING)
 			time.Sleep(time.Microsecond)
 		}

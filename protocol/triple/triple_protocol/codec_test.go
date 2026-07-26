@@ -81,7 +81,7 @@ func TestStableCodec(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			for i := 0; i < 10; i++ {
+			for range 10 {
 				roundtripProto := &structpb.Struct{}
 				err = codec.Unmarshal(want, roundtripProto)
 				if err != nil {

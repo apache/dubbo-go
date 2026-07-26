@@ -20,6 +20,7 @@ package dubbo3
 import (
 	"context"
 	"errors"
+	"maps"
 	"reflect"
 	"sync"
 	"time"
@@ -257,9 +258,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, invocation base.Invocation) 
 	triAttachmentWithErr := di.client.Invoke(methodName, in, invocation.Reply())
 	result.Err = triAttachmentWithErr.GetError()
 	result.Attrs = make(map[string]any)
-	for k, v := range triAttachmentWithErr.GetAttachments() {
-		result.Attrs[k] = v
-	}
+	maps.Copy(result.Attrs, triAttachmentWithErr.GetAttachments())
 	result.Rest = invocation.Reply()
 	return &result
 }

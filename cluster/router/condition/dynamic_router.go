@@ -446,7 +446,7 @@ func (a *ApplicationRouter) Notify(invokers []base.Invoker) {
 }
 
 func removeDuplicates(rules []*global.ConditionRule) {
-	for i := 0; i < len(rules); i++ {
+	for i := range rules {
 		if rules[i] == nil {
 			continue
 		}

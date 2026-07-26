@@ -127,7 +127,7 @@ func (pi *PassThroughProxyInvoker) Invoke(ctx context.Context, invocation base.I
 		result.SetError(retErr.(error))
 		return result
 	}
-	if replyv.IsValid() && (replyv.Kind() != reflect.Ptr || replyv.Kind() == reflect.Ptr && replyv.Elem().IsValid()) {
+	if replyv.IsValid() && (replyv.Kind() != reflect.Pointer || replyv.Kind() == reflect.Pointer && replyv.Elem().IsValid()) {
 		result.SetResult(replyv.Interface())
 	}
 

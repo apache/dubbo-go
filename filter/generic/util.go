@@ -113,7 +113,7 @@ func validateReplyPointer(reply any) (reflect.Value, error) {
 	}
 
 	replyValue := reflect.ValueOf(reply)
-	if replyValue.Kind() != reflect.Ptr {
+	if replyValue.Kind() != reflect.Pointer {
 		return reflect.Value{}, perrors.New("reply must be a pointer")
 	}
 

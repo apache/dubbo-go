@@ -110,7 +110,7 @@ func (dp *DubboProtocol) Export(invoker base.Invoker) base.Exporter {
 		typeOf := valueOf.Type()
 		numField := valueOf.NumMethod()
 		tripleService := &UnaryService{proxyImpl: invoker}
-		for i := 0; i < numField; i++ {
+		for i := range numField {
 			ft := typeOf.Method(i)
 			if ft.Name == "Reference" {
 				continue

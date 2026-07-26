@@ -192,7 +192,7 @@ func TestIsSupportResponseAttachmentConcurrent(t *testing.T) {
 	versions := []any{"2.X", "2.0.10", "2.5.3", "2.6.2", "2.0.2", "2.7.2", ""}
 	var wg sync.WaitGroup
 
-	for i := 0; i < 200; i++ {
+	for range 200 {
 		for _, version := range versions {
 			wg.Add(1)
 			go func(v any) {

@@ -245,24 +245,20 @@ func (s *Server) Start(url *common.URL) {
 	}
 	logger.Infof("[Jsonrpc][Server] rpc server start to listen on %s", listener.Addr())
 
-	s.wg.Add(1)
-	go func() {
+	s.wg.Go(func() {
 		if err := accept(listener, func(conn net.Conn) { s.handlePkg(conn) }); err != nil {
 			logger.Errorf("[Jsonrpc][Server] accept failed, err=%v", err)
 		}
-		s.wg.Done()
-	}()
+	})
 
-	s.wg.Add(1)
-	go func() { // Server done goroutine
+	s.wg.Go(func() { // Server done goroutine
 		var err error
 		<-s.done               // step1: block to wait for done channel(wait Server.Stop step2)
 		err = listener.Close() // step2: and then close listener
 		if err != nil {
 			logger.Warnf("[Jsonrpc][Server] listener close failed, addr=%s, err=%v", listener.Addr(), err)
 		}
-		s.wg.Done()
-	}()
+	})
 }
 
 // Stop JSON RPC server, just can be call once.

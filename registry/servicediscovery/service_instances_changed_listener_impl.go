@@ -255,7 +255,7 @@ func (lstn *ServiceInstancesChangedListenerImpl) GetPriority() int {
 
 // GetEventType returns ServiceInstancesChangedEvent
 func (lstn *ServiceInstancesChangedListenerImpl) GetEventType() reflect.Type {
-	return reflect.TypeOf(&registry.ServiceInstancesChangedEvent{})
+	return reflect.TypeFor[*registry.ServiceInstancesChangedEvent]()
 }
 
 // metadataCacheKey builds the cache key that isolates MetadataInfo by provider

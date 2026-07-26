@@ -235,8 +235,8 @@ func (p *polarisRouter) buildRouteRequest(svc string, url *common.URL,
 			routeReq.AddArguments(model.BuildPathArgument(p.getInvokeMethod(url, invocation)))
 			continue
 		}
-		if strings.HasPrefix(label, model.LabelKeyHeader) {
-			if val, ok := attachement[strings.TrimPrefix(label, model.LabelKeyHeader)]; ok {
+		if after, ok := strings.CutPrefix(label, model.LabelKeyHeader); ok {
+			if val, ok := attachement[after]; ok {
 				routeReq.SourceService.Metadata[label] = fmt.Sprintf("%+v", val)
 				routeReq.AddArguments(model.BuildArgumentFromLabel(label, fmt.Sprintf("%+v", val)))
 			}
