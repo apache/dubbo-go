@@ -35,6 +35,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
@@ -89,4 +90,25 @@ func (ef *mockEchoFilter) OnResponse(ctx context.Context, result result.Result, 
 
 func newFilter() filter.Filter {
 	return &mockEchoFilter{}
+}
+
+// TestBuildInvokerChainSkipsUnknownFilter verifies that an unregistered filter
+// name (typo / unimported) is skipped rather than producing a nil-filter
+// FilterInvoker that nil-derefs at invoke time. Regression for #3547.
+func TestBuildInvokerChainSkipsUnknownFilter(t *testing.T) {
+	u := common.NewURLWithOptions(
+		common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.ServiceFilterKey, mockFilterKey+",unknownFilterName"))
+	invoker := base.NewBaseInvoker(u)
+	chain := BuildInvokerChain(invoker, constant.ServiceFilterKey)
+
+	// top of the chain is the registered mockEcho FilterInvoker (unknown skipped)
+	_, ok := chain.(*FilterInvoker)
+	assert.True(t, ok)
+
+	// A non-echo method forces mockEcho to call next.Invoke; on the old code path
+	// the unknown filter produced a nil-filter FilterInvoker that nil-derefs here.
+	assert.NotPanics(t, func() {
+		_ = chain.Invoke(context.Background(), invocation.NewRPCInvocation("someMethod", nil, nil))
+	})
 }

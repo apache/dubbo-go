@@ -87,7 +87,15 @@ func BuildInvokerChain(invoker base.Invoker, key string) base.Invoker {
 	// The order of filters is from left to right, so loading from right to left
 	next := invoker
 	for _, filterName := range slices.Backward(filterNames) {
-		flt, _ := extension.GetFilter(strings.TrimSpace(filterName))
+		name := strings.TrimSpace(filterName)
+		flt, ok := extension.GetFilter(name)
+		if !ok {
+			// An unregistered filter name (typo / unimported) would otherwise build a
+			// nil-filter FilterInvoker that nil-derefs on every Invoke. Skip it and
+			// log so misconfiguration is visible instead of crashing at runtime.
+			logger.Errorf("[Protocol][Wrapper] filter %q is not registered, skip it", name)
+			continue
+		}
 		fi := &FilterInvoker{next: next, invoker: invoker, filter: flt}
 		next = fi
 	}
