@@ -190,7 +190,7 @@ func TestExchangeClientAsyncRequestTimeoutCallback(t *testing.T) {
 
 	acr, ok := got.(AsyncCallbackResponse)
 	require.True(t, ok, "callback received %T, want AsyncCallbackResponse", got)
-	assert.Error(t, acr.Cause)
+	require.Error(t, acr.Cause)
 	assert.Contains(t, acr.Cause.Error(), "timeout")
 	assert.Equal(t, before, countPendingResponses(), "pendingResponses leaked after async timeout")
 }
