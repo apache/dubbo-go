@@ -260,6 +260,14 @@ func (mtsV2 *MetadataServiceV2) GetMetadataInfo(ctx context.Context, req *triple
 	if err != nil {
 		return nil, err
 	}
+	// DefaultMetadataService.GetMetadataInfo returns (nil, nil) for an empty
+	// or unknown revision; dereferencing metadataInfo.App below would panic.
+	// The MetadataServiceV2Handler is exported over triple, so this endpoint is
+	// remotely reachable. See #3534.
+	if metadataInfo == nil {
+		logger.Warnf("[Metadata] metadata info is nil for revision=%s", req.GetRevision())
+		return nil, perrors.Errorf("metadata info not found for revision=%s", req.GetRevision())
+	}
 	return &tripleapi.MetadataInfoV2{
 		App:      metadataInfo.App,
 		Version:  metadataInfo.Revision,

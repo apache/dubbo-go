@@ -418,3 +418,19 @@ func TestDefaultMetadataServiceConcurrentReadAccess(t *testing.T) {
 	}
 	wg.Wait()
 }
+
+// TestMetadataServiceV2GetMetadataInfoNilNoPanic verifies that an unknown
+// revision (for which DefaultMetadataService.GetMetadataInfo returns nil,nil)
+// no longer nil-dereferences metadataInfo.App and instead returns an error.
+// The MetadataServiceV2Handler is exported over triple, so this is remotely
+// reachable. Regression for #3534.
+func TestMetadataServiceV2GetMetadataInfoNilNoPanic(t *testing.T) {
+	// empty metadataMap -> GetMetadataInfo returns (nil, nil) for an unknown revision
+	delegate := &DefaultMetadataService{}
+	svc := &MetadataServiceV2{delegate: delegate}
+
+	got, err := svc.GetMetadataInfo(context.TODO(), &tripleapi.MetadataRequest{Revision: "unknown"})
+	require.Error(t, err)
+	require.Nil(t, got)
+	assert.Contains(t, err.Error(), "metadata info not found")
+}
