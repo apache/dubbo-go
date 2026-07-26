@@ -229,7 +229,14 @@ func unpackRequestBody(decoder *hessian.Decoder, reqObj any) error {
 	}
 	req[4] = argsTypes
 
-	ats := DescRegex.FindAllString(argsTypes.(string), -1)
+	// argsTypes must be a string descriptor (e.g. "Ljava/lang/String;"). A null
+	// or non-string value (malformed/hostile request) would otherwise panic on
+	// the type assertion. Surface it as an error instead. See #3523.
+	argsTypesStr, ok := argsTypes.(string)
+	if !ok {
+		return perrors.Errorf("hessian2: invalid argument types descriptor, expected string, got %T", argsTypes)
+	}
+	ats := DescRegex.FindAllString(argsTypesStr, -1)
 	var arg any
 	for range ats {
 		arg, err = decoder.Decode()

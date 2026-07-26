@@ -158,3 +158,22 @@ func TestIssue192(t *testing.T) {
 		})
 	}
 }
+
+// TestUnpackRequestBody_NilArgsTypes verifies that a request whose
+// argument-types descriptor field is a Hessian null no longer panics on the
+// unchecked argsTypes.(string) assertion; instead it returns an error.
+// Regression for #3523.
+func TestUnpackRequestBody_NilArgsTypes(t *testing.T) {
+	enc := hessian.NewEncoder()
+	_ = enc.Encode("2.0.2")        // dubbo version
+	_ = enc.Encode("com.test.Foo") // path
+	_ = enc.Encode("v1")           // service version
+	_ = enc.Encode("echo")         // method
+	_ = enc.Encode(nil)            // argsTypes = Hessian null  <-- used to panic
+
+	dec := hessian.NewDecoder(enc.Buffer())
+	req := make([]any, 7)
+	err := unpackRequestBody(dec, req)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "argument types descriptor")
+}
