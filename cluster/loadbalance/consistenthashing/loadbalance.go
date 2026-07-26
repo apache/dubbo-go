@@ -25,6 +25,10 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/log/logger"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
@@ -60,6 +64,9 @@ func newConshashLoadBalance() loadbalance.LoadBalance {
 
 // Select gets invoker based on load balancing strategy
 func (lb *conshashLoadBalance) Select(invokers []base.Invoker, invocation base.Invocation) base.Invoker {
+	if len(invokers) == 0 {
+		return nil
+	}
 	methodName := invocation.MethodName()
 	key := invokers[0].GetURL().ServiceKey() + "." + methodName
 
@@ -78,14 +85,24 @@ func (lb *conshashLoadBalance) Select(invokers []base.Invoker, invocation base.I
 	selector, ok := selectors[key]
 	selectorsMu.RUnlock()
 
-	if !ok || selector.hashCode != hashCode {
-		selectorsMu.Lock()
-		selector, ok = selectors[key]
-		if !ok || selector.hashCode != hashCode {
-			selectors[key] = newSelector(invokers, methodName, hashCode)
-		}
-		selector = selectors[key]
-		selectorsMu.Unlock()
+	if ok && selector != nil && selector.hashCode == hashCode {
+		return selector.Select(invocation)
 	}
+
+	selectorsMu.Lock()
+	selector, ok = selectors[key]
+	if !ok || selector == nil || selector.hashCode != hashCode {
+		built, err := newSelector(invokers, methodName, hashCode)
+		if err != nil {
+			selectorsMu.Unlock()
+			// Do not cache a nil selector: a malformed hash.arguments value
+			// would otherwise be stored and nil-deref on the next Select.
+			logger.Warnf("[Loadbalance][ConsistentHash] build selector failed, key=%s err=%v, degrade to the first invoker", key, err)
+			return invokers[0]
+		}
+		selector = built
+		selectors[key] = selector
+	}
+	selectorsMu.Unlock()
 	return selector.Select(invocation)
 }

@@ -43,18 +43,27 @@ type selector struct {
 }
 
 func newSelector(invokers []base.Invoker, methodName string,
-	hashCode uint32) *selector {
+	hashCode uint32) (*selector, error) {
 
 	selector := &selector{}
 	selector.virtualInvokers = make(map[uint32]base.Invoker)
 	selector.hashCode = hashCode
 	url := invokers[0].GetURL()
 	selector.replicaNum = url.GetMethodParamIntValue(methodName, HashNodes, 160)
+	if selector.replicaNum < 4 {
+		// hash.nodes below 4 yields replicaNum/4 == 0 digests, i.e. an empty
+		// ring, which would make selectForKey index an empty slice and panic.
+		// Clamp to the minimum so each invoker gets at least one virtual node.
+		selector.replicaNum = 4
+	}
 	indices := re.Split(url.GetMethodParam(methodName, HashArguments, "0"), -1)
 	for _, index := range indices {
 		i, err := strconv.Atoi(index)
 		if err != nil {
-			return nil
+			// A malformed hash.arguments value must not poison the selector
+			// cache with a nil selector (which would nil-deref on the next
+			// Select). Surface it as an error so the caller degrades instead.
+			return nil, fmt.Errorf("invalid hash.arguments index %q: %w", index, err)
 		}
 		selector.argumentIndex = append(selector.argumentIndex, i)
 	}
@@ -71,7 +80,7 @@ func newSelector(invokers []base.Invoker, methodName string,
 		}
 	}
 	sort.Sort(selector.keys)
-	return selector
+	return selector, nil
 }
 
 // Select gets invoker based on load balancing strategy
@@ -97,6 +106,11 @@ func (c *selector) toKey(args []any) string {
 }
 
 func (c *selector) selectForKey(hash uint32) base.Invoker {
+	if len(c.keys) == 0 {
+		// Defensive: an empty ring (e.g. a future regression in replicaNum
+		// clamping) must not panic on c.keys[idx].
+		return nil
+	}
 	idx := sort.Search(len(c.keys), func(i int) bool {
 		return c.keys[i] >= hash
 	})

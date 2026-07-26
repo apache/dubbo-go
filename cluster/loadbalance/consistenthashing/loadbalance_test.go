@@ -24,6 +24,7 @@ import (
 )
 
 import (
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -60,7 +61,7 @@ func (s *consistentHashSelectorSuite) SetupTest() {
 	var invokers []base.Invoker
 	url, _ := common.NewURL(url20000)
 	invokers = append(invokers, base.NewBaseInvoker(url))
-	s.selector = newSelector(invokers, "echo", 999944)
+	s.selector, _ = newSelector(invokers, "echo", 999944)
 }
 
 func (s *consistentHashSelectorSuite) TestToKey() {
@@ -78,7 +79,10 @@ func TestToKeyWithArgumentIndex(t *testing.T) {
 		t.Fatal(err)
 	}
 	invokers = append(invokers, base.NewBaseInvoker(url))
-	sel := newSelector(invokers, "echo", 999944)
+	sel, err := newSelector(invokers, "echo", 999944)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	key := sel.toKey([]any{"ignored", "used"})
 	if key != "used" {
@@ -156,4 +160,46 @@ func (s *consistentHashLoadBalanceSuite) TestConcurrentSelect() {
 		}(i)
 	}
 	wg.Wait()
+}
+
+// TestSelectDegradesOnBadHashArguments verifies that a non-numeric
+// hash.arguments value no longer poisons the selector cache with nil and no
+// longer panics; instead Select degrades to the first invoker. Regression #3510.
+func TestSelectDegradesOnBadHashArguments(t *testing.T) {
+	// clear any cached selector so the test starts from a clean state
+	selectorsMu.Lock()
+	clear(selectors)
+	selectorsMu.Unlock()
+
+	url, _ := common.NewURL("dubbo://192.168.1.0:20000/org.apache.demo.BadArgs?methods.echo.hash.arguments=0,notanumber")
+	invokers := []base.Invoker{base.NewBaseInvoker(url)}
+	lb := newConshashLoadBalance()
+	inv := invocation.NewRPCInvocation("echo", []any{"a"}, nil)
+
+	got := lb.Select(invokers, inv)
+	assert.NotNil(t, got)
+	assert.Equal(t, invokers[0], got)
+
+	// a nil selector must not have been cached
+	selectorsMu.RLock()
+	cached, ok := selectors[invokers[0].GetURL().ServiceKey()+".echo"]
+	selectorsMu.RUnlock()
+	assert.False(t, ok && cached == nil, "nil selector must not be cached")
+}
+
+// TestSelectHandlesSmallHashNodes verifies that hash.nodes < 4 (which yields
+// an empty ring) no longer panics on an empty c.keys. Regression #3510.
+func TestSelectHandlesSmallHashNodes(t *testing.T) {
+	selectorsMu.Lock()
+	clear(selectors)
+	selectorsMu.Unlock()
+
+	url, _ := common.NewURL("dubbo://192.168.1.0:20000/org.apache.demo.SmallNodes?methods.echo.hash.nodes=2")
+	invokers := []base.Invoker{base.NewBaseInvoker(url)}
+	lb := newConshashLoadBalance()
+	inv := invocation.NewRPCInvocation("echo", []any{"a"}, nil)
+
+	got := lb.Select(invokers, inv)
+	assert.NotNil(t, got)
+	assert.Equal(t, invokers[0], got)
 }
