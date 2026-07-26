@@ -309,10 +309,7 @@ func (e *etcdV3ServiceDiscovery) DataChange(eventType remoting.Event) bool {
 	for _, lis := range listeners {
 		err = lis.OnEvent(registry.NewServiceInstancesChangedEvent(name, instances))
 	}
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 // newEtcdV3ServiceDiscovery
