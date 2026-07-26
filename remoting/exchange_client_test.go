@@ -160,3 +160,37 @@ func countPendingResponses() int {
 	})
 	return n
 }
+
+// TestExchangeClientAsyncRequestTimeoutCallback verifies that when an async
+// request never receives a reply (e.g. the connection drops before the server
+// responds), the pending response is removed and the AsyncCallback is invoked
+// with a timeout error instead of leaking forever. Regression for #3529
+// (distinct from the write-error cleanup in TestExchangeClientAsyncRequestErrorCleanup).
+func TestExchangeClientAsyncRequestTimeoutCallback(t *testing.T) {
+	m := &mockClient{available: true} // Request succeeds, no reply delivered (simulates conn drop)
+	ec := NewExchangeClient(testURL(), m, 5*time.Second, true)
+
+	before := countPendingResponses()
+	res := &result.RPCResult{}
+
+	var (
+		got common.CallbackResponse
+		wg  sync.WaitGroup
+	)
+	wg.Add(1)
+	cb := func(response common.CallbackResponse) {
+		got = response
+		wg.Done()
+	}
+
+	err := ec.AsyncRequest(newTestInvocation(), testURL(), 200*time.Millisecond, cb, res)
+	require.NoError(t, err)
+
+	wg.Wait()
+
+	acr, ok := got.(AsyncCallbackResponse)
+	require.True(t, ok, "callback received %T, want AsyncCallbackResponse", got)
+	assert.Error(t, acr.Cause)
+	assert.Contains(t, acr.Cause.Error(), "timeout")
+	assert.Equal(t, before, countPendingResponses(), "pendingResponses leaked after async timeout")
+}

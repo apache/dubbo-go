@@ -19,6 +19,7 @@ package remoting
 
 import (
 	"errors"
+	"fmt"
 	"time"
 )
 
@@ -169,6 +170,29 @@ func (client *ExchangeClient) AsyncRequest(invocation *base.Invocation, url *com
 		RemovePendingResponse(SequenceType(request.ID))
 		result.Err = err
 		return err
+	}
+	// The async path returns immediately and (unlike the sync path) does not
+	// enforce the timeout on the pending response: if no reply arrives — e.g.
+	// the connection drops before the server responds — the pending entry
+	// would leak in the global pendingResponses map and the AsyncCallback would
+	// never fire. Install a timer that, if the reply has not arrived by
+	// `timeout`, removes the pending and invokes the callback with a timeout
+	// error. RemovePendingResponse is an atomic load-and-delete, so the timer
+	// and the reply path (Response.Handle) cannot both win the callback.
+	// See #3529.
+	if timeout > 0 {
+		reqID := request.ID
+		to := timeout
+		time.AfterFunc(to, func() {
+			pr := RemovePendingResponse(SequenceType(reqID))
+			if pr == nil {
+				return // reply already handled by Response.Handle
+			}
+			if pr.Callback != nil {
+				pr.Err = fmt.Errorf("remote async request timeout: requestID=%d timeout=%s", reqID, to.String())
+				pr.Callback(pr.GetCallResponse())
+			}
+		})
 	}
 	result.Rest = rsp.response
 	return nil
