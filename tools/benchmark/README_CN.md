@@ -1,4 +1,3 @@
-
 # Dubbo-Go Benchmark Suite
 
 [English](README.md) | 中文
