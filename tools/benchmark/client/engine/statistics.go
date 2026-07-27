@@ -19,7 +19,7 @@ package engine
 
 import (
 	"fmt"
-	"sort"
+	"slices"
 	"time"
 )
 
@@ -50,9 +50,7 @@ func (s *Statistics) Compute(m *MetricsCollector) *Statistics {
 		return s
 	}
 
-	sort.Slice(latencies, func(i, j int) bool {
-		return latencies[i] < latencies[j]
-	})
+	slices.Sort(latencies)
 
 	s.Total = m.GetTotalCount()
 	s.Success = m.GetSuccessCount()
