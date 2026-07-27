@@ -781,8 +781,7 @@ func BenchmarkRPCResult_SetError(b *testing.B) {
 	r := &RPCResult{}
 	err := errors.New("test error")
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		r.SetError(err)
 	}
 }
@@ -791,8 +790,7 @@ func BenchmarkRPCResult_SetResult(b *testing.B) {
 	r := &RPCResult{}
 	result := "test result"
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		r.SetResult(result)
 	}
 }
@@ -800,8 +798,7 @@ func BenchmarkRPCResult_SetResult(b *testing.B) {
 func BenchmarkRPCResult_AddAttachment(b *testing.B) {
 	r := &RPCResult{}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for i := 0; b.Loop(); i++ {
 		r.AddAttachment(fmt.Sprintf("key-%d", i), "value")
 	}
 }
@@ -810,8 +807,7 @@ func BenchmarkRPCResult_Attachment(b *testing.B) {
 	r := &RPCResult{}
 	r.Attrs = map[string]any{"key": "value"}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = r.Attachment("key", "default")
 	}
 }
@@ -823,8 +819,7 @@ func BenchmarkRPCResult_String(b *testing.B) {
 		Err:   errors.New("test error"),
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = r.String()
 	}
 }

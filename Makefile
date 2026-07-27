@@ -43,7 +43,7 @@ test: clean
 
 fmt: install-imports-formatter
 	# replace interface{} with any
-	go run golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@v0.21.1 -any=true -fix -test ./...
+	go run golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@v0.21.1 -fix -test ./...
 	go fmt ./... && GOROOT=$(shell go env GOROOT) imports-formatter
 	cd $(CLI_DIR) && go fmt ./...
 
@@ -54,6 +54,9 @@ check-fmt:
 	@if ! git diff --exit-code --quiet; then \
 		echo "Error: The following files have formatting changes:"; \
 		git diff --name-only; \
+		echo ""; \
+		echo "Formatting diff:"; \
+		git --no-pager diff --; \
 		echo ""; \
 		echo "Please run 'make fmt' to fix formatting issues and commit the changes."; \
 		exit 1; \
