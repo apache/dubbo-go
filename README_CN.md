@@ -136,6 +136,32 @@ func main() {
 
 可以通过 `make rpc-contract-check` 在本地运行。
 
+### [benchmark](https://github.com/apache/dubbo-go/tree/main/tools/benchmark)
+
+一套用于对比 **Dubbo-Go**、**Dubbo-Java** 和 **gRPC** 框架性能的基准测试套件，支持多维度指标测试，包括吞吐量 (QPS)、延迟 (p50/p90/p95/p99) 以及资源占用 (CPU、内存)。
+
+**主要特性：**
+- 多维度测试：消息大小、序列化方式、压缩策略、并发度、调用模式
+- 支持框架：Dubbo-Go (Triple)、Dubbo-Java、gRPC
+- 输出报告：包含 QPS、延迟百分位、系统资源指标的 JSON 报告
+- 自动化：代码生成脚本和批量执行脚本
+
+**快速开始：**
+
+```bash
+# 启动 Dubbo-Go 服务端
+cd tools/benchmark/server/dubbo-go && go run main.go --port 20000
+
+# 运行单个基准测试
+cd tools/benchmark && go run client/main.go \
+  --framework dubbo-go --payload 1024 --concurrency 100 --mode unary
+
+# 运行全部基准测试
+./tools/benchmark/scripts/run_all.sh
+```
+
+有关使用详情，请参阅 [benchmark README](./tools/benchmark/README_CN.md)。
+
 ## 生态系统
 
 - [dubbo-go-samples](https://github.com/apache/dubbo-go-samples)
