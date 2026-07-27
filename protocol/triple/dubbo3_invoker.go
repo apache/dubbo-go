@@ -103,8 +103,8 @@ func NewDubbo3Invoker(url *common.URL) (*DubboInvoker, error) {
 	opts = append(opts, triConfig.WithGRPCMaxCallSendMessageSize(maxCallSendMsgSize))
 
 	// grpc keepalive config
-	// Deprecated：use tripleconfig
-	// TODO: remove KeepAliveInterval and KeepAliveInterval in version 4.0.0
+	// Compatibility: read legacy URL keepalive parameters.
+	// TODO: remove KeepAliveInterval and KeepAliveTimeout in version 4.0.0.
 	keepAliveInterval := url.GetParamDuration(constant.KeepAliveInterval, constant.DefaultKeepAliveInterval)
 	keepAliveTimeout := url.GetParamDuration(constant.KeepAliveTimeout, constant.DefaultKeepAliveTimeout)
 

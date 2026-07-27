@@ -25,7 +25,9 @@ import (
 type ProviderConfig struct {
 	ServiceConfig
 	Filter string `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	// Deprecated Register whether registration is required
+	// Register reports whether registration is required.
+	//
+	// Deprecated: this field is retained only for compatibility with legacy configuration.
 	Register bool `yaml:"register" json:"register" property:"register"`
 	// RegistryIDs is registry ids list
 	RegistryIDs []string `yaml:"registry-ids" json:"registry-ids" property:"registry-ids"`
