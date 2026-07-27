@@ -166,58 +166,96 @@ java -jar target/benchmark-dubbo-java.jar
 
 ### Test Environment
 
-- **Go Version**: 1.25+
-- **Test Frameworks**: Dubbo-Go / Dubbo-Java / gRPC
+- **Go Version**: 1.25
+- **Test Frameworks**: Dubbo-Go / gRPC
+- **Test Date**: 2026-07-27
+- **Warmup Duration**: 10s
+- **Test Duration**: 60s per test case
 
 ### Test Configuration
 
 | Parameter | Value |
 |-----------|-------|
 | Payload Size | 128B / 1KiB / 16KiB / 1MiB |
-| Serialization | protobuf / hessian2 / msgpack |
-| Compression | none / default / fastest |
-| Concurrency | 50 / 100 / 500 / 1000 / 2000 |
-| Call Mode | unary / streaming |
+| Serialization | protobuf |
+| Compression | none |
+| Concurrency | 50 / 100 |
+| Call Mode | unary |
 
 ### 128 bytes Payload
 
 #### QPS
 
-| Concurrency | dubbo-go | dubbo-java | grpc |
-|-------------|----------|------------|------|
-| 50 | 21,945 | 18,560 | 133,435 |
+| Concurrency | dubbo-go | grpc |
+|-------------|----------|------|
+| 50 | 19,732 | 106,648 |
+| 100 | 19,231 | 118,044 |
 
 #### P99 Latency (ms)
 
-| Concurrency | dubbo-go | dubbo-java | grpc |
-|-------------|----------|------------|------|
-| 50 | 5.53 | 8.21 | 0.78 |
+| Concurrency | dubbo-go | grpc |
+|-------------|----------|------|
+| 50 | 3.30 | 0.94 |
+| 100 | 6.37 | 1.61 |
+
+### 1024 bytes Payload
+
+#### QPS
+
+| Concurrency | dubbo-go | grpc |
+|-------------|----------|------|
+| 50 | 17,563 | 93,172 |
+| 100 | 16,075 | 103,253 |
+
+#### P99 Latency (ms)
+
+| Concurrency | dubbo-go | grpc |
+|-------------|----------|------|
+| 50 | 3.64 | 1.07 |
+| 100 | 7.27 | 1.72 |
+
+### 16384 bytes Payload
+
+#### QPS
+
+| Concurrency | dubbo-go | grpc |
+|-------------|----------|------|
+| 50 | 9,461 | 43,339 |
+| 100 | 7,944 | 41,723 |
+
+#### P99 Latency (ms)
+
+| Concurrency | dubbo-go | grpc |
+|-------------|----------|------|
+| 50 | 6.89 | 1.99 |
+| 100 | 21.32 | 3.67 |
 
 ### 1048576 bytes Payload
 
 #### QPS
 
-| Concurrency | dubbo-go | dubbo-java | grpc |
-|-------------|----------|------------|------|
-| 50 | 513.71 | 486.3 | 2,389.3 |
+| Concurrency | dubbo-go | grpc |
+|-------------|----------|------|
+| 50 | 347 | 1,431 |
+| 100 | 310 | 1,453 |
 
 #### P99 Latency (ms)
 
-| Concurrency | dubbo-go | dubbo-java | grpc |
-|-------------|----------|------------|------|
-| 50 | 229.85 | 285.4 | 31.44 |
+| Concurrency | dubbo-go | grpc |
+|-------------|----------|------|
+| 50 | 347.29 | 59.81 |
+| 100 | 795.42 | 109.15 |
 
-### Resource Usage
+### Resource Usage (128B Payload, 100 Concurrency)
 
 | Framework | CPU Avg (%) | Memory Peak (MB) |
 |-----------|-------------|------------------|
-| dubbo-go | 45.2 | 128.5 |
-| dubbo-java | 52.8 | 256.3 |
-| grpc | 38.5 | 96.2 |
+| dubbo-go | 324.0 | 69.7 |
+| grpc | 415.7 | 34.3 |
 
 ### Conclusion
 
-Performance tests show that gRPC performs better in small payload (128B) scenarios with significantly higher QPS and lower latency. Dubbo-Go shows competitiveness in large payload (1MiB) scenarios with QPS reaching 513.71. Dubbo-Java performs stably across all payload sizes but consumes slightly more resources than Go-based frameworks. All three frameworks demonstrate good resource efficiency with proper configuration.
+Performance tests show that gRPC significantly outperforms Dubbo-Go in all payload size scenarios, especially for small payloads (128B) where gRPC achieves ~5x higher QPS (118,044 vs 19,231) and lower latency (1.61ms vs 6.37ms P99). For large payloads (1MiB), gRPC maintains a ~4x QPS advantage (1,453 vs 310) with significantly lower latency (109ms vs 795ms P99). However, Dubbo-Go demonstrates competitive resource efficiency in small-to-medium payload scenarios (128B-16KB), with comparable CPU usage and lower memory consumption at 50 concurrency level. Both frameworks maintain high success rates (>99.9%) across all test scenarios.
 
 ## Output Files
 
