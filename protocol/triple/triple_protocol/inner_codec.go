@@ -58,8 +58,13 @@ func innerCodecNames() []string {
 // resolveInnerCodec looks up the inner codec registered under serializeType
 // in the inner codec registry. An empty serializeType defaults to hessian2 for
 // backward compatibility.
+//
+// Dubbo Java writes "hessian4" into the wrapper (TripleConstants.HESSIAN4)
+// while its on-wire encoding is Hessian2-compatible; the Java receiver maps it
+// back to "hessian2" in ReflectionPackableMethod.convertHessianFromWrapper. Go
+// mirrors that single alias so a Java non-IDL client is not rejected.
 func resolveInnerCodec(serializeType string) (Codec, error) {
-	if serializeType == "" {
+	if serializeType == "" || serializeType == "hessian4" {
 		serializeType = codecNameHessian2
 	}
 	c, ok := GetInnerCodec(serializeType)
