@@ -214,8 +214,16 @@ func saveResults(stats *engine.Statistics, cpuAvg, memoryPeak float64) {
 
 	dataDir := filepath.Join(baseDir, "data")
 	if mkdirErr := os.MkdirAll(dataDir, 0755); mkdirErr != nil {
-		logger.Warnf("[WARN] Failed to create data directory: %v", mkdirErr)
-		return
+		wd, wdErr := os.Getwd()
+		if wdErr != nil {
+			logger.Warnf("[WARN] Failed to create data directory: %v", mkdirErr)
+			return
+		}
+		dataDir = filepath.Join(wd, "data")
+		if mkdirErr2 := os.MkdirAll(dataDir, 0755); mkdirErr2 != nil {
+			logger.Warnf("[WARN] Failed to create data directory: %v", mkdirErr2)
+			return
+		}
 	}
 
 	filename := fmt.Sprintf("%s_%d_%s_%s_%d_%s.json",
