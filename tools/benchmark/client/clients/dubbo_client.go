@@ -20,20 +20,21 @@ package clients
 import (
 	"context"
 	"fmt"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/client"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
+
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
+
 	benchmark "dubbo.apache.org/dubbo-go/v3/tools/benchmark/proto"
 )
 
 type DubboGoClient struct {
-	client   benchmark.TripleBenchmarkService
-	payload  []byte
-	callMode string
+	client      benchmark.TripleBenchmarkService
+	payload     []byte
+	callMode    string
+	compression string
 }
 
 func NewDubboGoClient(addr string, serialization, compression, callMode string, payload []byte) (*DubboGoClient, error) {
@@ -41,6 +42,7 @@ func NewDubboGoClient(addr string, serialization, compression, callMode string, 
 		client.WithClientNoCheck(),
 		client.WithClientSerialization(serialization),
 		client.WithClientParam(constant.SerializationKey, serialization),
+		client.WithClientParam("compression", compression),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Dubbo client: %v", err)
@@ -51,15 +53,17 @@ func NewDubboGoClient(addr string, serialization, compression, callMode string, 
 		client.WithSerialization(serialization),
 		client.WithParam(constant.MaxCallRecvMsgSize, "16MB"),
 		client.WithParam(constant.MaxCallSendMsgSize, "16MB"),
+		client.WithParam("compression", compression),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create BenchmarkService: %v", err)
 	}
 
 	return &DubboGoClient{
-		client:   service,
-		payload:  payload,
-		callMode: callMode,
+		client:      service,
+		payload:     payload,
+		callMode:    callMode,
+		compression: compression,
 	}, nil
 }
 
@@ -104,5 +108,5 @@ func (c *DubboGoClient) Close() error {
 }
 
 func (c *DubboGoClient) String() string {
-	return fmt.Sprintf("Dubbo-Go Client: callMode=%s, payloadSize=%d", c.callMode, len(c.payload))
+	return fmt.Sprintf("Dubbo-Go Client: callMode=%s, compression=%s, payloadSize=%d", c.callMode, c.compression, len(c.payload))
 }
