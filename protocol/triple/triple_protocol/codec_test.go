@@ -136,3 +136,34 @@ func TestMsgpackCodec(t *testing.T) {
 	assert.Equal(t, got.Number, want.Number)
 	assert.Equal(t, got.Text, want.Text)
 }
+
+func TestResolveInnerCodec(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name          string
+		serializeType string
+		wantOK        bool
+	}{
+		{"hessian2", "hessian2", true},
+		{"msgpack", "msgpack", true},
+		{"empty-defaults-hessian2", "", true},
+		{"unknown", "unknown", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			s, err := resolveInnerCodec(tc.serializeType)
+			if tc.wantOK {
+				if err != nil {
+					t.Fatalf("resolveInnerCodec(%q) err: %v", tc.serializeType, err)
+				}
+				if s == nil {
+					t.Fatalf("got nil serializer")
+				}
+			} else {
+				if err == nil {
+					t.Fatalf("expected error for %q, got nil", tc.serializeType)
+				}
+			}
+		})
+	}
+}

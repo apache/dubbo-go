@@ -34,8 +34,6 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
@@ -162,7 +160,6 @@ func (h *tripleHandler) NewConn(
 		contentType,
 	)
 	codec := h.Codecs.Get(codecName)
-	backupCodec := h.Codecs.Get(h.FallbackCodecName)
 	// todo:// need to figure it out
 	// The codec can be nil in the GET request case; that's okay: when failed
 	// is non-nil, codec is never used.
@@ -187,15 +184,18 @@ func (h *tripleHandler) NewConn(
 		Addr:     request.RemoteAddr,
 		Protocol: ProtocolTriple,
 	}
-	conn = &tripleUnaryHandlerConn{
+	var codecSession = codec
+	if codec != nil && getWireCodecName(codec) == codecNameProto {
+		codecSession = &tripleServerCodecSession{delegate: codec}
+	}
+	hc := &tripleUnaryHandlerConn{
 		spec:           h.Spec,
 		peer:           peer,
 		request:        request,
 		responseWriter: responseWriter,
 		marshaler: tripleUnaryMarshaler{
 			writer:           responseWriter,
-			codec:            codec,
-			backupCodec:      backupCodec,
+			codec:            codecSession,
 			compressMinBytes: h.CompressMinBytes,
 			compressionName:  responseCompression,
 			compressionPool:  h.CompressionPools.Get(responseCompression),
@@ -205,15 +205,14 @@ func (h *tripleHandler) NewConn(
 		},
 		unmarshaler: tripleUnaryUnmarshaler{
 			reader:          requestBody,
-			codec:           codec,
-			backupCodec:     backupCodec,
+			codec:           codecSession,
 			compressionPool: h.CompressionPools.Get(requestCompression),
 			bufferPool:      h.BufferPool,
 			readMaxBytes:    h.ReadMaxBytes,
 		},
 		responseTrailer: make(http.Header),
 	}
-	conn = wrapHandlerConnWithCodedErrors(conn)
+	conn = wrapHandlerConnWithCodedErrors(hc)
 
 	if failed != nil {
 		// Negotiation failed, so we can't establish a stream.
@@ -484,7 +483,6 @@ func (hc *tripleUnaryHandlerConn) writeResponseHeader(err error) {
 type tripleUnaryMarshaler struct {
 	writer           io.Writer
 	codec            Codec
-	backupCodec      Codec // backupCodec is the fallback codec when primary codec fails
 	compressMinBytes int
 	compressionName  string
 	compressionPool  *compressionPool
@@ -499,13 +497,7 @@ func (m *tripleUnaryMarshaler) Marshal(message any) *Error {
 	}
 	data, err := m.codec.Marshal(message)
 	if err != nil {
-		if m.backupCodec != nil && m.codec.Name() != m.backupCodec.Name() {
-			logger.Warnf("[Triple] failed to marshal message with primary codec %s, trying fallback codec %s", m.codec.Name(), m.backupCodec.Name())
-			data, err = m.backupCodec.Marshal(message)
-		}
-		if err != nil {
-			return errorf(CodeInternal, "marshal message: %w", err)
-		}
+		return errorf(CodeInternal, "marshal message: %w", err)
 	}
 	// Can't avoid allocating the slice, but we can reuse it.
 	uncompressed := bytes.NewBuffer(data)
@@ -549,7 +541,6 @@ func (m *tripleUnaryRequestMarshaler) Marshal(message any) *Error {
 type tripleUnaryUnmarshaler struct {
 	reader          io.Reader
 	codec           Codec
-	backupCodec     Codec // backupCodec is the fallback codec when primary codec fails
 	compressionPool *compressionPool
 	bufferPool      *bufferPool
 	alreadyRead     bool
@@ -557,14 +548,7 @@ type tripleUnaryUnmarshaler struct {
 }
 
 func (u *tripleUnaryUnmarshaler) Unmarshal(message any) *Error {
-	err := u.UnmarshalFunc(message, u.codec.Unmarshal)
-	if err != nil {
-		if u.backupCodec != nil && u.codec.Name() != u.backupCodec.Name() {
-			logger.Warnf("[Triple] failed to unmarshal message with primary codec %s, trying fallback codec %s", u.codec.Name(), u.backupCodec.Name())
-			err = u.UnmarshalFunc(message, u.backupCodec.Unmarshal)
-		}
-	}
-	return err
+	return u.UnmarshalFunc(message, u.codec.Unmarshal)
 }
 
 func (u *tripleUnaryUnmarshaler) UnmarshalFunc(message any, unmarshal func([]byte, any) error) *Error {
