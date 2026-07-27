@@ -20,7 +20,7 @@ set -e
 
 echo "start integrate-test: repo = $1, SHA = $2, branch = $3"
 
-# set root workspace (already checked out dubbo-go code)
+# set root workspace
 ROOT_DIR=$(pwd)
 echo "integrate-test root work-space -> ${ROOT_DIR}"
 

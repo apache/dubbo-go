@@ -148,29 +148,7 @@ Run `make rpc-contract-check` to use it locally.
 
 ### [benchmark](https://github.com/apache/dubbo-go/tree/main/tools/benchmark)
 
-A performance benchmark suite for comparing **Dubbo-Go**, **Dubbo-Java**, and **gRPC** frameworks across multiple dimensions including throughput (QPS), latency (p50/p90/p95/p99), and resource usage (CPU, memory).
-
-**Key Features:**
-- Multi-dimensional testing: payload size, serialization, compression, concurrency, and call modes
-- Frameworks: Dubbo-Go (Triple), Dubbo-Java, and gRPC
-- Output: JSON reports with QPS, latency percentiles, and system resource metrics
-- Automation: scripts for code generation and batch execution
-
-**Quick Start:**
-
-```bash
-# Start a Dubbo-Go server
-cd tools/benchmark/server/dubbo-go && go run main.go --port 20000
-
-# Run a single benchmark
-cd tools/benchmark && go run client/main.go \
-  --framework dubbo-go --payload 1024 --concurrency 100 --mode unary
-
-# Run all benchmarks
-./tools/benchmark/scripts/run_all.sh
-```
-
-For usage details, see the [benchmark README](./tools/benchmark/README.md).
+A performance benchmark suite for comparing **Dubbo-Go**, **Dubbo-Java**, and **gRPC** frameworks. See the [benchmark README](./tools/benchmark/README.md) for details.
 
 ## Ecosystem
 - [dubbo-go-samples](https://github.com/apache/dubbo-go-samples)
