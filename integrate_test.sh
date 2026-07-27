@@ -27,8 +27,13 @@ echo "integrate-test root work-space -> ${ROOT_DIR}"
 echo "use dubbo-go-samples $3 branch for integration testing"
 git clone -b $3 https://github.com/apache/dubbo-go-samples.git samples --depth=1 && cd samples
 
-# use local checked-out dubbo-go code to avoid fork module resolution issues
-go mod edit -replace=dubbo.apache.org/dubbo-go/v3="$ROOT_DIR"
+# update dubbo-go to current commit id
+if [ "$1" == "apache/dubbo-go" ]; then
+    go mod edit -replace=dubbo.apache.org/dubbo-go/v3=dubbo.apache.org/dubbo-go/v3@"$2"
+else
+    export GONOSUMDB="${GONOSUMDB:+${GONOSUMDB},}github.com/$1/v3"
+    go mod edit -replace=dubbo.apache.org/dubbo-go/v3=github.com/"$1"/v3@"$2"
+fi
 
 go mod tidy
 
