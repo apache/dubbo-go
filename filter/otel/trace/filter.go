@@ -20,25 +20,21 @@ package trace
 import (
 	"context"
 	"strconv"
-)
 
-import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/baggage"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
-	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
-	"go.opentelemetry.io/otel/trace"
-)
 
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
+	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // buildSpanName returns the standardized span name for a Dubbo invocation,
@@ -48,10 +44,6 @@ func buildSpanName(side string, url *common.URL, invocation base.Invocation) str
 }
 
 // buildSpanAttributes collects the semantic attributes for a Dubbo span.
-//
-// It prefers OpenTelemetry semantic conventions where they exist
-// (rpc.system, rpc.service, rpc.method, server.address, server.port) and falls
-// back to the stable "dubbo.*" namespace for Dubbo-specific information.
 func buildSpanAttributes(side string, url *common.URL, invocation base.Invocation) []attribute.KeyValue {
 	attrs := []attribute.KeyValue{
 		semconv.RPCSystemApacheDubbo,

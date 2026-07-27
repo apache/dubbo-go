@@ -30,14 +30,8 @@ var (
 	RPCMessageTypeReceived = RPCMessageTypeKey.String("RECEIVED")
 )
 
-// Dubbo-specific span attributes.
-//
 // These describe information that has no OpenTelemetry semantic-convention
-// equivalent, so they live under a stable "dubbo.*" namespace. Attributes that
-// DO have a semantic-convention equivalent (rpc.system, rpc.service, rpc.method,
-// server.address, ...) use the semconv helpers directly instead of these keys.
-// Treat these key names as a stable contract: do not rename or remove them once
-// released, since users build dashboards and alerts on top of them.
+// equivalent, so they live under a stable "dubbo.*" namespace.
 var (
 	// DubboSideKey records the invocation side: "consumer" or "provider".
 	DubboSideKey = attribute.Key("dubbo.side")
