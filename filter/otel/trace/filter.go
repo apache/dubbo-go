@@ -19,10 +19,12 @@ package trace
 
 import (
 	"context"
+	"strconv"
 )
 
 import (
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/baggage"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
@@ -31,12 +33,49 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
+
+// buildSpanName returns the standardized span name for a Dubbo invocation,
+// e.g. "dubbo.consumer <service>/<method>" or "dubbo.provider <service>/<method>".
+func buildSpanName(side string, url *common.URL, invocation base.Invocation) string {
+	return "dubbo." + side + " " + url.ServiceKey() + "/" + invocation.MethodName()
+}
+
+// buildSpanAttributes collects the semantic attributes for a Dubbo span.
+//
+// It prefers OpenTelemetry semantic conventions where they exist
+// (rpc.system, rpc.service, rpc.method, server.address, server.port) and falls
+// back to the stable "dubbo.*" namespace for Dubbo-specific information.
+func buildSpanAttributes(side string, url *common.URL, invocation base.Invocation) []attribute.KeyValue {
+	attrs := []attribute.KeyValue{
+		semconv.RPCSystemApacheDubbo,
+		semconv.RPCService(url.ServiceKey()),
+		semconv.RPCMethod(invocation.MethodName()),
+		DubboSideKey.String(side),
+	}
+	if url.Protocol != "" {
+		attrs = append(attrs, DubboProtocolKey.String(url.Protocol))
+	}
+	if group := url.Group(); group != "" {
+		attrs = append(attrs, DubboGroupKey.String(group))
+	}
+	if version := url.Version(); version != "" {
+		attrs = append(attrs, DubboVersionKey.String(version))
+	}
+	if url.Ip != "" {
+		attrs = append(attrs, semconv.ServerAddress(url.Ip))
+	}
+	if port, err := strconv.Atoi(url.Port); err == nil {
+		attrs = append(attrs, semconv.ServerPort(port))
+	}
+	return attrs
+}
 
 func init() {
 	// TODO: use single filter to simplify filter field in configuration
@@ -78,15 +117,12 @@ func (f *otelServerFilter) Invoke(ctx context.Context, invoker base.Invoker, inv
 		trace.WithInstrumentationVersion(constant.Version),
 	)
 
+	url := invoker.GetURL()
 	ctx, span := tracer.Start(
 		trace.ContextWithRemoteSpanContext(ctx, spanCtx),
-		invocation.ActualMethodName(),
+		buildSpanName(sideProvider, url, invocation),
 		trace.WithSpanKind(trace.SpanKindServer),
-		trace.WithAttributes(
-			semconv.RPCSystemApacheDubbo,
-			semconv.RPCService(invoker.GetURL().ServiceKey()),
-			semconv.RPCMethod(invocation.MethodName()),
-		),
+		trace.WithAttributes(buildSpanAttributes(sideProvider, url, invocation)...),
 	)
 	defer span.End()
 
@@ -120,16 +156,13 @@ func (f *otelClientFilter) Invoke(ctx context.Context, invoker base.Invoker, inv
 		trace.WithInstrumentationVersion(constant.Version),
 	)
 
+	url := invoker.GetURL()
 	var span trace.Span
 	ctx, span = tracer.Start(
 		ctx,
-		invocation.ActualMethodName(),
+		buildSpanName(sideConsumer, url, invocation),
 		trace.WithSpanKind(trace.SpanKindClient),
-		trace.WithAttributes(
-			semconv.RPCSystemApacheDubbo,
-			semconv.RPCService(invoker.GetURL().ServiceKey()),
-			semconv.RPCMethod(invocation.MethodName()),
-		),
+		trace.WithAttributes(buildSpanAttributes(sideConsumer, url, invocation)...),
 	)
 	defer span.End()
 
