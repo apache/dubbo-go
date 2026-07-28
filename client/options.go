@@ -376,6 +376,9 @@ func WithSticky() ReferenceOption {
 }
 
 // TODO: remove this function after old triple removed
+//
+// Deprecated: this option will be removed in the next version. The IDL mode
+// switch is no longer supported by dubbo-go.
 func WithIDL(IDLMode string) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.IDLMode = IDLMode
@@ -743,14 +746,14 @@ func WithClientClusterStrategy(strategy string) ClientOption {
 	}
 }
 
-// Deprecated：use triple.WithKeepAliveInterval()
+// Deprecated: use triple.WithKeepAliveInterval()
 func WithKeepAliveInterval(keepAliveInterval time.Duration) ClientOption {
 	return func(_ *ClientOptions) {
 		panic("use triple.WithKeepAliveInterval()")
 	}
 }
 
-// Deprecated：use triple.WithKeepAliveTimeout()
+// Deprecated: use triple.WithKeepAliveTimeout()
 func WithKeepAliveTimeout(keepAliveTimeout time.Duration) ClientOption {
 	return func(_ *ClientOptions) {
 		panic("use triple.WithKeepAliveTimeout()")

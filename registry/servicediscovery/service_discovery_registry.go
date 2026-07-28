@@ -221,8 +221,7 @@ func (s *serviceDiscoveryRegistry) UnSubscribe(url *common.URL, listener registr
 		return nil
 	}
 	serviceNamesKey := sortServices(services)
-	l := s.serviceListeners[serviceNamesKey]
-	if l != nil {
+	if l := s.getServiceListener(serviceNamesKey); l != nil {
 		l.RemoveListener(url.ServiceKey())
 	}
 	s.stopListen(url)
@@ -525,36 +524,69 @@ func (s *serviceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.No
 }
 
 func (s *serviceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry.NotifyListener, services *gxset.HashSet) {
-	var err error
 	serviceNamesKey := sortServices(services)
 	protocol := constant.TriProtocol // consume "tri" protocol by default, other protocols need to be specified on reference/consumer explicitly
 	if url.Protocol != "" {
 		protocol = url.Protocol
 	}
 	protocolServiceKey := url.ServiceKey() + ":" + protocol
-	listener := s.serviceListeners[serviceNamesKey]
-	if listener == nil {
-		listener = NewServiceInstancesChangedListener(url.GetParam(constant.ApplicationKey, ""), s.url.GetParam(constant.RegistryIdKey, constant.DefaultKey), services)
-		for _, serviceNameTmp := range services.Values() {
-			serviceName := serviceNameTmp.(string)
-			instances := s.serviceDiscovery.GetInstances(serviceName)
-			logger.Infof("[Registry][ServiceDiscovery] synchronized instance notification on application %s subscription, instance list size %s", serviceName, len(instances))
-			err = listener.OnEvent(&registry.ServiceInstancesChangedEvent{
-				ServiceName: serviceName,
-				Instances:   instances,
-			})
-			if err != nil {
-				logger.Warnf("[Registry][ServiceDiscovery] ServiceInstancesChangedListenerImpl handle error, err=%v", err)
-			}
+
+	// Fast path: reuse an already installed listener without touching external calls.
+	if listener := s.getServiceListener(serviceNamesKey); listener != nil {
+		s.subscribeAndNotify(url, serviceNamesKey, protocolServiceKey, listener, notify)
+		return
+	}
+
+	// Build the listener and load its initial instances outside s.lock.
+	// GetInstances and OnEvent may perform external RPC / metadata-report
+	// calls; holding the registry write lock across them would block every
+	// other subscribe/unsubscribe on this registry. The lock below only guards
+	// the serviceListeners check/install, never the external work.
+	listener := NewServiceInstancesChangedListener(url.GetParam(constant.ApplicationKey, ""), s.url.GetParam(constant.RegistryIdKey, constant.DefaultKey), services)
+	for _, serviceNameTmp := range services.Values() {
+		serviceName := serviceNameTmp.(string)
+		instances := s.serviceDiscovery.GetInstances(serviceName)
+		logger.Infof("[Registry][ServiceDiscovery] synchronized instance notification on application %s subscription, instance list size %s", serviceName, len(instances))
+		if err := listener.OnEvent(&registry.ServiceInstancesChangedEvent{
+			ServiceName: serviceName,
+			Instances:   instances,
+		}); err != nil {
+			logger.Warnf("[Registry][ServiceDiscovery] ServiceInstancesChangedListenerImpl handle error, err=%v", err)
 		}
 	}
-	s.serviceListeners[serviceNamesKey] = listener
+
+	// Install under a short write lock with a double-check so a concurrent
+	// subscriber for the same key does not install a duplicate listener.
+	s.lock.Lock()
+	if existing := s.serviceListeners[serviceNamesKey]; existing != nil {
+		listener = existing
+	} else {
+		s.serviceListeners[serviceNamesKey] = listener
+	}
+	s.lock.Unlock()
+
+	s.subscribeAndNotify(url, serviceNamesKey, protocolServiceKey, listener, notify)
+}
+
+// getServiceListener returns the listener installed for serviceNamesKey, or nil
+// if none has been installed yet, acquired under a read lock.
+func (s *serviceDiscoveryRegistry) getServiceListener(serviceNamesKey string) registry.ServiceInstancesChangedListener {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	return s.serviceListeners[serviceNamesKey]
+}
+
+// subscribeAndNotify registers the notify callback and asynchronously wires the
+// listener into the service discovery so the caller does not block on it.
+func (s *serviceDiscoveryRegistry) subscribeAndNotify(url *common.URL, serviceNamesKey, protocolServiceKey string,
+	listener registry.ServiceInstancesChangedListener, notify registry.NotifyListener,
+) {
 	listener.AddListenerAndNotify(protocolServiceKey, notify)
 	event := metricsMetadata.NewMetadataMetricTimeEvent(metricsMetadata.SubscribeServiceRt)
 
 	logger.Infof("[Registry][ServiceDiscovery] start subscribing to registry for applications=%s with a new go routine", serviceNamesKey)
 	go func() {
-		err = s.serviceDiscovery.AddListener(listener)
+		err := s.serviceDiscovery.AddListener(listener)
 		event.Succ = err != nil
 		event.End = time.Now()
 		event.Attachment[constant.InterfaceKey] = url.Interface()

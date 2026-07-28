@@ -1062,3 +1062,96 @@ func TestServiceDiscoveryRegistryUnRegister_Concurrent(t *testing.T) {
 	// unregister should be called
 	assert.True(t, mockSD.unregisterCalled)
 }
+
+// TestServiceDiscoveryRegistrySubscribeURLDoesNotHoldLockOnExternalCall
+// verifies that a stalled GetInstances (e.g. an external RPC or metadata-report
+// fetch) for one service does not block subscription for a different service.
+// The registry write lock must only guard the serviceListeners map, not the
+// external GetInstances / OnEvent calls. See review feedback [P1] on PR #3442.
+func TestServiceDiscoveryRegistrySubscribeURLDoesNotHoldLockOnExternalCall(t *testing.T) {
+	mockSD, _ := setupEnvironment(t)
+	regID := fmt.Sprintf("mock-reg-%s-%d", t.Name(), time.Now().UnixNano())
+
+	registryURL, err := common.NewURL(testRegistryURL,
+		common.WithParamsValue(constant.RegistryKey, "mock"),
+		common.WithParamsValue(constant.RegistryIdKey, regID))
+	require.NoError(t, err)
+
+	reg, err := newServiceDiscoveryRegistry(registryURL)
+	require.NoError(t, err)
+	sdReg := reg.(*serviceDiscoveryRegistry)
+
+	unblock := make(chan struct{})
+	started := make(chan struct{}, 1)
+	sdReg.serviceDiscovery = &blockingMockServiceDiscovery{
+		mockServiceDiscovery: mockSD,
+		blockName:            "appA",
+		unblock:              unblock,
+		started:              started,
+	}
+
+	// service A targets appA (GetInstances blocks); service B targets appB (returns at once).
+	urlA, _ := common.NewURL("dubbo://127.0.0.1:20000/",
+		common.WithInterface(testInterface),
+		common.WithParamsValue(constant.GroupKey, "A"),
+		common.WithParamsValue(constant.SideKey, constant.SideConsumer))
+	urlB, _ := common.NewURL("dubbo://127.0.0.1:20001/",
+		common.WithInterface("org.apache.dubbo.test.OtherService"),
+		common.WithParamsValue(constant.GroupKey, "B"),
+		common.WithParamsValue(constant.SideKey, constant.SideConsumer))
+
+	doneA := make(chan struct{})
+	go func() {
+		sdReg.SubscribeURL(urlA, &mockNotifyListener{}, gxset.NewSet("appA"))
+		close(doneA)
+	}()
+
+	// wait until A is blocked inside GetInstances("appA")
+	select {
+	case <-started:
+	case <-time.After(2 * time.Second):
+		t.Fatal("GetInstances for service A was never invoked")
+	}
+
+	// B must complete promptly even though A is still blocked in GetInstances.
+	// If the registry write lock were held across GetInstances, B would stall here.
+	completedB := make(chan struct{})
+	go func() {
+		sdReg.SubscribeURL(urlB, &mockNotifyListener{}, gxset.NewSet("appB"))
+		close(completedB)
+	}()
+	select {
+	case <-completedB:
+	case <-time.After(2 * time.Second):
+		t.Fatal("subscribe for B was blocked by A's stalled external call; lock must not cover GetInstances")
+	}
+
+	close(unblock)
+	<-doneA
+}
+
+// blockingMockServiceDiscovery wraps mockServiceDiscovery and blocks
+// GetInstances for blockName until unblock is closed, to assert that a stalled
+// external call does not hold the registry lock and stall other keys. AddListener
+// is overridden so the async wiring goroutine does not touch the mock's WaitGroup.
+type blockingMockServiceDiscovery struct {
+	*mockServiceDiscovery
+	blockName string
+	unblock   chan struct{}
+	started   chan struct{}
+}
+
+func (m *blockingMockServiceDiscovery) GetInstances(name string) []registry.ServiceInstance {
+	if name == m.blockName {
+		select {
+		case m.started <- struct{}{}:
+		default:
+		}
+		<-m.unblock
+	}
+	return m.mockServiceDiscovery.GetInstances(name)
+}
+
+func (m *blockingMockServiceDiscovery) AddListener(registry.ServiceInstancesChangedListener) error {
+	return nil
+}

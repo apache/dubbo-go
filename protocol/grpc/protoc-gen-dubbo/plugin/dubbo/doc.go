@@ -15,11 +15,7 @@
  * limitations under the License.
  */
 
-package constant
-
-const (
-	Version      = "3.3.2"      // apache/dubbo-go version
-	Name         = "dubbogo"    // module name
-	DATE         = "2026/08/01" // release date
-	RouteVersion = "v3.1"
-)
+// Package dubbo implements the legacy gRPC code generator plugin.
+//
+// Deprecated: use dubbo.apache.org/dubbo-go/v3/protocol/triple instead.
+package dubbo
