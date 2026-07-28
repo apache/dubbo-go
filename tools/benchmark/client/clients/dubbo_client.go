@@ -20,13 +20,13 @@ package clients
 import (
 	"context"
 	"fmt"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/client"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
-
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
-
 	benchmark "dubbo.apache.org/dubbo-go/v3/tools/benchmark/proto"
 )
 
