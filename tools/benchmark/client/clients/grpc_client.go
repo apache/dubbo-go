@@ -39,9 +39,9 @@ type GrpcClient struct {
 }
 
 func NewGrpcClient(addr string, callMode string, payload []byte) (*GrpcClient, error) {
-	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to gRPC service: %v", err)
+		return nil, fmt.Errorf("failed to create gRPC client: %v", err)
 	}
 
 	client := benchmark.NewBenchmarkServiceClient(conn)

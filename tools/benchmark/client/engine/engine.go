@@ -42,6 +42,7 @@ type Engine struct {
 	stopChan         chan struct{}
 	ctx              context.Context
 	cancel           context.CancelFunc
+	stopOnce         sync.Once
 }
 
 func NewEngine(concurrency int, warmupDuration, testDuration, requestTimeout time.Duration) *Engine {
@@ -111,10 +112,12 @@ func (e *Engine) worker(benchmarkFunc BenchmarkFunc) {
 }
 
 func (e *Engine) Stop() {
-	close(e.stopChan)
-	e.cancel()
-	e.wg.Wait()
-	logger.Info("[INFO] Benchmark completed")
+	e.stopOnce.Do(func() {
+		close(e.stopChan)
+		e.cancel()
+		e.wg.Wait()
+		logger.Info("[INFO] Benchmark completed")
+	})
 }
 
 func (e *Engine) GetMetricsCollector() *MetricsCollector {

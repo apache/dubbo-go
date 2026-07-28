@@ -53,7 +53,6 @@ tools/benchmark
 │   ├── run_all.sh           # 一键全量压测
 │   └── run_single.sh        # 单场景压测
 ├── config.yaml              # 压测配置
-├── go.mod/go.sum            # Go依赖
 ├── README.md                # 英文文档
 └── README_CN.md             # 中文文档
 ```

@@ -23,12 +23,16 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 	"time"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
+
+	"gopkg.in/yaml.v3"
 )
 
 import (
@@ -55,7 +59,30 @@ var (
 	warmupDuration = flag.String("warmup", "10s", "Warmup duration")
 	serverAddr     = flag.String("addr", "", "Server address")
 	serverPID      = flag.Int("pid", 0, "Server process PID (for system monitoring)")
+	outputDir      = flag.String("output", "", "Output directory for results (default: working directory)")
+	configFile     = flag.String("config", "", "Path to config.yaml")
 )
+
+type BenchmarkConfig struct {
+	Service struct {
+		Name string `yaml:"name"`
+		Port struct {
+			DubboGo   int `yaml:"dubbo-go"`
+			DubboJava int `yaml:"dubbo-java"`
+			Grpc      int `yaml:"grpc"`
+		} `yaml:"port"`
+	} `yaml:"service"`
+	PayloadSizes      []string `yaml:"payload_sizes"`
+	Serializations    []string `yaml:"serializations"`
+	Compressions      []string `yaml:"compressions"`
+	CallModes         []string `yaml:"call_modes"`
+	ConcurrencyLevels []string `yaml:"concurrency_levels"`
+	Benchmark         struct {
+		WarmupDuration string `yaml:"warmup_duration"`
+		TestDuration   string `yaml:"test_duration"`
+		RequestTimeout string `yaml:"request_timeout"`
+	} `yaml:"benchmark"`
+}
 
 type Caller interface {
 	Call(ctx context.Context) error
@@ -89,6 +116,8 @@ type BenchmarkResult struct {
 
 func main() {
 	flag.Parse()
+
+	loadConfig(*configFile)
 
 	logger.Info(Separator)
 	logger.Info("       Dubbo-Go Benchmark Client")
@@ -139,6 +168,15 @@ func main() {
 
 	benchEngine := engine.NewEngine(*concurrency, warmupDur, testDur, 30*time.Second)
 
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		sig := <-sigCh
+		logger.Infof("[INFO] Received signal %v, stopping benchmark...", sig)
+		benchEngine.Stop()
+	}()
+
 	logger.Info("[INFO] Starting benchmark...")
 	stats := benchEngine.Run(func(ctx context.Context) (time.Duration, error) {
 		start := time.Now()
@@ -155,6 +193,26 @@ func main() {
 	}
 
 	saveResults(stats, cpuAvg, float64(memoryPeakBytes)/1024/1024)
+}
+
+func loadConfig(configPath string) {
+	if configPath == "" {
+		return
+	}
+
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		logger.Warnf("[WARN] Failed to read config file: %v", err)
+		return
+	}
+
+	var config BenchmarkConfig
+	if err := yaml.Unmarshal(data, &config); err != nil {
+		logger.Warnf("[WARN] Failed to parse config file: %v", err)
+		return
+	}
+
+	logger.Infof("[INFO] Loaded config from %s", configPath)
 }
 
 func createCaller(data []byte) (Caller, error) {
@@ -205,38 +263,32 @@ func saveResults(stats *engine.Statistics, cpuAvg, memoryPeak float64) {
 		MemoryPeak:      memoryPeak,
 	}
 
-	execPath, err := os.Executable()
-	if err != nil {
-		logger.Warnf("[WARN] Failed to get executable path: %v", err)
-		return
-	}
-	baseDir := filepath.Dir(filepath.Dir(execPath))
-
-	dataDir := filepath.Join(baseDir, "data")
-	if mkdirErr := os.MkdirAll(dataDir, 0755); mkdirErr != nil {
-		wd, wdErr := os.Getwd()
-		if wdErr != nil {
-			logger.Warnf("[WARN] Failed to create data directory: %v", mkdirErr)
+	dataDir := *outputDir
+	if dataDir == "" {
+		wd, err := os.Getwd()
+		if err != nil {
+			logger.Warnf("[WARN] Failed to get working directory: %v", err)
 			return
 		}
 		dataDir = filepath.Join(wd, "data")
-		if mkdirErr2 := os.MkdirAll(dataDir, 0755); mkdirErr2 != nil {
-			logger.Warnf("[WARN] Failed to create data directory: %v", mkdirErr2)
-			return
-		}
+	}
+
+	if mkdirErr := os.MkdirAll(dataDir, 0755); mkdirErr != nil {
+		logger.Warnf("[WARN] Failed to create data directory: %v", mkdirErr)
+		return
 	}
 
 	filename := fmt.Sprintf("%s_%d_%s_%s_%d_%s.json",
 		*framework, *payloadSize, *serialization, *compression, *concurrency, *callMode)
 	path := filepath.Join(dataDir, filename)
 
-	data, err := json.MarshalIndent(result, "", "  ")
+	dataBytes, err := json.MarshalIndent(result, "", "  ")
 	if err != nil {
 		logger.Warnf("[WARN] Failed to serialize result: %v", err)
 		return
 	}
 
-	if err := os.WriteFile(path, data, 0644); err != nil {
+	if err := os.WriteFile(path, dataBytes, 0644); err != nil {
 		logger.Warnf("[WARN] Failed to write result file: %v", err)
 		return
 	}

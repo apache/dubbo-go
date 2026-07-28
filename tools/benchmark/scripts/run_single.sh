@@ -31,6 +31,20 @@ COMPRESSION="${4:-none}"
 CONCURRENCY="${5:-100}"
 CALL_MODE="${6:-unary}"
 
+wait_for_port() {
+    local port=$1
+    local timeout=${2:-30}
+    local elapsed=0
+    while [ $elapsed -lt $timeout ]; do
+        if nc -z localhost "$port" 2>/dev/null; then
+            return 0
+        fi
+        sleep 1
+        elapsed=$((elapsed + 1))
+    done
+    return 1
+}
+
 echo "$SEPARATOR"
 echo "   Dubbo-Go Benchmark - Single Test"
 echo "$SEPARATOR"
@@ -85,7 +99,13 @@ esac
 pid=$!
 echo "[INFO] Server PID: $pid"
 
-sleep 3
+echo "[INFO] Waiting for server to be ready on port $SERVER_PORT..."
+if ! wait_for_port "$SERVER_PORT" 30; then
+    echo "[ERROR] Server failed to start within 30 seconds"
+    kill "$pid" 2>/dev/null || true
+    exit 1
+fi
+echo "[INFO] Server is ready"
 
 echo ""
 echo "[INFO] Starting benchmark..."
@@ -96,7 +116,8 @@ echo "[INFO] Starting benchmark..."
     --compression "$COMPRESSION" \
     --concurrency "$CONCURRENCY" \
     --mode "$CALL_MODE" \
-    --pid "$pid"
+    --pid "$pid" \
+    --output "$BASE_DIR/data"
 
 echo ""
 echo "[INFO] Stopping server..."

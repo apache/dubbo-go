@@ -53,7 +53,6 @@ tools/benchmark
 │   ├── run_all.sh           # Run all benchmarks
 │   └── run_single.sh        # Run single benchmark
 ├── config.yaml              # Benchmark configuration
-├── go.mod/go.sum            # Go dependencies
 ├── README.md                # English documentation
 └── README_CN.md             # Chinese documentation
 ```

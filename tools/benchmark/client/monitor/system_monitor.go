@@ -19,11 +19,14 @@ package monitor
 
 import (
 	"fmt"
-	"os/exec"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
+)
+
+import (
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/mem"
+	"github.com/shirou/gopsutil/v3/process"
 )
 
 type SystemMetrics struct {
@@ -39,25 +42,40 @@ type SystemMonitor struct {
 	mu       sync.Mutex
 	stopChan chan struct{}
 	wg       sync.WaitGroup
+	stopOnce sync.Once
+	proc     *process.Process
 }
 
 func NewSystemMonitor(pid int, interval time.Duration) *SystemMonitor {
-	return &SystemMonitor{
+	sm := &SystemMonitor{
 		pid:      pid,
 		interval: interval,
 		metrics:  make([]SystemMetrics, 0),
 		stopChan: make(chan struct{}),
 	}
+
+	proc, err := process.NewProcess(int32(pid))
+	if err != nil {
+		return sm
+	}
+	sm.proc = proc
+
+	return sm
 }
 
 func (sm *SystemMonitor) Start() {
+	if sm.proc == nil {
+		return
+	}
 	sm.wg.Add(1)
 	go sm.monitor()
 }
 
 func (sm *SystemMonitor) Stop() {
-	close(sm.stopChan)
-	sm.wg.Wait()
+	sm.stopOnce.Do(func() {
+		close(sm.stopChan)
+		sm.wg.Wait()
+	})
 }
 
 func (sm *SystemMonitor) monitor() {
@@ -103,43 +121,39 @@ func (sm *SystemMonitor) collectMetrics() (SystemMetrics, error) {
 }
 
 func (sm *SystemMonitor) getCPUUsage() (float64, error) {
-	psPath, err := exec.LookPath("ps")
-	if err != nil {
-		return 0, err
+	if sm.proc != nil {
+		cpuPercent, err := sm.proc.Percent(0)
+		if err == nil {
+			return cpuPercent, nil
+		}
 	}
-	cmd := exec.Command(psPath, "-p", strconv.Itoa(sm.pid), "-o", "%cpu=")
-	output, err := cmd.Output()
+
+	cpuPercents, err := cpu.Percent(0, false)
 	if err != nil {
 		return 0, err
 	}
 
-	cpuStr := strings.TrimSpace(string(output))
-	cpu, err := strconv.ParseFloat(cpuStr, 64)
-	if err != nil {
-		return 0, err
+	if len(cpuPercents) > 0 {
+		return cpuPercents[0], nil
 	}
 
-	return cpu, nil
+	return 0, nil
 }
 
 func (sm *SystemMonitor) getMemoryUsage() (uint64, error) {
-	psPath, err := exec.LookPath("ps")
-	if err != nil {
-		return 0, err
+	if sm.proc != nil {
+		memInfo, err := sm.proc.MemoryInfo()
+		if err == nil {
+			return memInfo.RSS, nil
+		}
 	}
-	cmd := exec.Command(psPath, "-p", strconv.Itoa(sm.pid), "-o", "rss=")
-	output, err := cmd.Output()
+
+	virtualMem, err := mem.VirtualMemory()
 	if err != nil {
 		return 0, err
 	}
 
-	memStr := strings.TrimSpace(string(output))
-	mem, err := strconv.ParseUint(memStr, 10, 64)
-	if err != nil {
-		return 0, err
-	}
-
-	return mem * 1024, nil
+	return virtualMem.Used, nil
 }
 
 func (sm *SystemMonitor) GetMetrics() []SystemMetrics {
