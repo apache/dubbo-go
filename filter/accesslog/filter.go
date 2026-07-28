@@ -342,9 +342,9 @@ func (f *Filter) openLogFile(accessLog string) (*os.File, error) {
 	// By this way, we can split the access log based on days.
 	// use 'accessLog' as complete path to avoid log not found.
 	if now != last {
-		if err := logFile.Close(); err != nil {
-			logger.Warnf("[Filter][AccessLog] failed to close access log file before rotation, accessLog=%s err=%v", accessLog, err)
-			return nil, err
+		if closeErr := logFile.Close(); closeErr != nil {
+			logger.Warnf("[Filter][AccessLog] failed to close access log file before rotation, accessLog=%s err=%v", accessLog, closeErr)
+			return nil, closeErr
 		}
 		err = os.Rename(accessLog, accessLog+"."+now)
 		if err != nil {
