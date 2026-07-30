@@ -144,10 +144,14 @@ func (c *DubboCodec) EncodeResponse(response *remoting.Response) (*bytes.Buffer,
 		},
 	}
 	if !response.IsHeartbeat() {
+		rpcResult, err := rpcResultFromResponse(response.Result)
+		if err != nil {
+			return nil, err
+		}
 		resp.Body = &impl.ResponsePayload{
-			RspObj:      response.Result.(result.RPCResult).Rest,
-			Exception:   response.Result.(result.RPCResult).Err,
-			Attachments: response.Result.(result.RPCResult).Attrs,
+			RspObj:      rpcResult.Rest,
+			Exception:   rpcResult.Err,
+			Attachments: rpcResult.Attrs,
 		}
 	}
 
@@ -159,6 +163,20 @@ func (c *DubboCodec) EncodeResponse(response *remoting.Response) (*bytes.Buffer,
 	}
 
 	return bytes.NewBuffer(pkg), nil
+}
+
+func rpcResultFromResponse(value any) (result.RPCResult, error) {
+	switch rpcResult := value.(type) {
+	case result.RPCResult:
+		return rpcResult, nil
+	case *result.RPCResult:
+		if rpcResult == nil {
+			return result.RPCResult{}, perrors.New("dubbo response result is a nil *result.RPCResult")
+		}
+		return *rpcResult, nil
+	default:
+		return result.RPCResult{}, perrors.Errorf("dubbo response result has unexpected type %T", value)
+	}
 }
 
 // Decode data, including request and response.

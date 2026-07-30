@@ -79,6 +79,19 @@ func referNormal(t *testing.T, regProtocol *registryProtocol) {
 	assert.Equal(t, invoker.GetURL().String(), url.String())
 }
 
+func TestGetRegistryReturnsNilForUnexpectedCachedType(t *testing.T) {
+	regProtocol := newRegistryProtocol()
+	registryURL, err := common.NewURL("mock://127.0.0.1:1111")
+	require.NoError(t, err)
+	regProtocol.registries.Store(registryURL.PrimitiveURL, "not-a-registry")
+
+	var actual registry.Registry
+	require.NotPanics(t, func() {
+		actual = regProtocol.getRegistry(registryURL)
+	})
+	assert.Nil(t, actual)
+}
+
 func TestRefer(t *testing.T) {
 	regProtocol := newRegistryProtocol()
 	referNormal(t, regProtocol)

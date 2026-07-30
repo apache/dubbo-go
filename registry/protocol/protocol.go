@@ -86,15 +86,26 @@ func (proto *registryProtocol) getRegistry(registryUrl *common.URL) registry.Reg
 	if namespace != "" {
 		cacheKey = cacheKey + "?" + constant.NacosNamespaceID + "=" + namespace
 	}
-	actualReg, _ := proto.registries.LoadOrStore(cacheKey, func() any {
-		reg, err := extension.GetRegistry(registryUrl.Protocol, registryUrl)
-		if err != nil {
-			logger.Errorf("[Registry] registry cannot connect successfully, err=%s", err.Error())
-			panic(err)
-		}
-		return reg
-	}())
-	return actualReg.(registry.Registry)
+	if actualReg, loaded := proto.registries.Load(cacheKey); loaded {
+		return cachedRegistry(actualReg, cacheKey)
+	}
+
+	reg, err := extension.GetRegistry(registryUrl.Protocol, registryUrl)
+	if err != nil {
+		logger.Errorf("[Registry] registry cannot connect successfully, err=%s", err.Error())
+		panic(err)
+	}
+	actualReg, _ := proto.registries.LoadOrStore(cacheKey, reg)
+	return cachedRegistry(actualReg, cacheKey)
+}
+
+func cachedRegistry(value any, cacheKey string) registry.Registry {
+	reg, ok := value.(registry.Registry)
+	if !ok || reg == nil {
+		logger.Errorf("[Registry] cached registry has unexpected type %T for key %s", value, cacheKey)
+		return nil
+	}
+	return reg
 }
 
 func getCacheKey(invoker base.Invoker) string {
@@ -192,6 +203,10 @@ func (proto *registryProtocol) Refer(url *common.URL) base.Invoker {
 	}
 
 	reg := proto.getRegistry(url)
+	if reg == nil {
+		logger.Errorf("[Registry] consumer service %v has no valid registry, and will return nil invoker", serviceUrl.String())
+		return nil
+	}
 
 	// new registry directory for store service url from registry
 	dic, err := extension.GetDirectoryInstance(registryUrl, reg)
@@ -255,6 +270,10 @@ func (proto *registryProtocol) Export(originInvoker base.Invoker) base.Exporter 
 	if len(registryUrl.Protocol) > 0 {
 		// url to registry
 		reg := proto.getRegistry(registryUrl)
+		if reg == nil {
+			logger.Errorf("[Registry] provider service %v has no valid registry, and will return nil exporter", providerUrl.String())
+			return nil
+		}
 		registeredProviderUrl := getUrlToRegistry(providerUrl, registryUrl)
 
 		err := reg.Register(registeredProviderUrl)
@@ -496,10 +515,14 @@ func (proto *registryProtocol) Destroy() {
 		// the work for unexport should be finished in protocol.UnExport(), see also config.destroyProviderProtocols().
 		exporter := value.(*exporterChangeableWrapper)
 		reg := proto.getRegistry(getRegistryUrl(exporter.originInvoker))
-		if err := reg.UnRegister(exporter.registerUrl); err != nil {
-			logger.Warnf("[Registry] unRegister consumer url failed, url=%s err=%v", exporter.registerUrl.String(), err)
+		if reg == nil {
+			logger.Warnf("[Registry] skip unregister because no valid registry was found, url=%s", exporter.registerUrl.String())
+		} else {
+			if err := reg.UnRegister(exporter.registerUrl); err != nil {
+				logger.Warnf("[Registry] unRegister consumer url failed, url=%s err=%v", exporter.registerUrl.String(), err)
+			}
+			proto.unsubscribeOverrideListener(reg, exporter.subscribeUrl)
 		}
-		proto.unsubscribeOverrideListener(reg, exporter.subscribeUrl)
 		proto.serviceConfigurationListeners.Delete(getProviderUrl(exporter.originInvoker).ServiceKey())
 
 		// close all protocol server after consumerUpdateWait + stepTimeout(max time wait during
@@ -559,6 +582,10 @@ func (proto *registryProtocol) UnregisterRegistries() {
 	proto.bounds.Range(func(_, value any) bool {
 		exporter := value.(*exporterChangeableWrapper)
 		reg := proto.getRegistry(getRegistryUrl(exporter.originInvoker))
+		if reg == nil {
+			logger.Warnf("[Registry] skip unregister because no valid registry was found, url=%s", exporter.registerUrl.String())
+			return true
+		}
 		if err := reg.UnRegister(exporter.registerUrl); err != nil {
 			logger.Warnf("[Registry] unRegister consumer url failed, url=%s err=%v", exporter.registerUrl.String(), err)
 		}

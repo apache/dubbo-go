@@ -346,9 +346,15 @@ func (dir *RegistryDirectory) refreshAllInvokers(events []*registry.ServiceEvent
 		defer dir.registerLock.Unlock()
 		// get need clear invokers from original invoker list
 		dir.cacheInvokersMap.Range(func(k, v any) bool {
-			if !dir.eventMatched(k.(string), providerEvents) {
+			key, ok := k.(string)
+			if !ok {
+				logger.Errorf("[Registry][Directory] cached invoker has unexpected key type %T", k)
+				dir.cacheInvokersMap.Delete(k)
+				return true
+			}
+			if !dir.eventMatched(key, providerEvents) {
 				// delete unused invoker from cache
-				if invoker := dir.uncacheInvokerWithKey(k.(string)); invoker != nil {
+				if invoker := dir.uncacheInvokerWithKey(key); invoker != nil {
 					oldInvokers = append(oldInvokers, invoker)
 				}
 			}
@@ -499,7 +505,11 @@ func (dir *RegistryDirectory) toGroupInvokers() []protocolbase.Invoker {
 	groupInvokersMap := make(map[string][]protocolbase.Invoker)
 
 	dir.cacheInvokersMap.Range(func(key, value any) bool {
-		invoker := value.(protocolbase.Invoker)
+		invoker, ok := cachedInvoker(key, value)
+		if !ok {
+			dir.cacheInvokersMap.Delete(key)
+			return true
+		}
 		group := invoker.GetURL().GetParam(constant.GroupKey, "")
 		groupInvokersMap[group] = append(groupInvokersMap[group], invoker)
 		return true
@@ -541,8 +551,19 @@ func (dir *RegistryDirectory) uncacheInvokerWithClusterID(clusterID string) []pr
 	logger.Debugf("[Registry][Directory] all service will be deleted in cache invokers with clusterID=%s", clusterID)
 	invokerKeys := make([]string, 0)
 	dir.cacheInvokersMap.Range(func(key, cacheInvoker any) bool {
-		if cacheInvoker.(protocolbase.Invoker).GetURL().GetParam(constant.MeshClusterIDKey, "") == clusterID {
-			invokerKeys = append(invokerKeys, key.(string))
+		invoker, ok := cachedInvoker(key, cacheInvoker)
+		if !ok {
+			dir.cacheInvokersMap.Delete(key)
+			return true
+		}
+		keyString, ok := key.(string)
+		if !ok {
+			logger.Errorf("[Registry][Directory] cached invoker has unexpected key type %T", key)
+			dir.cacheInvokersMap.Delete(key)
+			return true
+		}
+		if invoker.GetURL().GetParam(constant.MeshClusterIDKey, "") == clusterID {
+			invokerKeys = append(invokerKeys, keyString)
 		}
 		return true
 	})
@@ -568,7 +589,11 @@ func (dir *RegistryDirectory) uncacheInvokerWithKey(key string) protocolbase.Inv
 	protocolbase.RemoveUrlKeyUnhealthyStatus(key)
 	if cacheInvoker, ok := dir.cacheInvokersMap.Load(key); ok {
 		dir.cacheInvokersMap.Delete(key)
-		return cacheInvoker.(protocolbase.Invoker)
+		invoker, valid := cachedInvoker(key, cacheInvoker)
+		if !valid {
+			return nil
+		}
+		return invoker
 	}
 	return nil
 }
@@ -586,7 +611,7 @@ func (dir *RegistryDirectory) RemoveClosingInstance(instanceKey string) bool {
 		defer dir.registerLock.Unlock()
 
 		if cacheInvoker, ok := dir.cacheInvokersMap.Load(instanceKey); ok {
-			removed = cacheInvoker.(protocolbase.Invoker)
+			removed, _ = cachedInvoker(instanceKey, cacheInvoker)
 		}
 		dir.markClosingTombstone(instanceKey, removed, "closing-event")
 		removed = dir.uncacheInvokerWithKey(instanceKey)
@@ -686,7 +711,15 @@ func (dir *RegistryDirectory) doCacheInvoker(newUrl *common.URL, event *registry
 		logger.Infof("[Registry][Directory] skip rebuilding closing instance due to tombstone, instance key: %s", key)
 		return nil, true
 	}
-	if cacheInvoker, ok := dir.cacheInvokersMap.Load(key); !ok {
+	cacheInvoker, ok := dir.cacheInvokersMap.Load(key)
+	var existingInvoker protocolbase.Invoker
+	if ok {
+		existingInvoker, ok = cachedInvoker(key, cacheInvoker)
+		if !ok {
+			dir.cacheInvokersMap.Delete(key)
+		}
+	}
+	if !ok {
 		logger.Debugf("[Registry][Directory] service will be added in cache invokers, url=%s", newUrl)
 		newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(newUrl)
 		if newInvoker != nil {
@@ -698,20 +731,29 @@ func (dir *RegistryDirectory) doCacheInvoker(newUrl *common.URL, event *registry
 		metrics.Publish(metricsRegistry.NewDirectoryEvent(metricsRegistry.NumValidTotal))
 		// if cached invoker has the same URL with the new URL, then no need to re-refer, and no need to destroy
 		// the old invoker.
-		if common.GetCompareURLEqualFunc()(newUrl, cacheInvoker.(protocolbase.Invoker).GetURL()) {
+		if common.GetCompareURLEqualFunc()(newUrl, existingInvoker.GetURL()) {
 			return nil, true
 		}
 
-		logger.Debugf("[Registry][Directory] service will be updated in cache invokers, newUrl=%s oldUrl=%s", newUrl, cacheInvoker.(protocolbase.Invoker).GetURL())
+		logger.Debugf("[Registry][Directory] service will be updated in cache invokers, newUrl=%s oldUrl=%s", newUrl, existingInvoker.GetURL())
 		newInvoker := extension.GetProtocol(protocolwrapper.FILTER).Refer(newUrl)
 		if newInvoker != nil {
 			dir.cacheInvokersMap.Store(key, newInvoker)
-			return cacheInvoker.(protocolbase.Invoker), true
+			return existingInvoker, true
 		} else {
 			logger.Warnf("[Registry][Directory] service will be updated in cache invokers fail, result is null, url=%s", newUrl.String())
 		}
 	}
 	return nil, false
+}
+
+func cachedInvoker(key, value any) (protocolbase.Invoker, bool) {
+	invoker, ok := value.(protocolbase.Invoker)
+	if !ok || invoker == nil {
+		logger.Errorf("[Registry][Directory] cached invoker has unexpected type %T for key %v", value, key)
+		return nil, false
+	}
+	return invoker, true
 }
 
 // List selected protocol invokers from the directory

@@ -66,6 +66,38 @@ func TestSubscribe_InvalidUrl(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestUnexpectedCachedInvokerTypeDoesNotPanic(t *testing.T) {
+	registryDirectory, _ := normalRegistryDir()
+	const key = "unexpected-invoker-type"
+
+	t.Run("grouping", func(t *testing.T) {
+		registryDirectory.cacheInvokersMap.Store(key, "not-an-invoker")
+		require.NotPanics(t, func() {
+			registryDirectory.toGroupInvokers()
+		})
+		_, exists := registryDirectory.cacheInvokersMap.Load(key)
+		assert.False(t, exists)
+	})
+
+	t.Run("uncache", func(t *testing.T) {
+		registryDirectory.cacheInvokersMap.Store(key, "not-an-invoker")
+		var invoker protocolbase.Invoker
+		require.NotPanics(t, func() {
+			invoker = registryDirectory.uncacheInvokerWithKey(key)
+		})
+		assert.Nil(t, invoker)
+	})
+
+	t.Run("remove closing instance", func(t *testing.T) {
+		registryDirectory.cacheInvokersMap.Store(key, "not-an-invoker")
+		var removed bool
+		require.NotPanics(t, func() {
+			removed = registryDirectory.RemoveClosingInstance(key)
+		})
+		assert.False(t, removed)
+	})
+}
+
 func TestNewRegistryDirectoryResolvesApplicationAttribute(t *testing.T) {
 	tests := []struct {
 		name      string
