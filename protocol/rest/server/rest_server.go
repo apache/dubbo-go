@@ -112,8 +112,8 @@ func GetRouteFunc(invoker base.Invoker, methodConfig *rest_config.RestMethodConf
 		rawRequest := req.RawRequest()
 		if rawRequest == nil {
 			logger.Errorf("[Rest][Server] request adapter returned a nil raw request")
-			if err := resp.WriteError(http.StatusInternalServerError, errors.New("raw HTTP request is nil")); err != nil {
-				logger.Errorf("[Rest][Server] write error failed, err=%v", err)
+			if writeErr := resp.WriteError(http.StatusInternalServerError, errors.New("raw HTTP request is nil")); writeErr != nil {
+				logger.Errorf("[Rest][Server] write error failed, err=%v", writeErr)
 			}
 			return
 		}

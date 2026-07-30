@@ -63,6 +63,8 @@ var (
 	}
 )
 
+type metadataContextKey struct{}
+
 func TestConvertMetadataInfoV2PreservesTag(t *testing.T) {
 	got := convertMetadataInfoV2(&tripleapi.MetadataInfoV2{
 		App:     "dubbo-app",
@@ -200,7 +202,7 @@ func TestGetMetadataFromRpcWithContext(t *testing.T) {
 	}).Once()
 	mockInvoker.On("Destroy").Once()
 
-	ctx := context.WithValue(context.Background(), struct{}{}, "request-value")
+	ctx := context.WithValue(context.Background(), metadataContextKey{}, "request-value")
 	metadata, err := GetMetadataFromRpcWithContext(ctx, "111", ins)
 	require.NoError(t, err)
 	assert.Equal(t, metadataInfo, metadata)
@@ -212,7 +214,7 @@ func TestTriMetadataServiceWithContext(t *testing.T) {
 	mockInvoker.url = common.NewURLWithOptions(common.WithProtocol(constant.TriProtocol))
 	mockInvoker.On("Invoke").Return(&result.RPCResult{Attrs: map[string]any{}}).Once()
 
-	ctx := context.WithValue(context.Background(), struct{}{}, "request-value")
+	ctx := context.WithValue(context.Background(), metadataContextKey{}, "request-value")
 	metadata, err := (&triMetadataServiceV2{invoker: mockInvoker}).getMetadataInfo(ctx, "111")
 	require.NoError(t, err)
 	require.NotNil(t, metadata)
