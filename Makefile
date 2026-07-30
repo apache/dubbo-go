@@ -26,7 +26,7 @@ MAKEFLAGS += --no-print-directory
 CLI_DIR = tools/dubbogo-cli
 IMPORTS_FORMATTER_DIR = tools/imports-formatter
 
-.PHONY: help test fmt clean lint check-fmt rpc-contract-check
+.PHONY: help test fmt clean lint check-fmt rpc-contract-check test-race vulncheck install-govulncheck
 
 help:
 	@echo "Available commands:"
@@ -73,6 +73,18 @@ lint: install-golangci-lint
 
 rpc-contract-check:
 	GOTOOLCHAIN=go1.25.0+auto go run ./tools/variadicrpccheck ./...
+
+# Run unit tests with the race detector (required for framework-level PRs)
+test-race: clean
+	GOTOOLCHAIN=go1.25.0+auto go test -race ./...
+	cd $(CLI_DIR) && GOTOOLCHAIN=go1.25.0+auto go test -race ./...
+
+# Scan dependencies for known vulnerabilities (govulncheck)
+vulncheck: install-govulncheck
+	govulncheck ./...
+
+install-govulncheck:
+	go install golang.org/x/vuln/cmd/govulncheck@latest
 
 install-golangci-lint:
 	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.7.2

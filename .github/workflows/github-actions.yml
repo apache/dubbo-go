@@ -63,6 +63,12 @@ jobs:
       - name: Lint
         run: make lint
 
+      - name: Unit Test (race detector)
+        run: make test-race
+
+      - name: Dependency Vulnerability Check
+        run: make vulncheck
+
       - name: Codecov
         uses: codecov/codecov-action@v7 #NOSONAR
         with:
