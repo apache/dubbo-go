@@ -57,6 +57,7 @@ func TestCacheListenerCallbacks(t *testing.T) {
 		t.Fatalf("write file error %v", err)
 	}
 	waitEvent(t, rec.ch, remoting.EventTypeUpdate)
+	drainEvents(rec.ch)
 
 	// remove listener then cleanup
 	cl.RemoveListener(filePath, rec)
@@ -66,12 +67,38 @@ func TestCacheListenerCallbacks(t *testing.T) {
 	if err := os.Remove(filePath); err != nil {
 		t.Fatalf("remove file error %v", err)
 	}
+	assertNoEvent(t, rec.ch, 200*time.Millisecond)
+}
+
+func TestDrainEvents(t *testing.T) {
+	ch := make(chan *config_center.ConfigChangeEvent, 4)
+	ch <- &config_center.ConfigChangeEvent{ConfigType: remoting.EventTypeAdd}
+	ch <- &config_center.ConfigChangeEvent{ConfigType: remoting.EventTypeUpdate}
+
+	drainEvents(ch)
+
 	select {
-	case <-rec.ch:
-		// should not receive after removal
-		t.Fatalf("unexpected event after remove")
-	case <-time.After(200 * time.Millisecond):
+	case ev := <-ch:
+		t.Fatalf("expected channel drained, got %v", ev.ConfigType)
+	default:
 	}
+}
+
+func TestAssertNoEvent(t *testing.T) {
+	t.Run("allow stale event before grace window", func(t *testing.T) {
+		ch := make(chan *config_center.ConfigChangeEvent, 2)
+		ch <- &config_center.ConfigChangeEvent{ConfigType: remoting.EventTypeUpdate}
+		assertNoEvent(t, ch, 120*time.Millisecond)
+	})
+
+	t.Run("return when no event arrives", func(t *testing.T) {
+		ch := make(chan *config_center.ConfigChangeEvent, 1)
+		start := time.Now()
+		assertNoEvent(t, ch, 120*time.Millisecond)
+		if elapsed := time.Since(start); elapsed < 100*time.Millisecond {
+			t.Fatalf("assertNoEvent returned too early, elapsed=%v", elapsed)
+		}
+	})
 }
 
 func waitEvent(t *testing.T, ch <-chan *config_center.ConfigChangeEvent, expect remoting.EventType) {
@@ -83,5 +110,39 @@ func waitEvent(t *testing.T, ch <-chan *config_center.ConfigChangeEvent, expect 
 		}
 	case <-time.After(2 * time.Second):
 		t.Fatalf("timeout waiting for event %v", expect)
+	}
+}
+
+func drainEvents(ch <-chan *config_center.ConfigChangeEvent) {
+	for {
+		select {
+		case <-ch:
+		default:
+			return
+		}
+	}
+}
+
+func assertNoEvent(t *testing.T, ch <-chan *config_center.ConfigChangeEvent, duration time.Duration) {
+	t.Helper()
+
+	grace := time.NewTimer(50 * time.Millisecond)
+	defer grace.Stop()
+
+	timer := time.NewTimer(duration)
+	defer timer.Stop()
+	allowStale := true
+	for {
+		select {
+		case ev := <-ch:
+			if allowStale {
+				continue
+			}
+			t.Fatalf("unexpected event after remove: %v", ev.ConfigType)
+		case <-grace.C:
+			allowStale = false
+		case <-timer.C:
+			return
+		}
 	}
 }

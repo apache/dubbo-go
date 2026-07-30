@@ -25,9 +25,9 @@ type MetricsConfig struct {
 	Protocol           string            `default:"prometheus" yaml:"protocol" json:"protocol,omitempty" property:"protocol"`
 	Prometheus         *PrometheusConfig `yaml:"prometheus" json:"prometheus" property:"prometheus"`
 	Aggregation        *AggregateConfig  `yaml:"aggregation" json:"aggregation" property:"aggregation"`
-	EnableMetadata     *bool             `default:"true" yaml:"enable-metadata" json:"enable-metadata,omitempty" property:"enable-metadata"`
-	EnableRegistry     *bool             `default:"true" yaml:"enable-registry" json:"enable-registry,omitempty" property:"enable-registry"`
-	EnableConfigCenter *bool             `default:"true" yaml:"enable-config-center" json:"enable-config-center,omitempty" property:"enable-config-center"`
+	EnableMetadata     *bool             `default:"false" yaml:"enable-metadata" json:"enable-metadata,omitempty" property:"enable-metadata"`
+	EnableRegistry     *bool             `default:"false" yaml:"enable-registry" json:"enable-registry,omitempty" property:"enable-registry"`
+	EnableConfigCenter *bool             `default:"false" yaml:"enable-config-center" json:"enable-config-center,omitempty" property:"enable-config-center"`
 	Probe              *ProbeConfig      `yaml:"probe" json:"probe" property:"probe"`
 }
 
@@ -52,7 +52,7 @@ type ProbeConfig struct {
 }
 
 type Exporter struct {
-	Enabled *bool `default:"false" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
+	Enabled *bool `default:"true" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
 }
 
 type PushgatewayConfig struct {

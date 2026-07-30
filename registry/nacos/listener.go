@@ -74,15 +74,38 @@ func NewNacosListenerWithServiceName(serviceName string, regURL *common.URL, nam
 	}
 }
 
+func (nl *nacosListener) setInstanceSnapshot(instances []model.Instance) {
+	nl.cacheLock.Lock()
+	defer nl.cacheLock.Unlock()
+
+	nl.instanceMap = buildInstanceMap(instances)
+}
+
+func buildInstanceMap(instances []model.Instance) map[string]model.Instance {
+	instanceMap := make(map[string]model.Instance, len(instances))
+	for i := range instances {
+		if !instances[i].Enable {
+			continue
+		}
+		host := instanceHost(instances[i])
+		instanceMap[host] = instances[i]
+	}
+	return instanceMap
+}
+
+func instanceHost(instance model.Instance) string {
+	return instance.Ip + ":" + strconv.Itoa(int(instance.Port))
+}
+
 func generateUrl(instance model.Instance) *common.URL {
 	if instance.Metadata == nil {
-		logger.Errorf("nacos instance metadata is empty,instance:%+v", instance)
+		logger.Errorf("[Registry][Nacos] nacos instance metadata is empty, instance=%+v", instance)
 		return nil
 	}
 	path := instance.Metadata["path"]
 	myInterface := instance.Metadata["interface"]
 	if len(path) == 0 && len(myInterface) == 0 {
-		logger.Errorf("nacos instance metadata does not have  both path key and interface key,instance:%+v", instance)
+		logger.Errorf("[Registry][Nacos] nacos instance metadata does not have both path key and interface key, instance=%+v", instance)
 		return nil
 	}
 	if len(path) == 0 && len(myInterface) != 0 {
@@ -90,7 +113,7 @@ func generateUrl(instance model.Instance) *common.URL {
 	}
 	protocol := instance.Metadata["protocol"]
 	if len(protocol) == 0 {
-		logger.Errorf("nacos instance metadata does not have protocol key,instance:%+v", instance)
+		logger.Errorf("[Registry][Nacos] nacos instance metadata does not have protocol key, instance=%+v", instance)
 		return nil
 	}
 	urlMap := url.Values{}
@@ -109,7 +132,7 @@ func generateUrl(instance model.Instance) *common.URL {
 // Callback will be invoked when got subscribed events.
 func (nl *nacosListener) Callback(services []model.Instance, err error) {
 	if err != nil {
-		logger.Errorf("nacos subscribe callback error:%s , subscribe:%+v ", err.Error(), nl.subscribeParam)
+		logger.Errorf("[Registry][Nacos] nacos subscribe callback error, err=%v subscribe=%v", err, nl.subscribeParam)
 		return
 	}
 
@@ -125,7 +148,7 @@ func (nl *nacosListener) Callback(services []model.Instance, err error) {
 			// instance is not available,so ignore it
 			continue
 		}
-		host := services[i].Ip + ":" + strconv.Itoa(int(services[i].Port))
+		host := instanceHost(services[i])
 		instance := services[i]
 		newInstanceMap[host] = instance
 		if old, ok := nl.instanceMap[host]; !ok && instance.Healthy {
@@ -184,7 +207,7 @@ func (nl *nacosListener) listenService(serviceName string) error {
 	}
 	err := nl.namingClient.Client().Subscribe(nl.subscribeParam)
 	if err == nil {
-		listenerCache.Store(nl.subscribeParam.ServiceName+nl.subscribeParam.GroupName, nl)
+		listenerCache.Store(subscribeCacheKey(nl.subscribeParam.ServiceName, nl.subscribeParam.GroupName), nl)
 	}
 	return nil
 }
@@ -202,12 +225,12 @@ func (nl *nacosListener) Next() (*registry.ServiceEvent, error) {
 	for {
 		select {
 		case <-nl.done:
-			logger.Warnf("nacos listener is close!service name:%+v", nl.serviceName)
+			logger.Warnf("[Registry][Nacos] nacos listener is close, service=%v", nl.serviceName)
 			return nil, perrors.New("listener stopped")
 
 		case val := <-nl.events.Out():
 			e, _ := val.(*config_center.ConfigChangeEvent)
-			logger.Debugf("got nacos event %s", e)
+			logger.Debugf("[Registry][Nacos] got nacos event %s", e)
 			return &registry.ServiceEvent{Action: e.ConfigType, Service: e.Value.(*common.URL)}, nil
 		}
 	}

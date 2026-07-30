@@ -42,13 +42,51 @@ type CacheListener struct {
 	rootPath     string
 }
 
+type listenerSet struct {
+	mu        sync.RWMutex
+	listeners map[config_center.ConfigurationListener]struct{}
+}
+
+func newListenerSet(listener config_center.ConfigurationListener) *listenerSet {
+	return &listenerSet{
+		listeners: map[config_center.ConfigurationListener]struct{}{
+			listener: {},
+		},
+	}
+}
+
+func (ls *listenerSet) Add(listener config_center.ConfigurationListener) {
+	ls.mu.Lock()
+	defer ls.mu.Unlock()
+	ls.listeners[listener] = struct{}{}
+}
+
+func (ls *listenerSet) Remove(listener config_center.ConfigurationListener) (empty bool) {
+	ls.mu.Lock()
+	defer ls.mu.Unlock()
+	delete(ls.listeners, listener)
+	return len(ls.listeners) == 0
+}
+
+// Snapshot returns a read-only listener snapshot for safe iteration.
+// Callers must treat both the returned slice and its listeners as immutable.
+func (ls *listenerSet) Snapshot() []config_center.ConfigurationListener {
+	ls.mu.RLock()
+	defer ls.mu.RUnlock()
+	listeners := make([]config_center.ConfigurationListener, 0, len(ls.listeners))
+	for l := range ls.listeners {
+		listeners = append(listeners, l)
+	}
+	return listeners
+}
+
 // NewCacheListener creates a new CacheListener
 func NewCacheListener(rootPath string) *CacheListener {
 	cl := &CacheListener{rootPath: rootPath}
 	// start watcher
 	watch, err := fsnotify.NewWatcher()
 	if err != nil {
-		logger.Errorf("file : listen config fail, error:%v ", err)
+		logger.Errorf("[ConfigCenter][File] listen config fail, err=%v", err)
 	}
 	go func() {
 		for {
@@ -61,11 +99,11 @@ func NewCacheListener(rootPath string) *CacheListener {
 				if key == "" {
 					continue
 				}
-				logger.Debugf("watcher %s, event %v", cl.rootPath, event)
+				logger.Debugf("[ConfigCenter][File] watcher event, rootPath=%s event=%v", cl.rootPath, event)
 				if event.Op&fsnotify.Remove == fsnotify.Remove {
 					cl.contentCache.Delete(key)
 					if l, ok := cl.keyListeners.Load(key); ok {
-						removeCallback(l.(map[config_center.ConfigurationListener]struct{}), key, remoting.EventTypeDel)
+						removeCallback(l.(*listenerSet).Snapshot(), key, remoting.EventTypeDel)
 					}
 				}
 				if event.Op&fsnotify.Write == fsnotify.Write {
@@ -77,7 +115,7 @@ func NewCacheListener(rootPath string) *CacheListener {
 					}
 					cl.contentCache.Store(key, content)
 					if l, ok := cl.keyListeners.Load(key); ok {
-						dataChangeCallback(l.(map[config_center.ConfigurationListener]struct{}), key, content,
+						dataChangeCallback(l.(*listenerSet).Snapshot(), key, content,
 							remoting.EventTypeUpdate)
 					}
 				}
@@ -90,7 +128,7 @@ func NewCacheListener(rootPath string) *CacheListener {
 					}
 					cl.contentCache.Store(key, content)
 					if l, ok := cl.keyListeners.Load(key); ok {
-						dataChangeCallback(l.(map[config_center.ConfigurationListener]struct{}), key, content,
+						dataChangeCallback(l.(*listenerSet).Snapshot(), key, content,
 							remoting.EventTypeAdd)
 					}
 				}
@@ -99,7 +137,7 @@ func NewCacheListener(rootPath string) *CacheListener {
 					return
 				}
 				if err != nil {
-					logger.Warnf("file : listen watch fail:%+v", err)
+					logger.Warnf("[ConfigCenter][File] listen watch fail, err=%v", err)
 				}
 			}
 		}
@@ -113,22 +151,22 @@ func NewCacheListener(rootPath string) *CacheListener {
 	return cl
 }
 
-func removeCallback(lmap map[config_center.ConfigurationListener]struct{}, key string, event remoting.EventType) {
-	if len(lmap) == 0 {
-		logger.Warnf("file watch callback but configuration listener is empty, key:%s, event:%v", key, event)
+func removeCallback(listeners []config_center.ConfigurationListener, key string, event remoting.EventType) {
+	if len(listeners) == 0 {
+		logger.Warnf("[ConfigCenter][File] file watch callback but configuration listener is empty, key=%s event=%v", key, event)
 		return
 	}
-	for l := range lmap {
+	for _, l := range listeners {
 		callback(l, key, "", event)
 	}
 }
 
-func dataChangeCallback(lmap map[config_center.ConfigurationListener]struct{}, key, content string, event remoting.EventType) {
-	if len(lmap) == 0 {
-		logger.Warnf("file watch callback but configuration listener is empty, key:%s, event:%v", key, event)
+func dataChangeCallback(listeners []config_center.ConfigurationListener, key, content string, event remoting.EventType) {
+	if len(listeners) == 0 {
+		logger.Warnf("[ConfigCenter][File] file watch callback but configuration listener is empty, key=%s event=%v", key, event)
 		return
 	}
-	for l := range lmap {
+	for _, l := range listeners {
 		callback(l, key, content, event)
 	}
 }
@@ -151,16 +189,13 @@ func (cl *CacheListener) Close() error {
 func (cl *CacheListener) AddListener(key string, listener config_center.ConfigurationListener) {
 	// reference from https://stackoverflow.com/questions/34018908/golang-why-dont-we-have-a-set-datastructure
 	// make a map[your type]struct{} like set in java
-	listeners, loaded := cl.keyListeners.LoadOrStore(key, map[config_center.ConfigurationListener]struct{}{
-		listener: {},
-	})
+	listeners, loaded := cl.keyListeners.LoadOrStore(key, newListenerSet(listener))
 	if loaded {
-		listeners.(map[config_center.ConfigurationListener]struct{})[listener] = struct{}{}
-		cl.keyListeners.Store(key, listeners)
+		listeners.(*listenerSet).Add(listener)
 		return
 	}
 	if err := cl.watch.Add(key); err != nil {
-		logger.Errorf("watcher add path:%s err:%v", key, err)
+		logger.Errorf("[ConfigCenter][File] watcher add path, path=%s err=%v", key, err)
 	}
 }
 
@@ -170,23 +205,19 @@ func (cl *CacheListener) RemoveListener(key string, listener config_center.Confi
 	if !loaded {
 		return
 	}
-	lmap := listeners.(map[config_center.ConfigurationListener]struct{})
-	delete(lmap, listener)
-	if len(lmap) == 0 {
+	if listeners.(*listenerSet).Remove(listener) {
 		cl.keyListeners.Delete(key)
 		cl.contentCache.Delete(key)
 		if err := cl.watch.Remove(key); err != nil {
-			logger.Errorf("watcher remove path:%s err:%v", key, err)
+			logger.Errorf("[ConfigCenter][File] watcher remove path, path=%s err=%v", key, err)
 		}
-		return
 	}
-	cl.keyListeners.Store(key, lmap)
 }
 
 func getFileContent(path string) string {
 	c, err := os.ReadFile(path)
 	if err != nil {
-		logger.Errorf("read file path:%s err:%v", path, err)
+		logger.Errorf("[ConfigCenter][File] read file, path=%s err=%v", path, err)
 		return ""
 	}
 

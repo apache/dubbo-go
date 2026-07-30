@@ -69,7 +69,7 @@ func TestBroadcastInvokeSuccess(t *testing.T) {
 	invokers := make([]*mock.MockInvoker, 0)
 
 	mockResult := &result.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		invoker := mock.NewMockInvoker(ctrl)
 		invokers = append(invokers, invoker)
 		invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockResult).AnyTimes()
@@ -89,7 +89,7 @@ func TestBroadcastInvokeFailed(t *testing.T) {
 
 	mockResult := &result.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
 	mockFailedResult := &result.RPCResult{Err: errors.New("just failed")}
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		invoker := mock.NewMockInvoker(ctrl)
 		invokers = append(invokers, invoker)
 		invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockResult).AnyTimes()
@@ -99,7 +99,7 @@ func TestBroadcastInvokeFailed(t *testing.T) {
 		invokers = append(invokers, invoker)
 		invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockFailedResult).AnyTimes()
 	}
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		invoker := mock.NewMockInvoker(ctrl)
 		invokers = append(invokers, invoker)
 		invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockResult).AnyTimes()

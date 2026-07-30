@@ -48,8 +48,16 @@ type CaseB struct {
 	B CaseA
 }
 
+type PointerLongResp struct {
+	Total *int64
+}
+
 func (c *CaseB) JavaClassName() string {
 	return "com.test.caseb"
+}
+
+func (p PointerLongResp) JavaClassName() string {
+	return "com.test.PointerLongResp"
 }
 
 func (c CaseA) JavaClassName() string {
@@ -174,6 +182,20 @@ func TestResponse(t *testing.T) {
 		}
 		assert.Len(t, mapValueArr, 1)
 		assert.Equal(t, &caseObj, mapValueArr[0])
+	})
+}
+
+func TestResponseWithPointerLongField(t *testing.T) {
+	total := int64(123456789)
+	body := &PointerLongResp{Total: &total}
+	decodedResponse := &DubboResponse{}
+	hessian.RegisterPOJO(body)
+
+	doTestResponse(t, PackageResponse, Response_OK, body, decodedResponse, func() {
+		resp, ok := decodedResponse.RspObj.(*PointerLongResp)
+		require.True(t, ok)
+		require.NotNil(t, resp.Total)
+		assert.Equal(t, total, *resp.Total)
 	})
 }
 

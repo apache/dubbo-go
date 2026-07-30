@@ -91,14 +91,14 @@ func (f *activeFilter) OnResponse(ctx context.Context, result result.Result, inv
 	// If the URL is missing or invalid, it means the Invoke phase was likely interrupted.
 	// Skip EndCount to prevent statistic inconsistency or panics.
 	if !ok || url == nil {
-		logger.Warnf("activeFilter cannot get cached URL from attribute, skip EndCount. Invoker may not have passed Invoke phase.")
+		logger.Warn("[Filter][Active] activeFilter cannot get cached URL from attribute, skip EndCount. Invoker may not have passed Invoke phase.")
 		return result
 	}
 
 	startTime, err := strconv.ParseInt(rpcInv.GetAttachmentWithDefaultValue(dubboInvokeStartTime, "0"), 10, 64)
 	if err != nil {
 		result.SetError(err)
-		logger.Errorf("parse dubbo_invoke_start_time to int64 failed")
+		logger.Error("[Filter][Active] parse dubbo_invoke_start_time to int64 failed")
 		// When err is not nil, use default elapsed value of 1
 		base.EndCount(url, inv.MethodName(), 1, false)
 		return result

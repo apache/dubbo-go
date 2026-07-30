@@ -103,7 +103,7 @@ func TestNewRPCInvocation(t *testing.T) {
 
 func TestNewRPCInvocationWithOptions(t *testing.T) {
 	methodName := "testMethod"
-	paramTypes := []reflect.Type{reflect.TypeOf(""), reflect.TypeOf(0)}
+	paramTypes := []reflect.Type{reflect.TypeFor[string](), reflect.TypeFor[int]()}
 	paramTypeNames := []string{"string", "int"}
 	paramValues := []reflect.Value{reflect.ValueOf("test"), reflect.ValueOf(123)}
 	paramRawValues := []any{"test", 123}
@@ -371,13 +371,9 @@ func TestRPCInvocation_GetAttachmentAsContext(t *testing.T) {
 	header := triple_protocol.ExtractFromOutgoingContext(ctx)
 	assert.NotNil(t, header)
 
-	// Verify that string attachments are in the header
-	// NewOutgoingContext stores keys as lowercase, so check both ways
-	assert.Contains(t, header, "key1")
-	assert.Equal(t, []string{"value1"}, header["key1"]) //nolint:staticcheck
-
-	assert.Contains(t, header, "key2")
-	assert.Equal(t, []string{"value2", "value3"}, header["key2"]) //nolint:staticcheck
+	// Verify that string attachments are in the header.
+	assert.Equal(t, []string{"value1"}, header.Values("key1"))
+	assert.Equal(t, []string{"value2", "value3"}, header.Values("key2"))
 
 	// key3 (int) should not be in the header since it's not a string
 	assert.NotContains(t, header, "key3")
@@ -486,7 +482,7 @@ func TestRPCInvocation_ConcurrentAccess(t *testing.T) {
 	// Test concurrent SetAttachment and GetAttachment with unique keys
 	numGoroutines := 10
 	wg.Add(numGoroutines)
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		go func(n int) {
 			defer wg.Done()
 			key := fmt.Sprintf("attachment_key_%d", n)
@@ -502,7 +498,7 @@ func TestRPCInvocation_ConcurrentAccess(t *testing.T) {
 	wg.Wait()
 
 	// Verify all attachments were set correctly
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		key := fmt.Sprintf("attachment_key_%d", i)
 		expectedValue := fmt.Sprintf("value_%d", i)
 		val, ok := invocation.GetAttachment(key)
@@ -512,7 +508,7 @@ func TestRPCInvocation_ConcurrentAccess(t *testing.T) {
 
 	// Test concurrent SetAttribute and GetAttribute with unique keys
 	wg.Add(numGoroutines)
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		go func(n int) {
 			defer wg.Done()
 			key := fmt.Sprintf("attribute_key_%d", n)
@@ -528,7 +524,7 @@ func TestRPCInvocation_ConcurrentAccess(t *testing.T) {
 	wg.Wait()
 
 	// Verify all attributes were set correctly
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		key := fmt.Sprintf("attribute_key_%d", i)
 		expectedValue := i * 100
 		val, ok := invocation.GetAttribute(key)
@@ -545,7 +541,7 @@ func TestRPCInvocation_ConcurrentAccess(t *testing.T) {
 	mockInvoker := &mockInvoker{url: url}
 
 	wg.Add(numGoroutines)
-	for i := 0; i < numGoroutines; i++ {
+	for range numGoroutines {
 		go func() {
 			defer wg.Done()
 			invocation.SetInvoker(mockInvoker)

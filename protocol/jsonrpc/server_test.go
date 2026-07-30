@@ -19,6 +19,7 @@ package jsonrpc
 
 import (
 	"bufio"
+	"context"
 	"io"
 	"net"
 	"net/http"
@@ -49,6 +50,25 @@ func sendHTTPRequest(t *testing.T, conn net.Conn, contentType string) (*http.Res
 
 	resp, err := http.ReadResponse(bufio.NewReader(conn), nil)
 	return resp, err
+}
+
+func TestServeRequest_ServiceNotFound(t *testing.T) {
+	GetProtocol()
+
+	serverConn, clientConn := net.Pipe()
+	defer require.NoError(t, clientConn.Close())
+	defer require.NoError(t, serverConn.Close())
+
+	header := map[string]string{
+		"Path":         "com.example.UnregisteredService",
+		"HttpMethod":   "POST",
+		"Content-Type": "application/json",
+	}
+	body := []byte(`{"jsonrpc":"2.0","method":"com.example.UnregisteredService.SayHello","id":1}`)
+
+	err := serveRequest(context.Background(), header, body, serverConn)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "service not found")
 }
 
 func TestHandlePkg_ContentType(t *testing.T) {

@@ -127,7 +127,7 @@ func (c *HTTPClient) Call(ctx context.Context, service *common.URL, req *Request
 	if span := opentracing.SpanFromContext(ctx); span != nil {
 		err := opentracing.GlobalTracer().Inject(span.Context(), opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(httpHeader))
 		if err != nil {
-			logger.Error("Could not inject the Context into http header.")
+			logger.Error("[Jsonrpc] could not inject the Context into http header.")
 		}
 	}
 

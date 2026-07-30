@@ -20,7 +20,6 @@ package common
 import (
 	"bytes"
 	"encoding/base64"
-	"fmt"
 	"math"
 	"net"
 	"net/url"
@@ -51,8 +50,13 @@ const (
 	CONFIGURATOR
 	ROUTER
 	PROVIDER
-	PROTOCOL = "protocol"
 )
+
+// PROTOCOL is the canonical key for the protocol in URL maps/params.
+//
+// Deprecated: use constant.ProtocolKey instead. Kept as an alias to preserve
+// backward compatibility for downstream users.
+const PROTOCOL = constant.ProtocolKey
 
 var (
 	DubboNodes          = [...]string{"consumers", "configurators", "routers", "providers"} // Dubbo service node
@@ -102,6 +106,7 @@ type URL struct {
 	Port     string
 
 	PrimitiveURL string
+	primitiveTS  string // primitiveTS caches the original provider timestamp so GetCacheInvokerMapKey stays stable when configurator refreshes rebuild invoker URLs.
 	// url.Values is not safe map, add to avoid concurrent map read and map write error
 	paramsLock sync.RWMutex
 	params     url.Values
@@ -294,12 +299,13 @@ func NewURL(urlString string, opts ...Option) (*URL, error) {
 	}
 
 	s.PrimitiveURL = urlString
+	s.primitiveTS = s.params.Get(constant.TimestampKey)
 	s.Protocol = serviceURL.Scheme
 	s.Username = serviceURL.User.Username()
 	s.Password, _ = serviceURL.User.Password()
 	s.Location = serviceURL.Host
 	s.Path = serviceURL.Path
-	for _, location := range strings.Split(s.Location, ",") {
+	for location := range strings.SplitSeq(s.Location, ",") {
 		location = strings.Trim(location, " ")
 		if strings.Contains(location, ":") {
 			s.Ip, s.Port, err = net.SplitHostPort(location)
@@ -393,38 +399,113 @@ func isMatchCategory(category1 string, category2 string) bool {
 }
 
 func (c *URL) String() string {
-	c.paramsLock.Lock()
-	defer c.paramsLock.Unlock()
+	c.paramsLock.RLock()
+	defer c.paramsLock.RUnlock()
+
+	encodedParams := c.params.Encode()
 	var buf strings.Builder
-	if len(c.Username) == 0 && len(c.Password) == 0 {
-		buf.WriteString(fmt.Sprintf("%s://%s:%s%s?", c.Protocol, c.Ip, c.Port, c.Path))
-	} else {
-		buf.WriteString(fmt.Sprintf("%s://%s:%s@%s:%s%s?", c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Path))
+
+	size := len(c.Protocol) + len("://") + len(c.Ip) + len(":") + len(c.Port) + len(c.Path)
+	if len(c.Username) != 0 || len(c.Password) != 0 {
+		size += len(c.Username) + len(":") + len(c.Password) + len("@")
 	}
-	buf.WriteString(c.params.Encode())
+	if encodedParams != "" {
+		size += len("?") + len(encodedParams)
+	}
+
+	buf.Grow(size)
+	buf.WriteString(c.Protocol)
+	buf.WriteString("://")
+	if len(c.Username) != 0 || len(c.Password) != 0 {
+		buf.WriteString(c.Username)
+		buf.WriteString(":")
+		buf.WriteString(c.Password)
+		buf.WriteString("@")
+	}
+	buf.WriteString(c.Ip)
+	buf.WriteString(":")
+	buf.WriteString(c.Port)
+	buf.WriteString(c.Path)
+	if encodedParams != "" {
+		buf.WriteByte('?')
+		buf.WriteString(encodedParams)
+	}
 	return buf.String()
 }
 
 // Key gets key
 func (c *URL) Key() string {
-	buildString := fmt.Sprintf(
-		"%s://%s:%s@%s:%s/?interface=%s&group=%s&version=%s",
-		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Service(), c.GetParam(constant.GroupKey, ""), c.GetParam(constant.VersionKey, ""),
-	)
-	return buildString
+	var buf strings.Builder
+	service := c.Service()
+	group := c.GetParam(constant.GroupKey, "")
+	version := c.GetParam(constant.VersionKey, "")
+
+	size := len(c.Protocol) + len("://") + len(c.Username) +
+		len(":") + len(c.Password) + len("@") +
+		len(c.Ip) + len(":") + len(c.Port) +
+		len("/?interface=") + len(service) +
+		len("&group=") + len(group) +
+		len("&version=") + len(version)
+
+	buf.Grow(size)
+	buf.WriteString(c.Protocol)
+	buf.WriteString("://")
+	buf.WriteString(c.Username)
+	buf.WriteString(":")
+	buf.WriteString(c.Password)
+	buf.WriteString("@")
+	buf.WriteString(c.Ip)
+	buf.WriteString(":")
+	buf.WriteString(c.Port)
+	buf.WriteString("/?interface=")
+	buf.WriteString(service)
+	buf.WriteString("&group=")
+	buf.WriteString(group)
+	buf.WriteString("&version=")
+	buf.WriteString(version)
+
+	return buf.String()
 }
 
 // GetCacheInvokerMapKey get directory cacheInvokerMap key
 func (c *URL) GetCacheInvokerMapKey() string {
-	urlNew, _ := NewURL(c.PrimitiveURL)
+	var buf strings.Builder
+	service := c.Service()
+	group := c.GetParam(constant.GroupKey, "")
+	version := c.GetParam(constant.VersionKey, "")
+	meshClusterID := c.GetParam(constant.MeshClusterIDKey, "")
 
-	buildString := fmt.Sprintf(
-		"%s://%s:%s@%s:%s/?interface=%s&group=%s&version=%s&timestamp=%s&"+constant.MeshClusterIDKey+"=%s",
-		c.Protocol, c.Username, c.Password, c.Ip, c.Port, c.Service(), c.GetParam(constant.GroupKey, ""),
-		c.GetParam(constant.VersionKey, ""), urlNew.GetParam(constant.TimestampKey, ""),
-		c.GetParam(constant.MeshClusterIDKey, ""),
-	)
-	return buildString
+	size := len(c.Protocol) + len("://") + len(c.Username) +
+		len(":") + len(c.Password) + len("@") +
+		len(c.Ip) + len(":") + len(c.Port) +
+		len("/?interface=") + len(service) +
+		len("&group=") + len(group) +
+		len("&version=") + len(version) +
+		len("&timestamp=") + len(c.primitiveTS) +
+		len("&meshClusterID=") + len(meshClusterID)
+
+	buf.Grow(size)
+	buf.WriteString(c.Protocol)
+	buf.WriteString("://")
+	buf.WriteString(c.Username)
+	buf.WriteString(":")
+	buf.WriteString(c.Password)
+	buf.WriteString("@")
+	buf.WriteString(c.Ip)
+	buf.WriteString(":")
+	buf.WriteString(c.Port)
+	buf.WriteString("/?interface=")
+	buf.WriteString(service)
+	buf.WriteString("&group=")
+	buf.WriteString(group)
+	buf.WriteString("&version=")
+	buf.WriteString(version)
+	buf.WriteString("&timestamp=")
+	buf.WriteString(c.primitiveTS)
+	buf.WriteString("&meshClusterID=")
+	buf.WriteString(meshClusterID)
+
+	return buf.String()
 }
 
 // ServiceKey gets a unique key of a service.
@@ -439,7 +520,7 @@ func ServiceKey(intf string, group string, version string) string {
 	if intf == "" {
 		return ""
 	}
-	buf := &bytes.Buffer{}
+	var buf strings.Builder
 	if group != "" {
 		buf.WriteString(group)
 		buf.WriteString("/")
@@ -533,8 +614,8 @@ func (c *URL) Service() string {
 	return ""
 }
 
-// AddParam will add the key-value pair
-func (c *URL) AddParam(key string, value string) {
+// AppendParam appends the key-value pair without replacing existing values.
+func (c *URL) AppendParam(key, value string) {
 	c.paramsLock.Lock()
 	defer c.paramsLock.Unlock()
 	if c.params == nil {
@@ -543,14 +624,16 @@ func (c *URL) AddParam(key string, value string) {
 	c.params.Add(key, value)
 }
 
-// AddParamAvoidNil will add key-value pair
-func (c *URL) AddParamAvoidNil(key string, value string) {
-	c.paramsLock.Lock()
-	defer c.paramsLock.Unlock()
-	if c.params == nil {
-		c.params = url.Values{}
-	}
-	c.params.Add(key, value)
+// AddParam will add the key-value pair.
+// Deprecated: use SetParam to replace an existing value or AppendParam to preserve multiple values.
+func (c *URL) AddParam(key, value string) {
+	c.AppendParam(key, value)
+}
+
+// AddParamAvoidNil will add key-value pair.
+// Deprecated: use AppendParam instead.
+func (c *URL) AddParamAvoidNil(key, value string) {
+	c.AppendParam(key, value)
 }
 
 // SetParam will put the key-value pair into URL
@@ -594,6 +677,20 @@ func (c *URL) GetAttribute(key string) (any, bool) {
 	defer c.attributesLock.RUnlock()
 	r, ok := c.attributes[key]
 	return r, ok
+}
+
+func (c *URL) DeleteAttribute(key string) {
+	c.attributesLock.Lock()
+	defer c.attributesLock.Unlock()
+	if c.attributes != nil {
+		delete(c.attributes, key)
+	}
+}
+
+func (c *URL) ClearAttributes() {
+	c.attributesLock.Lock()
+	defer c.attributesLock.Unlock()
+	c.attributes = make(map[string]any)
 }
 
 // DelParam will delete the given key from the URL
@@ -653,9 +750,40 @@ func (c *URL) GetNonDefaultParam(s string) (string, bool) {
 	return r, r != ""
 }
 
-// GetParams gets values
+// GetParams gets values.
+// Deprecated: use CopyParams instead.
 func (c *URL) GetParams() url.Values {
-	return c.params
+	return c.CopyParams()
+}
+
+func copyURLValues(src url.Values) url.Values {
+	if src == nil {
+		return nil
+	}
+
+	dst := make(url.Values, len(src))
+	for k, vs := range src {
+		copied := make([]string, len(vs))
+		copy(copied, vs)
+		dst[k] = copied
+	}
+
+	return dst
+}
+
+func valuesHasNonDefaultParam(values url.Values, key string) bool {
+	if len(values) == 0 {
+		return false
+	}
+	return values.Get(key) != ""
+}
+
+// CopyParams returns a deep copy of params.
+func (c *URL) CopyParams() url.Values {
+	c.paramsLock.RLock()
+	defer c.paramsLock.RUnlock()
+
+	return copyURLValues(c.params)
 }
 
 // GetParamAndDecoded gets values and decode
@@ -668,17 +796,18 @@ func (c *URL) GetParamAndDecoded(key string) (string, error) {
 // GetRawParam gets raw param
 func (c *URL) GetRawParam(key string) string {
 	switch key {
-	case PROTOCOL:
+	case constant.ProtocolKey:
 		return c.Protocol
-	case "username":
+	case constant.UsernameKey:
 		return c.Username
-	case "host":
-		return strings.Split(c.Location, ":")[0]
-	case "password":
+	case constant.HostKey:
+		host, _ := parseLocation(c.Location)
+		return host
+	case constant.PasswordKey:
 		return c.Password
-	case "port":
+	case constant.PortKey:
 		return c.Port
-	case "path":
+	case constant.PathKey:
 		return c.Path
 	default:
 		return c.GetParam(key, "")
@@ -786,7 +915,34 @@ func (c *URL) SetParams(m url.Values) {
 
 // ToMap transfer URL to Map
 func (c *URL) ToMap() map[string]string {
-	paramsMap := make(map[string]string)
+	// Pre-calculate capacity to avoid map growth
+	c.paramsLock.RLock()
+	paramCount := len(c.params)
+	c.paramsLock.RUnlock()
+
+	// Count non-empty scalar fields
+	capacity := paramCount
+	if c.Protocol != "" {
+		capacity++
+	}
+	if c.Username != "" {
+		capacity++
+	}
+	if c.Password != "" {
+		capacity++
+	}
+	if c.Location != "" {
+		capacity += 2 // host + port
+	}
+	if c.Path != "" {
+		capacity++
+	}
+
+	if capacity == 0 {
+		return nil
+	}
+
+	paramsMap := make(map[string]string, capacity)
 
 	c.RangeParams(
 		func(key, value string) bool {
@@ -796,32 +952,21 @@ func (c *URL) ToMap() map[string]string {
 	)
 
 	if c.Protocol != "" {
-		paramsMap[PROTOCOL] = c.Protocol
+		paramsMap[constant.ProtocolKey] = c.Protocol
 	}
 	if c.Username != "" {
-		paramsMap["username"] = c.Username
+		paramsMap[constant.UsernameKey] = c.Username
 	}
 	if c.Password != "" {
-		paramsMap["password"] = c.Password
+		paramsMap[constant.PasswordKey] = c.Password
 	}
 	if c.Location != "" {
-		paramsMap["host"] = strings.Split(c.Location, ":")[0]
-		var port string
-		if strings.Contains(c.Location, ":") {
-			port = strings.Split(c.Location, ":")[1]
-		} else {
-			port = "0"
-		}
-		paramsMap["port"] = port
-	}
-	if c.Protocol != "" {
-		paramsMap[PROTOCOL] = c.Protocol
+		host, port := parseLocation(c.Location)
+		paramsMap[constant.HostKey] = host
+		paramsMap[constant.PortKey] = port
 	}
 	if c.Path != "" {
-		paramsMap["path"] = c.Path
-	}
-	if len(paramsMap) == 0 {
-		return nil
+		paramsMap[constant.PathKey] = c.Path
 	}
 	return paramsMap
 }
@@ -841,50 +986,60 @@ func (c *URL) ToMap() map[string]string {
 func (c *URL) MergeURL(anotherUrl *URL) *URL {
 	// After Clone, it is a new URL that there is no thread safe issue.
 	mergedURL := c.Clone()
-	params := mergedURL.GetParams()
-	// iterator the anotherUrl if c not have the key ,merge in
-	// anotherUrl usually will not changed. so change RangeParams to GetParams to avoid the string value copy.// Group get group
-	for key, value := range anotherUrl.GetParams() {
-		if _, ok := mergedURL.GetNonDefaultParam(key); !ok {
-			if len(value) > 0 {
-				params[key] = make([]string, len(value))
-				copy(params[key], value)
+	params := mergedURL.params
+	if params == nil {
+		params = url.Values{}
+		mergedURL.params = params
+	}
+	baseTimestamp := params.Get(constant.TimestampKey)
+	baseHasTimestamp := baseTimestamp != ""
+
+	func() {
+		anotherUrl.paramsLock.RLock()
+		defer anotherUrl.paramsLock.RUnlock()
+
+		// Merge params from anotherUrl under one read lock.
+		for key, value := range anotherUrl.params {
+			if !valuesHasNonDefaultParam(params, key) {
+				if len(value) > 0 {
+					params[key] = make([]string, len(value))
+					copy(params[key], value)
+				}
 			}
 		}
-	}
 
-	// remote timestamp
-	if v, ok := c.GetNonDefaultParam(constant.TimestampKey); !ok {
-		params[constant.RemoteTimestampKey] = []string{v}
-		params[constant.TimestampKey] = []string{anotherUrl.GetParam(constant.TimestampKey, "")}
-	}
-
-	// finally execute methodConfigMergeFcn
-	mergedURL.Methods = make([]string, len(anotherUrl.Methods))
-	for i, method := range anotherUrl.Methods {
-		for _, paramKey := range []string{constant.LoadbalanceKey, constant.ClusterKey, constant.RetriesKey, constant.TimeoutKey} {
-			if v := anotherUrl.GetParam(paramKey, ""); len(v) > 0 {
-				params[paramKey] = []string{v}
-			}
-
-			methodsKey := "methods." + method + "." + paramKey
-			// if len(mergedURL.GetParam(methodsKey, "")) == 0 {
-			if v := anotherUrl.GetParam(methodsKey, ""); len(v) > 0 {
-				params[methodsKey] = []string{v}
-			}
-			// }
-			mergedURL.Methods[i] = method
+		// remote timestamp
+		if !baseHasTimestamp {
+			params[constant.RemoteTimestampKey] = []string{baseTimestamp}
+			params[constant.TimestampKey] = []string{anotherUrl.params.Get(constant.TimestampKey)}
 		}
-	}
+
+		// finally execute methodConfigMergeFcn
+		mergedURL.Methods = make([]string, len(anotherUrl.Methods))
+		for i, method := range anotherUrl.Methods {
+			for _, paramKey := range []string{constant.LoadbalanceKey, constant.ClusterKey, constant.RetriesKey, constant.TimeoutKey} {
+				if v := anotherUrl.params.Get(paramKey); len(v) > 0 {
+					params[paramKey] = []string{v}
+				}
+
+				methodsKey := "methods." + method + "." + paramKey
+				// if len(mergedURL.GetParam(methodsKey, "")) == 0 {
+				if v := anotherUrl.params.Get(methodsKey); len(v) > 0 {
+					params[methodsKey] = []string{v}
+				}
+				// }
+				mergedURL.Methods[i] = method
+			}
+		}
+	}()
+
 	// merge attributes
-	if mergedURL.attributes == nil {
-		mergedURL.attributes = make(map[string]any, len(anotherUrl.attributes))
-	}
-	for attrK, attrV := range anotherUrl.attributes {
+	anotherUrl.RangeAttributes(func(attrK string, attrV any) bool {
 		if _, ok := mergedURL.GetAttribute(attrK); !ok {
-			mergedURL.attributes[attrK] = attrV
+			mergedURL.SetAttribute(attrK, attrV)
 		}
-	}
+		return true
+	})
 	// In this way, we will raise some performance.
 	mergedURL.ReplaceParams(params)
 	return mergedURL
@@ -894,35 +1049,8 @@ func (c *URL) MergeURL(anotherUrl *URL) *URL {
 // excludeParams: the set of parameters to exclude from the cloned URL
 // reserveParams: the set of parameters to retain in the cloned URL
 func (c *URL) CloneWithFilter(excludeParams *gxset.HashSet, reserveParams []string) *URL {
-	newURL := &URL{
-		Protocol:     c.Protocol,
-		Location:     c.Location,
-		Ip:           c.Ip,
-		Port:         c.Port,
-		PrimitiveURL: c.PrimitiveURL,
-		Path:         c.Path,
-		Username:     c.Username,
-		Password:     c.Password,
-		Methods:      append(make([]string, 0), c.Methods...),
-		attributes:   make(map[string]any),
-		params:       url.Values{},
-	}
-
-	// Copy and filter params based on excludeParams or reserveParams
-	c.RangeParams(
-		func(key, value string) bool {
-			// If the param is in excludeParams or not in reserveParams, skip it
-			if excludeParams != nil && excludeParams.Contains(key) {
-				return true
-			}
-			if len(reserveParams) > 0 && !slices.Contains(reserveParams, key) {
-				return true
-			}
-			// Set the param if it passes the filter
-			newURL.SetParam(key, value)
-			return true
-		},
-	)
+	newURL := c.newURLForClone()
+	newURL.params = c.copyFilteredParams(newURL.params, excludeParams, reserveParams)
 
 	// Copy attributes
 	c.RangeAttributes(
@@ -938,6 +1066,77 @@ func (c *URL) CloneWithFilter(excludeParams *gxset.HashSet, reserveParams []stri
 	}
 
 	return newURL
+}
+
+func (c *URL) newURLForClone() *URL {
+	return &URL{
+		Protocol:     c.Protocol,
+		Location:     c.Location,
+		Ip:           c.Ip,
+		Port:         c.Port,
+		PrimitiveURL: c.PrimitiveURL,
+		primitiveTS:  c.primitiveTS,
+		Path:         c.Path,
+		Username:     c.Username,
+		Password:     c.Password,
+		Methods:      append(make([]string, 0), c.Methods...),
+		attributes:   make(map[string]any),
+		params:       url.Values{},
+	}
+}
+
+func (c *URL) copyFilteredParams(params url.Values, excludeParams *gxset.HashSet, reserveParams []string) url.Values {
+	c.paramsLock.RLock()
+	defer c.paramsLock.RUnlock()
+
+	if excludeParams == nil && len(reserveParams) == 0 {
+		if len(c.params) > 8 {
+			copiedParams := copyURLValues(c.params)
+			if copiedParams != nil {
+				return copiedParams
+			}
+		}
+		for key, values := range c.params {
+			copied := make([]string, len(values))
+			copy(copied, values)
+			params[key] = copied
+		}
+		return params
+	}
+
+	if capacity := paramsCapacityForClone(len(c.params), excludeParams, reserveParams); capacity > 8 {
+		params = make(url.Values, capacity)
+	}
+
+	for key, values := range c.params {
+		if shouldCopyParam(key, excludeParams, reserveParams) {
+			copied := make([]string, len(values))
+			copy(copied, values)
+			params[key] = copied
+		}
+	}
+
+	return params
+}
+
+func paramsCapacityForClone(paramsLen int, excludeParams *gxset.HashSet, reserveParams []string) int {
+	if len(reserveParams) > 0 && len(reserveParams) < paramsLen {
+		paramsLen = len(reserveParams)
+	}
+	if excludeParams != nil {
+		paramsLen -= excludeParams.Size()
+	}
+	if paramsLen < 0 {
+		return 0
+	}
+	return paramsLen
+}
+
+func shouldCopyParam(key string, excludeParams *gxset.HashSet, reserveParams []string) bool {
+	if excludeParams != nil && excludeParams.Contains(key) {
+		return false
+	}
+	return len(reserveParams) == 0 || slices.Contains(reserveParams, key)
 }
 
 // Clone will copy the URL
@@ -977,6 +1176,37 @@ func (c *URL) CloneWithParams(reserveParams []string) *URL {
 	return c.CloneWithFilter(nil, reserveParams)
 }
 
+// keySet is a set of URL parameter keys that should be ignored during comparison.
+type keySet map[string]struct{}
+
+func newKeySet(keys []string) keySet {
+	set := make(keySet, len(keys))
+	for _, k := range keys {
+		set[k] = struct{}{}
+	}
+	return set
+}
+
+func (s keySet) contains(key string) bool {
+	_, ok := s[key]
+	return ok
+}
+
+// reservedKeyList are the keys that ToMap materializes from scalar fields (or the
+// "host:port" Location), where a non-empty field overrides the same-named param.
+var reservedKeyList = []string{
+	constant.ProtocolKey,
+	constant.UsernameKey,
+	constant.PasswordKey,
+	constant.HostKey,
+	constant.PortKey,
+	constant.PathKey,
+}
+
+// reservedKeys is reservedKeyList as a set. equalParams skips these keys so that
+// equalReservedKeys can compare them with ToMap's field-overrides-param precedence.
+var reservedKeys = newKeySet(reservedKeyList)
+
 // IsEquals compares if two URLs equals with each other. Excludes are all parameter keys which should ignored.
 func IsEquals(left *URL, right *URL, excludes ...string) bool {
 	if (left == nil && right != nil) || (right == nil && left != nil) {
@@ -986,26 +1216,126 @@ func IsEquals(left *URL, right *URL, excludes ...string) bool {
 		return false
 	}
 
-	leftMap := left.ToMap()
-	rightMap := right.ToMap()
-	for _, exclude := range excludes {
-		delete(leftMap, exclude)
-		delete(rightMap, exclude)
-	}
+	excluded := newKeySet(excludes)
+	return equalReservedKeys(left, right, excluded) &&
+		equalParams(left, right, excluded)
+}
 
-	if len(leftMap) != len(rightMap) {
-		return false
-	}
+// rawParam reports the first value of a param and whether the key is present in
+// the params map (an empty-valued key still counts as present, matching ToMap).
+func (c *URL) rawParam(key string) (string, bool) {
+	c.paramsLock.RLock()
+	defer c.paramsLock.RUnlock()
 
-	for lk, lv := range leftMap {
-		if rv, ok := rightMap[lk]; !ok {
-			return false
-		} else if lv != rv {
+	if len(c.params) == 0 {
+		return "", false
+	}
+	vs, ok := c.params[key]
+	if !ok || len(vs) == 0 {
+		return "", false
+	}
+	return vs[0], true
+}
+
+// effectiveReserved returns the flattened value of a reserved key and whether it
+// is present, matching ToMap's precedence: a non-empty scalar field (or a
+// non-empty Location for host/port) overrides the same-named param; otherwise the
+// param, if any, is used.
+func effectiveReserved(u *URL, key string) (string, bool) {
+	switch key {
+	case constant.ProtocolKey:
+		if u.Protocol != "" {
+			return u.Protocol, true
+		}
+	case constant.UsernameKey:
+		if u.Username != "" {
+			return u.Username, true
+		}
+	case constant.PasswordKey:
+		if u.Password != "" {
+			return u.Password, true
+		}
+	case constant.PathKey:
+		if u.Path != "" {
+			return u.Path, true
+		}
+	case constant.HostKey:
+		if u.Location != "" {
+			host, _ := parseLocation(u.Location)
+			return host, true
+		}
+	case constant.PortKey:
+		if u.Location != "" {
+			_, port := parseLocation(u.Location)
+			return port, true
+		}
+	}
+	return u.rawParam(key)
+}
+
+// equalReservedKeys compares the reserved keys (protocol/username/password/host/
+// port/path) of two URLs using ToMap precedence, skipping any excluded key.
+func equalReservedKeys(left, right *URL, excluded keySet) bool {
+	for _, key := range reservedKeyList {
+		if excluded.contains(key) {
+			continue
+		}
+		lv, lok := effectiveReserved(left, key)
+		rv, rok := effectiveReserved(right, key)
+		if lok != rok || lv != rv {
 			return false
 		}
 	}
-
 	return true
+}
+
+// equalParams compares the non-reserved params of two URLs, skipping excluded keys.
+// Reserved keys are handled by equalScalars/equalLocation, so they are skipped here
+// to preserve ToMap's "field overrides same-named param" precedence. It avoids
+// materializing both maps by snapshotting only the left side and streaming the right.
+func equalParams(left, right *URL, excluded keySet) bool {
+	leftParams := make(map[string]string)
+	left.RangeParams(func(key, value string) bool {
+		if !reservedKeys.contains(key) && !excluded.contains(key) {
+			leftParams[key] = value
+		}
+		return true
+	})
+
+	rightCount := 0
+	matched := true
+	right.RangeParams(func(key, value string) bool {
+		if reservedKeys.contains(key) || excluded.contains(key) {
+			return true
+		}
+		rightCount++
+		if lv, ok := leftParams[key]; !ok || lv != value {
+			matched = false
+			return false
+		}
+		return true
+	})
+
+	return matched && rightCount == len(leftParams)
+}
+
+// parseLocation splits "host:port" into host and port. The port is the segment
+// between the first and second ':' (equivalent to strings.Split(location, ":")[1]),
+// preserving the historical behavior for locations that contain extra ':'.
+func parseLocation(location string) (host, port string) {
+	if location == "" {
+		return "", "0"
+	}
+	before, after, ok := strings.Cut(location, ":")
+	if !ok {
+		return location, "0"
+	}
+	host = before
+	rest := after
+	if before, _, ok := strings.Cut(rest, ":"); ok {
+		return host, before
+	}
+	return host, rest
 }
 
 // URLSlice will be used to sort URL instance

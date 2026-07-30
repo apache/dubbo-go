@@ -18,6 +18,7 @@
 package client
 
 import (
+	"net/http"
 	"strconv"
 	"time"
 )
@@ -375,6 +376,9 @@ func WithSticky() ReferenceOption {
 }
 
 // TODO: remove this function after old triple removed
+//
+// Deprecated: this option will be removed in the next version. The IDL mode
+// switch is no longer supported by dubbo-go.
 func WithIDL(IDLMode string) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.IDLMode = IDLMode
@@ -742,14 +746,14 @@ func WithClientClusterStrategy(strategy string) ClientOption {
 	}
 }
 
-// Deprecated：use triple.WithKeepAliveInterval()
+// Deprecated: use triple.WithKeepAliveInterval()
 func WithKeepAliveInterval(keepAliveInterval time.Duration) ClientOption {
 	return func(_ *ClientOptions) {
 		panic("use triple.WithKeepAliveInterval()")
 	}
 }
 
-// Deprecated：use triple.WithKeepAliveTimeout()
+// Deprecated: use triple.WithKeepAliveTimeout()
 func WithKeepAliveTimeout(keepAliveTimeout time.Duration) ClientOption {
 	return func(_ *ClientOptions) {
 		panic("use triple.WithKeepAliveTimeout()")
@@ -999,8 +1003,10 @@ func SetClientRouters(routers []*global.RouterConfig) ClientOption {
 
 // todo: need to be consistent with MethodConfig
 type CallOptions struct {
-	RequestTimeout string
-	Retries        string
+	RequestTimeout  string
+	Retries         string
+	ResponseHeader  *http.Header
+	ResponseTrailer *http.Header
 }
 
 type CallOption func(*CallOptions)
@@ -1020,5 +1026,23 @@ func WithCallRequestTimeout(timeout time.Duration) CallOption {
 func WithCallRetries(retries int) CallOption {
 	return func(opts *CallOptions) {
 		opts.Retries = strconv.Itoa(retries)
+	}
+}
+
+// WithResponseHeader configures a target to receive response headers.
+// Currently, only Triple unary calls populate this option (including error
+// responses when metadata is available).
+func WithResponseHeader(header *http.Header) CallOption {
+	return func(opts *CallOptions) {
+		opts.ResponseHeader = header
+	}
+}
+
+// WithResponseTrailer configures a target to receive response trailers.
+// Currently, only Triple unary calls populate this option (including error
+// responses when metadata is available).
+func WithResponseTrailer(trailer *http.Header) CallOption {
+	return func(opts *CallOptions) {
+		opts.ResponseTrailer = trailer
 	}
 }

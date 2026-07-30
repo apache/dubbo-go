@@ -18,7 +18,9 @@
 package prometheus
 
 import (
+	"errors"
 	"io"
+	"net"
 	"net/http"
 	"sync"
 	"testing"
@@ -99,7 +101,7 @@ func TestPromMetricRegistrySummary(t *testing.T) {
 
 func TestPromMetricRegistryRt(t *testing.T) {
 	p := NewPromMetricRegistry(prom.NewRegistry(), url)
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		p.Rt(metricId, &metrics.RtOpts{}).Observe(10 * float64(i))
 	}
 	text, err := p.Scrape()
@@ -111,7 +113,7 @@ func TestPromMetricRegistryRt(t *testing.T) {
 	assert.Contains(t, text, "# HELP dubbo_request_sum Sum request\n# TYPE dubbo_request_sum gauge\ndubbo_request_sum{app=\"dubbo\",version=\"1.0.0\"} 450")
 
 	p = NewPromMetricRegistry(prom.NewRegistry(), url)
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		p.Rt(metricId, &metrics.RtOpts{Aggregate: true, BucketNum: 10, TimeWindowSeconds: 60}).Observe(10 * float64(i))
 	}
 	text, err = p.Scrape()
@@ -124,12 +126,10 @@ func TestPromMetricRegistryRt(t *testing.T) {
 func TestPromMetricRegistryCounterConcurrent(t *testing.T) {
 	p := NewPromMetricRegistry(prom.NewRegistry(), url)
 	var wg sync.WaitGroup
-	for i := 0; i < 10; i++ {
-		wg.Add(1)
-		go func() {
+	for range 10 {
+		wg.Go(func() {
 			p.Counter(metricId).Inc()
-			wg.Done()
-		}()
+		})
 	}
 	wg.Wait()
 	text, err := p.Scrape()
@@ -150,20 +150,49 @@ func TestPromMetricRegistryExport(t *testing.T) {
 	// test push
 	var wg sync.WaitGroup
 	wg.Add(1)
-	go func() {
-		err := http.ListenAndServe(url.GetParam(constant.PrometheusPushgatewayBaseUrlKey, ""),
-			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				bodyBytes, err := io.ReadAll(r.Body)
-				assert.NoError(t, err)
-				text := string(bodyBytes)
-				assert.Contains(t, text, "dubbo_request_avg")
+	bodyCh := make(chan string, 1)
+	readErrCh := make(chan error, 1)
+	serveErrCh := make(chan error, 1)
+	var pushOnce sync.Once
+	server := &http.Server{
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			bodyBytes, err := io.ReadAll(r.Body)
+			pushOnce.Do(func() {
+				if err != nil {
+					readErrCh <- err
+				} else {
+					bodyCh <- string(bodyBytes)
+				}
 				wg.Done()
-			}))
-		assert.NoError(t, err)
+			})
+		}),
+	}
+	listener, err := net.Listen("tcp", url.GetParam(constant.PrometheusPushgatewayBaseUrlKey, ""))
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_ = server.Close()
+	})
+	go func() {
+		if error := server.Serve(listener); error != nil && !errors.Is(error, http.ErrServerClosed) {
+			serveErrCh <- error
+		}
 	}()
 	timeout := url.GetParamByIntValue(constant.PrometheusPushgatewayPushIntervalKey, constant.PrometheusDefaultPushInterval)
 	if waitTimeout(&wg, time.Duration(timeout+1)*time.Second) {
 		assert.Fail(t, "wait pushgateway data timeout")
+	}
+	select {
+	case err = <-readErrCh:
+		require.NoError(t, err)
+	case text := <-bodyCh:
+		assert.Contains(t, text, "dubbo_request_avg")
+	default:
+		assert.Fail(t, "pushgateway request body was not captured")
+	}
+	select {
+	case err = <-serveErrCh:
+		require.NoError(t, err)
+	default:
 	}
 	// test pull
 	resp, err := http.Get("http://localhost:" +

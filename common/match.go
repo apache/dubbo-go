@@ -30,7 +30,7 @@ import (
 
 type ParamMatch struct {
 	Key   string      `yaml:"key" json:"key,omitempty" property:"key"`
-	Value StringMatch `yaml:"value" json:"value,omitempty" property:"value"`
+	Value StringMatch `yaml:"value" json:"value" property:"value"`
 }
 
 func (p *ParamMatch) IsMatch(url *URL) bool {

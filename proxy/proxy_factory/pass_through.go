@@ -115,7 +115,7 @@ func (pi *PassThroughProxyInvoker) Invoke(ctx context.Context, invocation base.I
 	returnValues, callErr := callLocalMethod(method.Method(), in, false)
 
 	if callErr != nil {
-		logger.Errorf("Invoke function error: %+v, service: %#v", callErr, url)
+		logger.Errorf("[Proxy] invoke function error, err=%+v service=%#v", callErr, url)
 		result.SetError(callErr)
 		return result
 	}
@@ -127,7 +127,7 @@ func (pi *PassThroughProxyInvoker) Invoke(ctx context.Context, invocation base.I
 		result.SetError(retErr.(error))
 		return result
 	}
-	if replyv.IsValid() && (replyv.Kind() != reflect.Ptr || replyv.Kind() == reflect.Ptr && replyv.Elem().IsValid()) {
+	if replyv.IsValid() && (replyv.Kind() != reflect.Pointer || replyv.Kind() == reflect.Pointer && replyv.Elem().IsValid()) {
 		result.SetResult(replyv.Interface())
 	}
 

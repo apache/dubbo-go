@@ -26,7 +26,7 @@ MAKEFLAGS += --no-print-directory
 CLI_DIR = tools/dubbogo-cli
 IMPORTS_FORMATTER_DIR = tools/imports-formatter
 
-.PHONY: help test fmt clean lint check-fmt
+.PHONY: help test fmt clean lint check-fmt rpc-contract-check
 
 help:
 	@echo "Available commands:"
@@ -34,6 +34,7 @@ help:
 	@echo "  clean      - Clean test generate files"
 	@echo "  fmt        - Format code"
 	@echo "  lint       - Run golangci-lint"
+	@echo "  rpc-contract-check - Warn about variadic RPC contracts"
 
 # Run unit tests
 test: clean
@@ -42,7 +43,7 @@ test: clean
 
 fmt: install-imports-formatter
 	# replace interface{} with any
-	go run golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@latest -any=true -fix -test ./...
+	go run golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@v0.21.1 -fix -test ./...
 	go fmt ./... && GOROOT=$(shell go env GOROOT) imports-formatter
 	cd $(CLI_DIR) && go fmt ./...
 
@@ -53,6 +54,9 @@ check-fmt:
 	@if ! git diff --exit-code --quiet; then \
 		echo "Error: The following files have formatting changes:"; \
 		git diff --name-only; \
+		echo ""; \
+		echo "Formatting diff:"; \
+		git --no-pager diff --; \
 		echo ""; \
 		echo "Please run 'make fmt' to fix formatting issues and commit the changes."; \
 		exit 1; \
@@ -66,6 +70,9 @@ clean:
 lint: install-golangci-lint
 	go vet ./...
 	golangci-lint run ./... --timeout=10m
+
+rpc-contract-check:
+	GOTOOLCHAIN=go1.25.0+auto go run ./tools/variadicrpccheck ./...
 
 install-golangci-lint:
 	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.7.2

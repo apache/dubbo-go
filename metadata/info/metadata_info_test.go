@@ -33,6 +33,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
 var (
@@ -65,6 +66,49 @@ func TestMetadataInfoAddService(t *testing.T) {
 	assert.Empty(t, metadataInfo.GetExportedServiceURLs())
 }
 
+func TestMetadataInfoAddServiceBackfillsApplicationTag(t *testing.T) {
+	metadataInfo := &MetadataInfo{
+		Services:              make(map[string]*ServiceInfo),
+		exportedServiceURLs:   make(map[string][]*common.URL),
+		subscribedServiceURLs: make(map[string][]*common.URL),
+	}
+	url, err := common.NewURL("tri://127.0.0.1:20000?application=foo&application.tag=gray&interface=com.foo.Bar&methods=GetPetByID")
+	require.NoError(t, err)
+
+	metadataInfo.AddService(url)
+
+	assert.Equal(t, "foo", metadataInfo.App)
+	assert.Equal(t, "gray", metadataInfo.Tag)
+}
+
+func TestMetadataInfoRemoveServiceWithClonedURL(t *testing.T) {
+	metadataInfo := NewMetadataInfo("foo", "")
+	url, err := common.NewURL("dubbo://127.0.0.1:20000?application=foo&interface=com.foo.Bar&methods=GetPetByID%2CGetPetTypes&side=provider&version=1.0.0")
+	require.NoError(t, err)
+
+	metadataInfo.AddService(url)
+	metadataInfo.RemoveService(url.Clone())
+
+	assert.Empty(t, metadataInfo.Services)
+	assert.Empty(t, metadataInfo.GetExportedServiceURLs())
+}
+
+func TestMetadataInfoRemoveServiceKeepsRemainingMatchKeyService(t *testing.T) {
+	metadataInfo := NewMetadataInfo("foo", "")
+	url1, err := common.NewURL("dubbo://127.0.0.1:20000?application=foo&interface=com.foo.Bar&methods=GetPetByID&side=provider&version=1.0.0")
+	require.NoError(t, err)
+	url2, err := common.NewURL("dubbo://127.0.0.1:20001?application=foo&interface=com.foo.Bar&methods=GetPetByID&side=provider&version=1.0.0")
+	require.NoError(t, err)
+
+	metadataInfo.AddService(url1)
+	metadataInfo.AddService(url2)
+	metadataInfo.RemoveService(url1.Clone())
+
+	require.Len(t, metadataInfo.Services, 1)
+	assert.Len(t, metadataInfo.GetExportedServiceURLs(), 1)
+	assert.Equal(t, url2, metadataInfo.GetExportedServiceURLs()[0])
+}
+
 func TestHessian(t *testing.T) {
 	metadataInfo := &MetadataInfo{
 		App:                   "test",
@@ -89,6 +133,13 @@ func TestMetadataInfoAddSubscribeURL(t *testing.T) {
 	info.AddSubscribeURL(serviceUrl)
 	assert.NotEmpty(t, info.GetSubscribedURLs())
 	info.RemoveSubscribeURL(serviceUrl)
+	assert.Empty(t, info.GetSubscribedURLs())
+}
+
+func TestMetadataInfoRemoveSubscribeURLWithClonedURL(t *testing.T) {
+	info := NewMetadataInfo("dubbo", "tag")
+	info.AddSubscribeURL(serviceUrl)
+	info.RemoveSubscribeURL(serviceUrl.Clone())
 	assert.Empty(t, info.GetSubscribedURLs())
 }
 
@@ -128,6 +179,21 @@ func TestServiceInfoGetParams(t *testing.T) {
 	assert.Equal(t, []string{"random"}, service.GetParams()["loadbalance"])
 }
 
+func TestServiceInfoExcludesInstanceLevelParams(t *testing.T) {
+	serviceURL, err := common.NewURL("tri://127.0.0.1:20000/org.apache.dubbo.samples.proto.GreetService",
+		common.WithInterface("org.apache.dubbo.samples.proto.GreetService"),
+		common.WithParamsValue(constant.EnvironmentKey, "pre"),
+		common.WithMethods([]string{"Greet"}),
+	)
+	require.NoError(t, err)
+
+	service := NewServiceInfoWithURL(serviceURL)
+
+	// Environment is instance-level metadata, not service-level.
+	// It should NOT appear in ServiceInfo.Params and thus not affect revision.
+	assert.Empty(t, service.GetParams()[constant.EnvironmentKey])
+}
+
 func TestServiceInfoGetMatchKey(t *testing.T) {
 	si := NewServiceInfoWithURL(serviceUrl)
 	matchKey := si.MatchKey
@@ -137,6 +203,27 @@ func TestServiceInfoGetMatchKey(t *testing.T) {
 	si.MatchKey = ""
 	si.ServiceKey = ""
 	assert.NotEmpty(t, si.GetMatchKey())
+}
+
+func TestMetadataInfoGetServices(t *testing.T) {
+	metadataInfo := &MetadataInfo{
+		Services:              make(map[string]*ServiceInfo),
+		exportedServiceURLs:   make(map[string][]*common.URL),
+		subscribedServiceURLs: make(map[string][]*common.URL),
+	}
+	url, _ := common.NewURL("dubbo://127.0.0.1:20000?application=foo&category=providers&check=false&dubbo=dubbo-go+v1.5.0&interface=com.foo.Bar&methods=GetPetByID%2CGetPetTypes&organization=Apache&owner=foo&revision=1.0.0&side=provider&version=1.0.0")
+	metadataInfo.AddService(url)
+
+	services := metadataInfo.GetServices()
+	require.Len(t, services, 1)
+	assert.NotEmpty(t, services)
+
+	// GetServices returns a copy: modifying the original does not affect the snapshot
+	metadataInfo.RemoveService(url)
+	assert.Len(t, services, 1)
+
+	// A fresh call reflects the removal
+	assert.Empty(t, metadataInfo.GetServices())
 }
 
 func TestServiceInfoJavaClassName(t *testing.T) {

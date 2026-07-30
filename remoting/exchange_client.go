@@ -89,7 +89,7 @@ func (cl *ExchangeClient) doInit(url *common.URL) error {
 		// retry for a while
 		time.Sleep(100 * time.Millisecond)
 		if cl.client.Connect(url) != nil {
-			logger.Errorf("Failed to connect server %+v " + url.Location)
+			logger.Errorf("[Remoting] failed to connect server, url=%v", url.Location)
 			return errors.New("Failed to connect server " + url.Location)
 		}
 	}
@@ -132,6 +132,7 @@ func (client *ExchangeClient) Request(invocation *base.Invocation, url *common.U
 	err := client.client.Request(request, timeout, rsp)
 	// request error
 	if err != nil {
+		RemovePendingResponse(SequenceType(request.ID))
 		res.Err = err
 		return err
 	}
@@ -140,7 +141,7 @@ func (client *ExchangeClient) Request(invocation *base.Invocation, url *common.U
 		res.Attrs = resultTmp.Attrs
 		res.Err = resultTmp.Err
 	} else {
-		logger.Warnf("[ExchangeClient.Request] The type of result is unexpected, we want *protocol.RPCResult, "+
+		logger.Warnf("[Remoting] the type of result is unexpected, we want *protocol.RPCResult, "+
 			"but we got %T", rsp.response.Result)
 	}
 	return nil
@@ -165,6 +166,7 @@ func (client *ExchangeClient) AsyncRequest(invocation *base.Invocation, url *com
 
 	err := client.client.Request(request, timeout, rsp)
 	if err != nil {
+		RemovePendingResponse(SequenceType(request.ID))
 		result.Err = err
 		return err
 	}

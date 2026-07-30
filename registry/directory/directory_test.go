@@ -26,6 +26,8 @@ import (
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
+
 	"github.com/golang/mock/gomock"
 
 	"github.com/stretchr/testify/assert"
@@ -36,8 +38,11 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 	_ "dubbo.apache.org/dubbo-go/v3/cluster/router/tag"
 	"dubbo.apache.org/dubbo-go/v3/common"
+	common_cfg "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/config_center"
+	configparser "dubbo.apache.org/dubbo-go/v3/config_center/parser"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
@@ -61,15 +66,111 @@ func TestSubscribe_InvalidUrl(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestNewRegistryDirectoryResolvesApplicationAttribute(t *testing.T) {
+	tests := []struct {
+		name      string
+		configure func(registryURL *common.URL, subURL *common.URL)
+		wantName  string
+	}{
+		{
+			name: "sub URL attribute",
+			configure: func(_ *common.URL, subURL *common.URL) {
+				subURL.SetAttribute(constant.ApplicationKey, &global.ApplicationConfig{Name: "sub-attr-app"})
+			},
+			wantName: "sub-attr-app",
+		},
+		{
+			name: "registry URL param",
+			configure: func(registryURL *common.URL, _ *common.URL) {
+				registryURL.SetParam(constant.ApplicationKey, "registry-param-app")
+			},
+			wantName: "registry-param-app",
+		},
+		{
+			name: "sub URL param",
+			configure: func(_ *common.URL, subURL *common.URL) {
+				subURL.SetParam(constant.ApplicationKey, "sub-param-app")
+			},
+			wantName: "sub-param-app",
+		},
+		{
+			name:      "default",
+			configure: func(_ *common.URL, _ *common.URL) {},
+			wantName:  constant.DefaultDubboApp,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			registryURL, subURL := newRegistryDirectoryAttributeTestURL(t)
+			tt.configure(registryURL, subURL)
+
+			newRegistryDirectoryForAttributeTest(t, registryURL)
+
+			applicationRaw, ok := registryURL.GetAttribute(constant.ApplicationKey)
+			require.True(t, ok)
+			application, ok := applicationRaw.(*global.ApplicationConfig)
+			require.True(t, ok)
+			assert.Equal(t, tt.wantName, application.Name)
+		})
+	}
+}
+
+func TestNewRegistryDirectoryCopiesRegistriesAttributeFromSubURL(t *testing.T) {
+	registryURL, subURL := newRegistryDirectoryAttributeTestURL(t)
+	registries := map[string]*global.RegistryConfig{
+		"mock-registry": {Protocol: "mock", Address: "127.0.0.1:1111"},
+	}
+	subURL.SetAttribute(constant.RegistriesConfigKey, registries)
+
+	newRegistryDirectoryForAttributeTest(t, registryURL)
+
+	registriesRaw, ok := registryURL.GetAttribute(constant.RegistriesConfigKey)
+	require.True(t, ok)
+	assert.Equal(t, registries, registriesRaw)
+}
+
+func TestNewRegistryDirectoryUsesDefaultRegistriesAttribute(t *testing.T) {
+	registryURL, _ := newRegistryDirectoryAttributeTestURL(t)
+
+	newRegistryDirectoryForAttributeTest(t, registryURL)
+
+	registriesRaw, ok := registryURL.GetAttribute(constant.RegistriesConfigKey)
+	require.True(t, ok)
+	registries, ok := registriesRaw.(map[string]*global.RegistryConfig)
+	require.True(t, ok)
+	require.Contains(t, registries, constant.DefaultKey)
+	assert.Equal(t, global.DefaultRegistryConfig(), registries[constant.DefaultKey])
+}
+
+func TestNewRegistryDirectoryConsumerListenerUsesResolvedApplicationName(t *testing.T) {
+	env := common_cfg.GetEnvInstance()
+	previousDynamicConfiguration := env.GetDynamicConfiguration()
+	dynamicConfiguration := newRecordingDynamicConfiguration()
+	env.SetDynamicConfiguration(dynamicConfiguration)
+	t.Cleanup(func() {
+		env.SetDynamicConfiguration(previousDynamicConfiguration)
+	})
+
+	registryURL, subURL := newRegistryDirectoryAttributeTestURL(t)
+	subURL.SetParam(constant.ApplicationKey, "consumer-listener-app")
+
+	newRegistryDirectoryForAttributeTest(t, registryURL)
+
+	assert.Contains(t, dynamicConfiguration.keys, "consumer-listener-app"+constant.ConfiguratorSuffix)
+}
+
 func Test_Destroy(t *testing.T) {
 	registryDirectory, _ := normalRegistryDir()
 
 	time.Sleep(3e9)
 	assert.Len(t, registryDirectory.snapshotCacheInvokers(), 3)
+	assert.Equal(t, 3, registry.CountSyncMapEntries(registryDirectory.cacheInvokersMap))
 	assert.True(t, registryDirectory.IsAvailable())
 
 	registryDirectory.Destroy()
 	assert.Empty(t, registryDirectory.snapshotCacheInvokers())
+	assert.Zero(t, registry.CountSyncMapEntries(registryDirectory.cacheInvokersMap))
 	assert.False(t, registryDirectory.IsAvailable())
 }
 
@@ -263,6 +364,167 @@ func TestExpiredClosingTombstoneAllowsRebuild(t *testing.T) {
 	assert.Len(t, registryDirectory.snapshotCacheInvokers(), 1)
 }
 
+func TestRefreshConfiguratorsUseLatestBatch(t *testing.T) {
+	realConfigurator := extension.GetDefaultConfiguratorFunc()
+
+	t.Run("single events keep incremental configs", func(t *testing.T) {
+		registryDirectory, _ := normalRegistryDir(true)
+
+		registryDirectory.refreshInvokers(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: mustURL(t,
+			"override://0.0.0.0:0/org.apache.dubbo-go.mockService?timeout=2s",
+		)})
+		require.Len(t, registryDirectory.snapshotConfigurators(), 1)
+
+		registryDirectory.refreshInvokers(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: mustURL(t,
+			"override://0.0.0.0:0/org.apache.dubbo-go.mockService?cluster=mock2",
+		)})
+		require.Len(t, registryDirectory.snapshotConfigurators(), 2)
+
+		target := mustURL(t, "dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService")
+		registryDirectory.overrideUrl(target)
+
+		assert.Equal(t, "2s", target.GetParam("timeout", ""))
+		assert.Equal(t, "mock2", target.GetParam(constant.ClusterKey, ""))
+	})
+
+	t.Run("same batch keeps param union", func(t *testing.T) {
+		extension.SetDefaultConfigurator(realConfigurator)
+
+		registryDirectory, _ := normalRegistryDir(true)
+		registryDirectory.refreshAllInvokers([]*registry.ServiceEvent{
+			{Action: remoting.EventTypeAdd, Service: mustURL(t,
+				"override://0.0.0.0:0/org.apache.dubbo-go.mockService?timeout=2s",
+			)},
+			{Action: remoting.EventTypeAdd, Service: mustURL(t,
+				"override://0.0.0.0:0/org.apache.dubbo-go.mockService?cluster=mock2",
+			)},
+		}, func() {})
+
+		target := mustURL(t, "dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService")
+		registryDirectory.overrideUrl(target)
+
+		assert.Equal(t, "2s", target.GetParam("timeout", ""))
+		assert.Equal(t, "mock2", target.GetParam(constant.ClusterKey, ""))
+	})
+
+	t.Run("new batch replaces previous batch", func(t *testing.T) {
+		extension.SetDefaultConfigurator(realConfigurator)
+
+		registryDirectory, _ := normalRegistryDir(true)
+		registryDirectory.refreshAllInvokers([]*registry.ServiceEvent{
+			{Action: remoting.EventTypeAdd, Service: mustURL(t,
+				"override://0.0.0.0:0/org.apache.dubbo-go.mockService?timeout=2s",
+			)},
+			{Action: remoting.EventTypeAdd, Service: mustURL(t,
+				"override://0.0.0.0:0/org.apache.dubbo-go.mockService?cluster=mock2",
+			)},
+		}, func() {})
+
+		registryDirectory.refreshAllInvokers([]*registry.ServiceEvent{
+			{Action: remoting.EventTypeAdd, Service: mustURL(t,
+				"override://0.0.0.0:0/org.apache.dubbo-go.mockService?cluster=mock3",
+			)},
+		}, func() {})
+
+		target := mustURL(t, "dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService")
+		registryDirectory.overrideUrl(target)
+
+		assert.Empty(t, target.GetParam("timeout", ""))
+		assert.Equal(t, "mock3", target.GetParam(constant.ClusterKey, ""))
+	})
+
+	t.Run("configurator-only notify all refreshes cached invokers immediately", func(t *testing.T) {
+		extension.SetDefaultConfigurator(realConfigurator)
+
+		registryDirectory, _ := normalRegistryDir(true)
+		registryDirectory.refreshAllInvokers([]*registry.ServiceEvent{
+			{Action: remoting.EventTypeAdd, Service: mustURL(t,
+				"dubbo://0.0.0.0:20011/org.apache.dubbo-go.mockService?cluster=mock1&group=group&version=1.0.0",
+			)},
+			{Action: remoting.EventTypeAdd, Service: mustURL(t,
+				"dubbo://0.0.0.0:20012/org.apache.dubbo-go.mockService?cluster=mock1&group=group&version=1.0.0",
+			)},
+		}, func() {})
+
+		require.Len(t, registryDirectory.snapshotCacheInvokers(), 2)
+		assert.Equal(t, "mock1", findInvokerURLByPort(t, registryDirectory, "20011").GetParam(constant.ClusterKey, ""))
+		assert.Equal(t, "mock1", findInvokerURLByPort(t, registryDirectory, "20012").GetParam(constant.ClusterKey, ""))
+
+		registryDirectory.refreshAllInvokers([]*registry.ServiceEvent{
+			{Action: remoting.EventTypeAdd, Service: mustURL(t,
+				"override://0.0.0.0:0/org.apache.dubbo-go.mockService?timeout=2s",
+			)},
+			{Action: remoting.EventTypeAdd, Service: mustURL(t,
+				"override://0.0.0.0:0/org.apache.dubbo-go.mockService?cluster=mock2",
+			)},
+		}, func() {})
+
+		require.Len(t, registryDirectory.snapshotCacheInvokers(), 2)
+		assert.Equal(t, "mock2", findInvokerURLByPort(t, registryDirectory, "20011").GetParam(constant.ClusterKey, ""))
+		assert.Equal(t, "2s", findInvokerURLByPort(t, registryDirectory, "20011").GetParam("timeout", ""))
+		assert.Equal(t, "mock2", findInvokerURLByPort(t, registryDirectory, "20012").GetParam(constant.ClusterKey, ""))
+		assert.Equal(t, "2s", findInvokerURLByPort(t, registryDirectory, "20012").GetParam("timeout", ""))
+
+		registryDirectory.refreshAllInvokers([]*registry.ServiceEvent{
+			{Action: remoting.EventTypeAdd, Service: mustURL(t,
+				"override://0.0.0.0:0/org.apache.dubbo-go.mockService?cluster=mock3",
+			)},
+		}, func() {})
+
+		require.Len(t, registryDirectory.snapshotCacheInvokers(), 2)
+		assert.Equal(t, "mock3", findInvokerURLByPort(t, registryDirectory, "20011").GetParam(constant.ClusterKey, ""))
+		assert.Empty(t, findInvokerURLByPort(t, registryDirectory, "20011").GetParam("timeout", ""))
+		assert.Equal(t, "mock3", findInvokerURLByPort(t, registryDirectory, "20012").GetParam(constant.ClusterKey, ""))
+		assert.Empty(t, findInvokerURLByPort(t, registryDirectory, "20012").GetParam("timeout", ""))
+	})
+}
+
+func mustURL(t *testing.T, rawURL string) *common.URL {
+	t.Helper()
+	u, err := common.NewURL(rawURL)
+	require.NoError(t, err)
+	return u
+}
+
+func newRegistryDirectoryAttributeTestURL(t *testing.T) (*common.URL, *common.URL) {
+	t.Helper()
+
+	registryURL, err := common.NewURL("mock://127.0.0.1:1111")
+	require.NoError(t, err)
+	subURL, err := common.NewURL(
+		"dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService",
+		common.WithParamsValue(constant.ClusterKey, "mock"),
+		common.WithParamsValue(constant.GroupKey, "group"),
+		common.WithParamsValue(constant.VersionKey, "1.0.0"),
+	)
+	require.NoError(t, err)
+	registryURL.SubURL = subURL
+	return registryURL, subURL
+}
+
+func newRegistryDirectoryForAttributeTest(t *testing.T, registryURL *common.URL) *RegistryDirectory {
+	t.Helper()
+
+	mockRegistry, err := registry.NewMockRegistry(&common.URL{})
+	require.NoError(t, err)
+	dir, err := NewRegistryDirectory(registryURL, mockRegistry)
+	require.NoError(t, err)
+	registryDirectory := dir.(*RegistryDirectory)
+	t.Cleanup(registryDirectory.Destroy)
+	return registryDirectory
+}
+
+func findInvokerURLByPort(t *testing.T, dir *RegistryDirectory, port string) *common.URL {
+	t.Helper()
+	for _, invoker := range dir.snapshotCacheInvokers() {
+		if invoker.GetURL().Port == port {
+			return invoker.GetURL()
+		}
+	}
+	require.FailNowf(t, "missing invoker", "no cached invoker found for port %s", port)
+	return nil
+}
+
 func normalRegistryDir(noMockEvent ...bool) (*RegistryDirectory, *registry.MockRegistry) {
 	extension.SetProtocol(protocolwrapper.FILTER, protocolwrapper.NewMockProtocolFilter)
 
@@ -284,7 +546,7 @@ func normalRegistryDir(noMockEvent ...bool) (*RegistryDirectory, *registry.MockR
 
 	_ = dir.(*RegistryDirectory).Subscribe(suburl)
 	if len(noMockEvent) == 0 {
-		for i := 0; i < 3; i++ {
+		for i := range 3 {
 			mockRegistry.(*registry.MockRegistry).MockEvent(
 				&registry.ServiceEvent{
 					Action: remoting.EventTypeAdd,
@@ -352,7 +614,7 @@ func TestRegistryDirectoryIsAvailableConcurrentWithCacheUpdates(t *testing.T) {
 	dir.invokersLock.Unlock()
 
 	var wg sync.WaitGroup
-	for i := 0; i < 200; i++ {
+	for range 200 {
 		wg.Add(2)
 		go func() {
 			defer wg.Done()
@@ -377,7 +639,7 @@ func TestRegistryDirectoryConfiguratorConcurrentAccess(t *testing.T) {
 	require.NoError(t, err)
 
 	var wg sync.WaitGroup
-	for i := 0; i < 50; i++ {
+	for range 50 {
 		wg.Add(2)
 		go func() {
 			defer wg.Done()
@@ -405,7 +667,7 @@ func TestRegistryDirectorySubscribedURLConcurrentAccess(t *testing.T) {
 	dir.RegisteredUrl = registeredURL
 
 	var wg sync.WaitGroup
-	for i := 0; i < 200; i++ {
+	for range 200 {
 		wg.Add(2)
 		go func() {
 			defer wg.Done()
@@ -544,4 +806,52 @@ func newRegistryDirectoryForConcurrencyTest(t *testing.T) *RegistryDirectory {
 	dir, err := NewRegistryDirectory(url, mockRegistry)
 	require.NoError(t, err)
 	return dir.(*RegistryDirectory)
+}
+
+type recordingDynamicConfiguration struct {
+	parser configparser.ConfigurationParser
+	keys   []string
+}
+
+func newRecordingDynamicConfiguration() *recordingDynamicConfiguration {
+	return &recordingDynamicConfiguration{parser: &configparser.DefaultConfigurationParser{}}
+}
+
+func (c *recordingDynamicConfiguration) Parser() configparser.ConfigurationParser {
+	return c.parser
+}
+
+func (c *recordingDynamicConfiguration) SetParser(parser configparser.ConfigurationParser) {
+	c.parser = parser
+}
+
+func (c *recordingDynamicConfiguration) AddListener(key string, _ config_center.ConfigurationListener, _ ...config_center.Option) {
+	c.keys = append(c.keys, key)
+}
+
+func (c *recordingDynamicConfiguration) RemoveListener(_ string, _ config_center.ConfigurationListener, _ ...config_center.Option) {
+}
+
+func (c *recordingDynamicConfiguration) GetProperties(_ string, _ ...config_center.Option) (string, error) {
+	return "", nil
+}
+
+func (c *recordingDynamicConfiguration) GetRule(_ string, _ ...config_center.Option) (string, error) {
+	return "", nil
+}
+
+func (c *recordingDynamicConfiguration) GetInternalProperty(_ string, _ ...config_center.Option) (string, error) {
+	return "", nil
+}
+
+func (c *recordingDynamicConfiguration) PublishConfig(_, _, _ string) error {
+	return nil
+}
+
+func (c *recordingDynamicConfiguration) RemoveConfig(_, _ string) error {
+	return nil
+}
+
+func (c *recordingDynamicConfiguration) GetConfigKeysByGroup(_ string) (*gxset.HashSet, error) {
+	return gxset.NewSet(), nil
 }

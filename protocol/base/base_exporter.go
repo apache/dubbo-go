@@ -56,7 +56,7 @@ func (de *BaseExporter) GetInvoker() Invoker {
 
 // UnExport un export service.
 func (de *BaseExporter) UnExport() {
-	logger.Infof("Exporter unexport.")
+	logger.Info("[Protocol][Exporter] exporter unexport.")
 	de.invoker.Destroy()
 	de.exporterMap.Delete(de.key)
 }

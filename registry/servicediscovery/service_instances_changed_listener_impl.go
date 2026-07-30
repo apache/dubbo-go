@@ -28,6 +28,8 @@ import (
 	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/gof/observer"
 	"github.com/dubbogo/gost/log/logger"
+
+	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -50,7 +52,7 @@ func initCache(app string) {
 	fileName := constant.DefaultMetaFileName + app
 	cache, err := store.NewCacheManager(constant.DefaultMetaCacheName, fileName, time.Minute*10, constant.DefaultEntrySize, true)
 	if err != nil {
-		logger.Fatal("Failed to create cache [%s],the err is %v", constant.DefaultMetaCacheName, err)
+		logger.Fatalf("[Registry][ServiceDiscovery] failed to create cache [%s],the err is %v", constant.DefaultMetaCacheName, err)
 	}
 	metaCache = cache
 }
@@ -58,6 +60,7 @@ func initCache(app string) {
 // ServiceInstancesChangedListenerImpl The Service Discovery Changed  Event Listener
 type ServiceInstancesChangedListenerImpl struct {
 	app                string
+	registryId         string
 	serviceNames       *gxset.HashSet
 	listeners          map[string]registry.NotifyListener
 	serviceUrls        map[string][]*common.URL
@@ -66,12 +69,13 @@ type ServiceInstancesChangedListenerImpl struct {
 	mutex              sync.Mutex
 }
 
-func NewServiceInstancesChangedListener(app string, services *gxset.HashSet) registry.ServiceInstancesChangedListener {
+func NewServiceInstancesChangedListener(app string, registryId string, services *gxset.HashSet) registry.ServiceInstancesChangedListener {
 	cacheOnce.Do(func() {
 		initCache(app)
 	})
 	return &ServiceInstancesChangedListenerImpl{
 		app:                app,
+		registryId:         registryId,
 		serviceNames:       services,
 		listeners:          make(map[string]registry.NotifyListener),
 		serviceUrls:        make(map[string][]*common.URL),
@@ -80,7 +84,7 @@ func NewServiceInstancesChangedListener(app string, services *gxset.HashSet) reg
 	}
 }
 
-// OnEvent on ServiceInstancesChangedEvent the service instances change event
+// OnEvent handles service instance change events by refreshing metadata, rebuilding service URLs, and notifying listeners.
 func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error {
 	ce, ok := e.(*registry.ServiceInstancesChangedEvent)
 	if !ok {
@@ -91,80 +95,83 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 	defer lstn.mutex.Unlock()
 
 	lstn.allInstances[ce.ServiceName] = ce.Instances
-	revisionToInstances := make(map[string][]registry.ServiceInstance)
-	newRevisionToMetadata := make(map[string]*info.MetadataInfo)
-	localServiceToRevisions := make(map[*info.ServiceInfo]*gxset.HashSet)
-	protocolRevisionsToUrls := make(map[string]map[*gxset.HashSet][]*common.URL)
-	newServiceURLs := make(map[string][]*common.URL)
+	revisionToInstances := make(map[string][]registry.ServiceInstance, len(lstn.revisionToMetadata))
+	newRevisionToMetadata := make(map[string]*info.MetadataInfo, len(lstn.revisionToMetadata))
+	// The same service match key can be exported by several revisions.
+	// Keep each revision's ServiceInfo so provider-specific params are not collapsed.
+	serviceToRevisionServices := make(map[string]map[string]*info.ServiceInfo, len(lstn.serviceUrls))
 
-	logger.Infof("Received instance notification event of service %s, instance list size %d", ce.ServiceName, len(ce.Instances))
+	logger.Infof("[Registry][ServiceDiscovery] received instance notification event, service=%s size=%d", ce.ServiceName, len(ce.Instances))
 
 	for _, instances := range lstn.allInstances {
 		for _, instance := range instances {
 			if instance.GetMetadata() == nil {
-				logger.Warnf("Instance metadata is nil: %s", instance.GetHost())
+				logger.Warnf("[Registry][ServiceDiscovery] instance metadata is nil, host=%s", instance.GetHost())
 				continue
 			}
 			revision := instance.GetMetadata()[constant.ExportedServicesRevisionPropertyName]
 			if revision == "0" {
-				logger.Infof("Find instance without valid service metadata: %s", instance.GetHost())
+				logger.Infof("[Registry][ServiceDiscovery] find instance without valid service metadata, host=%s", instance.GetHost())
 				continue
 			}
-			subInstances := revisionToInstances[revision]
+			// MetadataInfo belongs to the provider application, so isolate every cache
+			// dimension by provider app. Two provider apps that happen to share a revision
+			// (e.g. same interface set exported under different application names) must not
+			// collide on a revision-only key. instance.GetServiceName() is the provider app.
+			providerApp := instance.GetServiceName()
+			key := metadataCacheKey(providerApp, lstn.registryId, revision)
+
+			subInstances := revisionToInstances[key]
 			if subInstances == nil {
 				subInstances = make([]registry.ServiceInstance, 0, 8)
 			}
-			revisionToInstances[revision] = append(subInstances, instance)
-			metadataInfo := lstn.revisionToMetadata[revision]
+			revisionToInstances[key] = append(subInstances, instance)
+			metadataInfo := lstn.revisionToMetadata[key]
 			if metadataInfo == nil {
-				meta, err := GetMetadataInfo(lstn.app, instance, revision)
+				meta, err := GetMetadataInfo(providerApp, instance, revision, lstn.registryId)
 				if err != nil {
 					// Skip this instance if metadata fetch fails (e.g., old Java Dubbo version)
 					// Try next instance with same revision
-					logger.Warnf("Failed to get metadata from instance %s (revision %s): %v, skipping this instance",
+					logger.Warnf("[Registry][ServiceDiscovery] failed to get metadata from instance %s (revision %s), err=%v, skipping this instance",
 						instance.GetHost(), revision, err)
 					continue
 				}
 				metadataInfo = meta
 			}
+			if metadataInfo == nil {
+				logger.Warnf("[Registry][ServiceDiscovery] metadata info is nil for instance %s (revision %s), skipping this instance",
+					instance.GetHost(), revision)
+				continue
+			}
 			instance.SetServiceMetadata(metadataInfo)
-			for _, service := range metadataInfo.Services {
-				if localServiceToRevisions[service] == nil {
-					localServiceToRevisions[service] = gxset.NewSet()
+			for _, service := range metadataInfo.GetServices() {
+				matchKey := service.GetMatchKey()
+				if serviceToRevisionServices[matchKey] == nil {
+					serviceToRevisionServices[matchKey] = make(map[string]*info.ServiceInfo)
 				}
-				localServiceToRevisions[service].Add(revision)
+				serviceToRevisionServices[matchKey][key] = service
 			}
 
-			newRevisionToMetadata[revision] = metadataInfo
+			newRevisionToMetadata[key] = metadataInfo
 		}
-		lstn.revisionToMetadata = newRevisionToMetadata
-		for revision, metadataInfo := range newRevisionToMetadata {
-			metaCache.Set(revision, metadataInfo)
-		}
+	}
+	lstn.revisionToMetadata = newRevisionToMetadata
+	for key, metadataInfo := range newRevisionToMetadata {
+		// key is already provider-app scoped and matches the disk cache key format.
+		metaCache.Set(key, metadataInfo)
+	}
 
-		for serviceInfo, revisions := range localServiceToRevisions {
-			revisionsToUrls := protocolRevisionsToUrls[serviceInfo.Protocol]
-			if revisionsToUrls == nil {
-				protocolRevisionsToUrls[serviceInfo.Protocol] = make(map[*gxset.HashSet][]*common.URL)
-				revisionsToUrls = protocolRevisionsToUrls[serviceInfo.Protocol]
-			}
-			urls := revisionsToUrls[revisions]
-			if urls != nil {
-				newServiceURLs[serviceInfo.GetMatchKey()] = urls
-			} else {
-				urls = make([]*common.URL, 0, 8)
-				for _, v := range revisions.Values() {
-					r := v.(string)
-					for _, i := range revisionToInstances[r] {
-						if i != nil {
-							urls = append(urls, i.ToURLs(serviceInfo)...)
-						}
-					}
+	newServiceURLs := make(map[string][]*common.URL, len(serviceToRevisionServices))
+	for serviceKey, revisionServices := range serviceToRevisionServices {
+		urls := make([]*common.URL, 0, 8)
+		for key, serviceInfo := range revisionServices {
+			for _, i := range revisionToInstances[key] {
+				if i != nil {
+					urls = append(urls, toInstanceServiceURLs(i, serviceInfo)...)
 				}
-				revisionsToUrls[revisions] = urls
-				newServiceURLs[serviceInfo.GetMatchKey()] = urls
 			}
 		}
+		newServiceURLs[serviceKey] = urls
 	}
 
 	lstn.serviceUrls = newServiceURLs
@@ -183,10 +190,36 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 	return nil
 }
 
+func toInstanceServiceURLs(instance registry.ServiceInstance, serviceInfo *info.ServiceInfo) []*common.URL {
+	urls := instance.ToURLs(serviceInfo)
+	// Environment is instance-level routing metadata and is not part of the revision hash.
+	// Treat the fresh instance value as authoritative so same-revision restarts
+	// can update or clear stale metadata cached by revision.
+	metadata := instance.GetMetadata()
+	if metadata == nil {
+		for _, url := range urls {
+			url.DelParam(constant.EnvironmentKey)
+		}
+		return urls
+	}
+	environment, ok := metadata[constant.EnvironmentKey]
+	for _, url := range urls {
+		if ok && len(environment) > 0 {
+			url.SetParam(constant.EnvironmentKey, environment)
+		} else {
+			url.DelParam(constant.EnvironmentKey)
+		}
+	}
+	return urls
+}
+
 // AddListenerAndNotify add notify listener and notify to listen service event
 func (lstn *ServiceInstancesChangedListenerImpl) AddListenerAndNotify(serviceKey string, notify registry.NotifyListener) {
+	lstn.mutex.Lock()
 	lstn.listeners[serviceKey] = notify
 	urls := lstn.serviceUrls[serviceKey]
+	lstn.mutex.Unlock()
+
 	for _, url := range urls {
 		notify.Notify(&registry.ServiceEvent{
 			Action:  remoting.EventTypeAdd,
@@ -197,6 +230,8 @@ func (lstn *ServiceInstancesChangedListenerImpl) AddListenerAndNotify(serviceKey
 
 // RemoveListener remove notify listener
 func (lstn *ServiceInstancesChangedListenerImpl) RemoveListener(serviceKey string) {
+	lstn.mutex.Lock()
+	defer lstn.mutex.Unlock()
 	delete(lstn.listeners, serviceKey)
 }
 
@@ -220,15 +255,29 @@ func (lstn *ServiceInstancesChangedListenerImpl) GetPriority() int {
 
 // GetEventType returns ServiceInstancesChangedEvent
 func (lstn *ServiceInstancesChangedListenerImpl) GetEventType() reflect.Type {
-	return reflect.TypeOf(&registry.ServiceInstancesChangedEvent{})
+	return reflect.TypeFor[*registry.ServiceInstancesChangedEvent]()
 }
 
-// GetMetadataInfo get metadata info when MetadataStorageTypePropertyName is null
-func GetMetadataInfo(app string, instance registry.ServiceInstance, revision string) (*info.MetadataInfo, error) {
+// metadataCacheKey builds the cache key that isolates MetadataInfo by provider
+// application, registry, and revision. MetadataInfo is owned by the provider app,
+// so app must be the provider application name (instance.GetServiceName()), never
+// the subscribing consumer app. Keying on revision alone would let two provider
+// apps that share a revision overwrite each other's metadata.
+func metadataCacheKey(app, registryId, revision string) string {
+	return app + ":" + registryId + ":" + revision
+}
+
+// GetMetadataInfo retrieves the MetadataInfo for a service instance by revision.
+// Results are cached by app+registryId+revision, where app must be the provider
+// application name. For "remote" storage type, it fetches from the metadata report
+// and falls back to RPC if the report fails or returns nil. For all other storage
+// types (including absent), it uses RPC directly.
+func GetMetadataInfo(app string, instance registry.ServiceInstance, revision string, registryId string) (*info.MetadataInfo, error) {
 	cacheOnce.Do(func() {
 		initCache(app)
 	})
-	if metadataInfo, ok := metaCache.Get(revision); ok {
+	cacheKey := metadataCacheKey(app, registryId, revision)
+	if metadataInfo, ok := metaCache.Get(cacheKey); ok {
 		return metadataInfo.(*info.MetadataInfo), nil
 	}
 
@@ -236,21 +285,61 @@ func GetMetadataInfo(app string, instance registry.ServiceInstance, revision str
 	var metadataInfo *info.MetadataInfo
 	var err error
 	if instance.GetMetadata() == nil {
+		// No metadata map at all; treat as default (local/RPC) storage type.
 		metadataStorageType = constant.DefaultMetadataStorageType
 	} else {
 		metadataStorageType = instance.GetMetadata()[constant.MetadataStorageTypePropertyName]
-	}
-	if metadataStorageType == constant.RemoteMetadataStorageType {
-		metadataInfo, err = metadata.GetMetadataFromMetadataReport(revision, instance)
-		if err != nil {
-			return nil, err
+		if metadataStorageType == "" {
+			// MetadataStorageTypePropertyName absent (e.g. old Java provider); default to local storage type.
+			logger.Warnf("[Metadata] MetadataStorageType not set for instance %s, defaulting to local", instance.GetID())
+			metadataStorageType = constant.DefaultMetadataStorageType
 		}
-	} else {
+	}
+
+	if metadataStorageType == constant.RemoteMetadataStorageType {
+		var reportErr error
+		metadataInfo, reportErr = metadata.GetMetadataFromMetadataReport(revision, instance, registryId)
+		if reportErr != nil {
+			logger.Errorf("[Metadata][Fallback] report failed, fallback to RPC app=%s registry=%s revision=%s err=%v",
+				app, registryId, revision, reportErr)
+		} else if metadataInfo == nil {
+			logger.Warnf("[Metadata][Fallback] report returned nil metadata, fallback to RPC app=%s registry=%s revision=%s",
+				app, registryId, revision)
+		} else {
+			metaCache.Set(cacheKey, metadataInfo)
+			return metadataInfo, nil
+		}
+
 		metadataInfo, err = metadata.GetMetadataFromRpc(revision, instance)
 		if err != nil {
-			return nil, err
+			if reportErr != nil {
+				// Wrap rpcErr so callers can use errors.Is/As on the primary failure;
+				// reportErr is annotated as context since it triggered the fallback.
+				return nil, perrors.Wrapf(err,
+					"both paths failed, reportErr: %v", reportErr)
+			}
+			// reportErr was nil — the report returned nil metadata and RPC also failed.
+			return nil, perrors.Wrapf(err,
+				"RPC fallback failed after report returned nil metadata")
 		}
+		if metadataInfo == nil {
+			return nil, perrors.Errorf("got nil metadata from RPC app=%s registry=%s revision=%s",
+				app, registryId, revision)
+		}
+		metaCache.Set(cacheKey, metadataInfo)
+		return metadataInfo, nil
 	}
-	metaCache.Set(revision, metadataInfo)
+
+	// Non-remote storage type ("local" or absent): fetch metadata via RPC directly.
+	metadataInfo, err = metadata.GetMetadataFromRpc(revision, instance)
+	if err != nil {
+		return nil, perrors.Wrapf(err,
+			"failed app=%s registry=%s revision=%s", app, registryId, revision)
+	}
+	if metadataInfo == nil {
+		return nil, perrors.Errorf("got nil metadata from RPC app=%s registry=%s revision=%s",
+			app, registryId, revision)
+	}
+	metaCache.Set(cacheKey, metadataInfo)
 	return metadataInfo, nil
 }

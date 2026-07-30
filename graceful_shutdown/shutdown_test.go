@@ -20,6 +20,8 @@ package graceful_shutdown
 import (
 	"context"
 	"errors"
+	"os"
+	"os/signal"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -29,6 +31,7 @@ import (
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -37,11 +40,12 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/metrics/probe"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
-// MockFilter implements filter.Filter and config.Setter for testing
+// MockFilter implements filter.Filter and shutdownConfigSetter for testing.
 type MockFilter struct {
 	mock.Mock
 }
@@ -99,11 +103,23 @@ func (m *MockFilter) OnResponse(ctx context.Context, result result.Result, invok
 	return nil
 }
 
-func TestInit(t *testing.T) {
-	// Reset initOnce and protocols for testing
+func resetShutdownTestState() {
 	initOnce = sync.Once{}
 	protocols = nil
 	proMu = sync.Mutex{}
+
+	shutdownConfigMu = sync.RWMutex{}
+	shutdownConfig = nil
+	shutdownOnce = sync.Once{}
+	shutdownStarted = atomic.Bool{}
+	shutdownDone = make(chan struct{})
+	shutdownResult = nil
+	signalNotify = signal.Notify
+}
+
+func TestInit(t *testing.T) {
+	// Reset initOnce and protocols for testing
+	resetShutdownTestState()
 
 	// Register mock filters
 	mockConsumerFilter := &MockFilter{}
@@ -131,6 +147,101 @@ func TestInit(t *testing.T) {
 	// Remove mock filters
 	extension.UnregisterFilter(constant.GracefulShutdownConsumerFilterKey)
 	extension.UnregisterFilter(constant.GracefulShutdownProviderFilterKey)
+}
+
+func TestInitReturnsWhenGracefulShutdownFilterMissing(t *testing.T) {
+	resetShutdownTestState()
+
+	mockConsumerFilter := &MockFilter{}
+	mockConsumerFilter.On("Set", mock.Anything, mock.Anything).Return()
+
+	extension.SetFilter(constant.GracefulShutdownConsumerFilterKey, func() filter.Filter {
+		return mockConsumerFilter
+	})
+	extension.UnregisterFilter(constant.GracefulShutdownProviderFilterKey)
+	t.Cleanup(func() {
+		extension.UnregisterFilter(constant.GracefulShutdownConsumerFilterKey)
+	})
+
+	notifyCalled := atomic.Bool{}
+	signalNotify = func(chan<- os.Signal, ...os.Signal) {
+		notifyCalled.Store(true)
+	}
+
+	Init()
+
+	mockConsumerFilter.AssertNotCalled(t, "Set", mock.Anything, mock.Anything)
+	assert.False(t, notifyCalled.Load())
+	assert.Nil(t, shutdownConfig)
+}
+
+func TestShutdownClosesDoneAndRunsOnce(t *testing.T) {
+	resetShutdownTestState()
+
+	callbackName := "shutdown-run-once-test"
+	originalCallback, callbackExists := extension.LookupGracefulShutdownCallback(callbackName)
+	t.Cleanup(func() {
+		extension.UnregisterGracefulShutdownCallback(callbackName)
+		if callbackExists {
+			extension.RegisterGracefulShutdownCallback(callbackName, originalCallback)
+		}
+	})
+
+	var callbackCalls atomic.Int32
+	extension.RegisterGracefulShutdownCallback(callbackName, func(ctx context.Context) error {
+		callbackCalls.Add(1)
+		return nil
+	})
+
+	cfg := global.DefaultShutdownConfig()
+	internalSignal := false
+	cfg.InternalSignal = &internalSignal
+	cfg.ConsumerUpdateWaitTime = "0s"
+	cfg.StepTimeout = "0s"
+	cfg.NotifyTimeout = "10ms"
+	cfg.OfflineRequestWindowTimeout = "0s"
+
+	Init(SetShutdownConfig(cfg))
+
+	firstDone := make(chan error, 1)
+	secondDone := make(chan error, 1)
+	go func() {
+		firstDone <- Shutdown(context.Background())
+	}()
+	go func() {
+		secondDone <- Shutdown(context.Background())
+	}()
+
+	require.NoError(t, <-firstDone)
+	require.NoError(t, <-secondDone)
+	assert.Equal(t, int32(1), callbackCalls.Load())
+
+	select {
+	case <-Done():
+	default:
+		t.Fatal("Done channel was not closed after Shutdown completed")
+	}
+}
+
+func TestBeforeShutdownMarksNotReady(t *testing.T) {
+	probe.Init(&probe.Config{
+		Enabled:          true,
+		Port:             "0",
+		UseInternalState: true,
+	})
+	probe.SetReady(true)
+	t.Cleanup(func() {
+		probe.SetReady(false)
+		probe.SetStartupComplete(false)
+		probe.EnableInternalState(false)
+	})
+
+	require.NoError(t, probe.CheckReadiness(context.Background()))
+
+	cfg := global.DefaultShutdownConfig()
+	beforeShutdown(cfg)
+
+	require.Error(t, probe.CheckReadiness(context.Background()))
 }
 
 func TestRegisterProtocol(t *testing.T) {
@@ -170,7 +281,7 @@ func TestTotalTimeout(t *testing.T) {
 	// Test with default timeout
 	config := global.DefaultShutdownConfig()
 	timeout := totalTimeout(config)
-	assert.Equal(t, defaultTimeout, timeout)
+	assert.Equal(t, constant.DefaultShutdownConfigTimeout, timeout)
 
 	// Test with custom timeout
 	config.Timeout = "120s"
@@ -180,12 +291,12 @@ func TestTotalTimeout(t *testing.T) {
 	// Test with invalid timeout
 	config.Timeout = "invalid"
 	timeout = totalTimeout(config)
-	assert.Equal(t, defaultTimeout, timeout)
+	assert.Equal(t, constant.DefaultShutdownConfigTimeout, timeout)
 
 	// Test with timeout less than default
 	config.Timeout = "30s"
 	timeout = totalTimeout(config)
-	assert.Equal(t, defaultTimeout, timeout) // Should use default if less than default
+	assert.Equal(t, constant.DefaultShutdownConfigTimeout, timeout) // Should use default if less than default
 }
 
 func TestParseDuration(t *testing.T) {
@@ -356,7 +467,7 @@ func TestNotifyLongConnectionConsumersRunsCallbacksInParallel(t *testing.T) {
 		close(done)
 	}()
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		select {
 		case <-started:
 		case <-time.After(time.Second):

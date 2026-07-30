@@ -80,8 +80,8 @@ func ToGenericException(expt any) (*GenericException, bool) {
 func parseLegacyException(exStr string) *GenericException {
 	const prefix = "java exception:"
 	msg := strings.TrimSpace(exStr)
-	if strings.HasPrefix(msg, prefix) {
-		msg = strings.TrimSpace(strings.TrimPrefix(msg, prefix))
+	if after, ok := strings.CutPrefix(msg, prefix); ok {
+		msg = strings.TrimSpace(after)
 	}
 	return &GenericException{ExceptionClass: "java.lang.Exception", ExceptionMessage: msg}
 }
@@ -141,7 +141,7 @@ func packResponse(header DubboHeader, ret any) ([]byte, error) {
 	if header.ResponseStatus == Response_OK {
 		if hb {
 			if err := encoder.Encode(nil); err != nil {
-				logger.Warnf("Encode(nil) = %v", err)
+				logger.Warnf("[Dubbo][Hessian2] encode nil failed, err=%v", err)
 			}
 		} else {
 			atta := isSupportResponseAttachment(response.Attachments[DUBBO_VERSION_KEY])
@@ -213,7 +213,7 @@ func packResponse(header DubboHeader, ret any) ([]byte, error) {
 	byteArray = hessian.EncNull(byteArray) // if not, "java client" will throw exception  "unexpected end of file"
 	pkgLen := len(byteArray)
 	if pkgLen > int(DEFAULT_LEN) { // recommand 8M
-		logger.Warnf("Data length %d too large, recommand max payload %d. "+
+		logger.Warnf("[Dubbo][Hessian2] data length %d too large, recommand max payload %d. "+
 			"Dubbo java can't handle the package whose size greater than %d!!!", pkgLen, DEFAULT_LEN, DEFAULT_LEN)
 	}
 	// byteArray{body length}
@@ -311,14 +311,14 @@ func CopySlice(inSlice, outSlice reflect.Value) error {
 		return perrors.Errorf("@in is not slice, but %v", inSlice.Kind())
 	}
 
-	for outSlice.Kind() == reflect.Ptr {
+	for outSlice.Kind() == reflect.Pointer {
 		outSlice = outSlice.Elem()
 	}
 
 	size := inSlice.Len()
 	outSlice.Set(reflect.MakeSlice(outSlice.Type(), size, size))
 
-	for i := 0; i < size; i++ {
+	for i := range size {
 		inSliceValue := inSlice.Index(i)
 		if !inSliceValue.Type().AssignableTo(outSlice.Index(i).Type()) {
 			return perrors.Errorf("in element type [%s] can not assign to out element type [%s]",
@@ -377,7 +377,7 @@ func ReflectResponse(in any, out any) error {
 	if out == nil {
 		return perrors.Errorf("@out is nil")
 	}
-	if reflect.TypeOf(out).Kind() != reflect.Ptr {
+	if reflect.TypeOf(out).Kind() != reflect.Pointer {
 		return perrors.Errorf("@out should be a pointer")
 	}
 

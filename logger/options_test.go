@@ -60,3 +60,49 @@ func TestNewOptionsAndWithers(t *testing.T) {
 		t.Fatalf("expected file compress true, got %+v", opts.Logger.File.Compress)
 	}
 }
+
+func TestWithTraceIntegration(t *testing.T) {
+	opts := NewOptions(WithTraceIntegration(true))
+	if opts.Logger.TraceIntegration == nil {
+		t.Fatalf("expected TraceIntegration to be initialized, got nil")
+	}
+	if opts.Logger.TraceIntegration.Enabled == nil {
+		t.Fatalf("expected TraceIntegration.Enabled to be set, got nil")
+	}
+	if *opts.Logger.TraceIntegration.Enabled != true {
+		t.Fatalf("expected TraceIntegration.Enabled to be true, got %v", *opts.Logger.TraceIntegration.Enabled)
+	}
+}
+
+func TestWithRecordErrorToSpan(t *testing.T) {
+	opts := NewOptions(WithRecordErrorToSpan(false))
+	if opts.Logger.TraceIntegration == nil {
+		t.Fatalf("expected TraceIntegration to be initialized, got nil")
+	}
+	if opts.Logger.TraceIntegration.RecordErrorToSpan == nil {
+		t.Fatalf("expected TraceIntegration.RecordErrorToSpan to be set, got nil")
+	}
+	if *opts.Logger.TraceIntegration.RecordErrorToSpan != false {
+		t.Fatalf("expected TraceIntegration.RecordErrorToSpan to be false, got %v", *opts.Logger.TraceIntegration.RecordErrorToSpan)
+	}
+}
+
+func TestWithTraceIntegrationCombined(t *testing.T) {
+	opts := NewOptions(
+		WithZap(),
+		WithTraceIntegration(true),
+		WithRecordErrorToSpan(true),
+	)
+	if opts.Logger.Driver != "zap" {
+		t.Fatalf("expected driver zap, got %s", opts.Logger.Driver)
+	}
+	if opts.Logger.TraceIntegration == nil {
+		t.Fatalf("expected TraceIntegration to be initialized, got nil")
+	}
+	if opts.Logger.TraceIntegration.Enabled == nil || *opts.Logger.TraceIntegration.Enabled != true {
+		t.Fatalf("expected TraceIntegration.Enabled to be true, got %+v", opts.Logger.TraceIntegration.Enabled)
+	}
+	if opts.Logger.TraceIntegration.RecordErrorToSpan == nil || *opts.Logger.TraceIntegration.RecordErrorToSpan != true {
+		t.Fatalf("expected TraceIntegration.RecordErrorToSpan to be true, got %+v", opts.Logger.TraceIntegration.RecordErrorToSpan)
+	}
+}

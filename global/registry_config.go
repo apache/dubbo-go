@@ -18,6 +18,7 @@
 package global
 
 import (
+	"maps"
 	"strconv"
 )
 
@@ -72,9 +73,7 @@ func (c *RegistryConfig) Clone() *RegistryConfig {
 	}
 
 	newParams := make(map[string]string, len(c.Params))
-	for k, v := range c.Params {
-		newParams[k] = v
-	}
+	maps.Copy(newParams, c.Params)
 
 	return &RegistryConfig{
 		Protocol:          c.Protocol,

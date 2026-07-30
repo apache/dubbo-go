@@ -34,7 +34,7 @@ import (
 
 	perrors "github.com/pkg/errors"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 import (
@@ -71,7 +71,7 @@ func newApolloConfiguration(url *common.URL) (*apolloConfiguration, error) {
 		IsBackupConfig:   url.GetParamBool(constant.ConfigBackupConfigKey, true),
 		BackupConfigPath: url.GetParam(constant.ConfigBackupConfigPathKey, ""),
 	}
-	logger.Infof("[Apollo ConfigCenter] New Apollo ConfigCenter with Configuration: %+v, url = %+v", c.appConf, c.url)
+	logger.Infof("[ConfigCenter][Apollo] new Apollo ConfigCenter with Configuration, appConf=%v url=%v", c.appConf, c.url)
 	client, err := agollo.StartWithConfig(func() (*config.AppConfig, error) {
 		return c.appConf, nil
 	})
@@ -222,10 +222,14 @@ func (c *apolloConfiguration) getAddressWithProtocolPrefix(url *common.URL) stri
 		addr := regexp.MustCompile(`\s+`).ReplaceAllString(address, "")
 		parts := strings.Split(addr, ",")
 		addrs := make([]string, 0)
+		path := strings.Trim(url.Path, "/")
 		for _, part := range parts {
 			addr := part
+			if path != "" {
+				addr = strings.TrimRight(addr, "/") + "/" + path
+			}
 			if !strings.HasPrefix(part, apolloProtocolPrefix) {
-				addr = apolloProtocolPrefix + part
+				addr = apolloProtocolPrefix + addr
 			}
 			addrs = append(addrs, addr)
 		}

@@ -30,7 +30,9 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
 var validate *validator.Validate
@@ -113,4 +115,74 @@ func removeMinus(strArr []string) string {
 
 func IsValid(addr string) bool {
 	return addr != "" && addr != constant.NotAvailable
+}
+
+// EnsureApplicationAttribute resolves application config from the primary URL,
+// fallback URLs, URL params, then the default application name.
+func EnsureApplicationAttribute(url *common.URL, fallbackURLs ...*common.URL) *global.ApplicationConfig {
+	urls := make([]*common.URL, 0, len(fallbackURLs)+1)
+	urls = append(urls, url)
+	urls = append(urls, fallbackURLs...)
+
+	for _, candidate := range urls {
+		if application, ok := applicationFromAttribute(candidate); ok {
+			setApplicationAttribute(url, application)
+			return application
+		}
+	}
+
+	for _, candidate := range urls {
+		if application := applicationFromParam(candidate); application != nil {
+			setApplicationAttribute(url, application)
+			return application
+		}
+	}
+
+	application := &global.ApplicationConfig{Name: constant.DefaultDubboApp}
+	setApplicationAttribute(url, application)
+	return application
+}
+
+func setApplicationAttribute(url *common.URL, application *global.ApplicationConfig) {
+	if url != nil {
+		url.SetAttribute(constant.ApplicationKey, application)
+	}
+}
+
+func applicationFromAttribute(url *common.URL) (*global.ApplicationConfig, bool) {
+	if url == nil {
+		return nil, false
+	}
+
+	applicationRaw, ok := url.GetAttribute(constant.ApplicationKey)
+	if !ok {
+		return nil, false
+	}
+
+	switch application := applicationRaw.(type) {
+	case *global.ApplicationConfig:
+		if application != nil && application.Name != "" {
+			return application, true
+		}
+	case global.ApplicationConfig:
+		if application.Name != "" {
+			applicationCopy := application
+			return &applicationCopy, true
+		}
+	case string:
+		if application != "" {
+			return &global.ApplicationConfig{Name: application}, true
+		}
+	}
+	return nil, false
+}
+
+func applicationFromParam(url *common.URL) *global.ApplicationConfig {
+	if url == nil {
+		return nil
+	}
+	if applicationName := url.GetParam(constant.ApplicationKey, ""); applicationName != "" {
+		return &global.ApplicationConfig{Name: applicationName}
+	}
+	return nil
 }

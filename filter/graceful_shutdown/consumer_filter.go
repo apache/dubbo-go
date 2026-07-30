@@ -36,7 +36,6 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	gracefulshutdown "dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
@@ -80,7 +79,7 @@ func newConsumerGracefulShutdownFilter() filter.Filter {
 func (f *consumerGracefulShutdownFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
 	// check if invoker is closing
 	if f.isClosingInvoker(invoker) {
-		logger.Warnf("Graceful shutdown --- Skipping closing invoker --- %s", invoker.GetURL().String())
+		logger.Warnf("[Filter][GracefulShutdown] skipping closing invoker, url=%s", invoker.GetURL().String())
 		return &result.RPCResult{Err: errors.New("provider is closing")}
 	}
 
@@ -122,11 +121,8 @@ func (f *consumerGracefulShutdownFilter) Set(name string, conf any) {
 		switch ct := conf.(type) {
 		case *global.ShutdownConfig:
 			f.shutdownConfig = ct
-		// only for compatibility with old config, able to directly remove after config is deleted
-		case *config.ShutdownConfig:
-			f.shutdownConfig = compatGlobalShutdownConfig(ct)
 		default:
-			logger.Warnf("the type of config for {%s} should be *global.ShutdownConfig", constant.GracefulShutdownFilterShutdownConfig)
+			logger.Warnf("[Filter][GracefulShutdown] the type of config for %s should be *global.ShutdownConfig", constant.GracefulShutdownFilterShutdownConfig)
 		}
 		return
 	default:
@@ -144,7 +140,7 @@ func (f *consumerGracefulShutdownFilter) isClosingInvoker(invoker base.Invoker) 
 		f.closingInvokers.Delete(key)
 		if setter, ok := invoker.(base.AvailabilitySetter); ok {
 			setter.SetAvailable(true)
-			logger.Infof("Graceful shutdown --- Recovered invoker availability after closing TTL --- %s", key)
+			logger.Infof("[Filter][GracefulShutdown] recovered invoker availability after closing TTL, key=%s", key)
 		}
 	}
 	return false
@@ -168,12 +164,12 @@ func (f *consumerGracefulShutdownFilter) markClosingInvoker(invoker base.Invoker
 	expireTime := time.Now().Add(f.getClosingInvokerExpireTime())
 	f.closingInvokers.Store(key, expireTime)
 
-	logger.Infof("Graceful shutdown --- Marked invoker as closing --- %s, will expire at %v, IsAvailable=%v",
+	logger.Infof("[Filter][GracefulShutdown] marked invoker as closing, key=%s expireTime=%v isAvailable=%v",
 		key, expireTime, invoker.IsAvailable())
 
 	if setter, ok := invoker.(base.AvailabilitySetter); ok {
 		setter.SetAvailable(false)
-		logger.Infof("Graceful shutdown --- Set invoker unavailable --- %s, IsAvailable now=%v",
+		logger.Infof("[Filter][GracefulShutdown] set invoker unavailable, key=%s isAvailable=%v",
 			key, invoker.IsAvailable())
 	}
 }

@@ -28,6 +28,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/router"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	common_cfg "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
@@ -545,4 +546,289 @@ func TestRouteNilDefaults(t *testing.T) {
 	)
 
 	assert.Len(t, result, 3)
+}
+
+type mockCache struct {
+	invokers   []base.Invoker
+	pool       router.AddrPool
+	generation uint64
+}
+
+func (m *mockCache) GetInvokers() []base.Invoker { return m.invokers }
+func (m *mockCache) FindAddrPool(_ router.Poolable) (router.AddrPool, []base.Invoker, uint64) {
+	return m.pool, m.invokers, m.generation
+}
+func (m *mockCache) FindAddrMeta(_ router.Poolable) router.AddrMetadata { return nil }
+
+func newCacheRouter() *PriorityRouter {
+	initUrl()
+	p, _ := NewTagPriorityRouter()
+	return p
+}
+
+func makeInvokers(tag1, tag2, tag3 string) []base.Invoker {
+	u1, _ := common.NewURL("dubbo://192.168.0.1:20000/com.xxx.xxx.UserProvider?interface=com.xxx.xxx.UserProvider&group=&version=3.1.0")
+	u2, _ := common.NewURL("dubbo://192.168.0.2:20000/com.xxx.xxx.UserProvider?interface=com.xxx.xxx.UserProvider&group=&version=3.1.0")
+	u3, _ := common.NewURL("dubbo://192.168.0.3:20000/com.xxx.xxx.UserProvider?interface=com.xxx.xxx.UserProvider&group=&version=3.1.0")
+	if tag1 != "" {
+		u1.SetParam(constant.Tagkey, tag1)
+	}
+	if tag2 != "" {
+		u2.SetParam(constant.Tagkey, tag2)
+	}
+	if tag3 != "" {
+		u3.SetParam(constant.Tagkey, tag3)
+	}
+	return []base.Invoker{
+		base.NewBaseInvoker(u1),
+		base.NewBaseInvoker(u2),
+		base.NewBaseInvoker(u3),
+	}
+}
+
+func withCache(p *PriorityRouter, invokers []base.Invoker) {
+	pool, _ := p.Pool(invokers)
+	p.cache.Store(&mockCache{invokers: invokers, pool: pool})
+}
+
+func boolPtr(v bool) *bool { return &v }
+
+func TestRouteBitmapStaticTag(t *testing.T) {
+	p := newCacheRouter()
+	invokers := makeInvokers("gray", "gray", "")
+	withCache(p, invokers)
+
+	t.Run("request has tag, returns only matching invokers", func(t *testing.T) {
+		attachments := map[string]any{constant.Tagkey: "gray"}
+		result := p.Route(invokers, consumerUrl, invocation.NewRPCInvocation("GetUser", nil, attachments))
+		assert.Len(t, result, 2)
+		for _, r := range result {
+			assert.Equal(t, "gray", r.GetURL().GetParam(constant.Tagkey, ""))
+		}
+	})
+
+	t.Run("request has no tag, returns untagged invokers", func(t *testing.T) {
+		result := p.Route(invokers, consumerUrl, invocation.NewRPCInvocation("GetUser", nil, nil))
+		assert.Len(t, result, 1)
+		assert.Empty(t, result[0].GetURL().GetParam(constant.Tagkey, ""))
+	})
+
+	t.Run("request has non-matching tag with force, returns empty", func(t *testing.T) {
+		attachments := map[string]any{constant.Tagkey: "nonexistent", constant.ForceUseTag: "true"}
+		result := p.Route(invokers, consumerUrl, invocation.NewRPCInvocation("GetUser", nil, attachments))
+		assert.Empty(t, result)
+	})
+}
+
+func TestRouteBitmapDynamicTagAddress(t *testing.T) {
+	p := newCacheRouter()
+	invokers := makeInvokers("gray", "gray", "")
+	withCache(p, invokers)
+
+	p.routerConfigs.Store(consumerUrl.GetParam(constant.ApplicationKey, "")+constant.TagRouterRuleSuffix, global.RouterConfig{
+		Key:     consumerUrl.Service() + constant.TagRouterRuleSuffix,
+		Force:   boolPtr(false),
+		Enabled: boolPtr(true),
+		Valid:   boolPtr(true),
+		Tags: []global.Tag{{
+			Name:      "gray",
+			Addresses: []string{"192.168.0.1:20000"},
+		}},
+	})
+
+	t.Run("address matches only selected invoker", func(t *testing.T) {
+		attachments := map[string]any{constant.Tagkey: "gray"}
+		result := p.Route(invokers, consumerUrl, invocation.NewRPCInvocation("GetUser", nil, attachments))
+		assert.Len(t, result, 1)
+		assert.Equal(t, "192.168.0.1:20000", result[0].GetURL().Location)
+	})
+}
+
+func TestRouteBitmapDynamicTagAnyHost(t *testing.T) {
+	p := newCacheRouter()
+	invokers := makeInvokers("gray", "gray", "gray")
+	withCache(p, invokers)
+
+	p.routerConfigs.Store(consumerUrl.GetParam(constant.ApplicationKey, "")+constant.TagRouterRuleSuffix, global.RouterConfig{
+		Key:     consumerUrl.Service() + constant.TagRouterRuleSuffix,
+		Force:   boolPtr(true),
+		Enabled: boolPtr(true),
+		Valid:   boolPtr(true),
+		Tags: []global.Tag{{
+			Name:      "gray",
+			Addresses: []string{constant.AnyHostValue + ":20000"},
+		}},
+	})
+
+	t.Run("anyhost address matches all invokers on that port", func(t *testing.T) {
+		attachments := map[string]any{constant.Tagkey: "gray"}
+		result := p.Route(invokers, consumerUrl, invocation.NewRPCInvocation("GetUser", nil, attachments))
+		assert.Len(t, result, 3)
+	})
+}
+
+func TestRouteBitmapDynamicEmptyTag(t *testing.T) {
+	p := newCacheRouter()
+	invokers := makeInvokers("gray", "", "")
+	withCache(p, invokers)
+
+	p.routerConfigs.Store(consumerUrl.GetParam(constant.ApplicationKey, "")+constant.TagRouterRuleSuffix, global.RouterConfig{
+		Key:     consumerUrl.Service() + constant.TagRouterRuleSuffix,
+		Force:   boolPtr(false),
+		Enabled: boolPtr(true),
+		Valid:   boolPtr(true),
+		Tags: []global.Tag{{
+			Addresses: []string{"192.168.0.1:20000"},
+		}},
+	})
+
+	t.Run("empty request tag with address exclusion", func(t *testing.T) {
+		result := p.Route(invokers, consumerUrl, invocation.NewRPCInvocation("GetUser", nil, nil))
+		assert.Len(t, result, 2)
+		for _, r := range result {
+			assert.NotEqual(t, "192.168.0.1:20000", r.GetURL().Location)
+		}
+	})
+}
+
+func TestRouteDynamicParamExactFallback(t *testing.T) {
+	p := newCacheRouter()
+	invokers := makeInvokers("gray", "gray", "")
+	invokers[1].GetURL().SetParam("version", "v2")
+	withCache(p, invokers)
+
+	p.routerConfigs.Store(consumerUrl.GetParam(constant.ApplicationKey, "")+constant.TagRouterRuleSuffix, global.RouterConfig{
+		Key:     consumerUrl.Service() + constant.TagRouterRuleSuffix,
+		Force:   boolPtr(false),
+		Enabled: boolPtr(true),
+		Valid:   boolPtr(true),
+		Tags: []global.Tag{{
+			Name: "gray",
+			Match: []*common.ParamMatch{
+				{Key: "version", Value: common.StringMatch{Exact: "v2"}},
+			},
+		}},
+	})
+
+	t.Run("match falls back to requestTag and filters correctly", func(t *testing.T) {
+		attachments := map[string]any{constant.Tagkey: "gray"}
+		result := p.Route(invokers, consumerUrl, invocation.NewRPCInvocation("GetUser", nil, attachments))
+		assert.Len(t, result, 1)
+		assert.Equal(t, "192.168.0.2:20000", result[0].GetURL().Location)
+	})
+}
+
+func TestRouteBitmapMatchFallback(t *testing.T) {
+	p := newCacheRouter()
+	invokers := makeInvokers("gray", "gray", "")
+	withCache(p, invokers)
+
+	p.routerConfigs.Store(consumerUrl.GetParam(constant.ApplicationKey, "")+constant.TagRouterRuleSuffix, global.RouterConfig{
+		Key:     consumerUrl.Service() + constant.TagRouterRuleSuffix,
+		Force:   boolPtr(false),
+		Enabled: boolPtr(true),
+		Valid:   boolPtr(true),
+		Tags: []global.Tag{{
+			Name: "gray",
+			Match: []*common.ParamMatch{
+				{Key: "environment", Value: common.StringMatch{Exact: "prod"}},
+			},
+		}},
+	})
+
+	t.Run("unindexed param key falls back to original path", func(t *testing.T) {
+		attachments := map[string]any{constant.Tagkey: "gray"}
+		result := p.Route(invokers, consumerUrl, invocation.NewRPCInvocation("GetUser", nil, attachments))
+		assert.Len(t, result, 1)
+		assert.Empty(t, result[0].GetURL().GetParam(constant.Tagkey, ""))
+	})
+}
+
+func TestRouteBitmapEquivalence(t *testing.T) {
+	// Same scenario via bitmap and original path should produce identical results.
+	invokers := makeInvokers("gray", "gray", "")
+
+	pCache := newCacheRouter()
+	withCache(pCache, invokers)
+	pCache.routerConfigs.Store(consumerUrl.GetParam(constant.ApplicationKey, "")+constant.TagRouterRuleSuffix, global.RouterConfig{
+		Key:     consumerUrl.Service() + constant.TagRouterRuleSuffix,
+		Force:   boolPtr(false),
+		Enabled: boolPtr(true),
+		Valid:   boolPtr(true),
+		Tags: []global.Tag{{
+			Name:      "gray",
+			Addresses: []string{"192.168.0.1:20000"},
+		}},
+	})
+
+	pFallback := newCacheRouter()
+	pFallback.routerConfigs.Store(consumerUrl.GetParam(constant.ApplicationKey, "")+constant.TagRouterRuleSuffix, global.RouterConfig{
+		Key:     consumerUrl.Service() + constant.TagRouterRuleSuffix,
+		Force:   boolPtr(false),
+		Enabled: boolPtr(true),
+		Valid:   boolPtr(true),
+		Tags: []global.Tag{{
+			Name:      "gray",
+			Addresses: []string{"192.168.0.1:20000"},
+		}},
+	})
+
+	t.Run("bitmap and fallback produce same result", func(t *testing.T) {
+		attachments := map[string]any{constant.Tagkey: "gray"}
+		invoc := invocation.NewRPCInvocation("GetUser", nil, attachments)
+
+		rCache := pCache.Route(invokers, consumerUrl, invoc)
+		rFallback := pFallback.Route(invokers, consumerUrl, invoc)
+
+		assert.Len(t, rCache, len(rFallback))
+		for i := range rCache {
+			assert.Equal(t, rCache[i].GetURL().Location, rFallback[i].GetURL().Location)
+		}
+	})
+}
+
+// withCacheGen stores a cache built from invokers at the given generation, mirroring what
+// RouterChain.SetInvokers does so a test can simulate a specific cache generation.
+func withCacheGen(p *PriorityRouter, invokers []base.Invoker, generation uint64) {
+	pool, _ := p.Pool(invokers)
+	p.cache.Store(&mockCache{invokers: invokers, pool: pool, generation: generation})
+}
+
+// TestRouteGenerationGuard reproduces the race Alan flagged: the cache is built on [a,b,c],
+// but Route is called with the chain's current snapshot [a]. When the invocation's published
+// generation does not match the cache generation (a concurrent SetInvokers rebuilt the cache
+// between the chain snapshot and this lookup), the bitmap fast path must be skipped so the
+// route stays confined to the invokers passed in.
+func TestRouteGenerationGuard(t *testing.T) {
+	p := newCacheRouter()
+	full := makeInvokers("gray", "gray", "") // [a(gray), b(gray), c()]
+	withCacheGen(p, full, 5)                 // cache snapshot is generation 5
+	subset := []base.Invoker{full[0]}        // chain snapshot for this call is just [a]
+
+	newInvoc := func(gen uint64) base.Invocation {
+		inv := invocation.NewRPCInvocation("GetUser", nil, map[string]any{constant.Tagkey: "gray"})
+		inv.SetAttribute(constant.RouterChainCacheGeneration, gen)
+		return inv
+	}
+
+	t.Run("stale generation falls back to the invokers passed in", func(t *testing.T) {
+		// snapshot generation 4 != cache generation 5 -> must not use the [a,b,c] cache.
+		result := p.Route(subset, consumerUrl, newInvoc(4))
+		assert.Len(t, result, 1)
+		assert.Equal(t, full[0].GetURL().Location, result[0].GetURL().Location)
+	})
+
+	t.Run("missing generation falls back to the invokers passed in", func(t *testing.T) {
+		// No RouterChainCacheGeneration published -> default 0 != cache generation 5 -> fall back.
+		inv := invocation.NewRPCInvocation("GetUser", nil, map[string]any{constant.Tagkey: "gray"})
+		result := p.Route(subset, consumerUrl, inv)
+		assert.Len(t, result, 1)
+		assert.Equal(t, full[0].GetURL().Location, result[0].GetURL().Location)
+	})
+
+	t.Run("matching generation takes the bitmap path over the cached snapshot", func(t *testing.T) {
+		// snapshot generation 5 == cache generation 5 -> bitmap path over [a,b,c] -> [a,b].
+		result := p.Route(subset, consumerUrl, newInvoc(5))
+		assert.Len(t, result, 2)
+	})
 }

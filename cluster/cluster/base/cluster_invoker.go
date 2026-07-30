@@ -19,11 +19,16 @@
 package base
 
 import (
+	"slices"
+	"sync"
+)
+
+import (
 	"github.com/dubbogo/gost/log/logger"
 
 	perrors "github.com/pkg/errors"
 
-	"go.uber.org/atomic"
+	uberatomic "go.uber.org/atomic"
 )
 
 import (
@@ -38,15 +43,20 @@ import (
 type BaseClusterInvoker struct {
 	Directory      directory.Directory
 	AvailableCheck bool
-	Destroyed      *atomic.Bool
+	Destroyed      *uberatomic.Bool
 	StickyInvoker  base.Invoker
+
+	// stickyLock guards StickyInvoker against the data race between IsAvailable
+	// (read) and DoSelect (read/write). It is unexported so the public field and
+	// constructor signatures stay source-compatible across the v3.x line.
+	stickyLock sync.RWMutex
 }
 
 func NewBaseClusterInvoker(directory directory.Directory) BaseClusterInvoker {
 	return BaseClusterInvoker{
 		Directory:      directory,
 		AvailableCheck: true,
-		Destroyed:      atomic.NewBool(false),
+		Destroyed:      uberatomic.NewBool(false),
 	}
 }
 
@@ -62,10 +72,24 @@ func (invoker *BaseClusterInvoker) Destroy() {
 }
 
 func (invoker *BaseClusterInvoker) IsAvailable() bool {
-	if invoker.StickyInvoker != nil {
-		return invoker.StickyInvoker.IsAvailable()
+	if sticky := invoker.getStickyInvoker(); sticky != nil {
+		return sticky.IsAvailable()
 	}
 	return invoker.Directory.IsAvailable()
+}
+
+// getStickyInvoker returns the sticky invoker under a read lock.
+func (invoker *BaseClusterInvoker) getStickyInvoker() base.Invoker {
+	invoker.stickyLock.RLock()
+	defer invoker.stickyLock.RUnlock()
+	return invoker.StickyInvoker
+}
+
+// setStickyInvoker replaces the sticky invoker under a write lock.
+func (invoker *BaseClusterInvoker) setStickyInvoker(v base.Invoker) {
+	invoker.stickyLock.Lock()
+	defer invoker.stickyLock.Unlock()
+	invoker.StickyInvoker = v
 }
 
 // CheckInvokers checks invokers' status if is available or not
@@ -100,19 +124,21 @@ func (invoker *BaseClusterInvoker) DoSelect(lb loadbalance.LoadBalance, invocati
 	// Get the service method sticky config if have
 	sticky = url.GetMethodParamBool(invocation.MethodName(), constant.StickyKey, sticky)
 
-	if invoker.StickyInvoker != nil && !isInvoked(invoker.StickyInvoker, invokers) {
-		invoker.StickyInvoker = nil
+	stickyInvoker := invoker.getStickyInvoker()
+	if stickyInvoker != nil && !isInvoked(stickyInvoker, invokers) {
+		invoker.setStickyInvoker(nil)
+		stickyInvoker = nil
 	}
 
 	if sticky && invoker.AvailableCheck &&
-		invoker.StickyInvoker != nil && invoker.StickyInvoker.IsAvailable() &&
-		(invoked == nil || !isInvoked(invoker.StickyInvoker, invoked)) {
-		return invoker.StickyInvoker
+		stickyInvoker != nil && stickyInvoker.IsAvailable() &&
+		(invoked == nil || !isInvoked(stickyInvoker, invoked)) {
+		return stickyInvoker
 	}
 
 	selectedInvoker = invoker.doSelectInvoker(lb, invocation, invokers, invoked)
 	if sticky {
-		invoker.StickyInvoker = selectedInvoker
+		invoker.setStickyInvoker(selectedInvoker)
 	}
 	return selectedInvoker
 }
@@ -127,7 +153,7 @@ func (invoker *BaseClusterInvoker) doSelectInvoker(lb loadbalance.LoadBalance, i
 			return invokers[0]
 		}
 		base.SetInvokerUnhealthyStatus(invokers[0])
-		logger.Errorf("the invokers of %s is nil. ", invokers[0].GetURL().ServiceKey())
+		logger.Errorf("[Cluster] invoker unavailable, serviceKey=%s, reason=nil", invokers[0].GetURL().ServiceKey())
 		return nil
 	}
 
@@ -138,7 +164,7 @@ func (invoker *BaseClusterInvoker) doSelectInvoker(lb loadbalance.LoadBalance, i
 		base.SetInvokerUnhealthyStatus(selectedInvoker)
 		otherInvokers := getOtherInvokers(invokers, selectedInvoker)
 		// do reselect
-		for i := 0; i < 3; i++ {
+		for range 3 {
 			if len(otherInvokers) == 0 {
 				// no other ivk to reselect, return to fallback
 				break
@@ -149,8 +175,7 @@ func (invoker *BaseClusterInvoker) doSelectInvoker(lb loadbalance.LoadBalance, i
 				continue
 			}
 			if !reselectedInvoker.IsAvailable() {
-				logger.Infof("the invoker of %s is not available, maybe some network error happened or the server is shutdown.",
-					invoker.GetURL().Ip)
+				logger.Infof("[Cluster] invoker unavailable, ip=%s", invoker.GetURL().Ip)
 				base.SetInvokerUnhealthyStatus(reselectedInvoker)
 				otherInvokers = getOtherInvokers(otherInvokers, reselectedInvoker)
 				continue
@@ -163,12 +188,7 @@ func (invoker *BaseClusterInvoker) doSelectInvoker(lb loadbalance.LoadBalance, i
 }
 
 func isInvoked(selectedInvoker base.Invoker, invoked []base.Invoker) bool {
-	for _, i := range invoked {
-		if i == selectedInvoker {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(invoked, selectedInvoker)
 }
 
 func GetLoadBalance(invoker base.Invoker, methodName string) loadbalance.LoadBalance {

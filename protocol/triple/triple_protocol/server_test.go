@@ -20,6 +20,7 @@ package triple_protocol
 import (
 	"crypto/tls"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"testing"
 	"time"
@@ -174,4 +175,19 @@ func TestServer_HTTP3PathsUseQUICConfigHelper(t *testing.T) {
 		assert.Nil(t, srv.http3Srv)
 		assert.Nil(t, srv.httpSrv)
 	})
+}
+
+func TestServerSetFallbackHTTPHandler(t *testing.T) {
+	srv := NewServer("127.0.0.1:0", nil)
+	srv.SetFallbackHTTPHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("ok"))
+	}))
+
+	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
+	resp := httptest.NewRecorder()
+
+	srv.mux.ServeHTTP(resp, req)
+
+	assert.Equal(t, http.StatusOK, resp.Code)
+	assert.Equal(t, "ok", resp.Body.String())
 }

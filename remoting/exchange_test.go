@@ -42,9 +42,8 @@ func TestSequenceID(t *testing.T) {
 func TestSequenceIDConcurrent(t *testing.T) {
 	var wg sync.WaitGroup
 	ids := make(chan int64, 50)
-	for i := 0; i < 50; i++ {
-		wg.Add(1)
-		go func() { defer wg.Done(); ids <- SequenceID() }()
+	for range 50 {
+		wg.Go(func() { ids <- SequenceID() })
 	}
 	wg.Wait()
 	close(ids)
@@ -106,8 +105,8 @@ func TestAddGetRemovePendingResponse(t *testing.T) {
 	pr := NewPendingResponse(999)
 	AddPendingResponse(pr)
 	assert.Equal(t, pr, GetPendingResponse(SequenceType(999)))
-	assert.Equal(t, pr, removePendingResponse(SequenceType(999)))
-	assert.Nil(t, removePendingResponse(SequenceType(999)))
+	assert.Equal(t, pr, RemovePendingResponse(SequenceType(999)))
+	assert.Nil(t, RemovePendingResponse(SequenceType(999)))
 }
 
 func TestResponseHandle(t *testing.T) {

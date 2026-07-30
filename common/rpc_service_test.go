@@ -19,11 +19,14 @@ package common
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"testing"
 )
 
 import (
+	gostlogger "github.com/dubbogo/gost/log/logger"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -91,6 +94,37 @@ func (s *TestService1) Reference() string {
 	return referenceTestPathDistinct
 }
 
+// VariadicRPCService exposes variadic RPC methods for detection tests.
+type VariadicRPCService struct{}
+
+func (s *VariadicRPCService) Fanout(ctx context.Context, names ...string) error {
+	return nil
+}
+
+func (s *VariadicRPCService) Merge(ctx context.Context, prefix string, values ...int) (any, error) {
+	return values, nil
+}
+
+func (s *VariadicRPCService) LocalOnly(values ...string) int {
+	return len(values)
+}
+
+// NonRPCVariadicService exposes only local variadic helpers.
+type NonRPCVariadicService struct{}
+
+func (s *NonRPCVariadicService) LocalOnly(values ...string) int {
+	return len(values)
+}
+
+type captureCommonWarnLogger struct {
+	gostlogger.Logger
+	warns []string
+}
+
+func (l *captureCommonWarnLogger) Warnf(template string, args ...any) {
+	l.warns = append(l.warns, fmt.Sprintf(template, args...))
+}
+
 func TestServiceMapRegister(t *testing.T) {
 	// lowercase
 	s0 := &testService{}
@@ -149,8 +183,7 @@ func TestMethodTypeSuiteContext(t *testing.T) {
 }
 
 func TestSuiteMethod(t *testing.T) {
-	s := &TestService{}
-	method, ok := reflect.TypeOf(s).MethodByName("MethodOne")
+	method, ok := reflect.TypeFor[*TestService]().MethodByName("MethodOne")
 	assert.True(t, ok)
 	methodType := suiteMethod(method)
 	method = methodType.Method()
@@ -164,7 +197,7 @@ func TestSuiteMethod(t *testing.T) {
 	rt := methodType.ReplyType()
 	assert.Nil(t, rt)
 
-	method, ok = reflect.TypeOf(s).MethodByName("MethodTwo")
+	method, ok = reflect.TypeFor[*TestService]().MethodByName("MethodTwo")
 	assert.True(t, ok)
 	methodType = suiteMethod(method)
 	method = methodType.Method()
@@ -177,7 +210,7 @@ func TestSuiteMethod(t *testing.T) {
 	rt = methodType.ReplyType()
 	assert.Equal(t, testSuiteMethodExpectedString, rt.String())
 
-	method, ok = reflect.TypeOf(s).MethodByName("MethodThree")
+	method, ok = reflect.TypeFor[*TestService]().MethodByName("MethodThree")
 	assert.True(t, ok)
 	methodType = suiteMethod(method)
 	method = methodType.Method()
@@ -189,35 +222,67 @@ func TestSuiteMethod(t *testing.T) {
 	assert.Nil(t, rt)
 
 	// wrong number of in return
-	s1 := &testService{}
-	method, ok = reflect.TypeOf(s1).MethodByName("Reference")
+	method, ok = reflect.TypeFor[*testService]().MethodByName("Reference")
 	assert.True(t, ok)
 	methodType = suiteMethod(method)
 	assert.Nil(t, methodType)
 
 	// args not exported
-	method, ok = reflect.TypeOf(s1).MethodByName("Method1")
+	method, ok = reflect.TypeFor[*testService]().MethodByName("Method1")
 	assert.True(t, ok)
 	methodType = suiteMethod(method)
 	assert.Nil(t, methodType)
 
 	// Reply not exported
-	method, ok = reflect.TypeOf(s1).MethodByName("Method2")
+	method, ok = reflect.TypeFor[*testService]().MethodByName("Method2")
 	assert.True(t, ok)
 	methodType = suiteMethod(method)
 	assert.Nil(t, methodType)
 
 	// no return
-	method, ok = reflect.TypeOf(s1).MethodByName("Method3")
+	method, ok = reflect.TypeFor[*testService]().MethodByName("Method3")
 	assert.True(t, ok)
 	methodType = suiteMethod(method)
 	assert.Nil(t, methodType)
 
 	// return value is not error
-	method, ok = reflect.TypeOf(s1).MethodByName("Method4")
+	method, ok = reflect.TypeFor[*testService]().MethodByName("Method4")
 	assert.True(t, ok)
 	methodType = suiteMethod(method)
 	assert.Nil(t, methodType)
+}
+
+// Test VariadicRPCMethodNames returns exported variadic RPC methods only
+func TestVariadicRPCMethodNames(t *testing.T) {
+	t.Run("returns variadic rpc methods only", func(t *testing.T) {
+		assert.Equal(t, []string{"Fanout", "Merge"}, VariadicRPCMethodNames(&VariadicRPCService{}))
+	})
+
+	t.Run("ignores non-rpc variadic methods", func(t *testing.T) {
+		assert.Empty(t, VariadicRPCMethodNames(&NonRPCVariadicService{}))
+	})
+
+	t.Run("handles nil services", func(t *testing.T) {
+		assert.Empty(t, VariadicRPCMethodNames(nil))
+	})
+}
+
+func TestWarnVariadicRPCMethods(t *testing.T) {
+	prev := gostlogger.GetLogger()
+	capture := &captureCommonWarnLogger{Logger: prev}
+	gostlogger.SetLogger(capture)
+	t.Cleanup(func() {
+		gostlogger.SetLogger(prev)
+	})
+
+	WarnVariadicRPCMethods("com.example.VariadicService", &VariadicRPCService{})
+	require.Len(t, capture.warns, 1)
+	assert.Contains(t, capture.warns[0], "com.example.VariadicService")
+	assert.Contains(t, capture.warns[0], "Fanout, Merge")
+	assert.Contains(t, capture.warns[0], "[]T")
+
+	WarnVariadicRPCMethods("com.example.LocalOnlyService", &NonRPCVariadicService{})
+	assert.Len(t, capture.warns, 1)
 }
 
 type ServiceWithoutRef struct{}
@@ -325,7 +390,7 @@ func TestGetInterface(t *testing.T) {
 }
 
 func TestMethodTypeSuiteContextInvalid(t *testing.T) {
-	mt := &MethodType{ctxType: reflect.TypeOf((*context.Context)(nil)).Elem()}
+	mt := &MethodType{ctxType: reflect.TypeFor[context.Context]()}
 
 	// Test with nil context (invalid)
 	var nilCtx context.Context = nil
@@ -344,23 +409,22 @@ func TestIsExported(t *testing.T) {
 
 func TestIsExportedOrBuiltinType(t *testing.T) {
 	// Exported type
-	assert.True(t, isExportedOrBuiltinType(reflect.TypeOf(TestService{})))
+	assert.True(t, isExportedOrBuiltinType(reflect.TypeFor[TestService]()))
 
 	// Pointer to exported type
-	assert.True(t, isExportedOrBuiltinType(reflect.TypeOf(&TestService{})))
+	assert.True(t, isExportedOrBuiltinType(reflect.TypeFor[*TestService]()))
 
 	// Builtin type (string)
-	assert.True(t, isExportedOrBuiltinType(reflect.TypeOf("")))
+	assert.True(t, isExportedOrBuiltinType(reflect.TypeFor[string]()))
 
 	// Builtin type (int)
-	assert.True(t, isExportedOrBuiltinType(reflect.TypeOf(0)))
+	assert.True(t, isExportedOrBuiltinType(reflect.TypeFor[int]()))
 
 	// Pointer to builtin
-	var i int
-	assert.True(t, isExportedOrBuiltinType(reflect.TypeOf(&i)))
+	assert.True(t, isExportedOrBuiltinType(reflect.TypeFor[*int]()))
 
 	// Unexported type
-	assert.False(t, isExportedOrBuiltinType(reflect.TypeOf(testService{})))
+	assert.False(t, isExportedOrBuiltinType(reflect.TypeFor[testService]()))
 }
 
 // Test service with XXX prefix methods (should be skipped)
@@ -467,8 +531,7 @@ func TestUnRegisterInterfaceNotFound(t *testing.T) {
 }
 
 func TestSuitableMethodsWithMethodMapper(t *testing.T) {
-	s := &TestService{}
-	methods, methodMap := suitableMethods(reflect.TypeOf(s))
+	methods, methodMap := suitableMethods(reflect.TypeFor[*TestService]())
 
 	// Check that MethodMapper renamed MethodTwo to methodTwo
 	assert.Contains(t, methods, "methodTwo")

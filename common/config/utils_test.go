@@ -27,7 +27,9 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
 func TestTranslateIds(t *testing.T) {
@@ -147,4 +149,62 @@ func TestIsValid(t *testing.T) {
 	assert.True(t, IsValid("localhost"))
 	assert.False(t, IsValid(""))
 	assert.False(t, IsValid(constant.NotAvailable))
+}
+
+func TestEnsureApplicationAttribute(t *testing.T) {
+	t.Run("primary attribute has highest priority", func(t *testing.T) {
+		primary := common.NewURLWithOptions(
+			common.WithAttribute(constant.ApplicationKey, "primary-app"),
+			common.WithParamsValue(constant.ApplicationKey, "primary-param"),
+		)
+		fallback := common.NewURLWithOptions(
+			common.WithAttribute(constant.ApplicationKey, "fallback-app"),
+		)
+
+		application := EnsureApplicationAttribute(primary, fallback)
+
+		require.NotNil(t, application)
+		assert.Equal(t, "primary-app", application.Name)
+		applicationRaw, ok := primary.GetAttribute(constant.ApplicationKey)
+		require.True(t, ok)
+		assert.Equal(t, application, applicationRaw)
+	})
+
+	t.Run("fallback attribute wins over primary param", func(t *testing.T) {
+		primary := common.NewURLWithOptions(
+			common.WithParamsValue(constant.ApplicationKey, "primary-param"),
+		)
+		fallback := common.NewURLWithOptions(
+			common.WithAttribute(constant.ApplicationKey, global.ApplicationConfig{Name: "fallback-app"}),
+		)
+
+		application := EnsureApplicationAttribute(primary, fallback)
+
+		require.NotNil(t, application)
+		assert.Equal(t, "fallback-app", application.Name)
+		applicationRaw, ok := primary.GetAttribute(constant.ApplicationKey)
+		require.True(t, ok)
+		assert.Equal(t, application, applicationRaw)
+	})
+
+	t.Run("fallback param is used before default", func(t *testing.T) {
+		primary := common.NewURLWithOptions()
+		fallback := common.NewURLWithOptions(
+			common.WithParamsValue(constant.ApplicationKey, "fallback-param"),
+		)
+
+		application := EnsureApplicationAttribute(primary, fallback)
+
+		require.NotNil(t, application)
+		assert.Equal(t, "fallback-param", application.Name)
+	})
+
+	t.Run("default application is used when no source exists", func(t *testing.T) {
+		primary := common.NewURLWithOptions()
+
+		application := EnsureApplicationAttribute(primary)
+
+		require.NotNil(t, application)
+		assert.Equal(t, constant.DefaultDubboApp, application.Name)
+	})
 }

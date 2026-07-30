@@ -235,8 +235,8 @@ func (p *polarisRouter) buildRouteRequest(svc string, url *common.URL,
 			routeReq.AddArguments(model.BuildPathArgument(p.getInvokeMethod(url, invocation)))
 			continue
 		}
-		if strings.HasPrefix(label, model.LabelKeyHeader) {
-			if val, ok := attachement[strings.TrimPrefix(label, model.LabelKeyHeader)]; ok {
+		if after, ok := strings.CutPrefix(label, model.LabelKeyHeader); ok {
+			if val, ok := attachement[after]; ok {
 				routeReq.SourceService.Metadata[label] = fmt.Sprintf("%+v", val)
 				routeReq.AddArguments(model.BuildArgumentFromLabel(label, fmt.Sprintf("%+v", val)))
 			}
@@ -259,12 +259,12 @@ func (p *polarisRouter) buildTrafficLabels(svc string) ([]string, error) {
 	engine := p.routerAPI.SDKContext().GetEngine()
 	resp, err := engine.SyncGetServiceRule(model.EventRouting, req)
 	if err != nil {
-		logger.Errorf("[Router][Polaris] ns:%s svc:%s get route rule fail : %+v", req.GetNamespace(), req.GetService(), err)
+		logger.Errorf("[Router][Polaris] get route rule failed, namespace=%s service=%s error=%+v", req.GetNamespace(), req.GetService(), err)
 		return nil, err
 	}
 
 	if resp == nil || resp.GetValue() == nil {
-		logger.Errorf("[Router][Polaris] ns:%s svc:%s get route rule empty", req.GetNamespace(), req.GetService())
+		logger.Errorf("[Router][Polaris] get route rule empty, namespace=%s service=%s", req.GetNamespace(), req.GetService())
 		return nil, ErrorPolarisServiceRouteRuleEmpty
 	}
 
@@ -320,7 +320,7 @@ func (p *polarisRouter) buildInstanceMap(svc string) map[string]model.Instance {
 		},
 	})
 	if err != nil {
-		logger.Errorf("[Router][Polaris] ns:%s svc:%s get all instances fail : %+v", remotingpolaris.GetNamespace(), svc, err)
+		logger.Errorf("[Router][Polaris] get all instances failed, namespace=%s service=%s error=%+v", remotingpolaris.GetNamespace(), svc, err)
 		return nil
 	}
 
@@ -354,7 +354,7 @@ func (p *polarisRouter) Notify(invokers []base.Invoker) {
 	}
 	service := p.getService(invokers[0].GetURL())
 	if service == "" {
-		logger.Error("url service is empty")
+		logger.Error("[Router][Polaris] url service is empty")
 		return
 	}
 
@@ -366,7 +366,7 @@ func (p *polarisRouter) Notify(invokers []base.Invoker) {
 	engine := p.routerAPI.SDKContext().GetEngine()
 	_, err := engine.SyncGetServiceRule(model.EventRouting, req)
 	if err != nil {
-		logger.Errorf("[Router][Polaris] ns:%s svc:%s get route rule fail : %+v", req.GetNamespace(), req.GetService(), err)
+		logger.Errorf("[Router][Polaris] get route rule failed, namespace=%s service=%s error=%+v", req.GetNamespace(), req.GetService(), err)
 		return
 	}
 
@@ -377,7 +377,7 @@ func (p *polarisRouter) Notify(invokers []base.Invoker) {
 		},
 	})
 	if err != nil {
-		logger.Errorf("[Router][Polaris] ns:%s svc:%s get all instances fail : %+v", req.GetNamespace(), req.GetService(), err)
+		logger.Errorf("[Router][Polaris] get all instances failed, namespace=%s service=%s error=%+v", req.GetNamespace(), req.GetService(), err)
 		return
 	}
 }

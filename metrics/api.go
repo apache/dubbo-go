@@ -280,7 +280,7 @@ func (d *DefaultRtVec) Record(labels map[string]string, v float64) {
 func labelsToString(labels map[string]string) string {
 	labelsJson, err := json.Marshal(labels)
 	if err != nil {
-		logger.Errorf("json.Marshal(labels) = error:%v", err)
+		logger.Errorf("[Metrics] json.Marshal(labels) = err=%v", err)
 		return ""
 	}
 	return string(labelsJson)

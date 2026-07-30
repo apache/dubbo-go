@@ -19,6 +19,7 @@ package registry
 
 import (
 	"fmt"
+	"sync"
 	"time"
 )
 
@@ -48,6 +49,20 @@ func NewMockRegistry(url *common.URL) (Registry, error) {
 	listener := &listener{count: 0, registry: registry, listenChan: make(chan *ServiceEvent)}
 	registry.listener = listener
 	return registry, nil
+}
+
+// CountSyncMapEntries returns the number of entries in a sync.Map.
+func CountSyncMapEntries(m *sync.Map) int {
+	if m == nil {
+		return 0
+	}
+
+	count := 0
+	m.Range(func(_, _ any) bool {
+		count++
+		return true
+	})
+	return count
 }
 
 // Register is used as a mock registry
@@ -97,7 +112,7 @@ func (r *MockRegistry) Subscribe(url *common.URL, notifyListener NotifyListener)
 					return
 				}
 
-				logger.Infof("[Mock Registry] update begin, service event: %v", serviceEvent.String())
+				logger.Infof("[Registry][Mock] update begin, event=%v", serviceEvent.String())
 				notifyListener.Notify(serviceEvent)
 			}
 		}
@@ -156,7 +171,7 @@ func (r *MockRegistry) MockEvents(events []*ServiceEvent) {
 
 func (r *MockRegistry) checkLoopSubscribe(url *common.URL) (int, Listener) {
 	if !r.IsAvailable() {
-		logger.Warnf("event listener game over.")
+		logger.Warn("[Registry][Mock] event listener game over")
 		time.Sleep(time.Duration(3) * time.Second)
 		return -1, nil
 	}
@@ -164,7 +179,7 @@ func (r *MockRegistry) checkLoopSubscribe(url *common.URL) (int, Listener) {
 	listener, err := r.subscribe(url)
 	if err != nil {
 		if !r.IsAvailable() {
-			logger.Warnf("event listener game over.")
+			logger.Warn("[Registry][Mock] event listener game over")
 			return -1, nil
 		}
 		time.Sleep(time.Duration(3) * time.Second)

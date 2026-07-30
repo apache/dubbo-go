@@ -60,7 +60,7 @@ func (c *DubboCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer, er
 	invoc, ok := request.Data.(*base.Invocation)
 	if !ok {
 		err := perrors.Errorf("encode request failed for parameter type :%+v", request)
-		logger.Errorf(err.Error())
+		logger.Errorf("[Dubbo][Codec] decode failed, err=%v", err)
 		return nil, err
 	}
 	invocation := *invoc
@@ -207,7 +207,7 @@ func (c *DubboCodec) decodeRequest(data []byte) (*remoting.Request, int, error) 
 		if originErr == hessian.ErrBodyNotEnough {
 			return nil, hessian.HEADER_LENGTH + pkg.GetBodyLen(), nil
 		}
-		logger.Errorf("pkg.Unmarshal(len(@data):%d) = error:%+v", buf.Len(), err)
+		logger.Errorf("[Dubbo][Codec] pkg.Unmarshal failed, dataLen=%d, err=%v", buf.Len(), err)
 
 		return request, 0, perrors.WithStack(err)
 	}
@@ -260,7 +260,7 @@ func (c *DubboCodec) decodeResponse(data []byte) (*remoting.Response, int, error
 			return nil, hessian.HEADER_LENGTH + pkg.GetBodyLen(), nil
 		}
 
-		logger.Warnf("pkg.Unmarshal(len(@data):%d) = error:%+v", buf.Len(), err)
+		logger.Warnf("[Dubbo][Codec] pkg.Unmarshal failed, dataLen=%d, err=%v", buf.Len(), err)
 		return nil, 0, perrors.WithStack(err)
 	}
 	response := &remoting.Response{
@@ -273,19 +273,19 @@ func (c *DubboCodec) decodeResponse(data []byte) (*remoting.Response, int, error
 	var pkgerr error
 	if pkg.Header.Type&impl.PackageHeartbeat != 0x00 {
 		if pkg.Header.Type&impl.PackageResponse != 0x00 {
-			logger.Debugf("get rpc heartbeat response{header: %#v, body: %#v}", pkg.Header, pkg.Body)
+			logger.Debugf("[Dubbo][Codec] get rpc heartbeat response, header=%#v, body=%#v", pkg.Header, pkg.Body)
 			if pkg.Err != nil {
-				logger.Errorf("rpc heartbeat response{error: %#v}", pkg.Err)
+				logger.Errorf("[Dubbo][Codec] rpc heartbeat response, err=%v", pkg.Err)
 				pkgerr = pkg.Err
 			}
 		} else {
-			logger.Debugf("get rpc heartbeat request{header: %#v, service: %#v, body: %#v}", pkg.Header, pkg.Service, pkg.Body)
+			logger.Debugf("[Dubbo][Codec] get rpc heartbeat request, header=%#v, service=%#v, body=%#v", pkg.Header, pkg.Service, pkg.Body)
 			response.Status = hessian.Response_OK
 			// reply(session, p, hessian.PackageHeartbeat)
 		}
 		return response, hessian.HEADER_LENGTH + pkg.Header.BodyLen, pkgerr
 	}
-	logger.Debugf("get rpc response{header: %#v, body: %#v}", pkg.Header, pkg.Body)
+	logger.Debugf("[Dubbo][Codec] get rpc response, header=%#v, body=%#v", pkg.Header, pkg.Body)
 	rpcResult := &result.RPCResult{}
 	response.Result = rpcResult
 	if pkg.Header.Type&impl.PackageRequest == 0x00 {

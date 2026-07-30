@@ -75,7 +75,7 @@ func NewExporter(config *ExporterConfig, customFunc func() (sdktrace.SpanExporte
 	exporter, err := customFunc()
 	if err != nil {
 		err = fmt.Errorf("failed to create %s exporter: %v", config.Exporter, err)
-		logger.Error(err)
+		logger.Errorf("[OTel][Trace] failed to create %s exporter, err=%v", config.Exporter, err)
 		return
 	}
 
@@ -89,7 +89,7 @@ func NewExporter(config *ExporterConfig, customFunc func() (sdktrace.SpanExporte
 		samplerOption = sdktrace.WithSampler(sdktrace.ParentBased(sdktrace.NeverSample()))
 	default:
 		err = fmt.Errorf("otel sample mode %s not supported", config.SampleMode)
-		logger.Error(err)
+		logger.Errorf("[OTel][Trace] otel sample mode %s not supported", config.SampleMode)
 		return
 	}
 

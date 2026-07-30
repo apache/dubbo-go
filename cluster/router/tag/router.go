@@ -20,15 +20,17 @@ package tag
 import (
 	"strings"
 	"sync"
+	"sync/atomic"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/router"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	conf "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
@@ -40,6 +42,7 @@ import (
 
 type PriorityRouter struct {
 	routerConfigs sync.Map
+	cache         atomic.Value // router.Cache
 }
 
 func NewTagPriorityRouter() (*PriorityRouter, error) {
@@ -49,9 +52,27 @@ func NewTagPriorityRouter() (*PriorityRouter, error) {
 // Route Determine the target invokers list.
 func (p *PriorityRouter) Route(invokers []base.Invoker, url *common.URL, invocation base.Invocation) []base.Invoker {
 	if len(invokers) == 0 {
-		logger.Warnf("[tag router] invokers from previous router is empty")
+		logger.Warn("[Router][Tag] invokers from previous router is empty")
 		return invokers
 	}
+
+	// Cache only takes effect when TagRouter is the first router in the chain.
+	// RouterChain sets RouterCacheDisable=true after each router, so later routers always skip cache.
+	if v := p.cache.Load(); v != nil {
+		if !invocation.GetAttributeWithDefaultValue(constant.RouterCacheDisable, false).(bool) {
+			c := v.(router.Cache)
+			pool, fullInvokers, cacheGen := c.FindAddrPool(p)
+			snapshotGen := invocation.GetAttributeWithDefaultValue(constant.RouterChainCacheGeneration, uint64(0)).(uint64)
+			// Only take the bitmap fast path when the cache snapshot is the same generation the
+			// chain snapshotted for this call. Otherwise a concurrent SetInvokers may have rebuilt
+			// the cache between the chain snapshot and this lookup, so fall through to the original
+			// matcher over the invokers passed in (finalInvokers).
+			if pool != nil && fullInvokers != nil && cacheGen == snapshotGen {
+				return p.routeWithPool(fullInvokers, pool, url, invocation)
+			}
+		}
+	}
+
 	// get application name from invoker to look up tag routing config
 	application := invokers[0].GetURL().GetParam(constant.ApplicationKey, "")
 	key := strings.Join([]string{application, constant.TagRouterRuleSuffix}, "")
@@ -82,23 +103,23 @@ func (p *PriorityRouter) Notify(invokers []base.Invoker) {
 	}
 	application := invokers[0].GetURL().GetParam(constant.ApplicationKey, "")
 	if application == "" {
-		logger.Warn("url application is empty, tag router will not be enabled")
+		logger.Warn("[Router][Tag] url application is empty, tag router will not be enabled")
 		return
 	}
 	dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
 	if dynamicConfiguration == nil {
-		logger.Infof("Config center does not start, Tag router will not be enabled")
+		logger.Info("[Router][Tag] Config center does not start, Tag router will not be enabled")
 		return
 	}
 	key := strings.Join([]string{application, constant.TagRouterRuleSuffix}, "")
 	dynamicConfiguration.AddListener(key, p)
 	value, err := dynamicConfiguration.GetRule(key)
 	if err != nil {
-		logger.Errorf("query router rule fail,key=%s,err=%v", key, err)
+		logger.Errorf("[Router][Tag] query router rule failed, key=%s error=%v", key, err)
 		return
 	}
 	if value == "" {
-		logger.Infof("router rule is empty,key=%s", key)
+		logger.Info("[Router][Tag] router rule is empty")
 		return
 	}
 	p.Process(&config_center.ConfigChangeEvent{Key: key, Value: value, ConfigType: remoting.EventTypeAdd})
@@ -122,7 +143,7 @@ func (p *PriorityRouter) SetStaticConfig(cfg *global.RouterConfig) {
 	// Derive storage key the same way Notify() does: application + suffix
 	key := strings.Join([]string{cfg.Key, constant.TagRouterRuleSuffix}, "")
 	p.routerConfigs.Store(key, *cfgCopy)
-	logger.Infof("[tag router] Applied static tag router config: key=%s", key)
+	logger.Infof("[Router][Tag] applied static tag router config, key=%s", key)
 }
 
 // Process applies config-center updates as the authoritative rule source at runtime.
@@ -135,12 +156,11 @@ func (p *PriorityRouter) Process(event *config_center.ConfigChangeEvent) {
 	}
 	routerConfig, err := parseRoute(event.Value.(string))
 	if err != nil {
-		logger.Warnf("[tag router]Parse new tag route config error, %+v "+
-			"and we will use the original tag rule configuration.", err)
+		logger.Warnf("[Router][Tag] parse new tag route config failed, error=%+v", err)
 		return
 	}
 	p.routerConfigs.Store(event.Key, *routerConfig)
-	logger.Infof("[tag router]Parse tag router config success,routerConfig=%+v", routerConfig)
+	logger.Infof("[Router][Tag] parse tag router config success, routerConfig=%+v", routerConfig)
 }
 
 func parseRoute(routeContent string) (*global.RouterConfig, error) {

@@ -34,7 +34,6 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
@@ -57,10 +56,9 @@ type DubboInvoker struct {
 
 // NewDubboInvoker constructor
 func NewDubboInvoker(url *common.URL, client *remoting.ExchangeClient) *DubboInvoker {
-	// TODO: Temporary compatibility with old APIs, can be removed later
-	rt := config.GetConsumerConfig().RequestTimeout
+	rt := global.DefaultConsumerRequestTimeout
 	if consumerConfRaw, ok := url.GetAttribute(constant.ConsumerConfigKey); ok {
-		if consumerConf, ok := consumerConfRaw.(*global.ConsumerConfig); ok {
+		if consumerConf, ok := consumerConfRaw.(*global.ConsumerConfig); ok && consumerConf.RequestTimeout != "" {
 			rt = consumerConf.RequestTimeout
 		}
 	}
@@ -99,7 +97,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, ivc base.Invocation) result.
 	if !di.BaseInvoker.IsAvailable() {
 		// Generally, the case will not happen, because the invoker has been removed
 		// from the invoker list before destroy,so no new request will enter the destroyed invoker
-		logger.Warnf("this dubboInvoker is destroyed")
+		logger.Warn("[Dubbo][Invoker] this dubbo invoker is destroyed")
 		res.SetError(base.ErrDestroyedInvoker)
 		return &res
 	}
@@ -107,7 +105,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, ivc base.Invocation) result.
 	client := di.getClient()
 	if client == nil {
 		res.SetError(base.ErrClientClosed)
-		logger.Debugf("result.Err: %v", res.Error())
+		logger.Debugf("[Dubbo][Invoker] result err, err=%v", res.Error())
 		return &res
 	}
 
@@ -131,7 +129,7 @@ func (di *DubboInvoker) Invoke(ctx context.Context, ivc base.Invocation) result.
 	// async
 	async, err := strconv.ParseBool(inv.GetAttachmentWithDefaultValue(constant.AsyncKey, "false"))
 	if err != nil {
-		logger.Errorf("ParseBool - error: %v", err)
+		logger.Errorf("[Dubbo][Invoker] parse bool failed, err=%v", err)
 		async = false
 	}
 	// response := NewResponse(inv.Reply(), nil)
@@ -214,7 +212,7 @@ func (di *DubboInvoker) appendCtx(ctx context.Context, ivc *invocation.RPCInvoca
 	if currentSpan != nil {
 		err := injectTraceCtx(currentSpan, ivc)
 		if err != nil {
-			logger.Errorf("Could not inject the span context into attachments: %v", err)
+			logger.Errorf("[Dubbo][Invoker] could not inject the span context into attachments, err=%v", err)
 		}
 	}
 }

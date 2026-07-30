@@ -160,21 +160,21 @@ func (p *promMetricRegistry) exportHttp() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		if err := srv.Shutdown(ctx); nil != err {
-			logger.Fatalf("prometheus server shutdown failed, err: %v", err)
+			logger.Fatalf("[Metrics][Prometheus] prometheus server shutdown failed, err=%v", err)
 		} else {
-			logger.Info("prometheus server gracefully shutdown success")
+			logger.Info("[Metrics][Prometheus] prometheus server gracefully shutdown success")
 		}
 	})
-	logger.Infof("prometheus endpoint :%s%s", port, path)
+	logger.Infof("[Metrics][Prometheus] prometheus endpoint :%s%s", port, path)
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed { // except Shutdown or Close
-		logger.Errorf("new prometheus server with error: %v", err)
+		logger.Errorf("[Metrics][Prometheus] new prometheus server with err=%v", err)
 	}
 }
 
 func (p *promMetricRegistry) exportPushgateway() {
 	baseUrl, exist := p.url.GetNonDefaultParam(constant.PrometheusPushgatewayBaseUrlKey)
 	if !exist {
-		logger.Error("no pushgateway base url found in config path: metrics.prometheus.pushgateway.base-url, please check your config")
+		logger.Error("[Metrics][Prometheus] no pushgateway base url found in config path: metrics.prometheus.pushgateway.base-url, please check your config")
 		return
 	}
 	username := p.url.GetParam(constant.PrometheusPushgatewayUsernameKey, "")
@@ -185,15 +185,15 @@ func (p *promMetricRegistry) exportPushgateway() {
 	if len(username) != 0 {
 		pusher.BasicAuth(username, password)
 	}
-	logger.Infof("prometheus pushgateway will push to %s every %d seconds", baseUrl, pushInterval)
+	logger.Infof("[Metrics][Prometheus] prometheus pushgateway will push to %s every %d seconds", baseUrl, pushInterval)
 	ticker := time.NewTicker(time.Duration(pushInterval) * time.Second)
 	go func() {
 		for range ticker.C {
 			err := pusher.Add()
 			if err != nil {
-				logger.Errorf("push metric data to prometheus pushgateway error: %v", err)
+				logger.Errorf("[Metrics][Prometheus] push metric data to prometheus pushgateway err=%v", err)
 			} else {
-				logger.Debugf("prometheus pushgateway push to %s success", baseUrl)
+				logger.Debugf("[Metrics][Prometheus] prometheus pushgateway push to %s success", baseUrl)
 			}
 		}
 	}()

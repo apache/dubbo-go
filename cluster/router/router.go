@@ -95,9 +95,20 @@ type Cache interface {
 	// GetInvokers returns the snapshot of received invokers.
 	GetInvokers() []base.Invoker
 
-	// FindAddrPool returns address pool associated with the given Poolable instance.
-	FindAddrPool(Poolable) AddrPool
+	// FindAddrPool returns the address pool, the invoker snapshot, and the generation of that
+	// snapshot in a single locked read. The generation lets callers verify the pool/invokers
+	// belong to the same generation the chain snapshotted for the current route, so the bitmap
+	// indices stay aligned with the invoker slice and the route is not served from a snapshot
+	// produced by a concurrent SetInvokers.
+	FindAddrPool(Poolable) (AddrPool, []base.Invoker, uint64)
 
 	// FindAddrMeta returns address metadata associated with the given Poolable instance.
 	FindAddrMeta(Poolable) AddrMetadata
+}
+
+// CacheAccessor allow routers to receive the invoker-snapshot cache.
+// Implemented by Poolable routers so that RouterChain can pass the cache
+// reference after it is built in SetInvokers.
+type CacheAccessor interface {
+	SetCache(Cache)
 }

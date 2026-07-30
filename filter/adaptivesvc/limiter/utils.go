@@ -29,7 +29,7 @@ func VerboseDebugf(msg string, args ...any) {
 	if !Verbose {
 		return
 	}
-	logger.Debugf(msg, args...)
+	logger.Debugf("[Filter][AdaptiveSvc] "+msg, args...)
 }
 
 func minDuration(lhs, rhs time.Duration) time.Duration {

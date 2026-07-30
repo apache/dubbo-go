@@ -74,10 +74,10 @@ func newNacosDynamicConfiguration(url *common.URL) (*nacosDynamicConfiguration, 
 		done: make(chan struct{}),
 	}
 	c.GetURL()
-	logger.Infof("[Nacos ConfigCenter] New Nacos ConfigCenter with Configuration: %+v, url = %+v", c, c.GetURL())
+	logger.Infof("[ConfigCenter][Nacos] new Nacos ConfigCenter with Configuration, nacosConfig=%v url=%v", c, c.GetURL())
 	err := ValidateNacosClient(c)
 	if err != nil {
-		logger.Errorf("nacos configClient start error ,error message is %v", err)
+		logger.Errorf("[ConfigCenter][Nacos] nacos configClient start error, err=%v", err)
 		return nil, err
 	}
 	c.wg.Add(1)
@@ -174,12 +174,12 @@ func (n *nacosDynamicConfiguration) GetRule(key string, opts ...config_center.Op
 
 	// Handle "config not exist" gracefully (normal during initialization)
 	if isConfigNotExistErr(err) {
-		logger.Warnf("config not found, key=%s, group=%s, err=%v", key, group, err)
+		logger.Warnf("[ConfigCenter][Nacos] config not found, key=%s group=%s err=%v", key, group, err)
 		return "", nil
 	}
 
 	// Other unexpected errors
-	logger.Errorf("failed to query rule, key=%s, group=%s, err=%+v", key, group, err)
+	logger.Errorf("[ConfigCenter][Nacos] failed to query rule, key=%s group=%s err=%v", key, group, err)
 	return "", perrors.WithStack(err)
 }
 
@@ -255,5 +255,5 @@ func (n *nacosDynamicConfiguration) IsAvailable() bool {
 func (n *nacosDynamicConfiguration) closeConfigs() {
 	// Close the old configClient first to close the tmp node
 	n.client.Close()
-	logger.Infof("begin to close provider n configClient")
+	logger.Info("[ConfigCenter][Nacos] begin to close provider n configClient")
 }

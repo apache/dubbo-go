@@ -50,7 +50,7 @@ func (p *ProtocolPortsMetadataCustomizer) GetPriority() int {
 func (p *ProtocolPortsMetadataCustomizer) Customize(instance registry.ServiceInstance) {
 	list, err := metadata.GetMetadataService().GetExportedServiceURLs()
 	if err != nil {
-		logger.Errorf("get metadata exported service url is error, %v", err)
+		logger.Errorf("[Registry][ServiceDiscovery] get metadata exported service url is error, err=%v", err)
 		return
 	}
 	if len(list) == 0 {
@@ -66,7 +66,7 @@ func (p *ProtocolPortsMetadataCustomizer) Customize(instance registry.ServiceIns
 
 		port, err := strconv.Atoi(u.Port)
 		if err != nil {
-			logger.Errorf("Could not customize the metadata of port. ", err)
+			logger.Errorf("[Registry][ServiceDiscovery] could not customize the metadata of port, err=%v", err)
 		}
 		protocolMap[u.Protocol] = port
 	}
@@ -90,7 +90,7 @@ func endpointsStr(protocolMap map[string]int) string {
 
 	str, err := json.Marshal(endpoints)
 	if err != nil {
-		logger.Errorf("could not convert the endpoints to json", err)
+		logger.Errorf("[Registry][ServiceDiscovery] could not convert the endpoints to json, err=%v", err)
 		return ""
 	}
 	return string(str)

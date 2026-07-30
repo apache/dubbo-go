@@ -39,7 +39,7 @@ func GetProxyFactory(name string) proxy.ProxyFactory {
 	}
 	v, ok := proxyFactories.Get(name)
 	if !ok {
-		logger.Warn("proxy factory for " + name + " is not existing, make sure you have import the package.")
+		logger.Warnf("[ProxyFactory] proxy factory for %s is not existing, make sure you have import the package", name)
 		return nil
 	}
 	return v()

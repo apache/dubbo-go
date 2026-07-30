@@ -133,8 +133,10 @@ func TestDualTransport_ConcurrentH2DiscoveryStartsSingleProbe(t *testing.T) {
 	})
 
 	var wg sync.WaitGroup
+	errCh := make(chan error, numRequests)
+	statusCh := make(chan int, numRequests)
 	wg.Add(numRequests)
-	for i := 0; i < numRequests; i++ {
+	for range numRequests {
 		req, err := http.NewRequest(http.MethodPost, "https://example.com/service", nil)
 		require.NoError(t, err)
 
@@ -142,12 +144,15 @@ func TestDualTransport_ConcurrentH2DiscoveryStartsSingleProbe(t *testing.T) {
 			defer wg.Done()
 
 			resp, err := dt.RoundTrip(req)
-			if !assert.NoError(t, err) {
+			if err != nil {
+				errCh <- err
 				return
 			}
-			if assert.NotNil(t, resp) {
-				assert.Equal(t, http.StatusOK, resp.StatusCode)
+			if resp == nil {
+				errCh <- errors.New("response is nil")
+				return
 			}
+			statusCh <- resp.StatusCode
 		}(req)
 	}
 
@@ -158,6 +163,14 @@ func TestDualTransport_ConcurrentH2DiscoveryStartsSingleProbe(t *testing.T) {
 	}
 
 	wg.Wait()
+	close(errCh)
+	close(statusCh)
+	for err := range errCh {
+		require.NoError(t, err)
+	}
+	for status := range statusCh {
+		assert.Equal(t, http.StatusOK, status)
+	}
 	assert.Equal(t, int32(numRequests), h2Calls.Load())
 	assert.Equal(t, int32(1), h3Calls.Load())
 

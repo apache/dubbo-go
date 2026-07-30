@@ -17,6 +17,8 @@
 
 package global
 
+const DefaultConsumerRequestTimeout = "3s"
+
 type ConsumerConfig struct {
 	Filter          string   `yaml:"filter" json:"filter,omitempty" property:"filter"`
 	RegistryIDs     []string `yaml:"registry-ids" json:"registry-ids,omitempty" property:"registry-ids"`
@@ -35,7 +37,7 @@ type ConsumerConfig struct {
 
 func DefaultConsumerConfig() *ConsumerConfig {
 	return &ConsumerConfig{
-		RequestTimeout: "3s",
+		RequestTimeout: DefaultConsumerRequestTimeout,
 		Check:          true,
 		References:     make(map[string]*ReferenceConfig),
 	}

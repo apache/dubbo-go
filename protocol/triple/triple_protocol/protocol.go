@@ -1,16 +1,19 @@
-// Copyright 2021-2023 Buf Technologies, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package triple_protocol
 
@@ -329,27 +332,49 @@ func flushResponseWriter(w http.ResponseWriter) {
 }
 
 func canonicalizeContentType(contentType string) string {
-	// Typically, clients send Content-Type in canonical form, without
-	// parameters. In those cases, we'd like to avoid parsing and
-	// canonicalization overhead.
-	//
-	// See https://www.rfc-editor.org/rfc/rfc2045.html#section-5.1 for a full
-	// grammar.
-	var slashes int
-	for _, r := range contentType {
-		switch {
-		case r >= 'a' && r <= 'z':
-		case r == '.' || r == '+' || r == '-':
-		case r == '/':
-			slashes++
-		default:
-			return canonicalizeContentTypeSlow(contentType)
-		}
-	}
-	if slashes == 1 {
-		return contentType
+	if canonical, ok := canonicalizeContentTypeFast(contentType); ok {
+		return canonical
 	}
 	return canonicalizeContentTypeSlow(contentType)
+}
+
+// canonicalizeContentTypeFast handles parameter-free types and the common
+// "; charset=<token>" case without invoking mime.ParseMediaType.
+// See https://www.rfc-editor.org/rfc/rfc2045.html#section-5.1 for a full grammar.
+func canonicalizeContentTypeFast(contentType string) (string, bool) {
+	before, after, ok := strings.Cut(contentType, ";")
+	if !ok {
+		if isLowercaseMediaType(contentType) {
+			return contentType, true
+		}
+		return "", false
+	}
+
+	base := before
+	param := after
+
+	if !isLowercaseMediaType(base) {
+		return "", false
+	}
+	if strings.Contains(param, ";") {
+		return "", false
+	}
+
+	const prefix = " charset="
+	if !strings.HasPrefix(param, prefix) {
+		return "", false
+	}
+
+	charset := param[len(prefix):]
+	if !isSimpleCharsetToken(charset) {
+		return "", false
+	}
+
+	lower := strings.ToLower(charset)
+	if lower == charset {
+		return contentType, true
+	}
+	return base + "; charset=" + lower, true
 }
 
 func canonicalizeContentTypeSlow(contentType string) string {
@@ -366,4 +391,56 @@ func canonicalizeContentTypeSlow(contentType string) string {
 		params["charset"] = strings.ToLower(charset)
 	}
 	return mime.FormatMediaType(base, params)
+}
+
+// isLowercaseMediaType reports whether s is a well-formed, already-lowercase
+// media type: both type and subtype non-empty, separated by exactly one '/'.
+func isLowercaseMediaType(s string) bool {
+	slash := strings.IndexByte(s, '/')
+	if slash <= 0 || slash == len(s)-1 {
+		return false
+	}
+	if strings.IndexByte(s[slash+1:], '/') >= 0 {
+		return false
+	}
+	return isLowercaseToken(s[:slash]) && isLowercaseToken(s[slash+1:])
+}
+
+// isLowercaseToken reports whether s is a non-empty token of lowercase letters,
+// digits, '.', '+', and '-'.
+func isLowercaseToken(s string) bool {
+	if s == "" {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		switch {
+		case c >= 'a' && c <= 'z':
+		case c >= '0' && c <= '9':
+		case c == '.' || c == '+' || c == '-':
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+// isSimpleCharsetToken reports whether s is a non-empty token composed of
+// letters, digits, '-', '_', and '.'.
+func isSimpleCharsetToken(s string) bool {
+	if s == "" {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		switch {
+		case c >= 'a' && c <= 'z':
+		case c >= 'A' && c <= 'Z':
+		case c >= '0' && c <= '9':
+		case c == '-' || c == '_' || c == '.':
+		default:
+			return false
+		}
+	}
+	return true
 }

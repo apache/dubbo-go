@@ -20,6 +20,7 @@ package triple_protocol
 import (
 	"net/http"
 	"net/url"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -74,7 +75,7 @@ func buildCorsPolicy(cfg *CorsConfig, handlers []protocolHandler) *CorsConfig {
 	}
 
 	if built.hasWildcard() && !cfg.AllowCredentials && len(cfg.AllowOrigins) > 1 {
-		logger.Warnf("[TRIPLE] CORS: wildcard \"*\" will override other origins when allowCredentials=false")
+		logger.Warn("[Triple][CORS] CORS: wildcard \"*\" will override other origins when allowCredentials=false")
 	}
 
 	return built
@@ -85,12 +86,7 @@ func (c *CorsConfig) hasWildcard() bool {
 	if c == nil {
 		return false
 	}
-	for _, origin := range c.AllowOrigins {
-		if origin == constant.AnyValue {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(c.AllowOrigins, constant.AnyValue)
 }
 
 // normalizeMethods normalizes and deduplicates CORS methods.
@@ -231,7 +227,7 @@ func (c *CorsConfig) handlePreflight(w http.ResponseWriter, r *http.Request) boo
 	origin := r.Header.Get(corsOrigin)
 	if origin == "" || !c.matchOrigin(origin) {
 		if origin != "" {
-			logger.Debugf("[TRIPLE] CORS forbidden origin: %s", origin)
+			logger.Debugf("[Triple][CORS] CORS forbidden origin: %s", origin)
 		}
 		w.Header().Add(corsVary, corsOrigin)
 		w.WriteHeader(http.StatusForbidden)
@@ -240,7 +236,7 @@ func (c *CorsConfig) handlePreflight(w http.ResponseWriter, r *http.Request) boo
 
 	requestedMethod := r.Header.Get(corsRequestMethod)
 	if requestedMethod != "" && !c.containsMethod(requestedMethod) {
-		logger.Debugf("[TRIPLE] CORS forbidden method: %s (origin: %s)", requestedMethod, origin)
+		logger.Debugf("[Triple][CORS] CORS forbidden method: %s (origin: %s)", requestedMethod, origin)
 		w.Header().Add(corsVary, corsOrigin)
 		w.WriteHeader(http.StatusForbidden)
 		return true
@@ -279,12 +275,7 @@ func (c *CorsConfig) containsMethod(target string) bool {
 		return false
 	}
 	targetUpper := strings.ToUpper(target)
-	for _, method := range c.AllowMethods {
-		if method == targetUpper {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(c.AllowMethods, targetUpper)
 }
 
 // setAllowMethods sets the Access-Control-Allow-Methods header.

@@ -18,6 +18,7 @@
 package protocol
 
 import (
+	"sync"
 	"testing"
 	"time"
 )
@@ -26,6 +27,7 @@ import (
 	gxset "github.com/dubbogo/gost/container/set"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -36,6 +38,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/config_center/configurator"
+	configparser "dubbo.apache.org/dubbo-go/v3/config_center/parser"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/protocolwrapper"
@@ -166,7 +169,7 @@ func exporterNormal(t *testing.T, regProtocol *registryProtocol) *common.URL {
 		common.WithParamsValue(constant.VersionKey, "1.0.0"),
 		common.WithParamsValue(constant.BeanNameKey, "org.apache.dubbo-go.mockService"),
 		common.WithAttribute(constant.ApplicationKey, applicationConfig),
-		common.WithAttribute(constant.ProviderConfigPrefix, providerConfig),
+		common.WithAttribute(constant.ProviderConfigKey, providerConfig),
 		common.WithAttribute(constant.RpcServiceKey, mockRPCService),
 	)
 
@@ -182,6 +185,83 @@ func exporterNormal(t *testing.T, regProtocol *registryProtocol) *common.URL {
 func TestExporter(t *testing.T) {
 	regProtocol := newRegistryProtocol()
 	exporterNormal(t, regProtocol)
+}
+
+func TestExportCopiesProviderAttributesToRegistryURL(t *testing.T) {
+	extension.SetRegistry("mock", registry.NewMockRegistry)
+	extension.SetProtocol(protocolwrapper.FILTER, protocolwrapper.NewMockProtocolFilter)
+
+	regProtocol := newRegistryProtocol()
+	shutdownConfig := &global.ShutdownConfig{
+		StepTimeout:            "1ms",
+		ConsumerUpdateWaitTime: "1ms",
+	}
+	applicationConfig := &global.ApplicationConfig{Name: "provider-application"}
+
+	registryURL, err := common.NewURL("mock://127.0.0.1:1111")
+	require.NoError(t, err)
+	providerURL, err := common.NewURL(
+		"dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService",
+		common.WithAttribute(constant.ShutdownConfigPrefix, shutdownConfig),
+		common.WithAttribute(constant.ApplicationKey, applicationConfig),
+	)
+	require.NoError(t, err)
+	registryURL.SubURL = providerURL
+
+	exporter := regProtocol.Export(base.NewBaseInvoker(registryURL))
+	require.NotNil(t, exporter)
+	t.Cleanup(regProtocol.Destroy)
+
+	shutdownRaw, ok := registryURL.GetAttribute(constant.ShutdownConfigPrefix)
+	require.True(t, ok)
+	assert.Same(t, shutdownConfig, shutdownRaw)
+	applicationRaw, ok := registryURL.GetAttribute(constant.ApplicationKey)
+	require.True(t, ok)
+	assert.Same(t, applicationConfig, applicationRaw)
+
+	wrapper := exporter.(*exporterChangeableWrapper)
+	registeredShutdownRaw, ok := wrapper.registerUrl.GetAttribute(constant.ShutdownConfigPrefix)
+	require.True(t, ok)
+	assert.Same(t, shutdownConfig, registeredShutdownRaw)
+}
+
+func TestRegisterServiceMapUsesURLAttributesAndProviderProtocolFallback(t *testing.T) {
+	const (
+		interfaceName = "org.apache.dubbo-go.attributeOnlyService"
+		protocolName  = "attribute-protocol"
+		serviceID     = "attribute-service"
+	)
+
+	serviceConfig := &global.ServiceConfig{
+		Interface: interfaceName,
+		Group:     "group",
+		Version:   "1.0.0",
+	}
+	serviceKey := common.ServiceKey(interfaceName, serviceConfig.Group, serviceConfig.Version)
+	_ = common.ServiceMap.UnRegister(interfaceName, protocolName, serviceKey)
+	t.Cleanup(func() {
+		_ = common.ServiceMap.UnRegister(interfaceName, protocolName, serviceKey)
+	})
+
+	providerConfig := &global.ProviderConfig{
+		Services: map[string]*global.ServiceConfig{
+			serviceID: serviceConfig,
+		},
+	}
+	registryURL, err := common.NewURL("mock://127.0.0.1:1111")
+	require.NoError(t, err)
+	providerURL, err := common.NewURL(
+		protocolName+"://127.0.0.1:20000/"+interfaceName,
+		common.WithParamsValue(constant.BeanNameKey, serviceID),
+		common.WithAttribute(constant.ProviderConfigKey, providerConfig),
+		common.WithAttribute(constant.RpcServiceKey, &MockRPCService{}),
+	)
+	require.NoError(t, err)
+	registryURL.SubURL = providerURL
+
+	err = registerServiceMap(base.NewBaseInvoker(registryURL))
+	require.NoError(t, err)
+	assert.NotNil(t, common.ServiceMap.GetService(protocolName, interfaceName, serviceConfig.Group, serviceConfig.Version))
 }
 
 func TestMultiRegAndMultiProtoExporter(t *testing.T) {
@@ -254,7 +334,7 @@ func TestOneRegAndProtoExporter(t *testing.T) {
 		common.WithParamsValue(constant.VersionKey, "1.0.0"),
 		common.WithParamsValue(constant.BeanNameKey, "org.apache.dubbo-go.mockService"),
 		common.WithAttribute(constant.ApplicationKey, applicationConfig),
-		common.WithAttribute(constant.ProviderConfigPrefix, providerConfig),
+		common.WithAttribute(constant.ProviderConfigKey, providerConfig),
 		common.WithAttribute(constant.RpcServiceKey, mockRPCService),
 	)
 
@@ -293,6 +373,164 @@ func TestDestroy(t *testing.T) {
 	assert.Equal(t, 0, count)
 }
 
+func TestDestroyCleansConfigurationListeners(t *testing.T) {
+	regProtocol := newRegistryProtocol()
+	exporterNormal(t, regProtocol)
+
+	assert.Equal(t, 1, registry.CountSyncMapEntries(regProtocol.overrideListeners))
+	assert.Equal(t, 1, registry.CountSyncMapEntries(regProtocol.serviceConfigurationListeners))
+
+	regProtocol.Destroy()
+
+	assert.Equal(t, 0, registry.CountSyncMapEntries(regProtocol.overrideListeners))
+	assert.Equal(t, 0, registry.CountSyncMapEntries(regProtocol.serviceConfigurationListeners))
+}
+
+func TestDestroyUnsubscribesOverrideListener(t *testing.T) {
+	regProtocol, recordingRegistry, originInvoker, exporter, listener := newRegistryProtocolWithSubscribedExporter(t)
+	regProtocol.bounds.Store(getCacheKey(originInvoker), exporter)
+
+	regProtocol.Destroy()
+
+	assert.Equal(t, 1, recordingRegistry.unSubscribeCount)
+	assert.Equal(t, exporter.subscribeUrl.String(), recordingRegistry.unSubscribeURL.String())
+	assert.Same(t, listener, recordingRegistry.unSubscribeListener)
+	assert.Equal(t, 0, registry.CountSyncMapEntries(regProtocol.overrideListeners))
+	assert.Equal(t, 0, registry.CountSyncMapEntries(regProtocol.serviceConfigurationListeners))
+}
+
+func TestDestroyUsesRegisteredURLShutdownAttribute(t *testing.T) {
+	extension.SetRegistry("destroy-recording", registry.NewMockRegistry)
+
+	regProtocol := newRegistryProtocol()
+	regProtocol.overrideListeners = &sync.Map{}
+	regProtocol.serviceConfigurationListeners = &sync.Map{}
+
+	registryURL, err := common.NewURL("destroy-recording://127.0.0.1:1111")
+	require.NoError(t, err)
+	providerURL, err := common.NewURL("dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService")
+	require.NoError(t, err)
+	registryURL.SubURL = providerURL
+	originInvoker := base.NewBaseInvoker(registryURL)
+
+	unexported := make(chan time.Time, 1)
+	exporter := newExporterChangeableWrapper(originInvoker, &recordingExporter{
+		invoker:    base.NewBaseInvoker(providerURL),
+		unexported: unexported,
+	})
+	registerURL := providerURL.Clone()
+	registerURL.SetAttribute(constant.ShutdownConfigPrefix, &global.ShutdownConfig{
+		StepTimeout:            "30ms",
+		ConsumerUpdateWaitTime: "30ms",
+	})
+	exporter.SetRegisterUrl(registerURL)
+	exporter.SetSubscribeUrl(getSubscribedOverrideUrl(providerURL))
+	regProtocol.bounds.Store(getCacheKey(originInvoker), exporter)
+
+	regProtocol.Destroy()
+
+	select {
+	case <-unexported:
+		require.Fail(t, "exporter unexported before shutdown wait elapsed")
+	case <-time.After(20 * time.Millisecond):
+	}
+
+	select {
+	case <-unexported:
+	case <-time.After(time.Second):
+		require.Fail(t, "exporter was not unexported")
+	}
+	assert.Eventually(t, func() bool {
+		return registry.CountSyncMapEntries(regProtocol.bounds) == 0
+	}, time.Second, 10*time.Millisecond)
+}
+
+func TestNewProviderConfigurationListenerUsesResolvedApplicationName(t *testing.T) {
+	env := common_cfg.GetEnvInstance()
+	previousDynamicConfiguration := env.GetDynamicConfiguration()
+	dynamicConfiguration := newRecordingDynamicConfiguration()
+	env.SetDynamicConfiguration(dynamicConfiguration)
+	t.Cleanup(func() {
+		env.SetDynamicConfiguration(previousDynamicConfiguration)
+	})
+
+	providerURL, err := common.NewURL(
+		"dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService",
+		common.WithParamsValue(constant.ApplicationKey, "provider-listener-app"),
+	)
+	require.NoError(t, err)
+
+	newProviderConfigurationListener(&sync.Map{}, providerURL)
+
+	assert.Contains(t, dynamicConfiguration.keys, "provider-listener-app"+constant.ConfiguratorSuffix)
+	applicationRaw, ok := providerURL.GetAttribute(constant.ApplicationKey)
+	require.True(t, ok)
+	application, ok := applicationRaw.(*global.ApplicationConfig)
+	require.True(t, ok)
+	assert.Equal(t, "provider-listener-app", application.Name)
+}
+
+func TestReExportReplacesConfigurationListeners(t *testing.T) {
+	extension.SetDefaultConfigurator(configurator.NewMockConfigurator)
+
+	regProtocol := newRegistryProtocol()
+	url := exporterNormal(t, regProtocol)
+
+	assert.Equal(t, 1, registry.CountSyncMapEntries(regProtocol.overrideListeners))
+	assert.Equal(t, 1, registry.CountSyncMapEntries(regProtocol.serviceConfigurationListeners))
+
+	regI, loaded := regProtocol.registries.Load(url.PrimitiveURL)
+	if !loaded {
+		assert.Fail(t, "regProtocol.registries.Load can not be loaded")
+		return
+	}
+	reg := regI.(*registry.MockRegistry)
+
+	overrideURL, _ := common.NewURL(
+		"override://0:0:0:0/org.apache.dubbo-go.mockService?cluster=mock1&&group=group&&version=1.0.0",
+	)
+	reg.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: overrideURL})
+
+	assert.Eventually(t, func() bool {
+		newURL := url.SubURL.Clone()
+		newURL.SetParam(constant.ClusterKey, "mock1")
+		delKeys := gxset.NewSet("dynamic", "enabled")
+		key := newURL.CloneExceptParams(delKeys).String()
+		_, ok := regProtocol.bounds.Load(key)
+		return ok
+	}, 5*time.Second, 100*time.Millisecond)
+
+	assert.Equal(t, 1, registry.CountSyncMapEntries(regProtocol.overrideListeners))
+	assert.Equal(t, 1, registry.CountSyncMapEntries(regProtocol.serviceConfigurationListeners))
+}
+
+func TestReExportUnsubscribesOldOverrideListener(t *testing.T) {
+	regProtocol, recordingRegistry, originInvoker, exporter, listener := newRegistryProtocolWithSubscribedExporter(t)
+	regProtocol.bounds.Store(getCacheKey(originInvoker), exporter)
+
+	newURL := originInvoker.GetURL().Clone()
+	newURL.SubURL = originInvoker.GetURL().SubURL.Clone()
+	newURL.SubURL.SetParam(constant.ClusterKey, "mock1")
+	regProtocol.reExport(originInvoker, newURL)
+
+	assert.Equal(t, 1, recordingRegistry.unSubscribeCount)
+	assert.Equal(t, exporter.subscribeUrl.String(), recordingRegistry.unSubscribeURL.String())
+	assert.Same(t, listener, recordingRegistry.unSubscribeListener)
+	assert.Equal(t, 1, registry.CountSyncMapEntries(regProtocol.overrideListeners))
+	assert.Equal(t, 1, registry.CountSyncMapEntries(regProtocol.serviceConfigurationListeners))
+}
+
+func TestUnsubscribeOverrideListenerKeepsUnexpectedListenerType(t *testing.T) {
+	regProtocol, recordingRegistry, _, exporter, _ := newRegistryProtocolWithSubscribedExporter(t)
+	regProtocol.overrideListeners.Store(exporter.subscribeUrl.String(), "unexpected-listener")
+
+	regProtocol.unsubscribeOverrideListener(recordingRegistry, exporter.subscribeUrl)
+
+	assert.Equal(t, 0, recordingRegistry.unSubscribeCount)
+	_, ok := regProtocol.overrideListeners.Load(exporter.subscribeUrl.String())
+	assert.True(t, ok)
+}
+
 func TestExportWithOverrideListener(t *testing.T) {
 	extension.SetDefaultConfigurator(configurator.NewMockConfigurator)
 
@@ -323,7 +561,7 @@ func TestExportWithServiceConfig(t *testing.T) {
 	extension.SetDefaultConfigurator(configurator.NewMockConfigurator)
 	ccUrl, _ := common.NewURL("mock://127.0.0.1:1111")
 	dc, _ := (&config_center.MockDynamicConfigurationFactory{}).GetDynamicConfiguration(ccUrl)
-	// Use common/config (not dubbo.apache.org/dubbo-go/v3/config)
+	// Use the common config environment, not the legacy config package.
 	common_cfg.GetEnvInstance().SetDynamicConfiguration(dc)
 
 	regProtocol := newRegistryProtocol()
@@ -348,7 +586,7 @@ func TestExportWithApplicationConfig(t *testing.T) {
 	extension.SetDefaultConfigurator(configurator.NewMockConfigurator)
 	ccUrl, _ := common.NewURL("mock://127.0.0.1:1111")
 	dc, _ := (&config_center.MockDynamicConfigurationFactory{}).GetDynamicConfiguration(ccUrl)
-	// Use common/config (not dubbo.apache.org/dubbo-go/v3/config)
+	// Use the common config environment, not the legacy config package.
 	common_cfg.GetEnvInstance().SetDynamicConfiguration(dc)
 
 	regProtocol := newRegistryProtocol()
@@ -367,12 +605,93 @@ func TestExportWithApplicationConfig(t *testing.T) {
 	assert.NotNil(t, v2)
 }
 
+func TestIsMatchedDoesNotAccumulateCategory(t *testing.T) {
+	providerURL, _ := common.NewURL("override://127.0.0.1:20000/org.apache.dubbo-go.mockService?interface=org.apache.dubbo-go.mockService")
+	consumerURL, _ := common.NewURL("consumer://127.0.0.1/org.apache.dubbo-go.mockService?interface=org.apache.dubbo-go.mockService&category=configurators")
+
+	assert.True(t, isMatched(providerURL, consumerURL))
+	assert.True(t, isMatched(providerURL, consumerURL))
+	assert.Equal(t, []string{constant.ConfiguratorsCategory}, providerURL.GetParams()[constant.CategoryKey])
+}
+
 func TestGetProviderUrlWithHideKey(t *testing.T) {
 	url, _ := common.NewURL("dubbo://127.0.0.1:1111?a=a1&b=b1&.c=c1&.d=d1&e=e1&protocol=registry")
 	providerUrl := getUrlToRegistry(url, url)
 	assert.NotContains(t, providerUrl.GetParams(), ".c")
 	assert.NotContains(t, providerUrl.GetParams(), ".d")
 	assert.Contains(t, providerUrl.GetParams(), "a")
+}
+
+type unsubscribeRecordingRegistry struct {
+	*registry.MockRegistry
+	unSubscribeURL      *common.URL
+	unSubscribeListener registry.NotifyListener
+	unSubscribeCount    int
+}
+
+func (r *unsubscribeRecordingRegistry) UnSubscribe(url *common.URL, notifyListener registry.NotifyListener) error {
+	r.unSubscribeCount++
+	r.unSubscribeURL = url
+	r.unSubscribeListener = notifyListener
+	return nil
+}
+
+type recordingExporter struct {
+	invoker    base.Invoker
+	unexported chan<- time.Time
+}
+
+func (e *recordingExporter) GetInvoker() base.Invoker {
+	return e.invoker
+}
+
+func (e *recordingExporter) UnExport() {
+	e.unexported <- time.Now()
+}
+
+func newRegistryProtocolWithSubscribedExporter(
+	t *testing.T,
+) (*registryProtocol, *unsubscribeRecordingRegistry, base.Invoker, *exporterChangeableWrapper, *overrideSubscribeListener) {
+	t.Helper()
+
+	var recordingRegistry *unsubscribeRecordingRegistry
+	extension.SetRegistry("recording", func(url *common.URL) (registry.Registry, error) {
+		mockRegistry, err := registry.NewMockRegistry(url)
+		if err != nil {
+			return nil, err
+		}
+		recordingRegistry = &unsubscribeRecordingRegistry{MockRegistry: mockRegistry.(*registry.MockRegistry)}
+		return recordingRegistry, nil
+	})
+	extension.SetProtocol(protocolwrapper.FILTER, protocolwrapper.NewMockProtocolFilter)
+
+	registryURL, err := common.NewURL("recording://127.0.0.1:1111")
+	require.NoError(t, err)
+	providerURL, err := common.NewURL(
+		"dubbo://127.0.0.1:20000/org.apache.dubbo-go.mockService",
+		common.WithParamsValue(constant.ClusterKey, "mock"),
+		common.WithParamsValue(constant.GroupKey, "group"),
+		common.WithParamsValue(constant.VersionKey, "1.0.0"),
+	)
+	require.NoError(t, err)
+	registryURL.SubURL = providerURL
+
+	originInvoker := base.NewBaseInvoker(registryURL)
+	regProtocol := newRegistryProtocol()
+	regProtocol.initConfigurationListeners(providerURL)
+	regProtocol.getRegistry(registryURL)
+
+	overrideURL := getSubscribedOverrideUrl(providerURL)
+	listener := newOverrideSubscribeListener(overrideURL, originInvoker, regProtocol)
+	regProtocol.overrideListeners.Store(overrideURL.String(), listener)
+	serviceConfigurationListener := newServiceConfigurationListener(listener, providerURL)
+	regProtocol.serviceConfigurationListeners.Store(providerURL.ServiceKey(), serviceConfigurationListener)
+
+	exporter := newExporterChangeableWrapper(originInvoker, base.NewBaseExporter("recording-key", base.NewBaseInvoker(providerURL), &sync.Map{}))
+	exporter.SetRegisterUrl(getUrlToRegistry(providerURL, registryURL))
+	exporter.SetSubscribeUrl(overrideURL)
+
+	return regProtocol, recordingRegistry, originInvoker, exporter, listener
 }
 
 // MockRPCService is a mock RPC service for testing
@@ -386,4 +705,52 @@ func (m *MockRPCService) MockMethod(arg1, arg2 string) error {
 // Reference returns the reference path
 func (m *MockRPCService) Reference() string {
 	return "org.apache.dubbo-go.mockService"
+}
+
+type recordingDynamicConfiguration struct {
+	parser configparser.ConfigurationParser
+	keys   []string
+}
+
+func newRecordingDynamicConfiguration() *recordingDynamicConfiguration {
+	return &recordingDynamicConfiguration{parser: &configparser.DefaultConfigurationParser{}}
+}
+
+func (c *recordingDynamicConfiguration) Parser() configparser.ConfigurationParser {
+	return c.parser
+}
+
+func (c *recordingDynamicConfiguration) SetParser(parser configparser.ConfigurationParser) {
+	c.parser = parser
+}
+
+func (c *recordingDynamicConfiguration) AddListener(key string, _ config_center.ConfigurationListener, _ ...config_center.Option) {
+	c.keys = append(c.keys, key)
+}
+
+func (c *recordingDynamicConfiguration) RemoveListener(_ string, _ config_center.ConfigurationListener, _ ...config_center.Option) {
+}
+
+func (c *recordingDynamicConfiguration) GetProperties(_ string, _ ...config_center.Option) (string, error) {
+	return "", nil
+}
+
+func (c *recordingDynamicConfiguration) GetRule(_ string, _ ...config_center.Option) (string, error) {
+	return "", nil
+}
+
+func (c *recordingDynamicConfiguration) GetInternalProperty(_ string, _ ...config_center.Option) (string, error) {
+	return "", nil
+}
+
+func (c *recordingDynamicConfiguration) PublishConfig(_, _, _ string) error {
+	return nil
+}
+
+func (c *recordingDynamicConfiguration) RemoveConfig(_, _ string) error {
+	return nil
+}
+
+func (c *recordingDynamicConfiguration) GetConfigKeysByGroup(_ string) (*gxset.HashSet, error) {
+	return gxset.NewSet(), nil
 }

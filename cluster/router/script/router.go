@@ -25,7 +25,7 @@ import (
 import (
 	"github.com/dubbogo/gost/log/logger"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 import (
@@ -70,13 +70,26 @@ func (s *ScriptRouter) Process(event *config_center.ConfigChangeEvent) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	if event.ConfigType == remoting.EventTypeDel {
+		in, _ := ins.GetInstances(s.scriptType)
+
+		if in != nil && s.enabled {
+			in.Destroy(s.rawScript)
+		}
+		s.enabled = false
+		s.rawScript = ""
+		s.scriptType = ""
+		return
+	}
+
 	rawConf, ok := event.Value.(string)
 	if !ok {
-		panic(ok)
+		logger.Errorf("[Router][Script] route config value must be string, actualType=%T", event.Value)
+		return
 	}
 	cfg, err := parseRoute(rawConf)
 	if err != nil {
-		logger.Errorf("Parse route cfg failed: %v", err)
+		logger.Errorf("[Router][Script] parse route config failed, error=%v", err)
 		return
 	}
 
@@ -86,26 +99,26 @@ func (s *ScriptRouter) Process(event *config_center.ConfigChangeEvent) {
 		if s.enabled && s.scriptType != "" {
 			in, err := ins.GetInstances(s.scriptType)
 			if err != nil {
-				logger.Errorf("GetInstances failed to Destroy: %v", err)
+				logger.Errorf("[Router][Script] GetInstances failed to destroy, error=%v", err)
 			} else {
 				in.Destroy(s.rawScript)
 			}
 		}
 		// check new config
 		if cfg.ScriptType == "" {
-			logger.Errorf("`type` field must be set in config")
+			logger.Error("[Router][Script] type field must be set in config")
 			return
 		}
 		if cfg.Script == "" {
-			logger.Errorf("`script` field must be set in config")
+			logger.Error("[Router][Script] script field must be set in config")
 			return
 		}
 		if cfg.Key == "" {
-			logger.Errorf("`applicationName` field must be set in config")
+			logger.Error("[Router][Script] applicationName field must be set in config")
 			return
 		}
 		if !*cfg.Enabled {
-			logger.Infof("`enabled` field equiles false, this rule will be ignored :%s", cfg.Script)
+			logger.Infof("[Router][Script] enabled field equals false, this rule will be ignored, script=%s", cfg.Script)
 		}
 		// rewrite to ScriptRouter
 		s.enabled = *cfg.Enabled
@@ -115,7 +128,7 @@ func (s *ScriptRouter) Process(event *config_center.ConfigChangeEvent) {
 		// compile script
 		in, err := ins.GetInstances(s.scriptType)
 		if err != nil {
-			logger.Errorf("GetInstances failed: %v", err)
+			logger.Errorf("[Router][Script] GetInstances failed, error=%v", err)
 			s.enabled = false
 			return
 		}
@@ -124,19 +137,10 @@ func (s *ScriptRouter) Process(event *config_center.ConfigChangeEvent) {
 			// fail, disable rule
 			if err != nil {
 				s.enabled = false
-				logger.Errorf("Compile Script failed: %v", err)
+				logger.Errorf("[Router][Script] compile script failed, error=%v", err)
 			}
 		}
 
-	case remoting.EventTypeDel:
-		in, _ := ins.GetInstances(s.scriptType)
-
-		if in != nil && s.enabled {
-			in.Destroy(s.rawScript)
-		}
-		s.enabled = false
-		s.rawScript = ""
-		s.scriptType = ""
 	}
 }
 
@@ -163,7 +167,7 @@ func (s *ScriptRouter) Route(invokers []base.Invoker, _ *common.URL, invocation 
 
 	res, err := s.runScript(scriptType, rawScript, invokers, invocation)
 	if err != nil {
-		logger.Warnf("ScriptRouter.Route error: %v", err)
+		logger.Warnf("[Router][Script] route failed, error=%v", err)
 	}
 
 	return res
@@ -183,19 +187,19 @@ func (s *ScriptRouter) Notify(invokers []base.Invoker) {
 	}
 	url := invokers[0].GetURL()
 	if url == nil {
-		logger.Error("Failed to notify a dynamically Script rule, because url is empty")
+		logger.Error("[Router][Script] url is empty")
 		return
 	}
 
 	dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
 	if dynamicConfiguration == nil {
-		logger.Infof("Config center does not start, Script router will not be enabled")
+		logger.Info("[Router][Script] Config center does not start, Script router will not be enabled")
 		return
 	}
 
 	providerApplication := url.GetParam("application", "")
 	if providerApplication == "" {
-		logger.Warn("Script router get providerApplication is empty, will not subscribe to provider app rules.")
+		logger.Warn("[Router][Script] providerApplication is empty, will not subscribe to provider app rules")
 		return
 	}
 
@@ -213,7 +217,7 @@ func (s *ScriptRouter) Notify(invokers []base.Invoker) {
 		s.applicationName = providerApplication
 		value, err = dynamicConfiguration.GetRule(listenTarget)
 		if err != nil {
-			logger.Errorf("Failed to query Script rule, applicationName=%s, listening=%s, err=%v", s.applicationName, listenTarget, err)
+			logger.Errorf("[Router][Script] query script rule failed, applicationName=%s listenTarget=%s error=%v", s.applicationName, listenTarget, err)
 		}
 		s.Process(&config_center.ConfigChangeEvent{Key: listenTarget, Value: value, ConfigType: remoting.EventTypeUpdate})
 	}

@@ -53,7 +53,7 @@ func DefaultRouterConfig() *RouterConfig {
 }
 
 type ConditionRule struct {
-	From ConditionRuleFrom `yaml:"from" json:"from,omitempty" property:"from"`
+	From ConditionRuleFrom `yaml:"from" json:"from" property:"from"`
 	To   []ConditionRuleTo `yaml:"to" json:"to,omitempty" property:"to"`
 }
 
@@ -113,7 +113,7 @@ type AffinityRouter struct {
 	Key           string        `validate:"required" yaml:"key" json:"key,omitempty" property:"key"`       // specifies which service or application the rule body acts on.
 	Runtime       bool          `default:"false" yaml:"runtime" json:"runtime,omitempty" property:"runtime"`
 	Enabled       bool          `default:"true" yaml:"enabled" json:"enabled,omitempty" property:"enabled"`
-	AffinityAware AffinityAware `yaml:"affinityAware" json:"affinityAware,omitempty" property:"affinityAware"`
+	AffinityAware AffinityAware `yaml:"affinityAware" json:"affinityAware" property:"affinityAware"`
 }
 
 func (c *RouterConfig) Clone() *RouterConfig {

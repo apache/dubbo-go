@@ -177,12 +177,12 @@ func (r *BaseRegistry) RestartCallBack() bool {
 		err := r.register(registeredUrl)
 		if err != nil {
 			flag = false
-			logger.Errorf("failed to re-register service :%v, error{%#v}",
+			logger.Errorf("[Registry] failed to re-register service, url=%v err=%#v",
 				registeredUrl, perrors.WithStack(err))
 			return flag
 		}
 
-		logger.Infof("success to re-register service :%v", registeredUrl.Key())
+		logger.Infof("[Registry] success to re-register service, url=%v", registeredUrl.Key())
 		return flag
 	})
 
@@ -266,7 +266,7 @@ func (r *BaseRegistry) providerRegistry(c *common.URL, params url.Values, f crea
 		err = f(dubboPath)
 	}
 	if err != nil {
-		logger.Errorf("facadeBasedRegistry.CreatePath(path{%s}) = error{%#v}", dubboPath, perrors.WithStack(err))
+		logger.Errorf("[Registry] facadeBasedRegistry.CreatePath(path{%s}) = err=%#v", dubboPath, perrors.WithStack(err))
 		return "", "", perrors.WithMessagef(err, "facadeBasedRegistry.CreatePath(path:%s)", dubboPath)
 	}
 	params.Add(constant.AnyhostKey, "true")
@@ -277,7 +277,7 @@ func (r *BaseRegistry) providerRegistry(c *common.URL, params url.Values, f crea
 	if len(c.Methods) != 0 {
 		params.Add(constant.MethodsKey, strings.Join(c.Methods, ","))
 	}
-	logger.Debugf("provider url params:%#v", params)
+	logger.Debugf("[Registry] provider url params=%#v", params)
 	var host string
 	if len(c.Ip) == 0 {
 		host = localIP
@@ -296,7 +296,7 @@ func (r *BaseRegistry) providerRegistry(c *common.URL, params url.Values, f crea
 	s, _ := url.QueryUnescape(params.Encode())
 	rawURL = fmt.Sprintf("%s://%s%s?%s", c.Protocol, host, c.Path, s)
 	// Print your own registration service providers.
-	logger.Debugf("provider path:%s, url:%s", dubboPath, rawURL)
+	logger.Debugf("[Registry] provider path=%s, url=%s", dubboPath, rawURL)
 	return dubboPath, rawURL, nil
 }
 
@@ -314,14 +314,14 @@ func (r *BaseRegistry) consumerRegistry(c *common.URL, params url.Values, f crea
 	}
 
 	if err != nil {
-		logger.Errorf("facadeBasedRegistry.CreatePath(path{%s}) = error{%v}", dubboPath, perrors.WithStack(err))
+		logger.Errorf("[Registry] facadeBasedRegistry.CreatePath(path{%s}) = err=%v", dubboPath, perrors.WithStack(err))
 		return "", "", perrors.WithStack(err)
 	}
 
 	params.Add("protocol", c.Protocol)
 	s, _ := url.QueryUnescape(params.Encode())
 	rawURL = fmt.Sprintf("consumer://%s%s?%s", localIP, c.Path, s)
-	logger.Debugf("consumer path:%s, url:%s", dubboPath, rawURL)
+	logger.Debugf("[Registry] consumer path=%s, url=%s", dubboPath, rawURL)
 	return dubboPath, rawURL, nil
 }
 
@@ -329,28 +329,28 @@ func (r *BaseRegistry) consumerRegistry(c *common.URL, params url.Values, f crea
 func (r *BaseRegistry) Subscribe(url *common.URL, notifyListener NotifyListener) error {
 	for {
 		if !r.IsAvailable() {
-			logger.Warnf("event listener game over.")
-			return perrors.New("BaseRegistry is not available.")
+			logger.Warn("[Registry] event listener game over")
+			return perrors.New("BaseRegistry is not available")
 		}
 
 		listener, err := r.facadeBasedRegistry.DoSubscribe(url)
 		if err != nil {
 			if !r.IsAvailable() {
-				logger.Warnf("event listener game over.")
+				logger.Warn("[Registry] event listener game over")
 				return err
 			}
-			logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
+			logger.Warnf("[Registry] getListener() = err=%v", perrors.WithStack(err))
 			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
 			continue
 		}
 
 		for {
 			if serviceEvent, err := listener.Next(); err != nil {
-				logger.Warnf("Selector.watch() = error{%v}", perrors.WithStack(err))
+				logger.Warnf("[Registry] Selector.watch() = err=%v", perrors.WithStack(err))
 				listener.Close()
 				return nil
 			} else {
-				logger.Debugf("[Registry] update begin, service event: %v", serviceEvent.String())
+				logger.Debugf("[Registry] update begin, event=%v", serviceEvent.String())
 				notifyListener.Notify(serviceEvent)
 			}
 		}
@@ -360,17 +360,17 @@ func (r *BaseRegistry) Subscribe(url *common.URL, notifyListener NotifyListener)
 // UnSubscribe URL
 func (r *BaseRegistry) UnSubscribe(url *common.URL, notifyListener NotifyListener) error {
 	if !r.IsAvailable() {
-		logger.Warnf("event listener game over.")
+		logger.Warn("[Registry] event listener game over")
 		return perrors.New("BaseRegistry is not available.")
 	}
 
 	listener, err := r.facadeBasedRegistry.DoUnsubscribe(url)
 	if err != nil {
 		if !r.IsAvailable() {
-			logger.Warnf("event listener game over.")
-			return perrors.New("BaseRegistry is not available.")
+			logger.Warn("[Registry] event listener game over")
+			return perrors.New("BaseRegistry is not available")
 		}
-		logger.Warnf("getListener() = err:%v", perrors.WithStack(err))
+		logger.Warnf("[Registry] getListener() = err=%v", perrors.WithStack(err))
 		return perrors.WithStack(err)
 	}
 
@@ -388,7 +388,7 @@ func (r *BaseRegistry) LoadSubscribeInstances(url *common.URL, notify NotifyList
 
 // closeRegisters close and remove registry client and reset services map
 func (r *BaseRegistry) closeRegisters() {
-	logger.Infof("begin to close provider client")
+	logger.Info("[Registry] begin to close provider client")
 	r.cltLock.Lock()
 	defer r.cltLock.Unlock()
 	// Close and remove(set to nil) the registry client

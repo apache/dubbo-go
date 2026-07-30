@@ -19,6 +19,7 @@ package triple
 
 import (
 	"errors"
+	"maps"
 	"net/http"
 	"net/url"
 	"strings"
@@ -108,7 +109,7 @@ func WithCORS(opts ...CORSOption) Option {
 		opt(cors)
 	}
 	if err := validateCorsConfig(cors); err != nil {
-		logger.Errorf("[TRIPLE] invalid CORS config: %v", err)
+		logger.Errorf("[Triple] invalid CORS config, err=%v", err)
 		// Return a no-op function to ignore invalid CORS configuration
 		return func(*Options) {}
 	}
@@ -415,8 +416,6 @@ func OpenAPISettings(settings map[string]string) OpenAPIOption {
 		if o.Settings == nil {
 			o.Settings = make(map[string]string)
 		}
-		for k, v := range settings {
-			o.Settings[k] = v
-		}
+		maps.Copy(o.Settings, settings)
 	}
 }

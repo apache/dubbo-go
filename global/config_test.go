@@ -28,6 +28,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+)
+
 // TestCloneConfig tests the Clone method of the *_config.go files
 func TestCloneConfig(t *testing.T) {
 	t.Run("ApplicationConfig", func(t *testing.T) {
@@ -243,7 +247,7 @@ func InitCheckCompleteInequality(t *testing.T, origin any) {
 		case reflect.Map:
 			originField.Set(reflect.MakeMap(originField.Type()))
 
-		case reflect.Slice, reflect.Ptr:
+		case reflect.Slice, reflect.Pointer:
 
 		default:
 			// Field '%s' is of unsupported type '%s', skipping checking
@@ -312,7 +316,7 @@ func CheckCompleteInequality(t *testing.T, origin any, clone any) {
 			assert.InEpsilon(t, 2.5, cloneField.Float(), 1e-9)
 			assert.InEpsilon(t, 1.5, originField.Float(), 1e-9)
 
-		case reflect.Map, reflect.Ptr:
+		case reflect.Map, reflect.Pointer:
 			if originField.IsNil() {
 				assert.Zero(t, cloneField.Pointer())
 			} else {
@@ -1063,7 +1067,8 @@ func TestDefaultProtocolConfig(t *testing.T) {
 		proto := DefaultProtocolConfig()
 		assert.NotNil(t, proto)
 		assert.NotEmpty(t, proto.Name)
-		assert.NotEmpty(t, proto.Port)
+		assert.Equal(t, constant.TriProtocol, proto.Name)
+		assert.Equal(t, constant.DefaultTripleProtocolPort, proto.Port)
 		assert.NotNil(t, proto.TripleConfig)
 	})
 }
@@ -1844,8 +1849,10 @@ func TestDefaultCustomConfig(t *testing.T) {
 	t.Run("default_custom_config", func(t *testing.T) {
 		custom := DefaultCustomConfig()
 		assert.NotNil(t, custom)
+		assert.NotNil(t, custom.ConfigMap)
 	})
 }
+
 func TestMethodConfigClone(t *testing.T) {
 	t.Run("clone_full_method_config", func(t *testing.T) {
 		method := &MethodConfig{
@@ -2140,6 +2147,70 @@ func TestLoggerConfigClone(t *testing.T) {
 		assert.NotNil(t, cloned)
 		assert.Equal(t, logger.Level, cloned.Level)
 		assert.NotSame(t, logger, cloned)
+	})
+
+	t.Run("clone_full_logger_config_with_trace_integration", func(t *testing.T) {
+		enabled := true
+		recordError := false
+		logger := &LoggerConfig{
+			Driver:   "zap",
+			Level:    "info",
+			Format:   "json",
+			Appender: "console",
+			File: &File{
+				Name:       "app.log",
+				MaxSize:    100,
+				MaxBackups: 5,
+				MaxAge:     7,
+				Compress:   &enabled,
+			},
+			TraceIntegration: &TraceIntegrationConfig{
+				Enabled:           &enabled,
+				RecordErrorToSpan: &recordError,
+			},
+		}
+		cloned := logger.Clone()
+		assert.NotNil(t, cloned)
+		assert.Equal(t, logger.Driver, cloned.Driver)
+		assert.Equal(t, logger.Level, cloned.Level)
+		assert.Equal(t, logger.Format, cloned.Format)
+		assert.Equal(t, logger.Appender, cloned.Appender)
+		assert.NotSame(t, logger, cloned)
+		assert.NotSame(t, logger.File, cloned.File)
+		assert.NotSame(t, logger.TraceIntegration, cloned.TraceIntegration)
+		assert.Equal(t, *logger.TraceIntegration.Enabled, *cloned.TraceIntegration.Enabled)
+		assert.Equal(t, *logger.TraceIntegration.RecordErrorToSpan, *cloned.TraceIntegration.RecordErrorToSpan)
+	})
+
+	t.Run("clone_logger_config_with_nil_trace_integration", func(t *testing.T) {
+		logger := &LoggerConfig{
+			Level:            "debug",
+			TraceIntegration: nil,
+		}
+		cloned := logger.Clone()
+		assert.NotNil(t, cloned)
+		assert.Equal(t, logger.Level, cloned.Level)
+		assert.Nil(t, cloned.TraceIntegration)
+	})
+
+	t.Run("clone_trace_integration_config", func(t *testing.T) {
+		enabled := true
+		recordError := false
+		ti := &TraceIntegrationConfig{
+			Enabled:           &enabled,
+			RecordErrorToSpan: &recordError,
+		}
+		cloned := ti.Clone()
+		assert.NotNil(t, cloned)
+		assert.NotSame(t, ti, cloned)
+		assert.Equal(t, *ti.Enabled, *cloned.Enabled)
+		assert.Equal(t, *ti.RecordErrorToSpan, *cloned.RecordErrorToSpan)
+	})
+
+	t.Run("clone_nil_trace_integration_config", func(t *testing.T) {
+		var ti *TraceIntegrationConfig
+		cloned := ti.Clone()
+		assert.Nil(t, cloned)
 	})
 
 	t.Run("clone_nil_logger_config", func(t *testing.T) {
