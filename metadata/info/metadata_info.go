@@ -388,23 +388,6 @@ func (si *ServiceInfo) DeepCopy() *ServiceInfo {
 //     "{k1=v1, k2=v2}" — braces wrapped, "key=value" joined by ", ",
 //     keys in natural ascending order. An empty params map renders as "{}".
 //   - Methods are intentionally NOT part of the revision serialization.
-// toDescString returns a deterministic string representation of ServiceInfo
-// for revision calculation. It strictly mirrors the Java dubbo
-// ServiceInfo.toDescString() algorithm so that CalRevision produces the exact
-// same 32-char lowercase MD5 digest as the Java side.
-//
-// Format (no separators between segments, methods are excluded):
-//
-//	getMatchKey() + port + path + sortedTreeMap(params).toString()
-//
-// where:
-//   - getMatchKey() = serviceKey + ":" + protocol (protocol must be non-empty)
-//   - port is the int value concatenated verbatim (strconv.Itoa)
-//   - path is concatenated verbatim
-//   - The params TreeMap string uses Java's TreeMap.toString() format:
-//     "{k1=v1, k2=v2}" — braces wrapped, "key=value" joined by ", ",
-//     keys in natural ascending order. An empty params map renders as "{}".
-//   - Methods are intentionally NOT part of the revision serialization.
 func (si *ServiceInfo) toDescString() string {
 	return si.GetMatchKey() + strconv.Itoa(si.Port) + si.Path + renderParams(si.Params)
 }
