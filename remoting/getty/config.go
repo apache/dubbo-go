@@ -23,6 +23,7 @@ import (
 
 import (
 	getty "github.com/apache/dubbo-getty"
+	"github.com/dubbogo/gost/log/logger"
 
 	perrors "github.com/pkg/errors"
 )
@@ -140,7 +141,9 @@ func GetDefaultClientConfig() *ClientConfig {
 			SessionName:      "client",
 		},
 	}
-	_ = defaultClientConfig.CheckValidity()
+	if err := defaultClientConfig.CheckValidity(); err != nil {
+		logger.Errorf("[Remoting][Getty] invalid default client config, err=%v", err)
+	}
 	return defaultClientConfig
 }
 
@@ -166,7 +169,9 @@ func GetDefaultServerConfig() *ServerConfig {
 			SessionName:      "server",
 		},
 	}
-	_ = defaultServerConfig.CheckValidity()
+	if err := defaultServerConfig.CheckValidity(); err != nil {
+		logger.Errorf("[Remoting][Getty] invalid default server config, err=%v", err)
+	}
 	return defaultServerConfig
 }
 

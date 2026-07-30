@@ -124,8 +124,10 @@ func (gi *GrpcInvoker) Invoke(ctx context.Context, invocation base.Invocation) r
 	// check err
 	if !res[1].IsNil() {
 		result.SetError(res[1].Interface().(error))
-	} else {
-		_ = hessian2.ReflectResponse(res[0], invocation.Reply())
+	} else if invocation.Reply() != nil {
+		if err := hessian2.ReflectResponse(res[0], invocation.Reply()); err != nil {
+			result.SetError(errors.WithStack(err))
+		}
 	}
 
 	return &result

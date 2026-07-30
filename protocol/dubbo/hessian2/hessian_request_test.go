@@ -90,6 +90,39 @@ func TestPackRequest(t *testing.T) {
 	}
 }
 
+func TestPackRequestReturnsEncodeErrors(t *testing.T) {
+	tests := []struct {
+		name    string
+		request *DubboRequest
+	}{
+		{
+			name: "unsupported argument",
+			request: NewRequest([]any{
+				map[complex64]string{1 + 2i: "value"},
+			}, nil),
+		},
+		{
+			name: "unsupported attachment",
+			request: NewRequest([]any{}, map[string]any{
+				"unsupported": func() {},
+			}),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data, err := packRequest(Service{
+				Path:    "test",
+				Version: "v1.0",
+				Method:  "test",
+			}, DubboHeader{Type: PackageRequest}, tt.request)
+
+			require.Error(t, err)
+			assert.Nil(t, data)
+		})
+	}
+}
+
 func TestGetArgsTypeList(t *testing.T) {
 	type Test struct{}
 	str, err := getArgsTypeList([]any{nil, 1, []int{2}, true, []bool{false}, "a", []string{"b"}, Test{}, &Test{}, []Test{}, map[string]Test{}, TestEnumGender(MAN)})

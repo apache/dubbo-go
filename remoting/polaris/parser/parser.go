@@ -88,7 +88,10 @@ func ParseArgumentsByExpression(key string, parameters []any) any {
 		return nil
 	}
 	var searchVal any
-	_ = json.Unmarshal(data, &searchVal)
+	if err = json.Unmarshal(data, &searchVal); err != nil {
+		logger.Errorf("[Remoting][Polaris] unmarshal parameter %+v fail, err=%v", parameters[index], err)
+		return nil
+	}
 	res, err := jsonpath.JsonPathLookup(searchVal, key)
 	if err != nil {
 		logger.Errorf("[Remoting][Polaris] invalid do json path lookup, key=%s err=%v", key, err)

@@ -450,6 +450,38 @@ func TestMarshalResponse(t *testing.T) {
 		assert.NotNil(t, data)
 	})
 
+	t.Run("response with unsupported value", func(t *testing.T) {
+		encoder := hessian.NewEncoder()
+		pkg := DubboPackage{
+			Header: DubboHeader{ResponseStatus: Response_OK},
+			Body: &ResponsePayload{
+				RspObj:      func() {},
+				Attachments: map[string]any{},
+			},
+		}
+
+		data, err := marshalResponse(encoder, pkg)
+		require.Error(t, err)
+		assert.Nil(t, data)
+	})
+
+	t.Run("response with unsupported attachment", func(t *testing.T) {
+		encoder := hessian.NewEncoder()
+		pkg := DubboPackage{
+			Header: DubboHeader{ResponseStatus: Response_OK},
+			Body: &ResponsePayload{
+				Attachments: map[string]any{
+					DUBBO_VERSION_KEY: "2.7.0",
+					"unsupported":     func() {},
+				},
+			},
+		}
+
+		data, err := marshalResponse(encoder, pkg)
+		require.Error(t, err)
+		assert.Nil(t, data)
+	})
+
 	t.Run("response with value", func(t *testing.T) {
 		encoder := hessian.NewEncoder()
 		pkg := DubboPackage{

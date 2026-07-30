@@ -496,7 +496,9 @@ func (s *Server) compatRegisterHandler(interfaceName string, svc dubbo3.Dubbo3Gr
 		// please refer to protocol/triple/internal/proto/triple_gen/greettriple for procedure examples
 		// error could be ignored because base is empty string
 		procedure := joinProcedure(interfaceName, method.MethodName)
-		_ = s.triServer.RegisterCompatUnaryHandler(procedure, method.MethodName, svc, tri.MethodHandler(method.Handler), opts...)
+		if err := s.triServer.RegisterCompatUnaryHandler(procedure, method.MethodName, svc, tri.MethodHandler(method.Handler), opts...); err != nil {
+			logger.Errorf("[Triple][Server] register compat unary handler failed, procedure=%s, err=%v", procedure, err)
+		}
 	}
 
 	// init stream handlers
@@ -513,7 +515,9 @@ func (s *Server) compatRegisterHandler(interfaceName string, svc dubbo3.Dubbo3Gr
 		case stream.ServerStreams:
 			typ = tri.StreamTypeServer
 		}
-		_ = s.triServer.RegisterCompatStreamHandler(procedure, svc, typ, stream.Handler, opts...)
+		if err := s.triServer.RegisterCompatStreamHandler(procedure, svc, typ, stream.Handler, opts...); err != nil {
+			logger.Errorf("[Triple][Server] register compat stream handler failed, procedure=%s, err=%v", procedure, err)
+		}
 	}
 }
 
@@ -543,7 +547,7 @@ func (s *Server) registerMethodHandler(procedure string, m common.MethodInfo, in
 }
 
 func (s *Server) registerUnaryMethodHandler(procedure string, m common.MethodInfo, invoker base.Invoker, opts ...tri.HandlerOption) {
-	_ = s.triServer.RegisterUnaryHandler(
+	err := s.triServer.RegisterUnaryHandler(
 		procedure,
 		m.ReqInitFunc,
 		func(ctx context.Context, req *tri.Request) (*tri.Response, error) {
@@ -561,10 +565,13 @@ func (s *Server) registerUnaryMethodHandler(procedure string, m common.MethodInf
 		},
 		opts...,
 	)
+	if err != nil {
+		logger.Errorf("[Triple][Server] register unary handler failed, procedure=%s, err=%v", procedure, err)
+	}
 }
 
 func (s *Server) registerClientStreamMethodHandler(procedure string, m common.MethodInfo, invoker base.Invoker, opts ...tri.HandlerOption) {
-	_ = s.triServer.RegisterClientStreamHandler(
+	err := s.triServer.RegisterClientStreamHandler(
 		procedure,
 		func(ctx context.Context, stream *tri.ClientStream) (*tri.Response, error) {
 			args := []any{m.StreamInitFunc(stream)}
@@ -577,10 +584,13 @@ func (s *Server) registerClientStreamMethodHandler(procedure string, m common.Me
 		},
 		opts...,
 	)
+	if err != nil {
+		logger.Errorf("[Triple][Server] register client stream handler failed, procedure=%s, err=%v", procedure, err)
+	}
 }
 
 func (s *Server) registerServerStreamMethodHandler(procedure string, m common.MethodInfo, invoker base.Invoker, opts ...tri.HandlerOption) {
-	_ = s.triServer.RegisterServerStreamHandler(
+	err := s.triServer.RegisterServerStreamHandler(
 		procedure,
 		m.ReqInitFunc,
 		func(ctx context.Context, req *tri.Request, stream *tri.ServerStream) error {
@@ -594,10 +604,13 @@ func (s *Server) registerServerStreamMethodHandler(procedure string, m common.Me
 		},
 		opts...,
 	)
+	if err != nil {
+		logger.Errorf("[Triple][Server] register server stream handler failed, procedure=%s, err=%v", procedure, err)
+	}
 }
 
 func (s *Server) registerBidiStreamMethodHandler(procedure string, m common.MethodInfo, invoker base.Invoker, opts ...tri.HandlerOption) {
-	_ = s.triServer.RegisterBidiStreamHandler(
+	err := s.triServer.RegisterBidiStreamHandler(
 		procedure,
 		func(ctx context.Context, stream *tri.BidiStream) error {
 			args := []any{m.StreamInitFunc(stream)}
@@ -610,6 +623,9 @@ func (s *Server) registerBidiStreamMethodHandler(procedure string, m common.Meth
 		},
 		opts...,
 	)
+	if err != nil {
+		logger.Errorf("[Triple][Server] register bidi stream handler failed, procedure=%s, err=%v", procedure, err)
+	}
 }
 
 func extractUnaryInvocationArgs(msg any) []any {
