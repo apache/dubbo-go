@@ -173,7 +173,8 @@ func marshalRequest(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 	if err != nil {
 		return nil, perrors.Wrapf(err, " PackRequest(args:%+v)", args)
 	}
-	if err := encodeHessianValue(encoder, types, "argument types"); err != nil {
+	err = encodeHessianValue(encoder, types, "argument types")
+	if err != nil {
 		return nil, err
 	}
 	for _, v := range args {
