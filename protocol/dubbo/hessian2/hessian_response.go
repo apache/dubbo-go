@@ -38,13 +38,49 @@ import (
 // compatibility.
 //
 // Deprecated: Use hessian.GenericException from github.com/apache/dubbo-go-hessian2 instead.
-type GenericException = hessian.GenericException
+type GenericException struct {
+	ExceptionClass   string
+	ExceptionMessage string
+}
+
+func (e GenericException) Error() string {
+	if e.ExceptionClass == "" {
+		return e.ExceptionMessage
+	}
+	if e.ExceptionMessage == "" {
+		return e.ExceptionClass
+	}
+	return "java exception: " + e.ExceptionClass + " - " + e.ExceptionMessage
+}
 
 // ToGenericException converts decoded exception to GenericException when possible.
 //
 // Deprecated: Use hessian.ToGenericException from github.com/apache/dubbo-go-hessian2 instead.
 func ToGenericException(expt any) (*GenericException, bool) {
-	return hessian.ToGenericException(expt)
+	switch v := expt.(type) {
+	case *GenericException:
+		return v, true
+	case GenericException:
+		return &v, true
+	case *java_exception.DubboGenericException:
+		return &GenericException{ExceptionClass: v.ExceptionClass, ExceptionMessage: v.ExceptionMessage}, true
+	case java_exception.DubboGenericException:
+		return &GenericException{ExceptionClass: v.ExceptionClass, ExceptionMessage: v.ExceptionMessage}, true
+	case java_exception.Throwabler:
+		return &GenericException{ExceptionClass: v.JavaClassName(), ExceptionMessage: v.Error()}, true
+	case string:
+		return parseLegacyException(v), true
+	}
+	return nil, false
+}
+
+func parseLegacyException(exStr string) *GenericException {
+	const prefix = "java exception:"
+	msg := strings.TrimSpace(exStr)
+	if after, ok := strings.CutPrefix(msg, prefix); ok {
+		msg = strings.TrimSpace(after)
+	}
+	return &GenericException{ExceptionClass: "java.lang.Exception", ExceptionMessage: msg}
 }
 
 // DubboResponse dubbo response

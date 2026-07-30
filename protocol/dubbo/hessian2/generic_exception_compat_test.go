@@ -53,7 +53,15 @@ func TestGenericExceptionCompat(t *testing.T) {
 
 	// 3) ToGenericException with a string (legacy path)
 	result2, ok2 := dubbohessian.ToGenericException("java exception: com.example.Err - something went wrong")
-	if !ok2 || result2 == nil {
-		t.Fatal("ToGenericException should handle legacy string format")
+	if !ok2 {
+		t.Fatal("ToGenericException should return true for legacy string format")
+	}
+	if result2.ExceptionClass != "java.lang.Exception" {
+		t.Fatalf("unexpected ExceptionClass: got %q, want %q",
+			result2.ExceptionClass, "java.lang.Exception")
+	}
+	if result2.ExceptionMessage != "com.example.Err - something went wrong" {
+		t.Fatalf("unexpected ExceptionMessage: got %q, want %q",
+			result2.ExceptionMessage, "com.example.Err - something went wrong")
 	}
 }
