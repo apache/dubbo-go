@@ -1,0 +1,27 @@
+# dubbo-go CODEOWNERS
+# ---------------------------------------------------------------------------
+# 作用：PR 触碰对应路径时自动请求以下 owner 审查（见 CODE_REVIEW_GUIDE.md §6.3）。
+# 注意：下方 @dubbo-go/xxx 为「团队/个人 handle 占位符」，请替换为真实的
+#       GitHub team 名或 Committer 个人账号，否则 GitHub 不会路由审查。
+# 语法：<path> @owner1 @owner2
+# ---------------------------------------------------------------------------
+
+# 核心模块
+/cluster/                @dubbo-go/cluster-maintainers
+/protocol/               @dubbo-go/protocol-maintainers
+/registry/               @dubbo-go/registry-maintainers
+/config_center/          @dubbo-go/config-maintainers
+/common/                 @dubbo-go/core-maintainers
+/global/                 @dubbo-go/core-maintainers
+/metadata/               @dubbo-go/metadata-maintainers
+/remoting/               @dubbo-go/remoting-maintainers
+/filter/                 @dubbo-go/filter-maintainers
+/metrics/                @dubbo-go/observability-maintainers
+/otel/                   @dubbo-go/observability-maintainers
+
+# 工具与文档
+/tools/                  @dubbo-go/tooling-maintainers
+/doc/                    @dubbo-go/docs-maintainers
+
+# 兜底：未被上述路径覆盖的所有文件
+*                        @dubbo-go/committers

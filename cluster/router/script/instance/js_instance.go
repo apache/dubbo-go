@@ -23,6 +23,7 @@ import (
 	"reflect"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 import (
@@ -37,6 +38,12 @@ const (
 	jsScriptResultName = `__go_program_result`
 	jsScriptPrefix     = "\n" + jsScriptResultName + ` = `
 )
+
+// defaultScriptTimeout bounds the execution of a user-provided routing script.
+// Without it a runaway/looping script (e.g. `while (true) {}`) would block the
+// routing goroutine indefinitely, causing a denial of service.
+// See CODE_REVIEW_GUIDE.md §4.2.2.
+const defaultScriptTimeout = 500 * time.Millisecond
 
 type jsInstances struct {
 	insPool *sync.Pool // store *goja.runtime
@@ -199,6 +206,14 @@ func (j jsInstance) runScript(pg *goja.Program) (res any, err error) {
 			}
 		}
 	}(&res, &err)
+	// Hardening: interrupt the script if it exceeds the timeout so a runaway
+	// script cannot block this goroutine forever (DoS). initCallArgs calls
+	// ClearInterrupt before each run, which also clears any stale interrupt.
+	timer := time.AfterFunc(defaultScriptTimeout, func() {
+		j.rt.Interrupt("script execution exceeded timeout")
+	})
+	defer timer.Stop()
+
 	res, err = j.rt.RunProgram(pg)
 	return res, err
 }

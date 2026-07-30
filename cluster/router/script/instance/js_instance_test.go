@@ -23,6 +23,7 @@ import (
 	"reflect"
 	"sync"
 	"testing"
+	"time"
 )
 
 import (
@@ -715,4 +716,27 @@ func TestRunScriptInPanic(t *testing.T) {
 }(invokers, invocation, context));
 `
 	wontPanic(scriptCallWrongArgs3)
+}
+
+// TestRunScriptTimeout guards against a runaway/looping routing script blocking
+// the routing goroutine indefinitely (denial of service).
+// See CODE_REVIEW_GUIDE.md §4.2.2 and apache/dubbo-go#3566.
+func TestRunScriptTimeout(t *testing.T) {
+	j := newJsInstance()
+	pg, err := goja.Compile("", "while (true) {}", true)
+	testify_require.NoError(t, err)
+
+	done := make(chan error, 1)
+	go func() {
+		_, e := j.runScript(pg)
+		done <- e
+	}()
+
+	select {
+	case e := <-done:
+		// The interrupt must surface as an error rather than hanging forever.
+		testify_require.Error(t, e, "runaway script must be interrupted and return an error")
+	case <-time.After(3 * time.Second):
+		t.Fatal("runScript blocked indefinitely; script execution timeout is not enforced")
+	}
 }
