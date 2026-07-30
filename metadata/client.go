@@ -55,6 +55,15 @@ func GetMetadataFromMetadataReport(revision string, instance registry.ServiceIns
 }
 
 func GetMetadataFromRpc(revision string, instance registry.ServiceInstance) (*info.MetadataInfo, error) {
+	return GetMetadataFromRpcWithContext(context.Background(), revision, instance)
+}
+
+// GetMetadataFromRpcWithContext fetches metadata through the metadata service
+// while preserving the caller's context for the underlying RPC invocation.
+func GetMetadataFromRpcWithContext(ctx context.Context, revision string, instance registry.ServiceInstance) (*info.MetadataInfo, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	url, err := buildStandardMetadataServiceURL(instance)
 	if err != nil {
 		return nil, err
@@ -74,13 +83,12 @@ func GetMetadataFromRpc(revision string, instance registry.ServiceInstance) (*in
 	defer func() {
 		invoker.Destroy()
 	}()
-	return remoteService.getMetadataInfo(context.Background(), revision)
+	return remoteService.getMetadataInfo(ctx, revision)
 }
 
 // remoteMetadataService is the internal interface for fetching MetadataInfo via RPC.
-// The context parameter is accepted for future cancellation support but is not yet propagated.
 type remoteMetadataService interface {
-	getMetadataInfo(_ context.Context, revision string) (*info.MetadataInfo, error)
+	getMetadataInfo(ctx context.Context, revision string) (*info.MetadataInfo, error)
 }
 
 type triMetadataServiceV2 struct {
@@ -88,13 +96,15 @@ type triMetadataServiceV2 struct {
 }
 
 // getMetadataInfo fetches metadata via RPC using the Triple protocol (Protobuf).
-// TODO(context-propagation): ctx is not yet forwarded to the invoker; cancellation is not respected.
-func (m *triMetadataServiceV2) getMetadataInfo(_ context.Context, revision string) (*info.MetadataInfo, error) {
+func (m *triMetadataServiceV2) getMetadataInfo(ctx context.Context, revision string) (*info.MetadataInfo, error) {
 	const methodName = "GetMetadataInfo"
 	req := &tripleapi.MetadataRequest{Revision: revision}
 	metadataInfo := &tripleapi.MetadataInfoV2{}
 	inv, _ := generateInvocation(m.invoker.GetURL(), methodName, req, metadataInfo, constant.CallUnary)
-	res := m.invoker.Invoke(context.Background(), inv)
+	if rpcInv, ok := inv.(*invocation.RPCInvocation); ok {
+		rpcInv.SetContext(ctx)
+	}
+	res := m.invoker.Invoke(ctx, inv)
 	if res.Error() != nil {
 		logger.Errorf("[Metadata][RPC] could not get the metadata info from remote provider, err=%v", res.Error())
 		return nil, perrors.Wrapf(res.Error(), "remote metadata call failed")
@@ -160,15 +170,17 @@ type remoteMetadataServiceV1 struct {
 }
 
 // getMetadataInfo fetches metadata via RPC using the dubbo:// protocol (Hessian2 serialization).
-// TODO(context-propagation): ctx is not yet forwarded to the invoker; cancellation is not respected.
-func (m *remoteMetadataServiceV1) getMetadataInfo(_ context.Context, revision string) (*info.MetadataInfo, error) {
+func (m *remoteMetadataServiceV1) getMetadataInfo(ctx context.Context, revision string) (*info.MetadataInfo, error) {
 	const methodName = "getMetadataInfo"
 	// Use interface{} as reply parameter to accept any type (MetadataInfo or string)
 	// This avoids panic when Java returns String instead of MetadataInfo
 	var rawResult any
 	inv, _ := generateInvocation(m.invoker.GetURL(), methodName, revision, &rawResult, constant.CallUnary)
+	if rpcInv, ok := inv.(*invocation.RPCInvocation); ok {
+		rpcInv.SetContext(ctx)
+	}
 
-	res := m.invoker.Invoke(context.Background(), inv)
+	res := m.invoker.Invoke(ctx, inv)
 	if res.Error() != nil {
 		logger.Errorf("[Metadata][RPC] RPC call failed to %s, err=%v", m.invoker.GetURL().Location, res.Error())
 		return nil, perrors.Wrapf(res.Error(), "RPC call failed to %s", m.invoker.GetURL().Location)

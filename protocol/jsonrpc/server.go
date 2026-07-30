@@ -162,13 +162,7 @@ func (s *Server) handlePkg(conn net.Conn) {
 			return
 		}
 
-		ctx := context.Background()
-
-		spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.HTTPHeaders,
-			opentracing.HTTPHeadersCarrier(r.Header))
-		if err == nil {
-			ctx = context.WithValue(ctx, constant.TracingRemoteSpanCtx, spanCtx)
-		}
+		ctx := contextFromRequest(r)
 
 		if len(reqHeader["Timeout"]) > 0 {
 			timeout, err := time.ParseDuration(reqHeader["Timeout"])
@@ -192,6 +186,16 @@ func (s *Server) handlePkg(conn net.Conn) {
 			return
 		}
 	}
+}
+
+func contextFromRequest(r *http.Request) context.Context {
+	ctx := r.Context()
+	spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.HTTPHeaders,
+		opentracing.HTTPHeadersCarrier(r.Header))
+	if err == nil {
+		ctx = context.WithValue(ctx, constant.TracingRemoteSpanCtx, spanCtx)
+	}
+	return ctx
 }
 
 func accept(listener net.Listener, fn func(net.Conn)) error {
@@ -352,10 +356,12 @@ func serveRequest(ctx context.Context, header map[string]string, body []byte, co
 	}
 	invoker := exporter.(*JsonrpcExporter).GetInvoker()
 	if invoker != nil {
-		result := invoker.Invoke(ctx, invocation.NewRPCInvocation(methodName, args, map[string]any{
+		rpcInvocation := invocation.NewRPCInvocation(methodName, args, map[string]any{
 			constant.PathKey:    path,
 			constant.VersionKey: codec.req.Version,
-		}))
+		})
+		rpcInvocation.SetContext(ctx)
+		result := invoker.Invoke(ctx, rpcInvocation)
 		if err := result.Error(); err != nil {
 			rspStream, codecErr := codec.Write(err.Error(), invalidRequest)
 			if codecErr != nil {

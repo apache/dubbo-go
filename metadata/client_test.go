@@ -186,6 +186,39 @@ func TestGetMetadataFromRpc(t *testing.T) {
 	})
 }
 
+func TestGetMetadataFromRpcWithContext(t *testing.T) {
+	mockInvoker := new(mockInvoker)
+	mockProtocol := new(mockProtocol)
+	extension.SetProtocol("dubbo", func() base.Protocol {
+		return mockProtocol
+	})
+
+	mockProtocol.On("Refer").Return(mockInvoker).Once()
+	mockInvoker.On("Invoke").Return(&result.RPCResult{
+		Attrs: map[string]any{},
+		Rest:  metadataInfo,
+	}).Once()
+	mockInvoker.On("Destroy").Once()
+
+	ctx := context.WithValue(context.Background(), struct{}{}, "request-value")
+	metadata, err := GetMetadataFromRpcWithContext(ctx, "111", ins)
+	require.NoError(t, err)
+	assert.Equal(t, metadataInfo, metadata)
+	assert.Same(t, ctx, mockInvoker.invokedContext)
+}
+
+func TestTriMetadataServiceWithContext(t *testing.T) {
+	mockInvoker := new(mockInvoker)
+	mockInvoker.url = common.NewURLWithOptions(common.WithProtocol(constant.TriProtocol))
+	mockInvoker.On("Invoke").Return(&result.RPCResult{Attrs: map[string]any{}}).Once()
+
+	ctx := context.WithValue(context.Background(), struct{}{}, "request-value")
+	metadata, err := (&triMetadataServiceV2{invoker: mockInvoker}).getMetadataInfo(ctx, "111")
+	require.NoError(t, err)
+	require.NotNil(t, metadata)
+	assert.Same(t, ctx, mockInvoker.invokedContext)
+}
+
 func TestGetMetadataFromRpc_MissingURLParams(t *testing.T) {
 	t.Run("missing protocol", func(t *testing.T) {
 		insNoProto := &registry.DefaultServiceInstance{
@@ -377,9 +410,14 @@ func (m *mockProtocol) Destroy() {
 
 type mockInvoker struct {
 	mock.Mock
+	invokedContext context.Context
+	url            *common.URL
 }
 
 func (m *mockInvoker) GetURL() *common.URL {
+	if m.url != nil {
+		return m.url
+	}
 	return common.NewURLWithOptions(common.WithProtocol(constant.DefaultProtocol))
 }
 
@@ -392,6 +430,7 @@ func (m *mockInvoker) Destroy() {
 }
 
 func (m *mockInvoker) Invoke(ctx context.Context, inv base.Invocation) result.Result {
+	m.invokedContext = ctx
 	args := m.Called()
 	res := args.Get(0).(result.Result)
 

@@ -379,6 +379,19 @@ func TestRPCInvocation_GetAttachmentAsContext(t *testing.T) {
 	assert.NotContains(t, header, "key3")
 }
 
+func TestRPCInvocation_GetAttachmentAsContextPreservesRequestContext(t *testing.T) {
+	type requestContextKey struct{}
+	requestCtx := context.WithValue(context.Background(), requestContextKey{}, "request-value")
+	invocation := NewRPCInvocationWithOptions(
+		WithContext(requestCtx),
+		WithAttachment("key", "value"),
+	)
+
+	ctx := invocation.GetAttachmentAsContext()
+	assert.Equal(t, "request-value", ctx.Value(requestContextKey{}))
+	assert.Equal(t, "value", triple_protocol.ExtractFromOutgoingContext(ctx).Get("key"))
+}
+
 func TestRPCInvocation_MergeAttachmentFromContext(t *testing.T) {
 	invocation := NewRPCInvocationWithOptions()
 

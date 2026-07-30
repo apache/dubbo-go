@@ -23,6 +23,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 )
@@ -69,6 +70,18 @@ func TestServeRequest_ServiceNotFound(t *testing.T) {
 	err := serveRequest(context.Background(), header, body, serverConn)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "service not found")
+}
+
+func TestContextFromRequestPreservesRequestContext(t *testing.T) {
+	type contextKey struct{}
+	requestCtx, cancel := context.WithCancel(context.WithValue(context.Background(), contextKey{}, "request-value"))
+	defer cancel()
+	request := httptest.NewRequestWithContext(requestCtx, http.MethodPost, "/test", nil)
+
+	ctx := contextFromRequest(request)
+	require.Equal(t, "request-value", ctx.Value(contextKey{}))
+	cancel()
+	require.Error(t, ctx.Err())
 }
 
 func TestHandlePkg_ContentType(t *testing.T) {

@@ -18,7 +18,6 @@
 package server
 
 import (
-	"context"
 	"errors"
 	"net/http"
 	"reflect"
@@ -110,7 +109,17 @@ func GetRouteFunc(invoker base.Invoker, methodConfig *rest_config.RestMethodConf
 				logger.Errorf("[Rest][Server] write error string failed, err=%v", err)
 			}
 		}
-		result := invoker.Invoke(context.Background(), invocation.NewRPCInvocation(methodConfig.MethodName, args, make(map[string]any)))
+		rawRequest := req.RawRequest()
+		if rawRequest == nil {
+			logger.Errorf("[Rest][Server] request adapter returned a nil raw request")
+			if err := resp.WriteError(http.StatusInternalServerError, errors.New("raw HTTP request is nil")); err != nil {
+				logger.Errorf("[Rest][Server] write error failed, err=%v", err)
+			}
+			return
+		}
+		rpcInvocation := invocation.NewRPCInvocation(methodConfig.MethodName, args, make(map[string]any))
+		rpcInvocation.SetContext(rawRequest.Context())
+		result := invoker.Invoke(rawRequest.Context(), rpcInvocation)
 		if result.Error() != nil {
 			err = resp.WriteError(http.StatusInternalServerError, result.Error())
 			if err != nil {

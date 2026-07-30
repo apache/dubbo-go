@@ -47,6 +47,7 @@ type RPCInvocation struct {
 	arguments          []any
 	reply              any
 	callBack           any
+	ctx                context.Context
 	attachments        map[string]any
 	// Refer to dubbo 2.7.6.  It is different from attachment. It is used in internal process.
 	attributes map[string]any
@@ -174,6 +175,27 @@ func (r *RPCInvocation) SetCallBack(c any) {
 	r.callBack = c
 }
 
+// Context returns the request context associated with this invocation.
+func (r *RPCInvocation) Context() context.Context {
+	r.lock.RLock()
+	ctx := r.ctx
+	r.lock.RUnlock()
+	if ctx == nil {
+		return context.Background()
+	}
+	return ctx
+}
+
+// SetContext associates a request context with this invocation.
+func (r *RPCInvocation) SetContext(ctx context.Context) {
+	if ctx == nil {
+		return
+	}
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	r.ctx = ctx
+}
+
 func (r *RPCInvocation) ServiceKey() string {
 	return common.ServiceKey(strings.TrimPrefix(r.GetAttachmentWithDefaultValue(constant.PathKey, r.GetAttachmentWithDefaultValue(constant.InterfaceKey, "")), "/"),
 		r.GetAttachmentWithDefaultValue(constant.GroupKey, ""), r.GetAttachmentWithDefaultValue(constant.VersionKey, ""))
@@ -244,7 +266,7 @@ func (r *RPCInvocation) GetAttributeWithDefaultValue(key string, defaultValue an
 }
 
 func (r *RPCInvocation) GetAttachmentAsContext() context.Context {
-	ctx := context.Background()
+	ctx := r.Context()
 	var header = http.Header{}
 	for k, v := range r.Attachments() {
 		if str, ok := v.(string); ok {
@@ -340,6 +362,13 @@ func WithReply(reply any) option {
 func WithCallBack(callBack any) option {
 	return func(invo *RPCInvocation) {
 		invo.callBack = callBack
+	}
+}
+
+// WithContext creates an option with the request context.
+func WithContext(ctx context.Context) option {
+	return func(invo *RPCInvocation) {
+		invo.SetContext(ctx)
 	}
 }
 
