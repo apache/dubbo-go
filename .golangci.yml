@@ -23,6 +23,7 @@ linters:
     - staticcheck
     - unused
     - testifylint
+    - gosec
   settings:
     depguard:
       rules:
@@ -63,7 +64,10 @@ linters:
     rules:
       - linters:
           - gosec
-        text: weak cryptographic primitive
+        # G104(未检查的错误返回) 噪音大且与 staticcheck/govet 重叠，暂不阻塞；
+        # weak cryptographic primitive(G401) 项目有意的 md5 哈希用途，排除。
+        # 如需更严格，移除本规则即可恢复全部 gosec 检查。
+        text: '(G104|weak cryptographic primitive)'
       - linters:
           - staticcheck
         text: '(SA1019|ST1001):'
