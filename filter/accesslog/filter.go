@@ -213,7 +213,8 @@ func (f *Filter) processLogs() {
 
 // drainLogs drains remaining log data with timeout protection
 func (f *Filter) drainLogs() {
-	timeout := time.After(5 * time.Second)
+	timer := time.NewTimer(5 * time.Second)
+	defer timer.Stop()
 	for {
 		select {
 		case accessLogData, ok := <-f.logChan:
@@ -221,10 +222,8 @@ func (f *Filter) drainLogs() {
 				return
 			}
 			f.writeLogToFileWithTimeout(accessLogData, 1*time.Second)
-		case <-timeout:
+		case <-timer.C:
 			logger.Warn("[Filter][AccessLog] accessLog drain timeout, some logs may be lost")
-			return
-		default:
 			return
 		}
 	}
