@@ -19,6 +19,8 @@ package main
 
 import (
 	"context"
+	"errors"
+	"io"
 )
 
 import (
@@ -26,19 +28,32 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/server"
+	"github.com/dubbogo/gost/log/logger"
 )
 
-type GreeterProvider struct {
-	api.UnimplementedGreeterServer
-}
+type GreeterProvider struct{}
 
 func (s *GreeterProvider) SayHello(ctx context.Context, in *api.HelloRequest) (*api.User, error) {
 	logger.Infof("Dubbo3 GreeterProvider get user name = %s\n", in.Name)
 	return &api.User{Name: "Hello " + in.Name, Id: "12345", Age: 21}, nil
+}
+
+func (s *GreeterProvider) SayHelloStream(ctx context.Context, stream api.Greeter_SayHelloStreamServer) error {
+	for {
+		in, err := stream.Recv()
+		if errors.Is(err, io.EOF) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		if err := stream.Send(&api.User{Name: "Hello " + in.Name, Id: "12345", Age: 21}); err != nil {
+			return err
+		}
+	}
 }
 
 func main() {
@@ -52,7 +67,7 @@ func main() {
 		panic(err)
 	}
 
-	if err := api.RegisterGreeterServer(srv, &GreeterProvider{}); err != nil {
+	if err := api.RegisterGreeterHandler(srv, &GreeterProvider{}); err != nil {
 		panic(err)
 	}
 

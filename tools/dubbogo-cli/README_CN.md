@@ -107,7 +107,7 @@ dubbogo-cli newDemo .
 ├── api
 │   ├── samples_api.pb.go
 │   ├── samples_api.proto
-│   └── samples_api_triple.pb.go
+│   └── samples_api.triple.go
 ├── go-client
 │   └── cmd
 │       └── client.go
@@ -161,7 +161,7 @@ dubbogo-cli newApp .
 ├── api
 │   ├── api.pb.go
 │   ├── api.proto
-│   └── api_triple.pb.go
+│   └── api.triple.go
 ├── build
 │   └── Dockerfile
 ├── chart

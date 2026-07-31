@@ -31,19 +31,19 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/client"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
+	"github.com/dubbogo/gost/log/logger"
 )
 
 func main() {
 	cli, err := client.NewClient(
-		client.WithClientURL("tri://localhost:20000"),
+		client.WithClientURL("127.0.0.1:20000"),
 	)
 	if err != nil {
 		panic(err)
 	}
 
-	greeterClient, err := api.NewGreeterClient(cli)
+	greeterClient, err := api.NewGreeter(cli)
 	if err != nil {
 		panic(err)
 	}

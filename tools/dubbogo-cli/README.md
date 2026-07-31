@@ -103,7 +103,7 @@ The Demo uses the direct connection mode, without relying on the registration ce
 ├── api
 │   ├── samples_api.pb.go
 │   ├── samples_api.proto
-│   └── samples_api_triple.pb.go
+│   └── samples_api.triple.go
 ├── go-client
 │   └── cmd
 │       └── client.go
@@ -157,7 +157,7 @@ Create application template under './'
 ├── api
 │   ├── api.pb.go
 │   ├── api.proto
-│   └── api_triple.pb.go
+│   └── api.triple.go
 ├── build
 │   └── Dockerfile
 ├── chart

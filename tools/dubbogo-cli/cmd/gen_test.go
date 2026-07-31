@@ -20,6 +20,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -48,6 +49,40 @@ func TestNewDemo(t *testing.T) {
 	}
 
 	assertFileSame(t, "./testGenCode/newDemo", "./testGenCode/template/newDemo")
+}
+
+func TestGeneratedCodeDoesNotImportRemovedLoggerPackage(t *testing.T) {
+	const removedLoggerImport = `"dubbo.apache.org/dubbo-go/v3/common/logger"`
+
+	for _, dir := range []string{"../generator", "./testGenCode/template"} {
+		files, err := walkDir(dir)
+		require.NoError(t, err, "iterate generated code sources failed: %s", dir)
+
+		for _, file := range files {
+			if filepath.Ext(file) != ".go" {
+				continue
+			}
+
+			content, err := os.ReadFile(file)
+			require.NoError(t, err, "read generated code source failed: %s", file)
+			require.NotContains(t, string(content), removedLoggerImport,
+				"generated code must not import the removed logger package: %s", file)
+		}
+	}
+}
+
+func TestGeneratedProjectsCompile(t *testing.T) {
+	for _, dir := range []string{
+		"./testGenCode/template/newApp",
+		"./testGenCode/template/newDemo",
+	} {
+		t.Run(filepath.Base(dir), func(t *testing.T) {
+			cmd := exec.Command("go", "test", "./...")
+			cmd.Dir = dir
+			output, err := cmd.CombinedOutput()
+			require.NoError(t, err, "generated project must compile:\n%s", output)
+		})
+	}
 }
 
 func assertFileSame(t *testing.T, genPath, templatePath string) {
