@@ -67,7 +67,7 @@ require (
 	google.golang.org/grpc v1.64.1
 	google.golang.org/protobuf v1.34.2
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
-	gopkg.in/yaml.v3 v3.0.1
+	go.yaml.in/yaml/v4 v4.0.0-rc.6
 )
 
 require (

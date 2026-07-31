@@ -6,7 +6,7 @@ require (
 	github.com/golang/protobuf v1.5.0
 	github.com/pb33f/libopenapi v0.23.0
 	google.golang.org/protobuf v1.36.6
-	gopkg.in/yaml.v3 v3.0.1
+	go.yaml.in/yaml/v4 v4.0.0-rc.6
 )
 
 require (

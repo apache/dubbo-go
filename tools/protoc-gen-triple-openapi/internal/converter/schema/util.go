@@ -27,7 +27,7 @@ import (
 
 	"google.golang.org/protobuf/reflect/protoreflect"
 
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v4"
 )
 
 func messageToSchema(tt protoreflect.MessageDescriptor) (string, *base.Schema) {
