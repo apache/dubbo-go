@@ -79,13 +79,18 @@ func NewServer() *Server {
 }
 
 func (s *Server) handlePkg(conn net.Conn) {
+	connectionCtx, connectionCancel := context.WithCancel(context.Background())
+	writeConn := &lockedConn{Conn: conn}
+	var requestWG sync.WaitGroup
 	defer func() {
 		if r := recover(); r != nil {
 			logger.Warnf("[Jsonrpc][Server] connection panic, local=%v, remote=%v, err=%v, debug stack=%s",
 				conn.LocalAddr(), conn.RemoteAddr(), r, string(debug.Stack()))
 		}
 
+		connectionCancel()
 		conn.Close()
+		requestWG.Wait()
 	}()
 
 	setTimeout := func(conn net.Conn, timeout time.Duration) {
@@ -118,7 +123,7 @@ func (s *Server) handlePkg(conn net.Conn) {
 		if err != nil {
 			return perrors.WithStack(err)
 		}
-		_, err = rspBuf.WriteTo(conn)
+		_, err = rspBuf.WriteTo(writeConn)
 		return perrors.WithStack(err)
 	}
 
@@ -162,30 +167,52 @@ func (s *Server) handlePkg(conn net.Conn) {
 			return
 		}
 
+		requestCtx, requestCancel := context.WithCancel(connectionCtx)
+		r = r.WithContext(requestCtx)
 		ctx := contextFromRequest(r)
+		var timeoutCancel context.CancelFunc
 
 		if len(reqHeader["Timeout"]) > 0 {
 			timeout, err := time.ParseDuration(reqHeader["Timeout"])
 			if err == nil {
 				httpTimeout = timeout
-				var cancel context.CancelFunc
-				ctx, cancel = context.WithTimeout(ctx, httpTimeout)
-				defer cancel()
+				ctx, timeoutCancel = context.WithTimeout(ctx, httpTimeout)
 			}
 			delete(reqHeader, "Timeout")
 		}
 		setTimeout(conn, httpTimeout)
 
-		if err := serveRequest(ctx, reqHeader, reqBody, conn); err != nil {
-			if errRsp := sendErrorResp(r.Header, []byte(perrors.WithStack(err).Error())); errRsp != nil {
-				logger.Warnf("[Jsonrpc][Server] sendErrorResp failed, header=%v, err=%v, send_err=%v",
-					r.Header, perrors.WithStack(err), errRsp)
+		requestWG.Add(1)
+		go func(ctx context.Context, requestCancel, timeoutCancel context.CancelFunc, header map[string]string, body []byte, responseHeader http.Header) {
+			defer requestWG.Done()
+			defer requestCancel()
+			if timeoutCancel != nil {
+				defer timeoutCancel()
 			}
 
-			logger.Infof("[Jsonrpc][Server] unexpected error serving request, closing socket, err=%v", err)
-			return
-		}
+			if err := serveRequest(ctx, header, body, writeConn); err != nil {
+				if errRsp := sendErrorResp(responseHeader, []byte(perrors.WithStack(err).Error())); errRsp != nil {
+					logger.Warnf("[Jsonrpc][Server] sendErrorResp failed, header=%v, err=%v, send_err=%v",
+						responseHeader, perrors.WithStack(err), errRsp)
+				}
+
+				logger.Infof("[Jsonrpc][Server] unexpected error serving request, closing socket, err=%v", err)
+				connectionCancel()
+				conn.Close()
+			}
+		}(ctx, requestCancel, timeoutCancel, reqHeader, reqBody, r.Header)
 	}
+}
+
+type lockedConn struct {
+	net.Conn
+	writeMu sync.Mutex
+}
+
+func (c *lockedConn) Write(p []byte) (int, error) {
+	c.writeMu.Lock()
+	defer c.writeMu.Unlock()
+	return c.Conn.Write(p)
 }
 
 func contextFromRequest(r *http.Request) context.Context {

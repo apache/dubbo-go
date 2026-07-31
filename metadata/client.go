@@ -64,6 +64,9 @@ func GetMetadataFromRpcWithContext(ctx context.Context, revision string, instanc
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	url, err := buildStandardMetadataServiceURL(instance)
 	if err != nil {
 		return nil, err

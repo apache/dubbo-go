@@ -267,13 +267,15 @@ func (r *RPCInvocation) GetAttributeWithDefaultValue(key string, defaultValue an
 
 func (r *RPCInvocation) GetAttachmentAsContext() context.Context {
 	ctx := r.Context()
-	var header = http.Header{}
+	header := cloneOutgoingHeader(triple_protocol.ExtractFromOutgoingContext(ctx))
 	for k, v := range r.Attachments() {
 		if str, ok := v.(string); ok {
+			header.Del(k)
 			header.Set(k, str)
 			continue
 		}
 		if str, ok := v.([]string); ok {
+			header.Del(k)
 			for _, s := range str {
 				header.Add(k, s)
 			}
@@ -281,6 +283,14 @@ func (r *RPCInvocation) GetAttachmentAsContext() context.Context {
 		}
 	}
 	return triple_protocol.NewOutgoingContext(ctx, header)
+}
+
+func cloneOutgoingHeader(header http.Header) http.Header {
+	cloned := make(http.Header, len(header))
+	for key, values := range header {
+		cloned[key] = append([]string(nil), values...)
+	}
+	return cloned
 }
 
 func (r *RPCInvocation) MergeAttachmentFromContext(ctx context.Context) {

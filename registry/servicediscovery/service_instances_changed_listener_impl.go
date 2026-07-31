@@ -18,6 +18,7 @@
 package servicediscovery
 
 import (
+	"context"
 	"encoding/gob"
 	"reflect"
 	"sync"
@@ -59,6 +60,7 @@ func initCache(app string) {
 
 // ServiceInstancesChangedListenerImpl The Service Discovery Changed  Event Listener
 type ServiceInstancesChangedListenerImpl struct {
+	ctx                context.Context
 	app                string
 	registryId         string
 	serviceNames       *gxset.HashSet
@@ -70,10 +72,20 @@ type ServiceInstancesChangedListenerImpl struct {
 }
 
 func NewServiceInstancesChangedListener(app string, registryId string, services *gxset.HashSet) registry.ServiceInstancesChangedListener {
+	return NewServiceInstancesChangedListenerWithContext(context.Background(), app, registryId, services)
+}
+
+// NewServiceInstancesChangedListenerWithContext creates a listener whose
+// metadata refreshes are canceled with ctx, such as when its registry closes.
+func NewServiceInstancesChangedListenerWithContext(ctx context.Context, app string, registryId string, services *gxset.HashSet) registry.ServiceInstancesChangedListener {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	cacheOnce.Do(func() {
 		initCache(app)
 	})
 	return &ServiceInstancesChangedListenerImpl{
+		ctx:                ctx,
 		app:                app,
 		registryId:         registryId,
 		serviceNames:       services,
@@ -128,7 +140,7 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 			revisionToInstances[key] = append(subInstances, instance)
 			metadataInfo := lstn.revisionToMetadata[key]
 			if metadataInfo == nil {
-				meta, err := GetMetadataInfo(providerApp, instance, revision, lstn.registryId)
+				meta, err := GetMetadataInfoWithContext(lstn.ctx, providerApp, instance, revision, lstn.registryId)
 				if err != nil {
 					// Skip this instance if metadata fetch fails (e.g., old Java Dubbo version)
 					// Try next instance with same revision
@@ -273,6 +285,15 @@ func metadataCacheKey(app, registryId, revision string) string {
 // and falls back to RPC if the report fails or returns nil. For all other storage
 // types (including absent), it uses RPC directly.
 func GetMetadataInfo(app string, instance registry.ServiceInstance, revision string, registryId string) (*info.MetadataInfo, error) {
+	return GetMetadataInfoWithContext(context.Background(), app, instance, revision, registryId)
+}
+
+// GetMetadataInfoWithContext retrieves metadata using the supplied lifecycle
+// context for metadata RPC fallbacks.
+func GetMetadataInfoWithContext(ctx context.Context, app string, instance registry.ServiceInstance, revision string, registryId string) (*info.MetadataInfo, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	cacheOnce.Do(func() {
 		initCache(app)
 	})
@@ -310,7 +331,7 @@ func GetMetadataInfo(app string, instance registry.ServiceInstance, revision str
 			return metadataInfo, nil
 		}
 
-		metadataInfo, err = metadata.GetMetadataFromRpc(revision, instance)
+		metadataInfo, err = metadata.GetMetadataFromRpcWithContext(ctx, revision, instance)
 		if err != nil {
 			if reportErr != nil {
 				// Wrap rpcErr so callers can use errors.Is/As on the primary failure;
@@ -331,7 +352,7 @@ func GetMetadataInfo(app string, instance registry.ServiceInstance, revision str
 	}
 
 	// Non-remote storage type ("local" or absent): fetch metadata via RPC directly.
-	metadataInfo, err = metadata.GetMetadataFromRpc(revision, instance)
+	metadataInfo, err = metadata.GetMetadataFromRpcWithContext(ctx, revision, instance)
 	if err != nil {
 		return nil, perrors.Wrapf(err,
 			"failed app=%s registry=%s revision=%s", app, registryId, revision)

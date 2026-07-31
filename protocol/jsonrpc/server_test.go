@@ -20,6 +20,7 @@ package jsonrpc
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -30,6 +31,12 @@ import (
 
 import (
 	"github.com/stretchr/testify/require"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
 
 // sendHTTPRequest writes an HTTP request to conn and returns the parsed response.
@@ -156,4 +163,67 @@ func TestHandlePkg_ContentType(t *testing.T) {
 			}
 		})
 	}
+}
+
+type blockingInvoker struct {
+	base.BaseInvoker
+	started  chan struct{}
+	canceled chan struct{}
+}
+
+func (i *blockingInvoker) Invoke(ctx context.Context, _ base.Invocation) result.Result {
+	close(i.started)
+	<-ctx.Done()
+	close(i.canceled)
+	return &result.RPCResult{Err: ctx.Err()}
+}
+
+func TestHandlePkgCancelsInvocationWhenClientDisconnects(t *testing.T) {
+	const servicePath = "context-cancel-test"
+	protocol := GetProtocol().(*JsonrpcProtocol)
+	invoker := &blockingInvoker{
+		BaseInvoker: *base.NewBaseInvoker(common.NewURLWithOptions(
+			common.WithProtocol(JSONRPC),
+			common.WithPath("/"+servicePath),
+		)),
+		started:  make(chan struct{}),
+		canceled: make(chan struct{}),
+	}
+	protocol.SetExporterMap(servicePath, NewJsonrpcExporter(servicePath, invoker, protocol.ExporterMap()))
+	t.Cleanup(func() { protocol.ExporterMap().Delete(servicePath) })
+
+	server := NewServer()
+	serverConn, clientConn := net.Pipe()
+	handleDone := make(chan struct{})
+	go func() {
+		server.handlePkg(serverConn)
+		close(handleDone)
+	}()
+
+	body := `{"jsonrpc":"2.0","method":"Blocked","params":[],"id":1}`
+	request := "POST /" + servicePath + " HTTP/1.1\r\n" +
+		"Host: localhost\r\n" +
+		"Content-Type: application/json\r\n" +
+		"Content-Length: " + fmt.Sprint(len(body)) + "\r\n\r\n" + body
+	_, err := clientConn.Write([]byte(request))
+	require.NoError(t, err)
+
+	select {
+	case <-invoker.started:
+	case <-time.After(time.Second):
+		t.Fatal("invoker was not started")
+	}
+	require.NoError(t, clientConn.Close())
+
+	select {
+	case <-invoker.canceled:
+	case <-time.After(time.Second):
+		t.Fatal("invocation context was not canceled after client disconnect")
+	}
+	select {
+	case <-handleDone:
+	case <-time.After(time.Second):
+		t.Fatal("connection handler did not exit")
+	}
+	require.NoError(t, serverConn.Close())
 }

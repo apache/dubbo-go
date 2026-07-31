@@ -18,6 +18,7 @@
 package remoting
 
 import (
+	"context"
 	"errors"
 	"time"
 )
@@ -54,6 +55,10 @@ type Client interface {
 	Close()
 	Request(request *Request, timeout time.Duration, response *PendingResponse) error
 	IsAvailable() bool
+}
+
+type contextClient interface {
+	RequestContext(ctx context.Context, request *Request, timeout time.Duration, response *PendingResponse) error
 }
 
 // ExchangeClient is abstraction level. it is like facade.
@@ -116,6 +121,19 @@ func (client *ExchangeClient) GetActiveNumber() uint32 {
 // Request means two way request.
 func (client *ExchangeClient) Request(invocation *base.Invocation, url *common.URL, timeout time.Duration,
 	res *result.RPCResult) error {
+	return client.RequestContext(context.Background(), invocation, url, timeout, res)
+}
+
+// RequestContext sends a two-way request and stops waiting when ctx is canceled.
+func (client *ExchangeClient) RequestContext(ctx context.Context, invocation *base.Invocation, url *common.URL, timeout time.Duration,
+	res *result.RPCResult) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := ctx.Err(); err != nil {
+		res.Err = err
+		return err
+	}
 	if er := client.doInit(url); er != nil {
 		return er
 	}
@@ -129,7 +147,7 @@ func (client *ExchangeClient) Request(invocation *base.Invocation, url *common.U
 	rsp.Reply = (*invocation).Reply()
 	AddPendingResponse(rsp)
 
-	err := client.client.Request(request, timeout, rsp)
+	err := client.requestContext(ctx, request, timeout, rsp)
 	// request error
 	if err != nil {
 		RemovePendingResponse(SequenceType(request.ID))
@@ -147,9 +165,29 @@ func (client *ExchangeClient) Request(invocation *base.Invocation, url *common.U
 	return nil
 }
 
+func (client *ExchangeClient) requestContext(ctx context.Context, request *Request, timeout time.Duration, response *PendingResponse) error {
+	if contextAwareClient, ok := client.client.(contextClient); ok {
+		return contextAwareClient.RequestContext(ctx, request, timeout, response)
+	}
+	return client.client.Request(request, timeout, response)
+}
+
 // AsyncRequest async two way request.
 func (client *ExchangeClient) AsyncRequest(invocation *base.Invocation, url *common.URL, timeout time.Duration,
 	callback common.AsyncCallback, result *result.RPCResult) error {
+	return client.AsyncRequestContext(context.Background(), invocation, url, timeout, callback, result)
+}
+
+// AsyncRequestContext sends an asynchronous two-way request with ctx.
+func (client *ExchangeClient) AsyncRequestContext(ctx context.Context, invocation *base.Invocation, url *common.URL, timeout time.Duration,
+	callback common.AsyncCallback, result *result.RPCResult) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := ctx.Err(); err != nil {
+		result.Err = err
+		return err
+	}
 	if er := client.doInit(url); er != nil {
 		return er
 	}
@@ -164,7 +202,7 @@ func (client *ExchangeClient) AsyncRequest(invocation *base.Invocation, url *com
 	rsp.Reply = (*invocation).Reply()
 	AddPendingResponse(rsp)
 
-	err := client.client.Request(request, timeout, rsp)
+	err := client.requestContext(ctx, request, timeout, rsp)
 	if err != nil {
 		RemovePendingResponse(SequenceType(request.ID))
 		result.Err = err
@@ -176,6 +214,17 @@ func (client *ExchangeClient) AsyncRequest(invocation *base.Invocation, url *com
 
 // Send sends oneway request.
 func (client *ExchangeClient) Send(invocation *base.Invocation, url *common.URL, timeout time.Duration) error {
+	return client.SendContext(context.Background(), invocation, url, timeout)
+}
+
+// SendContext sends a one-way request with ctx.
+func (client *ExchangeClient) SendContext(ctx context.Context, invocation *base.Invocation, url *common.URL, timeout time.Duration) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if er := client.doInit(url); er != nil {
 		return er
 	}
@@ -187,7 +236,7 @@ func (client *ExchangeClient) Send(invocation *base.Invocation, url *common.URL,
 	rsp := NewPendingResponse(request.ID)
 	rsp.response = NewResponse(request.ID, "2.0.2")
 
-	err := client.client.Request(request, timeout, rsp)
+	err := client.requestContext(ctx, request, timeout, rsp)
 	if err != nil {
 		return err
 	}
