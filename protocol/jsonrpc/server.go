@@ -88,10 +88,11 @@ func (s *Server) handlePkg(conn net.Conn) {
 				conn.LocalAddr(), conn.RemoteAddr(), r, string(debug.Stack()))
 		}
 
-		connectionCancel()
 		conn.Close()
 		requestWG.Wait()
 	}()
+	// Register this after the cleanup defer so LIFO ordering cancels request contexts before Wait.
+	defer connectionCancel()
 
 	setTimeout := func(conn net.Conn, timeout time.Duration) {
 		t := time.Time{}

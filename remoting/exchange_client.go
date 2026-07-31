@@ -57,7 +57,7 @@ type Client interface {
 	IsAvailable() bool
 }
 
-type contextClient interface {
+type contextRequester interface {
 	RequestContext(ctx context.Context, request *Request, timeout time.Duration, response *PendingResponse) error
 }
 
@@ -166,8 +166,8 @@ func (client *ExchangeClient) RequestContext(ctx context.Context, invocation *ba
 }
 
 func (client *ExchangeClient) requestContext(ctx context.Context, request *Request, timeout time.Duration, response *PendingResponse) error {
-	if contextAwareClient, ok := client.client.(contextClient); ok {
-		return contextAwareClient.RequestContext(ctx, request, timeout, response)
+	if requester, ok := client.client.(contextRequester); ok {
+		return requester.RequestContext(ctx, request, timeout, response)
 	}
 	return client.client.Request(request, timeout, response)
 }
