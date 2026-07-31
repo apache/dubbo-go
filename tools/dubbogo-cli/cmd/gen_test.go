@@ -18,7 +18,6 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -35,26 +34,20 @@ import (
 )
 
 func TestNewApp(t *testing.T) {
-	if err := application.Generate("./testGenCode/newApp"); err != nil {
-		fmt.Printf("generate error: %s\n", err)
-	}
+	genPath := filepath.Join(t.TempDir(), "newApp")
+	require.NoError(t, application.Generate(genPath))
 
-	assertFileSame(t, "./testGenCode/newApp", "./testGenCode/template/newApp")
+	assertFileSame(t, genPath, "./testGenCode/template/newApp")
 }
 
 func TestNewDemo(t *testing.T) {
-	if err := sample.Generate("./testGenCode/newDemo"); err != nil {
-		fmt.Printf("generate error: %s\n", err)
-	}
+	genPath := filepath.Join(t.TempDir(), "newDemo")
+	require.NoError(t, sample.Generate(genPath))
 
-	assertFileSame(t, "./testGenCode/newDemo", "./testGenCode/template/newDemo")
+	assertFileSame(t, genPath, "./testGenCode/template/newDemo")
 }
 
 func assertFileSame(t *testing.T, genPath, templatePath string) {
-	t.Cleanup(func() {
-		os.RemoveAll(genPath)
-	})
-
 	// 1. get all files in template directory
 	templateFiles, err := walkDir(templatePath)
 	require.NoError(t, err, "iterate template directory failed")
