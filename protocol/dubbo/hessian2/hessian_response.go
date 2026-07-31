@@ -34,8 +34,7 @@ import (
 	perrors "github.com/pkg/errors"
 )
 
-// GenericException is a type alias of hessian.GenericException for backward
-// compatibility.
+// GenericException is a legacy-compatible type.
 //
 // Deprecated: Use hessian.GenericException from github.com/apache/dubbo-go-hessian2 instead.
 type GenericException struct {
