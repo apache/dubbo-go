@@ -24,6 +24,8 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/log/logger"
+
 	"helloworld/api"
 )
 
@@ -31,7 +33,6 @@ import (
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/server"
-	"github.com/dubbogo/gost/log/logger"
 )
 
 type GreeterProvider struct{}

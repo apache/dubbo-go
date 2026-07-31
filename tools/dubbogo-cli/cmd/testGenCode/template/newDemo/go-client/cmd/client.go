@@ -22,13 +22,14 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/log/logger"
+
 	"helloworld/api"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/client"
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
-	"github.com/dubbogo/gost/log/logger"
 )
 
 func main() {

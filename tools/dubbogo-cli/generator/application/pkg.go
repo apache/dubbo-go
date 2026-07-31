@@ -45,9 +45,7 @@ import (
 
 import (
 	"dubbo-go-app/api"
-)
 
-import (
 	"github.com/dubbogo/gost/log/logger"
 )
 

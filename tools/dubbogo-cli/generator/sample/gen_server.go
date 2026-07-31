@@ -28,14 +28,15 @@ import (
 )
 
 import (
+	"github.com/dubbogo/gost/log/logger"
+
 	"helloworld/api"
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/server"
-	"dubbo.apache.org/dubbo-go/v3/protocol"
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
-	"github.com/dubbogo/gost/log/logger"
+	"dubbo.apache.org/dubbo-go/v3/protocol"
+	"dubbo.apache.org/dubbo-go/v3/server"
 )
 
 type GreeterProvider struct{}
