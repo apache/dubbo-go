@@ -48,11 +48,13 @@ type contextCaptureInvoker struct {
 	*base.BaseInvoker
 	ctx            context.Context
 	lastInvocation base.Invocation
+	invocations    int
 }
 
 func (i *contextCaptureInvoker) Invoke(ctx context.Context, inv base.Invocation) result.Result {
 	i.ctx = ctx
 	i.lastInvocation = inv
+	i.invocations++
 	return &result.RPCResult{Rest: "ok"}
 }
 
@@ -130,4 +132,35 @@ func TestGetRouteFuncPropagatesRequestContext(t *testing.T) {
 	assertedInvocation, ok := invoker.lastInvocation.(*invocation.RPCInvocation)
 	require.True(t, ok)
 	require.Equal(t, "request-value", assertedInvocation.Context().Value(contextKey{}))
+}
+
+func TestGetRouteFuncReturnsAfterParameterParseError(t *testing.T) {
+	const interfaceName = "RestContextParseErrorService"
+	const protocol = "rest"
+	const version = "context-parse-error"
+
+	_, err := common.ServiceMap.Register(interfaceName, protocol, "", version, &RestContextService{})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, common.ServiceMap.UnRegister(interfaceName, protocol, common.ServiceKey(interfaceName, "", version)))
+	})
+
+	url := common.NewURLWithOptions(
+		common.WithProtocol(protocol),
+		common.WithPath(interfaceName),
+		common.WithParamsValue(constant.VersionKey, version),
+	)
+	invoker := &contextCaptureInvoker{BaseInvoker: base.NewBaseInvoker(url)}
+	methodConfig := &config.RestMethodConfig{
+		MethodName:    "Handle",
+		PathParamsMap: map[int]string{0: "missing"},
+		Body:          -1,
+	}
+	request := &testRestRequest{request: httptest.NewRequest(http.MethodGet, "/", nil)}
+	response := &testRestResponse{ResponseRecorder: httptest.NewRecorder()}
+
+	GetRouteFunc(invoker, methodConfig)(request, response)
+
+	require.Equal(t, 0, invoker.invocations)
+	require.Equal(t, http.StatusInternalServerError, response.Code)
 }

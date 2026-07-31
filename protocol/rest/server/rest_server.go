@@ -104,10 +104,10 @@ func GetRouteFunc(invoker base.Invoker, methodConfig *rest_config.RestMethodConf
 		}
 		if err != nil {
 			logger.Errorf("[Rest][Server] parsing http parameters error, err=%v", err)
-			err = resp.WriteError(http.StatusInternalServerError, errors.New(parseParameterErrorStr))
-			if err != nil {
-				logger.Errorf("[Rest][Server] write error string failed, err=%v", err)
+			if writeErr := resp.WriteError(http.StatusInternalServerError, errors.New(parseParameterErrorStr)); writeErr != nil {
+				logger.Errorf("[Rest][Server] write error string failed, err=%v", writeErr)
 			}
+			return
 		}
 		rawRequest := req.RawRequest()
 		if rawRequest == nil {
