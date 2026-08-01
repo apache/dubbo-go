@@ -51,7 +51,7 @@ Apache Dubbo-go 3.3.2 is a production-readiness release focused on API consolida
 ### Tooling
 
 - Refresh the companion tool versions for the release: `protoc-gen-go-triple` and `protoc-gen-triple-openapi` 3.3.2, `dubbogo-cli` 1.0.1, and `imports-formatter` 1.0.11. The Triple generator now emits the modern `NewXxx` and `RegisterXxxHandler` API style by default, records generator and `protoc` versions in generated files, and retains legacy output behind `useOldVersion=true`. [#3585](https://github.com/apache/dubbo-go/pull/3585)
-- Rework CLI scaffolds to generate protobuf and Triple sources through `make proto-gen` instead of embedding generated files. New projects use Go 1.25 with the stable Dubbo-Go v3.3.1 dependency, treat wrapped EOF as normal stream completion, and are compiled end to end in Linux CI. [#3585](https://github.com/apache/dubbo-go/pull/3585) [#3587](https://github.com/apache/dubbo-go/pull/3587)
+- Rework CLI scaffolds to generate protobuf and Triple sources through `make proto-gen` instead of embedding generated files. New projects use Go 1.25 with the stable Dubbo-go v3.3.1 dependency, treat wrapped EOF as normal stream completion, and are compiled end to end in Linux CI. [#3585](https://github.com/apache/dubbo-go/pull/3585) [#3587](https://github.com/apache/dubbo-go/pull/3587)
 
 ### Documentation and CI
 
