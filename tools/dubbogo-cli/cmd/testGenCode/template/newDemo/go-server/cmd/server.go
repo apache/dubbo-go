@@ -19,6 +19,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"io"
 	"log"
 )
@@ -44,7 +45,7 @@ func (s *GreeterProvider) SayHello(ctx context.Context, in *api.HelloRequest) (*
 func (s *GreeterProvider) SayHelloStream(ctx context.Context, stream api.Greeter_SayHelloStreamServer) error {
 	for {
 		in, err := stream.Recv()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return nil
 		}
 		if err != nil {
