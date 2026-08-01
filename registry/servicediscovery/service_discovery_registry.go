@@ -114,10 +114,6 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 			if s.metadataReport == nil {
 				return perrors.New("can not publish app metadata cause report instance not found")
 			}
-			err := s.metadataReport.PublishAppMetadata(metaInfo.App, metaInfo.Revision, metaInfo)
-			if err != nil {
-				return err
-			}
 		}
 		err := s.serviceDiscovery.Register(instance)
 		if err != nil {
@@ -127,6 +123,12 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 		s.instances = append(s.instances, instance)
 		s.instanceURLs[instance] = url
 		s.lock.Unlock()
+	}
+
+	if metadata.GetMetadataType() == constant.RemoteMetadataStorageType {
+		if err := s.metadataReport.PublishAppMetadata(metaInfo.App, metaInfo.Revision, metaInfo); err != nil {
+			return err
+		}
 	}
 
 	s.lock.Lock()
