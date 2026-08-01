@@ -187,7 +187,7 @@ func TestServiceDiscoveryRegistryRegisterReturnsPublishError(t *testing.T) {
 	require.NoError(t, err)
 
 	err = sdReg.RegisterService()
-	assert.EqualError(t, err, "mock publish failed")
+	require.EqualError(t, err, "mock publish failed")
 	assert.True(t, mockSD.registerCalled, "ServiceDiscovery.Register should be called")
 }
 
