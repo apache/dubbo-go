@@ -33,6 +33,18 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/tools/dubbogo-cli/generator/sample"
 )
 
+type generatedProjectCase struct {
+	name     string
+	generate func(string) error
+}
+
+func generatedProjectCases() []generatedProjectCase {
+	return []generatedProjectCase{
+		{name: "newApp", generate: application.Generate},
+		{name: "newDemo", generate: sample.Generate},
+	}
+}
+
 func TestNewApp(t *testing.T) {
 	genPath := filepath.Join(t.TempDir(), "newApp")
 	require.NoError(t, application.Generate(genPath))
@@ -45,6 +57,43 @@ func TestNewDemo(t *testing.T) {
 	require.NoError(t, sample.Generate(genPath))
 
 	assertFileSame(t, genPath, "./testGenCode/template/newDemo")
+}
+
+func TestGeneratedModuleVersion(t *testing.T) {
+	const stableVersion = "dubbo.apache.org/dubbo-go/v3 v3.3.1"
+	const datedPrerelease = "v3.3.1-20260727"
+
+	for _, tc := range generatedProjectCases() {
+		t.Run(tc.name, func(t *testing.T) {
+			genPath := filepath.Join(t.TempDir(), tc.name)
+			require.NoError(t, tc.generate(genPath))
+
+			content, err := os.ReadFile(filepath.Join(genPath, "go.mod"))
+			require.NoError(t, err)
+			require.Contains(t, string(content), stableVersion)
+			require.NotContains(t, string(content), datedPrerelease)
+		})
+	}
+}
+
+func TestGeneratedCodeDoesNotImportRemovedLoggerPackage(t *testing.T) {
+	const removedLoggerImport = `"dubbo.apache.org/dubbo-go/v3/common/logger"`
+
+	for _, dir := range []string{"../generator", "./testGenCode/template"} {
+		files, err := walkDir(dir)
+		require.NoError(t, err, "iterate generated code sources failed: %s", dir)
+
+		for _, file := range files {
+			if filepath.Ext(file) != ".go" {
+				continue
+			}
+
+			content, err := os.ReadFile(file)
+			require.NoError(t, err, "read generated code source failed: %s", file)
+			require.NotContains(t, string(content), removedLoggerImport,
+				"generated code must not import the removed logger package: %s", file)
+		}
+	}
 }
 
 func assertFileSame(t *testing.T, genPath, templatePath string) {
