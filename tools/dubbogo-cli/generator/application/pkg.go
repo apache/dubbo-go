@@ -39,27 +39,26 @@ package service
 
 import (
 	"context"
-	"errors"
 	"io"
+	"log"
 )
 
 import (
 	"dubbo-go-app/api"
-
-	"github.com/dubbogo/gost/log/logger"
 )
 
-type GreeterServerImpl struct{}
+type GreeterServerImpl struct {
+}
 
 func (s *GreeterServerImpl) SayHello(ctx context.Context, in *api.HelloRequest) (*api.User, error) {
-	logger.Infof("Dubbo-go GreeterProvider get user name = %s\n", in.Name)
+	log.Printf("Dubbo-go GreeterProvider get user name = %s\n", in.Name)
 	return &api.User{Name: "Hello " + in.Name, Id: "12345", Age: 21}, nil
 }
 
 func (s *GreeterServerImpl) SayHelloStream(ctx context.Context, stream api.Greeter_SayHelloStreamServer) error {
 	for {
 		in, err := stream.Recv()
-		if errors.Is(err, io.EOF) {
+		if err == io.EOF {
 			return nil
 		}
 		if err != nil {

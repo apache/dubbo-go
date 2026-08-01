@@ -19,13 +19,11 @@ package main
 
 import (
 	"context"
-	"errors"
 	"io"
+	"log"
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-
 	"helloworld/api"
 )
 
@@ -35,17 +33,18 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/server"
 )
 
-type GreeterProvider struct{}
+type GreeterProvider struct {
+}
 
 func (s *GreeterProvider) SayHello(ctx context.Context, in *api.HelloRequest) (*api.User, error) {
-	logger.Infof("Dubbo3 GreeterProvider get user name = %s\n", in.Name)
+	log.Printf("Dubbo3 GreeterProvider get user name = %s\n", in.Name)
 	return &api.User{Name: "Hello " + in.Name, Id: "12345", Age: 21}, nil
 }
 
 func (s *GreeterProvider) SayHelloStream(ctx context.Context, stream api.Greeter_SayHelloStreamServer) error {
 	for {
 		in, err := stream.Recv()
-		if errors.Is(err, io.EOF) {
+		if err == io.EOF {
 			return nil
 		}
 		if err != nil {

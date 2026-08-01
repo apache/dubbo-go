@@ -47,7 +47,7 @@ remove-nacos-env:
 	helm uninstall nacos
 
 proto-gen:
-	protoc --go_out=./api --go-triple_out=./api ./api/api.proto
+	protoc --go_out=. --go_opt=paths=source_relative --go-triple_out=. --go-triple_opt=paths=source_relative ./api/api.proto
 
 clean:
 	rm ./build/dubbogo.yaml

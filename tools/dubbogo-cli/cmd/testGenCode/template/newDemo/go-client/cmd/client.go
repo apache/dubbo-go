@@ -19,11 +19,10 @@ package main
 
 import (
 	"context"
+	"log"
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-
 	"helloworld/api"
 )
 
@@ -34,7 +33,7 @@ import (
 
 func main() {
 	cli, err := client.NewClient(
-		client.WithClientURL("127.0.0.1:20000"),
+		client.WithClientURL("tri://localhost:20000"),
 	)
 	if err != nil {
 		panic(err)
@@ -45,13 +44,13 @@ func main() {
 		panic(err)
 	}
 
-	logger.Info("start to test dubbo")
+	log.Println("start to test dubbo")
 	req := &api.HelloRequest{
 		Name: "laurence",
 	}
 	reply, err := greeterClient.SayHello(context.Background(), req)
 	if err != nil {
-		logger.Error(err)
+		log.Println(err)
 	}
-	logger.Infof("client response result: %v\n", reply)
+	log.Printf("client response result: %v\n", reply)
 }

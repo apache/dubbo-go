@@ -19,7 +19,7 @@ syntax = "proto3";
 
 package greet;
 
-option go_package = "github.com/apache/dubbo-go/tools/protoc-gen-triple-openapi/example;greet";
+option go_package = "dubbo.apache.org/dubbo-go/v3/tools/protoc-gen-triple-openapi/example;greet";
 
 message GreetRequest {
   string name = 1;

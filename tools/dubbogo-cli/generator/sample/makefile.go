@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package application
+package sample
 
 const (
 	makefile = `# Licensed to the Apache Software Foundation (ASF) under one or more
@@ -33,45 +33,8 @@ const (
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-IMAGE = $(your_repo)/$(namespace)/$(image_name)
-TAG = 1.0.0
-HELM_INSTALL_NAME = dubbo-go-app
-
-build-amd64-app:
-	GOOS=linux GOARCH=amd64 go build -o build/app ./cmd
-
-build: proto-gen tidy build-amd64-app
-	cp ./conf/dubbogo.yaml ./build/dubbogo.yaml
-	docker build ./build -t ${IMAGE}:${TAG}
-	docker push ${IMAGE}:${TAG}
-	make clean
-
-buildx-publish: proto-gen tidy build-amd64-app
-	cp ./conf/dubbogo.yaml ./build/dubbogo.yaml
-	docker buildx build \
-    	 --platform linux/amd64 \
-    	 -t ${IMAGE}:${TAG} \
-    	 ./build --push
-	make clean
-
-remove:
-	helm uninstall ${HELM_INSTALL_NAME}
-
-deploy:
-	helm install ${HELM_INSTALL_NAME} ./chart/app
-
-deploy-nacos-env:
-	helm install nacos ./chart/nacos_env
-
-remove-nacos-env:
-	helm uninstall nacos
-
 proto-gen:
-	protoc --go_out=. --go_opt=paths=source_relative --go-triple_out=. --go-triple_opt=paths=source_relative ./api/api.proto
-
-clean:
-	rm ./build/dubbogo.yaml
-	rm ./build/app
+	protoc --go_out=. --go_opt=paths=source_relative --go-triple_out=. --go-triple_opt=paths=source_relative ./api/samples_api.proto
 
 tidy:
 	go mod tidy
