@@ -58,7 +58,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y protobuf-compiler
-          go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.34.2
+          go install -mod=readonly google.golang.org/protobuf/cmd/protoc-gen-go
           cd tools/protoc-gen-go-triple
           go install .
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
