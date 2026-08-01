@@ -150,6 +150,47 @@ func TestServiceDiscoveryRegistryRegisterPublishesMetadataOnce(t *testing.T) {
 	assert.Equal(t, 1, countingReport.published)
 }
 
+// TestServiceDiscoveryRegistryRegisterReturnsPublishError verifies that
+// RegisterService propagates a PublishAppMetadata error.
+func TestServiceDiscoveryRegistryRegisterReturnsPublishError(t *testing.T) {
+	mockSD, _ := setupEnvironment(t)
+	regID := fmt.Sprintf("mock-reg-%s-%d", t.Name(), time.Now().UnixNano())
+	prevType := metadata.GetMetadataType()
+	opts := metadata.NewOptions(metadata.WithMetadataType(constant.RemoteMetadataStorageType))
+	_ = opts.Init()
+	defer func() {
+		restoreOpts := metadata.NewOptions(metadata.WithMetadataType(prevType))
+		_ = restoreOpts.Init()
+	}()
+
+	registryURL, err := common.NewURL(testRegistryURL,
+		common.WithParamsValue(constant.RegistryKey, "mock"),
+		common.WithParamsValue(constant.RegistryIdKey, regID))
+	require.NoError(t, err)
+
+	reg, err := newServiceDiscoveryRegistry(registryURL)
+	require.NoError(t, err)
+
+	failingReport := &mockMetadataReportForGC{publishErr: errors.New("mock publish failed")}
+	sdReg, ok := reg.(*serviceDiscoveryRegistry)
+	require.True(t, ok)
+	sdReg.metadataReport = failingReport
+
+	providerURL, err := common.NewURL("dubbo://127.0.0.1:20880/",
+		common.WithParamsValue(constant.ApplicationKey, testApp),
+		common.WithInterface(testInterface),
+		common.WithParamsValue(constant.SideKey, constant.SideProvider),
+	)
+	require.NoError(t, err)
+
+	err = reg.Register(providerURL)
+	require.NoError(t, err)
+
+	err = sdReg.RegisterService()
+	assert.EqualError(t, err, "mock publish failed")
+	assert.True(t, mockSD.registerCalled, "ServiceDiscovery.Register should be called")
+}
+
 // TestServiceDiscoveryRegistrySubscribe verifies the subscription flow.
 func TestServiceDiscoveryRegistrySubscribe(t *testing.T) {
 	mockSD, mockMapping := setupEnvironment(t)
@@ -564,10 +605,11 @@ func (m *mockProxyFactory) GetInvoker(url *common.URL) protocol.Invoker { return
 
 // mockMetadataReportForGC is a lightweight mock for testing GC logic
 type mockMetadataReportForGC struct {
-	revisions []report.AppRevision
-	deleted   []string // tracks deleted revisions
-	published int      // tracks publish calls
-	reportURL *common.URL
+	revisions  []report.AppRevision
+	deleted    []string // tracks deleted revisions
+	published  int      // tracks publish calls
+	reportURL  *common.URL
+	publishErr error // optional error returned by PublishAppMetadata
 }
 
 func (m *mockMetadataReportForGC) GetAppMetadata(string, string) (*info.MetadataInfo, error) {
@@ -575,6 +617,9 @@ func (m *mockMetadataReportForGC) GetAppMetadata(string, string) (*info.Metadata
 }
 func (m *mockMetadataReportForGC) PublishAppMetadata(string, string, *info.MetadataInfo) error {
 	m.published++
+	if m.publishErr != nil {
+		return m.publishErr
+	}
 	return nil
 }
 func (m *mockMetadataReportForGC) RegisterServiceAppMapping(string, string, string) error {
