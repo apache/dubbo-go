@@ -23,9 +23,13 @@ import (
 	"fmt"
 	"io"
 	"testing"
+)
 
+import (
 	"github.com/stretchr/testify/require"
+)
 
+import (
 	rpb "dubbo.apache.org/dubbo-go/v3/protocol/triple/reflection/triple_reflection"
 )
 
