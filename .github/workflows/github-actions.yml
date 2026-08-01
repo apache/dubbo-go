@@ -54,6 +54,18 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
+      - name: Install generated-project toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.34.2
+          cd tools/protoc-gen-go-triple
+          go install .
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Test generated CLI projects
+        run: make -C tools/dubbogo-cli test-generated-projects
+
       - name: Check Code Format
         run: make check-fmt
 
