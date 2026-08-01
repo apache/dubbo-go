@@ -175,6 +175,49 @@ func TestInitReturnsWhenGracefulShutdownFilterMissing(t *testing.T) {
 	assert.Nil(t, shutdownConfig)
 }
 
+func TestInitInternalSignalTriggersShutdownWithoutProcessExit(t *testing.T) {
+	resetShutdownTestState()
+
+	mockConsumerFilter := &MockFilter{}
+	mockProviderFilter := &MockFilter{}
+	mockConsumerFilter.On("Set", mock.Anything, mock.Anything).Return()
+	mockProviderFilter.On("Set", mock.Anything, mock.Anything).Return()
+
+	extension.SetFilter(constant.GracefulShutdownConsumerFilterKey, func() filter.Filter {
+		return mockConsumerFilter
+	})
+	extension.SetFilter(constant.GracefulShutdownProviderFilterKey, func() filter.Filter {
+		return mockProviderFilter
+	})
+	t.Cleanup(func() {
+		extension.UnregisterFilter(constant.GracefulShutdownConsumerFilterKey)
+		extension.UnregisterFilter(constant.GracefulShutdownProviderFilterKey)
+		resetShutdownTestState()
+	})
+
+	signalNotify = func(signals chan<- os.Signal, _ ...os.Signal) {
+		signals <- os.Interrupt
+	}
+
+	cfg := global.DefaultShutdownConfig()
+	internalSignal := true
+	cfg.InternalSignal = &internalSignal
+	cfg.ConsumerUpdateWaitTime = "0s"
+	cfg.StepTimeout = "0s"
+	cfg.NotifyTimeout = "10ms"
+	cfg.OfflineRequestWindowTimeout = "0s"
+
+	Init(SetShutdownConfig(cfg))
+
+	select {
+	case <-Done():
+	case <-time.After(time.Second):
+		t.Fatal("shutdown did not complete after internal signal")
+	}
+
+	require.NoError(t, Shutdown(context.Background()))
+}
+
 func TestShutdownClosesDoneAndRunsOnce(t *testing.T) {
 	resetShutdownTestState()
 

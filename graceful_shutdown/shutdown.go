@@ -114,12 +114,10 @@ func Init(opts ...Option) {
 			go func() {
 				sig := <-signals
 				logger.Infof("get signal %s, applicationConfig will shutdown.", sig)
-				// fallback timeout
-				time.AfterFunc(totalTimeout(newOpts.Shutdown), func() {
-					logger.Warn("Shutdown gracefully timeout, applicationConfig will shutdown immediately. ")
-					os.Exit(0)
-				})
-				if err := Shutdown(context.Background()); err != nil {
+				ctx, cancel := context.WithTimeout(context.Background(), totalTimeout(newOpts.Shutdown))
+				defer cancel()
+
+				if err := Shutdown(ctx); err != nil {
 					logger.Warnf("Graceful shutdown --- shutdown completed with error: %v", err)
 				}
 				// those signals' original behavior is exit with dump ths stack, so we try to keep the behavior
@@ -128,7 +126,6 @@ func Init(opts ...Option) {
 						debug.WriteHeapDump(os.Stdout.Fd())
 					}
 				}
-				os.Exit(0)
 			}()
 		}
 	})
