@@ -25,12 +25,12 @@ import (
 )
 
 import (
-	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
-
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	openapimodel "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/pb33f/libopenapi/index"
 	"github.com/pb33f/libopenapi/orderedmap"
+
+	"go.yaml.in/yaml/v4"
 
 	"google.golang.org/protobuf/proto"
 
@@ -38,8 +38,6 @@ import (
 
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/pluginpb"
-
-	"gopkg.in/yaml.v3"
 )
 
 import (
@@ -207,7 +205,7 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 		})
 	}
 
-	return &plugin.CodeGeneratorResponse{
+	return &pluginpb.CodeGeneratorResponse{
 		File: files,
 	}, nil
 }
