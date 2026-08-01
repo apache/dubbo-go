@@ -19,6 +19,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -77,6 +78,9 @@ var gracefulShutdownDone chan struct{}
 
 //go:linkname gracefulShutdownResult dubbo.apache.org/dubbo-go/v3/graceful_shutdown.shutdownResult
 var gracefulShutdownResult error
+
+//go:linkname gracefulShutdownSignalError dubbo.apache.org/dubbo-go/v3/graceful_shutdown.shutdownSignalError
+var gracefulShutdownSignalError chan error
 
 //go:linkname gracefulShutdownSignalNotify dubbo.apache.org/dubbo-go/v3/graceful_shutdown.signalNotify
 var gracefulShutdownSignalNotify func(chan<- os.Signal, ...os.Signal)
@@ -317,6 +321,7 @@ func resetGracefulShutdownStateForTest(t *testing.T) {
 	gracefulShutdownStarted = atomic.Bool{}
 	gracefulShutdownDone = make(chan struct{})
 	gracefulShutdownResult = nil
+	gracefulShutdownSignalError = make(chan error, 1)
 	gracefulShutdownSignalNotify = signal.Notify
 }
 
@@ -361,6 +366,49 @@ func TestServeContextReturnsAfterContextCancellation(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("process-level graceful shutdown did not finish after context cancellation")
 	}
+}
+
+func TestServeContextReturnsInternalShutdownError(t *testing.T) {
+	resetGracefulShutdownStateForTest(t)
+	t.Cleanup(func() {
+		resetGracefulShutdownStateForTest(t)
+	})
+	resetInternalProviderServicesForTest(t)
+	var registerCount atomic.Int32
+	registerCountingServeTestProtocols(t, nil, nil, &registerCount, nil)
+
+	internalSignal := false
+	shutdownCfg := global.DefaultShutdownConfig()
+	shutdownCfg.InternalSignal = &internalSignal
+	shutdownCfg.ConsumerUpdateWaitTime = "0s"
+	shutdownCfg.StepTimeout = "0s"
+	shutdownCfg.NotifyTimeout = "10ms"
+	shutdownCfg.OfflineRequestWindowTimeout = "0s"
+
+	srv, err := NewServer(SetServerShutdown(shutdownCfg))
+	require.NoError(t, err)
+	require.NoError(t, srv.Register(&MockServerRPCService{}, nil))
+
+	serveDone := make(chan error, 1)
+	go func() {
+		serveDone <- srv.ServeContext(context.Background())
+	}()
+
+	require.Eventually(t, func() bool {
+		return registerCount.Load() == 1
+	}, time.Second, 10*time.Millisecond)
+
+	expectedErr := errors.New("graceful shutdown timed out")
+	gracefulShutdownSignalError <- expectedErr
+
+	select {
+	case err := <-serveDone:
+		require.ErrorIs(t, err, expectedErr)
+	case <-time.After(time.Second):
+		t.Fatal("ServeContext did not return the internal shutdown error")
+	}
+
+	require.NoError(t, graceful_shutdown.Shutdown(context.Background()))
 }
 
 func TestServeContextDoesNotStartWhenContextAlreadyCanceled(t *testing.T) {

@@ -20,7 +20,9 @@ package graceful_shutdown
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
+	"os/exec"
 	"os/signal"
 	"sync"
 	"sync/atomic"
@@ -114,7 +116,9 @@ func resetShutdownTestState() {
 	shutdownStarted = atomic.Bool{}
 	shutdownDone = make(chan struct{})
 	shutdownResult = nil
+	shutdownSignalError = make(chan error, 1)
 	signalNotify = signal.Notify
+	signalStop = signal.Stop
 }
 
 func TestInit(t *testing.T) {
@@ -176,6 +180,20 @@ func TestInitReturnsWhenGracefulShutdownFilterMissing(t *testing.T) {
 }
 
 func TestInitInternalSignalTriggersShutdownWithoutProcessExit(t *testing.T) {
+	if os.Getenv("DUBBO_GO_GRACEFUL_SHUTDOWN_HELPER") == "1" {
+		runInternalSignalShutdownTest(t)
+		fmt.Fprintln(os.Stdout, "graceful shutdown helper completed")
+		return
+	}
+
+	cmd := exec.Command(os.Args[0], "-test.run=^TestInitInternalSignalTriggersShutdownWithoutProcessExit$")
+	cmd.Env = append(os.Environ(), "DUBBO_GO_GRACEFUL_SHUTDOWN_HELPER=1")
+	output, err := cmd.CombinedOutput()
+	require.NoError(t, err, string(output))
+	assert.Contains(t, string(output), "graceful shutdown helper completed")
+}
+
+func runInternalSignalShutdownTest(t *testing.T) {
 	resetShutdownTestState()
 
 	mockConsumerFilter := &MockFilter{}
@@ -198,6 +216,10 @@ func TestInitInternalSignalTriggersShutdownWithoutProcessExit(t *testing.T) {
 	signalNotify = func(signals chan<- os.Signal, _ ...os.Signal) {
 		signals <- os.Interrupt
 	}
+	stopCalled := atomic.Bool{}
+	signalStop = func(chan<- os.Signal) {
+		stopCalled.Store(true)
+	}
 
 	cfg := global.DefaultShutdownConfig()
 	internalSignal := true
@@ -216,6 +238,29 @@ func TestInitInternalSignalTriggersShutdownWithoutProcessExit(t *testing.T) {
 	}
 
 	require.NoError(t, Shutdown(context.Background()))
+	require.Eventually(t, func() bool {
+		return stopCalled.Load()
+	}, time.Second, time.Millisecond)
+
+	select {
+	case err := <-ShutdownError():
+		t.Fatalf("unexpected shutdown error: %v", err)
+	default:
+	}
+}
+
+func TestReportShutdownError(t *testing.T) {
+	resetShutdownTestState()
+
+	expectedErr := context.DeadlineExceeded
+	reportShutdownError(expectedErr)
+
+	select {
+	case err := <-ShutdownError():
+		require.ErrorIs(t, err, expectedErr)
+	case <-time.After(time.Second):
+		t.Fatal("shutdown error was not reported")
+	}
 }
 
 func TestShutdownClosesDoneAndRunsOnce(t *testing.T) {
