@@ -87,7 +87,7 @@ func (gi *GrpcInvoker) Invoke(ctx context.Context, invocation base.Invocation) r
 	if !gi.BaseInvoker.IsAvailable() {
 		// Generally, the case will not happen, because the invoker has been removed
 		// from the invoker list before destroy,so no new request will enter the destroyed invoker
-		logger.Warnf("this grpcInvoker is destroyed")
+		logger.Warn("[GRPC][Invoker] this grpcInvoker is destroyed")
 		result.SetError(base.ErrDestroyedInvoker)
 		return &result
 	}
@@ -183,7 +183,7 @@ func (gi *GrpcInvoker) startHealthWatch(handler gracefulshutdown.ClosingEventHan
 		healthClient := grpc_health_v1.NewHealthClient(client.ClientConn)
 		stream, err := healthClient.Watch(ctx, &grpc_health_v1.HealthCheckRequest{Service: gi.GetURL().ServiceKey()})
 		if err != nil {
-			logger.Debugf("[GRPC Protocol] health watch start failed for %s: %v", gi.GetURL().String(), err)
+			logger.Debugf("[GRPC][Invoker] health watch start failed, url=%s err=%v", gi.GetURL().String(), err)
 			return
 		}
 
@@ -191,7 +191,7 @@ func (gi *GrpcInvoker) startHealthWatch(handler gracefulshutdown.ClosingEventHan
 			resp, recvErr := stream.Recv()
 			if recvErr != nil {
 				if ctx.Err() == nil {
-					logger.Debugf("[GRPC Protocol] health watch recv failed for %s: %v", gi.GetURL().String(), recvErr)
+					logger.Debugf("[GRPC][Invoker] health watch recv failed, url=%s err=%v", gi.GetURL().String(), recvErr)
 				}
 				return
 			}

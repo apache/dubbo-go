@@ -876,15 +876,24 @@ func TestServiceWithSubURL(t *testing.T) {
 	assert.Equal(t, "com.path.Service", u3.Service())
 }
 
-func TestAddParam(t *testing.T) {
+func TestAppendParam(t *testing.T) {
 	u := &URL{}
-	u.AddParam("key1", "value1")
+	u.AppendParam("key1", "value1")
 	assert.Equal(t, "value1", u.GetParam("key1", ""))
 
 	// add another value to same key
-	u.AddParam("key1", "value2")
+	u.AppendParam("key1", "value2")
 	params := u.GetParams()
 	assert.Len(t, params["key1"], 2)
+}
+
+func TestAddParamCompatibility(t *testing.T) {
+	u := &URL{}
+	u.AddParam("key1", "value1")
+	u.AddParam("key1", "value2")
+
+	params := u.GetParams()
+	assert.Equal(t, []string{"value1", "value2"}, params["key1"])
 }
 
 func TestGetParamsReturnsCopy(t *testing.T) {
@@ -1066,6 +1075,29 @@ func TestCloneWithParams(t *testing.T) {
 	assert.Equal(t, []string{"method1", "method2"}, cloned.Methods)
 }
 
+func TestCloneWithFilterPreservesMultiValueParams(t *testing.T) {
+	u := &URL{}
+	u.SetParams(url.Values{
+		"group": {"a", "b"},
+		"drop":  {"drop-value"},
+		"other": {"other-value"},
+	})
+
+	excludeSet := gxset.NewSet("drop")
+	cloned := u.CloneWithFilter(excludeSet, []string{"group", "drop"})
+
+	clonedParams := cloned.GetParams()
+	assert.Equal(t, []string{"a", "b"}, clonedParams["group"])
+	assert.NotContains(t, clonedParams, "drop")
+	assert.NotContains(t, clonedParams, "other")
+
+	cloned.paramsLock.Lock()
+	cloned.params["group"][0] = "changed"
+	cloned.paramsLock.Unlock()
+
+	assert.Equal(t, []string{"a", "b"}, u.GetParams()["group"])
+}
+
 func TestURLCompare(t *testing.T) {
 	u1, _ := NewURL("dubbo://127.0.0.1:20000/a.Service")
 	u2, _ := NewURL("dubbo://127.0.0.1:20000/b.Service")
@@ -1134,6 +1166,122 @@ func TestIsEquals(t *testing.T) {
 	// nil checks
 	assert.False(t, IsEquals(nil, u1))
 	assert.False(t, IsEquals(u1, nil))
+}
+
+// TestIsEqualsReservedKeyOverride guards the ToMap precedence semantics: a
+// non-empty scalar field overrides the same-named param, so two URLs whose
+// flattened maps are identical must be judged equal even if their raw params differ.
+func TestIsEqualsReservedKeyOverride(t *testing.T) {
+	// Both have field Protocol "consumer" but different params["protocol"].
+	// After ToMap both flatten to protocol=consumer, so they are equal.
+	left, _ := NewURL("consumer://127.0.0.1:20000/com.test.Service?key1=value1")
+	right, _ := NewURL("consumer://127.0.0.1:20000/com.test.Service?key1=value1")
+	left.SetParam(constant.ProtocolKey, "tri")
+	right.SetParam(constant.ProtocolKey, "dubbo")
+
+	assert.True(t, IsEquals(left, right), "field protocol should override param protocol")
+	// symmetry
+	assert.True(t, IsEquals(right, left))
+
+	// Excluding the reserved key keeps them equal too.
+	assert.True(t, IsEquals(left, right, constant.ProtocolKey))
+}
+
+// TestIsEqualsReservedKeyFallback verifies that when the scalar field is empty,
+// the same-named param participates in the comparison (matching ToMap fallback).
+func TestIsEqualsReservedKeyFallback(t *testing.T) {
+	left := &URL{Ip: "127.0.0.1", Port: "20000"}
+	right := &URL{Ip: "127.0.0.1", Port: "20000"}
+	left.SetParam(constant.PathKey, "/a")
+	right.SetParam(constant.PathKey, "/b")
+	// Path field empty on both -> fall back to params, which differ.
+	assert.False(t, IsEquals(left, right))
+
+	right.SetParam(constant.PathKey, "/a")
+	assert.True(t, IsEquals(left, right))
+
+	// Field on one side overrides its param and must match the other side's field.
+	left.Path = "/a"
+	left.SetParam(constant.PathKey, "/ignored")
+	assert.True(t, IsEquals(left, right))
+}
+
+// TestIsEqualsReservedKeyPresence guards presence mismatch: one side has a
+// reserved param, the other has neither field nor param.
+func TestIsEqualsReservedKeyPresence(t *testing.T) {
+	left := &URL{Ip: "127.0.0.1", Port: "20000"}
+	right := &URL{Ip: "127.0.0.1", Port: "20000"}
+	left.SetParam(constant.UsernameKey, "alice")
+	assert.False(t, IsEquals(left, right))
+	assert.False(t, IsEquals(right, left))
+}
+
+// TestIsEqualsHostPortOverride guards ToMap precedence for host/port: a non-empty
+// Location overrides same-named params, so differing params["host"]/["port"] must
+// not make otherwise-identical URLs unequal.
+func TestIsEqualsHostPortOverride(t *testing.T) {
+	left, _ := NewURL("dubbo://127.0.0.1:20000/com.test.Service?key1=value1")
+	right, _ := NewURL("dubbo://127.0.0.1:20000/com.test.Service?key1=value1")
+	left.SetParam(constant.HostKey, "1.1.1.1")
+	right.SetParam(constant.HostKey, "2.2.2.2")
+	left.SetParam(constant.PortKey, "1")
+	right.SetParam(constant.PortKey, "2")
+
+	// Location (127.0.0.1:20000) overrides both host and port params on each side.
+	assert.True(t, IsEquals(left, right), "Location should override host/port params")
+	assert.True(t, IsEquals(right, left))
+}
+
+// TestIsEqualsHostPortFallbackAndExclude covers the host/port conflict + exclude +
+// symmetry cases when Location is empty and the params provide host/port.
+func TestIsEqualsHostPortFallbackAndExclude(t *testing.T) {
+	left := &URL{Ip: "127.0.0.1", Port: "20000"}
+	right := &URL{Ip: "127.0.0.1", Port: "20000"}
+	left.SetParam(constant.HostKey, "a")
+	right.SetParam(constant.HostKey, "b")
+	left.SetParam(constant.PortKey, "1")
+	right.SetParam(constant.PortKey, "1")
+
+	// host param differs -> not equal
+	assert.False(t, IsEquals(left, right))
+	assert.False(t, IsEquals(right, left))
+
+	// exclude host -> equal (port still matches)
+	assert.True(t, IsEquals(left, right, constant.HostKey))
+	assert.True(t, IsEquals(right, left, constant.HostKey))
+
+	// now make port differ too, exclude both host and port -> equal
+	right.SetParam(constant.PortKey, "2")
+	assert.False(t, IsEquals(left, right, constant.HostKey))
+	assert.True(t, IsEquals(left, right, constant.HostKey, constant.PortKey))
+}
+
+// TestParseLocationMultiColon guards that a location with extra ':' keeps the
+// historical port semantics (the segment between the first and second ':').
+func TestParseLocationMultiColon(t *testing.T) {
+	host, port := parseLocation("127.0.0.1:2181:extra")
+	assert.Equal(t, "127.0.0.1", host)
+	assert.Equal(t, "2181", port)
+
+	host, port = parseLocation("127.0.0.1:2181")
+	assert.Equal(t, "127.0.0.1", host)
+	assert.Equal(t, "2181", port)
+
+	host, port = parseLocation("127.0.0.1")
+	assert.Equal(t, "127.0.0.1", host)
+	assert.Equal(t, "0", port)
+
+	u := &URL{Location: "127.0.0.1:2181:2182"}
+	m := u.ToMap()
+	assert.Equal(t, "2181", m[constant.PortKey])
+	assert.Equal(t, "127.0.0.1", m[constant.HostKey])
+}
+
+// TestProtocolConstantAlias ensures the deprecated exported PROTOCOL alias is
+// preserved for backward compatibility.
+func TestProtocolConstantAlias(t *testing.T) {
+	assert.Equal(t, constant.ProtocolKey, PROTOCOL)
+	assert.Equal(t, "protocol", PROTOCOL)
 }
 
 func TestGetSubscribeName(t *testing.T) {
@@ -1295,6 +1443,12 @@ func TestURLStringWithoutAuth(t *testing.T) {
 	assert.NotContains(t, str, "@")
 }
 
+func TestURLStringWithoutQuery(t *testing.T) {
+	u, err := NewURL("dubbo://127.0.0.1:20000/com.test.Service")
+	require.NoError(t, err)
+	assert.Equal(t, "dubbo://127.0.0.1:20000/com.test.Service", u.String())
+}
+
 func TestGetParamAndDecodedError(t *testing.T) {
 	u := &URL{}
 	params := url.Values{}
@@ -1342,6 +1496,47 @@ func TestMergeURLWithMethodParams(t *testing.T) {
 	mergedUrl := serviceUrl.MergeURL(referenceUrl)
 	assert.Equal(t, "random", mergedUrl.GetParam(constant.LoadbalanceKey, ""))
 	assert.Equal(t, "5000", mergedUrl.GetParam("methods.testMethod."+constant.TimeoutKey, ""))
+}
+
+func TestMergeURLPreservesMultiValueParams(t *testing.T) {
+	local := &URL{}
+	local.SetParams(url.Values{
+		"group": {"local-a", "local-b"},
+	})
+
+	remote := &URL{}
+	remote.SetParams(url.Values{
+		"group":   {"remote-a", "remote-b"},
+		"version": {"remote-v1", "remote-v2"},
+	})
+
+	merged := local.MergeURL(remote)
+	mergedParams := merged.GetParams()
+
+	assert.Equal(t, []string{"local-a", "local-b"}, mergedParams["group"])
+	assert.Equal(t, []string{"remote-v1", "remote-v2"}, mergedParams["version"])
+
+	remote.paramsLock.Lock()
+	remote.params["version"][0] = "changed"
+	remote.paramsLock.Unlock()
+
+	assert.Equal(t, []string{"remote-v1", "remote-v2"}, merged.GetParams()["version"])
+}
+
+func TestMergeURLUsesNonDefaultParamSemantics(t *testing.T) {
+	local := &URL{}
+	local.SetParams(url.Values{
+		"group": {"", "local-b"},
+	})
+
+	remote := &URL{}
+	remote.SetParams(url.Values{
+		"group": {"remote-a", "remote-b"},
+	})
+
+	merged := local.MergeURL(remote)
+
+	assert.Equal(t, []string{"remote-a", "remote-b"}, merged.GetParams()["group"])
 }
 
 func TestURLWithPathAlreadyHasSlash(t *testing.T) {
@@ -1471,10 +1666,10 @@ func TestCloneThreadSafe(t *testing.T) {
 	wg.Add(100)
 
 	// Reader goroutines
-	for i := 0; i < 50; i++ {
+	for range 50 {
 		go func() {
 			defer wg.Done()
-			for j := 0; j < 100; j++ {
+			for range 100 {
 				c := u.Clone()
 				_ = c.String() // Use the clone to avoid optimization
 			}
@@ -1482,10 +1677,10 @@ func TestCloneThreadSafe(t *testing.T) {
 	}
 
 	// Writer goroutines for params
-	for i := 0; i < 25; i++ {
+	for i := range 25 {
 		go func(i int) {
 			defer wg.Done()
-			for j := 0; j < 100; j++ {
+			for j := range 100 {
 				key := "key" + strconv.Itoa(j)
 				val := "val" + strconv.Itoa(i)
 				u.SetParam(key, val)
@@ -1494,10 +1689,10 @@ func TestCloneThreadSafe(t *testing.T) {
 	}
 
 	// Writer goroutines for attributes
-	for i := 0; i < 25; i++ {
+	for i := range 25 {
 		go func(i int) {
 			defer wg.Done()
-			for j := 0; j < 100; j++ {
+			for j := range 100 {
 				key := "attr" + strconv.Itoa(j)
 				val := "attr_val" + strconv.Itoa(i)
 				u.SetAttribute(key, val)

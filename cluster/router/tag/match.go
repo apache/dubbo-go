@@ -146,7 +146,7 @@ func requestTag(invokers []base.Invoker, url *common.URL, invocation base.Invoca
 	if len(addresses) == 0 {
 		return result
 	}
-	result = filterInvokers(invokers, addresses, getAddressPredicate(true))
+	result = filterInvokers(result, addresses, getAddressPredicate(true))
 	logger.Debugf("[Router][Tag] failover match all providers without any tags, invokers=%+v", result)
 	return result
 }

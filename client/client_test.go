@@ -20,6 +20,7 @@ package client
 import (
 	"context"
 	"errors"
+	"net/http"
 	"testing"
 	"time"
 )
@@ -146,7 +147,19 @@ func TestConnectionCallPassesOptions(t *testing.T) {
 	conn := &Connection{refOpts: &ReferenceOptions{invoker: invoker}}
 
 	var resp string
-	res, err := conn.call(context.Background(), []any{"req"}, &resp, "Ping", constant.CallUnary, WithCallRequestTimeout(1500*time.Millisecond), WithCallRetries(3))
+	var responseHeader http.Header
+	var responseTrailer http.Header
+	res, err := conn.call(
+		context.Background(),
+		[]any{"req"},
+		&resp,
+		"Ping",
+		constant.CallUnary,
+		WithCallRequestTimeout(1500*time.Millisecond),
+		WithCallRetries(3),
+		WithResponseHeader(&responseHeader),
+		WithResponseTrailer(&responseTrailer),
+	)
 	require.NoError(t, err)
 	require.Equal(t, invRes, res)
 
@@ -158,6 +171,14 @@ func TestConnectionCallPassesOptions(t *testing.T) {
 
 	requireCallType(t, inv, constant.CallUnary)
 	require.Equal(t, []any{"req", &resp}, inv.ParameterRawValues())
+
+	headerTarget, ok := inv.GetAttribute(constant.ResponseHeaderKey)
+	require.True(t, ok)
+	require.Same(t, &responseHeader, headerTarget)
+
+	trailerTarget, ok := inv.GetAttribute(constant.ResponseTrailerKey)
+	require.True(t, ok)
+	require.Same(t, &responseTrailer, trailerTarget)
 }
 
 func TestCallUnary(t *testing.T) {

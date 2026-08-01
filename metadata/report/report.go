@@ -18,13 +18,33 @@
 package report
 
 import (
+	"encoding/json"
+)
+
+import (
 	gxset "github.com/dubbogo/gost/container/set"
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 )
+
+// AppRevision represents a revision entry with its last modification time.
+type AppRevision struct {
+	Revision   string
+	ModifyTime int64 // unix timestamp in milliseconds
+}
+
+// ParseMetadataLastUpdatedTime extracts lastUpdatedTime from a metadata JSON blob.
+func ParseMetadataLastUpdatedTime(data []byte) int64 {
+	var meta info.MetadataInfo
+	if err := json.Unmarshal(data, &meta); err != nil {
+		return 0
+	}
+	return meta.LastUpdatedTime
+}
 
 // MetadataReport is an interface of remote metadata report.
 type MetadataReport interface {
@@ -42,4 +62,15 @@ type MetadataReport interface {
 
 	// RemoveServiceAppMappingListener remove the serviceMapping listener by key and group
 	RemoveServiceAppMappingListener(interfaceName, group string) error
+
+	// UnPublishAppMetadata removes metadata for a specific revision from the metadata center.
+	// This operation is idempotent — deleting a non-existent revision should not return an error.
+	UnPublishAppMetadata(application, revision string) error
+
+	// ListAppRevisions lists all stored revisions for an application.
+	// Each AppRevision contains the revision string and the last modification time (unix ms).
+	ListAppRevisions(application string) ([]AppRevision, error)
+
+	// URL returns the URL used to create this metadata report instance.
+	URL() *common.URL
 }

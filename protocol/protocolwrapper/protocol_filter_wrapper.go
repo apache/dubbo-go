@@ -19,6 +19,7 @@ package protocolwrapper
 
 import (
 	"context"
+	"slices"
 	"strings"
 )
 
@@ -85,17 +86,17 @@ func BuildInvokerChain(invoker base.Invoker, key string) base.Invoker {
 
 	// The order of filters is from left to right, so loading from right to left
 	next := invoker
-	for i := len(filterNames) - 1; i >= 0; i-- {
-		flt, _ := extension.GetFilter(strings.TrimSpace(filterNames[i]))
+	for _, filterName := range slices.Backward(filterNames) {
+		flt, _ := extension.GetFilter(strings.TrimSpace(filterName))
 		fi := &FilterInvoker{next: next, invoker: invoker, filter: flt}
 		next = fi
 	}
 	switch key {
 	case constant.ServiceFilterKey:
-		logger.Debugf("[BuildInvokerChain] The provider invocation link is %s, invoker: %s",
+		logger.Debugf("[Protocol][Wrapper] The provider invocation link is %s, invoker: %s",
 			strings.Join(append(filterNames, "proxyInvoker"), " -> "), invoker)
 	case constant.ReferenceFilterKey:
-		logger.Debugf("[BuildInvokerChain] The consumer filters are %s, invoker: %s",
+		logger.Debugf("[Protocol][Wrapper] The consumer filters are %s, invoker: %s",
 			strings.Join(append(filterNames, "proxyInvoker"), " -> "), invoker)
 	}
 

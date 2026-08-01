@@ -83,13 +83,11 @@ func TestGetProtocolConcurrent(t *testing.T) {
 	results := make(chan base.Protocol, goroutines)
 
 	var wg sync.WaitGroup
-	for i := 0; i < goroutines; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range goroutines {
+		wg.Go(func() {
 			<-start
 			results <- GetProtocol()
-		}()
+		})
 	}
 
 	close(start)

@@ -38,10 +38,9 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3"
 	"dubbo.apache.org/dubbo-go/v3/common"
+	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
-	"dubbo.apache.org/dubbo-go/v3/config"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
@@ -63,82 +62,46 @@ func initClient(url *common.URL) {
 		return
 	}
 
-	// load client config from rootConfig.Protocols
-	// default use dubbo
-	// TODO: Temporary compatibility with old APIs, can be removed later
-	if url.GetParam(constant.ApplicationKey, "") == "" && config.GetApplicationConfig() == nil {
+	// Ensure application config is available via URL attribute
+	commonCfg.EnsureApplicationAttribute(url)
+
+	protocolConfRaw, ok := url.GetAttribute(constant.ProtocolConfigKey)
+	if !ok || protocolConfRaw == nil {
+		logger.Warn("[Remoting][Getty] protocolConfig not found in URL attributes")
 		return
 	}
-
-	// TODO: Temporary compatibility with old APIs, can be removed later
-	if url.GetParam(constant.ProtocolKey, "") == "" && config.GetRootConfig().Protocols == nil {
+	protocolConfMap, ok := protocolConfRaw.(map[string]*global.ProtocolConfig)
+	if !ok || protocolConfMap == nil {
+		logger.Warn("[Remoting][Getty] protocolConfig assert failed or is nil")
 		return
-	}
-
-	// TODO: Temporary compatibility with old APIs, can be removed later
-	protocolConfMap := dubbo.CompatGlobalProtocolConfigMap(config.GetRootConfig().Protocols)
-	if protocolConfMap == nil {
-		if protocolConfRaw, ok := url.GetAttribute(constant.ProtocolConfigKey); ok {
-			protocolConfig, ok := protocolConfRaw.(map[string]*global.ProtocolConfig)
-			if !ok {
-				logger.Warnf("protocolConfig assert failed")
-				return
-			}
-			if protocolConfig == nil {
-				logger.Warnf("protocolConfig is nil")
-				return
-			}
-			protocolConfMap = protocolConfig
-		}
 	}
 
 	protocolConf := protocolConfMap[url.Protocol]
 	if protocolConf == nil {
-		logger.Info("use default getty client config")
+		logger.Info("[Remoting][Getty] use default getty client config")
 		return
 	} else {
-		//client tls config
-		tlsConfig := dubbo.CompatGlobalTLSConfig(config.GetRootConfig().TLSConfig)
-
-		if tlsConfig == nil {
-			if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
-				tlsConf, ok := tlsConfRaw.(*global.TLSConfig)
-				if !ok {
-					logger.Errorf("Getty client initialized the TLSConfig configuration failed")
-					return
-				}
-				tlsConfig = tlsConf
-			}
-		}
-
-		if tlsConfig != nil {
-			clientConf.SSLEnabled = true
-			clientConf.TLSBuilder = &getty.ClientTlsConfigBuilder{
-				ClientKeyCertChainPath:        tlsConfig.TLSCertFile,
-				ClientPrivateKeyPath:          tlsConfig.TLSKeyFile,
-				ClientTrustCertCollectionPath: tlsConfig.CACertFile,
-			}
-		} else if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
-			// use global TLSConfig handle tls
+		// client tls config
+		if tlsConfRaw, ok := url.GetAttribute(constant.TLSConfigKey); ok {
 			tlsConf, ok := tlsConfRaw.(*global.TLSConfig)
 			if !ok {
-				logger.Errorf("Getty client initialized the TLSConfig configuration failed")
+				logger.Error("[Remoting][Getty] getty client initialized the TLSConfig configuration failed")
 				return
 			}
 			if dubbotls.IsClientTLSValid(tlsConf) {
-				srvConf.SSLEnabled = true
-				srvConf.TLSBuilder = &getty.ClientTlsConfigBuilder{
+				clientConf.SSLEnabled = true
+				clientConf.TLSBuilder = &getty.ClientTlsConfigBuilder{
 					ClientKeyCertChainPath:        tlsConf.TLSCertFile,
 					ClientPrivateKeyPath:          tlsConf.TLSKeyFile,
 					ClientTrustCertCollectionPath: tlsConf.CACertFile,
 				}
-				logger.Infof("Getty client initialized the TLSConfig configuration")
+				logger.Info("[Remoting][Getty] getty client initialized the TLSConfig configuration")
 			}
 		}
 		//getty params
 		gettyClientConfig := protocolConf.Params
 		if gettyClientConfig == nil {
-			logger.Debugf("gettyClientConfig is nil")
+			logger.Debug("[Remoting][Getty] gettyClientConfig is nil")
 			return
 		}
 		gettyClientConfigBytes, err := yaml.Marshal(gettyClientConfig)
@@ -151,7 +114,7 @@ func initClient(url *common.URL) {
 		}
 	}
 	if err := clientConf.CheckValidity(); err != nil {
-		logger.Warnf("[CheckValidity] error: %v", err)
+		logger.Warnf("[Remoting][Getty] checkValidity error, err=%v", err)
 		return
 	}
 	setClientGrPool()
@@ -164,7 +127,7 @@ func SetClientConf(c ClientConfig) {
 	clientConf = &c
 	err := clientConf.CheckValidity()
 	if err != nil {
-		logger.Warnf("[ClientConfig CheckValidity] error: %v", err)
+		logger.Warnf("[Remoting][Getty] clientConfig checkValidity error, err=%v", err)
 		return
 	}
 	setClientGrPool()
@@ -225,7 +188,7 @@ func (c *Client) Connect(url *common.URL) error {
 	c.addr = url.Location
 	_, _, err := c.selectSession(c.addr)
 	if err != nil {
-		logger.Errorf("try to connect server %v failed for : %v", url.Location, err)
+		logger.Errorf("[Remoting][Getty] try to connect server %v failed, err=%v", url.Location, err)
 	}
 	return err
 }
@@ -260,7 +223,7 @@ func (c *Client) Request(request *remoting.Request, timeout time.Duration, respo
 	)
 	if totalLen, sendLen, err = c.transfer(session, request, timeout); err != nil {
 		if sendLen != 0 && totalLen != sendLen {
-			logger.Warnf("start to close the session at request because %d of %d bytes data is sent success. err:%+v", sendLen, totalLen, err)
+			logger.Warnf("[Remoting][Getty] start to close the session at request because %d of %d bytes data is sent success. err=%+v", sendLen, totalLen, err)
 			go c.Close()
 		}
 		return perrors.WithStack(err)

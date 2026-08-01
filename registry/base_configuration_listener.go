@@ -71,19 +71,19 @@ func (bcl *BaseConfigurationListener) InitWith(key string, listener config_cente
 		return
 	} else if len(rawConfig) > 0 {
 		if err := bcl.genConfiguratorFromRawRule(rawConfig); err != nil {
-			logger.Error("bcl.genConfiguratorFromRawRule(rawConfig:%v) = error:%v", rawConfig, err)
+			logger.Errorf("[Registry] bcl.genConfiguratorFromRawRule(rawConfig=%v) = err=%v", rawConfig, err)
 		}
 	}
 }
 
 // Process the notification event once there's any change happens on the config.
 func (bcl *BaseConfigurationListener) Process(event *config_center.ConfigChangeEvent) {
-	logger.Infof("Notification of overriding rule, change type is: %v , raw config content is:%v", event.ConfigType, event.Value)
+	logger.Infof("[Registry] notification of overriding rule, type=%v content=%v", event.ConfigType, event.Value)
 	if event.ConfigType == remoting.EventTypeDel {
 		bcl.setConfigurators(nil)
 	} else {
 		if err := bcl.genConfiguratorFromRawRule(event.Value.(string)); err != nil {
-			logger.Error(perrors.WithStack(err))
+			logger.Errorf("[Registry] process config change failed, err=%v", perrors.WithStack(err))
 		}
 	}
 }

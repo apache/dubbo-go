@@ -92,7 +92,7 @@ func (gp *GrpcProtocol) Export(invoker base.Invoker) base.Exporter {
 	serviceKey := url.ServiceKey()
 	exporter := NewGrpcExporter(serviceKey, invoker, gp.ExporterMap())
 	gp.SetExporterMap(serviceKey, exporter)
-	logger.Infof("[GRPC Protocol] Export service: %s", url.String())
+	logger.Infof("[GRPC] export service, url=%s", url.String())
 	srv := gp.openServer(url)
 	srv.SetServingStatus(serviceKey, grpc_health_v1.HealthCheckResponse_SERVING)
 	return exporter
@@ -120,18 +120,18 @@ func (gp *GrpcProtocol) openServer(url *common.URL) *Server {
 func (gp *GrpcProtocol) Refer(url *common.URL) base.Invoker {
 	client, err := NewClient(url)
 	if err != nil {
-		logger.Warnf("can't dial the server: %s", url.Key())
+		logger.Warnf("[GRPC] can't dial the server, url=%s", url.Key())
 		return nil
 	}
 	invoker := NewGrpcInvoker(url, client)
 	gp.SetInvokers(invoker)
-	logger.Infof("[GRPC Protcol] Refer service: %s", url.String())
+	logger.Infof("[GRPC] refer service, url=%s", url.String())
 	return invoker
 }
 
 // Destroy will destroy gRPC all invoker and exporter, so it only is called once.
 func (gp *GrpcProtocol) Destroy() {
-	logger.Infof("GrpcProtocol destroy.")
+	logger.Info("[GRPC] grpc protocol destroy.")
 
 	for _, server := range gp.drainServers() {
 		grpcServerGracefulStop(server)

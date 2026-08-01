@@ -18,6 +18,7 @@
 package extension
 
 import (
+	"maps"
 	"sync"
 )
 
@@ -39,6 +40,16 @@ func (r *Registry[T]) Register(name string, v T) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.items[name] = v
+}
+
+func (r *Registry[T]) RegisterIfAbsent(name string, v T) bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if _, ok := r.items[name]; ok {
+		return false
+	}
+	r.items[name] = v
+	return true
 }
 
 func (r *Registry[T]) Get(name string) (T, bool) {
@@ -68,9 +79,7 @@ func (r *Registry[T]) Snapshot() map[string]T {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	m := make(map[string]T, len(r.items))
-	for k, v := range r.items {
-		m[k] = v
-	}
+	maps.Copy(m, r.items)
 	return m
 }
 

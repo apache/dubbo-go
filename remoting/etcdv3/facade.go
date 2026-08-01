@@ -52,7 +52,7 @@ func HandleClientRestart(r clientFacade) {
 			// re-register all services
 			time.Sleep(10 * time.Microsecond)
 		case <-r.Done():
-			logger.Warnf("(ETCDV3ProviderRegistry)reconnectETCDV3 goroutine exit now...")
+			logger.Warn("[Remoting][Etcdv3] reconnectETCDV3 goroutine exit now")
 			return
 		}
 	}

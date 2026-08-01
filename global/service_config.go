@@ -17,6 +17,10 @@
 
 package global
 
+import (
+	"maps"
+)
+
 // ServiceConfig is the configuration of the service provider
 type ServiceConfig struct {
 	Filter                      string            `yaml:"filter" json:"filter,omitempty" property:"filter"`
@@ -82,9 +86,7 @@ func (c *ServiceConfig) Clone() *ServiceConfig {
 	}
 
 	newParams := make(map[string]string, len(c.Params))
-	for k, v := range c.Params {
-		newParams[k] = v
-	}
+	maps.Copy(newParams, c.Params)
 
 	newRCProtocolsMap := make(map[string]*ProtocolConfig, len(c.RCProtocolsMap))
 	for k, v := range c.RCProtocolsMap {

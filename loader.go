@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 )
@@ -68,22 +69,26 @@ var watcher = &fileWatcher{
 
 func Load(opts ...LoaderConfOption) error {
 	conf := NewLoaderConf(opts...)
+	newOpts := conf.opts
 	if conf.opts == nil {
+		newOpts = defaultInstanceOptions()
 		koan := GetConfigResolver(conf)
 		koan = conf.MergeConfig(koan)
-		if err := koan.UnmarshalWithConf(instanceOptions.Prefix(),
-			instanceOptions, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
+		if err := koan.UnmarshalWithConf(newOpts.Prefix(),
+			newOpts, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
 			return err
 		}
-	} else {
-		instanceOptions = conf.opts
 	}
 
-	if err := instanceOptions.init(); err != nil {
+	if err := newOpts.init(); err != nil {
 		return err
 	}
 
-	instance := &Instance{insOpts: instanceOptions}
+	instanceOptionsMutex.Lock()
+	instanceOptions = newOpts
+	instanceOptionsMutex.Unlock()
+
+	instance := &Instance{insOpts: newOpts}
 	// start the file watcher
 	once.Do(func() {
 		watcher.watcherWg.Add(1)
@@ -100,31 +105,31 @@ func Load(opts ...LoaderConfOption) error {
 func watch(conf *loaderConf, stopCh <-chan struct{}) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		logger.Errorf("Failed to initialize file watcher, error: %v", err)
+		logger.Errorf("[Loader] failed to initialize file watcher, err=%v", err)
 		return
 	}
 	defer watcher.Close()
 
 	err = watcher.Add(conf.path)
 	if err != nil {
-		logger.Errorf("Failed to add file %s to watcher, error: %v", conf.path, err)
+		logger.Errorf("[Loader] failed to add file %s to watcher, err=%v", conf.path, err)
 		return
 	}
 
 	for {
 		select {
 		case <-stopCh:
-			logger.Infof("File watcher is stopping...")
+			logger.Info("[Loader] file watcher is stopping")
 			return
 		case event := <-watcher.Events:
 			if event.Op&fsnotify.Write == fsnotify.Write {
-				logger.Infof("Configuration file %s updated, initiating hot reload...", event.Name)
+				logger.Infof("[Loader] configuration file %s updated, initiating hot reload", event.Name)
 				if err := hotUpdateConfig(conf); err != nil {
-					logger.Warnf("Hot reload of configuration failed, error: %v", err)
+					logger.Warnf("[Loader] hot reload of configuration failed, err=%v", err)
 				}
 			}
 		case err := <-watcher.Errors:
-			logger.Warnf("File watcher encountered an error: %v", err)
+			logger.Warnf("[Loader] file watcher encountered an error, err=%v", err)
 		}
 	}
 }
@@ -142,7 +147,7 @@ func hotUpdateConfig(conf *loaderConf) error {
 	newKoan := buildKoanfFromBytes(conf, newBytes)
 
 	if !safeChanged(oldKoan, newKoan) {
-		logger.Warnf("Hot reload denied: changes outside allowed hot-reload keys detected")
+		logger.Warn("[Loader] hot reload denied, changes outside allowed hot-reload keys detected")
 		return errors.New("hot reload denied: disallowed configuration changes detected")
 	}
 
@@ -164,10 +169,10 @@ func hotUpdateConfig(conf *loaderConf) error {
 
 	// Explicitly update logger level after hot reload
 	if ok := logger.SetLoggerLevel(instanceOptions.Logger.Level); !ok {
-		logger.Warnf("Failed to update logger level after hot reload. Logger may not support dynamic level changes.")
+		logger.Warn("[Loader] failed to update logger level after hot reload. Logger may not support dynamic level changes")
 	}
 
-	logger.Infof("Configuration hot reload completed successfully!")
+	logger.Info("[Loader] configuration hot reload completed successfully")
 	return nil
 }
 
@@ -219,6 +224,7 @@ func (fn loaderConfigFunc) apply(vc *loaderConf) {
 }
 
 // WithGenre set load config file suffix
+//
 // Deprecated: replaced by WithSuffix
 func WithGenre(suffix string) LoaderConfOption {
 	return loaderConfigFunc(func(conf *loaderConf) {
@@ -303,10 +309,8 @@ func userHomeDir() string {
 
 // checkFileSuffix check file suffix
 func checkFileSuffix(suffix string) error {
-	for _, g := range []string{"json", "yaml", "yml"} {
-		if g == suffix {
-			return nil
-		}
+	if slices.Contains([]string{"json", "yaml", "yml"}, suffix) {
+		return nil
 	}
 	return errors.Errorf("no support file suffix: %s", suffix)
 }
@@ -330,17 +334,17 @@ func (conf *loaderConf) MergeConfig(koan *koanf.Koanf) *koanf.Koanf {
 	)
 	active := koan.String("dubbo.profiles.active")
 	active = getLegalActive(active)
-	logger.Infof("The following profiles are active: %s", active)
+	logger.Infof("[Loader] the following profiles are active, profiles=%s", active)
 	if defaultActive != active {
 		path := conf.getActiveFilePath(active)
 		if !pathExists(path) {
-			logger.Debugf("Config file:%s not exist skip config merge", path)
+			logger.Debugf("[Loader] config file=%s not exist, skip config merge", path)
 			return koan
 		}
 		activeConf = NewLoaderConf(WithPath(path))
 		activeKoan = GetConfigResolver(activeConf)
 		if err := koan.Merge(activeKoan); err != nil {
-			logger.Debugf("Config merge err %s", err)
+			logger.Debugf("[Loader] config merge error, err=%s", err)
 		}
 	}
 	return koan
@@ -419,7 +423,7 @@ func resolvePlaceholder(resolver *koanf.Koanf) *koanf.Koanf {
 	}
 	err := resolver.Load(confmap.Provider(m, resolver.Delim()), nil)
 	if err != nil {
-		logger.Errorf("resolvePlaceholder error %s", err)
+		logger.Errorf("[Loader] resolvePlaceholder error, err=%s", err)
 	}
 	return resolver
 }
@@ -430,27 +434,27 @@ func checkPlaceholder(s string) (newKey, defaultValue string) {
 		return
 	}
 	s = s[len(file.PlaceholderPrefix) : len(s)-len(file.PlaceholderSuffix)]
-	indexColon := strings.Index(s, ":")
-	if indexColon == -1 {
+	before, after, ok := strings.Cut(s, ":")
+	if !ok {
 		newKey = strings.TrimSpace(s)
 		return
 	}
-	newKey = strings.TrimSpace(s[0:indexColon])
-	defaultValue = strings.TrimSpace(s[indexColon+1:])
+	newKey = strings.TrimSpace(before)
+	defaultValue = strings.TrimSpace(after)
 
 	return
 }
 
 // StopFileWatcher Stop file listener
 func StopFileWatcher() {
-	logger.Info("Stopping file watcher...")
+	logger.Info("[Loader] stopping file watcher")
 	stopOnce.Do(func() {
 		watcher.mu.Lock()
 		defer watcher.mu.Unlock()
 		close(watcher.stopCh)
 	})
 	watcher.watcherWg.Wait()
-	logger.Info("File watcher stopped successfully")
+	logger.Info("[Loader] file watcher stopped successfully")
 }
 
 func buildKoanfFromBytes(conf *loaderConf, b []byte) *koanf.Koanf {

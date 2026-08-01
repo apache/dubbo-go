@@ -38,11 +38,21 @@ func TestRegistryBasicOps(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, 1, v)
 
+	assert.False(t, r.RegisterIfAbsent("a", 2))
+	v, ok = r.Get("a")
+	assert.True(t, ok)
+	assert.Equal(t, 1, v)
+
+	assert.True(t, r.RegisterIfAbsent("b", 2))
+	v, ok = r.Get("b")
+	assert.True(t, ok)
+	assert.Equal(t, 2, v)
+
 	must := r.MustGet("a")
 	assert.Equal(t, 1, must)
 
 	snapshot := r.Snapshot()
-	assert.Equal(t, map[string]int{"a": 1}, snapshot)
+	assert.Equal(t, map[string]int{"a": 1, "b": 2}, snapshot)
 	snapshot["a"] = 99
 
 	v, ok = r.Get("a")
@@ -50,8 +60,7 @@ func TestRegistryBasicOps(t *testing.T) {
 	assert.Equal(t, 1, v)
 
 	names := r.Names()
-	assert.Len(t, names, 1)
-	assert.Equal(t, "a", names[0])
+	assert.ElementsMatch(t, []string{"a", "b"}, names)
 
 	r.Unregister("a")
 	_, ok = r.Get("a")
@@ -65,11 +74,11 @@ func TestRegistryConcurrentAccess(t *testing.T) {
 	workers := 32
 	iterations := 200
 
-	for i := 0; i < workers; i++ {
+	for i := range workers {
 		wg.Add(1)
 		go func(worker int) {
 			defer wg.Done()
-			for j := 0; j < iterations; j++ {
+			for j := range iterations {
 				key := "k-" + strconv.Itoa(worker) + "-" + strconv.Itoa(j)
 				r.Register(key, j)
 				_, _ = r.Get(key)

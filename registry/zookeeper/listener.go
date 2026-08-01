@@ -77,14 +77,14 @@ func (l *RegistryDataListener) DataChange(event remoting.Event) bool {
 	// Intercept the last bit
 	index := strings.Index(event.Path, providersPath)
 	if index == -1 {
-		logger.Warnf("[RegistryDataListener][DataChange]Listen error zk node path {%s}, "+
+		logger.Warnf("[Registry][Zookeeper] listen error zk node path {%s}, "+
 			"this listener is used to listen services which under the directory of providers/", event.Path)
 		return false
 	}
 	url := event.Path[index+len(providersPath):]
 	serviceURL, err := common.NewURL(url)
 	if err != nil {
-		logger.Errorf("[RegistryDataListener][DataChange]Listen NewURL({%s}) = error{%+v} event.Path={%s}", url, err, event.Path)
+		logger.Errorf("[Registry][Zookeeper] listen NewURL({%s}) = err=%v event.Path={%s}", url, err, event.Path)
 		return false
 	}
 	l.mutex.Lock()
@@ -155,13 +155,13 @@ func (l *RegistryConfigurationListener) Next() (*registry.ServiceEvent, error) {
 		case <-l.close:
 			return nil, perrors.New("listener has been closed")
 		case <-l.registry.Done():
-			logger.Warnf("zk consumer register has quit, so zk event listener exit now. (registry url {%v}", l.registry.URL)
+			logger.Warnf("[Registry][Zookeeper] zk consumer register has quit, so zk event listener exit now, registry url=%v", l.registry.URL)
 			return nil, perrors.New("zookeeper registry, (registry url{%v}) stopped")
 		case val := <-l.events.Out():
 			e, _ := val.(*config_center.ConfigChangeEvent)
-			logger.Debugf("got zk event %s", e)
+			logger.Debugf("[Registry][Zookeeper] got zk event %s", e)
 			if e.ConfigType == remoting.EventTypeDel && !l.valid() {
-				logger.Warnf("update @result{%s}. But its connection to registry is invalid", e.Value)
+				logger.Warnf("[Registry][Zookeeper] update @result{%s}, but its connection to registry is invalid", e.Value)
 				continue
 			}
 			return &registry.ServiceEvent{Action: e.ConfigType, Service: e.Value.(*common.URL)}, nil

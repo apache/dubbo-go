@@ -52,6 +52,9 @@ const (
 	ReleaseKey                  = "release"
 	AnyhostKey                  = "anyhost"
 	PortKey                     = "port"
+	HostKey                     = "host"
+	UsernameKey                 = "username"
+	PasswordKey                 = "password"
 	ProtocolKey                 = "protocol"
 	PathSeparator               = "/"
 	DotSeparator                = "."
@@ -63,12 +66,13 @@ const (
 	MaxServerSendMsgSize        = "max-server-send-msg-size"
 	MaxCallRecvMsgSize          = "max-call-recv-msg-size"
 	MaxServerRecvMsgSize        = "max-server-recv-msg-size"
-
-	// TODO: remove KeepAliveInterval and KeepAliveInterval in version 4.0.0
-	KeepAliveInterval = "keep-alive-interval"
-	KeepAliveTimeout  = "keep-alive-timeout"
+	KeepAliveInterval           = "keep-alive-interval"
+	KeepAliveTimeout            = "keep-alive-timeout"
 
 	// TODO: remove IDLMode after old triple removed
+	//
+	// Deprecated: this constant will be removed in the next version. The IDL
+	// mode switch is no longer supported by dubbo-go.
 	IDLMode = "IDL-mode"
 
 	TripleConfigKey     = "triple-config"
@@ -79,6 +83,9 @@ const (
 
 // TODO: remove this after old triple removed
 // IDLMode
+//
+// Deprecated: these constants will be removed in the next version. The IDL
+// mode switch is no longer supported by dubbo-go.
 const (
 	IDL    = "IDL"
 	NONIDL = "non-IDL"
@@ -157,6 +164,8 @@ const (
 	CycleReportKey                     = "cycle.report"
 	DefaultBlackListRecoverBlock       = 16
 	CallTypeKey                        = "call-type"
+	ResponseHeaderKey                  = "response-header"
+	ResponseTrailerKey                 = "response-trailer"
 	CallUnary                          = "unary"
 	CallClientStream                   = "client-stream"
 	CallServerStream                   = "server-stream"
@@ -357,6 +366,8 @@ const (
 	RouterScopeApplication            = "application"
 	ForceKey                          = "force"
 	TrafficDisableKey                 = "trafficDisable"
+	RouterCacheDisable                = "routerCacheDisable"
+	RouterChainCacheGeneration        = "routerChainCacheGeneration"
 	Arguments                         = "arguments"
 	Attachments                       = "attachments"
 	Param                             = "param"
@@ -364,6 +375,12 @@ const (
 	Wildcard                          = "wildcard"
 	MeshRouterFactoryKey              = "mesh"
 	DefaultRouteConditionSubSetWeight = 100
+
+	// Poolable router bitmap key prefixes
+	PoolKeyTagPrefix  = "tag\x00"
+	PoolKeyAddrPrefix = "addr\x00"
+	PoolKeyPortPrefix = "port\x00"
+	PoolKeyAll        = "*"
 )
 
 // Auth filter
@@ -417,6 +434,11 @@ const (
 	MetadataServiceURLParamsPropertyName   = MetadataServicePrefix + "url-params"
 	MetadataServiceURLsPropertyName        = MetadataServicePrefix + "urls"
 	ServiceDiscoveryKey                    = "service_discovery" // indicate which service discovery instance will be used
+
+	// metadata GC configuration keys
+	MetadataGCEnabledKey      = "metadata.gc.enabled"
+	MetadataGCWindowKey       = "metadata.gc.window"        // GC window in days, aligned with daily renew cycle
+	MetadataRenewOnStartupKey = "metadata.renew-on-startup" // whether to run renewAppMetadata once on startup
 )
 
 // Generic Filter

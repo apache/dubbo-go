@@ -63,7 +63,7 @@ func newSelector(invokers []base.Invoker, methodName string,
 		address := u.Ip + ":" + u.Port
 		for i := 0; i < selector.replicaNum/4; i++ {
 			digest := md5.Sum([]byte(address + strconv.Itoa(i)))
-			for j := 0; j < 4; j++ {
+			for j := range 4 {
 				key := selector.hash(digest, j)
 				selector.keys = append(selector.keys, key)
 				selector.virtualInvokers[key] = invoker
@@ -83,9 +83,14 @@ func (c *selector) Select(invocation base.Invocation) base.Invoker {
 
 func (c *selector) toKey(args []any) string {
 	var sb strings.Builder
-	for i := range c.argumentIndex {
+	for _, i := range c.argumentIndex {
 		if i >= 0 && i < len(args) {
-			_, _ = fmt.Fprint(&sb, args[i].(string))
+			switch v := args[i].(type) {
+			case string:
+				sb.WriteString(v)
+			default:
+				_, _ = fmt.Fprint(&sb, v)
+			}
 		}
 	}
 	return sb.String()

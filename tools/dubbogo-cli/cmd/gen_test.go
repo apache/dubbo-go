@@ -18,8 +18,8 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -34,27 +34,116 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/tools/dubbogo-cli/generator/sample"
 )
 
-func TestNewApp(t *testing.T) {
-	if err := application.Generate("./testGenCode/newApp"); err != nil {
-		fmt.Printf("generate error: %s\n", err)
-	}
+type generatedProjectCase struct {
+	name     string
+	generate func(string) error
+}
 
-	assertFileSame(t, "./testGenCode/newApp", "./testGenCode/template/newApp")
+func generatedProjectCases() []generatedProjectCase {
+	return []generatedProjectCase{
+		{name: "newApp", generate: application.Generate},
+		{name: "newDemo", generate: sample.Generate},
+	}
+}
+
+func TestNewApp(t *testing.T) {
+	genPath := filepath.Join(t.TempDir(), "newApp")
+	require.NoError(t, application.Generate(genPath))
+
+	assertFileSame(t, genPath, "./testGenCode/template/newApp")
 }
 
 func TestNewDemo(t *testing.T) {
-	if err := sample.Generate("./testGenCode/newDemo"); err != nil {
-		fmt.Printf("generate error: %s\n", err)
+	genPath := filepath.Join(t.TempDir(), "newDemo")
+	require.NoError(t, sample.Generate(genPath))
+
+	assertFileSame(t, genPath, "./testGenCode/template/newDemo")
+}
+
+func TestGeneratedModuleVersion(t *testing.T) {
+	const stableVersion = "dubbo.apache.org/dubbo-go/v3 v3.3.1"
+	const datedPrerelease = "v3.3.1-20260727"
+
+	for _, tc := range generatedProjectCases() {
+		t.Run(tc.name, func(t *testing.T) {
+			genPath := filepath.Join(t.TempDir(), tc.name)
+			require.NoError(t, tc.generate(genPath))
+
+			content, err := os.ReadFile(filepath.Join(genPath, "go.mod"))
+			require.NoError(t, err)
+			require.Contains(t, string(content), stableVersion)
+			require.NotContains(t, string(content), datedPrerelease)
+		})
+	}
+}
+
+func TestGeneratedCodeDoesNotImportRemovedLoggerPackage(t *testing.T) {
+	const removedLoggerImport = `"dubbo.apache.org/dubbo-go/v3/common/logger"`
+
+	for _, dir := range []string{"../generator", "./testGenCode/template"} {
+		files, err := walkDir(dir)
+		require.NoError(t, err, "iterate generated code sources failed: %s", dir)
+
+		for _, file := range files {
+			if filepath.Ext(file) != ".go" {
+				continue
+			}
+
+			content, err := os.ReadFile(file)
+			require.NoError(t, err, "read generated code source failed: %s", file)
+			require.NotContains(t, string(content), removedLoggerImport,
+				"generated code must not import the removed logger package: %s", file)
+		}
+	}
+}
+
+func TestGeneratedProjectsCompile(t *testing.T) {
+	if os.Getenv("DUBBOGO_CLI_E2E") != "1" {
+		t.Skip("set DUBBOGO_CLI_E2E=1 to run generated-project compilation")
 	}
 
-	assertFileSame(t, "./testGenCode/newDemo", "./testGenCode/template/newDemo")
+	for _, tc := range generatedProjectCases() {
+		t.Run(tc.name, func(t *testing.T) {
+			genPath := filepath.Join(t.TempDir(), tc.name)
+			require.NoError(t, tc.generate(genPath))
+
+			cmd := exec.Command("make", "test")
+			cmd.Dir = genPath
+			cmd.Env = append(os.Environ(), "GOWORK=off")
+			output, err := cmd.CombinedOutput()
+			require.NoError(t, err, "generated project make test failed:\n%s", output)
+		})
+	}
+}
+
+func TestGeneratedStreamHandlersHandleWrappedEOF(t *testing.T) {
+	testCases := []struct {
+		generatedProjectCase
+		serverFile string
+	}{
+		{
+			generatedProjectCase: generatedProjectCase{name: "newApp", generate: application.Generate},
+			serverFile:           "pkg/service/service.go",
+		},
+		{
+			generatedProjectCase: generatedProjectCase{name: "newDemo", generate: sample.Generate},
+			serverFile:           "go-server/cmd/server.go",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			genPath := filepath.Join(t.TempDir(), tc.name)
+			require.NoError(t, tc.generate(genPath))
+
+			content, err := os.ReadFile(filepath.Join(genPath, tc.serverFile))
+			require.NoError(t, err)
+			require.Contains(t, string(content), "errors.Is(err, io.EOF)")
+		})
+	}
 }
 
 func assertFileSame(t *testing.T, genPath, templatePath string) {
-	t.Cleanup(func() {
-		os.RemoveAll(genPath)
-	})
-
 	// 1. get all files in template directory
 	templateFiles, err := walkDir(templatePath)
 	require.NoError(t, err, "iterate template directory failed")

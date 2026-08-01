@@ -169,6 +169,43 @@ func TestDelegateMetadataReportRemoveServiceAppMappingListener(t *testing.T) {
 	})
 }
 
+func TestDelegateMetadataReportUnPublishAppMetadata(t *testing.T) {
+	mockReport := new(mockMetadataReport)
+	defer mockReport.AssertExpectations(t)
+	delegate := &DelegateMetadataReport{instance: mockReport}
+	t.Run("normal", func(t *testing.T) {
+		mockReport.On("UnPublishAppMetadata").Return(nil).Once()
+		err := delegate.UnPublishAppMetadata("application", "revision")
+		require.NoError(t, err)
+	})
+	t.Run("error", func(t *testing.T) {
+		mockReport.On("UnPublishAppMetadata").Return(errors.New("mock error")).Once()
+		err := delegate.UnPublishAppMetadata("application", "revision")
+		require.Error(t, err)
+	})
+}
+
+func TestDelegateMetadataReportListAppRevisions(t *testing.T) {
+	mockReport := new(mockMetadataReport)
+	defer mockReport.AssertExpectations(t)
+	delegate := &DelegateMetadataReport{instance: mockReport}
+	t.Run("normal", func(t *testing.T) {
+		expected := []report.AppRevision{
+			{Revision: "rev1", ModifyTime: 3000},
+			{Revision: "rev2", ModifyTime: 1000},
+		}
+		mockReport.On("ListAppRevisions").Return(expected, nil).Once()
+		got, err := delegate.ListAppRevisions("application")
+		require.NoError(t, err)
+		assert.Equal(t, expected, got)
+	})
+	t.Run("error", func(t *testing.T) {
+		mockReport.On("ListAppRevisions").Return([]report.AppRevision(nil), errors.New("mock error")).Once()
+		_, err := delegate.ListAppRevisions("application")
+		require.Error(t, err)
+	})
+}
+
 func TestGetMetadataReport(t *testing.T) {
 	instances = make(map[string]report.MetadataReport)
 	assert.Nil(t, GetMetadataReport())
@@ -176,13 +213,61 @@ func TestGetMetadataReport(t *testing.T) {
 	assert.NotNil(t, GetMetadataReport())
 }
 
+func TestGetMetadataReportIsDeterministic(t *testing.T) {
+	instances = make(map[string]report.MetadataReport)
+	r1 := new(mockMetadataReport)
+	r2 := new(mockMetadataReport)
+	// "aaa" sorts before "zzz" alphabetically, neither is "default"
+	instances["zzz"] = r1
+	instances["aaa"] = r2
+
+	// without a "default" key, must always return the alphabetically first entry (r2)
+	for range 20 {
+		got := GetMetadataReport()
+		assert.Equal(t, r2, got, "expected the report for 'aaa'")
+	}
+
+	// when the "default" key exists, must always return it (r1), taking priority over alphabetical order
+	instances[constant.DefaultKey] = r1
+	for range 20 {
+		got := GetMetadataReport()
+		assert.Equal(t, r1, got, "expected the report for 'default'")
+	}
+}
+
 func TestGetMetadataReportByRegistry(t *testing.T) {
 	instances = make(map[string]report.MetadataReport)
+	// nothing registered: all paths return nil
+	assert.Nil(t, GetMetadataReportByRegistry(""))
 	assert.Nil(t, GetMetadataReportByRegistry("reg"))
-	instances["default"] = new(mockMetadataReport)
-	assert.NotNil(t, GetMetadataReportByRegistry("default"))
-	assert.NotNil(t, GetMetadataReportByRegistry("reg"))
-	assert.NotNil(t, GetMetadataReportByRegistry(""))
+
+	defaultReport := new(mockMetadataReport)
+	instances["default"] = defaultReport
+
+	// exact hit
+	assert.Equal(t, defaultReport, GetMetadataReportByRegistry("default"))
+	// empty string → no registry context → falls through to GetMetadataReport() → "default"
+	assert.Equal(t, defaultReport, GetMetadataReportByRegistry(""))
+	// specific but unknown id → falls back to "default"
+	assert.Equal(t, defaultReport, GetMetadataReportByRegistry("reg"))
+}
+
+func TestGetMetadataReportByRegistryFallsBackDeterministically(t *testing.T) {
+	instances = make(map[string]report.MetadataReport)
+	rA := new(mockMetadataReport)
+	rB := new(mockMetadataReport)
+	instances["aaa"] = rA // lex-first
+	instances["zzz"] = rB
+
+	// known key → exact report
+	assert.Equal(t, rA, GetMetadataReportByRegistry("aaa"))
+	assert.Equal(t, rB, GetMetadataReportByRegistry("zzz"))
+
+	// unknown specific id → nil when no "default" is registered
+	assert.Nil(t, GetMetadataReportByRegistry("unknown-registry"))
+
+	// empty string → falls through to GetMetadataReport() → lex-first ("aaa" → rA)
+	assert.Equal(t, rA, GetMetadataReportByRegistry(""))
 }
 
 func TestGetMetadataReports(t *testing.T) {
@@ -249,6 +334,21 @@ func (m *mockMetadataReport) GetServiceAppMapping(string, string, mapping.Mappin
 func (m *mockMetadataReport) RemoveServiceAppMappingListener(string, string) error {
 	args := m.Called()
 	return args.Error(0)
+}
+
+func (m *mockMetadataReport) UnPublishAppMetadata(string, string) error {
+	args := m.Called()
+	return args.Error(0)
+}
+
+func (m *mockMetadataReport) ListAppRevisions(string) ([]report.AppRevision, error) {
+	args := m.Called()
+	return args.Get(0).([]report.AppRevision), args.Error(1)
+}
+
+func (m *mockMetadataReport) URL() *common.URL {
+	u, _ := common.NewURL("mock://127.0.0.1:8848")
+	return u
 }
 
 type listener struct {

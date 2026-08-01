@@ -96,7 +96,7 @@ func TestAccessLogFilterFileHandleManagement(t *testing.T) {
 	invocation := &invocation_impl.RPCInvocation{}
 
 	// Invoke multiple times to test file handle caching
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		filter.Invoke(context.Background(), invoker, invocation)
 	}
 

@@ -42,9 +42,9 @@ func TestBeginCount(t *testing.T) {
 	urlStatus := GetURLStatus(url)
 	methodStatus := GetMethodStatus(url, "test")
 	methodStatus1 := GetMethodStatus(url, "test1")
-	assert.Equal(t, int32(1), methodStatus.active)
-	assert.Equal(t, int32(1), urlStatus.active)
-	assert.Equal(t, int32(0), methodStatus1.active)
+	assert.Equal(t, int32(1), methodStatus.active.Load())
+	assert.Equal(t, int32(1), urlStatus.active.Load())
+	assert.Equal(t, int32(0), methodStatus1.active.Load())
 }
 
 func TestEndCount(t *testing.T) {
@@ -54,10 +54,10 @@ func TestEndCount(t *testing.T) {
 	EndCount(url, "test", 100, true)
 	urlStatus := GetURLStatus(url)
 	methodStatus := GetMethodStatus(url, "test")
-	assert.Equal(t, int32(-1), methodStatus.active)
-	assert.Equal(t, int32(-1), urlStatus.active)
-	assert.Equal(t, int32(1), methodStatus.total)
-	assert.Equal(t, int32(1), urlStatus.total)
+	assert.Equal(t, int32(-1), methodStatus.active.Load())
+	assert.Equal(t, int32(-1), urlStatus.active.Load())
+	assert.Equal(t, int32(1), methodStatus.total.Load())
+	assert.Equal(t, int32(1), urlStatus.total.Load())
 }
 
 func TestGetMethodStatus(t *testing.T) {
@@ -66,7 +66,7 @@ func TestGetMethodStatus(t *testing.T) {
 	url, _ := common.NewURL(mockCommonDubboUrl)
 	status := GetMethodStatus(url, "test")
 	assert.NotNil(t, status)
-	assert.Equal(t, int32(0), status.total)
+	assert.Equal(t, int32(0), status.total.Load())
 }
 
 func TestGetUrlStatus(t *testing.T) {
@@ -75,7 +75,7 @@ func TestGetUrlStatus(t *testing.T) {
 	url, _ := common.NewURL(mockCommonDubboUrl)
 	status := GetURLStatus(url)
 	assert.NotNil(t, status)
-	assert.Equal(t, int32(0), status.total)
+	assert.Equal(t, int32(0), status.total.Load())
 }
 
 func TestBeginCount0(t *testing.T) {
@@ -84,7 +84,7 @@ func TestBeginCount0(t *testing.T) {
 	url, _ := common.NewURL(mockCommonDubboUrl)
 	status := GetURLStatus(url)
 	beginCount0(status)
-	assert.Equal(t, int32(1), status.active)
+	assert.Equal(t, int32(1), status.active.Load())
 }
 
 func TestAll(t *testing.T) {
@@ -94,50 +94,50 @@ func TestAll(t *testing.T) {
 	request(url, "test", 100, false, true)
 	urlStatus := GetURLStatus(url)
 	methodStatus := GetMethodStatus(url, "test")
-	assert.Equal(t, int32(1), methodStatus.total)
-	assert.Equal(t, int32(1), urlStatus.total)
-	assert.Equal(t, int32(0), methodStatus.active)
-	assert.Equal(t, int32(0), urlStatus.active)
-	assert.Equal(t, int32(0), methodStatus.failed)
-	assert.Equal(t, int32(0), urlStatus.failed)
-	assert.Equal(t, int32(0), methodStatus.successiveRequestFailureCount)
-	assert.Equal(t, int32(0), urlStatus.successiveRequestFailureCount)
-	assert.Equal(t, int64(100), methodStatus.totalElapsed)
-	assert.Equal(t, int64(100), urlStatus.totalElapsed)
+	assert.Equal(t, int32(1), methodStatus.total.Load())
+	assert.Equal(t, int32(1), urlStatus.total.Load())
+	assert.Equal(t, int32(0), methodStatus.active.Load())
+	assert.Equal(t, int32(0), urlStatus.active.Load())
+	assert.Equal(t, int32(0), methodStatus.failed.Load())
+	assert.Equal(t, int32(0), urlStatus.failed.Load())
+	assert.Equal(t, int32(0), methodStatus.successiveRequestFailureCount.Load())
+	assert.Equal(t, int32(0), urlStatus.successiveRequestFailureCount.Load())
+	assert.Equal(t, int64(100), methodStatus.totalElapsed.Load())
+	assert.Equal(t, int64(100), urlStatus.totalElapsed.Load())
 	request(url, "test", 100, false, false)
 	request(url, "test", 100, false, false)
 	request(url, "test", 100, false, false)
 	request(url, "test", 100, false, false)
 	request(url, "test", 100, false, false)
-	assert.Equal(t, int32(6), methodStatus.total)
-	assert.Equal(t, int32(6), urlStatus.total)
-	assert.Equal(t, int32(5), methodStatus.failed)
-	assert.Equal(t, int32(5), urlStatus.failed)
-	assert.Equal(t, int32(5), methodStatus.successiveRequestFailureCount)
-	assert.Equal(t, int32(5), urlStatus.successiveRequestFailureCount)
-	assert.Equal(t, int64(600), methodStatus.totalElapsed)
-	assert.Equal(t, int64(600), urlStatus.totalElapsed)
-	assert.Equal(t, int64(500), methodStatus.failedElapsed)
-	assert.Equal(t, int64(500), urlStatus.failedElapsed)
+	assert.Equal(t, int32(6), methodStatus.total.Load())
+	assert.Equal(t, int32(6), urlStatus.total.Load())
+	assert.Equal(t, int32(5), methodStatus.failed.Load())
+	assert.Equal(t, int32(5), urlStatus.failed.Load())
+	assert.Equal(t, int32(5), methodStatus.successiveRequestFailureCount.Load())
+	assert.Equal(t, int32(5), urlStatus.successiveRequestFailureCount.Load())
+	assert.Equal(t, int64(600), methodStatus.totalElapsed.Load())
+	assert.Equal(t, int64(600), urlStatus.totalElapsed.Load())
+	assert.Equal(t, int64(500), methodStatus.failedElapsed.Load())
+	assert.Equal(t, int64(500), urlStatus.failedElapsed.Load())
 
 	request(url, "test", 100, false, true)
-	assert.Equal(t, int32(0), methodStatus.successiveRequestFailureCount)
-	assert.Equal(t, int32(0), urlStatus.successiveRequestFailureCount)
+	assert.Equal(t, int32(0), methodStatus.successiveRequestFailureCount.Load())
+	assert.Equal(t, int32(0), urlStatus.successiveRequestFailureCount.Load())
 
 	request(url, "test", 200, false, false)
 	request(url, "test", 200, false, false)
-	assert.Equal(t, int32(2), methodStatus.successiveRequestFailureCount)
-	assert.Equal(t, int32(2), urlStatus.successiveRequestFailureCount)
+	assert.Equal(t, int32(2), methodStatus.successiveRequestFailureCount.Load())
+	assert.Equal(t, int32(2), urlStatus.successiveRequestFailureCount.Load())
 	assert.Equal(t, int64(200), methodStatus.maxElapsed)
 	assert.Equal(t, int64(200), urlStatus.maxElapsed)
 
 	request(url, "test1", 200, false, false)
 	request(url, "test1", 200, false, false)
 	request(url, "test1", 200, false, false)
-	assert.Equal(t, int32(5), urlStatus.successiveRequestFailureCount)
+	assert.Equal(t, int32(5), urlStatus.successiveRequestFailureCount.Load())
 	methodStatus1 := GetMethodStatus(url, "test1")
-	assert.Equal(t, int32(2), methodStatus.successiveRequestFailureCount)
-	assert.Equal(t, int32(3), methodStatus1.successiveRequestFailureCount)
+	assert.Equal(t, int32(2), methodStatus.successiveRequestFailureCount.Load())
+	assert.Equal(t, int32(3), methodStatus1.successiveRequestFailureCount.Load())
 }
 
 func request(url *common.URL, method string, elapsed int64, active, succeeded bool) {

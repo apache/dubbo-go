@@ -1,16 +1,19 @@
-// Copyright 2021-2023 Buf Technologies, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package triple_protocol
 
@@ -76,7 +79,7 @@ func (w *envelopeWriter) Marshal(message any) *Error {
 	raw, err := w.codec.Marshal(message)
 	if err != nil {
 		if w.backupCodec != nil && w.codec.Name() != w.backupCodec.Name() {
-			logger.Debugf("failed to marshal message with primary codec %s, trying fallback codec %s", w.codec.Name(), w.backupCodec.Name())
+			logger.Debugf("[Triple][Codec] failed to marshal message with primary codec %s, trying fallback codec %s", w.codec.Name(), w.backupCodec.Name())
 			raw, err = w.backupCodec.Marshal(message)
 		}
 		if err != nil {
@@ -202,7 +205,7 @@ func (r *envelopeReader) Unmarshal(message any) *Error {
 
 	if err := r.codec.Unmarshal(data.Bytes(), message); err != nil {
 		if r.backupCodec != nil && r.backupCodec.Name() != r.codec.Name() {
-			logger.Debugf("failed to unmarshal message with primary codec %s, trying fallback codec %s", r.codec.Name(), r.backupCodec.Name())
+			logger.Debugf("[Triple][Codec] failed to unmarshal message with primary codec %s, trying fallback codec %s", r.codec.Name(), r.backupCodec.Name())
 			err = r.backupCodec.Unmarshal(data.Bytes(), message)
 		}
 		if err != nil {

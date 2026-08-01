@@ -18,6 +18,7 @@
 package global
 
 import (
+	"maps"
 	"path"
 	"strings"
 )
@@ -58,9 +59,7 @@ func (c *OpenAPIConfig) Clone() *OpenAPIConfig {
 	}
 
 	settings := make(map[string]string)
-	for k, v := range c.Settings {
-		settings[k] = v
-	}
+	maps.Copy(settings, c.Settings)
 
 	return &OpenAPIConfig{
 		Enabled:                   c.Enabled,

@@ -267,10 +267,11 @@ func (r *RPCInvocation) MergeAttachmentFromContext(ctx context.Context) {
 		return
 	}
 	for k, v := range header {
+		key := strings.ToLower(k)
 		if len(v) == 1 {
-			r.SetAttachment(k, v[0])
+			r.SetAttachment(key, v[0])
 		} else {
-			r.SetAttachment(k, v)
+			r.SetAttachment(key, v)
 		}
 	}
 }

@@ -18,21 +18,27 @@
 package extension
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/config/interfaces"
+	"bytes"
 )
 
+// ConfigReader is used to read config from consumer or provider.
+type ConfigReader interface {
+	ReadConsumerConfig(reader *bytes.Buffer) error
+	ReadProviderConfig(reader *bytes.Buffer) error
+}
+
 var (
-	configReaders = NewRegistry[func() interfaces.ConfigReader]("config reader")
+	configReaders = NewRegistry[func() ConfigReader]("config reader")
 	defaults      = NewRegistry[string]("default config reader")
 )
 
 // SetConfigReaders sets a creator of config reader with @name
-func SetConfigReaders(name string, v func() interfaces.ConfigReader) {
+func SetConfigReaders(name string, v func() ConfigReader) {
 	configReaders.Register(name, v)
 }
 
 // GetConfigReaders gets a config reader with @name
-func GetConfigReaders(name string) interfaces.ConfigReader {
+func GetConfigReaders(name string) ConfigReader {
 	return configReaders.MustGet(name)()
 }
 

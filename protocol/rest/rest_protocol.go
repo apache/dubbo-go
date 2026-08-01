@@ -74,7 +74,7 @@ func (rp *RestProtocol) Export(invoker base.Invoker) base.Exporter {
 	id := url.GetParam(constant.BeanNameKey, "")
 	restServiceConfig := rest_config.GetRestProviderServiceConfig(id)
 	if restServiceConfig == nil {
-		logger.Errorf("%s service doesn't has provider config", url.Path)
+		logger.Errorf("[Rest] %s service doesn't has provider config", url.Path)
 		return nil
 	}
 	rp.SetExporterMap(serviceKey, exporter)
@@ -101,7 +101,7 @@ func (rp *RestProtocol) Refer(url *common.URL) base.Invoker {
 	id := url.GetParam(constant.BeanNameKey, "")
 	restServiceConfig := rest_config.GetRestConsumerServiceConfig(id)
 	if restServiceConfig == nil {
-		logger.Errorf("%s service doesn't has consumer config", url.Path)
+		logger.Errorf("[Rest] %s service doesn't has consumer config", url.Path)
 		return nil
 	}
 	restOptions := client.RestOptions{RequestTimeout: requestTimeout, ConnectTimeout: connectTimeout, KeppAliveTimeout: keepAliveTimeout}

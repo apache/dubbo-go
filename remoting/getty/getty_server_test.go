@@ -22,6 +22,7 @@ import (
 )
 
 import (
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -43,4 +44,52 @@ func TestInitServer(t *testing.T) {
 	})
 	url.SetAttribute(constant.ApplicationKey, global.ApplicationConfig{})
 	initServer(url)
+}
+
+func TestInitServerTLS(t *testing.T) {
+	newURL := func() *common.URL {
+		url, err := common.NewURL("dubbo://127.0.0.1:20003/test")
+		require.NoError(t, err)
+		url.SetAttribute(constant.ProtocolConfigKey, map[string]*global.ProtocolConfig{
+			"dubbo": {
+				Name:   "dubbo",
+				Ip:     "127.0.0.1",
+				Port:   "20003",
+				Params: map[string]any{},
+			},
+		})
+		url.SetAttribute(constant.ApplicationKey, global.ApplicationConfig{})
+		return url
+	}
+
+	t.Run("valid TLS config enables SSLEnabled and TLSBuilder", func(t *testing.T) {
+		srvConf = GetDefaultServerConfig()
+		url := newURL()
+		url.SetAttribute(constant.TLSConfigKey, &global.TLSConfig{
+			TLSCertFile: "/path/to/server.crt",
+			TLSKeyFile:  "/path/to/server.key",
+		})
+		initServer(url)
+		assert.True(t, srvConf.SSLEnabled)
+		assert.NotNil(t, srvConf.TLSBuilder)
+	})
+
+	t.Run("invalid TLS config keeps TLS disabled", func(t *testing.T) {
+		srvConf = GetDefaultServerConfig()
+		url := newURL()
+		url.SetAttribute(constant.TLSConfigKey, &global.TLSConfig{
+			TLSCertFile: "",
+			TLSKeyFile:  "",
+		})
+		initServer(url)
+		assert.False(t, srvConf.SSLEnabled)
+	})
+
+	t.Run("wrong TLSConfigKey type returns early without panic", func(t *testing.T) {
+		srvConf = GetDefaultServerConfig()
+		url := newURL()
+		url.SetAttribute(constant.TLSConfigKey, "not a *global.TLSConfig")
+		initServer(url)
+		assert.False(t, srvConf.SSLEnabled)
+	})
 }

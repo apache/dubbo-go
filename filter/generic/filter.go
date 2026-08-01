@@ -176,7 +176,7 @@ func (f *genericFilter) OnResponse(_ context.Context, res result.Result, invoker
 
 	// Check if reply is a valid pointer
 	replyValue := reflect.ValueOf(reply)
-	if replyValue.Kind() != reflect.Ptr || replyValue.IsNil() {
+	if replyValue.Kind() != reflect.Pointer || replyValue.IsNil() {
 		return res
 	}
 

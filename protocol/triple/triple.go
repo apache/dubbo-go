@@ -96,9 +96,9 @@ func (tp *TripleProtocol) Export(invoker base.Invoker) base.Exporter {
 	}
 	exporter := NewTripleExporter(serviceKey, invoker, tp.ExporterMap())
 	tp.SetExporterMap(serviceKey, exporter)
-	logger.Infof("[TRIPLE Protocol] Export service: %s", url.String())
+	logger.Infof("[Triple] export service: %s", url.String())
 	if err := tp.openServer(invoker, info); err != nil {
-		logger.Errorf("[TRIPLE Protocol] Export service failed: %s, err: %v", url.String(), err)
+		logger.Errorf("[Triple] export service failed, %s, err=%v", url.String(), err)
 		exporter.UnExport()
 		panic(err)
 	}
@@ -122,7 +122,7 @@ func (tp *TripleProtocol) openServer(invoker base.Invoker, info *common.ServiceI
 	}
 
 	if _, ok := tp.ExporterMap().Load(url.ServiceKey()); !ok {
-		panic("[TRIPLE Protocol]" + url.Key() + "is not existing")
+		panic("[Triple]" + url.Key() + "is not existing")
 	}
 
 	// Do not freeze listener configuration at construction time. The shared
@@ -160,17 +160,17 @@ func (tp *TripleProtocol) Refer(url *common.URL) base.Invoker {
 		invoker, err = NewDubbo3Invoker(url)
 	}
 	if err != nil {
-		logger.Warnf("can't dial the server: %s", url.Key())
+		logger.Warnf("[Triple] can't dial the server: %s", url.Key())
 		return nil
 	}
 
 	tp.SetInvokers(invoker)
-	logger.Infof("[TRIPLE Protocol] Refer service: %s", url.String())
+	logger.Infof("[Triple] refer service: %s", url.String())
 	return invoker
 }
 
 func (tp *TripleProtocol) Destroy() {
-	logger.Infof("TripleProtocol destroy.")
+	logger.Info("[Triple] TripleProtocol destroy.")
 
 	for _, server := range tp.drainServers() {
 		tripleServerGracefulStop(server)

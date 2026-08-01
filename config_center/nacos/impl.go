@@ -255,5 +255,5 @@ func (n *nacosDynamicConfiguration) IsAvailable() bool {
 func (n *nacosDynamicConfiguration) closeConfigs() {
 	// Close the old configClient first to close the tmp node
 	n.client.Close()
-	logger.Infof("[ConfigCenter][Nacos] begin to close provider n configClient")
+	logger.Info("[ConfigCenter][Nacos] begin to close provider n configClient")
 }

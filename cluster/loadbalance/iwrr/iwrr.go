@@ -20,6 +20,7 @@ package iwrr
 import (
 	"math/rand"
 	"sync"
+	"time"
 )
 
 import (
@@ -85,9 +86,10 @@ func NewInterleavedweightedRoundRobin(invokers []base.Invoker, invocation base.I
 	size := uint64(len(invokers))
 	offset := rand.Uint64() % size //NOSONAR
 	step := int64(0)
-	for idx := uint64(0); idx < size; idx++ {
+	now := time.Now().Unix()
+	for idx := range size {
 		invoker := invokers[(idx+offset)%size]
-		weight := loadbalance.GetWeight(invoker, invocation)
+		weight := loadbalance.GetWeightAt(invoker, invocation, now)
 		step = gcdInt(step, weight)
 		iwrrp.current.push(&iwrrEntry{
 			invoker: invoker,
@@ -113,10 +115,7 @@ func (iwrr *interleavedweightedRoundRobin) Pick(invocation base.Invocation) base
 	if entry.weight > 0 {
 		iwrr.current.push(entry)
 	} else {
-		weight := loadbalance.GetWeight(entry.invoker, invocation)
-		if weight < 0 {
-			weight = 0
-		}
+		weight := max(loadbalance.GetWeight(entry.invoker, invocation), 0)
 		entry.weight = weight
 		iwrr.next.push(entry)
 	}

@@ -1,21 +1,25 @@
-// Copyright 2021-2023 Buf Technologies, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package triple_protocol
 
 import (
 	"context"
+	"slices"
 )
 
 // UnaryFunc is the generic signature of a unary RPC. Interceptors may wrap
@@ -87,8 +91,8 @@ func newChain(interceptors []Interceptor) *chain {
 	// the slice act first. Rather than doing this dance repeatedly, reverse the
 	// interceptor order now.
 	var c chain
-	for i := len(interceptors) - 1; i >= 0; i-- {
-		if interceptor := interceptors[i]; interceptor != nil {
+	for _, interceptor := range slices.Backward(interceptors) {
+		if interceptor != nil {
 			c.interceptors = append(c.interceptors, interceptor)
 		}
 	}

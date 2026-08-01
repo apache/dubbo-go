@@ -1,16 +1,19 @@
-// Copyright 2021-2023 Buf Technologies, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package triple_protocol
 
@@ -497,7 +500,7 @@ func (m *tripleUnaryMarshaler) Marshal(message any) *Error {
 	data, err := m.codec.Marshal(message)
 	if err != nil {
 		if m.backupCodec != nil && m.codec.Name() != m.backupCodec.Name() {
-			logger.Warnf("failed to marshal message with primary codec %s, trying fallback codec %s", m.codec.Name(), m.backupCodec.Name())
+			logger.Warnf("[Triple] failed to marshal message with primary codec %s, trying fallback codec %s", m.codec.Name(), m.backupCodec.Name())
 			data, err = m.backupCodec.Marshal(message)
 		}
 		if err != nil {
@@ -557,7 +560,7 @@ func (u *tripleUnaryUnmarshaler) Unmarshal(message any) *Error {
 	err := u.UnmarshalFunc(message, u.codec.Unmarshal)
 	if err != nil {
 		if u.backupCodec != nil && u.codec.Name() != u.backupCodec.Name() {
-			logger.Warnf("failed to unmarshal message with primary codec %s, trying fallback codec %s", u.codec.Name(), u.backupCodec.Name())
+			logger.Warnf("[Triple] failed to unmarshal message with primary codec %s, trying fallback codec %s", u.codec.Name(), u.backupCodec.Name())
 			err = u.UnmarshalFunc(message, u.backupCodec.Unmarshal)
 		}
 	}

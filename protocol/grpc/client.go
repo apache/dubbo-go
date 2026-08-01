@@ -97,7 +97,7 @@ func NewClient(url *common.URL) (*Client, error) {
 		// use global TLSConfig handle tls
 		tlsConf, ok := tlsConfRaw.(*global.TLSConfig)
 		if !ok {
-			logger.Errorf("Grpc Client initialized the TLSConfig configuration failed")
+			logger.Error("[GRPC][Client] grpc client initialized the TLSConfig configuration failed")
 			return nil, errors.New("DUBBO3 Client initialized the TLSConfig configuration failed")
 		}
 
@@ -107,7 +107,7 @@ func NewClient(url *common.URL) (*Client, error) {
 				return nil, err
 			}
 			if cfg != nil {
-				logger.Infof("Grpc Client initialized the TLSConfig configuration")
+				logger.Info("[GRPC][Client] grpc client initialized the TLSConfig configuration")
 				transportCreds = credentials.NewTLS(cfg)
 			}
 		}
@@ -116,7 +116,7 @@ func NewClient(url *common.URL) (*Client, error) {
 
 	conn, err := grpc.Dial(url.Location, dialOpts...)
 	if err != nil {
-		logger.Errorf("grpc dial error: %v", err)
+		logger.Errorf("[GRPC][Client] grpc dial failed, err=%v", err)
 		return nil, err
 	}
 
@@ -132,7 +132,7 @@ func NewClient(url *common.URL) (*Client, error) {
 	invoker := getInvoker(consumerService, conn)
 	if invoker == nil {
 		err := fmt.Errorf("grpc client invoker is nil, interface=%s", key)
-		logger.Errorf("failed to get grpc client invoker: %v", err)
+		logger.Errorf("[GRPC][Client] failed to get grpc client invoker, err=%v", err)
 		conn.Close()
 		return nil, err
 	}
@@ -164,16 +164,16 @@ func clientInit(url *common.URL) {
 	}
 	protocolConf, ok := protocolConfRaw.(map[string]*global.ProtocolConfig)
 	if !ok {
-		logger.Warnf("protocolConfig assert failed")
+		logger.Warn("[GRPC][Client] protocolConfig assert failed")
 		return
 	}
 	if protocolConf == nil {
-		logger.Warnf("protocolConfig is nil")
+		logger.Warn("[GRPC][Client] protocolConfig is nil")
 		return
 	}
 	grpcConf := protocolConf[GRPC]
 	if grpcConf == nil {
-		logger.Warnf("grpcConf is nil")
+		logger.Warn("[GRPC][Client] grpcConf is nil")
 		return
 	}
 	grpcConfByte, err := yaml.Marshal(grpcConf)

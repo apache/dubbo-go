@@ -215,7 +215,7 @@ type (
 // size:4801228
 func (u *UserProvider) GetBigPkg(ctx context.Context, req []any, rsp *User) error {
 	argBuf := new(bytes.Buffer)
-	for i := 0; i < 400; i++ {
+	for range 400 {
 		argBuf.WriteString("击鼓其镗，踊跃用兵。土国城漕，我独南行。从孙子仲，平陈与宋。不我以归，忧心有忡。爰居爰处？爰丧其马？于以求之？于林之下。死生契阔，与子成说。执子之手，与子偕老。于嗟阔兮，不我活兮。于嗟洵兮，不我信兮。")
 		argBuf.WriteString("击鼓其镗，踊跃用兵。土国城漕，我独南行。从孙子仲，平陈与宋。不我以归，忧心有忡。爰居爰处？爰丧其马？于以求之？于林之下。死生契阔，与子成说。执子之手，与子偕老。于嗟阔兮，不我活兮。于嗟洵兮，不我信兮。")
 	}
@@ -284,4 +284,50 @@ func TestInitClient(t *testing.T) {
 	})
 	url.SetAttribute(constant.ApplicationKey, global.ApplicationConfig{})
 	initClient(url)
+}
+
+func TestInitClientTLS(t *testing.T) {
+	newURL := func() *common.URL {
+		url, err := common.NewURL("dubbo://127.0.0.1:20003/test")
+		require.NoError(t, err)
+		url.SetAttribute(constant.ProtocolConfigKey, map[string]*global.ProtocolConfig{
+			"dubbo": {
+				Name:   "dubbo",
+				Ip:     "127.0.0.1",
+				Port:   "20003",
+				Params: map[string]any{},
+			},
+		})
+		url.SetAttribute(constant.ApplicationKey, global.ApplicationConfig{})
+		return url
+	}
+
+	t.Run("valid TLS config enables SSLEnabled and TLSBuilder", func(t *testing.T) {
+		clientConf = GetDefaultClientConfig()
+		url := newURL()
+		url.SetAttribute(constant.TLSConfigKey, &global.TLSConfig{
+			CACertFile: "/path/to/ca.crt",
+		})
+		initClient(url)
+		assert.True(t, clientConf.SSLEnabled)
+		assert.NotNil(t, clientConf.TLSBuilder)
+	})
+
+	t.Run("invalid TLS config keeps TLS disabled", func(t *testing.T) {
+		clientConf = GetDefaultClientConfig()
+		url := newURL()
+		url.SetAttribute(constant.TLSConfigKey, &global.TLSConfig{
+			CACertFile: "",
+		})
+		initClient(url)
+		assert.False(t, clientConf.SSLEnabled)
+	})
+
+	t.Run("wrong TLSConfigKey type returns early without panic", func(t *testing.T) {
+		clientConf = GetDefaultClientConfig()
+		url := newURL()
+		url.SetAttribute(constant.TLSConfigKey, "not a *global.TLSConfig")
+		initClient(url)
+		assert.False(t, clientConf.SSLEnabled)
+	})
 }

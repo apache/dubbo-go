@@ -20,6 +20,7 @@ package triple
 import (
 	"context"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 )
@@ -27,6 +28,8 @@ import (
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 import (
@@ -101,6 +104,92 @@ func TestClientManager_Close(t *testing.T) {
 
 	err := cm.close()
 	require.NoError(t, err)
+}
+
+func TestClientManagerCallUnaryCopiesResponseMetadata(t *testing.T) {
+	const (
+		responseHeaderKey  = "x-test-response-header"
+		responseHeaderVal  = "response-header-value"
+		responseTrailerKey = "x-test-response-trailer"
+		responseTrailerVal = "response-trailer-value"
+	)
+
+	handler := tri.NewUnaryHandler(
+		"/test.Service/Check",
+		func() any {
+			return new(emptypb.Empty)
+		},
+		func(ctx context.Context, req *tri.Request) (*tri.Response, error) {
+			resp := tri.NewResponse(new(emptypb.Empty))
+			resp.Header().Set(responseHeaderKey, responseHeaderVal)
+			resp.Trailer().Set(responseTrailerKey, responseTrailerVal)
+			return resp, nil
+		},
+	)
+	server := httptest.NewServer(handler)
+	t.Cleanup(server.Close)
+
+	cm := &clientManager{
+		isIDL:     true,
+		triClient: tri.NewClient(server.Client(), server.URL+"/test.Service", tri.WithTriple()),
+	}
+
+	var resp emptypb.Empty
+	var responseHeader http.Header
+	var responseTrailer http.Header
+	err := cm.callUnary(
+		context.Background(),
+		"Check",
+		&emptypb.Empty{},
+		&resp,
+		&responseHeader,
+		&responseTrailer,
+	)
+	require.NoError(t, err)
+	require.Equal(t, responseHeaderVal, responseHeader.Get(responseHeaderKey))
+	require.Equal(t, responseTrailerVal, responseTrailer.Get(responseTrailerKey))
+}
+
+func TestClientManagerCallUnaryCopiesErrorResponseMetadata(t *testing.T) {
+	const (
+		responseHeaderKey  = "x-test-error-header"
+		responseHeaderVal  = "error-header-value"
+		responseTrailerKey = "x-test-error-trailer"
+		responseTrailerVal = "error-trailer-value"
+	)
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/grpc")
+		w.Header().Set(responseHeaderKey, responseHeaderVal)
+		w.Header().Set("Trailer", "Grpc-Status, Grpc-Message, "+responseTrailerKey)
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Grpc-Status", "3")
+		w.Header().Set("Grpc-Message", "invalid%20test%20request")
+		w.Header().Set(responseTrailerKey, responseTrailerVal)
+	})
+	server := httptest.NewServer(handler)
+	t.Cleanup(server.Close)
+
+	cm := &clientManager{
+		isIDL:     true,
+		triClient: tri.NewClient(server.Client(), server.URL+"/test.Service"),
+	}
+
+	var resp emptypb.Empty
+	var responseHeader http.Header
+	var responseTrailer http.Header
+	err := cm.callUnary(
+		context.Background(),
+		"Check",
+		&emptypb.Empty{},
+		&resp,
+		&responseHeader,
+		&responseTrailer,
+	)
+	require.Error(t, err)
+	require.Equal(t, tri.CodeInvalidArgument, tri.CodeOf(err))
+	require.Equal(t, responseHeaderVal, responseHeader.Get(responseHeaderKey))
+	require.Equal(t, responseTrailerVal, responseTrailer.Get(responseTrailerKey))
 }
 
 // TestClientManager_CallMethods_MissingClient removed - no longer applicable

@@ -71,7 +71,7 @@ func (opts *Options) Init() error {
 				// config test -> metadata exporter -> dubbo protocol/remoting -> config,cycle import will occur
 				// some day we fix the cycle import then can remove this recover
 				if err := recover(); err != nil {
-					logger.Errorf("metadata export failed,please check if dubbo protocol is imported, error: %v", err)
+					logger.Errorf("[Metadata] metadata export failed, please check if dubbo protocol is imported, err=%v", err)
 				}
 			}()
 			err = exporter.Export()
@@ -143,7 +143,7 @@ func fromRegistry(id string, rc *global.RegistryConfig) *ReportOptions {
 	if rc.Timeout != "" {
 		timeout, err := time.ParseDuration(rc.Timeout)
 		if err != nil {
-			logger.Errorf("parse registry timeout config error %v", rc.Timeout)
+			logger.Errorf("[Metadata] parse registry timeout config, err=%v", rc.Timeout)
 		} else {
 			WithTimeout(timeout)(opts)
 		}
@@ -154,7 +154,7 @@ func fromRegistry(id string, rc *global.RegistryConfig) *ReportOptions {
 func (opts *ReportOptions) Init() error {
 	url, err := opts.toUrl()
 	if err != nil {
-		logger.Errorf("metadata report create error %v", err)
+		logger.Errorf("[Metadata] metadata report create error, err=%v", err)
 		return err
 	}
 	return addMetadataReport(opts.registryId, url)

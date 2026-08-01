@@ -70,9 +70,22 @@ func (s *ScriptRouter) Process(event *config_center.ConfigChangeEvent) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	if event.ConfigType == remoting.EventTypeDel {
+		in, _ := ins.GetInstances(s.scriptType)
+
+		if in != nil && s.enabled {
+			in.Destroy(s.rawScript)
+		}
+		s.enabled = false
+		s.rawScript = ""
+		s.scriptType = ""
+		return
+	}
+
 	rawConf, ok := event.Value.(string)
 	if !ok {
-		panic(ok)
+		logger.Errorf("[Router][Script] route config value must be string, actualType=%T", event.Value)
+		return
 	}
 	cfg, err := parseRoute(rawConf)
 	if err != nil {
@@ -93,15 +106,15 @@ func (s *ScriptRouter) Process(event *config_center.ConfigChangeEvent) {
 		}
 		// check new config
 		if cfg.ScriptType == "" {
-			logger.Errorf("[Router][Script] type field must be set in config")
+			logger.Error("[Router][Script] type field must be set in config")
 			return
 		}
 		if cfg.Script == "" {
-			logger.Errorf("[Router][Script] script field must be set in config")
+			logger.Error("[Router][Script] script field must be set in config")
 			return
 		}
 		if cfg.Key == "" {
-			logger.Errorf("[Router][Script] applicationName field must be set in config")
+			logger.Error("[Router][Script] applicationName field must be set in config")
 			return
 		}
 		if !*cfg.Enabled {
@@ -128,15 +141,6 @@ func (s *ScriptRouter) Process(event *config_center.ConfigChangeEvent) {
 			}
 		}
 
-	case remoting.EventTypeDel:
-		in, _ := ins.GetInstances(s.scriptType)
-
-		if in != nil && s.enabled {
-			in.Destroy(s.rawScript)
-		}
-		s.enabled = false
-		s.rawScript = ""
-		s.scriptType = ""
 	}
 }
 

@@ -48,7 +48,7 @@ func (de *DubboExporter) UnExport() {
 	interfaceName := de.GetInvoker().GetURL().GetParam(constant.InterfaceKey, "")
 	err := common.ServiceMap.UnRegister(interfaceName, DUBBO, de.GetInvoker().GetURL().ServiceKey())
 	if err != nil {
-		logger.Errorf("[DubboExporter.UnExport] error: %v", err)
+		logger.Errorf("[Dubbo][Exporter] unexport failed, err=%v", err)
 	}
 	de.BaseExporter.UnExport()
 }

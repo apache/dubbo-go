@@ -61,7 +61,7 @@ func (s *ServiceAffinityRoute) Notify(invokers []base.Invoker) {
 
 	dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
 	if dynamicConfiguration == nil {
-		logger.Infof("[Router][Affinity] config center not started, affinity router disabled")
+		logger.Info("[Router][Affinity] config center not started, affinity router disabled")
 		return
 	}
 
@@ -87,7 +87,7 @@ func newApplicationAffinityRouter(url *common.URL) *ApplicationAffinityRoute {
 	applicationName := url.GetParam(constant.ApplicationKey, "")
 
 	if applicationName == "" {
-		logger.Errorf("[Router][Affinity] application name is required")
+		logger.Error("[Router][Affinity] application name is required")
 		return nil
 	}
 
@@ -114,13 +114,13 @@ func (s *ApplicationAffinityRoute) Notify(invokers []base.Invoker) {
 
 	dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
 	if dynamicConfiguration == nil {
-		logger.Infof("[Router][Affinity] config center not started, affinity router disabled")
+		logger.Info("[Router][Affinity] config center not started, affinity router disabled")
 		return
 	}
 
 	providerApplication := url.GetParam("application", "")
 	if providerApplication == "" || providerApplication == s.currentApplication {
-		logger.Warnf("[Router][Affinity] provider application is empty or equals to current, will not subscribe")
+		logger.Warn("[Router][Affinity] provider application is empty or equals to current, will not subscribe")
 		return
 	}
 
