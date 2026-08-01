@@ -56,7 +56,6 @@ Apache Dubbo-go 3.3.2 is a production-readiness release focused on API consolida
 ### Documentation and CI
 
 - Document Triple header and trailer APIs and the migration path for reading generic-call response attachments; refresh filter documentation and repair outdated README links. [#3158](https://github.com/apache/dubbo-go/pull/3158) [#3365](https://github.com/apache/dubbo-go/pull/3365) [#3380](https://github.com/apache/dubbo-go/pull/3380) [#3381](https://github.com/apache/dubbo-go/pull/3381) [#3447](https://github.com/apache/dubbo-go/pull/3447)
-- Add dependency lock files to generated CLI application and demo scaffolds. [#3483](https://github.com/apache/dubbo-go/pull/3483)
 - Refresh the English and Chinese documentation for maintained tools, update the current configuration schema and example, and remove the obsolete variadic-RPC contract checker. [#3585](https://github.com/apache/dubbo-go/pull/3585)
 - Add default protection rules for the default and release branches, upgrade the Codecov action, and add the Linux/RISC-V build workflow. [#3325](https://github.com/apache/dubbo-go/pull/3325) [#3375](https://github.com/apache/dubbo-go/pull/3375) [#3470](https://github.com/apache/dubbo-go/pull/3470)
 
