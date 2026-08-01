@@ -116,6 +116,33 @@ func TestGeneratedProjectsCompile(t *testing.T) {
 	}
 }
 
+func TestGeneratedStreamHandlersHandleWrappedEOF(t *testing.T) {
+	testCases := []struct {
+		generatedProjectCase
+		serverFile string
+	}{
+		{
+			generatedProjectCase: generatedProjectCase{name: "newApp", generate: application.Generate},
+			serverFile:           "pkg/service/service.go",
+		},
+		{
+			generatedProjectCase: generatedProjectCase{name: "newDemo", generate: sample.Generate},
+			serverFile:           "go-server/cmd/server.go",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			genPath := filepath.Join(t.TempDir(), tc.name)
+			require.NoError(t, tc.generate(genPath))
+
+			content, err := os.ReadFile(filepath.Join(genPath, tc.serverFile))
+			require.NoError(t, err)
+			require.Contains(t, string(content), "errors.Is(err, io.EOF)")
+		})
+	}
+}
+
 func assertFileSame(t *testing.T, genPath, templatePath string) {
 	// 1. get all files in template directory
 	templateFiles, err := walkDir(templatePath)
