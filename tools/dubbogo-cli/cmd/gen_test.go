@@ -19,6 +19,7 @@ package cmd
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -93,6 +94,25 @@ func TestGeneratedCodeDoesNotImportRemovedLoggerPackage(t *testing.T) {
 			require.NotContains(t, string(content), removedLoggerImport,
 				"generated code must not import the removed logger package: %s", file)
 		}
+	}
+}
+
+func TestGeneratedProjectsCompile(t *testing.T) {
+	if os.Getenv("DUBBOGO_CLI_E2E") != "1" {
+		t.Skip("set DUBBOGO_CLI_E2E=1 to run generated-project compilation")
+	}
+
+	for _, tc := range generatedProjectCases() {
+		t.Run(tc.name, func(t *testing.T) {
+			genPath := filepath.Join(t.TempDir(), tc.name)
+			require.NoError(t, tc.generate(genPath))
+
+			cmd := exec.Command("make", "test")
+			cmd.Dir = genPath
+			cmd.Env = append(os.Environ(), "GOWORK=off")
+			output, err := cmd.CombinedOutput()
+			require.NoError(t, err, "generated project make test failed:\n%s", output)
+		})
 	}
 }
 

@@ -76,7 +76,7 @@ clean:
 tidy:
 	go mod tidy
 
-test:
+test: proto-gen tidy
 	go test ./...
 `
 )
