@@ -83,7 +83,9 @@ go vet ./...
 
 - [ ] **步骤 3：执行 Linux/WSL 生成项目验证**
 
-运行 CI 等价的生成项目 E2E，并对 fresh newApp/newDemo 分别执行 `go mod tidy -diff`。预期退出 0，tidy 无差异。
+运行 CI 等价的 `make test-generated-projects`。该目标为 fresh newApp/newDemo 执行现有的 `proto-gen -> tidy -> go test` 链路，预期两个子测试均退出 0。
+
+模板刻意保留只含直接依赖的最小 `go.mod`，所以不把独立 `go mod tidy -diff` 的零差异作为验收条件；锁文件正确性由生成器回归测试、golden 全文件比对和真实 E2E 构建共同验证。
 
 - [ ] **步骤 4：执行仓库状态和差异门禁**
 

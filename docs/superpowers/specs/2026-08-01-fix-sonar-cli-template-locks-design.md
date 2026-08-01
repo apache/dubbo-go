@@ -14,7 +14,7 @@
 1. `application.Generate` 与 `sample.Generate` 生成的项目立即包含完整、非空的 `go.sum`。
 2. 两个 golden template 保存与 generator 输出一致的 `go.sum`，使 Sonar 能在仓库树中识别锁文件。
 3. 保留 #3585/#3587 的动态协议源码架构；不恢复内嵌的 `*.pb.go`、`*.triple.go` 或其他已删除生成文件。
-4. 生成项目运行 `go mod tidy -diff` 时不需要修正依赖 checksum。
+4. 生成项目继续通过 Linux `make test`，且生成阶段不新增网络或外部 Go 命令依赖。
 
 ## 方案
 
@@ -38,10 +38,12 @@ checksum 必须由当前模板的 `go.mod` 和实际生成后的协议源码通�
 
 - `go test ./cmd -run '^TestGeneratedProjectsIncludeDependencyLocks$' -count=1 -v`
 - `go test ./... -count=1`，工作目录为 `tools/dubbogo-cli`
-- 对 fresh `newApp` 和 `newDemo` 执行 `go mod tidy -diff`
-- 在 Linux/WSL 执行生成项目 E2E `make test`
+- 在 Linux/WSL 执行生成项目 E2E `make test`，覆盖 `proto-gen -> tidy -> go test`
+- 比对 generator 输出、两份 golden `go.sum` 和共享 checksum 内容
 - `go vet ./...`
 - `git diff --check`
+
+模板刻意保留只含直接依赖的最小 `go.mod`，因此独立执行 `go mod tidy -diff` 会报告应补充间接依赖；该结果属于既有模板设计，不作为本次 checksum 修复的验收门禁。
 
 ## 发布边界
 
