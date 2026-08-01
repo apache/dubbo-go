@@ -2,7 +2,7 @@
 
 ### Summary
 
-Apache Dubbo-go 3.3.2 is a production-readiness release focused on API consolidation, Triple protocol capabilities, application-level metadata, service governance, and concurrency safety. It completes the removal of the legacy `config` package, moves the project baseline to **Go 1.25**, expands generic invocation and HTTP-facing Triple features, and fixes multiple races, stale-snapshot issues, and resource leaks.
+Apache Dubbo-go 3.3.2 is a production-readiness release focused on API consolidation, Triple protocol capabilities, application-level metadata, service governance, concurrency safety, and release tooling. It completes the removal of the legacy `config` package, moves the project baseline to **Go 1.25**, expands generic invocation and HTTP-facing Triple features, refreshes generated-project workflows, and fixes multiple races, stale-snapshot issues, and resource leaks.
 
 ### Breaking Changes and Upgrade Notes
 
@@ -48,10 +48,16 @@ Apache Dubbo-go 3.3.2 is a production-readiness release focused on API consolida
 - Remove the Viper dependency and continue decoupling runtime components from legacy configuration internals. [#3323](https://github.com/apache/dubbo-go/pull/3323) [#3449](https://github.com/apache/dubbo-go/pull/3449)
 - Add a Linux/RISC-V build check and update security-sensitive and networking dependencies. [#3244](https://github.com/apache/dubbo-go/pull/3244) [#3368](https://github.com/apache/dubbo-go/pull/3368) [#3467](https://github.com/apache/dubbo-go/pull/3467) [#3470](https://github.com/apache/dubbo-go/pull/3470)
 
+### Tooling
+
+- Refresh the companion tool versions for the release: `protoc-gen-go-triple` and `protoc-gen-triple-openapi` 3.3.2, `dubbogo-cli` 1.0.1, and `imports-formatter` 1.0.11. The Triple generator now emits the modern `NewXxx` and `RegisterXxxHandler` API style by default, records generator and `protoc` versions in generated files, and retains legacy output behind `useOldVersion=true`. [#3585](https://github.com/apache/dubbo-go/pull/3585)
+- Rework CLI scaffolds to generate protobuf and Triple sources through `make proto-gen` instead of embedding generated files. New projects use Go 1.25 with the stable Dubbo-Go v3.3.1 dependency, treat wrapped EOF as normal stream completion, and are compiled end to end in Linux CI. [#3585](https://github.com/apache/dubbo-go/pull/3585) [#3587](https://github.com/apache/dubbo-go/pull/3587)
+
 ### Documentation and CI
 
 - Document Triple header and trailer APIs and the migration path for reading generic-call response attachments; refresh filter documentation and repair outdated README links. [#3158](https://github.com/apache/dubbo-go/pull/3158) [#3365](https://github.com/apache/dubbo-go/pull/3365) [#3380](https://github.com/apache/dubbo-go/pull/3380) [#3381](https://github.com/apache/dubbo-go/pull/3381) [#3447](https://github.com/apache/dubbo-go/pull/3447)
 - Add dependency lock files to generated CLI application and demo scaffolds. [#3483](https://github.com/apache/dubbo-go/pull/3483)
+- Refresh the English and Chinese documentation for maintained tools, update the current configuration schema and example, and remove the obsolete variadic-RPC contract checker. [#3585](https://github.com/apache/dubbo-go/pull/3585)
 - Add default protection rules for the default and release branches, upgrade the Codecov action, and add the Linux/RISC-V build workflow. [#3325](https://github.com/apache/dubbo-go/pull/3325) [#3375](https://github.com/apache/dubbo-go/pull/3375) [#3470](https://github.com/apache/dubbo-go/pull/3470)
 
 ### Contributors
