@@ -97,6 +97,59 @@ func TestServiceDiscoveryRegistryRegister(t *testing.T) {
 	}
 }
 
+// TestServiceDiscoveryRegistryRegisterPublishesMetadataOnce verifies that
+// app metadata is published exactly once.
+func TestServiceDiscoveryRegistryRegisterPublishesMetadataOnce(t *testing.T) {
+	mockSD, mockMapping := setupEnvironment(t)
+	regID := fmt.Sprintf("mock-reg-%s-%d", t.Name(), time.Now().UnixNano())
+	prevType := metadata.GetMetadataType()
+	opts := metadata.NewOptions(metadata.WithMetadataType(constant.RemoteMetadataStorageType))
+	_ = opts.Init()
+	defer func() {
+		restoreOpts := metadata.NewOptions(metadata.WithMetadataType(prevType))
+		_ = restoreOpts.Init()
+	}()
+
+	registryURL, err := common.NewURL(testRegistryURL,
+		common.WithParamsValue(constant.RegistryKey, "mock"),
+		common.WithParamsValue(constant.RegistryIdKey, regID))
+	require.NoError(t, err)
+
+	reg, err := newServiceDiscoveryRegistry(registryURL)
+	require.NoError(t, err)
+
+	countingReport := &mockMetadataReportForGC{}
+	sdReg, ok := reg.(*serviceDiscoveryRegistry)
+	require.True(t, ok)
+	sdReg.metadataReport = countingReport
+
+	providerURL1, err := common.NewURL("dubbo://127.0.0.1:20880/",
+		common.WithParamsValue(constant.ApplicationKey, testApp),
+		common.WithInterface(testInterface),
+		common.WithParamsValue(constant.SideKey, constant.SideProvider),
+	)
+	require.NoError(t, err)
+	providerURL2, err := common.NewURL("dubbo://127.0.0.1:20881/",
+		common.WithParamsValue(constant.ApplicationKey, testApp),
+		common.WithInterface(testInterface),
+		common.WithParamsValue(constant.SideKey, constant.SideProvider),
+	)
+	require.NoError(t, err)
+
+	err = reg.Register(providerURL1)
+	require.NoError(t, err)
+	err = reg.Register(providerURL2)
+	require.NoError(t, err)
+	assert.True(t, mockMapping.mapCalled, "ServiceNameMapping.Map should be called")
+
+	err = sdReg.RegisterService()
+	require.NoError(t, err)
+
+	assert.True(t, mockSD.registerCalled, "ServiceDiscovery.Register should be called")
+	assert.Len(t, sdReg.instances, 2)
+	assert.Equal(t, 1, countingReport.published)
+}
+
 // TestServiceDiscoveryRegistrySubscribe verifies the subscription flow.
 func TestServiceDiscoveryRegistrySubscribe(t *testing.T) {
 	mockSD, mockMapping := setupEnvironment(t)
