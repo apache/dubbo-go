@@ -635,7 +635,11 @@ func TestProtoWrapperCodec_Msgpack(t *testing.T) {
 func TestServerCodecSession_UnmarshalWrappedRequest_MsgPack(t *testing.T) {
 	t.Parallel()
 
-	session := &tripleServerCodecSession{delegate: &protoBinaryCodec{}}
+	// Provider configured serialization=msgpack, so msgpack is on the allowlist.
+	session := &tripleServerCodecSession{
+		delegate:             &protoBinaryCodec{},
+		allowedSerializeType: codecNameMsgPack,
+	}
 
 	msgpCodec := &msgpackCodec{}
 	arg1, _ := msgpCodec.Marshal("msgarg")
@@ -684,16 +688,20 @@ func TestServerCodecSession_UnmarshalWrappedRequest_CorruptPayload(t *testing.T)
 	cases := []struct {
 		name          string
 		serializeType string
+		allowed       string // provider allowlist; hessian2 is always implicitly allowed
 		payload       []byte
 	}{
 		// 0xff is not a valid hessian2 type code: decode fails.
-		{"hessian2-corrupt", codecNameHessian2, []byte{0xff}},
+		{"hessian2-corrupt", codecNameHessian2, "", []byte{0xff}},
 		// 0xc1 is reserved (never used) in the msgpack spec: decode fails.
-		{"msgpack-corrupt", codecNameMsgPack, []byte{0xc1}},
+		{"msgpack-corrupt", codecNameMsgPack, codecNameMsgPack, []byte{0xc1}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			session := &tripleServerCodecSession{delegate: &protoBinaryCodec{}}
+			session := &tripleServerCodecSession{
+				delegate:             &protoBinaryCodec{},
+				allowedSerializeType: tc.allowed,
+			}
 			wrapper := &interoperability.TripleRequestWrapper{
 				SerializeType: tc.serializeType,
 				Args:          [][]byte{tc.payload},
@@ -787,4 +795,60 @@ func TestNonIDLResponse_RoundTrip_MsgPack(t *testing.T) {
 	var out string
 	assert.Nil(t, codec.Unmarshal(data, &out))
 	assert.Equal(t, out, "roundtrip-msgpack")
+}
+
+func TestServerCodecSession_Allowlist_RejectsUnauthorizedSerializeType(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name    string
+		allowed string // provider's configured serialization; "" = hessian2-only
+	}{
+		{"not-configured-default", ""}, // serialization defaults to protobuf (IDL), not msgpack
+		{"configured-hessian2", codecNameHessian2},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			session := &tripleServerCodecSession{
+				delegate:             &protoBinaryCodec{},
+				allowedSerializeType: tc.allowed,
+			}
+			msgpCodec := &msgpackCodec{}
+			arg, _ := msgpCodec.Marshal("sneaky")
+			wrapper := &interoperability.TripleRequestWrapper{
+				SerializeType: codecNameMsgPack,
+				Args:          [][]byte{arg},
+				ArgTypes:      []string{"java.lang.String"},
+			}
+			data, _ := proto.Marshal(wrapper)
+
+			var v any
+			err := session.Unmarshal(data, []any{&v})
+			assert.NotNil(t, err)
+			assert.True(t, strings.Contains(err.Error(), "not allowed by provider"))
+		})
+	}
+}
+
+func TestServerCodecSession_Allowlist_Hessian2AlwaysAllowed(t *testing.T) {
+	t.Parallel()
+
+	// Provider configured serialization=protobuf (the IDL default); hessian2
+	// Non-IDL request must still be accepted.
+	session := &tripleServerCodecSession{
+		delegate:             &protoBinaryCodec{},
+		allowedSerializeType: "protobuf",
+	}
+	hessianCodec := &hessian2Codec{}
+	arg, _ := hessianCodec.Marshal("ok")
+	wrapper := &interoperability.TripleRequestWrapper{
+		SerializeType: codecNameHessian2,
+		Args:          [][]byte{arg},
+		ArgTypes:      []string{"java.lang.String"},
+	}
+	data, _ := proto.Marshal(wrapper)
+
+	var v any
+	err := session.Unmarshal(data, []any{&v})
+	assert.Nil(t, err)
 }

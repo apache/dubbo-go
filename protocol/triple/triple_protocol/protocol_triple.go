@@ -186,7 +186,10 @@ func (h *tripleHandler) NewConn(
 	}
 	var codecSession = codec
 	if codec != nil && getWireCodecName(codec) == codecNameProto {
-		codecSession = &tripleServerCodecSession{delegate: codec}
+		codecSession = &tripleServerCodecSession{
+			delegate:             codec,
+			allowedSerializeType: h.FallbackCodecName,
+		}
 	}
 	hc := &tripleUnaryHandlerConn{
 		spec:           h.Spec,

@@ -19,6 +19,7 @@ package triple_protocol
 
 import (
 	"fmt"
+	"sort"
 )
 
 // innerCodecRegistry is the allowed-set of Triple non-IDL inner serialization
@@ -31,27 +32,38 @@ type innerCodecRegistry struct {
 
 var innerCodecs = &innerCodecRegistry{items: make(map[string]Codec)}
 
-// SetInnerCodec registers an inner codec under the given name.
-//
-// SetInnerCodec is init-only: it MUST be called exclusively from package init().
-func SetInnerCodec(name string, c Codec) {
+func init() {
+	registerInnerCodec(codecNameHessian2, &hessian2Codec{})
+	registerInnerCodec(codecNameMsgPack, &msgpackCodec{})
+}
+
+// registerInnerCodec registers an inner codec under the given name.
+func registerInnerCodec(name string, c Codec) {
+	if c == nil {
+		panic(fmt.Sprintf("triple_protocol: registerInnerCodec(%q): nil codec", name))
+	}
+	if c.Name() != name {
+		panic(fmt.Sprintf("triple_protocol: registerInnerCodec(%q): codec Name() = %q, must match the registered name",
+			name, c.Name()))
+	}
 	innerCodecs.items[name] = c
 }
 
-// GetInnerCodec looks up a registered inner codec by name.
+// getInnerCodec looks up a registered inner codec by name.
 // Returns (nil, false) when the name is unknown or disabled (unregistered).
-func GetInnerCodec(name string) (Codec, bool) {
+func getInnerCodec(name string) (Codec, bool) {
 	c, ok := innerCodecs.items[name]
 	return c, ok
 }
 
-// innerCodecNames returns the registered inner codec names, for error
-// diagnostics. Order is unspecified.
+// innerCodecNames returns the registered inner codec names, sorted for stable
+// error diagnostics (map iteration order is unspecified).
 func innerCodecNames() []string {
 	names := make([]string, 0, len(innerCodecs.items))
 	for n := range innerCodecs.items {
 		names = append(names, n)
 	}
+	sort.Strings(names)
 	return names
 }
 
@@ -67,15 +79,10 @@ func resolveInnerCodec(serializeType string) (Codec, error) {
 	if serializeType == "" || serializeType == "hessian4" {
 		serializeType = codecNameHessian2
 	}
-	c, ok := GetInnerCodec(serializeType)
+	c, ok := getInnerCodec(serializeType)
 	if !ok {
 		return nil, fmt.Errorf("unsupported or disabled serialize type %q (registered: %v)",
 			serializeType, innerCodecNames())
 	}
 	return c, nil
-}
-
-func init() {
-	SetInnerCodec(codecNameHessian2, &hessian2Codec{})
-	SetInnerCodec(codecNameMsgPack, &msgpackCodec{})
 }

@@ -590,13 +590,25 @@ func copySlice(inSlice, outSlice reflect.Value) error {
 // single decode, and Marshal reads it to wrap the response in a
 // TripleResponseWrapper.
 type tripleServerCodecSession struct {
-	delegate      Codec  // IDL path codec, resolved from Content-Type
-	serializeType string // captured by Unmarshal when Non-IDL; read by Marshal
+	delegate             Codec  // IDL path codec, resolved from Content-Type
+	serializeType        string // captured by Unmarshal when Non-IDL; read by Marshal
+	allowedSerializeType string // provider "serialization" param; effective allowlist = {hessian2} ∪ {this}. TODO: support Java's multi-valued prefer-serialization
 }
 
 var _ Codec = (*tripleServerCodecSession)(nil)
 
 func (s *tripleServerCodecSession) Name() string { return s.delegate.Name() }
+
+// checkAllowed enforces the provider-side serialization allowlist.
+// hessian2 is always allowed (Non-IDL interop default); any other name must
+// match the provider's configured serialization.
+func (s *tripleServerCodecSession) checkAllowed(codecName string) error {
+	if codecName == codecNameHessian2 || codecName == s.allowedSerializeType {
+		return nil
+	}
+	return fmt.Errorf("serialize type %q not allowed by provider (allowed: %s, %s)",
+		codecName, codecNameHessian2, s.allowedSerializeType)
+}
 
 func (s *tripleServerCodecSession) Unmarshal(data []byte, message any) error {
 	if _, isProto := message.(proto.Message); isProto {
@@ -613,6 +625,9 @@ func (s *tripleServerCodecSession) Unmarshal(data []byte, message any) error {
 	s.serializeType = reqWrapper.SerializeType
 	inner, err := resolveInnerCodec(reqWrapper.SerializeType)
 	if err != nil {
+		return fmt.Errorf("unmarshal triple wrapper request: %w", err)
+	}
+	if err := s.checkAllowed(inner.Name()); err != nil {
 		return fmt.Errorf("unmarshal triple wrapper request: %w", err)
 	}
 	return unmarshalWrapperRequestArgs(&reqWrapper, inner, message)
