@@ -27,25 +27,23 @@ import (
 	"path/filepath"
 	"syscall"
 	"time"
-)
 
-import (
-	"github.com/dubbogo/gost/log/logger"
-
-	"gopkg.in/yaml.v3"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/tools/benchmark/client/clients"
 	"dubbo.apache.org/dubbo-go/v3/tools/benchmark/client/engine"
 	"dubbo.apache.org/dubbo-go/v3/tools/benchmark/client/monitor"
 	"dubbo.apache.org/dubbo-go/v3/tools/benchmark/client/payload"
+	"github.com/dubbogo/gost/log/logger"
+	"gopkg.in/yaml.v3"
 )
 
 const (
 	FrameworkDubboGo = "dubbo-go"
 	FrameworkGRPC    = "grpc"
 	Separator        = "========================================"
+	MaxPayloadSize   = 16 * 1024 * 1024 // 16MB
+	MinPayloadSize   = 1
+	MinConcurrency   = 1
+	MaxConcurrency   = 10000
 )
 
 var (
@@ -114,10 +112,53 @@ type BenchmarkResult struct {
 	MemoryPeak      float64 `json:"memory_peak_mb"`
 }
 
+var (
+	validFrameworks     = map[string]bool{FrameworkDubboGo: true, FrameworkGRPC: true}
+	validSerializations = map[string]bool{"hessian2": true, "protobuf": true, "msgpack": true}
+	validCompressions   = map[string]bool{"none": true, "default": true, "fastest": true}
+	validCallModes      = map[string]bool{"unary": true, "streaming": true}
+)
+
+func validateParams() {
+	if !validFrameworks[*framework] {
+		logger.Fatalf("Invalid framework: %s. Valid values: dubbo-go, grpc", *framework)
+	}
+
+	if *payloadSize < MinPayloadSize || *payloadSize > MaxPayloadSize {
+		logger.Fatalf("Invalid payload size: %d. Must be between %d and %d bytes", *payloadSize, MinPayloadSize, MaxPayloadSize)
+	}
+
+	if *concurrency < MinConcurrency || *concurrency > MaxConcurrency {
+		logger.Fatalf("Invalid concurrency: %d. Must be between %d and %d", *concurrency, MinConcurrency, MaxConcurrency)
+	}
+
+	if !validSerializations[*serialization] {
+		logger.Fatalf("Invalid serialization: %s. Valid values: hessian2, protobuf, msgpack", *serialization)
+	}
+
+	if !validCompressions[*compression] {
+		logger.Fatalf("Invalid compression: %s. Valid values: none, default, fastest", *compression)
+	}
+
+	if !validCallModes[*callMode] {
+		logger.Fatalf("Invalid call mode: %s. Valid values: unary, streaming", *callMode)
+	}
+
+	if _, err := time.ParseDuration(*testDuration); err != nil {
+		logger.Fatalf("Invalid test duration: %v", err)
+	}
+
+	if _, err := time.ParseDuration(*warmupDuration); err != nil {
+		logger.Fatalf("Invalid warmup duration: %v", err)
+	}
+}
+
 func main() {
 	flag.Parse()
 
 	loadConfig(*configFile)
+
+	validateParams()
 
 	logger.Info(Separator)
 	logger.Info("       Dubbo-Go Benchmark Client")

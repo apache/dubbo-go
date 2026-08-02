@@ -24,6 +24,19 @@ SEPARATOR="========================================"
 
 mkdir -p "$LOG_DIR"
 
+cleanup() {
+    echo "[INFO] Cleaning up resources..."
+    if [ -n "$SERVER_PID" ] && kill -0 "$SERVER_PID" 2>/dev/null; then
+        kill "$SERVER_PID" 2>/dev/null || true
+        sleep 2
+        if kill -0 "$SERVER_PID" 2>/dev/null; then
+            kill -9 "$SERVER_PID" 2>/dev/null || true
+        fi
+    fi
+}
+
+trap cleanup EXIT INT TERM
+
 FRAMEWORK="${1:-dubbo-go}"
 PAYLOAD="${2:-1024}"
 SERIALIZATION="${3:-protobuf}"
@@ -96,13 +109,13 @@ case "$FRAMEWORK" in
         exit 1
         ;;
 esac
-pid=$!
-echo "[INFO] Server PID: $pid"
+SERVER_PID=$!
+echo "[INFO] Server PID: $SERVER_PID"
 
 echo "[INFO] Waiting for server to be ready on port $SERVER_PORT..."
 if ! wait_for_port "$SERVER_PORT" 30; then
     echo "[ERROR] Server failed to start within 30 seconds"
-    kill "$pid" 2>/dev/null || true
+    kill "$SERVER_PID" 2>/dev/null || true
     exit 1
 fi
 echo "[INFO] Server is ready"
@@ -116,16 +129,8 @@ echo "[INFO] Starting benchmark..."
     --compression "$COMPRESSION" \
     --concurrency "$CONCURRENCY" \
     --mode "$CALL_MODE" \
-    --pid "$pid" \
+    --pid "$SERVER_PID" \
     --output "$BASE_DIR/data"
-
-echo ""
-echo "[INFO] Stopping server..."
-kill "$pid" 2>/dev/null || true
-sleep 2
-if kill -0 "$pid" 2>/dev/null; then
-    kill -9 "$pid" 2>/dev/null || true
-fi
 
 echo ""
 echo "$SEPARATOR"

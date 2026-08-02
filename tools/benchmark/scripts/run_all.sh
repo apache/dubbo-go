@@ -22,12 +22,22 @@ BASE_DIR=$(cd "$(dirname "$0")/.." && pwd)
 LOG_DIR="$BASE_DIR/logs"
 REPORT_DIR="$BASE_DIR/report"
 DATA_DIR="$BASE_DIR/data"
-PID_FILE="/tmp/benchmark_server.pid"
 SEPARATOR="========================================"
 
 mkdir -p "$LOG_DIR"
 mkdir -p "$REPORT_DIR"
 mkdir -p "$DATA_DIR"
+
+cleanup_server() {
+    local pid=$1
+    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+        kill "$pid" 2>/dev/null || true
+        sleep 2
+        if kill -0 "$pid" 2>/dev/null; then
+            kill -9 "$pid" 2>/dev/null || true
+        fi
+    fi
+}
 
 echo "$SEPARATOR"
 echo "   Dubbo-Go Benchmark - Full Test Suite"
@@ -55,23 +65,6 @@ wait_for_port() {
     done
     return 1
 }
-
-cleanup() {
-    echo "[INFO] Cleaning up resources..."
-    if [ -f "$PID_FILE" ]; then
-        pid=$(cat "$PID_FILE")
-        if kill -0 "$pid" 2>/dev/null; then
-            kill "$pid" 2>/dev/null || true
-            sleep 2
-            if kill -0 "$pid" 2>/dev/null; then
-                kill -9 "$pid" 2>/dev/null || true
-            fi
-        fi
-        rm -f "$PID_FILE"
-    fi
-}
-
-trap cleanup EXIT
 
 echo ""
 echo "[INFO] Compiling Dubbo-Go server..."
@@ -127,7 +120,6 @@ for framework in "${FRAMEWORKS[@]}"; do
                         echo "--------------------------------------------------------"
 
                         LOG_FILE="$LOG_DIR/${framework}_${payload}_${serialization}_${compression}_${concurrency}_${mode}.log"
-                        DATA_FILE="$DATA_DIR/${framework}_${payload}_${serialization}_${compression}_${concurrency}_${mode}.json"
 
                         echo "[INFO] Starting server..."
                         case "$framework" in
@@ -142,13 +134,15 @@ for framework in "${FRAMEWORKS[@]}"; do
                                 exit 1
                                 ;;
                         esac
-                        pid=$!
-                        echo "$pid" > "$PID_FILE"
+                        SERVER_PID=$!
+
+                        trap "cleanup_server $SERVER_PID" EXIT INT TERM
 
                         echo "[INFO] Waiting for server to be ready on port $SERVER_PORT..."
                         if ! wait_for_port "$SERVER_PORT" 30; then
                             echo "[ERROR] Server failed to start within 30 seconds"
-                            kill "$pid" 2>/dev/null || true
+                            cleanup_server "$SERVER_PID"
+                            trap - EXIT INT TERM
                             continue
                         fi
                         echo "[INFO] Server is ready"
@@ -161,19 +155,14 @@ for framework in "${FRAMEWORKS[@]}"; do
                             --compression "$compression" \
                             --concurrency "$concurrency" \
                             --mode "$mode" \
-                            --pid "$pid" \
+                            --pid "$SERVER_PID" \
                             --output "$DATA_DIR" \
                             > "$LOG_FILE" 2>&1
 
                         echo "[INFO] Test case completed, log saved to $LOG_FILE"
 
-                        echo "[INFO] Stopping server..."
-                        kill "$pid" 2>/dev/null || true
-                        sleep 2
-                        if kill -0 "$pid" 2>/dev/null; then
-                            kill -9 "$pid" 2>/dev/null || true
-                        fi
-                        rm -f "$PID_FILE"
+                        cleanup_server "$SERVER_PID"
+                        trap - EXIT INT TERM
                     done
                 done
             done
