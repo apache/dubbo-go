@@ -42,3 +42,6 @@ metadata/report/zookeeper/zookeeper-4unittest/
 # macOS
 .DS_Store
 .history
+
+# Local AI agent planning artifacts
+/docs/superpowers/
