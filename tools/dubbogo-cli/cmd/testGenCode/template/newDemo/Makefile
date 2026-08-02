@@ -13,10 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-.PHONY: test test-generated-projects
+proto-gen:
+	protoc --go_out=. --go_opt=paths=source_relative --go-triple_out=. --go-triple_opt=paths=source_relative ./api/samples_api.proto
 
-test:
+tidy:
+	go mod tidy
+
+test: proto-gen tidy
 	go test ./...
-
-test-generated-projects:
-	DUBBOGO_CLI_E2E=1 go test ./cmd -run '^TestGeneratedProjectsCompile$$' -count=1 -v

@@ -25,9 +25,9 @@ import (
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	"github.com/pb33f/libopenapi/orderedmap"
 
-	"google.golang.org/protobuf/reflect/protoreflect"
+	"go.yaml.in/yaml/v4"
 
-	"gopkg.in/yaml.v3"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 func messageToSchema(tt protoreflect.MessageDescriptor) (string, *base.Schema) {

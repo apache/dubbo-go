@@ -1,26 +1,26 @@
 # protoc-gen-triple-openapi
 
-English | [中文](README_CN.md)
+[English](README.md) | 中文
 
-`protoc-gen-triple-openapi` is a `protoc` plugin that generates OpenAPI v3 documents from protobuf services used with the Dubbo Triple protocol.
+`protoc-gen-triple-openapi` 是一个 `protoc` 插件，用于从 Dubbo Triple 协议使用的 protobuf 服务定义生成 OpenAPI v3 文档。
 
-## Requirements
+## 环境要求
 
-- Go 1.23 or later
+- Go 1.23 或更高版本
 - `protoc`
-- protobuf files that define Triple services
+- 定义了 Triple 服务的 protobuf 文件
 
-## Installation
+## 安装
 
 ```bash
 go install dubbo.apache.org/dubbo-go/v3/tools/protoc-gen-triple-openapi@latest
 ```
 
-Make sure `$(go env GOPATH)/bin` is in your `PATH`.
+请确保 `$(go env GOPATH)/bin` 已加入 `PATH`。
 
-## Usage
+## 使用
 
-Generate YAML, the default format:
+生成 YAML，默认格式：
 
 ```bash
 protoc \
@@ -29,7 +29,7 @@ protoc \
   ./api/greet.proto
 ```
 
-Generate JSON:
+生成 JSON：
 
 ```bash
 protoc \
@@ -38,12 +38,12 @@ protoc \
   ./api/greet.proto
 ```
 
-Generated file names use the input proto base name:
+生成文件名基于输入 proto 文件名：
 
 - `greet.triple.openapi.yaml`
 - `greet.triple.openapi.json`
 
-## Proto Example
+## Proto 示例
 
 ```proto
 syntax = "proto3";
@@ -65,13 +65,13 @@ message GreetResponse {
 }
 ```
 
-## Options
+## 参数
 
-| Option | Values | Default | Description |
+| 参数 | 可选值 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `format` | `yaml`, `json` | `yaml` | Output document format. |
+| `format` | `yaml`, `json` | `yaml` | 输出文档格式。 |
 
-## Version
+## 版本
 
 ```bash
 protoc-gen-triple-openapi --version

@@ -1,746 +1,603 @@
 {
-  "$comment": "JSON Schema for Dubbo-Go Framework",
-  "$schema": "http://json-schema.org/draft-07/schema",
-  "title": "Dubbo-Go Framework schema",
+  "$comment": "JSON Schema for Apache dubbo-go YAML configuration.",
+  "$id": "https://raw.githubusercontent.com/apache/dubbo-go/develop/tools/dubbo-go-schema/dubbo-go.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Apache dubbo-go configuration",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "dubbo"
-  ],
+  "required": ["dubbo"],
   "properties": {
     "dubbo": {
       "type": "object",
-      "description": "The dubbo is root",
+      "additionalProperties": false,
+      "description": "Root configuration for a dubbo-go instance.",
       "properties": {
-        "profiles": {
+        "application": { "$ref": "#/definitions/application" },
+        "protocols": { "$ref": "#/definitions/protocolMap" },
+        "registries": { "$ref": "#/definitions/registryMap" },
+        "config-center": { "$ref": "#/definitions/configCenter" },
+        "metadata-report": { "$ref": "#/definitions/metadataReport" },
+        "provider": { "$ref": "#/definitions/provider" },
+        "consumer": { "$ref": "#/definitions/consumer" },
+        "metrics": { "$ref": "#/definitions/metrics" },
+        "tracing": { "$ref": "#/definitions/tracingMap" },
+        "otel": { "$ref": "#/definitions/otel" },
+        "logger": { "$ref": "#/definitions/logger" },
+        "shutdown": { "$ref": "#/definitions/shutdown" },
+        "router": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/router" }
+        },
+        "profiles": { "$ref": "#/definitions/profiles" },
+        "event-dispatcher-type": { "type": "string" },
+        "cache_file": { "type": "string" },
+        "custom": {
           "type": "object",
-          "description": "Load and merge configuration files based on active",
-          "properties": {
-            "active": {
-              "type": "string",
-              "description": "The file suffix to be loaded"
-            }
-          }
+          "additionalProperties": true
         },
-        "application": {
-          "$ref": "#/definitions/application"
-        },
-        "registries": {
-          "type": "object",
-          "description": "dubbo registry",
-          "additionalProperties": false,
-          "patternProperties": {
-            "^[_a-zA-Z][a-zA-Z\\d_-]*$": {
-              "$ref": "#/definitions/registry"
-            }
-          }
-        },
-        "protocols": {
-          "type": "object",
-          "description": "dubbo protocol",
-          "additionalProperties": false,
-          "patternProperties": {
-            "^[_a-zA-Z][a-zA-Z\\d_-]*$": {
-              "$ref": "#/definitions/protocol"
-            }
-          }
-        },
-        "config-center": {
-          "$ref": "#/definitions/config-center"
-        },
-        "metadata-report": {
-          "$ref": "#/definitions/metadata-report"
-        },
-        "provider": {
-          "$ref": "#/definitions/provider"
-        },
-        "consumer": {
-          "$ref": "#/definitions/consumer"
-        },
-        "metrics": {
-          "type": "object",
-          "description": "metric",
-          "additionalProperties": false,
-          "patternProperties": {
-            "^[_a-zA-Z][a-zA-Z\\d_-]*$": {
-              "$ref": "#/definitions/metric"
-            }
-          }
-        },
-        "tracing": {
-          "type": "object",
-          "description": "tracing",
-          "additionalProperties": false,
-          "patternProperties": {
-            "^[_a-zA-Z][a-zA-Z\\d_-]*$": {
-              "$ref": "#/definitions/tracing"
-            }
-          }
-        },
-        "shutdown": { "$ref": "#/definitions/shutdown"}
+        "tls_config": { "$ref": "#/definitions/tls" }
       }
     }
   },
   "definitions": {
-    "registry": {
+    "idMap": {
       "type": "object",
-      "description": "Registry center",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[_a-zA-Z][a-zA-Z\\d_-]*$": {}
+      }
+    },
+    "stringMap": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "stringArray": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "duration": {
+      "type": "string",
+      "description": "Go duration string, for example 3s, 500ms, 1m."
+    },
+    "stringOrInteger": {
+      "oneOf": [{ "type": "string" }, { "type": "integer" }]
+    },
+    "stringOrNumber": {
+      "oneOf": [{ "type": "string" }, { "type": "number" }]
+    },
+    "boolString": {
+      "type": "string",
+      "enum": ["true", "false"]
+    },
+    "profiles": {
+      "type": "object",
       "additionalProperties": false,
       "properties": {
-        "protocol": {
+        "active": {
           "type": "string",
-          "description": "Registry protocol",
-          "enum": [
-            "nacos",
-            "etcdv3",
-            "polaris",
-            "xds",
-            "zookeeper",
-            "service-discovery-registry"
-          ]
-        },
-        "timeout": {
-          "type": "string",
-          "description": "Registry timeout default 5s"
-        },
-        "group": {
-          "type": "string",
-          "description": "Registry group"
-        },
-        "namespace": {
-          "type": "string",
-          "description": "Registry namespace"
-        },
-        "ttl": {
-          "type": "string",
-          "description": "Registry ttl default 10s"
-        },
-        "address": {
-          "type": "string",
-          "description": "Registry address support format {protocol}://address"
-        },
-        "username": {
-          "type": "string",
-          "description": "Registry username for auth"
-        },
-        "password": {
-          "type": "string",
-          "description": "Registry password for auth"
-        },
-        "simplified": {
-          "type": "boolean",
-          "description": "Simplified registry"
-        },
-        "preferred": {
-          "type": "boolean",
-          "description": "Always use this registry first if set to true, useful when subscribe to multiple registriesConfig"
-        },
-        "zone": {
-          "type": "string",
-          "description": "The region where the registry belongs, usually used to isolate traffics"
-        },
-        "weight": {
-          "type": "integer",
-          "default": 100,
-          "description": "Affects traffic distribution among registriesConfig, useful when subscribe to multiple registriesConfig Take effect only when no preferred registry is specified."
-        },
-        "registry-type": {
-          "type": "string",
-          "description": "Registry Interface discovery or application discovery default Interface discovery",
-          "enum": [
-            "service"
-          ]
-        },
-        "params": {
-          "type": "object",
-          "description": "Other parameters for registry are passed to the corresponding registry in key-value mode"
+          "description": "Profile suffix to load and merge."
         }
       }
     },
     "application": {
       "type": "object",
       "additionalProperties": false,
-      "description": "Application is a configuration for current application, whether the application is a provider or a consumer",
+      "description": "Application identity and metadata settings.",
       "properties": {
-        "organization": {
-          "type": "string",
-          "description": "default dubbo-go"
-        },
-        "name": {
-          "type": "string",
-          "description": "default dubbo.io"
-        },
-        "module": {
-          "type": "string",
-          "description": "default sample"
-        },
-        "group": {
-          "type": "string"
-        },
-        "version": {
-          "type": "string"
-        },
-        "owner": {
-          "type": "string",
-          "description": "default dubbo-go"
-        },
-        "environment": {
-          "type": "string"
-        },
+        "organization": { "type": "string", "default": "dubbo-go" },
+        "name": { "type": "string", "default": "dubbo.io" },
+        "module": { "type": "string", "default": "sample" },
+        "group": { "type": "string" },
+        "version": { "type": "string" },
+        "owner": { "type": "string", "default": "dubbo-go" },
+        "environment": { "type": "string" },
         "metadata-type": {
           "type": "string",
-          "description": "The metadata type. remote or local default local",
-          "enum": [
-            "local",
-            "remote"
-          ]
+          "default": "local",
+          "enum": ["local", "remote"]
+        },
+        "tag": { "type": "string" },
+        "metadata-service-port": { "type": "string" },
+        "metadata-service-protocol": {
+          "type": "string",
+          "default": "dubbo"
         }
+      }
+    },
+    "registryMap": {
+      "allOf": [{ "$ref": "#/definitions/idMap" }],
+      "patternProperties": {
+        "^[_a-zA-Z][a-zA-Z\\d_-]*$": { "$ref": "#/definitions/registry" }
+      }
+    },
+    "registry": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Registry center configuration.",
+      "properties": {
+        "protocol": {
+          "type": "string",
+          "enum": ["nacos", "etcdv3", "polaris", "xds", "zookeeper", "service-discovery-registry"]
+        },
+        "timeout": { "$ref": "#/definitions/duration", "default": "5s" },
+        "group": { "type": "string" },
+        "namespace": { "type": "string" },
+        "ttl": { "$ref": "#/definitions/duration", "default": "15m" },
+        "address": { "type": "string" },
+        "username": { "type": "string" },
+        "password": { "type": "string" },
+        "simplified": { "type": "boolean" },
+        "preferred": { "type": "boolean" },
+        "zone": { "type": "string" },
+        "weight": { "type": "integer", "default": 100 },
+        "registry-type": {
+          "type": "string",
+          "enum": ["service"]
+        },
+        "use-as-meta-report": { "$ref": "#/definitions/boolString", "default": "true" },
+        "use-as-config-center": { "$ref": "#/definitions/boolString", "default": "true" },
+        "params": { "$ref": "#/definitions/stringMap" }
+      }
+    },
+    "protocolMap": {
+      "allOf": [{ "$ref": "#/definitions/idMap" }],
+      "patternProperties": {
+        "^[_a-zA-Z][a-zA-Z\\d_-]*$": { "$ref": "#/definitions/protocol" }
       }
     },
     "protocol": {
       "type": "object",
       "additionalProperties": false,
+      "description": "Server protocol configuration.",
       "properties": {
         "name": {
           "type": "string",
-          "description": "default dubbo",
-          "default": "dubbo",
-          "enum": [
-            "dubbo",
-            "rest",
-            "grpc",
-            "filter",
-            "jsonrpc",
-            "tri",
-            "registry"
-          ]
+          "default": "tri",
+          "enum": ["dubbo", "rest", "grpc", "filter", "jsonrpc", "tri", "triple", "registry"]
         },
-        "ip": {
-          "type": "string"
-        },
-        "port": {
-          "type": "number",
-          "description": "default 20000"
-        },
-        "params": {
-          "type": "object"
-        }
-      }
-    },
-    "config-center": {
-      "type": "object",
-      "description": "config center",
-      "additionalProperties": false,
-      "properties": {
-        "protocol": {
-          "type": "string",
-          "description": "config center protocol",
-          "enum": [
-            "nacos",
-            "apollo",
-            "file",
-            "zookeeper"
-          ]
-        },
-        "address": {
-          "type": "string",
-          "description": "Registry address support format {protocol}://address"
-        },
-        "data-id": {
-          "type": "string",
-          "description": "data id for nacos"
-        },
-        "app-id": {
-          "type": "string",
-          "description": "data id for nacos"
-        },
-        "cluster": {
-          "type": "string"
-        },
-        "username": {
-          "type": "string"
-        },
-        "password": {
-          "type": "string"
-        },
-        "group": {
-          "type": "string"
-        },
-        "namespace": {
-          "type": "string"
-        },
+        "ip": { "type": "string" },
+        "port": { "$ref": "#/definitions/stringOrInteger", "default": "20000" },
         "params": {
           "type": "object",
-          "description": "Other parameters for registry are passed to the corresponding registry in key-value mode"
+          "additionalProperties": true
         },
-        "timeout": {
-          "type": "string",
-          "description": "Registry timeout",
-          "default": "5s"
-        },
+        "triple": { "$ref": "#/definitions/triple" },
+        "max-server-send-msg-size": { "type": "string" },
+        "max-server-recv-msg-size": { "type": "string", "default": "4mib" }
+      }
+    },
+    "triple": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max-server-send-msg-size": { "type": "string" },
+        "max-server-recv-msg-size": { "type": "string" },
+        "keep-alive-interval": { "$ref": "#/definitions/duration" },
+        "keep-alive-timeout": { "$ref": "#/definitions/duration" },
+        "http3": { "$ref": "#/definitions/http3" },
+        "cors": { "$ref": "#/definitions/cors" },
+        "openapi": { "$ref": "#/definitions/openapi" }
+      }
+    },
+    "http3": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enable": { "type": "boolean", "default": false },
+        "negotiation": { "type": "boolean", "default": true }
+      }
+    },
+    "cors": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "allow-origins": { "$ref": "#/definitions/stringArray" },
+        "allow-methods": { "$ref": "#/definitions/stringArray" },
+        "allow-headers": { "$ref": "#/definitions/stringArray" },
+        "expose-headers": { "$ref": "#/definitions/stringArray" },
+        "allow-credentials": { "type": "boolean" },
+        "max-age": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "openapi": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": false },
+        "path": { "type": "string", "default": "/dubbo/openapi" },
+        "info-title": { "type": "string" },
+        "info-description": { "type": "string" },
+        "info-version": { "type": "string" },
+        "default-consumes-media-types": { "$ref": "#/definitions/stringArray" },
+        "default-produces-media-types": { "$ref": "#/definitions/stringArray" },
+        "default-http-status-codes": { "$ref": "#/definitions/stringArray" },
+        "settings": { "$ref": "#/definitions/stringMap" }
+      }
+    },
+    "configCenter": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "protocol": { "type": "string", "enum": ["nacos", "apollo", "file", "zookeeper", "etcd", "consul"] },
+        "address": { "type": "string" },
+        "data-id": { "type": "string" },
+        "app-id": { "type": "string", "default": "dubbo" },
+        "cluster": { "type": "string" },
+        "username": { "type": "string" },
+        "password": { "type": "string" },
+        "group": { "type": "string" },
+        "namespace": { "type": "string" },
+        "params": { "$ref": "#/definitions/stringMap" },
+        "timeout": { "$ref": "#/definitions/duration", "default": "10s" },
         "file-extension": {
           "type": "string",
-          "description": "the suffix of config dataId, also the file extension of config content",
-          "enum": [
-            "json",
-            "toml",
-            "yaml",
-            "yml",
-            "properties"
-          ]
+          "default": "yaml",
+          "enum": ["json", "toml", "yaml", "yml", "properties"]
         }
       }
     },
-    "metadata-report": {
+    "metadataReport": {
       "type": "object",
-      "description": "metadata report",
       "additionalProperties": false,
       "properties": {
-        "protocol": {
-          "type": "string"
-        },
-        "address": {
-          "type": "string",
-          "description": "Registry address support format {protocol}://address"
-        },
-        "username": {
-          "type": "string"
-        },
-        "password": {
-          "type": "string"
-        },
-        "group": {
-          "type": "string"
-        },
-        "namespace": {
-          "type": "string"
-        },
-        "timeout": {
-          "type": "string",
-          "description": "metadata report timeout",
-          "default": "20s"
-        }
+        "protocol": { "type": "string" },
+        "address": { "type": "string" },
+        "username": { "type": "string" },
+        "password": { "type": "string" },
+        "group": { "type": "string" },
+        "namespace": { "type": "string" },
+        "timeout": { "$ref": "#/definitions/duration", "default": "20s" },
+        "params": { "$ref": "#/definitions/stringMap" }
       }
     },
     "provider": {
       "type": "object",
-      "description": "provider",
       "additionalProperties": false,
       "properties": {
-        "filter": {
-          "type": "string"
+        "filter": { "type": "string" },
+        "register": { "type": "boolean", "deprecated": true },
+        "registry-ids": { "$ref": "#/definitions/stringArray" },
+        "protocol-ids": { "$ref": "#/definitions/stringArray" },
+        "tracing-key": { "type": "string" },
+        "proxy": { "type": "string", "default": "default" },
+        "filter_conf": { "type": "object", "additionalProperties": true },
+        "config_type": { "$ref": "#/definitions/stringMap" },
+        "adaptive-service": { "type": "boolean" },
+        "adaptive-service-verbose": { "type": "boolean" },
+        "services": { "$ref": "#/definitions/serviceMap" }
+      }
+    },
+    "serviceMap": {
+      "allOf": [{ "$ref": "#/definitions/idMap" }],
+      "patternProperties": {
+        "^[_a-zA-Z][a-zA-Z\\d_-]*$": { "$ref": "#/definitions/service" }
+      }
+    },
+    "service": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "filter": { "type": "string" },
+        "protocol-ids": { "$ref": "#/definitions/stringArray" },
+        "interface": { "type": "string" },
+        "registry-ids": { "$ref": "#/definitions/stringArray" },
+        "cluster": { "type": "string", "default": "failover" },
+        "loadbalance": { "$ref": "#/definitions/loadbalance" },
+        "group": { "type": "string" },
+        "version": { "type": "string" },
+        "methods": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/method" }
         },
-        "register": {
-          "type": "boolean"
-        },
-        "registry-ids": {
-          "type": "array"
-        },
-        "tracing-key": {
-          "type": "string"
-        },
-        "proxy": {
-          "type": "string",
-          "default": "default"
-        },
-        "adaptive-service": {
-          "type": "boolean"
-        },
-        "adaptive-service-verbose": {
-          "type": "boolean"
-        },
-        "services": {
-          "type": "object",
-          "description": "provider services",
-          "additionalProperties": false,
-          "patternProperties": {
-            "^[_a-zA-Z][a-zA-Z\\d_-]*$": {
-              "$ref": "#/definitions/services"
-            }
-          }
-        }
+        "warmup": { "$ref": "#/definitions/stringOrNumber" },
+        "retries": { "$ref": "#/definitions/stringOrNumber" },
+        "serialization": { "$ref": "#/definitions/serialization" },
+        "params": { "$ref": "#/definitions/stringMap" },
+        "token": { "type": "string" },
+        "accesslog": { "type": "string" },
+        "tps.limiter": { "$ref": "#/definitions/tpsLimiter" },
+        "tps.limit.interval": { "$ref": "#/definitions/stringOrNumber" },
+        "tps.limit.rate": { "$ref": "#/definitions/stringOrNumber" },
+        "tps.limit.strategy": { "$ref": "#/definitions/tpsLimitStrategy" },
+        "tps.limit.rejected.handler": { "type": "string", "default": "log" },
+        "execute.limit": { "$ref": "#/definitions/stringOrNumber" },
+        "execute.limit.rejected.handler": { "type": "string", "default": "log" },
+        "auth": { "type": "string" },
+        "not_register": { "type": "boolean" },
+        "param.sign": { "type": "string" },
+        "tag": { "type": "string" },
+        "tracing-key": { "type": "string" },
+        "weight": { "type": "integer" }
       }
     },
     "consumer": {
       "type": "object",
-      "description": "consumer",
       "additionalProperties": false,
       "properties": {
-        "filter": {
-          "type": "string"
-        },
-        "registry-ids": {
-          "type": "array"
-        },
-        "request-timeout": {
-          "type": "string",
-          "default": "3s"
-        },
-        "proxy": {
-          "type": "string",
-          "default": "default"
-        },
-        "check": {
-          "type": "boolean"
-        },
-        "adaptive-service": {
-          "type": "boolean"
-        },
-        "tracing-key": {
-          "type": "string"
-        },
-        "max-wait-time-for-service-discovery": {
-          "type": "string",
-          "default": "3s"
-        },
-        "references": {
-          "type": "object",
-          "description": "consumer reference",
-          "additionalProperties": false,
-          "patternProperties": {
-            "^[_a-zA-Z][a-zA-Z\\d_-]*$": {
-              "$ref": "#/definitions/reference"
-            }
-          }
-        }
+        "filter": { "type": "string" },
+        "registry-ids": { "$ref": "#/definitions/stringArray" },
+        "protocol": { "type": "string" },
+        "request-timeout": { "$ref": "#/definitions/duration", "default": "3s" },
+        "proxy": { "type": "string", "default": "default" },
+        "check": { "type": "boolean" },
+        "adaptive-service": { "type": "boolean" },
+        "references": { "$ref": "#/definitions/referenceMap" },
+        "tracing-key": { "type": "string" },
+        "filter-conf": { "type": "object", "additionalProperties": true },
+        "max-wait-time-for-service-discovery": { "$ref": "#/definitions/duration", "default": "3s" },
+        "mesh-enabled": { "type": "boolean" }
       }
     },
-    "services": {
-      "type": "object",
-      "description": "provider service",
-      "additionalProperties": false,
-      "properties": {
-        "filter": {
-          "type": "string"
-        },
-        "protocol-ids": {
-          "type": "array"
-        },
-        "interface": {
-          "type": "string"
-        },
-        "registry-ids": {
-          "type": "array"
-        },
-        "cluster": {
-          "type": "string",
-          "default": "failover"
-        },
-        "loadbalance": {
-          "$ref": "#/definitions/loadbalance"
-        },
-        "retries": {
-          "type": "number",
-          "description": "Retry count",
-          "default": 2
-        },
-        "group": {
-          "type": "string"
-        },
-        "version": {
-          "type": "string"
-        },
-        "serialization": {
-          "$ref": "#/definitions/serialization"
-        },
-        "methods": {
-          "type": "object",
-          "description": "metadata report",
-          "additionalProperties": false,
-          "patternProperties": {
-            "^[_a-zA-Z][a-zA-Z\\d_-]*$": {
-              "$ref": "#/definitions/method"
-            }
-          }
-        },
-        "warmup": {
-          "type": "number",
-          "description": "get service register time an do warm up time",
-          "default": 600
-        },
-        "params": {
-          "type": "object"
-        },
-        "token": {
-          "type": "string",
-          "description": "if set `true` or `default` use uuid"
-        },
-        "accesslog": {
-          "type": "string"
-        },
-        "tps.limiter": {
-          "$ref": "#/definitions/tps.limiter"
-        },
-        "tps.limit.interval": {
-          "type": "integer"
-        },
-        "tps.limit.strategy": {
-          "$ref": "#/definitions/tps.limit.strategy"
-        },
-        "tps.limit.rate": {
-          "type": "integer"
-        },
-        "tps.limit.rejected.handler": {
-          "type": "string",
-          "default": "log"
-        },
-        "execute.limit": {
-          "type": "number"
-        },
-        "execute.limit.rejected.handler": {
-          "type": "string",
-          "default": "log"
-        },
-        "auth": {
-          "type": "boolean",
-          "default": false
-        },
-        "param.sign": {
-          "type": "boolean",
-          "default": false
-        },
-        "tag": {
-          "type": "string"
-        },
-        "max_message_size": {
-          "type": "integer",
-          "default": 4
-        },
-        "tracing-key": {
-          "type": "string"
-        }
+    "referenceMap": {
+      "allOf": [{ "$ref": "#/definitions/idMap" }],
+      "patternProperties": {
+        "^[_a-zA-Z][a-zA-Z\\d_-]*$": { "$ref": "#/definitions/reference" }
       }
     },
     "reference": {
       "type": "object",
-      "description": "consumer reference",
+      "additionalProperties": false,
       "properties": {
-        "interface": {
-          "type": "string"
-        },
-        "check": {
-          "type": "boolean"
-        },
-        "url": {
-          "type": "string"
-        },
-        "filter": {
-          "type": "string"
-        },
-        "protocol": {
-          "type": "string",
-          "default": "tri"
-        },
-        "registry-ids": {
-          "type": "array"
-        },
-        "cluster": {
-          "type": "string",
-          "default": "failover"
-        },
-        "loadbalance": {
-          "$ref": "#/definitions/loadbalance"
-        },
-        "group": {
-          "type": "string"
-        },
-        "version": {
-          "type": "string"
-        },
-        "serialization": {
-          "$ref": "#/definitions/serialization"
-        },
+        "interface": { "type": "string" },
+        "check": { "type": "boolean" },
+        "url": { "type": "string" },
+        "filter": { "type": "string" },
+        "protocol": { "type": "string", "default": "tri" },
+        "registry-ids": { "$ref": "#/definitions/stringArray" },
+        "cluster": { "type": "string", "default": "failover" },
+        "loadbalance": { "$ref": "#/definitions/loadbalance" },
+        "retries": { "$ref": "#/definitions/stringOrNumber" },
+        "group": { "type": "string" },
+        "version": { "type": "string" },
+        "serialization": { "$ref": "#/definitions/serialization" },
+        "provided_by": { "type": "string" },
         "methods": {
-          "type": "object",
-          "description": "metadata report",
-          "additionalProperties": false,
-          "patternProperties": {
-            "^[_a-zA-Z][a-zA-Z\\d_-]*$": {
-              "$ref": "#/definitions/method"
-            }
-          }
+          "type": "array",
+          "items": { "$ref": "#/definitions/method" }
         },
-        "async": {
-          "type": "boolean"
-        },
-        "params": {
-          "type": "object"
-        },
-        "generic": {
-          "type": "boolean"
-        },
-        "sticky": {
-          "type": "boolean"
-        },
-        "timeout": {
-          "type": "string"
-        },
-        "force.tag": {
-          "type": "boolean"
-        },
-        "tracing-key": {
-          "type": "string"
-        }
+        "protocol_config": { "$ref": "#/definitions/clientProtocol" },
+        "async": { "type": "boolean" },
+        "params": { "$ref": "#/definitions/stringMap" },
+        "generic": { "type": "string" },
+        "sticky": { "type": "boolean" },
+        "timeout": { "$ref": "#/definitions/duration" },
+        "force.tag": { "type": "boolean" },
+        "tracing-key": { "type": "string" },
+        "mesh-provider-port": { "type": "integer" },
+        "keep-alive-interval": { "$ref": "#/definitions/duration", "deprecated": true },
+        "keep-alive-timeout": { "$ref": "#/definitions/duration", "deprecated": true }
+      }
+    },
+    "clientProtocol": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "default": "tri" },
+        "triple": { "$ref": "#/definitions/triple" }
       }
     },
     "method": {
       "type": "object",
-      "description": "metadata report",
       "additionalProperties": false,
       "properties": {
-        "name": {
-          "type": "string"
+        "name": { "type": "string" },
+        "retries": { "$ref": "#/definitions/stringOrNumber" },
+        "loadbalance": { "$ref": "#/definitions/loadbalance" },
+        "weight": { "type": "integer", "default": 100 },
+        "tps.limit.interval": { "$ref": "#/definitions/stringOrNumber" },
+        "tps.limit.rate": { "$ref": "#/definitions/stringOrNumber" },
+        "tps.limit.strategy": { "$ref": "#/definitions/tpsLimitStrategy" },
+        "execute.limit": { "$ref": "#/definitions/stringOrNumber" },
+        "execute.limit.rejected.handler": { "type": "string", "default": "log" },
+        "sticky": { "type": "boolean" },
+        "timeout": { "$ref": "#/definitions/duration" }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enable": { "type": "boolean", "default": false },
+        "port": { "$ref": "#/definitions/stringOrInteger", "default": "9090" },
+        "path": { "type": "string", "default": "/metrics" },
+        "protocol": { "type": "string", "default": "prometheus" },
+        "enable-metadata": { "type": "boolean", "default": false },
+        "enable-registry": { "type": "boolean", "default": false },
+        "enable-config-center": { "type": "boolean", "default": false },
+        "prometheus": { "$ref": "#/definitions/prometheus" },
+        "aggregation": { "$ref": "#/definitions/aggregation" },
+        "probe": { "$ref": "#/definitions/probe" }
+      }
+    },
+    "prometheus": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "exporter": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean", "default": true }
+          }
         },
-        "retries": {
-          "type": "number",
-          "description": "Retry count",
-          "default": 2
-        },
-        "loadbalance": {
-          "$ref": "#/definitions/loadbalance"
-        },
-        "weight": {
-          "type": "integer",
-          "default": 100
-        },
-        "tps.limit.interval": {
-          "type": "integer"
-        },
-        "tps.limit.rate": {
-          "type": "integer"
-        },
-        "tps.limit.strategy": {
-          "$ref": "#/definitions/tps.limit.strategy"
-        },
-        "execute.limit": {
-          "type": "number"
-        },
-        "execute.limit.rejected.handler": {
+        "pushgateway": { "$ref": "#/definitions/pushgateway" }
+      }
+    },
+    "pushgateway": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": false },
+        "base-url": { "type": "string" },
+        "job": { "type": "string", "default": "default_dubbo_job" },
+        "username": { "type": "string" },
+        "password": { "type": "string" },
+        "push-interval": { "type": "integer", "default": 30 }
+      }
+    },
+    "aggregation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": false },
+        "bucket-num": { "type": "integer", "default": 10 },
+        "time-window-seconds": { "type": "integer", "default": 120 }
+      }
+    },
+    "probe": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": false },
+        "port": { "$ref": "#/definitions/stringOrInteger", "default": "22222" },
+        "liveness-path": { "type": "string", "default": "/live" },
+        "readiness-path": { "type": "string", "default": "/ready" },
+        "startup-path": { "type": "string", "default": "/startup" },
+        "use-internal-state": { "type": "boolean", "default": true }
+      }
+    },
+    "tracingMap": {
+      "allOf": [{ "$ref": "#/definitions/idMap" }],
+      "patternProperties": {
+        "^[_a-zA-Z][a-zA-Z\\d_-]*$": { "$ref": "#/definitions/tracing" }
+      },
+      "description": "Deprecated tracing config. Prefer dubbo.otel.tracing for new applications."
+    },
+    "tracing": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "default": "jaeger" },
+        "serviceName": { "type": "string" },
+        "address": { "type": "string" },
+        "use-agent": { "type": "boolean", "default": false }
+      }
+    },
+    "otel": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tracing": { "$ref": "#/definitions/otelTracing" }
+      }
+    },
+    "otelTracing": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enable": { "type": "boolean", "default": false },
+        "exporter": {
           "type": "string",
-          "default": "log"
+          "default": "stdout",
+          "enum": ["stdout", "jaeger", "zipkin", "otlp-http", "otlp-grpc"]
         },
-        "sticky": {
-          "type": "boolean"
+        "endpoint": { "type": "string" },
+        "propagator": {
+          "type": "string",
+          "default": "w3c",
+          "enum": ["w3c", "b3"]
         },
-        "timeout": {
-          "type": "string"
-        }
+        "sample-mode": {
+          "type": "string",
+          "default": "ratio",
+          "enum": ["always", "never", "ratio"]
+        },
+        "sample-ratio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.5
+        },
+        "insecure": { "type": "boolean", "default": false }
+      }
+    },
+    "logger": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "driver": { "type": "string", "default": "zap" },
+        "level": { "type": "string", "default": "info" },
+        "format": { "type": "string", "default": "text" },
+        "appender": { "type": "string", "default": "console" },
+        "file": { "$ref": "#/definitions/logFile" },
+        "trace-integration": { "$ref": "#/definitions/traceIntegration" }
+      }
+    },
+    "logFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "default": "dubbo.log" },
+        "max-size": { "type": "integer", "default": 100 },
+        "max-backups": { "type": "integer", "default": 5 },
+        "max-age": { "type": "integer", "default": 3 },
+        "compress": { "type": "boolean", "default": true }
+      }
+    },
+    "traceIntegration": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": false },
+        "record-error-to-span": { "type": "boolean", "default": true }
+      }
+    },
+    "shutdown": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "timeout": { "$ref": "#/definitions/duration", "default": "60s" },
+        "step-timeout": { "$ref": "#/definitions/duration", "default": "3s" },
+        "notify-timeout": { "$ref": "#/definitions/duration", "default": "5s" },
+        "consumer-update-wait-time": { "$ref": "#/definitions/duration", "default": "3s" },
+        "reject-handler": { "type": "string" },
+        "internal-signal": { "type": "boolean", "default": true },
+        "offline-request-window-timeout": { "$ref": "#/definitions/duration", "default": "3s" },
+        "closing-invoker-expire-time": { "$ref": "#/definitions/duration", "default": "30s" }
+      }
+    },
+    "router": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "scope": { "type": "string" },
+        "key": { "type": "string" },
+        "force": { "type": "boolean" },
+        "runtime": { "type": "boolean" },
+        "enabled": { "type": "boolean" },
+        "valid": { "type": "boolean" },
+        "priority": { "type": "integer" },
+        "conditions": { "$ref": "#/definitions/stringArray" },
+        "tags": { "type": "array" },
+        "type": { "type": "string" },
+        "script": { "type": "string" }
+      }
+    },
+    "tls": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ca-cert-file": { "type": "string" },
+        "tls-cert-file": { "type": "string" },
+        "tls-key-file": { "type": "string" },
+        "tls-server-name": { "type": "string" }
       }
     },
     "loadbalance": {
       "type": "string",
       "default": "random",
-      "enum": [
-        "roundrobin",
-        "consistenthashing",
-        "leastactive",
-        "xdsringhash",
-        "p2c",
-        "random"
-      ]
+      "enum": ["roundrobin", "consistenthashing", "leastactive", "xdsringhash", "p2c", "random"]
     },
     "serialization": {
       "type": "string",
-      "enum": [
-        "protobuf",
-        "hessian2",
-        "msgpack",
-        "jsonMapStruct"
-      ]
+      "enum": ["protobuf", "hessian2", "msgpack", "jsonMapStruct"]
     },
-    "tps.limit.strategy": {
+    "tpsLimitStrategy": {
       "type": "string",
-      "enum": [
-        "threadSafeFixedWindow",
-        "slidingWindow",
-        "fixedWindow",
-        "default"
-      ]
+      "enum": ["threadSafeFixedWindow", "slidingWindow", "fixedWindow", "default"]
     },
-    "tps.limiter": {
+    "tpsLimiter": {
       "type": "string",
-      "description": "allows developer to config both method-level and service-level tps limiter.",
-      "enum": [
-        "method-service",
-        "default"
-      ]
-    },
-    "metric": {
-      "type": "object",
-      "description": "metadata report",
-      "additionalProperties": false,
-      "properties": {
-        "mode": {
-          "type": "string",
-          "default": "pull"
-        },
-        "namespace": {
-          "type": "string",
-          "default": "dubbo"
-        },
-        "enable": {
-          "type": "boolean",
-          "default": true
-        },
-        "port": {
-          "type": "integer",
-          "default": 9090
-        },
-        "path": {
-          "type": "string",
-          "default": "/metrics"
-        },
-        "push-gateway-address": {
-          "type": "string"
-        }
-      }
-    },
-    "tracing": {
-      "type": "object",
-      "description": "metadata report",
-      "additionalProperties": false,
-      "properties": {
-        "name": {
-          "type": "string",
-          "default": "jaeger"
-        },
-        "serviceName": {
-          "type": "string"
-        },
-        "address": {
-          "type": "string"
-        },
-        "use-agent": {
-          "type": "boolean",
-          "default": false
-        }
-      }
-    },
-    "shutdown": {
-      "type": "object",
-      "description": "metadata report",
-      "additionalProperties": false,
-      "properties": {
-        "timeout": {
-          "type": "string",
-          "default": "60s"
-        },
-        "step-timeout": {
-          "type": "string",
-          "default": "3s"
-        },
-        "consumer-update-wait-time": {
-          "type": "string",
-          "default": "3s"
-        },
-        "reject-handler": {
-          "type": "string"
-        },
-        "internal-signal": {
-          "type": "boolean",
-          "default": true
-        }
-      }
+      "enum": ["method-service", "default"]
     }
   }
 }
