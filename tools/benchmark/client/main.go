@@ -27,13 +27,19 @@ import (
 	"path/filepath"
 	"syscall"
 	"time"
+)
 
+import (
+	"github.com/dubbogo/gost/log/logger"
+
+	"gopkg.in/yaml.v3"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/tools/benchmark/client/clients"
 	"dubbo.apache.org/dubbo-go/v3/tools/benchmark/client/engine"
 	"dubbo.apache.org/dubbo-go/v3/tools/benchmark/client/monitor"
 	"dubbo.apache.org/dubbo-go/v3/tools/benchmark/client/payload"
-	"github.com/dubbogo/gost/log/logger"
-	"gopkg.in/yaml.v3"
 )
 
 const (
