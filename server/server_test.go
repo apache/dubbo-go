@@ -375,7 +375,7 @@ func TestServeContextReturnsInternalShutdownError(t *testing.T) {
 	})
 	resetInternalProviderServicesForTest(t)
 	var registerCount atomic.Int32
-	registerCountingServeTestProtocols(t, nil, nil, &registerCount, nil)
+	registerCountingServeTestProtocols(t, nil, nil, &registerCount, nil, nil)
 
 	internalSignal := false
 	shutdownCfg := global.DefaultShutdownConfig()
