@@ -17,10 +17,6 @@
 
 package global
 
-import (
-	"encoding/json"
-)
-
 // Http3Config represents the config of http3
 type Http3Config struct {
 	// Whether to enable HTTP/3 support.
@@ -49,75 +45,6 @@ type Http3Config struct {
 
 	// MaxIncomingUniStreams defines the maximum number of concurrent unidirectional streams.
 	MaxIncomingUniStreams int64 `yaml:"max-incoming-uni-streams" json:"max-incoming-uni-streams,omitempty"`
-}
-
-func (t *Http3Config) UnmarshalJSON(data []byte) error {
-	type canonicalJSON struct {
-		Enable                *bool   `json:"enable"`
-		Negotiation           *bool   `json:"negotiation"`
-		KeepAlivePeriod       *string `json:"keep-alive-period"`
-		MaxIdleTimeout        *string `json:"max-idle-timeout"`
-		MaxIncomingStreams    *int64  `json:"max-incoming-streams"`
-		MaxIncomingUniStreams *int64  `json:"max-incoming-uni-streams"`
-	}
-	type compatJSON struct {
-		KeepAlivePeriod       *string `json:"keepAlivePeriod"`
-		MaxIdleTimeout        *string `json:"maxIdleTimeout"`
-		MaxIncomingStreams    *int64  `json:"maxIncomingStreams"`
-		MaxIncomingUniStreams *int64  `json:"maxIncomingUniStreams"`
-	}
-
-	var raw map[string]json.RawMessage
-	if err := json.Unmarshal(data, &raw); err != nil {
-		return err
-	}
-
-	var canonical canonicalJSON
-	if err := json.Unmarshal(data, &canonical); err != nil {
-		return err
-	}
-
-	var compat compatJSON
-	if err := json.Unmarshal(data, &compat); err != nil {
-		return err
-	}
-
-	if canonical.Enable != nil {
-		t.Enable = *canonical.Enable
-	}
-	if canonical.Negotiation != nil {
-		t.Negotiation = *canonical.Negotiation
-	}
-	if _, ok := raw["keep-alive-period"]; ok {
-		if canonical.KeepAlivePeriod != nil {
-			t.KeepAlivePeriod = *canonical.KeepAlivePeriod
-		}
-	} else if compat.KeepAlivePeriod != nil {
-		t.KeepAlivePeriod = *compat.KeepAlivePeriod
-	}
-	if _, ok := raw["max-idle-timeout"]; ok {
-		if canonical.MaxIdleTimeout != nil {
-			t.MaxIdleTimeout = *canonical.MaxIdleTimeout
-		}
-	} else if compat.MaxIdleTimeout != nil {
-		t.MaxIdleTimeout = *compat.MaxIdleTimeout
-	}
-	if _, ok := raw["max-incoming-streams"]; ok {
-		if canonical.MaxIncomingStreams != nil {
-			t.MaxIncomingStreams = *canonical.MaxIncomingStreams
-		}
-	} else if compat.MaxIncomingStreams != nil {
-		t.MaxIncomingStreams = *compat.MaxIncomingStreams
-	}
-	if _, ok := raw["max-incoming-uni-streams"]; ok {
-		if canonical.MaxIncomingUniStreams != nil {
-			t.MaxIncomingUniStreams = *canonical.MaxIncomingUniStreams
-		}
-	} else if compat.MaxIncomingUniStreams != nil {
-		t.MaxIncomingUniStreams = *compat.MaxIncomingUniStreams
-	}
-
-	return nil
 }
 
 // DefaultHttp3Config returns a default Http3Config instance.

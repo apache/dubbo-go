@@ -1247,51 +1247,6 @@ func TestHttp3ConfigJSONTags(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, http3, &decoded)
 
-	var compatDecoded Http3Config
-	err = json.Unmarshal([]byte(`{
-		"enable": true,
-		"negotiation": true,
-		"keepAlivePeriod": "15s",
-		"maxIdleTimeout": "30s",
-		"maxIncomingStreams": 128,
-		"maxIncomingUniStreams": 64
-	}`), &compatDecoded)
-	require.NoError(t, err)
-	assert.Equal(t, http3, &compatDecoded)
-
-	var preferCanonical Http3Config
-	err = json.Unmarshal([]byte(`{
-		"keep-alive-period": "15s",
-		"keepAlivePeriod": "99s",
-		"max-idle-timeout": "30s",
-		"maxIdleTimeout": "99s",
-		"max-incoming-streams": 128,
-		"maxIncomingStreams": 999,
-		"max-incoming-uni-streams": 64,
-		"maxIncomingUniStreams": 999
-	}`), &preferCanonical)
-	require.NoError(t, err)
-	assert.Equal(t, "15s", preferCanonical.KeepAlivePeriod)
-	assert.Equal(t, "30s", preferCanonical.MaxIdleTimeout)
-	assert.Equal(t, int64(128), preferCanonical.MaxIncomingStreams)
-	assert.Equal(t, int64(64), preferCanonical.MaxIncomingUniStreams)
-
-	var nullCanonical Http3Config
-	err = json.Unmarshal([]byte(`{
-		"keep-alive-period": null,
-		"keepAlivePeriod": "99s",
-		"max-idle-timeout": null,
-		"maxIdleTimeout": "99s",
-		"max-incoming-streams": null,
-		"maxIncomingStreams": 999,
-		"max-incoming-uni-streams": null,
-		"maxIncomingUniStreams": 999
-	}`), &nullCanonical)
-	require.NoError(t, err)
-	assert.Empty(t, nullCanonical.KeepAlivePeriod)
-	assert.Empty(t, nullCanonical.MaxIdleTimeout)
-	assert.Zero(t, nullCanonical.MaxIncomingStreams)
-	assert.Zero(t, nullCanonical.MaxIncomingUniStreams)
 }
 
 func TestConsumerConfigClone(t *testing.T) {
