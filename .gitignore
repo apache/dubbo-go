@@ -43,10 +43,5 @@ metadata/report/zookeeper/zookeeper-4unittest/
 .DS_Store
 .history
 
-# benchmark suite
-tools/benchmark/client/benchmark-client
-tools/benchmark/server/dubbo-go/benchmark-dubbo-go
-tools/benchmark/server/grpc/benchmark-grpc
-tools/benchmark/data/
-tools/benchmark/logs/
-tools/benchmark/report/
+# Local AI agent planning artifacts
+/docs/superpowers/

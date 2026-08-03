@@ -15,33 +15,35 @@
  * limitations under the License.
  */
 
-package application
+package reflection
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/tools/dubbogo-cli/generator/internal/scaffold"
+	"context"
+	"errors"
+	"fmt"
+	"io"
+	"testing"
 )
 
-const (
-	gomodFile = `module dubbo-go-app
-
-go 1.25
-
-require (
-	dubbo.apache.org/dubbo-go/v3 v3.3.1
-	google.golang.org/protobuf v1.34.2
-)
-`
+import (
+	"github.com/stretchr/testify/require"
 )
 
-func init() {
-	fileMap["gomodFile"] = &fileGenerator{
-		path:    ".",
-		file:    "go.mod",
-		context: gomodFile,
-	}
-	fileMap["gosumFile"] = &fileGenerator{
-		path:    ".",
-		file:    "go.sum",
-		context: scaffold.GoSum,
-	}
+import (
+	rpb "dubbo.apache.org/dubbo-go/v3/protocol/triple/reflection/triple_reflection"
+)
+
+type recvErrorStream struct {
+	rpb.ServerReflection_ServerReflectionInfoServer
+	err error
+}
+
+func (s recvErrorStream) Recv() (*rpb.ServerReflectionRequest, error) { return nil, s.err }
+
+func TestServerReflectionInfoRecvError(t *testing.T) {
+	server := &ReflectionServer{}
+	require.NoError(t, server.ServerReflectionInfo(context.Background(), recvErrorStream{err: fmt.Errorf("transport: %w", io.EOF)}))
+
+	recvErr := errors.New("receive failed")
+	require.ErrorIs(t, server.ServerReflectionInfo(context.Background(), recvErrorStream{err: recvErr}), recvErr)
 }
