@@ -117,10 +117,7 @@ Common development tools live in `tools/`.
 | [protoc-gen-triple-openapi](./tools/protoc-gen-triple-openapi/README.md) | Generate OpenAPI v3 documents from Triple protobuf services. |
 | [imports-formatter](./tools/imports-formatter/README.md) | Format Go import blocks using dubbo-go grouping rules. |
 | [dubbo-go-schema](./tools/dubbo-go-schema/README.md) | Provide JSON Schema completion and validation for dubbo-go YAML config. |
-
-### [benchmark](https://github.com/apache/dubbo-go/tree/main/tools/benchmark)
-
-A performance benchmark suite for comparing **Dubbo-Go**, **Dubbo-Java**, and **gRPC** frameworks. See the [benchmark README](./tools/benchmark/README.md) for details.
+| [benchmark](./tools/benchmark/README.md) | Performance benchmark suite for comparing Dubbo-Go, Dubbo-Java, and gRPC frameworks. |
 
 ## Ecosystem
 - [dubbo-go-samples](https://github.com/apache/dubbo-go-samples)
