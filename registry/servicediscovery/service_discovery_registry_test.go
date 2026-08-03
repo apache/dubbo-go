@@ -987,8 +987,10 @@ func TestServiceDiscoveryRegistry_DoRenewAppMetadata(t *testing.T) {
 	assert.Equal(t, 1, mockReport.published)
 }
 
-// TestServiceDiscoveryRegistry_StartMetadataTimersSkipsEmptyRevision verifies that
-// the renewAppMetadata timer is not started while the revision is still "0".
+// TestServiceDiscoveryRegistry_StartMetadataTimersSkipsEmptyRevision verifies that the
+// renewAppMetadata timer is not started while the metadata revision is an empty
+// marker ("" initial state, "0" after exports are cleared, or "N/A" customizer
+// default), otherwise doRenewAppMetadata would spin as a no-op.
 func TestServiceDiscoveryRegistry_StartMetadataTimersSkipsEmptyRevision(t *testing.T) {
 	prevType := metadata.GetMetadataType()
 	opts := metadata.NewOptions(metadata.WithMetadataType(constant.RemoteMetadataStorageType))
@@ -1000,28 +1002,40 @@ func TestServiceDiscoveryRegistry_StartMetadataTimersSkipsEmptyRevision(t *testi
 
 	mockReport := &mockMetadataReportForGC{}
 
-	regID := fmt.Sprintf("timer-empty-rev-reg-%d", time.Now().UnixNano())
-	url := common.NewURLWithOptions(
-		common.WithParamsValue(constant.RegistryIdKey, regID),
-	)
-
-	reg := &serviceDiscoveryRegistry{
-		url:            url,
-		metadataReport: mockReport,
+	tests := []struct {
+		name     string
+		revision string
+	}{
+		{"initial empty revision", ""},
+		{"cleared revision", "0"},
+		{"customizer default revision", "N/A"},
 	}
+	for i, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			regID := fmt.Sprintf("timer-empty-rev-reg-%d-%d", i, time.Now().UnixNano())
+			url := common.NewURLWithOptions(
+				common.WithParamsValue(constant.RegistryIdKey, regID),
+			)
 
-	serviceURL, _ := common.NewURL("dubbo://127.0.0.1:20880/org.test.EmptyRevision",
-		common.WithParamsValue(constant.ApplicationKey, "test-app"),
-		common.WithParamsValue(constant.SideKey, constant.SideProvider),
-	)
-	metadata.AddService(regID, serviceURL)
-	metaInfo := metadata.GetMetadataInfo(regID)
-	require.NotNil(t, metaInfo)
-	metaInfo.Revision = "0"
+			reg := &serviceDiscoveryRegistry{
+				url:            url,
+				metadataReport: mockReport,
+			}
 
-	reg.startMetadataTimers()
+			serviceURL, _ := common.NewURL("dubbo://127.0.0.1:20880/org.test.EmptyRevision",
+				common.WithParamsValue(constant.ApplicationKey, "test-app"),
+				common.WithParamsValue(constant.SideKey, constant.SideProvider),
+			)
+			metadata.AddService(regID, serviceURL)
+			metaInfo := metadata.GetMetadataInfo(regID)
+			require.NotNil(t, metaInfo)
+			metaInfo.Revision = tt.revision
 
-	assert.Nil(t, reg.renewAppMetadataTimer)
+			reg.startMetadataTimers()
+
+			assert.Nil(t, reg.renewAppMetadataTimer)
+		})
+	}
 }
 
 func TestServiceDiscoveryRegistry_Destroy_StopsTimers(t *testing.T) {
