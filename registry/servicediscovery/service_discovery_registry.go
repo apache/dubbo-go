@@ -97,6 +97,12 @@ func (s *serviceDiscoveryRegistry) startMetadataTimers() {
 	if s.metadataReport == nil {
 		return
 	}
+	// Nothing has been published yet (revision is "0"), so doRenewAppMetadata
+	// would spin as a no-op; do not start the timer until there is a revision.
+	metaInfo := metadata.GetMetadataInfo(s.url.GetParam(constant.RegistryIdKey, ""))
+	if metaInfo == nil || metaInfo.Revision == "0" {
+		return
+	}
 	s.startRenewAppMetadataTimer()
 }
 
@@ -107,28 +113,37 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 		panic("no metada info found of registry id " + registryId)
 	}
 	urls := metaInfo.GetExportedServiceURLs()
+	if len(urls) == 0 {
+		return nil
+	}
+
+	instances := make([]registry.ServiceInstance, 0, len(urls))
+	instanceURLs := make(map[registry.ServiceInstance]*common.URL)
 	for _, url := range urls {
 		instance := createInstance(metaInfo, url, registryId)
 		metaInfo.Revision = instance.GetMetadata()[constant.ExportedServicesRevisionPropertyName]
-		if metadata.GetMetadataType() == constant.RemoteMetadataStorageType {
-			if s.metadataReport == nil {
-				return perrors.New("can not publish app metadata cause report instance not found")
-			}
+		instances = append(instances, instance)
+		instanceURLs[instance] = url
+	}
+
+	if metadata.GetMetadataType() == constant.RemoteMetadataStorageType {
+		if s.metadataReport == nil {
+			return perrors.New("can not publish app metadata cause report instance not found")
 		}
+		if err := s.metadataReport.PublishAppMetadata(metaInfo.App, metaInfo.Revision, metaInfo); err != nil {
+			return err
+		}
+	}
+
+	for _, instance := range instances {
 		err := s.serviceDiscovery.Register(instance)
 		if err != nil {
 			return perrors.WithMessage(err, "Register service failed")
 		}
 		s.lock.Lock()
 		s.instances = append(s.instances, instance)
-		s.instanceURLs[instance] = url
+		s.instanceURLs[instance] = instanceURLs[instance]
 		s.lock.Unlock()
-	}
-
-	if metadata.GetMetadataType() == constant.RemoteMetadataStorageType {
-		if err := s.metadataReport.PublishAppMetadata(metaInfo.App, metaInfo.Revision, metaInfo); err != nil {
-			return err
-		}
 	}
 
 	s.lock.Lock()
