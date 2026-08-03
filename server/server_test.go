@@ -583,8 +583,7 @@ func TestServeContextReturnsErrorWhenMetadataPublishFails(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, srv.Register(&MockServerRPCService{}, nil))
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	err = srv.ServeContext(ctx)
 	require.Error(t, err)
