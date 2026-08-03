@@ -33,9 +33,8 @@ import (
 )
 
 import (
-	gostlogger "github.com/dubbogo/gost/log/logger"
-
 	gxset "github.com/dubbogo/gost/container/set"
+	gostlogger "github.com/dubbogo/gost/log/logger"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
