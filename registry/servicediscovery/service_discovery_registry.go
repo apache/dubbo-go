@@ -88,6 +88,10 @@ func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
 	}, nil
 }
 
+func isPublishableRevision(revision string) bool {
+	return len(revision) > 0 && revision != "0" && revision != "N/A"
+}
+
 // startMetadataTimers starts the renewAppMetadata timer if metadata type is remote.
 // GC runs after each renew cycle inside doRenewAppMetadata.
 func (s *serviceDiscoveryRegistry) startMetadataTimers() {
@@ -97,10 +101,8 @@ func (s *serviceDiscoveryRegistry) startMetadataTimers() {
 	if s.metadataReport == nil {
 		return
 	}
-	// Nothing has been published yet (revision is "0"), so doRenewAppMetadata
-	// would spin as a no-op; do not start the timer until there is a revision.
 	metaInfo := metadata.GetMetadataInfo(s.url.GetParam(constant.RegistryIdKey, ""))
-	if metaInfo == nil || metaInfo.Revision == "0" {
+	if metaInfo == nil || !isPublishableRevision(metaInfo.Revision) {
 		return
 	}
 	s.startRenewAppMetadataTimer()
@@ -391,7 +393,7 @@ func (s *serviceDiscoveryRegistry) startRenewAppMetadataTimer() {
 func (s *serviceDiscoveryRegistry) doRenewAppMetadata() {
 	registryID := s.url.GetParam(constant.RegistryIdKey, "")
 	metaInfo := metadata.GetMetadataInfo(registryID)
-	if metaInfo == nil || metaInfo.Revision == "0" {
+	if metaInfo == nil || !isPublishableRevision(metaInfo.Revision) {
 		return
 	}
 
