@@ -205,6 +205,7 @@ func (c *gettyRPCClient) removeSession(session getty.Session) {
 	}
 
 	var removeFlag bool
+	var removed bool
 	func() {
 		c.lock.Lock()
 		defer c.lock.Unlock()
@@ -213,11 +214,15 @@ func (c *gettyRPCClient) removeSession(session getty.Session) {
 		}
 
 		for i, s := range c.sessions {
-			if s.session == session {
+			if s != nil && s.session == session {
 				c.sessions = append(c.sessions[:i], c.sessions[i+1:]...)
+				removed = true
 				logger.Debugf("[Remoting][Getty] delete session=%s index=%d", session.Stat(), i)
 				break
 			}
+		}
+		if !removed {
+			return
 		}
 		logger.Infof("[Remoting][Getty] after remove session=%s, left session number=%d", session.Stat(), len(c.sessions))
 		if len(c.sessions) == 0 {
@@ -225,7 +230,7 @@ func (c *gettyRPCClient) removeSession(session getty.Session) {
 		}
 	}()
 	if removeFlag {
-		c.rpcClient.resetRpcConn()
+		c.rpcClient.resetRpcConn(c)
 		c.close()
 	}
 }

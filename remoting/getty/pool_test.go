@@ -143,8 +143,10 @@ func TestGettyRPCClientLifecycle(t *testing.T) {
 }
 
 type stubSession struct {
-	closed atomic.Bool
-	writes atomic.Int32
+	closed    atomic.Bool
+	writes    atomic.Int32
+	onClose   func()
+	closeOnce sync.Once
 }
 
 func (s *stubSession) ID() uint32                              { return 1 }
@@ -184,9 +186,17 @@ func (s *stubSession) WritePkg(pkg any, timeout time.Duration) (int, int, error)
 }
 func (s *stubSession) WriteBytes([]byte) (int, error)         { return 0, nil }
 func (s *stubSession) WriteBytesArray(...[]byte) (int, error) { return 0, nil }
-func (s *stubSession) Close()                                 { s.closed.Store(true) }
+func (s *stubSession) Close() {
+	s.closeOnce.Do(func() {
+		s.closed.Store(true)
+		if s.onClose != nil {
+			s.onClose()
+		}
+	})
+}
 
-func TestIssue3509_ReadTimeoutRemovesHalfDeadSession(t *testing.T) {
+// This test case verifies the scenario described at https://github.com/apache/dubbo-go/issues/3509.
+func TestReadTimeoutRemovesHalfDeadSession(t *testing.T) {
 	sess := &stubSession{}
 	client := &Client{addr: "127.0.0.1:20880"}
 	rpcClient := &gettyRPCClient{rpcClient: client, sessions: []*rpcSession{{session: sess}}}
@@ -211,7 +221,6 @@ func TestIssue3509_ReadTimeoutRemovesHalfDeadSession(t *testing.T) {
 	assert.False(t, client.clientClosed, "a timed out session must not close the client")
 }
 
-// This test case verifies the scenario described at https://github.com/apache/dubbo-go/issues/3509.
 func TestIssueClosedSessionIsNotSelected(t *testing.T) {
 	sess := &stubSession{}
 	sess.Close()
@@ -219,4 +228,55 @@ func TestIssueClosedSessionIsNotSelected(t *testing.T) {
 
 	selected := client.selectSession()
 	assert.Nil(t, selected)
+}
+
+func TestDelayedOnCloseDoesNotResetReplacement(t *testing.T) {
+	client := &Client{addr: "127.0.0.1:20880"}
+	oldSession := &stubSession{}
+	oldPool := &gettyRPCClient{rpcClient: client, sessions: []*rpcSession{{session: oldSession}}}
+	client.gettyClient = oldPool
+	client.gettyClientCreated.Store(true)
+
+	closeStarted := make(chan struct{})
+	allowOnClose := make(chan struct{})
+	onCloseDone := make(chan struct{})
+	oldSession.onClose = func() {
+		close(closeStarted)
+		<-allowOnClose
+		oldPool.removeSession(oldSession)
+		close(onCloseDone)
+	}
+
+	request := remoting.NewRequest("2.0.2")
+	request.TwoWay = true
+	response := remoting.NewPendingResponse(request.ID)
+	remoting.AddPendingResponse(response)
+
+	err := client.Request(request, 10*time.Millisecond, response)
+	require.ErrorIs(t, err, errClientReadTimeout)
+	<-closeStarted
+
+	replacement := &gettyRPCClient{rpcClient: client, sessions: []*rpcSession{{session: &stubSession{}}}}
+	client.gettyClientMux.Lock()
+	client.gettyClient = replacement
+	client.gettyClientCreated.Store(true)
+	client.gettyClientMux.Unlock()
+
+	client.resetRpcConn(oldPool)
+	client.gettyClientMux.RLock()
+	assert.Same(t, replacement, client.gettyClient)
+	assert.True(t, client.gettyClientCreated.Load())
+	client.gettyClientMux.RUnlock()
+
+	close(allowOnClose)
+	select {
+	case <-onCloseDone:
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for delayed OnClose")
+	}
+
+	client.gettyClientMux.RLock()
+	assert.Same(t, replacement, client.gettyClient)
+	assert.True(t, client.gettyClientCreated.Load())
+	client.gettyClientMux.RUnlock()
 }

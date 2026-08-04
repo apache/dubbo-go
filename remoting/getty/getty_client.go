@@ -290,10 +290,12 @@ func (c *Client) transfer(session getty.Session, request *remoting.Request, time
 	return totalLen, sendLen, perrors.WithStack(err)
 }
 
-func (c *Client) resetRpcConn() {
+func (c *Client) resetRpcConn(expected *gettyRPCClient) {
 	c.gettyClientMux.Lock()
+	defer c.gettyClientMux.Unlock()
+	if c.gettyClient != expected {
+		return
+	}
 	c.gettyClient = nil
 	c.gettyClientCreated.Store(false)
-	c.gettyClientMux.Unlock()
-
 }
