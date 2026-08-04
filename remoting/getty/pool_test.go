@@ -200,7 +200,7 @@ func TestIssue3509_ReadTimeoutRemovesHalfDeadSession(t *testing.T) {
 
 	err := client.Request(req, 10*time.Millisecond, rsp)
 	require.Error(t, err)
-	assert.ErrorIs(t, err, errClientReadTimeout)
+	require.ErrorIs(t, err, errClientReadTimeout)
 	assert.Eventually(t, sess.IsClosed, time.Second, time.Millisecond, "timed out session should be closed")
 	assert.Equal(t, int32(1), sess.writes.Load())
 
