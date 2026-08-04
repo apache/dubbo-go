@@ -21,15 +21,19 @@ import (
 	"net"
 	"sync"
 	"sync/atomic"
+	"testing"
 	"time"
+)
 
-	"dubbo.apache.org/dubbo-go/v3/remoting"
+import (
+	gettylib "github.com/apache/dubbo-getty"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+)
 
-	"testing"
-
-	gettylib "github.com/apache/dubbo-getty"
+import (
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 func TestGettyRPCClientUpdateActive(t *testing.T) {
