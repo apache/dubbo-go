@@ -118,10 +118,15 @@ func TestServiceDiscoveryRegistryRegisterPublishesMetadataOnce(t *testing.T) {
 	reg, err := newServiceDiscoveryRegistry(registryURL)
 	require.NoError(t, err)
 
-	countingReport := &mockMetadataReportForGC{}
+	// Disable the startup renew so the background publish cannot race the count below.
+	renewURL, err := common.NewURL("mock://127.0.0.1:8848",
+		common.WithParamsValue(constant.MetadataRenewOnStartupKey, "false"))
+	require.NoError(t, err)
+	countingReport := &mockMetadataReportForGC{reportURL: renewURL}
 	sdReg, ok := reg.(*serviceDiscoveryRegistry)
 	require.True(t, ok)
 	sdReg.metadataReport = countingReport
+	defer sdReg.stopMetadataTimers()
 
 	providerURL1, err := common.NewURL("dubbo://127.0.0.1:20880/",
 		common.WithParamsValue(constant.ApplicationKey, testApp),
