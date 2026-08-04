@@ -70,6 +70,11 @@ func (f *genericServiceFilter) Invoke(ctx context.Context, invoker base.Invoker,
 		return invoker.Invoke(ctx, inv)
 	}
 
+	_, g, err := resolveGenericInvocationGeneralizer(inv)
+	if err != nil {
+		return &result.RPCResult{Err: err}
+	}
+
 	// get real invocation info from the generic invocation
 	mtdName := inv.Arguments()[0].(string)
 	// types are not required in dubbo-go, for dubbo-go client to dubbo-go server, types could be nil
@@ -89,15 +94,13 @@ func (f *genericServiceFilter) Invoke(ctx context.Context, invoker base.Invoker,
 	}
 
 	argsType := method.ArgsType()
-	if err := validateGenericArgs(method.IsVariadic(), len(argsType), len(args), mtdName); err != nil {
+	err = validateGenericArgs(method.IsVariadic(), len(argsType), len(args), mtdName)
+	if err != nil {
 		return &result.RPCResult{Err: err}
 	}
 
-	// get generic info from attachments of invocation, the default value is "true"
-	generic := inv.GetAttachmentWithDefaultValue(constant.GenericKey, constant.GenericSerializationDefault)
-	// get generalizer according to value in the `generic`
 	// realize
-	newArgs, err := realizeInvocationArgs(getGeneralizer(generic), argsType, args, method.IsVariadic(), types)
+	newArgs, err := realizeInvocationArgs(g, argsType, args, method.IsVariadic(), types)
 	if err != nil {
 		return &result.RPCResult{Err: err}
 	}
@@ -411,11 +414,17 @@ func unwrapToSlice(obj hessian.Object) []hessian.Object {
 }
 
 func (f *genericServiceFilter) OnResponse(_ context.Context, result result.Result, _ base.Invoker, inv base.Invocation) result.Result {
-	if inv.IsGenericInvocation() && result.Result() != nil {
-		// get generic info from attachments of invocation, the default value is "true"
-		generic := inv.GetAttachmentWithDefaultValue(constant.GenericKey, constant.GenericSerializationDefault)
-		// get generalizer according to value in the `generic`
-		g := getGeneralizer(generic)
+	if !inv.IsGenericInvocation() {
+		return result
+	}
+
+	_, g, err := resolveGenericInvocationGeneralizer(inv)
+	if err != nil {
+		result.SetError(err)
+		result.SetResult(nil)
+		return result
+	}
+	if result.Result() != nil {
 
 		obj, err := g.Generalize(result.Result())
 		if err != nil {
