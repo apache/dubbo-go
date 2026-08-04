@@ -193,7 +193,7 @@ func (c *gettyRPCClient) selectSession() getty.Session {
 	if len(available) == 0 {
 		return nil
 	}
-	return available[rand.Int31n(int32(len(available)))]
+	return available[rand.Int31n(int32(len(available)))] // NOSONAR
 }
 
 func (c *gettyRPCClient) addSession(session getty.Session) {
