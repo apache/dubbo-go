@@ -26,11 +26,12 @@ MAKEFLAGS += --no-print-directory
 CLI_DIR = tools/dubbogo-cli
 IMPORTS_FORMATTER_DIR = tools/imports-formatter
 
-.PHONY: help test fmt clean lint check-fmt
+.PHONY: help test test-race fmt clean lint check-fmt
 
 help:
 	@echo "Available commands:"
 	@echo "  test       - Run unit tests"
+	@echo "  test-race  - Run race detector on servicediscovery packages"
 	@echo "  clean      - Clean test generate files"
 	@echo "  fmt        - Format code"
 	@echo "  lint       - Run golangci-lint"
@@ -39,6 +40,12 @@ help:
 test: clean
 	GOTOOLCHAIN=go1.25.0+auto go test ./... -coverprofile=coverage.txt -covermode=atomic
 	cd $(CLI_DIR) && GOTOOLCHAIN=go1.25.0+auto go test ./...
+
+# Run race detector on packages that start background goroutines in tests.
+# TestServiceDiscoveryRegistryUnRegister_Concurrent intentionally simulates a
+# data race, so it is excluded from the race detector via -skip.
+test-race:
+	GOTOOLCHAIN=go1.25.0+auto go test -race ./registry/servicediscovery/... -skip '^TestServiceDiscoveryRegistryUnRegister_Concurrent$$'
 
 fmt: install-imports-formatter
 	# replace interface{} with any

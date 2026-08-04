@@ -72,6 +72,9 @@ jobs:
       - name: Unit Test
         run: make test
 
+      - name: Race Test
+        run: make test-race
+
       - name: Lint
         run: make lint
 
