@@ -87,9 +87,9 @@ func marshalResponse(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 			if response.Exception != nil { // throw error
 				_ = encoder.Encode(resWithException)
 				switch ex := response.Exception.(type) {
-				case *hessian2.GenericException:
+				case *hessian.GenericException:
 					_ = encoder.Encode(java_exception.NewDubboGenericException(ex.ExceptionClass, ex.ExceptionMessage))
-				case hessian2.GenericException:
+				case hessian.GenericException:
 					_ = encoder.Encode(java_exception.NewDubboGenericException(ex.ExceptionClass, ex.ExceptionMessage))
 				case java_exception.Throwabler:
 					_ = encoder.Encode(ex)
@@ -301,7 +301,7 @@ func unmarshalResponseBody(body []byte, p *DubboPackage) error {
 			}
 		}
 
-		if g, ok := hessian2.ToGenericException(expt); ok {
+		if g, ok := hessian.ToGenericException(expt); ok {
 			response.Exception = g
 		} else if e, ok := expt.(error); ok {
 			response.Exception = e
@@ -328,7 +328,7 @@ func unmarshalResponseBody(body []byte, p *DubboPackage) error {
 			}
 		}
 
-		return perrors.WithStack(hessian.ReflectResponse(rsp, response.RspObj))
+		return perrors.WithStack(hessian2.ReflectResponse(rsp, response.RspObj))
 
 	case RESPONSE_NULL_VALUE, RESPONSE_NULL_VALUE_WITH_ATTACHMENTS:
 		if rspType == RESPONSE_NULL_VALUE_WITH_ATTACHMENTS {
