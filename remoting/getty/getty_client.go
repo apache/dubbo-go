@@ -210,7 +210,7 @@ func (c *Client) Request(request *remoting.Request, timeout time.Duration, respo
 	if timeout <= 0 {
 		timeout = c.opts.RequestTimeout
 	}
-	_, session, err := c.selectSession(c.addr)
+	rpcClient, session, err := c.selectSession(c.addr)
 	if err != nil {
 		return perrors.WithStack(err)
 	}
@@ -235,6 +235,9 @@ func (c *Client) Request(request *remoting.Request, timeout time.Duration, respo
 
 	select {
 	case <-gxtime.After(timeout):
+		remoting.RemovePendingResponse(remoting.SequenceType(request.ID))
+		rpcClient.removeSession(session)
+		go session.Close()
 		return perrors.WithStack(errClientReadTimeout)
 	case <-response.Done:
 		err = response.Err

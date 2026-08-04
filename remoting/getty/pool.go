@@ -25,11 +25,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-)
 
-import (
 	getty "github.com/apache/dubbo-getty"
-
 	"github.com/dubbogo/gost/log/logger"
 
 	perrors "github.com/pkg/errors"
@@ -173,11 +170,16 @@ func (c *gettyRPCClient) selectSession() getty.Session {
 	if c.sessions == nil {
 		return nil
 	}
-	count := len(c.sessions)
-	if count == 0 {
+	available := make([]getty.Session, 0, len(c.sessions))
+	for _, s := range c.sessions {
+		if s != nil && s.session != nil && !s.session.IsClosed() {
+			available = append(available, s.session)
+		}
+	}
+	if len(available) == 0 {
 		return nil
 	}
-	return c.sessions[rand.Int31n(int32(count))].session
+	return available[rand.Int31n(int32(len(available)))]
 }
 
 func (c *gettyRPCClient) addSession(session getty.Session) {
