@@ -159,7 +159,7 @@ func (s *stubSession) ReadTimeout() time.Duration              { return time.Sec
 func (s *stubSession) SetReadTimeout(time.Duration)            {}
 func (s *stubSession) WriteTimeout() time.Duration             { return time.Second }
 func (s *stubSession) SetWriteTimeout(time.Duration)           {}
-func (s *stubSession) Send(interface{}) (int, error)           { return 0, nil }
+func (s *stubSession) Send(any) (int, error)                   { return 0, nil }
 func (s *stubSession) CloseConn(int)                           {}
 func (s *stubSession) SetSession(gettylib.Session)             {}
 func (s *stubSession) Reset()                                  {}
@@ -175,10 +175,10 @@ func (s *stubSession) SetReader(gettylib.Reader)               {}
 func (s *stubSession) SetWriter(gettylib.Writer)               {}
 func (s *stubSession) SetCronPeriod(int)                       {}
 func (s *stubSession) SetWaitTime(time.Duration)               {}
-func (s *stubSession) GetAttribute(interface{}) interface{}    { return nil }
-func (s *stubSession) SetAttribute(interface{}, interface{})   {}
-func (s *stubSession) RemoveAttribute(interface{})             {}
-func (s *stubSession) WritePkg(pkg interface{}, timeout time.Duration) (int, int, error) {
+func (s *stubSession) GetAttribute(any) any                    { return nil }
+func (s *stubSession) SetAttribute(any, any)                   {}
+func (s *stubSession) RemoveAttribute(any)                     {}
+func (s *stubSession) WritePkg(pkg any, timeout time.Duration) (int, int, error) {
 	s.writes.Add(1)
 	return 1, 1, nil
 }
