@@ -18,13 +18,18 @@
 package getty
 
 import (
+	"net"
 	"sync"
-	"testing"
-)
+	"sync/atomic"
+	"time"
 
-import (
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"testing"
+
+	gettylib "github.com/apache/dubbo-getty"
 )
 
 func TestGettyRPCClientUpdateActive(t *testing.T) {
@@ -131,4 +136,83 @@ func TestGettyRPCClientLifecycle(t *testing.T) {
 
 	require.NoError(t, client.close())
 	assert.Equal(t, int64(0), client.active.Load())
+}
+
+type stubSession struct {
+	closed atomic.Bool
+	writes atomic.Int32
+}
+
+func (s *stubSession) ID() uint32                              { return 1 }
+func (s *stubSession) SetCompressType(gettylib.CompressType)   {}
+func (s *stubSession) LocalAddr() string                       { return "127.0.0.1:12345" }
+func (s *stubSession) RemoteAddr() string                      { return "127.0.0.1:20880" }
+func (s *stubSession) IncReadPkgNum()                          {}
+func (s *stubSession) IncWritePkgNum()                         {}
+func (s *stubSession) UpdateActive()                           {}
+func (s *stubSession) GetActive() time.Time                    { return time.Now() }
+func (s *stubSession) ReadTimeout() time.Duration              { return time.Second }
+func (s *stubSession) SetReadTimeout(time.Duration)            {}
+func (s *stubSession) WriteTimeout() time.Duration             { return time.Second }
+func (s *stubSession) SetWriteTimeout(time.Duration)           {}
+func (s *stubSession) Send(interface{}) (int, error)           { return 0, nil }
+func (s *stubSession) CloseConn(int)                           {}
+func (s *stubSession) SetSession(gettylib.Session)             {}
+func (s *stubSession) Reset()                                  {}
+func (s *stubSession) Conn() net.Conn                          { return nil }
+func (s *stubSession) Stat() string                            { return "stub-session" }
+func (s *stubSession) IsClosed() bool                          { return s.closed.Load() }
+func (s *stubSession) EndPoint() gettylib.EndPoint             { return nil }
+func (s *stubSession) SetMaxMsgLen(int)                        {}
+func (s *stubSession) SetName(string)                          {}
+func (s *stubSession) SetEventListener(gettylib.EventListener) {}
+func (s *stubSession) SetPkgHandler(gettylib.ReadWriter)       {}
+func (s *stubSession) SetReader(gettylib.Reader)               {}
+func (s *stubSession) SetWriter(gettylib.Writer)               {}
+func (s *stubSession) SetCronPeriod(int)                       {}
+func (s *stubSession) SetWaitTime(time.Duration)               {}
+func (s *stubSession) GetAttribute(interface{}) interface{}    { return nil }
+func (s *stubSession) SetAttribute(interface{}, interface{})   {}
+func (s *stubSession) RemoveAttribute(interface{})             {}
+func (s *stubSession) WritePkg(pkg interface{}, timeout time.Duration) (int, int, error) {
+	s.writes.Add(1)
+	return 1, 1, nil
+}
+func (s *stubSession) WriteBytes([]byte) (int, error)         { return 0, nil }
+func (s *stubSession) WriteBytesArray(...[]byte) (int, error) { return 0, nil }
+func (s *stubSession) Close()                                 { s.closed.Store(true) }
+
+func TestIssue3509_ReadTimeoutRemovesHalfDeadSession(t *testing.T) {
+	sess := &stubSession{}
+	client := &Client{addr: "127.0.0.1:20880"}
+	rpcClient := &gettyRPCClient{rpcClient: client, sessions: []*rpcSession{{session: sess}}}
+	client.gettyClient = rpcClient
+	client.gettyClientCreated.Store(true)
+
+	req := remoting.NewRequest("2.0.2")
+	req.TwoWay = true
+	rsp := remoting.NewPendingResponse(req.ID)
+	remoting.AddPendingResponse(rsp)
+
+	err := client.Request(req, 10*time.Millisecond, rsp)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, errClientReadTimeout)
+	assert.Eventually(t, sess.IsClosed, time.Second, time.Millisecond, "timed out session should be closed")
+	assert.Equal(t, int32(1), sess.writes.Load())
+
+	assert.Nil(t, rpcClient.selectSession())
+	assert.Empty(t, rpcClient.sessions)
+	assert.Nil(t, client.gettyClient, "the connection handle should be reset after the last session is removed")
+	assert.Nil(t, remoting.GetPendingResponse(remoting.SequenceType(req.ID)))
+	assert.False(t, client.clientClosed, "a timed out session must not close the client")
+}
+
+// This test case verifies the scenario described at https://github.com/apache/dubbo-go/issues/3509.
+func TestIssueClosedSessionIsNotSelected(t *testing.T) {
+	sess := &stubSession{}
+	sess.Close()
+	client := &gettyRPCClient{sessions: []*rpcSession{{session: sess}}}
+
+	selected := client.selectSession()
+	assert.Nil(t, selected)
 }
