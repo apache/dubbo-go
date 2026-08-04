@@ -142,11 +142,11 @@ func TestInit(t *testing.T) {
 	})
 
 	// Test with default options
-	Init()
+	Init(WithoutInternalSignal())
 
 	// Test with custom options
 	customTimeout := 120 * time.Second
-	Init(WithTimeout(customTimeout))
+	Init(WithTimeout(customTimeout), WithoutInternalSignal())
 
 	// Remove mock filters
 	extension.UnregisterFilter(constant.GracefulShutdownConsumerFilterKey)
