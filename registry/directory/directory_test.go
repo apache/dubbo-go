@@ -148,6 +148,19 @@ func TestNewRegistryDirectoryResolvesApplicationAttribute(t *testing.T) {
 	}
 }
 
+func TestTypedNilCachedInvokerDoesNotPanic(t *testing.T) {
+	registryDirectory, _ := normalRegistryDir()
+	const key = "typed-nil-invoker"
+	var typedNil *protocolbase.BaseInvoker
+	registryDirectory.cacheInvokersMap.Store(key, typedNil)
+
+	require.NotPanics(t, func() {
+		registryDirectory.toGroupInvokers()
+	})
+	_, exists := registryDirectory.cacheInvokersMap.Load(key)
+	assert.False(t, exists)
+}
+
 func TestNewRegistryDirectoryCopiesRegistriesAttributeFromSubURL(t *testing.T) {
 	registryURL, subURL := newRegistryDirectoryAttributeTestURL(t)
 	registries := map[string]*global.RegistryConfig{

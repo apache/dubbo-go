@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"reflect"
 	"sync"
 	"time"
 )
@@ -502,6 +503,16 @@ func cloneServiceEvents(events []*registry.ServiceEvent) []*registry.ServiceEven
 }
 
 func (dir *RegistryDirectory) toGroupInvokers() []protocolbase.Invoker {
+	groupInvokersMap := dir.groupInvokersFromCache()
+	if len(groupInvokersMap) == 1 {
+		for _, invokers := range groupInvokersMap {
+			return invokers
+		}
+	}
+	return dir.joinGroupInvokers(groupInvokersMap)
+}
+
+func (dir *RegistryDirectory) groupInvokersFromCache() map[string][]protocolbase.Invoker {
 	groupInvokersMap := make(map[string][]protocolbase.Invoker)
 
 	dir.cacheInvokersMap.Range(func(key, value any) bool {
@@ -514,36 +525,30 @@ func (dir *RegistryDirectory) toGroupInvokers() []protocolbase.Invoker {
 		groupInvokersMap[group] = append(groupInvokersMap[group], invoker)
 		return true
 	})
+	return groupInvokersMap
+}
 
+func (dir *RegistryDirectory) joinGroupInvokers(groupInvokersMap map[string][]protocolbase.Invoker) []protocolbase.Invoker {
 	groupInvokersList := make([]protocolbase.Invoker, 0, len(groupInvokersMap))
-	if len(groupInvokersMap) == 1 {
-		// len is 1 it means no group setting ,so do not need cluster again
-		for _, invokers := range groupInvokersMap {
-			groupInvokersList = invokers
+	for _, invokers := range groupInvokersMap {
+		staticDir := static.NewDirectory(invokers)
+		clusterKey := dir.GetURL().SubURL.GetParam(constant.ClusterKey, constant.DefaultCluster)
+		cluster, err := extension.GetCluster(clusterKey)
+		if err != nil {
+			logger.Errorf("[Registry][Directory] directory get cluster %s error, err=%w, will skip this group",
+				clusterKey, err)
+			continue
 		}
-	} else {
-		for _, invokers := range groupInvokersMap {
-			staticDir := static.NewDirectory(invokers)
-			clusterKey := dir.GetURL().SubURL.GetParam(constant.ClusterKey, constant.DefaultCluster)
-			cluster, err := extension.GetCluster(clusterKey)
-			if err != nil {
-				logger.Errorf("[Registry][Directory] directory get cluster %s error, err=%w, will skip this group",
-					clusterKey, err)
-				continue
-			}
-			if cluster == nil {
-				logger.Errorf("[Registry][Directory] directory cluster is nil for key %s, will skip this group", clusterKey)
-				continue
-			}
-			err = staticDir.BuildRouterChain(invokers, dir.GetURL())
-			if err != nil {
-				logger.Errorf("[Registry][Directory] buildRouterChain error, err=%v", err)
-				continue
-			}
-			groupInvokersList = append(groupInvokersList, cluster.Join(staticDir))
+		if cluster == nil {
+			logger.Errorf("[Registry][Directory] directory cluster is nil for key %s, will skip this group", clusterKey)
+			continue
 		}
+		if err = staticDir.BuildRouterChain(invokers, dir.GetURL()); err != nil {
+			logger.Errorf("[Registry][Directory] buildRouterChain error, err=%v", err)
+			continue
+		}
+		groupInvokersList = append(groupInvokersList, cluster.Join(staticDir))
 	}
-
 	return groupInvokersList
 }
 
@@ -749,11 +754,24 @@ func (dir *RegistryDirectory) doCacheInvoker(newUrl *common.URL, event *registry
 
 func cachedInvoker(key, value any) (protocolbase.Invoker, bool) {
 	invoker, ok := value.(protocolbase.Invoker)
-	if !ok || invoker == nil {
+	if !ok || isNilInvoker(invoker) {
 		logger.Errorf("[Registry][Directory] cached invoker has unexpected type %T for key %v", value, key)
 		return nil, false
 	}
 	return invoker, true
+}
+
+func isNilInvoker(invoker protocolbase.Invoker) bool {
+	if invoker == nil {
+		return true
+	}
+	value := reflect.ValueOf(invoker)
+	switch value.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice, reflect.UnsafePointer:
+		return value.IsNil()
+	default:
+		return false
+	}
 }
 
 // List selected protocol invokers from the directory

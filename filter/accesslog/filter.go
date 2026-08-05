@@ -185,7 +185,7 @@ func stringAttachment(attachments map[string]any, key string) (string, bool) {
 	}
 	stringValue, ok := value.(string)
 	if !ok {
-		logger.Warnf("[Filter][AccessLog] attachment %q has unexpected type %T and will be omitted", key, value)
+		logger.Debugf("[Filter][AccessLog] attachment %q has unexpected type %T and will be omitted", key, value)
 		return "", false
 	}
 	return stringValue, true
