@@ -56,6 +56,16 @@ func TestDefaultRnd(t *testing.T) {
 	})
 }
 
+func setLocalMetrics(t *testing.T, localMetrics metrics.Metrics) {
+	t.Helper()
+
+	originalLocalMetrics := metrics.LocalMetrics
+	metrics.LocalMetrics = localMetrics
+	t.Cleanup(func() {
+		metrics.LocalMetrics = originalLocalMetrics
+	})
+}
+
 func TestLoadBalance(t *testing.T) {
 	// Create P2C load balancer with deterministic randomPicker for repeatable tests.
 	// Always returns fixed indices (0,1) except when n <= 1.
@@ -90,7 +100,7 @@ func TestLoadBalance(t *testing.T) {
 		defer ctrl.Finish()
 
 		m := metrics.NewMockMetrics(ctrl)
-		metrics.LocalMetrics = m
+		setLocalMetrics(t, m)
 
 		url0, _ := common.NewURL("dubbo://192.168.1.0:20000/com.ikurento.user.UserProvider")
 		url1, _ := common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
@@ -119,7 +129,7 @@ func TestLoadBalance(t *testing.T) {
 		defer ctrl.Finish()
 
 		m := metrics.NewMockMetrics(ctrl)
-		metrics.LocalMetrics = m
+		setLocalMetrics(t, m)
 
 		url0, _ := common.NewURL("dubbo://192.168.1.0:20000/com.ikurento.user.UserProvider")
 		url1, _ := common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
@@ -150,7 +160,7 @@ func TestLoadBalance(t *testing.T) {
 		defer ctrl.Finish()
 
 		m := metrics.NewMockMetrics(ctrl)
-		metrics.LocalMetrics = m
+		setLocalMetrics(t, m)
 
 		url0, _ := common.NewURL("dubbo://192.168.1.0:20000/com.ikurento.user.UserProvider")
 		url1, _ := common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
@@ -177,7 +187,7 @@ func TestLoadBalance(t *testing.T) {
 		defer ctrl.Finish()
 
 		m := metrics.NewMockMetrics(ctrl)
-		metrics.LocalMetrics = m
+		setLocalMetrics(t, m)
 
 		url0, _ := common.NewURL("dubbo://192.168.1.0:20000/com.ikurento.user.UserProvider")
 		url1, _ := common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
@@ -209,7 +219,7 @@ func TestLoadBalance(t *testing.T) {
 		defer ctrl.Finish()
 
 		m := metrics.NewMockMetrics(ctrl)
-		metrics.LocalMetrics = m
+		setLocalMetrics(t, m)
 
 		url0, _ := common.NewURL("dubbo://192.168.1.0:20000/com.ikurento.user.UserProvider")
 		url1, _ := common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
@@ -235,7 +245,7 @@ func TestLoadBalance(t *testing.T) {
 		defer ctrl.Finish()
 
 		m := metrics.NewMockMetrics(ctrl)
-		metrics.LocalMetrics = m
+		setLocalMetrics(t, m)
 
 		url0, _ := common.NewURL("dubbo://192.168.1.0:20000/com.ikurento.user.UserProvider")
 		url1, _ := common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
@@ -266,7 +276,7 @@ func TestLoadBalance(t *testing.T) {
 		defer ctrl.Finish()
 
 		m := metrics.NewMockMetrics(ctrl)
-		metrics.LocalMetrics = m
+		setLocalMetrics(t, m)
 
 		url0, _ := common.NewURL("dubbo://192.168.1.0:20000/com.ikurento.user.UserProvider")
 		url1, _ := common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
@@ -297,7 +307,7 @@ func TestLoadBalance(t *testing.T) {
 		defer ctrl.Finish()
 
 		m := metrics.NewMockMetrics(ctrl)
-		metrics.LocalMetrics = m
+		setLocalMetrics(t, m)
 
 		url0, _ := common.NewURL("dubbo://192.168.1.0:20000/com.ikurento.user.UserProvider")
 		url1, _ := common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")

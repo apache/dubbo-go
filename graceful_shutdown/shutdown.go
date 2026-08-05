@@ -136,8 +136,8 @@ func Done() <-chan struct{} {
 	return shutdownDone
 }
 
-// ShutdownError returns the error channel for an internal signal-triggered
-// shutdown that could not complete before its timeout.
+// ShutdownError returns the error channel for failures encountered during an
+// internal signal-triggered shutdown.
 func ShutdownError() <-chan error {
 	return shutdownSignalError
 }
