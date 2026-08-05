@@ -121,9 +121,9 @@ func responseTypes(withAttachments bool) (int32, int32, int32) {
 func encodeResponseException(encoder *hessian.Encoder, exception error) error {
 	var value any
 	switch ex := exception.(type) {
-	case *hessian2.GenericException:
+	case *hessian.GenericException:
 		value = java_exception.NewDubboGenericException(ex.ExceptionClass, ex.ExceptionMessage)
-	case hessian2.GenericException:
+	case hessian.GenericException:
 		value = java_exception.NewDubboGenericException(ex.ExceptionClass, ex.ExceptionMessage)
 	case java_exception.Throwabler:
 		value = ex
@@ -337,7 +337,7 @@ func unmarshalResponseBody(body []byte, p *DubboPackage) error {
 			}
 		}
 
-		if g, ok := hessian2.ToGenericException(expt); ok {
+		if g, ok := hessian.ToGenericException(expt); ok {
 			response.Exception = g
 		} else if e, ok := expt.(error); ok {
 			response.Exception = e
@@ -364,7 +364,7 @@ func unmarshalResponseBody(body []byte, p *DubboPackage) error {
 			}
 		}
 
-		return perrors.WithStack(hessian.ReflectResponse(rsp, response.RspObj))
+		return perrors.WithStack(hessian2.ReflectResponse(rsp, response.RspObj))
 
 	case RESPONSE_NULL_VALUE, RESPONSE_NULL_VALUE_WITH_ATTACHMENTS:
 		if rspType == RESPONSE_NULL_VALUE_WITH_ATTACHMENTS {

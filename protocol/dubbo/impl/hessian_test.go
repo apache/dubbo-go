@@ -34,7 +34,6 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/hessian2"
 )
 
 const (
@@ -544,7 +543,7 @@ func TestMarshalResponse(t *testing.T) {
 				ResponseStatus: Response_OK,
 			},
 			Body: &ResponsePayload{
-				Exception: hessian2.GenericException{
+				Exception: hessian.GenericException{
 					ExceptionClass:   "com.example.UserNotFoundException",
 					ExceptionMessage: "user not found",
 				},
@@ -753,7 +752,7 @@ func TestUnmarshalResponseBody(t *testing.T) {
 		require.NoError(t, err)
 
 		response := EnsureResponsePayload(pkg.Body)
-		ge, ok := response.Exception.(*hessian2.GenericException)
+		ge, ok := response.Exception.(*hessian.GenericException)
 		require.True(t, ok)
 		assert.Equal(t, "com.example.UserNotFoundException", ge.ExceptionClass)
 		assert.Equal(t, "user not found", ge.ExceptionMessage)
@@ -819,7 +818,7 @@ func TestUnmarshalResponseBody(t *testing.T) {
 		require.NoError(t, err)
 
 		response := EnsureResponsePayload(pkg.Body)
-		ge, ok := response.Exception.(*hessian2.GenericException)
+		ge, ok := response.Exception.(*hessian.GenericException)
 		require.True(t, ok)
 		assert.Equal(t, "java.lang.Exception", ge.ExceptionClass)
 		assert.Equal(t, "user not found", ge.ExceptionMessage)

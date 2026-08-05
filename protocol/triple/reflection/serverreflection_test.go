@@ -15,46 +15,35 @@
  * limitations under the License.
  */
 
-package main
+package reflection
 
 import (
-	"os"
+	"context"
+	"errors"
+	"fmt"
+	"io"
 	"testing"
 )
 
 import (
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestMainUsesRunExitCode(t *testing.T) {
-	dir := t.TempDir()
-	writeTempFile(t, dir, goModFileName, variadicCheckModuleContent)
-	writeTempFile(t, dir, serviceFileName, `package sample
+import (
+	rpb "dubbo.apache.org/dubbo-go/v3/protocol/triple/reflection/triple_reflection"
+)
 
-func Echo(name string) string {
-	return name
+type recvErrorStream struct {
+	rpb.ServerReflection_ServerReflectionInfoServer
+	err error
 }
-`)
 
-	oldExitFunc := exitFunc
-	oldArgs := os.Args
-	oldWd, err := os.Getwd()
-	require.NoError(t, err)
+func (s recvErrorStream) Recv() (*rpb.ServerReflectionRequest, error) { return nil, s.err }
 
-	var gotCode int
-	exitFunc = func(code int) {
-		gotCode = code
-	}
-	os.Args = []string{"variadicrpccheck", "./..."}
-	require.NoError(t, os.Chdir(dir))
-	t.Cleanup(func() {
-		exitFunc = oldExitFunc
-		os.Args = oldArgs
-		_ = os.Chdir(oldWd)
-	})
+func TestServerReflectionInfoRecvError(t *testing.T) {
+	server := &ReflectionServer{}
+	require.NoError(t, server.ServerReflectionInfo(context.Background(), recvErrorStream{err: fmt.Errorf("transport: %w", io.EOF)}))
 
-	main()
-
-	assert.Equal(t, 0, gotCode)
+	recvErr := errors.New("receive failed")
+	require.ErrorIs(t, server.ServerReflectionInfo(context.Background(), recvErrorStream{err: recvErr}), recvErr)
 }

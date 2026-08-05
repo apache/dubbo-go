@@ -13,5 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+.PHONY: test test-generated-projects
+
 test:
 	go test ./...
+
+test-generated-projects:
+	DUBBOGO_CLI_E2E=1 go test ./cmd -run '^TestGeneratedProjectsCompile$$' -count=1 -v
