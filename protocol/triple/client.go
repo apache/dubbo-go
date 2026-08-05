@@ -45,6 +45,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/http3config"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
@@ -229,15 +230,13 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 			return nil, fmt.Errorf("TRIPLE http3 client must have TLS config, but TLS config is nil")
 		}
 
-		// TODO: Enrich the http3 transport config for triple protocol.
-		transport = &http3.Transport{
-			TLSClientConfig: cfg,
-			QUICConfig: &quic.Config{
-				// ref: https://quic-go.net/docs/quic/connection/#keeping-a-connection-alive
-				KeepAlivePeriod: keepAliveInterval,
-				// ref: https://quic-go.net/docs/quic/connection/#idle-timeout
-				MaxIdleTimeout: keepAliveTimeout,
-			},
+		var http3Config *global.Http3Config
+		if tripleConf != nil {
+			http3Config = tripleConf.Http3
+		}
+		transport, err = newHTTP3Transport(cfg, http3Config, keepAliveInterval, keepAliveTimeout)
+		if err != nil {
+			return nil, err
 		}
 
 		logger.Info("[Triple][Client] triple http3 client transport init successfully")
@@ -282,6 +281,26 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		isIDL:        isIDL,
 		triClient:    triClient,
 		healthClient: healthClient,
+	}, nil
+}
+
+func newHTTP3Transport(
+	tlsConfig *tls.Config,
+	http3Config *global.Http3Config,
+	keepAliveInterval time.Duration,
+	keepAliveTimeout time.Duration,
+) (http.RoundTripper, error) {
+	quicConfig, err := http3config.NewQUICConfigWithDefaults(http3Config, &quic.Config{
+		KeepAlivePeriod: keepAliveInterval,
+		MaxIdleTimeout:  keepAliveTimeout,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &http3.Transport{
+		TLSClientConfig: tlsConfig,
+		QUICConfig:      quicConfig,
 	}, nil
 }
 

@@ -19,6 +19,7 @@ package triple
 
 import (
 	"context"
+	"crypto/tls"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -26,6 +27,8 @@ import (
 )
 
 import (
+	"github.com/quic-go/quic-go/http3"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -94,6 +97,68 @@ func TestDualTransport(t *testing.T) {
 		RoundTrip(*http.Request) (*http.Response, error)
 	})
 	assert.True(t, ok, "transport should implement http.RoundTripper")
+}
+
+func TestNewHTTP3TransportQUICConfig(t *testing.T) {
+	tlsConfig := &tls.Config{ServerName: "localhost"}
+	tests := []struct {
+		name                         string
+		http3Config                  *global.Http3Config
+		expectedKeepAlivePeriod      time.Duration
+		expectedMaxIdleTimeout       time.Duration
+		expectedMaxIncomingStreams   int64
+		expectedMaxIncomingUniStream int64
+	}{
+		{
+			name:                    "nil_http3_config_preserves_defaults",
+			expectedKeepAlivePeriod: 10 * time.Second,
+			expectedMaxIdleTimeout:  20 * time.Second,
+		},
+		{
+			name:                    "empty_http3_config_preserves_defaults",
+			http3Config:             &global.Http3Config{},
+			expectedKeepAlivePeriod: 10 * time.Second,
+			expectedMaxIdleTimeout:  20 * time.Second,
+		},
+		{
+			name: "explicit_http3_config_overrides_defaults",
+			http3Config: &global.Http3Config{
+				KeepAlivePeriod:       "15s",
+				MaxIdleTimeout:        "30s",
+				MaxIncomingStreams:    128,
+				MaxIncomingUniStreams: 64,
+			},
+			expectedKeepAlivePeriod:      15 * time.Second,
+			expectedMaxIdleTimeout:       30 * time.Second,
+			expectedMaxIncomingStreams:   128,
+			expectedMaxIncomingUniStream: 64,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			transport, err := newHTTP3Transport(tlsConfig, test.http3Config, 10*time.Second, 20*time.Second)
+			require.NoError(t, err)
+
+			http3Transport, ok := transport.(*http3.Transport)
+			require.True(t, ok)
+			assert.Same(t, tlsConfig, http3Transport.TLSClientConfig)
+			require.NotNil(t, http3Transport.QUICConfig)
+			assert.Equal(t, test.expectedKeepAlivePeriod, http3Transport.QUICConfig.KeepAlivePeriod)
+			assert.Equal(t, test.expectedMaxIdleTimeout, http3Transport.QUICConfig.MaxIdleTimeout)
+			assert.Equal(t, test.expectedMaxIncomingStreams, http3Transport.QUICConfig.MaxIncomingStreams)
+			assert.Equal(t, test.expectedMaxIncomingUniStream, http3Transport.QUICConfig.MaxIncomingUniStreams)
+		})
+	}
+}
+
+func TestNewHTTP3TransportReturnsQUICConfigError(t *testing.T) {
+	transport, err := newHTTP3Transport(&tls.Config{}, &global.Http3Config{
+		MaxIdleTimeout: "invalid",
+	}, 10*time.Second, 20*time.Second)
+	require.Error(t, err)
+	assert.Nil(t, transport)
+	assert.ErrorContains(t, err, "max-idle-timeout")
 }
 
 func TestClientManager_Close(t *testing.T) {
