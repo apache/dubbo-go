@@ -18,6 +18,9 @@
 package store
 
 import (
+	"fmt"
+	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 )
@@ -149,4 +152,32 @@ func TestMetaInfoCacheManager(t *testing.T) {
 	cm3.destroy()
 	cm2.destroy()
 	cm.destroy() // clear cache file
+}
+
+func TestCacheManagerConcurrentAccess(t *testing.T) {
+	cm, err := NewCacheManager("raceTest", filepath.Join(t.TempDir(), "race_cache"), time.Millisecond, 32, true)
+	if err != nil {
+		t.Fatalf("failed to create cache manager: %v", err)
+	}
+	defer cm.destroy()
+
+	var wg sync.WaitGroup
+	for i := 0; i < 16; i++ {
+		wg.Add(1)
+		go func(worker int) {
+			defer wg.Done()
+			for j := 0; j < 500; j++ {
+				key := fmt.Sprintf("key-%d", j%64)
+				cm.Set(key, fmt.Sprintf("value-%d-%d", worker, j))
+				cm.Get(key)
+				if j%3 == 0 {
+					cm.Delete(fmt.Sprintf("key-%d", (j+worker)%64))
+				}
+				if j%7 == 0 {
+					cm.GetAll()
+				}
+			}
+		}(i)
+	}
+	wg.Wait()
 }
