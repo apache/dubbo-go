@@ -19,9 +19,12 @@ package zookeeper
 
 import (
 	"testing"
+	"time"
 )
 
 import (
+	"github.com/stretchr/testify/require"
+
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
@@ -50,7 +53,8 @@ func TestCacheListenerDataChange(t *testing.T) {
 }
 
 func TestCacheListenerDataChangeEmptyContent(t *testing.T) {
-	l := &CacheListener{rootPath: "/dubbo/config"}
+	cache := newConfigCache(time.Minute)
+	l := &CacheListener{rootPath: "/dubbo/config", cache: &cache}
 	path := "/dubbo/config/group/app"
 	rec := &recListener{}
 	l.keyListeners.Store(path, map[config_center.ConfigurationListener]struct{}{rec: {}})
@@ -61,6 +65,48 @@ func TestCacheListenerDataChangeEmptyContent(t *testing.T) {
 	}
 	if len(rec.events) != 1 || rec.events[0].ConfigType != remoting.EventTypeDel {
 		t.Fatalf("unexpected events %+v", rec.events)
+	}
+	entry, ok := cache.getFresh(path)
+	if !ok || !entry.exists || entry.content != "" {
+		t.Fatalf("empty configuration should be cached as existing: %+v", entry)
+	}
+
+	l.DataChange(remoting.Event{Path: path, Action: remoting.EventTypeDel})
+	entry, ok = cache.getFresh(path)
+	if !ok || entry.exists {
+		t.Fatalf("deleted configuration should be cached as missing: %+v", entry)
+	}
+}
+
+func TestCacheListenerIgnoresEventAcrossReset(t *testing.T) {
+	cache := newConfigCache(time.Minute)
+	l := &CacheListener{rootPath: "/dubbo/config", cache: &cache}
+	path := "/dubbo/config/group/app"
+	pathLock := cache.pathLock(path)
+	pathLock.Lock()
+	watchStateDone := make(chan struct{})
+	go func() {
+		l.WatchStateChanged(path, false)
+		close(watchStateDone)
+	}()
+	require.Eventually(t, func() bool {
+		_, ok := l.eventGeneration.Load(path)
+		return ok
+	}, time.Second, time.Millisecond)
+
+	cache.reset()
+	pathLock.Unlock()
+	<-watchStateDone
+	l.WatchStateChanged(path, true)
+	l.DataChange(remoting.Event{Path: path, Action: remoting.EventTypeUpdate, Content: "old"})
+
+	_, ok := cache.getFresh(path)
+	if ok {
+		t.Fatal("event started before reset should not repopulate cache")
+	}
+	_, watchActive := cache.snapshot(path)
+	if watchActive {
+		t.Fatal("event started before reset should not reactivate watch state")
 	}
 }
 
