@@ -58,7 +58,6 @@ type failbackClusterInvoker struct {
 	lifecycleMu   sync.Mutex
 	stopped       bool
 	taskList      *queue.Queue
-	retryCtx      context.Context
 	retryCancel   context.CancelFunc
 	processDone   chan struct{}
 	retryDone     chan struct{}
@@ -120,40 +119,45 @@ func (invoker *failbackClusterInvoker) process(ctx context.Context, taskList *qu
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			// check each timeout task and re-run
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				default:
-				}
-
-				value, err := taskList.Peek()
-				if err == queue.ErrDisposed {
-					return
-				}
-				if err == queue.ErrEmptyQueue {
-					break
-				}
-				if err != nil {
-					logger.Warnf("[Cluster][Failback] peek task failed, err=%v", err)
-					break
-				}
-
-				retryTask := value.(*retryTimerTask)
-				// use exponential backoff calculated wait time instead of fixed 5 seconds
-				if time.Since(retryTask.lastT) < retryTask.nextBackoff {
-					break
-				}
-
-				// ignore return. the get must success.
-				if _, err = taskList.Get(1); err != nil {
-					logger.Warnf("[Cluster][Failback] get task failed, err=%v", err)
-					break
-				}
-				invoker.startRetry(ctx, retryTask)
+			if invoker.processRetryTasks(ctx, taskList) {
+				return
 			}
 		}
+	}
+}
+
+func (invoker *failbackClusterInvoker) processRetryTasks(ctx context.Context, taskList *queue.Queue) bool {
+	for {
+		select {
+		case <-ctx.Done():
+			return true
+		default:
+		}
+
+		value, err := taskList.Peek()
+		if err == queue.ErrDisposed {
+			return true
+		}
+		if err == queue.ErrEmptyQueue {
+			return false
+		}
+		if err != nil {
+			logger.Warnf("[Cluster][Failback] peek task failed, err=%v", err)
+			return false
+		}
+
+		retryTask := value.(*retryTimerTask)
+		// use exponential backoff calculated wait time instead of fixed 5 seconds
+		if time.Since(retryTask.lastT) < retryTask.nextBackoff {
+			return false
+		}
+
+		// ignore return. the get must success.
+		if _, err = taskList.Get(1); err != nil {
+			logger.Warnf("[Cluster][Failback] get task failed, err=%v", err)
+			return false
+		}
+		invoker.startRetry(ctx, retryTask)
 	}
 }
 
@@ -237,10 +241,11 @@ func (invoker *failbackClusterInvoker) enqueueInitialRetry(ctx context.Context, 
 		if ctx == nil {
 			ctx = context.Background()
 		}
-		invoker.retryCtx, invoker.retryCancel = context.WithCancel(context.WithoutCancel(ctx))
+		retryCtx, retryCancel := context.WithCancel(context.WithoutCancel(ctx))
+		invoker.retryCancel = retryCancel
 		invoker.taskList = queue.New(invoker.failbackTasks)
 		invoker.processDone = make(chan struct{})
-		go invoker.process(invoker.retryCtx, invoker.taskList, invoker.processDone)
+		go invoker.process(retryCtx, invoker.taskList, invoker.processDone)
 	}
 
 	if invoker.taskList.Len() >= invoker.failbackTasks {
@@ -285,7 +290,7 @@ func (invoker *failbackClusterInvoker) enqueueRetry(retryTask *retryTimerTask) b
 	invoker.lifecycleMu.Lock()
 	defer invoker.lifecycleMu.Unlock()
 
-	if invoker.stopped || invoker.retryCtx == nil || invoker.retryCtx.Err() != nil || invoker.taskList == nil {
+	if invoker.stopped || invoker.taskList == nil {
 		return false
 	}
 

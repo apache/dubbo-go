@@ -335,35 +335,37 @@ func (r *BaseRegistry) Subscribe(url *common.URL, notifyListener NotifyListener)
 		}
 
 		listener, err := r.facadeBasedRegistry.DoSubscribe(url)
-		if err != nil {
-			if !r.IsAvailable() {
-				logger.Warn("[Registry] event listener game over")
-				return errBaseRegistryUnavailable
-			}
-			logger.Warnf("[Registry] getListener() = err=%v", perrors.WithStack(err))
-			if err = r.waitRetryDelay(); err != nil {
-				return err
-			}
-			continue
+		if err == nil {
+			return r.watchListener(listener, notifyListener)
 		}
+		if !r.IsAvailable() {
+			logger.Warn("[Registry] event listener game over")
+			return errBaseRegistryUnavailable
+		}
+		logger.Warnf("[Registry] getListener() = err=%v", perrors.WithStack(err))
+		if err = r.waitRetryDelay(); err != nil {
+			return err
+		}
+	}
+}
 
-		for {
-			serviceEvent, err := listener.Next()
-			if err != nil {
-				logger.Warnf("[Registry] Selector.watch() = err=%v", perrors.WithStack(err))
-				listener.Close()
-				if !r.IsAvailable() {
-					return errBaseRegistryUnavailable
-				}
-				return nil
-			}
+func (r *BaseRegistry) watchListener(listener Listener, notifyListener NotifyListener) error {
+	for {
+		serviceEvent, err := listener.Next()
+		if err != nil {
+			logger.Warnf("[Registry] Selector.watch() = err=%v", perrors.WithStack(err))
+			listener.Close()
 			if !r.IsAvailable() {
-				listener.Close()
 				return errBaseRegistryUnavailable
 			}
-			logger.Debugf("[Registry] update begin, event=%v", serviceEvent.String())
-			notifyListener.Notify(serviceEvent)
+			return nil
 		}
+		if !r.IsAvailable() {
+			listener.Close()
+			return errBaseRegistryUnavailable
+		}
+		logger.Debugf("[Registry] update begin, event=%v", serviceEvent.String())
+		notifyListener.Notify(serviceEvent)
 	}
 }
 

@@ -268,33 +268,10 @@ func (c *Client) selectSession(addr string) (*gettyRPCClient, getty.Session, err
 	client := c.gettyClient
 	c.gettyClientMux.RUnlock()
 	if client == nil {
-		c.connectMu.Lock()
-		defer c.connectMu.Unlock()
-		if c.closed.Load() {
-			return nil, nil, errClientClosed
-		}
-
-		c.gettyClientMux.Lock()
-		client = c.gettyClient
-		c.gettyClientMux.Unlock()
-		if client == nil {
-			var err error
-			client, err = newGettyRPCClientConn(c, addr)
-			if err != nil {
-				return nil, nil, perrors.WithStack(err)
-			}
-			if c.closed.Load() {
-				_ = client.close()
-				return nil, nil, errClientClosed
-			}
-			c.gettyClientMux.Lock()
-			if c.closed.Load() {
-				c.gettyClientMux.Unlock()
-				_ = client.close()
-				return nil, nil, errClientClosed
-			}
-			c.gettyClient = client
-			c.gettyClientMux.Unlock()
+		var err error
+		client, err = c.getOrCreateGettyClient(addr)
+		if err != nil {
+			return nil, nil, perrors.WithStack(err)
 		}
 	}
 
@@ -302,6 +279,40 @@ func (c *Client) selectSession(addr string) (*gettyRPCClient, getty.Session, err
 		return nil, nil, errClientClosed
 	}
 	return client, client.selectSession(), nil
+}
+
+func (c *Client) getOrCreateGettyClient(addr string) (*gettyRPCClient, error) {
+	c.connectMu.Lock()
+	defer c.connectMu.Unlock()
+
+	if c.closed.Load() {
+		return nil, errClientClosed
+	}
+	c.gettyClientMux.RLock()
+	client := c.gettyClient
+	c.gettyClientMux.RUnlock()
+	if client != nil {
+		return client, nil
+	}
+
+	client, err := newGettyRPCClientConn(c, addr)
+	if err != nil {
+		return nil, err
+	}
+	if c.closed.Load() {
+		_ = client.close()
+		return nil, errClientClosed
+	}
+
+	c.gettyClientMux.Lock()
+	if c.closed.Load() {
+		c.gettyClientMux.Unlock()
+		_ = client.close()
+		return nil, errClientClosed
+	}
+	c.gettyClient = client
+	c.gettyClientMux.Unlock()
+	return client, nil
 }
 
 func (c *Client) transfer(session getty.Session, request *remoting.Request, timeout time.Duration) (int, int, error) {
