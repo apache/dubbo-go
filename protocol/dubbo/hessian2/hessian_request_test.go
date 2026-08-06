@@ -132,7 +132,7 @@ func TestPackRequestReturnsEncodeErrors(t *testing.T) {
 			}, DubboHeader{Type: PackageRequest}, tt.request)
 
 			require.Error(t, err)
-			assert.ErrorContains(t, err, tt.errString)
+			require.ErrorContains(t, err, tt.errString)
 			assert.Nil(t, data)
 		})
 	}
