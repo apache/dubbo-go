@@ -69,13 +69,44 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
+    greet.GreetProfile:
+      type: object
+      properties:
+        salutation:
+          type: string
+          title: salutation
+      title: GreetProfile
     greet.GreetRequest:
       type: object
       properties:
         name:
           type: string
           title: name
+        aliases:
+          type: array
+          items:
+            type: string
+          title: aliases
+        metadata:
+          type: object
+          title: metadata
+        type:
+          title: type
+          $ref: '#/components/schemas/greet.GreetingType'
+        profile:
+          title: profile
+          $ref: '#/components/schemas/greet.GreetProfile'
       title: GreetRequest
+    greet.GreetRequest.MetadataEntry:
+      type: object
+      properties:
+        key:
+          type: string
+          title: key
+        value:
+          type: string
+          title: value
+      title: MetadataEntry
     greet.GreetResponse:
       type: object
       properties:
