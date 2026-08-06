@@ -35,9 +35,10 @@ type CacheManager struct {
 	cacheFile    string        // The file path where the cache is stored
 	dumpInterval time.Duration // The duration after which the cache dump
 	stop         chan struct{} // Channel used to stop the cache expiration routine
+	done         chan struct{} // Channel closed after the cache expiration routine stops
 	cache        *lru.Cache    // The LRU cache implementation
 	lock         sync.Mutex
-	enableDump   bool
+	stopOnce     sync.Once
 }
 
 type Item struct {
@@ -53,7 +54,7 @@ func NewCacheManager(name, cacheFile string, dumpInterval time.Duration, maxCach
 		cacheFile:    cacheFile,
 		dumpInterval: dumpInterval,
 		stop:         make(chan struct{}),
-		enableDump:   enableDump,
+		done:         make(chan struct{}),
 	}
 	cache, err := lru.New(maxCacheSize)
 	if err != nil {
@@ -70,6 +71,8 @@ func NewCacheManager(name, cacheFile string, dumpInterval time.Duration, maxCach
 
 	if enableDump {
 		cm.runDumpTask()
+	} else {
+		close(cm.done)
 	}
 
 	return cm, nil
@@ -77,29 +80,54 @@ func NewCacheManager(name, cacheFile string, dumpInterval time.Duration, maxCach
 
 // Get retrieves the value associated with the given key from the cache.
 func (cm *CacheManager) Get(key string) (any, bool) {
+	cm.lock.Lock()
+	defer cm.lock.Unlock()
 	return cm.cache.Get(key)
 }
 
 // Set sets the value associated with the given key in the cache.
 func (cm *CacheManager) Set(key string, value any) {
+	cm.lock.Lock()
+	defer cm.lock.Unlock()
 	cm.cache.Add(key, value)
 }
 
 // Delete removes the value associated with the given key from the cache.
 func (cm *CacheManager) Delete(key string) {
+	cm.lock.Lock()
+	defer cm.lock.Unlock()
 	cm.cache.Remove(key)
 }
 
 // GetAll returns all the key-value pairs in the cache.
 func (cm *CacheManager) GetAll() map[string]any {
+	cm.lock.Lock()
+	defer cm.lock.Unlock()
+
+	return cm.getAllLocked()
+}
+
+func (cm *CacheManager) getAllLocked() map[string]any {
 	keys := cm.cache.Keys()
 
-	result := make(map[string]any)
+	result := make(map[string]any, len(keys))
 	for _, k := range keys {
-		result[k.(string)], _ = cm.cache.Get(k)
+		key, ok := k.(string)
+		if !ok {
+			continue
+		}
+		if value, ok := cm.cache.Get(k); ok {
+			result[key] = value
+		}
 	}
 
 	return result
+}
+
+func (cm *CacheManager) len() int {
+	cm.lock.Lock()
+	defer cm.lock.Unlock()
+	return cm.cache.Len()
 }
 
 // loadCache loads the cache from the cache file.
@@ -121,7 +149,7 @@ func (cm *CacheManager) loadCache() error {
 			return err
 		}
 		// Add the loaded keys to the front of the LRU list
-		cm.cache.Add(it.Key, it.Value)
+		cm.Set(it.Key, it.Value)
 	}
 
 	return nil
@@ -129,10 +157,6 @@ func (cm *CacheManager) loadCache() error {
 
 // dumpCache dumps the cache to the cache file.
 func (cm *CacheManager) dumpCache() error {
-
-	cm.lock.Lock()
-	defer cm.lock.Unlock()
-
 	items := cm.GetAll()
 
 	file, err := os.Create(cm.cacheFile)
@@ -158,6 +182,10 @@ func (cm *CacheManager) dumpCache() error {
 func (cm *CacheManager) runDumpTask() {
 	go func() {
 		ticker := time.NewTicker(cm.dumpInterval)
+		defer func() {
+			ticker.Stop()
+			close(cm.done)
+		}()
 		for {
 			select {
 			case <-ticker.C:
@@ -166,10 +194,9 @@ func (cm *CacheManager) runDumpTask() {
 					// Handle error
 					logger.Warnf("[Registry][ServiceDiscovery] failed to dump cache, err=%v", err)
 				} else {
-					logger.Infof("[Registry][ServiceDiscovery] dumping [%s] caches, latest entries=%d", cm.name, cm.cache.Len())
+					logger.Infof("[Registry][ServiceDiscovery] dumping [%s] caches, latest entries=%d", cm.name, cm.len())
 				}
 			case <-cm.stop:
-				ticker.Stop()
 				return
 			}
 		}
@@ -177,18 +204,19 @@ func (cm *CacheManager) runDumpTask() {
 }
 
 func (cm *CacheManager) StopDump() {
-	cm.lock.Lock()
-	defer cm.lock.Unlock()
-	if cm.enableDump {
-		cm.stop <- struct{}{} // Stop the cache dump routine
-		cm.enableDump = false
-	}
+	cm.stopOnce.Do(func() {
+		close(cm.stop)
+	})
+	<-cm.done
 }
 
 // destroy stops the cache dump routine, clears the cache and removes the cache file.
 func (cm *CacheManager) destroy() {
-	cm.StopDump()    // Stop the cache dump routine
+	cm.StopDump() // Stop the cache dump routine
+
+	cm.lock.Lock()
 	cm.cache.Purge() // Clear the cache
+	cm.lock.Unlock()
 
 	// Delete the cache file if it exists
 	if _, err := os.Stat(cm.cacheFile); err == nil {
