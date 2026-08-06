@@ -18,7 +18,9 @@
 package zookeeper
 
 import (
+	"encoding/base64"
 	"testing"
+	"time"
 )
 
 import (
@@ -32,6 +34,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
+	remotingzookeeper "dubbo.apache.org/dubbo-go/v3/remoting/zookeeper"
 )
 
 func TestBuildPath(t *testing.T) {
@@ -124,6 +127,133 @@ func TestGetPropertiesWithMockZk(t *testing.T) {
 	empty, err := cfg.GetProperties("missing", config_center.WithGroup("grp"))
 	require.NoError(t, err)
 	require.Empty(t, empty)
+}
+
+func TestLoadPropertiesRegistersWatchOnlyWhenInactive(t *testing.T) {
+	cluster, client, events, err := gxzookeeper.NewMockZookeeperClient("watch-selection", 5*time.Second)
+	if err != nil {
+		t.Skipf("skip mock zk setup: %v", err)
+	}
+	defer cluster.Stop()
+
+	cfg := &zookeeperDynamicConfiguration{
+		rootPath: "/dubbo/config",
+		client:   client,
+		url:      mustURL(t, "registry://127.0.0.1:2181"),
+		cache:    newConfigCache(time.Minute),
+	}
+	activePath := cfg.getPath("active", "group")
+	inactivePath := cfg.getPath("inactive", "group")
+	require.NoError(t, cfg.PublishConfig("active", "group", "v1"))
+	require.NoError(t, cfg.PublishConfig("inactive", "group", "v1"))
+
+	waitForEvent := func(path string, timeout time.Duration) bool {
+		timer := time.NewTimer(timeout)
+		defer timer.Stop()
+		for {
+			select {
+			case event := <-events:
+				if event.Path == path && event.Type == zk.EventNodeDataChanged {
+					return true
+				}
+			case <-timer.C:
+				return false
+			}
+		}
+	}
+
+	_, watchActive, err := cfg.loadProperties(activePath, true)
+	require.NoError(t, err)
+	require.True(t, watchActive)
+	_, stat, err := client.GetContent(activePath)
+	require.NoError(t, err)
+	_, err = client.SetContent(activePath, []byte("v2"), stat.Version)
+	require.NoError(t, err)
+	require.False(t, waitForEvent(activePath, time.Second))
+
+	_, watchActive, err = cfg.loadProperties(inactivePath, false)
+	require.NoError(t, err)
+	require.True(t, watchActive)
+	_, stat, err = client.GetContent(inactivePath)
+	require.NoError(t, err)
+	_, err = client.SetContent(inactivePath, []byte("v2"), stat.Version)
+	require.NoError(t, err)
+	require.True(t, waitForEvent(inactivePath, time.Second))
+}
+
+func TestGetPropertiesCacheUpdatedByWatch(t *testing.T) {
+	cluster, client, _, err := gxzookeeper.NewMockZookeeperClient("cache-watch", 5*time.Second)
+	if err != nil {
+		t.Skipf("skip mock zk setup: %v", err)
+	}
+	defer cluster.Stop()
+	go (&gxzookeeper.DefaultHandler{}).HandleZkEvent(client)
+
+	cfg := &zookeeperDynamicConfiguration{
+		rootPath: "/dubbo/config",
+		client:   client,
+		done:     make(chan struct{}),
+		url:      mustURL(t, "registry://127.0.0.1:2181"),
+		cache:    newConfigCache(time.Minute),
+	}
+	cfg.listener = remotingzookeeper.NewZkEventListener(client)
+	cfg.cacheListener = newCacheListener(cfg.rootPath, cfg.listener, &cfg.cache)
+	cfg.listener.ListenConfigurationEvent(cfg.rootPath, cfg.cacheListener)
+	defer cfg.listener.Close()
+
+	require.NoError(t, cfg.PublishConfig("file.properties", "grp", "v1"))
+	value, err := cfg.GetProperties("file.properties", config_center.WithGroup("grp"))
+	require.NoError(t, err)
+	require.Equal(t, "v1", value)
+
+	// ListenConfigurationEvent registers asynchronously; wait before triggering the watch.
+	time.Sleep(50 * time.Millisecond)
+	_, stat, err := client.GetContent("/dubbo/config/grp/file.properties")
+	require.NoError(t, err)
+	_, err = client.SetContent("/dubbo/config/grp/file.properties", []byte("v2"), stat.Version)
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool {
+		value, getErr := cfg.GetProperties("file.properties", config_center.WithGroup("grp"))
+		return getErr == nil && value == "v2"
+	}, time.Second, 10*time.Millisecond)
+
+	require.NoError(t, cfg.RemoveConfig("file.properties", "grp"))
+	require.Eventually(t, func() bool {
+		entry, ok := cfg.cache.getFresh("/dubbo/config/grp/file.properties")
+		return ok && !entry.exists
+	}, time.Second, 10*time.Millisecond)
+}
+
+func TestGetPropertiesDecodesCachedBase64(t *testing.T) {
+	cfg := &zookeeperDynamicConfiguration{
+		rootPath:      "/dubbo/config",
+		url:           mustURL(t, "registry://127.0.0.1:2181"),
+		cache:         newConfigCache(time.Minute),
+		base64Enabled: true,
+	}
+	path := cfg.getPropertiesPath("key", config_center.WithGroup("group"))
+	cfg.cache.store(path, configCacheEntry{
+		content: base64.StdEncoding.EncodeToString([]byte("value")),
+		exists:  true,
+	})
+
+	value, err := cfg.GetProperties("key", config_center.WithGroup("group"))
+	require.NoError(t, err)
+	require.Equal(t, "value", value)
+}
+
+func TestRestartCallBackResetsCache(t *testing.T) {
+	cfg := &zookeeperDynamicConfiguration{cache: newConfigCache(time.Minute)}
+	path := "/dubbo/config/group/key"
+	cfg.cache.store(path, configCacheEntry{content: "value", exists: true})
+	cfg.cache.setWatchActive(path, true)
+
+	require.True(t, cfg.RestartCallBack())
+	_, ok := cfg.cache.getFresh(path)
+	require.False(t, ok)
+	_, watchActive := cfg.cache.snapshot(path)
+	require.False(t, watchActive)
 }
 
 func mustURL(t *testing.T, raw string) *common.URL {
