@@ -26,21 +26,36 @@ import (
 )
 
 import (
+	hessian "github.com/apache/dubbo-go-hessian2"
+
 	"github.com/stretchr/testify/require"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
+
+	_ "dubbo.apache.org/dubbo-go/v3/cluster/cluster/available"
+	_ "dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
 )
 
 type fakeInvoker struct {
 	lastCtx        context.Context
 	lastInvocation base.Invocation
 	res            result.Result
+}
+
+type genericClientTestUser struct {
+	Name string `json:"name"`
+	Age  int    `json:"age"`
+}
+
+func (genericClientTestUser) JavaClassName() string {
+	return "org.apache.dubbo.test.User"
 }
 
 func (f *fakeInvoker) GetURL() *common.URL {
@@ -179,6 +194,41 @@ func TestConnectionCallPassesOptions(t *testing.T) {
 	trailerTarget, ok := inv.GetAttribute(constant.ResponseTrailerKey)
 	require.True(t, ok)
 	require.Same(t, &responseTrailer, trailerTarget)
+}
+
+func TestNewGenericServicePropagatesGenericTypeToTypedInvoke(t *testing.T) {
+	const protocolName = "generic-client-test"
+
+	extension.SetProtocol(protocolName, func() base.Protocol {
+		proto := base.NewBaseProtocol()
+		return &proto
+	})
+
+	cli, err := NewClient()
+	require.NoError(t, err)
+
+	service, err := cli.NewGenericService(
+		"org.apache.dubbo.test.UserProvider",
+		WithProtocol(protocolName),
+		WithURL(protocolName+"://127.0.0.1:1"),
+		WithClusterAvailable(),
+		WithGenericType(constant.GenericSerializationGson),
+	)
+	require.NoError(t, err)
+	if service.GenericType() != constant.GenericSerializationGson {
+		t.Errorf("generic service mode = %q, want %q", service.GenericType(), constant.GenericSerializationGson)
+	}
+
+	service.Invoke = func(ctx context.Context, methodName string, types []string, args []hessian.Object) (any, error) {
+		require.Equal(t, "getUser", methodName)
+		return `{"name":"gsonUser","age":42}`, nil
+	}
+
+	var user genericClientTestUser
+	err = service.InvokeWithType(context.Background(), "getUser", nil, nil, &user)
+	require.NoError(t, err)
+	require.Equal(t, "gsonUser", user.Name)
+	require.Equal(t, 42, user.Age)
 }
 
 func TestCallUnary(t *testing.T) {

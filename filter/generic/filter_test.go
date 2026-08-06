@@ -30,6 +30,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 import (
@@ -338,6 +340,10 @@ type mockUser struct {
 	Address *mockAddress
 }
 
+func (mockUser) JavaClassName() string {
+	return "org.apache.dubbo.test.MockUser"
+}
+
 type mockAddress struct {
 	City    string
 	Country string
@@ -520,6 +526,95 @@ func TestFilter_OnResponse_WithSliceDeserialization(t *testing.T) {
 	assert.Equal(t, 25, users[1].Age)
 }
 
+func TestFilter_OnResponse_WithTypedReplyByGenericMode(t *testing.T) {
+	filter := &genericFilter{}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockInvoker := mock.NewMockInvoker(ctrl)
+	mockInvoker.EXPECT().GetURL().DoAndReturn(func() *common.URL {
+		return common.NewURLWithOptions(
+			common.WithParams(url.Values{}),
+			common.WithParamsValue(constant.GenericKey, constant.GenericSerializationDefault),
+		)
+	}).AnyTimes()
+
+	tests := []struct {
+		name   string
+		mode   string
+		result any
+	}{
+		{
+			name: constant.GenericSerializationDefault,
+			mode: constant.GenericSerializationDefault,
+			result: map[string]any{
+				"name": "mapUser",
+				"age":  31,
+			},
+		},
+		{
+			name:   constant.GenericSerializationGson,
+			mode:   constant.GenericSerializationGson,
+			result: `{"name":"gsonUser","age":32}`,
+		},
+		{
+			name: constant.GenericSerializationBean,
+			mode: constant.GenericSerializationBean,
+			result: mustGeneralize(t, generalizer.GetBeanGeneralizer(), mockUser{
+				Name: "beanUser",
+				Age:  33,
+			}),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var user mockUser
+			inv := invocation.NewRPCInvocationWithOptions(
+				invocation.WithMethodName(constant.Generic),
+				invocation.WithReply(&user),
+				invocation.WithAttachments(map[string]any{constant.GenericKey: tt.mode}),
+			)
+			res := &result.RPCResult{Rest: tt.result}
+
+			newRes := filter.OnResponse(context.Background(), res, mockInvoker, inv)
+
+			require.NoError(t, newRes.Error())
+			assert.NotEmpty(t, user.Name)
+			assert.NotZero(t, user.Age)
+			assert.Same(t, &user, newRes.Result())
+		})
+	}
+}
+
+func TestFilter_OnResponse_WithProtobufJsonTypedReply(t *testing.T) {
+	filter := &genericFilter{}
+	invokeURL := common.NewURLWithOptions(
+		common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.GenericKey, constant.GenericSerializationProtobufJson),
+	)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockInvoker := mock.NewMockInvoker(ctrl)
+	mockInvoker.EXPECT().GetURL().Return(invokeURL).AnyTimes()
+
+	var reply structpb.Struct
+	inv := invocation.NewRPCInvocationWithOptions(
+		invocation.WithMethodName(constant.Generic),
+		invocation.WithReply(&reply),
+	)
+	res := &result.RPCResult{Rest: `{"name":"protoUser"}`}
+
+	newRes := filter.OnResponse(context.Background(), res, mockInvoker, inv)
+
+	require.NoError(t, newRes.Error())
+	assert.Equal(t, "protoUser", reply.Fields["name"].GetStringValue())
+	assert.Same(t, &reply, newRes.Result())
+}
+
 func TestFilter_OnResponse_WithUnsupportedGenericMode(t *testing.T) {
 	invokeURL := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
@@ -538,8 +633,8 @@ func TestFilter_OnResponse_WithUnsupportedGenericMode(t *testing.T) {
 	assert.Nil(t, newRes.Result())
 }
 
-// TestFilter_OnResponse_DeserializationError tests that OnResponse gracefully handles
-// deserialization failures by logging a warning and returning the original result.
+// TestFilter_OnResponse_DeserializationError tests that OnResponse returns an explicit error
+// when typed result deserialization fails.
 func TestFilter_OnResponse_DeserializationError(t *testing.T) {
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
@@ -568,11 +663,10 @@ func TestFilter_OnResponse_DeserializationError(t *testing.T) {
 
 		newRes := filter.OnResponse(context.Background(), res, mockInvoker, inv)
 
-		// OnResponse should return the original result when deserialization fails
-		// The user struct should remain unchanged (zero values)
+		// OnResponse should return an explicit error when typed deserialization fails.
 		assert.Empty(t, user.Name)
 		assert.Equal(t, 0, user.Age)
-		// The result should still be the original map
-		assert.Equal(t, mapResult, newRes.Result())
+		require.Error(t, newRes.Error())
+		assert.Nil(t, newRes.Result())
 	})
 }
