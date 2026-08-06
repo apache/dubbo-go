@@ -19,8 +19,11 @@ package zookeeper
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 )
 
 import (
@@ -134,11 +137,41 @@ func (m *mockZkClient) Children(path string) ([]string, *zk.Stat, error) {
 }
 
 func (m *mockZkClient) Get(path string) ([]byte, *zk.Stat, error) {
+	if err, ok := m.errors["Get:"+path]; ok {
+		return nil, nil, err
+	}
 	v, ok := m.data[path]
 	if !ok {
 		return nil, nil, zk.ErrNoNode
 	}
 	return v, m.stats[path], nil
+}
+
+type concurrencyTrackingZkClient struct {
+	*mockZkClient
+	entered chan struct{}
+	release chan struct{}
+
+	mu        sync.Mutex
+	active    int
+	maxActive int
+}
+
+func (m *concurrencyTrackingZkClient) Get(path string) ([]byte, *zk.Stat, error) {
+	m.mu.Lock()
+	m.active++
+	if m.active > m.maxActive {
+		m.maxActive = m.active
+	}
+	m.mu.Unlock()
+
+	m.entered <- struct{}{}
+	<-m.release
+
+	m.mu.Lock()
+	m.active--
+	m.mu.Unlock()
+	return m.mockZkClient.Get(path)
 }
 
 // --- Helper ---
@@ -253,6 +286,65 @@ func TestListAppRevisions(t *testing.T) {
 	assert.Equal(t, int64(1000), names["r1"])
 	assert.Equal(t, int64(3000), names["r2"])
 	assert.Equal(t, int64(2000), names["r3"])
+}
+
+func TestListAppRevisionsPipelinesReadsWithBoundedConcurrency(t *testing.T) {
+	const extraRevisions = 5
+	revisionCount := listAppRevisionsMaxConcurrency + extraRevisions
+	mc := newMockZkClient()
+	client := &concurrencyTrackingZkClient{
+		mockZkClient: mc,
+		entered:      make(chan struct{}, revisionCount),
+		release:      make(chan struct{}),
+	}
+	for i := range revisionCount {
+		path := fmt.Sprintf("/dubbo/my-app/r%d", i)
+		mc.data[path] = []byte(fmt.Sprintf(`{"lastUpdatedTime":%d}`, i))
+	}
+
+	r := &zookeeperMetadataReport{client: client, rootDir: "/dubbo/"}
+	type listResult struct {
+		revisions []report.AppRevision
+		err       error
+	}
+	done := make(chan listResult, 1)
+	go func() {
+		revisions, err := r.ListAppRevisions("my-app")
+		done <- listResult{revisions: revisions, err: err}
+	}()
+
+	for range listAppRevisionsMaxConcurrency {
+		select {
+		case <-client.entered:
+		case <-time.After(time.Second):
+			t.Fatal("timed out waiting for concurrent ZooKeeper reads")
+		}
+	}
+	select {
+	case <-client.entered:
+		t.Fatal("ListAppRevisions exceeded its concurrency limit")
+	default:
+	}
+	close(client.release)
+
+	result := <-done
+	require.NoError(t, result.err)
+	require.Len(t, result.revisions, revisionCount)
+	client.mu.Lock()
+	assert.Equal(t, listAppRevisionsMaxConcurrency, client.maxActive)
+	client.mu.Unlock()
+}
+
+func TestListAppRevisionsSkipsRevisionRemovedDuringRead(t *testing.T) {
+	r, mc := newTestReportWithMock()
+	mc.data["/dubbo/my-app/r1"] = []byte(`{"lastUpdatedTime":1000}`)
+	mc.data["/dubbo/my-app/r2"] = []byte(`{"lastUpdatedTime":2000}`)
+	mc.errors["Get:/dubbo/my-app/r2"] = zk.ErrNoNode
+
+	revisions, err := r.ListAppRevisions("my-app")
+	require.NoError(t, err)
+	require.Len(t, revisions, 1)
+	assert.Equal(t, "r1", revisions[0].Revision)
 }
 
 func TestRegisterServiceAppMapping_NewKey(t *testing.T) {

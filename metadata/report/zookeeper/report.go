@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 )
 
 import (
@@ -89,6 +90,11 @@ type zookeeperMetadataReport struct {
 	url           *common.URL
 }
 
+// listAppRevisionsMaxConcurrency bounds the number of in-flight reads sent
+// over the ZooKeeper connection. ZooKeeper's Go client does not support read
+// operations in Multi, but concurrent requests are pipelined by the client.
+const listAppRevisionsMaxConcurrency = 16
+
 // URL returns the URL used to create this metadata report.
 func (m *zookeeperMetadataReport) URL() *common.URL {
 	return m.url
@@ -144,17 +150,42 @@ func (m *zookeeperMetadataReport) ListAppRevisions(application string) ([]report
 		}
 		return nil, err
 	}
+	revisions := make([]report.AppRevision, len(children))
+	found := make([]bool, len(children))
+	jobs := make(chan int, len(children))
+	for i := range children {
+		jobs <- i
+	}
+	close(jobs)
+
+	var workers sync.WaitGroup
+	workerCount := min(len(children), listAppRevisionsMaxConcurrency)
+	workers.Add(workerCount)
+	for range workerCount {
+		go func() {
+			defer workers.Done()
+			for i := range jobs {
+				revision := children[i]
+				path := parent + constant.PathSeparator + revision
+				data, _, getErr := m.client.Get(path)
+				if getErr != nil {
+					continue // skip if node disappeared between listing and reading
+				}
+				revisions[i] = report.AppRevision{
+					Revision:   revision,
+					ModifyTime: report.ParseMetadataLastUpdatedTime(data),
+				}
+				found[i] = true
+			}
+		}()
+	}
+	workers.Wait()
+
 	result := make([]report.AppRevision, 0, len(children))
-	for _, rev := range children {
-		path := parent + constant.PathSeparator + rev
-		data, _, err := m.client.Get(path)
-		if err != nil {
-			continue // skip if node disappeared between listing and reading
+	for i := range revisions {
+		if found[i] {
+			result = append(result, revisions[i])
 		}
-		result = append(result, report.AppRevision{
-			Revision:   rev,
-			ModifyTime: report.ParseMetadataLastUpdatedTime(data),
-		})
 	}
 	return result, nil
 }
