@@ -25,6 +25,7 @@ import (
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
+	"github.com/dubbogo/gost/log/logger"
 
 	perrors "github.com/pkg/errors"
 )
@@ -78,13 +79,17 @@ func (d *ServiceNameMapping) Map(url *common.URL) error {
 	// if the mapping can hold a report instance, it can write once
 	metadataReports := metadata.GetMetadataReports()
 	if len(metadataReports) == 0 {
-		return perrors.New("can not registering mapping to remote cause no metadata report instance found")
+		err := perrors.New("can not registering mapping to remote cause no metadata report instance found")
+		logger.Errorf("[Metadata][Mapping] register failed interface=%s application=%s group=%s reports=0 err=%v", serviceInterface, appName, DefaultGroup, err)
+		return err
 	}
 	for _, metadataReport := range metadataReports {
 		if err := registerWithRetry(metadataReport, serviceInterface, DefaultGroup, appName); err != nil {
+			logger.Errorf("[Metadata][Mapping] register failed interface=%s application=%s group=%s reports=%d err=%v", serviceInterface, appName, DefaultGroup, len(metadataReports), err)
 			return err
 		}
 	}
+	logger.Debugf("[Metadata][Mapping] register succeeded interface=%s application=%s group=%s reports=%d", serviceInterface, appName, DefaultGroup, len(metadataReports))
 	return nil
 }
 
@@ -121,7 +126,13 @@ func (d *ServiceNameMapping) Get(url *common.URL, listener mapping.MappingListen
 	serviceInterface := url.GetParam(constant.InterfaceKey, "")
 	metadataReports := metadata.GetMetadataReports()
 	if len(metadataReports) == 0 {
-		return nil, perrors.New("can not get mapping in remote cause no metadata report instance found")
+		err := perrors.New("can not get mapping in remote cause no metadata report instance found")
+		logger.Warnf("[Metadata][Mapping] get failed interface=%s group=%s reports=0 err=%v", serviceInterface, DefaultGroup, err)
+		return nil, err
+	}
+	operation := "get"
+	if listener != nil {
+		operation = "listen"
 	}
 	// Attach the listener to the stable primary report only (GetMetadataReport uses
 	// a deterministic selection: prefer "default", otherwise lexicographic first).
@@ -147,8 +158,13 @@ func (d *ServiceNameMapping) Get(url *common.URL, listener mapping.MappingListen
 		}
 	}
 	if result == nil {
-		return nil, errors.Join(errs...)
+		if err := errors.Join(errs...); err != nil {
+			logger.Warnf("[Metadata][Mapping] %s failed interface=%s group=%s reports=%d err=%v", operation, serviceInterface, DefaultGroup, len(metadataReports), err)
+			return nil, err
+		}
+		return nil, nil
 	}
+	logger.Debugf("[Metadata][Mapping] %s succeeded interface=%s group=%s reports=%d apps=%d", operation, serviceInterface, DefaultGroup, len(metadataReports), result.Size())
 	return result, nil
 }
 
@@ -162,7 +178,9 @@ func (d *ServiceNameMapping) Remove(url *common.URL) error {
 	serviceInterface := url.GetParam(constant.InterfaceKey, "")
 	metadataReports := metadata.GetMetadataReports()
 	if len(metadataReports) == 0 {
-		return perrors.New("can not remove mapping in remote cause no metadata report instance found")
+		err := perrors.New("can not remove mapping in remote cause no metadata report instance found")
+		logger.Warnf("[Metadata][Mapping] remove failed interface=%s group=%s reports=0 err=%v", serviceInterface, DefaultGroup, err)
+		return err
 	}
 	var errs []error
 	for _, metadataReport := range metadataReports {
@@ -170,5 +188,10 @@ func (d *ServiceNameMapping) Remove(url *common.URL) error {
 			errs = append(errs, err)
 		}
 	}
-	return errors.Join(errs...)
+	if err := errors.Join(errs...); err != nil {
+		logger.Warnf("[Metadata][Mapping] remove failed interface=%s group=%s reports=%d err=%v", serviceInterface, DefaultGroup, len(metadataReports), err)
+		return err
+	}
+	logger.Debugf("[Metadata][Mapping] remove succeeded interface=%s group=%s reports=%d", serviceInterface, DefaultGroup, len(metadataReports))
+	return nil
 }
