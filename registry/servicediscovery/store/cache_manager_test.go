@@ -19,6 +19,7 @@ package store
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -155,7 +156,8 @@ func TestMetaInfoCacheManager(t *testing.T) {
 }
 
 func TestCacheManagerConcurrentAccess(t *testing.T) {
-	cm, err := NewCacheManager("raceTest", filepath.Join(t.TempDir(), "race_cache"), time.Millisecond, 32, true)
+	cacheFile := filepath.Join(t.TempDir(), "race_cache")
+	cm, err := NewCacheManager("raceTest", cacheFile, time.Millisecond, 32, true)
 	if err != nil {
 		t.Fatalf("failed to create cache manager: %v", err)
 	}
@@ -180,4 +182,83 @@ func TestCacheManagerConcurrentAccess(t *testing.T) {
 		}(i)
 	}
 	wg.Wait()
+
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		info, statErr := os.Stat(cacheFile)
+		if statErr == nil && info.Size() > 0 {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("cache dump was not created: %v", statErr)
+		}
+		time.Sleep(time.Millisecond)
+	}
+	cm.StopDump()
+
+	loaded, err := NewCacheManager("raceTestReloaded", cacheFile, time.Hour, 32, false)
+	if err != nil {
+		t.Fatalf("failed to reload cache manager: %v", err)
+	}
+	defer loaded.destroy()
+
+	items := loaded.GetAll()
+	if len(items) == 0 {
+		t.Fatal("reloaded cache dump contained no entries")
+	}
+	for key, value := range items {
+		if value == nil {
+			t.Fatalf("reloaded cache entry %q contained a nil value", key)
+		}
+		if _, ok := value.(string); !ok {
+			t.Fatalf("reloaded cache entry %q had unexpected type %T", key, value)
+		}
+	}
+}
+
+func TestCacheManagerConcurrentStopDump(t *testing.T) {
+	tests := []struct {
+		name       string
+		enableDump bool
+	}{
+		{name: "enabled", enableDump: true},
+		{name: "disabled", enableDump: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cm, err := NewCacheManager("stopTest", filepath.Join(t.TempDir(), "stop_cache"), time.Hour, 8, tt.enableDump)
+			if err != nil {
+				t.Fatalf("failed to create cache manager: %v", err)
+			}
+			defer cm.destroy()
+
+			const callers = 64
+			start := make(chan struct{})
+			var wg sync.WaitGroup
+			for i := 0; i < callers; i++ {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					<-start
+					cm.StopDump()
+				}()
+			}
+			close(start)
+
+			done := make(chan struct{})
+			go func() {
+				wg.Wait()
+				close(done)
+			}()
+
+			select {
+			case <-done:
+			case <-time.After(2 * time.Second):
+				t.Fatal("concurrent StopDump calls did not complete")
+			}
+
+			cm.StopDump()
+		})
+	}
 }
