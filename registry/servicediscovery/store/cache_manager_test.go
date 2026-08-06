@@ -164,11 +164,11 @@ func TestCacheManagerConcurrentAccess(t *testing.T) {
 	defer cm.destroy()
 
 	var wg sync.WaitGroup
-	for i := 0; i < 16; i++ {
+	for i := range 16 {
 		wg.Add(1)
 		go func(worker int) {
 			defer wg.Done()
-			for j := 0; j < 500; j++ {
+			for j := range 500 {
 				key := fmt.Sprintf("key-%d", j%64)
 				cm.Set(key, fmt.Sprintf("value-%d-%d", worker, j))
 				cm.Get(key)
@@ -236,13 +236,11 @@ func TestCacheManagerConcurrentStopDump(t *testing.T) {
 			const callers = 64
 			start := make(chan struct{})
 			var wg sync.WaitGroup
-			for i := 0; i < callers; i++ {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
+			for range callers {
+				wg.Go(func() {
 					<-start
 					cm.StopDump()
-				}()
+				})
 			}
 			close(start)
 
