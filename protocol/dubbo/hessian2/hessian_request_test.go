@@ -18,6 +18,7 @@
 package hessian2
 
 import (
+	"encoding/binary"
 	"reflect"
 	"strconv"
 	"testing"
@@ -90,22 +91,35 @@ func TestPackRequest(t *testing.T) {
 	}
 }
 
+func TestPackRequestHeartbeat(t *testing.T) {
+	data, err := packRequest(Service{}, DubboHeader{Type: PackageHeartbeat}, NewRequest([]any{}, nil))
+
+	require.NoError(t, err)
+	require.Len(t, data, HEADER_LENGTH+1)
+	assert.Equal(t, DubboRequestHeartbeatHeader[:HEADER_LENGTH-4], data[:HEADER_LENGTH-4])
+	assert.Equal(t, uint32(1), binary.BigEndian.Uint32(data[HEADER_LENGTH-4:HEADER_LENGTH]))
+	assert.Equal(t, byte('N'), data[HEADER_LENGTH])
+}
+
 func TestPackRequestReturnsEncodeErrors(t *testing.T) {
 	tests := []struct {
-		name    string
-		request *DubboRequest
+		name      string
+		request   *DubboRequest
+		errString string
 	}{
 		{
-			name: "unsupported argument",
+			name: "unsupported map key argument",
 			request: NewRequest([]any{
 				map[complex64]string{1 + 2i: "value"},
 			}, nil),
+			errString: "failed to encode argument of type map[complex64]string",
 		},
 		{
 			name: "unsupported attachment",
 			request: NewRequest([]any{}, map[string]any{
 				"unsupported": func() {},
 			}),
+			errString: "failed to encode request attachments",
 		},
 	}
 
@@ -118,6 +132,7 @@ func TestPackRequestReturnsEncodeErrors(t *testing.T) {
 			}, DubboHeader{Type: PackageRequest}, tt.request)
 
 			require.Error(t, err)
+			assert.ErrorContains(t, err, tt.errString)
 			assert.Nil(t, data)
 		})
 	}

@@ -127,14 +127,12 @@ func packRequest(service Service, header DubboHeader, req any) ([]byte, error) {
 		if err := encoder.Encode(nil); err != nil {
 			return nil, perrors.Wrap(err, "failed to encode heartbeat request")
 		}
-		goto END
+	} else {
+		if err := encodeRequestBody(encoder, service, request, args); err != nil {
+			return nil, err
+		}
 	}
 
-	if err := encodeRequestBody(encoder, service, request, args); err != nil {
-		return nil, err
-	}
-
-END:
 	byteArray = encoder.Buffer()
 	pkgLen = len(byteArray)
 	if pkgLen > int(DEFAULT_LEN) { // recommand 8M
