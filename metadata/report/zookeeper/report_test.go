@@ -299,7 +299,7 @@ func TestListAppRevisionsPipelinesReadsWithBoundedConcurrency(t *testing.T) {
 	}
 	for i := range revisionCount {
 		path := fmt.Sprintf("/dubbo/my-app/r%d", i)
-		mc.data[path] = []byte(fmt.Sprintf(`{"lastUpdatedTime":%d}`, i))
+		mc.data[path] = fmt.Appendf(nil, `{"lastUpdatedTime":%d}`, i)
 	}
 
 	r := &zookeeperMetadataReport{client: client, rootDir: "/dubbo/"}
