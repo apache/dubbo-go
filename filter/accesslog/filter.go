@@ -136,30 +136,24 @@ func (f *Filter) logIntoChannel(accessLogData Data) {
 func (f *Filter) buildAccessLogData(_ base.Invoker, invocation base.Invocation) map[string]string {
 	dataMap := make(map[string]string, 16)
 	attachments := invocation.Attachments()
-	itf := attachments[constant.InterfaceKey]
-	if itf == nil || len(itf.(string)) == 0 {
-		itf = attachments[constant.PathKey]
+	itf, ok := stringAttachment(attachments, constant.InterfaceKey)
+	if !ok || len(itf) == 0 {
+		itf, _ = stringAttachment(attachments, constant.PathKey)
 	}
-	if itf != nil {
-		dataMap[constant.InterfaceKey] = itf.(string)
+	if itf != "" {
+		dataMap[constant.InterfaceKey] = itf
 	}
-	if v, ok := attachments[constant.MethodKey]; ok && v != nil {
-		dataMap[constant.MethodKey] = v.(string)
-	}
-	if v, ok := attachments[constant.VersionKey]; ok && v != nil {
-		dataMap[constant.VersionKey] = v.(string)
-	}
-	if v, ok := attachments[constant.GroupKey]; ok && v != nil {
-		dataMap[constant.GroupKey] = v.(string)
-	}
-	if v, ok := attachments[constant.TimestampKey]; ok && v != nil {
-		dataMap[constant.TimestampKey] = v.(string)
-	}
-	if v, ok := attachments[constant.LocalAddr]; ok && v != nil {
-		dataMap[constant.LocalAddr] = v.(string)
-	}
-	if v, ok := attachments[constant.RemoteAddr]; ok && v != nil {
-		dataMap[constant.RemoteAddr] = v.(string)
+	for _, key := range []string{
+		constant.MethodKey,
+		constant.VersionKey,
+		constant.GroupKey,
+		constant.TimestampKey,
+		constant.LocalAddr,
+		constant.RemoteAddr,
+	} {
+		if value, ok := stringAttachment(attachments, key); ok {
+			dataMap[key] = value
+		}
 	}
 
 	if len(invocation.Arguments()) > 0 {
@@ -182,6 +176,19 @@ func (f *Filter) buildAccessLogData(_ base.Invoker, invocation base.Invocation) 
 	}
 
 	return dataMap
+}
+
+func stringAttachment(attachments map[string]any, key string) (string, bool) {
+	value, exists := attachments[key]
+	if !exists || value == nil {
+		return "", false
+	}
+	stringValue, ok := value.(string)
+	if !ok {
+		logger.Debugf("[Filter][AccessLog] attachment %q has unexpected type %T and will be omitted", key, value)
+		return "", false
+	}
+	return stringValue, true
 }
 
 // OnResponse do nothing
