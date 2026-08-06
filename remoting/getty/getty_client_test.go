@@ -20,6 +20,7 @@ package getty
 import (
 	"bytes"
 	"context"
+	"net"
 	"reflect"
 	"sync"
 	"testing"
@@ -330,4 +331,91 @@ func TestInitClientTLS(t *testing.T) {
 		initClient(url)
 		assert.False(t, clientConf.SSLEnabled)
 	})
+}
+
+func TestGettyConnectWaitStopsWhenClosed(t *testing.T) {
+	client := NewClient(Options{ConnectTimeout: 5 * time.Second})
+	started := make(chan struct{})
+	var startOnce sync.Once
+	available := func() bool {
+		startOnce.Do(func() { close(started) })
+		return false
+	}
+	waitDone := make(chan error, 1)
+	go func() {
+		waitDone <- waitForGettyClient("127.0.0.1:1", client.opts.ConnectTimeout, available, client.done)
+	}()
+	select {
+	case <-started:
+	case <-time.After(time.Second):
+		t.Fatal("connection wait did not start")
+	}
+
+	start := time.Now()
+	client.Close()
+	err := <-waitDone
+
+	require.Error(t, err)
+	require.ErrorIs(t, err, errClientClosed)
+	require.Less(t, time.Since(start), time.Second)
+}
+
+func TestGettyConnectWaitHonorsTimeout(t *testing.T) {
+	start := time.Now()
+	err := waitForGettyClient("127.0.0.1:1", 30*time.Millisecond,
+		func() bool { return false },
+		nil,
+	)
+
+	require.Error(t, err)
+	require.NotErrorIs(t, err, errClientClosed)
+	require.Less(t, time.Since(start), time.Second)
+}
+
+func TestGettyNewConnectionStopsWhenClientCloses(t *testing.T) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	addr := listener.Addr().String()
+	require.NoError(t, listener.Close())
+
+	client := NewClient(Options{ConnectTimeout: 5 * time.Second})
+	client.conf = *GetDefaultClientConfig()
+	connectDone := make(chan error, 1)
+	go func() {
+		_, connectErr := newGettyRPCClientConn(client, addr)
+		connectDone <- connectErr
+	}()
+	time.AfterFunc(20*time.Millisecond, client.Close)
+
+	start := time.Now()
+	select {
+	case err := <-connectDone:
+		require.Error(t, err)
+		require.ErrorIs(t, err, errClientClosed)
+	case <-time.After(time.Second):
+		t.Fatal("newGettyRPCClientConn remained blocked after Close")
+	}
+	require.Less(t, time.Since(start), time.Second)
+}
+
+func TestClientCloseDoesNotWaitForConnectLock(t *testing.T) {
+	client := NewClient(Options{ConnectTimeout: time.Second, RequestTimeout: time.Second})
+	client.connectMu.Lock()
+	closeDone := make(chan struct{})
+	go func() {
+		client.Close()
+		close(closeDone)
+	}()
+
+	select {
+	case <-closeDone:
+	case <-time.After(time.Second):
+		t.Fatal("Client.Close waited for the connection lock")
+	}
+	client.connectMu.Unlock()
+
+	require.True(t, client.closed.Load())
+	_, _, err := client.selectSession("")
+	require.Error(t, err)
+	require.ErrorIs(t, err, errClientClosed)
 }

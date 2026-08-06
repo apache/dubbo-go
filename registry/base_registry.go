@@ -45,7 +45,8 @@ const (
 )
 
 var (
-	localIP = ""
+	localIP                    = ""
+	errBaseRegistryUnavailable = perrors.New("BaseRegistry is not available")
 )
 
 func init() {
@@ -330,7 +331,7 @@ func (r *BaseRegistry) Subscribe(url *common.URL, notifyListener NotifyListener)
 	for {
 		if !r.IsAvailable() {
 			logger.Warn("[Registry] event listener game over")
-			return perrors.New("BaseRegistry is not available")
+			return errBaseRegistryUnavailable
 		}
 
 		listener, err := r.facadeBasedRegistry.DoSubscribe(url)
@@ -340,20 +341,41 @@ func (r *BaseRegistry) Subscribe(url *common.URL, notifyListener NotifyListener)
 				return err
 			}
 			logger.Warnf("[Registry] getListener() = err=%v", perrors.WithStack(err))
-			time.Sleep(time.Duration(RegistryConnDelay) * time.Second)
+			if err = r.waitRetryDelay(); err != nil {
+				return err
+			}
 			continue
 		}
 
 		for {
-			if serviceEvent, err := listener.Next(); err != nil {
+			serviceEvent, err := listener.Next()
+			if err != nil {
 				logger.Warnf("[Registry] Selector.watch() = err=%v", perrors.WithStack(err))
 				listener.Close()
+				if !r.IsAvailable() {
+					return errBaseRegistryUnavailable
+				}
 				return nil
-			} else {
-				logger.Debugf("[Registry] update begin, event=%v", serviceEvent.String())
-				notifyListener.Notify(serviceEvent)
 			}
+			if !r.IsAvailable() {
+				listener.Close()
+				return errBaseRegistryUnavailable
+			}
+			logger.Debugf("[Registry] update begin, event=%v", serviceEvent.String())
+			notifyListener.Notify(serviceEvent)
 		}
+	}
+}
+
+func (r *BaseRegistry) waitRetryDelay() error {
+	timer := time.NewTimer(time.Duration(RegistryConnDelay) * time.Second)
+	defer timer.Stop()
+
+	select {
+	case <-r.Done():
+		return errBaseRegistryUnavailable
+	case <-timer.C:
+		return nil
 	}
 }
 
