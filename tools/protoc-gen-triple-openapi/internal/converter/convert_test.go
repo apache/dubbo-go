@@ -22,9 +22,13 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
+)
 
+import (
 	"google.golang.org/protobuf/proto"
+
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/pluginpb"
 )
@@ -72,8 +76,10 @@ func TestConvertGolden(t *testing.T) {
 			if err != nil {
 				t.Fatalf("read golden file: %v", err)
 			}
-			if got != string(want) {
-				t.Errorf("generated OpenAPI differs from %s\n--- want\n%s\n--- got\n%s", tt.goldenFile, want, got)
+			got = strings.ReplaceAll(got, "\r\n", "\n")
+			wantText := strings.ReplaceAll(string(want), "\r\n", "\n")
+			if got != wantText {
+				t.Errorf("generated OpenAPI differs from %s\n--- want\n%s\n--- got\n%s", tt.goldenFile, wantText, got)
 			}
 		})
 	}
