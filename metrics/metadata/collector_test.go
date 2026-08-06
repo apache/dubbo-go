@@ -112,12 +112,12 @@ func TestMetadataMetricCollectorHandleMapping(t *testing.T) {
 
 				tt.handler(collector, event)
 
-				assert.Equal(t, 1.0, registry.counters[tt.prefix+"_num_total"])
+				assert.InDelta(t, 1.0, registry.counters[tt.prefix+"_num_total"], 0.000001)
 				if succ {
-					assert.Equal(t, 1.0, registry.counters[tt.prefix+"_num_succeed_total"])
+					assert.InDelta(t, 1.0, registry.counters[tt.prefix+"_num_succeed_total"], 0.000001)
 					assert.NotContains(t, registry.counters, tt.prefix+"_num_failed_total")
 				} else {
-					assert.Equal(t, 1.0, registry.counters[tt.prefix+"_num_failed_total"])
+					assert.InDelta(t, 1.0, registry.counters[tt.prefix+"_num_failed_total"], 0.000001)
 					assert.NotContains(t, registry.counters, tt.prefix+"_num_succeed_total")
 				}
 				assert.Equal(t, []float64{10.0}, registry.rts[tt.prefix+"_rt_milliseconds"])
