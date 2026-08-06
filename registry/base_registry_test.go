@@ -36,10 +36,11 @@ import (
 type baseRegistryTestFacade struct {
 	BaseRegistry
 
-	subscribeCalls atomic.Int32
-	firstSubscribe chan struct{}
-	listener       Listener
-	subscribeErr   error
+	subscribeCalls   atomic.Int32
+	firstSubscribe   chan struct{}
+	subscribeRelease chan struct{}
+	listener         Listener
+	subscribeErr     error
 }
 
 func newBaseRegistryTestFacade(listener Listener, subscribeErr error) *baseRegistryTestFacade {
@@ -55,6 +56,9 @@ func newBaseRegistryTestFacade(listener Listener, subscribeErr error) *baseRegis
 func (f *baseRegistryTestFacade) DoSubscribe(*common.URL) (Listener, error) {
 	if f.subscribeCalls.Add(1) == 1 {
 		close(f.firstSubscribe)
+	}
+	if f.subscribeRelease != nil {
+		<-f.subscribeRelease
 	}
 	return f.listener, f.subscribeErr
 }
@@ -150,6 +154,27 @@ func TestBaseRegistrySubscribeDestroyInterruptsRetryDelay(t *testing.T) {
 		t.Fatal("Subscribe remained blocked after Destroy")
 	}
 	require.Less(t, time.Since(start), time.Second)
+}
+
+func TestBaseRegistrySubscribeReturnsUnavailableAfterDestroyDuringSubscribe(t *testing.T) {
+	listener := &baseRegistryTestListener{closed: make(chan struct{})}
+	facade := newBaseRegistryTestFacade(listener, errors.New("subscribe failed"))
+	facade.subscribeRelease = make(chan struct{})
+
+	subscribeDone := make(chan error, 1)
+	go func() {
+		subscribeDone <- facade.Subscribe(common.NewURLWithOptions(), &baseRegistryTestNotify{})
+	}()
+
+	select {
+	case <-facade.firstSubscribe:
+	case <-time.After(time.Second):
+		t.Fatal("Subscribe did not attempt the initial subscription")
+	}
+	facade.Destroy()
+	close(facade.subscribeRelease)
+
+	require.ErrorIs(t, <-subscribeDone, errBaseRegistryUnavailable)
 }
 
 func TestBaseRegistrySubscribeDoesNotNotifyAfterDestroy(t *testing.T) {

@@ -302,13 +302,14 @@ func (invoker *failbackClusterInvoker) waitForShutdown(processDone, retryDone <-
 		return
 	}
 
-	timer := time.NewTimer(constant.DefaultShutdownConfigStepTimeout)
-	defer timer.Stop()
-
 	wait := func(done <-chan struct{}, name string) bool {
 		if done == nil {
 			return true
 		}
+
+		timer := time.NewTimer(constant.DefaultShutdownConfigStepTimeout)
+		defer timer.Stop()
+
 		select {
 		case <-done:
 			return true

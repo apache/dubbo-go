@@ -283,6 +283,35 @@ func TestFailbackDestroyHasBoundedRetryWait(t *testing.T) {
 	}
 }
 
+func TestFailbackWaitForShutdownUsesPerStepTimeout(t *testing.T) {
+	processDone := make(chan struct{})
+	retryDone := make(chan struct{})
+	waitDone := make(chan struct{})
+
+	go func() {
+		time.Sleep(constant.DefaultShutdownConfigStepTimeout - time.Second)
+		close(processDone)
+		time.Sleep(1500 * time.Millisecond)
+		close(retryDone)
+	}()
+	go func() {
+		(&failbackClusterInvoker{}).waitForShutdown(processDone, retryDone)
+		close(waitDone)
+	}()
+
+	select {
+	case <-waitDone:
+	case <-time.After(constant.DefaultShutdownConfigStepTimeout + time.Second):
+		t.Fatal("waitForShutdown did not return")
+	}
+
+	select {
+	case <-retryDone:
+	default:
+		t.Fatal("waitForShutdown returned before the retry tasks completed")
+	}
+}
+
 func TestFailbackDoesNotEnqueueAfterDestroy(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

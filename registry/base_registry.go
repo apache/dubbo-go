@@ -338,7 +338,7 @@ func (r *BaseRegistry) Subscribe(url *common.URL, notifyListener NotifyListener)
 		if err != nil {
 			if !r.IsAvailable() {
 				logger.Warn("[Registry] event listener game over")
-				return err
+				return errBaseRegistryUnavailable
 			}
 			logger.Warnf("[Registry] getListener() = err=%v", perrors.WithStack(err))
 			if err = r.waitRetryDelay(); err != nil {
