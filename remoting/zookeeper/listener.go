@@ -56,6 +56,10 @@ type ZkEventListener struct {
 	exit        chan struct{}
 }
 
+type configurationWatchStateListener interface {
+	WatchStateChanged(path string, active bool)
+}
+
 // NewZkEventListener returns a EventListener instance
 func NewZkEventListener(client *gxzookeeper.ZookeeperClient) *ZkEventListener {
 	return &ZkEventListener{
@@ -86,25 +90,37 @@ func (l *ZkEventListener) ListenConfigurationEvent(zkPath string, listener remot
 	go func(zkPath string, listener remoting.DataListener) {
 		var eventChan = make(chan zk.Event, 16)
 		l.Client.RegisterEvent(zkPath, eventChan)
+		watchStateListener, tracksWatchState := listener.(configurationWatchStateListener)
 		for {
 			select {
 			case event := <-eventChan:
 				logger.Infof("[Remoting][Zookeeper]Receive configuration change event:%#v", event)
-				if event.Type == zk.EventNodeChildrenChanged || event.Type == zk.EventNotWatching {
+				if event.Type == zk.EventNotWatching {
+					if tracksWatchState {
+						watchStateListener.WatchStateChanged(event.Path, false)
+					}
 					continue
 				}
+				if event.Type == zk.EventNodeChildrenChanged {
+					continue
+				}
+				if tracksWatchState {
+					watchStateListener.WatchStateChanged(event.Path, false)
+				}
 				// 1. Re-set watcher for the zk node
-				_, _, _, err := l.Client.Conn.ExistsW(event.Path)
+				exists, _, _, err := l.Client.Conn.ExistsW(event.Path)
 				if err != nil {
 					logger.Warnf("[Remoting][Zookeeper]Re-set watcher error, err=%v", err)
 					continue
 				}
+				if tracksWatchState {
+					watchStateListener.WatchStateChanged(event.Path, true)
+				}
 
-				action := remoting.EventTypeAdd
+				action := remoting.EventTypeDel
 				var content string
-				if event.Type == zk.EventNodeDeleted {
-					action = remoting.EventTypeDel
-				} else {
+				if exists {
+					action = remoting.EventTypeAdd
 					// 2. Try to get new configuration value of the zk node
 					// Notice: The order of step 1 and step 2 cannot be swapped, if you get value(with timestamp t1)
 					// before re-set the watcher(with timestamp t2), and some one change the data of the zk node after

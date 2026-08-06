@@ -35,19 +35,34 @@ import (
 type CacheListener struct {
 	// key is zkNode Path and value is set of listeners
 	keyListeners    sync.Map
+	eventGeneration sync.Map
 	zkEventListener *zookeeper.ZkEventListener
 	rootPath        string
+	cache           *configCache
 }
 
 // NewCacheListener creates a new CacheListener
 func NewCacheListener(rootPath string, listener *zookeeper.ZkEventListener) *CacheListener {
-	return &CacheListener{zkEventListener: listener, rootPath: rootPath}
+	return newCacheListener(rootPath, listener, nil)
+}
+
+func newCacheListener(rootPath string, listener *zookeeper.ZkEventListener, cache *configCache) *CacheListener {
+	return &CacheListener{zkEventListener: listener, rootPath: rootPath, cache: cache}
 }
 
 // AddListener will add a listener if loaded
 func (l *CacheListener) AddListener(key string, listener config_center.ConfigurationListener) {
 	// FIXME do not use Client.ExistW, cause it has a bug(can not watch zk node that do not exist)
-	_, _, _, err := l.zkEventListener.Client.Conn.ExistsW(key)
+	register := func() error {
+		_, _, _, err := l.zkEventListener.Client.Conn.ExistsW(key)
+		return err
+	}
+	var err error
+	if l.cache == nil {
+		err = register()
+	} else {
+		err = l.cache.ensureWatch(key, register)
+	}
 	// reference from https://stackoverflow.com/questions/34018908/golang-why-dont-we-have-a-set-datastructure
 	// make a map[your type]struct{} like set in java
 	if err != nil {
@@ -60,6 +75,24 @@ func (l *CacheListener) AddListener(key string, listener config_center.Configura
 	}
 }
 
+// WatchStateChanged updates the cache's concrete-path watch state.
+func (l *CacheListener) WatchStateChanged(path string, active bool) {
+	if l.cache == nil {
+		return
+	}
+	if !active {
+		generation, _ := l.cache.snapshot(path)
+		l.eventGeneration.Store(path, generation)
+		l.cache.setWatchActiveAtGeneration(path, generation, false)
+		return
+	}
+	if generation, ok := l.eventGeneration.Load(path); ok {
+		l.cache.setWatchActiveAtGeneration(path, generation.(uint64), true)
+		return
+	}
+	l.cache.setWatchActive(path, true)
+}
+
 // RemoveListener will delete a listener if loaded
 func (l *CacheListener) RemoveListener(key string, listener config_center.ConfigurationListener) {
 	listeners, loaded := l.keyListeners.Load(key)
@@ -70,6 +103,18 @@ func (l *CacheListener) RemoveListener(key string, listener config_center.Config
 
 // DataChange changes all listeners' event
 func (l *CacheListener) DataChange(event remoting.Event) bool {
+	if l.cache != nil {
+		entry := configCacheEntry{content: event.Content, exists: true}
+		if event.Action == remoting.EventTypeDel {
+			entry = configCacheEntry{exists: false}
+		}
+		if generation, ok := l.eventGeneration.LoadAndDelete(event.Path); ok {
+			l.cache.storeAtGeneration(event.Path, generation.(uint64), entry)
+		} else {
+			l.cache.store(event.Path, entry)
+		}
+	}
+
 	changeType := event.Action
 	if event.Content == "" {
 		changeType = remoting.EventTypeDel
