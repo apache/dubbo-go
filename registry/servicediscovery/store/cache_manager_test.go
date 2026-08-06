@@ -163,26 +163,47 @@ func TestCacheManagerConcurrentAccess(t *testing.T) {
 	}
 	defer cm.destroy()
 
+	runConcurrentCacheAccess(cm)
+	waitForCacheDump(t, cacheFile)
+	cm.StopDump()
+
+	loaded, err := NewCacheManager("raceTestReloaded", cacheFile, time.Hour, 32, false)
+	if err != nil {
+		t.Fatalf("failed to reload cache manager: %v", err)
+	}
+	defer loaded.destroy()
+
+	assertCacheEntries(t, loaded.GetAll())
+}
+
+func runConcurrentCacheAccess(cm *CacheManager) {
 	var wg sync.WaitGroup
 	for i := range 16 {
 		wg.Add(1)
 		go func(worker int) {
 			defer wg.Done()
-			for j := range 500 {
-				key := fmt.Sprintf("key-%d", j%64)
-				cm.Set(key, fmt.Sprintf("value-%d-%d", worker, j))
-				cm.Get(key)
-				if j%3 == 0 {
-					cm.Delete(fmt.Sprintf("key-%d", (j+worker)%64))
-				}
-				if j%7 == 0 {
-					cm.GetAll()
-				}
-			}
+			exerciseCacheManager(cm, worker)
 		}(i)
 	}
 	wg.Wait()
+}
 
+func exerciseCacheManager(cm *CacheManager, worker int) {
+	for j := range 500 {
+		key := fmt.Sprintf("key-%d", j%64)
+		cm.Set(key, fmt.Sprintf("value-%d-%d", worker, j))
+		cm.Get(key)
+		if j%3 == 0 {
+			cm.Delete(fmt.Sprintf("key-%d", (j+worker)%64))
+		}
+		if j%7 == 0 {
+			cm.GetAll()
+		}
+	}
+}
+
+func waitForCacheDump(t *testing.T, cacheFile string) {
+	t.Helper()
 	deadline := time.Now().Add(5 * time.Second)
 	for {
 		info, statErr := os.Stat(cacheFile)
@@ -194,15 +215,10 @@ func TestCacheManagerConcurrentAccess(t *testing.T) {
 		}
 		time.Sleep(time.Millisecond)
 	}
-	cm.StopDump()
+}
 
-	loaded, err := NewCacheManager("raceTestReloaded", cacheFile, time.Hour, 32, false)
-	if err != nil {
-		t.Fatalf("failed to reload cache manager: %v", err)
-	}
-	defer loaded.destroy()
-
-	items := loaded.GetAll()
+func assertCacheEntries(t *testing.T, items map[string]any) {
+	t.Helper()
 	if len(items) == 0 {
 		t.Fatal("reloaded cache dump contained no entries")
 	}
