@@ -153,6 +153,34 @@
           "profile": {
             "title": "profile",
             "$ref": "#/components/schemas/greet.GreetProfile"
+          },
+          "types": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/greet.GreetingType"
+            },
+            "title": "types"
+          },
+          "profiles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/greet.GreetProfile"
+            },
+            "title": "profiles"
+          },
+          "profileMetadata": {
+            "type": "object",
+            "title": "profile_metadata",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/greet.GreetProfile"
+            }
+          },
+          "typeMetadata": {
+            "type": "object",
+            "title": "type_metadata",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/greet.GreetingType"
+            }
           }
         },
         "title": "GreetRequest"
@@ -170,6 +198,34 @@
           }
         },
         "title": "MetadataEntry"
+      },
+      "greet.GreetRequest.ProfileMetadataEntry": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "key"
+          },
+          "value": {
+            "title": "value",
+            "$ref": "#/components/schemas/greet.GreetProfile"
+          }
+        },
+        "title": "ProfileMetadataEntry"
+      },
+      "greet.GreetRequest.TypeMetadataEntry": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "key"
+          },
+          "value": {
+            "title": "value",
+            "$ref": "#/components/schemas/greet.GreetingType"
+          }
+        },
+        "title": "TypeMetadataEntry"
       },
       "greet.GreetResponse": {
         "type": "object",

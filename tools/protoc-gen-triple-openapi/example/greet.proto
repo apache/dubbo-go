@@ -32,6 +32,10 @@ message GreetRequest {
   map<string, string> metadata = 3;
   GreetingType type = 4;
   GreetProfile profile = 5;
+  repeated GreetingType types = 6;
+  repeated GreetProfile profiles = 7;
+  map<string, GreetProfile> profile_metadata = 8;
+  map<string, GreetingType> type_metadata = 9;
 }
 
 message GreetProfile {

@@ -122,6 +122,10 @@ func greetRequest(format string) *pluginpb.CodeGeneratorRequest {
 							field("metadata", "metadata", 3, descriptorpb.FieldDescriptorProto_LABEL_REPEATED, descriptorpb.FieldDescriptorProto_TYPE_MESSAGE, ".greet.GreetRequest.MetadataEntry"),
 							field("type", "type", 4, descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL, descriptorpb.FieldDescriptorProto_TYPE_ENUM, ".greet.GreetingType"),
 							field("profile", "profile", 5, descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL, descriptorpb.FieldDescriptorProto_TYPE_MESSAGE, ".greet.GreetProfile"),
+							field("types", "types", 6, descriptorpb.FieldDescriptorProto_LABEL_REPEATED, descriptorpb.FieldDescriptorProto_TYPE_ENUM, ".greet.GreetingType"),
+							field("profiles", "profiles", 7, descriptorpb.FieldDescriptorProto_LABEL_REPEATED, descriptorpb.FieldDescriptorProto_TYPE_MESSAGE, ".greet.GreetProfile"),
+							field("profile_metadata", "profileMetadata", 8, descriptorpb.FieldDescriptorProto_LABEL_REPEATED, descriptorpb.FieldDescriptorProto_TYPE_MESSAGE, ".greet.GreetRequest.ProfileMetadataEntry"),
+							field("type_metadata", "typeMetadata", 9, descriptorpb.FieldDescriptorProto_LABEL_REPEATED, descriptorpb.FieldDescriptorProto_TYPE_MESSAGE, ".greet.GreetRequest.TypeMetadataEntry"),
 						},
 						NestedType: []*descriptorpb.DescriptorProto{
 							{
@@ -129,6 +133,22 @@ func greetRequest(format string) *pluginpb.CodeGeneratorRequest {
 								Field: []*descriptorpb.FieldDescriptorProto{
 									field("key", "key", 1, descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL, descriptorpb.FieldDescriptorProto_TYPE_STRING, ""),
 									field("value", "value", 2, descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL, descriptorpb.FieldDescriptorProto_TYPE_STRING, ""),
+								},
+								Options: &descriptorpb.MessageOptions{MapEntry: proto.Bool(true)},
+							},
+							{
+								Name: proto.String("ProfileMetadataEntry"),
+								Field: []*descriptorpb.FieldDescriptorProto{
+									field("key", "key", 1, descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL, descriptorpb.FieldDescriptorProto_TYPE_STRING, ""),
+									field("value", "value", 2, descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL, descriptorpb.FieldDescriptorProto_TYPE_MESSAGE, ".greet.GreetProfile"),
+								},
+								Options: &descriptorpb.MessageOptions{MapEntry: proto.Bool(true)},
+							},
+							{
+								Name: proto.String("TypeMetadataEntry"),
+								Field: []*descriptorpb.FieldDescriptorProto{
+									field("key", "key", 1, descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL, descriptorpb.FieldDescriptorProto_TYPE_STRING, ""),
+									field("value", "value", 2, descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL, descriptorpb.FieldDescriptorProto_TYPE_ENUM, ".greet.GreetingType"),
 								},
 								Options: &descriptorpb.MessageOptions{MapEntry: proto.Bool(true)},
 							},
@@ -170,6 +190,91 @@ func greetRequest(format string) *pluginpb.CodeGeneratorRequest {
 				},
 			},
 		},
+	}
+}
+
+func TestConvertErrorResponseEnumCollision(t *testing.T) {
+	request := &pluginpb.CodeGeneratorRequest{
+		FileToGenerate: []string{"collision.proto"},
+		Parameter:      proto.String("format=yaml"),
+		ProtoFile: []*descriptorpb.FileDescriptorProto{{
+			Name:   proto.String("collision.proto"),
+			Syntax: proto.String("proto3"),
+			EnumType: []*descriptorpb.EnumDescriptorProto{{
+				Name:  proto.String("ErrorResponse"),
+				Value: []*descriptorpb.EnumValueDescriptorProto{{Name: proto.String("UNKNOWN"), Number: proto.Int32(0)}},
+			}},
+			MessageType: []*descriptorpb.DescriptorProto{
+				{Name: proto.String("Request"), Field: []*descriptorpb.FieldDescriptorProto{field("state", "state", 1, descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL, descriptorpb.FieldDescriptorProto_TYPE_ENUM, ".ErrorResponse")}},
+				{Name: proto.String("Response")},
+			},
+			Service: []*descriptorpb.ServiceDescriptorProto{{
+				Name:   proto.String("Service"),
+				Method: []*descriptorpb.MethodDescriptorProto{{Name: proto.String("Call"), InputType: proto.String(".Request"), OutputType: proto.String(".Response")}},
+			}},
+		}},
+	}
+
+	response, err := convert(request)
+	if err != nil {
+		t.Fatalf("convert() error = %v", err)
+	}
+	got := response.File[0].GetContent()
+	for _, want := range []string{
+		"state:\n          title: state\n          $ref: '#/components/schemas/ErrorResponse'",
+		"ErrorResponse:\n      type: string\n      title: ErrorResponse\n      enum:\n        - UNKNOWN",
+		"Triple-ErrorResponse:\n      type: object",
+		"$ref: '#/components/schemas/Triple-ErrorResponse'",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("generated OpenAPI does not contain %q\n%s", want, got)
+		}
+	}
+}
+
+func TestConvertErrorResponseMessageCollision(t *testing.T) {
+	request := &pluginpb.CodeGeneratorRequest{
+		FileToGenerate: []string{"collision.proto"},
+		Parameter:      proto.String("format=yaml"),
+		ProtoFile: []*descriptorpb.FileDescriptorProto{{
+			Name:   proto.String("collision.proto"),
+			Syntax: proto.String("proto3"),
+			MessageType: []*descriptorpb.DescriptorProto{
+				{
+					Name: proto.String("ErrorResponse"),
+					Field: []*descriptorpb.FieldDescriptorProto{
+						field("detail", "detail", 1, descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL, descriptorpb.FieldDescriptorProto_TYPE_STRING, ""),
+					},
+				},
+				{
+					Name: proto.String("Request"),
+					Field: []*descriptorpb.FieldDescriptorProto{
+						field("error", "error", 1, descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL, descriptorpb.FieldDescriptorProto_TYPE_MESSAGE, ".ErrorResponse"),
+					},
+				},
+				{Name: proto.String("Response")},
+			},
+			Service: []*descriptorpb.ServiceDescriptorProto{{
+				Name:   proto.String("Service"),
+				Method: []*descriptorpb.MethodDescriptorProto{{Name: proto.String("Call"), InputType: proto.String(".Request"), OutputType: proto.String(".Response")}},
+			}},
+		}},
+	}
+
+	response, err := convert(request)
+	if err != nil {
+		t.Fatalf("convert() error = %v", err)
+	}
+	got := response.File[0].GetContent()
+	for _, want := range []string{
+		"error:\n          title: error\n          $ref: '#/components/schemas/ErrorResponse'",
+		"ErrorResponse:\n      type: object\n      properties:\n        detail:",
+		"Triple-ErrorResponse:\n      type: object",
+		"$ref: '#/components/schemas/Triple-ErrorResponse'",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("generated OpenAPI does not contain %q\n%s", want, got)
+		}
 	}
 }
 
