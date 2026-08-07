@@ -35,7 +35,7 @@ const (
 // standard library's [compress/gzip].
 type Handler struct {
 	spec Spec
-	// key is group/version
+	// Key is group/version
 	implementations  map[string]StreamingHandlerFunc
 	protocolHandlers []protocolHandler
 	allowMethod      string      // Allow header
@@ -74,7 +74,7 @@ func generateUnaryHandlerFunc(
 ) StreamingHandlerFunc {
 	// Wrap the strongly-typed implementation so we can apply interceptors.
 	untyped := UnaryHandlerFunc(func(ctx context.Context, request AnyRequest) (AnyResponse, error) {
-		// verify err
+		// Verify err
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
@@ -90,30 +90,30 @@ func generateUnaryHandlerFunc(
 		}
 		return res, err
 	})
-	// todo: modify server func
+	// TODO: modify server func
 	if interceptor != nil {
 		untyped = interceptor.WrapUnaryHandler(untyped)
 	}
-	// receive and send
-	// conn should be responsible for marshal and unmarshal
+	// Receive and send
+	// Conn should be responsible for marshal and unmarshal
 	// Given a stream, how should we call the unary function?
 	implementation := func(ctx context.Context, conn StreamingHandlerConn) error {
 		req := reqInitFunc()
 		if err := conn.Receive(req); err != nil {
 			return err
 		}
-		// wrap the specific msg
+		// Wrap the specific msg
 		request := NewRequest(req)
 		request.spec = conn.Spec()
 		request.peer = conn.Peer()
 		request.header = conn.RequestHeader()
-		// embed header in context so that user logic could process them via FromIncomingContext
+		// Embed header in context so that user logic could process them via FromIncomingContext
 		ctx = newIncomingContext(ctx, conn.RequestHeader())
 		ctx = context.WithValue(ctx, handlerOutgoingKey{}, conn)
 
 		response, err := untyped(ctx, request)
 
-		//Write the server-side return-attachment-data in the tailer to send to the caller
+		// Write the server-side return-attachment-data in the trailer to send to the caller
 		if data := ExtractFromOutgoingContext(ctx); data != nil {
 			mergeHeaders(conn.ResponseTrailer(), data)
 		}
@@ -122,7 +122,7 @@ func generateUnaryHandlerFunc(
 			return err
 		}
 
-		// merge headers
+		// Merge headers
 		mergeHeaders(conn.ResponseHeader(), response.Header())
 		mergeHeaders(conn.ResponseTrailer(), response.Trailer())
 		return conn.Send(response.Any())
@@ -161,7 +161,7 @@ func generateClientStreamHandlerFunc(
 ) StreamingHandlerFunc {
 	implementation := func(ctx context.Context, conn StreamingHandlerConn) error {
 		stream := &ClientStream{conn: conn}
-		// embed header in context so that user logic could process them via FromIncomingContext
+		// Embed header in context so that user logic could process them via FromIncomingContext
 		ctx = newIncomingContext(ctx, conn.RequestHeader())
 		res, err := streamFunc(ctx, stream)
 
@@ -224,7 +224,7 @@ func generateServerStreamHandlerFunc(
 		if err := conn.Receive(req); err != nil {
 			return err
 		}
-		// embed header in context so that user logic could process them via FromIncomingContext
+		// Embed header in context so that user logic could process them via FromIncomingContext
 		ctx = newIncomingContext(ctx, conn.RequestHeader())
 		err := streamFunc(
 			ctx,
@@ -280,7 +280,7 @@ func generateBidiStreamHandlerFunc(
 	interceptor Interceptor,
 ) StreamingHandlerFunc {
 	implementation := func(ctx context.Context, conn StreamingHandlerConn) error {
-		// embed header in context so that user logic could process them via FromIncomingContext
+		// Embed header in context so that user logic could process them via FromIncomingContext
 		ctx = newIncomingContext(ctx, conn.RequestHeader())
 		err := streamFunc(ctx, &BidiStream{conn: conn})
 		if err != nil {
@@ -325,7 +325,7 @@ func (h *Handler) ServeHTTP(responseWriter http.ResponseWriter, request *http.Re
 		}
 	}
 
-	// inspect headers
+	// Inspect headers
 	var protocolHandlers []protocolHandler
 	for _, handler := range h.protocolHandlers {
 		if _, ok := handler.Methods()[request.Method]; ok {
@@ -341,7 +341,7 @@ func (h *Handler) ServeHTTP(responseWriter http.ResponseWriter, request *http.Re
 
 	contentType := canonicalizeContentType(getHeaderCanonical(request.Header, headerContentType))
 
-	// inspect contentType
+	// Inspect contentType
 	// Find our implementation of the RPC protocol in use.
 	var protocolHdl protocolHandler
 	for _, handler := range protocolHandlers {
@@ -358,7 +358,7 @@ func (h *Handler) ServeHTTP(responseWriter http.ResponseWriter, request *http.Re
 
 	// Establish a stream and serve the RPC.
 	setHeaderCanonical(request.Header, headerContentType, contentType)
-	// process context
+	// Process context
 	ctx, cancel, timeoutErr := protocolHdl.SetTimeout(request) //nolint: contextcheck
 	if timeoutErr != nil {
 		ctx = request.Context()
@@ -366,7 +366,7 @@ func (h *Handler) ServeHTTP(responseWriter http.ResponseWriter, request *http.Re
 	if cancel != nil {
 		defer cancel()
 	}
-	// create stream
+	// Create stream
 	connCloser, ok := protocolHdl.NewConn(
 		responseWriter,
 		request.WithContext(ctx),
@@ -381,10 +381,10 @@ func (h *Handler) ServeHTTP(responseWriter http.ResponseWriter, request *http.Re
 		return
 	}
 
-	// invoke implementation
+	// Invoke implementation
 	svcGroup := request.Header.Get(tripleServiceGroup)
 	svcVersion := request.Header.Get(tripleServiceVersion)
-	// todo(DMwangnima): inspect ok
+	// TODO(DMwangnima): inspect ok
 	implementation, ok := h.implementations[getIdentifier(svcGroup, svcVersion)]
 	if !ok {
 		_ = connCloser.Close(errorf(CodeUnimplemented, "no implementation found for service group %s and service version %s", svcGroup, svcVersion))
@@ -441,7 +441,7 @@ func (c *handlerConfig) newSpec(streamType StreamType) Spec {
 }
 
 func (c *handlerConfig) newProtocolHandlers(streamType StreamType) []protocolHandler {
-	// initialize protocol
+	// Initialize protocol
 	var protocols []protocol
 	if streamType == StreamTypeUnary {
 		protocols = append(protocols, &protocolTriple{})
@@ -449,9 +449,9 @@ func (c *handlerConfig) newProtocolHandlers(streamType StreamType) []protocolHan
 	if c.HandleGRPC {
 		protocols = append(protocols, &protocolGRPC{})
 	}
-	// protocol -> protocolHandler
+	// Protocol -> protocolHandler
 	handlers := make([]protocolHandler, 0, len(protocols))
-	// initialize codec and compressor
+	// Initialize codec and compressor
 	compressors := newReadOnlyCompressionPools(
 		c.CompressionPools,
 		c.CompressionNames,
@@ -464,7 +464,7 @@ func (c *handlerConfig) newProtocolHandlers(streamType StreamType) []protocolHan
 			Codecs:            codecs,
 			CompressionPools:  compressors,
 			FallbackCodecName: c.FallbackCodecName,
-			// config content
+			// Config content
 			CompressMinBytes:            c.CompressMinBytes,
 			BufferPool:                  c.BufferPool,
 			ReadMaxBytes:                c.ReadMaxBytes,
