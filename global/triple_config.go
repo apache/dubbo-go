@@ -28,7 +28,7 @@ type TripleConfig struct {
 	// more detail to see https://pkg.go.dev/github.com/dustin/go-humanize#pkg-constants
 	MaxServerSendMsgSize string `yaml:"max-server-send-msg-size" json:"max-server-send-msg-size,omitempty"`
 	// MaxServerRecvMsgSize defines the max size of server receive message.
-	MaxServerRecvMsgSize string `yaml:"max-server-recv-msg-size" json:"max-server-recv-msg-size,omitempty"`
+	MaxServerRecvMsgSize string `default:"4mib" yaml:"max-server-recv-msg-size" json:"max-server-recv-msg-size,omitempty"`
 	// Http3 holds the HTTP/3 transport configuration.
 	Http3 *Http3Config `yaml:"http3" json:"http3,omitempty"`
 	// Cors configures CORS for Triple protocol handlers.
@@ -48,9 +48,10 @@ type TripleConfig struct {
 // DefaultTripleConfig returns a default TripleConfig instance.
 func DefaultTripleConfig() *TripleConfig {
 	return &TripleConfig{
-		Http3:   DefaultHttp3Config(),
-		Cors:    DefaultCorsConfig(),
-		OpenAPI: DefaultOpenAPIConfig(),
+		MaxServerRecvMsgSize: "4mib",
+		Http3:                DefaultHttp3Config(),
+		Cors:                 DefaultCorsConfig(),
+		OpenAPI:              DefaultOpenAPIConfig(),
 	}
 }
 

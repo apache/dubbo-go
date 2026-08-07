@@ -314,7 +314,24 @@ func TestInstanceInitAddsDefaultGlobalProtocolWhenEmpty(t *testing.T) {
 	require.NotNil(t, tri)
 	assert.Equal(t, constant.TriProtocol, tri.Name)
 	assert.Equal(t, constant.DefaultTripleProtocolPort, tri.Port)
-	assert.Equal(t, "4mib", tri.MaxServerRecvMsgSize)
+	require.NotNil(t, tri.TripleConfig)
+	assert.Equal(t, "4mib", tri.TripleConfig.MaxServerRecvMsgSize)
+}
+
+func TestInstanceInitDefaultsExplicitTripleConfig(t *testing.T) {
+	ins, err := NewInstance(func(opts *InstanceOptions) {
+		opts.Protocols = map[string]*global.ProtocolConfig{
+			constant.TriProtocol: {
+				TripleConfig: &global.TripleConfig{},
+			},
+		}
+	})
+	require.NoError(t, err)
+
+	tri := ins.insOpts.Protocols[constant.TriProtocol]
+	require.NotNil(t, tri)
+	require.NotNil(t, tri.TripleConfig)
+	assert.Equal(t, "4mib", tri.TripleConfig.MaxServerRecvMsgSize)
 }
 
 func TestInstanceInitTranslatesGlobalRegistryAddress(t *testing.T) {

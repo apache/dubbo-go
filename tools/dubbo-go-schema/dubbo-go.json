@@ -161,9 +161,7 @@
           "type": "object",
           "additionalProperties": true
         },
-        "triple": { "$ref": "#/definitions/triple" },
-        "max-server-send-msg-size": { "type": "string" },
-        "max-server-recv-msg-size": { "type": "string", "default": "4mib" }
+        "triple": { "$ref": "#/definitions/triple" }
       }
     },
     "triple": {
@@ -171,7 +169,7 @@
       "additionalProperties": false,
       "properties": {
         "max-server-send-msg-size": { "type": "string" },
-        "max-server-recv-msg-size": { "type": "string" },
+        "max-server-recv-msg-size": { "type": "string", "default": "4mib" },
         "keep-alive-interval": { "$ref": "#/definitions/duration" },
         "keep-alive-timeout": { "$ref": "#/definitions/duration" },
         "http3": { "$ref": "#/definitions/http3" },
