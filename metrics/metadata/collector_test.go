@@ -25,6 +25,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -183,3 +184,56 @@ type mockRtMetric struct {
 }
 
 func (r *mockRtMetric) Observe(v float64) { r.m.rts[r.name] = append(r.m.rts[r.name], v) }
+
+// TestMetadataMetricCollectorPublishChain covers the production dispatch path:
+// a started collector subscribes to the event bus, and events published via
+// metrics.Publish must reach the registry. Removing any of the mapping switch
+// cases in start() must make this test fail.
+func TestMetadataMetricCollectorPublishChain(t *testing.T) {
+	registry := newMockMetricRegistry()
+	collector := &MetadataMetricCollector{BaseCollector: metrics.BaseCollector{R: registry}}
+	collector.start()
+	defer metrics.Unsubscribe(constant.MetricsMetadata)
+
+	publish := func(name MetricName, succ bool) {
+		event := NewMetadataMetricTimeEvent(name)
+		event.End = event.Start.Add(10 * time.Millisecond)
+		event.Succ = succ
+		event.Attachment[constant.InterfaceKey] = "interfaceName"
+		event.Attachment[constant.GroupKey] = "group"
+		event.Attachment[constant.ApplicationKey] = "application"
+		metrics.Publish(event)
+	}
+
+	publish(MetadataMappingRegister, true)
+	publish(MetadataMappingGet, true)
+	publish(MetadataMappingListen, false)
+	publish(MetadataMappingRemove, true)
+
+	prefixes := []string{
+		"dubbo_metadata_mapping_register",
+		"dubbo_metadata_mapping_get",
+		"dubbo_metadata_mapping_listen",
+		"dubbo_metadata_mapping_remove",
+	}
+	require.Eventually(t, func() bool {
+		if registry.counters["dubbo_metadata_mapping_register_num_total"] != 1 ||
+			registry.counters["dubbo_metadata_mapping_get_num_total"] != 1 ||
+			registry.counters["dubbo_metadata_mapping_listen_num_total"] != 1 ||
+			registry.counters["dubbo_metadata_mapping_remove_num_total"] != 1 {
+			return false
+		}
+		if registry.counters["dubbo_metadata_mapping_register_num_succeed_total"] != 1 ||
+			registry.counters["dubbo_metadata_mapping_get_num_succeed_total"] != 1 ||
+			registry.counters["dubbo_metadata_mapping_listen_num_failed_total"] != 1 ||
+			registry.counters["dubbo_metadata_mapping_remove_num_succeed_total"] != 1 {
+			return false
+		}
+		for _, p := range prefixes {
+			if len(registry.rts[p+"_rt_milliseconds"]) == 0 {
+				return false
+			}
+		}
+		return true
+	}, 5*time.Second, 10*time.Millisecond)
+}
