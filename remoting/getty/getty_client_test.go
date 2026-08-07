@@ -28,6 +28,8 @@ import (
 )
 
 import (
+	dubboGetty "github.com/apache/dubbo-getty"
+
 	hessian "github.com/apache/dubbo-go-hessian2"
 
 	perrors "github.com/pkg/errors"
@@ -46,6 +48,16 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
+
+type closeTrackingGettyClient struct {
+	dubboGetty.Client
+	closeOnce sync.Once
+	closed    chan struct{}
+}
+
+func (c *closeTrackingGettyClient) Close() {
+	c.closeOnce.Do(func() { close(c.closed) })
+}
 
 func TestRunSuite(t *testing.T) {
 	svr, url := InitTest(t)
@@ -358,6 +370,50 @@ func TestGettyConnectWaitStopsWhenClosed(t *testing.T) {
 	require.Error(t, err)
 	require.ErrorIs(t, err, errClientClosed)
 	require.Less(t, time.Since(start), time.Second)
+}
+
+func TestGettyCloseAfterConnectionReadyBeforePublish(t *testing.T) {
+	client := NewClient(Options{ConnectTimeout: time.Second})
+	fakeGettyClient := &closeTrackingGettyClient{closed: make(chan struct{})}
+	fakeRPCClient := &gettyRPCClient{gettyClient: fakeGettyClient}
+	factoryReady := make(chan struct{})
+	releaseFactory := make(chan struct{})
+	connectDone := make(chan error, 1)
+
+	go func() {
+		_, err := client.getOrCreateGettyClient("", func(_ *Client, _ string) (*gettyRPCClient, error) {
+			close(factoryReady)
+			<-releaseFactory
+			return fakeRPCClient, nil
+		})
+		connectDone <- err
+	}()
+
+	select {
+	case <-factoryReady:
+	case <-time.After(time.Second):
+		t.Fatal("connection factory did not become ready")
+	}
+
+	client.Close()
+	close(releaseFactory)
+
+	select {
+	case err := <-connectDone:
+		require.ErrorIs(t, err, errClientClosed)
+	case <-time.After(time.Second):
+		t.Fatal("connection creation did not finish after release")
+	}
+
+	select {
+	case <-fakeGettyClient.closed:
+	case <-time.After(time.Second):
+		t.Fatal("unpublished connection was not closed")
+	}
+
+	client.gettyClientMux.RLock()
+	require.Nil(t, client.gettyClient)
+	client.gettyClientMux.RUnlock()
 }
 
 func TestGettyConnectWaitHonorsTimeout(t *testing.T) {
