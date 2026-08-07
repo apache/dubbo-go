@@ -21,8 +21,21 @@ package greet;
 
 option go_package = "dubbo.apache.org/dubbo-go/v3/tools/protoc-gen-triple-openapi/example;greet";
 
+enum GreetingType {
+  GREETING_TYPE_UNSPECIFIED = 0;
+  GREETING_TYPE_FORMAL = 1;
+}
+
 message GreetRequest {
   string name = 1;
+  repeated string aliases = 2;
+  map<string, string> metadata = 3;
+  GreetingType type = 4;
+  GreetProfile profile = 5;
+}
+
+message GreetProfile {
+  string salutation = 1;
 }
 
 message GreetResponse {
