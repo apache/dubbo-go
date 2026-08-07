@@ -141,7 +141,10 @@
           },
           "metadata": {
             "type": "object",
-            "title": "metadata"
+            "title": "metadata",
+            "additionalProperties": {
+              "type": "string"
+            }
           },
           "type": {
             "title": "type",
@@ -197,6 +200,14 @@
           }
         },
         "title": "GreetUserResponse"
+      },
+      "greet.GreetingType": {
+        "type": "string",
+        "title": "GreetingType",
+        "enum": [
+          "GREETING_TYPE_UNSPECIFIED",
+          "GREETING_TYPE_FORMAL"
+        ]
       },
       "ErrorResponse": {
         "type": "object",

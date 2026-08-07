@@ -90,6 +90,8 @@ components:
         metadata:
           type: object
           title: metadata
+          additionalProperties:
+            type: string
         type:
           title: type
           $ref: '#/components/schemas/greet.GreetingType'
@@ -128,6 +130,12 @@ components:
           type: string
           title: greeting
       title: GreetUserResponse
+    greet.GreetingType:
+      type: string
+      title: GreetingType
+      enum:
+        - GREETING_TYPE_UNSPECIFIED
+        - GREETING_TYPE_FORMAL
     ErrorResponse:
       type: object
       properties:
