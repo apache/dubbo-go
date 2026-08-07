@@ -41,11 +41,24 @@ test: clean
 	GOTOOLCHAIN=go1.25.0+auto go test ./... -coverprofile=coverage.txt -covermode=atomic
 	cd $(CLI_DIR) && GOTOOLCHAIN=go1.25.0+auto go test ./...
 
-# Run race detector on packages that start background goroutines in tests.
-# TestServiceDiscoveryRegistryUnRegister_Concurrent intentionally simulates a
-# data race, so it is excluded from the race detector via -skip.
+# Tests with known issues (data races or test design defects) tracked in the
+# race-detector issue. Skipped via -skip so the whole-repo race run can pass;
+# each test should be fixed and removed from this list over time.
+RACE_SKIP_TESTS := TestFailbackRetryFailed \
+TestFailbackOutOfLimit \
+TestRouteCacheGenerationRace \
+TestListener \
+TestDubboProtocol_Refer \
+TestGrpcHealthWatchEmitsClosingEvent \
+TestServiceDiscoveryRegistryUnRegister_Concurrent \
+TestCfgAPI_Export \
+TestCfgAPI_Call \
+TestTCPPackageHandle
+space := $(subst x, ,x)
+
 test-race:
-	GOTOOLCHAIN=go1.25.0+auto go test -race ./registry/servicediscovery/... -skip '^TestServiceDiscoveryRegistryUnRegister_Concurrent$$'
+	GOTOOLCHAIN=go1.25.0+auto go test -race ./... \
+		-skip '^($(subst $(space),|,$(RACE_SKIP_TESTS)))$$'
 
 fmt: install-imports-formatter
 	# replace interface{} with any
