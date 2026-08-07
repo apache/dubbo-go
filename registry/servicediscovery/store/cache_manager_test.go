@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -229,6 +230,110 @@ func assertCacheEntries(t *testing.T, items map[string]any) {
 		if _, ok := value.(string); !ok {
 			t.Fatalf("reloaded cache entry %q had unexpected type %T", key, value)
 		}
+	}
+}
+
+func TestCacheManagerGetAllReturnsAtomicSnapshotDuringReplacement(t *testing.T) {
+	previousGOMAXPROCS := runtime.GOMAXPROCS(4)
+	defer runtime.GOMAXPROCS(previousGOMAXPROCS)
+
+	cm, err := NewCacheManager("snapshotTest", filepath.Join(t.TempDir(), "snapshot_cache"), time.Hour, 1, false)
+	if err != nil {
+		t.Fatalf("failed to create cache manager: %v", err)
+	}
+	defer cm.destroy()
+
+	cm.Set("a", "value-a")
+
+	stop, errCh, waitReaders := startSnapshotReaders(cm, 8)
+	replaceCapacityOneEntries(cm, 100000)
+	close(stop)
+	waitReaders()
+
+	if msg := snapshotError(errCh); msg != "" {
+		t.Fatal(msg)
+	}
+}
+
+func startSnapshotReaders(cm *CacheManager, readers int) (chan struct{}, chan string, func()) {
+	start := make(chan struct{})
+	stop := make(chan struct{})
+	errCh := make(chan string, 1)
+
+	var wg sync.WaitGroup
+	for range readers {
+		wg.Go(func() {
+			readSnapshotsUntilStopped(cm, start, stop, errCh)
+		})
+	}
+	close(start)
+
+	return stop, errCh, wg.Wait
+}
+
+func readSnapshotsUntilStopped(cm *CacheManager, start, stop <-chan struct{}, errCh chan<- string) {
+	<-start
+	for !snapshotStopped(stop) {
+		if msg := validateCapacityOneSnapshot(cm.GetAll()); msg != "" {
+			reportSnapshotError(errCh, msg)
+			return
+		}
+	}
+}
+
+func snapshotStopped(stop <-chan struct{}) bool {
+	select {
+	case <-stop:
+		return true
+	default:
+		return false
+	}
+}
+
+func replaceCapacityOneEntries(cm *CacheManager, replacements int) {
+	for i := range replacements {
+		if i%2 == 0 {
+			cm.Set("b", "value-b")
+		} else {
+			cm.Set("a", "value-a")
+		}
+	}
+}
+
+func validateCapacityOneSnapshot(items map[string]any) string {
+	if len(items) != 1 {
+		return fmt.Sprintf("GetAll returned %d entries during capacity-1 replacement: %#v", len(items), items)
+	}
+
+	if value, ok := items["a"]; ok {
+		return validateSnapshotEntry("a", value, "value-a")
+	}
+	if value, ok := items["b"]; ok {
+		return validateSnapshotEntry("b", value, "value-b")
+	}
+	return fmt.Sprintf("GetAll returned unexpected snapshot: %#v", items)
+}
+
+func validateSnapshotEntry(key string, value, expected any) string {
+	if value == expected {
+		return ""
+	}
+	return fmt.Sprintf("GetAll returned unexpected entry %q=%#v", key, value)
+}
+
+func snapshotError(errCh <-chan string) string {
+	select {
+	case msg := <-errCh:
+		return msg
+	default:
+		return ""
+	}
+}
+
+func reportSnapshotError(errCh chan<- string, msg string) {
+	select {
+	case errCh <- msg:
+	default:
 	}
 }
 
