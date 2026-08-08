@@ -69,13 +69,86 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
+    greet.GreetProfile:
+      type: object
+      properties:
+        salutation:
+          type: string
+          title: salutation
+      title: GreetProfile
     greet.GreetRequest:
       type: object
       properties:
         name:
           type: string
           title: name
+        aliases:
+          type: array
+          items:
+            type: string
+          title: aliases
+        metadata:
+          type: object
+          title: metadata
+          additionalProperties:
+            type: string
+        type:
+          title: type
+          $ref: '#/components/schemas/greet.GreetingType'
+        profile:
+          title: profile
+          $ref: '#/components/schemas/greet.GreetProfile'
+        types:
+          type: array
+          items:
+            $ref: '#/components/schemas/greet.GreetingType'
+          title: types
+        profiles:
+          type: array
+          items:
+            $ref: '#/components/schemas/greet.GreetProfile'
+          title: profiles
+        profileMetadata:
+          type: object
+          title: profile_metadata
+          additionalProperties:
+            $ref: '#/components/schemas/greet.GreetProfile'
+        typeMetadata:
+          type: object
+          title: type_metadata
+          additionalProperties:
+            $ref: '#/components/schemas/greet.GreetingType'
       title: GreetRequest
+    greet.GreetRequest.MetadataEntry:
+      type: object
+      properties:
+        key:
+          type: string
+          title: key
+        value:
+          type: string
+          title: value
+      title: MetadataEntry
+    greet.GreetRequest.ProfileMetadataEntry:
+      type: object
+      properties:
+        key:
+          type: string
+          title: key
+        value:
+          title: value
+          $ref: '#/components/schemas/greet.GreetProfile'
+      title: ProfileMetadataEntry
+    greet.GreetRequest.TypeMetadataEntry:
+      type: object
+      properties:
+        key:
+          type: string
+          title: key
+        value:
+          title: value
+          $ref: '#/components/schemas/greet.GreetingType'
+      title: TypeMetadataEntry
     greet.GreetResponse:
       type: object
       properties:
@@ -97,6 +170,12 @@ components:
           type: string
           title: greeting
       title: GreetUserResponse
+    greet.GreetingType:
+      type: string
+      title: GreetingType
+      enum:
+        - GREETING_TYPE_UNSPECIFIED
+        - GREETING_TYPE_FORMAL
     ErrorResponse:
       type: object
       properties:

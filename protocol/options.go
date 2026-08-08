@@ -147,6 +147,8 @@ func NewClientOptions(opts ...ClientOption) *ClientOptions {
 	return defOpts
 }
 
+// ========== Protocol selection ==========
+
 type tripleOption struct {
 	triOpts triple.Options
 }
@@ -159,6 +161,7 @@ func (o *tripleOption) applyToServer(config *ServerOptions) {
 	config.Protocol.TripleConfig = o.triOpts.Triple
 }
 
+// WithTriple applies Triple protocol options to clients and servers.
 func WithTriple(opts ...triple.Option) Option {
 	triSrvOpts := triple.NewOptions(opts...)
 
@@ -177,7 +180,7 @@ func (o *dubboOption) applyToServer(config *ServerOptions) {
 	config.Protocol.Name = constant.DubboProtocol
 }
 
-// TODO: Maybe we need configure dubbo protocol future.
+// WithDubbo selects the Dubbo protocol for clients and servers.
 func WithDubbo() Option {
 	return &dubboOption{}
 }
@@ -192,7 +195,7 @@ func (o *jsonRPCOption) applyToServer(config *ServerOptions) {
 	config.Protocol.Name = constant.JSONRPCProtocol
 }
 
-// TODO: Maybe we need configure jsonRPC protocol future.
+// WithJSONRPC selects the JSON-RPC protocol for clients and servers.
 func WithJSONRPC() Option {
 	return &jsonRPCOption{}
 }
@@ -207,7 +210,7 @@ func (o *restOption) applyToServer(config *ServerOptions) {
 	config.Protocol.Name = constant.RESTProtocol
 }
 
-// TODO: Maybe we need configure REST protocol future.
+// WithREST selects the REST protocol for clients and servers.
 func WithREST() Option {
 	return &restOption{}
 }
@@ -229,6 +232,8 @@ func WithProtocol(p string) Option {
 	return &protocolNameOption{p}
 }
 
+// ========== Server protocol configuration ==========
+
 type idOption struct {
 	ID string
 }
@@ -237,8 +242,8 @@ func (o *idOption) applyToServer(config *ServerOptions) {
 	config.ID = o.ID
 }
 
-// WithID specifies the id of protocol.Options. Then you could configure server.WithProtocolIDs and
-// server.WithServer_ProtocolIDs to specify which protocol you need to use in multi-protocols scenario.
+// WithID sets the protocol ID. Use server.WithProtocolIDs or server.WithServerProtocolIDs
+// to select the protocol in a multi-protocol scenario.
 func WithID(id string) ServerOption {
 	return &idOption{id}
 }
@@ -251,6 +256,7 @@ func (o *ipOption) applyToServer(config *ServerOptions) {
 	config.Protocol.Ip = o.Ip
 }
 
+// WithIp sets the IP address for the server protocol.
 func WithIp(ip string) ServerOption {
 	return &ipOption{ip}
 }
@@ -263,6 +269,7 @@ func (o *portOption) applyToServer(config *ServerOptions) {
 	config.Protocol.Port = o.Port
 }
 
+// WithPort sets the port for the server protocol.
 func WithPort(port int) ServerOption {
 	return &portOption{strconv.Itoa(port)}
 }
@@ -275,9 +282,12 @@ func (o *paramsOption) applyToServer(config *ServerOptions) {
 	config.Protocol.Params = o.Params
 }
 
+// WithParams sets the parameters for the server protocol.
 func WithParams(params any) ServerOption {
 	return &paramsOption{params}
 }
+
+// ========== Deprecated options ==========
 
 // Deprecated: use triple.WithMaxServerSendMsgSize instead.
 func WithMaxServerSendMsgSize(size string) ServerOption {
