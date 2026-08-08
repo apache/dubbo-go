@@ -55,11 +55,16 @@ func messageToSchema(tt protoreflect.MessageDescriptor) (string, *base.Schema) {
 
 func fieldToSchema(parent *base.SchemaProxy, tt protoreflect.FieldDescriptor) *base.SchemaProxy {
 	if tt.IsMap() {
-		// Handle maps
 		root := ScalarFieldToSchema(parent, tt, false)
 		root.Title = string(tt.Name())
 		root.Type = []string{"object"}
-		// TODO: todo
+		value := tt.MapValue()
+		switch value.Kind() {
+		case protoreflect.MessageKind, protoreflect.EnumKind:
+			root.AdditionalProperties = &base.DynamicValue[*base.SchemaProxy, bool]{A: ReferenceFieldToSchema(parent, value)}
+		default:
+			root.AdditionalProperties = &base.DynamicValue[*base.SchemaProxy, bool]{A: base.CreateSchemaProxy(ScalarFieldToSchema(parent, value, true))}
+		}
 		root.Description = ""
 		return base.CreateSchemaProxy(root)
 	} else if tt.IsList() {
@@ -135,6 +140,20 @@ func ScalarFieldToSchema(parent *base.SchemaProxy, tt protoreflect.FieldDescript
 		s.Format = "byte"
 	}
 	return s
+}
+
+func enumToSchema(tt protoreflect.EnumDescriptor) (string, *base.Schema) {
+	values := tt.Values()
+	enum := make([]*yaml.Node, 0, values.Len())
+	for i := 0; i < values.Len(); i++ {
+		enum = append(enum, CreateStringNode(string(values.Get(i).Name())))
+	}
+
+	return string(tt.FullName()), &base.Schema{
+		Title: string(tt.Name()),
+		Type:  []string{"string"},
+		Enum:  enum,
+	}
 }
 
 func ReferenceFieldToSchema(parent *base.SchemaProxy, tt protoreflect.FieldDescriptor) *base.SchemaProxy {
