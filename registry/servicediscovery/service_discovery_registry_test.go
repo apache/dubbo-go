@@ -125,6 +125,42 @@ func TestServiceDiscoveryRegistrySubscribe(t *testing.T) {
 	assert.True(t, mockSD.listenerAdded)
 }
 
+// TestServiceDiscoveryRegistrySubscribeWithProvidedBy verifies that the initial
+// provided-by application is subscribed and its instances listener is installed.
+func TestServiceDiscoveryRegistrySubscribeWithProvidedBy(t *testing.T) {
+	mockSD, _ := setupEnvironment(t)
+
+	registryURL, _ := common.NewURL(testRegistryURL,
+		common.WithParamsValue(constant.RegistryKey, "mock"))
+
+	reg, err := newServiceDiscoveryRegistry(registryURL)
+	require.NoError(t, err)
+
+	consumerURL, _ := common.NewURL("dubbo://127.0.0.1:20000/",
+		common.WithInterface(testInterface),
+		common.WithParamsValue(constant.SideKey, constant.SideConsumer),
+		common.WithParamsValue(constant.ProvidedBy, testApp),
+	)
+
+	mockSD.wg.Add(1)
+	err = reg.Subscribe(consumerURL, &mockNotifyListener{})
+	require.NoError(t, err)
+
+	assert.Equal(t, testApp, mockSD.capturedAppName)
+
+	done := make(chan struct{})
+	go func() {
+		mockSD.wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(3 * time.Second):
+		t.Fatal("AddListener was not invoked")
+	}
+	assert.True(t, mockSD.listenerAdded)
+}
+
 // TestServiceDiscoveryRegistryUnSubscribe verifies the unsubscription logic.
 func TestServiceDiscoveryRegistryUnSubscribe(t *testing.T) {
 	mockSD, mockMapping := setupEnvironment(t)
