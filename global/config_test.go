@@ -1072,7 +1072,7 @@ func TestDefaultProtocolConfig(t *testing.T) {
 // TestProtocolConfigFields tests individual fields of ProtocolConfig
 func TestProtocolConfigFields(t *testing.T) {
 	t.Run("triple_fields_are_nested", func(t *testing.T) {
-		protocolType := reflect.TypeOf(ProtocolConfig{})
+		protocolType := reflect.TypeFor[ProtocolConfig]()
 		_, hasSendSize := protocolType.FieldByName("MaxServerSendMsgSize")
 		_, hasRecvSize := protocolType.FieldByName("MaxServerRecvMsgSize")
 		assert.False(t, hasSendSize)
