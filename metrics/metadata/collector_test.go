@@ -19,6 +19,7 @@ package metadata
 
 import (
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 )
@@ -133,6 +134,7 @@ func TestMetadataMetricCollectorHandleMapping(t *testing.T) {
 }
 
 type mockMetricRegistry struct {
+	mu       sync.Mutex
 	counters map[string]float64
 	rts      map[string][]float64
 	ids      map[string]*metrics.MetricId
@@ -147,11 +149,15 @@ func newMockMetricRegistry() *mockMetricRegistry {
 }
 
 func (m *mockMetricRegistry) Counter(id *metrics.MetricId) metrics.CounterMetric {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.ids[id.Name] = id
 	return &mockCounterMetric{m: m, name: id.Name}
 }
 
 func (m *mockMetricRegistry) Rt(id *metrics.MetricId, _ *metrics.RtOpts) metrics.ObservableMetric {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.ids[id.Name] = id
 	return &mockRtMetric{m: m, name: id.Name}
 }
@@ -175,25 +181,50 @@ type mockCounterMetric struct {
 	name string
 }
 
-func (c *mockCounterMetric) Inc()          { c.m.counters[c.name]++ }
-func (c *mockCounterMetric) Add(v float64) { c.m.counters[c.name] += v }
+func (c *mockCounterMetric) Inc() {
+	c.m.mu.Lock()
+	defer c.m.mu.Unlock()
+	c.m.counters[c.name]++
+}
+
+func (c *mockCounterMetric) Add(v float64) {
+	c.m.mu.Lock()
+	defer c.m.mu.Unlock()
+	c.m.counters[c.name] += v
+}
 
 type mockRtMetric struct {
 	m    *mockMetricRegistry
 	name string
 }
 
-func (r *mockRtMetric) Observe(v float64) { r.m.rts[r.name] = append(r.m.rts[r.name], v) }
+func (r *mockRtMetric) Observe(v float64) {
+	r.m.mu.Lock()
+	defer r.m.mu.Unlock()
+	r.m.rts[r.name] = append(r.m.rts[r.name], v)
+}
 
 // TestMetadataMetricCollectorPublishChain covers the production dispatch path:
 // a started collector subscribes to the event bus, and events published via
 // metrics.Publish must reach the registry. Removing any of the mapping switch
 // cases in start() must make this test fail.
 func TestMetadataMetricCollectorPublishChain(t *testing.T) {
+	// start() subscribes the package-level channel. Swap in a per-test
+	// channel so the teardown does not permanently close the production
+	// channel: Unsubscribe closes the registered channel, and re-subscribing
+	// a closed channel on the next run (go test -count=2) would panic on
+	// publish. The original channel is restored afterwards.
+	originalCh := ch
+	testCh := make(chan metrics.MetricsEvent, 10)
+	ch = testCh
+	defer func() {
+		metrics.Unsubscribe(constant.MetricsMetadata)
+		ch = originalCh
+	}()
+
 	registry := newMockMetricRegistry()
 	collector := &MetadataMetricCollector{BaseCollector: metrics.BaseCollector{R: registry}}
 	collector.start()
-	defer metrics.Unsubscribe(constant.MetricsMetadata)
 
 	publish := func(name MetricName, succ bool) {
 		event := NewMetadataMetricTimeEvent(name)
@@ -217,6 +248,8 @@ func TestMetadataMetricCollectorPublishChain(t *testing.T) {
 		"dubbo_metadata_mapping_remove",
 	}
 	require.Eventually(t, func() bool {
+		registry.mu.Lock()
+		defer registry.mu.Unlock()
 		if registry.counters["dubbo_metadata_mapping_register_num_total"] != 1 ||
 			registry.counters["dubbo_metadata_mapping_get_num_total"] != 1 ||
 			registry.counters["dubbo_metadata_mapping_listen_num_total"] != 1 ||
