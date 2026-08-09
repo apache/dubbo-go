@@ -87,8 +87,12 @@ type closingTombstone struct {
 	InstanceKey string
 	ServiceKey  string
 	Address     string
-	Source      string
-	ExpireAt    time.Time
+	// Timestamp is the export timestamp of the closing instance's URL. A re-add
+	// carrying a different timestamp is a genuine restart, not a stale
+	// pre-shutdown registry snapshot.
+	Timestamp string
+	Source    string
+	ExpireAt  time.Time
 }
 
 var defaultClosingTombstoneTTL = func() time.Duration {
@@ -645,24 +649,30 @@ func (dir *RegistryDirectory) markClosingTombstone(instanceKey string, invoker p
 	if invoker != nil && invoker.GetURL() != nil {
 		tombstone.ServiceKey = invoker.GetURL().ServiceKey()
 		tombstone.Address = invoker.GetURL().Location
+		tombstone.Timestamp = invoker.GetURL().GetParam(constant.TimestampKey, "")
 	}
 	dir.closingTombstones.Store(instanceKey, tombstone)
 }
 
 func (dir *RegistryDirectory) hasActiveClosingTombstone(instanceKey string) bool {
+	_, ok := dir.activeClosingTombstone(instanceKey)
+	return ok
+}
+
+func (dir *RegistryDirectory) activeClosingTombstone(instanceKey string) (closingTombstone, bool) {
 	if instanceKey == "" {
-		return false
+		return closingTombstone{}, false
 	}
 	tombstoneValue, ok := dir.closingTombstones.Load(instanceKey)
 	if !ok {
-		return false
+		return closingTombstone{}, false
 	}
 	tombstone := tombstoneValue.(closingTombstone)
 	if time.Now().After(tombstone.ExpireAt) {
 		dir.closingTombstones.Delete(instanceKey)
-		return false
+		return closingTombstone{}, false
 	}
-	return true
+	return tombstone, true
 }
 
 func (dir *RegistryDirectory) clearClosingTombstone(instanceKey string) {
@@ -712,9 +722,19 @@ func (dir *RegistryDirectory) cacheInvoker(url *common.URL, event *registry.Serv
 func (dir *RegistryDirectory) doCacheInvoker(newUrl *common.URL, event *registry.ServiceEvent) (protocolbase.Invoker, bool) {
 	key := event.Key()
 	dir.cleanupExpiredClosingTombstones()
-	if dir.hasActiveClosingTombstone(key) {
-		logger.Infof("[Registry][Directory] skip rebuilding closing instance due to tombstone, instance key: %s", key)
-		return nil, true
+	if tombstone, ok := dir.activeClosingTombstone(key); ok {
+		// A tombstone guards against re-adding an instance from a stale
+		// pre-shutdown registry snapshot. If the re-add carries a different
+		// export timestamp, the instance has genuinely restarted with the same
+		// address: vetoing it would keep the directory empty until the next
+		// registry event, which may never come.
+		newTimestamp := newUrl.GetParam(constant.TimestampKey, "")
+		if tombstone.Timestamp == "" || newTimestamp == "" || newTimestamp == tombstone.Timestamp {
+			logger.Infof("[Registry][Directory] skip rebuilding closing instance due to tombstone, instance key: %s", key)
+			return nil, true
+		}
+		logger.Infof("[Registry][Directory] instance %s restarted with a new export timestamp, clearing closing tombstone", key)
+		dir.clearClosingTombstone(key)
 	}
 	cacheInvoker, ok := dir.cacheInvokersMap.Load(key)
 	var existingInvoker protocolbase.Invoker

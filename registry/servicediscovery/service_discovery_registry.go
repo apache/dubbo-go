@@ -323,6 +323,15 @@ func (s *serviceDiscoveryRegistry) IsAvailable() bool {
 
 func (s *serviceDiscoveryRegistry) Destroy() {
 	s.stopMetadataTimers()
+	s.lock.Lock()
+	for _, l := range s.serviceListeners {
+		// Destroy drops listeners without RemoveListener; cancel any pending
+		// metadata retry so its timer cannot leak.
+		if impl, ok := l.(*ServiceInstancesChangedListenerImpl); ok {
+			impl.stopMetadataRetry()
+		}
+	}
+	s.lock.Unlock()
 	err := s.serviceDiscovery.Destroy()
 	if err != nil {
 		logger.Errorf("[Registry][ServiceDiscovery] destroy serviceDiscovery catch error, err=%s", err.Error())

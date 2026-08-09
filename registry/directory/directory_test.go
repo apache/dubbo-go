@@ -409,6 +409,49 @@ func TestExpiredClosingTombstoneAllowsRebuild(t *testing.T) {
 	assert.Len(t, registryDirectory.snapshotCacheInvokers(), 1)
 }
 
+// TestClosingTombstoneAllowsRebuildAfterGenuineRestart verifies the tombstone
+// only vetoes stale pre-shutdown snapshots: a re-add with a new export
+// timestamp is a genuine same-address restart and must rebuild immediately.
+func TestClosingTombstoneAllowsRebuildAfterGenuineRestart(t *testing.T) {
+	registryDirectory, mockRegistry := normalRegistryDir(true)
+
+	oldURL, _ := common.NewURL("dubbo://0.0.0.0:20000/org.apache.dubbo-go.mockService",
+		common.WithParamsValue(constant.ClusterKey, "mock1"),
+		common.WithParamsValue(constant.GroupKey, "group"),
+		common.WithParamsValue(constant.VersionKey, "1.0.0"),
+		common.WithParamsValue(constant.TimestampKey, "1000"))
+	newURL, _ := common.NewURL("dubbo://0.0.0.0:20000/org.apache.dubbo-go.mockService",
+		common.WithParamsValue(constant.ClusterKey, "mock1"),
+		common.WithParamsValue(constant.GroupKey, "group"),
+		common.WithParamsValue(constant.VersionKey, "1.0.0"),
+		common.WithParamsValue(constant.TimestampKey, "2000"))
+
+	oldEvent := &registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: oldURL}
+	newEvent := &registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: newURL}
+	key := registryDirectory.invokerCacheKey(oldEvent)
+	// The discrimination only matters when both URLs map to the same instance key.
+	require.Equal(t, key, registryDirectory.invokerCacheKey(newEvent))
+
+	mockRegistry.MockEvent(oldEvent)
+	time.Sleep(1e9)
+	require.Len(t, registryDirectory.snapshotCacheInvokers(), 1)
+
+	require.True(t, registryDirectory.RemoveClosingInstance(key))
+	assert.Empty(t, registryDirectory.snapshotCacheInvokers())
+	require.True(t, registryDirectory.hasActiveClosingTombstone(key))
+
+	// Stale snapshot re-add (same export timestamp) stays vetoed.
+	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: oldURL})
+	time.Sleep(1e9)
+	assert.Empty(t, registryDirectory.snapshotCacheInvokers())
+
+	// Genuine restart (new export timestamp) rebuilds despite the active tombstone.
+	mockRegistry.MockEvent(newEvent)
+	time.Sleep(1e9)
+	assert.Len(t, registryDirectory.snapshotCacheInvokers(), 1)
+	assert.False(t, registryDirectory.hasActiveClosingTombstone(key))
+}
+
 func TestRefreshConfiguratorsUseLatestBatch(t *testing.T) {
 	realConfigurator := extension.GetDefaultConfiguratorFunc()
 
