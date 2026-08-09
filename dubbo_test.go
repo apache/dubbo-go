@@ -25,6 +25,8 @@ import (
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"gopkg.in/yaml.v3"
 )
 
 import (
@@ -332,6 +334,95 @@ func TestInstanceInitDefaultsExplicitTripleConfig(t *testing.T) {
 	require.NotNil(t, tri)
 	require.NotNil(t, tri.TripleConfig)
 	assert.Equal(t, "4mib", tri.TripleConfig.MaxServerRecvMsgSize)
+}
+
+func TestInstanceInitMigratesDeprecatedProtocolMessageSizes(t *testing.T) {
+	tests := []struct {
+		name           string
+		protocol       *global.ProtocolConfig
+		wantLegacySend string
+		wantLegacyRecv string
+		wantNestedSend string
+		wantNestedRecv string
+	}{
+		{
+			name: "deprecated values populate empty nested values",
+			protocol: &global.ProtocolConfig{
+				MaxServerSendMsgSize: "2mib",
+				MaxServerRecvMsgSize: "3mib",
+				TripleConfig:         &global.TripleConfig{},
+			},
+			wantLegacySend: "2mib",
+			wantLegacyRecv: "3mib",
+			wantNestedSend: "2mib",
+			wantNestedRecv: "3mib",
+		},
+		{
+			name: "nested values take precedence",
+			protocol: &global.ProtocolConfig{
+				MaxServerSendMsgSize: "2mib",
+				MaxServerRecvMsgSize: "3mib",
+				TripleConfig: &global.TripleConfig{
+					MaxServerSendMsgSize: "5mib",
+					MaxServerRecvMsgSize: "6mib",
+				},
+			},
+			wantLegacySend: "2mib",
+			wantLegacyRecv: "3mib",
+			wantNestedSend: "5mib",
+			wantNestedRecv: "6mib",
+		},
+		{
+			name:           "empty values use defaults",
+			protocol:       &global.ProtocolConfig{},
+			wantLegacyRecv: "4mib",
+			wantNestedRecv: "4mib",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ins, err := NewInstance(func(opts *InstanceOptions) {
+				opts.Protocols = map[string]*global.ProtocolConfig{
+					constant.TriProtocol: tt.protocol,
+				}
+			})
+			require.NoError(t, err)
+
+			tri := ins.insOpts.Protocols[constant.TriProtocol]
+			require.NotNil(t, tri)
+			require.NotNil(t, tri.TripleConfig)
+			assert.Equal(t, tt.wantLegacySend, tri.MaxServerSendMsgSize)
+			assert.Equal(t, tt.wantLegacyRecv, tri.MaxServerRecvMsgSize)
+			assert.Equal(t, tt.wantNestedSend, tri.TripleConfig.MaxServerSendMsgSize)
+			assert.Equal(t, tt.wantNestedRecv, tri.TripleConfig.MaxServerRecvMsgSize)
+		})
+	}
+}
+
+func TestInstanceInitMigratesDeprecatedProtocolMessageSizesFromYAML(t *testing.T) {
+	var protocols map[string]*global.ProtocolConfig
+	err := yaml.Unmarshal([]byte(`
+tri:
+  name: tri
+  max-server-send-msg-size: 2mib
+  max-server-recv-msg-size: 3mib
+  triple: {}
+`), &protocols)
+	require.NoError(t, err)
+
+	ins, err := NewInstance(func(opts *InstanceOptions) {
+		opts.Protocols = protocols
+	})
+	require.NoError(t, err)
+
+	tri := ins.insOpts.Protocols[constant.TriProtocol]
+	require.NotNil(t, tri)
+	require.NotNil(t, tri.TripleConfig)
+	assert.Equal(t, "2mib", tri.MaxServerSendMsgSize)
+	assert.Equal(t, "3mib", tri.MaxServerRecvMsgSize)
+	assert.Equal(t, "2mib", tri.TripleConfig.MaxServerSendMsgSize)
+	assert.Equal(t, "3mib", tri.TripleConfig.MaxServerRecvMsgSize)
 }
 
 func TestInstanceInitTranslatesGlobalRegistryAddress(t *testing.T) {

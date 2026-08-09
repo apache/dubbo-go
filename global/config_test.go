@@ -998,9 +998,11 @@ func TestRouterConfigFields(t *testing.T) {
 func TestProtocolConfigClone(t *testing.T) {
 	t.Run("clone_full_protocol_config", func(t *testing.T) {
 		proto := &ProtocolConfig{
-			Name: "tri",
-			Ip:   "localhost",
-			Port: "20880",
+			Name:                 "tri",
+			Ip:                   "localhost",
+			Port:                 "20880",
+			MaxServerSendMsgSize: "1mb",
+			MaxServerRecvMsgSize: "3mb",
 			TripleConfig: &TripleConfig{
 				MaxServerSendMsgSize: "2mb",
 				MaxServerRecvMsgSize: "4mb",
@@ -1019,6 +1021,8 @@ func TestProtocolConfigClone(t *testing.T) {
 		assert.Equal(t, proto.Name, cloned.Name)
 		assert.Equal(t, proto.Ip, cloned.Ip)
 		assert.Equal(t, proto.Port, cloned.Port)
+		assert.Equal(t, proto.MaxServerSendMsgSize, cloned.MaxServerSendMsgSize)
+		assert.Equal(t, proto.MaxServerRecvMsgSize, cloned.MaxServerRecvMsgSize)
 		assert.NotSame(t, proto, cloned)
 		assert.NotSame(t, proto.TripleConfig, cloned.TripleConfig)
 		assert.NotNil(t, cloned.TripleConfig)
@@ -1044,16 +1048,20 @@ func TestProtocolConfigClone(t *testing.T) {
 
 	t.Run("clone_protocol_config_preserves_protocol_fields", func(t *testing.T) {
 		proto := &ProtocolConfig{
-			Name:   "http",
-			Ip:     "localhost",
-			Port:   "8080",
-			Params: map[string]string{"key": "value"},
+			Name:                 "http",
+			Ip:                   "localhost",
+			Port:                 "8080",
+			Params:               map[string]string{"key": "value"},
+			MaxServerSendMsgSize: "10mb",
+			MaxServerRecvMsgSize: "10mb",
 		}
 		cloned := proto.Clone()
 		assert.Equal(t, "http", cloned.Name)
 		assert.Equal(t, "localhost", cloned.Ip)
 		assert.Equal(t, "8080", cloned.Port)
 		assert.Equal(t, proto.Params, cloned.Params)
+		assert.Equal(t, "10mb", cloned.MaxServerSendMsgSize)
+		assert.Equal(t, "10mb", cloned.MaxServerRecvMsgSize)
 	})
 }
 
@@ -1071,12 +1079,19 @@ func TestDefaultProtocolConfig(t *testing.T) {
 
 // TestProtocolConfigFields tests individual fields of ProtocolConfig
 func TestProtocolConfigFields(t *testing.T) {
-	t.Run("triple_fields_are_nested", func(t *testing.T) {
+	t.Run("deprecated_triple_fields_remain_available_in_v3", func(t *testing.T) {
 		protocolType := reflect.TypeFor[ProtocolConfig]()
 		_, hasSendSize := protocolType.FieldByName("MaxServerSendMsgSize")
 		_, hasRecvSize := protocolType.FieldByName("MaxServerRecvMsgSize")
-		assert.False(t, hasSendSize)
-		assert.False(t, hasRecvSize)
+		assert.True(t, hasSendSize)
+		assert.True(t, hasRecvSize)
+
+		proto := ProtocolConfig{
+			MaxServerSendMsgSize: "1mib",
+			MaxServerRecvMsgSize: "2mib",
+		}
+		assert.Equal(t, "1mib", proto.MaxServerSendMsgSize)
+		assert.Equal(t, "2mib", proto.MaxServerRecvMsgSize)
 	})
 
 	t.Run("protocol_config_name", func(t *testing.T) {

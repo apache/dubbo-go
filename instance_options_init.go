@@ -140,6 +140,11 @@ func (rc *InstanceOptions) initGlobalProtocols() error {
 }
 
 func initGlobalProtocol(protocolConfig *global.ProtocolConfig) error {
+	legacySendMsgSize := protocolConfig.MaxServerSendMsgSize
+	legacyRecvMsgSize := protocolConfig.MaxServerRecvMsgSize
+	nestedSendMsgSizeSet := protocolConfig.TripleConfig != nil && protocolConfig.TripleConfig.MaxServerSendMsgSize != ""
+	nestedRecvMsgSizeSet := protocolConfig.TripleConfig != nil && protocolConfig.TripleConfig.MaxServerRecvMsgSize != ""
+
 	if err := defaults.Set(protocolConfig); err != nil {
 		return err
 	}
@@ -162,6 +167,15 @@ func initGlobalProtocol(protocolConfig *global.ProtocolConfig) error {
 			protocolConfig.TripleConfig.OpenAPI = global.DefaultOpenAPIConfig()
 		}
 		protocolConfig.TripleConfig.OpenAPI.Init()
+	}
+
+	// Keep v3 configurations source-compatible while converging on TripleConfig.
+	// A non-empty nested value wins; otherwise migrate the deprecated value.
+	if !nestedSendMsgSizeSet && legacySendMsgSize != "" {
+		protocolConfig.TripleConfig.MaxServerSendMsgSize = legacySendMsgSize
+	}
+	if !nestedRecvMsgSizeSet && legacyRecvMsgSize != "" {
+		protocolConfig.TripleConfig.MaxServerRecvMsgSize = legacyRecvMsgSize
 	}
 	return commonCfg.Verify(protocolConfig)
 }

@@ -184,10 +184,17 @@ func (svcOpts *ServiceOptions) Export() error {
 			isIDL = svcOpts.IDLMode
 		}
 
-		var maxServerSendMsgSize, maxServerRecvMsgSize string
+		// Keep accepting the deprecated protocol-level fields through v3. Nested
+		// Triple values take precedence when both forms are configured.
+		maxServerSendMsgSize := protocolConf.MaxServerSendMsgSize
+		maxServerRecvMsgSize := protocolConf.MaxServerRecvMsgSize
 		if protocolConf.TripleConfig != nil {
-			maxServerSendMsgSize = protocolConf.TripleConfig.MaxServerSendMsgSize
-			maxServerRecvMsgSize = protocolConf.TripleConfig.MaxServerRecvMsgSize
+			if protocolConf.TripleConfig.MaxServerSendMsgSize != "" {
+				maxServerSendMsgSize = protocolConf.TripleConfig.MaxServerSendMsgSize
+			}
+			if protocolConf.TripleConfig.MaxServerRecvMsgSize != "" {
+				maxServerRecvMsgSize = protocolConf.TripleConfig.MaxServerRecvMsgSize
+			}
 		}
 
 		ivkURL := common.NewURLWithOptions(

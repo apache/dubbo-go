@@ -161,7 +161,9 @@
           "type": "object",
           "additionalProperties": true
         },
-        "triple": { "$ref": "#/definitions/triple" }
+        "triple": { "$ref": "#/definitions/triple" },
+        "max-server-send-msg-size": { "type": "string" },
+        "max-server-recv-msg-size": { "type": "string", "default": "4mib" }
       }
     },
     "triple": {
