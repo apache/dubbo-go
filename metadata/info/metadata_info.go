@@ -268,6 +268,9 @@ type ServiceInfo struct {
 	URL        *common.URL `json:"-" hessian:"-"`
 }
 
+// NewServiceInfoWithURL builds a service-level metadata view from provider URL.
+// It copies the service identity and endpoint fields, retains only whitelisted service and
+// method parameters, and stores method parameters in the compact "<method>.<key>" form.
 func NewServiceInfoWithURL(url *common.URL) *ServiceInfo {
 	service := NewServiceInfo(url.Service(), url.Group(), url.Version(), url.Protocol, url.Path, nil)
 	service.Port, _ = strconv.Atoi(url.Port)
@@ -311,11 +314,19 @@ func (si *ServiceInfo) JavaClassName() string {
 	return "org.apache.dubbo.metadata.MetadataInfo$ServiceInfo"
 }
 
+// GetMethods returns the service method name corresponding to MethodsKey.
+// The comma-separated representation preserves the order found in the provider URL.
+// If the parameter is null, the current implementation returns a list of method names containing a single empty string.
 func (si *ServiceInfo) GetMethods() []string {
 	s := si.Params[constant.MethodsKey]
 	return strings.Split(s, ",")
 }
 
+// GetParams reconstructs URL query parameters from the serialized service metadata.
+// Method parameters are stored compactly as "<method>.<key>" in ServiceInfo and are expanded
+// to "methods.<method>.<key>" when the method is listed in MethodsKey. All other parameters
+// keep their original keys. The returned url.Values is newly allocated and can be used to
+// rebuild a consumer URL without modifying ServiceInfo.Params.
 func (si *ServiceInfo) GetParams() url.Values {
 	v := url.Values{}
 	methods := gxset.NewSet()

@@ -17,15 +17,14 @@
 
 package global
 
-// Http3Config represents the config of http3
+// Http3Config represents the config of http3 protocol.
 type Http3Config struct {
-	// Whether to enable HTTP/3 support.
+	// Enable defines whether to enable HTTP/3 support.
 	// When set to true, both HTTP/2 and HTTP/3 servers will be started simultaneously.
 	// When set to false, only HTTP/2 server will be started.
 	// The default value is false.
 	Enable bool `yaml:"enable" json:"enable,omitempty"`
-
-	// Whether to enable HTTP/3 negotiation.
+	// Negotiation defines whether to enable HTTP/3 negotiation.
 	// If set to true, HTTP/2 alt-svc negotiation will be enabled,
 	// allowing clients to negotiate between HTTP/2 and HTTP/3.
 	// If set to false, HTTP/2 alt-svc negotiation will be skipped,
@@ -36,13 +35,10 @@ type Http3Config struct {
 
 	// KeepAlivePeriod defines how often to send keep-alive packets.
 	KeepAlivePeriod string `yaml:"keep-alive-period" json:"keep-alive-period,omitempty"`
-
 	// MaxIdleTimeout defines the maximum idle timeout for QUIC connections.
 	MaxIdleTimeout string `yaml:"max-idle-timeout" json:"max-idle-timeout,omitempty"`
-
 	// MaxIncomingStreams defines the maximum number of concurrent bidirectional streams.
 	MaxIncomingStreams int64 `yaml:"max-incoming-streams" json:"max-incoming-streams,omitempty"`
-
 	// MaxIncomingUniStreams defines the maximum number of concurrent unidirectional streams.
 	MaxIncomingUniStreams int64 `yaml:"max-incoming-uni-streams" json:"max-incoming-uni-streams,omitempty"`
 }
