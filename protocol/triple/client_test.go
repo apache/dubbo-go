@@ -19,6 +19,7 @@ package triple
 
 import (
 	"context"
+	"crypto/tls"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -26,8 +27,12 @@ import (
 )
 
 import (
+	"github.com/quic-go/quic-go/http3"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"golang.org/x/net/http2"
 
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -80,26 +85,68 @@ func TestClientManager_HTTP2AndHTTP3(t *testing.T) {
 	assert.NotNil(t, clientManager.triClient)
 }
 
-func TestDualTransport(t *testing.T) {
-	// Test dualTransport creation
-	keepAliveInterval := 30 * time.Second
-	keepAliveTimeout := 5 * time.Second
+func TestNewClientTransport(t *testing.T) {
+	interval := 30 * time.Second
+	timeout := 5 * time.Second
+	tlsConfig := &tls.Config{MinVersion: tls.VersionTLS12}
 
-	// Test newDualTransport function
-	transport := newDualTransport(nil, keepAliveInterval, keepAliveTimeout)
-	assert.NotNil(t, transport)
-
-	// Verify that transport implements http.RoundTripper interface
-	_, ok := transport.(interface {
-		RoundTrip(*http.Request) (*http.Response, error)
+	t.Run("HTTP/2 cleartext", func(t *testing.T) {
+		transport, err := newClientTransport(constant.CallHTTP2, nil, interval, timeout)
+		require.NoError(t, err)
+		h2 := transport.(*http2.Transport)
+		assert.True(t, h2.AllowHTTP)
+		assert.Equal(t, interval, h2.ReadIdleTimeout)
+		assert.Equal(t, timeout, h2.PingTimeout)
 	})
-	assert.True(t, ok, "transport should implement http.RoundTripper")
+
+	t.Run("HTTP/2 TLS", func(t *testing.T) {
+		transport, err := newClientTransport(constant.CallHTTP2, tlsConfig, interval, timeout)
+		require.NoError(t, err)
+		h2 := transport.(*http2.Transport)
+		assert.Same(t, tlsConfig, h2.TLSClientConfig)
+		assert.False(t, h2.AllowHTTP)
+	})
+
+	t.Run("HTTP/3 requires TLS", func(t *testing.T) {
+		transport, err := newClientTransport(constant.CallHTTP3, nil, interval, timeout)
+		require.Error(t, err)
+		assert.Nil(t, transport)
+	})
+
+	t.Run("HTTP/3 TLS", func(t *testing.T) {
+		transport, err := newClientTransport(constant.CallHTTP3, tlsConfig, interval, timeout)
+		require.NoError(t, err)
+		h3 := transport.(*http3.Transport)
+		assert.Same(t, tlsConfig, h3.TLSClientConfig)
+		assert.Equal(t, interval, h3.QUICConfig.KeepAlivePeriod)
+		assert.Equal(t, timeout, h3.QUICConfig.MaxIdleTimeout)
+	})
+
+	t.Run("dual requires TLS", func(t *testing.T) {
+		transport, err := newClientTransport(constant.CallHTTP2AndHTTP3, nil, interval, timeout)
+		require.Error(t, err)
+		assert.Nil(t, transport)
+	})
+
+	t.Run("dual TLS", func(t *testing.T) {
+		transport, err := newClientTransport(constant.CallHTTP2AndHTTP3, tlsConfig, interval, timeout)
+		require.NoError(t, err)
+		dual := transport.(*dualTransport)
+		assert.NotNil(t, dual.http2Transport)
+		assert.NotNil(t, dual.http3Transport)
+	})
+
+	t.Run("unsupported protocol", func(t *testing.T) {
+		transport, err := newClientTransport("unknown", tlsConfig, interval, timeout)
+		require.Error(t, err)
+		assert.Nil(t, transport)
+	})
 }
 
 func TestClientManager_Close(t *testing.T) {
 	cm := &clientManager{
 		isIDL:     true,
-		triClient: tri.NewClient(&http.Client{}, "http://localhost:8080/test"),
+		triClient: NewClient(&http.Client{}, "http://localhost:8080/test"),
 	}
 
 	err := cm.close()
@@ -131,7 +178,7 @@ func TestClientManagerCallUnaryCopiesResponseMetadata(t *testing.T) {
 
 	cm := &clientManager{
 		isIDL:     true,
-		triClient: tri.NewClient(server.Client(), server.URL+"/test.Service", tri.WithTriple()),
+		triClient: NewClient(server.Client(), server.URL+"/test.Service", tri.WithTriple()),
 	}
 
 	var resp emptypb.Empty
@@ -172,7 +219,7 @@ func TestClientManagerCallUnaryCopiesErrorResponseMetadata(t *testing.T) {
 
 	cm := &clientManager{
 		isIDL:     true,
-		triClient: tri.NewClient(server.Client(), server.URL+"/test.Service"),
+		triClient: NewClient(server.Client(), server.URL+"/test.Service"),
 	}
 
 	var resp emptypb.Empty
@@ -195,7 +242,7 @@ func TestClientManagerCallUnaryCopiesErrorResponseMetadata(t *testing.T) {
 // TestClientManager_CallMethods_MissingClient removed - no longer applicable
 // in the service-level client architecture where all methods share a single triClient.
 
-func Test_genKeepAliveOptions(t *testing.T) {
+func TestResolveKeepAlive(t *testing.T) {
 	defaultInterval, _ := time.ParseDuration(constant.DefaultKeepAliveInterval)
 	defaultTimeout, _ := time.ParseDuration(constant.DefaultKeepAliveTimeout)
 
@@ -203,7 +250,6 @@ func Test_genKeepAliveOptions(t *testing.T) {
 		desc           string
 		url            *common.URL
 		tripleConf     *global.TripleConfig
-		expectOptsLen  int
 		expectInterval time.Duration
 		expectTimeout  time.Duration
 		expectErr      bool
@@ -212,7 +258,6 @@ func Test_genKeepAliveOptions(t *testing.T) {
 			desc:           "nil triple config",
 			url:            common.NewURLWithOptions(),
 			tripleConf:     nil,
-			expectOptsLen:  2, // readMaxBytes, sendMaxBytes
 			expectInterval: defaultInterval,
 			expectTimeout:  defaultTimeout,
 			expectErr:      false,
@@ -224,7 +269,6 @@ func Test_genKeepAliveOptions(t *testing.T) {
 				common.WithParamsValue(constant.MaxCallSendMsgSize, "10MB"),
 			),
 			tripleConf:     nil,
-			expectOptsLen:  2,
 			expectInterval: defaultInterval,
 			expectTimeout:  defaultTimeout,
 			expectErr:      false,
@@ -236,7 +280,6 @@ func Test_genKeepAliveOptions(t *testing.T) {
 				common.WithParamsValue(constant.KeepAliveTimeout, "20s"),
 			),
 			tripleConf:     nil,
-			expectOptsLen:  2,
 			expectInterval: 60 * time.Second,
 			expectTimeout:  20 * time.Second,
 			expectErr:      false,
@@ -248,7 +291,20 @@ func Test_genKeepAliveOptions(t *testing.T) {
 				KeepAliveInterval: "45s",
 				KeepAliveTimeout:  "15s",
 			},
-			expectOptsLen:  2,
+			expectInterval: 45 * time.Second,
+			expectTimeout:  15 * time.Second,
+			expectErr:      false,
+		},
+		{
+			desc: "triple config overrides legacy params",
+			url: common.NewURLWithOptions(
+				common.WithParamsValue(constant.KeepAliveInterval, "60s"),
+				common.WithParamsValue(constant.KeepAliveTimeout, "20s"),
+			),
+			tripleConf: &global.TripleConfig{
+				KeepAliveInterval: "45s",
+				KeepAliveTimeout:  "15s",
+			},
 			expectInterval: 45 * time.Second,
 			expectTimeout:  15 * time.Second,
 			expectErr:      false,
@@ -273,7 +329,6 @@ func Test_genKeepAliveOptions(t *testing.T) {
 			desc:           "empty triple config",
 			url:            common.NewURLWithOptions(),
 			tripleConf:     &global.TripleConfig{},
-			expectOptsLen:  2,
 			expectInterval: defaultInterval,
 			expectTimeout:  defaultTimeout,
 			expectErr:      false,
@@ -282,17 +337,29 @@ func Test_genKeepAliveOptions(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			opts, interval, timeout, err := genKeepAliveOptions(test.url, test.tripleConf)
+			interval, timeout, err := resolveKeepAlive(test.url, test.tripleConf)
 			if test.expectErr {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
-				assert.Len(t, opts, test.expectOptsLen)
 				assert.Equal(t, test.expectInterval, interval)
 				assert.Equal(t, test.expectTimeout, timeout)
 			}
 		})
 	}
+}
+
+func TestResolveSizeLimits(t *testing.T) {
+	recv, send := resolveSizeLimits(common.NewURLWithOptions())
+	assert.Equal(t, constant.DefaultMaxCallRecvMsgSize, recv)
+	assert.Equal(t, constant.DefaultMaxCallSendMsgSize, send)
+
+	recv, send = resolveSizeLimits(common.NewURLWithOptions(
+		common.WithParamsValue(constant.MaxCallRecvMsgSize, "10MB"),
+		common.WithParamsValue(constant.MaxCallSendMsgSize, "20MB"),
+	))
+	assert.Equal(t, 10_000_000, recv)
+	assert.Equal(t, 20_000_000, send)
 }
 
 func Test_newClientManager_Serialization(t *testing.T) {
