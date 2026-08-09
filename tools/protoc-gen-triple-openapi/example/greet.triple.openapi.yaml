@@ -11,6 +11,7 @@ paths:
     post:
       tags:
         - greet.GreetService
+      description: Returns a greeting for a request.
       operationId: Greet
       requestBody:
         content:
@@ -82,21 +83,26 @@ components:
         name:
           type: string
           title: name
+          description: Name of the person to greet.
         aliases:
           type: array
           items:
             type: string
           title: aliases
+          description: Alternative names for the person.
         metadata:
           type: object
           title: metadata
           additionalProperties:
             type: string
+          description: Additional request metadata.
         type:
           title: type
+          description: Preferred greeting style.
           $ref: '#/components/schemas/greet.GreetingType'
         profile:
           title: profile
+          description: Profile details for the person.
           $ref: '#/components/schemas/greet.GreetProfile'
         types:
           type: array
@@ -119,6 +125,7 @@ components:
           additionalProperties:
             $ref: '#/components/schemas/greet.GreetingType'
       title: GreetRequest
+      description: A request to the Greet RPC.
     greet.GreetRequest.MetadataEntry:
       type: object
       properties:
@@ -190,3 +197,4 @@ components:
 security: []
 tags:
   - name: greet.GreetService
+    description: APIs for greeting users.

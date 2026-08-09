@@ -35,6 +35,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"google.golang.org/protobuf/reflect/protodesc"
+	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/pluginpb"
@@ -130,8 +131,8 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 			service := services.Get(i)
 
 			tags = append(tags, &base.Tag{
-				Name: string(service.FullName()),
-				// TODO: add serivce description
+				Name:        string(service.FullName()),
+				Description: protoDescription(service),
 			})
 
 			methods := service.Methods()
@@ -142,7 +143,7 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 				operation := &openapimodel.Operation{
 					OperationId: string(md.Name()),
 					Tags:        []string{string(service.FullName())},
-					// TODO: add operation description
+					Description: protoDescription(md),
 				}
 
 				// RequestBody
@@ -233,4 +234,8 @@ func newErrorResponse(description, schemaID string) *openapimodel.Response {
 		Description: description,
 		Content:     responseMediaType,
 	}
+}
+
+func protoDescription(descriptor protoreflect.Descriptor) string {
+	return strings.TrimSpace(descriptor.ParentFile().SourceLocations().ByDescriptor(descriptor).LeadingComments)
 }
