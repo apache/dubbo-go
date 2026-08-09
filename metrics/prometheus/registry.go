@@ -20,6 +20,7 @@ package prometheus
 import (
 	"bytes"
 	"context"
+	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -143,7 +144,7 @@ func (p *promMetricRegistry) Rt(m *metrics.MetricId, opts *metrics.RtOpts) metri
 
 func (p *promMetricRegistry) Export() {
 	if p.url.GetParamBool(constant.PrometheusExporterEnabledKey, false) {
-		go p.exportHttp()
+		p.exportHttp()
 	}
 	if p.url.GetParamBool(constant.PrometheusPushgatewayEnabledKey, false) {
 		p.exportPushgateway()
@@ -156,6 +157,29 @@ func (p *promMetricRegistry) exportHttp() {
 	port := p.url.GetParam(constant.PrometheusExporterMetricsPortKey, constant.PrometheusDefaultMetricsPort)
 	mux.Handle(path, promhttp.InstrumentMetricHandler(p.r, promhttp.HandlerFor(p.gather, promhttp.HandlerOpts{})))
 	srv := &http.Server{Addr: ":" + port, Handler: mux}
+
+	ready := make(chan struct{})
+	go func() {
+		ln, err := net.Listen("tcp", ":"+port)
+		if err != nil {
+			logger.Errorf("[Metrics][Prometheus] failed to listen on port %s, err=%v", port, err)
+			close(ready)
+			return
+		}
+		close(ready)
+		if err := srv.Serve(ln); err != nil && err != http.ErrServerClosed {
+			logger.Errorf("[Metrics][Prometheus] prometheus server error, err=%v", err)
+		}
+	}()
+
+	// Wait for the server to be ready (with timeout)
+	select {
+	case <-ready:
+		logger.Infof("[Metrics][Prometheus] prometheus endpoint :%s%s", port, path)
+	case <-time.After(10 * time.Second):
+		logger.Errorf("[Metrics][Prometheus] timeout waiting for prometheus server to start on port %s", port)
+	}
+
 	extension.AddCustomShutdownCallback(func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
@@ -165,10 +189,6 @@ func (p *promMetricRegistry) exportHttp() {
 			logger.Info("[Metrics][Prometheus] prometheus server gracefully shutdown success")
 		}
 	})
-	logger.Infof("[Metrics][Prometheus] prometheus endpoint :%s%s", port, path)
-	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed { // except Shutdown or Close
-		logger.Errorf("[Metrics][Prometheus] new prometheus server with err=%v", err)
-	}
 }
 
 func (p *promMetricRegistry) exportPushgateway() {
