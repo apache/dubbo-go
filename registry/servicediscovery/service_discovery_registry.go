@@ -69,6 +69,11 @@ type serviceDiscoveryRegistry struct {
 	serviceListeners        map[string]registry.ServiceInstancesChangedListener
 	serviceMappingListeners map[string]mapping.MappingListener
 	renewAppMetadataTimer   *time.Timer
+	// destroyed is set by Destroy. SubscribeURL re-checks it under lock right
+	// before installing a listener, so a subscribe whose initial GetInstances /
+	// metadata phase outlives Destroy is discarded instead of being installed
+	// into a dead registry. Guarded by lock.
+	destroyed bool
 }
 
 func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
@@ -324,6 +329,7 @@ func (s *serviceDiscoveryRegistry) IsAvailable() bool {
 func (s *serviceDiscoveryRegistry) Destroy() {
 	s.stopMetadataTimers()
 	s.lock.Lock()
+	s.destroyed = true
 	for _, l := range s.serviceListeners {
 		// Destroy drops listeners without RemoveListener; cancel any pending
 		// metadata retry so its timer cannot leak.
@@ -540,6 +546,11 @@ func (s *serviceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry
 	}
 	protocolServiceKey := url.ServiceKey() + ":" + protocol
 
+	// A destroyed registry accepts no new subscriptions.
+	if s.isDestroyed() {
+		return
+	}
+
 	// Fast path: reuse an already installed listener without touching external calls.
 	if listener := s.getServiceListener(serviceNamesKey); listener != nil {
 		s.subscribeAndNotify(url, serviceNamesKey, protocolServiceKey, listener, notify)
@@ -567,6 +578,17 @@ func (s *serviceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry
 	// Install under a short write lock with a double-check so a concurrent
 	// subscriber for the same key does not install a duplicate listener.
 	s.lock.Lock()
+	if s.destroyed {
+		// Destroy ran while the initial GetInstances/metadata phase above was
+		// in flight: the listener was invisible to it, so it is not closed.
+		// Discard it here instead of installing into a dead registry.
+		s.lock.Unlock()
+		if impl, ok := listener.(*ServiceInstancesChangedListenerImpl); ok {
+			impl.stopMetadataRetry()
+		}
+		logger.Warnf("[Registry][ServiceDiscovery] discard late subscribe for applications=%s: registry already destroyed", serviceNamesKey)
+		return
+	}
 	if existing := s.serviceListeners[serviceNamesKey]; existing != nil {
 		// The loser of the install race is dropped without subscribers; close
 		// it so it can never arm a metadata retry or be kept alive by one.
@@ -588,6 +610,13 @@ func (s *serviceDiscoveryRegistry) getServiceListener(serviceNamesKey string) re
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	return s.serviceListeners[serviceNamesKey]
+}
+
+// isDestroyed reports whether Destroy has run.
+func (s *serviceDiscoveryRegistry) isDestroyed() bool {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	return s.destroyed
 }
 
 // subscribeAndNotify registers the notify callback and asynchronously wires the
