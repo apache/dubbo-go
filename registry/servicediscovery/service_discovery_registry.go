@@ -229,7 +229,13 @@ func (s *serviceDiscoveryRegistry) UnSubscribe(url *common.URL, listener registr
 	}
 	serviceNamesKey := sortServices(services)
 	if l := s.getServiceListener(serviceNamesKey); l != nil {
-		l.RemoveListener(url.ServiceKey())
+		// Must match the key SubscribeURL used for AddListenerAndNotify,
+		// otherwise the entry leaks and subscriber tracking breaks.
+		l.RemoveListener(protocolServiceKeyOf(url))
+		if !listenerHasSubscribers(l) {
+			// Last subscriber left: stop retrying AddListener for this key.
+			s.cancelSubscribeRetry(serviceNamesKey)
+		}
 	}
 	s.stopListen(url)
 	err := s.serviceNameMapping.Remove(url)
