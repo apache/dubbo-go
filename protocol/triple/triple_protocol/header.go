@@ -249,8 +249,7 @@ func FromIncomingContext(ctx context.Context) (http.Header, bool) {
 func SetHeader(ctx context.Context, header http.Header) error {
 	conn, ok := ctx.Value(handlerOutgoingKey{}).(StreamingHandlerConn)
 	if !ok {
-		// todo(DMwangnima): return standard error
-		return fmt.Errorf("triple: failed to fetch the connection from the context %v", ctx)
+		return errorf(CodeInternal, "triple: handler outgoing context not found; SetHeader must be called within a Triple handler")
 	}
 	mergeHeaders(conn.ResponseHeader(), header)
 	return nil
@@ -272,8 +271,7 @@ func SetHeader(ctx context.Context, header http.Header) error {
 func SetTrailer(ctx context.Context, trailer http.Header) error {
 	conn, ok := ctx.Value(handlerOutgoingKey{}).(StreamingHandlerConn)
 	if !ok {
-		// todo(DMwangnima): return standard error
-		return fmt.Errorf("triple: failed to fetch the connection from the context %v", ctx)
+		return errorf(CodeInternal, "triple: handler outgoing context not found; SetTrailer must be called within a Triple handler")
 	}
 	mergeHeaders(conn.ResponseTrailer(), trailer)
 	return nil
@@ -297,8 +295,7 @@ func SetTrailer(ctx context.Context, trailer http.Header) error {
 func SendHeader(ctx context.Context, header http.Header) error {
 	conn, ok := ctx.Value(handlerOutgoingKey{}).(StreamingHandlerConn)
 	if !ok {
-		// todo(DMwangnima): return standard error
-		return fmt.Errorf("triple: failed to fetch the connection from the context %v", ctx)
+		return errorf(CodeInternal, "triple: handler outgoing context not found; SendHeader must be called within a Triple handler")
 	}
 	mergeHeaders(conn.RequestHeader(), header)
 	return conn.Send(nil)
