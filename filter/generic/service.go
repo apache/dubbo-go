@@ -69,8 +69,8 @@ func (s *GenericService) GenericType() string {
 // The reply parameter must be a non-nil pointer to the target type.
 //
 // InvokeWithType uses the service generic mode to realize the result. Supported modes are
-// true, gson, bean, protobuf-json, and the legacy protobuf alias. generic=false disables
-// generic result realization and returns an explicit error.
+// true, gson, bean, protobuf-json, and the legacy protobuf mode (Map/Hessian semantics).
+// generic=false disables generic result realization and returns an explicit error.
 //
 // Example usage:
 //

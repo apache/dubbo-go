@@ -351,7 +351,7 @@ func TestValidateGenericType(t *testing.T) {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tt.generic)
 				assert.Contains(t, err.Error(), "false")
-				assert.Contains(t, err.Error(), constant.GenericSerializationProtobuf)
+				assert.Regexp(t, `(?:^|,\s*)protobuf(?:,|$)`, err.Error())
 			} else {
 				assert.NoError(t, err)
 			}
