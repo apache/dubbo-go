@@ -28,6 +28,7 @@ import (
 import (
 	gettylib "github.com/apache/dubbo-getty"
 
+	perrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -279,4 +280,71 @@ func TestDelayedOnCloseDoesNotResetReplacement(t *testing.T) {
 	assert.Same(t, replacement, client.gettyClient)
 	assert.True(t, client.gettyClientCreated.Load())
 	client.gettyClientMux.RUnlock()
+}
+
+func TestTimeoutResetWithConcurrentSelectSession(t *testing.T) {
+	client := &Client{addr: "127.0.0.1:20880"}
+	oldSession := &stubSession{}
+	oldPool := &gettyRPCClient{rpcClient: client, sessions: []*rpcSession{{session: oldSession}}}
+	client.gettyClient = oldPool
+	client.gettyClientCreated.Store(true)
+
+	closeStarted := make(chan struct{})
+	allowOnClose := make(chan struct{})
+	onCloseDone := make(chan struct{})
+	oldSession.onClose = func() {
+		close(closeStarted)
+		<-allowOnClose
+		oldPool.removeSession(oldSession)
+		close(onCloseDone)
+	}
+
+	request := remoting.NewRequest("2.0.2")
+	request.TwoWay = true
+	response := remoting.NewPendingResponse(request.ID)
+	remoting.AddPendingResponse(response)
+	require.ErrorIs(t, client.Request(request, 10*time.Millisecond, response), errClientReadTimeout)
+	<-closeStarted
+	client.gettyClientMux.RLock()
+	assert.Nil(t, client.gettyClient)
+	assert.False(t, client.gettyClientCreated.Load())
+	client.gettyClientMux.RUnlock()
+
+	replacementSession := &stubSession{}
+	replacement := &gettyRPCClient{rpcClient: client, sessions: []*rpcSession{{session: replacementSession}}}
+	client.gettyClientMux.Lock()
+	client.gettyClient = replacement
+	client.gettyClientCreated.Store(true)
+	client.gettyClientMux.Unlock()
+
+	selectDone := make(chan struct{})
+	selectErr := make(chan error, 1)
+	go func() {
+		defer close(selectDone)
+		for range 100 {
+			selectedClient, selectedSession, err := client.selectSession(client.addr)
+			if err != nil {
+				selectErr <- err
+				return
+			}
+			if selectedClient != replacement || selectedSession != replacementSession {
+				selectErr <- perrors.New("selectSession returned a stale connection")
+				return
+			}
+		}
+	}()
+
+	close(allowOnClose)
+	select {
+	case err := <-selectErr:
+		t.Fatal(err)
+	case <-selectDone:
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for concurrent selectSession")
+	}
+	select {
+	case <-onCloseDone:
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for delayed OnClose")
+	}
 }
