@@ -68,7 +68,13 @@ type serviceDiscoveryRegistry struct {
 	metadataReport          report.MetadataReport
 	serviceListeners        map[string]registry.ServiceInstancesChangedListener
 	serviceMappingListeners map[string]mapping.MappingListener
-	renewAppMetadataTimer   *time.Timer
+	// subscribeRetries holds at most one pending AddListener retry per
+	// serviceNamesKey. Guarded by lock.
+	subscribeRetries      map[string]*subscribeRetry
+	renewAppMetadataTimer *time.Timer
+	// destroyed is set by Destroy so late AddListener failures cannot arm new
+	// retry timers. Guarded by lock.
+	destroyed bool
 }
 
 func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
@@ -83,6 +89,7 @@ func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
 		serviceNameMapping: extension.GetGlobalServiceNameMapping(),
 		metadataReport:     metadata.GetMetadataReportByRegistry(url.GetParam(constant.RegistryIdKey, "")),
 		serviceListeners:   make(map[string]registry.ServiceInstancesChangedListener),
+		subscribeRetries:   make(map[string]*subscribeRetry),
 		// cache for mapping listener
 		serviceMappingListeners: make(map[string]mapping.MappingListener),
 	}, nil
@@ -323,6 +330,13 @@ func (s *serviceDiscoveryRegistry) IsAvailable() bool {
 
 func (s *serviceDiscoveryRegistry) Destroy() {
 	s.stopMetadataTimers()
+	s.lock.Lock()
+	s.destroyed = true
+	for key := range s.subscribeRetries {
+		// Cancel pending AddListener retries so their timers cannot leak.
+		s.cancelSubscribeRetryLocked(key)
+	}
+	s.lock.Unlock()
 	err := s.serviceDiscovery.Destroy()
 	if err != nil {
 		logger.Errorf("[Registry][ServiceDiscovery] destroy serviceDiscovery catch error, err=%s", err.Error())
@@ -525,11 +539,7 @@ func (s *serviceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.No
 
 func (s *serviceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry.NotifyListener, services *gxset.HashSet) {
 	serviceNamesKey := sortServices(services)
-	protocol := constant.TriProtocol // consume "tri" protocol by default, other protocols need to be specified on reference/consumer explicitly
-	if url.Protocol != "" {
-		protocol = url.Protocol
-	}
-	protocolServiceKey := url.ServiceKey() + ":" + protocol
+	protocolServiceKey := protocolServiceKeyOf(url)
 
 	// Fast path: reuse an already installed listener without touching external calls.
 	if listener := s.getServiceListener(serviceNamesKey); listener != nil {
@@ -543,17 +553,7 @@ func (s *serviceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry
 	// other subscribe/unsubscribe on this registry. The lock below only guards
 	// the serviceListeners check/install, never the external work.
 	listener := NewServiceInstancesChangedListener(url.GetParam(constant.ApplicationKey, ""), s.url.GetParam(constant.RegistryIdKey, constant.DefaultKey), services)
-	for _, serviceNameTmp := range services.Values() {
-		serviceName := serviceNameTmp.(string)
-		instances := s.serviceDiscovery.GetInstances(serviceName)
-		logger.Infof("[Registry][ServiceDiscovery] synchronized instance notification on application %s subscription, instance list size %s", serviceName, len(instances))
-		if err := listener.OnEvent(&registry.ServiceInstancesChangedEvent{
-			ServiceName: serviceName,
-			Instances:   instances,
-		}); err != nil {
-			logger.Warnf("[Registry][ServiceDiscovery] ServiceInstancesChangedListenerImpl handle error, err=%v", err)
-		}
-	}
+	s.loadLatestInstances(listener)
 
 	// Install under a short write lock with a double-check so a concurrent
 	// subscriber for the same key does not install a duplicate listener.
@@ -576,26 +576,183 @@ func (s *serviceDiscoveryRegistry) getServiceListener(serviceNamesKey string) re
 	return s.serviceListeners[serviceNamesKey]
 }
 
+// protocolServiceKeyOf builds the subscriber key SubscribeURL registers and
+// UnSubscribe removes: consumers default to the "tri" protocol, other
+// protocols need to be specified on the reference/consumer explicitly.
+func protocolServiceKeyOf(url *common.URL) string {
+	protocol := constant.TriProtocol
+	if url.Protocol != "" {
+		protocol = url.Protocol
+	}
+	return url.ServiceKey() + ":" + protocol
+}
+
+// loadLatestInstances pushes the current registry snapshot for every subscribed
+// application into the listener. It runs outside s.lock: GetInstances and
+// OnEvent may perform external RPC / metadata-report calls.
+func (s *serviceDiscoveryRegistry) loadLatestInstances(listener registry.ServiceInstancesChangedListener) {
+	for _, serviceNameTmp := range listener.GetServiceNames().Values() {
+		serviceName := serviceNameTmp.(string)
+		instances := s.serviceDiscovery.GetInstances(serviceName)
+		logger.Infof("[Registry][ServiceDiscovery] synchronized instance notification on application %s subscription, instance list size %d", serviceName, len(instances))
+		if err := listener.OnEvent(&registry.ServiceInstancesChangedEvent{
+			ServiceName: serviceName,
+			Instances:   instances,
+		}); err != nil {
+			logger.Warnf("[Registry][ServiceDiscovery] ServiceInstancesChangedListenerImpl handle error, err=%v", err)
+		}
+	}
+}
+
 // subscribeAndNotify registers the notify callback and asynchronously wires the
-// listener into the service discovery so the caller does not block on it.
+// listener into the service discovery so the caller does not block on it. A
+// failed AddListener is retried in the background with backoff; without the
+// retry a transient registry error would leave the consumer permanently stale
+// (issue #3624).
 func (s *serviceDiscoveryRegistry) subscribeAndNotify(url *common.URL, serviceNamesKey, protocolServiceKey string,
 	listener registry.ServiceInstancesChangedListener, notify registry.NotifyListener,
 ) {
 	listener.AddListenerAndNotify(protocolServiceKey, notify)
-	event := metricsMetadata.NewMetadataMetricTimeEvent(metricsMetadata.SubscribeServiceRt)
 
 	logger.Infof("[Registry][ServiceDiscovery] start subscribing to registry for applications=%s with a new go routine", serviceNamesKey)
 	go func() {
-		err := s.serviceDiscovery.AddListener(listener)
-		event.Succ = err != nil
-		event.End = time.Now()
-		event.Attachment[constant.InterfaceKey] = url.Interface()
-		metrics.Publish(event)
-		metrics.Publish(metricsRegistry.NewServerSubscribeEvent(err == nil))
-		if err != nil {
+		if err := s.addInstanceListener(url, listener); err != nil {
 			logger.Errorf("[Registry][ServiceDiscovery] add instance listener catch error, url=%s err=%s", url.String(), err.Error())
+			s.scheduleSubscribeRetry(serviceNamesKey, &subscribeRetry{listener: listener, url: url})
 		}
 	}()
+}
+
+// addInstanceListener installs the listener into the service discovery and
+// publishes the subscribe metrics.
+func (s *serviceDiscoveryRegistry) addInstanceListener(url *common.URL, listener registry.ServiceInstancesChangedListener) error {
+	event := metricsMetadata.NewMetadataMetricTimeEvent(metricsMetadata.SubscribeServiceRt)
+	err := s.serviceDiscovery.AddListener(listener)
+	event.Succ = err == nil
+	event.End = time.Now()
+	event.Attachment[constant.InterfaceKey] = url.Interface()
+	metrics.Publish(event)
+	metrics.Publish(metricsRegistry.NewServerSubscribeEvent(err == nil))
+	return err
+}
+
+var (
+	// subscribeRetryInitialDelay is the first backoff delay before retrying a
+	// failed AddListener call. Package-level so tests can shrink it.
+	subscribeRetryInitialDelay = time.Second
+	// subscribeRetryMaxDelay caps the backoff. The retry count itself is
+	// intentionally unlimited: a capped count would re-introduce the
+	// permanently stale consumer this mechanism fixes.
+	subscribeRetryMaxDelay = 30 * time.Second
+)
+
+// subscribeRetry is a pending AddListener retry for one serviceNamesKey.
+type subscribeRetry struct {
+	listener registry.ServiceInstancesChangedListener
+	url      *common.URL
+	timer    *time.Timer
+	attempts int
+}
+
+// scheduleSubscribeRetry arms the retry timer for serviceNamesKey after a
+// failed AddListener call. One pending retry per key: repeated failures share
+// the same timer instead of stacking new ones. Retries continue with capped
+// exponential backoff and jitter until the subscription is established, the
+// last subscriber unsubscribes, or the registry is destroyed.
+func (s *serviceDiscoveryRegistry) scheduleSubscribeRetry(serviceNamesKey string, state *subscribeRetry) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	if s.destroyed {
+		return
+	}
+	if !listenerHasSubscribers(state.listener) {
+		// No subscriber left (e.g. unsubscribe raced with a failing retry):
+		// do not arm a timer nobody waits for.
+		return
+	}
+	if _, ok := s.subscribeRetries[serviceNamesKey]; ok {
+		return
+	}
+	delay := subscribeRetryDelay(state.attempts)
+	state.attempts++
+	state.timer = time.AfterFunc(delay, func() {
+		s.retryAddListener(serviceNamesKey)
+	})
+	s.subscribeRetries[serviceNamesKey] = state
+	logger.Debugf("[Registry][ServiceDiscovery] instance listener for applications=%s not established, retry in %s", serviceNamesKey, delay)
+}
+
+// cancelSubscribeRetry stops a pending AddListener retry, if any.
+func (s *serviceDiscoveryRegistry) cancelSubscribeRetry(serviceNamesKey string) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.cancelSubscribeRetryLocked(serviceNamesKey)
+}
+
+// cancelSubscribeRetryLocked stops a pending AddListener retry; caller must
+// hold s.lock.
+func (s *serviceDiscoveryRegistry) cancelSubscribeRetryLocked(serviceNamesKey string) {
+	if state, ok := s.subscribeRetries[serviceNamesKey]; ok {
+		state.timer.Stop()
+		delete(s.subscribeRetries, serviceNamesKey)
+	}
+}
+
+// retryAddListener re-runs AddListener after the backoff delay. On success it
+// re-syncs the latest instance snapshot so instance changes missed while the
+// subscription was down are picked up instead of leaving the consumer on a
+// stale view.
+func (s *serviceDiscoveryRegistry) retryAddListener(serviceNamesKey string) {
+	s.lock.Lock()
+	state, ok := s.subscribeRetries[serviceNamesKey]
+	if !ok {
+		s.lock.Unlock()
+		return
+	}
+	delete(s.subscribeRetries, serviceNamesKey)
+	active := !s.destroyed &&
+		s.serviceListeners[serviceNamesKey] == state.listener &&
+		listenerHasSubscribers(state.listener)
+	s.lock.Unlock()
+
+	if !active {
+		// Registry destroyed, listener replaced, or no subscriber left:
+		// stop retrying so the loop cannot leak.
+		return
+	}
+	if err := s.addInstanceListener(state.url, state.listener); err != nil {
+		logger.Warnf("[Registry][ServiceDiscovery] retry add instance listener failed, applications=%s attempt=%d err=%s",
+			serviceNamesKey, state.attempts, err.Error())
+		s.scheduleSubscribeRetry(serviceNamesKey, state)
+		return
+	}
+	logger.Infof("[Registry][ServiceDiscovery] instance listener for applications=%s established after %d retries, re-syncing latest instances",
+		serviceNamesKey, state.attempts)
+	s.loadLatestInstances(state.listener)
+}
+
+// subscribeRetryDelay returns exponential backoff (initial << attempt) capped
+// at subscribeRetryMaxDelay, plus up to 25% jitter to desynchronize retries
+// across consumers after a correlated registry failure.
+func subscribeRetryDelay(attempt int) time.Duration {
+	delay := subscribeRetryMaxDelay
+	if attempt >= 0 && attempt < 30 { // guard against shift overflow
+		delay = subscribeRetryInitialDelay << attempt
+		if delay <= 0 || delay > subscribeRetryMaxDelay {
+			delay = subscribeRetryMaxDelay
+		}
+	}
+	return delay + time.Duration(rand.Int64N(int64(delay/4)+1))
+}
+
+// listenerHasSubscribers reports whether the listener still has subscribers.
+// Unknown implementations are assumed active so retries are never dropped
+// silently.
+func listenerHasSubscribers(listener registry.ServiceInstancesChangedListener) bool {
+	if impl, ok := listener.(*ServiceInstancesChangedListenerImpl); ok {
+		return impl.hasSubscribers()
+	}
+	return true
 }
 
 func sortServices(services *gxset.HashSet) string {

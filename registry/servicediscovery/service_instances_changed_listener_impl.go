@@ -128,7 +128,7 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 			revisionToInstances[key] = append(subInstances, instance)
 			metadataInfo := lstn.revisionToMetadata[key]
 			if metadataInfo == nil {
-				meta, err := GetMetadataInfo(providerApp, instance, revision, lstn.registryId)
+				meta, err := metadataInfoFetcher(providerApp, instance, revision, lstn.registryId)
 				if err != nil {
 					// Skip this instance if metadata fetch fails (e.g., old Java Dubbo version)
 					// Try next instance with same revision
@@ -235,6 +235,15 @@ func (lstn *ServiceInstancesChangedListenerImpl) RemoveListener(serviceKey strin
 	delete(lstn.listeners, serviceKey)
 }
 
+// hasSubscribers reports whether any notify listener is still attached. The
+// owning registry uses it to stop pending subscribe retries once the last
+// subscriber unsubscribes.
+func (lstn *ServiceInstancesChangedListenerImpl) hasSubscribers() bool {
+	lstn.mutex.Lock()
+	defer lstn.mutex.Unlock()
+	return len(lstn.listeners) > 0
+}
+
 // GetServiceNames return all listener service names
 func (lstn *ServiceInstancesChangedListenerImpl) GetServiceNames() *gxset.HashSet {
 	return lstn.serviceNames
@@ -266,6 +275,10 @@ func (lstn *ServiceInstancesChangedListenerImpl) GetEventType() reflect.Type {
 func metadataCacheKey(app, registryId, revision string) string {
 	return app + ":" + registryId + ":" + revision
 }
+
+// metadataInfoFetcher resolves MetadataInfo for a revision; a package-level
+// indirection so tests can inject transient failures.
+var metadataInfoFetcher = GetMetadataInfo
 
 // GetMetadataInfo retrieves the MetadataInfo for a service instance by revision.
 // Results are cached by app+registryId+revision, where app must be the provider
