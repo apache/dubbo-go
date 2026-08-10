@@ -126,7 +126,8 @@ func TestServiceDiscoveryRegistrySubscribe(t *testing.T) {
 }
 
 // TestServiceDiscoveryRegistrySubscribeWithProvidedBy verifies that the initial
-// provided-by application is subscribed and its instances listener is installed.
+// provided-by application is subscribed and its instances listener is installed
+// exactly once (issue #3617).
 func TestServiceDiscoveryRegistrySubscribeWithProvidedBy(t *testing.T) {
 	mockSD, _ := setupEnvironment(t)
 
@@ -159,6 +160,54 @@ func TestServiceDiscoveryRegistrySubscribeWithProvidedBy(t *testing.T) {
 		t.Fatal("AddListener was not invoked")
 	}
 	assert.True(t, mockSD.listenerAdded)
+	assert.Equal(t, 1, mockSD.getListenerAddCount(), "AddListener must be invoked exactly once for provided-by")
+}
+
+// TestServiceDiscoveryRegistrySubscribeMetadataReportA2A verifies that on the
+// metadata-report path, replaying an identical mapping event to the installed
+// mapping listener does not trigger a second ServiceDiscovery.AddListener call.
+// This is the regression that the narrowed fix guards: the initial OnEvent
+// establishes the listener baseline so the same mapping is a no-op (P1 #3623).
+func TestServiceDiscoveryRegistrySubscribeMetadataReportA2A(t *testing.T) {
+	mockSD, mockMapping := setupEnvironment(t)
+	mockMapping.data[testInterface] = gxset.NewSet(testApp)
+
+	registryURL, _ := common.NewURL(testRegistryURL,
+		common.WithParamsValue(constant.RegistryKey, "mock"))
+
+	reg, err := newServiceDiscoveryRegistry(registryURL)
+	require.NoError(t, err)
+	sdReg, ok := reg.(*serviceDiscoveryRegistry)
+	require.True(t, ok)
+
+	consumerURL, _ := common.NewURL("dubbo://127.0.0.1:20000/",
+		common.WithInterface(testInterface),
+		common.WithParamsValue(constant.GroupKey, testGroup),
+		common.WithParamsValue(constant.SideKey, constant.SideConsumer),
+	)
+
+	mockSD.wg.Add(1)
+	err = reg.Subscribe(consumerURL, &mockNotifyListener{})
+	require.NoError(t, err)
+
+	done := make(chan struct{})
+	go func() { mockSD.wg.Wait(); close(done) }()
+	select {
+	case <-done:
+	case <-time.After(3 * time.Second):
+		t.Fatal("initial AddListener was not invoked")
+	}
+	require.Equal(t, 1, mockSD.getListenerAddCount(), "AddListener must fire once for the initial mapping")
+
+	protocolServiceKey := consumerURL.ServiceKey() + ":" + consumerURL.Protocol
+	sdReg.lock.Lock()
+	mappingListener := sdReg.serviceMappingListeners[protocolServiceKey]
+	sdReg.lock.Unlock()
+	require.NotNil(t, mappingListener, "mapping listener must be registered on the metadata-report path")
+
+	err = mappingListener.OnEvent(registry.NewServiceMappingChangedEvent(consumerURL.ServiceKey(), gxset.NewSet(testApp)))
+	assert.NoError(t, err)
+	assert.Equal(t, 1, mockSD.getListenerAddCount(), "an identical mapping replay must not trigger another AddListener")
 }
 
 // TestServiceDiscoveryRegistryUnSubscribe verifies the unsubscription logic.
@@ -416,6 +465,12 @@ type mockServiceDiscovery struct {
 	capturedAppName  string
 	capturedInstance registry.ServiceInstance
 
+	// AddListener invocation tracking. Counts every AddListener call so tests
+	// can assert that the underlying ServiceDiscovery is not re-registered
+	// (see PR #3623 review feedback on metadata-report path baseline).
+	listenerMu       sync.Mutex
+	listenerAddCount int
+
 	// for Unregister tests
 	unregisterCalled  bool
 	unregisterIDs     []string
@@ -467,8 +522,19 @@ func (m *mockServiceDiscovery) GetRequestInstances([]string, int, int) map[strin
 
 func (m *mockServiceDiscovery) AddListener(registry.ServiceInstancesChangedListener) error {
 	defer m.wg.Done()
+	m.listenerMu.Lock()
 	m.listenerAdded = true
+	m.listenerAddCount++
+	m.listenerMu.Unlock()
 	return nil
+}
+
+// getListenerAddCount returns the number of AddListener calls observed by the
+// mock under the listener lock.
+func (m *mockServiceDiscovery) getListenerAddCount() int {
+	m.listenerMu.Lock()
+	defer m.listenerMu.Unlock()
+	return m.listenerAddCount
 }
 
 type mockServiceNameMapping struct {
