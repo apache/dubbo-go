@@ -126,7 +126,10 @@ func greetRequest(format string) *pluginpb.CodeGeneratorRequest {
 							field("profiles", "profiles", 7, descriptorpb.FieldDescriptorProto_LABEL_REPEATED, descriptorpb.FieldDescriptorProto_TYPE_MESSAGE, ".greet.GreetProfile"),
 							field("profile_metadata", "profileMetadata", 8, descriptorpb.FieldDescriptorProto_LABEL_REPEATED, descriptorpb.FieldDescriptorProto_TYPE_MESSAGE, ".greet.GreetRequest.ProfileMetadataEntry"),
 							field("type_metadata", "typeMetadata", 9, descriptorpb.FieldDescriptorProto_LABEL_REPEATED, descriptorpb.FieldDescriptorProto_TYPE_MESSAGE, ".greet.GreetRequest.TypeMetadataEntry"),
+							oneofField("recipient_id", "recipientId", 10, descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL, descriptorpb.FieldDescriptorProto_TYPE_STRING, "", 0),
+							oneofField("recipient_profile", "recipientProfile", 11, descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL, descriptorpb.FieldDescriptorProto_TYPE_MESSAGE, ".greet.GreetProfile", 0),
 						},
+						OneofDecl: []*descriptorpb.OneofDescriptorProto{{Name: proto.String("recipient")}},
 						NestedType: []*descriptorpb.DescriptorProto{
 							{
 								Name: proto.String("MetadataEntry"),
@@ -301,6 +304,12 @@ func field(name, jsonName string, number int32, label descriptorpb.FieldDescript
 	if typeName != "" {
 		fd.TypeName = proto.String(typeName)
 	}
+	return fd
+}
+
+func oneofField(name, jsonName string, number int32, label descriptorpb.FieldDescriptorProto_Label, kind descriptorpb.FieldDescriptorProto_Type, typeName string, oneofIndex int32) *descriptorpb.FieldDescriptorProto {
+	fd := field(name, jsonName, number, label, kind, typeName)
+	fd.OneofIndex = proto.Int32(oneofIndex)
 	return fd
 }
 
