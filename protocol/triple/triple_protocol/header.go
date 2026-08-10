@@ -271,7 +271,7 @@ func SetHeader(ctx context.Context, header http.Header) error {
 func SetTrailer(ctx context.Context, trailer http.Header) error {
 	conn, ok := ctx.Value(handlerOutgoingKey{}).(StreamingHandlerConn)
 	if !ok {
-		return errorf(CodeInternal, "triple: handler outgoing context not found, ensure this is called from within a Triple handler")
+		return errorf(CodeInternal, "triple: handler outgoing context not found; SetTrailer must be called within a Triple handler")
 	}
 	mergeHeaders(conn.ResponseTrailer(), trailer)
 	return nil
