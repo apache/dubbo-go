@@ -206,7 +206,7 @@ func TestServiceDiscoveryRegistrySubscribeMetadataReportA2A(t *testing.T) {
 	require.NotNil(t, mappingListener, "mapping listener must be registered on the metadata-report path")
 
 	err = mappingListener.OnEvent(registry.NewServiceMappingChangedEvent(consumerURL.ServiceKey(), gxset.NewSet(testApp)))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 1, mockSD.getListenerAddCount(), "an identical mapping replay must not trigger another AddListener")
 }
 
