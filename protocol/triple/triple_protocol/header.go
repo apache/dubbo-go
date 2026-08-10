@@ -249,7 +249,7 @@ func FromIncomingContext(ctx context.Context) (http.Header, bool) {
 func SetHeader(ctx context.Context, header http.Header) error {
 	conn, ok := ctx.Value(handlerOutgoingKey{}).(StreamingHandlerConn)
 	if !ok {
-		return errorf(CodeInternal, "triple: handler outgoing context not found, ensure this is called from within a Triple handler")
+		return errorf(CodeInternal, "triple: handler outgoing context not found; SetHeader must be called within a Triple handler")
 	}
 	mergeHeaders(conn.ResponseHeader(), header)
 	return nil
