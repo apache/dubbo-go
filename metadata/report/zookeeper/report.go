@@ -239,11 +239,20 @@ type zookeeperMetadataReportFactory struct{}
 
 // CreateMetadataReport creates the zookeeper-based metadata report implementation.
 func (mf *zookeeperMetadataReportFactory) CreateMetadataReport(url *common.URL) report.MetadataReport {
+	// Join the gost shared-client pool under the same key (url.Location) that
+	// registry and config-center use via ValidateZookeeperClient, so all roles
+	// pointing at the same cluster reuse one ZooKeeper session. The pool is
+	// reference-counted: Close only disconnects when the last user is gone.
+	// Prefer the timeout key the other pool users read (ConfigTimeoutKey) so
+	// the pooled client's timeout does not depend on which role creates it
+	// first; fall back to the metadata-report's historical TimeoutKey with
+	// DefaultRegTimeout as the ultimate default (consistent with registry and config-center).
+	timeout := url.GetParamDuration(constant.ConfigTimeoutKey, url.GetParam(constant.TimeoutKey, constant.DefaultRegTimeout))
 	client, err := gxzookeeper.NewZookeeperClient(
-		"zookeeperMetadataReport",
+		url.Location,
 		strings.Split(url.Location, ","),
-		false,
-		gxzookeeper.WithZkTimeOut(url.GetParamDuration(constant.TimeoutKey, "15s")),
+		true,
+		gxzookeeper.WithZkTimeOut(timeout),
 	)
 	if err != nil {
 		panic(err)
