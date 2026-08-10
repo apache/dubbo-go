@@ -21,6 +21,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -43,6 +44,55 @@ var (
 	newNacosConfigClient = nacosClient.NewNacosConfigClient
 )
 
+// credentialIDs maps each distinct credential set to a small opaque id used
+// in pool keys. The credentials themselves stay in this process-local map and
+// never become part of the key, which may end up in logs.
+var (
+	credentialIDsMu sync.Mutex
+	credentialIDs   = make(map[string]string)
+)
+
+func credentialID(url *common.URL) string {
+	tuple := strings.Join([]string{
+		url.GetParam(constant.NacosUsername, ""),
+		url.GetParam(constant.NacosPassword, ""),
+		url.GetParam(constant.NacosAccessKey, ""),
+		url.GetParam(constant.NacosSecretKey, ""),
+	}, "\n")
+	credentialIDsMu.Lock()
+	defer credentialIDsMu.Unlock()
+	id, ok := credentialIDs[tuple]
+	if !ok {
+		id = "cred" + strconv.Itoa(len(credentialIDs))
+		credentialIDs[tuple] = id
+	}
+	return id
+}
+
+// nacosClientPoolKey derives the gost client-pool key from the fields that
+// distinguish one nacos connection from another: server (endpoint/address),
+// namespace and the full credential set. Components pointing at the same
+// cluster (registry, config-center, metadata-report) resolve to the same key
+// and share one SDK client session instead of each opening its own.
+// Role-scoped client names must not be used as the key — they would defeat
+// the sharing.
+func nacosClientPoolKey(kind string, url *common.URL) string {
+	// GetNacosConfig ignores url.Location when an endpoint is set; mirror
+	// that here so URLs resolving to the same server set share one client.
+	server := url.GetParam(constant.NacosEndpoint, "")
+	if server == "" {
+		server = url.Location
+	}
+	// Clients authenticated differently must never collapse into one pool
+	// entry, so the full credential set participates via its opaque id.
+	return strings.Join([]string{
+		"dubbo-nacos", kind,
+		server,
+		url.GetParam(constant.NacosNamespaceID, ""),
+		credentialID(url),
+	}, "|")
+}
+
 // NewNacosConfigClientByUrl read the config from url and build an instance
 func NewNacosConfigClientByUrl(url *common.URL) (*nacosClient.NacosConfigClient, error) {
 	sc, cc, err := GetNacosConfig(url)
@@ -53,7 +103,7 @@ func NewNacosConfigClientByUrl(url *common.URL) (*nacosClient.NacosConfigClient,
 	if len(clientName) <= 0 {
 		return nil, perrors.New("nacos client name must set")
 	}
-	return newNacosConfigClient(clientName, true, sc, cc)
+	return newNacosConfigClient(nacosClientPoolKey("config", url), true, sc, cc)
 }
 
 // GetNacosConfig will return the nacos config
@@ -130,9 +180,5 @@ func NewNacosClientByURL(url *common.URL) (*nacosClient.NacosNamingClient, error
 		return nil, perrors.New("nacos client name must set")
 	}
 	logger.Infof("[Remoting][Nacos] new nacos client, config=%+v", scs)
-	namespaceID := url.GetParam(constant.NacosNamespaceID, "")
-	if len(namespaceID) > 0 {
-		clientName += namespaceID
-	}
-	return newNacosNamingClient(clientName, true, scs, cc)
+	return newNacosNamingClient(nacosClientPoolKey("naming", url), true, scs, cc)
 }
