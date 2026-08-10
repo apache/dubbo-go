@@ -42,6 +42,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/tools/protoc-gen-triple-openapi/constant"
+	"dubbo.apache.org/dubbo-go/v3/tools/protoc-gen-triple-openapi/internal/converter/schema"
 	"dubbo.apache.org/dubbo-go/v3/tools/protoc-gen-triple-openapi/internal/options"
 )
 
@@ -130,8 +131,8 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 			service := services.Get(i)
 
 			tags = append(tags, &base.Tag{
-				Name: string(service.FullName()),
-				// TODO: add serivce description
+				Name:        string(service.FullName()),
+				Description: schema.ProtoDescription(service),
 			})
 
 			methods := service.Methods()
@@ -142,7 +143,7 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 				operation := &openapimodel.Operation{
 					OperationId: string(md.Name()),
 					Tags:        []string{string(service.FullName())},
-					// TODO: add operation description
+					Description: schema.ProtoDescription(md),
 				}
 
 				// RequestBody
