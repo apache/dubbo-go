@@ -261,26 +261,18 @@ func (c *Client) selectSession(addr string) (*gettyRPCClient, getty.Session, err
 		return nil, nil, perrors.New("client have been closed")
 	}
 
-	if !c.gettyClientCreated.Load() {
-		c.gettyClientMux.Lock()
-		if c.gettyClient == nil {
-			rpcClientConn, rpcErr := newGettyRPCClientConn(c, addr)
-			if rpcErr != nil {
-				c.gettyClientMux.Unlock()
-				return nil, nil, perrors.WithStack(rpcErr)
-			}
-			c.gettyClientCreated.Store(true)
-			c.gettyClient = rpcClientConn
+	c.gettyClientMux.Lock()
+	defer c.gettyClientMux.Unlock()
+	if c.gettyClient == nil {
+		rpcClientConn, rpcErr := newGettyRPCClientConn(c, addr)
+		if rpcErr != nil {
+			return nil, nil, perrors.WithStack(rpcErr)
 		}
-		client := c.gettyClient
-		session := c.gettyClient.selectSession()
-		c.gettyClientMux.Unlock()
-		return client, session, nil
+		c.gettyClient = rpcClientConn
 	}
-	c.gettyClientMux.RLock()
+	c.gettyClientCreated.Store(true)
 	client := c.gettyClient
-	session := c.gettyClient.selectSession()
-	c.gettyClientMux.RUnlock()
+	session := client.selectSession()
 	return client, session, nil
 
 }
