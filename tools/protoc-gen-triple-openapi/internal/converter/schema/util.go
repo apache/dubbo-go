@@ -34,7 +34,7 @@ import (
 func messageToSchema(tt protoreflect.MessageDescriptor) (string, *base.Schema) {
 	s := &base.Schema{
 		Title:       string(tt.Name()),
-		Description: protoDescription(tt),
+		Description: ProtoDescription(tt),
 		Type:        []string{"object"},
 	}
 
@@ -65,7 +65,7 @@ func fieldToSchema(parent *base.SchemaProxy, tt protoreflect.FieldDescriptor) *b
 		default:
 			root.AdditionalProperties = &base.DynamicValue[*base.SchemaProxy, bool]{A: base.CreateSchemaProxy(ScalarFieldToSchema(parent, value, true))}
 		}
-		root.Description = protoDescription(tt)
+		root.Description = ProtoDescription(tt)
 		return base.CreateSchemaProxy(root)
 	} else if tt.IsList() {
 		var itemSchema *base.SchemaProxy
@@ -80,7 +80,7 @@ func fieldToSchema(parent *base.SchemaProxy, tt protoreflect.FieldDescriptor) *b
 		s := &base.Schema{
 			Title:       string(tt.Name()),
 			ParentProxy: parent,
-			Description: protoDescription(tt),
+			Description: ProtoDescription(tt),
 			Type:        []string{"array"},
 			Items:       &base.DynamicValue[*base.SchemaProxy, bool]{A: itemSchema},
 		}
@@ -107,7 +107,7 @@ func ScalarFieldToSchema(parent *base.SchemaProxy, tt protoreflect.FieldDescript
 	}
 	if !inContainer {
 		s.Title = string(tt.Name())
-		s.Description = protoDescription(tt)
+		s.Description = ProtoDescription(tt)
 	}
 
 	switch tt.Kind() {
@@ -175,6 +175,6 @@ func CreateStringNode(str string) *yaml.Node {
 	return n
 }
 
-func protoDescription(descriptor protoreflect.Descriptor) string {
+func ProtoDescription(descriptor protoreflect.Descriptor) string {
 	return strings.TrimSpace(descriptor.ParentFile().SourceLocations().ByDescriptor(descriptor).LeadingComments)
 }

@@ -35,7 +35,6 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"google.golang.org/protobuf/reflect/protodesc"
-	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/pluginpb"
@@ -43,6 +42,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/tools/protoc-gen-triple-openapi/constant"
+	"dubbo.apache.org/dubbo-go/v3/tools/protoc-gen-triple-openapi/internal/converter/schema"
 	"dubbo.apache.org/dubbo-go/v3/tools/protoc-gen-triple-openapi/internal/options"
 )
 
@@ -132,7 +132,7 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 
 			tags = append(tags, &base.Tag{
 				Name:        string(service.FullName()),
-				Description: protoDescription(service),
+				Description: schema.ProtoDescription(service),
 			})
 
 			methods := service.Methods()
@@ -143,7 +143,7 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 				operation := &openapimodel.Operation{
 					OperationId: string(md.Name()),
 					Tags:        []string{string(service.FullName())},
-					Description: protoDescription(md),
+					Description: schema.ProtoDescription(md),
 				}
 
 				// RequestBody
@@ -234,8 +234,4 @@ func newErrorResponse(description, schemaID string) *openapimodel.Response {
 		Description: description,
 		Content:     responseMediaType,
 	}
-}
-
-func protoDescription(descriptor protoreflect.Descriptor) string {
-	return strings.TrimSpace(descriptor.ParentFile().SourceLocations().ByDescriptor(descriptor).LeadingComments)
 }
