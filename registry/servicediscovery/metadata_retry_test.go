@@ -253,3 +253,61 @@ func TestMetadataRetryListenerDetach(t *testing.T) {
 	listener.AddListenerAndNotify(key, notify)
 	assert.NotNil(t, listener.retryTimer, "re-attaching a subscriber must resume retries")
 }
+
+// TestMetadataRetryWaitsForSubscriber verifies a failed refresh with no
+// attached subscriber does not arm the retry timer: a listener that is never
+// installed (e.g. discarded after losing the subscribe install race) must not
+// keep probing metadata. Attaching a subscriber re-arms the retry.
+func TestMetadataRetryWaitsForSubscriber(t *testing.T) {
+	const revision = "rev-retry-no-subscriber"
+	const port = 22106
+	stubRetryDelays(t, time.Second, 2*time.Second)
+
+	stubMetadataFetch(t, func(string, registry.ServiceInstance, string, string) (*info.MetadataInfo, error) {
+		return nil, perrors.New("metadata unreachable")
+	})
+
+	listener := NewServiceInstancesChangedListener(testApp, constant.DefaultKey, gxset.NewSet(testApp)).(*ServiceInstancesChangedListenerImpl)
+	settleRetryListener(t, listener)
+
+	// Snapshot arrives before any subscriber attaches (the SubscribeURL order).
+	require.Error(t, listener.OnEvent(registry.NewServiceInstancesChangedEvent(testApp, []registry.ServiceInstance{
+		newTestServiceInstanceOnly(port, "", revision),
+	})))
+	assert.Nil(t, listener.retryTimer, "no subscriber attached: retry must not be armed")
+
+	listener.AddListenerAndNotify(common.MatchKey(testInterface, constant.TriProtocol), &retryNotifyListener{})
+	assert.NotNil(t, listener.retryTimer, "attaching a subscriber must arm the pending retry")
+}
+
+// TestMetadataRetryStopsAfterClose verifies a closed listener cannot re-arm the
+// retry timer — neither via a direct schedule nor via an in-flight refresh
+// that finishes after the owning registry was destroyed.
+func TestMetadataRetryStopsAfterClose(t *testing.T) {
+	const revision = "rev-retry-closed"
+	const port = 22107
+	stubRetryDelays(t, time.Second, 2*time.Second)
+
+	stubMetadataFetch(t, func(string, registry.ServiceInstance, string, string) (*info.MetadataInfo, error) {
+		return nil, perrors.New("metadata unreachable")
+	})
+
+	listener := NewServiceInstancesChangedListener(testApp, constant.DefaultKey, gxset.NewSet(testApp)).(*ServiceInstancesChangedListenerImpl)
+	listener.AddListenerAndNotify(common.MatchKey(testInterface, constant.TriProtocol), &retryNotifyListener{})
+
+	require.Error(t, listener.OnEvent(registry.NewServiceInstancesChangedEvent(testApp, []registry.ServiceInstance{
+		newTestServiceInstanceOnly(port, "", revision),
+	})))
+	require.NotNil(t, listener.retryTimer, "retry should be scheduled after a failed fetch")
+
+	listener.stopMetadataRetry()
+	assert.Nil(t, listener.retryTimer, "close must cancel the pending retry")
+
+	listener.scheduleMetadataRetry()
+	assert.Nil(t, listener.retryTimer, "closed listener must not re-arm the retry")
+
+	// Simulate a refresh that was in flight while the registry was destroyed:
+	// its trailing schedule must not arm a new timer.
+	listener.refreshServiceURLs()
+	assert.Nil(t, listener.retryTimer, "in-flight refresh finishing after close must not arm a retry")
+}

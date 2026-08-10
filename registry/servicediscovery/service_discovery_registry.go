@@ -568,6 +568,11 @@ func (s *serviceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry
 	// subscriber for the same key does not install a duplicate listener.
 	s.lock.Lock()
 	if existing := s.serviceListeners[serviceNamesKey]; existing != nil {
+		// The loser of the install race is dropped without subscribers; close
+		// it so it can never arm a metadata retry or be kept alive by one.
+		if impl, ok := listener.(*ServiceInstancesChangedListenerImpl); ok {
+			impl.stopMetadataRetry()
+		}
 		listener = existing
 	} else {
 		s.serviceListeners[serviceNamesKey] = listener

@@ -79,6 +79,10 @@ type ServiceInstancesChangedListenerImpl struct {
 	retryTimer          *time.Timer
 	retryAttempts       int
 	lastFailureLog      map[string]time.Time
+	// closed is set when the owning registry drops this listener for good
+	// (Destroy, or a duplicate listener discarded during subscribe). A closed
+	// listener never arms a new retry timer. Guarded by mutex.
+	closed bool
 }
 
 func NewServiceInstancesChangedListener(app string, registryId string, services *gxset.HashSet) registry.ServiceInstancesChangedListener {
@@ -428,12 +432,14 @@ var (
 // indirection so tests can inject transient failures.
 var metadataInfoFetcher = GetMetadataInfo
 
-// stopMetadataRetry cancels any pending metadata retry. It is called when the
-// owning registry is destroyed and drops this listener without RemoveListener,
-// so the retry timer cannot leak.
+// stopMetadataRetry marks the listener closed and cancels any pending metadata
+// retry. It is called when the owning registry is destroyed and drops this
+// listener without RemoveListener, so neither the pending timer nor an
+// in-flight refresh can arm a new one afterwards.
 func (lstn *ServiceInstancesChangedListenerImpl) stopMetadataRetry() {
 	lstn.mutex.Lock()
 	defer lstn.mutex.Unlock()
+	lstn.closed = true
 	if lstn.retryTimer != nil {
 		lstn.retryTimer.Stop()
 		lstn.retryTimer = nil
@@ -442,11 +448,14 @@ func (lstn *ServiceInstancesChangedListenerImpl) stopMetadataRetry() {
 
 // scheduleMetadataRetry arms the shared retry timer while unresolved revisions
 // remain. Retries replay the latest instance snapshot, so revisions whose
-// instances disappeared from the registry are dropped naturally on the next run.
+// instances disappeared from the registry are dropped naturally on the next
+// run. No timer is armed once the listener is closed or while it has no
+// subscribers: AddListenerAndNotify re-arms the retry when a subscriber
+// attaches, and a subscriber-less listener must not keep probing metadata.
 func (lstn *ServiceInstancesChangedListenerImpl) scheduleMetadataRetry() {
 	lstn.mutex.Lock()
 	defer lstn.mutex.Unlock()
-	if len(lstn.unresolvedRevisions) == 0 {
+	if len(lstn.unresolvedRevisions) == 0 || lstn.closed || len(lstn.listeners) == 0 {
 		if lstn.retryTimer != nil {
 			lstn.retryTimer.Stop()
 			lstn.retryTimer = nil
@@ -463,7 +472,9 @@ func (lstn *ServiceInstancesChangedListenerImpl) scheduleMetadataRetry() {
 	lstn.retryTimer = time.AfterFunc(delay, func() {
 		lstn.mutex.Lock()
 		lstn.retryTimer = nil
-		run := len(lstn.unresolvedRevisions) > 0
+		// Re-check under the lock: the last subscriber may have been removed
+		// or the listener closed while the timer was pending.
+		run := !lstn.closed && len(lstn.listeners) > 0 && len(lstn.unresolvedRevisions) > 0
 		lstn.mutex.Unlock()
 		if run {
 			lstn.refreshServiceURLs()
