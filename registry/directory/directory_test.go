@@ -351,6 +351,14 @@ func TestRemoveClosingInstanceReturnsFalseForUnknownKey(t *testing.T) {
 	assert.Empty(t, registryDirectory.snapshotCacheInvokers())
 }
 
+// hasActiveClosingTombstone reports whether an unexpired tombstone exists for
+// the instance key. Test helper; production code uses activeClosingTombstone
+// directly because it also needs the tombstone payload.
+func hasActiveClosingTombstone(dir *RegistryDirectory, instanceKey string) bool {
+	_, ok := dir.activeClosingTombstone(instanceKey)
+	return ok
+}
+
 func TestClosingTombstonePreventsRebuildUntilDeleteEvent(t *testing.T) {
 	registryDirectory, mockRegistry := normalRegistryDir(true)
 
@@ -368,7 +376,7 @@ func TestClosingTombstonePreventsRebuildUntilDeleteEvent(t *testing.T) {
 	removed := registryDirectory.RemoveClosingInstance(key)
 	require.True(t, removed)
 	assert.Empty(t, registryDirectory.snapshotCacheInvokers())
-	assert.True(t, registryDirectory.hasActiveClosingTombstone(key))
+	assert.True(t, hasActiveClosingTombstone(registryDirectory, key))
 
 	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerURL})
 	time.Sleep(1e9)
@@ -376,7 +384,7 @@ func TestClosingTombstonePreventsRebuildUntilDeleteEvent(t *testing.T) {
 
 	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeDel, Service: providerURL})
 	time.Sleep(1e9)
-	assert.False(t, registryDirectory.hasActiveClosingTombstone(key))
+	assert.False(t, hasActiveClosingTombstone(registryDirectory, key))
 
 	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerURL})
 	time.Sleep(1e9)
@@ -402,7 +410,7 @@ func TestExpiredClosingTombstoneAllowsRebuild(t *testing.T) {
 	assert.Empty(t, registryDirectory.snapshotCacheInvokers())
 
 	time.Sleep(40 * time.Millisecond)
-	assert.False(t, registryDirectory.hasActiveClosingTombstone(key))
+	assert.False(t, hasActiveClosingTombstone(registryDirectory, key))
 
 	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerURL})
 	time.Sleep(1e9)
@@ -438,7 +446,7 @@ func TestClosingTombstoneAllowsRebuildAfterGenuineRestart(t *testing.T) {
 
 	require.True(t, registryDirectory.RemoveClosingInstance(key))
 	assert.Empty(t, registryDirectory.snapshotCacheInvokers())
-	require.True(t, registryDirectory.hasActiveClosingTombstone(key))
+	require.True(t, hasActiveClosingTombstone(registryDirectory, key))
 
 	// Stale snapshot re-add (same export timestamp) stays vetoed.
 	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: oldURL})
@@ -449,7 +457,7 @@ func TestClosingTombstoneAllowsRebuildAfterGenuineRestart(t *testing.T) {
 	mockRegistry.MockEvent(newEvent)
 	time.Sleep(1e9)
 	assert.Len(t, registryDirectory.snapshotCacheInvokers(), 1)
-	assert.False(t, registryDirectory.hasActiveClosingTombstone(key))
+	assert.False(t, hasActiveClosingTombstone(registryDirectory, key))
 }
 
 func TestRefreshConfiguratorsUseLatestBatch(t *testing.T) {

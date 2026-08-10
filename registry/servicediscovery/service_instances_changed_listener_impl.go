@@ -105,13 +105,15 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 		return nil
 	}
 
-	logger.Infof("[Registry][ServiceDiscovery] received instance notification event, service=%s size=%d", ce.ServiceName, len(ce.Instances))
+	logger.Debugf("[Registry][ServiceDiscovery] received instance notification event, service=%s size=%d", ce.ServiceName, len(ce.Instances))
 
 	lstn.mutex.Lock()
 	lstn.allInstances[ce.ServiceName] = ce.Instances
 	lstn.mutex.Unlock()
 
-	lstn.refreshServiceURLs()
+	if !lstn.refreshServiceURLs() {
+		return perrors.Errorf("metadata unresolved for some revisions of service=%s, retry is scheduled", ce.ServiceName)
+	}
 	return nil
 }
 
@@ -119,8 +121,9 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 // notifies subscribers. The build is serialized by buildMu, but lstn.mutex is
 // only held while reading or committing in-memory state: metadata RPCs run in
 // between without it, so a slow or unreachable provider cannot block event
-// processing or retry scheduling.
-func (lstn *ServiceInstancesChangedListenerImpl) refreshServiceURLs() {
+// processing or retry scheduling. It reports whether every revision resolved;
+// unresolved revisions are retried by the shared retry timer.
+func (lstn *ServiceInstancesChangedListenerImpl) refreshServiceURLs() bool {
 	lstn.buildMu.Lock()
 	defer lstn.buildMu.Unlock()
 
@@ -237,6 +240,7 @@ func (lstn *ServiceInstancesChangedListenerImpl) refreshServiceURLs() {
 	}
 
 	lstn.scheduleMetadataRetry()
+	return len(unresolved) == 0
 }
 
 func toInstanceServiceURLs(instance registry.ServiceInstance, serviceInfo *info.ServiceInfo) []*common.URL {

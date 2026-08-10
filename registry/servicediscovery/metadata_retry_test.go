@@ -119,7 +119,7 @@ func TestMetadataRetryRecoversWithoutFurtherEvent(t *testing.T) {
 	err := listener.OnEvent(registry.NewServiceInstancesChangedEvent(testApp, []registry.ServiceInstance{
 		newTestServiceInstanceOnly(port, "", revision),
 	}))
-	require.NoError(t, err)
+	require.Error(t, err, "first fetch failed, OnEvent must surface the unresolved revision")
 	require.Empty(t, notify.snapshot(), "first fetch failed, nothing should be notified yet")
 
 	require.Eventually(t, func() bool {
@@ -144,9 +144,9 @@ func TestMetadataRetryStopsWhenInstanceRemoved(t *testing.T) {
 	notify := &retryNotifyListener{}
 	listener.AddListenerAndNotify(common.MatchKey(testInterface, constant.TriProtocol), notify)
 
-	require.NoError(t, listener.OnEvent(registry.NewServiceInstancesChangedEvent(testApp, []registry.ServiceInstance{
+	require.Error(t, listener.OnEvent(registry.NewServiceInstancesChangedEvent(testApp, []registry.ServiceInstance{
 		newTestServiceInstanceOnly(port, "", revision),
-	})))
+	})), "fetch failed, OnEvent must surface the unresolved revision")
 	require.Eventually(t, func() bool { return calls.Load() >= 2 }, time.Second, 5*time.Millisecond,
 		"retry should have run at least once")
 
@@ -184,9 +184,9 @@ func TestMetadataRetryFollowsLatestRevision(t *testing.T) {
 	listener.AddListenerAndNotify(common.MatchKey(testInterface, constant.TriProtocol), notify)
 	t.Cleanup(func() { metaCache.Delete(testApp + ":" + constant.DefaultKey + ":" + revNew) })
 
-	require.NoError(t, listener.OnEvent(registry.NewServiceInstancesChangedEvent(testApp, []registry.ServiceInstance{
+	require.Error(t, listener.OnEvent(registry.NewServiceInstancesChangedEvent(testApp, []registry.ServiceInstance{
 		newTestServiceInstanceOnly(port, "", revOld),
-	})))
+	})), "revOld fetch failed, OnEvent must surface the unresolved revision")
 	require.NoError(t, listener.OnEvent(registry.NewServiceInstancesChangedEvent(testApp, []registry.ServiceInstance{
 		newTestServiceInstanceOnly(port, "", revNew),
 	})))
@@ -215,9 +215,9 @@ func TestMetadataRetryUsesSingleTimer(t *testing.T) {
 	listener.AddListenerAndNotify(common.MatchKey(testInterface, constant.TriProtocol), notify)
 
 	for range 3 {
-		require.NoError(t, listener.OnEvent(registry.NewServiceInstancesChangedEvent(testApp, []registry.ServiceInstance{
+		require.Error(t, listener.OnEvent(registry.NewServiceInstancesChangedEvent(testApp, []registry.ServiceInstance{
 			newTestServiceInstanceOnly(port, "", revision),
-		})))
+		})), "fetch failed, OnEvent must surface the unresolved revision")
 	}
 
 	require.NotNil(t, listener.retryTimer)
@@ -242,9 +242,9 @@ func TestMetadataRetryListenerDetach(t *testing.T) {
 	key := common.MatchKey(testInterface, constant.TriProtocol)
 	listener.AddListenerAndNotify(key, notify)
 
-	require.NoError(t, listener.OnEvent(registry.NewServiceInstancesChangedEvent(testApp, []registry.ServiceInstance{
+	require.Error(t, listener.OnEvent(registry.NewServiceInstancesChangedEvent(testApp, []registry.ServiceInstance{
 		newTestServiceInstanceOnly(port, "", revision),
-	})))
+	})), "fetch failed, OnEvent must surface the unresolved revision")
 	require.NotNil(t, listener.retryTimer, "retry should be scheduled after a failed fetch")
 
 	listener.RemoveListener(key)

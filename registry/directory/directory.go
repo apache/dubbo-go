@@ -654,11 +654,6 @@ func (dir *RegistryDirectory) markClosingTombstone(instanceKey string, invoker p
 	dir.closingTombstones.Store(instanceKey, tombstone)
 }
 
-func (dir *RegistryDirectory) hasActiveClosingTombstone(instanceKey string) bool {
-	_, ok := dir.activeClosingTombstone(instanceKey)
-	return ok
-}
-
 func (dir *RegistryDirectory) activeClosingTombstone(instanceKey string) (closingTombstone, bool) {
 	if instanceKey == "" {
 		return closingTombstone{}, false
