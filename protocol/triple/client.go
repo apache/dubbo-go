@@ -54,9 +54,8 @@ const (
 	httpsPrefix string = "https://"
 )
 
-// clientManager wraps triple clients and is responsible for find concrete triple client to invoke
-// callUnary, callClientStream, callServerStream, callBidiStream.
-// A Reference has a clientManager.
+// clientManager owns the service-level Triple clients used by unary, streaming,
+// and health-check calls for a Reference.
 type clientManager struct {
 	isIDL        bool
 	triClient    *tri.Client
@@ -107,12 +106,13 @@ func (cm *clientManager) close() error {
 	return nil
 }
 
-// newClientManager extracts configurations from url and builds clientManager
+// newClientManager resolves URL and global Triple settings, then builds the
+// service and health clients that share one HTTP transport.
 func newClientManager(url *common.URL) (*clientManager, error) {
 	var cliOpts []tri.ClientOption
 	var isIDL bool
 
-	// Set serialization
+	// Resolve codec options before constructing the transport-backed client.
 	serialization := url.GetParam(constant.SerializationKey, constant.ProtobufSerialization)
 	switch serialization {
 	case constant.ProtobufSerialization:
@@ -128,18 +128,19 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		panic(fmt.Sprintf("Unsupported serialization: %s", serialization))
 	}
 
-	// Set timeout
+	// Apply the call timeout configured on the reference URL.
 	timeout := url.GetParamDuration(constant.TimeoutKey, "")
 	cliOpts = append(cliOpts, tri.WithTimeout(timeout))
 
-	// Set service group and version
+	// Pass group and version through request headers for service selection.
 	group := url.GetParam(constant.GroupKey, "")
 	version := url.GetParam(constant.VersionKey, "")
 	cliOpts = append(cliOpts, tri.WithGroup(group), tri.WithVersion(version))
 
-	// TODO(DMwangnima): support OpenTracing
+	// Observability integrations should contribute tri.ClientOption values
+	// before the shared service and health clients are created.
 
-	// Handle TLS
+	// Resolve TLS first because HTTP/2 and HTTP/3 transport setup depends on it.
 	var (
 		tlsFlag bool
 		tlsConf *global.TLSConfig
@@ -172,15 +173,15 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		tripleConf = tripleConfRaw.(*global.TripleConfig)
 	}
 
-	// Handle keepalive options
-	cliKeepAliveOpts, keepAliveInterval, keepAliveTimeout, genKeepAliveOptsErr := genKeepAliveOptions(url, tripleConf)
-	if genKeepAliveOptsErr != nil {
-		logger.Errorf("[Triple][Client] genKeepAliveOpts failed, err=%v", genKeepAliveOptsErr)
-		return nil, genKeepAliveOptsErr
+	// Resolve keepalive and size-limit options before choosing the transport.
+	clientKeepaliveOpts, keepAliveInterval, keepAliveTimeout, keepaliveErr := resolveClientKeepaliveOptions(url, tripleConf)
+	if keepaliveErr != nil {
+		logger.Errorf("[Triple][Client] resolve client keepalive options failed, err=%v", keepaliveErr)
+		return nil, keepaliveErr
 	}
-	cliOpts = append(cliOpts, cliKeepAliveOpts...)
+	cliOpts = append(cliOpts, clientKeepaliveOpts...)
 
-	// Handle HTTP transport of triple protocol
+	// Build the HTTP transport used by the Triple client.
 	var transport http.RoundTripper
 
 	var callProtocol string
@@ -192,10 +193,9 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	}
 
 	switch callProtocol {
-	// This case might be for backward compatibility,
-	// It's not useful for the Triple protocol, HTTP/1 lacks trailer functionality.
-	// Triple protocol only supports HTTP/2 and HTTP/3.
 	case constant.CallHTTP:
+		// Backward compatibility path for callers that still request HTTP/1.1.
+		// Triple itself requires HTTP/2 or HTTP/3 trailer support.
 		transport = &http.Transport{
 			TLSClientConfig: cfg,
 		}
@@ -245,7 +245,8 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 			return nil, fmt.Errorf("TRIPLE HTTP/2 and HTTP/3 client must have TLS config, but TLS config is nil")
 		}
 
-		// Create a dual transport that can handle both HTTP/2 and HTTP/3
+		// Dual transport lets the client negotiate HTTP/2 or HTTP/3 with the
+		// same URL and keepalive settings.
 		transport = newDualTransport(cfg, keepAliveInterval, keepAliveTimeout)
 		logger.Info("[Triple][Client] triple HTTP/2 and HTTP/3 client transport init successfully")
 	default:
@@ -296,29 +297,27 @@ func (cm *clientManager) callHealthWatch(ctx context.Context, service string) (*
 	return stream, nil
 }
 
-func genKeepAliveOptions(url *common.URL, tripleConf *global.TripleConfig) ([]tri.ClientOption, time.Duration, time.Duration, error) {
-	var cliKeepAliveOpts []tri.ClientOption
+func resolveClientKeepaliveOptions(url *common.URL, tripleConf *global.TripleConfig) ([]tri.ClientOption, time.Duration, time.Duration, error) {
+	var clientKeepaliveOpts []tri.ClientOption
 
-	// Set max send and recv msg size
+	// Apply client message-size limits from URL compatibility parameters.
 	maxCallRecvMsgSize := constant.DefaultMaxCallRecvMsgSize
 	if recvMsgSize, err := humanize.ParseBytes(url.GetParam(constant.MaxCallRecvMsgSize, "")); err == nil && recvMsgSize > 0 {
 		maxCallRecvMsgSize = int(recvMsgSize)
 	}
-	cliKeepAliveOpts = append(cliKeepAliveOpts, tri.WithReadMaxBytes(maxCallRecvMsgSize))
+	clientKeepaliveOpts = append(clientKeepaliveOpts, tri.WithReadMaxBytes(maxCallRecvMsgSize))
 	maxCallSendMsgSize := constant.DefaultMaxCallSendMsgSize
 	if sendMsgSize, err := humanize.ParseBytes(url.GetParam(constant.MaxCallSendMsgSize, "")); err == nil && sendMsgSize > 0 {
 		maxCallSendMsgSize = int(sendMsgSize)
 	}
-	cliKeepAliveOpts = append(cliKeepAliveOpts, tri.WithSendMaxBytes(maxCallSendMsgSize))
+	clientKeepaliveOpts = append(clientKeepaliveOpts, tri.WithSendMaxBytes(maxCallSendMsgSize))
 
-	// Set keepalive interval and keepalive timeout
-	// Compatibility: read the legacy URL keepalive parameters.
-	// TODO: remove KeepAliveInterval and KeepAliveTimeout in version 4.0.0.
+	// Legacy URL keepalive parameters remain supported for 3.x compatibility.
 	keepAliveInterval := url.GetParamDuration(constant.KeepAliveInterval, constant.DefaultKeepAliveInterval)
 	keepAliveTimeout := url.GetParamDuration(constant.KeepAliveTimeout, constant.DefaultKeepAliveTimeout)
 
 	if tripleConf == nil {
-		return cliKeepAliveOpts, keepAliveInterval, keepAliveTimeout, nil
+		return clientKeepaliveOpts, keepAliveInterval, keepAliveTimeout, nil
 	}
 
 	var parseErr error
@@ -336,5 +335,5 @@ func genKeepAliveOptions(url *common.URL, tripleConf *global.TripleConfig) ([]tr
 		}
 	}
 
-	return cliKeepAliveOpts, keepAliveInterval, keepAliveTimeout, nil
+	return clientKeepaliveOpts, keepAliveInterval, keepAliveTimeout, nil
 }

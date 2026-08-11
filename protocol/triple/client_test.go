@@ -195,7 +195,7 @@ func TestClientManagerCallUnaryCopiesErrorResponseMetadata(t *testing.T) {
 // TestClientManager_CallMethods_MissingClient removed - no longer applicable
 // in the service-level client architecture where all methods share a single triClient.
 
-func Test_genKeepAliveOptions(t *testing.T) {
+func Test_resolveClientKeepaliveOptions(t *testing.T) {
 	defaultInterval, _ := time.ParseDuration(constant.DefaultKeepAliveInterval)
 	defaultTimeout, _ := time.ParseDuration(constant.DefaultKeepAliveTimeout)
 
@@ -282,7 +282,7 @@ func Test_genKeepAliveOptions(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			opts, interval, timeout, err := genKeepAliveOptions(test.url, test.tripleConf)
+			opts, interval, timeout, err := resolveClientKeepaliveOptions(test.url, test.tripleConf)
 			if test.expectErr {
 				require.Error(t, err)
 			} else {
