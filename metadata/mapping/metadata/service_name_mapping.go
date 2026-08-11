@@ -221,8 +221,8 @@ func (d *ServiceNameMapping) Remove(url *common.URL) (err error) {
 	}()
 	var errs []error
 	for _, metadataReport := range metadataReports {
-		if err := metadataReport.RemoveServiceAppMappingListener(serviceInterface, DefaultGroup); err != nil {
-			errs = append(errs, err)
+		if removeErr := metadataReport.RemoveServiceAppMappingListener(serviceInterface, DefaultGroup); removeErr != nil {
+			errs = append(errs, removeErr)
 		}
 	}
 	if err = errors.Join(errs...); err != nil {
