@@ -42,6 +42,10 @@ message GreetRequest {
   repeated GreetProfile profiles = 7;
   map<string, GreetProfile> profile_metadata = 8;
   map<string, GreetingType> type_metadata = 9;
+  oneof recipient {
+    string recipient_id = 10;
+    GreetProfile recipient_profile = 11;
+  }
 }
 
 message GreetProfile {

@@ -79,6 +79,23 @@ components:
       title: GreetProfile
     greet.GreetRequest:
       type: object
+      allOf:
+        - oneOf:
+            - type: object
+              not:
+                anyOf:
+                  - type: object
+                    required:
+                      - recipientId
+                  - type: object
+                    required:
+                      - recipientProfile
+            - type: object
+              required:
+                - recipientId
+            - type: object
+              required:
+                - recipientProfile
       properties:
         name:
           type: string
@@ -124,6 +141,12 @@ components:
           title: type_metadata
           additionalProperties:
             $ref: '#/components/schemas/greet.GreetingType'
+        recipientId:
+          type: string
+          title: recipient_id
+        recipientProfile:
+          title: recipient_profile
+          $ref: '#/components/schemas/greet.GreetProfile'
       title: GreetRequest
       description: A request to the Greet RPC.
     greet.GreetRequest.MetadataEntry:
