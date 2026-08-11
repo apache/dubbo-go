@@ -256,6 +256,22 @@ func TestGenericService_InvokeWithTypeUsesProtobufJsonMode(t *testing.T) {
 	assert.Equal(t, "protoUser", reply.Fields["name"].GetStringValue())
 }
 
+func TestGenericService_InvokeWithTypeUsesGsonPointerReply(t *testing.T) {
+	service := NewGenericService("TestService")
+	require.NoError(t, service.SetGenericType(constant.GenericSerializationGson))
+	service.Invoke = func(ctx context.Context, methodName string, types []string, args []hessian.Object) (any, error) {
+		return `{"name":"gsonUser","age":32}`, nil
+	}
+
+	var reply *testUser
+	err := service.InvokeWithType(context.Background(), "getUser", nil, nil, &reply)
+
+	require.NoError(t, err)
+	require.NotNil(t, reply)
+	assert.Equal(t, "gsonUser", reply.Name)
+	assert.Equal(t, 32, reply.Age)
+}
+
 func TestGenericService_InvokeWithTypeRejectsDisabledGenericMode(t *testing.T) {
 	tests := []struct {
 		name string

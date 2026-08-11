@@ -615,6 +615,59 @@ func TestFilter_OnResponse_WithProtobufJsonTypedReply(t *testing.T) {
 	assert.Same(t, &reply, newRes.Result())
 }
 
+func TestFilter_OnResponse_KeepsRawResultForAnyReply(t *testing.T) {
+	filter := &genericFilter{}
+	invokeURL := common.NewURLWithOptions(
+		common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.GenericKey, constant.GenericSerializationDefault),
+	)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockInvoker := mock.NewMockInvoker(ctrl)
+	mockInvoker.EXPECT().GetURL().Return(invokeURL).AnyTimes()
+
+	for _, genericType := range []string{
+		constant.GenericSerializationGson,
+		constant.GenericSerializationProtobufJson,
+	} {
+		t.Run(genericType, func(t *testing.T) {
+			const rawResult = `{"name":"rawUser"}`
+			t.Run("direct result", func(t *testing.T) {
+				var reply any
+				inv := invocation.NewRPCInvocationWithOptions(
+					invocation.WithMethodName(constant.Generic),
+					invocation.WithReply(&reply),
+					invocation.WithAttachments(map[string]any{constant.GenericKey: genericType}),
+				)
+
+				newRes := filter.OnResponse(context.Background(), &result.RPCResult{Rest: rawResult}, mockInvoker, inv)
+
+				require.NoError(t, newRes.Error())
+				assert.Equal(t, rawResult, reply)
+				assert.Equal(t, rawResult, newRes.Result())
+			})
+
+			t.Run("protocol reply pointer", func(t *testing.T) {
+				reply := any(rawResult)
+				inv := invocation.NewRPCInvocationWithOptions(
+					invocation.WithMethodName(constant.Generic),
+					invocation.WithReply(&reply),
+					invocation.WithAttachments(map[string]any{constant.GenericKey: genericType}),
+				)
+				res := &result.RPCResult{Rest: &reply}
+
+				newRes := filter.OnResponse(context.Background(), res, mockInvoker, inv)
+
+				require.NoError(t, newRes.Error())
+				assert.Equal(t, rawResult, reply)
+				assert.Same(t, &reply, newRes.Result())
+			})
+		})
+	}
+}
+
 func TestFilter_OnResponse_WithUnsupportedGenericMode(t *testing.T) {
 	invokeURL := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),

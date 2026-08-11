@@ -196,13 +196,22 @@ func (f *genericFilter) OnResponse(_ context.Context, res result.Result, invoker
 	if data == nil {
 		return res
 	}
+	replyElem := replyValue.Elem()
+	dataValue := reflect.ValueOf(data)
+	if replyElem.Kind() == reflect.Interface && dataValue.Type().AssignableTo(replyElem.Type()) {
+		if dataValue.Kind() == reflect.Pointer && dataValue.Pointer() == replyValue.Pointer() {
+			return res
+		}
+		replyElem.Set(dataValue)
+		return res
+	}
 
 	if !shouldRealizeTypedResult(data, generic) {
 		return res
 	}
 
 	// Get the element type that the pointer points to
-	replyElemType := replyValue.Elem().Type()
+	replyElemType := replyElem.Type()
 
 	// Realize the map/slice to the target struct using shared helper
 	realized, err := realizeResult(data, replyElemType, g)
