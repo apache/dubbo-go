@@ -245,7 +245,7 @@ func (s *Server) registerServiceHandlers(invoker base.Invoker, info *common.Serv
 
 	// IDLMode means that this will only be set when
 	// The new triple is started in non-IDL mode.
-	// Legacy compatibility keeps this switch until config-package migration is complete.
+	// TODO: remove IDLMode when config package is removed
 	IDLMode := url.GetParam(constant.IDLMode, "")
 
 	var service common.RPCService
@@ -387,6 +387,7 @@ func buildServerHandlerOptions(url *common.URL, tripleConf *global.TripleConfig)
 	handlerOpts = append(handlerOpts, tri.WithGroup(group), tri.WithVersion(version))
 
 	// Compatibility: read the legacy URL receive-size parameter.
+	// TODO: remove MaxServerRecvMsgSize in version 4.0.0.
 	maxServerRecvMsgSize := constant.DefaultMaxServerRecvMsgSize
 	if recvMsgSize, convertErr := humanize.ParseBytes(url.GetParam(constant.MaxServerRecvMsgSize, "")); convertErr == nil && recvMsgSize != 0 {
 		maxServerRecvMsgSize = int(recvMsgSize)
@@ -394,6 +395,7 @@ func buildServerHandlerOptions(url *common.URL, tripleConf *global.TripleConfig)
 	handlerOpts = append(handlerOpts, tri.WithReadMaxBytes(maxServerRecvMsgSize))
 
 	// Compatibility: read the legacy URL send-size parameter.
+	// TODO: remove MaxServerSendMsgSize in version 4.0.0.
 	maxServerSendMsgSize := constant.DefaultMaxServerSendMsgSize
 	if sendMsgSize, convertErr := humanize.ParseBytes(url.GetParam(constant.MaxServerSendMsgSize, "")); convertErr == nil && sendMsgSize != 0 {
 		maxServerSendMsgSize = int(sendMsgSize)
@@ -420,7 +422,7 @@ func buildServerHandlerOptions(url *common.URL, tripleConf *global.TripleConfig)
 		handlerOpts = append(handlerOpts, tri.WithSendMaxBytes(maxServerSendMsgSize))
 	}
 
-	// Tracing integrations should append handler options before registration.
+	// TODO: support OpenTracing
 
 	// CORS configuration
 	if tripleConf.Cors != nil && len(tripleConf.Cors.AllowOrigins) > 0 {
@@ -551,7 +553,8 @@ func (s *Server) registerUnaryMethodHandler(procedure string, m common.MethodInf
 			ctx = context.WithValue(ctx, constant.AttachmentKey, attachments)
 			invo := invocation.NewRPCInvocation(m.Name, args, attachments)
 			res := invoker.Invoke(ctx, invo)
-			// Keep response wrapping aligned with server/InfoInvoker.Invoke.
+			// TODO(DMwangnima): modify InfoInvoker to get a unified processing logic
+			// Please refer to server/InfoInvoker.Invoke()
 			triResp := wrapTripleResponse(res.Result())
 			appendTripleOutgoingAttachments(ctx, res.Attachments())
 			return triResp, res.Error()
@@ -682,8 +685,7 @@ func (s *Server) saveServiceInfo(interfaceName string, info *common.ServiceInfo,
 	ret.Metadata = info
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	// gRPC reflection uses the service name as the map key; OpenAPI registration
-	// receives group and version separately below.
+	// TODO(DMwangnima): using interfaceName is not enough, we need to consider group and version
 	s.services[interfaceName] = ret
 
 	if s.triServer != nil {

@@ -90,7 +90,7 @@ func generateUnaryHandlerFunc(
 		}
 		return res, err
 	})
-	// Apply unary interceptors before transport-level receive/send orchestration.
+	// TODO: modify server func
 	if interceptor != nil {
 		untyped = interceptor.WrapUnaryHandler(untyped)
 	}
@@ -382,6 +382,7 @@ func (h *Handler) ServeHTTP(responseWriter http.ResponseWriter, request *http.Re
 	// Select the group/version implementation and invoke it on the protocol stream.
 	svcGroup := request.Header.Get(tripleServiceGroup)
 	svcVersion := request.Header.Get(tripleServiceVersion)
+	// TODO(DMwangnima): inspect ok
 	implementation, ok := h.implementations[getIdentifier(svcGroup, svcVersion)]
 	if !ok {
 		_ = connCloser.Close(errorf(CodeUnimplemented, "no implementation found for service group %s and service version %s", svcGroup, svcVersion))

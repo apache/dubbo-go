@@ -137,8 +137,7 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	version := url.GetParam(constant.VersionKey, "")
 	cliOpts = append(cliOpts, tri.WithGroup(group), tri.WithVersion(version))
 
-	// Observability integrations should contribute tri.ClientOption values
-	// before the shared service and health clients are created.
+	// TODO(DMwangnima): support OpenTracing
 
 	// Resolve TLS first because HTTP/2 and HTTP/3 transport setup depends on it.
 	var (
@@ -312,7 +311,9 @@ func resolveClientKeepAliveOptions(url *common.URL, tripleConf *global.TripleCon
 	}
 	clientKeepAliveOpts = append(clientKeepAliveOpts, tri.WithSendMaxBytes(maxCallSendMsgSize))
 
-	// Legacy URL keepalive parameters remain supported for 3.x compatibility.
+	// Set keepalive interval and keepalive timeout
+	// Compatibility: read the legacy URL keepalive parameters.
+	// TODO: remove KeepAliveInterval and KeepAliveTimeout in version 4.0.0.
 	keepAliveInterval := url.GetParamDuration(constant.KeepAliveInterval, constant.DefaultKeepAliveInterval)
 	keepAliveTimeout := url.GetParamDuration(constant.KeepAliveTimeout, constant.DefaultKeepAliveTimeout)
 
