@@ -26,9 +26,11 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"errors"
+	"fmt"
 	"math/big"
 	"net"
 	"net/http"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -268,6 +270,88 @@ func TestServer_HTTP2AndHTTP3_StartAndGracefulStop(t *testing.T) {
 	require.NoError(t, waitForServerExit(t, errCh, 5*time.Second))
 }
 
+// TestServer_HTTP2AndHTTP3_StopReleasesTCPPort verifies that Stop releases
+// the TCP socket, so the same address can be bound again afterwards.
+func TestServer_HTTP2AndHTTP3_StopReleasesTCPPort(t *testing.T) {
+	cfg := &global.TripleConfig{
+		Http3: &global.Http3Config{Enable: true},
+	}
+	srv, errCh := startTestServer(t, constant.CallHTTP2AndHTTP3, cfg, newTestTLSConfig(t))
+	waitForTCPReady(t, srv.addr, 3*time.Second)
+	waitForHTTP3Stored(t, srv)
+
+	require.NoError(t, srv.Stop())
+	require.NoError(t, waitForServerExit(t, errCh, 5*time.Second))
+
+	// The TCP socket must be released once Run has returned.
+	tcpLn, err := net.Listen("tcp", srv.addr)
+	require.NoError(t, err)
+	defer tcpLn.Close()
+}
+
+// TestServer_HTTP2AndHTTP3_StopReleasesUDPPort verifies that Stop releases
+// the UDP socket, so the same address can be bound again afterwards.
+func TestServer_HTTP2AndHTTP3_StopReleasesUDPPort(t *testing.T) {
+	cfg := &global.TripleConfig{
+		Http3: &global.Http3Config{Enable: true},
+	}
+	srv, errCh := startTestServer(t, constant.CallHTTP2AndHTTP3, cfg, newTestTLSConfig(t))
+	waitForTCPReady(t, srv.addr, 3*time.Second)
+	waitForHTTP3Stored(t, srv)
+
+	require.NoError(t, srv.Stop())
+	require.NoError(t, waitForServerExit(t, errCh, 5*time.Second))
+
+	// The UDP socket must be released once Run has returned.
+	udpConn, err := net.ListenPacket("udp", srv.addr)
+	require.NoError(t, err)
+	defer udpConn.Close()
+}
+
+// TestServer_HTTP2AndHTTP3_GracefulStopReleasesTCPPort verifies that
+// GracefulStop releases the TCP socket, so the same address can be bound again
+// afterwards.
+func TestServer_HTTP2AndHTTP3_GracefulStopReleasesTCPPort(t *testing.T) {
+	cfg := &global.TripleConfig{
+		Http3: &global.Http3Config{Enable: true},
+	}
+	srv, errCh := startTestServer(t, constant.CallHTTP2AndHTTP3, cfg, newTestTLSConfig(t))
+	waitForTCPReady(t, srv.addr, 3*time.Second)
+	waitForHTTP3Stored(t, srv)
+
+	graceCtx, cancel := context.WithTimeout(context.Background(), constant.DefaultGracefulShutdownTimeout)
+	defer cancel()
+	require.NoError(t, srv.GracefulStop(graceCtx))
+	require.NoError(t, waitForServerExit(t, errCh, 5*time.Second))
+
+	// The TCP socket must be released once Run has returned.
+	tcpLn, err := net.Listen("tcp", srv.addr)
+	require.NoError(t, err)
+	defer tcpLn.Close()
+}
+
+// TestServer_HTTP2AndHTTP3_GracefulStopReleasesUDPPort verifies that
+// GracefulStop releases the UDP socket, so the same address can be bound again
+// afterwards.
+func TestServer_HTTP2AndHTTP3_GracefulStopReleasesUDPPort(t *testing.T) {
+	cfg := &global.TripleConfig{
+		Http3: &global.Http3Config{Enable: true},
+	}
+	srv, errCh := startTestServer(t, constant.CallHTTP2AndHTTP3, cfg, newTestTLSConfig(t))
+	waitForTCPReady(t, srv.addr, 3*time.Second)
+	waitForHTTP3Stored(t, srv)
+
+	graceCtx, cancel := context.WithTimeout(context.Background(), constant.DefaultGracefulShutdownTimeout)
+	defer cancel()
+	require.NoError(t, srv.GracefulStop(graceCtx))
+	require.NoError(t, waitForServerExit(t, errCh, 5*time.Second))
+
+	// The UDP socket must be released once Run has returned.
+	udpConn, err := net.ListenPacket("udp", srv.addr)
+	require.NoError(t, err)
+	defer udpConn.Close()
+}
+
 func TestServer_StopBeforeStart(t *testing.T) {
 	srv := NewServer(getFreeAddr(t), nil)
 	require.NoError(t, srv.Stop())
@@ -287,11 +371,66 @@ func TestServer_Run_HTTP3WithoutTLS(t *testing.T) {
 	assert.Contains(t, err.Error(), "must have TLS config")
 }
 
+// TestServer_HTTP2AndHTTP3_StartFailsOnOccupiedTCP verifies that Run fails
+// fast with a bind error when the TCP port is occupied, instead of hanging on
+// errgroup.Wait while the UDP side keeps listening.
+func TestServer_HTTP2AndHTTP3_StartFailsOnOccupiedTCP(t *testing.T) {
+	addr := getFreeAddr(t)
+	tcpLn, err := net.Listen("tcp", addr)
+	require.NoError(t, err)
+	defer tcpLn.Close()
+
+	srv := NewServer(addr, nil)
+	errCh := runServer(srv, constant.CallHTTP2AndHTTP3, newTestTLSConfig(t))
+
+	select {
+	case err := <-errCh:
+		require.Error(t, err)
+		require.True(t, isAddrInUse(err), "expected address in use error, got: %v", err)
+	case <-time.After(3 * time.Second):
+		require.FailNow(t, "Run did not return within 3s: it must fail fast when the TCP port is occupied")
+	}
+}
+
+// TestServer_HTTP2AndHTTP3_StartFailsOnOccupiedUDP is the symmetric case:
+// Run must fail fast with a bind error when the UDP port is occupied, instead
+// of hanging while the HTTP/2 side keeps listening.
+func TestServer_HTTP2AndHTTP3_StartFailsOnOccupiedUDP(t *testing.T) {
+	udpConn, err := net.ListenPacket("udp", "127.0.0.1:0")
+	require.NoError(t, err)
+	defer udpConn.Close()
+	addr := udpConn.LocalAddr().String()
+
+	srv := NewServer(addr, nil)
+	errCh := runServer(srv, constant.CallHTTP2AndHTTP3, newTestTLSConfig(t))
+
+	select {
+	case err := <-errCh:
+		require.Error(t, err)
+		require.True(t, isAddrInUse(err), "expected address in use error, got: %v", err)
+		// The bind error must come from the UDP pre-bind step; if it comes
+		// from the TCP step instead, this test is not exercising the case it
+		// claims to cover.
+		assert.Contains(t, err.Error(), "HTTP/3 server bind error")
+	case <-time.After(3 * time.Second):
+		require.FailNow(t, "Run did not return within 3s: it must fail fast when the UDP port is occupied")
+	}
+}
+
 func TestServer_Run_HTTP2AndHTTP3WithoutTLS(t *testing.T) {
 	srv := NewServer(getFreeAddr(t), nil)
 	err := srv.Run(constant.CallHTTP2AndHTTP3, nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "must have TLS config")
+}
+
+// TestServer_Run_HTTP2AndHTTP3_TLSWithoutCert verifies that Run fails when
+// the TLS config carries no certificate source.
+func TestServer_Run_HTTP2AndHTTP3_TLSWithoutCert(t *testing.T) {
+	srv := NewServer(getFreeAddr(t), nil)
+	err := srv.Run(constant.CallHTTP2AndHTTP3, &tls.Config{})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "must have a TLS certificate configured")
 }
 
 func TestServer_RunUnsupportedProtocol(t *testing.T) {
@@ -340,5 +479,172 @@ func TestServer_RepeatedStartStop(t *testing.T) {
 				require.ErrorIs(t, waitForServerExit(t, errCh, 5*time.Second), http.ErrServerClosed)
 			}
 		}
+	}
+}
+
+// TestServer_HTTP2AndHTTP3_ServeFailsOnHTTP2Side verifies that when the
+// HTTP/2 Serve fails after a successful bind, the HTTP/3 side is closed and
+// Run returns the error instead of hanging on errgroup.Wait.
+func TestServer_HTTP2AndHTTP3_ServeFailsOnHTTP2Side(t *testing.T) {
+	oldListen := netListen
+	netListen = func(network, addr string) (net.Listener, error) {
+		ln, err := net.Listen(network, addr)
+		require.NoError(t, err)
+		require.NoError(t, ln.Close())
+		return ln, nil
+	}
+	t.Cleanup(func() { netListen = oldListen })
+
+	srv := NewServer(getFreeAddr(t), nil)
+	errCh := runServer(srv, constant.CallHTTP2AndHTTP3, newTestTLSConfig(t))
+
+	select {
+	case err := <-errCh:
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "HTTP/2 server error")
+	case <-time.After(3 * time.Second):
+		require.FailNow(t, "Run did not return within 3s: it must fail when the HTTP/2 Serve exits with an error")
+	}
+
+	// The HTTP/3 side must have been closed, so the UDP port can be rebound.
+	udpConn, err := net.ListenPacket("udp", srv.addr)
+	require.NoError(t, err)
+	defer udpConn.Close()
+}
+
+// TestServer_HTTP2AndHTTP3_ServeFailsOnHTTP3Side verifies that when the
+// HTTP/3 Serve fails after a successful bind, the HTTP/2 side is closed and
+// Run returns the error instead of hanging on errgroup.Wait.
+func TestServer_HTTP2AndHTTP3_ServeFailsOnHTTP3Side(t *testing.T) {
+	oldListenPacket := netListenPacket
+	netListenPacket = func(network, addr string) (net.PacketConn, error) {
+		conn, err := net.ListenPacket(network, addr)
+		require.NoError(t, err)
+		require.NoError(t, conn.Close())
+		return conn, nil
+	}
+	t.Cleanup(func() { netListenPacket = oldListenPacket })
+
+	srv := NewServer(getFreeAddr(t), nil)
+	errCh := runServer(srv, constant.CallHTTP2AndHTTP3, newTestTLSConfig(t))
+
+	select {
+	case err := <-errCh:
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "HTTP/3 server error")
+	case <-time.After(3 * time.Second):
+		require.FailNow(t, "Run did not return within 3s: it must fail when the HTTP/3 Serve exits with an error")
+	}
+
+	// The HTTP/2 side must have been closed, so the TCP port can be rebound.
+	tcpLn, err := net.Listen("tcp", srv.addr)
+	require.NoError(t, err)
+	defer tcpLn.Close()
+}
+
+// TestServer_HTTP2AndHTTP3_ConcurrentStartAndStop runs concurrent
+// start-and-stop cycles so the Store calls in startHttp2AndHttp3 overlap
+// with the Load calls in Stop, which the race detector reports if the
+// server fields are accessed without synchronization.
+func TestServer_HTTP2AndHTTP3_ConcurrentStartAndStop(t *testing.T) {
+	cfg := &global.TripleConfig{
+		Http3: &global.Http3Config{Enable: true},
+	}
+
+	const iterations = 10
+	errCh := make(chan error, 2*iterations)
+	var wg sync.WaitGroup
+	for range iterations {
+		wg.Go(func() {
+
+			srv := NewServer(getFreeAddr(t), cfg)
+			runCh := runServer(srv, constant.CallHTTP2AndHTTP3, newTestTLSConfig(t))
+
+			// The first Stop may run while Run is still storing the
+			// servers, so it can close nothing. The second Stop after the
+			// stores are visible always closes them.
+			_ = srv.Stop()
+			for i := 0; srv.http3Srv.Load() == nil && i < 100; i++ {
+				time.Sleep(time.Millisecond)
+			}
+			errCh <- srv.Stop()
+
+			select {
+			case err := <-runCh:
+				errCh <- err
+			case <-time.After(5 * time.Second):
+				errCh <- fmt.Errorf("Run did not return within 5s")
+			}
+		})
+	}
+
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(30 * time.Second):
+		require.FailNow(t, "concurrent start/stop did not finish within 30s")
+	}
+	close(errCh)
+	for err := range errCh {
+		require.NoError(t, err)
+	}
+}
+
+// TestServer_HTTP2AndHTTP3_ConcurrentStartAndGracefulStop runs concurrent
+// start-and-graceful-stop cycles so the Store calls in startHttp2AndHttp3
+// overlap with the Load calls in GracefulStop, which the race detector
+// reports if the server fields are accessed without synchronization.
+func TestServer_HTTP2AndHTTP3_ConcurrentStartAndGracefulStop(t *testing.T) {
+	cfg := &global.TripleConfig{
+		Http3: &global.Http3Config{Enable: true},
+	}
+
+	const iterations = 10
+	errCh := make(chan error, 2*iterations)
+	var wg sync.WaitGroup
+	for range iterations {
+		wg.Go(func() {
+
+			srv := NewServer(getFreeAddr(t), cfg)
+			runCh := runServer(srv, constant.CallHTTP2AndHTTP3, newTestTLSConfig(t))
+
+			graceCtx, cancel := context.WithTimeout(context.Background(), constant.DefaultGracefulShutdownTimeout)
+			defer cancel()
+
+			// The first GracefulStop may run while Run is still storing
+			// the servers, so it can close nothing. The second
+			// GracefulStop after the stores are visible always closes them.
+			_ = srv.GracefulStop(graceCtx)
+			for i := 0; srv.http3Srv.Load() == nil && i < 100; i++ {
+				time.Sleep(time.Millisecond)
+			}
+			errCh <- srv.GracefulStop(graceCtx)
+
+			select {
+			case err := <-runCh:
+				errCh <- err
+			case <-time.After(5 * time.Second):
+				errCh <- fmt.Errorf("Run did not return within 5s")
+			}
+		})
+	}
+
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(30 * time.Second):
+		require.FailNow(t, "concurrent start/graceful-stop did not finish within 30s")
+	}
+	close(errCh)
+	for err := range errCh {
+		require.NoError(t, err)
 	}
 }
