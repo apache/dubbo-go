@@ -155,17 +155,15 @@ func TestAddRemoveListenerConcurrentChurnKeepsPersistentSubscription(t *testing.
 	var wg sync.WaitGroup
 	workers := 32
 	start := make(chan struct{})
-	for w := 0; w < workers; w++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range workers {
+		wg.Go(func() {
 			<-start
-			for i := 0; i < 200; i++ {
+			for range 200 {
 				l := newNoopListener()
 				n.addListener(key, l)
 				n.removeListener(key, l)
 			}
-		}()
+		})
 	}
 	close(start)
 	wg.Wait()
@@ -239,12 +237,10 @@ func TestRemoveThenAddNoLostSubscriptionDeterministic(t *testing.T) {
 	// unfixed code the adder proceeds, stores a fresh set, and ListenConfig
 	// populates the slot while the remover is still parked.
 	var adderWG sync.WaitGroup
-	adderWG.Add(1)
-	go func() {
-		defer adderWG.Done()
+	adderWG.Go(func() {
 		l := newNoopListener()
 		n.addListener(key, l)
-	}()
+	})
 
 	// Probe whether the adder could complete before we release the cancel. With
 	// the lifecycle lock the adder is still blocked; without it the adder
@@ -287,11 +283,11 @@ func TestListenerConcurrentStress(t *testing.T) {
 	keyFor := func(k int) string { return "stress-key-" + strconv.Itoa(k) }
 
 	var wg sync.WaitGroup
-	for g := 0; g < goroutines; g++ {
+	for g := range goroutines {
 		wg.Add(1)
 		go func(g int) {
 			defer wg.Done()
-			for i := 0; i < iterations; i++ {
+			for i := range iterations {
 				k := g % numKeys
 				key := keyFor(k)
 				l := newNoopListener()
@@ -310,7 +306,7 @@ func TestListenerConcurrentStress(t *testing.T) {
 	wg.Wait()
 
 	// A live subscription must exist iff at least one listener remains.
-	for k := 0; k < numKeys; k++ {
+	for k := range numKeys {
 		key := keyFor(k)
 		got := client.hasSubscription(key, "test-group")
 		want := atomic.LoadInt32(&remaining[k]) > 0
