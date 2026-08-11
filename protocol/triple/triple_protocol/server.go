@@ -21,6 +21,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"net"
 	"net/http"
 )
 
@@ -45,6 +46,11 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/openapi"
 )
+
+// netListen and netListenPacket create the pre-bound sockets in
+// startHttp2AndHttp3. Tests override them to simulate Serve failures.
+var netListen = net.Listen
+var netListenPacket = net.ListenPacket
 
 type Server struct {
 	addr               string
@@ -264,6 +270,28 @@ func (s *Server) startHttp2AndHttp3(tlsConf *tls.Config) error {
 		return err
 	}
 
+	if len(tlsConf.Certificates) == 0 &&
+		tlsConf.GetCertificate == nil &&
+		tlsConf.GetConfigForClient == nil {
+		return fmt.Errorf("TRIPLE HTTP/2 and HTTP/3 Server must have a TLS certificate configured, but none of Certificates/GetCertificate/GetConfigForClient is set")
+	}
+
+	// Pre-bind the TCP (HTTP/2) listener before serving any request:
+	// fail fast with the bind error when the port is occupied.
+	tcpLn, err := netListen("tcp", s.addr)
+	if err != nil {
+		return fmt.Errorf("HTTP/2 server bind error: %w", err)
+	}
+	defer tcpLn.Close()
+
+	// Pre-bind the UDP (HTTP/3) socket as well; on failure close the
+	// already-bound TCP listener and return, no request has been served yet.
+	udpConn, err := netListenPacket("udp", s.addr)
+	if err != nil {
+		return fmt.Errorf("HTTP/3 server bind error: %w", err)
+	}
+	defer udpConn.Close()
+
 	// Start HTTP/3 server first to get its configuration
 	s.http3Srv.Store(&http3.Server{
 		Addr:       s.addr,
@@ -293,7 +321,10 @@ func (s *Server) startHttp2AndHttp3(tlsConf *tls.Config) error {
 
 	// Start HTTP/2 server in a goroutine
 	eg.Go(func() error {
-		if err := s.httpSrv.Load().ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
+		if err := s.httpSrv.Load().ServeTLS(tcpLn, "", ""); err != nil && err != http.ErrServerClosed {
+			// Close the HTTP/3 server so its Serve call returns and
+			// eg.Wait does not block on the still-listening UDP socket.
+			_ = s.http3Srv.Load().Close()
 			return fmt.Errorf("HTTP/2 server error: %w", err)
 		}
 		return nil
@@ -301,7 +332,10 @@ func (s *Server) startHttp2AndHttp3(tlsConf *tls.Config) error {
 
 	// Start HTTP/3 server in a goroutine
 	eg.Go(func() error {
-		if err := s.http3Srv.Load().ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := s.http3Srv.Load().Serve(udpConn); err != nil && err != http.ErrServerClosed {
+			// Close the HTTP/2 server so its Serve call returns and
+			// eg.Wait does not block on the still-listening TCP listener.
+			_ = s.httpSrv.Load().Close()
 			return fmt.Errorf("HTTP/3 server error: %w", err)
 		}
 		return nil
