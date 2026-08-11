@@ -29,6 +29,7 @@ import (
 	gettylib "github.com/apache/dubbo-getty"
 
 	perrors "github.com/pkg/errors"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -146,6 +147,7 @@ func TestGettyRPCClientLifecycle(t *testing.T) {
 type stubSession struct {
 	closed    atomic.Bool
 	writes    atomic.Int32
+	onWrite   func()
 	onClose   func()
 	closeOnce sync.Once
 }
@@ -183,6 +185,9 @@ func (s *stubSession) SetAttribute(any, any)                   {}
 func (s *stubSession) RemoveAttribute(any)                     {}
 func (s *stubSession) WritePkg(pkg any, timeout time.Duration) (int, int, error) {
 	s.writes.Add(1)
+	if s.onWrite != nil {
+		s.onWrite()
+	}
 	return 1, 1, nil
 }
 func (s *stubSession) WriteBytes([]byte) (int, error)         { return 0, nil }
@@ -347,4 +352,56 @@ func TestTimeoutResetWithConcurrentSelectSession(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("timed out waiting for delayed OnClose")
 	}
+}
+
+func TestRequestTimeoutConcurrentWithClose(t *testing.T) {
+	client := &Client{addr: "127.0.0.1:20880"}
+	sess := &stubSession{}
+	rpcClient := &gettyRPCClient{rpcClient: client, sessions: []*rpcSession{{session: sess}}}
+	client.gettyClient = rpcClient
+	client.gettyClientCreated.Store(true)
+
+	writeStarted := make(chan struct{})
+	sess.onWrite = func() {
+		close(writeStarted)
+	}
+
+	request := remoting.NewRequest("2.0.2")
+	request.TwoWay = true
+	response := remoting.NewPendingResponse(request.ID)
+	remoting.AddPendingResponse(response)
+	requestDone := make(chan error, 1)
+	go func() {
+		requestDone <- client.Request(request, 20*time.Millisecond, response)
+	}()
+
+	select {
+	case <-writeStarted:
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for request write")
+	}
+
+	closeDone := make(chan struct{})
+	go func() {
+		client.Close()
+		close(closeDone)
+	}()
+
+	select {
+	case err := <-requestDone:
+		require.ErrorIs(t, err, errClientReadTimeout)
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for request timeout")
+	}
+	select {
+	case <-closeDone:
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for client close")
+	}
+
+	client.gettyClientMux.RLock()
+	assert.Nil(t, client.gettyClient)
+	assert.False(t, client.gettyClientCreated.Load())
+	client.gettyClientMux.RUnlock()
+	assert.True(t, client.clientClosed)
 }

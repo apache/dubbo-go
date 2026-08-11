@@ -196,8 +196,11 @@ func (c *Client) Connect(url *common.URL) error {
 // Close close network connection
 func (c *Client) Close() {
 	c.mux.Lock()
+	c.gettyClientMux.Lock()
 	client := c.gettyClient
 	c.gettyClient = nil
+	c.gettyClientCreated.Store(false)
+	c.gettyClientMux.Unlock()
 	c.clientClosed = true
 	c.mux.Unlock()
 	if client != nil {
