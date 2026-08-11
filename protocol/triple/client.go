@@ -232,12 +232,12 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		if tripleConf != nil {
 			http3Config = tripleConf.Http3
 		}
-		quicConfig, err := http3config.NewQUICConfig(http3Config, &quic.Config{
+		quicConfig, configErr := http3config.NewQUICConfig(http3Config, &quic.Config{
 			KeepAlivePeriod: keepAliveInterval,
 			MaxIdleTimeout:  keepAliveTimeout,
 		})
-		if err != nil {
-			return nil, err
+		if configErr != nil {
+			return nil, configErr
 		}
 
 		transport = &http3.Transport{
