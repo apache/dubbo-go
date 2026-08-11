@@ -232,13 +232,18 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		if tripleConf != nil {
 			http3Config = tripleConf.Http3
 		}
-		// HTTP/3 transport maps legacy keepalive defaults to QUIC defaults,
-		// then lets explicit Http3Config fields override them.
-		transport, err = newHTTP3Transport(cfg, http3Config, keepAliveInterval, keepAliveTimeout)
+		quicConfig, err := http3config.NewQUICConfig(http3Config, &quic.Config{
+			KeepAlivePeriod: keepAliveInterval,
+			MaxIdleTimeout:  keepAliveTimeout,
+		})
 		if err != nil {
 			return nil, err
 		}
 
+		transport = &http3.Transport{
+			TLSClientConfig: cfg,
+			QUICConfig:      quicConfig,
+		}
 		logger.Info("[Triple][Client] triple http3 client transport init successfully")
 	case constant.CallHTTP2AndHTTP3:
 		if !tlsFlag {
@@ -281,26 +286,6 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		isIDL:        isIDL,
 		triClient:    triClient,
 		healthClient: healthClient,
-	}, nil
-}
-
-func newHTTP3Transport(
-	tlsConfig *tls.Config,
-	http3Config *global.Http3Config,
-	keepAliveInterval time.Duration,
-	keepAliveTimeout time.Duration,
-) (http.RoundTripper, error) {
-	quicConfig, err := http3config.NewQUICConfigWithDefaults(http3Config, &quic.Config{
-		KeepAlivePeriod: keepAliveInterval,
-		MaxIdleTimeout:  keepAliveTimeout,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &http3.Transport{
-		TLSClientConfig: tlsConfig,
-		QUICConfig:      quicConfig,
 	}, nil
 }
 

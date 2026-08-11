@@ -35,7 +35,7 @@ import (
 
 func TestNewQUICConfig(t *testing.T) {
 	t.Run("defaults_preserved_when_unset", func(t *testing.T) {
-		quicConfig, err := NewQUICConfig(&global.Http3Config{})
+		quicConfig, err := NewQUICConfig(&global.Http3Config{}, nil)
 		require.NoError(t, err)
 		require.NotNil(t, quicConfig)
 		assert.Zero(t, quicConfig.KeepAlivePeriod)
@@ -50,7 +50,7 @@ func TestNewQUICConfig(t *testing.T) {
 			MaxIdleTimeout:        "30s",
 			MaxIncomingStreams:    128,
 			MaxIncomingUniStreams: 64,
-		})
+		}, nil)
 		require.NoError(t, err)
 		require.NotNil(t, quicConfig)
 		assert.Equal(t, 15*time.Second, quicConfig.KeepAlivePeriod)
@@ -62,7 +62,7 @@ func TestNewQUICConfig(t *testing.T) {
 	t.Run("invalid_keep_alive_period_returns_error", func(t *testing.T) {
 		quicConfig, err := NewQUICConfig(&global.Http3Config{
 			KeepAlivePeriod: "invalid",
-		})
+		}, nil)
 		require.Error(t, err)
 		assert.Nil(t, quicConfig)
 		assert.ErrorContains(t, err, "keep-alive-period")
@@ -71,21 +71,32 @@ func TestNewQUICConfig(t *testing.T) {
 	t.Run("invalid_max_idle_timeout_returns_error", func(t *testing.T) {
 		quicConfig, err := NewQUICConfig(&global.Http3Config{
 			MaxIdleTimeout: "invalid",
-		})
+		}, nil)
 		require.Error(t, err)
 		assert.Nil(t, quicConfig)
 		assert.ErrorContains(t, err, "max-idle-timeout")
 	})
-}
+	t.Run("nil_config_uses_defaults", func(t *testing.T) {
+		defaults := &quic.Config{
+			KeepAlivePeriod: 10 * time.Second,
+			MaxIdleTimeout:  20 * time.Second,
+		}
 
-func TestNewQUICConfigWithDefaults(t *testing.T) {
+		quicConfig, err := NewQUICConfig(nil, defaults)
+		require.NoError(t, err)
+		require.NotNil(t, quicConfig)
+		assert.NotSame(t, defaults, quicConfig)
+		assert.Equal(t, 10*time.Second, quicConfig.KeepAlivePeriod)
+		assert.Equal(t, 20*time.Second, quicConfig.MaxIdleTimeout)
+	})
+
 	t.Run("defaults_are_used_when_fields_unset", func(t *testing.T) {
 		defaults := &quic.Config{
 			KeepAlivePeriod: 10 * time.Second,
 			MaxIdleTimeout:  20 * time.Second,
 		}
 
-		quicConfig, err := NewQUICConfigWithDefaults(&global.Http3Config{}, defaults)
+		quicConfig, err := NewQUICConfig(&global.Http3Config{}, defaults)
 		require.NoError(t, err)
 		require.NotNil(t, quicConfig)
 		assert.NotSame(t, defaults, quicConfig)
@@ -94,7 +105,7 @@ func TestNewQUICConfigWithDefaults(t *testing.T) {
 	})
 
 	t.Run("explicit_fields_override_defaults", func(t *testing.T) {
-		quicConfig, err := NewQUICConfigWithDefaults(&global.Http3Config{
+		quicConfig, err := NewQUICConfig(&global.Http3Config{
 			KeepAlivePeriod: "15s",
 			MaxIdleTimeout:  "30s",
 		}, &quic.Config{
@@ -108,7 +119,7 @@ func TestNewQUICConfigWithDefaults(t *testing.T) {
 	})
 
 	t.Run("explicit_zero_duration_overrides_default", func(t *testing.T) {
-		quicConfig, err := NewQUICConfigWithDefaults(&global.Http3Config{
+		quicConfig, err := NewQUICConfig(&global.Http3Config{
 			KeepAlivePeriod: "0s",
 			MaxIdleTimeout:  "0s",
 		}, &quic.Config{
