@@ -174,12 +174,12 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	}
 
 	// Resolve keepalive and size-limit options before choosing the transport.
-	clientKeepaliveOpts, keepAliveInterval, keepAliveTimeout, keepaliveErr := resolveClientKeepaliveOptions(url, tripleConf)
-	if keepaliveErr != nil {
-		logger.Errorf("[Triple][Client] resolve client keepalive options failed, err=%v", keepaliveErr)
-		return nil, keepaliveErr
+	clientKeepAliveOpts, keepAliveInterval, keepAliveTimeout, keepAliveErr := resolveClientKeepAliveOptions(url, tripleConf)
+	if keepAliveErr != nil {
+		logger.Errorf("[Triple][Client] genKeepAliveOpts failed, err=%v", keepAliveErr)
+		return nil, keepAliveErr
 	}
-	cliOpts = append(cliOpts, clientKeepaliveOpts...)
+	cliOpts = append(cliOpts, clientKeepAliveOpts...)
 
 	// Build the HTTP transport used by the Triple client.
 	var transport http.RoundTripper
@@ -297,27 +297,27 @@ func (cm *clientManager) callHealthWatch(ctx context.Context, service string) (*
 	return stream, nil
 }
 
-func resolveClientKeepaliveOptions(url *common.URL, tripleConf *global.TripleConfig) ([]tri.ClientOption, time.Duration, time.Duration, error) {
-	var clientKeepaliveOpts []tri.ClientOption
+func resolveClientKeepAliveOptions(url *common.URL, tripleConf *global.TripleConfig) ([]tri.ClientOption, time.Duration, time.Duration, error) {
+	var clientKeepAliveOpts []tri.ClientOption
 
 	// Apply client message-size limits from URL compatibility parameters.
 	maxCallRecvMsgSize := constant.DefaultMaxCallRecvMsgSize
 	if recvMsgSize, err := humanize.ParseBytes(url.GetParam(constant.MaxCallRecvMsgSize, "")); err == nil && recvMsgSize > 0 {
 		maxCallRecvMsgSize = int(recvMsgSize)
 	}
-	clientKeepaliveOpts = append(clientKeepaliveOpts, tri.WithReadMaxBytes(maxCallRecvMsgSize))
+	clientKeepAliveOpts = append(clientKeepAliveOpts, tri.WithReadMaxBytes(maxCallRecvMsgSize))
 	maxCallSendMsgSize := constant.DefaultMaxCallSendMsgSize
 	if sendMsgSize, err := humanize.ParseBytes(url.GetParam(constant.MaxCallSendMsgSize, "")); err == nil && sendMsgSize > 0 {
 		maxCallSendMsgSize = int(sendMsgSize)
 	}
-	clientKeepaliveOpts = append(clientKeepaliveOpts, tri.WithSendMaxBytes(maxCallSendMsgSize))
+	clientKeepAliveOpts = append(clientKeepAliveOpts, tri.WithSendMaxBytes(maxCallSendMsgSize))
 
 	// Legacy URL keepalive parameters remain supported for 3.x compatibility.
 	keepAliveInterval := url.GetParamDuration(constant.KeepAliveInterval, constant.DefaultKeepAliveInterval)
 	keepAliveTimeout := url.GetParamDuration(constant.KeepAliveTimeout, constant.DefaultKeepAliveTimeout)
 
 	if tripleConf == nil {
-		return clientKeepaliveOpts, keepAliveInterval, keepAliveTimeout, nil
+		return clientKeepAliveOpts, keepAliveInterval, keepAliveTimeout, nil
 	}
 
 	var parseErr error
@@ -335,5 +335,5 @@ func resolveClientKeepaliveOptions(url *common.URL, tripleConf *global.TripleCon
 		}
 	}
 
-	return clientKeepaliveOpts, keepAliveInterval, keepAliveTimeout, nil
+	return clientKeepAliveOpts, keepAliveInterval, keepAliveTimeout, nil
 }
