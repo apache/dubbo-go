@@ -157,7 +157,23 @@ func (cli *Client) NewService(service any, opts ...ReferenceOption) (*Connection
 //	if err != nil {
 //	    panic(err)
 //	}
-//	result, err := genericService.Invoke(ctx, "QueryUser", []string{"org.apache.dubbo.samples.User"}, []hessian.Object{user})
+//	var trailers http.Header
+//	result, err := genericService.InvokeWithOptions(
+//	    ctx,
+//	    "QueryUser",
+//	    []string{"org.apache.dubbo.samples.User"},
+//	    []hessian.Object{user},
+//	    client.WithResponseTrailer(&trailers),
+//	)
+//	var typed User
+//	err = genericService.InvokeWithType(
+//	    ctx,
+//	    "QueryUser",
+//	    []string{"org.apache.dubbo.samples.User"},
+//	    []hessian.Object{user},
+//	    &typed,
+//	    client.WithResponseTrailer(&trailers),
+//	)
 func (cli *Client) NewGenericService(referenceStr string, opts ...ReferenceOption) (*generic.GenericService, error) {
 	finalOpts := []ReferenceOption{
 		WithIDL(constant.NONIDL),

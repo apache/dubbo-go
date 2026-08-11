@@ -20,11 +20,14 @@ package proxy
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"reflect"
 	"testing"
 )
 
 import (
+	hessian "github.com/apache/dubbo-go-hessian2"
+
 	perrors "github.com/pkg/errors"
 
 	"github.com/stretchr/testify/assert"
@@ -48,6 +51,14 @@ type TestService struct {
 	MethodFive  func() error
 	MethodSix   func(context.Context, string) (any, error)
 	Echo        func(any, *any) error
+}
+
+type TestServiceWithCallOptions struct {
+	Invoke func(context.Context, string, []string, []hessian.Object, ...base.CallOption) (any, error) `dubbo:"$invoke"`
+}
+
+type TestServiceWithVariadic struct {
+	Echo func(...any) (any, error)
 }
 
 func (s *TestService) Reference() string {
@@ -158,4 +169,71 @@ func (bi *TestProxyInvoker) Invoke(_ context.Context, inv base.Invocation) resul
 	return &result.RPCResult{
 		Rest: inv.Arguments(),
 	}
+}
+
+type callOptionsProxyInvoker struct {
+	base.BaseInvoker
+	invocation base.Invocation
+}
+
+func (i *callOptionsProxyInvoker) Invoke(_ context.Context, inv base.Invocation) result.Result {
+	i.invocation = inv
+	if reply, ok := inv.Reply().(*any); ok {
+		*reply = "ok"
+	}
+	return &result.RPCResult{}
+}
+
+func TestProxyImplementWithCallOptions(t *testing.T) {
+	invoker := &callOptionsProxyInvoker{BaseInvoker: *base.NewBaseInvoker(&common.URL{})}
+	service := &TestServiceWithCallOptions{}
+	p := NewProxy(invoker, nil, nil)
+	p.Implement(service)
+
+	var responseHeader http.Header
+	var responseTrailer http.Header
+	resultValue, err := service.Invoke(
+		context.Background(),
+		"echo",
+		[]string{"java.lang.String"},
+		[]hessian.Object{"hello"},
+		func(options *base.CallOptions) {
+			options.RequestTimeout = "1s"
+			options.Retries = "2"
+			options.ResponseHeader = &responseHeader
+			options.ResponseTrailer = &responseTrailer
+		},
+	)
+
+	require.NoError(t, err)
+	require.Equal(t, "ok", resultValue)
+	require.Equal(t, []any{
+		"echo",
+		[]string{"java.lang.String"},
+		[]hessian.Object{"hello"},
+	}, invoker.invocation.Arguments())
+
+	timeout, ok := invoker.invocation.GetAttachment(constant.TimeoutKey)
+	require.True(t, ok)
+	require.Equal(t, "1s", timeout)
+	retries, ok := invoker.invocation.GetAttachment(constant.RetriesKey)
+	require.True(t, ok)
+	require.Equal(t, "2", retries)
+
+	trailer, ok := invoker.invocation.GetAttribute(constant.ResponseTrailerKey)
+	require.True(t, ok)
+	require.Same(t, &responseTrailer, trailer)
+}
+
+func TestProxyImplementKeepsOrdinaryVariadicArguments(t *testing.T) {
+	invoker := &callOptionsProxyInvoker{BaseInvoker: *base.NewBaseInvoker(&common.URL{})}
+	service := &TestServiceWithVariadic{}
+	p := NewProxy(invoker, nil, nil)
+	p.Implement(service)
+
+	resultValue, err := service.Echo("one", "two")
+
+	require.NoError(t, err)
+	require.Equal(t, "ok", resultValue)
+	require.Equal(t, []any{"one", "two"}, invoker.invocation.Arguments())
 }

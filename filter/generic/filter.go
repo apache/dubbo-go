@@ -60,6 +60,14 @@ func newGenericFilter() filter.Filter {
 	return instance
 }
 
+func copyResponseMetadataAttributes(from, to base.Invocation) {
+	for _, key := range [...]string{constant.ResponseHeaderKey, constant.ResponseTrailerKey} {
+		if value, ok := from.GetAttribute(key); ok {
+			to.SetAttribute(key, value)
+		}
+	}
+}
+
 // Invoke turns the parameters to map for generic method
 func (f *genericFilter) Invoke(ctx context.Context, invoker base.Invoker, inv base.Invocation) result.Result {
 	configuredGeneric := invoker.GetURL().GetParam(constant.GenericKey, "")
@@ -124,6 +132,7 @@ func (f *genericFilter) Invoke(ctx context.Context, invoker base.Invoker, inv ba
 		} else {
 			newIvc.SetAttribute(constant.CallTypeKey, constant.CallUnary)
 		}
+		copyResponseMetadataAttributes(inv, newIvc)
 
 		return invoker.Invoke(ctx, newIvc)
 	} else if isMakingAGenericCall(invoker, inv) {
@@ -151,6 +160,7 @@ func (f *genericFilter) Invoke(ctx context.Context, invoker base.Invoker, inv ba
 		} else {
 			newIvc.SetAttribute(constant.CallTypeKey, constant.CallUnary)
 		}
+		copyResponseMetadataAttributes(inv, newIvc)
 
 		return invoker.Invoke(ctx, newIvc)
 	}

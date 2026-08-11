@@ -19,6 +19,7 @@ package generic
 
 import (
 	"context"
+	"net/http"
 	"net/url"
 	"testing"
 )
@@ -94,6 +95,10 @@ func TestFilter_InvokeWithGenericCall(t *testing.T) {
 		[]string{"java.lang.String"},
 		[]string{"arg1"},
 	}, make(map[string]any))
+	var responseHeader http.Header
+	var responseTrailer http.Header
+	genericInvocation.SetAttribute(constant.ResponseHeaderKey, &responseHeader)
+	genericInvocation.SetAttribute(constant.ResponseTrailerKey, &responseTrailer)
 
 	mockInvoker := mock.NewMockInvoker(ctrl)
 	mockInvoker.EXPECT().GetURL().Return(invokeUrl).Times(3)
@@ -105,6 +110,12 @@ func TestFilter_InvokeWithGenericCall(t *testing.T) {
 			assert.Equal(t, "java.lang.String", args[1].([]string)[0])
 			assert.Equal(t, "arg1", args[2].([]string)[0])
 			assert.Equal(t, constant.GenericSerializationDefault, invocation.GetAttachmentWithDefaultValue(constant.GenericKey, ""))
+			gotHeader, ok := invocation.GetAttribute(constant.ResponseHeaderKey)
+			require.True(t, ok)
+			require.Same(t, &responseHeader, gotHeader)
+			gotTrailer, ok := invocation.GetAttribute(constant.ResponseTrailerKey)
+			require.True(t, ok)
+			require.Same(t, &responseTrailer, gotTrailer)
 			return &result.RPCResult{}
 		})
 
@@ -575,4 +586,38 @@ func TestFilter_OnResponse_DeserializationError(t *testing.T) {
 		// The result should still be the original map
 		assert.Equal(t, mapResult, newRes.Result())
 	})
+}
+
+func TestFilter_InvokePreservesResponseMetadataAttributes(t *testing.T) {
+	invokeURL := common.NewURLWithOptions(
+		common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.GenericKey, constant.GenericSerializationDefault),
+	)
+	filter := &genericFilter{}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	var responseHeader http.Header
+	var responseTrailer http.Header
+	inv := invocation.NewRPCInvocation("echo", []any{"hello"}, nil)
+	inv.SetAttribute(constant.ResponseHeaderKey, &responseHeader)
+	inv.SetAttribute(constant.ResponseTrailerKey, &responseTrailer)
+
+	mockInvoker := mock.NewMockInvoker(ctrl)
+	mockInvoker.EXPECT().GetURL().Return(invokeURL).Times(2)
+	mockInvoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(_ context.Context, transformed base.Invocation) result.Result {
+			gotHeader, ok := transformed.GetAttribute(constant.ResponseHeaderKey)
+			require.True(t, ok)
+			require.Same(t, &responseHeader, gotHeader)
+			gotTrailer, ok := transformed.GetAttribute(constant.ResponseTrailerKey)
+			require.True(t, ok)
+			require.Same(t, &responseTrailer, gotTrailer)
+			return &result.RPCResult{}
+		},
+	).Times(1)
+
+	invokeResult := filter.Invoke(context.Background(), mockInvoker, inv)
+	require.NoError(t, invokeResult.Error())
 }

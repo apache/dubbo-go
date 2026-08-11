@@ -1016,15 +1016,13 @@ func SetClientRouters(routers []*global.RouterConfig) ClientOption {
 	}
 }
 
-// todo: need to be consistent with MethodConfig
-type CallOptions struct {
-	RequestTimeout  string
-	Retries         string
-	ResponseHeader  *http.Header
-	ResponseTrailer *http.Header
-}
+// CallOptions is kept as an alias for compatibility. The shared definition lives
+// in protocol/base so GenericService and the reflective proxy can reuse it.
+type CallOptions = base.CallOptions
 
-type CallOption func(*CallOptions)
+// CallOption is kept as an alias for compatibility. The shared definition lives
+// in protocol/base so GenericService and the reflective proxy can reuse it.
+type CallOption = base.CallOption
 
 func newDefaultCallOptions() *CallOptions {
 	return &CallOptions{}

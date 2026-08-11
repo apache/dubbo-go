@@ -121,7 +121,7 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 
 	valueOfElem := valueOf.Elem()
 
-	makeDubboCallProxy := func(methodName string, outs []reflect.Type) func(in []reflect.Value) []reflect.Value {
+	makeDubboCallProxy := func(methodName string, outs []reflect.Type, hasCallOptions bool) func(in []reflect.Value) []reflect.Value {
 		return func(in []reflect.Value) []reflect.Value {
 			var (
 				err            error
@@ -159,6 +159,15 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 				}
 			}
 
+			callOptions := &base.CallOptions{}
+			if hasCallOptions {
+				optionValues := in[end-1]
+				end--
+				for i := 0; i < optionValues.Len(); i++ {
+					optionValues.Index(i).Interface().(base.CallOption)(callOptions)
+				}
+			}
+
 			if end-start <= 0 {
 				inIArr = []any{}
 				inVArr = []reflect.Value{}
@@ -181,6 +190,17 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 				invocation.WithCallBack(p.callback), invocation.WithParameterValues(inVArr))
 			if !replyEmptyFlag {
 				inv.SetReply(reply.Interface())
+			}
+
+			if hasCallOptions {
+				inv.SetAttachment(constant.TimeoutKey, callOptions.RequestTimeout)
+				inv.SetAttachment(constant.RetriesKey, callOptions.Retries)
+				if callOptions.ResponseHeader != nil {
+					inv.SetAttribute(constant.ResponseHeaderKey, callOptions.ResponseHeader)
+				}
+				if callOptions.ResponseTrailer != nil {
+					inv.SetAttribute(constant.ResponseTrailerKey, callOptions.ResponseTrailer)
+				}
 			}
 
 			for k, value := range p.attachments {
@@ -231,7 +251,7 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 	}
 }
 
-func refectAndMakeObjectFunc(valueOfElem reflect.Value, makeDubboCallProxy func(methodName string, outs []reflect.Type) func(in []reflect.Value) []reflect.Value) error {
+func refectAndMakeObjectFunc(valueOfElem reflect.Value, makeDubboCallProxy func(methodName string, outs []reflect.Type, hasCallOptions bool) func(in []reflect.Value) []reflect.Value) error {
 	typeOf := valueOfElem.Type()
 	// check incoming interface, incoming interface's elem must be a struct.
 	if typeOf.Kind() != reflect.Struct {
@@ -266,7 +286,8 @@ func refectAndMakeObjectFunc(valueOfElem reflect.Value, makeDubboCallProxy func(
 			}
 
 			// do method proxy here:
-			f.Set(reflect.MakeFunc(f.Type(), makeDubboCallProxy(methodName, funcOuts)))
+			hasCallOptions := t.Type.IsVariadic() && t.Type.In(t.Type.NumIn()-1).Elem() == reflect.TypeFor[base.CallOption]()
+			f.Set(reflect.MakeFunc(f.Type(), makeDubboCallProxy(methodName, funcOuts, hasCallOptions)))
 			logger.Debugf("[Proxy] set method [%s]", methodName)
 		} else if f.IsValid() && f.CanSet() {
 			// for struct combination

@@ -19,6 +19,7 @@ package generic
 
 import (
 	"context"
+	"errors"
 	"reflect"
 )
 
@@ -28,12 +29,17 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/filter/generic/generalizer"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 // GenericService uses for generic invoke for service call
 type GenericService struct {
-	Invoke       func(ctx context.Context, methodName string, types []string, args []hessian.Object) (any, error) `dubbo:"$invoke"`
-	referenceStr string
+	// Invoke is the legacy generic call entry point. Use InvokeWithOptions when
+	// per-call options such as response metadata targets are required.
+	Invoke func(ctx context.Context, methodName string, types []string, args []hessian.Object) (any, error) `dubbo:"$invoke"`
+	// InvokeWithOptions is the options-aware generic call entry point.
+	InvokeWithOptions func(ctx context.Context, methodName string, types []string, args []hessian.Object, opts ...base.CallOption) (any, error) `dubbo:"$invoke"`
+	referenceStr      string
 }
 
 // NewGenericService returns a GenericService instance
@@ -47,7 +53,8 @@ func (s *GenericService) Reference() string {
 }
 
 // InvokeWithType invokes the remote method and deserializes the result into the reply struct.
-// The reply parameter must be a non-nil pointer to the target type.
+// The reply parameter must be a non-nil pointer to the target type. Optional call options
+// are forwarded through the options-aware generic call path.
 //
 // Note: This method uses MapGeneralizer for deserialization, which means it only supports
 // the default map-based generic serialization (generic=true). If you are using other
@@ -62,34 +69,50 @@ func (s *GenericService) Reference() string {
 //	    return err
 //	}
 //	fmt.Println(user.Name, user.Age)
-func (s *GenericService) InvokeWithType(ctx context.Context, methodName string, types []string, args []hessian.Object, reply any) error {
-	// Validate the reply pointer
+func (s *GenericService) InvokeWithType(ctx context.Context, methodName string, types []string, args []hessian.Object, reply any, opts ...base.CallOption) error {
+	if len(opts) > 0 {
+		return s.invokeWithTypeOptions(ctx, methodName, types, args, reply, opts...)
+	}
+	return s.invokeWithType(ctx, methodName, types, args, reply, func(ctx context.Context, methodName string, types []string, args []hessian.Object) (any, error) {
+		return s.Invoke(ctx, methodName, types, args)
+	})
+}
+
+// InvokeWithTypeOptions is the explicit options-named form of InvokeWithType.
+// The reply parameter must be a non-nil pointer. It returns an initialization error
+// if the service was not implemented with the options-aware proxy path.
+func (s *GenericService) InvokeWithTypeOptions(ctx context.Context, methodName string, types []string, args []hessian.Object, reply any, opts ...base.CallOption) error {
+	return s.invokeWithTypeOptions(ctx, methodName, types, args, reply, opts...)
+}
+
+func (s *GenericService) invokeWithTypeOptions(ctx context.Context, methodName string, types []string, args []hessian.Object, reply any, opts ...base.CallOption) error {
+	if s.InvokeWithOptions == nil {
+		return errors.New("generic invoke with options is not initialized")
+	}
+	return s.invokeWithType(ctx, methodName, types, args, reply, func(ctx context.Context, methodName string, types []string, args []hessian.Object) (any, error) {
+		return s.InvokeWithOptions(ctx, methodName, types, args, opts...)
+	})
+}
+
+func (s *GenericService) invokeWithType(ctx context.Context, methodName string, types []string, args []hessian.Object, reply any, invoke func(context.Context, string, []string, []hessian.Object) (any, error)) error {
 	replyValue, err := validateReplyPointer(reply)
 	if err != nil {
 		return err
 	}
 
-	// Call the underlying Invoke method
-	result, err := s.Invoke(ctx, methodName, types, args)
+	result, err := invoke(ctx, methodName, types, args)
 	if err != nil {
 		return err
 	}
-
 	if result == nil {
 		return nil
 	}
 
-	// Get the element type that the pointer points to
-	replyType := replyValue.Elem().Type()
-
-	// Use MapGeneralizer to realize the map result to the target struct
 	g := generalizer.GetMapGeneralizer()
-	realized, err := realizeResult(result, replyType, g)
+	realized, err := realizeResult(result, replyValue.Elem().Type(), g)
 	if err != nil {
 		return err
 	}
-
-	// Set the realized value to reply
 	if realized != nil {
 		replyValue.Elem().Set(reflect.ValueOf(realized))
 	}
