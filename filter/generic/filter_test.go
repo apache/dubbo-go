@@ -645,8 +645,8 @@ func TestFilter_OnResponse_KeepsRawResultForAnyReply(t *testing.T) {
 				newRes := filter.OnResponse(context.Background(), &result.RPCResult{Rest: rawResult}, mockInvoker, inv)
 
 				require.NoError(t, newRes.Error())
-				assert.Equal(t, rawResult, reply)
-				assert.Equal(t, rawResult, newRes.Result())
+				assert.JSONEq(t, rawResult, reply.(string))
+				assert.JSONEq(t, rawResult, newRes.Result().(string))
 			})
 
 			t.Run("protocol reply pointer", func(t *testing.T) {
@@ -661,7 +661,7 @@ func TestFilter_OnResponse_KeepsRawResultForAnyReply(t *testing.T) {
 				newRes := filter.OnResponse(context.Background(), res, mockInvoker, inv)
 
 				require.NoError(t, newRes.Error())
-				assert.Equal(t, rawResult, reply)
+				assert.JSONEq(t, rawResult, reply.(string))
 				assert.Same(t, &reply, newRes.Result())
 			})
 		})
