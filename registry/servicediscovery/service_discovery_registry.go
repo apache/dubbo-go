@@ -622,7 +622,7 @@ func (s *serviceDiscoveryRegistry) subscribeAndNotify(url *common.URL, serviceNa
 
 	logger.Infof("[Registry][ServiceDiscovery] start subscribing to registry for applications=%s with a new go routine", serviceNamesKey)
 	go func() {
-		if err := s.addInstanceListener(url, listener); err != nil {
+		if err := s.addInstanceListener(serviceNamesKey, url, listener); err != nil {
 			logger.Errorf("[Registry][ServiceDiscovery] add instance listener catch error, url=%s err=%s", url.String(), err.Error())
 			s.scheduleSubscribeRetry(serviceNamesKey, &subscribeRetry{listener: listener, url: url})
 		}
@@ -630,8 +630,10 @@ func (s *serviceDiscoveryRegistry) subscribeAndNotify(url *common.URL, serviceNa
 }
 
 // addInstanceListener installs the listener into the service discovery and
-// publishes the subscribe metrics.
-func (s *serviceDiscoveryRegistry) addInstanceListener(url *common.URL, listener registry.ServiceInstancesChangedListener) error {
+// publishes the subscribe metrics. A success resolves any pending retry for
+// the key so its timer cannot fire an extra (possibly non-idempotent)
+// AddListener.
+func (s *serviceDiscoveryRegistry) addInstanceListener(serviceNamesKey string, url *common.URL, listener registry.ServiceInstancesChangedListener) error {
 	event := metricsMetadata.NewMetadataMetricTimeEvent(metricsMetadata.SubscribeServiceRt)
 	err := s.serviceDiscovery.AddListener(listener)
 	event.Succ = err == nil
@@ -639,6 +641,9 @@ func (s *serviceDiscoveryRegistry) addInstanceListener(url *common.URL, listener
 	event.Attachment[constant.InterfaceKey] = url.Interface()
 	metrics.Publish(event)
 	metrics.Publish(metricsRegistry.NewServerSubscribeEvent(err == nil))
+	if err == nil {
+		s.resolveSubscribeRetry(serviceNamesKey, listener)
+	}
 	return err
 }
 
@@ -652,23 +657,30 @@ var (
 	subscribeRetryMaxDelay = 30 * time.Second
 )
 
-// subscribeRetry is a pending AddListener retry for one serviceNamesKey.
+// subscribeRetry is a pending or in-flight AddListener retry for one
+// serviceNamesKey. The entry stays in the map while the attempt is in flight
+// (inFlight) so a concurrent failure cannot seed a fresh attempts=0 state and
+// reset the backoff. canceled is set when the state is resolved by a
+// successful subscribe or canceled by unsubscribe/Destroy; an in-flight
+// attempt checks it before rescheduling.
 type subscribeRetry struct {
 	listener registry.ServiceInstancesChangedListener
 	url      *common.URL
 	timer    *time.Timer
 	attempts int
+	inFlight bool
+	canceled bool
 }
 
 // scheduleSubscribeRetry arms the retry timer for serviceNamesKey after a
 // failed AddListener call. One pending retry per key: repeated failures share
-// the same timer instead of stacking new ones. Retries continue with capped
+// the same state instead of stacking new ones. Retries continue with capped
 // exponential backoff and jitter until the subscription is established, the
 // last subscriber unsubscribes, or the registry is destroyed.
 func (s *serviceDiscoveryRegistry) scheduleSubscribeRetry(serviceNamesKey string, state *subscribeRetry) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-	if s.destroyed {
+	if s.destroyed || state.canceled {
 		return
 	}
 	if !listenerHasSubscribers(state.listener) {
@@ -679,12 +691,18 @@ func (s *serviceDiscoveryRegistry) scheduleSubscribeRetry(serviceNamesKey string
 	if _, ok := s.subscribeRetries[serviceNamesKey]; ok {
 		return
 	}
+	s.subscribeRetries[serviceNamesKey] = state
+	s.armSubscribeRetryLocked(serviceNamesKey, state)
+}
+
+// armSubscribeRetryLocked computes the next backoff delay and arms the retry
+// timer; caller must hold s.lock and the state must be in the map.
+func (s *serviceDiscoveryRegistry) armSubscribeRetryLocked(serviceNamesKey string, state *subscribeRetry) {
 	delay := subscribeRetryDelay(state.attempts)
 	state.attempts++
 	state.timer = time.AfterFunc(delay, func() {
 		s.retryAddListener(serviceNamesKey)
 	})
-	s.subscribeRetries[serviceNamesKey] = state
 	logger.Debugf("[Registry][ServiceDiscovery] instance listener for applications=%s not established, retry in %s", serviceNamesKey, delay)
 }
 
@@ -696,15 +714,39 @@ func (s *serviceDiscoveryRegistry) cancelSubscribeRetry(serviceNamesKey string) 
 }
 
 // cancelSubscribeRetryLocked stops a pending AddListener retry; caller must
-// hold s.lock.
+// hold s.lock. An in-flight attempt is not interrupted but will not
+// reschedule.
 func (s *serviceDiscoveryRegistry) cancelSubscribeRetryLocked(serviceNamesKey string) {
 	if state, ok := s.subscribeRetries[serviceNamesKey]; ok {
-		state.timer.Stop()
+		state.canceled = true
+		if state.timer != nil {
+			state.timer.Stop()
+		}
 		delete(s.subscribeRetries, serviceNamesKey)
 	}
 }
 
-// retryAddListener re-runs AddListener after the backoff delay. On success it
+// resolveSubscribeRetry drops a pending retry after a successful AddListener
+// for the same listener: the subscription is established, so the timer must
+// not fire an extra (possibly non-idempotent) AddListener. An in-flight
+// attempt that later fails sees canceled and does not reschedule.
+func (s *serviceDiscoveryRegistry) resolveSubscribeRetry(serviceNamesKey string, listener registry.ServiceInstancesChangedListener) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	state, ok := s.subscribeRetries[serviceNamesKey]
+	if !ok || state.listener != listener {
+		return
+	}
+	state.canceled = true
+	if state.timer != nil {
+		state.timer.Stop()
+	}
+	delete(s.subscribeRetries, serviceNamesKey)
+}
+
+// retryAddListener re-runs AddListener after the backoff delay. The state
+// stays in the map while the attempt is in flight so concurrent failures
+// dedup against it and the backoff attempts keep growing. On success it
 // re-syncs the latest instance snapshot so instance changes missed while the
 // subscription was down are picked up instead of leaving the consumer on a
 // stale view.
@@ -715,21 +757,44 @@ func (s *serviceDiscoveryRegistry) retryAddListener(serviceNamesKey string) {
 		s.lock.Unlock()
 		return
 	}
-	delete(s.subscribeRetries, serviceNamesKey)
-	active := !s.destroyed &&
+	state.timer = nil
+	state.inFlight = true
+	active := !s.destroyed && !state.canceled &&
 		s.serviceListeners[serviceNamesKey] == state.listener &&
 		listenerHasSubscribers(state.listener)
 	s.lock.Unlock()
 
 	if !active {
 		// Registry destroyed, listener replaced, or no subscriber left:
-		// stop retrying so the loop cannot leak.
+		// drop the state so the loop cannot leak.
+		s.lock.Lock()
+		if s.subscribeRetries[serviceNamesKey] == state {
+			delete(s.subscribeRetries, serviceNamesKey)
+		}
+		s.lock.Unlock()
 		return
 	}
-	if err := s.addInstanceListener(state.url, state.listener); err != nil {
+	if err := s.addInstanceListener(serviceNamesKey, state.url, state.listener); err != nil {
+		s.lock.Lock()
+		defer s.lock.Unlock()
+		if state.canceled || s.destroyed || !listenerHasSubscribers(state.listener) {
+			// A concurrent successful subscribe resolved this state, or the
+			// listener is gone: drop it instead of rescheduling.
+			if s.subscribeRetries[serviceNamesKey] == state {
+				delete(s.subscribeRetries, serviceNamesKey)
+			}
+			return
+		}
+		// Re-arm in place: the entry never left the map, so the backoff
+		// attempts keep growing and no duplicate state can appear.
+		state.inFlight = false
+		s.armSubscribeRetryLocked(serviceNamesKey, state)
 		logger.Warnf("[Registry][ServiceDiscovery] retry add instance listener failed, applications=%s attempt=%d err=%s",
 			serviceNamesKey, state.attempts, err.Error())
-		s.scheduleSubscribeRetry(serviceNamesKey, state)
+		return
+	}
+	// Success: addInstanceListener already resolved the state.
+	if s.isDestroyed() {
 		return
 	}
 	logger.Infof("[Registry][ServiceDiscovery] instance listener for applications=%s established after %d retries, re-syncing latest instances",
@@ -749,6 +814,13 @@ func subscribeRetryDelay(attempt int) time.Duration {
 		}
 	}
 	return delay + time.Duration(rand.Int64N(int64(delay/4)+1))
+}
+
+// isDestroyed reports whether Destroy has run.
+func (s *serviceDiscoveryRegistry) isDestroyed() bool {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	return s.destroyed
 }
 
 // listenerHasSubscribers reports whether the listener still has subscribers.

@@ -87,19 +87,29 @@ func stubSubscribeRetryDelays(t *testing.T, initial, max time.Duration) {
 
 // retrySubscribeDiscovery is a concurrency-safe ServiceDiscovery stub whose
 // AddListener keeps failing while fail is set, so tests can control exactly
-// when the subscription is allowed to be established.
+// when the subscription is allowed to be established. When blockOnCall > 0,
+// the Nth AddListener call blocks until blockRelease is closed, letting tests
+// hold an attempt in flight deterministically.
 type retrySubscribeDiscovery struct {
 	mockServiceDiscovery
-	mu        sync.Mutex
-	fail      atomic.Bool
-	addCalls  int
-	instances []registry.ServiceInstance
+	mu           sync.Mutex
+	fail         atomic.Bool
+	addCalls     int
+	instances    []registry.ServiceInstance
+	blockOnCall  int
+	blockEntered chan struct{}
+	blockRelease chan struct{}
 }
 
 func (m *retrySubscribeDiscovery) AddListener(registry.ServiceInstancesChangedListener) error {
 	m.mu.Lock()
-	defer m.mu.Unlock()
 	m.addCalls++
+	call := m.addCalls
+	m.mu.Unlock()
+	if call == m.blockOnCall && m.blockRelease != nil {
+		close(m.blockEntered)
+		<-m.blockRelease
+	}
 	if m.fail.Load() {
 		return perrors.New("transient subscribe failure")
 	}
@@ -275,9 +285,121 @@ func TestSubscribeRetryUsesSingleTimer(t *testing.T) {
 	// pending retry, not arm a second timer.
 	reg.SubscribeURL(newRetryConsumerURL(t), &retryNotifyListener{}, services)
 	require.Eventually(t, func() bool { return sd.addListenerCalls() >= 2 }, time.Second, 5*time.Millisecond)
+	// addCalls is incremented before the failure path schedules; give both
+	// schedule attempts time to settle before asserting on the map.
+	time.Sleep(100 * time.Millisecond)
 
 	reg.lock.RLock()
 	defer reg.lock.RUnlock()
 	assert.Len(t, reg.subscribeRetries, 1, "repeated failures must share the pending retry timer")
 	assert.Equal(t, 1, reg.subscribeRetries[testApp].attempts)
+}
+
+// TestSubscribeRetryResolvedByConcurrentSuccess covers the review finding: a
+// subscribe that succeeds while a retry is pending must cancel the pending
+// timer — otherwise it fires an extra AddListener, which is not safe for
+// service discoveries whose AddListener is not idempotent (e.g. Polaris
+// AddSubscriber, ZooKeeper ListenServiceEvent).
+func TestSubscribeRetryResolvedByConcurrentSuccess(t *testing.T) {
+	stubSubscribeRetryDelays(t, 500*time.Millisecond, time.Second)
+
+	sd := &retrySubscribeDiscovery{}
+	sd.fail.Store(true)
+	reg := newRetryTestRegistry(sd)
+	t.Cleanup(reg.Destroy)
+
+	services := gxset.NewSet(testApp)
+	reg.SubscribeURL(newRetryConsumerURL(t), &retryNotifyListener{}, services)
+	require.Eventually(t, func() bool { return sd.addListenerCalls() >= 1 }, time.Second, 5*time.Millisecond,
+		"initial AddListener attempt should have run")
+	require.Eventually(t, func() bool {
+		reg.lock.RLock()
+		defer reg.lock.RUnlock()
+		return len(reg.subscribeRetries) == 1
+	}, time.Second, 5*time.Millisecond, "retry should be pending after the failed subscribe")
+
+	// A later subscribe succeeds while the retry is still pending.
+	sd.fail.Store(false)
+	reg.SubscribeURL(newRetryConsumerURL(t), &retryNotifyListener{}, services)
+	require.Eventually(t, func() bool { return sd.addListenerCalls() >= 2 }, time.Second, 5*time.Millisecond)
+
+	// Wait well beyond the backoff: the pending retry must have been resolved.
+	time.Sleep(700 * time.Millisecond)
+	assert.Equal(t, 2, sd.addListenerCalls(), "successful subscribe must cancel the pending retry")
+	reg.lock.RLock()
+	defer reg.lock.RUnlock()
+	assert.Empty(t, reg.subscribeRetries, "retry state must be resolved after success")
+}
+
+// TestSubscribeRetryInFlightStatePreserved covers the review finding: the
+// retry state must stay in the map while its attempt is in flight, so a
+// concurrent failing subscribe dedups against it instead of seeding a fresh
+// attempts=0 state that resets the backoff.
+func TestSubscribeRetryInFlightStatePreserved(t *testing.T) {
+	// Large delays: no timer fires during the test; the retry is driven
+	// synchronously instead.
+	stubSubscribeRetryDelays(t, time.Hour, 2*time.Hour)
+
+	sd := &retrySubscribeDiscovery{
+		blockOnCall:  2,
+		blockEntered: make(chan struct{}),
+		blockRelease: make(chan struct{}),
+	}
+	sd.fail.Store(true)
+	reg := newRetryTestRegistry(sd)
+	t.Cleanup(reg.Destroy)
+
+	services := gxset.NewSet(testApp)
+	reg.SubscribeURL(newRetryConsumerURL(t), &retryNotifyListener{}, services)
+	require.Eventually(t, func() bool { return sd.addListenerCalls() >= 1 }, time.Second, 5*time.Millisecond)
+
+	var state *subscribeRetry
+	require.Eventually(t, func() bool {
+		reg.lock.RLock()
+		defer reg.lock.RUnlock()
+		state = reg.subscribeRetries[testApp]
+		return state != nil
+	}, time.Second, 5*time.Millisecond, "retry should be pending after the failed subscribe")
+	reg.lock.Lock()
+	if state.timer != nil {
+		state.timer.Stop()
+	}
+	reg.lock.Unlock()
+
+	// Drive the retry attempt synchronously; it blocks inside AddListener
+	// call #2, i.e. in flight.
+	retryDone := make(chan struct{})
+	go func() {
+		defer close(retryDone)
+		reg.retryAddListener(testApp)
+	}()
+	select {
+	case <-sd.blockEntered:
+	case <-time.After(2 * time.Second):
+		t.Fatal("retry attempt never reached AddListener")
+	}
+
+	// A concurrent subscribe fails while the retry is in flight.
+	reg.SubscribeURL(newRetryConsumerURL(t), &retryNotifyListener{}, services)
+	require.Eventually(t, func() bool { return sd.addListenerCalls() >= 3 }, time.Second, 5*time.Millisecond)
+	// Let its schedule attempt finish before the in-flight attempt resolves,
+	// so the dedup check runs while the in-flight state is still present.
+	time.Sleep(100 * time.Millisecond)
+
+	reg.lock.RLock()
+	current := reg.subscribeRetries[testApp]
+	reg.lock.RUnlock()
+	assert.Same(t, state, current,
+		"in-flight retry state must be preserved, not replaced by a fresh attempts=0 state")
+
+	// Let the in-flight attempt succeed: the state is resolved.
+	sd.fail.Store(false)
+	close(sd.blockRelease)
+	<-retryDone
+	require.Eventually(t, func() bool {
+		reg.lock.RLock()
+		defer reg.lock.RUnlock()
+		return len(reg.subscribeRetries) == 0
+	}, time.Second, 5*time.Millisecond, "successful in-flight retry must resolve the state")
+	assert.Equal(t, 3, sd.addListenerCalls(), "no extra AddListener beyond the three driven attempts")
 }
