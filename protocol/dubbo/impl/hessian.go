@@ -61,60 +61,9 @@ func (h HessianSerializer) Unmarshal(input []byte, p *DubboPackage) error {
 }
 
 func marshalResponse(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
-	header := p.Header
 	response := EnsureResponsePayload(p.Body)
-	if header.ResponseStatus == Response_OK {
-		if p.IsHeartBeat() {
-			_ = encoder.Encode(nil)
-		} else {
-			var version string
-			if attachmentVersion, ok := response.Attachments[DUBBO_VERSION_KEY]; ok {
-				version = attachmentVersion.(string)
-			}
-			atta := isSupportResponseAttachment(version)
-
-			var resWithException, resValue, resNullValue int32
-			if atta {
-				resWithException = RESPONSE_WITH_EXCEPTION_WITH_ATTACHMENTS
-				resValue = RESPONSE_VALUE_WITH_ATTACHMENTS
-				resNullValue = RESPONSE_NULL_VALUE_WITH_ATTACHMENTS
-			} else {
-				resWithException = RESPONSE_WITH_EXCEPTION
-				resValue = RESPONSE_VALUE
-				resNullValue = RESPONSE_NULL_VALUE
-			}
-
-			if response.Exception != nil { // throw error
-				_ = encoder.Encode(resWithException)
-				switch ex := response.Exception.(type) {
-				case *hessian.GenericException:
-					_ = encoder.Encode(java_exception.NewDubboGenericException(ex.ExceptionClass, ex.ExceptionMessage))
-				case hessian.GenericException:
-					_ = encoder.Encode(java_exception.NewDubboGenericException(ex.ExceptionClass, ex.ExceptionMessage))
-				case java_exception.Throwabler:
-					_ = encoder.Encode(ex)
-				default:
-					_ = encoder.Encode(java_exception.NewThrowable(response.Exception.Error()))
-				}
-			} else {
-				if response.RspObj == nil {
-					_ = encoder.Encode(resNullValue)
-				} else {
-					_ = encoder.Encode(resValue)
-					_ = encoder.Encode(response.RspObj) // result
-				}
-			}
-
-			if atta {
-				_ = encoder.Encode(response.Attachments) // attachments
-			}
-		}
-	} else {
-		if response.Exception != nil { // throw error
-			_ = encoder.Encode(response.Exception.Error())
-		} else {
-			_ = encoder.Encode(response.RspObj)
-		}
+	if err := encodeResponse(encoder, p, response); err != nil {
+		return nil, err
 	}
 	bs := encoder.Buffer()
 	// encNull
@@ -122,13 +71,97 @@ func marshalResponse(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 	return bs, nil
 }
 
+func encodeResponse(encoder *hessian.Encoder, p DubboPackage, response *ResponsePayload) error {
+	if p.Header.ResponseStatus != Response_OK {
+		if response.Exception != nil {
+			return encodeHessianValue(encoder, response.Exception.Error(), "response exception message")
+		}
+		return encodeHessianValue(encoder, response.RspObj, "response value")
+	}
+	if p.IsHeartBeat() {
+		return encodeHessianValue(encoder, nil, "heartbeat response")
+	}
+
+	var version string
+	if attachmentVersion, ok := response.Attachments[DUBBO_VERSION_KEY]; ok {
+		version = attachmentVersion.(string)
+	}
+	withAttachments := isSupportResponseAttachment(version)
+	resWithException, resValue, resNullValue := responseTypes(withAttachments)
+
+	if err := encodeResponsePayload(encoder, response, resWithException, resValue, resNullValue); err != nil {
+		return err
+	}
+	if withAttachments {
+		return encodeHessianValue(encoder, response.Attachments, "response attachments")
+	}
+	return nil
+}
+
+func encodeResponsePayload(encoder *hessian.Encoder, response *ResponsePayload, resWithException, resValue, resNullValue int32) error {
+	if response.Exception != nil {
+		return encodeExceptionResponse(encoder, response.Exception, resWithException)
+	}
+	if response.RspObj == nil {
+		return encodeHessianValue(encoder, resNullValue, "null response type")
+	}
+	if err := encodeHessianValue(encoder, resValue, "response value type"); err != nil {
+		return err
+	}
+	return encodeHessianValue(encoder, response.RspObj, "response value")
+}
+
+func responseTypes(withAttachments bool) (int32, int32, int32) {
+	if withAttachments {
+		return RESPONSE_WITH_EXCEPTION_WITH_ATTACHMENTS, RESPONSE_VALUE_WITH_ATTACHMENTS, RESPONSE_NULL_VALUE_WITH_ATTACHMENTS
+	}
+	return RESPONSE_WITH_EXCEPTION, RESPONSE_VALUE, RESPONSE_NULL_VALUE
+}
+
+func encodeResponseException(encoder *hessian.Encoder, exception error) error {
+	var value any
+	switch ex := exception.(type) {
+	case *hessian.GenericException:
+		value = java_exception.NewDubboGenericException(ex.ExceptionClass, ex.ExceptionMessage)
+	case hessian.GenericException:
+		value = java_exception.NewDubboGenericException(ex.ExceptionClass, ex.ExceptionMessage)
+	case java_exception.Throwabler:
+		value = ex
+	default:
+		value = java_exception.NewThrowable(exception.Error())
+	}
+	return encodeHessianValue(encoder, value, "response exception")
+}
+
+func encodeExceptionResponse(encoder *hessian.Encoder, exception error, responseType int32) error {
+	if err := encodeHessianValue(encoder, responseType, "response exception type"); err != nil {
+		return err
+	}
+	return encodeResponseException(encoder, exception)
+}
+
+func encodeHessianValue(encoder *hessian.Encoder, value any, description string) error {
+	if err := encoder.Encode(value); err != nil {
+		return perrors.Wrapf(err, "failed to encode %s", description)
+	}
+	return nil
+}
+
 func marshalRequest(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 	service := p.Service
 	request := EnsureRequestPayload(p.Body)
-	_ = encoder.Encode(DEFAULT_DUBBO_PROTOCOL_VERSION)
-	_ = encoder.Encode(service.Path)
-	_ = encoder.Encode(service.Version)
-	_ = encoder.Encode(service.Method)
+	if err := encodeHessianValue(encoder, DEFAULT_DUBBO_PROTOCOL_VERSION, "dubbo protocol version"); err != nil {
+		return nil, err
+	}
+	if err := encodeHessianValue(encoder, service.Path, "service path"); err != nil {
+		return nil, err
+	}
+	if err := encodeHessianValue(encoder, service.Version, "service version"); err != nil {
+		return nil, err
+	}
+	if err := encodeHessianValue(encoder, service.Method, "service method"); err != nil {
+		return nil, err
+	}
 
 	args, ok := request.Params.([]any)
 
@@ -140,7 +173,10 @@ func marshalRequest(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 	if err != nil {
 		return nil, perrors.Wrapf(err, " PackRequest(args:%+v)", args)
 	}
-	_ = encoder.Encode(types)
+	err = encodeHessianValue(encoder, types, "argument types")
+	if err != nil {
+		return nil, err
+	}
 	for _, v := range args {
 		if e := encoder.Encode(v); e != nil {
 			return nil, perrors.Wrapf(e, "failed to encode argument: %v", v)

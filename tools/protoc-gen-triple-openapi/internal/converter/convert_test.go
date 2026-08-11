@@ -188,6 +188,18 @@ func greetRequest(format string) *pluginpb.CodeGeneratorRequest {
 						},
 					},
 				},
+				SourceCodeInfo: &descriptorpb.SourceCodeInfo{
+					Location: []*descriptorpb.SourceCodeInfo_Location{
+						sourceComment([]int32{4, 0}, "A request to the Greet RPC."),
+						sourceComment([]int32{4, 0, 2, 0}, "Name of the person to greet."),
+						sourceComment([]int32{4, 0, 2, 1}, "Alternative names for the person."),
+						sourceComment([]int32{4, 0, 2, 2}, "Additional request metadata."),
+						sourceComment([]int32{4, 0, 2, 3}, "Preferred greeting style."),
+						sourceComment([]int32{4, 0, 2, 4}, "Profile details for the person."),
+						sourceComment([]int32{6, 0}, "APIs for greeting users."),
+						sourceComment([]int32{6, 0, 2, 0}, "Returns a greeting for a request."),
+					},
+				},
 			},
 		},
 	}
@@ -290,4 +302,12 @@ func field(name, jsonName string, number int32, label descriptorpb.FieldDescript
 		fd.TypeName = proto.String(typeName)
 	}
 	return fd
+}
+
+func sourceComment(path []int32, comment string) *descriptorpb.SourceCodeInfo_Location {
+	return &descriptorpb.SourceCodeInfo_Location{
+		Path:            path,
+		Span:            []int32{0, 0, 0, 1},
+		LeadingComments: proto.String(comment),
+	}
 }
