@@ -196,8 +196,11 @@ func (c *Client) Connect(url *common.URL) error {
 // Close close network connection
 func (c *Client) Close() {
 	c.mux.Lock()
+	c.gettyClientMux.Lock()
 	client := c.gettyClient
 	c.gettyClient = nil
+	c.gettyClientCreated.Store(false)
+	c.gettyClientMux.Unlock()
 	c.clientClosed = true
 	c.mux.Unlock()
 	if client != nil {
@@ -210,7 +213,7 @@ func (c *Client) Request(request *remoting.Request, timeout time.Duration, respo
 	if timeout <= 0 {
 		timeout = c.opts.RequestTimeout
 	}
-	_, session, err := c.selectSession(c.addr)
+	rpcClient, session, err := c.selectSession(c.addr)
 	if err != nil {
 		return perrors.WithStack(err)
 	}
@@ -235,6 +238,9 @@ func (c *Client) Request(request *remoting.Request, timeout time.Duration, respo
 
 	select {
 	case <-gxtime.After(timeout):
+		remoting.RemovePendingResponse(remoting.SequenceType(request.ID))
+		rpcClient.removeSession(session)
+		go session.Close()
 		return perrors.WithStack(errClientReadTimeout)
 	case <-response.Done:
 		err = response.Err
@@ -258,26 +264,18 @@ func (c *Client) selectSession(addr string) (*gettyRPCClient, getty.Session, err
 		return nil, nil, perrors.New("client have been closed")
 	}
 
-	if !c.gettyClientCreated.Load() {
-		c.gettyClientMux.Lock()
-		if c.gettyClient == nil {
-			rpcClientConn, rpcErr := newGettyRPCClientConn(c, addr)
-			if rpcErr != nil {
-				c.gettyClientMux.Unlock()
-				return nil, nil, perrors.WithStack(rpcErr)
-			}
-			c.gettyClientCreated.Store(true)
-			c.gettyClient = rpcClientConn
+	c.gettyClientMux.Lock()
+	defer c.gettyClientMux.Unlock()
+	if c.gettyClient == nil {
+		rpcClientConn, rpcErr := newGettyRPCClientConn(c, addr)
+		if rpcErr != nil {
+			return nil, nil, perrors.WithStack(rpcErr)
 		}
-		client := c.gettyClient
-		session := c.gettyClient.selectSession()
-		c.gettyClientMux.Unlock()
-		return client, session, nil
+		c.gettyClient = rpcClientConn
 	}
-	c.gettyClientMux.RLock()
+	c.gettyClientCreated.Store(true)
 	client := c.gettyClient
-	session := c.gettyClient.selectSession()
-	c.gettyClientMux.RUnlock()
+	session := client.selectSession()
 	return client, session, nil
 
 }
@@ -287,10 +285,12 @@ func (c *Client) transfer(session getty.Session, request *remoting.Request, time
 	return totalLen, sendLen, perrors.WithStack(err)
 }
 
-func (c *Client) resetRpcConn() {
+func (c *Client) resetRpcConn(expected *gettyRPCClient) {
 	c.gettyClientMux.Lock()
+	defer c.gettyClientMux.Unlock()
+	if c.gettyClient != expected {
+		return
+	}
 	c.gettyClient = nil
 	c.gettyClientCreated.Store(false)
-	c.gettyClientMux.Unlock()
-
 }
