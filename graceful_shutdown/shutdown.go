@@ -422,7 +422,8 @@ func invokeCustomShutdownCallback(timeout time.Duration, callback func()) {
 
 func getProtocolSafely(name string) (protocol protocolbase.Protocol, ok bool) {
 	defer func() {
-		if recover() != nil {
+		if recovered := recover(); recovered != nil {
+			logger.Warnf("[GracefulShutdown] get protocol %s panicked, err=%v", name, recovered)
 			protocol = nil
 			ok = false
 		}
