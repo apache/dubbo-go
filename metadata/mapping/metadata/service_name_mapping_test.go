@@ -40,6 +40,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
+	"dubbo.apache.org/dubbo-go/v3/metrics"
+	metricsMetadata "dubbo.apache.org/dubbo-go/v3/metrics/metadata"
 )
 
 func TestGetNameMappingInstance(t *testing.T) {
@@ -245,6 +247,171 @@ func TestServiceNameMappingRemoveContinuesAfterPartialFailure(t *testing.T) {
 	// both reports must have been called despite r1's failure
 	r1.AssertExpectations(t)
 	r2.AssertExpectations(t)
+}
+
+func TestServiceNameMappingGetMetersPerBusinessOperation(t *testing.T) {
+	metadata.ClearMetadataReportInstances()
+	t.Cleanup(metadata.ClearMetadataReportInstances)
+	serviceNameMappingOnce = sync.Once{}
+	serviceNameMappingInstance = nil
+
+	r1 := initMockWithId(t, "reg-get-a")
+	r2 := initMockWithId(t, "reg-get-b")
+
+	ch := make(chan metrics.MetricsEvent, 10)
+	metrics.Subscribe(constant.MetricsMetadata, ch)
+	defer metrics.Unsubscribe(constant.MetricsMetadata)
+
+	ins := GetNameMappingInstance()
+	serviceUrl := common.NewURLWithOptions(
+		common.WithInterface("org.example.MeteredService"),
+	)
+
+	// a listen fans out to every report but must count as a single listen event
+	r1.On("GetServiceAppMapping").Return(gxset.NewSet("app-a"), nil).Once()
+	r2.On("GetServiceAppMapping").Return(gxset.NewSet("app-b"), nil).Once()
+	apps, err := ins.Get(serviceUrl, &listener{})
+	require.NoError(t, err)
+	assert.Equal(t, 2, apps.Size())
+	assertMappingMetricEvent(t, <-ch, metricsMetadata.MetadataMappingListen, true, false, mappingAttachment("org.example.MeteredService"))
+	assert.Empty(t, ch)
+
+	// a plain get counts as a single get event
+	r1.On("GetServiceAppMapping").Return(gxset.NewSet("app-a"), nil).Once()
+	r2.On("GetServiceAppMapping").Return(gxset.NewSet("app-b"), nil).Once()
+	apps, err = ins.Get(serviceUrl, nil)
+	require.NoError(t, err)
+	assert.Equal(t, 2, apps.Size())
+	assertMappingMetricEvent(t, <-ch, metricsMetadata.MetadataMappingGet, true, false, mappingAttachment("org.example.MeteredService"))
+	assert.Empty(t, ch)
+
+	// partial failure is still a successful business operation (err == nil),
+	// but the event must carry the partial flag
+	getErr := errors.New("r1 failure")
+	r1.On("GetServiceAppMapping").Return(gxset.NewSet(), getErr).Once()
+	r2.On("GetServiceAppMapping").Return(gxset.NewSet("app-b"), nil).Once()
+	apps, err = ins.Get(serviceUrl, &listener{})
+	require.NoError(t, err)
+	assert.False(t, apps.Empty())
+	assertMappingMetricEvent(t, <-ch, metricsMetadata.MetadataMappingListen, true, true, mappingAttachment("org.example.MeteredService"))
+	assert.Empty(t, ch)
+
+	// all reports failing produces a single failed event
+	r1.On("GetServiceAppMapping").Return(gxset.NewSet(), getErr).Once()
+	r2.On("GetServiceAppMapping").Return(gxset.NewSet(), errors.New("r2 failure")).Once()
+	_, err = ins.Get(serviceUrl, &listener{})
+	require.Error(t, err)
+	assertMappingMetricEvent(t, <-ch, metricsMetadata.MetadataMappingListen, false, false, mappingAttachment("org.example.MeteredService"))
+	assert.Empty(t, ch)
+
+	r1.AssertExpectations(t)
+	r2.AssertExpectations(t)
+}
+
+func TestServiceNameMappingMapMetersPerBusinessOperation(t *testing.T) {
+	metadata.ClearMetadataReportInstances()
+	t.Cleanup(metadata.ClearMetadataReportInstances)
+	serviceNameMappingOnce = sync.Once{}
+	serviceNameMappingInstance = nil
+
+	r1 := initMockWithId(t, "reg-map-a")
+	r2 := initMockWithId(t, "reg-map-b")
+
+	ch := make(chan metrics.MetricsEvent, 10)
+	metrics.Subscribe(constant.MetricsMetadata, ch)
+	defer metrics.Unsubscribe(constant.MetricsMetadata)
+
+	ins := GetNameMappingInstance()
+	serviceUrl := common.NewURLWithOptions(
+		common.WithInterface("org.example.RegisterService"),
+		common.WithParamsValue(constant.ApplicationKey, "reg-app"),
+	)
+	wantAttachment := mappingAttachment("org.example.RegisterService")
+	wantAttachment[constant.ApplicationKey] = "reg-app"
+
+	// all reports succeed: one register event
+	r1.On("RegisterServiceAppMapping").Return(nil).Once()
+	r2.On("RegisterServiceAppMapping").Return(nil).Once()
+	err := ins.Map(serviceUrl)
+	require.NoError(t, err)
+	assertMappingMetricEvent(t, <-ch, metricsMetadata.MetadataMappingRegister, true, false, wantAttachment)
+	assert.Empty(t, ch)
+
+	// first report fails: Map stops immediately, one failed register event
+	regErr := errors.New("r1 failure")
+	// report iteration order is non-deterministic, so both may be the first to
+	// fail; the call-count assertion below pins down that only one is invoked.
+	r1.On("RegisterServiceAppMapping").Return(regErr).Maybe()
+	r2.On("RegisterServiceAppMapping").Return(regErr).Maybe()
+	callsBefore := len(r1.Calls) + len(r2.Calls)
+	err = ins.Map(serviceUrl)
+	require.Error(t, err)
+	require.Equal(t, callsBefore+1, len(r1.Calls)+len(r2.Calls), "Map must stop at the first failing report")
+	assertMappingMetricEvent(t, <-ch, metricsMetadata.MetadataMappingRegister, false, false, wantAttachment)
+	assert.Empty(t, ch)
+
+	r1.AssertExpectations(t)
+	r2.AssertExpectations(t)
+}
+
+func TestServiceNameMappingRemoveMetersPerBusinessOperation(t *testing.T) {
+	metadata.ClearMetadataReportInstances()
+	t.Cleanup(metadata.ClearMetadataReportInstances)
+	serviceNameMappingOnce = sync.Once{}
+	serviceNameMappingInstance = nil
+
+	r1 := initMockWithId(t, "reg-remove-a")
+	r2 := initMockWithId(t, "reg-remove-b")
+
+	ch := make(chan metrics.MetricsEvent, 10)
+	metrics.Subscribe(constant.MetricsMetadata, ch)
+	defer metrics.Unsubscribe(constant.MetricsMetadata)
+
+	ins := GetNameMappingInstance()
+	serviceUrl := common.NewURLWithOptions(
+		common.WithInterface("org.example.RemoveService"),
+	)
+	wantAttachment := mappingAttachment("org.example.RemoveService")
+
+	// all reports succeed: one remove event
+	r1.On("RemoveServiceAppMappingListener").Return(nil).Once()
+	r2.On("RemoveServiceAppMappingListener").Return(nil).Once()
+	err := ins.Remove(serviceUrl)
+	require.NoError(t, err)
+	assertMappingMetricEvent(t, <-ch, metricsMetadata.MetadataMappingRemove, true, false, wantAttachment)
+	assert.Empty(t, ch)
+
+	// partial failure: best-effort still calls every report, one failed remove event
+	removeErr := errors.New("r1 failure")
+	r1.On("RemoveServiceAppMappingListener").Return(removeErr).Once()
+	r2.On("RemoveServiceAppMappingListener").Return(nil).Once()
+	err = ins.Remove(serviceUrl)
+	require.ErrorIs(t, err, removeErr)
+	assertMappingMetricEvent(t, <-ch, metricsMetadata.MetadataMappingRemove, false, false, wantAttachment)
+	assert.Empty(t, ch)
+
+	r1.AssertExpectations(t)
+	r2.AssertExpectations(t)
+}
+
+func mappingAttachment(serviceInterface string) map[string]string {
+	return map[string]string{
+		constant.InterfaceKey: serviceInterface,
+		constant.GroupKey:     DefaultGroup,
+	}
+}
+
+func assertMappingMetricEvent(t *testing.T, metricEvent metrics.MetricsEvent, name metricsMetadata.MetricName, succ bool, partial bool, wantAttachment map[string]string) {
+	t.Helper()
+	assert.Equal(t, constant.MetricsMetadata, metricEvent.Type())
+	event, ok := metricEvent.(*metricsMetadata.MetadataMetricEvent)
+	assert.True(t, ok)
+	assert.Equal(t, name, event.Name)
+	assert.Equal(t, succ, event.Succ)
+	assert.Equal(t, partial, event.Partial)
+	assert.Equal(t, wantAttachment, event.Attachment)
+	assert.NotNil(t, event.Start)
+	assert.NotNil(t, event.End)
 }
 
 type listener struct {

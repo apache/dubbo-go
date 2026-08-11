@@ -130,6 +130,37 @@ func TestMetadataMetricCollectorHandleMapping(t *testing.T) {
 				assert.Equal(t, "application", id.Tags[constant.TagApplicationName])
 			})
 		}
+
+		// a partial success (some reports failed, some succeeded) must be counted
+		// as failed, not succeed
+		for _, tt := range []struct {
+			name      string
+			eventName MetricName
+			handler   func(*MetadataMetricCollector, *MetadataMetricEvent)
+			prefix    string
+		}{
+			{"get", MetadataMappingGet, (*MetadataMetricCollector).handleMetadataMappingGet, "dubbo_metadata_mapping_get"},
+			{"listen", MetadataMappingListen, (*MetadataMetricCollector).handleMetadataMappingListen, "dubbo_metadata_mapping_listen"},
+		} {
+			t.Run(fmt.Sprintf("%s/partial", tt.name), func(t *testing.T) {
+				registry := newMockMetricRegistry()
+				collector := &MetadataMetricCollector{BaseCollector: metrics.BaseCollector{R: registry}}
+				event := NewMetadataMetricTimeEvent(tt.eventName)
+				event.End = event.Start.Add(10 * time.Millisecond)
+				event.Succ = true
+				event.Partial = true
+				event.Attachment[constant.InterfaceKey] = "interfaceName"
+				event.Attachment[constant.GroupKey] = "group"
+				event.Attachment[constant.ApplicationKey] = "application"
+
+				tt.handler(collector, event)
+
+				assert.InDelta(t, 1.0, registry.counters[tt.prefix+"_num_total"], 0.000001)
+				assert.InDelta(t, 1.0, registry.counters[tt.prefix+"_num_failed_total"], 0.000001)
+				assert.NotContains(t, registry.counters, tt.prefix+"_num_succeed_total")
+				assert.Equal(t, []float64{10.0}, registry.rts[tt.prefix+"_rt_milliseconds"])
+			})
+		}
 	}
 }
 

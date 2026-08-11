@@ -104,13 +104,13 @@ func (c *MetadataMetricCollector) handleMetadataMappingRegister(event *MetadataM
 
 func (c *MetadataMetricCollector) handleMetadataMappingGet(event *MetadataMetricEvent) {
 	level := newMetadataMappingMetricLevel(event.Attachment)
-	c.StateCount(metadataMappingGetNum, metadataMappingGetSucceed, metadataMappingGetFailed, level, event.Succ)
+	c.StateCount(metadataMappingGetNum, metadataMappingGetSucceed, metadataMappingGetFailed, level, event.Succ && !event.Partial)
 	c.R.Rt(metrics.NewMetricId(metadataMappingGetRt, level), &metrics.RtOpts{}).Observe(event.CostMs())
 }
 
 func (c *MetadataMetricCollector) handleMetadataMappingListen(event *MetadataMetricEvent) {
 	level := newMetadataMappingMetricLevel(event.Attachment)
-	c.StateCount(metadataMappingListenNum, metadataMappingListenSucceed, metadataMappingListenFailed, level, event.Succ)
+	c.StateCount(metadataMappingListenNum, metadataMappingListenSucceed, metadataMappingListenFailed, level, event.Succ && !event.Partial)
 	c.R.Rt(metrics.NewMetricId(metadataMappingListenRt, level), &metrics.RtOpts{}).Observe(event.CostMs())
 }
 
@@ -145,6 +145,7 @@ func (m metadataMappingMetricLevel) Tags() map[string]string {
 type MetadataMetricEvent struct {
 	Name       MetricName
 	Succ       bool
+	Partial    bool
 	Start      time.Time
 	End        time.Time
 	Attachment map[string]string

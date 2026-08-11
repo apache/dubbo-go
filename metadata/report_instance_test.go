@@ -124,34 +124,27 @@ func TestDelegateMetadataReportGetServiceAppMapping(t *testing.T) {
 	mockReport := new(mockMetadataReport)
 	defer mockReport.AssertExpectations(t)
 	delegate := &DelegateMetadataReport{instance: mockReport}
-	var ch = make(chan metrics.MetricsEvent, 10)
-	metrics.Subscribe(constant.MetricsMetadata, ch)
-	defer close(ch)
 	t.Run("get normal", func(t *testing.T) {
 		mockReport.On("GetServiceAppMapping").Return(gxset.NewSet(), nil).Once()
 		got, err := delegate.GetServiceAppMapping("dubbo", "dev", nil)
 		require.NoError(t, err)
 		assert.True(t, got.Empty())
-		assertMappingMetricEvent(t, <-ch, metricsMetadata.MetadataMappingGet, true, map[string]string{constant.InterfaceKey: "dubbo", constant.GroupKey: "dev"})
 	})
 	t.Run("get error", func(t *testing.T) {
 		mockReport.On("GetServiceAppMapping").Return(gxset.NewSet(), errors.New("mock error")).Once()
 		_, err := delegate.GetServiceAppMapping("dubbo", "dev", nil)
 		require.Error(t, err)
-		assertMappingMetricEvent(t, <-ch, metricsMetadata.MetadataMappingGet, false, map[string]string{constant.InterfaceKey: "dubbo", constant.GroupKey: "dev"})
 	})
 	t.Run("listen normal", func(t *testing.T) {
 		mockReport.On("GetServiceAppMapping").Return(gxset.NewSet(), nil).Once()
 		got, err := delegate.GetServiceAppMapping("dubbo", "dev", &listener{})
 		require.NoError(t, err)
 		assert.True(t, got.Empty())
-		assertMappingMetricEvent(t, <-ch, metricsMetadata.MetadataMappingListen, true, map[string]string{constant.InterfaceKey: "dubbo", constant.GroupKey: "dev"})
 	})
 	t.Run("listen error", func(t *testing.T) {
 		mockReport.On("GetServiceAppMapping").Return(gxset.NewSet(), errors.New("mock error")).Once()
 		_, err := delegate.GetServiceAppMapping("dubbo", "dev", &listener{})
 		require.Error(t, err)
-		assertMappingMetricEvent(t, <-ch, metricsMetadata.MetadataMappingListen, false, map[string]string{constant.InterfaceKey: "dubbo", constant.GroupKey: "dev"})
 	})
 }
 
@@ -159,20 +152,15 @@ func TestDelegateMetadataReportRegisterServiceAppMapping(t *testing.T) {
 	mockReport := new(mockMetadataReport)
 	defer mockReport.AssertExpectations(t)
 	delegate := &DelegateMetadataReport{instance: mockReport}
-	var ch = make(chan metrics.MetricsEvent, 10)
-	metrics.Subscribe(constant.MetricsMetadata, ch)
-	defer close(ch)
 	t.Run("normal", func(t *testing.T) {
 		mockReport.On("RegisterServiceAppMapping").Return(nil).Once()
 		err := delegate.RegisterServiceAppMapping("interfaceName", "group", "application")
 		require.NoError(t, err)
-		assertMappingMetricEvent(t, <-ch, metricsMetadata.MetadataMappingRegister, true, map[string]string{constant.InterfaceKey: "interfaceName", constant.GroupKey: "group", constant.ApplicationKey: "application"})
 	})
 	t.Run("error", func(t *testing.T) {
 		mockReport.On("RegisterServiceAppMapping").Return(errors.New("mock error")).Once()
 		err := delegate.RegisterServiceAppMapping("interfaceName", "group", "application")
 		require.Error(t, err)
-		assertMappingMetricEvent(t, <-ch, metricsMetadata.MetadataMappingRegister, false, map[string]string{constant.InterfaceKey: "interfaceName", constant.GroupKey: "group", constant.ApplicationKey: "application"})
 	})
 }
 
@@ -180,33 +168,16 @@ func TestDelegateMetadataReportRemoveServiceAppMappingListener(t *testing.T) {
 	mockReport := new(mockMetadataReport)
 	defer mockReport.AssertExpectations(t)
 	delegate := &DelegateMetadataReport{instance: mockReport}
-	var ch = make(chan metrics.MetricsEvent, 10)
-	metrics.Subscribe(constant.MetricsMetadata, ch)
-	defer close(ch)
 	t.Run("normal", func(t *testing.T) {
 		mockReport.On("RemoveServiceAppMappingListener").Return(nil).Once()
 		err := delegate.RemoveServiceAppMappingListener("interfaceName", "group")
 		require.NoError(t, err)
-		assertMappingMetricEvent(t, <-ch, metricsMetadata.MetadataMappingRemove, true, map[string]string{constant.InterfaceKey: "interfaceName", constant.GroupKey: "group"})
 	})
 	t.Run("error", func(t *testing.T) {
 		mockReport.On("RemoveServiceAppMappingListener").Return(errors.New("mock error")).Once()
 		err := delegate.RemoveServiceAppMappingListener("interfaceName", "group")
 		require.Error(t, err)
-		assertMappingMetricEvent(t, <-ch, metricsMetadata.MetadataMappingRemove, false, map[string]string{constant.InterfaceKey: "interfaceName", constant.GroupKey: "group"})
 	})
-}
-
-func assertMappingMetricEvent(t *testing.T, metricEvent metrics.MetricsEvent, name metricsMetadata.MetricName, succ bool, wantAttachment map[string]string) {
-	t.Helper()
-	assert.Equal(t, constant.MetricsMetadata, metricEvent.Type())
-	event, ok := metricEvent.(*metricsMetadata.MetadataMetricEvent)
-	assert.True(t, ok)
-	assert.Equal(t, name, event.Name)
-	assert.NotNil(t, event.Start)
-	assert.NotNil(t, event.End)
-	assert.Equal(t, succ, event.Succ)
-	assert.Equal(t, wantAttachment, event.Attachment)
 }
 
 func TestDelegateMetadataReportUnPublishAppMetadata(t *testing.T) {
