@@ -152,6 +152,7 @@ type ReferenceOption func(*ReferenceOptions)
 
 // ---------- For user ----------
 
+// WithCheck sets ReferenceOptions.Reference.Check to true for this service reference.
 func WithCheck() ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		check := true
@@ -159,19 +160,22 @@ func WithCheck() ReferenceOption {
 	}
 }
 
+// WithURL sets ReferenceOptions.Reference.URL for direct service invocation.
+// It bypasses registry discovery for this reference when a direct URL is supplied.
 func WithURL(url string) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.URL = url
 	}
 }
 
+// WithFilter sets ReferenceOptions.Reference.Filter for this service reference.
 func WithFilter(filter string) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Filter = filter
 	}
 }
 
-// WithInterface sets the interface name for the service reference.
+// WithInterface sets ReferenceOptions.Reference.InterfaceName for the service reference.
 //
 // As a functional option, it is passed to a client constructor
 // (e.g., NewGreetService) to configure which remote service to connect to.
@@ -191,6 +195,8 @@ func WithInterface(interfaceName string) ReferenceOption {
 	}
 }
 
+// WithRegistryIDs sets ReferenceOptions.Reference.RegistryIDs for this reference.
+// Pair it with WithRegistry or client-level registry configuration using matching IDs.
 func WithRegistryIDs(registryIDs ...string) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		if len(registryIDs) > 0 {
@@ -199,6 +205,8 @@ func WithRegistryIDs(registryIDs ...string) ReferenceOption {
 	}
 }
 
+// WithRegistry builds a registry configuration and adds it to ReferenceOptions.Registries.
+// Use registry.WithID and select the same ID with WithRegistryIDs when multiple registries exist.
 func WithRegistry(opts ...registry.Option) ReferenceOption {
 	regOpts := registry.NewOptions(opts...)
 
@@ -212,60 +220,71 @@ func WithRegistry(opts ...registry.Option) ReferenceOption {
 
 // ========== Cluster Strategy ==========
 
+// WithClusterAvailable sets ReferenceOptions.Reference.Cluster to the available strategy.
 func WithClusterAvailable() ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Cluster = constant.ClusterKeyAvailable
 	}
 }
 
+// WithClusterBroadcast sets ReferenceOptions.Reference.Cluster to the broadcast strategy.
 func WithClusterBroadcast() ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Cluster = constant.ClusterKeyBroadcast
 	}
 }
 
+// WithClusterFailBack sets ReferenceOptions.Reference.Cluster to the failback strategy.
 func WithClusterFailBack() ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Cluster = constant.ClusterKeyFailback
 	}
 }
 
+// WithClusterFailFast sets ReferenceOptions.Reference.Cluster to the fail-fast strategy.
 func WithClusterFailFast() ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Cluster = constant.ClusterKeyFailfast
 	}
 }
 
+// WithClusterFailOver sets ReferenceOptions.Reference.Cluster to the failover strategy.
+// Pair it with WithRetries to control the retry count.
 func WithClusterFailOver() ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Cluster = constant.ClusterKeyFailover
 	}
 }
 
+// WithClusterFailSafe sets ReferenceOptions.Reference.Cluster to the fail-safe strategy.
 func WithClusterFailSafe() ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Cluster = constant.ClusterKeyFailsafe
 	}
 }
 
+// WithClusterForking sets ReferenceOptions.Reference.Cluster to the forking strategy.
 func WithClusterForking() ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Cluster = constant.ClusterKeyForking
 	}
 }
 
+// WithClusterZoneAware sets ReferenceOptions.Reference.Cluster to the zone-aware strategy.
 func WithClusterZoneAware() ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Cluster = constant.ClusterKeyZoneAware
 	}
 }
 
+// WithClusterAdaptiveService sets ReferenceOptions.Reference.Cluster to the adaptive-service strategy.
 func WithClusterAdaptiveService() ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Cluster = constant.ClusterKeyAdaptiveService
 	}
 }
 
+// WithCluster sets ReferenceOptions.Reference.Cluster to a custom cluster strategy name.
 func WithCluster(cluster string) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Cluster = cluster
@@ -274,84 +293,104 @@ func WithCluster(cluster string) ReferenceOption {
 
 // ========== LoadBalance Strategy ==========
 
+// WithLoadBalanceConsistentHashing sets ReferenceOptions.Reference.Loadbalance to consistent hashing.
 func WithLoadBalanceConsistentHashing() ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Loadbalance = constant.LoadBalanceKeyConsistentHashing
 	}
 }
 
+// WithLoadBalanceLeastActive sets ReferenceOptions.Reference.Loadbalance to least active.
 func WithLoadBalanceLeastActive() ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Loadbalance = constant.LoadBalanceKeyLeastActive
 	}
 }
 
+// WithLoadBalanceRandom sets ReferenceOptions.Reference.Loadbalance to random.
 func WithLoadBalanceRandom() ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Loadbalance = constant.LoadBalanceKeyRandom
 	}
 }
 
+// WithLoadBalanceRoundRobin sets ReferenceOptions.Reference.Loadbalance to round robin.
 func WithLoadBalanceRoundRobin() ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Loadbalance = constant.LoadBalanceKeyRoundRobin
 	}
 }
 
+// WithLoadBalanceP2C sets ReferenceOptions.Reference.Loadbalance to power of two choices.
 func WithLoadBalanceP2C() ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Loadbalance = constant.LoadBalanceKeyP2C
 	}
 }
 
+// WithLoadBalance sets ReferenceOptions.Reference.Loadbalance to a custom strategy name.
 func WithLoadBalance(lb string) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Loadbalance = lb
 	}
 }
 
+// WithRetries sets ReferenceOptions.Reference.Retries for this service reference.
+// It is commonly paired with WithClusterFailOver.
 func WithRetries(retries int) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Retries = strconv.Itoa(retries)
 	}
 }
 
+// WithGroup sets ReferenceOptions.Reference.Group used to identify the provider group.
+// The value must match the server service group.
 func WithGroup(group string) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Group = group
 	}
 }
 
+// WithVersion sets ReferenceOptions.Reference.Version used to identify the service version.
+// The value must match the server service version.
 func WithVersion(version string) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Version = version
 	}
 }
 
+// WithSerializationJSON sets ReferenceOptions.Reference.Serialization to JSON.
+// The selected serialization must be supported by the provider protocol.
 func WithSerializationJSON() ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Serialization = constant.JSONSerialization
 	}
 }
 
+// WithSerialization sets ReferenceOptions.Reference.Serialization for this reference.
+// The selected serialization must be supported by the provider protocol.
 func WithSerialization(serialization string) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Serialization = serialization
 	}
 }
 
+// WithProvidedBy sets ReferenceOptions.Reference.ProvidedBy for provider selection metadata.
 func WithProvidedBy(providedBy string) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.ProvidedBy = providedBy
 	}
 }
 
+// WithAsync sets ReferenceOptions.Reference.Async to enable asynchronous invocation.
 func WithAsync() ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Async = true
 	}
 }
 
+// WithParams replaces ReferenceOptions.Reference.Params when params is non-empty.
+// Use WithParam to add or override a single parameter.
 func WithParams(params map[string]string) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		if len(params) <= 0 {
@@ -361,13 +400,15 @@ func WithParams(params map[string]string) ReferenceOption {
 	}
 }
 
+// WithGeneric sets ReferenceOptions.Reference.Generic to the default generic invocation mode.
+// Use WithGenericType to select a specific generalization format.
 func WithGeneric() ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Generic = "true"
 	}
 }
 
-// WithGenericType sets the generic mode (generalization format), which decides how
+// WithGenericType sets ReferenceOptions.Reference.Generic, which decides how
 // business objects are generalized into a generic structure.
 //
 // Valid values: "true" (default, Map), "gson", "protobuf-json", "bean".
@@ -384,13 +425,14 @@ func WithGenericType(genericType string) ReferenceOption {
 	}
 }
 
+// WithSticky sets ReferenceOptions.Reference.Sticky so invocations prefer the same provider.
 func WithSticky() ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Sticky = true
 	}
 }
 
-// TODO: remove this function after old triple removed
+// WithIDL sets ReferenceOptions.Reference.IDLMode for legacy clients.
 //
 // Deprecated: this option will be removed in the next version. The IDL mode
 // switch is no longer supported by dubbo-go.
@@ -402,48 +444,58 @@ func WithIDL(IDLMode string) ReferenceOption {
 
 // ========== Protocol to consume ==========
 
+// WithProtocolDubbo sets ReferenceOptions.Reference.Protocol to Dubbo.
 func WithProtocolDubbo() ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Protocol = constant.DubboProtocol
 	}
 }
 
+// WithProtocolTriple sets ReferenceOptions.Reference.Protocol to Triple.
 func WithProtocolTriple() ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Protocol = constant.TriProtocol
 	}
 }
 
+// WithProtocolJsonRPC sets ReferenceOptions.Reference.Protocol to JSON-RPC.
 func WithProtocolJsonRPC() ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Protocol = constant.JSONRPCProtocol
 	}
 }
 
+// WithProtocol sets ReferenceOptions.Reference.Protocol to a custom protocol name.
 func WithProtocol(protocol string) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.Protocol = protocol
 	}
 }
 
+// WithRequestTimeout sets ReferenceOptions.Reference.RequestTimeout for every call on this reference.
+// A call-level WithCallRequestTimeout overrides it for an individual invocation.
 func WithRequestTimeout(timeout time.Duration) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.RequestTimeout = timeout.String()
 	}
 }
 
+// WithForceTag sets ReferenceOptions.Reference.ForceTag to require tag-based routing.
 func WithForceTag() ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.ForceTag = true
 	}
 }
 
+// WithMeshProviderPort sets ReferenceOptions.Reference.MeshProviderPort for mesh routing.
 func WithMeshProviderPort(port int) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		opts.Reference.MeshProviderPort = port
 	}
 }
 
+// WithMethod appends method to ReferenceOptions.Reference.MethodsConfig when it is non-nil.
+// Use it with reference-level options to override configuration for a specific method.
 func WithMethod(method *global.MethodConfig) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		if method == nil {
@@ -456,6 +508,8 @@ func WithMethod(method *global.MethodConfig) ReferenceOption {
 	}
 }
 
+// WithParam adds or replaces one entry in ReferenceOptions.Reference.Params.
+// Use WithParams to replace the complete parameter map.
 func WithParam(k, v string) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		if opts.Reference.Params == nil {
@@ -465,9 +519,8 @@ func WithParam(k, v string) ReferenceOption {
 	}
 }
 
-// WithRouter appends router configurations to the reference options.
-// This is a user-facing option for incrementally adding routers.
-// It appends to the current router config slice instead of replacing it.
+// WithRouter appends router configurations to ReferenceOptions.Routers.
+// Use SetClientRouters only when framework-loaded configuration must replace the slice.
 func WithRouter(routers ...*global.RouterConfig) ReferenceOption {
 	return func(opts *ReferenceOptions) {
 		if len(routers) > 0 {
@@ -644,26 +697,32 @@ func (cliOpts *ClientOptions) init(opts ...ClientOption) error {
 
 type ClientOption func(*ClientOptions)
 
+// WithClientNoCheck sets ClientOptions.Consumer.Check to false for all client references.
+// A reference-level WithCheck can enable checking for a specific service.
 func WithClientNoCheck() ClientOption {
 	return func(opts *ClientOptions) {
 		opts.Consumer.Check = false
 	}
 }
 
+// WithClientURL sets ClientOptions.overallReference.URL as the default direct invocation URL.
+// A reference-level WithURL overrides it for a specific service.
 func WithClientURL(url string) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.overallReference.URL = url
 	}
 }
 
-// todo(DMwangnima): change Filter Option like Cluster and LoadBalance
+// WithClientFilter sets ClientOptions.overallReference.Filter as the default filter chain.
+// A reference-level WithFilter overrides it for a specific service.
 func WithClientFilter(filter string) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.overallReference.Filter = filter
 	}
 }
 
-// todo(DMwangnima): think about a more ideal configuration style
+// WithClientRegistryIDs sets ClientOptions.Consumer.RegistryIDs.
+// Pair it with WithClientRegistry using matching registry IDs.
 func WithClientRegistryIDs(registryIDs ...string) ClientOption {
 	return func(opts *ClientOptions) {
 		if len(registryIDs) > 0 {
@@ -672,6 +731,8 @@ func WithClientRegistryIDs(registryIDs ...string) ClientOption {
 	}
 }
 
+// WithClientRegistry builds a registry configuration and adds it to ClientOptions.Registries.
+// Use registry.WithID and select the same ID with WithClientRegistryIDs when needed.
 func WithClientRegistry(opts ...registry.Option) ClientOption {
 	regOpts := registry.NewOptions(opts...)
 
@@ -680,6 +741,7 @@ func WithClientRegistry(opts ...registry.Option) ClientOption {
 	}
 }
 
+// WithClientShutdown applies graceful shutdown options to ClientOptions.Shutdown.
 func WithClientShutdown(opts ...graceful_shutdown.Option) ClientOption {
 	sdOpts := graceful_shutdown.NewOptions(opts...)
 
@@ -688,6 +750,8 @@ func WithClientShutdown(opts ...graceful_shutdown.Option) ClientOption {
 	}
 }
 
+// WithClientTLSOption applies tls.Option values to ClientOptions.TLS.
+// Configure compatible TLS settings on the server with server.WithServerTLSOption.
 func WithClientTLSOption(opts ...tls.Option) ClientOption {
 	tlsOpts := tls.NewOptions(opts...)
 
@@ -701,74 +765,89 @@ func WithClientTLSOption(opts ...tls.Option) ClientOption {
 
 // ========== Cluster Strategy ==========
 
+// WithClientClusterAvailable sets ClientOptions.overallReference.Cluster to available.
 func WithClientClusterAvailable() ClientOption {
 	return func(opts *ClientOptions) {
 		opts.overallReference.Cluster = constant.ClusterKeyAvailable
 	}
 }
 
+// WithClientClusterBroadcast sets ClientOptions.overallReference.Cluster to broadcast.
 func WithClientClusterBroadcast() ClientOption {
 	return func(opts *ClientOptions) {
 		opts.overallReference.Cluster = constant.ClusterKeyBroadcast
 	}
 }
 
+// WithClientClusterFailBack sets ClientOptions.overallReference.Cluster to failback.
 func WithClientClusterFailBack() ClientOption {
 	return func(opts *ClientOptions) {
 		opts.overallReference.Cluster = constant.ClusterKeyFailback
 	}
 }
 
+// WithClientClusterFailFast sets ClientOptions.overallReference.Cluster to fail-fast.
 func WithClientClusterFailFast() ClientOption {
 	return func(opts *ClientOptions) {
 		opts.overallReference.Cluster = constant.ClusterKeyFailfast
 	}
 }
 
+// WithClientClusterFailOver sets ClientOptions.overallReference.Cluster to failover.
+// Pair it with WithClientRetries to control the default retry count.
 func WithClientClusterFailOver() ClientOption {
 	return func(opts *ClientOptions) {
 		opts.overallReference.Cluster = constant.ClusterKeyFailover
 	}
 }
 
+// WithClientClusterFailSafe sets ClientOptions.overallReference.Cluster to fail-safe.
 func WithClientClusterFailSafe() ClientOption {
 	return func(opts *ClientOptions) {
 		opts.overallReference.Cluster = constant.ClusterKeyFailsafe
 	}
 }
 
+// WithClientClusterForking sets ClientOptions.overallReference.Cluster to forking.
 func WithClientClusterForking() ClientOption {
 	return func(opts *ClientOptions) {
 		opts.overallReference.Cluster = constant.ClusterKeyForking
 	}
 }
 
+// WithClientClusterZoneAware sets ClientOptions.overallReference.Cluster to zone-aware.
 func WithClientClusterZoneAware() ClientOption {
 	return func(opts *ClientOptions) {
 		opts.overallReference.Cluster = constant.ClusterKeyZoneAware
 	}
 }
 
+// WithClientClusterAdaptiveService sets ClientOptions.overallReference.Cluster to adaptive-service.
 func WithClientClusterAdaptiveService() ClientOption {
 	return func(opts *ClientOptions) {
 		opts.overallReference.Cluster = constant.ClusterKeyAdaptiveService
 	}
 }
 
+// WithClientClusterStrategy sets ClientOptions.overallReference.Cluster to a custom strategy name.
 func WithClientClusterStrategy(strategy string) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.overallReference.Cluster = strategy
 	}
 }
 
-// Deprecated: use triple.WithKeepAliveInterval()
+// WithKeepAliveInterval is retained for compatibility and panics when applied.
+//
+// Deprecated: pass triple.WithKeepAliveInterval through protocol.WithTriple and WithClientProtocol.
 func WithKeepAliveInterval(keepAliveInterval time.Duration) ClientOption {
 	return func(_ *ClientOptions) {
 		panic("use triple.WithKeepAliveInterval()")
 	}
 }
 
-// Deprecated: use triple.WithKeepAliveTimeout()
+// WithKeepAliveTimeout is retained for compatibility and panics when applied.
+//
+// Deprecated: pass triple.WithKeepAliveTimeout through protocol.WithTriple and WithClientProtocol.
 func WithKeepAliveTimeout(keepAliveTimeout time.Duration) ClientOption {
 	return func(_ *ClientOptions) {
 		panic("use triple.WithKeepAliveTimeout()")
@@ -777,74 +856,89 @@ func WithKeepAliveTimeout(keepAliveTimeout time.Duration) ClientOption {
 
 // ========== LoadBalance Strategy ==========
 
+// WithClientLoadBalanceConsistentHashing sets ClientOptions.overallReference.Loadbalance to consistent hashing.
 func WithClientLoadBalanceConsistentHashing() ClientOption {
 	return func(opts *ClientOptions) {
 		opts.overallReference.Loadbalance = constant.LoadBalanceKeyConsistentHashing
 	}
 }
 
+// WithClientLoadBalanceLeastActive sets ClientOptions.overallReference.Loadbalance to least active.
 func WithClientLoadBalanceLeastActive() ClientOption {
 	return func(opts *ClientOptions) {
 		opts.overallReference.Loadbalance = constant.LoadBalanceKeyLeastActive
 	}
 }
 
+// WithClientLoadBalanceRandom sets ClientOptions.overallReference.Loadbalance to random.
 func WithClientLoadBalanceRandom() ClientOption {
 	return func(opts *ClientOptions) {
 		opts.overallReference.Loadbalance = constant.LoadBalanceKeyRandom
 	}
 }
 
+// WithClientLoadBalanceRoundRobin sets ClientOptions.overallReference.Loadbalance to round robin.
 func WithClientLoadBalanceRoundRobin() ClientOption {
 	return func(opts *ClientOptions) {
 		opts.overallReference.Loadbalance = constant.LoadBalanceKeyRoundRobin
 	}
 }
 
+// WithClientLoadBalanceP2C sets ClientOptions.overallReference.Loadbalance to power of two choices.
 func WithClientLoadBalanceP2C() ClientOption {
 	return func(opts *ClientOptions) {
 		opts.overallReference.Loadbalance = constant.LoadBalanceKeyP2C
 	}
 }
 
+// WithClientLoadBalance sets ClientOptions.overallReference.Loadbalance to a custom strategy name.
 func WithClientLoadBalance(lb string) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.overallReference.Loadbalance = lb
 	}
 }
 
+// WithClientRetries sets ClientOptions.overallReference.Retries as the default retry count.
+// It is commonly paired with WithClientClusterFailOver.
 func WithClientRetries(retries int) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.overallReference.Retries = strconv.Itoa(retries)
 	}
 }
 
-// is this needed?
+// WithClientGroup sets ClientOptions.overallReference.Group as the default provider group.
+// A reference-level WithGroup can override it and must match the server service group.
 func WithClientGroup(group string) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.overallReference.Group = group
 	}
 }
 
-// is this needed?
+// WithClientVersion sets ClientOptions.overallReference.Version as the default service version.
+// A reference-level WithVersion can override it and must match the server service version.
 func WithClientVersion(version string) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.overallReference.Version = version
 	}
 }
 
+// WithClientSerializationJSON sets ClientOptions.overallReference.Serialization to JSON.
+// The selected serialization must be supported by the provider protocol.
 func WithClientSerializationJSON() ClientOption {
 	return func(opts *ClientOptions) {
 		opts.overallReference.Serialization = constant.JSONSerialization
 	}
 }
 
+// WithClientSerialization sets ClientOptions.overallReference.Serialization.
+// The selected serialization must be supported by the provider protocol.
 func WithClientSerialization(ser string) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.overallReference.Serialization = ser
 	}
 }
 
+// WithClientProvidedBy sets ClientOptions.overallReference.ProvidedBy as default provider metadata.
 func WithClientProvidedBy(providedBy string) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.overallReference.ProvidedBy = providedBy
@@ -858,6 +952,8 @@ func WithClientProvidedBy(providedBy string) ClientOption {
 //	}
 // }
 
+// WithClientParams replaces ClientOptions.overallReference.Params when params is non-empty.
+// Use WithClientParam to add or override one default parameter.
 func WithClientParams(params map[string]string) ClientOption {
 	return func(opts *ClientOptions) {
 		if len(params) <= 0 {
@@ -867,6 +963,8 @@ func WithClientParams(params map[string]string) ClientOption {
 	}
 }
 
+// WithClientParam adds or replaces one entry in ClientOptions.overallReference.Params.
+// Use WithClientParams to replace the complete default parameter map.
 func WithClientParam(k, v string) ClientOption {
 	return func(opts *ClientOptions) {
 		if opts.overallReference.Params == nil {
@@ -876,9 +974,8 @@ func WithClientParam(k, v string) ClientOption {
 	}
 }
 
-// WithClientRouter appends router configurations to the client options.
-// This is a user-facing option for incrementally adding routers.
-// It appends to the current router slice instead of replacing it.
+// WithClientRouter appends router configurations to ClientOptions.Routers.
+// Use SetClientRouters only when framework-loaded configuration must replace the slice.
 func WithClientRouter(routers ...*global.RouterConfig) ClientOption {
 	return func(opts *ClientOptions) {
 		if len(routers) > 0 {
@@ -898,6 +995,8 @@ func WithClientRouter(routers ...*global.RouterConfig) ClientOption {
 //	}
 // }
 
+// WithClientSticky sets ClientOptions.overallReference.Sticky for all references by default.
+// A reference-level WithSticky enables the same behavior for one service.
 func WithClientSticky() ClientOption {
 	return func(opts *ClientOptions) {
 		opts.overallReference.Sticky = true
@@ -906,24 +1005,30 @@ func WithClientSticky() ClientOption {
 
 // ========== Protocol to consume ==========
 
+// WithClientProtocolDubbo sets ClientOptions.Consumer.Protocol to Dubbo.
 func WithClientProtocolDubbo() ClientOption {
 	return func(opts *ClientOptions) {
 		opts.Consumer.Protocol = constant.DubboProtocol
 	}
 }
 
+// WithClientProtocolTriple sets ClientOptions.Consumer.Protocol to Triple.
 func WithClientProtocolTriple() ClientOption {
 	return func(opts *ClientOptions) {
 		opts.Consumer.Protocol = constant.TriProtocol
 	}
 }
 
+// WithClientProtocolJsonRPC sets ClientOptions.Consumer.Protocol to JSON-RPC.
 func WithClientProtocolJsonRPC() ClientOption {
 	return func(opts *ClientOptions) {
 		opts.Consumer.Protocol = constant.JSONRPCProtocol
 	}
 }
 
+// WithClientProtocol builds a client protocol configuration and assigns it to
+// ClientOptions.overallReference.ProtocolClientConfig. Pass protocol.WithTriple,
+// protocol.WithDubbo, protocol.WithJSONRPC, or another protocol.ClientOption.
 func WithClientProtocol(opts ...protocol.ClientOption) ClientOption {
 	proOpts := protocol.NewClientOptions(opts...)
 
@@ -935,81 +1040,90 @@ func WithClientProtocol(opts ...protocol.ClientOption) ClientOption {
 	}
 }
 
+// WithClientRequestTimeout sets ClientOptions.Consumer.RequestTimeout as the client default.
+// A reference-level WithRequestTimeout or call-level WithCallRequestTimeout can override it.
 func WithClientRequestTimeout(timeout time.Duration) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.Consumer.RequestTimeout = timeout.String()
 	}
 }
 
+// WithClientForceTag sets ClientOptions.overallReference.ForceTag for default tag routing.
 func WithClientForceTag() ClientOption {
 	return func(opts *ClientOptions) {
 		opts.overallReference.ForceTag = true
 	}
 }
 
+// WithClientMeshProviderPort sets ClientOptions.overallReference.MeshProviderPort for mesh routing.
 func WithClientMeshProviderPort(port int) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.overallReference.MeshProviderPort = port
 	}
 }
 
+// SetClientRegistries replaces ClientOptions.Registries with framework-loaded configuration.
+// User code should prefer WithClientRegistry and WithClientRegistryIDs.
 func SetClientRegistries(regs map[string]*global.RegistryConfig) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.Registries = regs
 	}
 }
 
+// SetClientApplication assigns framework-loaded application configuration to ClientOptions.Application.
 func SetClientApplication(application *global.ApplicationConfig) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.Application = application
 	}
 }
 
+// SetClientConsumer assigns framework-loaded consumer configuration to ClientOptions.Consumer.
 func SetClientConsumer(consumer *global.ConsumerConfig) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.Consumer = consumer
 	}
 }
 
+// SetClientShutdown assigns framework-loaded shutdown configuration to ClientOptions.Shutdown.
+// User code should prefer WithClientShutdown.
 func SetClientShutdown(shutdown *global.ShutdownConfig) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.Shutdown = shutdown
 	}
 }
 
+// SetClientMetrics assigns framework-loaded metrics configuration to ClientOptions.Metrics.
 func SetClientMetrics(metrics *global.MetricsConfig) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.Metrics = metrics
 	}
 }
 
+// SetClientOtel assigns framework-loaded OpenTelemetry configuration to ClientOptions.Otel.
 func SetClientOtel(otel *global.OtelConfig) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.Otel = otel
 	}
 }
 
+// SetClientTLS assigns framework-loaded TLS configuration to ClientOptions.TLS.
+// User code should prefer WithClientTLSOption.
 func SetClientTLS(tls *global.TLSConfig) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.TLS = tls
 	}
 }
 
-// SetClientProtocols sets the protocols configuration for the client.
-// This function is used by the framework to configure protocol settings from global configuration.
-// It accepts a map of protocol configurations where the key is the protocol name
-// and the value is the corresponding protocol configuration.
+// SetClientProtocols replaces ClientOptions.Protocols with framework-loaded configuration.
+// User code should prefer WithClientProtocol.
 func SetClientProtocols(protocols map[string]*global.ProtocolConfig) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.Protocols = protocols
 	}
 }
 
-// SetClientRouters sets the routers configuration for the client.
-// This is an internal framework function for applying router settings to
-// client options.
-// End users should not use this function for configuration.
-// It replaces the current router slice instead of appending to it.
+// SetClientRouters replaces ClientOptions.Routers with framework-loaded configuration.
+// User code should prefer WithClientRouter or reference-level WithRouter.
 func SetClientRouters(routers []*global.RouterConfig) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.Routers = routers
@@ -1030,21 +1144,23 @@ func newDefaultCallOptions() *CallOptions {
 	return &CallOptions{}
 }
 
-// WithCallRequestTimeout the maximum waiting time for one specific call, only works for 'tri' and 'dubbo' protocol
+// WithCallRequestTimeout sets CallOptions.RequestTimeout for one Triple or Dubbo invocation.
+// It overrides WithRequestTimeout and WithClientRequestTimeout for that call.
 func WithCallRequestTimeout(timeout time.Duration) CallOption {
 	return func(opts *CallOptions) {
 		opts.RequestTimeout = timeout.String()
 	}
 }
 
-// WithCallRetries the maximum retry times on request failure for one specific call, only works for 'tri' and 'dubbo' protocol
+// WithCallRetries sets CallOptions.Retries for one Triple or Dubbo invocation.
+// It overrides WithRetries and WithClientRetries for that call.
 func WithCallRetries(retries int) CallOption {
 	return func(opts *CallOptions) {
 		opts.Retries = strconv.Itoa(retries)
 	}
 }
 
-// WithResponseHeader configures a target to receive response headers.
+// WithResponseHeader sets CallOptions.ResponseHeader as the target for response headers.
 // Currently, only Triple unary calls populate this option (including error
 // responses when metadata is available).
 func WithResponseHeader(header *http.Header) CallOption {
@@ -1053,7 +1169,7 @@ func WithResponseHeader(header *http.Header) CallOption {
 	}
 }
 
-// WithResponseTrailer configures a target to receive response trailers.
+// WithResponseTrailer sets CallOptions.ResponseTrailer as the target for response trailers.
 // Currently, only Triple unary calls populate this option (including error
 // responses when metadata is available).
 func WithResponseTrailer(trailer *http.Header) CallOption {

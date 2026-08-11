@@ -40,7 +40,8 @@ type Option interface {
 	ServerOption
 }
 
-// WithClientOptions composes multiple ClientOptions into one.
+// WithClientOptions composes ClientOption values for NewClientOptions and applies
+// each option to the same ClientOptions instance in order.
 func WithClientOptions(options ...ClientOption) ClientOption {
 	return &clientOptionsOption{options}
 }
@@ -55,7 +56,8 @@ func (o *clientOptionsOption) applyToClient(config *ClientOptions) {
 	}
 }
 
-// WithServerOptions composes multiple ServerOptions into one.
+// WithServerOptions composes ServerOption values for NewServerOptions and applies
+// each option to the same ServerOptions instance in order.
 func WithServerOptions(options ...ServerOption) ServerOption {
 	return &serverOptionsOption{options}
 }
@@ -70,7 +72,8 @@ func (o *serverOptionsOption) applyToServer(config *ServerOptions) {
 	}
 }
 
-// WithOptions composes multiple Options into one.
+// WithOptions composes options that apply to both ClientOptions and ServerOptions.
+// Use it when the same protocol settings must be shared by clients and servers.
 func WithOptions(options ...Option) Option {
 	return &optionsOption{options}
 }
@@ -227,7 +230,8 @@ func (o *protocolNameOption) applyToServer(config *ServerOptions) {
 	config.Protocol.Name = o.Name
 }
 
-// NOTE: This option can't be configured freely.
+// WithProtocol sets the protocol Name field for both clients and servers.
+// Prefer WithTriple, WithDubbo, WithJSONRPC, or WithREST for built-in protocols.
 func WithProtocol(p string) Option {
 	return &protocolNameOption{p}
 }
@@ -289,12 +293,16 @@ func WithParams(params any) ServerOption {
 
 // ========== Deprecated options ==========
 
-// Deprecated: use triple.WithMaxServerSendMsgSize instead.
+// WithMaxServerSendMsgSize is retained for compatibility and panics when applied.
+//
+// Deprecated: use triple.WithMaxServerSendMsgSize with WithTriple instead.
 func WithMaxServerSendMsgSize(size string) ServerOption {
 	panic("use triple.WithMaxServerSendMsgSize()")
 }
 
-// Deprecated: use triple.WithMaxServerRecvMsgSize instead.
+// WithMaxServerRecvMsgSize is retained for compatibility and panics when applied.
+//
+// Deprecated: use triple.WithMaxServerRecvMsgSize with WithTriple instead.
 func WithMaxServerRecvMsgSize(size string) ServerOption {
 	panic("use triple.WithMaxServerRecvMsgSize()")
 }
