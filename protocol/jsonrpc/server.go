@@ -60,6 +60,8 @@ const (
 	PathPrefix = byte('/')
 	// Max HTTP header size in Mib
 	MaxHeaderSize = 8 * 1024 * 1024
+	// ContentTypeHeader is the HTTP Content-Type header name.
+	ContentTypeHeader = "Content-Type"
 )
 
 // Server is JSON RPC server wrapper
@@ -143,7 +145,7 @@ func (s *Server) handlePkg(conn net.Conn) {
 		reqHeader["HttpMethod"] = r.Method
 
 		httpTimeout := s.timeout
-		contentType := reqHeader["Content-Type"]
+		contentType := reqHeader[ContentTypeHeader]
 		mediaType, _, parseErr := mime.ParseMediaType(contentType)
 		unsupportedContentType := parseErr != nil || (mediaType != "application/json" && mediaType != "application/json-rpc")
 
@@ -222,7 +224,7 @@ func writeHTTPErrorResponse(writer io.Writer, header http.Header, body []byte) e
 		ContentLength: int64(len(body)),
 		Body:          io.NopCloser(bytes.NewReader(body)),
 	}
-	rsp.Header.Del("Content-Type")
+	rsp.Header.Del(ContentTypeHeader)
 	rsp.Header.Del("Content-Length")
 	rsp.Header.Del("Timeout")
 
@@ -363,7 +365,7 @@ func serveRequest(ctx context.Context, header map[string]string, body []byte, wr
 			ContentLength: int64(len(body)),
 			Body:          io.NopCloser(bytes.NewReader(body)),
 		}
-		rsp.Header.Del("Content-Type")
+		rsp.Header.Del(ContentTypeHeader)
 		rsp.Header.Del("Content-Length")
 		rsp.Header.Del("Timeout")
 		for k, v := range header {
@@ -389,7 +391,7 @@ func serveRequest(ctx context.Context, header map[string]string, body []byte, wr
 			ContentLength: int64(len(body)),
 			Body:          io.NopCloser(bytes.NewReader(body)),
 		}
-		rsp.Header.Del("Content-Type")
+		rsp.Header.Del(ContentTypeHeader)
 		rsp.Header.Del("Content-Length")
 		rsp.Header.Del("Timeout")
 		for k, v := range header {
