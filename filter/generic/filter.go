@@ -172,7 +172,7 @@ func (f *genericFilter) OnResponse(_ context.Context, res result.Result, invoker
 	if isGenericDisabled(configuredGeneric) {
 		return res
 	}
-	_, g, err := resolveGeneralizer(configuredGeneric, inv)
+	generic, g, err := resolveGeneralizer(configuredGeneric, inv)
 	if err != nil {
 		res.SetError(err)
 		res.SetResult(nil)
@@ -196,27 +196,37 @@ func (f *genericFilter) OnResponse(_ context.Context, res result.Result, invoker
 	if data == nil {
 		return res
 	}
-
-	// Check if data is a map type that needs to be deserialized
+	replyElem := replyValue.Elem()
 	dataValue := reflect.ValueOf(data)
-	if dataValue.Kind() != reflect.Map && dataValue.Kind() != reflect.Slice {
-		// If data is not a map or slice, it's already a primitive type, no need to deserialize
+	if replyElem.Kind() == reflect.Interface && dataValue.Type().AssignableTo(replyElem.Type()) {
+		if dataValue.Kind() == reflect.Pointer && dataValue.Pointer() == replyValue.Pointer() {
+			return res
+		}
+		replyElem.Set(dataValue)
+		return res
+	}
+
+	if !shouldRealizeTypedResult(data, generic) {
 		return res
 	}
 
 	// Get the element type that the pointer points to
-	replyElemType := replyValue.Elem().Type()
+	replyElemType := replyElem.Type()
 
 	// Realize the map/slice to the target struct using shared helper
 	realized, err := realizeResult(data, replyElemType, g)
 	if err != nil {
 		logger.Warnf("[Filter][Generic] failed to deserialize generic result, err=%v", err)
+		res.SetError(err)
+		res.SetResult(nil)
 		return res
 	}
 
-	// Set the realized value to reply
-	if realized != nil {
-		replyValue.Elem().Set(reflect.ValueOf(realized))
+	if err := setRealizedReply(replyValue, realized); err != nil {
+		logger.Warnf("[Filter][Generic] failed to set generic result reply, err=%v", err)
+		res.SetError(err)
+		res.SetResult(nil)
+		return res
 	}
 
 	// Update the result with the deserialized reply

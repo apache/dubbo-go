@@ -339,6 +339,7 @@ func TestValidateGenericType(t *testing.T) {
 		{"protobuf-json", constant.GenericSerializationProtobufJson, false},
 		{"bean", constant.GenericSerializationBean, false},
 		{"protobuf legacy compat", constant.GenericSerializationProtobuf, false},
+		{"false disables generic", "false", false},
 		{"case insensitive", "TRUE", false},
 		{"unknown value", "bad-type", true},
 	}
@@ -349,6 +350,8 @@ func TestValidateGenericType(t *testing.T) {
 			if tt.wantErr {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tt.generic)
+				assert.Contains(t, err.Error(), "false")
+				assert.Regexp(t, `(?:^|,\s*)protobuf(?:,|$)`, err.Error())
 			} else {
 				assert.NoError(t, err)
 			}

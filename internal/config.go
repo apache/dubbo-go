@@ -233,14 +233,14 @@ func IsGenericMode(generic string) bool {
 }
 
 // ValidateGenericType validates the generic serialization type (generic mode).
-// An empty value means the call is not generic and is allowed. Unknown values fail
-// fast instead of silently falling back to the Map generalizer.
+// An empty value or "false" means the call is not generic and is allowed.
+// Unknown values fail fast instead of silently falling back to the Map generalizer.
 //
 // Valid values: "true" (Map, default), "gson", "protobuf-json", "bean".
 // "protobuf" is kept as a legacy compatibility value and is not recommended.
 func ValidateGenericType(generic string) error {
-	if generic == "" || IsGenericMode(generic) {
+	if generic == "" || strings.EqualFold(generic, "false") || IsGenericMode(generic) {
 		return nil
 	}
-	return fmt.Errorf("invalid generic type %q, valid values: true, gson, protobuf-json, bean", generic)
+	return fmt.Errorf("invalid generic type %q, valid values: true, false, gson, protobuf-json, bean, protobuf", generic)
 }

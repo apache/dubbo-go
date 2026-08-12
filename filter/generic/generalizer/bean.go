@@ -174,6 +174,9 @@ func (g *BeanGeneralizer) toDescriptor(obj any, visited map[uintptr]bool) *JavaB
 // fromDescriptor converts JavaBeanDescriptor to map for MapGeneralizer.Realize
 func (g *BeanGeneralizer) fromDescriptor(obj any) any {
 	desc, ok := obj.(*JavaBeanDescriptor)
+	if ok && desc == nil {
+		return nil
+	}
 	if !ok {
 		if m, ok := obj.(map[any]any); ok {
 			desc = &JavaBeanDescriptor{Properties: make(map[any]any)}
