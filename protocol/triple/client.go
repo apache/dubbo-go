@@ -250,8 +250,17 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 			return nil, fmt.Errorf("TRIPLE HTTP/2 and HTTP/3 client must have TLS config, but TLS config is nil")
 		}
 
+		var http3Config *global.Http3Config
+		if tripleConf != nil {
+			http3Config = tripleConf.Http3
+		}
+
 		// Create a dual transport that can handle both HTTP/2 and HTTP/3
-		transport = newDualTransport(cfg, keepAliveInterval, keepAliveTimeout)
+		dualTransport, configErr := newDualTransport(cfg, http3Config, keepAliveInterval, keepAliveTimeout)
+		if configErr != nil {
+			return nil, configErr
+		}
+		transport = dualTransport
 		logger.Info("[Triple][Client] triple HTTP/2 and HTTP/3 client transport init successfully")
 	default:
 		return nil, fmt.Errorf("unsupported http protocol: %s", callProtocol)
