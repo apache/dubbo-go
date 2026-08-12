@@ -58,6 +58,7 @@ type Server struct {
 	handlers           map[string]*Handler
 	httpSrv            uatomic.Pointer[http.Server]
 	http3Srv           uatomic.Pointer[http3.Server]
+	stopCount          uatomic.Uint32
 	tripleConfig       *global.TripleConfig // Configuration for the triple protocol
 	openapiIntegration *openapi.OpenAPIIntegration
 }
@@ -276,6 +277,8 @@ func (s *Server) startHttp2AndHttp3(tlsConf *tls.Config) error {
 		return fmt.Errorf("TRIPLE HTTP/2 and HTTP/3 Server must have a TLS certificate configured, but none of Certificates/GetCertificate/GetConfigForClient is set")
 	}
 
+	epoch := s.stopCount.Load()
+
 	// Pre-bind the TCP (HTTP/2) listener before serving any request:
 	// fail fast with the bind error when the port is occupied.
 	tcpLn, err := netListen("tcp", s.addr)
@@ -316,8 +319,14 @@ func (s *Server) startHttp2AndHttp3(tlsConf *tls.Config) error {
 
 	logger.Debugf("[Triple][Server] triple HTTP/2 and HTTP/3 Server starting on %v", s.addr)
 
+	// A stop during the bind or store steps closed nothing; abort so the
+	// deferred closes release the sockets.
+	if s.stopCount.Load() != epoch {
+		return nil
+	}
+
 	// Use errgroup to manage concurrent server startup
-	eg := &errgroup.Group{}
+	eg, _ := errgroup.WithContext(context.Background())
 
 	// Start HTTP/2 server in a goroutine
 	eg.Go(func() error {
@@ -347,6 +356,9 @@ func (s *Server) startHttp2AndHttp3(tlsConf *tls.Config) error {
 
 // Stop the Triple server for both HTTP/2 and HTTP/3.
 func (s *Server) Stop() error {
+	// Record the stop first so an in-flight startup aborts at its checkpoint.
+	s.stopCount.Add(1)
+
 	eg, _ := errgroup.WithContext(context.Background())
 
 	// stop HTTP server
@@ -375,6 +387,9 @@ func (s *Server) Stop() error {
 
 // Gracefulstop shutdown the Triple server for both HTTP/2 and HTTP/3 gracefully.
 func (s *Server) GracefulStop(ctx context.Context) error {
+	// Record the stop first so an in-flight startup aborts at its checkpoint.
+	s.stopCount.Add(1)
+
 	eg, ctx := errgroup.WithContext(ctx)
 
 	// shutdown HTTP server
