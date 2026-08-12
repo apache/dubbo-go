@@ -290,7 +290,7 @@ func TestListAppRevisions(t *testing.T) {
 
 func TestListAppRevisionsPipelinesReadsWithBoundedConcurrency(t *testing.T) {
 	const extraRevisions = 5
-	revisionCount := listAppRevisionsMaxConcurrency + extraRevisions
+	revisionCount := constant.ZookeeperListAppRevisionsMaxConcurrency + extraRevisions
 	mc := newMockZkClient()
 	client := &concurrencyTrackingZkClient{
 		mockZkClient: mc,
@@ -313,7 +313,7 @@ func TestListAppRevisionsPipelinesReadsWithBoundedConcurrency(t *testing.T) {
 		done <- listResult{revisions: revisions, err: err}
 	}()
 
-	for range listAppRevisionsMaxConcurrency {
+	for range constant.ZookeeperListAppRevisionsMaxConcurrency {
 		select {
 		case <-client.entered:
 		case <-time.After(time.Second):
@@ -331,7 +331,7 @@ func TestListAppRevisionsPipelinesReadsWithBoundedConcurrency(t *testing.T) {
 	require.NoError(t, result.err)
 	require.Len(t, result.revisions, revisionCount)
 	client.mu.Lock()
-	assert.Equal(t, listAppRevisionsMaxConcurrency, client.maxActive)
+	assert.Equal(t, constant.ZookeeperListAppRevisionsMaxConcurrency, client.maxActive)
 	client.mu.Unlock()
 }
 

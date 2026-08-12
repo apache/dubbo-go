@@ -90,11 +90,6 @@ type zookeeperMetadataReport struct {
 	url           *common.URL
 }
 
-// listAppRevisionsMaxConcurrency bounds the number of in-flight reads sent
-// over the ZooKeeper connection. ZooKeeper's Go client does not support read
-// operations in Multi, but concurrent requests are pipelined by the client.
-const listAppRevisionsMaxConcurrency = 16
-
 // URL returns the URL used to create this metadata report.
 func (m *zookeeperMetadataReport) URL() *common.URL {
 	return m.url
@@ -159,7 +154,7 @@ func (m *zookeeperMetadataReport) ListAppRevisions(application string) ([]report
 	close(jobs)
 
 	var workers sync.WaitGroup
-	workerCount := min(len(children), listAppRevisionsMaxConcurrency)
+	workerCount := min(len(children), constant.ZookeeperListAppRevisionsMaxConcurrency)
 	workers.Add(workerCount)
 	for range workerCount {
 		go func() {
