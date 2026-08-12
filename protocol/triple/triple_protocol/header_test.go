@@ -159,7 +159,9 @@ func TestNewOutgoingContextReplacesExisting(t *testing.T) {
 func TestAppendToOutgoingContextPanicsOnOddKV(t *testing.T) {
 	t.Parallel()
 	assert.Panics(t, func() {
-		AppendToOutgoingContext(context.Background(), "foo")
+		// Deliberately pass an odd number of kv arguments to trigger the
+		// panic. staticcheck SA5012 flags this as a bug.
+		AppendToOutgoingContext(context.Background(), "foo") //nolint:staticcheck
 	})
 }
 
