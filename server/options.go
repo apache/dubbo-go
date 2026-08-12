@@ -126,49 +126,64 @@ type ServerOption func(*ServerOptions)
 
 // ========== LoadBalance Strategy ==========
 
-// WithServerLoadBalanceConsistentHashing sets ServerOptions.Provider.Loadbalance to consistent hashing.
+// WithServerLoadBalanceConsistentHashing advertises consistent hashing as the default
+// consumer load balancer for every service. Calls with the same configured arguments tend
+// to reach the same provider while the provider set is stable. Use it when most services need
+// cache or session affinity; service-level load-balancing options can override it.
 func WithServerLoadBalanceConsistentHashing() ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.Loadbalance = constant.LoadBalanceKeyConsistentHashing
 	}
 }
 
-// WithServerLoadBalanceLeastActive sets ServerOptions.Provider.Loadbalance to least active.
+// WithServerLoadBalanceLeastActive advertises least-active load balancing as the default for
+// consumers, favoring providers with fewer in-flight requests and using weight to break ties.
+// Use it when request duration varies and busy instances should receive less work.
 func WithServerLoadBalanceLeastActive() ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.Loadbalance = constant.LoadBalanceKeyLeastActive
 	}
 }
 
-// WithServerLoadBalanceRandom sets ServerOptions.Provider.Loadbalance to random.
+// WithServerLoadBalanceRandom advertises weighted-random provider selection as the default
+// consumer load-balancing policy. It is a low-overhead general default for statistically even
+// traffic across services.
 func WithServerLoadBalanceRandom() ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.Loadbalance = constant.LoadBalanceKeyRandom
 	}
 }
 
-// WithServerLoadBalanceRoundRobin sets ServerOptions.Provider.Loadbalance to round robin.
+// WithServerLoadBalanceRoundRobin advertises smooth weighted round-robin provider selection
+// as the default consumer load-balancing policy. Use it when requests have similar cost and
+// predictable per-instance traffic shares are desirable.
 func WithServerLoadBalanceRoundRobin() ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.Loadbalance = constant.LoadBalanceKeyRoundRobin
 	}
 }
 
-// WithServerLoadBalanceP2C sets ServerOptions.Provider.Loadbalance to power of two choices.
+// WithServerLoadBalanceP2C advertises P2C as the default consumer load balancer. Consumers
+// sample two providers and favor the one reporting more remaining capacity. Use it together
+// with WithServerAdaptiveService for capacity-aware routing.
 func WithServerLoadBalanceP2C() ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.Loadbalance = constant.LoadBalanceKeyP2C
 	}
 }
 
-// WithServerLoadBalance sets ServerOptions.Provider.Loadbalance to a custom strategy name.
+// WithServerLoadBalance advertises a registered load-balancing extension as the default for
+// consumers. Use it for domain-specific provider placement; a service-level option overrides it.
 func WithServerLoadBalance(lb string) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.Loadbalance = lb
 	}
 }
 
-// WithServerWarmUp sets ServerOptions.Provider.Warmup to the whole-second value of warmUp.
+// WithServerWarmUp gradually increases newly started providers' effective weight over the
+// supplied duration, reducing traffic while caches and other resources warm up. Durations
+// shorter than one second are truncated. Use it when cold instances cannot safely receive full
+// traffic immediately; WithServerWarmup preserves sub-second duration strings.
 func WithServerWarmUp(warmUp time.Duration) ServerOption {
 	return func(opts *ServerOptions) {
 		warmUpSec := int(warmUp / time.Second)
@@ -178,217 +193,264 @@ func WithServerWarmUp(warmUp time.Duration) ServerOption {
 
 // ========== Cluster Strategy ==========
 
-// WithServerClusterAvailable sets ServerOptions.Provider.Cluster to available.
+// WithServerClusterAvailable tells consumers to invoke the first available provider without
+// load balancing or retries by default. Use it only when any healthy provider is sufficient
+// and balanced traffic is not required.
 func WithServerClusterAvailable() ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.Cluster = constant.ClusterKeyAvailable
 	}
 }
 
-// WithServerClusterBroadcast sets ServerOptions.Provider.Cluster to broadcast.
+// WithServerClusterBroadcast tells consumers to invoke every provider sequentially by
+// default and report an error if any provider fails. Use it for operations such as cache
+// invalidation that intentionally run on every instance.
 func WithServerClusterBroadcast() ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.Cluster = constant.ClusterKeyBroadcast
 	}
 }
 
-// WithServerClusterFailBack sets ServerOptions.Provider.Cluster to failback.
+// WithServerClusterFailBack tells consumers to hide an initial failure and retry the call in
+// the background with exponential backoff. Use it for best-effort notifications where eventual
+// delivery matters more than returning the initial error.
 func WithServerClusterFailBack() ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.Cluster = constant.ClusterKeyFailback
 	}
 }
 
-// WithServerClusterFailFast sets ServerOptions.Provider.Cluster to fail-fast.
+// WithServerClusterFailFast tells consumers to invoke once and return the error without
+// retrying another provider. Use it for non-idempotent operations where duplicate execution
+// would be more harmful than an immediate failure.
 func WithServerClusterFailFast() ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.Cluster = constant.ClusterKeyFailfast
 	}
 }
 
-// WithServerClusterFailOver sets ServerOptions.Provider.Cluster to failover.
-// Pair it with WithServerRetries to control the retry count.
+// WithServerClusterFailOver tells consumers to retry non-business failures on reselected
+// providers. Use it for idempotent calls that should survive one unavailable instance;
+// WithServerRetries controls the additional attempts after the first call.
 func WithServerClusterFailOver() ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.Cluster = constant.ClusterKeyFailover
 	}
 }
 
-// WithServerClusterFailSafe sets ServerOptions.Provider.Cluster to fail-safe.
+// WithServerClusterFailSafe tells consumers to log and suppress invocation failures,
+// returning an empty result. Use it only for optional best-effort work, such as audit events,
+// because callers cannot distinguish a suppressed failure from an empty success.
 func WithServerClusterFailSafe() ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.Cluster = constant.ClusterKeyFailsafe
 	}
 }
 
-// WithServerClusterForking sets ServerOptions.Provider.Cluster to forking.
+// WithServerClusterForking tells consumers to invoke multiple providers concurrently and
+// return the first completed result. Use it for idempotent, latency-sensitive reads and accept
+// the duplicate work and extra provider load it creates.
 func WithServerClusterForking() ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.Cluster = constant.ClusterKeyForking
 	}
 }
 
-// WithServerClusterZoneAware sets ServerOptions.Provider.Cluster to zone-aware.
+// WithServerClusterZoneAware tells consumers using multiple registries to prefer an explicitly
+// preferred registry, then the request's zone, before falling back by registry weight. Use it
+// for multi-region services that should keep traffic local while retaining fallback.
 func WithServerClusterZoneAware() ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.Cluster = constant.ClusterKeyZoneAware
 	}
 }
 
-// WithServerClusterAdaptiveService sets ServerOptions.Provider.Cluster to adaptive-service.
+// WithServerClusterAdaptiveService advertises adaptive remaining-capacity routing to consumers.
+// Consumers must also use P2C and providers must publish adaptive capacity metrics. Use it for
+// services whose effective instance capacity changes significantly under load.
 func WithServerClusterAdaptiveService() ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.Cluster = constant.ClusterKeyAdaptiveService
 	}
 }
 
-// WithServerCluster sets ServerOptions.Provider.Cluster to a custom strategy name.
+// WithServerCluster advertises a registered cluster extension as the default consumer fault
+// handling policy. Use it for an application-specific failure policy; a service-level cluster
+// option overrides it.
 func WithServerCluster(cluster string) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.Cluster = cluster
 	}
 }
 
-// WithServerGroup sets ServerOptions.Provider.Group as the default service group.
-// A service-level WithGroup can override it.
+// WithServerGroup publishes services in the supplied group by default, allowing multiple
+// logical implementations of one interface to coexist. Use groups for environments, tenants,
+// or alternate implementations; consumers must request the same group.
 func WithServerGroup(group string) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.Group = group
 	}
 }
 
-// WithServerVersion sets ServerOptions.Provider.Version as the default service version.
-// A service-level WithVersion can override it.
+// WithServerVersion publishes services under the supplied version by default. Consumers with
+// another version cannot discover them. Use it during incompatible API migrations; a
+// service-level WithVersion overrides this value.
 func WithServerVersion(version string) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.Version = version
 	}
 }
 
-// WithServerJSON sets ServerOptions.Provider.Serialization to JSON.
-// Clients must select a compatible serialization.
+// WithServerJSON uses JSON as the default wire serialization for exported services. Consumers
+// and the selected protocol must support JSON or requests cannot be decoded. Use it for
+// interoperability when readable payloads matter more than compact binary encoding.
 func WithServerJSON() ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.Serialization = constant.JSONSerialization
 	}
 }
 
-// WithServerToken sets ServerOptions.Provider.Token for provider authentication.
-// Pair it with WithServerFilter("token") to enable token validation.
+// WithServerToken requires consumers to present the same service token when the token provider
+// filter is active. Use it for simple shared-secret protection and pair it with
+// WithServerFilter("token") or a chain containing that filter.
 func WithServerToken(token string) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.Token = token
 	}
 }
 
-// WithServerNotRegister sets ServerOptions.Provider.NotRegister to skip service registration by default.
+// WithServerNotRegister prevents services from being published to registries by default while
+// still allowing the server to listen. Use it for local tests or private fixed endpoints; such
+// services must be reached by a direct URL.
 func WithServerNotRegister() ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.NotRegister = true
 	}
 }
 
-// WithServerWarmup sets ServerOptions.Provider.Warmup to warmupDuration.String().
-// Use WithServerWarmUp when the configuration requires a whole-second numeric value.
+// WithServerWarmup gradually increases newly started providers' effective load-balancing
+// weight over the supplied duration. Use it for cold-start protection when caches or connection
+// pools need time to fill. It preserves values such as "500ms" in the provider URL.
 func WithServerWarmup(warmupDuration time.Duration) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.Warmup = warmupDuration.String()
 	}
 }
 
-// WithServerRetries sets ServerOptions.Provider.Retries as the default retry count.
-// It is commonly paired with WithServerClusterFailOver.
+// WithServerRetries advertises how many additional attempts retry-capable consumers may make
+// after the initial call. Zero means one total attempt. Use retries only for idempotent services;
+// service-level settings take precedence.
 func WithServerRetries(retries int) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.Retries = strconv.Itoa(retries)
 	}
 }
 
-// WithServerSerialization sets ServerOptions.Provider.Serialization.
-// Clients must select a compatible serialization.
+// WithServerSerialization selects the default wire serialization by extension name. Consumers
+// and the selected protocol must support the same serialization. Use it when both sides install
+// the same non-default serialization extension.
 func WithServerSerialization(ser string) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.Serialization = ser
 	}
 }
 
-// WithServerAccesslog sets ServerOptions.Provider.AccessLog for provider access logging.
+// WithServerAccesslog enables provider access logging by default. A file path writes access
+// records there; "true" or "default" sends them to the application logger. Logging is
+// asynchronous and records may be dropped if its channel is full. Use it for request auditing
+// or troubleshooting, accounting for payload visibility and storage cost.
 func WithServerAccesslog(accesslog string) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.AccessLog = accesslog
 	}
 }
 
-// WithServerTpsLimiter sets ServerOptions.Provider.TpsLimiter.
-// Pair it with the WithServerTpsLimitRate, strategy, and rejected-handler options as needed.
+// WithServerTpsLimiter enables the named TPS limiter for services by default. An empty name
+// disables TPS limiting; an unregistered name causes service validation to panic. Use it to
+// protect provider capacity from bursts, together with rate, strategy, and rejection settings.
 func WithServerTpsLimiter(limiter string) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.TpsLimiter = limiter
 	}
 }
 
-// WithServerTpsLimitRate sets ServerOptions.Provider.TpsLimitRate.
-// Pair it with WithServerTpsLimiter to enable TPS limiting.
+// WithServerTpsLimitRate sets the default maximum request rate enforced by the selected TPS
+// limiter. Use it to express the sustainable throughput of services. It has no effect until
+// WithServerTpsLimiter selects a limiter.
 func WithServerTpsLimitRate(rate int) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.TpsLimitRate = strconv.Itoa(rate)
 	}
 }
 
-// WithServerTpsLimitStrategy sets ServerOptions.Provider.TpsLimitStrategy.
-// Pair it with WithServerTpsLimiter to enable TPS limiting.
+// WithServerTpsLimitStrategy selects the registered rate-limiting strategy used by the default
+// TPS limiter. Use it to choose how bursts are measured, such as a fixed or sliding window;
+// an unregistered name causes service validation to panic.
 func WithServerTpsLimitStrategy(strategy string) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.TpsLimitStrategy = strategy
 	}
 }
 
-// WithServerTpsLimitRejectedHandler sets ServerOptions.Provider.TpsLimitRejectedHandler.
-// Pair it with WithServerTpsLimiter to handle rejected requests.
+// WithServerTpsLimitRejectedHandler selects the handler invoked when the default TPS limit is
+// exceeded. Use a custom handler to return a domain-specific error or fallback result;
+// an unregistered name causes service validation to panic.
 func WithServerTpsLimitRejectedHandler(rejHandler string) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.TpsLimitRejectedHandler = rejHandler
 	}
 }
 
-// WithServerExecuteLimit sets ServerOptions.Provider.ExecuteLimit.
-// Pair it with WithServerExecuteLimitRejectedHandler when custom rejection handling is required.
+// WithServerExecuteLimit caps concurrent in-flight provider invocations by default. The value
+// must be an integer string; a negative value disables the cap, while an invalid value returns
+// an empty result without invoking the service. Use it when concurrency, rather than request
+// rate, is the scarce resource, such as a bounded database connection pool.
 func WithServerExecuteLimit(exeLimit string) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.ExecuteLimit = exeLimit
 	}
 }
 
-// WithServerExecuteLimitRejectedHandler sets ServerOptions.Provider.ExecuteLimitRejectedHandler.
-// Pair it with WithServerExecuteLimit.
+// WithServerExecuteLimitRejectedHandler selects the registered handler for calls rejected after
+// the default in-flight limit is reached. Use it to return a specific overload response. If
+// lookup fails, the call proceeds after a warning.
 func WithServerExecuteLimitRejectedHandler(exeRejHandler string) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.ExecuteLimitRejectedHandler = exeRejHandler
 	}
 }
 
-// WithServerAuth sets ServerOptions.Provider.Auth for provider authentication metadata.
+// WithServerAuth enables AK/SK request-signature verification for services by default when set
+// to "true" and the provider filter chain contains "auth". Missing or invalid signatures are
+// rejected before service execution. Use it when providers must authenticate calling applications;
+// configure access-key storage and signing on both provider and consumer.
 func WithServerAuth(auth string) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.Auth = auth
 	}
 }
 
-// WithServerParamSign sets ServerOptions.Provider.ParamSign for parameter signing.
+// WithServerParamSign includes request parameters in AK/SK signature verification by default
+// when set to "true". Use it when signatures must detect parameter tampering; both sides must
+// canonicalize the same values. It requires authentication and the "auth" filter.
 func WithServerParamSign(paramSign string) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.ParamSign = paramSign
 	}
 }
 
-// WithServerTag sets ServerOptions.Provider.Tag for tag-based routing.
+// WithServerTag publishes services with the supplied routing tag by default, allowing tagged
+// consumers to target this provider group. Use tags for canary, tenant, or hardware-specific
+// pools without changing the service interface.
 func WithServerTag(tag string) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.Tag = tag
 	}
 }
 
-// WithServerParam adds or replaces one entry in ServerOptions.Provider.Params.
+// WithServerParam publishes one custom provider URL parameter for filters, routers, protocols,
+// or extensions. Use it to configure an extension not covered by a typed option. A later call
+// with the same key replaces the earlier value.
 func WithServerParam(k, v string) ServerOption {
 	return func(opts *ServerOptions) {
 		if opts.Provider.Params == nil {
@@ -398,24 +460,27 @@ func WithServerParam(k, v string) ServerOption {
 	}
 }
 
-// WithServerFilter sets ServerOptions.Provider.Filter as the default provider filter chain.
-// Pair it with options such as WithServerToken that require a matching filter.
+// WithServerFilter selects the comma-separated provider filter chain applied to incoming calls
+// by default, in execution order. Use it for shared middleware such as authentication, metrics,
+// or custom validation. A service-level WithFilter replaces this chain.
 func WithServerFilter(filter string) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.Filter = filter
 	}
 }
 
-// WithServerRegistryIDs sets ServerOptions.Provider.RegistryIDs.
-// Pair it with WithServerRegistry using matching registry IDs.
+// WithServerRegistryIDs limits service publication to the named registries by default. Each ID
+// must match a registry added with WithServerRegistry or server initialization fails. Use it to
+// publish all services to selected environments or regions when several registries exist.
 func WithServerRegistryIDs(registryIDs []string) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.RegistryIDs = registryIDs
 	}
 }
 
-// WithServerRegistry builds a registry configuration and adds it to ServerOptions.Registries.
-// Use registry.WithID and select the same ID with WithServerRegistryIDs when needed.
+// WithServerRegistry makes a registry available for publishing services. Give each registry a
+// distinct registry.WithID and use WithServerRegistryIDs to publish only to a subset. Configure
+// shared registries here instead of repeating WithRegistry for every service.
 func WithServerRegistry(opts ...registry.Option) ServerOption {
 	regOpts := registry.NewOptions(opts...)
 
@@ -427,16 +492,29 @@ func WithServerRegistry(opts ...registry.Option) ServerOption {
 	}
 }
 
-// WithServerProtocolIDs sets ServerOptions.Provider.ProtocolIDs.
-// Pair it with WithServerProtocol using matching protocol IDs.
+// WithServerProtocolIDs limits service export to the named server protocols by default. Each ID
+// must match a protocol added with WithServerProtocol. Use it when the server listens on several
+// endpoints but most services should be exposed through only a selected subset.
 func WithServerProtocolIDs(protocolIDs []string) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.ProtocolIDs = protocolIDs
 	}
 }
 
-// WithServerProtocol builds a protocol configuration and adds it to ServerOptions.Protocols.
-// Use protocol.WithID and select the same ID with WithServerProtocolIDs when multiple protocols exist.
+// WithServerProtocol configures a protocol endpoint on which services may be exported. Give
+// each endpoint a distinct protocol.WithID when serving multiple protocols or ports. Configure
+// shared listeners here, then choose them globally or per service with protocol IDs.
+//
+// For example, this exposes services on a named Triple endpoint:
+//
+//	server.NewServer(
+//		server.WithServerProtocol(
+//			protocol.WithTriple(),
+//			protocol.WithID("triple"),
+//			protocol.WithPort(20000),
+//		),
+//		server.WithServerProtocolIDs([]string{"triple"}),
+//	)
 func WithServerProtocol(opts ...protocol.ServerOption) ServerOption {
 	proOpts := protocol.NewServerOptions(opts...)
 
@@ -448,23 +526,27 @@ func WithServerProtocol(opts ...protocol.ServerOption) ServerOption {
 	}
 }
 
-// WithServerAdaptiveService sets ServerOptions.Provider.AdaptiveService to enable adaptive services.
+// WithServerAdaptiveService enables provider-side capacity measurement and publishes the
+// remaining-capacity metrics required by adaptive-service consumers. Use it with consumer-side
+// adaptive cluster and P2C options when static provider weights do not reflect current load.
 func WithServerAdaptiveService() ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.AdaptiveService = true
 	}
 }
 
-// WithServerAdaptiveServiceVerbose sets ServerOptions.Provider.AdaptiveServiceVerbose.
-// Pair it with WithServerAdaptiveService to enable verbose adaptive-service output.
+// WithServerAdaptiveServiceVerbose enables detailed adaptive limiter diagnostics. Server
+// initialization fails unless WithServerAdaptiveService is also enabled. Use it while tuning or
+// diagnosing adaptive limits; verbose output may be too noisy for normal production operation.
 func WithServerAdaptiveServiceVerbose() ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.AdaptiveServiceVerbose = true
 	}
 }
 
-// WithServerTLSOption applies tls.Option values to ServerOptions.TLS.
-// Configure compatible client settings with client.WithClientTLSOption.
+// WithServerTLSOption configures credentials and peer verification for encrypted server
+// connections. Use it for transport encryption and, when configured, mutual authentication.
+// Clients must use compatible trust and certificate settings.
 func WithServerTLSOption(opts ...tls.Option) ServerOption {
 	tlsOpts := tls.NewOptions(opts...)
 
@@ -663,7 +745,7 @@ type ServiceOption func(*ServiceOptions)
 
 // ---------- For user ----------
 
-// WithInterface sets ServiceOptions.Service.Interface for the service being exposed.
+// WithInterface publishes this service under the supplied discovery and routing identifier.
 //
 // As a functional option, it is passed to a service registration function
 // (e.g., RegisterGreetServiceHandler) to configure the service's properties.
@@ -684,8 +766,9 @@ func WithInterface(interfaceName string) ServiceOption {
 	}
 }
 
-// WithRegistryIDs sets ServiceOptions.Service.RegistryIDs for this service.
-// Pair it with WithRegistry using matching registry IDs.
+// WithRegistryIDs publishes this service only to the named registries. Each ID must match a
+// registry added with WithRegistry or inherited from the server, otherwise registration fails.
+// Use it when one service belongs in a different environment or region from the server default.
 func WithRegistryIDs(registryIDs []string) ServiceOption {
 	return func(cfg *ServiceOptions) {
 		if len(registryIDs) > 0 {
@@ -694,16 +777,18 @@ func WithRegistryIDs(registryIDs []string) ServiceOption {
 	}
 }
 
-// WithFilter sets ServiceOptions.Service.Filter for this service.
-// Pair it with options such as WithToken that require a matching filter.
+// WithFilter selects the comma-separated provider filter chain applied to incoming calls for
+// this service, in execution order. Use it to add service-specific middleware such as "auth"
+// or a custom validator. It replaces the server-level default filter chain.
 func WithFilter(filter string) ServiceOption {
 	return func(cfg *ServiceOptions) {
 		cfg.Service.Filter = filter
 	}
 }
 
-// WithProtocolIDs sets ServiceOptions.Service.ProtocolIDs for this service.
-// Pair it with WithProtocol using matching protocol IDs.
+// WithProtocolIDs exports this service only through the named protocol endpoints. Each ID must
+// match a protocol added with WithProtocol or inherited from the server. Use it when this
+// service should expose only Triple, Dubbo, or a dedicated listener.
 func WithProtocolIDs(protocolIDs []string) ServiceOption {
 	return func(cfg *ServiceOptions) {
 		if len(protocolIDs) > 0 {
@@ -714,49 +799,61 @@ func WithProtocolIDs(protocolIDs []string) ServiceOption {
 
 // ========== LoadBalance Strategy ==========
 
-// WithLoadBalanceConsistentHashing sets ServiceOptions.Service.Loadbalance to consistent hashing.
+// WithLoadBalanceConsistentHashing tells consumers of this service to route calls with the same
+// configured arguments to the same provider while the provider set is stable. Use it for
+// per-user caches or session affinity; membership changes can remap some keys.
 func WithLoadBalanceConsistentHashing() ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.Service.Loadbalance = constant.LoadBalanceKeyConsistentHashing
 	}
 }
 
-// WithLoadBalanceLeastActive sets ServiceOptions.Service.Loadbalance to least active.
+// WithLoadBalanceLeastActive tells consumers to favor providers with fewer in-flight requests,
+// using warm-up-adjusted weight when active counts are equal. Use it when this service has
+// uneven request durations and busy instances should receive less new work.
 func WithLoadBalanceLeastActive() ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.Service.Loadbalance = constant.LoadBalanceKeyLeastActive
 	}
 }
 
-// WithLoadBalanceRandom sets ServiceOptions.Service.Loadbalance to random.
+// WithLoadBalanceRandom tells consumers to choose providers randomly in proportion to their
+// effective weight. Use it as a low-overhead general choice for statistically even traffic.
 func WithLoadBalanceRandom() ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.Service.Loadbalance = constant.LoadBalanceKeyRandom
 	}
 }
 
-// WithLoadBalanceRoundRobin sets ServiceOptions.Service.Loadbalance to round robin.
+// WithLoadBalanceRoundRobin tells consumers to distribute calls using smooth weighted
+// round-robin selection. Use it when calls have similar cost and predictable instance shares
+// are desirable.
 func WithLoadBalanceRoundRobin() ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.Service.Loadbalance = constant.LoadBalanceKeyRoundRobin
 	}
 }
 
-// WithLoadBalanceP2C sets ServiceOptions.Service.Loadbalance to power of two choices.
+// WithLoadBalanceP2C tells consumers to sample two providers and favor the one reporting more
+// remaining capacity. Use it with adaptive-service metrics when instance capacity changes
+// dynamically under load.
 func WithLoadBalanceP2C() ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.Service.Loadbalance = constant.LoadBalanceKeyP2C
 	}
 }
 
-// WithLoadBalance sets ServiceOptions.Service.Loadbalance to a custom strategy name.
+// WithLoadBalance advertises a registered load-balancing extension to consumers of this
+// service. Use it for a domain-specific placement rule; it overrides the server-level default.
 func WithLoadBalance(lb string) ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.Service.Loadbalance = lb
 	}
 }
 
-// WithWarmUp sets ServiceOptions.Service.Warmup to the whole-second value of warmUp.
+// WithWarmUp gradually increases this provider's effective weight over the supplied duration,
+// reducing traffic after startup. Use it when this service needs to fill caches or pools before
+// receiving full traffic. Durations shorter than one second are truncated.
 func WithWarmUp(warmUp time.Duration) ServiceOption {
 	return func(opts *ServiceOptions) {
 		warmUpSec := int(warmUp / time.Second)
@@ -766,218 +863,265 @@ func WithWarmUp(warmUp time.Duration) ServiceOption {
 
 // ========== Cluster Strategy ==========
 
-// WithClusterAvailable sets ServiceOptions.Service.Cluster to available.
+// WithClusterAvailable tells consumers to invoke the first available provider without load
+// balancing or retries. Use it only when any healthy provider is sufficient and even traffic
+// distribution is not required.
 func WithClusterAvailable() ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.Service.Cluster = constant.ClusterKeyAvailable
 	}
 }
 
-// WithClusterBroadcast sets ServiceOptions.Service.Cluster to broadcast.
+// WithClusterBroadcast tells consumers to invoke every provider sequentially and report an
+// error if any provider fails. Use it for operations such as invalidating a cache on every
+// instance; the operation should tolerate repeated calls.
 func WithClusterBroadcast() ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.Service.Cluster = constant.ClusterKeyBroadcast
 	}
 }
 
-// WithClusterFailBack sets ServiceOptions.Service.Cluster to failback.
+// WithClusterFailBack tells consumers to hide an initial failure and retry in the background
+// with exponential backoff, which suits eventual-delivery notifications.
 func WithClusterFailBack() ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.Service.Cluster = constant.ClusterKeyFailback
 	}
 }
 
-// WithClusterFailFast sets ServiceOptions.Service.Cluster to fail-fast.
+// WithClusterFailFast tells consumers to invoke once and return the error without retrying
+// another provider. Use it for non-idempotent operations where duplicate execution would be
+// more harmful than an immediate failure.
 func WithClusterFailFast() ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.Service.Cluster = constant.ClusterKeyFailfast
 	}
 }
 
-// WithClusterFailOver sets ServiceOptions.Service.Cluster to failover.
-// Pair it with WithRetries to control the retry count.
+// WithClusterFailOver tells consumers to retry non-business failures on reselected providers.
+// Use it for idempotent operations that should survive one unavailable instance. WithRetries
+// controls the additional attempts after the first call.
 func WithClusterFailOver() ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.Service.Cluster = constant.ClusterKeyFailover
 	}
 }
 
-// WithClusterFailSafe sets ServiceOptions.Service.Cluster to fail-safe.
+// WithClusterFailSafe tells consumers to log and suppress invocation failures, returning an
+// empty result. Use it only for optional best-effort work because callers cannot distinguish a
+// suppressed failure from an empty success.
 func WithClusterFailSafe() ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.Service.Cluster = constant.ClusterKeyFailsafe
 	}
 }
 
-// WithClusterForking sets ServiceOptions.Service.Cluster to forking.
+// WithClusterForking tells consumers to invoke multiple providers concurrently and return the
+// first completed result. Use it for idempotent, latency-sensitive reads and accept the
+// duplicate work and extra provider load.
 func WithClusterForking() ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.Service.Cluster = constant.ClusterKeyForking
 	}
 }
 
-// WithClusterZoneAware sets ServiceOptions.Service.Cluster to zone-aware.
+// WithClusterZoneAware tells consumers using multiple registries to prefer an explicitly
+// preferred registry, then the request's zone, before falling back by registry weight. Use it
+// for multi-region services that should keep traffic local while retaining fallback.
 func WithClusterZoneAware() ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.Service.Cluster = constant.ClusterKeyZoneAware
 	}
 }
 
-// WithClusterAdaptiveService sets ServiceOptions.Service.Cluster to adaptive-service.
+// WithClusterAdaptiveService tells consumers to route using remaining-capacity metrics. It
+// requires P2C load balancing and providers with adaptive-service metrics enabled. Use it when
+// this service's instance capacity varies significantly at runtime.
 func WithClusterAdaptiveService() ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.Service.Cluster = constant.ClusterKeyAdaptiveService
 	}
 }
 
-// WithCluster sets ServiceOptions.Service.Cluster to a custom strategy name.
+// WithCluster advertises a registered cluster extension as the consumer fault-handling policy
+// for this service. Use it for a domain-specific failure policy; it overrides the server default.
 func WithCluster(cluster string) ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.Service.Cluster = cluster
 	}
 }
 
-// WithGroup sets ServiceOptions.Service.Group for provider discovery.
-// Clients must use the same group with client.WithGroup or client.WithClientGroup.
+// WithGroup publishes this service in the supplied group, allowing multiple implementations
+// of one interface to coexist. Use groups for environments, tenants, or alternate implementations;
+// consumers requesting another group cannot discover it.
 func WithGroup(group string) ServiceOption {
 	return func(cfg *ServiceOptions) {
 		cfg.Service.Group = group
 	}
 }
 
-// WithVersion sets ServiceOptions.Service.Version for provider discovery.
-// Clients must use the same version with client.WithVersion or client.WithClientVersion.
+// WithVersion publishes this service under the supplied version. Consumers requesting another
+// version cannot discover it even when the interface and group match. Use it during incompatible
+// API migrations so old and new providers can run concurrently.
 func WithVersion(version string) ServiceOption {
 	return func(cfg *ServiceOptions) {
 		cfg.Service.Version = version
 	}
 }
 
-// WithJSON sets ServiceOptions.Service.Serialization to JSON.
-// Clients must select JSON or another compatible serialization.
+// WithJSON encodes this service's request and response payloads with JSON. Consumers and the
+// selected protocol must support JSON or requests cannot be decoded. Use it for interoperability
+// when readable payloads matter more than compact binary encoding.
 func WithJSON() ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.Service.Serialization = constant.JSONSerialization
 	}
 }
 
-// WithToken sets ServiceOptions.Service.Token for service authentication.
-// Pair it with WithFilter("token") to enable token validation.
+// WithToken requires consumers to present the same service token when the token provider filter
+// is active. Use it for simple shared-secret protection and pair it with WithFilter("token") or
+// a chain containing that filter.
 func WithToken(token string) ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.Service.Token = token
 	}
 }
 
-// WithNotRegister sets ServiceOptions.Service.NotRegister to skip registry publication.
+// WithNotRegister keeps this service out of all registries while still exporting it on its
+// protocol endpoint. Use it for tests, internal health services, or fixed private endpoints;
+// consumers must use a direct URL to reach it.
 func WithNotRegister() ServiceOption {
 	return func(cfg *ServiceOptions) {
 		cfg.Service.NotRegister = true
 	}
 }
 
-// WithWarmup sets ServiceOptions.Service.Warmup to warmupDuration.String().
-// Use WithWarmUp when the configuration requires a whole-second numeric value.
+// WithWarmup gradually increases this provider's effective load-balancing weight over the
+// supplied duration. Use it for cold-start protection while caches or pools initialize. It
+// preserves values such as "500ms" in the provider URL.
 func WithWarmup(warmupDuration time.Duration) ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.Service.Warmup = warmupDuration.String()
 	}
 }
 
-// WithRetries sets ServiceOptions.Service.Retries for this service.
-// It is commonly paired with WithClusterFailOver.
+// WithRetries advertises how many additional attempts retry-capable consumers may make after
+// the initial call. Zero means one total attempt. Use retries only for idempotent service methods.
 func WithRetries(retries int) ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.Service.Retries = strconv.Itoa(retries)
 	}
 }
 
-// WithSerialization sets ServiceOptions.Service.Serialization.
-// Clients must select a compatible serialization.
+// WithSerialization selects this service's wire serialization by extension name. Consumers
+// and the selected protocol must support the same serialization. Use it when both sides install
+// the same non-default serialization extension.
 func WithSerialization(ser string) ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.Service.Serialization = ser
 	}
 }
 
-// WithAccesslog sets ServiceOptions.Service.AccessLog for service access logging.
+// WithAccesslog enables access logging for this service. A file path writes records there;
+// "true" or "default" sends them to the application logger. Logging is asynchronous and
+// records may be dropped if its channel is full. Use it for auditing or troubleshooting while
+// accounting for payload visibility and storage cost.
 func WithAccesslog(accesslog string) ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.Service.AccessLog = accesslog
 	}
 }
 
-// WithTpsLimiter sets ServiceOptions.Service.TpsLimiter.
-// Pair it with the TPS rate, strategy, and rejected-handler options as needed.
+// WithTpsLimiter enables the named requests-per-second limiter for this service. An empty name
+// disables TPS limiting; an unregistered name causes service validation to panic. Use it to
+// protect this provider from request bursts, together with rate and rejection settings. For
+// example, use WithTpsLimiter("default") and WithTpsLimitRate(100) to allow 100 requests per
+// configured limiter interval before invoking the default rejection handler.
 func WithTpsLimiter(limiter string) ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.Service.TpsLimiter = limiter
 	}
 }
 
-// WithTpsLimitRate sets ServiceOptions.Service.TpsLimitRate.
-// Pair it with WithTpsLimiter to enable TPS limiting.
+// WithTpsLimitRate sets the maximum request rate enforced by this service's selected TPS
+// limiter. Set it to the service's sustainable throughput; it has no effect until WithTpsLimiter
+// selects a limiter.
 func WithTpsLimitRate(rate int) ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.Service.TpsLimitRate = strconv.Itoa(rate)
 	}
 }
 
-// WithTpsLimitStrategy sets ServiceOptions.Service.TpsLimitStrategy.
-// Pair it with WithTpsLimiter to enable TPS limiting.
+// WithTpsLimitStrategy selects the registered rate-limiting strategy used for this service.
+// Use it to choose how bursts are measured, such as a fixed or sliding window. An unregistered
+// name causes service validation to panic.
 func WithTpsLimitStrategy(strategy string) ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.Service.TpsLimitStrategy = strategy
 	}
 }
 
-// WithTpsLimitRejectedHandler sets ServiceOptions.Service.TpsLimitRejectedHandler.
-// Pair it with WithTpsLimiter to handle rejected requests.
+// WithTpsLimitRejectedHandler selects the handler invoked when this service exceeds its TPS
+// limit. Use a custom handler to return a domain-specific overload error or fallback result;
+// an unregistered name causes service validation to panic.
 func WithTpsLimitRejectedHandler(rejHandler string) ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.Service.TpsLimitRejectedHandler = rejHandler
 	}
 }
 
-// WithExecuteLimit sets ServiceOptions.Service.ExecuteLimit.
-// Pair it with WithExecuteLimitRejectedHandler when custom rejection handling is required.
+// WithExecuteLimit caps concurrent in-flight invocations of this service. The value must be an
+// integer string; a negative value disables the cap, while an invalid value returns an empty
+// result without invoking the service. Use it when concurrency is bounded by resources such as
+// database connections. For example, WithExecuteLimit("32") allows at most 32 simultaneous
+// invocations; method-level execution limits can override it.
 func WithExecuteLimit(exeLimit string) ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.Service.ExecuteLimit = exeLimit
 	}
 }
 
-// WithExecuteLimitRejectedHandler sets ServiceOptions.Service.ExecuteLimitRejectedHandler.
-// Pair it with WithExecuteLimit.
+// WithExecuteLimitRejectedHandler selects the registered handler for calls rejected after this
+// service's in-flight limit is reached. Use it to return a specific overload response. If lookup
+// fails, the call proceeds after a warning.
 func WithExecuteLimitRejectedHandler(exeRejHandler string) ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.Service.ExecuteLimitRejectedHandler = exeRejHandler
 	}
 }
 
-// WithAuth sets ServiceOptions.Service.Auth for service authentication metadata.
+// WithAuth enables AK/SK request-signature verification when set to "true" and the provider
+// filter chain contains "auth". Use it when this service must authenticate calling applications;
+// missing or invalid signatures are rejected before execution. Enable both parts with
+// WithFilter("auth") and WithAuth("true"), then configure compatible access-key storage and
+// consumer signing.
 func WithAuth(auth string) ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.Service.Auth = auth
 	}
 }
 
-// WithParamSign sets ServiceOptions.Service.ParamSign for parameter signing.
+// WithParamSign includes request parameters in AK/SK signature verification when set to
+// "true". Use it when the signature must also detect parameter tampering. It only has an effect
+// when WithAuth and the "auth" provider filter are enabled on both sides.
 func WithParamSign(paramSign string) ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.Service.ParamSign = paramSign
 	}
 }
 
-// WithTag sets ServiceOptions.Service.Tag for tag-based routing.
+// WithTag publishes this service instance with the supplied routing tag, allowing tagged
+// consumers to select it. Use tags for canary, tenant, or hardware-specific pools without
+// changing the interface, group, or version.
 func WithTag(tag string) ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.Service.Tag = tag
 	}
 }
 
-// WithProtocol builds a protocol configuration and adds it to ServiceOptions.Protocols.
-// Use protocol.WithID and select the same ID with WithProtocolIDs when multiple protocols exist.
+// WithProtocol configures a protocol endpoint available to this service. Give each endpoint a
+// distinct protocol.WithID and use WithProtocolIDs when the service should use only a subset.
+// Use it for a listener needed only by this service; shared listeners belong on NewServer.
 func WithProtocol(opts ...protocol.ServerOption) ServiceOption {
 	proOpts := protocol.NewServerOptions(opts...)
 
@@ -989,8 +1133,9 @@ func WithProtocol(opts ...protocol.ServerOption) ServiceOption {
 	}
 }
 
-// WithRegistry builds a registry configuration and adds it to ServiceOptions.Registries.
-// Use registry.WithID and select the same ID with WithRegistryIDs when multiple registries exist.
+// WithRegistry makes a registry available for publishing this service. Give each registry a
+// distinct registry.WithID and use WithRegistryIDs to publish only to a subset. Use it for a
+// service-specific registry; shared registries are normally configured on NewServer.
 func WithRegistry(opts ...registry.Option) ServiceOption {
 	regOpts := registry.NewOptions(opts...)
 
@@ -1002,8 +1147,9 @@ func WithRegistry(opts ...registry.Option) ServiceOption {
 	}
 }
 
-// WithMethod appends method to ServiceOptions.Service.Methods when it is non-nil.
-// Use it with service-level options to override configuration for a specific method.
+// WithMethod adds method-specific behavior such as timeout, retries, or execution limits.
+// Method settings take precedence over the corresponding service defaults. Use it when one
+// method is slower, non-idempotent, or has a different capacity limit from the rest.
 func WithMethod(method *global.MethodConfig) ServiceOption {
 	return func(opts *ServiceOptions) {
 		if method == nil {
@@ -1016,7 +1162,8 @@ func WithMethod(method *global.MethodConfig) ServiceOption {
 	}
 }
 
-// WithParam adds or replaces one entry in ServiceOptions.Service.Params.
+// WithParam publishes one custom service URL parameter for filters, routers, protocols, or
+// extensions. A later call with the same key replaces the earlier value.
 func WithParam(k, v string) ServiceOption {
 	return func(opts *ServiceOptions) {
 		if opts.Service.Params == nil {
@@ -1026,7 +1173,9 @@ func WithParam(k, v string) ServiceOption {
 	}
 }
 
-// WithOpenAPIGroup sets ServiceOptions.openapiGroup used to group generated OpenAPI operations.
+// WithOpenAPIGroup places this service's generated operations in the supplied OpenAPI group,
+// allowing related services to be presented together in generated API documentation. Use the
+// same group for APIs that should appear as one logical section to documentation consumers.
 func WithOpenAPIGroup(group string) ServiceOption {
 	return func(opts *ServiceOptions) {
 		opts.openapiGroup = group

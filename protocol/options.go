@@ -41,7 +41,8 @@ type Option interface {
 }
 
 // WithClientOptions composes ClientOption values for NewClientOptions and applies
-// each option to the same ClientOptions instance in order.
+// each option to the same ClientOptions instance in order. Use it to package a reusable client
+// transport policy, such as Triple keepalive and message-size settings, into one option.
 func WithClientOptions(options ...ClientOption) ClientOption {
 	return &clientOptionsOption{options}
 }
@@ -57,7 +58,8 @@ func (o *clientOptionsOption) applyToClient(config *ClientOptions) {
 }
 
 // WithServerOptions composes ServerOption values for NewServerOptions and applies
-// each option to the same ServerOptions instance in order.
+// each option to the same ServerOptions instance in order. Use it to package a reusable server
+// endpoint policy before passing it to server.WithProtocol or server.WithServerProtocol.
 func WithServerOptions(options ...ServerOption) ServerOption {
 	return &serverOptionsOption{options}
 }
@@ -73,7 +75,8 @@ func (o *serverOptionsOption) applyToServer(config *ServerOptions) {
 }
 
 // WithOptions composes options that apply to both ClientOptions and ServerOptions.
-// Use it when the same protocol settings must be shared by clients and servers.
+// Use it when the same transport settings must be shared by clients and servers, for example
+// common Triple message limits in an application that both consumes and provides services.
 func WithOptions(options ...Option) Option {
 	return &optionsOption{options}
 }
@@ -164,7 +167,10 @@ func (o *tripleOption) applyToServer(config *ServerOptions) {
 	config.Protocol.TripleConfig = o.triOpts.Triple
 }
 
-// WithTriple applies Triple protocol options to clients and servers.
+// WithTriple applies Triple transport settings, such as message limits or keepalive behavior,
+// to both client and server protocol configurations. The default protocol is Triple; when
+// combining options explicitly, use it with a matching protocol selection. Choose Triple for
+// HTTP/2, streaming, or gRPC-compatible interoperability.
 func WithTriple(opts ...triple.Option) Option {
 	triSrvOpts := triple.NewOptions(opts...)
 
@@ -183,7 +189,8 @@ func (o *dubboOption) applyToServer(config *ServerOptions) {
 	config.Protocol.Name = constant.DubboProtocol
 }
 
-// WithDubbo selects the Dubbo protocol for clients and servers.
+// WithDubbo makes clients create Dubbo transports and servers expose Dubbo endpoints. Choose it
+// when interoperating with existing services that use the classic Dubbo protocol.
 func WithDubbo() Option {
 	return &dubboOption{}
 }
@@ -198,7 +205,8 @@ func (o *jsonRPCOption) applyToServer(config *ServerOptions) {
 	config.Protocol.Name = constant.JSONRPCProtocol
 }
 
-// WithJSONRPC selects the JSON-RPC protocol for clients and servers.
+// WithJSONRPC makes clients create JSON-RPC transports and servers expose JSON-RPC endpoints.
+// Choose it when integrating with systems that speak JSON-RPC rather than Dubbo or Triple.
 func WithJSONRPC() Option {
 	return &jsonRPCOption{}
 }
@@ -213,7 +221,8 @@ func (o *restOption) applyToServer(config *ServerOptions) {
 	config.Protocol.Name = constant.RESTProtocol
 }
 
-// WithREST selects the REST protocol for clients and servers.
+// WithREST makes clients create REST transports and servers expose REST endpoints. Choose it
+// when the service contract is exposed as HTTP resources for REST clients.
 func WithREST() Option {
 	return &restOption{}
 }
@@ -230,8 +239,10 @@ func (o *protocolNameOption) applyToServer(config *ServerOptions) {
 	config.Protocol.Name = o.Name
 }
 
-// WithProtocol sets the protocol Name field for both clients and servers.
-// Prefer WithTriple, WithDubbo, WithJSONRPC, or WithREST for built-in protocols.
+// WithProtocol selects a registered transport extension for both clients and servers. Protocol
+// initialization fails when the supplied name has no matching extension; prefer the built-in
+// selection helpers when applicable. Use this option only for a custom protocol registered by
+// the application or another module.
 func WithProtocol(p string) Option {
 	return &protocolNameOption{p}
 }
@@ -246,8 +257,9 @@ func (o *idOption) applyToServer(config *ServerOptions) {
 	config.ID = o.ID
 }
 
-// WithID sets the protocol ID. Use server.WithProtocolIDs or server.WithServerProtocolIDs
-// to select the protocol in a multi-protocol scenario.
+// WithID names this server protocol configuration so services can select it with
+// server.WithProtocolIDs or server.WithServerProtocolIDs. IDs must be distinct when multiple
+// endpoints use the same protocol on different addresses or ports.
 func WithID(id string) ServerOption {
 	return &idOption{id}
 }
@@ -260,7 +272,9 @@ func (o *ipOption) applyToServer(config *ServerOptions) {
 	config.Protocol.Ip = o.Ip
 }
 
-// WithIp sets the IP address for the server protocol.
+// WithIp binds this protocol endpoint to the supplied local IP and publishes that address to
+// registries. Use it on multi-homed hosts to choose the correct network interface, and ensure
+// the published address is reachable by consumers.
 func WithIp(ip string) ServerOption {
 	return &ipOption{ip}
 }
@@ -273,7 +287,9 @@ func (o *portOption) applyToServer(config *ServerOptions) {
 	config.Protocol.Port = o.Port
 }
 
-// WithPort sets the port for the server protocol.
+// WithPort binds and publishes this protocol endpoint on the supplied port. When omitted, the
+// server allocates an available random port during export. Set a stable port for production,
+// firewall rules, or direct clients; omit it when an ephemeral test port is acceptable.
 func WithPort(port int) ServerOption {
 	return &portOption{strconv.Itoa(port)}
 }
@@ -286,7 +302,10 @@ func (o *paramsOption) applyToServer(config *ServerOptions) {
 	config.Protocol.Params = o.Params
 }
 
-// WithParams sets the parameters for the server protocol.
+// WithParams supplies transport-specific server settings consumed by the selected protocol,
+// such as its underlying remoting configuration. The expected value type depends on that
+// protocol implementation. Use it only when the protocol documents a concrete parameter type;
+// prefer typed options such as WithTriple when they are available.
 func WithParams(params any) ServerOption {
 	return &paramsOption{params}
 }
