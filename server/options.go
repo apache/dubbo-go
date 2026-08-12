@@ -463,6 +463,8 @@ func WithServerParam(k, v string) ServerOption {
 // WithServerFilter selects the comma-separated provider filter chain applied to incoming calls
 // by default, in execution order. Use it for shared middleware such as authentication, metrics,
 // or custom validation. A service-level WithFilter replaces this chain.
+//
+// todo(DMwangnima): change Filter Option like Cluster and LoadBalance
 func WithServerFilter(filter string) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.Filter = filter
@@ -472,6 +474,8 @@ func WithServerFilter(filter string) ServerOption {
 // WithServerRegistryIDs limits service publication to the named registries by default. Each ID
 // must match a registry added with WithServerRegistry or server initialization fails. Use it to
 // publish all services to selected environments or regions when several registries exist.
+//
+// todo(DMwangnima): think about a more ideal configuration style
 func WithServerRegistryIDs(registryIDs []string) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.RegistryIDs = registryIDs
@@ -495,6 +499,8 @@ func WithServerRegistry(opts ...registry.Option) ServerOption {
 // WithServerProtocolIDs limits service export to the named server protocols by default. Each ID
 // must match a protocol added with WithServerProtocol. Use it when the server listens on several
 // endpoints but most services should be exposed through only a selected subset.
+//
+// todo(DMwangnima): think about a more ideal configuration style
 func WithServerProtocolIDs(protocolIDs []string) ServerOption {
 	return func(opts *ServerOptions) {
 		opts.Provider.ProtocolIDs = protocolIDs
@@ -769,6 +775,8 @@ func WithInterface(interfaceName string) ServiceOption {
 // WithRegistryIDs publishes this service only to the named registries. Each ID must match a
 // registry added with WithRegistry or inherited from the server, otherwise registration fails.
 // Use it when one service belongs in a different environment or region from the server default.
+//
+// todo(DMwangnima): think about a more ideal configuration style
 func WithRegistryIDs(registryIDs []string) ServiceOption {
 	return func(cfg *ServiceOptions) {
 		if len(registryIDs) > 0 {
@@ -780,6 +788,8 @@ func WithRegistryIDs(registryIDs []string) ServiceOption {
 // WithFilter selects the comma-separated provider filter chain applied to incoming calls for
 // this service, in execution order. Use it to add service-specific middleware such as "auth"
 // or a custom validator. It replaces the server-level default filter chain.
+//
+// todo(DMwangnima): change Filter Option like Cluster and LoadBalance
 func WithFilter(filter string) ServiceOption {
 	return func(cfg *ServiceOptions) {
 		cfg.Service.Filter = filter
@@ -789,6 +799,8 @@ func WithFilter(filter string) ServiceOption {
 // WithProtocolIDs exports this service only through the named protocol endpoints. Each ID must
 // match a protocol added with WithProtocol or inherited from the server. Use it when this
 // service should expose only Triple, Dubbo, or a dedicated listener.
+//
+// todo(DMwangnima): think about a more ideal configuration style
 func WithProtocolIDs(protocolIDs []string) ServiceOption {
 	return func(cfg *ServiceOptions) {
 		if len(protocolIDs) > 0 {
@@ -1183,6 +1195,8 @@ func WithOpenAPIGroup(group string) ServiceOption {
 }
 
 // WithIDLMode sets ServiceOptions.IDLMode for legacy services.
+//
+// TODO: remove when config package is removed
 //
 // Deprecated: this option will be removed in the next version. The IDL mode
 // switch is no longer supported by dubbo-go.

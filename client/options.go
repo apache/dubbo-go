@@ -483,6 +483,8 @@ func WithSticky() ReferenceOption {
 
 // WithIDL sets ReferenceOptions.Reference.IDLMode for legacy clients.
 //
+// TODO: remove this function after old triple removed
+//
 // Deprecated: this option will be removed in the next version. The IDL mode
 // switch is no longer supported by dubbo-go.
 func WithIDL(IDLMode string) ReferenceOption {
@@ -780,6 +782,8 @@ func WithClientURL(url string) ClientOption {
 // WithClientFilter selects the comma-separated consumer filter chain applied to references
 // by default. Use it for cross-cutting behavior shared by all calls, such as tracing or
 // authentication. A reference-level WithFilter replaces it for one service.
+//
+// todo(DMwangnima): change Filter Option like Cluster and LoadBalance
 func WithClientFilter(filter string) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.overallReference.Filter = filter
@@ -789,6 +793,8 @@ func WithClientFilter(filter string) ClientOption {
 // WithClientRegistryIDs limits service discovery to the named client registries by default.
 // Each ID must match a registry added with WithClientRegistry. Use it to keep all references
 // on a selected environment or region when several registries are configured.
+//
+// todo(DMwangnima): think about a more ideal configuration style
 func WithClientRegistryIDs(registryIDs ...string) ClientOption {
 	return func(opts *ClientOptions) {
 		if len(registryIDs) > 0 {
@@ -1013,6 +1019,8 @@ func WithClientRetries(retries int) ClientOption {
 // WithClientGroup restricts references to providers in this group by default. A mismatched
 // group produces no providers. Use it when this client should consume one logical deployment,
 // such as a tenant or environment; WithGroup overrides it for one reference.
+//
+// TODO: determine whether this client-level group option is needed.
 func WithClientGroup(group string) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.overallReference.Group = group
@@ -1022,6 +1030,8 @@ func WithClientGroup(group string) ClientOption {
 // WithClientVersion restricts references to this service version by default. WithVersion
 // overrides it for one reference. Use it during incompatible API migrations when a client must
 // remain on a specific provider version.
+//
+// TODO: determine whether this client-level version option is needed.
 func WithClientVersion(version string) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.overallReference.Version = version
