@@ -70,8 +70,7 @@ type Server struct {
 	once sync.Once
 
 	sync.RWMutex
-	wg      sync.WaitGroup
-	timeout time.Duration
+	wg sync.WaitGroup
 }
 
 // NewServer creates new JSON RPC server.
@@ -103,17 +102,6 @@ func (s *Server) handlePkg(conn net.Conn) {
 	// Register this after the cleanup defer so LIFO ordering cancels request contexts before Wait.
 	defer connectionCancel()
 
-	setTimeout := func(conn net.Conn, timeout time.Duration) {
-		t := time.Time{}
-		if timeout > time.Duration(0) {
-			t = time.Now().Add(timeout)
-		}
-
-		if err := conn.SetDeadline(t); err != nil {
-			logger.Errorf("[Jsonrpc][Server] connection.SetDeadline failed, t=%v, err=%v", t, err)
-		}
-	}
-
 	limitedReader := &io.LimitedReader{R: conn}
 	bufReader := bufio.NewReader(limitedReader)
 	var sequence uint64
@@ -144,7 +132,6 @@ func (s *Server) handlePkg(conn net.Conn) {
 		}
 		reqHeader["HttpMethod"] = r.Method
 
-		httpTimeout := s.timeout
 		contentType := reqHeader[ContentTypeHeader]
 		mediaType, _, parseErr := mime.ParseMediaType(contentType)
 		unsupportedContentType := parseErr != nil || (mediaType != "application/json" && mediaType != "application/json-rpc")
@@ -157,12 +144,10 @@ func (s *Server) handlePkg(conn net.Conn) {
 		if len(reqHeader["Timeout"]) > 0 {
 			timeout, err := time.ParseDuration(reqHeader["Timeout"])
 			if err == nil {
-				httpTimeout = timeout
-				ctx, timeoutCancel = context.WithTimeout(ctx, httpTimeout)
+				ctx, timeoutCancel = context.WithTimeout(ctx, timeout)
 			}
 			delete(reqHeader, "Timeout")
 		}
-		setTimeout(conn, httpTimeout)
 
 		requestSequence := sequence
 		sequence++

@@ -365,3 +365,112 @@ func TestHandlePkgPreservesPipelinedResponseOrder(t *testing.T) {
 	require.Equal(t, 2, second.id)
 	require.Equal(t, "fast", second.result)
 }
+
+type requestTimeoutInvoker struct {
+	base.BaseInvoker
+	longStarted   chan struct{}
+	shortTimedOut chan struct{}
+	longCanceled  chan struct{}
+	releaseLong   chan struct{}
+}
+
+func (i *requestTimeoutInvoker) Invoke(ctx context.Context, invocation base.Invocation) result.Result {
+	switch invocation.MethodName() {
+	case "Long":
+		close(i.longStarted)
+		select {
+		case <-ctx.Done():
+			close(i.longCanceled)
+			return &result.RPCResult{Err: ctx.Err()}
+		case <-i.releaseLong:
+			return &result.RPCResult{Rest: "long"}
+		}
+	case "Short":
+		<-ctx.Done()
+		close(i.shortTimedOut)
+		return &result.RPCResult{Err: ctx.Err()}
+	default:
+		return &result.RPCResult{Err: fmt.Errorf("unexpected method %s", invocation.MethodName())}
+	}
+}
+
+func TestHandlePkgIsolatesPipelinedRequestTimeouts(t *testing.T) {
+	const servicePath = "request-timeout-test"
+	protocol := GetProtocol().(*JsonrpcProtocol)
+	invoker := &requestTimeoutInvoker{
+		BaseInvoker:   *base.NewBaseInvoker(common.NewURLWithOptions(common.WithProtocol(JSONRPC))),
+		longStarted:   make(chan struct{}),
+		shortTimedOut: make(chan struct{}),
+		longCanceled:  make(chan struct{}),
+		releaseLong:   make(chan struct{}),
+	}
+	protocol.SetExporterMap(servicePath, NewJsonrpcExporter(servicePath, invoker, protocol.ExporterMap()))
+	t.Cleanup(func() { protocol.ExporterMap().Delete(servicePath) })
+
+	serverConn, clientConn := net.Pipe()
+	handleDone := make(chan struct{})
+	go func() {
+		NewServer().handlePkg(serverConn)
+		close(handleDone)
+	}()
+
+	var releaseOnce sync.Once
+	releaseLong := func() { releaseOnce.Do(func() { close(invoker.releaseLong) }) }
+	t.Cleanup(func() {
+		releaseLong()
+		_ = clientConn.Close()
+		select {
+		case <-handleDone:
+		case <-time.After(time.Second):
+			t.Error("connection handler did not exit")
+		}
+	})
+	require.NoError(t, clientConn.SetReadDeadline(time.Now().Add(3*time.Second)))
+
+	makeRequest := func(method string, id int, timeout time.Duration) string {
+		body := fmt.Sprintf(`{"jsonrpc":"2.0","method":%q,"params":[],"id":%d}`, method, id)
+		return "POST /" + servicePath + " HTTP/1.1\r\n" +
+			"Host: localhost\r\n" +
+			"Content-Type: application/json\r\n" +
+			"Timeout: " + timeout.String() + "\r\n" +
+			"Content-Length: " + fmt.Sprint(len(body)) + "\r\n\r\n" + body
+	}
+
+	writeDone := make(chan error, 1)
+	go func() {
+		_, err := clientConn.Write([]byte(
+			makeRequest("Long", 1, 5*time.Second) + makeRequest("Short", 2, 50*time.Millisecond),
+		))
+		writeDone <- err
+	}()
+
+	select {
+	case <-invoker.longStarted:
+	case <-time.After(time.Second):
+		t.Fatal("long invocation was not started")
+	}
+	select {
+	case <-invoker.shortTimedOut:
+	case <-time.After(time.Second):
+		t.Fatal("short invocation did not reach its context deadline")
+	}
+	require.NoError(t, <-writeDone)
+	select {
+	case <-invoker.longCanceled:
+		t.Fatal("short request timeout canceled the long request")
+	case <-time.After(250 * time.Millisecond):
+	}
+
+	releaseLong()
+	reader := bufio.NewReader(clientConn)
+	for id := 1; id <= 2; id++ {
+		httpResponse, err := http.ReadResponse(reader, nil)
+		require.NoError(t, err)
+		var payload struct {
+			ID int `json:"id"`
+		}
+		require.NoError(t, json.NewDecoder(httpResponse.Body).Decode(&payload))
+		require.NoError(t, httpResponse.Body.Close())
+		require.Equal(t, id, payload.ID)
+	}
+}
