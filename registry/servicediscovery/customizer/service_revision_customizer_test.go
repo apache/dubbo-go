@@ -94,7 +94,14 @@ func TestRevisionChangesOnParamsChange(t *testing.T) {
 	assert.NotEqual(t, r1, r2, "revision should change when params (timeout/loadbalance) change")
 }
 
-// 4. methods change → revision changes
+// 4. method-level differences → revision changes (Java-aligned).
+//
+// Under Java dubbo alignment (ServiceInfo.toDescString() = getMatchKey() + port +
+// path + TreeMap(params).toString()), the bare method LIST is excluded from the
+// revision serialization. Therefore a purely list-level method change with no
+// method-level params must NOT alter the revision. Method-level params (e.g.
+// methods.sayHello.timeout) ARE part of the serialized TreeMap, so a method change
+// that carries method-level params DOES change the revision.
 func TestRevisionChangesOnMethodChange(t *testing.T) {
 	u1 := newTestURL("dubbo", "20880", "com.example.TestService", "test-app", "groupA", "1.0.0", []string{"sayHello"}, nil)
 	u2 := newTestURL("dubbo", "20880", "com.example.TestService", "test-app", "groupA", "1.0.0", []string{"sayHello", "sayGoodbye"}, nil)
@@ -104,7 +111,17 @@ func TestRevisionChangesOnMethodChange(t *testing.T) {
 
 	assert.NotEmpty(t, r1)
 	assert.NotEmpty(t, r2)
-	assert.NotEqual(t, r1, r2, "revision should change when methods change")
+	assert.Equal(t, r1, r2, "method list alone (no method-level params) must not change revision under Java alignment")
+
+	u3 := newTestURL("dubbo", "20880", "com.example.TestService", "test-app", "groupA", "1.0.0", []string{"sayHello"},
+		map[string]string{constant.MethodsKey + ".sayHello.timeout": "1000"})
+	u4 := newTestURL("dubbo", "20880", "com.example.TestService", "test-app", "groupA", "1.0.0", []string{"sayHello", "sayGoodbye"},
+		map[string]string{constant.MethodsKey + ".sayHello.timeout": "1000", constant.MethodsKey + ".sayGoodbye.timeout": "2000"})
+
+	r3 := resolveRevision([]*common.URL{u3})
+	r4 := resolveRevision([]*common.URL{u4})
+
+	assert.NotEqual(t, r3, r4, "method-level params must change the revision")
 }
 
 // 5. version change → revision changes
