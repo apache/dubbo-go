@@ -77,14 +77,6 @@ type ServiceNameMapping struct {
 func (d *ServiceNameMapping) Map(url *common.URL) (err error) {
 	serviceInterface := url.GetParam(constant.InterfaceKey, "")
 	appName := url.GetParam(constant.ApplicationKey, "")
-	// url is the service url,not the registry url,this url has no registry id info,can not get where to write mapping,so write all
-	// if the mapping can hold a report instance, it can write once
-	metadataReports := metadata.GetMetadataReports()
-	if len(metadataReports) == 0 {
-		err = perrors.New("can not registering mapping to remote cause no metadata report instance found")
-		logger.Errorf("[Metadata][Mapping] register failed interface=%s application=%s group=%s reports=0 err=%v", serviceInterface, appName, DefaultGroup, err)
-		return err
-	}
 
 	event := metadataMetrics.NewMetadataMetricTimeEvent(metadataMetrics.MetadataMappingRegister)
 	event.Attachment[constant.InterfaceKey] = serviceInterface
@@ -95,6 +87,16 @@ func (d *ServiceNameMapping) Map(url *common.URL) (err error) {
 		event.End = time.Now()
 		metrics.Publish(event)
 	}()
+
+	// url is the service url,not the registry url,this url has no registry id info,can not get where to write mapping,so write all
+	// if the mapping can hold a report instance, it can write once
+	metadataReports := metadata.GetMetadataReports()
+	if len(metadataReports) == 0 {
+		err = perrors.New("can not registering mapping to remote cause no metadata report instance found")
+		logger.Errorf("[Metadata][Mapping] register failed interface=%s application=%s group=%s reports=0 err=%v", serviceInterface, appName, DefaultGroup, err)
+		return err
+	}
+
 	for _, metadataReport := range metadataReports {
 		if err := registerWithRetry(metadataReport, serviceInterface, DefaultGroup, appName); err != nil {
 			logger.Errorf("[Metadata][Mapping] register failed interface=%s application=%s group=%s reports=%d err=%v", serviceInterface, appName, DefaultGroup, len(metadataReports), err)
@@ -136,12 +138,7 @@ func backoff(attempt int) time.Duration {
 // Get will return the application-level services. If not found, the empty set will be returned.
 func (d *ServiceNameMapping) Get(url *common.URL, listener mapping.MappingListener) (result *gxset.HashSet, err error) {
 	serviceInterface := url.GetParam(constant.InterfaceKey, "")
-	metadataReports := metadata.GetMetadataReports()
-	if len(metadataReports) == 0 {
-		err = perrors.New("can not get mapping in remote cause no metadata report instance found")
-		logger.Warnf("[Metadata][Mapping] get failed interface=%s group=%s reports=0 err=%v", serviceInterface, DefaultGroup, err)
-		return nil, err
-	}
+
 	operation := "get"
 	eventName := metadataMetrics.MetadataMappingGet
 	if listener != nil {
@@ -159,6 +156,14 @@ func (d *ServiceNameMapping) Get(url *common.URL, listener mapping.MappingListen
 		event.End = time.Now()
 		metrics.Publish(event)
 	}()
+
+	metadataReports := metadata.GetMetadataReports()
+	if len(metadataReports) == 0 {
+		err = perrors.New("can not get mapping in remote cause no metadata report instance found")
+		logger.Warnf("[Metadata][Mapping] get failed interface=%s group=%s reports=0 err=%v", serviceInterface, DefaultGroup, err)
+		return nil, err
+	}
+
 	// Attach the listener to the stable primary report only (GetMetadataReport uses
 	// a deterministic selection: prefer "default", otherwise lexicographic first).
 	// GetMetadataReports() iterates a map so its order is non-deterministic; using
@@ -204,12 +209,6 @@ func (d *ServiceNameMapping) Get(url *common.URL, listener mapping.MappingListen
 // error in one of the others.
 func (d *ServiceNameMapping) Remove(url *common.URL) (err error) {
 	serviceInterface := url.GetParam(constant.InterfaceKey, "")
-	metadataReports := metadata.GetMetadataReports()
-	if len(metadataReports) == 0 {
-		err = perrors.New("can not remove mapping in remote cause no metadata report instance found")
-		logger.Warnf("[Metadata][Mapping] remove failed interface=%s group=%s reports=0 err=%v", serviceInterface, DefaultGroup, err)
-		return err
-	}
 
 	event := metadataMetrics.NewMetadataMetricTimeEvent(metadataMetrics.MetadataMappingRemove)
 	event.Attachment[constant.InterfaceKey] = serviceInterface
@@ -219,6 +218,14 @@ func (d *ServiceNameMapping) Remove(url *common.URL) (err error) {
 		event.End = time.Now()
 		metrics.Publish(event)
 	}()
+
+	metadataReports := metadata.GetMetadataReports()
+	if len(metadataReports) == 0 {
+		err = perrors.New("can not remove mapping in remote cause no metadata report instance found")
+		logger.Warnf("[Metadata][Mapping] remove failed interface=%s group=%s reports=0 err=%v", serviceInterface, DefaultGroup, err)
+		return err
+	}
+
 	var errs []error
 	for _, metadataReport := range metadataReports {
 		if removeErr := metadataReport.RemoveServiceAppMappingListener(serviceInterface, DefaultGroup); removeErr != nil {

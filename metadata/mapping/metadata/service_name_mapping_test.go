@@ -64,6 +64,45 @@ func TestNoReportInstance(t *testing.T) {
 	require.Error(t, err, "test Remove with no report instance")
 }
 
+func TestServiceNameMappingNoReportMetersPerBusinessOperation(t *testing.T) {
+	metadata.ClearMetadataReportInstances()
+	t.Cleanup(metadata.ClearMetadataReportInstances)
+	serviceNameMappingOnce = sync.Once{}
+	serviceNameMappingInstance = nil
+
+	ch := make(chan metrics.MetricsEvent, 10)
+	metrics.Subscribe(constant.MetricsMetadata, ch)
+	defer metrics.Unsubscribe(constant.MetricsMetadata)
+
+	ins := GetNameMappingInstance()
+	serviceUrl := common.NewURLWithOptions(
+		common.WithInterface("org.example.NoReportService"),
+		common.WithParamsValue(constant.ApplicationKey, "no-report-app"),
+	)
+
+	err := ins.Map(serviceUrl)
+	require.Error(t, err)
+	wantAttachment := mappingAttachment("org.example.NoReportService")
+	wantAttachment[constant.ApplicationKey] = "no-report-app"
+	assertMappingMetricEvent(t, <-ch, metricsMetadata.MetadataMappingRegister, false, false, wantAttachment)
+	assert.Empty(t, ch)
+
+	_, err = ins.Get(serviceUrl, nil)
+	require.Error(t, err)
+	assertMappingMetricEvent(t, <-ch, metricsMetadata.MetadataMappingGet, false, false, mappingAttachment("org.example.NoReportService"))
+	assert.Empty(t, ch)
+
+	_, err = ins.Get(serviceUrl, &listener{})
+	require.Error(t, err)
+	assertMappingMetricEvent(t, <-ch, metricsMetadata.MetadataMappingListen, false, false, mappingAttachment("org.example.NoReportService"))
+	assert.Empty(t, ch)
+
+	err = ins.Remove(serviceUrl)
+	require.Error(t, err)
+	assertMappingMetricEvent(t, <-ch, metricsMetadata.MetadataMappingRemove, false, false, mappingAttachment("org.example.NoReportService"))
+	assert.Empty(t, ch)
+}
+
 func TestServiceNameMappingGet(t *testing.T) {
 	ins := GetNameMappingInstance()
 	lis := &listener{}
