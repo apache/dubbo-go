@@ -80,7 +80,12 @@ func NewServer() *Server {
 
 func (s *Server) handlePkg(conn net.Conn) {
 	connectionCtx, connectionCancel := context.WithCancel(context.Background())
-	writeConn := &lockedConn{Conn: conn}
+	responses := make(chan orderedResponse)
+	responseWriterDone := make(chan struct{})
+	go func() {
+		defer close(responseWriterDone)
+		writeResponsesInOrder(connectionCtx, connectionCancel, conn, responses)
+	}()
 	var requestWG sync.WaitGroup
 	defer func() {
 		if r := recover(); r != nil {
@@ -90,6 +95,7 @@ func (s *Server) handlePkg(conn net.Conn) {
 
 		conn.Close()
 		requestWG.Wait()
+		<-responseWriterDone
 	}()
 	// Register this after the cleanup defer so LIFO ordering cancels request contexts before Wait.
 	defer connectionCancel()
@@ -105,31 +111,11 @@ func (s *Server) handlePkg(conn net.Conn) {
 		}
 	}
 
-	sendErrorResp := func(header http.Header, body []byte) error {
-		rsp := &http.Response{
-			Header:        header,
-			StatusCode:    500,
-			ProtoMajor:    1,
-			ProtoMinor:    1,
-			ContentLength: int64(len(body)),
-			Body:          io.NopCloser(bytes.NewReader(body)),
-		}
-		rsp.Header.Del("Content-Type")
-		rsp.Header.Del("Content-Length")
-		rsp.Header.Del("Timeout")
-
-		rspBuf := bytes.NewBuffer(make([]byte, DefaultHTTPRspBufferSize))
-		rspBuf.Reset()
-		err := rsp.Write(rspBuf)
-		if err != nil {
-			return perrors.WithStack(err)
-		}
-		_, err = rspBuf.WriteTo(writeConn)
-		return perrors.WithStack(err)
-	}
-
+	limitedReader := &io.LimitedReader{R: conn}
+	bufReader := bufio.NewReader(limitedReader)
+	var sequence uint64
 	for {
-		bufReader := bufio.NewReader(io.LimitReader(conn, MaxHeaderSize))
+		limitedReader.N = int64(MaxHeaderSize - bufReader.Buffered())
 		if _, err := bufReader.Peek(1); err == io.EOF {
 			return
 		}
@@ -158,15 +144,7 @@ func (s *Server) handlePkg(conn net.Conn) {
 		httpTimeout := s.timeout
 		contentType := reqHeader["Content-Type"]
 		mediaType, _, parseErr := mime.ParseMediaType(contentType)
-		if parseErr != nil || (mediaType != "application/json" && mediaType != "application/json-rpc") {
-			setTimeout(conn, httpTimeout)
-			errMsg := "unsupported content type: " + contentType
-			if errRsp := sendErrorResp(r.Header, []byte(errMsg)); errRsp != nil {
-				logger.Warnf("[Jsonrpc][Server] sendErrorResp failed, header=%v, err_msg=%v, send_err=%v",
-					r.Header, errMsg, errRsp)
-			}
-			return
-		}
+		unsupportedContentType := parseErr != nil || (mediaType != "application/json" && mediaType != "application/json-rpc")
 
 		requestCtx, requestCancel := context.WithCancel(connectionCtx)
 		r = r.WithContext(requestCtx)
@@ -183,37 +161,110 @@ func (s *Server) handlePkg(conn net.Conn) {
 		}
 		setTimeout(conn, httpTimeout)
 
+		requestSequence := sequence
+		sequence++
 		requestWG.Add(1)
-		go func(ctx context.Context, requestCancel, timeoutCancel context.CancelFunc, header map[string]string, body []byte, responseHeader http.Header) {
+		go func(ctx context.Context, requestCancel, timeoutCancel context.CancelFunc, header map[string]string, body []byte,
+			responseHeader http.Header, contentType string, unsupportedContentType bool, requestSequence uint64) {
 			defer requestWG.Done()
 			defer requestCancel()
 			if timeoutCancel != nil {
 				defer timeoutCancel()
 			}
 
-			if err := serveRequest(ctx, header, body, writeConn); err != nil {
-				if errRsp := sendErrorResp(responseHeader, []byte(perrors.WithStack(err).Error())); errRsp != nil {
-					logger.Warnf("[Jsonrpc][Server] sendErrorResp failed, header=%v, err=%v, send_err=%v",
-						responseHeader, perrors.WithStack(err), errRsp)
-				}
-
-				logger.Infof("[Jsonrpc][Server] unexpected error serving request, closing socket, err=%v", err)
-				connectionCancel()
-				conn.Close()
+			response := buildOrderedResponse(ctx, header, body, responseHeader, contentType,
+				unsupportedContentType, requestSequence)
+			select {
+			case responses <- response:
+			case <-connectionCtx.Done():
 			}
-		}(ctx, requestCancel, timeoutCancel, reqHeader, reqBody, r.Header)
+		}(ctx, requestCancel, timeoutCancel, reqHeader, reqBody, r.Header, contentType, unsupportedContentType, requestSequence)
 	}
 }
 
-type lockedConn struct {
-	net.Conn
-	writeMu sync.Mutex
+type orderedResponse struct {
+	sequence        uint64
+	data            []byte
+	closeConnection bool
 }
 
-func (c *lockedConn) Write(p []byte) (int, error) {
-	c.writeMu.Lock()
-	defer c.writeMu.Unlock()
-	return c.Conn.Write(p)
+func buildOrderedResponse(ctx context.Context, header map[string]string, body []byte, responseHeader http.Header,
+	contentType string, unsupportedContentType bool, sequence uint64) orderedResponse {
+	responseBuffer := bytes.NewBuffer(nil)
+	if unsupportedContentType {
+		errMsg := "unsupported content type: " + contentType
+		if err := writeHTTPErrorResponse(responseBuffer, responseHeader, []byte(errMsg)); err != nil {
+			logger.Warnf("[Jsonrpc][Server] write error response failed, header=%v, err_msg=%v, write_err=%v",
+				responseHeader, errMsg, err)
+		}
+		return orderedResponse{sequence: sequence, data: responseBuffer.Bytes(), closeConnection: true}
+	}
+
+	err := serveRequest(ctx, header, body, responseBuffer)
+	if err == nil {
+		return orderedResponse{sequence: sequence, data: responseBuffer.Bytes()}
+	}
+	if writeErr := writeHTTPErrorResponse(responseBuffer, responseHeader, []byte(perrors.WithStack(err).Error())); writeErr != nil {
+		logger.Warnf("[Jsonrpc][Server] write error response failed, header=%v, err=%v, write_err=%v",
+			responseHeader, perrors.WithStack(err), writeErr)
+	}
+	logger.Infof("[Jsonrpc][Server] unexpected error serving request, closing socket, err=%v", err)
+	return orderedResponse{sequence: sequence, data: responseBuffer.Bytes(), closeConnection: true}
+}
+
+func writeHTTPErrorResponse(writer io.Writer, header http.Header, body []byte) error {
+	rsp := &http.Response{
+		Header:        header.Clone(),
+		StatusCode:    500,
+		ProtoMajor:    1,
+		ProtoMinor:    1,
+		ContentLength: int64(len(body)),
+		Body:          io.NopCloser(bytes.NewReader(body)),
+	}
+	rsp.Header.Del("Content-Type")
+	rsp.Header.Del("Content-Length")
+	rsp.Header.Del("Timeout")
+
+	rspBuf := bytes.NewBuffer(make([]byte, DefaultHTTPRspBufferSize))
+	rspBuf.Reset()
+	if err := rsp.Write(rspBuf); err != nil {
+		return perrors.WithStack(err)
+	}
+	_, err := rspBuf.WriteTo(writer)
+	return perrors.WithStack(err)
+}
+
+func writeResponsesInOrder(ctx context.Context, cancel context.CancelFunc, conn net.Conn, responses <-chan orderedResponse) {
+	nextSequence := uint64(0)
+	pending := make(map[uint64]orderedResponse)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case response := <-responses:
+			pending[response.sequence] = response
+		}
+
+		for {
+			response, ok := pending[nextSequence]
+			if !ok {
+				break
+			}
+			delete(pending, nextSequence)
+			if _, err := bytes.NewReader(response.data).WriteTo(conn); err != nil {
+				logger.Warnf("[Jsonrpc][Server] write response failed, sequence=%d, err=%v", nextSequence, err)
+				cancel()
+				conn.Close()
+				return
+			}
+			if response.closeConnection {
+				cancel()
+				conn.Close()
+				return
+			}
+			nextSequence++
+		}
+	}
 }
 
 func contextFromRequest(r *http.Request) context.Context {
@@ -301,7 +352,7 @@ func (s *Server) Stop() {
 	})
 }
 
-func serveRequest(ctx context.Context, header map[string]string, body []byte, conn net.Conn) error {
+func serveRequest(ctx context.Context, header map[string]string, body []byte, writer io.Writer) error {
 	sendErrorResp := func(header map[string]string, body []byte) error {
 		rsp := &http.Response{
 			Header:        make(http.Header),
@@ -324,7 +375,7 @@ func serveRequest(ctx context.Context, header map[string]string, body []byte, co
 		if err != nil {
 			return perrors.WithStack(err)
 		}
-		_, err = rspBuf.WriteTo(conn)
+		_, err = rspBuf.WriteTo(writer)
 		return perrors.WithStack(err)
 	}
 
@@ -350,7 +401,7 @@ func serveRequest(ctx context.Context, header map[string]string, body []byte, co
 		if err != nil {
 			return perrors.WithStack(err)
 		}
-		_, err = rspBuf.WriteTo(conn)
+		_, err = rspBuf.WriteTo(writer)
 		return perrors.WithStack(err)
 	}
 
