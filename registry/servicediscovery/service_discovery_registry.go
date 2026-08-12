@@ -523,10 +523,19 @@ func (s *serviceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.No
 			" either specify 'provided-by' for reference or enable metadata-report center subscription url:%s", url.String())
 	} else {
 		logger.Infof("[Registry][ServiceDiscovery] find initial mapping applications %q for service %s", services, url.ServiceKey())
-		// first notify
-		err := mappingListener.OnEvent(registry.NewServiceMappingChangedEvent(url.ServiceKey(), services))
-		if err != nil {
-			logger.Errorf("[Registry][ServiceDiscovery] ServiceInstancesChangedListenerImpl handle error, err=%v", err)
+		if _, ok := url.GetNonDefaultParam(constant.ProvidedBy); ok {
+			// provided-by is an explicit, unchanging initial target set, so it is
+			// subscribed directly. Routing it through the mapping change listener
+			// treats it as an unchanged mapping and skips SubscribeURL entirely.
+			s.SubscribeURL(url, notify, services)
+		} else {
+			// metadata-report mapping is dynamic: keep the initial subscription on
+			// OnEvent so the listener baseline (oldServiceNames) is updated and later
+			// mapping updates diff against it instead of re-subscribing.
+			err := mappingListener.OnEvent(registry.NewServiceMappingChangedEvent(url.ServiceKey(), services))
+			if err != nil {
+				logger.Errorf("[Registry][ServiceDiscovery] ServiceInstancesChangedListenerImpl handle error, err=%v", err)
+			}
 		}
 	}
 	return nil

@@ -25,12 +25,12 @@ import (
 )
 
 import (
-	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
-
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	openapimodel "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/pb33f/libopenapi/index"
 	"github.com/pb33f/libopenapi/orderedmap"
+
+	"go.yaml.in/yaml/v4"
 
 	"google.golang.org/protobuf/proto"
 
@@ -38,12 +38,11 @@ import (
 
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/pluginpb"
-
-	"gopkg.in/yaml.v3"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/tools/protoc-gen-triple-openapi/constant"
+	"dubbo.apache.org/dubbo-go/v3/tools/protoc-gen-triple-openapi/internal/converter/schema"
 	"dubbo.apache.org/dubbo-go/v3/tools/protoc-gen-triple-openapi/internal/options"
 )
 
@@ -118,7 +117,8 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 		})
 
 		// handle openapi components
-		doc.Components, err = generateComponents(fd)
+		errorResponseSchemaID := ""
+		doc.Components, errorResponseSchemaID, err = generateComponents(fd)
 		if err != nil {
 			return nil, err
 		}
@@ -131,8 +131,8 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 			service := services.Get(i)
 
 			tags = append(tags, &base.Tag{
-				Name: string(service.FullName()),
-				// TODO: add serivce description
+				Name:        string(service.FullName()),
+				Description: schema.ProtoDescription(service),
 			})
 
 			methods := service.Methods()
@@ -143,7 +143,7 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 				operation := &openapimodel.Operation{
 					OperationId: string(md.Name()),
 					Tags:        []string{string(service.FullName())},
-					// TODO: add operation description
+					Description: schema.ProtoDescription(md),
 				}
 
 				// RequestBody
@@ -168,10 +168,10 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 				})
 
 				// status code 400
-				codeMap.Set(constant.StatusCode400, newErrorResponse(constant.StatusCode400Description))
+				codeMap.Set(constant.StatusCode400, newErrorResponse(constant.StatusCode400Description, errorResponseSchemaID))
 
 				// status code 500
-				codeMap.Set(constant.StatusCode500, newErrorResponse(constant.StatusCode500Description))
+				codeMap.Set(constant.StatusCode500, newErrorResponse(constant.StatusCode500Description, errorResponseSchemaID))
 
 				operation.Responses = &openapimodel.Responses{
 					Codes: codeMap,
@@ -207,7 +207,7 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 		})
 	}
 
-	return &plugin.CodeGeneratorResponse{
+	return &pluginpb.CodeGeneratorResponse{
 		File: files,
 	}, nil
 }
@@ -227,8 +227,8 @@ func formatOpenapiDoc(opts options.Options, doc *openapimodel.Document) (string,
 	}
 }
 
-func newErrorResponse(description string) *openapimodel.Response {
-	responseSchema := base.CreateSchemaProxyRef(constant.OpenAPIDocComponentsSchemaSuffix + "ErrorResponse")
+func newErrorResponse(description, schemaID string) *openapimodel.Response {
+	responseSchema := base.CreateSchemaProxyRef(constant.OpenAPIDocComponentsSchemaSuffix + schemaID)
 	responseMediaType := makeMediaTypes(responseSchema)
 	return &openapimodel.Response{
 		Description: description,

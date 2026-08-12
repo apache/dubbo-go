@@ -614,7 +614,7 @@ func TestWithRegistryIDs(t *testing.T) {
 	registryIDs := []string{"registry1"}
 	opt := WithRegistryIDs(registryIDs)
 	opt(opts)
-	assert.NotEqual(t, registryIDs, opts.Service.RegistryIDs)
+	assert.Equal(t, registryIDs, opts.Service.RegistryIDs)
 }
 
 // Test WithFilter
@@ -1060,5 +1060,5 @@ func TestWithProtocolIDs(t *testing.T) {
 	protocolIDs := []string{"dubbo"}
 	opt := WithProtocolIDs(protocolIDs)
 	opt(opts)
-	assert.NotEqual(t, protocolIDs, opts.Service.ProtocolIDs)
+	assert.Equal(t, protocolIDs, opts.Service.ProtocolIDs)
 }

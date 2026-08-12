@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,30 +15,23 @@
  * limitations under the License.
  */
 
-package main
+package org.apache.dubbo.benchmark;
 
-import (
-	"fmt"
-	"io"
-	"os"
-)
+public class BenchmarkResponse {
+    private byte[] payload;
 
-var exitFunc = os.Exit
+    public BenchmarkResponse() {
+    }
 
-func main() {
-	exitFunc(run(os.Stdout, os.Stderr, ".", os.Args[1:]))
-}
+    public BenchmarkResponse(byte[] payload) {
+        this.payload = payload;
+    }
 
-// run prints every collected finding and always returns zero so the tool remains
-// guidance-only in local checks and CI. Package-load errors are still mirrored
-// to stderr to explain partial scan coverage.
-func run(stdout, stderr io.Writer, dir string, patterns []string) int {
-	findings, err := Scan(dir, patterns)
-	for _, finding := range findings {
-		_, _ = fmt.Fprintln(stdout, finding.String())
-	}
-	if err != nil {
-		_, _ = fmt.Fprintf(stderr, "variadicrpccheck: %v\n", err)
-	}
-	return 0
+    public byte[] getPayload() {
+        return payload;
+    }
+
+    public void setPayload(byte[] payload) {
+        this.payload = payload;
+    }
 }

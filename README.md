@@ -15,7 +15,13 @@ You can visit [the official website](https://dubbo.apache.org/) for more informa
 
 ## Recent Updates
 
-For detailed changes, refer to CHANGELOG.md.
+For detailed changes, refer to [CHANGELOG.md](CHANGELOG.md).
+
+- **3.3.2**:
+
+  ***BREAKING CHANGE***: `config` package has been removed, please use modern `global` package, check [dubbo-go-samples](https://github.com/apache/dubbo-go-samples) for usage instructions.
+
+  Apache Dubbo-go 3.3.2 is a production-readiness release focused on API consolidation, Triple protocol capabilities, application-level metadata, service governance, concurrency safety, and release tooling. It completes the removal of the legacy config package, expands generic invocation and HTTP-facing Triple features, refreshes generated-project workflows, and fixes multiple races, stale-snapshot issues, and resource leaks.
 
 - **3.3.1**: Optimized configuration hot-reloading with content-based caching to prevent redundant notifications. Added experimental HTTP/3 support, Apollo integration, and Triple protocol OpenAPI generation. Fixed critical race conditions in service discovery under high-concurrency.
 
@@ -106,52 +112,24 @@ Dubbo-go provides robust service governance capabilities:
 - **HA Strategy**: Failover, Failfast, Failsafe/Failback, Available, Broadcast, Forking.
 - **Interoperability**: Full compatibility with Apache Dubbo (Java) via Triple protocol generic calls, group/version wildcard matching, and TLS API redesign.
 
-## ️ Tools
+## Tools
 
-The `tools/` directory and the `dubbogo/tools` repository provide several utilities to streamline your Dubbo-Go development experience.
+Common development tools live in `tools/`.
 
-### [dubbo-go-schema](https://github.com/apache/dubbo-go/tree/main/tools/dubbo-go-schema)
-
-A tool that provides JSON Schema for Dubbo-Go configuration files, enabling editor assistance such as completion, hints, and validation.
-
-For usage details, see the [dubbo-go-schema README](./tools/dubbo-go-schema/README.md).
-
-
-### [dubbogo-cli](https://github.com/apache/dubbo-go/tree/main/tools/dubbogo-cli)
-
-A command-line tool for bootstrapping, managing, and debugging Dubbo-Go applications.
-
-- [dubbogo-cli](https://github.com/apache/dubbo-go/tree/main/tools/dubbogo-cli)
-- [dubbogo-cli-v2](https://github.com/dubbogo/tools/tree/master/cmd/dubbogo-cli-v2)
-
-
-### [protoc-gen-go-triple](https://github.com/dubbogo/protoc-gen-go-triple)
-
-A `protoc` plugin that generates Go client and server code for the Triple protocol from `.proto` definition files.
-
-*Note: This tool replaces the deprecated [protoc-gen-dubbo3grpc](https://github.com/dubbogo/tools/tree/master/cmd/protoc-gen-dubbo3grpc) and deprecated [protoc-gen-go-triple](https://github.com/dubbogo/tools/tree/master/cmd/protoc-gen-go-triple).*
-
-For usage details, see the [protoc-gen-go-triple README](https://github.com/dubbogo/protoc-gen-go-triple).
-
-
-### [imports-formatter](https://github.com/dubbogo/tools?tab=readme-ov-file#imports-formatter)
-
-A formatting tool for Dubbo-Go developers that organizes Go `import` blocks according to the community style guide.
-
-For usage details, see the [imports-formatter README](https://github.com/dubbogo/tools?tab=readme-ov-file#imports-formatter).
-
-### variadicrpccheck
-
-A warning-only scanner that detects exported variadic RPC contracts and prints migration guidance for cross-language scenarios.
-
-Run `make rpc-contract-check` to use it locally.
+| Tool | Purpose |
+| --- | --- |
+| [dubbogo-cli](./tools/dubbogo-cli/README.md) | Scaffold demos/apps, install companion tools, inspect metadata, and debug services. |
+| [protoc-gen-go-triple](./tools/protoc-gen-go-triple/README.md) | Generate dubbo-go Triple bindings from protobuf service definitions. |
+| [protoc-gen-triple-openapi](./tools/protoc-gen-triple-openapi/README.md) | Generate OpenAPI v3 documents from Triple protobuf services. |
+| [imports-formatter](./tools/imports-formatter/README.md) | Format Go import blocks using dubbo-go grouping rules. |
+| [dubbo-go-schema](./tools/dubbo-go-schema/README.md) | Provide JSON Schema completion and validation for dubbo-go YAML config. |
+| [benchmark](./tools/benchmark/README.md) | Performance benchmark suite for comparing Dubbo-Go, Dubbo-Java, and gRPC frameworks. |
 
 ## Ecosystem
 - [dubbo-go-samples](https://github.com/apache/dubbo-go-samples)
 - [dubbo-go-pixiu which acting as a proxy to solve Dubbo multi-language interoperability](https://github.com/apache/dubbo-go-pixiu)
 - [Interoperability with Dubbo Java](https://cn.dubbo.apache.org/zh-cn/overview/mannual/golang-sdk/tutorial/interop-dubbo/)
-- [Protoc-gen-go-triple](https://github.com/dubbogo/protoc-gen-go-triple/)
-- [Console](https://github.com/apache/dubbo-kubernetes), under development
+- [Console](https://github.com/apache/dubbo-admin), under development
 - [dubbo-go-extensions](https://github.com/apache/dubbo-go-extensions), under development
 
 ## Documentation

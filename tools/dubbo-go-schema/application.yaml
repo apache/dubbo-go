@@ -14,27 +14,85 @@
 # limitations under the License.
 
 dubbo:
+  application:
+    name: demo-service
+    module: demo
+    metadata-type: remote
+
   registries:
     nacos:
+      protocol: nacos
+      address: 127.0.0.1:8848
       timeout: 5s
       registry-type: service
-      protocol: nacos
+      use-as-meta-report: "true"
+      use-as-config-center: "true"
+
   protocols:
-    dubbo:
-      name: dubbo
+    triple:
+      name: tri
+      port: 20000
+      triple:
+        max-server-recv-msg-size: 4mib
+        openapi:
+          enabled: true
+          path: /dubbo/openapi
+        cors:
+          allow-origins:
+            - http://localhost:3000
+          allow-methods:
+            - GET
+            - POST
+
   provider:
+    registry-ids:
+      - nacos
+    protocol-ids:
+      - triple
     services:
-      userService:
+      greeter:
+        interface: org.apache.dubbo.samples.Greeter
         protocol-ids:
-          - dubbo
+          - triple
         loadbalance: random
+        methods:
+          - name: SayHello
+            timeout: 3s
+
   consumer:
+    registry-ids:
+      - nacos
+    request-timeout: 3s
     references:
-      dddd:
-        filter: dddd
-        interface: ddddd
-        timeout: dd
+      greeter:
+        interface: org.apache.dubbo.samples.Greeter
+        protocol: tri
+        timeout: 3s
 
+  metrics:
+    enable: true
+    protocol: prometheus
+    port: 9090
+    path: /metrics
+    prometheus:
+      exporter:
+        enabled: true
 
+  otel:
+    tracing:
+      enable: false
+      exporter: stdout
+      propagator: w3c
+      sample-mode: ratio
+      sample-ratio: 0.5
 
+  logger:
+    driver: zap
+    level: info
+    format: text
+    appender: console
 
+  shutdown:
+    timeout: 60s
+    step-timeout: 3s
+    notify-timeout: 5s

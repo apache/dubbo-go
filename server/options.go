@@ -619,7 +619,7 @@ func WithInterface(interfaceName string) ServiceOption {
 // todo(DMwangnima): think about a more ideal configuration style
 func WithRegistryIDs(registryIDs []string) ServiceOption {
 	return func(cfg *ServiceOptions) {
-		if len(registryIDs) <= 0 {
+		if len(registryIDs) > 0 {
 			cfg.Service.RegistryIDs = registryIDs
 		}
 	}
@@ -635,7 +635,7 @@ func WithFilter(filter string) ServiceOption {
 // todo(DMwangnima): think about a more ideal configuration style
 func WithProtocolIDs(protocolIDs []string) ServiceOption {
 	return func(cfg *ServiceOptions) {
-		if len(protocolIDs) <= 0 {
+		if len(protocolIDs) > 0 {
 			cfg.Service.ProtocolIDs = protocolIDs
 		}
 	}
