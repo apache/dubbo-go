@@ -489,8 +489,10 @@ func TestServer_HTTP2AndHTTP3_ServeFailsOnHTTP2Side(t *testing.T) {
 	oldListen := netListen
 	netListen = func(network, addr string) (net.Listener, error) {
 		ln, err := net.Listen(network, addr)
-		require.NoError(t, err)
-		require.NoError(t, ln.Close())
+		if err != nil {
+			return nil, err
+		}
+		defer ln.Close() // the returned listener stays closed so Serve fails
 		return ln, nil
 	}
 	t.Cleanup(func() { netListen = oldListen })
@@ -519,8 +521,10 @@ func TestServer_HTTP2AndHTTP3_ServeFailsOnHTTP3Side(t *testing.T) {
 	oldListenPacket := netListenPacket
 	netListenPacket = func(network, addr string) (net.PacketConn, error) {
 		conn, err := net.ListenPacket(network, addr)
-		require.NoError(t, err)
-		require.NoError(t, conn.Close())
+		if err != nil {
+			return nil, err
+		}
+		defer conn.Close() // the returned conn stays closed so Serve fails
 		return conn, nil
 	}
 	t.Cleanup(func() { netListenPacket = oldListenPacket })
@@ -647,4 +651,89 @@ func TestServer_HTTP2AndHTTP3_ConcurrentStartAndGracefulStop(t *testing.T) {
 	for err := range errCh {
 		require.NoError(t, err)
 	}
+}
+
+// TestServer_HTTP2AndHTTP3_StopDuringStartup verifies that a Stop arriving
+// while the startup is still in progress cancels the startup: Run returns
+// without serving and the pre-bound sockets are released. The Stop is
+// injected from the pre-bind step, when both httpSrv and http3Srv are still
+// nil, so a Stop that only closes the stored servers would miss them.
+func TestServer_HTTP2AndHTTP3_StopDuringStartup(t *testing.T) {
+	cfg := &global.TripleConfig{
+		Http3: &global.Http3Config{Enable: true},
+	}
+	addr := getFreeAddr(t)
+	srv := NewServer(addr, cfg)
+
+	oldListen := netListen
+	netListen = func(network, addr string) (net.Listener, error) {
+		ln, err := net.Listen(network, addr)
+		if err != nil {
+			return nil, err
+		}
+		if err := srv.Stop(); err != nil {
+			_ = ln.Close() // release the bound socket before returning the error
+			return nil, err
+		}
+		return ln, nil
+	}
+	t.Cleanup(func() { netListen = oldListen })
+
+	errCh := runServer(srv, constant.CallHTTP2AndHTTP3, newTestTLSConfig(t))
+
+	// Run must return: the startup was canceled instead of serving.
+	require.NoError(t, waitForServerExit(t, errCh, 3*time.Second))
+
+	// The pre-bound sockets must be released, otherwise the ports leak.
+	tcpLn, err := net.Listen("tcp", srv.addr)
+	require.NoError(t, err)
+	defer tcpLn.Close()
+
+	udpConn, err := net.ListenPacket("udp", srv.addr)
+	require.NoError(t, err)
+	defer udpConn.Close()
+}
+
+// TestServer_HTTP2AndHTTP3_StopDuringStartupDoesNotServe verifies that an
+// aborted startup leaves nothing listening: after Run returns, connecting
+// to the address fails and both sockets can be rebound.
+func TestServer_HTTP2AndHTTP3_StopDuringStartupDoesNotServe(t *testing.T) {
+	cfg := &global.TripleConfig{
+		Http3: &global.Http3Config{Enable: true},
+	}
+	addr := getFreeAddr(t)
+	srv := NewServer(addr, cfg)
+
+	oldListen := netListen
+	netListen = func(network, addr string) (net.Listener, error) {
+		ln, err := net.Listen(network, addr)
+		if err != nil {
+			return nil, err
+		}
+		if err := srv.Stop(); err != nil {
+			_ = ln.Close() // release the bound socket before returning the error
+			return nil, err
+		}
+		return ln, nil
+	}
+	t.Cleanup(func() { netListen = oldListen })
+
+	errCh := runServer(srv, constant.CallHTTP2AndHTTP3, newTestTLSConfig(t))
+	require.NoError(t, waitForServerExit(t, errCh, 3*time.Second))
+
+	// The aborted startup must not serve: a connection attempt fails.
+	conn, err := net.DialTimeout("tcp", addr, 200*time.Millisecond)
+	require.Error(t, err)
+	if conn != nil {
+		_ = conn.Close()
+	}
+
+	// Both sockets must be free to rebind.
+	tcpLn, err := net.Listen("tcp", addr)
+	require.NoError(t, err)
+	defer tcpLn.Close()
+
+	udpConn, err := net.ListenPacket("udp", addr)
+	require.NoError(t, err)
+	defer udpConn.Close()
 }
