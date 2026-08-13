@@ -167,8 +167,11 @@ func (cli *Client) NewGenericService(referenceStr string, opts ...ReferenceOptio
 	finalOpts = append(finalOpts, opts...)
 
 	genericService := generic.NewGenericService(referenceStr)
-	_, err := cli.DialWithService(referenceStr, genericService, finalOpts...)
+	connection, err := cli.DialWithService(referenceStr, genericService, finalOpts...)
 	if err != nil {
+		return nil, err
+	}
+	if err := genericService.SetGenericType(connection.refOpts.Reference.Generic); err != nil {
 		return nil, err
 	}
 

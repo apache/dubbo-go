@@ -95,6 +95,9 @@ const (
 const (
 	SimpleMetadataServiceName = "MetadataService"
 	DefaultRevision           = "N/A"
+
+	// ZookeeperListAppRevisionsMaxConcurrency bounds in-flight reads when listing application revisions.
+	ZookeeperListAppRevisionsMaxConcurrency = 16
 )
 
 const (
