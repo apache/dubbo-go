@@ -74,7 +74,7 @@ func generateUnaryHandlerFunc(
 ) StreamingHandlerFunc {
 	// Wrap the strongly-typed implementation so we can apply interceptors.
 	untyped := UnaryHandlerFunc(func(ctx context.Context, request AnyRequest) (AnyResponse, error) {
-		// Verify err
+		// Honor cancellation before reading from the transport stream.
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
@@ -94,26 +94,25 @@ func generateUnaryHandlerFunc(
 	if interceptor != nil {
 		untyped = interceptor.WrapUnaryHandler(untyped)
 	}
-	// Receive and send
-	// Conn should be responsible for marshal and unmarshal
-	// Given a stream, how should we call the unary function?
+	// The transport stream owns framing, decoding, and encoding. This adapter
+	// receives the request, invokes the unary handler, and writes the response.
 	implementation := func(ctx context.Context, conn StreamingHandlerConn) error {
 		req := reqInitFunc()
 		if err := conn.Receive(req); err != nil {
 			return err
 		}
-		// Wrap the specific msg
+		// Build the request envelope with stream metadata for handlers and interceptors.
 		request := NewRequest(req)
 		request.spec = conn.Spec()
 		request.peer = conn.Peer()
 		request.header = conn.RequestHeader()
-		// Embed header in context so that user logic could process them via FromIncomingContext
+		// Expose incoming headers through context for user logic via FromIncomingContext.
 		ctx = newIncomingContext(ctx, conn.RequestHeader())
 		ctx = context.WithValue(ctx, handlerOutgoingKey{}, conn)
 
 		response, err := untyped(ctx, request)
 
-		// Write the server-side return-attachment-data in the trailer to send to the caller
+		// Propagate outgoing context values as response trailers.
 		if data := ExtractFromOutgoingContext(ctx); data != nil {
 			mergeHeaders(conn.ResponseTrailer(), data)
 		}
@@ -122,7 +121,7 @@ func generateUnaryHandlerFunc(
 			return err
 		}
 
-		// Merge headers
+		// Propagate application headers and trailers before sending the payload.
 		mergeHeaders(conn.ResponseHeader(), response.Header())
 		mergeHeaders(conn.ResponseTrailer(), response.Trailer())
 		return conn.Send(response.Any())
@@ -161,7 +160,7 @@ func generateClientStreamHandlerFunc(
 ) StreamingHandlerFunc {
 	implementation := func(ctx context.Context, conn StreamingHandlerConn) error {
 		stream := &ClientStream{conn: conn}
-		// Embed header in context so that user logic could process them via FromIncomingContext
+		// Expose incoming headers through context for user logic via FromIncomingContext.
 		ctx = newIncomingContext(ctx, conn.RequestHeader())
 		res, err := streamFunc(ctx, stream)
 
@@ -224,7 +223,7 @@ func generateServerStreamHandlerFunc(
 		if err := conn.Receive(req); err != nil {
 			return err
 		}
-		// Embed header in context so that user logic could process them via FromIncomingContext
+		// Expose incoming headers through context for user logic via FromIncomingContext.
 		ctx = newIncomingContext(ctx, conn.RequestHeader())
 		err := streamFunc(
 			ctx,
@@ -280,7 +279,7 @@ func generateBidiStreamHandlerFunc(
 	interceptor Interceptor,
 ) StreamingHandlerFunc {
 	implementation := func(ctx context.Context, conn StreamingHandlerConn) error {
-		// Embed header in context so that user logic could process them via FromIncomingContext
+		// Expose incoming headers through context for user logic via FromIncomingContext.
 		ctx = newIncomingContext(ctx, conn.RequestHeader())
 		err := streamFunc(ctx, &BidiStream{conn: conn})
 		if err != nil {
@@ -318,14 +317,14 @@ func (h *Handler) ServeHTTP(responseWriter http.ResponseWriter, request *http.Re
 		return
 	}
 
-	// CORS handling
+	// Apply CORS policy before protocol negotiation.
 	if h.cors != nil {
 		if h.handleCORS(responseWriter, request) {
 			return
 		}
 	}
 
-	// Inspect headers
+	// Filter protocol handlers by HTTP method before inspecting the payload.
 	var protocolHandlers []protocolHandler
 	for _, handler := range h.protocolHandlers {
 		if _, ok := handler.Methods()[request.Method]; ok {
@@ -341,8 +340,7 @@ func (h *Handler) ServeHTTP(responseWriter http.ResponseWriter, request *http.Re
 
 	contentType := canonicalizeContentType(getHeaderCanonical(request.Header, headerContentType))
 
-	// Inspect contentType
-	// Find our implementation of the RPC protocol in use.
+	// Select the protocol handler that can decode this content type.
 	var protocolHdl protocolHandler
 	for _, handler := range protocolHandlers {
 		if handler.CanHandlePayload(request, contentType) {
@@ -358,7 +356,7 @@ func (h *Handler) ServeHTTP(responseWriter http.ResponseWriter, request *http.Re
 
 	// Establish a stream and serve the RPC.
 	setHeaderCanonical(request.Header, headerContentType, contentType)
-	// Process context
+	// Derive the request context and deadline from the selected protocol handler.
 	ctx, cancel, timeoutErr := protocolHdl.SetTimeout(request) //nolint: contextcheck
 	if timeoutErr != nil {
 		ctx = request.Context()
@@ -366,7 +364,7 @@ func (h *Handler) ServeHTTP(responseWriter http.ResponseWriter, request *http.Re
 	if cancel != nil {
 		defer cancel()
 	}
-	// Create stream
+	// Create the protocol stream that owns request consumption and response writes.
 	connCloser, ok := protocolHdl.NewConn(
 		responseWriter,
 		request.WithContext(ctx),
@@ -381,7 +379,7 @@ func (h *Handler) ServeHTTP(responseWriter http.ResponseWriter, request *http.Re
 		return
 	}
 
-	// Invoke implementation
+	// Select the group/version implementation and invoke it on the protocol stream.
 	svcGroup := request.Header.Get(tripleServiceGroup)
 	svcVersion := request.Header.Get(tripleServiceVersion)
 	// TODO(DMwangnima): inspect ok
@@ -441,7 +439,7 @@ func (c *handlerConfig) newSpec(streamType StreamType) Spec {
 }
 
 func (c *handlerConfig) newProtocolHandlers(streamType StreamType) []protocolHandler {
-	// Initialize protocol
+	// Build protocol candidates for this stream type.
 	var protocols []protocol
 	if streamType == StreamTypeUnary {
 		protocols = append(protocols, &protocolTriple{})
@@ -449,9 +447,8 @@ func (c *handlerConfig) newProtocolHandlers(streamType StreamType) []protocolHan
 	if c.HandleGRPC {
 		protocols = append(protocols, &protocolGRPC{})
 	}
-	// Protocol -> protocolHandler
 	handlers := make([]protocolHandler, 0, len(protocols))
-	// Initialize codec and compressor
+	// Create read-only codec and compressor views shared by protocol handlers.
 	compressors := newReadOnlyCompressionPools(
 		c.CompressionPools,
 		c.CompressionNames,

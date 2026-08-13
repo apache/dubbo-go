@@ -26,16 +26,26 @@ enum GreetingType {
   GREETING_TYPE_FORMAL = 1;
 }
 
+// A request to the Greet RPC.
 message GreetRequest {
+  // Name of the person to greet.
   string name = 1;
+  // Alternative names for the person.
   repeated string aliases = 2;
+  // Additional request metadata.
   map<string, string> metadata = 3;
+  // Preferred greeting style.
   GreetingType type = 4;
+  // Profile details for the person.
   GreetProfile profile = 5;
   repeated GreetingType types = 6;
   repeated GreetProfile profiles = 7;
   map<string, GreetProfile> profile_metadata = 8;
   map<string, GreetingType> type_metadata = 9;
+  oneof recipient {
+    string recipient_id = 10;
+    GreetProfile recipient_profile = 11;
+  }
 }
 
 message GreetProfile {
@@ -54,7 +64,9 @@ message GreetUserResponse {
   string greeting = 1;
 }
 
+// APIs for greeting users.
 service GreetService {
+  // Returns a greeting for a request.
   rpc Greet(GreetRequest) returns (GreetResponse) {}
 
   rpc GreetUser(GreetUserRequest) returns (GreetUserResponse) {}

@@ -145,16 +145,17 @@ type Options struct {
 
 // Client : some configuration for network communication.
 type Client struct {
-	addr               string
-	opts               Options
-	conf               ClientConfig
-	mux                sync.RWMutex
-	sslEnabled         bool
-	clientClosed       bool
-	gettyClient        *gettyRPCClient
-	gettyClientMux     sync.RWMutex
-	gettyClientCreated atomic.Bool
-	codec              remoting.Codec
+	addr           string
+	opts           Options
+	conf           ClientConfig
+	connectMu      sync.Mutex
+	closeOnce      sync.Once
+	done           chan struct{}
+	sslEnabled     bool
+	closed         atomic.Bool
+	gettyClient    *gettyRPCClient
+	gettyClientMux sync.RWMutex
+	codec          remoting.Codec
 }
 
 // NewClient create client
@@ -168,10 +169,9 @@ func NewClient(opt Options) *Client {
 	}
 
 	c := &Client{
-		opts:         opt,
-		clientClosed: false,
+		opts: opt,
+		done: make(chan struct{}),
 	}
-	c.gettyClientCreated.Store(false)
 	return c
 }
 
@@ -180,6 +180,9 @@ func (c *Client) SetExchangeClient(client *remoting.ExchangeClient) {
 
 // Connect init client and try to connection.
 func (c *Client) Connect(url *common.URL) error {
+	if c.closed.Load() {
+		return errClientClosed
+	}
 	initClient(url)
 	c.conf = *clientConf
 	c.sslEnabled = c.conf.SSLEnabled
@@ -195,14 +198,19 @@ func (c *Client) Connect(url *common.URL) error {
 
 // Close close network connection
 func (c *Client) Close() {
-	c.mux.Lock()
-	client := c.gettyClient
-	c.gettyClient = nil
-	c.clientClosed = true
-	c.mux.Unlock()
-	if client != nil {
-		client.close()
-	}
+	c.closeOnce.Do(func() {
+		c.closed.Store(true)
+		if c.done != nil {
+			close(c.done)
+		}
+		c.gettyClientMux.Lock()
+		client := c.gettyClient
+		c.gettyClient = nil
+		c.gettyClientMux.Unlock()
+		if client != nil {
+			client.close()
+		}
+	})
 }
 
 // Request send request
@@ -252,34 +260,55 @@ func (c *Client) IsAvailable() bool {
 }
 
 func (c *Client) selectSession(addr string) (*gettyRPCClient, getty.Session, error) {
-	c.mux.RLock()
-	defer c.mux.RUnlock()
-	if c.clientClosed {
-		return nil, nil, perrors.New("client have been closed")
+	if c.closed.Load() {
+		return nil, nil, errClientClosed
 	}
 
-	if !c.gettyClientCreated.Load() {
-		c.gettyClientMux.Lock()
-		if c.gettyClient == nil {
-			rpcClientConn, rpcErr := newGettyRPCClientConn(c, addr)
-			if rpcErr != nil {
-				c.gettyClientMux.Unlock()
-				return nil, nil, perrors.WithStack(rpcErr)
-			}
-			c.gettyClientCreated.Store(true)
-			c.gettyClient = rpcClientConn
+	c.gettyClientMux.RLock()
+	client := c.gettyClient
+	c.gettyClientMux.RUnlock()
+	if client == nil {
+		var err error
+		client, err = c.getOrCreateGettyClient(addr, newGettyRPCClientConn)
+		if err != nil {
+			return nil, nil, perrors.WithStack(err)
 		}
-		client := c.gettyClient
-		session := c.gettyClient.selectSession()
-		c.gettyClientMux.Unlock()
-		return client, session, nil
+	}
+
+	if c.closed.Load() {
+		return nil, nil, errClientClosed
+	}
+	return client, client.selectSession(), nil
+}
+
+func (c *Client) getOrCreateGettyClient(addr string, newClientConn func(*Client, string) (*gettyRPCClient, error)) (*gettyRPCClient, error) {
+	c.connectMu.Lock()
+	defer c.connectMu.Unlock()
+
+	if c.closed.Load() {
+		return nil, errClientClosed
 	}
 	c.gettyClientMux.RLock()
 	client := c.gettyClient
-	session := c.gettyClient.selectSession()
 	c.gettyClientMux.RUnlock()
-	return client, session, nil
+	if client != nil {
+		return client, nil
+	}
 
+	client, err := newClientConn(c, addr)
+	if err != nil {
+		return nil, err
+	}
+
+	c.gettyClientMux.Lock()
+	if c.closed.Load() {
+		c.gettyClientMux.Unlock()
+		_ = client.close()
+		return nil, errClientClosed
+	}
+	c.gettyClient = client
+	c.gettyClientMux.Unlock()
+	return client, nil
 }
 
 func (c *Client) transfer(session getty.Session, request *remoting.Request, timeout time.Duration) (int, int, error) {
@@ -287,10 +316,14 @@ func (c *Client) transfer(session getty.Session, request *remoting.Request, time
 	return totalLen, sendLen, perrors.WithStack(err)
 }
 
-func (c *Client) resetRpcConn() {
-	c.gettyClientMux.Lock()
-	c.gettyClient = nil
-	c.gettyClientCreated.Store(false)
-	c.gettyClientMux.Unlock()
+func (c *Client) resetRpcConn(expected *gettyRPCClient) {
+	c.connectMu.Lock()
+	defer c.connectMu.Unlock()
 
+	c.gettyClientMux.Lock()
+	defer c.gettyClientMux.Unlock()
+	if c.gettyClient != expected {
+		return
+	}
+	c.gettyClient = nil
 }

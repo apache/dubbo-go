@@ -85,6 +85,61 @@ func TestConvertGolden(t *testing.T) {
 	}
 }
 
+func TestConvertProto3OptionalSkipsSyntheticOneof(t *testing.T) {
+	request := &pluginpb.CodeGeneratorRequest{
+		FileToGenerate: []string{"optional.proto"},
+		Parameter:      proto.String("format=yaml"),
+		ProtoFile: []*descriptorpb.FileDescriptorProto{{
+			Name:    proto.String("optional.proto"),
+			Package: proto.String("optional"),
+			Syntax:  proto.String("proto3"),
+			MessageType: []*descriptorpb.DescriptorProto{
+				{
+					Name: proto.String("Request"),
+					Field: []*descriptorpb.FieldDescriptorProto{
+						proto3OptionalField("display_name", "displayName", 1, descriptorpb.FieldDescriptorProto_TYPE_STRING, 0),
+						proto3OptionalField("retry_count", "retryCount", 2, descriptorpb.FieldDescriptorProto_TYPE_INT32, 1),
+					},
+					OneofDecl: []*descriptorpb.OneofDescriptorProto{
+						{Name: proto.String("_display_name")},
+						{Name: proto.String("_retry_count")},
+					},
+				},
+				{Name: proto.String("Response")},
+			},
+			Service: []*descriptorpb.ServiceDescriptorProto{{
+				Name: proto.String("Service"),
+				Method: []*descriptorpb.MethodDescriptorProto{{
+					Name:       proto.String("Call"),
+					InputType:  proto.String(".optional.Request"),
+					OutputType: proto.String(".optional.Response"),
+				}},
+			}},
+		}},
+	}
+
+	response, err := convert(request)
+	if err != nil {
+		t.Fatalf("convert() error = %v", err)
+	}
+	if len(response.File) != 1 {
+		t.Fatalf("generated %d files, want 1", len(response.File))
+	}
+
+	got := response.File[0].GetContent()
+	for _, want := range []string{
+		"displayName:",
+		"retryCount:",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("generated OpenAPI does not contain %q\n%s", want, got)
+		}
+	}
+	if strings.Contains(got, "oneOf:") || strings.Contains(got, "allOf:") {
+		t.Errorf("proto3 optional fields generated oneof constraints\n%s", got)
+	}
+}
+
 func examplePath(t *testing.T, name string) string {
 	t.Helper()
 	_, sourceFile, _, ok := runtime.Caller(0)
@@ -126,7 +181,10 @@ func greetRequest(format string) *pluginpb.CodeGeneratorRequest {
 							field("profiles", "profiles", 7, descriptorpb.FieldDescriptorProto_LABEL_REPEATED, descriptorpb.FieldDescriptorProto_TYPE_MESSAGE, ".greet.GreetProfile"),
 							field("profile_metadata", "profileMetadata", 8, descriptorpb.FieldDescriptorProto_LABEL_REPEATED, descriptorpb.FieldDescriptorProto_TYPE_MESSAGE, ".greet.GreetRequest.ProfileMetadataEntry"),
 							field("type_metadata", "typeMetadata", 9, descriptorpb.FieldDescriptorProto_LABEL_REPEATED, descriptorpb.FieldDescriptorProto_TYPE_MESSAGE, ".greet.GreetRequest.TypeMetadataEntry"),
+							oneofField("recipient_id", "recipientId", 10, descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL, descriptorpb.FieldDescriptorProto_TYPE_STRING, "", 0),
+							oneofField("recipient_profile", "recipientProfile", 11, descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL, descriptorpb.FieldDescriptorProto_TYPE_MESSAGE, ".greet.GreetProfile", 0),
 						},
+						OneofDecl: []*descriptorpb.OneofDescriptorProto{{Name: proto.String("recipient")}},
 						NestedType: []*descriptorpb.DescriptorProto{
 							{
 								Name: proto.String("MetadataEntry"),
@@ -186,6 +244,18 @@ func greetRequest(format string) *pluginpb.CodeGeneratorRequest {
 							{Name: proto.String("Greet"), InputType: proto.String(".greet.GreetRequest"), OutputType: proto.String(".greet.GreetResponse")},
 							{Name: proto.String("GreetUser"), InputType: proto.String(".greet.GreetUserRequest"), OutputType: proto.String(".greet.GreetUserResponse")},
 						},
+					},
+				},
+				SourceCodeInfo: &descriptorpb.SourceCodeInfo{
+					Location: []*descriptorpb.SourceCodeInfo_Location{
+						sourceComment([]int32{4, 0}, "A request to the Greet RPC."),
+						sourceComment([]int32{4, 0, 2, 0}, "Name of the person to greet."),
+						sourceComment([]int32{4, 0, 2, 1}, "Alternative names for the person."),
+						sourceComment([]int32{4, 0, 2, 2}, "Additional request metadata."),
+						sourceComment([]int32{4, 0, 2, 3}, "Preferred greeting style."),
+						sourceComment([]int32{4, 0, 2, 4}, "Profile details for the person."),
+						sourceComment([]int32{6, 0}, "APIs for greeting users."),
+						sourceComment([]int32{6, 0, 2, 0}, "Returns a greeting for a request."),
 					},
 				},
 			},
@@ -290,4 +360,25 @@ func field(name, jsonName string, number int32, label descriptorpb.FieldDescript
 		fd.TypeName = proto.String(typeName)
 	}
 	return fd
+}
+
+func oneofField(name, jsonName string, number int32, label descriptorpb.FieldDescriptorProto_Label, kind descriptorpb.FieldDescriptorProto_Type, typeName string, oneofIndex int32) *descriptorpb.FieldDescriptorProto {
+	fd := field(name, jsonName, number, label, kind, typeName)
+	fd.OneofIndex = proto.Int32(oneofIndex)
+	return fd
+}
+
+func proto3OptionalField(name, jsonName string, number int32, kind descriptorpb.FieldDescriptorProto_Type, oneofIndex int32) *descriptorpb.FieldDescriptorProto {
+	fd := field(name, jsonName, number, descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL, kind, "")
+	fd.OneofIndex = proto.Int32(oneofIndex)
+	fd.Proto3Optional = proto.Bool(true)
+	return fd
+}
+
+func sourceComment(path []int32, comment string) *descriptorpb.SourceCodeInfo_Location {
+	return &descriptorpb.SourceCodeInfo_Location{
+		Path:            path,
+		Span:            []int32{0, 0, 0, 1},
+		LeadingComments: proto.String(comment),
+	}
 }

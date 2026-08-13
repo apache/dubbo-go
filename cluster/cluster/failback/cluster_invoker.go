@@ -19,6 +19,7 @@ package failback
 
 import (
 	"context"
+	"errors"
 	"strconv"
 	"sync"
 	"time"
@@ -51,12 +52,20 @@ import (
 type failbackClusterInvoker struct {
 	base.BaseClusterInvoker
 
-	once          sync.Once
-	ticker        *time.Ticker
 	maxRetries    int64
 	failbackTasks int64
+
+	lifecycleMu   sync.Mutex
+	stopped       bool
 	taskList      *queue.Queue
+	retryCancel   context.CancelFunc
+	processDone   chan struct{}
+	retryDone     chan struct{}
+	activeRetries int
+	destroyOnce   sync.Once
 }
+
+var errFailbackInvokerStopped = errors.New("failback invoker is stopped")
 
 func newFailbackClusterInvoker(directory directory.Directory) protocolbase.Invoker {
 	invoker := &failbackClusterInvoker{
@@ -79,49 +88,88 @@ func newFailbackClusterInvoker(directory directory.Directory) protocolbase.Invok
 }
 
 func (invoker *failbackClusterInvoker) tryTimerTaskProc(ctx context.Context, retryTask *retryTimerTask) {
+	if ctx.Err() != nil {
+		return
+	}
+
 	invoked := make([]protocolbase.Invoker, 0)
 	invoked = append(invoked, retryTask.lastInvoker)
 
 	retryInvoker := invoker.DoSelect(retryTask.loadbalance, retryTask.invocation, retryTask.invokers, invoked)
+	if retryInvoker == nil || ctx.Err() != nil {
+		return
+	}
+
 	res := retryInvoker.Invoke(ctx, retryTask.invocation)
-	if res.Error() != nil {
+	if res.Error() != nil && ctx.Err() == nil {
 		retryTask.lastInvoker = retryInvoker
 		retryTask.lastErr = res.Error()
 		retryTask.checkRetry()
 	}
 }
 
-func (invoker *failbackClusterInvoker) process(ctx context.Context) {
-	invoker.ticker = time.NewTicker(time.Second * 1)
-	for range invoker.ticker.C {
-		// check each timeout task and re-run
-		for {
-			value, err := invoker.taskList.Peek()
-			if err == queue.ErrDisposed {
+func (invoker *failbackClusterInvoker) process(ctx context.Context, taskList *queue.Queue, done chan struct{}) {
+	defer close(done)
+
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if invoker.processRetryTasks(ctx, taskList) {
 				return
 			}
-			if err == queue.ErrEmptyQueue {
-				break
-			}
-
-			retryTask := value.(*retryTimerTask)
-			// use exponential backoff calculated wait time instead of fixed 5 seconds
-			if time.Since(retryTask.lastT) < retryTask.nextBackoff {
-				break
-			}
-
-			// ignore return. the get must success.
-			if _, err = invoker.taskList.Get(1); err != nil {
-				logger.Warnf("[Cluster][Failback] get task failed, err=%v", err)
-				break
-			}
-			go invoker.tryTimerTaskProc(ctx, retryTask)
 		}
+	}
+}
+
+func (invoker *failbackClusterInvoker) processRetryTasks(ctx context.Context, taskList *queue.Queue) bool {
+	for {
+		select {
+		case <-ctx.Done():
+			return true
+		default:
+		}
+
+		value, err := taskList.Peek()
+		if err == queue.ErrDisposed {
+			return true
+		}
+		if err == queue.ErrEmptyQueue {
+			return false
+		}
+		if err != nil {
+			logger.Warnf("[Cluster][Failback] peek task failed, err=%v", err)
+			return false
+		}
+
+		retryTask := value.(*retryTimerTask)
+		// use exponential backoff calculated wait time instead of fixed 5 seconds
+		if time.Since(retryTask.lastT) < retryTask.nextBackoff {
+			return false
+		}
+
+		// ignore return. the get must success.
+		if _, err = taskList.Get(1); err != nil {
+			logger.Warnf("[Cluster][Failback] get task failed, err=%v", err)
+			return false
+		}
+		invoker.startRetry(ctx, retryTask)
 	}
 }
 
 // Invoke executes with failback semantics: schedule retries on failure.
 func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation protocolbase.Invocation) result.Result {
+	if invoker.isStopped() {
+		return &result.RPCResult{Err: errFailbackInvokerStopped}
+	}
+	if err := invoker.CheckWhetherDestroyed(); err != nil {
+		return &result.RPCResult{Err: err}
+	}
+
 	invokers := invoker.Directory.List(invocation)
 	if err := invoker.CheckInvokers(invokers, invocation); err != nil {
 		logger.Errorf("[Cluster][Failback] check invokers failed, method=%s service=%s err=%v",
@@ -144,19 +192,8 @@ func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation pr
 	// DO INVOKE
 	res := ivk.Invoke(ctx, invocation)
 	if res.Error() != nil {
-		invoker.once.Do(func() {
-			invoker.taskList = queue.New(invoker.failbackTasks)
-			go invoker.process(ctx)
-		})
-
-		taskLen := invoker.taskList.Len()
-		if taskLen >= invoker.failbackTasks {
-			logger.Warnf("[Cluster][Failback] task list full, len=%d", taskLen)
-			return &result.RPCResult{}
-		}
-
 		timerTask := newRetryTimerTask(loadBalance, invocation, invokers, ivk, invoker)
-		invoker.taskList.Put(timerTask)
+		invoker.enqueueInitialRetry(ctx, timerTask)
 
 		logger.Errorf("[Cluster][Failback] invoke failed, method=%s service=%s err=%v",
 			methodName, url.Service(), res.Error().Error())
@@ -166,15 +203,131 @@ func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation pr
 	return res
 }
 
-func (invoker *failbackClusterInvoker) Destroy() {
-	invoker.BaseClusterInvoker.Destroy()
+func (invoker *failbackClusterInvoker) isStopped() bool {
+	invoker.lifecycleMu.Lock()
+	defer invoker.lifecycleMu.Unlock()
+	return invoker.stopped
+}
 
-	// stop ticker
-	if invoker.ticker != nil {
-		invoker.ticker.Stop()
+func (invoker *failbackClusterInvoker) Destroy() {
+	invoker.destroyOnce.Do(func() {
+		invoker.lifecycleMu.Lock()
+		invoker.stopped = true
+		if invoker.retryCancel != nil {
+			invoker.retryCancel()
+		}
+		taskList := invoker.taskList
+		processDone := invoker.processDone
+		retryDone := invoker.retryDone
+		if taskList != nil {
+			_ = taskList.Dispose()
+		}
+		invoker.lifecycleMu.Unlock()
+
+		invoker.waitForShutdown(processDone, retryDone)
+		invoker.BaseClusterInvoker.Destroy()
+	})
+}
+
+func (invoker *failbackClusterInvoker) enqueueInitialRetry(ctx context.Context, retryTask *retryTimerTask) {
+	invoker.lifecycleMu.Lock()
+	defer invoker.lifecycleMu.Unlock()
+
+	if invoker.stopped || invoker.Destroyed.Load() {
+		return
 	}
 
-	_ = invoker.taskList.Dispose()
+	if invoker.taskList == nil {
+		if ctx == nil {
+			ctx = context.Background()
+		}
+		retryCtx, retryCancel := context.WithCancel(context.WithoutCancel(ctx))
+		invoker.retryCancel = retryCancel
+		invoker.taskList = queue.New(invoker.failbackTasks)
+		invoker.processDone = make(chan struct{})
+		go invoker.process(retryCtx, invoker.taskList, invoker.processDone)
+	}
+
+	if invoker.taskList.Len() >= invoker.failbackTasks {
+		logger.Warnf("[Cluster][Failback] task list full, len=%d", invoker.taskList.Len())
+		return
+	}
+
+	if err := invoker.taskList.Put(retryTask); err != nil {
+		logger.Warnf("[Cluster][Failback] put initial task failed, err=%v", err)
+	}
+}
+
+func (invoker *failbackClusterInvoker) startRetry(ctx context.Context, retryTask *retryTimerTask) {
+	invoker.lifecycleMu.Lock()
+	defer invoker.lifecycleMu.Unlock()
+
+	if invoker.stopped || ctx.Err() != nil {
+		return
+	}
+	if invoker.activeRetries == 0 {
+		invoker.retryDone = make(chan struct{})
+	}
+	invoker.activeRetries++
+	retryDone := invoker.retryDone
+	go func() {
+		defer invoker.finishRetry(retryDone)
+		invoker.tryTimerTaskProc(ctx, retryTask)
+	}()
+}
+
+func (invoker *failbackClusterInvoker) finishRetry(retryDone chan struct{}) {
+	invoker.lifecycleMu.Lock()
+	defer invoker.lifecycleMu.Unlock()
+
+	invoker.activeRetries--
+	if invoker.activeRetries == 0 && invoker.retryDone == retryDone {
+		close(retryDone)
+	}
+}
+
+func (invoker *failbackClusterInvoker) enqueueRetry(retryTask *retryTimerTask) bool {
+	invoker.lifecycleMu.Lock()
+	defer invoker.lifecycleMu.Unlock()
+
+	if invoker.stopped || invoker.taskList == nil {
+		return false
+	}
+
+	retryTask.lastT = time.Now()
+	if err := invoker.taskList.Put(retryTask); err != nil {
+		logger.Warnf("[Cluster][Failback] put retry task failed, err=%v", err)
+		return false
+	}
+	return true
+}
+
+func (invoker *failbackClusterInvoker) waitForShutdown(processDone, retryDone <-chan struct{}) {
+	if processDone == nil && retryDone == nil {
+		return
+	}
+
+	wait := func(done <-chan struct{}, name string) bool {
+		if done == nil {
+			return true
+		}
+
+		timer := time.NewTimer(constant.DefaultShutdownConfigStepTimeout)
+		defer timer.Stop()
+
+		select {
+		case <-done:
+			return true
+		case <-timer.C:
+			logger.Warnf("[Cluster][Failback] timed out waiting for %s shutdown", name)
+			return false
+		}
+	}
+
+	if !wait(processDone, "retry processor") {
+		return
+	}
+	_ = wait(retryDone, "retry tasks")
 }
 
 type retryTimerTask struct {
@@ -203,13 +356,10 @@ func (t *retryTimerTask) checkRetry() {
 		return
 	}
 
-	logger.Infof("[Cluster][Failback] retry scheduled, backoff=%v method=%s", t.nextBackoff, t.invocation.MethodName())
-
-	if err := t.clusterInvoker.taskList.Put(t); err != nil {
-		logger.Errorf("[Cluster][Failback] put task failed, task=%v err=%v", t, err)
+	if !t.clusterInvoker.enqueueRetry(t) {
 		return
 	}
-	t.lastT = time.Now() // update lastT after successful Put
+	logger.Infof("[Cluster][Failback] retry scheduled, backoff=%v method=%s", t.nextBackoff, t.invocation.MethodName())
 }
 
 func newRetryTimerTask(loadbalance loadbalance.LoadBalance, invocation protocolbase.Invocation, invokers []protocolbase.Invoker,
