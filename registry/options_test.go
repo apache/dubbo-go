@@ -20,10 +20,15 @@ package registry
 import (
 	"testing"
 	"time"
+)
 
+import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestNewOptionsRequireProtocol(t *testing.T) {
