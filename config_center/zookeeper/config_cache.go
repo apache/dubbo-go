@@ -22,6 +22,8 @@ import (
 	"time"
 )
 
+const pathLockShardCount = 128
+
 type configCacheEntry struct {
 	content   string
 	exists    bool
@@ -36,7 +38,7 @@ type configCache struct {
 	watches    map[string]bool
 	generation uint64
 
-	pathLocks sync.Map
+	pathLocks [pathLockShardCount]sync.Mutex
 }
 
 func newConfigCache(ttl time.Duration) configCache {
@@ -232,6 +234,10 @@ func (c *configCache) reset() {
 }
 
 func (c *configCache) pathLock(path string) *sync.Mutex {
-	lock, _ := c.pathLocks.LoadOrStore(path, &sync.Mutex{})
-	return lock.(*sync.Mutex)
+	var hash uint32 = 2166136261
+	for i := 0; i < len(path); i++ {
+		hash ^= uint32(path[i])
+		hash *= 16777619
+	}
+	return &c.pathLocks[hash%pathLockShardCount]
 }

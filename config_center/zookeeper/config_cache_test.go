@@ -19,6 +19,8 @@ package zookeeper
 
 import (
 	"errors"
+	"fmt"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -59,6 +61,20 @@ func TestConfigCacheLoadAndExpiry(t *testing.T) {
 	require.ErrorIs(t, err, readErr)
 	_, watchActive := cache.snapshot("/error")
 	require.True(t, watchActive)
+}
+
+func TestConfigCacheUsesFixedPathLockShards(t *testing.T) {
+	cache := newConfigCache(time.Minute)
+	locks := make(map[*sync.Mutex]struct{})
+	pathLock := cache.pathLock("/path")
+
+	for i := 0; i < 4096; i++ {
+		locks[cache.pathLock(fmt.Sprintf("/path/%d", i))] = struct{}{}
+	}
+
+	require.Equal(t, pathLockShardCount, len(cache.pathLocks))
+	require.Same(t, pathLock, cache.pathLock("/path"))
+	require.LessOrEqual(t, len(locks), pathLockShardCount)
 }
 
 func TestConfigCacheWatchUpdateWinsOverLoad(t *testing.T) {
