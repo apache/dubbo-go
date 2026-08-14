@@ -18,6 +18,7 @@
 package triple_protocol
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -28,6 +29,7 @@ import (
 import (
 	"google.golang.org/protobuf/proto"
 
+	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -115,4 +117,103 @@ func TestErrorIs(t *testing.T) {
 	tripleErr := NewError(CodeUnavailable, err)
 	assert.False(t, errors.Is(tripleErr, NewError(CodeUnavailable, err)))
 	assert.True(t, errors.Is(tripleErr, tripleErr))
+}
+
+// TestNewWireError verifies that IsWireError returns true for wire errors
+// created by NewWireError (including when wrapped) and false for regular
+// Triple errors and non-Triple errors.
+func TestNewWireError(t *testing.T) {
+	t.Parallel()
+	// Wire error is detected by IsWireError
+	wireErr := NewWireError(CodeUnavailable, errors.New("server down"))
+	assert.True(t, IsWireError(wireErr))
+	// Regular error is not a wire error
+	plainErr := NewError(CodeUnavailable, errors.New("client issue"))
+	assert.False(t, IsWireError(plainErr))
+	// Non-triple error is not a wire error
+	assert.False(t, IsWireError(errors.New("not triple")))
+	// Wrapped wire error is still detected
+	wrapped := fmt.Errorf("wrapped: %w", wireErr)
+	assert.True(t, IsWireError(wrapped))
+}
+
+// TestNewErrorDetailWithAny verifies that NewErrorDetail uses an *anypb.Any
+// directly without wrapping it into another Any.
+func TestNewErrorDetailWithAny(t *testing.T) {
+	t.Parallel()
+	// When msg is already an *anypb.Any, it should be used directly
+	// without wrapping into another Any.
+	anyMsg := &anypb.Any{
+		TypeUrl: "type.googleapis.com/google.protobuf.Empty",
+		Value:   []byte{},
+	}
+	detail, err := NewErrorDetail(anyMsg)
+	assert.Nil(t, err)
+	assert.Equal(t, detail.Type(), "google.protobuf.Empty")
+}
+
+// TestErrorDetailBytesReturnsCopy verifies that ErrorDetail.Bytes returns a
+// copy of the serialized detail and that mutating it does not affect the
+// internal state.
+func TestErrorDetailBytesReturnsCopy(t *testing.T) {
+	t.Parallel()
+	detail, err := NewErrorDetail(durationpb.New(time.Second))
+	assert.Nil(t, err)
+	first := detail.Bytes()
+	assert.NotZero(t, first)
+	// Mutate the returned slice; internal state should be unaffected
+	first[0] = ^first[0]
+	second := detail.Bytes()
+	assert.NotEqual(t, first, second)
+}
+
+// TestWrapIfContextError verifies that wrapIfContextError wraps
+// context.Canceled and context.DeadlineExceeded with the corresponding
+// Triple codes, leaves already-coded and plain errors unchanged, and
+// returns nil for nil input.
+func TestWrapIfContextError(t *testing.T) {
+	t.Parallel()
+	// context.Canceled -> CodeCanceled
+	err := wrapIfContextError(context.Canceled)
+	tripleErr, ok := asError(err)
+	assert.True(t, ok)
+	assert.Equal(t, tripleErr.Code(), CodeCanceled)
+	assert.ErrorIs(t, err, context.Canceled)
+	// context.DeadlineExceeded -> CodeDeadlineExceeded
+	err = wrapIfContextError(context.DeadlineExceeded)
+	tripleErr, ok = asError(err)
+	assert.True(t, ok)
+	assert.Equal(t, tripleErr.Code(), CodeDeadlineExceeded)
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
+	// Already coded error is returned unchanged (same instance)
+	coded := NewError(CodeNotFound, errors.New("not found"))
+	assert.True(t, wrapIfContextError(coded) == coded)
+	// Plain error is returned as-is (not coded)
+	plainErr := errors.New("plain")
+	assert.True(t, wrapIfContextError(plainErr) == plainErr)
+	// nil
+	assert.Nil(t, wrapIfContextError(nil))
+}
+
+// TestWrapIfUncoded verifies that wrapIfUncoded returns nil for nil,
+// preserves already-coded errors, wraps context.Canceled via
+// wrapIfContextError, and wraps plain errors with CodeUnknown.
+func TestWrapIfUncoded(t *testing.T) {
+	t.Parallel()
+	// nil returns nil
+	assert.Nil(t, wrapIfUncoded(nil))
+	// Already coded error is returned unchanged (same instance)
+	coded := NewError(CodeNotFound, errors.New("not found"))
+	err := wrapIfUncoded(coded)
+	assert.True(t, err == coded)
+	// context.Canceled gets wrapped with CodeCanceled
+	err = wrapIfUncoded(context.Canceled)
+	result, ok := asError(err)
+	assert.True(t, ok)
+	assert.Equal(t, result.Code(), CodeCanceled)
+	// Plain error gets wrapped with CodeUnknown
+	err = wrapIfUncoded(errors.New("plain"))
+	result, ok = asError(err)
+	assert.True(t, ok)
+	assert.Equal(t, result.Code(), CodeUnknown)
 }

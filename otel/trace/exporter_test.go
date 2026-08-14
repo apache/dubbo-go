@@ -76,8 +76,9 @@ func TestNewExporter_CustomFuncError(t *testing.T) {
 		ServiceName: "test-service",
 	}
 
+	cause := errors.New("custom func error")
 	customFunc := func() (sdktrace.SpanExporter, error) {
-		return nil, errors.New("custom func error")
+		return nil, cause
 	}
 
 	tracerProvider, propagator, err := NewExporter(config, customFunc)
@@ -85,6 +86,7 @@ func TestNewExporter_CustomFuncError(t *testing.T) {
 	assert.Nil(t, propagator)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to create test exporter")
+	require.ErrorIs(t, err, cause)
 }
 
 func TestNewExporter_InvalidSampleMode(t *testing.T) {

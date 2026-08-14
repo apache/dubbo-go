@@ -19,6 +19,7 @@ package cmd
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -33,6 +34,18 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/tools/dubbogo-cli/generator/sample"
 )
 
+type generatedProjectCase struct {
+	name     string
+	generate func(string) error
+}
+
+func generatedProjectCases() []generatedProjectCase {
+	return []generatedProjectCase{
+		{name: "newApp", generate: application.Generate},
+		{name: "newDemo", generate: sample.Generate},
+	}
+}
+
 func TestNewApp(t *testing.T) {
 	genPath := filepath.Join(t.TempDir(), "newApp")
 	require.NoError(t, application.Generate(genPath))
@@ -45,6 +58,107 @@ func TestNewDemo(t *testing.T) {
 	require.NoError(t, sample.Generate(genPath))
 
 	assertFileSame(t, genPath, "./testGenCode/template/newDemo")
+}
+
+func TestGeneratedModuleVersion(t *testing.T) {
+	const stableVersion = "dubbo.apache.org/dubbo-go/v3 v3.3.1"
+	const datedPrerelease = "v3.3.1-20260727"
+
+	for _, tc := range generatedProjectCases() {
+		t.Run(tc.name, func(t *testing.T) {
+			genPath := filepath.Join(t.TempDir(), tc.name)
+			require.NoError(t, tc.generate(genPath))
+
+			content, err := os.ReadFile(filepath.Join(genPath, "go.mod"))
+			require.NoError(t, err)
+			require.Contains(t, string(content), stableVersion)
+			require.NotContains(t, string(content), datedPrerelease)
+		})
+	}
+}
+
+func TestGeneratedProjectsIncludeDependencyLocks(t *testing.T) {
+	const dubboGoChecksum = "dubbo.apache.org/dubbo-go/v3 v3.3.1 h1:"
+	const protobufChecksum = "google.golang.org/protobuf v1.34.2 h1:"
+
+	for _, tc := range generatedProjectCases() {
+		t.Run(tc.name, func(t *testing.T) {
+			genPath := filepath.Join(t.TempDir(), tc.name)
+			require.NoError(t, tc.generate(genPath))
+
+			content, err := os.ReadFile(filepath.Join(genPath, "go.sum"))
+			require.NoError(t, err, "generated project must include go.sum")
+			require.NotEmpty(t, strings.TrimSpace(string(content)), "generated go.sum must not be empty")
+			require.Contains(t, string(content), dubboGoChecksum)
+			require.Contains(t, string(content), protobufChecksum)
+		})
+	}
+}
+
+func TestGeneratedCodeDoesNotImportRemovedLoggerPackage(t *testing.T) {
+	const removedLoggerImport = `"dubbo.apache.org/dubbo-go/v3/common/logger"`
+
+	for _, dir := range []string{"../generator", "./testGenCode/template"} {
+		files, err := walkDir(dir)
+		require.NoError(t, err, "iterate generated code sources failed: %s", dir)
+
+		for _, file := range files {
+			if filepath.Ext(file) != ".go" {
+				continue
+			}
+
+			content, err := os.ReadFile(file)
+			require.NoError(t, err, "read generated code source failed: %s", file)
+			require.NotContains(t, string(content), removedLoggerImport,
+				"generated code must not import the removed logger package: %s", file)
+		}
+	}
+}
+
+func TestGeneratedProjectsCompile(t *testing.T) {
+	if os.Getenv("DUBBOGO_CLI_E2E") != "1" {
+		t.Skip("set DUBBOGO_CLI_E2E=1 to run generated-project compilation")
+	}
+
+	for _, tc := range generatedProjectCases() {
+		t.Run(tc.name, func(t *testing.T) {
+			genPath := filepath.Join(t.TempDir(), tc.name)
+			require.NoError(t, tc.generate(genPath))
+
+			cmd := exec.Command("make", "test")
+			cmd.Dir = genPath
+			cmd.Env = append(os.Environ(), "GOWORK=off")
+			output, err := cmd.CombinedOutput()
+			require.NoError(t, err, "generated project make test failed:\n%s", output)
+		})
+	}
+}
+
+func TestGeneratedStreamHandlersHandleWrappedEOF(t *testing.T) {
+	testCases := []struct {
+		generatedProjectCase
+		serverFile string
+	}{
+		{
+			generatedProjectCase: generatedProjectCase{name: "newApp", generate: application.Generate},
+			serverFile:           "pkg/service/service.go",
+		},
+		{
+			generatedProjectCase: generatedProjectCase{name: "newDemo", generate: sample.Generate},
+			serverFile:           "go-server/cmd/server.go",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			genPath := filepath.Join(t.TempDir(), tc.name)
+			require.NoError(t, tc.generate(genPath))
+
+			content, err := os.ReadFile(filepath.Join(genPath, tc.serverFile))
+			require.NoError(t, err)
+			require.Contains(t, string(content), "errors.Is(err, io.EOF)")
+		})
+	}
 }
 
 func assertFileSame(t *testing.T, genPath, templatePath string) {

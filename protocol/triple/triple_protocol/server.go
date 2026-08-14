@@ -29,8 +29,9 @@ import (
 
 	"github.com/dubbogo/grpc-go"
 
-	"github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/http3"
+
+	uatomic "go.uber.org/atomic"
 
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -42,6 +43,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/http3config"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/openapi"
 )
 
@@ -49,8 +51,8 @@ type Server struct {
 	addr               string
 	mux                *methodRouteMux
 	handlers           map[string]*Handler
-	httpSrv            *http.Server
-	http3Srv           *http3.Server
+	httpSrv            uatomic.Pointer[http.Server]
+	http3Srv           uatomic.Pointer[http3.Server]
 	tripleConfig       *global.TripleConfig // Configuration for the triple protocol
 	openapiIntegration *openapi.OpenAPIIntegration
 }
@@ -197,20 +199,21 @@ func (s *Server) Run(callProtocol string, tlsConf *tls.Config) error {
 }
 
 func (s *Server) startHttp2(tlsConf *tls.Config) error {
-	s.httpSrv = &http.Server{
+	s.httpSrv.Store(&http.Server{
 		Addr:      s.addr,
 		Handler:   h2c.NewHandler(s.mux, &http2.Server{}),
 		TLSConfig: tlsConf,
-	}
+	})
 
 	logger.Debugf("[Triple][Server] triple HTTP/2 Server starting on %v", s.addr)
 
-	var err error
+	srv := s.httpSrv.Load()
 
+	var err error
 	if tlsConf != nil {
-		err = s.httpSrv.ListenAndServeTLS("", "")
+		err = srv.ListenAndServeTLS("", "")
 	} else {
-		err = s.httpSrv.ListenAndServe()
+		err = srv.ListenAndServe()
 	}
 
 	return err
@@ -221,20 +224,29 @@ func (s *Server) startHttp3(tlsConf *tls.Config) error {
 		return fmt.Errorf("TRIPLE HTTP/3 Server must have TLS config, but TLS config is nil")
 	}
 
-	s.http3Srv = &http3.Server{
+	var http3Config *global.Http3Config
+	if s.tripleConfig != nil {
+		http3Config = s.tripleConfig.Http3
+	}
+
+	quicConfig, err := http3config.NewQUICConfig(http3Config, nil)
+	if err != nil {
+		return err
+	}
+
+	s.http3Srv.Store(&http3.Server{
 		Addr:    s.addr,
 		Handler: s.mux,
 		// Adapt and enhance a generic tls.Config object into a configuration
 		// specifically for HTTP/3 services.
 		// ref: https://quic-go.net/docs/http3/server/#setting-up-a-http3server
-		TLSConfig: http3.ConfigureTLSConfig(tlsConf),
-		// TODO: Detailed QUIC configuration.
-		QUICConfig: &quic.Config{},
-	}
+		TLSConfig:  http3.ConfigureTLSConfig(tlsConf),
+		QUICConfig: quicConfig,
+	})
 
 	logger.Debugf("[Triple][Server] triple HTTP/3 Server starting on %v", s.addr)
 
-	return s.http3Srv.ListenAndServe()
+	return s.http3Srv.Load().ListenAndServe()
 }
 
 func (s *Server) startHttp2AndHttp3(tlsConf *tls.Config) error {
@@ -243,27 +255,37 @@ func (s *Server) startHttp2AndHttp3(tlsConf *tls.Config) error {
 		return fmt.Errorf("TRIPLE HTTP/2 and HTTP/3 Server must have TLS config, but TLS config is nil")
 	}
 
+	var http3Config *global.Http3Config
+	if s.tripleConfig != nil {
+		http3Config = s.tripleConfig.Http3
+	}
+
+	quicConfig, err := http3config.NewQUICConfig(http3Config, nil)
+	if err != nil {
+		return err
+	}
+
 	// Start HTTP/3 server first to get its configuration
-	s.http3Srv = &http3.Server{
+	s.http3Srv.Store(&http3.Server{
 		Addr:       s.addr,
 		Handler:    s.mux,
 		TLSConfig:  http3.ConfigureTLSConfig(tlsConf),
-		QUICConfig: &quic.Config{},
-	}
+		QUICConfig: quicConfig,
+	})
 
 	// Create Alt-Svc handler wrapper for HTTP/2 server
 	var negotiation bool
 	if s.tripleConfig != nil && s.tripleConfig.Http3 != nil {
 		negotiation = s.tripleConfig.Http3.Negotiation
 	}
-	altSvcHandler := NewAltSvcHandler(s.mux, s.http3Srv, negotiation)
+	altSvcHandler := NewAltSvcHandler(s.mux, s.http3Srv.Load(), negotiation)
 
 	// Start HTTP/2 server with Alt-Svc handler wrapper
-	s.httpSrv = &http.Server{
+	s.httpSrv.Store(&http.Server{
 		Addr:      s.addr,
 		Handler:   h2c.NewHandler(altSvcHandler, &http2.Server{}),
 		TLSConfig: tlsConf,
-	}
+	})
 
 	logger.Debugf("[Triple][Server] triple HTTP/2 and HTTP/3 Server starting on %v", s.addr)
 
@@ -272,7 +294,7 @@ func (s *Server) startHttp2AndHttp3(tlsConf *tls.Config) error {
 
 	// Start HTTP/2 server in a goroutine
 	eg.Go(func() error {
-		if err := s.httpSrv.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
+		if err := s.httpSrv.Load().ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
 			return fmt.Errorf("HTTP/2 server error: %w", err)
 		}
 		return nil
@@ -280,7 +302,7 @@ func (s *Server) startHttp2AndHttp3(tlsConf *tls.Config) error {
 
 	// Start HTTP/3 server in a goroutine
 	eg.Go(func() error {
-		if err := s.http3Srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := s.http3Srv.Load().ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			return fmt.Errorf("HTTP/3 server error: %w", err)
 		}
 		return nil
@@ -295,9 +317,9 @@ func (s *Server) Stop() error {
 	eg, _ := errgroup.WithContext(context.Background())
 
 	// stop HTTP server
-	if s.httpSrv != nil {
+	if srv := s.httpSrv.Load(); srv != nil {
 		eg.Go(func() error {
-			if err := s.httpSrv.Close(); err != nil {
+			if err := srv.Close(); err != nil {
 				return fmt.Errorf("http server close failed: %w", err)
 			}
 			return nil
@@ -305,9 +327,9 @@ func (s *Server) Stop() error {
 	}
 
 	// stop HTTP/3 server
-	if s.http3Srv != nil {
+	if srv3 := s.http3Srv.Load(); srv3 != nil {
 		eg.Go(func() error {
-			if err := s.http3Srv.Close(); err != nil {
+			if err := srv3.Close(); err != nil {
 				return fmt.Errorf("http3 server close failed: %w", err)
 			}
 			return nil
@@ -323,9 +345,9 @@ func (s *Server) GracefulStop(ctx context.Context) error {
 	eg, ctx := errgroup.WithContext(ctx)
 
 	// shutdown HTTP server
-	if s.httpSrv != nil {
+	if srv := s.httpSrv.Load(); srv != nil {
 		eg.Go(func() error {
-			if err := s.httpSrv.Shutdown(ctx); err != nil {
+			if err := srv.Shutdown(ctx); err != nil {
 				return fmt.Errorf("http server shutdown failed: %w", err)
 			}
 			return nil
@@ -333,9 +355,9 @@ func (s *Server) GracefulStop(ctx context.Context) error {
 	}
 
 	// shutdown HTTP/3 server
-	if s.http3Srv != nil {
+	if srv3 := s.http3Srv.Load(); srv3 != nil {
 		eg.Go(func() error {
-			if err := s.http3Srv.Shutdown(ctx); err != nil {
+			if err := srv3.Shutdown(ctx); err != nil {
 				return fmt.Errorf("http3 server shutdown failed: %w", err)
 			}
 			return nil

@@ -20,6 +20,7 @@ package grpc
 import (
 	"context"
 	"reflect"
+	"sync"
 	"testing"
 )
 
@@ -31,10 +32,37 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/grpc/internal/helloworld"
 	"dubbo.apache.org/dubbo-go/v3/protocol/grpc/internal/routeguide"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
+
+type grpcInvokerTestClient struct{}
+
+func (*grpcInvokerTestClient) Call(context.Context) (string, error) {
+	return "response", nil
+}
+
+func TestUnaryInvokeReturnsReflectResponseError(t *testing.T) {
+	url := common.NewURLWithOptions(common.WithProtocol("grpc"))
+	invoker := &GrpcInvoker{
+		BaseInvoker: *base.NewBaseInvoker(url),
+		clientGuard: &sync.RWMutex{},
+		client: &Client{
+			invoker: reflect.ValueOf(&grpcInvokerTestClient{}),
+		},
+	}
+	invo := invocation.NewRPCInvocationWithOptions(
+		invocation.WithMethodName("Call"),
+		invocation.WithReply("reply must be a pointer"),
+	)
+
+	res := invoker.Invoke(context.Background(), invo)
+
+	require.Error(t, res.Error())
+	assert.ErrorContains(t, res.Error(), "@out should be a pointer")
+}
 
 const (
 	helloworldURL = "grpc://127.0.0.1:30000/GrpcGreeterImpl?accesslog=&anyhost=true&app.version=0.0.1&application=BDTService&async=false&bean.name=GrpcGreeterImpl" +

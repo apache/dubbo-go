@@ -7,7 +7,7 @@ require (
 	github.com/Workiva/go-datastructures v1.0.52
 	github.com/alibaba/sentinel-golang v1.0.4
 	github.com/apache/dubbo-getty v1.4.10
-	github.com/apache/dubbo-go-hessian2 v1.12.5
+	github.com/apache/dubbo-go-hessian2 v1.13.2
 	github.com/apolloconfig/agollo/v4 v4.4.0
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/creasty/defaults v1.5.2
@@ -61,13 +61,13 @@ require (
 	go.opentelemetry.io/otel/trace v1.21.0
 	go.uber.org/atomic v1.10.0
 	go.uber.org/zap v1.21.0
+	go.yaml.in/yaml/v4 v4.0.0-rc.6
 	golang.org/x/net v0.56.0
 	golang.org/x/sync v0.21.0
 	golang.org/x/tools v0.47.0
 	google.golang.org/grpc v1.64.1
 	google.golang.org/protobuf v1.34.2
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
-	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -147,4 +147,5 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240318140521-94a12d6c2237 // indirect
 	gopkg.in/ini.v1 v1.66.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
