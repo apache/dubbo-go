@@ -19,6 +19,8 @@ package metadata
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 	"sync"
 	"testing"
 )
@@ -26,6 +28,7 @@ import (
 import (
 	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/gof/observer"
+	gostlogger "github.com/dubbogo/gost/log/logger"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -347,6 +350,42 @@ func TestServiceNameMappingGetMetersPerBusinessOperation(t *testing.T) {
 	r2.AssertExpectations(t)
 }
 
+func TestServiceNameMappingGetDoesNotLogMetadataReportSecrets(t *testing.T) {
+	metadata.ClearMetadataReportInstances()
+	t.Cleanup(metadata.ClearMetadataReportInstances)
+	serviceNameMappingOnce = sync.Once{}
+	serviceNameMappingInstance = nil
+
+	const (
+		username    = "review-user"
+		password    = "review-secret"
+		accessToken = "review-access-token"
+	)
+	reportURL, err := common.NewURL("nacos://" + username + ":" + password + "@127.0.0.1:8848?access-token=" + accessToken)
+	require.NoError(t, err)
+	mockReport := initMockWithId(t, "reg-secret")
+	mockReport.reportURL = reportURL
+	mockReport.On("GetServiceAppMapping").Return(gxset.NewSet(), errors.New("get failure")).Once()
+
+	previousLogger := gostlogger.GetLogger()
+	capture := &captureMappingWarnLogger{Logger: previousLogger}
+	gostlogger.SetLogger(capture)
+	t.Cleanup(func() {
+		gostlogger.SetLogger(previousLogger)
+	})
+
+	serviceURL := common.NewURLWithOptions(common.WithInterface("org.example.SecretService"))
+	_, err = GetNameMappingInstance().Get(serviceURL, nil)
+	require.Error(t, err)
+
+	logOutput := capture.String()
+	assert.Contains(t, logOutput, "url=nacos://127.0.0.1:8848")
+	assert.NotContains(t, logOutput, username)
+	assert.NotContains(t, logOutput, password)
+	assert.NotContains(t, logOutput, accessToken)
+	mockReport.AssertExpectations(t)
+}
+
 func TestServiceNameMappingMapMetersPerBusinessOperation(t *testing.T) {
 	metadata.ClearMetadataReportInstances()
 	t.Cleanup(metadata.ClearMetadataReportInstances)
@@ -465,6 +504,7 @@ func (l listener) Stop() {
 
 type mockMetadataReport struct {
 	mock.Mock
+	reportURL *common.URL
 }
 
 func (m *mockMetadataReport) CreateMetadataReport(*common.URL) report.MetadataReport {
@@ -507,6 +547,27 @@ func (m *mockMetadataReport) ListAppRevisions(string) ([]report.AppRevision, err
 }
 
 func (m *mockMetadataReport) URL() *common.URL {
+	if m.reportURL != nil {
+		return m.reportURL
+	}
 	u, _ := common.NewURL("mock://127.0.0.1:8848")
 	return u
+}
+
+type captureMappingWarnLogger struct {
+	gostlogger.Logger
+	mu    sync.Mutex
+	warns []string
+}
+
+func (l *captureMappingWarnLogger) Warnf(template string, args ...any) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.warns = append(l.warns, fmt.Sprintf(template, args...))
+}
+
+func (l *captureMappingWarnLogger) String() string {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return strings.Join(l.warns, "\n")
 }

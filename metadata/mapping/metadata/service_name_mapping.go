@@ -179,7 +179,7 @@ func (d *ServiceNameMapping) Get(url *common.URL, listener mapping.MappingListen
 			errs = append(errs, getErr)
 			reportURL := ""
 			if u := metadataReport.URL(); u != nil {
-				reportURL = u.String()
+				reportURL = u.Protocol + "://" + u.Address()
 			}
 			logger.Warnf("[Metadata][Mapping] %s report %d/%d failed interface=%s group=%s url=%s err=%v", operation, i+1, len(metadataReports), serviceInterface, DefaultGroup, reportURL, getErr)
 			continue
