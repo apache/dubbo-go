@@ -99,7 +99,9 @@ func WithAppName(app string) Option {
 	}
 }
 
-// WithMetadataType sets the metadata storage type.
+// WithMetadataType sets the metadata storage type,
+// allowed values are "local" and "remote",
+// any other value behaves as "local".
 func WithMetadataType(typ string) Option {
 	return func(options *Options) {
 		options.metadataType = typ
@@ -113,7 +115,9 @@ func WithPort(port int) Option {
 	}
 }
 
-// WithMetadataProtocol sets the metadata service protocol.
+// WithMetadataProtocol sets the protocol used to export the MetadataService,
+// allowed values are "dubbo" and "tri",
+// any other value behaves as "tri".
 func WithMetadataProtocol(protocol string) Option {
 	return func(options *Options) {
 		options.protocol = protocol
@@ -238,7 +242,8 @@ func WithEtcdV3() ReportOption {
 	}
 }
 
-// WithProtocol sets the metadata report protocol.
+// WithProtocol sets the metadata report protocol to a custom value.
+// For the built-in backends, use WithZookeeper, WithNacos, or WithEtcdV3.
 func WithProtocol(meta string) ReportOption {
 	return func(opts *ReportOptions) {
 		opts.Protocol = meta
