@@ -96,8 +96,9 @@ func getFreeAddr(t *testing.T) string {
 // server must always be started this way in tests.
 func runServer(srv *Server, protocol string, tlsConf *tls.Config) chan error {
 	errCh := make(chan error, 1)
+	epoch := srv.BeginStart()
 	go func() {
-		errCh <- srv.Run(protocol, tlsConf)
+		errCh <- srv.Run(protocol, tlsConf, epoch)
 	}()
 	return errCh
 }
@@ -364,9 +365,67 @@ func TestServer_GracefulStopBeforeStart(t *testing.T) {
 	require.NoError(t, srv.GracefulStop(graceCtx))
 }
 
+// TestServer_HTTP2AndHTTP3_StopBeforeRunAbortsStartup verifies that a Stop
+// completed before Run executes is still detected: BeginStart registers the
+// epoch synchronously, Stop increments the counter, and Run's checkpoint
+// aborts the startup without binding any socket.
+func TestServer_HTTP2AndHTTP3_StopBeforeRunAbortsStartup(t *testing.T) {
+	addr := getFreeAddr(t)
+	srv := NewServer(addr, nil)
+
+	// Register the startup epoch, then Stop before Run gets to run: the
+	// checkpoint must abort instead of serving on the pre-bound sockets.
+	epoch := srv.BeginStart()
+	require.NoError(t, srv.Stop())
+
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- srv.Run(constant.CallHTTP2AndHTTP3, newTestTLSConfig(t), epoch)
+	}()
+
+	select {
+	case err := <-errCh:
+		require.NoError(t, err)
+	case <-time.After(3 * time.Second):
+		require.FailNow(t, "Run did not abort within 3s: a Stop completed before Run must still be detected")
+	}
+
+	// The abort must not leave any listener behind: the TCP port is free.
+	tcpLn, err := net.Listen("tcp", addr)
+	require.NoError(t, err)
+	require.NoError(t, tcpLn.Close())
+}
+
+// TestServer_HTTP2_StopBeforeRunAbortsStartup verifies that Run's checkpoint
+// guards the single-protocol path too: a Stop completed after BeginStart but
+// before Run executes aborts the HTTP/2 startup without binding any socket.
+func TestServer_HTTP2_StopBeforeRunAbortsStartup(t *testing.T) {
+	addr := getFreeAddr(t)
+	srv := NewServer(addr, nil)
+
+	epoch := srv.BeginStart()
+	require.NoError(t, srv.Stop())
+
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- srv.Run(constant.CallHTTP2, nil, epoch)
+	}()
+
+	select {
+	case err := <-errCh:
+		require.NoError(t, err)
+	case <-time.After(3 * time.Second):
+		require.FailNow(t, "Run did not abort within 3s: a Stop completed before Run must still be detected")
+	}
+
+	tcpLn, err := net.Listen("tcp", addr)
+	require.NoError(t, err)
+	require.NoError(t, tcpLn.Close())
+}
+
 func TestServer_Run_HTTP3WithoutTLS(t *testing.T) {
 	srv := NewServer(getFreeAddr(t), nil)
-	err := srv.Run(constant.CallHTTP3, nil)
+	err := srv.Run(constant.CallHTTP3, nil, srv.BeginStart())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "must have TLS config")
 }
@@ -419,7 +478,7 @@ func TestServer_HTTP2AndHTTP3_StartFailsOnOccupiedUDP(t *testing.T) {
 
 func TestServer_Run_HTTP2AndHTTP3WithoutTLS(t *testing.T) {
 	srv := NewServer(getFreeAddr(t), nil)
-	err := srv.Run(constant.CallHTTP2AndHTTP3, nil)
+	err := srv.Run(constant.CallHTTP2AndHTTP3, nil, srv.BeginStart())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "must have TLS config")
 }
@@ -428,14 +487,14 @@ func TestServer_Run_HTTP2AndHTTP3WithoutTLS(t *testing.T) {
 // the TLS config carries no certificate source.
 func TestServer_Run_HTTP2AndHTTP3_TLSWithoutCert(t *testing.T) {
 	srv := NewServer(getFreeAddr(t), nil)
-	err := srv.Run(constant.CallHTTP2AndHTTP3, &tls.Config{})
+	err := srv.Run(constant.CallHTTP2AndHTTP3, &tls.Config{}, srv.BeginStart())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "must have a TLS certificate configured")
 }
 
 func TestServer_RunUnsupportedProtocol(t *testing.T) {
 	srv := NewServer(getFreeAddr(t), nil)
-	err := srv.Run("tcp", nil)
+	err := srv.Run("tcp", nil, srv.BeginStart())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unsupported protocol")
 }

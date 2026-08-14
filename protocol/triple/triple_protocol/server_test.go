@@ -169,7 +169,7 @@ func TestServer_HTTP3PathsUseQUICConfigHelper(t *testing.T) {
 			},
 		})
 
-		err := srv.startHttp2AndHttp3(&tls.Config{})
+		err := srv.startHttp2AndHttp3(&tls.Config{}, srv.BeginStart())
 		require.Error(t, err)
 		require.ErrorContains(t, err, "max-idle-timeout")
 		assert.Nil(t, srv.http3Srv.Load())

@@ -49,8 +49,10 @@ import (
 
 // netListen and netListenPacket create the pre-bound sockets in
 // startHttp2AndHttp3. Tests override them to simulate Serve failures.
-var netListen = net.Listen
-var netListenPacket = net.ListenPacket
+var (
+	netListen       = net.Listen
+	netListenPacket = net.ListenPacket
+)
 
 type Server struct {
 	addr               string
