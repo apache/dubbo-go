@@ -378,9 +378,12 @@ func TestServer_HTTP2AndHTTP3_StopBeforeRunAbortsStartup(t *testing.T) {
 	epoch := srv.BeginStart()
 	require.NoError(t, srv.Stop())
 
+	// newTestTLSConfig uses t for assertions, so build it in the test
+	// goroutine and only pass the value into the transport goroutine.
+	tlsConf := newTestTLSConfig(t)
 	errCh := make(chan error, 1)
 	go func() {
-		errCh <- srv.Run(constant.CallHTTP2AndHTTP3, newTestTLSConfig(t), epoch)
+		errCh <- srv.Run(constant.CallHTTP2AndHTTP3, tlsConf, epoch)
 	}()
 
 	select {
