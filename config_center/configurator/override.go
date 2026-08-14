@@ -56,7 +56,7 @@ func (c *overrideConfigurator) Configure(url *common.URL) {
 	}
 
 	// branch for version 2.7.x
-	apiVersion := c.configuratorUrl.GetParam(constant.ConfigVersionKey, "")
+	apiVersion := c.configuratorUrl.GetParam(constant.RuleConfigVersionKey, "")
 	if len(apiVersion) != 0 {
 		var host string
 		currentSide := url.GetParam(constant.SideKey, "")
@@ -153,7 +153,7 @@ func getConditionKeys() *gxset.HashSet {
 	conditionKeys.Add(constant.VersionKey)
 	conditionKeys.Add(constant.ApplicationKey)
 	conditionKeys.Add(constant.SideKey)
-	conditionKeys.Add(constant.ConfigVersionKey)
+	conditionKeys.Add(constant.RuleConfigVersionKey)
 	conditionKeys.Add(constant.CompatibleConfigKey)
 	return conditionKeys
 }
