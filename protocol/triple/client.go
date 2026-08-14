@@ -45,6 +45,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/http3config"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
@@ -226,27 +227,40 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 			return nil, fmt.Errorf("TRIPLE http3 client must have TLS config, but TLS config is nil")
 		}
 
-		// HTTP/3 transport maps keepalive to quic-go's KeepAlivePeriod and MaxIdleTimeout;
-		// All other QUIC knobs keep the quic.Config defaults.
-		transport = &http3.Transport{
-			TLSClientConfig: cfg,
-			QUICConfig: &quic.Config{
-				// ref: https://quic-go.net/docs/quic/connection/#keeping-a-connection-alive
-				KeepAlivePeriod: keepAliveInterval,
-				// ref: https://quic-go.net/docs/quic/connection/#idle-timeout
-				MaxIdleTimeout: keepAliveTimeout,
-			},
+		var http3Config *global.Http3Config
+		if tripleConf != nil {
+			http3Config = tripleConf.Http3
+		}
+		quicConfig, configErr := http3config.NewQUICConfig(http3Config, &quic.Config{
+			KeepAlivePeriod: keepAliveInterval,
+			MaxIdleTimeout:  keepAliveTimeout,
+		})
+		if configErr != nil {
+			return nil, configErr
 		}
 
+		transport = &http3.Transport{
+			TLSClientConfig: cfg,
+			QUICConfig:      quicConfig,
+		}
 		logger.Info("[Triple][Client] triple http3 client transport init successfully")
 	case constant.CallHTTP2AndHTTP3:
 		if !tlsFlag {
 			return nil, fmt.Errorf("TRIPLE HTTP/2 and HTTP/3 client must have TLS config, but TLS config is nil")
 		}
 
+		var http3Config *global.Http3Config
+		if tripleConf != nil {
+			http3Config = tripleConf.Http3
+		}
+
 		// Dual transport lets the client negotiate HTTP/2 or HTTP/3 with the
 		// same URL and keepalive settings.
-		transport = newDualTransport(cfg, keepAliveInterval, keepAliveTimeout)
+		dualTransport, configErr := newDualTransport(cfg, http3Config, keepAliveInterval, keepAliveTimeout)
+		if configErr != nil {
+			return nil, configErr
+		}
+		transport = dualTransport
 		logger.Info("[Triple][Client] triple HTTP/2 and HTTP/3 client transport init successfully")
 	default:
 		return nil, fmt.Errorf("unsupported http protocol: %s", callProtocol)

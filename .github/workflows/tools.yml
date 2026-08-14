@@ -1,0 +1,107 @@
+name: Tools
+
+on:
+  push:
+    branches:
+      - main
+      - 'release-*'
+      - 'feature-*'
+    paths:
+      - '**/*.go'
+      - 'go.mod'
+      - 'go.sum'
+      - 'tools/**'
+      - 'Makefile'
+      - '.golangci.yml'
+      - '.github/actions/setup-go/action.yml'
+      - '.github/workflows/tools.yml'
+  pull_request:
+    branches:
+      - '**'
+    paths:
+      - '**/*.go'
+      - 'go.mod'
+      - 'go.sum'
+      - 'tools/**'
+      - 'Makefile'
+      - '.golangci.yml'
+      - '.github/actions/setup-go/action.yml'
+      - '.github/workflows/tools.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tools-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  format:
+    name: Format
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Go
+        uses: ./.github/actions/setup-go
+
+      - name: Restore Go tools
+        uses: ./.github/actions/setup-tools
+
+      - name: Apply formatters
+        run: make fmt
+
+      - name: Verify formatter output
+        run: git diff --exit-code -- '*.go'
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Go
+        uses: ./.github/actions/setup-go
+
+      - name: Restore Go tools
+        uses: ./.github/actions/setup-tools
+
+      - name: Run lint
+        run: make lint
+
+  generated-projects:
+    name: Generated CLI Projects
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Go
+        uses: ./.github/actions/setup-go
+
+      - name: Install protobuf compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y protobuf-compiler
+
+      - name: Install generated-project toolchain
+        env:
+          GOBIN: ${{ runner.temp }}/bin
+        run: |
+          mkdir -p "$GOBIN"
+          go install -mod=readonly google.golang.org/protobuf/cmd/protoc-gen-go
+          cd tools/protoc-gen-go-triple
+          go install .
+          echo "$GOBIN" >> "$GITHUB_PATH"
+
+      - name: Test generated CLI projects
+        run: make -C tools/dubbogo-cli test-generated-projects
