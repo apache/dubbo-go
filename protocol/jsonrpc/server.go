@@ -62,6 +62,8 @@ const (
 	MaxHeaderSize = 8 * 1024 * 1024
 	// ContentTypeHeader is the HTTP Content-Type header name.
 	ContentTypeHeader = "Content-Type"
+	// maxRequestWindowPerConnection bounds requests whose responses have not been written yet.
+	maxRequestWindowPerConnection = 64
 )
 
 // Server is JSON RPC server wrapper
@@ -83,10 +85,11 @@ func NewServer() *Server {
 func (s *Server) handlePkg(conn net.Conn) {
 	connectionCtx, connectionCancel := context.WithCancel(context.Background())
 	responses := make(chan orderedResponse)
+	requestWindow := make(chan struct{}, maxRequestWindowPerConnection)
 	responseWriterDone := make(chan struct{})
 	go func() {
 		defer close(responseWriterDone)
-		writeResponsesInOrder(connectionCtx, connectionCancel, conn, responses)
+		writeResponsesInOrder(connectionCtx, connectionCancel, conn, responses, requestWindow)
 	}()
 	var requestWG sync.WaitGroup
 	defer func() {
@@ -106,12 +109,20 @@ func (s *Server) handlePkg(conn net.Conn) {
 	bufReader := bufio.NewReader(limitedReader)
 	var sequence uint64
 	for {
+		select {
+		case requestWindow <- struct{}{}:
+		case <-connectionCtx.Done():
+			return
+		}
+
 		limitedReader.N = int64(MaxHeaderSize - bufReader.Buffered())
 		if _, err := bufReader.Peek(1); errors.Is(err, io.EOF) {
+			<-requestWindow
 			return
 		}
 		r, err := http.ReadRequest(bufReader)
 		if err != nil {
+			<-requestWindow
 			logger.Warnf("[Jsonrpc][Server] read request failed, err=%v", err)
 			return
 		}
@@ -119,6 +130,7 @@ func (s *Server) handlePkg(conn net.Conn) {
 		reqBody, err := io.ReadAll(r.Body)
 		r.Body.Close()
 		if err != nil {
+			<-requestWindow
 			return
 		}
 
@@ -222,7 +234,8 @@ func writeHTTPErrorResponse(writer io.Writer, header http.Header, body []byte) e
 	return perrors.WithStack(err)
 }
 
-func writeResponsesInOrder(ctx context.Context, cancel context.CancelFunc, conn net.Conn, responses <-chan orderedResponse) {
+func writeResponsesInOrder(ctx context.Context, cancel context.CancelFunc, conn net.Conn, responses <-chan orderedResponse,
+	requestWindow <-chan struct{}) {
 	nextSequence := uint64(0)
 	pending := make(map[uint64]orderedResponse)
 	for {
@@ -251,6 +264,7 @@ func writeResponsesInOrder(ctx context.Context, cancel context.CancelFunc, conn 
 				return
 			}
 			nextSequence++
+			<-requestWindow
 		}
 	}
 }
