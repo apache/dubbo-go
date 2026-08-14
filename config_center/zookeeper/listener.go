@@ -203,19 +203,14 @@ func (l *CacheListener) DataChange(event remoting.Event) bool {
 		}
 	}
 
-	changeType := event.Action
-	if event.Content == "" {
-		changeType = remoting.EventTypeDel
-	}
-
 	key, group := l.pathToKeyGroup(event.Path)
-	defer metrics.Publish(metricsConfigCenter.NewIncMetricEvent(key, group, changeType, metricsConfigCenter.Zookeeper))
+	defer metrics.Publish(metricsConfigCenter.NewIncMetricEvent(key, group, event.Action, metricsConfigCenter.Zookeeper))
 	if listeners, ok := l.keyListeners.Load(event.Path); ok {
 		for listener := range listeners.(map[config_center.ConfigurationListener]struct{}) {
 			listener.Process(&config_center.ConfigChangeEvent{
 				Key:        key,
 				Value:      event.Content,
-				ConfigType: changeType,
+				ConfigType: event.Action,
 			})
 		}
 		return true

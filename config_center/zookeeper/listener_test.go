@@ -69,7 +69,7 @@ func TestCacheListenerDataChangeEmptyContent(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected listeners to be notified")
 	}
-	if len(rec.events) != 1 || rec.events[0].ConfigType != remoting.EventTypeDel {
+	if len(rec.events) != 1 || rec.events[0].ConfigType != remoting.EventTypeAdd {
 		t.Fatalf("unexpected events %+v", rec.events)
 	}
 	entry, ok := cache.getFresh(path)
@@ -78,6 +78,9 @@ func TestCacheListenerDataChangeEmptyContent(t *testing.T) {
 	}
 
 	l.DataChange(remoting.Event{Path: path, Action: remoting.EventTypeDel})
+	if len(rec.events) != 2 || rec.events[1].ConfigType != remoting.EventTypeDel {
+		t.Fatalf("unexpected events %+v", rec.events)
+	}
 	entry, ok = cache.getFresh(path)
 	if !ok || entry.exists {
 		t.Fatalf("deleted configuration should be cached as missing: %+v", entry)

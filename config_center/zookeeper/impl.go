@@ -110,10 +110,8 @@ func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfigu
 }
 
 // AddListener add listener for key
-// TODO this method should has a parameter 'group', and it does not now, so we should concat group and key with '/' manually
 func (c *zookeeperDynamicConfiguration) AddListener(key string, listener config_center.ConfigurationListener, options ...config_center.Option) {
-	key = strings.Join([]string{c.GetURL().GetParam(constant.ConfigNamespaceKey, config_center.DefaultGroup), key}, "/")
-	qualifiedKey := buildPath(c.rootPath, key)
+	qualifiedKey := c.getPropertiesPath(key, options...)
 	c.cacheListener.AddListener(qualifiedKey, listener)
 }
 
@@ -128,8 +126,7 @@ func buildPath(rootPath, subPath string) string {
 }
 
 func (c *zookeeperDynamicConfiguration) RemoveListener(key string, listener config_center.ConfigurationListener, options ...config_center.Option) {
-	key = strings.Join([]string{c.GetURL().GetParam(constant.ConfigNamespaceKey, config_center.DefaultGroup), key}, "/")
-	qualifiedKey := buildPath(c.rootPath, key)
+	qualifiedKey := c.getPropertiesPath(key, options...)
 	c.cacheListener.RemoveListener(qualifiedKey, listener)
 }
 

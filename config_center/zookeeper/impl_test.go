@@ -183,6 +183,37 @@ func TestLoadPropertiesRegistersWatchOnlyWhenInactive(t *testing.T) {
 	require.True(t, waitForEvent(inactivePath, time.Second))
 }
 
+func TestListenerUsesGroupOption(t *testing.T) {
+	cluster, client, _, err := gxzookeeper.NewMockZookeeperClient("listener-group", 5*time.Second)
+	if err != nil {
+		t.Skipf("skip mock zk setup: %v", err)
+	}
+	defer cluster.Stop()
+
+	zkListener := remotingzookeeper.NewZkEventListener(client)
+	defer zkListener.Close()
+	cfg := &zookeeperDynamicConfiguration{
+		rootPath: "/dubbo/config",
+		client:   client,
+		url:      mustURL(t, "registry://127.0.0.1:2181"),
+		cache:    newConfigCache(time.Minute),
+		listener: zkListener,
+	}
+	cfg.cacheListener = newCacheListener(cfg.rootPath, zkListener, &cfg.cache)
+	key := "app.properties"
+	group := "custom"
+	path := cfg.getPropertiesPath(key, config_center.WithGroup(group))
+	rec := &recListener{}
+
+	cfg.AddListener(key, rec, config_center.WithGroup(group))
+	_, ok := cfg.cacheListener.keyListeners.Load(path)
+	require.True(t, ok)
+
+	cfg.RemoveListener(key, rec, config_center.WithGroup(group))
+	_, ok = cfg.cacheListener.keyListeners.Load(path)
+	require.False(t, ok)
+}
+
 func TestGetPropertiesFallsBackToTTLAtAutoWatchLimit(t *testing.T) {
 	cluster, client, events, err := gxzookeeper.NewMockZookeeperClient("watch-limit", 5*time.Second)
 	if err != nil {
