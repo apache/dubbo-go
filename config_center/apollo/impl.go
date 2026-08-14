@@ -34,7 +34,7 @@ import (
 
 	perrors "github.com/pkg/errors"
 
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v4"
 )
 
 import (
@@ -118,7 +118,11 @@ func (c *apolloConfiguration) GetInternalProperty(key string, opts ...cc.Option)
 	if err != nil {
 		return "", perrors.Wrap(err, "get config value failed")
 	}
-	return value.(string), nil
+	stringValue, ok := value.(string)
+	if !ok {
+		return "", perrors.Errorf("apollo config value for key %q is not a string: %T", key, value)
+	}
+	return stringValue, nil
 }
 
 func (c *apolloConfiguration) GetRule(key string, opts ...cc.Option) (string, error) {

@@ -17,13 +17,17 @@
 
 package application
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/tools/dubbogo-cli/generator/internal/scaffold"
+)
+
 const (
 	gomodFile = `module dubbo-go-app
 
 go 1.25
 
 require (
-	dubbo.apache.org/dubbo-go/v3 v3.3.1-20260727
+	dubbo.apache.org/dubbo-go/v3 v3.3.1
 	google.golang.org/protobuf v1.34.2
 )
 `
@@ -34,5 +38,10 @@ func init() {
 		path:    ".",
 		file:    "go.mod",
 		context: gomodFile,
+	}
+	fileMap["gosumFile"] = &fileGenerator{
+		path:    ".",
+		file:    "go.sum",
+		context: scaffold.GoSum,
 	}
 }

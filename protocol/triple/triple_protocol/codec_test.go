@@ -123,16 +123,226 @@ func TestJSONCodec(t *testing.T) {
 func TestMsgpackCodec(t *testing.T) {
 	t.Parallel()
 
-	want := &pingv1.PingRequest{
-		Number: 1234,
-		Text:   "5678",
-	}
-	codec := &msgpackCodec{}
-	binary, err := codec.Marshal(want)
-	assert.Nil(t, err)
-	var got pingv1.PingRequest
-	err = codec.Unmarshal(binary, &got)
-	assert.Nil(t, err)
-	assert.Equal(t, got.Number, want.Number)
-	assert.Equal(t, got.Text, want.Text)
+	t.Run("roundtrip proto message", func(t *testing.T) {
+		t.Parallel()
+		want := &pingv1.PingRequest{
+			Number: 1234,
+			Text:   "5678",
+		}
+		codec := &msgpackCodec{}
+		binary, err := codec.Marshal(want)
+		assert.Nil(t, err)
+		var got pingv1.PingRequest
+		err = codec.Unmarshal(binary, &got)
+		assert.Nil(t, err)
+		assert.Equal(t, got.Number, want.Number)
+		assert.Equal(t, got.Text, want.Text)
+	})
+
+	t.Run("name returns msgpack", func(t *testing.T) {
+		t.Parallel()
+		codec := &msgpackCodec{}
+		assert.Equal(t, codecNameMsgPack, codec.Name())
+	})
+
+	t.Run("marshal nil returns empty bytes", func(t *testing.T) {
+		t.Parallel()
+		codec := &msgpackCodec{}
+		data, err := codec.Marshal(nil)
+		assert.Nil(t, err)
+		assert.Equal(t, []byte{0xc0}, data)
+	})
+
+	t.Run("unmarshal into nil returns error", func(t *testing.T) {
+		t.Parallel()
+		codec := &msgpackCodec{}
+		err := codec.Unmarshal([]byte{0xc0}, nil)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("unmarshal invalid data returns error", func(t *testing.T) {
+		t.Parallel()
+		codec := &msgpackCodec{}
+		var got pingv1.PingRequest
+		err := codec.Unmarshal([]byte{0xff, 0xff, 0xff}, &got)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("roundtrip with empty string", func(t *testing.T) {
+		t.Parallel()
+		want := &pingv1.PingRequest{Text: "", Number: 0}
+		codec := &msgpackCodec{}
+		data, err := codec.Marshal(want)
+		assert.Nil(t, err)
+		var got pingv1.PingRequest
+		err = codec.Unmarshal(data, &got)
+		assert.Nil(t, err)
+		assert.True(t, proto.Equal(&got, want))
+	})
+}
+
+func TestHessian2Codec(t *testing.T) {
+	t.Parallel()
+
+	t.Run("name returns hessian2", func(t *testing.T) {
+		t.Parallel()
+		codec := &hessian2Codec{}
+		assert.Equal(t, codecNameHessian2, codec.Name())
+	})
+
+	t.Run("roundtrip string", func(t *testing.T) {
+		t.Parallel()
+		codec := &hessian2Codec{}
+		want := "hello dubbo-go"
+		data, err := codec.Marshal(want)
+		assert.Nil(t, err)
+		var got string
+		err = codec.Unmarshal(data, &got)
+		assert.Nil(t, err)
+		assert.Equal(t, want, got)
+	})
+
+	t.Run("roundtrip int32", func(t *testing.T) {
+		t.Parallel()
+		codec := &hessian2Codec{}
+		want := int32(42)
+		data, err := codec.Marshal(want)
+		assert.Nil(t, err)
+		var got int32
+		err = codec.Unmarshal(data, &got)
+		assert.Nil(t, err)
+		assert.Equal(t, want, got)
+	})
+
+	t.Run("roundtrip int64", func(t *testing.T) {
+		t.Parallel()
+		codec := &hessian2Codec{}
+		want := int64(9223372036854775807)
+		data, err := codec.Marshal(want)
+		assert.Nil(t, err)
+		var got int64
+		err = codec.Unmarshal(data, &got)
+		assert.Nil(t, err)
+		assert.Equal(t, want, got)
+	})
+
+	t.Run("roundtrip bool true", func(t *testing.T) {
+		t.Parallel()
+		codec := &hessian2Codec{}
+		want := true
+		data, err := codec.Marshal(want)
+		assert.Nil(t, err)
+		var got bool
+		err = codec.Unmarshal(data, &got)
+		assert.Nil(t, err)
+		assert.True(t, got)
+	})
+
+	t.Run("roundtrip bool false", func(t *testing.T) {
+		t.Parallel()
+		codec := &hessian2Codec{}
+		want := false
+		data, err := codec.Marshal(want)
+		assert.Nil(t, err)
+		var got bool
+		err = codec.Unmarshal(data, &got)
+		assert.Nil(t, err)
+		assert.False(t, got)
+	})
+
+	t.Run("roundtrip byte slice", func(t *testing.T) {
+		t.Parallel()
+		codec := &hessian2Codec{}
+		want := []byte{0x01, 0x02, 0x03, 0x04}
+		data, err := codec.Marshal(want)
+		assert.Nil(t, err)
+		var got []byte
+		err = codec.Unmarshal(data, &got)
+		assert.Nil(t, err)
+		assert.Equal(t, want, got)
+	})
+
+	t.Run("roundtrip map", func(t *testing.T) {
+		t.Parallel()
+		codec := &hessian2Codec{}
+		want := map[any]any{"key1": "value1", "key2": int64(42)}
+		data, err := codec.Marshal(want)
+		assert.Nil(t, err)
+		got := make(map[any]any)
+		err = codec.Unmarshal(data, &got)
+		assert.Nil(t, err)
+		assert.Equal(t, want, got)
+	})
+
+	t.Run("roundtrip string slice", func(t *testing.T) {
+		t.Parallel()
+		codec := &hessian2Codec{}
+		want := []string{"a", "b", "c"}
+		data, err := codec.Marshal(want)
+		assert.Nil(t, err)
+		var got []string
+		err = codec.Unmarshal(data, &got)
+		assert.Nil(t, err)
+		assert.Equal(t, want, got)
+	})
+
+	t.Run("marshal nil returns nil bytes", func(t *testing.T) {
+		t.Parallel()
+		codec := &hessian2Codec{}
+		data, err := codec.Marshal(nil)
+		assert.Nil(t, err)
+		assert.Equal(t, []byte{'N'}, data)
+	})
+
+	t.Run("unmarshal into non-pointer returns error", func(t *testing.T) {
+		t.Parallel()
+		codec := &hessian2Codec{}
+		var got string
+		err := codec.Unmarshal([]byte{'N'}, got)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("unmarshal nil pointer returns error", func(t *testing.T) {
+		t.Parallel()
+		codec := &hessian2Codec{}
+		var got *string
+		err := codec.Unmarshal([]byte{'N'}, got)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("unmarshal into nil returns error", func(t *testing.T) {
+		t.Parallel()
+		codec := &hessian2Codec{}
+		err := codec.Unmarshal([]byte{'N'}, nil)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("roundtrip empty string", func(t *testing.T) {
+		t.Parallel()
+		codec := &hessian2Codec{}
+		want := ""
+		data, err := codec.Marshal(want)
+		assert.Nil(t, err)
+		var got string
+		err = codec.Unmarshal(data, &got)
+		assert.Nil(t, err)
+		assert.Equal(t, want, got)
+	})
+
+	t.Run("roundtrip empty map", func(t *testing.T) {
+		t.Parallel()
+		codec := &hessian2Codec{}
+		want := map[string]string{}
+		data, err := codec.Marshal(want)
+		assert.Nil(t, err)
+		got := make(map[string]string)
+		err = codec.Unmarshal(data, &got)
+		assert.Nil(t, err)
+		assert.Equal(t, len(want), len(got))
+	})
+
+	t.Run("implements Codec interface", func(t *testing.T) {
+		t.Parallel()
+		var _ Codec = (*hessian2Codec)(nil)
+	})
 }

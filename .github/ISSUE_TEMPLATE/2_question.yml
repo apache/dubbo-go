@@ -1,107 +1,17 @@
-name: "❓ Question"
-description: "Ask a question about the project"
-title: "[QUESTION] "
-labels: ["question"]
+name: Question or discussion
+description: Ask a question or start a discussion about dubbo-go
+title: "[Question]: "
 body:
-  - type: markdown
-    attributes:
-      value: |
-        ## 🤔 Question
-        
-        We're happy to help answer your questions about Dubbo-go!
-
-  - type: checkboxes
-    id: verification
-    attributes:
-      label: "✅ Verification Checklist"
-      description: "Please verify that you've completed the following:"
-      options:
-        - label: "🔍 I have searched the [existing issues](https://github.com/apache/dubbo-go/issues) and confirmed this is not a duplicate"
-          required: true
-
-  - type: markdown
-    attributes:
-      value: |
-        ---
-        ## 🔧 Configuration (Optional)"
-
-  - type: input
-    id: server-config
-    attributes:
-      label: "Server Configuration"
-      description: "Server framework and version"
-      placeholder: "Dubbo-go, v3.0.5"
-    validations:
-      required: false
-
-  - type: input
-    id: client-config
-    attributes:
-      label: "Client Configuration"
-      description: "Client framework and version"
-      placeholder: "Dubbo-go, v3.0.5"
-    validations:
-      required: false
-
-  - type: input
-    id: protocol-config
-    attributes:
-      label: "Protocol Configuration"
-      description: "Communication protocol used"
-      placeholder: "Triple"
-    validations:
-      required: false
-
-  - type: input
-    id: registry-config
-    attributes:
-      label: "Registry Configuration"
-      description: "Registry type and version"
-      placeholder: "Nacos, v2.0.0"
-    validations:
-      required: false
-
-  - type: markdown
-    attributes:
-      value: |
-        ---
-        ## ❓ Question Details
-
   - type: textarea
     id: question
     attributes:
-      label: "💬 Your Question"
-      description: "Please describe your question in detail"
-      placeholder: |
-        Please describe your question in detail, including:
-        • What specifically would you like to know?
-        • What confusion have you encountered?
-        • What kind of help are you expecting?
+      label: What would you like to ask or discuss?
+      description: Include the behavior, API, or topic you would like to discuss.
     validations:
       required: true
 
   - type: textarea
     id: context
     attributes:
-      label: "📚 Background Information"
-      description: "Add any context that might help us answer your question"
-      placeholder: |
-        Provide relevant background information:
-        • What project are you working on?
-        • Why do you need to understand this?
-        • What have you already tried?
-    validations:
-      required: false
-
-  - type: textarea
-    id: related-resources
-    attributes:
-      label: "🔗 Related Resources"
-      description: "Link to any related documents, code, or resources"
-      placeholder: |
-        Share related links or resources:
-        • Relevant documentation links
-        • Code repositories or snippets
-        • Reference materials
-    validations:
-      required: false
+      label: Context (optional)
+      description: Share a small code sample, configuration, or related link if useful.

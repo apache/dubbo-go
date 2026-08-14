@@ -15,7 +15,13 @@ You can visit [the official website](https://dubbo.apache.org/) for more informa
 
 ## Recent Updates
 
-For detailed changes, refer to CHANGELOG.md.
+For detailed changes, refer to [CHANGELOG.md](CHANGELOG.md).
+
+- **3.3.2**:
+
+  ***BREAKING CHANGE***: `config` package has been removed, please use modern `global` package, check [dubbo-go-samples](https://github.com/apache/dubbo-go-samples) for usage instructions.
+
+  Apache Dubbo-go 3.3.2 is a production-readiness release focused on API consolidation, Triple protocol capabilities, application-level metadata, service governance, concurrency safety, and release tooling. It completes the removal of the legacy config package, expands generic invocation and HTTP-facing Triple features, refreshes generated-project workflows, and fixes multiple races, stale-snapshot issues, and resource leaks.
 
 - **3.3.1**: Optimized configuration hot-reloading with content-based caching to prevent redundant notifications. Added experimental HTTP/3 support, Apollo integration, and Triple protocol OpenAPI generation. Fixed critical race conditions in service discovery under high-concurrency.
 
@@ -117,6 +123,7 @@ Common development tools live in `tools/`.
 | [protoc-gen-triple-openapi](./tools/protoc-gen-triple-openapi/README.md) | Generate OpenAPI v3 documents from Triple protobuf services. |
 | [imports-formatter](./tools/imports-formatter/README.md) | Format Go import blocks using dubbo-go grouping rules. |
 | [dubbo-go-schema](./tools/dubbo-go-schema/README.md) | Provide JSON Schema completion and validation for dubbo-go YAML config. |
+| [benchmark](./tools/benchmark/README.md) | Performance benchmark suite for comparing Dubbo-Go, Dubbo-Java, and gRPC frameworks. |
 
 ## Ecosystem
 - [dubbo-go-samples](https://github.com/apache/dubbo-go-samples)
