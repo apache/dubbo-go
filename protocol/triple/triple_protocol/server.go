@@ -192,7 +192,21 @@ func (s *Server) SetFallbackHTTPHandler(h http.Handler) {
 	s.mux.SetFallbackHandler(h)
 }
 
-func (s *Server) Run(callProtocol string, tlsConf *tls.Config) error {
+// BeginStart snapshots the startup epoch before the transport goroutine
+// runs. It must be called synchronously on the start path so Run's
+// checkpoint can detect a Stop that completes before Run reads the counter.
+func (s *Server) BeginStart() uint32 {
+	return s.stopCount.Load()
+}
+
+func (s *Server) Run(callProtocol string, tlsConf *tls.Config, epoch uint32) error {
+	// A Stop that completed after the synchronous BeginStart registration
+	// but before this checkpoint aborts the startup here, before any socket
+	// is bound or served.
+	if s.stopCount.Load() != epoch {
+		return nil
+	}
+
 	// Support for starting HTTP/2 and HTTP/3 servers simultaneously.
 	switch callProtocol {
 	case constant.CallHTTP2:
@@ -200,7 +214,7 @@ func (s *Server) Run(callProtocol string, tlsConf *tls.Config) error {
 	case constant.CallHTTP3:
 		return s.startHttp3(tlsConf)
 	case constant.CallHTTP2AndHTTP3:
-		return s.startHttp2AndHttp3(tlsConf)
+		return s.startHttp2AndHttp3(tlsConf, epoch)
 	default:
 		return fmt.Errorf("unsupported protocol: %s, only http2, http3, or http2-and-http3 are supported", callProtocol)
 	}
@@ -257,7 +271,7 @@ func (s *Server) startHttp3(tlsConf *tls.Config) error {
 	return s.http3Srv.Load().ListenAndServe()
 }
 
-func (s *Server) startHttp2AndHttp3(tlsConf *tls.Config) error {
+func (s *Server) startHttp2AndHttp3(tlsConf *tls.Config, epoch uint32) error {
 	// Check if TLS config is provided for HTTP/3
 	if tlsConf == nil {
 		return fmt.Errorf("TRIPLE HTTP/2 and HTTP/3 Server must have TLS config, but TLS config is nil")
@@ -278,8 +292,6 @@ func (s *Server) startHttp2AndHttp3(tlsConf *tls.Config) error {
 		tlsConf.GetConfigForClient == nil {
 		return fmt.Errorf("TRIPLE HTTP/2 and HTTP/3 Server must have a TLS certificate configured, but none of Certificates/GetCertificate/GetConfigForClient is set")
 	}
-
-	epoch := s.stopCount.Load()
 
 	// Pre-bind the TCP (HTTP/2) listener before serving any request:
 	// fail fast with the bind error when the port is occupied.
