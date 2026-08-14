@@ -26,15 +26,16 @@ import (
 )
 
 import (
+	"github.com/dubbogo/go-zookeeper/zk"
 	"github.com/stretchr/testify/require"
 )
 
 func TestConfigCacheLoadAndExpiry(t *testing.T) {
 	cache := newConfigCache(20 * time.Millisecond)
 	var loads atomic.Int32
-	loader := func(bool) (configCacheEntry, bool, error) {
+	loader := func(*zk.Watcher) (configCacheEntry, *zk.Watcher, error) {
 		count := loads.Add(1)
-		return configCacheEntry{content: string(rune('0' + count)), exists: true}, true, nil
+		return configCacheEntry{content: string(rune('0' + count)), exists: true}, nil, nil
 	}
 
 	first, err := cache.load("/path", loader)
@@ -126,8 +127,8 @@ func TestConfigCacheConcurrentLoadsRemainBounded(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			_, err := cache.load(path, func(bool) (configCacheEntry, bool, error) {
-				return configCacheEntry{exists: true}, false, nil
+			_, err := cache.load(path, func(*zk.Watcher) (configCacheEntry, *zk.Watcher, error) {
+				return configCacheEntry{exists: true}, nil, nil
 			})
 			errs <- err
 		}()
@@ -148,10 +149,10 @@ func TestConfigCacheWatchUpdateWinsOverLoad(t *testing.T) {
 	loadDone := make(chan struct{})
 	go func() {
 		defer close(loadDone)
-		_, _ = cache.load("/path", func(bool) (configCacheEntry, bool, error) {
+		_, _ = cache.load("/path", func(watcher *zk.Watcher) (configCacheEntry, *zk.Watcher, error) {
 			close(loadStarted)
 			<-releaseLoad
-			return configCacheEntry{content: "old", exists: true}, true, nil
+			return configCacheEntry{content: "old", exists: true}, watcher, nil
 		})
 	}()
 
@@ -172,20 +173,20 @@ func TestConfigCacheWatchUpdateWinsOverLoad(t *testing.T) {
 
 func TestConfigCacheResetDiscardsInFlightLoad(t *testing.T) {
 	cache := newConfigCache(time.Minute)
-	cache.setWatchActive("/path", true)
+	cache.setWatch("/path", configWatchState{watcher: &zk.Watcher{}, auto: true})
 	loadStarted := make(chan struct{})
 	releaseLoad := make(chan struct{})
 	result := make(chan configCacheEntry, 1)
 	var loads atomic.Int32
 
 	go func() {
-		entry, _ := cache.load("/path", func(bool) (configCacheEntry, bool, error) {
+		entry, _ := cache.load("/path", func(watcher *zk.Watcher) (configCacheEntry, *zk.Watcher, error) {
 			if loads.Add(1) == 1 {
 				close(loadStarted)
 				<-releaseLoad
-				return configCacheEntry{content: "old", exists: true}, true, nil
+				return configCacheEntry{content: "old", exists: true}, watcher, nil
 			}
-			return configCacheEntry{content: "new", exists: true}, true, nil
+			return configCacheEntry{content: "new", exists: true}, watcher, nil
 		})
 		result <- entry
 	}()
@@ -194,8 +195,8 @@ func TestConfigCacheResetDiscardsInFlightLoad(t *testing.T) {
 	cache.reset()
 	_, ok := cache.getFresh("/path")
 	require.False(t, ok)
-	_, watchActive := cache.snapshot("/path")
-	require.False(t, watchActive)
+	_, watchState := cache.snapshot("/path")
+	require.Nil(t, watchState.watcher)
 	close(releaseLoad)
 
 	require.Equal(t, "new", (<-result).content)

@@ -133,8 +133,8 @@ func (c *zookeeperDynamicConfiguration) RemoveListener(key string, listener conf
 
 func (c *zookeeperDynamicConfiguration) GetProperties(key string, opts ...config_center.Option) (string, error) {
 	path := c.getPropertiesPath(key, opts...)
-	entry, err := c.cache.load(path, func(watchActive bool) (configCacheEntry, bool, error) {
-		return c.loadProperties(path, watchActive)
+	entry, err := c.cache.load(path, func(watcher *zk.Watcher) (configCacheEntry, *zk.Watcher, error) {
+		return c.loadProperties(path, watcher)
 	})
 	if err != nil {
 		return "", err
@@ -167,35 +167,35 @@ func (c *zookeeperDynamicConfiguration) getPropertiesPath(key string, opts ...co
 	return buildPath(c.rootPath, key)
 }
 
-func (c *zookeeperDynamicConfiguration) loadProperties(path string, watchActive bool) (configCacheEntry, bool, error) {
-	if !c.cache.enabled() || watchActive {
+func (c *zookeeperDynamicConfiguration) loadProperties(path string, watcher *zk.Watcher) (configCacheEntry, *zk.Watcher, error) {
+	if !c.cache.enabled() || watcher != nil {
 		content, _, err := c.client.GetContent(path)
 		if errors.Is(err, zk.ErrNoNode) {
 			logger.Warnf("[ConfigCenter][Zookeeper] query rule fail, key=%s err=%v", path, err)
-			return configCacheEntry{exists: false}, watchActive, nil
+			return configCacheEntry{exists: false}, watcher, nil
 		}
 		if err != nil {
-			return configCacheEntry{}, watchActive, perrors.WithStack(err)
+			return configCacheEntry{}, watcher, perrors.WithStack(err)
 		}
-		return configCacheEntry{content: string(content), exists: true}, watchActive, nil
+		return configCacheEntry{content: string(content), exists: true}, watcher, nil
 	}
 
 	for {
-		content, _, _, err := c.client.Conn.GetW(path)
+		content, _, registeredWatcher, err := c.client.Conn.GetW(path)
 		if err == nil {
-			return configCacheEntry{content: string(content), exists: true}, true, nil
+			return configCacheEntry{content: string(content), exists: true}, registeredWatcher, nil
 		}
 		if !errors.Is(err, zk.ErrNoNode) {
-			return configCacheEntry{}, false, perrors.WithStack(err)
+			return configCacheEntry{}, nil, perrors.WithStack(err)
 		}
 
-		exists, _, _, watchErr := c.client.Conn.ExistsW(path)
+		exists, _, registeredWatcher, watchErr := c.client.Conn.ExistsW(path)
 		if watchErr != nil {
-			return configCacheEntry{}, false, perrors.WithStack(watchErr)
+			return configCacheEntry{}, nil, perrors.WithStack(watchErr)
 		}
 		if !exists {
 			logger.Warnf("[ConfigCenter][Zookeeper] query rule fail, key=%s err=%v", path, err)
-			return configCacheEntry{exists: false}, true, nil
+			return configCacheEntry{exists: false}, registeredWatcher, nil
 		}
 
 		content, _, getErr := c.client.Conn.Get(path)
@@ -203,9 +203,9 @@ func (c *zookeeperDynamicConfiguration) loadProperties(path string, watchActive 
 			continue
 		}
 		if getErr != nil {
-			return configCacheEntry{}, true, perrors.WithStack(getErr)
+			return configCacheEntry{}, registeredWatcher, perrors.WithStack(getErr)
 		}
-		return configCacheEntry{content: string(content), exists: true}, true, nil
+		return configCacheEntry{content: string(content), exists: true}, registeredWatcher, nil
 	}
 }
 

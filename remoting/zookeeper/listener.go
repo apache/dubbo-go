@@ -57,7 +57,7 @@ type ZkEventListener struct {
 }
 
 type configurationWatchStateListener interface {
-	WatchStateChanged(path string, active bool)
+	WatchStateChanged(path string, watcher *zk.Watcher)
 }
 
 // NewZkEventListener returns a EventListener instance
@@ -97,7 +97,7 @@ func (l *ZkEventListener) ListenConfigurationEvent(zkPath string, listener remot
 				logger.Infof("[Remoting][Zookeeper]Receive configuration change event:%#v", event)
 				if event.Type == zk.EventNotWatching {
 					if tracksWatchState {
-						watchStateListener.WatchStateChanged(event.Path, false)
+						watchStateListener.WatchStateChanged(event.Path, nil)
 					}
 					continue
 				}
@@ -105,16 +105,16 @@ func (l *ZkEventListener) ListenConfigurationEvent(zkPath string, listener remot
 					continue
 				}
 				if tracksWatchState {
-					watchStateListener.WatchStateChanged(event.Path, false)
+					watchStateListener.WatchStateChanged(event.Path, nil)
 				}
 				// 1. Re-set watcher for the zk node
-				exists, _, _, err := l.Client.Conn.ExistsW(event.Path)
+				exists, _, watcher, err := l.Client.Conn.ExistsW(event.Path)
 				if err != nil {
 					logger.Warnf("[Remoting][Zookeeper]Re-set watcher error, err=%v", err)
 					continue
 				}
 				if tracksWatchState {
-					watchStateListener.WatchStateChanged(event.Path, true)
+					watchStateListener.WatchStateChanged(event.Path, watcher)
 				}
 
 				action := remoting.EventTypeDel

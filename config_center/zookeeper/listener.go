@@ -23,6 +23,10 @@ import (
 )
 
 import (
+	"github.com/dubbogo/go-zookeeper/zk"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
@@ -41,6 +45,11 @@ type CacheListener struct {
 	cache           *configCache
 }
 
+type watchEventState struct {
+	generation uint64
+	auto       bool
+}
+
 // NewCacheListener creates a new CacheListener
 func NewCacheListener(rootPath string, listener *zookeeper.ZkEventListener) *CacheListener {
 	return newCacheListener(rootPath, listener, nil)
@@ -53,15 +62,15 @@ func newCacheListener(rootPath string, listener *zookeeper.ZkEventListener, cach
 // AddListener will add a listener if loaded
 func (l *CacheListener) AddListener(key string, listener config_center.ConfigurationListener) {
 	// FIXME do not use Client.ExistW, cause it has a bug(can not watch zk node that do not exist)
-	register := func() error {
-		_, _, _, err := l.zkEventListener.Client.Conn.ExistsW(key)
-		return err
+	register := func() (*zk.Watcher, error) {
+		_, _, watcher, err := l.zkEventListener.Client.Conn.ExistsW(key)
+		return watcher, err
 	}
 	var err error
 	if l.cache == nil {
-		err = register()
+		_, err = register()
 	} else {
-		err = l.cache.ensureWatch(key, register)
+		err = l.cache.ensureBusinessWatch(key, register)
 	}
 	// reference from https://stackoverflow.com/questions/34018908/golang-why-dont-we-have-a-set-datastructure
 	// make a map[your type]struct{} like set in java
@@ -73,24 +82,40 @@ func (l *CacheListener) AddListener(key string, listener config_center.Configura
 		listeners.(map[config_center.ConfigurationListener]struct{})[listener] = struct{}{}
 		l.keyListeners.Store(key, listeners)
 	}
+	if l.cache != nil {
+		l.cache.promoteWatch(key)
+	}
 }
 
 // WatchStateChanged updates the cache's concrete-path watch state.
-func (l *CacheListener) WatchStateChanged(path string, active bool) {
+func (l *CacheListener) WatchStateChanged(path string, watcher *zk.Watcher) {
 	if l.cache == nil {
 		return
 	}
-	if !active {
-		generation, _ := l.cache.snapshot(path)
-		l.eventGeneration.Store(path, generation)
-		l.cache.setWatchActiveAtGeneration(path, generation, false)
+	if watcher == nil {
+		generation, watchState := l.cache.snapshot(path)
+		auto := watchState.auto
+		if watchState.watcher == nil {
+			auto = !l.hasListeners(path)
+		}
+		l.eventGeneration.Store(path, watchEventState{generation: generation, auto: auto})
+		l.cache.setWatchAtGeneration(path, generation, configWatchState{})
 		return
 	}
-	if generation, ok := l.eventGeneration.Load(path); ok {
-		l.cache.setWatchActiveAtGeneration(path, generation.(uint64), true)
+	if state, ok := l.eventGeneration.Load(path); ok {
+		eventState := state.(watchEventState)
+		if l.hasListeners(path) {
+			eventState.auto = false
+		}
+		l.cache.setWatchAtGeneration(path, eventState.generation, configWatchState{watcher: watcher, auto: eventState.auto})
 		return
 	}
-	l.cache.setWatchActive(path, true)
+	l.cache.setWatch(path, configWatchState{watcher: watcher, auto: !l.hasListeners(path)})
+}
+
+func (l *CacheListener) hasListeners(path string) bool {
+	_, ok := l.keyListeners.Load(path)
+	return ok
 }
 
 // RemoveListener will delete a listener if loaded
@@ -108,8 +133,8 @@ func (l *CacheListener) DataChange(event remoting.Event) bool {
 		if event.Action == remoting.EventTypeDel {
 			entry = configCacheEntry{exists: false}
 		}
-		if generation, ok := l.eventGeneration.LoadAndDelete(event.Path); ok {
-			l.cache.storeAtGeneration(event.Path, generation.(uint64), entry)
+		if state, ok := l.eventGeneration.LoadAndDelete(event.Path); ok {
+			l.cache.storeAtGeneration(event.Path, state.(watchEventState).generation, entry)
 		} else {
 			l.cache.store(event.Path, entry)
 		}

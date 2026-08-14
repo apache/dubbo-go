@@ -23,6 +23,7 @@ import (
 )
 
 import (
+	"github.com/dubbogo/go-zookeeper/zk"
 	"github.com/stretchr/testify/require"
 )
 
@@ -88,7 +89,7 @@ func TestCacheListenerIgnoresEventAcrossReset(t *testing.T) {
 	pathLock.Lock()
 	watchStateDone := make(chan struct{})
 	go func() {
-		l.WatchStateChanged(path, false)
+		l.WatchStateChanged(path, nil)
 		close(watchStateDone)
 	}()
 	require.Eventually(t, func() bool {
@@ -99,17 +100,58 @@ func TestCacheListenerIgnoresEventAcrossReset(t *testing.T) {
 	cache.reset()
 	pathLock.Unlock()
 	<-watchStateDone
-	l.WatchStateChanged(path, true)
+	l.WatchStateChanged(path, &zk.Watcher{})
 	l.DataChange(remoting.Event{Path: path, Action: remoting.EventTypeUpdate, Content: "old"})
 
 	_, ok := cache.getFresh(path)
 	if ok {
 		t.Fatal("event started before reset should not repopulate cache")
 	}
-	_, watchActive := cache.snapshot(path)
-	if watchActive {
+	_, watchState := cache.snapshot(path)
+	if watchState.watcher != nil {
 		t.Fatal("event started before reset should not reactivate watch state")
 	}
+}
+
+func TestAddListenerPromotesAutoWatch(t *testing.T) {
+	cache := newConfigCache(time.Minute)
+	path := "/dubbo/config/group/app"
+	watcher := &zk.Watcher{}
+	cache.setWatch(path, configWatchState{watcher: watcher, auto: true})
+	l := &CacheListener{cache: &cache}
+	rec := &recListener{}
+
+	require.NotPanics(t, func() {
+		l.AddListener(path, rec)
+	})
+
+	_, watchState := cache.snapshot(path)
+	require.Same(t, watcher, watchState.watcher)
+	require.False(t, watchState.auto)
+	require.Zero(t, cache.autoWatchCount)
+	listeners, ok := l.keyListeners.Load(path)
+	require.True(t, ok)
+	_, ok = listeners.(map[config_center.ConfigurationListener]struct{})[rec]
+	require.True(t, ok)
+}
+
+func TestCacheListenerPreservesAutoWatchOwnershipOnRenewal(t *testing.T) {
+	cache := newConfigCache(time.Minute)
+	path := "/dubbo/config/group/app"
+	cache.setWatch(path, configWatchState{watcher: &zk.Watcher{}, auto: true})
+	l := &CacheListener{cache: &cache}
+
+	l.WatchStateChanged(path, nil)
+	_, watchState := cache.snapshot(path)
+	require.Nil(t, watchState.watcher)
+	require.Zero(t, cache.autoWatchCount)
+
+	replacement := &zk.Watcher{}
+	l.WatchStateChanged(path, replacement)
+	_, watchState = cache.snapshot(path)
+	require.Same(t, replacement, watchState.watcher)
+	require.True(t, watchState.auto)
+	require.Equal(t, 1, cache.autoWatchCount)
 }
 
 func TestCacheListenerPathToKeyGroup(t *testing.T) {

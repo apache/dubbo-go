@@ -162,18 +162,19 @@ func TestLoadPropertiesRegistersWatchOnlyWhenInactive(t *testing.T) {
 		}
 	}
 
-	_, watchActive, err := cfg.loadProperties(activePath, true)
+	activeWatcher := &zk.Watcher{}
+	_, watcher, err := cfg.loadProperties(activePath, activeWatcher)
 	require.NoError(t, err)
-	require.True(t, watchActive)
+	require.Same(t, activeWatcher, watcher)
 	_, stat, err := client.GetContent(activePath)
 	require.NoError(t, err)
 	_, err = client.SetContent(activePath, []byte("v2"), stat.Version)
 	require.NoError(t, err)
 	require.False(t, waitForEvent(activePath, time.Second))
 
-	_, watchActive, err = cfg.loadProperties(inactivePath, false)
+	_, watcher, err = cfg.loadProperties(inactivePath, nil)
 	require.NoError(t, err)
-	require.True(t, watchActive)
+	require.NotNil(t, watcher)
 	_, stat, err = client.GetContent(inactivePath)
 	require.NoError(t, err)
 	_, err = client.SetContent(inactivePath, []byte("v2"), stat.Version)
@@ -247,13 +248,14 @@ func TestRestartCallBackResetsCache(t *testing.T) {
 	cfg := &zookeeperDynamicConfiguration{cache: newConfigCache(time.Minute)}
 	path := "/dubbo/config/group/key"
 	cfg.cache.store(path, configCacheEntry{content: "value", exists: true})
-	cfg.cache.setWatchActive(path, true)
+	cfg.cache.setWatch(path, configWatchState{watcher: &zk.Watcher{}, auto: true})
 
 	require.True(t, cfg.RestartCallBack())
 	_, ok := cfg.cache.getFresh(path)
 	require.False(t, ok)
-	_, watchActive := cfg.cache.snapshot(path)
-	require.False(t, watchActive)
+	_, watchState := cfg.cache.snapshot(path)
+	require.Nil(t, watchState.watcher)
+	require.Zero(t, cfg.cache.autoWatchCount)
 }
 
 func mustURL(t *testing.T, raw string) *common.URL {
