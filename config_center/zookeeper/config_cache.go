@@ -24,6 +24,7 @@ import (
 
 import (
 	"github.com/dubbogo/go-zookeeper/zk"
+
 	"github.com/hashicorp/golang-lru"
 )
 
@@ -90,7 +91,11 @@ func (c *configCache) enabled() bool {
 	return c.ttl > 0
 }
 
-func (c *configCache) load(path string, loader func(*zk.Watcher, bool) (configCacheEntry, *zk.Watcher, error)) (configCacheEntry, error) {
+func (c *configCache) load(
+	path string,
+	loader func(*zk.Watcher, bool) (configCacheEntry, *zk.Watcher, error),
+	removeWatcher func(*zk.Watcher),
+) (configCacheEntry, error) {
 	if !c.enabled() {
 		entry, _, err := loader(nil, false)
 		return entry, err
@@ -119,11 +124,17 @@ func (c *configCache) load(path string, loader func(*zk.Watcher, bool) (configCa
 		}
 		if err != nil {
 			if !c.storeWatchState(path, generation, nextWatchState) {
+				if registerWatch {
+					removeRegisteredWatcher(removeWatcher, watcher)
+				}
 				continue
 			}
 			return configCacheEntry{}, err
 		}
 		if !c.storeLoad(path, generation, entry, nextWatchState) {
+			if registerWatch {
+				removeRegisteredWatcher(removeWatcher, watcher)
+			}
 			continue
 		}
 		return entry, nil
@@ -278,7 +289,11 @@ func (c *configCache) setWatchStateLocked(path string, watchState configWatchSta
 	return true
 }
 
-func (c *configCache) ensureBusinessWatch(path string, register func() (*zk.Watcher, error)) error {
+func (c *configCache) ensureBusinessWatch(
+	path string,
+	register func() (*zk.Watcher, error),
+	removeWatcher func(*zk.Watcher),
+) error {
 	if !c.enabled() {
 		_, err := register()
 		return err
@@ -311,6 +326,7 @@ func (c *configCache) ensureBusinessWatch(path string, register func() (*zk.Watc
 			return nil
 		}
 		c.stateLock.Unlock()
+		removeRegisteredWatcher(removeWatcher, watcher)
 	}
 }
 
@@ -383,14 +399,28 @@ func (c *configCache) cancelWatchRenewal(path string, generation uint64) {
 	}
 }
 
-func (c *configCache) reset() {
+func (c *configCache) reset() []*zk.Watcher {
 	c.stateLock.Lock()
 	defer c.stateLock.Unlock()
+
+	watchers := make([]*zk.Watcher, 0, len(c.watches))
+	for _, watchState := range c.watches {
+		if watchState.watcher != nil {
+			watchers = append(watchers, watchState.watcher)
+		}
+	}
 	c.generation++
 	c.entries.Purge()
 	c.watches = make(map[string]configWatchState)
 	c.autoWatchCount = 0
 	c.autoWatchReservations = 0
+	return watchers
+}
+
+func removeRegisteredWatcher(removeWatcher func(*zk.Watcher), watcher *zk.Watcher) {
+	if watcher != nil && removeWatcher != nil {
+		removeWatcher(watcher)
+	}
 }
 
 func (c *configCache) pathLock(path string) *sync.Mutex {

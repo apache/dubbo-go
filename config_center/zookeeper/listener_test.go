@@ -25,7 +25,9 @@ import (
 
 import (
 	"github.com/dubbogo/go-zookeeper/zk"
+
 	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -150,7 +152,7 @@ func TestAddListenerRegistersBusinessWatchAtAutoWatchLimit(t *testing.T) {
 	defer cluster.Stop()
 
 	cache := newConfigCache(time.Minute)
-	for i := 0; i < maxAutoWatches; i++ {
+	for i := range maxAutoWatches {
 		require.True(t, cache.setWatch(fmt.Sprintf("/auto/%d", i), configWatchState{
 			watcher: &zk.Watcher{},
 			auto:    true,
@@ -234,7 +236,7 @@ func TestCacheListenerRemoveListenerDropsWatchAtAutoLimit(t *testing.T) {
 	defer cluster.Stop()
 
 	cache := newConfigCache(time.Minute)
-	for i := 0; i < maxAutoWatches; i++ {
+	for i := range maxAutoWatches {
 		require.True(t, cache.setWatch(fmt.Sprintf("/auto/%d", i), configWatchState{
 			watcher: &zk.Watcher{},
 			auto:    true,

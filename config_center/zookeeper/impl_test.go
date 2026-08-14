@@ -38,6 +38,14 @@ import (
 	remotingzookeeper "dubbo.apache.org/dubbo-go/v3/remoting/zookeeper"
 )
 
+type channelConfigListener struct {
+	events chan *config_center.ConfigChangeEvent
+}
+
+func (l *channelConfigListener) Process(event *config_center.ConfigChangeEvent) {
+	l.events <- event
+}
+
 func TestBuildPath(t *testing.T) {
 	tests := []struct {
 		root     string
@@ -227,7 +235,7 @@ func TestGetPropertiesFallsBackToTTLAtAutoWatchLimit(t *testing.T) {
 		url:      mustURL(t, "registry://127.0.0.1:2181"),
 		cache:    newConfigCache(time.Minute),
 	}
-	for i := 0; i < maxAutoWatches; i++ {
+	for i := range maxAutoWatches {
 		require.True(t, cfg.cache.setWatch(fmt.Sprintf("/watch/%d", i), configWatchState{
 			watcher: &zk.Watcher{},
 			auto:    true,
@@ -329,11 +337,19 @@ func TestGetPropertiesDecodesCachedBase64(t *testing.T) {
 }
 
 func TestRestartCallBackResetsCache(t *testing.T) {
-	cfg := &zookeeperDynamicConfiguration{cache: newConfigCache(time.Minute)}
+	cluster, client, _, err := gxzookeeper.NewMockZookeeperClient("restart-watch-reset", 5*time.Second)
+	if err != nil {
+		t.Skipf("skip mock zk setup: %v", err)
+	}
+	defer cluster.Stop()
+
+	cfg := &zookeeperDynamicConfiguration{cache: newConfigCache(time.Minute), client: client}
 	path := "/dubbo/config/group/key"
 	pendingPath := "/dubbo/config/group/pending"
+	_, _, watcher, err := client.Conn.ExistsW(path)
+	require.NoError(t, err)
 	cfg.cache.store(path, configCacheEntry{content: "value", exists: true})
-	cfg.cache.setWatch(path, configWatchState{watcher: &zk.Watcher{}, auto: true})
+	cfg.cache.setWatch(path, configWatchState{watcher: watcher, auto: true})
 	cfg.cache.setWatch(pendingPath, configWatchState{auto: true, pending: true})
 
 	require.True(t, cfg.RestartCallBack())
@@ -345,6 +361,64 @@ func TestRestartCallBackResetsCache(t *testing.T) {
 	require.False(t, pendingWatchState.tracked())
 	require.Zero(t, cfg.cache.autoWatchCount)
 	require.Zero(t, cfg.cache.autoWatchReservations)
+	select {
+	case event := <-watcher.EvtCh:
+		require.ErrorIs(t, event.Err, zk.ErrWatcherRemoved)
+	case <-time.After(time.Second):
+		t.Fatal("watcher was not removed")
+	}
+}
+
+func TestRestartCallBackRestoresBusinessListener(t *testing.T) {
+	cluster, client, _, err := gxzookeeper.NewMockZookeeperClient("restart-business-watch", 5*time.Second)
+	if err != nil {
+		t.Skipf("skip mock zk setup: %v", err)
+	}
+	defer cluster.Stop()
+	go (&gxzookeeper.DefaultHandler{}).HandleZkEvent(client)
+
+	cfg := &zookeeperDynamicConfiguration{
+		rootPath: "/dubbo/config",
+		client:   client,
+		url:      mustURL(t, "registry://127.0.0.1:2181"),
+		cache:    newConfigCache(time.Minute),
+	}
+	cfg.listener = remotingzookeeper.NewZkEventListener(client)
+	cfg.cacheListener = newCacheListener(cfg.rootPath, cfg.listener, &cfg.cache)
+	cfg.listener.ListenConfigurationEvent(cfg.rootPath, cfg.cacheListener)
+	defer cfg.listener.Close()
+
+	key := "app.properties"
+	group := "group"
+	path := cfg.getPropertiesPath(key, config_center.WithGroup(group))
+	recorder := &channelConfigListener{events: make(chan *config_center.ConfigChangeEvent, 2)}
+	require.NoError(t, cfg.PublishConfig(key, group, "v1"))
+	time.Sleep(50 * time.Millisecond)
+	cfg.AddListener(key, recorder, config_center.WithGroup(group))
+	_, previousWatch := cfg.cache.snapshot(path)
+	require.NotNil(t, previousWatch.watcher)
+	require.False(t, previousWatch.auto)
+
+	require.True(t, cfg.RestartCallBack())
+	_, restoredWatch := cfg.cache.snapshot(path)
+	require.NotNil(t, restoredWatch.watcher)
+	require.NotSame(t, previousWatch.watcher, restoredWatch.watcher)
+	require.False(t, restoredWatch.auto)
+
+	for _, value := range []string{"v2", "v3"} {
+		_, stat, getErr := client.GetContent(path)
+		require.NoError(t, getErr)
+		_, setErr := client.SetContent(path, []byte(value), stat.Version)
+		require.NoError(t, setErr)
+
+		select {
+		case event := <-recorder.events:
+			require.Equal(t, key, event.Key)
+			require.Equal(t, value, event.Value)
+		case <-time.After(time.Second):
+			t.Fatalf("listener did not receive configuration value %q", value)
+		}
+	}
 }
 
 func mustURL(t *testing.T, raw string) *common.URL {

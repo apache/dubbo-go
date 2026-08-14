@@ -134,7 +134,7 @@ func (c *zookeeperDynamicConfiguration) GetProperties(key string, opts ...config
 	path := c.getPropertiesPath(key, opts...)
 	entry, err := c.cache.load(path, func(watcher *zk.Watcher, registerWatch bool) (configCacheEntry, *zk.Watcher, error) {
 		return c.loadProperties(path, watcher, registerWatch)
-	})
+	}, c.removeWatcher)
 	if err != nil {
 		return "", err
 	}
@@ -343,8 +343,20 @@ func (c *zookeeperDynamicConfiguration) closeConfigs() {
 }
 
 func (c *zookeeperDynamicConfiguration) RestartCallBack() bool {
-	c.cache.reset()
+	for _, watcher := range c.cache.reset() {
+		c.removeWatcher(watcher)
+	}
+	if c.cacheListener != nil {
+		c.cacheListener.restoreBusinessWatches()
+	}
 	return true
+}
+
+func (c *zookeeperDynamicConfiguration) removeWatcher(watcher *zk.Watcher) {
+	if watcher == nil || c.client == nil || c.client.Conn == nil {
+		return
+	}
+	c.client.Conn.RemoveWatcher(watcher)
 }
 
 func (c *zookeeperDynamicConfiguration) getPath(key string, group string) string {

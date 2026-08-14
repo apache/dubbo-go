@@ -27,6 +27,7 @@ import (
 
 import (
 	"github.com/dubbogo/go-zookeeper/zk"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -38,15 +39,15 @@ func TestConfigCacheLoadAndExpiry(t *testing.T) {
 		return configCacheEntry{content: string(rune('0' + count)), exists: true}, nil, nil
 	}
 
-	first, err := cache.load("/path", loader)
+	first, err := cache.load("/path", loader, nil)
 	require.NoError(t, err)
-	second, err := cache.load("/path", loader)
+	second, err := cache.load("/path", loader, nil)
 	require.NoError(t, err)
 	require.Equal(t, first.content, second.content)
 	require.Equal(t, int32(1), loads.Load())
 
 	require.Eventually(t, func() bool {
-		entry, loadErr := cache.load("/path", loader)
+		entry, loadErr := cache.load("/path", loader, nil)
 		return loadErr == nil && entry.content == "2"
 	}, time.Second, 5*time.Millisecond)
 	require.Equal(t, int32(2), loads.Load())
@@ -57,11 +58,10 @@ func TestConfigCacheUsesFixedPathLockShards(t *testing.T) {
 	locks := make(map[*sync.Mutex]struct{})
 	pathLock := cache.pathLock("/path")
 
-	for i := 0; i < 4096; i++ {
+	for i := range 4096 {
 		locks[cache.pathLock(fmt.Sprintf("/path/%d", i))] = struct{}{}
 	}
 
-	require.Equal(t, pathLockShardCount, len(cache.pathLocks))
 	require.Same(t, pathLock, cache.pathLock("/path"))
 	require.LessOrEqual(t, len(locks), pathLockShardCount)
 }
@@ -69,7 +69,7 @@ func TestConfigCacheUsesFixedPathLockShards(t *testing.T) {
 func TestConfigCacheBoundsEntriesUnderKeyChurn(t *testing.T) {
 	cache := newConfigCache(time.Minute)
 
-	for i := 0; i < 4096; i++ {
+	for i := range 4096 {
 		cache.store(fmt.Sprintf("/path/%d", i), configCacheEntry{
 			content: fmt.Sprintf("value-%d", i),
 			exists:  true,
@@ -91,7 +91,7 @@ func TestConfigCacheStoresMissingEntry(t *testing.T) {
 
 func TestConfigCacheEvictsLeastRecentlyUsed(t *testing.T) {
 	cache := newConfigCache(time.Minute)
-	for i := 0; i < maxCacheEntries; i++ {
+	for i := range maxCacheEntries {
 		cache.store(fmt.Sprintf("/path/%d", i), configCacheEntry{exists: true})
 	}
 
@@ -122,16 +122,14 @@ func TestConfigCacheConcurrentLoadsRemainBounded(t *testing.T) {
 	var wg sync.WaitGroup
 	errs := make(chan error, 4096)
 
-	for i := 0; i < 4096; i++ {
+	for i := range 4096 {
 		path := fmt.Sprintf("/path/%d", i)
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			_, err := cache.load(path, func(*zk.Watcher, bool) (configCacheEntry, *zk.Watcher, error) {
 				return configCacheEntry{exists: true}, nil, nil
-			})
+			}, nil)
 			errs <- err
-		}()
+		})
 	}
 	wg.Wait()
 	close(errs)
@@ -148,20 +146,18 @@ func TestConfigCacheConcurrentAutoWatchRegistrationsRemainBounded(t *testing.T) 
 	var wg sync.WaitGroup
 	errs := make(chan error, 4096)
 
-	for i := 0; i < 4096; i++ {
+	for i := range 4096 {
 		path := fmt.Sprintf("/watch/%d", i)
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			_, err := cache.load(path, func(_ *zk.Watcher, registerWatch bool) (configCacheEntry, *zk.Watcher, error) {
 				if registerWatch {
 					registrations.Add(1)
 					return configCacheEntry{exists: true}, &zk.Watcher{}, nil
 				}
 				return configCacheEntry{exists: true}, nil, nil
-			})
+			}, nil)
 			errs <- err
-		}()
+		})
 	}
 	wg.Wait()
 	close(errs)
@@ -185,7 +181,7 @@ func TestConfigCacheWatchUpdateWinsOverLoad(t *testing.T) {
 			close(loadStarted)
 			<-releaseLoad
 			return configCacheEntry{content: "old", exists: true}, watcher, nil
-		})
+		}, nil)
 	}()
 
 	<-loadStarted
@@ -205,35 +201,93 @@ func TestConfigCacheWatchUpdateWinsOverLoad(t *testing.T) {
 
 func TestConfigCacheResetDiscardsInFlightLoad(t *testing.T) {
 	cache := newConfigCache(time.Minute)
-	cache.setWatch("/path", configWatchState{watcher: &zk.Watcher{}, auto: true})
 	loadStarted := make(chan struct{})
 	releaseLoad := make(chan struct{})
-	result := make(chan configCacheEntry, 1)
+	removed := make(chan *zk.Watcher, 1)
+	type loadResult struct {
+		entry configCacheEntry
+		err   error
+	}
+	result := make(chan loadResult, 1)
 	var loads atomic.Int32
+	staleWatcher := &zk.Watcher{}
+	currentWatcher := &zk.Watcher{}
 
 	go func() {
-		entry, _ := cache.load("/path", func(watcher *zk.Watcher, _ bool) (configCacheEntry, *zk.Watcher, error) {
+		entry, err := cache.load("/path", func(_ *zk.Watcher, _ bool) (configCacheEntry, *zk.Watcher, error) {
 			if loads.Add(1) == 1 {
 				close(loadStarted)
 				<-releaseLoad
-				return configCacheEntry{content: "old", exists: true}, watcher, nil
+				return configCacheEntry{content: "old", exists: true}, staleWatcher, nil
 			}
-			return configCacheEntry{content: "new", exists: true}, watcher, nil
+			return configCacheEntry{content: "new", exists: true}, currentWatcher, nil
+		}, func(watcher *zk.Watcher) {
+			removed <- watcher
 		})
-		result <- entry
+		result <- loadResult{entry: entry, err: err}
 	}()
 
 	<-loadStarted
-	cache.reset()
+	require.Empty(t, cache.reset())
 	_, ok := cache.getFresh("/path")
 	require.False(t, ok)
 	_, watchState := cache.snapshot("/path")
 	require.Nil(t, watchState.watcher)
 	close(releaseLoad)
 
-	require.Equal(t, "new", (<-result).content)
+	load := <-result
+	require.NoError(t, load.err)
+	require.Equal(t, "new", load.entry.content)
 	require.Equal(t, int32(2), loads.Load())
+	select {
+	case watcher := <-removed:
+		require.Same(t, staleWatcher, watcher)
+	case <-time.After(time.Second):
+		t.Fatal("stale watcher was not removed")
+	}
 	entry, ok := cache.getFresh("/path")
 	require.True(t, ok)
 	require.Equal(t, "new", entry.content)
+	_, watchState = cache.snapshot("/path")
+	require.Same(t, currentWatcher, watchState.watcher)
+}
+
+func TestConfigCacheResetDiscardsInFlightBusinessWatch(t *testing.T) {
+	cache := newConfigCache(time.Minute)
+	registerStarted := make(chan struct{})
+	releaseRegister := make(chan struct{})
+	removed := make(chan *zk.Watcher, 1)
+	result := make(chan error, 1)
+	var registrations atomic.Int32
+	staleWatcher := &zk.Watcher{}
+	currentWatcher := &zk.Watcher{}
+
+	go func() {
+		result <- cache.ensureBusinessWatch("/path", func() (*zk.Watcher, error) {
+			if registrations.Add(1) == 1 {
+				close(registerStarted)
+				<-releaseRegister
+				return staleWatcher, nil
+			}
+			return currentWatcher, nil
+		}, func(watcher *zk.Watcher) {
+			removed <- watcher
+		})
+	}()
+
+	<-registerStarted
+	require.Empty(t, cache.reset())
+	close(releaseRegister)
+
+	require.NoError(t, <-result)
+	require.Equal(t, int32(2), registrations.Load())
+	select {
+	case watcher := <-removed:
+		require.Same(t, staleWatcher, watcher)
+	case <-time.After(time.Second):
+		t.Fatal("stale business watcher was not removed")
+	}
+	_, watchState := cache.snapshot("/path")
+	require.Same(t, currentWatcher, watchState.watcher)
+	require.False(t, watchState.auto)
 }

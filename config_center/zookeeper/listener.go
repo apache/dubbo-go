@@ -24,6 +24,8 @@ import (
 
 import (
 	"github.com/dubbogo/go-zookeeper/zk"
+
+	"github.com/dubbogo/gost/log/logger"
 )
 
 import (
@@ -59,18 +61,22 @@ func newCacheListener(rootPath string, listener *zookeeper.ZkEventListener, cach
 	return &CacheListener{zkEventListener: listener, rootPath: rootPath, cache: cache}
 }
 
+func (l *CacheListener) registerWatcher(key string) (*zk.Watcher, error) {
+	_, _, watcher, err := l.zkEventListener.Client.Conn.ExistsW(key)
+	return watcher, err
+}
+
 // AddListener will add a listener if loaded
 func (l *CacheListener) AddListener(key string, listener config_center.ConfigurationListener) {
 	// FIXME do not use Client.ExistW, cause it has a bug(can not watch zk node that do not exist)
 	register := func() (*zk.Watcher, error) {
-		_, _, watcher, err := l.zkEventListener.Client.Conn.ExistsW(key)
-		return watcher, err
+		return l.registerWatcher(key)
 	}
 	var err error
 	if l.cache == nil {
 		_, err = register()
 	} else {
-		err = l.cache.ensureBusinessWatch(key, register)
+		err = l.cache.ensureBusinessWatch(key, register, l.removeWatcher)
 	}
 	// reference from https://stackoverflow.com/questions/34018908/golang-why-dont-we-have-a-set-datastructure
 	// make a map[your type]struct{} like set in java
@@ -85,6 +91,28 @@ func (l *CacheListener) AddListener(key string, listener config_center.Configura
 	if l.cache != nil {
 		l.cache.promoteWatch(key)
 	}
+}
+
+func (l *CacheListener) restoreBusinessWatches() {
+	if l.cache == nil || !l.cache.enabled() || l.zkEventListener == nil ||
+		l.zkEventListener.Client == nil || l.zkEventListener.Client.Conn == nil {
+		return
+	}
+
+	l.keyListeners.Range(func(key, _ any) bool {
+		path := key.(string)
+		err := l.cache.ensureBusinessWatch(path, func() (*zk.Watcher, error) {
+			return l.registerWatcher(path)
+		}, l.removeWatcher)
+		if err != nil {
+			logger.Warnf("[ConfigCenter][Zookeeper] restore configuration watcher failed, path=%s err=%v", path, err)
+			return true
+		}
+		if !l.hasListeners(path) {
+			l.removeWatcher(l.cache.releaseBusinessWatch(path))
+		}
+		return true
+	})
 }
 
 // WatchStateChanged updates the cache's concrete-path watch state.
