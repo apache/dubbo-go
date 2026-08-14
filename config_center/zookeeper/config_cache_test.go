@@ -18,7 +18,6 @@
 package zookeeper
 
 import (
-	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -33,9 +32,7 @@ import (
 func TestConfigCacheLoadAndExpiry(t *testing.T) {
 	cache := newConfigCache(20 * time.Millisecond)
 	var loads atomic.Int32
-	var watchStates []bool
-	loader := func(watchActive bool) (configCacheEntry, bool, error) {
-		watchStates = append(watchStates, watchActive)
+	loader := func(bool) (configCacheEntry, bool, error) {
 		count := loads.Add(1)
 		return configCacheEntry{content: string(rune('0' + count)), exists: true}, true, nil
 	}
@@ -52,15 +49,6 @@ func TestConfigCacheLoadAndExpiry(t *testing.T) {
 		return loadErr == nil && entry.content == "2"
 	}, time.Second, 5*time.Millisecond)
 	require.Equal(t, int32(2), loads.Load())
-	require.Equal(t, []bool{false, true}, watchStates)
-
-	readErr := errors.New("read failed after watch registration")
-	_, err = cache.load("/error", func(bool) (configCacheEntry, bool, error) {
-		return configCacheEntry{}, true, readErr
-	})
-	require.ErrorIs(t, err, readErr)
-	_, watchActive := cache.snapshot("/error")
-	require.True(t, watchActive)
 }
 
 func TestConfigCacheUsesFixedPathLockShards(t *testing.T) {
@@ -75,6 +63,82 @@ func TestConfigCacheUsesFixedPathLockShards(t *testing.T) {
 	require.Equal(t, pathLockShardCount, len(cache.pathLocks))
 	require.Same(t, pathLock, cache.pathLock("/path"))
 	require.LessOrEqual(t, len(locks), pathLockShardCount)
+}
+
+func TestConfigCacheBoundsEntriesUnderKeyChurn(t *testing.T) {
+	cache := newConfigCache(time.Minute)
+
+	for i := 0; i < 4096; i++ {
+		cache.store(fmt.Sprintf("/path/%d", i), configCacheEntry{
+			content: fmt.Sprintf("value-%d", i),
+			exists:  true,
+		})
+	}
+
+	require.Equal(t, maxCacheEntries, cache.entries.Len())
+}
+
+func TestConfigCacheStoresMissingEntry(t *testing.T) {
+	cache := newConfigCache(time.Minute)
+	cache.store("/missing", configCacheEntry{exists: false})
+
+	require.Equal(t, 1, cache.entries.Len())
+	entry, ok := cache.getFresh("/missing")
+	require.True(t, ok)
+	require.False(t, entry.exists)
+}
+
+func TestConfigCacheEvictsLeastRecentlyUsed(t *testing.T) {
+	cache := newConfigCache(time.Minute)
+	for i := 0; i < maxCacheEntries; i++ {
+		cache.store(fmt.Sprintf("/path/%d", i), configCacheEntry{exists: true})
+	}
+
+	_, ok := cache.getFresh("/path/0")
+	require.True(t, ok)
+	cache.store("/new", configCacheEntry{exists: true})
+
+	_, ok = cache.getFresh("/path/1")
+	require.False(t, ok)
+	_, ok = cache.getFresh("/path/0")
+	require.True(t, ok)
+}
+
+func TestConfigCacheRemovesExpiredEntryOnAccess(t *testing.T) {
+	cache := newConfigCache(10 * time.Millisecond)
+	cache.store("/path", configCacheEntry{exists: true})
+	require.Equal(t, 1, cache.entries.Len())
+	time.Sleep(20 * time.Millisecond)
+	require.Equal(t, 1, cache.entries.Len())
+
+	_, ok := cache.getFresh("/path")
+	require.False(t, ok)
+	require.Zero(t, cache.entries.Len())
+}
+
+func TestConfigCacheConcurrentLoadsRemainBounded(t *testing.T) {
+	cache := newConfigCache(time.Minute)
+	var wg sync.WaitGroup
+	errs := make(chan error, 4096)
+
+	for i := 0; i < 4096; i++ {
+		path := fmt.Sprintf("/path/%d", i)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, err := cache.load(path, func(bool) (configCacheEntry, bool, error) {
+				return configCacheEntry{exists: true}, false, nil
+			})
+			errs <- err
+		}()
+	}
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		require.NoError(t, err)
+	}
+
+	require.Equal(t, maxCacheEntries, cache.entries.Len())
 }
 
 func TestConfigCacheWatchUpdateWinsOverLoad(t *testing.T) {

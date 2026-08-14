@@ -22,7 +22,14 @@ import (
 	"time"
 )
 
-const pathLockShardCount = 128
+import (
+	"github.com/hashicorp/golang-lru"
+)
+
+const (
+	pathLockShardCount = 128
+	maxCacheEntries    = 1024
+)
 
 type configCacheEntry struct {
 	content   string
@@ -34,7 +41,7 @@ type configCache struct {
 	ttl time.Duration
 
 	stateLock  sync.RWMutex
-	entries    map[string]configCacheEntry
+	entries    *lru.Cache
 	watches    map[string]bool
 	generation uint64
 
@@ -42,9 +49,13 @@ type configCache struct {
 }
 
 func newConfigCache(ttl time.Duration) configCache {
+	entries, err := lru.New(maxCacheEntries)
+	if err != nil {
+		panic(err)
+	}
 	return configCache{
 		ttl:     ttl,
-		entries: make(map[string]configCacheEntry),
+		entries: entries,
 		watches: make(map[string]bool),
 	}
 }
@@ -118,16 +129,21 @@ func (c *configCache) getFresh(path string) (configCacheEntry, bool) {
 	c.stateLock.RLock()
 	defer c.stateLock.RUnlock()
 
-	entry, ok := c.entries[path]
+	value, ok := c.entries.Get(path)
 	if !ok {
 		return configCacheEntry{}, false
 	}
-	return entry, entry.expiresAt.After(time.Now())
+	entry := value.(configCacheEntry)
+	if !entry.expiresAt.After(time.Now()) {
+		c.entries.Remove(path)
+		return configCacheEntry{}, false
+	}
+	return entry, true
 }
 
 func (c *configCache) storeEntryLocked(path string, entry configCacheEntry) {
 	entry.expiresAt = time.Now().Add(c.ttl)
-	c.entries[path] = entry
+	c.entries.Add(path, entry)
 }
 
 func (c *configCache) snapshot(path string) (uint64, bool) {
@@ -229,7 +245,7 @@ func (c *configCache) reset() {
 	c.stateLock.Lock()
 	defer c.stateLock.Unlock()
 	c.generation++
-	c.entries = make(map[string]configCacheEntry)
+	c.entries.Purge()
 	c.watches = make(map[string]bool)
 }
 
