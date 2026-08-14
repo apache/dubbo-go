@@ -57,7 +57,8 @@ type ZkEventListener struct {
 }
 
 type configurationWatchStateListener interface {
-	WatchStateChanged(path string, watcher *zk.Watcher)
+	WatchStateChanged(path string, watcher *zk.Watcher) bool
+	WatchStateChangeFailed(path string)
 }
 
 // NewZkEventListener returns a EventListener instance
@@ -98,22 +99,36 @@ func (l *ZkEventListener) ListenConfigurationEvent(zkPath string, listener remot
 				if event.Type == zk.EventNotWatching {
 					if tracksWatchState {
 						watchStateListener.WatchStateChanged(event.Path, nil)
+						watchStateListener.WatchStateChangeFailed(event.Path)
 					}
 					continue
 				}
 				if event.Type == zk.EventNodeChildrenChanged {
 					continue
 				}
+				registerWatch := true
 				if tracksWatchState {
-					watchStateListener.WatchStateChanged(event.Path, nil)
+					registerWatch = watchStateListener.WatchStateChanged(event.Path, nil)
 				}
 				// 1. Re-set watcher for the zk node
-				exists, _, watcher, err := l.Client.Conn.ExistsW(event.Path)
+				var (
+					exists  bool
+					watcher *zk.Watcher
+					err     error
+				)
+				if registerWatch {
+					exists, _, watcher, err = l.Client.Conn.ExistsW(event.Path)
+				} else {
+					exists, _, err = l.Client.Conn.Exists(event.Path)
+				}
 				if err != nil {
+					if tracksWatchState {
+						watchStateListener.WatchStateChangeFailed(event.Path)
+					}
 					logger.Warnf("[Remoting][Zookeeper]Re-set watcher error, err=%v", err)
 					continue
 				}
-				if tracksWatchState {
+				if tracksWatchState && registerWatch {
 					watchStateListener.WatchStateChanged(event.Path, watcher)
 				}
 
@@ -127,6 +142,9 @@ func (l *ZkEventListener) ListenConfigurationEvent(zkPath string, listener remot
 					// t2 but before t1, you may get the old value, and the new value will not trigger the event.
 					contentBytes, _, err := l.Client.Conn.Get(event.Path)
 					if err != nil {
+						if tracksWatchState {
+							watchStateListener.WatchStateChangeFailed(event.Path)
+						}
 						logger.Warnf("[Remoting][Zookeeper] get config value error, err=%v", err)
 						continue
 					}

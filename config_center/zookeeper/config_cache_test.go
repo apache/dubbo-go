@@ -33,7 +33,7 @@ import (
 func TestConfigCacheLoadAndExpiry(t *testing.T) {
 	cache := newConfigCache(20 * time.Millisecond)
 	var loads atomic.Int32
-	loader := func(*zk.Watcher) (configCacheEntry, *zk.Watcher, error) {
+	loader := func(*zk.Watcher, bool) (configCacheEntry, *zk.Watcher, error) {
 		count := loads.Add(1)
 		return configCacheEntry{content: string(rune('0' + count)), exists: true}, nil, nil
 	}
@@ -127,7 +127,7 @@ func TestConfigCacheConcurrentLoadsRemainBounded(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			_, err := cache.load(path, func(*zk.Watcher) (configCacheEntry, *zk.Watcher, error) {
+			_, err := cache.load(path, func(*zk.Watcher, bool) (configCacheEntry, *zk.Watcher, error) {
 				return configCacheEntry{exists: true}, nil, nil
 			})
 			errs <- err
@@ -142,6 +142,38 @@ func TestConfigCacheConcurrentLoadsRemainBounded(t *testing.T) {
 	require.Equal(t, maxCacheEntries, cache.entries.Len())
 }
 
+func TestConfigCacheConcurrentAutoWatchRegistrationsRemainBounded(t *testing.T) {
+	cache := newConfigCache(time.Minute)
+	var registrations atomic.Int32
+	var wg sync.WaitGroup
+	errs := make(chan error, 4096)
+
+	for i := 0; i < 4096; i++ {
+		path := fmt.Sprintf("/watch/%d", i)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, err := cache.load(path, func(_ *zk.Watcher, registerWatch bool) (configCacheEntry, *zk.Watcher, error) {
+				if registerWatch {
+					registrations.Add(1)
+					return configCacheEntry{exists: true}, &zk.Watcher{}, nil
+				}
+				return configCacheEntry{exists: true}, nil, nil
+			})
+			errs <- err
+		}()
+	}
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		require.NoError(t, err)
+	}
+
+	require.Equal(t, int32(maxAutoWatches), registrations.Load())
+	require.Equal(t, maxAutoWatches, cache.autoWatchCount)
+	require.Zero(t, cache.autoWatchReservations)
+}
+
 func TestConfigCacheWatchUpdateWinsOverLoad(t *testing.T) {
 	cache := newConfigCache(time.Minute)
 	loadStarted := make(chan struct{})
@@ -149,7 +181,7 @@ func TestConfigCacheWatchUpdateWinsOverLoad(t *testing.T) {
 	loadDone := make(chan struct{})
 	go func() {
 		defer close(loadDone)
-		_, _ = cache.load("/path", func(watcher *zk.Watcher) (configCacheEntry, *zk.Watcher, error) {
+		_, _ = cache.load("/path", func(watcher *zk.Watcher, _ bool) (configCacheEntry, *zk.Watcher, error) {
 			close(loadStarted)
 			<-releaseLoad
 			return configCacheEntry{content: "old", exists: true}, watcher, nil
@@ -180,7 +212,7 @@ func TestConfigCacheResetDiscardsInFlightLoad(t *testing.T) {
 	var loads atomic.Int32
 
 	go func() {
-		entry, _ := cache.load("/path", func(watcher *zk.Watcher) (configCacheEntry, *zk.Watcher, error) {
+		entry, _ := cache.load("/path", func(watcher *zk.Watcher, _ bool) (configCacheEntry, *zk.Watcher, error) {
 			if loads.Add(1) == 1 {
 				close(loadStarted)
 				<-releaseLoad

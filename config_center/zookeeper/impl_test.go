@@ -19,6 +19,7 @@ package zookeeper
 
 import (
 	"encoding/base64"
+	"fmt"
 	"testing"
 	"time"
 )
@@ -163,7 +164,7 @@ func TestLoadPropertiesRegistersWatchOnlyWhenInactive(t *testing.T) {
 	}
 
 	activeWatcher := &zk.Watcher{}
-	_, watcher, err := cfg.loadProperties(activePath, activeWatcher)
+	_, watcher, err := cfg.loadProperties(activePath, activeWatcher, false)
 	require.NoError(t, err)
 	require.Same(t, activeWatcher, watcher)
 	_, stat, err := client.GetContent(activePath)
@@ -172,7 +173,7 @@ func TestLoadPropertiesRegistersWatchOnlyWhenInactive(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, waitForEvent(activePath, time.Second))
 
-	_, watcher, err = cfg.loadProperties(inactivePath, nil)
+	_, watcher, err = cfg.loadProperties(inactivePath, nil, true)
 	require.NoError(t, err)
 	require.NotNil(t, watcher)
 	_, stat, err = client.GetContent(inactivePath)
@@ -180,6 +181,58 @@ func TestLoadPropertiesRegistersWatchOnlyWhenInactive(t *testing.T) {
 	_, err = client.SetContent(inactivePath, []byte("v2"), stat.Version)
 	require.NoError(t, err)
 	require.True(t, waitForEvent(inactivePath, time.Second))
+}
+
+func TestGetPropertiesFallsBackToTTLAtAutoWatchLimit(t *testing.T) {
+	cluster, client, events, err := gxzookeeper.NewMockZookeeperClient("watch-limit", 5*time.Second)
+	if err != nil {
+		t.Skipf("skip mock zk setup: %v", err)
+	}
+	defer cluster.Stop()
+
+	cfg := &zookeeperDynamicConfiguration{
+		rootPath: "/dubbo/config",
+		client:   client,
+		url:      mustURL(t, "registry://127.0.0.1:2181"),
+		cache:    newConfigCache(time.Minute),
+	}
+	for i := 0; i < maxAutoWatches; i++ {
+		require.True(t, cfg.cache.setWatch(fmt.Sprintf("/watch/%d", i), configWatchState{
+			watcher: &zk.Watcher{},
+			auto:    true,
+		}))
+	}
+
+	require.NoError(t, cfg.PublishConfig("fallback", "group", "v1"))
+	value, err := cfg.GetProperties("fallback", config_center.WithGroup("group"))
+	require.NoError(t, err)
+	require.Equal(t, "v1", value)
+
+	path := cfg.getPath("fallback", "group")
+	_, watchState := cfg.cache.snapshot(path)
+	require.False(t, watchState.tracked())
+	require.Equal(t, maxAutoWatches, cfg.cache.autoWatchCount)
+	require.Zero(t, cfg.cache.autoWatchReservations)
+	_, stat, err := client.GetContent(path)
+	require.NoError(t, err)
+	_, err = client.SetContent(path, []byte("v2"), stat.Version)
+	require.NoError(t, err)
+
+	timer := time.NewTimer(100 * time.Millisecond)
+	defer timer.Stop()
+	for {
+		select {
+		case event := <-events:
+			if event.Path == path && event.Type == zk.EventNodeDataChanged {
+				t.Fatal("TTL fallback should not register an auto watch")
+			}
+		case <-timer.C:
+			value, err = cfg.GetProperties("fallback", config_center.WithGroup("group"))
+			require.NoError(t, err)
+			require.Equal(t, "v1", value)
+			return
+		}
+	}
 }
 
 func TestGetPropertiesCacheUpdatedByWatch(t *testing.T) {
@@ -256,6 +309,7 @@ func TestRestartCallBackResetsCache(t *testing.T) {
 	_, watchState := cfg.cache.snapshot(path)
 	require.Nil(t, watchState.watcher)
 	require.Zero(t, cfg.cache.autoWatchCount)
+	require.Zero(t, cfg.cache.autoWatchReservations)
 }
 
 func mustURL(t *testing.T, raw string) *common.URL {

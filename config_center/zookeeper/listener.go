@@ -88,29 +88,36 @@ func (l *CacheListener) AddListener(key string, listener config_center.Configura
 }
 
 // WatchStateChanged updates the cache's concrete-path watch state.
-func (l *CacheListener) WatchStateChanged(path string, watcher *zk.Watcher) {
+func (l *CacheListener) WatchStateChanged(path string, watcher *zk.Watcher) bool {
 	if l.cache == nil {
-		return
+		return true
 	}
 	if watcher == nil {
 		generation, watchState := l.cache.snapshot(path)
 		auto := watchState.auto
-		if watchState.watcher == nil {
+		if !watchState.tracked() {
 			auto = !l.hasListeners(path)
 		}
 		l.eventGeneration.Store(path, watchEventState{generation: generation, auto: auto})
-		l.cache.setWatchAtGeneration(path, generation, configWatchState{})
-		return
+		return l.cache.beginWatchRenewal(path, generation, auto)
 	}
 	if state, ok := l.eventGeneration.Load(path); ok {
 		eventState := state.(watchEventState)
 		if l.hasListeners(path) {
 			eventState.auto = false
 		}
-		l.cache.setWatchAtGeneration(path, eventState.generation, configWatchState{watcher: watcher, auto: eventState.auto})
+		return l.cache.setWatchAtGeneration(path, eventState.generation, configWatchState{watcher: watcher, auto: eventState.auto})
+	}
+	return l.cache.setWatch(path, configWatchState{watcher: watcher, auto: !l.hasListeners(path)})
+}
+
+func (l *CacheListener) WatchStateChangeFailed(path string) {
+	if l.cache == nil {
 		return
 	}
-	l.cache.setWatch(path, configWatchState{watcher: watcher, auto: !l.hasListeners(path)})
+	if state, ok := l.eventGeneration.LoadAndDelete(path); ok {
+		l.cache.cancelWatchRenewal(path, state.(watchEventState).generation)
+	}
 }
 
 func (l *CacheListener) hasListeners(path string) bool {

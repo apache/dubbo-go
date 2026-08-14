@@ -133,8 +133,8 @@ func (c *zookeeperDynamicConfiguration) RemoveListener(key string, listener conf
 
 func (c *zookeeperDynamicConfiguration) GetProperties(key string, opts ...config_center.Option) (string, error) {
 	path := c.getPropertiesPath(key, opts...)
-	entry, err := c.cache.load(path, func(watcher *zk.Watcher) (configCacheEntry, *zk.Watcher, error) {
-		return c.loadProperties(path, watcher)
+	entry, err := c.cache.load(path, func(watcher *zk.Watcher, registerWatch bool) (configCacheEntry, *zk.Watcher, error) {
+		return c.loadProperties(path, watcher, registerWatch)
 	})
 	if err != nil {
 		return "", err
@@ -167,8 +167,8 @@ func (c *zookeeperDynamicConfiguration) getPropertiesPath(key string, opts ...co
 	return buildPath(c.rootPath, key)
 }
 
-func (c *zookeeperDynamicConfiguration) loadProperties(path string, watcher *zk.Watcher) (configCacheEntry, *zk.Watcher, error) {
-	if !c.cache.enabled() || watcher != nil {
+func (c *zookeeperDynamicConfiguration) loadProperties(path string, watcher *zk.Watcher, registerWatch bool) (configCacheEntry, *zk.Watcher, error) {
+	if !c.cache.enabled() || watcher != nil || !registerWatch {
 		content, _, err := c.client.GetContent(path)
 		if errors.Is(err, zk.ErrNoNode) {
 			logger.Warnf("[ConfigCenter][Zookeeper] query rule fail, key=%s err=%v", path, err)
