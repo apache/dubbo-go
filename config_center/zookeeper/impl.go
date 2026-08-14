@@ -127,8 +127,10 @@ func buildPath(rootPath, subPath string) string {
 	return path.Clean(fullPath)
 }
 
-func (c *zookeeperDynamicConfiguration) RemoveListener(key string, listener config_center.ConfigurationListener, opions ...config_center.Option) {
-	c.cacheListener.RemoveListener(key, listener)
+func (c *zookeeperDynamicConfiguration) RemoveListener(key string, listener config_center.ConfigurationListener, options ...config_center.Option) {
+	key = strings.Join([]string{c.GetURL().GetParam(constant.ConfigNamespaceKey, config_center.DefaultGroup), key}, "/")
+	qualifiedKey := buildPath(c.rootPath, key)
+	c.cacheListener.RemoveListener(qualifiedKey, listener)
 }
 
 func (c *zookeeperDynamicConfiguration) GetProperties(key string, opts ...config_center.Option) (string, error) {

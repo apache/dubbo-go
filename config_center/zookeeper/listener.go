@@ -94,21 +94,61 @@ func (l *CacheListener) WatchStateChanged(path string, watcher *zk.Watcher) bool
 	}
 	if watcher == nil {
 		generation, watchState := l.cache.snapshot(path)
-		auto := watchState.auto
-		if !watchState.tracked() {
-			auto = !l.hasListeners(path)
+		hasListeners := l.hasListeners(path)
+		if !watchState.tracked() && !hasListeners {
+			l.eventGeneration.Store(path, watchEventState{generation: generation})
+			return false
 		}
+		auto := watchState.auto
 		l.eventGeneration.Store(path, watchEventState{generation: generation, auto: auto})
 		return l.cache.beginWatchRenewal(path, generation, auto)
 	}
+	if !l.cache.enabled() {
+		if l.hasListeners(path) {
+			return true
+		}
+		l.removeWatcher(watcher)
+		return false
+	}
 	if state, ok := l.eventGeneration.Load(path); ok {
 		eventState := state.(watchEventState)
-		if l.hasListeners(path) {
+		_, watchState := l.cache.snapshot(path)
+		hasListeners := l.hasListeners(path)
+		if !watchState.tracked() && !hasListeners {
+			l.removeWatcher(watcher)
+			return false
+		}
+		if watchState.watcher != nil && watchState.watcher != watcher {
+			l.removeWatcher(watcher)
+			return true
+		}
+		if watchState.tracked() {
+			eventState.auto = watchState.auto
+		}
+		if hasListeners {
 			eventState.auto = false
 		}
-		return l.cache.setWatchAtGeneration(path, eventState.generation, configWatchState{watcher: watcher, auto: eventState.auto})
+		stored := l.cache.setWatchAtGeneration(path, eventState.generation, configWatchState{watcher: watcher, auto: eventState.auto})
+		if !stored {
+			l.removeWatcher(watcher)
+		}
+		return stored
 	}
-	return l.cache.setWatch(path, configWatchState{watcher: watcher, auto: !l.hasListeners(path)})
+	_, watchState := l.cache.snapshot(path)
+	hasListeners := l.hasListeners(path)
+	if !watchState.tracked() && !hasListeners {
+		l.removeWatcher(watcher)
+		return false
+	}
+	if watchState.watcher != nil && watchState.watcher != watcher {
+		l.removeWatcher(watcher)
+		return true
+	}
+	stored := l.cache.setWatch(path, configWatchState{watcher: watcher, auto: watchState.auto})
+	if !stored {
+		l.removeWatcher(watcher)
+	}
+	return stored
 }
 
 func (l *CacheListener) WatchStateChangeFailed(path string) {
@@ -128,9 +168,25 @@ func (l *CacheListener) hasListeners(path string) bool {
 // RemoveListener will delete a listener if loaded
 func (l *CacheListener) RemoveListener(key string, listener config_center.ConfigurationListener) {
 	listeners, loaded := l.keyListeners.Load(key)
-	if loaded {
-		delete(listeners.(map[config_center.ConfigurationListener]struct{}), listener)
+	if !loaded {
+		return
 	}
+	listenerSet := listeners.(map[config_center.ConfigurationListener]struct{})
+	delete(listenerSet, listener)
+	if len(listenerSet) != 0 {
+		return
+	}
+	l.keyListeners.Delete(key)
+	if l.cache != nil {
+		l.removeWatcher(l.cache.releaseBusinessWatch(key))
+	}
+}
+
+func (l *CacheListener) removeWatcher(watcher *zk.Watcher) {
+	if watcher == nil || l.zkEventListener == nil || l.zkEventListener.Client == nil || l.zkEventListener.Client.Conn == nil {
+		return
+	}
+	l.zkEventListener.Client.Conn.RemoveWatcher(watcher)
 }
 
 // DataChange changes all listeners' event

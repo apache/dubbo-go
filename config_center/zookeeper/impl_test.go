@@ -300,14 +300,18 @@ func TestGetPropertiesDecodesCachedBase64(t *testing.T) {
 func TestRestartCallBackResetsCache(t *testing.T) {
 	cfg := &zookeeperDynamicConfiguration{cache: newConfigCache(time.Minute)}
 	path := "/dubbo/config/group/key"
+	pendingPath := "/dubbo/config/group/pending"
 	cfg.cache.store(path, configCacheEntry{content: "value", exists: true})
 	cfg.cache.setWatch(path, configWatchState{watcher: &zk.Watcher{}, auto: true})
+	cfg.cache.setWatch(pendingPath, configWatchState{auto: true, pending: true})
 
 	require.True(t, cfg.RestartCallBack())
 	_, ok := cfg.cache.getFresh(path)
 	require.False(t, ok)
 	_, watchState := cfg.cache.snapshot(path)
 	require.Nil(t, watchState.watcher)
+	_, pendingWatchState := cfg.cache.snapshot(pendingPath)
+	require.False(t, pendingWatchState.tracked())
 	require.Zero(t, cfg.cache.autoWatchCount)
 	require.Zero(t, cfg.cache.autoWatchReservations)
 }

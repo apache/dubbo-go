@@ -332,6 +332,30 @@ func (c *configCache) promoteWatch(path string) {
 	c.setWatchStateLocked(path, watchState)
 }
 
+func (c *configCache) releaseBusinessWatch(path string) *zk.Watcher {
+	if !c.enabled() {
+		return nil
+	}
+	pathLock := c.pathLock(path)
+	pathLock.Lock()
+	defer pathLock.Unlock()
+
+	c.stateLock.Lock()
+	defer c.stateLock.Unlock()
+	watchState, ok := c.watches[path]
+	if !ok || watchState.auto {
+		return nil
+	}
+
+	autoWatchState := watchState
+	autoWatchState.auto = true
+	if c.setWatchStateLocked(path, autoWatchState) {
+		return nil
+	}
+	c.setWatchStateLocked(path, configWatchState{})
+	return watchState.watcher
+}
+
 func (c *configCache) beginWatchRenewal(path string, generation uint64, auto bool) bool {
 	if !c.enabled() {
 		return !auto

@@ -88,6 +88,7 @@ func TestCacheListenerIgnoresEventAcrossReset(t *testing.T) {
 	cache := newConfigCache(time.Minute)
 	l := &CacheListener{rootPath: "/dubbo/config", cache: &cache}
 	path := "/dubbo/config/group/app"
+	cache.setWatch(path, configWatchState{watcher: &zk.Watcher{}, auto: true})
 	pathLock := cache.pathLock(path)
 	pathLock.Lock()
 	watchStateDone := make(chan struct{})
@@ -204,14 +205,77 @@ func TestCacheListenerPathToKeyGroup(t *testing.T) {
 }
 
 func TestCacheListenerRemoveListener(t *testing.T) {
-	l := &CacheListener{}
+	cache := newConfigCache(time.Minute)
+	l := &CacheListener{cache: &cache}
 	key := "k"
 	rec := &recListener{}
+	watcher := &zk.Watcher{}
+	cache.setWatch(key, configWatchState{watcher: watcher})
 	l.keyListeners.Store(key, map[config_center.ConfigurationListener]struct{}{rec: {}})
+
 	l.RemoveListener(key, rec)
-	if m, ok := l.keyListeners.Load(key); ok {
-		if _, exists := m.(map[config_center.ConfigurationListener]struct{})[rec]; exists {
-			t.Fatalf("listener should be removed")
-		}
+
+	_, ok := l.keyListeners.Load(key)
+	require.False(t, ok)
+	_, watchState := cache.snapshot(key)
+	require.Same(t, watcher, watchState.watcher)
+	require.True(t, watchState.auto)
+	require.Equal(t, 1, cache.autoWatchCount)
+}
+
+func TestCacheListenerRemoveListenerDropsWatchAtAutoLimit(t *testing.T) {
+	cluster, client, _, err := gxzookeeper.NewMockZookeeperClient("remove-listener-watch-limit", 5*time.Second)
+	if err != nil {
+		t.Skipf("skip mock zk setup: %v", err)
 	}
+	defer cluster.Stop()
+
+	cache := newConfigCache(time.Minute)
+	for i := 0; i < maxAutoWatches; i++ {
+		require.True(t, cache.setWatch(fmt.Sprintf("/auto/%d", i), configWatchState{
+			watcher: &zk.Watcher{},
+			auto:    true,
+		}))
+	}
+	path := "/dubbo/config/group/app"
+	_, _, watcher, err := client.Conn.ExistsW(path)
+	require.NoError(t, err)
+	require.True(t, cache.setWatch(path, configWatchState{watcher: watcher}))
+	zkListener := remotingzookeeper.NewZkEventListener(client)
+	defer zkListener.Close()
+	l := newCacheListener("/dubbo/config", zkListener, &cache)
+	rec := &recListener{}
+	l.keyListeners.Store(path, map[config_center.ConfigurationListener]struct{}{rec: {}})
+
+	l.RemoveListener(path, rec)
+
+	_, ok := l.keyListeners.Load(path)
+	require.False(t, ok)
+	_, watchState := cache.snapshot(path)
+	require.False(t, watchState.tracked())
+	require.Equal(t, maxAutoWatches, cache.autoWatchCount)
+	select {
+	case event := <-watcher.EvtCh:
+		require.ErrorIs(t, event.Err, zk.ErrWatcherRemoved)
+	case <-time.After(time.Second):
+		t.Fatal("watcher was not removed")
+	}
+}
+
+func TestCacheListenerResidualEventDoesNotRenewWatch(t *testing.T) {
+	cache := newConfigCache(time.Minute)
+	path := "/dubbo/config/group/app"
+	l := &CacheListener{rootPath: "/dubbo/config", cache: &cache}
+
+	require.False(t, l.WatchStateChanged(path, nil))
+	_, watchState := cache.snapshot(path)
+	require.False(t, watchState.tracked())
+	require.False(t, l.DataChange(remoting.Event{Path: path, Action: remoting.EventTypeUpdate, Content: "value"}))
+
+	entry, ok := cache.getFresh(path)
+	require.True(t, ok)
+	require.True(t, entry.exists)
+	require.Equal(t, "value", entry.content)
+	_, ok = l.eventGeneration.Load(path)
+	require.False(t, ok)
 }
