@@ -26,6 +26,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -433,13 +434,14 @@ func TestHandlePkgBoundsPipelinedRequestWindow(t *testing.T) {
 			"Content-Length: " + fmt.Sprint(len(body)) + "\r\n\r\n" + body
 	}
 
-	requests := makeRequest("Blocked", 1)
+	var requests strings.Builder
+	requests.WriteString(makeRequest("Blocked", 1))
 	for id := 2; id <= requestCount; id++ {
-		requests += makeRequest("Fast", id)
+		requests.WriteString(makeRequest("Fast", id))
 	}
 	writeDone := make(chan error, 1)
 	go func() {
-		_, err := clientConn.Write([]byte(requests))
+		_, err := clientConn.Write([]byte(requests.String()))
 		writeDone <- err
 	}()
 
