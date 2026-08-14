@@ -27,7 +27,7 @@ import (
 import (
 	"github.com/dubbogo/gost/log/logger"
 
-	"github.com/hashicorp/golang-lru"
+	lru "github.com/hashicorp/golang-lru"
 )
 
 type CacheManager struct {
@@ -108,6 +108,7 @@ func (cm *CacheManager) loadCache() error {
 	if err != nil {
 		return err
 	}
+	defer cf.Close()
 
 	decoder := gob.NewDecoder(cf)
 	for {
@@ -123,7 +124,7 @@ func (cm *CacheManager) loadCache() error {
 		cm.cache.Add(it.Key, it.Value)
 	}
 
-	return cf.Close()
+	return nil
 }
 
 // dumpCache dumps the cache to the cache file.

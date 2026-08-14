@@ -34,20 +34,14 @@ import (
 	perrors "github.com/pkg/errors"
 )
 
-// DubboResponse dubbo response
-type DubboResponse struct {
-	RspObj      any
-	Exception   error
-	Attachments map[string]any
-}
-
-// GenericException keeps Java exception class and message.
+// GenericException is a legacy-compatible type.
+//
+// Deprecated: Use hessian.GenericException from github.com/apache/dubbo-go-hessian2 instead.
 type GenericException struct {
 	ExceptionClass   string
 	ExceptionMessage string
 }
 
-// Error returns a readable error string.
 func (e GenericException) Error() string {
 	if e.ExceptionClass == "" {
 		return e.ExceptionMessage
@@ -59,6 +53,8 @@ func (e GenericException) Error() string {
 }
 
 // ToGenericException converts decoded exception to GenericException when possible.
+//
+// Deprecated: Use hessian.ToGenericException from github.com/apache/dubbo-go-hessian2 instead.
 func ToGenericException(expt any) (*GenericException, bool) {
 	switch v := expt.(type) {
 	case *GenericException:
@@ -84,6 +80,13 @@ func parseLegacyException(exStr string) *GenericException {
 		msg = strings.TrimSpace(after)
 	}
 	return &GenericException{ExceptionClass: "java.lang.Exception", ExceptionMessage: msg}
+}
+
+// DubboResponse dubbo response
+type DubboResponse struct {
+	RspObj      any
+	Exception   error
+	Attachments map[string]any
 }
 
 // NewResponse create a new DubboResponse
@@ -163,9 +166,9 @@ func packResponse(header DubboHeader, ret any) ([]byte, error) {
 					return nil, perrors.Errorf("encoding response failed: %v", err)
 				}
 				switch ex := response.Exception.(type) {
-				case *GenericException:
+				case *hessian.GenericException:
 					err = encoder.Encode(java_exception.NewDubboGenericException(ex.ExceptionClass, ex.ExceptionMessage))
-				case GenericException:
+				case hessian.GenericException:
 					err = encoder.Encode(java_exception.NewDubboGenericException(ex.ExceptionClass, ex.ExceptionMessage))
 				case java_exception.Throwabler:
 					err = encoder.Encode(ex)
@@ -253,7 +256,7 @@ func unpackResponseBody(decoder *hessian.Decoder, resp any) error {
 			}
 		}
 
-		if g, ok := ToGenericException(expt); ok {
+		if g, ok := hessian.ToGenericException(expt); ok {
 			response.Exception = g
 		} else if e, ok := expt.(error); ok {
 			response.Exception = e

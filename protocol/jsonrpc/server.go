@@ -21,6 +21,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"mime"
 	"net"
@@ -124,7 +125,7 @@ func (s *Server) handlePkg(conn net.Conn) {
 
 	for {
 		bufReader := bufio.NewReader(io.LimitReader(conn, MaxHeaderSize))
-		if _, err := bufReader.Peek(1); err == io.EOF {
+		if _, err := bufReader.Peek(1); errors.Is(err, io.EOF) {
 			return
 		}
 		r, err := http.ReadRequest(bufReader)
@@ -326,7 +327,7 @@ func serveRequest(ctx context.Context, header map[string]string, body []byte, co
 	codec := newServerCodec()
 	err := codec.ReadHeader(header, body)
 	if err != nil {
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 			return perrors.WithStack(err)
 		}
 		return perrors.New("server cannot decode request: " + err.Error())

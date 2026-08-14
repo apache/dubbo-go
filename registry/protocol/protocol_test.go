@@ -79,6 +79,48 @@ func referNormal(t *testing.T, regProtocol *registryProtocol) {
 	assert.Equal(t, invoker.GetURL().String(), url.String())
 }
 
+func TestGetRegistryRejectsInvalidCachedValues(t *testing.T) {
+	tests := []struct {
+		name  string
+		value any
+	}{
+		{name: "unexpected type", value: "not-a-registry"},
+		{name: "typed nil", value: (*registry.MockRegistry)(nil)},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			regProtocol := newRegistryProtocol()
+			registryURL, err := common.NewURL("mock://127.0.0.1:1111")
+			require.NoError(t, err)
+			extension.SetRegistry("mock", registry.NewMockRegistry)
+			regProtocol.registries.Store(registryURL.PrimitiveURL, tt.value)
+
+			var actual registry.Registry
+			require.NotPanics(t, func() {
+				actual = regProtocol.getRegistry(registryURL)
+			})
+			assert.Nil(t, actual)
+			_, exists := regProtocol.registries.Load(registryURL.PrimitiveURL)
+			assert.False(t, exists)
+			assert.Empty(t, regProtocol.GetRegistries())
+
+			actual = regProtocol.getRegistry(registryURL)
+			assert.NotNil(t, actual)
+		})
+	}
+}
+
+func TestGetRegistriesSkipsTypedNil(t *testing.T) {
+	regProtocol := newRegistryProtocol()
+	var typedNil *registry.MockRegistry
+	regProtocol.registries.Store("typed-nil", typedNil)
+
+	assert.Empty(t, regProtocol.GetRegistries())
+	_, exists := regProtocol.registries.Load("typed-nil")
+	assert.False(t, exists)
+}
+
 func TestRefer(t *testing.T) {
 	regProtocol := newRegistryProtocol()
 	referNormal(t, regProtocol)

@@ -109,6 +109,7 @@ func main() {
 | [protoc-gen-triple-openapi](./tools/protoc-gen-triple-openapi/README_CN.md) | 从 Triple protobuf 服务生成 OpenAPI v3 文档。 |
 | [imports-formatter](./tools/imports-formatter/README_CN.md) | 按 dubbo-go 分组规则整理 Go import 块。 |
 | [dubbo-go-schema](./tools/dubbo-go-schema/README_CN.md) | 为 dubbo-go YAML 配置提供 JSON Schema 补全与校验。 |
+| [benchmark](./tools/benchmark/README_CN.md) | 对比 Dubbo-Go、Dubbo-Java 和 gRPC 框架性能的基准测试套件。 |
 
 ## 生态系统
 

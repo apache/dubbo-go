@@ -77,6 +77,24 @@ func TestGeneratedModuleVersion(t *testing.T) {
 	}
 }
 
+func TestGeneratedProjectsIncludeDependencyLocks(t *testing.T) {
+	const dubboGoChecksum = "dubbo.apache.org/dubbo-go/v3 v3.3.1 h1:"
+	const protobufChecksum = "google.golang.org/protobuf v1.34.2 h1:"
+
+	for _, tc := range generatedProjectCases() {
+		t.Run(tc.name, func(t *testing.T) {
+			genPath := filepath.Join(t.TempDir(), tc.name)
+			require.NoError(t, tc.generate(genPath))
+
+			content, err := os.ReadFile(filepath.Join(genPath, "go.sum"))
+			require.NoError(t, err, "generated project must include go.sum")
+			require.NotEmpty(t, strings.TrimSpace(string(content)), "generated go.sum must not be empty")
+			require.Contains(t, string(content), dubboGoChecksum)
+			require.Contains(t, string(content), protobufChecksum)
+		})
+	}
+}
+
 func TestGeneratedCodeDoesNotImportRemovedLoggerPackage(t *testing.T) {
 	const removedLoggerImport = `"dubbo.apache.org/dubbo-go/v3/common/logger"`
 
