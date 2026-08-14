@@ -23,7 +23,6 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
-	"time"
 )
 
 import (
@@ -101,51 +100,6 @@ func TestServer_RegisterMuxHandle(t *testing.T) {
 		})
 		assert.Equal(t, test.path, pattern)
 	}
-}
-
-func TestNewQUICConfig(t *testing.T) {
-	t.Run("defaults_preserved_when_unset", func(t *testing.T) {
-		quicConfig, err := newQUICConfig(&global.Http3Config{})
-		require.NoError(t, err)
-		require.NotNil(t, quicConfig)
-		assert.Zero(t, quicConfig.KeepAlivePeriod)
-		assert.Zero(t, quicConfig.MaxIdleTimeout)
-		assert.Zero(t, quicConfig.MaxIncomingStreams)
-		assert.Zero(t, quicConfig.MaxIncomingUniStreams)
-	})
-
-	t.Run("explicit_fields_are_mapped", func(t *testing.T) {
-		quicConfig, err := newQUICConfig(&global.Http3Config{
-			KeepAlivePeriod:       "15s",
-			MaxIdleTimeout:        "30s",
-			MaxIncomingStreams:    128,
-			MaxIncomingUniStreams: 64,
-		})
-		require.NoError(t, err)
-		require.NotNil(t, quicConfig)
-		assert.Equal(t, 15*time.Second, quicConfig.KeepAlivePeriod)
-		assert.Equal(t, 30*time.Second, quicConfig.MaxIdleTimeout)
-		assert.Equal(t, int64(128), quicConfig.MaxIncomingStreams)
-		assert.Equal(t, int64(64), quicConfig.MaxIncomingUniStreams)
-	})
-
-	t.Run("invalid_keep_alive_period_returns_error", func(t *testing.T) {
-		quicConfig, err := newQUICConfig(&global.Http3Config{
-			KeepAlivePeriod: "invalid",
-		})
-		require.Error(t, err)
-		assert.Nil(t, quicConfig)
-		assert.ErrorContains(t, err, "keep-alive-period")
-	})
-
-	t.Run("invalid_max_idle_timeout_returns_error", func(t *testing.T) {
-		quicConfig, err := newQUICConfig(&global.Http3Config{
-			MaxIdleTimeout: "invalid",
-		})
-		require.Error(t, err)
-		assert.Nil(t, quicConfig)
-		assert.ErrorContains(t, err, "max-idle-timeout")
-	})
 }
 
 func TestServer_HTTP3PathsUseQUICConfigHelper(t *testing.T) {

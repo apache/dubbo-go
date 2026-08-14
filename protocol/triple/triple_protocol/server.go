@@ -43,6 +43,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/http3config"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/openapi"
 )
 
@@ -228,7 +229,7 @@ func (s *Server) startHttp3(tlsConf *tls.Config) error {
 		http3Config = s.tripleConfig.Http3
 	}
 
-	quicConfig, err := newQUICConfig(http3Config)
+	quicConfig, err := http3config.NewQUICConfig(http3Config, nil)
 	if err != nil {
 		return err
 	}
@@ -259,7 +260,7 @@ func (s *Server) startHttp2AndHttp3(tlsConf *tls.Config) error {
 		http3Config = s.tripleConfig.Http3
 	}
 
-	quicConfig, err := newQUICConfig(http3Config)
+	quicConfig, err := http3config.NewQUICConfig(http3Config, nil)
 	if err != nil {
 		return err
 	}
