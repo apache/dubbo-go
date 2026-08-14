@@ -51,6 +51,9 @@ jobs:
       - name: Run unit tests
         run: make test
 
+      - name: Race Test
+        run: make test-race
+
       - name: Codecov
         uses: codecov/codecov-action@v7 #NOSONAR
         with:

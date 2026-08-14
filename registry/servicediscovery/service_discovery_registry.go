@@ -88,6 +88,10 @@ func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
 	}, nil
 }
 
+func isPublishableRevision(revision string) bool {
+	return len(revision) > 0 && revision != "0" && revision != "N/A"
+}
+
 // startMetadataTimers starts the renewAppMetadata timer if metadata type is remote.
 // GC runs after each renew cycle inside doRenewAppMetadata.
 func (s *serviceDiscoveryRegistry) startMetadataTimers() {
@@ -95,6 +99,10 @@ func (s *serviceDiscoveryRegistry) startMetadataTimers() {
 		return
 	}
 	if s.metadataReport == nil {
+		return
+	}
+	metaInfo := metadata.GetMetadataInfo(s.url.GetParam(constant.RegistryIdKey, ""))
+	if metaInfo == nil || !isPublishableRevision(metaInfo.Revision) {
 		return
 	}
 	s.startRenewAppMetadataTimer()
@@ -107,25 +115,36 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 		panic("no metada info found of registry id " + registryId)
 	}
 	urls := metaInfo.GetExportedServiceURLs()
+	if len(urls) == 0 {
+		return nil
+	}
+
+	instances := make([]registry.ServiceInstance, 0, len(urls))
+	instanceURLs := make(map[registry.ServiceInstance]*common.URL)
 	for _, url := range urls {
 		instance := createInstance(metaInfo, url, registryId)
 		metaInfo.Revision = instance.GetMetadata()[constant.ExportedServicesRevisionPropertyName]
-		if metadata.GetMetadataType() == constant.RemoteMetadataStorageType {
-			if s.metadataReport == nil {
-				return perrors.New("can not publish app metadata cause report instance not found")
-			}
-			err := s.metadataReport.PublishAppMetadata(metaInfo.App, metaInfo.Revision, metaInfo)
-			if err != nil {
-				return err
-			}
+		instances = append(instances, instance)
+		instanceURLs[instance] = url
+	}
+
+	if metadata.GetMetadataType() == constant.RemoteMetadataStorageType {
+		if s.metadataReport == nil {
+			return perrors.New("can not publish app metadata cause report instance not found")
 		}
+		if err := s.metadataReport.PublishAppMetadata(metaInfo.App, metaInfo.Revision, metaInfo); err != nil {
+			return err
+		}
+	}
+
+	for _, instance := range instances {
 		err := s.serviceDiscovery.Register(instance)
 		if err != nil {
 			return perrors.WithMessage(err, "Register service failed")
 		}
 		s.lock.Lock()
 		s.instances = append(s.instances, instance)
-		s.instanceURLs[instance] = url
+		s.instanceURLs[instance] = instanceURLs[instance]
 		s.lock.Unlock()
 	}
 
@@ -374,7 +393,7 @@ func (s *serviceDiscoveryRegistry) startRenewAppMetadataTimer() {
 func (s *serviceDiscoveryRegistry) doRenewAppMetadata() {
 	registryID := s.url.GetParam(constant.RegistryIdKey, "")
 	metaInfo := metadata.GetMetadataInfo(registryID)
-	if metaInfo == nil || metaInfo.Revision == "0" {
+	if metaInfo == nil || !isPublishableRevision(metaInfo.Revision) {
 		return
 	}
 
