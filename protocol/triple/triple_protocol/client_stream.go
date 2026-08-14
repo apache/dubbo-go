@@ -72,7 +72,8 @@ func (c *ClientStreamForClient) Send(request any) error {
 }
 
 // CloseAndReceive closes the send side of the stream and waits for the
-// response.
+// response. If closing the send side or receiving the response fails, the
+// receive side is closed before the error is returned.
 func (c *ClientStreamForClient) CloseAndReceive(response *Response) error {
 	if c.err != nil {
 		return c.err
@@ -111,7 +112,8 @@ type ServerStreamForClient struct {
 // available through the Msg method. It returns false when the stream stops,
 // either by reaching the end or by encountering an unexpected error. After
 // Receive returns false, the Err method will return any unexpected error
-// encountered.
+// encountered. Once Receive returns false, subsequent calls return false
+// without advancing the stream.
 // todo(DMwangnima): add classic usage
 func (s *ServerStreamForClient) Receive(msg any) bool {
 	if s.constructErr != nil || s.receiveErr != nil {
@@ -122,7 +124,9 @@ func (s *ServerStreamForClient) Receive(msg any) bool {
 	return s.receiveErr == nil
 }
 
-// Msg returns the most recent message unmarshaled by a call to Receive.
+// Msg returns the most recent message passed to Receive. It returns nil
+// if Receive has not been called. If Receive returned false, the returned
+// message may not have been unmarshaled.
 func (s *ServerStreamForClient) Msg() any {
 	return s.msg
 }
@@ -160,7 +164,8 @@ func (s *ServerStreamForClient) ResponseTrailer() http.Header {
 	return s.conn.ResponseTrailer()
 }
 
-// Close the receive side of the stream.
+// Close closes the receive side of the stream. If the stream could not be
+// constructed, the construction error is returned instead.
 func (s *ServerStreamForClient) Close() error {
 	if s.constructErr != nil {
 		return s.constructErr
@@ -232,6 +237,8 @@ func (b *BidiStreamForClient) CloseRequest() error {
 
 // Receive a message. When the server is done sending messages and no other
 // errors have occurred, Receive will return an error that wraps [io.EOF].
+// Any error encountered while receiving, such as a server-side error, is
+// returned directly.
 func (b *BidiStreamForClient) Receive(msg any) error {
 	if b.err != nil {
 		return b.err
