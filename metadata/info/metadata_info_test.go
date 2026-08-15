@@ -147,6 +147,23 @@ func TestNewMetadataInfo(t *testing.T) {
 	info := NewMetadataInfo("dubbo", "tag")
 	assert.Equal(t, "dubbo", info.App)
 	assert.Equal(t, "tag", info.Tag)
+	assert.NotNil(t, info.Services)
+	assert.Empty(t, info.Services)
+	assert.NotNil(t, info.exportedServiceURLs)
+	assert.NotNil(t, info.subscribedServiceURLs)
+}
+
+func TestNewAppMetadataInfo(t *testing.T) {
+	info := NewAppMetadataInfo("dubbo")
+	assert.Equal(t, "dubbo", info.App)
+	assert.Empty(t, info.Tag)
+	assert.Empty(t, info.Revision)
+	assert.NotNil(t, info.Services)
+	assert.Empty(t, info.Services)
+	assert.NotNil(t, info.exportedServiceURLs)
+	assert.Empty(t, info.GetExportedServiceURLs())
+	assert.NotNil(t, info.subscribedServiceURLs)
+	assert.Empty(t, info.GetSubscribedURLs())
 }
 
 func TestNewMetadataInfoWithParams(t *testing.T) {
@@ -237,6 +254,11 @@ func TestServiceInfoGetMatchKey(t *testing.T) {
 	si.MatchKey = ""
 	si.ServiceKey = ""
 	assert.NotEmpty(t, si.GetMatchKey())
+}
+
+func TestCalRevisionWithEmptyServices(t *testing.T) {
+	assert.Equal(t, "0", CalRevision("dubbo", nil))
+	assert.Equal(t, "0", CalRevision("dubbo", map[string]*ServiceInfo{}))
 }
 
 func TestMetadataInfoGetServices(t *testing.T) {
