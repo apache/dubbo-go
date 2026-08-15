@@ -426,6 +426,56 @@ func TestServer_HTTP2_StopBeforeRunAbortsStartup(t *testing.T) {
 	require.NoError(t, tcpLn.Close())
 }
 
+// TestServer_HTTP2_StopBetweenCheckpointAndServeAbortsStartup verifies that
+// startHttp2 re-checks the epoch after publishing the server: a Stop that
+// landed after the entry checkpoint aborts the HTTP/2 startup before the
+// listener serves, leaving the TCP port free.
+func TestServer_HTTP2_StopBetweenCheckpointAndServeAbortsStartup(t *testing.T) {
+	addr := getFreeAddr(t)
+	srv := NewServer(addr, nil)
+
+	// Stop after the epoch snapshot, then start HTTP/2 with the stale epoch:
+	// the checkpoint after the store must abort deterministically.
+	epoch := srv.BeginStart()
+	require.NoError(t, srv.Stop())
+
+	err := srv.startHttp2(nil, epoch)
+	require.NoError(t, err)
+	// The server was published before the abort, so the per-protocol
+	// checkpoint, not the entry check, aborted the startup.
+	require.NotNil(t, srv.httpSrv.Load())
+
+	// The abort must not leave any listener behind: the TCP port is free.
+	tcpLn, err := net.Listen("tcp", addr)
+	require.NoError(t, err)
+	require.NoError(t, tcpLn.Close())
+}
+
+// TestServer_HTTP3_StopBetweenCheckpointAndServeAbortsStartup verifies that
+// startHttp3 re-checks the epoch after publishing the server: a Stop that
+// landed after the entry checkpoint aborts the HTTP/3 startup before the
+// listener serves, leaving the UDP port free.
+func TestServer_HTTP3_StopBetweenCheckpointAndServeAbortsStartup(t *testing.T) {
+	addr := getFreeAddr(t)
+	srv := NewServer(addr, nil)
+
+	// Stop after the epoch snapshot, then start HTTP/3 with the stale epoch:
+	// the checkpoint after the store must abort deterministically.
+	epoch := srv.BeginStart()
+	require.NoError(t, srv.Stop())
+
+	err := srv.startHttp3(newTestTLSConfig(t), epoch)
+	require.NoError(t, err)
+	// The server was published before the abort, so the per-protocol
+	// checkpoint, not the entry check, aborted the startup.
+	require.NotNil(t, srv.http3Srv.Load())
+
+	// The abort must not leave any listener behind: the UDP port is free.
+	udpConn, err := net.ListenPacket("udp", addr)
+	require.NoError(t, err)
+	require.NoError(t, udpConn.Close())
+}
+
 func TestServer_Run_HTTP3WithoutTLS(t *testing.T) {
 	srv := NewServer(getFreeAddr(t), nil)
 	err := srv.Run(constant.CallHTTP3, nil, srv.BeginStart())
