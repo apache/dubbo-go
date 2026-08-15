@@ -211,9 +211,9 @@ func (s *Server) Run(callProtocol string, tlsConf *tls.Config, epoch uint32) err
 	// Support for starting HTTP/2 and HTTP/3 servers simultaneously.
 	switch callProtocol {
 	case constant.CallHTTP2:
-		return s.startHttp2(tlsConf)
+		return s.startHttp2(tlsConf, epoch)
 	case constant.CallHTTP3:
-		return s.startHttp3(tlsConf)
+		return s.startHttp3(tlsConf, epoch)
 	case constant.CallHTTP2AndHTTP3:
 		return s.startHttp2AndHttp3(tlsConf, epoch)
 	default:
@@ -221,12 +221,18 @@ func (s *Server) Run(callProtocol string, tlsConf *tls.Config, epoch uint32) err
 	}
 }
 
-func (s *Server) startHttp2(tlsConf *tls.Config) error {
+func (s *Server) startHttp2(tlsConf *tls.Config, epoch uint32) error {
 	s.httpSrv.Store(&http.Server{
 		Addr:      s.addr,
 		Handler:   h2c.NewHandler(s.mux, &http2.Server{}),
 		TLSConfig: tlsConf,
 	})
+
+	// A Stop that landed after the entry checkpoint but before this server
+	// was published closed nothing; abort so no listener is served.
+	if s.stopCount.Load() != epoch {
+		return nil
+	}
 
 	logger.Debugf("[Triple][Server] triple HTTP/2 Server starting on %v", s.addr)
 
@@ -242,7 +248,7 @@ func (s *Server) startHttp2(tlsConf *tls.Config) error {
 	return err
 }
 
-func (s *Server) startHttp3(tlsConf *tls.Config) error {
+func (s *Server) startHttp3(tlsConf *tls.Config, epoch uint32) error {
 	if tlsConf == nil {
 		return fmt.Errorf("TRIPLE HTTP/3 Server must have TLS config, but TLS config is nil")
 	}
@@ -266,6 +272,12 @@ func (s *Server) startHttp3(tlsConf *tls.Config) error {
 		TLSConfig:  http3.ConfigureTLSConfig(tlsConf),
 		QUICConfig: quicConfig,
 	})
+
+	// A Stop that landed after the entry checkpoint but before this server
+	// was published closed nothing; abort so no listener is served.
+	if s.stopCount.Load() != epoch {
+		return nil
+	}
 
 	logger.Debugf("[Triple][Server] triple HTTP/3 Server starting on %v", s.addr)
 
@@ -332,13 +344,13 @@ func (s *Server) startHttp2AndHttp3(tlsConf *tls.Config, epoch uint32) error {
 		TLSConfig: tlsConf,
 	})
 
-	logger.Debugf("[Triple][Server] triple HTTP/2 and HTTP/3 Server starting on %v", s.addr)
-
-	// A stop during the bind or store steps closed nothing; abort so the
+	// A Stop during the bind or store steps closed nothing; abort so the
 	// deferred closes release the sockets.
 	if s.stopCount.Load() != epoch {
 		return nil
 	}
+
+	logger.Debugf("[Triple][Server] triple HTTP/2 and HTTP/3 Server starting on %v", s.addr)
 
 	// Use errgroup to manage concurrent server startup
 	eg, _ := errgroup.WithContext(context.Background())
