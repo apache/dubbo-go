@@ -30,122 +30,257 @@ func TestDefaultOptions(t *testing.T) {
 	opts := defaultOptions()
 	assert.NotNil(t, opts)
 	assert.NotNil(t, opts.Metrics)
+	// the metrics module and all sub-modules are disabled by default
+	assert.Nil(t, opts.Metrics.Enable)
+	assert.Nil(t, opts.Metrics.Aggregation.Enabled)
+	assert.Nil(t, opts.Metrics.Probe.Enabled)
+	assert.Nil(t, opts.Metrics.Prometheus.Pushgateway.Enabled)
+	assert.Equal(t, "", opts.Metrics.Port)
+	assert.Equal(t, "", opts.Metrics.Path)
+	assert.Equal(t, "", opts.Metrics.Protocol)
 }
 
 func TestNewOptions(t *testing.T) {
-	t.Run("no options", func(t *testing.T) {
-		opts := NewOptions()
-		assert.NotNil(t, opts)
-		assert.NotNil(t, opts.Metrics)
-	})
-
-	t.Run("with single option", func(t *testing.T) {
-		opts := NewOptions(WithPrometheus())
-		assert.NotNil(t, opts)
-		assert.Equal(t, "prometheus", opts.Metrics.Protocol)
-	})
-
-	t.Run("with multiple options", func(t *testing.T) {
-		opts := NewOptions(
-			WithPrometheus(),
-			WithPort(9090),
-			WithPath("/metrics"),
-		)
-		assert.NotNil(t, opts)
-		assert.Equal(t, "prometheus", opts.Metrics.Protocol)
-		assert.Equal(t, "9090", opts.Metrics.Port)
-		assert.Equal(t, "/metrics", opts.Metrics.Path)
-	})
+	tests := []struct {
+		name    string
+		options []Option
+		check   func(*testing.T, *Options)
+	}{
+		{
+			name: "no options",
+			check: func(t *testing.T, opts *Options) {
+				assert.NotNil(t, opts)
+				assert.NotNil(t, opts.Metrics)
+			},
+		},
+		{
+			name:    "single option",
+			options: []Option{WithPrometheus()},
+			check: func(t *testing.T, opts *Options) {
+				assert.Equal(t, "prometheus", opts.Metrics.Protocol)
+			},
+		},
+		{
+			name:    "multiple options",
+			options: []Option{WithPrometheus(), WithPort(9090), WithPath("/metrics")},
+			check: func(t *testing.T, opts *Options) {
+				assert.Equal(t, "prometheus", opts.Metrics.Protocol)
+				assert.Equal(t, "9090", opts.Metrics.Port)
+				assert.Equal(t, "/metrics", opts.Metrics.Path)
+			},
+		},
+		{
+			name:    "later option wins",
+			options: []Option{WithPort(8080), WithPort(9090)},
+			check: func(t *testing.T, opts *Options) {
+				assert.Equal(t, "9090", opts.Metrics.Port)
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opts := NewOptions(tt.options...)
+			tt.check(t, opts)
+		})
+	}
 }
 
-func TestWithAggregationEnabled(t *testing.T) {
-	opts := NewOptions(WithAggregationEnabled())
-	assert.NotNil(t, opts.Metrics.Aggregation.Enabled)
-	assert.True(t, *opts.Metrics.Aggregation.Enabled)
+func TestBoolFlagOptions(t *testing.T) {
+	tests := []struct {
+		name   string
+		option Option
+		get    func(*Options) *bool
+	}{
+		{
+			name:   "WithAggregationEnabled",
+			option: WithAggregationEnabled(),
+			get:    func(o *Options) *bool { return o.Metrics.Aggregation.Enabled },
+		},
+		{
+			name:   "WithPrometheusExporterEnabled",
+			option: WithPrometheusExporterEnabled(),
+			get:    func(o *Options) *bool { return o.Metrics.Prometheus.Exporter.Enabled },
+		},
+		{
+			name:   "WithPrometheusPushgatewayEnabled",
+			option: WithPrometheusPushgatewayEnabled(),
+			get:    func(o *Options) *bool { return o.Metrics.Prometheus.Pushgateway.Enabled },
+		},
+		{
+			name:   "WithConfigCenterEnabled",
+			option: WithConfigCenterEnabled(),
+			get:    func(o *Options) *bool { return o.Metrics.EnableConfigCenter },
+		},
+		{
+			name:   "WithMetadataEnabled",
+			option: WithMetadataEnabled(),
+			get:    func(o *Options) *bool { return o.Metrics.EnableMetadata },
+		},
+		{
+			name:   "WithRegistryEnabled",
+			option: WithRegistryEnabled(),
+			get:    func(o *Options) *bool { return o.Metrics.EnableRegistry },
+		},
+		{
+			name:   "WithEnabled",
+			option: WithEnabled(),
+			get:    func(o *Options) *bool { return o.Metrics.Enable },
+		},
+		{
+			name:   "WithProbeEnabled",
+			option: WithProbeEnabled(),
+			get:    func(o *Options) *bool { return o.Metrics.Probe.Enabled },
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opts := NewOptions(tt.option)
+			assert.NotNil(t, opts.Metrics)
+			got := tt.get(opts)
+			assert.NotNil(t, got)
+			assert.True(t, *got)
+		})
+	}
 }
 
-func TestWithAggregationBucketNum(t *testing.T) {
-	opts := NewOptions(WithAggregationBucketNum(20))
-	assert.Equal(t, 20, opts.Metrics.Aggregation.BucketNum)
+func TestStringFieldOptions(t *testing.T) {
+	tests := []struct {
+		name   string
+		option Option
+		want   string
+		get    func(*Options) string
+	}{
+		{
+			name:   "WithPrometheus",
+			option: WithPrometheus(),
+			want:   "prometheus",
+			get:    func(o *Options) string { return o.Metrics.Protocol },
+		},
+		{
+			name:   "WithPrometheusGatewayUrl",
+			option: WithPrometheusGatewayUrl("http://localhost:9091"),
+			want:   "http://localhost:9091",
+			get:    func(o *Options) string { return o.Metrics.Prometheus.Pushgateway.BaseUrl },
+		},
+		{
+			name:   "WithPrometheusGatewayJob",
+			option: WithPrometheusGatewayJob("test-job"),
+			want:   "test-job",
+			get:    func(o *Options) string { return o.Metrics.Prometheus.Pushgateway.Job },
+		},
+		{
+			name:   "WithPrometheusGatewayUsername",
+			option: WithPrometheusGatewayUsername("admin"),
+			want:   "admin",
+			get:    func(o *Options) string { return o.Metrics.Prometheus.Pushgateway.Username },
+		},
+		{
+			name:   "WithPrometheusGatewayPassword",
+			option: WithPrometheusGatewayPassword("secret"),
+			want:   "secret",
+			get:    func(o *Options) string { return o.Metrics.Prometheus.Pushgateway.Password },
+		},
+		{
+			name:   "WithPort",
+			option: WithPort(8080),
+			want:   "8080",
+			get:    func(o *Options) string { return o.Metrics.Port },
+		},
+		{
+			name:   "WithPath",
+			option: WithPath("/custom/metrics"),
+			want:   "/custom/metrics",
+			get:    func(o *Options) string { return o.Metrics.Path },
+		},
+		{
+			name:   "WithProbePort",
+			option: WithProbePort(12345),
+			want:   "12345",
+			get:    func(o *Options) string { return o.Metrics.Probe.Port },
+		},
+		{
+			name:   "WithProbeLivenessPath",
+			option: WithProbeLivenessPath("/custom/live"),
+			want:   "/custom/live",
+			get:    func(o *Options) string { return o.Metrics.Probe.LivenessPath },
+		},
+		{
+			name:   "WithProbeReadinessPath",
+			option: WithProbeReadinessPath("/custom/ready"),
+			want:   "/custom/ready",
+			get:    func(o *Options) string { return o.Metrics.Probe.ReadinessPath },
+		},
+		{
+			name:   "WithProbeStartupPath",
+			option: WithProbeStartupPath("/custom/startup"),
+			want:   "/custom/startup",
+			get:    func(o *Options) string { return o.Metrics.Probe.StartupPath },
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opts := NewOptions(tt.option)
+			assert.Equal(t, tt.want, tt.get(opts))
+		})
+	}
 }
 
-func TestWithAggregationTimeWindowSeconds(t *testing.T) {
-	opts := NewOptions(WithAggregationTimeWindowSeconds(60))
-	assert.Equal(t, 60, opts.Metrics.Aggregation.TimeWindowSeconds)
+func TestIntFieldOptions(t *testing.T) {
+	tests := []struct {
+		name   string
+		option Option
+		want   int
+		get    func(*Options) int
+	}{
+		{
+			name:   "WithAggregationBucketNum",
+			option: WithAggregationBucketNum(20),
+			want:   20,
+			get:    func(o *Options) int { return o.Metrics.Aggregation.BucketNum },
+		},
+		{
+			name:   "WithAggregationTimeWindowSeconds",
+			option: WithAggregationTimeWindowSeconds(60),
+			want:   60,
+			get:    func(o *Options) int { return o.Metrics.Aggregation.TimeWindowSeconds },
+		},
+		{
+			name:   "WithPrometheusGatewayInterval",
+			option: WithPrometheusGatewayInterval(60 * time.Second),
+			want:   60,
+			get:    func(o *Options) int { return o.Metrics.Prometheus.Pushgateway.PushInterval },
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opts := NewOptions(tt.option)
+			assert.Equal(t, tt.want, tt.get(opts))
+		})
+	}
 }
 
-func TestWithPrometheus(t *testing.T) {
-	opts := NewOptions(WithPrometheus())
-	assert.Equal(t, "prometheus", opts.Metrics.Protocol)
-}
-
-func TestWithPrometheusExporterEnabled(t *testing.T) {
-	opts := NewOptions(WithPrometheusExporterEnabled())
-	assert.NotNil(t, opts.Metrics.Prometheus.Exporter.Enabled)
-	assert.True(t, *opts.Metrics.Prometheus.Exporter.Enabled)
-}
-
-func TestWithPrometheusPushgatewayEnabled(t *testing.T) {
-	opts := NewOptions(WithPrometheusPushgatewayEnabled())
-	assert.NotNil(t, opts.Metrics.Prometheus.Pushgateway.Enabled)
-	assert.True(t, *opts.Metrics.Prometheus.Pushgateway.Enabled)
-}
-
-func TestWithPrometheusGatewayUrl(t *testing.T) {
-	opts := NewOptions(WithPrometheusGatewayUrl("http://localhost:9091"))
-	assert.Equal(t, "http://localhost:9091", opts.Metrics.Prometheus.Pushgateway.BaseUrl)
-}
-
-func TestWithPrometheusGatewayJob(t *testing.T) {
-	opts := NewOptions(WithPrometheusGatewayJob("test-job"))
-	assert.Equal(t, "test-job", opts.Metrics.Prometheus.Pushgateway.Job)
-}
-
-func TestWithPrometheusGatewayUsername(t *testing.T) {
-	opts := NewOptions(WithPrometheusGatewayUsername("admin"))
-	assert.Equal(t, "admin", opts.Metrics.Prometheus.Pushgateway.Username)
-}
-
-func TestWithPrometheusGatewayPassword(t *testing.T) {
-	opts := NewOptions(WithPrometheusGatewayPassword("secret"))
-	assert.Equal(t, "secret", opts.Metrics.Prometheus.Pushgateway.Password)
-}
-
-func TestWithPrometheusGatewayInterval(t *testing.T) {
-	opts := NewOptions(WithPrometheusGatewayInterval(60 * time.Second))
-	assert.Equal(t, 60, opts.Metrics.Prometheus.Pushgateway.PushInterval)
-}
-
-func TestWithConfigCenterEnabled(t *testing.T) {
-	opts := NewOptions(WithConfigCenterEnabled())
-	assert.NotNil(t, opts.Metrics.EnableConfigCenter)
-	assert.True(t, *opts.Metrics.EnableConfigCenter)
-}
-
-func TestWithMetadataEnabled(t *testing.T) {
-	opts := NewOptions(WithMetadataEnabled())
-	assert.NotNil(t, opts.Metrics.EnableMetadata)
-	assert.True(t, *opts.Metrics.EnableMetadata)
-}
-
-func TestWithRegistryEnabled(t *testing.T) {
-	opts := NewOptions(WithRegistryEnabled())
-	assert.NotNil(t, opts.Metrics.EnableRegistry)
-	assert.True(t, *opts.Metrics.EnableRegistry)
-}
-
-func TestWithEnabled(t *testing.T) {
-	opts := NewOptions(WithEnabled())
-	assert.NotNil(t, opts.Metrics.Enable)
-	assert.True(t, *opts.Metrics.Enable)
-}
-
-func TestWithPort(t *testing.T) {
-	opts := NewOptions(WithPort(8080))
-	assert.Equal(t, "8080", opts.Metrics.Port)
-}
-
-func TestWithPath(t *testing.T) {
-	opts := NewOptions(WithPath("/custom/metrics"))
-	assert.Equal(t, "/custom/metrics", opts.Metrics.Path)
+func TestWithProbeUseInternalState(t *testing.T) {
+	tests := []struct {
+		name string
+		use  bool
+		want bool
+	}{
+		{
+			name: "use internal state",
+			use:  true,
+			want: true,
+		},
+		{
+			name: "not use internal state",
+			use:  false,
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opts := NewOptions(WithProbeUseInternalState(tt.use))
+			assert.NotNil(t, opts.Metrics.Probe.UseInternalState)
+			assert.Equal(t, tt.want, *opts.Metrics.Probe.UseInternalState)
+		})
+	}
 }
