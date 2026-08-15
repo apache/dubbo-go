@@ -129,6 +129,9 @@ type stubStreamingClientConn struct {
 	closeRespCalls int
 }
 
+func (c *stubStreamingClientConn) Spec() Spec { return Spec{} }
+func (c *stubStreamingClientConn) Peer() Peer { return Peer{} }
+
 func (c *stubStreamingClientConn) Send(any) error {
 	c.sendCalls++
 	return c.sendErr
