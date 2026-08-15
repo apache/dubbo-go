@@ -102,3 +102,50 @@ func TestConfigureV3UsesRuleConfigVersion(t *testing.T) {
 	assert.Equal(t, "random", consumerURL.GetParam(constant.LoadbalanceKey, ""))
 	assert.Empty(t, consumerURL.GetParam(constant.RuleConfigVersionKey, ""))
 }
+
+func TestConfigureV3UsesLegacyConfigVersion(t *testing.T) {
+	tests := []struct {
+		name            string
+		configuratorURL string
+		matchApp        string
+		wantBalance     string
+	}{
+		{
+			name:            "mismatched condition does not configure",
+			configuratorURL: "override://0.0.0.0:0/*?config-center.configVersion=v3.0&side=consumer&loadbalance=roundrobin",
+			matchApp:        "another-consumer",
+			wantBalance:     "random",
+		},
+		{
+			name:            "matched condition configures without leaking legacy key",
+			configuratorURL: "override://0.0.0.0:0/*?config-center.configVersion=v3.0&side=consumer&loadbalance=roundrobin",
+			matchApp:        "demo-consumer",
+			wantBalance:     "roundrobin",
+		},
+		{
+			name:            "rule key takes precedence over legacy key",
+			configuratorURL: "override://0.0.0.0:0/*?configVersion=v3.0&config-center.configVersion=2.7.1&side=consumer&loadbalance=roundrobin",
+			matchApp:        "another-consumer",
+			wantBalance:     "random",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			url, err := common.NewURL(tt.configuratorURL)
+			require.NoError(t, err)
+			url.SetAttribute(constant.MatchCondition, &parser.ConditionMatch{
+				App: &common.ListStringMatch{Oneof: []common.StringMatch{{Exact: tt.matchApp}}},
+			})
+			configurator := extension.GetConfigurator(defaults, url)
+
+			consumerURL, err := common.NewURL("consumer://127.0.0.1/org.apache.dubbo.quickstart.GreeterDynamic?application=demo-consumer&side=consumer&loadbalance=random")
+			require.NoError(t, err)
+			configurator.Configure(consumerURL)
+
+			assert.Equal(t, tt.wantBalance, consumerURL.GetParam(constant.LoadbalanceKey, ""))
+			assert.Empty(t, consumerURL.GetParam(constant.RuleConfigVersionKey, ""))
+			assert.Empty(t, consumerURL.GetParam(constant.ConfigVersionKey, ""))
+		})
+	}
+}
