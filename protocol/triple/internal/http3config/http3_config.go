@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package triple_protocol
+package http3config
 
 import (
 	"fmt"
@@ -30,8 +30,13 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 )
 
-func newQUICConfig(http3Config *global.Http3Config) (*quic.Config, error) {
+// NewQUICConfig maps HTTP/3 transport configuration over optional default QUIC settings.
+func NewQUICConfig(http3Config *global.Http3Config, defaults *quic.Config) (*quic.Config, error) {
 	quicConfig := &quic.Config{}
+	if defaults != nil {
+		quicConfigCopy := *defaults
+		quicConfig = &quicConfigCopy
+	}
 	if http3Config == nil {
 		return quicConfig, nil
 	}

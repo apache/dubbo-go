@@ -187,6 +187,74 @@ func TestDynamicRouterSetStaticConfig(t *testing.T) {
 	})
 }
 
+func TestGenerateConditionsRoutePreservesExplicitBooleans(t *testing.T) {
+	raw := `conditions:
+- method=SayHello => application=router-rule-e2e-condition-provider-hangzhou
+configVersion: v3.0
+enabled: true
+force: false
+key: org.apache.dubbo.quickstart.Greeter:1.0.0:demo
+priority: 1
+runtime: true
+scope: service
+`
+
+	routers, force, enabled, err := generateConditionsRoute(raw)
+	require.NoError(t, err)
+	assert.False(t, force)
+	assert.True(t, enabled)
+	assert.Len(t, routers, 1)
+}
+
+func TestDynamicRouterSwitchesFromV31ToV30(t *testing.T) {
+	providerHangzhou, err := common.NewURL(
+		"dubbo://127.0.0.1:20000/org.apache.dubbo.quickstart.Greeter" +
+			"?application=router-rule-e2e-condition-provider-hangzhou&group=demo&version=1.0.0",
+	)
+	require.NoError(t, err)
+	providerShanghai, err := common.NewURL(
+		"dubbo://127.0.0.1:20001/org.apache.dubbo.quickstart.Greeter" +
+			"?application=router-rule-e2e-condition-provider-shanghai&group=demo&version=1.0.0",
+	)
+	require.NoError(t, err)
+	consumer, err := common.NewURL(
+		"consumer://127.0.0.1/org.apache.dubbo.quickstart.Greeter?group=demo&version=1.0.0",
+	)
+	require.NoError(t, err)
+	invokers := []base.Invoker{base.NewBaseInvoker(providerHangzhou), base.NewBaseInvoker(providerShanghai)}
+
+	d := &DynamicRouter{}
+	d.Process(&config_center.ConfigChangeEvent{
+		Value: `configVersion: v3.1
+enabled: true
+force: false
+conditions:
+  - from:
+      match: method=SayHello
+    to:
+      - match: application=router-rule-e2e-condition-provider-shanghai
+        weight: 100
+`,
+		ConfigType: remoting.EventTypeUpdate,
+	})
+	got := d.Route(invokers, consumer, invocation.NewRPCInvocation("SayHello", nil, nil))
+	require.Len(t, got, 1)
+	assert.Equal(t, "router-rule-e2e-condition-provider-shanghai", got[0].GetURL().GetParam("application", ""))
+
+	d.Process(&config_center.ConfigChangeEvent{
+		Value: `configVersion: v3.0
+enabled: true
+force: false
+conditions:
+  - method=SayHello => application=router-rule-e2e-condition-provider-hangzhou
+`,
+		ConfigType: remoting.EventTypeUpdate,
+	})
+	got = d.Route(invokers, consumer, invocation.NewRPCInvocation("SayHello", nil, nil))
+	require.Len(t, got, 1)
+	assert.Equal(t, "router-rule-e2e-condition-provider-hangzhou", got[0].GetURL().GetParam("application", ""))
+}
+
 func TestScopedStaticConfigSetters(t *testing.T) {
 	t.Run("service router only accepts service scope", func(t *testing.T) {
 		router := NewServiceRouter()

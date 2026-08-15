@@ -293,7 +293,7 @@ func generateConditionsRoute(rawConfig string) (stateRouters, bool, bool, error)
 		return nil, false, false, err
 	}
 
-	force, enable := *routerConfig.Enabled, *routerConfig.Force
+	force, enable := *routerConfig.Force, *routerConfig.Enabled
 	if !enable {
 		return nil, false, false, nil
 	}

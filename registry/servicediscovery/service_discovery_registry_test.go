@@ -97,6 +97,280 @@ func TestServiceDiscoveryRegistryRegister(t *testing.T) {
 	}
 }
 
+// TestServiceDiscoveryRegistryRegisterPublishesMetadataOnce verifies that
+// app metadata is published exactly once.
+func TestServiceDiscoveryRegistryRegisterPublishesMetadataOnce(t *testing.T) {
+	mockSD, mockMapping := setupEnvironment(t)
+	regID := fmt.Sprintf("mock-reg-%s-%d", t.Name(), time.Now().UnixNano())
+	prevType := metadata.GetMetadataType()
+	opts := metadata.NewOptions(metadata.WithMetadataType(constant.RemoteMetadataStorageType))
+	_ = opts.Init()
+	defer func() {
+		restoreOpts := metadata.NewOptions(metadata.WithMetadataType(prevType))
+		_ = restoreOpts.Init()
+	}()
+
+	registryURL, err := common.NewURL(testRegistryURL,
+		common.WithParamsValue(constant.RegistryKey, "mock"),
+		common.WithParamsValue(constant.RegistryIdKey, regID))
+	require.NoError(t, err)
+
+	reg, err := newServiceDiscoveryRegistry(registryURL)
+	require.NoError(t, err)
+
+	// Disable the startup renew so the background publish cannot race the count below.
+	renewURL, err := common.NewURL("mock://127.0.0.1:8848",
+		common.WithParamsValue(constant.MetadataRenewOnStartupKey, "false"))
+	require.NoError(t, err)
+	countingReport := &mockMetadataReportForGC{reportURL: renewURL}
+	sdReg, ok := reg.(*serviceDiscoveryRegistry)
+	require.True(t, ok)
+	sdReg.metadataReport = countingReport
+	defer sdReg.stopMetadataTimers()
+
+	providerURL1, err := common.NewURL("dubbo://127.0.0.1:20880/",
+		common.WithParamsValue(constant.ApplicationKey, testApp),
+		common.WithInterface(testInterface),
+		common.WithParamsValue(constant.SideKey, constant.SideProvider),
+	)
+	require.NoError(t, err)
+	providerURL2, err := common.NewURL("dubbo://127.0.0.1:20881/",
+		common.WithParamsValue(constant.ApplicationKey, testApp),
+		common.WithInterface(testInterface),
+		common.WithParamsValue(constant.SideKey, constant.SideProvider),
+	)
+	require.NoError(t, err)
+
+	err = reg.Register(providerURL1)
+	require.NoError(t, err)
+	err = reg.Register(providerURL2)
+	require.NoError(t, err)
+	assert.True(t, mockMapping.mapCalled, "ServiceNameMapping.Map should be called")
+
+	err = sdReg.RegisterService()
+	require.NoError(t, err)
+
+	assert.True(t, mockSD.registerCalled, "ServiceDiscovery.Register should be called")
+	assert.Len(t, sdReg.instances, 2)
+	assert.Equal(t, 1, countingReport.published)
+}
+
+// TestServiceDiscoveryRegistryRegisterReturnsPublishError verifies that
+// RegisterService propagates a PublishAppMetadata error.
+func TestServiceDiscoveryRegistryRegisterReturnsPublishError(t *testing.T) {
+	mockSD, _ := setupEnvironment(t)
+	regID := fmt.Sprintf("mock-reg-%s-%d", t.Name(), time.Now().UnixNano())
+	prevType := metadata.GetMetadataType()
+	opts := metadata.NewOptions(metadata.WithMetadataType(constant.RemoteMetadataStorageType))
+	_ = opts.Init()
+	defer func() {
+		restoreOpts := metadata.NewOptions(metadata.WithMetadataType(prevType))
+		_ = restoreOpts.Init()
+	}()
+
+	registryURL, err := common.NewURL(testRegistryURL,
+		common.WithParamsValue(constant.RegistryKey, "mock"),
+		common.WithParamsValue(constant.RegistryIdKey, regID))
+	require.NoError(t, err)
+
+	reg, err := newServiceDiscoveryRegistry(registryURL)
+	require.NoError(t, err)
+
+	failingReport := &mockMetadataReportForGC{publishErr: errors.New("mock publish failed")}
+	sdReg, ok := reg.(*serviceDiscoveryRegistry)
+	require.True(t, ok)
+	sdReg.metadataReport = failingReport
+
+	providerURL, err := common.NewURL("dubbo://127.0.0.1:20880/",
+		common.WithParamsValue(constant.ApplicationKey, testApp),
+		common.WithInterface(testInterface),
+		common.WithParamsValue(constant.SideKey, constant.SideProvider),
+	)
+	require.NoError(t, err)
+
+	err = reg.Register(providerURL)
+	require.NoError(t, err)
+
+	err = sdReg.RegisterService()
+	require.EqualError(t, err, "mock publish failed")
+	assert.False(t, mockSD.registerCalled, "ServiceDiscovery.Register should not be called when publish fails")
+	assert.Empty(t, sdReg.instances, "no instance should remain after a failed publish")
+}
+
+// TestServiceDiscoveryRegistryRegisterRetryAfterPublishFailure verifies that retrying
+// after a failed publish starts clean: no instances left behind, then registers normally.
+func TestServiceDiscoveryRegistryRegisterRetryAfterPublishFailure(t *testing.T) {
+	mockSD, _ := setupEnvironment(t)
+	regID := fmt.Sprintf("mock-reg-%s-%d", t.Name(), time.Now().UnixNano())
+	prevType := metadata.GetMetadataType()
+	opts := metadata.NewOptions(metadata.WithMetadataType(constant.RemoteMetadataStorageType))
+	_ = opts.Init()
+	defer func() {
+		restoreOpts := metadata.NewOptions(metadata.WithMetadataType(prevType))
+		_ = restoreOpts.Init()
+	}()
+
+	registryURL, err := common.NewURL(testRegistryURL,
+		common.WithParamsValue(constant.RegistryKey, "mock"),
+		common.WithParamsValue(constant.RegistryIdKey, regID))
+	require.NoError(t, err)
+
+	reg, err := newServiceDiscoveryRegistry(registryURL)
+	require.NoError(t, err)
+
+	report := &mockMetadataReportForGC{publishErr: errors.New("mock publish failed")}
+	sdReg, ok := reg.(*serviceDiscoveryRegistry)
+	require.True(t, ok)
+	sdReg.metadataReport = report
+
+	providerURL, err := common.NewURL("dubbo://127.0.0.1:20880/",
+		common.WithParamsValue(constant.ApplicationKey, testApp),
+		common.WithInterface(testInterface),
+		common.WithParamsValue(constant.SideKey, constant.SideProvider),
+	)
+	require.NoError(t, err)
+
+	err = reg.Register(providerURL)
+	require.NoError(t, err)
+
+	// First call: publish fails, so nothing is registered and no state is left behind.
+	err = sdReg.RegisterService()
+	require.EqualError(t, err, "mock publish failed")
+	assert.False(t, mockSD.registerCalled, "ServiceDiscovery.Register should not be called when publish fails")
+	assert.Empty(t, sdReg.instances, "no instance should remain after a failed publish")
+
+	// Retry: publish succeeds, the instance is registered and recorded exactly once.
+	report.publishErr = nil
+	err = sdReg.RegisterService()
+	require.NoError(t, err)
+	assert.True(t, mockSD.registerCalled, "ServiceDiscovery.Register should be called on retry")
+	assert.Len(t, sdReg.instances, 1)
+}
+
+// TestServiceDiscoveryRegistryRegisterPureConsumerDoesNotPublish verifies that a pure
+// consumer (no exported URLs, only subscriptions) never publishes or registers.
+func TestServiceDiscoveryRegistryRegisterPureConsumerDoesNotPublish(t *testing.T) {
+	mockSD, _ := setupEnvironment(t)
+	regID := fmt.Sprintf("mock-reg-%s-%d", t.Name(), time.Now().UnixNano())
+	prevType := metadata.GetMetadataType()
+	opts := metadata.NewOptions(metadata.WithMetadataType(constant.RemoteMetadataStorageType))
+	_ = opts.Init()
+	defer func() {
+		restoreOpts := metadata.NewOptions(metadata.WithMetadataType(prevType))
+		_ = restoreOpts.Init()
+	}()
+
+	registryURL, err := common.NewURL(testRegistryURL,
+		common.WithParamsValue(constant.RegistryKey, "mock"),
+		common.WithParamsValue(constant.RegistryIdKey, regID))
+	require.NoError(t, err)
+
+	reg, err := newServiceDiscoveryRegistry(registryURL)
+	require.NoError(t, err)
+
+	sdReg, ok := reg.(*serviceDiscoveryRegistry)
+	require.True(t, ok)
+
+	countingReport := &mockMetadataReportForGC{}
+	sdReg.metadataReport = countingReport
+
+	// A pure consumer only subscribes; the consumer URL still creates a
+	// MetadataInfo whose exported URLs are empty.
+	consumerURL, err := common.NewURL("dubbo://127.0.0.1:20000/",
+		common.WithParamsValue(constant.ApplicationKey, testApp),
+		common.WithInterface(testInterface),
+		common.WithParamsValue(constant.SideKey, constant.SideConsumer),
+	)
+	require.NoError(t, err)
+	metadata.AddSubscribeURL(regID, consumerURL)
+
+	err = sdReg.RegisterService()
+	require.NoError(t, err)
+
+	assert.False(t, mockSD.registerCalled, "ServiceDiscovery.Register should not be called for a pure consumer")
+	assert.Equal(t, 0, countingReport.published, "app metadata must not be published when exported URLs are empty")
+}
+
+// TestServiceDiscoveryRegistryRegisterNilReportReturnsError verifies that a nil
+// metadata report is checked before any dereference instead of panicking.
+func TestServiceDiscoveryRegistryRegisterNilReportReturnsError(t *testing.T) {
+	mockSD, _ := setupEnvironment(t)
+	regID := fmt.Sprintf("mock-reg-%s-%d", t.Name(), time.Now().UnixNano())
+	prevType := metadata.GetMetadataType()
+	opts := metadata.NewOptions(metadata.WithMetadataType(constant.RemoteMetadataStorageType))
+	_ = opts.Init()
+	defer func() {
+		restoreOpts := metadata.NewOptions(metadata.WithMetadataType(prevType))
+		_ = restoreOpts.Init()
+	}()
+
+	registryURL, err := common.NewURL(testRegistryURL,
+		common.WithParamsValue(constant.RegistryKey, "mock"),
+		common.WithParamsValue(constant.RegistryIdKey, regID))
+	require.NoError(t, err)
+
+	reg, err := newServiceDiscoveryRegistry(registryURL)
+	require.NoError(t, err)
+
+	sdReg, ok := reg.(*serviceDiscoveryRegistry)
+	require.True(t, ok)
+	// Remote mode without a configured metadata report instance.
+	sdReg.metadataReport = nil
+
+	providerURL, err := common.NewURL("dubbo://127.0.0.1:20880/",
+		common.WithParamsValue(constant.ApplicationKey, testApp),
+		common.WithInterface(testInterface),
+		common.WithParamsValue(constant.SideKey, constant.SideProvider),
+	)
+	require.NoError(t, err)
+
+	err = reg.Register(providerURL)
+	require.NoError(t, err)
+
+	err = sdReg.RegisterService()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "report instance not found")
+	assert.False(t, mockSD.registerCalled, "no instance should be registered when the metadata report is nil")
+}
+
+// TestServiceDiscoveryRegistryRegisterLocalMetadataDoesNotPublish verifies that
+// non-remote metadata mode publishes app metadata zero times.
+func TestServiceDiscoveryRegistryRegisterLocalMetadataDoesNotPublish(t *testing.T) {
+	mockSD, _ := setupEnvironment(t)
+	regID := fmt.Sprintf("mock-reg-%s-%d", t.Name(), time.Now().UnixNano())
+	// setupEnvironment leaves the metadata type as "mock", i.e. not remote.
+
+	registryURL, err := common.NewURL(testRegistryURL,
+		common.WithParamsValue(constant.RegistryKey, "mock"),
+		common.WithParamsValue(constant.RegistryIdKey, regID))
+	require.NoError(t, err)
+
+	reg, err := newServiceDiscoveryRegistry(registryURL)
+	require.NoError(t, err)
+
+	sdReg, ok := reg.(*serviceDiscoveryRegistry)
+	require.True(t, ok)
+
+	countingReport := &mockMetadataReportForGC{}
+	sdReg.metadataReport = countingReport
+
+	providerURL, err := common.NewURL("dubbo://127.0.0.1:20880/",
+		common.WithParamsValue(constant.ApplicationKey, testApp),
+		common.WithInterface(testInterface),
+		common.WithParamsValue(constant.SideKey, constant.SideProvider),
+	)
+	require.NoError(t, err)
+
+	err = reg.Register(providerURL)
+	require.NoError(t, err)
+
+	err = sdReg.RegisterService()
+	require.NoError(t, err)
+
+	assert.True(t, mockSD.registerCalled, "ServiceDiscovery.Register should be called")
+	assert.Equal(t, 0, countingReport.published, "app metadata must not be published in non-remote metadata mode")
+}
+
 // TestServiceDiscoveryRegistrySubscribe verifies the subscription flow.
 func TestServiceDiscoveryRegistrySubscribe(t *testing.T) {
 	mockSD, mockMapping := setupEnvironment(t)
@@ -613,10 +887,11 @@ func (m *mockProxyFactory) GetInvoker(url *common.URL) protocol.Invoker { return
 
 // mockMetadataReportForGC is a lightweight mock for testing GC logic
 type mockMetadataReportForGC struct {
-	revisions []report.AppRevision
-	deleted   []string // tracks deleted revisions
-	published int      // tracks publish calls
-	reportURL *common.URL
+	revisions  []report.AppRevision
+	deleted    []string // tracks deleted revisions
+	published  int      // tracks publish calls
+	reportURL  *common.URL
+	publishErr error // optional error returned by PublishAppMetadata
 }
 
 func (m *mockMetadataReportForGC) GetAppMetadata(string, string) (*info.MetadataInfo, error) {
@@ -624,6 +899,9 @@ func (m *mockMetadataReportForGC) GetAppMetadata(string, string) (*info.Metadata
 }
 func (m *mockMetadataReportForGC) PublishAppMetadata(string, string, *info.MetadataInfo) error {
 	m.published++
+	if m.publishErr != nil {
+		return m.publishErr
+	}
 	return nil
 }
 func (m *mockMetadataReportForGC) RegisterServiceAppMapping(string, string, string) error {
@@ -814,6 +1092,57 @@ func TestServiceDiscoveryRegistry_DoRenewAppMetadata(t *testing.T) {
 
 	reg.doRenewAppMetadata()
 	assert.Equal(t, 1, mockReport.published)
+}
+
+// TestServiceDiscoveryRegistry_StartMetadataTimersSkipsEmptyRevision verifies that the
+// renewAppMetadata timer is not started while the metadata revision is an empty
+// marker ("" initial state, "0" after exports are cleared, or "N/A" customizer
+// default), otherwise doRenewAppMetadata would spin as a no-op.
+func TestServiceDiscoveryRegistry_StartMetadataTimersSkipsEmptyRevision(t *testing.T) {
+	prevType := metadata.GetMetadataType()
+	opts := metadata.NewOptions(metadata.WithMetadataType(constant.RemoteMetadataStorageType))
+	_ = opts.Init()
+	defer func() {
+		restoreOpts := metadata.NewOptions(metadata.WithMetadataType(prevType))
+		_ = restoreOpts.Init()
+	}()
+
+	mockReport := &mockMetadataReportForGC{}
+
+	tests := []struct {
+		name     string
+		revision string
+	}{
+		{"initial empty revision", ""},
+		{"cleared revision", "0"},
+		{"customizer default revision", "N/A"},
+	}
+	for i, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			regID := fmt.Sprintf("timer-empty-rev-reg-%d-%d", i, time.Now().UnixNano())
+			url := common.NewURLWithOptions(
+				common.WithParamsValue(constant.RegistryIdKey, regID),
+			)
+
+			reg := &serviceDiscoveryRegistry{
+				url:            url,
+				metadataReport: mockReport,
+			}
+
+			serviceURL, _ := common.NewURL("dubbo://127.0.0.1:20880/org.test.EmptyRevision",
+				common.WithParamsValue(constant.ApplicationKey, "test-app"),
+				common.WithParamsValue(constant.SideKey, constant.SideProvider),
+			)
+			metadata.AddService(regID, serviceURL)
+			metaInfo := metadata.GetMetadataInfo(regID)
+			require.NotNil(t, metaInfo)
+			metaInfo.Revision = tt.revision
+
+			reg.startMetadataTimers()
+
+			assert.Nil(t, reg.renewAppMetadataTimer)
+		})
+	}
 }
 
 func TestServiceDiscoveryRegistry_Destroy_StopsTimers(t *testing.T) {
