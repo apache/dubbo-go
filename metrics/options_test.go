@@ -35,9 +35,9 @@ func TestDefaultOptions(t *testing.T) {
 	assert.Nil(t, opts.Metrics.Aggregation.Enabled)
 	assert.Nil(t, opts.Metrics.Probe.Enabled)
 	assert.Nil(t, opts.Metrics.Prometheus.Pushgateway.Enabled)
-	assert.Equal(t, "", opts.Metrics.Port)
-	assert.Equal(t, "", opts.Metrics.Path)
-	assert.Equal(t, "", opts.Metrics.Protocol)
+	assert.Empty(t, opts.Metrics.Port)
+	assert.Empty(t, opts.Metrics.Path)
+	assert.Empty(t, opts.Metrics.Protocol)
 }
 
 func TestNewOptions(t *testing.T) {
