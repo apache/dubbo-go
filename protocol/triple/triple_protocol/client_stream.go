@@ -72,8 +72,8 @@ func (c *ClientStreamForClient) Send(request any) error {
 }
 
 // CloseAndReceive closes the send side of the stream and waits for the
-// response. If closing the send side or receiving the response fails, the
-// receive side is closed before the error is returned.
+// response. If closing the send side or receiving the response fails,
+// CloseResponse is called on a best-effort basis before the error is returned.
 func (c *ClientStreamForClient) CloseAndReceive(response *Response) error {
 	if c.err != nil {
 		return c.err
