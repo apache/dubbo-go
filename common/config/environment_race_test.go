@@ -34,12 +34,20 @@ func TestDynamicConfigurationRace(t *testing.T) {
 	})
 
 	const iterations = 100000
+	start := make(chan struct{})
+	ready := make(chan struct{})
+
 	var wg sync.WaitGroup
 	wg.Go(func() { // reader goroutine mimics a lingering registry subscription goroutine
+		close(ready)
+		<-start
 		for range iterations {
 			_ = env.GetDynamicConfiguration()
 		}
 	})
+
+	<-ready
+	close(start)
 	for range iterations { // the test goroutine keeps writing
 		env.SetDynamicConfiguration(nil)
 	}
