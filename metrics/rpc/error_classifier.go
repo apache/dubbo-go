@@ -18,10 +18,6 @@
 package rpc
 
 import (
-	"errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
@@ -107,7 +103,7 @@ const (
 // [ErrorTypeBusinessFailed]. Plain Go errors (those that do not carry a Triple
 // status code) and every unhandled code fall back to [ErrorTypeUnknown].
 // A typed nil [*triple_protocol.Error] (or one hidden behind wrapping) also
-// falls back to [ErrorTypeUnknown] instead of panicking.
+// falls back to [ErrorTypeUnknown], which is handled by [triple_protocol.CodeOf].
 //
 // [ErrorTypeNetworkFailure] (network layer) and [ErrorTypeCodec] (codec layer)
 // are reserved but not yet produced: some transport-layer faults and codec
@@ -116,12 +112,6 @@ const (
 // is left to the default branch.
 func classifyError(err error) ErrorType {
 	if err == nil {
-		return ErrorTypeUnknown
-	}
-	// A typed nil *triple_protocol.Error escapes err == nil, but CodeOf
-	// would panic while dereferencing it, so return ErrorTypeUnknown instead.
-	var tripleErr *triple_protocol.Error
-	if errors.As(err, &tripleErr) && tripleErr == nil {
 		return ErrorTypeUnknown
 	}
 	// TODO: Support dubbo protocol error classification
