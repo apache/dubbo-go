@@ -46,6 +46,8 @@ type Item struct {
 	Value any
 }
 
+var cacheManagerBeforeDumpCache func()
+
 // NewCacheManager creates a new CacheManager instance.
 // It initializes the cache manager with the provided parameters and starts a routine for cache dumping.
 func NewCacheManager(name, cacheFile string, dumpInterval time.Duration, maxCacheSize int, enableDump bool) (*CacheManager, error) {
@@ -189,6 +191,9 @@ func (cm *CacheManager) runDumpTask() {
 		for {
 			select {
 			case <-ticker.C:
+				if cacheManagerBeforeDumpCache != nil {
+					cacheManagerBeforeDumpCache()
+				}
 				// Dump the cache to the file
 				if err := cm.dumpCache(); err != nil {
 					// Handle error

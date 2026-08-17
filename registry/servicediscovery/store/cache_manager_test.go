@@ -381,3 +381,55 @@ func TestCacheManagerConcurrentStopDump(t *testing.T) {
 		})
 	}
 }
+
+func TestCacheManagerStopDumpCompletesAfterDumpTickSelected(t *testing.T) {
+	dumpSelected := make(chan struct{})
+	releaseDump := make(chan struct{})
+	var selectedOnce sync.Once
+	var releaseOnce sync.Once
+	release := func() {
+		releaseOnce.Do(func() {
+			close(releaseDump)
+		})
+	}
+
+	cacheManagerBeforeDumpCache = func() {
+		selectedOnce.Do(func() {
+			close(dumpSelected)
+		})
+		<-releaseDump
+	}
+	t.Cleanup(func() {
+		release()
+		cacheManagerBeforeDumpCache = nil
+	})
+
+	cm, err := NewCacheManager("stopTickTest", filepath.Join(t.TempDir(), "stop_tick_cache"), 100*time.Millisecond, 8, true)
+	if err != nil {
+		t.Fatalf("failed to create cache manager: %v", err)
+	}
+	cm.Set("key", "value")
+
+	select {
+	case <-dumpSelected:
+	case <-time.After(2 * time.Second):
+		t.Fatal("dump task did not select ticker")
+	}
+
+	done := make(chan struct{})
+	cm.lock.Lock()
+	go func() {
+		cm.StopDump()
+		close(done)
+	}()
+	time.Sleep(20 * time.Millisecond)
+
+	release()
+	cm.lock.Unlock()
+
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("StopDump did not complete after selected dump was released")
+	}
+}
