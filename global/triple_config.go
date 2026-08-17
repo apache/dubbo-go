@@ -24,24 +24,30 @@ type TripleConfig struct {
 	//
 	// for server
 	//
-	// MaxServerSendMsgSize defines the max size of server send message, 1mb=1000kb=1000000b 1mib=1024kb=1048576b.
-	// more detail to see https://pkg.go.dev/github.com/dustin/go-humanize#pkg-constants
+	// MaxServerSendMsgSize defines the maximum size of messages sent by server.
+	// Supported units include 1mb=1000kb=1000000b and 1mib=1024kb=1048576b.
+	// For more details, see https://pkg.go.dev/github.com/dustin/go-humanize#pkg-constants.
 	MaxServerSendMsgSize string `yaml:"max-server-send-msg-size" json:"max-server-send-msg-size,omitempty"`
-	// MaxServerRecvMsgSize defines the max size of server receive message.
+
+	// MaxServerRecvMsgSize defines the maximum size of messages received by server.
 	MaxServerRecvMsgSize string `yaml:"max-server-recv-msg-size" json:"max-server-recv-msg-size,omitempty"`
-	// Http3 holds the HTTP/3 transport configuration.
+
+	// Http3 holds the HTTP/3 transport configuration for server and client.
 	Http3 *Http3Config `yaml:"http3" json:"http3,omitempty"`
-	// Cors configures CORS for Triple protocol handlers.
+
+	// Cors configures CORS for Triple protocol handlers on server.
 	Cors *CorsConfig `yaml:"cors" json:"cors,omitempty"`
-	// OpenAPI configures OpenAPI documentation generation.
+
+	// OpenAPI configures OpenAPI documentation generation for server.
 	OpenAPI *OpenAPIConfig `yaml:"openapi" json:"openapi,omitempty"`
 
 	//
 	// for client
 	//
-	// KeepAliveInterval defines the duration of keep alive interval.
+	// KeepAliveInterval defines the keep-alive interval for client.
 	KeepAliveInterval string `yaml:"keep-alive-interval" json:"keep-alive-interval,omitempty" property:"keep-alive-interval"`
-	// KeepAliveTimeout defines the duration of keep alive timeout.
+
+	// KeepAliveTimeout defines the keep-alive timeout for client.
 	KeepAliveTimeout string `yaml:"keep-alive-timeout" json:"keep-alive-timeout,omitempty" property:"keep-alive-timeout"`
 }
 
