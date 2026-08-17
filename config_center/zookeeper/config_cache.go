@@ -188,18 +188,30 @@ func (c *configCache) storeAtGeneration(path string, generation uint64, entry co
 
 func (c *configCache) getFresh(path string) (configCacheEntry, bool) {
 	c.stateLock.RLock()
-	defer c.stateLock.RUnlock()
-
 	value, ok := c.entries.Get(path)
 	if !ok {
+		c.stateLock.RUnlock()
 		return configCacheEntry{}, false
 	}
 	entry := value.(configCacheEntry)
-	if !entry.expiresAt.After(time.Now()) {
-		c.entries.Remove(path)
+	if entry.expiresAt.After(time.Now()) {
+		c.stateLock.RUnlock()
+		return entry, true
+	}
+	c.stateLock.RUnlock()
+
+	c.stateLock.Lock()
+	defer c.stateLock.Unlock()
+	value, ok = c.entries.Get(path)
+	if !ok {
 		return configCacheEntry{}, false
 	}
-	return entry, true
+	entry = value.(configCacheEntry)
+	if entry.expiresAt.After(time.Now()) {
+		return entry, true
+	}
+	c.entries.Remove(path)
+	return configCacheEntry{}, false
 }
 
 func (c *configCache) storeEntryLocked(path string, entry configCacheEntry) {
