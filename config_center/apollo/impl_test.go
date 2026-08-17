@@ -68,7 +68,7 @@ const (
 	"homepageUrl": "http://localhost:8080"
 }]`
 
-	mockConfigCacheRes = `{"content":"dubbo:\n  application:\n     name: \"demo-server\"\n     version: \"2.0\"\n"}`
+	mockConfigCacheRes = `{"content":"dubbo:\n  application:\n     name: \"demo-server\"\n     version: \"2.0\"\n     retries: 3\n"}`
 
 	mockConfigCacheJsonRes = `{
     "content": "{\n    \"dubbo\": {\n        \"application\": {\n            \"name\": \"demo-server\",\n            \"version\": \"2.0\"\n        },\n        \"otel\": {\n            \"trace\": {\n                \"enable\": true,\n                \"sample-ratio\": 1.123\n            }\n        }\n    }\n}"
@@ -80,7 +80,7 @@ var mockConfigRes = `{
 	"cluster": "default",
 	"namespaceName": "mockDubbogo.yaml",
 	"configurations":{
-		"content":"dubbo:\n  application:\n     name: \"demo-server\"\n     version: \"2.0\"\n"
+		"content":"dubbo:\n  application:\n     name: \"demo-server\"\n     version: \"2.0\"\n     retries: 3\n"
     },
 	"releaseKey": "20191104105242-0f13805d89f834a4"
 }`
@@ -179,6 +179,20 @@ func TestGetConfigItem(t *testing.T) {
 	appName, err := configuration.GetInternalProperty(constant.ApplicationConfigPrefix + ".name")
 	require.NoError(t, err)
 	assert.Equal(t, "demo-server", appName)
+}
+
+func TestGetConfigItemReturnsErrorForNonStringValue(t *testing.T) {
+	configuration := initMockApollo(t)
+
+	var (
+		value string
+		err   error
+	)
+	require.NotPanics(t, func() {
+		value, err = configuration.GetInternalProperty(constant.ApplicationConfigPrefix + ".retries")
+	})
+	require.Error(t, err)
+	assert.Empty(t, value)
 }
 
 func initMockApollo(t *testing.T) *apolloConfiguration {

@@ -30,16 +30,27 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/filter/generic/generalizer"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/mock"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
+
+type mockGenericPOJO struct {
+	Name string
+}
+
+func (*mockGenericPOJO) JavaClassName() string {
+	return "org.apache.dubbo.test.MockGenericPOJO"
+}
 
 // test isCallingToGenericService branch
 func TestFilter_Invoke(t *testing.T) {
@@ -103,12 +114,234 @@ func TestFilter_InvokeWithGenericCall(t *testing.T) {
 	assert.NotNil(t, r)
 }
 
+func TestFilter_InvokeUsesConfiguredGenericMode(t *testing.T) {
+	tests := []struct {
+		name       string
+		mode       string
+		arg        any
+		resultType any
+	}{
+		{
+			name:       "map",
+			mode:       constant.GenericSerializationDefault,
+			arg:        &mockGenericPOJO{Name: "map"},
+			resultType: map[string]any{},
+		},
+		{
+			name:       "bean",
+			mode:       constant.GenericSerializationBean,
+			arg:        &mockGenericPOJO{Name: "bean"},
+			resultType: &generalizer.JavaBeanDescriptor{},
+		},
+		{
+			name:       "gson",
+			mode:       constant.GenericSerializationGson,
+			arg:        &mockGenericPOJO{Name: "gson"},
+			resultType: "",
+		},
+		{
+			name:       "protobuf-json",
+			mode:       constant.GenericSerializationProtobufJson,
+			arg:        &generalizer.RequestType{Id: 1},
+			resultType: "",
+		},
+		{
+			name:       "protobuf-legacy",
+			mode:       constant.GenericSerializationProtobuf,
+			arg:        &mockGenericPOJO{Name: "protobuf"},
+			resultType: map[string]any{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			invokeURL := common.NewURLWithOptions(
+				common.WithParams(url.Values{}),
+				common.WithParamsValue(constant.GenericKey, tt.mode),
+			)
+			inv := invocation.NewRPCInvocation("Hello", []any{tt.arg}, nil)
+
+			ctrl := gomock.NewController(t)
+			mockInvoker := mock.NewMockInvoker(ctrl)
+			mockInvoker.EXPECT().GetURL().Return(invokeURL).Times(2)
+			mockInvoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
+				func(_ context.Context, outgoing base.Invocation) result.Result {
+					assert.Equal(t, tt.mode, outgoing.GetAttachmentWithDefaultValue(constant.GenericKey, ""))
+					assert.IsType(t, tt.resultType, outgoing.Arguments()[2].([]hessian.Object)[0])
+					return &result.RPCResult{}
+				},
+			)
+
+			res := (&genericFilter{}).Invoke(context.Background(), mockInvoker, inv)
+
+			require.NoError(t, res.Error())
+		})
+	}
+}
+
+func TestFilter_InvokeInvocationGenericModeOverridesURL(t *testing.T) {
+	invokeURL := common.NewURLWithOptions(
+		common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.GenericKey, constant.GenericSerializationDefault),
+	)
+	inv := invocation.NewRPCInvocation("Hello", []any{&mockGenericPOJO{Name: "bean"}}, map[string]any{
+		constant.GenericKey: constant.GenericSerializationBean,
+	})
+
+	ctrl := gomock.NewController(t)
+	mockInvoker := mock.NewMockInvoker(ctrl)
+	mockInvoker.EXPECT().GetURL().Return(invokeURL).Times(2)
+	mockInvoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(_ context.Context, outgoing base.Invocation) result.Result {
+			assert.Equal(t, constant.GenericSerializationBean,
+				outgoing.GetAttachmentWithDefaultValue(constant.GenericKey, ""))
+			assert.IsType(t, &generalizer.JavaBeanDescriptor{}, outgoing.Arguments()[2].([]hessian.Object)[0])
+			return &result.RPCResult{}
+		},
+	)
+
+	res := (&genericFilter{}).Invoke(context.Background(), mockInvoker, inv)
+
+	require.NoError(t, res.Error())
+}
+
+func TestFilter_InvokeWithUnsupportedGenericMode(t *testing.T) {
+	filter := &genericFilter{}
+
+	tests := []struct {
+		name    string
+		generic string
+	}{
+		{
+			name:    "unknown",
+			generic: "unsupported_type",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			invokeURL := common.NewURLWithOptions(
+				common.WithParams(url.Values{}),
+				common.WithParamsValue(constant.GenericKey, tt.generic),
+			)
+			inv := invocation.NewRPCInvocation("Hello", []any{"arg1"}, nil)
+
+			ctrl := gomock.NewController(t)
+			mockInvoker := mock.NewMockInvoker(ctrl)
+			mockInvoker.EXPECT().GetURL().Return(invokeURL).Times(1)
+			mockInvoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Times(0)
+
+			res := filter.Invoke(context.Background(), mockInvoker, inv)
+
+			require.EqualError(t, res.Error(), `unsupported generic mode "`+tt.generic+`"`)
+			assert.Nil(t, res.Result())
+		})
+	}
+}
+
+func TestFilter_InvokeRejectsUnsupportedInvocationGenericMode(t *testing.T) {
+	filter := &genericFilter{}
+	invokeURL := common.NewURLWithOptions(
+		common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.GenericKey, constant.GenericSerializationDefault),
+	)
+
+	for _, generic := range []string{"unsupported_type"} {
+		t.Run(generic, func(t *testing.T) {
+			inv := invocation.NewRPCInvocation("Hello", []any{"arg1"}, map[string]any{
+				constant.GenericKey: generic,
+			})
+			ctrl := gomock.NewController(t)
+			mockInvoker := mock.NewMockInvoker(ctrl)
+			mockInvoker.EXPECT().GetURL().Return(invokeURL).Times(1)
+			mockInvoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Times(0)
+
+			res := filter.Invoke(context.Background(), mockInvoker, inv)
+
+			require.EqualError(t, res.Error(), `unsupported generic mode "`+generic+`"`)
+			assert.Nil(t, res.Result())
+		})
+	}
+}
+
+func TestFilter_InvokeEmptyInvocationGenericModeUsesConfiguredMode(t *testing.T) {
+	filter := &genericFilter{}
+	invokeURL := common.NewURLWithOptions(
+		common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.GenericKey, constant.GenericSerializationDefault),
+	)
+	inv := invocation.NewRPCInvocation("Hello", []any{&mockGenericPOJO{Name: "map"}}, map[string]any{
+		constant.GenericKey: "",
+	})
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockInvoker := mock.NewMockInvoker(ctrl)
+	mockInvoker.EXPECT().GetURL().Return(invokeURL).Times(2)
+	mockInvoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(_ context.Context, outgoing base.Invocation) result.Result {
+			assert.Equal(t, constant.GenericSerializationDefault,
+				outgoing.GetAttachmentWithDefaultValue(constant.GenericKey, ""))
+			assert.IsType(t, map[string]any{}, outgoing.Arguments()[2].([]hessian.Object)[0])
+			return &result.RPCResult{}
+		},
+	)
+
+	res := filter.Invoke(context.Background(), mockInvoker, inv)
+
+	require.NoError(t, res.Error())
+}
+
+func TestFilter_InvokeWithoutGenericModePassesThrough(t *testing.T) {
+	filter := &genericFilter{}
+	invokeURL := common.NewURLWithOptions(common.WithParams(url.Values{}))
+	inv := invocation.NewRPCInvocation("Hello", []any{"arg1"}, nil)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockInvoker := mock.NewMockInvoker(ctrl)
+	mockInvoker.EXPECT().GetURL().Return(invokeURL).Times(1)
+	mockInvoker.EXPECT().Invoke(gomock.Any(), gomock.Eq(inv)).Return(&result.RPCResult{Rest: "ok"})
+
+	res := filter.Invoke(context.Background(), mockInvoker, inv)
+
+	require.NoError(t, res.Error())
+	assert.Equal(t, "ok", res.Result())
+}
+
+func TestFilter_InvokeWithGenericFalsePassesThrough(t *testing.T) {
+	filter := &genericFilter{}
+	invokeURL := common.NewURLWithOptions(
+		common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.GenericKey, "false"),
+	)
+	inv := invocation.NewRPCInvocation("Hello", []any{"arg1"}, nil)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockInvoker := mock.NewMockInvoker(ctrl)
+	mockInvoker.EXPECT().GetURL().Return(invokeURL).Times(1)
+	mockInvoker.EXPECT().Invoke(gomock.Any(), gomock.Eq(inv)).Return(&result.RPCResult{Rest: "ok"})
+
+	res := filter.Invoke(context.Background(), mockInvoker, inv)
+
+	require.NoError(t, res.Error())
+	assert.Equal(t, "ok", res.Result())
+}
+
 // mockUser is a test struct for OnResponse deserialization
 type mockUser struct {
 	Name    string
 	Age     int
 	Email   string
 	Address *mockAddress
+}
+
+func (mockUser) JavaClassName() string {
+	return "org.apache.dubbo.test.MockUser"
 }
 
 type mockAddress struct {
@@ -293,8 +526,168 @@ func TestFilter_OnResponse_WithSliceDeserialization(t *testing.T) {
 	assert.Equal(t, 25, users[1].Age)
 }
 
-// TestFilter_OnResponse_DeserializationError tests that OnResponse gracefully handles
-// deserialization failures by logging a warning and returning the original result.
+func TestFilter_OnResponse_WithTypedReplyByGenericMode(t *testing.T) {
+	filter := &genericFilter{}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockInvoker := mock.NewMockInvoker(ctrl)
+	mockInvoker.EXPECT().GetURL().DoAndReturn(func() *common.URL {
+		return common.NewURLWithOptions(
+			common.WithParams(url.Values{}),
+			common.WithParamsValue(constant.GenericKey, constant.GenericSerializationDefault),
+		)
+	}).AnyTimes()
+
+	tests := []struct {
+		name   string
+		mode   string
+		result any
+	}{
+		{
+			name: constant.GenericSerializationDefault,
+			mode: constant.GenericSerializationDefault,
+			result: map[string]any{
+				"name": "mapUser",
+				"age":  31,
+			},
+		},
+		{
+			name:   constant.GenericSerializationGson,
+			mode:   constant.GenericSerializationGson,
+			result: `{"name":"gsonUser","age":32}`,
+		},
+		{
+			name: constant.GenericSerializationBean,
+			mode: constant.GenericSerializationBean,
+			result: mustGeneralize(t, generalizer.GetBeanGeneralizer(), mockUser{
+				Name: "beanUser",
+				Age:  33,
+			}),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var user mockUser
+			inv := invocation.NewRPCInvocationWithOptions(
+				invocation.WithMethodName(constant.Generic),
+				invocation.WithReply(&user),
+				invocation.WithAttachments(map[string]any{constant.GenericKey: tt.mode}),
+			)
+			res := &result.RPCResult{Rest: tt.result}
+
+			newRes := filter.OnResponse(context.Background(), res, mockInvoker, inv)
+
+			require.NoError(t, newRes.Error())
+			assert.NotEmpty(t, user.Name)
+			assert.NotZero(t, user.Age)
+			assert.Same(t, &user, newRes.Result())
+		})
+	}
+}
+
+func TestFilter_OnResponse_WithProtobufJsonTypedReply(t *testing.T) {
+	filter := &genericFilter{}
+	invokeURL := common.NewURLWithOptions(
+		common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.GenericKey, constant.GenericSerializationProtobufJson),
+	)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockInvoker := mock.NewMockInvoker(ctrl)
+	mockInvoker.EXPECT().GetURL().Return(invokeURL).AnyTimes()
+
+	var reply structpb.Struct
+	inv := invocation.NewRPCInvocationWithOptions(
+		invocation.WithMethodName(constant.Generic),
+		invocation.WithReply(&reply),
+	)
+	res := &result.RPCResult{Rest: `{"name":"protoUser"}`}
+
+	newRes := filter.OnResponse(context.Background(), res, mockInvoker, inv)
+
+	require.NoError(t, newRes.Error())
+	assert.Equal(t, "protoUser", reply.Fields["name"].GetStringValue())
+	assert.Same(t, &reply, newRes.Result())
+}
+
+func TestFilter_OnResponse_KeepsRawResultForAnyReply(t *testing.T) {
+	filter := &genericFilter{}
+	invokeURL := common.NewURLWithOptions(
+		common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.GenericKey, constant.GenericSerializationDefault),
+	)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockInvoker := mock.NewMockInvoker(ctrl)
+	mockInvoker.EXPECT().GetURL().Return(invokeURL).AnyTimes()
+
+	for _, genericType := range []string{
+		constant.GenericSerializationGson,
+		constant.GenericSerializationProtobufJson,
+	} {
+		t.Run(genericType, func(t *testing.T) {
+			const rawResult = `{"name":"rawUser"}`
+			t.Run("direct result", func(t *testing.T) {
+				var reply any
+				inv := invocation.NewRPCInvocationWithOptions(
+					invocation.WithMethodName(constant.Generic),
+					invocation.WithReply(&reply),
+					invocation.WithAttachments(map[string]any{constant.GenericKey: genericType}),
+				)
+
+				newRes := filter.OnResponse(context.Background(), &result.RPCResult{Rest: rawResult}, mockInvoker, inv)
+
+				require.NoError(t, newRes.Error())
+				assert.JSONEq(t, rawResult, reply.(string))
+				assert.JSONEq(t, rawResult, newRes.Result().(string))
+			})
+
+			t.Run("protocol reply pointer", func(t *testing.T) {
+				reply := any(rawResult)
+				inv := invocation.NewRPCInvocationWithOptions(
+					invocation.WithMethodName(constant.Generic),
+					invocation.WithReply(&reply),
+					invocation.WithAttachments(map[string]any{constant.GenericKey: genericType}),
+				)
+				res := &result.RPCResult{Rest: &reply}
+
+				newRes := filter.OnResponse(context.Background(), res, mockInvoker, inv)
+
+				require.NoError(t, newRes.Error())
+				assert.JSONEq(t, rawResult, reply.(string))
+				assert.Same(t, &reply, newRes.Result())
+			})
+		})
+	}
+}
+
+func TestFilter_OnResponse_WithUnsupportedGenericMode(t *testing.T) {
+	invokeURL := common.NewURLWithOptions(
+		common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.GenericKey, "unsupported_type"),
+	)
+	filter := &genericFilter{}
+
+	ctrl := gomock.NewController(t)
+	mockInvoker := mock.NewMockInvoker(ctrl)
+	mockInvoker.EXPECT().GetURL().Return(invokeURL).Times(1)
+
+	res := &result.RPCResult{Rest: map[string]any{"name": "test"}}
+	newRes := filter.OnResponse(context.Background(), res, mockInvoker, invocation.NewRPCInvocation("Hello", nil, nil))
+
+	require.EqualError(t, newRes.Error(), `unsupported generic mode "unsupported_type"`)
+	assert.Nil(t, newRes.Result())
+}
+
+// TestFilter_OnResponse_DeserializationError tests that OnResponse returns an explicit error
+// when typed result deserialization fails.
 func TestFilter_OnResponse_DeserializationError(t *testing.T) {
 	invokeUrl := common.NewURLWithOptions(
 		common.WithParams(url.Values{}),
@@ -323,11 +716,10 @@ func TestFilter_OnResponse_DeserializationError(t *testing.T) {
 
 		newRes := filter.OnResponse(context.Background(), res, mockInvoker, inv)
 
-		// OnResponse should return the original result when deserialization fails
-		// The user struct should remain unchanged (zero values)
+		// OnResponse should return an explicit error when typed deserialization fails.
 		assert.Empty(t, user.Name)
 		assert.Equal(t, 0, user.Age)
-		// The result should still be the original map
-		assert.Equal(t, mapResult, newRes.Result())
+		require.Error(t, newRes.Error())
+		assert.Nil(t, newRes.Result())
 	})
 }

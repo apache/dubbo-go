@@ -20,6 +20,7 @@ package getty
 import (
 	"bytes"
 	"context"
+	"net"
 	"reflect"
 	"sync"
 	"testing"
@@ -27,6 +28,8 @@ import (
 )
 
 import (
+	dubboGetty "github.com/apache/dubbo-getty"
+
 	hessian "github.com/apache/dubbo-go-hessian2"
 
 	perrors "github.com/pkg/errors"
@@ -45,6 +48,16 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/proxy/proxy_factory"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
+
+type closeTrackingGettyClient struct {
+	dubboGetty.Client
+	closeOnce sync.Once
+	closed    chan struct{}
+}
+
+func (c *closeTrackingGettyClient) Close() {
+	c.closeOnce.Do(func() { close(c.closed) })
+}
 
 func TestRunSuite(t *testing.T) {
 	svr, url := InitTest(t)
@@ -330,4 +343,135 @@ func TestInitClientTLS(t *testing.T) {
 		initClient(url)
 		assert.False(t, clientConf.SSLEnabled)
 	})
+}
+
+func TestGettyConnectWaitStopsWhenClosed(t *testing.T) {
+	client := NewClient(Options{ConnectTimeout: 5 * time.Second})
+	started := make(chan struct{})
+	var startOnce sync.Once
+	available := func() bool {
+		startOnce.Do(func() { close(started) })
+		return false
+	}
+	waitDone := make(chan error, 1)
+	go func() {
+		waitDone <- waitForGettyClient("127.0.0.1:1", client.opts.ConnectTimeout, available, client.done)
+	}()
+	select {
+	case <-started:
+	case <-time.After(time.Second):
+		t.Fatal("connection wait did not start")
+	}
+
+	start := time.Now()
+	client.Close()
+	err := <-waitDone
+
+	require.Error(t, err)
+	require.ErrorIs(t, err, errClientClosed)
+	require.Less(t, time.Since(start), time.Second)
+}
+
+func TestGettyCloseAfterConnectionReadyBeforePublish(t *testing.T) {
+	client := NewClient(Options{ConnectTimeout: time.Second})
+	fakeGettyClient := &closeTrackingGettyClient{closed: make(chan struct{})}
+	fakeRPCClient := &gettyRPCClient{gettyClient: fakeGettyClient}
+	factoryReady := make(chan struct{})
+	releaseFactory := make(chan struct{})
+	connectDone := make(chan error, 1)
+
+	go func() {
+		_, err := client.getOrCreateGettyClient("", func(_ *Client, _ string) (*gettyRPCClient, error) {
+			close(factoryReady)
+			<-releaseFactory
+			return fakeRPCClient, nil
+		})
+		connectDone <- err
+	}()
+
+	select {
+	case <-factoryReady:
+	case <-time.After(time.Second):
+		t.Fatal("connection factory did not become ready")
+	}
+
+	client.Close()
+	close(releaseFactory)
+
+	select {
+	case err := <-connectDone:
+		require.ErrorIs(t, err, errClientClosed)
+	case <-time.After(time.Second):
+		t.Fatal("connection creation did not finish after release")
+	}
+
+	select {
+	case <-fakeGettyClient.closed:
+	case <-time.After(time.Second):
+		t.Fatal("unpublished connection was not closed")
+	}
+
+	client.gettyClientMux.RLock()
+	require.Nil(t, client.gettyClient)
+	client.gettyClientMux.RUnlock()
+}
+
+func TestGettyConnectWaitHonorsTimeout(t *testing.T) {
+	start := time.Now()
+	err := waitForGettyClient("127.0.0.1:1", 30*time.Millisecond,
+		func() bool { return false },
+		nil,
+	)
+
+	require.Error(t, err)
+	require.NotErrorIs(t, err, errClientClosed)
+	require.Less(t, time.Since(start), time.Second)
+}
+
+func TestGettyNewConnectionStopsWhenClientCloses(t *testing.T) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	addr := listener.Addr().String()
+	require.NoError(t, listener.Close())
+
+	client := NewClient(Options{ConnectTimeout: 5 * time.Second})
+	client.conf = *GetDefaultClientConfig()
+	connectDone := make(chan error, 1)
+	go func() {
+		_, connectErr := newGettyRPCClientConn(client, addr)
+		connectDone <- connectErr
+	}()
+	time.AfterFunc(20*time.Millisecond, client.Close)
+
+	start := time.Now()
+	select {
+	case err := <-connectDone:
+		require.Error(t, err)
+		require.ErrorIs(t, err, errClientClosed)
+	case <-time.After(time.Second):
+		t.Fatal("newGettyRPCClientConn remained blocked after Close")
+	}
+	require.Less(t, time.Since(start), time.Second)
+}
+
+func TestClientCloseDoesNotWaitForConnectLock(t *testing.T) {
+	client := NewClient(Options{ConnectTimeout: time.Second, RequestTimeout: time.Second})
+	client.connectMu.Lock()
+	closeDone := make(chan struct{})
+	go func() {
+		client.Close()
+		close(closeDone)
+	}()
+
+	select {
+	case <-closeDone:
+	case <-time.After(time.Second):
+		t.Fatal("Client.Close waited for the connection lock")
+	}
+	client.connectMu.Unlock()
+
+	require.True(t, client.closed.Load())
+	_, _, err := client.selectSession("")
+	require.Error(t, err)
+	require.ErrorIs(t, err, errClientClosed)
 }

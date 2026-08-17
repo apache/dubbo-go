@@ -348,6 +348,56 @@ func TestRouteAppliesRoutersOnSnapshot(t *testing.T) {
 	assert.Equal(t, 1, r2.lastSize)
 }
 
+// To test the situation where router is empty, and we expect that if there is no router,
+// the provider should be returned without doing anything
+func TestRouteWithoutRoutersReturnsInvokers(t *testing.T) {
+	consumerURL, err := common.NewURL(testConsumerServiceURL)
+	require.NoError(t, err)
+	invoker := buildInvoker(t, "dubbo://127.0.0.1:20000/com.demo.Service")
+	chain := &RouterChain{invokers: []base.Invoker{invoker}}
+
+	result := chain.Route(consumerURL, invocation.NewRPCInvocation("Say", nil, nil))
+
+	assert.Equal(t, []base.Invoker{invoker}, result)
+}
+
+// To test if the router chain works within ascending priority order, we add Router with priority 30
+// -> Router 10 -> Router 20, the result should be expected to be Router 10 -> Router 20 -> Router 30
+func TestAddRoutersAppliesAscendingPriorityOrder(t *testing.T) {
+	consumerURL, err := common.NewURL(testConsumerServiceURL)
+	require.NoError(t, err)
+	invoker := buildInvoker(t, "dubbo://127.0.0.1:20000/com.demo.Service")
+	order := make([]int64, 0, 3)
+	newRouter := func(priority int64) *testPriorityRouter {
+		return &testPriorityRouter{
+			priority: priority,
+			routeFn: func(invokers []base.Invoker, _ *common.URL, _ base.Invocation) []base.Invoker {
+				order = append(order, priority)
+				return invokers
+			},
+		}
+	}
+	chain := &RouterChain{invokers: []base.Invoker{invoker}}
+	chain.AddRouters([]router.PriorityRouter{newRouter(30), newRouter(10), newRouter(20)})
+
+	chain.Route(consumerURL, invocation.NewRPCInvocation("Say", nil, nil))
+
+	assert.Equal(t, []int64{10, 20, 30}, order)
+}
+
+// TestRouteWithNilInvokersReturnsEmpty verifies that a nil invoker list produces an empty route result.
+func TestRouteWithNilInvokersReturnsEmpty(t *testing.T) {
+	consumerURL, err := common.NewURL(testConsumerServiceURL)
+	require.NoError(t, err)
+	chain := &RouterChain{}
+
+	chain.SetInvokers(nil)
+	result := chain.Route(consumerURL, invocation.NewRPCInvocation("Say", nil, nil))
+
+	assert.Empty(t, result)
+	assert.Empty(t, chain.cache.GetInvokers())
+}
+
 // TestSetInvokersIncrementsAndPublishesGeneration verifies that each SetInvokers bumps the
 // chain generation and that Route publishes the current generation into the invocation so
 // Poolable routers can validate their cache against it.

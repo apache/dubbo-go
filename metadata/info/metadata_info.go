@@ -44,6 +44,8 @@ func init() {
 	hessian.RegisterPOJO(&ServiceInfo{})
 }
 
+// IncludeKeys is a whitelist of provider URL parameter keys
+// that are copied into ServiceInfo.Params and exposed to consumers.
 var IncludeKeys = gxset.NewSet(
 	constant.ApplicationKey,
 	constant.GroupKey,
@@ -61,20 +63,30 @@ var IncludeKeys = gxset.NewSet(
 
 // MetadataInfo the metadata information of instance
 type MetadataInfo struct {
-	App                   string                   `json:"app,omitempty" hessian:"app"`
-	Revision              string                   `json:"revision,omitempty" hessian:"revision"`
-	Tag                   string                   `json:"tag,omitempty" hessian:"tag"`
-	Services              map[string]*ServiceInfo  `json:"services,omitempty" hessian:"services"`
-	exportedServiceURLs   map[string][]*common.URL `hessian:"-"` // server exported service urls
-	subscribedServiceURLs map[string][]*common.URL `hessian:"-"` // client subscribed service urls
-	mu                    sync.RWMutex             `json:"-" hessian:"-"`
-	LastUpdatedTime       int64                    `json:"lastUpdatedTime,omitempty" hessian:"-"`
+	// App is the application name.
+	App string `json:"app,omitempty" hessian:"app"`
+	// Revision is a content hash of app name and its services.
+	Revision string `json:"revision,omitempty" hessian:"revision"`
+	// Tag is the application tag.
+	Tag string `json:"tag,omitempty" hessian:"tag"`
+	// Services is the exported services.
+	Services map[string]*ServiceInfo `json:"services,omitempty" hessian:"services"`
+	// exportedServiceURLs is the server exported service urls.
+	exportedServiceURLs map[string][]*common.URL `hessian:"-"`
+	// subscribedServiceURLs is the client subscribed service urls.
+	subscribedServiceURLs map[string][]*common.URL `hessian:"-"`
+	// mu is the read-write lock for the metadata.
+	mu sync.RWMutex `json:"-" hessian:"-"`
+	// LastUpdatedTime is the last updated time of the metadata.
+	LastUpdatedTime int64 `json:"lastUpdatedTime,omitempty" hessian:"-"`
 }
 
+// NewAppMetadataInfo creates an empty MetadataInfo for the given application.
 func NewAppMetadataInfo(app string) *MetadataInfo {
 	return NewMetadataInfo(app, "")
 }
 
+// NewMetadataInfo creates an empty MetadataInfo with the given application name and tag.
 func NewMetadataInfo(app, tag string) *MetadataInfo {
 	return &MetadataInfo{
 		App:                   app,
@@ -85,6 +97,7 @@ func NewMetadataInfo(app, tag string) *MetadataInfo {
 	}
 }
 
+// NewMetadataInfoWithParams creates a MetadataInfo with the given application name, revision, and services.
 func NewMetadataInfoWithParams(app string, revision string, services map[string]*ServiceInfo) *MetadataInfo {
 	return &MetadataInfo{
 		App:                   app,
@@ -95,6 +108,7 @@ func NewMetadataInfoWithParams(app string, revision string, services map[string]
 	}
 }
 
+// JavaClassName aligns the class name with the Java implementation.
 func (info *MetadataInfo) JavaClassName() string {
 	return "org.apache.dubbo.metadata.MetadataInfo"
 }
@@ -121,6 +135,7 @@ func (info *MetadataInfo) addServiceWithoutLock(url *common.URL) {
 	}
 }
 
+// addUrl adds a service URL to the map depending on the ServiceKey.
 func addUrl(m map[string][]*common.URL, url *common.URL) {
 	if _, ok := m[url.ServiceKey()]; !ok {
 		m[url.ServiceKey()] = make([]*common.URL, 0)
@@ -128,6 +143,7 @@ func addUrl(m map[string][]*common.URL, url *common.URL) {
 	m[url.ServiceKey()] = append(m[url.ServiceKey()], url)
 }
 
+// removeUrl removes a service URL from the map depending on the ServiceKey.
 func removeUrl(m map[string][]*common.URL, url *common.URL) {
 	if urls, ok := m[url.ServiceKey()]; ok {
 		for i, u := range urls {
@@ -177,6 +193,7 @@ func (info *MetadataInfo) RemoveSubscribeURL(url *common.URL) {
 	removeUrl(info.subscribedServiceURLs, url)
 }
 
+// GetExportedServiceURLs returns all the exported service urls.
 func (info *MetadataInfo) GetExportedServiceURLs() []*common.URL {
 	info.mu.RLock()
 	defer info.mu.RUnlock()
@@ -188,6 +205,7 @@ func (info *MetadataInfo) GetExportedServiceURLs() []*common.URL {
 	return res
 }
 
+// GetSubscribedURLs returns all the subscribed service urls.
 func (info *MetadataInfo) GetSubscribedURLs() []*common.URL {
 	info.mu.RLock()
 	defer info.mu.RUnlock()
@@ -212,6 +230,7 @@ func (info *MetadataInfo) GetServices() map[string]*ServiceInfo {
 	return cp
 }
 
+// ReplaceExportedServices replaces the exported services with the given URLs.
 func (info *MetadataInfo) ReplaceExportedServices(urls []*common.URL) {
 	info.mu.Lock()
 	defer info.mu.Unlock()
@@ -242,6 +261,7 @@ func (info *MetadataInfo) Snapshot() MetadataInfo {
 	}
 }
 
+// findExportedServiceURL finds the service URL for a given match key.
 func (info *MetadataInfo) findExportedServiceURL(matchKey string) *common.URL {
 	for _, urls := range info.exportedServiceURLs {
 		for _, serviceURL := range urls {
@@ -253,21 +273,36 @@ func (info *MetadataInfo) findExportedServiceURL(matchKey string) *common.URL {
 	return nil
 }
 
-// ServiceInfo the information of service
+// ServiceInfo is the metadata information of a service instance from a provider URL.
 type ServiceInfo struct {
-	Name     string            `json:"name,omitempty" hessian:"name"`
-	Group    string            `json:"group,omitempty" hessian:"group"`
-	Version  string            `json:"version,omitempty" hessian:"version"`
-	Protocol string            `json:"protocol,omitempty" hessian:"protocol"`
-	Port     int               `json:"port,omitempty" hessian:"port"`
-	Path     string            `json:"path,omitempty" hessian:"path"`
-	Params   map[string]string `json:"params,omitempty" hessian:"params"`
+	// Name is the service interface name.
+	Name string `json:"name,omitempty" hessian:"name"`
+	// Group is the service group name.
+	Group string `json:"group,omitempty" hessian:"group"`
+	// Version is the service version, 0.0.0 means no version.
+	Version string `json:"version,omitempty" hessian:"version"`
+	// Protocol is the service protocol.
+	Protocol string `json:"protocol,omitempty" hessian:"protocol"`
+	// Port is the service port.
+	Port int `json:"port,omitempty" hessian:"port"`
+	// Path is the service path.
+	Path string `json:"path,omitempty" hessian:"path"`
+	// Params holds the provider URL parameters exposed to consumers.
+	// It is derived from the provider URL. It contains whitelist-filtered
+	// service-level parameters, method-level parameters and the method name list.
+	Params map[string]string `json:"params,omitempty" hessian:"params"`
 
-	ServiceKey string      `json:"-" hessian:"-"`
-	MatchKey   string      `json:"-" hessian:"-"`
-	URL        *common.URL `json:"-" hessian:"-"`
+	// ServiceKey is the service key, computed from Name, Group, and Version.
+	ServiceKey string `json:"-" hessian:"-"`
+	// MatchKey is the match key, computed from ServiceKey and Protocol.
+	MatchKey string `json:"-" hessian:"-"`
+	// URL points to the source provider URL.
+	URL *common.URL `json:"-" hessian:"-"`
 }
 
+// NewServiceInfoWithURL builds a service-level metadata view from provider URL.
+// It copies the service identity and endpoint fields, retains only whitelisted service and
+// method parameters, and stores method parameters in the compact "<method>.<key>" form.
 func NewServiceInfoWithURL(url *common.URL) *ServiceInfo {
 	service := NewServiceInfo(url.Service(), url.Group(), url.Version(), url.Protocol, url.Path, nil)
 	service.Port, _ = strconv.Atoi(url.Port)
@@ -292,6 +327,7 @@ func NewServiceInfoWithURL(url *common.URL) *ServiceInfo {
 	return service
 }
 
+// NewServiceInfo creates a ServiceInfo with the given identity fields and params, computing ServiceKey and MatchKey.
 func NewServiceInfo(name, group, version, protocol, path string, params map[string]string) *ServiceInfo {
 	serviceKey := common.ServiceKey(name, group, version)
 	matchKey := common.MatchKey(serviceKey, protocol)
@@ -307,15 +343,24 @@ func NewServiceInfo(name, group, version, protocol, path string, params map[stri
 	}
 }
 
+// JavaClassName aligns the class name with the Java implementation.
 func (si *ServiceInfo) JavaClassName() string {
 	return "org.apache.dubbo.metadata.MetadataInfo$ServiceInfo"
 }
 
+// GetMethods returns the service method name corresponding to MethodsKey.
+// The comma-separated representation preserves the order found in the provider URL.
+// If the parameter is null, the current implementation returns a list of method names containing a single empty string.
 func (si *ServiceInfo) GetMethods() []string {
 	s := si.Params[constant.MethodsKey]
 	return strings.Split(s, ",")
 }
 
+// GetParams reconstructs URL query parameters from the serialized service metadata.
+// Method parameters are stored compactly as "<method>.<key>" in ServiceInfo and are expanded
+// to "methods.<method>.<key>" when the method is listed in MethodsKey. All other parameters
+// keep their original keys. The returned url.Values is newly allocated and can be used to
+// rebuild a consumer URL without modifying ServiceInfo.Params.
 func (si *ServiceInfo) GetParams() url.Values {
 	v := url.Values{}
 	methods := gxset.NewSet()
