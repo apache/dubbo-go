@@ -869,7 +869,7 @@ func TestServerCodecSession_Marshal_ProductionShape(t *testing.T) {
 		name          string
 		serializeType string
 		allowed       string
-		payload       any      // wrapped as []any{payload} to mirror production shape
+		payload       any        // wrapped as []any{payload} to mirror production shape
 		newDest       func() any // returns a typed pointer to decode into
 		assertDecoded func(t *testing.T, dest any)
 	}{
