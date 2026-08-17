@@ -303,18 +303,16 @@ func (c *protoWrapperCodec) Unmarshal(binary []byte, message any) error {
 	// Response format: TripleResponseWrapper with single data field
 	var wrapperResp interoperability.TripleResponseWrapper
 	if err := proto.Unmarshal(binary, &wrapperResp); err == nil {
-		// Check if it's a valid response wrapper (has serializeType or non-empty data)
+		inner, err := resolveInnerCodec(wrapperResp.SerializeType)
+		if err != nil {
+			return fmt.Errorf("wrapper codec: %w", err)
+		}
+		// Non-empty Data: decode the single return value.
 		if len(wrapperResp.Data) > 0 {
-			inner, err := resolveInnerCodec(wrapperResp.SerializeType)
-			if err != nil {
-				return fmt.Errorf("wrapper codec: %w", err)
-			}
 			return inner.Unmarshal(wrapperResp.Data, message)
 		}
-		// Empty Data with serializeType indicates a null/void response, which is valid
-		if wrapperResp.SerializeType != "" {
-			return nil
-		}
+		// Empty Data with a validated SerializeType is a null/void response.
+		return nil
 	}
 
 	// Fallback: try as single-arg request (not a response wrapper)
@@ -644,9 +642,30 @@ func (s *tripleServerCodecSession) Marshal(message any) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("marshal triple wrapper response: %w", err)
 	}
-	data, err := inner.Marshal(message)
-	if err != nil {
-		return nil, fmt.Errorf("marshal triple wrapper response data: %w", err)
+	payload := message
+	var isVoid bool
+	if container, ok := message.([]any); ok {
+		// The production handler packs exactly one return value as
+		// []any{result} (server.go wrapTripleResponse). More elements indicate
+		// a programming error; fail loudly instead of silently truncating.
+		switch len(container) {
+		case 0:
+			isVoid = true
+		case 1:
+			payload = container[0]
+			if payload == nil {
+				isVoid = true
+			}
+		default:
+			return nil, fmt.Errorf("marshal triple wrapper response: expected at most 1 return value, got %d", len(container))
+		}
+	}
+	var data []byte
+	if !isVoid {
+		data, err = inner.Marshal(payload)
+		if err != nil {
+			return nil, fmt.Errorf("marshal triple wrapper response data: %w", err)
+		}
 	}
 	// Use inner.Name() instead of s.serializeType so that an absent SerializeType
 	// (defaulted to hessian2 by resolveInnerCodec) is normalized on the wire.
