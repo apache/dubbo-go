@@ -710,6 +710,44 @@ func TestContextError(t *testing.T) {
 	assert.False(t, triple.IsWireError(err))
 }
 
+func TestBizErrorCodePreservedAcrossProtocols(t *testing.T) {
+	t.Parallel()
+
+	handler := triple.NewUnaryHandler(
+		"/connect.ping.v1.PingService/Ping",
+		func() any { return new(pingv1.PingRequest) },
+		func(ctx context.Context, req *triple.Request) (*triple.Response, error) {
+			return nil, triple.NewError(triple.CodeBizError, errors.New(errorMessage))
+		},
+	)
+	assertBizError := func(t *testing.T, server *httptest.Server, opts ...triple.ClientOption) { //nolint:thelper
+		client := pingv1connect.NewPingServiceClient(server.Client(), server.URL, opts...)
+		request := triple.NewRequest(&pingv1.PingRequest{Number: 42})
+		response := triple.NewResponse(&pingv1.PingResponse{})
+		err := client.Ping(context.Background(), request, response)
+		assert.NotNil(t, err)
+		var tripleErr *triple.Error
+		assert.True(t, errors.As(err, &tripleErr))
+		assert.Equal(t, tripleErr.Code(), triple.CodeBizError)
+	}
+
+	t.Run("triple", func(t *testing.T) {
+		t.Parallel()
+		server := httptest.NewServer(handler)
+		t.Cleanup(server.Close)
+		assertBizError(t, server, triple.WithTriple())
+	})
+
+	t.Run("grpc", func(t *testing.T) {
+		t.Parallel()
+		server := httptest.NewUnstartedServer(handler)
+		server.EnableHTTP2 = true
+		server.StartTLS()
+		t.Cleanup(server.Close)
+		assertBizError(t, server)
+	})
+}
+
 func TestGRPCMarshalStatusError(t *testing.T) {
 	t.Parallel()
 

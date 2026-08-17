@@ -65,6 +65,16 @@ func (c *compatHandlerStream) RecvMsg(m any) error {
 	return c.conn.Receive(m)
 }
 
+// NewCompatStreamHandler constructs a [Handler] that adapts a
+// protoc-gen-go-triple generated stream function to the Triple streaming
+// model. The generated function receives a [grpc.ServerStream] backed by the
+// underlying protocol connection. Before invocation, the request headers are
+// injected into the context as gRPC-compatible metadata together with the
+// [constant.TripleGoInterfaceName] value. When an [Interceptor] is provided,
+// it wraps the whole implementation, so it runs before the metadata
+// injection. Note that SetHeader, SendHeader and SetTrailer on the adapted
+// [grpc.ServerStream] are no-ops: metadata set through them is silently
+// dropped.
 func NewCompatStreamHandler(
 	procedure string,
 	srv any,

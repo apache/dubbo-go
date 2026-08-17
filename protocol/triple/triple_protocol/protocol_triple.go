@@ -691,7 +691,7 @@ func (e *tripleWireError) asError() *Error {
 	if e == nil {
 		return nil
 	}
-	if e.Code < minCode || e.Code > maxCode {
+	if (e.Code < minCode || e.Code > maxCode) && e.Code != CodeBizError {
 		e.Code = CodeUnknown
 	}
 	err := NewWireError(e.Code, errors.New(e.Message))
