@@ -421,6 +421,52 @@ func TestRestartCallBackRestoresBusinessListener(t *testing.T) {
 	}
 }
 
+func TestRestartCallBackRestoresBusinessListenerWhenCacheDisabled(t *testing.T) {
+	cluster, client, _, err := gxzookeeper.NewMockZookeeperClient("restart-business-watch-cache-disabled", 5*time.Second)
+	if err != nil {
+		t.Skipf("skip mock zk setup: %v", err)
+	}
+	defer cluster.Stop()
+	go (&gxzookeeper.DefaultHandler{}).HandleZkEvent(client)
+
+	cfg := &zookeeperDynamicConfiguration{
+		rootPath: "/dubbo/config",
+		client:   client,
+		url:      mustURL(t, "registry://127.0.0.1:2181"),
+		cache:    newConfigCache(0),
+	}
+	cfg.listener = remotingzookeeper.NewZkEventListener(client)
+	cfg.cacheListener = newCacheListener(cfg.rootPath, cfg.listener, &cfg.cache)
+	defer cfg.listener.Close()
+
+	key := "app.properties"
+	group := "group"
+	path := cfg.getPropertiesPath(key, config_center.WithGroup(group))
+	recorder := &channelConfigListener{events: make(chan *config_center.ConfigChangeEvent, 2)}
+	require.NoError(t, cfg.PublishConfig(key, group, "v1"))
+	time.Sleep(50 * time.Millisecond)
+	// A reconnect preserves business listeners but may invalidate their watches.
+	cfg.cacheListener.keyListeners.Store(path, map[config_center.ConfigurationListener]struct{}{recorder: {}})
+
+	cfg.listener.ListenConfigurationEvent(cfg.rootPath, cfg.cacheListener)
+	require.True(t, cfg.RestartCallBack())
+
+	for _, value := range []string{"v2", "v3"} {
+		_, stat, getErr := client.GetContent(path)
+		require.NoError(t, getErr)
+		_, setErr := client.SetContent(path, []byte(value), stat.Version)
+		require.NoError(t, setErr)
+
+		select {
+		case event := <-recorder.events:
+			require.Equal(t, key, event.Key)
+			require.Equal(t, value, event.Value)
+		case <-time.After(time.Second):
+			t.Fatalf("listener did not receive configuration value %q", value)
+		}
+	}
+}
+
 func mustURL(t *testing.T, raw string) *common.URL {
 	t.Helper()
 	u, err := common.NewURL(raw)

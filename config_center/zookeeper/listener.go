@@ -94,7 +94,7 @@ func (l *CacheListener) AddListener(key string, listener config_center.Configura
 }
 
 func (l *CacheListener) restoreBusinessWatches() {
-	if l.cache == nil || !l.cache.enabled() || l.zkEventListener == nil ||
+	if l.cache == nil || l.zkEventListener == nil ||
 		l.zkEventListener.Client == nil || l.zkEventListener.Client.Conn == nil {
 		return
 	}
