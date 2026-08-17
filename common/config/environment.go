@@ -99,8 +99,8 @@ func (env *Environment) Configuration() *list.List {
 // SetDynamicConfiguration sets value for dynamicConfiguration
 func (env *Environment) SetDynamicConfiguration(dc config_center.DynamicConfiguration) {
 	env.dynamicMu.Lock()
+	defer env.dynamicMu.Unlock()
 	env.dynamicConfiguration = dc
-	env.dynamicMu.Unlock()
 }
 
 // GetDynamicConfiguration gets dynamicConfiguration
