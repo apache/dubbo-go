@@ -188,6 +188,34 @@ func Http3Negotiation(negotiation bool) Option {
 	}
 }
 
+// Http3KeepAlivePeriod sets how often the HTTP/3 transport sends QUIC keep-alive packets.
+func Http3KeepAlivePeriod(period time.Duration) Option {
+	return func(opts *Options) {
+		opts.Triple.Http3.KeepAlivePeriod = period.String()
+	}
+}
+
+// Http3MaxIdleTimeout sets the maximum idle timeout for HTTP/3 QUIC connections.
+func Http3MaxIdleTimeout(timeout time.Duration) Option {
+	return func(opts *Options) {
+		opts.Triple.Http3.MaxIdleTimeout = timeout.String()
+	}
+}
+
+// Http3MaxIncomingStreams sets the maximum number of concurrent HTTP/3 bidirectional streams.
+func Http3MaxIncomingStreams(streams int64) Option {
+	return func(opts *Options) {
+		opts.Triple.Http3.MaxIncomingStreams = streams
+	}
+}
+
+// Http3MaxIncomingUniStreams sets the maximum number of concurrent HTTP/3 unidirectional streams.
+func Http3MaxIncomingUniStreams(streams int64) Option {
+	return func(opts *Options) {
+		opts.Triple.Http3.MaxIncomingUniStreams = streams
+	}
+}
+
 // CORSOption configures a single aspect of CORS.
 type CORSOption func(*global.CorsConfig)
 
