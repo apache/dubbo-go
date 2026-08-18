@@ -76,8 +76,6 @@ func (f *genericServiceFilter) Invoke(ctx context.Context, invoker base.Invoker,
 	}
 
 	// get real invocation info from the generic invocation
-	// IsGenericInvocation only guarantees len(Arguments)==3, not the element types;
-	// guard the assertions so a malformed $invoke returns an error instead of panicking.
 	mtdName, ok := inv.Arguments()[0].(string)
 	if !ok {
 		return &result.RPCResult{Err: perrors.Errorf("$invoke: arg[0] must be string, got %T", inv.Arguments()[0])}
