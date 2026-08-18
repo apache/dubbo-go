@@ -565,6 +565,44 @@ func TestSetHeaderAndSetTrailerInUnaryHandler(t *testing.T) {
 	assert.Equal(t, response.Trailer().Values(handlerTrailer), []string{trailerValue})
 }
 
+// TestSendHeaderInUnaryHandler verifies that SendHeader flushes response
+// headers over a real HTTP transport and that the response body stays
+// decodable. Unlike the mock in header_test.go, this exercises net/http's
+// WriteHeader snapshot semantics and the unary handler's double-Send path
+// (SendHeader's conn.Send(nil) followed by the framework's conn.Send(msg)),
+// guarding the regression fixed in #3667.
+func TestSendHeaderInUnaryHandler(t *testing.T) {
+	t.Parallel()
+
+	handler := triple.NewUnaryHandler(
+		"/connect.ping.v1.PingService/Ping",
+		func() any { return new(pingv1.PingRequest) },
+		func(ctx context.Context, req *triple.Request) (*triple.Response, error) {
+			if err := triple.SendHeader(ctx, http.Header{handlerHeader: []string{headerValue}}); err != nil {
+				return nil, err
+			}
+			msg := req.Msg.(*pingv1.PingRequest)
+			return triple.NewResponse(&pingv1.PingResponse{
+				Number: msg.Number,
+				Text:   msg.Text,
+			}), nil
+		},
+	)
+	server := httptest.NewServer(handler)
+	t.Cleanup(server.Close)
+
+	client := pingv1connect.NewPingServiceClient(server.Client(), server.URL)
+	request := triple.NewRequest(&pingv1.PingRequest{Number: 42, Text: "hello"})
+	response := triple.NewResponse(&pingv1.PingResponse{})
+	err := client.Ping(context.Background(), request, response)
+	assert.Nil(t, err)
+	// The flushed response header must reach the client.
+	assert.Equal(t, response.Header().Values(handlerHeader), []string{headerValue})
+	// The response body must remain decodable after the header flush.
+	assert.Equal(t, response.Msg.(*pingv1.PingResponse).Number, int64(42))
+	assert.Equal(t, response.Msg.(*pingv1.PingResponse).Text, "hello")
+}
+
 func TestConcurrentStreams(t *testing.T) {
 	if testing.Short() {
 		t.Skipf("skipping %s test in short mode", t.Name())
