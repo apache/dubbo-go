@@ -22,10 +22,12 @@ import (
 )
 
 import (
+	"github.com/stretchr/testify/assert"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/registry"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestMetadtaServiceVersionCustomizerGetPriority(t *testing.T) {
@@ -64,7 +66,7 @@ func TestMetadtaServiceVersionCustomizerNonLocalStorage(t *testing.T) {
 	p := &MetadtaServiceVersionCustomizer{}
 	ins := &registry.DefaultServiceInstance{
 		Metadata: map[string]string{
-			constant.MetadataStorageTypePropertyName: "remote",
+			constant.MetadataStorageTypePropertyName:      "remote",
 			constant.MetadataServiceURLParamsPropertyName: `{"protocol":"tri","port":"20880"}`,
 		},
 	}
@@ -88,7 +90,7 @@ func TestMetadtaServiceVersionCustomizerInvalidJSON(t *testing.T) {
 func newVersionInstance(paramsJSON string) registry.ServiceInstance {
 	return &registry.DefaultServiceInstance{
 		Metadata: map[string]string{
-			constant.MetadataStorageTypePropertyName: constant.DefaultMetadataStorageType,
+			constant.MetadataStorageTypePropertyName:      constant.DefaultMetadataStorageType,
 			constant.MetadataServiceURLParamsPropertyName: paramsJSON,
 		},
 	}
