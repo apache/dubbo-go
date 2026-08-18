@@ -111,11 +111,12 @@ type Option interface {
 	Apply(config any) error
 }
 
-// FilterSpec describes one filter contribution from an extension. Factory is
-// preferred for resource-local configuration; a nil Factory may be resolved
-// through the legacy named-filter registry by the chain builder.
+// FilterSpec describes one filter contribution from an extension. ID is an
+// extension-owned internal identity used by the core for deduplication and
+// diagnostics; it is not a user-facing filter name. Factory is required and
+// creates the filter for the current resource context.
 type FilterSpec struct {
-	Key     string
+	ID      string
 	Factory func() filter.Filter
 	Order   int
 }
