@@ -22,24 +22,68 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/registry"
+
 	gxset "github.com/dubbogo/gost/container/set"
 
 	"github.com/stretchr/testify/assert"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/registry"
-)
-
-func TestMetadataServiceURLParamsMetadataCustomizer(t *testing.T) {
-
+func TestMetadataServiceURLParamsMetadataCustomizerGetPriority(t *testing.T) {
 	msup := &metadataServiceURLParamsMetadataCustomizer{exceptKeys: gxset.NewSet()}
 	assert.Equal(t, 0, msup.GetPriority())
-
-	msup.Customize(createInstance())
 }
 
-func createInstance() registry.ServiceInstance {
+// TestMetadataServiceURLParamsCustomizeNilURL verifies that when the metadata
+// service URL is not exported (nil), Customize writes nothing into metadata.
+func TestMetadataServiceURLParamsCustomizeNilURL(t *testing.T) {
+	msup := &metadataServiceURLParamsMetadataCustomizer{exceptKeys: gxset.NewSet()}
 	ins := &registry.DefaultServiceInstance{}
-	return ins
+	msup.Customize(ins)
+	_, ok := ins.GetMetadata()[constant.MetadataServiceURLParamsPropertyName]
+	assert.False(t, ok, "nothing should be written when the metadata service URL is nil")
+}
+
+func TestConvertToParams(t *testing.T) {
+	msup := &metadataServiceURLParamsMetadataCustomizer{exceptKeys: gxset.NewSet()}
+
+	u := common.NewURLWithOptions(
+		common.WithProtocol("dubbo"),
+		common.WithPort("20880"),
+		common.WithParamsValue(constant.TimeoutKey, "3000"), // in IncludeKeys, should be kept
+		common.WithParamsValue(constant.PathKey, "/path"),   // in IncludeKeys, should be kept
+		common.WithParamsValue(constant.VersionKey, ""),     // empty value, should be dropped
+		common.WithParamsValue("custom.arbitrary.key", "x"), // not in IncludeKeys, should be dropped
+	)
+
+	ps := msup.convertToParams(u)
+
+	assert.Equal(t, "3000", ps[constant.TimeoutKey])
+	assert.Equal(t, "/path", ps[constant.PathKey])
+	// port/protocol are always appended even if absent from URL params
+	assert.Equal(t, "dubbo", ps[constant.ProtocolKey])
+	assert.Equal(t, "20880", ps[constant.PortKey])
+	// empty values are dropped
+	_, ok := ps[constant.VersionKey]
+	assert.False(t, ok, "empty value param should be dropped")
+	// keys outside info.IncludeKeys are dropped
+	_, ok = ps["custom.arbitrary.key"]
+	assert.False(t, ok, "param not in IncludeKeys should be dropped")
+}
+
+func TestConvertToParamsAlwaysAppendsPortAndProtocol(t *testing.T) {
+	msup := &metadataServiceURLParamsMetadataCustomizer{exceptKeys: gxset.NewSet()}
+
+	// URL without explicit port/protocol params
+	u := common.NewURLWithOptions(
+		common.WithProtocol("tri"),
+		common.WithPort("50051"),
+	)
+
+	ps := msup.convertToParams(u)
+
+	assert.Equal(t, "tri", ps[constant.ProtocolKey])
+	assert.Equal(t, "50051", ps[constant.PortKey])
 }

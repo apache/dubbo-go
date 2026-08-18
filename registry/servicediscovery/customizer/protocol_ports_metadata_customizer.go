@@ -23,14 +23,12 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+
+	"github.com/dubbogo/gost/log/logger"
 )
 
 func init() {
@@ -46,7 +44,12 @@ func (p *ProtocolPortsMetadataCustomizer) GetPriority() int {
 	return 0
 }
 
-// Customize put the the string like [{"protocol": "dubbo", "port": 123}] into instance's metadata
+// Customize writes the exported service endpoints into the instance metadata
+// under ServiceInstanceEndpoints ("dubbo.endpoints"). The URLs come from
+// metadata.GetMetadataService().GetExportedServiceURLs(); it returns without
+// writing when the list is empty (client side) or on error. URLs with an empty
+// protocol are skipped and unparsable ports are recorded as 0, then the
+// endpoints JSON overwrites the key.
 func (p *ProtocolPortsMetadataCustomizer) Customize(instance registry.ServiceInstance) {
 	list, err := metadata.GetMetadataService().GetExportedServiceURLs()
 	if err != nil {
@@ -75,6 +78,7 @@ func (p *ProtocolPortsMetadataCustomizer) Customize(instance registry.ServiceIns
 }
 
 // endpointsStr convert the map to json like [{"protocol": "dubbo", "port": 123}]
+// It returns "" when the map is empty or the marshaling fails.
 func endpointsStr(protocolMap map[string]int) string {
 	if len(protocolMap) == 0 {
 		return ""
