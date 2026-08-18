@@ -23,9 +23,12 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 )
 
 func TestContextValidate(t *testing.T) {
