@@ -24,6 +24,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -67,7 +68,7 @@ func TestProtocolPortsCustomizeWithURLs(t *testing.T) {
 	str := ins.GetMetadata()[constant.ServiceInstanceEndpoints]
 	assert.NotEmpty(t, str)
 	var endpoints []registry.Endpoint
-	assert.NoError(t, json.Unmarshal([]byte(str), &endpoints))
+	require.NoError(t, json.Unmarshal([]byte(str), &endpoints))
 	assert.Len(t, endpoints, 2)
 
 	got := make(map[string]int)
@@ -96,7 +97,7 @@ func TestProtocolPortsCustomizeSkipsEmptyProtocol(t *testing.T) {
 
 	str := ins.GetMetadata()[constant.ServiceInstanceEndpoints]
 	var endpoints []registry.Endpoint
-	assert.NoError(t, json.Unmarshal([]byte(str), &endpoints))
+	require.NoError(t, json.Unmarshal([]byte(str), &endpoints))
 	assert.Len(t, endpoints, 1, "URL with empty protocol should be skipped")
 	assert.Equal(t, "dubbo", endpoints[0].Protocol)
 	assert.Equal(t, 20881, endpoints[0].Port)
@@ -120,7 +121,7 @@ func TestProtocolPortsCustomizeUnparsablePort(t *testing.T) {
 
 	str := ins.GetMetadata()[constant.ServiceInstanceEndpoints]
 	var endpoints []registry.Endpoint
-	assert.NoError(t, json.Unmarshal([]byte(str), &endpoints))
+	require.NoError(t, json.Unmarshal([]byte(str), &endpoints))
 	assert.Len(t, endpoints, 2)
 
 	ports := make(map[string]int)
@@ -132,14 +133,14 @@ func TestProtocolPortsCustomizeUnparsablePort(t *testing.T) {
 }
 
 func TestEndpointsStrEmpty(t *testing.T) {
-	assert.Equal(t, "", endpointsStr(map[string]int{}))
-	assert.Equal(t, "", endpointsStr(nil))
+	assert.Empty(t, endpointsStr(map[string]int{}))
+	assert.Empty(t, endpointsStr(nil))
 }
 
 func TestEndpointsStrNormal(t *testing.T) {
 	str := endpointsStr(map[string]int{"dubbo": 123})
 	var endpoints []registry.Endpoint
-	assert.NoError(t, json.Unmarshal([]byte(str), &endpoints))
+	require.NoError(t, json.Unmarshal([]byte(str), &endpoints))
 	assert.Len(t, endpoints, 1)
 	assert.Equal(t, "dubbo", endpoints[0].Protocol)
 	assert.Equal(t, 123, endpoints[0].Port)
