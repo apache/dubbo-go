@@ -30,6 +30,8 @@ func init() {
 	extension.AddCustomizers(&hostPortCustomizer{})
 }
 
+// hostPortCustomizer fills the host and port of a DefaultServiceInstance from
+// its exported service URLs.
 type hostPortCustomizer struct{}
 
 // GetPriority will return 1 so that it will be invoked in front of user defining Customizer
@@ -37,7 +39,11 @@ func (e *hostPortCustomizer) GetPriority() int {
 	return 1
 }
 
-// Customize calculate the revision for exported urls and then put it into instance metadata
+// Customize sets the host and port of the instance from the first exported
+// service URL, so that the instance carries a reachable address.
+// It only applies to *registry.DefaultServiceInstance, and does nothing when
+// the port is already set or when the instance has no exported service URLs.
+// An unparsable port leaves the port unchanged, while the host is still set.
 func (e *hostPortCustomizer) Customize(instance registry.ServiceInstance) {
 	if instance.GetPort() > 0 { // has set, avoid reset
 		return
