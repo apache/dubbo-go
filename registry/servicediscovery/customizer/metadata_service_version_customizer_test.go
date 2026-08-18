@@ -35,7 +35,8 @@ func TestMetadtaServiceVersionCustomizerGetPriority(t *testing.T) {
 	assert.Equal(t, 0, p.GetPriority())
 }
 
-// TestMetadtaServiceVersionCustomizerTriProtocol verifies that tri writes v2.
+// TestMetadtaServiceVersionCustomizerTriProtocol verifies that a tri metadata
+// service URL writes v2.
 func TestMetadtaServiceVersionCustomizerTriProtocol(t *testing.T) {
 	p := &MetadtaServiceVersionCustomizer{}
 	ins := newVersionInstance(`{"protocol":"tri","port":"20880"}`)
@@ -43,7 +44,8 @@ func TestMetadtaServiceVersionCustomizerTriProtocol(t *testing.T) {
 	assert.Equal(t, constant.MetadataServiceV2Version, ins.GetMetadata()[constant.MetadataVersion])
 }
 
-// TestMetadtaServiceVersionCustomizerDubboProtocol verifies that dubbo writes v1.
+// TestMetadtaServiceVersionCustomizerDubboProtocol verifies that a dubbo
+// metadata service URL writes v1.
 func TestMetadtaServiceVersionCustomizerDubboProtocol(t *testing.T) {
 	p := &MetadtaServiceVersionCustomizer{}
 	ins := newVersionInstance(`{"protocol":"dubbo","port":"20880"}`)

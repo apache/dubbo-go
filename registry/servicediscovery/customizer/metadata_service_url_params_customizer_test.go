@@ -40,6 +40,9 @@ func TestMetadataServiceURLParamsMetadataCustomizerGetPriority(t *testing.T) {
 
 // TestMetadataServiceURLParamsCustomizeNilURL verifies that when the metadata
 // service URL is not exported (nil), Customize writes nothing into metadata.
+// The URL comes from the global metadata.GetMetadataService() singleton whose
+// metadataUrl is nil by default; there is no exported setter and no test in
+// this package modifies it, so the nil state is deterministic.
 func TestMetadataServiceURLParamsCustomizeNilURL(t *testing.T) {
 	msup := &metadataServiceURLParamsMetadataCustomizer{exceptKeys: gxset.NewSet()}
 	ins := &registry.DefaultServiceInstance{}

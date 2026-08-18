@@ -36,7 +36,7 @@ func init() {
 }
 
 // MetadtaServiceVersionCustomizer writes the metadata service version into the
-// instance metadata according to the protocol of the exported service.
+// instance metadata according to the protocol of the metadata service URL.
 type MetadtaServiceVersionCustomizer struct {
 }
 
