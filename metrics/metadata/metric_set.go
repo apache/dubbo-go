@@ -35,16 +35,18 @@ const (
 	MetadataMappingGet
 	MetadataMappingListen
 	MetadataMappingRemove
+	MetadataCache
+	MetadataFetch
 )
 
 const (
-	dubboMetadataPush              = "dubbo_metadata_push_num"
-	dubboPushRt                    = "dubbo_push_rt_milliseconds"
-	dubboMetadataSubscribe         = "dubbo_metadata_subscribe_num"
-	dubboSubscribeRt               = "dubbo_subscribe_rt_milliseconds"
-	dubboMetadataStoreProvider     = "dubbo_metadata_store_provider"
-	dubboStoreProviderInterfaceRt  = "dubbo_store_provider_interface_rt_milliseconds"
-	dubboSubscribeServiceRt        = "dubbo_subscribe_service_rt_milliseconds"
+	dubboMetadataPush             = "dubbo_metadata_push_num"
+	dubboPushRt                   = "dubbo_push_rt_milliseconds"
+	dubboMetadataSubscribe        = "dubbo_metadata_subscribe_num"
+	dubboSubscribeRt              = "dubbo_subscribe_rt_milliseconds"
+	dubboMetadataStoreProvider    = "dubbo_metadata_store_provider"
+	dubboStoreProviderInterfaceRt = "dubbo_store_provider_interface_rt_milliseconds"
+	dubboSubscribeServiceRt       = "dubbo_subscribe_service_rt_milliseconds"
 	dubboMetadataMappingRegister   = "dubbo_metadata_mapping_register_num"
 	dubboMetadataMappingRegisterRt = "dubbo_metadata_mapping_register_rt_milliseconds"
 	dubboMetadataMappingGet        = "dubbo_metadata_mapping_get_num"
@@ -53,6 +55,8 @@ const (
 	dubboMetadataMappingListenRt   = "dubbo_metadata_mapping_listen_rt_milliseconds"
 	dubboMetadataMappingRemove     = "dubbo_metadata_mapping_remove_num"
 	dubboMetadataMappingRemoveRt   = "dubbo_metadata_mapping_remove_rt_milliseconds"
+	dubboMetadataCache            = "dubbo_metadata_cache"
+	dubboMetadataFetch            = "dubbo_metadata_fetch"
 )
 
 const (
@@ -116,4 +120,52 @@ var (
 	metadataMappingRemoveSucceed = metrics.NewMetricKey(dubboMetadataMappingRemove+succSuffix, "Succeed Metadata Mapping Remove Num")
 	metadataMappingRemoveFailed  = metrics.NewMetricKey(dubboMetadataMappingRemove+failedSuffix, "Failed Metadata Mapping Remove Num")
 	metadataMappingRemoveRt      = metrics.NewMetricKey(dubboMetadataMappingRemoveRt, "Metadata Mapping Remove Time")
+
+	/*
+	   # HELP dubbo_metadata_cache_total Total Metadata Cache Lookup Num
+	   # TYPE dubbo_metadata_cache_total counter
+	   dubbo_metadata_cache_total{application_name="metrics-consumer",hostname="localhost",ip="10.252.156.213",provider_app="metrics-provider",} 5.0
+	   dubbo_metadata_cache_hit_total{application_name="metrics-consumer",hostname="localhost",ip="10.252.156.213",provider_app="metrics-provider",} 4.0
+	   dubbo_metadata_cache_miss_total{application_name="metrics-consumer",hostname="localhost",ip="10.252.156.213",provider_app="metrics-provider",} 1.0
+	*/
+	// app level, tagged by provider app
+	metadataCacheNum  = metrics.NewMetricKey(dubboMetadataCache+totalSuffix, "Total Metadata Cache Lookup Num")
+	metadataCacheHit  = metrics.NewMetricKey(dubboMetadataCache+"_hit"+totalSuffix, "Hit Metadata Cache Lookup Num")
+	metadataCacheMiss = metrics.NewMetricKey(dubboMetadataCache+"_miss"+totalSuffix, "Miss Metadata Cache Lookup Num")
+
+	/*
+	   # HELP dubbo_metadata_fetch_total Total Metadata Fetch Num
+	   # TYPE dubbo_metadata_fetch_total counter
+	   dubbo_metadata_fetch_total{application_name="metrics-consumer",hostname="localhost",ip="10.252.156.213",provider_app="metrics-provider",result="success",source="report",storage_type="remote",} 1.0
+	*/
+	// app level, tagged by provider app, fetch source, storage type and result
+	metadataFetchNum = metrics.NewMetricKey(dubboMetadataFetch+totalSuffix, "Total Metadata Fetch Num")
+)
+
+const (
+	TagProviderApp = "provider_app"
+	TagSource      = "source"
+	TagStorageType = "storage_type"
+	TagResult      = "result"
+)
+
+// Metadata fetch source values
+const (
+	SourceCache    = "cache"
+	SourceReport   = "report"
+	SourceRpc      = "rpc"
+	SourceFallback = "fallback"
+)
+
+// Metadata storage type values
+const (
+	StorageTypeLocal  = "local"
+	StorageTypeRemote = "remote"
+	StorageTypeCache  = "cache"
+)
+
+// Metadata fetch result values
+const (
+	ResultSuccess = "success"
+	ResultFailure = "failure"
 )
