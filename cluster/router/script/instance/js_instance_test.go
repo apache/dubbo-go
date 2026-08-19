@@ -519,8 +519,7 @@ func TestCompileConcurrentSingleProgram(t *testing.T) {
 	const n = 20
 	var wg sync.WaitGroup
 	for range n {
-		wg.Add(1)
-		go func() { defer wg.Done(); assert.NoError(t, ins.Compile(script)) }()
+		wg.Go(func() { ; assert.NoError(t, ins.Compile(script)) })
 	}
 	wg.Wait()
 	assert.Len(t, ins.program, 1)
@@ -534,16 +533,14 @@ func TestRunConcurrentWithRace(t *testing.T) {
 	assert.NoError(t, globalIns.Compile(script))
 	var wg sync.WaitGroup
 	for range 30 {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			ins, err := GetInstances("javascript")
-			assert.NoError(t, err)
+			testify_require.NoError(t, err)
 			invokers, inv, _ := getRouteArgs()
 			got, err := ins.Run(script, invokers, inv)
-			assert.NoError(t, err)
+			testify_require.NoError(t, err)
 			assert.Len(t, got, 2)
-		}()
+		})
 	}
 	wg.Wait()
 }
@@ -593,31 +590,31 @@ func TestJsInstancesRunFailurePaths(t *testing.T) {
 		ins := newJsInstances()
 		invokers, inv, _ := getRouteArgs()
 		got, err := ins.Run(throwScript, invokers, inv)
-		assert.NoError(t, err)
+		testify_require.NoError(t, err)
 		assert.Equal(t, invokers, got)
 	})
 	t.Run("script throws", func(t *testing.T) {
 		ins := newJsInstances()
-		assert.NoError(t, ins.Compile(throwScript))
+		testify_require.NoError(t, ins.Compile(throwScript))
 		invokers, inv, _ := getRouteArgs()
 		got, err := ins.Run(throwScript, invokers, inv)
-		assert.Error(t, err)
+		testify_require.Error(t, err)
 		assert.Equal(t, invokers, got)
 	})
 	t.Run("script returns non-array", func(t *testing.T) {
 		ins := newJsInstances()
-		assert.NoError(t, ins.Compile(nonArrayScript))
+		testify_require.NoError(t, ins.Compile(nonArrayScript))
 		invokers, inv, _ := getRouteArgs()
 		got, err := ins.Run(nonArrayScript, invokers, inv)
-		assert.Error(t, err)
+		testify_require.Error(t, err)
 		assert.Equal(t, invokers, got)
 	})
 	t.Run("script returns array with invalid element", func(t *testing.T) {
 		ins := newJsInstances()
-		assert.NoError(t, ins.Compile(badElemScript))
+		testify_require.NoError(t, ins.Compile(badElemScript))
 		invokers, inv, _ := getRouteArgs()
 		got, err := ins.Run(badElemScript, invokers, inv)
-		assert.Error(t, err)
+		testify_require.Error(t, err)
 		assert.Equal(t, invokers, got)
 	})
 }
@@ -665,13 +662,13 @@ func TestProgramRefcountLifecycle(t *testing.T) {
 	ins.Destroy(script)
 	assert.Len(t, ins.program, 1)
 	got, err := ins.Run(script, invokers, inv)
-	assert.NoError(t, err)
+	testify_require.NoError(t, err)
 	assert.Len(t, got, 2)
 
 	ins.Destroy(script)
 	assert.Empty(t, ins.program)
 	got, err = ins.Run(script, invokers, inv)
-	assert.NoError(t, err)
+	testify_require.NoError(t, err)
 	assert.Len(t, got, 3)
 }
 
