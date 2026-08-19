@@ -513,6 +513,41 @@ func TestFuncWithCompileConcurrent(t *testing.T) {
 	wg.Wait()
 }
 
+func TestCompileConcurrentSingleProgram(t *testing.T) {
+	ins := newJsInstances()
+	const script = `(function route(i,v,c){ return [invokers[1], invokers[2]]; }(invokers,invocation,context));`
+	const n = 20
+	var wg sync.WaitGroup
+	for range n {
+		wg.Add(1)
+		go func() { defer wg.Done(); assert.NoError(t, ins.Compile(script)) }()
+	}
+	wg.Wait()
+	assert.Len(t, ins.program, 1)
+	assert.EqualValues(t, n, ins.program[script].count)
+}
+
+func TestRunConcurrentWithRace(t *testing.T) {
+	globalIns, err := GetInstances("javascript")
+	assert.NoError(t, err)
+	const script = `(function route(i,v,c){ return [invokers[1], invokers[2]]; }(invokers,invocation,context));`
+	assert.NoError(t, globalIns.Compile(script))
+	var wg sync.WaitGroup
+	for range 30 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			ins, err := GetInstances("javascript")
+			assert.NoError(t, err)
+			invokers, inv, _ := getRouteArgs()
+			got, err := ins.Run(script, invokers, inv)
+			assert.NoError(t, err)
+			assert.Len(t, got, 2)
+		}()
+	}
+	wg.Wait()
+}
+
 func TestFuncWithCompileAndRunRepeatedly(t *testing.T) {
 	pg, err := goja.Compile("routeJs", jsScriptPrefix+`(
 function route(invokers,invocation,context) {
@@ -549,6 +584,44 @@ function route(invokers,invocation,context) {
 	}
 }
 
+func TestJsInstancesRunFailurePaths(t *testing.T) {
+	const throwScript = `(function route(i,v,c){ throw new Error("boom"); }(invokers,invocation,context));`
+	const nonArrayScript = `(function route(i,v,c){ return {}; }(invokers,invocation,context));`
+	const badElemScript = `(function route(i,v,c){ var r=[]; r.push(1); return r; }(invokers,invocation,context));`
+
+	t.Run("run without compile", func(t *testing.T) {
+		ins := newJsInstances()
+		invokers, inv, _ := getRouteArgs()
+		got, err := ins.Run(throwScript, invokers, inv)
+		assert.NoError(t, err)
+		assert.Equal(t, invokers, got)
+	})
+	t.Run("script throws", func(t *testing.T) {
+		ins := newJsInstances()
+		assert.NoError(t, ins.Compile(throwScript))
+		invokers, inv, _ := getRouteArgs()
+		got, err := ins.Run(throwScript, invokers, inv)
+		assert.Error(t, err)
+		assert.Equal(t, invokers, got)
+	})
+	t.Run("script returns non-array", func(t *testing.T) {
+		ins := newJsInstances()
+		assert.NoError(t, ins.Compile(nonArrayScript))
+		invokers, inv, _ := getRouteArgs()
+		got, err := ins.Run(nonArrayScript, invokers, inv)
+		assert.Error(t, err)
+		assert.Equal(t, invokers, got)
+	})
+	t.Run("script returns array with invalid element", func(t *testing.T) {
+		ins := newJsInstances()
+		assert.NoError(t, ins.Compile(badElemScript))
+		invokers, inv, _ := getRouteArgs()
+		got, err := ins.Run(badElemScript, invokers, inv)
+		assert.Error(t, err)
+		assert.Equal(t, invokers, got)
+	})
+}
+
 func setRunScriptEnv() *goja.Runtime {
 	runtime := goja.New()
 	rt_link_external_libraries(runtime)
@@ -577,6 +650,29 @@ func setRunScriptEnv() *goja.Runtime {
 	}
 	re_init_res_recv(runtime)
 	return runtime
+}
+
+func TestProgramRefcountLifecycle(t *testing.T) {
+	ins := newJsInstances()
+	const script = `(function route(i,v,c){ return [invokers[1], invokers[2]]; }(invokers,invocation,context));`
+
+	assert.NoError(t, ins.Compile(script))
+	assert.NoError(t, ins.Compile(script))
+	assert.Len(t, ins.program, 1)
+	assert.EqualValues(t, 2, ins.program[script].count)
+
+	invokers, inv, _ := getRouteArgs()
+	ins.Destroy(script)
+	assert.Len(t, ins.program, 1)
+	got, err := ins.Run(script, invokers, inv)
+	assert.NoError(t, err)
+	assert.Len(t, got, 2)
+
+	ins.Destroy(script)
+	assert.Empty(t, ins.program)
+	got, err = ins.Run(script, invokers, inv)
+	assert.NoError(t, err)
+	assert.Len(t, got, 3)
 }
 
 func TestRunScriptInPanic(t *testing.T) {
