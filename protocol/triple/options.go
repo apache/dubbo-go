@@ -157,6 +157,8 @@ func WithHttp3Enable() Option {
 }
 
 // Http3Enable enables HTTP/3 support for the Triple protocol.
+//
+// Deprecated: use WithHttp3Enable instead.
 func Http3Enable() Option {
 	return WithHttp3Enable()
 }
@@ -194,6 +196,8 @@ func WithHttp3Negotiation(negotiation bool) Option {
 }
 
 // Http3Negotiation configures HTTP/3 negotiation behavior for the Triple protocol.
+//
+// Deprecated: use WithHttp3Negotiation instead.
 func Http3Negotiation(negotiation bool) Option {
 	return WithHttp3Negotiation(negotiation)
 }
