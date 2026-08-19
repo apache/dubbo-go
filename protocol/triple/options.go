@@ -118,7 +118,7 @@ func WithCORS(opts ...CORSOption) Option {
 	}
 }
 
-// Http3Enable enables HTTP/3 support for the Triple protocol.
+// WithHttp3Enable enables HTTP/3 support for the Triple protocol.
 // This option configures the server to start both HTTP/2 and HTTP/3 servers
 // simultaneously, providing modern HTTP/3 capabilities alongside traditional HTTP/2.
 //
@@ -132,7 +132,7 @@ func WithCORS(opts ...CORSOption) Option {
 //
 //	// Basic HTTP/3 enablement
 //	server := triple.NewServer(
-//	    triple.Http3Enable(),
+//	    triple.WithHttp3Enable(),
 //	)
 //
 // Requirements:
@@ -150,13 +150,18 @@ func WithCORS(opts ...CORSOption) Option {
 //
 // NOTICE: This API is EXPERIMENTAL and may be changed or removed in
 // a later release.
-func Http3Enable() Option {
+func WithHttp3Enable() Option {
 	return func(opts *Options) {
 		opts.Triple.Http3.Enable = true
 	}
 }
 
-// Http3Negotiation configures HTTP/3 negotiation behavior for the Triple protocol.
+// Http3Enable enables HTTP/3 support for the Triple protocol.
+func Http3Enable() Option {
+	return WithHttp3Enable()
+}
+
+// WithHttp3Negotiation configures HTTP/3 negotiation behavior for the Triple protocol.
 // This option controls whether HTTP/2 Alternative Services (Alt-Svc) negotiation
 // is enabled when both HTTP/2 and HTTP/3 servers are running simultaneously.
 //
@@ -164,14 +169,14 @@ func Http3Enable() Option {
 //
 //	// Enable HTTP/3 negotiation (default behavior)
 //	server := triple.NewServer(
-//	    triple.Http3Enable(),
-//	    triple.Http3Negotiation(true),
+//	    triple.WithHttp3Enable(),
+//	    triple.WithHttp3Negotiation(true),
 //	)
 //
 //	// Disable HTTP/3 negotiation for explicit protocol control
 //	server := triple.NewServer(
-//	    triple.Http3Enable(),
-//	    triple.Http3Negotiation(false),
+//	    triple.WithHttp3Enable(),
+//	    triple.WithHttp3Negotiation(false),
 //	)
 //
 // Default Behavior:
@@ -182,35 +187,40 @@ func Http3Enable() Option {
 //
 // NOTICE: This API is EXPERIMENTAL and may be changed or removed in
 // a later release.
-func Http3Negotiation(negotiation bool) Option {
+func WithHttp3Negotiation(negotiation bool) Option {
 	return func(opts *Options) {
 		opts.Triple.Http3.Negotiation = negotiation
 	}
 }
 
-// Http3KeepAlivePeriod sets how often the HTTP/3 transport sends QUIC keep-alive packets.
-func Http3KeepAlivePeriod(period time.Duration) Option {
+// Http3Negotiation configures HTTP/3 negotiation behavior for the Triple protocol.
+func Http3Negotiation(negotiation bool) Option {
+	return WithHttp3Negotiation(negotiation)
+}
+
+// WithHttp3KeepAlivePeriod sets how often the HTTP/3 transport sends QUIC keep-alive packets.
+func WithHttp3KeepAlivePeriod(period time.Duration) Option {
 	return func(opts *Options) {
 		opts.Triple.Http3.KeepAlivePeriod = period.String()
 	}
 }
 
-// Http3MaxIdleTimeout sets the maximum idle timeout for HTTP/3 QUIC connections.
-func Http3MaxIdleTimeout(timeout time.Duration) Option {
+// WithHttp3MaxIdleTimeout sets the maximum idle timeout for HTTP/3 QUIC connections.
+func WithHttp3MaxIdleTimeout(timeout time.Duration) Option {
 	return func(opts *Options) {
 		opts.Triple.Http3.MaxIdleTimeout = timeout.String()
 	}
 }
 
-// Http3MaxIncomingStreams sets the maximum number of concurrent HTTP/3 bidirectional streams.
-func Http3MaxIncomingStreams(streams int64) Option {
+// WithHttp3MaxIncomingStreams sets the maximum number of concurrent HTTP/3 bidirectional streams.
+func WithHttp3MaxIncomingStreams(streams int64) Option {
 	return func(opts *Options) {
 		opts.Triple.Http3.MaxIncomingStreams = streams
 	}
 }
 
-// Http3MaxIncomingUniStreams sets the maximum number of concurrent HTTP/3 unidirectional streams.
-func Http3MaxIncomingUniStreams(streams int64) Option {
+// WithHttp3MaxIncomingUniStreams sets the maximum number of concurrent HTTP/3 unidirectional streams.
+func WithHttp3MaxIncomingUniStreams(streams int64) Option {
 	return func(opts *Options) {
 		opts.Triple.Http3.MaxIncomingUniStreams = streams
 	}

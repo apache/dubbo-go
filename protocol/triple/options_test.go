@@ -29,15 +29,19 @@ import (
 
 func TestHTTP3TransportOptions(t *testing.T) {
 	opts := NewOptions(
-		Http3KeepAlivePeriod(15*time.Second),
-		Http3MaxIdleTimeout(30*time.Second),
-		Http3MaxIncomingStreams(128),
-		Http3MaxIncomingUniStreams(64),
+		WithHttp3Enable(),
+		WithHttp3Negotiation(false),
+		WithHttp3KeepAlivePeriod(15*time.Second),
+		WithHttp3MaxIdleTimeout(30*time.Second),
+		WithHttp3MaxIncomingStreams(128),
+		WithHttp3MaxIncomingUniStreams(64),
 	)
 
 	require.NotNil(t, opts)
 	require.NotNil(t, opts.Triple)
 	require.NotNil(t, opts.Triple.Http3)
+	assert.True(t, opts.Triple.Http3.Enable)
+	assert.False(t, opts.Triple.Http3.Negotiation)
 	assert.Equal(t, "15s", opts.Triple.Http3.KeepAlivePeriod)
 	assert.Equal(t, "30s", opts.Triple.Http3.MaxIdleTimeout)
 	assert.Equal(t, int64(128), opts.Triple.Http3.MaxIncomingStreams)
