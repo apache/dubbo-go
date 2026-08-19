@@ -89,6 +89,7 @@ func (l *ZkEventListener) ListenServiceNodeEvent(zkPath string, listener remotin
 func (l *ZkEventListener) ListenConfigurationEvent(zkPath string, listener remoting.DataListener) {
 	l.wg.Add(1)
 	go func(zkPath string, listener remoting.DataListener) {
+		defer l.wg.Done()
 		var eventChan = make(chan zk.Event, 16)
 		l.Client.RegisterEvent(zkPath, eventChan)
 		watchStateListener, tracksWatchState := listener.(configurationWatchStateListener)
