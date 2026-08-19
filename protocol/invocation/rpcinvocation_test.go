@@ -186,7 +186,9 @@ func TestRPCInvocation_ActualMethodName_MalformedArgs(t *testing.T) {
 				WithArguments(tc.args),
 			)
 			// Should fall back to MethodName() without panicking.
-			assert.Equal(t, tc.want, inv.ActualMethodName())
+			require.NotPanics(t, func() {
+				assert.Equal(t, tc.want, inv.ActualMethodName())
+			})
 		})
 	}
 }

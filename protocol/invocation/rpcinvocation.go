@@ -86,7 +86,8 @@ func (r *RPCInvocation) ActualMethodName() string {
 	if r.IsGenericInvocation() {
 		// IsGenericInvocation only guarantees len(Arguments)==3, not the element types;
 		// guard the assertion so a malformed $invoke falls back to MethodName() instead of panicking.
-		mtdName, ok := r.Arguments()[0].(string)
+		args := r.Arguments()
+		mtdName, ok := args[0].(string)
 		if !ok {
 			return r.MethodName()
 		}
