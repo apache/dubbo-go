@@ -35,6 +35,10 @@ func TestHTTP3TransportOptions(t *testing.T) {
 		WithHttp3MaxIdleTimeout(30*time.Second),
 		WithHttp3MaxIncomingStreams(128),
 		WithHttp3MaxIncomingUniStreams(64),
+		WithHttp3InitialStreamReceiveWindow(512*1024),
+		WithHttp3MaxStreamReceiveWindow(6*1024*1024),
+		WithHttp3InitialConnectionReceiveWindow(1024*1024),
+		WithHttp3MaxConnectionReceiveWindow(16*1024*1024),
 	)
 
 	require.NotNil(t, opts)
@@ -46,6 +50,10 @@ func TestHTTP3TransportOptions(t *testing.T) {
 	assert.Equal(t, "30s", opts.Triple.Http3.MaxIdleTimeout)
 	assert.Equal(t, int64(128), opts.Triple.Http3.MaxIncomingStreams)
 	assert.Equal(t, int64(64), opts.Triple.Http3.MaxIncomingUniStreams)
+	assert.Equal(t, "524288", opts.Triple.Http3.InitialStreamReceiveWindow)
+	assert.Equal(t, "6291456", opts.Triple.Http3.MaxStreamReceiveWindow)
+	assert.Equal(t, "1048576", opts.Triple.Http3.InitialConnectionReceiveWindow)
+	assert.Equal(t, "16777216", opts.Triple.Http3.MaxConnectionReceiveWindow)
 }
 
 func TestHTTP3DeprecatedAliases(t *testing.T) {

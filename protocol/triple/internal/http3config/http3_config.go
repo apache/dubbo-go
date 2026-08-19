@@ -23,6 +23,8 @@ import (
 )
 
 import (
+	"github.com/dustin/go-humanize"
+
 	"github.com/quic-go/quic-go"
 )
 
@@ -63,6 +65,35 @@ func NewQUICConfig(http3Config *global.Http3Config, defaults *quic.Config) (*qui
 	}
 	if http3Config.MaxIncomingUniStreams != 0 {
 		quicConfig.MaxIncomingUniStreams = http3Config.MaxIncomingUniStreams
+	}
+
+	if http3Config.InitialStreamReceiveWindow != "" {
+		initialStreamReceiveWindow, err := humanize.ParseBytes(http3Config.InitialStreamReceiveWindow)
+		if err != nil {
+			return nil, fmt.Errorf("invalid http3 initial-stream-receive-window %q: %w", http3Config.InitialStreamReceiveWindow, err)
+		}
+		quicConfig.InitialStreamReceiveWindow = initialStreamReceiveWindow
+	}
+	if http3Config.MaxStreamReceiveWindow != "" {
+		maxStreamReceiveWindow, err := humanize.ParseBytes(http3Config.MaxStreamReceiveWindow)
+		if err != nil {
+			return nil, fmt.Errorf("invalid http3 max-stream-receive-window %q: %w", http3Config.MaxStreamReceiveWindow, err)
+		}
+		quicConfig.MaxStreamReceiveWindow = maxStreamReceiveWindow
+	}
+	if http3Config.InitialConnectionReceiveWindow != "" {
+		initialConnectionReceiveWindow, err := humanize.ParseBytes(http3Config.InitialConnectionReceiveWindow)
+		if err != nil {
+			return nil, fmt.Errorf("invalid http3 initial-connection-receive-window %q: %w", http3Config.InitialConnectionReceiveWindow, err)
+		}
+		quicConfig.InitialConnectionReceiveWindow = initialConnectionReceiveWindow
+	}
+	if http3Config.MaxConnectionReceiveWindow != "" {
+		maxConnectionReceiveWindow, err := humanize.ParseBytes(http3Config.MaxConnectionReceiveWindow)
+		if err != nil {
+			return nil, fmt.Errorf("invalid http3 max-connection-receive-window %q: %w", http3Config.MaxConnectionReceiveWindow, err)
+		}
+		quicConfig.MaxConnectionReceiveWindow = maxConnectionReceiveWindow
 	}
 
 	return quicConfig, nil

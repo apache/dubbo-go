@@ -42,14 +42,22 @@ func TestNewQUICConfig(t *testing.T) {
 		assert.Zero(t, quicConfig.MaxIdleTimeout)
 		assert.Zero(t, quicConfig.MaxIncomingStreams)
 		assert.Zero(t, quicConfig.MaxIncomingUniStreams)
+		assert.Zero(t, quicConfig.InitialStreamReceiveWindow)
+		assert.Zero(t, quicConfig.MaxStreamReceiveWindow)
+		assert.Zero(t, quicConfig.InitialConnectionReceiveWindow)
+		assert.Zero(t, quicConfig.MaxConnectionReceiveWindow)
 	})
 
 	t.Run("explicit_fields_are_mapped", func(t *testing.T) {
 		quicConfig, err := NewQUICConfig(&global.Http3Config{
-			KeepAlivePeriod:       "15s",
-			MaxIdleTimeout:        "30s",
-			MaxIncomingStreams:    128,
-			MaxIncomingUniStreams: 64,
+			KeepAlivePeriod:                "15s",
+			MaxIdleTimeout:                 "30s",
+			MaxIncomingStreams:             128,
+			MaxIncomingUniStreams:          64,
+			InitialStreamReceiveWindow:     "512KiB",
+			MaxStreamReceiveWindow:         "6MiB",
+			InitialConnectionReceiveWindow: "1MiB",
+			MaxConnectionReceiveWindow:     "16MiB",
 		}, nil)
 		require.NoError(t, err)
 		require.NotNil(t, quicConfig)
@@ -57,6 +65,10 @@ func TestNewQUICConfig(t *testing.T) {
 		assert.Equal(t, 30*time.Second, quicConfig.MaxIdleTimeout)
 		assert.Equal(t, int64(128), quicConfig.MaxIncomingStreams)
 		assert.Equal(t, int64(64), quicConfig.MaxIncomingUniStreams)
+		assert.Equal(t, uint64(524288), quicConfig.InitialStreamReceiveWindow)
+		assert.Equal(t, uint64(6291456), quicConfig.MaxStreamReceiveWindow)
+		assert.Equal(t, uint64(1048576), quicConfig.InitialConnectionReceiveWindow)
+		assert.Equal(t, uint64(16777216), quicConfig.MaxConnectionReceiveWindow)
 	})
 
 	t.Run("invalid_keep_alive_period_returns_error", func(t *testing.T) {
@@ -76,10 +88,24 @@ func TestNewQUICConfig(t *testing.T) {
 		assert.Nil(t, quicConfig)
 		assert.ErrorContains(t, err, "max-idle-timeout")
 	})
+
+	t.Run("invalid_receive_window_returns_error", func(t *testing.T) {
+		quicConfig, err := NewQUICConfig(&global.Http3Config{
+			MaxConnectionReceiveWindow: "invalid",
+		}, nil)
+		require.Error(t, err)
+		assert.Nil(t, quicConfig)
+		assert.ErrorContains(t, err, "max-connection-receive-window")
+	})
+
 	t.Run("nil_config_uses_defaults", func(t *testing.T) {
 		defaults := &quic.Config{
-			KeepAlivePeriod: 10 * time.Second,
-			MaxIdleTimeout:  20 * time.Second,
+			KeepAlivePeriod:                10 * time.Second,
+			MaxIdleTimeout:                 20 * time.Second,
+			InitialStreamReceiveWindow:     512 * 1024,
+			MaxStreamReceiveWindow:         6 * 1024 * 1024,
+			InitialConnectionReceiveWindow: 512 * 1024,
+			MaxConnectionReceiveWindow:     15 * 1024 * 1024,
 		}
 
 		quicConfig, err := NewQUICConfig(nil, defaults)
@@ -88,12 +114,20 @@ func TestNewQUICConfig(t *testing.T) {
 		assert.NotSame(t, defaults, quicConfig)
 		assert.Equal(t, 10*time.Second, quicConfig.KeepAlivePeriod)
 		assert.Equal(t, 20*time.Second, quicConfig.MaxIdleTimeout)
+		assert.Equal(t, uint64(512*1024), quicConfig.InitialStreamReceiveWindow)
+		assert.Equal(t, uint64(6*1024*1024), quicConfig.MaxStreamReceiveWindow)
+		assert.Equal(t, uint64(512*1024), quicConfig.InitialConnectionReceiveWindow)
+		assert.Equal(t, uint64(15*1024*1024), quicConfig.MaxConnectionReceiveWindow)
 	})
 
 	t.Run("defaults_are_used_when_fields_unset", func(t *testing.T) {
 		defaults := &quic.Config{
-			KeepAlivePeriod: 10 * time.Second,
-			MaxIdleTimeout:  20 * time.Second,
+			KeepAlivePeriod:                10 * time.Second,
+			MaxIdleTimeout:                 20 * time.Second,
+			InitialStreamReceiveWindow:     512 * 1024,
+			MaxStreamReceiveWindow:         6 * 1024 * 1024,
+			InitialConnectionReceiveWindow: 512 * 1024,
+			MaxConnectionReceiveWindow:     15 * 1024 * 1024,
 		}
 
 		quicConfig, err := NewQUICConfig(&global.Http3Config{}, defaults)
@@ -102,20 +136,36 @@ func TestNewQUICConfig(t *testing.T) {
 		assert.NotSame(t, defaults, quicConfig)
 		assert.Equal(t, 10*time.Second, quicConfig.KeepAlivePeriod)
 		assert.Equal(t, 20*time.Second, quicConfig.MaxIdleTimeout)
+		assert.Equal(t, uint64(512*1024), quicConfig.InitialStreamReceiveWindow)
+		assert.Equal(t, uint64(6*1024*1024), quicConfig.MaxStreamReceiveWindow)
+		assert.Equal(t, uint64(512*1024), quicConfig.InitialConnectionReceiveWindow)
+		assert.Equal(t, uint64(15*1024*1024), quicConfig.MaxConnectionReceiveWindow)
 	})
 
 	t.Run("explicit_fields_override_defaults", func(t *testing.T) {
 		quicConfig, err := NewQUICConfig(&global.Http3Config{
-			KeepAlivePeriod: "15s",
-			MaxIdleTimeout:  "30s",
+			KeepAlivePeriod:                "15s",
+			MaxIdleTimeout:                 "30s",
+			InitialStreamReceiveWindow:     "262144",
+			MaxStreamReceiveWindow:         "4194304",
+			InitialConnectionReceiveWindow: "524288",
+			MaxConnectionReceiveWindow:     "8388608",
 		}, &quic.Config{
-			KeepAlivePeriod: 10 * time.Second,
-			MaxIdleTimeout:  20 * time.Second,
+			KeepAlivePeriod:                10 * time.Second,
+			MaxIdleTimeout:                 20 * time.Second,
+			InitialStreamReceiveWindow:     512 * 1024,
+			MaxStreamReceiveWindow:         6 * 1024 * 1024,
+			InitialConnectionReceiveWindow: 512 * 1024,
+			MaxConnectionReceiveWindow:     15 * 1024 * 1024,
 		})
 		require.NoError(t, err)
 		require.NotNil(t, quicConfig)
 		assert.Equal(t, 15*time.Second, quicConfig.KeepAlivePeriod)
 		assert.Equal(t, 30*time.Second, quicConfig.MaxIdleTimeout)
+		assert.Equal(t, uint64(262144), quicConfig.InitialStreamReceiveWindow)
+		assert.Equal(t, uint64(4194304), quicConfig.MaxStreamReceiveWindow)
+		assert.Equal(t, uint64(524288), quicConfig.InitialConnectionReceiveWindow)
+		assert.Equal(t, uint64(8388608), quicConfig.MaxConnectionReceiveWindow)
 	})
 
 	t.Run("explicit_zero_duration_overrides_default", func(t *testing.T) {
