@@ -43,17 +43,18 @@ import (
 )
 
 const (
-	FrameworkDubboGo = "dubbo-go"
-	FrameworkGRPC    = "grpc"
-	Separator        = "========================================"
-	MaxPayloadSize   = 16 * 1024 * 1024 // 16MB
-	MinPayloadSize   = 1
-	MinConcurrency   = 1
-	MaxConcurrency   = 10000
+	FrameworkDubboGo   = "dubbo-go"
+	FrameworkDubboJava = "dubbo-java"
+	FrameworkGRPC      = "grpc"
+	Separator          = "========================================"
+	MaxPayloadSize     = 16 * 1024 * 1024 // 16MB
+	MinPayloadSize     = 1
+	MinConcurrency     = 1
+	MaxConcurrency     = 10000
 )
 
 var (
-	framework      = flag.String("framework", FrameworkDubboGo, "Framework: dubbo-go / grpc")
+	framework      = flag.String("framework", FrameworkDubboGo, "Framework: dubbo-go / dubbo-java / grpc")
 	payloadSize    = flag.Int("payload", 1024, "Payload size (bytes)")
 	serialization  = flag.String("serialization", "protobuf", "Serialization protocol: hessian2 / protobuf / msgpack")
 	compression    = flag.String("compression", "none", "Compression strategy: none / default / fastest")
@@ -119,7 +120,7 @@ type BenchmarkResult struct {
 }
 
 var (
-	validFrameworks     = map[string]bool{FrameworkDubboGo: true, FrameworkGRPC: true}
+	validFrameworks     = map[string]bool{FrameworkDubboGo: true, FrameworkDubboJava: true, FrameworkGRPC: true}
 	validSerializations = map[string]bool{"hessian2": true, "protobuf": true, "msgpack": true}
 	validCompressions   = map[string]bool{"none": true, "default": true, "fastest": true}
 	validCallModes      = map[string]bool{"unary": true, "streaming": true}
@@ -127,7 +128,7 @@ var (
 
 func validateParams() {
 	if !validFrameworks[*framework] {
-		logger.Fatalf("Invalid framework: %s. Valid values: dubbo-go, grpc", *framework)
+		logger.Fatalf("Invalid framework: %s. Valid values: dubbo-go, dubbo-java, grpc", *framework)
 	}
 
 	if *payloadSize < MinPayloadSize || *payloadSize > MaxPayloadSize {
@@ -148,6 +149,14 @@ func validateParams() {
 
 	if !validCallModes[*callMode] {
 		logger.Fatalf("Invalid call mode: %s. Valid values: unary, streaming", *callMode)
+	}
+
+	if *framework == FrameworkDubboJava && *callMode != "unary" {
+		logger.Fatalf("Invalid call mode for dubbo-java: %s. Only unary is supported", *callMode)
+	}
+
+	if *framework == FrameworkDubboJava && *serialization != "protobuf" {
+		logger.Fatalf("Invalid serialization for dubbo-java: %s. Only protobuf is supported", *serialization)
 	}
 
 	if _, err := time.ParseDuration(*testDuration); err != nil {
@@ -268,6 +277,8 @@ func createCaller(data []byte) (Caller, error) {
 		switch *framework {
 		case FrameworkDubboGo:
 			addr = "127.0.0.1:20000"
+		case FrameworkDubboJava:
+			addr = "127.0.0.1:20001"
 		case FrameworkGRPC:
 			addr = "127.0.0.1:50051"
 		default:
@@ -276,7 +287,7 @@ func createCaller(data []byte) (Caller, error) {
 	}
 
 	switch *framework {
-	case FrameworkDubboGo:
+	case FrameworkDubboGo, FrameworkDubboJava:
 		return clients.NewDubboGoClient(addr, *serialization, *compression, *callMode, data)
 	case FrameworkGRPC:
 		return clients.NewGrpcClient(addr, *callMode, data)
