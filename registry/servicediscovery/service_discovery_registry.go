@@ -18,6 +18,7 @@
 package servicediscovery
 
 import (
+	"context"
 	"errors"
 	"math/rand/v2"
 	"sort"
@@ -59,6 +60,8 @@ func init() {
 // In order to keep compatible with interface-level registry，
 // serviceDiscoveryRegistry = ServiceDiscovery + metadata
 type serviceDiscoveryRegistry struct {
+	ctx                     context.Context
+	cancel                  context.CancelFunc
 	lock                    sync.RWMutex
 	url                     *common.URL
 	serviceDiscovery        registry.ServiceDiscovery
@@ -76,7 +79,10 @@ func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
 	if err != nil {
 		return nil, perrors.WithMessage(err, "Create service discovery failed")
 	}
+	ctx, cancel := context.WithCancel(context.Background())
 	return &serviceDiscoveryRegistry{
+		ctx:                ctx,
+		cancel:             cancel,
 		url:                url,
 		serviceDiscovery:   serviceDiscovery,
 		instanceURLs:       make(map[registry.ServiceInstance]*common.URL),
@@ -341,6 +347,9 @@ func (s *serviceDiscoveryRegistry) IsAvailable() bool {
 }
 
 func (s *serviceDiscoveryRegistry) Destroy() {
+	if s.cancel != nil {
+		s.cancel()
+	}
 	s.stopMetadataTimers()
 	err := s.serviceDiscovery.Destroy()
 	if err != nil {
@@ -570,7 +579,7 @@ func (s *serviceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry
 	// calls; holding the registry write lock across them would block every
 	// other subscribe/unsubscribe on this registry. The lock below only guards
 	// the serviceListeners check/install, never the external work.
-	listener := NewServiceInstancesChangedListener(url.GetParam(constant.ApplicationKey, ""), s.url.GetParam(constant.RegistryIdKey, constant.DefaultKey), services)
+	listener := NewServiceInstancesChangedListenerWithContext(s.ctx, url.GetParam(constant.ApplicationKey, ""), s.url.GetParam(constant.RegistryIdKey, constant.DefaultKey), services)
 	for _, serviceNameTmp := range services.Values() {
 		serviceName := serviceNameTmp.(string)
 		instances := s.serviceDiscovery.GetInstances(serviceName)

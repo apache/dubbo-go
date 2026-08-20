@@ -408,6 +408,38 @@ func TestRPCInvocation_GetAttachmentAsContext(t *testing.T) {
 	assert.NotContains(t, header, "key3")
 }
 
+func TestRPCInvocation_GetAttachmentAsContextPreservesRequestContext(t *testing.T) {
+	type requestContextKey struct{}
+	requestCtx := context.WithValue(context.Background(), requestContextKey{}, "request-value")
+	invocation := NewRPCInvocationWithOptions(
+		WithContext(requestCtx),
+		WithAttachment("key", "value"),
+	)
+
+	ctx := invocation.GetAttachmentAsContext()
+	assert.Equal(t, "request-value", ctx.Value(requestContextKey{}))
+	assert.Equal(t, "value", triple_protocol.ExtractFromOutgoingContext(ctx).Get("key"))
+}
+
+func TestRPCInvocation_GetAttachmentAsContextPreservesOutgoingAttachments(t *testing.T) {
+	requestCtx := context.Background()
+	requestCtx = triple_protocol.NewOutgoingContext(requestCtx, http.Header{
+		"Existing": {"existing-value"},
+		"Shared":   {"old-value"},
+	})
+	invocation := NewRPCInvocationWithOptions(
+		WithContext(requestCtx),
+		WithAttachment("New", "new-value"),
+		WithAttachment("Shared", "new-shared-value"),
+	)
+
+	ctx := invocation.GetAttachmentAsContext()
+	header := triple_protocol.ExtractFromOutgoingContext(ctx)
+	assert.Equal(t, []string{"existing-value"}, header.Values("Existing"))
+	assert.Equal(t, []string{"new-value"}, header.Values("New"))
+	assert.Equal(t, []string{"new-shared-value"}, header.Values("Shared"))
+}
+
 func TestRPCInvocation_MergeAttachmentFromContext(t *testing.T) {
 	invocation := NewRPCInvocationWithOptions()
 
