@@ -83,6 +83,12 @@ case "$FRAMEWORK" in
         SERVER_BIN="$BASE_DIR/server/grpc/benchmark-grpc"
         SERVER_PORT=50051
         ;;
+    dubbo-java)
+        cd "$BASE_DIR/server/dubbo-java"
+        mvn clean package -DskipTests -q
+        SERVER_BIN="$BASE_DIR/server/dubbo-java/target/benchmark-dubbo-java.jar"
+        SERVER_PORT=20001
+        ;;
     *)
         echo "[ERROR] Unsupported framework: $FRAMEWORK"
         exit 1
@@ -103,6 +109,9 @@ case "$FRAMEWORK" in
         ;;
     grpc)
         "$SERVER_BIN" --port "$SERVER_PORT" > "$LOG_FILE.server.log" 2>&1 &
+        ;;
+    dubbo-java)
+        java -jar "$SERVER_BIN" > "$LOG_FILE.server.log" 2>&1 &
         ;;
     *)
         echo "[ERROR] Unsupported framework: $FRAMEWORK"

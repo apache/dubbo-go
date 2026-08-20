@@ -18,6 +18,7 @@
 package servicediscovery
 
 import (
+	"context"
 	"errors"
 	"math/rand/v2"
 	"sort"
@@ -59,6 +60,8 @@ func init() {
 // In order to keep compatible with interface-level registry，
 // serviceDiscoveryRegistry = ServiceDiscovery + metadata
 type serviceDiscoveryRegistry struct {
+	ctx                     context.Context
+	cancel                  context.CancelFunc
 	lock                    sync.RWMutex
 	url                     *common.URL
 	serviceDiscovery        registry.ServiceDiscovery
@@ -82,7 +85,10 @@ func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
 	if err != nil {
 		return nil, perrors.WithMessage(err, "Create service discovery failed")
 	}
+	ctx, cancel := context.WithCancel(context.Background())
 	return &serviceDiscoveryRegistry{
+		ctx:                ctx,
+		cancel:             cancel,
 		url:                url,
 		serviceDiscovery:   serviceDiscovery,
 		instanceURLs:       make(map[registry.ServiceInstance]*common.URL),
@@ -95,6 +101,10 @@ func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
 	}, nil
 }
 
+func isPublishableRevision(revision string) bool {
+	return len(revision) > 0 && revision != "0" && revision != "N/A"
+}
+
 // startMetadataTimers starts the renewAppMetadata timer if metadata type is remote.
 // GC runs after each renew cycle inside doRenewAppMetadata.
 func (s *serviceDiscoveryRegistry) startMetadataTimers() {
@@ -102,6 +112,10 @@ func (s *serviceDiscoveryRegistry) startMetadataTimers() {
 		return
 	}
 	if s.metadataReport == nil {
+		return
+	}
+	metaInfo := metadata.GetMetadataInfo(s.url.GetParam(constant.RegistryIdKey, ""))
+	if metaInfo == nil || !isPublishableRevision(metaInfo.Revision) {
 		return
 	}
 	s.startRenewAppMetadataTimer()
@@ -114,25 +128,36 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 		panic("no metada info found of registry id " + registryId)
 	}
 	urls := metaInfo.GetExportedServiceURLs()
+	if len(urls) == 0 {
+		return nil
+	}
+
+	instances := make([]registry.ServiceInstance, 0, len(urls))
+	instanceURLs := make(map[registry.ServiceInstance]*common.URL)
 	for _, url := range urls {
 		instance := createInstance(metaInfo, url, registryId)
 		metaInfo.Revision = instance.GetMetadata()[constant.ExportedServicesRevisionPropertyName]
-		if metadata.GetMetadataType() == constant.RemoteMetadataStorageType {
-			if s.metadataReport == nil {
-				return perrors.New("can not publish app metadata cause report instance not found")
-			}
-			err := s.metadataReport.PublishAppMetadata(metaInfo.App, metaInfo.Revision, metaInfo)
-			if err != nil {
-				return err
-			}
+		instances = append(instances, instance)
+		instanceURLs[instance] = url
+	}
+
+	if metadata.GetMetadataType() == constant.RemoteMetadataStorageType {
+		if s.metadataReport == nil {
+			return perrors.New("can not publish app metadata cause report instance not found")
 		}
+		if err := s.metadataReport.PublishAppMetadata(metaInfo.App, metaInfo.Revision, metaInfo); err != nil {
+			return err
+		}
+	}
+
+	for _, instance := range instances {
 		err := s.serviceDiscovery.Register(instance)
 		if err != nil {
 			return perrors.WithMessage(err, "Register service failed")
 		}
 		s.lock.Lock()
 		s.instances = append(s.instances, instance)
-		s.instanceURLs[instance] = url
+		s.instanceURLs[instance] = instanceURLs[instance]
 		s.lock.Unlock()
 	}
 
@@ -335,6 +360,9 @@ func (s *serviceDiscoveryRegistry) IsAvailable() bool {
 }
 
 func (s *serviceDiscoveryRegistry) Destroy() {
+	if s.cancel != nil {
+		s.cancel()
+	}
 	s.stopMetadataTimers()
 	s.lock.Lock()
 	s.destroyed = true
@@ -394,7 +422,7 @@ func (s *serviceDiscoveryRegistry) startRenewAppMetadataTimer() {
 func (s *serviceDiscoveryRegistry) doRenewAppMetadata() {
 	registryID := s.url.GetParam(constant.RegistryIdKey, "")
 	metaInfo := metadata.GetMetadataInfo(registryID)
-	if metaInfo == nil || metaInfo.Revision == "0" {
+	if metaInfo == nil || !isPublishableRevision(metaInfo.Revision) {
 		return
 	}
 
@@ -534,10 +562,19 @@ func (s *serviceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.No
 			" either specify 'provided-by' for reference or enable metadata-report center subscription url:%s", url.String())
 	} else {
 		logger.Infof("[Registry][ServiceDiscovery] find initial mapping applications %q for service %s", services, url.ServiceKey())
-		// first notify
-		err := mappingListener.OnEvent(registry.NewServiceMappingChangedEvent(url.ServiceKey(), services))
-		if err != nil {
-			logger.Errorf("[Registry][ServiceDiscovery] ServiceInstancesChangedListenerImpl handle error, err=%v", err)
+		if _, ok := url.GetNonDefaultParam(constant.ProvidedBy); ok {
+			// provided-by is an explicit, unchanging initial target set, so it is
+			// subscribed directly. Routing it through the mapping change listener
+			// treats it as an unchanged mapping and skips SubscribeURL entirely.
+			s.SubscribeURL(url, notify, services)
+		} else {
+			// metadata-report mapping is dynamic: keep the initial subscription on
+			// OnEvent so the listener baseline (oldServiceNames) is updated and later
+			// mapping updates diff against it instead of re-subscribing.
+			err := mappingListener.OnEvent(registry.NewServiceMappingChangedEvent(url.ServiceKey(), services))
+			if err != nil {
+				logger.Errorf("[Registry][ServiceDiscovery] ServiceInstancesChangedListenerImpl handle error, err=%v", err)
+			}
 		}
 	}
 	return nil
@@ -558,7 +595,7 @@ func (s *serviceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry
 	// calls; holding the registry write lock across them would block every
 	// other subscribe/unsubscribe on this registry. The lock below only guards
 	// the serviceListeners check/install, never the external work.
-	listener := NewServiceInstancesChangedListener(url.GetParam(constant.ApplicationKey, ""), s.url.GetParam(constant.RegistryIdKey, constant.DefaultKey), services)
+	listener := NewServiceInstancesChangedListenerWithContext(s.ctx, url.GetParam(constant.ApplicationKey, ""), s.url.GetParam(constant.RegistryIdKey, constant.DefaultKey), services)
 	s.loadLatestInstances(listener)
 
 	// Install under a short write lock with a double-check so a concurrent

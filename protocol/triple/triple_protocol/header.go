@@ -194,6 +194,13 @@ func AppendToOutgoingContext(ctx context.Context, kv ...string) context.Context 
 	return ctx
 }
 
+// ExtractFromOutgoingContext returns the outgoing headers set on ctx by
+// [NewOutgoingContext] or [AppendToOutgoingContext]. It returns nil if no
+// outgoing headers have been set.
+//
+// The framework calls this internally: on the client side to populate
+// request headers before sending, and on the server side to merge
+// handler-set headers into response trailers.
 func ExtractFromOutgoingContext(ctx context.Context) http.Header {
 	extraData, ok := ctx.Value(extraDataKey{}).(map[string]http.Header)
 	if !ok {
@@ -234,6 +241,8 @@ func FromIncomingContext(ctx context.Context) (http.Header, bool) {
 
 // SetHeader appends response headers from a server handler. The headers are
 // buffered and sent with the response instead of being sent immediately.
+// It returns a [CodeInternal] error if called outside a Triple handler
+// context.
 //
 // For example:
 //
@@ -249,14 +258,15 @@ func FromIncomingContext(ctx context.Context) (http.Header, bool) {
 func SetHeader(ctx context.Context, header http.Header) error {
 	conn, ok := ctx.Value(handlerOutgoingKey{}).(StreamingHandlerConn)
 	if !ok {
-		// todo(DMwangnima): return standard error
-		return fmt.Errorf("triple: failed to fetch the connection from the context %v", ctx)
+		return errorf(CodeInternal, "triple: handler outgoing context not found; SetHeader must be called within a Triple handler")
 	}
 	mergeHeaders(conn.ResponseHeader(), header)
 	return nil
 }
 
 // SetTrailer appends response trailers from a server handler.
+// It returns a [CodeInternal] error if called outside a Triple handler
+// context.
 //
 // For example:
 //
@@ -272,8 +282,7 @@ func SetHeader(ctx context.Context, header http.Header) error {
 func SetTrailer(ctx context.Context, trailer http.Header) error {
 	conn, ok := ctx.Value(handlerOutgoingKey{}).(StreamingHandlerConn)
 	if !ok {
-		// todo(DMwangnima): return standard error
-		return fmt.Errorf("triple: failed to fetch the connection from the context %v", ctx)
+		return errorf(CodeInternal, "triple: handler outgoing context not found; SetTrailer must be called within a Triple handler")
 	}
 	mergeHeaders(conn.ResponseTrailer(), trailer)
 	return nil
@@ -281,7 +290,8 @@ func SetTrailer(ctx context.Context, trailer http.Header) error {
 
 // SendHeader appends response headers from a server handler and sends them
 // immediately. This is useful for streaming handlers that need to flush headers
-// before the first message.
+// before the first message. It returns a [CodeInternal] error if called
+// outside a Triple handler context.
 //
 // For example:
 //
@@ -297,9 +307,8 @@ func SetTrailer(ctx context.Context, trailer http.Header) error {
 func SendHeader(ctx context.Context, header http.Header) error {
 	conn, ok := ctx.Value(handlerOutgoingKey{}).(StreamingHandlerConn)
 	if !ok {
-		// todo(DMwangnima): return standard error
-		return fmt.Errorf("triple: failed to fetch the connection from the context %v", ctx)
+		return errorf(CodeInternal, "triple: handler outgoing context not found; SendHeader must be called within a Triple handler")
 	}
-	mergeHeaders(conn.RequestHeader(), header)
+	mergeHeaders(conn.ResponseHeader(), header)
 	return conn.Send(nil)
 }

@@ -18,6 +18,7 @@
 package servicediscovery
 
 import (
+	"context"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -69,7 +70,7 @@ func (c *retryNotifyListener) snapshot() []*registry.ServiceEvent {
 }
 
 // stubMetadataFetch replaces the metadata fetcher and restores it on cleanup.
-func stubMetadataFetch(t *testing.T, fetch func(app string, instance registry.ServiceInstance, revision, registryId string) (*info.MetadataInfo, error)) {
+func stubMetadataFetch(t *testing.T, fetch func(ctx context.Context, app string, instance registry.ServiceInstance, revision, registryId string) (*info.MetadataInfo, error)) {
 	t.Helper()
 	original := metadataInfoFetcher
 	metadataInfoFetcher = fetch
@@ -166,7 +167,7 @@ func TestSubscribeRetryRecoversAfterTransientFailure(t *testing.T) {
 	stubSubscribeRetryDelays(t, 5*time.Millisecond, 20*time.Millisecond)
 
 	meta := newTestMetadataInfo(t, revision, port, "")
-	stubMetadataFetch(t, func(string, registry.ServiceInstance, string, string) (*info.MetadataInfo, error) {
+	stubMetadataFetch(t, func(context.Context, string, registry.ServiceInstance, string, string) (*info.MetadataInfo, error) {
 		return meta, nil
 	})
 	t.Cleanup(func() { metaCache.Delete(testApp + ":" + constant.DefaultKey + ":" + revision) })

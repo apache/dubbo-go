@@ -182,6 +182,7 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 			if !replyEmptyFlag {
 				inv.SetReply(reply.Interface())
 			}
+			inv.SetContext(invCtx)
 
 			for k, value := range p.attachments {
 				inv.SetAttachment(k, value)

@@ -142,6 +142,84 @@ func realizeResult(data any, targetType reflect.Type, g generalizer.Generalizer)
 	return realized, nil
 }
 
+func shouldRealizeTypedResult(data any, generic string) bool {
+	if data == nil {
+		return false
+	}
+	switch {
+	case strings.EqualFold(generic, constant.GenericSerializationGson),
+		strings.EqualFold(generic, constant.GenericSerializationProtobufJson),
+		strings.EqualFold(generic, constant.GenericSerializationBean):
+		return true
+	default:
+		kind := reflect.ValueOf(data).Kind()
+		return kind == reflect.Map || kind == reflect.Slice
+	}
+}
+
+func unsupportedTypedResultModeError(generic string) error {
+	return perrors.Errorf("generic mode %q does not support typed result", generic)
+}
+
+func setRealizedReply(replyValue reflect.Value, realized any) error {
+	if realized == nil {
+		return nil
+	}
+
+	target := replyValue.Elem()
+	value, ok := valueForAssignment(reflect.ValueOf(realized), target.Type())
+	if !ok {
+		return perrors.Errorf("failed to assign realized result of type %T to reply type %s", realized, target.Type())
+	}
+	target.Set(value)
+	return nil
+}
+
+func valueForAssignment(value reflect.Value, targetType reflect.Type) (reflect.Value, bool) {
+	if !value.IsValid() {
+		if canBeNil(targetType) {
+			return reflect.Zero(targetType), true
+		}
+		return reflect.Value{}, false
+	}
+
+	if value.Type().AssignableTo(targetType) {
+		return value, true
+	}
+	if value.Type().ConvertibleTo(targetType) {
+		return value.Convert(targetType), true
+	}
+
+	if value.Kind() == reflect.Pointer {
+		if value.IsNil() {
+			return reflect.Value{}, false
+		}
+		elem := value.Elem()
+		if elem.Type().AssignableTo(targetType) {
+			return elem, true
+		}
+		if elem.Type().ConvertibleTo(targetType) {
+			return elem.Convert(targetType), true
+		}
+	}
+
+	if targetType.Kind() == reflect.Pointer {
+		elemType := targetType.Elem()
+		if value.Type().AssignableTo(elemType) {
+			ptr := reflect.New(elemType)
+			ptr.Elem().Set(value)
+			return ptr, true
+		}
+		if value.Type().ConvertibleTo(elemType) {
+			ptr := reflect.New(elemType)
+			ptr.Elem().Set(value.Convert(elemType))
+			return ptr, true
+		}
+	}
+
+	return reflect.Value{}, false
+}
+
 // validateReplyPointer checks if the reply is a valid non-nil pointer.
 //
 // Parameters:

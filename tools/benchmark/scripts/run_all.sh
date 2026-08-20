@@ -75,6 +75,10 @@ echo "[INFO] Compiling gRPC server..."
 cd "$BASE_DIR/server/grpc"
 go build -o benchmark-grpc main.go
 
+echo "[INFO] Compiling Dubbo-Java server..."
+cd "$BASE_DIR/server/dubbo-java"
+mvn clean package -DskipTests -q
+
 echo ""
 echo "[INFO] Compiling benchmark client..."
 cd "$BASE_DIR/client"
@@ -83,7 +87,7 @@ go build -o benchmark-client main.go
 echo ""
 echo "[INFO] Starting full benchmark suite..."
 
-FRAMEWORKS=("dubbo-go" "grpc")
+FRAMEWORKS=("dubbo-go" "grpc" "dubbo-java")
 PAYLOADS=("128" "1024" "16384" "1048576")
 SERIALIZATIONS=("protobuf")
 COMPRESSIONS=("none")
@@ -102,6 +106,10 @@ for framework in "${FRAMEWORKS[@]}"; do
         grpc)
             SERVER_BIN="$BASE_DIR/server/grpc/benchmark-grpc"
             SERVER_PORT=50051
+            ;;
+        dubbo-java)
+            SERVER_BIN="$BASE_DIR/server/dubbo-java/target/benchmark-dubbo-java.jar"
+            SERVER_PORT=20001
             ;;
         *)
             echo "[WARNING] Skipping unknown framework: $framework"
@@ -128,6 +136,9 @@ for framework in "${FRAMEWORKS[@]}"; do
                                 ;;
                             grpc)
                                 "$SERVER_BIN" --port "$SERVER_PORT" > "$LOG_FILE.server.log" 2>&1 &
+                                ;;
+                            dubbo-java)
+                                java -jar "$SERVER_BIN" > "$LOG_FILE.server.log" 2>&1 &
                                 ;;
                             *)
                                 echo "[ERROR] Unsupported framework: $framework"

@@ -19,6 +19,7 @@ package schema
 
 import (
 	"fmt"
+	"strings"
 )
 
 import (
@@ -32,25 +33,66 @@ import (
 
 func messageToSchema(tt protoreflect.MessageDescriptor) (string, *base.Schema) {
 	s := &base.Schema{
-		Title: string(tt.Name()),
-		// TODO: add Description
-		Description: "",
+		Title:       string(tt.Name()),
+		Description: ProtoDescription(tt),
 		Type:        []string{"object"},
 	}
 
 	props := orderedmap.New[string, *base.SchemaProxy]()
+	parent := base.CreateSchemaProxy(s)
 
 	fields := tt.Fields()
 	for i := 0; i < fields.Len(); i++ {
 		field := fields.Get(i)
-		// TODO: handle oneof
-		prop := fieldToSchema(base.CreateSchemaProxy(s), field)
+		prop := fieldToSchema(parent, field)
 		props.Set(field.JSONName(), prop)
 	}
 
 	s.Properties = props
+	appendOneOfSchemas(s, tt.Oneofs())
 
 	return string(tt.FullName()), s
+}
+
+func appendOneOfSchemas(s *base.Schema, oneofs protoreflect.OneofDescriptors) {
+	for i := 0; i < oneofs.Len(); i++ {
+		oneof := oneofs.Get(i)
+		if oneof.IsSynthetic() {
+			continue
+		}
+
+		s.AllOf = append(s.AllOf, oneofToSchema(oneof))
+	}
+}
+
+func oneofToSchema(tt protoreflect.OneofDescriptor) *base.SchemaProxy {
+	fields := tt.Fields()
+	choices := make([]*base.SchemaProxy, 0, fields.Len()+1)
+	notAnyOf := make([]*base.SchemaProxy, 0, fields.Len())
+	for i := 0; i < fields.Len(); i++ {
+		notAnyOf = append(notAnyOf, requiredFieldSchema(fields.Get(i).JSONName()))
+	}
+
+	choices = append(choices, base.CreateSchemaProxy(&base.Schema{
+		Type: []string{"object"},
+		Not: base.CreateSchemaProxy(&base.Schema{
+			AnyOf: notAnyOf,
+		}),
+	}))
+	for i := 0; i < fields.Len(); i++ {
+		choices = append(choices, requiredFieldSchema(fields.Get(i).JSONName()))
+	}
+
+	return base.CreateSchemaProxy(&base.Schema{
+		OneOf: choices,
+	})
+}
+
+func requiredFieldSchema(fieldName string) *base.SchemaProxy {
+	return base.CreateSchemaProxy(&base.Schema{
+		Type:     []string{"object"},
+		Required: []string{fieldName},
+	})
 }
 
 func fieldToSchema(parent *base.SchemaProxy, tt protoreflect.FieldDescriptor) *base.SchemaProxy {
@@ -65,7 +107,7 @@ func fieldToSchema(parent *base.SchemaProxy, tt protoreflect.FieldDescriptor) *b
 		default:
 			root.AdditionalProperties = &base.DynamicValue[*base.SchemaProxy, bool]{A: base.CreateSchemaProxy(ScalarFieldToSchema(parent, value, true))}
 		}
-		root.Description = ""
+		root.Description = ProtoDescription(tt)
 		return base.CreateSchemaProxy(root)
 	} else if tt.IsList() {
 		var itemSchema *base.SchemaProxy
@@ -80,8 +122,7 @@ func fieldToSchema(parent *base.SchemaProxy, tt protoreflect.FieldDescriptor) *b
 		s := &base.Schema{
 			Title:       string(tt.Name()),
 			ParentProxy: parent,
-			// TODO: todo
-			Description: "",
+			Description: ProtoDescription(tt),
 			Type:        []string{"array"},
 			Items:       &base.DynamicValue[*base.SchemaProxy, bool]{A: itemSchema},
 		}
@@ -108,7 +149,7 @@ func ScalarFieldToSchema(parent *base.SchemaProxy, tt protoreflect.FieldDescript
 	}
 	if !inContainer {
 		s.Title = string(tt.Name())
-		// TODO: add description
+		s.Description = ProtoDescription(tt)
 	}
 
 	switch tt.Kind() {
@@ -174,4 +215,8 @@ func CreateStringNode(str string) *yaml.Node {
 		Value: str,
 	}
 	return n
+}
+
+func ProtoDescription(descriptor protoreflect.Descriptor) string {
+	return strings.TrimSpace(descriptor.ParentFile().SourceLocations().ByDescriptor(descriptor).LeadingComments)
 }

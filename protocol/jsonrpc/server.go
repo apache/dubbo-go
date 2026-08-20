@@ -60,6 +60,10 @@ const (
 	PathPrefix = byte('/')
 	// Max HTTP header size in Mib
 	MaxHeaderSize = 8 * 1024 * 1024
+	// ContentTypeHeader is the HTTP Content-Type header name.
+	ContentTypeHeader = "Content-Type"
+	// maxRequestWindowPerConnection bounds requests whose responses have not been written yet.
+	maxRequestWindowPerConnection = 64
 )
 
 // Server is JSON RPC server wrapper
@@ -68,8 +72,7 @@ type Server struct {
 	once sync.Once
 
 	sync.RWMutex
-	wg      sync.WaitGroup
-	timeout time.Duration
+	wg sync.WaitGroup
 }
 
 // NewServer creates new JSON RPC server.
@@ -80,6 +83,15 @@ func NewServer() *Server {
 }
 
 func (s *Server) handlePkg(conn net.Conn) {
+	connectionCtx, connectionCancel := context.WithCancel(context.Background())
+	responses := make(chan orderedResponse)
+	requestWindow := make(chan struct{}, maxRequestWindowPerConnection)
+	responseWriterDone := make(chan struct{})
+	go func() {
+		defer close(responseWriterDone)
+		writeResponsesInOrder(connectionCtx, connectionCancel, conn, responses, requestWindow)
+	}()
+	var requestWG sync.WaitGroup
 	defer func() {
 		if r := recover(); r != nil {
 			logger.Warnf("[Jsonrpc][Server] connection panic, local=%v, remote=%v, err=%v, debug stack=%s",
@@ -87,49 +99,30 @@ func (s *Server) handlePkg(conn net.Conn) {
 		}
 
 		conn.Close()
+		requestWG.Wait()
+		<-responseWriterDone
 	}()
+	// Register this after the cleanup defer so LIFO ordering cancels request contexts before Wait.
+	defer connectionCancel()
 
-	setTimeout := func(conn net.Conn, timeout time.Duration) {
-		t := time.Time{}
-		if timeout > time.Duration(0) {
-			t = time.Now().Add(timeout)
-		}
-
-		if err := conn.SetDeadline(t); err != nil {
-			logger.Errorf("[Jsonrpc][Server] connection.SetDeadline failed, t=%v, err=%v", t, err)
-		}
-	}
-
-	sendErrorResp := func(header http.Header, body []byte) error {
-		rsp := &http.Response{
-			Header:        header,
-			StatusCode:    500,
-			ProtoMajor:    1,
-			ProtoMinor:    1,
-			ContentLength: int64(len(body)),
-			Body:          io.NopCloser(bytes.NewReader(body)),
-		}
-		rsp.Header.Del("Content-Type")
-		rsp.Header.Del("Content-Length")
-		rsp.Header.Del("Timeout")
-
-		rspBuf := bytes.NewBuffer(make([]byte, DefaultHTTPRspBufferSize))
-		rspBuf.Reset()
-		err := rsp.Write(rspBuf)
-		if err != nil {
-			return perrors.WithStack(err)
-		}
-		_, err = rspBuf.WriteTo(conn)
-		return perrors.WithStack(err)
-	}
-
+	limitedReader := &io.LimitedReader{R: conn}
+	bufReader := bufio.NewReader(limitedReader)
+	var sequence uint64
 	for {
-		bufReader := bufio.NewReader(io.LimitReader(conn, MaxHeaderSize))
+		select {
+		case requestWindow <- struct{}{}:
+		case <-connectionCtx.Done():
+			return
+		}
+
+		limitedReader.N = int64(MaxHeaderSize - bufReader.Buffered())
 		if _, err := bufReader.Peek(1); errors.Is(err, io.EOF) {
+			<-requestWindow
 			return
 		}
 		r, err := http.ReadRequest(bufReader)
 		if err != nil {
+			<-requestWindow
 			logger.Warnf("[Jsonrpc][Server] read request failed, err=%v", err)
 			return
 		}
@@ -137,6 +130,7 @@ func (s *Server) handlePkg(conn net.Conn) {
 		reqBody, err := io.ReadAll(r.Body)
 		r.Body.Close()
 		if err != nil {
+			<-requestWindow
 			return
 		}
 
@@ -150,49 +144,139 @@ func (s *Server) handlePkg(conn net.Conn) {
 		}
 		reqHeader["HttpMethod"] = r.Method
 
-		httpTimeout := s.timeout
-		contentType := reqHeader["Content-Type"]
+		contentType := reqHeader[ContentTypeHeader]
 		mediaType, _, parseErr := mime.ParseMediaType(contentType)
-		if parseErr != nil || (mediaType != "application/json" && mediaType != "application/json-rpc") {
-			setTimeout(conn, httpTimeout)
-			errMsg := "unsupported content type: " + contentType
-			if errRsp := sendErrorResp(r.Header, []byte(errMsg)); errRsp != nil {
-				logger.Warnf("[Jsonrpc][Server] sendErrorResp failed, header=%v, err_msg=%v, send_err=%v",
-					r.Header, errMsg, errRsp)
-			}
-			return
-		}
+		unsupportedContentType := parseErr != nil || (mediaType != "application/json" && mediaType != "application/json-rpc")
 
-		ctx := context.Background()
-
-		spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.HTTPHeaders,
-			opentracing.HTTPHeadersCarrier(r.Header))
-		if err == nil {
-			ctx = context.WithValue(ctx, constant.TracingRemoteSpanCtx, spanCtx)
-		}
+		requestCtx, requestCancel := context.WithCancel(connectionCtx)
+		r = r.WithContext(requestCtx)
+		ctx := contextFromRequest(r)
+		var timeoutCancel context.CancelFunc
 
 		if len(reqHeader["Timeout"]) > 0 {
 			timeout, err := time.ParseDuration(reqHeader["Timeout"])
 			if err == nil {
-				httpTimeout = timeout
-				var cancel context.CancelFunc
-				ctx, cancel = context.WithTimeout(ctx, httpTimeout)
-				defer cancel()
+				ctx, timeoutCancel = context.WithTimeout(ctx, timeout)
 			}
 			delete(reqHeader, "Timeout")
 		}
-		setTimeout(conn, httpTimeout)
 
-		if err := serveRequest(ctx, reqHeader, reqBody, conn); err != nil {
-			if errRsp := sendErrorResp(r.Header, []byte(perrors.WithStack(err).Error())); errRsp != nil {
-				logger.Warnf("[Jsonrpc][Server] sendErrorResp failed, header=%v, err=%v, send_err=%v",
-					r.Header, perrors.WithStack(err), errRsp)
+		requestSequence := sequence
+		sequence++
+		requestWG.Add(1)
+		go func(ctx context.Context, requestCancel, timeoutCancel context.CancelFunc, header map[string]string, body []byte,
+			responseHeader http.Header, contentType string, unsupportedContentType bool, requestSequence uint64) {
+			defer requestWG.Done()
+			defer requestCancel()
+			if timeoutCancel != nil {
+				defer timeoutCancel()
 			}
 
-			logger.Infof("[Jsonrpc][Server] unexpected error serving request, closing socket, err=%v", err)
+			response := buildOrderedResponse(ctx, header, body, responseHeader, contentType,
+				unsupportedContentType, requestSequence)
+			select {
+			case responses <- response:
+			case <-connectionCtx.Done():
+			}
+		}(ctx, requestCancel, timeoutCancel, reqHeader, reqBody, r.Header, contentType, unsupportedContentType, requestSequence)
+	}
+}
+
+type orderedResponse struct {
+	sequence        uint64
+	data            []byte
+	closeConnection bool
+}
+
+func buildOrderedResponse(ctx context.Context, header map[string]string, body []byte, responseHeader http.Header,
+	contentType string, unsupportedContentType bool, sequence uint64) orderedResponse {
+	responseBuffer := bytes.NewBuffer(nil)
+	if unsupportedContentType {
+		errMsg := "unsupported content type: " + contentType
+		if err := writeHTTPErrorResponse(responseBuffer, responseHeader, []byte(errMsg)); err != nil {
+			logger.Warnf("[Jsonrpc][Server] write error response failed, header=%v, err_msg=%v, write_err=%v",
+				responseHeader, errMsg, err)
+		}
+		return orderedResponse{sequence: sequence, data: responseBuffer.Bytes(), closeConnection: true}
+	}
+
+	err := serveRequest(ctx, header, body, responseBuffer)
+	if err == nil {
+		return orderedResponse{sequence: sequence, data: responseBuffer.Bytes()}
+	}
+	if writeErr := writeHTTPErrorResponse(responseBuffer, responseHeader, []byte(perrors.WithStack(err).Error())); writeErr != nil {
+		logger.Warnf("[Jsonrpc][Server] write error response failed, header=%v, err=%v, write_err=%v",
+			responseHeader, perrors.WithStack(err), writeErr)
+	}
+	logger.Infof("[Jsonrpc][Server] unexpected error serving request, closing socket, err=%v", err)
+	return orderedResponse{sequence: sequence, data: responseBuffer.Bytes(), closeConnection: true}
+}
+
+func writeHTTPErrorResponse(writer io.Writer, header http.Header, body []byte) error {
+	rsp := &http.Response{
+		Header:        header.Clone(),
+		StatusCode:    500,
+		ProtoMajor:    1,
+		ProtoMinor:    1,
+		ContentLength: int64(len(body)),
+		Body:          io.NopCloser(bytes.NewReader(body)),
+	}
+	rsp.Header.Del(ContentTypeHeader)
+	rsp.Header.Del("Content-Length")
+	rsp.Header.Del("Timeout")
+
+	rspBuf := bytes.NewBuffer(make([]byte, DefaultHTTPRspBufferSize))
+	rspBuf.Reset()
+	if err := rsp.Write(rspBuf); err != nil {
+		return perrors.WithStack(err)
+	}
+	_, err := rspBuf.WriteTo(writer)
+	return perrors.WithStack(err)
+}
+
+func writeResponsesInOrder(ctx context.Context, cancel context.CancelFunc, conn net.Conn, responses <-chan orderedResponse,
+	requestWindow <-chan struct{}) {
+	nextSequence := uint64(0)
+	pending := make(map[uint64]orderedResponse)
+	for {
+		select {
+		case <-ctx.Done():
 			return
+		case response := <-responses:
+			pending[response.sequence] = response
+		}
+
+		for {
+			response, ok := pending[nextSequence]
+			if !ok {
+				break
+			}
+			delete(pending, nextSequence)
+			if _, err := bytes.NewReader(response.data).WriteTo(conn); err != nil {
+				logger.Warnf("[Jsonrpc][Server] write response failed, sequence=%d, err=%v", nextSequence, err)
+				cancel()
+				conn.Close()
+				return
+			}
+			if response.closeConnection {
+				cancel()
+				conn.Close()
+				return
+			}
+			nextSequence++
+			<-requestWindow
 		}
 	}
+}
+
+func contextFromRequest(r *http.Request) context.Context {
+	ctx := r.Context()
+	spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.HTTPHeaders,
+		opentracing.HTTPHeadersCarrier(r.Header))
+	if err == nil {
+		ctx = context.WithValue(ctx, constant.TracingRemoteSpanCtx, spanCtx)
+	}
+	return ctx
 }
 
 func accept(listener net.Listener, fn func(net.Conn)) error {
@@ -270,7 +354,7 @@ func (s *Server) Stop() {
 	})
 }
 
-func serveRequest(ctx context.Context, header map[string]string, body []byte, conn net.Conn) error {
+func serveRequest(ctx context.Context, header map[string]string, body []byte, writer io.Writer) error {
 	sendErrorResp := func(header map[string]string, body []byte) error {
 		rsp := &http.Response{
 			Header:        make(http.Header),
@@ -280,7 +364,7 @@ func serveRequest(ctx context.Context, header map[string]string, body []byte, co
 			ContentLength: int64(len(body)),
 			Body:          io.NopCloser(bytes.NewReader(body)),
 		}
-		rsp.Header.Del("Content-Type")
+		rsp.Header.Del(ContentTypeHeader)
 		rsp.Header.Del("Content-Length")
 		rsp.Header.Del("Timeout")
 		for k, v := range header {
@@ -293,7 +377,7 @@ func serveRequest(ctx context.Context, header map[string]string, body []byte, co
 		if err != nil {
 			return perrors.WithStack(err)
 		}
-		_, err = rspBuf.WriteTo(conn)
+		_, err = rspBuf.WriteTo(writer)
 		return perrors.WithStack(err)
 	}
 
@@ -306,7 +390,7 @@ func serveRequest(ctx context.Context, header map[string]string, body []byte, co
 			ContentLength: int64(len(body)),
 			Body:          io.NopCloser(bytes.NewReader(body)),
 		}
-		rsp.Header.Del("Content-Type")
+		rsp.Header.Del(ContentTypeHeader)
 		rsp.Header.Del("Content-Length")
 		rsp.Header.Del("Timeout")
 		for k, v := range header {
@@ -319,7 +403,7 @@ func serveRequest(ctx context.Context, header map[string]string, body []byte, co
 		if err != nil {
 			return perrors.WithStack(err)
 		}
-		_, err = rspBuf.WriteTo(conn)
+		_, err = rspBuf.WriteTo(writer)
 		return perrors.WithStack(err)
 	}
 
@@ -353,10 +437,12 @@ func serveRequest(ctx context.Context, header map[string]string, body []byte, co
 	}
 	invoker := exporter.(*JsonrpcExporter).GetInvoker()
 	if invoker != nil {
-		result := invoker.Invoke(ctx, invocation.NewRPCInvocation(methodName, args, map[string]any{
+		rpcInvocation := invocation.NewRPCInvocation(methodName, args, map[string]any{
 			constant.PathKey:    path,
 			constant.VersionKey: codec.req.Version,
-		}))
+		})
+		rpcInvocation.SetContext(ctx)
+		result := invoker.Invoke(ctx, rpcInvocation)
 		if err := result.Error(); err != nil {
 			rspStream, codecErr := codec.Write(err.Error(), invalidRequest)
 			if codecErr != nil {

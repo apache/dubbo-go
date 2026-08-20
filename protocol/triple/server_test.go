@@ -358,7 +358,7 @@ func TestServer_SaveServiceInfo_Concurrent(t *testing.T) {
 	assert.Len(t, server.GetServiceInfo(), concurrency)
 }
 
-func Test_getHanOpts(t *testing.T) {
+func Test_buildServerHandlerOptions(t *testing.T) {
 	tests := []struct {
 		desc       string
 		url        *common.URL
@@ -402,7 +402,7 @@ func Test_getHanOpts(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			opts := getHanOpts(test.url, test.tripleConf)
+			opts := buildServerHandlerOptions(test.url, test.tripleConf)
 			assert.Len(t, opts, test.expectLen)
 		})
 	}

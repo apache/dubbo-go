@@ -239,7 +239,9 @@ func (nl *nacosListener) Next() (*registry.ServiceEvent, error) {
 // Close stops the subscription and releases resources.
 func (nl *nacosListener) Close() {
 	nl.once.Do(func() {
-		_ = nl.stopListen()
+		if err := nl.stopListen(); err != nil {
+			logger.Warnf("[Registry][Nacos] unsubscribe listener failed, serviceName=%s, err=%v", nl.serviceName, err)
+		}
 		close(nl.done)
 	})
 }

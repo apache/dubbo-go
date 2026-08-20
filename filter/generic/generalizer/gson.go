@@ -69,6 +69,10 @@ func (GsonGeneralizer) Realize(obj any, typ reflect.Type) (any, error) {
 		return nil, perrors.Errorf("unexpected type of obj(=%T), wanted is string", obj)
 	}
 
+	for typ.Kind() == reflect.Pointer {
+		typ = typ.Elem()
+	}
+
 	// create the target object
 	ret, ok := reflect.New(typ).Interface().(hessian.POJO)
 	if !ok {

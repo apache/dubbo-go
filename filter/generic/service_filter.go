@@ -76,10 +76,16 @@ func (f *genericServiceFilter) Invoke(ctx context.Context, invoker base.Invoker,
 	}
 
 	// get real invocation info from the generic invocation
-	mtdName := inv.Arguments()[0].(string)
+	mtdName, ok := inv.Arguments()[0].(string)
+	if !ok {
+		return &result.RPCResult{Err: perrors.Errorf("$invoke: arg[0] must be string, got %T", inv.Arguments()[0])}
+	}
 	// types are not required in dubbo-go, for dubbo-go client to dubbo-go server, types could be nil
 	types := inv.Arguments()[1]
-	args := inv.Arguments()[2].([]hessian.Object)
+	args, ok := inv.Arguments()[2].([]hessian.Object)
+	if !ok {
+		return &result.RPCResult{Err: perrors.Errorf("$invoke: arg[2] must be []hessian.Object, got %T", inv.Arguments()[2])}
+	}
 
 	logger.Debugf("[Filter][Generic] received a generic invocation, methodName=%s types=%v args=%v", mtdName, types, args)
 
