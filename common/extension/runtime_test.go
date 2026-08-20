@@ -18,7 +18,6 @@
 package extension
 
 import (
-	"errors"
 	"testing"
 )
 
@@ -34,52 +33,62 @@ func TestScopeValidity(t *testing.T) {
 	for _, scope := range []Scope{0, ClientScope | ServerScope, Scope(8)} {
 		assert.False(t, scope.valid())
 	}
+	assert.True(t, (ClientScope | ServerScope).Supports(ClientScope))
+	assert.True(t, (ClientScope | ServerScope).Supports(ServerScope))
+	assert.False(t, (ClientScope | ServerScope).Supports(InstanceScope))
+	assert.False(t, (ClientScope | ServerScope).Supports(ClientScope|ServerScope))
 }
 
-func TestConfigRegistrationCreatesIndependentInstances(t *testing.T) {
+func TestDefinitionRegistration(t *testing.T) {
 	const prefix = "runtime-test"
-	UnregisterConfig(prefix)
-	t.Cleanup(func() { UnregisterConfig(prefix) })
+	Unregister(prefix)
+	t.Cleanup(func() { Unregister(prefix) })
 
 	type config struct{ Timeout int }
-	var initialized []Scope
-	descriptor := configDescriptor{
-		prefix: prefix,
-		scopes: ClientScope | ServerScope,
-		new:    func() any { return &config{Timeout: 1000} },
-		init: func(scope Scope, value any) error {
-			if _, ok := value.(*config); !ok {
-				return errors.New("unexpected config type")
-			}
-			initialized = append(initialized, scope)
+	var decoded map[string]any
+	var initialized int
+	definition := Definition{
+		Prefix: prefix,
+		Scopes: ClientScope | ServerScope,
+		New:    func() any { return &config{Timeout: 1000} },
+		Decode: func(raw map[string]any, value any) error {
+			decoded = raw
 			return nil
 		},
+		Init: func(value any) error {
+			initialized++
+			return nil
+		},
+		ConsumerFilters: func(value any) []string { return []string{"test-consumer"} },
+		ProviderFilters: func(value any) []string { return []string{"test-provider"} },
 	}
-	SetConfig(descriptor)
+	require.NoError(t, Register(definition))
 
-	registered, ok := GetConfig(prefix)
+	registered, ok := Lookup(prefix)
 	require.True(t, ok)
-	assert.True(t, registered.Scopes().Supports(ClientScope))
-	assert.True(t, registered.Scopes().Supports(ServerScope))
-	assert.False(t, registered.Scopes().Supports(InstanceScope))
+	assert.True(t, registered.Supports(ClientScope))
+	assert.True(t, registered.Supports(ServerScope))
+	assert.False(t, registered.Supports(InstanceScope))
 	clientConfig := registered.New()
 	serverConfig := registered.New()
-	require.NotSame(t, clientConfig, serverConfig)
-	require.NoError(t, registered.Init(ClientScope, clientConfig))
-	require.NoError(t, registered.Init(ServerScope, serverConfig))
-	assert.Equal(t, []Scope{ClientScope, ServerScope}, initialized)
+	assert.NotSame(t, clientConfig, serverConfig)
+	raw := map[string]any{"greet.GreetService:::Greet": map[string]any{"timeout": 1000}}
+	require.NoError(t, registered.Decode(raw, clientConfig))
+	require.NoError(t, registered.Init(clientConfig))
+	assert.Equal(t, raw, decoded)
+	assert.Equal(t, 1, initialized)
+	assert.Equal(t, []string{"test-consumer"}, registered.ConsumerFilters(clientConfig))
+	assert.Equal(t, []string{"test-provider"}, registered.ProviderFilters(serverConfig))
+	require.Error(t, Register(definition))
 }
 
-type configDescriptor struct {
-	prefix string
-	scopes Scope
-	new    func() any
-	init   func(Scope, any) error
-}
-
-func (d configDescriptor) Prefix() string { return d.prefix }
-func (d configDescriptor) Scopes() Scope  { return d.scopes }
-func (d configDescriptor) New() any       { return d.new() }
-func (d configDescriptor) Init(scope Scope, config any) error {
-	return d.init(scope, config)
+func TestDefinitionValidation(t *testing.T) {
+	for _, definition := range []Definition{
+		{Scopes: ClientScope, New: func() any { return nil }},
+		{Prefix: "test", New: func() any { return nil }},
+		{Prefix: "test", Scopes: Scope(8), New: func() any { return nil }},
+		{Prefix: "test", Scopes: ClientScope},
+	} {
+		assert.Error(t, Register(definition))
+	}
 }
