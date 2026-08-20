@@ -31,16 +31,28 @@ const (
 	// SubscribeRt
 	// StoreProviderInterfaceRt
 	SubscribeServiceRt
+	MetadataMappingRegister
+	MetadataMappingGet
+	MetadataMappingListen
+	MetadataMappingRemove
 )
 
 const (
-	dubboMetadataPush             = "dubbo_metadata_push_num"
-	dubboPushRt                   = "dubbo_push_rt_milliseconds"
-	dubboMetadataSubscribe        = "dubbo_metadata_subscribe_num"
-	dubboSubscribeRt              = "dubbo_subscribe_rt_milliseconds"
-	dubboMetadataStoreProvider    = "dubbo_metadata_store_provider"
-	dubboStoreProviderInterfaceRt = "dubbo_store_provider_interface_rt_milliseconds"
-	dubboSubscribeServiceRt       = "dubbo_subscribe_service_rt_milliseconds"
+	dubboMetadataPush              = "dubbo_metadata_push_num"
+	dubboPushRt                    = "dubbo_push_rt_milliseconds"
+	dubboMetadataSubscribe         = "dubbo_metadata_subscribe_num"
+	dubboSubscribeRt               = "dubbo_subscribe_rt_milliseconds"
+	dubboMetadataStoreProvider     = "dubbo_metadata_store_provider"
+	dubboStoreProviderInterfaceRt  = "dubbo_store_provider_interface_rt_milliseconds"
+	dubboSubscribeServiceRt        = "dubbo_subscribe_service_rt_milliseconds"
+	dubboMetadataMappingRegister   = "dubbo_metadata_mapping_register_num"
+	dubboMetadataMappingRegisterRt = "dubbo_metadata_mapping_register_rt_milliseconds"
+	dubboMetadataMappingGet        = "dubbo_metadata_mapping_get_num"
+	dubboMetadataMappingGetRt      = "dubbo_metadata_mapping_get_rt_milliseconds"
+	dubboMetadataMappingListen     = "dubbo_metadata_mapping_listen_num"
+	dubboMetadataMappingListenRt   = "dubbo_metadata_mapping_listen_rt_milliseconds"
+	dubboMetadataMappingRemove     = "dubbo_metadata_mapping_remove_num"
+	dubboMetadataMappingRemoveRt   = "dubbo_metadata_mapping_remove_rt_milliseconds"
 )
 
 const (
@@ -84,4 +96,24 @@ var (
 	storeProviderInterfaceRt = metrics.NewMetricKey(dubboStoreProviderInterfaceRt, "Store Provider Interface Time")
 
 	subscribeServiceRt = metrics.NewMetricKey(dubboSubscribeServiceRt, "Subscribe Service Time")
+
+	metadataMappingRegisterNum     = metrics.NewMetricKey(dubboMetadataMappingRegister+totalSuffix, "Total Metadata Mapping Register Num")
+	metadataMappingRegisterSucceed = metrics.NewMetricKey(dubboMetadataMappingRegister+succSuffix, "Succeed Metadata Mapping Register Num")
+	metadataMappingRegisterFailed  = metrics.NewMetricKey(dubboMetadataMappingRegister+failedSuffix, "Failed Metadata Mapping Register Num")
+	metadataMappingRegisterRt      = metrics.NewMetricKey(dubboMetadataMappingRegisterRt, "Metadata Mapping Register Time")
+
+	metadataMappingGetNum     = metrics.NewMetricKey(dubboMetadataMappingGet+totalSuffix, "Total Metadata Mapping Get Num")
+	metadataMappingGetSucceed = metrics.NewMetricKey(dubboMetadataMappingGet+succSuffix, "Succeed Metadata Mapping Get Num")
+	metadataMappingGetFailed  = metrics.NewMetricKey(dubboMetadataMappingGet+failedSuffix, "Failed Metadata Mapping Get Num")
+	metadataMappingGetRt      = metrics.NewMetricKey(dubboMetadataMappingGetRt, "Metadata Mapping Get Time")
+
+	metadataMappingListenNum     = metrics.NewMetricKey(dubboMetadataMappingListen+totalSuffix, "Total Metadata Mapping Listen Num")
+	metadataMappingListenSucceed = metrics.NewMetricKey(dubboMetadataMappingListen+succSuffix, "Succeed Metadata Mapping Listen Num")
+	metadataMappingListenFailed  = metrics.NewMetricKey(dubboMetadataMappingListen+failedSuffix, "Failed Metadata Mapping Listen Num")
+	metadataMappingListenRt      = metrics.NewMetricKey(dubboMetadataMappingListenRt, "Metadata Mapping Listen Time")
+
+	metadataMappingRemoveNum     = metrics.NewMetricKey(dubboMetadataMappingRemove+totalSuffix, "Total Metadata Mapping Remove Num")
+	metadataMappingRemoveSucceed = metrics.NewMetricKey(dubboMetadataMappingRemove+succSuffix, "Succeed Metadata Mapping Remove Num")
+	metadataMappingRemoveFailed  = metrics.NewMetricKey(dubboMetadataMappingRemove+failedSuffix, "Failed Metadata Mapping Remove Num")
+	metadataMappingRemoveRt      = metrics.NewMetricKey(dubboMetadataMappingRemoveRt, "Metadata Mapping Remove Time")
 )
