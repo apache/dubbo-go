@@ -15,15 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.dubbo.benchmark;
+package benchmark;
 
-import org.apache.dubbo.config.annotation.DubboService;
+import org.apache.dubbo.benchmark.BenchmarkProto;
 
-@DubboService
-public class BenchmarkServiceImpl implements BenchmarkService {
-
-    @Override
-    public BenchmarkResponse unaryCall(BenchmarkRequest request) {
-        return new BenchmarkResponse(request.getPayload());
-    }
+public interface BenchmarkService {
+    BenchmarkProto.BenchmarkResponse UnaryCall(BenchmarkProto.BenchmarkRequest request);
 }
