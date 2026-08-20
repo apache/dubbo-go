@@ -28,7 +28,6 @@ import (
 	"errors"
 	"math/big"
 	"net"
-	"net/http"
 	"syscall"
 	"testing"
 	"time"
@@ -175,7 +174,7 @@ func TestServer_HTTP2_StartAndStop(t *testing.T) {
 	require.Nil(t, srv.http3Srv.Load())
 
 	require.NoError(t, srv.Stop())
-	require.ErrorIs(t, waitForServerExit(t, errCh, 5*time.Second), http.ErrServerClosed)
+	require.NoError(t, waitForServerExit(t, errCh, 5*time.Second))
 }
 
 func TestServer_HTTP2_StartAndStopWithTLS(t *testing.T) {
@@ -186,7 +185,7 @@ func TestServer_HTTP2_StartAndStopWithTLS(t *testing.T) {
 	require.Nil(t, srv.http3Srv.Load())
 
 	require.NoError(t, srv.Stop())
-	require.ErrorIs(t, waitForServerExit(t, errCh, 5*time.Second), http.ErrServerClosed)
+	require.NoError(t, waitForServerExit(t, errCh, 5*time.Second))
 }
 
 func TestServer_HTTP3_StartAndStop(t *testing.T) {
@@ -200,7 +199,7 @@ func TestServer_HTTP3_StartAndStop(t *testing.T) {
 	require.Nil(t, srv.httpSrv.Load())
 
 	require.NoError(t, srv.Stop())
-	require.ErrorIs(t, waitForServerExit(t, errCh, 5*time.Second), http.ErrServerClosed)
+	require.NoError(t, waitForServerExit(t, errCh, 5*time.Second))
 }
 
 func TestServer_HTTP2AndHTTP3_StartAndStop(t *testing.T) {
@@ -215,8 +214,6 @@ func TestServer_HTTP2AndHTTP3_StartAndStop(t *testing.T) {
 	require.NotNil(t, srv.http3Srv.Load())
 
 	require.NoError(t, srv.Stop())
-	// startHttp2AndHttp3 swallows http.ErrServerClosed inside the errgroup,
-	// so Run returns nil after the servers are closed.
 	require.NoError(t, waitForServerExit(t, errCh, 5*time.Second))
 }
 
@@ -230,7 +227,7 @@ func TestServer_HTTP2_StartAndGracefulStop(t *testing.T) {
 	graceCtx, cancel := context.WithTimeout(context.Background(), constant.DefaultGracefulShutdownTimeout)
 	defer cancel()
 	require.NoError(t, srv.GracefulStop(graceCtx))
-	require.ErrorIs(t, waitForServerExit(t, errCh, 5*time.Second), http.ErrServerClosed)
+	require.NoError(t, waitForServerExit(t, errCh, 5*time.Second))
 }
 
 func TestServer_HTTP3_StartAndGracefulStop(t *testing.T) {
@@ -246,7 +243,7 @@ func TestServer_HTTP3_StartAndGracefulStop(t *testing.T) {
 	graceCtx, cancel := context.WithTimeout(context.Background(), constant.DefaultGracefulShutdownTimeout)
 	defer cancel()
 	require.NoError(t, srv.GracefulStop(graceCtx))
-	require.ErrorIs(t, waitForServerExit(t, errCh, 5*time.Second), http.ErrServerClosed)
+	require.NoError(t, waitForServerExit(t, errCh, 5*time.Second))
 }
 
 func TestServer_HTTP2AndHTTP3_StartAndGracefulStop(t *testing.T) {
@@ -263,8 +260,6 @@ func TestServer_HTTP2AndHTTP3_StartAndGracefulStop(t *testing.T) {
 	graceCtx, cancel := context.WithTimeout(context.Background(), constant.DefaultGracefulShutdownTimeout)
 	defer cancel()
 	require.NoError(t, srv.GracefulStop(graceCtx))
-	// startHttp2AndHttp3 swallows http.ErrServerClosed inside the errgroup,
-	// so Run returns nil after the servers are closed.
 	require.NoError(t, waitForServerExit(t, errCh, 5*time.Second))
 }
 
@@ -334,11 +329,36 @@ func TestServer_RepeatedStartStop(t *testing.T) {
 			}
 
 			require.NoError(t, srv.Stop())
-			if tc.protocol == constant.CallHTTP2AndHTTP3 {
-				require.NoError(t, waitForServerExit(t, errCh, 5*time.Second))
-			} else {
-				require.ErrorIs(t, waitForServerExit(t, errCh, 5*time.Second), http.ErrServerClosed)
-			}
+			require.NoError(t, waitForServerExit(t, errCh, 5*time.Second))
 		}
 	}
+}
+
+// TestServerRunReturnsBindErrorWhenPortInUse verifies that Run propagates a
+// genuine serve error (here a TCP port conflict) instead of swallowing it
+// together with http.ErrServerClosed. It guards the boundary of the shutdown
+// filter: only the normal-closure signal must be suppressed.
+func TestServerRunReturnsBindErrorWhenPortInUse(t *testing.T) {
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	defer l.Close()
+
+	srv := NewServer(l.Addr().String(), &global.TripleConfig{})
+	err = srv.Run(constant.CallHTTP2, nil)
+	require.Error(t, err)
+	require.True(t, isAddrInUse(err), "expected EADDRINUSE, got %v", err)
+}
+
+// TestServerRunHTTP3ReturnsBindErrorWhenPortInUse verifies the same boundary
+// for the HTTP/3 path, where the QUIC endpoint fails to bind the occupied
+// UDP port.
+func TestServerRunHTTP3ReturnsBindErrorWhenPortInUse(t *testing.T) {
+	pc, err := net.ListenPacket("udp", "127.0.0.1:0")
+	require.NoError(t, err)
+	defer pc.Close()
+
+	srv := NewServer(pc.LocalAddr().String(), &global.TripleConfig{})
+	err = srv.Run(constant.CallHTTP3, newTestTLSConfig(t))
+	require.Error(t, err)
+	require.True(t, isAddrInUse(err), "expected EADDRINUSE, got %v", err)
 }
