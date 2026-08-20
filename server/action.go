@@ -184,6 +184,19 @@ func (svcOpts *ServiceOptions) Export() error {
 			isIDL = svcOpts.IDLMode
 		}
 
+		// Keep accepting the deprecated protocol-level fields through v3. Nested
+		// Triple values take precedence when both forms are configured.
+		maxServerSendMsgSize := protocolConf.MaxServerSendMsgSize
+		maxServerRecvMsgSize := protocolConf.MaxServerRecvMsgSize
+		if protocolConf.TripleConfig != nil {
+			if protocolConf.TripleConfig.MaxServerSendMsgSize != "" {
+				maxServerSendMsgSize = protocolConf.TripleConfig.MaxServerSendMsgSize
+			}
+			if protocolConf.TripleConfig.MaxServerRecvMsgSize != "" {
+				maxServerRecvMsgSize = protocolConf.TripleConfig.MaxServerRecvMsgSize
+			}
+		}
+
 		ivkURL := common.NewURLWithOptions(
 			common.WithPath(svcConf.Interface),
 			common.WithProtocol(protocolConf.Name),
@@ -201,11 +214,9 @@ func (svcOpts *ServiceOptions) Export() error {
 			common.WithToken(svcConf.Token),
 			common.WithParamsValue(constant.MetadataTypeKey, svcOpts.metadataType),
 
-			// fix https://github.com/apache/dubbo-go/issues/2176
-			// TODO: remove MaxServerSendMsgSize value and MaxServerRecvMsgSize value when version 4.0.0
-			// use TripleConfig to transport arguments
-			common.WithParamsValue(constant.MaxServerSendMsgSize, protocolConf.MaxServerSendMsgSize),
-			common.WithParamsValue(constant.MaxServerRecvMsgSize, protocolConf.MaxServerRecvMsgSize),
+			// Preserve the legacy URL parameters for downstream protocol compatibility.
+			common.WithParamsValue(constant.MaxServerSendMsgSize, maxServerSendMsgSize),
+			common.WithParamsValue(constant.MaxServerRecvMsgSize, maxServerRecvMsgSize),
 
 			// TODO: remove IDL value when version 4.0.0
 			common.WithParamsValue(constant.IDLMode, isIDL),

@@ -38,13 +38,13 @@ type ProtocolConfig struct {
 	// MaxServerSendMsgSize defines the max size of server send message, 1mb=1000kb=1000000b 1mib=1024kb=1048576b.
 	// more detail to see https://pkg.go.dev/github.com/dustin/go-humanize#pkg-constants
 	//
-	// Deprecated: use "ClientProtocolConfig.TripleConfig.MaxServerSendMsgSize" or in config tag "protocol_config/triple/max-server-send-msg-size" instead
+	// Deprecated: use TripleConfig.MaxServerSendMsgSize or the "triple/max-server-send-msg-size" config key instead.
 	MaxServerSendMsgSize string `yaml:"max-server-send-msg-size" json:"max-server-send-msg-size,omitempty"`
 	// TODO: remove MaxServerSendMsgSize and MaxServerRecvMsgSize when version 4.0.0
 	//
 	// MaxServerRecvMsgSize defines the max size of server receive message.
 	//
-	// Deprecated: use "ClientProtocolConfig.TripleConfig.MaxServerRecvMsgSize" or in config tag "protocol_config/triple/max-server-recv-msg-size" instead
+	// Deprecated: use TripleConfig.MaxServerRecvMsgSize or the "triple/max-server-recv-msg-size" config key instead.
 	MaxServerRecvMsgSize string `default:"4mib" yaml:"max-server-recv-msg-size" json:"max-server-recv-msg-size,omitempty"`
 }
 

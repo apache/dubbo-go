@@ -1002,7 +1002,7 @@ func TestProtocolConfigClone(t *testing.T) {
 			Ip:                   "localhost",
 			Port:                 "20880",
 			MaxServerSendMsgSize: "1mb",
-			MaxServerRecvMsgSize: "4mb",
+			MaxServerRecvMsgSize: "3mb",
 			TripleConfig: &TripleConfig{
 				MaxServerSendMsgSize: "2mb",
 				MaxServerRecvMsgSize: "4mb",
@@ -1026,6 +1026,8 @@ func TestProtocolConfigClone(t *testing.T) {
 		assert.NotSame(t, proto, cloned)
 		assert.NotSame(t, proto.TripleConfig, cloned.TripleConfig)
 		assert.NotNil(t, cloned.TripleConfig)
+		assert.Equal(t, "2mb", cloned.TripleConfig.MaxServerSendMsgSize)
+		assert.Equal(t, "4mb", cloned.TripleConfig.MaxServerRecvMsgSize)
 	})
 
 	t.Run("clone_nil_protocol_config", func(t *testing.T) {
@@ -1044,11 +1046,12 @@ func TestProtocolConfigClone(t *testing.T) {
 		assert.Equal(t, "dubbo", cloned.Name)
 	})
 
-	t.Run("clone_protocol_config_preserves_all_fields", func(t *testing.T) {
+	t.Run("clone_protocol_config_preserves_protocol_fields", func(t *testing.T) {
 		proto := &ProtocolConfig{
 			Name:                 "http",
 			Ip:                   "localhost",
 			Port:                 "8080",
+			Params:               map[string]string{"key": "value"},
 			MaxServerSendMsgSize: "10mb",
 			MaxServerRecvMsgSize: "10mb",
 		}
@@ -1056,6 +1059,7 @@ func TestProtocolConfigClone(t *testing.T) {
 		assert.Equal(t, "http", cloned.Name)
 		assert.Equal(t, "localhost", cloned.Ip)
 		assert.Equal(t, "8080", cloned.Port)
+		assert.Equal(t, proto.Params, cloned.Params)
 		assert.Equal(t, "10mb", cloned.MaxServerSendMsgSize)
 		assert.Equal(t, "10mb", cloned.MaxServerRecvMsgSize)
 	})
@@ -1075,6 +1079,21 @@ func TestDefaultProtocolConfig(t *testing.T) {
 
 // TestProtocolConfigFields tests individual fields of ProtocolConfig
 func TestProtocolConfigFields(t *testing.T) {
+	t.Run("deprecated_triple_fields_remain_available_in_v3", func(t *testing.T) {
+		protocolType := reflect.TypeFor[ProtocolConfig]()
+		_, hasSendSize := protocolType.FieldByName("MaxServerSendMsgSize")
+		_, hasRecvSize := protocolType.FieldByName("MaxServerRecvMsgSize")
+		assert.True(t, hasSendSize)
+		assert.True(t, hasRecvSize)
+
+		proto := ProtocolConfig{
+			MaxServerSendMsgSize: "1mib",
+			MaxServerRecvMsgSize: "2mib",
+		}
+		assert.Equal(t, "1mib", proto.MaxServerSendMsgSize)
+		assert.Equal(t, "2mib", proto.MaxServerRecvMsgSize)
+	})
+
 	t.Run("protocol_config_name", func(t *testing.T) {
 		proto := &ProtocolConfig{Name: "dubbo"}
 		assert.Equal(t, "dubbo", proto.Name)
@@ -1158,7 +1177,10 @@ func TestDefaultTripleConfig(t *testing.T) {
 	t.Run("default_triple_config", func(t *testing.T) {
 		triple := DefaultTripleConfig()
 		assert.NotNil(t, triple)
+		assert.Equal(t, "4mib", triple.MaxServerRecvMsgSize)
 		assert.NotNil(t, triple.Http3)
+		assert.NotNil(t, triple.Cors)
+		assert.NotNil(t, triple.OpenAPI)
 	})
 }
 
