@@ -252,7 +252,7 @@ func (s *serviceDiscoveryRegistry) UnSubscribe(url *common.URL, listener registr
 	}
 	serviceNamesKey := sortServices(services)
 	if l := s.getServiceListener(serviceNamesKey); l != nil {
-		l.RemoveListener(url.ServiceKey())
+		l.RemoveListener(protocolSubscribeKey(url))
 	}
 	s.stopListen(url)
 	err := s.serviceNameMapping.Remove(url)
@@ -577,11 +577,7 @@ func (s *serviceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.No
 
 func (s *serviceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry.NotifyListener, services *gxset.HashSet) {
 	serviceNamesKey := sortServices(services)
-	protocol := constant.TriProtocol // consume "tri" protocol by default, other protocols need to be specified on reference/consumer explicitly
-	if url.Protocol != "" {
-		protocol = url.Protocol
-	}
-	protocolServiceKey := url.ServiceKey() + ":" + protocol
+	protocolServiceKey := protocolSubscribeKey(url)
 
 	// A destroyed registry accepts no new subscriptions.
 	if s.isDestroyed() {
@@ -676,6 +672,18 @@ func (s *serviceDiscoveryRegistry) subscribeAndNotify(url *common.URL, serviceNa
 			logger.Errorf("[Registry][ServiceDiscovery] add instance listener catch error, url=%s err=%s", url.String(), err.Error())
 		}
 	}()
+}
+
+// protocolSubscribeKey builds the key under which a subscription's notify
+// listener is registered on the ServiceInstancesChangedListener. SubscribeURL
+// and UnSubscribe must derive it the same way, or the last subscriber is never
+// removed and the metadata retry keeps probing after UnSubscribe.
+func protocolSubscribeKey(url *common.URL) string {
+	protocol := constant.TriProtocol // consume "tri" protocol by default, other protocols need to be specified on reference/consumer explicitly
+	if url.Protocol != "" {
+		protocol = url.Protocol
+	}
+	return url.ServiceKey() + ":" + protocol
 }
 
 func sortServices(services *gxset.HashSet) string {

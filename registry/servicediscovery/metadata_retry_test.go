@@ -312,3 +312,61 @@ func TestMetadataRetryStopsAfterClose(t *testing.T) {
 	listener.refreshServiceURLs()
 	assert.Nil(t, listener.retryTimer, "in-flight refresh finishing after close must not arm a retry")
 }
+
+// TestUnSubscribeStopsMetadataRetry is the regression test for the public
+// SubscribeURL -> UnSubscribe lifecycle: the listener is registered under the
+// protocol-qualified key, so UnSubscribe must remove it with the same key.
+// With an unresolved revision and a pending retry timer, UnSubscribe must leave
+// the listener subscriber-less and stop the timer from probing metadata.
+func TestUnSubscribeStopsMetadataRetry(t *testing.T) {
+	const revision = "rev-unsubscribe-retry"
+	const port = 22108
+	stubRetryDelays(t, 5*time.Millisecond, 20*time.Millisecond)
+
+	var fetchCalls atomic.Int32
+	stubMetadataFetch(t, func(context.Context, string, registry.ServiceInstance, string, string) (*info.MetadataInfo, error) {
+		fetchCalls.Add(1)
+		return nil, perrors.New("metadata unreachable")
+	})
+
+	setupEnvironment(t)
+	registryURL, _ := common.NewURL(testRegistryURL,
+		common.WithParamsValue(constant.RegistryKey, "mock"))
+	reg, err := newServiceDiscoveryRegistry(registryURL)
+	require.NoError(t, err)
+	sdReg, ok := reg.(*serviceDiscoveryRegistry)
+	require.True(t, ok)
+	sdReg.serviceDiscovery = &destroyRaceDiscovery{
+		instances: []registry.ServiceInstance{newTestServiceInstanceOnly(port, "", revision)},
+	}
+
+	consumerURL, err := common.NewURL("dubbo://127.0.0.1:20000/",
+		common.WithInterface(testInterface),
+		common.WithParamsValue(constant.SideKey, constant.SideConsumer),
+		common.WithParamsValue(constant.ProvidedBy, testApp))
+	require.NoError(t, err)
+
+	sdReg.SubscribeURL(consumerURL, &retryNotifyListener{}, gxset.NewSet(testApp))
+
+	listener, ok := sdReg.getServiceListener(testApp).(*ServiceInstancesChangedListenerImpl)
+	require.True(t, ok, "SubscribeURL must install the listener")
+	require.Eventually(t, func() bool {
+		listener.mutex.Lock()
+		defer listener.mutex.Unlock()
+		return listener.retryTimer != nil
+	}, 2*time.Second, time.Millisecond, "failed metadata fetch must arm the retry timer")
+
+	require.NoError(t, sdReg.UnSubscribe(consumerURL, &retryNotifyListener{}))
+
+	listener.mutex.Lock()
+	remaining := len(listener.listeners)
+	timer := listener.retryTimer
+	listener.mutex.Unlock()
+	assert.Zero(t, remaining, "UnSubscribe must remove the subscriber registered by SubscribeURL")
+	assert.Nil(t, timer, "removing the last subscriber must cancel the retry timer")
+
+	// No retry may fire after the last subscriber left.
+	before := fetchCalls.Load()
+	time.Sleep(150 * time.Millisecond)
+	assert.Equal(t, before, fetchCalls.Load(), "no metadata fetch may happen after UnSubscribe")
+}
