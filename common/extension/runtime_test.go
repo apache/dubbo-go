@@ -27,84 +27,59 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-import (
-	"dubbo.apache.org/dubbo-go/v3/common"
-)
-
-func TestContextValidate(t *testing.T) {
-	tests := []struct {
-		name string
-		ctx  Context
-		pass bool
-	}{
-		{name: "instance", ctx: Context{Scope: InstanceScope, Role: RoleNone}, pass: true},
-		{name: "client", ctx: Context{Scope: ClientScope, Role: common.CONSUMER}, pass: true},
-		{name: "server", ctx: Context{Scope: ServerScope, Role: common.PROVIDER}, pass: true},
-		{name: "instance consumer is invalid", ctx: Context{Scope: InstanceScope, Role: common.CONSUMER}},
-		{name: "client provider is invalid", ctx: Context{Scope: ClientScope, Role: common.PROVIDER}},
-		{name: "server consumer is invalid", ctx: Context{Scope: ServerScope, Role: common.CONSUMER}},
-		{name: "combined scope is invalid", ctx: Context{Scope: ClientScope | ServerScope, Role: common.CONSUMER}},
-		{name: "zero scope is invalid", ctx: Context{Role: RoleNone}},
+func TestScopeValidity(t *testing.T) {
+	for _, scope := range []Scope{InstanceScope, ClientScope, ServerScope} {
+		assert.True(t, scope.valid())
 	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := tt.ctx.Validate()
-			if tt.pass {
-				require.NoError(t, err)
-			} else {
-				require.Error(t, err)
-			}
-		})
+	for _, scope := range []Scope{0, ClientScope | ServerScope, Scope(8)} {
+		assert.False(t, scope.valid())
 	}
 }
 
-func TestDefinitionRegistration(t *testing.T) {
+func TestConfigRegistrationCreatesIndependentInstances(t *testing.T) {
 	const prefix = "runtime-test"
-	Unregister(prefix)
-	t.Cleanup(func() { Unregister(prefix) })
+	UnregisterConfig(prefix)
+	t.Cleanup(func() { UnregisterConfig(prefix) })
 
-	def := Definition{
-		Prefix:    prefix,
-		Scopes:    ClientScope | ServerScope,
-		NewConfig: func() any { return map[string]any{"timeout": 1000} },
-		Init: func(ctx *Context) error {
-			if ctx == nil {
-				return errors.New("context is nil")
+	type config struct{ Timeout int }
+	var initialized []Scope
+	descriptor := configDescriptor{
+		prefix: prefix,
+		scopes: ClientScope | ServerScope,
+		new:    func() any { return &config{Timeout: 1000} },
+		init: func(scope Scope, value any) error {
+			if _, ok := value.(*config); !ok {
+				return errors.New("unexpected config type")
 			}
+			initialized = append(initialized, scope)
 			return nil
 		},
 	}
+	SetConfig(descriptor)
 
-	require.NoError(t, Register(def))
-	assert.True(t, def.Supports(ClientScope))
-	assert.True(t, def.Supports(ServerScope))
-	assert.False(t, def.Supports(InstanceScope))
-
-	got, ok := Lookup(prefix)
+	registered, ok := GetConfig(prefix)
 	require.True(t, ok)
-	assert.Equal(t, prefix, got.Prefix)
-	assert.NotNil(t, got.NewConfig)
-
-	err := Register(def)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "already registered")
+	assert.True(t, registered.Scopes().Supports(ClientScope))
+	assert.True(t, registered.Scopes().Supports(ServerScope))
+	assert.False(t, registered.Scopes().Supports(InstanceScope))
+	clientConfig := registered.New()
+	serverConfig := registered.New()
+	require.NotSame(t, clientConfig, serverConfig)
+	require.NoError(t, registered.Init(ClientScope, clientConfig))
+	require.NoError(t, registered.Init(ServerScope, serverConfig))
+	assert.Equal(t, []Scope{ClientScope, ServerScope}, initialized)
 }
 
-func TestDefinitionValidation(t *testing.T) {
-	tests := []struct {
-		name string
-		def  Definition
-	}{
-		{name: "missing prefix", def: Definition{Scopes: ClientScope, NewConfig: func() any { return nil }}},
-		{name: "missing scopes", def: Definition{Prefix: "test", NewConfig: func() any { return nil }}},
-		{name: "unknown scope bit", def: Definition{Prefix: "test", Scopes: Scope(8), NewConfig: func() any { return nil }}},
-		{name: "missing constructor", def: Definition{Prefix: "test", Scopes: ClientScope}},
-	}
+type configDescriptor struct {
+	prefix string
+	scopes Scope
+	new    func() any
+	init   func(Scope, any) error
+}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			require.Error(t, Register(tt.def))
-		})
-	}
+func (d configDescriptor) Prefix() string { return d.prefix }
+func (d configDescriptor) Scopes() Scope  { return d.scopes }
+func (d configDescriptor) New() any       { return d.new() }
+func (d configDescriptor) Init(scope Scope, config any) error {
+	return d.init(scope, config)
 }
