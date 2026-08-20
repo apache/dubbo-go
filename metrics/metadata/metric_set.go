@@ -129,9 +129,9 @@ var (
 	   dubbo_metadata_cache_miss_total{application_name="metrics-consumer",hostname="localhost",ip="10.252.156.213",provider_app="metrics-provider",} 1.0
 	*/
 	// app level, tagged by provider app
-	metadataCacheNum  = metrics.NewMetricKey(dubboMetadataCache+totalSuffix, "Total Metadata Cache Lookup Num")
-	metadataCacheHit  = metrics.NewMetricKey(dubboMetadataCache+"_hit"+totalSuffix, "Hit Metadata Cache Lookup Num")
-	metadataCacheMiss = metrics.NewMetricKey(dubboMetadataCache+"_miss"+totalSuffix, "Miss Metadata Cache Lookup Num")
+	metadataCacheNum  = metrics.NewMetricKey(dubboMetadataCache+totalSuffix, "Total Lookups Against the Metadata LRU Cache")
+	metadataCacheHit  = metrics.NewMetricKey(dubboMetadataCache+"_hit"+totalSuffix, "Successful Lookups Against the Metadata LRU Cache")
+	metadataCacheMiss = metrics.NewMetricKey(dubboMetadataCache+"_miss"+totalSuffix, "Failed Lookups Against the Metadata LRU Cache")
 
 	/*
 	   # HELP dubbo_metadata_fetch_total Total Metadata Fetch Num
