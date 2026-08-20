@@ -412,13 +412,19 @@ func (s *Server) ServeContext(ctx context.Context) error {
 		select {
 		case <-graceful_shutdown.Done():
 			return graceful_shutdown.Shutdown(context.Background())
+		case err := <-graceful_shutdown.ShutdownError():
+			return err
 		case <-done:
 			return graceful_shutdown.Shutdown(ctx)
 		}
 	}
 
-	<-graceful_shutdown.Done()
-	return graceful_shutdown.Shutdown(context.Background())
+	select {
+	case <-graceful_shutdown.Done():
+		return graceful_shutdown.Shutdown(context.Background())
+	case err := <-graceful_shutdown.ShutdownError():
+		return err
+	}
 }
 
 func (s *Server) rollbackServeStartWithCause(cause error, serviceInstanceRegistered bool) error {

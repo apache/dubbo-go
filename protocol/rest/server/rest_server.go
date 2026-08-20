@@ -18,7 +18,6 @@
 package server
 
 import (
-	"context"
 	"errors"
 	"net/http"
 	"reflect"
@@ -105,12 +104,22 @@ func GetRouteFunc(invoker base.Invoker, methodConfig *rest_config.RestMethodConf
 		}
 		if err != nil {
 			logger.Errorf("[Rest][Server] parsing http parameters error, err=%v", err)
-			err = resp.WriteError(http.StatusInternalServerError, errors.New(parseParameterErrorStr))
-			if err != nil {
-				logger.Errorf("[Rest][Server] write error string failed, err=%v", err)
+			if writeErr := resp.WriteError(http.StatusInternalServerError, errors.New(parseParameterErrorStr)); writeErr != nil {
+				logger.Errorf("[Rest][Server] write error string failed, err=%v", writeErr)
 			}
+			return
 		}
-		result := invoker.Invoke(context.Background(), invocation.NewRPCInvocation(methodConfig.MethodName, args, make(map[string]any)))
+		rawRequest := req.RawRequest()
+		if rawRequest == nil {
+			logger.Errorf("[Rest][Server] request adapter returned a nil raw request")
+			if writeErr := resp.WriteError(http.StatusInternalServerError, errors.New("raw HTTP request is nil")); writeErr != nil {
+				logger.Errorf("[Rest][Server] write error failed, err=%v", writeErr)
+			}
+			return
+		}
+		rpcInvocation := invocation.NewRPCInvocation(methodConfig.MethodName, args, make(map[string]any))
+		rpcInvocation.SetContext(rawRequest.Context())
+		result := invoker.Invoke(rawRequest.Context(), rpcInvocation)
 		if result.Error() != nil {
 			err = resp.WriteError(http.StatusInternalServerError, result.Error())
 			if err != nil {

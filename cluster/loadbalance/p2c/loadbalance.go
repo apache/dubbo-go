@@ -19,7 +19,6 @@ package p2c
 
 import (
 	"errors"
-	"fmt"
 	"math/rand"
 	"sync"
 	"time"
@@ -127,6 +126,10 @@ func (l *p2cLoadBalance) Select(invokers []base.Invoker, invocation base.Invocat
 		logger.Warnf("[Loadbalance][P2C] get method metrics err=%v", err)
 		return nil
 	}
+	if remainingIIface == nil {
+		logger.Debugf("[Loadbalance][P2C] select invoker i=%d (nil metrics)", i)
+		return invokers[i]
+	}
 
 	// TODO(justxuewei): It should have a strategy to drop some metrics after a period of time.
 	remainingJIface, err := m.GetMethodMetrics(invokers[j].GetURL(), methodName, metrics.HillClimbing)
@@ -138,18 +141,25 @@ func (l *p2cLoadBalance) Select(invokers []base.Invoker, invocation base.Invocat
 		logger.Warnf("[Loadbalance][P2C] get method metrics err=%v", err)
 		return nil
 	}
+	if remainingJIface == nil {
+		logger.Debugf("[Loadbalance][P2C] select invoker j=%d (nil metrics)", j)
+		return invokers[j]
+	}
 
-	// Convert interface to int, if the type is unexpected, panic immediately
+	// Convert interface to uint64. If one value has an unexpected type, prefer that
+	// invoker so the caller can collect fresh metrics instead of crashing.
 	remainingI, ok := remainingIIface.(uint64)
 	if !ok {
-		panic(fmt.Sprintf("[Loadbalance][P2C] type check failed: key=%s expected=uint64 actual=%T",
-			metrics.HillClimbing, remainingIIface))
+		logger.Warnf("[Loadbalance][P2C] type check failed: key=%s expected=uint64 actual=%T",
+			metrics.HillClimbing, remainingIIface)
+		return invokers[i]
 	}
 
 	remainingJ, ok := remainingJIface.(uint64)
 	if !ok {
-		panic(fmt.Sprintf("[Loadbalance][P2C] type check failed: key=%s expected=uint64 actual=%T",
-			metrics.HillClimbing, remainingJIface))
+		logger.Warnf("[Loadbalance][P2C] type check failed: key=%s expected=uint64 actual=%T",
+			metrics.HillClimbing, remainingJIface)
+		return invokers[j]
 	}
 
 	logger.Debugf("[Loadbalance][P2C] compare remaining capacity i=%d val=%d j=%d val=%d", i, remainingI, j, remainingJ)

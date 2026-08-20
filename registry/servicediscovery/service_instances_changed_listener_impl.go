@@ -18,6 +18,7 @@
 package servicediscovery
 
 import (
+	"context"
 	"encoding/gob"
 	"reflect"
 	"sync"
@@ -59,6 +60,7 @@ func initCache(app string) {
 
 // ServiceInstancesChangedListenerImpl The Service Discovery Changed  Event Listener
 type ServiceInstancesChangedListenerImpl struct {
+	ctx                context.Context
 	app                string
 	registryId         string
 	serviceNames       *gxset.HashSet
@@ -70,10 +72,20 @@ type ServiceInstancesChangedListenerImpl struct {
 }
 
 func NewServiceInstancesChangedListener(app string, registryId string, services *gxset.HashSet) registry.ServiceInstancesChangedListener {
+	return NewServiceInstancesChangedListenerWithContext(context.Background(), app, registryId, services)
+}
+
+// NewServiceInstancesChangedListenerWithContext creates a listener whose
+// metadata refreshes are canceled with ctx, such as when its registry closes.
+func NewServiceInstancesChangedListenerWithContext(ctx context.Context, app string, registryId string, services *gxset.HashSet) registry.ServiceInstancesChangedListener {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	cacheOnce.Do(func() {
 		initCache(app)
 	})
 	return &ServiceInstancesChangedListenerImpl{
+		ctx:                ctx,
 		app:                app,
 		registryId:         registryId,
 		serviceNames:       services,
@@ -128,7 +140,7 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 			revisionToInstances[key] = append(subInstances, instance)
 			metadataInfo := lstn.revisionToMetadata[key]
 			if metadataInfo == nil {
-				meta, err := GetMetadataInfo(providerApp, instance, revision, lstn.registryId)
+				meta, err := GetMetadataInfoWithContext(lstn.ctx, providerApp, instance, revision, lstn.registryId)
 				if err != nil {
 					// Skip this instance if metadata fetch fails (e.g., old Java Dubbo version)
 					// Try next instance with same revision
@@ -273,6 +285,15 @@ func metadataCacheKey(app, registryId, revision string) string {
 // and falls back to RPC if the report fails or returns nil. For all other storage
 // types (including absent), it uses RPC directly.
 func GetMetadataInfo(app string, instance registry.ServiceInstance, revision string, registryId string) (*info.MetadataInfo, error) {
+	return GetMetadataInfoWithContext(context.Background(), app, instance, revision, registryId)
+}
+
+// GetMetadataInfoWithContext retrieves metadata using the supplied lifecycle
+// context for metadata RPC fallbacks.
+func GetMetadataInfoWithContext(ctx context.Context, app string, instance registry.ServiceInstance, revision string, registryId string) (*info.MetadataInfo, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	cacheOnce.Do(func() {
 		initCache(app)
 	})
@@ -281,65 +302,80 @@ func GetMetadataInfo(app string, instance registry.ServiceInstance, revision str
 		return metadataInfo.(*info.MetadataInfo), nil
 	}
 
-	var metadataStorageType string
 	var metadataInfo *info.MetadataInfo
 	var err error
-	if instance.GetMetadata() == nil {
-		// No metadata map at all; treat as default (local/RPC) storage type.
-		metadataStorageType = constant.DefaultMetadataStorageType
+	if getMetadataStorageType(instance) == constant.RemoteMetadataStorageType {
+		metadataInfo, err = getRemoteMetadataInfo(ctx, app, instance, revision, registryId)
 	} else {
-		metadataStorageType = instance.GetMetadata()[constant.MetadataStorageTypePropertyName]
-		if metadataStorageType == "" {
-			// MetadataStorageTypePropertyName absent (e.g. old Java provider); default to local storage type.
-			logger.Warnf("[Metadata] MetadataStorageType not set for instance %s, defaulting to local", instance.GetID())
-			metadataStorageType = constant.DefaultMetadataStorageType
-		}
+		metadataInfo, err = getMetadataInfoFromRPC(ctx, app, instance, revision, registryId)
+	}
+	if err != nil {
+		return nil, err
+	}
+	metaCache.Set(cacheKey, metadataInfo)
+	return metadataInfo, nil
+}
+
+func getMetadataStorageType(instance registry.ServiceInstance) string {
+	instanceMetadata := instance.GetMetadata()
+	if instanceMetadata == nil {
+		return constant.DefaultMetadataStorageType
 	}
 
-	if metadataStorageType == constant.RemoteMetadataStorageType {
-		var reportErr error
-		metadataInfo, reportErr = metadata.GetMetadataFromMetadataReport(revision, instance, registryId)
-		if reportErr != nil {
-			logger.Errorf("[Metadata][Fallback] report failed, fallback to RPC app=%s registry=%s revision=%s err=%v",
-				app, registryId, revision, reportErr)
-		} else if metadataInfo == nil {
-			logger.Warnf("[Metadata][Fallback] report returned nil metadata, fallback to RPC app=%s registry=%s revision=%s",
-				app, registryId, revision)
-		} else {
-			metaCache.Set(cacheKey, metadataInfo)
-			return metadataInfo, nil
-		}
-
-		metadataInfo, err = metadata.GetMetadataFromRpc(revision, instance)
-		if err != nil {
-			if reportErr != nil {
-				// Wrap rpcErr so callers can use errors.Is/As on the primary failure;
-				// reportErr is annotated as context since it triggered the fallback.
-				return nil, perrors.Wrapf(err,
-					"both paths failed, reportErr: %v", reportErr)
-			}
-			// reportErr was nil — the report returned nil metadata and RPC also failed.
-			return nil, perrors.Wrapf(err,
-				"RPC fallback failed after report returned nil metadata")
-		}
-		if metadataInfo == nil {
-			return nil, perrors.Errorf("got nil metadata from RPC app=%s registry=%s revision=%s",
-				app, registryId, revision)
-		}
-		metaCache.Set(cacheKey, metadataInfo)
-		return metadataInfo, nil
+	storageType := instanceMetadata[constant.MetadataStorageTypePropertyName]
+	if storageType == "" {
+		logger.Warnf("[Metadata] MetadataStorageType not set for instance %s, defaulting to local", instance.GetID())
+		return constant.DefaultMetadataStorageType
 	}
+	return storageType
+}
 
-	// Non-remote storage type ("local" or absent): fetch metadata via RPC directly.
-	metadataInfo, err = metadata.GetMetadataFromRpc(revision, instance)
+func getMetadataInfoFromRPC(ctx context.Context, app string, instance registry.ServiceInstance, revision string, registryId string) (*info.MetadataInfo, error) {
+	metadataInfo, err := metadata.GetMetadataFromRpcWithContext(ctx, revision, instance)
 	if err != nil {
 		return nil, perrors.Wrapf(err,
 			"failed app=%s registry=%s revision=%s", app, registryId, revision)
 	}
+	return requireMetadataInfo(metadataInfo, app, registryId, revision)
+}
+
+func getRemoteMetadataInfo(ctx context.Context, app string, instance registry.ServiceInstance, revision string, registryId string) (*info.MetadataInfo, error) {
+	metadataInfo, reportErr := metadata.GetMetadataFromMetadataReport(revision, instance, registryId)
+	if reportErr == nil && metadataInfo != nil {
+		return metadataInfo, nil
+	}
+	logMetadataReportFallback(app, registryId, revision, reportErr)
+
+	metadataInfo, rpcErr := metadata.GetMetadataFromRpcWithContext(ctx, revision, instance)
+	if rpcErr != nil {
+		return nil, wrapMetadataRPCFallbackError(rpcErr, reportErr)
+	}
+	return requireMetadataInfo(metadataInfo, app, registryId, revision)
+}
+
+func logMetadataReportFallback(app, registryId, revision string, reportErr error) {
+	if reportErr != nil {
+		logger.Errorf("[Metadata][Fallback] report failed, fallback to RPC app=%s registry=%s revision=%s err=%v",
+			app, registryId, revision, reportErr)
+		return
+	}
+	logger.Warnf("[Metadata][Fallback] report returned nil metadata, fallback to RPC app=%s registry=%s revision=%s",
+		app, registryId, revision)
+}
+
+func wrapMetadataRPCFallbackError(rpcErr, reportErr error) error {
+	if reportErr != nil {
+		// Wrap rpcErr so callers can use errors.Is/As on the primary failure;
+		// reportErr is annotated as context since it triggered the fallback.
+		return perrors.Wrapf(rpcErr, "both paths failed, reportErr: %v", reportErr)
+	}
+	return perrors.Wrapf(rpcErr, "RPC fallback failed after report returned nil metadata")
+}
+
+func requireMetadataInfo(metadataInfo *info.MetadataInfo, app, registryId, revision string) (*info.MetadataInfo, error) {
 	if metadataInfo == nil {
 		return nil, perrors.Errorf("got nil metadata from RPC app=%s registry=%s revision=%s",
 			app, registryId, revision)
 	}
-	metaCache.Set(cacheKey, metadataInfo)
 	return metadataInfo, nil
 }
