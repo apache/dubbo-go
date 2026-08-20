@@ -46,6 +46,9 @@ func init() {
 	extension.AddCustomizers(&metadataServiceURLParamsMetadataCustomizer{exceptKeys: exceptKeys})
 }
 
+// metadataServiceURLParamsMetadataCustomizer writes the metadata service URL
+// params into the instance metadata as JSON.
+// exceptKeys is currently unused.
 type metadataServiceURLParamsMetadataCustomizer struct {
 	exceptKeys *gxset.HashSet
 }
@@ -55,6 +58,9 @@ func (m *metadataServiceURLParamsMetadataCustomizer) GetPriority() int {
 	return 0
 }
 
+// Customize writes the metadata service URL params into the instance metadata
+// under MetadataServiceURLParamsPropertyName; when the metadata service URL is
+// nil, it returns without writing, otherwise the params JSON overwrites the key.
 func (m *metadataServiceURLParamsMetadataCustomizer) Customize(instance registry.ServiceInstance) {
 	// TODO: GetMetadataService() is a global singleton and returns the same metadata service URL
 	// regardless of which registry this instance belongs to. In a multi-registry setup each
@@ -74,6 +80,9 @@ func (m *metadataServiceURLParamsMetadataCustomizer) Customize(instance registry
 	instance.GetMetadata()[constant.MetadataServiceURLParamsPropertyName] = string(str)
 }
 
+// convertToParams converts the URL params into a map[string]string.
+// Only keys contained in info.IncludeKeys with non-empty values are kept;
+// the port and protocol are always appended from the URL.
 func (m *metadataServiceURLParamsMetadataCustomizer) convertToParams(url *common.URL) map[string]string {
 	// those keys are useless
 	p := make(map[string]string, len(url.GetParams()))
