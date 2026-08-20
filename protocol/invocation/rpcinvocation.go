@@ -84,10 +84,16 @@ func (r *RPCInvocation) MethodName() string {
 // ActualMethodName gets actual invocation method name. It returns the method name been called if it's a generic call
 func (r *RPCInvocation) ActualMethodName() string {
 	if r.IsGenericInvocation() {
-		return r.Arguments()[0].(string)
-	} else {
-		return r.MethodName()
+		// IsGenericInvocation only guarantees len(Arguments)==3, not the element types;
+		// guard the assertion so a malformed $invoke falls back to MethodName() instead of panicking.
+		args := r.Arguments()
+		mtdName, ok := args[0].(string)
+		if !ok {
+			return r.MethodName()
+		}
+		return mtdName
 	}
+	return r.MethodName()
 }
 
 // IsGenericInvocation gets if this is a generic invocation

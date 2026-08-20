@@ -164,6 +164,35 @@ func TestRPCInvocation_ActualMethodName(t *testing.T) {
 	assert.Equal(t, "actualAsyncMethod", invocation.ActualMethodName())
 }
 
+// TestRPCInvocation_ActualMethodName_MalformedArgs ensures a malformed $invoke
+// (arg[0] not a string) falls back to MethodName() instead of panicking.
+// See issue #3683.
+func TestRPCInvocation_ActualMethodName_MalformedArgs(t *testing.T) {
+	cases := []struct {
+		name   string
+		method string
+		args   []any
+		want   string
+	}{
+		{name: "invoke-arg0-int", method: constant.Generic, args: []any{123, []string{}, []any{}}, want: constant.Generic},
+		{name: "invoke-arg0-nil", method: constant.Generic, args: []any{nil, []string{}, []any{}}, want: constant.Generic},
+		{name: "invokeAsync-arg0-int", method: constant.GenericAsync, args: []any{123, []string{}, []any{}}, want: constant.GenericAsync},
+		{name: "invokeAsync-arg0-nil", method: constant.GenericAsync, args: []any{nil, []string{}, []any{}}, want: constant.GenericAsync},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			inv := NewRPCInvocationWithOptions(
+				WithMethodName(tc.method),
+				WithArguments(tc.args),
+			)
+			// Should fall back to MethodName() without panicking.
+			require.NotPanics(t, func() {
+				assert.Equal(t, tc.want, inv.ActualMethodName())
+			})
+		})
+	}
+}
+
 func TestRPCInvocation_IsGenericInvocation(t *testing.T) {
 	// Test non-generic invocation
 	invocation := NewRPCInvocationWithOptions(
