@@ -88,7 +88,7 @@ func TestMTagRoundTrip(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "42", generalizedMap["user_id"])
 
-	realized, err := mockMapGeneralizer.Realize(generalized, reflect.TypeOf(original))
+	realized, err := mockMapGeneralizer.Realize(generalized, reflect.TypeFor[testMTagObj]())
 	require.NoError(t, err)
 	assert.Equal(t, original, realized)
 }
