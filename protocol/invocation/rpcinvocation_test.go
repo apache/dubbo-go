@@ -164,6 +164,35 @@ func TestRPCInvocation_ActualMethodName(t *testing.T) {
 	assert.Equal(t, "actualAsyncMethod", invocation.ActualMethodName())
 }
 
+// TestRPCInvocation_ActualMethodName_MalformedArgs ensures a malformed $invoke
+// (arg[0] not a string) falls back to MethodName() instead of panicking.
+// See issue #3683.
+func TestRPCInvocation_ActualMethodName_MalformedArgs(t *testing.T) {
+	cases := []struct {
+		name   string
+		method string
+		args   []any
+		want   string
+	}{
+		{name: "invoke-arg0-int", method: constant.Generic, args: []any{123, []string{}, []any{}}, want: constant.Generic},
+		{name: "invoke-arg0-nil", method: constant.Generic, args: []any{nil, []string{}, []any{}}, want: constant.Generic},
+		{name: "invokeAsync-arg0-int", method: constant.GenericAsync, args: []any{123, []string{}, []any{}}, want: constant.GenericAsync},
+		{name: "invokeAsync-arg0-nil", method: constant.GenericAsync, args: []any{nil, []string{}, []any{}}, want: constant.GenericAsync},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			inv := NewRPCInvocationWithOptions(
+				WithMethodName(tc.method),
+				WithArguments(tc.args),
+			)
+			// Should fall back to MethodName() without panicking.
+			require.NotPanics(t, func() {
+				assert.Equal(t, tc.want, inv.ActualMethodName())
+			})
+		})
+	}
+}
+
 func TestRPCInvocation_IsGenericInvocation(t *testing.T) {
 	// Test non-generic invocation
 	invocation := NewRPCInvocationWithOptions(
@@ -377,6 +406,38 @@ func TestRPCInvocation_GetAttachmentAsContext(t *testing.T) {
 
 	// key3 (int) should not be in the header since it's not a string
 	assert.NotContains(t, header, "key3")
+}
+
+func TestRPCInvocation_GetAttachmentAsContextPreservesRequestContext(t *testing.T) {
+	type requestContextKey struct{}
+	requestCtx := context.WithValue(context.Background(), requestContextKey{}, "request-value")
+	invocation := NewRPCInvocationWithOptions(
+		WithContext(requestCtx),
+		WithAttachment("key", "value"),
+	)
+
+	ctx := invocation.GetAttachmentAsContext()
+	assert.Equal(t, "request-value", ctx.Value(requestContextKey{}))
+	assert.Equal(t, "value", triple_protocol.ExtractFromOutgoingContext(ctx).Get("key"))
+}
+
+func TestRPCInvocation_GetAttachmentAsContextPreservesOutgoingAttachments(t *testing.T) {
+	requestCtx := context.Background()
+	requestCtx = triple_protocol.NewOutgoingContext(requestCtx, http.Header{
+		"Existing": {"existing-value"},
+		"Shared":   {"old-value"},
+	})
+	invocation := NewRPCInvocationWithOptions(
+		WithContext(requestCtx),
+		WithAttachment("New", "new-value"),
+		WithAttachment("Shared", "new-shared-value"),
+	)
+
+	ctx := invocation.GetAttachmentAsContext()
+	header := triple_protocol.ExtractFromOutgoingContext(ctx)
+	assert.Equal(t, []string{"existing-value"}, header.Values("Existing"))
+	assert.Equal(t, []string{"new-value"}, header.Values("New"))
+	assert.Equal(t, []string{"new-shared-value"}, header.Values("Shared"))
 }
 
 func TestRPCInvocation_MergeAttachmentFromContext(t *testing.T) {

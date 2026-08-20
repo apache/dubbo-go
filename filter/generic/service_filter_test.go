@@ -269,6 +269,55 @@ func TestServiceFilter_InvokeWithUnsupportedGenericMode(t *testing.T) {
 	}
 }
 
+// TestServiceFilter_InvokeRejectsMalformedArgs ensures a $invoke with wrong-typed
+// arguments returns an error instead of panicking. See service_filter.go:79,82.
+func TestServiceFilter_InvokeRejectsMalformedArgs(t *testing.T) {
+	filter := &genericServiceFilter{}
+
+	cases := []struct {
+		name string
+		args []any
+		want string
+	}{
+		{
+			name: "arg0-not-string",
+			args: []any{123, []string{}, []hessian.Object{}},
+			want: "$invoke: arg[0] must be string, got int",
+		},
+		{
+			name: "arg0-nil",
+			args: []any{nil, []string{}, []hessian.Object{}},
+			want: "$invoke: arg[0] must be string, got <nil>",
+		},
+		{
+			name: "arg2-not-hessian-slice",
+			args: []any{"Hello", []string{}, "not-a-slice"},
+			want: "$invoke: arg[2] must be []hessian.Object, got string",
+		},
+		{
+			name: "arg2-nil",
+			args: []any{"Hello", []string{}, nil},
+			want: "$invoke: arg[2] must be []hessian.Object, got <nil>",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			inv := invocation.NewRPCInvocation(constant.Generic, tc.args,
+				map[string]any{constant.GenericKey: "true"})
+
+			ctrl := gomock.NewController(t)
+			mockInvoker := mock.NewMockInvoker(ctrl)
+			mockInvoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Times(0)
+
+			res := filter.Invoke(context.Background(), mockInvoker, inv)
+
+			require.EqualError(t, res.Error(), tc.want)
+			assert.Nil(t, res.Result())
+		})
+	}
+}
+
 func TestServiceFilter_InvokeWithEmptyGenericModeUsesDefault(t *testing.T) {
 	filter := &genericServiceFilter{}
 	service := &MockHelloService{}

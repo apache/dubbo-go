@@ -18,6 +18,7 @@
 package servicediscovery
 
 import (
+	"context"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -95,7 +96,7 @@ func TestSubscribeURLDiscardedWhenDestroyRacesInitialLoad(t *testing.T) {
 	release := make(chan struct{})
 	var enteredOnce sync.Once
 	var fetchCalls atomic.Int32
-	stubMetadataFetch(t, func(string, registry.ServiceInstance, string, string) (*info.MetadataInfo, error) {
+	stubMetadataFetch(t, func(context.Context, string, registry.ServiceInstance, string, string) (*info.MetadataInfo, error) {
 		fetchCalls.Add(1)
 		enteredOnce.Do(func() { close(entered) })
 		<-release

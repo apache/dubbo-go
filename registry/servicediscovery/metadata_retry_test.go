@@ -18,6 +18,7 @@
 package servicediscovery
 
 import (
+	"context"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -69,7 +70,7 @@ func (c *retryNotifyListener) snapshot() []*registry.ServiceEvent {
 }
 
 // stubMetadataFetch replaces the metadata fetcher and restores it on cleanup.
-func stubMetadataFetch(t *testing.T, fetch func(app string, instance registry.ServiceInstance, revision, registryId string) (*info.MetadataInfo, error)) {
+func stubMetadataFetch(t *testing.T, fetch func(ctx context.Context, app string, instance registry.ServiceInstance, revision, registryId string) (*info.MetadataInfo, error)) {
 	t.Helper()
 	original := metadataInfoFetcher
 	metadataInfoFetcher = fetch
@@ -104,7 +105,7 @@ func TestMetadataRetryRecoversWithoutFurtherEvent(t *testing.T) {
 
 	meta := newTestMetadataInfo(t, revision, port, "")
 	var calls atomic.Int32
-	stubMetadataFetch(t, func(string, registry.ServiceInstance, string, string) (*info.MetadataInfo, error) {
+	stubMetadataFetch(t, func(context.Context, string, registry.ServiceInstance, string, string) (*info.MetadataInfo, error) {
 		if calls.Add(1) == 1 {
 			return nil, perrors.New("transient metadata failure")
 		}
@@ -135,7 +136,7 @@ func TestMetadataRetryStopsWhenInstanceRemoved(t *testing.T) {
 	stubRetryDelays(t, 5*time.Millisecond, 10*time.Millisecond)
 
 	var calls atomic.Int32
-	stubMetadataFetch(t, func(string, registry.ServiceInstance, string, string) (*info.MetadataInfo, error) {
+	stubMetadataFetch(t, func(context.Context, string, registry.ServiceInstance, string, string) (*info.MetadataInfo, error) {
 		calls.Add(1)
 		return nil, perrors.New("metadata unreachable")
 	})
@@ -170,7 +171,7 @@ func TestMetadataRetryFollowsLatestRevision(t *testing.T) {
 
 	metaNew := newTestMetadataInfo(t, revNew, port, "")
 	var oldCalls, newCalls atomic.Int32
-	stubMetadataFetch(t, func(_ string, _ registry.ServiceInstance, revision string, _ string) (*info.MetadataInfo, error) {
+	stubMetadataFetch(t, func(_ context.Context, _ string, _ registry.ServiceInstance, revision string, _ string) (*info.MetadataInfo, error) {
 		if revision == revOld {
 			oldCalls.Add(1)
 			return nil, perrors.New("transient metadata failure")
@@ -204,7 +205,7 @@ func TestMetadataRetryUsesSingleTimer(t *testing.T) {
 	stubRetryDelays(t, time.Second, 2*time.Second)
 
 	var calls atomic.Int32
-	stubMetadataFetch(t, func(string, registry.ServiceInstance, string, string) (*info.MetadataInfo, error) {
+	stubMetadataFetch(t, func(context.Context, string, registry.ServiceInstance, string, string) (*info.MetadataInfo, error) {
 		calls.Add(1)
 		return nil, perrors.New("metadata unreachable")
 	})
@@ -232,7 +233,7 @@ func TestMetadataRetryListenerDetach(t *testing.T) {
 	const port = 22105
 	stubRetryDelays(t, time.Second, 2*time.Second)
 
-	stubMetadataFetch(t, func(string, registry.ServiceInstance, string, string) (*info.MetadataInfo, error) {
+	stubMetadataFetch(t, func(context.Context, string, registry.ServiceInstance, string, string) (*info.MetadataInfo, error) {
 		return nil, perrors.New("metadata unreachable")
 	})
 
@@ -263,7 +264,7 @@ func TestMetadataRetryWaitsForSubscriber(t *testing.T) {
 	const port = 22106
 	stubRetryDelays(t, time.Second, 2*time.Second)
 
-	stubMetadataFetch(t, func(string, registry.ServiceInstance, string, string) (*info.MetadataInfo, error) {
+	stubMetadataFetch(t, func(context.Context, string, registry.ServiceInstance, string, string) (*info.MetadataInfo, error) {
 		return nil, perrors.New("metadata unreachable")
 	})
 
@@ -288,7 +289,7 @@ func TestMetadataRetryStopsAfterClose(t *testing.T) {
 	const port = 22107
 	stubRetryDelays(t, time.Second, 2*time.Second)
 
-	stubMetadataFetch(t, func(string, registry.ServiceInstance, string, string) (*info.MetadataInfo, error) {
+	stubMetadataFetch(t, func(context.Context, string, registry.ServiceInstance, string, string) (*info.MetadataInfo, error) {
 		return nil, perrors.New("metadata unreachable")
 	})
 

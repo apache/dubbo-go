@@ -726,6 +726,23 @@ func TestWithURL(t *testing.T) {
 	processReferenceOptionsInitCases(t, cases)
 }
 
+func TestWithGenericType(t *testing.T) {
+	cases := []referenceOptionsInitCase{
+		{
+			desc: "empty generic overrides default generic option",
+			opts: []ReferenceOption{
+				WithGeneric(),
+				WithGenericType(""),
+			},
+			verify: func(t *testing.T, refOpts *ReferenceOptions, err error) {
+				require.NoError(t, err)
+				assert.Empty(t, refOpts.Reference.Generic)
+			},
+		},
+	}
+	processReferenceOptionsInitCases(t, cases)
+}
+
 func TestWithFilter(t *testing.T) {
 	cases := []referenceOptionsInitCase{
 		{
