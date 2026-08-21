@@ -37,16 +37,24 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 )
 
+// zkAddrEnvKey mirrors the environment variable gost's
+// NewZookeeperClientFromEnv reads to locate a ZooKeeper server (see
+// database/kv/zk/client.go in dubbogo/gost); it isn't exported there, so the
+// name is duplicated here.
+const zkAddrEnvKey = "ZK_ADDR"
+
 // failOrSkipZkUnavailable reports that a ZooKeeper connection could not be
-// established. Under CI (detected via the CI environment variable GitHub
-// Actions sets) it fails the test outright, since CI is expected to run
-// these tests against a real ZooKeeper and a silent skip there would hide a
-// regression; outside CI it skips so a developer machine without a
-// ZooKeeper running isn't blocked.
+// established. Whether that's a failure or a skip is keyed off ZK_ADDR
+// rather than a generic "am I in CI" heuristic: if it's set, whoever is
+// running this test explicitly pointed it at a real ZooKeeper (as our CI
+// workflow does), so an unreachable server is a genuine regression, not
+// something to silently skip past; when it's unset - the common case on a
+// developer machine that hasn't set one up - it skips instead so local runs
+// aren't blocked.
 func failOrSkipZkUnavailable(t *testing.T, err error) {
 	t.Helper()
-	if os.Getenv("CI") != "" {
-		t.Fatalf("zookeeper unavailable in CI, this test must run: %v", err)
+	if addr := os.Getenv(zkAddrEnvKey); addr != "" {
+		t.Fatalf("%s=%q was set but zookeeper is unavailable: %v", zkAddrEnvKey, addr, err)
 	}
 	t.Skipf("skip zk setup: %v", err)
 }

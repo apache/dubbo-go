@@ -41,11 +41,22 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
+    # Set at job level (not just on one step) so every step below - Run unit
+    # tests and Race Test alike - explicitly points config_center/zookeeper's
+    # tests at the service container. That's also what makes
+    # failOrSkipZkUnavailable (config_center/zookeeper/impl_test.go) fail
+    # those tests instead of skipping them if the server it names isn't
+    # reachable: ZK_ADDR being set here is this job asserting "a ZooKeeper
+    # must be up", so an unreachable one is this job's own regression, not
+    # something to pass over quietly.
+    env:
+      ZK_ADDR: 127.0.0.1:2181
+
     services:
       # Backs the ZooKeeper-dependent unit tests under config_center/zookeeper
-      # (see #3459/#3690): they connect to ZK_ADDR (default 127.0.0.1:2181)
-      # and, without a reachable server, silently skip instead of exercising
-      # the migrated client, so we run a real instance here.
+      # (see #3459/#3690): they connect to ZK_ADDR and, without a reachable
+      # server, would otherwise skip instead of exercising the migrated
+      # client, so we run a real instance here.
       zookeeper:
         image: zookeeper:3.9
         ports:
@@ -71,8 +82,6 @@ jobs:
           exit 1
 
       - name: Run unit tests
-        env:
-          ZK_ADDR: 127.0.0.1:2181
         run: make test
 
       - name: Race Test
