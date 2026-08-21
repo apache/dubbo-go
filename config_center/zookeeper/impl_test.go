@@ -66,7 +66,7 @@ func TestGetPath(t *testing.T) {
 }
 
 func TestPublishAndRemoveConfigWithMockZk(t *testing.T) {
-	client, _, err := gxzookeeper.NewMockZookeeperClient("test", 5e9)
+	client, _, err := gxzookeeper.NewZookeeperClientFromEnv("test", 5e9)
 	if err != nil {
 		t.Skipf("skip mock zk setup: %v", err)
 	}
@@ -101,7 +101,7 @@ func TestPublishAndRemoveConfigWithMockZk(t *testing.T) {
 }
 
 func TestGetPropertiesWithMockZk(t *testing.T) {
-	client, _, err := gxzookeeper.NewMockZookeeperClient("test2", 5e9)
+	client, _, err := gxzookeeper.NewZookeeperClientFromEnv("test2", 5e9)
 	if err != nil {
 		t.Skipf("skip mock zk setup: %v", err)
 	}
