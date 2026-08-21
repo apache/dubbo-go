@@ -18,6 +18,10 @@
 package triple_protocol
 
 import (
+	"context"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -240,10 +244,11 @@ func TestProtoBinaryCodec_MarshalNonProtoReturnsError(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestProtoBinaryCodec_UnmarshalWrappedResponse(t *testing.T) {
+func TestProtoWrapperCodec_UnmarshalWrappedResponse(t *testing.T) {
 	t.Parallel()
 
-	codec := &protoBinaryCodec{}
+	// Client-side: protoWrapperCodec decodes a TripleResponseWrapper.
+	codec := newProtoWrapperCodec(&hessian2Codec{})
 
 	// Create a TripleResponseWrapper
 	hessianCodec := &hessian2Codec{}
@@ -263,10 +268,12 @@ func TestProtoBinaryCodec_UnmarshalWrappedResponse(t *testing.T) {
 	assert.Equal(t, result, "hello world")
 }
 
-func TestProtoBinaryCodec_UnmarshalWrappedRequest(t *testing.T) {
+func TestServerCodecSession_UnmarshalWrappedRequest(t *testing.T) {
 	t.Parallel()
 
-	codec := &protoBinaryCodec{}
+	// Server-side: tripleServerCodecSession decodes a TripleRequestWrapper and
+	// captures SerializeType for the subsequent response Marshal.
+	codecSession := &tripleServerCodecSession{delegate: &protoBinaryCodec{}}
 
 	// Create a TripleRequestWrapper
 	hessianCodec := &hessian2Codec{}
@@ -286,7 +293,7 @@ func TestProtoBinaryCodec_UnmarshalWrappedRequest(t *testing.T) {
 		var v any
 		results[i] = &v
 	}
-	err := codec.Unmarshal(data, results)
+	err := codecSession.Unmarshal(data, results)
 	assert.Nil(t, err)
 
 	// Verify the unmarshaled values
@@ -294,12 +301,13 @@ func TestProtoBinaryCodec_UnmarshalWrappedRequest(t *testing.T) {
 	val1 := *(results[1].(*any))
 	assert.Equal(t, val0, "arg1")
 	assert.Equal(t, val1, int64(123))
+	assert.Equal(t, codecSession.serializeType, codecNameHessian2)
 }
 
-func TestProtoBinaryCodec_ResponseThenRequestFallback(t *testing.T) {
+func TestServerCodecSession_UnmarshalSingleArgRequest(t *testing.T) {
 	t.Parallel()
 
-	codec := &protoBinaryCodec{}
+	session := &tripleServerCodecSession{delegate: &protoBinaryCodec{}}
 
 	// Test that it tries TripleResponseWrapper first, then falls back to TripleRequestWrapper
 	// Create a valid TripleRequestWrapper
@@ -318,7 +326,7 @@ func TestProtoBinaryCodec_ResponseThenRequestFallback(t *testing.T) {
 	results := make([]any, 1)
 	var v any
 	results[0] = &v
-	err := codec.Unmarshal(data, results)
+	err := session.Unmarshal(data, results)
 	assert.Nil(t, err)
 	assert.Equal(t, *(results[0].(*any)), "test")
 }
@@ -625,4 +633,461 @@ func TestProtoWrapperCodec_Msgpack(t *testing.T) {
 	codec := newProtoWrapperCodec(&msgpackCodec{})
 	assert.Equal(t, codec.Name(), codecNameMsgPack)
 	assert.Equal(t, codec.WireCodecName(), codecNameProto)
+}
+
+func TestServerCodecSession_UnmarshalWrappedRequest_MsgPack(t *testing.T) {
+	t.Parallel()
+
+	// Provider configured serialization=msgpack, so msgpack is on the allowlist.
+	session := &tripleServerCodecSession{
+		delegate:             &protoBinaryCodec{},
+		allowedSerializeType: codecNameMsgPack,
+	}
+
+	msgpCodec := &msgpackCodec{}
+	arg1, _ := msgpCodec.Marshal("msgarg")
+	arg2, _ := msgpCodec.Marshal(int64(7))
+
+	wrapper := &interoperability.TripleRequestWrapper{
+		SerializeType: codecNameMsgPack,
+		Args:          [][]byte{arg1, arg2},
+		ArgTypes:      []string{"java.lang.String", "long"},
+	}
+	data, _ := proto.Marshal(wrapper)
+
+	results := make([]any, 2)
+	var str string
+	var num int64
+	results[0] = &str
+	results[1] = &num
+	// This MUST decode via msgpack directly (SerializeType dispatch).
+	err := session.Unmarshal(data, results)
+	assert.Nil(t, err)
+
+	assert.Equal(t, str, "msgarg")
+	assert.Equal(t, num, int64(7))
+	assert.Equal(t, session.serializeType, codecNameMsgPack)
+}
+
+func TestServerCodecSession_UnmarshalWrappedRequest_UnknownType(t *testing.T) {
+	t.Parallel()
+
+	session := &tripleServerCodecSession{delegate: &protoBinaryCodec{}}
+	wrapper := &interoperability.TripleRequestWrapper{
+		SerializeType: "unknown",
+		Args:          [][]byte{{0x01}},
+		ArgTypes:      []string{"java.lang.String"},
+	}
+	data, _ := proto.Marshal(wrapper)
+
+	var v any
+	err := session.Unmarshal(data, []any{&v})
+	assert.NotNil(t, err) // explicit error, no silent fallback
+}
+
+func TestServerCodecSession_UnmarshalWrappedRequest_CorruptPayload(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name          string
+		serializeType string
+		allowed       string // provider allowlist; hessian2 is always implicitly allowed
+		payload       []byte
+	}{
+		// 0xff is not a valid hessian2 type code: decode fails.
+		{"hessian2-corrupt", codecNameHessian2, "", []byte{0xff}},
+		// 0xc1 is reserved (never used) in the msgpack spec: decode fails.
+		{"msgpack-corrupt", codecNameMsgPack, codecNameMsgPack, []byte{0xc1}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			session := &tripleServerCodecSession{
+				delegate:             &protoBinaryCodec{},
+				allowedSerializeType: tc.allowed,
+			}
+			wrapper := &interoperability.TripleRequestWrapper{
+				SerializeType: tc.serializeType,
+				Args:          [][]byte{tc.payload},
+				ArgTypes:      []string{"java.lang.String"},
+			}
+			data, _ := proto.Marshal(wrapper)
+
+			var v any
+			// Payload does not match the declared SerializeType: the selected
+			// inner codec must surface an explicit decode error.
+			err := session.Unmarshal(data, []any{&v})
+			assert.NotNil(t, err)
+			assert.True(t, strings.Contains(err.Error(), "triple wrapper request"))
+		})
+	}
+}
+
+func TestProtoWrapperCodec_UnmarshalWrappedResponse_UnknownType(t *testing.T) {
+	t.Parallel()
+
+	codec := newProtoWrapperCodec(&hessian2Codec{})
+	wrapper := &interoperability.TripleResponseWrapper{
+		SerializeType: "unknown",
+		Data:          []byte{0x01},
+	}
+	data, _ := proto.Marshal(wrapper)
+
+	var result any
+	err := codec.Unmarshal(data, &result)
+	assert.NotNil(t, err)
+}
+
+func TestServerCodecSession_MarshalWrappedResponse_Hessian2(t *testing.T) {
+	t.Parallel()
+
+	session := &tripleServerCodecSession{delegate: &protoBinaryCodec{}, serializeType: codecNameHessian2}
+	data, err := session.Marshal("hello")
+	assert.Nil(t, err)
+
+	// Decode the produced wrapper and verify round-trip.
+	var wrapper interoperability.TripleResponseWrapper
+	assert.Nil(t, proto.Unmarshal(data, &wrapper))
+	assert.Equal(t, wrapper.SerializeType, codecNameHessian2)
+
+	hessianCodec := &hessian2Codec{}
+	var out any
+	assert.Nil(t, hessianCodec.Unmarshal(wrapper.Data, &out))
+	assert.Equal(t, out, "hello")
+}
+
+func TestServerCodecSession_MarshalWrappedResponse_FollowsSerializeType(t *testing.T) {
+	t.Parallel()
+
+	session := &tripleServerCodecSession{delegate: &protoBinaryCodec{}, serializeType: codecNameMsgPack}
+	data, err := session.Marshal(int64(42))
+	assert.Nil(t, err)
+
+	var wrapper interoperability.TripleResponseWrapper
+	assert.Nil(t, proto.Unmarshal(data, &wrapper))
+	assert.Equal(t, wrapper.SerializeType, codecNameMsgPack)
+
+	msgp := &msgpackCodec{}
+	var out int64
+	assert.Nil(t, msgp.Unmarshal(wrapper.Data, &out))
+	assert.Equal(t, out, int64(42))
+}
+
+func TestNonIDLResponse_RoundTrip_Hessian2(t *testing.T) {
+	t.Parallel()
+
+	// Server encode.
+	session := &tripleServerCodecSession{delegate: &protoBinaryCodec{}, serializeType: codecNameHessian2}
+	data, err := session.Marshal("roundtrip-hessian")
+	assert.Nil(t, err)
+
+	// Client decode (via protoWrapperCodec, simulating a Non-IDL client).
+	codec := newProtoWrapperCodec(&hessian2Codec{})
+	var out any
+	assert.Nil(t, codec.Unmarshal(data, &out))
+	assert.Equal(t, out, "roundtrip-hessian")
+}
+
+func TestNonIDLResponse_RoundTrip_MsgPack(t *testing.T) {
+	t.Parallel()
+
+	session := &tripleServerCodecSession{delegate: &protoBinaryCodec{}, serializeType: codecNameMsgPack}
+	data, err := session.Marshal("roundtrip-msgpack")
+	assert.Nil(t, err)
+
+	codec := newProtoWrapperCodec(&msgpackCodec{})
+	var out string
+	assert.Nil(t, codec.Unmarshal(data, &out))
+	assert.Equal(t, out, "roundtrip-msgpack")
+}
+
+func TestServerCodecSession_Allowlist_RejectsUnauthorizedSerializeType(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name    string
+		allowed string // provider's configured serialization; "" = hessian2-only
+	}{
+		{"not-configured-default", ""}, // serialization defaults to protobuf (IDL), not msgpack
+		{"configured-hessian2", codecNameHessian2},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			session := &tripleServerCodecSession{
+				delegate:             &protoBinaryCodec{},
+				allowedSerializeType: tc.allowed,
+			}
+			msgpCodec := &msgpackCodec{}
+			arg, _ := msgpCodec.Marshal("sneaky")
+			wrapper := &interoperability.TripleRequestWrapper{
+				SerializeType: codecNameMsgPack,
+				Args:          [][]byte{arg},
+				ArgTypes:      []string{"java.lang.String"},
+			}
+			data, _ := proto.Marshal(wrapper)
+
+			var v any
+			err := session.Unmarshal(data, []any{&v})
+			assert.NotNil(t, err)
+			assert.True(t, strings.Contains(err.Error(), "not allowed by provider"))
+		})
+	}
+}
+
+func TestServerCodecSession_Allowlist_Hessian2AlwaysAllowed(t *testing.T) {
+	t.Parallel()
+
+	// Provider configured serialization=protobuf (the IDL default); hessian2
+	// Non-IDL request must still be accepted.
+	session := &tripleServerCodecSession{
+		delegate:             &protoBinaryCodec{},
+		allowedSerializeType: "protobuf",
+	}
+	hessianCodec := &hessian2Codec{}
+	arg, _ := hessianCodec.Marshal("ok")
+	wrapper := &interoperability.TripleRequestWrapper{
+		SerializeType: codecNameHessian2,
+		Args:          [][]byte{arg},
+		ArgTypes:      []string{"java.lang.String"},
+	}
+	data, _ := proto.Marshal(wrapper)
+
+	var v any
+	err := session.Unmarshal(data, []any{&v})
+	assert.Nil(t, err)
+}
+
+// TestServerCodecSession_Marshal_ProductionShape covers the wire shape produced
+// by the real handler path (server.go wrapTripleResponse constructs
+// []any{result}). The session MUST unwrap the one-element container and serialize
+// only the scalar return value into TripleResponseWrapper.Data, matching Java's
+// ReflectionPackableMethod.WrapResponsePack. Serializing the whole []any would
+// make Hessian2 panic (copySlice on string) and MsgPack return a type error.
+func TestServerCodecSession_Marshal_ProductionShape(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name          string
+		serializeType string
+		allowed       string
+		payload       any        // wrapped as []any{payload} to mirror production shape
+		newDest       func() any // returns a typed pointer to decode into
+		assertDecoded func(t *testing.T, dest any)
+	}{
+		{
+			name:          "hessian2-string",
+			serializeType: codecNameHessian2,
+			payload:       "hello-prod",
+			newDest:       func() any { var s string; return &s },
+			assertDecoded: func(t *testing.T, dest any) { assert.Equal(t, *(dest.(*string)), "hello-prod") },
+		},
+		{
+			name:          "hessian2-int64",
+			serializeType: codecNameHessian2,
+			payload:       int64(99),
+			newDest:       func() any { var n int64; return &n },
+			assertDecoded: func(t *testing.T, dest any) { assert.Equal(t, *(dest.(*int64)), int64(99)) },
+		},
+		{
+			name:          "msgpack-string",
+			serializeType: codecNameMsgPack,
+			allowed:       codecNameMsgPack,
+			payload:       "msgpack-prod",
+			newDest:       func() any { var s string; return &s },
+			assertDecoded: func(t *testing.T, dest any) { assert.Equal(t, *(dest.(*string)), "msgpack-prod") },
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Server-side encode with the PRODUCTION shape: []any{result}.
+			session := &tripleServerCodecSession{
+				delegate:             &protoBinaryCodec{},
+				serializeType:        tc.serializeType,
+				allowedSerializeType: tc.allowed,
+			}
+			data, err := session.Marshal([]any{tc.payload})
+			assert.Nil(t, err)
+
+			// Inspect the wrapper: Data must hold the scalar, not the container.
+			var wrapper interoperability.TripleResponseWrapper
+			assert.Nil(t, proto.Unmarshal(data, &wrapper))
+			assert.Equal(t, wrapper.SerializeType, tc.serializeType)
+			assert.True(t, len(wrapper.Data) > 0)
+
+			// Client-side decode via protoWrapperCodec into a typed pointer, the
+			// way a real caller (which knows the return type) would.
+			clientCodec := newProtoWrapperCodec(resolveInnerCodecOrFail(t, tc.serializeType))
+			dest := tc.newDest()
+			assert.Nil(t, clientCodec.Unmarshal(data, dest))
+			tc.assertDecoded(t, dest)
+		})
+	}
+}
+
+func resolveInnerCodecOrFail(t *testing.T, serializeType string) Codec {
+	t.Helper()
+	c, err := resolveInnerCodec(serializeType)
+	if err != nil {
+		t.Fatalf("resolveInnerCodec(%q): %v", serializeType, err)
+	}
+	return c
+}
+
+// TestServerCodecSession_Marshal_VoidResponse covers null/void responses: an
+// empty or nil container element must produce an empty Data field (decoded as
+// void by the peer), NOT an attempt to serialize nil.
+func TestServerCodecSession_Marshal_VoidResponse(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name string
+		msg  any
+	}{
+		{"empty-slice", []any{}},
+		{"nil-element", []any{nil}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			session := &tripleServerCodecSession{
+				delegate:      &protoBinaryCodec{},
+				serializeType: codecNameHessian2,
+			}
+			data, err := session.Marshal(tc.msg)
+			assert.Nil(t, err)
+
+			var wrapper interoperability.TripleResponseWrapper
+			assert.Nil(t, proto.Unmarshal(data, &wrapper))
+			assert.Equal(t, len(wrapper.Data), 0)
+
+			// Client decodes empty Data as void (no error, no value).
+			clientCodec := newProtoWrapperCodec(&hessian2Codec{})
+			var got any
+			assert.Nil(t, clientCodec.Unmarshal(data, &got))
+		})
+	}
+}
+
+// TestProtoWrapperCodec_Unmarshal_EmptyData_UnknownSerializeType covers P1: a
+// corrupt response {SerializeType:"unknown", Data:nil} must be rejected even
+// though Data is empty. Previously it was silently treated as void.
+func TestProtoWrapperCodec_Unmarshal_EmptyData_UnknownSerializeType(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name          string
+		serializeType string
+		wantErr       bool
+	}{
+		// Unknown/disabled types must error regardless of Data emptiness.
+		{"unknown-empty-data", "unknown", true},
+		{"disabled-empty-data", "fastjson", true},
+		// Valid types with empty Data are legitimate void responses.
+		{"hessian2-empty-data", codecNameHessian2, false},
+		{"msgpack-empty-data", codecNameMsgPack, false},
+		// hessian4 aliases hessian2; empty Data is void.
+		{"hessian4-empty-data", "hessian4", false},
+		// Empty SerializeType defaults to hessian2 (backward compat); void OK.
+		{"blank-serialize-type", "", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			codec := newProtoWrapperCodec(&hessian2Codec{})
+			wrapper := &interoperability.TripleResponseWrapper{
+				SerializeType: tc.serializeType,
+				// Data intentionally nil/empty.
+			}
+			data, _ := proto.Marshal(wrapper)
+
+			var got any
+			err := codec.Unmarshal(data, &got)
+			if tc.wantErr {
+				assert.NotNil(t, err)
+			} else {
+				assert.Nil(t, err)
+			}
+		})
+	}
+}
+
+// TestServerCodecSession_Marshal_MultiElementError pins the defined semantics
+// for a multi-element response container: it is a programming error (the
+// production handler always packs exactly one return value), NOT a silent
+// truncation to the first element.
+func TestServerCodecSession_Marshal_MultiElementError(t *testing.T) {
+	t.Parallel()
+
+	session := &tripleServerCodecSession{
+		delegate:      &protoBinaryCodec{},
+		serializeType: codecNameHessian2,
+	}
+	_, err := session.Marshal([]any{"a", "b"})
+	assert.NotNil(t, err)
+}
+
+// TestNonIDLUnary_PublicEntry_EndToEnd drives a non-IDL unary RPC through the
+// public entry points (server: NewUnaryHandler; client: NewClient/CallUnary)
+// over HTTP. The handler returns NewResponse([]any{result}), mirroring the
+// production shape built by server.go wrapTripleResponse, so the session must
+// unwrap the one-element container before serialization. Covers the P0 review
+// matrix: {Hessian2, MsgPack} x {concrete type pointer, *any} destinations.
+func TestNonIDLUnary_PublicEntry_EndToEnd(t *testing.T) {
+	t.Parallel()
+
+	const (
+		service = "/test.NonIDLGreeter"
+		method  = "SayHello"
+	)
+	cases := []struct {
+		name          string
+		clientOption  ClientOption
+		handlerOption HandlerOption // nil for hessian2: always on the allowlist
+		newDest       func() any
+	}{
+		{"hessian2-concrete-pointer", WithHessian2(), nil, func() any { return new(string) }},
+		{"hessian2-any-pointer", WithHessian2(), nil, func() any { var v any; return &v }},
+		{"msgpack-concrete-pointer", WithMsgPack(), WithExpectedCodecName(codecNameMsgPack), func() any { return new(string) }},
+		{"msgpack-any-pointer", WithMsgPack(), WithExpectedCodecName(codecNameMsgPack), func() any { var v any; return &v }},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			handlerOpts := []HandlerOption{}
+			if tc.handlerOption != nil {
+				handlerOpts = append(handlerOpts, tc.handlerOption)
+			}
+			mux := http.NewServeMux()
+			mux.Handle(service+"/"+method, NewUnaryHandler(
+				service+"/"+method,
+				func() any { return []any{new(string)} },
+				func(_ context.Context, req *Request) (*Response, error) {
+					arg := req.Msg.([]any)[0].(*string)
+					// Production shape: wrapTripleResponse packs []any{result}.
+					return NewResponse([]any{"hello:" + *arg}), nil
+				},
+				handlerOpts...,
+			))
+			server := httptest.NewServer(mux)
+			t.Cleanup(server.Close)
+
+			client := NewClient(server.Client(), server.URL+service, WithTriple(), tc.clientOption)
+			resp := &Response{Msg: tc.newDest()}
+			assert.Nil(t, client.CallUnary(context.Background(), NewRequest([]any{"world"}), method, resp))
+
+			var result string
+			switch dest := resp.Msg.(type) {
+			case *string:
+				result = *dest
+			case *any:
+				switch v := (*dest).(type) {
+				case string:
+					result = v
+				case []byte:
+					// ugorji/codec decodes a msgpack str into []byte when the
+					// destination is *any.
+					result = string(v)
+				}
+			}
+			assert.Equal(t, result, "hello:world")
+		})
+	}
 }

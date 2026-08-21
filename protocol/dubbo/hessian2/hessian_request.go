@@ -85,8 +85,6 @@ func EnsureRequest(body any) *DubboRequest {
 
 func packRequest(service Service, header DubboHeader, req any) ([]byte, error) {
 	var (
-		err       error
-		types     string
 		byteArray []byte
 		pkgLen    int
 	)
@@ -126,31 +124,53 @@ func packRequest(service Service, header DubboHeader, req any) ([]byte, error) {
 	// body
 	//////////////////////////////////////////
 	if hb {
-		_ = encoder.Encode(nil)
-		goto END
+		if err := encoder.Encode(nil); err != nil {
+			return nil, perrors.Wrap(err, "failed to encode heartbeat request")
+		}
+	} else {
+		if err := encodeRequestBody(encoder, service, request, args); err != nil {
+			return nil, err
+		}
 	}
 
+	byteArray = encoder.Buffer()
+	pkgLen = len(byteArray)
+	if pkgLen > int(DEFAULT_LEN) { // recommand 8M
+		logger.Warnf("[Dubbo][Hessian2] data length %d too large, recommand max payload %d. "+
+			"Dubbo java can't handle the package whose size is greater than %d!!!", pkgLen, DEFAULT_LEN, DEFAULT_LEN)
+	}
+	// byteArray{body length}
+	binary.BigEndian.PutUint32(byteArray[12:], uint32(pkgLen-HEADER_LENGTH))
+	return byteArray, nil
+}
+
+func encodeRequestBody(encoder *hessian.Encoder, service Service, request *DubboRequest, args []any) error {
 	// dubbo version + path + version + method
-	if err = encoder.Encode(DEFAULT_DUBBO_PROTOCOL_VERSION); err != nil {
-		logger.Warnf("[Dubbo][Hessian2] encode default dubbo protocol version failed, err=%v", err)
+	if err := encoder.Encode(DEFAULT_DUBBO_PROTOCOL_VERSION); err != nil {
+		return perrors.Wrap(err, "failed to encode default dubbo protocol version")
 	}
-	if err = encoder.Encode(service.Path); err != nil {
-		logger.Warnf("[Dubbo][Hessian2] encode service path failed, err=%v", err)
+	if err := encoder.Encode(service.Path); err != nil {
+		return perrors.Wrap(err, "failed to encode service path")
 	}
-	if err = encoder.Encode(service.Version); err != nil {
-		logger.Warnf("[Dubbo][Hessian2] encode service version failed, err=%v", err)
+	if err := encoder.Encode(service.Version); err != nil {
+		return perrors.Wrap(err, "failed to encode service version")
 	}
-	if err = encoder.Encode(service.Method); err != nil {
-		logger.Warnf("[Dubbo][Hessian2] encode service method failed, err=%v", err)
+	if err := encoder.Encode(service.Method); err != nil {
+		return perrors.Wrap(err, "failed to encode service method")
 	}
 
 	// args = args type list + args value list
-	if types, err = getArgsTypeList(args); err != nil {
-		return nil, perrors.Wrapf(err, " PackRequest(args:%+v)", args)
+	types, err := getArgsTypeList(args)
+	if err != nil {
+		return perrors.Wrapf(err, " PackRequest(args:%+v)", args)
 	}
-	_ = encoder.Encode(types)
+	if err := encoder.Encode(types); err != nil {
+		return perrors.Wrap(err, "failed to encode argument types")
+	}
 	for _, v := range args {
-		_ = encoder.Encode(v)
+		if err := encoder.Encode(v); err != nil {
+			return perrors.Wrapf(err, "failed to encode argument of type %T", v)
+		}
 	}
 
 	request.Attachments[PATH_KEY] = service.Path
@@ -165,18 +185,10 @@ func packRequest(service Service, header DubboHeader, req any) ([]byte, error) {
 		request.Attachments[TIMEOUT_KEY] = strconv.Itoa(int(service.Timeout / time.Millisecond))
 	}
 
-	_ = encoder.Encode(request.Attachments)
-
-END:
-	byteArray = encoder.Buffer()
-	pkgLen = len(byteArray)
-	if pkgLen > int(DEFAULT_LEN) { // recommand 8M
-		logger.Warnf("[Dubbo][Hessian2] data length %d too large, recommand max payload %d. "+
-			"Dubbo java can't handle the package whose size is greater than %d!!!", pkgLen, DEFAULT_LEN, DEFAULT_LEN)
+	if err := encoder.Encode(request.Attachments); err != nil {
+		return perrors.Wrap(err, "failed to encode request attachments")
 	}
-	// byteArray{body length}
-	binary.BigEndian.PutUint32(byteArray[12:], uint32(pkgLen-HEADER_LENGTH))
-	return byteArray, nil
+	return nil
 }
 
 // hessian decode request body
@@ -231,7 +243,7 @@ func unpackRequestBody(decoder *hessian.Decoder, reqObj any) error {
 
 	ats := DescRegex.FindAllString(argsTypes.(string), -1)
 	var arg any
-	for i := 0; i < len(ats); i++ {
+	for range ats {
 		arg, err = decoder.Decode()
 		if err != nil {
 			return perrors.WithStack(err)

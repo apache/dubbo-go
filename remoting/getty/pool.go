@@ -37,8 +37,8 @@ import (
 
 type gettyRPCClient struct {
 	once   sync.Once
-	addr   string // protocol string
-	active int64  // zero, not create or be destroyed
+	addr   string       // protocol string
+	active atomic.Int64 // zero, not create or be destroyed
 
 	rpcClient *Client
 
@@ -75,25 +75,10 @@ func newGettyRPCClientConn(rpcClient *Client, addr string) (*gettyRPCClient, err
 	}
 	go c.gettyClient.RunEventLoop(c.newSession)
 
-	idx := 1
-	start := time.Now()
 	connectTimeout := rpcClient.opts.ConnectTimeout
-	for {
-		idx++
-		if c.isAvailable() {
-			break
-		}
-
-		if time.Since(start) > connectTimeout {
-			c.gettyClient.Close()
-			return nil, perrors.New(fmt.Sprintf("failed to create client connection to %s in %s", addr, connectTimeout))
-		}
-
-		interval := time.Millisecond * time.Duration(idx)
-		if interval > time.Duration(100e6) {
-			interval = 100e6 // 100 ms
-		}
-		time.Sleep(interval)
+	if err := waitForGettyClient(addr, connectTimeout, c.isAvailable, rpcClient.done); err != nil {
+		c.gettyClient.Close()
+		return nil, err
 	}
 	logger.Debug("[Remoting][Getty] client init ok")
 	c.updateActive(time.Now().Unix())
@@ -101,8 +86,34 @@ func newGettyRPCClientConn(rpcClient *Client, addr string) (*gettyRPCClient, err
 	return c, nil
 }
 
+func waitForGettyClient(addr string, timeout time.Duration, available func() bool, done <-chan struct{}) error {
+	start := time.Now()
+	for idx := 2; ; idx++ {
+		if available() {
+			return nil
+		}
+		if time.Since(start) > timeout {
+			return perrors.New(fmt.Sprintf("failed to create client connection to %s in %s", addr, timeout))
+		}
+
+		interval := min(time.Millisecond*time.Duration(idx), 100*time.Millisecond)
+		timer := time.NewTimer(interval)
+		select {
+		case <-timer.C:
+		case <-done:
+			if !timer.Stop() {
+				select {
+				case <-timer.C:
+				default:
+				}
+			}
+			return errClientClosed
+		}
+	}
+}
+
 func (c *gettyRPCClient) updateActive(active int64) {
-	atomic.StoreInt64(&c.active, active)
+	c.active.Store(active)
 }
 
 func (c *gettyRPCClient) newSession(session getty.Session) error {
@@ -220,7 +231,7 @@ func (c *gettyRPCClient) removeSession(session getty.Session) {
 		}
 	}()
 	if removeFlag {
-		c.rpcClient.resetRpcConn()
+		c.rpcClient.resetRpcConn(c)
 		c.close()
 	}
 }

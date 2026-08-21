@@ -34,20 +34,14 @@ import (
 	perrors "github.com/pkg/errors"
 )
 
-// DubboResponse dubbo response
-type DubboResponse struct {
-	RspObj      any
-	Exception   error
-	Attachments map[string]any
-}
-
-// GenericException keeps Java exception class and message.
+// GenericException is a legacy-compatible type.
+//
+// Deprecated: Use hessian.GenericException from github.com/apache/dubbo-go-hessian2 instead.
 type GenericException struct {
 	ExceptionClass   string
 	ExceptionMessage string
 }
 
-// Error returns a readable error string.
 func (e GenericException) Error() string {
 	if e.ExceptionClass == "" {
 		return e.ExceptionMessage
@@ -59,6 +53,8 @@ func (e GenericException) Error() string {
 }
 
 // ToGenericException converts decoded exception to GenericException when possible.
+//
+// Deprecated: Use hessian.ToGenericException from github.com/apache/dubbo-go-hessian2 instead.
 func ToGenericException(expt any) (*GenericException, bool) {
 	switch v := expt.(type) {
 	case *GenericException:
@@ -80,10 +76,17 @@ func ToGenericException(expt any) (*GenericException, bool) {
 func parseLegacyException(exStr string) *GenericException {
 	const prefix = "java exception:"
 	msg := strings.TrimSpace(exStr)
-	if strings.HasPrefix(msg, prefix) {
-		msg = strings.TrimSpace(strings.TrimPrefix(msg, prefix))
+	if after, ok := strings.CutPrefix(msg, prefix); ok {
+		msg = strings.TrimSpace(after)
 	}
 	return &GenericException{ExceptionClass: "java.lang.Exception", ExceptionMessage: msg}
+}
+
+// DubboResponse dubbo response
+type DubboResponse struct {
+	RspObj      any
+	Exception   error
+	Attachments map[string]any
 }
 
 // NewResponse create a new DubboResponse
@@ -163,9 +166,9 @@ func packResponse(header DubboHeader, ret any) ([]byte, error) {
 					return nil, perrors.Errorf("encoding response failed: %v", err)
 				}
 				switch ex := response.Exception.(type) {
-				case *GenericException:
+				case *hessian.GenericException:
 					err = encoder.Encode(java_exception.NewDubboGenericException(ex.ExceptionClass, ex.ExceptionMessage))
-				case GenericException:
+				case hessian.GenericException:
 					err = encoder.Encode(java_exception.NewDubboGenericException(ex.ExceptionClass, ex.ExceptionMessage))
 				case java_exception.Throwabler:
 					err = encoder.Encode(ex)
@@ -253,7 +256,7 @@ func unpackResponseBody(decoder *hessian.Decoder, resp any) error {
 			}
 		}
 
-		if g, ok := ToGenericException(expt); ok {
+		if g, ok := hessian.ToGenericException(expt); ok {
 			response.Exception = g
 		} else if e, ok := expt.(error); ok {
 			response.Exception = e
@@ -311,14 +314,14 @@ func CopySlice(inSlice, outSlice reflect.Value) error {
 		return perrors.Errorf("@in is not slice, but %v", inSlice.Kind())
 	}
 
-	for outSlice.Kind() == reflect.Ptr {
+	for outSlice.Kind() == reflect.Pointer {
 		outSlice = outSlice.Elem()
 	}
 
 	size := inSlice.Len()
 	outSlice.Set(reflect.MakeSlice(outSlice.Type(), size, size))
 
-	for i := 0; i < size; i++ {
+	for i := range size {
 		inSliceValue := inSlice.Index(i)
 		if !inSliceValue.Type().AssignableTo(outSlice.Index(i).Type()) {
 			return perrors.Errorf("in element type [%s] can not assign to out element type [%s]",
@@ -377,7 +380,7 @@ func ReflectResponse(in any, out any) error {
 	if out == nil {
 		return perrors.Errorf("@out is nil")
 	}
-	if reflect.TypeOf(out).Kind() != reflect.Ptr {
+	if reflect.TypeOf(out).Kind() != reflect.Pointer {
 		return perrors.Errorf("@out should be a pointer")
 	}
 

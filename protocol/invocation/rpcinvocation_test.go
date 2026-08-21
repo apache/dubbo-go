@@ -103,7 +103,7 @@ func TestNewRPCInvocation(t *testing.T) {
 
 func TestNewRPCInvocationWithOptions(t *testing.T) {
 	methodName := "testMethod"
-	paramTypes := []reflect.Type{reflect.TypeOf(""), reflect.TypeOf(0)}
+	paramTypes := []reflect.Type{reflect.TypeFor[string](), reflect.TypeFor[int]()}
 	paramTypeNames := []string{"string", "int"}
 	paramValues := []reflect.Value{reflect.ValueOf("test"), reflect.ValueOf(123)}
 	paramRawValues := []any{"test", 123}
@@ -162,6 +162,35 @@ func TestRPCInvocation_ActualMethodName(t *testing.T) {
 		WithArguments([]any{"actualAsyncMethod", []string{"java.lang.String"}, []any{"param"}}),
 	)
 	assert.Equal(t, "actualAsyncMethod", invocation.ActualMethodName())
+}
+
+// TestRPCInvocation_ActualMethodName_MalformedArgs ensures a malformed $invoke
+// (arg[0] not a string) falls back to MethodName() instead of panicking.
+// See issue #3683.
+func TestRPCInvocation_ActualMethodName_MalformedArgs(t *testing.T) {
+	cases := []struct {
+		name   string
+		method string
+		args   []any
+		want   string
+	}{
+		{name: "invoke-arg0-int", method: constant.Generic, args: []any{123, []string{}, []any{}}, want: constant.Generic},
+		{name: "invoke-arg0-nil", method: constant.Generic, args: []any{nil, []string{}, []any{}}, want: constant.Generic},
+		{name: "invokeAsync-arg0-int", method: constant.GenericAsync, args: []any{123, []string{}, []any{}}, want: constant.GenericAsync},
+		{name: "invokeAsync-arg0-nil", method: constant.GenericAsync, args: []any{nil, []string{}, []any{}}, want: constant.GenericAsync},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			inv := NewRPCInvocationWithOptions(
+				WithMethodName(tc.method),
+				WithArguments(tc.args),
+			)
+			// Should fall back to MethodName() without panicking.
+			require.NotPanics(t, func() {
+				assert.Equal(t, tc.want, inv.ActualMethodName())
+			})
+		})
+	}
 }
 
 func TestRPCInvocation_IsGenericInvocation(t *testing.T) {
@@ -379,6 +408,38 @@ func TestRPCInvocation_GetAttachmentAsContext(t *testing.T) {
 	assert.NotContains(t, header, "key3")
 }
 
+func TestRPCInvocation_GetAttachmentAsContextPreservesRequestContext(t *testing.T) {
+	type requestContextKey struct{}
+	requestCtx := context.WithValue(context.Background(), requestContextKey{}, "request-value")
+	invocation := NewRPCInvocationWithOptions(
+		WithContext(requestCtx),
+		WithAttachment("key", "value"),
+	)
+
+	ctx := invocation.GetAttachmentAsContext()
+	assert.Equal(t, "request-value", ctx.Value(requestContextKey{}))
+	assert.Equal(t, "value", triple_protocol.ExtractFromOutgoingContext(ctx).Get("key"))
+}
+
+func TestRPCInvocation_GetAttachmentAsContextPreservesOutgoingAttachments(t *testing.T) {
+	requestCtx := context.Background()
+	requestCtx = triple_protocol.NewOutgoingContext(requestCtx, http.Header{
+		"Existing": {"existing-value"},
+		"Shared":   {"old-value"},
+	})
+	invocation := NewRPCInvocationWithOptions(
+		WithContext(requestCtx),
+		WithAttachment("New", "new-value"),
+		WithAttachment("Shared", "new-shared-value"),
+	)
+
+	ctx := invocation.GetAttachmentAsContext()
+	header := triple_protocol.ExtractFromOutgoingContext(ctx)
+	assert.Equal(t, []string{"existing-value"}, header.Values("Existing"))
+	assert.Equal(t, []string{"new-value"}, header.Values("New"))
+	assert.Equal(t, []string{"new-shared-value"}, header.Values("Shared"))
+}
+
 func TestRPCInvocation_MergeAttachmentFromContext(t *testing.T) {
 	invocation := NewRPCInvocationWithOptions()
 
@@ -482,7 +543,7 @@ func TestRPCInvocation_ConcurrentAccess(t *testing.T) {
 	// Test concurrent SetAttachment and GetAttachment with unique keys
 	numGoroutines := 10
 	wg.Add(numGoroutines)
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		go func(n int) {
 			defer wg.Done()
 			key := fmt.Sprintf("attachment_key_%d", n)
@@ -498,7 +559,7 @@ func TestRPCInvocation_ConcurrentAccess(t *testing.T) {
 	wg.Wait()
 
 	// Verify all attachments were set correctly
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		key := fmt.Sprintf("attachment_key_%d", i)
 		expectedValue := fmt.Sprintf("value_%d", i)
 		val, ok := invocation.GetAttachment(key)
@@ -508,7 +569,7 @@ func TestRPCInvocation_ConcurrentAccess(t *testing.T) {
 
 	// Test concurrent SetAttribute and GetAttribute with unique keys
 	wg.Add(numGoroutines)
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		go func(n int) {
 			defer wg.Done()
 			key := fmt.Sprintf("attribute_key_%d", n)
@@ -524,7 +585,7 @@ func TestRPCInvocation_ConcurrentAccess(t *testing.T) {
 	wg.Wait()
 
 	// Verify all attributes were set correctly
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		key := fmt.Sprintf("attribute_key_%d", i)
 		expectedValue := i * 100
 		val, ok := invocation.GetAttribute(key)
@@ -541,7 +602,7 @@ func TestRPCInvocation_ConcurrentAccess(t *testing.T) {
 	mockInvoker := &mockInvoker{url: url}
 
 	wg.Add(numGoroutines)
-	for i := 0; i < numGoroutines; i++ {
+	for range numGoroutines {
 		go func() {
 			defer wg.Done()
 			invocation.SetInvoker(mockInvoker)

@@ -20,6 +20,7 @@ package generic
 import (
 	"context"
 	"reflect"
+	"slices"
 	"strings"
 	"sync"
 )
@@ -69,11 +70,22 @@ func (f *genericServiceFilter) Invoke(ctx context.Context, invoker base.Invoker,
 		return invoker.Invoke(ctx, inv)
 	}
 
+	_, g, err := resolveGenericInvocationGeneralizer(inv)
+	if err != nil {
+		return &result.RPCResult{Err: err}
+	}
+
 	// get real invocation info from the generic invocation
-	mtdName := inv.Arguments()[0].(string)
+	mtdName, ok := inv.Arguments()[0].(string)
+	if !ok {
+		return &result.RPCResult{Err: perrors.Errorf("$invoke: arg[0] must be string, got %T", inv.Arguments()[0])}
+	}
 	// types are not required in dubbo-go, for dubbo-go client to dubbo-go server, types could be nil
 	types := inv.Arguments()[1]
-	args := inv.Arguments()[2].([]hessian.Object)
+	args, ok := inv.Arguments()[2].([]hessian.Object)
+	if !ok {
+		return &result.RPCResult{Err: perrors.Errorf("$invoke: arg[2] must be []hessian.Object, got %T", inv.Arguments()[2])}
+	}
 
 	logger.Debugf("[Filter][Generic] received a generic invocation, methodName=%s types=%v args=%v", mtdName, types, args)
 
@@ -88,15 +100,13 @@ func (f *genericServiceFilter) Invoke(ctx context.Context, invoker base.Invoker,
 	}
 
 	argsType := method.ArgsType()
-	if err := validateGenericArgs(method.IsVariadic(), len(argsType), len(args), mtdName); err != nil {
+	err = validateGenericArgs(method.IsVariadic(), len(argsType), len(args), mtdName)
+	if err != nil {
 		return &result.RPCResult{Err: err}
 	}
 
-	// get generic info from attachments of invocation, the default value is "true"
-	generic := inv.GetAttachmentWithDefaultValue(constant.GenericKey, constant.GenericSerializationDefault)
-	// get generalizer according to value in the `generic`
 	// realize
-	newArgs, err := realizeInvocationArgs(getGeneralizer(generic), argsType, args, method.IsVariadic(), types)
+	newArgs, err := realizeInvocationArgs(g, argsType, args, method.IsVariadic(), types)
 	if err != nil {
 		return &result.RPCResult{Err: err}
 	}
@@ -201,7 +211,7 @@ func assignableValue(value any, targetType reflect.Type) (reflect.Value, error) 
 
 func canBeNil(typ reflect.Type) bool {
 	switch typ.Kind() {
-	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice:
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice:
 		return true
 	default:
 		return false
@@ -275,10 +285,8 @@ func shouldUnwrapPackedVariadicArg(variadicType string, variadicSliceType reflec
 		return false
 	}
 
-	for _, typeName := range javaTypeNamesForType(variadicSliceType) {
-		if variadicType == typeName {
-			return true
-		}
+	if slices.Contains(javaTypeNamesForType(variadicSliceType), variadicType) {
+		return true
 	}
 
 	elemType := variadicSliceType.Elem()
@@ -388,10 +396,8 @@ func jvmLeafDescriptorForType(typ reflect.Type) string {
 }
 
 func appendUniqueString(values []string, value string) []string {
-	for _, existing := range values {
-		if existing == value {
-			return values
-		}
+	if slices.Contains(values, value) {
+		return values
 	}
 	return append(values, value)
 }
@@ -414,11 +420,17 @@ func unwrapToSlice(obj hessian.Object) []hessian.Object {
 }
 
 func (f *genericServiceFilter) OnResponse(_ context.Context, result result.Result, _ base.Invoker, inv base.Invocation) result.Result {
-	if inv.IsGenericInvocation() && result.Result() != nil {
-		// get generic info from attachments of invocation, the default value is "true"
-		generic := inv.GetAttachmentWithDefaultValue(constant.GenericKey, constant.GenericSerializationDefault)
-		// get generalizer according to value in the `generic`
-		g := getGeneralizer(generic)
+	if !inv.IsGenericInvocation() {
+		return result
+	}
+
+	_, g, err := resolveGenericInvocationGeneralizer(inv)
+	if err != nil {
+		result.SetError(err)
+		result.SetResult(nil)
+		return result
+	}
+	if result.Result() != nil {
 
 		obj, err := g.Generalize(result.Result())
 		if err != nil {

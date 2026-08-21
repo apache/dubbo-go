@@ -37,6 +37,8 @@ func init() {
 	extension.AddCustomizers(&subscribedServicesRevisionMetadataCustomizer{})
 }
 
+// exportedServicesRevisionMetadataCustomizer writes a revision derived from the
+// exported service URLs of the registry-scoped metadata info.
 type exportedServicesRevisionMetadataCustomizer struct{}
 
 // GetPriority will return 1 so that it will be invoked in front of user defining Customizer
@@ -64,6 +66,8 @@ func (e *exportedServicesRevisionMetadataCustomizer) Customize(instance registry
 	instance.GetMetadata()[constant.ExportedServicesRevisionPropertyName] = revision
 }
 
+// subscribedServicesRevisionMetadataCustomizer writes a revision derived from
+// the subscribed service URLs of the registry-scoped metadata info.
 type subscribedServicesRevisionMetadataCustomizer struct{}
 
 // GetPriority will return 2 so that it will be invoked in front of user defining Customizer

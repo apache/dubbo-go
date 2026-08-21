@@ -132,6 +132,36 @@ func writePEMFile(filename, blockType string, data []byte) error {
 	})
 }
 
+func TestReferRejectsInvalidHTTP3ConfigOnDualTransportPath(t *testing.T) {
+	caCertFile, serverCertFile, serverKeyFile, cleanup := generateTestCerts(t)
+	defer cleanup()
+
+	proto := triple.GetProtocol()
+	url, err := common.NewURL(
+		"tri://localhost:20000",
+		common.WithMethods([]string{"test"}),
+		common.WithProtocol(triple.TRIPLE),
+		common.WithParamsValue(constant.IDLMode, constant.NONIDL),
+		common.WithParamsValue(constant.SerializationKey, constant.MsgpackSerialization),
+	)
+	require.NoError(t, err)
+	url.SetAttribute(constant.TLSConfigKey, &global.TLSConfig{
+		CACertFile:  caCertFile,
+		TLSCertFile: serverCertFile,
+		TLSKeyFile:  serverKeyFile,
+	})
+	url.SetAttribute(constant.TripleConfigKey, &global.TripleConfig{
+		Http3: &global.Http3Config{
+			Enable:          true,
+			KeepAlivePeriod: "invalid",
+		},
+	})
+	url.SetParam(constant.SslEnabledKey, "true")
+
+	invoker := proto.Refer(url)
+	require.Nil(t, invoker)
+}
+
 // testClientInvokeWithTimeout tests that a Triple client invocation correctly times out.
 func testClientInvokeWithTimeout(t *testing.T, tlsConfig *global.TLSConfig) {
 

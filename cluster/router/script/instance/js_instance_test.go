@@ -495,7 +495,7 @@ func TestFuncWithCompileConcurrent(t *testing.T) {
 	}
 	wg := sync.WaitGroup{}
 	wg.Add(100)
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		go func() {
 			defer wg.Done()
 			rt := goja.New()
@@ -509,6 +509,38 @@ func TestFuncWithCompileConcurrent(t *testing.T) {
 			assert.Len(t, res.Export().([]any), 2)
 			assert.Equal(t, localIp, (*(res.Export().([]any)[0]).(*base.BaseInvoker)).GetURL().Ip)
 		}()
+	}
+	wg.Wait()
+}
+
+func TestCompileConcurrentSingleProgram(t *testing.T) {
+	ins := newJsInstances()
+	const script = `(function route(i,v,c){ return [invokers[1], invokers[2]]; }(invokers,invocation,context));`
+	const n = 20
+	var wg sync.WaitGroup
+	for range n {
+		wg.Go(func() { ; assert.NoError(t, ins.Compile(script)) })
+	}
+	wg.Wait()
+	assert.Len(t, ins.program, 1)
+	assert.EqualValues(t, n, ins.program[script].count)
+}
+
+func TestRunConcurrentWithRace(t *testing.T) {
+	globalIns, err := GetInstances("javascript")
+	assert.NoError(t, err)
+	const script = `(function route(i,v,c){ return [invokers[1], invokers[2]]; }(invokers,invocation,context));`
+	assert.NoError(t, globalIns.Compile(script))
+	var wg sync.WaitGroup
+	for range 30 {
+		wg.Go(func() {
+			ins, err := GetInstances("javascript")
+			testify_require.NoError(t, err)
+			invokers, inv, _ := getRouteArgs()
+			got, err := ins.Run(script, invokers, inv)
+			testify_require.NoError(t, err)
+			assert.Len(t, got, 2)
+		})
 	}
 	wg.Wait()
 }
@@ -535,7 +567,7 @@ function route(invokers,invocation,context) {
 	_ = rt.Set(`println`, func(args ...any) {
 		//fmt.Println(args...)
 	})
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		rt_link_external_libraries(rt)
 		rt_init_args(rt)
 		re_init_res_recv(rt)
@@ -547,6 +579,44 @@ function route(invokers,invocation,context) {
 		assert.Equal(t, localIp, (*(res.Export().([]any)[0]).(*base.BaseInvoker)).GetURL().Ip)
 		assert.Equal(t, "20004", (*(res.Export().([]any)[0]).(*base.BaseInvoker)).GetURL().Port)
 	}
+}
+
+func TestJsInstancesRunFailurePaths(t *testing.T) {
+	const throwScript = `(function route(i,v,c){ throw new Error("boom"); }(invokers,invocation,context));`
+	const nonArrayScript = `(function route(i,v,c){ return {}; }(invokers,invocation,context));`
+	const badElemScript = `(function route(i,v,c){ var r=[]; r.push(1); return r; }(invokers,invocation,context));`
+
+	t.Run("run without compile", func(t *testing.T) {
+		ins := newJsInstances()
+		invokers, inv, _ := getRouteArgs()
+		got, err := ins.Run(throwScript, invokers, inv)
+		testify_require.NoError(t, err)
+		assert.Equal(t, invokers, got)
+	})
+	t.Run("script throws", func(t *testing.T) {
+		ins := newJsInstances()
+		testify_require.NoError(t, ins.Compile(throwScript))
+		invokers, inv, _ := getRouteArgs()
+		got, err := ins.Run(throwScript, invokers, inv)
+		testify_require.Error(t, err)
+		assert.Equal(t, invokers, got)
+	})
+	t.Run("script returns non-array", func(t *testing.T) {
+		ins := newJsInstances()
+		testify_require.NoError(t, ins.Compile(nonArrayScript))
+		invokers, inv, _ := getRouteArgs()
+		got, err := ins.Run(nonArrayScript, invokers, inv)
+		testify_require.Error(t, err)
+		assert.Equal(t, invokers, got)
+	})
+	t.Run("script returns array with invalid element", func(t *testing.T) {
+		ins := newJsInstances()
+		testify_require.NoError(t, ins.Compile(badElemScript))
+		invokers, inv, _ := getRouteArgs()
+		got, err := ins.Run(badElemScript, invokers, inv)
+		testify_require.Error(t, err)
+		assert.Equal(t, invokers, got)
+	})
 }
 
 func setRunScriptEnv() *goja.Runtime {
@@ -577,6 +647,29 @@ func setRunScriptEnv() *goja.Runtime {
 	}
 	re_init_res_recv(runtime)
 	return runtime
+}
+
+func TestProgramRefcountLifecycle(t *testing.T) {
+	ins := newJsInstances()
+	const script = `(function route(i,v,c){ return [invokers[1], invokers[2]]; }(invokers,invocation,context));`
+
+	assert.NoError(t, ins.Compile(script))
+	assert.NoError(t, ins.Compile(script))
+	assert.Len(t, ins.program, 1)
+	assert.EqualValues(t, 2, ins.program[script].count)
+
+	invokers, inv, _ := getRouteArgs()
+	ins.Destroy(script)
+	assert.Len(t, ins.program, 1)
+	got, err := ins.Run(script, invokers, inv)
+	testify_require.NoError(t, err)
+	assert.Len(t, got, 2)
+
+	ins.Destroy(script)
+	assert.Empty(t, ins.program)
+	got, err = ins.Run(script, invokers, inv)
+	testify_require.NoError(t, err)
+	assert.Len(t, got, 3)
 }
 
 func TestRunScriptInPanic(t *testing.T) {

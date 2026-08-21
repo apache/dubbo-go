@@ -84,6 +84,257 @@ func TestFailbackSuceess(t *testing.T) {
 
 	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 	assert.Equal(t, mockResult, result)
+
+	invoker.EXPECT().Destroy().Return()
+	clusterInvoker.Destroy()
+	clusterInvoker.Destroy()
+}
+
+func TestFailbackDestroyWithoutFailure(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	invoker := mock.NewMockInvoker(ctrl)
+	clusterInvoker := registerFailback(invoker).(*failbackClusterInvoker)
+
+	invoker.EXPECT().Destroy().Return()
+	require.NotPanics(t, clusterInvoker.Destroy)
+	require.NotPanics(t, clusterInvoker.Destroy)
+}
+
+func TestFailbackInvokeAfterDestroy(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	invoker := mock.NewMockInvoker(ctrl)
+	clusterInvoker := registerFailback(invoker).(*failbackClusterInvoker)
+
+	invoker.EXPECT().Destroy().Return()
+	clusterInvoker.Destroy()
+
+	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
+	require.ErrorIs(t, result.Error(), errFailbackInvokerStopped)
+}
+
+func TestFailbackRetryUsesIndependentContext(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	invoker := mock.NewMockInvoker(ctrl)
+	clusterInvoker := registerFailback(invoker).(*failbackClusterInvoker)
+
+	invoker.EXPECT().GetURL().Return(failbackUrl).AnyTimes()
+	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
+
+	failedResult := &result.RPCResult{Err: perrors.New("error")}
+	successResult := &result.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
+	retryStarted := make(chan struct{})
+	retryContextErr := make(chan error, 1)
+	var callCount atomic.Int32
+
+	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Times(2).DoAndReturn(
+		func(ctx context.Context, _ base.Invocation) result.Result {
+			if callCount.Add(1) == 1 {
+				return failedResult
+			}
+			retryContextErr <- ctx.Err()
+			close(retryStarted)
+			return successResult
+		},
+	)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+
+	result := clusterInvoker.Invoke(ctx, &invocation.RPCInvocation{})
+	require.NoError(t, result.Error())
+	<-ctx.Done()
+
+	select {
+	case <-retryStarted:
+	case <-time.After(5 * time.Second):
+		t.Fatal("failback retry did not start after caller context cancellation")
+	}
+	require.NoError(t, <-retryContextErr)
+
+	invoker.EXPECT().Destroy().Return()
+	clusterInvoker.Destroy()
+}
+
+func TestFailbackDestroyCancelsRetry(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	invoker := mock.NewMockInvoker(ctrl)
+	clusterInvoker := registerFailback(invoker).(*failbackClusterInvoker)
+
+	invoker.EXPECT().GetURL().Return(failbackUrl).AnyTimes()
+	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
+
+	failedResult := &result.RPCResult{Err: perrors.New("error")}
+	retryStarted := make(chan struct{})
+	retryReturned := make(chan struct{})
+	var callCount atomic.Int32
+
+	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Times(2).DoAndReturn(
+		func(ctx context.Context, _ base.Invocation) result.Result {
+			if callCount.Add(1) == 1 {
+				return failedResult
+			}
+			close(retryStarted)
+			<-ctx.Done()
+			close(retryReturned)
+			return &result.RPCResult{Err: ctx.Err()}
+		},
+	)
+
+	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
+	require.NoError(t, result.Error())
+
+	select {
+	case <-retryStarted:
+	case <-time.After(5 * time.Second):
+		t.Fatal("failback retry did not start")
+	}
+
+	invoker.EXPECT().Destroy().Return()
+	destroyed := make(chan struct{})
+	go func() {
+		clusterInvoker.Destroy()
+		close(destroyed)
+	}()
+
+	select {
+	case <-retryReturned:
+	case <-time.After(2 * time.Second):
+		t.Fatal("retry invocation did not observe shutdown cancellation")
+	}
+	select {
+	case <-destroyed:
+	case <-time.After(2 * time.Second):
+		t.Fatal("Destroy did not return after retry cancellation")
+	}
+
+	clusterInvoker.Destroy()
+}
+
+func TestFailbackDestroyHasBoundedRetryWait(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	invoker := mock.NewMockInvoker(ctrl)
+	clusterInvoker := registerFailback(invoker).(*failbackClusterInvoker)
+
+	invoker.EXPECT().GetURL().Return(failbackUrl).AnyTimes()
+	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
+
+	failedResult := &result.RPCResult{Err: perrors.New("error")}
+	retryStarted := make(chan struct{})
+	retryReturned := make(chan struct{})
+	releaseRetry := make(chan struct{})
+	var releaseOnce sync.Once
+	release := func() {
+		releaseOnce.Do(func() {
+			close(releaseRetry)
+		})
+	}
+	defer release()
+	var callCount atomic.Int32
+
+	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Times(2).DoAndReturn(
+		func(_ context.Context, _ base.Invocation) result.Result {
+			if callCount.Add(1) == 1 {
+				return failedResult
+			}
+			close(retryStarted)
+			<-releaseRetry
+			close(retryReturned)
+			return &result.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
+		},
+	)
+
+	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
+	require.NoError(t, result.Error())
+
+	select {
+	case <-retryStarted:
+	case <-time.After(5 * time.Second):
+		t.Fatal("failback retry did not start")
+	}
+
+	invoker.EXPECT().Destroy().Return()
+	destroyed := make(chan struct{})
+	go func() {
+		clusterInvoker.Destroy()
+		close(destroyed)
+	}()
+
+	select {
+	case <-destroyed:
+	case <-time.After(5 * time.Second):
+		t.Fatal("Destroy blocked past the bounded retry wait")
+	}
+	release()
+
+	select {
+	case <-retryReturned:
+	case <-time.After(2 * time.Second):
+		t.Fatal("retry goroutine did not finish after release")
+	}
+}
+
+func TestFailbackWaitForShutdownUsesPerStepTimeout(t *testing.T) {
+	processDone := make(chan struct{})
+	retryDone := make(chan struct{})
+	waitDone := make(chan struct{})
+
+	go func() {
+		time.Sleep(constant.DefaultShutdownConfigStepTimeout - time.Second)
+		close(processDone)
+		time.Sleep(1500 * time.Millisecond)
+		close(retryDone)
+	}()
+	go func() {
+		(&failbackClusterInvoker{}).waitForShutdown(processDone, retryDone)
+		close(waitDone)
+	}()
+
+	select {
+	case <-waitDone:
+	case <-time.After(constant.DefaultShutdownConfigStepTimeout + time.Second):
+		t.Fatal("waitForShutdown did not return")
+	}
+
+	select {
+	case <-retryDone:
+	default:
+		t.Fatal("waitForShutdown returned before the retry tasks completed")
+	}
+}
+
+func TestFailbackDoesNotEnqueueAfterDestroy(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	invoker := mock.NewMockInvoker(ctrl)
+	clusterInvoker := registerFailback(invoker).(*failbackClusterInvoker)
+
+	invoker.EXPECT().GetURL().Return(failbackUrl).AnyTimes()
+	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
+	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(
+		&result.RPCResult{Err: perrors.New("error")},
+	)
+
+	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
+	require.NoError(t, result.Error())
+
+	value, err := clusterInvoker.taskList.Peek()
+	require.NoError(t, err)
+	retryTask := value.(*retryTimerTask)
+
+	invoker.EXPECT().Destroy().Return()
+	clusterInvoker.Destroy()
+	require.False(t, clusterInvoker.enqueueRetry(retryTask))
 }
 
 // failed firstly, success later after one retry.
@@ -148,12 +399,12 @@ func TestFailbackRetryFailed(t *testing.T) {
 
 	// Use atomic counter to safely track retries across goroutines.
 	// With exponential backoff and randomization factor, timing is non-deterministic.
-	var retryCount int64
+	var retryCount atomic.Int64
 	targetRetries := int64(2)
 
 	// add retry calls that eventually failed.
 	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(func(context.Context, base.Invocation) result.Result {
-		atomic.AddInt64(&retryCount, 1)
+		retryCount.Add(1)
 		return mockFailedResult
 	}).MinTimes(int(targetRetries))
 
@@ -165,7 +416,7 @@ func TestFailbackRetryFailed(t *testing.T) {
 
 	// Wait for at least targetRetries to complete, with bounded timeout to avoid hanging tests
 	require.Eventually(t, func() bool {
-		return atomic.LoadInt64(&retryCount) >= targetRetries
+		return retryCount.Load() >= targetRetries
 	}, 10*time.Second, 100*time.Millisecond)
 
 	// Wait for task to be re-queued after retries (with timeout)
@@ -199,13 +450,13 @@ func TestFailbackRetryFailed10Times(t *testing.T) {
 	// 10 task should retry and failed.
 	// With exponential backoff (starting at ~1s), retries happen faster than the old fixed 5s interval.
 	// Use atomic counter to safely track retries across goroutines.
-	var retryCount int64
+	var retryCount atomic.Int64
 	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).DoAndReturn(func(context.Context, base.Invocation) result.Result {
-		atomic.AddInt64(&retryCount, 1)
+		retryCount.Add(1)
 		return mockFailedResult
 	}).MinTimes(10)
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 		require.NoError(t, result.Error())
 		assert.Nil(t, result.Result())
@@ -214,7 +465,7 @@ func TestFailbackRetryFailed10Times(t *testing.T) {
 
 	// Wait for at least 10 retries to complete, with bounded timeout
 	require.Eventually(t, func() bool {
-		return atomic.LoadInt64(&retryCount) >= 10
+		return retryCount.Load() >= 10
 	}, 30*time.Second, 100*time.Millisecond)
 
 	// Wait for tasks to be re-queued after retries
@@ -249,7 +500,7 @@ func TestFailbackOutOfLimit(t *testing.T) {
 	assert.Empty(t, result.Attachments())
 
 	// all will be out of limit
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 		require.NoError(t, result.Error())
 		assert.Nil(t, result.Result())

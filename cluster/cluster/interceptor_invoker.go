@@ -19,6 +19,7 @@ package cluster
 
 import (
 	"context"
+	"slices"
 	"sync"
 )
 
@@ -93,15 +94,15 @@ func BuildInterceptorChain(invoker base.Invoker, builtins ...Interceptor) base.I
 	next := invoker
 	interceptors := GetClusterInterceptors()
 	if len(interceptors) != 0 {
-		for i := len(interceptors) - 1; i >= 0; i-- {
-			v := &InterceptorInvoker{next: next, interceptor: interceptors[i]}
+		for _, interceptor := range slices.Backward(interceptors) {
+			v := &InterceptorInvoker{next: next, interceptor: interceptor}
 			next = v
 		}
 	}
 
 	if len(builtins) > 0 {
-		for i := len(builtins) - 1; i >= 0; i-- {
-			v := &InterceptorInvoker{next: next, interceptor: builtins[i]}
+		for _, builtin := range slices.Backward(builtins) {
+			v := &InterceptorInvoker{next: next, interceptor: builtin}
 			next = v
 		}
 	}

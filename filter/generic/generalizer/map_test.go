@@ -49,6 +49,11 @@ type testPlainObj struct {
 	EeEe int
 }
 
+type testMTagObj struct {
+	UserID string `m:"user_id"`
+	Name   string
+}
+
 func TestObjToMap(t *testing.T) {
 	obj := &testPlainObj{}
 	obj.AaAa = "1"
@@ -69,6 +74,23 @@ func TestObjToMap(t *testing.T) {
 	assert.Equal(t, reflect.Map, reflect.TypeOf(m["caCa"].(map[string]any)["xxYy"]).Kind())
 	assert.Equal(t, "2020-10-29 02:34:00", m["daDa"].(time.Time).Format("2006-01-02 15:04:05"))
 	assert.Equal(t, 100, m["eeEe"].(int))
+}
+
+func TestMTagRoundTrip(t *testing.T) {
+	original := testMTagObj{
+		UserID: "42",
+		Name:   "alice",
+	}
+
+	generalized, err := mockMapGeneralizer.Generalize(original)
+	require.NoError(t, err)
+	generalizedMap, ok := generalized.(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "42", generalizedMap["user_id"])
+
+	realized, err := mockMapGeneralizer.Realize(generalized, reflect.TypeFor[testMTagObj]())
+	require.NoError(t, err)
+	assert.Equal(t, original, realized)
 }
 
 type testStruct struct {
@@ -192,7 +214,7 @@ func TestPOJOClassName(t *testing.T) {
 	assert.Equal(t, "lmc", m.(map[string]any)["child"].(map[string]any)["name"].(string))
 	assert.Equal(t, "org.apache.dubbo.mockChild", m.(map[string]any)["child"].(map[string]any)["class"].(string))
 
-	r, err := mockMapGeneralizer.Realize(m, reflect.TypeOf(p))
+	r, err := mockMapGeneralizer.Realize(m, reflect.TypeFor[mockParent]())
 	require.NoError(t, err)
 	rMockParent, ok := r.(mockParent)
 	assert.True(t, ok)
@@ -227,7 +249,7 @@ func TestPOJOArray(t *testing.T) {
 	assert.Equal(t, "lmc1", m.([]any)[1].(map[string]any)["name"].(string))
 	assert.Equal(t, 21, m.([]any)[1].(map[string]any)["age"].(int))
 
-	r, err := mockMapGeneralizer.Realize(m, reflect.TypeOf(pojoArr))
+	r, err := mockMapGeneralizer.Realize(m, reflect.TypeFor[[]*mockChild]())
 	require.NoError(t, err)
 	rPojoArr, ok := r.([]*mockChild)
 	assert.True(t, ok)
@@ -248,7 +270,7 @@ func TestNullField(t *testing.T) {
 	m, _ := mockMapGeneralizer.Generalize(p)
 	assert.Nil(t, m.(map[string]any)["child"])
 
-	r, err := mockMapGeneralizer.Realize(m, reflect.TypeOf(p))
+	r, err := mockMapGeneralizer.Realize(m, reflect.TypeFor[mockParent]())
 	require.NoError(t, err)
 	rMockParent, ok := r.(mockParent)
 	assert.True(t, ok)
@@ -332,7 +354,7 @@ func TestGenericIncludeClass_ConfigTrue(t *testing.T) {
 	_, ok = mMap["child"].(map[string]any)["class"]
 	assert.True(t, ok)
 
-	r, err := mockMapGeneralizer.Realize(m, reflect.TypeOf(parent))
+	r, err := mockMapGeneralizer.Realize(m, reflect.TypeFor[mockParent]())
 	require.NoError(t, err)
 	rParent, ok := r.(mockParent)
 	assert.True(t, ok)
@@ -372,7 +394,7 @@ func TestGenericIncludeClass_ConfigFalse(t *testing.T) {
 	mMap["class"] = "org.apache.dubbo.mockParent"
 	mMap["child"].(map[string]any)["class"] = "org.apache.dubbo.mockChild"
 
-	r, err := mockMapGeneralizer.Realize(m, reflect.TypeOf(parent))
+	r, err := mockMapGeneralizer.Realize(m, reflect.TypeFor[mockParent]())
 	require.NoError(t, err)
 	rParent, ok := r.(mockParent)
 	assert.True(t, ok)

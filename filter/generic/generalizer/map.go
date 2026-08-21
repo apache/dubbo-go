@@ -68,7 +68,15 @@ func (g *MapGeneralizer) Realize(obj any, typ reflect.Type) (any, error) {
 		obj = removeClass(obj)
 	}
 	newobj := reflect.New(typ).Interface()
-	err := mapstructure.Decode(obj, newobj)
+	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+		Result:  newobj,
+		TagName: "m",
+	})
+	if err != nil {
+		return nil, perrors.Errorf("creating map decoder failed, %v", err)
+	}
+
+	err = decoder.Decode(obj)
 	if err != nil {
 		return nil, perrors.Errorf("realizing map failed, %v", err)
 	}
@@ -160,7 +168,7 @@ func objToMap(obj any) any {
 	// if obj is a POJO, get the struct from the pointer (if it is a pointer)
 	pojo, isPojo := obj.(hessian.POJO)
 	if isPojo {
-		for t.Kind() == reflect.Ptr {
+		for t.Kind() == reflect.Pointer {
 			t = t.Elem()
 			v = v.Elem()
 		}
@@ -182,7 +190,7 @@ func objToMap(obj any) any {
 			}
 			valueIface := value.Interface()
 			switch kind {
-			case reflect.Ptr:
+			case reflect.Pointer:
 				if value.IsNil() {
 					setInMap(result, field, nil)
 					continue
@@ -221,7 +229,7 @@ func objToMap(obj any) any {
 			newTempMap[mapKey(key)] = objToMap(mapV)
 		}
 		return newTempMap
-	case reflect.Ptr:
+	case reflect.Pointer:
 		return objToMap(v.Elem().Interface())
 	default:
 		return obj

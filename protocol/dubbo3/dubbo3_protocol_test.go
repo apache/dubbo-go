@@ -30,6 +30,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/hessian2"
+)
+
 type MockUser struct {
 	Name string
 }
@@ -51,7 +55,7 @@ func TestDubbo3UnaryService_GetReqParamsInterfaces(t *testing.T) {
 	valueOf := reflect.ValueOf(&MockService{})
 	typeOf := valueOf.Type()
 	numField := valueOf.NumMethod()
-	for i := 0; i < numField; i++ {
+	for i := range numField {
 		ft := typeOf.Method(i)
 		// num in/out is checked in common/rpc_service.go
 		typs := make([]reflect.Type, 0)
@@ -85,7 +89,7 @@ func TestDubbo3UnaryService_GetReqParamsInterfaces(t *testing.T) {
 func subTest(t *testing.T, val, paramsInterfaces any) {
 	list := paramsInterfaces.([]any)
 	for k := range list {
-		err := hessian.ReflectResponse(val, list[k])
+		err := hessian2.ReflectResponse(val, list[k])
 		require.NoError(t, err)
 	}
 }

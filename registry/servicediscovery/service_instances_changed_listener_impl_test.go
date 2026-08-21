@@ -18,6 +18,7 @@
 package servicediscovery
 
 import (
+	"context"
 	"fmt"
 	"testing"
 )
@@ -38,6 +39,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 	metadatareport "dubbo.apache.org/dubbo-go/v3/metadata/report"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
@@ -125,7 +128,10 @@ func TestServiceInstancesChangedListenerRefreshesAndClearsEnvironmentWhenRevisio
 }
 
 func TestServiceInstancesChangedListenerSkipsNilMetadataWithoutPanic(t *testing.T) {
-	listener := NewServiceInstancesChangedListener(testApp, constant.DefaultKey, gxset.NewSet(testApp))
+	listener := NewServiceInstancesChangedListener(testApp, constant.DefaultKey, gxset.NewSet(testApp)).(*ServiceInstancesChangedListenerImpl)
+	// Nil metadata leaves the revision unresolved and arms the retry timer;
+	// settle it on cleanup so no retry outlives the test.
+	settleRetryListener(t, listener)
 	notify := &capturingNotifyListener{}
 	listener.AddListenerAndNotify(common.MatchKey(testInterface, constant.TriProtocol), notify)
 
@@ -144,7 +150,7 @@ func TestServiceInstancesChangedListenerSkipsNilMetadataWithoutPanic(t *testing.
 			instance,
 		}))
 	})
-	require.NoError(t, err)
+	require.Error(t, err, "nil metadata leaves the revision unresolved, OnEvent must surface it")
 	assert.Empty(t, notify.events)
 }
 
@@ -429,6 +435,67 @@ func TestGetMetadataInfo_CacheKeyFormat(t *testing.T) {
 	meta, err := GetMetadataInfo(testApp, instance, revision, constant.DefaultKey)
 	require.NoError(t, err)
 	assert.Equal(t, expectedMeta, meta)
+}
+
+func TestServiceInstancesChangedListenerPropagatesLifecycleContext(t *testing.T) {
+	const (
+		protocolName = "metadata-context-test"
+		providerApp  = "metadata-context-provider"
+		revision     = "metadata-context-revision"
+	)
+	captured := &listenerContextInvoker{
+		BaseInvoker: *base.NewBaseInvoker(common.NewURLWithOptions(common.WithProtocol(protocolName))),
+	}
+	extension.SetProtocol(protocolName, func() base.Protocol {
+		return &listenerContextProtocol{invoker: captured}
+	})
+
+	cacheKey := metadataCacheKey(providerApp, constant.DefaultKey, revision)
+	t.Cleanup(func() { metaCache.Delete(cacheKey) })
+	ctx, cancel := context.WithCancel(context.Background())
+	listener := NewServiceInstancesChangedListenerWithContext(ctx, testApp, constant.DefaultKey, gxset.NewSet(providerApp))
+	instance := &registry.DefaultServiceInstance{
+		ID:          "127.0.0.1:20099",
+		ServiceName: providerApp,
+		Host:        "127.0.0.1",
+		Port:        20099,
+		Metadata: map[string]string{
+			constant.ExportedServicesRevisionPropertyName: revision,
+			constant.MetadataServiceURLParamsPropertyName: `{"protocol":"` + protocolName + `","port":"20880"}`,
+		},
+	}
+
+	require.NoError(t, listener.OnEvent(registry.NewServiceInstancesChangedEvent(providerApp, []registry.ServiceInstance{instance})))
+	require.Same(t, ctx, captured.ctx)
+	cancel()
+	require.ErrorIs(t, captured.ctx.Err(), context.Canceled)
+}
+
+type listenerContextProtocol struct {
+	invoker base.Invoker
+}
+
+func (p *listenerContextProtocol) Export(base.Invoker) base.Exporter {
+	return nil
+}
+
+func (p *listenerContextProtocol) Refer(*common.URL) base.Invoker {
+	return p.invoker
+}
+
+func (p *listenerContextProtocol) Destroy() {}
+
+type listenerContextInvoker struct {
+	base.BaseInvoker
+	ctx context.Context
+}
+
+func (i *listenerContextInvoker) Invoke(ctx context.Context, invocation base.Invocation) result.Result {
+	i.ctx = ctx
+	if reply, ok := invocation.Reply().(*any); ok {
+		*reply = &info.MetadataInfo{App: "metadata-context-provider"}
+	}
+	return &result.RPCResult{}
 }
 
 func TestGetMetadataInfo_LocalStorageGoesDirectlyToRPC(t *testing.T) {

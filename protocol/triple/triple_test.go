@@ -83,13 +83,11 @@ func TestGetProtocolConcurrent(t *testing.T) {
 	results := make(chan base.Protocol, goroutines)
 
 	var wg sync.WaitGroup
-	for i := 0; i < goroutines; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range goroutines {
+		wg.Go(func() {
 			<-start
 			results <- GetProtocol()
-		}()
+		})
 	}
 
 	close(start)
@@ -305,12 +303,15 @@ func Test_isGenericCall(t *testing.T) {
 		{"gson", "gson", true},
 		{"GSON", "GSON", true},
 		{"Gson", "Gson", true},
-		{"protobuf", "protobuf", true},
-		{"PROTOBUF", "PROTOBUF", true},
-		{"Protobuf", "Protobuf", true},
+		{"protobuf legacy alias", "protobuf", true},
+		{"PROTOBUF legacy alias", "PROTOBUF", true},
+		{"Protobuf legacy alias", "Protobuf", true},
 		{"protobuf-json", "protobuf-json", true},
 		{"PROTOBUF-JSON", "PROTOBUF-JSON", true},
 		{"Protobuf-Json", "Protobuf-Json", true},
+		{"bean", "bean", true},
+		{"BEAN", "BEAN", true},
+		{"Bean", "Bean", true},
 
 		// invalid generic serialization types
 		{"false", "false", false},

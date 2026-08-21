@@ -63,7 +63,7 @@ func TestRandomlbSelectWeight(t *testing.T) {
 	randomlb := NewRandomLoadBalance()
 
 	invokers := []base.Invoker{}
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		u, _ := common.NewURL(fmt.Sprintf(tmpUrlFormat, i))
 		invokers = append(invokers, base.NewBaseInvoker(u))
 	}
@@ -76,7 +76,7 @@ func TestRandomlbSelectWeight(t *testing.T) {
 
 	var selectedInvoker []base.Invoker
 	var selected float64
-	for i := 0; i < 10000; i++ {
+	for range 10000 {
 		s := randomlb.Select(invokers, ivc)
 		if s.GetURL().Ip == tmpIp {
 			selected++
@@ -95,7 +95,7 @@ func TestRandomlbSelectWarmup(t *testing.T) {
 	randomlb := NewRandomLoadBalance()
 
 	invokers := []base.Invoker{}
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		u, _ := common.NewURL(fmt.Sprintf(tmpUrlFormat, i))
 		invokers = append(invokers, base.NewBaseInvoker(u))
 	}
@@ -108,7 +108,7 @@ func TestRandomlbSelectWarmup(t *testing.T) {
 
 	var selectedInvoker []base.Invoker
 	var selected float64
-	for i := 0; i < 10000; i++ {
+	for range 10000 {
 		s := randomlb.Select(invokers, ivc)
 		if s.GetURL().Ip == tmpIp {
 			selected++

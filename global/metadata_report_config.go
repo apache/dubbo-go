@@ -17,6 +17,10 @@
 
 package global
 
+import (
+	"maps"
+)
+
 // MetadataReportConfig is app level configuration
 type MetadataReportConfig struct {
 	Protocol  string            `required:"true"  yaml:"protocol"  json:"protocol,omitempty"`
@@ -41,9 +45,7 @@ func (c *MetadataReportConfig) Clone() *MetadataReportConfig {
 	}
 
 	newParams := make(map[string]string, len(c.Params))
-	for k, v := range c.Params {
-		newParams[k] = v
-	}
+	maps.Copy(newParams, c.Params)
 
 	return &MetadataReportConfig{
 		Protocol:  c.Protocol,

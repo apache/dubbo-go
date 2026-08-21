@@ -187,7 +187,7 @@ func getExchangeClient(url *common.URL) *remoting.ExchangeClient {
 			defer exchangeLock.Delete(url.Location)
 			if loaded {
 				// retry for 5 times.
-				for i := 0; i < 5; i++ {
+				for i := range 5 {
 					if clientTmp, ok = exchangeClientMap.Load(url.Location); ok {
 						break
 					} else {

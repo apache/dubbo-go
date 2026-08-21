@@ -18,7 +18,6 @@
 package server
 
 import (
-	"context"
 	"errors"
 	"net/http"
 	"reflect"
@@ -105,12 +104,22 @@ func GetRouteFunc(invoker base.Invoker, methodConfig *rest_config.RestMethodConf
 		}
 		if err != nil {
 			logger.Errorf("[Rest][Server] parsing http parameters error, err=%v", err)
-			err = resp.WriteError(http.StatusInternalServerError, errors.New(parseParameterErrorStr))
-			if err != nil {
-				logger.Errorf("[Rest][Server] write error string failed, err=%v", err)
+			if writeErr := resp.WriteError(http.StatusInternalServerError, errors.New(parseParameterErrorStr)); writeErr != nil {
+				logger.Errorf("[Rest][Server] write error string failed, err=%v", writeErr)
 			}
+			return
 		}
-		result := invoker.Invoke(context.Background(), invocation.NewRPCInvocation(methodConfig.MethodName, args, make(map[string]any)))
+		rawRequest := req.RawRequest()
+		if rawRequest == nil {
+			logger.Errorf("[Rest][Server] request adapter returned a nil raw request")
+			if writeErr := resp.WriteError(http.StatusInternalServerError, errors.New("raw HTTP request is nil")); writeErr != nil {
+				logger.Errorf("[Rest][Server] write error failed, err=%v", writeErr)
+			}
+			return
+		}
+		rpcInvocation := invocation.NewRPCInvocation(methodConfig.MethodName, args, make(map[string]any))
+		rpcInvocation.SetContext(rawRequest.Context())
+		result := invoker.Invoke(rawRequest.Context(), rpcInvocation)
 		if result.Error() != nil {
 			err = resp.WriteError(http.StatusInternalServerError, result.Error())
 			if err != nil {
@@ -203,7 +212,7 @@ func assembleArgsFromHeaders(methodConfig *rest_config.RestMethodConfig, req Res
 			return perrors.Errorf("[Rest][Server] header param parse error, the index %v args of method:%v doesn't exist", k, methodConfig.MethodName)
 		}
 		t := argsTypes[k]
-		if t.Kind() == reflect.Ptr {
+		if t.Kind() == reflect.Pointer {
 			t = t.Elem()
 		}
 		if t.Kind() == reflect.String {
@@ -220,7 +229,7 @@ func assembleArgsFromBody(methodConfig *rest_config.RestMethodConfig, argsTypes 
 	if methodConfig.Body >= 0 && methodConfig.Body < len(argsTypes) {
 		t := argsTypes[methodConfig.Body]
 		kind := t.Kind()
-		if kind == reflect.Ptr {
+		if kind == reflect.Pointer {
 			t = t.Elem()
 		}
 		var ni any
@@ -255,7 +264,7 @@ func assembleArgsFromQueryParams(methodConfig *rest_config.RestMethodConfig, arg
 		}
 		t := argsTypes[k]
 		kind := t.Kind()
-		if kind == reflect.Ptr {
+		if kind == reflect.Pointer {
 			t = t.Elem()
 			kind = t.Kind()
 		}
@@ -298,7 +307,7 @@ func assembleArgsFromPathParams(methodConfig *rest_config.RestMethodConfig, args
 		}
 		t := argsTypes[k]
 		kind := t.Kind()
-		if kind == reflect.Ptr {
+		if kind == reflect.Pointer {
 			t = t.Elem()
 			kind = t.Kind()
 		}

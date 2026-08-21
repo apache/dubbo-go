@@ -26,6 +26,7 @@ import (
 	"github.com/golang/mock/gomock"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -81,4 +82,30 @@ func TestFilterOnResponse(t *testing.T) {
 	filter := &Filter{}
 	response := filter.OnResponse(context.TODO(), rpcResult, nil, nil)
 	assert.Equal(t, rpcResult, response)
+}
+
+func TestBuildAccessLogDataSkipsNonStringAttachments(t *testing.T) {
+	attachments := map[string]any{
+		constant.InterfaceKey: 42,
+		constant.PathKey:      "fallback.Service",
+		constant.MethodKey:    true,
+		constant.VersionKey:   1,
+		constant.GroupKey:     []string{"group"},
+		constant.TimestampKey: 1234567890,
+		constant.LocalAddr:    struct{}{},
+		constant.RemoteAddr:   nil,
+	}
+	inv := invocation.NewRPCInvocation("MethodName", nil, attachments)
+
+	var data map[string]string
+	require.NotPanics(t, func() {
+		data = (&Filter{}).buildAccessLogData(nil, inv)
+	})
+	assert.Equal(t, "fallback.Service", data[constant.InterfaceKey])
+	assert.NotContains(t, data, constant.MethodKey)
+	assert.NotContains(t, data, constant.VersionKey)
+	assert.NotContains(t, data, constant.GroupKey)
+	assert.NotContains(t, data, constant.TimestampKey)
+	assert.NotContains(t, data, constant.LocalAddr)
+	assert.NotContains(t, data, constant.RemoteAddr)
 }

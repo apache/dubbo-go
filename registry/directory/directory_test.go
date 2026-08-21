@@ -66,6 +66,38 @@ func TestSubscribe_InvalidUrl(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestUnexpectedCachedInvokerTypeDoesNotPanic(t *testing.T) {
+	registryDirectory, _ := normalRegistryDir()
+	const key = "unexpected-invoker-type"
+
+	t.Run("grouping", func(t *testing.T) {
+		registryDirectory.cacheInvokersMap.Store(key, "not-an-invoker")
+		require.NotPanics(t, func() {
+			registryDirectory.toGroupInvokers()
+		})
+		_, exists := registryDirectory.cacheInvokersMap.Load(key)
+		assert.False(t, exists)
+	})
+
+	t.Run("uncache", func(t *testing.T) {
+		registryDirectory.cacheInvokersMap.Store(key, "not-an-invoker")
+		var invoker protocolbase.Invoker
+		require.NotPanics(t, func() {
+			invoker = registryDirectory.uncacheInvokerWithKey(key)
+		})
+		assert.Nil(t, invoker)
+	})
+
+	t.Run("remove closing instance", func(t *testing.T) {
+		registryDirectory.cacheInvokersMap.Store(key, "not-an-invoker")
+		var removed bool
+		require.NotPanics(t, func() {
+			removed = registryDirectory.RemoveClosingInstance(key)
+		})
+		assert.False(t, removed)
+	})
+}
+
 func TestNewRegistryDirectoryResolvesApplicationAttribute(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -114,6 +146,19 @@ func TestNewRegistryDirectoryResolvesApplicationAttribute(t *testing.T) {
 			assert.Equal(t, tt.wantName, application.Name)
 		})
 	}
+}
+
+func TestTypedNilCachedInvokerDoesNotPanic(t *testing.T) {
+	registryDirectory, _ := normalRegistryDir()
+	const key = "typed-nil-invoker"
+	var typedNil *protocolbase.BaseInvoker
+	registryDirectory.cacheInvokersMap.Store(key, typedNil)
+
+	require.NotPanics(t, func() {
+		registryDirectory.toGroupInvokers()
+	})
+	_, exists := registryDirectory.cacheInvokersMap.Load(key)
+	assert.False(t, exists)
 }
 
 func TestNewRegistryDirectoryCopiesRegistriesAttributeFromSubURL(t *testing.T) {
@@ -306,6 +351,14 @@ func TestRemoveClosingInstanceReturnsFalseForUnknownKey(t *testing.T) {
 	assert.Empty(t, registryDirectory.snapshotCacheInvokers())
 }
 
+// hasActiveClosingTombstone reports whether an unexpired tombstone exists for
+// the instance key. Test helper; production code uses activeClosingTombstone
+// directly because it also needs the tombstone payload.
+func hasActiveClosingTombstone(dir *RegistryDirectory, instanceKey string) bool {
+	_, ok := dir.activeClosingTombstone(instanceKey)
+	return ok
+}
+
 func TestClosingTombstonePreventsRebuildUntilDeleteEvent(t *testing.T) {
 	registryDirectory, mockRegistry := normalRegistryDir(true)
 
@@ -323,7 +376,7 @@ func TestClosingTombstonePreventsRebuildUntilDeleteEvent(t *testing.T) {
 	removed := registryDirectory.RemoveClosingInstance(key)
 	require.True(t, removed)
 	assert.Empty(t, registryDirectory.snapshotCacheInvokers())
-	assert.True(t, registryDirectory.hasActiveClosingTombstone(key))
+	assert.True(t, hasActiveClosingTombstone(registryDirectory, key))
 
 	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerURL})
 	time.Sleep(1e9)
@@ -331,7 +384,7 @@ func TestClosingTombstonePreventsRebuildUntilDeleteEvent(t *testing.T) {
 
 	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeDel, Service: providerURL})
 	time.Sleep(1e9)
-	assert.False(t, registryDirectory.hasActiveClosingTombstone(key))
+	assert.False(t, hasActiveClosingTombstone(registryDirectory, key))
 
 	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerURL})
 	time.Sleep(1e9)
@@ -357,11 +410,54 @@ func TestExpiredClosingTombstoneAllowsRebuild(t *testing.T) {
 	assert.Empty(t, registryDirectory.snapshotCacheInvokers())
 
 	time.Sleep(40 * time.Millisecond)
-	assert.False(t, registryDirectory.hasActiveClosingTombstone(key))
+	assert.False(t, hasActiveClosingTombstone(registryDirectory, key))
 
 	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: providerURL})
 	time.Sleep(1e9)
 	assert.Len(t, registryDirectory.snapshotCacheInvokers(), 1)
+}
+
+// TestClosingTombstoneAllowsRebuildAfterGenuineRestart verifies the tombstone
+// only vetoes stale pre-shutdown snapshots: a re-add with a new export
+// timestamp is a genuine same-address restart and must rebuild immediately.
+func TestClosingTombstoneAllowsRebuildAfterGenuineRestart(t *testing.T) {
+	registryDirectory, mockRegistry := normalRegistryDir(true)
+
+	oldURL, _ := common.NewURL("dubbo://0.0.0.0:20000/org.apache.dubbo-go.mockService",
+		common.WithParamsValue(constant.ClusterKey, "mock1"),
+		common.WithParamsValue(constant.GroupKey, "group"),
+		common.WithParamsValue(constant.VersionKey, "1.0.0"),
+		common.WithParamsValue(constant.TimestampKey, "1000"))
+	newURL, _ := common.NewURL("dubbo://0.0.0.0:20000/org.apache.dubbo-go.mockService",
+		common.WithParamsValue(constant.ClusterKey, "mock1"),
+		common.WithParamsValue(constant.GroupKey, "group"),
+		common.WithParamsValue(constant.VersionKey, "1.0.0"),
+		common.WithParamsValue(constant.TimestampKey, "2000"))
+
+	oldEvent := &registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: oldURL}
+	newEvent := &registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: newURL}
+	key := registryDirectory.invokerCacheKey(oldEvent)
+	// The discrimination only matters when both URLs map to the same instance key.
+	require.Equal(t, key, registryDirectory.invokerCacheKey(newEvent))
+
+	mockRegistry.MockEvent(oldEvent)
+	time.Sleep(1e9)
+	require.Len(t, registryDirectory.snapshotCacheInvokers(), 1)
+
+	require.True(t, registryDirectory.RemoveClosingInstance(key))
+	assert.Empty(t, registryDirectory.snapshotCacheInvokers())
+	require.True(t, hasActiveClosingTombstone(registryDirectory, key))
+
+	// Stale snapshot re-add (same export timestamp) stays vetoed.
+	mockRegistry.MockEvent(&registry.ServiceEvent{Action: remoting.EventTypeAdd, Service: oldURL})
+	time.Sleep(1e9)
+	assert.Empty(t, registryDirectory.snapshotCacheInvokers())
+
+	// Genuine restart (new export timestamp) rebuilds despite the active tombstone.
+	mockRegistry.MockEvent(newEvent)
+	time.Sleep(1e9)
+	assert.Len(t, registryDirectory.snapshotCacheInvokers(), 1)
+	assert.False(t, hasActiveClosingTombstone(registryDirectory, key))
 }
 
 func TestRefreshConfiguratorsUseLatestBatch(t *testing.T) {
@@ -546,7 +642,7 @@ func normalRegistryDir(noMockEvent ...bool) (*RegistryDirectory, *registry.MockR
 
 	_ = dir.(*RegistryDirectory).Subscribe(suburl)
 	if len(noMockEvent) == 0 {
-		for i := 0; i < 3; i++ {
+		for i := range 3 {
 			mockRegistry.(*registry.MockRegistry).MockEvent(
 				&registry.ServiceEvent{
 					Action: remoting.EventTypeAdd,
@@ -614,7 +710,7 @@ func TestRegistryDirectoryIsAvailableConcurrentWithCacheUpdates(t *testing.T) {
 	dir.invokersLock.Unlock()
 
 	var wg sync.WaitGroup
-	for i := 0; i < 200; i++ {
+	for range 200 {
 		wg.Add(2)
 		go func() {
 			defer wg.Done()
@@ -639,7 +735,7 @@ func TestRegistryDirectoryConfiguratorConcurrentAccess(t *testing.T) {
 	require.NoError(t, err)
 
 	var wg sync.WaitGroup
-	for i := 0; i < 50; i++ {
+	for range 50 {
 		wg.Add(2)
 		go func() {
 			defer wg.Done()
@@ -667,7 +763,7 @@ func TestRegistryDirectorySubscribedURLConcurrentAccess(t *testing.T) {
 	dir.RegisteredUrl = registeredURL
 
 	var wg sync.WaitGroup
-	for i := 0; i < 200; i++ {
+	for range 200 {
 		wg.Add(2)
 		go func() {
 			defer wg.Done()

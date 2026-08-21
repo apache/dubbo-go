@@ -98,51 +98,25 @@ func main() {
 * **高可用策略**: 故障转移 (Failover)、快速失败 (Failfast)、失败安全/失败自动恢复 (Failsafe/Failback)、广播 (Broadcast)、并行调用 (Forking)。
 * **跨语言互通**: 通过 Triple 协议泛化调用、版本通配符匹配等技术，实现与 Java 版 Dubbo 的完美互通。
 
-## ️ 工具生态
+## 工具
 
-`tools/` 目录和 `dubbogo/tools` 仓库提供了一些实用工具，以简化您的 Dubbo-Go 开发体验。
+常用开发工具位于 `tools/` 目录。
 
-### [dubbo-go-schema](https://github.com/apache/dubbo-go/tree/main/tools/dubbo-go-schema)
-
-该工具为 Dubbo-Go 配置文件提供 JSON Schema，支持编辑器中的代码补全、提示和实时校验。
-
-有关使用详情，请参阅 [dubbo-go-schema README](./tools/dubbo-go-schema/README.md)。
-
-### [dubbogo-cli](https://github.com/apache/dubbo-go/tree/main/tools/dubbogo-cli)
-
-一个用于引导、管理和调试 Dubbo-Go 应用的命令行工具。
-
-- [dubbogo-cli](https://github.com/apache/dubbo-go/tree/main/tools/dubbogo-cli)
-- [dubbogo-cli-v2](https://github.com/dubbogo/tools/tree/master/cmd/dubbogo-cli-v2)
-
-
-### [protoc-gen-go-triple](https://github.com/dubbogo/protoc-gen-go-triple)
-
-一个 `protoc` 插件，用于从 `.proto` 定义文件生成 Triple 协议的 Golang 客户端和服务端代码。
-
-*注意：该工具取代了已废弃的 [protoc-gen-dubbo3grpc](https://github.com/dubbogo/tools/tree/master/cmd/protoc-gen-dubbo3grpc) 和已废弃的 [protoc-gen-go-triple](https://github.com/dubbogo/tools/tree/master/cmd/protoc-gen-go-triple)。*
-
-有关使用详情，请参阅 [protoc-gen-go-triple README](https://github.com/dubbogo/protoc-gen-go-triple)。
-
-### [imports-formatter](https://github.com/dubbogo/tools?tab=readme-ov-file#imports-formatter)
-
-这是一个面向 Dubbo-Go 开发者的格式化工具，用于按照社区风格指南整理 Golang 的 `import` 代码块。
-
-有关使用详情，请参阅 [imports-formatter README](https://github.com/dubbogo/tools?tab=readme-ov-file#imports-formatter)。
-
-### variadicrpccheck
-
-一个 warning-only 的扫描工具，用于检测导出的 variadic RPC 接口定义，并给出跨语言场景下的迁移建议。
-
-可以通过 `make rpc-contract-check` 在本地运行。
+| 工具 | 用途 |
+| --- | --- |
+| [dubbogo-cli](./tools/dubbogo-cli/README_CN.md) | 创建 demo/应用脚手架、安装配套工具、查看元数据并调试服务。 |
+| [protoc-gen-go-triple](./tools/protoc-gen-go-triple/README_CN.md) | 从 protobuf 服务定义生成 dubbo-go Triple 绑定代码。 |
+| [protoc-gen-triple-openapi](./tools/protoc-gen-triple-openapi/README_CN.md) | 从 Triple protobuf 服务生成 OpenAPI v3 文档。 |
+| [imports-formatter](./tools/imports-formatter/README_CN.md) | 按 dubbo-go 分组规则整理 Go import 块。 |
+| [dubbo-go-schema](./tools/dubbo-go-schema/README_CN.md) | 为 dubbo-go YAML 配置提供 JSON Schema 补全与校验。 |
+| [benchmark](./tools/benchmark/README_CN.md) | 对比 Dubbo-Go、Dubbo-Java 和 gRPC 框架性能的基准测试套件。 |
 
 ## 生态系统
 
 - [dubbo-go-samples](https://github.com/apache/dubbo-go-samples)
 - [dubbo-go-pixiu: 作为代理解决 Dubbo 多语言互通问题](https://github.com/apache/dubbo-go-pixiu)
 - [与 Dubbo Java 互通](https://cn.dubbo.apache.org/zh-cn/overview/mannual/golang-sdk/tutorial/interop-dubbo/)
-- [Protoc-gen-go-triple](https://github.com/dubbogo/protoc-gen-go-triple/)
-- [控制台 (Console)](https://github.com/apache/dubbo-kubernetes)，开发中
+- [控制台 (Console)](https://github.com/apache/dubbo-admin)，开发中
 - [dubbo-go-extensions](https://github.com/apache/dubbo-go-extensions)，建设中
 
 ## 社区与文档

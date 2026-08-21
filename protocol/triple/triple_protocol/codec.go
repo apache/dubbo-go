@@ -100,10 +100,10 @@ type stableCodec interface {
 	IsBinary() bool
 }
 
-// protoBinaryCodec handles standard protobuf binary serialization.
-// It also supports Java Dubbo Triple generic calls when the message is not a proto.Message.
-// This dual functionality is needed because the server receives wrapped generic calls
-// with Content-Type "application/proto", so this codec must handle both cases.
+// protoBinaryCodec handles standard protobuf binary serialization for IDL
+// calls. Non-IDL (Java Dubbo Triple generic call) wrapper handling on the
+// server side is handled by tripleServerCodecSession, which delegates to
+// this codec for the IDL path.
 type protoBinaryCodec struct{}
 
 var _ Codec = (*protoBinaryCodec)(nil)
@@ -121,59 +121,9 @@ func (c *protoBinaryCodec) Marshal(message any) ([]byte, error) {
 func (c *protoBinaryCodec) Unmarshal(data []byte, message any) error {
 	protoMessage, ok := message.(proto.Message)
 	if !ok {
-		// Non-proto types indicate a generic call - try to unwrap from wrapper format.
-		// This is used by the server when receiving Java/Go generic calls.
-		return c.unmarshalWrappedMessage(data, message)
+		return errNotProto(message)
 	}
 	return proto.Unmarshal(data, protoMessage)
-}
-
-// unmarshalWrappedMessage handles both TripleResponseWrapper and TripleRequestWrapper formats.
-// It determines the format by checking if message is a slice (request) or not (response).
-func (c *protoBinaryCodec) unmarshalWrappedMessage(data []byte, message any) error {
-	hessianCodec := &hessian2Codec{}
-
-	// Check if message is a slice - if so, it's a request with multiple args
-	if params, isSlice := message.([]any); isSlice {
-		// Request format: TripleRequestWrapper with multiple args
-		var reqWrapper interoperability.TripleRequestWrapper
-		if err := proto.Unmarshal(data, &reqWrapper); err != nil {
-			return fmt.Errorf("unmarshal wrapped request: %w", err)
-		}
-		if len(reqWrapper.Args) != len(params) {
-			return fmt.Errorf("unmarshal wrapped request: expected %d params, got %d args", len(params), len(reqWrapper.Args))
-		}
-
-		for i, arg := range reqWrapper.Args {
-			if err := hessianCodec.Unmarshal(arg, params[i]); err != nil {
-				return fmt.Errorf("unmarshal wrapped request arg[%d]: %w", i, err)
-			}
-		}
-		return nil
-	}
-
-	// Response format: TripleResponseWrapper with single data field
-	var respWrapper interoperability.TripleResponseWrapper
-	if err := proto.Unmarshal(data, &respWrapper); err == nil {
-		// Check if it's a valid response wrapper (has serializeType or non-empty data)
-		if len(respWrapper.Data) > 0 {
-			return hessianCodec.Unmarshal(respWrapper.Data, message)
-		}
-		// Empty Data with serializeType indicates a null/void response, which is valid
-		if respWrapper.SerializeType != "" {
-			return nil
-		}
-	}
-
-	// Fallback: try as single-arg request (not a response wrapper)
-	var reqWrapper interoperability.TripleRequestWrapper
-	if err := proto.Unmarshal(data, &reqWrapper); err != nil {
-		return fmt.Errorf("unmarshal wrapped message: %T is not a proto.Message and data is not a valid wrapper", message)
-	}
-	if len(reqWrapper.Args) != 1 {
-		return fmt.Errorf("unmarshal wrapped message: expected 1 arg for single param, got %d", len(reqWrapper.Args))
-	}
-	return hessianCodec.Unmarshal(reqWrapper.Args[0], message)
 }
 
 func (c *protoBinaryCodec) MarshalStable(message any) ([]byte, error) {
@@ -338,8 +288,12 @@ func (c *protoWrapperCodec) Unmarshal(binary []byte, message any) error {
 			return fmt.Errorf("wrapper codec: expected %d params, got %d args", len(params), len(wrapperReq.Args))
 		}
 
+		inner, err := resolveInnerCodec(wrapperReq.SerializeType)
+		if err != nil {
+			return fmt.Errorf("wrapper codec: %w", err)
+		}
 		for i, arg := range wrapperReq.Args {
-			if err := c.innerCodec.Unmarshal(arg, params[i]); err != nil {
+			if err := inner.Unmarshal(arg, params[i]); err != nil {
 				return err
 			}
 		}
@@ -349,14 +303,16 @@ func (c *protoWrapperCodec) Unmarshal(binary []byte, message any) error {
 	// Response format: TripleResponseWrapper with single data field
 	var wrapperResp interoperability.TripleResponseWrapper
 	if err := proto.Unmarshal(binary, &wrapperResp); err == nil {
-		// Check if it's a valid response wrapper (has serializeType or non-empty data)
+		inner, err := resolveInnerCodec(wrapperResp.SerializeType)
+		if err != nil {
+			return fmt.Errorf("wrapper codec: %w", err)
+		}
+		// Non-empty Data: decode the single return value.
 		if len(wrapperResp.Data) > 0 {
-			return c.innerCodec.Unmarshal(wrapperResp.Data, message)
+			return inner.Unmarshal(wrapperResp.Data, message)
 		}
-		// Empty Data with serializeType indicates a null/void response, which is valid
-		if wrapperResp.SerializeType != "" {
-			return nil
-		}
+		// Empty Data with a validated SerializeType is a null/void response.
+		return nil
 	}
 
 	// Fallback: try as single-arg request (not a response wrapper)
@@ -367,7 +323,11 @@ func (c *protoWrapperCodec) Unmarshal(binary []byte, message any) error {
 	if len(wrapperReq.Args) != 1 {
 		return fmt.Errorf("wrapper codec: expected 1 arg for single param, got %d", len(wrapperReq.Args))
 	}
-	return c.innerCodec.Unmarshal(wrapperReq.Args[0], message)
+	inner, err := resolveInnerCodec(wrapperReq.SerializeType)
+	if err != nil {
+		return fmt.Errorf("wrapper codec: %w", err)
+	}
+	return inner.Unmarshal(wrapperReq.Args[0], message)
 }
 
 func newProtoWrapperCodec(innerCodec Codec) *protoWrapperCodec {
@@ -534,7 +494,7 @@ func getArgType(v any) string {
 	//  Serialized tags for complex types
 	default:
 		t := reflect.TypeOf(v)
-		if reflect.Ptr == t.Kind() {
+		if reflect.Pointer == t.Kind() {
 			t = t.Elem()
 		}
 		switch t.Kind() {
@@ -566,7 +526,7 @@ func reflectResponse(in any, out any) error {
 	if out == nil {
 		return perrors.Errorf("@out is nil")
 	}
-	if reflect.TypeOf(out).Kind() != reflect.Ptr {
+	if reflect.TypeOf(out).Kind() != reflect.Pointer {
 		return perrors.Errorf("@out should be a pointer")
 	}
 
@@ -600,14 +560,14 @@ func copySlice(inSlice, outSlice reflect.Value) error {
 		return perrors.Errorf("@in is not slice, but %v", inSlice.Kind())
 	}
 
-	for outSlice.Kind() == reflect.Ptr {
+	for outSlice.Kind() == reflect.Pointer {
 		outSlice = outSlice.Elem()
 	}
 
 	size := inSlice.Len()
 	outSlice.Set(reflect.MakeSlice(outSlice.Type(), size, size))
 
-	for i := 0; i < size; i++ {
+	for i := range size {
 		inSliceValue := inSlice.Index(i)
 		if !inSliceValue.Type().AssignableTo(outSlice.Index(i).Type()) {
 			return perrors.Errorf("in element type [%s] can not assign to out element type [%s]",
@@ -617,6 +577,124 @@ func copySlice(inSlice, outSlice reflect.Value) error {
 	}
 
 	return nil
+}
+
+// tripleServerCodecSession is a per-request Codec for the triple server that
+// handles both IDL and Non-IDL formats.
+//
+// SerializeType is request-scoped state that the Codec interface
+// (Marshal/Unmarshal) has no channel to surface. The session object IS that
+// channel: Unmarshal captures SerializeType from the TripleRequestWrapper in a
+// single decode, and Marshal reads it to wrap the response in a
+// TripleResponseWrapper.
+type tripleServerCodecSession struct {
+	delegate             Codec  // IDL path codec, resolved from Content-Type
+	serializeType        string // captured by Unmarshal when Non-IDL; read by Marshal
+	allowedSerializeType string // provider "serialization" param; effective allowlist = {hessian2} ∪ {this}. TODO: support Java's multi-valued prefer-serialization
+}
+
+var _ Codec = (*tripleServerCodecSession)(nil)
+
+func (s *tripleServerCodecSession) Name() string { return s.delegate.Name() }
+
+// checkAllowed enforces the provider-side serialization allowlist.
+// hessian2 is always allowed (Non-IDL interop default); any other name must
+// match the provider's configured serialization.
+func (s *tripleServerCodecSession) checkAllowed(codecName string) error {
+	if codecName == codecNameHessian2 || codecName == s.allowedSerializeType {
+		return nil
+	}
+	return fmt.Errorf("serialize type %q not allowed by provider (allowed: %s, %s)",
+		codecName, codecNameHessian2, s.allowedSerializeType)
+}
+
+func (s *tripleServerCodecSession) Unmarshal(data []byte, message any) error {
+	if _, isProto := message.(proto.Message); isProto {
+		// IDL: standard proto message.
+		return s.delegate.Unmarshal(data, message)
+	}
+	// Non-IDL: decode the TripleRequestWrapper once, capturing SerializeType
+	// for the subsequent response Marshal and decoding the inner args in the
+	// same pass.
+	var reqWrapper interoperability.TripleRequestWrapper
+	if err := proto.Unmarshal(data, &reqWrapper); err != nil {
+		return fmt.Errorf("unmarshal triple wrapper request: %w", err)
+	}
+	s.serializeType = reqWrapper.SerializeType
+	inner, err := resolveInnerCodec(reqWrapper.SerializeType)
+	if err != nil {
+		return fmt.Errorf("unmarshal triple wrapper request: %w", err)
+	}
+	if err := s.checkAllowed(inner.Name()); err != nil {
+		return fmt.Errorf("unmarshal triple wrapper request: %w", err)
+	}
+	return unmarshalWrapperRequestArgs(&reqWrapper, inner, message)
+}
+
+func (s *tripleServerCodecSession) Marshal(message any) ([]byte, error) {
+	if _, isProto := message.(proto.Message); isProto {
+		// IDL: standard proto message.
+		return s.delegate.Marshal(message)
+	}
+	// Non-IDL: wrap the response in a TripleResponseWrapper whose Data is
+	// serialized with the inner codec resolved from the request's SerializeType.
+	inner, err := resolveInnerCodec(s.serializeType)
+	if err != nil {
+		return nil, fmt.Errorf("marshal triple wrapper response: %w", err)
+	}
+	payload := message
+	var isVoid bool
+	if container, ok := message.([]any); ok {
+		// The production handler packs exactly one return value as
+		// []any{result} (server.go wrapTripleResponse). More elements indicate
+		// a programming error; fail loudly instead of silently truncating.
+		switch len(container) {
+		case 0:
+			isVoid = true
+		case 1:
+			payload = container[0]
+			if payload == nil {
+				isVoid = true
+			}
+		default:
+			return nil, fmt.Errorf("marshal triple wrapper response: expected at most 1 return value, got %d", len(container))
+		}
+	}
+	var data []byte
+	if !isVoid {
+		data, err = inner.Marshal(payload)
+		if err != nil {
+			return nil, fmt.Errorf("marshal triple wrapper response data: %w", err)
+		}
+	}
+	// Use inner.Name() instead of s.serializeType so that an absent SerializeType
+	// (defaulted to hessian2 by resolveInnerCodec) is normalized on the wire.
+	return proto.Marshal(&interoperability.TripleResponseWrapper{
+		SerializeType: inner.Name(),
+		Data:          data,
+	})
+}
+
+// unmarshalWrapperRequestArgs decodes the inner args of a TripleRequestWrapper
+// into message. message may be []any (multi-arg generic call) or a single
+// value (single-arg call packed as a one-element wrapper).
+func unmarshalWrapperRequestArgs(w *interoperability.TripleRequestWrapper, inner Codec, message any) error {
+	if params, isSlice := message.([]any); isSlice {
+		if len(w.Args) != len(params) {
+			return fmt.Errorf("triple wrapper request: expected %d params, got %d args", len(params), len(w.Args))
+		}
+		for i, arg := range w.Args {
+			if err := inner.Unmarshal(arg, params[i]); err != nil {
+				return fmt.Errorf("triple wrapper request arg[%d]: %w", i, err)
+			}
+		}
+		return nil
+	}
+	// Single-arg call: the wrapper carries one arg decoded into message.
+	if len(w.Args) != 1 {
+		return fmt.Errorf("triple wrapper request: expected 1 arg for single param, got %d", len(w.Args))
+	}
+	return inner.Unmarshal(w.Args[0], message)
 }
 
 // copyMap copy from in map to out map

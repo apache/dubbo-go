@@ -64,12 +64,14 @@ var (
 	shutdownConfigMu sync.RWMutex
 	shutdownConfig   *global.ShutdownConfig
 
-	shutdownOnce    sync.Once
-	shutdownStarted atomic.Bool
-	shutdownDone    = make(chan struct{})
-	shutdownResult  error
+	shutdownOnce        sync.Once
+	shutdownStarted     atomic.Bool
+	shutdownDone        = make(chan struct{})
+	shutdownResult      error
+	shutdownSignalError = make(chan error, 1)
 
 	signalNotify = signal.Notify
+	signalStop   = signal.Stop
 )
 
 type shutdownConfigSetter interface {
@@ -108,23 +110,23 @@ func Init(opts ...Option) {
 			signalNotify(signals, ShutdownSignals...)
 
 			go func() {
+				defer signalStop(signals)
+
 				sig := <-signals
 				logger.Infof("[GracefulShutdown] get signal %s, applicationConfig will shutdown.", sig)
-				// fallback timeout
-				time.AfterFunc(totalTimeout(newOpts.Shutdown), func() {
-					logger.Warn("[GracefulShutdown] shutdown gracefully timeout, applicationConfig will shutdown immediately. ")
-					os.Exit(0)
-				})
-				if err := Shutdown(context.Background()); err != nil {
+				ctx, cancel := context.WithTimeout(context.Background(), totalTimeout(newOpts.Shutdown))
+				defer cancel()
+
+				if err := Shutdown(ctx); err != nil {
 					logger.Warnf("[GracefulShutdown] shutdown completed, err=%v", err)
+					reportShutdownError(err)
 				}
-				// those signals' original behavior is exit with dump ths stack, so we try to keep the behavior
+				// Preserve heap-dump behavior for dump signals without terminating the host process.
 				for _, dumpSignal := range DumpHeapShutdownSignals {
 					if sig == dumpSignal {
 						debug.WriteHeapDump(os.Stdout.Fd())
 					}
 				}
-				os.Exit(0)
 			}()
 		}
 	})
@@ -132,6 +134,24 @@ func Init(opts ...Option) {
 
 func Done() <-chan struct{} {
 	return shutdownDone
+}
+
+// ShutdownError returns the error channel for failures encountered during an
+// internal signal-triggered shutdown.
+func ShutdownError() <-chan error {
+	return shutdownSignalError
+}
+
+func reportShutdownError(err error) {
+	if err == nil {
+		return
+	}
+
+	select {
+	case shutdownSignalError <- err:
+	default:
+		logger.Warnf("[GracefulShutdown] shutdown error channel is full, err=%v", err)
+	}
 }
 
 func IsDone() bool {
@@ -171,10 +191,7 @@ func RegisterProtocol(name string) {
 }
 
 func totalTimeout(shutdown *global.ShutdownConfig) time.Duration {
-	timeout := parseDuration(shutdown.Timeout, timeoutDesc, constant.DefaultShutdownConfigTimeout)
-	if timeout < constant.DefaultShutdownConfigTimeout {
-		timeout = constant.DefaultShutdownConfigTimeout
-	}
+	timeout := max(parseDuration(shutdown.Timeout, timeoutDesc, constant.DefaultShutdownConfigTimeout), constant.DefaultShutdownConfigTimeout)
 
 	return timeout
 }
@@ -425,7 +442,8 @@ func invokeCustomShutdownCallback(timeout time.Duration, callback func()) {
 
 func getProtocolSafely(name string) (protocol protocolbase.Protocol, ok bool) {
 	defer func() {
-		if recover() != nil {
+		if recovered := recover(); recovered != nil {
+			logger.Warnf("[GracefulShutdown] get protocol %s panicked, err=%v", name, recovered)
 			protocol = nil
 			ok = false
 		}

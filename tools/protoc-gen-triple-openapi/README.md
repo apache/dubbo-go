@@ -1,49 +1,78 @@
 # protoc-gen-triple-openapi
 
-`protoc-gen-triple-openapi` is a protoc plugin to generate OpenAPI v3 documentation from protobuf files that use the Triple protocol.
+English | [中文](README_CN.md)
 
-## Getting Started
+`protoc-gen-triple-openapi` is a `protoc` plugin that generates OpenAPI v3 documents from protobuf services used with the Dubbo Triple protocol.
 
-### Installation
+## Requirements
 
-To install `protoc-gen-triple-openapi`, you need to have Go installed and configured. Then, you can use the following command to install the plugin:
+- Go 1.23 or later
+- `protoc`
+- protobuf files that define Triple services
 
-```shell
-go install github.com/apache/dubbo-go/tools/protoc-gen-triple-openapi
+## Installation
+
+```bash
+go install dubbo.apache.org/dubbo-go/v3/tools/protoc-gen-triple-openapi@latest
 ```
+
+Make sure `$(go env GOPATH)/bin` is in your `PATH`.
 
 ## Usage
 
-To use `protoc-gen-triple-openapi`, you need to have a `.proto` file that defines your service. For example, you can have a file named `greet.proto` with the following content:
+Generate YAML, the default format:
+
+```bash
+protoc \
+  --triple-openapi_out=. \
+  --triple-openapi_opt=format=yaml \
+  ./api/greet.proto
+```
+
+Generate JSON:
+
+```bash
+protoc \
+  --triple-openapi_out=. \
+  --triple-openapi_opt=format=json \
+  ./api/greet.proto
+```
+
+Generated file names use the input proto base name:
+
+- `greet.triple.openapi.yaml`
+- `greet.triple.openapi.json`
+
+## Proto Example
 
 ```proto
 syntax = "proto3";
 
 package org.apache.dubbo.samples.greet;
 
-option go_package = "github.com/apache/dubbo-go-samples/api";
+option go_package = "example.com/hello/api;api";
 
-// The greeting service definition.
 service GreetService {
-  // Sends a greeting
   rpc Greet(GreetRequest) returns (GreetResponse) {}
 }
 
-// The request message containing the user's name.
 message GreetRequest {
   string name = 1;
 }
 
-// The response message containing the greetings
 message GreetResponse {
   string greeting = 1;
 }
 ```
 
-Then, you can use the following command to generate the OpenAPI documentation:
+## Options
 
-```shell
-protoc --triple-openapi_out=. greet.proto
+| Option | Values | Default | Description |
+| --- | --- | --- | --- |
+| `format` | `yaml`, `json` | `yaml` | Output document format. |
+
+## Version
+
+```bash
+protoc-gen-triple-openapi --version
 ```
-
-This will generate a file named `greet.openapi.yaml` with the OpenAPI documentation.

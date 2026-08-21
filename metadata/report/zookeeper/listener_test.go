@@ -109,7 +109,7 @@ func TestListenerSetConcurrency(t *testing.T) {
 	set := NewListenerSet()
 	g, _ := errgroup.WithContext(context.Background())
 
-	for i := 0; i < 50; i++ {
+	for range 50 {
 		g.Go(func() error {
 			set.Add(newMockMappingListener())
 			return nil

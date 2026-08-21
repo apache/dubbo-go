@@ -56,6 +56,16 @@ func TestDefaultRnd(t *testing.T) {
 	})
 }
 
+func setLocalMetrics(t *testing.T, localMetrics metrics.Metrics) {
+	t.Helper()
+
+	originalLocalMetrics := metrics.LocalMetrics
+	metrics.LocalMetrics = localMetrics
+	t.Cleanup(func() {
+		metrics.LocalMetrics = originalLocalMetrics
+	})
+}
+
 func TestLoadBalance(t *testing.T) {
 	// Create P2C load balancer with deterministic randomPicker for repeatable tests.
 	// Always returns fixed indices (0,1) except when n <= 1.
@@ -90,7 +100,7 @@ func TestLoadBalance(t *testing.T) {
 		defer ctrl.Finish()
 
 		m := metrics.NewMockMetrics(ctrl)
-		metrics.LocalMetrics = m
+		setLocalMetrics(t, m)
 
 		url0, _ := common.NewURL("dubbo://192.168.1.0:20000/com.ikurento.user.UserProvider")
 		url1, _ := common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
@@ -119,7 +129,7 @@ func TestLoadBalance(t *testing.T) {
 		defer ctrl.Finish()
 
 		m := metrics.NewMockMetrics(ctrl)
-		metrics.LocalMetrics = m
+		setLocalMetrics(t, m)
 
 		url0, _ := common.NewURL("dubbo://192.168.1.0:20000/com.ikurento.user.UserProvider")
 		url1, _ := common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
@@ -150,7 +160,7 @@ func TestLoadBalance(t *testing.T) {
 		defer ctrl.Finish()
 
 		m := metrics.NewMockMetrics(ctrl)
-		metrics.LocalMetrics = m
+		setLocalMetrics(t, m)
 
 		url0, _ := common.NewURL("dubbo://192.168.1.0:20000/com.ikurento.user.UserProvider")
 		url1, _ := common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
@@ -177,7 +187,7 @@ func TestLoadBalance(t *testing.T) {
 		defer ctrl.Finish()
 
 		m := metrics.NewMockMetrics(ctrl)
-		metrics.LocalMetrics = m
+		setLocalMetrics(t, m)
 
 		url0, _ := common.NewURL("dubbo://192.168.1.0:20000/com.ikurento.user.UserProvider")
 		url1, _ := common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
@@ -204,4 +214,122 @@ func TestLoadBalance(t *testing.T) {
 		assert.Equal(t, ivkArr[1].GetURL().String(), ivk.GetURL().String())
 	})
 
+	t.Run("metrics i nil", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := metrics.NewMockMetrics(ctrl)
+		setLocalMetrics(t, m)
+
+		url0, _ := common.NewURL("dubbo://192.168.1.0:20000/com.ikurento.user.UserProvider")
+		url1, _ := common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
+
+		m.EXPECT().
+			GetMethodMetrics(gomock.Eq(url0), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.HillClimbing)).
+			Times(1).
+			Return(nil, nil)
+
+		ivkArr := []base.Invoker{
+			base.NewBaseInvoker(url0),
+			base.NewBaseInvoker(url1),
+		}
+
+		assert.NotPanics(t, func() {
+			ivk := lb.Select(ivkArr, invocation)
+			assert.Equal(t, ivkArr[0].GetURL().String(), ivk.GetURL().String())
+		})
+	})
+
+	t.Run("metrics j nil", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := metrics.NewMockMetrics(ctrl)
+		setLocalMetrics(t, m)
+
+		url0, _ := common.NewURL("dubbo://192.168.1.0:20000/com.ikurento.user.UserProvider")
+		url1, _ := common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
+
+		m.EXPECT().
+			GetMethodMetrics(gomock.Eq(url0), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.HillClimbing)).
+			Times(1).
+			Return(uint64(0), nil)
+
+		m.EXPECT().
+			GetMethodMetrics(gomock.Eq(url1), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.HillClimbing)).
+			Times(1).
+			Return(nil, nil)
+
+		ivkArr := []base.Invoker{
+			base.NewBaseInvoker(url0),
+			base.NewBaseInvoker(url1),
+		}
+
+		assert.NotPanics(t, func() {
+			ivk := lb.Select(ivkArr, invocation)
+			assert.Equal(t, ivkArr[1].GetURL().String(), ivk.GetURL().String())
+		})
+	})
+
+	t.Run("metrics i wrong type", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := metrics.NewMockMetrics(ctrl)
+		setLocalMetrics(t, m)
+
+		url0, _ := common.NewURL("dubbo://192.168.1.0:20000/com.ikurento.user.UserProvider")
+		url1, _ := common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
+
+		m.EXPECT().
+			GetMethodMetrics(gomock.Eq(url0), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.HillClimbing)).
+			Times(1).
+			Return("bad-metrics", nil)
+
+		m.EXPECT().
+			GetMethodMetrics(gomock.Eq(url1), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.HillClimbing)).
+			Times(1).
+			Return(uint64(10), nil)
+
+		ivkArr := []base.Invoker{
+			base.NewBaseInvoker(url0),
+			base.NewBaseInvoker(url1),
+		}
+
+		assert.NotPanics(t, func() {
+			ivk := lb.Select(ivkArr, invocation)
+			assert.Equal(t, ivkArr[0].GetURL().String(), ivk.GetURL().String())
+		})
+	})
+
+	t.Run("metrics j wrong type", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := metrics.NewMockMetrics(ctrl)
+		setLocalMetrics(t, m)
+
+		url0, _ := common.NewURL("dubbo://192.168.1.0:20000/com.ikurento.user.UserProvider")
+		url1, _ := common.NewURL("dubbo://192.168.1.1:20000/com.ikurento.user.UserProvider")
+
+		m.EXPECT().
+			GetMethodMetrics(gomock.Eq(url0), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.HillClimbing)).
+			Times(1).
+			Return(uint64(10), nil)
+
+		m.EXPECT().
+			GetMethodMetrics(gomock.Eq(url1), gomock.Eq(invocation.MethodName()), gomock.Eq(metrics.HillClimbing)).
+			Times(1).
+			Return("bad-metrics", nil)
+
+		ivkArr := []base.Invoker{
+			base.NewBaseInvoker(url0),
+			base.NewBaseInvoker(url1),
+		}
+
+		assert.NotPanics(t, func() {
+			ivk := lb.Select(ivkArr, invocation)
+			assert.Equal(t, ivkArr[1].GetURL().String(), ivk.GetURL().String())
+		})
+	})
 }

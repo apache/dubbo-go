@@ -38,6 +38,7 @@ type Environment struct {
 	// externalConfigs      sync.Map
 	externalConfigMap    sync.Map
 	appExternalConfigMap sync.Map
+	dynamicMu            sync.RWMutex
 	dynamicConfiguration config_center.DynamicConfiguration
 }
 
@@ -97,11 +98,15 @@ func (env *Environment) Configuration() *list.List {
 
 // SetDynamicConfiguration sets value for dynamicConfiguration
 func (env *Environment) SetDynamicConfiguration(dc config_center.DynamicConfiguration) {
+	env.dynamicMu.Lock()
+	defer env.dynamicMu.Unlock()
 	env.dynamicConfiguration = dc
 }
 
 // GetDynamicConfiguration gets dynamicConfiguration
 func (env *Environment) GetDynamicConfiguration() config_center.DynamicConfiguration {
+	env.dynamicMu.RLock()
+	defer env.dynamicMu.RUnlock()
 	return env.dynamicConfiguration
 }
 
@@ -138,8 +143,8 @@ func (conf *InmemoryConfiguration) GetSubProperty(subKey string) map[string]stru
 	conf.store.Range(func(key, _ any) bool {
 		if idx := strings.Index(key.(string), subKey); idx >= 0 {
 			after := key.(string)[idx+len(subKey):]
-			if i := strings.Index(after, "."); i >= 0 {
-				properties[after[0:strings.Index(after, ".")]] = struct{}{}
+			if before, _, ok := strings.Cut(after, "."); ok {
+				properties[before] = struct{}{}
 			}
 
 		}

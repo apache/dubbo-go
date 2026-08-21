@@ -34,7 +34,6 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/hessian2"
 )
 
 const (
@@ -334,7 +333,7 @@ func TestIsSupportResponseAttachmentConcurrent(t *testing.T) {
 	versions := []string{"", "2.0.10", "2.6.2", "2.7.0", "3.0.0", "invalid"}
 	var wg sync.WaitGroup
 
-	for i := 0; i < 200; i++ {
+	for range 200 {
 		for _, version := range versions {
 			wg.Add(1)
 			go func(v string) {
@@ -450,6 +449,38 @@ func TestMarshalResponse(t *testing.T) {
 		assert.NotNil(t, data)
 	})
 
+	t.Run("response with unsupported value", func(t *testing.T) {
+		encoder := hessian.NewEncoder()
+		pkg := DubboPackage{
+			Header: DubboHeader{ResponseStatus: Response_OK},
+			Body: &ResponsePayload{
+				RspObj:      func() {},
+				Attachments: map[string]any{},
+			},
+		}
+
+		data, err := marshalResponse(encoder, pkg)
+		require.Error(t, err)
+		assert.Nil(t, data)
+	})
+
+	t.Run("response with unsupported attachment", func(t *testing.T) {
+		encoder := hessian.NewEncoder()
+		pkg := DubboPackage{
+			Header: DubboHeader{ResponseStatus: Response_OK},
+			Body: &ResponsePayload{
+				Attachments: map[string]any{
+					DUBBO_VERSION_KEY: "2.7.0",
+					"unsupported":     func() {},
+				},
+			},
+		}
+
+		data, err := marshalResponse(encoder, pkg)
+		require.Error(t, err)
+		assert.Nil(t, data)
+	})
+
 	t.Run("response with value", func(t *testing.T) {
 		encoder := hessian.NewEncoder()
 		pkg := DubboPackage{
@@ -512,7 +543,7 @@ func TestMarshalResponse(t *testing.T) {
 				ResponseStatus: Response_OK,
 			},
 			Body: &ResponsePayload{
-				Exception: hessian2.GenericException{
+				Exception: hessian.GenericException{
 					ExceptionClass:   "com.example.UserNotFoundException",
 					ExceptionMessage: "user not found",
 				},
@@ -656,7 +687,7 @@ func TestUnmarshalRequestBody(t *testing.T) {
 
 		pkg := &DubboPackage{}
 		err := unmarshalRequestBody(encoder.Buffer(), pkg)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 }
 
@@ -721,7 +752,7 @@ func TestUnmarshalResponseBody(t *testing.T) {
 		require.NoError(t, err)
 
 		response := EnsureResponsePayload(pkg.Body)
-		ge, ok := response.Exception.(*hessian2.GenericException)
+		ge, ok := response.Exception.(*hessian.GenericException)
 		require.True(t, ok)
 		assert.Equal(t, "com.example.UserNotFoundException", ge.ExceptionClass)
 		assert.Equal(t, "user not found", ge.ExceptionMessage)
@@ -748,7 +779,7 @@ func TestUnmarshalResponseBody(t *testing.T) {
 
 		pkg := &DubboPackage{}
 		err := unmarshalResponseBody(encoder.Buffer(), pkg)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 
 	t.Run("response with null value and attachments", func(t *testing.T) {
@@ -787,7 +818,7 @@ func TestUnmarshalResponseBody(t *testing.T) {
 		require.NoError(t, err)
 
 		response := EnsureResponsePayload(pkg.Body)
-		ge, ok := response.Exception.(*hessian2.GenericException)
+		ge, ok := response.Exception.(*hessian.GenericException)
 		require.True(t, ok)
 		assert.Equal(t, "java.lang.Exception", ge.ExceptionClass)
 		assert.Equal(t, "user not found", ge.ExceptionMessage)
@@ -902,7 +933,7 @@ func TestHessianSerializer_Unmarshal(t *testing.T) {
 		}
 
 		err := serializer.Unmarshal([]byte{}, pkg)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 
 	t.Run("unmarshal request", func(t *testing.T) {
@@ -921,7 +952,7 @@ func TestHessianSerializer_Unmarshal(t *testing.T) {
 		}
 
 		err := serializer.Unmarshal(encoder.Buffer(), pkg)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 
 	t.Run("unmarshal response", func(t *testing.T) {

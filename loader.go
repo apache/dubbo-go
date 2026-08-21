@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 )
@@ -223,6 +224,7 @@ func (fn loaderConfigFunc) apply(vc *loaderConf) {
 }
 
 // WithGenre set load config file suffix
+//
 // Deprecated: replaced by WithSuffix
 func WithGenre(suffix string) LoaderConfOption {
 	return loaderConfigFunc(func(conf *loaderConf) {
@@ -307,10 +309,8 @@ func userHomeDir() string {
 
 // checkFileSuffix check file suffix
 func checkFileSuffix(suffix string) error {
-	for _, g := range []string{"json", "yaml", "yml"} {
-		if g == suffix {
-			return nil
-		}
+	if slices.Contains([]string{"json", "yaml", "yml"}, suffix) {
+		return nil
 	}
 	return errors.Errorf("no support file suffix: %s", suffix)
 }
@@ -434,13 +434,13 @@ func checkPlaceholder(s string) (newKey, defaultValue string) {
 		return
 	}
 	s = s[len(file.PlaceholderPrefix) : len(s)-len(file.PlaceholderSuffix)]
-	indexColon := strings.Index(s, ":")
-	if indexColon == -1 {
+	before, after, ok := strings.Cut(s, ":")
+	if !ok {
 		newKey = strings.TrimSpace(s)
 		return
 	}
-	newKey = strings.TrimSpace(s[0:indexColon])
-	defaultValue = strings.TrimSpace(s[indexColon+1:])
+	newKey = strings.TrimSpace(before)
+	defaultValue = strings.TrimSpace(after)
 
 	return
 }

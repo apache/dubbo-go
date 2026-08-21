@@ -24,6 +24,8 @@ import (
 import (
 	getty "github.com/apache/dubbo-getty"
 
+	"github.com/dubbogo/gost/log/logger"
+
 	perrors "github.com/pkg/errors"
 )
 
@@ -81,7 +83,7 @@ type (
 		QueueNumber int `default:"0" yaml:"queue-number" json:"queue-number,omitempty"`
 
 		// session tcp parameters
-		GettySessionParam GettySessionParam `required:"true" yaml:"getty-session-param" json:"getty-session-param,omitempty"`
+		GettySessionParam GettySessionParam `required:"true" yaml:"getty-session-param" json:"getty-session-param"`
 	}
 
 	// ClientConfig holds supported types by the multi config package
@@ -112,7 +114,7 @@ type (
 		QueueNumber int `default:"0" yaml:"queue-number" json:"queue-number,omitempty"`
 
 		// session tcp parameters
-		GettySessionParam GettySessionParam `required:"true" yaml:"getty-session-param" json:"getty-session-param,omitempty"`
+		GettySessionParam GettySessionParam `required:"true" yaml:"getty-session-param" json:"getty-session-param"`
 	}
 )
 
@@ -140,7 +142,9 @@ func GetDefaultClientConfig() *ClientConfig {
 			SessionName:      "client",
 		},
 	}
-	_ = defaultClientConfig.CheckValidity()
+	if err := defaultClientConfig.CheckValidity(); err != nil {
+		logger.Errorf("[Remoting][Getty] invalid default client config, err=%v", err)
+	}
 	return defaultClientConfig
 }
 
@@ -166,7 +170,9 @@ func GetDefaultServerConfig() *ServerConfig {
 			SessionName:      "server",
 		},
 	}
-	_ = defaultServerConfig.CheckValidity()
+	if err := defaultServerConfig.CheckValidity(); err != nil {
+		logger.Errorf("[Remoting][Getty] invalid default server config, err=%v", err)
+	}
 	return defaultServerConfig
 }
 

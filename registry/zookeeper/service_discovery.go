@@ -272,7 +272,7 @@ func (zksd *zookeeperServiceDiscovery) DataChange(eventType remoting.Event) bool
 	path := strings.TrimPrefix(eventType.Path, zksd.rootPath)
 	path = strings.TrimPrefix(path, constant.PathSeparator)
 	// get service name in zk path
-	serviceName := strings.Split(path, constant.PathSeparator)[0]
+	serviceName, _, _ := strings.Cut(path, constant.PathSeparator)
 
 	var err error
 	instances := zksd.GetInstances(serviceName)

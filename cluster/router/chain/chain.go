@@ -39,7 +39,9 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
-// RouterChain Router chain
+// RouterChain first selects invokers for the requested service, then applies
+// priority routers in ascending priority order. Each router receives the
+// invokers returned by the previous router.
 type RouterChain struct {
 	// Full list of addresses from registry, classified by method name.
 	invokers []base.Invoker

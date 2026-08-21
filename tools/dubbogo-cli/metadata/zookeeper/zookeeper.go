@@ -31,7 +31,6 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
-	"dubbo.apache.org/dubbo-go/v3/metadata/definition"
 	"dubbo.apache.org/dubbo-go/v3/tools/dubbogo-cli/metadata"
 )
 
@@ -44,6 +43,12 @@ type ZookeeperMetadataReport struct {
 	client  *gxzookeeper.ZookeeperClient
 	rootDir string
 	zkAddr  string // Store the ZooKeeper address for URL construction
+}
+
+type serviceDefinition struct {
+	Methods []struct {
+		Name string `json:"name"`
+	} `json:"methods"`
 }
 
 // NewZookeeperMetadataReport creates a ZooKeeper metadata reporter
@@ -184,7 +189,7 @@ func (z *ZookeeperMetadataReport) searchMetadataProvider(path string, methods *[
 				return
 			}
 
-			var serviceDefinition definition.FullServiceDefinition
+			var serviceDefinition serviceDefinition
 			err = json.Unmarshal(content, &serviceDefinition)
 			if err != nil {
 				fmt.Printf("Json Unmarshal fail: %v\n", err)

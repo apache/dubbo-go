@@ -19,6 +19,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -32,6 +33,7 @@ import (
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
 	gostlogger "github.com/dubbogo/gost/log/logger"
 
 	"github.com/stretchr/testify/assert"
@@ -44,6 +46,9 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
+	"dubbo.apache.org/dubbo-go/v3/metadata/info"
+	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
+	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
@@ -78,6 +83,9 @@ var gracefulShutdownDone chan struct{}
 //go:linkname gracefulShutdownResult dubbo.apache.org/dubbo-go/v3/graceful_shutdown.shutdownResult
 var gracefulShutdownResult error
 
+//go:linkname gracefulShutdownSignalError dubbo.apache.org/dubbo-go/v3/graceful_shutdown.shutdownSignalError
+var gracefulShutdownSignalError chan error
+
 //go:linkname gracefulShutdownSignalNotify dubbo.apache.org/dubbo-go/v3/graceful_shutdown.signalNotify
 var gracefulShutdownSignalNotify func(chan<- os.Signal, ...os.Signal)
 
@@ -104,10 +112,18 @@ type mockServeRegistryFactoryProtocol struct {
 	base.BaseProtocol
 }
 
+type failingServeRegistryFactoryProtocol struct {
+	base.BaseProtocol
+}
+
 type mockServeRegistry struct{}
 
 func (p *mockServeRegistryFactoryProtocol) GetRegistries() []registry.Registry {
 	return []registry.Registry{&mockServeRegistry{}}
+}
+
+func (p *failingServeRegistryFactoryProtocol) GetRegistries() []registry.Registry {
+	return []registry.Registry{&failingServeRegistry{metadataReport: &publishFailingMetadataReport{}}}
 }
 
 func (r *mockServeRegistry) GetURL() *common.URL {
@@ -145,6 +161,86 @@ func (r *mockServeRegistry) RegisterService() error {
 }
 
 func (r *mockServeRegistry) UnRegisterService() error {
+	return nil
+}
+
+// failingServeRegistry is a registry mock whose RegisterService calls
+// PublishAppMetadata and returns the error when the report cannot publish.
+type failingServeRegistry struct {
+	metadataReport report.MetadataReport
+}
+
+func (r *failingServeRegistry) GetURL() *common.URL {
+	return &common.URL{}
+}
+
+func (r *failingServeRegistry) IsAvailable() bool {
+	return true
+}
+
+func (r *failingServeRegistry) Destroy() {}
+
+func (r *failingServeRegistry) Register(*common.URL) error {
+	return nil
+}
+
+func (r *failingServeRegistry) UnRegister(*common.URL) error {
+	return nil
+}
+
+func (r *failingServeRegistry) Subscribe(*common.URL, registry.NotifyListener) error {
+	return nil
+}
+
+func (r *failingServeRegistry) UnSubscribe(*common.URL, registry.NotifyListener) error {
+	return nil
+}
+
+func (r *failingServeRegistry) LoadSubscribeInstances(*common.URL, registry.NotifyListener) error {
+	return nil
+}
+
+func (r *failingServeRegistry) RegisterService() error {
+	return r.metadataReport.PublishAppMetadata("", "", nil)
+}
+
+func (r *failingServeRegistry) UnRegisterService() error {
+	return nil
+}
+
+// publishFailingMetadataReport is a metadata report mock whose publish always
+// fails, so a registry using it hits the real publish path and returns the error.
+type publishFailingMetadataReport struct{}
+
+func (m *publishFailingMetadataReport) GetAppMetadata(_, _ string) (*info.MetadataInfo, error) {
+	return nil, nil
+}
+
+func (m *publishFailingMetadataReport) PublishAppMetadata(_, _ string, _ *info.MetadataInfo) error {
+	return errors.New("mock publish app metadata failed")
+}
+
+func (m *publishFailingMetadataReport) RegisterServiceAppMapping(_, _, _ string) error {
+	return nil
+}
+
+func (m *publishFailingMetadataReport) GetServiceAppMapping(_ string, _ string, _ mapping.MappingListener) (*gxset.HashSet, error) {
+	return nil, nil
+}
+
+func (m *publishFailingMetadataReport) RemoveServiceAppMappingListener(_, _ string) error {
+	return nil
+}
+
+func (m *publishFailingMetadataReport) UnPublishAppMetadata(_, _ string) error {
+	return nil
+}
+
+func (m *publishFailingMetadataReport) ListAppRevisions(_ string) ([]report.AppRevision, error) {
+	return nil, nil
+}
+
+func (m *publishFailingMetadataReport) URL() *common.URL {
 	return nil
 }
 
@@ -267,6 +363,29 @@ func registerServeTestProtocols(t *testing.T) {
 	})
 }
 
+func registerFailingServeTestProtocols(t *testing.T) {
+	t.Helper()
+
+	originalProtocols := extensionProtocols.Snapshot()
+	extension.SetProtocol("dubbo", func() base.Protocol {
+		return &mockServeProtocol{BaseProtocol: base.NewBaseProtocol()}
+	})
+	extension.SetProtocol(constant.RegistryKey, func() base.Protocol {
+		return &failingServeRegistryFactoryProtocol{BaseProtocol: base.NewBaseProtocol()}
+	})
+	t.Cleanup(func() {
+		for name, factory := range originalProtocols {
+			extension.SetProtocol(name, factory)
+		}
+		if _, ok := originalProtocols["dubbo"]; !ok {
+			extension.UnregisterProtocol("dubbo")
+		}
+		if _, ok := originalProtocols[constant.RegistryKey]; !ok {
+			extension.UnregisterProtocol(constant.RegistryKey)
+		}
+	})
+}
+
 func registerCountingServeTestProtocols(
 	t *testing.T,
 	exportCount, unexportCount, registerCount, unregisterCount *atomic.Int32,
@@ -317,6 +436,7 @@ func resetGracefulShutdownStateForTest(t *testing.T) {
 	gracefulShutdownStarted = atomic.Bool{}
 	gracefulShutdownDone = make(chan struct{})
 	gracefulShutdownResult = nil
+	gracefulShutdownSignalError = make(chan error, 1)
 	gracefulShutdownSignalNotify = signal.Notify
 }
 
@@ -361,6 +481,49 @@ func TestServeContextReturnsAfterContextCancellation(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("process-level graceful shutdown did not finish after context cancellation")
 	}
+}
+
+func TestServeContextReturnsInternalShutdownError(t *testing.T) {
+	resetGracefulShutdownStateForTest(t)
+	t.Cleanup(func() {
+		resetGracefulShutdownStateForTest(t)
+	})
+	resetInternalProviderServicesForTest(t)
+	var registerCount atomic.Int32
+	registerCountingServeTestProtocols(t, nil, nil, &registerCount, nil, nil)
+
+	internalSignal := false
+	shutdownCfg := global.DefaultShutdownConfig()
+	shutdownCfg.InternalSignal = &internalSignal
+	shutdownCfg.ConsumerUpdateWaitTime = "0s"
+	shutdownCfg.StepTimeout = "0s"
+	shutdownCfg.NotifyTimeout = "10ms"
+	shutdownCfg.OfflineRequestWindowTimeout = "0s"
+
+	srv, err := NewServer(SetServerShutdown(shutdownCfg))
+	require.NoError(t, err)
+	require.NoError(t, srv.Register(&MockServerRPCService{}, nil))
+
+	serveDone := make(chan error, 1)
+	go func() {
+		serveDone <- srv.ServeContext(context.Background())
+	}()
+
+	require.Eventually(t, func() bool {
+		return registerCount.Load() == 1
+	}, time.Second, 10*time.Millisecond)
+
+	expectedErr := errors.New("graceful shutdown timed out")
+	gracefulShutdownSignalError <- expectedErr
+
+	select {
+	case err := <-serveDone:
+		require.ErrorIs(t, err, expectedErr)
+	case <-time.After(time.Second):
+		t.Fatal("ServeContext did not return the internal shutdown error")
+	}
+
+	require.NoError(t, graceful_shutdown.Shutdown(context.Background()))
 }
 
 func TestServeContextDoesNotStartWhenContextAlreadyCanceled(t *testing.T) {
@@ -441,6 +604,36 @@ func TestServeContextRollsBackWhenCanceledDuringStartup(t *testing.T) {
 	assert.Equal(t, int32(1), unexportCount.Load())
 	assert.Equal(t, int32(1), registerCount.Load())
 	assert.Equal(t, int32(1), unregisterCount.Load())
+}
+
+// TestServeContextReturnsErrorWhenMetadataPublishFails verifies that a metadata
+// publish failure is propagated back to the caller of ServeContext. The registry
+// mock calls PublishAppMetadata while the metadata report is mocked to fail.
+func TestServeContextReturnsErrorWhenMetadataPublishFails(t *testing.T) {
+	resetGracefulShutdownStateForTest(t)
+	t.Cleanup(func() {
+		resetGracefulShutdownStateForTest(t)
+	})
+	resetInternalProviderServicesForTest(t)
+	registerFailingServeTestProtocols(t)
+
+	internalSignal := false
+	shutdownCfg := global.DefaultShutdownConfig()
+	shutdownCfg.InternalSignal = &internalSignal
+	shutdownCfg.ConsumerUpdateWaitTime = "0s"
+	shutdownCfg.StepTimeout = "0s"
+	shutdownCfg.NotifyTimeout = "10ms"
+	shutdownCfg.OfflineRequestWindowTimeout = "0s"
+
+	srv, err := NewServer(SetServerShutdown(shutdownCfg))
+	require.NoError(t, err)
+	require.NoError(t, srv.Register(&MockServerRPCService{}, nil))
+
+	ctx := t.Context()
+
+	err = srv.ServeContext(ctx)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "mock publish app metadata failed")
 }
 
 func TestServeContextDoesNotRestartAfterGracefulShutdownCompletes(t *testing.T) {
@@ -943,7 +1136,7 @@ func TestConcurrentServiceRegistration(t *testing.T) {
 	require.NoError(t, err)
 
 	var wg sync.WaitGroup
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
@@ -956,7 +1149,7 @@ func TestConcurrentServiceRegistration(t *testing.T) {
 	wg.Wait()
 
 	// Verify all services were registered using public API
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		svcID := "service-" + strconv.Itoa(i)
 		retrieved := srv.GetServiceOptions(svcID)
 		assert.NotNil(t, retrieved, "Service %s should be registered", svcID)
@@ -1110,7 +1303,7 @@ func TestExportServicesEmpty(t *testing.T) {
 
 	ctx := context.Background()
 	err = srv.exportServices(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 // Test NewServer with custom group option

@@ -124,13 +124,24 @@ func TestDelegateMetadataReportGetServiceAppMapping(t *testing.T) {
 	mockReport := new(mockMetadataReport)
 	defer mockReport.AssertExpectations(t)
 	delegate := &DelegateMetadataReport{instance: mockReport}
-	t.Run("normal", func(t *testing.T) {
+	t.Run("get normal", func(t *testing.T) {
+		mockReport.On("GetServiceAppMapping").Return(gxset.NewSet(), nil).Once()
+		got, err := delegate.GetServiceAppMapping("dubbo", "dev", nil)
+		require.NoError(t, err)
+		assert.True(t, got.Empty())
+	})
+	t.Run("get error", func(t *testing.T) {
+		mockReport.On("GetServiceAppMapping").Return(gxset.NewSet(), errors.New("mock error")).Once()
+		_, err := delegate.GetServiceAppMapping("dubbo", "dev", nil)
+		require.Error(t, err)
+	})
+	t.Run("listen normal", func(t *testing.T) {
 		mockReport.On("GetServiceAppMapping").Return(gxset.NewSet(), nil).Once()
 		got, err := delegate.GetServiceAppMapping("dubbo", "dev", &listener{})
 		require.NoError(t, err)
 		assert.True(t, got.Empty())
 	})
-	t.Run("error", func(t *testing.T) {
+	t.Run("listen error", func(t *testing.T) {
 		mockReport.On("GetServiceAppMapping").Return(gxset.NewSet(), errors.New("mock error")).Once()
 		_, err := delegate.GetServiceAppMapping("dubbo", "dev", &listener{})
 		require.Error(t, err)

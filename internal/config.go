@@ -23,6 +23,7 @@ package internal
 import (
 	"fmt"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -56,11 +57,8 @@ func LoadRegistries(registryIds []string, registries map[string]*global.Registry
 		if targetAll {
 			target = true
 		} else {
-			for _, tr := range registryIds {
-				if tr == k {
-					target = true
-					break
-				}
+			if slices.Contains(registryIds, k) {
+				target = true
 			}
 		}
 
@@ -214,4 +212,35 @@ func ValidateRegistryIDs(ids []string, regs map[string]*global.RegistryConfig) e
 		}
 	}
 	return nil
+}
+
+// IsGenericMode reports whether a generic value denotes a generic call. It is the
+// single source of truth for the accepted generic modes so that callers (config
+// validation, protocol-level routing) stay in sync instead of each maintaining its
+// own list. An empty value means the call is not generic.
+//
+// Recognized modes: "true" (Map, default), "gson", "protobuf-json", "bean", and the
+// legacy "protobuf" (kept for compatibility, not recommended).
+func IsGenericMode(generic string) bool {
+	if generic == "" {
+		return false
+	}
+	return strings.EqualFold(generic, constant.GenericSerializationDefault) ||
+		strings.EqualFold(generic, constant.GenericSerializationGson) ||
+		strings.EqualFold(generic, constant.GenericSerializationProtobufJson) ||
+		strings.EqualFold(generic, constant.GenericSerializationBean) ||
+		strings.EqualFold(generic, constant.GenericSerializationProtobuf)
+}
+
+// ValidateGenericType validates the generic serialization type (generic mode).
+// An empty value or "false" means the call is not generic and is allowed.
+// Unknown values fail fast instead of silently falling back to the Map generalizer.
+//
+// Valid values: "true" (Map, default), "gson", "protobuf-json", "bean".
+// "protobuf" is kept as a legacy compatibility value and is not recommended.
+func ValidateGenericType(generic string) error {
+	if generic == "" || strings.EqualFold(generic, "false") || IsGenericMode(generic) {
+		return nil
+	}
+	return fmt.Errorf("invalid generic type %q, valid values: true, false, gson, protobuf-json, bean, protobuf", generic)
 }

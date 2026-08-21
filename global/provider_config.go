@@ -17,11 +17,17 @@
 
 package global
 
+import (
+	"maps"
+)
+
 // ProviderConfig is the default configuration of service provider
 type ProviderConfig struct {
 	ServiceConfig
 	Filter string `yaml:"filter" json:"filter,omitempty" property:"filter"`
-	// Deprecated Register whether registration is required
+	// Register reports whether registration is required.
+	//
+	// Deprecated: this field is retained only for compatibility with legacy configuration.
 	Register bool `yaml:"register" json:"register" property:"register"`
 	// RegistryIDs is registry ids list
 	RegistryIDs []string `yaml:"registry-ids" json:"registry-ids" property:"registry-ids"`
@@ -66,9 +72,7 @@ func (c *ProviderConfig) Clone() *ProviderConfig {
 	}
 
 	newConfigType := make(map[string]string, len(c.ConfigType))
-	for k, v := range c.ConfigType {
-		newConfigType[k] = v
-	}
+	maps.Copy(newConfigType, c.ConfigType)
 
 	return &ProviderConfig{
 		ServiceConfig:          *c.ServiceConfig.Clone(),

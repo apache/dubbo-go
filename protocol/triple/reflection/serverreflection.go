@@ -20,7 +20,9 @@ package reflection
 
 import (
 	"context"
+	"errors"
 	"io"
+	"slices"
 	"sort"
 )
 
@@ -137,9 +139,7 @@ func (s *ReflectionServer) allExtensionNumbersForTypeName(name string) ([]int32,
 		numbers = append(numbers, int32(xt.TypeDescriptor().Number()))
 		return true
 	})
-	sort.Slice(numbers, func(i, j int) bool {
-		return numbers[i] < numbers[j]
-	})
+	slices.Sort(numbers)
 	if len(numbers) == 0 {
 		// maybe return an error if given type name is not known
 		if _, err := s.descResolver.FindDescriptorByName(protoreflect.FullName(name)); err != nil {
@@ -167,7 +167,7 @@ func (s *ReflectionServer) ServerReflectionInfo(ctx context.Context, stream rpb.
 	sentFileDescriptors := make(map[string]bool)
 	for {
 		in, err := stream.Recv()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return nil
 		}
 		if err != nil {

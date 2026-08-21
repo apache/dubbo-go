@@ -19,7 +19,6 @@ package getty
 
 import (
 	"sync"
-	"sync/atomic"
 	"testing"
 )
 
@@ -31,10 +30,10 @@ import (
 func TestGettyRPCClientUpdateActive(t *testing.T) {
 	client := &gettyRPCClient{}
 	client.updateActive(1234567890)
-	assert.Equal(t, int64(1234567890), atomic.LoadInt64(&client.active))
+	assert.Equal(t, int64(1234567890), client.active.Load())
 
 	client.updateActive(0)
-	assert.Equal(t, int64(0), atomic.LoadInt64(&client.active))
+	assert.Equal(t, int64(0), client.active.Load())
 }
 
 func TestGettyRPCClientSelectSession(t *testing.T) {
@@ -83,7 +82,7 @@ func TestGettyRPCClientConcurrent(t *testing.T) {
 	client := &gettyRPCClient{sessions: []*rpcSession{}}
 	var wg sync.WaitGroup
 
-	for i := 0; i < 50; i++ {
+	for i := range 50 {
 		wg.Add(1)
 		go func(val int64) {
 			defer wg.Done()
@@ -112,12 +111,10 @@ func TestRpcSessionConcurrent(t *testing.T) {
 	s := &rpcSession{}
 	var wg sync.WaitGroup
 
-	for i := 0; i < 100; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range 100 {
+		wg.Go(func() {
 			s.AddReqNum(1)
-		}()
+		})
 	}
 	wg.Wait()
 	assert.Equal(t, int32(100), s.GetReqNum())
@@ -127,11 +124,11 @@ func TestGettyRPCClientLifecycle(t *testing.T) {
 	client := &gettyRPCClient{addr: "127.0.0.1:20880", sessions: []*rpcSession{}}
 
 	assert.False(t, client.isAvailable())
-	assert.Equal(t, int64(0), atomic.LoadInt64(&client.active))
+	assert.Equal(t, int64(0), client.active.Load())
 
 	client.updateActive(1234567890)
-	assert.Equal(t, int64(1234567890), atomic.LoadInt64(&client.active))
+	assert.Equal(t, int64(1234567890), client.active.Load())
 
 	require.NoError(t, client.close())
-	assert.Equal(t, int64(0), atomic.LoadInt64(&client.active))
+	assert.Equal(t, int64(0), client.active.Load())
 }
