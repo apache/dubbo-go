@@ -25,10 +25,10 @@ import (
 )
 
 import (
-	"github.com/go-zookeeper/zk"
-
 	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	"github.com/dubbogo/gost/log/logger"
+
+	"github.com/go-zookeeper/zk"
 
 	perrors "github.com/pkg/errors"
 )

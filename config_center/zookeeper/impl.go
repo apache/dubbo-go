@@ -27,11 +27,11 @@ import (
 )
 
 import (
-	"github.com/go-zookeeper/zk"
-
 	gxset "github.com/dubbogo/gost/container/set"
 	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	"github.com/dubbogo/gost/log/logger"
+
+	"github.com/go-zookeeper/zk"
 
 	perrors "github.com/pkg/errors"
 )
