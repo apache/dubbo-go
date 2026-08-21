@@ -40,13 +40,13 @@ const (
 )
 
 const (
-	dubboMetadataPush             = "dubbo_metadata_push_num"
-	dubboPushRt                   = "dubbo_push_rt_milliseconds"
-	dubboMetadataSubscribe        = "dubbo_metadata_subscribe_num"
-	dubboSubscribeRt              = "dubbo_subscribe_rt_milliseconds"
-	dubboMetadataStoreProvider    = "dubbo_metadata_store_provider"
-	dubboStoreProviderInterfaceRt = "dubbo_store_provider_interface_rt_milliseconds"
-	dubboSubscribeServiceRt       = "dubbo_subscribe_service_rt_milliseconds"
+	dubboMetadataPush              = "dubbo_metadata_push_num"
+	dubboPushRt                    = "dubbo_push_rt_milliseconds"
+	dubboMetadataSubscribe         = "dubbo_metadata_subscribe_num"
+	dubboSubscribeRt               = "dubbo_subscribe_rt_milliseconds"
+	dubboMetadataStoreProvider     = "dubbo_metadata_store_provider"
+	dubboStoreProviderInterfaceRt  = "dubbo_store_provider_interface_rt_milliseconds"
+	dubboSubscribeServiceRt        = "dubbo_subscribe_service_rt_milliseconds"
 	dubboMetadataMappingRegister   = "dubbo_metadata_mapping_register_num"
 	dubboMetadataMappingRegisterRt = "dubbo_metadata_mapping_register_rt_milliseconds"
 	dubboMetadataMappingGet        = "dubbo_metadata_mapping_get_num"
@@ -55,8 +55,8 @@ const (
 	dubboMetadataMappingListenRt   = "dubbo_metadata_mapping_listen_rt_milliseconds"
 	dubboMetadataMappingRemove     = "dubbo_metadata_mapping_remove_num"
 	dubboMetadataMappingRemoveRt   = "dubbo_metadata_mapping_remove_rt_milliseconds"
-	dubboMetadataCache            = "dubbo_metadata_cache"
-	dubboMetadataFetch            = "dubbo_metadata_fetch"
+	dubboMetadataCache             = "dubbo_metadata_cache"
+	dubboMetadataFetch             = "dubbo_metadata_fetch"
 )
 
 const (
