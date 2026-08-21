@@ -75,8 +75,11 @@ type serviceDiscoveryRegistry struct {
 	// serviceNamesKey. Guarded by lock.
 	subscribeRetries      map[string]*subscribeRetry
 	renewAppMetadataTimer *time.Timer
-	// destroyed is set by Destroy so late AddListener failures cannot arm new
-	// retry timers. Guarded by lock.
+	// destroyed is set by Destroy. SubscribeURL re-checks it under lock right
+	// before installing a listener, so a subscribe whose initial GetInstances /
+	// metadata phase outlives Destroy is discarded instead of being installed
+	// into a dead registry, and late AddListener failures cannot arm new retry
+	// timers. Guarded by lock.
 	destroyed bool
 }
 
@@ -256,7 +259,7 @@ func (s *serviceDiscoveryRegistry) UnSubscribe(url *common.URL, listener registr
 	if l := s.getServiceListener(serviceNamesKey); l != nil {
 		// Must match the key SubscribeURL used for AddListenerAndNotify,
 		// otherwise the entry leaks and subscriber tracking breaks.
-		l.RemoveListener(protocolServiceKeyOf(url))
+		l.RemoveListener(protocolSubscribeKey(url))
 		if !listenerHasSubscribers(l) {
 			// Last subscriber left: stop retrying AddListener for this key.
 			s.cancelSubscribeRetry(serviceNamesKey)
@@ -369,6 +372,13 @@ func (s *serviceDiscoveryRegistry) Destroy() {
 	for key := range s.subscribeRetries {
 		// Cancel pending AddListener retries so their timers cannot leak.
 		s.cancelSubscribeRetryLocked(key)
+	}
+	for _, l := range s.serviceListeners {
+		// Destroy drops listeners without RemoveListener; cancel any pending
+		// metadata retry so its timer cannot leak.
+		if impl, ok := l.(*ServiceInstancesChangedListenerImpl); ok {
+			impl.stopMetadataRetry()
+		}
 	}
 	s.lock.Unlock()
 	err := s.serviceDiscovery.Destroy()
@@ -582,7 +592,12 @@ func (s *serviceDiscoveryRegistry) Subscribe(url *common.URL, notify registry.No
 
 func (s *serviceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry.NotifyListener, services *gxset.HashSet) {
 	serviceNamesKey := sortServices(services)
-	protocolServiceKey := protocolServiceKeyOf(url)
+	protocolServiceKey := protocolSubscribeKey(url)
+
+	// A destroyed registry accepts no new subscriptions.
+	if s.isDestroyed() {
+		return
+	}
 
 	// Fast path: reuse an already installed listener without touching external calls.
 	if listener := s.getServiceListener(serviceNamesKey); listener != nil {
@@ -601,7 +616,23 @@ func (s *serviceDiscoveryRegistry) SubscribeURL(url *common.URL, notify registry
 	// Install under a short write lock with a double-check so a concurrent
 	// subscriber for the same key does not install a duplicate listener.
 	s.lock.Lock()
+	if s.destroyed {
+		// Destroy ran while the initial GetInstances/metadata phase above was
+		// in flight: the listener was invisible to it, so it is not closed.
+		// Discard it here instead of installing into a dead registry.
+		s.lock.Unlock()
+		if impl, ok := listener.(*ServiceInstancesChangedListenerImpl); ok {
+			impl.stopMetadataRetry()
+		}
+		logger.Warnf("[Registry][ServiceDiscovery] discard late subscribe for applications=%s: registry already destroyed", serviceNamesKey)
+		return
+	}
 	if existing := s.serviceListeners[serviceNamesKey]; existing != nil {
+		// The loser of the install race is dropped without subscribers; close
+		// it so it can never arm a metadata retry or be kept alive by one.
+		if impl, ok := listener.(*ServiceInstancesChangedListenerImpl); ok {
+			impl.stopMetadataRetry()
+		}
 		listener = existing
 	} else {
 		s.serviceListeners[serviceNamesKey] = listener
@@ -617,17 +648,6 @@ func (s *serviceDiscoveryRegistry) getServiceListener(serviceNamesKey string) re
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	return s.serviceListeners[serviceNamesKey]
-}
-
-// protocolServiceKeyOf builds the subscriber key SubscribeURL registers and
-// UnSubscribe removes: consumers default to the "tri" protocol, other
-// protocols need to be specified on the reference/consumer explicitly.
-func protocolServiceKeyOf(url *common.URL) string {
-	protocol := constant.TriProtocol
-	if url.Protocol != "" {
-		protocol = url.Protocol
-	}
-	return url.ServiceKey() + ":" + protocol
 }
 
 // loadLatestInstances pushes the current registry snapshot for every subscribed
@@ -868,6 +888,18 @@ func listenerHasSubscribers(listener registry.ServiceInstancesChangedListener) b
 		return impl.hasSubscribers()
 	}
 	return true
+}
+
+// protocolSubscribeKey builds the key under which a subscription's notify
+// listener is registered on the ServiceInstancesChangedListener. SubscribeURL
+// and UnSubscribe must derive it the same way, or the last subscriber is never
+// removed and the metadata retry keeps probing after UnSubscribe.
+func protocolSubscribeKey(url *common.URL) string {
+	protocol := constant.TriProtocol // consume "tri" protocol by default, other protocols need to be specified on reference/consumer explicitly
+	if url.Protocol != "" {
+		protocol = url.Protocol
+	}
+	return url.ServiceKey() + ":" + protocol
 }
 
 func sortServices(services *gxset.HashSet) string {

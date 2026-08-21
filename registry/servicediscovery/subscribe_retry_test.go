@@ -41,42 +41,6 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
 
-// retryNotifyListener is a concurrency-safe notify listener: subscribe retries
-// run on timer goroutines, so test listeners must synchronize access.
-type retryNotifyListener struct {
-	mu     sync.Mutex
-	events []*registry.ServiceEvent
-}
-
-func (c *retryNotifyListener) Notify(event *registry.ServiceEvent) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.events = append(c.events, event)
-}
-
-func (c *retryNotifyListener) NotifyAll(events []*registry.ServiceEvent, callback func()) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.events = append([]*registry.ServiceEvent(nil), events...)
-	if callback != nil {
-		callback()
-	}
-}
-
-func (c *retryNotifyListener) snapshot() []*registry.ServiceEvent {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	return append([]*registry.ServiceEvent(nil), c.events...)
-}
-
-// stubMetadataFetch replaces the metadata fetcher and restores it on cleanup.
-func stubMetadataFetch(t *testing.T, fetch func(ctx context.Context, app string, instance registry.ServiceInstance, revision, registryId string) (*info.MetadataInfo, error)) {
-	t.Helper()
-	original := metadataInfoFetcher
-	metadataInfoFetcher = fetch
-	t.Cleanup(func() { metadataInfoFetcher = original })
-}
-
 // stubSubscribeRetryDelays shrinks the subscribe backoff so retries fire within
 // test time budgets.
 func stubSubscribeRetryDelays(t *testing.T, initial, max time.Duration) {
