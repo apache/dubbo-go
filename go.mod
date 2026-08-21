@@ -13,7 +13,7 @@ require (
 	github.com/creasty/defaults v1.5.2
 	github.com/dop251/goja v0.0.0-20240220182346-e401ed450204
 	github.com/dop251/goja_nodejs v0.0.0-20211022123610-8dd9abb0616d
-	github.com/dubbogo/gost v1.14.3
+	github.com/dubbogo/gost v1.14.5-0.20260821091004-da8c3ce04178
 	github.com/dubbogo/grpc-go v1.42.10
 	github.com/dubbogo/triple v1.2.2-rc4
 	github.com/dustin/go-humanize v1.0.1
@@ -148,10 +148,3 @@ require (
 	gopkg.in/ini.v1 v1.66.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
-
-// TODO(#3459): temporary local replace while dubbogo/gost's migration off the
-// forked github.com/dubbogo/go-zookeeper package (see feat/upstream-zk branch
-// of https://github.com/dubbogo/gost) is validated here. Remove this once a
-// released gost version with the upstream github.com/go-zookeeper/zk
-// dependency is published, and bump the `require` above accordingly.
-replace github.com/dubbogo/gost => github.com/NeverENG/gost v0.0.0-20260821085803-e11b407c6b6a
