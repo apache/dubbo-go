@@ -31,6 +31,16 @@ jobs:
     name: CI
     runs-on: ubuntu-latest
 
+    services:
+      # Backs the ZooKeeper-dependent unit tests under config_center/zookeeper
+      # (see #3459/#3690): they connect to ZK_ADDR (default 127.0.0.1:2181)
+      # and, without a reachable server, silently skip instead of exercising
+      # the migrated client, so we run a real instance here.
+      zookeeper:
+        image: zookeeper:3.9
+        ports:
+          - 2181:2181
+
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -57,7 +67,21 @@ jobs:
       - name: Check Code Format
         run: make check-fmt
 
+      - name: Wait for ZooKeeper
+        run: |
+          for i in $(seq 1 30); do
+            if (exec 3<>/dev/tcp/127.0.0.1/2181) 2>/dev/null; then
+              exec 3>&-
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "zookeeper did not become reachable on 127.0.0.1:2181" >&2
+          exit 1
+
       - name: Unit Test
+        env:
+          ZK_ADDR: 127.0.0.1:2181
         run: make test
 
       - name: Lint
