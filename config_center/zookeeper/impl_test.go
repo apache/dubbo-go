@@ -22,7 +22,7 @@ import (
 )
 
 import (
-	"github.com/dubbogo/go-zookeeper/zk"
+	"github.com/go-zookeeper/zk"
 
 	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 
@@ -66,11 +66,11 @@ func TestGetPath(t *testing.T) {
 }
 
 func TestPublishAndRemoveConfigWithMockZk(t *testing.T) {
-	cluster, client, _, err := gxzookeeper.NewMockZookeeperClient("test", 5e9)
+	client, _, err := gxzookeeper.NewMockZookeeperClient("test", 5e9)
 	if err != nil {
 		t.Skipf("skip mock zk setup: %v", err)
 	}
-	defer cluster.Stop()
+	defer client.Close()
 
 	cfg := &zookeeperDynamicConfiguration{
 		rootPath: "/dubbo/config",
@@ -101,11 +101,11 @@ func TestPublishAndRemoveConfigWithMockZk(t *testing.T) {
 }
 
 func TestGetPropertiesWithMockZk(t *testing.T) {
-	cluster, client, _, err := gxzookeeper.NewMockZookeeperClient("test2", 5e9)
+	client, _, err := gxzookeeper.NewMockZookeeperClient("test2", 5e9)
 	if err != nil {
 		t.Skipf("skip mock zk setup: %v", err)
 	}
-	defer cluster.Stop()
+	defer client.Close()
 
 	cfg := &zookeeperDynamicConfiguration{
 		rootPath: "/dubbo/config",
