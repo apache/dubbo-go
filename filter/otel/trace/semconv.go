@@ -29,3 +29,23 @@ var (
 	RPCMessageTypeSent     = RPCMessageTypeKey.String("SENT")
 	RPCMessageTypeReceived = RPCMessageTypeKey.String("RECEIVED")
 )
+
+// These describe information that has no OpenTelemetry semantic-convention
+// equivalent, so they live under a stable "dubbo.*" namespace.
+var (
+	// DubboSideKey records the invocation side: "consumer" or "provider".
+	DubboSideKey = attribute.Key("dubbo.side")
+	// DubboProtocolKey records the Dubbo protocol in use, e.g. "dubbo", "tri".
+	DubboProtocolKey = attribute.Key("dubbo.protocol")
+	// DubboGroupKey records the Dubbo service group.
+	DubboGroupKey = attribute.Key("dubbo.group")
+	// DubboVersionKey records the Dubbo service version.
+	DubboVersionKey = attribute.Key("dubbo.version")
+)
+
+const (
+	// sideConsumer / sideProvider are the values used for DubboSideKey and the
+	// span-name prefix ("dubbo.consumer" / "dubbo.provider").
+	sideConsumer = "consumer"
+	sideProvider = "provider"
+)
