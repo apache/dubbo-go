@@ -603,8 +603,8 @@ github.com/HdrHistogram/hdrhistogram-go v1.1.2 h1:5IcZpTvzydCQeHzK4Ef/D5rrSqwxob
 github.com/HdrHistogram/hdrhistogram-go v1.1.2/go.mod h1:yDgFjdqOqDEKOvasDdhWNXYg9BVp4O+o5f6V/ehm6Oo=
 github.com/JohnCGriffin/overflow v0.0.0-20211019200055-46fa312c352c/go.mod h1:X0CRv0ky0k6m906ixxpzmDRLvX58TFUKS2eePweuyxk=
 github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible/go.mod h1:r7JcOSlj0wfOMncg0iLm8Leh48TZaKVeNIfJntJ2wa0=
-github.com/NeverENG/gost v0.0.0-20260821073520-22ee110bbfeb h1:WvUcqqk8poepHmKZsCY8yLYEZntZ9mThRISL8tg7zfk=
-github.com/NeverENG/gost v0.0.0-20260821073520-22ee110bbfeb/go.mod h1:iciVTssk7hmmkPmeWREHQ/DOFC5ojgvtUhKNI4wvmgs=
+github.com/NeverENG/gost v0.0.0-20260821084449-2203fbd00b11 h1:xbF4Hl+zeoM5KRgt4K68IfDdigCKwKTja9ZlmIpBOwM=
+github.com/NeverENG/gost v0.0.0-20260821084449-2203fbd00b11/go.mod h1:iciVTssk7hmmkPmeWREHQ/DOFC5ojgvtUhKNI4wvmgs=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/RoaringBitmap/roaring v1.2.3 h1:yqreLINqIrX22ErkKI0vY47/ivtJr6n+kMhVOVmhWBY=
 github.com/RoaringBitmap/roaring v1.2.3/go.mod h1:plvDsJQpxOC5bw8LRteu/MLWHsHez/3y6cubLI4/1yE=

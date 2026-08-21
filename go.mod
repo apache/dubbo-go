@@ -154,4 +154,4 @@ require (
 // of https://github.com/dubbogo/gost) is validated here. Remove this once a
 // released gost version with the upstream github.com/go-zookeeper/zk
 // dependency is published, and bump the `require` above accordingly.
-replace github.com/dubbogo/gost => github.com/NeverENG/gost v0.0.0-20260821073520-22ee110bbfeb
+replace github.com/dubbogo/gost => github.com/NeverENG/gost v0.0.0-20260821084449-2203fbd00b11
