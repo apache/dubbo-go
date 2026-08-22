@@ -193,17 +193,39 @@ func (s *Server) SetFallbackHTTPHandler(h http.Handler) {
 	s.mux.SetFallbackHandler(h)
 }
 
-// BeginStart snapshots the startup epoch before the transport goroutine
-// runs. It must be called synchronously on the start path so Run's
-// checkpoint can detect a Stop that completes before Run reads the counter.
-func (s *Server) BeginStart() uint32 {
+// Start starts the server for the given protocol without blocking. It
+// snapshots the startup epoch synchronously before the transport goroutine
+// runs, so run's checkpoint detects a Stop that completes before the
+// goroutine executes. Serve errors are logged; use Run when the error must
+// be returned synchronously.
+func (s *Server) Start(callProtocol string, tlsConf *tls.Config) {
+	epoch := s.beginStart()
+	go func() {
+		if runErr := s.run(callProtocol, tlsConf, epoch); runErr != nil {
+			logger.Errorf("[Triple][Server] server serve failed, err=%v", runErr)
+		}
+	}()
+}
+
+// beginStart snapshots the startup epoch before the transport goroutine
+// runs. It must be called synchronously on the start path so run's
+// checkpoint can detect a Stop that completes before run reads the counter.
+func (s *Server) beginStart() uint32 {
 	return s.stopCount.Load()
 }
 
-func (s *Server) Run(callProtocol string, tlsConf *tls.Config, epoch uint32) error {
-	// A Stop that completed after the synchronous BeginStart registration
-	// but before this checkpoint aborts the startup here, before any socket
-	// is bound or served.
+// Run starts the server for the given protocol and blocks until the server
+// is closed. It keeps the pre-3640 two-argument signature: the startup epoch
+// is snapshotted here, so a Stop that completes before this call executes
+// cannot be detected. Callers that need that guarantee use Start.
+func (s *Server) Run(callProtocol string, tlsConf *tls.Config) error {
+	return s.run(callProtocol, tlsConf, s.stopCount.Load())
+}
+
+func (s *Server) run(callProtocol string, tlsConf *tls.Config, epoch uint32) error {
+	// A Stop that completed after the synchronous epoch snapshot but before
+	// this checkpoint aborts the startup here, before any socket is bound or
+	// served.
 	if s.stopCount.Load() != epoch {
 		return nil
 	}

@@ -92,13 +92,13 @@ func getFreeAddr(t *testing.T) string {
 }
 
 // runServer starts the server in a goroutine and returns the channel that
-// receives the error returned by Run. ListenAndServe is blocking, so the
-// server must always be started this way in tests.
+// receives the error returned by the startup. ListenAndServe is blocking, so
+// the server must always be started this way in tests.
 func runServer(srv *Server, protocol string, tlsConf *tls.Config) chan error {
 	errCh := make(chan error, 1)
-	epoch := srv.BeginStart()
+	epoch := srv.beginStart()
 	go func() {
-		errCh <- srv.Run(protocol, tlsConf, epoch)
+		errCh <- srv.run(protocol, tlsConf, epoch)
 	}()
 	return errCh
 }
@@ -366,16 +366,16 @@ func TestServer_GracefulStopBeforeStart(t *testing.T) {
 }
 
 // TestServer_HTTP2AndHTTP3_StopBeforeRunAbortsStartup verifies that a Stop
-// completed before Run executes is still detected: BeginStart registers the
-// epoch synchronously, Stop increments the counter, and Run's checkpoint
+// completed before run executes is still detected: beginStart registers the
+// epoch synchronously, Stop increments the counter, and run's checkpoint
 // aborts the startup without binding any socket.
 func TestServer_HTTP2AndHTTP3_StopBeforeRunAbortsStartup(t *testing.T) {
 	addr := getFreeAddr(t)
 	srv := NewServer(addr, nil)
 
-	// Register the startup epoch, then Stop before Run gets to run: the
+	// Register the startup epoch, then Stop before run gets to execute: the
 	// checkpoint must abort instead of serving on the pre-bound sockets.
-	epoch := srv.BeginStart()
+	epoch := srv.beginStart()
 	require.NoError(t, srv.Stop())
 
 	// newTestTLSConfig uses t for assertions, so build it in the test
@@ -383,7 +383,7 @@ func TestServer_HTTP2AndHTTP3_StopBeforeRunAbortsStartup(t *testing.T) {
 	tlsConf := newTestTLSConfig(t)
 	errCh := make(chan error, 1)
 	go func() {
-		errCh <- srv.Run(constant.CallHTTP2AndHTTP3, tlsConf, epoch)
+		errCh <- srv.run(constant.CallHTTP2AndHTTP3, tlsConf, epoch)
 	}()
 
 	select {
@@ -399,19 +399,19 @@ func TestServer_HTTP2AndHTTP3_StopBeforeRunAbortsStartup(t *testing.T) {
 	require.NoError(t, tcpLn.Close())
 }
 
-// TestServer_HTTP2_StopBeforeRunAbortsStartup verifies that Run's checkpoint
-// guards the single-protocol path too: a Stop completed after BeginStart but
-// before Run executes aborts the HTTP/2 startup without binding any socket.
+// TestServer_HTTP2_StopBeforeRunAbortsStartup verifies that run's checkpoint
+// guards the single-protocol path too: a Stop completed after beginStart but
+// before run executes aborts the HTTP/2 startup without binding any socket.
 func TestServer_HTTP2_StopBeforeRunAbortsStartup(t *testing.T) {
 	addr := getFreeAddr(t)
 	srv := NewServer(addr, nil)
 
-	epoch := srv.BeginStart()
+	epoch := srv.beginStart()
 	require.NoError(t, srv.Stop())
 
 	errCh := make(chan error, 1)
 	go func() {
-		errCh <- srv.Run(constant.CallHTTP2, nil, epoch)
+		errCh <- srv.run(constant.CallHTTP2, nil, epoch)
 	}()
 
 	select {
@@ -436,7 +436,7 @@ func TestServer_HTTP2_StopBetweenCheckpointAndServeAbortsStartup(t *testing.T) {
 
 	// Stop after the epoch snapshot, then start HTTP/2 with the stale epoch:
 	// the checkpoint after the store must abort deterministically.
-	epoch := srv.BeginStart()
+	epoch := srv.beginStart()
 	require.NoError(t, srv.Stop())
 
 	err := srv.startHttp2(nil, epoch)
@@ -461,7 +461,7 @@ func TestServer_HTTP3_StopBetweenCheckpointAndServeAbortsStartup(t *testing.T) {
 
 	// Stop after the epoch snapshot, then start HTTP/3 with the stale epoch:
 	// the checkpoint after the store must abort deterministically.
-	epoch := srv.BeginStart()
+	epoch := srv.beginStart()
 	require.NoError(t, srv.Stop())
 
 	err := srv.startHttp3(newTestTLSConfig(t), epoch)
@@ -478,7 +478,7 @@ func TestServer_HTTP3_StopBetweenCheckpointAndServeAbortsStartup(t *testing.T) {
 
 func TestServer_Run_HTTP3WithoutTLS(t *testing.T) {
 	srv := NewServer(getFreeAddr(t), nil)
-	err := srv.Run(constant.CallHTTP3, nil, srv.BeginStart())
+	err := srv.Run(constant.CallHTTP3, nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "must have TLS config")
 }
@@ -531,7 +531,7 @@ func TestServer_HTTP2AndHTTP3_StartFailsOnOccupiedUDP(t *testing.T) {
 
 func TestServer_Run_HTTP2AndHTTP3WithoutTLS(t *testing.T) {
 	srv := NewServer(getFreeAddr(t), nil)
-	err := srv.Run(constant.CallHTTP2AndHTTP3, nil, srv.BeginStart())
+	err := srv.Run(constant.CallHTTP2AndHTTP3, nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "must have TLS config")
 }
@@ -540,14 +540,14 @@ func TestServer_Run_HTTP2AndHTTP3WithoutTLS(t *testing.T) {
 // the TLS config carries no certificate source.
 func TestServer_Run_HTTP2AndHTTP3_TLSWithoutCert(t *testing.T) {
 	srv := NewServer(getFreeAddr(t), nil)
-	err := srv.Run(constant.CallHTTP2AndHTTP3, &tls.Config{}, srv.BeginStart())
+	err := srv.Run(constant.CallHTTP2AndHTTP3, &tls.Config{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "must have a TLS certificate configured")
 }
 
 func TestServer_RunUnsupportedProtocol(t *testing.T) {
 	srv := NewServer(getFreeAddr(t), nil)
-	err := srv.Run("tcp", nil, srv.BeginStart())
+	err := srv.Run("tcp", nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unsupported protocol")
 }

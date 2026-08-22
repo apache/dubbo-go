@@ -232,17 +232,10 @@ func (s *Server) startTransport(callProtocol string, tlsConf *tls.Config) {
 		return
 	}
 	s.transportStarted = true
-
-	// Register the startup epoch synchronously before the transport goroutine
-	// runs, so Run's checkpoint can detect a Stop that completes before Run
-	// reads the counter.
-	epoch := s.triServer.BeginStart()
-
-	go func() {
-		if runErr := s.triServer.Run(callProtocol, tlsConf, epoch); runErr != nil {
-			logger.Errorf("[Triple][Server] server serve failed, err=%v", runErr)
-		}
-	}()
+	// Start snapshots the startup epoch synchronously before the transport
+	// goroutine runs, so run's checkpoint detects a Stop that completes
+	// before the goroutine executes.
+	s.triServer.Start(callProtocol, tlsConf)
 }
 
 func (s *Server) registerServiceHandlers(invoker base.Invoker, info *common.ServiceInfo, handlerOpts []tri.HandlerOption) {
