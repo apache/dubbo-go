@@ -65,6 +65,22 @@ func NewZkEventListener(client *gxzookeeper.ZookeeperClient) *ZkEventListener {
 	}
 }
 
+// waitForRetry waits for the given retry delay, or returns early when the
+// listener is signaled to exit via l.exit. It reports whether the exit was
+// signaled. The internal timer is always stopped, which avoids the
+// timer/goroutine leak that time.After would cause when the exit path is
+// taken (see #3558).
+func (l *ZkEventListener) waitForRetry(delay time.Duration) bool {
+	timer := time.NewTimer(delay)
+	defer timer.Stop()
+	select {
+	case <-timer.C:
+		return false
+	case <-l.exit:
+		return true
+	}
+}
+
 // ListenServiceNodeEvent listen a path node event
 func (l *ZkEventListener) ListenServiceNodeEvent(zkPath string, listener remoting.DataListener) {
 	l.wg.Add(1)
@@ -267,13 +283,10 @@ func (l *ZkEventListener) listenAllDirEvents(conf *common.URL, listener remoting
 			}
 			logger.Errorf("[Remoting][Zookeeper] get children of path {%s} with watcher failed, err=%v", rootPath, err)
 			// Maybe the zookeeper does not ready yet, sleep failTimes * ConnDelay senconds to wait
-			after := time.After(timeSecondDuration(failTimes * ConnDelay))
-			select {
-			case <-after:
-				continue
-			case <-l.exit:
-				return
-			}
+		if l.waitForRetry(timeSecondDuration(failTimes * ConnDelay)) {
+			return
+		}
+		continue
 		}
 		failTimes = 0
 		if len(children) == 0 {
@@ -347,13 +360,10 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, li
 				logger.Errorf("[Remoting][Zookeeper] get children of path {%s} with watcher failed, err=%v", zkRootPath, err)
 			}
 			// Maybe the provider does not ready yet, sleep failTimes * ConnDelay senconds to wait
-			after := time.After(timeSecondDuration(failTimes * ConnDelay))
-			select {
-			case <-after:
-				continue
-			case <-l.exit:
-				return
-			}
+		if l.waitForRetry(timeSecondDuration(failTimes * ConnDelay)) {
+			return
+		}
+		continue
 		}
 		failTimes = 0
 		if len(children) == 0 {
