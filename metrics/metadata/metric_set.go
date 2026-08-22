@@ -151,17 +151,15 @@ const (
 
 // Metadata fetch source values
 const (
-	SourceCache    = "cache"
-	SourceReport   = "report"
-	SourceRpc      = "rpc"
-	SourceFallback = "fallback"
+	SourceCache  = "cache"
+	SourceReport = "report"
+	SourceRpc    = "rpc"
 )
 
 // Metadata storage type values
 const (
 	StorageTypeLocal  = "local"
 	StorageTypeRemote = "remote"
-	StorageTypeCache  = "cache"
 )
 
 // Metadata fetch result values
