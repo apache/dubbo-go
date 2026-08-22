@@ -23,6 +23,12 @@ import (
 )
 
 import (
+	"github.com/dubbogo/go-zookeeper/zk"
+
+	"github.com/dubbogo/gost/log/logger"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
@@ -35,19 +41,43 @@ import (
 type CacheListener struct {
 	// key is zkNode Path and value is set of listeners
 	keyListeners    sync.Map
+	eventGeneration sync.Map
 	zkEventListener *zookeeper.ZkEventListener
 	rootPath        string
+	cache           *configCache
+}
+
+type watchEventState struct {
+	generation uint64
+	auto       bool
 }
 
 // NewCacheListener creates a new CacheListener
 func NewCacheListener(rootPath string, listener *zookeeper.ZkEventListener) *CacheListener {
-	return &CacheListener{zkEventListener: listener, rootPath: rootPath}
+	return newCacheListener(rootPath, listener, nil)
+}
+
+func newCacheListener(rootPath string, listener *zookeeper.ZkEventListener, cache *configCache) *CacheListener {
+	return &CacheListener{zkEventListener: listener, rootPath: rootPath, cache: cache}
+}
+
+func (l *CacheListener) registerWatcher(key string) (*zk.Watcher, error) {
+	_, _, watcher, err := l.zkEventListener.Client.Conn.ExistsW(key)
+	return watcher, err
 }
 
 // AddListener will add a listener if loaded
 func (l *CacheListener) AddListener(key string, listener config_center.ConfigurationListener) {
 	// FIXME do not use Client.ExistW, cause it has a bug(can not watch zk node that do not exist)
-	_, _, _, err := l.zkEventListener.Client.Conn.ExistsW(key)
+	register := func() (*zk.Watcher, error) {
+		return l.registerWatcher(key)
+	}
+	var err error
+	if l.cache == nil {
+		_, err = register()
+	} else {
+		err = l.cache.ensureBusinessWatch(key, register, l.removeWatcher)
+	}
 	// reference from https://stackoverflow.com/questions/34018908/golang-why-dont-we-have-a-set-datastructure
 	// make a map[your type]struct{} like set in java
 	if err != nil {
@@ -58,31 +88,157 @@ func (l *CacheListener) AddListener(key string, listener config_center.Configura
 		listeners.(map[config_center.ConfigurationListener]struct{})[listener] = struct{}{}
 		l.keyListeners.Store(key, listeners)
 	}
+	if l.cache != nil {
+		l.cache.promoteWatch(key)
+	}
+}
+
+func (l *CacheListener) restoreBusinessWatches() {
+	if l.cache == nil || l.zkEventListener == nil ||
+		l.zkEventListener.Client == nil || l.zkEventListener.Client.Conn == nil {
+		return
+	}
+
+	l.keyListeners.Range(func(key, _ any) bool {
+		path := key.(string)
+		err := l.cache.ensureBusinessWatch(path, func() (*zk.Watcher, error) {
+			return l.registerWatcher(path)
+		}, l.removeWatcher)
+		if err != nil {
+			logger.Warnf("[ConfigCenter][Zookeeper] restore configuration watcher failed, path=%s err=%v", path, err)
+			return true
+		}
+		if !l.hasListeners(path) {
+			l.removeWatcher(l.cache.releaseBusinessWatch(path))
+		}
+		return true
+	})
+}
+
+// WatchStateChanged updates the cache's concrete-path watch state.
+func (l *CacheListener) WatchStateChanged(path string, watcher *zk.Watcher) bool {
+	if l.cache == nil {
+		return true
+	}
+	if watcher == nil {
+		generation, watchState := l.cache.snapshot(path)
+		hasListeners := l.hasListeners(path)
+		if !watchState.tracked() && !hasListeners {
+			l.eventGeneration.Store(path, watchEventState{generation: generation})
+			return false
+		}
+		auto := watchState.auto
+		l.eventGeneration.Store(path, watchEventState{generation: generation, auto: auto})
+		return l.cache.beginWatchRenewal(path, generation, auto)
+	}
+	if !l.cache.enabled() {
+		if l.hasListeners(path) {
+			return true
+		}
+		l.removeWatcher(watcher)
+		return false
+	}
+	if state, ok := l.eventGeneration.Load(path); ok {
+		eventState := state.(watchEventState)
+		_, watchState := l.cache.snapshot(path)
+		hasListeners := l.hasListeners(path)
+		if !watchState.tracked() && !hasListeners {
+			l.removeWatcher(watcher)
+			return false
+		}
+		if watchState.watcher != nil && watchState.watcher != watcher {
+			l.removeWatcher(watcher)
+			return true
+		}
+		if watchState.tracked() {
+			eventState.auto = watchState.auto
+		}
+		if hasListeners {
+			eventState.auto = false
+		}
+		stored := l.cache.setWatchAtGeneration(path, eventState.generation, configWatchState{watcher: watcher, auto: eventState.auto})
+		if !stored {
+			l.removeWatcher(watcher)
+		}
+		return stored
+	}
+	_, watchState := l.cache.snapshot(path)
+	hasListeners := l.hasListeners(path)
+	if !watchState.tracked() && !hasListeners {
+		l.removeWatcher(watcher)
+		return false
+	}
+	if watchState.watcher != nil && watchState.watcher != watcher {
+		l.removeWatcher(watcher)
+		return true
+	}
+	stored := l.cache.setWatch(path, configWatchState{watcher: watcher, auto: watchState.auto})
+	if !stored {
+		l.removeWatcher(watcher)
+	}
+	return stored
+}
+
+func (l *CacheListener) WatchStateChangeFailed(path string) {
+	if l.cache == nil {
+		return
+	}
+	if state, ok := l.eventGeneration.LoadAndDelete(path); ok {
+		l.cache.cancelWatchRenewal(path, state.(watchEventState).generation)
+	}
+}
+
+func (l *CacheListener) hasListeners(path string) bool {
+	_, ok := l.keyListeners.Load(path)
+	return ok
 }
 
 // RemoveListener will delete a listener if loaded
 func (l *CacheListener) RemoveListener(key string, listener config_center.ConfigurationListener) {
 	listeners, loaded := l.keyListeners.Load(key)
-	if loaded {
-		delete(listeners.(map[config_center.ConfigurationListener]struct{}), listener)
+	if !loaded {
+		return
 	}
+	listenerSet := listeners.(map[config_center.ConfigurationListener]struct{})
+	delete(listenerSet, listener)
+	if len(listenerSet) != 0 {
+		return
+	}
+	l.keyListeners.Delete(key)
+	if l.cache != nil {
+		l.removeWatcher(l.cache.releaseBusinessWatch(key))
+	}
+}
+
+func (l *CacheListener) removeWatcher(watcher *zk.Watcher) {
+	if watcher == nil || l.zkEventListener == nil || l.zkEventListener.Client == nil || l.zkEventListener.Client.Conn == nil {
+		return
+	}
+	l.zkEventListener.Client.Conn.RemoveWatcher(watcher)
 }
 
 // DataChange changes all listeners' event
 func (l *CacheListener) DataChange(event remoting.Event) bool {
-	changeType := event.Action
-	if event.Content == "" {
-		changeType = remoting.EventTypeDel
+	if l.cache != nil {
+		entry := configCacheEntry{content: event.Content, exists: true}
+		if event.Action == remoting.EventTypeDel {
+			entry = configCacheEntry{exists: false}
+		}
+		if state, ok := l.eventGeneration.LoadAndDelete(event.Path); ok {
+			l.cache.storeAtGeneration(event.Path, state.(watchEventState).generation, entry)
+		} else {
+			l.cache.store(event.Path, entry)
+		}
 	}
 
 	key, group := l.pathToKeyGroup(event.Path)
-	defer metrics.Publish(metricsConfigCenter.NewIncMetricEvent(key, group, changeType, metricsConfigCenter.Zookeeper))
+	defer metrics.Publish(metricsConfigCenter.NewIncMetricEvent(key, group, event.Action, metricsConfigCenter.Zookeeper))
 	if listeners, ok := l.keyListeners.Load(event.Path); ok {
 		for listener := range listeners.(map[config_center.ConfigurationListener]struct{}) {
 			listener.Process(&config_center.ConfigChangeEvent{
 				Key:        key,
 				Value:      event.Content,
-				ConfigType: changeType,
+				ConfigType: event.Action,
 			})
 		}
 		return true

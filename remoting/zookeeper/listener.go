@@ -56,6 +56,11 @@ type ZkEventListener struct {
 	exit        chan struct{}
 }
 
+type configurationWatchStateListener interface {
+	WatchStateChanged(path string, watcher *zk.Watcher) bool
+	WatchStateChangeFailed(path string)
+}
+
 // NewZkEventListener returns a EventListener instance
 func NewZkEventListener(client *gxzookeeper.ZookeeperClient) *ZkEventListener {
 	return &ZkEventListener{
@@ -84,33 +89,63 @@ func (l *ZkEventListener) ListenServiceNodeEvent(zkPath string, listener remotin
 func (l *ZkEventListener) ListenConfigurationEvent(zkPath string, listener remoting.DataListener) {
 	l.wg.Add(1)
 	go func(zkPath string, listener remoting.DataListener) {
+		defer l.wg.Done()
 		var eventChan = make(chan zk.Event, 16)
 		l.Client.RegisterEvent(zkPath, eventChan)
+		watchStateListener, tracksWatchState := listener.(configurationWatchStateListener)
 		for {
 			select {
 			case event := <-eventChan:
 				logger.Infof("[Remoting][Zookeeper]Receive configuration change event:%#v", event)
-				if event.Type == zk.EventNodeChildrenChanged || event.Type == zk.EventNotWatching {
+				if event.Type == zk.EventNotWatching {
+					if tracksWatchState {
+						watchStateListener.WatchStateChanged(event.Path, nil)
+						watchStateListener.WatchStateChangeFailed(event.Path)
+					}
 					continue
 				}
+				if event.Type == zk.EventNodeChildrenChanged {
+					continue
+				}
+				registerWatch := true
+				if tracksWatchState {
+					registerWatch = watchStateListener.WatchStateChanged(event.Path, nil)
+				}
 				// 1. Re-set watcher for the zk node
-				_, _, _, err := l.Client.Conn.ExistsW(event.Path)
+				var (
+					exists  bool
+					watcher *zk.Watcher
+					err     error
+				)
+				if registerWatch {
+					exists, _, watcher, err = l.Client.Conn.ExistsW(event.Path)
+				} else {
+					exists, _, err = l.Client.Conn.Exists(event.Path)
+				}
 				if err != nil {
+					if tracksWatchState {
+						watchStateListener.WatchStateChangeFailed(event.Path)
+					}
 					logger.Warnf("[Remoting][Zookeeper]Re-set watcher error, err=%v", err)
 					continue
 				}
+				if tracksWatchState && registerWatch {
+					watchStateListener.WatchStateChanged(event.Path, watcher)
+				}
 
-				action := remoting.EventTypeAdd
+				action := remoting.EventTypeDel
 				var content string
-				if event.Type == zk.EventNodeDeleted {
-					action = remoting.EventTypeDel
-				} else {
+				if exists {
+					action = remoting.EventTypeAdd
 					// 2. Try to get new configuration value of the zk node
 					// Notice: The order of step 1 and step 2 cannot be swapped, if you get value(with timestamp t1)
 					// before re-set the watcher(with timestamp t2), and some one change the data of the zk node after
 					// t2 but before t1, you may get the old value, and the new value will not trigger the event.
 					contentBytes, _, err := l.Client.Conn.Get(event.Path)
 					if err != nil {
+						if tracksWatchState {
+							watchStateListener.WatchStateChangeFailed(event.Path)
+						}
 						logger.Warnf("[Remoting][Zookeeper] get config value error, err=%v", err)
 						continue
 					}

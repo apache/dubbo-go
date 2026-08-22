@@ -24,6 +24,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 import (
@@ -45,7 +46,8 @@ import (
 )
 
 const (
-	pathSeparator = "/"
+	pathSeparator         = "/"
+	defaultConfigCacheTTL = 30 * time.Second
 )
 
 type zookeeperDynamicConfiguration struct {
@@ -60,6 +62,7 @@ type zookeeperDynamicConfiguration struct {
 	// listenerLock  sync.Mutex
 	listener      *zookeeper.ZkEventListener
 	cacheListener *CacheListener
+	cache         configCache
 	parser        parser.ConfigurationParser
 
 	base64Enabled bool
@@ -67,20 +70,25 @@ type zookeeperDynamicConfiguration struct {
 
 func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfiguration, error) {
 	rootPath := url.GetParam(constant.ConfigRootPathParamKey, "/dubbo/config")
+	cacheTTL, err := parseConfigCacheTTL(url.GetParam(constant.ConfigCacheTTLKey, ""))
+	if err != nil {
+		return nil, err
+	}
 	c := &zookeeperDynamicConfiguration{
 		url:      url,
 		rootPath: rootPath,
+		cache:    newConfigCache(cacheTTL),
 	}
 	logger.Infof("[ConfigCenter][Zookeeper] new Zookeeper ConfigCenter with Configuration, zkConfig=%v url=%v", c, c.GetURL())
 	if v := url.GetParam("base64", ""); v != "" {
-		base64Enabled, err := strconv.ParseBool(v)
-		if err != nil {
-			panic("value of base64 must be bool, error=" + err.Error())
+		base64Enabled, parseErr := strconv.ParseBool(v)
+		if parseErr != nil {
+			panic("value of base64 must be bool, error=" + parseErr.Error())
 		}
 		c.base64Enabled = base64Enabled
 	}
 
-	err := zookeeper.ValidateZookeeperClient(c, url.Location)
+	err = zookeeper.ValidateZookeeperClient(c, url.Location)
 	if err != nil {
 		logger.Errorf("[ConfigCenter][Zookeeper] zookeeper client start error, err=%v", err)
 		return nil, err
@@ -96,16 +104,14 @@ func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfigu
 
 	// Start listener
 	c.listener = zookeeper.NewZkEventListener(c.client)
-	c.cacheListener = NewCacheListener(c.rootPath, c.listener)
+	c.cacheListener = newCacheListener(c.rootPath, c.listener, &c.cache)
 	c.listener.ListenConfigurationEvent(c.rootPath, c.cacheListener)
 	return c, nil
 }
 
 // AddListener add listener for key
-// TODO this method should has a parameter 'group', and it does not now, so we should concat group and key with '/' manually
 func (c *zookeeperDynamicConfiguration) AddListener(key string, listener config_center.ConfigurationListener, options ...config_center.Option) {
-	key = strings.Join([]string{c.GetURL().GetParam(constant.ConfigNamespaceKey, config_center.DefaultGroup), key}, "/")
-	qualifiedKey := buildPath(c.rootPath, key)
+	qualifiedKey := c.getPropertiesPath(key, options...)
 	c.cacheListener.AddListener(qualifiedKey, listener)
 }
 
@@ -119,11 +125,34 @@ func buildPath(rootPath, subPath string) string {
 	return path.Clean(fullPath)
 }
 
-func (c *zookeeperDynamicConfiguration) RemoveListener(key string, listener config_center.ConfigurationListener, opions ...config_center.Option) {
-	c.cacheListener.RemoveListener(key, listener)
+func (c *zookeeperDynamicConfiguration) RemoveListener(key string, listener config_center.ConfigurationListener, options ...config_center.Option) {
+	qualifiedKey := c.getPropertiesPath(key, options...)
+	c.cacheListener.RemoveListener(qualifiedKey, listener)
 }
 
 func (c *zookeeperDynamicConfiguration) GetProperties(key string, opts ...config_center.Option) (string, error) {
+	path := c.getPropertiesPath(key, opts...)
+	entry, err := c.cache.load(path, func(watcher *zk.Watcher, registerWatch bool) (configCacheEntry, *zk.Watcher, error) {
+		return c.loadProperties(path, watcher, registerWatch)
+	}, c.removeWatcher)
+	if err != nil {
+		return "", err
+	}
+	if !entry.exists {
+		return "", nil
+	}
+	if !c.base64Enabled {
+		return entry.content, nil
+	}
+
+	decoded, err := base64.StdEncoding.DecodeString(entry.content)
+	if err != nil {
+		return "", perrors.WithStack(err)
+	}
+	return string(decoded), nil
+}
+
+func (c *zookeeperDynamicConfiguration) getPropertiesPath(key string, opts ...config_center.Option) string {
 	tmpOpts := config_center.NewOptions(opts...)
 	/**
 	 * when group is not null, we are getting startup configs from Config Center, for example:
@@ -134,23 +163,63 @@ func (c *zookeeperDynamicConfiguration) GetProperties(key string, opts ...config
 	} else {
 		key = c.GetURL().GetParam(constant.ConfigNamespaceKey, config_center.DefaultGroup) + "/" + key
 	}
-	content, _, err := c.client.GetContent(c.rootPath + "/" + key)
-	if errors.Is(err, zk.ErrNoNode) {
-		logger.Warnf("[ConfigCenter][Zookeeper] query rule fail, key=%s err=%v", key, err)
-		return "", nil
-	}
-	if err != nil {
-		return "", perrors.WithStack(err)
-	}
-	if !c.base64Enabled {
-		return string(content), nil
+	return buildPath(c.rootPath, key)
+}
+
+func (c *zookeeperDynamicConfiguration) loadProperties(path string, watcher *zk.Watcher, registerWatch bool) (configCacheEntry, *zk.Watcher, error) {
+	if !c.cache.enabled() || watcher != nil || !registerWatch {
+		content, _, err := c.client.GetContent(path)
+		if errors.Is(err, zk.ErrNoNode) {
+			logger.Warnf("[ConfigCenter][Zookeeper] query rule fail, key=%s err=%v", path, err)
+			return configCacheEntry{exists: false}, watcher, nil
+		}
+		if err != nil {
+			return configCacheEntry{}, watcher, perrors.WithStack(err)
+		}
+		return configCacheEntry{content: string(content), exists: true}, watcher, nil
 	}
 
-	decoded, err := base64.StdEncoding.DecodeString(string(content))
-	if err != nil {
-		return "", perrors.WithStack(err)
+	for {
+		content, _, registeredWatcher, err := c.client.Conn.GetW(path)
+		if err == nil {
+			return configCacheEntry{content: string(content), exists: true}, registeredWatcher, nil
+		}
+		if !errors.Is(err, zk.ErrNoNode) {
+			return configCacheEntry{}, nil, perrors.WithStack(err)
+		}
+
+		exists, _, registeredWatcher, watchErr := c.client.Conn.ExistsW(path)
+		if watchErr != nil {
+			return configCacheEntry{}, nil, perrors.WithStack(watchErr)
+		}
+		if !exists {
+			logger.Warnf("[ConfigCenter][Zookeeper] query rule fail, key=%s err=%v", path, err)
+			return configCacheEntry{exists: false}, registeredWatcher, nil
+		}
+
+		content, _, getErr := c.client.Conn.Get(path)
+		if errors.Is(getErr, zk.ErrNoNode) {
+			continue
+		}
+		if getErr != nil {
+			return configCacheEntry{}, registeredWatcher, perrors.WithStack(getErr)
+		}
+		return configCacheEntry{content: string(content), exists: true}, registeredWatcher, nil
 	}
-	return string(decoded), nil
+}
+
+func parseConfigCacheTTL(value string) (time.Duration, error) {
+	if value == "" {
+		return defaultConfigCacheTTL, nil
+	}
+	ttl, err := time.ParseDuration(value)
+	if err != nil {
+		return 0, perrors.Wrapf(err, "invalid %s value %q", constant.ConfigCacheTTLKey, value)
+	}
+	if ttl < 0 {
+		return 0, perrors.Errorf("%s must not be negative", constant.ConfigCacheTTLKey)
+	}
+	return ttl, nil
 }
 
 // GetInternalProperty For zookeeper, getConfig and getConfigs have the same meaning.
@@ -274,7 +343,20 @@ func (c *zookeeperDynamicConfiguration) closeConfigs() {
 }
 
 func (c *zookeeperDynamicConfiguration) RestartCallBack() bool {
+	for _, watcher := range c.cache.reset() {
+		c.removeWatcher(watcher)
+	}
+	if c.cacheListener != nil {
+		c.cacheListener.restoreBusinessWatches()
+	}
 	return true
+}
+
+func (c *zookeeperDynamicConfiguration) removeWatcher(watcher *zk.Watcher) {
+	if watcher == nil || c.client == nil || c.client.Conn == nil {
+		return
+	}
+	c.client.Conn.RemoveWatcher(watcher)
 }
 
 func (c *zookeeperDynamicConfiguration) getPath(key string, group string) string {
