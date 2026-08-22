@@ -32,7 +32,7 @@ import (
 import (
 	"github.com/dubbogo/gost/log/logger"
 
-	"go.yaml.in/yaml/v4"
+	"gopkg.in/yaml.v3"
 )
 
 import (
