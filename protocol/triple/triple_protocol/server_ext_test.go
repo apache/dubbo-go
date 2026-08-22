@@ -19,18 +19,14 @@ package triple_protocol_test
 
 import (
 	"net"
-	"net/http"
 	"testing"
 	"time"
 )
 
 import (
-	"github.com/stretchr/testify/require"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	triple "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
+	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/assert"
 )
 
 // TestServer_Run_KeepsTwoArgumentSignature verifies that the exported Run
@@ -44,21 +40,18 @@ func TestServer_Run_KeepsTwoArgumentSignature(t *testing.T) {
 		errCh <- srv.Run(constant.CallHTTP2, nil)
 	}()
 
-	require.Eventually(t, func() bool {
-		conn, dialErr := net.DialTimeout("tcp", addr, 100*time.Millisecond)
-		if dialErr != nil {
-			return false
-		}
-		_ = conn.Close()
-		return true
-	}, 3*time.Second, 20*time.Millisecond)
+	// Wait until the listener is up so the stop below closes a serving
+	// server instead of racing the startup.
+	waitForListener(t, addr)
 
-	require.NoError(t, srv.Stop())
+	assert.Nil(t, srv.Stop())
 	select {
 	case err := <-errCh:
-		require.ErrorIs(t, err, http.ErrServerClosed)
+		// A clean Stop is the normal end of the single-protocol path: the
+		// shutdown filter suppresses http.ErrServerClosed, so Run returns nil.
+		assert.Nil(t, err)
 	case <-time.After(5 * time.Second):
-		require.FailNow(t, "server did not exit within 5s")
+		t.Fatalf("server did not exit within 5s")
 	}
 }
 
@@ -67,8 +60,27 @@ func freeAddr(t *testing.T) string {
 	t.Helper()
 
 	l, err := net.Listen("tcp", "127.0.0.1:0")
-	require.NoError(t, err)
+	assert.Nil(t, err)
 	addr := l.Addr().String()
-	require.NoError(t, l.Close())
+	assert.Nil(t, l.Close())
 	return addr
+}
+
+// waitForListener polls until the address accepts TCP connections or the
+// deadline expires.
+func waitForListener(t *testing.T, addr string) {
+	t.Helper()
+
+	deadline := time.Now().Add(3 * time.Second)
+	for {
+		conn, err := net.DialTimeout("tcp", addr, 100*time.Millisecond)
+		if err == nil {
+			_ = conn.Close()
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("server did not accept connections within 3s: %v", err)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
 }

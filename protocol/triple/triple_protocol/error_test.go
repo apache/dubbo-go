@@ -86,6 +86,11 @@ func TestCodeOf(t *testing.T) {
 		CodeUnavailable,
 	)
 	assert.Equal(t, CodeOf(errors.New("foo")), CodeUnknown)
+	// a typed nil *Error assigned to the error interface escapes err == nil,
+	// but must not panic and must fall back to CodeUnknown
+	var typedNil *Error
+	assert.Equal(t, CodeOf(typedNil), CodeUnknown)
+	assert.Equal(t, CodeOf(fmt.Errorf("wrapped: %w", typedNil)), CodeUnknown)
 }
 
 func TestErrorDetails(t *testing.T) {

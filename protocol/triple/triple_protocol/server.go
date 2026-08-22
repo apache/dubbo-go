@@ -266,8 +266,10 @@ func (s *Server) startHttp2(tlsConf *tls.Config, epoch uint32) error {
 	} else {
 		err = srv.ListenAndServe()
 	}
-
-	return err
+	if err != nil && err != http.ErrServerClosed {
+		return err
+	}
+	return nil
 }
 
 func (s *Server) startHttp3(tlsConf *tls.Config, epoch uint32) error {
@@ -303,7 +305,11 @@ func (s *Server) startHttp3(tlsConf *tls.Config, epoch uint32) error {
 
 	logger.Debugf("[Triple][Server] triple HTTP/3 Server starting on %v", s.addr)
 
-	return s.http3Srv.Load().ListenAndServe()
+	err = s.http3Srv.Load().ListenAndServe()
+	if err != nil && err != http.ErrServerClosed {
+		return err
+	}
+	return nil
 }
 
 func (s *Server) startHttp2AndHttp3(tlsConf *tls.Config, epoch uint32) error {

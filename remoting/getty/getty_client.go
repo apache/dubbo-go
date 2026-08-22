@@ -18,6 +18,7 @@
 package getty
 
 import (
+	"context"
 	"math/rand"
 	"sync"
 	"time"
@@ -28,7 +29,6 @@ import (
 
 	"github.com/dubbogo/gost/log/logger"
 	gxsync "github.com/dubbogo/gost/sync"
-	gxtime "github.com/dubbogo/gost/time"
 
 	perrors "github.com/pkg/errors"
 
@@ -215,6 +215,17 @@ func (c *Client) Close() {
 
 // Request send request
 func (c *Client) Request(request *remoting.Request, timeout time.Duration, response *remoting.PendingResponse) error {
+	return c.RequestContext(context.Background(), request, timeout, response)
+}
+
+// RequestContext sends a request and stops waiting when ctx is canceled.
+func (c *Client) RequestContext(ctx context.Context, request *remoting.Request, timeout time.Duration, response *remoting.PendingResponse) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if timeout <= 0 {
 		timeout = c.opts.RequestTimeout
 	}
@@ -241,11 +252,15 @@ func (c *Client) Request(request *remoting.Request, timeout time.Duration, respo
 		return nil
 	}
 
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
 	select {
-	case <-gxtime.After(timeout):
+	case <-timer.C:
 		return perrors.WithStack(errClientReadTimeout)
 	case <-response.Done:
 		err = response.Err
+	case <-ctx.Done():
+		return perrors.WithStack(ctx.Err())
 	}
 
 	return perrors.WithStack(err)
