@@ -1056,18 +1056,24 @@ func TestWrapTripleResponse(t *testing.T) {
 }
 
 func TestAppendTripleOutgoingAttachments(t *testing.T) {
-	ctx := tri.NewOutgoingContext(context.Background(), make(http.Header))
-	appendTripleOutgoingAttachments(ctx, map[string]any{
+	resp := tri.NewResponse(nil)
+	appendTripleOutgoingAttachments(resp, map[string]any{
 		"one":   "1",
 		"multi": []string{"a", "b"},
 		"omit":  100,
 	})
 
-	outgoing := tri.ExtractFromOutgoingContext(ctx)
-	require.NotNil(t, outgoing)
-	assert.Equal(t, []string{"1"}, outgoing.Values("one"))
-	assert.Equal(t, []string{"a", "b"}, outgoing.Values("multi"))
-	assert.Empty(t, outgoing.Values("omit"))
+	// string and []string land on the trailer; non-string lands on the header.
+	assert.Equal(t, []string{"1"}, resp.Trailer().Values("One"))
+	assert.Equal(t, []string{"a", "b"}, resp.Trailer().Values("Multi"))
+	assert.Equal(t, []string{"100"}, resp.Header().Values("Omit"))
+
+	// nil response and empty attachments are no-ops.
+	appendTripleOutgoingAttachments(nil, map[string]any{"x": "y"})
+	resp2 := tri.NewResponse(nil)
+	appendTripleOutgoingAttachments(resp2, nil)
+	assert.Empty(t, resp2.Trailer())
+	assert.Empty(t, resp2.Header())
 }
 
 const tripleServerDefaultImplementationKey = "/"
