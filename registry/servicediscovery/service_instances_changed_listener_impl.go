@@ -386,10 +386,14 @@ func GetMetadataInfoWithContext(ctx context.Context, app string, instance regist
 	})
 	cacheKey := metadataCacheKey(app, registryId, revision)
 	if metadataInfo, ok := metaCache.Get(cacheKey); ok {
+		logger.Debugf("[Metadata][Cache] app=%s registry=%s revision=%s host=%s result=hit",
+			app, registryId, revision, instance.GetHost())
 		publishMetadataCacheEvent(app, true)
 		publishMetadataFetchEvent(app, metricsMetadata.SourceCache, "", nil)
 		return metadataInfo.(*info.MetadataInfo), nil
 	}
+	logger.Debugf("[Metadata][Cache] app=%s registry=%s revision=%s host=%s result=miss",
+		app, registryId, revision, instance.GetHost())
 	publishMetadataCacheEvent(app, false)
 
 	var metadataInfo *info.MetadataInfo
