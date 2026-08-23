@@ -33,11 +33,11 @@ import (
 )
 
 var (
-	methodStatistics    sync.Map        // url -> { methodName : RPCStatus}
-	serviceStatistic    sync.Map        // url -> RPCStatus
-	invokerBlackList    sync.Map        // store unhealthy url blackList
-	blackListCacheDirty atomic.Bool      // store if the cache in chain is not refreshed by blacklist
-	blackListRefreshing atomic.Int32     // store if the refresing method is processing
+	methodStatistics    sync.Map     // url -> { methodName : RPCStatus}
+	serviceStatistic    sync.Map     // url -> RPCStatus
+	invokerBlackList    sync.Map     // store unhealthy url blackList
+	blackListCacheDirty atomic.Bool  // store if the cache in chain is not refreshed by blacklist
+	blackListRefreshing atomic.Int32 // store if the refresing method is processing
 )
 
 // RPCStatus is URL statistics.

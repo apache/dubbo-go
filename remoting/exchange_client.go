@@ -62,10 +62,10 @@ type contextRequester interface {
 
 // ExchangeClient is abstraction level. it is like facade.
 type ExchangeClient struct {
-	ConnectTimeout time.Duration  // timeout for connecting server
-	address        string         // server address for dialing. The format: ip:port
-	client         Client         // dealing with the transport
-	init           bool           // the tag for init.
+	ConnectTimeout time.Duration // timeout for connecting server
+	address        string        // server address for dialing. The format: ip:port
+	client         Client        // dealing with the transport
+	init           bool          // the tag for init.
 	activeNum      atomic.Uint32 // the number of service using the exchangeClient
 }
 

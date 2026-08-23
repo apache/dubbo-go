@@ -401,7 +401,7 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, li
 			l.Client.RUnlock()
 			if err != nil {
 				logger.Errorf("[Remoting][Zookeeper] get content of the child node {%v} failed, err=%v", zkNodePath, perrors.WithStack(err))
-				}
+			}
 			logger.Debugf("[Remoting][Zookeeper] get children!{%s}", zkNodePath)
 			if !listener.DataChange(remoting.Event{Path: zkNodePath, Action: remoting.EventTypeAdd, Content: string(content)}) {
 				continue
