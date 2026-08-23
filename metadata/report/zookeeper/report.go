@@ -19,6 +19,7 @@ package zookeeper
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -29,8 +30,6 @@ import (
 	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 
 	"github.com/go-zookeeper/zk"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -118,7 +117,7 @@ func (m *zookeeperMetadataReport) PublishAppMetadata(application, revision strin
 		return err
 	}
 	err = m.client.CreateWithValue(k, data)
-	if perrors.Is(err, zk.ErrNodeExists) {
+	if errors.Is(err, zk.ErrNodeExists) {
 		_, err = m.client.SetContent(k, data, -1)
 	}
 	return err
@@ -129,7 +128,7 @@ func (m *zookeeperMetadataReport) PublishAppMetadata(application, revision strin
 func (m *zookeeperMetadataReport) UnPublishAppMetadata(application, revision string) error {
 	k := m.rootDir + application + constant.PathSeparator + revision
 	err := m.client.Delete(k)
-	if perrors.Is(err, zk.ErrNoNode) {
+	if errors.Is(err, zk.ErrNoNode) {
 		return nil
 	}
 	return err
@@ -140,7 +139,7 @@ func (m *zookeeperMetadataReport) ListAppRevisions(application string) ([]report
 	parent := m.rootDir + application
 	children, _, err := m.client.Children(parent)
 	if err != nil {
-		if perrors.Is(err, zk.ErrNoNode) {
+		if errors.Is(err, zk.ErrNoNode) {
 			return nil, nil
 		}
 		return nil, err
@@ -189,9 +188,9 @@ func (m *zookeeperMetadataReport) ListAppRevisions(application string) ([]report
 func (m *zookeeperMetadataReport) RegisterServiceAppMapping(key string, group string, value string) error {
 	path := m.rootDir + group + constant.PathSeparator + key
 	v, state, err := m.client.GetContent(path)
-	if perrors.Is(err, zk.ErrNoNode) {
+	if errors.Is(err, zk.ErrNoNode) {
 		if cErr := m.client.CreateWithValue(path, []byte(value)); cErr != nil {
-			if perrors.Is(cErr, zk.ErrNodeExists) {
+			if errors.Is(cErr, zk.ErrNodeExists) {
 				return fmt.Errorf("create mapping %s: %w", path, report.ErrMappingCASConflict)
 			}
 			return cErr
@@ -205,7 +204,7 @@ func (m *zookeeperMetadataReport) RegisterServiceAppMapping(key string, group st
 		return nil
 	}
 	if _, sErr := m.client.SetContent(path, []byte(merged), state.Version); sErr != nil {
-		if perrors.Is(sErr, zk.ErrBadVersion) {
+		if errors.Is(sErr, zk.ErrBadVersion) {
 			return fmt.Errorf("update mapping %s: %w", path, report.ErrMappingCASConflict)
 		}
 		return sErr

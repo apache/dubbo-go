@@ -84,7 +84,7 @@ func (f *consumerGracefulShutdownFilter) Invoke(ctx context.Context, invoker bas
 	}
 
 	if f.shutdownConfig != nil {
-		f.shutdownConfig.ConsumerActiveCount.Inc()
+		f.shutdownConfig.ConsumerActiveCount.Add(1)
 	}
 
 	res := invoker.Invoke(ctx, invocation)
@@ -98,7 +98,7 @@ func (f *consumerGracefulShutdownFilter) Invoke(ctx context.Context, invoker bas
 // OnResponse reduces the number of active processes then return the process result
 func (f *consumerGracefulShutdownFilter) OnResponse(ctx context.Context, result result.Result, invoker base.Invoker, invocation base.Invocation) result.Result {
 	if f.shutdownConfig != nil && shouldDecrementConsumerActive(result) {
-		f.shutdownConfig.ConsumerActiveCount.Dec()
+		f.shutdownConfig.ConsumerActiveCount.Add(-1)
 	}
 
 	// check closing flag in response

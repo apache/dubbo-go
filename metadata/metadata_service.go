@@ -19,14 +19,13 @@ package metadata
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -191,7 +190,7 @@ func (e *serviceExporter) exportDubbo(port string) error {
 	)
 	methods, err := common.ServiceMap.Register(ivkURL.Interface(), ivkURL.Protocol, ivkURL.Group(), ivkURL.Version(), e.service)
 	if err != nil {
-		formatErr := perrors.Errorf("The service %v needExport the protocol %v error! Error message is %v.",
+		formatErr := fmt.Errorf("The service %v needExport the protocol %v error! Error message is %v.",
 			ivkURL.Interface(), ivkURL.Protocol, err.Error())
 		logger.Error("[Metadata] " + formatErr.Error())
 		return formatErr

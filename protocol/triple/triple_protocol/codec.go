@@ -29,8 +29,6 @@ import (
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 
-	perrors "github.com/pkg/errors"
-
 	msgpack "github.com/ugorji/go/codec"
 
 	"google.golang.org/protobuf/encoding/protojson"
@@ -520,14 +518,14 @@ func getArgType(v any) string {
 
 func reflectResponse(in any, out any) error {
 	if in == nil {
-		return perrors.Errorf("@in is nil")
+		return fmt.Errorf("@in is nil")
 	}
 
 	if out == nil {
-		return perrors.Errorf("@out is nil")
+		return fmt.Errorf("@out is nil")
 	}
 	if reflect.TypeOf(out).Kind() != reflect.Pointer {
-		return perrors.Errorf("@out should be a pointer")
+		return fmt.Errorf("@out should be a pointer")
 	}
 
 	inValue := hessian.EnsurePackValue(in)
@@ -554,10 +552,10 @@ func reflectResponse(in any, out any) error {
 // copySlice copy from inSlice to outSlice
 func copySlice(inSlice, outSlice reflect.Value) error {
 	if inSlice.IsNil() {
-		return perrors.New("@in is nil")
+		return errors.New("@in is nil")
 	}
 	if inSlice.Kind() != reflect.Slice {
-		return perrors.Errorf("@in is not slice, but %v", inSlice.Kind())
+		return fmt.Errorf("@in is not slice, but %v", inSlice.Kind())
 	}
 
 	for outSlice.Kind() == reflect.Pointer {
@@ -570,7 +568,7 @@ func copySlice(inSlice, outSlice reflect.Value) error {
 	for i := range size {
 		inSliceValue := inSlice.Index(i)
 		if !inSliceValue.Type().AssignableTo(outSlice.Index(i).Type()) {
-			return perrors.Errorf("in element type [%s] can not assign to out element type [%s]",
+			return fmt.Errorf("in element type [%s] can not assign to out element type [%s]",
 				inSliceValue.Type().String(), outSlice.Type().String())
 		}
 		outSlice.Index(i).Set(inSliceValue)
@@ -700,13 +698,13 @@ func unmarshalWrapperRequestArgs(w *interoperability.TripleRequestWrapper, inner
 // copyMap copy from in map to out map
 func copyMap(inMapValue, outMapValue reflect.Value) error {
 	if inMapValue.IsNil() {
-		return perrors.New("@in is nil")
+		return errors.New("@in is nil")
 	}
 	if !inMapValue.CanInterface() {
-		return perrors.New("@in's Interface can not be used.")
+		return errors.New("@in's Interface can not be used.")
 	}
 	if inMapValue.Kind() != reflect.Map {
-		return perrors.Errorf("@in is not map, but %v", inMapValue.Kind())
+		return fmt.Errorf("@in is not map, but %v", inMapValue.Kind())
 	}
 
 	outMapType := hessian.UnpackPtrType(outMapValue.Type())
@@ -721,11 +719,11 @@ func copyMap(inMapValue, outMapValue reflect.Value) error {
 		inValue := inMapValue.MapIndex(inKey)
 
 		if !inKey.Type().AssignableTo(outKeyType) {
-			return perrors.Errorf("in Key:{type:%s, value:%#v} can not assign to out Key:{type:%s} ",
+			return fmt.Errorf("in Key:{type:%s, value:%#v} can not assign to out Key:{type:%s} ",
 				inKey.Type().String(), inKey, outKeyType.String())
 		}
 		if !inValue.Type().AssignableTo(outValueType) {
-			return perrors.Errorf("in Value:{type:%s, value:%#v} can not assign to out value:{type:%s}",
+			return fmt.Errorf("in Value:{type:%s, value:%#v} can not assign to out value:{type:%s}",
 				inValue.Type().String(), inValue, outValueType.String())
 		}
 		outMapValue.SetMapIndex(inKey, inValue)

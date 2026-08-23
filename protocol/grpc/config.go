@@ -18,7 +18,7 @@
 package grpc
 
 import (
-	perrors "github.com/pkg/errors"
+	"fmt"
 )
 
 type (
@@ -52,7 +52,7 @@ func GetClientConfig() ClientConfig {
 // Validate check if custom config encoding is supported in dubbo grpc
 func (c *ClientConfig) Validate() error {
 	if c.ContentSubType != codecJson && c.ContentSubType != codecProto {
-		return perrors.Errorf(" dubbo-go grpc codec currently only support proto、json, %s isn't supported,"+
+		return fmt.Errorf(" dubbo-go grpc codec currently only support proto、json, %s isn't supported,"+
 			" please check protocol content_sub_type config", c.ContentSubType)
 	}
 	return nil

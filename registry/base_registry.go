@@ -18,6 +18,7 @@
 package registry
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -46,7 +47,7 @@ const (
 
 var (
 	localIP                    = ""
-	errBaseRegistryUnavailable = perrors.New("BaseRegistry is not available")
+	errBaseRegistryUnavailable = errors.New("BaseRegistry is not available")
 )
 
 func init() {
@@ -134,7 +135,7 @@ func (r *BaseRegistry) Register(url *common.URL) error {
 	start := time.Now()
 	// todo bug when provider、consumer simultaneous initialization
 	if _, ok := r.registered.Load(url.Key()); ok {
-		return perrors.Errorf("Service {%s} has been registered", url.Key())
+		return fmt.Errorf("Service {%s} has been registered", url.Key())
 	}
 
 	err := r.register(url)
@@ -143,7 +144,7 @@ func (r *BaseRegistry) Register(url *common.URL) error {
 		r.registered.Store(url.Key(), url)
 
 	} else {
-		err = perrors.WithMessagef(err, "register(url:%+v)", url)
+		err = fmt.Errorf("register(url:%+v): %w", url, err)
 	}
 
 	return err
@@ -152,14 +153,14 @@ func (r *BaseRegistry) Register(url *common.URL) error {
 // UnRegister implement interface registry to unregister
 func (r *BaseRegistry) UnRegister(url *common.URL) error {
 	if _, ok := r.registered.Load(url.Key()); !ok {
-		return perrors.Errorf("Service {%s} has not registered", url.Key())
+		return fmt.Errorf("Service {%s} has not registered", url.Key())
 	}
 	err := r.unregister(url)
 	metrics.Publish(metricsRegistry.NewSubscribeEvent(err == nil))
 	if err == nil {
 		r.registered.Delete(url.Key())
 	} else {
-		err = perrors.WithMessagef(err, "unregister(url:%+v)", url)
+		err = fmt.Errorf("unregister(url:%+v): %w", url, err)
 	}
 
 	return err
@@ -229,10 +230,10 @@ func (r *BaseRegistry) processURL(c *common.URL, f func(string, string) error, c
 	case common.CONSUMER:
 		dubboPath, rawURL, err = r.consumerRegistry(c, params, cpf)
 	default:
-		return perrors.Errorf("@c{%v} type is not referencer or provider", c)
+		return fmt.Errorf("@c{%v} type is not referencer or provider", c)
 	}
 	if err != nil {
-		return perrors.WithMessagef(err, "@c{%v} registry fail", c)
+		return fmt.Errorf("@c{%v} registry fail: %w", c, err)
 	}
 
 	encodedURL = url.QueryEscape(rawURL)
@@ -240,7 +241,7 @@ func (r *BaseRegistry) processURL(c *common.URL, f func(string, string) error, c
 	err = f(dubboPath, encodedURL)
 
 	if err != nil {
-		return perrors.WithMessagef(err, "register Node(path:%s, url:%s)", dubboPath, rawURL)
+		return fmt.Errorf("register Node(path:%s, url:%s): %w", dubboPath, rawURL, err)
 	}
 	return nil
 }
@@ -260,7 +261,7 @@ func (r *BaseRegistry) providerRegistry(c *common.URL, params url.Values, f crea
 		err       error
 	)
 	if c.Path == "" || len(c.Methods) == 0 {
-		return "", "", perrors.Errorf("conf{Path:%s, Methods:%s}", c.Path, c.Methods)
+		return "", "", fmt.Errorf("conf{Path:%s, Methods:%s}", c.Path, c.Methods)
 	}
 	dubboPath = fmt.Sprintf("/%s/%s/%s", r.GetParam(constant.RegistryGroupKey, "dubbo"), r.service(c), common.DubboNodes[common.PROVIDER])
 	if f != nil {
@@ -268,7 +269,7 @@ func (r *BaseRegistry) providerRegistry(c *common.URL, params url.Values, f crea
 	}
 	if err != nil {
 		logger.Errorf("[Registry] facadeBasedRegistry.CreatePath(path{%s}) = err=%#v", dubboPath, perrors.WithStack(err))
-		return "", "", perrors.WithMessagef(err, "facadeBasedRegistry.CreatePath(path:%s)", dubboPath)
+		return "", "", fmt.Errorf("facadeBasedRegistry.CreatePath(path:%s): %w", dubboPath, err)
 	}
 	params.Add(constant.AnyhostKey, "true")
 
@@ -385,14 +386,14 @@ func (r *BaseRegistry) waitRetryDelay() error {
 func (r *BaseRegistry) UnSubscribe(url *common.URL, notifyListener NotifyListener) error {
 	if !r.IsAvailable() {
 		logger.Warn("[Registry] event listener game over")
-		return perrors.New("BaseRegistry is not available.")
+		return errors.New("BaseRegistry is not available.")
 	}
 
 	listener, err := r.facadeBasedRegistry.DoUnsubscribe(url)
 	if err != nil {
 		if !r.IsAvailable() {
 			logger.Warn("[Registry] event listener game over")
-			return perrors.New("BaseRegistry is not available")
+			return errors.New("BaseRegistry is not available")
 		}
 		logger.Warnf("[Registry] getListener() = err=%v", perrors.WithStack(err))
 		return perrors.WithStack(err)

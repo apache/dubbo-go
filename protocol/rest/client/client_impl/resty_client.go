@@ -19,6 +19,7 @@ package client_impl
 
 import (
 	"context"
+	"errors"
 	"net"
 	"net/http"
 	"path"
@@ -26,7 +27,6 @@ import (
 
 import (
 	"github.com/go-resty/resty/v2"
-
 	perrors "github.com/pkg/errors"
 )
 
@@ -79,7 +79,7 @@ func (rc *RestyClient) Do(restRequest *client.RestClientRequest, res any) error 
 		return perrors.WithStack(err)
 	}
 	if resp.IsError() {
-		return perrors.New(resp.String())
+		return errors.New(resp.String())
 	}
 	return nil
 }

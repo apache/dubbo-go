@@ -19,14 +19,13 @@ package etcd
 
 import (
 	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
 )
 
 import (
 	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
-
-	perrors "github.com/pkg/errors"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -155,7 +154,7 @@ func TestPublishAndGetAppMetadata(t *testing.T) {
 	// Get non-existent returns error
 	_, err = r.GetAppMetadata("my-app", "nonexistent")
 	require.Error(t, err)
-	assert.True(t, perrors.Is(err, gxetcd.ErrKVPairNotFound))
+	assert.True(t, errors.Is(err, gxetcd.ErrKVPairNotFound))
 }
 
 func TestPublishAppMetadata_Update(t *testing.T) {

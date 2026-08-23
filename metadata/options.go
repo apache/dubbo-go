@@ -18,6 +18,7 @@
 package metadata
 
 import (
+	"errors"
 	"strconv"
 	"strings"
 	"sync"
@@ -26,8 +27,6 @@ import (
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -195,7 +194,7 @@ func (opts *ReportOptions) toUrl() (*common.URL, error) {
 		common.WithParamsValue(constant.ClientNameKey, strings.Join([]string{constant.MetadataReportPrefix, opts.Protocol, opts.Address}, "-")),
 	)
 	if err != nil || len(res.Protocol) == 0 {
-		return nil, perrors.New("Invalid MetadataReport Config.")
+		return nil, errors.New("Invalid MetadataReport Config.")
 	}
 	res.SetParam("metadata", res.Protocol)
 	for key, val := range opts.Params {

@@ -18,14 +18,13 @@
 package zookeeper
 
 import (
+	"fmt"
 	"strings"
 )
 
 import (
 	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -55,7 +54,7 @@ func ValidateZookeeperClient(container ZkClientFacade, zkName string) error {
 		if cltErr != nil {
 			logger.Warnf("[Remoting][Zookeeper] newZookeeperClient, name=%s zkAddress=%s timeout=%s err=%v",
 				zkName, url.Location, timeout.String(), cltErr)
-			return perrors.WithMessagef(cltErr, "newZookeeperClient(address:%+v)", url.Location)
+			return fmt.Errorf("newZookeeperClient(address:%+v): %w", url.Location, cltErr)
 		}
 		container.SetZkClient(newClient)
 	}

@@ -25,7 +25,6 @@ import (
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-	gxsort "github.com/dubbogo/gost/sort"
 )
 
 import (
@@ -240,7 +239,7 @@ func (d *DefaultServiceInstance) GetMetadata() map[string]string {
 // logic to modify instance. Be careful of priority. Usually you should use number
 // between [100, 9000] other number will be thought as system reserve number
 type ServiceInstanceCustomizer interface {
-	gxsort.Prioritizer
+	GetPriority() int
 
 	Customize(instance ServiceInstance)
 }

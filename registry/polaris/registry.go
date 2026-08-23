@@ -18,6 +18,7 @@
 package polaris
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -140,7 +141,7 @@ func (pr *polarisRegistry) UnRegister(url *common.URL) error {
 	request := createDeregisterParam(url, url.Interface())
 	request.Namespace = pr.namespace
 	if err := pr.provider.Deregister(request); err != nil {
-		return perrors.WithMessagef(err, "fail to deregister(conf:%+v)", url)
+		return fmt.Errorf("fail to deregister(conf:%+v): %w", url, err)
 	}
 	return nil
 }
@@ -256,7 +257,7 @@ func (pr *polarisRegistry) createPolarisListenerWithIdentity(
 // UnSubscribe returns nil if unsubscribing registry successfully. If not returns an error.
 func (pr *polarisRegistry) UnSubscribe(url *common.URL, notifyListener registry.NotifyListener) error {
 	// TODO wait polaris support it
-	return perrors.New("UnSubscribe not support in polarisRegistry")
+	return errors.New("UnSubscribe not support in polarisRegistry")
 }
 
 // LoadSubscribeInstances load subscribe instance
@@ -273,8 +274,8 @@ func (pr *polarisRegistry) LoadSubscribeInstances(url *common.URL, notify regist
 		},
 	})
 	if err != nil {
-		return perrors.New(fmt.Sprintf("could not query the instances for serviceName=%s,namespace=%s,error=%v",
-			serviceName, pr.namespace, err))
+		return fmt.Errorf("could not query the instances for serviceName=%s,namespace=%s,error=%v",
+			serviceName, pr.namespace, err)
 	}
 	validInstances := make([]model.Instance, 0, len(resp.Instances))
 	initialEvents := make([]*registry.ServiceEvent, 0, len(resp.Instances))

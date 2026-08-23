@@ -29,8 +29,6 @@ import (
 	"github.com/apache/dubbo-go-hessian2/java_exception"
 
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -203,8 +201,20 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 
 			result := p.invoke.Invoke(invCtx, inv)
 			err = result.Error()
-			// cause is raw user level error
-			cause := perrors.Cause(err)
+			// cause is the root error, equivalent to perrors.Cause, walking both
+			// stdlib Unwrap() and pkg/errors Cause() chains.
+			cause := err
+			for cause != nil {
+				if u, ok := cause.(interface{ Unwrap() error }); ok {
+					cause = u.Unwrap()
+					continue
+				}
+				if c, ok := cause.(interface{ Cause() error }); ok {
+					cause = c.Cause()
+					continue
+				}
+				break
+			}
 			if err != nil {
 				// if some error happened, it should be log some info in the separate file.
 				if throwabler, ok := cause.(java_exception.Throwabler); ok {

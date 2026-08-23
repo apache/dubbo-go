@@ -27,7 +27,6 @@ import (
 import (
 	gxset "github.com/dubbogo/gost/container/set"
 	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
-	gxpage "github.com/dubbogo/gost/hash/page"
 	"github.com/dubbogo/gost/log/logger"
 )
 
@@ -191,21 +190,21 @@ func (zksd *zookeeperServiceDiscovery) GetInstances(serviceName string) []regist
 }
 
 // GetInstancesByPage will return the instances
-func (zksd *zookeeperServiceDiscovery) GetInstancesByPage(serviceName string, offset int, pageSize int) gxpage.Pager {
+func (zksd *zookeeperServiceDiscovery) GetInstancesByPage(serviceName string, offset int, pageSize int) registry.Pager {
 	all := zksd.GetInstances(serviceName)
 	res := make([]any, 0, pageSize)
 	// could not use res = all[a:b] here because the res should be []any, not []ServiceInstance
 	for i := offset; i < len(all) && i < offset+pageSize; i++ {
 		res = append(res, all[i])
 	}
-	return gxpage.NewPage(offset, pageSize, res, len(all))
+	return registry.NewPage(offset, pageSize, res, len(all))
 }
 
 // GetHealthyInstancesByPage will return the instance
 // In zookeeper, all service instance's is healthy.
 // However, the healthy parameter in this method maybe false. So we can not use that API.
 // Thus, we must query all instances and then do filter
-func (zksd *zookeeperServiceDiscovery) GetHealthyInstancesByPage(serviceName string, offset int, pageSize int, healthy bool) gxpage.Pager {
+func (zksd *zookeeperServiceDiscovery) GetHealthyInstancesByPage(serviceName string, offset int, pageSize int, healthy bool) registry.Pager {
 	all := zksd.GetInstances(serviceName)
 	res := make([]any, 0, pageSize)
 	// could not use res = all[a:b] here because the res should be []any, not []ServiceInstance
@@ -221,12 +220,12 @@ func (zksd *zookeeperServiceDiscovery) GetHealthyInstancesByPage(serviceName str
 		}
 		i++
 	}
-	return gxpage.NewPage(offset, pageSize, res, len(all))
+	return registry.NewPage(offset, pageSize, res, len(all))
 }
 
 // GetRequestInstances will return the instances
-func (zksd *zookeeperServiceDiscovery) GetRequestInstances(serviceNames []string, offset int, requestedSize int) map[string]gxpage.Pager {
-	res := make(map[string]gxpage.Pager, len(serviceNames))
+func (zksd *zookeeperServiceDiscovery) GetRequestInstances(serviceNames []string, offset int, requestedSize int) map[string]registry.Pager {
+	res := make(map[string]registry.Pager, len(serviceNames))
 	for _, name := range serviceNames {
 		res[name] = zksd.GetInstancesByPage(name, offset, requestedSize)
 	}

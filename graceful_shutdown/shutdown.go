@@ -357,11 +357,11 @@ func waitingProviderProcessedTimeout(shutdown *global.ShutdownConfig, timeout ti
 	offlineRequestWindowTimeout := parseDuration(shutdown.OfflineRequestWindowTimeout, offlineRequestWindowTimeoutDesc, constant.DefaultShutdownConfigOfflineRequestWindowTimeout)
 
 	for time.Now().Before(deadline) &&
-		(shutdown.ProviderActiveCount.Load() > 0 || time.Now().Before(shutdown.ProviderLastReceivedRequestTime.Load().Add(offlineRequestWindowTimeout))) {
+		(shutdown.ProviderActiveCount.Load() > 0 || time.Now().Before(shutdown.LoadLastReceivedRequestTime().Add(offlineRequestWindowTimeout))) {
 		// sleep 10 ms and then we check it again
 		time.Sleep(10 * time.Millisecond)
 		logger.Infof("[GracefulShutdown] waiting for provider active invocation count = %d, provider last received request time=%v",
-			shutdown.ProviderActiveCount.Load(), shutdown.ProviderLastReceivedRequestTime.Load())
+			shutdown.ProviderActiveCount.Load(), shutdown.LoadLastReceivedRequestTime())
 	}
 }
 

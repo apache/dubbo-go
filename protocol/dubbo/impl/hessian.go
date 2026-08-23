@@ -18,6 +18,7 @@
 package impl
 
 import (
+	"fmt"
 	"math"
 	"reflect"
 	"strconv"
@@ -30,7 +31,6 @@ import (
 	"github.com/apache/dubbo-go-hessian2/java_exception"
 
 	"github.com/dubbogo/gost/log/logger"
-
 	perrors "github.com/pkg/errors"
 )
 
@@ -142,7 +142,7 @@ func encodeExceptionResponse(encoder *hessian.Encoder, exception error, response
 
 func encodeHessianValue(encoder *hessian.Encoder, value any, description string) error {
 	if err := encoder.Encode(value); err != nil {
-		return perrors.Wrapf(err, "failed to encode %s", description)
+		return fmt.Errorf("failed to encode %s: %w", description, err)
 	}
 	return nil
 }
@@ -167,11 +167,11 @@ func marshalRequest(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 
 	if !ok {
 		logger.Infof("[Dubbo] request args, params=%v", request.Params)
-		return nil, perrors.Errorf("@params is not of type: []any")
+		return nil, fmt.Errorf("@params is not of type: []any")
 	}
 	types, err := GetArgsTypeList(args)
 	if err != nil {
-		return nil, perrors.Wrapf(err, " PackRequest(args:%+v)", args)
+		return nil, fmt.Errorf(" PackRequest(args:%+v): %w", args, err)
 	}
 	err = encodeHessianValue(encoder, types, "argument types")
 	if err != nil {
@@ -179,7 +179,7 @@ func marshalRequest(encoder *hessian.Encoder, p DubboPackage) ([]byte, error) {
 	}
 	for _, v := range args {
 		if e := encoder.Encode(v); e != nil {
-			return nil, perrors.Wrapf(e, "failed to encode argument: %v", v)
+			return nil, fmt.Errorf("failed to encode argument: %v: %w", v, e)
 		}
 	}
 
@@ -246,7 +246,7 @@ func unmarshalRequestBody(body []byte, p *DubboPackage) error {
 	)
 	req, ok := p.Body.([]any)
 	if !ok {
-		return perrors.Errorf("@reqObj is not of type: []any")
+		return fmt.Errorf("@reqObj is not of type: []any")
 	}
 	dubboVersion, err = decoder.Decode()
 	if err != nil {
@@ -304,7 +304,7 @@ func unmarshalRequestBody(body []byte, p *DubboPackage) error {
 		buildServerSidePackageBody(p)
 		return nil
 	}
-	return perrors.Errorf("get wrong attachments: %+v", attachments)
+	return fmt.Errorf("get wrong attachments: %+v", attachments)
 }
 
 func unmarshalResponseBody(body []byte, p *DubboPackage) error {
@@ -333,7 +333,7 @@ func unmarshalResponseBody(body []byte, p *DubboPackage) error {
 				atta := ToMapStringInterface(v)
 				response.Attachments = atta
 			} else {
-				return perrors.Errorf("get wrong attachments: %+v", attachments)
+				return fmt.Errorf("get wrong attachments: %+v", attachments)
 			}
 		}
 
@@ -342,7 +342,7 @@ func unmarshalResponseBody(body []byte, p *DubboPackage) error {
 		} else if e, ok := expt.(error); ok {
 			response.Exception = e
 		} else {
-			response.Exception = perrors.Errorf("got exception: %+v", expt)
+			response.Exception = fmt.Errorf("got exception: %+v", expt)
 		}
 		return nil
 
@@ -360,7 +360,7 @@ func unmarshalResponseBody(body []byte, p *DubboPackage) error {
 				atta := ToMapStringInterface(v)
 				response.Attachments = atta
 			} else {
-				return perrors.Errorf("get wrong attachments: %+v", attachments)
+				return fmt.Errorf("get wrong attachments: %+v", attachments)
 			}
 		}
 
@@ -376,7 +376,7 @@ func unmarshalResponseBody(body []byte, p *DubboPackage) error {
 				atta := ToMapStringInterface(v)
 				response.Attachments = atta
 			} else {
-				return perrors.Errorf("get wrong attachments: %+v", attachments)
+				return fmt.Errorf("get wrong attachments: %+v", attachments)
 			}
 		}
 		return nil
@@ -443,7 +443,7 @@ func GetArgsTypeList(args []any) (string, error) {
 	for i := range args {
 		typ = getArgType(args[i])
 		if typ == "" {
-			return types, perrors.Errorf("cat not get arg %#v type", args[i])
+			return types, fmt.Errorf("cat not get arg %#v type", args[i])
 		}
 		if !strings.Contains(typ, ".") {
 			types += typ

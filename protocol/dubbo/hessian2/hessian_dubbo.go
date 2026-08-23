@@ -20,6 +20,7 @@ package hessian2
 import (
 	"bufio"
 	"encoding/binary"
+	"fmt"
 	"time"
 )
 
@@ -111,7 +112,7 @@ func (h *HessianCodec) Write(service Service, header DubboHeader, body any) ([]b
 		return packResponse(header, body)
 
 	default:
-		return nil, perrors.Errorf("Unrecognized message type: %v", header.Type)
+		return nil, fmt.Errorf("Unrecognized message type: %v", header.Type)
 	}
 
 	// unreachable return nil, nil
@@ -159,7 +160,7 @@ func (h *HessianCodec) ReadHeader(header *DubboHeader) error {
 
 	// Header{serialization id(5 bit), event, two way, req/response}
 	if header.SerialID = buf[2] & SERIAL_MASK; header.SerialID == Zero {
-		return perrors.Errorf("serialization ID:%v", header.SerialID)
+		return fmt.Errorf("serialization ID:%v", header.SerialID)
 	}
 
 	flag := buf[2] & FLAG_EVENT
@@ -240,14 +241,14 @@ func (h *HessianCodec) ReadBody(rspObj any) error {
 		}
 		rsp, ok := rspObj.(*DubboResponse)
 		if !ok {
-			return perrors.Errorf("java exception: %v", exception)
+			return fmt.Errorf("java exception: %v", exception)
 		}
 		if g, ok := hessian.ToGenericException(exception); ok {
 			rsp.Exception = g
 		} else if e, ok := exception.(error); ok {
 			rsp.Exception = e
 		} else {
-			rsp.Exception = perrors.Errorf("java exception: %v", exception)
+			rsp.Exception = fmt.Errorf("java exception: %v", exception)
 		}
 		return nil
 	case PackageRequest | PackageHeartbeat, PackageResponse | PackageHeartbeat:

@@ -18,12 +18,9 @@
 package impl
 
 import (
+	"errors"
 	"reflect"
 	"regexp"
-)
-
-import (
-	"github.com/pkg/errors"
 )
 
 const (

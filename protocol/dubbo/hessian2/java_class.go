@@ -26,14 +26,12 @@ import (
 
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
-
-	perrors "github.com/pkg/errors"
 )
 
 var (
-	NilError            = perrors.Errorf("object should not be nil")
-	UnexpectedTypeError = perrors.Errorf("object should be a POJO")
-	notBasicClassError  = perrors.Errorf("object isn't a basic class")
+	NilError            = fmt.Errorf("object should not be nil")
+	UnexpectedTypeError = fmt.Errorf("object should be a POJO")
+	notBasicClassError  = fmt.Errorf("object isn't a basic class")
 )
 
 // GetJavaName returns java name of an object

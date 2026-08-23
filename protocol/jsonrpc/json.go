@@ -20,6 +20,7 @@ package jsonrpc
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"reflect"
@@ -136,10 +137,10 @@ func (c *jsonClientCodec) Write(d *CodecData) ([]byte, error) {
 				}
 			case reflect.Array, reflect.Struct:
 			default:
-				return nil, perrors.New("unsupported param type: Ptr to " + ptrK.String())
+				return nil, errors.New("unsupported param type: Ptr to " + ptrK.String())
 			}
 		default:
-			return nil, perrors.New("unsupported param type: " + k.String())
+			return nil, errors.New("unsupported param type: " + k.String())
 		}
 	}
 
@@ -176,14 +177,14 @@ func (c *jsonClientCodec) Read(streamBytes []byte, x any) error {
 
 	_, ok := c.pending[c.rsp.ID]
 	if !ok {
-		err := perrors.Errorf("can not find method of rsponse id %v, rsponse error:%v", c.rsp.ID, c.rsp.Error)
+		err := fmt.Errorf("can not find method of rsponse id %v, rsponse error:%v", c.rsp.ID, c.rsp.Error)
 		return err
 	}
 	delete(c.pending, c.rsp.ID)
 
 	// c.rsp.ID
 	if c.rsp.Error != nil {
-		return perrors.New(c.rsp.Error.Error())
+		return errors.New(c.rsp.Error.Error())
 	}
 
 	if c.rsp.Result == nil {
@@ -218,32 +219,32 @@ func (r *serverRequest) UnmarshalJSON(raw []byte) error {
 	// Attention: if do not define a new struct named @req, the json.Unmarshal will invoke
 	// (*serverRequest)UnmarshalJSON recursively.
 	if err := json.Unmarshal(raw, req(r)); err != nil {
-		return perrors.New("bad request")
+		return errors.New("bad request")
 	}
 
 	o := make(map[string]*json.RawMessage)
 	if err := json.Unmarshal(raw, &o); err != nil {
-		return perrors.New("bad request")
+		return errors.New("bad request")
 	}
 	if o["jsonrpc"] == nil || o["method"] == nil {
-		return perrors.New("bad request")
+		return errors.New("bad request")
 	}
 	_, okID := o["id"]
 	_, okParams := o["params"]
 	if len(o) == 3 && (!okID && !okParams) || len(o) == 4 && (!okID || !okParams) || len(o) > 4 {
-		return perrors.New("bad request")
+		return errors.New("bad request")
 	}
 	if r.Version != Version {
-		return perrors.New("bad request")
+		return errors.New("bad request")
 	}
 	if okParams {
 		if r.Params == nil || len(*r.Params) == 0 {
-			return perrors.New("bad request")
+			return errors.New("bad request")
 		}
 		switch []byte(*r.Params)[0] {
 		case '[', '{':
 		default:
-			return perrors.New("bad request")
+			return errors.New("bad request")
 		}
 	}
 	if okID && r.ID == nil {
@@ -251,11 +252,11 @@ func (r *serverRequest) UnmarshalJSON(raw []byte) error {
 	}
 	if okID {
 		if len(*r.ID) == 0 {
-			return perrors.New("bad request")
+			return errors.New("bad request")
 		}
 		switch []byte(*r.ID)[0] {
 		case 't', 'f', '{', '[':
-			return perrors.New("bad request")
+			return errors.New("bad request")
 		}
 	}
 

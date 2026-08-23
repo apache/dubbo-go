@@ -20,12 +20,9 @@ package impl
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"time"
-)
-
-import (
-	"github.com/pkg/errors"
 )
 
 type PackageType int
@@ -81,7 +78,7 @@ func (p *DubboPackage) Marshal() (*bytes.Buffer, error) {
 	}
 	pkg, err := p.Codec.Encode(*p)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 	return bytes.NewBuffer(pkg), nil
 }

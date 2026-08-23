@@ -19,16 +19,14 @@
 package base
 
 import (
+	"fmt"
 	"slices"
 	"sync"
+	"sync/atomic"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
-
-	uberatomic "go.uber.org/atomic"
 )
 
 import (
@@ -43,7 +41,7 @@ import (
 type BaseClusterInvoker struct {
 	Directory      directory.Directory
 	AvailableCheck bool
-	Destroyed      *uberatomic.Bool
+	Destroyed      *atomic.Bool
 	StickyInvoker  base.Invoker
 
 	// stickyLock guards StickyInvoker against the data race between IsAvailable
@@ -56,7 +54,7 @@ func NewBaseClusterInvoker(directory directory.Directory) BaseClusterInvoker {
 	return BaseClusterInvoker{
 		Directory:      directory,
 		AvailableCheck: true,
-		Destroyed:      uberatomic.NewBool(false),
+		Destroyed:      new(atomic.Bool),
 	}
 }
 
@@ -96,7 +94,7 @@ func (invoker *BaseClusterInvoker) setStickyInvoker(v base.Invoker) {
 func (invoker *BaseClusterInvoker) CheckInvokers(invokers []base.Invoker, invocation base.Invocation) error {
 	if len(invokers) == 0 {
 		ip := common.GetLocalIp()
-		return perrors.Errorf("Failed to invoke the method %v. No provider available for the service %v from "+
+		return fmt.Errorf("Failed to invoke the method %v. No provider available for the service %v from "+
 			"registry %v on the consumer %v using the dubbo version %v .Please check if the providers have been started and registered.",
 			invocation.MethodName(), invoker.Directory.GetURL().SubURL.Key(), invoker.Directory.GetURL().String(), ip, constant.Version)
 	}
@@ -107,7 +105,7 @@ func (invoker *BaseClusterInvoker) CheckInvokers(invokers []base.Invoker, invoca
 func (invoker *BaseClusterInvoker) CheckWhetherDestroyed() error {
 	if invoker.Destroyed.Load() {
 		ip := common.GetLocalIp()
-		return perrors.Errorf("Rpc cluster invoker for %v on consumer %v use dubbo version %v is now destroyed! can not invoke any more. ",
+		return fmt.Errorf("Rpc cluster invoker for %v on consumer %v use dubbo version %v is now destroyed! can not invoke any more. ",
 			invoker.Directory.GetURL().Service(), ip, constant.Version)
 	}
 	return nil

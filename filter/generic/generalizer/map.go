@@ -18,6 +18,7 @@
 package generalizer
 
 import (
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -31,8 +32,6 @@ import (
 	"github.com/dubbogo/gost/log/logger"
 
 	"github.com/mitchellh/mapstructure"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -73,12 +72,12 @@ func (g *MapGeneralizer) Realize(obj any, typ reflect.Type) (any, error) {
 		TagName: "m",
 	})
 	if err != nil {
-		return nil, perrors.Errorf("creating map decoder failed, %v", err)
+		return nil, fmt.Errorf("creating map decoder failed, %v", err)
 	}
 
 	err = decoder.Decode(obj)
 	if err != nil {
-		return nil, perrors.Errorf("realizing map failed, %v", err)
+		return nil, fmt.Errorf("realizing map failed, %v", err)
 	}
 
 	return reflect.ValueOf(newobj).Elem().Interface(), nil

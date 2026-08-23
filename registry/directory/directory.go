@@ -28,8 +28,6 @@ import (
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -147,7 +145,7 @@ func registriesFromAttribute(url *common.URL) (map[string]*global.RegistryConfig
 // NewRegistryDirectory will create a new RegistryDirectory
 func NewRegistryDirectory(url *common.URL, registry registry.Registry) (directory.Directory, error) {
 	if url.SubURL == nil {
-		return nil, perrors.Errorf("url is invalid, suburl can not be nil")
+		return nil, fmt.Errorf("url is invalid, suburl can not be nil")
 	}
 	logger.Debugf("[Registry][Directory] new RegistryDirectory for service=%s", url.Key())
 

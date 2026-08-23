@@ -19,6 +19,7 @@ package common
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -26,9 +27,6 @@ import (
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-	gxnet "github.com/dubbogo/gost/net"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -44,8 +42,51 @@ func GetLocalIp() string {
 	if len(localIp) != 0 {
 		return localIp
 	}
-	localIp, _ = gxnet.GetLocalIP()
+	localIp, _ = getLocalIP()
 	return localIp
+}
+
+func getLocalIP() (string, error) {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return "", err
+	}
+	var localIP net.IP
+	for _, iface := range interfaces {
+		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 || strings.Contains(strings.ToLower(iface.Name), "docker") {
+			continue
+		}
+		addrs, err := iface.Addrs()
+		if err != nil {
+			return "", err
+		}
+		for _, addr := range addrs {
+			ipNet, ok := addr.(*net.IPNet)
+			if !ok || ipNet.IP.IsLoopback() {
+				continue
+			}
+			ip := ipNet.IP.To4()
+			if ip == nil {
+				continue
+			}
+			localIP = ip
+			if ip.IsPrivate() {
+				return ip.String(), nil
+			}
+		}
+	}
+	if localIP == nil {
+		return "", fmt.Errorf("can not get local IP")
+	}
+	return localIP.String(), nil
+}
+
+func ListenOnTCPRandomPort(ip string) (*net.TCPListener, error) {
+	addr := &net.TCPAddr{IP: net.IPv4zero}
+	if ip != "" {
+		addr.IP = net.ParseIP(ip)
+	}
+	return net.ListenTCP("tcp4", addr)
 }
 
 func GetLocalHostName() string {
@@ -111,13 +152,13 @@ func IsMatchGlobPattern(pattern, value string) bool {
 }
 
 func GetRandomPort(ip string) string {
-	tcp, err := gxnet.ListenOnTCPRandomPort(ip)
+	tcp, err := ListenOnTCPRandomPort(ip)
 	if err != nil {
-		panic(perrors.New(fmt.Sprintf("Get tcp port error, err is {%v}", err)))
+		panic(fmt.Errorf("Get tcp port error, err is {%v}", err))
 	}
 	err = tcp.Close()
 	if err != nil {
-		panic(perrors.New(fmt.Sprintf("Close tcp port error, err is {%v}", err)))
+		panic(fmt.Errorf("Close tcp port error, err is {%v}", err))
 	}
 	return strings.Split(tcp.Addr().String(), ":")[1]
 }

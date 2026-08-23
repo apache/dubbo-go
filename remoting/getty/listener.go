@@ -18,6 +18,7 @@
 package getty
 
 import (
+	"errors"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -29,8 +30,6 @@ import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 
 	"github.com/dubbogo/gost/log/logger"
-	gxtime "github.com/dubbogo/gost/time"
-
 	perrors "github.com/pkg/errors"
 )
 
@@ -45,8 +44,8 @@ const (
 )
 
 var (
-	errTooManySessions      = perrors.New("too many sessions")
-	errHeartbeatReadTimeout = perrors.New("heartbeat read timeout")
+	errTooManySessions      = errors.New("too many sessions")
+	errHeartbeatReadTimeout = errors.New("heartbeat read timeout")
 )
 
 type rpcSession struct {
@@ -352,7 +351,7 @@ func heartbeat(session getty.Session, timeout time.Duration, callBack func(err e
 	go func() {
 		var err1 error
 		select {
-		case <-gxtime.After(timeout):
+		case <-time.After(timeout):
 			err1 = errHeartbeatReadTimeout
 			remoting.RemovePendingResponse(remoting.SequenceType(req.ID))
 		case <-resp.Done:

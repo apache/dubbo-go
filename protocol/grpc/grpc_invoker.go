@@ -19,6 +19,7 @@ package grpc
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"sync"
@@ -26,8 +27,6 @@ import (
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-
-	"github.com/pkg/errors"
 
 	"google.golang.org/grpc/connectivity"
 
@@ -125,7 +124,7 @@ func (gi *GrpcInvoker) Invoke(ctx context.Context, invocation base.Invocation) r
 		result.SetError(res[1].Interface().(error))
 	} else if invocation.Reply() != nil {
 		if err := hessian2.ReflectResponse(res[0], invocation.Reply()); err != nil {
-			result.SetError(errors.WithStack(err))
+			result.SetError(err)
 		}
 	}
 

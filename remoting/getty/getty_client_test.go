@@ -20,6 +20,7 @@ package getty
 import (
 	"bytes"
 	"context"
+	"errors"
 	"net"
 	"reflect"
 	"sync"
@@ -31,8 +32,6 @@ import (
 	dubboGetty "github.com/apache/dubbo-getty"
 
 	hessian "github.com/apache/dubbo-go-hessian2"
-
-	perrors "github.com/pkg/errors"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -254,7 +253,7 @@ func (u *UserProvider) GetUser1() error {
 }
 
 func (u *UserProvider) GetUser2() error {
-	return perrors.New("error")
+	return errors.New("error")
 }
 
 func (u *UserProvider) GetUser3(rsp *[]any) error {

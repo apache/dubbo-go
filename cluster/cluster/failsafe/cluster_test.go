@@ -19,14 +19,13 @@ package failsafe
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 )
 
 import (
 	"github.com/golang/mock/gomock"
-
-	perrors "github.com/pkg/errors"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -96,7 +95,7 @@ func TestFailSafeInvokeFail(t *testing.T) {
 
 	invoker.EXPECT().GetURL().Return(failsafeUrl).AnyTimes()
 
-	mockResult := &result.RPCResult{Err: perrors.New("error")}
+	mockResult := &result.RPCResult{Err: errors.New("error")}
 
 	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockResult).AnyTimes()
 	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})

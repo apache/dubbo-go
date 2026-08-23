@@ -18,6 +18,7 @@
 package parser
 
 import (
+	"errors"
 	"strconv"
 	"strings"
 )
@@ -237,7 +238,7 @@ func appItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.URL, e
 // getServiceString returns service string
 func getServiceString(service string) (string, error) {
 	if len(service) == 0 {
-		return "", perrors.New("service field in configuration is null.")
+		return "", errors.New("service field in configuration is null.")
 	}
 	var serviceStr string
 	i := strings.Index(service, "/")
@@ -269,7 +270,7 @@ func getParamString(item ConfigItem) (string, error) {
 	}
 	params := item.Parameters
 	if len(params) <= 0 {
-		return "", perrors.New("Invalid configurator rule, please specify at least one parameter " +
+		return "", errors.New("Invalid configurator rule, please specify at least one parameter " +
 			"you want to change in the rule.")
 	}
 	for k, v := range params {

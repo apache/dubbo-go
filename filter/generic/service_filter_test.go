@@ -29,8 +29,6 @@ import (
 
 	"github.com/golang/mock/gomock"
 
-	perrors "github.com/pkg/errors"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -68,7 +66,7 @@ func (s *MockHelloService) HelloPB(req *generalizer.RequestType) (*generalizer.R
 			Message: "Nice to meet you",
 		}, nil
 	}
-	return nil, perrors.Errorf("people not found")
+	return nil, fmt.Errorf("people not found")
 }
 
 func (s *MockHelloService) HelloVariadic(prefix string, names ...string) (string, error) {

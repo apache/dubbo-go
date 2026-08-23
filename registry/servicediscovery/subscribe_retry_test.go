@@ -19,6 +19,7 @@ package servicediscovery
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -27,8 +28,6 @@ import (
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
-
-	perrors "github.com/pkg/errors"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -76,7 +75,7 @@ func (m *retrySubscribeDiscovery) AddListener(registry.ServiceInstancesChangedLi
 		<-m.blockRelease
 	}
 	if m.fail.Load() {
-		return perrors.New("transient subscribe failure")
+		return errors.New("transient subscribe failure")
 	}
 	return nil
 }

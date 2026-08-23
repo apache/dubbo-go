@@ -36,7 +36,6 @@ import (
 	"github.com/dubbogo/gost/log/logger"
 
 	"github.com/opentracing/opentracing-go"
-
 	perrors "github.com/pkg/errors"
 )
 
@@ -200,7 +199,7 @@ func (c *HTTPClient) Do(addr, path string, httpHeader http.Header, body []byte) 
 	}
 
 	if httpRsp.StatusCode != http.StatusOK {
-		return nil, perrors.New(fmt.Sprintf("http status:%q, error string:%q", httpRsp.Status, string(b)))
+		return nil, fmt.Errorf("http status:%q, error string:%q", httpRsp.Status, string(b))
 	}
 
 	return b, nil

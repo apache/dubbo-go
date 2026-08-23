@@ -24,7 +24,6 @@ import (
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
-	gxpage "github.com/dubbogo/gost/hash/page"
 	"github.com/dubbogo/gost/log/logger"
 
 	perrors "github.com/pkg/errors"
@@ -68,10 +67,6 @@ func newPolarisServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, err
 	consumerApi, err := polaris.GetConsumerAPI()
 	if err != nil {
 		return nil, err
-	}
-
-	if err != nil {
-		return nil, perrors.WithMessage(err, "create polaris namingClient failed.")
 	}
 
 	descriptor := fmt.Sprintf("polaris-service-discovery[%s]", discoveryURL.Location)
@@ -121,7 +116,7 @@ func (polaris *polarisServiceDiscovery) Register(instance registry.ServiceInstan
 	ins := convertToRegisterInstance(polaris.namespace, instance)
 	resp, err := polaris.provider.RegisterInstance(ins)
 	if err != nil {
-		return perrors.WithMessage(err, "could not register the instance. "+instance.GetServiceName())
+		return fmt.Errorf("could not register the instance. "+instance.GetServiceName()+": %w", err)
 	}
 
 	if resp.Existed {
@@ -162,7 +157,7 @@ func (polaris *polarisServiceDiscovery) Unregister(instance registry.ServiceInst
 
 	err := polaris.provider.Deregister(convertToDeregisterInstance(polaris.namespace, instance))
 	if err != nil {
-		return perrors.WithMessage(err, "Could not unregister the instance. "+instance.GetServiceName())
+		return fmt.Errorf("Could not unregister the instance. "+instance.GetServiceName()+": %w", err)
 	}
 
 	polaris.services.Remove(instance.GetServiceName())
@@ -208,19 +203,19 @@ func (polaris *polarisServiceDiscovery) GetInstances(serviceName string) []regis
 
 // GetInstancesByPage will return a page containing instances of ServiceInstance with the serviceName
 // the page will start at offset
-func (polaris *polarisServiceDiscovery) GetInstancesByPage(serviceName string, offset int, pageSize int) gxpage.Pager {
+func (polaris *polarisServiceDiscovery) GetInstancesByPage(serviceName string, offset int, pageSize int) registry.Pager {
 	all := polaris.GetInstances(serviceName)
 	res := make([]any, 0, pageSize)
 	for i := offset; i < len(all) && i < offset+pageSize; i++ {
 		res = append(res, all[i])
 	}
-	return gxpage.NewPage(offset, pageSize, res, len(all))
+	return registry.NewPage(offset, pageSize, res, len(all))
 }
 
 // GetHealthyInstancesByPage will return a page containing instances of ServiceInstance.
 // The param healthy indices that the instance should be healthy or not.
 // The page will start at offset
-func (polaris *polarisServiceDiscovery) GetHealthyInstancesByPage(serviceName string, offset int, pageSize int, healthy bool) gxpage.Pager {
+func (polaris *polarisServiceDiscovery) GetHealthyInstancesByPage(serviceName string, offset int, pageSize int, healthy bool) registry.Pager {
 	all := polaris.GetInstances(serviceName)
 	res := make([]any, 0, pageSize)
 	// could not use res = all[a:b] here because the res should be []any, not []ServiceInstance
@@ -236,12 +231,12 @@ func (polaris *polarisServiceDiscovery) GetHealthyInstancesByPage(serviceName st
 		}
 		i++
 	}
-	return gxpage.NewPage(offset, pageSize, res, len(all))
+	return registry.NewPage(offset, pageSize, res, len(all))
 }
 
 // GetRequestInstances get all instances by the specified service names
-func (polaris *polarisServiceDiscovery) GetRequestInstances(serviceNames []string, offset int, requestedSize int) map[string]gxpage.Pager {
-	res := make(map[string]gxpage.Pager, len(serviceNames))
+func (polaris *polarisServiceDiscovery) GetRequestInstances(serviceNames []string, offset int, requestedSize int) map[string]registry.Pager {
+	res := make(map[string]registry.Pager, len(serviceNames))
 	for _, name := range serviceNames {
 		res[name] = polaris.GetInstancesByPage(name, offset, requestedSize)
 	}

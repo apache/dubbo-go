@@ -19,6 +19,7 @@ package servicediscovery
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -27,8 +28,6 @@ import (
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
-
-	perrors "github.com/pkg/errors"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -100,7 +99,7 @@ func TestSubscribeURLDiscardedWhenDestroyRacesInitialLoad(t *testing.T) {
 		fetchCalls.Add(1)
 		enteredOnce.Do(func() { close(entered) })
 		<-release
-		return nil, perrors.New("metadata unreachable")
+		return nil, errors.New("metadata unreachable")
 	})
 
 	sd := &destroyRaceDiscovery{

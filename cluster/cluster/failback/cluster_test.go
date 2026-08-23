@@ -19,6 +19,7 @@ package failback
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -28,8 +29,6 @@ import (
 
 import (
 	"github.com/golang/mock/gomock"
-
-	perrors "github.com/pkg/errors"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -126,7 +125,7 @@ func TestFailbackRetryUsesIndependentContext(t *testing.T) {
 	invoker.EXPECT().GetURL().Return(failbackUrl).AnyTimes()
 	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 
-	failedResult := &result.RPCResult{Err: perrors.New("error")}
+	failedResult := &result.RPCResult{Err: errors.New("error")}
 	successResult := &result.RPCResult{Rest: clusterpkg.Rest{Tried: 0, Success: true}}
 	retryStarted := make(chan struct{})
 	retryContextErr := make(chan error, 1)
@@ -171,7 +170,7 @@ func TestFailbackDestroyCancelsRetry(t *testing.T) {
 	invoker.EXPECT().GetURL().Return(failbackUrl).AnyTimes()
 	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 
-	failedResult := &result.RPCResult{Err: perrors.New("error")}
+	failedResult := &result.RPCResult{Err: errors.New("error")}
 	retryStarted := make(chan struct{})
 	retryReturned := make(chan struct{})
 	var callCount atomic.Int32
@@ -228,7 +227,7 @@ func TestFailbackDestroyHasBoundedRetryWait(t *testing.T) {
 	invoker.EXPECT().GetURL().Return(failbackUrl).AnyTimes()
 	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 
-	failedResult := &result.RPCResult{Err: perrors.New("error")}
+	failedResult := &result.RPCResult{Err: errors.New("error")}
 	retryStarted := make(chan struct{})
 	retryReturned := make(chan struct{})
 	releaseRetry := make(chan struct{})
@@ -322,7 +321,7 @@ func TestFailbackDoesNotEnqueueAfterDestroy(t *testing.T) {
 	invoker.EXPECT().GetURL().Return(failbackUrl).AnyTimes()
 	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(
-		&result.RPCResult{Err: perrors.New("error")},
+		&result.RPCResult{Err: errors.New("error")},
 	)
 
 	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
@@ -349,7 +348,7 @@ func TestFailbackRetryOneSuccess(t *testing.T) {
 	invoker.EXPECT().IsAvailable().Return(true)
 
 	// failed at first
-	mockFailedResult := &result.RPCResult{Err: perrors.New("error")}
+	mockFailedResult := &result.RPCResult{Err: errors.New("error")}
 	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockFailedResult)
 
 	// success second
@@ -394,7 +393,7 @@ func TestFailbackRetryFailed(t *testing.T) {
 	invoker.EXPECT().GetURL().Return(failbackUrl).AnyTimes()
 	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 
-	mockFailedResult := &result.RPCResult{Err: perrors.New("error")}
+	mockFailedResult := &result.RPCResult{Err: errors.New("error")}
 	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockFailedResult)
 
 	// Use atomic counter to safely track retries across goroutines.
@@ -444,7 +443,7 @@ func TestFailbackRetryFailed10Times(t *testing.T) {
 	invoker.EXPECT().GetURL().Return(failbackUrl).AnyTimes()
 
 	// 10 task should failed firstly.
-	mockFailedResult := &result.RPCResult{Err: perrors.New("error")}
+	mockFailedResult := &result.RPCResult{Err: errors.New("error")}
 	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockFailedResult).Times(10)
 
 	// 10 task should retry and failed.
@@ -490,7 +489,7 @@ func TestFailbackOutOfLimit(t *testing.T) {
 	invoker.EXPECT().GetURL().Return(failbackUrl).AnyTimes()
 	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 
-	mockFailedResult := &result.RPCResult{Err: perrors.New("error")}
+	mockFailedResult := &result.RPCResult{Err: errors.New("error")}
 	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockFailedResult).Times(11)
 
 	// reached limit

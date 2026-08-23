@@ -20,12 +20,9 @@
 package hessian2
 
 import (
+	"errors"
 	"reflect"
 	"regexp"
-)
-
-import (
-	perrors "github.com/pkg/errors"
 )
 
 const (
@@ -222,10 +219,10 @@ var (
 
 // Error part
 var (
-	ErrHeaderNotEnough = perrors.New("header buffer too short")
-	ErrBodyNotEnough   = perrors.New("body buffer too short")
-	ErrJavaException   = perrors.New("got java exception")
-	ErrIllegalPackage  = perrors.New("illegal package!")
+	ErrHeaderNotEnough = errors.New("header buffer too short")
+	ErrBodyNotEnough   = errors.New("body buffer too short")
+	ErrJavaException   = errors.New("got java exception")
+	ErrIllegalPackage  = errors.New("illegal package!")
 )
 
 // DescRegex is the precompiled regexp for method descriptor patterns.

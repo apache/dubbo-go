@@ -19,14 +19,13 @@ package proxy
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"testing"
 )
 
 import (
-	perrors "github.com/pkg/errors"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -91,7 +90,7 @@ func TestProxyImplement(t *testing.T) {
 		methodOne func(context.Context, any, *struct{}) error
 	}
 	s1 := &S1{TestService: *s, methodOne: func(_ context.Context, _ any, _ *struct{}) error {
-		return perrors.New("errors")
+		return errors.New("errors")
 	}}
 	p.Implement(s1)
 	err = s1.MethodOne(nil, 0, false, nil)

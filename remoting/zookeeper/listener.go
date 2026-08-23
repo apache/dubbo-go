@@ -18,11 +18,13 @@
 package zookeeper
 
 import (
+	"errors"
 	"net/url"
 	"path"
 	"slices"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -33,8 +35,6 @@ import (
 	"github.com/go-zookeeper/zk"
 
 	perrors "github.com/pkg/errors"
-
-	uatomic "go.uber.org/atomic"
 )
 
 import (
@@ -51,7 +51,7 @@ var (
 type ZkEventListener struct {
 	Client      *gxzookeeper.ZookeeperClient
 	pathMapLock sync.Mutex
-	pathMap     map[string]*uatomic.Int32
+	pathMap     map[string]*atomic.Int32
 	wg          sync.WaitGroup
 	exit        chan struct{}
 }
@@ -60,7 +60,7 @@ type ZkEventListener struct {
 func NewZkEventListener(client *gxzookeeper.ZookeeperClient) *ZkEventListener {
 	return &ZkEventListener{
 		Client:  client,
-		pathMap: make(map[string]*uatomic.Int32),
+		pathMap: make(map[string]*atomic.Int32),
 		exit:    make(chan struct{}),
 	}
 }
@@ -139,9 +139,9 @@ func (l *ZkEventListener) listenServiceNodeEvent(zkPath string, listener ...remo
 		l.pathMapLock.Unlock()
 		return false
 	}
-	a.Inc()
+	a.Add(1)
 	l.pathMapLock.Unlock()
-	defer a.Dec()
+	defer a.Add(-1)
 	var zkEvent zk.Event
 	for {
 		keyEventCh, err := l.Client.ExistW(zkPath)
@@ -289,7 +289,7 @@ func (l *ZkEventListener) listenAllDirEvents(conf *common.URL, listener remoting
 				l.pathMapLock.Unlock()
 				continue
 			} else {
-				l.pathMap[zkRootPath] = uatomic.NewInt32(0)
+				l.pathMap[zkRootPath] = new(atomic.Int32)
 			}
 			l.pathMapLock.Unlock()
 			logger.Debugf("[Remoting][Zookeeper] listen dubbo interface key{%s}", zkRootPath)
@@ -343,7 +343,7 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, li
 				failTimes = MaxFailTimes
 			}
 
-			if !perrors.Is(err, zk.ErrNoNode) { // ignore if node not exist
+			if !errors.Is(err, zk.ErrNoNode) { // ignore if node not exist
 				logger.Errorf("[Remoting][Zookeeper] get children of path {%s} with watcher failed, err=%v", zkRootPath, err)
 			}
 			// Maybe the provider does not ready yet, sleep failTimes * ConnDelay senconds to wait
@@ -373,7 +373,7 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, li
 			l.pathMapLock.Lock()
 			_, ok := l.pathMap[zkNodePath]
 			if !ok {
-				l.pathMap[zkNodePath] = uatomic.NewInt32(0)
+				l.pathMap[zkNodePath] = new(atomic.Int32)
 			}
 			l.pathMapLock.Unlock()
 			if ok {
@@ -401,7 +401,7 @@ func (l *ZkEventListener) listenDirEvent(conf *common.URL, zkRootPath string, li
 			l.Client.RUnlock()
 			if err != nil {
 				logger.Errorf("[Remoting][Zookeeper] get content of the child node {%v} failed, err=%v", zkNodePath, perrors.WithStack(err))
-			}
+				}
 			logger.Debugf("[Remoting][Zookeeper] get children!{%s}", zkNodePath)
 			if !listener.DataChange(remoting.Event{Path: zkNodePath, Action: remoting.EventTypeAdd, Content: string(content)}) {
 				continue

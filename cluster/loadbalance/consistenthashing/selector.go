@@ -20,13 +20,10 @@ package consistenthashing
 import (
 	"crypto/md5"
 	"fmt"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
-)
-
-import (
-	gxsort "github.com/dubbogo/gost/sort"
 )
 
 import (
@@ -38,7 +35,7 @@ type selector struct {
 	hashCode        uint32
 	replicaNum      int
 	virtualInvokers map[uint32]base.Invoker
-	keys            gxsort.Uint32Slice
+	keys            []uint32
 	argumentIndex   []int
 }
 
@@ -70,7 +67,7 @@ func newSelector(invokers []base.Invoker, methodName string,
 			}
 		}
 	}
-	sort.Sort(selector.keys)
+	slices.Sort(selector.keys)
 	return selector
 }
 

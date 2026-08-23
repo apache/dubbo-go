@@ -29,8 +29,6 @@ import (
 	"github.com/dubbogo/gost/log/logger"
 	gxsync "github.com/dubbogo/gost/sync"
 
-	perrors "github.com/pkg/errors"
-
 	"go.yaml.in/yaml/v4"
 )
 
@@ -182,7 +180,7 @@ func (s *Server) newSession(session getty.Session) error {
 
 	if _, ok = session.Conn().(*tls.Conn); !ok {
 		if tcpConn, ok = session.Conn().(*net.TCPConn); !ok {
-			return perrors.New(fmt.Sprintf("%s, session.conn{%#v} is not tcp connection", session.Stat(), session.Conn()))
+			return fmt.Errorf("%s, session.conn{%#v} is not tcp connection", session.Stat(), session.Conn())
 		}
 
 		if err = tcpConn.SetNoDelay(conf.GettySessionParam.TcpNoDelay); err != nil {
