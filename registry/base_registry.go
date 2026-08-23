@@ -135,7 +135,7 @@ func (r *BaseRegistry) Register(url *common.URL) error {
 	start := time.Now()
 	// todo bug when provider、consumer simultaneous initialization
 	if _, ok := r.registered.Load(url.Key()); ok {
-		return fmt.Errorf("Service {%s} has been registered", url.Key())
+		return fmt.Errorf("service {%s} has been registered", url.Key())
 	}
 
 	err := r.register(url)
@@ -153,7 +153,7 @@ func (r *BaseRegistry) Register(url *common.URL) error {
 // UnRegister implement interface registry to unregister
 func (r *BaseRegistry) UnRegister(url *common.URL) error {
 	if _, ok := r.registered.Load(url.Key()); !ok {
-		return fmt.Errorf("Service {%s} has not registered", url.Key())
+		return fmt.Errorf("service {%s} has not registered", url.Key())
 	}
 	err := r.unregister(url)
 	metrics.Publish(metricsRegistry.NewSubscribeEvent(err == nil))
@@ -386,7 +386,7 @@ func (r *BaseRegistry) waitRetryDelay() error {
 func (r *BaseRegistry) UnSubscribe(url *common.URL, notifyListener NotifyListener) error {
 	if !r.IsAvailable() {
 		logger.Warn("[Registry] event listener game over")
-		return errors.New("BaseRegistry is not available.")
+		return errors.New("BaseRegistry is not available")
 	}
 
 	listener, err := r.facadeBasedRegistry.DoUnsubscribe(url)

@@ -44,7 +44,7 @@ func GetServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error) {
 	protocol := url.GetParam(constant.RegistryKey, "")
 	creator, ok := discoveryCreatorMap.Get(protocol)
 	if !ok {
-		return nil, errors.New("Could not find the service discovery with discovery protocol: " + protocol)
+		return nil, errors.New("could not find the service discovery with discovery protocol: " + protocol)
 	}
 	return creator(url)
 }

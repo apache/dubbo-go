@@ -92,8 +92,8 @@ func (g *BeanGeneralizer) Realize(obj any, typ reflect.Type) (any, error) {
 
 func (g *BeanGeneralizer) GetType(obj any) (typ string, err error) {
 	typ, err = hessian2.GetJavaName(obj)
-	// no error or error is not NilError
-	if err == nil || err != hessian2.NilError {
+	// no error or error is not ErrNilError
+	if err == nil || err != hessian2.ErrNilError {
 		return
 	}
 

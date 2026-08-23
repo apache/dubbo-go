@@ -88,13 +88,13 @@ func (GsonGeneralizer) Realize(obj any, typ reflect.Type) (any, error) {
 
 func (GsonGeneralizer) GetType(obj any) (typ string, err error) {
 	typ, err = hessian2.GetJavaName(obj)
-	// no error or error is not NilError
-	if err == nil || err != hessian2.NilError {
+	// no error or error is not ErrNilError
+	if err == nil || err != hessian2.ErrNilError {
 		return
 	}
 
 	typ = "java.lang.Object"
-	if err == hessian2.NilError {
+	if err == hessian2.ErrNilError {
 		logger.Debugf("[Filter][Generic] the type of nil object couldn't be inferred, use the default value, type=%s", typ)
 		return
 	}

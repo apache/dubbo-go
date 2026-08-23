@@ -154,11 +154,11 @@ func IsMatchGlobPattern(pattern, value string) bool {
 func GetRandomPort(ip string) string {
 	tcp, err := ListenOnTCPRandomPort(ip)
 	if err != nil {
-		panic(fmt.Errorf("Get tcp port error, err is {%v}", err))
+		panic(fmt.Errorf("get tcp port error, err is {%v}", err))
 	}
 	err = tcp.Close()
 	if err != nil {
-		panic(fmt.Errorf("Close tcp port error, err is {%v}", err))
+		panic(fmt.Errorf("close tcp port error, err is {%v}", err))
 	}
 	return strings.Split(tcp.Addr().String(), ":")[1]
 }

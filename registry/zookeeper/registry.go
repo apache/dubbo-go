@@ -138,7 +138,7 @@ func (r *zkRegistry) DoUnregister(root string, node string) error {
 	r.cltLock.Lock()
 	defer r.cltLock.Unlock()
 	if !r.ZkClient().ZkConnValid() {
-		return fmt.Errorf("zk client is not valid.")
+		return fmt.Errorf("zk client is not valid")
 	}
 	return r.ZkClient().Delete(path.Join(root, node))
 }
@@ -293,7 +293,7 @@ func (r *zkRegistry) getCloseListener(conf *common.URL) (*RegistryConfigurationL
 	r.dataListener.mutex.Unlock()
 
 	if r.listener == nil {
-		return nil, errors.New("Zookeeper event listener is null, can not close.")
+		return nil, errors.New("zookeeper event listener is null, can not close")
 	}
 
 	return zkListener, nil

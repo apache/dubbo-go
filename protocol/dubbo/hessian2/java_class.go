@@ -29,15 +29,15 @@ import (
 )
 
 var (
-	NilError            = fmt.Errorf("object should not be nil")
-	UnexpectedTypeError = fmt.Errorf("object should be a POJO")
-	notBasicClassError  = fmt.Errorf("object isn't a basic class")
+	ErrNilError            = fmt.Errorf("object should not be nil")
+	ErrUnexpectedTypeError = fmt.Errorf("object should be a POJO")
+	errNotBasicClassError  = fmt.Errorf("object isn't a basic class")
 )
 
 // GetJavaName returns java name of an object
 func GetJavaName(obj any) (string, error) {
 	if obj == nil {
-		return "", NilError
+		return "", ErrNilError
 	}
 
 	t := reflect.TypeOf(obj)
@@ -71,7 +71,7 @@ func GetJavaName(obj any) (string, error) {
 	default:
 		pojo, ok := obj.(hessian.POJO)
 		if !ok {
-			return "", UnexpectedTypeError
+			return "", ErrUnexpectedTypeError
 		}
 		return pojo.JavaClassName(), nil
 	}
@@ -103,7 +103,7 @@ func getBasicJavaName(typ reflect.Type) (string, error) {
 		return "java.lang.String", nil
 	}
 
-	return "", notBasicClassError
+	return "", errNotBasicClassError
 }
 
 // GetClassDesc get class desc.

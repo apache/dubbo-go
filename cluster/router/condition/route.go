@@ -56,7 +56,7 @@ func NewConditionStateRouter(url *common.URL) (*StateRouter, error) {
 	once.Do(initMatcherFactories)
 
 	if len(matcherFactories) == 0 {
-		return nil, fmt.Errorf("No ConditionMatcherFactory exists")
+		return nil, fmt.Errorf("no ConditionMatcherFactory exists")
 	}
 
 	c := &StateRouter{}
@@ -115,7 +115,7 @@ func (s *StateRouter) matchThen(url *common.URL, param *common.URL) bool {
 func generateMatcher(url *common.URL) (when, then map[string]matcher.Matcher, err error) {
 	rule := url.GetParam(constant.RuleKey, "")
 	if rule == "" || len(strings.Trim(rule, " ")) == 0 {
-		return nil, nil, fmt.Errorf("Illegal route rule!")
+		return nil, nil, fmt.Errorf("illegal route rule")
 	}
 	rule = strings.ReplaceAll(rule, "consumer.", "")
 	rule = strings.ReplaceAll(rule, "provider.", "")
@@ -431,16 +431,16 @@ func NewConditionMultiDestRouter(url *common.URL) (*MultiDestRouter, error) {
 	once.Do(initMatcherFactories)
 
 	if len(matcherFactories) == 0 {
-		return nil, fmt.Errorf("No ConditionMatcherFactory exists")
+		return nil, fmt.Errorf("no ConditionMatcherFactory exists")
 	}
 
 	rawCondConf, ok := url.GetAttribute(constant.RuleKey)
 	if !ok {
-		return nil, fmt.Errorf("Condition Router can't get the rule key")
+		return nil, fmt.Errorf("condition router can't get the rule key")
 	}
 	condConf, ok := rawCondConf.(*global.ConditionRule)
 	if !ok {
-		return nil, fmt.Errorf("Condition Router get the rule key invalid , got %T", rawCondConf)
+		return nil, fmt.Errorf("condition router get the rule key invalid , got %T", rawCondConf)
 	}
 	// ensure config effective
 	if (len(condConf.To) == 0) && condConf.From.Match == "" {

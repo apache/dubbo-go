@@ -37,7 +37,7 @@ func SetServiceInstanceSelector(name string, f func() instance.ServiceInstanceSe
 func GetServiceInstanceSelector(name string) (instance.ServiceInstanceSelector, error) {
 	serviceInstanceSelector, ok := serviceInstanceSelectorMappings.Get(name)
 	if !ok {
-		return nil, errors.New("Could not find service instance selector with" +
+		return nil, errors.New("could not find service instance selector with" +
 			"name:" + name)
 	}
 	return serviceInstanceSelector(), nil

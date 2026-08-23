@@ -112,7 +112,7 @@ func (h *HessianCodec) Write(service Service, header DubboHeader, body any) ([]b
 		return packResponse(header, body)
 
 	default:
-		return nil, fmt.Errorf("Unrecognized message type: %v", header.Type)
+		return nil, fmt.Errorf("unrecognized message type: %v", header.Type)
 	}
 
 	// unreachable return nil, nil

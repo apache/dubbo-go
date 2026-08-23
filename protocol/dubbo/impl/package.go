@@ -74,7 +74,7 @@ func (p *DubboPackage) ReadHeader() error {
 
 func (p *DubboPackage) Marshal() (*bytes.Buffer, error) {
 	if p.Codec == nil {
-		return nil, errors.New("Codec is nil")
+		return nil, errors.New("codec is nil")
 	}
 	pkg, err := p.Codec.Encode(*p)
 	if err != nil {
@@ -85,7 +85,7 @@ func (p *DubboPackage) Marshal() (*bytes.Buffer, error) {
 
 func (p *DubboPackage) Unmarshal() error {
 	if p.Codec == nil {
-		return errors.New("Codec is nil")
+		return errors.New("codec is nil")
 	}
 	return p.Codec.Decode(p)
 }

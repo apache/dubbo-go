@@ -190,7 +190,7 @@ func (e *serviceExporter) exportDubbo(port string) error {
 	)
 	methods, err := common.ServiceMap.Register(ivkURL.Interface(), ivkURL.Protocol, ivkURL.Group(), ivkURL.Version(), e.service)
 	if err != nil {
-		formatErr := fmt.Errorf("The service %v needExport the protocol %v error! Error message is %v.",
+		formatErr := fmt.Errorf("the service %v needExport the protocol %v error! Error message is %v",
 			ivkURL.Interface(), ivkURL.Protocol, err.Error())
 		logger.Error("[Metadata] " + formatErr.Error())
 		return formatErr

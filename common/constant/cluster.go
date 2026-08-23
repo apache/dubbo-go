@@ -30,7 +30,7 @@ const (
 )
 
 const (
-	NonImportErrorMsgFormat = "Cluster for %s is not existing, make sure you have import the package."
+	NonImportErrorMsgFormat = "cluster for %s is not existing, make sure you have import the package"
 )
 
 const (

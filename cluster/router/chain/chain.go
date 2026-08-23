@@ -204,7 +204,7 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 
 	routerFactories := extension.GetRouterFactories()
 	if len(routerFactories) == 0 {
-		return nil, fmt.Errorf("No routerFactory exists, create one please")
+		return nil, fmt.Errorf("no routerFactory exists, create one please")
 	}
 
 	routers := make([]router.PriorityRouter, 0, len(routerFactories))

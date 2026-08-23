@@ -73,7 +73,7 @@ func (grs *GoRestfulServer) Start(url *common.URL) {
 	container.Add(grs.ws)
 	ln, err := net.Listen("tcp", url.Location)
 	if err != nil {
-		panic(fmt.Errorf("Restful Server start error:%v", err))
+		panic(fmt.Errorf("restful server start error:%v", err))
 	}
 
 	go func() {

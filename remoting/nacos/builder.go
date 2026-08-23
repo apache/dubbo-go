@@ -59,12 +59,12 @@ func NewNacosConfigClientByUrl(url *common.URL) (*nacosClient.NacosConfigClient,
 // GetNacosConfig will return the nacos config
 func GetNacosConfig(url *common.URL) ([]nacosConstant.ServerConfig, nacosConstant.ClientConfig, error) {
 	if url == nil {
-		return []nacosConstant.ServerConfig{}, nacosConstant.ClientConfig{}, errors.New("url is empty!")
+		return []nacosConstant.ServerConfig{}, nacosConstant.ClientConfig{}, errors.New("url is empty")
 	}
 
 	if len(url.Location) == 0 {
 		return []nacosConstant.ServerConfig{}, nacosConstant.ClientConfig{},
-			errors.New("url.location is empty!")
+			errors.New("url.location is empty")
 	}
 
 	var serverConfigs []nacosConstant.ServerConfig

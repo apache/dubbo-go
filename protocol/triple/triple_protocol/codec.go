@@ -701,7 +701,7 @@ func copyMap(inMapValue, outMapValue reflect.Value) error {
 		return errors.New("@in is nil")
 	}
 	if !inMapValue.CanInterface() {
-		return errors.New("@in's Interface can not be used.")
+		return errors.New("@in's Interface can not be used")
 	}
 	if inMapValue.Kind() != reflect.Map {
 		return fmt.Errorf("@in is not map, but %v", inMapValue.Kind())

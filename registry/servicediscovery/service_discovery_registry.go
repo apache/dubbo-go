@@ -85,7 +85,7 @@ type serviceDiscoveryRegistry struct {
 func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
 	serviceDiscovery, err := extension.GetServiceDiscovery(url)
 	if err != nil {
-		return nil, fmt.Errorf("Create service discovery failed: %w", err)
+		return nil, fmt.Errorf("create service discovery failed: %w", err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	return &serviceDiscoveryRegistry{
@@ -155,7 +155,7 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 	for _, instance := range instances {
 		err := s.serviceDiscovery.Register(instance)
 		if err != nil {
-			return fmt.Errorf("Register service failed: %w", err)
+			return fmt.Errorf("register service failed: %w", err)
 		}
 		s.lock.Lock()
 		s.instances = append(s.instances, instance)
@@ -314,7 +314,7 @@ func (s *serviceDiscoveryRegistry) syncExportedMetadataAfterUnregister(targetURL
 		keepInstance.SetServiceMetadata(metadataInfo)
 		keepInstance.GetMetadata()[constant.ExportedServicesRevisionPropertyName] = revision
 		if err := s.serviceDiscovery.Update(keepInstance); err != nil {
-			return fmt.Errorf("Update service failed: %w", err)
+			return fmt.Errorf("update service failed: %w", err)
 		}
 	}
 	return nil

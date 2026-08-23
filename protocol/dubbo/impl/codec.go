@@ -149,7 +149,7 @@ func (c *ProtocolCodec) Encode(p DubboPackage) ([]byte, error) {
 		return packResponse(p, c.serializer)
 
 	default:
-		return nil, fmt.Errorf("Unrecognized message type: %v", header.Type)
+		return nil, fmt.Errorf("unrecognized message type: %v", header.Type)
 	}
 }
 
@@ -181,7 +181,7 @@ func (c *ProtocolCodec) Decode(p *DubboPackage) error {
 		return nil
 	}
 	if c.serializer == nil {
-		return errors.New("Codec serializer is nil")
+		return errors.New("codec serializer is nil")
 	}
 	if p.IsResponse() {
 		p.Body = &ResponsePayload{

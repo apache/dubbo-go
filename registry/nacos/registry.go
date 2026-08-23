@@ -281,7 +281,7 @@ func (nr *nacosRegistry) subscribe(serviceName string, notifyListener registry.N
 	}
 	if !nr.IsAvailable() {
 		logger.Warn("[Registry][Nacos] event listener game over")
-		return errors.New("nacosRegistry is not available.")
+		return errors.New("nacosRegistry is not available")
 	}
 	listener := NewNacosListenerWithServiceName(serviceName, nr.URL, nr.namingClient)
 	groupName := nr.GetParam(constant.RegistryGroupKey, defaultGroup)

@@ -194,7 +194,7 @@ func (opts *ReportOptions) toUrl() (*common.URL, error) {
 		common.WithParamsValue(constant.ClientNameKey, strings.Join([]string{constant.MetadataReportPrefix, opts.Protocol, opts.Address}, "-")),
 	)
 	if err != nil || len(res.Protocol) == 0 {
-		return nil, errors.New("Invalid MetadataReport Config.")
+		return nil, errors.New("invalid MetadataReport Config")
 	}
 	res.SetParam("metadata", res.Protocol)
 	for key, val := range opts.Params {

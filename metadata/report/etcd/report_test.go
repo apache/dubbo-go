@@ -19,7 +19,6 @@ package etcd
 
 import (
 	"encoding/json"
-	"errors"
 	"strings"
 	"testing"
 )
@@ -154,7 +153,7 @@ func TestPublishAndGetAppMetadata(t *testing.T) {
 	// Get non-existent returns error
 	_, err = r.GetAppMetadata("my-app", "nonexistent")
 	require.Error(t, err)
-	assert.True(t, errors.Is(err, gxetcd.ErrKVPairNotFound))
+	assert.ErrorIs(t, err, gxetcd.ErrKVPairNotFound)
 }
 
 func TestPublishAppMetadata_Update(t *testing.T) {
