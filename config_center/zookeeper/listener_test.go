@@ -92,21 +92,8 @@ func TestCacheListenerIgnoresEventAcrossReset(t *testing.T) {
 	l := &CacheListener{rootPath: "/dubbo/config", cache: &cache}
 	path := "/dubbo/config/group/app"
 	cache.setWatch(path, configWatchState{registered: true, auto: true, sessionID: 1})
-	pathLock := cache.pathLock(path)
-	pathLock.Lock()
-	watchStateDone := make(chan struct{})
-	go func() {
-		l.WatchStateChanged(path)
-		close(watchStateDone)
-	}()
-	require.Eventually(t, func() bool {
-		_, ok := l.eventGeneration.Load(path)
-		return ok
-	}, time.Second, time.Millisecond)
-
+	require.True(t, l.WatchStateChanged(path))
 	cache.reset(2)
-	pathLock.Unlock()
-	<-watchStateDone
 	l.WatchRegistered(path, make(chan zk.Event, 1), 1, 1)
 	l.DataChange(remoting.Event{Path: path, Action: remoting.EventTypeUpdate, Content: "old"})
 
@@ -138,6 +125,27 @@ func TestAddListenerPromotesAutoWatch(t *testing.T) {
 	listeners, ok := l.keyListeners.Load(path)
 	require.True(t, ok)
 	_, ok = listeners.(map[config_center.ConfigurationListener]struct{})[rec]
+	require.True(t, ok)
+}
+
+func TestAddListenerReactivatesRetiredWatch(t *testing.T) {
+	cache := newConfigCache(time.Minute)
+	path := "/dubbo/config/group/app"
+	cache.setWatch(path, configWatchState{
+		registered: true,
+		retired:    true,
+		sessionID:  1,
+	})
+	l := &CacheListener{cache: &cache}
+	rec := &recListener{}
+
+	l.AddListener(path, rec)
+
+	_, watchState := cache.snapshot(path)
+	require.True(t, watchState.registered)
+	require.False(t, watchState.retired)
+	require.False(t, watchState.auto)
+	_, ok := l.keyListeners.Load(path)
 	require.True(t, ok)
 }
 
@@ -221,10 +229,7 @@ func TestCacheListenerRemoveListener(t *testing.T) {
 	require.Equal(t, 1, cache.autoWatchCount)
 }
 
-func TestCacheListenerRemoveListenerDropsWatchAtAutoLimit(t *testing.T) {
-	client, _ := newZookeeperTestClient(t, "remove-listener-watch-limit")
-	root := newTestRoot(t, client)
-
+func TestCacheListenerRemoveListenerRetiresWatchAtAutoLimit(t *testing.T) {
 	cache := newConfigCache(time.Minute)
 	for i := range maxAutoWatches {
 		require.True(t, cache.setWatch(fmt.Sprintf("/auto/%d", i), configWatchState{
@@ -233,16 +238,12 @@ func TestCacheListenerRemoveListenerDropsWatchAtAutoLimit(t *testing.T) {
 			sessionID:  1,
 		}))
 	}
-	path := root + "/group/app"
-	_, _, _, err := client.Conn.ExistsW(path)
-	require.NoError(t, err)
+	path := "/dubbo/config/group/app"
 	require.True(t, cache.setWatch(path, configWatchState{
 		registered: true,
-		sessionID:  client.Conn.SessionID(),
+		sessionID:  1,
 	}))
-	zkListener := remotingzookeeper.NewZkEventListener(client)
-	defer zkListener.Close()
-	l := newCacheListener(root, zkListener, &cache)
+	l := newCacheListener("/dubbo/config", nil, &cache)
 	rec := &recListener{}
 	l.keyListeners.Store(path, map[config_center.ConfigurationListener]struct{}{rec: {}})
 

@@ -350,22 +350,6 @@ func (c *configCache) ensureBusinessWatch(
 	}
 }
 
-func (c *configCache) promoteWatch(path string) {
-	pathLock := c.pathLock(path)
-	pathLock.Lock()
-	defer pathLock.Unlock()
-
-	c.stateLock.Lock()
-	defer c.stateLock.Unlock()
-	watchState, ok := c.watches[path]
-	if !ok {
-		return
-	}
-	watchState.auto = false
-	watchState.retired = false
-	c.setWatchStateLocked(path, watchState)
-}
-
 func (c *configCache) releaseBusinessWatch(path string) {
 	pathLock := c.pathLock(path)
 	pathLock.Lock()
