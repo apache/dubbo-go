@@ -152,8 +152,29 @@ func (l *CacheListener) WatchStateChangeFailed(path string) {
 	if l.cache == nil {
 		return
 	}
-	if _, ok := l.eventGeneration.LoadAndDelete(path); ok {
-		l.cache.cancelWatchRenewal(path)
+	state, ok := l.eventGeneration.LoadAndDelete(path)
+	if !ok {
+		return
+	}
+	l.cache.cancelWatchRenewal(path)
+	if !l.hasListeners(path) || l.zkEventListener == nil ||
+		l.zkEventListener.Client == nil || l.zkEventListener.Client.Conn == nil {
+		return
+	}
+
+	eventState := state.(watchEventState)
+	conn := l.zkEventListener.Client.Conn
+	if conn.State() != zk.StateHasSession || conn.SessionID() == eventState.sessionID {
+		return
+	}
+	if err := l.cache.ensureBusinessWatch(path, func() (watchRegistration, error) {
+		return l.registerWatcher(path)
+	}); err != nil {
+		logger.Warnf("[ConfigCenter][Zookeeper] retry configuration watcher failed, path=%s err=%v", path, err)
+		return
+	}
+	if !l.hasListeners(path) {
+		l.cache.releaseBusinessWatch(path)
 	}
 }
 

@@ -301,6 +301,47 @@ func TestConfigCacheKeepsInFlightWatchInSameSession(t *testing.T) {
 	require.Equal(t, int64(1), watchState.sessionID)
 }
 
+func TestConfigCacheResetPreservesOnlyCurrentSessionWatches(t *testing.T) {
+	cache := newConfigCache(time.Minute)
+	cache.store("/entry", configCacheEntry{content: "value", exists: true})
+	require.True(t, cache.setWatch("/active", configWatchState{
+		registered: true,
+		auto:       true,
+		sessionID:  2,
+	}))
+	require.True(t, cache.setWatch("/retired", configWatchState{
+		registered: true,
+		retired:    true,
+		sessionID:  2,
+	}))
+	require.True(t, cache.setWatch("/stale", configWatchState{
+		registered: true,
+		auto:       true,
+		sessionID:  1,
+	}))
+	require.True(t, cache.setWatch("/pending", configWatchState{
+		pending:   true,
+		auto:      true,
+		sessionID: 1,
+	}))
+
+	cache.reset(2)
+
+	_, ok := cache.getFresh("/entry")
+	require.False(t, ok)
+	_, active := cache.snapshot("/active")
+	require.True(t, active.registered)
+	_, retired := cache.snapshot("/retired")
+	require.True(t, retired.registered)
+	require.True(t, retired.retired)
+	_, stale := cache.snapshot("/stale")
+	require.False(t, stale.tracked())
+	_, pending := cache.snapshot("/pending")
+	require.True(t, pending.pending)
+	require.Equal(t, 1, cache.autoWatchCount)
+	require.Equal(t, 1, cache.autoWatchReservations)
+}
+
 func TestWatchRegistrationResolveAcrossSession(t *testing.T) {
 	t.Run("current session watch remains active", func(t *testing.T) {
 		registration := watchRegistration{

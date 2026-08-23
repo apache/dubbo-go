@@ -508,7 +508,12 @@ func TestRestartCallBackRestoresBusinessListenerWhenCacheDisabled(t *testing.T) 
 	cfg.AddListener(key, recorder, config_center.WithGroup(group))
 	_, watchState := cfg.cache.snapshot(path)
 	require.True(t, watchState.registered)
+	watchState.sessionID--
+	require.True(t, cfg.cache.setWatch(path, watchState))
 	require.True(t, cfg.RestartCallBack())
+	_, restoredWatch := cfg.cache.snapshot(path)
+	require.True(t, restoredWatch.registered)
+	require.Equal(t, client.Conn.SessionID(), restoredWatch.sessionID)
 
 	for _, value := range []string{"v2", "v3"} {
 		_, stat, getErr := client.GetContent(path)
