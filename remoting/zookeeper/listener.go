@@ -57,7 +57,8 @@ type ZkEventListener struct {
 }
 
 type configurationWatchStateListener interface {
-	WatchStateChanged(path string, watcher *zk.Watcher) bool
+	WatchStateChanged(path string) bool
+	WatchRegistered(path string, events <-chan zk.Event, beforeSessionID, afterSessionID int64) bool
 	WatchStateChangeFailed(path string)
 }
 
@@ -98,10 +99,6 @@ func (l *ZkEventListener) ListenConfigurationEvent(zkPath string, listener remot
 			case event := <-eventChan:
 				logger.Infof("[Remoting][Zookeeper]Receive configuration change event:%#v", event)
 				if event.Type == zk.EventNotWatching {
-					if tracksWatchState {
-						watchStateListener.WatchStateChanged(event.Path, nil)
-						watchStateListener.WatchStateChangeFailed(event.Path)
-					}
 					continue
 				}
 				if event.Type == zk.EventNodeChildrenChanged {
@@ -109,16 +106,20 @@ func (l *ZkEventListener) ListenConfigurationEvent(zkPath string, listener remot
 				}
 				registerWatch := true
 				if tracksWatchState {
-					registerWatch = watchStateListener.WatchStateChanged(event.Path, nil)
+					registerWatch = watchStateListener.WatchStateChanged(event.Path)
 				}
 				// 1. Re-set watcher for the zk node
 				var (
-					exists  bool
-					watcher *zk.Watcher
-					err     error
+					exists          bool
+					watchEvents     <-chan zk.Event
+					beforeSessionID int64
+					afterSessionID  int64
+					err             error
 				)
 				if registerWatch {
-					exists, _, watcher, err = l.Client.Conn.ExistsW(event.Path)
+					beforeSessionID = l.Client.Conn.SessionID()
+					exists, _, watchEvents, err = l.Client.Conn.ExistsW(event.Path)
+					afterSessionID = l.Client.Conn.SessionID()
 				} else {
 					exists, _, err = l.Client.Conn.Exists(event.Path)
 				}
@@ -130,7 +131,9 @@ func (l *ZkEventListener) ListenConfigurationEvent(zkPath string, listener remot
 					continue
 				}
 				if tracksWatchState && registerWatch {
-					watchStateListener.WatchStateChanged(event.Path, watcher)
+					watchStateListener.WatchRegistered(
+						event.Path, watchEvents, beforeSessionID, afterSessionID,
+					)
 				}
 
 				action := remoting.EventTypeDel

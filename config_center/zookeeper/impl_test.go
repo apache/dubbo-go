@@ -19,10 +19,10 @@ package zookeeper
 
 import (
 	"crypto/rand"
-	"encoding/hex"
-	"os"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
+	"os"
 	"testing"
 	"time"
 )
@@ -69,6 +69,17 @@ func failOrSkipZkUnavailable(t *testing.T, err error) {
 		t.Fatalf("%s=%q was set but zookeeper is unavailable: %v", zkAddrEnvKey, addr, err)
 	}
 	t.Skipf("skip zk setup: %v", err)
+}
+
+func newZookeeperTestClient(t *testing.T, name string) (*gxzookeeper.ZookeeperClient, <-chan zk.Event) {
+	t.Helper()
+	client, events, err := gxzookeeper.NewZookeeperClientFromEnv(name, 5*time.Second)
+	if err != nil {
+		failOrSkipZkUnavailable(t, err)
+		return nil, nil
+	}
+	t.Cleanup(func() { client.Close() })
+	return client, events
 }
 
 // newTestRoot returns a randomly named zookeeper root path unique to the
@@ -206,14 +217,11 @@ func TestGetPropertiesWithZk(t *testing.T) {
 }
 
 func TestLoadPropertiesRegistersWatchOnlyWhenInactive(t *testing.T) {
-	cluster, client, events, err := gxzookeeper.NewMockZookeeperClient("watch-selection", 5*time.Second)
-	if err != nil {
-		t.Skipf("skip mock zk setup: %v", err)
-	}
-	defer cluster.Stop()
+	client, events := newZookeeperTestClient(t, "watch-selection")
+	root := newTestRoot(t, client)
 
 	cfg := &zookeeperDynamicConfiguration{
-		rootPath: "/dubbo/config",
+		rootPath: root,
 		client:   client,
 		url:      mustURL(t, "registry://127.0.0.1:2181"),
 		cache:    newConfigCache(time.Minute),
@@ -238,19 +246,18 @@ func TestLoadPropertiesRegistersWatchOnlyWhenInactive(t *testing.T) {
 		}
 	}
 
-	activeWatcher := &zk.Watcher{}
-	_, watcher, err := cfg.loadProperties(activePath, activeWatcher, false)
+	_, registration, err := cfg.loadProperties(activePath, false)
 	require.NoError(t, err)
-	require.Same(t, activeWatcher, watcher)
+	require.Nil(t, registration.events)
 	_, stat, err := client.GetContent(activePath)
 	require.NoError(t, err)
 	_, err = client.SetContent(activePath, []byte("v2"), stat.Version)
 	require.NoError(t, err)
 	require.False(t, waitForEvent(activePath, time.Second))
 
-	_, watcher, err = cfg.loadProperties(inactivePath, nil, true)
+	_, registration, err = cfg.loadProperties(inactivePath, true)
 	require.NoError(t, err)
-	require.NotNil(t, watcher)
+	require.NotNil(t, registration.events)
 	_, stat, err = client.GetContent(inactivePath)
 	require.NoError(t, err)
 	_, err = client.SetContent(inactivePath, []byte("v2"), stat.Version)
@@ -259,16 +266,13 @@ func TestLoadPropertiesRegistersWatchOnlyWhenInactive(t *testing.T) {
 }
 
 func TestListenerUsesGroupOption(t *testing.T) {
-	cluster, client, _, err := gxzookeeper.NewMockZookeeperClient("listener-group", 5*time.Second)
-	if err != nil {
-		t.Skipf("skip mock zk setup: %v", err)
-	}
-	defer cluster.Stop()
+	client, _ := newZookeeperTestClient(t, "listener-group")
+	root := newTestRoot(t, client)
 
 	zkListener := remotingzookeeper.NewZkEventListener(client)
 	defer zkListener.Close()
 	cfg := &zookeeperDynamicConfiguration{
-		rootPath: "/dubbo/config",
+		rootPath: root,
 		client:   client,
 		url:      mustURL(t, "registry://127.0.0.1:2181"),
 		cache:    newConfigCache(time.Minute),
@@ -290,22 +294,20 @@ func TestListenerUsesGroupOption(t *testing.T) {
 }
 
 func TestGetPropertiesFallsBackToTTLAtAutoWatchLimit(t *testing.T) {
-	cluster, client, events, err := gxzookeeper.NewMockZookeeperClient("watch-limit", 5*time.Second)
-	if err != nil {
-		t.Skipf("skip mock zk setup: %v", err)
-	}
-	defer cluster.Stop()
+	client, events := newZookeeperTestClient(t, "watch-limit")
+	root := newTestRoot(t, client)
 
 	cfg := &zookeeperDynamicConfiguration{
-		rootPath: "/dubbo/config",
+		rootPath: root,
 		client:   client,
 		url:      mustURL(t, "registry://127.0.0.1:2181"),
 		cache:    newConfigCache(time.Minute),
 	}
 	for i := range maxAutoWatches {
 		require.True(t, cfg.cache.setWatch(fmt.Sprintf("/watch/%d", i), configWatchState{
-			watcher: &zk.Watcher{},
-			auto:    true,
+			registered: true,
+			auto:       true,
+			sessionID:  client.Conn.SessionID(),
 		}))
 	}
 
@@ -342,15 +344,12 @@ func TestGetPropertiesFallsBackToTTLAtAutoWatchLimit(t *testing.T) {
 }
 
 func TestGetPropertiesCacheUpdatedByWatch(t *testing.T) {
-	cluster, client, _, err := gxzookeeper.NewMockZookeeperClient("cache-watch", 5*time.Second)
-	if err != nil {
-		t.Skipf("skip mock zk setup: %v", err)
-	}
-	defer cluster.Stop()
+	client, _ := newZookeeperTestClient(t, "cache-watch")
 	go (&gxzookeeper.DefaultHandler{}).HandleZkEvent(client)
+	root := newTestRoot(t, client)
 
 	cfg := &zookeeperDynamicConfiguration{
-		rootPath: "/dubbo/config",
+		rootPath: root,
 		client:   client,
 		done:     make(chan struct{}),
 		url:      mustURL(t, "registry://127.0.0.1:2181"),
@@ -368,9 +367,10 @@ func TestGetPropertiesCacheUpdatedByWatch(t *testing.T) {
 
 	// ListenConfigurationEvent registers asynchronously; wait before triggering the watch.
 	time.Sleep(50 * time.Millisecond)
-	_, stat, err := client.GetContent("/dubbo/config/grp/file.properties")
+	watchPath := cfg.getPropertiesPath("file.properties", config_center.WithGroup("grp"))
+	_, stat, err := client.GetContent(watchPath)
 	require.NoError(t, err)
-	_, err = client.SetContent("/dubbo/config/grp/file.properties", []byte("v2"), stat.Version)
+	_, err = client.SetContent(watchPath, []byte("v2"), stat.Version)
 	require.NoError(t, err)
 
 	require.Eventually(t, func() bool {
@@ -380,7 +380,7 @@ func TestGetPropertiesCacheUpdatedByWatch(t *testing.T) {
 
 	require.NoError(t, cfg.RemoveConfig("file.properties", "grp"))
 	require.Eventually(t, func() bool {
-		entry, ok := cfg.cache.getFresh("/dubbo/config/grp/file.properties")
+		entry, ok := cfg.cache.getFresh(watchPath)
 		return ok && !entry.exists
 	}, time.Second, 10*time.Millisecond)
 }
@@ -404,48 +404,43 @@ func TestGetPropertiesDecodesCachedBase64(t *testing.T) {
 }
 
 func TestRestartCallBackResetsCache(t *testing.T) {
-	cluster, client, _, err := gxzookeeper.NewMockZookeeperClient("restart-watch-reset", 5*time.Second)
-	if err != nil {
-		t.Skipf("skip mock zk setup: %v", err)
-	}
-	defer cluster.Stop()
+	client, _ := newZookeeperTestClient(t, "restart-watch-reset")
 
 	cfg := &zookeeperDynamicConfiguration{cache: newConfigCache(time.Minute), client: client}
 	path := "/dubbo/config/group/key"
 	pendingPath := "/dubbo/config/group/pending"
-	_, _, watcher, err := client.Conn.ExistsW(path)
+	_, _, _, err := client.Conn.ExistsW(path)
 	require.NoError(t, err)
 	cfg.cache.store(path, configCacheEntry{content: "value", exists: true})
-	cfg.cache.setWatch(path, configWatchState{watcher: watcher, auto: true})
-	cfg.cache.setWatch(pendingPath, configWatchState{auto: true, pending: true})
+	cfg.cache.setWatch(path, configWatchState{
+		registered: true,
+		auto:       true,
+		sessionID:  client.Conn.SessionID(),
+	})
+	cfg.cache.setWatch(pendingPath, configWatchState{
+		auto:      true,
+		pending:   true,
+		sessionID: client.Conn.SessionID(),
+	})
 
 	require.True(t, cfg.RestartCallBack())
 	_, ok := cfg.cache.getFresh(path)
 	require.False(t, ok)
 	_, watchState := cfg.cache.snapshot(path)
-	require.Nil(t, watchState.watcher)
+	require.True(t, watchState.registered)
 	_, pendingWatchState := cfg.cache.snapshot(pendingPath)
-	require.False(t, pendingWatchState.tracked())
-	require.Zero(t, cfg.cache.autoWatchCount)
-	require.Zero(t, cfg.cache.autoWatchReservations)
-	select {
-	case event := <-watcher.EvtCh:
-		require.ErrorIs(t, event.Err, zk.ErrWatcherRemoved)
-	case <-time.After(time.Second):
-		t.Fatal("watcher was not removed")
-	}
+	require.True(t, pendingWatchState.pending)
+	require.Equal(t, 1, cfg.cache.autoWatchCount)
+	require.Equal(t, 1, cfg.cache.autoWatchReservations)
 }
 
 func TestRestartCallBackRestoresBusinessListener(t *testing.T) {
-	cluster, client, _, err := gxzookeeper.NewMockZookeeperClient("restart-business-watch", 5*time.Second)
-	if err != nil {
-		t.Skipf("skip mock zk setup: %v", err)
-	}
-	defer cluster.Stop()
+	client, _ := newZookeeperTestClient(t, "restart-business-watch")
 	go (&gxzookeeper.DefaultHandler{}).HandleZkEvent(client)
+	root := newTestRoot(t, client)
 
 	cfg := &zookeeperDynamicConfiguration{
-		rootPath: "/dubbo/config",
+		rootPath: root,
 		client:   client,
 		url:      mustURL(t, "registry://127.0.0.1:2181"),
 		cache:    newConfigCache(time.Minute),
@@ -463,13 +458,13 @@ func TestRestartCallBackRestoresBusinessListener(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 	cfg.AddListener(key, recorder, config_center.WithGroup(group))
 	_, previousWatch := cfg.cache.snapshot(path)
-	require.NotNil(t, previousWatch.watcher)
+	require.True(t, previousWatch.registered)
 	require.False(t, previousWatch.auto)
 
 	require.True(t, cfg.RestartCallBack())
 	_, restoredWatch := cfg.cache.snapshot(path)
-	require.NotNil(t, restoredWatch.watcher)
-	require.NotSame(t, previousWatch.watcher, restoredWatch.watcher)
+	require.True(t, restoredWatch.registered)
+	require.Equal(t, previousWatch.sessionID, restoredWatch.sessionID)
 	require.False(t, restoredWatch.auto)
 
 	for _, value := range []string{"v2", "v3"} {
@@ -489,15 +484,12 @@ func TestRestartCallBackRestoresBusinessListener(t *testing.T) {
 }
 
 func TestRestartCallBackRestoresBusinessListenerWhenCacheDisabled(t *testing.T) {
-	cluster, client, _, err := gxzookeeper.NewMockZookeeperClient("restart-business-watch-cache-disabled", 5*time.Second)
-	if err != nil {
-		t.Skipf("skip mock zk setup: %v", err)
-	}
-	defer cluster.Stop()
+	client, _ := newZookeeperTestClient(t, "restart-business-watch-cache-disabled")
 	go (&gxzookeeper.DefaultHandler{}).HandleZkEvent(client)
+	root := newTestRoot(t, client)
 
 	cfg := &zookeeperDynamicConfiguration{
-		rootPath: "/dubbo/config",
+		rootPath: root,
 		client:   client,
 		url:      mustURL(t, "registry://127.0.0.1:2181"),
 		cache:    newConfigCache(0),
@@ -512,10 +504,10 @@ func TestRestartCallBackRestoresBusinessListenerWhenCacheDisabled(t *testing.T) 
 	recorder := &channelConfigListener{events: make(chan *config_center.ConfigChangeEvent, 2)}
 	require.NoError(t, cfg.PublishConfig(key, group, "v1"))
 	time.Sleep(50 * time.Millisecond)
-	// A reconnect preserves business listeners but may invalidate their watches.
-	cfg.cacheListener.keyListeners.Store(path, map[config_center.ConfigurationListener]struct{}{recorder: {}})
-
 	cfg.listener.ListenConfigurationEvent(cfg.rootPath, cfg.cacheListener)
+	cfg.AddListener(key, recorder, config_center.WithGroup(group))
+	_, watchState := cfg.cache.snapshot(path)
+	require.True(t, watchState.registered)
 	require.True(t, cfg.RestartCallBack())
 
 	for _, value := range []string{"v2", "v3"} {

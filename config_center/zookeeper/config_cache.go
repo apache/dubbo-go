@@ -23,7 +23,7 @@ import (
 )
 
 import (
-	"github.com/dubbogo/go-zookeeper/zk"
+	"github.com/go-zookeeper/zk"
 
 	"github.com/hashicorp/golang-lru"
 )
@@ -40,14 +40,36 @@ type configCacheEntry struct {
 	expiresAt time.Time
 }
 
+type watchRegistration struct {
+	events          <-chan zk.Event
+	beforeSessionID int64
+	afterSessionID  int64
+}
+
+func (r watchRegistration) resolve() (int64, bool) {
+	if r.events == nil || r.afterSessionID == 0 {
+		return 0, false
+	}
+	if r.beforeSessionID != r.afterSessionID {
+		select {
+		case <-r.events:
+			return 0, false
+		default:
+		}
+	}
+	return r.afterSessionID, true
+}
+
 type configWatchState struct {
-	watcher *zk.Watcher
-	auto    bool
-	pending bool
+	registered bool
+	pending    bool
+	auto       bool
+	retired    bool
+	sessionID  int64
 }
 
 func (s configWatchState) tracked() bool {
-	return s.watcher != nil || s.pending
+	return s.registered || s.pending
 }
 
 func (s configWatchState) holdsAutoSlot() bool {
@@ -55,7 +77,7 @@ func (s configWatchState) holdsAutoSlot() bool {
 }
 
 func (s configWatchState) holdsAutoWatch() bool {
-	return s.auto && s.watcher != nil
+	return s.auto && s.registered
 }
 
 func (s configWatchState) holdsAutoReservation() bool {
@@ -71,6 +93,7 @@ type configCache struct {
 	autoWatchCount        int
 	autoWatchReservations int
 	generation            uint64
+	sessionID             int64
 
 	pathLocks [pathLockShardCount]sync.Mutex
 }
@@ -93,11 +116,10 @@ func (c *configCache) enabled() bool {
 
 func (c *configCache) load(
 	path string,
-	loader func(*zk.Watcher, bool) (configCacheEntry, *zk.Watcher, error),
-	removeWatcher func(*zk.Watcher),
+	loader func(bool) (configCacheEntry, watchRegistration, error),
 ) (configCacheEntry, error) {
 	if !c.enabled() {
-		entry, _, err := loader(nil, false)
+		entry, _, err := loader(false)
 		return entry, err
 	}
 	if entry, ok := c.getFresh(path); ok {
@@ -113,49 +135,38 @@ func (c *configCache) load(
 			return entry, nil
 		}
 
-		generation, watchState, registerWatch := c.prepareLoad(path)
-		entry, watcher, err := loader(watchState.watcher, registerWatch)
-		nextWatchState := watchState
+		generation, registerWatch := c.prepareLoad(path)
+		entry, registration, err := loader(registerWatch)
 		if registerWatch {
-			nextWatchState = configWatchState{}
-			if watcher != nil {
-				nextWatchState = configWatchState{watcher: watcher, auto: true}
-			}
+			c.finishWatchRegistrationLocked(path, generation, registration)
 		}
 		if err != nil {
-			if !c.storeWatchState(path, generation, nextWatchState) {
-				if registerWatch {
-					removeRegisteredWatcher(removeWatcher, watcher)
-				}
+			if !c.isCurrentGeneration(generation) {
 				continue
 			}
 			return configCacheEntry{}, err
 		}
-		if !c.storeLoad(path, generation, entry, nextWatchState) {
-			if registerWatch {
-				removeRegisteredWatcher(removeWatcher, watcher)
-			}
+		if !c.storeLoadEntry(path, generation, entry) {
 			continue
 		}
 		return entry, nil
 	}
 }
 
-func (c *configCache) prepareLoad(path string) (uint64, configWatchState, bool) {
+func (c *configCache) prepareLoad(path string) (uint64, bool) {
 	c.stateLock.Lock()
 	defer c.stateLock.Unlock()
 
 	generation := c.generation
-	watchState := c.watches[path]
-	if watchState.tracked() {
-		return generation, watchState, false
+	if c.watches[path].tracked() {
+		return generation, false
 	}
 
-	pendingState := configWatchState{auto: true, pending: true}
+	pendingState := configWatchState{auto: true, pending: true, sessionID: c.sessionID}
 	if !c.setWatchStateLocked(path, pendingState) {
-		return generation, configWatchState{}, false
+		return generation, false
 	}
-	return generation, pendingState, true
+	return generation, true
 }
 
 func (c *configCache) store(path string, entry configCacheEntry) {
@@ -231,31 +242,17 @@ func (c *configCache) isCurrentGeneration(generation uint64) bool {
 	return c.generation == generation
 }
 
-func (c *configCache) storeLoad(path string, generation uint64, entry configCacheEntry, watchState configWatchState) bool {
+func (c *configCache) storeLoadEntry(path string, generation uint64, entry configCacheEntry) bool {
 	c.stateLock.Lock()
 	defer c.stateLock.Unlock()
 	if c.generation != generation {
 		return false
 	}
-
 	c.storeEntryLocked(path, entry)
-	c.setWatchStateLocked(path, watchState)
 	return true
 }
 
-func (c *configCache) storeWatchState(path string, generation uint64, watchState configWatchState) bool {
-	c.stateLock.Lock()
-	defer c.stateLock.Unlock()
-	if c.generation != generation {
-		return false
-	}
-	return c.setWatchStateLocked(path, watchState)
-}
-
 func (c *configCache) setWatch(path string, watchState configWatchState) bool {
-	if !c.enabled() {
-		return false
-	}
 	pathLock := c.pathLock(path)
 	pathLock.Lock()
 	defer pathLock.Unlock()
@@ -263,20 +260,13 @@ func (c *configCache) setWatch(path string, watchState configWatchState) bool {
 	c.stateLock.Lock()
 	defer c.stateLock.Unlock()
 	return c.setWatchStateLocked(path, watchState)
-}
-
-func (c *configCache) setWatchAtGeneration(path string, generation uint64, watchState configWatchState) bool {
-	if !c.enabled() {
-		return false
-	}
-	pathLock := c.pathLock(path)
-	pathLock.Lock()
-	defer pathLock.Unlock()
-	return c.storeWatchState(path, generation, watchState)
 }
 
 func (c *configCache) setWatchStateLocked(path string, watchState configWatchState) bool {
 	current := c.watches[path]
+	if watchState.auto && !c.enabled() {
+		return false
+	}
 	if watchState.holdsAutoSlot() && !current.holdsAutoSlot() &&
 		c.autoWatchCount+c.autoWatchReservations >= maxAutoWatches {
 		return false
@@ -301,51 +291,66 @@ func (c *configCache) setWatchStateLocked(path string, watchState configWatchSta
 	return true
 }
 
+func (c *configCache) finishWatchRegistration(path string, generation uint64, registration watchRegistration) bool {
+	pathLock := c.pathLock(path)
+	pathLock.Lock()
+	defer pathLock.Unlock()
+	return c.finishWatchRegistrationLocked(path, generation, registration)
+}
+
+func (c *configCache) finishWatchRegistrationLocked(path string, generation uint64, registration watchRegistration) bool {
+	sessionID, active := registration.resolve()
+	c.stateLock.Lock()
+	defer c.stateLock.Unlock()
+
+	watchState := c.watches[path]
+	if !watchState.pending {
+		return false
+	}
+	if !active || c.generation != generation && c.sessionID != 0 && sessionID != c.sessionID {
+		c.setWatchStateLocked(path, configWatchState{})
+		return false
+	}
+	watchState.registered = true
+	watchState.pending = false
+	watchState.sessionID = sessionID
+	return c.setWatchStateLocked(path, watchState)
+}
+
 func (c *configCache) ensureBusinessWatch(
 	path string,
-	register func() (*zk.Watcher, error),
-	removeWatcher func(*zk.Watcher),
+	register func() (watchRegistration, error),
 ) error {
-	if !c.enabled() {
-		_, err := register()
-		return err
-	}
 	pathLock := c.pathLock(path)
 	pathLock.Lock()
 	defer pathLock.Unlock()
 
 	for {
-		generation, watchState := c.snapshot(path)
-		if watchState.tracked() {
-			if watchState.auto {
-				watchState.auto = false
-				c.storeWatchState(path, generation, watchState)
-			}
-			return nil
-		}
-		watcher, err := register()
-		if err != nil {
-			if !c.isCurrentGeneration(generation) {
-				continue
-			}
-			return err
-		}
-
 		c.stateLock.Lock()
-		if c.generation == generation {
-			c.setWatchStateLocked(path, configWatchState{watcher: watcher})
+		watchState := c.watches[path]
+		if watchState.tracked() {
+			watchState.auto = false
+			watchState.retired = false
+			c.setWatchStateLocked(path, watchState)
 			c.stateLock.Unlock()
 			return nil
 		}
+		generation := c.generation
+		c.setWatchStateLocked(path, configWatchState{pending: true, sessionID: c.sessionID})
 		c.stateLock.Unlock()
-		removeRegisteredWatcher(removeWatcher, watcher)
+
+		registration, err := register()
+		if err != nil {
+			c.cancelPendingLocked(path)
+			return err
+		}
+		if c.finishWatchRegistrationLocked(path, generation, registration) {
+			return nil
+		}
 	}
 }
 
 func (c *configCache) promoteWatch(path string) {
-	if !c.enabled() {
-		return
-	}
 	pathLock := c.pathLock(path)
 	pathLock.Lock()
 	defer pathLock.Unlock()
@@ -353,17 +358,15 @@ func (c *configCache) promoteWatch(path string) {
 	c.stateLock.Lock()
 	defer c.stateLock.Unlock()
 	watchState, ok := c.watches[path]
-	if !ok || !watchState.auto {
+	if !ok {
 		return
 	}
 	watchState.auto = false
+	watchState.retired = false
 	c.setWatchStateLocked(path, watchState)
 }
 
-func (c *configCache) releaseBusinessWatch(path string) *zk.Watcher {
-	if !c.enabled() {
-		return nil
-	}
+func (c *configCache) releaseBusinessWatch(path string) {
 	pathLock := c.pathLock(path)
 	pathLock.Lock()
 	defer pathLock.Unlock()
@@ -372,66 +375,87 @@ func (c *configCache) releaseBusinessWatch(path string) *zk.Watcher {
 	defer c.stateLock.Unlock()
 	watchState, ok := c.watches[path]
 	if !ok || watchState.auto {
-		return nil
+		return
 	}
 
 	autoWatchState := watchState
 	autoWatchState.auto = true
+	autoWatchState.retired = false
 	if c.setWatchStateLocked(path, autoWatchState) {
-		return nil
-	}
-	c.setWatchStateLocked(path, configWatchState{})
-	return watchState.watcher
-}
-
-func (c *configCache) beginWatchRenewal(path string, generation uint64, auto bool) bool {
-	if !c.enabled() {
-		return !auto
-	}
-	pathLock := c.pathLock(path)
-	pathLock.Lock()
-	defer pathLock.Unlock()
-
-	return c.storeWatchState(path, generation, configWatchState{auto: auto, pending: true})
-}
-
-func (c *configCache) cancelWatchRenewal(path string, generation uint64) {
-	if !c.enabled() {
 		return
 	}
+	watchState.retired = true
+	c.setWatchStateLocked(path, watchState)
+}
+
+func (c *configCache) beginWatchRenewal(path string, hasListeners bool) (uint64, bool) {
 	pathLock := c.pathLock(path)
 	pathLock.Lock()
 	defer pathLock.Unlock()
 
 	c.stateLock.Lock()
 	defer c.stateLock.Unlock()
-	watchState := c.watches[path]
-	if c.generation == generation && watchState.pending {
+	generation := c.generation
+	watchState, ok := c.watches[path]
+	if !ok {
+		if !hasListeners {
+			return generation, false
+		}
+		c.setWatchStateLocked(path, configWatchState{pending: true, sessionID: c.sessionID})
+		return generation, true
+	}
+	if watchState.pending {
+		if hasListeners {
+			watchState.auto = false
+			watchState.retired = false
+			c.setWatchStateLocked(path, watchState)
+		}
+		return generation, false
+	}
+	if watchState.retired && !hasListeners {
+		c.setWatchStateLocked(path, configWatchState{})
+		return generation, false
+	}
+	if hasListeners {
+		watchState.auto = false
+		watchState.retired = false
+	} else if !watchState.auto {
+		c.setWatchStateLocked(path, configWatchState{})
+		return generation, false
+	}
+	watchState.registered = false
+	watchState.pending = true
+	c.setWatchStateLocked(path, watchState)
+	return generation, true
+}
+
+func (c *configCache) cancelWatchRenewal(path string) {
+	pathLock := c.pathLock(path)
+	pathLock.Lock()
+	defer pathLock.Unlock()
+	c.cancelPendingLocked(path)
+}
+
+func (c *configCache) cancelPendingLocked(path string) {
+	c.stateLock.Lock()
+	defer c.stateLock.Unlock()
+	if c.watches[path].pending {
 		c.setWatchStateLocked(path, configWatchState{})
 	}
 }
 
-func (c *configCache) reset() []*zk.Watcher {
+func (c *configCache) reset(sessionID int64) {
 	c.stateLock.Lock()
 	defer c.stateLock.Unlock()
 
-	watchers := make([]*zk.Watcher, 0, len(c.watches))
-	for _, watchState := range c.watches {
-		if watchState.watcher != nil {
-			watchers = append(watchers, watchState.watcher)
-		}
-	}
 	c.generation++
+	c.sessionID = sessionID
 	c.entries.Purge()
-	c.watches = make(map[string]configWatchState)
-	c.autoWatchCount = 0
-	c.autoWatchReservations = 0
-	return watchers
-}
-
-func removeRegisteredWatcher(removeWatcher func(*zk.Watcher), watcher *zk.Watcher) {
-	if watcher != nil && removeWatcher != nil {
-		removeWatcher(watcher)
+	for path, watchState := range c.watches {
+		if watchState.pending || watchState.sessionID == sessionID {
+			continue
+		}
+		c.setWatchStateLocked(path, configWatchState{})
 	}
 }
 

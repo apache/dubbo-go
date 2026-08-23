@@ -132,9 +132,9 @@ func (c *zookeeperDynamicConfiguration) RemoveListener(key string, listener conf
 
 func (c *zookeeperDynamicConfiguration) GetProperties(key string, opts ...config_center.Option) (string, error) {
 	path := c.getPropertiesPath(key, opts...)
-	entry, err := c.cache.load(path, func(watcher *zk.Watcher, registerWatch bool) (configCacheEntry, *zk.Watcher, error) {
-		return c.loadProperties(path, watcher, registerWatch)
-	}, c.removeWatcher)
+	entry, err := c.cache.load(path, func(registerWatch bool) (configCacheEntry, watchRegistration, error) {
+		return c.loadProperties(path, registerWatch)
+	})
 	if err != nil {
 		return "", err
 	}
@@ -166,35 +166,47 @@ func (c *zookeeperDynamicConfiguration) getPropertiesPath(key string, opts ...co
 	return buildPath(c.rootPath, key)
 }
 
-func (c *zookeeperDynamicConfiguration) loadProperties(path string, watcher *zk.Watcher, registerWatch bool) (configCacheEntry, *zk.Watcher, error) {
-	if !c.cache.enabled() || watcher != nil || !registerWatch {
+func (c *zookeeperDynamicConfiguration) loadProperties(path string, registerWatch bool) (configCacheEntry, watchRegistration, error) {
+	if !c.cache.enabled() || !registerWatch {
 		content, _, err := c.client.GetContent(path)
 		if errors.Is(err, zk.ErrNoNode) {
 			logger.Warnf("[ConfigCenter][Zookeeper] query rule fail, key=%s err=%v", path, err)
-			return configCacheEntry{exists: false}, watcher, nil
+			return configCacheEntry{exists: false}, watchRegistration{}, nil
 		}
 		if err != nil {
-			return configCacheEntry{}, watcher, perrors.WithStack(err)
+			return configCacheEntry{}, watchRegistration{}, perrors.WithStack(err)
 		}
-		return configCacheEntry{content: string(content), exists: true}, watcher, nil
+		return configCacheEntry{content: string(content), exists: true}, watchRegistration{}, nil
 	}
 
 	for {
-		content, _, registeredWatcher, err := c.client.Conn.GetW(path)
+		beforeSessionID := c.client.Conn.SessionID()
+		content, _, events, err := c.client.Conn.GetW(path)
+		registration := watchRegistration{
+			events:          events,
+			beforeSessionID: beforeSessionID,
+			afterSessionID:  c.client.Conn.SessionID(),
+		}
 		if err == nil {
-			return configCacheEntry{content: string(content), exists: true}, registeredWatcher, nil
+			return configCacheEntry{content: string(content), exists: true}, registration, nil
 		}
 		if !errors.Is(err, zk.ErrNoNode) {
-			return configCacheEntry{}, nil, perrors.WithStack(err)
+			return configCacheEntry{}, watchRegistration{}, perrors.WithStack(err)
 		}
 
-		exists, _, registeredWatcher, watchErr := c.client.Conn.ExistsW(path)
+		beforeSessionID = c.client.Conn.SessionID()
+		exists, _, events, watchErr := c.client.Conn.ExistsW(path)
+		registration = watchRegistration{
+			events:          events,
+			beforeSessionID: beforeSessionID,
+			afterSessionID:  c.client.Conn.SessionID(),
+		}
 		if watchErr != nil {
-			return configCacheEntry{}, nil, perrors.WithStack(watchErr)
+			return configCacheEntry{}, watchRegistration{}, perrors.WithStack(watchErr)
 		}
 		if !exists {
 			logger.Warnf("[ConfigCenter][Zookeeper] query rule fail, key=%s err=%v", path, err)
-			return configCacheEntry{exists: false}, registeredWatcher, nil
+			return configCacheEntry{exists: false}, registration, nil
 		}
 
 		content, _, getErr := c.client.Conn.Get(path)
@@ -202,9 +214,9 @@ func (c *zookeeperDynamicConfiguration) loadProperties(path string, watcher *zk.
 			continue
 		}
 		if getErr != nil {
-			return configCacheEntry{}, registeredWatcher, perrors.WithStack(getErr)
+			return configCacheEntry{}, registration, perrors.WithStack(getErr)
 		}
-		return configCacheEntry{content: string(content), exists: true}, registeredWatcher, nil
+		return configCacheEntry{content: string(content), exists: true}, registration, nil
 	}
 }
 
@@ -343,20 +355,15 @@ func (c *zookeeperDynamicConfiguration) closeConfigs() {
 }
 
 func (c *zookeeperDynamicConfiguration) RestartCallBack() bool {
-	for _, watcher := range c.cache.reset() {
-		c.removeWatcher(watcher)
+	var sessionID int64
+	if c.client != nil && c.client.Conn != nil {
+		sessionID = c.client.Conn.SessionID()
 	}
+	c.cache.reset(sessionID)
 	if c.cacheListener != nil {
 		c.cacheListener.restoreBusinessWatches()
 	}
 	return true
-}
-
-func (c *zookeeperDynamicConfiguration) removeWatcher(watcher *zk.Watcher) {
-	if watcher == nil || c.client == nil || c.client.Conn == nil {
-		return
-	}
-	c.client.Conn.RemoveWatcher(watcher)
 }
 
 func (c *zookeeperDynamicConfiguration) getPath(key string, group string) string {
