@@ -128,7 +128,10 @@ func TestServiceInstancesChangedListenerRefreshesAndClearsEnvironmentWhenRevisio
 }
 
 func TestServiceInstancesChangedListenerSkipsNilMetadataWithoutPanic(t *testing.T) {
-	listener := NewServiceInstancesChangedListener(testApp, constant.DefaultKey, gxset.NewSet(testApp))
+	listener := NewServiceInstancesChangedListener(testApp, constant.DefaultKey, gxset.NewSet(testApp)).(*ServiceInstancesChangedListenerImpl)
+	// Nil metadata leaves the revision unresolved and arms the retry timer;
+	// settle it on cleanup so no retry outlives the test.
+	settleRetryListener(t, listener)
 	notify := &capturingNotifyListener{}
 	listener.AddListenerAndNotify(common.MatchKey(testInterface, constant.TriProtocol), notify)
 
@@ -147,7 +150,7 @@ func TestServiceInstancesChangedListenerSkipsNilMetadataWithoutPanic(t *testing.
 			instance,
 		}))
 	})
-	require.NoError(t, err)
+	require.Error(t, err, "nil metadata leaves the revision unresolved, OnEvent must surface it")
 	assert.Empty(t, notify.events)
 }
 
