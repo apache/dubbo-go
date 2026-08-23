@@ -68,6 +68,23 @@ var watcher = &fileWatcher{
 	stopCh: make(chan struct{}),
 }
 
+// goSafely runs fn in a new goroutine and recovers from any panic it raises,
+// preserving the recover and WaitGroup semantics of the former
+// gost/runtime.GoSafely helper so that a panicking watcher cannot crash the
+// process.
+func goSafely(wg *sync.WaitGroup, fn func()) {
+	wg.Add(1)
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Fprintf(os.Stderr, "%s goroutine panic: %v\n%s\n", time.Now(), r, debug.Stack())
+			}
+			wg.Done()
+		}()
+		fn()
+	}()
+}
+
 func Load(opts ...LoaderConfOption) error {
 	conf := NewLoaderConf(opts...)
 	newOpts := conf.opts
@@ -92,16 +109,9 @@ func Load(opts ...LoaderConfOption) error {
 	instance := &Instance{insOpts: newOpts}
 	// start the file watcher
 	once.Do(func() {
-		watcher.watcherWg.Add(1)
-		go func() {
-			defer func() {
-				if r := recover(); r != nil {
-					fmt.Fprintf(os.Stderr, "%s goroutine panic: %v\n%s\n", time.Now(), r, debug.Stack())
-				}
-				watcher.watcherWg.Done()
-			}()
+		goSafely(&watcher.watcherWg, func() {
 			watch(conf, watcher.stopCh)
-		}()
+		})
 		extension.AddCustomShutdownCallback(func() {
 			StopFileWatcher()
 		})

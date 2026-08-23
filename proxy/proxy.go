@@ -57,6 +57,24 @@ type (
 
 var typError = reflect.Zero(reflect.TypeFor[error]()).Type()
 
+// resolveRootCause returns the root cause of err, walking both the stdlib
+// Unwrap() and pkg/errors Cause() chains. It is equivalent to perrors.Cause.
+func resolveRootCause(err error) error {
+	cause := err
+	for cause != nil {
+		if u, ok := cause.(interface{ Unwrap() error }); ok {
+			cause = u.Unwrap()
+			continue
+		}
+		if c, ok := cause.(interface{ Cause() error }); ok {
+			cause = c.Cause()
+			continue
+		}
+		break
+	}
+	return cause
+}
+
 // NewProxy create service proxy.
 func NewProxy(invoke base.Invoker, callback any, attachments map[string]string) *Proxy {
 	return NewProxyWithOptions(invoke, callback, attachments,
@@ -201,20 +219,7 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 
 			result := p.invoke.Invoke(invCtx, inv)
 			err = result.Error()
-			// cause is the root error, equivalent to perrors.Cause, walking both
-			// stdlib Unwrap() and pkg/errors Cause() chains.
-			cause := err
-			for cause != nil {
-				if u, ok := cause.(interface{ Unwrap() error }); ok {
-					cause = u.Unwrap()
-					continue
-				}
-				if c, ok := cause.(interface{ Cause() error }); ok {
-					cause = c.Cause()
-					continue
-				}
-				break
-			}
+			cause := resolveRootCause(err)
 			if err != nil {
 				// if some error happened, it should be log some info in the separate file.
 				if throwabler, ok := cause.(java_exception.Throwabler); ok {

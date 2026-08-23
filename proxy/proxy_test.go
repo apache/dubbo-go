@@ -28,6 +28,8 @@ import (
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -157,4 +159,34 @@ func (bi *TestProxyInvoker) Invoke(_ context.Context, inv base.Invocation) resul
 	return &result.RPCResult{
 		Rest: inv.Arguments(),
 	}
+}
+
+// TestResolveRootCause is a regression test for the stdlib replacement of
+// perrors.Cause in proxy.go: resolveRootCause must walk both the stdlib
+// Unwrap() and pkg/errors Cause() chains down to the root error.
+func TestResolveRootCause(t *testing.T) {
+	root := errors.New("root")
+
+	t.Run("plain error returns itself", func(t *testing.T) {
+		require.Equal(t, root, resolveRootCause(root))
+	})
+
+	t.Run("stdlib Unwrap chain", func(t *testing.T) {
+		wrapped := fmt.Errorf("w1: %w", fmt.Errorf("w2: %w", root))
+		require.Equal(t, root, resolveRootCause(wrapped))
+	})
+
+	t.Run("pkg/errors Cause chain", func(t *testing.T) {
+		wrapped := perrors.Wrapf(perrors.Wrap(root, "a"), "b")
+		require.Equal(t, root, resolveRootCause(wrapped))
+	})
+
+	t.Run("mixed Unwrap and Cause chain", func(t *testing.T) {
+		wrapped := fmt.Errorf("w1: %w", perrors.Wrap(root, "a"))
+		require.Equal(t, root, resolveRootCause(wrapped))
+	})
+
+	t.Run("nil returns nil", func(t *testing.T) {
+		require.NoError(t, resolveRootCause(nil))
+	})
 }

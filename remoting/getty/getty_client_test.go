@@ -474,3 +474,34 @@ func TestClientCloseDoesNotWaitForConnectLock(t *testing.T) {
 	require.Error(t, err)
 	require.ErrorIs(t, err, errClientClosed)
 }
+
+// mockWriteOnlySession embeds the getty.Session interface and overrides only
+// WritePkg. It never delivers a response, so a two-way request must eventually
+// hit the read-timeout branch.
+type mockWriteOnlySession struct {
+	dubboGetty.Session
+}
+
+func (m *mockWriteOnlySession) WritePkg(pkg any, _ time.Duration) (int, int, error) {
+	return 0, 0, nil
+}
+
+// TestRequestContextReadTimeout is a regression test for the stdlib migration of
+// the request timeout wait (gost/time -> time.NewTimer): when no response
+// arrives within the timeout, RequestContext must return errClientReadTimeout.
+func TestRequestContextReadTimeout(t *testing.T) {
+	client := NewClient(Options{RequestTimeout: 30 * time.Millisecond})
+	client.gettyClient = &gettyRPCClient{
+		sessions: []*rpcSession{{session: &mockWriteOnlySession{}}},
+	}
+
+	request := remoting.NewRequest("2.0.2")
+	request.TwoWay = true
+	rsp := remoting.NewPendingResponse(request.ID)
+
+	start := time.Now()
+	err := client.RequestContext(context.Background(), request, 30*time.Millisecond, rsp)
+	require.Error(t, err)
+	require.ErrorIs(t, err, errClientReadTimeout)
+	require.Less(t, time.Since(start), time.Second)
+}
