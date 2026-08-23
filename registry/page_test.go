@@ -26,7 +26,7 @@ import (
 )
 
 func TestNewPage_ExactDivision(t *testing.T) {
-	data := []interface{}{1, 2, 3, 4, 5}
+	data := []any{1, 2, 3, 4, 5}
 	p := NewPage(0, 5, data, 10)
 
 	assert.Equal(t, 0, p.GetOffset())
@@ -39,7 +39,7 @@ func TestNewPage_ExactDivision(t *testing.T) {
 }
 
 func TestNewPage_RemainderRoundsUpTotalPages(t *testing.T) {
-	data := []interface{}{9, 10}
+	data := []any{9, 10}
 	p := NewPage(8, 4, data, 10)
 
 	assert.Equal(t, 3, p.GetTotalPages())
@@ -49,7 +49,7 @@ func TestNewPage_RemainderRoundsUpTotalPages(t *testing.T) {
 }
 
 func TestNewPage_LastPageHasNoNext(t *testing.T) {
-	data := []interface{}{6, 7, 8, 9, 10}
+	data := []any{6, 7, 8, 9, 10}
 	p := NewPage(5, 5, data, 10)
 
 	assert.Equal(t, 2, p.GetTotalPages())

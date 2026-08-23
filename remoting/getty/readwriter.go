@@ -26,9 +26,9 @@ import (
 import (
 	getty "github.com/apache/dubbo-getty"
 
-	perrors "github.com/pkg/errors"
-
 	"github.com/dubbogo/gost/log/logger"
+
+	perrors "github.com/pkg/errors"
 )
 
 import (

@@ -27,6 +27,7 @@ import (
 
 import (
 	"github.com/go-resty/resty/v2"
+
 	perrors "github.com/pkg/errors"
 )
 

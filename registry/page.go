@@ -32,7 +32,7 @@ type Pager interface {
 	GetTotalPages() int
 
 	// GetData will return the data
-	GetData() []interface{}
+	GetData() []any
 
 	// GetDataSize will return the size of data.
 	// Usually it's len(GetData())
@@ -50,7 +50,7 @@ type page struct {
 	requestOffset int
 	pageSize      int
 	totalSize     int
-	data          []interface{}
+	data          []any
 	totalPages    int
 	hasNext       bool
 }
@@ -71,7 +71,7 @@ func (d *page) GetTotalPages() int {
 }
 
 // GetData will return the data
-func (d *page) GetData() []interface{} {
+func (d *page) GetData() []any {
 	return d.data
 }
 
@@ -92,7 +92,7 @@ func (d *page) HasData() bool {
 }
 
 // NewPage will create a Pager instance.
-func NewPage(requestOffset int, pageSize int, data []interface{}, totalSize int) Pager {
+func NewPage(requestOffset int, pageSize int, data []any, totalSize int) Pager {
 	remain := totalSize % pageSize
 	totalPages := totalSize / pageSize
 	if remain > 0 {

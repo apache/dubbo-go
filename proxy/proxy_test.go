@@ -26,10 +26,10 @@ import (
 )
 
 import (
+	perrors "github.com/pkg/errors"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
