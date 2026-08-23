@@ -261,6 +261,75 @@ func TestConfigCacheResetDiscardsInFlightLoad(t *testing.T) {
 	require.Equal(t, int64(2), watchState.sessionID)
 }
 
+func TestConfigCacheKeepsInFlightWatchInSameSession(t *testing.T) {
+	cache := newConfigCache(time.Minute)
+	loadStarted := make(chan struct{})
+	releaseLoad := make(chan struct{})
+	result := make(chan error, 1)
+	decisions := make(chan bool, 2)
+	var loads atomic.Int32
+	var registrations atomic.Int32
+
+	go func() {
+		_, err := cache.load("/path", func(registerWatch bool) (configCacheEntry, watchRegistration, error) {
+			decisions <- registerWatch
+			if loads.Add(1) == 1 {
+				registrations.Add(1)
+				close(loadStarted)
+				<-releaseLoad
+				return configCacheEntry{content: "old", exists: true}, newTestWatchRegistration(1), nil
+			}
+			return configCacheEntry{content: "new", exists: true}, watchRegistration{}, nil
+		})
+		result <- err
+	}()
+
+	<-loadStarted
+	cache.reset(1)
+	close(releaseLoad)
+
+	require.NoError(t, <-result)
+	require.Equal(t, int32(2), loads.Load())
+	require.Equal(t, int32(1), registrations.Load())
+	require.True(t, <-decisions)
+	require.False(t, <-decisions)
+	entry, ok := cache.getFresh("/path")
+	require.True(t, ok)
+	require.Equal(t, "new", entry.content)
+	_, watchState := cache.snapshot("/path")
+	require.True(t, watchState.registered)
+	require.Equal(t, int64(1), watchState.sessionID)
+}
+
+func TestWatchRegistrationResolveAcrossSession(t *testing.T) {
+	t.Run("current session watch remains active", func(t *testing.T) {
+		registration := watchRegistration{
+			events:          make(chan zk.Event, 1),
+			beforeSessionID: 1,
+			afterSessionID:  2,
+		}
+
+		sessionID, active := registration.resolve()
+		require.True(t, active)
+		require.Equal(t, int64(2), sessionID)
+	})
+
+	t.Run("invalidated watch is discarded", func(t *testing.T) {
+		events := make(chan zk.Event, 1)
+		events <- zk.Event{Type: zk.EventNotWatching}
+		close(events)
+		registration := watchRegistration{
+			events:          events,
+			beforeSessionID: 1,
+			afterSessionID:  2,
+		}
+
+		sessionID, active := registration.resolve()
+		require.False(t, active)
+		require.Zero(t, sessionID)
+	})
+}
+
 func TestConfigCacheResetDiscardsInFlightBusinessWatch(t *testing.T) {
 	cache := newConfigCache(time.Minute)
 	registerStarted := make(chan struct{})
