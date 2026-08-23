@@ -203,6 +203,39 @@ func TestCacheListenerPreservesAutoWatchOwnershipOnRenewal(t *testing.T) {
 	require.Zero(t, cache.autoWatchReservations)
 }
 
+func TestCacheListenerRetriesInvalidatedWatchInNewSession(t *testing.T) {
+	client, _ := newZookeeperTestClient(t, "retry-invalidated-business-watch")
+	root := newTestRoot(t, client)
+	zkListener := remotingzookeeper.NewZkEventListener(client)
+	defer zkListener.Close()
+
+	cache := newConfigCache(time.Minute)
+	currentSessionID := client.Conn.SessionID()
+	cache.reset(currentSessionID)
+	path := root + "/group/app"
+	previousSessionID := currentSessionID - 1
+	require.True(t, cache.setWatch(path, configWatchState{
+		pending:   true,
+		sessionID: previousSessionID,
+	}))
+	l := newCacheListener(root, zkListener, &cache)
+	l.keyListeners.Store(path, map[config_center.ConfigurationListener]struct{}{&recListener{}: {}})
+	l.eventGeneration.Store(path, watchEventState{
+		generation: cache.generation,
+		sessionID:  previousSessionID,
+	})
+	events := make(chan zk.Event, 1)
+	events <- zk.Event{Type: zk.EventNotWatching}
+	close(events)
+
+	require.False(t, l.WatchRegistered(path, events, previousSessionID, currentSessionID))
+	_, watchState := cache.snapshot(path)
+	require.True(t, watchState.registered)
+	require.False(t, watchState.pending)
+	require.False(t, watchState.auto)
+	require.Equal(t, currentSessionID, watchState.sessionID)
+}
+
 func TestCacheListenerPathToKeyGroup(t *testing.T) {
 	l := &CacheListener{rootPath: "/dubbo/config"}
 	key, group := l.pathToKeyGroup("/dubbo/config/g/app")

@@ -324,7 +324,13 @@ func (c *configCache) ensureBusinessWatch(
 	pathLock := c.pathLock(path)
 	pathLock.Lock()
 	defer pathLock.Unlock()
+	return c.ensureBusinessWatchLocked(path, register)
+}
 
+func (c *configCache) ensureBusinessWatchLocked(
+	path string,
+	register func() (watchRegistration, error),
+) error {
 	for {
 		c.stateLock.Lock()
 		watchState := c.watches[path]
@@ -354,7 +360,10 @@ func (c *configCache) releaseBusinessWatch(path string) {
 	pathLock := c.pathLock(path)
 	pathLock.Lock()
 	defer pathLock.Unlock()
+	c.releaseBusinessWatchLocked(path)
+}
 
+func (c *configCache) releaseBusinessWatchLocked(path string) {
 	c.stateLock.Lock()
 	defer c.stateLock.Unlock()
 	watchState, ok := c.watches[path]

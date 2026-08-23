@@ -78,17 +78,26 @@ func (l *CacheListener) AddListener(key string, listener config_center.Configura
 	register := func() (watchRegistration, error) {
 		return l.registerWatcher(key)
 	}
-	var err error
 	if l.cache == nil {
-		_, err = register()
-	} else {
-		err = l.cache.ensureBusinessWatch(key, register)
-	}
-	// reference from https://stackoverflow.com/questions/34018908/golang-why-dont-we-have-a-set-datastructure
-	// make a map[your type]struct{} like set in java
-	if err != nil {
+		if _, err := register(); err != nil {
+			return
+		}
+		l.storeListener(key, listener)
 		return
 	}
+
+	pathLock := l.cache.pathLock(key)
+	pathLock.Lock()
+	defer pathLock.Unlock()
+	if err := l.cache.ensureBusinessWatchLocked(key, register); err != nil {
+		return
+	}
+	l.storeListener(key, listener)
+}
+
+func (l *CacheListener) storeListener(key string, listener config_center.ConfigurationListener) {
+	// reference from https://stackoverflow.com/questions/34018908/golang-why-dont-we-have-a-set-datastructure
+	// make a map[your type]struct{} like set in java
 	listeners, loaded := l.keyListeners.LoadOrStore(key, map[config_center.ConfigurationListener]struct{}{listener: {}})
 	if loaded {
 		listeners.(map[config_center.ConfigurationListener]struct{})[listener] = struct{}{}
@@ -141,11 +150,16 @@ func (l *CacheListener) WatchRegistered(path string, events <-chan zk.Event, bef
 	if !ok {
 		return false
 	}
-	return l.cache.finishWatchRegistration(path, state.(watchEventState).generation, watchRegistration{
+	eventState := state.(watchEventState)
+	stored := l.cache.finishWatchRegistration(path, eventState.generation, watchRegistration{
 		events:          events,
 		beforeSessionID: beforeSessionID,
 		afterSessionID:  afterSessionID,
 	})
+	if !stored {
+		l.retryBusinessWatch(path, eventState.sessionID)
+	}
+	return stored
 }
 
 func (l *CacheListener) WatchStateChangeFailed(path string) {
@@ -157,14 +171,18 @@ func (l *CacheListener) WatchStateChangeFailed(path string) {
 		return
 	}
 	l.cache.cancelWatchRenewal(path)
+	eventState := state.(watchEventState)
+	l.retryBusinessWatch(path, eventState.sessionID)
+}
+
+func (l *CacheListener) retryBusinessWatch(path string, previousSessionID int64) {
 	if !l.hasListeners(path) || l.zkEventListener == nil ||
 		l.zkEventListener.Client == nil || l.zkEventListener.Client.Conn == nil {
 		return
 	}
 
-	eventState := state.(watchEventState)
 	conn := l.zkEventListener.Client.Conn
-	if conn.State() != zk.StateHasSession || conn.SessionID() == eventState.sessionID {
+	if conn.State() != zk.StateHasSession || conn.SessionID() == previousSessionID {
 		return
 	}
 	if err := l.cache.ensureBusinessWatch(path, func() (watchRegistration, error) {
@@ -185,19 +203,31 @@ func (l *CacheListener) hasListeners(path string) bool {
 
 // RemoveListener will delete a listener if loaded
 func (l *CacheListener) RemoveListener(key string, listener config_center.ConfigurationListener) {
+	if l.cache == nil {
+		l.removeListener(key, listener)
+		return
+	}
+
+	pathLock := l.cache.pathLock(key)
+	pathLock.Lock()
+	defer pathLock.Unlock()
+	if l.removeListener(key, listener) {
+		l.cache.releaseBusinessWatchLocked(key)
+	}
+}
+
+func (l *CacheListener) removeListener(key string, listener config_center.ConfigurationListener) bool {
 	listeners, loaded := l.keyListeners.Load(key)
 	if !loaded {
-		return
+		return false
 	}
 	listenerSet := listeners.(map[config_center.ConfigurationListener]struct{})
 	delete(listenerSet, listener)
 	if len(listenerSet) != 0 {
-		return
+		return false
 	}
 	l.keyListeners.Delete(key)
-	if l.cache != nil {
-		l.cache.releaseBusinessWatch(key)
-	}
+	return true
 }
 
 // DataChange changes all listeners' event
@@ -216,17 +246,34 @@ func (l *CacheListener) DataChange(event remoting.Event) bool {
 
 	key, group := l.pathToKeyGroup(event.Path)
 	defer metrics.Publish(metricsConfigCenter.NewIncMetricEvent(key, group, event.Action, metricsConfigCenter.Zookeeper))
-	if listeners, ok := l.keyListeners.Load(event.Path); ok {
-		for listener := range listeners.(map[config_center.ConfigurationListener]struct{}) {
-			listener.Process(&config_center.ConfigChangeEvent{
-				Key:        key,
-				Value:      event.Content,
-				ConfigType: event.Action,
-			})
-		}
-		return true
+	listeners := l.snapshotListeners(event.Path)
+	for _, listener := range listeners {
+		listener.Process(&config_center.ConfigChangeEvent{
+			Key:        key,
+			Value:      event.Content,
+			ConfigType: event.Action,
+		})
 	}
-	return false
+	return len(listeners) != 0
+}
+
+func (l *CacheListener) snapshotListeners(path string) []config_center.ConfigurationListener {
+	if l.cache != nil {
+		pathLock := l.cache.pathLock(path)
+		pathLock.Lock()
+		defer pathLock.Unlock()
+	}
+
+	listeners, ok := l.keyListeners.Load(path)
+	if !ok {
+		return nil
+	}
+	listenerSet := listeners.(map[config_center.ConfigurationListener]struct{})
+	result := make([]config_center.ConfigurationListener, 0, len(listenerSet))
+	for listener := range listenerSet {
+		result = append(result, listener)
+	}
+	return result
 }
 
 func (l *CacheListener) pathToKeyGroup(path string) (string, string) {
