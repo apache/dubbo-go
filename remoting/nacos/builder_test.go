@@ -29,6 +29,7 @@ import (
 	nacosConstant "github.com/nacos-group/nacos-sdk-go/v2/common/constant"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -246,4 +247,148 @@ func TestNewNacosConfigClientByUrlMissingClientName(t *testing.T) {
 	client, err := NewNacosConfigClientByUrl(regURL)
 	assert.Nil(t, client)
 	assert.Error(t, err)
+}
+
+func TestNacosClientPoolKeySharedAcrossRoles(t *testing.T) {
+	var captured []string
+	oldNewNacosConfigClient := newNacosConfigClient
+	newNacosConfigClient = func(name string, share bool, sc []nacosConstant.ServerConfig,
+		cc nacosConstant.ClientConfig) (*nacosClient.NacosConfigClient, error) {
+		captured = append(captured, name)
+		assert.True(t, share)
+		return &nacosClient.NacosConfigClient{}, nil
+	}
+	t.Cleanup(func() {
+		newNacosConfigClient = oldNewNacosConfigClient
+	})
+
+	mkURL := func(clientName, namespace string) *common.URL {
+		m := url.Values{}
+		m.Set(constant.NacosNamespaceID, namespace)
+		m.Set(constant.ClientNameKey, clientName)
+		u, _ := common.NewURL("registry://test.nacos.io:80", common.WithParams(m))
+		return u
+	}
+
+	// config-center and metadata-report carry role-scoped client names, but
+	// point at the same cluster: they must resolve to one pool key (#3573).
+	_, err := NewNacosConfigClientByUrl(mkURL("dubbo.config-center-nacos-test.nacos.io:80", "ns1"))
+	require.NoError(t, err)
+	_, err = NewNacosConfigClientByUrl(mkURL("dubbo.metadata-report-nacos-test.nacos.io:80", "ns1"))
+	require.NoError(t, err)
+	assert.Equal(t, captured[0], captured[1])
+
+	// A different namespace is a different connection identity and must not
+	// share the client.
+	_, err = NewNacosConfigClientByUrl(mkURL("dubbo.config-center-nacos-test.nacos.io:80", "ns2"))
+	require.NoError(t, err)
+	assert.NotEqual(t, captured[0], captured[2])
+}
+
+func TestNacosClientPoolKeyCredentialAndEndpointIdentity(t *testing.T) {
+	// Clean up global credential IDs to avoid race conditions with other tests
+	credentialIDsMu.Lock()
+	oldCredentialIDs := credentialIDs
+	credentialIDs = make(map[string]string)
+	credentialIDsMu.Unlock()
+	t.Cleanup(func() {
+		credentialIDsMu.Lock()
+		credentialIDs = oldCredentialIDs
+		credentialIDsMu.Unlock()
+	})
+
+	key := func(params map[string]string) string {
+		m := url.Values{}
+		for k, v := range params {
+			m.Set(k, v)
+		}
+		u, _ := common.NewURL("registry://test.nacos.io:80", common.WithParams(m))
+		return nacosClientPoolKey("config", u)
+	}
+
+	userPass := map[string]string{constant.NacosUsername: "alice", constant.NacosPassword: "s3cret-A"}
+
+	// Same server and same full credential set share one key.
+	assert.Equal(t, key(userPass), key(map[string]string{constant.NacosUsername: "alice", constant.NacosPassword: "s3cret-A"}))
+
+	// A different password (or secretKey) is a differently authenticated
+	// client and must never collapse into the same pool entry.
+	assert.NotEqual(t, key(userPass), key(map[string]string{constant.NacosUsername: "alice", constant.NacosPassword: "s3cret-B"}))
+	assert.NotEqual(t,
+		key(map[string]string{constant.NacosAccessKey: "AKID", constant.NacosSecretKey: "SK-1"}),
+		key(map[string]string{constant.NacosAccessKey: "AKID", constant.NacosSecretKey: "SK-2"}))
+
+	// Credentials must not appear in the key verbatim (keys can be logged).
+	assert.NotContains(t, key(userPass), "alice")
+	assert.NotContains(t, key(userPass), "s3cret-A")
+
+	// When an endpoint is set, GetNacosConfig ignores url.Location; the pool
+	// key mirrors that, so differing (ignored) locations still share.
+	withEndpoint := func(location string) string {
+		m := url.Values{}
+		m.Set(constant.NacosEndpoint, "acm.aliyun.com")
+		u, _ := common.NewURL("registry://"+location, common.WithParams(m))
+		return nacosClientPoolKey("config", u)
+	}
+	assert.Equal(t, withEndpoint("a.nacos.io:80"), withEndpoint("b.nacos.io:80"))
+}
+
+func TestNacosNamingAndConfigPoolKeysDistinct(t *testing.T) {
+	var namingKey, configKey string
+	oldNaming := newNacosNamingClient
+	oldConfig := newNacosConfigClient
+	newNacosNamingClient = func(name string, share bool, sc []nacosConstant.ServerConfig,
+		cc nacosConstant.ClientConfig) (*nacosClient.NacosNamingClient, error) {
+		namingKey = name
+		return &nacosClient.NacosNamingClient{}, nil
+	}
+	newNacosConfigClient = func(name string, share bool, sc []nacosConstant.ServerConfig,
+		cc nacosConstant.ClientConfig) (*nacosClient.NacosConfigClient, error) {
+		configKey = name
+		return &nacosClient.NacosConfigClient{}, nil
+	}
+	t.Cleanup(func() {
+		newNacosNamingClient = oldNaming
+		newNacosConfigClient = oldConfig
+	})
+
+	regURL := getRegURL()
+	_, err := NewNacosClientByURL(regURL)
+	require.NoError(t, err)
+	_, err = NewNacosConfigClientByUrl(regURL)
+	require.NoError(t, err)
+	assert.NotEqual(t, namingKey, configKey)
+}
+
+func TestNacosClientPoolKeyDistinguishesByPath(t *testing.T) {
+	// Clean up global credential IDs to avoid race conditions with other tests
+	credentialIDsMu.Lock()
+	oldCredentialIDs := credentialIDs
+	credentialIDs = make(map[string]string)
+	credentialIDsMu.Unlock()
+	t.Cleanup(func() {
+		credentialIDsMu.Lock()
+		credentialIDs = oldCredentialIDs
+		credentialIDsMu.Unlock()
+	})
+
+	key := func(path string) string {
+		m := url.Values{}
+		m.Set(constant.ClientNameKey, "test-client")
+		m.Set(constant.NacosNamespaceID, "default")
+		u, _ := common.NewURL("registry://localhost:8848"+path, common.WithParams(m))
+		return nacosClientPoolKey("config", u)
+	}
+
+	// URLs with different paths must generate different pool keys (#3635)
+	keyNacos := key("/nacos")
+	keyCustom := key("/custom")
+	keyEmpty := key("")
+
+	assert.NotEqual(t, keyNacos, keyCustom, "different paths should create different pool keys")
+	assert.NotEqual(t, keyNacos, keyEmpty, "path /nacos should differ from empty path")
+	assert.NotEqual(t, keyCustom, keyEmpty, "path /custom should differ from empty path")
+
+	// Same path should generate same key
+	assert.Equal(t, keyNacos, key("/nacos"), "same path should create same pool key")
 }
