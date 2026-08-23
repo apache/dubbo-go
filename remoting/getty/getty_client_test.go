@@ -486,9 +486,9 @@ func (m *mockWriteOnlySession) WritePkg(pkg any, _ time.Duration) (int, int, err
 	return 0, 0, nil
 }
 
-// TestRequestContextReadTimeout is a regression test for the stdlib migration of
-// the request timeout wait (gost/time -> time.NewTimer): when no response
-// arrives within the timeout, RequestContext must return errClientReadTimeout.
+// TestRequestContextReadTimeout is a regression test for the request timeout
+// wait: when no response arrives within the timeout, RequestContext must return
+// errClientReadTimeout.
 func TestRequestContextReadTimeout(t *testing.T) {
 	client := NewClient(Options{RequestTimeout: 30 * time.Millisecond})
 	client.gettyClient = &gettyRPCClient{
