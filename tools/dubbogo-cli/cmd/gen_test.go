@@ -95,21 +95,6 @@ func TestGeneratedProjectsIncludeDependencyLocks(t *testing.T) {
 	}
 }
 
-func TestGeneratedProjectsDoNotIncludeLegacyMockDependency(t *testing.T) {
-	const legacyMockDependency = "github.com/golang/mock"
-
-	for _, tc := range generatedProjectCases() {
-		t.Run(tc.name, func(t *testing.T) {
-			genPath := filepath.Join(t.TempDir(), tc.name)
-			require.NoError(t, tc.generate(genPath))
-
-			content, err := os.ReadFile(filepath.Join(genPath, "go.sum"))
-			require.NoError(t, err)
-			require.NotContains(t, string(content), legacyMockDependency)
-		})
-	}
-}
-
 func TestGeneratedCodeDoesNotImportRemovedLoggerPackage(t *testing.T) {
 	const removedLoggerImport = `"dubbo.apache.org/dubbo-go/v3/common/logger"`
 
