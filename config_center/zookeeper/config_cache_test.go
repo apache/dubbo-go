@@ -261,7 +261,7 @@ func TestConfigCacheResetDiscardsInFlightLoad(t *testing.T) {
 	require.Equal(t, int64(2), watchState.sessionID)
 }
 
-func TestConfigCacheKeepsInFlightWatchInSameSession(t *testing.T) {
+func TestConfigCacheRejectsInFlightWatchAfterGenerationReset(t *testing.T) {
 	cache := newConfigCache(time.Minute)
 	loadStarted := make(chan struct{})
 	releaseLoad := make(chan struct{})
@@ -279,7 +279,8 @@ func TestConfigCacheKeepsInFlightWatchInSameSession(t *testing.T) {
 				<-releaseLoad
 				return configCacheEntry{content: "old", exists: true}, newTestWatchRegistration(1), nil
 			}
-			return configCacheEntry{content: "new", exists: true}, watchRegistration{}, nil
+			registrations.Add(1)
+			return configCacheEntry{content: "new", exists: true}, newTestWatchRegistration(1), nil
 		})
 		result <- err
 	}()
@@ -290,9 +291,9 @@ func TestConfigCacheKeepsInFlightWatchInSameSession(t *testing.T) {
 
 	require.NoError(t, <-result)
 	require.Equal(t, int32(2), loads.Load())
-	require.Equal(t, int32(1), registrations.Load())
+	require.Equal(t, int32(2), registrations.Load())
 	require.True(t, <-decisions)
-	require.False(t, <-decisions)
+	require.True(t, <-decisions)
 	entry, ok := cache.getFresh("/path")
 	require.True(t, ok)
 	require.Equal(t, "new", entry.content)
@@ -371,6 +372,21 @@ func TestWatchRegistrationResolveAcrossSession(t *testing.T) {
 	})
 }
 
+func TestWatchRegistrationSessionStabilityIncludesFollowUpRead(t *testing.T) {
+	registration := watchRegistration{
+		events:              make(chan zk.Event, 1),
+		beforeSessionID:     1,
+		afterSessionID:      1,
+		readBeforeSessionID: 2,
+		readAfterSessionID:  2,
+	}
+	require.False(t, registration.sessionStable())
+
+	registration.readBeforeSessionID = 1
+	registration.readAfterSessionID = 1
+	require.True(t, registration.sessionStable())
+}
+
 func TestConfigCacheResetDiscardsInFlightBusinessWatch(t *testing.T) {
 	cache := newConfigCache(time.Minute)
 	registerStarted := make(chan struct{})
@@ -401,6 +417,78 @@ func TestConfigCacheResetDiscardsInFlightBusinessWatch(t *testing.T) {
 	require.True(t, watchState.registered)
 	require.False(t, watchState.auto)
 	require.Equal(t, int64(2), watchState.sessionID)
+}
+
+func TestConfigCacheConcurrentBusinessWatchRegistrationSharesPendingOperation(t *testing.T) {
+	cache := newConfigCache(time.Minute)
+	registerStarted := make(chan struct{})
+	releaseRegister := make(chan struct{})
+	var registrations atomic.Int32
+	register := func() (watchRegistration, error) {
+		if registrations.Add(1) == 1 {
+			close(registerStarted)
+			<-releaseRegister
+		}
+		return newTestWatchRegistration(1), nil
+	}
+
+	firstResult := make(chan error, 1)
+	go func() { firstResult <- cache.ensureBusinessWatch("/path", register) }()
+	<-registerStarted
+
+	secondResult := make(chan error, 1)
+	go func() { secondResult <- cache.ensureBusinessWatch("/path", register) }()
+	time.Sleep(10 * time.Millisecond)
+	require.Equal(t, int32(1), registrations.Load())
+
+	close(releaseRegister)
+	require.NoError(t, <-firstResult)
+	require.NoError(t, <-secondResult)
+	require.Equal(t, int32(1), registrations.Load())
+	_, watchState := cache.snapshot("/path")
+	require.True(t, watchState.registered)
+	require.False(t, watchState.auto)
+}
+
+func TestConfigCacheRegistrationRequiresCurrentGenerationAndSession(t *testing.T) {
+	cache := newConfigCache(time.Minute)
+	cache.reset(1)
+
+	generation, registerWatch, token := cache.prepareLoad("/path")
+	require.True(t, registerWatch)
+
+	cache.reset(1)
+	require.False(t, cache.finishWatchRegistration("/path", generation, token, newTestWatchRegistration(1)))
+	_, watchState := cache.snapshot("/path")
+	require.False(t, watchState.tracked())
+
+	generation, registerWatch, token = cache.prepareLoad("/path")
+	require.True(t, registerWatch)
+	cache.stateLock.Lock()
+	cache.sessionID = 2
+	cache.stateLock.Unlock()
+	require.False(t, cache.finishWatchRegistration("/path", generation, token, newTestWatchRegistration(1)))
+	_, watchState = cache.snapshot("/path")
+	require.False(t, watchState.tracked())
+}
+
+func TestConfigCacheLoadRetryIsBoundedWhenGenerationKeepsChanging(t *testing.T) {
+	cache := newConfigCache(time.Minute)
+	var loads atomic.Int32
+	started := time.Now()
+	_, err := cache.load("/path", func(registerWatch bool) (configCacheEntry, watchRegistration, error) {
+		loads.Add(1)
+		sessionID := time.Now().UnixNano()
+		cache.reset(sessionID)
+		if registerWatch {
+			return configCacheEntry{content: "stale", exists: true}, newTestWatchRegistration(sessionID), nil
+		}
+		return configCacheEntry{content: "stale", exists: true}, watchRegistration{}, nil
+	})
+
+	require.ErrorIs(t, err, errWatchRegistrationStale)
+	require.LessOrEqual(t, loads.Load(), int32(2*(maxCacheLoadRetries+1)+1))
+	require.Less(t, time.Since(started), time.Second)
 }
 
 func TestConfigCacheBusinessWatchRegistrationRetryIsBounded(t *testing.T) {

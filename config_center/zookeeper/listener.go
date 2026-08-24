@@ -51,6 +51,7 @@ type watchEventState struct {
 	generation uint64
 	sessionID  int64
 	auto       bool
+	token      uint64
 }
 
 // NewCacheListener creates a new CacheListener
@@ -76,9 +77,16 @@ func (l *CacheListener) registerWatcher(key string) (watchRegistration, error) {
 // AddListener will add a listener if loaded
 func (l *CacheListener) AddListener(key string, listener config_center.ConfigurationListener) {
 	// FIXME do not use Client.ExistW, cause it has a bug(can not watch zk node that do not exist)
-	register := func() (watchRegistration, error) {
+	l.addListenerWithRegister(key, listener, func() (watchRegistration, error) {
 		return l.registerWatcher(key)
-	}
+	})
+}
+
+func (l *CacheListener) addListenerWithRegister(
+	key string,
+	listener config_center.ConfigurationListener,
+	register func() (watchRegistration, error),
+) {
 	if l.cache == nil {
 		if _, err := register(); err != nil {
 			return
@@ -89,25 +97,43 @@ func (l *CacheListener) AddListener(key string, listener config_center.Configura
 
 	pathLock := l.cache.pathLock(key)
 	pathLock.Lock()
-	l.storeListener(key, listener)
+	added := l.storeListener(key, listener)
 	pathLock.Unlock()
-	if err := l.cache.ensureBusinessWatchWithRetry(key, register, 1); err != nil {
+	stillNeeded := func() bool {
 		pathLock.Lock()
-		if l.removeListener(key, listener) {
+		defer pathLock.Unlock()
+		return l.hasListener(key, listener)
+	}
+	err := l.cache.ensureBusinessWatchWithRetryIf(key, register, 1, stillNeeded)
+	pathLock.Lock()
+	defer pathLock.Unlock()
+	present := l.hasListener(key, listener)
+	if err != nil && added && present {
+		_, last := l.removeListener(key, listener)
+		if last {
 			l.cache.releaseBusinessWatchLocked(key)
 		}
-		pathLock.Unlock()
+		return
+	}
+	if !present && !l.hasListeners(key) {
+		l.cache.releaseBusinessWatchLocked(key)
 	}
 }
 
-func (l *CacheListener) storeListener(key string, listener config_center.ConfigurationListener) {
+func (l *CacheListener) storeListener(key string, listener config_center.ConfigurationListener) bool {
 	// reference from https://stackoverflow.com/questions/34018908/golang-why-dont-we-have-a-set-datastructure
 	// make a map[your type]struct{} like set in java
 	listeners, loaded := l.keyListeners.LoadOrStore(key, map[config_center.ConfigurationListener]struct{}{listener: {}})
-	if loaded {
-		listeners.(map[config_center.ConfigurationListener]struct{})[listener] = struct{}{}
-		l.keyListeners.Store(key, listeners)
+	if !loaded {
+		return true
 	}
+	listenerSet := listeners.(map[config_center.ConfigurationListener]struct{})
+	if _, exists := listenerSet[listener]; exists {
+		return false
+	}
+	listenerSet[listener] = struct{}{}
+	l.keyListeners.Store(key, listenerSet)
+	return true
 }
 
 func (l *CacheListener) restoreBusinessWatches() {
@@ -148,6 +174,7 @@ func (l *CacheListener) WatchStateChanged(path string) bool {
 		generation: generation,
 		sessionID:  watchState.sessionID,
 		auto:       watchState.auto,
+		token:      watchState.pendingOpToken(),
 	})
 	return registerWatch
 }
@@ -170,19 +197,29 @@ func (l *CacheListener) WatchRegistered(path string, events <-chan zk.Event, bef
 		beforeSessionID: beforeSessionID,
 		afterSessionID:  afterSessionID,
 	}
-	stored := l.cache.finishWatchRegistrationLocked(path, eventState.generation, registration)
+	stored := l.cache.finishWatchRegistrationLocked(path, eventState.generation, eventState.token, registration)
 	currentGeneration := l.cache.isCurrentGeneration(eventState.generation)
 	if stored && registration.sessionStable() && currentGeneration {
 		pathLock.Unlock()
 		return zookeeper.WatchRegistrationAccepted
 	}
-	l.eventGeneration.Delete(path)
+	reload := eventState.auto || (stored && !currentGeneration)
+	if reload {
+		l.eventGeneration.Store(path, eventState)
+	} else {
+		l.eventGeneration.Delete(path)
+	}
 	pathLock.Unlock()
 
-	if eventState.auto || (stored && !currentGeneration) {
+	if reload {
 		return zookeeper.WatchRegistrationReload
 	}
-	if l.retryBusinessWatch(path, eventState.sessionID) {
+	if l.retryBusinessWatch(path, eventState.sessionID, eventState.generation) {
+		pathLock.Lock()
+		if _, ok := l.eventGeneration.Load(path); !ok {
+			l.eventGeneration.Store(path, eventState)
+		}
+		pathLock.Unlock()
 		return zookeeper.WatchRegistrationReload
 	}
 	return zookeeper.WatchRegistrationDiscarded
@@ -202,10 +239,10 @@ func (l *CacheListener) WatchStateChangeFailed(path string) {
 	l.cache.cancelPendingLocked(path)
 	pathLock.Unlock()
 	eventState := state.(watchEventState)
-	l.retryBusinessWatch(path, eventState.sessionID)
+	l.retryBusinessWatch(path, eventState.sessionID, eventState.generation)
 }
 
-func (l *CacheListener) retryBusinessWatch(path string, previousSessionID int64) bool {
+func (l *CacheListener) retryBusinessWatch(path string, previousSessionID int64, previousGeneration uint64) bool {
 	pathLock := l.cache.pathLock(path)
 	pathLock.Lock()
 	hasListeners := l.hasListeners(path)
@@ -216,7 +253,9 @@ func (l *CacheListener) retryBusinessWatch(path string, previousSessionID int64)
 	}
 
 	conn := l.zkEventListener.Client.Conn
-	if conn.State() != zk.StateHasSession || conn.SessionID() == previousSessionID {
+	currentGeneration, _ := l.cache.snapshot(path)
+	if conn.State() != zk.StateHasSession ||
+		(conn.SessionID() == previousSessionID && currentGeneration == previousGeneration) {
 		return false
 	}
 	if err := l.cache.ensureBusinessWatchWithRetry(path, func() (watchRegistration, error) {
@@ -240,6 +279,15 @@ func (l *CacheListener) hasListeners(path string) bool {
 	return ok
 }
 
+func (l *CacheListener) hasListener(path string, listener config_center.ConfigurationListener) bool {
+	listeners, ok := l.keyListeners.Load(path)
+	if !ok {
+		return false
+	}
+	_, ok = listeners.(map[config_center.ConfigurationListener]struct{})[listener]
+	return ok
+}
+
 // RemoveListener will delete a listener if loaded
 func (l *CacheListener) RemoveListener(key string, listener config_center.ConfigurationListener) {
 	if l.cache == nil {
@@ -250,23 +298,28 @@ func (l *CacheListener) RemoveListener(key string, listener config_center.Config
 	pathLock := l.cache.pathLock(key)
 	pathLock.Lock()
 	defer pathLock.Unlock()
-	if l.removeListener(key, listener) {
+	removed, last := l.removeListener(key, listener)
+	if removed && last {
 		l.cache.releaseBusinessWatchLocked(key)
 	}
 }
 
-func (l *CacheListener) removeListener(key string, listener config_center.ConfigurationListener) bool {
+func (l *CacheListener) removeListener(key string, listener config_center.ConfigurationListener) (bool, bool) {
 	listeners, loaded := l.keyListeners.Load(key)
 	if !loaded {
-		return false
+		return false, false
 	}
 	listenerSet := listeners.(map[config_center.ConfigurationListener]struct{})
+	if _, exists := listenerSet[listener]; !exists {
+		return false, false
+	}
 	delete(listenerSet, listener)
 	if len(listenerSet) != 0 {
-		return false
+		l.keyListeners.Store(key, listenerSet)
+		return true, false
 	}
 	l.keyListeners.Delete(key)
-	return true
+	return true, true
 }
 
 // DataChange changes all listeners' event

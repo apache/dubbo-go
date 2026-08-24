@@ -30,12 +30,21 @@ import (
 )
 
 const (
-	pathLockShardCount = 128
-	maxCacheEntries    = 1024
-	maxAutoWatches     = 1024
+	pathLockShardCount  = 128
+	maxCacheEntries     = 1024
+	maxAutoWatches      = 1024
+	maxCacheLoadRetries = 3
 )
 
 var errWatchRegistrationStale = errors.New("zookeeper watch registration became stale")
+var errBusinessWatchCanceled = errors.New("zookeeper business watch registration canceled")
+
+type watchOperation struct {
+	token     uint64
+	done      chan struct{}
+	err       error
+	completed bool
+}
 
 type configCacheEntry struct {
 	content   string
@@ -44,9 +53,11 @@ type configCacheEntry struct {
 }
 
 type watchRegistration struct {
-	events          <-chan zk.Event
-	beforeSessionID int64
-	afterSessionID  int64
+	events              <-chan zk.Event
+	beforeSessionID     int64
+	afterSessionID      int64
+	readBeforeSessionID int64
+	readAfterSessionID  int64
 }
 
 func (r watchRegistration) resolve() (int64, bool) {
@@ -60,12 +71,45 @@ func (r watchRegistration) resolve() (int64, bool) {
 		default:
 		}
 	}
-	return r.afterSessionID, true
+	return r.resultSessionID(), true
 }
 
 func (r watchRegistration) sessionStable() bool {
-	return (r.beforeSessionID == 0 && r.afterSessionID == 0) ||
-		(r.beforeSessionID != 0 && r.beforeSessionID == r.afterSessionID)
+	if !stableSessionPair(r.beforeSessionID, r.afterSessionID) ||
+		!stableSessionPair(r.readBeforeSessionID, r.readAfterSessionID) {
+		return false
+	}
+	var sessionID int64
+	for _, id := range []int64{
+		r.beforeSessionID,
+		r.afterSessionID,
+		r.readBeforeSessionID,
+		r.readAfterSessionID,
+	} {
+		if id == 0 {
+			continue
+		}
+		if sessionID == 0 {
+			sessionID = id
+			continue
+		}
+		if sessionID != id {
+			return false
+		}
+	}
+	return true
+}
+
+func (r watchRegistration) resultSessionID() int64 {
+	if r.readAfterSessionID != 0 {
+		return r.readAfterSessionID
+	}
+	return r.afterSessionID
+}
+
+func stableSessionPair(beforeSessionID, afterSessionID int64) bool {
+	return (beforeSessionID == 0 && afterSessionID == 0) ||
+		(beforeSessionID != 0 && beforeSessionID == afterSessionID)
 }
 
 type configWatchState struct {
@@ -74,6 +118,7 @@ type configWatchState struct {
 	auto       bool
 	retired    bool
 	sessionID  int64
+	pendingOp  *watchOperation
 }
 
 func (s configWatchState) tracked() bool {
@@ -92,6 +137,13 @@ func (s configWatchState) holdsAutoReservation() bool {
 	return s.auto && s.pending
 }
 
+func (s configWatchState) pendingOpToken() uint64 {
+	if s.pendingOp == nil {
+		return 0
+	}
+	return s.pendingOp.token
+}
+
 type configCache struct {
 	ttl time.Duration
 
@@ -102,6 +154,7 @@ type configCache struct {
 	autoWatchReservations int
 	generation            uint64
 	sessionID             int64
+	nextWatchToken        uint64
 
 	pathLocks [pathLockShardCount]sync.Mutex
 }
@@ -127,7 +180,11 @@ func (c *configCache) load(
 	loader func(bool) (configCacheEntry, watchRegistration, error),
 ) (configCacheEntry, error) {
 	if !c.enabled() {
-		entry, _, err := loader(false)
+		generation, _ := c.snapshot(path)
+		entry, registration, err := loader(false)
+		if err == nil && !c.loadResultCurrent(generation, registration) {
+			return configCacheEntry{}, errWatchRegistrationStale
+		}
 		return entry, err
 	}
 	if entry, ok := c.getFresh(path); ok {
@@ -138,61 +195,81 @@ func (c *configCache) load(
 	pathLock.Lock()
 	defer pathLock.Unlock()
 
-	registrationRetries := 0
-	for {
+	watchRetries := 0
+	for attempt := 0; attempt <= maxCacheLoadRetries; attempt++ {
 		if entry, ok := c.getFresh(path); ok {
 			return entry, nil
 		}
 
-		generation, registerWatch := c.prepareLoad(path)
+		generation, registerWatch, token := c.prepareLoad(path)
 		entry, registration, err := loader(registerWatch)
 		if registerWatch {
-			stored := c.finishWatchRegistrationLocked(path, generation, registration)
-			if !stored || !registration.sessionStable() {
-				if registrationRetries == 0 {
-					registrationRetries++
+			stored := c.finishWatchRegistrationLocked(path, generation, token, registration)
+			if !stored || !c.loadResultCurrent(generation, registration) {
+				if watchRetries == 0 && attempt < maxCacheLoadRetries {
+					watchRetries++
 					continue
 				}
-				entry, fallbackRegistration, fallbackErr := loader(false)
+				fallbackEntry, fallbackRegistration, fallbackErr := loader(false)
 				if fallbackErr != nil {
 					return configCacheEntry{}, fallbackErr
 				}
-				if !fallbackRegistration.sessionStable() {
-					return configCacheEntry{}, errWatchRegistrationStale
-				}
-				if !c.storeLoadEntry(path, generation, entry) {
+				if !c.loadResultCurrent(generation, fallbackRegistration) {
+					if attempt == maxCacheLoadRetries {
+						return configCacheEntry{}, errWatchRegistrationStale
+					}
 					continue
 				}
-				return entry, nil
+				if c.storeLoadEntry(path, generation, fallbackEntry) {
+					return fallbackEntry, nil
+				}
+				if attempt == maxCacheLoadRetries {
+					return configCacheEntry{}, errWatchRegistrationStale
+				}
+				continue
 			}
+		} else if !c.loadResultCurrent(generation, registration) {
+			if attempt == maxCacheLoadRetries {
+				return configCacheEntry{}, errWatchRegistrationStale
+			}
+			continue
 		}
+
 		if err != nil {
+			if attempt == maxCacheLoadRetries && !c.isCurrentGeneration(generation) {
+				return configCacheEntry{}, errWatchRegistrationStale
+			}
 			if !c.isCurrentGeneration(generation) {
 				continue
 			}
 			return configCacheEntry{}, err
 		}
-		if !c.storeLoadEntry(path, generation, entry) {
-			continue
+
+		if c.storeLoadEntry(path, generation, entry) {
+			return entry, nil
 		}
-		return entry, nil
+		if attempt == maxCacheLoadRetries {
+			return configCacheEntry{}, errWatchRegistrationStale
+		}
 	}
+	return configCacheEntry{}, errWatchRegistrationStale
 }
 
-func (c *configCache) prepareLoad(path string) (uint64, bool) {
+func (c *configCache) prepareLoad(path string) (uint64, bool, uint64) {
 	c.stateLock.Lock()
 	defer c.stateLock.Unlock()
 
 	generation := c.generation
 	if c.watches[path].tracked() {
-		return generation, false
+		return generation, false, 0
 	}
 
-	pendingState := configWatchState{auto: true, pending: true, sessionID: c.sessionID}
+	op := c.newWatchOperationLocked()
+	pendingState := configWatchState{auto: true, pending: true, sessionID: c.sessionID, pendingOp: op}
 	if !c.setWatchStateLocked(path, pendingState) {
-		return generation, false
+		return generation, false, 0
 	}
-	return generation, true
+	return generation, true, op.token
 }
 
 func (c *configCache) store(path string, entry configCacheEntry) {
@@ -284,6 +361,20 @@ func (c *configCache) isCurrentGeneration(generation uint64) bool {
 	return c.generation == generation
 }
 
+func (c *configCache) loadResultCurrent(generation uint64, registration watchRegistration) bool {
+	if !registration.sessionStable() {
+		return false
+	}
+	c.stateLock.RLock()
+	defer c.stateLock.RUnlock()
+	if c.generation != generation {
+		return false
+	}
+	resultSessionID := registration.resultSessionID()
+	return c.sessionID == 0 ||
+		(resultSessionID != 0 && resultSessionID == c.sessionID)
+}
+
 func (c *configCache) storeLoadEntry(path string, generation uint64, entry configCacheEntry) bool {
 	c.stateLock.Lock()
 	defer c.stateLock.Unlock()
@@ -292,6 +383,31 @@ func (c *configCache) storeLoadEntry(path string, generation uint64, entry confi
 	}
 	c.storeEntryLocked(path, entry)
 	return true
+}
+
+func (c *configCache) newWatchOperationLocked() *watchOperation {
+	c.nextWatchToken++
+	return &watchOperation{
+		token: c.nextWatchToken,
+		done:  make(chan struct{}),
+	}
+}
+
+func (c *configCache) completeWatchOperationLocked(op *watchOperation, err error) {
+	if op == nil || op.completed {
+		return
+	}
+	op.err = err
+	op.completed = true
+	close(op.done)
+}
+
+func (c *configCache) clearWatchStateLocked(path string, err error) {
+	current := c.watches[path]
+	if current.pending {
+		c.completeWatchOperationLocked(current.pendingOp, err)
+	}
+	c.setWatchStateLocked(path, configWatchState{})
 }
 
 func (c *configCache) setWatch(path string, watchState configWatchState) bool {
@@ -306,6 +422,9 @@ func (c *configCache) setWatch(path string, watchState configWatchState) bool {
 
 func (c *configCache) setWatchStateLocked(path string, watchState configWatchState) bool {
 	current := c.watches[path]
+	if !watchState.pending {
+		watchState.pendingOp = nil
+	}
 	if watchState.auto && !c.enabled() {
 		return false
 	}
@@ -333,14 +452,14 @@ func (c *configCache) setWatchStateLocked(path string, watchState configWatchSta
 	return true
 }
 
-func (c *configCache) finishWatchRegistration(path string, generation uint64, registration watchRegistration) bool {
+func (c *configCache) finishWatchRegistration(path string, generation, token uint64, registration watchRegistration) bool {
 	pathLock := c.pathLock(path)
 	pathLock.Lock()
 	defer pathLock.Unlock()
-	return c.finishWatchRegistrationLocked(path, generation, registration)
+	return c.finishWatchRegistrationLocked(path, generation, token, registration)
 }
 
-func (c *configCache) finishWatchRegistrationLocked(path string, generation uint64, registration watchRegistration) bool {
+func (c *configCache) finishWatchRegistrationLocked(path string, generation, token uint64, registration watchRegistration) bool {
 	sessionID, active := registration.resolve()
 	c.stateLock.Lock()
 	defer c.stateLock.Unlock()
@@ -349,14 +468,27 @@ func (c *configCache) finishWatchRegistrationLocked(path string, generation uint
 	if !watchState.pending {
 		return false
 	}
-	if !active || c.generation != generation && c.sessionID != 0 && sessionID != c.sessionID {
-		c.setWatchStateLocked(path, configWatchState{})
+	if (watchState.pendingOp != nil && watchState.pendingOp.token != token) ||
+		(watchState.pendingOp == nil && token != 0) {
 		return false
 	}
+	generationCurrent := c.generation == generation
+	sessionCurrent := c.sessionID == 0 ||
+		(sessionID != 0 && sessionID == c.sessionID)
+	if !active || !generationCurrent || !registration.sessionStable() || !sessionCurrent {
+		c.clearWatchStateLocked(path, errWatchRegistrationStale)
+		return false
+	}
+	op := watchState.pendingOp
 	watchState.registered = true
 	watchState.pending = false
 	watchState.sessionID = sessionID
-	return c.setWatchStateLocked(path, watchState)
+	watchState.pendingOp = nil
+	stored := c.setWatchStateLocked(path, watchState)
+	if stored {
+		c.completeWatchOperationLocked(op, nil)
+	}
+	return stored
 }
 
 func (c *configCache) ensureBusinessWatch(
@@ -371,8 +503,23 @@ func (c *configCache) ensureBusinessWatchWithRetry(
 	register func() (watchRegistration, error),
 	maxRetries int,
 ) error {
+	return c.ensureBusinessWatchWithRetryIf(path, register, maxRetries, nil)
+}
+
+func (c *configCache) ensureBusinessWatchWithRetryIf(
+	path string,
+	register func() (watchRegistration, error),
+	maxRetries int,
+	stillNeeded func() bool,
+) error {
 	for attempt := 0; ; attempt++ {
+		if stillNeeded != nil && !stillNeeded() {
+			return errBusinessWatchCanceled
+		}
 		err := c.ensureBusinessWatchOnce(path, register)
+		if err == nil && stillNeeded != nil && !stillNeeded() {
+			return errBusinessWatchCanceled
+		}
 		if !errors.Is(err, errWatchRegistrationStale) || attempt >= maxRetries {
 			return err
 		}
@@ -387,7 +534,7 @@ func (c *configCache) ensureBusinessWatchOnce(
 	pathLock.Lock()
 	c.stateLock.Lock()
 	watchState := c.watches[path]
-	if watchState.tracked() {
+	if watchState.registered {
 		watchState.auto = false
 		watchState.retired = false
 		c.setWatchStateLocked(path, watchState)
@@ -395,9 +542,27 @@ func (c *configCache) ensureBusinessWatchOnce(
 		pathLock.Unlock()
 		return nil
 	}
+	if watchState.pending {
+		watchState.auto = false
+		watchState.retired = false
+		c.setWatchStateLocked(path, watchState)
+		op := watchState.pendingOp
+		c.stateLock.Unlock()
+		pathLock.Unlock()
+		if op == nil {
+			return nil
+		}
+		<-op.done
+		return op.err
+	}
 	generation := c.generation
 	sessionID := c.sessionID
-	c.setWatchStateLocked(path, configWatchState{pending: true, sessionID: sessionID})
+	op := c.newWatchOperationLocked()
+	c.setWatchStateLocked(path, configWatchState{
+		pending:   true,
+		sessionID: sessionID,
+		pendingOp: op,
+	})
 	c.stateLock.Unlock()
 	pathLock.Unlock()
 
@@ -405,12 +570,22 @@ func (c *configCache) ensureBusinessWatchOnce(
 	pathLock.Lock()
 	defer pathLock.Unlock()
 	if err != nil {
-		c.cancelPendingLocked(path)
+		c.stateLock.Lock()
+		current := c.watches[path]
+		if current.pendingOp == op {
+			c.clearWatchStateLocked(path, err)
+		} else {
+			c.completeWatchOperationLocked(op, err)
+		}
+		c.stateLock.Unlock()
 		return err
 	}
-	if c.finishWatchRegistrationLocked(path, generation, registration) {
+	if c.finishWatchRegistrationLocked(path, generation, op.token, registration) {
 		return nil
 	}
+	c.stateLock.Lock()
+	c.completeWatchOperationLocked(op, errWatchRegistrationStale)
+	c.stateLock.Unlock()
 	return errWatchRegistrationStale
 }
 
@@ -448,7 +623,11 @@ func (c *configCache) beginWatchRenewalLocked(path string, hasListeners bool) (u
 		if !hasListeners {
 			return generation, watchState, false
 		}
-		c.setWatchStateLocked(path, configWatchState{pending: true, sessionID: c.sessionID})
+		c.setWatchStateLocked(path, configWatchState{
+			pending:   true,
+			sessionID: c.sessionID,
+			pendingOp: c.newWatchOperationLocked(),
+		})
 		return generation, c.watches[path], true
 	}
 	if watchState.pending {
@@ -472,6 +651,7 @@ func (c *configCache) beginWatchRenewalLocked(path string, hasListeners bool) (u
 	}
 	watchState.registered = false
 	watchState.pending = true
+	watchState.pendingOp = c.newWatchOperationLocked()
 	c.setWatchStateLocked(path, watchState)
 	return generation, c.watches[path], true
 }
@@ -487,7 +667,7 @@ func (c *configCache) cancelPendingLocked(path string) {
 	c.stateLock.Lock()
 	defer c.stateLock.Unlock()
 	if c.watches[path].pending {
-		c.setWatchStateLocked(path, configWatchState{})
+		c.clearWatchStateLocked(path, errWatchRegistrationStale)
 	}
 }
 

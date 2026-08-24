@@ -215,7 +215,11 @@ func (c *zookeeperDynamicConfiguration) loadProperties(path string, registerWatc
 			return configCacheEntry{exists: false}, registration, nil
 		}
 
+		readBeforeSessionID := c.client.Conn.SessionID()
 		content, _, getErr := c.client.Conn.Get(path)
+		readAfterSessionID := c.client.Conn.SessionID()
+		registration.readBeforeSessionID = readBeforeSessionID
+		registration.readAfterSessionID = readAfterSessionID
 		if errors.Is(getErr, zk.ErrNoNode) {
 			continue
 		}
