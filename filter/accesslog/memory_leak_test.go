@@ -20,7 +20,6 @@ package accesslog
 import (
 	"context"
 	"os"
-	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -49,32 +48,27 @@ func resetGlobalState() {
 func TestAccessLogFilterGoroutineShutdown(t *testing.T) {
 	resetGlobalState()
 
-	// Count goroutines before
-	initialGoroutines := runtime.NumGoroutine()
+	filter, ok := newFilter().(*Filter)
+	if !ok {
+		t.Fatal("newFilter should return a *Filter")
+	}
 
-	// Create filter (this should start the goroutine)
-	filter := newFilter()
-	assert.NotNil(t, filter)
+	// processLogs goroutine should be running: done must not be closed yet
+	select {
+	case <-filter.done:
+		t.Fatal("processLogs exited before shutdown")
+	default:
+	}
 
-	// Give the goroutine time to start
-	time.Sleep(100 * time.Millisecond)
-	postCreateGoroutines := runtime.NumGoroutine()
-
-	// Should have at least one more goroutine
-	assert.Greater(t, postCreateGoroutines, initialGoroutines)
-
-	// Shutdown the filter
 	Shutdown()
 
-	// Give goroutine time to exit
-	time.Sleep(100 * time.Millisecond)
-	runtime.GC() // Force garbage collection
-
-	postShutdownGoroutines := runtime.NumGoroutine()
-
-	// Goroutine count should be back to original or less
-	assert.LessOrEqual(t, postShutdownGoroutines, initialGoroutines+1,
-		"Goroutines should be cleaned up after shutdown")
+	// After shutdown the goroutine should exit deterministically
+	select {
+	case <-filter.done:
+		// success
+	case <-time.After(5 * time.Second):
+		t.Fatal("processLogs did not exit after shutdown")
+	}
 }
 
 // TestAccessLogFilterFileHandleManagement tests proper file handle management

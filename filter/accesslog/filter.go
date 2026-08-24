@@ -90,21 +90,21 @@ type Filter struct {
 	ctx          context.Context
 	cancel       context.CancelFunc
 	shutdownOnce sync.Once
+	done         chan struct{} // closed when processLogs exits
 }
 
 func newFilter() filter.Filter {
-	if accessLogFilter == nil {
-		once.Do(func() {
-			ctx, cancel := context.WithCancel(context.Background())
-			accessLogFilter = &Filter{
-				logChan:   make(chan Data, LogMaxBuffer),
-				fileCache: make(map[string]*os.File),
-				ctx:       ctx,
-				cancel:    cancel,
-			}
-			go accessLogFilter.processLogs()
-		})
-	}
+	once.Do(func() {
+		ctx, cancel := context.WithCancel(context.Background())
+		accessLogFilter = &Filter{
+			logChan:   make(chan Data, LogMaxBuffer),
+			fileCache: make(map[string]*os.File),
+			ctx:       ctx,
+			cancel:    cancel,
+			done:      make(chan struct{}),
+		}
+		go accessLogFilter.processLogs()
+	})
 	return accessLogFilter
 }
 
@@ -198,6 +198,8 @@ func (f *Filter) OnResponse(_ context.Context, result result.Result, _ base.Invo
 
 // processLogs runs in a background goroutine to process log data
 func (f *Filter) processLogs() {
+	// registered first, runs last: signals only after drainLogs completes
+	defer close(f.done)
 	defer func() {
 		if r := recover(); r != nil {
 			logger.Errorf("[Filter][AccessLog] accessLog processLogs panic, err=%v", r)
@@ -429,6 +431,13 @@ func (f *Filter) shutdown() {
 		// Close the channel to stop accepting new logs
 		if f.logChan != nil {
 			close(f.logChan)
+		}
+
+		// Wait for processLogs to exit (drainLogs timeout is 5s, use 6s margin)
+		select {
+		case <-f.done:
+		case <-time.After(6 * time.Second):
+			logger.Warn("[Filter][AccessLog] shutdown wait for processLogs timeout")
 		}
 
 		// Close all cached file handles
