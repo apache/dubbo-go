@@ -31,6 +31,8 @@ import (
 	"github.com/cenkalti/backoff/v4"
 
 	"github.com/dubbogo/gost/log/logger"
+
+	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -190,6 +192,9 @@ func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation pr
 	invoked := make([]protocolbase.Invoker, 0, len(invokers))
 	ivk := invoker.DoSelect(loadBalance, invocation, invokers, invoked)
 	// DO INVOKE
+	if ivk == nil {
+		return &result.RPCResult{Err: perrors.New("invoker is nil")}
+	}
 	res := ivk.Invoke(ctx, invocation)
 	if res.Error() != nil {
 		timerTask := newRetryTimerTask(loadBalance, invocation, invokers, ivk, invoker)

@@ -270,6 +270,10 @@ func (pr *polarisRegistry) LoadSubscribeInstances(url *common.URL, notify regist
 		GetInstancesRequest: model.GetInstancesRequest{
 			Service:   serviceName,
 			Namespace: pr.namespace,
+			// Polaris evaluates routing rules during GetInstances by default. At subscribe
+			// time there is no uid label, so the filter rejects all instances. Skip it here;
+			// polarisRouter.Route handles per-call routing instead.
+			SkipRouteFilter: true,
 		},
 	})
 	if err != nil {

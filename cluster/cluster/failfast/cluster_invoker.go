@@ -22,6 +22,10 @@ import (
 )
 
 import (
+	perrors "github.com/pkg/errors"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/cluster/base"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
@@ -54,5 +58,8 @@ func (invoker *failfastClusterInvoker) Invoke(ctx context.Context, invocation pr
 	}
 
 	ivk := invoker.DoSelect(loadbalance, invocation, invokers, nil)
+	if ivk == nil {
+		return &result.RPCResult{Err: perrors.New("invoker is nil")}
+	}
 	return ivk.Invoke(ctx, invocation)
 }
