@@ -89,7 +89,8 @@ func TestExternalServiceDiscoveryStillSatisfiesInterface(t *testing.T) {
 func TestPagerAliasIsGxpagePager(t *testing.T) {
 	// registry.Pager is an alias of gxpage.Pager, so a page produced by the
 	// registry package can be assigned to a gxpage.Pager variable.
-	var p gxpage.Pager = registry.NewPage(0, 10, []any{1, 2, 3}, 10)
+	var p gxpage.Pager
+	p = registry.NewPage(0, 10, []any{1, 2, 3}, 10)
 	assert.NotNil(t, p)
 }
 
