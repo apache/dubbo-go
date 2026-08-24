@@ -20,7 +20,9 @@ package dubboutil
 import (
 	"encoding/json"
 	"testing"
+)
 
+import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -34,7 +36,7 @@ func TestEncodeJSON(t *testing.T) {
 		Count: 2,
 	})
 	require.NoError(t, err)
-	assert.Equal(t, `{"name":"dubbo-go","count":2}`, string(encoded))
+	assert.JSONEq(t, `{"name":"dubbo-go","count":2}`, string(encoded))
 }
 
 func TestEncodeJSONNilInput(t *testing.T) {
@@ -46,7 +48,7 @@ func TestEncodeJSONNilInput(t *testing.T) {
 func TestEncodeJSONMarshalError(t *testing.T) {
 	encoded, err := EncodeJSON(make(chan int))
 	require.Error(t, err)
-	assert.ErrorContains(t, err, "encode JSON: json: unsupported type: chan int")
+	require.ErrorContains(t, err, "encode JSON: json: unsupported type: chan int")
 	assert.Nil(t, encoded)
 }
 
