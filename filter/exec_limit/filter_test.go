@@ -20,6 +20,7 @@ package exec_limit
 import (
 	"context"
 	"net/url"
+	"sync"
 	"testing"
 )
 
@@ -30,6 +31,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/dubboutil"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
@@ -82,4 +84,49 @@ func TestFilterInvoke(t *testing.T) {
 	result := limitFilter.Invoke(context.Background(), base.NewBaseInvoker(invokeUrl), invoc)
 	assert.NotNil(t, result)
 	assert.NoError(t, result.Error())
+}
+
+func TestExecuteLimitStateConcurrentFirstInitialization(t *testing.T) {
+	const goroutines = 64
+
+	limitFilter := &executeLimitFilter{}
+
+	start := make(chan struct{})
+	states := make(chan *ExecuteState, goroutines)
+	okValues := make(chan bool, goroutines)
+	wg := sync.WaitGroup{}
+
+	for range goroutines {
+		wg.Go(func() {
+			<-start
+			state, _, ok := dubboutil.LoadOrStoreSyncMap(&limitFilter.executeState, "service#method", &ExecuteState{})
+			okValues <- ok
+			states <- state
+		})
+	}
+
+	close(start)
+	wg.Wait()
+	close(states)
+	close(okValues)
+
+	for ok := range okValues {
+		assert.True(t, ok)
+	}
+
+	var first *ExecuteState
+	for state := range states {
+		if first == nil {
+			first = state
+			continue
+		}
+		assert.Same(t, first, state)
+	}
+
+	count := 0
+	limitFilter.executeState.Range(func(_, _ any) bool {
+		count++
+		return true
+	})
+	assert.Equal(t, 1, count)
 }

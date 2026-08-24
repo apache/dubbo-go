@@ -24,13 +24,12 @@ import (
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-
-	"github.com/modern-go/concurrent"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/dubboutil"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
@@ -112,16 +111,16 @@ func init() {
  * In this case, only UpdateUser will be limited by its configuration (70 times in 40000ms)
  */
 type MethodServiceTpsLimiter struct {
-	tpsState *concurrent.Map
+	tpsState sync.Map
 }
 
 // IsAllowable based on method-level and service-level.
 // The method-level has high priority which means that if there is any rate limit configuration for the method,
 // the service-level rate limit strategy will be ignored.
 // The key point is how to keep thread-safe
-// This implementation use concurrent map + loadOrStore to make implementation thread-safe
-// You can image that even multiple threads create limiter, but only one could store the limiter into tpsState
-func (limiter MethodServiceTpsLimiter) IsAllowable(url *common.URL, invocation base.Invocation) bool {
+// This implementation uses sync.Map + LoadOrStore to make implementation thread-safe.
+// You can imagine that even when multiple goroutines create limiters, only one can store the limiter into tpsState.
+func (limiter *MethodServiceTpsLimiter) IsAllowable(url *common.URL, invocation base.Invocation) bool {
 	methodConfigPrefix := "methods." + invocation.MethodName() + "."
 
 	methodLimitRateConfig := url.GetParam(methodConfigPrefix+constant.TPSLimitRateKey, "")
@@ -137,10 +136,10 @@ func (limiter MethodServiceTpsLimiter) IsAllowable(url *common.URL, invocation b
 	}
 
 	// looking up the limiter from 'cache'
-	limitState, found := limiter.tpsState.Load(limitTarget)
+	limitState, found := dubboutil.LoadSyncMap[filter.TpsLimitStrategy](&limiter.tpsState, limitTarget)
 	if found {
 		// the limiter has been cached, we return its result
-		return limitState.(filter.TpsLimitStrategy).IsAllowable()
+		return limitState.IsAllowable()
 	}
 
 	// we could not find the limiter, and try to create one.
@@ -173,9 +172,17 @@ func (limiter MethodServiceTpsLimiter) IsAllowable(url *common.URL, invocation b
 	}
 
 	// we using loadOrStore to ensure thread-safe
-	limitState, _ = limiter.tpsState.LoadOrStore(limitTarget, limitStateCreator.Create(int(limitRate), int(limitInterval)))
+	limitState, _, ok := dubboutil.LoadOrStoreSyncMap[filter.TpsLimitStrategy](
+		&limiter.tpsState,
+		limitTarget,
+		limitStateCreator.Create(int(limitRate), int(limitInterval)),
+	)
+	if !ok {
+		logger.Warnf("[Filter][TPS] invalid TPS limit strategy state type, invocation=%s", url.ServiceKey()+"#"+invocation.MethodName())
+		return true
+	}
 
-	return limitState.(filter.TpsLimitStrategy).IsAllowable()
+	return limitState.IsAllowable()
 }
 
 // getLimitConfig will try to fetch the configuration from url.
@@ -215,9 +222,7 @@ var (
 // GetMethodServiceTpsLimiter will return an MethodServiceTpsLimiter instance.
 func GetMethodServiceTpsLimiter() filter.TpsLimiter {
 	methodServiceTpsLimiterOnce.Do(func() {
-		methodServiceTpsLimiterInstance = &MethodServiceTpsLimiter{
-			tpsState: concurrent.NewMap(),
-		}
+		methodServiceTpsLimiterInstance = &MethodServiceTpsLimiter{}
 	})
 	return methodServiceTpsLimiterInstance
 }

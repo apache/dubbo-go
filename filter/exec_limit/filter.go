@@ -51,12 +51,11 @@ import (
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-
-	"github.com/modern-go/concurrent"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/dubboutil"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	_ "dubbo.apache.org/dubbo-go/v3/filter/handler"
@@ -74,7 +73,7 @@ func init() {
 }
 
 type executeLimitFilter struct {
-	executeState *concurrent.Map
+	executeState sync.Map
 }
 
 // ExecuteState defines the concurrent count
@@ -86,9 +85,7 @@ type ExecuteState struct {
 func newFilter() filter.Filter {
 	if executeLimit == nil {
 		once.Do(func() {
-			executeLimit = &executeLimitFilter{
-				executeState: concurrent.NewMap(),
-			}
+			executeLimit = &executeLimitFilter{}
 		})
 	}
 	return executeLimit
@@ -120,12 +117,16 @@ func (f *executeLimitFilter) Invoke(ctx context.Context, invoker base.Invoker, i
 		return invoker.Invoke(ctx, invocation)
 	}
 
-	state, _ := f.executeState.LoadOrStore(limitTarget, &ExecuteState{
+	state, _, ok := dubboutil.LoadOrStoreSyncMap(&f.executeState, limitTarget, &ExecuteState{
 		concurrentCount: 0,
 	})
+	if !ok {
+		logger.Errorf("[Filter][ExecLimit] invalid execute state type, url=%s target=%s", ivkURL.String(), limitTarget)
+		return invoker.Invoke(ctx, invocation)
+	}
 
-	concurrentCount := state.(*ExecuteState).increase()
-	defer state.(*ExecuteState).decrease()
+	concurrentCount := state.increase()
+	defer state.decrease()
 	if concurrentCount > limitRate {
 		logger.Errorf("[Filter][ExecLimit] the invocation was rejected due to over the execute limitation, url=%s", ivkURL.String())
 		rejectedHandlerConfig := ivkURL.GetParam(methodConfigPrefix+constant.ExecuteRejectedExecutionHandlerKey,

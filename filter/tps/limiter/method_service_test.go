@@ -19,6 +19,8 @@ package limiter
 
 import (
 	"net/url"
+	"sync"
+	"sync/atomic"
 	"testing"
 )
 
@@ -144,6 +146,58 @@ func TestMethodServiceTpsLimiterImplIsAllowableBothMethodAndService(t *testing.T
 	assert.True(t, result)
 }
 
+func TestMethodServiceTpsLimiterConcurrentFirstInitialization(t *testing.T) {
+	const goroutines = 64
+
+	methodName := "hello-concurrent"
+	strategyKey := "concurrent-first-init"
+	invoc := invocation.NewRPCInvocation(methodName, []any{"OK"}, make(map[string]any))
+	invokeUrl := common.NewURLWithOptions(
+		common.WithParams(url.Values{}),
+		common.WithParamsValue(constant.InterfaceKey, methodName),
+		common.WithParamsValue(constant.TPSLimitRateKey, "1000"),
+		common.WithParamsValue(constant.TPSLimitIntervalKey, "60000"),
+		common.WithParamsValue(constant.TPSLimitStrategyKey, strategyKey),
+	)
+
+	creator := &countingStrategyCreator{}
+	extension.SetTpsLimitStrategy(strategyKey, creator)
+
+	limiter := &MethodServiceTpsLimiter{}
+
+	start := make(chan struct{})
+	results := make(chan bool, goroutines)
+	wg := sync.WaitGroup{}
+	for range goroutines {
+		wg.Go(func() {
+			<-start
+			results <- limiter.IsAllowable(invokeUrl, invoc)
+		})
+	}
+
+	close(start)
+	wg.Wait()
+	close(results)
+
+	for result := range results {
+		assert.True(t, result)
+	}
+
+	count := 0
+	var stored filter.TpsLimitStrategy
+	limiter.tpsState.Range(func(_, value any) bool {
+		count++
+		stored = value.(filter.TpsLimitStrategy)
+		return true
+	})
+	assert.Equal(t, 1, count)
+
+	storedStrategy, ok := stored.(*countingStrategy)
+	assert.True(t, ok)
+	assert.Equal(t, int64(goroutines), storedStrategy.calls.Load())
+	assert.GreaterOrEqual(t, creator.created.Load(), int64(1))
+}
+
 type mockStrategyCreator struct {
 	rate     int
 	interval int
@@ -155,4 +209,22 @@ func (creator *mockStrategyCreator) Create(rate int, interval int) filter.TpsLim
 	assert.Equal(creator.t, creator.rate, rate)
 	assert.Equal(creator.t, creator.interval, interval)
 	return creator.strategy
+}
+
+type countingStrategyCreator struct {
+	created atomic.Int64
+}
+
+func (creator *countingStrategyCreator) Create(int, int) filter.TpsLimitStrategy {
+	creator.created.Add(1)
+	return &countingStrategy{}
+}
+
+type countingStrategy struct {
+	calls atomic.Int64
+}
+
+func (strategy *countingStrategy) IsAllowable() bool {
+	strategy.calls.Add(1)
+	return true
 }
