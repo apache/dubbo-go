@@ -17,96 +17,17 @@
 
 package registry
 
-// Pager is the abstraction for pagination usage.
-// It is the domain interface of dubbo-go registry, replacing the previous
-// gxpage.Pager from github.com/dubbogo/gost/hash/page.
-type Pager interface {
+import (
+	gxpage "github.com/dubbogo/gost/hash/page"
+)
 
-	// GetOffset will return the offset
-	GetOffset() int
-
-	// GetPageSize will return the page size
-	GetPageSize() int
-
-	// GetTotalPages will return the number of total pages
-	GetTotalPages() int
-
-	// GetData will return the data
-	GetData() []any
-
-	// GetDataSize will return the size of data.
-	// Usually it's len(GetData())
-	GetDataSize() int
-
-	// HasNext will return whether has next page
-	HasNext() bool
-
-	// HasData will return whether this page has data.
-	HasData() bool
-}
-
-// page is the default implementation of Pager interface.
-type page struct {
-	requestOffset int
-	pageSize      int
-	totalSize     int
-	data          []any
-	totalPages    int
-	hasNext       bool
-}
-
-// GetOffset will return the offset
-func (d *page) GetOffset() int {
-	return d.requestOffset
-}
-
-// GetPageSize will return the page size
-func (d *page) GetPageSize() int {
-	return d.pageSize
-}
-
-// GetTotalPages will return the number of total pages
-func (d *page) GetTotalPages() int {
-	return d.totalPages
-}
-
-// GetData will return the data
-func (d *page) GetData() []any {
-	return d.data
-}
-
-// GetDataSize will return the size of data.
-// it's len(GetData())
-func (d *page) GetDataSize() int {
-	return len(d.GetData())
-}
-
-// HasNext will return whether has next page
-func (d *page) HasNext() bool {
-	return d.hasNext
-}
-
-// HasData will return whether this page has data.
-func (d *page) HasData() bool {
-	return d.GetDataSize() > 0
-}
+// Pager is an alias of gxpage.Pager from github.com/dubbogo/gost/hash/page.
+// It is kept as a type alias so that the signatures of the exported
+// ServiceDiscovery pagination methods stay source-compatible for external
+// implementors across the v3.x line.
+type Pager = gxpage.Pager
 
 // NewPage will create a Pager instance.
 func NewPage(requestOffset int, pageSize int, data []any, totalSize int) Pager {
-	remain := totalSize % pageSize
-	totalPages := totalSize / pageSize
-	if remain > 0 {
-		totalPages++
-	}
-
-	hasNext := totalSize-requestOffset-pageSize > 0
-
-	return &page{
-		requestOffset: requestOffset,
-		pageSize:      pageSize,
-		data:          data,
-		totalSize:     totalSize,
-		totalPages:    totalPages,
-		hasNext:       hasNext,
-	}
+	return gxpage.NewPage(requestOffset, pageSize, data, totalSize)
 }

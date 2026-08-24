@@ -81,8 +81,8 @@ func (f *providerGracefulShutdownFilter) Invoke(ctx context.Context, invoker bas
 			return rejectedExecutionHandler.RejectedExecution(invoker.GetURL(), invocation)
 		}
 	}
-	f.shutdownConfig.ProviderActiveCount.Add(1)
-	f.shutdownConfig.StoreLastReceivedRequestTime(time.Now())
+	f.shutdownConfig.ProviderActiveCount.Inc()
+	f.shutdownConfig.ProviderLastReceivedRequestTime.Store(time.Now())
 	return markProviderCountedResult(invoker.Invoke(ctx, invocation))
 }
 
@@ -93,7 +93,7 @@ func (f *providerGracefulShutdownFilter) OnResponse(ctx context.Context, res res
 	}
 
 	if shouldDecrementProviderActive(res) {
-		f.shutdownConfig.ProviderActiveCount.Add(-1)
+		f.shutdownConfig.ProviderActiveCount.Dec()
 	}
 
 	// add closing flag to response

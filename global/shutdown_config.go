@@ -18,7 +18,6 @@
 package global
 
 import (
-	"sync/atomic"
 	"time"
 )
 
@@ -26,6 +25,8 @@ import (
 	"github.com/creasty/defaults"
 
 	"github.com/dubbogo/gost/log/logger"
+
+	"go.uber.org/atomic"
 )
 
 import (
@@ -75,7 +76,7 @@ type ShutdownConfig struct {
 	ProviderActiveCount atomic.Int32
 
 	// provider last received request timestamp
-	ProviderLastReceivedRequestTime atomic.Pointer[time.Time]
+	ProviderLastReceivedRequestTime atomic.Time
 
 	Closing atomic.Bool
 
@@ -89,21 +90,6 @@ func DefaultShutdownConfig() *ShutdownConfig {
 	defaults.MustSet(cfg)
 
 	return cfg
-}
-
-// LoadLastReceivedRequestTime returns the timestamp of the last received request.
-// A nil pointer means no request has ever been received, which is represented as
-// the zero time.
-func (c *ShutdownConfig) LoadLastReceivedRequestTime() time.Time {
-	if last := c.ProviderLastReceivedRequestTime.Load(); last != nil {
-		return *last
-	}
-	return time.Time{}
-}
-
-// StoreLastReceivedRequestTime records the timestamp of the last received request.
-func (c *ShutdownConfig) StoreLastReceivedRequestTime(t time.Time) {
-	c.ProviderLastReceivedRequestTime.Store(&t)
 }
 
 // Prefix dubbo.shutdown
@@ -198,7 +184,7 @@ func (c *ShutdownConfig) Clone() *ShutdownConfig {
 	newShutdownConfig.RejectRequest.Store(c.RejectRequest.Load())
 	newShutdownConfig.ConsumerActiveCount.Store(c.ConsumerActiveCount.Load())
 	newShutdownConfig.ProviderActiveCount.Store(c.ProviderActiveCount.Load())
-	newShutdownConfig.StoreLastReceivedRequestTime(c.LoadLastReceivedRequestTime())
+	newShutdownConfig.ProviderLastReceivedRequestTime.Store(c.ProviderLastReceivedRequestTime.Load())
 	newShutdownConfig.Closing.Store(c.Closing.Load())
 
 	return newShutdownConfig

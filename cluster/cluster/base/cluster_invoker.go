@@ -22,11 +22,12 @@ import (
 	"fmt"
 	"slices"
 	"sync"
-	"sync/atomic"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
+
+	uberatomic "go.uber.org/atomic"
 )
 
 import (
@@ -41,7 +42,7 @@ import (
 type BaseClusterInvoker struct {
 	Directory      directory.Directory
 	AvailableCheck bool
-	Destroyed      *atomic.Bool
+	Destroyed      *uberatomic.Bool
 	StickyInvoker  base.Invoker
 
 	// stickyLock guards StickyInvoker against the data race between IsAvailable
@@ -54,7 +55,7 @@ func NewBaseClusterInvoker(directory directory.Directory) BaseClusterInvoker {
 	return BaseClusterInvoker{
 		Directory:      directory,
 		AvailableCheck: true,
-		Destroyed:      new(atomic.Bool),
+		Destroyed:      uberatomic.NewBool(false),
 	}
 }
 
