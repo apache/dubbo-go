@@ -235,11 +235,17 @@ func (d *DefaultServiceInstance) GetMetadata() map[string]string {
 	return d.Metadata
 }
 
+// Prioritizer is a Dubbo domain interface for objects that can be ordered by
+// an integer priority. It replaces the former gost/sort.Prioritizer.
+type Prioritizer interface {
+	GetPriority() int
+}
+
 // ServiceInstanceCustomizer is an extension point which allow user using custom
 // logic to modify instance. Be careful of priority. Usually you should use number
 // between [100, 9000] other number will be thought as system reserve number
 type ServiceInstanceCustomizer interface {
-	GetPriority() int
+	Prioritizer
 
 	Customize(instance ServiceInstance)
 }

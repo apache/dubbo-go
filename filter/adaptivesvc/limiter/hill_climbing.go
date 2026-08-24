@@ -24,6 +24,10 @@ import (
 	"time"
 )
 
+import (
+	uberatomic "go.uber.org/atomic"
+)
+
 var (
 	_ Limiter = (*HillClimbing)(nil)
 	_ Updater = (*HillClimbingUpdater)(nil)
@@ -47,66 +51,6 @@ var (
 	stablePeriod  = 32000 * time.Millisecond
 )
 
-// The standard library does not provide atomic types for float64,
-// time.Duration and time.Time. The following minimal wrappers keep the
-// HillClimbing limiter on top of sync/atomic primitives only.
-type atomicFloat64 struct {
-	bits atomic.Uint64
-}
-
-func newAtomicFloat64(v float64) *atomicFloat64 {
-	f := &atomicFloat64{}
-	f.bits.Store(math.Float64bits(v))
-	return f
-}
-
-func (f *atomicFloat64) Load() float64 {
-	return math.Float64frombits(f.bits.Load())
-}
-
-func (f *atomicFloat64) Store(v float64) {
-	f.bits.Store(math.Float64bits(v))
-}
-
-type atomicDuration struct {
-	nanos atomic.Int64
-}
-
-func newAtomicDuration(d time.Duration) *atomicDuration {
-	a := &atomicDuration{}
-	a.nanos.Store(int64(d))
-	return a
-}
-
-func (d *atomicDuration) Load() time.Duration {
-	return time.Duration(d.nanos.Load())
-}
-
-func (d *atomicDuration) Store(v time.Duration) {
-	d.nanos.Store(int64(v))
-}
-
-type atomicTime struct {
-	t atomic.Pointer[time.Time]
-}
-
-func newAtomicTime(t time.Time) *atomicTime {
-	a := &atomicTime{}
-	a.t.Store(&t)
-	return a
-}
-
-func (a *atomicTime) Load() time.Time {
-	if t := a.t.Load(); t != nil {
-		return *t
-	}
-	return time.Time{}
-}
-
-func (a *atomicTime) Store(t time.Time) {
-	a.t.Store(&t)
-}
-
 func newAtomicUint64(v uint64) *atomic.Uint64 {
 	a := new(atomic.Uint64)
 	a.Store(v)
@@ -123,16 +67,16 @@ type HillClimbing struct {
 
 	mutex *sync.Mutex
 	// nextUpdateTime = lastUpdatedTime + updateInterval
-	updateInterval  *atomicDuration
-	lastUpdatedTime *atomicTime
+	updateInterval  *uberatomic.Duration
+	lastUpdatedTime *uberatomic.Time
 
 	// metrics of the current round
 	transactionNum *atomic.Uint64
-	rttAvg         *atomicFloat64
+	rttAvg         *uberatomic.Float64
 
 	// best metrics in the history
-	bestMaxCapacity *atomicFloat64
-	bestRTTAvg      *atomicFloat64
+	bestMaxCapacity *uberatomic.Float64
+	bestRTTAvg      *uberatomic.Float64
 	bestLimitation  *atomic.Uint64
 	bestTPS         *atomic.Uint64
 }
@@ -144,12 +88,12 @@ func NewHillClimbing() Limiter {
 		inflight:        new(atomic.Uint64),
 		limitation:      newAtomicUint64(initialLimitation),
 		mutex:           new(sync.Mutex),
-		updateInterval:  newAtomicDuration(radicalPeriod),
-		lastUpdatedTime: newAtomicTime(time.Now()),
+		updateInterval:  uberatomic.NewDuration(radicalPeriod),
+		lastUpdatedTime: uberatomic.NewTime(time.Now()),
 		transactionNum:  new(atomic.Uint64),
-		rttAvg:          newAtomicFloat64(0),
-		bestMaxCapacity: new(atomicFloat64),
-		bestRTTAvg:      newAtomicFloat64(math.MaxFloat64),
+		rttAvg:          uberatomic.NewFloat64(0),
+		bestMaxCapacity: uberatomic.NewFloat64(0),
+		bestRTTAvg:      uberatomic.NewFloat64(math.MaxFloat64),
 		bestLimitation:  new(atomic.Uint64),
 		bestTPS:         new(atomic.Uint64),
 	}

@@ -51,40 +51,63 @@ func getLocalIP() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	var localIP net.IP
+	var fallback net.IP
 	for _, iface := range interfaces {
 		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 || strings.Contains(strings.ToLower(iface.Name), "docker") {
 			continue
 		}
 		addrs, err := iface.Addrs()
 		if err != nil {
-			return "", err
+			// an abnormal interface should not fail the whole lookup
+			continue
 		}
 		for _, addr := range addrs {
-			ipNet, ok := addr.(*net.IPNet)
-			if !ok || ipNet.IP.IsLoopback() {
+			ip := ipFromAddr(addr)
+			if ip == nil || ip.IsLoopback() || ip.IsUnspecified() || ip.IsLinkLocalUnicast() {
 				continue
 			}
-			ip := ipNet.IP.To4()
-			if ip == nil {
+			ipv4 := ip.To4()
+			if ipv4 == nil {
 				continue
 			}
-			localIP = ip
-			if ip.IsPrivate() {
-				return ip.String(), nil
+			if ipv4.IsPrivate() {
+				return ipv4.String(), nil
+			}
+			if fallback == nil {
+				fallback = ipv4
 			}
 		}
 	}
-	if localIP == nil {
+	if fallback == nil {
 		return "", fmt.Errorf("can not get local IP")
 	}
-	return localIP.String(), nil
+	return fallback.String(), nil
+}
+
+// ipFromAddr extracts the IP from a network address, supporting both *net.IPNet
+// and *net.IPAddr.
+func ipFromAddr(addr net.Addr) net.IP {
+	switch v := addr.(type) {
+	case *net.IPNet:
+		return v.IP
+	case *net.IPAddr:
+		return v.IP
+	default:
+		return nil
+	}
 }
 
 func ListenOnTCPRandomPort(ip string) (*net.TCPListener, error) {
-	addr := &net.TCPAddr{IP: net.IPv4zero}
+	addr := &net.TCPAddr{
+		IP:   net.IPv4zero,
+		Port: 0,
+	}
 	if ip != "" {
-		addr.IP = net.ParseIP(ip)
+		parsed := net.ParseIP(ip)
+		if parsed == nil || parsed.To4() == nil {
+			return nil, fmt.Errorf("invalid IPv4 address %q", ip)
+		}
+		addr.IP = parsed.To4()
 	}
 	return net.ListenTCP("tcp4", addr)
 }

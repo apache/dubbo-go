@@ -57,22 +57,17 @@ type (
 
 var typError = reflect.Zero(reflect.TypeFor[error]()).Type()
 
-// resolveRootCause returns the root cause of err, walking both the stdlib
-// Unwrap() and pkg/errors Cause() chains. It is equivalent to perrors.Cause.
+// resolveRootCause returns the root cause of err by walking the stdlib
+// Unwrap() chain. pkg/errors v0.9.1 wrapper types also implement Unwrap(),
+// so a single stdlib walk reaches the same root that perrors.Cause used to.
 func resolveRootCause(err error) error {
-	cause := err
-	for cause != nil {
-		if u, ok := cause.(interface{ Unwrap() error }); ok {
-			cause = u.Unwrap()
-			continue
+	for {
+		unwrapped := errors.Unwrap(err)
+		if unwrapped == nil {
+			return err
 		}
-		if c, ok := cause.(interface{ Cause() error }); ok {
-			cause = c.Cause()
-			continue
-		}
-		break
+		err = unwrapped
 	}
-	return cause
 }
 
 // NewProxy create service proxy.

@@ -28,7 +28,7 @@ import (
 
 func TestGetJavaName(t *testing.T) {
 	_, err := GetJavaName(nil)
-	assert.Equal(t, ErrNilError, err)
+	assert.Equal(t, NilError, err)
 
 	typ, err := GetJavaName(true)
 	assert.Equal(t, "boolean", typ)
@@ -113,7 +113,7 @@ func TestGetJavaName(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = GetJavaName(&mockNonPOJO{})
-	assert.Equal(t, ErrUnexpectedTypeError, err)
+	assert.Equal(t, UnexpectedTypeError, err)
 }
 
 type mockPOJOPtr struct {

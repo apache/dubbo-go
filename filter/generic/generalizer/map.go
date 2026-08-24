@@ -85,13 +85,13 @@ func (g *MapGeneralizer) Realize(obj any, typ reflect.Type) (any, error) {
 
 func (g *MapGeneralizer) GetType(obj any) (typ string, err error) {
 	typ, err = hessian2.GetJavaName(obj)
-	// no error or error is not ErrNilError
-	if err == nil || err != hessian2.ErrNilError {
+	// no error or error is not NilError
+	if err == nil || err != hessian2.NilError {
 		return
 	}
 
 	typ = "java.lang.Object"
-	if err == hessian2.ErrNilError {
+	if err == hessian2.NilError {
 		logger.Debugf("[Filter][Generic] the type of nil object couldn't be inferred, use the default value, type=%q", typ)
 		return
 	}
