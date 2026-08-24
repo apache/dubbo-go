@@ -19,6 +19,7 @@ package failsafe
 
 import (
 	"context"
+	"errors"
 )
 
 import (
@@ -74,6 +75,9 @@ func (invoker *failsafeClusterInvoker) Invoke(ctx context.Context, invocation pr
 
 	ivk := invoker.DoSelect(loadbalance, invocation, invokers, invoked)
 	// DO INVOKE
+	if ivk == nil {
+		return &result.RPCResult{Err: errors.New("invoker is nil")}
+	}
 	res = ivk.Invoke(ctx, invocation)
 	if res.Error() != nil {
 		// ignore
