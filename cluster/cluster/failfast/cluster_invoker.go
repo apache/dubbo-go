@@ -19,10 +19,7 @@ package failfast
 
 import (
 	"context"
-)
-
-import (
-	perrors "github.com/pkg/errors"
+	"fmt"
 )
 
 import (
@@ -59,7 +56,7 @@ func (invoker *failfastClusterInvoker) Invoke(ctx context.Context, invocation pr
 
 	ivk := invoker.DoSelect(loadbalance, invocation, invokers, nil)
 	if ivk == nil {
-		return &result.RPCResult{Err: perrors.New("invoker is nil")}
+		return &result.RPCResult{Err: fmt.Errorf("invoker is nil")}
 	}
 	return ivk.Invoke(ctx, invocation)
 }

@@ -19,12 +19,11 @@ package failsafe
 
 import (
 	"context"
+	"fmt"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -77,7 +76,7 @@ func (invoker *failsafeClusterInvoker) Invoke(ctx context.Context, invocation pr
 	ivk := invoker.DoSelect(loadbalance, invocation, invokers, invoked)
 	// DO INVOKE
 	if ivk == nil {
-		return &result.RPCResult{Err: perrors.New("invoker is nil")}
+		return &result.RPCResult{Err: fmt.Errorf("invoker is nil")}
 	}
 	res = ivk.Invoke(ctx, invocation)
 	if res.Error() != nil {
