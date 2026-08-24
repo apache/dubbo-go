@@ -168,15 +168,21 @@ func (c *zookeeperDynamicConfiguration) getPropertiesPath(key string, opts ...co
 
 func (c *zookeeperDynamicConfiguration) loadProperties(path string, registerWatch bool) (configCacheEntry, watchRegistration, error) {
 	if !c.cache.enabled() || !registerWatch {
+		beforeSessionID := c.client.Conn.SessionID()
 		content, _, err := c.client.GetContent(path)
+		afterSessionID := c.client.Conn.SessionID()
+		registration := watchRegistration{
+			beforeSessionID: beforeSessionID,
+			afterSessionID:  afterSessionID,
+		}
 		if errors.Is(err, zk.ErrNoNode) {
 			logger.Warnf("[ConfigCenter][Zookeeper] query rule fail, key=%s err=%v", path, err)
-			return configCacheEntry{exists: false}, watchRegistration{}, nil
+			return configCacheEntry{exists: false}, registration, nil
 		}
 		if err != nil {
-			return configCacheEntry{}, watchRegistration{}, perrors.WithStack(err)
+			return configCacheEntry{}, registration, perrors.WithStack(err)
 		}
-		return configCacheEntry{content: string(content), exists: true}, watchRegistration{}, nil
+		return configCacheEntry{content: string(content), exists: true}, registration, nil
 	}
 
 	for {

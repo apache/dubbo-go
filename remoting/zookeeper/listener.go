@@ -56,9 +56,17 @@ type ZkEventListener struct {
 	exit        chan struct{}
 }
 
+type WatchRegistrationResult uint8
+
+const (
+	WatchRegistrationAccepted WatchRegistrationResult = iota
+	WatchRegistrationReload
+	WatchRegistrationDiscarded
+)
+
 type configurationWatchStateListener interface {
 	WatchStateChanged(path string) bool
-	WatchRegistered(path string, events <-chan zk.Event, beforeSessionID, afterSessionID int64) bool
+	WatchRegistered(path string, events <-chan zk.Event, beforeSessionID, afterSessionID int64) WatchRegistrationResult
 	WatchStateChangeFailed(path string)
 }
 
@@ -130,10 +138,28 @@ func (l *ZkEventListener) ListenConfigurationEvent(zkPath string, listener remot
 					logger.Warnf("[Remoting][Zookeeper]Re-set watcher error, err=%v", err)
 					continue
 				}
+				registrationResult := WatchRegistrationAccepted
 				if tracksWatchState && registerWatch {
-					watchStateListener.WatchRegistered(
+					registrationResult = watchStateListener.WatchRegistered(
 						event.Path, watchEvents, beforeSessionID, afterSessionID,
 					)
+					if registrationResult == WatchRegistrationDiscarded {
+						continue
+					}
+					if registrationResult == WatchRegistrationReload {
+						beforeSessionID = l.Client.Conn.SessionID()
+						exists, _, err = l.Client.Conn.Exists(event.Path)
+						afterSessionID = l.Client.Conn.SessionID()
+						if err != nil {
+							watchStateListener.WatchStateChangeFailed(event.Path)
+							logger.Warnf("[Remoting][Zookeeper] reload config existence error, err=%v", err)
+							continue
+						}
+						if !sessionStable(beforeSessionID, afterSessionID) {
+							watchStateListener.WatchStateChangeFailed(event.Path)
+							continue
+						}
+					}
 				}
 
 				action := remoting.EventTypeDel
@@ -144,12 +170,20 @@ func (l *ZkEventListener) ListenConfigurationEvent(zkPath string, listener remot
 					// Notice: The order of step 1 and step 2 cannot be swapped, if you get value(with timestamp t1)
 					// before re-set the watcher(with timestamp t2), and some one change the data of the zk node after
 					// t2 but before t1, you may get the old value, and the new value will not trigger the event.
+					beforeSessionID = l.Client.Conn.SessionID()
 					contentBytes, _, err := l.Client.Conn.Get(event.Path)
+					afterSessionID = l.Client.Conn.SessionID()
 					if err != nil {
 						if tracksWatchState {
 							watchStateListener.WatchStateChangeFailed(event.Path)
 						}
 						logger.Warnf("[Remoting][Zookeeper] get config value error, err=%v", err)
+						continue
+					}
+					if !sessionStable(beforeSessionID, afterSessionID) {
+						if tracksWatchState {
+							watchStateListener.WatchStateChangeFailed(event.Path)
+						}
 						continue
 					}
 					content = string(contentBytes)
@@ -167,6 +201,11 @@ func (l *ZkEventListener) ListenConfigurationEvent(zkPath string, listener remot
 		}
 
 	}(zkPath, listener)
+}
+
+func sessionStable(beforeSessionID, afterSessionID int64) bool {
+	return (beforeSessionID == 0 && afterSessionID == 0) ||
+		(beforeSessionID != 0 && beforeSessionID == afterSessionID)
 }
 
 // listenServiceNodeEvent watches a single zk node and reports changes via listener.

@@ -94,8 +94,8 @@ func TestCacheListenerIgnoresEventAcrossReset(t *testing.T) {
 	cache.setWatch(path, configWatchState{registered: true, auto: true, sessionID: 1})
 	require.True(t, l.WatchStateChanged(path))
 	cache.reset(2)
-	l.WatchRegistered(path, make(chan zk.Event, 1), 1, 1)
-	l.DataChange(remoting.Event{Path: path, Action: remoting.EventTypeUpdate, Content: "old"})
+	require.Equal(t, remotingzookeeper.WatchRegistrationReload,
+		l.WatchRegistered(path, make(chan zk.Event, 1), 1, 1))
 
 	_, ok := cache.getFresh(path)
 	if ok {
@@ -214,7 +214,8 @@ func TestCacheListenerPreservesAutoWatchOwnershipOnRenewal(t *testing.T) {
 	require.Zero(t, cache.autoWatchCount)
 	require.Equal(t, 1, cache.autoWatchReservations)
 
-	require.True(t, l.WatchRegistered(path, make(chan zk.Event, 1), 1, 1))
+	require.Equal(t, remotingzookeeper.WatchRegistrationAccepted,
+		l.WatchRegistered(path, make(chan zk.Event, 1), 1, 1))
 	_, watchState = cache.snapshot(path)
 	require.True(t, watchState.registered)
 	require.True(t, watchState.auto)
@@ -248,12 +249,37 @@ func TestCacheListenerRetriesInvalidatedWatchInNewSession(t *testing.T) {
 	events <- zk.Event{Type: zk.EventNotWatching}
 	close(events)
 
-	require.False(t, l.WatchRegistered(path, events, previousSessionID, currentSessionID))
+	require.Equal(t, remotingzookeeper.WatchRegistrationReload,
+		l.WatchRegistered(path, events, previousSessionID, currentSessionID))
 	_, watchState := cache.snapshot(path)
 	require.True(t, watchState.registered)
 	require.False(t, watchState.pending)
 	require.False(t, watchState.auto)
 	require.Equal(t, currentSessionID, watchState.sessionID)
+}
+
+func TestCacheListenerDiscardsStaleBusinessRegistrationWithoutListener(t *testing.T) {
+	cache := newConfigCache(time.Minute)
+	path := "/dubbo/config/group/app"
+	require.True(t, cache.setWatch(path, configWatchState{
+		pending:   true,
+		sessionID: 1,
+	}))
+	l := &CacheListener{cache: &cache}
+	l.eventGeneration.Store(path, watchEventState{
+		generation: cache.generation,
+		sessionID:  1,
+	})
+	events := make(chan zk.Event, 1)
+	events <- zk.Event{Type: zk.EventNotWatching}
+	close(events)
+
+	result := l.WatchRegistered(path, events, 1, 2)
+	require.Equal(t, remotingzookeeper.WatchRegistrationDiscarded, result)
+	_, watchState := cache.snapshot(path)
+	require.False(t, watchState.tracked())
+	_, ok := l.eventGeneration.Load(path)
+	require.False(t, ok)
 }
 
 func TestCacheListenerPathToKeyGroup(t *testing.T) {

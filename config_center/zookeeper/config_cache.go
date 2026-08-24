@@ -63,6 +63,11 @@ func (r watchRegistration) resolve() (int64, bool) {
 	return r.afterSessionID, true
 }
 
+func (r watchRegistration) sessionStable() bool {
+	return (r.beforeSessionID == 0 && r.afterSessionID == 0) ||
+		(r.beforeSessionID != 0 && r.beforeSessionID == r.afterSessionID)
+}
+
 type configWatchState struct {
 	registered bool
 	pending    bool
@@ -133,6 +138,7 @@ func (c *configCache) load(
 	pathLock.Lock()
 	defer pathLock.Unlock()
 
+	registrationRetries := 0
 	for {
 		if entry, ok := c.getFresh(path); ok {
 			return entry, nil
@@ -141,7 +147,24 @@ func (c *configCache) load(
 		generation, registerWatch := c.prepareLoad(path)
 		entry, registration, err := loader(registerWatch)
 		if registerWatch {
-			c.finishWatchRegistrationLocked(path, generation, registration)
+			stored := c.finishWatchRegistrationLocked(path, generation, registration)
+			if !stored || !registration.sessionStable() {
+				if registrationRetries == 0 {
+					registrationRetries++
+					continue
+				}
+				entry, fallbackRegistration, fallbackErr := loader(false)
+				if fallbackErr != nil {
+					return configCacheEntry{}, fallbackErr
+				}
+				if !fallbackRegistration.sessionStable() {
+					return configCacheEntry{}, errWatchRegistrationStale
+				}
+				if !c.storeLoadEntry(path, generation, entry) {
+					continue
+				}
+				return entry, nil
+			}
 		}
 		if err != nil {
 			if !c.isCurrentGeneration(generation) {
@@ -193,11 +216,27 @@ func (c *configCache) storeAtGeneration(path string, generation uint64, entry co
 	pathLock.Lock()
 	defer pathLock.Unlock()
 
+	c.storeAtGenerationLocked(path, generation, entry)
+}
+
+func (c *configCache) storeAtGenerationLocked(path string, generation uint64, entry configCacheEntry) {
+	if !c.enabled() {
+		return
+	}
 	c.stateLock.Lock()
 	defer c.stateLock.Unlock()
 	if c.generation == generation {
 		c.storeEntryLocked(path, entry)
 	}
+}
+
+func (c *configCache) storeLocked(path string, entry configCacheEntry) {
+	if !c.enabled() {
+		return
+	}
+	c.stateLock.Lock()
+	defer c.stateLock.Unlock()
+	c.storeEntryLocked(path, entry)
 }
 
 func (c *configCache) getFresh(path string) (configCacheEntry, bool) {

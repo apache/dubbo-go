@@ -424,3 +424,61 @@ func TestConfigCacheBusinessWatchRegistrationRetryIsBounded(t *testing.T) {
 	_, watchState := cache.snapshot("/path")
 	require.False(t, watchState.tracked())
 }
+
+func TestConfigCacheLoadRejectsStaleRegistrationBeforeStoringEntry(t *testing.T) {
+	cache := newConfigCache(time.Minute)
+	var registrations atomic.Int32
+
+	loader := func(registerWatch bool) (configCacheEntry, watchRegistration, error) {
+		if !registerWatch {
+			return configCacheEntry{content: "fallback", exists: true}, watchRegistration{}, nil
+		}
+		if registrations.Add(1) == 1 {
+			events := make(chan zk.Event, 1)
+			events <- zk.Event{Type: zk.EventNotWatching}
+			close(events)
+			return configCacheEntry{content: "stale", exists: true}, watchRegistration{
+				events:          events,
+				beforeSessionID: 1,
+				afterSessionID:  2,
+			}, nil
+		}
+		return configCacheEntry{content: "current", exists: true}, newTestWatchRegistration(2), nil
+	}
+
+	entry, err := cache.load("/path", loader)
+	require.NoError(t, err)
+	require.Equal(t, "current", entry.content)
+	require.Equal(t, int32(2), registrations.Load())
+	cached, ok := cache.getFresh("/path")
+	require.True(t, ok)
+	require.Equal(t, "current", cached.content)
+}
+
+func TestConfigCacheLoadFallsBackAfterRepeatedStaleRegistrations(t *testing.T) {
+	cache := newConfigCache(time.Minute)
+	var registrations atomic.Int32
+	var fallbacks atomic.Int32
+
+	loader := func(registerWatch bool) (configCacheEntry, watchRegistration, error) {
+		if !registerWatch {
+			fallbacks.Add(1)
+			return configCacheEntry{content: "fallback", exists: true}, watchRegistration{}, nil
+		}
+		registrations.Add(1)
+		events := make(chan zk.Event, 1)
+		events <- zk.Event{Type: zk.EventNotWatching}
+		close(events)
+		return configCacheEntry{content: "stale", exists: true}, watchRegistration{
+			events:          events,
+			beforeSessionID: 1,
+			afterSessionID:  2,
+		}, nil
+	}
+
+	entry, err := cache.load("/path", loader)
+	require.NoError(t, err)
+	require.Equal(t, "fallback", entry.content)
+	require.Equal(t, int32(2), registrations.Load())
+	require.Equal(t, int32(1), fallbacks.Load())
+}

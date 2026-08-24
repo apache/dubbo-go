@@ -50,6 +50,7 @@ type CacheListener struct {
 type watchEventState struct {
 	generation uint64
 	sessionID  int64
+	auto       bool
 }
 
 // NewCacheListener creates a new CacheListener
@@ -146,66 +147,92 @@ func (l *CacheListener) WatchStateChanged(path string) bool {
 	l.eventGeneration.Store(path, watchEventState{
 		generation: generation,
 		sessionID:  watchState.sessionID,
+		auto:       watchState.auto,
 	})
 	return registerWatch
 }
 
 // WatchRegistered records a watch created while handling a configuration event.
-func (l *CacheListener) WatchRegistered(path string, events <-chan zk.Event, beforeSessionID, afterSessionID int64) bool {
+func (l *CacheListener) WatchRegistered(path string, events <-chan zk.Event, beforeSessionID, afterSessionID int64) zookeeper.WatchRegistrationResult {
 	if l.cache == nil {
-		return true
+		return zookeeper.WatchRegistrationAccepted
 	}
+	pathLock := l.cache.pathLock(path)
+	pathLock.Lock()
 	state, ok := l.eventGeneration.Load(path)
 	if !ok {
-		return false
+		pathLock.Unlock()
+		return zookeeper.WatchRegistrationDiscarded
 	}
 	eventState := state.(watchEventState)
-	stored := l.cache.finishWatchRegistration(path, eventState.generation, watchRegistration{
+	registration := watchRegistration{
 		events:          events,
 		beforeSessionID: beforeSessionID,
 		afterSessionID:  afterSessionID,
-	})
-	if !stored {
-		l.retryBusinessWatch(path, eventState.sessionID)
 	}
-	return stored
+	stored := l.cache.finishWatchRegistrationLocked(path, eventState.generation, registration)
+	currentGeneration := l.cache.isCurrentGeneration(eventState.generation)
+	if stored && registration.sessionStable() && currentGeneration {
+		pathLock.Unlock()
+		return zookeeper.WatchRegistrationAccepted
+	}
+	l.eventGeneration.Delete(path)
+	pathLock.Unlock()
+
+	if eventState.auto || (stored && !currentGeneration) {
+		return zookeeper.WatchRegistrationReload
+	}
+	if l.retryBusinessWatch(path, eventState.sessionID) {
+		return zookeeper.WatchRegistrationReload
+	}
+	return zookeeper.WatchRegistrationDiscarded
 }
 
 func (l *CacheListener) WatchStateChangeFailed(path string) {
 	if l.cache == nil {
 		return
 	}
+	pathLock := l.cache.pathLock(path)
+	pathLock.Lock()
 	state, ok := l.eventGeneration.LoadAndDelete(path)
 	if !ok {
+		pathLock.Unlock()
 		return
 	}
-	l.cache.cancelWatchRenewal(path)
+	l.cache.cancelPendingLocked(path)
+	pathLock.Unlock()
 	eventState := state.(watchEventState)
 	l.retryBusinessWatch(path, eventState.sessionID)
 }
 
-func (l *CacheListener) retryBusinessWatch(path string, previousSessionID int64) {
-	if !l.hasListeners(path) || l.zkEventListener == nil ||
+func (l *CacheListener) retryBusinessWatch(path string, previousSessionID int64) bool {
+	pathLock := l.cache.pathLock(path)
+	pathLock.Lock()
+	hasListeners := l.hasListeners(path)
+	pathLock.Unlock()
+	if !hasListeners || l.zkEventListener == nil ||
 		l.zkEventListener.Client == nil || l.zkEventListener.Client.Conn == nil {
-		return
+		return false
 	}
 
 	conn := l.zkEventListener.Client.Conn
 	if conn.State() != zk.StateHasSession || conn.SessionID() == previousSessionID {
-		return
+		return false
 	}
 	if err := l.cache.ensureBusinessWatchWithRetry(path, func() (watchRegistration, error) {
 		return l.registerWatcher(path)
 	}, 1); err != nil {
 		logger.Warnf("[ConfigCenter][Zookeeper] retry configuration watcher failed, path=%s err=%v", path, err)
-		return
+		return false
 	}
-	pathLock := l.cache.pathLock(path)
+	pathLock = l.cache.pathLock(path)
 	pathLock.Lock()
+	defer pathLock.Unlock()
 	if !l.hasListeners(path) {
 		l.cache.releaseBusinessWatchLocked(path)
+		return false
 	}
-	pathLock.Unlock()
+	return true
 }
 
 func (l *CacheListener) hasListeners(path string) bool {
@@ -249,11 +276,14 @@ func (l *CacheListener) DataChange(event remoting.Event) bool {
 		if event.Action == remoting.EventTypeDel {
 			entry = configCacheEntry{exists: false}
 		}
+		pathLock := l.cache.pathLock(event.Path)
+		pathLock.Lock()
 		if state, ok := l.eventGeneration.LoadAndDelete(event.Path); ok {
-			l.cache.storeAtGeneration(event.Path, state.(watchEventState).generation, entry)
+			l.cache.storeAtGenerationLocked(event.Path, state.(watchEventState).generation, entry)
 		} else {
-			l.cache.store(event.Path, entry)
+			l.cache.storeLocked(event.Path, entry)
 		}
+		pathLock.Unlock()
 	}
 
 	key, group := l.pathToKeyGroup(event.Path)
