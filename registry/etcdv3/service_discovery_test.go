@@ -24,6 +24,8 @@ import (
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -36,6 +38,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 const testName = "test"
@@ -51,6 +54,21 @@ func TestNewEtcdV3ServiceDiscovery(t *testing.T) {
 func TestEtcdV3ServiceDiscoveryGetDefaultPageSize(t *testing.T) {
 	serviceDiscovery := &etcdV3ServiceDiscovery{}
 	assert.Equal(t, registry.DefaultPageSize, serviceDiscovery.GetDefaultPageSize())
+}
+
+func TestEtcdV3ServiceDiscoveryDataChange(t *testing.T) {
+	serviceDiscovery := &etcdV3ServiceDiscovery{
+		instanceListenerMap: map[string]*gxset.HashSet{
+			testName: gxset.NewSet(),
+		},
+	}
+
+	updated := serviceDiscovery.DataChange(remoting.Event{
+		Action:  remoting.EventTypeUpdate,
+		Content: `{"ServiceName":"test"}`,
+	})
+
+	assert.True(t, updated)
 }
 
 func TestEtcdV3JSONHelpers(t *testing.T) {
