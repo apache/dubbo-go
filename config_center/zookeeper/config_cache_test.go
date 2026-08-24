@@ -402,3 +402,25 @@ func TestConfigCacheResetDiscardsInFlightBusinessWatch(t *testing.T) {
 	require.False(t, watchState.auto)
 	require.Equal(t, int64(2), watchState.sessionID)
 }
+
+func TestConfigCacheBusinessWatchRegistrationRetryIsBounded(t *testing.T) {
+	cache := newConfigCache(time.Minute)
+	var registrations atomic.Int32
+	invalidRegistration := func() (watchRegistration, error) {
+		registrations.Add(1)
+		events := make(chan zk.Event, 1)
+		events <- zk.Event{Type: zk.EventNotWatching}
+		close(events)
+		return watchRegistration{
+			events:          events,
+			beforeSessionID: 1,
+			afterSessionID:  2,
+		}, nil
+	}
+
+	err := cache.ensureBusinessWatchWithRetry("/path", invalidRegistration, 1)
+	require.ErrorIs(t, err, errWatchRegistrationStale)
+	require.Equal(t, int32(2), registrations.Load())
+	_, watchState := cache.snapshot("/path")
+	require.False(t, watchState.tracked())
+}

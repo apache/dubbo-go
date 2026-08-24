@@ -88,11 +88,15 @@ func (l *CacheListener) AddListener(key string, listener config_center.Configura
 
 	pathLock := l.cache.pathLock(key)
 	pathLock.Lock()
-	defer pathLock.Unlock()
-	if err := l.cache.ensureBusinessWatchLocked(key, register); err != nil {
-		return
-	}
 	l.storeListener(key, listener)
+	pathLock.Unlock()
+	if err := l.cache.ensureBusinessWatchWithRetry(key, register, 1); err != nil {
+		pathLock.Lock()
+		if l.removeListener(key, listener) {
+			l.cache.releaseBusinessWatchLocked(key)
+		}
+		pathLock.Unlock()
+	}
 }
 
 func (l *CacheListener) storeListener(key string, listener config_center.ConfigurationListener) {
@@ -113,16 +117,19 @@ func (l *CacheListener) restoreBusinessWatches() {
 
 	l.keyListeners.Range(func(key, _ any) bool {
 		path := key.(string)
-		err := l.cache.ensureBusinessWatch(path, func() (watchRegistration, error) {
+		err := l.cache.ensureBusinessWatchWithRetry(path, func() (watchRegistration, error) {
 			return l.registerWatcher(path)
-		})
+		}, 1)
 		if err != nil {
 			logger.Warnf("[ConfigCenter][Zookeeper] restore configuration watcher failed, path=%s err=%v", path, err)
 			return true
 		}
+		pathLock := l.cache.pathLock(path)
+		pathLock.Lock()
 		if !l.hasListeners(path) {
-			l.cache.releaseBusinessWatch(path)
+			l.cache.releaseBusinessWatchLocked(path)
 		}
+		pathLock.Unlock()
 		return true
 	})
 }
@@ -132,8 +139,10 @@ func (l *CacheListener) WatchStateChanged(path string) bool {
 	if l.cache == nil {
 		return true
 	}
-	generation, registerWatch := l.cache.beginWatchRenewal(path, l.hasListeners(path))
-	_, watchState := l.cache.snapshot(path)
+	pathLock := l.cache.pathLock(path)
+	pathLock.Lock()
+	defer pathLock.Unlock()
+	generation, watchState, registerWatch := l.cache.beginWatchRenewalLocked(path, l.hasListeners(path))
 	l.eventGeneration.Store(path, watchEventState{
 		generation: generation,
 		sessionID:  watchState.sessionID,
@@ -185,15 +194,18 @@ func (l *CacheListener) retryBusinessWatch(path string, previousSessionID int64)
 	if conn.State() != zk.StateHasSession || conn.SessionID() == previousSessionID {
 		return
 	}
-	if err := l.cache.ensureBusinessWatch(path, func() (watchRegistration, error) {
+	if err := l.cache.ensureBusinessWatchWithRetry(path, func() (watchRegistration, error) {
 		return l.registerWatcher(path)
-	}); err != nil {
+	}, 1); err != nil {
 		logger.Warnf("[ConfigCenter][Zookeeper] retry configuration watcher failed, path=%s err=%v", path, err)
 		return
 	}
+	pathLock := l.cache.pathLock(path)
+	pathLock.Lock()
 	if !l.hasListeners(path) {
-		l.cache.releaseBusinessWatch(path)
+		l.cache.releaseBusinessWatchLocked(path)
 	}
+	pathLock.Unlock()
 }
 
 func (l *CacheListener) hasListeners(path string) bool {

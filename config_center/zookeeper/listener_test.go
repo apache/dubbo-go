@@ -149,6 +149,26 @@ func TestAddListenerReactivatesRetiredWatch(t *testing.T) {
 	require.True(t, ok)
 }
 
+func TestWatchStateChangedUsesCurrentBusinessOwnership(t *testing.T) {
+	cache := newConfigCache(time.Minute)
+	path := "/dubbo/config/group/app"
+	require.True(t, cache.setWatch(path, configWatchState{
+		registered: true,
+		auto:       true,
+		sessionID:  1,
+	}))
+	l := &CacheListener{cache: &cache}
+	rec := &recListener{}
+
+	l.AddListener(path, rec)
+	require.True(t, l.WatchStateChanged(path))
+
+	_, watchState := cache.snapshot(path)
+	require.True(t, watchState.pending)
+	require.False(t, watchState.auto)
+	require.Zero(t, cache.autoWatchReservations)
+}
+
 func TestAddListenerRegistersBusinessWatchAtAutoWatchLimit(t *testing.T) {
 	client, _ := newZookeeperTestClient(t, "business-watch-limit")
 	root := newTestRoot(t, client)

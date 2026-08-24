@@ -18,6 +18,7 @@
 package zookeeper
 
 import (
+	"errors"
 	"sync"
 	"time"
 )
@@ -33,6 +34,8 @@ const (
 	maxCacheEntries    = 1024
 	maxAutoWatches     = 1024
 )
+
+var errWatchRegistrationStale = errors.New("zookeeper watch registration became stale")
 
 type configCacheEntry struct {
 	content   string
@@ -321,39 +324,55 @@ func (c *configCache) ensureBusinessWatch(
 	path string,
 	register func() (watchRegistration, error),
 ) error {
-	pathLock := c.pathLock(path)
-	pathLock.Lock()
-	defer pathLock.Unlock()
-	return c.ensureBusinessWatchLocked(path, register)
+	return c.ensureBusinessWatchWithRetry(path, register, 1)
 }
 
-func (c *configCache) ensureBusinessWatchLocked(
+func (c *configCache) ensureBusinessWatchWithRetry(
+	path string,
+	register func() (watchRegistration, error),
+	maxRetries int,
+) error {
+	for attempt := 0; ; attempt++ {
+		err := c.ensureBusinessWatchOnce(path, register)
+		if !errors.Is(err, errWatchRegistrationStale) || attempt >= maxRetries {
+			return err
+		}
+	}
+}
+
+func (c *configCache) ensureBusinessWatchOnce(
 	path string,
 	register func() (watchRegistration, error),
 ) error {
-	for {
-		c.stateLock.Lock()
-		watchState := c.watches[path]
-		if watchState.tracked() {
-			watchState.auto = false
-			watchState.retired = false
-			c.setWatchStateLocked(path, watchState)
-			c.stateLock.Unlock()
-			return nil
-		}
-		generation := c.generation
-		c.setWatchStateLocked(path, configWatchState{pending: true, sessionID: c.sessionID})
+	pathLock := c.pathLock(path)
+	pathLock.Lock()
+	c.stateLock.Lock()
+	watchState := c.watches[path]
+	if watchState.tracked() {
+		watchState.auto = false
+		watchState.retired = false
+		c.setWatchStateLocked(path, watchState)
 		c.stateLock.Unlock()
-
-		registration, err := register()
-		if err != nil {
-			c.cancelPendingLocked(path)
-			return err
-		}
-		if c.finishWatchRegistrationLocked(path, generation, registration) {
-			return nil
-		}
+		pathLock.Unlock()
+		return nil
 	}
+	generation := c.generation
+	sessionID := c.sessionID
+	c.setWatchStateLocked(path, configWatchState{pending: true, sessionID: sessionID})
+	c.stateLock.Unlock()
+	pathLock.Unlock()
+
+	registration, err := register()
+	pathLock.Lock()
+	defer pathLock.Unlock()
+	if err != nil {
+		c.cancelPendingLocked(path)
+		return err
+	}
+	if c.finishWatchRegistrationLocked(path, generation, registration) {
+		return nil
+	}
+	return errWatchRegistrationStale
 }
 
 func (c *configCache) releaseBusinessWatch(path string) {
@@ -381,21 +400,17 @@ func (c *configCache) releaseBusinessWatchLocked(path string) {
 	c.setWatchStateLocked(path, watchState)
 }
 
-func (c *configCache) beginWatchRenewal(path string, hasListeners bool) (uint64, bool) {
-	pathLock := c.pathLock(path)
-	pathLock.Lock()
-	defer pathLock.Unlock()
-
+func (c *configCache) beginWatchRenewalLocked(path string, hasListeners bool) (uint64, configWatchState, bool) {
 	c.stateLock.Lock()
 	defer c.stateLock.Unlock()
 	generation := c.generation
 	watchState, ok := c.watches[path]
 	if !ok {
 		if !hasListeners {
-			return generation, false
+			return generation, watchState, false
 		}
 		c.setWatchStateLocked(path, configWatchState{pending: true, sessionID: c.sessionID})
-		return generation, true
+		return generation, c.watches[path], true
 	}
 	if watchState.pending {
 		if hasListeners {
@@ -403,23 +418,23 @@ func (c *configCache) beginWatchRenewal(path string, hasListeners bool) (uint64,
 			watchState.retired = false
 			c.setWatchStateLocked(path, watchState)
 		}
-		return generation, false
+		return generation, c.watches[path], false
 	}
 	if watchState.retired && !hasListeners {
 		c.setWatchStateLocked(path, configWatchState{})
-		return generation, false
+		return generation, configWatchState{}, false
 	}
 	if hasListeners {
 		watchState.auto = false
 		watchState.retired = false
 	} else if !watchState.auto {
 		c.setWatchStateLocked(path, configWatchState{})
-		return generation, false
+		return generation, configWatchState{}, false
 	}
 	watchState.registered = false
 	watchState.pending = true
 	c.setWatchStateLocked(path, watchState)
-	return generation, true
+	return generation, c.watches[path], true
 }
 
 func (c *configCache) cancelWatchRenewal(path string) {
