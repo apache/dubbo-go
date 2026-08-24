@@ -66,7 +66,7 @@ MODERNIZE_STAMP := $(TOOLS_BIN)/.modernize-$(MODERNIZE_VERSION)
 GO_ENV := $(strip $(if $(GOOS),GOOS=$(GOOS)) $(if $(GOARCH),GOARCH=$(GOARCH)) $(if $(CGO_ENABLED),CGO_ENABLED=$(CGO_ENABLED)))
 GO_RUN = $(GO_ENV) $(GO)
 
-.PHONY: help build test test-race fmt check-fmt clean lint tools
+.PHONY: help build test test-race generate-mocks fmt check-fmt clean lint tools
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*##"; printf "Usage: make <target>\n\nTargets:\n"} /^[a-zA-Z0-9_.-]+:.*##/ {printf "  %-22s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -82,6 +82,9 @@ test: clean ## Run unit tests and write the root coverage profile
 test-race: clean ## Run unit tests with the race detector
 	$(GO_RUN) test ./... -race -skip '^($(subst $(space),|,$(RACE_SKIP_TESTS)))$$' -coverprofile=$(CURDIR)/$(COVERAGE_FILE) -covermode=atomic
 	cd $(CLI_DIR) && $(GO_RUN) test ./... -race
+
+generate-mocks: ## Regenerate GoMock implementations with the pinned generator
+	$(GO_RUN) generate ./cluster/metrics ./filter ./protocol/base
 
 fmt: $(MODERNIZE_STAMP) $(IMPORTS_FORMATTER_STAMP) ## Format Go code and modernize syntax
 	# Replace interface{} with any and apply the repository's import grouping rules.

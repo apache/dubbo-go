@@ -22,9 +22,9 @@ import (
 )
 
 import (
-	"github.com/golang/mock/gomock"
-
 	"github.com/stretchr/testify/assert"
+
+	"go.uber.org/mock/gomock"
 )
 
 import (
