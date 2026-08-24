@@ -28,6 +28,7 @@ import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 )
 
+//nolint:staticcheck
 var (
 	NilError            = fmt.Errorf("object should not be nil")
 	UnexpectedTypeError = fmt.Errorf("object should be a POJO")
