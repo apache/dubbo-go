@@ -50,6 +50,10 @@ const (
 	// LogFileMode is the file permission for access log files.
 	LogFileMode = 0o600
 
+	// shutdownWaitTimeout is the maximum time Shutdown waits for the
+	// processLogs goroutine to exit, covering the 5s drainLogs timeout.
+	shutdownWaitTimeout = 6 * time.Second
+
 	// those fields are the data collected by this filter
 
 	// Types represents the list of argument types in log.
@@ -436,7 +440,7 @@ func (f *Filter) shutdown() {
 		// Wait for processLogs to exit (drainLogs timeout is 5s, use 6s margin)
 		select {
 		case <-f.done:
-		case <-time.After(6 * time.Second):
+		case <-time.After(shutdownWaitTimeout):
 			logger.Warn("[Filter][AccessLog] shutdown wait for processLogs timeout")
 		}
 
