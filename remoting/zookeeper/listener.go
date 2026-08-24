@@ -175,9 +175,8 @@ func processConfigurationEvent(
 		logger.Warnf("[Remoting][Zookeeper]Re-set watcher error, err=%v", err)
 		return
 	}
-	registrationResult := WatchRegistrationAccepted
 	if tracksWatchState && registerWatch {
-		registrationResult = watchStateListener.WatchRegistered(
+		registrationResult := watchStateListener.WatchRegistered(
 			event.Path, watchEvents, beforeSessionID, afterSessionID,
 		)
 		if registrationResult == WatchRegistrationDiscarded {

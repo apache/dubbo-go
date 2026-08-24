@@ -285,17 +285,6 @@ func (c *configCache) store(path string, entry configCacheEntry) {
 	c.storeEntryLocked(path, entry)
 }
 
-func (c *configCache) storeAtGeneration(path string, generation uint64, entry configCacheEntry) {
-	if !c.enabled() {
-		return
-	}
-	pathLock := c.pathLock(path)
-	pathLock.Lock()
-	defer pathLock.Unlock()
-
-	c.storeAtGenerationLocked(path, generation, entry)
-}
-
 func (c *configCache) storeAtGenerationLocked(path string, generation uint64, entry configCacheEntry) {
 	if !c.enabled() {
 		return
@@ -589,13 +578,6 @@ func (c *configCache) ensureBusinessWatchOnce(
 	return errWatchRegistrationStale
 }
 
-func (c *configCache) releaseBusinessWatch(path string) {
-	pathLock := c.pathLock(path)
-	pathLock.Lock()
-	defer pathLock.Unlock()
-	c.releaseBusinessWatchLocked(path)
-}
-
 func (c *configCache) releaseBusinessWatchLocked(path string) {
 	c.stateLock.Lock()
 	defer c.stateLock.Unlock()
@@ -654,13 +636,6 @@ func (c *configCache) beginWatchRenewalLocked(path string, hasListeners bool) (u
 	watchState.pendingOp = c.newWatchOperationLocked()
 	c.setWatchStateLocked(path, watchState)
 	return generation, c.watches[path], true
-}
-
-func (c *configCache) cancelWatchRenewal(path string) {
-	pathLock := c.pathLock(path)
-	pathLock.Lock()
-	defer pathLock.Unlock()
-	c.cancelPendingLocked(path)
 }
 
 func (c *configCache) cancelPendingLocked(path string) {

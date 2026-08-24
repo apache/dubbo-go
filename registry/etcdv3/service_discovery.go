@@ -28,13 +28,12 @@ import (
 	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
 	gxpage "github.com/dubbogo/gost/hash/page"
 	"github.com/dubbogo/gost/log/logger"
-
-	"github.com/hashicorp/vault/sdk/helper/jsonutil"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/dubboutil"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
@@ -86,7 +85,7 @@ func (e *etcdV3ServiceDiscovery) Register(instance registry.ServiceInstance) err
 	path := toPath(instance)
 
 	if nil != e.client {
-		ins, err := jsonutil.EncodeJSON(instance)
+		ins, err := dubboutil.EncodeJSON(instance)
 		if err == nil {
 			err = e.client.RegisterTemp(path, string(ins))
 			if err != nil {
@@ -105,7 +104,7 @@ func (e *etcdV3ServiceDiscovery) Update(instance registry.ServiceInstance) error
 	path := toPath(instance)
 
 	if nil != e.client {
-		ins, err := jsonutil.EncodeJSON(instance)
+		ins, err := dubboutil.EncodeJSON(instance)
 		if err == nil {
 			if err = e.client.RegisterTemp(path, string(ins)); err != nil {
 				logger.Warnf("[Registry][Etcdv3] etcdV3ServiceDiscovery.client.RegisterTemp(path=%v instance=%v) = err=%v",
@@ -151,7 +150,7 @@ func (e *etcdV3ServiceDiscovery) GetInstances(serviceName string) []registry.Ser
 			serviceInstances := make([]registry.ServiceInstance, 0, len(vList))
 			for _, v := range vList {
 				instance := &registry.DefaultServiceInstance{}
-				err = jsonutil.DecodeJSON([]byte(v), &instance)
+				err = dubboutil.DecodeJSON([]byte(v), &instance)
 				if nil == err {
 					serviceInstances = append(serviceInstances, instance)
 				}
@@ -279,7 +278,7 @@ func (e *etcdV3ServiceDiscovery) registerServiceWatcher(serviceName string) erro
 func (e *etcdV3ServiceDiscovery) DataChange(eventType remoting.Event) bool {
 	if eventType.Action == remoting.EventTypeUpdate {
 		instance := &registry.DefaultServiceInstance{}
-		err := jsonutil.DecodeJSON([]byte(eventType.Content), &instance)
+		err := dubboutil.DecodeJSON([]byte(eventType.Content), &instance)
 		if err != nil {
 			instance.ServiceName = ""
 		}

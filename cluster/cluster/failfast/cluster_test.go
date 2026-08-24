@@ -105,3 +105,27 @@ func TestFailfastInvokeFail(t *testing.T) {
 	assert.Equal(t, "error", result.Error().Error())
 	assert.Nil(t, result.Result())
 }
+
+// TestFailfastInvokeWithNoAvailableProvider verifies that invoking with
+// no available providers returns an error instead of panicking.
+func TestFailfastInvokeWithNoAvailableProvider(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	extension.SetLoadbalance("random", random.NewRandomLoadBalance)
+
+	// Simulate unavailable invoker causing DoSelect to return nil.
+	invoker := mock.NewMockInvoker(ctrl)
+	invoker.EXPECT().IsAvailable().Return(false).AnyTimes()
+	invoker.EXPECT().GetURL().Return(failfastUrl).AnyTimes()
+
+	staticDir := static.NewDirectory([]base.Invoker{invoker})
+	clusterInvoker := newFailfastCluster().Join(staticDir)
+
+	require.NotPanics(t, func() {
+		res := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
+		// Must return an error, not panic
+		require.NotNil(t, res)
+		require.Error(t, res.Error())
+	})
+}

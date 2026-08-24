@@ -32,7 +32,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-import "dubbo.apache.org/dubbo-go/v3/remoting"
+import (
+	"dubbo.apache.org/dubbo-go/v3/remoting"
+)
 
 type recordingDataListener struct {
 	events []remoting.Event
