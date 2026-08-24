@@ -137,17 +137,17 @@ func (di *DubboInvoker) Invoke(ctx context.Context, ivc base.Invocation) result.
 	timeout := di.getTimeout(inv)
 	if async {
 		if callBack, ok := inv.CallBack().(func(response common.CallbackResponse)); ok {
-			err = client.AsyncRequest(&ivc, url, timeout, callBack, rest)
+			err = client.AsyncRequestContext(ctx, &ivc, url, timeout, callBack, rest)
 			res.SetError(err)
 		} else {
-			err = client.Send(&ivc, url, timeout)
+			err = client.SendContext(ctx, &ivc, url, timeout)
 			res.SetError(err)
 		}
 	} else {
 		if inv.Reply() == nil {
 			res.SetError(base.ErrNoReply)
 		} else {
-			err = client.Request(&ivc, url, timeout, rest)
+			err = client.RequestContext(ctx, &ivc, url, timeout, rest)
 			res.SetError(err)
 		}
 	}

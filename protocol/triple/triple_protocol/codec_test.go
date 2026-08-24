@@ -346,3 +346,48 @@ func TestHessian2Codec(t *testing.T) {
 		var _ Codec = (*hessian2Codec)(nil)
 	})
 }
+
+func TestResolveInnerCodec(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name          string
+		serializeType string
+		wantOK        bool
+		// wantName is checked only when wantOK is true. Empty means skip the
+		// name assertion (kept simple for cases that only care about resolve).
+		wantName string
+	}{
+		{"hessian2", "hessian2", true, "hessian2"},
+		{"msgpack", "msgpack", true, "msgpack"},
+		{"empty-defaults-hessian2", "", true, "hessian2"},
+		// Dubbo Java writes "hessian4" into the wrapper (TripleConstants.HESSIAN4);
+		// it denotes the same on-wire Hessian2 encoding and must resolve to the
+		// hessian2 codec. Mirrors Java's ReflectionPackableMethod.convertHessianFromWrapper.
+		{"hessian4-alias", "hessian4", true, "hessian2"},
+		{"unknown", "unknown", false, ""},
+		// Bare "hessian" is not a value Dubbo writes; it must be rejected rather
+		// than silently normalized, so misbehaving peers surface clearly.
+		{"hessian-not-aliased", "hessian", false, ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			s, err := resolveInnerCodec(tc.serializeType)
+			if tc.wantOK {
+				if err != nil {
+					t.Fatalf("resolveInnerCodec(%q) err: %v", tc.serializeType, err)
+				}
+				if s == nil {
+					t.Fatalf("got nil serializer")
+				}
+				if tc.wantName != "" && s.Name() != tc.wantName {
+					t.Fatalf("resolveInnerCodec(%q) name = %q, want %q",
+						tc.serializeType, s.Name(), tc.wantName)
+				}
+			} else {
+				if err == nil {
+					t.Fatalf("expected error for %q, got nil", tc.serializeType)
+				}
+			}
+		})
+	}
+}

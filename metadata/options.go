@@ -41,17 +41,24 @@ var (
 	exportOnce      sync.Once
 )
 
+// Options holds the configuration for the metadata service.
 type Options struct {
-	appName      string
+	// appName is the application name.
+	appName string
+	// metadataType is the metadata storage type (local or remote), default value is local.
 	metadataType string
-	port         int
-	protocol     string
+	// port is the metadata service listen port, 0 means a random port is used.
+	port int
+	// protocol is the protocol used to export the MetadataService, default value is dubbo.
+	protocol string
 }
 
+// defaultOptions returns a default Options instance.
 func defaultOptions() *Options {
 	return &Options{metadataType: constant.DefaultMetadataStorageType, protocol: constant.DefaultProtocol}
 }
 
+// NewOptions returns an Options instance from given options.
 func NewOptions(opts ...Option) *Options {
 	metaOptions := defaultOptions()
 	for _, opt := range opts {
@@ -60,6 +67,8 @@ func NewOptions(opts ...Option) *Options {
 	return metaOptions
 }
 
+// Init registers opts as the global metadata options and, for local storage,
+// exports the metadata service only once.
 func (opts *Options) Init() error {
 	metadataOptions = opts
 	var err error
@@ -80,37 +89,50 @@ func (opts *Options) Init() error {
 	return err
 }
 
+// Option configures an Options instance.
 type Option func(*Options)
 
+// WithAppName sets the application owning the metadata service.
 func WithAppName(app string) Option {
 	return func(options *Options) {
 		options.appName = app
 	}
 }
 
+// WithMetadataType sets the metadata storage type,
+// allowed values are "local" and "remote",
+// any other value behaves as "local".
 func WithMetadataType(typ string) Option {
 	return func(options *Options) {
 		options.metadataType = typ
 	}
 }
 
+// WithPort sets the metadata service listen port.
 func WithPort(port int) Option {
 	return func(options *Options) {
 		options.port = port
 	}
 }
 
+// WithMetadataProtocol sets the protocol used to export the MetadataService,
+// allowed values are "dubbo" and "tri",
+// any other value behaves as "tri".
 func WithMetadataProtocol(protocol string) Option {
 	return func(options *Options) {
 		options.protocol = protocol
 	}
 }
 
+// ReportOptions holds the configuration for a metadata report center connection.
 type ReportOptions struct {
+	// registryId is used as a key to look up the report instance.
 	registryId string
+	// MetadataReportConfig embeds the connection configuration.
 	*global.MetadataReportConfig
 }
 
+// InitRegistryMetadataReport initializes a metadata report for each registry
 func InitRegistryMetadataReport(registries map[string]*global.RegistryConfig) error {
 	if len(registries) > 0 {
 		for id, reg := range registries {
@@ -151,6 +173,7 @@ func fromRegistry(id string, rc *global.RegistryConfig) *ReportOptions {
 	return opts
 }
 
+// Init builds a report URL from opts and registers the metadata report under opts.registryId.
 func (opts *ReportOptions) Init() error {
 	url, err := opts.toUrl()
 	if err != nil {
@@ -181,10 +204,12 @@ func (opts *ReportOptions) toUrl() (*common.URL, error) {
 	return res, nil
 }
 
+// defaultReportOptions returns a default ReportOptions instance.
 func defaultReportOptions() *ReportOptions {
 	return &ReportOptions{MetadataReportConfig: global.DefaultMetadataReportConfig()}
 }
 
+// NewReportOptions returns a ReportOptions instance from given options.
 func NewReportOptions(opts ...ReportOption) *ReportOptions {
 	reportOptions := defaultReportOptions()
 	for _, opt := range opts {
@@ -193,26 +218,32 @@ func NewReportOptions(opts ...ReportOption) *ReportOptions {
 	return reportOptions
 }
 
+// ReportOption configures a ReportOptions instance.
 type ReportOption func(*ReportOptions)
 
+// WithZookeeper sets the metadata report protocol to zookeeper.
 func WithZookeeper() ReportOption {
 	return func(opts *ReportOptions) {
 		opts.Protocol = constant.ZookeeperKey
 	}
 }
 
+// WithNacos sets the metadata report protocol to nacos.
 func WithNacos() ReportOption {
 	return func(opts *ReportOptions) {
 		opts.Protocol = constant.NacosKey
 	}
 }
 
+// WithEtcdV3 sets the metadata report protocol to etcd v3.
 func WithEtcdV3() ReportOption {
 	return func(opts *ReportOptions) {
 		opts.Protocol = constant.EtcdV3Key
 	}
 }
 
+// WithProtocol sets the metadata report protocol to a custom value.
+// For the built-in backends, use WithZookeeper, WithNacos, or WithEtcdV3.
 func WithProtocol(meta string) ReportOption {
 	return func(opts *ReportOptions) {
 		opts.Protocol = meta
@@ -230,42 +261,49 @@ func WithAddress(address string) ReportOption {
 	}
 }
 
+// WithUsername sets the metadata report username. Consumed only by nacos.
 func WithUsername(username string) ReportOption {
 	return func(opts *ReportOptions) {
 		opts.Username = username
 	}
 }
 
+// WithPassword sets the metadata report password. Consumed only by nacos.
 func WithPassword(password string) ReportOption {
 	return func(opts *ReportOptions) {
 		opts.Password = password
 	}
 }
 
+// WithTimeout sets the metadata report timeout.
 func WithTimeout(timeout time.Duration) ReportOption {
 	return func(opts *ReportOptions) {
 		opts.Timeout = strconv.Itoa(int(timeout.Milliseconds()))
 	}
 }
 
+// WithGroup sets the isolation group.
 func WithGroup(group string) ReportOption {
 	return func(opts *ReportOptions) {
 		opts.Group = group
 	}
 }
 
+// WithNamespace sets the metadata report namespace. Consumed only by nacos.
 func WithNamespace(namespace string) ReportOption {
 	return func(opts *ReportOptions) {
 		opts.Namespace = namespace
 	}
 }
 
+// WithParams sets extra params passed through to the backend client library.
 func WithParams(params map[string]string) ReportOption {
 	return func(opts *ReportOptions) {
 		opts.Params = params
 	}
 }
 
+// WithRegistryId sets the registry id this report originates from.
 func WithRegistryId(id string) ReportOption {
 	return func(opts *ReportOptions) {
 		opts.registryId = id

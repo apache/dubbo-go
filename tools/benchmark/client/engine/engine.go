@@ -114,8 +114,8 @@ func (e *Engine) worker(benchmarkFunc BenchmarkFunc) {
 func (e *Engine) Stop() {
 	e.stopOnce.Do(func() {
 		close(e.stopChan)
-		e.cancel()
 		e.wg.Wait()
+		e.cancel()
 		logger.Info("[INFO] Benchmark completed")
 	})
 }

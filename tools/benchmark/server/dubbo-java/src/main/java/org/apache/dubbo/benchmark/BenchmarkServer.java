@@ -23,13 +23,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+import java.util.concurrent.CountDownLatch;
+
 @SpringBootApplication
-@EnableDubbo
+@EnableDubbo(scanBasePackages = "benchmark")
 public class BenchmarkServer {
 
     private static final Logger logger = LoggerFactory.getLogger(BenchmarkServer.class);
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         logger.info("========================================");
         logger.info("    Dubbo-Java Benchmark Server");
         logger.info("========================================");
@@ -37,5 +39,7 @@ public class BenchmarkServer {
         logger.info("Server listening on: 127.0.0.1:20001");
         SpringApplication.run(BenchmarkServer.class, args);
         logger.info("Server started, waiting for requests...");
+        // Keep the non-web Spring Boot app alive after startup.
+        new CountDownLatch(1).await();
     }
 }
