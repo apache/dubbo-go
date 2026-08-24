@@ -20,7 +20,6 @@ package failback
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strconv"
 	"sync"
 	"time"
@@ -192,7 +191,7 @@ func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation pr
 	ivk := invoker.DoSelect(loadBalance, invocation, invokers, invoked)
 	// DO INVOKE
 	if ivk == nil {
-		return &result.RPCResult{Err: fmt.Errorf("invoker is nil")}
+		return &result.RPCResult{Err: errors.New("invoker is nil")}
 	}
 	res := ivk.Invoke(ctx, invocation)
 	if res.Error() != nil {
