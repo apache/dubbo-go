@@ -29,12 +29,11 @@ func EncodeJSON(in any) ([]byte, error) {
 		return nil, fmt.Errorf("input for encoding is nil")
 	}
 
-	var buf bytes.Buffer
-	enc := json.NewEncoder(&buf)
-	if err := enc.Encode(in); err != nil {
-		return nil, err
+	data, err := json.Marshal(in)
+	if err != nil {
+		return nil, fmt.Errorf("encode JSON: %w", err)
 	}
-	return buf.Bytes(), nil
+	return data, nil
 }
 
 // DecodeJSON decodes JSON data into out.
