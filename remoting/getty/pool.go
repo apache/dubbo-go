@@ -19,6 +19,7 @@ package getty
 
 import (
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"math/rand"
 	"net"
@@ -299,8 +300,9 @@ func (c *gettyRPCClient) isAvailable() bool {
 }
 
 func (c *gettyRPCClient) close() error {
-	closeErr := perrors.Errorf("close gettyRPCClient{%#v} again", c)
+	firstClose := false
 	c.once.Do(func() {
+		firstClose = true
 		var (
 			gettyClient getty.Client
 			sessions    []*rpcSession
@@ -330,7 +332,9 @@ func (c *gettyRPCClient) close() error {
 			}
 		}()
 
-		closeErr = nil
 	})
-	return closeErr
+	if !firstClose {
+		return errors.New("close gettyRPCClient again")
+	}
+	return nil
 }
