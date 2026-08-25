@@ -50,8 +50,12 @@ const (
 	// LogFileMode is the file permission for access log files.
 	LogFileMode = 0o600
 
+	// drainTimeout bounds how long drainLogs keeps flushing remaining
+	// log data while shutting down.
+	drainTimeout = 5 * time.Second
+
 	// shutdownWaitTimeout is the maximum time Shutdown waits for the
-	// processLogs goroutine to exit, covering the 5s drainLogs timeout.
+	// processLogs goroutine to exit, covering the drainTimeout margin.
 	shutdownWaitTimeout = 6 * time.Second
 
 	// those fields are the data collected by this filter
@@ -64,6 +68,7 @@ const (
 
 var (
 	once            sync.Once
+	filterMu        sync.Mutex // guards accessLogFilter against concurrent Shutdown
 	accessLogFilter *Filter
 )
 
@@ -213,49 +218,28 @@ func (f *Filter) processLogs() {
 
 	for {
 		select {
-		case accessLogData, ok := <-f.logChan:
-			if !ok {
-				return
-			}
-			f.writeLogToFileWithTimeout(accessLogData, 5*time.Second)
+		case accessLogData := <-f.logChan:
+			f.writeLogToFile(accessLogData)
 		case <-f.ctx.Done():
 			return
 		}
 	}
 }
 
-// drainLogs drains remaining log data with timeout protection
+// drainLogs drains remaining log data with an absolute deadline
 func (f *Filter) drainLogs() {
-	timeout := time.After(5 * time.Second)
+	deadline := time.Now().Add(drainTimeout)
 	for {
 		select {
-		case accessLogData, ok := <-f.logChan:
-			if !ok {
-				return
-			}
-			f.writeLogToFileWithTimeout(accessLogData, 1*time.Second)
-		case <-timeout:
-			logger.Warn("[Filter][AccessLog] accessLog drain timeout, some logs may be lost")
-			return
+		case accessLogData := <-f.logChan:
+			f.writeLogToFile(accessLogData)
 		default:
 			return
 		}
-	}
-}
-
-// writeLogToFileWithTimeout writes log with timeout protection
-func (f *Filter) writeLogToFileWithTimeout(data Data, timeout time.Duration) {
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
-		f.writeLogToFile(data)
-	}()
-
-	select {
-	case <-done:
-		logger.Debugf("[Filter][AccessLog] accessLog successfully written for, accessLog=%s", data.accessLog)
-	case <-time.After(timeout):
-		logger.Warnf("[Filter][AccessLog] accessLog writeLogToFile timeout, accessLog=%s", data.accessLog)
+		if time.Now().After(deadline) {
+			logger.Warn("[Filter][AccessLog] accessLog drain timeout, some logs may be lost")
+			return
+		}
 	}
 }
 
@@ -419,22 +403,22 @@ func (d *Data) toLogMessage() string {
 // Shutdown gracefully shuts down the access log filter
 // This should be called during application shutdown to prevent goroutine leaks
 func Shutdown() {
-	if accessLogFilter != nil {
-		accessLogFilter.shutdown()
+	filterMu.Lock()
+	f := accessLogFilter
+	filterMu.Unlock()
+	if f != nil {
+		f.shutdown()
 	}
 }
 
 // shutdown gracefully shuts down this filter instance
 func (f *Filter) shutdown() {
 	f.shutdownOnce.Do(func() {
-		// Cancel the context to signal goroutine to stop
+		// Cancel the context to signal the goroutine to stop. The channel is
+		// intentionally left open so concurrent Invoke calls never panic on a
+		// closed channel; excess data is dropped once the buffer is full.
 		if f.cancel != nil {
 			f.cancel()
-		}
-
-		// Close the channel to stop accepting new logs
-		if f.logChan != nil {
-			close(f.logChan)
 		}
 
 		// Wait for processLogs to exit (drainLogs timeout is 5s, use 6s margin)

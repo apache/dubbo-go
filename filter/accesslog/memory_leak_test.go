@@ -20,6 +20,7 @@ package accesslog
 import (
 	"context"
 	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -40,7 +41,9 @@ import (
 // resetGlobalState resets the global state for testing
 func resetGlobalState() {
 	once.Do(func() {}) // Trigger once
+	filterMu.Lock()
 	accessLogFilter = nil
+	filterMu.Unlock()
 	once = sync.Once{}
 }
 
@@ -68,6 +71,40 @@ func TestAccessLogFilterGoroutineShutdown(t *testing.T) {
 		// success
 	case <-time.After(5 * time.Second):
 		t.Fatal("processLogs did not exit after shutdown")
+	}
+}
+
+// TestAccessLogFilterConcurrentInvokeShutdown drives concurrent Invoke and
+// Shutdown calls to verify the filter neither panics on a closed channel nor
+// races on the global state when running under -race.
+func TestAccessLogFilterConcurrentInvokeShutdown(t *testing.T) {
+	resetGlobalState()
+
+	filter := newFilter().(*Filter)
+	url := common.NewURLWithOptions(
+		common.WithParamsValue(constant.AccessLogFilterKey, filepath.Join(t.TempDir(), "access.log")),
+	)
+	invoker := &MockInvoker{url: url}
+	invocation := &invocation_impl.RPCInvocation{}
+
+	var wg sync.WaitGroup
+	for range 10 {
+		wg.Go(func() {
+			for range 100 {
+				filter.Invoke(context.Background(), invoker, invocation)
+			}
+		})
+	}
+	wg.Go(func() {
+		Shutdown()
+	})
+
+	wg.Wait()
+
+	select {
+	case <-filter.done:
+	default:
+		t.Fatal("processLogs did not exit after concurrent shutdown")
 	}
 }
 
