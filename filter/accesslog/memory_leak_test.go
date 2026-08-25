@@ -96,6 +96,36 @@ func TestAccessLogFilterConcurrentInvokeShutdown(t *testing.T) {
 	}
 }
 
+// TestAccessLogFilterConcurrentInitAndShutdown races the very first
+// newFilter call against Shutdown from a shared barrier to verify that
+// publishing under filterMu establishes a happens-before edge with readers:
+// under -race this must not report a data race on accessLogFilter.
+func TestAccessLogFilterConcurrentInitAndShutdown(t *testing.T) {
+	for range 100 {
+		resetGlobalState()
+
+		start := make(chan struct{})
+		var wg sync.WaitGroup
+		wg.Go(func() {
+			<-start
+			newFilter()
+		})
+		wg.Go(func() {
+			<-start
+			// May legitimately observe nil when initialization has not
+			// finished yet, so only the race detector is the oracle here.
+			Shutdown()
+		})
+		close(start)
+		wg.Wait()
+
+		// When the racing Shutdown above observed nil, the filter created by
+		// newFilter was never shut down; this extra call guarantees the
+		// processLogs goroutine of every round is reaped before the next one.
+		Shutdown()
+	}
+}
+
 // TestAccessLogFilterFileHandleManagement tests proper file handle management
 func TestAccessLogFilterFileHandleManagement(t *testing.T) {
 	resetGlobalState()

@@ -100,19 +100,34 @@ type Filter struct {
 	cancel       context.CancelFunc
 	shutdownOnce sync.Once
 	wg           sync.WaitGroup // tracks the processLogs goroutine
+
+	// shutdownWaitTimeout bounds how long shutdown waits for processLogs to
+	// exit; it defaults to shutdownWaitTimeout and may be shortened by tests.
+	shutdownWaitTimeout time.Duration
 }
 
 func newFilter() filter.Filter {
 	once.Do(func() {
 		ctx, cancel := context.WithCancel(context.Background())
-		accessLogFilter = &Filter{
-			logChan:   make(chan Data, LogMaxBuffer),
-			fileCache: make(map[string]*os.File),
-			ctx:       ctx,
-			cancel:    cancel,
+		f := &Filter{
+			logChan:             make(chan Data, LogMaxBuffer),
+			fileCache:           make(map[string]*os.File),
+			ctx:                 ctx,
+			cancel:              cancel,
+			shutdownWaitTimeout: shutdownWaitTimeout,
 		}
-		accessLogFilter.wg.Add(1)
-		go accessLogFilter.processLogs()
+		// wg.Add must happen before the filter is published: a concurrent
+		// Shutdown that observes the filter while the WaitGroup counter is
+		// still zero would close file handles before processLogs even starts.
+		f.wg.Add(1)
+
+		// Publish under filterMu so readers in Shutdown see either nil or a
+		// fully constructed filter (happens-before via the mutex).
+		filterMu.Lock()
+		accessLogFilter = f
+		filterMu.Unlock()
+
+		go f.processLogs()
 	})
 	return accessLogFilter
 }
@@ -420,21 +435,33 @@ func (f *Filter) shutdown() {
 			f.cancel()
 		}
 
-		// Wait for processLogs to exit (drainLogs timeout is 5s, use 6s margin)
-		if !f.waitProcessLogs(shutdownWaitTimeout) {
+		// Wait for processLogs to exit before touching the files it writes to.
+		if !f.waitProcessLogs(f.shutdownWaitTimeout) {
 			logger.Warn("[Filter][AccessLog] shutdown wait for processLogs timeout")
+			// The writer may still be blocked inside a single write syscall,
+			// which the context cannot interrupt; defer closing the file
+			// handles until it has actually exited instead of closing files
+			// it still holds.
+			go func() {
+				f.wg.Wait()
+				f.closeFiles()
+			}()
+			return
 		}
-
-		// Close all cached file handles
-		f.fileLock.Lock()
-		defer f.fileLock.Unlock()
-		for path, file := range f.fileCache {
-			if err := file.Close(); err != nil {
-				logger.Warnf("[Filter][AccessLog] error closing access log file, path=%s err=%v", path, err)
-			}
-			delete(f.fileCache, path)
-		}
+		f.closeFiles()
 	})
+}
+
+// closeFiles closes and clears all cached file handles.
+func (f *Filter) closeFiles() {
+	f.fileLock.Lock()
+	defer f.fileLock.Unlock()
+	for path, file := range f.fileCache {
+		if err := file.Close(); err != nil {
+			logger.Warnf("[Filter][AccessLog] error closing access log file, path=%s err=%v", path, err)
+		}
+		delete(f.fileCache, path)
+	}
 }
 
 // waitProcessLogs waits for the processLogs goroutine to exit, returning
