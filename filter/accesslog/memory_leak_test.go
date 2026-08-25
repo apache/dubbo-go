@@ -97,9 +97,11 @@ func TestAccessLogFilterConcurrentInvokeShutdown(t *testing.T) {
 }
 
 // TestAccessLogFilterConcurrentInitAndShutdown races the very first
-// newFilter call against Shutdown from a shared barrier to verify that
-// publishing under filterMu establishes a happens-before edge with readers:
-// under -race this must not report a data race on accessLogFilter.
+// newFilter call against Shutdown from a shared barrier. The single Shutdown
+// call must complete the whole lifecycle on its own — once.Do(doInit) makes
+// it wait for the in-flight initialization before shutting the filter down —
+// so after both calls finish, the processLogs goroutine must have exited
+// without any compensating Shutdown.
 func TestAccessLogFilterConcurrentInitAndShutdown(t *testing.T) {
 	for range 100 {
 		resetGlobalState()
@@ -112,17 +114,18 @@ func TestAccessLogFilterConcurrentInitAndShutdown(t *testing.T) {
 		})
 		wg.Go(func() {
 			<-start
-			// May legitimately observe nil when initialization has not
-			// finished yet, so only the race detector is the oracle here.
 			Shutdown()
 		})
 		close(start)
 		wg.Wait()
 
-		// When the racing Shutdown above observed nil, the filter created by
-		// newFilter was never shut down; this extra call guarantees the
-		// processLogs goroutine of every round is reaped before the next one.
-		Shutdown()
+		filter, ok := newFilter().(*Filter)
+		if !ok {
+			t.Fatal("newFilter should return a *Filter")
+		}
+		if !filter.waitProcessLogs(5 * time.Second) {
+			t.Fatal("processLogs did not exit after the concurrent Shutdown returned")
+		}
 	}
 }
 
@@ -149,15 +152,24 @@ func TestAccessLogFilterFileHandleManagement(t *testing.T) {
 		filter.Invoke(context.Background(), invoker, invocation)
 	}
 
-	// Wait for logs to be processed
-	time.Sleep(100 * time.Millisecond)
+	// Wait until the consumer goroutine has opened and cached the log file;
+	// a fixed sleep here would be flaky under CI load.
+	deadline := time.Now().Add(2 * time.Second)
+	var cachedFile *os.File
+	var exists bool
+	for {
+		filter.fileLock.RLock()
+		cachedFile, exists = filter.fileCache[tempFile]
+		filter.fileLock.RUnlock()
+		if exists {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("log file was never cached by the consumer")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
 
-	// Check that file is in cache
-	filter.fileLock.RLock()
-	cachedFile, exists := filter.fileCache[tempFile]
-	filter.fileLock.RUnlock()
-
-	assert.True(t, exists, "File should be cached")
 	assert.NotNil(t, cachedFile, "Cached file should not be nil")
 
 	// Shutdown and verify files are closed
