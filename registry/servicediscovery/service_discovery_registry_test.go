@@ -28,6 +28,7 @@ import (
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
+	gxpage "github.com/dubbogo/gost/hash/page"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -784,12 +785,12 @@ func (m *mockServiceDiscovery) GetInstances(name string) []registry.ServiceInsta
 	m.capturedAppName = name
 	return []registry.ServiceInstance{}
 }
-func (m *mockServiceDiscovery) GetInstancesByPage(string, int, int) registry.Pager { return nil }
-func (m *mockServiceDiscovery) GetHealthyInstancesByPage(string, int, int, bool) registry.Pager {
+func (m *mockServiceDiscovery) GetInstancesByPage(string, int, int) gxpage.Pager { return nil }
+func (m *mockServiceDiscovery) GetHealthyInstancesByPage(string, int, int, bool) gxpage.Pager {
 	return nil
 }
 
-func (m *mockServiceDiscovery) GetRequestInstances([]string, int, int) map[string]registry.Pager {
+func (m *mockServiceDiscovery) GetRequestInstances([]string, int, int) map[string]gxpage.Pager {
 	return nil
 }
 

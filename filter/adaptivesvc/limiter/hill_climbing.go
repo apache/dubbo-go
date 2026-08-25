@@ -20,12 +20,11 @@ package limiter
 import (
 	"math"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
 import (
-	uberatomic "go.uber.org/atomic"
+	"go.uber.org/atomic"
 )
 
 var (
@@ -51,12 +50,6 @@ var (
 	stablePeriod  = 32000 * time.Millisecond
 )
 
-func newAtomicUint64(v uint64) *atomic.Uint64 {
-	a := new(atomic.Uint64)
-	a.Store(v)
-	return a
-}
-
 // HillClimbing is a limiter using HillClimbing algorithm
 type HillClimbing struct {
 	seq   *atomic.Uint64
@@ -67,16 +60,16 @@ type HillClimbing struct {
 
 	mutex *sync.Mutex
 	// nextUpdateTime = lastUpdatedTime + updateInterval
-	updateInterval  *uberatomic.Duration
-	lastUpdatedTime *uberatomic.Time
+	updateInterval  *atomic.Duration
+	lastUpdatedTime *atomic.Time
 
 	// metrics of the current round
 	transactionNum *atomic.Uint64
-	rttAvg         *uberatomic.Float64
+	rttAvg         *atomic.Float64
 
 	// best metrics in the history
-	bestMaxCapacity *uberatomic.Float64
-	bestRTTAvg      *uberatomic.Float64
+	bestMaxCapacity *atomic.Float64
+	bestRTTAvg      *atomic.Float64
 	bestLimitation  *atomic.Uint64
 	bestTPS         *atomic.Uint64
 }
@@ -86,14 +79,14 @@ func NewHillClimbing() Limiter {
 		seq:             new(atomic.Uint64),
 		round:           new(atomic.Uint64),
 		inflight:        new(atomic.Uint64),
-		limitation:      newAtomicUint64(initialLimitation),
+		limitation:      atomic.NewUint64(initialLimitation),
 		mutex:           new(sync.Mutex),
-		updateInterval:  uberatomic.NewDuration(radicalPeriod),
-		lastUpdatedTime: uberatomic.NewTime(time.Now()),
+		updateInterval:  atomic.NewDuration(radicalPeriod),
+		lastUpdatedTime: atomic.NewTime(time.Now()),
 		transactionNum:  new(atomic.Uint64),
-		rttAvg:          uberatomic.NewFloat64(0),
-		bestMaxCapacity: uberatomic.NewFloat64(0),
-		bestRTTAvg:      uberatomic.NewFloat64(math.MaxFloat64),
+		rttAvg:          new(atomic.Float64),
+		bestMaxCapacity: new(atomic.Float64),
+		bestRTTAvg:      atomic.NewFloat64(math.MaxFloat64),
 		bestLimitation:  new(atomic.Uint64),
 		bestTPS:         new(atomic.Uint64),
 	}
@@ -143,7 +136,7 @@ func NewHillClimbingUpdater(limiter *HillClimbing) *HillClimbingUpdater {
 
 func (u *HillClimbingUpdater) DoUpdate() error {
 	defer func() {
-		u.limiter.inflight.Add(^uint64(0))
+		u.limiter.inflight.Dec()
 	}()
 	VerboseDebugf("[HillClimbingUpdater] A request finished, the limiter will be updated, seq: %d.", u.seq)
 

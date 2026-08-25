@@ -23,6 +23,7 @@ import (
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
+	gxpage "github.com/dubbogo/gost/hash/page"
 )
 
 const DefaultPageSize = 100
@@ -55,15 +56,15 @@ type ServiceDiscovery interface {
 
 	// GetInstancesByPage will return a page containing instances of ServiceInstance
 	// with the serviceName the page will start at offset
-	GetInstancesByPage(serviceName string, offset int, pageSize int) Pager
+	GetInstancesByPage(serviceName string, offset int, pageSize int) gxpage.Pager
 
 	// GetHealthyInstancesByPage will return a page containing instances of ServiceInstance.
 	// The param healthy indices that the instance should be healthy or not.
 	// The page will start at offset
-	GetHealthyInstancesByPage(serviceName string, offset int, pageSize int, healthy bool) Pager
+	GetHealthyInstancesByPage(serviceName string, offset int, pageSize int, healthy bool) gxpage.Pager
 
 	// GetRequestInstances gets all instances by the specified service names
-	GetRequestInstances(serviceNames []string, offset int, requestedSize int) map[string]Pager
+	GetRequestInstances(serviceNames []string, offset int, requestedSize int) map[string]gxpage.Pager
 
 	// AddListener adds a new ServiceInstancesChangedListenerImpl
 	// see addServiceInstancesChangedListener in Java

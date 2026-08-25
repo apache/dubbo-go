@@ -28,6 +28,7 @@ import (
 import (
 	gxset "github.com/dubbogo/gost/container/set"
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
+	gxpage "github.com/dubbogo/gost/hash/page"
 	"github.com/dubbogo/gost/log/logger"
 
 	"github.com/nacos-group/nacos-sdk-go/v2/model"
@@ -217,21 +218,21 @@ func (n *nacosServiceDiscovery) GetInstances(serviceName string) []registry.Serv
 
 // GetInstancesByPage will return the instances
 // Due to nacos namingClient does not support pagination, so we have to query all instances and then return part of them
-func (n *nacosServiceDiscovery) GetInstancesByPage(serviceName string, offset int, pageSize int) registry.Pager {
+func (n *nacosServiceDiscovery) GetInstancesByPage(serviceName string, offset int, pageSize int) gxpage.Pager {
 	all := n.GetInstances(serviceName)
 	res := make([]any, 0, pageSize)
 	// could not use res = all[a:b] here because the res should be []any, not []ServiceInstance
 	for i := offset; i < len(all) && i < offset+pageSize; i++ {
 		res = append(res, all[i])
 	}
-	return registry.NewPage(offset, pageSize, res, len(all))
+	return gxpage.NewPage(offset, pageSize, res, len(all))
 }
 
 // GetHealthyInstancesByPage will return the instance
 // The nacos namingClient has an API SelectInstances, which has a parameter call HealthyOnly.
 // However, the healthy parameter in this method maybe false. So we can not use that API.
 // Thus, we must query all instances and then do filter
-func (n *nacosServiceDiscovery) GetHealthyInstancesByPage(serviceName string, offset int, pageSize int, healthy bool) registry.Pager {
+func (n *nacosServiceDiscovery) GetHealthyInstancesByPage(serviceName string, offset int, pageSize int, healthy bool) gxpage.Pager {
 	all := n.GetInstances(serviceName)
 	res := make([]any, 0, pageSize)
 	// could not use res = all[a:b] here because the res should be []any, not []ServiceInstance
@@ -247,13 +248,13 @@ func (n *nacosServiceDiscovery) GetHealthyInstancesByPage(serviceName string, of
 		}
 		i++
 	}
-	return registry.NewPage(offset, pageSize, res, len(all))
+	return gxpage.NewPage(offset, pageSize, res, len(all))
 }
 
 // GetRequestInstances will return the instances
 // The nacos namingClient doesn't have batch API, so we should query those serviceNames one by one.
-func (n *nacosServiceDiscovery) GetRequestInstances(serviceNames []string, offset int, requestedSize int) map[string]registry.Pager {
-	res := make(map[string]registry.Pager, len(serviceNames))
+func (n *nacosServiceDiscovery) GetRequestInstances(serviceNames []string, offset int, requestedSize int) map[string]gxpage.Pager {
+	res := make(map[string]gxpage.Pager, len(serviceNames))
 	for _, name := range serviceNames {
 		res[name] = n.GetInstancesByPage(name, offset, requestedSize)
 	}

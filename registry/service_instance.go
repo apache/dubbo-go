@@ -236,7 +236,8 @@ func (d *DefaultServiceInstance) GetMetadata() map[string]string {
 }
 
 // Prioritizer is a Dubbo domain interface for objects that can be ordered by
-// an integer priority. It replaces the former gost/sort.Prioritizer.
+// an integer priority. It replaces the former
+// [gost/sort.Prioritizer](https://github.com/dubbogo/gost/blob/v1.14.5/sort/prioritized.go).
 type Prioritizer interface {
 	GetPriority() int
 }

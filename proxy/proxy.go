@@ -214,6 +214,7 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 
 			result := p.invoke.Invoke(invCtx, inv)
 			err = result.Error()
+			// cause is raw user level error
 			cause := resolveRootCause(err)
 			if err != nil {
 				// if some error happened, it should be log some info in the separate file.

@@ -26,6 +26,7 @@ import (
 import (
 	gxset "github.com/dubbogo/gost/container/set"
 	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
+	gxpage "github.com/dubbogo/gost/hash/page"
 	"github.com/dubbogo/gost/log/logger"
 
 	"github.com/hashicorp/vault/sdk/helper/jsonutil"
@@ -165,7 +166,7 @@ func (e *etcdV3ServiceDiscovery) GetInstances(serviceName string) []registry.Ser
 
 // GetInstancesByPage will return a page containing instances of ServiceInstance with the serviceName
 // the page will start at offset
-func (e *etcdV3ServiceDiscovery) GetInstancesByPage(serviceName string, offset int, pageSize int) registry.Pager {
+func (e *etcdV3ServiceDiscovery) GetInstancesByPage(serviceName string, offset int, pageSize int) gxpage.Pager {
 	all := e.GetInstances(serviceName)
 
 	res := make([]any, 0, pageSize)
@@ -174,13 +175,13 @@ func (e *etcdV3ServiceDiscovery) GetInstancesByPage(serviceName string, offset i
 		res = append(res, all[i])
 	}
 
-	return registry.NewPage(offset, pageSize, res, len(all))
+	return gxpage.NewPage(offset, pageSize, res, len(all))
 }
 
 // GetHealthyInstancesByPage will return a page containing instances of ServiceInstance.
 // The param healthy indices that the instance should be healthy or not.
 // The page will start at offset
-func (e *etcdV3ServiceDiscovery) GetHealthyInstancesByPage(serviceName string, offset int, pageSize int, healthy bool) registry.Pager {
+func (e *etcdV3ServiceDiscovery) GetHealthyInstancesByPage(serviceName string, offset int, pageSize int, healthy bool) gxpage.Pager {
 	all := e.GetInstances(serviceName)
 	res := make([]any, 0, pageSize)
 
@@ -196,12 +197,12 @@ func (e *etcdV3ServiceDiscovery) GetHealthyInstancesByPage(serviceName string, o
 		}
 		i++
 	}
-	return registry.NewPage(offset, pageSize, res, len(all))
+	return gxpage.NewPage(offset, pageSize, res, len(all))
 }
 
 // GetRequestInstances Batch get all instances by the specified service names
-func (e *etcdV3ServiceDiscovery) GetRequestInstances(serviceNames []string, offset int, requestedSize int) map[string]registry.Pager {
-	res := make(map[string]registry.Pager, len(serviceNames))
+func (e *etcdV3ServiceDiscovery) GetRequestInstances(serviceNames []string, offset int, requestedSize int) map[string]gxpage.Pager {
+	res := make(map[string]gxpage.Pager, len(serviceNames))
 	for _, name := range serviceNames {
 		res[name] = e.GetInstancesByPage(name, offset, requestedSize)
 	}
