@@ -181,8 +181,19 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	}
 	cliOpts = append(cliOpts, clientKeepAliveOpts...)
 
+	// Optionally enable the unary fast path, off by default.
+	if tripleConf != nil && tripleConf.UnaryFastPath {
+		cliOpts = append(cliOpts, tri.WithUnaryFastPath())
+	}
+
 	// Build the HTTP transport used by the Triple client.
 	var transport http.RoundTripper
+
+	// Always select the Triple protocol explicitly, regardless of the HTTP
+	// transport variant. The triple_protocol.Client defaults to the gRPC
+	// protocol; without this option the unary fast path (and Triple-specific
+	// behavior) would never be reachable.
+	cliOpts = append(cliOpts, tri.WithTriple())
 
 	var callProtocol string
 	if tripleConf != nil && tripleConf.Http3 != nil && tripleConf.Http3.Enable {
@@ -199,7 +210,6 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		transport = &http.Transport{
 			TLSClientConfig: cfg,
 		}
-		cliOpts = append(cliOpts, tri.WithTriple())
 	case constant.CallHTTP2:
 		// HTTP/2 transport only configures keepalive (ReadIdleTimeout/PingTimeout) and TLS;
 		// All other knobs keep the http2.Transport defaults.
