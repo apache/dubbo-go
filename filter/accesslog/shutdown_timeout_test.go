@@ -104,7 +104,7 @@ func TestAccessLogFilterShutdownTimeoutBlockedWriter(t *testing.T) {
 	// The filter opens log files with O_RDWR and therefore holds its own
 	// read end, so closing ours can never produce EPIPE. Unblock the writer
 	// by draining the FIFO instead: once all queued entries are written, the
-	// already cancelled context stops processLogs and the deferred background
+	// already canceled context stops processLogs and the deferred background
 	// cleanup closes the cached files, which ends the draining goroutine.
 	reader.Close()
 	drainer, err := os.OpenFile(fifo, os.O_RDONLY, 0)
