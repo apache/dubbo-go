@@ -70,6 +70,18 @@ func WithTriple() ClientOption {
 	return &tripleOption{}
 }
 
+// WithUnaryFastPath enables the unary fast path (unaryFastPathCall) for unary
+// calls, off by default.
+func WithUnaryFastPath() ClientOption {
+	return &unaryFastPathOption{}
+}
+
+type unaryFastPathOption struct{}
+
+func (o *unaryFastPathOption) applyToClient(config *clientConfig) {
+	config.UnaryFastPath = true
+}
+
 // WithProtoJSON configures a client to send JSON-encoded data instead of
 // binary Protobuf. It uses the standard Protobuf JSON mapping as implemented
 // by [google.golang.org/protobuf/encoding/protojson]: fields are named using

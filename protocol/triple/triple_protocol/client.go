@@ -69,6 +69,7 @@ func NewClient(httpClient HTTPClient, url string, options ...ClientOption) *Clie
 			ReadMaxBytes:     config.ReadMaxBytes,
 			SendMaxBytes:     config.SendMaxBytes,
 			GetURLMaxBytes:   config.GetURLMaxBytes,
+			UnaryFastPath:    config.UnaryFastPath,
 		},
 	)
 	if protocolErr != nil {
@@ -230,6 +231,7 @@ type clientConfig struct {
 	Timeout                time.Duration
 	Group                  string
 	Version                string
+	UnaryFastPath          bool
 }
 
 func newClientConfig(rawURL string, options []ClientOption) (*clientConfig, *Error) {
