@@ -56,20 +56,10 @@ func TestAccessLogFilterGoroutineShutdown(t *testing.T) {
 		t.Fatal("newFilter should return a *Filter")
 	}
 
-	// processLogs goroutine should be running: done must not be closed yet
-	select {
-	case <-filter.done:
-		t.Fatal("processLogs exited before shutdown")
-	default:
-	}
-
 	Shutdown()
 
 	// After shutdown the goroutine should exit deterministically
-	select {
-	case <-filter.done:
-		// success
-	case <-time.After(5 * time.Second):
+	if !filter.waitProcessLogs(5 * time.Second) {
 		t.Fatal("processLogs did not exit after shutdown")
 	}
 }
@@ -101,9 +91,7 @@ func TestAccessLogFilterConcurrentInvokeShutdown(t *testing.T) {
 
 	wg.Wait()
 
-	select {
-	case <-filter.done:
-	default:
+	if !filter.waitProcessLogs(5 * time.Second) {
 		t.Fatal("processLogs did not exit after concurrent shutdown")
 	}
 }

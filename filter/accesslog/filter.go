@@ -99,7 +99,7 @@ type Filter struct {
 	ctx          context.Context
 	cancel       context.CancelFunc
 	shutdownOnce sync.Once
-	done         chan struct{} // closed when processLogs exits
+	wg           sync.WaitGroup // tracks the processLogs goroutine
 }
 
 func newFilter() filter.Filter {
@@ -110,8 +110,8 @@ func newFilter() filter.Filter {
 			fileCache: make(map[string]*os.File),
 			ctx:       ctx,
 			cancel:    cancel,
-			done:      make(chan struct{}),
 		}
+		accessLogFilter.wg.Add(1)
 		go accessLogFilter.processLogs()
 	})
 	return accessLogFilter
@@ -207,8 +207,7 @@ func (f *Filter) OnResponse(_ context.Context, result result.Result, _ base.Invo
 
 // processLogs runs in a background goroutine to process log data
 func (f *Filter) processLogs() {
-	// registered first, runs last: signals only after drainLogs completes
-	defer close(f.done)
+	defer f.wg.Done()
 	defer func() {
 		if r := recover(); r != nil {
 			logger.Errorf("[Filter][AccessLog] accessLog processLogs panic, err=%v", r)
@@ -422,9 +421,7 @@ func (f *Filter) shutdown() {
 		}
 
 		// Wait for processLogs to exit (drainLogs timeout is 5s, use 6s margin)
-		select {
-		case <-f.done:
-		case <-time.After(shutdownWaitTimeout):
+		if !f.waitProcessLogs(shutdownWaitTimeout) {
 			logger.Warn("[Filter][AccessLog] shutdown wait for processLogs timeout")
 		}
 
@@ -438,4 +435,17 @@ func (f *Filter) shutdown() {
 			delete(f.fileCache, path)
 		}
 	})
+}
+
+// waitProcessLogs waits for the processLogs goroutine to exit, returning
+// false if it does not stop within the timeout.
+func (f *Filter) waitProcessLogs(timeout time.Duration) bool {
+	done := make(chan struct{})
+	go func() { f.wg.Wait(); close(done) }()
+	select {
+	case <-done:
+		return true
+	case <-time.After(timeout):
+		return false
+	}
 }
