@@ -150,6 +150,8 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 		if err := s.metadataReport.PublishAppMetadata(metaInfo.App, metaInfo.Revision, metaInfo); err != nil {
 			return err
 		}
+		logger.Infof("[Metadata][Publish] published app metadata, app=%s revision=%s urls=%d",
+			metaInfo.App, metaInfo.Revision, len(urls))
 	}
 
 	for _, instance := range instances {

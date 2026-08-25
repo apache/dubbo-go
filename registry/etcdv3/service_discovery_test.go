@@ -19,10 +19,13 @@ package etcdv3
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 )
 
 import (
+	gxset "github.com/dubbogo/gost/container/set"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -30,10 +33,12 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/dubboutil"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 	"dubbo.apache.org/dubbo-go/v3/registry"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 const testName = "test"
@@ -49,6 +54,38 @@ func TestNewEtcdV3ServiceDiscovery(t *testing.T) {
 func TestEtcdV3ServiceDiscoveryGetDefaultPageSize(t *testing.T) {
 	serviceDiscovery := &etcdV3ServiceDiscovery{}
 	assert.Equal(t, registry.DefaultPageSize, serviceDiscovery.GetDefaultPageSize())
+}
+
+func TestEtcdV3ServiceDiscoveryDataChange(t *testing.T) {
+	serviceDiscovery := &etcdV3ServiceDiscovery{
+		instanceListenerMap: map[string]*gxset.HashSet{
+			testName: gxset.NewSet(),
+		},
+	}
+
+	updated := serviceDiscovery.DataChange(remoting.Event{
+		Action:  remoting.EventTypeUpdate,
+		Content: `{"ServiceName":"test"}`,
+	})
+
+	assert.True(t, updated)
+}
+
+func TestEtcdV3JSONHelpers(t *testing.T) {
+	encoded, err := dubboutil.EncodeJSON(map[string]any{
+		"int":     42,
+		"float":   1.25,
+		"nullVal": nil,
+	})
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"int":42,"float":1.25,"nullVal":null}`, string(encoded))
+
+	var decoded map[string]any
+	err = dubboutil.DecodeJSON(encoded, &decoded)
+	require.NoError(t, err)
+	assert.Equal(t, json.Number("42"), decoded["int"])
+	assert.Equal(t, json.Number("1.25"), decoded["float"])
+	assert.Nil(t, decoded["nullVal"])
 }
 
 func TestFunction(t *testing.T) {
