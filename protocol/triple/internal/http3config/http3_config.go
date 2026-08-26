@@ -19,6 +19,8 @@ package http3config
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -26,6 +28,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/quic-go/quic-go"
+	"github.com/quic-go/quic-go/quicvarint"
 )
 
 import (
@@ -67,34 +70,72 @@ func NewQUICConfig(http3Config *global.Http3Config, defaults *quic.Config) (*qui
 		quicConfig.MaxIncomingUniStreams = http3Config.MaxIncomingUniStreams
 	}
 
-	if http3Config.InitialStreamReceiveWindow != "" {
-		initialStreamReceiveWindow, err := humanize.ParseBytes(http3Config.InitialStreamReceiveWindow)
+	parseReceiveWindow := func(name, value string) (uint64, error) {
+		// Parse option-generated decimal values exactly before accepting humanized sizes.
+		window, err := strconv.ParseUint(strings.TrimSpace(value), 10, 64)
 		if err != nil {
-			return nil, fmt.Errorf("invalid http3 initial-stream-receive-window %q: %w", http3Config.InitialStreamReceiveWindow, err)
+			window, err = humanize.ParseBytes(value)
 		}
-		quicConfig.InitialStreamReceiveWindow = initialStreamReceiveWindow
+		if err != nil {
+			return 0, fmt.Errorf("invalid http3 %s %q: %w", name, value, err)
+		}
+		return window, nil
+	}
+
+	initialStreamReceiveWindow := quicConfig.InitialStreamReceiveWindow
+	maxStreamReceiveWindow := quicConfig.MaxStreamReceiveWindow
+	initialConnectionReceiveWindow := quicConfig.InitialConnectionReceiveWindow
+	maxConnectionReceiveWindow := quicConfig.MaxConnectionReceiveWindow
+	var err error
+	if http3Config.InitialStreamReceiveWindow != "" {
+		initialStreamReceiveWindow, err = parseReceiveWindow("initial-stream-receive-window", http3Config.InitialStreamReceiveWindow)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if http3Config.MaxStreamReceiveWindow != "" {
-		maxStreamReceiveWindow, err := humanize.ParseBytes(http3Config.MaxStreamReceiveWindow)
+		maxStreamReceiveWindow, err = parseReceiveWindow("max-stream-receive-window", http3Config.MaxStreamReceiveWindow)
 		if err != nil {
-			return nil, fmt.Errorf("invalid http3 max-stream-receive-window %q: %w", http3Config.MaxStreamReceiveWindow, err)
+			return nil, err
 		}
-		quicConfig.MaxStreamReceiveWindow = maxStreamReceiveWindow
 	}
 	if http3Config.InitialConnectionReceiveWindow != "" {
-		initialConnectionReceiveWindow, err := humanize.ParseBytes(http3Config.InitialConnectionReceiveWindow)
+		initialConnectionReceiveWindow, err = parseReceiveWindow("initial-connection-receive-window", http3Config.InitialConnectionReceiveWindow)
 		if err != nil {
-			return nil, fmt.Errorf("invalid http3 initial-connection-receive-window %q: %w", http3Config.InitialConnectionReceiveWindow, err)
+			return nil, err
 		}
-		quicConfig.InitialConnectionReceiveWindow = initialConnectionReceiveWindow
 	}
 	if http3Config.MaxConnectionReceiveWindow != "" {
-		maxConnectionReceiveWindow, err := humanize.ParseBytes(http3Config.MaxConnectionReceiveWindow)
+		maxConnectionReceiveWindow, err = parseReceiveWindow("max-connection-receive-window", http3Config.MaxConnectionReceiveWindow)
 		if err != nil {
-			return nil, fmt.Errorf("invalid http3 max-connection-receive-window %q: %w", http3Config.MaxConnectionReceiveWindow, err)
+			return nil, err
 		}
-		quicConfig.MaxConnectionReceiveWindow = maxConnectionReceiveWindow
 	}
+
+	for _, receiveWindow := range []struct {
+		name  string
+		value uint64
+	}{
+		{"initial-stream-receive-window", initialStreamReceiveWindow},
+		{"max-stream-receive-window", maxStreamReceiveWindow},
+		{"initial-connection-receive-window", initialConnectionReceiveWindow},
+		{"max-connection-receive-window", maxConnectionReceiveWindow},
+	} {
+		if receiveWindow.value > quicvarint.Max {
+			return nil, fmt.Errorf("invalid http3 %s: value %d exceeds QUIC varint maximum %d", receiveWindow.name, receiveWindow.value, quicvarint.Max)
+		}
+	}
+	if initialStreamReceiveWindow != 0 && maxStreamReceiveWindow != 0 && initialStreamReceiveWindow > maxStreamReceiveWindow {
+		return nil, fmt.Errorf("invalid http3 receive windows: initial-stream-receive-window %d exceeds max-stream-receive-window %d", initialStreamReceiveWindow, maxStreamReceiveWindow)
+	}
+	if initialConnectionReceiveWindow != 0 && maxConnectionReceiveWindow != 0 && initialConnectionReceiveWindow > maxConnectionReceiveWindow {
+		return nil, fmt.Errorf("invalid http3 receive windows: initial-connection-receive-window %d exceeds max-connection-receive-window %d", initialConnectionReceiveWindow, maxConnectionReceiveWindow)
+	}
+
+	quicConfig.InitialStreamReceiveWindow = initialStreamReceiveWindow
+	quicConfig.MaxStreamReceiveWindow = maxStreamReceiveWindow
+	quicConfig.InitialConnectionReceiveWindow = initialConnectionReceiveWindow
+	quicConfig.MaxConnectionReceiveWindow = maxConnectionReceiveWindow
 
 	return quicConfig, nil
 }

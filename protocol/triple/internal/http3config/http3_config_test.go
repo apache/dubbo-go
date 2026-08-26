@@ -24,9 +24,11 @@ import (
 
 import (
 	"github.com/quic-go/quic-go"
+	"github.com/quic-go/quic-go/quicvarint"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.yaml.in/yaml/v4"
 )
 
 import (
@@ -96,6 +98,124 @@ func TestNewQUICConfig(t *testing.T) {
 		require.Error(t, err)
 		assert.Nil(t, quicConfig)
 		assert.ErrorContains(t, err, "max-connection-receive-window")
+	})
+
+	t.Run("receive_windows_must_fit_quic_varint", func(t *testing.T) {
+		for _, test := range []struct {
+			name  string
+			field func(*global.Http3Config)
+			want  string
+		}{
+			{
+				name: "initial_stream",
+				field: func(config *global.Http3Config) {
+					config.InitialStreamReceiveWindow = "4611686018427387904"
+				},
+				want: "initial-stream-receive-window",
+			},
+			{
+				name: "max_stream",
+				field: func(config *global.Http3Config) {
+					config.MaxStreamReceiveWindow = "4611686018427387904"
+				},
+				want: "max-stream-receive-window",
+			},
+			{
+				name: "initial_connection",
+				field: func(config *global.Http3Config) {
+					config.InitialConnectionReceiveWindow = "4611686018427387904"
+				},
+				want: "initial-connection-receive-window",
+			},
+			{
+				name: "max_connection",
+				field: func(config *global.Http3Config) {
+					config.MaxConnectionReceiveWindow = "4611686018427387904"
+				},
+				want: "max-connection-receive-window",
+			},
+		} {
+			t.Run(test.name, func(t *testing.T) {
+				config := &global.Http3Config{}
+				test.field(config)
+
+				quicConfig, err := NewQUICConfig(config, nil)
+				require.Error(t, err)
+				assert.Nil(t, quicConfig)
+				require.ErrorContains(t, err, test.want)
+				require.ErrorContains(t, err, "QUIC varint maximum")
+			})
+		}
+	})
+
+	t.Run("initial_receive_window_must_not_exceed_maximum", func(t *testing.T) {
+		for _, test := range []struct {
+			name      string
+			configure func(*global.Http3Config)
+			want      string
+		}{
+			{
+				name: "stream",
+				configure: func(config *global.Http3Config) {
+					config.InitialStreamReceiveWindow = "16MiB"
+					config.MaxStreamReceiveWindow = "1MiB"
+				},
+				want: "initial-stream-receive-window",
+			},
+			{
+				name: "connection",
+				configure: func(config *global.Http3Config) {
+					config.InitialConnectionReceiveWindow = "32MiB"
+					config.MaxConnectionReceiveWindow = "2MiB"
+				},
+				want: "initial-connection-receive-window",
+			},
+		} {
+			t.Run(test.name, func(t *testing.T) {
+				config := &global.Http3Config{
+					InitialStreamReceiveWindow:     "1MiB",
+					MaxStreamReceiveWindow:         "2MiB",
+					InitialConnectionReceiveWindow: "1MiB",
+					MaxConnectionReceiveWindow:     "2MiB",
+				}
+				test.configure(config)
+
+				quicConfig, err := NewQUICConfig(config, nil)
+				require.Error(t, err)
+				assert.Nil(t, quicConfig)
+				assert.ErrorContains(t, err, test.want)
+			})
+		}
+	})
+
+	t.Run("quic_varint_maximum_is_accepted", func(t *testing.T) {
+		max := "4611686018427387903"
+		quicConfig, err := NewQUICConfig(&global.Http3Config{
+			InitialStreamReceiveWindow:     max,
+			MaxStreamReceiveWindow:         max,
+			InitialConnectionReceiveWindow: max,
+			MaxConnectionReceiveWindow:     max,
+		}, nil)
+		require.NoError(t, err)
+		assert.Equal(t, uint64(quicvarint.Max), quicConfig.InitialStreamReceiveWindow)
+		assert.Equal(t, uint64(quicvarint.Max), quicConfig.MaxStreamReceiveWindow)
+		assert.Equal(t, uint64(quicvarint.Max), quicConfig.InitialConnectionReceiveWindow)
+		assert.Equal(t, uint64(quicvarint.Max), quicConfig.MaxConnectionReceiveWindow)
+	})
+
+	t.Run("yaml_receive_windows_are_validated", func(t *testing.T) {
+		var config global.TripleConfig
+		err := yaml.Unmarshal([]byte(`
+http3:
+  initial-stream-receive-window: "16MiB"
+  max-stream-receive-window: "1MiB"
+  initial-connection-receive-window: "32MiB"
+  max-connection-receive-window: "2MiB"
+`), &config)
+		require.NoError(t, err)
+		_, err = NewQUICConfig(config.Http3, nil)
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "initial-stream-receive-window")
 	})
 
 	t.Run("nil_config_uses_defaults", func(t *testing.T) {
