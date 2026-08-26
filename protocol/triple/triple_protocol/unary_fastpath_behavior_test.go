@@ -30,7 +30,9 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+)
 
+import (
 	pingv1 "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/ping/v1"
 )
 
@@ -185,8 +187,8 @@ func TestUnaryFastPathEmptyBodyUsesNoBody(t *testing.T) {
 		t.Fatal(err)
 	}
 	var (
-		calls     atomic.Int32
-		sawNoBody bool
+		calls      atomic.Int32
+		sawNoBody  bool
 		contentLen int64
 	)
 	httpClient := &behaviorHTTPClient{do: func(req *http.Request) (*http.Response, error) {
@@ -234,13 +236,13 @@ func TestUnaryFastPathConcurrentReadClose(t *testing.T) {
 	)
 	var wg sync.WaitGroup
 	wg.Add(readers + closers)
-	for i := 0; i < closers; i++ {
+	for range closers {
 		go func() {
 			defer wg.Done()
 			_ = body.Close()
 		}()
 	}
-	for i := 0; i < readers; i++ {
+	for range readers {
 		go func() {
 			defer wg.Done()
 			for {
@@ -265,13 +267,13 @@ func TestUnaryFastPathRequestHeaderConcurrent(t *testing.T) {
 	wg.Add(3)
 	go func() {
 		defer wg.Done()
-		for i := 0; i < 50; i++ {
+		for range 50 {
 			_ = call.Header()
 		}
 	}()
 	go func() {
 		defer wg.Done()
-		for i := 0; i < 50; i++ {
+		for range 50 {
 			_, _ = call.Write([]byte("payload"))
 		}
 	}()

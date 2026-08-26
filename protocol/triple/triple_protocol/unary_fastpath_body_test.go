@@ -27,7 +27,9 @@ import (
 	"net/url"
 	"sync/atomic"
 	"testing"
+)
 
+import (
 	pingv1 "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/ping/v1"
 )
 
