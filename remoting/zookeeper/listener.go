@@ -56,14 +56,21 @@ type ZkEventListener struct {
 	exit        chan struct{}
 }
 
+// WatchRegistrationResult tells the configuration event loop how to continue
+// after a listener validates a newly registered ZooKeeper watch.
 type WatchRegistrationResult uint8
 
 const (
+	// WatchRegistrationAccepted keeps the watch and processes the current read.
 	WatchRegistrationAccepted WatchRegistrationResult = iota
+	// WatchRegistrationReload re-reads the node without registering another watch.
 	WatchRegistrationReload
+	// WatchRegistrationDiscarded stops processing a stale event.
 	WatchRegistrationDiscarded
 )
 
+// configurationWatchStateListener lets the config center validate watch state
+// while the remoting layer remains responsible for ZooKeeper reads and events.
 type configurationWatchStateListener interface {
 	WatchStateChanged(path string) bool
 	WatchRegistered(path string, events <-chan zk.Event, beforeSessionID, afterSessionID int64) WatchRegistrationResult
@@ -120,6 +127,9 @@ type configurationEventReader struct {
 	content func() ([]byte, int64, int64, error)
 }
 
+// processConfigurationEvent renews a one-shot watch when requested before
+// reading the latest value, then lets watch-aware listeners reject results from
+// stale sessions.
 func (l *ZkEventListener) processConfigurationEvent(
 	event zk.Event,
 	listener remoting.DataListener,
@@ -234,6 +244,8 @@ func processConfigurationEvent(
 	listener.DataChange(remoting.Event{Path: event.Path, Action: action, Content: content})
 }
 
+// sessionStable reports whether a ZooKeeper operation completed in the session
+// in which it started. A zero pair represents a reader without session data.
 func sessionStable(beforeSessionID, afterSessionID int64) bool {
 	return (beforeSessionID == 0 && afterSessionID == 0) ||
 		(beforeSessionID != 0 && beforeSessionID == afterSessionID)

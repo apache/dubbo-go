@@ -39,6 +39,9 @@ const (
 var errWatchRegistrationStale = errors.New("zookeeper watch registration became stale")
 var errBusinessWatchCanceled = errors.New("zookeeper business watch registration canceled")
 
+// watchOperation represents one in-flight watch registration. Concurrent
+// callers for the same path wait on done instead of registering another watch,
+// while token prevents a late result from completing a newer operation.
 type watchOperation struct {
 	token     uint64
 	done      chan struct{}
@@ -46,12 +49,17 @@ type watchOperation struct {
 	completed bool
 }
 
+// configCacheEntry keeps node existence separate from content so a missing
+// node is distinguishable from an existing node whose content is empty.
 type configCacheEntry struct {
 	content   string
 	exists    bool
 	expiresAt time.Time
 }
 
+// watchRegistration captures the event channel returned by ZooKeeper and the
+// sessions around both watch registration and its optional follow-up read. A
+// result is usable only when these operations belong to one stable session.
 type watchRegistration struct {
 	events              <-chan zk.Event
 	beforeSessionID     int64
@@ -60,6 +68,9 @@ type watchRegistration struct {
 	readAfterSessionID  int64
 }
 
+// resolve reports the session associated with the registration. If registration
+// crosses a session boundary, it also rejects a watch whose channel has already
+// received an event.
 func (r watchRegistration) resolve() (int64, bool) {
 	if r.events == nil || r.afterSessionID == 0 {
 		return 0, false
@@ -74,6 +85,9 @@ func (r watchRegistration) resolve() (int64, bool) {
 	return r.resultSessionID(), true
 }
 
+// sessionStable reports whether registration and any follow-up read stayed in
+// the same ZooKeeper session. Zero pairs are allowed for operations that did
+// not access a connection, but all observed non-zero IDs must agree.
 func (r watchRegistration) sessionStable() bool {
 	if !stableSessionPair(r.beforeSessionID, r.afterSessionID) ||
 		!stableSessionPair(r.readBeforeSessionID, r.readAfterSessionID) {
@@ -112,13 +126,16 @@ func stableSessionPair(beforeSessionID, afterSessionID int64) bool {
 		(beforeSessionID != 0 && beforeSessionID == afterSessionID)
 }
 
+// configWatchState tracks the lifecycle and ownership of one concrete-path
+// watch. Auto watches accelerate cache updates and consume the bounded auto
+// quota; business watches are retained while configuration listeners exist.
 type configWatchState struct {
-	registered bool
-	pending    bool
-	auto       bool
-	retired    bool
-	sessionID  int64
-	pendingOp  *watchOperation
+	registered bool            // ZooKeeper accepted the watch registration.
+	pending    bool            // A registration is in flight and reserves ownership.
+	auto       bool            // The cache, rather than a business listener, owns the watch.
+	retired    bool            // Business ownership ended, but no auto quota was available.
+	sessionID  int64           // ZooKeeper session associated with the registered or pending watch.
+	pendingOp  *watchOperation // Shared completion state for the in-flight registration.
 }
 
 func (s configWatchState) tracked() bool {
@@ -144,18 +161,22 @@ func (s configWatchState) pendingOpToken() uint64 {
 	return s.pendingOp.token
 }
 
+// configCache combines a bounded read-through cache with the concrete-path
+// watch state needed to keep cached values current between TTL refreshes.
 type configCache struct {
 	ttl time.Duration
 
 	stateLock             sync.RWMutex
-	entries               *lru.Cache
+	entries               *lru.Cache // Bounded LRU containing both existing and missing nodes.
 	watches               map[string]configWatchState
 	autoWatchCount        int
 	autoWatchReservations int
-	generation            uint64
-	sessionID             int64
+	generation            uint64 // Incremented on reset to reject results from earlier cache epochs.
+	sessionID             int64  // Current ZooKeeper session observed by the latest reset.
 	nextWatchToken        uint64
 
+	// Fixed shards serialize cache and listener transitions for the same path
+	// without retaining one lock for every path ever requested.
 	pathLocks [pathLockShardCount]sync.Mutex
 }
 
@@ -350,6 +371,8 @@ func (c *configCache) isCurrentGeneration(generation uint64) bool {
 	return c.generation == generation
 }
 
+// loadResultCurrent is the final fence before a ZooKeeper read can affect the
+// cache: both the cache generation and every observed session must be current.
 func (c *configCache) loadResultCurrent(generation uint64, registration watchRegistration) bool {
 	if !registration.sessionStable() {
 		return false
@@ -409,6 +432,8 @@ func (c *configCache) setWatch(path string, watchState configWatchState) bool {
 	return c.setWatchStateLocked(path, watchState)
 }
 
+// setWatchStateLocked is the single accounting point for auto watch capacity.
+// The caller must hold stateLock while replacing a path's watch state.
 func (c *configCache) setWatchStateLocked(path string, watchState configWatchState) bool {
 	current := c.watches[path]
 	if !watchState.pending {
@@ -448,6 +473,8 @@ func (c *configCache) finishWatchRegistration(path string, generation, token uin
 	return c.finishWatchRegistrationLocked(path, generation, token, registration)
 }
 
+// finishWatchRegistrationLocked commits a pending watch only when its token,
+// cache generation, and ZooKeeper session still match the current state.
 func (c *configCache) finishWatchRegistrationLocked(path string, generation, token uint64, registration watchRegistration) bool {
 	sessionID, active := registration.resolve()
 	c.stateLock.Lock()
@@ -646,6 +673,11 @@ func (c *configCache) cancelPendingLocked(path string) {
 	}
 }
 
+// reset starts a new cache generation and clears cached values. Registered
+// watches from the same session are preserved because the ZooKeeper client
+// restores them on reconnect. Pending registrations remain for their completion
+// path to reject by generation, while registered watches from older sessions are
+// removed.
 func (c *configCache) reset(sessionID int64) {
 	c.stateLock.Lock()
 	defer c.stateLock.Unlock()

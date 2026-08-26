@@ -40,13 +40,18 @@ import (
 // CacheListener defines keyListeners and rootPath
 type CacheListener struct {
 	// key is zkNode Path and value is set of listeners
-	keyListeners    sync.Map
+	keyListeners sync.Map
+	// eventGeneration carries the cache epoch and watch ownership from event
+	// consumption through watch renewal to the final cache update.
 	eventGeneration sync.Map
 	zkEventListener *zookeeper.ZkEventListener
 	rootPath        string
 	cache           *configCache
 }
 
+// watchEventState is the snapshot attached to one consumed watch event. It
+// prevents a delayed renewal or DataChange callback from updating a newer
+// cache generation or completing a different pending registration.
 type watchEventState struct {
 	generation uint64
 	sessionID  int64
@@ -161,7 +166,9 @@ func (l *CacheListener) restoreBusinessWatches() {
 	})
 }
 
-// WatchStateChanged updates the cache's concrete-path watch state.
+// WatchStateChanged consumes the current watch state and reserves its renewal.
+// It returns whether the event loop should use ExistsW to register a new watch
+// or plain Exists when the path no longer has watch ownership.
 func (l *CacheListener) WatchStateChanged(path string) bool {
 	if l.cache == nil {
 		return true
@@ -179,7 +186,9 @@ func (l *CacheListener) WatchStateChanged(path string) bool {
 	return registerWatch
 }
 
-// WatchRegistered records a watch created while handling a configuration event.
+// WatchRegistered validates a renewed watch against the event generation,
+// operation token, and ZooKeeper session. The result tells the event loop to
+// accept the read, reload without another watch, or discard the stale event.
 func (l *CacheListener) WatchRegistered(path string, events <-chan zk.Event, beforeSessionID, afterSessionID int64) zookeeper.WatchRegistrationResult {
 	if l.cache == nil {
 		return zookeeper.WatchRegistrationAccepted
@@ -225,6 +234,9 @@ func (l *CacheListener) WatchRegistered(path string, events <-chan zk.Event, bef
 	return zookeeper.WatchRegistrationDiscarded
 }
 
+// WatchStateChangeFailed releases a pending renewal. If business listeners
+// remain and the connection has a live session, it may retry the watch after
+// the cache generation or ZooKeeper session has changed.
 func (l *CacheListener) WatchStateChangeFailed(path string) {
 	if l.cache == nil {
 		return
@@ -322,7 +334,9 @@ func (l *CacheListener) removeListener(key string, listener config_center.Config
 	return true, true
 }
 
-// DataChange changes all listeners' event
+// DataChange updates the read-through cache before notifying a snapshot of the
+// business listeners. Events tied to an older generation cannot repopulate a
+// cache that has already been reset.
 func (l *CacheListener) DataChange(event remoting.Event) bool {
 	if l.cache != nil {
 		entry := configCacheEntry{content: event.Content, exists: true}
