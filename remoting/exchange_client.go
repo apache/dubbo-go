@@ -25,12 +25,11 @@ import (
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-
-	uatomic "go.uber.org/atomic"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	uatomic "dubbo.apache.org/dubbo-go/v3/common/dubboutil/atomic"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )

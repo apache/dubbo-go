@@ -27,8 +27,6 @@ import (
 	"github.com/dubbogo/gost/log/logger"
 
 	perrors "github.com/pkg/errors"
-
-	uberatomic "go.uber.org/atomic"
 )
 
 import (
@@ -36,6 +34,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/loadbalance"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	uberatomic "dubbo.apache.org/dubbo-go/v3/common/dubboutil/atomic"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )

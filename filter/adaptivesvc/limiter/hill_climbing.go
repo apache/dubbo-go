@@ -24,7 +24,7 @@ import (
 )
 
 import (
-	"go.uber.org/atomic"
+	"dubbo.apache.org/dubbo-go/v3/common/dubboutil/atomic"
 )
 
 var (
