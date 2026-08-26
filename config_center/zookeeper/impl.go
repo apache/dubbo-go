@@ -48,6 +48,8 @@ import (
 const (
 	pathSeparator         = "/"
 	defaultConfigCacheTTL = 30 * time.Second
+	minConfigCacheTTL     = time.Second
+	maxConfigCacheTTL     = 10 * time.Minute
 )
 
 type zookeeperDynamicConfiguration struct {
@@ -240,6 +242,9 @@ func parseConfigCacheTTL(value string) (time.Duration, error) {
 	}
 	if ttl < 0 {
 		return 0, perrors.Errorf("%s must not be negative", constant.ConfigCacheTTLKey)
+	}
+	if ttl > 0 && (ttl < minConfigCacheTTL || ttl > maxConfigCacheTTL) {
+		return 0, perrors.Errorf("%s must be 0 or between %s and %s", constant.ConfigCacheTTLKey, minConfigCacheTTL, maxConfigCacheTTL)
 	}
 	return ttl, nil
 }
