@@ -66,6 +66,10 @@ func (c *MetadataMetricCollector) start() {
 					c.handleMetadataMappingListen(event)
 				case MetadataMappingRemove:
 					c.handleMetadataMappingRemove(event)
+				case MetadataCache:
+					c.handleMetadataCache(event)
+				case MetadataFetch:
+					c.handleMetadataFetch(event)
 				default:
 				}
 			}
@@ -118,6 +122,26 @@ func (c *MetadataMetricCollector) handleMetadataMappingRemove(event *MetadataMet
 	level := newMetadataMappingMetricLevel(event.Attachment)
 	c.StateCount(metadataMappingRemoveNum, metadataMappingRemoveSucceed, metadataMappingRemoveFailed, level, event.Succ)
 	c.R.Rt(metrics.NewMetricId(metadataMappingRemoveRt, level), &metrics.RtOpts{}).Observe(event.CostMs())
+}
+
+func (c *MetadataMetricCollector) handleMetadataCache(event *MetadataMetricEvent) {
+	labels := metrics.GetApplicationLevel().Tags()
+	labels[TagProviderApp] = event.Attachment[TagProviderApp]
+	c.R.Counter(metrics.NewMetricIdByLabels(metadataCacheNum, labels)).Inc()
+	if event.Succ {
+		c.R.Counter(metrics.NewMetricIdByLabels(metadataCacheHit, labels)).Inc()
+	} else {
+		c.R.Counter(metrics.NewMetricIdByLabels(metadataCacheMiss, labels)).Inc()
+	}
+}
+
+func (c *MetadataMetricCollector) handleMetadataFetch(event *MetadataMetricEvent) {
+	labels := metrics.GetApplicationLevel().Tags()
+	labels[TagProviderApp] = event.Attachment[TagProviderApp]
+	labels[TagSource] = event.Attachment[TagSource]
+	labels[TagStorageType] = event.Attachment[TagStorageType]
+	labels[TagResult] = event.Attachment[TagResult]
+	c.R.Counter(metrics.NewMetricIdByLabels(metadataFetchNum, labels)).Inc()
 }
 
 type metadataMappingMetricLevel struct {
