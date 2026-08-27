@@ -25,6 +25,7 @@ import (
 )
 
 import (
+	"github.com/mitchellh/mapstructure"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -54,6 +55,17 @@ type testMTagObj struct {
 	Name   string
 }
 
+type testMTagEmbedded struct {
+	City string `m:"city_name"`
+}
+
+type testMTagOptionsObj struct {
+	ID       string           `m:"id,omitempty"`
+	Empty    string           `m:"empty,omitempty"`
+	Ignored  string           `m:"-"`
+	Embedded testMTagEmbedded `m:",squash"`
+}
+
 func TestObjToMap(t *testing.T) {
 	obj := &testPlainObj{}
 	obj.AaAa = "1"
@@ -64,7 +76,9 @@ func TestObjToMap(t *testing.T) {
 	obj.CaCa.XxYy.Xx = "3"
 	obj.DaDa = time.Date(2020, 10, 29, 2, 34, 0, 0, time.Local)
 	obj.EeEe = 100
-	m := objToMap(obj).(map[string]any)
+	generalized, err := objToMap(obj)
+	require.NoError(t, err)
+	m := generalized.(map[string]any)
 	assert.Equal(t, "1", m["aaAa"].(string))
 	assert.Equal(t, "1", m["baBa"].(string))
 	assert.Equal(t, "2", m["caCa"].(map[string]any)["aaAa"].(string))
@@ -93,6 +107,47 @@ func TestMTagRoundTrip(t *testing.T) {
 	assert.Equal(t, original, realized)
 }
 
+func TestMTagOptionsRoundTrip(t *testing.T) {
+	original := testMTagOptionsObj{
+		ID:      "42",
+		Ignored: "secret",
+		Embedded: testMTagEmbedded{
+			City: "Hangzhou",
+		},
+	}
+
+	generalized, err := mockMapGeneralizer.Generalize(original)
+	require.NoError(t, err)
+	generalizedMap, ok := generalized.(map[string]any)
+	require.True(t, ok)
+	expected := map[string]any{}
+	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+		Result:  &expected,
+		TagName: "m",
+	})
+	require.NoError(t, err)
+	require.NoError(t, decoder.Decode(original))
+	assert.Equal(t, expected, generalizedMap)
+
+	realized, err := mockMapGeneralizer.Realize(generalized, reflect.TypeFor[testMTagOptionsObj]())
+	require.NoError(t, err)
+	realizedObj, ok := realized.(testMTagOptionsObj)
+	require.True(t, ok)
+	assert.Equal(t, original.ID, realizedObj.ID)
+	assert.Empty(t, realizedObj.Empty)
+	assert.Empty(t, realizedObj.Ignored)
+	assert.Equal(t, original.Embedded.City, realizedObj.Embedded.City)
+}
+
+func TestMTagSquashRejectsNonStruct(t *testing.T) {
+	obj := struct {
+		Value string `m:",squash"`
+	}{Value: "invalid"}
+
+	_, err := mockMapGeneralizer.Generalize(obj)
+	require.ErrorContains(t, err, "cannot squash non-struct type")
+}
+
 type testStruct struct {
 	AaAa string
 	BaBa string `m:"baBa"`
@@ -116,7 +171,9 @@ func TestObjToMap_Slice(t *testing.T) {
 	tmp.XxYy.xxXx = "3"
 	tmp.XxYy.Xx = "3"
 	testData.CaCa = append(testData.CaCa, tmp)
-	m := objToMap(testData).(map[string]any)
+	generalized, err := objToMap(testData)
+	require.NoError(t, err)
+	m := generalized.(map[string]any)
 
 	assert.Equal(t, "1", m["aaAa"].(string))
 	assert.Equal(t, "1", m["baBa"].(string))
@@ -151,7 +208,8 @@ func TestObjToMap_Map(t *testing.T) {
 	testData.CaCa["k1"] = "v1"
 	testData.CaCa["kv2"] = "v2"
 	testData.IntMap[1] = 1
-	m := objToMap(testData)
+	m, err := objToMap(testData)
+	require.NoError(t, err)
 
 	assert.Equal(t, reflect.Map, reflect.TypeOf(m).Kind())
 	mappedStruct := m.(map[string]any)

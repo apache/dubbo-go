@@ -56,7 +56,10 @@ func GetMapGeneralizer() Generalizer {
 type MapGeneralizer struct{}
 
 func (g *MapGeneralizer) Generalize(obj any) (gobj any, err error) {
-	gobj = objToMap(obj)
+	gobj, err = objToMap(obj)
+	if err != nil {
+		return nil, perrors.Errorf("generalizing map failed, %v", err)
+	}
 	if !getGenericIncludeClass() {
 		gobj = removeClass(gobj)
 	}
@@ -157,9 +160,9 @@ func removeClass(obj any) any {
 }
 
 // objToMap converts an object(any) to a map
-func objToMap(obj any) any {
+func objToMap(obj any) (any, error) {
 	if obj == nil {
-		return obj
+		return obj, nil
 	}
 
 	t := reflect.TypeOf(obj)
@@ -183,40 +186,63 @@ func objToMap(obj any) any {
 		for i := 0; i < t.NumField(); i++ {
 			field := t.Field(i)
 			value := v.Field(i)
+			tag := parseMTag(field)
+			if tag.ignore || tag.omitEmpty && isEmptyValue(value) {
+				continue
+			}
 			kind := value.Kind()
 			if !value.CanInterface() {
 				logger.Debugf("[Filter][Generic] objToMap is skipped because it couldn't be converted to interface, field=%v", field)
 				continue
 			}
 			valueIface := value.Interface()
+			var generalizedValue any
+			var err error
 			switch kind {
 			case reflect.Pointer:
 				if value.IsNil() {
-					setInMap(result, field, nil)
-					continue
+					generalizedValue = nil
+					break
 				}
-				setInMap(result, field, objToMap(valueIface))
+				generalizedValue, err = objToMap(valueIface)
 			case reflect.Struct, reflect.Slice, reflect.Map:
 				if isPrimitive(valueIface) {
 					logger.Warnf("[Filter][Generic] %q is primitive. Cross-language transfer (e.g., dubbo-go <-> dubbo-java) may crash. Use basic types like string.", value.Type())
-					setInMap(result, field, valueIface)
-					continue
+					generalizedValue = valueIface
+					break
 				}
 
-				setInMap(result, field, objToMap(valueIface))
+				generalizedValue, err = objToMap(valueIface)
 			default:
-				setInMap(result, field, valueIface)
+				generalizedValue = valueIface
 			}
+			if err != nil {
+				return nil, err
+			}
+			if tag.squash {
+				squashed, ok := generalizedValue.(map[string]any)
+				if !ok {
+					return nil, perrors.Errorf("cannot squash non-struct type '%s'", value.Type())
+				}
+				for key, val := range squashed {
+					result[key] = val
+				}
+				continue
+			}
+			result[tag.name] = generalizedValue
 		}
-		return result
+		return result, nil
 	case reflect.Array, reflect.Slice:
 		value := reflect.ValueOf(obj)
 		newTemps := make([]any, 0, value.Len())
 		for i := 0; i < value.Len(); i++ {
-			newTemp := objToMap(value.Index(i).Interface())
+			newTemp, err := objToMap(value.Index(i).Interface())
+			if err != nil {
+				return nil, err
+			}
 			newTemps = append(newTemps, newTemp)
 		}
-		return newTemps
+		return newTemps, nil
 	case reflect.Map:
 		newTempMap := make(map[any]any, v.Len())
 		iter := v.MapRange()
@@ -226,13 +252,17 @@ func objToMap(obj any) any {
 			}
 			key := iter.Key()
 			mapV := iter.Value().Interface()
-			newTempMap[mapKey(key)] = objToMap(mapV)
+			generalizedValue, err := objToMap(mapV)
+			if err != nil {
+				return nil, err
+			}
+			newTempMap[mapKey(key)] = generalizedValue
 		}
-		return newTempMap
+		return newTempMap, nil
 	case reflect.Pointer:
 		return objToMap(v.Elem().Interface())
 	default:
-		return obj
+		return obj, nil
 	}
 }
 
@@ -254,15 +284,56 @@ func mapKey(key reflect.Value) any {
 	}
 }
 
-// setInMap sets the struct into the map using the tag or the name of the struct as the key
-func setInMap(m map[string]any, structField reflect.StructField, value any) (result map[string]any) {
-	result = m
-	if tagName := structField.Tag.Get("m"); tagName == "" {
-		result[toUnexport(structField.Name)] = value
-	} else {
-		result[tagName] = value
+type mTag struct {
+	name      string
+	ignore    bool
+	omitEmpty bool
+	squash    bool
+}
+
+func parseMTag(field reflect.StructField) mTag {
+	tag := mTag{name: toUnexport(field.Name)}
+	tagValue := field.Tag.Get("m")
+	name, options, hasOptions := strings.Cut(tagValue, ",")
+	if name == "-" {
+		tag.ignore = true
+		return tag
 	}
-	return
+	if name != "" {
+		tag.name = name
+	}
+	if !hasOptions {
+		return tag
+	}
+
+	for _, option := range strings.Split(options, ",") {
+		switch option {
+		case "omitempty":
+			tag.omitEmpty = true
+		case "squash":
+			tag.squash = true
+		}
+	}
+	return tag
+}
+
+func isEmptyValue(value reflect.Value) bool {
+	switch value.Kind() {
+	case reflect.Array, reflect.Map, reflect.Slice, reflect.String:
+		return value.Len() == 0
+	case reflect.Bool:
+		return !value.Bool()
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return value.Int() == 0
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return value.Uint() == 0
+	case reflect.Float32, reflect.Float64:
+		return value.Float() == 0
+	case reflect.Interface, reflect.Pointer:
+		return value.IsNil()
+	default:
+		return false
+	}
 }
 
 // toUnexport is to lower the first letter
