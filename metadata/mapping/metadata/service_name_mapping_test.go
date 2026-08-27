@@ -61,10 +61,17 @@ func TestNoReportInstance(t *testing.T) {
 	)
 	_, err := ins.Get(serviceUrl, lis)
 	require.Error(t, err, "test Get no report instance")
+	assert.Contains(t, err.Error(), "mapping_listen failed:")
+	assert.Contains(t, err.Error(), "service_key=org.apache.dubbo.samples.proto.GreetService")
+	assert.Contains(t, err.Error(), "interface=org.apache.dubbo.samples.proto.GreetService")
+	assert.Contains(t, err.Error(), "group=mapping")
 	err = ins.Map(serviceUrl)
 	require.Error(t, err, "test Map with no report instance")
+	assert.Contains(t, err.Error(), "mapping_register failed:")
+	assert.Contains(t, err.Error(), "application=dubbo")
 	err = ins.Remove(serviceUrl)
 	require.Error(t, err, "test Remove with no report instance")
+	assert.Contains(t, err.Error(), "mapping_remove failed:")
 }
 
 func TestServiceNameMappingNoReportMetersPerBusinessOperation(t *testing.T) {
@@ -85,6 +92,7 @@ func TestServiceNameMappingNoReportMetersPerBusinessOperation(t *testing.T) {
 
 	err := ins.Map(serviceUrl)
 	require.Error(t, err)
+	assert.Contains(t, err.Error(), "mapping_register failed:")
 	wantAttachment := mappingAttachment("org.example.NoReportService")
 	wantAttachment[constant.ApplicationKey] = "no-report-app"
 	assertMappingMetricEvent(t, <-ch, metricsMetadata.MetadataMappingRegister, false, false, wantAttachment)
@@ -92,16 +100,19 @@ func TestServiceNameMappingNoReportMetersPerBusinessOperation(t *testing.T) {
 
 	_, err = ins.Get(serviceUrl, nil)
 	require.Error(t, err)
+	assert.Contains(t, err.Error(), "mapping_get failed:")
 	assertMappingMetricEvent(t, <-ch, metricsMetadata.MetadataMappingGet, false, false, mappingAttachment("org.example.NoReportService"))
 	assert.Empty(t, ch)
 
 	_, err = ins.Get(serviceUrl, &listener{})
 	require.Error(t, err)
+	assert.Contains(t, err.Error(), "mapping_listen failed:")
 	assertMappingMetricEvent(t, <-ch, metricsMetadata.MetadataMappingListen, false, false, mappingAttachment("org.example.NoReportService"))
 	assert.Empty(t, ch)
 
 	err = ins.Remove(serviceUrl)
 	require.Error(t, err)
+	assert.Contains(t, err.Error(), "mapping_remove failed:")
 	assertMappingMetricEvent(t, <-ch, metricsMetadata.MetadataMappingRemove, false, false, mappingAttachment("org.example.NoReportService"))
 	assert.Empty(t, ch)
 }
@@ -122,9 +133,16 @@ func TestServiceNameMappingGet(t *testing.T) {
 		assert.False(t, apps.Empty())
 	})
 	t.Run("test error", func(t *testing.T) {
-		mockReport.On("GetServiceAppMapping").Return(gxset.NewSet(), errors.New("mock error")).Once()
+		sourceErr := errors.New("mock error")
+		mockReport.On("GetServiceAppMapping").Return(gxset.NewSet(), sourceErr).Once()
 		_, err = ins.Get(serviceUrl, lis)
 		require.Error(t, err)
+		assert.Contains(t, err.Error(), "mapping_listen failed:")
+		assert.Contains(t, err.Error(), "service_key=org.apache.dubbo.samples.proto.GreetService")
+		assert.Contains(t, err.Error(), "interface=org.apache.dubbo.samples.proto.GreetService")
+		assert.Contains(t, err.Error(), "group=mapping")
+		assert.Contains(t, err.Error(), "report_url=mock://127.0.0.1")
+		require.ErrorIs(t, err, sourceErr)
 	})
 	mockReport.AssertExpectations(t)
 }
@@ -144,9 +162,15 @@ func TestServiceNameMappingMap(t *testing.T) {
 	})
 	t.Run("non-conflict error returns immediately", func(t *testing.T) {
 		// a generic error is not retriable, so RegisterServiceAppMapping is called exactly once
-		mockReport.On("RegisterServiceAppMapping").Return(errors.New("mock error")).Once()
+		sourceErr := errors.New("mock error")
+		mockReport.On("RegisterServiceAppMapping").Return(sourceErr).Once()
 		err = ins.Map(serviceUrl)
 		require.Error(t, err, "test mapping error")
+		assert.Contains(t, err.Error(), "mapping_register failed:")
+		assert.Contains(t, err.Error(), "service_key=org.apache.dubbo.samples.proto.GreetService")
+		assert.Contains(t, err.Error(), "application=dubbo")
+		assert.Contains(t, err.Error(), "report_url=mock://127.0.0.1")
+		require.ErrorIs(t, err, sourceErr)
 	})
 	t.Run("CAS conflict retries up to retryTimes", func(t *testing.T) {
 		const conflictRetries = 3
@@ -154,6 +178,8 @@ func TestServiceNameMappingMap(t *testing.T) {
 		mockReport.On("RegisterServiceAppMapping").Return(report.ErrMappingCASConflict).Times(conflictRetries)
 		err = ins.Map(serviceUrl)
 		require.Error(t, err, "conflict exhausts the retry budget")
+		assert.Contains(t, err.Error(), "mapping_register failed:")
+		require.ErrorIs(t, err, report.ErrMappingCASConflict)
 	})
 	mockReport.AssertExpectations(t)
 }
@@ -172,9 +198,14 @@ func TestServiceNameMappingRemove(t *testing.T) {
 		require.NoError(t, err)
 	})
 	t.Run("test error", func(t *testing.T) {
-		mockReport.On("RemoveServiceAppMappingListener").Return(errors.New("mock error")).Once()
+		sourceErr := errors.New("mock error")
+		mockReport.On("RemoveServiceAppMappingListener").Return(sourceErr).Once()
 		err = ins.Remove(serviceUrl)
 		require.Error(t, err)
+		assert.Contains(t, err.Error(), "mapping_remove failed:")
+		assert.Contains(t, err.Error(), "service_key=org.apache.dubbo.samples.proto.GreetService")
+		assert.Contains(t, err.Error(), "report_url=mock://127.0.0.1")
+		require.ErrorIs(t, err, sourceErr)
 	})
 	mockReport.AssertExpectations(t)
 }
@@ -255,6 +286,9 @@ func TestServiceNameMappingRemoveCollectsAllErrors(t *testing.T) {
 
 	err := ins.Remove(serviceUrl)
 	require.Error(t, err)
+	assert.Contains(t, err.Error(), "mapping_remove failed:")
+	assert.Contains(t, err.Error(), "service_key=org.example.BarService")
+	assert.Contains(t, err.Error(), "report_url=mock://127.0.0.1:8848")
 	// both individual errors must be present in the returned error
 	require.ErrorIs(t, err, err1)
 	require.ErrorIs(t, err, err2)
@@ -343,6 +377,8 @@ func TestServiceNameMappingGetMetersPerBusinessOperation(t *testing.T) {
 	r2.On("GetServiceAppMapping").Return(gxset.NewSet(), errors.New("r2 failure")).Once()
 	_, err = ins.Get(serviceUrl, &listener{})
 	require.Error(t, err)
+	assert.Contains(t, err.Error(), "mapping_listen failed:")
+	require.ErrorIs(t, err, getErr)
 	assertMappingMetricEvent(t, <-ch, metricsMetadata.MetadataMappingListen, false, false, mappingAttachment("org.example.MeteredService"))
 	assert.Empty(t, ch)
 

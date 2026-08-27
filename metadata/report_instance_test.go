@@ -67,9 +67,16 @@ func TestDelegateMetadataReportGetAppMetadata(t *testing.T) {
 		assert.True(t, event.Succ)
 	})
 	t.Run("error", func(t *testing.T) {
-		mockReport.On("GetAppMetadata").Return(info.NewAppMetadataInfo("dubbo"), errors.New("mock error")).Once()
+		sourceErr := errors.New("mock error")
+		mockReport.On("GetAppMetadata").Return(info.NewAppMetadataInfo("dubbo"), sourceErr).Once()
 		_, err := delegate.GetAppMetadata("dubbo", "1111")
 		require.Error(t, err)
+		assert.Contains(t, err.Error(), "metadata_report failed:")
+		assert.Contains(t, err.Error(), "operation=get")
+		assert.Contains(t, err.Error(), "app=dubbo")
+		assert.Contains(t, err.Error(), "revision=1111")
+		assert.Contains(t, err.Error(), "storage_type=remote")
+		require.ErrorIs(t, err, sourceErr)
 		assert.Len(t, ch, 1)
 		metricEvent := <-ch
 		assert.Equal(t, constant.MetricsMetadata, metricEvent.Type())
@@ -105,9 +112,16 @@ func TestDelegateMetadataReportPublishAppMetadata(t *testing.T) {
 		assert.True(t, event.Succ)
 	})
 	t.Run("error", func(t *testing.T) {
-		mockReport.On("PublishAppMetadata").Return(errors.New("mock error")).Once()
+		sourceErr := errors.New("mock error")
+		mockReport.On("PublishAppMetadata").Return(sourceErr).Once()
 		err := delegate.PublishAppMetadata("application", "revision", metadataInfo)
 		require.Error(t, err)
+		assert.Contains(t, err.Error(), "metadata_report failed:")
+		assert.Contains(t, err.Error(), "operation=publish")
+		assert.Contains(t, err.Error(), "app=application")
+		assert.Contains(t, err.Error(), "revision=revision")
+		assert.Contains(t, err.Error(), "storage_type=remote")
+		require.ErrorIs(t, err, sourceErr)
 		assert.Len(t, ch, 1)
 		metricEvent := <-ch
 		assert.Equal(t, constant.MetricsMetadata, metricEvent.Type())
@@ -190,9 +204,16 @@ func TestDelegateMetadataReportUnPublishAppMetadata(t *testing.T) {
 		require.NoError(t, err)
 	})
 	t.Run("error", func(t *testing.T) {
-		mockReport.On("UnPublishAppMetadata").Return(errors.New("mock error")).Once()
+		sourceErr := errors.New("mock error")
+		mockReport.On("UnPublishAppMetadata").Return(sourceErr).Once()
 		err := delegate.UnPublishAppMetadata("application", "revision")
 		require.Error(t, err)
+		assert.Contains(t, err.Error(), "metadata_report failed:")
+		assert.Contains(t, err.Error(), "operation=unpublish")
+		assert.Contains(t, err.Error(), "app=application")
+		assert.Contains(t, err.Error(), "revision=revision")
+		assert.Contains(t, err.Error(), "storage_type=remote")
+		require.ErrorIs(t, err, sourceErr)
 	})
 }
 
@@ -211,9 +232,15 @@ func TestDelegateMetadataReportListAppRevisions(t *testing.T) {
 		assert.Equal(t, expected, got)
 	})
 	t.Run("error", func(t *testing.T) {
-		mockReport.On("ListAppRevisions").Return([]report.AppRevision(nil), errors.New("mock error")).Once()
+		sourceErr := errors.New("mock error")
+		mockReport.On("ListAppRevisions").Return([]report.AppRevision(nil), sourceErr).Once()
 		_, err := delegate.ListAppRevisions("application")
 		require.Error(t, err)
+		assert.Contains(t, err.Error(), "metadata_report failed:")
+		assert.Contains(t, err.Error(), "operation=list_revisions")
+		assert.Contains(t, err.Error(), "app=application")
+		assert.Contains(t, err.Error(), "storage_type=remote")
+		require.ErrorIs(t, err, sourceErr)
 	})
 }
 

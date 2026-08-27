@@ -20,6 +20,7 @@ package metadata
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"reflect"
 )
 
@@ -45,11 +46,12 @@ const defaultTimeout = "5s" // s
 func GetMetadataFromMetadataReport(revision string, instance registry.ServiceInstance, registryId string) (*info.MetadataInfo, error) {
 	report := GetMetadataReportByRegistry(registryId)
 	if report == nil {
-		return nil, perrors.Errorf("no metadata report instance found for registryId=%s, please check metadata-report configuration", registryId)
+		return nil, fmt.Errorf("metadata_report failed: operation=get app=%s revision=%s registry_id=%s storage_type=%s: no metadata report instance found, please check metadata-report configuration",
+			instance.GetServiceName(), revision, registryId, constant.RemoteMetadataStorageType)
 	}
 	meta, err := report.GetAppMetadata(instance.GetServiceName(), revision)
 	if err != nil {
-		return nil, perrors.Wrapf(err, "failed to get app metadata app=%s revision=%s", instance.GetServiceName(), revision)
+		return nil, fmt.Errorf("%w; registry_id=%s", err, registryId)
 	}
 	return meta, nil
 }
@@ -64,18 +66,25 @@ func GetMetadataFromRpcWithContext(ctx context.Context, revision string, instanc
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	storageType := constant.DefaultMetadataStorageType
+	if instanceMetadata := instance.GetMetadata(); instanceMetadata != nil && instanceMetadata[constant.MetadataStorageTypePropertyName] != "" {
+		storageType = instanceMetadata[constant.MetadataStorageTypePropertyName]
+	}
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("rpc_metadata failed: app=%s revision=%s instance_id=%s host=%s storage_type=%s: %w",
+			instance.GetServiceName(), revision, instance.GetID(), instance.GetHost(), storageType, err)
 	}
 	url, err := buildStandardMetadataServiceURL(instance)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("url_construction failed: app=%s revision=%s instance_id=%s host=%s storage_type=%s: %w",
+			instance.GetServiceName(), revision, instance.GetID(), instance.GetHost(), storageType, err)
 	}
 	url.SetParam(constant.TimeoutKey, defaultTimeout)
 	p := extension.GetProtocol(url.Protocol)
 	invoker := p.Refer(url)
 	if invoker == nil { // can't connect instance
-		return nil, perrors.New("can not connect to remote metadata service host: " + url.Ip)
+		return nil, fmt.Errorf("rpc_metadata failed: app=%s revision=%s instance_id=%s host=%s storage_type=%s: can not connect to remote metadata service",
+			instance.GetServiceName(), revision, instance.GetID(), instance.GetHost(), storageType)
 	}
 	var remoteService remoteMetadataService
 	if url.Protocol == constant.TriProtocol && instance.GetMetadata()[constant.MetadataVersion] == constant.MetadataServiceV2Version {
@@ -86,7 +95,12 @@ func GetMetadataFromRpcWithContext(ctx context.Context, revision string, instanc
 	defer func() {
 		invoker.Destroy()
 	}()
-	return remoteService.getMetadataInfo(ctx, revision)
+	metadataInfo, err := remoteService.getMetadataInfo(ctx, revision)
+	if err != nil {
+		return metadataInfo, fmt.Errorf("rpc_metadata failed: app=%s revision=%s instance_id=%s host=%s storage_type=%s: %w",
+			instance.GetServiceName(), revision, instance.GetID(), instance.GetHost(), storageType, err)
+	}
+	return metadataInfo, nil
 }
 
 // remoteMetadataService is the internal interface for fetching MetadataInfo via RPC.
@@ -287,7 +301,8 @@ func getMetadataServiceUrlParams(ins registry.ServiceInstance) map[string]string
 	if str, ok := ps[constant.MetadataServiceURLParamsPropertyName]; ok && len(str) > 0 {
 		err := json.Unmarshal([]byte(str), &res)
 		if err != nil {
-			logger.Errorf("[Metadata][URL] could not parse the metadata service url parameters to map, err=%v", err)
+			logger.Errorf("[Metadata][URL] url_construction failed: app=%s instance_id=%s host=%s: could not parse metadata service URL parameters: %v",
+				ins.GetServiceName(), ins.GetID(), ins.GetHost(), err)
 		}
 	}
 

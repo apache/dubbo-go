@@ -92,6 +92,20 @@ func TestGetMetadataFromMetadataReport(t *testing.T) {
 		instances = make(map[string]report.MetadataReport)
 		_, err := GetMetadataFromMetadataReport("1", ins, "default")
 		require.Error(t, err)
+		assert.Contains(t, err.Error(), "metadata_report failed:")
+		assert.Contains(t, err.Error(), "operation=get")
+		assert.Contains(t, err.Error(), "app=dubbo-app")
+		assert.Contains(t, err.Error(), "revision=1")
+		assert.Contains(t, err.Error(), "registry_id=default")
+		assert.Contains(t, err.Error(), "storage_type=remote")
+	})
+
+	t.Run("no report instance with empty registry id", func(t *testing.T) {
+		instances = make(map[string]report.MetadataReport)
+		_, err := GetMetadataFromMetadataReport("1", ins, "")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "metadata_report failed:")
+		assert.Contains(t, err.Error(), "registry_id=")
 	})
 
 	t.Run("default registry routes to default report", func(t *testing.T) {
@@ -140,11 +154,19 @@ func TestGetMetadataFromMetadataReport(t *testing.T) {
 		instances = make(map[string]report.MetadataReport)
 		mockReport := new(mockMetadataReport)
 		defer mockReport.AssertExpectations(t)
-		instances["default"] = mockReport
+		instances["default"] = &DelegateMetadataReport{instance: mockReport}
 
-		mockReport.On("GetAppMetadata").Return(metadataInfo, errors.New("mock error")).Once()
+		sourceErr := errors.New("mock error")
+		mockReport.On("GetAppMetadata").Return(metadataInfo, sourceErr).Once()
 		_, err := GetMetadataFromMetadataReport("1", ins, "default")
 		require.Error(t, err)
+		assert.Contains(t, err.Error(), "metadata_report failed:")
+		assert.Contains(t, err.Error(), "operation=get")
+		assert.Contains(t, err.Error(), "app=dubbo-app")
+		assert.Contains(t, err.Error(), "revision=1")
+		assert.Contains(t, err.Error(), "registry_id=default")
+		assert.Contains(t, err.Error(), "storage_type=remote")
+		require.ErrorIs(t, err, sourceErr)
 	})
 }
 
@@ -174,17 +196,31 @@ func TestGetMetadataFromRpc(t *testing.T) {
 		mockProtocol.On("Refer").Return(nil).Once()
 		_, err := GetMetadataFromRpc("111", ins)
 		require.Error(t, err)
+		assert.Contains(t, err.Error(), "rpc_metadata failed:")
+		assert.Contains(t, err.Error(), "app=dubbo-app")
+		assert.Contains(t, err.Error(), "revision=111")
+		assert.Contains(t, err.Error(), "instance_id=1")
+		assert.Contains(t, err.Error(), "host=dubbo.io")
+		assert.Contains(t, err.Error(), "storage_type=local")
 	})
 	t.Run("invoke timeout", func(t *testing.T) {
+		sourceErr := errors.New("timeout error")
 		mockProtocol.On("Refer").Return(mockInvoker).Once()
 		mockInvoker.On("Invoke").Return(&result.RPCResult{
 			Attrs: map[string]any{},
-			Err:   errors.New("timeout error"),
+			Err:   sourceErr,
 			Rest:  metadataInfo,
 		}).Once()
 		mockInvoker.On("Destroy").Once()
 		_, err := GetMetadataFromRpc("111", ins)
 		require.Error(t, err)
+		assert.Contains(t, err.Error(), "rpc_metadata failed:")
+		assert.Contains(t, err.Error(), "app=dubbo-app")
+		assert.Contains(t, err.Error(), "revision=111")
+		assert.Contains(t, err.Error(), "instance_id=1")
+		assert.Contains(t, err.Error(), "host=dubbo.io")
+		assert.Contains(t, err.Error(), "storage_type=local")
+		require.ErrorIs(t, err, sourceErr)
 	})
 }
 
@@ -209,6 +245,21 @@ func TestGetMetadataFromRpcWithContext(t *testing.T) {
 	assert.Same(t, ctx, mockInvoker.invokedContext)
 }
 
+func TestGetMetadataFromRpcWithCanceledContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := GetMetadataFromRpcWithContext(ctx, "111", ins)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "rpc_metadata failed:")
+	assert.Contains(t, err.Error(), "app=dubbo-app")
+	assert.Contains(t, err.Error(), "revision=111")
+	assert.Contains(t, err.Error(), "instance_id=1")
+	assert.Contains(t, err.Error(), "host=dubbo.io")
+	assert.Contains(t, err.Error(), "storage_type=local")
+	require.ErrorIs(t, err, context.Canceled)
+}
+
 func TestTriMetadataServiceWithContext(t *testing.T) {
 	mockInvoker := new(mockInvoker)
 	mockInvoker.url = common.NewURLWithOptions(common.WithProtocol(constant.TriProtocol))
@@ -231,6 +282,12 @@ func TestGetMetadataFromRpc_MissingURLParams(t *testing.T) {
 		}
 		_, err := GetMetadataFromRpc("1", insNoProto)
 		require.Error(t, err)
+		assert.Contains(t, err.Error(), "url_construction failed:")
+		assert.Contains(t, err.Error(), "app=dubbo-app")
+		assert.Contains(t, err.Error(), "revision=1")
+		assert.Contains(t, err.Error(), "instance_id=2")
+		assert.Contains(t, err.Error(), "host=dubbo.io")
+		assert.Contains(t, err.Error(), "storage_type=local")
 		assert.Contains(t, err.Error(), "protocol is empty")
 	})
 
@@ -245,6 +302,12 @@ func TestGetMetadataFromRpc_MissingURLParams(t *testing.T) {
 		}
 		_, err := GetMetadataFromRpc("1", insNoPort)
 		require.Error(t, err)
+		assert.Contains(t, err.Error(), "url_construction failed:")
+		assert.Contains(t, err.Error(), "app=dubbo-app")
+		assert.Contains(t, err.Error(), "revision=1")
+		assert.Contains(t, err.Error(), "instance_id=3")
+		assert.Contains(t, err.Error(), "host=dubbo.io")
+		assert.Contains(t, err.Error(), "storage_type=local")
 		assert.Contains(t, err.Error(), "port is empty")
 	})
 }

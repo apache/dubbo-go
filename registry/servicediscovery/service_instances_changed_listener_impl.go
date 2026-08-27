@@ -20,6 +20,7 @@ package servicediscovery
 import (
 	"context"
 	"encoding/gob"
+	"fmt"
 	"maps"
 	"math/rand/v2"
 	"reflect"
@@ -385,12 +386,14 @@ func GetMetadataInfoWithContext(ctx context.Context, app string, instance regist
 		initCache(app)
 	})
 	cacheKey := metadataCacheKey(app, registryId, revision)
-	if metadataInfo, ok := metaCache.Get(cacheKey); ok {
+	if cachedValue, ok := metaCache.Get(cacheKey); ok {
 		logger.Debugf("[Metadata][Cache] app=%s registry=%s revision=%s host=%s result=hit",
 			app, registryId, revision, instance.GetHost())
 		publishMetadataCacheEvent(app, true)
 		publishMetadataFetchEvent(app, metricsMetadata.SourceCache, "", nil)
-		return metadataInfo.(*info.MetadataInfo), nil
+		metadataInfo := cachedValue.(*info.MetadataInfo)
+		logMetadataRevisionMismatch(metadataInfo, metricsMetadata.SourceCache, app, revision, registryId, instance)
+		return metadataInfo, nil
 	}
 	logger.Debugf("[Metadata][Cache] app=%s registry=%s revision=%s host=%s result=miss",
 		app, registryId, revision, instance.GetHost())
@@ -415,9 +418,22 @@ func GetMetadataInfoWithContext(ctx context.Context, app string, instance regist
 		publishMetadataFetchEvent(app, source, metricStorageType, err)
 		return nil, err
 	}
+	logMetadataRevisionMismatch(metadataInfo, source, app, revision, registryId, instance)
 	metaCache.Set(cacheKey, metadataInfo)
 	publishMetadataFetchEvent(app, source, metricStorageType, nil)
 	return metadataInfo, nil
+}
+
+func logMetadataRevisionMismatch(metadataInfo *info.MetadataInfo, source, app, expectedRevision, registryId string, instance registry.ServiceInstance) {
+	if metadataInfo == nil || metadataInfo.Revision == expectedRevision {
+		return
+	}
+	storageType := constant.DefaultMetadataStorageType
+	if instanceMetadata := instance.GetMetadata(); instanceMetadata != nil && instanceMetadata[constant.MetadataStorageTypePropertyName] != "" {
+		storageType = instanceMetadata[constant.MetadataStorageTypePropertyName]
+	}
+	logger.Warnf("[Metadata] revision_mismatch failed: source=%s app=%s expected_revision=%q actual_revision=%q registry_id=%s storage_type=%s instance_id=%s host=%s",
+		source, app, expectedRevision, metadataInfo.Revision, registryId, storageType, instance.GetID(), instance.GetHost())
 }
 
 func publishMetadataCacheEvent(app string, hit bool) {
@@ -552,8 +568,7 @@ func getMetadataStorageType(instance registry.ServiceInstance) string {
 func getMetadataInfoFromRPC(ctx context.Context, app string, instance registry.ServiceInstance, revision string, registryId string) (*info.MetadataInfo, string, error) {
 	metadataInfo, err := metadata.GetMetadataFromRpcWithContext(ctx, revision, instance)
 	if err != nil {
-		return nil, metricsMetadata.SourceRpc, perrors.Wrapf(err,
-			"failed app=%s registry=%s revision=%s", app, registryId, revision)
+		return nil, metricsMetadata.SourceRpc, fmt.Errorf("%w; registry_id=%s", err, registryId)
 	}
 	metadataInfo, err = requireMetadataInfo(metadataInfo, app, registryId, revision)
 	return metadataInfo, metricsMetadata.SourceRpc, err
@@ -568,35 +583,40 @@ func getRemoteMetadataInfo(ctx context.Context, app string, instance registry.Se
 
 	metadataInfo, rpcErr := metadata.GetMetadataFromRpcWithContext(ctx, revision, instance)
 	if rpcErr != nil {
-		return nil, metricsMetadata.SourceRpc, wrapMetadataRPCFallbackError(rpcErr, reportErr)
+		rpcErr = wrapMetadataRPCFallbackError(rpcErr, reportErr)
+		rpcErr = fmt.Errorf("%w; registry_id=%s", rpcErr, registryId)
+		return nil, metricsMetadata.SourceRpc, rpcErr
 	}
 	metadataInfo, rpcErr = requireMetadataInfo(metadataInfo, app, registryId, revision)
+	if rpcErr != nil {
+		return nil, metricsMetadata.SourceRpc, wrapMetadataRPCFallbackError(rpcErr, reportErr)
+	}
 	return metadataInfo, metricsMetadata.SourceRpc, rpcErr
 }
 
 func logMetadataReportFallback(app, registryId, revision string, reportErr error) {
 	if reportErr != nil {
-		logger.Errorf("[Metadata][Fallback] report failed, fallback to RPC app=%s registry=%s revision=%s err=%v",
-			app, registryId, revision, reportErr)
+		logger.Errorf("[Metadata][Fallback] report failed, fallback to RPC app=%s registry=%s revision=%s storage_type=%s err=%v",
+			app, registryId, revision, constant.RemoteMetadataStorageType, reportErr)
 		return
 	}
-	logger.Warnf("[Metadata][Fallback] report returned nil metadata, fallback to RPC app=%s registry=%s revision=%s",
-		app, registryId, revision)
+	logger.Warnf("[Metadata][Fallback] report returned nil metadata, fallback to RPC app=%s registry=%s revision=%s storage_type=%s",
+		app, registryId, revision, constant.RemoteMetadataStorageType)
 }
 
 func wrapMetadataRPCFallbackError(rpcErr, reportErr error) error {
 	if reportErr != nil {
 		// Wrap rpcErr so callers can use errors.Is/As on the primary failure;
 		// reportErr is annotated as context since it triggered the fallback.
-		return perrors.Wrapf(rpcErr, "both paths failed, reportErr: %v", reportErr)
+		return fmt.Errorf("%w; report_error=%v", rpcErr, reportErr)
 	}
-	return perrors.Wrapf(rpcErr, "RPC fallback failed after report returned nil metadata")
+	return fmt.Errorf("%w; report_result=nil", rpcErr)
 }
 
 func requireMetadataInfo(metadataInfo *info.MetadataInfo, app, registryId, revision string) (*info.MetadataInfo, error) {
 	if metadataInfo == nil {
-		return nil, perrors.Errorf("got nil metadata from RPC app=%s registry=%s revision=%s",
-			app, registryId, revision)
+		return nil, fmt.Errorf("rpc_metadata failed: app=%s revision=%s registry_id=%s: metadata is nil",
+			app, revision, registryId)
 	}
 	return metadataInfo, nil
 }
