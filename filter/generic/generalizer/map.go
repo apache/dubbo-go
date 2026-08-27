@@ -18,6 +18,7 @@
 package generalizer
 
 import (
+	"maps"
 	"reflect"
 	"strconv"
 	"strings"
@@ -224,9 +225,7 @@ func objToMap(obj any) (any, error) {
 				if !ok {
 					return nil, perrors.Errorf("cannot squash non-struct type '%s'", value.Type())
 				}
-				for key, val := range squashed {
-					result[key] = val
-				}
+				maps.Copy(result, squashed)
 				continue
 			}
 			result[tag.name] = generalizedValue
@@ -306,7 +305,7 @@ func parseMTag(field reflect.StructField) mTag {
 		return tag
 	}
 
-	for _, option := range strings.Split(options, ",") {
+	for option := range strings.SplitSeq(options, ",") {
 		switch option {
 		case "omitempty":
 			tag.omitEmpty = true
