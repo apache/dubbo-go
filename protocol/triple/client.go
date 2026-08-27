@@ -181,9 +181,14 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	}
 	cliOpts = append(cliOpts, clientKeepAliveOpts...)
 
-	// Optionally enable the unary fast path, off by default.
-	if tripleConf != nil && tripleConf.UnaryFastPath {
-		cliOpts = append(cliOpts, tri.WithUnaryFastPath())
+	// The unary fast path is on by default; an explicit unary-fast-path: false
+	// in the config opts back out to the duplex path.
+	if tripleConf != nil {
+		if tripleConf.UnaryFastPath {
+			cliOpts = append(cliOpts, tri.WithUnaryFastPath())
+		} else {
+			cliOpts = append(cliOpts, tri.WithoutUnaryFastPath())
+		}
 	}
 
 	// Build the HTTP transport used by the Triple client.

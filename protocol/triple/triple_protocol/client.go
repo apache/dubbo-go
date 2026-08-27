@@ -243,7 +243,9 @@ func newClientConfig(rawURL string, options []ClientOption) (*clientConfig, *Err
 	config := clientConfig{
 		URL: url,
 		// use gRPC by default
-		Protocol:         &protocolGRPC{},
+		Protocol: &protocolGRPC{},
+		// the unary fast path is on by default
+		UnaryFastPath:    true,
 		Procedure:        protoPath,
 		CompressionPools: make(map[string]*compressionPool),
 		BufferPool:       newBufferPool(),

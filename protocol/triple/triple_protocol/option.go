@@ -70,8 +70,9 @@ func WithTriple() ClientOption {
 	return &tripleOption{}
 }
 
-// WithUnaryFastPath enables the unary fast path (unaryFastPathCall) for unary
-// calls, off by default.
+// WithUnaryFastPath explicitly enables the unary fast path (unaryFastPathCall)
+// for unary calls. The fast path is on by default; this option is provided for
+// callers that want to state the intent explicitly.
 func WithUnaryFastPath() ClientOption {
 	return &unaryFastPathOption{}
 }
@@ -80,6 +81,19 @@ type unaryFastPathOption struct{}
 
 func (o *unaryFastPathOption) applyToClient(config *clientConfig) {
 	config.UnaryFastPath = true
+}
+
+// WithoutUnaryFastPath disables the unary fast path (unaryFastPathCall) for
+// unary calls, falling back to the duplex (io.Pipe) call path. Use it as a
+// rollback switch when the fast path misbehaves under a specific workload.
+func WithoutUnaryFastPath() ClientOption {
+	return &withoutUnaryFastPathOption{}
+}
+
+type withoutUnaryFastPathOption struct{}
+
+func (o *withoutUnaryFastPathOption) applyToClient(config *clientConfig) {
+	config.UnaryFastPath = false
 }
 
 // WithProtoJSON configures a client to send JSON-encoded data instead of

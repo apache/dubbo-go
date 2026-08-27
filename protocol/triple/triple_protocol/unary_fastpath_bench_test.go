@@ -61,20 +61,25 @@ var unaryBenchPayloadSizes = []int{
 	128, 1024, 16 * 1024, 1024 * 1024,
 }
 
-// BenchmarkUnaryDuplex measures the production unary path with the fast path
-// disabled (the default). The generated client defaults to the gRPC protocol,
-// so WithTriple selects the Triple protocol; without WithUnaryFastPath,
-// NewConn keeps using duplexHTTPCall for unary RPCs. It is the control group
-// for BenchmarkUnaryFastPathProduction.
+// BenchmarkUnaryDuplex measures the duplex unary path with the fast path
+// explicitly disabled. The generated client defaults to the gRPC protocol,
+// so WithTriple selects the Triple protocol; WithoutUnaryFastPath opts back
+// out of the on-by-default fast path, keeping duplexHTTPCall for unary RPCs.
+// It is the control group for BenchmarkUnaryFastPathProduction.
 func BenchmarkUnaryDuplex(b *testing.B) {
 	server, httpClient := newPingBenchmarkServer(b)
-	client := pingv1connect.NewPingServiceClient(httpClient, server.URL, triple_protocol.WithTriple())
+	client := pingv1connect.NewPingServiceClient(
+		httpClient,
+		server.URL,
+		triple_protocol.WithTriple(),
+		triple_protocol.WithoutUnaryFastPath(),
+	)
 	benchmarkUnaryPing(b, client)
 }
 
 // BenchmarkUnaryFastPathProduction measures the production unary fast path via
-// the generated client, differing from BenchmarkUnaryDuplex only by the
-// WithUnaryFastPath option.
+// the generated client. The fast path is on by default; the WithUnaryFastPath
+// option is repeated here to state the intent explicitly.
 func BenchmarkUnaryFastPathProduction(b *testing.B) {
 	server, httpClient := newPingBenchmarkServer(b)
 	client := pingv1connect.NewPingServiceClient(

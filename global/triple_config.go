@@ -49,16 +49,17 @@ type TripleConfig struct {
 
 	// KeepAliveTimeout defines the keep-alive timeout for client.
 	KeepAliveTimeout string `yaml:"keep-alive-timeout" json:"keep-alive-timeout,omitempty" property:"keep-alive-timeout"`
-	// UnaryFastPath enables the unary fast path for client, off by default.
+	// UnaryFastPath enables the unary fast path for client, on by default.
 	UnaryFastPath bool `yaml:"unary-fast-path" json:"unary-fast-path,omitempty" property:"unary-fast-path"`
 }
 
 // DefaultTripleConfig returns a default TripleConfig instance.
 func DefaultTripleConfig() *TripleConfig {
 	return &TripleConfig{
-		Http3:   DefaultHttp3Config(),
-		Cors:    DefaultCorsConfig(),
-		OpenAPI: DefaultOpenAPIConfig(),
+		Http3:         DefaultHttp3Config(),
+		Cors:          DefaultCorsConfig(),
+		OpenAPI:       DefaultOpenAPIConfig(),
+		UnaryFastPath: true,
 	}
 }
 

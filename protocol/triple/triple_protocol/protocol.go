@@ -130,7 +130,7 @@ type protocolClientParams struct {
 	GetURLMaxBytes   int
 	GetUseFallback   bool
 	// UnaryFastPath enables the unary fast path (unaryFastPathCall) for unary
-	// calls. It is off by default so the duplex path remains the baseline.
+	// calls. It is on by default; disable it to fall back to the duplex path.
 	UnaryFastPath bool
 	// The gRPC family of protocols always needs access to a Protobuf codec to
 	// marshal and unmarshal errors.
