@@ -176,3 +176,133 @@ func TestUnaryFastPathBodyAbortServer(t *testing.T) {
 		t.Fatalf("close response: %v", err)
 	}
 }
+
+// TestUnaryFastPathEmptyWriteSkipsPool verifies that zero-length writes do
+// not pull a buffer out of the pool: Send(nil), an empty protobuf message,
+// or an explicit Write of an empty slice must leave c.body nil so that
+// makeRequest hands http.NoBody to the transport and the pool stays intact.
+func TestUnaryFastPathEmptyWriteSkipsPool(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.ContentLength != 0 {
+			t.Errorf("request ContentLength = %d, want 0 for empty payload", r.ContentLength)
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	t.Cleanup(server.Close)
+	serverURL, err := url.Parse(server.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pool := newBufferPool()
+	call := newUnaryFastPathCall(
+		context.Background(),
+		server.Client(),
+		serverURL,
+		Spec{Procedure: "/connect.ping.v1.PingService/Ping"},
+		make(http.Header),
+		pool,
+	)
+	call.SetValidateResponse(func(*http.Response) *Error { return nil })
+
+	for _, empty := range [][]byte{nil, []byte{}} {
+		if n, err := call.Write(empty); n != 0 || err != nil {
+			t.Fatalf("Write(%v) = (%d, %v), want (0, nil)", empty, n, err)
+		}
+	}
+	if call.body != nil {
+		t.Fatal("zero-length write pulled a buffer from the pool")
+	}
+	if err := call.CloseWrite(); err != nil {
+		t.Fatalf("close write: %v", err)
+	}
+	if call.request.Body != http.NoBody {
+		t.Fatalf("request body = %T, want http.NoBody", call.request.Body)
+	}
+}
+
+// TestUnaryFastPathMakeRequestRecyclesEmptyBuffer verifies the fallback guard
+// in makeRequest: if a zero-length buffer reaches the send path despite the
+// Write short-circuit, it must be returned to the pool instead of being
+// replaced by http.NoBody and leaked.
+func TestUnaryFastPathMakeRequestRecyclesEmptyBuffer(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	t.Cleanup(server.Close)
+	serverURL, err := url.Parse(server.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pool := newBufferPool()
+	call := newUnaryFastPathCall(
+		context.Background(),
+		server.Client(),
+		serverURL,
+		Spec{Procedure: "/connect.ping.v1.PingService/Ping"},
+		make(http.Header),
+		pool,
+	)
+	call.SetValidateResponse(func(*http.Response) *Error { return nil })
+	// Simulate a zero-length buffer reaching the send path without going
+	// through Write (the short-circuit normally prevents this).
+	call.body = pool.Get()
+	if err := call.CloseWrite(); err != nil {
+		t.Fatalf("close write: %v", err)
+	}
+	if call.body != nil {
+		t.Fatal("empty buffer was not returned to the pool")
+	}
+	if call.request.Body != http.NoBody {
+		t.Fatalf("request body = %T, want http.NoBody", call.request.Body)
+	}
+}
+
+// TestUnaryFastPathEmptyMessageCall verifies end to end that an empty
+// protobuf request (marshaled to zero bytes) still completes a unary call:
+// the fast path must hand http.NoBody to the transport without leaking a
+// pooled buffer.
+func TestUnaryFastPathEmptyMessageCall(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.Handle("/connect.ping.v1.PingService/Ping", NewUnaryHandler(
+		"/connect.ping.v1.PingService/Ping",
+		func() any { return &pingv1.PingRequest{} },
+		func(ctx context.Context, req *Request) (*Response, error) {
+			return NewResponse(&pingv1.PingResponse{Text: "empty-ok"}), nil
+		},
+	))
+	server := httptest.NewUnstartedServer(mux)
+	server.EnableHTTP2 = true
+	server.StartTLS()
+	t.Cleanup(server.Close)
+	httpClient := server.Client()
+	serverURL, err := url.Parse(server.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	header := make(http.Header)
+	header.Set(headerContentType, "application/proto")
+	pool := newBufferPool()
+
+	conn := newTripleClientConn(true, &protoBinaryCodec{}, httpClient, serverURL, header, pool)
+	if err := conn.Send(&pingv1.PingRequest{}); err != nil {
+		t.Fatalf("send empty message: %v", err)
+	}
+	if err := conn.CloseRequest(); err != nil {
+		t.Fatalf("close request: %v", err)
+	}
+	resp := NewResponse(&pingv1.PingResponse{})
+	if err := receiveUnaryResponse(conn, resp); err != nil {
+		t.Fatalf("receive: %v", err)
+	}
+	pingResp, ok := resp.Any().(*pingv1.PingResponse)
+	if !ok {
+		t.Fatalf("unexpected response type %T", resp.Any())
+	}
+	if pingResp.Text != "empty-ok" {
+		t.Fatalf("echo text = %q, want %q", pingResp.Text, "empty-ok")
+	}
+	if err := conn.CloseResponse(); err != nil {
+		t.Fatalf("close response: %v", err)
+	}
+}
