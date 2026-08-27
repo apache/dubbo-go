@@ -129,6 +129,14 @@ func (c *unaryFastPathCall) Write(data []byte) (int, error) {
 		c.SetError(err)
 		return 0, wrapIfContextError(err)
 	}
+	if len(data) == 0 {
+		// Empty payloads (Send(nil), an empty protobuf message, or an
+		// explicit zero-length Write) must not pull a buffer out of the pool:
+		// makeRequest hands http.NoBody to the transport for a zero-length
+		// body, so the buffer would never be returned via
+		// unaryRequestBody.Close. Skip the pool entirely and keep c.body nil.
+		return 0, nil
+	}
 	if c.body == nil {
 		c.body = c.bufferPool.Get()
 	}
@@ -190,6 +198,12 @@ func (c *unaryFastPathCall) makeRequest() {
 		if bodyLen > 0 {
 			c.request.Body = &unaryRequestBody{buf: c.body, pool: c.bufferPool}
 		} else {
+			// Zero-length body: no transport read will ever happen, so
+			// unaryRequestBody.Close can't return the buffer to the pool.
+			// Recycle it now (belt and braces with the zero-length Write
+			// short-circuit above).
+			c.bufferPool.Put(c.body)
+			c.body = nil
 			c.request.Body = http.NoBody
 		}
 	} else {
