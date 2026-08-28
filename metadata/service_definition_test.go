@@ -232,7 +232,7 @@ func TestPublishServiceDefinitions(t *testing.T) {
 	assert.Equal(t, echoInterface, def.CanonicalName)
 	require.Len(t, def.Methods, 1)
 	assert.Equal(t, "Echo", def.Methods[0].Name)
-	assert.Equal(t, "string", def.Methods[0].ReturnType)
+	assert.Equal(t, "java.lang.String", def.Methods[0].ReturnType)
 }
 
 func TestPublishIsIdempotent(t *testing.T) {

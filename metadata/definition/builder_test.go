@@ -192,20 +192,21 @@ func TestBuildTrimsReceiverAndContext(t *testing.T) {
 	def, _ := build(t, &basicService{})
 
 	get := methodByName(t, def, "GetUser")
-	assert.Equal(t, []string{"string"}, get.ParameterTypes,
+	assert.Equal(t, []string{"java.lang.String"}, get.ParameterTypes,
 		"receiver and leading context.Context must not appear as parameters")
 
 	noCtx := methodByName(t, def, "NoContext")
-	assert.Equal(t, []string{"string", "int64"}, noCtx.ParameterTypes,
+	assert.Equal(t, []string{"java.lang.String", "long"}, noCtx.ParameterTypes,
 		"a method without context.Context keeps all its declared parameters")
 }
 
 func TestBuildReturnTypes(t *testing.T) {
 	def, _ := build(t, &basicService{})
 
-	assert.Equal(t, "*dubbo.apache.org/dubbo-go/v3/metadata/definition.User",
-		methodByName(t, def, "GetUser").ReturnType)
-	assert.Equal(t, "bool", methodByName(t, def, "NoContext").ReturnType)
+	// *User is published as User: the pointer only says the value may be
+	// absent, which Java reads off the type being a reference type.
+	assert.Equal(t, userType, methodByName(t, def, "GetUser").ReturnType)
+	assert.Equal(t, "boolean", methodByName(t, def, "NoContext").ReturnType)
 
 	// An error-only method must be distinguishable from a failed resolution.
 	ping := methodByName(t, def, "Ping")
@@ -221,8 +222,8 @@ func TestBuildParameterNamesArePositional(t *testing.T) {
 	require.Len(t, noCtx.Parameters, 2)
 	assert.Equal(t, "arg0", noCtx.Parameters[0].Name)
 	assert.Equal(t, "arg1", noCtx.Parameters[1].Name)
-	assert.Equal(t, "string", noCtx.Parameters[0].Type)
-	assert.Equal(t, "int64", noCtx.Parameters[1].Type)
+	assert.Equal(t, "java.lang.String", noCtx.Parameters[0].Type)
+	assert.Equal(t, "long", noCtx.Parameters[1].Type)
 
 	for i, p := range noCtx.Parameters {
 		assert.Equal(t, noCtx.ParameterTypes[i], p.Type,
@@ -231,44 +232,124 @@ func TestBuildParameterNamesArePositional(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// type expression and wrapper entries
+// type expression and container entries
 // ---------------------------------------------------------------------------
 
-func TestBuildEmitsWrapperTypeEntries(t *testing.T) {
+const (
+	userType = "dubbo.apache.org/dubbo-go/v3/metadata/definition.User"
+	addrType = "dubbo.apache.org/dubbo-go/v3/metadata/definition.Address"
+	nodeType = "dubbo.apache.org/dubbo-go/v3/metadata/definition.Node"
+)
+
+func TestBuildScalarsUseJavaSpelling(t *testing.T) {
+	// The contract speaks Java's type vocabulary, which is the vocabulary
+	// dubbo-go's own generic runtime matches against.
 	def, _ := build(t, &basicService{})
 
-	const userType = "dubbo.apache.org/dubbo-go/v3/metadata/definition.User"
-	const addrType = "dubbo.apache.org/dubbo-go/v3/metadata/definition.Address"
+	user := typeByName(t, def, userType)
+	assert.Equal(t, "java.lang.String", user.Properties["name"])
+	assert.Equal(t, "int", user.Properties["age"], "Go int32 is Java int")
+}
 
-	// GetUser returns *User, so Admin looks up "*User" first and needs a path
-	// from there down to User's fields.
-	ptr := typeByName(t, def, "*"+userType)
-	assert.Equal(t, []string{userType}, ptr.Items)
+func TestBuildPointerBecomesWrapperOrReference(t *testing.T) {
+	def, _ := build(t, &basicService{})
+
+	// A pointer to a struct is just the struct: Java objects are already
+	// nullable, so there is nothing extra to say.
+	assert.Equal(t, addrType, typeByName(t, def, userType).Properties["home"])
+	for _, ty := range def.Types {
+		assert.NotContains(t, ty.Type, "*", "pointers must not survive into type names")
+	}
+
+	// A pointer to a scalar boxes it, which is exactly how Java distinguishes
+	// a nullable value from a primitive.
+	c := newTypeCollector()
+	expr, err := c.resolve(reflect.TypeFor[*int64]())
+	require.NoError(t, err)
+	assert.Equal(t, "java.lang.Long", expr)
+
+	expr, err = c.resolve(reflect.TypeFor[int64]())
+	require.NoError(t, err)
+	assert.Equal(t, "long", expr)
+}
+
+// TestBuildContainerArity is the distinction consumers rely on: Java's
+// MapTypeBuilder appends one entry per actual type argument, so a collection
+// carries one item and a map carries two. Publishing a map with a single item
+// would have it read as an array of that item.
+func TestBuildContainerArity(t *testing.T) {
+	def, _ := build(t, &basicService{})
 
 	user := typeByName(t, def, userType)
-	assert.Equal(t, map[string]string{
-		"name":     "string",
-		"age":      "int32",
-		"home":     "*" + addrType,
-		"tags":     "[]string",
-		"scores":   "map[string]float64",
-		"quadrant": "[4]int",
-	}, user.Properties)
+	assert.Equal(t, "java.lang.String[]", user.Properties["tags"])
+	assert.Equal(t, "java.util.Map<java.lang.String,java.lang.Double>", user.Properties["scores"])
+	assert.Equal(t, "long[]", user.Properties["quadrant"], "a Go array has no length in Java")
 
-	// Each composite property must itself be resolvable to its element.
-	assert.Equal(t, []string{"string"}, typeByName(t, def, "[]string").Items)
-	assert.Equal(t, []string{"float64"}, typeByName(t, def, "map[string]float64").Items)
-	assert.Equal(t, []string{"int"}, typeByName(t, def, "[4]int").Items)
-	assert.Equal(t, []string{addrType}, typeByName(t, def, "*"+addrType).Items)
+	list := typeByName(t, def, "java.lang.String[]")
+	require.Len(t, list.Items, 1, "a collection carries exactly one item")
+	assert.Equal(t, []string{"java.lang.String"}, list.Items)
+
+	m := typeByName(t, def, "java.util.Map<java.lang.String,java.lang.Double>")
+	require.Len(t, m.Items, 2, "a map carries key and value")
+	assert.Equal(t, []string{"java.lang.String", "java.lang.Double"}, m.Items,
+		"the value is boxed because Java generics admit only reference types")
+}
+
+func TestBuildByteSliceIsJavaByteArray(t *testing.T) {
+	// []byte and []uint8 are one type in Go, and this one carries binary
+	// payloads that hessian2 already puts on the wire as Java byte[].
+	c := newTypeCollector()
+	expr, err := c.resolve(reflect.TypeFor[[]byte]())
+	require.NoError(t, err)
+	assert.Equal(t, "byte[]", expr)
+	assert.Equal(t, []string{"byte"}, c.defs["byte[]"].Items)
+}
+
+func TestBuildRejectsUnsigned64(t *testing.T) {
+	// No Java integer type holds the range, and publishing the existing
+	// hessian helper's non-Java "unsigned long" would name nothing.
+	for _, typ := range []reflect.Type{
+		reflect.TypeFor[uint64](),
+		reflect.TypeFor[uint](),
+	} {
+		_, err := newTypeCollector().resolve(typ)
+		require.Error(t, err, "%s", typ)
+		assert.True(t, IsUnsupported(err))
+		assert.Contains(t, err.Error(), "exceed the range")
+	}
+}
+
+func TestBuildWidensSmallUnsigned(t *testing.T) {
+	// Widening keeps the whole Go range representable; the schema is looser on
+	// the low end, which realization rejects rather than wraps.
+	for typ, want := range map[reflect.Type]string{
+		reflect.TypeFor[uint8]():  "byte",
+		reflect.TypeFor[uint16](): "int",
+		reflect.TypeFor[uint32](): "long",
+	} {
+		expr, err := newTypeCollector().resolve(typ)
+		require.NoError(t, err, "%s", typ)
+		assert.Equal(t, want, expr, "%s", typ)
+	}
+}
+
+func TestBuildUsesDeclaredJavaClassName(t *testing.T) {
+	// A type that declares a Java class name is published under it: that is the
+	// name hessian2 writes into the wire form and the name a Java peer knows.
+	c := newTypeCollector()
+	expr, err := c.resolve(reflect.TypeFor[javaNamed]())
+	require.NoError(t, err)
+	assert.Equal(t, "com.example.Named", expr)
+	assert.Equal(t, map[string]string{"label": "java.lang.String"}, c.defs[expr].Properties)
 }
 
 func TestBuildStructPropertiesFollowGeneralizerNaming(t *testing.T) {
 	def, _ := build(t, &basicService{})
 
-	addr := typeByName(t, def, "dubbo.apache.org/dubbo-go/v3/metadata/definition.Address")
+	addr := typeByName(t, def, addrType)
 	assert.Equal(t, map[string]string{
-		"city":    "string", // no tag: first rune lowercased
-		"zipCode": "string", // m tag wins verbatim
+		"city":    "java.lang.String", // no tag: first rune lowercased
+		"zipCode": "java.lang.String", // m tag wins verbatim
 	}, addr.Properties)
 	assert.NotContains(t, addr.Properties, "hidden", "unexported fields are not on the wire")
 	assert.NotContains(t, addr.Properties, "Zip", "the Go name is not the wire name when a tag exists")
@@ -277,22 +358,20 @@ func TestBuildStructPropertiesFollowGeneralizerNaming(t *testing.T) {
 func TestBuildRecursiveTypeTerminates(t *testing.T) {
 	def, _ := build(t, &basicService{})
 
-	const nodeType = "dubbo.apache.org/dubbo-go/v3/metadata/definition.Node"
 	node := typeByName(t, def, nodeType)
 	assert.Equal(t, map[string]string{
-		"label": "string",
-		"next":  "*" + nodeType,
+		"label": "java.lang.String",
+		"next":  nodeType,
 	}, node.Properties, "the cycle is preserved as a reference, not expanded")
-	assert.Equal(t, []string{nodeType}, typeByName(t, def, "*"+nodeType).Items)
 }
 
 func TestBuildNamedScalarUsesUnderlyingType(t *testing.T) {
-	// A named scalar travels the generic wire as its underlying builtin, so the
-	// contract names the builtin.
+	// A named scalar travels the generic wire as its underlying value, so the
+	// contract names that rather than the Go type name.
 	c := newTypeCollector()
 	expr, err := c.resolve(reflect.TypeOf(time.Month(1)))
 	require.NoError(t, err)
-	assert.Equal(t, "int", expr)
+	assert.Equal(t, "long", expr, "Go int is 64-bit here, matching getBasicJavaName")
 }
 
 // ---------------------------------------------------------------------------
@@ -478,3 +557,10 @@ func TestBuildRejectsUnusableInput(t *testing.T) {
 	_, _, err = BuildFromURL(testURL(t, "", "", ""), reflect.TypeOf(&basicService{}))
 	assert.Error(t, err, "an empty interface name cannot identify a definition")
 }
+
+// javaNamed declares a Java class name, as a hessian POJO does.
+type javaNamed struct {
+	Label string
+}
+
+func (javaNamed) JavaClassName() string { return "com.example.Named" }

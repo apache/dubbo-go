@@ -76,6 +76,96 @@ var blockedNamedTypes = map[string]string{
 	"encoding/json.RawMessage": "raw JSON has no declarable structure",
 }
 
+// Java type names used by the published contract.
+//
+// The definition speaks Java's type vocabulary rather than Go's. That is not a
+// concession to any particular consumer: it is the vocabulary dubbo-go's own
+// generic runtime already uses. filter/generic matches the caller-supplied
+// $invoke types against protocol/dubbo/hessian2.GetJavaName output when it
+// decides whether to unwrap a packed variadic tail, so a Go-spelled contract
+// would describe names that dubbo-go itself does not recognize.
+//
+// Struct names are the exception and stay Go-derived unless the type declares a
+// Java class name; see resolveStruct.
+const (
+	javaBoolean = "boolean"
+	javaByte    = "byte"
+	javaShort   = "short"
+	javaInt     = "int"
+	javaLong    = "long"
+	javaFloat   = "float"
+	javaDouble  = "double"
+	javaString  = "java.lang.String"
+	javaMap     = "java.util.Map"
+)
+
+// javaWrappers maps each primitive spelling to its boxed counterpart.
+//
+// Go's T versus *T is exactly Java's primitive versus wrapper distinction, and
+// consumers read nullability off that: a primitive rejects null, a reference
+// type accepts it. Expressing it through the type name means the contract needs
+// no separate nullability flag, which Provider metadata has never carried.
+var javaWrappers = map[string]string{
+	javaBoolean: "java.lang.Boolean",
+	javaByte:    "java.lang.Byte",
+	javaShort:   "java.lang.Short",
+	javaInt:     "java.lang.Integer",
+	javaLong:    "java.lang.Long",
+	javaFloat:   "java.lang.Float",
+	javaDouble:  "java.lang.Double",
+}
+
+// javaScalarName returns the Java spelling of a Go scalar.
+//
+// Unsigned kinds widen to the next signed type that holds their whole range.
+// The schema is then wider than the Go field on the low end — nothing stops a
+// caller sending -1 for a uint16 — but the provider rejects that during
+// realization, so the failure is a clean error rather than a wrapped value.
+//
+// uint and uint64 have no such landing spot: their range runs past Java's long.
+// They are refused rather than published under an invented name, which is what
+// the existing hessian helper does with its non-Java "unsigned long".
+func javaScalarName(t reflect.Type, nullable bool) (string, error) {
+	var primitive string
+	switch t.Kind() {
+	case reflect.Bool:
+		primitive = javaBoolean
+	case reflect.Int8:
+		primitive = javaByte
+	case reflect.Uint8:
+		// byte, not short, even though Go's uint8 is 0..255 and Java's byte is
+		// signed. []byte and []uint8 are one type in Go, so this choice also
+		// decides byte slices — and those carry binary payloads that hessian2
+		// already puts on the wire as Java byte[] (see GetClassDesc's "[B").
+		// Keeping the container faithful matters more than the 128..255 range,
+		// which the schema simply rejects.
+		primitive = javaByte
+	case reflect.Int16:
+		primitive = javaShort
+	case reflect.Uint16, reflect.Int32:
+		primitive = javaInt
+	case reflect.Uint32, reflect.Int, reflect.Int64:
+		primitive = javaLong
+	case reflect.Uint, reflect.Uint64:
+		return "", unsupported(t.String(),
+			"unsigned 64-bit integers exceed the range of every Java integer type")
+	case reflect.Float32:
+		primitive = javaFloat
+	case reflect.Float64:
+		primitive = javaDouble
+	case reflect.String:
+		// Already a reference type; there is no unboxed spelling to choose.
+		return javaString, nil
+	default:
+		return "", unsupported(t.String(), "not a scalar kind")
+	}
+
+	if nullable {
+		return javaWrappers[primitive], nil
+	}
+	return primitive, nil
+}
+
 // typeCollector resolves reflect.Types into type expressions and accumulates a
 // TypeDefinition for every composite type it walks through.
 type typeCollector struct {
@@ -101,6 +191,22 @@ func (c *typeCollector) resolveAt(t reflect.Type, depth int) (string, error) {
 		return "", unsupported(t.String(), fmt.Sprintf("type nesting exceeds %d levels", maxTypeDepth))
 	}
 
+	// Pointers carry nullability, not structure. Java expresses the same
+	// distinction with primitive versus wrapper class rather than in the type
+	// expression, so strip the indirection here and let the scalar branch pick
+	// the right spelling. For struct, list and map the wrapper form is already
+	// nullable, so the flag changes nothing.
+	nullable := false
+	for t.Kind() == reflect.Pointer {
+		t = t.Elem()
+		nullable = true
+		depth++
+		if depth > maxTypeDepth {
+			return "", unsupported(t.String(),
+				fmt.Sprintf("type nesting exceeds %d levels", maxTypeDepth))
+		}
+	}
+
 	if name := namedTypeKey(t); name != "" {
 		if reason, blocked := blockedNamedTypes[name]; blocked {
 			return "", unsupported(name, reason)
@@ -112,27 +218,25 @@ func (c *typeCollector) resolveAt(t reflect.Type, depth int) (string, error) {
 		reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
 		reflect.Float32, reflect.Float64:
-		// Scalars are published under their builtin spelling even when the type
+		// Scalars are published under their Java spelling even when the Go type
 		// is named. A `type UserID int64` travels the generic wire as a bare
-		// int64 — MapGeneralizer's objToMap returns it unchanged through the
-		// default branch — so publishing "UserID" would name something the
-		// caller can neither construct nor recognize. Only structs keep their
-		// declared name, because only structs have a structure to describe.
-		return t.Kind().String(), nil
+		// 64-bit integer, so publishing "UserID" would name something the caller
+		// can neither construct nor recognize.
+		return javaScalarName(t, nullable)
 
-	case reflect.Pointer:
-		return c.resolveWrapper(t.Elem(), depth, func(elem string) string {
-			return "*" + elem
-		})
-
-	case reflect.Slice:
-		return c.resolveWrapper(t.Elem(), depth, func(elem string) string {
-			return "[]" + elem
-		})
-
-	case reflect.Array:
-		return c.resolveWrapper(t.Elem(), depth, func(elem string) string {
-			return fmt.Sprintf("[%d]%s", t.Len(), elem)
+	case reflect.Slice, reflect.Array:
+		// Array syntax, not List<T>. Java generics cannot hold a primitive, so
+		// List<byte> would not be a type anyone could write; the array form is
+		// valid for every element kind. It is also what
+		// protocol/dubbo/hessian2.GetJavaName produces, which keeps the
+		// published contract and the runtime's own spelling in agreement — and
+		// it is what makes a Go []byte land on Java's byte[], the form hessian2
+		// already puts on the wire.
+		//
+		// A Go array's length has no Java counterpart, so [N]T and []T are
+		// spelled the same.
+		return c.resolveContainer(t.Elem(), depth, func(elem string) string {
+			return elem + "[]"
 		})
 
 	case reflect.Map:
@@ -140,12 +244,10 @@ func (c *typeCollector) resolveAt(t reflect.Type, depth int) (string, error) {
 			return "", unsupported(t.String(),
 				"only string-keyed maps can be expressed as JSON objects")
 		}
-		// The key type is fixed at map[string] rather than resolved: a named
-		// string key still serializes as a JSON object key, and admitting
-		// map[UserID]T would imply a key schema that JSON cannot carry.
-		return c.resolveWrapper(t.Elem(), depth, func(elem string) string {
-			return "map[string]" + elem
-		})
+		// The key is fixed at String rather than resolved: a named string key
+		// still serializes as a JSON object key, and admitting map[UserID]T
+		// would imply a key schema JSON cannot carry.
+		return c.resolveMap(t.Elem(), depth)
 
 	case reflect.Struct:
 		return c.resolveStruct(t, depth)
@@ -170,14 +272,18 @@ func (c *typeCollector) resolveAt(t reflect.Type, depth int) (string, error) {
 	}
 }
 
-// resolveWrapper resolves a pointer/slice/array/map element and records a
-// wrapper TypeDefinition linking the composite expression to its element.
+// resolveContainer resolves a slice or array element and records a list entry
+// whose single item is the element type.
 //
-// Wrappers get their own entries because Admin resolves a parameter by looking
-// up its exact ParameterTypes string in types[], then walks items/properties
-// from there. Publishing only the element T while the parameter reads []T
-// leaves Admin with no path to T's fields.
-func (c *typeCollector) resolveWrapper(
+// Container entries exist because Admin resolves a parameter by looking up its
+// exact ParameterTypes string in types[], then walks items/properties from
+// there. Publishing only the element T while the parameter reads List<T> leaves
+// Admin with no path to T's fields.
+//
+// Exactly one item is what marks this as a collection rather than a map: Java's
+// MapTypeBuilder appends one entry per actual type argument, so a Map yields two
+// and consumers tell the two apart by arity, not by name.
+func (c *typeCollector) resolveContainer(
 	elem reflect.Type,
 	depth int,
 	compose func(string) string,
@@ -192,6 +298,36 @@ func (c *typeCollector) resolveWrapper(
 		c.put(expr, &TypeDefinition{Type: expr, Items: []string{elemExpr}})
 	}
 	return expr, nil
+}
+
+// resolveMap records a map entry carrying both type arguments.
+//
+// Two items, key first. A single item would be read as a collection of that
+// item, silently turning an object schema into an array one.
+//
+// The value is boxed: it sits inside a generic argument list, where Java admits
+// only reference types. Map<java.lang.String,long> is not a type.
+func (c *typeCollector) resolveMap(value reflect.Type, depth int) (string, error) {
+	valueExpr, err := c.resolveAt(value, depth+1)
+	if err != nil {
+		return "", err
+	}
+	valueExpr = boxed(valueExpr)
+	expr := javaMap + "<" + javaString + "," + valueExpr + ">"
+
+	if _, seen := c.defs[expr]; !seen {
+		c.put(expr, &TypeDefinition{Type: expr, Items: []string{javaString, valueExpr}})
+	}
+	return expr, nil
+}
+
+// boxed returns the wrapper spelling of a primitive, or expr unchanged when it
+// is already a reference type.
+func boxed(expr string) string {
+	if wrapper, primitive := javaWrappers[expr]; primitive {
+		return wrapper
+	}
+	return expr
 }
 
 func (c *typeCollector) resolveStruct(t reflect.Type, depth int) (string, error) {
@@ -300,10 +436,28 @@ func fieldWireName(field reflect.StructField) (string, error) {
 	return tag, nil
 }
 
-// namedTypeKey returns the fully qualified name of a named type, or "" if the
-// type is unnamed. Package path is included so two same-named types from
-// different packages stay distinct, matching Java's use of the class FQN.
+// javaClassNamed is implemented by types that declare their own Java class
+// name. It is hessian.POJO, restated here so this package does not take a
+// dependency on the codec just to read one method.
+type javaClassNamed interface {
+	JavaClassName() string
+}
+
+// namedTypeKey returns the name a struct is published under.
+//
+// A type that declares a Java class name is published under it: that is the
+// name hessian2 puts in the wire form's "class" key and the name a Java peer
+// knows the type by, so using anything else would describe a different type
+// than the one on the wire. Everything else falls back to the Go import path
+// plus type name — no Java name exists to borrow, and the path keeps two
+// same-named types from different packages distinct, which is the same job
+// Java's FQN does.
+//
+// Returns "" for an unnamed type.
 func namedTypeKey(t reflect.Type) string {
+	if declared := declaredJavaClassName(t); declared != "" {
+		return declared
+	}
 	if t.Name() == "" {
 		return ""
 	}
@@ -311,6 +465,27 @@ func namedTypeKey(t reflect.Type) string {
 		return t.Name()
 	}
 	return t.PkgPath() + "." + t.Name()
+}
+
+// declaredJavaClassName reads JavaClassName from a type or its pointer,
+// covering both receiver forms, and returns "" when the type does not declare
+// one or panics trying.
+func declaredJavaClassName(t reflect.Type) (name string) {
+	if t.Kind() != reflect.Struct {
+		return ""
+	}
+	named, ok := reflect.New(t).Interface().(javaClassNamed)
+	if !ok {
+		return ""
+	}
+	defer func() {
+		// A JavaClassName that dereferences its receiver's fields would panic on
+		// the zero value. Fall back to the Go name rather than fail the build.
+		if recover() != nil {
+			name = ""
+		}
+	}()
+	return named.JavaClassName()
 }
 
 func (c *typeCollector) put(expr string, def *TypeDefinition) {
