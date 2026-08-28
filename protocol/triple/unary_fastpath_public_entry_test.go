@@ -22,6 +22,7 @@ import (
 	"errors"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"testing"
 )
@@ -40,17 +41,21 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
 // TestCallUnaryFastPathWireSignature verifies that a unary call issued through
-// the public client entry (clientManager.callUnary, the path reached by
-// TripleInvoker.Invoke) reaches the server with a pre-declared Content-Length
-// when the fast path is on, and streams without one when it is explicitly
-// disabled. The fast path buffers the whole request body and sets
-// Content-Length; duplexHTTPCall streams through an io.Pipe and cannot, so the
-// server sees Content-Length == -1. This guards the dispatch wiring between
-// the RPC layer and the gRPC protocol client.
+// the production entry — TripleProtocol.Refer, then TripleInvoker.Invoke with
+// a real invocation (method, parameters, call type, metadata and attachments
+// converted exactly as production does) — reaches the server with a
+// pre-declared Content-Length when the fast path is on, and streams without
+// one when it is explicitly disabled. The fast path buffers the whole request
+// body and sets Content-Length; duplexHTTPCall streams through an io.Pipe and
+// cannot, so the server sees Content-Length == -1. This guards the dispatch
+// wiring from the RPC layer down to the gRPC protocol client: if Refer ever
+// routed to a different Invoker, or Invoke stopped reaching this manager, the
+// wire signature assertion fails even though the manager-level path is intact.
 func TestCallUnaryFastPathWireSignature(t *testing.T) {
 	for _, tc := range []struct {
 		name         string
@@ -73,10 +78,17 @@ func TestCallUnaryFastPathWireSignature(t *testing.T) {
 					return tri.NewResponse(&wrapperspb.StringValue{Value: sv.Value}), nil
 				},
 			)
+			// Refer starts a background gRPC health-check stream; it hits a
+			// different path (grpc.health.v1.Health/...) with a streaming body
+			// (Content-Length == -1) that would clobber the Ping signature.
+			// Capture every non-health request instead, so the assertion is
+			// immune to both the health stream and the exact Ping path.
 			wrapped := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				mu.Lock()
-				contentLen = r.ContentLength
-				mu.Unlock()
+				if !strings.HasPrefix(r.URL.Path, "/grpc.health.v1.Health/") {
+					mu.Lock()
+					contentLen = r.ContentLength
+					mu.Unlock()
+				}
 				pingHandler.ServeHTTP(w, r)
 			})
 			server := &http.Server{Handler: h2c.NewHandler(wrapped, &http2.Server{})}
@@ -91,26 +103,29 @@ func TestCallUnaryFastPathWireSignature(t *testing.T) {
 				"tri://"+ln.Addr().String()+"/connect.ping.v1.PingService",
 				common.WithMethods([]string{"Ping"}),
 				common.WithProtocol(TRIPLE),
+				common.WithParamsValue(constant.IDLMode, constant.NONIDL),
 			)
 			require.NoError(t, err)
 			if tc.tripleConf != nil {
 				url.SetAttribute(constant.TripleConfigKey, tc.tripleConf)
 			}
 
-			cm, err := newClientManager(url)
-			require.NoError(t, err)
-			defer cm.close()
+			invoker := GetProtocol().Refer(url)
+			require.NotNil(t, invoker)
+			defer invoker.Destroy()
 
 			resp := &wrapperspb.StringValue{}
-			err = cm.callUnary(
-				context.Background(),
-				"Ping",
-				&wrapperspb.StringValue{Value: "hello"},
-				resp,
-				nil,
-				nil,
+			inv := invocation.NewRPCInvocationWithOptions(
+				invocation.WithMethodName("Ping"),
+				invocation.WithParameterRawValues([]any{
+					&wrapperspb.StringValue{Value: "hello"},
+					resp,
+				}),
 			)
-			require.NoError(t, err)
+			inv.SetAttribute(constant.CallTypeKey, constant.CallUnary)
+
+			res := invoker.Invoke(context.Background(), inv)
+			require.NoError(t, res.Error())
 			assert.Equal(t, "hello", resp.Value)
 
 			mu.Lock()
@@ -127,11 +142,12 @@ func TestCallUnaryFastPathWireSignature(t *testing.T) {
 }
 
 // TestCallUnaryFastPathErrorPaths verifies that error propagation through the
-// public client entry (clientManager.callUnary) behaves identically whether
-// the fast path is on (default) or disabled (duplex): a canceled context fails
-// fast, a handler error surfaces with its code and message, and a gRPC
-// trailers-only response (grpc-status with no message body) is decoded
-// correctly. This guards the gRPC wire error path of the fast path.
+// production entry (TripleProtocol.Refer + TripleInvoker.Invoke) behaves
+// identically whether the fast path is on (default) or disabled (duplex): a
+// canceled context fails fast, a handler error surfaces with its code and
+// message, and a gRPC trailers-only response (grpc-status with no message
+// body) is decoded correctly. This guards the gRPC wire error path of the
+// fast path through the same Refer/Invoker dispatch the RPC layer uses.
 func TestCallUnaryFastPathErrorPaths(t *testing.T) {
 	scenarios := []struct {
 		name    string
@@ -200,15 +216,16 @@ func TestCallUnaryFastPathErrorPaths(t *testing.T) {
 						"tri://"+ln.Addr().String()+"/connect.ping.v1.PingService",
 						common.WithMethods([]string{"Ping"}),
 						common.WithProtocol(TRIPLE),
+						common.WithParamsValue(constant.IDLMode, constant.NONIDL),
 					)
 					require.NoError(t, err)
 					if cfg.tripleConf != nil {
 						url.SetAttribute(constant.TripleConfigKey, cfg.tripleConf)
 					}
 
-					cm, err := newClientManager(url)
-					require.NoError(t, err)
-					defer cm.close()
+					invoker := GetProtocol().Refer(url)
+					require.NotNil(t, invoker)
+					defer invoker.Destroy()
 
 					ctx := context.Background()
 					if sc.name == "context-canceled" {
@@ -217,15 +234,17 @@ func TestCallUnaryFastPathErrorPaths(t *testing.T) {
 						cancel()
 					}
 					resp := &wrapperspb.StringValue{}
-					err = cm.callUnary(
-						ctx,
-						"Ping",
-						&wrapperspb.StringValue{Value: "hello"},
-						resp,
-						nil,
-						nil,
+					inv := invocation.NewRPCInvocationWithOptions(
+						invocation.WithMethodName("Ping"),
+						invocation.WithParameterRawValues([]any{
+							&wrapperspb.StringValue{Value: "hello"},
+							resp,
+						}),
 					)
-					sc.wantErr(t, err)
+					inv.SetAttribute(constant.CallTypeKey, constant.CallUnary)
+
+					res := invoker.Invoke(ctx, inv)
+					sc.wantErr(t, res.Error())
 				})
 			}
 		})
