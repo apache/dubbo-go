@@ -124,6 +124,8 @@ func GetMetadataReports() []report.MetadataReport {
 }
 
 func GetMetadataType() string {
+	metadataOptionsMu.RLock()
+	defer metadataOptionsMu.RUnlock()
 	if metadataOptions == nil || metadataOptions.metadataType == "" {
 		return constant.DefaultMetadataStorageType
 	}

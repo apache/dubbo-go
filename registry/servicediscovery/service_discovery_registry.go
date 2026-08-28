@@ -107,13 +107,19 @@ func isPublishableRevision(revision string) bool {
 	return len(revision) > 0 && revision != "0" && revision != "N/A"
 }
 
-// startMetadataTimers starts the renewAppMetadata timer if metadata type is remote.
-// GC runs after each renew cycle inside doRenewAppMetadata.
+// startMetadataTimers starts the daily renew timer when there is anything for
+// it to refresh. GC runs after each renew cycle inside doRenewAppMetadata.
+//
+// Two independent things want the timer. Remote application metadata needs
+// re-publishing, and so do interface-level service definitions — which are
+// published regardless of metadataType, so the timer must start for them even
+// when application metadata lives locally. Each half guards itself inside
+// doRenewAppMetadata.
 func (s *serviceDiscoveryRegistry) startMetadataTimers() {
-	if metadata.GetMetadataType() != constant.RemoteMetadataStorageType {
+	if s.metadataReport == nil {
 		return
 	}
-	if s.metadataReport == nil {
+	if !renewsAppMetadata() && !metadata.ServiceDefinitionsEnabled() {
 		return
 	}
 	metaInfo := metadata.GetMetadataInfo(s.url.GetParam(constant.RegistryIdKey, ""))
@@ -121,6 +127,12 @@ func (s *serviceDiscoveryRegistry) startMetadataTimers() {
 		return
 	}
 	s.startRenewAppMetadataTimer()
+}
+
+// renewsAppMetadata reports whether application metadata lives in the metadata
+// center, and therefore needs the daily re-publish.
+func renewsAppMetadata() bool {
+	return metadata.GetMetadataType() == constant.RemoteMetadataStorageType
 }
 
 func (s *serviceDiscoveryRegistry) RegisterService() error {
@@ -450,20 +462,40 @@ func (s *serviceDiscoveryRegistry) doRenewAppMetadata() {
 		return
 	}
 
-	// Copy snapshot to avoid data race
-	snapshot := metaInfo.Snapshot()
-	snapshot.LastUpdatedTime = time.Now().UnixMilli()
-	if err := s.metadataReport.PublishAppMetadata(snapshot.App, snapshot.Revision, &snapshot); err != nil {
-		logger.Errorf("[Metadata][renewAppMetadata] failed to re-publish metadata for app=%s revision=%s: %v", snapshot.App, snapshot.Revision, err)
-	} else {
-		logger.Infof("[Metadata][renewAppMetadata] refreshed metadata for app=%s revision=%s", snapshot.App, snapshot.Revision)
+	if renewsAppMetadata() {
+		// Copy snapshot to avoid data race
+		snapshot := metaInfo.Snapshot()
+		snapshot.LastUpdatedTime = time.Now().UnixMilli()
+		if err := s.metadataReport.PublishAppMetadata(snapshot.App, snapshot.Revision, &snapshot); err != nil {
+			logger.Errorf("[Metadata][renewAppMetadata] failed to re-publish metadata for app=%s revision=%s: %v", snapshot.App, snapshot.Revision, err)
+		} else {
+			logger.Infof("[Metadata][renewAppMetadata] refreshed metadata for app=%s revision=%s", snapshot.App, snapshot.Revision)
+		}
+
+		// Run garbage collection if enabled, after each renew cycle. It reasons
+		// about application metadata revisions, so it only applies here.
+		reportURL := s.metadataReportURL()
+		if reportURL != nil && reportURL.GetParamBool(constant.MetadataGCEnabledKey, true) {
+			s.doGarbageCollect()
+		}
 	}
 
-	// Run garbage collection if enabled, after each renew cycle
-	reportURL := s.metadataReportURL()
-	if reportURL != nil && reportURL.GetParamBool(constant.MetadataGCEnabledKey, true) {
-		s.doGarbageCollect()
-	}
+	// Re-publish interface-level definitions.
+	//
+	// Nothing ever deletes a definition — its key holds no instance and no
+	// revision, and a provider killed with SIGKILL gets no cleanup hook — so
+	// operators need some way to tell a live contract from an abandoned one.
+	// This pass is that way: every service a running provider still exports
+	// gets its timestamp refreshed daily, while a service that was removed from
+	// the code is never republished and its timestamp freezes. "Last updated
+	// more than about two days ago and no live instance" then becomes a safe
+	// death test.
+	//
+	// Without the refresh, never-deleting would be an unbounded leak with no
+	// way to distinguish the garbage. Java relies on exactly this property, via
+	// AbstractMetadataReport's daily publishAll over the same 02:00–06:00
+	// window.
+	metadata.PublishServiceDefinitions(metaInfo.GetExportedServiceURLs())
 }
 
 func (s *serviceDiscoveryRegistry) calculateRenewAppMetadataDelay() time.Duration {

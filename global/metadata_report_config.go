@@ -32,19 +32,20 @@ type MetadataReportConfig struct {
 	Namespace string            `yaml:"namespace" json:"namespace,omitempty"`
 	Params    map[string]string `yaml:"params"  json:"parameters,omitempty"`
 
-	// PublishServiceDefinition toggles publishing interface-level service
-	// definitions to this report, which is what makes services visible to Dubbo
-	// Admin's generic-invocation console.
+	// ReportDefinition toggles publishing interface-level service definitions to
+	// this report, which is what makes services visible to Dubbo Admin's
+	// generic-invocation console.
 	//
-	// nil means enabled, matching Java, where publishing is unconditional. It is
-	// a pointer so an explicit `false` is distinguishable from an unset field;
-	// with a plain bool the zero value would silently disable the feature for
-	// everyone who does not mention it.
+	// nil means enabled. This mirrors Java's MetadataReportConfig.reportDefinition,
+	// which is the same switch with the same default. It is a pointer so an
+	// explicit `false` is distinguishable from an unset field; with a plain bool
+	// the zero value would silently disable the feature for everyone who does
+	// not mention it.
 	//
 	// Turning this off is worth considering for a provider whose application,
 	// version or group carries a per-deploy value, since each distinct
 	// combination becomes a separate key that nothing ever deletes.
-	PublishServiceDefinition *bool `yaml:"publish-service-definition" json:"publish-service-definition,omitempty"`
+	ReportDefinition *bool `yaml:"report-definition" json:"report-definition,omitempty"`
 }
 
 func DefaultMetadataReportConfig() *MetadataReportConfig {
@@ -61,21 +62,21 @@ func (c *MetadataReportConfig) Clone() *MetadataReportConfig {
 	newParams := make(map[string]string, len(c.Params))
 	maps.Copy(newParams, c.Params)
 
-	var publishServiceDefinition *bool
-	if c.PublishServiceDefinition != nil {
-		value := *c.PublishServiceDefinition
-		publishServiceDefinition = &value
+	var reportDefinition *bool
+	if c.ReportDefinition != nil {
+		value := *c.ReportDefinition
+		reportDefinition = &value
 	}
 
 	return &MetadataReportConfig{
-		Protocol:                 c.Protocol,
-		Address:                  c.Address,
-		Username:                 c.Username,
-		Password:                 c.Password,
-		Timeout:                  c.Timeout,
-		Group:                    c.Group,
-		Namespace:                c.Namespace,
-		Params:                   newParams,
-		PublishServiceDefinition: publishServiceDefinition,
+		Protocol:         c.Protocol,
+		Address:          c.Address,
+		Username:         c.Username,
+		Password:         c.Password,
+		Timeout:          c.Timeout,
+		Group:            c.Group,
+		Namespace:        c.Namespace,
+		Params:           newParams,
+		ReportDefinition: reportDefinition,
 	}
 }

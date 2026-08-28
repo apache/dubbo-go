@@ -260,7 +260,7 @@ func TestPublishFailureDoesNotPanicOrBlock(t *testing.T) {
 
 func TestPublishSkippedWhenSwitchedOff(t *testing.T) {
 	backend := installCapableReport(t, map[string]string{
-		constant.MetadataReportPublishServiceDefinitionKey: "false",
+		constant.MetadataReportReportDefinitionKey: "false",
 	})
 	u := exportService(t, constant.DubboProtocol, false)
 
@@ -269,13 +269,43 @@ func TestPublishSkippedWhenSwitchedOff(t *testing.T) {
 }
 
 func TestPublishEnabledByDefault(t *testing.T) {
-	// An absent key must behave as enabled, matching Java where publishing is
-	// unconditional.
+	// An absent key must behave as enabled, matching Java's report-definition,
+	// which defaults to true.
 	backend := installCapableReport(t, nil)
 	u := exportService(t, constant.DubboProtocol, false)
 
 	PublishServiceDefinitions([]*common.URL{u})
 	assert.Len(t, backend.snapshot(), 1)
+}
+
+// TestServiceDefinitionsEnabled covers the predicate the daily re-publish uses
+// to decide whether it has anything to do. That pass is what keeps a live
+// contract's timestamp fresh, so scheduling it must not depend on where
+// application metadata happens to live.
+func TestServiceDefinitionsEnabled(t *testing.T) {
+	t.Run("capable and switched on", func(t *testing.T) {
+		installCapableReport(t, nil)
+		assert.True(t, ServiceDefinitionsEnabled())
+	})
+
+	t.Run("capable but switched off", func(t *testing.T) {
+		installCapableReport(t, map[string]string{
+			constant.MetadataReportReportDefinitionKey: "false",
+		})
+		assert.False(t, ServiceDefinitionsEnabled())
+	})
+
+	t.Run("backend without the capability", func(t *testing.T) {
+		installReports(t, map[string]report.MetadataReport{
+			constant.DefaultKey: &DelegateMetadataReport{instance: &baseReport{url: reportURL(t, nil)}},
+		})
+		assert.False(t, ServiceDefinitionsEnabled())
+	})
+
+	t.Run("no reports at all", func(t *testing.T) {
+		installReports(t, map[string]report.MetadataReport{})
+		assert.False(t, ServiceDefinitionsEnabled())
+	})
 }
 
 // ---------------------------------------------------------------------------

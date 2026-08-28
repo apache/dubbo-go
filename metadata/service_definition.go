@@ -39,11 +39,17 @@ import (
 // Failures are logged, never returned. A provider whose definition did not
 // reach the metadata center is still a working provider — it is only invisible
 // to Admin's console — so a metadata-center outage must not keep instances out
-// of traffic. This matches Java, where publishServiceDefinition failures are
-// likewise non-fatal.
+// of traffic.
+//
+// Java reaches the same outcome by a different route: AbstractMetadataReport
+// defaults sync-report to false and hands the write to an executor, so export
+// never observes the result at all. Publishing here is synchronous but its
+// error is swallowed, which keeps the export path free of a goroutine whose
+// lifetime nobody owns while giving the caller the same guarantee.
 //
 // Publishing is idempotent and keyed only by service identity, so calling this
-// on every start simply overwrites the previous document.
+// on every start — and again on each cycle-report pass — simply overwrites the
+// previous document.
 func PublishServiceDefinitions(urls []*common.URL) {
 	publishers := serviceDefinitionPublishers()
 	if len(publishers) == 0 {
@@ -99,6 +105,15 @@ func publishServiceDefinition(u *common.URL, publishers []report.ServiceDefiniti
 	}
 }
 
+// ServiceDefinitionsEnabled reports whether any configured metadata report will
+// accept interface-level service definitions.
+//
+// Callers use this to decide whether work that only exists to serve definitions
+// — the daily re-publish, for one — is worth scheduling at all.
+func ServiceDefinitionsEnabled() bool {
+	return len(serviceDefinitionPublishers()) > 0
+}
+
 // serviceDefinitionPublishers returns the configured reports that both support
 // the capability and have it switched on.
 //
@@ -116,7 +131,7 @@ func serviceDefinitionPublishers() []report.ServiceDefinitionPublisher {
 			continue
 		}
 		if url := delegate.URL(); url != nil &&
-			!url.GetParamBool(constant.MetadataReportPublishServiceDefinitionKey, true) {
+			!url.GetParamBool(constant.MetadataReportReportDefinitionKey, true) {
 			continue
 		}
 		publishers = append(publishers, publisher)
