@@ -72,7 +72,10 @@ type serviceDiscoveryRegistry struct {
 	serviceMappingListeners map[string]mapping.MappingListener
 	// subscribeRetries holds at most one pending AddListener retry per
 	// serviceNamesKey. Guarded by lock.
-	subscribeRetries      map[string]*subscribeRetry
+	subscribeRetries map[string]*subscribeRetry
+	// definitionRetries holds at most one pending service-definition publish
+	// retry per service key. Guarded by lock.
+	definitionRetries     map[string]*definitionRetry
 	renewAppMetadataTimer *time.Timer
 	// destroyed is set by Destroy. SubscribeURL re-checks it under lock right
 	// before installing a listener, so a subscribe whose initial GetInstances /
@@ -98,6 +101,7 @@ func newServiceDiscoveryRegistry(url *common.URL) (registry.Registry, error) {
 		metadataReport:     metadata.GetMetadataReportByRegistry(url.GetParam(constant.RegistryIdKey, "")),
 		serviceListeners:   make(map[string]registry.ServiceInstancesChangedListener),
 		subscribeRetries:   make(map[string]*subscribeRetry),
+		definitionRetries:  make(map[string]*definitionRetry),
 		// cache for mapping listener
 		serviceMappingListeners: make(map[string]mapping.MappingListener),
 	}, nil
@@ -175,8 +179,9 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 	//
 	// This never blocks registration. A provider whose definition failed to
 	// publish still serves traffic correctly; it is only missing from Admin's
-	// console until the next start.
-	metadata.PublishServiceDefinitions(urls)
+	// console. Failures are retried with backoff, and the daily cycle report
+	// is the backstop past that.
+	s.publishServiceDefinitions(urls)
 
 	for _, instance := range instances {
 		err := s.serviceDiscovery.Register(instance)
@@ -399,6 +404,8 @@ func (s *serviceDiscoveryRegistry) Destroy() {
 		// Cancel pending AddListener retries so their timers cannot leak.
 		s.cancelSubscribeRetryLocked(key)
 	}
+	// Same for pending definition publish retries.
+	s.cancelDefinitionRetriesLocked()
 	for _, l := range s.serviceListeners {
 		// Destroy drops listeners without RemoveListener; cancel any pending
 		// metadata retry so its timer cannot leak.
@@ -420,6 +427,165 @@ func (s *serviceDiscoveryRegistry) stopMetadataTimers() {
 		s.renewAppMetadataTimer.Stop()
 		s.renewAppMetadataTimer = nil
 	}
+}
+
+// ========== service definitions: publish with bounded retry ==========
+
+var (
+	// definitionRetryInitialDelay is the first backoff delay before retrying a
+	// failed definition publish. Package-level so tests can shrink it.
+	definitionRetryInitialDelay = time.Second
+	// definitionRetryMaxDelay caps the backoff.
+	definitionRetryMaxDelay = 30 * time.Second
+	// definitionRetryMaxAttempts bounds the retries, unlike the deliberately
+	// unlimited subscribe retry next door. The two differ because their
+	// backstops do: a subscription that never establishes leaves a permanently
+	// stale consumer and nothing else will fix it, whereas a definition that
+	// never publishes is re-attempted by the daily cycle report. Retrying past
+	// the point where the metadata center is plainly not coming back would only
+	// add log noise to a failure the daily pass already owns.
+	//
+	// With the delays above this spans roughly four minutes, which covers the
+	// case this exists for: the metadata center bouncing while a provider
+	// happens to start.
+	definitionRetryMaxAttempts = 10
+
+	// publishDefinitions indirects the publish call so tests can drive the
+	// retry loop without a live metadata center.
+	publishDefinitions = metadata.PublishServiceDefinitions
+)
+
+// definitionRetry is a pending or in-flight definition publish retry for one
+// service key. Mirrors subscribeRetry: the entry stays in the map while an
+// attempt is in flight so a concurrent failure cannot reset the backoff.
+type definitionRetry struct {
+	url      *common.URL
+	timer    *time.Timer
+	attempts int
+	inFlight bool
+	canceled bool
+}
+
+// publishServiceDefinitions publishes definitions for urls and arms a retry for
+// whatever failed to reach the metadata center.
+//
+// Never blocks and never reports failure upward: a provider whose definition did
+// not land still serves traffic, it is only missing from Admin's console.
+func (s *serviceDiscoveryRegistry) publishServiceDefinitions(urls []*common.URL) {
+	for _, u := range publishDefinitions(urls) {
+		s.scheduleDefinitionRetry(u)
+	}
+}
+
+// scheduleDefinitionRetry arms the retry timer for one service. One pending
+// retry per service key: repeated failures share the same state rather than
+// stacking new ones, so the backoff is not reset by a later attempt.
+func (s *serviceDiscoveryRegistry) scheduleDefinitionRetry(u *common.URL) {
+	key := u.ServiceKey()
+
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	if s.destroyed {
+		return
+	}
+	if _, pending := s.definitionRetries[key]; pending {
+		return
+	}
+	if s.definitionRetries == nil {
+		// A registry built as a struct literal rather than through
+		// newServiceDiscoveryRegistry still has to be safe to publish from.
+		s.definitionRetries = make(map[string]*definitionRetry)
+	}
+	state := &definitionRetry{url: u}
+	s.definitionRetries[key] = state
+	s.armDefinitionRetryLocked(key, state)
+}
+
+// armDefinitionRetryLocked computes the next backoff delay and arms the timer;
+// caller must hold s.lock and the state must be in the map.
+func (s *serviceDiscoveryRegistry) armDefinitionRetryLocked(key string, state *definitionRetry) {
+	if state.attempts >= definitionRetryMaxAttempts {
+		logger.Warnf("[Metadata][Definition] giving up on publishing %s after %d attempts; "+
+			"the daily cycle report will try again", key, state.attempts)
+		delete(s.definitionRetries, key)
+		return
+	}
+
+	delay := definitionRetryDelay(state.attempts)
+	state.attempts++
+	state.timer = time.AfterFunc(delay, func() {
+		s.retryPublishDefinition(key)
+	})
+	logger.Debugf("[Metadata][Definition] definition for %s not published, retry in %s", key, delay)
+}
+
+func (s *serviceDiscoveryRegistry) retryPublishDefinition(key string) {
+	s.lock.Lock()
+	state, ok := s.definitionRetries[key]
+	if !ok {
+		s.lock.Unlock()
+		return
+	}
+	state.timer = nil
+	state.inFlight = true
+	active := !s.destroyed && !state.canceled
+	s.lock.Unlock()
+
+	if !active {
+		s.lock.Lock()
+		if s.definitionRetries[key] == state {
+			delete(s.definitionRetries, key)
+		}
+		s.lock.Unlock()
+		return
+	}
+
+	failed := publishDefinitions([]*common.URL{state.url})
+
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	state.inFlight = false
+	if s.definitionRetries[key] != state {
+		// Superseded or cancelled while in flight.
+		return
+	}
+	if len(failed) == 0 || s.destroyed || state.canceled {
+		delete(s.definitionRetries, key)
+		return
+	}
+	// Re-arm in place: the entry never left the map, so the backoff continues
+	// from where it was instead of restarting.
+	s.armDefinitionRetryLocked(key, state)
+}
+
+// cancelDefinitionRetriesLocked stops every pending definition retry; caller
+// must hold s.lock. An in-flight attempt is not interrupted but will not
+// reschedule.
+func (s *serviceDiscoveryRegistry) cancelDefinitionRetriesLocked() {
+	for key, state := range s.definitionRetries {
+		state.canceled = true
+		if state.timer != nil {
+			state.timer.Stop()
+			state.timer = nil
+		}
+		if !state.inFlight {
+			delete(s.definitionRetries, key)
+		}
+	}
+}
+
+// definitionRetryDelay grows exponentially from definitionRetryInitialDelay,
+// capped at definitionRetryMaxDelay, plus up to 25% jitter so providers
+// restarting together do not retry in lockstep.
+func definitionRetryDelay(attempt int) time.Duration {
+	delay := definitionRetryMaxDelay
+	if attempt >= 0 && attempt < 30 { // guard against shift overflow
+		delay = definitionRetryInitialDelay << attempt
+		if delay <= 0 || delay > definitionRetryMaxDelay {
+			delay = definitionRetryMaxDelay
+		}
+	}
+	return delay + time.Duration(rand.Int64N(int64(delay/4)+1))
 }
 
 // ========== renewAppMetadata: daily app-level metadata re-publish ==========
@@ -495,7 +661,7 @@ func (s *serviceDiscoveryRegistry) doRenewAppMetadata() {
 	// way to distinguish the garbage. Java relies on exactly this property, via
 	// AbstractMetadataReport's daily publishAll over the same 02:00–06:00
 	// window.
-	metadata.PublishServiceDefinitions(metaInfo.GetExportedServiceURLs())
+	s.publishServiceDefinitions(metaInfo.GetExportedServiceURLs())
 }
 
 func (s *serviceDiscoveryRegistry) calculateRenewAppMetadataDelay() time.Duration {

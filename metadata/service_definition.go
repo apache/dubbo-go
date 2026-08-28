@@ -34,45 +34,54 @@ import (
 )
 
 // PublishServiceDefinitions builds and publishes an interface-level service
-// definition for each exported URL that carries a describable contract.
+// definition for each exported URL that carries a describable contract, and
+// returns the URLs whose publish failed for a reason worth retrying.
 //
-// Failures are logged, never returned. A provider whose definition did not
-// reach the metadata center is still a working provider — it is only invisible
-// to Admin's console — so a metadata-center outage must not keep instances out
-// of traffic.
+// No error is returned and nothing here blocks. A provider whose definition did
+// not reach the metadata center is still a working provider — it is only
+// invisible to Admin's console — so a metadata-center outage must not keep
+// instances out of traffic. Java reaches the same outcome by a different route:
+// AbstractMetadataReport defaults sync-report to false and hands the write to an
+// executor, so export never observes the result at all.
 //
-// Java reaches the same outcome by a different route: AbstractMetadataReport
-// defaults sync-report to false and hands the write to an executor, so export
-// never observes the result at all. Publishing here is synchronous but its
-// error is swallowed, which keeps the export path free of a goroutine whose
-// lifetime nobody owns while giving the caller the same guarantee.
+// Only write failures come back. A service that has no describable contract —
+// unregistered, unbuildable, or with no publishable methods — is reported in the
+// log and dropped, because retrying cannot change any of those.
 //
 // Publishing is idempotent and keyed only by service identity, so calling this
-// on every start — and again on each cycle-report pass — simply overwrites the
-// previous document.
-func PublishServiceDefinitions(urls []*common.URL) {
+// on every start, on each cycle-report pass, and on every retry simply
+// overwrites the previous document.
+func PublishServiceDefinitions(urls []*common.URL) []*common.URL {
 	publishers := serviceDefinitionPublishers()
 	if len(publishers) == 0 {
-		return
+		return nil
 	}
 
+	var failed []*common.URL
 	for _, u := range dedupeByService(urls) {
-		publishServiceDefinition(u, publishers)
+		if !publishServiceDefinition(u, publishers) {
+			failed = append(failed, u)
+		}
 	}
+	return failed
 }
 
-func publishServiceDefinition(u *common.URL, publishers []report.ServiceDefinitionPublisher) {
+// publishServiceDefinition reports whether the caller should retry.
+//
+// A partial failure across several reports counts as a failure: the retry
+// republishes to all of them, which is harmless because each write overwrites.
+func publishServiceDefinition(u *common.URL, publishers []report.ServiceDefinitionPublisher) bool {
 	svc := common.ServiceMap.GetServiceByServiceKey(u.Protocol, u.ServiceKey())
 	if svc == nil {
 		logger.Warnf("[Metadata][Definition] no registered service for %s/%s, skipping definition",
 			u.Protocol, u.ServiceKey())
-		return
+		return true
 	}
 
 	def, skips, err := definition.BuildFromURL(u, svc.ServiceType())
 	if err != nil {
 		logger.Errorf("[Metadata][Definition] could not build definition for %s: %v", u.ServiceKey(), err)
-		return
+		return true
 	}
 	for _, skip := range skips {
 		logger.Warnf("[Metadata][Definition] method %s.%s is not published: %s",
@@ -81,28 +90,31 @@ func publishServiceDefinition(u *common.URL, publishers []report.ServiceDefiniti
 	if len(def.Methods) == 0 {
 		logger.Warnf("[Metadata][Definition] %s has no publishable methods, skipping definition",
 			def.CanonicalName)
-		return
+		return true
 	}
 
 	payload, err := json.Marshal(def)
 	if err != nil {
 		logger.Errorf("[Metadata][Definition] could not serialize definition for %s: %v",
 			def.CanonicalName, err)
-		return
+		return true
 	}
 
 	application := u.GetParam(constant.ApplicationKey, "")
+	published := true
 	for _, publisher := range publishers {
 		if err := publisher.PublishServiceDefinition(
 			def.CanonicalName, u.Version(), u.Group(), application, string(payload),
 		); err != nil {
 			logger.Errorf("[Metadata][Definition] could not publish definition for %s: %v",
 				def.CanonicalName, err)
+			published = false
 			continue
 		}
 		logger.Infof("[Metadata][Definition] published definition for %s, methods=%d types=%d",
 			def.CanonicalName, len(def.Methods), len(def.Types))
 	}
+	return published
 }
 
 // ServiceDefinitionsEnabled reports whether any configured metadata report will
