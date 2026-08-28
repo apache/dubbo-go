@@ -24,6 +24,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
+	"unicode/utf8"
 )
 
 import (
@@ -336,9 +338,17 @@ func isEmptyValue(value reflect.Value) bool {
 	}
 }
 
-// toUnexport is to lower the first letter
+// toUnexport lowercases the first rune of a.
+//
+// Rune-based rather than byte-based: strings.ToLower(a[:1]) splits a multi-byte
+// leading rune, so an exported field named with a non-ASCII letter used to
+// generalize to a key containing an invalid UTF-8 fragment.
 func toUnexport(a string) string {
-	return strings.ToLower(a[:1]) + a[1:]
+	if a == "" {
+		return a
+	}
+	first, size := utf8.DecodeRuneInString(a)
+	return string(unicode.ToLower(first)) + a[size:]
 }
 
 // isPrimitive determines if the object is primitive

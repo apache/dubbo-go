@@ -22,6 +22,7 @@ import (
 	"strconv"
 	"testing"
 	"time"
+	"unicode/utf8"
 )
 
 import (
@@ -181,6 +182,39 @@ func TestMTagSquashRejectsNonStruct(t *testing.T) {
 
 	_, err := mockMapGeneralizer.Generalize(obj)
 	require.ErrorContains(t, err, "cannot squash non-struct type")
+}
+
+func TestUntaggedNameLowercasesByRune(t *testing.T) {
+	// Lowercasing the first byte instead of the first rune split multi-byte
+	// leading runes, producing keys that were not valid UTF-8.
+	obj := struct {
+		Ünicode string
+		Ascii   string
+	}{Ünicode: "value", Ascii: "value"}
+
+	out, err := mockMapGeneralizer.Generalize(obj)
+	require.NoError(t, err)
+	m := out.(map[string]any)
+
+	assert.Contains(t, m, "ünicode")
+	assert.Contains(t, m, "ascii", "ASCII names must keep behaving exactly as before")
+	for key := range m {
+		assert.True(t, utf8.ValidString(key), "key %q is not valid UTF-8", key)
+	}
+}
+
+func TestUntaggedNameRoundTripsForUnicode(t *testing.T) {
+	type unicodeNamed struct {
+		Ünicode string
+	}
+	original := unicodeNamed{Ünicode: "value"}
+
+	generalized, err := mockMapGeneralizer.Generalize(original)
+	require.NoError(t, err)
+
+	realized, err := mockMapGeneralizer.Realize(generalized, reflect.TypeOf(unicodeNamed{}))
+	require.NoError(t, err)
+	assert.Equal(t, original, realized)
 }
 
 type testStruct struct {
