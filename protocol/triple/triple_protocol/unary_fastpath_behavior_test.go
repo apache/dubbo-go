@@ -553,10 +553,10 @@ func TestUnaryFastPathProtoJSONCodec(t *testing.T) {
 	}
 }
 
-// TestUnaryFastPathGRPCKeepsDuplex verifies that the fast path switch never
-// routes gRPC protocol calls: gRPC keeps using duplexHTTPCall even when the
-// switch is enabled, so its behavior is preserved.
-func TestUnaryFastPathGRPCKeepsDuplex(t *testing.T) {
+// TestUnaryFastPathGRPCRoutesUnary verifies that grpcClient.NewConn routes
+// unary calls through unaryFastPathCall when the switch is enabled and keeps
+// duplexHTTPCall otherwise; streaming calls always use duplexHTTPCall.
+func TestUnaryFastPathGRPCRoutesUnary(t *testing.T) {
 	newClient := func(fast bool) *grpcClient {
 		return &grpcClient{
 			protocolClientParams: protocolClientParams{
@@ -570,31 +570,37 @@ func TestUnaryFastPathGRPCKeepsDuplex(t *testing.T) {
 			peer: Peer{},
 		}
 	}
-	unarySpec := Spec{StreamType: StreamTypeUnary, Procedure: "/connect.ping.v1.PingService/Ping"}
-	streamSpec := Spec{StreamType: StreamTypeBidi, Procedure: "/connect.ping.v1.PingService/Ping"}
-
-	for _, tc := range []struct {
-		name string
-		fast bool
-		spec Spec
-	}{
-		{"enabled", true, unarySpec},
-		{"disabled", false, unarySpec},
-		{"enabled-streaming", true, streamSpec},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			conn := newClient(tc.fast).NewConn(context.Background(), tc.spec, make(http.Header))
-			translated, ok := conn.(*errorTranslatingClientConn)
-			if !ok {
-				t.Fatalf("unexpected conn wrapper %T", conn)
+	assertCallType := func(t *testing.T, conn StreamingClientConn, want string) {
+		t.Helper()
+		translated, ok := conn.(*errorTranslatingClientConn)
+		if !ok {
+			t.Fatalf("unexpected conn wrapper %T", conn)
+		}
+		grpcConn, ok := translated.StreamingClientConn.(*grpcClientConn)
+		if !ok {
+			t.Fatalf("unexpected grpc conn %T", translated.StreamingClientConn)
+		}
+		switch want {
+		case "fastpath":
+			if _, ok := grpcConn.call.(*unaryFastPathCall); !ok {
+				t.Fatalf("grpc call type = %T, want *unaryFastPathCall", grpcConn.call)
 			}
-			grpcConn, ok := translated.StreamingClientConn.(*grpcClientConn)
-			if !ok {
-				t.Fatalf("unexpected grpc conn %T", translated.StreamingClientConn)
+		case "duplex":
+			if _, ok := grpcConn.call.(*duplexHTTPCall); !ok {
+				t.Fatalf("grpc call type = %T, want *duplexHTTPCall", grpcConn.call)
 			}
-			if _, ok := any(grpcConn.duplexCall).(*duplexHTTPCall); !ok {
-				t.Fatalf("grpc call type = %T, want *duplexHTTPCall", grpcConn.duplexCall)
-			}
-		})
+		default:
+			// Guard against a misspelled want string silently passing.
+			t.Fatalf("assertCallType: unknown want %q", want)
+		}
 	}
+
+	unarySpec := Spec{StreamType: StreamTypeUnary, Procedure: "/connect.ping.v1.PingService/Ping"}
+	// Enabled -> unary calls take the fast path on the gRPC protocol too.
+	assertCallType(t, newClient(true).NewConn(context.Background(), unarySpec, make(http.Header)), "fastpath")
+	// Disabled -> unary calls keep using duplexHTTPCall.
+	assertCallType(t, newClient(false).NewConn(context.Background(), unarySpec, make(http.Header)), "duplex")
+	// Streaming calls always use duplexHTTPCall, regardless of the switch.
+	streamSpec := Spec{StreamType: StreamTypeBidi, Procedure: "/connect.ping.v1.PingService/Ping"}
+	assertCallType(t, newClient(true).NewConn(context.Background(), streamSpec, make(http.Header)), "duplex")
 }
