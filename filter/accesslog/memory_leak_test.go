@@ -20,7 +20,6 @@ package accesslog
 import (
 	"context"
 	"os"
-	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -45,36 +44,30 @@ func resetGlobalState() {
 	once = sync.Once{}
 }
 
-// TestAccessLogFilterGoroutineShutdown tests that the goroutine is properly shut down
+// TestAccessLogFilterGoroutineShutdown verifies that the background log
+// processing goroutine starts with the filter and fully exits on Shutdown.
+// It uses the filter's deterministic lifecycle signals instead of a
+// process-wide goroutine count, which is timing-sensitive under -race (a
+// leftover goroutine from a previous test can be exiting concurrently with a
+// newly started one, canceling out the count change).
 func TestAccessLogFilterGoroutineShutdown(t *testing.T) {
 	resetGlobalState()
-
-	// Count goroutines before
-	initialGoroutines := runtime.NumGoroutine()
 
 	// Create filter (this should start the goroutine)
 	filter := newFilter()
 	assert.NotNil(t, filter)
 
-	// Give the goroutine time to start
-	time.Sleep(100 * time.Millisecond)
-	postCreateGoroutines := runtime.NumGoroutine()
+	f := filter.(*Filter)
+	// The background goroutine must be running; wait for the start signal.
+	<-f.started
 
-	// Should have at least one more goroutine
-	assert.Greater(t, postCreateGoroutines, initialGoroutines)
-
-	// Shutdown the filter
+	// Shutdown the filter and wait for the goroutine to actually exit.
 	Shutdown()
-
-	// Give goroutine time to exit
-	time.Sleep(100 * time.Millisecond)
-	runtime.GC() // Force garbage collection
-
-	postShutdownGoroutines := runtime.NumGoroutine()
-
-	// Goroutine count should be back to original or less
-	assert.LessOrEqual(t, postShutdownGoroutines, initialGoroutines+1,
-		"Goroutines should be cleaned up after shutdown")
+	select {
+	case <-f.done:
+	case <-time.After(10 * time.Second):
+		t.Fatal("access log goroutine did not exit after Shutdown")
+	}
 }
 
 // TestAccessLogFilterFileHandleManagement tests proper file handle management
