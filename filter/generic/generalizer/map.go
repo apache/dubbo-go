@@ -225,6 +225,7 @@ func objToMap(obj any) (any, error) {
 				if !ok {
 					return nil, perrors.Errorf("cannot squash non-struct type '%s'", value.Type())
 				}
+				delete(squashed, "class")
 				maps.Copy(result, squashed)
 				continue
 			}

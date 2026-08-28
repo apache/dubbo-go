@@ -67,6 +67,23 @@ type testMTagOptionsObj struct {
 	Embedded testMTagEmbedded `m:",squash"`
 }
 
+type testMTagSquashedPOJO struct {
+	City string `m:"city"`
+}
+
+func (testMTagSquashedPOJO) JavaClassName() string {
+	return "org.apache.dubbo.testMTagSquashedPOJO"
+}
+
+type testMTagSquashParentPOJO struct {
+	Name     string               `m:"name"`
+	Embedded testMTagSquashedPOJO `m:",squash"`
+}
+
+func (testMTagSquashParentPOJO) JavaClassName() string {
+	return "org.apache.dubbo.testMTagSquashParentPOJO"
+}
+
 func TestObjToMap(t *testing.T) {
 	obj := &testPlainObj{}
 	obj.AaAa = "1"
@@ -138,6 +155,23 @@ func TestMTagOptionsRoundTrip(t *testing.T) {
 	assert.Empty(t, realizedObj.Empty)
 	assert.Empty(t, realizedObj.Ignored)
 	assert.Equal(t, original.Embedded.City, realizedObj.Embedded.City)
+}
+
+func TestMTagSquashPreservesParentPOJOClass(t *testing.T) {
+	original := testMTagSquashParentPOJO{
+		Name: "alice",
+		Embedded: testMTagSquashedPOJO{
+			City: "Hangzhou",
+		},
+	}
+
+	generalized, err := GetMapGeneralizer().Generalize(original)
+	require.NoError(t, err)
+	generalizedMap, ok := generalized.(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "org.apache.dubbo.testMTagSquashParentPOJO", generalizedMap["class"])
+	assert.Equal(t, "alice", generalizedMap["name"])
+	assert.Equal(t, "Hangzhou", generalizedMap["city"])
 }
 
 func TestMTagSquashRejectsNonStruct(t *testing.T) {
