@@ -366,32 +366,143 @@ func variadicRPCMethodNames(typ reflect.Type) []string {
 	return methodNames
 }
 
+// CanonicalMethod pairs an exported RPC method with the canonical wire name
+// dubbo-go advertises for it.
+type CanonicalMethod struct {
+	// Name is the MethodMapper mapping when one exists, otherwise the Go method
+	// name. It never holds the first-rune-swapped alias.
+	Name string
+	// GoName is the Go method name. Two entries with the same GoName are the
+	// same method; this is what distinguishes "one method, two spellings" from
+	// "two methods fighting over one name".
+	GoName string
+	Method *MethodType
+}
+
+// MethodNameConflict records two distinct Go methods that resolve to the same
+// runtime wire name.
+type MethodNameConflict struct {
+	First    string
+	Second   string
+	WireName string
+}
+
+func (c MethodNameConflict) String() string {
+	return c.First + " and " + c.Second + " are both routable as " + c.WireName
+}
+
+// MethodWireNames returns every name a canonical method is routable under at
+// runtime: the name itself, plus its first-rune-swapped alias when that differs.
+func MethodWireNames(canonical string) []string {
+	alias := dubboutil.SwapCaseFirstRune(canonical)
+	if alias == canonical {
+		return []string{canonical}
+	}
+	return []string{canonical, alias}
+}
+
+// CanonicalMethods returns typ's exported RPC methods in reflect's stable method
+// order, each resolved through MethodMapper.
+//
+// suitableMethods additionally registers a first-rune-swapped alias for every
+// name, so Java callers can invoke sayHello on a Go SayHello. Callers that want
+// the advertised contract rather than the runtime lookup table need this
+// alias-free view — iterating the map suitableMethods returns would publish each
+// method twice under two spellings.
+func CanonicalMethods(typ reflect.Type) []CanonicalMethod {
+	methodMapper := methodMapperOf(typ)
+
+	methods := make([]CanonicalMethod, 0, typ.NumMethod())
+	for m := range typ.NumMethod() {
+		method := typ.Method(m)
+		mt := suiteMethod(method)
+		if mt == nil {
+			continue
+		}
+		name, mapped := methodMapper[method.Name]
+		if !mapped {
+			name = method.Name
+		}
+		methods = append(methods, CanonicalMethod{Name: name, GoName: method.Name, Method: mt})
+	}
+	return methods
+}
+
+// MethodNameConflicts reports canonical names whose runtime wire-name sets
+// intersect.
+//
+// Both MethodMapper and the alias mechanism can produce these: two Go methods
+// mapped onto one name, or onto names that are first-rune-case variants of each
+// other. Either way the later registration silently overwrites the earlier one
+// in the lookup map, so one method becomes unreachable while calls to its name
+// land on the other.
+func MethodNameConflicts(methods []CanonicalMethod) []MethodNameConflict {
+	owner := make(map[string]CanonicalMethod, len(methods)*2)
+	reported := make(map[string]bool)
+	var conflicts []MethodNameConflict
+	for _, m := range methods {
+		for _, wire := range MethodWireNames(m.Name) {
+			prev, taken := owner[wire]
+			if taken && prev.GoName != m.GoName {
+				// One entry per pair of methods, not per contested name. Two
+				// methods whose canonical names are first-rune variants of each
+				// other contest both spellings, and reporting each would log the
+				// same problem twice. Iteration follows the caller's stable
+				// slice order, so prev is always the earlier method and the pair
+				// key is consistently ordered.
+				pair := prev.GoName + "\x00" + m.GoName
+				if !reported[pair] {
+					reported[pair] = true
+					conflicts = append(conflicts, MethodNameConflict{
+						First:    prev.GoName,
+						Second:   m.GoName,
+						WireName: wire,
+					})
+				}
+				continue
+			}
+			owner[wire] = m
+		}
+	}
+	return conflicts
+}
+
+// methodMapperOf invokes the service's MethodMapper hook, if it declares one.
+func methodMapperOf(typ reflect.Type) map[string]string {
+	method, ok := typ.MethodByName(METHOD_MAPPER)
+	if !ok || method.Type.NumIn() != 1 || method.Type.NumOut() != 1 ||
+		method.Type.Out(0).String() != "map[string]string" {
+		return nil
+	}
+	return method.Func.Call([]reflect.Value{reflect.New(typ.Elem())})[0].Interface().(map[string]string)
+}
+
 // suitableMethods returns suitable Rpc methods of typ
 func suitableMethods(typ reflect.Type) (string, map[string]*MethodType) {
-	methods := make(map[string]*MethodType)
-	var mts []string
 	logger.Debugf("[RPCService] NumMethod is %d, type=%s", typ.NumMethod(), typ.String())
-	method, ok := typ.MethodByName(METHOD_MAPPER)
-	var methodMapper map[string]string
-	if ok && method.Type.NumIn() == 1 && method.Type.NumOut() == 1 && method.Type.Out(0).String() == "map[string]string" {
-		methodMapper = method.Func.Call([]reflect.Value{reflect.New(typ.Elem())})[0].Interface().(map[string]string)
+
+	canonical := CanonicalMethods(typ)
+
+	// Conflicts are reported but not fatal: services that already run with an
+	// overwriting name collision must keep starting after an upgrade. The
+	// contract builder refuses to publish the affected methods, so the warning
+	// is the only signal a maintainer gets here — worth keeping loud.
+	for _, conflict := range MethodNameConflicts(canonical) {
+		logger.Warnf("[RPCService] method name conflict on type %s: %s. "+
+			"Only one of them is reachable at runtime, and neither is published "+
+			"in the service definition.", typ.String(), conflict)
 	}
 
-	for m := 0; m < typ.NumMethod(); m++ {
-		method = typ.Method(m)
-		if mt := suiteMethod(method); mt != nil {
-			methodName, ok := methodMapper[method.Name]
-			if !ok {
-				methodName = method.Name
-			}
-			methods[methodName] = mt
-			mts = append(mts, methodName)
-			//For better interoperability with java class,
-			//we convert the first letter in methodName between
-			//upper and lower case
-			methods[dubboutil.SwapCaseFirstRune(methodName)] = mt
-			mts = append(mts, dubboutil.SwapCaseFirstRune(methodName))
-		}
+	methods := make(map[string]*MethodType, len(canonical)*2)
+	mts := make([]string, 0, len(canonical)*2)
+	for _, m := range canonical {
+		methods[m.Name] = m.Method
+		mts = append(mts, m.Name)
+		// For better interoperability with java class, we convert the first
+		// letter in methodName between upper and lower case.
+		alias := dubboutil.SwapCaseFirstRune(m.Name)
+		methods[alias] = m.Method
+		mts = append(mts, alias)
 	}
 	return strings.Join(mts, ","), methods
 }

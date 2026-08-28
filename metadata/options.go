@@ -197,6 +197,15 @@ func (opts *ReportOptions) toUrl() (*common.URL, error) {
 		return nil, errors.New("invalid MetadataReport Config")
 	}
 	res.SetParam("metadata", res.Protocol)
+	// Only set when explicitly configured. Leaving the key absent lets readers
+	// apply their own default (enabled), so an unset field and an explicit
+	// `true` behave identically.
+	if opts.PublishServiceDefinition != nil {
+		res.SetParam(constant.MetadataReportPublishServiceDefinitionKey,
+			strconv.FormatBool(*opts.PublishServiceDefinition))
+	}
+	// Params is the raw escape hatch and is applied last, so it can override the
+	// typed fields above — the same precedence group/namespace already have.
 	for key, val := range opts.Params {
 		res.SetParam(key, val)
 	}
@@ -306,5 +315,14 @@ func WithParams(params map[string]string) ReportOption {
 func WithRegistryId(id string) ReportOption {
 	return func(opts *ReportOptions) {
 		opts.registryId = id
+	}
+}
+
+// WithPublishServiceDefinition toggles publishing of interface-level service
+// definitions to this report. Definitions are published by default; pass false
+// to opt out.
+func WithPublishServiceDefinition(publish bool) ReportOption {
+	return func(opts *ReportOptions) {
+		opts.PublishServiceDefinition = &publish
 	}
 }

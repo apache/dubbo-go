@@ -155,6 +155,17 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 			metaInfo.App, metaInfo.Revision, len(urls))
 	}
 
+	// Interface-level service definitions are a separate data path from the
+	// application-level metadata above: they describe the RPC contract rather
+	// than what this instance currently exports, and Admin discovers them by
+	// their own key. They are therefore published regardless of metadataType,
+	// which only governs where application metadata lives.
+	//
+	// This never blocks registration. A provider whose definition failed to
+	// publish still serves traffic correctly; it is only missing from Admin's
+	// console until the next start.
+	metadata.PublishServiceDefinitions(urls)
+
 	for _, instance := range instances {
 		err := s.serviceDiscovery.Register(instance)
 		if err != nil {

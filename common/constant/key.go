@@ -195,6 +195,11 @@ const (
 	MetadataReportUsernameKey  = "metadata-report.username"
 	MetadataReportPasswordKey  = "metadata-report.password"
 	MetadataReportProtocolKey  = "metadata-report.protocol"
+
+	// MetadataReportPublishServiceDefinitionKey toggles publishing of
+	// interface-level service definitions to this metadata report. Defaults to
+	// true, matching Java, where the behaviour is unconditional.
+	MetadataReportPublishServiceDefinitionKey = "metadata-report.publish-service-definition"
 )
 
 // registry keys

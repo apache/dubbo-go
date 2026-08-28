@@ -37,6 +37,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/metadata/definition"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 	"dubbo.apache.org/dubbo-go/v3/metadata/mapping"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
@@ -304,6 +305,31 @@ func (n *nacosMetadataReport) ListAppRevisions(application string) ([]report.App
 		pageNo++
 	}
 	return result, nil
+}
+
+// PublishServiceDefinition stores one interface-level service definition,
+// implementing report.ServiceDefinitionPublisher.
+//
+// The dataId is byte-compatible with Java's MetadataIdentifier.getUniqueKey, and
+// the Nacos group is the fixed "dubbo" that Dubbo Admin's watcher searches —
+// deliberately not n.group, which serves the application-level metadata written
+// by PublishAppMetadata and defaults to DEFAULT_GROUP. See definition.DataID.
+//
+// PublishConfig overwrites in place, so republishing on every provider start is
+// idempotent: the key is derived only from the service identity, never from the
+// instance.
+func (n *nacosMetadataReport) PublishServiceDefinition(serviceInterface, version, group, application, definitionJSON string) error {
+	dataID := definition.DataID(serviceInterface, version, group, application)
+	if err := n.storeMetadata(vo.ConfigParam{
+		DataId:  dataID,
+		Group:   definition.MetadataGroup,
+		Content: definitionJSON,
+	}); err != nil {
+		return perrors.WithMessagef(err, "publishing service definition %s", dataID)
+	}
+	logger.Debugf("[Metadata][Nacos] published service definition, dataId=%s group=%s",
+		dataID, definition.MetadataGroup)
+	return nil
 }
 
 type nacosMetadataReportFactory struct{}
