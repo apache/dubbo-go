@@ -212,7 +212,7 @@ func TestUntaggedNameRoundTripsForUnicode(t *testing.T) {
 	generalized, err := mockMapGeneralizer.Generalize(original)
 	require.NoError(t, err)
 
-	realized, err := mockMapGeneralizer.Realize(generalized, reflect.TypeOf(unicodeNamed{}))
+	realized, err := mockMapGeneralizer.Realize(generalized, reflect.TypeFor[unicodeNamed]())
 	require.NoError(t, err)
 	assert.Equal(t, original, realized)
 }
