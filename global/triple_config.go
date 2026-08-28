@@ -50,8 +50,8 @@ type TripleConfig struct {
 	// KeepAliveTimeout defines the keep-alive timeout for client.
 	KeepAliveTimeout string `yaml:"keep-alive-timeout" json:"keep-alive-timeout,omitempty" property:"keep-alive-timeout"`
 	// UnaryFastPath enables the unary fast path for client, on by default.
-	// It only applies to the Triple (connect) protocol; the default gRPC
-	// wire format never reaches it.
+	// It applies to unary calls on both the gRPC and the Triple (connect)
+	// wire formats; streaming calls always use duplexHTTPCall.
 	UnaryFastPath bool `yaml:"unary-fast-path" json:"unary-fast-path,omitempty" property:"unary-fast-path"`
 }
 

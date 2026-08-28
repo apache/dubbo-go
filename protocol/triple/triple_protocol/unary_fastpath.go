@@ -27,9 +27,9 @@ import (
 	"sync"
 )
 
-// unaryClientCall is the subset of *duplexHTTPCall that tripleUnaryClientConn
-// depends on. unary calls use unaryFastPathCall; streaming calls keep using
-// duplexHTTPCall.
+// unaryClientCall is the transport surface shared by grpcClientConn and
+// tripleUnaryClientConn. unary calls use unaryFastPathCall; streaming calls
+// keep using duplexHTTPCall.
 type unaryClientCall interface {
 	io.Writer
 	io.Reader
@@ -42,7 +42,7 @@ type unaryClientCall interface {
 	ResponseTrailer() http.Header
 }
 
-// Both the original and the fast path must satisfy the interface.
+// Both duplexHTTPCall and unaryFastPathCall satisfy the interface.
 var (
 	_ unaryClientCall = (*duplexHTTPCall)(nil)
 	_ unaryClientCall = (*unaryFastPathCall)(nil)
@@ -117,8 +117,8 @@ func (c *unaryFastPathCall) Write(data []byte) (int, error) {
 	c.writeMu.Lock()
 	defer c.writeMu.Unlock()
 	if c.bodySent {
-		// A racing CloseWrite already handed the body to the transport;
-		// writing now would race with its background read. Mirror
+		// A racing CloseWrite already handed the body to the transport; a
+		// write now could race with the transport reading it. Mirror
 		// duplexHTTPCall.Write, which returns io.EOF once the pipe is closed.
 		return 0, io.EOF
 	}
@@ -130,11 +130,9 @@ func (c *unaryFastPathCall) Write(data []byte) (int, error) {
 		return 0, wrapIfContextError(err)
 	}
 	if len(data) == 0 {
-		// Empty payloads (Send(nil), an empty protobuf message, or an
-		// explicit zero-length Write) must not pull a buffer out of the pool:
-		// makeRequest hands http.NoBody to the transport for a zero-length
-		// body, so the buffer would never be returned via
-		// unaryRequestBody.Close. Skip the pool entirely and keep c.body nil.
+		// Empty writes must not pull a buffer from the pool: a zero-length
+		// body is sent as http.NoBody, so the buffer would never be
+		// returned via unaryRequestBody.Close.
 		return 0, nil
 	}
 	if c.body == nil {
@@ -190,8 +188,8 @@ func (b *unaryRequestBody) Close() error {
 // unaryRequestBody.Close, which x/net/http2 calls after it stops reading.
 func (c *unaryFastPathCall) makeRequest() {
 	defer close(c.responseReady)
-	// O3: advertise Content-Length so the server can pre-size its http2 data
-	// buffer; empty payloads use NoBody and skip the background body writer.
+	// Advertise Content-Length so the server can pre-size its HTTP/2 data
+	// buffer; empty payloads use http.NoBody.
 	var bodyLen int
 	if c.body != nil {
 		bodyLen = c.body.Len()
@@ -200,8 +198,7 @@ func (c *unaryFastPathCall) makeRequest() {
 		} else {
 			// Zero-length body: no transport read will ever happen, so
 			// unaryRequestBody.Close can't return the buffer to the pool.
-			// Recycle it now (belt and braces with the zero-length Write
-			// short-circuit above).
+			// Recycle it here instead.
 			c.bufferPool.Put(c.body)
 			c.body = nil
 			c.request.Body = http.NoBody

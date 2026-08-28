@@ -181,8 +181,9 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	}
 	cliOpts = append(cliOpts, clientKeepAliveOpts...)
 
-	// The unary fast path is on by default. It only applies to the Triple
-	// (connect) protocol; the client below defaults to the gRPC wire format.
+	// The unary fast path is on by default. It routes unary calls through
+	// unaryFastPathCall on both the gRPC and the Triple (connect) wire
+	// formats; streaming calls always use duplexHTTPCall.
 	if tripleConf != nil {
 		if tripleConf.UnaryFastPath {
 			cliOpts = append(cliOpts, tri.WithUnaryFastPath())

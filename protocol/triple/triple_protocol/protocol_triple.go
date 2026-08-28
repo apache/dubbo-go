@@ -266,8 +266,8 @@ func (c *tripleClient) NewConn(
 	}
 	var call unaryClientCall
 	if spec.StreamType == StreamTypeUnary && c.UnaryFastPath {
-		// Unary fast path: no io.Pipe, no per-request goroutine; on by
-		// default, streaming calls always keep using duplexHTTPCall.
+		// Unary fast path: no io.Pipe, no per-request goroutine. Streaming
+		// calls always keep using duplexHTTPCall.
 		call = newUnaryFastPathCall(ctx, c.HTTPClient, c.URL, spec, header, c.BufferPool)
 	} else {
 		call = newDuplexHTTPCall(ctx, c.HTTPClient, c.URL, spec, header)
