@@ -31,6 +31,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 )
 
 func TestNewDubboInvokerUsesGlobalDefaultTimeout(t *testing.T) {
@@ -61,6 +62,19 @@ func TestNewDubboInvokerUsesTimeoutParam(t *testing.T) {
 	invoker := NewDubboInvoker(url, nil)
 
 	assert.Equal(t, 5*time.Second, invoker.timeout)
+}
+
+func TestGetTimeoutAcrossAttemptsOnSameInvocation(t *testing.T) {
+	url, err := common.NewURL("dubbo://127.0.0.1:20880/org.apache.dubbo.UserProvider?timeout=10s")
+	require.NoError(t, err)
+
+	invoker := NewDubboInvoker(url, nil)
+	inv := invocation.NewRPCInvocation("GetUser", nil, nil)
+
+	// the first attempt writes the timeout back as bare milliseconds;
+	// retries on the same invocation (failover) must resolve the same timeout
+	assert.Equal(t, 10*time.Second, invoker.getTimeout(inv))
+	assert.Equal(t, 10*time.Second, invoker.getTimeout(inv))
 }
 
 //
