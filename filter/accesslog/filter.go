@@ -50,6 +50,14 @@ const (
 	// LogFileMode is the file permission for access log files.
 	LogFileMode = 0o600
 
+	// drainTimeout bounds how long drainLogs keeps flushing remaining
+	// log data while shutting down.
+	drainTimeout = 5 * time.Second
+
+	// shutdownWaitTimeout is the maximum time Shutdown waits for the
+	// processLogs goroutine to exit, covering the drainTimeout margin.
+	shutdownWaitTimeout = 6 * time.Second
+
 	// those fields are the data collected by this filter
 
 	// Types represents the list of argument types in log.
@@ -60,6 +68,7 @@ const (
 
 var (
 	once            sync.Once
+	filterMu        sync.Mutex // guards accessLogFilter against concurrent Shutdown
 	accessLogFilter *Filter
 )
 
@@ -90,21 +99,46 @@ type Filter struct {
 	ctx          context.Context
 	cancel       context.CancelFunc
 	shutdownOnce sync.Once
+	wg           sync.WaitGroup // tracks the processLogs goroutine
+
+	// shutdownWaitTimeout bounds how long shutdown waits for processLogs to
+	// exit; it defaults to shutdownWaitTimeout and may be shortened by tests.
+	shutdownWaitTimeout time.Duration
 }
 
-func newFilter() filter.Filter {
-	if accessLogFilter == nil {
-		once.Do(func() {
-			ctx, cancel := context.WithCancel(context.Background())
-			accessLogFilter = &Filter{
-				logChan:   make(chan Data, LogMaxBuffer),
-				fileCache: make(map[string]*os.File),
-				ctx:       ctx,
-				cancel:    cancel,
-			}
-			go accessLogFilter.processLogs()
-		})
+// doInit builds and publishes the singleton filter. It runs at most once via
+// sync.Once, which doubles as an initialization barrier: a concurrent Shutdown
+// blocks in once.Do until this completes, so it can never return early by
+// observing a stale nil while the filter is still being constructed.
+func doInit() {
+	ctx, cancel := context.WithCancel(context.Background())
+	f := &Filter{
+		logChan:             make(chan Data, LogMaxBuffer),
+		fileCache:           make(map[string]*os.File),
+		ctx:                 ctx,
+		cancel:              cancel,
+		shutdownWaitTimeout: shutdownWaitTimeout,
 	}
+	// wg.Add must happen before the filter is published: a concurrent
+	// Shutdown that observes the filter while the WaitGroup counter is
+	// still zero would close file handles before processLogs even starts.
+	f.wg.Add(1)
+
+	// Publish under filterMu so readers in Shutdown see either nil or a
+	// fully constructed filter (happens-before via the mutex).
+	filterMu.Lock()
+	accessLogFilter = f
+	filterMu.Unlock()
+
+	go f.processLogs()
+}
+
+// newFilter returns the singleton access log filter, creating it on first
+// use. The lock-free read is safe because every production write to
+// accessLogFilter happens inside doInit under once.Do, and once.Do returning
+// establishes the happens-before edge readers need.
+func newFilter() filter.Filter {
+	once.Do(doInit)
 	return accessLogFilter
 }
 
@@ -198,6 +232,7 @@ func (f *Filter) OnResponse(_ context.Context, result result.Result, _ base.Invo
 
 // processLogs runs in a background goroutine to process log data
 func (f *Filter) processLogs() {
+	defer f.wg.Done()
 	defer func() {
 		if r := recover(); r != nil {
 			logger.Errorf("[Filter][AccessLog] accessLog processLogs panic, err=%v", r)
@@ -207,49 +242,28 @@ func (f *Filter) processLogs() {
 
 	for {
 		select {
-		case accessLogData, ok := <-f.logChan:
-			if !ok {
-				return
-			}
-			f.writeLogToFileWithTimeout(accessLogData, 5*time.Second)
+		case accessLogData := <-f.logChan:
+			f.writeLogToFile(accessLogData)
 		case <-f.ctx.Done():
 			return
 		}
 	}
 }
 
-// drainLogs drains remaining log data with timeout protection
+// drainLogs drains remaining log data with an absolute deadline
 func (f *Filter) drainLogs() {
-	timeout := time.After(5 * time.Second)
+	deadline := time.Now().Add(drainTimeout)
 	for {
 		select {
-		case accessLogData, ok := <-f.logChan:
-			if !ok {
-				return
-			}
-			f.writeLogToFileWithTimeout(accessLogData, 1*time.Second)
-		case <-timeout:
-			logger.Warn("[Filter][AccessLog] accessLog drain timeout, some logs may be lost")
-			return
+		case accessLogData := <-f.logChan:
+			f.writeLogToFile(accessLogData)
 		default:
 			return
 		}
-	}
-}
-
-// writeLogToFileWithTimeout writes log with timeout protection
-func (f *Filter) writeLogToFileWithTimeout(data Data, timeout time.Duration) {
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
-		f.writeLogToFile(data)
-	}()
-
-	select {
-	case <-done:
-		logger.Debugf("[Filter][AccessLog] accessLog successfully written for, accessLog=%s", data.accessLog)
-	case <-time.After(timeout):
-		logger.Warnf("[Filter][AccessLog] accessLog writeLogToFile timeout, accessLog=%s", data.accessLog)
+		if time.Now().After(deadline) {
+			logger.Warn("[Filter][AccessLog] accessLog drain timeout, some logs may be lost")
+			return
+		}
 	}
 }
 
@@ -410,35 +424,72 @@ func (d *Data) toLogMessage() string {
 	return builder.String()
 }
 
-// Shutdown gracefully shuts down the access log filter
-// This should be called during application shutdown to prevent goroutine leaks
+// Shutdown gracefully shuts down the access log filter.
+// This should be called during application shutdown to prevent goroutine leaks.
+// once.Do(doInit) doubles as an initialization barrier: it waits for any
+// in-flight initialization (or performs it), so when Shutdown returns the
+// published filter has been shut down by this very call, even if it raced
+// against the first newFilter. If the subsystem was never used, Shutdown
+// runs one lightweight initialization cycle and tears it down immediately;
+// that keeps the postcondition deterministic at a negligible cost.
 func Shutdown() {
-	if accessLogFilter != nil {
-		accessLogFilter.shutdown()
-	}
+	once.Do(doInit)
+	filterMu.Lock()
+	f := accessLogFilter
+	filterMu.Unlock()
+	f.shutdown()
 }
 
 // shutdown gracefully shuts down this filter instance
 func (f *Filter) shutdown() {
 	f.shutdownOnce.Do(func() {
-		// Cancel the context to signal goroutine to stop
+		// Cancel the context to signal the goroutine to stop. The channel is
+		// intentionally left open so concurrent Invoke calls never panic on a
+		// closed channel; excess data is dropped once the buffer is full.
 		if f.cancel != nil {
 			f.cancel()
 		}
 
-		// Close the channel to stop accepting new logs
-		if f.logChan != nil {
-			close(f.logChan)
+		// Wait for processLogs to exit before touching the files it writes to.
+		if !f.waitProcessLogs(f.shutdownWaitTimeout) {
+			logger.Warn("[Filter][AccessLog] shutdown wait for processLogs timeout")
+			// The writer may still be blocked inside a single write syscall,
+			// which the context cannot interrupt; defer closing the file
+			// handles until it has actually exited instead of closing files
+			// it still holds. This cleanup goroutine may therefore live
+			// indefinitely if the writer is stuck forever: prompt handle
+			// reclamation is deliberately traded for write safety.
+			go func() {
+				f.wg.Wait()
+				f.closeFiles()
+			}()
+			return
 		}
-
-		// Close all cached file handles
-		f.fileLock.Lock()
-		defer f.fileLock.Unlock()
-		for path, file := range f.fileCache {
-			if err := file.Close(); err != nil {
-				logger.Warnf("[Filter][AccessLog] error closing access log file, path=%s err=%v", path, err)
-			}
-			delete(f.fileCache, path)
-		}
+		f.closeFiles()
 	})
+}
+
+// closeFiles closes and clears all cached file handles.
+func (f *Filter) closeFiles() {
+	f.fileLock.Lock()
+	defer f.fileLock.Unlock()
+	for path, file := range f.fileCache {
+		if err := file.Close(); err != nil {
+			logger.Warnf("[Filter][AccessLog] error closing access log file, path=%s err=%v", path, err)
+		}
+		delete(f.fileCache, path)
+	}
+}
+
+// waitProcessLogs waits for the processLogs goroutine to exit, returning
+// false if it does not stop within the timeout.
+func (f *Filter) waitProcessLogs(timeout time.Duration) bool {
+	done := make(chan struct{})
+	go func() { f.wg.Wait(); close(done) }()
+	select {
+	case <-done:
+		return true
+	case <-time.After(timeout):
+		return false
+	}
 }

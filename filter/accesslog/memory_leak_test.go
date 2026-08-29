@@ -20,7 +20,7 @@ package accesslog
 import (
 	"context"
 	"os"
-	"runtime"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -41,7 +41,9 @@ import (
 // resetGlobalState resets the global state for testing
 func resetGlobalState() {
 	once.Do(func() {}) // Trigger once
+	filterMu.Lock()
 	accessLogFilter = nil
+	filterMu.Unlock()
 	once = sync.Once{}
 }
 
@@ -49,32 +51,82 @@ func resetGlobalState() {
 func TestAccessLogFilterGoroutineShutdown(t *testing.T) {
 	resetGlobalState()
 
-	// Count goroutines before
-	initialGoroutines := runtime.NumGoroutine()
+	filter, ok := newFilter().(*Filter)
+	if !ok {
+		t.Fatal("newFilter should return a *Filter")
+	}
 
-	// Create filter (this should start the goroutine)
-	filter := newFilter()
-	assert.NotNil(t, filter)
-
-	// Give the goroutine time to start
-	time.Sleep(100 * time.Millisecond)
-	postCreateGoroutines := runtime.NumGoroutine()
-
-	// Should have at least one more goroutine
-	assert.Greater(t, postCreateGoroutines, initialGoroutines)
-
-	// Shutdown the filter
 	Shutdown()
 
-	// Give goroutine time to exit
-	time.Sleep(100 * time.Millisecond)
-	runtime.GC() // Force garbage collection
+	// After shutdown the goroutine should exit deterministically
+	if !filter.waitProcessLogs(5 * time.Second) {
+		t.Fatal("processLogs did not exit after shutdown")
+	}
+}
 
-	postShutdownGoroutines := runtime.NumGoroutine()
+// TestAccessLogFilterConcurrentInvokeShutdown drives concurrent Invoke and
+// Shutdown calls to verify the filter neither panics on a closed channel nor
+// races on the global state when running under -race.
+func TestAccessLogFilterConcurrentInvokeShutdown(t *testing.T) {
+	resetGlobalState()
 
-	// Goroutine count should be back to original or less
-	assert.LessOrEqual(t, postShutdownGoroutines, initialGoroutines+1,
-		"Goroutines should be cleaned up after shutdown")
+	filter := newFilter().(*Filter)
+	url := common.NewURLWithOptions(
+		common.WithParamsValue(constant.AccessLogFilterKey, filepath.Join(t.TempDir(), "access.log")),
+	)
+	invoker := &MockInvoker{url: url}
+	invocation := &invocation_impl.RPCInvocation{}
+
+	var wg sync.WaitGroup
+	for range 10 {
+		wg.Go(func() {
+			for range 100 {
+				filter.Invoke(context.Background(), invoker, invocation)
+			}
+		})
+	}
+	wg.Go(func() {
+		Shutdown()
+	})
+
+	wg.Wait()
+
+	if !filter.waitProcessLogs(5 * time.Second) {
+		t.Fatal("processLogs did not exit after concurrent shutdown")
+	}
+}
+
+// TestAccessLogFilterConcurrentInitAndShutdown races the very first
+// newFilter call against Shutdown from a shared barrier. The single Shutdown
+// call must complete the whole lifecycle on its own — once.Do(doInit) makes
+// it wait for the in-flight initialization before shutting the filter down —
+// so after both calls finish, the processLogs goroutine must have exited
+// without any compensating Shutdown.
+func TestAccessLogFilterConcurrentInitAndShutdown(t *testing.T) {
+	for range 100 {
+		resetGlobalState()
+
+		start := make(chan struct{})
+		var wg sync.WaitGroup
+		wg.Go(func() {
+			<-start
+			newFilter()
+		})
+		wg.Go(func() {
+			<-start
+			Shutdown()
+		})
+		close(start)
+		wg.Wait()
+
+		filter, ok := newFilter().(*Filter)
+		if !ok {
+			t.Fatal("newFilter should return a *Filter")
+		}
+		if !filter.waitProcessLogs(5 * time.Second) {
+			t.Fatal("processLogs did not exit after the concurrent Shutdown returned")
+		}
+	}
 }
 
 // TestAccessLogFilterFileHandleManagement tests proper file handle management
@@ -100,15 +152,24 @@ func TestAccessLogFilterFileHandleManagement(t *testing.T) {
 		filter.Invoke(context.Background(), invoker, invocation)
 	}
 
-	// Wait for logs to be processed
-	time.Sleep(100 * time.Millisecond)
+	// Wait until the consumer goroutine has opened and cached the log file;
+	// a fixed sleep here would be flaky under CI load.
+	deadline := time.Now().Add(2 * time.Second)
+	var cachedFile *os.File
+	var exists bool
+	for {
+		filter.fileLock.RLock()
+		cachedFile, exists = filter.fileCache[tempFile]
+		filter.fileLock.RUnlock()
+		if exists {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("log file was never cached by the consumer")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
 
-	// Check that file is in cache
-	filter.fileLock.RLock()
-	cachedFile, exists := filter.fileCache[tempFile]
-	filter.fileLock.RUnlock()
-
-	assert.True(t, exists, "File should be cached")
 	assert.NotNil(t, cachedFile, "Cached file should not be nil")
 
 	// Shutdown and verify files are closed
