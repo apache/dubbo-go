@@ -45,7 +45,6 @@ import (
 // ---------------------------------------------------------------------------
 // fakes
 // ---------------------------------------------------------------------------
-
 type publishedDefinition struct {
 	ServiceInterface string
 	Version          string

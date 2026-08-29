@@ -209,7 +209,7 @@ func TestDefinitionRetryCancelledOnDestroy(t *testing.T) {
 	assert.Equal(t, 0, reg.pendingDefinitionRetries())
 
 	time.Sleep(500 * time.Millisecond)
-	assert.Equal(t, 0, stub.callCount(), "a cancelled retry must not fire")
+	assert.Equal(t, 0, stub.callCount(), "a canceled retry must not fire")
 }
 
 // TestDefinitionRetryNotArmedAfterDestroy covers the race where a publish

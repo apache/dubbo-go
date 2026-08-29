@@ -404,7 +404,7 @@ func (c *typeCollector) structProperties(t reflect.Type, expr string, depth int)
 // These rejections are the proposal's transition constraint. They lift once the
 // shared GenericFieldName resolver lands and both directions read the tag the
 // same way; until then, publishing a schema for these fields would describe a
-// wire format that only one direction honours.
+// wire format that only one direction honors.
 func fieldWireName(field reflect.StructField) (string, error) {
 	tag, tagged := field.Tag.Lookup("m")
 	if !tagged || tag == "" {

@@ -546,7 +546,7 @@ func (s *serviceDiscoveryRegistry) retryPublishDefinition(key string) {
 	defer s.lock.Unlock()
 	state.inFlight = false
 	if s.definitionRetries[key] != state {
-		// Superseded or cancelled while in flight.
+		// Superseded or canceled while in flight.
 		return
 	}
 	if len(failed) == 0 || s.destroyed || state.canceled {
