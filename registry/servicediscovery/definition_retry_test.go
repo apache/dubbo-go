@@ -31,6 +31,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 )
 
 // definitionPublishStub records calls and replays a scripted outcome.
@@ -44,7 +45,7 @@ type definitionPublishStub struct {
 	signalAt int
 }
 
-func (p *definitionPublishStub) publish(urls []*common.URL) []*common.URL {
+func (p *definitionPublishStub) publish(_ report.MetadataReport, urls []*common.URL) []*common.URL {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.calls++

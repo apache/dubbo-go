@@ -366,6 +366,67 @@ func variadicRPCMethodNames(typ reflect.Type) []string {
 	return methodNames
 }
 
+// WarnDiscardedReplyRPCMethods flags exported methods shaped like net/rpc's
+// func(args, reply *T) error, whose reply pointer dubbo-go does not send back.
+//
+// The shape is a leftover from net/rpc, which dubbo-go's early API borrowed —
+// suiteMethod still accepts a lone error return, and MethodType.argsType's
+// comment still says the reply is among the args. Neither proxy honors it any
+// more: the provider builds its response from the method's return values only
+// (proxy_factory.ProxyInvoker), and the consumer only allocates a reply when the
+// method declares two return values (proxy.Proxy). Whatever the method writes
+// into that pointer stays in the provider's memory.
+//
+// So the author's intent silently does not happen, and nothing else in the stack
+// says so. Warning at registration is the only place it can be caught before a
+// caller sees an empty result.
+//
+// Advisory, not a rejection: func(ctx, from *Account, to *Account) error is the
+// same shape and is perfectly correct — it just does not return anything, which
+// is what dubbo-go will do.
+func WarnDiscardedReplyRPCMethods(serviceName string, svc RPCService) {
+	methodNames := discardedReplyRPCMethodNames(reflect.TypeOf(svc))
+	if len(methodNames) == 0 {
+		return
+	}
+
+	logger.Warnf(
+		"[RPCService] service %s exports method(s) shaped like a net/rpc reply-pointer call: %s. "+
+			"dubbo-go returns only a method's declared return values, so anything written into the "+
+			"trailing pointer is discarded and the caller receives an empty result. Return the value "+
+			"instead, as (T, error).",
+		serviceName,
+		strings.Join(methodNames, ", "),
+	)
+}
+
+// discardedReplyRPCMethodNames returns exported RPC methods that return only an
+// error and take at least two parameters, the last of them a pointer.
+//
+// Two parameters, not one: net/rpc's shape is (args, reply), so requiring a
+// preceding argument keeps the very common func(ctx, req *Req) error — a
+// genuinely void call such as a delete — out of the warning.
+func discardedReplyRPCMethodNames(typ reflect.Type) []string {
+	if typ == nil {
+		return nil
+	}
+
+	methodNames := make([]string, 0)
+	for i := 0; i < typ.NumMethod(); i++ {
+		method := typ.Method(i)
+		mt := suiteMethod(method)
+		if mt == nil || mt.ReplyType() != nil {
+			continue
+		}
+		args := mt.ArgsType()
+		if len(args) >= 2 && args[len(args)-1].Kind() == reflect.Pointer {
+			methodNames = append(methodNames, method.Name)
+		}
+	}
+
+	return methodNames
+}
+
 // CanonicalMethod pairs an exported RPC method with the canonical wire name
 // dubbo-go advertises for it.
 type CanonicalMethod struct {

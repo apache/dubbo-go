@@ -133,13 +133,16 @@ func javaScalarName(t reflect.Type, nullable bool) (string, error) {
 	case reflect.Int8:
 		primitive = javaByte
 	case reflect.Uint8:
-		// byte, not short, even though Go's uint8 is 0..255 and Java's byte is
-		// signed. []byte and []uint8 are one type in Go, so this choice also
-		// decides byte slices — and those carry binary payloads that hessian2
-		// already puts on the wire as Java byte[] (see GetClassDesc's "[B").
-		// Keeping the container faithful matters more than the 128..255 range,
-		// which the schema simply rejects.
-		primitive = javaByte
+		// short, not byte. Java's byte is signed, so a consumer decoding
+		// against it accepts only -128..127 and rejects a Go uint8 of 128..255
+		// before the call ever leaves. Widening costs nothing and keeps the
+		// whole range callable.
+		//
+		// This also decides []byte, since []byte and []uint8 are one type in Go.
+		// Spelling it byte[] would match what hessian2 writes on the wire, but
+		// that alignment buys nothing when half the element values cannot be
+		// expressed in the schema either way.
+		primitive = javaShort
 	case reflect.Int16:
 		primitive = javaShort
 	case reflect.Uint16, reflect.Int32:

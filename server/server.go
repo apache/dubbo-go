@@ -187,7 +187,9 @@ func (s *Server) genSvcOpts(handler any, info *common.ServiceInfo, opts ...Servi
 	newSvcOpts.Implement(handler)
 	newSvcOpts.info = enhanceServiceInfo(info)
 	// Warn on exported variadic RPC methods without blocking registration.
-	common.WarnVariadicRPCMethods(serviceNameForWarning(interfaceName, svcConf.Interface), handler)
+	warnName := serviceNameForWarning(interfaceName, svcConf.Interface)
+	common.WarnVariadicRPCMethods(warnName, handler)
+	common.WarnDiscardedReplyRPCMethods(warnName, handler)
 	return newSvcOpts, nil
 }
 

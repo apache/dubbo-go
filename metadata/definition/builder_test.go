@@ -294,14 +294,20 @@ func TestBuildContainerArity(t *testing.T) {
 		"the value is boxed because Java generics admit only reference types")
 }
 
-func TestBuildByteSliceIsJavaByteArray(t *testing.T) {
-	// []byte and []uint8 are one type in Go, and this one carries binary
-	// payloads that hessian2 already puts on the wire as Java byte[].
+func TestBuildUint8WidensSoTheWholeRangeIsCallable(t *testing.T) {
+	// Java's byte is signed, so spelling uint8 as byte would leave 128..255
+	// rejected by a consumer's range check before the call left. []byte and
+	// []uint8 are one type in Go, so the slice follows.
 	c := newTypeCollector()
-	expr, err := c.resolve(reflect.TypeFor[[]byte]())
+
+	expr, err := c.resolve(reflect.TypeFor[uint8]())
 	require.NoError(t, err)
-	assert.Equal(t, "byte[]", expr)
-	assert.Equal(t, []string{"byte"}, c.defs["byte[]"].Items)
+	assert.Equal(t, "short", expr)
+
+	expr, err = c.resolve(reflect.TypeFor[[]byte]())
+	require.NoError(t, err)
+	assert.Equal(t, "short[]", expr)
+	assert.Equal(t, []string{"short"}, c.defs["short[]"].Items)
 }
 
 func TestBuildRejectsUnsigned64(t *testing.T) {
@@ -322,7 +328,7 @@ func TestBuildWidensSmallUnsigned(t *testing.T) {
 	// Widening keeps the whole Go range representable; the schema is looser on
 	// the low end, which realization rejects rather than wraps.
 	for typ, want := range map[reflect.Type]string{
-		reflect.TypeFor[uint8]():  "byte",
+		reflect.TypeFor[uint8]():  "short",
 		reflect.TypeFor[uint16](): "int",
 		reflect.TypeFor[uint32](): "long",
 	} {

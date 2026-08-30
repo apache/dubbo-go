@@ -51,15 +51,21 @@ import (
 // Publishing is idempotent and keyed only by service identity, so calling this
 // on every start, on each cycle-report pass, and on every retry simply
 // overwrites the previous document.
-func PublishServiceDefinitions(urls []*common.URL) []*common.URL {
-	publishers := serviceDefinitionPublishers()
-	if len(publishers) == 0 {
+//
+// The target is the caller's own report, not every configured one. Reports are
+// per registry, and two registries routinely point at different namespaces or
+// even different clusters; broadcasting would write one registry's contracts
+// into another's environment and multiply the retry traffic when the unrelated
+// target is down.
+func PublishServiceDefinitions(r report.MetadataReport, urls []*common.URL) []*common.URL {
+	publisher, ok := serviceDefinitionPublisher(r)
+	if !ok {
 		return nil
 	}
 
 	var failed []*common.URL
 	for _, u := range dedupeByService(urls) {
-		if !publishServiceDefinition(u, publishers) {
+		if !publishServiceDefinition(u, publisher) {
 			failed = append(failed, u)
 		}
 	}
@@ -67,10 +73,7 @@ func PublishServiceDefinitions(urls []*common.URL) []*common.URL {
 }
 
 // publishServiceDefinition reports whether the caller should retry.
-//
-// A partial failure across several reports counts as a failure: the retry
-// republishes to all of them, which is harmless because each write overwrites.
-func publishServiceDefinition(u *common.URL, publishers []report.ServiceDefinitionPublisher) bool {
+func publishServiceDefinition(u *common.URL, publisher report.ServiceDefinitionPublisher) bool {
 	svc := common.ServiceMap.GetServiceByServiceKey(u.Protocol, u.ServiceKey())
 	if svc == nil {
 		logger.Warnf("[Metadata][Definition] no registered service for %s/%s, skipping definition",
@@ -101,54 +104,47 @@ func publishServiceDefinition(u *common.URL, publishers []report.ServiceDefiniti
 	}
 
 	application := u.GetParam(constant.ApplicationKey, "")
-	published := true
-	for _, publisher := range publishers {
-		if err := publisher.PublishServiceDefinition(
-			def.CanonicalName, u.Version(), u.Group(), application, string(payload),
-		); err != nil {
-			logger.Errorf("[Metadata][Definition] could not publish definition for %s: %v",
-				def.CanonicalName, err)
-			published = false
-			continue
-		}
-		logger.Infof("[Metadata][Definition] published definition for %s, methods=%d types=%d",
-			def.CanonicalName, len(def.Methods), len(def.Types))
+	if err := publisher.PublishServiceDefinition(
+		def.CanonicalName, u.Version(), u.Group(), application, string(payload),
+	); err != nil {
+		logger.Errorf("[Metadata][Definition] could not publish definition for %s: %v",
+			def.CanonicalName, err)
+		return false
 	}
-	return published
+	logger.Infof("[Metadata][Definition] published definition for %s, methods=%d types=%d",
+		def.CanonicalName, len(def.Methods), len(def.Types))
+	return true
 }
 
-// ServiceDefinitionsEnabled reports whether any configured metadata report will
-// accept interface-level service definitions.
+// ServiceDefinitionsEnabled reports whether r will accept interface-level
+// service definitions.
 //
 // Callers use this to decide whether work that only exists to serve definitions
 // — the daily re-publish, for one — is worth scheduling at all.
-func ServiceDefinitionsEnabled() bool {
-	return len(serviceDefinitionPublishers()) > 0
+func ServiceDefinitionsEnabled(r report.MetadataReport) bool {
+	_, ok := serviceDefinitionPublisher(r)
+	return ok
 }
 
-// serviceDefinitionPublishers returns the configured reports that both support
-// the capability and have it switched on.
+// serviceDefinitionPublisher resolves r's publish capability, honoring the
+// report-definition switch.
 //
 // The instance table stores *DelegateMetadataReport, so the capability has to be
 // queried through the wrapper rather than type-asserted off the interface value.
-func serviceDefinitionPublishers() []report.ServiceDefinitionPublisher {
-	var publishers []report.ServiceDefinitionPublisher
-	for _, r := range GetMetadataReports() {
-		delegate, ok := r.(*DelegateMetadataReport)
-		if !ok {
-			continue
-		}
-		publisher, supported := delegate.ServiceDefinitionPublisher()
-		if !supported {
-			continue
-		}
-		if url := delegate.URL(); url != nil &&
-			!url.GetParamBool(constant.MetadataReportReportDefinitionKey, true) {
-			continue
-		}
-		publishers = append(publishers, publisher)
+func serviceDefinitionPublisher(r report.MetadataReport) (report.ServiceDefinitionPublisher, bool) {
+	delegate, ok := r.(*DelegateMetadataReport)
+	if !ok {
+		return nil, false
 	}
-	return publishers
+	publisher, supported := delegate.ServiceDefinitionPublisher()
+	if !supported {
+		return nil, false
+	}
+	if url := delegate.URL(); url != nil &&
+		!url.GetParamBool(constant.MetadataReportReportDefinitionKey, true) {
+		return nil, false
+	}
+	return publisher, true
 }
 
 // dedupeByService reduces the exported URLs to one per service identity.

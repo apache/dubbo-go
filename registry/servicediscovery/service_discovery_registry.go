@@ -75,8 +75,11 @@ type serviceDiscoveryRegistry struct {
 	subscribeRetries map[string]*subscribeRetry
 	// definitionRetries holds at most one pending service-definition publish
 	// retry per service key. Guarded by lock.
-	definitionRetries     map[string]*definitionRetry
-	renewAppMetadataTimer *time.Timer
+	definitionRetries map[string]*definitionRetry
+	// definitionPublishTimer runs the first definition publish off the
+	// registration path. Guarded by lock.
+	definitionPublishTimer *time.Timer
+	renewAppMetadataTimer  *time.Timer
 	// destroyed is set by Destroy. SubscribeURL re-checks it under lock right
 	// before installing a listener, so a subscribe whose initial GetInstances /
 	// metadata phase outlives Destroy is discarded instead of being installed
@@ -123,7 +126,7 @@ func (s *serviceDiscoveryRegistry) startMetadataTimers() {
 	if s.metadataReport == nil {
 		return
 	}
-	if !renewsAppMetadata() && !metadata.ServiceDefinitionsEnabled() {
+	if !renewsAppMetadata() && !metadata.ServiceDefinitionsEnabled(s.metadataReport) {
 		return
 	}
 	metaInfo := metadata.GetMetadataInfo(s.url.GetParam(constant.RegistryIdKey, ""))
@@ -171,18 +174,6 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 			metaInfo.App, metaInfo.Revision, len(urls))
 	}
 
-	// Interface-level service definitions are a separate data path from the
-	// application-level metadata above: they describe the RPC contract rather
-	// than what this instance currently exports, and Admin discovers them by
-	// their own key. They are therefore published regardless of metadataType,
-	// which only governs where application metadata lives.
-	//
-	// This never blocks registration. A provider whose definition failed to
-	// publish still serves traffic correctly; it is only missing from Admin's
-	// console. Failures are retried with backoff, and the daily cycle report
-	// is the backstop past that.
-	s.publishServiceDefinitions(urls)
-
 	for _, instance := range instances {
 		err := s.serviceDiscovery.Register(instance)
 		if err != nil {
@@ -193,6 +184,18 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 		s.instanceURLs[instance] = instanceURLs[instance]
 		s.lock.Unlock()
 	}
+
+	// Interface-level service definitions are a separate data path from the
+	// application-level metadata above: they describe the RPC contract rather
+	// than what this instance currently exports, and Admin discovers them by
+	// their own key. They are therefore published regardless of metadataType,
+	// which only governs where application metadata lives.
+	//
+	// Scheduled rather than run inline, and after registration rather than
+	// before, so the metadata center is never in the path of an instance
+	// entering traffic. Failures retry with backoff; the daily cycle report is
+	// the backstop past that.
+	s.scheduleServiceDefinitionPublish(urls)
 
 	s.lock.Lock()
 	if s.renewAppMetadataTimer == nil {
@@ -404,8 +407,12 @@ func (s *serviceDiscoveryRegistry) Destroy() {
 		// Cancel pending AddListener retries so their timers cannot leak.
 		s.cancelSubscribeRetryLocked(key)
 	}
-	// Same for pending definition publish retries.
+	// Same for pending definition publish retries and the initial publish.
 	s.cancelDefinitionRetriesLocked()
+	if s.definitionPublishTimer != nil {
+		s.definitionPublishTimer.Stop()
+		s.definitionPublishTimer = nil
+	}
 	for _, l := range s.serviceListeners {
 		// Destroy drops listeners without RemoveListener; cancel any pending
 		// metadata retry so its timer cannot leak.
@@ -469,12 +476,40 @@ type definitionRetry struct {
 // publishServiceDefinitions publishes definitions for urls and arms a retry for
 // whatever failed to reach the metadata center.
 //
-// Never blocks and never reports failure upward: a provider whose definition did
-// not land still serves traffic, it is only missing from Admin's console.
+// Synchronous. Callers already running off the registration path — the daily
+// cycle report — use this directly; RegisterService must not, because the write
+// goes all the way to the metadata center. See scheduleServiceDefinitionPublish.
 func (s *serviceDiscoveryRegistry) publishServiceDefinitions(urls []*common.URL) {
-	for _, u := range publishDefinitions(urls) {
+	for _, u := range publishDefinitions(s.metadataReport, urls) {
 		s.scheduleDefinitionRetry(u)
 	}
+}
+
+// scheduleServiceDefinitionPublish hands the first publish to a timer instead of
+// running it inline.
+//
+// Publishing reaches the metadata center synchronously, once per service. On the
+// registration path that cost lands between "the process is ready" and "the
+// instance is discoverable": a slow or unreachable Nacos delays every service in
+// turn, holding an otherwise healthy provider out of traffic for as long as the
+// writes take. Definitions are console metadata, so nothing about them justifies
+// that.
+//
+// The timer is tracked and canceled by Destroy, so the work cannot outlive the
+// registry the way a bare goroutine would. Failures land in the same per-service
+// retry as any other publish.
+func (s *serviceDiscoveryRegistry) scheduleServiceDefinitionPublish(urls []*common.URL) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	if s.destroyed {
+		return
+	}
+	if s.definitionPublishTimer != nil {
+		s.definitionPublishTimer.Stop()
+	}
+	s.definitionPublishTimer = time.AfterFunc(0, func() {
+		s.publishServiceDefinitions(urls)
+	})
 }
 
 // scheduleDefinitionRetry arms the retry timer for one service. One pending
@@ -540,7 +575,7 @@ func (s *serviceDiscoveryRegistry) retryPublishDefinition(key string) {
 		return
 	}
 
-	failed := publishDefinitions([]*common.URL{state.url})
+	failed := publishDefinitions(s.metadataReport, []*common.URL{state.url})
 
 	s.lock.Lock()
 	defer s.lock.Unlock()

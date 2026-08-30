@@ -206,7 +206,7 @@ func TestBackendWithoutCapabilityReportsUnsupported(t *testing.T) {
 	delegate := GetMetadataReports()[0].(*DelegateMetadataReport)
 	_, supported := delegate.ServiceDefinitionPublisher()
 	assert.False(t, supported, "zookeeper/etcd/third-party reports must be unaffected")
-	assert.Empty(t, serviceDefinitionPublishers())
+	assert.False(t, ServiceDefinitionsEnabled(GetMetadataReports()[0]))
 }
 
 // ---------------------------------------------------------------------------
@@ -217,7 +217,7 @@ func TestPublishServiceDefinitions(t *testing.T) {
 	backend := installCapableReport(t, nil)
 	u := exportService(t, constant.DubboProtocol, false)
 
-	PublishServiceDefinitions([]*common.URL{u})
+	PublishServiceDefinitions(GetMetadataReports()[0], []*common.URL{u})
 
 	published := backend.snapshot()
 	require.Len(t, published, 1)
@@ -238,8 +238,8 @@ func TestPublishIsIdempotent(t *testing.T) {
 	backend := installCapableReport(t, nil)
 	u := exportService(t, constant.DubboProtocol, false)
 
-	PublishServiceDefinitions([]*common.URL{u})
-	PublishServiceDefinitions([]*common.URL{u})
+	PublishServiceDefinitions(GetMetadataReports()[0], []*common.URL{u})
+	PublishServiceDefinitions(GetMetadataReports()[0], []*common.URL{u})
 
 	published := backend.snapshot()
 	require.Len(t, published, 2, "each call publishes; the backend overwrites in place")
@@ -254,7 +254,7 @@ func TestPublishFailureDoesNotPanicOrBlock(t *testing.T) {
 
 	// A metadata-center outage must not keep the provider out of traffic, so
 	// this returns normally and the caller proceeds to register instances.
-	assert.NotPanics(t, func() { PublishServiceDefinitions([]*common.URL{u}) })
+	assert.NotPanics(t, func() { PublishServiceDefinitions(GetMetadataReports()[0], []*common.URL{u}) })
 }
 
 func TestPublishSkippedWhenSwitchedOff(t *testing.T) {
@@ -263,7 +263,7 @@ func TestPublishSkippedWhenSwitchedOff(t *testing.T) {
 	})
 	u := exportService(t, constant.DubboProtocol, false)
 
-	PublishServiceDefinitions([]*common.URL{u})
+	PublishServiceDefinitions(GetMetadataReports()[0], []*common.URL{u})
 	assert.Empty(t, backend.snapshot())
 }
 
@@ -273,7 +273,7 @@ func TestPublishEnabledByDefault(t *testing.T) {
 	backend := installCapableReport(t, nil)
 	u := exportService(t, constant.DubboProtocol, false)
 
-	PublishServiceDefinitions([]*common.URL{u})
+	PublishServiceDefinitions(GetMetadataReports()[0], []*common.URL{u})
 	assert.Len(t, backend.snapshot(), 1)
 }
 
@@ -284,26 +284,26 @@ func TestPublishEnabledByDefault(t *testing.T) {
 func TestServiceDefinitionsEnabled(t *testing.T) {
 	t.Run("capable and switched on", func(t *testing.T) {
 		installCapableReport(t, nil)
-		assert.True(t, ServiceDefinitionsEnabled())
+		assert.True(t, ServiceDefinitionsEnabled(GetMetadataReports()[0]))
 	})
 
 	t.Run("capable but switched off", func(t *testing.T) {
 		installCapableReport(t, map[string]string{
 			constant.MetadataReportReportDefinitionKey: "false",
 		})
-		assert.False(t, ServiceDefinitionsEnabled())
+		assert.False(t, ServiceDefinitionsEnabled(GetMetadataReports()[0]))
 	})
 
 	t.Run("backend without the capability", func(t *testing.T) {
 		installReports(t, map[string]report.MetadataReport{
 			constant.DefaultKey: &DelegateMetadataReport{instance: &baseReport{url: reportURL(t, nil)}},
 		})
-		assert.False(t, ServiceDefinitionsEnabled())
+		assert.False(t, ServiceDefinitionsEnabled(GetMetadataReports()[0]))
 	})
 
-	t.Run("no reports at all", func(t *testing.T) {
-		installReports(t, map[string]report.MetadataReport{})
-		assert.False(t, ServiceDefinitionsEnabled())
+	t.Run("no report configured", func(t *testing.T) {
+		// A registry without a metadata report passes nil here.
+		assert.False(t, ServiceDefinitionsEnabled(nil))
 	})
 }
 
@@ -345,7 +345,7 @@ func TestTripleIDLIsNotPublished(t *testing.T) {
 	backend := installCapableReport(t, nil)
 	u := exportService(t, constant.TriProtocol, true)
 
-	PublishServiceDefinitions([]*common.URL{u})
+	PublishServiceDefinitions(GetMetadataReports()[0], []*common.URL{u})
 	assert.Empty(t, backend.snapshot())
 }
 
@@ -353,7 +353,7 @@ func TestTripleNonIDLIsPublished(t *testing.T) {
 	backend := installCapableReport(t, nil)
 	u := exportService(t, constant.TriProtocol, false)
 
-	PublishServiceDefinitions([]*common.URL{u})
+	PublishServiceDefinitions(GetMetadataReports()[0], []*common.URL{u})
 	assert.Len(t, backend.snapshot(), 1)
 }
 
@@ -368,7 +368,7 @@ func TestMultiProtocolPublishesOneDefinition(t *testing.T) {
 	dubboURL := exportService(t, constant.DubboProtocol, false)
 	tripleURL := exportService(t, constant.TriProtocol, false)
 
-	PublishServiceDefinitions([]*common.URL{tripleURL, dubboURL})
+	PublishServiceDefinitions(GetMetadataReports()[0], []*common.URL{tripleURL, dubboURL})
 
 	published := backend.snapshot()
 	require.Len(t, published, 1)
@@ -405,12 +405,13 @@ func TestUnregisteredServiceIsSkipped(t *testing.T) {
 		common.WithParamsValue(constant.InterfaceKey, "org.example.NeverExported"),
 	)
 
-	assert.NotPanics(t, func() { PublishServiceDefinitions([]*common.URL{u}) })
+	assert.NotPanics(t, func() { PublishServiceDefinitions(GetMetadataReports()[0], []*common.URL{u}) })
 	assert.Empty(t, backend.snapshot())
 }
 
-func TestNoReportsIsANoOp(t *testing.T) {
-	installReports(t, map[string]report.MetadataReport{})
+func TestNoReportIsANoOp(t *testing.T) {
+	// A registry with no metadata report passes nil rather than skipping the
+	// call, so publishing must tolerate it.
 	u := exportService(t, constant.DubboProtocol, false)
-	assert.NotPanics(t, func() { PublishServiceDefinitions([]*common.URL{u}) })
+	assert.NotPanics(t, func() { PublishServiceDefinitions(nil, []*common.URL{u}) })
 }
