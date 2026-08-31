@@ -98,7 +98,7 @@ func processLogsGoroutineID() (int64, bool) {
 // goroutine block and extracts its goroutine ID from the "goroutine <id>"
 // header line.
 func findProcessLogsGoroutineID(stack []byte) (int64, bool) {
-	for _, block := range bytes.Split(stack, []byte("\n\n")) {
+	for block := range bytes.SplitSeq(stack, []byte("\n\n")) {
 		if !bytes.Contains(block, []byte("accesslog.(*Filter).processLogs")) {
 			continue
 		}
