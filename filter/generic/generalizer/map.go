@@ -18,8 +18,10 @@
 package generalizer
 
 import (
+	"encoding/json"
 	"fmt"
 	"maps"
+	"math"
 	"reflect"
 	"strconv"
 	"strings"
@@ -74,8 +76,9 @@ func (g *MapGeneralizer) Realize(obj any, typ reflect.Type) (any, error) {
 	}
 	newobj := reflect.New(typ).Interface()
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		Result:  newobj,
-		TagName: "m",
+		DecodeHook: genericRealizeDecodeHook,
+		Result:     newobj,
+		TagName:    "m",
 	})
 	if err != nil {
 		return nil, fmt.Errorf("creating map decoder failed, %v", err)
@@ -87,6 +90,139 @@ func (g *MapGeneralizer) Realize(obj any, typ reflect.Type) (any, error) {
 	}
 
 	return reflect.ValueOf(newobj).Elem().Interface(), nil
+}
+
+// genericRealizeDecodeHook closes two gaps in mapstructure's numeric
+// conversion that matter to generic RPC contracts:
+//   - SetUint truncates values above the target type's maximum;
+//   - Java byte[] carries signed bytes while Go []byte carries the same bits as
+//     uint8 values.
+//
+// The first must fail loudly rather than silently change an RPC argument. The
+// second is a deliberate bit-preserving conversion and only applies inside a
+// byte slice/array, never to a scalar uint8 (which definitions publish as Java
+// short so 0..255 stays directly representable).
+func genericRealizeDecodeHook(from, to reflect.Type, data any) (any, error) {
+	if from == nil || to == nil || data == nil {
+		return data, nil
+	}
+
+	if isByteSequence(to) && (from.Kind() == reflect.Slice || from.Kind() == reflect.Array) {
+		return realizeJavaByteSequence(data, to)
+	}
+
+	if isUnsignedKind(to.Kind()) {
+		if err := validateUnsignedValue(data, to); err != nil {
+			return nil, err
+		}
+	}
+	return data, nil
+}
+
+func isByteSequence(t reflect.Type) bool {
+	return (t.Kind() == reflect.Slice || t.Kind() == reflect.Array) &&
+		t.Elem().Kind() == reflect.Uint8
+}
+
+func realizeJavaByteSequence(data any, target reflect.Type) (any, error) {
+	source := reflect.ValueOf(data)
+	result := make([]byte, source.Len())
+	byteType := reflect.TypeFor[byte]()
+	for i := range source.Len() {
+		value := source.Index(i)
+		for value.Kind() == reflect.Interface || value.Kind() == reflect.Pointer {
+			if value.IsNil() {
+				return nil, fmt.Errorf("nil byte at index %d cannot be realized as %s", i, target)
+			}
+			value = value.Elem()
+		}
+		if value.Kind() == reflect.Int8 {
+			// Java byte and Go byte carry the same eight bits under different
+			// signedness. Preserve those bits instead of treating -1 as an
+			// out-of-range numeric value.
+			result[i] = byte(int8(value.Int()))
+			continue
+		}
+		converted, recognized, err := checkedUnsignedValue(value.Interface(), byteType)
+		if err != nil {
+			return nil, fmt.Errorf("byte at index %d: %w", i, err)
+		}
+		if !recognized {
+			return nil, fmt.Errorf("byte at index %d has unsupported type %s", i, value.Type())
+		}
+		result[i] = byte(converted)
+	}
+	return result, nil
+}
+
+func isUnsignedKind(kind reflect.Kind) bool {
+	switch kind {
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return true
+	default:
+		return false
+	}
+}
+
+func validateUnsignedValue(data any, target reflect.Type) error {
+	_, _, err := checkedUnsignedValue(data, target)
+	return err
+}
+
+func checkedUnsignedValue(data any, target reflect.Type) (uint64, bool, error) {
+	if number, ok := data.(json.Number); ok {
+		value, err := strconv.ParseUint(string(number), 10, target.Bits())
+		if err != nil {
+			return 0, true, fmt.Errorf("value %s overflows %s: %w", number, target, err)
+		}
+		if target.OverflowUint(value) {
+			return 0, true, fmt.Errorf("value %s overflows %s", number, target)
+		}
+		return value, true, nil
+	}
+
+	value := reflect.ValueOf(data)
+	for value.Kind() == reflect.Interface || value.Kind() == reflect.Pointer {
+		if value.IsNil() {
+			return 0, false, nil
+		}
+		value = value.Elem()
+	}
+
+	switch value.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		signed := value.Int()
+		if signed < 0 || target.OverflowUint(uint64(signed)) {
+			return 0, true, fmt.Errorf("value %d overflows %s", signed, target)
+		}
+		return uint64(signed), true, nil
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		if target.OverflowUint(value.Uint()) {
+			return 0, true, fmt.Errorf("value %d overflows %s", value.Uint(), target)
+		}
+		return value.Uint(), true, nil
+	case reflect.Float32, reflect.Float64:
+		floating := value.Float()
+		overflow := floating > float64(unsignedMax(target.Bits()))
+		if target.Bits() >= 64 {
+			// float64(MaxUint64) rounds to 2^64, so compare against the
+			// exclusive upper bound instead of the rounded integer maximum.
+			overflow = floating >= math.Exp2(64)
+		}
+		if math.IsNaN(floating) || math.IsInf(floating, 0) || floating < 0 ||
+			math.Trunc(floating) != floating || overflow {
+			return 0, true, fmt.Errorf("value %v overflows %s", floating, target)
+		}
+		return uint64(floating), true, nil
+	}
+	return 0, false, nil
+}
+
+func unsignedMax(bits int) uint64 {
+	if bits >= 64 {
+		return math.MaxUint64
+	}
+	return 1<<bits - 1
 }
 
 func (g *MapGeneralizer) GetType(obj any) (typ string, err error) {

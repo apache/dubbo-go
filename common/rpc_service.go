@@ -338,7 +338,10 @@ func VariadicRPCMethodNames(svc RPCService) []string {
 // WarnVariadicRPCMethods emits guidance for exported variadic RPC methods while
 // keeping existing services compatible.
 func WarnVariadicRPCMethods(serviceName string, svc RPCService) {
-	methodNames := VariadicRPCMethodNames(svc)
+	warnVariadicRPCMethods(serviceName, VariadicRPCMethodNames(svc))
+}
+
+func warnVariadicRPCMethods(serviceName string, methodNames []string) {
 	if len(methodNames) == 0 {
 		return
 	}
@@ -351,22 +354,20 @@ func WarnVariadicRPCMethods(serviceName string, svc RPCService) {
 }
 
 func variadicRPCMethodNames(typ reflect.Type) []string {
-	if typ == nil {
-		return nil
-	}
-
-	methodNames := make([]string, 0)
-	for i := 0; i < typ.NumMethod(); i++ {
-		method := typ.Method(i)
-		if suiteMethod(method) != nil && method.Type.IsVariadic() {
-			methodNames = append(methodNames, method.Name)
-		}
-	}
-
-	return methodNames
+	return inspectRPCMethods(typ).variadic
 }
 
-// WarnDiscardedReplyRPCMethods flags exported methods shaped like net/rpc's
+// WarnRPCMethods emits advisory diagnostics for RPC method shapes that are
+// accepted for compatibility but need care in generic/cross-language APIs. It
+// scans the handler once so adding a diagnostic does not repeatedly invoke
+// suiteMethod for every exported method.
+func WarnRPCMethods(serviceName string, svc RPCService) {
+	diagnostics := inspectRPCMethods(reflect.TypeOf(svc))
+	warnVariadicRPCMethods(serviceName, diagnostics.variadic)
+	warnPossibleReplyPointerMethods(serviceName, diagnostics.possibleReplyPointer)
+}
+
+// warnPossibleReplyPointerMethods flags methods shaped like net/rpc's
 // func(args, reply *T) error, whose reply pointer dubbo-go does not send back.
 //
 // The shape is a leftover from net/rpc, which dubbo-go's early API borrowed —
@@ -377,54 +378,64 @@ func variadicRPCMethodNames(typ reflect.Type) []string {
 // method declares two return values (proxy.Proxy). Whatever the method writes
 // into that pointer stays in the provider's memory.
 //
-// So the author's intent silently does not happen, and nothing else in the stack
-// says so. Warning at registration is the only place it can be caught before a
-// caller sees an empty result.
-//
 // Advisory, not a rejection: func(ctx, from *Account, to *Account) error is the
 // same shape and is perfectly correct — it just does not return anything, which
 // is what dubbo-go will do.
-func WarnDiscardedReplyRPCMethods(serviceName string, svc RPCService) {
-	methodNames := discardedReplyRPCMethodNames(reflect.TypeOf(svc))
+func warnPossibleReplyPointerMethods(serviceName string, methodNames []string) {
 	if len(methodNames) == 0 {
 		return
 	}
 
 	logger.Warnf(
-		"[RPCService] service %s exports method(s) shaped like a net/rpc reply-pointer call: %s. "+
-			"dubbo-go returns only a method's declared return values, so anything written into the "+
-			"trailing pointer is discarded and the caller receives an empty result. Return the value "+
-			"instead, as (T, error).",
+		"[RPCService] service %s exports method(s) with multiple inputs and a trailing pointer: %s. "+
+			"If that pointer is intended as a net/rpc-style reply, dubbo-go will not return its "+
+			"mutated value; return the value explicitly as (T, error). If every pointer is an input, "+
+			"no action is required.",
 		serviceName,
 		strings.Join(methodNames, ", "),
 	)
 }
 
-// discardedReplyRPCMethodNames returns exported RPC methods that return only an
+// possibleReplyPointerRPCMethodNames returns exported RPC methods that return only an
 // error and take at least two parameters, the last of them a pointer.
 //
 // Two parameters, not one: net/rpc's shape is (args, reply), so requiring a
 // preceding argument keeps the very common func(ctx, req *Req) error — a
 // genuinely void call such as a delete — out of the warning.
-func discardedReplyRPCMethodNames(typ reflect.Type) []string {
+func possibleReplyPointerRPCMethodNames(typ reflect.Type) []string {
+	return inspectRPCMethods(typ).possibleReplyPointer
+}
+
+type rpcMethodDiagnostics struct {
+	variadic             []string
+	possibleReplyPointer []string
+}
+
+func inspectRPCMethods(typ reflect.Type) rpcMethodDiagnostics {
 	if typ == nil {
-		return nil
+		return rpcMethodDiagnostics{}
 	}
 
-	methodNames := make([]string, 0)
+	diagnostics := rpcMethodDiagnostics{}
 	for i := 0; i < typ.NumMethod(); i++ {
 		method := typ.Method(i)
 		mt := suiteMethod(method)
-		if mt == nil || mt.ReplyType() != nil {
+		if mt == nil {
+			continue
+		}
+		if method.Type.IsVariadic() {
+			diagnostics.variadic = append(diagnostics.variadic, method.Name)
+		}
+		if mt.ReplyType() != nil {
 			continue
 		}
 		args := mt.ArgsType()
 		if len(args) >= 2 && args[len(args)-1].Kind() == reflect.Pointer {
-			methodNames = append(methodNames, method.Name)
+			diagnostics.possibleReplyPointer = append(diagnostics.possibleReplyPointer, method.Name)
 		}
 	}
 
-	return methodNames
+	return diagnostics
 }
 
 // CanonicalMethod pairs an exported RPC method with the canonical wire name

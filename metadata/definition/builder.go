@@ -115,7 +115,7 @@ func BuildFromURL(u *common.URL, svcType reflect.Type) (*ServiceDefinition, []Sk
 func buildMethod(m common.CanonicalMethod, types *typeCollector) (*MethodDefinition, error) {
 	if m.Method.IsVariadic() {
 		// dubbo-go exports variadic methods with only a warning
-		// (WarnVariadicRPCMethods), so they do reach this point. They are
+		// (WarnRPCMethods), so they do reach this point. They are
 		// excluded here because a variadic tail has no fixed arity to publish:
 		// the generic path packs a variable number of trailing args into the
 		// slice, which no fixed parameterTypes list can describe.

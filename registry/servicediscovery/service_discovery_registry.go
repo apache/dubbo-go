@@ -76,10 +76,13 @@ type serviceDiscoveryRegistry struct {
 	// definitionRetries holds at most one pending service-definition publish
 	// retry per service key. Guarded by lock.
 	definitionRetries map[string]*definitionRetry
-	// definitionPublishTimer runs the first definition publish off the
-	// registration path. Guarded by lock.
-	definitionPublishTimer *time.Timer
-	renewAppMetadataTimer  *time.Timer
+	// Full definition publishes are coalesced behind one worker per registry.
+	// The state is guarded by lock; definitionPublishMu serializes the backend
+	// call with per-service retries as well.
+	definitionPublishRunning bool
+	definitionPublishPending []*common.URL
+	definitionPublishMu      sync.Mutex
+	renewAppMetadataTimer    *time.Timer
 	// destroyed is set by Destroy. SubscribeURL re-checks it under lock right
 	// before installing a listener, so a subscribe whose initial GetInstances /
 	// metadata phase outlives Destroy is discarded instead of being installed
@@ -407,12 +410,9 @@ func (s *serviceDiscoveryRegistry) Destroy() {
 		// Cancel pending AddListener retries so their timers cannot leak.
 		s.cancelSubscribeRetryLocked(key)
 	}
-	// Same for pending definition publish retries and the initial publish.
+	// Same for pending definition publish retries and queued full publishes.
 	s.cancelDefinitionRetriesLocked()
-	if s.definitionPublishTimer != nil {
-		s.definitionPublishTimer.Stop()
-		s.definitionPublishTimer = nil
-	}
+	s.cancelDefinitionPublishLocked()
 	for _, l := range s.serviceListeners {
 		// Destroy drops listeners without RemoveListener; cancel any pending
 		// metadata retry so its timer cannot leak.
@@ -476,17 +476,38 @@ type definitionRetry struct {
 // publishServiceDefinitions publishes definitions for urls and arms a retry for
 // whatever failed to reach the metadata center.
 //
-// Synchronous. Callers already running off the registration path — the daily
-// cycle report — use this directly; RegisterService must not, because the write
-// goes all the way to the metadata center. See scheduleServiceDefinitionPublish.
+// Synchronous. The full-publish worker uses this after removing the work from
+// the registration path; callers on that path must use
+// scheduleServiceDefinitionPublish instead.
 func (s *serviceDiscoveryRegistry) publishServiceDefinitions(urls []*common.URL) {
-	for _, u := range publishDefinitions(s.metadataReport, urls) {
+	for _, u := range s.publishServiceDefinitionsNow(urls) {
 		s.scheduleDefinitionRetry(u)
 	}
 }
 
-// scheduleServiceDefinitionPublish hands the first publish to a timer instead of
-// running it inline.
+// publishServiceDefinitionsNow serializes every backend definition write for
+// this registry, including full publishes and per-service retries.
+//
+// Destroy deliberately does not wait for a call that has already entered the
+// backend: the Nacos API has no context/cancellation parameter. The call may
+// finish within the backend timeout, but no retry or queued full publish will
+// follow it.
+func (s *serviceDiscoveryRegistry) publishServiceDefinitionsNow(urls []*common.URL) []*common.URL {
+	s.definitionPublishMu.Lock()
+	defer s.definitionPublishMu.Unlock()
+
+	s.lock.RLock()
+	destroyed := s.destroyed
+	reportInstance := s.metadataReport
+	s.lock.RUnlock()
+	if destroyed {
+		return nil
+	}
+	return publishDefinitions(reportInstance, urls)
+}
+
+// scheduleServiceDefinitionPublish hands a full publish to the registry's
+// single worker instead of running it inline.
 //
 // Publishing reaches the metadata center synchronously, once per service. On the
 // registration path that cost lands between "the process is ready" and "the
@@ -495,21 +516,49 @@ func (s *serviceDiscoveryRegistry) publishServiceDefinitions(urls []*common.URL)
 // writes take. Definitions are console metadata, so nothing about them justifies
 // that.
 //
-// The timer is tracked and canceled by Destroy, so the work cannot outlive the
-// registry the way a bare goroutine would. Failures land in the same per-service
-// retry as any other publish.
+// Repeated schedules are coalesced to the latest full URL snapshot. Destroy
+// discards a snapshot that has not started, while an already-running backend
+// call is allowed to finish without blocking shutdown. Failures land in the
+// same per-service retry as any other publish.
 func (s *serviceDiscoveryRegistry) scheduleServiceDefinitionPublish(urls []*common.URL) {
 	s.lock.Lock()
-	defer s.lock.Unlock()
 	if s.destroyed {
+		s.lock.Unlock()
 		return
 	}
-	if s.definitionPublishTimer != nil {
-		s.definitionPublishTimer.Stop()
+	s.definitionPublishPending = append([]*common.URL(nil), urls...)
+	if s.definitionPublishRunning {
+		s.lock.Unlock()
+		return
 	}
-	s.definitionPublishTimer = time.AfterFunc(0, func() {
+	s.definitionPublishRunning = true
+	s.lock.Unlock()
+
+	go s.runDefinitionPublishWorker()
+}
+
+func (s *serviceDiscoveryRegistry) runDefinitionPublishWorker() {
+	for {
+		s.lock.Lock()
+		if s.destroyed || len(s.definitionPublishPending) == 0 {
+			s.definitionPublishPending = nil
+			s.definitionPublishRunning = false
+			s.lock.Unlock()
+			return
+		}
+		urls := s.definitionPublishPending
+		s.definitionPublishPending = nil
+		s.lock.Unlock()
+
 		s.publishServiceDefinitions(urls)
-	})
+	}
+}
+
+// cancelDefinitionPublishLocked drops a full snapshot that has not started.
+// Caller must hold s.lock. An in-flight backend call cannot be interrupted, but
+// the worker observes destroyed and exits without consuming another snapshot.
+func (s *serviceDiscoveryRegistry) cancelDefinitionPublishLocked() {
+	s.definitionPublishPending = nil
 }
 
 // scheduleDefinitionRetry arms the retry timer for one service. One pending
@@ -575,7 +624,7 @@ func (s *serviceDiscoveryRegistry) retryPublishDefinition(key string) {
 		return
 	}
 
-	failed := publishDefinitions(s.metadataReport, []*common.URL{state.url})
+	failed := s.publishServiceDefinitionsNow([]*common.URL{state.url})
 
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -696,7 +745,7 @@ func (s *serviceDiscoveryRegistry) doRenewAppMetadata() {
 	// way to distinguish the garbage. Java relies on exactly this property, via
 	// AbstractMetadataReport's daily publishAll over the same 02:00–06:00
 	// window.
-	s.publishServiceDefinitions(metaInfo.GetExportedServiceURLs())
+	s.scheduleServiceDefinitionPublish(metaInfo.GetExportedServiceURLs())
 }
 
 func (s *serviceDiscoveryRegistry) calculateRenewAppMetadataDelay() time.Duration {

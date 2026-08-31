@@ -37,12 +37,11 @@ import (
 // definition for each exported URL that carries a describable contract, and
 // returns the URLs whose publish failed for a reason worth retrying.
 //
-// No error is returned and nothing here blocks. A provider whose definition did
-// not reach the metadata center is still a working provider — it is only
-// invisible to Admin's console — so a metadata-center outage must not keep
-// instances out of traffic. Java reaches the same outcome by a different route:
-// AbstractMetadataReport defaults sync-report to false and hands the write to an
-// executor, so export never observes the result at all.
+// The backend call is synchronous; registration paths must schedule it outside
+// the instance-registration call. No error is returned upward: a provider whose
+// definition did not reach the metadata center is still a working provider — it
+// is only invisible to Admin's console. Java reaches the same non-fatal outcome
+// by queuing the write when sync-report is false.
 //
 // Only write failures come back. A service that has no describable contract —
 // unregistered, unbuildable, or with no publishable methods — is reported in the

@@ -294,10 +294,10 @@ func TestBuildContainerArity(t *testing.T) {
 		"the value is boxed because Java generics admit only reference types")
 }
 
-func TestBuildUint8WidensSoTheWholeRangeIsCallable(t *testing.T) {
-	// Java's byte is signed, so spelling uint8 as byte would leave 128..255
-	// rejected by a consumer's range check before the call left. []byte and
-	// []uint8 are one type in Go, so the slice follows.
+func TestBuildUint8AndByteSliceUseTheirJavaWireTypes(t *testing.T) {
+	// A scalar uint8 needs Java short to keep 0..255 representable. A byte slice
+	// is different: Hessian writes it as Java byte[]/[B, so the container keeps
+	// that wire identity and realization translates signed bytes back to Go.
 	c := newTypeCollector()
 
 	expr, err := c.resolve(reflect.TypeFor[uint8]())
@@ -306,8 +306,8 @@ func TestBuildUint8WidensSoTheWholeRangeIsCallable(t *testing.T) {
 
 	expr, err = c.resolve(reflect.TypeFor[[]byte]())
 	require.NoError(t, err)
-	assert.Equal(t, "short[]", expr)
-	assert.Equal(t, []string{"short"}, c.defs["short[]"].Items)
+	assert.Equal(t, "byte[]", expr)
+	assert.Equal(t, []string{"byte"}, c.defs["byte[]"].Items)
 }
 
 func TestBuildRejectsUnsigned64(t *testing.T) {
@@ -325,8 +325,8 @@ func TestBuildRejectsUnsigned64(t *testing.T) {
 }
 
 func TestBuildWidensSmallUnsigned(t *testing.T) {
-	// Widening keeps the whole Go range representable; the schema is looser on
-	// the low end, which realization rejects rather than wraps.
+	// Widening keeps the whole Go range representable; realization validates
+	// both bounds of the narrower Go target rather than wrapping.
 	for typ, want := range map[reflect.Type]string{
 		reflect.TypeFor[uint8]():  "short",
 		reflect.TypeFor[uint16](): "int",

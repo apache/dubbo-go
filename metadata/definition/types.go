@@ -118,9 +118,9 @@ var javaWrappers = map[string]string{
 // javaScalarName returns the Java spelling of a Go scalar.
 //
 // Unsigned kinds widen to the next signed type that holds their whole range.
-// The schema is then wider than the Go field on the low end — nothing stops a
-// caller sending -1 for a uint16 — but the provider rejects that during
-// realization, so the failure is a clean error rather than a wrapped value.
+// The Java schema is then wider than the Go value on both sides; generic
+// realization validates the target Go bit width so negative or oversized
+// inputs fail instead of wrapping.
 //
 // uint and uint64 have no such landing spot: their range runs past Java's long.
 // They are refused rather than published under an invented name, which is what
@@ -172,8 +172,7 @@ func javaScalarName(t reflect.Type, nullable bool) (string, error) {
 // typeCollector resolves reflect.Types into type expressions and accumulates a
 // TypeDefinition for every composite type it walks through.
 type typeCollector struct {
-	defs  map[string]*TypeDefinition
-	order []string
+	defs map[string]*TypeDefinition
 }
 
 func newTypeCollector() *typeCollector {
@@ -238,9 +237,14 @@ func (c *typeCollector) resolveAt(t reflect.Type, depth int) (string, error) {
 		//
 		// A Go array's length has no Java counterpart, so [N]T and []T are
 		// spelled the same.
-		return c.resolveContainer(t.Elem(), depth, func(elem string) string {
-			return elem + "[]"
-		})
+		// Go []byte is Hessian binary and Java byte[] regardless of uint8's
+		// scalar spelling. Scalar uint8 widens to short so 0..255 is directly
+		// representable; inside a byte container the wire identity wins, and the
+		// generic realizer preserves Java's signed byte bits on the way back.
+		if t.Elem().Kind() == reflect.Uint8 {
+			return c.recordContainer(javaByte)
+		}
+		return c.resolveContainer(t.Elem(), depth)
 
 	case reflect.Map:
 		if t.Key().Kind() != reflect.String {
@@ -289,14 +293,16 @@ func (c *typeCollector) resolveAt(t reflect.Type, depth int) (string, error) {
 func (c *typeCollector) resolveContainer(
 	elem reflect.Type,
 	depth int,
-	compose func(string) string,
 ) (string, error) {
 	elemExpr, err := c.resolveAt(elem, depth+1)
 	if err != nil {
 		return "", err
 	}
-	expr := compose(elemExpr)
+	return c.recordContainer(elemExpr)
+}
 
+func (c *typeCollector) recordContainer(elemExpr string) (string, error) {
+	expr := elemExpr + "[]"
 	if _, seen := c.defs[expr]; !seen {
 		c.put(expr, &TypeDefinition{Type: expr, Items: []string{elemExpr}})
 	}
@@ -493,7 +499,6 @@ func declaredJavaClassName(t reflect.Type) (name string) {
 
 func (c *typeCollector) put(expr string, def *TypeDefinition) {
 	c.defs[expr] = def
-	c.order = append(c.order, expr)
 }
 
 // merge copies other's definitions into c without overwriting existing entries.
@@ -503,21 +508,15 @@ func (c *typeCollector) put(expr string, def *TypeDefinition) {
 // types already resolved — leaves no orphan entries describing types no
 // published method can reach.
 func (c *typeCollector) merge(other *typeCollector) {
-	for _, expr := range other.order {
+	for expr, def := range other.defs {
 		if _, seen := c.defs[expr]; !seen {
-			c.put(expr, other.defs[expr])
+			c.put(expr, def)
 		}
 	}
 }
 
 func (c *typeCollector) remove(expr string) {
 	delete(c.defs, expr)
-	for i, name := range c.order {
-		if name == expr {
-			c.order = append(c.order[:i], c.order[i+1:]...)
-			break
-		}
-	}
 }
 
 // definitions returns the collected types sorted by expression.

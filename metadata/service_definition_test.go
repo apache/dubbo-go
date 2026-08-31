@@ -277,6 +277,21 @@ func TestPublishEnabledByDefault(t *testing.T) {
 	assert.Len(t, backend.snapshot(), 1)
 }
 
+func TestPublishTargetsOnlyTheRequestedReport(t *testing.T) {
+	first := &capableReport{baseReport: baseReport{url: reportURL(t, nil)}}
+	second := &capableReport{baseReport: baseReport{url: reportURL(t, nil)}}
+	installReports(t, map[string]report.MetadataReport{
+		"registry-a": &DelegateMetadataReport{instance: first},
+		"registry-b": &DelegateMetadataReport{instance: second},
+	})
+	u := exportService(t, constant.DubboProtocol, false)
+
+	PublishServiceDefinitions(GetMetadataReportByRegistry("registry-a"), []*common.URL{u})
+
+	assert.Len(t, first.snapshot(), 1)
+	assert.Empty(t, second.snapshot(), "a registry must never broadcast definitions to another report")
+}
+
 // TestServiceDefinitionsEnabled covers the predicate the daily re-publish uses
 // to decide whether it has anything to do. That pass is what keeps a live
 // contract's timestamp fresh, so scheduling it must not depend on where

@@ -26,7 +26,7 @@
 // (dubbo-common/.../definition/model/), because Admin deserializes both into the
 // same ServiceProviderMetadata structure. Nothing in this package imports Admin
 // code — the compatibility contract is the JSON shape alone, pinned by the
-// golden tests in definition_test.go.
+// golden tests in json_test.go.
 package definition
 
 // ServiceDefinition is the interface-level contract published for one exported
@@ -51,8 +51,8 @@ type ServiceDefinition struct {
 	// differ in size; consumers must not assume they match.
 	Parameters map[string]string `json:"parameters"`
 	// Types holds one entry for every composite type reachable from a method
-	// signature, including pointer/slice/array/map wrappers. See the package
-	// comment on typeCollector for why wrappers get their own entries.
+	// signature, including struct, slice, array and map shapes. Pointers express
+	// nullability and are folded into Java reference/wrapper spellings.
 	Types []TypeDefinition `json:"types"`
 }
 
@@ -89,15 +89,15 @@ type ParameterDefinition struct {
 // TypeDefinition describes one type reachable from a method signature.
 //
 // The three optional fields are mutually exclusive in practice: Properties for
-// structs, Items for pointer/slice/array/map wrappers, Enums for enumerated
+// structs, Items for slice/array/map containers, Enums for enumerated
 // values (never populated by Go, retained for Java JSON compatibility).
 type TypeDefinition struct {
-	// Type is the type expression, in Go's native syntax. It is the key Admin
-	// uses to resolve a ParameterTypes or ReturnType entry, so it must match
-	// those strings byte for byte.
+	// Type is the Java-vocabulary type expression used by the generic runtime.
+	// It is the key Admin uses to resolve a ParameterTypes or ReturnType entry,
+	// so it must match those strings byte for byte.
 	Type string `json:"type"`
-	// Items holds the element type expression for a wrapper type: the pointee
-	// for *T, the element for []T and [N]T, the value type for map[string]T.
+	// Items holds one element type for slices/arrays, or the key and value types
+	// for maps, matching Java TypeDefinition's generic-argument layout.
 	Items []string `json:"items,omitempty"`
 	// Enums is never populated by the Go builder. Go has no enum type that
 	// reflection can enumerate; named integer constants are indistinguishable

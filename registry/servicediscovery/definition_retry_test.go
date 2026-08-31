@@ -66,7 +66,10 @@ func (p *definitionPublishStub) callCount() int {
 
 // installDefinitionPublishStub swaps the publish seam and shrinks the backoff so
 // the retry loop runs in test time rather than minutes.
-func installDefinitionPublishStub(t *testing.T, stub *definitionPublishStub) {
+func installDefinitionPublishFunc(
+	t *testing.T,
+	publish func(report.MetadataReport, []*common.URL) []*common.URL,
+) {
 	t.Helper()
 
 	prevPublish := publishDefinitions
@@ -74,7 +77,7 @@ func installDefinitionPublishStub(t *testing.T, stub *definitionPublishStub) {
 	prevMax := definitionRetryMaxDelay
 	prevAttempts := definitionRetryMaxAttempts
 
-	publishDefinitions = stub.publish
+	publishDefinitions = publish
 	definitionRetryInitialDelay = time.Millisecond
 	definitionRetryMaxDelay = 4 * time.Millisecond
 
@@ -84,6 +87,11 @@ func installDefinitionPublishStub(t *testing.T, stub *definitionPublishStub) {
 		definitionRetryMaxDelay = prevMax
 		definitionRetryMaxAttempts = prevAttempts
 	})
+}
+
+func installDefinitionPublishStub(t *testing.T, stub *definitionPublishStub) {
+	t.Helper()
+	installDefinitionPublishFunc(t, stub.publish)
 }
 
 // newDefinitionRetryRegistry builds a registry and cancels whatever retries it
@@ -101,6 +109,7 @@ func newDefinitionRetryRegistry(t *testing.T) *serviceDiscoveryRegistry {
 		reg.lock.Lock()
 		reg.destroyed = true
 		reg.cancelDefinitionRetriesLocked()
+		reg.cancelDefinitionPublishLocked()
 		reg.lock.Unlock()
 	})
 	return reg
@@ -267,4 +276,189 @@ func TestPublishServiceDefinitionsArmsNoRetryOnSuccess(t *testing.T) {
 
 	assert.Equal(t, 1, stub.callCount())
 	assert.Equal(t, 0, reg.pendingDefinitionRetries())
+}
+
+type serializedDefinitionPublishStub struct {
+	mu           sync.Mutex
+	calls        int
+	active       int
+	maxActive    int
+	reports      []report.MetadataReport
+	batches      [][]*common.URL
+	firstStarted chan struct{}
+	releaseFirst chan struct{}
+	secondDone   chan struct{}
+}
+
+func (p *serializedDefinitionPublishStub) publish(
+	r report.MetadataReport,
+	urls []*common.URL,
+) []*common.URL {
+	p.mu.Lock()
+	p.calls++
+	call := p.calls
+	p.active++
+	if p.active > p.maxActive {
+		p.maxActive = p.active
+	}
+	p.reports = append(p.reports, r)
+	p.batches = append(p.batches, append([]*common.URL(nil), urls...))
+	if call == 1 {
+		close(p.firstStarted)
+	}
+	p.mu.Unlock()
+
+	if call == 1 {
+		<-p.releaseFirst
+	}
+
+	p.mu.Lock()
+	p.active--
+	if call == 2 {
+		close(p.secondDone)
+	}
+	p.mu.Unlock()
+	return nil
+}
+
+func (p *serializedDefinitionPublishStub) snapshot() (
+	calls int,
+	maxActive int,
+	reports []report.MetadataReport,
+	batches [][]*common.URL,
+) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	batches = make([][]*common.URL, len(p.batches))
+	for i := range p.batches {
+		batches[i] = append([]*common.URL(nil), p.batches[i]...)
+	}
+	return p.calls, p.maxActive, append([]report.MetadataReport(nil), p.reports...), batches
+}
+
+func TestDefinitionPublishWorkerSerializesAndCoalesces(t *testing.T) {
+	stub := &serializedDefinitionPublishStub{
+		firstStarted: make(chan struct{}),
+		releaseFirst: make(chan struct{}),
+		secondDone:   make(chan struct{}),
+	}
+	installDefinitionPublishFunc(t, stub.publish)
+
+	reportA := &mockMetadataReportForGC{}
+	reg := newDefinitionRetryRegistry(t)
+	reg.metadataReport = reportA
+	first := definitionTestURL("org.test.First")
+	second := definitionTestURL("org.test.Second")
+	latest := definitionTestURL("org.test.Latest")
+
+	reg.scheduleServiceDefinitionPublish([]*common.URL{first})
+	select {
+	case <-stub.firstStarted:
+	case <-time.After(2 * time.Second):
+		t.Fatal("initial definition publish did not start")
+	}
+
+	// Both calls must return while the first backend write is blocked. The
+	// worker keeps only the latest full snapshot for the next pass.
+	reg.scheduleServiceDefinitionPublish([]*common.URL{second})
+	reg.scheduleServiceDefinitionPublish([]*common.URL{latest})
+	close(stub.releaseFirst)
+
+	select {
+	case <-stub.secondDone:
+	case <-time.After(2 * time.Second):
+		t.Fatal("coalesced definition publish did not run")
+	}
+
+	assert.Eventually(t, func() bool {
+		reg.lock.RLock()
+		defer reg.lock.RUnlock()
+		return !reg.definitionPublishRunning
+	}, 2*time.Second, 5*time.Millisecond)
+
+	calls, maxActive, reports, batches := stub.snapshot()
+	assert.Equal(t, 2, calls)
+	assert.Equal(t, 1, maxActive, "one registry must never write definitions concurrently")
+	assert.Equal(t, []report.MetadataReport{reportA, reportA}, reports)
+	require.Len(t, batches, 2)
+	assert.Equal(t, []*common.URL{first}, batches[0])
+	assert.Equal(t, []*common.URL{latest}, batches[1], "intermediate full snapshots should be coalesced")
+}
+
+func TestDefinitionPublishWorkerDropsPendingWorkOnDestroy(t *testing.T) {
+	stub := &serializedDefinitionPublishStub{
+		firstStarted: make(chan struct{}),
+		releaseFirst: make(chan struct{}),
+		secondDone:   make(chan struct{}),
+	}
+	installDefinitionPublishFunc(t, stub.publish)
+
+	reg := newDefinitionRetryRegistry(t)
+	reg.scheduleServiceDefinitionPublish([]*common.URL{definitionTestURL("org.test.InFlight")})
+	select {
+	case <-stub.firstStarted:
+	case <-time.After(2 * time.Second):
+		t.Fatal("initial definition publish did not start")
+	}
+	reg.scheduleServiceDefinitionPublish([]*common.URL{definitionTestURL("org.test.Pending")})
+
+	reg.lock.Lock()
+	reg.destroyed = true
+	reg.cancelDefinitionPublishLocked()
+	reg.lock.Unlock()
+	close(stub.releaseFirst)
+
+	assert.Eventually(t, func() bool {
+		reg.lock.RLock()
+		defer reg.lock.RUnlock()
+		return !reg.definitionPublishRunning
+	}, 2*time.Second, 5*time.Millisecond)
+	calls, maxActive, _, _ := stub.snapshot()
+	assert.Equal(t, 1, calls, "destroy must discard a full publish that has not started")
+	assert.Equal(t, 1, maxActive)
+}
+
+func TestDefinitionRetrySerializesWithFullPublish(t *testing.T) {
+	stub := &serializedDefinitionPublishStub{
+		firstStarted: make(chan struct{}),
+		releaseFirst: make(chan struct{}),
+		secondDone:   make(chan struct{}),
+	}
+	installDefinitionPublishFunc(t, stub.publish)
+
+	reg := newDefinitionRetryRegistry(t)
+	reg.scheduleServiceDefinitionPublish([]*common.URL{definitionTestURL("org.test.Full")})
+	select {
+	case <-stub.firstStarted:
+	case <-time.After(2 * time.Second):
+		t.Fatal("full definition publish did not start")
+	}
+
+	retryURL := definitionTestURL("org.test.RetryWhileFull")
+	key := retryURL.ServiceKey()
+	reg.lock.Lock()
+	reg.definitionRetries[key] = &definitionRetry{url: retryURL}
+	reg.lock.Unlock()
+	go reg.retryPublishDefinition(key)
+
+	// The retry goroutine may be waiting, but it must not enter the backend
+	// while the full publish is in flight.
+	assert.Eventually(t, func() bool {
+		reg.lock.RLock()
+		defer reg.lock.RUnlock()
+		return reg.definitionRetries[key].inFlight
+	}, 2*time.Second, 5*time.Millisecond)
+	calls, maxActive, _, _ := stub.snapshot()
+	assert.Equal(t, 1, calls)
+	assert.Equal(t, 1, maxActive)
+
+	close(stub.releaseFirst)
+	select {
+	case <-stub.secondDone:
+	case <-time.After(2 * time.Second):
+		t.Fatal("serialized definition retry did not run")
+	}
+	calls, maxActive, _, _ = stub.snapshot()
+	assert.Equal(t, 2, calls)
+	assert.Equal(t, 1, maxActive)
 }
