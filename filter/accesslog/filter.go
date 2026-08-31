@@ -90,28 +90,19 @@ type Filter struct {
 	ctx          context.Context
 	cancel       context.CancelFunc
 	shutdownOnce sync.Once
-	started      chan struct{} // closed once processLogs is running
-	done         chan struct{} // closed once processLogs has exited
 }
 
 func newFilter() filter.Filter {
 	if accessLogFilter == nil {
 		once.Do(func() {
 			ctx, cancel := context.WithCancel(context.Background())
-			f := &Filter{
+			accessLogFilter = &Filter{
 				logChan:   make(chan Data, LogMaxBuffer),
 				fileCache: make(map[string]*os.File),
 				ctx:       ctx,
 				cancel:    cancel,
-				started:   make(chan struct{}),
-				done:      make(chan struct{}),
 			}
-			accessLogFilter = f
-			go func() {
-				close(f.started)
-				f.processLogs()
-				close(f.done)
-			}()
+			go accessLogFilter.processLogs()
 		})
 	}
 	return accessLogFilter
