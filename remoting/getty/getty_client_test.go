@@ -486,13 +486,20 @@ func (m *mockWriteOnlySession) WritePkg(pkg any, _ time.Duration) (int, int, err
 	return 0, 0, nil
 }
 
+func (m *mockWriteOnlySession) IsClosed() bool { return false }
+
+func (m *mockWriteOnlySession) Stat() string { return "mock-session" }
+
+func (m *mockWriteOnlySession) Close() {}
+
 // TestRequestContextReadTimeout is a regression test for the request timeout
 // wait: when no response arrives within the timeout, RequestContext must return
 // errClientReadTimeout.
 func TestRequestContextReadTimeout(t *testing.T) {
 	client := NewClient(Options{RequestTimeout: 30 * time.Millisecond})
 	client.gettyClient = &gettyRPCClient{
-		sessions: []*rpcSession{{session: &mockWriteOnlySession{}}},
+		rpcClient: client,
+		sessions:  []*rpcSession{{session: &mockWriteOnlySession{}}},
 	}
 
 	request := remoting.NewRequest("2.0.2")
