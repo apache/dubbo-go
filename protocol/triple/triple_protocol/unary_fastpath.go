@@ -52,6 +52,13 @@ var (
 // unary hot path. Write accumulates the marshaled payload into a pooled
 // buffer; CloseWrite issues the request synchronously (no io.Pipe, no
 // per-request goroutine).
+//
+// This optimization primarily targets small, CPU-dominated unary requests,
+// roughly in the 128 B to 32 KiB range: the complete request body is
+// buffered before it is submitted to the transport. For large or highly
+// concurrent requests, memory residency and buffer growth may increase, and
+// the performance benefit is not guaranteed. The implementation does not
+// automatically fall back based on payload size.
 type unaryFastPathCall struct {
 	ctx              context.Context
 	httpClient       HTTPClient
