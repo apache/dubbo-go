@@ -18,9 +18,11 @@
 package accesslog
 
 import (
+	"bytes"
 	"context"
 	"os"
 	"runtime"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -45,36 +47,70 @@ func resetGlobalState() {
 	once = sync.Once{}
 }
 
-// TestAccessLogFilterGoroutineShutdown tests that the goroutine is properly shut down
+// TestAccessLogFilterGoroutineShutdown verifies that newFilter starts the
+// processLogs goroutine and that Shutdown terminates it. The start
+// assertion requires the processLogs goroutine to appear in a
+// runtime.Stack snapshot, so a future newFilter that forgets to start the
+// goroutine fails the test. The shutdown assertion tracks that exact
+// goroutine's ID instead of relying on the process-wide goroutine count,
+// which is timing-sensitive under -race: a leftover goroutine from a
+// previous test can be exiting concurrently with a newly started one,
+// canceling out the count change.
 func TestAccessLogFilterGoroutineShutdown(t *testing.T) {
 	resetGlobalState()
-
-	// Count goroutines before
-	initialGoroutines := runtime.NumGoroutine()
 
 	// Create filter (this should start the goroutine)
 	filter := newFilter()
 	assert.NotNil(t, filter)
 
-	// Give the goroutine time to start
-	time.Sleep(100 * time.Millisecond)
-	postCreateGoroutines := runtime.NumGoroutine()
+	// The processLogs goroutine must be running; capture its goroutine ID.
+	var gid int64
+	assert.Eventually(t, func() bool {
+		id, ok := processLogsGoroutineID()
+		if ok {
+			gid = id
+		}
+		return ok
+	}, 30*time.Second, 10*time.Millisecond, "processLogs goroutine did not start")
 
-	// Should have at least one more goroutine
-	assert.Greater(t, postCreateGoroutines, initialGoroutines)
-
-	// Shutdown the filter
+	// Shutdown the filter; that exact goroutine must exit.
 	Shutdown()
+	assert.Eventually(t, func() bool {
+		id, ok := processLogsGoroutineID()
+		return !ok || id != gid
+	}, 30*time.Second, 10*time.Millisecond, "processLogs goroutine did not exit after Shutdown")
+}
 
-	// Give goroutine time to exit
-	time.Sleep(100 * time.Millisecond)
-	runtime.GC() // Force garbage collection
+// processLogsGoroutineID returns the goroutine ID of a running processLogs
+// goroutine found in the runtime.Stack snapshot, and whether one was found.
+func processLogsGoroutineID() (int64, bool) {
+	buf := make([]byte, 64<<10)
+	for {
+		n := runtime.Stack(buf, true)
+		if n < len(buf) {
+			return findProcessLogsGoroutineID(buf[:n])
+		}
+		buf = make([]byte, len(buf)*2)
+	}
+}
 
-	postShutdownGoroutines := runtime.NumGoroutine()
-
-	// Goroutine count should be back to original or less
-	assert.LessOrEqual(t, postShutdownGoroutines, initialGoroutines+1,
-		"Goroutines should be cleaned up after shutdown")
+// findProcessLogsGoroutineID scans the stack snapshot for the processLogs
+// goroutine block and extracts its goroutine ID from the "goroutine <id>"
+// header line.
+func findProcessLogsGoroutineID(stack []byte) (int64, bool) {
+	for block := range bytes.SplitSeq(stack, []byte("\n\n")) {
+		if !bytes.Contains(block, []byte("accesslog.(*Filter).processLogs")) {
+			continue
+		}
+		fields := bytes.Fields(bytes.SplitN(block, []byte("\n"), 2)[0])
+		if len(fields) >= 2 {
+			id, err := strconv.ParseInt(string(fields[1]), 10, 64)
+			if err == nil {
+				return id, true
+			}
+		}
+	}
+	return 0, false
 }
 
 // TestAccessLogFilterFileHandleManagement tests proper file handle management

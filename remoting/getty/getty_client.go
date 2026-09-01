@@ -229,7 +229,7 @@ func (c *Client) RequestContext(ctx context.Context, request *remoting.Request, 
 	if timeout <= 0 {
 		timeout = c.opts.RequestTimeout
 	}
-	_, session, err := c.selectSession(c.addr)
+	rpcClient, session, err := c.selectSession(c.addr)
 	if err != nil {
 		return perrors.WithStack(err)
 	}
@@ -256,6 +256,9 @@ func (c *Client) RequestContext(ctx context.Context, request *remoting.Request, 
 	defer timer.Stop()
 	select {
 	case <-timer.C:
+		remoting.RemovePendingResponse(remoting.SequenceType(request.ID))
+		rpcClient.removeSession(session)
+		go session.Close()
 		return perrors.WithStack(errClientReadTimeout)
 	case <-response.Done:
 		err = response.Err

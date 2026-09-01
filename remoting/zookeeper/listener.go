@@ -56,6 +56,27 @@ type ZkEventListener struct {
 	exit        chan struct{}
 }
 
+// WatchRegistrationResult tells the configuration event loop how to continue
+// after a listener validates a newly registered ZooKeeper watch.
+type WatchRegistrationResult uint8
+
+const (
+	// WatchRegistrationAccepted keeps the watch and processes the current read.
+	WatchRegistrationAccepted WatchRegistrationResult = iota
+	// WatchRegistrationReload re-reads the node without registering another watch.
+	WatchRegistrationReload
+	// WatchRegistrationDiscarded stops processing a stale event.
+	WatchRegistrationDiscarded
+)
+
+// configurationWatchStateListener lets the config center validate watch state
+// while the remoting layer remains responsible for ZooKeeper reads and events.
+type configurationWatchStateListener interface {
+	WatchStateChanged(path string) bool
+	WatchRegistered(path string, events <-chan zk.Event, beforeSessionID, afterSessionID int64) WatchRegistrationResult
+	WatchStateChangeFailed(path string)
+}
+
 // NewZkEventListener returns a EventListener instance
 func NewZkEventListener(client *gxzookeeper.ZookeeperClient) *ZkEventListener {
 	return &ZkEventListener{
@@ -84,51 +105,150 @@ func (l *ZkEventListener) ListenServiceNodeEvent(zkPath string, listener remotin
 func (l *ZkEventListener) ListenConfigurationEvent(zkPath string, listener remoting.DataListener) {
 	l.wg.Add(1)
 	go func(zkPath string, listener remoting.DataListener) {
+		defer l.wg.Done()
 		var eventChan = make(chan zk.Event, 16)
 		l.Client.RegisterEvent(zkPath, eventChan)
+		watchStateListener, tracksWatchState := listener.(configurationWatchStateListener)
 		for {
 			select {
 			case event := <-eventChan:
 				logger.Infof("[Remoting][Zookeeper]Receive configuration change event:%#v", event)
-				if event.Type == zk.EventNodeChildrenChanged || event.Type == zk.EventNotWatching {
-					continue
-				}
-				// 1. Re-set watcher for the zk node
-				_, _, _, err := l.Client.Conn.ExistsW(event.Path)
-				if err != nil {
-					logger.Warnf("[Remoting][Zookeeper]Re-set watcher error, err=%v", err)
-					continue
-				}
-
-				action := remoting.EventTypeAdd
-				var content string
-				if event.Type == zk.EventNodeDeleted {
-					action = remoting.EventTypeDel
-				} else {
-					// 2. Try to get new configuration value of the zk node
-					// Notice: The order of step 1 and step 2 cannot be swapped, if you get value(with timestamp t1)
-					// before re-set the watcher(with timestamp t2), and some one change the data of the zk node after
-					// t2 but before t1, you may get the old value, and the new value will not trigger the event.
-					contentBytes, _, err := l.Client.Conn.Get(event.Path)
-					if err != nil {
-						logger.Warnf("[Remoting][Zookeeper] get config value error, err=%v", err)
-						continue
-					}
-					content = string(contentBytes)
-					logger.Debugf("[Remoting][Zookeeper] successfully get new config value=%s", string(content))
-				}
-
-				listener.DataChange(remoting.Event{
-					Path:    event.Path,
-					Action:  remoting.EventType(action),
-					Content: content,
-				})
+				l.processConfigurationEvent(event, listener, watchStateListener, tracksWatchState)
 			case <-l.exit:
 				return
 			}
 		}
 
 	}(zkPath, listener)
+}
+
+type configurationEventReader struct {
+	exists  func(registerWatch bool) (bool, <-chan zk.Event, int64, int64, error)
+	content func() ([]byte, int64, int64, error)
+}
+
+// processConfigurationEvent renews a one-shot watch when requested before
+// reading the latest value, then lets watch-aware listeners reject results from
+// stale sessions.
+func (l *ZkEventListener) processConfigurationEvent(
+	event zk.Event,
+	listener remoting.DataListener,
+	watchStateListener configurationWatchStateListener,
+	tracksWatchState bool,
+) {
+	reader := configurationEventReader{
+		exists: func(registerWatch bool) (bool, <-chan zk.Event, int64, int64, error) {
+			beforeSessionID := l.Client.Conn.SessionID()
+			var (
+				exists      bool
+				watchEvents <-chan zk.Event
+				err         error
+			)
+			if registerWatch {
+				exists, _, watchEvents, err = l.Client.Conn.ExistsW(event.Path)
+			} else {
+				exists, _, err = l.Client.Conn.Exists(event.Path)
+			}
+			return exists, watchEvents, beforeSessionID, l.Client.Conn.SessionID(), err
+		},
+		content: func() ([]byte, int64, int64, error) {
+			beforeSessionID := l.Client.Conn.SessionID()
+			content, _, err := l.Client.Conn.Get(event.Path)
+			return content, beforeSessionID, l.Client.Conn.SessionID(), err
+		},
+	}
+	processConfigurationEvent(event, listener, watchStateListener, tracksWatchState, reader)
+}
+
+func processConfigurationEvent(
+	event zk.Event,
+	listener remoting.DataListener,
+	watchStateListener configurationWatchStateListener,
+	tracksWatchState bool,
+	reader configurationEventReader,
+) {
+	if event.Type == zk.EventNotWatching || event.Type == zk.EventNodeChildrenChanged {
+		return
+	}
+	registerWatch := true
+	if tracksWatchState {
+		registerWatch = watchStateListener.WatchStateChanged(event.Path)
+	}
+
+	// Re-set the watcher before reading the value so a concurrent update cannot
+	// occur between the read and watch registration.
+	exists, watchEvents, beforeSessionID, afterSessionID, err := reader.exists(registerWatch)
+	if err != nil {
+		if tracksWatchState {
+			watchStateListener.WatchStateChangeFailed(event.Path)
+		}
+		logger.Warnf("[Remoting][Zookeeper]Re-set watcher error, err=%v", err)
+		return
+	}
+	if tracksWatchState && registerWatch {
+		registrationResult := watchStateListener.WatchRegistered(
+			event.Path, watchEvents, beforeSessionID, afterSessionID,
+		)
+		if registrationResult == WatchRegistrationDiscarded {
+			return
+		}
+		if registrationResult == WatchRegistrationAccepted &&
+			!sessionStable(beforeSessionID, afterSessionID) {
+			watchStateListener.WatchStateChangeFailed(event.Path)
+			return
+		}
+		if registrationResult == WatchRegistrationReload {
+			exists, _, beforeSessionID, afterSessionID, err = reader.exists(false)
+			if err != nil {
+				watchStateListener.WatchStateChangeFailed(event.Path)
+				logger.Warnf("[Remoting][Zookeeper] reload config existence error, err=%v", err)
+				return
+			}
+			if !sessionStable(beforeSessionID, afterSessionID) {
+				watchStateListener.WatchStateChangeFailed(event.Path)
+				return
+			}
+		}
+	}
+	if !tracksWatchState || !registerWatch {
+		if !sessionStable(beforeSessionID, afterSessionID) {
+			if tracksWatchState {
+				watchStateListener.WatchStateChangeFailed(event.Path)
+			}
+			return
+		}
+	}
+
+	action := remoting.EventTypeDel
+	var content string
+	if exists {
+		action = remoting.EventTypeAdd
+		contentBytes, beforeSessionID, afterSessionID, err := reader.content()
+		if err != nil {
+			if tracksWatchState {
+				watchStateListener.WatchStateChangeFailed(event.Path)
+			}
+			logger.Warnf("[Remoting][Zookeeper] get config value error, err=%v", err)
+			return
+		}
+		if !sessionStable(beforeSessionID, afterSessionID) {
+			if tracksWatchState {
+				watchStateListener.WatchStateChangeFailed(event.Path)
+			}
+			return
+		}
+		content = string(contentBytes)
+		logger.Debugf("[Remoting][Zookeeper] successfully get new config value=%s", content)
+	}
+
+	listener.DataChange(remoting.Event{Path: event.Path, Action: action, Content: content})
+}
+
+// sessionStable reports whether a ZooKeeper operation completed in the session
+// in which it started. A zero pair represents a reader without session data.
+func sessionStable(beforeSessionID, afterSessionID int64) bool {
+	return (beforeSessionID == 0 && afterSessionID == 0) ||
+		(beforeSessionID != 0 && beforeSessionID == afterSessionID)
 }
 
 // listenServiceNodeEvent watches a single zk node and reports changes via listener.
