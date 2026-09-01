@@ -48,6 +48,32 @@ jobs:
       - name: Setup Go
         uses: ./.github/actions/setup-go
 
+      - name: Setup Java for ZooKeeper tests
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+
+      - name: Prepare ZooKeeper test dependency
+        run: |
+          set -euo pipefail
+
+          go mod download github.com/dubbogo/gost
+
+          gost_dir="$(go list -m -f '{{.Dir}}' github.com/dubbogo/gost)"
+          jar_path="$(find "$gost_dir/database/kv/zk" \
+            -type f \
+            -path '*/contrib/fatjar/zookeeper-*-fatjar.jar' \
+            -print -quit)"
+
+          test -n "$jar_path"
+          java -version
+
+          zk_path="${jar_path%/contrib/fatjar/*}"
+          test -f "$jar_path"
+
+          echo "ZOOKEEPER_PATH=$zk_path" >> "$GITHUB_ENV"
+
       - name: Run unit tests
         run: make test
 
