@@ -46,17 +46,33 @@ type Http3Config struct {
 
 	// MaxIncomingUniStreams defines the maximum number of concurrent unidirectional streams accepted by server and client.
 	MaxIncomingUniStreams int64 `yaml:"max-incoming-uni-streams" json:"max-incoming-uni-streams,omitempty"`
+	// InitialStreamReceiveWindow defines the initial stream-level flow control receive window.
+	// Size strings such as "512KiB" and "6MiB" are supported.
+	InitialStreamReceiveWindow string `yaml:"initial-stream-receive-window" json:"initial-stream-receive-window,omitempty"`
+	// MaxStreamReceiveWindow defines the maximum stream-level flow control receive window.
+	// Size strings such as "512KiB" and "6MiB" are supported.
+	MaxStreamReceiveWindow string `yaml:"max-stream-receive-window" json:"max-stream-receive-window,omitempty"`
+	// InitialConnectionReceiveWindow defines the initial connection-level flow control receive window.
+	// Size strings such as "512KiB" and "15MiB" are supported.
+	InitialConnectionReceiveWindow string `yaml:"initial-connection-receive-window" json:"initial-connection-receive-window,omitempty"`
+	// MaxConnectionReceiveWindow defines the maximum connection-level flow control receive window.
+	// Size strings such as "512KiB" and "15MiB" are supported.
+	MaxConnectionReceiveWindow string `yaml:"max-connection-receive-window" json:"max-connection-receive-window,omitempty"`
 }
 
 // DefaultHttp3Config returns a default Http3Config instance.
 func DefaultHttp3Config() *Http3Config {
 	return &Http3Config{
-		Enable:                false,
-		Negotiation:           true,
-		KeepAlivePeriod:       "",
-		MaxIdleTimeout:        "",
-		MaxIncomingStreams:    0,
-		MaxIncomingUniStreams: 0,
+		Enable:                         false,
+		Negotiation:                    true,
+		KeepAlivePeriod:                "",
+		MaxIdleTimeout:                 "",
+		MaxIncomingStreams:             0,
+		MaxIncomingUniStreams:          0,
+		InitialStreamReceiveWindow:     "",
+		MaxStreamReceiveWindow:         "",
+		InitialConnectionReceiveWindow: "",
+		MaxConnectionReceiveWindow:     "",
 	}
 }
 
@@ -67,11 +83,15 @@ func (t *Http3Config) Clone() *Http3Config {
 	}
 
 	return &Http3Config{
-		Enable:                t.Enable,
-		Negotiation:           t.Negotiation,
-		KeepAlivePeriod:       t.KeepAlivePeriod,
-		MaxIdleTimeout:        t.MaxIdleTimeout,
-		MaxIncomingStreams:    t.MaxIncomingStreams,
-		MaxIncomingUniStreams: t.MaxIncomingUniStreams,
+		Enable:                         t.Enable,
+		Negotiation:                    t.Negotiation,
+		KeepAlivePeriod:                t.KeepAlivePeriod,
+		MaxIdleTimeout:                 t.MaxIdleTimeout,
+		MaxIncomingStreams:             t.MaxIncomingStreams,
+		MaxIncomingUniStreams:          t.MaxIncomingUniStreams,
+		InitialStreamReceiveWindow:     t.InitialStreamReceiveWindow,
+		MaxStreamReceiveWindow:         t.MaxStreamReceiveWindow,
+		InitialConnectionReceiveWindow: t.InitialConnectionReceiveWindow,
+		MaxConnectionReceiveWindow:     t.MaxConnectionReceiveWindow,
 	}
 }
