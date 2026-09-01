@@ -22,14 +22,11 @@ import (
 )
 
 import (
-	"go.uber.org/atomic"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router"
 	"dubbo.apache.org/dubbo-go/v3/cluster/router/chain"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/dubboutil/atomic"
 )
 
 // Directory Abstract implementation of Directory: Invoker list returned from this Directory's list method have been filtered by Routers

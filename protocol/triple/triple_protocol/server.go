@@ -32,8 +32,6 @@ import (
 
 	"github.com/quic-go/quic-go/http3"
 
-	uatomic "go.uber.org/atomic"
-
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 
@@ -43,6 +41,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	uatomic "dubbo.apache.org/dubbo-go/v3/common/dubboutil/atomic"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/http3config"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/openapi"

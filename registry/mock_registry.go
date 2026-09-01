@@ -25,12 +25,11 @@ import (
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-
-	"go.uber.org/atomic"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/dubboutil/atomic"
 )
 
 // MockRegistry is used as mock registry

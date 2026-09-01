@@ -22,11 +22,8 @@ import (
 	"net"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
-)
-
-import (
-	"go.uber.org/atomic"
 )
 
 import (
@@ -105,8 +102,8 @@ func (t *TelnetClient) ProcessRequests(userPkg any) {
 func (t *TelnetClient) addPendingResponse(model any) uint64 {
 	seqId := t.sequence.Load()
 	t.pendingResponses.Store(seqId, model)
-	t.waitNum.Inc()
-	t.sequence.Inc()
+	t.waitNum.Add(1)
+	t.sequence.Add(1)
 	return seqId
 }
 
@@ -117,7 +114,7 @@ func (t *TelnetClient) removePendingResponse(seq uint64) {
 	}
 	if _, ok := t.pendingResponses.Load(seq); ok {
 		t.pendingResponses.Delete(seq)
-		t.waitNum.Dec()
+		t.waitNum.Add(^uint64(0))
 	}
 }
 
@@ -161,7 +158,7 @@ func (t *TelnetClient) processSingleRequest(req *protocol.Request, userPkg any) 
 			t.removePendingResponse(seqId)
 			log.Printf("After %dms , Got Rsp:", time.Since(startTime).Milliseconds())
 			common.PrintInterface(rspPkg)
-			if t.waitNum.Sub(0) == 0 {
+			if t.waitNum.Load() == 0 {
 				return
 			}
 		}

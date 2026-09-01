@@ -32,8 +32,6 @@ import (
 
 	perrors "github.com/pkg/errors"
 
-	"go.uber.org/atomic"
-
 	"go.yaml.in/yaml/v4"
 )
 
@@ -41,6 +39,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/dubboutil/atomic"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"

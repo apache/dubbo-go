@@ -33,13 +33,12 @@ import (
 	"github.com/go-zookeeper/zk"
 
 	perrors "github.com/pkg/errors"
-
-	uatomic "go.uber.org/atomic"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	uatomic "dubbo.apache.org/dubbo-go/v3/common/dubboutil/atomic"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
