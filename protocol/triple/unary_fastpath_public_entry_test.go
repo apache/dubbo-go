@@ -63,7 +63,9 @@ func TestCallUnaryFastPathWireSignature(t *testing.T) {
 		wantPositive bool
 	}{
 		{"default-on", nil, true},
-		{"explicitly-off", &global.TripleConfig{UnaryFastPath: false}, false},
+		{"explicitly-on", &global.TripleConfig{UnaryFastPath: boolPtr(true)}, true},
+		{"explicitly-off", &global.TripleConfig{UnaryFastPath: boolPtr(false)}, false},
+		{"unset-keeps-default", &global.TripleConfig{KeepAliveInterval: "10s"}, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var (
@@ -196,7 +198,7 @@ func TestCallUnaryFastPathErrorPaths(t *testing.T) {
 				tripleConf *global.TripleConfig
 			}{
 				{"fastpath", nil},
-				{"duplex", &global.TripleConfig{UnaryFastPath: false}},
+				{"duplex", &global.TripleConfig{UnaryFastPath: boolPtr(false)}},
 			} {
 				t.Run(cfg.name, func(t *testing.T) {
 					pingHandler := tri.NewUnaryHandler(
@@ -249,4 +251,10 @@ func TestCallUnaryFastPathErrorPaths(t *testing.T) {
 			}
 		})
 	}
+}
+
+// boolPtr returns a pointer to v, mirroring the *bool config field style used
+// across the global config structs.
+func boolPtr(v bool) *bool {
+	return &v
 }
