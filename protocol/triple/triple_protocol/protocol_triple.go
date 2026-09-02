@@ -264,27 +264,34 @@ func (c *tripleClient) NewConn(
 			} // else effectively unbounded
 		}
 	}
-	duplexCall := newDuplexHTTPCall(ctx, c.HTTPClient, c.URL, spec, header)
+	var call unaryClientCall
+	if spec.StreamType == StreamTypeUnary && c.UnaryFastPath {
+		// Unary fast path: no io.Pipe, no per-request goroutine. Streaming
+		// calls always keep using duplexHTTPCall.
+		call = newUnaryFastPathCall(ctx, c.HTTPClient, c.URL, spec, header, c.BufferPool)
+	} else {
+		call = newDuplexHTTPCall(ctx, c.HTTPClient, c.URL, spec, header)
+	}
 	unaryConn := &tripleUnaryClientConn{
 		spec:             spec,
 		peer:             c.Peer(),
-		duplexCall:       duplexCall,
+		call:             call,
 		compressionPools: c.CompressionPools,
 		bufferPool:       c.BufferPool,
 		marshaler: tripleUnaryRequestMarshaler{
 			tripleUnaryMarshaler: tripleUnaryMarshaler{
-				writer:           duplexCall,
+				writer:           call,
 				codec:            c.Codec,
 				compressMinBytes: c.CompressMinBytes,
 				compressionName:  c.CompressionName,
 				compressionPool:  c.CompressionPools.Get(c.CompressionName),
 				bufferPool:       c.BufferPool,
-				header:           duplexCall.Header(),
+				header:           call.Header(),
 				sendMaxBytes:     c.SendMaxBytes,
 			},
 		},
 		unmarshaler: tripleUnaryUnmarshaler{
-			reader:       duplexCall,
+			reader:       call,
 			codec:        c.Codec,
 			bufferPool:   c.BufferPool,
 			readMaxBytes: c.ReadMaxBytes,
@@ -292,14 +299,14 @@ func (c *tripleClient) NewConn(
 		responseHeader:  make(http.Header),
 		responseTrailer: make(http.Header),
 	}
-	duplexCall.SetValidateResponse(unaryConn.validateResponse)
+	call.SetValidateResponse(unaryConn.validateResponse)
 	return wrapClientConnWithCodedErrors(unaryConn)
 }
 
 type tripleUnaryClientConn struct {
 	spec             Spec
 	peer             Peer
-	duplexCall       *duplexHTTPCall
+	call             unaryClientCall
 	compressionPools readOnlyCompressionPools
 	bufferPool       *bufferPool
 	marshaler        tripleUnaryRequestMarshaler
@@ -324,15 +331,15 @@ func (cc *tripleUnaryClientConn) Send(msg any) error {
 }
 
 func (cc *tripleUnaryClientConn) RequestHeader() http.Header {
-	return cc.duplexCall.Header()
+	return cc.call.Header()
 }
 
 func (cc *tripleUnaryClientConn) CloseRequest() error {
-	return cc.duplexCall.CloseWrite()
+	return cc.call.CloseWrite()
 }
 
 func (cc *tripleUnaryClientConn) Receive(msg any) error {
-	cc.duplexCall.BlockUntilResponseReady()
+	cc.call.BlockUntilResponseReady()
 	if err := cc.unmarshaler.Unmarshal(msg); err != nil {
 		return err
 	}
@@ -340,17 +347,17 @@ func (cc *tripleUnaryClientConn) Receive(msg any) error {
 }
 
 func (cc *tripleUnaryClientConn) ResponseHeader() http.Header {
-	cc.duplexCall.BlockUntilResponseReady()
+	cc.call.BlockUntilResponseReady()
 	return cc.responseHeader
 }
 
 func (cc *tripleUnaryClientConn) ResponseTrailer() http.Header {
-	cc.duplexCall.BlockUntilResponseReady()
+	cc.call.BlockUntilResponseReady()
 	return cc.responseTrailer
 }
 
 func (cc *tripleUnaryClientConn) CloseResponse() error {
-	return cc.duplexCall.CloseRead()
+	return cc.call.CloseRead()
 }
 
 func (cc *tripleUnaryClientConn) validateResponse(response *http.Response) *Error {
