@@ -145,7 +145,8 @@ func (s *serviceDiscoveryRegistry) RegisterService() error {
 
 	if metadata.GetMetadataType() == constant.RemoteMetadataStorageType {
 		if s.metadataReport == nil {
-			return errors.New("can not publish app metadata cause report instance not found")
+			return fmt.Errorf("metadata_report failed: operation=publish app=%s revision=%s registry_id=%s storage_type=%s: no metadata report instance found",
+				metaInfo.App, metaInfo.Revision, registryId, constant.RemoteMetadataStorageType)
 		}
 		if err := s.metadataReport.PublishAppMetadata(metaInfo.App, metaInfo.Revision, metaInfo); err != nil {
 			return err
@@ -306,7 +307,8 @@ func (s *serviceDiscoveryRegistry) syncExportedMetadataAfterUnregister(targetURL
 	}
 	if metadata.GetMetadataType() == constant.RemoteMetadataStorageType {
 		if s.metadataReport == nil {
-			return errors.New("can not publish app metadata cause report instance not found")
+			return fmt.Errorf("metadata_report failed: operation=publish app=%s revision=%s registry_id=%s storage_type=%s: no metadata report instance found",
+				metadataInfo.App, revision, registryId, constant.RemoteMetadataStorageType)
 		}
 		if err := s.metadataReport.PublishAppMetadata(metadataInfo.App, revision, metadataInfo); err != nil {
 			return err

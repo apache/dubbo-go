@@ -329,7 +329,13 @@ func TestServiceDiscoveryRegistryRegisterNilReportReturnsError(t *testing.T) {
 
 	err = sdReg.RegisterService()
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "report instance not found")
+	assert.Contains(t, err.Error(), "metadata_report failed:")
+	assert.Contains(t, err.Error(), "operation=publish")
+	assert.Contains(t, err.Error(), "app="+testApp)
+	assert.Contains(t, err.Error(), "revision=")
+	assert.Contains(t, err.Error(), "registry_id="+regID)
+	assert.Contains(t, err.Error(), "storage_type=remote")
+	assert.Contains(t, err.Error(), "no metadata report instance found")
 	assert.False(t, mockSD.registerCalled, "no instance should be registered when the metadata report is nil")
 }
 
