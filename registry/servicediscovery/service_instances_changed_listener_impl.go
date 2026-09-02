@@ -20,6 +20,7 @@ package servicediscovery
 import (
 	"context"
 	"encoding/gob"
+	"fmt"
 	"maps"
 	"math/rand/v2"
 	"reflect"
@@ -31,8 +32,6 @@ import (
 	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/gof/observer"
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -40,6 +39,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
+	"dubbo.apache.org/dubbo-go/v3/metrics"
+	metricsMetadata "dubbo.apache.org/dubbo-go/v3/metrics/metadata"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/registry/servicediscovery/store"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
@@ -128,7 +129,7 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 	lstn.mutex.Unlock()
 
 	if !lstn.refreshServiceURLs() {
-		return perrors.Errorf("metadata unresolved for some revisions of service=%s, retry is scheduled", ce.ServiceName)
+		return fmt.Errorf("metadata unresolved for some revisions of service=%s, retry is scheduled", ce.ServiceName)
 	}
 	return nil
 }
@@ -384,21 +385,59 @@ func GetMetadataInfoWithContext(ctx context.Context, app string, instance regist
 	})
 	cacheKey := metadataCacheKey(app, registryId, revision)
 	if metadataInfo, ok := metaCache.Get(cacheKey); ok {
+		logger.Debugf("[Metadata][Cache] app=%s registry=%s revision=%s host=%s result=hit",
+			app, registryId, revision, instance.GetHost())
+		publishMetadataCacheEvent(app, true)
+		publishMetadataFetchEvent(app, metricsMetadata.SourceCache, "", nil)
 		return metadataInfo.(*info.MetadataInfo), nil
 	}
+	logger.Debugf("[Metadata][Cache] app=%s registry=%s revision=%s host=%s result=miss",
+		app, registryId, revision, instance.GetHost())
+	publishMetadataCacheEvent(app, false)
 
 	var metadataInfo *info.MetadataInfo
+	var metricStorageType string
+	var storageType string
+	var source string
 	var err error
-	if getMetadataStorageType(instance) == constant.RemoteMetadataStorageType {
-		metadataInfo, err = getRemoteMetadataInfo(ctx, app, instance, revision, registryId)
+
+	storageType = getMetadataStorageType(instance)
+	metricStorageType = metricsMetadata.StorageTypeLocal
+
+	if storageType == constant.RemoteMetadataStorageType {
+		metricStorageType = metricsMetadata.StorageTypeRemote
+		metadataInfo, source, err = getRemoteMetadataInfo(ctx, app, instance, revision, registryId)
 	} else {
-		metadataInfo, err = getMetadataInfoFromRPC(ctx, app, instance, revision, registryId)
+		metadataInfo, source, err = getMetadataInfoFromRPC(ctx, app, instance, revision, registryId)
 	}
 	if err != nil {
+		publishMetadataFetchEvent(app, source, metricStorageType, err)
 		return nil, err
 	}
 	metaCache.Set(cacheKey, metadataInfo)
+	publishMetadataFetchEvent(app, source, metricStorageType, nil)
 	return metadataInfo, nil
+}
+
+func publishMetadataCacheEvent(app string, hit bool) {
+	event := metricsMetadata.NewMetadataMetricTimeEvent(metricsMetadata.MetadataCache)
+	event.Succ = hit
+	event.Attachment[metricsMetadata.TagProviderApp] = app
+	metrics.Publish(event)
+}
+
+func publishMetadataFetchEvent(app, source, storageType string, err error) {
+	event := metricsMetadata.NewMetadataMetricTimeEvent(metricsMetadata.MetadataFetch)
+	event.Succ = err == nil
+	event.Attachment[metricsMetadata.TagProviderApp] = app
+	event.Attachment[metricsMetadata.TagSource] = source
+	event.Attachment[metricsMetadata.TagStorageType] = storageType
+	if err == nil {
+		event.Attachment[metricsMetadata.TagResult] = metricsMetadata.ResultSuccess
+	} else {
+		event.Attachment[metricsMetadata.TagResult] = metricsMetadata.ResultFailure
+	}
+	metrics.Publish(event)
 }
 
 var (
@@ -509,27 +548,28 @@ func getMetadataStorageType(instance registry.ServiceInstance) string {
 	return storageType
 }
 
-func getMetadataInfoFromRPC(ctx context.Context, app string, instance registry.ServiceInstance, revision string, registryId string) (*info.MetadataInfo, error) {
+func getMetadataInfoFromRPC(ctx context.Context, app string, instance registry.ServiceInstance, revision string, registryId string) (*info.MetadataInfo, string, error) {
 	metadataInfo, err := metadata.GetMetadataFromRpcWithContext(ctx, revision, instance)
 	if err != nil {
-		return nil, perrors.Wrapf(err,
-			"failed app=%s registry=%s revision=%s", app, registryId, revision)
+		return nil, metricsMetadata.SourceRpc, fmt.Errorf("failed app=%s registry=%s revision=%s: %w", app, registryId, revision, err)
 	}
-	return requireMetadataInfo(metadataInfo, app, registryId, revision)
+	metadataInfo, err = requireMetadataInfo(metadataInfo, app, registryId, revision)
+	return metadataInfo, metricsMetadata.SourceRpc, err
 }
 
-func getRemoteMetadataInfo(ctx context.Context, app string, instance registry.ServiceInstance, revision string, registryId string) (*info.MetadataInfo, error) {
+func getRemoteMetadataInfo(ctx context.Context, app string, instance registry.ServiceInstance, revision string, registryId string) (*info.MetadataInfo, string, error) {
 	metadataInfo, reportErr := metadata.GetMetadataFromMetadataReport(revision, instance, registryId)
 	if reportErr == nil && metadataInfo != nil {
-		return metadataInfo, nil
+		return metadataInfo, metricsMetadata.SourceReport, nil
 	}
 	logMetadataReportFallback(app, registryId, revision, reportErr)
 
 	metadataInfo, rpcErr := metadata.GetMetadataFromRpcWithContext(ctx, revision, instance)
 	if rpcErr != nil {
-		return nil, wrapMetadataRPCFallbackError(rpcErr, reportErr)
+		return nil, metricsMetadata.SourceRpc, wrapMetadataRPCFallbackError(rpcErr, reportErr)
 	}
-	return requireMetadataInfo(metadataInfo, app, registryId, revision)
+	metadataInfo, rpcErr = requireMetadataInfo(metadataInfo, app, registryId, revision)
+	return metadataInfo, metricsMetadata.SourceRpc, rpcErr
 }
 
 func logMetadataReportFallback(app, registryId, revision string, reportErr error) {
@@ -546,14 +586,14 @@ func wrapMetadataRPCFallbackError(rpcErr, reportErr error) error {
 	if reportErr != nil {
 		// Wrap rpcErr so callers can use errors.Is/As on the primary failure;
 		// reportErr is annotated as context since it triggered the fallback.
-		return perrors.Wrapf(rpcErr, "both paths failed, reportErr: %v", reportErr)
+		return fmt.Errorf("both paths failed, reportErr: %v: %w", reportErr, rpcErr)
 	}
-	return perrors.Wrapf(rpcErr, "RPC fallback failed after report returned nil metadata")
+	return fmt.Errorf("RPC fallback failed after report returned nil metadata: %w", rpcErr)
 }
 
 func requireMetadataInfo(metadataInfo *info.MetadataInfo, app, registryId, revision string) (*info.MetadataInfo, error) {
 	if metadataInfo == nil {
-		return nil, perrors.Errorf("got nil metadata from RPC app=%s registry=%s revision=%s",
+		return nil, fmt.Errorf("got nil metadata from RPC app=%s registry=%s revision=%s",
 			app, registryId, revision)
 	}
 	return metadataInfo, nil

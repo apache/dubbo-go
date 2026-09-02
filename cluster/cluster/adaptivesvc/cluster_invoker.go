@@ -19,13 +19,12 @@ package adaptivesvc
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -58,7 +57,7 @@ func (ivk *adaptiveServiceClusterInvoker) Invoke(ctx context.Context, invocation
 	// get loadBalance
 	lbKey := invokers[0].GetURL().GetParam(constant.LoadbalanceKey, constant.LoadBalanceKeyP2C)
 	if lbKey != constant.LoadBalanceKeyP2C {
-		return &result.RPCResult{Err: perrors.Errorf("adaptive service not supports %s load balance", lbKey)}
+		return &result.RPCResult{Err: fmt.Errorf("adaptive service not supports %s load balance", lbKey)}
 	}
 	lb := extension.GetLoadbalance(lbKey)
 

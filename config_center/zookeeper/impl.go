@@ -24,6 +24,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 import (
@@ -45,7 +46,10 @@ import (
 )
 
 const (
-	pathSeparator = "/"
+	pathSeparator         = "/"
+	defaultConfigCacheTTL = 30 * time.Second
+	minConfigCacheTTL     = time.Second
+	maxConfigCacheTTL     = 10 * time.Minute
 )
 
 type zookeeperDynamicConfiguration struct {
@@ -60,6 +64,7 @@ type zookeeperDynamicConfiguration struct {
 	// listenerLock  sync.Mutex
 	listener      *zookeeper.ZkEventListener
 	cacheListener *CacheListener
+	cache         configCache
 	parser        parser.ConfigurationParser
 
 	base64Enabled bool
@@ -67,20 +72,25 @@ type zookeeperDynamicConfiguration struct {
 
 func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfiguration, error) {
 	rootPath := url.GetParam(constant.ConfigRootPathParamKey, "/dubbo/config")
+	cacheTTL, err := parseConfigCacheTTL(url.GetParam(constant.ConfigCacheTTLKey, ""))
+	if err != nil {
+		return nil, err
+	}
 	c := &zookeeperDynamicConfiguration{
 		url:      url,
 		rootPath: rootPath,
+		cache:    newConfigCache(cacheTTL),
 	}
 	logger.Infof("[ConfigCenter][Zookeeper] new Zookeeper ConfigCenter with Configuration, zkConfig=%v url=%v", c, c.GetURL())
 	if v := url.GetParam("base64", ""); v != "" {
-		base64Enabled, err := strconv.ParseBool(v)
-		if err != nil {
-			panic("value of base64 must be bool, error=" + err.Error())
+		base64Enabled, parseErr := strconv.ParseBool(v)
+		if parseErr != nil {
+			panic("value of base64 must be bool, error=" + parseErr.Error())
 		}
 		c.base64Enabled = base64Enabled
 	}
 
-	err := zookeeper.ValidateZookeeperClient(c, url.Location)
+	err = zookeeper.ValidateZookeeperClient(c, url.Location)
 	if err != nil {
 		logger.Errorf("[ConfigCenter][Zookeeper] zookeeper client start error, err=%v", err)
 		return nil, err
@@ -96,16 +106,14 @@ func newZookeeperDynamicConfiguration(url *common.URL) (*zookeeperDynamicConfigu
 
 	// Start listener
 	c.listener = zookeeper.NewZkEventListener(c.client)
-	c.cacheListener = NewCacheListener(c.rootPath, c.listener)
+	c.cacheListener = newCacheListener(c.rootPath, c.listener, &c.cache)
 	c.listener.ListenConfigurationEvent(c.rootPath, c.cacheListener)
 	return c, nil
 }
 
 // AddListener add listener for key
-// TODO this method should has a parameter 'group', and it does not now, so we should concat group and key with '/' manually
 func (c *zookeeperDynamicConfiguration) AddListener(key string, listener config_center.ConfigurationListener, options ...config_center.Option) {
-	key = strings.Join([]string{c.GetURL().GetParam(constant.ConfigNamespaceKey, config_center.DefaultGroup), key}, "/")
-	qualifiedKey := buildPath(c.rootPath, key)
+	qualifiedKey := c.getPropertiesPath(key, options...)
 	c.cacheListener.AddListener(qualifiedKey, listener)
 }
 
@@ -119,11 +127,34 @@ func buildPath(rootPath, subPath string) string {
 	return path.Clean(fullPath)
 }
 
-func (c *zookeeperDynamicConfiguration) RemoveListener(key string, listener config_center.ConfigurationListener, opions ...config_center.Option) {
-	c.cacheListener.RemoveListener(key, listener)
+func (c *zookeeperDynamicConfiguration) RemoveListener(key string, listener config_center.ConfigurationListener, options ...config_center.Option) {
+	qualifiedKey := c.getPropertiesPath(key, options...)
+	c.cacheListener.RemoveListener(qualifiedKey, listener)
 }
 
 func (c *zookeeperDynamicConfiguration) GetProperties(key string, opts ...config_center.Option) (string, error) {
+	path := c.getPropertiesPath(key, opts...)
+	entry, err := c.cache.load(path, func(registerWatch bool) (configCacheEntry, watchRegistration, error) {
+		return c.loadProperties(path, registerWatch)
+	})
+	if err != nil {
+		return "", err
+	}
+	if !entry.exists {
+		return "", nil
+	}
+	if !c.base64Enabled {
+		return entry.content, nil
+	}
+
+	decoded, err := base64.StdEncoding.DecodeString(entry.content)
+	if err != nil {
+		return "", perrors.WithStack(err)
+	}
+	return string(decoded), nil
+}
+
+func (c *zookeeperDynamicConfiguration) getPropertiesPath(key string, opts ...config_center.Option) string {
 	tmpOpts := config_center.NewOptions(opts...)
 	/**
 	 * when group is not null, we are getting startup configs from Config Center, for example:
@@ -134,23 +165,88 @@ func (c *zookeeperDynamicConfiguration) GetProperties(key string, opts ...config
 	} else {
 		key = c.GetURL().GetParam(constant.ConfigNamespaceKey, config_center.DefaultGroup) + "/" + key
 	}
-	content, _, err := c.client.GetContent(c.rootPath + "/" + key)
-	if errors.Is(err, zk.ErrNoNode) {
-		logger.Warnf("[ConfigCenter][Zookeeper] query rule fail, key=%s err=%v", key, err)
-		return "", nil
-	}
-	if err != nil {
-		return "", perrors.WithStack(err)
-	}
-	if !c.base64Enabled {
-		return string(content), nil
+	return buildPath(c.rootPath, key)
+}
+
+func (c *zookeeperDynamicConfiguration) loadProperties(path string, registerWatch bool) (configCacheEntry, watchRegistration, error) {
+	if !c.cache.enabled() || !registerWatch {
+		beforeSessionID := c.client.Conn.SessionID()
+		content, _, err := c.client.GetContent(path)
+		afterSessionID := c.client.Conn.SessionID()
+		registration := watchRegistration{
+			beforeSessionID: beforeSessionID,
+			afterSessionID:  afterSessionID,
+		}
+		if errors.Is(err, zk.ErrNoNode) {
+			logger.Warnf("[ConfigCenter][Zookeeper] query rule fail, key=%s err=%v", path, err)
+			return configCacheEntry{exists: false}, registration, nil
+		}
+		if err != nil {
+			return configCacheEntry{}, registration, perrors.WithStack(err)
+		}
+		return configCacheEntry{content: string(content), exists: true}, registration, nil
 	}
 
-	decoded, err := base64.StdEncoding.DecodeString(string(content))
-	if err != nil {
-		return "", perrors.WithStack(err)
+	for {
+		beforeSessionID := c.client.Conn.SessionID()
+		content, _, events, err := c.client.Conn.GetW(path)
+		registration := watchRegistration{
+			events:          events,
+			beforeSessionID: beforeSessionID,
+			afterSessionID:  c.client.Conn.SessionID(),
+		}
+		if err == nil {
+			return configCacheEntry{content: string(content), exists: true}, registration, nil
+		}
+		if !errors.Is(err, zk.ErrNoNode) {
+			return configCacheEntry{}, watchRegistration{}, perrors.WithStack(err)
+		}
+
+		beforeSessionID = c.client.Conn.SessionID()
+		exists, _, events, watchErr := c.client.Conn.ExistsW(path)
+		registration = watchRegistration{
+			events:          events,
+			beforeSessionID: beforeSessionID,
+			afterSessionID:  c.client.Conn.SessionID(),
+		}
+		if watchErr != nil {
+			return configCacheEntry{}, watchRegistration{}, perrors.WithStack(watchErr)
+		}
+		if !exists {
+			logger.Warnf("[ConfigCenter][Zookeeper] query rule fail, key=%s err=%v", path, err)
+			return configCacheEntry{exists: false}, registration, nil
+		}
+
+		readBeforeSessionID := c.client.Conn.SessionID()
+		content, _, getErr := c.client.Conn.Get(path)
+		readAfterSessionID := c.client.Conn.SessionID()
+		registration.readBeforeSessionID = readBeforeSessionID
+		registration.readAfterSessionID = readAfterSessionID
+		if errors.Is(getErr, zk.ErrNoNode) {
+			continue
+		}
+		if getErr != nil {
+			return configCacheEntry{}, registration, perrors.WithStack(getErr)
+		}
+		return configCacheEntry{content: string(content), exists: true}, registration, nil
 	}
-	return string(decoded), nil
+}
+
+func parseConfigCacheTTL(value string) (time.Duration, error) {
+	if value == "" {
+		return defaultConfigCacheTTL, nil
+	}
+	ttl, err := time.ParseDuration(value)
+	if err != nil {
+		return 0, perrors.Wrapf(err, "invalid %s value %q", constant.ConfigCacheTTLKey, value)
+	}
+	if ttl < 0 {
+		return 0, perrors.Errorf("%s must not be negative", constant.ConfigCacheTTLKey)
+	}
+	if ttl > 0 && (ttl < minConfigCacheTTL || ttl > maxConfigCacheTTL) {
+		return 0, perrors.Errorf("%s must be 0 or between %s and %s", constant.ConfigCacheTTLKey, minConfigCacheTTL, maxConfigCacheTTL)
+	}
+	return ttl, nil
 }
 
 // GetInternalProperty For zookeeper, getConfig and getConfigs have the same meaning.
@@ -170,7 +266,7 @@ func (c *zookeeperDynamicConfiguration) PublishConfig(key string, group string, 
 	err := c.client.CreateWithValue(path, valueBytes)
 	if err != nil {
 		// try update value if node already exists
-		if perrors.Is(err, zk.ErrNodeExists) {
+		if errors.Is(err, zk.ErrNodeExists) {
 			_, stat, _ := c.client.GetContent(path)
 			_, setErr := c.client.SetContent(path, valueBytes, stat.Version)
 			if setErr != nil {
@@ -202,7 +298,7 @@ func (c *zookeeperDynamicConfiguration) GetConfigKeysByGroup(group string) (*gxs
 	}
 
 	if len(result) == 0 {
-		return nil, perrors.New("could not find keys with group: " + group)
+		return nil, errors.New("could not find keys with group: " + group)
 	}
 	set := gxset.NewSet()
 	for _, e := range result {
@@ -274,6 +370,14 @@ func (c *zookeeperDynamicConfiguration) closeConfigs() {
 }
 
 func (c *zookeeperDynamicConfiguration) RestartCallBack() bool {
+	var sessionID int64
+	if c.client != nil && c.client.Conn != nil {
+		sessionID = c.client.Conn.SessionID()
+	}
+	c.cache.reset(sessionID)
+	if c.cacheListener != nil {
+		c.cacheListener.restoreBusinessWatches()
+	}
 	return true
 }
 

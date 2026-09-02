@@ -163,7 +163,11 @@ func (di *DubboInvoker) Invoke(ctx context.Context, ivc base.Invocation) result.
 func (di *DubboInvoker) getTimeout(ivc *invocation.RPCInvocation) time.Duration {
 	timeout := di.timeout                                                //default timeout
 	if attachTimeout, ok := ivc.GetAttachment(constant.TimeoutKey); ok { //check invocation timeout
-		timeout, _ = time.ParseDuration(attachTimeout)
+		if d, err := time.ParseDuration(attachTimeout); err == nil {
+			timeout = d
+		} else if d, err := time.ParseDuration(attachTimeout + "ms"); err == nil {
+			timeout = d
+		}
 	} else { // check method timeout
 		methodName := ivc.MethodName()
 		if di.GetURL().GetParamBool(constant.GenericKey, false) {

@@ -49,14 +49,22 @@ type TripleConfig struct {
 
 	// KeepAliveTimeout defines the keep-alive timeout for client.
 	KeepAliveTimeout string `yaml:"keep-alive-timeout" json:"keep-alive-timeout,omitempty" property:"keep-alive-timeout"`
+	// UnaryFastPath enables the unary fast path for client, on by default.
+	// It applies to unary calls on both the gRPC and the Triple (connect)
+	// wire formats; streaming calls always use duplexHTTPCall.
+	// A nil value means the field is not explicitly set, and the default
+	// (enabled) applies.
+	UnaryFastPath *bool `default:"true" yaml:"unary-fast-path" json:"unary-fast-path,omitempty" property:"unary-fast-path"`
 }
 
 // DefaultTripleConfig returns a default TripleConfig instance.
 func DefaultTripleConfig() *TripleConfig {
+	unaryFastPath := true
 	return &TripleConfig{
-		Http3:   DefaultHttp3Config(),
-		Cors:    DefaultCorsConfig(),
-		OpenAPI: DefaultOpenAPIConfig(),
+		Http3:         DefaultHttp3Config(),
+		Cors:          DefaultCorsConfig(),
+		OpenAPI:       DefaultOpenAPIConfig(),
+		UnaryFastPath: &unaryFastPath,
 	}
 }
 
@@ -64,6 +72,12 @@ func DefaultTripleConfig() *TripleConfig {
 func (t *TripleConfig) Clone() *TripleConfig {
 	if t == nil {
 		return nil
+	}
+
+	var newUnaryFastPath *bool
+	if t.UnaryFastPath != nil {
+		newUnaryFastPath = new(bool)
+		*newUnaryFastPath = *t.UnaryFastPath
 	}
 
 	return &TripleConfig{
@@ -75,5 +89,6 @@ func (t *TripleConfig) Clone() *TripleConfig {
 
 		KeepAliveInterval: t.KeepAliveInterval,
 		KeepAliveTimeout:  t.KeepAliveTimeout,
+		UnaryFastPath:     newUnaryFastPath,
 	}
 }

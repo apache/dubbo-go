@@ -18,6 +18,7 @@
 package zookeeper
 
 import (
+	"errors"
 	"strings"
 	"sync"
 )
@@ -26,8 +27,6 @@ import (
 	gxchan "github.com/dubbogo/gost/container/chan"
 	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -153,10 +152,10 @@ func (l *RegistryConfigurationListener) Next() (*registry.ServiceEvent, error) {
 	for {
 		select {
 		case <-l.close:
-			return nil, perrors.New("listener has been closed")
+			return nil, errors.New("listener has been closed")
 		case <-l.registry.Done():
 			logger.Warnf("[Registry][Zookeeper] zk consumer register has quit, so zk event listener exit now, registry url=%v", l.registry.URL)
-			return nil, perrors.New("zookeeper registry, (registry url{%v}) stopped")
+			return nil, errors.New("zookeeper registry, (registry url{%v}) stopped")
 		case val := <-l.events.Out():
 			e, _ := val.(*config_center.ConfigChangeEvent)
 			logger.Debugf("[Registry][Zookeeper] got zk event %s", e)

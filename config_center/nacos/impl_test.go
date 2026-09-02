@@ -26,10 +26,10 @@ import (
 	gxset "github.com/dubbogo/gost/container/set"
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
 
-	"github.com/golang/mock/gomock"
-
 	"github.com/nacos-group/nacos-sdk-go/v2/model"
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
+
+	"go.uber.org/mock/gomock"
 )
 
 import (

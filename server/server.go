@@ -20,7 +20,8 @@ package server
 
 import (
 	"context"
-	stderrors "errors"
+	"errors"
+	"fmt"
 	"net/http"
 	"reflect"
 	"sort"
@@ -30,8 +31,6 @@ import (
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-
-	"github.com/pkg/errors"
 )
 
 import (
@@ -329,7 +328,7 @@ func (s *Server) exportServices(ctx context.Context) error {
 		}
 		if err := svcOpts.Export(); err != nil {
 			logger.Errorf("[Server] export %s service failed, err=%s", svcOpts.Service.Interface, err)
-			return errors.Wrapf(err, "failed to export service %s", svcOpts.Service.Interface)
+			return fmt.Errorf("failed to export service %s: %w", svcOpts.Service.Interface, err)
 		}
 	}
 	return nil
@@ -429,7 +428,7 @@ func (s *Server) ServeContext(ctx context.Context) error {
 
 func (s *Server) rollbackServeStartWithCause(cause error, serviceInstanceRegistered bool) error {
 	if rollbackErr := s.rollbackServeStart(serviceInstanceRegistered); rollbackErr != nil {
-		return stderrors.Join(cause, errors.Wrap(rollbackErr, "startup rollback failed"))
+		return errors.Join(cause, fmt.Errorf("startup rollback failed: %w", rollbackErr))
 	}
 	return cause
 }

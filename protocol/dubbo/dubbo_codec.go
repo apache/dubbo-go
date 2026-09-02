@@ -19,6 +19,8 @@ package dubbo
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"strconv"
 	"time"
 )
@@ -59,7 +61,7 @@ func (c *DubboCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer, er
 
 	invoc, ok := request.Data.(*base.Invocation)
 	if !ok {
-		err := perrors.Errorf("encode request failed for parameter type :%+v", request)
+		err := fmt.Errorf("encode request failed for parameter type :%+v", request)
 		logger.Errorf("[Dubbo][Codec] decode failed, err=%v", err)
 		return nil, err
 	}
@@ -171,11 +173,11 @@ func rpcResultFromResponse(value any) (result.RPCResult, error) {
 		return rpcResult, nil
 	case *result.RPCResult:
 		if rpcResult == nil {
-			return result.RPCResult{}, perrors.New("dubbo response result is a nil *result.RPCResult")
+			return result.RPCResult{}, errors.New("dubbo response result is a nil *result.RPCResult")
 		}
 		return *rpcResult, nil
 	default:
-		return result.RPCResult{}, perrors.Errorf("dubbo response result has unexpected type %T", value)
+		return result.RPCResult{}, fmt.Errorf("dubbo response result has unexpected type %T", value)
 	}
 }
 
@@ -218,11 +220,10 @@ func (c *DubboCodec) decodeRequest(data []byte) (*remoting.Request, int, error) 
 	pkg.SetBody(make([]any, 7))
 	err := pkg.Unmarshal()
 	if err != nil {
-		originErr := perrors.Cause(err)
-		if originErr == hessian.ErrHeaderNotEnough { // this is impossible, as dubbo_codec.go:DubboCodec::Decode() line 167
+		if errors.Is(err, hessian.ErrHeaderNotEnough) { // this is impossible, as dubbo_codec.go:DubboCodec::Decode() line 167
 			return nil, 0, nil
 		}
-		if originErr == hessian.ErrBodyNotEnough {
+		if errors.Is(err, hessian.ErrBodyNotEnough) {
 			return nil, hessian.HEADER_LENGTH + pkg.GetBodyLen(), nil
 		}
 		logger.Errorf("[Dubbo][Codec] pkg.Unmarshal failed, dataLen=%d, err=%v", buf.Len(), err)
@@ -269,12 +270,11 @@ func (c *DubboCodec) decodeResponse(data []byte) (*remoting.Response, int, error
 	pkg := impl.NewDubboPackage(buf)
 	err := pkg.Unmarshal()
 	if err != nil {
-		originErr := perrors.Cause(err)
 		// if the data is very big, so the receive need much times.
-		if originErr == hessian.ErrHeaderNotEnough { // this is impossible, as dubbo_codec.go:DubboCodec::Decode() line 167
+		if errors.Is(err, hessian.ErrHeaderNotEnough) { // this is impossible, as dubbo_codec.go:DubboCodec::Decode() line 167
 			return nil, 0, nil
 		}
-		if originErr == hessian.ErrBodyNotEnough {
+		if errors.Is(err, hessian.ErrBodyNotEnough) {
 			return nil, hessian.HEADER_LENGTH + pkg.GetBodyLen(), nil
 		}
 

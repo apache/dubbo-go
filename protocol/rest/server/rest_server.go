@@ -19,6 +19,7 @@ package server
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -169,7 +170,7 @@ func getArgsInterfaceFromRequest(req RestServerRequest, methodConfig *rest_confi
 		m := make(map[string]any)
 		// TODO read as a slice
 		if err := req.ReadEntity(&m); err != nil {
-			return nil, perrors.Errorf("[Rest][Server] read body entity as map[string]any, err=%v", err)
+			return nil, fmt.Errorf("[Rest][Server] read body entity as map[string]any, err=%v", err)
 		}
 		argsMap[methodConfig.Body] = m
 	}
@@ -209,7 +210,7 @@ func assembleArgsFromHeaders(methodConfig *rest_config.RestMethodConfig, req Res
 	for k, v := range methodConfig.HeadersMap {
 		param := req.HeaderParameter(v)
 		if k < 0 || k >= argsLength {
-			return perrors.Errorf("[Rest][Server] header param parse error, the index %v args of method:%v doesn't exist", k, methodConfig.MethodName)
+			return fmt.Errorf("[Rest][Server] header param parse error, the index %v args of method:%v doesn't exist", k, methodConfig.MethodName)
 		}
 		t := argsTypes[k]
 		if t.Kind() == reflect.Pointer {
@@ -218,7 +219,7 @@ func assembleArgsFromHeaders(methodConfig *rest_config.RestMethodConfig, req Res
 		if t.Kind() == reflect.String {
 			args[k] = param
 		} else {
-			return perrors.Errorf("[Rest][Server] header param parse error, the index %v args's type isn't string", k)
+			return fmt.Errorf("[Rest][Server] header param parse error, the index %v args's type isn't string", k)
 		}
 	}
 	return nil
@@ -244,7 +245,7 @@ func assembleArgsFromBody(methodConfig *rest_config.RestMethodConfig, argsTypes 
 			}
 		}
 		if err := req.ReadEntity(&ni); err != nil {
-			return perrors.Errorf("[Rest][Server] read body entity error, err=%v", perrors.WithStack(err))
+			return fmt.Errorf("[Rest][Server] read body entity error, err=%v", perrors.WithStack(err))
 		}
 		args[methodConfig.Body] = ni
 	}
@@ -260,7 +261,7 @@ func assembleArgsFromQueryParams(methodConfig *rest_config.RestMethodConfig, arg
 	)
 	for k, v := range methodConfig.QueryParamsMap {
 		if k < 0 || k >= argsLength {
-			return perrors.Errorf("[Rest][Server] query param parse error, the index %v args of method:%v doesn't exist", k, methodConfig.MethodName)
+			return fmt.Errorf("[Rest][Server] query param parse error, the index %v args of method:%v doesn't exist", k, methodConfig.MethodName)
 		}
 		t := argsTypes[k]
 		kind := t.Kind()
@@ -283,11 +284,11 @@ func assembleArgsFromQueryParams(methodConfig *rest_config.RestMethodConfig, arg
 		case reflect.Int64:
 			param, err = strconv.ParseInt(req.QueryParameter(v), 10, 64)
 		default:
-			return perrors.Errorf("[Rest][Server] query param parse error, the index %v args's type isn't int or string or slice", k)
+			return fmt.Errorf("[Rest][Server] query param parse error, the index %v args's type isn't int or string or slice", k)
 		}
 
 		if err != nil {
-			return perrors.Errorf("[Rest][Server] query param parse error, err=%v", perrors.WithStack(err))
+			return fmt.Errorf("[Rest][Server] query param parse error, err=%v", perrors.WithStack(err))
 		}
 		args[k] = param
 	}
@@ -303,7 +304,7 @@ func assembleArgsFromPathParams(methodConfig *rest_config.RestMethodConfig, args
 	)
 	for k, v := range methodConfig.PathParamsMap {
 		if k < 0 || k >= argsLength {
-			return perrors.Errorf("[Rest][Server] path param parse error, the index %v args of method:%v doesn't exist", k, methodConfig.MethodName)
+			return fmt.Errorf("[Rest][Server] path param parse error, the index %v args of method:%v doesn't exist", k, methodConfig.MethodName)
 		}
 		t := argsTypes[k]
 		kind := t.Kind()
@@ -325,11 +326,11 @@ func assembleArgsFromPathParams(methodConfig *rest_config.RestMethodConfig, args
 		case reflect.String:
 			param = req.PathParameter(v)
 		default:
-			return perrors.Errorf("[Rest][Server] path param parse error, the index %v args's type isn't int or string", k)
+			return fmt.Errorf("[Rest][Server] path param parse error, the index %v args's type isn't int or string", k)
 		}
 
 		if err != nil {
-			return perrors.Errorf("[Rest][Server] path param parse error, err=%v", perrors.WithStack(err))
+			return fmt.Errorf("[Rest][Server] path param parse error, err=%v", perrors.WithStack(err))
 		}
 		args[k] = param
 	}

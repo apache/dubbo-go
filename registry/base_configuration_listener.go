@@ -18,6 +18,7 @@
 package registry
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -96,8 +97,7 @@ func (bcl *BaseConfigurationListener) genConfiguratorFromRawRule(rawConfig strin
 
 	urls, err := dynamicConfiguration.Parser().ParseToUrls(rawConfig)
 	if err != nil {
-		return perrors.WithMessage(err, "Failed to parse raw dynamic config and it will not take effect, the raw config is: "+
-			rawConfig)
+		return fmt.Errorf("Failed to parse raw dynamic config and it will not take effect, the raw config is: "+rawConfig+": %w", err)
 	}
 	bcl.setConfigurators(ToConfigurators(urls, defaultConfiguratorFunc))
 	return nil

@@ -18,18 +18,21 @@
 package dubbo
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"runtime/debug"
 	"slices"
 	"strings"
 	"sync"
+	"time"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-	gr "github.com/dubbogo/gost/runtime"
 
 	"github.com/fsnotify/fsnotify"
 
@@ -38,8 +41,6 @@ import (
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/providers/rawbytes"
-
-	"github.com/pkg/errors"
 )
 
 import (
@@ -67,6 +68,23 @@ var watcher = &fileWatcher{
 	stopCh: make(chan struct{}),
 }
 
+// goSafely runs handler in a new goroutine, recovers panics raised while
+// handler executes on that goroutine, and tracks completion in wg.
+// wg must not be nil.
+// See github.com/dubbogo/gost/runtime/goroutine.go.
+func goSafely(wg *sync.WaitGroup, handler func()) {
+	wg.Go(func() {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Fprintf(os.Stderr,
+					"%s goroutine panic: %v\n%s\n",
+					time.Now(), r, debug.Stack())
+			}
+		}()
+		handler()
+	})
+}
+
 func Load(opts ...LoaderConfOption) error {
 	conf := NewLoaderConf(opts...)
 	newOpts := conf.opts
@@ -91,10 +109,9 @@ func Load(opts ...LoaderConfOption) error {
 	instance := &Instance{insOpts: newOpts}
 	// start the file watcher
 	once.Do(func() {
-		watcher.watcherWg.Add(1)
-		gr.GoSafely(&watcher.watcherWg, false, func() {
+		goSafely(&watcher.watcherWg, func() {
 			watch(conf, watcher.stopCh)
-		}, nil)
+		})
 		extension.AddCustomShutdownCallback(func() {
 			StopFileWatcher()
 		})
@@ -312,7 +329,7 @@ func checkFileSuffix(suffix string) error {
 	if slices.Contains([]string{"json", "yaml", "yml"}, suffix) {
 		return nil
 	}
-	return errors.Errorf("no support file suffix: %s", suffix)
+	return fmt.Errorf("no support file suffix: %s", suffix)
 }
 
 // resolverFilePath resolver file path
@@ -395,7 +412,7 @@ func GetConfigResolver(conf *loaderConf) *koanf.Koanf {
 	case "json":
 		err = k.Load(rawbytes.Provider(bytes), json.Parser())
 	default:
-		err = errors.Errorf("no support %s file suffix", conf.suffix)
+		err = fmt.Errorf("no support %s file suffix", conf.suffix)
 	}
 
 	if err != nil {

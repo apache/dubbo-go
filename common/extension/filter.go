@@ -18,7 +18,7 @@
 package extension
 
 import (
-	"github.com/pkg/errors"
+	"errors"
 )
 
 import (

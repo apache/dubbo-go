@@ -18,12 +18,23 @@
 package zookeeper
 
 import (
+	"fmt"
+	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
+)
+
+import (
+	"github.com/go-zookeeper/zk"
+
+	"github.com/stretchr/testify/require"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
+	remotingzookeeper "dubbo.apache.org/dubbo-go/v3/remoting/zookeeper"
 )
 
 type recListener struct {
@@ -50,7 +61,8 @@ func TestCacheListenerDataChange(t *testing.T) {
 }
 
 func TestCacheListenerDataChangeEmptyContent(t *testing.T) {
-	l := &CacheListener{rootPath: "/dubbo/config"}
+	cache := newConfigCache(time.Minute)
+	l := &CacheListener{rootPath: "/dubbo/config", cache: &cache}
 	path := "/dubbo/config/group/app"
 	rec := &recListener{}
 	l.keyListeners.Store(path, map[config_center.ConfigurationListener]struct{}{rec: {}})
@@ -59,9 +71,375 @@ func TestCacheListenerDataChangeEmptyContent(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected listeners to be notified")
 	}
-	if len(rec.events) != 1 || rec.events[0].ConfigType != remoting.EventTypeDel {
+	if len(rec.events) != 1 || rec.events[0].ConfigType != remoting.EventTypeAdd {
 		t.Fatalf("unexpected events %+v", rec.events)
 	}
+	entry, ok := cache.getFresh(path)
+	if !ok || !entry.exists || entry.content != "" {
+		t.Fatalf("empty configuration should be cached as existing: %+v", entry)
+	}
+
+	l.DataChange(remoting.Event{Path: path, Action: remoting.EventTypeDel})
+	if len(rec.events) != 2 || rec.events[1].ConfigType != remoting.EventTypeDel {
+		t.Fatalf("unexpected events %+v", rec.events)
+	}
+	entry, ok = cache.getFresh(path)
+	if !ok || entry.exists {
+		t.Fatalf("deleted configuration should be cached as missing: %+v", entry)
+	}
+}
+
+func TestCacheListenerIgnoresEventAcrossReset(t *testing.T) {
+	cache := newConfigCache(time.Minute)
+	l := &CacheListener{rootPath: "/dubbo/config", cache: &cache}
+	path := "/dubbo/config/group/app"
+	cache.setWatch(path, configWatchState{registered: true, auto: true, sessionID: 1})
+	require.True(t, l.WatchStateChanged(path))
+	cache.reset(2)
+	require.Equal(t, remotingzookeeper.WatchRegistrationReload,
+		l.WatchRegistered(path, make(chan zk.Event, 1), 1, 1))
+
+	_, ok := cache.getFresh(path)
+	if ok {
+		t.Fatal("event started before reset should not repopulate cache")
+	}
+	_, watchState := cache.snapshot(path)
+	if watchState.tracked() {
+		t.Fatal("event started before reset should not reactivate watch state")
+	}
+}
+
+func TestCacheListenerReloadDataChangeRejectsResetGeneration(t *testing.T) {
+	cache := newConfigCache(time.Minute)
+	path := "/dubbo/config/group/app"
+	cache.reset(1)
+	cache.setWatch(path, configWatchState{registered: true, auto: true, sessionID: 1})
+	l := &CacheListener{rootPath: "/dubbo/config", cache: &cache}
+
+	require.True(t, l.WatchStateChanged(path))
+	eventStateValue, ok := l.eventGeneration.Load(path)
+	require.True(t, ok)
+	require.Equal(t, uint64(1), eventStateValue.(watchEventState).generation)
+
+	cache.reset(2)
+	events := make(chan zk.Event, 1)
+	events <- zk.Event{Type: zk.EventNotWatching}
+	close(events)
+	require.Equal(t, remotingzookeeper.WatchRegistrationReload,
+		l.WatchRegistered(path, events, 1, 1))
+	_, ok = l.eventGeneration.Load(path)
+	require.True(t, ok)
+
+	l.DataChange(remoting.Event{Path: path, Action: remoting.EventTypeUpdate, Content: "stale"})
+	_, ok = cache.getFresh(path)
+	require.False(t, ok)
+	_, ok = l.eventGeneration.Load(path)
+	require.False(t, ok)
+}
+
+func TestAddListenerPromotesAutoWatch(t *testing.T) {
+	cache := newConfigCache(time.Minute)
+	path := "/dubbo/config/group/app"
+	cache.setWatch(path, configWatchState{registered: true, auto: true, sessionID: 1})
+	l := &CacheListener{cache: &cache}
+	rec := &recListener{}
+
+	require.NotPanics(t, func() {
+		l.AddListener(path, rec)
+	})
+
+	_, watchState := cache.snapshot(path)
+	require.True(t, watchState.registered)
+	require.False(t, watchState.auto)
+	require.Zero(t, cache.autoWatchCount)
+	listeners, ok := l.keyListeners.Load(path)
+	require.True(t, ok)
+	_, ok = listeners.(map[config_center.ConfigurationListener]struct{})[rec]
+	require.True(t, ok)
+}
+
+func TestAddListenerReactivatesRetiredWatch(t *testing.T) {
+	cache := newConfigCache(time.Minute)
+	path := "/dubbo/config/group/app"
+	cache.setWatch(path, configWatchState{
+		registered: true,
+		retired:    true,
+		sessionID:  1,
+	})
+	l := &CacheListener{cache: &cache}
+	rec := &recListener{}
+
+	l.AddListener(path, rec)
+
+	_, watchState := cache.snapshot(path)
+	require.True(t, watchState.registered)
+	require.False(t, watchState.retired)
+	require.False(t, watchState.auto)
+	_, ok := l.keyListeners.Load(path)
+	require.True(t, ok)
+}
+
+func TestCacheListenerConcurrentAddListenerSharesPendingRegistration(t *testing.T) {
+	cache := newConfigCache(time.Minute)
+	l := newCacheListener("/dubbo/config", nil, &cache)
+	path := "/dubbo/config/group/app"
+	first := &recListener{}
+	second := &recListener{}
+	registerStarted := make(chan struct{})
+	releaseRegister := make(chan struct{})
+	var registrations atomic.Int32
+	register := func() (watchRegistration, error) {
+		if registrations.Add(1) == 1 {
+			close(registerStarted)
+			<-releaseRegister
+		}
+		return newTestWatchRegistration(1), nil
+	}
+
+	var wg sync.WaitGroup
+	wg.Go(func() { l.addListenerWithRegister(path, first, register) })
+	<-registerStarted
+	wg.Go(func() { l.addListenerWithRegister(path, second, register) })
+	time.Sleep(10 * time.Millisecond)
+	require.Equal(t, int32(1), registrations.Load())
+
+	close(releaseRegister)
+	wg.Wait()
+	require.Equal(t, int32(1), registrations.Load())
+	listeners, ok := l.keyListeners.Load(path)
+	require.True(t, ok)
+	listenerSet := listeners.(map[config_center.ConfigurationListener]struct{})
+	require.Len(t, listenerSet, 2)
+	_, watchState := cache.snapshot(path)
+	require.True(t, watchState.registered)
+	require.False(t, watchState.auto)
+}
+
+func TestAddListenerRegistrationFailureDoesNotRemoveExistingListener(t *testing.T) {
+	cache := newConfigCache(time.Minute)
+	l := newCacheListener("/dubbo/config", nil, &cache)
+	path := "/dubbo/config/group/app"
+	rec := &recListener{}
+	l.storeListener(path, rec)
+
+	l.addListenerWithRegister(path, rec, func() (watchRegistration, error) {
+		return watchRegistration{}, errWatchRegistrationStale
+	})
+
+	listeners, ok := l.keyListeners.Load(path)
+	require.True(t, ok)
+	listenerSet := listeners.(map[config_center.ConfigurationListener]struct{})
+	_, ok = listenerSet[rec]
+	require.True(t, ok)
+}
+
+func TestAddListenerStopsRetryWhenListenerIsRemoved(t *testing.T) {
+	cache := newConfigCache(time.Minute)
+	l := newCacheListener("/dubbo/config", nil, &cache)
+	path := "/dubbo/config/group/app"
+	rec := &recListener{}
+	registerStarted := make(chan struct{})
+	releaseRegister := make(chan struct{})
+	var registrations atomic.Int32
+	register := func() (watchRegistration, error) {
+		registrations.Add(1)
+		close(registerStarted)
+		<-releaseRegister
+		events := make(chan zk.Event, 1)
+		events <- zk.Event{Type: zk.EventNotWatching}
+		close(events)
+		return watchRegistration{
+			events:          events,
+			beforeSessionID: 1,
+			afterSessionID:  2,
+		}, nil
+	}
+
+	done := make(chan struct{})
+	go func() {
+		l.addListenerWithRegister(path, rec, register)
+		close(done)
+	}()
+	<-registerStarted
+	l.RemoveListener(path, rec)
+	close(releaseRegister)
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("AddListener did not stop after listener removal")
+	}
+
+	require.Equal(t, int32(1), registrations.Load())
+	_, ok := l.keyListeners.Load(path)
+	require.False(t, ok)
+	_, watchState := cache.snapshot(path)
+	require.False(t, watchState.tracked())
+}
+
+func TestRemovingOneListenerDoesNotReleaseSharedBusinessWatch(t *testing.T) {
+	cache := newConfigCache(time.Minute)
+	l := newCacheListener("/dubbo/config", nil, &cache)
+	path := "/dubbo/config/group/app"
+	first := &recListener{}
+	second := &recListener{}
+	registerStarted := make(chan struct{})
+	releaseRegister := make(chan struct{})
+	var registrations atomic.Int32
+	register := func() (watchRegistration, error) {
+		if registrations.Add(1) == 1 {
+			close(registerStarted)
+			<-releaseRegister
+		}
+		return newTestWatchRegistration(1), nil
+	}
+
+	var wg sync.WaitGroup
+	wg.Go(func() { l.addListenerWithRegister(path, first, register) })
+	<-registerStarted
+	wg.Go(func() { l.addListenerWithRegister(path, second, register) })
+	time.Sleep(10 * time.Millisecond)
+	l.RemoveListener(path, first)
+	close(releaseRegister)
+	wg.Wait()
+
+	require.Equal(t, int32(1), registrations.Load())
+	require.True(t, l.hasListener(path, second))
+	_, watchState := cache.snapshot(path)
+	require.True(t, watchState.registered)
+	require.False(t, watchState.auto)
+}
+
+func TestWatchStateChangedUsesCurrentBusinessOwnership(t *testing.T) {
+	cache := newConfigCache(time.Minute)
+	path := "/dubbo/config/group/app"
+	require.True(t, cache.setWatch(path, configWatchState{
+		registered: true,
+		auto:       true,
+		sessionID:  1,
+	}))
+	l := &CacheListener{cache: &cache}
+	rec := &recListener{}
+
+	l.AddListener(path, rec)
+	require.True(t, l.WatchStateChanged(path))
+
+	_, watchState := cache.snapshot(path)
+	require.True(t, watchState.pending)
+	require.False(t, watchState.auto)
+	require.Zero(t, cache.autoWatchReservations)
+}
+
+func TestAddListenerRegistersBusinessWatchAtAutoWatchLimit(t *testing.T) {
+	client, _ := newZookeeperTestClient(t, "business-watch-limit")
+	root := newTestRoot(t, client)
+
+	cache := newConfigCache(time.Minute)
+	for i := range maxAutoWatches {
+		require.True(t, cache.setWatch(fmt.Sprintf("/auto/%d", i), configWatchState{
+			registered: true,
+			auto:       true,
+			sessionID:  1,
+		}))
+	}
+	zkListener := remotingzookeeper.NewZkEventListener(client)
+	defer zkListener.Close()
+	l := newCacheListener(root, zkListener, &cache)
+	path := root + "/group/app"
+	rec := &recListener{}
+
+	l.AddListener(path, rec)
+
+	_, watchState := cache.snapshot(path)
+	require.True(t, watchState.registered)
+	require.False(t, watchState.auto)
+	require.Equal(t, maxAutoWatches, cache.autoWatchCount)
+	require.Zero(t, cache.autoWatchReservations)
+	listeners, ok := l.keyListeners.Load(path)
+	require.True(t, ok)
+	_, ok = listeners.(map[config_center.ConfigurationListener]struct{})[rec]
+	require.True(t, ok)
+}
+
+func TestCacheListenerPreservesAutoWatchOwnershipOnRenewal(t *testing.T) {
+	cache := newConfigCache(time.Minute)
+	path := "/dubbo/config/group/app"
+	cache.setWatch(path, configWatchState{registered: true, auto: true, sessionID: 1})
+	l := &CacheListener{cache: &cache}
+
+	require.True(t, l.WatchStateChanged(path))
+	_, watchState := cache.snapshot(path)
+	require.False(t, watchState.registered)
+	require.True(t, watchState.pending)
+	require.True(t, watchState.auto)
+	require.Zero(t, cache.autoWatchCount)
+	require.Equal(t, 1, cache.autoWatchReservations)
+
+	require.Equal(t, remotingzookeeper.WatchRegistrationAccepted,
+		l.WatchRegistered(path, make(chan zk.Event, 1), 1, 1))
+	_, watchState = cache.snapshot(path)
+	require.True(t, watchState.registered)
+	require.True(t, watchState.auto)
+	require.False(t, watchState.pending)
+	require.Equal(t, 1, cache.autoWatchCount)
+	require.Zero(t, cache.autoWatchReservations)
+}
+
+func TestCacheListenerRetriesInvalidatedWatchInNewSession(t *testing.T) {
+	client, _ := newZookeeperTestClient(t, "retry-invalidated-business-watch")
+	root := newTestRoot(t, client)
+	zkListener := remotingzookeeper.NewZkEventListener(client)
+	defer zkListener.Close()
+
+	cache := newConfigCache(time.Minute)
+	currentSessionID := client.Conn.SessionID()
+	cache.reset(currentSessionID)
+	path := root + "/group/app"
+	previousSessionID := currentSessionID - 1
+	require.True(t, cache.setWatch(path, configWatchState{
+		pending:   true,
+		sessionID: previousSessionID,
+	}))
+	l := newCacheListener(root, zkListener, &cache)
+	l.keyListeners.Store(path, map[config_center.ConfigurationListener]struct{}{&recListener{}: {}})
+	l.eventGeneration.Store(path, watchEventState{
+		generation: cache.generation,
+		sessionID:  previousSessionID,
+	})
+	events := make(chan zk.Event, 1)
+	events <- zk.Event{Type: zk.EventNotWatching}
+	close(events)
+
+	require.Equal(t, remotingzookeeper.WatchRegistrationReload,
+		l.WatchRegistered(path, events, previousSessionID, currentSessionID))
+	_, watchState := cache.snapshot(path)
+	require.True(t, watchState.registered)
+	require.False(t, watchState.pending)
+	require.False(t, watchState.auto)
+	require.Equal(t, currentSessionID, watchState.sessionID)
+}
+
+func TestCacheListenerDiscardsStaleBusinessRegistrationWithoutListener(t *testing.T) {
+	cache := newConfigCache(time.Minute)
+	path := "/dubbo/config/group/app"
+	require.True(t, cache.setWatch(path, configWatchState{
+		pending:   true,
+		sessionID: 1,
+	}))
+	l := &CacheListener{cache: &cache}
+	l.eventGeneration.Store(path, watchEventState{
+		generation: cache.generation,
+		sessionID:  1,
+	})
+	events := make(chan zk.Event, 1)
+	events <- zk.Event{Type: zk.EventNotWatching}
+	close(events)
+
+	result := l.WatchRegistered(path, events, 1, 2)
+	require.Equal(t, remotingzookeeper.WatchRegistrationDiscarded, result)
+	_, watchState := cache.snapshot(path)
+	require.False(t, watchState.tracked())
+	_, ok := l.eventGeneration.Load(path)
+	require.False(t, ok)
 }
 
 func TestCacheListenerPathToKeyGroup(t *testing.T) {
@@ -73,14 +451,74 @@ func TestCacheListenerPathToKeyGroup(t *testing.T) {
 }
 
 func TestCacheListenerRemoveListener(t *testing.T) {
-	l := &CacheListener{}
+	cache := newConfigCache(time.Minute)
+	l := &CacheListener{cache: &cache}
 	key := "k"
 	rec := &recListener{}
+	cache.setWatch(key, configWatchState{registered: true, sessionID: 1})
 	l.keyListeners.Store(key, map[config_center.ConfigurationListener]struct{}{rec: {}})
+
 	l.RemoveListener(key, rec)
-	if m, ok := l.keyListeners.Load(key); ok {
-		if _, exists := m.(map[config_center.ConfigurationListener]struct{})[rec]; exists {
-			t.Fatalf("listener should be removed")
-		}
+
+	_, ok := l.keyListeners.Load(key)
+	require.False(t, ok)
+	_, watchState := cache.snapshot(key)
+	require.True(t, watchState.registered)
+	require.True(t, watchState.auto)
+	require.Equal(t, 1, cache.autoWatchCount)
+}
+
+func TestCacheListenerRemoveListenerRetiresWatchAtAutoLimit(t *testing.T) {
+	cache := newConfigCache(time.Minute)
+	for i := range maxAutoWatches {
+		require.True(t, cache.setWatch(fmt.Sprintf("/auto/%d", i), configWatchState{
+			registered: true,
+			auto:       true,
+			sessionID:  1,
+		}))
 	}
+	path := "/dubbo/config/group/app"
+	require.True(t, cache.setWatch(path, configWatchState{
+		registered: true,
+		sessionID:  1,
+	}))
+	l := newCacheListener("/dubbo/config", nil, &cache)
+	rec := &recListener{}
+	l.keyListeners.Store(path, map[config_center.ConfigurationListener]struct{}{rec: {}})
+
+	l.RemoveListener(path, rec)
+
+	_, ok := l.keyListeners.Load(path)
+	require.False(t, ok)
+	_, watchState := cache.snapshot(path)
+	require.True(t, watchState.registered)
+	require.True(t, watchState.retired)
+	require.False(t, watchState.auto)
+	require.Equal(t, maxAutoWatches, cache.autoWatchCount)
+
+	require.False(t, l.WatchStateChanged(path))
+	_, watchState = cache.snapshot(path)
+	require.False(t, watchState.tracked())
+	require.False(t, l.DataChange(remoting.Event{Path: path, Action: remoting.EventTypeUpdate, Content: "value"}))
+	entry, ok := cache.getFresh(path)
+	require.True(t, ok)
+	require.Equal(t, "value", entry.content)
+}
+
+func TestCacheListenerResidualEventDoesNotRenewWatch(t *testing.T) {
+	cache := newConfigCache(time.Minute)
+	path := "/dubbo/config/group/app"
+	l := &CacheListener{rootPath: "/dubbo/config", cache: &cache}
+
+	require.False(t, l.WatchStateChanged(path))
+	_, watchState := cache.snapshot(path)
+	require.False(t, watchState.tracked())
+	require.False(t, l.DataChange(remoting.Event{Path: path, Action: remoting.EventTypeUpdate, Content: "value"}))
+
+	entry, ok := cache.getFresh(path)
+	require.True(t, ok)
+	require.True(t, entry.exists)
+	require.Equal(t, "value", entry.content)
+	_, ok = l.eventGeneration.Load(path)
+	require.False(t, ok)
 }

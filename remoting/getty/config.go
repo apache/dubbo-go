@@ -18,6 +18,7 @@
 package getty
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -181,19 +182,19 @@ func (c *GettySessionParam) CheckValidity() error {
 	var err error
 
 	if c.keepAlivePeriod, err = time.ParseDuration(c.KeepAlivePeriod); err != nil {
-		return perrors.WithMessagef(err, "time.ParseDuration(KeepAlivePeriod{%#v})", c.KeepAlivePeriod)
+		return fmt.Errorf("time.ParseDuration(KeepAlivePeriod{%#v}): %w", c.KeepAlivePeriod, err)
 	}
 
 	if c.tcpReadTimeout, err = parseTcpTimeoutDuration(c.TcpReadTimeout); err != nil {
-		return perrors.WithMessagef(err, "time.ParseDuration(TcpReadTimeout{%#v})", c.TcpReadTimeout)
+		return fmt.Errorf("time.ParseDuration(TcpReadTimeout{%#v}): %w", c.TcpReadTimeout, err)
 	}
 
 	if c.tcpWriteTimeout, err = parseTcpTimeoutDuration(c.TcpWriteTimeout); err != nil {
-		return perrors.WithMessagef(err, "time.ParseDuration(TcpWriteTimeout{%#v})", c.TcpWriteTimeout)
+		return fmt.Errorf("time.ParseDuration(TcpWriteTimeout{%#v}): %w", c.TcpWriteTimeout, err)
 	}
 
 	if c.waitTimeout, err = time.ParseDuration(c.WaitTimeout); err != nil {
-		return perrors.WithMessagef(err, "time.ParseDuration(WaitTimeout{%#v})", c.WaitTimeout)
+		return fmt.Errorf("time.ParseDuration(WaitTimeout{%#v}): %w", c.WaitTimeout, err)
 	}
 
 	return nil
@@ -217,22 +218,22 @@ func (c *ClientConfig) CheckValidity() error {
 	c.ReconnectInterval = c.ReconnectInterval * 1e6
 
 	if c.heartbeatPeriod, err = time.ParseDuration(c.HeartbeatPeriod); err != nil {
-		return perrors.WithMessagef(err, "time.ParseDuration(HeartbeatPeroid{%#v})", c.HeartbeatPeriod)
+		return fmt.Errorf("time.ParseDuration(HeartbeatPeroid{%#v}): %w", c.HeartbeatPeriod, err)
 	}
 
 	if c.heartbeatPeriod >= time.Duration(constant.MaxWheelTimeSpan) {
-		return perrors.WithMessagef(err, "heartbeat-period %s should be less than %s",
-			c.HeartbeatPeriod, time.Duration(constant.MaxWheelTimeSpan))
+		return fmt.Errorf("heartbeat-period %s should be less than %s: %w",
+			c.HeartbeatPeriod, time.Duration(constant.MaxWheelTimeSpan), err)
 	}
 
 	if len(c.HeartbeatTimeout) == 0 {
 		c.heartbeatTimeout = constant.DefaultHeartbeatTimeout
 	} else if c.heartbeatTimeout, err = time.ParseDuration(c.HeartbeatTimeout); err != nil {
-		return perrors.WithMessagef(err, "time.ParseDuration(HeartbeatTimeout{%#v})", c.HeartbeatTimeout)
+		return fmt.Errorf("time.ParseDuration(HeartbeatTimeout{%#v}): %w", c.HeartbeatTimeout, err)
 	}
 
 	if c.sessionTimeout, err = time.ParseDuration(c.SessionTimeout); err != nil {
-		return perrors.WithMessagef(err, "time.ParseDuration(SessionTimeout{%#v})", c.SessionTimeout)
+		return fmt.Errorf("time.ParseDuration(SessionTimeout{%#v}): %w", c.SessionTimeout, err)
 	}
 
 	return perrors.WithStack(c.GettySessionParam.CheckValidity())
@@ -245,27 +246,27 @@ func (c *ServerConfig) CheckValidity() error {
 	if len(c.HeartbeatPeriod) == 0 {
 		c.heartbeatPeriod = constant.DefaultHeartbeatTimeout
 	} else if c.heartbeatPeriod, err = time.ParseDuration(c.HeartbeatPeriod); err != nil {
-		return perrors.WithMessagef(err, "time.ParseDuration(HeartbeatPeroid{%#v})", c.HeartbeatPeriod)
+		return fmt.Errorf("time.ParseDuration(HeartbeatPeroid{%#v}): %w", c.HeartbeatPeriod, err)
 	}
 
 	if c.heartbeatPeriod >= time.Duration(constant.MaxWheelTimeSpan) {
-		return perrors.WithMessagef(err, "heartbeat-period %s should be less than %s",
-			c.HeartbeatPeriod, time.Duration(constant.MaxWheelTimeSpan))
+		return fmt.Errorf("heartbeat-period %s should be less than %s: %w",
+			c.HeartbeatPeriod, time.Duration(constant.MaxWheelTimeSpan), err)
 	}
 
 	if len(c.HeartbeatTimeout) == 0 {
 		c.heartbeatTimeout = constant.DefaultHeartbeatTimeout
 	} else if c.heartbeatTimeout, err = time.ParseDuration(c.HeartbeatTimeout); err != nil {
-		return perrors.WithMessagef(err, "time.ParseDuration(HeartbeatTimeout{%#v})", c.HeartbeatTimeout)
+		return fmt.Errorf("time.ParseDuration(HeartbeatTimeout{%#v}): %w", c.HeartbeatTimeout, err)
 	}
 
 	if c.sessionTimeout, err = time.ParseDuration(c.SessionTimeout); err != nil {
-		return perrors.WithMessagef(err, "time.ParseDuration(SessionTimeout{%#v})", c.SessionTimeout)
+		return fmt.Errorf("time.ParseDuration(SessionTimeout{%#v}): %w", c.SessionTimeout, err)
 	}
 
 	if c.sessionTimeout >= time.Duration(constant.MaxWheelTimeSpan) {
-		return perrors.WithMessagef(err, "session-timeout %s should be less than %s",
-			c.SessionTimeout, time.Duration(constant.MaxWheelTimeSpan))
+		return fmt.Errorf("session-timeout %s should be less than %s: %w",
+			c.SessionTimeout, time.Duration(constant.MaxWheelTimeSpan), err)
 	}
 
 	return perrors.WithStack(c.GettySessionParam.CheckValidity())
