@@ -527,7 +527,7 @@ func TestGetMetadataInfo_LocalStorageGoesDirectlyToRPC(t *testing.T) {
 	assert.Contains(t, err.Error(), "url_construction failed:")
 	assert.Contains(t, err.Error(), "app=test-app")
 	assert.Contains(t, err.Error(), "revision=rev-local-rpc")
-	assert.Contains(t, err.Error(), "registry_id=default")
+	assert.Contains(t, err.Error(), "registry=default")
 	assert.Contains(t, err.Error(), "storage_type=local")
 	assert.Contains(t, err.Error(), "metadata service URL params missing",
 		"local storage path should go directly to RPC, not touch the metadata report")
@@ -558,7 +558,7 @@ func TestGetMetadataInfo_FallbackToRPC(t *testing.T) {
 	// Both report and RPC fail: the combined error proves the fallback path was taken
 	// and includes the RPC/URL failure as the wrapped cause.
 	assert.Contains(t, err.Error(), "url_construction failed:")
-	assert.Contains(t, err.Error(), "report_error=metadata_report failed:",
+	assert.Contains(t, err.Error(), "both paths failed, reportErr: metadata_report failed:",
 		"fallback path should retain the report failure")
 	assert.Contains(t, err.Error(), "app=test-app")
 	assert.Contains(t, err.Error(), "revision=rev-fallback-to-rpc")
@@ -618,7 +618,7 @@ func TestGetMetadataInfo_ReportReturnsNil_FallsBackToRPC(t *testing.T) {
 	// The report returned nil (no error), so the fallback was triggered and then RPC
 	// failed at URL construction. The error must reflect the RPC-after-nil-report path.
 	assert.Contains(t, err.Error(), "url_construction failed:")
-	assert.Contains(t, err.Error(), "report_result=nil",
+	assert.Contains(t, err.Error(), "RPC fallback failed after report returned nil metadata",
 		"nil report result should trigger fallback and surface an RPC error")
 	assert.Contains(t, err.Error(), "registry_id="+regID)
 	assert.Contains(t, err.Error(), "storage_type=remote")
