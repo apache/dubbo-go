@@ -18,6 +18,7 @@
 package metadata
 
 import (
+	"fmt"
 	"sort"
 	"sync"
 	"time"
@@ -146,6 +147,10 @@ func (d *DelegateMetadataReport) PublishAppMetadata(application, revision string
 	event.Succ = err == nil
 	event.End = time.Now()
 	metrics.Publish(event)
+	if err != nil {
+		return fmt.Errorf("metadata_report failed: operation=publish app=%s revision=%s storage_type=%s: %w",
+			application, revision, constant.RemoteMetadataStorageType, err)
+	}
 	return err
 }
 
@@ -156,6 +161,10 @@ func (d *DelegateMetadataReport) GetAppMetadata(application, revision string) (*
 	event.Succ = err == nil
 	event.End = time.Now()
 	metrics.Publish(event)
+	if err != nil {
+		return meta, fmt.Errorf("metadata_report failed: operation=get app=%s revision=%s storage_type=%s: %w",
+			application, revision, constant.RemoteMetadataStorageType, err)
+	}
 	return meta, err
 }
 
@@ -173,10 +182,20 @@ func (d *DelegateMetadataReport) RemoveServiceAppMappingListener(interfaceName, 
 
 // UnPublishAppMetadata delegate unpublish metadata info
 func (d *DelegateMetadataReport) UnPublishAppMetadata(application, revision string) error {
-	return d.instance.UnPublishAppMetadata(application, revision)
+	err := d.instance.UnPublishAppMetadata(application, revision)
+	if err != nil {
+		return fmt.Errorf("metadata_report failed: operation=unpublish app=%s revision=%s storage_type=%s: %w",
+			application, revision, constant.RemoteMetadataStorageType, err)
+	}
+	return nil
 }
 
 // ListAppRevisions delegate list app revisions
 func (d *DelegateMetadataReport) ListAppRevisions(application string) ([]report.AppRevision, error) {
-	return d.instance.ListAppRevisions(application)
+	revisions, err := d.instance.ListAppRevisions(application)
+	if err != nil {
+		return revisions, fmt.Errorf("metadata_report failed: operation=list_revisions app=%s storage_type=%s: %w",
+			application, constant.RemoteMetadataStorageType, err)
+	}
+	return revisions, nil
 }
