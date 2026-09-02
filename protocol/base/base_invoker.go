@@ -49,7 +49,7 @@ var (
 // Invoker the service invocation interface for the consumer
 // Extension - Invoker
 //
-//go:generate mockgen -source invoker.go -destination mock/mock_invoker.go -self_package dubbo.apache.org/dubbo-go/v3/protocol/mock --package mock Invoker
+//go:generate go run go.uber.org/mock/mockgen@v0.6.0 -copyright_file ../../.github/mockgen-copyright.txt -source base_invoker.go -destination ../mock/mock_invoker.go -self_package dubbo.apache.org/dubbo-go/v3/protocol/mock -package mock -exclude_interfaces AvailabilitySetter
 type Invoker interface {
 	common.Node
 	// Invoke the invocation and return result.
