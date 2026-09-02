@@ -19,10 +19,7 @@ package base
 
 import (
 	"sync"
-)
-
-import (
-	"go.uber.org/atomic"
+	"sync/atomic"
 )
 
 import (
@@ -45,7 +42,7 @@ type Directory struct {
 func NewDirectory(url *common.URL) *Directory {
 	return &Directory{
 		url:         url,
-		destroyed:   atomic.NewBool(false),
+		destroyed:   new(atomic.Bool),
 		routerChain: &chain.RouterChain{},
 	}
 }

@@ -18,14 +18,13 @@
 package metadata
 
 import (
+	"errors"
 	"testing"
 )
 
 import (
 	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/gof/observer"
-
-	"github.com/pkg/errors"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

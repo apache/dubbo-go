@@ -20,6 +20,7 @@ package servicediscovery
 import (
 	"context"
 	"encoding/gob"
+	"fmt"
 	"maps"
 	"math/rand/v2"
 	"reflect"
@@ -31,8 +32,6 @@ import (
 	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/gof/observer"
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -130,7 +129,7 @@ func (lstn *ServiceInstancesChangedListenerImpl) OnEvent(e observer.Event) error
 	lstn.mutex.Unlock()
 
 	if !lstn.refreshServiceURLs() {
-		return perrors.Errorf("metadata unresolved for some revisions of service=%s, retry is scheduled", ce.ServiceName)
+		return fmt.Errorf("metadata unresolved for some revisions of service=%s, retry is scheduled", ce.ServiceName)
 	}
 	return nil
 }
@@ -552,8 +551,7 @@ func getMetadataStorageType(instance registry.ServiceInstance) string {
 func getMetadataInfoFromRPC(ctx context.Context, app string, instance registry.ServiceInstance, revision string, registryId string) (*info.MetadataInfo, string, error) {
 	metadataInfo, err := metadata.GetMetadataFromRpcWithContext(ctx, revision, instance)
 	if err != nil {
-		return nil, metricsMetadata.SourceRpc, perrors.Wrapf(err,
-			"failed app=%s registry=%s revision=%s", app, registryId, revision)
+		return nil, metricsMetadata.SourceRpc, fmt.Errorf("failed app=%s registry=%s revision=%s: %w", app, registryId, revision, err)
 	}
 	metadataInfo, err = requireMetadataInfo(metadataInfo, app, registryId, revision)
 	return metadataInfo, metricsMetadata.SourceRpc, err
@@ -588,14 +586,14 @@ func wrapMetadataRPCFallbackError(rpcErr, reportErr error) error {
 	if reportErr != nil {
 		// Wrap rpcErr so callers can use errors.Is/As on the primary failure;
 		// reportErr is annotated as context since it triggered the fallback.
-		return perrors.Wrapf(rpcErr, "both paths failed, reportErr: %v", reportErr)
+		return fmt.Errorf("both paths failed, reportErr: %v: %w", reportErr, rpcErr)
 	}
-	return perrors.Wrapf(rpcErr, "RPC fallback failed after report returned nil metadata")
+	return fmt.Errorf("RPC fallback failed after report returned nil metadata: %w", rpcErr)
 }
 
 func requireMetadataInfo(metadataInfo *info.MetadataInfo, app, registryId, revision string) (*info.MetadataInfo, error) {
 	if metadataInfo == nil {
-		return nil, perrors.Errorf("got nil metadata from RPC app=%s registry=%s revision=%s",
+		return nil, fmt.Errorf("got nil metadata from RPC app=%s registry=%s revision=%s",
 			app, registryId, revision)
 	}
 	return metadataInfo, nil

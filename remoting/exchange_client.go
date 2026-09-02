@@ -20,13 +20,12 @@ package remoting
 import (
 	"context"
 	"errors"
+	"sync/atomic"
 	"time"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-
-	uatomic "go.uber.org/atomic"
 )
 
 import (
@@ -63,11 +62,11 @@ type contextRequester interface {
 
 // ExchangeClient is abstraction level. it is like facade.
 type ExchangeClient struct {
-	ConnectTimeout time.Duration  // timeout for connecting server
-	address        string         // server address for dialing. The format: ip:port
-	client         Client         // dealing with the transport
-	init           bool           // the tag for init.
-	activeNum      uatomic.Uint32 // the number of service using the exchangeClient
+	ConnectTimeout time.Duration // timeout for connecting server
+	address        string        // server address for dialing. The format: ip:port
+	client         Client        // dealing with the transport
+	init           bool          // the tag for init.
+	activeNum      atomic.Uint32 // the number of service using the exchangeClient
 }
 
 // NewExchangeClient returns a ExchangeClient.
@@ -110,7 +109,7 @@ func (client *ExchangeClient) IncreaseActiveNumber() uint32 {
 
 // DecreaseActiveNumber decrease number of service using client.
 func (client *ExchangeClient) DecreaseActiveNumber() uint32 {
-	return client.activeNum.Sub(1)
+	return client.activeNum.Add(^uint32(0))
 }
 
 // GetActiveNumber get number of service using client.

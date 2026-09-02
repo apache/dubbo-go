@@ -19,6 +19,7 @@ package generalizer
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"sync"
 )
@@ -27,8 +28,6 @@ import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -52,7 +51,7 @@ type GsonGeneralizer struct{}
 func (GsonGeneralizer) Generalize(obj any) (any, error) {
 	newObj, ok := obj.(hessian.POJO)
 	if !ok {
-		return nil, perrors.Errorf("unexpected type of obj(=%T), wanted is hessian pojo", obj)
+		return nil, fmt.Errorf("unexpected type of obj(=%T), wanted is hessian pojo", obj)
 	}
 
 	jsonbytes, err := json.Marshal(newObj)
@@ -66,7 +65,7 @@ func (GsonGeneralizer) Generalize(obj any) (any, error) {
 func (GsonGeneralizer) Realize(obj any, typ reflect.Type) (any, error) {
 	jsonbytes, ok := obj.(string)
 	if !ok {
-		return nil, perrors.Errorf("unexpected type of obj(=%T), wanted is string", obj)
+		return nil, fmt.Errorf("unexpected type of obj(=%T), wanted is string", obj)
 	}
 
 	for typ.Kind() == reflect.Pointer {
@@ -76,7 +75,7 @@ func (GsonGeneralizer) Realize(obj any, typ reflect.Type) (any, error) {
 	// create the target object
 	ret, ok := reflect.New(typ).Interface().(hessian.POJO)
 	if !ok {
-		return nil, perrors.Errorf("the type of obj(=%s) should be hessian pojo", typ)
+		return nil, fmt.Errorf("the type of obj(=%s) should be hessian pojo", typ)
 	}
 
 	err := json.Unmarshal([]byte(jsonbytes), ret)

@@ -18,6 +18,7 @@
 package generalizer
 
 import (
+	"fmt"
 	"maps"
 	"reflect"
 	"strconv"
@@ -34,8 +35,6 @@ import (
 	"github.com/dubbogo/gost/log/logger"
 
 	"github.com/mitchellh/mapstructure"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -61,7 +60,7 @@ type MapGeneralizer struct{}
 func (g *MapGeneralizer) Generalize(obj any) (gobj any, err error) {
 	gobj, err = objToMap(obj)
 	if err != nil {
-		return nil, perrors.Errorf("generalizing map failed, %v", err)
+		return nil, fmt.Errorf("generalizing map failed, %v", err)
 	}
 	if !getGenericIncludeClass() {
 		gobj = removeClass(gobj)
@@ -79,12 +78,12 @@ func (g *MapGeneralizer) Realize(obj any, typ reflect.Type) (any, error) {
 		TagName: "m",
 	})
 	if err != nil {
-		return nil, perrors.Errorf("creating map decoder failed, %v", err)
+		return nil, fmt.Errorf("creating map decoder failed, %v", err)
 	}
 
 	err = decoder.Decode(obj)
 	if err != nil {
-		return nil, perrors.Errorf("realizing map failed, %v", err)
+		return nil, fmt.Errorf("realizing map failed, %v", err)
 	}
 
 	return reflect.ValueOf(newobj).Elem().Interface(), nil
@@ -225,7 +224,7 @@ func objToMap(obj any) (any, error) {
 			if tag.squash {
 				squashed, ok := generalizedValue.(map[string]any)
 				if !ok {
-					return nil, perrors.Errorf("cannot squash non-struct type '%s'", value.Type())
+					return nil, fmt.Errorf("cannot squash non-struct type '%s'", value.Type())
 				}
 				delete(squashed, "class")
 				maps.Copy(result, squashed)

@@ -19,13 +19,12 @@ package graceful_shutdown
 
 import (
 	"context"
+	"errors"
 	"net/url"
 	"testing"
 )
 
 import (
-	perrors "github.com/pkg/errors"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -95,7 +94,7 @@ func (handler *TestRejectedExecutionHandler) RejectedExecution(url *common.URL,
 	_ base.Invocation) result.Result {
 
 	return &result.RPCResult{
-		Err: perrors.New("Rejected"),
+		Err: errors.New("Rejected"),
 	}
 }
 

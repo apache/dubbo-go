@@ -266,7 +266,7 @@ func (c *zookeeperDynamicConfiguration) PublishConfig(key string, group string, 
 	err := c.client.CreateWithValue(path, valueBytes)
 	if err != nil {
 		// try update value if node already exists
-		if perrors.Is(err, zk.ErrNodeExists) {
+		if errors.Is(err, zk.ErrNodeExists) {
 			_, stat, _ := c.client.GetContent(path)
 			_, setErr := c.client.SetContent(path, valueBytes, stat.Version)
 			if setErr != nil {
@@ -298,7 +298,7 @@ func (c *zookeeperDynamicConfiguration) GetConfigKeysByGroup(group string) (*gxs
 	}
 
 	if len(result) == 0 {
-		return nil, perrors.New("could not find keys with group: " + group)
+		return nil, errors.New("could not find keys with group: " + group)
 	}
 	set := gxset.NewSet()
 	for _, e := range result {

@@ -18,6 +18,7 @@
 package etcdv3
 
 import (
+	"errors"
 	"fmt"
 	"path"
 	"strings"
@@ -27,8 +28,6 @@ import (
 import (
 	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -111,7 +110,7 @@ func (r *etcdV3Registry) DoRegister(root string, node string) error {
 
 // DoUnregister is not supported in etcdV3Registry.
 func (r *etcdV3Registry) DoUnregister(root string, node string) error {
-	return perrors.New("DoUnregister is not support in etcdV3Registry")
+	return errors.New("DoUnregister is not support in etcdV3Registry")
 }
 
 // CloseAndNilClient closes listeners and clear client
@@ -133,7 +132,7 @@ func (r *etcdV3Registry) CreatePath(k string) error {
 	for _, str := range strings.Split(k, "/")[1:] {
 		tmpPath = path.Join(tmpPath, "/", str)
 		if err := r.client.Put(tmpPath, ""); err != nil {
-			return perrors.WithMessagef(err, "create path %s in etcd", tmpPath)
+			return fmt.Errorf("create path %s in etcd: %w", tmpPath, err)
 		}
 	}
 
@@ -150,7 +149,7 @@ func (r *etcdV3Registry) DoSubscribe(svc *common.URL) (registry.Listener, error)
 		client := r.client
 		r.cltLock.Unlock()
 		if client == nil {
-			return nil, perrors.New("etcd client broken")
+			return nil, errors.New("etcd client broken")
 		}
 		r.listenerLock.Lock()
 		r.listener = etcdv3.NewEventListener(r.client) // new client & listener
@@ -165,7 +164,7 @@ func (r *etcdV3Registry) DoSubscribe(svc *common.URL) (registry.Listener, error)
 }
 
 func (r *etcdV3Registry) DoUnsubscribe(conf *common.URL) (registry.Listener, error) {
-	return nil, perrors.New("DoUnsubscribe is not support in etcdV3Registry")
+	return nil, errors.New("DoUnsubscribe is not support in etcdV3Registry")
 }
 
 // LoadSubscribeInstances load subscribe instance

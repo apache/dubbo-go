@@ -26,8 +26,6 @@ import (
 import (
 	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -92,7 +90,7 @@ func (d *ServiceNameMapping) Map(url *common.URL) (err error) {
 	// if the mapping can hold a report instance, it can write once
 	metadataReports := metadata.GetMetadataReports()
 	if len(metadataReports) == 0 {
-		err = perrors.New("can not registering mapping to remote cause no metadata report instance found")
+		err = errors.New("can not registering mapping to remote cause no metadata report instance found")
 		logger.Errorf("[Metadata][Mapping] register failed interface=%s application=%s group=%s reports=0 err=%v", serviceInterface, appName, DefaultGroup, err)
 		return err
 	}
@@ -159,7 +157,7 @@ func (d *ServiceNameMapping) Get(url *common.URL, listener mapping.MappingListen
 
 	metadataReports := metadata.GetMetadataReports()
 	if len(metadataReports) == 0 {
-		err = perrors.New("can not get mapping in remote cause no metadata report instance found")
+		err = errors.New("can not get mapping in remote cause no metadata report instance found")
 		logger.Warnf("[Metadata][Mapping] get failed interface=%s group=%s reports=0 err=%v", serviceInterface, DefaultGroup, err)
 		return nil, err
 	}
@@ -221,7 +219,7 @@ func (d *ServiceNameMapping) Remove(url *common.URL) (err error) {
 
 	metadataReports := metadata.GetMetadataReports()
 	if len(metadataReports) == 0 {
-		err = perrors.New("can not remove mapping in remote cause no metadata report instance found")
+		err = errors.New("can not remove mapping in remote cause no metadata report instance found")
 		logger.Warnf("[Metadata][Mapping] remove failed interface=%s group=%s reports=0 err=%v", serviceInterface, DefaultGroup, err)
 		return err
 	}

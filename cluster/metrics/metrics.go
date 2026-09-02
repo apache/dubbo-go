@@ -18,7 +18,7 @@
 package metrics
 
 import (
-	"github.com/pkg/errors"
+	"errors"
 )
 
 import (

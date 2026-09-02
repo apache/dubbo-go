@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"sync/atomic"
 )
 
 import (
@@ -31,8 +32,6 @@ import (
 	"github.com/dubbogo/grpc-go"
 
 	"github.com/quic-go/quic-go/http3"
-
-	uatomic "go.uber.org/atomic"
 
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -59,9 +58,9 @@ type Server struct {
 	addr               string
 	mux                *methodRouteMux
 	handlers           map[string]*Handler
-	httpSrv            uatomic.Pointer[http.Server]
-	http3Srv           uatomic.Pointer[http3.Server]
-	stopCount          uatomic.Uint32
+	httpSrv            atomic.Pointer[http.Server]
+	http3Srv           atomic.Pointer[http3.Server]
+	stopCount          atomic.Uint32
 	tripleConfig       *global.TripleConfig // Configuration for the triple protocol
 	openapiIntegration *openapi.OpenAPIIntegration
 }

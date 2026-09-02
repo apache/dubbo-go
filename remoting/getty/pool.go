@@ -94,7 +94,7 @@ func waitForGettyClient(addr string, timeout time.Duration, available func() boo
 			return nil
 		}
 		if time.Since(start) > timeout {
-			return perrors.New(fmt.Sprintf("failed to create client connection to %s in %s", addr, timeout))
+			return fmt.Errorf("failed to create client connection to %s in %s", addr, timeout)
 		}
 
 		interval := min(time.Millisecond*time.Duration(idx), 100*time.Millisecond)

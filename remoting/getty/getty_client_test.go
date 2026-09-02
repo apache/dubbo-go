@@ -20,6 +20,7 @@ package getty
 import (
 	"bytes"
 	"context"
+	"errors"
 	"net"
 	"reflect"
 	"sync"
@@ -31,8 +32,6 @@ import (
 	dubboGetty "github.com/apache/dubbo-getty"
 
 	hessian "github.com/apache/dubbo-go-hessian2"
-
-	perrors "github.com/pkg/errors"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -254,7 +253,7 @@ func (u *UserProvider) GetUser1() error {
 }
 
 func (u *UserProvider) GetUser2() error {
-	return perrors.New("error")
+	return errors.New("error")
 }
 
 func (u *UserProvider) GetUser3(rsp *[]any) error {
@@ -474,4 +473,42 @@ func TestClientCloseDoesNotWaitForConnectLock(t *testing.T) {
 	_, _, err := client.selectSession("")
 	require.Error(t, err)
 	require.ErrorIs(t, err, errClientClosed)
+}
+
+// mockWriteOnlySession embeds the getty.Session interface and overrides only
+// WritePkg. It never delivers a response, so a two-way request must eventually
+// hit the read-timeout branch.
+type mockWriteOnlySession struct {
+	dubboGetty.Session
+}
+
+func (m *mockWriteOnlySession) WritePkg(pkg any, _ time.Duration) (int, int, error) {
+	return 0, 0, nil
+}
+
+func (m *mockWriteOnlySession) IsClosed() bool { return false }
+
+func (m *mockWriteOnlySession) Stat() string { return "mock-session" }
+
+func (m *mockWriteOnlySession) Close() {}
+
+// TestRequestContextReadTimeout is a regression test for the request timeout
+// wait: when no response arrives within the timeout, RequestContext must return
+// errClientReadTimeout.
+func TestRequestContextReadTimeout(t *testing.T) {
+	client := NewClient(Options{RequestTimeout: 30 * time.Millisecond})
+	client.gettyClient = &gettyRPCClient{
+		rpcClient: client,
+		sessions:  []*rpcSession{{session: &mockWriteOnlySession{}}},
+	}
+
+	request := remoting.NewRequest("2.0.2")
+	request.TwoWay = true
+	rsp := remoting.NewPendingResponse(request.ID)
+
+	start := time.Now()
+	err := client.RequestContext(context.Background(), request, 30*time.Millisecond, rsp)
+	require.Error(t, err)
+	require.ErrorIs(t, err, errClientReadTimeout)
+	require.Less(t, time.Since(start), time.Second)
 }
