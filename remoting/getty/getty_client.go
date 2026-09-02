@@ -19,8 +19,10 @@ package getty
 
 import (
 	"context"
+	"errors"
 	"math/rand"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -31,8 +33,6 @@ import (
 	gxsync "github.com/dubbogo/gost/sync"
 
 	perrors "github.com/pkg/errors"
-
-	"go.uber.org/atomic"
 
 	"go.yaml.in/yaml/v4"
 )
@@ -47,9 +47,9 @@ import (
 )
 
 var (
-	errSessionNotExist   = perrors.New("session not exist")
-	errClientClosed      = perrors.New("client closed")
-	errClientReadTimeout = perrors.New("maybe the client read timeout or fail to decode tcp stream in Writer.Write")
+	errSessionNotExist   = errors.New("session not exist")
+	errClientClosed      = errors.New("client closed")
+	errClientReadTimeout = errors.New("maybe the client read timeout or fail to decode tcp stream in Writer.Write")
 
 	clientConf = GetDefaultClientConfig()
 
@@ -229,7 +229,7 @@ func (c *Client) RequestContext(ctx context.Context, request *remoting.Request, 
 	if timeout <= 0 {
 		timeout = c.opts.RequestTimeout
 	}
-	_, session, err := c.selectSession(c.addr)
+	rpcClient, session, err := c.selectSession(c.addr)
 	if err != nil {
 		return perrors.WithStack(err)
 	}
@@ -256,6 +256,9 @@ func (c *Client) RequestContext(ctx context.Context, request *remoting.Request, 
 	defer timer.Stop()
 	select {
 	case <-timer.C:
+		remoting.RemovePendingResponse(remoting.SequenceType(request.ID))
+		rpcClient.removeSession(session)
+		go session.Close()
 		return perrors.WithStack(errClientReadTimeout)
 	case <-response.Done:
 		err = response.Err

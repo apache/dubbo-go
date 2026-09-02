@@ -20,7 +20,9 @@ package dubbo
 import (
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
+	"time"
 )
 
 func writeFile(t *testing.T, dir, name, content string) string {
@@ -107,4 +109,39 @@ func TestHotUpdateConfig_AllowsWithCustomPrefix(t *testing.T) {
 	if err := hotUpdateConfig(conf); err != nil {
 		t.Fatalf("hotUpdateConfig unexpected error with allowed prefix: %v", err)
 	}
+}
+
+// TestGoSafely_RunsAndRecoversPanic is a regression test for the inline
+// replacement of gost/runtime.GoSafely in loader.go (ported from the gost
+// TestGoSafe semantics): fn must run, and a panic raised inside fn must be
+// recovered so that wg.Go still completes and the process is not crashed.
+func TestGoSafely_RunsAndRecoversPanic(t *testing.T) {
+	t.Run("normal handler runs and completes", func(t *testing.T) {
+		ran := make(chan struct{})
+		var wg sync.WaitGroup
+		goSafely(&wg, func() { close(ran) })
+		select {
+		case <-ran:
+		case <-time.After(time.Second):
+			t.Fatal("goSafely did not run the handler")
+		}
+		wg.Wait()
+	})
+
+	t.Run("panicking handler is contained and completes", func(t *testing.T) {
+		started := make(chan struct{})
+		var wg sync.WaitGroup
+		goSafely(&wg, func() {
+			close(started)
+			panic("boom")
+		})
+		select {
+		case <-started:
+		case <-time.After(time.Second):
+			t.Fatal("goSafely did not start the panicking handler")
+		}
+		// Must not hang: the recover inside goSafely ensures the goroutine
+		// finishes and wg reaches zero even though the handler panicked.
+		wg.Wait()
+	})
 }

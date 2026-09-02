@@ -22,6 +22,7 @@ import (
 	"maps"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -227,6 +228,38 @@ func WithHttp3MaxIncomingStreams(streams int64) Option {
 func WithHttp3MaxIncomingUniStreams(streams int64) Option {
 	return func(opts *Options) {
 		opts.Triple.Http3.MaxIncomingUniStreams = streams
+	}
+}
+
+// WithHttp3InitialStreamReceiveWindow sets the initial stream-level flow control receive window in bytes.
+// A zero window keeps the quic-go default.
+func WithHttp3InitialStreamReceiveWindow(window uint64) Option {
+	return func(opts *Options) {
+		opts.Triple.Http3.InitialStreamReceiveWindow = strconv.FormatUint(window, 10)
+	}
+}
+
+// WithHttp3MaxStreamReceiveWindow sets the maximum stream-level flow control receive window in bytes.
+// A zero window keeps the quic-go default.
+func WithHttp3MaxStreamReceiveWindow(window uint64) Option {
+	return func(opts *Options) {
+		opts.Triple.Http3.MaxStreamReceiveWindow = strconv.FormatUint(window, 10)
+	}
+}
+
+// WithHttp3InitialConnectionReceiveWindow sets the initial connection-level flow control receive window in bytes.
+// A zero window keeps the quic-go default.
+func WithHttp3InitialConnectionReceiveWindow(window uint64) Option {
+	return func(opts *Options) {
+		opts.Triple.Http3.InitialConnectionReceiveWindow = strconv.FormatUint(window, 10)
+	}
+}
+
+// WithHttp3MaxConnectionReceiveWindow sets the maximum connection-level flow control receive window in bytes.
+// A zero window keeps the quic-go default.
+func WithHttp3MaxConnectionReceiveWindow(window uint64) Option {
+	return func(opts *Options) {
+		opts.Triple.Http3.MaxConnectionReceiveWindow = strconv.FormatUint(window, 10)
 	}
 }
 

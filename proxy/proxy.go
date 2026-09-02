@@ -29,8 +29,6 @@ import (
 	"github.com/apache/dubbo-go-hessian2/java_exception"
 
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -58,6 +56,19 @@ type (
 )
 
 var typError = reflect.Zero(reflect.TypeFor[error]()).Type()
+
+// resolveRootCause returns the root cause of err by walking the stdlib
+// Unwrap() chain. pkg/errors v0.9.1 wrapper types also implement Unwrap(),
+// so a single stdlib walk reaches the same root that perrors.Cause used to.
+func resolveRootCause(err error) error {
+	for {
+		unwrapped := errors.Unwrap(err)
+		if unwrapped == nil {
+			return err
+		}
+		err = unwrapped
+	}
+}
 
 // NewProxy create service proxy.
 func NewProxy(invoke base.Invoker, callback any, attachments map[string]string) *Proxy {
@@ -204,7 +215,7 @@ func DefaultProxyImplementFunc(p *Proxy, v common.RPCService) {
 			result := p.invoke.Invoke(invCtx, inv)
 			err = result.Error()
 			// cause is raw user level error
-			cause := perrors.Cause(err)
+			cause := resolveRootCause(err)
 			if err != nil {
 				// if some error happened, it should be log some info in the separate file.
 				if throwabler, ok := cause.(java_exception.Throwabler); ok {

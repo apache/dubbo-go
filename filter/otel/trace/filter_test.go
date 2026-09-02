@@ -24,11 +24,11 @@ import (
 )
 
 import (
-	"github.com/golang/mock/gomock"
-
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
+
+	"go.uber.org/mock/gomock"
 )
 
 import (

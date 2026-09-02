@@ -18,12 +18,10 @@
 package generic
 
 import (
+	"errors"
+	"fmt"
 	"reflect"
 	"strings"
-)
-
-import (
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -74,7 +72,7 @@ func getGeneralizer(generic string) (generalizer.Generalizer, error) {
 	case strings.EqualFold(generic, constant.GenericSerializationBean):
 		return generalizer.GetBeanGeneralizer(), nil
 	default:
-		return nil, perrors.Errorf("unsupported generic mode %q", generic)
+		return nil, fmt.Errorf("unsupported generic mode %q", generic)
 	}
 }
 
@@ -136,7 +134,7 @@ func realizeResult(data any, targetType reflect.Type, g generalizer.Generalizer)
 
 	realized, err := g.Realize(data, targetType)
 	if err != nil {
-		return nil, perrors.Errorf("failed to deserialize result to %s: %v", targetType.String(), err)
+		return nil, fmt.Errorf("failed to deserialize result to %s: %v", targetType.String(), err)
 	}
 
 	return realized, nil
@@ -158,7 +156,7 @@ func shouldRealizeTypedResult(data any, generic string) bool {
 }
 
 func unsupportedTypedResultModeError(generic string) error {
-	return perrors.Errorf("generic mode %q does not support typed result", generic)
+	return fmt.Errorf("generic mode %q does not support typed result", generic)
 }
 
 func setRealizedReply(replyValue reflect.Value, realized any) error {
@@ -169,7 +167,7 @@ func setRealizedReply(replyValue reflect.Value, realized any) error {
 	target := replyValue.Elem()
 	value, ok := valueForAssignment(reflect.ValueOf(realized), target.Type())
 	if !ok {
-		return perrors.Errorf("failed to assign realized result of type %T to reply type %s", realized, target.Type())
+		return fmt.Errorf("failed to assign realized result of type %T to reply type %s", realized, target.Type())
 	}
 	target.Set(value)
 	return nil
@@ -230,16 +228,16 @@ func valueForAssignment(value reflect.Value, targetType reflect.Type) (reflect.V
 //   - error if validation fails
 func validateReplyPointer(reply any) (reflect.Value, error) {
 	if reply == nil {
-		return reflect.Value{}, perrors.New("reply cannot be nil")
+		return reflect.Value{}, errors.New("reply cannot be nil")
 	}
 
 	replyValue := reflect.ValueOf(reply)
 	if replyValue.Kind() != reflect.Pointer {
-		return reflect.Value{}, perrors.New("reply must be a pointer")
+		return reflect.Value{}, errors.New("reply must be a pointer")
 	}
 
 	if replyValue.IsNil() {
-		return reflect.Value{}, perrors.New("reply cannot be a nil pointer")
+		return reflect.Value{}, errors.New("reply cannot be a nil pointer")
 	}
 
 	return replyValue, nil

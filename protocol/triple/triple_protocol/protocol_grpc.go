@@ -280,23 +280,31 @@ func (g *grpcClient) NewConn(
 			header[grpcHeaderTimeout] = []string{encodedDeadline}
 		}
 	}
-	duplexCall := newDuplexHTTPCall(
-		ctx,
-		g.HTTPClient,
-		g.URL,
-		spec,
-		header,
-	)
+	var call unaryClientCall
+	if spec.StreamType == StreamTypeUnary && g.UnaryFastPath {
+		// Unary fast path: no io.Pipe, no per-request goroutine. Streaming
+		// calls always keep using duplexHTTPCall.
+		call = newUnaryFastPathCall(
+			ctx,
+			g.HTTPClient,
+			g.URL,
+			spec,
+			header,
+			g.BufferPool,
+		)
+	} else {
+		call = newDuplexHTTPCall(ctx, g.HTTPClient, g.URL, spec, header)
+	}
 	conn := &grpcClientConn{
 		spec:             spec,
 		peer:             g.Peer(),
-		duplexCall:       duplexCall,
+		call:             call,
 		compressionPools: g.CompressionPools,
 		bufferPool:       g.BufferPool,
 		protobuf:         g.Protobuf,
 		marshaler: grpcMarshaler{
 			envelopeWriter: envelopeWriter{
-				writer:           duplexCall,
+				writer:           call,
 				compressionPool:  g.CompressionPools.Get(g.CompressionName),
 				codec:            g.Codec,
 				compressMinBytes: g.CompressMinBytes,
@@ -306,7 +314,7 @@ func (g *grpcClient) NewConn(
 		},
 		unmarshaler: grpcUnmarshaler{
 			envelopeReader: envelopeReader{
-				reader:       duplexCall,
+				reader:       call,
 				codec:        g.Codec,
 				bufferPool:   g.BufferPool,
 				readMaxBytes: g.ReadMaxBytes,
@@ -315,8 +323,8 @@ func (g *grpcClient) NewConn(
 		responseHeader:  make(http.Header),
 		responseTrailer: make(http.Header),
 	}
-	duplexCall.SetValidateResponse(conn.validateResponse)
-	conn.readTrailers = func(_ *grpcUnmarshaler, call *duplexHTTPCall) http.Header {
+	call.SetValidateResponse(conn.validateResponse)
+	conn.readTrailers = func(_ *grpcUnmarshaler, call unaryClientCall) http.Header {
 		// To access HTTP trailers, we need to read the body to EOF.
 		_ = discard(call)
 		return call.ResponseTrailer()
@@ -328,7 +336,7 @@ func (g *grpcClient) NewConn(
 type grpcClientConn struct {
 	spec             Spec
 	peer             Peer
-	duplexCall       *duplexHTTPCall
+	call             unaryClientCall
 	compressionPools readOnlyCompressionPools
 	bufferPool       *bufferPool
 	protobuf         Codec // for errors
@@ -336,7 +344,7 @@ type grpcClientConn struct {
 	unmarshaler      grpcUnmarshaler
 	responseHeader   http.Header
 	responseTrailer  http.Header
-	readTrailers     func(*grpcUnmarshaler, *duplexHTTPCall) http.Header
+	readTrailers     func(*grpcUnmarshaler, unaryClientCall) http.Header
 }
 
 func (cc *grpcClientConn) Spec() Spec {
@@ -355,15 +363,15 @@ func (cc *grpcClientConn) Send(msg any) error {
 }
 
 func (cc *grpcClientConn) RequestHeader() http.Header {
-	return cc.duplexCall.Header()
+	return cc.call.Header()
 }
 
 func (cc *grpcClientConn) CloseRequest() error {
-	return cc.duplexCall.CloseWrite()
+	return cc.call.CloseWrite()
 }
 
 func (cc *grpcClientConn) Receive(msg any) error {
-	cc.duplexCall.BlockUntilResponseReady()
+	cc.call.BlockUntilResponseReady()
 	err := cc.unmarshaler.Unmarshal(msg)
 	if err == nil {
 		return nil
@@ -377,7 +385,7 @@ func (cc *grpcClientConn) Receive(msg any) error {
 	// See if the server sent an explicit error in the HTTP or gRPC-Web trailers.
 	mergeHeaders(
 		cc.responseTrailer,
-		cc.readTrailers(&cc.unmarshaler, cc.duplexCall),
+		cc.readTrailers(&cc.unmarshaler, cc.call),
 	)
 	serverErr := grpcErrorFromTrailer(cc.bufferPool, cc.protobuf, cc.responseTrailer)
 	if serverErr != nil && (errors.Is(err, io.EOF) || !errors.Is(serverErr, errTrailersWithoutGRPCStatus)) {
@@ -391,33 +399,33 @@ func (cc *grpcClientConn) Receive(msg any) error {
 		// the stream has ended, Receive must return an error.
 		serverErr.meta = cc.responseHeader.Clone()
 		mergeHeaders(serverErr.meta, cc.responseTrailer)
-		cc.duplexCall.SetError(serverErr)
+		cc.call.SetError(serverErr)
 		return serverErr
 	}
 	// This was probably an error converting the bytes to a message or an error
 	// reading from the network. We're going to return it to the
 	// user, but we also want to setResponseError so Send errors out.
-	cc.duplexCall.SetError(err)
+	cc.call.SetError(err)
 	return err
 }
 
 func (cc *grpcClientConn) ResponseHeader() http.Header {
-	cc.duplexCall.BlockUntilResponseReady()
+	cc.call.BlockUntilResponseReady()
 	return cc.responseHeader
 }
 
 func (cc *grpcClientConn) ResponseTrailer() http.Header {
-	cc.duplexCall.BlockUntilResponseReady()
+	cc.call.BlockUntilResponseReady()
 	return cc.responseTrailer
 }
 
 func (cc *grpcClientConn) CloseResponse() error {
-	err := cc.duplexCall.CloseRead()
+	err := cc.call.CloseRead()
 	if err != nil {
 		return err
 	}
-	if cc.duplexCall.response != nil && cc.duplexCall.response.Trailer != nil {
-		cc.responseTrailer = cc.duplexCall.response.Trailer.Clone()
+	if trailer := cc.call.ResponseTrailer(); len(trailer) > 0 {
+		cc.responseTrailer = trailer.Clone()
 	}
 	return nil
 }

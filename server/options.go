@@ -18,9 +18,11 @@
 package server
 
 import (
+	"fmt"
 	"reflect"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -28,10 +30,6 @@ import (
 	"github.com/creasty/defaults"
 
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
-
-	"go.uber.org/atomic"
 )
 
 import (
@@ -101,8 +99,8 @@ func (srvOpts *ServerOptions) init(opts ...ServerOption) error {
 	// enable adaptive service verbose
 	if providerConf.AdaptiveServiceVerbose {
 		if !providerConf.AdaptiveService {
-			return perrors.Errorf("The adaptive service is disabled, " +
-				"adaptive service verbose should be disabled either.")
+			return fmt.Errorf("the adaptive service is disabled, " +
+				"adaptive service verbose should be disabled either")
 		}
 		logger.Info("[Server] adaptive service verbose is enabled")
 		logger.Debug("[Server] debug-level info could be shown")
@@ -668,8 +666,8 @@ func defaultServiceOptions() *ServiceOptions {
 	return &ServiceOptions{
 		Service:     global.DefaultServiceConfig(),
 		Application: global.DefaultApplicationConfig(),
-		unexported:  atomic.NewBool(false),
-		exported:    atomic.NewBool(false),
+		unexported:  new(atomic.Bool),
+		exported:    new(atomic.Bool),
 		needExport:  true,
 	}
 }
@@ -687,7 +685,7 @@ func (svcOpts *ServiceOptions) init(srv *Server, opts ...ServiceOption) error {
 
 	dubboutil.CopyFields(reflect.ValueOf(srv.cfg.Provider).Elem(), reflect.ValueOf(svc).Elem())
 
-	svcOpts.exported = atomic.NewBool(false)
+	svcOpts.exported = new(atomic.Bool)
 
 	application := svcOpts.Application
 	if application != nil {
@@ -698,7 +696,7 @@ func (svcOpts *ServiceOptions) init(srv *Server, opts ...ServiceOption) error {
 			svc.Version = application.Version
 		}
 	}
-	svcOpts.unexported = atomic.NewBool(false)
+	svcOpts.unexported = new(atomic.Bool)
 
 	// initialize Registries
 	if len(svc.RCRegistriesMap) == 0 {

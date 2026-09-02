@@ -22,6 +22,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"mime"
 	"net"
@@ -414,13 +415,13 @@ func serveRequest(ctx context.Context, header map[string]string, body []byte, wr
 		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 			return perrors.WithStack(err)
 		}
-		return perrors.New("server cannot decode request: " + err.Error())
+		return errors.New("server cannot decode request: " + err.Error())
 	}
 
 	path := header["Path"]
 	methodName := codec.req.Method
 	if len(path) == 0 || len(methodName) == 0 {
-		return perrors.New("service/method request ill-formed: " + path + "/" + methodName)
+		return errors.New("service/method request ill-formed: " + path + "/" + methodName)
 	}
 
 	// read body
@@ -433,7 +434,7 @@ func serveRequest(ctx context.Context, header map[string]string, body []byte, wr
 	// exporter invoke
 	exporter, ok := jsonrpcProtocol.ExporterMap().Load(path)
 	if !ok {
-		return perrors.Errorf("service not found: %s", path)
+		return fmt.Errorf("service not found: %s", path)
 	}
 	invoker := exporter.(*JsonrpcExporter).GetInvoker()
 	if invoker != nil {

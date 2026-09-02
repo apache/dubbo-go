@@ -18,6 +18,8 @@
 package nacos
 
 import (
+	"errors"
+	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -30,8 +32,6 @@ import (
 	"github.com/dubbogo/gost/log/logger"
 
 	nacosConstant "github.com/nacos-group/nacos-sdk-go/v2/common/constant"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -123,7 +123,7 @@ func NewNacosConfigClientByUrl(url *common.URL) (*nacosClient.NacosConfigClient,
 	}
 	clientName := url.GetParam(constant.ClientNameKey, "")
 	if len(clientName) <= 0 {
-		return nil, perrors.New("nacos client name must set")
+		return nil, errors.New("nacos client name must set")
 	}
 	return newNacosConfigClient(nacosClientPoolKey("config", url), true, sc, cc)
 }
@@ -131,12 +131,12 @@ func NewNacosConfigClientByUrl(url *common.URL) (*nacosClient.NacosConfigClient,
 // GetNacosConfig will return the nacos config
 func GetNacosConfig(url *common.URL) ([]nacosConstant.ServerConfig, nacosConstant.ClientConfig, error) {
 	if url == nil {
-		return []nacosConstant.ServerConfig{}, nacosConstant.ClientConfig{}, perrors.New("url is empty!")
+		return []nacosConstant.ServerConfig{}, nacosConstant.ClientConfig{}, errors.New("url is empty")
 	}
 
 	if len(url.Location) == 0 {
 		return []nacosConstant.ServerConfig{}, nacosConstant.ClientConfig{},
-			perrors.New("url.location is empty!")
+			errors.New("url.location is empty")
 	}
 
 	var serverConfigs []nacosConstant.ServerConfig
@@ -148,13 +148,13 @@ func GetNacosConfig(url *common.URL) ([]nacosConstant.ServerConfig, nacosConstan
 			ip, portStr, err := net.SplitHostPort(addr)
 			if err != nil {
 				return []nacosConstant.ServerConfig{}, nacosConstant.ClientConfig{},
-					perrors.WithMessagef(err, "split [%s] ", addr)
+					fmt.Errorf("split [%s] : %w", addr, err)
 			}
 			portContextPath := strings.Split(portStr, constant.PathSeparator)
 			port, err := strconv.Atoi(portContextPath[0])
 			if err != nil {
 				return []nacosConstant.ServerConfig{}, nacosConstant.ClientConfig{},
-					perrors.WithMessagef(err, "port [%s] ", portContextPath[0])
+					fmt.Errorf("port [%s] : %w", portContextPath[0], err)
 			}
 			var contextPath string
 			if len(portContextPath) > 1 {
@@ -199,7 +199,7 @@ func NewNacosClientByURL(url *common.URL) (*nacosClient.NacosNamingClient, error
 	}
 	clientName := url.GetParam(constant.ClientNameKey, "")
 	if len(clientName) <= 0 {
-		return nil, perrors.New("nacos client name must set")
+		return nil, errors.New("nacos client name must set")
 	}
 	logger.Infof("[Remoting][Nacos] new nacos client, config=%+v", scs)
 	return newNacosNamingClient(nacosClientPoolKey("naming", url), true, scs, cc)

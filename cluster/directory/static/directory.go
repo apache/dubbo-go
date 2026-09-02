@@ -18,9 +18,11 @@
 package static
 
 import (
-	"github.com/dubbogo/gost/log/logger"
+	"fmt"
+)
 
-	perrors "github.com/pkg/errors"
+import (
+	"github.com/dubbogo/gost/log/logger"
 )
 
 import (
@@ -100,7 +102,7 @@ func (dir *directory) Destroy() {
 // BuildRouterChain build router chain by invokers
 func (dir *directory) BuildRouterChain(invokers []protocolbase.Invoker, url *common.URL) error {
 	if len(invokers) == 0 {
-		return perrors.Errorf("invokers == null")
+		return fmt.Errorf("invokers == null")
 	}
 	routerChain, e := chain.NewRouterChain(url)
 	if e != nil {

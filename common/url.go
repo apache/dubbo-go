@@ -20,6 +20,7 @@ package common
 import (
 	"bytes"
 	"encoding/base64"
+	"fmt"
 	"math"
 	"net"
 	"net/url"
@@ -36,8 +37,6 @@ import (
 	gxset "github.com/dubbogo/gost/container/set"
 
 	"github.com/google/uuid"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -276,7 +275,7 @@ func NewURL(urlString string, opts ...Option) (*URL, error) {
 
 	rawURLString, err := url.QueryUnescape(urlString)
 	if err != nil {
-		return &s, perrors.Errorf("URL.QueryUnescape(%s),  error{%v}", urlString, err)
+		return &s, fmt.Errorf("URL.QueryUnescape(%s),  error{%v}", urlString, err)
 	}
 
 	// rawURLString = "//" + rawURLString
@@ -290,12 +289,12 @@ func NewURL(urlString string, opts ...Option) (*URL, error) {
 
 	serviceURL, urlParseErr := url.Parse(rawURLString)
 	if urlParseErr != nil {
-		return &s, perrors.Errorf("URL.Parse(URL string{%s}),  error{%v}", rawURLString, urlParseErr)
+		return &s, fmt.Errorf("URL.Parse(URL string{%s}),  error{%v}", rawURLString, urlParseErr)
 	}
 
 	s.params, err = url.ParseQuery(serviceURL.RawQuery)
 	if err != nil {
-		return &s, perrors.Errorf("URL.ParseQuery(raw URL string{%s}),  error{%v}", serviceURL.RawQuery, err)
+		return &s, fmt.Errorf("URL.ParseQuery(raw URL string{%s}),  error{%v}", serviceURL.RawQuery, err)
 	}
 
 	s.PrimitiveURL = urlString
@@ -310,7 +309,7 @@ func NewURL(urlString string, opts ...Option) (*URL, error) {
 		if strings.Contains(location, ":") {
 			s.Ip, s.Port, err = net.SplitHostPort(location)
 			if err != nil {
-				return &s, perrors.Errorf("net.SplitHostPort(url.Host{%s}), error{%v}", s.Location, err)
+				return &s, fmt.Errorf("net.SplitHostPort(url.Host{%s}), error{%v}", s.Location, err)
 			}
 			break
 		}

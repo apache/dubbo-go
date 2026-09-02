@@ -19,15 +19,13 @@ package base
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"sync/atomic"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
-
-	uatomic "go.uber.org/atomic"
 )
 
 import (
@@ -43,15 +41,15 @@ var (
 	// emptyURL is a global placeholder to prevent nil pointer dereferences during invoker destruction.
 	// It is returned by GetURL() when the invoker is destroyed, ensuring that concurrent readers receive a safe, initialized object.
 	emptyURL            = common.NewURLWithOptions(common.WithProtocol(protocolDestroyed))
-	ErrClientClosed     = perrors.New("remoting client has closed")
-	ErrNoReply          = perrors.New("request need @response")
-	ErrDestroyedInvoker = perrors.New("request Destroyed invoker")
+	ErrClientClosed     = errors.New("remoting client has closed")
+	ErrNoReply          = errors.New("request need @response")
+	ErrDestroyedInvoker = errors.New("request Destroyed invoker")
 )
 
 // Invoker the service invocation interface for the consumer
 // Extension - Invoker
 //
-//go:generate mockgen -source invoker.go -destination mock/mock_invoker.go -self_package dubbo.apache.org/dubbo-go/v3/protocol/mock --package mock Invoker
+//go:generate go run go.uber.org/mock/mockgen@v0.6.0 -copyright_file ../../.github/mockgen-copyright.txt -source base_invoker.go -destination ../mock/mock_invoker.go -self_package dubbo.apache.org/dubbo-go/v3/protocol/mock -package mock -exclude_interfaces AvailabilitySetter
 type Invoker interface {
 	common.Node
 	// Invoke the invocation and return result.
@@ -65,9 +63,9 @@ type AvailabilitySetter interface {
 
 // BaseInvoker provides default invoker implements Invoker
 type BaseInvoker struct {
-	url       uatomic.Pointer[common.URL]
-	available uatomic.Bool
-	destroyed uatomic.Bool
+	url       atomic.Pointer[common.URL]
+	available atomic.Bool
+	destroyed atomic.Bool
 }
 
 // NewBaseInvoker creates a new BaseInvoker

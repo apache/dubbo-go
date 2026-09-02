@@ -19,17 +19,16 @@ package failfast
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 )
 
 import (
-	"github.com/golang/mock/gomock"
-
-	perrors "github.com/pkg/errors"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.uber.org/mock/gomock"
 )
 
 import (
@@ -96,7 +95,7 @@ func TestFailfastInvokeFail(t *testing.T) {
 	invoker.EXPECT().IsAvailable().Return(true).AnyTimes()
 	invoker.EXPECT().GetURL().Return(failfastUrl).AnyTimes()
 
-	mockResult := &result.RPCResult{Err: perrors.New("error")}
+	mockResult := &result.RPCResult{Err: errors.New("error")}
 
 	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(mockResult).AnyTimes()
 	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})

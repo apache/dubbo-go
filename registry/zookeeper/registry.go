@@ -18,6 +18,7 @@
 package zookeeper
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"path"
@@ -137,7 +138,7 @@ func (r *zkRegistry) DoUnregister(root string, node string) error {
 	r.cltLock.Lock()
 	defer r.cltLock.Unlock()
 	if !r.ZkClient().ZkConnValid() {
-		return perrors.Errorf("zk client is not valid.")
+		return fmt.Errorf("zk client is not valid")
 	}
 	return r.ZkClient().Delete(path.Join(root, node))
 }
@@ -194,7 +195,7 @@ func (r *zkRegistry) registerTempZookeeperNode(root string, node string) error {
 	r.cltLock.Lock()
 	defer r.cltLock.Unlock()
 	if r.client == nil {
-		return perrors.WithStack(perrors.New("zk client already been closed"))
+		return perrors.WithStack(errors.New("zk client already been closed"))
 	}
 	logger.Infof("[Registry][Zookeeper] Registry instance with root = %s, node = %s", root, node)
 	err = r.client.Create(root)
@@ -210,7 +211,7 @@ func (r *zkRegistry) registerTempZookeeperNode(root string, node string) error {
 	}
 
 	// Maybe the node did exist, then we need to delete it first and recreate it
-	if perrors.Cause(err) == zk.ErrNodeExists {
+	if errors.Is(err, zk.ErrNodeExists) {
 		if err = r.client.Delete(zkPath); err == nil {
 			_, err = r.client.RegisterTemp(root, node)
 		}
@@ -221,7 +222,7 @@ func (r *zkRegistry) registerTempZookeeperNode(root string, node string) error {
 	}
 
 	logger.Errorf("[Registry][Zookeeper] register temp node(root=%s, node=%s) = err=%v", root, node, perrors.WithStack(err))
-	return perrors.WithMessagef(err, "RegisterTempNode(root{%s}, node{%s})", root, node)
+	return fmt.Errorf("RegisterTempNode(root{%s}, node{%s}): %w", root, node, err)
 }
 
 func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListener, error) {
@@ -237,7 +238,7 @@ func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListen
 			r.listenerLock.Lock()
 			defer r.listenerLock.Unlock()
 			if zkListener.isClosed {
-				return nil, perrors.New("configListener already been closed")
+				return nil, errors.New("configListener already been closed")
 			} else {
 				return zkListener, nil
 			}
@@ -250,7 +251,7 @@ func (r *zkRegistry) getListener(conf *common.URL) (*RegistryConfigurationListen
 		client := r.client
 		r.cltLock.Unlock()
 		if client == nil {
-			return nil, perrors.New("zk connection broken")
+			return nil, errors.New("zk connection broken")
 		}
 
 		// new client & listener
@@ -277,7 +278,7 @@ func (r *zkRegistry) getCloseListener(conf *common.URL) (*RegistryConfigurationL
 		zkListener, _ = configurationListener.(*RegistryConfigurationListener)
 		if zkListener != nil && zkListener.isClosed {
 			r.dataListener.mutex.Unlock()
-			return nil, perrors.New(fmt.Sprintf("configListener for service %s has already been closed", conf.ServiceKey()))
+			return nil, fmt.Errorf("configListener for service %s has already been closed", conf.ServiceKey())
 		}
 	}
 
@@ -292,7 +293,7 @@ func (r *zkRegistry) getCloseListener(conf *common.URL) (*RegistryConfigurationL
 	r.dataListener.mutex.Unlock()
 
 	if r.listener == nil {
-		return nil, perrors.New("Zookeeper event listener is null, can not close.")
+		return nil, errors.New("zookeeper event listener is null, can not close")
 	}
 
 	return zkListener, nil
