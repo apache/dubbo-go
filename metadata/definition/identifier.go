@@ -29,22 +29,14 @@ const (
 	// definitions are not published by dubbo-go.
 	providerSide = "provider"
 
-	// MetadataGroup is the metadata-center group interface-level definitions are
-	// written to.
+	// DefaultMetadataGroup is the default metadata-center group for
+	// interface-level definitions.
 	//
-	// This is fixed rather than derived from the metadata report's own group
-	// config, and the two must not be conflated. dubbo-go's Nacos report
-	// defaults its group to DEFAULT_GROUP, and PublishAppMetadata's
-	// Java-compatible format even uses the revision as the Nacos group — neither
-	// has anything to do with "dubbo".
-	//
-	// The value is dictated by the consumer: Dubbo Admin's Nacos watcher
-	// hardcodes a fuzzy search for "*:provider:*" under the "dubbo" group. On
-	// the Java side this is a metadata-report config option that also defaults
-	// to "dubbo"; a Java provider configured with a different group is likewise
-	// invisible to Admin. That is a pre-existing constraint of the discovery
-	// chain, not something this package introduces.
-	MetadataGroup = "dubbo"
+	// Nacos reports override it with metadata-report.group when configured,
+	// matching Java's NacosMetadataReport. Dubbo Admin watches "dubbo" by
+	// default, so deployments choosing another group must configure the
+	// consumer side consistently.
+	DefaultMetadataGroup = "dubbo"
 )
 
 // DataID builds the metadata-center key for one interface-level definition.

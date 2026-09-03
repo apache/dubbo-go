@@ -63,27 +63,14 @@ type MethodDefinition struct {
 	// never published here even though it is routable at runtime.
 	Name string `json:"name"`
 	// ParameterTypes holds the type expression of each parameter, in order,
-	// excluding the receiver and a leading context.Context.
+	// excluding the receiver and a leading context.Context. Java's deprecated
+	// MethodDefinition.parameters field is deliberately omitted: it contains
+	// TypeDefinition values, not source parameter names, and consumers derive
+	// positional argN labels from this field when names are unavailable.
 	ParameterTypes []string `json:"parameterTypes"`
-	// Parameters pairs each parameter type with a positional name.
-	//
-	// Java's equivalent field is @Deprecated and carries TypeDefinition elements
-	// with no name at all. Go publishes {name, type} instead because Admin's
-	// Parameter message has both fields, and Go reflection cannot recover source
-	// parameter names — so the names here are always generated (arg0..argN).
-	Parameters []ParameterDefinition `json:"parameters"`
 	// ReturnType is the type expression of the non-error return value, or
 	// VoidReturnType for a method that returns only error.
 	ReturnType string `json:"returnType"`
-}
-
-// ParameterDefinition is one positional parameter of a method.
-type ParameterDefinition struct {
-	// Name is always generated as arg0..argN. Go reflection cannot see source
-	// parameter names, and inventing business-looking names would mislead
-	// callers building generic requests.
-	Name string `json:"name"`
-	Type string `json:"type"`
 }
 
 // TypeDefinition describes one type reachable from a method signature.

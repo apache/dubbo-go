@@ -37,6 +37,9 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/metadata/definition"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 )
 
@@ -257,6 +260,40 @@ func Test_nacosMetadataReport_PublishAppMetadata(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_nacosMetadataReport_PublishServiceDefinitionUsesConfiguredGroup(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mnc := NewMockIConfigClient(ctrl)
+	nc := &nacosClient.NacosConfigClient{}
+	nc.SetClient(mnc)
+
+	const dataID = "org.example.Service:1.0.0:g1:provider:demo"
+	mnc.EXPECT().PublishConfig(vo.ConfigParam{
+		DataId:  dataID,
+		Group:   "foo",
+		Content: "{}",
+	}).Return(true, nil)
+	mnc.EXPECT().PublishConfig(vo.ConfigParam{
+		DataId:  dataID,
+		Group:   "bar",
+		Content: "{}",
+	}).Return(true, nil)
+
+	for _, group := range []string{"foo", "bar"} {
+		n := &nacosMetadataReport{client: nc, definitionGroup: group}
+		require.NoError(t, n.PublishServiceDefinition(
+			"org.example.Service", "1.0.0", "g1", "demo", "{}",
+		))
+	}
+}
+
+func TestServiceDefinitionGroupDefaultsAndFollowsConfiguration(t *testing.T) {
+	url := common.NewURLWithOptions()
+	assert.Equal(t, definition.DefaultMetadataGroup, serviceDefinitionGroup(url))
+
+	url.SetParam(constant.MetadataReportGroupKey, "isolated")
+	assert.Equal(t, "isolated", serviceDefinitionGroup(url))
 }
 
 func Test_nacosMetadataReport_RegisterServiceAppMapping(t *testing.T) {

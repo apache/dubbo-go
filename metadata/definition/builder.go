@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
-	"strconv"
 )
 
 import (
@@ -129,21 +128,13 @@ func buildMethod(m common.CanonicalMethod, types *typeCollector) (*MethodDefinit
 	// to supply a slot for it.
 	argsType := m.Method.ArgsType()
 	parameterTypes := make([]string, 0, len(argsType))
-	parameters := make([]ParameterDefinition, 0, len(argsType))
 
-	for i, arg := range argsType {
+	for _, arg := range argsType {
 		expr, err := types.resolve(arg)
 		if err != nil {
 			return nil, err
 		}
 		parameterTypes = append(parameterTypes, expr)
-		parameters = append(parameters, ParameterDefinition{
-			// Go reflection cannot recover source parameter names, so these are
-			// positional. Java's definition has no parameter names either; both
-			// sides fall back to the same argN convention in Admin.
-			Name: "arg" + strconv.Itoa(i),
-			Type: expr,
-		})
 	}
 
 	returnType := VoidReturnType
@@ -158,7 +149,6 @@ func buildMethod(m common.CanonicalMethod, types *typeCollector) (*MethodDefinit
 	return &MethodDefinition{
 		Name:           m.Name,
 		ParameterTypes: parameterTypes,
-		Parameters:     parameters,
 		ReturnType:     returnType,
 	}, nil
 }

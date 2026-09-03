@@ -40,7 +40,6 @@ func TestJSONShapeMatchesJavaContract(t *testing.T) {
 		Methods: []MethodDefinition{{
 			Name:           "getUser",
 			ParameterTypes: []string{"string"},
-			Parameters:     []ParameterDefinition{{Name: "arg0", Type: "string"}},
 			ReturnType:     "*org.example.User",
 		}},
 		Parameters: map[string]string{
@@ -64,11 +63,8 @@ func TestJSONShapeMatchesJavaContract(t *testing.T) {
 	assert.Equal(t, []string{"canonicalName", "methods", "parameters", "types"}, sortedKeys(decoded))
 
 	method := decoded["methods"].([]any)[0].(map[string]any)
-	assert.Equal(t, []string{"name", "parameterTypes", "parameters", "returnType"}, sortedKeys(method))
-
-	parameter := method["parameters"].([]any)[0].(map[string]any)
-	assert.Equal(t, []string{"name", "type"}, sortedKeys(parameter),
-		"Admin's Parameter message carries both a name and a type, unlike Java's deprecated shape")
+	assert.Equal(t, []string{"name", "parameterTypes", "returnType"}, sortedKeys(method),
+		"Java's deprecated method-level parameters field is omitted; consumers use parameterTypes")
 
 	wrapper := decoded["types"].([]any)[0].(map[string]any)
 	assert.Equal(t, []string{"items", "type"}, sortedKeys(wrapper))

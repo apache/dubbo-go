@@ -214,22 +214,6 @@ func TestBuildReturnTypes(t *testing.T) {
 	assert.Empty(t, ping.ParameterTypes)
 }
 
-func TestBuildParameterNamesArePositional(t *testing.T) {
-	def, _ := build(t, &basicService{})
-
-	noCtx := methodByName(t, def, "NoContext")
-	require.Len(t, noCtx.Parameters, 2)
-	assert.Equal(t, "arg0", noCtx.Parameters[0].Name)
-	assert.Equal(t, "arg1", noCtx.Parameters[1].Name)
-	assert.Equal(t, "java.lang.String", noCtx.Parameters[0].Type)
-	assert.Equal(t, "long", noCtx.Parameters[1].Type)
-
-	for i, p := range noCtx.Parameters {
-		assert.Equal(t, noCtx.ParameterTypes[i], p.Type,
-			"Parameters and ParameterTypes must agree positionally")
-	}
-}
-
 // ---------------------------------------------------------------------------
 // type expression and container entries
 // ---------------------------------------------------------------------------

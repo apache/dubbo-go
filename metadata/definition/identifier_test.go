@@ -98,8 +98,6 @@ func TestDataIDAlwaysHasFiveSegments(t *testing.T) {
 	assert.Len(t, strings.Split(id, ":"), 5)
 }
 
-func TestMetadataGroupIsFixed(t *testing.T) {
-	// Not derived from the report's own group config: Admin hardcodes this, and
-	// the report's group serves application-level metadata instead.
-	assert.Equal(t, "dubbo", MetadataGroup)
+func TestDefaultMetadataGroup(t *testing.T) {
+	assert.Equal(t, "dubbo", DefaultMetadataGroup)
 }
