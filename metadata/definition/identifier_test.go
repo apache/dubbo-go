@@ -62,7 +62,8 @@ func TestDataIDMatchesJavaUniqueKey(t *testing.T) {
 			want: "org.example.UserService:::provider:app",
 		},
 		{
-			// A Go import path is a legal Nacos dataId; slashes need no escaping.
+			// The logical identifier is backend-neutral. The Nacos report applies
+			// Java's slash/inner-class normalization at its client boundary.
 			name: "go style interface name",
 			args: [4]string{"github.com/example/api.UserService", "", "", "app"},
 			want: "github.com/example/api.UserService:::provider:app",

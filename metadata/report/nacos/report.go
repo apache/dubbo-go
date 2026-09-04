@@ -311,27 +311,40 @@ func (n *nacosMetadataReport) ListAppRevisions(application string) ([]report.App
 // PublishServiceDefinition stores one interface-level service definition,
 // implementing report.ServiceDefinitionPublisher.
 //
-// The dataId is byte-compatible with Java's MetadataIdentifier.getUniqueKey.
-// The definition group defaults to "dubbo", which Dubbo Admin watches by
-// default, and follows metadata-report.group when configured. It is kept
-// separate from n.group because the application-metadata compatibility path
-// still defaults that field to DEFAULT_GROUP.
+// The logical dataId is byte-compatible with Java's
+// MetadataIdentifier.getUniqueKey. At the Nacos boundary, dataId and group get
+// the same special-character normalization as Java's
+// NacosConfigServiceWrapper. The definition group defaults to "dubbo", which
+// Dubbo Admin watches by default, and follows metadata-report.group when
+// configured. It is kept separate from n.group because the
+// application-metadata compatibility path still defaults that field to
+// DEFAULT_GROUP.
 //
 // PublishConfig overwrites in place, so republishing on every provider start is
 // idempotent: the key is derived only from the service identity, never from the
 // instance.
 func (n *nacosMetadataReport) PublishServiceDefinition(serviceInterface, version, group, application, definitionJSON string) error {
-	dataID := definition.DataID(serviceInterface, version, group, application)
+	dataID := normalizeNacosMetadataKey(definition.DataID(serviceInterface, version, group, application))
+	definitionGroup := normalizeNacosMetadataKey(n.definitionGroup)
 	if err := n.storeMetadata(vo.ConfigParam{
 		DataId:  dataID,
-		Group:   n.definitionGroup,
+		Group:   definitionGroup,
 		Content: definitionJSON,
 	}); err != nil {
 		return fmt.Errorf("publishing service definition %s: %w", dataID, err)
 	}
 	logger.Debugf("[Metadata][Nacos] published service definition, dataId=%s group=%s",
-		dataID, n.definitionGroup)
+		dataID, definitionGroup)
 	return nil
+}
+
+// normalizeNacosMetadataKey mirrors Java's NacosConfigServiceWrapper boundary:
+// Nacos config keys cannot carry the inner-class marker or a path separator.
+// Keep definition.DataID backend-neutral and adapt only the values sent to
+// Nacos, including a configured metadata group.
+func normalizeNacosMetadataKey(value string) string {
+	value = strings.ReplaceAll(value, "$", "___")
+	return strings.ReplaceAll(value, "/", "-")
 }
 
 type nacosMetadataReportFactory struct{}

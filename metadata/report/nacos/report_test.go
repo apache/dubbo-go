@@ -288,6 +288,24 @@ func Test_nacosMetadataReport_PublishServiceDefinitionUsesConfiguredGroup(t *tes
 	}
 }
 
+func Test_nacosMetadataReport_PublishServiceDefinitionNormalizesNacosKeyAndGroup(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mnc := NewMockIConfigClient(ctrl)
+	nc := &nacosClient.NacosConfigClient{}
+	nc.SetClient(mnc)
+
+	mnc.EXPECT().PublishConfig(vo.ConfigParam{
+		DataId:  "github.com-example-api.Outer___Service:1.0.0:g-1:provider:demo-app___blue",
+		Group:   "metadata-isolated___blue",
+		Content: "{}",
+	}).Return(true, nil)
+
+	n := &nacosMetadataReport{client: nc, definitionGroup: "metadata/isolated$blue"}
+	require.NoError(t, n.PublishServiceDefinition(
+		"github.com/example/api.Outer$Service", "1.0.0", "g/1", "demo/app$blue", "{}",
+	))
+}
+
 func TestServiceDefinitionGroupDefaultsAndFollowsConfiguration(t *testing.T) {
 	url := common.NewURLWithOptions()
 	assert.Equal(t, definition.DefaultMetadataGroup, serviceDefinitionGroup(url))
