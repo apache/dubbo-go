@@ -37,7 +37,6 @@ import (
 // ---------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------
-
 // syncBuffer is an io.Writer that is safe for concurrent use. It lets
 // concurrency tests share one envelopeWriter without corrupting output.
 type syncBuffer struct {
@@ -670,17 +669,15 @@ func TestMarshalPerfConcurrentSend(t *testing.T) {
 	const iters = 100
 	var wg sync.WaitGroup
 	errCh := make(chan error, goroutines)
-	for g := 0; g < goroutines; g++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range goroutines {
+		wg.Go(func() {
 			out := &syncBuffer{}
 			w := &envelopeWriter{
 				writer:     out,
 				codec:      &protoBinaryCodec{},
 				bufferPool: sharedPool,
 			}
-			for i := 0; i < iters; i++ {
+			for range iters {
 				if err := w.Marshal(msg); err != nil {
 					errCh <- fmt.Errorf("concurrent marshal: %w", err)
 					return
@@ -689,7 +686,7 @@ func TestMarshalPerfConcurrentSend(t *testing.T) {
 			if out.Len() != iters*perIter {
 				errCh <- fmt.Errorf("goroutine output length %d, want %d", out.Len(), iters*perIter)
 			}
-		}()
+		})
 	}
 	wg.Wait()
 	close(errCh)
