@@ -37,7 +37,12 @@ import (
 
 var (
 	metadataOptions *Options
-	exportOnce      sync.Once
+	// metadataOptionsMu guards metadataOptions. In production it is written once
+	// at startup and only read afterwards, but the daily metadata renew reads it
+	// from a background goroutine, so the pairing needs to be explicit rather
+	// than relying on that ordering holding.
+	metadataOptionsMu sync.RWMutex
+	exportOnce        sync.Once
 )
 
 // Options holds the configuration for the metadata service.
@@ -69,7 +74,9 @@ func NewOptions(opts ...Option) *Options {
 // Init registers opts as the global metadata options and, for local storage,
 // exports the metadata service only once.
 func (opts *Options) Init() error {
+	metadataOptionsMu.Lock()
 	metadataOptions = opts
+	metadataOptionsMu.Unlock()
 	var err error
 	exportOnce.Do(func() {
 		if opts.metadataType != constant.RemoteMetadataStorageType {
@@ -197,6 +204,15 @@ func (opts *ReportOptions) toUrl() (*common.URL, error) {
 		return nil, errors.New("invalid MetadataReport Config")
 	}
 	res.SetParam("metadata", res.Protocol)
+	// Only set when explicitly configured. Leaving the key absent lets readers
+	// apply their own default (enabled), so an unset field and an explicit
+	// `true` behave identically.
+	if opts.ReportDefinition != nil {
+		res.SetParam(constant.MetadataReportReportDefinitionKey,
+			strconv.FormatBool(*opts.ReportDefinition))
+	}
+	// Params is the raw escape hatch and is applied last, so it can override the
+	// typed fields above — the same precedence group/namespace already have.
 	for key, val := range opts.Params {
 		res.SetParam(key, val)
 	}
@@ -306,5 +322,14 @@ func WithParams(params map[string]string) ReportOption {
 func WithRegistryId(id string) ReportOption {
 	return func(opts *ReportOptions) {
 		opts.registryId = id
+	}
+}
+
+// WithReportDefinition toggles publishing of interface-level service
+// definitions to this report. Definitions are published by default; pass false
+// to opt out. Mirrors Java's MetadataReportConfig.reportDefinition.
+func WithReportDefinition(report bool) ReportOption {
+	return func(opts *ReportOptions) {
+		opts.ReportDefinition = &report
 	}
 }

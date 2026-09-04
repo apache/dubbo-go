@@ -18,6 +18,7 @@
 package generalizer
 
 import (
+	"math"
 	"reflect"
 	"strconv"
 	"testing"
@@ -215,6 +216,64 @@ func TestUntaggedNameRoundTripsForUnicode(t *testing.T) {
 	realized, err := mockMapGeneralizer.Realize(generalized, reflect.TypeFor[unicodeNamed]())
 	require.NoError(t, err)
 	assert.Equal(t, original, realized)
+}
+
+func TestRealizeRejectsUnsignedOverflow(t *testing.T) {
+	tests := []struct {
+		name string
+		data any
+		typ  reflect.Type
+		want any
+	}{
+		{name: "uint8 max", data: int16(math.MaxUint8), typ: reflect.TypeFor[uint8](), want: uint8(math.MaxUint8)},
+		{name: "uint16 max", data: int32(math.MaxUint16), typ: reflect.TypeFor[uint16](), want: uint16(math.MaxUint16)},
+		{name: "uint32 max", data: int64(math.MaxUint32), typ: reflect.TypeFor[uint32](), want: uint32(math.MaxUint32)},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := mockMapGeneralizer.Realize(tt.data, tt.typ)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+
+	overflows := []struct {
+		name string
+		data any
+		typ  reflect.Type
+	}{
+		{name: "negative uint8", data: int16(-1), typ: reflect.TypeFor[uint8]()},
+		{name: "uint8 overflow", data: int16(math.MaxUint8 + 1), typ: reflect.TypeFor[uint8]()},
+		{name: "uint16 overflow", data: int32(math.MaxUint16 + 1), typ: reflect.TypeFor[uint16]()},
+		{name: "uint32 overflow", data: int64(math.MaxUint32 + 1), typ: reflect.TypeFor[uint32]()},
+	}
+	for _, tt := range overflows {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := mockMapGeneralizer.Realize(tt.data, tt.typ)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "overflows")
+		})
+	}
+}
+
+type bytePayload struct {
+	Data []byte
+}
+
+func TestRealizeJavaSignedByteArray(t *testing.T) {
+	got, err := mockMapGeneralizer.Realize(
+		map[string]any{"data": []int8{0, 127, -128, -1}},
+		reflect.TypeFor[bytePayload](),
+	)
+	require.NoError(t, err)
+	assert.Equal(t, bytePayload{Data: []byte{0, 127, 128, 255}}, got)
+
+	_, err = mockMapGeneralizer.Realize(
+		map[string]any{"data": []int16{0, math.MaxUint8 + 1}},
+		reflect.TypeFor[bytePayload](),
+	)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "overflows")
 }
 
 type testStruct struct {

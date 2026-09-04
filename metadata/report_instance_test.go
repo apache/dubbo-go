@@ -315,12 +315,18 @@ func TestGetMetadataReports(t *testing.T) {
 }
 
 func TestGetMetadataType(t *testing.T) {
-	assert.Equal(t, constant.DefaultMetadataStorageType, GetMetadataType())
-	metadataOptions = &Options{}
-	assert.Equal(t, constant.DefaultMetadataStorageType, GetMetadataType())
-	metadataOptions = &Options{
-		metadataType: constant.RemoteMetadataStorageType,
+	setOptions := func(opts *Options) {
+		metadataOptionsMu.Lock()
+		defer metadataOptionsMu.Unlock()
+		metadataOptions = opts
 	}
+
+	assert.Equal(t, constant.DefaultMetadataStorageType, GetMetadataType())
+	setOptions(&Options{})
+	assert.Equal(t, constant.DefaultMetadataStorageType, GetMetadataType())
+	setOptions(&Options{
+		metadataType: constant.RemoteMetadataStorageType,
+	})
 	assert.Equal(t, constant.RemoteMetadataStorageType, GetMetadataType())
 }
 
