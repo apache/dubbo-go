@@ -185,7 +185,6 @@ func TestMarshalPerfWireParity(t *testing.T) {
 	for _, compress := range []bool{false, true} {
 		t.Run(fmt.Sprintf("compressed=%v", compress), func(t *testing.T) {
 			for _, size := range regressionPayloadSizes() {
-				size := size
 				t.Run(regressionSizeLabel(size), func(t *testing.T) {
 					t.Parallel()
 					msg := newMarshalPerfMessage(size)
