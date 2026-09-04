@@ -23,8 +23,10 @@ import (
 	"reflect"
 	"sort"
 	"strings"
-	"unicode"
-	"unicode/utf8"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/internal/genericfield"
 )
 
 // maxTypeDepth bounds structural nesting. The visited set already terminates
@@ -369,7 +371,22 @@ func (c *typeCollector) structProperties(t reflect.Type, expr string, depth int)
 	// matchSets records, per wire name, the field that claimed it. mapstructure
 	// matches case-insensitively, so collisions are detected on the folded name.
 	matchSets := make(map[string]string)
+	flattening := map[reflect.Type]bool{t: true}
+	if err := c.collectStructProperties(t, expr, "", depth, properties, matchSets, flattening); err != nil {
+		return nil, err
+	}
+	return properties, nil
+}
 
+func (c *typeCollector) collectStructProperties(
+	t reflect.Type,
+	expr string,
+	path string,
+	depth int,
+	properties map[string]string,
+	matchSets map[string]string,
+	flattening map[reflect.Type]bool,
+) error {
 	for i := range t.NumField() {
 		field := t.Field(i)
 		if field.PkgPath != "" {
@@ -378,9 +395,51 @@ func (c *typeCollector) structProperties(t reflect.Type, expr string, depth int)
 			continue
 		}
 
-		wireName, err := fieldWireName(field)
-		if err != nil {
-			return nil, err
+		tag := genericfield.ParseMTag(field)
+		if tag.Ignore {
+			continue
+		}
+		if len(tag.UnknownOptions) > 0 {
+			return unsupported(field.Name,
+				fmt.Sprintf("m tag option %q has no declarable schema", tag.UnknownOptions[0]))
+		}
+
+		owner := path + field.Name
+		if tag.Squash {
+			fieldType := field.Type
+			fieldDepth := depth + 1
+			if fieldDepth > maxTypeDepth {
+				return unsupported(field.Type.String(),
+					fmt.Sprintf("type nesting exceeds %d levels", maxTypeDepth))
+			}
+			for fieldType.Kind() == reflect.Pointer {
+				fieldType = fieldType.Elem()
+				fieldDepth++
+				if fieldDepth > maxTypeDepth {
+					return unsupported(field.Type.String(),
+						fmt.Sprintf("type nesting exceeds %d levels", maxTypeDepth))
+				}
+			}
+			if fieldType.Kind() != reflect.Struct {
+				return unsupported(field.Type.String(), "m squash requires a struct or pointer to struct")
+			}
+			if name := namedTypeKey(fieldType); name != "" {
+				if reason, blocked := blockedNamedTypes[name]; blocked {
+					return unsupported(name, reason)
+				}
+			}
+			if flattening[fieldType] {
+				return unsupported(field.Type.String(), "recursive m squash cannot be represented as a finite schema")
+			}
+			flattening[fieldType] = true
+			err := c.collectStructProperties(
+				fieldType, expr, owner+".", fieldDepth, properties, matchSets, flattening,
+			)
+			delete(flattening, fieldType)
+			if err != nil {
+				return err
+			}
+			continue
 		}
 
 		// A field is reachable under its wire name and, for backwards
@@ -388,61 +447,23 @@ func (c *typeCollector) structProperties(t reflect.Type, expr string, depth int)
 		// original Go field name — both case-insensitively. Two fields whose
 		// reachable sets overlap make both the schema property and the Realize
 		// target depend on field iteration order.
-		for _, alias := range []string{wireName, field.Name} {
+		for _, alias := range []string{tag.Name, field.Name} {
 			folded := strings.ToLower(alias)
-			if owner, taken := matchSets[folded]; taken && owner != field.Name {
-				return nil, unsupported(expr, fmt.Sprintf(
-					"fields %q and %q are both reachable as %q", owner, field.Name, alias))
+			if previous, taken := matchSets[folded]; taken && previous != owner {
+				return unsupported(expr, fmt.Sprintf(
+					"fields %q and %q are both reachable as %q", previous, owner, alias))
 			}
-			matchSets[folded] = field.Name
+			matchSets[folded] = owner
 		}
 
 		fieldExpr, err := c.resolveAt(field.Type, depth+1)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		properties[wireName] = fieldExpr
+		properties[tag.Name] = fieldExpr
 	}
 
-	return properties, nil
-}
-
-// fieldWireName returns the map key MapGeneralizer.setInMap would emit for this
-// field, rejecting every case where Generalize and Realize currently disagree.
-//
-// These rejections are the proposal's transition constraint. They lift once the
-// shared GenericFieldName resolver lands and both directions read the tag the
-// same way; until then, publishing a schema for these fields would describe a
-// wire format that only one direction honors.
-func fieldWireName(field reflect.StructField) (string, error) {
-	tag, tagged := field.Tag.Lookup("m")
-	if !tagged || tag == "" {
-		first, size := utf8.DecodeRuneInString(field.Name)
-		if size > 1 {
-			// toUnexport lowercases via strings.ToLower(name[:1]), a byte slice.
-			// On a multi-byte leading rune that splits the rune and produces
-			// invalid UTF-8, so there is no wire name to publish.
-			return "", unsupported(field.Name,
-				"non-ASCII field names are mangled by the current Generalize path")
-		}
-		return string(unicode.ToLower(first)) + field.Name[size:], nil
-	}
-
-	if tag == "-" {
-		// Generalize writes a literal "-" key; mapstructure reads "-" as skip.
-		// The field is therefore emitted but never read back.
-		return "", unsupported(field.Name,
-			`m:"-" is written as a literal "-" key by Generalize but skipped by Realize`)
-	}
-
-	if strings.Contains(tag, ",") {
-		// Generalize uses the entire tag as the key ("name,omitempty");
-		// mapstructure parses off the option and uses "name".
-		return "", unsupported(field.Name,
-			fmt.Sprintf("m tag option in %q is interpreted differently by Generalize and Realize", tag))
-	}
-
-	return tag, nil
+	return nil
 }
 
 // javaClassNamed is implemented by types that declare their own Java class

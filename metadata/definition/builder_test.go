@@ -465,45 +465,78 @@ func TestRejectedMethodLeavesNoOrphanTypes(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// field-name transition constraints (proposal §4.2)
+// generic field names
 // ---------------------------------------------------------------------------
 
-type dashTagged struct {
-	Keep string
-	Drop string `m:"-"`
+type SquashedFields struct {
+	City string `m:"city_name"`
 }
 
-type optionTagged struct {
-	Name string `m:"name,omitempty"`
+type SupportedFieldShape struct {
+	Name     string         `m:"display_name,omitempty"`
+	Drop     string         `m:"-"`
+	Embedded SquashedFields `m:",squash"`
+	Ünicode  string
 }
 
-type nonASCIINamed struct {
-	Ünicode string
+type supportedFieldService struct{}
+
+func (s *supportedFieldService) Save(ctx context.Context, value SupportedFieldShape) error {
+	return nil
 }
 
-type aliasColliding struct {
+type RemainingFields struct {
+	Extra map[string]string `m:",remain"`
+}
+
+type remainingFieldService struct{}
+
+func (s *remainingFieldService) Save(ctx context.Context, value RemainingFields) error {
+	return nil
+}
+
+type AliasColliding struct {
 	Name  string
 	Other string `m:"name"`
 }
 
-func TestFieldNameTransitionConstraints(t *testing.T) {
-	cases := []struct {
+type collidingFieldService struct{}
+
+func (s *collidingFieldService) Save(ctx context.Context, value AliasColliding) error {
+	return nil
+}
+
+func TestBuildMatchesSupportedGenericFieldNames(t *testing.T) {
+	def, skips := build(t, &supportedFieldService{})
+	require.Empty(t, skips)
+
+	method := methodByName(t, def, "Save")
+	require.Len(t, method.ParameterTypes, 1)
+	shape := typeByName(t, def, method.ParameterTypes[0])
+	assert.Equal(t, map[string]string{
+		"city_name":    "java.lang.String", // squash flattens the embedded shape
+		"display_name": "java.lang.String", // omitempty affects values, not the schema
+		"ünicode":      "java.lang.String", // untagged names lowercase the first rune
+	}, shape.Properties)
+}
+
+func TestBuildRejectsUnrepresentableGenericFieldNames(t *testing.T) {
+	tests := []struct {
 		name    string
-		typ     reflect.Type
+		svc     any
 		wantMsg string
 	}{
-		{`m:"-"`, reflect.TypeFor[dashTagged](), `skipped by Realize`},
-		{"tag option", reflect.TypeFor[optionTagged](), "interpreted differently"},
-		{"non-ASCII field", reflect.TypeFor[nonASCIINamed](), "non-ASCII"},
-		{"canonical/legacy collision", reflect.TypeFor[aliasColliding](), "both reachable as"},
+		{"remain option", &remainingFieldService{}, "remain"},
+		{"canonical/legacy collision", &collidingFieldService{}, "both reachable as"},
 	}
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			_, err := newTypeCollector().resolve(tc.typ)
-			require.Error(t, err)
-			assert.True(t, IsUnsupported(err), "must be an unsupported marker, not an internal error")
-			assert.Contains(t, err.Error(), tc.wantMsg)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			def, skips := build(t, tt.svc)
+			assert.Empty(t, def.Methods)
+			reasons := skipReasons(skips)
+			require.Contains(t, reasons, "Save")
+			assert.Contains(t, reasons["Save"], tt.wantMsg)
 		})
 	}
 }

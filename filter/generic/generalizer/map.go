@@ -24,11 +24,8 @@ import (
 	"math"
 	"reflect"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
-	"unicode"
-	"unicode/utf8"
 )
 
 import (
@@ -42,6 +39,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/internal/genericfield"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/hessian2"
 )
 
@@ -324,8 +322,8 @@ func objToMap(obj any) (any, error) {
 		for i := 0; i < t.NumField(); i++ {
 			field := t.Field(i)
 			value := v.Field(i)
-			tag := parseMTag(field)
-			if tag.ignore || tag.omitEmpty && isEmptyValue(value) {
+			tag := genericfield.ParseMTag(field)
+			if tag.Ignore || tag.OmitEmpty && isEmptyValue(value) {
 				continue
 			}
 			kind := value.Kind()
@@ -357,7 +355,7 @@ func objToMap(obj any) (any, error) {
 			if err != nil {
 				return nil, err
 			}
-			if tag.squash {
+			if tag.Squash {
 				squashed, ok := generalizedValue.(map[string]any)
 				if !ok {
 					return nil, fmt.Errorf("cannot squash non-struct type '%s'", value.Type())
@@ -366,7 +364,7 @@ func objToMap(obj any) (any, error) {
 				maps.Copy(result, squashed)
 				continue
 			}
-			result[tag.name] = generalizedValue
+			result[tag.Name] = generalizedValue
 		}
 		return result, nil
 	case reflect.Array, reflect.Slice:
@@ -421,39 +419,6 @@ func mapKey(key reflect.Value) any {
 	}
 }
 
-type mTag struct {
-	name      string
-	ignore    bool
-	omitEmpty bool
-	squash    bool
-}
-
-func parseMTag(field reflect.StructField) mTag {
-	tag := mTag{name: toUnexport(field.Name)}
-	tagValue := field.Tag.Get("m")
-	name, options, hasOptions := strings.Cut(tagValue, ",")
-	if name == "-" {
-		tag.ignore = true
-		return tag
-	}
-	if name != "" {
-		tag.name = name
-	}
-	if !hasOptions {
-		return tag
-	}
-
-	for option := range strings.SplitSeq(options, ",") {
-		switch option {
-		case "omitempty":
-			tag.omitEmpty = true
-		case "squash":
-			tag.squash = true
-		}
-	}
-	return tag
-}
-
 func isEmptyValue(value reflect.Value) bool {
 	switch value.Kind() {
 	case reflect.Array, reflect.Map, reflect.Slice, reflect.String:
@@ -471,19 +436,6 @@ func isEmptyValue(value reflect.Value) bool {
 	default:
 		return false
 	}
-}
-
-// toUnexport lowercases the first rune of a.
-//
-// Rune-based rather than byte-based: strings.ToLower(a[:1]) splits a multi-byte
-// leading rune, so an exported field named with a non-ASCII letter used to
-// generalize to a key containing an invalid UTF-8 fragment.
-func toUnexport(a string) string {
-	if a == "" {
-		return a
-	}
-	first, size := utf8.DecodeRuneInString(a)
-	return string(unicode.ToLower(first)) + a[size:]
 }
 
 // isPrimitive determines if the object is primitive
