@@ -34,9 +34,6 @@ import (
 	pingv1 "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/ping/v1"
 )
 
-// ---------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------
 // syncBuffer is an io.Writer that is safe for concurrent use. It lets
 // concurrency tests share one envelopeWriter without corrupting output.
 type syncBuffer struct {
@@ -171,15 +168,8 @@ func wantCode(t *testing.T, err *Error, want Code) {
 	}
 }
 
-// ---------------------------------------------------------------
-// 1. Wire byte parity: fast path output == slow path output
-// ---------------------------------------------------------------
-
-// TestMarshalPerfWireParity locks the core correctness invariant: for the
-// same message and compression setting, the MarshalAppend fast path must emit
-// byte-for-byte the same wire output as the pre-optimization codec.Marshal
-// slow path. Runs on both the triple HTTP body wire (tripleUnaryMarshaler)
-// and the gRPC/Triple envelope wire (envelopeWriter).
+// TestMarshalPerfWireParity verifies that the MarshalAppend fast path and the
+// codec.Marshal slow path emit byte-identical wire output on both wire types.
 func TestMarshalPerfWireParity(t *testing.T) {
 	for _, compress := range []bool{false, true} {
 		t.Run(fmt.Sprintf("compressed=%v", compress), func(t *testing.T) {
@@ -241,10 +231,8 @@ func TestMarshalPerfWireParity(t *testing.T) {
 	}
 }
 
-// ---------------------------------------------------------------
-// 2. Pool invariants and envelope boundaries
-// ---------------------------------------------------------------
-
+// TestMarshalPerfPoolInvariants verifies buffer pool reuse invariants and
+// envelope framing for empty and nil messages.
 func TestMarshalPerfPoolInvariants(t *testing.T) {
 	t.Parallel()
 
@@ -306,11 +294,8 @@ func TestMarshalPerfPoolInvariants(t *testing.T) {
 	})
 
 	t.Run("compressMinBytes boundary does not panic", func(t *testing.T) {
-		// The compression decision is made on the codec's encoded output
-		// length, not the message's Text length (protobuf adds tag+length
-		// prefix bytes). Anchor the boundary on the real encoded length:
-		// threshold == encoded length compresses, threshold == length+1 does
-		// not. Both paths must survive the boundary and agree on the flag.
+		// The compression decision uses the codec's encoded output length: a
+		// threshold equal to the encoded length compresses, one byte more does not.
 		codec := &protoBinaryCodec{}
 		for _, size := range []int{511, 512, 513} {
 			msg := newMarshalPerfMessage(size)
@@ -338,10 +323,6 @@ func TestMarshalPerfPoolInvariants(t *testing.T) {
 	})
 }
 
-// ---------------------------------------------------------------
-// 3. backupCodec fallback parity (fast and slow paths)
-// ---------------------------------------------------------------
-
 // errorCodec implements Codec and marshalAppender, always failing. It forces
 // the envelopeWriter fast path (MarshalAppend) and slow path (Marshal) into
 // their backup-codec fallback branches.
@@ -364,6 +345,8 @@ func (errorCodec) Unmarshal([]byte, any) error {
 	return errors.New("primary codec unmarshal failed")
 }
 
+// TestMarshalPerfBackupCodecFallback verifies the backup-codec fallback on the
+// fast (MarshalAppend) and slow (Marshal) paths.
 func TestMarshalPerfBackupCodecFallback(t *testing.T) {
 	msg := &pingv1.PingRequest{Text: "fallback"}
 	// Reference wire bytes produced by the healthy codec.
@@ -402,11 +385,8 @@ func TestMarshalPerfBackupCodecFallback(t *testing.T) {
 	})
 
 	t.Run("write failure with healthy appender does not fall back", func(t *testing.T) {
-		// Regression: the fast path may fall back only on a marshal failure.
-		// A healthy appender codec whose marshal succeeds but whose write fails
-		// (I/O error, compression, or the sendMaxBytes limit) must surface that
-		// error as-is; the backup codec must not be consulted and the writer
-		// must not see a second write attempt.
+		// The fast path falls back only on a marshal failure: a write error
+		// must surface as-is, without consulting the backup codec or retrying.
 		backup := &countingNamedCodec{Codec: &protoBinaryCodec{}, name: "hessian2"}
 		out := &failingWriter{}
 		w := &envelopeWriter{
@@ -425,10 +405,8 @@ func TestMarshalPerfBackupCodecFallback(t *testing.T) {
 	})
 
 	t.Run("same name does not double fallback", func(t *testing.T) {
-		// Backup shares the failing codec's name; no fallback may occur (that
-		// would risk infinite recursion), so the error surfaces. errorCodec
-		// implements marshalAppender (fast leg); wrapping it hides the
-		// extension (slow leg).
+		// A backup sharing the codec's name must not be consulted, so the error
+		// surfaces on both the fast and slow legs.
 		legs := []struct {
 			name  string
 			codec Codec
@@ -497,10 +475,8 @@ func (c *countingNamedCodec) Marshal(message any) ([]byte, error) {
 	return c.Codec.Marshal(message)
 }
 
-// ---------------------------------------------------------------
-// 4. Compression threshold and sendMaxBytes consistency
-// ---------------------------------------------------------------
-
+// TestMarshalPerfCompressionAndMaxBytes verifies the sendMaxBytes limit and
+// compression headers on both paths.
 func TestMarshalPerfCompressionAndMaxBytes(t *testing.T) {
 	t.Parallel()
 
@@ -552,10 +528,8 @@ func TestMarshalPerfCompressionAndMaxBytes(t *testing.T) {
 	})
 }
 
-// ---------------------------------------------------------------
-// 5. >8MiB buffers are dropped, not recycled (no residue)
-// ---------------------------------------------------------------
-
+// TestMarshalPerfLargeBufferDropped verifies that buffers larger than
+// maxRecycleBufferSize are dropped rather than recycled.
 func TestMarshalPerfLargeBufferDropped(t *testing.T) {
 	t.Parallel()
 
@@ -611,9 +585,7 @@ func TestMarshalPerfLargeBufferDropped(t *testing.T) {
 					}
 				}
 				// Marshal the huge message first, then the tiny one through the
-				// SAME marshaler and buffer pool: if an 8MiB+1 buffer were ever
-				// recycled without being dropped/reset, residue would leak into
-				// the small message's wire bytes below.
+				// same pool; recycled residue would leak into the small output.
 				shared := newMarshalTo(newBufferPool())
 				if _, err := shared(large); err != nil {
 					t.Fatalf("%s/%s large marshal: %v", wire, c.name, err)
@@ -641,16 +613,10 @@ func TestMarshalPerfLargeBufferDropped(t *testing.T) {
 	})
 }
 
-// ---------------------------------------------------------------
-// 6. Concurrency (run under -race)
-// ---------------------------------------------------------------
-
+// TestMarshalPerfConcurrentSend verifies bufferPool safety under concurrent use.
 func TestMarshalPerfConcurrentSend(t *testing.T) {
-	// Production sends are serialized per connection, but bufferPool is shared
-	// across connections/goroutines. This test drives many goroutines, each
-	// with its own envelopeWriter but sharing one bufferPool, to lock the
-	// sync.Pool race-safety invariant under -race and verify no errors and no
-	// lost/corrupted output.
+	// Drive concurrent envelopeWriters sharing one bufferPool to verify
+	// sync.Pool race safety and that no output is lost or corrupted.
 	msg := newMarshalPerfMessage(128)
 	sharedPool := newBufferPool()
 	// Per-iteration output length on a single reference call.
@@ -695,12 +661,9 @@ func TestMarshalPerfConcurrentSend(t *testing.T) {
 	}
 }
 
-// ---------------------------------------------------------------
-// 7. Type guard: the fast path is limited to codecs whose MarshalAppend
-//    semantics are byte-identical to Marshal (protoBinaryCodec and the
-//    server codec session, which delegates to it for IDL proto messages).
-// ---------------------------------------------------------------
-
+// Type guard: only protoBinaryCodec and the tripleServerCodecSession wrapper
+// may expose the marshalAppender fast path; all other codecs must stay on
+// codec.Marshal.
 func TestMarshalPerfTypeGuard(t *testing.T) {
 	t.Parallel()
 
@@ -736,10 +699,9 @@ func TestMarshalPerfTypeGuard(t *testing.T) {
 	}
 }
 
-// ---------------------------------------------------------------
-// 8. Error guard: non-proto message never panics, errors as CodeInternal
-// ---------------------------------------------------------------
-
+// TestMarshalPerfErrorGuard verifies that non-proto messages never panic:
+// MarshalAppend returns errNotProto, and the envelope and triple marshalers
+// surface CodeInternal on both the fast and slow paths.
 func TestMarshalPerfErrorGuard(t *testing.T) {
 	t.Parallel()
 
@@ -781,11 +743,8 @@ func TestMarshalPerfErrorGuard(t *testing.T) {
 	})
 }
 
-// fastPathProbeCodec distinguishes the marshalAppender fast path from the
-// codec.Marshal slow path: Marshal always fails, MarshalAppend counts calls.
-// Wire-parity tests alone cannot catch a silent regression back to the slow
-// path because both paths emit byte-equal output; this probe turns any such
-// leak into a hard test failure.
+// fastPathProbeCodec distinguishes the fast and slow paths: Marshal always
+// fails while MarshalAppend counts calls, so a slow-path leak fails the test.
 type fastPathProbeCodec struct {
 	appendCalls int
 }
@@ -803,17 +762,10 @@ func (c *fastPathProbeCodec) MarshalAppend(dst []byte, _ any) ([]byte, error) {
 	return append(dst, "probe-payload"...), nil
 }
 
-// ---------------------------------------------------------------
-// 9. Server codec session fast path: triple server responses reach the
-//    MarshalAppend branch with byte-identical output
-// ---------------------------------------------------------------
-
-// TestMarshalPerfServerSessionFastPath locks the server-side fix: the triple
-// handler always wraps the proto codec in tripleServerCodecSession
-// (protocol_triple.go), which now implements marshalAppender. IDL proto
-// responses must marshal through the same fast path as the naked codec, and
-// Non-IDL wrapped responses must produce the same bytes via MarshalAppend as
-// via Marshal.
+// TestMarshalPerfServerSessionFastPath verifies that tripleServerCodecSession
+// responses reach the MarshalAppend fast path: IDL proto output stays
+// byte-identical to the naked codec, non-IDL MarshalAppend equals Marshal,
+// and delegates without the appender extension fall back gracefully.
 func TestMarshalPerfServerSessionFastPath(t *testing.T) {
 	t.Parallel()
 
@@ -881,10 +833,8 @@ func TestMarshalPerfServerSessionFastPath(t *testing.T) {
 	})
 
 	t.Run("server response must hit MarshalAppend, not the slow path", func(t *testing.T) {
-		// The probe's Marshal always fails, so a successful Marshal can only
-		// have gone through MarshalAppend. Catches the regression where the
-		// codecSession wrapper stops implementing marshalAppender or the
-		// marshaler silently falls back to codec.Marshal.
+		// The probe's Marshal always fails, so a successful Marshal proves the
+		// MarshalAppend fast path was taken.
 		for _, compress := range []bool{false, true} {
 			probe := &fastPathProbeCodec{}
 			session := &tripleServerCodecSession{delegate: probe}

@@ -30,10 +30,10 @@ import (
 	pingv1 "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/ping/v1"
 )
 
-// noAppenderCodec wraps a Codec without exposing the marshalAppender extension,
-// so the marshaler takes the pre-optimization slow path (codec.Marshal into a
-// freshly allocated slice wrapped by a new *bytes.Buffer). It is the A/B
-// baseline for the MarshalAppend fast path.
+// noAppenderCodec embeds a Codec without the marshalAppender extension, so
+// the marshaler's appender type assertion fails and marshaling takes the
+// codec.Marshal slow path — the baseline that the fast path is measured
+// against.
 type noAppenderCodec struct{ Codec }
 
 // marshalPerfPayloadSizes covers fixed-overhead-dominated small messages
@@ -51,11 +51,8 @@ func newMarshalPerfMessage(size int) *pingv1.PingRequest {
 	return &pingv1.PingRequest{Text: strings.Repeat("a", size)}
 }
 
-// benchMarshalConfig controls which branches of the marshal fast/slow paths a
-// benchmark drives. With compress enabled, marshalers are configured with a
-// gzip compression pool (compressMinBytes left at 0, so every message takes
-// the compression branch); sendMaxBytes, when non-zero, exercises the size
-// limit checks after marshaling and after compression.
+// benchMarshalConfig selects which marshal branches a benchmark drives: gzip
+// compression and the sendMaxBytes limit checks.
 type benchMarshalConfig struct {
 	compress     bool
 	sendMaxBytes int
@@ -113,10 +110,8 @@ func BenchmarkUnaryMarshalerSlowPath(b *testing.B) {
 	runUnaryMarshalerBench(b, &noAppenderCodec{&protoBinaryCodec{}}, benchMarshalConfig{})
 }
 
-// BenchmarkUnaryMarshaler*Compressed drive the gzip-compressed branch of the
-// fast/slow paths (second pooled buffer, compression header, compressed-size
-// limit check) with a generous sendMaxBytes so the limit is exercised but
-// never tripped.
+// BenchmarkUnaryMarshaler*Compressed drive the gzip-compressed fast and slow
+// paths with a generous sendMaxBytes that is exercised but never tripped.
 func BenchmarkUnaryMarshalerFastPathCompressed(b *testing.B) {
 	runUnaryMarshalerBench(b, &protoBinaryCodec{}, benchMarshalConfig{compress: true, sendMaxBytes: 1 << 30})
 }
