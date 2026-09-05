@@ -644,8 +644,8 @@ func TestTripleClientOTELTraceparentIsolation(t *testing.T) {
 	require.Len(t, invoker.calls, 2)
 	endedSpans := spanRecorder.Ended()
 	serverReadOnly := findEndedSpanByName(t, endedSpans, "service-a-handler")
-	clientBReadOnly := findEndedSpanByName(t, endedSpans, "CallServiceB")
-	clientCReadOnly := findEndedSpanByName(t, endedSpans, "CallServiceC")
+	clientBReadOnly := findEndedSpanByName(t, endedSpans, "dubbo.consumer org.apache.dubbo.test.DownstreamService/CallServiceB")
+	clientCReadOnly := findEndedSpanByName(t, endedSpans, "dubbo.consumer org.apache.dubbo.test.DownstreamService/CallServiceC")
 
 	clientBOutgoing := parseTraceparent(t, invoker.calls[0].outgoingTraceparent)
 	clientCOutgoing := parseTraceparent(t, invoker.calls[1].outgoingTraceparent)
