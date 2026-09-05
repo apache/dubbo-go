@@ -34,8 +34,11 @@ import (
 	pingv1 "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol/internal/gen/proto/connect/ping/v1"
 )
 
-// syncBuffer is an io.Writer that is safe for concurrent use. It lets
-// concurrency tests share one envelopeWriter without corrupting output.
+// syncBuffer is an io.Writer whose individual Write calls are safe for
+// concurrent use. Each goroutine in the concurrency test writes to its own
+// syncBuffer: emitting an envelope frame takes two Write calls (5-byte prefix
+// then payload), so giving each writer its own buffer prevents frames from
+// interleaving.
 type syncBuffer struct {
 	mu  sync.Mutex
 	buf bytes.Buffer
@@ -615,50 +618,101 @@ func TestMarshalPerfLargeBufferDropped(t *testing.T) {
 
 // TestMarshalPerfConcurrentSend verifies bufferPool safety under concurrent use.
 func TestMarshalPerfConcurrentSend(t *testing.T) {
-	// Drive concurrent envelopeWriters sharing one bufferPool to verify
-	// sync.Pool race safety and that no output is lost or corrupted.
-	msg := newMarshalPerfMessage(128)
-	sharedPool := newBufferPool()
-	// Per-iteration output length on a single reference call.
-	ref := &envelopeWriter{writer: &syncBuffer{}, codec: &protoBinaryCodec{}, bufferPool: sharedPool}
-	refOut := &syncBuffer{}
-	ref.writer = refOut
-	if err := ref.Marshal(msg); err != nil {
-		t.Fatal(err)
-	}
-	perIter := refOut.Len()
-	if perIter <= 5 {
-		t.Fatalf("unexpected reference envelope length %d", perIter)
-	}
-
-	const goroutines = 32
-	const iters = 100
-	var wg sync.WaitGroup
-	errCh := make(chan error, goroutines)
-	for range goroutines {
-		wg.Go(func() {
-			out := &syncBuffer{}
-			w := &envelopeWriter{
-				writer:     out,
-				codec:      &protoBinaryCodec{},
-				bufferPool: sharedPool,
+	for _, c := range regressionCodecList() {
+		t.Run(c.name, func(t *testing.T) {
+			// Drive concurrent envelopeWriters sharing one bufferPool. Each
+			// goroutine sends a globally unique payload per message, then
+			// decodes every emitted frame and verifies its content. Distinct
+			// content plus per-frame decode prevents cross-goroutine corruption
+			// from going unnoticed without -race: overwritten frames keep the
+			// same length, which a length-only check would not catch.
+			sharedPool := newBufferPool()
+			const goroutines = 32
+			const iters = 100
+			var wg sync.WaitGroup
+			errCh := make(chan error, goroutines)
+			// Start gate: every goroutine blocks until all 32 are ready. This
+			// keeps the pool actually contended and prevents the outcome from
+			// depending on the scheduler interleaving the goroutines.
+			var ready sync.WaitGroup
+			ready.Add(goroutines)
+			start := make(chan struct{})
+			for g := range goroutines {
+				wg.Go(func() {
+					ready.Done()
+					<-start
+					out := &syncBuffer{}
+					w := &envelopeWriter{
+						writer:     out,
+						codec:      c.codec,
+						bufferPool: sharedPool,
+					}
+					// Number uniquely identifies (goroutine, iteration) across
+					// the whole test, so content swapped between goroutines is
+					// reported, not silently accepted.
+					want := make([]*pingv1.PingRequest, 0, iters)
+					for i := range iters {
+						msg := &pingv1.PingRequest{
+							Number: int64(g*iters + i),
+							Text:   fmt.Sprintf("goroutine-%02d-message-%03d", g, i),
+						}
+						want = append(want, msg)
+						if err := w.Marshal(msg); err != nil {
+							errCh <- fmt.Errorf("goroutine %d marshal message %d: %w", g, i, err)
+							return
+						}
+					}
+					if err := verifyEnvelopeFrames(out.Bytes(), c.codec, want); err != nil {
+						errCh <- fmt.Errorf("goroutine %d: %w", g, err)
+					}
+				})
 			}
-			for range iters {
-				if err := w.Marshal(msg); err != nil {
-					errCh <- fmt.Errorf("concurrent marshal: %w", err)
-					return
-				}
-			}
-			if out.Len() != iters*perIter {
-				errCh <- fmt.Errorf("goroutine output length %d, want %d", out.Len(), iters*perIter)
+			ready.Wait()
+			close(start)
+			wg.Wait()
+			close(errCh)
+			for err := range errCh {
+				t.Fatal(err)
 			}
 		})
 	}
-	wg.Wait()
-	close(errCh)
-	for err := range errCh {
-		t.Fatal(err)
+}
+
+// verifyEnvelopeFrames walks the gRPC/Triple envelope stream written by
+// envelopeWriter and checks that every frame unmarshals to the corresponding
+// expected message. The frames must be uncompressed (flags == 0) and exactly
+// account for the whole stream.
+func verifyEnvelopeFrames(wire []byte, codec Codec, want []*pingv1.PingRequest) error {
+	pos := 0
+	for n, expected := range want {
+		if len(wire)-pos < 5 {
+			return fmt.Errorf("frame %d: truncated envelope prefix (%d bytes left)", n, len(wire)-pos)
+		}
+		if flags := wire[pos]; flags != 0 {
+			return fmt.Errorf("frame %d: unexpected flags 0x%x (only uncompressed frames expected)", n, flags)
+		}
+		length := int(binary.BigEndian.Uint32(wire[pos+1 : pos+5]))
+		pos += 5
+		if len(wire)-pos < length {
+			return fmt.Errorf("frame %d: payload length %d exceeds remaining %d bytes", n, length, len(wire)-pos)
+		}
+		payload := wire[pos : pos+length]
+		pos += length
+		var got pingv1.PingRequest
+		if err := codec.Unmarshal(payload, &got); err != nil {
+			return fmt.Errorf("frame %d: unmarshal: %w", n, err)
+		}
+		if got.Number != expected.Number || got.Text != expected.Text {
+			return fmt.Errorf(
+				"frame %d: content mismatch: got Number=%d Text=%q, want Number=%d Text=%q",
+				n, got.Number, got.Text, expected.Number, expected.Text,
+			)
+		}
 	}
+	if pos != len(wire) {
+		return fmt.Errorf("%d trailing bytes after %d frames", len(wire)-pos, len(want))
+	}
+	return nil
 }
 
 // Type guard: only protoBinaryCodec and the tripleServerCodecSession wrapper
@@ -696,6 +750,25 @@ func TestMarshalPerfTypeGuard(t *testing.T) {
 		if implements(tc.codec) {
 			t.Fatalf("%s must NOT implement marshalAppender (fast path scope leak)", tc.name)
 		}
+	}
+}
+
+// TestMarshalPerfEnvelopeWriterFastPath verifies that envelopeWriter.Marshal
+// really takes the MarshalAppend fast path when the codec implements
+// marshalAppender. fastPathProbeCodec.Marshal always fails, so only the
+// appender branch can produce a successful write; the probe counts the
+// appender calls to make the branch observable.
+func TestMarshalPerfEnvelopeWriterFastPath(t *testing.T) {
+	probe := &fastPathProbeCodec{}
+	w, out := newEnvelopeWriterForTest(t, probe, false, 0, 0)
+	if err := w.Marshal(&pingv1.PingRequest{Text: "fast-path"}); err != nil {
+		t.Fatalf("envelopeWriter.Marshal with appender codec failed: %v", err)
+	}
+	if probe.appendCalls != 1 {
+		t.Fatalf("MarshalAppend called %d times, want 1 (fast path not taken)", probe.appendCalls)
+	}
+	if out.Len() == 0 {
+		t.Fatal("fast path wrote no bytes")
 	}
 }
 
