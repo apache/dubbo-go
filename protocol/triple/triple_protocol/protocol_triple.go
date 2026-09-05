@@ -505,6 +505,11 @@ func (m *tripleUnaryMarshaler) Marshal(message any) *Error {
 	if message == nil {
 		return m.write(nil)
 	}
+	// Fast path: if the codec can append to a caller-provided buffer, marshal
+	// directly into a pooled buffer to avoid the per-request allocation.
+	if appender, ok := m.codec.(marshalAppender); ok {
+		return m.marshalAndWrite(message, appender)
+	}
 	data, err := m.codec.Marshal(message)
 	if err != nil {
 		return errorf(CodeInternal, "marshal message: %w", err)
@@ -512,15 +517,36 @@ func (m *tripleUnaryMarshaler) Marshal(message any) *Error {
 	// Can't avoid allocating the slice, but we can reuse it.
 	uncompressed := bytes.NewBuffer(data)
 	defer m.bufferPool.Put(uncompressed)
-	if len(data) < m.compressMinBytes || m.compressionPool == nil {
-		if m.sendMaxBytes > 0 && len(data) > m.sendMaxBytes {
-			return NewError(CodeResourceExhausted, fmt.Errorf("message size %d exceeds sendMaxBytes %d", len(data), m.sendMaxBytes))
+	return m.compressAndWrite(uncompressed)
+}
+
+// marshalAndWrite serializes message into a pooled *bytes.Buffer, compressing if
+// necessary, and writes it.
+func (m *tripleUnaryMarshaler) marshalAndWrite(message any, appender marshalAppender) *Error {
+	buffer, err := marshalToPool(m.bufferPool, appender, message)
+	if err != nil {
+		return err
+	}
+	defer m.bufferPool.Put(buffer)
+	return m.compressAndWrite(buffer)
+}
+
+// compressAndWrite enforces the compression threshold and the sendMaxBytes
+// limit on the marshaled bytes in buffer, sets the compression header when the
+// payload is compressed, and writes the result. It is the shared tail of both
+// Marshal (slow path, bytes produced by codec.Marshal) and marshalAndWrite
+// (fast path, bytes produced by marshalAppender.MarshalAppend), so the
+// compression policy can never drift between the two paths.
+func (m *tripleUnaryMarshaler) compressAndWrite(buffer *bytes.Buffer) *Error {
+	if buffer.Len() < m.compressMinBytes || m.compressionPool == nil {
+		if m.sendMaxBytes > 0 && buffer.Len() > m.sendMaxBytes {
+			return NewError(CodeResourceExhausted, fmt.Errorf("message size %d exceeds sendMaxBytes %d", buffer.Len(), m.sendMaxBytes))
 		}
-		return m.write(data)
+		return m.write(buffer.Bytes())
 	}
 	compressed := m.bufferPool.Get()
 	defer m.bufferPool.Put(compressed)
-	if err := m.compressionPool.Compress(compressed, uncompressed); err != nil {
+	if err := m.compressionPool.Compress(compressed, buffer); err != nil {
 		return err
 	}
 	if m.sendMaxBytes > 0 && compressed.Len() > m.sendMaxBytes {
