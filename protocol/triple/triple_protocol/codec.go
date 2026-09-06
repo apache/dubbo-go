@@ -98,6 +98,17 @@ type stableCodec interface {
 	IsBinary() bool
 }
 
+// marshalAppender is an extension to Codec for serializing into a caller-provided
+// buffer. Codecs that implement it can serialize with zero allocation when the
+// buffer's capacity is sufficient (protobuf fast path); otherwise the appender
+// itself grows the buffer. MarshalAppend must produce output byte-identical to
+// Marshal for the same message — the extension only changes where the bytes are
+// written. Codecs that do not implement it are unaffected.
+type marshalAppender interface {
+	// MarshalAppend marshals the given message, appending the result to dst.
+	MarshalAppend(dst []byte, message any) ([]byte, error)
+}
+
 // protoBinaryCodec handles standard protobuf binary serialization for IDL
 // calls. Non-IDL (Java Dubbo Triple generic call) wrapper handling on the
 // server side is handled by tripleServerCodecSession, which delegates to
@@ -114,6 +125,14 @@ func (c *protoBinaryCodec) Marshal(message any) ([]byte, error) {
 		return nil, errNotProto(message)
 	}
 	return proto.Marshal(protoMessage)
+}
+
+func (c *protoBinaryCodec) MarshalAppend(dst []byte, message any) ([]byte, error) {
+	protoMessage, ok := message.(proto.Message)
+	if !ok {
+		return nil, errNotProto(message)
+	}
+	return proto.MarshalOptions{}.MarshalAppend(dst, protoMessage)
 }
 
 func (c *protoBinaryCodec) Unmarshal(data []byte, message any) error {
@@ -636,6 +655,43 @@ func (s *tripleServerCodecSession) Marshal(message any) ([]byte, error) {
 	}
 	// Non-IDL: wrap the response in a TripleResponseWrapper whose Data is
 	// serialized with the inner codec resolved from the request's SerializeType.
+	wrapper, err := s.responseWrapper(message)
+	if err != nil {
+		return nil, err
+	}
+	return proto.Marshal(wrapper)
+}
+
+// MarshalAppend extends Marshal for the marshalAppender fast path. The IDL
+// proto leg forwards to the delegate's appender (zero allocation when the
+// pooled buffer's cap is sufficient); the Non-IDL leg still serializes the
+// inner payload with the inner codec, but appends the outer
+// TripleResponseWrapper into the caller-provided buffer instead of allocating
+// a fresh slice.
+func (s *tripleServerCodecSession) MarshalAppend(dst []byte, message any) ([]byte, error) {
+	if pm, isProto := message.(proto.Message); isProto {
+		if appender, ok := s.delegate.(marshalAppender); ok {
+			return appender.MarshalAppend(dst, pm)
+		}
+		// A custom proto codec without the appender extension must still
+		// round-trip; fall back to a plain marshal plus append. The output is
+		// byte-for-byte what Marshal would produce.
+		raw, err := s.delegate.Marshal(pm)
+		if err != nil {
+			return nil, err
+		}
+		return append(dst, raw...), nil
+	}
+	wrapper, err := s.responseWrapper(message)
+	if err != nil {
+		return nil, err
+	}
+	return proto.MarshalOptions{}.MarshalAppend(dst, wrapper)
+}
+
+// responseWrapper builds the TripleResponseWrapper for a Non-IDL response,
+// resolving the inner codec from the SerializeType captured by Unmarshal.
+func (s *tripleServerCodecSession) responseWrapper(message any) (*interoperability.TripleResponseWrapper, error) {
 	inner, err := resolveInnerCodec(s.serializeType)
 	if err != nil {
 		return nil, fmt.Errorf("marshal triple wrapper response: %w", err)
@@ -667,10 +723,10 @@ func (s *tripleServerCodecSession) Marshal(message any) ([]byte, error) {
 	}
 	// Use inner.Name() instead of s.serializeType so that an absent SerializeType
 	// (defaulted to hessian2 by resolveInnerCodec) is normalized on the wire.
-	return proto.Marshal(&interoperability.TripleResponseWrapper{
+	return &interoperability.TripleResponseWrapper{
 		SerializeType: inner.Name(),
 		Data:          data,
-	})
+	}, nil
 }
 
 // unmarshalWrapperRequestArgs decodes the inner args of a TripleRequestWrapper
