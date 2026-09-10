@@ -731,7 +731,7 @@ func Test_rpcSpanAttributes_WithoutGroupVersion(t *testing.T) {
 		common.WithParamsValue(constant.InterfaceKey, "com.example.OrderService"),
 	)
 	for _, attr := range rpcSpanAttributes(serviceURL, "GetOrder") {
-		if attr.Key == DubboGroupKey || attr.Key == DubboVersionKey {
+		if attr.Key == attribute.Key(constant.DubboGroupKey) || attr.Key == attribute.Key(constant.DubboVersionKey) {
 			t.Fatalf("unexpected empty Dubbo attribute %q", attr.Key)
 		}
 	}
@@ -787,10 +787,10 @@ func assertRPCSpanAttributes(
 	if got := values[semconv.RPCServiceKey].AsString(); got == "gray/com.example.OrderService:1.0.0" {
 		t.Errorf("rpc.service still contains group/version: %q", got)
 	}
-	if got := values[DubboGroupKey].AsString(); got != wantGroup {
+	if got := values[attribute.Key(constant.DubboGroupKey)].AsString(); got != wantGroup {
 		t.Errorf("dubbo.group = %q, want %q", got, wantGroup)
 	}
-	if got := values[DubboVersionKey].AsString(); got != wantVersion {
+	if got := values[attribute.Key(constant.DubboVersionKey)].AsString(); got != wantVersion {
 		t.Errorf("dubbo.version = %q, want %q", got, wantVersion)
 	}
 }

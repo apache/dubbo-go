@@ -63,10 +63,10 @@ func rpcSpanAttributes(serviceURL *common.URL, methodName string) []attribute.Ke
 		semconv.RPCMethod(methodName),
 	}
 	if group := serviceURL.Group(); group != "" {
-		attributes = append(attributes, DubboGroupKey.String(group))
+		attributes = append(attributes, attribute.Key(constant.DubboGroupKey).String(group))
 	}
 	if version := serviceURL.Version(); version != "" {
-		attributes = append(attributes, DubboVersionKey.String(version))
+		attributes = append(attributes, attribute.Key(constant.DubboVersionKey).String(version))
 	}
 	return attributes
 }
