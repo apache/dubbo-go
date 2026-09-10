@@ -25,7 +25,11 @@ import (
 
 import (
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.uber.org/mock/gomock"
@@ -644,4 +648,125 @@ func Test_otelClientFilter_Invoke(t *testing.T) {
 			}
 		})
 	}
+}
+
+// newRecordingProvider returns an in-memory TracerProvider and its span
+// recorder so tests can assert the span name/kind/attributes produced by the
+// filters.
+func newRecordingProvider() (*sdktrace.TracerProvider, *tracetest.SpanRecorder) {
+	sr := tracetest.NewSpanRecorder()
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
+	return tp, sr
+}
+
+// newSpanTestInvoker builds a mock invoker/invocation backed by a fully
+// populated URL, used by the span name/attribute assertions below.
+func newSpanTestInvoker(ctrl *gomock.Controller, methodName string) (*MockInvoker, *MockInvocation) {
+	res := NewMockResult(ctrl)
+	res.EXPECT().Error().Return(nil).AnyTimes()
+
+	url, _ := common.NewURL("tri://127.0.0.1:20000/com.foo.BarService?interface=com.foo.BarService&group=g1&version=1.0.0")
+
+	invoker := NewMockInvoker(ctrl)
+	invoker.EXPECT().GetURL().Return(url).AnyTimes()
+	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(res).AnyTimes()
+
+	invocation := NewMockInvocation(ctrl)
+	invocation.EXPECT().ActualMethodName().Return(methodName).AnyTimes()
+	invocation.EXPECT().MethodName().Return(methodName).AnyTimes()
+	invocation.EXPECT().SetAttachment(gomock.Any(), gomock.Any()).Return().AnyTimes()
+	invocation.EXPECT().Attachments().Return(map[string]any{}).AnyTimes()
+
+	return invoker, invocation
+}
+
+func attrMap(kvs []attribute.KeyValue) map[attribute.Key]attribute.Value {
+	m := make(map[attribute.Key]attribute.Value, len(kvs))
+	for _, kv := range kvs {
+		m[kv.Key] = kv.Value
+	}
+	return m
+}
+
+// assertCommonSpanAttributes checks the attributes shared by consumer and
+// provider spans, verifying alignment with OTel semantic conventions and the
+// dubbo.* namespace.
+func assertCommonSpanAttributes(t *testing.T, attrs map[attribute.Key]attribute.Value, wantSide string) {
+	t.Helper()
+	strCases := []struct {
+		key  attribute.Key
+		want string
+	}{
+		{semconv.RPCSystemKey, "apache_dubbo"},
+		{semconv.RPCServiceKey, "g1/com.foo.BarService:1.0.0"},
+		{semconv.RPCMethodKey, "SayHello"},
+		{DubboSideKey, wantSide},
+		{DubboProtocolKey, "tri"},
+		{DubboGroupKey, "g1"},
+		{DubboVersionKey, "1.0.0"},
+		{semconv.ServerAddressKey, "127.0.0.1"},
+	}
+	for _, c := range strCases {
+		v, ok := attrs[c.key]
+		if !ok {
+			t.Errorf("missing attribute %q", c.key)
+			continue
+		}
+		if v.AsString() != c.want {
+			t.Errorf("attribute %q = %q, want %q", c.key, v.AsString(), c.want)
+		}
+	}
+	if v, ok := attrs[semconv.ServerPortKey]; !ok || v.AsInt64() != 20000 {
+		t.Errorf("attribute %q = %v (ok=%v), want 20000", semconv.ServerPortKey, v.AsInt64(), ok)
+	}
+}
+
+func Test_otelServerFilter_SpanNameAndAttributes(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	tp, sr := newRecordingProvider()
+	invoker, invocation := newSpanTestInvoker(ctrl, "SayHello")
+
+	f := &otelServerFilter{
+		Propagators:    otel.GetTextMapPropagator(),
+		TracerProvider: tp,
+	}
+	f.Invoke(context.Background(), invoker, invocation)
+
+	spans := sr.Ended()
+	if len(spans) != 1 {
+		t.Fatalf("expected 1 span, got %d", len(spans))
+	}
+	span := spans[0]
+	if got, want := span.Name(), "dubbo.provider g1/com.foo.BarService:1.0.0/SayHello"; got != want {
+		t.Errorf("span name = %q, want %q", got, want)
+	}
+	if span.SpanKind() != trace.SpanKindServer {
+		t.Errorf("span kind = %v, want server", span.SpanKind())
+	}
+	assertCommonSpanAttributes(t, attrMap(span.Attributes()), sideProvider)
+}
+
+func Test_otelClientFilter_SpanNameAndAttributes(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	tp, sr := newRecordingProvider()
+	invoker, invocation := newSpanTestInvoker(ctrl, "SayHello")
+
+	f := &otelClientFilter{
+		Propagators:    otel.GetTextMapPropagator(),
+		TracerProvider: tp,
+	}
+	f.Invoke(context.Background(), invoker, invocation)
+
+	spans := sr.Ended()
+	if len(spans) != 1 {
+		t.Fatalf("expected 1 span, got %d", len(spans))
+	}
+	span := spans[0]
+	if got, want := span.Name(), "dubbo.consumer g1/com.foo.BarService:1.0.0/SayHello"; got != want {
+		t.Errorf("span name = %q, want %q", got, want)
+	}
+	if span.SpanKind() != trace.SpanKindClient {
+		t.Errorf("span kind = %v, want client", span.SpanKind())
+	}
+	assertCommonSpanAttributes(t, attrMap(span.Attributes()), sideConsumer)
 }
