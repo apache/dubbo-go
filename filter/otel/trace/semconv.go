@@ -21,6 +21,13 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
+const (
+	// DubboGroupKey identifies the Dubbo service group selected for an RPC.
+	DubboGroupKey attribute.Key = "dubbo.group"
+	// DubboVersionKey identifies the Dubbo service version selected for an RPC.
+	DubboVersionKey attribute.Key = "dubbo.version"
+)
+
 var (
 	RPCNameKey             = attribute.Key("name")
 	RPCMessageTypeKey      = attribute.Key("message.type")

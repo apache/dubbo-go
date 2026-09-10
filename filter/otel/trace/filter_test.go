@@ -684,7 +684,7 @@ func Test_otelServerFilter_Invoke_RPCAttributes(t *testing.T) {
 		t.Fatalf("Invoke() returned %v, want the mocked result", got)
 	}
 
-	assertRPCSpanAttributes(t, spanRecorder.Ended(), trace.SpanKindServer)
+	assertRPCSpanAttributes(t, spanRecorder.Ended(), trace.SpanKindServer, "gray", "1.0.0")
 }
 
 func Test_otelClientFilter_Invoke_RPCAttributes(t *testing.T) {
@@ -721,10 +721,45 @@ func Test_otelClientFilter_Invoke_RPCAttributes(t *testing.T) {
 		t.Fatalf("Invoke() returned %v, want the mocked result", got)
 	}
 
-	assertRPCSpanAttributes(t, spanRecorder.Ended(), trace.SpanKindClient)
+	assertRPCSpanAttributes(t, spanRecorder.Ended(), trace.SpanKindClient, "gray", "1.0.0")
 }
 
-func assertRPCSpanAttributes(t *testing.T, spans []sdktrace.ReadOnlySpan, wantKind trace.SpanKind) {
+func Test_rpcSpanAttributes_WithoutGroupVersion(t *testing.T) {
+	t.Parallel()
+
+	serviceURL := common.NewURLWithOptions(
+		common.WithParamsValue(constant.InterfaceKey, "com.example.OrderService"),
+	)
+	for _, attr := range rpcSpanAttributes(serviceURL, "GetOrder") {
+		if attr.Key == DubboGroupKey || attr.Key == DubboVersionKey {
+			t.Fatalf("unexpected empty Dubbo attribute %q", attr.Key)
+		}
+	}
+}
+
+func Test_rpcSpanAttributes_PreserveServiceKey(t *testing.T) {
+	t.Parallel()
+
+	serviceURL := common.NewURLWithOptions(
+		common.WithParamsValue(constant.InterfaceKey, "com.example.OrderService"),
+		common.WithParamsValue(constant.GroupKey, "gray"),
+		common.WithParamsValue(constant.VersionKey, "1.0.0"),
+	)
+	if got := serviceURL.ServiceKey(); got != "gray/com.example.OrderService:1.0.0" {
+		t.Fatalf("ServiceKey() = %q, want %q", got, "gray/com.example.OrderService:1.0.0")
+	}
+	if got := serviceURL.Service(); got != "com.example.OrderService" {
+		t.Fatalf("Service() = %q, want %q", got, "com.example.OrderService")
+	}
+}
+
+func assertRPCSpanAttributes(
+	t *testing.T,
+	spans []sdktrace.ReadOnlySpan,
+	wantKind trace.SpanKind,
+	wantGroup string,
+	wantVersion string,
+) {
 	t.Helper()
 	if len(spans) != 1 {
 		t.Fatalf("recorded %d spans, want 1", len(spans))
@@ -751,5 +786,11 @@ func assertRPCSpanAttributes(t *testing.T, spans []sdktrace.ReadOnlySpan, wantKi
 	}
 	if got := values[semconv.RPCServiceKey].AsString(); got == "gray/com.example.OrderService:1.0.0" {
 		t.Errorf("rpc.service still contains group/version: %q", got)
+	}
+	if got := values[DubboGroupKey].AsString(); got != wantGroup {
+		t.Errorf("dubbo.group = %q, want %q", got, wantGroup)
+	}
+	if got := values[DubboVersionKey].AsString(); got != wantVersion {
+		t.Errorf("dubbo.version = %q, want %q", got, wantVersion)
 	}
 }

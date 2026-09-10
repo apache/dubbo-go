@@ -23,6 +23,7 @@ import (
 
 import (
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/baggage"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
@@ -31,6 +32,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
@@ -52,6 +54,21 @@ func init() {
 			TracerProvider: otel.GetTracerProvider(),
 		}
 	})
+}
+
+func rpcSpanAttributes(serviceURL *common.URL, methodName string) []attribute.KeyValue {
+	attributes := []attribute.KeyValue{
+		semconv.RPCSystemApacheDubbo,
+		semconv.RPCService(serviceURL.Service()),
+		semconv.RPCMethod(methodName),
+	}
+	if group := serviceURL.Group(); group != "" {
+		attributes = append(attributes, DubboGroupKey.String(group))
+	}
+	if version := serviceURL.Version(); version != "" {
+		attributes = append(attributes, DubboVersionKey.String(version))
+	}
+	return attributes
 }
 
 var _ filter.Filter = (*otelServerFilter)(nil)
@@ -82,11 +99,7 @@ func (f *otelServerFilter) Invoke(ctx context.Context, invoker base.Invoker, inv
 		trace.ContextWithRemoteSpanContext(ctx, spanCtx),
 		invocation.ActualMethodName(),
 		trace.WithSpanKind(trace.SpanKindServer),
-		trace.WithAttributes(
-			semconv.RPCSystemApacheDubbo,
-			semconv.RPCService(invoker.GetURL().Service()),
-			semconv.RPCMethod(invocation.MethodName()),
-		),
+		trace.WithAttributes(rpcSpanAttributes(invoker.GetURL(), invocation.MethodName())...),
 	)
 	defer span.End()
 
@@ -125,11 +138,7 @@ func (f *otelClientFilter) Invoke(ctx context.Context, invoker base.Invoker, inv
 		ctx,
 		invocation.ActualMethodName(),
 		trace.WithSpanKind(trace.SpanKindClient),
-		trace.WithAttributes(
-			semconv.RPCSystemApacheDubbo,
-			semconv.RPCService(invoker.GetURL().Service()),
-			semconv.RPCMethod(invocation.MethodName()),
-		),
+		trace.WithAttributes(rpcSpanAttributes(invoker.GetURL(), invocation.MethodName())...),
 	)
 	defer span.End()
 
