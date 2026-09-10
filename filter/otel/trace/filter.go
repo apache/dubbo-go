@@ -84,7 +84,7 @@ func (f *otelServerFilter) Invoke(ctx context.Context, invoker base.Invoker, inv
 		trace.WithSpanKind(trace.SpanKindServer),
 		trace.WithAttributes(
 			semconv.RPCSystemApacheDubbo,
-			semconv.RPCService(invoker.GetURL().ServiceKey()),
+			semconv.RPCService(invoker.GetURL().Service()),
 			semconv.RPCMethod(invocation.MethodName()),
 		),
 	)
@@ -127,7 +127,7 @@ func (f *otelClientFilter) Invoke(ctx context.Context, invoker base.Invoker, inv
 		trace.WithSpanKind(trace.SpanKindClient),
 		trace.WithAttributes(
 			semconv.RPCSystemApacheDubbo,
-			semconv.RPCService(invoker.GetURL().ServiceKey()),
+			semconv.RPCService(invoker.GetURL().Service()),
 			semconv.RPCMethod(invocation.MethodName()),
 		),
 	)
