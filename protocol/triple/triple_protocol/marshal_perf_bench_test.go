@@ -180,7 +180,7 @@ func newWrapperPerfMessage(size int) []any {
 
 // runWrapperBench drives both send wires with a non-IDL wrapper codec. slow
 // hides MarshalAppend behind noAppenderCodec, reproducing the pre-optimization
-// client behaviour, so the pair isolates the outer-wrapper allocation.
+// client behavior, so the pair isolates the outer-wrapper allocation.
 func runWrapperBench(b *testing.B, slow bool) {
 	for _, inner := range []struct {
 		name  string
