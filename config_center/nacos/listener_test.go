@@ -49,6 +49,21 @@ func TestCallback(t *testing.T) {
 	}
 }
 
+func TestCallbackDelete(t *testing.T) {
+	l := &recordingListener{}
+	set := newKeyListenerSet("test-group")
+	set.add(l)
+
+	callback(set, "", "g", "data", "")
+
+	if len(l.events) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(l.events))
+	}
+	if l.events[0].Key != "data" || l.events[0].Value != "" || l.events[0].ConfigType != remoting.EventTypeDel {
+		t.Fatalf("unexpected event %+v", l.events[0])
+	}
+}
+
 func TestRemoveListener(t *testing.T) {
 	n := &nacosDynamicConfiguration{}
 	key := "k"
