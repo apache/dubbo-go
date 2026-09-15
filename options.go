@@ -148,6 +148,13 @@ func reportConfigToReportOptions(mc *global.MetadataReportConfig) (*metadata.Rep
 		}
 		metadata.WithTimeout(timeout)(opts)
 	}
+	// Only forwarded when set, so an unset field keeps the default rather than
+	// pinning it. This conversion builds ReportOptions field by field, so a new
+	// config field that is not listed here is silently dropped — which is what
+	// happened to this one, leaving report-definition:false with no effect.
+	if mc.ReportDefinition != nil {
+		metadata.WithReportDefinition(*mc.ReportDefinition)(opts)
+	}
 	return opts, nil
 }
 

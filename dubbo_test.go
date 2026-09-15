@@ -34,6 +34,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/metadata"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 	"dubbo.apache.org/dubbo-go/v3/server"
 )
@@ -495,6 +496,20 @@ func TestInstanceProcessDoesNotMutateLiveOptionsOnInvalidPayload(t *testing.T) {
 	ins.insOpts.Process(&config_center.ConfigChangeEvent{Value: 123})
 
 	assert.Equal(t, "stable-app", ins.insOpts.Application.Name)
+}
+
+func TestWithMetadataReportPreservesReportDefinitionThroughConversion(t *testing.T) {
+	opts := defaultInstanceOptions()
+	WithMetadataReport(
+		metadata.WithNacos(),
+		metadata.WithAddress("127.0.0.1:8848"),
+		metadata.WithReportDefinition(false),
+	)(opts)
+
+	reportOpts, err := reportConfigToReportOptions(opts.MetadataReport)
+	require.NoError(t, err)
+	require.NotNil(t, reportOpts.ReportDefinition)
+	assert.False(t, *reportOpts.ReportDefinition)
 }
 
 func TestSetProviderServiceRegistersByReference(t *testing.T) {
