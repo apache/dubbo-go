@@ -46,3 +46,14 @@ metadata/report/zookeeper/zookeeper-4unittest/
 
 # Local AI agent planning artifacts
 /docs/superpowers/
+
+# Local AI assistant instructions and prompt files
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+CONVENTIONS.md
+SOUL.md
+IDENTITY.md
+USER.md
+.cursor/rules/
+.github/copilot-instructions.md
