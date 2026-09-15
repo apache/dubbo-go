@@ -715,9 +715,10 @@ func verifyEnvelopeFrames(wire []byte, codec Codec, want []*pingv1.PingRequest) 
 	return nil
 }
 
-// Type guard: only protoBinaryCodec and the tripleServerCodecSession wrapper
-// may expose the marshalAppender fast path; all other codecs must stay on
-// codec.Marshal.
+// Type guard: the marshalAppender fast path is limited to the three codecs the
+// triple send paths legitimately route through -- protoBinaryCodec (IDL),
+// tripleServerCodecSession (server response) and protoWrapperCodec (client
+// non-IDL wrapper). Every other codec must stay on codec.Marshal.
 func TestMarshalPerfTypeGuard(t *testing.T) {
 	t.Parallel()
 
@@ -735,13 +736,23 @@ func TestMarshalPerfTypeGuard(t *testing.T) {
 	if !implements(&tripleServerCodecSession{delegate: &protoBinaryCodec{}}) {
 		t.Fatal("tripleServerCodecSession must implement marshalAppender (server response fast path)")
 	}
+	// protoWrapperCodec carries the client non-IDL request path (Java interop
+	// and generic calls); without the extension all of that traffic stays on
+	// the allocating codec.Marshal path, whatever the inner serialization is.
+	for _, inner := range []Codec{&hessian2Codec{}, &msgpackCodec{}} {
+		if !implements(newProtoWrapperCodec(inner)) {
+			t.Fatalf("protoWrapperCodec(inner %s) must implement marshalAppender (client request fast path)", inner.Name())
+		}
+	}
 
 	never := []struct {
 		name  string
 		codec Codec
 	}{
 		{name: "noAppender wrapper", codec: &noAppenderCodec{&protoBinaryCodec{}}},
-		{name: "proto wrapper (hessian inner)", codec: newProtoWrapperCodec(&hessian2Codec{})},
+		// The slow-path control used by the wire parity tests: wrapping the
+		// wrapper in a plain Codec must keep hiding the extension.
+		{name: "wrapper hidden behind Codec", codec: &noAppenderCodec{newProtoWrapperCodec(&hessian2Codec{})}},
 		{name: "hessian2", codec: &hessian2Codec{}},
 		{name: "msgpack", codec: &msgpackCodec{}},
 		{name: "json", codec: &protoJSONCodec{name: codecNameJSON}},
@@ -934,4 +945,340 @@ func TestMarshalPerfServerSessionFastPath(t *testing.T) {
 			t.Fatalf("envelope MarshalAppend calls = %d, want 1 (fast path not taken)", probe.appendCalls)
 		}
 	})
+}
+
+// wrapperFastPathProbe is the client-side counterpart of fastPathProbeCodec: a
+// protoWrapperCodec whose Marshal always fails and whose MarshalAppend counts
+// calls, so a successful marshal proves the marshalAppender branch produced
+// the bytes.
+type wrapperFastPathProbe struct {
+	*protoWrapperCodec
+	appendCalls int
+}
+
+var _ Codec = (*wrapperFastPathProbe)(nil)
+var _ marshalAppender = (*wrapperFastPathProbe)(nil)
+
+func newWrapperFastPathProbe(inner Codec) *wrapperFastPathProbe {
+	return &wrapperFastPathProbe{protoWrapperCodec: newProtoWrapperCodec(inner)}
+}
+
+func (c *wrapperFastPathProbe) Marshal(any) ([]byte, error) {
+	return nil, errors.New("slow path taken: the client wrapper must marshal through MarshalAppend")
+}
+
+func (c *wrapperFastPathProbe) MarshalAppend(dst []byte, message any) ([]byte, error) {
+	c.appendCalls++
+	return c.protoWrapperCodec.MarshalAppend(dst, message)
+}
+
+// TestMarshalPerfClientWrapperFastPath verifies that the client non-IDL wrapper
+// codec reaches the MarshalAppend fast path on both wire types -- the Triple
+// HTTP body (tripleUnaryMarshaler) and the gRPC/Triple envelope
+// (envelopeWriter) -- and that the two paths emit byte-identical wire output.
+func TestMarshalPerfClientWrapperFastPath(t *testing.T) {
+	t.Parallel()
+
+	t.Run("both wires take MarshalAppend, not the slow path", func(t *testing.T) {
+		// wrapperFastPathProbe.Marshal always fails, so only the MarshalAppend
+		// branch can produce a successful marshal here.
+		msg := []any{"fast-path", int32(42)}
+		for _, inner := range []Codec{&hessian2Codec{}, &msgpackCodec{}} {
+			for _, compress := range []bool{false, true} {
+				tripleProbe := newWrapperFastPathProbe(inner)
+				tripleM, tripleOut, _ := newTripleMarshalerForTest(t, tripleProbe, compress, 0, 0)
+				if err := tripleM.Marshal(msg); err != nil {
+					t.Fatalf("inner %s compressed=%v triple marshal: %v (fast path not taken)",
+						inner.Name(), compress, err)
+				}
+				if tripleProbe.appendCalls != 1 {
+					t.Fatalf("inner %s compressed=%v triple MarshalAppend calls = %d, want 1 (fast path not taken)",
+						inner.Name(), compress, tripleProbe.appendCalls)
+				}
+				if tripleOut.Len() == 0 {
+					t.Fatalf("inner %s compressed=%v triple fast path wrote no bytes", inner.Name(), compress)
+				}
+
+				envelopeProbe := newWrapperFastPathProbe(inner)
+				envelopeW, envelopeOut := newEnvelopeWriterForTest(t, envelopeProbe, compress, 0, 0)
+				if err := envelopeW.Marshal(msg); err != nil {
+					t.Fatalf("inner %s compressed=%v envelope marshal: %v (fast path not taken)",
+						inner.Name(), compress, err)
+				}
+				if envelopeProbe.appendCalls != 1 {
+					t.Fatalf("inner %s compressed=%v envelope MarshalAppend calls = %d, want 1 (fast path not taken)",
+						inner.Name(), compress, envelopeProbe.appendCalls)
+				}
+				if envelopeOut.Len() == 0 {
+					t.Fatalf("inner %s compressed=%v envelope fast path wrote no bytes", inner.Name(), compress)
+				}
+			}
+		}
+	})
+
+	t.Run("fast and slow paths emit identical wire bytes", func(t *testing.T) {
+		// Argument shapes compose with the payload-size matrix below: each
+		// shape builds its input from a payload of the current size, so the
+		// two dimensions are covered together instead of separately.
+		shapes := []struct {
+			name  string
+			build func(payload string) any
+		}{
+			{name: "single scalar arg", build: func(payload string) any { return []any{payload} }},
+			{name: "multiple scalar args", build: func(payload string) any { return []any{payload, int32(42), true} }},
+			{name: "pojo arg", build: func(payload string) any { return []any{&TestUser{ID: "1", Name: payload, Age: 18}} }},
+			{name: "bare scalar", build: func(payload string) any { return payload }},
+		}
+		// Payload sizes straddle the boundaries this send path walks through:
+		// the outer protobuf varint length prefix, which grows from one byte to
+		// two at 128 (127/128), the pooled buffer's initial capacity, where
+		// marshalToPool swaps in a grown array instead of reusing the pooled
+		// one (474/475, see initialBufferSize), and the inner codec's own
+		// length encoding (1023/1024). Empty and single-byte payloads cover the
+		// degenerate cases.
+		payloadSizes := []int{0, 1, 127, 128, 474, 475, 1024}
+
+		type input struct {
+			name string
+			msg  any
+		}
+		var inputs []input
+		for _, shape := range shapes {
+			for _, size := range payloadSizes {
+				inputs = append(inputs, input{
+					name: fmt.Sprintf("%s/payload=%dB", shape.name, size),
+					msg:  shape.build(strings.Repeat("a", size)),
+				})
+			}
+		}
+		// Payload-size independent shapes: the void call and a nil argument.
+		inputs = append(inputs,
+			input{name: "void container", msg: []any{}},
+			input{name: "nil arg", msg: []any{nil}},
+		)
+
+		for _, compress := range []bool{false, true} {
+			for _, inner := range []Codec{&hessian2Codec{}, &msgpackCodec{}} {
+				for _, mc := range inputs {
+					t.Run(fmt.Sprintf("compress=%v/%s/%s", compress, inner.Name(), mc.name), func(t *testing.T) {
+						t.Parallel()
+						// The fast and slow paths share one codec; the slow-path
+						// control only differs by hiding the appender extension
+						// behind the plain Codec interface.
+						fast := newProtoWrapperCodec(inner)
+						slow := &noAppenderCodec{fast}
+						msg := mc.msg
+
+						fastM, fastOut, fastHeader := newTripleMarshalerForTest(t, fast, compress, 0, 0)
+						fastErr := fastM.Marshal(msg)
+						slowM, slowOut, slowHeader := newTripleMarshalerForTest(t, slow, compress, 0, 0)
+						slowErr := slowM.Marshal(msg)
+						assertSameOutcome(t, "triple", fastErr, slowErr, fastOut.Bytes(), slowOut.Bytes())
+						if fastErr == nil && compress &&
+							fastHeader.Get(tripleUnaryHeaderCompression) !=
+								slowHeader.Get(tripleUnaryHeaderCompression) {
+							t.Fatalf("compression header mismatch: fast=%q slow=%q",
+								fastHeader.Get(tripleUnaryHeaderCompression), slowHeader.Get(tripleUnaryHeaderCompression))
+						}
+
+						fastW, fastEnvelopeOut := newEnvelopeWriterForTest(t, fast, compress, 0, 0)
+						fastErr = fastW.Marshal(msg)
+						slowW, slowEnvelopeOut := newEnvelopeWriterForTest(t, slow, compress, 0, 0)
+						slowErr = slowW.Marshal(msg)
+						assertSameOutcome(t, "envelope", fastErr, slowErr, fastEnvelopeOut.Bytes(), slowEnvelopeOut.Bytes())
+					})
+				}
+			}
+		}
+	})
+}
+
+// assertSameOutcome verifies that one wire agrees between the fast and the slow
+// client wrapper: byte-identical output when the input marshals, and the same
+// error when it does not. A nil argument is legitimate input for a generic
+// call, so the fast path must not change whether (or how) the input fails.
+func assertSameOutcome(t *testing.T, wire string, fastErr, slowErr *Error, fastWire, slowWire []byte) {
+	t.Helper()
+	if (fastErr == nil) != (slowErr == nil) {
+		t.Fatalf("%s: fast err = %v, slow err = %v (the fast path changed the outcome)",
+			wire, fastErr, slowErr)
+	}
+	if fastErr != nil {
+		if fastErr.Error() != slowErr.Error() {
+			t.Fatalf("%s: error mismatch: fast = %v, slow = %v", wire, fastErr, slowErr)
+		}
+		return
+	}
+	if !bytes.Equal(fastWire, slowWire) {
+		t.Fatalf("%s wire mismatch: fast %d bytes vs slow %d bytes", wire, len(fastWire), len(slowWire))
+	}
+}
+
+// TestMarshalPerfClientWrapperConcurrentSend verifies bufferPool safety when
+// the client wrapper is driven concurrently.
+func TestMarshalPerfClientWrapperConcurrentSend(t *testing.T) {
+	const goroutines = 32
+	const iters = 100
+	for _, inner := range []Codec{&hessian2Codec{}, &msgpackCodec{}} {
+		t.Run(inner.Name(), func(t *testing.T) {
+			codec := newProtoWrapperCodec(inner)
+			sharedPool := newBufferPool()
+			var wg sync.WaitGroup
+			errCh := make(chan error, goroutines)
+			// Start gate keeps the pool actually contended so the outcome does
+			// not depend on scheduler interleaving.
+			var ready sync.WaitGroup
+			ready.Add(goroutines)
+			start := make(chan struct{})
+			for g := range goroutines {
+				wg.Go(func() {
+					ready.Done()
+					<-start
+					out := &syncBuffer{}
+					w := &envelopeWriter{
+						writer:     out,
+						codec:      codec,
+						bufferPool: sharedPool,
+					}
+					for i := range iters {
+						// Globally unique (long) string identifies (goroutine,
+						// iteration); the wrapper turns it into a TripleRequestWrapper
+						// carrying one hessian2/msgpack-encoded argument.
+						msg := []any{fmt.Sprintf("goroutine-%02d-message-%03d-%s", g, i, strings.Repeat("x", g+i))}
+						if err := w.Marshal(msg); err != nil {
+							errCh <- fmt.Errorf("goroutine %d message %d: %w", g, i, err)
+							return
+						}
+					}
+					if err := verifyWrapperEnvelopeFrames(out.Bytes(), codec, iters, g); err != nil {
+						errCh <- fmt.Errorf("goroutine %d: %w", g, err)
+					}
+				})
+			}
+			ready.Wait()
+			close(start)
+			wg.Wait()
+			close(errCh)
+			for err := range errCh {
+				t.Error(err)
+			}
+		})
+	}
+}
+
+// verifyWrapperEnvelopeFrames walks the gRPC envelope stream, decoding each
+// payload back into []any via the wrapper codec and checking the single
+// argument matches what goroutine g should have emitted for iteration n.
+func verifyWrapperEnvelopeFrames(wire []byte, codec Codec, iters, g int) error {
+	pos := 0
+	for n := range iters {
+		if len(wire)-pos < 5 {
+			return fmt.Errorf("frame %d: truncated envelope prefix (%d bytes left)", n, len(wire)-pos)
+		}
+		if flags := wire[pos]; flags != 0 {
+			return fmt.Errorf("frame %d: unexpected flags 0x%x (only uncompressed frames expected)", n, flags)
+		}
+		length := int(binary.BigEndian.Uint32(wire[pos+1 : pos+5]))
+		pos += 5
+		if len(wire)-pos < length {
+			return fmt.Errorf("frame %d: payload length %d exceeds remaining %d bytes", n, length, len(wire)-pos)
+		}
+		payload := wire[pos : pos+length]
+		pos += length
+
+		want := fmt.Sprintf("goroutine-%02d-message-%03d-%s", g, n, strings.Repeat("x", g+n))
+		got := []any{new(string)}
+		if err := codec.Unmarshal(payload, got); err != nil {
+			return fmt.Errorf("frame %d: unmarshal wrapper: %w", n, err)
+		}
+		if len(got) != 1 {
+			return fmt.Errorf("frame %d: decoded %d args, want 1", n, len(got))
+		}
+		if s, ok := got[0].(*string); !ok || *s != want {
+			return fmt.Errorf("frame %d: arg = %q, want %q (frames from another goroutine contaminated this stream?)", n, got[0], want)
+		}
+	}
+	if pos != len(wire) {
+		return fmt.Errorf("frame stream has %d trailing bytes after %d frames", len(wire)-pos, iters)
+	}
+	return nil
+}
+
+// TestMarshalPerfClientWrapperLargeBufferDropped verifies that an oversized
+// pooled buffer is dropped, not recycled into a later small wrapper message.
+func TestMarshalPerfClientWrapperLargeBufferDropped(t *testing.T) {
+	t.Parallel()
+
+	for _, inner := range []Codec{&hessian2Codec{}, &msgpackCodec{}} {
+		t.Run(inner.Name(), func(t *testing.T) {
+			codec := newProtoWrapperCodec(inner)
+			large := []any{strings.Repeat("a", 8*1024*1024+1)}
+			small := []any{"x"}
+
+			for _, wire := range []string{"envelope", "triple"} {
+				// newMarshalTo returns a marshal function whose marshaler is
+				// bound to the given buffer pool, so callers control sharing.
+				newMarshalTo := func(pool *bufferPool) func([]any) ([]byte, error) {
+					out := &bytes.Buffer{}
+					switch wire {
+					case "envelope":
+						w := &envelopeWriter{writer: out, codec: codec, bufferPool: pool}
+						return func(msg []any) ([]byte, error) {
+							out.Reset()
+							if err := w.Marshal(msg); err != nil {
+								return nil, err
+							}
+							return out.Bytes(), nil
+						}
+					default: // triple
+						m := &tripleUnaryMarshaler{writer: out, codec: codec, bufferPool: pool}
+						return func(msg []any) ([]byte, error) {
+							out.Reset()
+							if err := m.Marshal(msg); err != nil {
+								return nil, err
+							}
+							return out.Bytes(), nil
+						}
+					}
+				}
+
+				// Marshal the huge message first, then the tiny one through the
+				// same pool; recycled residue would leak into the small output.
+				pool := newBufferPool()
+				shared := newMarshalTo(pool)
+				largeOut, err := shared(large)
+				if err != nil {
+					t.Fatalf("%s large marshal: %v", wire, err)
+				}
+				if len(largeOut) <= maxRecycleBufferSize {
+					t.Fatalf("test setup: %s large output %d bytes not larger than %d",
+						wire, len(largeOut), maxRecycleBufferSize)
+				}
+				// The oversized buffer must be dropped rather than pooled, so a
+				// later Get must not hand back one that large. Byte equality
+				// alone cannot tell the two apart: Put resets recycled buffers.
+				next := pool.Get()
+				if next.Cap() > maxRecycleBufferSize {
+					t.Fatalf("%s recycled an oversized wrapper buffer: cap %d > max %d",
+						wire, next.Cap(), maxRecycleBufferSize)
+				}
+				pool.Put(next)
+				afterLarge, err := shared(small)
+				if err != nil {
+					t.Fatalf("%s small marshal after large: %v", wire, err)
+				}
+				expected, err := newMarshalTo(newBufferPool())(small)
+				if err != nil {
+					t.Fatalf("%s reference small marshal: %v", wire, err)
+				}
+				if !bytes.Equal(afterLarge, expected) {
+					t.Fatalf("%s small message output changed after 8MiB+1 message: got %d bytes, want %d",
+						wire, len(afterLarge), len(expected))
+				}
+				if len(afterLarge) == 0 {
+					t.Fatalf("%s small message produced empty output", wire)
+				}
+			}
+		})
+	}
 }

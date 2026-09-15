@@ -70,8 +70,9 @@ func newBenchGzipPool() *compressionPool {
 
 // benchTripleUnaryMarshaler drives tripleUnaryMarshaler.Marshal with the given
 // codec. protoBinaryCodec exercises the MarshalAppend fast path;
-// noAppenderCodec exercises the codec.Marshal slow path.
-func benchTripleUnaryMarshaler(b *testing.B, codec Codec, message *pingv1.PingRequest, cfg benchMarshalConfig) {
+// noAppenderCodec exercises the codec.Marshal slow path. The message is typed
+// as any so both IDL and non-IDL wrapper payloads can reuse this driver.
+func benchTripleUnaryMarshaler(b *testing.B, codec Codec, message any, cfg benchMarshalConfig) {
 	b.Helper()
 	m := &tripleUnaryMarshaler{
 		writer:       io.Discard,
@@ -120,8 +121,10 @@ func BenchmarkUnaryMarshalerSlowPathCompressed(b *testing.B) {
 	runUnaryMarshalerBench(b, &noAppenderCodec{&protoBinaryCodec{}}, benchMarshalConfig{compress: true, sendMaxBytes: 1 << 30})
 }
 
-// benchEnvelopeWriter drives envelopeWriter.Marshal with the given codec.
-func benchEnvelopeWriter(b *testing.B, codec Codec, message *pingv1.PingRequest, cfg benchMarshalConfig) {
+// benchEnvelopeWriter drives envelopeWriter.Marshal with the given codec. The
+// message is typed as any so both IDL and non-IDL wrapper payloads can reuse
+// this driver.
+func benchEnvelopeWriter(b *testing.B, codec Codec, message any, cfg benchMarshalConfig) {
 	b.Helper()
 	w := &envelopeWriter{
 		writer:       io.Discard,
@@ -167,3 +170,46 @@ func BenchmarkEnvelopeWriterFastPathCompressed(b *testing.B) {
 func BenchmarkEnvelopeWriterSlowPathCompressed(b *testing.B) {
 	runEnvelopeWriterBench(b, &noAppenderCodec{&protoBinaryCodec{}}, benchMarshalConfig{compress: true, sendMaxBytes: 1 << 30})
 }
+
+// newWrapperPerfMessage builds a non-IDL request payload: one string argument
+// of the given size, the shape protoWrapperCodec wraps in a
+// TripleRequestWrapper.
+func newWrapperPerfMessage(size int) []any {
+	return []any{strings.Repeat("a", size)}
+}
+
+// runWrapperBench drives both send wires with a non-IDL wrapper codec. slow
+// hides MarshalAppend behind noAppenderCodec, reproducing the pre-optimization
+// client behavior, so the pair isolates the outer-wrapper allocation.
+func runWrapperBench(b *testing.B, slow bool) {
+	for _, inner := range []struct {
+		name  string
+		codec Codec
+	}{
+		{name: "hessian2", codec: &hessian2Codec{}},
+		{name: "msgpack", codec: &msgpackCodec{}},
+	} {
+		b.Run(inner.name, func(b *testing.B) {
+			var codec Codec = newProtoWrapperCodec(inner.codec)
+			if slow {
+				codec = &noAppenderCodec{codec}
+			}
+			for _, size := range marshalPerfPayloadSizes {
+				b.Run(marshalPerfSizeLabel(size), func(b *testing.B) {
+					msg := newWrapperPerfMessage(size)
+					b.Run("triple", func(b *testing.B) {
+						benchTripleUnaryMarshaler(b, codec, msg, benchMarshalConfig{})
+					})
+					b.Run("envelope", func(b *testing.B) {
+						benchEnvelopeWriter(b, codec, msg, benchMarshalConfig{})
+					})
+				})
+			}
+		})
+	}
+}
+
+// BenchmarkWrapperCodecFastPath / SlowPath measure the non-IDL wrapper send
+// path with and without the marshalAppender fast path on both wires.
+func BenchmarkWrapperCodecFastPath(b *testing.B) { runWrapperBench(b, false) }
+func BenchmarkWrapperCodecSlowPath(b *testing.B) { runWrapperBench(b, true) }
