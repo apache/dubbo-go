@@ -1,3 +1,10 @@
+## Unreleased
+
+### Breaking Changes and Upgrade Notes
+
+- **The extension configuration SPI now requires independent creation and scoped initialization.** Existing `extension.Config` implementations must add `New`, `Init`, and `FilterNames`. Replace `extension.SetConfig(c)` with `extension.RegisterConfig(c)` or `extension.MustRegisterConfig(c)`. The earlier Definition-based API is removed. [#3687](https://github.com/apache/dubbo-go/pull/3687)
+- **YAML extension configuration is optional, but configured prefixes must be registered.** The `dubbo.extensions` section may be omitted. When it is present, every active prefix must be provided by a registered extension in the running binary; an unknown prefix fails startup instead of being silently ignored. [#3687](https://github.com/apache/dubbo-go/pull/3687)
+
 ## 3.3.2
 
 ### Summary

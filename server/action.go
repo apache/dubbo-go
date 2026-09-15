@@ -34,6 +34,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/global"
@@ -369,12 +370,11 @@ func (svcOpts *ServiceOptions) getUrlMap() url.Values {
 	urlMap.Set(constant.WeightKey, strconv.FormatInt(svcOpts.Provider.Weight, 10))
 
 	//filter
-	var filters string
+	filters := svcConf.Filter
 	if svcConf.Filter == "" {
 		filters = constant.DefaultServiceFilters
-	} else {
-		filters = svcConf.Filter
 	}
+	filters = extension.MergeFilterNames(filters, svcOpts.srvOpts.extensionFilterNames)
 	if svcOpts.adaptiveService {
 		filters += fmt.Sprintf(",%s", constant.AdaptiveServiceProviderFilterKey)
 	}
@@ -384,6 +384,10 @@ func (svcOpts *ServiceOptions) getUrlMap() url.Values {
 	if tracing.Enable != nil && *tracing.Enable {
 		filters += fmt.Sprintf(",%s", constant.OTELServerTraceKey)
 	}
+	// Provider URLs are consumed directly by protocolwrapper. Normalize the
+	// suppression markers here because provider filter chains do not pass through
+	// the consumer-side MergeValue path that removes them.
+	filters = commonCfg.MergeValue(filters, "", "")
 	urlMap.Set(constant.ServiceFilterKey, filters)
 
 	// filter special config

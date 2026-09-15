@@ -25,6 +25,45 @@ import (
 	"time"
 )
 
+import (
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+)
+
+type loaderYAMLConfig struct {
+	prefix      string
+	Value       int `yaml:"value"`
+	initialized extension.Scope
+	onInit      func(*loaderYAMLConfig)
+}
+
+func (c *loaderYAMLConfig) Prefix() string {
+	return c.prefix
+}
+
+func (c *loaderYAMLConfig) New() extension.Config {
+	return &loaderYAMLConfig{
+		prefix: c.prefix,
+		onInit: c.onInit,
+	}
+}
+
+func (c *loaderYAMLConfig) Init(scope extension.Scope) error {
+	c.initialized = scope
+	if c.onInit != nil {
+		c.onInit(c)
+	}
+	return nil
+}
+
+func (c *loaderYAMLConfig) FilterNames(extension.Scope) []string {
+	return nil
+}
+
 func writeFile(t *testing.T, dir, name, content string) string {
 	t.Helper()
 	p := filepath.Join(dir, name)
@@ -86,6 +125,62 @@ func TestHotUpdateConfig_DeniesDisallowedChange(t *testing.T) {
 	}
 }
 
+func TestHotUpdateConfig_DeniesExtensionChangeEvenWhenBroadlyAllowed(t *testing.T) {
+	prevIns := instanceOptions
+	prevPreds := hotReloadAllowedPredicates
+	t.Cleanup(func() {
+		instanceOptions = prevIns
+		hotReloadAllowedPredicates = prevPreds
+	})
+
+	tmp := t.TempDir()
+	base := "dubbo:\n  extensions:\n    demo:\n      value: 1\n"
+	updated := "dubbo:\n  extensions:\n    demo:\n      value: 2\n"
+
+	path := writeFile(t, tmp, "conf.yaml", base)
+	conf := NewLoaderConf(WithPath(path))
+	AllowHotReloadPrefix("dubbo.")
+
+	if err := os.WriteFile(path, []byte(updated), 0o600); err != nil {
+		t.Fatalf("overwrite file: %v", err)
+	}
+
+	err := hotUpdateConfig(conf)
+	require.EqualError(t, err, "hot reload denied: extension configuration changes require restart")
+	require.Same(t, prevIns, instanceOptions)
+}
+
+func TestLoadConfigInitializesClientExtensionFromYAML(t *testing.T) {
+	const prefix = "loader-yaml-extension"
+	extension.UnregisterConfig(prefix)
+	t.Cleanup(func() { extension.UnregisterConfig(prefix) })
+
+	var initialized *loaderYAMLConfig
+	require.NoError(t, extension.RegisterConfig(&loaderYAMLConfig{
+		prefix: prefix,
+		onInit: func(config *loaderYAMLConfig) {
+			initialized = config
+		},
+	}))
+
+	conf := NewLoaderConf(WithBytes([]byte(`dubbo:
+  extensions:
+    loader-yaml-extension:
+      consumer:
+        value: 7
+`)))
+	loadedOptions, err := loadInstanceOptions(conf)
+	require.NoError(t, err)
+	require.NoError(t, loadedOptions.init())
+
+	instance := &Instance{insOpts: loadedOptions}
+	_, err = instance.NewClient()
+	require.NoError(t, err)
+	require.NotNil(t, initialized)
+	assert.Equal(t, 7, initialized.Value)
+	assert.Equal(t, extension.ClientScope, initialized.initialized)
+}
+
 func TestHotUpdateConfig_AllowsWithCustomPrefix(t *testing.T) {
 	// snapshot globals and hot-reload predicates
 	prevIns := instanceOptions
@@ -109,6 +204,23 @@ func TestHotUpdateConfig_AllowsWithCustomPrefix(t *testing.T) {
 	if err := hotUpdateConfig(conf); err != nil {
 		t.Fatalf("hotUpdateConfig unexpected error with allowed prefix: %v", err)
 	}
+}
+
+func TestExtensionConfigsFromKoanfPreservesDottedKeys(t *testing.T) {
+	conf := NewLoaderConf(WithBytes([]byte(`dubbo:
+  extensions:
+    dotted:
+      consumer:
+        greet.GreetService:::Greet:
+          timeout: 1000
+`)))
+	configs := extensionConfigsFromKoanf(GetConfigResolver(conf))
+	require.NotNil(t, configs)
+	dotted, ok := configs["dotted"].(map[string]any)
+	require.True(t, ok)
+	consumer, ok := dotted["consumer"].(map[string]any)
+	require.True(t, ok)
+	require.Contains(t, consumer, "greet.GreetService:::Greet")
 }
 
 // TestGoSafely_RunsAndRecoversPanic is a regression test for the inline
