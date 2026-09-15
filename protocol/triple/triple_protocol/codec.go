@@ -265,6 +265,31 @@ func (c *protoWrapperCodec) WireCodecName() string {
 
 // Marshal wraps the message in TripleRequestWrapper format for requests.
 func (c *protoWrapperCodec) Marshal(message any) ([]byte, error) {
+	wrapperReq, err := c.requestWrapper(message)
+	if err != nil {
+		return nil, err
+	}
+	return proto.Marshal(wrapperReq)
+}
+
+// MarshalAppend appends the TripleRequestWrapper encoding of message to dst.
+// The inner payloads still come from innerCodec.Marshal, so the output is
+// byte-identical to Marshal; only the outer wrapper encoding moves into the
+// caller-provided buffer. This is what brings the client-side non-IDL
+// (Java interop / generic call) request path onto the marshalAppender fast
+// path.
+func (c *protoWrapperCodec) MarshalAppend(dst []byte, message any) ([]byte, error) {
+	wrapperReq, err := c.requestWrapper(message)
+	if err != nil {
+		return nil, err
+	}
+	return proto.MarshalOptions{}.MarshalAppend(dst, wrapperReq)
+}
+
+// requestWrapper builds the TripleRequestWrapper for message, marshaling each
+// argument with the inner codec. It is the shared tail of Marshal and
+// MarshalAppend, so the two paths can never drift.
+func (c *protoWrapperCodec) requestWrapper(message any) (*interoperability.TripleRequestWrapper, error) {
 	reqs, ok := message.([]any)
 	if !ok {
 		reqs = []any{message}
@@ -282,13 +307,11 @@ func (c *protoWrapperCodec) Marshal(message any) ([]byte, error) {
 		reqsTypes[i] = getArgType(req)
 	}
 
-	wrapperReq := &interoperability.TripleRequestWrapper{
+	return &interoperability.TripleRequestWrapper{
 		SerializeType: c.innerCodec.Name(),
 		Args:          reqsBytes,
 		ArgTypes:      reqsTypes,
-	}
-
-	return proto.Marshal(wrapperReq)
+	}, nil
 }
 
 // Unmarshal handles both TripleResponseWrapper (for responses) and TripleRequestWrapper (for requests).
