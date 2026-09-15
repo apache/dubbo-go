@@ -17,9 +17,9 @@ You can visit [the official website](https://dubbo.apache.org/) for more informa
 
 For detailed changes, refer to [CHANGELOG.md](CHANGELOG.md).
 
-- **3.3.2**:
+- **[3.3.2](https://github.com/apache/dubbo-go/releases/tag/v3.3.2)**:
 
-  ***BREAKING CHANGE***: `config` package has been removed, please use modern `global` package, check [dubbo-go-samples](https://github.com/apache/dubbo-go-samples) for usage instructions.
+  **Upgrade note:** Go 1.25 or later is required. The legacy `config` package has been removed; applications that imported it directly must migrate to the instance/options APIs and configuration types under `global`. See the [3.3.2 changelog](CHANGELOG.md#332) and [dubbo-go-samples](https://github.com/apache/dubbo-go-samples) for migration details and current usage.
 
   Apache Dubbo-go 3.3.2 is a production-readiness release focused on API consolidation, Triple protocol capabilities, application-level metadata, service governance, concurrency safety, and release tooling. It completes the removal of the legacy config package, expands generic invocation and HTTP-facing Triple features, refreshes generated-project workflows, and fixes multiple races, stale-snapshot issues, and resource leaks.
 
@@ -31,7 +31,7 @@ For detailed changes, refer to [CHANGELOG.md](CHANGELOG.md).
 
 ### Prerequisites
 
-- Go 1.24 or later (recommended for compatibility with recent updates).
+- Go 1.25 or later.
 
 ### Installation
 
@@ -124,6 +124,15 @@ Common development tools live in `tools/`.
 | [imports-formatter](./tools/imports-formatter/README.md) | Format Go import blocks using dubbo-go grouping rules. |
 | [dubbo-go-schema](./tools/dubbo-go-schema/README.md) | Provide JSON Schema completion and validation for dubbo-go YAML config. |
 | [benchmark](./tools/benchmark/README.md) | Performance benchmark suite for comparing Dubbo-Go, Dubbo-Java, and gRPC frameworks. |
+
+Prebuilt archives for Darwin, Linux, and Windows are available from GitHub Releases:
+
+- [dubbogo-cli v1.0.1](https://github.com/apache/dubbo-go/releases/tag/tools/dubbogo-cli/v1.0.1)
+- [protoc-gen-go-triple v3.3.2](https://github.com/apache/dubbo-go/releases/tag/tools/protoc-gen-go-triple/v3.3.2)
+- [protoc-gen-triple-openapi v3.3.2](https://github.com/apache/dubbo-go/releases/tag/tools/protoc-gen-triple-openapi/v3.3.2)
+- [imports-formatter v1.0.11](https://github.com/apache/dubbo-go/releases/tag/tools/imports-formatter/v1.0.11)
+
+After installing `dubbogo-cli`, run `dubbogo-cli install all` to install the companion generators and formatter. Source installation commands are documented in each tool's README.
 
 ## Ecosystem
 - [dubbo-go-samples](https://github.com/apache/dubbo-go-samples)
