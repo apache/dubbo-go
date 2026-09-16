@@ -93,14 +93,14 @@ func TestHTTPTranscodingHandlerSupportsBodyPathQueryAndAdditionalBinding(t *test
 	require.NoError(t, err)
 	require.Len(t, routes, 2)
 
-	post := routes[0]
-	postRequest := httptest.NewRequest(http.MethodPost, "/v1/authors/alice?count=7", strings.NewReader(`{"title":"book"}`))
-	postRequest.Header.Set("Content-Type", "application/json; charset=utf-8")
-	postResponse := httptest.NewRecorder()
-	post.Handler(postResponse, postRequest, map[string]string{"name": "alice"})
-	assert.Equal(t, http.StatusOK, postResponse.Code)
-	assert.Equal(t, `"alice:book:7"`, postResponse.Body.String())
-	assert.Equal(t, []string{"resp-1"}, postResponse.Header().Values("X-Response-ID"))
+	patch := routes[0]
+	patchRequest := httptest.NewRequest(http.MethodPatch, "/v1/authors/alice?count=7", strings.NewReader(`{"title":"book"}`))
+	patchRequest.Header.Set("Content-Type", "application/json; charset=utf-8")
+	patchResponse := httptest.NewRecorder()
+	patch.Handler(patchResponse, patchRequest, map[string]string{"name": "alice"})
+	assert.Equal(t, http.StatusOK, patchResponse.Code)
+	assert.Equal(t, `"alice:book:7"`, patchResponse.Body.String())
+	assert.Equal(t, []string{"resp-1"}, patchResponse.Header().Values("X-Response-ID"))
 	assert.Equal(t, "alice", lastRequest.ProtoReflect().Get(requestFields.ByName("name")).String())
 
 	get := routes[1]
@@ -148,12 +148,34 @@ func TestHTTPTranscodingHandlerRejectsUnsupportedBodyAndMapsRPCError(t *testing.
 	assert.Equal(t, http.StatusNotFound, failedResponse.Code)
 	assert.Contains(t, failedResponse.Body.String(), `"code":5`)
 
+	malformed := httptest.NewRequest(http.MethodPost, "/v1/books/alice", strings.NewReader(`{"title":`))
+	malformed.Header.Set("Content-Type", "application/json")
+	malformedResponse := httptest.NewRecorder()
+	handler(malformedResponse, malformed, map[string]string{"name": "alice"})
+	assert.Equal(t, http.StatusBadRequest, malformedResponse.Code)
+	assert.Contains(t, malformedResponse.Body.String(), `"code":3`)
+
 	limited := newHTTPTranscodingHandler(binding, method, invoker, 4)
 	tooLarge := httptest.NewRequest(http.MethodPost, "/v1/books/alice", strings.NewReader(`{"title":"book"}`))
 	tooLarge.Header.Set("Content-Type", "application/json")
 	tooLargeResponse := httptest.NewRecorder()
 	limited(tooLargeResponse, tooLarge, map[string]string{"name": "alice"})
 	assert.Equal(t, http.StatusRequestEntityTooLarge, tooLargeResponse.Code)
+
+	internalInvoker := &tripleServerTestInvoker{
+		invokeFn: func(context.Context, base.Invocation) result.Result {
+			res := &result.RPCResult{}
+			res.SetError(tri.NewError(tri.CodeInternal, assert.AnError))
+			return res
+		},
+	}
+	internalHandler := newHTTPTranscodingHandler(binding, method, internalInvoker)
+	internalRequest := httptest.NewRequest(http.MethodPost, "/v1/books/alice", strings.NewReader(`{"title":"book"}`))
+	internalRequest.Header.Set("Content-Type", "application/json")
+	internalResponse := httptest.NewRecorder()
+	internalHandler(internalResponse, internalRequest, map[string]string{"name": "alice"})
+	assert.Equal(t, http.StatusInternalServerError, internalResponse.Code)
+	assert.Contains(t, internalResponse.Body.String(), `"code":13`)
 }
 
 func registerHTTPTranscodingTestDescriptor(t *testing.T) (protoreflect.MethodDescriptor, protoreflect.MessageDescriptor, protoreflect.MessageDescriptor) {
@@ -170,7 +192,7 @@ func registerHTTPTranscodingTestDescriptor(t *testing.T) (protoreflect.MethodDes
 	}
 	options := &descriptorpb.MethodOptions{}
 	proto.SetExtension(options, annotations.E_Http, &annotations.HttpRule{
-		Pattern:      &annotations.HttpRule_Post{Post: "/v1/authors/{name}"},
+		Pattern:      &annotations.HttpRule_Patch{Patch: "/v1/authors/{name}"},
 		Body:         "book",
 		ResponseBody: "message",
 		AdditionalBindings: []*annotations.HttpRule{{

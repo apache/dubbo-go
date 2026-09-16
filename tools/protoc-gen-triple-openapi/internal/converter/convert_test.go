@@ -87,6 +87,39 @@ func TestConvertGolden(t *testing.T) {
 	}
 }
 
+func TestConvertHTTPRulesGolden(t *testing.T) {
+	for _, format := range []string{"yaml", "json"} {
+		t.Run(format, func(t *testing.T) {
+			request := httpRuleRequest()
+			request.Parameter = proto.String("format=" + format + ",use-http-rules=true")
+			response, err := convert(request)
+			if err != nil {
+				t.Fatalf("convert() error = %v", err)
+			}
+			if len(response.File) != 1 {
+				t.Fatalf("generated %d files, want 1", len(response.File))
+			}
+
+			goldenFile := "http_rule.triple.openapi." + format
+			goldenPath := examplePath(t, goldenFile)
+			got := strings.ReplaceAll(response.File[0].GetContent(), "\r\n", "\n")
+			if *updateGolden {
+				if err := os.WriteFile(goldenPath, []byte(got), 0o644); err != nil {
+					t.Fatalf("update golden file: %v", err)
+				}
+				return
+			}
+			want, err := os.ReadFile(goldenPath)
+			if err != nil {
+				t.Fatalf("read golden file: %v", err)
+			}
+			if got != strings.ReplaceAll(string(want), "\r\n", "\n") {
+				t.Errorf("generated OpenAPI differs from %s\n--- want\n%s\n--- got\n%s", goldenFile, want, got)
+			}
+		})
+	}
+}
+
 func TestConvertUseHTTPRules(t *testing.T) {
 	request := httpRuleRequest()
 	response, err := convert(request)
@@ -155,10 +188,10 @@ func httpRuleRequest() *pluginpb.CodeGeneratorRequest {
 		}},
 	})
 	return &pluginpb.CodeGeneratorRequest{
-		FileToGenerate: []string{"http.proto"},
+		FileToGenerate: []string{"http_rule.proto"},
 		Parameter:      proto.String("format=json,use-http-rules=true"),
 		ProtoFile: []*descriptorpb.FileDescriptorProto{{
-			Name:    proto.String("http.proto"),
+			Name:    proto.String("http_rule.proto"),
 			Package: proto.String("http"),
 			Syntax:  proto.String("proto3"),
 			MessageType: []*descriptorpb.DescriptorProto{

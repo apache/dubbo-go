@@ -1,0 +1,51 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package http;
+
+option go_package = "dubbo.apache.org/dubbo-go/v3/tools/protoc-gen-triple-openapi/example;http";
+
+import "google/api/annotations.proto";
+
+message Book {
+  string id = 1;
+  string title = 2;
+}
+
+message UpdateBookRequest {
+  Book book = 1;
+  int32 page_size = 2;
+  string filter = 3;
+}
+
+message UpdateBookResponse {
+  Book book = 1;
+}
+
+service Library {
+  rpc UpdateBook(UpdateBookRequest) returns (UpdateBookResponse) {
+    option (google.api.http) = {
+      patch: "/v1/books/{book.id}"
+      body: "book"
+      response_body: "book"
+      additional_bindings: {
+        get: "/v1/books/{book.id}"
+        response_body: "book"
+      }
+    };
+  }
+}

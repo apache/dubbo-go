@@ -1,0 +1,250 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Dubbo-go OpenAPI",
+    "description": "dubbo-go generate OpenAPI docs.",
+    "version": "v1"
+  },
+  "servers": [
+    {
+      "url": "http://0.0.0.0:20000",
+      "description": "Dubbo-go Default Server"
+    }
+  ],
+  "paths": {
+    "/v1/books/{book.id}": {
+      "get": {
+        "tags": [
+          "http.Library"
+        ],
+        "operationId": "http.Library.UpdateBook.binding1",
+        "parameters": [
+          {
+            "name": "book.id",
+            "in": "path",
+            "required": true,
+            "allowReserved": true,
+            "schema": {
+              "type": "string",
+              "title": "id"
+            }
+          },
+          {
+            "name": "book.title",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "title": "title"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "title": "page_size",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "title": "filter"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "book",
+                  "$ref": "#/components/schemas/http.Book"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "http.Library"
+        ],
+        "operationId": "http.Library.UpdateBook",
+        "parameters": [
+          {
+            "name": "book.id",
+            "in": "path",
+            "required": true,
+            "allowReserved": true,
+            "schema": {
+              "type": "string",
+              "title": "id"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "title": "page_size",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "title": "filter"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "title": "book",
+                "$ref": "#/components/schemas/http.Book"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "book",
+                  "$ref": "#/components/schemas/http.Book"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "x-google-path-template": "/v1/books/{book.id}"
+    }
+  },
+  "components": {
+    "schemas": {
+      "http.Book": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "id"
+          },
+          "title": {
+            "type": "string",
+            "title": "title"
+          }
+        },
+        "title": "Book"
+      },
+      "http.UpdateBookRequest": {
+        "type": "object",
+        "properties": {
+          "book": {
+            "title": "book",
+            "$ref": "#/components/schemas/http.Book"
+          },
+          "pageSize": {
+            "type": "integer",
+            "title": "page_size",
+            "format": "int32"
+          },
+          "filter": {
+            "type": "string",
+            "title": "filter"
+          }
+        },
+        "title": "UpdateBookRequest"
+      },
+      "http.UpdateBookResponse": {
+        "type": "object",
+        "properties": {
+          "book": {
+            "title": "book",
+            "$ref": "#/components/schemas/http.Book"
+          }
+        },
+        "title": "UpdateBookResponse"
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The gRPC status code."
+          },
+          "message": {
+            "type": "string",
+            "description": "A developer-facing error message."
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "Additional error details."
+          }
+        },
+        "title": "ErrorResponse",
+        "description": "Error type returned by triple: https://cn.dubbo.apache.org/zh-cn/overview/reference/protocols/triple-spec/"
+      }
+    }
+  },
+  "security": [],
+  "tags": [
+    {
+      "name": "http.Library"
+    }
+  ]
+}
