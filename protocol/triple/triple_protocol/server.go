@@ -477,6 +477,16 @@ func NewServer(addr string, tripleConf *global.TripleConfig) *Server {
 		handlers:     make(map[string]*Handler),
 		tripleConfig: tripleConf,
 	}
+	if tripleConf != nil && tripleConf.Cors != nil {
+		s.mux.setTranscodingCORS(&CorsConfig{
+			AllowOrigins:     append([]string(nil), tripleConf.Cors.AllowOrigins...),
+			AllowMethods:     append([]string(nil), tripleConf.Cors.AllowMethods...),
+			AllowHeaders:     append([]string(nil), tripleConf.Cors.AllowHeaders...),
+			ExposeHeaders:    append([]string(nil), tripleConf.Cors.ExposeHeaders...),
+			AllowCredentials: tripleConf.Cors.AllowCredentials,
+			MaxAge:           tripleConf.Cors.MaxAge,
+		})
+	}
 
 	var openapiIntegration *openapi.OpenAPIIntegration
 	if tripleConf != nil && tripleConf.OpenAPI != nil && tripleConf.OpenAPI.Enabled {

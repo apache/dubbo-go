@@ -238,7 +238,7 @@ func (s *Server) startTransport(callProtocol string, tlsConf *tls.Config) {
 	s.triServer.Start(callProtocol, tlsConf)
 }
 
-func (s *Server) registerServiceHandlers(invoker base.Invoker, info *common.ServiceInfo, handlerOpts []tri.HandlerOption) {
+func (s *Server) registerServiceHandlers(invoker base.Invoker, info *common.ServiceInfo, handlerOpts []tri.HandlerOption) error {
 	url := invoker.GetURL()
 
 	// IDLMode means that this will only be set when
@@ -262,16 +262,21 @@ func (s *Server) registerServiceHandlers(invoker base.Invoker, info *common.Serv
 
 	if info != nil {
 		// New triple IDL mode
-		s.handleServiceWithInfo(intfName, invoker, info, handlerOpts...)
+		if err := s.handleServiceWithInfo(intfName, invoker, info, handlerOpts...); err != nil {
+			return err
+		}
 		s.saveServiceInfo(intfName, info, openapiGroup, url.Group(), url.Version())
 	} else if IDLMode == constant.NONIDL {
 		// New triple non-IDL mode
 		reflectInfo := createServiceInfoWithReflection(service)
-		s.handleServiceWithInfo(intfName, invoker, reflectInfo, handlerOpts...)
+		if err := s.handleServiceWithInfo(intfName, invoker, reflectInfo, handlerOpts...); err != nil {
+			return err
+		}
 		s.saveServiceInfo(intfName, reflectInfo, openapiGroup, url.Group(), url.Version())
 	} else {
 		s.compatHandleService(url, intfName, url.Group(), url.Version(), handlerOpts...)
 	}
+	return nil
 }
 
 // RefreshService refreshes Triple service.
@@ -292,8 +297,7 @@ func (s *Server) refreshService(invoker base.Invoker, info *common.ServiceInfo) 
 		return err
 	}
 
-	s.registerServiceHandlers(invoker, info, handlerOpts)
-	return nil
+	return s.registerServiceHandlers(invoker, info, handlerOpts)
 }
 
 // validateTransportSettings only guards listener-fixed settings. Handler-level
@@ -472,7 +476,9 @@ func (s *Server) compatHandleService(url *common.URL, interfaceName string, grou
 		ds, ok := service.(dubbo3.Dubbo3GrpcService)
 		if !ok {
 			info := createServiceInfoWithReflection(service)
-			s.handleServiceWithInfo(interfaceName, invoker, info, opts...)
+			if err := s.handleServiceWithInfo(interfaceName, invoker, info, opts...); err != nil {
+				logger.Errorf("[Triple][Server] register reflected HTTP handlers failed, service=%s, err=%v", interfaceName, err)
+			}
 			s.saveServiceInfo(interfaceName, info, "", "", "")
 			continue
 		}
@@ -518,12 +524,21 @@ func (s *Server) compatRegisterHandler(interfaceName string, svc dubbo3.Dubbo3Gr
 // handleServiceWithInfo injects invoker and creates handlers based on ServiceInfo.
 // Each method is registered once under its canonical procedure path. Triple's
 // transport-layer route mux performs case-insensitive fallback matching.
-func (s *Server) handleServiceWithInfo(interfaceName string, invoker base.Invoker, info *common.ServiceInfo, opts ...tri.HandlerOption) {
+func (s *Server) handleServiceWithInfo(interfaceName string, invoker base.Invoker, info *common.ServiceInfo, opts ...tri.HandlerOption) error {
+	if routes, err := s.buildHTTPTranscodingRoutes(interfaceName, invoker, info); err != nil {
+		return err
+	} else if len(routes) > 0 {
+		if err := s.triServer.RegisterHTTPHandlers(routes); err != nil {
+			return fmt.Errorf("register HTTP transcoding routes for %q: %w", interfaceName, err)
+		}
+	}
+
 	for _, method := range info.Methods {
 		m := method
 		procedure := joinProcedure(interfaceName, method.Name)
 		s.registerMethodHandler(procedure, m, invoker, opts...)
 	}
+	return nil
 }
 
 // registerMethodHandler registers a single method handler for the given procedure path.
@@ -545,17 +560,9 @@ func (s *Server) registerUnaryMethodHandler(procedure string, m common.MethodInf
 		procedure,
 		m.ReqInitFunc,
 		func(ctx context.Context, req *tri.Request) (*tri.Response, error) {
-			args := extractUnaryInvocationArgs(req.Msg)
-			attachments := generateAttachments(req.Header())
-			// Make incoming attachments available to invocation filters and user code.
-			ctx = context.WithValue(ctx, constant.AttachmentKey, attachments)
-			invo := invocation.NewRPCInvocation(m.Name, args, attachments)
-			res := invoker.Invoke(ctx, invo)
-			// TODO(DMwangnima): modify InfoInvoker to get a unified processing logic
-			// Please refer to server/InfoInvoker.Invoke()
-			triResp := wrapTripleResponse(res.Result())
-			appendTripleOutgoingAttachments(ctx, res.Attachments())
-			return triResp, res.Error()
+			triResp, attachments, err := invokeUnaryRequest(ctx, m, invoker, req.Msg, req.Header())
+			appendTripleOutgoingAttachments(ctx, attachments)
+			return triResp, err
 		},
 		opts...,
 	)
