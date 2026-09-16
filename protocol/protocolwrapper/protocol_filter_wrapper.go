@@ -86,8 +86,16 @@ func BuildInvokerChain(invoker base.Invoker, key string) base.Invoker {
 
 	// The order of filters is from left to right, so loading from right to left
 	next := invoker
-	for _, filterName := range slices.Backward(filterNames) {
-		flt, _ := extension.GetFilter(strings.TrimSpace(filterName))
+	for _, rawFilterName := range slices.Backward(filterNames) {
+		filterName := strings.TrimSpace(rawFilterName)
+		if filterName == "" || strings.HasPrefix(filterName, "-") {
+			continue
+		}
+		flt, ok := extension.GetFilter(filterName)
+		if !ok || flt == nil {
+			logger.Warnf("[Protocol][Wrapper] filter %q is not registered or returned nil, skipping", filterName)
+			continue
+		}
 		fi := &FilterInvoker{next: next, invoker: invoker, filter: flt}
 		next = fi
 	}

@@ -639,6 +639,7 @@ func (rc *InstanceOptions) startGlobalConfigCenter() (bool, error) {
 	if err = koan.UnmarshalWithConf(rc.Prefix(), rc, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
 		return false, err
 	}
+	rc.extensionConfigs = mergeExtensionConfigs(rc.extensionConfigs, extensionConfigsFromKoanf(koan))
 
 	dynamicConfig.AddListener(cc.DataId, rc, config_center.WithGroup(cc.Group))
 	return true, nil
