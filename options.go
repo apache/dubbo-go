@@ -30,6 +30,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/router"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
@@ -62,6 +63,9 @@ type InstanceOptions struct {
 	Custom              *global.CustomConfig   `yaml:"custom" json:"custom,omitempty" property:"custom"`
 	Profiles            *global.ProfilesConfig `yaml:"profiles" json:"profiles,omitempty" property:"profiles"`
 	TLSConfig           *global.TLSConfig      `yaml:"tls_config" json:"tls_config,omitempty" property:"tls_config"`
+
+	extensionOptions []extension.Option
+	extensionConfigs map[string]any
 }
 
 func defaultInstanceOptions() *InstanceOptions {
@@ -111,6 +115,9 @@ func (rc *InstanceOptions) init(opts ...InstanceOption) error {
 		return err
 	}
 	if err := metadata.InitRegistryMetadataReport(rc.Registries); err != nil {
+		return err
+	}
+	if _, err := extension.Initialize(rc.extensionConfigs, rc.extensionOptions, extension.InstanceScope); err != nil {
 		return err
 	}
 
@@ -283,6 +290,59 @@ func (rc *InstanceOptions) CloneTLSConfig() *global.TLSConfig {
 	return rc.TLSConfig.Clone()
 }
 
+func cloneExtensionConfigs(configs map[string]any) map[string]any {
+	if configs == nil {
+		return nil
+	}
+	cloned := make(map[string]any, len(configs))
+	for key, value := range configs {
+		cloned[key] = cloneExtensionValue(value)
+	}
+	return cloned
+}
+
+func mergeExtensionConfigs(base, overlay map[string]any) map[string]any {
+	if base == nil && overlay == nil {
+		return nil
+	}
+	merged := cloneExtensionConfigs(base)
+	if merged == nil {
+		merged = make(map[string]any, len(overlay))
+	}
+	for key, overlayValue := range overlay {
+		overlayMap, overlayIsMap := overlayValue.(map[string]any)
+		baseMap, baseIsMap := merged[key].(map[string]any)
+		if overlayIsMap && baseIsMap {
+			merged[key] = mergeExtensionConfigs(baseMap, overlayMap)
+			continue
+		}
+		merged[key] = cloneExtensionValue(overlayValue)
+	}
+	return merged
+}
+
+func cloneExtensionValue(value any) any {
+	switch value := value.(type) {
+	case map[string]any:
+		return cloneExtensionConfigs(value)
+	case []any:
+		cloned := make([]any, len(value))
+		for index, item := range value {
+			cloned[index] = cloneExtensionValue(item)
+		}
+		return cloned
+	default:
+		return value
+	}
+}
+
+func (rc *InstanceOptions) cloneExtensionConfigs() map[string]any {
+	if rc == nil {
+		return nil
+	}
+	return cloneExtensionConfigs(rc.extensionConfigs)
+}
+
 // Clone returns a snapshot of InstanceOptions. The returned value is detached
 // from the running instance, so callers can inspect or modify it without
 // changing live framework configuration.
@@ -310,10 +370,21 @@ func (rc *InstanceOptions) Clone() *InstanceOptions {
 		Custom:              rc.CloneCustom(),
 		Profiles:            rc.CloneProfiles(),
 		TLSConfig:           rc.CloneTLSConfig(),
+		extensionOptions:    append([]extension.Option(nil), rc.extensionOptions...),
+		extensionConfigs:    cloneExtensionConfigs(rc.extensionConfigs),
 	}
 }
 
 type InstanceOption func(*InstanceOptions)
+
+// WithExtension declares typed extension options for the Instance lifecycle.
+// The extension is initialized with InstanceScope after the regular instance
+// options have been applied.
+func WithExtension(options ...extension.Option) InstanceOption {
+	return func(opts *InstanceOptions) {
+		opts.extensionOptions = append(opts.extensionOptions, options...)
+	}
+}
 
 func WithOrganization(organization string) InstanceOption {
 	return func(opts *InstanceOptions) {

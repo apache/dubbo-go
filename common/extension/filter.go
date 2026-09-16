@@ -45,6 +45,13 @@ func GetFilter(name string) (filter.Filter, bool) {
 	return creator(), true
 }
 
+// HasFilter reports whether a filter creator is registered for name without
+// constructing a filter instance.
+func HasFilter(name string) bool {
+	_, ok := filters.Get(name)
+	return ok
+}
+
 // SetRejectedExecutionHandler sets the RejectedExecutionHandler with @name
 func SetRejectedExecutionHandler(name string, creator func() filter.RejectedExecutionHandler) {
 	rejectedExecutionHandler.Register(name, creator)
