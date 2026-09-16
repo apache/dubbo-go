@@ -41,6 +41,9 @@ type TripleConfig struct {
 	// OpenAPI configures OpenAPI documentation generation for server.
 	OpenAPI *OpenAPIConfig `yaml:"openapi" json:"openapi,omitempty"`
 
+	// HTTPTranscoding configures google.api.http transcoding on the Triple listener.
+	HTTPTranscoding *HTTPTranscodingConfig `yaml:"http-transcoding" json:"http-transcoding,omitempty"`
+
 	//
 	// for client
 	//
@@ -61,10 +64,11 @@ type TripleConfig struct {
 func DefaultTripleConfig() *TripleConfig {
 	unaryFastPath := true
 	return &TripleConfig{
-		Http3:         DefaultHttp3Config(),
-		Cors:          DefaultCorsConfig(),
-		OpenAPI:       DefaultOpenAPIConfig(),
-		UnaryFastPath: &unaryFastPath,
+		Http3:           DefaultHttp3Config(),
+		Cors:            DefaultCorsConfig(),
+		OpenAPI:         DefaultOpenAPIConfig(),
+		HTTPTranscoding: DefaultHTTPTranscodingConfig(),
+		UnaryFastPath:   &unaryFastPath,
 	}
 }
 
@@ -86,6 +90,7 @@ func (t *TripleConfig) Clone() *TripleConfig {
 		Http3:                t.Http3.Clone(),
 		Cors:                 t.Cors.Clone(),
 		OpenAPI:              t.OpenAPI.Clone(),
+		HTTPTranscoding:      t.HTTPTranscoding.Clone(),
 
 		KeepAliveInterval: t.KeepAliveInterval,
 		KeepAliveTimeout:  t.KeepAliveTimeout,
