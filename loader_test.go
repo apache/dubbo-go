@@ -134,8 +134,8 @@ func TestHotUpdateConfig_DeniesExtensionChangeEvenWhenBroadlyAllowed(t *testing.
 	})
 
 	tmp := t.TempDir()
-	base := "dubbo:\n  extensions:\n    demo:\n      value: 1\n"
-	updated := "dubbo:\n  extensions:\n    demo:\n      value: 2\n"
+	base := "dubbo:\n  extensions:\n    demo:\n      instance:\n        value: 1\n"
+	updated := "dubbo:\n  extensions:\n    demo:\n      instance:\n        value: 2\n"
 
 	path := writeFile(t, tmp, "conf.yaml", base)
 	conf := NewLoaderConf(WithPath(path))
@@ -179,6 +179,34 @@ func TestLoadConfigInitializesClientExtensionFromYAML(t *testing.T) {
 	require.NotNil(t, initialized)
 	assert.Equal(t, 7, initialized.Value)
 	assert.Equal(t, extension.ClientScope, initialized.initialized)
+}
+
+func TestLoadConfigInitializesInstanceExtensionFromYAML(t *testing.T) {
+	const prefix = "loader-yaml-instance-extension"
+	extension.UnregisterConfig(prefix)
+	t.Cleanup(func() { extension.UnregisterConfig(prefix) })
+
+	var initialized *loaderYAMLConfig
+	require.NoError(t, extension.RegisterConfig(&loaderYAMLConfig{
+		prefix: prefix,
+		onInit: func(config *loaderYAMLConfig) {
+			initialized = config
+		},
+	}))
+
+	conf := NewLoaderConf(WithBytes([]byte(`dubbo:
+  extensions:
+    loader-yaml-instance-extension:
+      instance:
+        value: 7
+`)))
+	loadedOptions, err := loadInstanceOptions(conf)
+	require.NoError(t, err)
+	require.NoError(t, loadedOptions.init())
+
+	require.NotNil(t, initialized)
+	assert.Equal(t, 7, initialized.Value)
+	assert.Equal(t, extension.InstanceScope, initialized.initialized)
 }
 
 func TestHotUpdateConfig_AllowsWithCustomPrefix(t *testing.T) {

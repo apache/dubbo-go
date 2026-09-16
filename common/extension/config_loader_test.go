@@ -294,11 +294,50 @@ func TestInitializeInstanceScopeSkipsFilterValidation(t *testing.T) {
 	}))
 
 	filters, err := Initialize(map[string]any{
-		prefix: map[string]any{},
+		prefix: map[string]any{
+			"instance": map[string]any{},
+		},
 	}, nil, InstanceScope)
 	require.NoError(t, err)
 	assert.Empty(t, filters)
 	assert.Equal(t, 1, initCount)
+}
+
+func TestSelectRawConfigUsesExplicitScopes(t *testing.T) {
+	config := map[string]any{
+		"instance": map[string]any{
+			"value":    1,
+			"consumer": map[string]any{"setting": "instance-consumer-field"},
+			"provider": map[string]any{"setting": "instance-provider-field"},
+		},
+		"consumer": map[string]any{"value": 2},
+		"provider": map[string]any{"value": 3},
+	}
+	tests := []struct {
+		name  string
+		scope Scope
+		want  map[string]any
+	}{
+		{name: "instance", scope: InstanceScope, want: config["instance"].(map[string]any)},
+		{name: "consumer", scope: ClientScope, want: config["consumer"].(map[string]any)},
+		{name: "provider", scope: ServerScope, want: config["provider"].(map[string]any)},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got, active, err := selectRawConfig(config, test.scope)
+			require.NoError(t, err)
+			assert.True(t, active)
+			assert.Equal(t, test.want, got)
+		})
+	}
+}
+
+func TestSelectRawConfigRejectsUnknownScope(t *testing.T) {
+	_, _, err := selectRawConfig(map[string]any{
+		"enabled": true,
+	}, InstanceScope)
+	require.EqualError(t, err, "unknown config scope \"enabled\" (expected instance, consumer, or provider)")
 }
 
 func TestMergeFilterNamesHonorsExplicitSuppression(t *testing.T) {

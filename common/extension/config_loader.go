@@ -32,8 +32,9 @@ import (
 // Initialize creates and initializes the extensions active for one lifecycle
 // scope. rawConfigs is the map below dubbo.extensions, while options contains
 // typed options declared by the corresponding entry point. rawConfigs may be
-// nil; when it contains an active prefix, that prefix must be registered in the
-// running binary and unknown prefixes are rejected.
+// nil. Each extension YAML map uses explicit instance, consumer, and/or provider
+// scope blocks; unknown scope names are rejected. When rawConfigs contains an
+// active prefix, that prefix must be registered in the running binary.
 //
 // Each active extension receives a fresh Config. Its configuration precedence
 // is defaults from Config.New, selected YAML, typed options, and finally
@@ -327,18 +328,17 @@ func selectRawConfig(value any, scope Scope) (map[string]any, bool, error) {
 	if !ok {
 		return nil, false, fmt.Errorf("value must be an object")
 	}
+	if err := validateRawConfigScopes(config); err != nil {
+		return nil, false, err
+	}
 
 	switch scope {
 	case InstanceScope:
-		// consumer/provider are reserved role blocks. They belong to the
-		// client/server lifecycles and must not activate an instance extension.
-		if _, ok := config["consumer"]; ok {
+		selected, ok := config["instance"]
+		if !ok {
 			return nil, false, nil
 		}
-		if _, ok := config["provider"]; ok {
-			return nil, false, nil
-		}
-		return config, true, nil
+		return selectedConfig(selected)
 	case ClientScope:
 		selected, ok := config["consumer"]
 		if !ok {
@@ -354,6 +354,17 @@ func selectRawConfig(value any, scope Scope) (map[string]any, bool, error) {
 	default:
 		return nil, false, fmt.Errorf("invalid scope %d", scope)
 	}
+}
+
+func validateRawConfigScopes(config map[string]any) error {
+	for scope := range config {
+		switch scope {
+		case "instance", "consumer", "provider":
+		default:
+			return fmt.Errorf("unknown config scope %q (expected instance, consumer, or provider)", scope)
+		}
+	}
+	return nil
 }
 
 func selectedConfig(value any) (map[string]any, bool, error) {
