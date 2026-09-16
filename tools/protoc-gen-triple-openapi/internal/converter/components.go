@@ -29,7 +29,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/tools/protoc-gen-triple-openapi/internal/converter/schema"
 )
 
-func generateComponents(fd protoreflect.FileDescriptor) (*openapimodel.Components, string, error) {
+func generateComponents(fd protoreflect.FileDescriptor, useHTTPRules ...bool) (*openapimodel.Components, string, error) {
 	components := &openapimodel.Components{
 		Schemas: schema.GenerateFileSchemas(fd),
 	}
@@ -41,14 +41,31 @@ func generateComponents(fd protoreflect.FileDescriptor) (*openapimodel.Component
 		errorResponseSchemaID = "Triple-ErrorResponse"
 	}
 	errorResponseProps := orderedmap.New[string, *base.SchemaProxy]()
-	errorResponseProps.Set("status", base.CreateSchemaProxy(&base.Schema{
-		Description: "The status code.",
-		Type:        []string{"string"},
-	}))
+	if len(useHTTPRules) > 0 && useHTTPRules[0] {
+		errorResponseProps.Set("code", base.CreateSchemaProxy(&base.Schema{
+			Description: "The gRPC status code.",
+			Type:        []string{"integer"},
+			Format:      "int32",
+		}))
+	} else {
+		errorResponseProps.Set("status", base.CreateSchemaProxy(&base.Schema{
+			Description: "The status code.",
+			Type:        []string{"string"},
+		}))
+	}
 	errorResponseProps.Set("message", base.CreateSchemaProxy(&base.Schema{
 		Description: "A developer-facing error message.",
 		Type:        []string{"string"},
 	}))
+	if len(useHTTPRules) > 0 && useHTTPRules[0] {
+		errorResponseProps.Set("details", base.CreateSchemaProxy(&base.Schema{
+			Description: "Additional error details.",
+			Type:        []string{"array"},
+			Items: &base.DynamicValue[*base.SchemaProxy, bool]{A: base.CreateSchemaProxy(&base.Schema{
+				Type: []string{"object"},
+			})},
+		}))
+	}
 	components.Schemas.Set(errorResponseSchemaID, base.CreateSchemaProxy(&base.Schema{
 		Title:       "ErrorResponse",
 		Description: `Error type returned by triple: https://cn.dubbo.apache.org/zh-cn/overview/reference/protocols/triple-spec/`,

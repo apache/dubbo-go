@@ -65,25 +65,28 @@ type serviceMethodInfo struct {
 }
 
 type DefaultService struct {
-	config      *global.OpenAPIConfig
-	defResolver *DefinitionResolver
-	encoder     *Encoder
+	config       *global.OpenAPIConfig
+	defResolver  *DefinitionResolver
+	encoder      *Encoder
+	useHTTPRules bool
 
 	mu       sync.RWMutex
 	openAPIs map[string]*model.OpenAPI
 	services map[serviceKey]*serviceInfo
 }
 
-func NewDefaultService(cfg *global.OpenAPIConfig) *DefaultService {
+func NewDefaultService(cfg *global.OpenAPIConfig, useHTTPRules ...bool) *DefaultService {
 	if cfg == nil {
 		cfg = global.DefaultOpenAPIConfig()
 	}
+	useRules := len(useHTTPRules) > 0 && useHTTPRules[0]
 	s := &DefaultService{
-		config:   cfg,
-		services: make(map[serviceKey]*serviceInfo),
-		openAPIs: make(map[string]*model.OpenAPI),
+		config:       cfg,
+		useHTTPRules: useRules,
+		services:     make(map[serviceKey]*serviceInfo),
+		openAPIs:     make(map[string]*model.OpenAPI),
 	}
-	s.defResolver = NewDefinitionResolver(s.config)
+	s.defResolver = NewDefinitionResolver(s.config, useRules)
 	s.encoder = NewEncoder()
 	return s
 }

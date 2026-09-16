@@ -94,6 +94,9 @@ func (e *Encoder) pathsToMap(paths map[string]*model.PathItem) map[string]any {
 
 func (e *Encoder) pathItemToMap(item *model.PathItem) map[string]any {
 	m := make(map[string]any)
+	for name, value := range item.Extensions {
+		m[name] = value
+	}
 	if item.Get != nil {
 		m["get"] = e.operationToMap(item.Get)
 	}
@@ -144,6 +147,13 @@ func (e *Encoder) operationToMap(op *model.Operation) map[string]any {
 	if op.OperationId != "" {
 		m["operationId"] = op.OperationId
 	}
+	if len(op.Parameters) > 0 {
+		parameters := make([]any, 0, len(op.Parameters))
+		for _, parameter := range op.Parameters {
+			parameters = append(parameters, e.parameterToMap(parameter))
+		}
+		m["parameters"] = parameters
+	}
 	if op.RequestBody != nil {
 		m["requestBody"] = e.requestBodyToMap(op.RequestBody)
 	}
@@ -155,6 +165,28 @@ func (e *Encoder) operationToMap(op *model.Operation) map[string]any {
 		m["responses"] = resps
 	}
 
+	return m
+}
+
+func (e *Encoder) parameterToMap(parameter *model.Parameter) map[string]any {
+	m := make(map[string]any)
+	if parameter == nil {
+		return m
+	}
+	m["name"] = parameter.Name
+	m["in"] = parameter.In
+	if parameter.Required {
+		m["required"] = true
+	}
+	if parameter.Description != "" {
+		m["description"] = parameter.Description
+	}
+	if parameter.Schema != nil {
+		m["schema"] = e.schemaToMap(parameter.Schema)
+	}
+	if parameter.AllowReserved {
+		m["allowReserved"] = true
+	}
 	return m
 }
 
@@ -216,6 +248,9 @@ func (e *Encoder) schemaToMap(s *model.Schema) map[string]any {
 	}
 	if s.Description != "" {
 		m["description"] = s.Description
+	}
+	if s.Pattern != "" {
+		m["pattern"] = s.Pattern
 	}
 	if s.Required {
 		m["required"] = true

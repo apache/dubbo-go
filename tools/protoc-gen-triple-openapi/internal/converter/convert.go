@@ -62,6 +62,9 @@ func ConvertFrom(r io.Reader) (*pluginpb.CodeGeneratorResponse, error) {
 
 func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorResponse, error) {
 	opts, err := options.Generate(req.GetParameter())
+	if err != nil {
+		return nil, err
+	}
 
 	genFiles := make(map[string]struct{}, len(req.FileToGenerate))
 	for _, file := range req.FileToGenerate {
@@ -118,7 +121,7 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 
 		// handle openapi components
 		errorResponseSchemaID := ""
-		doc.Components, errorResponseSchemaID, err = generateComponents(fd)
+		doc.Components, errorResponseSchemaID, err = generateComponents(fd, opts.UseHTTPRules)
 		if err != nil {
 			return nil, err
 		}
@@ -138,6 +141,27 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 			methods := service.Methods()
 			for j := 0; j < methods.Len(); j++ {
 				md := methods.Get(j)
+
+				if opts.UseHTTPRules {
+					httpOperations, httpErr := buildHTTPOperations(service, md, errorResponseSchemaID)
+					if httpErr != nil {
+						return nil, httpErr
+					}
+					if len(httpOperations) > 0 {
+						for _, httpOperation := range httpOperations {
+							item := items.GetOrZero(httpOperation.Path)
+							if item == nil {
+								item = &openapimodel.PathItem{}
+								items.Set(httpOperation.Path, item)
+							}
+							setHTTPPathExtension(item, httpOperation.Template)
+							if err := setHTTPPathOperation(item, httpOperation.Method, httpOperation.Operation); err != nil {
+								return nil, err
+							}
+						}
+						continue
+					}
+				}
 
 				// operation
 				operation := &openapimodel.Operation{

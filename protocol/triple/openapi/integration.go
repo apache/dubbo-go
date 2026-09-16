@@ -37,12 +37,12 @@ type OpenAPIIntegration struct {
 	redocHandler   *RedocHandler
 }
 
-func NewOpenAPIIntegration(cfg *global.OpenAPIConfig) *OpenAPIIntegration {
+func NewOpenAPIIntegration(cfg *global.OpenAPIConfig, useHTTPRules ...bool) *OpenAPIIntegration {
 	if cfg == nil || !cfg.Enabled {
 		return nil
 	}
 	cfg.Init()
-	svc := NewDefaultService(cfg)
+	svc := NewDefaultService(cfg, useHTTPRules...)
 	integration := &OpenAPIIntegration{
 		service:        svc,
 		requestHandler: NewRequestHandler(svc, cfg),

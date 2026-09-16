@@ -20,6 +20,7 @@ package model
 type Operation struct {
 	Tags        []string                `json:"tags,omitempty"`
 	OperationId string                  `json:"operationId,omitempty"`
+	Parameters  []*Parameter            `json:"parameters,omitempty"`
 	RequestBody *RequestBody            `json:"requestBody,omitempty"`
 	Responses   map[string]*ApiResponse `json:"responses,omitempty"`
 
@@ -50,6 +51,13 @@ func (o *Operation) SetGoMethod(method string) *Operation {
 
 func (o *Operation) AddTag(tag string) *Operation {
 	o.Tags = append(o.Tags, tag)
+	return o
+}
+
+func (o *Operation) AddParameter(parameter *Parameter) *Operation {
+	if parameter != nil {
+		o.Parameters = append(o.Parameters, parameter)
+	}
 	return o
 }
 

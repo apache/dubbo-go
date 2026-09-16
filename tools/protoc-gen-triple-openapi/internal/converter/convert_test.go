@@ -18,6 +18,7 @@
 package converter
 
 import (
+	"encoding/json"
 	"flag"
 	"os"
 	"path/filepath"
@@ -27,6 +28,7 @@ import (
 )
 
 import (
+	annotations "google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/proto"
 
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -82,6 +84,104 @@ func TestConvertGolden(t *testing.T) {
 				t.Errorf("generated OpenAPI differs from %s\n--- want\n%s\n--- got\n%s", tt.goldenFile, wantText, got)
 			}
 		})
+	}
+}
+
+func TestConvertUseHTTPRules(t *testing.T) {
+	request := httpRuleRequest()
+	response, err := convert(request)
+	if err != nil {
+		t.Fatalf("convert() error = %v", err)
+	}
+	var document map[string]any
+	if err := json.Unmarshal([]byte(response.File[0].GetContent()), &document); err != nil {
+		t.Fatalf("decode generated document: %v", err)
+	}
+	paths := document["paths"].(map[string]any)
+	pathItem := paths["/v1/books/{book.id}"].(map[string]any)
+	if _, ok := pathItem["patch"]; !ok {
+		t.Fatal("HTTP rule PATCH operation is missing")
+	}
+	if _, ok := pathItem["get"]; !ok {
+		t.Fatal("additional GET operation is missing")
+	}
+	if pathItem["x-google-path-template"] != "/v1/books/{book.id}" {
+		t.Fatalf("path extension = %v", pathItem["x-google-path-template"])
+	}
+	patch := pathItem["patch"].(map[string]any)
+	if patch["operationId"] != "http.Library.UpdateBook" {
+		t.Fatalf("operationId = %v", patch["operationId"])
+	}
+	if len(patch["parameters"].([]any)) != 3 {
+		t.Fatalf("parameters = %v", patch["parameters"])
+	}
+	if _, ok := patch["requestBody"]; !ok {
+		t.Fatal("PATCH requestBody is missing")
+	}
+	requestBody := patch["requestBody"].(map[string]any)
+	if requestBody["content"].(map[string]any)["application/json"].(map[string]any)["schema"] == nil {
+		t.Fatal("PATCH body field schema is missing")
+	}
+	get := pathItem["get"].(map[string]any)
+	if get["operationId"] != "http.Library.UpdateBook.binding1" {
+		t.Fatalf("additional operationId = %v", get["operationId"])
+	}
+	if _, ok := get["requestBody"]; ok {
+		t.Fatal("GET additional binding should not have a request body")
+	}
+	if get["responses"].(map[string]any)["200"].(map[string]any)["content"].(map[string]any)["application/json"].(map[string]any)["schema"] == nil {
+		t.Fatal("response_body schema is missing")
+	}
+	components := document["components"].(map[string]any)
+	errorSchema := components["schemas"].(map[string]any)["ErrorResponse"].(map[string]any)
+	properties := errorSchema["properties"].(map[string]any)
+	if _, ok := properties["code"]; !ok {
+		t.Fatal("HTTP error schema is missing code")
+	}
+	if _, ok := properties["details"]; !ok {
+		t.Fatal("HTTP error schema is missing details")
+	}
+}
+
+func httpRuleRequest() *pluginpb.CodeGeneratorRequest {
+	methodOptions := &descriptorpb.MethodOptions{}
+	proto.SetExtension(methodOptions, annotations.E_Http, &annotations.HttpRule{
+		Pattern:      &annotations.HttpRule_Patch{Patch: "/v1/books/{book.id}"},
+		Body:         "book",
+		ResponseBody: "book",
+		AdditionalBindings: []*annotations.HttpRule{{
+			Pattern:      &annotations.HttpRule_Get{Get: "/v1/books/{book.id}"},
+			ResponseBody: "book",
+		}},
+	})
+	return &pluginpb.CodeGeneratorRequest{
+		FileToGenerate: []string{"http.proto"},
+		Parameter:      proto.String("format=json,use-http-rules=true"),
+		ProtoFile: []*descriptorpb.FileDescriptorProto{{
+			Name:    proto.String("http.proto"),
+			Package: proto.String("http"),
+			Syntax:  proto.String("proto3"),
+			MessageType: []*descriptorpb.DescriptorProto{
+				{Name: proto.String("Book"), Field: []*descriptorpb.FieldDescriptorProto{
+					field("id", "id", 1, descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL, descriptorpb.FieldDescriptorProto_TYPE_STRING, ""),
+					field("title", "title", 2, descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL, descriptorpb.FieldDescriptorProto_TYPE_STRING, ""),
+				}},
+				{Name: proto.String("UpdateBookRequest"), Field: []*descriptorpb.FieldDescriptorProto{
+					field("book", "book", 1, descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL, descriptorpb.FieldDescriptorProto_TYPE_MESSAGE, ".http.Book"),
+					field("page_size", "pageSize", 2, descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL, descriptorpb.FieldDescriptorProto_TYPE_INT32, ""),
+					field("filter", "filter", 3, descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL, descriptorpb.FieldDescriptorProto_TYPE_STRING, ""),
+				}},
+				{Name: proto.String("UpdateBookResponse"), Field: []*descriptorpb.FieldDescriptorProto{
+					field("book", "book", 1, descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL, descriptorpb.FieldDescriptorProto_TYPE_MESSAGE, ".http.Book"),
+				}},
+			},
+			Service: []*descriptorpb.ServiceDescriptorProto{{
+				Name: proto.String("Library"),
+				Method: []*descriptorpb.MethodDescriptorProto{{
+					Name: proto.String("UpdateBook"), InputType: proto.String(".http.UpdateBookRequest"), OutputType: proto.String(".http.UpdateBookResponse"), Options: methodOptions,
+				}},
+			}},
+		}},
 	}
 }
 

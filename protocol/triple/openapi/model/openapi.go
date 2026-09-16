@@ -55,6 +55,8 @@ type PathItem struct {
 	Head    *Operation `json:"head,omitempty"`
 	Patch   *Operation `json:"patch,omitempty"`
 	Trace   *Operation `json:"trace,omitempty"`
+
+	Extensions map[string]any `json:"-"`
 }
 
 func NewPathItem() *PathItem {
@@ -132,6 +134,14 @@ func (p *PathItem) GetOperations() map[string]*Operation {
 		ops["TRACE"] = p.Trace
 	}
 	return ops
+}
+
+func (p *PathItem) SetExtension(name string, value any) *PathItem {
+	if p.Extensions == nil {
+		p.Extensions = make(map[string]any)
+	}
+	p.Extensions[name] = value
+	return p
 }
 
 type Components struct {

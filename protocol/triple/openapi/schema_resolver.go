@@ -199,6 +199,13 @@ func (r *SchemaResolver) isExported(f reflect.StructField) bool {
 }
 
 func (r *SchemaResolver) getFieldName(f reflect.StructField, jsonTag string) string {
+	for _, part := range strings.Split(f.Tag.Get("protobuf"), ",") {
+		if strings.HasPrefix(part, "json=") {
+			if name := strings.TrimPrefix(part, "json="); name != "" {
+				return name
+			}
+		}
+	}
 	if jsonTag != "" {
 		name, _, _ := strings.Cut(jsonTag, ",")
 		if name != "" {

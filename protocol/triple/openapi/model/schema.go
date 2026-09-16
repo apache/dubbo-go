@@ -34,6 +34,7 @@ type Schema struct {
 	Format               string             `json:"format,omitempty"`
 	Title                string             `json:"title,omitempty"`
 	Description          string             `json:"description,omitempty"`
+	Pattern              string             `json:"pattern,omitempty"`
 	Required             bool               `json:"required,omitempty"`
 	Enum                 []any              `json:"enum,omitempty"`
 	Items                *Schema            `json:"items,omitempty"`
@@ -66,6 +67,11 @@ func (s *Schema) SetTitle(title string) *Schema {
 
 func (s *Schema) SetDescription(desc string) *Schema {
 	s.Description = desc
+	return s
+}
+
+func (s *Schema) SetPattern(pattern string) *Schema {
+	s.Pattern = pattern
 	return s
 }
 

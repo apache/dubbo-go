@@ -19,18 +19,21 @@ package options
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
 type Options struct {
 	// yaml or json
-	Format string
+	Format       string
+	UseHTTPRules bool
 }
 
 func defaultOptions() Options {
 	return Options{
 		// default yaml format
-		Format: "yaml",
+		Format:       "yaml",
+		UseHTTPRules: false,
 	}
 }
 
@@ -50,6 +53,14 @@ func Generate(s string) (Options, error) {
 			default:
 				return opts, fmt.Errorf("format '%s' is not supported", format)
 			}
+		case param == "use-http-rules":
+			opts.UseHTTPRules = true
+		case strings.HasPrefix(param, "use-http-rules="):
+			value, err := strconv.ParseBool(strings.TrimPrefix(param, "use-http-rules="))
+			if err != nil {
+				return opts, fmt.Errorf("use-http-rules must be a boolean")
+			}
+			opts.UseHTTPRules = value
 		default:
 			return opts, fmt.Errorf("invalid parameter: %s", param)
 		}

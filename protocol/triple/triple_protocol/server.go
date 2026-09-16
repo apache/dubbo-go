@@ -490,7 +490,8 @@ func NewServer(addr string, tripleConf *global.TripleConfig) *Server {
 
 	var openapiIntegration *openapi.OpenAPIIntegration
 	if tripleConf != nil && tripleConf.OpenAPI != nil && tripleConf.OpenAPI.Enabled {
-		openapiIntegration = openapi.NewOpenAPIIntegration(tripleConf.OpenAPI)
+		useHTTPRules := tripleConf.HTTPTranscoding != nil && tripleConf.HTTPTranscoding.Enabled
+		openapiIntegration = openapi.NewOpenAPIIntegration(tripleConf.OpenAPI, useHTTPRules)
 	}
 	s.openapiIntegration = openapiIntegration
 

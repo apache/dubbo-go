@@ -379,6 +379,24 @@ func TestEncoder_operationToMap(t *testing.T) {
 	}
 }
 
+func TestEncoder_HTTPBindingFields(t *testing.T) {
+	e := NewEncoder()
+	op := model.NewOperation().
+		SetOperationId("Library.GetBook").
+		AddParameter(model.NewParameter("name", "path").SetRequired(true).SetAllowReserved(true).SetSchema(
+			model.NewSchema().SetType(model.SchemaTypeString)))
+	item := model.NewPathItem().SetExtension("x-google-path-template", "/v1/books/{name}").SetOperation("GET", op)
+	openAPI := model.NewOpenAPI().AddPath("/v1/books/{name}", item)
+
+	encoded, err := e.Encode(openAPI, "json", false)
+	if err != nil {
+		t.Fatalf("Encode() error = %v", err)
+	}
+	if !strings.Contains(encoded, "x-google-path-template") || !strings.Contains(encoded, "parameters") || !strings.Contains(encoded, "allowReserved") {
+		t.Fatalf("encoded OpenAPI omitted HTTP binding fields: %s", encoded)
+	}
+}
+
 // --- componentsToMap tests ---
 
 func TestEncoder_componentsToMap(t *testing.T) {

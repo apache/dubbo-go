@@ -208,6 +208,16 @@ func ReferenceFieldToSchema(parent *base.SchemaProxy, tt protoreflect.FieldDescr
 	}
 }
 
+// FieldToSchema converts a protobuf field descriptor into an OpenAPI schema.
+// It is used by HTTP rule conversion when a request or response binds to a
+// nested message field instead of the complete RPC message.
+func FieldToSchema(field protoreflect.FieldDescriptor) *base.SchemaProxy {
+	if field == nil {
+		return nil
+	}
+	return fieldToSchema(nil, field)
+}
+
 func CreateStringNode(str string) *yaml.Node {
 	n := &yaml.Node{
 		Kind:  yaml.ScalarNode,

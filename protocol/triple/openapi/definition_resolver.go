@@ -29,13 +29,16 @@ import (
 )
 
 type DefinitionResolver struct {
-	config *global.OpenAPIConfig
+	config       *global.OpenAPIConfig
+	useHTTPRules bool
 }
 
-func NewDefinitionResolver(cfg *global.OpenAPIConfig) *DefinitionResolver {
-	return &DefinitionResolver{
-		config: cfg,
+func NewDefinitionResolver(cfg *global.OpenAPIConfig, useHTTPRules ...bool) *DefinitionResolver {
+	resolver := &DefinitionResolver{config: cfg}
+	if len(useHTTPRules) > 0 {
+		resolver.useHTTPRules = useHTTPRules[0]
 	}
+	return resolver
 }
 
 func (r *DefinitionResolver) Resolve(interfaceName string, info *serviceInfo) *model.OpenAPI {
@@ -54,11 +57,22 @@ func (r *DefinitionResolver) Resolve(interfaceName string, info *serviceInfo) *m
 		}
 		seenMethods[strings.ToLower(methodName)] = true
 
-		httpMethods := r.determineHttpMethods()
-		for _, httpMethod := range httpMethods {
+		if r.useHTTPRules {
+			if bindings := r.resolveHTTPBindings(interfaceName, methodName); len(bindings) > 0 {
+				for _, binding := range bindings {
+					op := r.resolveBindingOperation(method, binding, interfaceName, schemaResolver)
+					path := normalizeHTTPPath(binding.PathTemplate)
+					pathItem := openAPI.GetOrAddPath(path)
+					pathItem.SetExtension("x-google-path-template", binding.PathTemplate)
+					pathItem.SetOperation(strings.ToUpper(binding.Method), op)
+				}
+				continue
+			}
+		}
+
+		for _, httpMethod := range r.determineHttpMethods() {
 			op := r.resolveOperation(method, httpMethod, interfaceName, schemaResolver)
-			path := r.buildPath(interfaceName, methodName)
-			pathItem := openAPI.GetOrAddPath(path)
+			pathItem := openAPI.GetOrAddPath(r.buildPath(interfaceName, methodName))
 			pathItem.SetOperation(strings.ToUpper(httpMethod), op)
 		}
 	}
@@ -71,6 +85,9 @@ func (r *DefinitionResolver) Resolve(interfaceName string, info *serviceInfo) *m
 		for name, schema := range allSchemas {
 			openAPI.Components.AddSchema(name, schema)
 		}
+	}
+	if r.useHTTPRules {
+		addRuntimeErrorSchema(openAPI)
 	}
 
 	return openAPI
@@ -211,6 +228,20 @@ func (r *DefinitionResolver) getStatusDescription(code string) string {
 		return "Forbidden"
 	case "404":
 		return "Not Found"
+	case "409":
+		return "Conflict"
+	case "413":
+		return "Payload Too Large"
+	case "415":
+		return "Unsupported Media Type"
+	case "429":
+		return "Too Many Requests"
+	case "501":
+		return "Not Implemented"
+	case "503":
+		return "Service Unavailable"
+	case "504":
+		return "Gateway Timeout"
 	case "500":
 		return "Internal Server Error"
 	default:
