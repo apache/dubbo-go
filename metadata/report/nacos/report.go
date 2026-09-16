@@ -20,6 +20,7 @@ package nacos
 import (
 	"crypto/md5"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -30,8 +31,6 @@ import (
 	"github.com/dubbogo/gost/log/logger"
 
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -121,10 +120,10 @@ func (n *nacosMetadataReport) PublishAppMetadata(application, revision string, m
 func (n *nacosMetadataReport) storeMetadata(param vo.ConfigParam) error {
 	res, err := n.client.Client().PublishConfig(param)
 	if err != nil {
-		return perrors.WithMessage(err, "Could not publish the metadata")
+		return fmt.Errorf("could not publish the metadata: %w", err)
 	}
 	if !res {
-		return perrors.New("Publish the metadata failed.")
+		return errors.New("publish the metadata failed")
 	}
 	return nil
 }
@@ -233,7 +232,7 @@ func (n *nacosMetadataReport) GetServiceAppMapping(key string, group string, lis
 		return nil, err
 	}
 	if v == "" {
-		return nil, perrors.New("There is no service app mapping data.")
+		return nil, errors.New("there is no service app mapping data")
 	}
 	return report.DecodeServiceAppNames(v), nil
 }
@@ -252,7 +251,7 @@ func (n *nacosMetadataReport) UnPublishAppMetadata(application, revision string)
 		Group:  revision,
 	})
 	if err != nil {
-		return perrors.WithMessage(err, "Could not delete the metadata")
+		return fmt.Errorf("could not delete the metadata: %w", err)
 	}
 	// Delete legacy config (compatible with dubbo-go 3.1.x).
 	if _, err = n.client.Client().DeleteConfig(vo.ConfigParam{
@@ -278,7 +277,7 @@ func (n *nacosMetadataReport) ListAppRevisions(application string) ([]report.App
 			PageSize: pageSize,
 		})
 		if err != nil {
-			return nil, perrors.WithMessage(err, "Could not search configs for ListAppRevisions")
+			return nil, fmt.Errorf("could not search configs for ListAppRevisions: %w", err)
 		}
 		if configs == nil || len(configs.PageItems) == 0 {
 			break

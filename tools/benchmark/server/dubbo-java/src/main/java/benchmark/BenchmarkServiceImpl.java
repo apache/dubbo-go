@@ -15,23 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.dubbo.benchmark;
+package benchmark;
 
-public class BenchmarkResponse {
-    private byte[] payload;
+import org.apache.dubbo.benchmark.BenchmarkProto;
+import org.apache.dubbo.config.annotation.DubboService;
 
-    public BenchmarkResponse() {
-    }
+@DubboService
+public class BenchmarkServiceImpl implements BenchmarkService {
 
-    public BenchmarkResponse(byte[] payload) {
-        this.payload = payload;
-    }
-
-    public byte[] getPayload() {
-        return payload;
-    }
-
-    public void setPayload(byte[] payload) {
-        this.payload = payload;
+    @Override
+    public BenchmarkProto.BenchmarkResponse UnaryCall(BenchmarkProto.BenchmarkRequest request) {
+        return BenchmarkProto.BenchmarkResponse.newBuilder()
+                .setPayload(request.getPayload())
+                .build();
     }
 }

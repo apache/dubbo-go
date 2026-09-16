@@ -18,10 +18,12 @@
 package etcdv3
 
 import (
+	"fmt"
+)
+
+import (
 	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
 )
 
 // ValidateClient validates client and sets options
@@ -40,7 +42,7 @@ func ValidateClient(container clientFacade, opts ...gxetcd.Option) error {
 		if err != nil {
 			logger.Warnf("[Remoting][Etcdv3] new etcd client, name=%s addresses=%v timeout=%s err=%v",
 				options.Name, options.Endpoints, options.Timeout.String(), err)
-			return perrors.WithMessagef(err, "new client (address:%+v)", options.Endpoints)
+			return fmt.Errorf("new client (address:%+v): %w", options.Endpoints, err)
 		}
 		container.SetClient(newClient)
 	}
@@ -51,7 +53,7 @@ func ValidateClient(container clientFacade, opts ...gxetcd.Option) error {
 		if err != nil {
 			logger.Warnf("[Remoting][Etcdv3] new etcd client, name=%s addresses=%v timeout=%s err=%v",
 				options.Name, options.Endpoints, options.Timeout.String(), err)
-			return perrors.WithMessagef(err, "new client (address:%+v)", options.Endpoints)
+			return fmt.Errorf("new client (address:%+v): %w", options.Endpoints, err)
 		}
 		container.SetClient(newClient)
 	}

@@ -18,6 +18,7 @@
 package etcdv3
 
 import (
+	"errors"
 	"slices"
 	"strings"
 	"sync"
@@ -26,8 +27,6 @@ import (
 import (
 	gxchan "github.com/dubbogo/gost/container/chan"
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -103,7 +102,7 @@ func (l *configurationListener) Next() (*registry.ServiceEvent, error) {
 		select {
 		case <-l.registry.Done():
 			logger.Warn("[Registry][Etcdv3] listener's etcd client connection is broken, so etcd event listener exit now")
-			return nil, perrors.New("listener stopped")
+			return nil, errors.New("listener stopped")
 
 		case val := <-l.events.Out():
 			e, _ := val.(*config_center.ConfigChangeEvent)

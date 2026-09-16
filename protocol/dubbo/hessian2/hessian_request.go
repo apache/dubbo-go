@@ -19,6 +19,8 @@ package hessian2
 
 import (
 	"encoding/binary"
+	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -45,7 +47,7 @@ func getArgsTypeList(args []any) (string, error) {
 	for i := range args {
 		typ = getArgType(args[i])
 		if typ == "" {
-			return types, perrors.Errorf("cat not get arg %#v type", args[i])
+			return types, fmt.Errorf("cat not get arg %#v type", args[i])
 		}
 		if !strings.Contains(typ, ".") {
 			types += typ
@@ -93,7 +95,7 @@ func packRequest(service Service, header DubboHeader, req any) ([]byte, error) {
 
 	args, ok := request.Params.([]any)
 	if !ok {
-		return nil, perrors.Errorf("@params is not of type: []any")
+		return nil, fmt.Errorf("@params is not of type: []any")
 	}
 
 	hb := header.Type == PackageHeartbeat
@@ -125,7 +127,7 @@ func packRequest(service Service, header DubboHeader, req any) ([]byte, error) {
 	//////////////////////////////////////////
 	if hb {
 		if err := encoder.Encode(nil); err != nil {
-			return nil, perrors.Wrap(err, "failed to encode heartbeat request")
+			return nil, fmt.Errorf("failed to encode heartbeat request: %w", err)
 		}
 	} else {
 		if err := encodeRequestBody(encoder, service, request, args); err != nil {
@@ -147,29 +149,29 @@ func packRequest(service Service, header DubboHeader, req any) ([]byte, error) {
 func encodeRequestBody(encoder *hessian.Encoder, service Service, request *DubboRequest, args []any) error {
 	// dubbo version + path + version + method
 	if err := encoder.Encode(DEFAULT_DUBBO_PROTOCOL_VERSION); err != nil {
-		return perrors.Wrap(err, "failed to encode default dubbo protocol version")
+		return fmt.Errorf("failed to encode default dubbo protocol version: %w", err)
 	}
 	if err := encoder.Encode(service.Path); err != nil {
-		return perrors.Wrap(err, "failed to encode service path")
+		return fmt.Errorf("failed to encode service path: %w", err)
 	}
 	if err := encoder.Encode(service.Version); err != nil {
-		return perrors.Wrap(err, "failed to encode service version")
+		return fmt.Errorf("failed to encode service version: %w", err)
 	}
 	if err := encoder.Encode(service.Method); err != nil {
-		return perrors.Wrap(err, "failed to encode service method")
+		return fmt.Errorf("failed to encode service method: %w", err)
 	}
 
 	// args = args type list + args value list
 	types, err := getArgsTypeList(args)
 	if err != nil {
-		return perrors.Wrapf(err, " PackRequest(args:%+v)", args)
+		return fmt.Errorf(" PackRequest(args:%+v): %w", args, err)
 	}
 	if err := encoder.Encode(types); err != nil {
-		return perrors.Wrap(err, "failed to encode argument types")
+		return fmt.Errorf("failed to encode argument types: %w", err)
 	}
 	for _, v := range args {
 		if err := encoder.Encode(v); err != nil {
-			return perrors.Wrapf(err, "failed to encode argument of type %T", v)
+			return fmt.Errorf("failed to encode argument of type %T: %w", v, err)
 		}
 	}
 
@@ -186,7 +188,7 @@ func encodeRequestBody(encoder *hessian.Encoder, service Service, request *Dubbo
 	}
 
 	if err := encoder.Encode(request.Attachments); err != nil {
-		return perrors.Wrap(err, "failed to encode request attachments")
+		return fmt.Errorf("failed to encode request attachments: %w", err)
 	}
 	return nil
 }
@@ -194,15 +196,15 @@ func encodeRequestBody(encoder *hessian.Encoder, service Service, request *Dubbo
 // hessian decode request body
 func unpackRequestBody(decoder *hessian.Decoder, reqObj any) error {
 	if decoder == nil {
-		return perrors.Errorf("@decoder is nil")
+		return fmt.Errorf("@decoder is nil")
 	}
 
 	req, ok := reqObj.([]any)
 	if !ok {
-		return perrors.Errorf("@reqObj is not of type: []any")
+		return fmt.Errorf("@reqObj is not of type: []any")
 	}
 	if len(req) < 7 {
-		return perrors.New("length of @reqObj should  be 7")
+		return errors.New("length of @reqObj should  be 7")
 	}
 
 	var (
@@ -262,7 +264,7 @@ func unpackRequestBody(decoder *hessian.Decoder, reqObj any) error {
 		return nil
 	}
 
-	return perrors.Errorf("get wrong attachments: %+v", attachments)
+	return fmt.Errorf("get wrong attachments: %+v", attachments)
 }
 
 func ToMapStringInterface(origin map[any]any) map[string]any {

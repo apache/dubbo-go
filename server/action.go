@@ -24,20 +24,17 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-	gxnet "github.com/dubbogo/gost/net"
-
-	perrors "github.com/pkg/errors"
-
-	"go.uber.org/atomic"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/global"
@@ -98,7 +95,7 @@ func (svcOpts *ServiceOptions) check() error {
 
 // InitExported will set exported as false atom bool
 func (svcOpts *ServiceOptions) InitExported() {
-	svcOpts.exported = atomic.NewBool(false)
+	svcOpts.exported = new(atomic.Bool)
 }
 
 // IsExport will return whether the service config is exported or not
@@ -114,9 +111,9 @@ func getRandomPort(protocolConfigs []*global.ProtocolConfig) *list.List {
 			continue
 		}
 
-		tcp, err := gxnet.ListenOnTCPRandomPort(proto.Ip)
+		tcp, err := common.ListenOnTCPRandomPort(proto.Ip)
 		if err != nil {
-			panic(perrors.New(fmt.Sprintf("Get tcp port error, err is {%v}", err)))
+			panic(fmt.Errorf("get tcp port error, err is {%v}", err))
 		}
 		defer tcp.Close()
 		ports.PushBack(strings.Split(tcp.Addr().String(), ":")[1])
@@ -130,7 +127,7 @@ func (svcOpts *ServiceOptions) Export() error {
 
 	// TODO: delay needExport
 	if svcOpts.unexported != nil && svcOpts.unexported.Load() {
-		err := perrors.Errorf("The service %v has already unexported!", svcConf.Interface)
+		err := fmt.Errorf("the service %v has already unexported", svcConf.Interface)
 		logger.Errorf("[Server] the service %v has already unexported", svcConf.Interface)
 		return err
 	}
@@ -166,7 +163,7 @@ func (svcOpts *ServiceOptions) Export() error {
 		// registry the service reflect
 		methods, err := common.ServiceMap.Register(svcConf.Interface, protocolConf.Name, svcConf.Group, svcConf.Version, svcOpts.rpcService)
 		if err != nil {
-			formatErr := perrors.Errorf("The service %v needExport the protocol %v error! Error message is %v.",
+			formatErr := fmt.Errorf("the service %v needExport the protocol %v error! Error message is %v",
 				svcConf.Interface, protocolConf.Name, err.Error())
 			logger.Errorf("[Server] failed to validate protocol, err=%v", formatErr)
 			return formatErr
@@ -255,7 +252,7 @@ func (svcOpts *ServiceOptions) Export() error {
 				invoker = svcOpts.generatorInvoker(regUrl, info)
 				exporter := svcOpts.cacheProtocol.Export(invoker)
 				if exporter == nil {
-					return perrors.New(fmt.Sprintf("Registry protocol new exporter error, registry is {%v}, url is {%v}", regUrl, ivkURL))
+					return fmt.Errorf("registry protocol new exporter error, registry is {%v}, url is {%v}", regUrl, ivkURL)
 				}
 				svcOpts.exporters = append(svcOpts.exporters, exporter)
 			}
@@ -263,7 +260,7 @@ func (svcOpts *ServiceOptions) Export() error {
 			invoker = svcOpts.generatorInvoker(ivkURL, info)
 			exporter := extension.GetProtocol(protocolwrapper.FILTER).Export(invoker)
 			if exporter == nil {
-				return perrors.New(fmt.Sprintf("Filter protocol without registry new exporter error, url is {%v}", ivkURL))
+				return fmt.Errorf("filter protocol without registry new exporter error, url is {%v}", ivkURL)
 			}
 			svcOpts.exporters = append(svcOpts.exporters, exporter)
 		}
@@ -373,12 +370,11 @@ func (svcOpts *ServiceOptions) getUrlMap() url.Values {
 	urlMap.Set(constant.WeightKey, strconv.FormatInt(svcOpts.Provider.Weight, 10))
 
 	//filter
-	var filters string
+	filters := svcConf.Filter
 	if svcConf.Filter == "" {
 		filters = constant.DefaultServiceFilters
-	} else {
-		filters = svcConf.Filter
 	}
+	filters = extension.MergeFilterNames(filters, svcOpts.srvOpts.extensionFilterNames)
 	if svcOpts.adaptiveService {
 		filters += fmt.Sprintf(",%s", constant.AdaptiveServiceProviderFilterKey)
 	}
@@ -388,6 +384,10 @@ func (svcOpts *ServiceOptions) getUrlMap() url.Values {
 	if tracing.Enable != nil && *tracing.Enable {
 		filters += fmt.Sprintf(",%s", constant.OTELServerTraceKey)
 	}
+	// Provider URLs are consumed directly by protocolwrapper. Normalize the
+	// suppression markers here because provider filter chains do not pass through
+	// the consumer-side MergeValue path that removes them.
+	filters = commonCfg.MergeValue(filters, "", "")
 	urlMap.Set(constant.ServiceFilterKey, filters)
 
 	// filter special config

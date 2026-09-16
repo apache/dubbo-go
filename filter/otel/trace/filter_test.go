@@ -24,15 +24,20 @@ import (
 )
 
 import (
-	"github.com/golang/mock/gomock"
-
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.opentelemetry.io/otel/trace"
+
+	"go.uber.org/mock/gomock"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
@@ -643,5 +648,149 @@ func Test_otelClientFilter_Invoke(t *testing.T) {
 				t.Errorf("Invoke() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func Test_otelServerFilter_Invoke_RPCAttributes(t *testing.T) {
+	t.Parallel()
+
+	spanRecorder := tracetest.NewSpanRecorder()
+	tracerProvider := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder))
+	defer func() { _ = tracerProvider.Shutdown(context.Background()) }()
+
+	ctrl := gomock.NewController(t)
+	res := NewMockResult(ctrl)
+	res.EXPECT().Error().Return(nil).AnyTimes()
+
+	serviceURL := common.NewURLWithOptions(
+		common.WithParamsValue(constant.InterfaceKey, "com.example.OrderService"),
+		common.WithParamsValue(constant.GroupKey, "gray"),
+		common.WithParamsValue(constant.VersionKey, "1.0.0"),
+	)
+	invoker := NewMockInvoker(ctrl)
+	invoker.EXPECT().GetURL().Return(serviceURL).AnyTimes()
+	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(res)
+
+	invocation := NewMockInvocation(ctrl)
+	invocation.EXPECT().ActualMethodName().Return("GetOrder").AnyTimes()
+	invocation.EXPECT().MethodName().Return("GetOrder").AnyTimes()
+	invocation.EXPECT().Attachments().Return(map[string]any{}).AnyTimes()
+
+	filter := &otelServerFilter{
+		Propagators:    propagation.TraceContext{},
+		TracerProvider: tracerProvider,
+	}
+	if got := filter.Invoke(context.Background(), invoker, invocation); got != res {
+		t.Fatalf("Invoke() returned %v, want the mocked result", got)
+	}
+
+	assertRPCSpanAttributes(t, spanRecorder.Ended(), trace.SpanKindServer, "gray", "1.0.0")
+}
+
+func Test_otelClientFilter_Invoke_RPCAttributes(t *testing.T) {
+	t.Parallel()
+
+	spanRecorder := tracetest.NewSpanRecorder()
+	tracerProvider := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder))
+	defer func() { _ = tracerProvider.Shutdown(context.Background()) }()
+
+	ctrl := gomock.NewController(t)
+	res := NewMockResult(ctrl)
+	res.EXPECT().Error().Return(nil).AnyTimes()
+
+	serviceURL := common.NewURLWithOptions(
+		common.WithParamsValue(constant.InterfaceKey, "com.example.OrderService"),
+		common.WithParamsValue(constant.GroupKey, "gray"),
+		common.WithParamsValue(constant.VersionKey, "1.0.0"),
+	)
+	invoker := NewMockInvoker(ctrl)
+	invoker.EXPECT().GetURL().Return(serviceURL).AnyTimes()
+	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(res)
+
+	invocation := NewMockInvocation(ctrl)
+	invocation.EXPECT().ActualMethodName().Return("GetOrder").AnyTimes()
+	invocation.EXPECT().MethodName().Return("GetOrder").AnyTimes()
+	invocation.EXPECT().Attachments().Return(map[string]any{}).AnyTimes()
+	invocation.EXPECT().SetAttachment(gomock.Any(), gomock.Any()).AnyTimes()
+
+	filter := &otelClientFilter{
+		Propagators:    propagation.TraceContext{},
+		TracerProvider: tracerProvider,
+	}
+	if got := filter.Invoke(context.Background(), invoker, invocation); got != res {
+		t.Fatalf("Invoke() returned %v, want the mocked result", got)
+	}
+
+	assertRPCSpanAttributes(t, spanRecorder.Ended(), trace.SpanKindClient, "gray", "1.0.0")
+}
+
+func Test_rpcSpanAttributes_WithoutGroupVersion(t *testing.T) {
+	t.Parallel()
+
+	serviceURL := common.NewURLWithOptions(
+		common.WithParamsValue(constant.InterfaceKey, "com.example.OrderService"),
+	)
+	for _, attr := range rpcSpanAttributes(serviceURL, "GetOrder") {
+		if attr.Key == attribute.Key(constant.DubboGroupKey) || attr.Key == attribute.Key(constant.DubboVersionKey) {
+			t.Fatalf("unexpected empty Dubbo attribute %q", attr.Key)
+		}
+	}
+}
+
+func Test_rpcSpanAttributes_PreserveServiceKey(t *testing.T) {
+	t.Parallel()
+
+	serviceURL := common.NewURLWithOptions(
+		common.WithParamsValue(constant.InterfaceKey, "com.example.OrderService"),
+		common.WithParamsValue(constant.GroupKey, "gray"),
+		common.WithParamsValue(constant.VersionKey, "1.0.0"),
+	)
+	if got := serviceURL.ServiceKey(); got != "gray/com.example.OrderService:1.0.0" {
+		t.Fatalf("ServiceKey() = %q, want %q", got, "gray/com.example.OrderService:1.0.0")
+	}
+	if got := serviceURL.Service(); got != "com.example.OrderService" {
+		t.Fatalf("Service() = %q, want %q", got, "com.example.OrderService")
+	}
+}
+
+func assertRPCSpanAttributes(
+	t *testing.T,
+	spans []sdktrace.ReadOnlySpan,
+	wantKind trace.SpanKind,
+	wantGroup string,
+	wantVersion string,
+) {
+	t.Helper()
+	if len(spans) != 1 {
+		t.Fatalf("recorded %d spans, want 1", len(spans))
+	}
+
+	span := spans[0]
+	if span.SpanKind() != wantKind {
+		t.Errorf("SpanKind = %v, want %v", span.SpanKind(), wantKind)
+	}
+
+	values := make(map[attribute.Key]attribute.Value, len(span.Attributes()))
+	for _, attr := range span.Attributes() {
+		values[attr.Key] = attr.Value
+	}
+
+	if got := values[semconv.RPCServiceKey].AsString(); got != "com.example.OrderService" {
+		t.Errorf("rpc.service = %q, want %q", got, "com.example.OrderService")
+	}
+	if got := values[semconv.RPCMethodKey].AsString(); got != "GetOrder" {
+		t.Errorf("rpc.method = %q, want %q", got, "GetOrder")
+	}
+	if got := values[semconv.RPCSystemKey].AsString(); got != "apache_dubbo" {
+		t.Errorf("rpc.system = %q, want %q", got, "apache_dubbo")
+	}
+	if got := values[semconv.RPCServiceKey].AsString(); got == "gray/com.example.OrderService:1.0.0" {
+		t.Errorf("rpc.service still contains group/version: %q", got)
+	}
+	if got := values[attribute.Key(constant.DubboGroupKey)].AsString(); got != wantGroup {
+		t.Errorf("dubbo.group = %q, want %q", got, wantGroup)
+	}
+	if got := values[attribute.Key(constant.DubboVersionKey)].AsString(); got != wantVersion {
+		t.Errorf("dubbo.version = %q, want %q", got, wantVersion)
 	}
 }

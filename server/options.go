@@ -18,9 +18,11 @@
 package server
 
 import (
+	"fmt"
 	"reflect"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -28,10 +30,6 @@ import (
 	"github.com/creasty/defaults"
 
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
-
-	"go.uber.org/atomic"
 )
 
 import (
@@ -39,6 +37,7 @@ import (
 	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/dubboutil"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	aslimiter "dubbo.apache.org/dubbo-go/v3/filter/adaptivesvc/limiter"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
@@ -51,14 +50,17 @@ import (
 )
 
 type ServerOptions struct {
-	Provider    *global.ProviderConfig
-	Application *global.ApplicationConfig
-	Registries  map[string]*global.RegistryConfig
-	Protocols   map[string]*global.ProtocolConfig
-	Shutdown    *global.ShutdownConfig
-	Metrics     *global.MetricsConfig
-	Otel        *global.OtelConfig
-	TLS         *global.TLSConfig
+	Provider             *global.ProviderConfig
+	Application          *global.ApplicationConfig
+	Registries           map[string]*global.RegistryConfig
+	Protocols            map[string]*global.ProtocolConfig
+	Shutdown             *global.ShutdownConfig
+	Metrics              *global.MetricsConfig
+	Otel                 *global.OtelConfig
+	TLS                  *global.TLSConfig
+	extensionOptions     []extension.Option
+	extensionConfigs     map[string]any
+	extensionFilterNames []string
 }
 
 func defaultServerOptions() *ServerOptions {
@@ -98,11 +100,17 @@ func (srvOpts *ServerOptions) init(opts ...ServerOption) error {
 		return err
 	}
 
+	filterNames, err := extension.Initialize(srvOpts.extensionConfigs, srvOpts.extensionOptions, extension.ServerScope)
+	if err != nil {
+		return err
+	}
+	srvOpts.extensionFilterNames = append([]string(nil), filterNames...)
+
 	// enable adaptive service verbose
 	if providerConf.AdaptiveServiceVerbose {
 		if !providerConf.AdaptiveService {
-			return perrors.Errorf("The adaptive service is disabled, " +
-				"adaptive service verbose should be disabled either.")
+			return fmt.Errorf("the adaptive service is disabled, " +
+				"adaptive service verbose should be disabled either")
 		}
 		logger.Info("[Server] adaptive service verbose is enabled")
 		logger.Debug("[Server] debug-level info could be shown")
@@ -121,6 +129,15 @@ func (srvOpts *ServerOptions) init(opts ...ServerOption) error {
 }
 
 type ServerOption func(*ServerOptions)
+
+// WithExtension declares typed extension options for this Server lifecycle.
+// The core supplies ServerScope; extensions contribute their registered filter
+// names after their configuration has been initialized.
+func WithExtension(options ...extension.Option) ServerOption {
+	return func(opts *ServerOptions) {
+		opts.extensionOptions = append(opts.extensionOptions, options...)
+	}
+}
 
 // ---------- For user ----------
 
@@ -567,6 +584,14 @@ func WithServerTLSOption(opts ...tls.Option) ServerOption {
 // ========== For framework ==========
 // These functions should not be invoked by users
 
+// SetServerExtensionConfigs installs extension YAML configuration inherited
+// from dubbo.Instance or dubbo.Load.
+func SetServerExtensionConfigs(configs map[string]any) ServerOption {
+	return func(opts *ServerOptions) {
+		opts.extensionConfigs = configs
+	}
+}
+
 // SetServerApplication assigns framework-loaded application configuration to ServerOptions.Application.
 func SetServerApplication(application *global.ApplicationConfig) ServerOption {
 	return func(opts *ServerOptions) {
@@ -668,8 +693,8 @@ func defaultServiceOptions() *ServiceOptions {
 	return &ServiceOptions{
 		Service:     global.DefaultServiceConfig(),
 		Application: global.DefaultApplicationConfig(),
-		unexported:  atomic.NewBool(false),
-		exported:    atomic.NewBool(false),
+		unexported:  new(atomic.Bool),
+		exported:    new(atomic.Bool),
 		needExport:  true,
 	}
 }
@@ -687,7 +712,7 @@ func (svcOpts *ServiceOptions) init(srv *Server, opts ...ServiceOption) error {
 
 	dubboutil.CopyFields(reflect.ValueOf(srv.cfg.Provider).Elem(), reflect.ValueOf(svc).Elem())
 
-	svcOpts.exported = atomic.NewBool(false)
+	svcOpts.exported = new(atomic.Bool)
 
 	application := svcOpts.Application
 	if application != nil {
@@ -698,7 +723,7 @@ func (svcOpts *ServiceOptions) init(srv *Server, opts ...ServiceOption) error {
 			svc.Version = application.Version
 		}
 	}
-	svcOpts.unexported = atomic.NewBool(false)
+	svcOpts.unexported = new(atomic.Bool)
 
 	// initialize Registries
 	if len(svc.RCRegistriesMap) == 0 {

@@ -19,14 +19,13 @@
 package base
 
 import (
+	"fmt"
 	"slices"
 	"sync"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
 
 	uberatomic "go.uber.org/atomic"
 )
@@ -96,8 +95,8 @@ func (invoker *BaseClusterInvoker) setStickyInvoker(v base.Invoker) {
 func (invoker *BaseClusterInvoker) CheckInvokers(invokers []base.Invoker, invocation base.Invocation) error {
 	if len(invokers) == 0 {
 		ip := common.GetLocalIp()
-		return perrors.Errorf("Failed to invoke the method %v. No provider available for the service %v from "+
-			"registry %v on the consumer %v using the dubbo version %v .Please check if the providers have been started and registered.",
+		return fmt.Errorf("failed to invoke the method %v. No provider available for the service %v from "+
+			"registry %v on the consumer %v using the dubbo version %v .Please check if the providers have been started and registered",
 			invocation.MethodName(), invoker.Directory.GetURL().SubURL.Key(), invoker.Directory.GetURL().String(), ip, constant.Version)
 	}
 	return nil
@@ -107,7 +106,7 @@ func (invoker *BaseClusterInvoker) CheckInvokers(invokers []base.Invoker, invoca
 func (invoker *BaseClusterInvoker) CheckWhetherDestroyed() error {
 	if invoker.Destroyed.Load() {
 		ip := common.GetLocalIp()
-		return perrors.Errorf("Rpc cluster invoker for %v on consumer %v use dubbo version %v is now destroyed! can not invoke any more. ",
+		return fmt.Errorf("rpc cluster invoker for %v on consumer %v use dubbo version %v is now destroyed! can not invoke any more",
 			invoker.Directory.GetURL().Service(), ip, constant.Version)
 	}
 	return nil

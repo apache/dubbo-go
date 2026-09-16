@@ -18,12 +18,9 @@
 package proxy_factory
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
-)
-
-import (
-	perrors "github.com/pkg/errors"
 )
 
 // callLocalMethod invokes a local method and recovers panics.
@@ -40,7 +37,7 @@ func callLocalMethod(method reflect.Method, in []reflect.Value, useCallSlice boo
 				if err, ok := e.(error); ok {
 					retErr = err
 				} else if err, ok := e.(string); ok {
-					retErr = perrors.New(err)
+					retErr = errors.New(err)
 				} else {
 					retErr = fmt.Errorf("invoke function error, unknow exception: %+v", e)
 				}

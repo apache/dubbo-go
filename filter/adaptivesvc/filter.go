@@ -20,6 +20,7 @@ package adaptivesvc
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -27,8 +28,6 @@ import (
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-
-	"github.com/pkg/errors"
 )
 
 import (

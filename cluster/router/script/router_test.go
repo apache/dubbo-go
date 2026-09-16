@@ -242,6 +242,41 @@ func TestScriptRouterProcessSkipsNonStringConfig(t *testing.T) {
 	assert.Equal(t, "old script", s.rawScript)
 }
 
+func TestProcessInvalidRuleDisablesRouter(t *testing.T) {
+	cases := []struct{ name, cfg string }{
+		{"invalid yaml", ":\n\tnot yaml : ["},
+		{"missing key", "configVersion: v3.0\ntype: javascript\nenabled: true\nscript: |-\n  1"},
+		{"missing type", "configVersion: v3.0\nkey: dubbo.io\nenabled: true\nscript: |-\n  1"},
+		{"missing script", "configVersion: v3.0\nkey: dubbo.io\ntype: javascript\nenabled: true"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			s := NewScriptRouter()
+			s.Process(&config_center.ConfigChangeEvent{Value: c.cfg, ConfigType: remoting.EventTypeUpdate})
+			assert.False(t, s.enabled)
+			invokers, inv, _ := getRouteCheckArgs()
+			assert.True(t, checkInvokersSame(s.Route(invokers, nil, inv), invokers))
+		})
+	}
+}
+
+func TestProcessMissingEnabledDefaultsTrue(t *testing.T) {
+	s := NewScriptRouter()
+	assert.NotPanics(t, func() {
+		s.Process(&config_center.ConfigChangeEvent{
+			Value: `configVersion: v3.0
+key: dubbo.io
+type: javascript
+script: |-
+  (function(){return invokers;}(invokers,invocation,context));`,
+			ConfigType: remoting.EventTypeUpdate,
+		})
+	})
+	assert.True(t, s.enabled)
+	invokers, inv, _ := getRouteCheckArgs()
+	assert.Len(t, s.Route(invokers, nil, inv), 3)
+}
+
 func TestScriptRouterProcessDelSkipsConfigBody(t *testing.T) {
 	s := &ScriptRouter{
 		enabled:    true,

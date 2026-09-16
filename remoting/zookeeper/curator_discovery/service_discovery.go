@@ -19,16 +19,18 @@ package curator_discovery
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"path"
 	"strings"
 	"sync"
 )
 
 import (
-	"github.com/dubbogo/go-zookeeper/zk"
-
 	gxzookeeper "github.com/dubbogo/gost/database/kv/zk"
 	"github.com/dubbogo/gost/log/logger"
+
+	"github.com/go-zookeeper/zk"
 
 	perrors "github.com/pkg/errors"
 )
@@ -104,7 +106,7 @@ func (sd *ServiceDiscovery) RegisterService(instance *ServiceInstance) error {
 	value, loaded := sd.services.LoadOrStore(instance.ID, &Entry{})
 	entry, ok := value.(*Entry)
 	if !ok {
-		return perrors.New("[Remoting][Zookeeper] services value not entry")
+		return errors.New("[Remoting][Zookeeper] services value not entry")
 	}
 	entry.Lock()
 	defer entry.Unlock()
@@ -123,11 +125,11 @@ func (sd *ServiceDiscovery) RegisterService(instance *ServiceInstance) error {
 func (sd *ServiceDiscovery) UpdateService(instance *ServiceInstance) error {
 	value, ok := sd.services.Load(instance.ID)
 	if !ok {
-		return perrors.Errorf("[Remoting][Zookeeper] Service{%s} not registered", instance.ID)
+		return fmt.Errorf("[Remoting][Zookeeper] Service{%s} not registered", instance.ID)
 	}
 	entry, ok := value.(*Entry)
 	if !ok {
-		return perrors.New("[Remoting][Zookeeper] services value not entry")
+		return errors.New("[Remoting][Zookeeper] services value not entry")
 	}
 	data, err := json.Marshal(instance)
 	if err != nil {
@@ -270,7 +272,7 @@ func (sd *ServiceDiscovery) getNameAndID(path string) (string, string, error) {
 	path = strings.TrimPrefix(path, constant.PathSeparator)
 	pathSlice := strings.Split(path, constant.PathSeparator)
 	if len(pathSlice) < 2 {
-		return "", "", perrors.Errorf("[Remoting][Zookeeper] path{%s} dont contain name and id", path)
+		return "", "", fmt.Errorf("[Remoting][Zookeeper] path{%s} dont contain name and id", path)
 	}
 	name := pathSlice[0]
 	id := pathSlice[1]

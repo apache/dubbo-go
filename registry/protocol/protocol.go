@@ -19,6 +19,8 @@ package protocol
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 	"sync"
@@ -28,8 +30,6 @@ import (
 import (
 	gxset "github.com/dubbogo/gost/container/set"
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -370,21 +370,21 @@ func registerServiceMap(invoker base.Invoker) error {
 
 	providerConfRaw, ok := providerUrl.GetAttribute(constant.ProviderConfigKey)
 	if !ok {
-		return perrors.Errorf("reExport can not get provider config from url attribute %s", constant.ProviderConfigKey)
+		return fmt.Errorf("reExport can not get provider config from url attribute %s", constant.ProviderConfigKey)
 	}
 	providerConf, ok := providerConfRaw.(*global.ProviderConfig)
 	if !ok || providerConf == nil {
-		return perrors.Errorf("reExport got illegal provider config from url attribute %s", constant.ProviderConfigKey)
+		return fmt.Errorf("reExport got illegal provider config from url attribute %s", constant.ProviderConfigKey)
 	}
 
 	serviceConf := providerConf.Services[id]
 	if serviceConf == nil {
-		return perrors.Errorf("reExport can not get service config %q from provider config", id)
+		return fmt.Errorf("reExport can not get service config %q from provider config", id)
 	}
 
 	rpcService, ok := providerUrl.GetAttribute(constant.RpcServiceKey)
 	if !ok || rpcService == nil {
-		return perrors.Errorf("reExport can not get RPCService from url attribute %s", constant.RpcServiceKey)
+		return fmt.Errorf("reExport can not get RPCService from url attribute %s", constant.RpcServiceKey)
 	}
 
 	protocol := providerUrl.Protocol
@@ -392,7 +392,7 @@ func registerServiceMap(invoker base.Invoker) error {
 		protocol = serviceConf.ProtocolIDs[0]
 	}
 	if protocol == "" {
-		return perrors.New("reExport can not get protocol")
+		return errors.New("reExport can not get protocol")
 	}
 
 	_, err := common.ServiceMap.Register(serviceConf.Interface,
@@ -400,7 +400,7 @@ func registerServiceMap(invoker base.Invoker) error {
 		serviceConf.Version, rpcService)
 	if err != nil {
 		s := "reExport can not re register ServiceMap. Error message is " + err.Error()
-		return perrors.New(s)
+		return errors.New(s)
 	}
 	return nil
 }

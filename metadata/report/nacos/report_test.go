@@ -27,13 +27,13 @@ import (
 import (
 	nacosClient "github.com/dubbogo/gost/database/kv/nacos"
 
-	"github.com/golang/mock/gomock"
-
 	"github.com/nacos-group/nacos-sdk-go/v2/model"
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.uber.org/mock/gomock"
 )
 
 import (

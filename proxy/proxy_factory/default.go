@@ -27,8 +27,6 @@ import (
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -111,7 +109,7 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation base.Invocation) 
 	svc := common.ServiceMap.GetServiceByServiceKey(proto, url.ServiceKey())
 	if svc == nil {
 		logger.Errorf("[Proxy] cannot find service [%s] in %s", path, proto)
-		result.SetError(perrors.Errorf("cannot find service [%s] in %s", path, proto))
+		result.SetError(fmt.Errorf("cannot find service [%s] in %s", path, proto))
 		return result
 	}
 
@@ -119,7 +117,7 @@ func (pi *ProxyInvoker) Invoke(ctx context.Context, invocation base.Invocation) 
 	method := svc.Method()[methodName]
 	if method == nil {
 		logger.Errorf("[Proxy] cannot find method [%s] of service [%s] in %s", methodName, path, proto)
-		result.SetError(perrors.Errorf("cannot find method [%s] of service [%s] in %s", methodName, path, proto))
+		result.SetError(fmt.Errorf("cannot find method [%s] of service [%s] in %s", methodName, path, proto))
 		return result
 	}
 

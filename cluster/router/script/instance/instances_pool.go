@@ -34,6 +34,14 @@ func init() {
 	setInstances(`javascript`, newJsInstances())
 }
 
+// ScriptInstances is the engine bound to one script type. It owns the whole
+// lifecycle of scripts of that type: compile, run and destroy.
+// Compile compiles the script and increments its reference count; compiling
+// the same script again only increments the count.
+// Run executes a compiled script; Run returns the original invokers for a
+// script that was never compiled or has been destroyed.
+// Destroy decrements the reference count of the compiled script; the entry
+// is removed from the cache once the count drops to zero.
 type ScriptInstances interface {
 	Run(rawScript string, invokers []base.Invoker, invocation base.Invocation) ([]base.Invoker, error)
 	Compile(rawScript string) error
@@ -42,6 +50,7 @@ type ScriptInstances interface {
 
 var factory map[string]ScriptInstances
 
+// GetInstances returns the engine instance for the given script type.
 func GetInstances(scriptType string) (ScriptInstances, error) {
 	ins, ok := factory[strings.ToLower(scriptType)]
 	if !ok {
@@ -58,6 +67,7 @@ func RangeInstances(f func(instance ScriptInstances) bool) {
 	}
 }
 
+// setInstances sets the engine instance for the given script type.
 func setInstances(tpName string, instance ScriptInstances) {
 	factory[tpName] = instance
 }

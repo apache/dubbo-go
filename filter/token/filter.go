@@ -20,12 +20,9 @@ package token
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"sync"
-)
-
-import (
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -69,7 +66,7 @@ func (f *tokenFilter) Invoke(ctx context.Context, invoker base.Invoker, invocati
 		var remoteTkn string
 		remoteTknIface, exist := attas[constant.TokenKey]
 		if !exist || remoteTknIface == nil {
-			return &result.RPCResult{Err: perrors.Errorf(InValidTokenFormat, invoker, invocation.MethodName())}
+			return &result.RPCResult{Err: fmt.Errorf(InValidTokenFormat, invoker, invocation.MethodName())}
 		}
 		switch remoteTknIface := remoteTknIface.(type) {
 		case string:
@@ -79,17 +76,17 @@ func (f *tokenFilter) Invoke(ctx context.Context, invoker base.Invoker, invocati
 			// deal with triple protocol
 			remoteTkns := remoteTknIface
 			if len(remoteTkns) != 1 {
-				return &result.RPCResult{Err: perrors.Errorf(InValidTokenFormat, invoker, invocation.MethodName())}
+				return &result.RPCResult{Err: fmt.Errorf(InValidTokenFormat, invoker, invocation.MethodName())}
 			}
 			remoteTkn = remoteTkns[0]
 		default:
-			return &result.RPCResult{Err: perrors.Errorf(InValidTokenFormat, invoker, invocation.MethodName())}
+			return &result.RPCResult{Err: fmt.Errorf(InValidTokenFormat, invoker, invocation.MethodName())}
 		}
 
 		if strings.EqualFold(invokerTkn, remoteTkn) {
 			return invoker.Invoke(ctx, invocation)
 		}
-		return &result.RPCResult{Err: perrors.Errorf(InValidTokenFormat, invoker, invocation.MethodName())}
+		return &result.RPCResult{Err: fmt.Errorf(InValidTokenFormat, invoker, invocation.MethodName())}
 	}
 
 	return invoker.Invoke(ctx, invocation)

@@ -18,6 +18,7 @@
 package condition
 
 import (
+	"fmt"
 	"math/rand"
 	"regexp"
 	"sort"
@@ -27,8 +28,6 @@ import (
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-
-	"github.com/pkg/errors"
 
 	"go.yaml.in/yaml/v4"
 )
@@ -57,7 +56,7 @@ func NewConditionStateRouter(url *common.URL) (*StateRouter, error) {
 	once.Do(initMatcherFactories)
 
 	if len(matcherFactories) == 0 {
-		return nil, errors.Errorf("No ConditionMatcherFactory exists")
+		return nil, fmt.Errorf("no ConditionMatcherFactory exists")
 	}
 
 	c := &StateRouter{}
@@ -116,7 +115,7 @@ func (s *StateRouter) matchThen(url *common.URL, param *common.URL) bool {
 func generateMatcher(url *common.URL) (when, then map[string]matcher.Matcher, err error) {
 	rule := url.GetParam(constant.RuleKey, "")
 	if rule == "" || len(strings.Trim(rule, " ")) == 0 {
-		return nil, nil, errors.Errorf("Illegal route rule!")
+		return nil, nil, fmt.Errorf("illegal route rule")
 	}
 	rule = strings.ReplaceAll(rule, "consumer.", "")
 	rule = strings.ReplaceAll(rule, "provider.", "")
@@ -213,7 +212,7 @@ func processMatchers(rule string) (map[string]matcher.Matcher, error) {
 				return nil, err
 			}
 		default:
-			return nil, errors.Errorf(illegalMsg, rule, separator, content)
+			return nil, fmt.Errorf(illegalMsg, rule, separator, content)
 		}
 	}
 
@@ -231,7 +230,7 @@ func processAndSeparator(content string, condition map[string]matcher.Matcher) (
 
 func processEqualNotEqualSeparator(separator, content string, currentMatcher matcher.Matcher, rule string) (map[string]struct{}, matcher.Matcher, error) {
 	if currentMatcher == nil {
-		return nil, nil, errors.Errorf(illegalMsg, rule, separator, content)
+		return nil, nil, fmt.Errorf(illegalMsg, rule, separator, content)
 	}
 	values := currentMatcher.GetMatches()
 	if separator == "!=" {
@@ -243,7 +242,7 @@ func processEqualNotEqualSeparator(separator, content string, currentMatcher mat
 
 func processCommaSeparator(content string, values map[string]struct{}, rule string) (map[string]struct{}, error) {
 	if len(values) == 0 {
-		return nil, errors.Errorf(illegalMsg, rule, ",", content)
+		return nil, fmt.Errorf(illegalMsg, rule, ",", content)
 	}
 	values[content] = struct{}{}
 	return values, nil
@@ -432,16 +431,16 @@ func NewConditionMultiDestRouter(url *common.URL) (*MultiDestRouter, error) {
 	once.Do(initMatcherFactories)
 
 	if len(matcherFactories) == 0 {
-		return nil, errors.Errorf("No ConditionMatcherFactory exists")
+		return nil, fmt.Errorf("no ConditionMatcherFactory exists")
 	}
 
 	rawCondConf, ok := url.GetAttribute(constant.RuleKey)
 	if !ok {
-		return nil, errors.Errorf("Condition Router can't get the rule key")
+		return nil, fmt.Errorf("condition router can't get the rule key")
 	}
 	condConf, ok := rawCondConf.(*global.ConditionRule)
 	if !ok {
-		return nil, errors.Errorf("Condition Router get the rule key invalid , got %T", rawCondConf)
+		return nil, fmt.Errorf("condition router get the rule key invalid , got %T", rawCondConf)
 	}
 	// ensure config effective
 	if (len(condConf.To) == 0) && condConf.From.Match == "" {

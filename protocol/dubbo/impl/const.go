@@ -18,12 +18,9 @@
 package impl
 
 import (
+	"errors"
 	"reflect"
 	"regexp"
-)
-
-import (
-	"github.com/pkg/errors"
 )
 
 const (
@@ -228,7 +225,7 @@ var (
 	ErrHeaderNotEnough = errors.New("header buffer too short")
 	ErrBodyNotEnough   = errors.New("body buffer too short")
 	ErrJavaException   = errors.New("got java exception")
-	ErrIllegalPackage  = errors.New("illegal package!")
+	ErrIllegalPackage  = errors.New("illegal package")
 )
 
 // DescRegex ...

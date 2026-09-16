@@ -18,6 +18,7 @@
 package polaris
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -26,8 +27,6 @@ import (
 import (
 	gxchan "github.com/dubbogo/gost/container/chan"
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
 
 	"github.com/polarismesh/polaris-go/pkg/model"
 )
@@ -115,11 +114,11 @@ func (pl *polarisListener) nextNotification() (*polarisNotification, error) {
 		select {
 		case <-pl.closeCh:
 			logger.Warn("[Registry][Polaris] polaris listener is close")
-			return nil, perrors.New("listener stopped")
+			return nil, errors.New("listener stopped")
 		case val := <-pl.events.Out():
 			notification, ok := val.(*polarisNotification)
 			if !ok || notification == nil {
-				return nil, perrors.Errorf("invalid polaris notification type %T", val)
+				return nil, fmt.Errorf("invalid polaris notification type %T", val)
 			}
 			return notification, nil
 		}
@@ -132,7 +131,7 @@ func (pl *polarisListener) Next() (*registry.ServiceEvent, error) {
 		select {
 		case <-pl.closeCh:
 			logger.Warn("[Registry][Polaris] polaris listener is close")
-			return nil, perrors.New("listener stopped")
+			return nil, errors.New("listener stopped")
 		default:
 		}
 

@@ -19,6 +19,7 @@ package nacos
 
 import (
 	"bytes"
+	"errors"
 	"net/url"
 	"reflect"
 	"strconv"
@@ -32,8 +33,6 @@ import (
 
 	"github.com/nacos-group/nacos-sdk-go/v2/model"
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -198,12 +197,12 @@ func getSubscribeName(url *common.URL) string {
 
 func (nl *nacosListener) listenService(serviceName string) error {
 	if nl.namingClient == nil {
-		return perrors.New("nacos naming namingClient stopped")
+		return errors.New("nacos naming namingClient stopped")
 	}
 	group := nl.regURL.GetParam(constant.RegistryGroupKey, defaultGroup)
 	nl.subscribeParam = createSubscribeParam(serviceName, group, nl.Callback)
 	if nl.subscribeParam == nil {
-		return perrors.New("create nacos subscribeParam failed")
+		return errors.New("create nacos subscribeParam failed")
 	}
 	err := nl.namingClient.Client().Subscribe(nl.subscribeParam)
 	if err == nil {
@@ -226,7 +225,7 @@ func (nl *nacosListener) Next() (*registry.ServiceEvent, error) {
 		select {
 		case <-nl.done:
 			logger.Warnf("[Registry][Nacos] nacos listener is close, service=%v", nl.serviceName)
-			return nil, perrors.New("listener stopped")
+			return nil, errors.New("listener stopped")
 
 		case val := <-nl.events.Out():
 			e, _ := val.(*config_center.ConfigChangeEvent)

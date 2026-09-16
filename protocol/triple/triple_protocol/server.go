@@ -21,7 +21,9 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"net"
 	"net/http"
+	"sync/atomic"
 )
 
 import (
@@ -30,8 +32,6 @@ import (
 	"github.com/dubbogo/grpc-go"
 
 	"github.com/quic-go/quic-go/http3"
-
-	uatomic "go.uber.org/atomic"
 
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -47,12 +47,20 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/openapi"
 )
 
+// netListen and netListenPacket create the pre-bound sockets in
+// startHttp2AndHttp3. Tests override them to simulate Serve failures.
+var (
+	netListen       = net.Listen
+	netListenPacket = net.ListenPacket
+)
+
 type Server struct {
 	addr               string
 	mux                *methodRouteMux
 	handlers           map[string]*Handler
-	httpSrv            uatomic.Pointer[http.Server]
-	http3Srv           uatomic.Pointer[http3.Server]
+	httpSrv            atomic.Pointer[http.Server]
+	http3Srv           atomic.Pointer[http3.Server]
+	stopCount          atomic.Uint32
 	tripleConfig       *global.TripleConfig // Configuration for the triple protocol
 	openapiIntegration *openapi.OpenAPIIntegration
 }
@@ -184,26 +192,68 @@ func (s *Server) SetFallbackHTTPHandler(h http.Handler) {
 	s.mux.SetFallbackHandler(h)
 }
 
+// Start starts the server for the given protocol without blocking. It
+// snapshots the startup epoch synchronously before the transport goroutine
+// runs, so run's checkpoint detects a Stop that completes before the
+// goroutine executes. Serve errors are logged; use Run when the error must
+// be returned synchronously.
+func (s *Server) Start(callProtocol string, tlsConf *tls.Config) {
+	epoch := s.beginStart()
+	go func() {
+		if runErr := s.run(callProtocol, tlsConf, epoch); runErr != nil {
+			logger.Errorf("[Triple][Server] server serve failed, err=%v", runErr)
+		}
+	}()
+}
+
+// beginStart snapshots the startup epoch before the transport goroutine
+// runs. It must be called synchronously on the start path so run's
+// checkpoint can detect a Stop that completes before run reads the counter.
+func (s *Server) beginStart() uint32 {
+	return s.stopCount.Load()
+}
+
+// Run starts the server for the given protocol and blocks until the server
+// is closed. It keeps the pre-3640 two-argument signature: the startup epoch
+// is snapshotted here, so a Stop that completes before this call executes
+// cannot be detected. Callers that need that guarantee use Start.
 func (s *Server) Run(callProtocol string, tlsConf *tls.Config) error {
+	return s.run(callProtocol, tlsConf, s.stopCount.Load())
+}
+
+func (s *Server) run(callProtocol string, tlsConf *tls.Config, epoch uint32) error {
+	// A Stop that completed after the synchronous epoch snapshot but before
+	// this checkpoint aborts the startup here, before any socket is bound or
+	// served.
+	if s.stopCount.Load() != epoch {
+		return nil
+	}
+
 	// Support for starting HTTP/2 and HTTP/3 servers simultaneously.
 	switch callProtocol {
 	case constant.CallHTTP2:
-		return s.startHttp2(tlsConf)
+		return s.startHttp2(tlsConf, epoch)
 	case constant.CallHTTP3:
-		return s.startHttp3(tlsConf)
+		return s.startHttp3(tlsConf, epoch)
 	case constant.CallHTTP2AndHTTP3:
-		return s.startHttp2AndHttp3(tlsConf)
+		return s.startHttp2AndHttp3(tlsConf, epoch)
 	default:
 		return fmt.Errorf("unsupported protocol: %s, only http2, http3, or http2-and-http3 are supported", callProtocol)
 	}
 }
 
-func (s *Server) startHttp2(tlsConf *tls.Config) error {
+func (s *Server) startHttp2(tlsConf *tls.Config, epoch uint32) error {
 	s.httpSrv.Store(&http.Server{
 		Addr:      s.addr,
 		Handler:   h2c.NewHandler(s.mux, &http2.Server{}),
 		TLSConfig: tlsConf,
 	})
+
+	// A Stop that landed after the entry checkpoint but before this server
+	// was published closed nothing; abort so no listener is served.
+	if s.stopCount.Load() != epoch {
+		return nil
+	}
 
 	logger.Debugf("[Triple][Server] triple HTTP/2 Server starting on %v", s.addr)
 
@@ -215,11 +265,13 @@ func (s *Server) startHttp2(tlsConf *tls.Config) error {
 	} else {
 		err = srv.ListenAndServe()
 	}
-
-	return err
+	if err != nil && err != http.ErrServerClosed {
+		return err
+	}
+	return nil
 }
 
-func (s *Server) startHttp3(tlsConf *tls.Config) error {
+func (s *Server) startHttp3(tlsConf *tls.Config, epoch uint32) error {
 	if tlsConf == nil {
 		return fmt.Errorf("TRIPLE HTTP/3 Server must have TLS config, but TLS config is nil")
 	}
@@ -244,12 +296,22 @@ func (s *Server) startHttp3(tlsConf *tls.Config) error {
 		QUICConfig: quicConfig,
 	})
 
+	// A Stop that landed after the entry checkpoint but before this server
+	// was published closed nothing; abort so no listener is served.
+	if s.stopCount.Load() != epoch {
+		return nil
+	}
+
 	logger.Debugf("[Triple][Server] triple HTTP/3 Server starting on %v", s.addr)
 
-	return s.http3Srv.Load().ListenAndServe()
+	err = s.http3Srv.Load().ListenAndServe()
+	if err != nil && err != http.ErrServerClosed {
+		return err
+	}
+	return nil
 }
 
-func (s *Server) startHttp2AndHttp3(tlsConf *tls.Config) error {
+func (s *Server) startHttp2AndHttp3(tlsConf *tls.Config, epoch uint32) error {
 	// Check if TLS config is provided for HTTP/3
 	if tlsConf == nil {
 		return fmt.Errorf("TRIPLE HTTP/2 and HTTP/3 Server must have TLS config, but TLS config is nil")
@@ -264,6 +326,28 @@ func (s *Server) startHttp2AndHttp3(tlsConf *tls.Config) error {
 	if err != nil {
 		return err
 	}
+
+	if len(tlsConf.Certificates) == 0 &&
+		tlsConf.GetCertificate == nil &&
+		tlsConf.GetConfigForClient == nil {
+		return fmt.Errorf("TRIPLE HTTP/2 and HTTP/3 Server must have a TLS certificate configured, but none of Certificates/GetCertificate/GetConfigForClient is set")
+	}
+
+	// Pre-bind the TCP (HTTP/2) listener before serving any request:
+	// fail fast with the bind error when the port is occupied.
+	tcpLn, err := netListen("tcp", s.addr)
+	if err != nil {
+		return fmt.Errorf("HTTP/2 server bind error: %w", err)
+	}
+	defer tcpLn.Close()
+
+	// Pre-bind the UDP (HTTP/3) socket as well; on failure close the
+	// already-bound TCP listener and return, no request has been served yet.
+	udpConn, err := netListenPacket("udp", s.addr)
+	if err != nil {
+		return fmt.Errorf("HTTP/3 server bind error: %w", err)
+	}
+	defer udpConn.Close()
 
 	// Start HTTP/3 server first to get its configuration
 	s.http3Srv.Store(&http3.Server{
@@ -287,14 +371,23 @@ func (s *Server) startHttp2AndHttp3(tlsConf *tls.Config) error {
 		TLSConfig: tlsConf,
 	})
 
+	// A Stop during the bind or store steps closed nothing; abort so the
+	// deferred closes release the sockets.
+	if s.stopCount.Load() != epoch {
+		return nil
+	}
+
 	logger.Debugf("[Triple][Server] triple HTTP/2 and HTTP/3 Server starting on %v", s.addr)
 
 	// Use errgroup to manage concurrent server startup
-	eg := &errgroup.Group{}
+	eg, _ := errgroup.WithContext(context.Background())
 
 	// Start HTTP/2 server in a goroutine
 	eg.Go(func() error {
-		if err := s.httpSrv.Load().ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
+		if err := s.httpSrv.Load().ServeTLS(tcpLn, "", ""); err != nil && err != http.ErrServerClosed {
+			// Close the HTTP/3 server so its Serve call returns and
+			// eg.Wait does not block on the still-listening UDP socket.
+			_ = s.http3Srv.Load().Close()
 			return fmt.Errorf("HTTP/2 server error: %w", err)
 		}
 		return nil
@@ -302,7 +395,10 @@ func (s *Server) startHttp2AndHttp3(tlsConf *tls.Config) error {
 
 	// Start HTTP/3 server in a goroutine
 	eg.Go(func() error {
-		if err := s.http3Srv.Load().ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := s.http3Srv.Load().Serve(udpConn); err != nil && err != http.ErrServerClosed {
+			// Close the HTTP/2 server so its Serve call returns and
+			// eg.Wait does not block on the still-listening TCP listener.
+			_ = s.httpSrv.Load().Close()
 			return fmt.Errorf("HTTP/3 server error: %w", err)
 		}
 		return nil
@@ -314,6 +410,9 @@ func (s *Server) startHttp2AndHttp3(tlsConf *tls.Config) error {
 
 // Stop the Triple server for both HTTP/2 and HTTP/3.
 func (s *Server) Stop() error {
+	// Record the stop first so an in-flight startup aborts at its checkpoint.
+	s.stopCount.Add(1)
+
 	eg, _ := errgroup.WithContext(context.Background())
 
 	// stop HTTP server
@@ -342,6 +441,9 @@ func (s *Server) Stop() error {
 
 // Gracefulstop shutdown the Triple server for both HTTP/2 and HTTP/3 gracefully.
 func (s *Server) GracefulStop(ctx context.Context) error {
+	// Record the stop first so an in-flight startup aborts at its checkpoint.
+	s.stopCount.Add(1)
+
 	eg, ctx := errgroup.WithContext(ctx)
 
 	// shutdown HTTP server

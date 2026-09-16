@@ -33,65 +33,170 @@ import (
 )
 
 func TestNewOptions(t *testing.T) {
-	// Test default options
-	opts := NewOptions()
-	assert.Equal(t, constant.DefaultMetadataStorageType, opts.metadataType)
-	assert.Equal(t, constant.DefaultProtocol, opts.protocol)
-
-	// Test with all options
-	opts = NewOptions(
-		WithAppName("my-app"),
-		WithMetadataType("remote"),
-		WithPort(20880),
-		WithMetadataProtocol("tri"),
-	)
-	assert.Equal(t, "my-app", opts.appName)
-	assert.Equal(t, "remote", opts.metadataType)
-	assert.Equal(t, 20880, opts.port)
-	assert.Equal(t, "tri", opts.protocol)
+	tests := []struct {
+		name      string
+		opts      []Option
+		wantApp   string
+		wantType  string
+		wantPort  int
+		wantProto string
+	}{
+		{
+			name:      "default",
+			opts:      nil,
+			wantApp:   "",
+			wantType:  constant.DefaultMetadataStorageType,
+			wantPort:  0,
+			wantProto: constant.DefaultProtocol,
+		},
+		{
+			name:      "with-app",
+			opts:      []Option{WithAppName("my-app")},
+			wantApp:   "my-app",
+			wantType:  constant.DefaultMetadataStorageType,
+			wantPort:  0,
+			wantProto: constant.DefaultProtocol,
+		},
+		{
+			name:      "with-type",
+			opts:      []Option{WithMetadataType("remote")},
+			wantApp:   "",
+			wantType:  "remote",
+			wantPort:  0,
+			wantProto: constant.DefaultProtocol,
+		},
+		{
+			name:      "with-port",
+			opts:      []Option{WithPort(20880)},
+			wantApp:   "",
+			wantType:  constant.DefaultMetadataStorageType,
+			wantPort:  20880,
+			wantProto: constant.DefaultProtocol,
+		},
+		{
+			name:      "with-protocol",
+			opts:      []Option{WithMetadataProtocol("tri")},
+			wantApp:   "",
+			wantType:  constant.DefaultMetadataStorageType,
+			wantPort:  0,
+			wantProto: "tri",
+		},
+		{
+			name: "all-set",
+			opts: []Option{
+				WithAppName("my-app"),
+				WithMetadataType("remote"),
+				WithPort(20880),
+				WithMetadataProtocol("tri"),
+			},
+			wantApp:   "my-app",
+			wantType:  "remote",
+			wantPort:  20880,
+			wantProto: "tri",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opts := NewOptions(tt.opts...)
+			assert.Equal(t, tt.wantApp, opts.appName)
+			assert.Equal(t, tt.wantType, opts.metadataType)
+			assert.Equal(t, tt.wantPort, opts.port)
+			assert.Equal(t, tt.wantProto, opts.protocol)
+		})
+	}
 }
 
 func TestNewReportOptions(t *testing.T) {
-	// Test default
-	opts := NewReportOptions()
-	assert.NotNil(t, opts.MetadataReportConfig)
-
-	// Test with all options
-	opts = NewReportOptions(
-		WithRegistryId("registry-1"),
-		WithZookeeper(),
-		WithAddress("127.0.0.1:2181"),
-		WithUsername("admin"),
-		WithPassword("secret"),
-		WithTimeout(5*time.Second),
-		WithGroup("test-group"),
-		WithNamespace("test-ns"),
-		WithParams(map[string]string{"key": "value"}),
-	)
-	assert.Equal(t, "registry-1", opts.registryId)
-	assert.Equal(t, constant.ZookeeperKey, opts.Protocol)
-	assert.Equal(t, "127.0.0.1:2181", opts.Address)
-	assert.Equal(t, "admin", opts.Username)
-	assert.Equal(t, "secret", opts.Password)
-	assert.Equal(t, "5000", opts.Timeout)
-	assert.Equal(t, "test-group", opts.Group)
-	assert.Equal(t, "test-ns", opts.Namespace)
-	assert.Equal(t, "value", opts.Params["key"])
-}
-
-func TestProtocolOptions(t *testing.T) {
 	tests := []struct {
-		option   ReportOption
-		expected string
+		name string
+		opts []ReportOption
+		get  func(*ReportOptions) string
+		want string
 	}{
-		{WithZookeeper(), constant.ZookeeperKey},
-		{WithNacos(), constant.NacosKey},
-		{WithEtcdV3(), constant.EtcdV3Key},
+		{
+			name: "default",
+			opts: nil,
+			get:  func(o *ReportOptions) string { return o.Protocol },
+			want: "",
+		},
+		{
+			name: "with-registryId",
+			opts: []ReportOption{WithRegistryId("registry-1")},
+			get:  func(o *ReportOptions) string { return o.registryId },
+			want: "registry-1",
+		},
+		{
+			name: "with-zookeeper",
+			opts: []ReportOption{WithZookeeper()},
+			get:  func(o *ReportOptions) string { return o.Protocol },
+			want: constant.ZookeeperKey,
+		},
+		{
+			name: "with-nacos",
+			opts: []ReportOption{WithNacos()},
+			get:  func(o *ReportOptions) string { return o.Protocol },
+			want: constant.NacosKey,
+		},
+		{
+			name: "with-etcdv3",
+			opts: []ReportOption{WithEtcdV3()},
+			get:  func(o *ReportOptions) string { return o.Protocol },
+			want: constant.EtcdV3Key,
+		},
+		{
+			name: "with-protocol-generic",
+			opts: []ReportOption{WithProtocol("consul")},
+			get:  func(o *ReportOptions) string { return o.Protocol },
+			want: "consul",
+		},
+		{
+			name: "with-address",
+			opts: []ReportOption{WithAddress("127.0.0.1:2181")},
+			get:  func(o *ReportOptions) string { return o.Address },
+			want: "127.0.0.1:2181",
+		},
+		{
+			name: "with-username",
+			opts: []ReportOption{WithUsername("admin")},
+			get:  func(o *ReportOptions) string { return o.Username },
+			want: "admin",
+		},
+		{
+			name: "with-password",
+			opts: []ReportOption{WithPassword("secret")},
+			get:  func(o *ReportOptions) string { return o.Password },
+			want: "secret",
+		},
+		{
+			name: "with-timeout",
+			opts: []ReportOption{WithTimeout(5 * time.Second)},
+			get:  func(o *ReportOptions) string { return o.Timeout },
+			want: "5000",
+		},
+		{
+			name: "with-group",
+			opts: []ReportOption{WithGroup("test-group")},
+			get:  func(o *ReportOptions) string { return o.Group },
+			want: "test-group",
+		},
+		{
+			name: "with-namespace",
+			opts: []ReportOption{WithNamespace("test-ns")},
+			get:  func(o *ReportOptions) string { return o.Namespace },
+			want: "test-ns",
+		},
+		{
+			name: "with-params",
+			opts: []ReportOption{WithParams(map[string]string{"key": "value"})},
+			get:  func(o *ReportOptions) string { return o.Params["key"] },
+			want: "value",
+		},
 	}
 	for _, tt := range tests {
-		opts := defaultReportOptions()
-		tt.option(opts)
-		assert.Equal(t, tt.expected, opts.Protocol)
+		t.Run(tt.name, func(t *testing.T) {
+			o := NewReportOptions(tt.opts...)
+			assert.Equal(t, tt.want, tt.get(o))
+		})
 	}
 }
 
@@ -112,10 +217,16 @@ func TestWithAddressProtocolParsing(t *testing.T) {
 
 func TestReportOptionsToUrl(t *testing.T) {
 	// Valid options
-	opts := NewReportOptions(WithZookeeper(), WithAddress("127.0.0.1:2181"))
+	opts := NewReportOptions(
+		WithZookeeper(),
+		WithAddress("127.0.0.1:2181"),
+		WithParams(map[string]string{"key": "value"}),
+	)
 	url, err := opts.toUrl()
 	require.NoError(t, err)
 	assert.Equal(t, "zookeeper", url.Protocol)
+	assert.Equal(t, "zookeeper", url.GetParam("metadata", ""))
+	assert.Equal(t, "value", url.GetParam("key", ""))
 
 	// Invalid options - empty protocol
 	opts = NewReportOptions(WithAddress("127.0.0.1:2181"))

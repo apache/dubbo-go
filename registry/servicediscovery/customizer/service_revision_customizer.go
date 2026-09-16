@@ -37,6 +37,8 @@ func init() {
 	extension.AddCustomizers(&subscribedServicesRevisionMetadataCustomizer{})
 }
 
+// exportedServicesRevisionMetadataCustomizer writes a revision derived from the
+// exported service URLs of the registry-scoped metadata info.
 type exportedServicesRevisionMetadataCustomizer struct{}
 
 // GetPriority will return 1 so that it will be invoked in front of user defining Customizer
@@ -54,7 +56,9 @@ func (e *exportedServicesRevisionMetadataCustomizer) Customize(instance registry
 	}
 	metaInfo := metadata.GetMetadataInfo(registryId)
 	var urls []*common.URL
+	app := ""
 	if metaInfo != nil {
+		app = metaInfo.App
 		urls = metaInfo.GetExportedServiceURLs()
 	}
 	revision := resolveRevision(urls)
@@ -62,8 +66,11 @@ func (e *exportedServicesRevisionMetadataCustomizer) Customize(instance registry
 		revision = defaultRevision
 	}
 	instance.GetMetadata()[constant.ExportedServicesRevisionPropertyName] = revision
+	logger.Infof("[Metadata][Revision] calculated %s revision, app=%s registryId=%s urls=%d revision=%s", "exported", app, registryId, len(urls), revision)
 }
 
+// subscribedServicesRevisionMetadataCustomizer writes a revision derived from
+// the subscribed service URLs of the registry-scoped metadata info.
 type subscribedServicesRevisionMetadataCustomizer struct{}
 
 // GetPriority will return 2 so that it will be invoked in front of user defining Customizer
@@ -80,7 +87,9 @@ func (e *subscribedServicesRevisionMetadataCustomizer) Customize(instance regist
 	}
 	metaInfo := metadata.GetMetadataInfo(registryId)
 	var urls []*common.URL
+	app := ""
 	if metaInfo != nil {
+		app = metaInfo.App
 		urls = metaInfo.GetSubscribedURLs()
 	}
 	revision := resolveRevision(urls)
@@ -88,6 +97,7 @@ func (e *subscribedServicesRevisionMetadataCustomizer) Customize(instance regist
 		revision = defaultRevision
 	}
 	instance.GetMetadata()[constant.SubscribedServicesRevisionPropertyName] = revision
+	logger.Infof("[Metadata][Revision] calculated %s revision, app=%s registryId=%s urls=%d revision=%s", "subscribed", app, registryId, len(urls), revision)
 }
 
 // resolveRevision calculates a deterministic revision from the given URLs.

@@ -25,9 +25,9 @@ import (
 )
 
 import (
-	"github.com/golang/mock/gomock"
-
 	"github.com/stretchr/testify/assert"
+
+	"go.uber.org/mock/gomock"
 )
 
 import (
@@ -172,5 +172,5 @@ func TestBroadcastInvokeFailedNoServer(t *testing.T) {
 	result := clusterInvoker.Invoke(context.Background(), &invocation.RPCInvocation{})
 
 	// Assert that the result is the same as the failed result
-	assert.Equal(t, "Failed to invoke the method  of the service com.ikurento.user.UserProvider .No provider is available because can't connect server.", result.Error().Error())
+	assert.Equal(t, "failed to invoke the method  of the service com.ikurento.user.UserProvider .No provider is available because can't connect server", result.Error().Error())
 }

@@ -27,8 +27,6 @@ import (
 )
 
 import (
-	perrors "github.com/pkg/errors"
-
 	"github.com/polarismesh/polaris-go"
 	"github.com/polarismesh/polaris-go/api"
 	"github.com/polarismesh/polaris-go/pkg/config"
@@ -117,7 +115,7 @@ func InitSDKContext(url *common.URL) error {
 		for _, addr := range addresses {
 			ip, portStr, err := net.SplitHostPort(addr)
 			if err != nil {
-				rerr = perrors.WithMessagef(err, "split [%s] ", addr)
+				rerr = fmt.Errorf("split [%s] : %w", addr, err)
 			}
 			port, _ := strconv.Atoi(portStr)
 			serverConfigs = append(serverConfigs, fmt.Sprintf("%s:%d", ip, uint64(port)))

@@ -49,6 +49,7 @@ import (
  *      tps.interval: 3000
  *      tps.limit.strategy: "name of implementation" # method-level
  */
+//go:generate go run go.uber.org/mock/mockgen@v0.6.0 -copyright_file ../.github/mockgen-copyright.txt -source tps_limiter.go -destination tps/limiter/mock.go -package limiter
 type TpsLimiter interface {
 	IsAllowable(*common.URL, base.Invocation) bool
 }

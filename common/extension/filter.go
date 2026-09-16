@@ -18,7 +18,7 @@
 package extension
 
 import (
-	"github.com/pkg/errors"
+	"errors"
 )
 
 import (
@@ -43,6 +43,13 @@ func GetFilter(name string) (filter.Filter, bool) {
 		return nil, false
 	}
 	return creator(), true
+}
+
+// HasFilter reports whether a filter creator is registered for name without
+// constructing a filter instance.
+func HasFilter(name string) bool {
+	_, ok := filters.Get(name)
+	return ok
 }
 
 // SetRejectedExecutionHandler sets the RejectedExecutionHandler with @name

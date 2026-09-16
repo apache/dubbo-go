@@ -190,6 +190,9 @@ func (invoker *failbackClusterInvoker) Invoke(ctx context.Context, invocation pr
 	invoked := make([]protocolbase.Invoker, 0, len(invokers))
 	ivk := invoker.DoSelect(loadBalance, invocation, invokers, invoked)
 	// DO INVOKE
+	if ivk == nil {
+		return &result.RPCResult{Err: errors.New("invoker is nil")}
+	}
 	res := ivk.Invoke(ctx, invocation)
 	if res.Error() != nil {
 		timerTask := newRetryTimerTask(loadBalance, invocation, invokers, ivk, invoker)

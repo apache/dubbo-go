@@ -17,6 +17,13 @@
 
 package constant
 
-// TraceScopeName is unique name of trace used for the filter
-// Reference: https://github.com/open-telemetry/opentelemetry-specification/
-const TraceScopeName = "dubbo.apache.org/dubbo-go/v3/filter/otel/trace"
+const (
+	// TraceScopeName is unique name of trace used for the filter.
+	// Reference: https://github.com/open-telemetry/opentelemetry-specification/
+	TraceScopeName = "dubbo.apache.org/dubbo-go/v3/filter/otel/trace"
+
+	// DubboGroupKey identifies the Dubbo service group selected for an RPC.
+	DubboGroupKey = "dubbo.group"
+	// DubboVersionKey identifies the Dubbo service version selected for an RPC.
+	DubboVersionKey = "dubbo.version"
+)

@@ -18,20 +18,19 @@
 package client
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
+	"regexp"
 	"strconv"
 	"time"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-	gxstrings "github.com/dubbogo/gost/strings"
 
 	constant2 "github.com/dubbogo/triple/pkg/common/constant"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -232,7 +231,7 @@ func processUserSpecifiedURLs(ref *global.ReferenceConfig, cfgURL *common.URL) (
 		 The result of urlStrings is a string array: []string{"tri://localhost:10000", "registry://localhost:2181"}.
 	*/
 	var urls []*common.URL
-	urlStrings := gxstrings.RegSplit(ref.URL, "\\s*[;]+\\s*")
+	urlStrings := regexp.MustCompile(`\s*[;]+\s*`).Split(ref.URL, -1)
 
 	for _, urlStr := range urlStrings {
 		serviceURL, err := common.NewURL(urlStr, common.WithProtocol(ref.Protocol))
@@ -293,7 +292,7 @@ func buildInvoker(urls []*common.URL, ref *global.ReferenceConfig) (base.Invoker
 	)
 
 	if len(urls) == 0 {
-		return nil, perrors.New("invoker list is empty")
+		return nil, errors.New("invoker list is empty")
 	}
 
 	invokers := make([]base.Invoker, len(urls))

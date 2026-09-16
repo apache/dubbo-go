@@ -24,10 +24,6 @@ import (
 )
 
 import (
-	perrors "github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
@@ -65,7 +61,7 @@ func (ri *RestInvoker) Invoke(ctx context.Context, inv base.Invocation) result.R
 		err         error
 	)
 	if methodConfig == nil {
-		result.Err = perrors.Errorf("[RestInvoker] Rest methodConfig:%s is nil", rpcInv.MethodName())
+		result.Err = fmt.Errorf("[RestInvoker] Rest methodConfig:%s is nil", rpcInv.MethodName())
 		return &result
 	}
 	if pathParams, err = restStringMapTransform(methodConfig.PathParamsMap, rpcInv.Arguments()); err != nil {
@@ -104,7 +100,7 @@ func restStringMapTransform(paramsMap map[int]string, args []any) (map[string]st
 	resMap := make(map[string]string, len(paramsMap))
 	for k, v := range paramsMap {
 		if k >= len(args) || k < 0 {
-			return nil, perrors.Errorf("[Rest Invoke] Index %v is out of bundle", k)
+			return nil, fmt.Errorf("[Rest Invoke] Index %v is out of bundle", k)
 		}
 		resMap[v] = fmt.Sprint(args[k])
 	}
@@ -119,7 +115,7 @@ func getRestHttpHeader(methodConfig *config.RestMethodConfig, args []any) (http.
 	header.Set("Accept", methodConfig.Produces)
 	for k, v := range headersMap {
 		if k >= len(args) || k < 0 {
-			return nil, perrors.Errorf("[Rest Invoke] Index %v is out of bundle", k)
+			return nil, fmt.Errorf("[Rest Invoke] Index %v is out of bundle", k)
 		}
 		header.Set(v, fmt.Sprint(args[k]))
 	}

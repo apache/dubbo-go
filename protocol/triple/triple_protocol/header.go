@@ -309,6 +309,6 @@ func SendHeader(ctx context.Context, header http.Header) error {
 	if !ok {
 		return errorf(CodeInternal, "triple: handler outgoing context not found; SendHeader must be called within a Triple handler")
 	}
-	mergeHeaders(conn.RequestHeader(), header)
+	mergeHeaders(conn.ResponseHeader(), header)
 	return conn.Send(nil)
 }

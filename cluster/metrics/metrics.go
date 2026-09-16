@@ -18,7 +18,7 @@
 package metrics
 
 import (
-	"github.com/pkg/errors"
+	"errors"
 )
 
 import (
@@ -29,6 +29,7 @@ var (
 	ErrMetricsNotFound = errors.New("metrics not found")
 )
 
+//go:generate go run go.uber.org/mock/mockgen@v0.6.0 -copyright_file ../../.github/mockgen-copyright.txt -source metrics.go -destination mock_metrics.go -package metrics
 type Metrics interface {
 	// GetMethodMetrics returns method-level metrics, the format of key is "{instance key}.{invoker key}.{method key}.{key}"
 	// url is invoker's url, which contains information about instance and invoker.

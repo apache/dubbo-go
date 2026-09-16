@@ -26,10 +26,10 @@ import (
 import (
 	hessian "github.com/apache/dubbo-go-hessian2"
 
-	"github.com/golang/mock/gomock"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.uber.org/mock/gomock"
 
 	"google.golang.org/protobuf/types/known/structpb"
 )

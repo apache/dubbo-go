@@ -58,6 +58,18 @@ func (c *MetadataMetricCollector) start() {
 					c.handleMetadataSub(event)
 				case SubscribeServiceRt:
 					c.handleSubscribeService(event)
+				case MetadataMappingRegister:
+					c.handleMetadataMappingRegister(event)
+				case MetadataMappingGet:
+					c.handleMetadataMappingGet(event)
+				case MetadataMappingListen:
+					c.handleMetadataMappingListen(event)
+				case MetadataMappingRemove:
+					c.handleMetadataMappingRemove(event)
+				case MetadataCache:
+					c.handleMetadataCache(event)
+				case MetadataFetch:
+					c.handleMetadataFetch(event)
 				default:
 				}
 			}
@@ -88,9 +100,76 @@ func (c *MetadataMetricCollector) handleSubscribeService(event *MetadataMetricEv
 	c.R.Rt(metrics.NewMetricId(subscribeServiceRt, level), &metrics.RtOpts{}).Observe(event.CostMs())
 }
 
+func (c *MetadataMetricCollector) handleMetadataMappingRegister(event *MetadataMetricEvent) {
+	level := newMetadataMappingMetricLevel(event.Attachment)
+	c.StateCount(metadataMappingRegisterNum, metadataMappingRegisterSucceed, metadataMappingRegisterFailed, level, event.Succ)
+	c.R.Rt(metrics.NewMetricId(metadataMappingRegisterRt, level), &metrics.RtOpts{}).Observe(event.CostMs())
+}
+
+func (c *MetadataMetricCollector) handleMetadataMappingGet(event *MetadataMetricEvent) {
+	level := newMetadataMappingMetricLevel(event.Attachment)
+	c.StateCount(metadataMappingGetNum, metadataMappingGetSucceed, metadataMappingGetFailed, level, event.Succ && !event.Partial)
+	c.R.Rt(metrics.NewMetricId(metadataMappingGetRt, level), &metrics.RtOpts{}).Observe(event.CostMs())
+}
+
+func (c *MetadataMetricCollector) handleMetadataMappingListen(event *MetadataMetricEvent) {
+	level := newMetadataMappingMetricLevel(event.Attachment)
+	c.StateCount(metadataMappingListenNum, metadataMappingListenSucceed, metadataMappingListenFailed, level, event.Succ && !event.Partial)
+	c.R.Rt(metrics.NewMetricId(metadataMappingListenRt, level), &metrics.RtOpts{}).Observe(event.CostMs())
+}
+
+func (c *MetadataMetricCollector) handleMetadataMappingRemove(event *MetadataMetricEvent) {
+	level := newMetadataMappingMetricLevel(event.Attachment)
+	c.StateCount(metadataMappingRemoveNum, metadataMappingRemoveSucceed, metadataMappingRemoveFailed, level, event.Succ)
+	c.R.Rt(metrics.NewMetricId(metadataMappingRemoveRt, level), &metrics.RtOpts{}).Observe(event.CostMs())
+}
+
+func (c *MetadataMetricCollector) handleMetadataCache(event *MetadataMetricEvent) {
+	labels := metrics.GetApplicationLevel().Tags()
+	labels[TagProviderApp] = event.Attachment[TagProviderApp]
+	c.R.Counter(metrics.NewMetricIdByLabels(metadataCacheNum, labels)).Inc()
+	if event.Succ {
+		c.R.Counter(metrics.NewMetricIdByLabels(metadataCacheHit, labels)).Inc()
+	} else {
+		c.R.Counter(metrics.NewMetricIdByLabels(metadataCacheMiss, labels)).Inc()
+	}
+}
+
+func (c *MetadataMetricCollector) handleMetadataFetch(event *MetadataMetricEvent) {
+	labels := metrics.GetApplicationLevel().Tags()
+	labels[TagProviderApp] = event.Attachment[TagProviderApp]
+	labels[TagSource] = event.Attachment[TagSource]
+	labels[TagStorageType] = event.Attachment[TagStorageType]
+	labels[TagResult] = event.Attachment[TagResult]
+	c.R.Counter(metrics.NewMetricIdByLabels(metadataFetchNum, labels)).Inc()
+}
+
+type metadataMappingMetricLevel struct {
+	*metrics.ApplicationMetricLevel
+	attachment map[string]string
+}
+
+func newMetadataMappingMetricLevel(attachment map[string]string) metadataMappingMetricLevel {
+	return metadataMappingMetricLevel{
+		ApplicationMetricLevel: metrics.GetApplicationLevel(),
+		attachment:             attachment,
+	}
+}
+
+func (m metadataMappingMetricLevel) Tags() map[string]string {
+	tags := m.ApplicationMetricLevel.Tags()
+	tags[constant.TagInterface] = m.attachment[constant.InterfaceKey]
+	tags[constant.TagGroup] = m.attachment[constant.GroupKey]
+	if app := m.attachment[constant.ApplicationKey]; app != "" {
+		tags[constant.TagApplicationName] = app
+	}
+	return tags
+}
+
 type MetadataMetricEvent struct {
 	Name       MetricName
 	Succ       bool
+	Partial    bool
 	Start      time.Time
 	End        time.Time
 	Attachment map[string]string

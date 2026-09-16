@@ -18,16 +18,13 @@
 package chain
 
 import (
+	"fmt"
 	"sort"
 	"sync"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
-
-	"go.uber.org/atomic"
 )
 
 import (
@@ -39,7 +36,9 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
-// RouterChain Router chain
+// RouterChain first selects invokers for the requested service, then applies
+// priority routers in ascending priority order. Each router receives the
+// invokers returned by the previous router.
 type RouterChain struct {
 	// Full list of addresses from registry, classified by method name.
 	invokers []base.Invoker
@@ -205,7 +204,7 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 
 	routerFactories := extension.GetRouterFactories()
 	if len(routerFactories) == 0 {
-		return nil, perrors.Errorf("No routerFactory exists, create one please")
+		return nil, fmt.Errorf("no routerFactory exists, create one please")
 	}
 
 	routers := make([]router.PriorityRouter, 0, len(routerFactories))
@@ -225,9 +224,6 @@ func NewRouterChain(url *common.URL) (*RouterChain, error) {
 	copy(newRouters, routers)
 
 	sortRouter(newRouters)
-
-	routerNeedsUpdateInit := atomic.Bool{}
-	routerNeedsUpdateInit.Store(false)
 
 	chain := &RouterChain{
 		routers:        newRouters,

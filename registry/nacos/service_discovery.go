@@ -117,7 +117,7 @@ func (n *nacosServiceDiscovery) Register(instance registry.ServiceInstance) erro
 	brins := n.toBatchRegisterInstances(n.serviceNameInstancesMap[instSrvName])
 	ok, err := n.namingClient.Client().BatchRegisterInstance(brins)
 	if err != nil || !ok {
-		return perrors.Errorf("register nacos instances failed, err:%+v", err)
+		return fmt.Errorf("register nacos instances failed, err:%+v", err)
 	}
 	n.registryInstances = append(n.registryInstances, instance) // all_instances
 	return nil
@@ -140,7 +140,7 @@ func (n *nacosServiceDiscovery) Update(instance registry.ServiceInstance) error 
 func (n *nacosServiceDiscovery) Unregister(instance registry.ServiceInstance) error {
 	ok, err := n.namingClient.Client().DeregisterInstance(n.toDeregisterInstance(instance))
 	if err != nil || !ok {
-		return perrors.WithMessage(err, "Could not unregister the instance. "+instance.GetServiceName())
+		return fmt.Errorf("Could not unregister the instance. "+instance.GetServiceName()+": %w", err)
 	}
 	return nil
 }
@@ -425,7 +425,7 @@ func newNacosServiceDiscovery(url *common.URL) (registry.ServiceDiscovery, error
 	discoveryURL.Password = url.Password
 	client, err := nacos.NewNacosClientByURL(discoveryURL)
 	if err != nil {
-		return nil, perrors.WithMessage(err, "create nacos namingClient failed.")
+		return nil, fmt.Errorf("create nacos namingClient failed.: %w", err)
 	}
 
 	descriptor := fmt.Sprintf("nacos-service-discovery[%s]", discoveryURL.Location)

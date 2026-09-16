@@ -18,8 +18,11 @@
 package getty
 
 import (
+	"context"
+	"errors"
 	"math/rand"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -28,11 +31,8 @@ import (
 
 	"github.com/dubbogo/gost/log/logger"
 	gxsync "github.com/dubbogo/gost/sync"
-	gxtime "github.com/dubbogo/gost/time"
 
 	perrors "github.com/pkg/errors"
-
-	"go.uber.org/atomic"
 
 	"go.yaml.in/yaml/v4"
 )
@@ -47,9 +47,9 @@ import (
 )
 
 var (
-	errSessionNotExist   = perrors.New("session not exist")
-	errClientClosed      = perrors.New("client closed")
-	errClientReadTimeout = perrors.New("maybe the client read timeout or fail to decode tcp stream in Writer.Write")
+	errSessionNotExist   = errors.New("session not exist")
+	errClientClosed      = errors.New("client closed")
+	errClientReadTimeout = errors.New("maybe the client read timeout or fail to decode tcp stream in Writer.Write")
 
 	clientConf = GetDefaultClientConfig()
 
@@ -215,10 +215,21 @@ func (c *Client) Close() {
 
 // Request send request
 func (c *Client) Request(request *remoting.Request, timeout time.Duration, response *remoting.PendingResponse) error {
+	return c.RequestContext(context.Background(), request, timeout, response)
+}
+
+// RequestContext sends a request and stops waiting when ctx is canceled.
+func (c *Client) RequestContext(ctx context.Context, request *remoting.Request, timeout time.Duration, response *remoting.PendingResponse) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if timeout <= 0 {
 		timeout = c.opts.RequestTimeout
 	}
-	_, session, err := c.selectSession(c.addr)
+	rpcClient, session, err := c.selectSession(c.addr)
 	if err != nil {
 		return perrors.WithStack(err)
 	}
@@ -241,11 +252,18 @@ func (c *Client) Request(request *remoting.Request, timeout time.Duration, respo
 		return nil
 	}
 
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
 	select {
-	case <-gxtime.After(timeout):
+	case <-timer.C:
+		remoting.RemovePendingResponse(remoting.SequenceType(request.ID))
+		rpcClient.removeSession(session)
+		go session.Close()
 		return perrors.WithStack(errClientReadTimeout)
 	case <-response.Done:
 		err = response.Err
+	case <-ctx.Done():
+		return perrors.WithStack(ctx.Err())
 	}
 
 	return perrors.WithStack(err)

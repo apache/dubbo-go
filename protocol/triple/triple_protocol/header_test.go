@@ -165,26 +165,29 @@ func TestAppendToOutgoingContextPanicsOnOddKV(t *testing.T) {
 	})
 }
 
-// mockHandlerConn is a minimal StreamingHandlerConn for testing SetHeader and
-// SetTrailer.
+// mockHandlerConn is a minimal StreamingHandlerConn for testing SetHeader,
+// SendHeader and SetTrailer.
 type mockHandlerConn struct {
 	responseHdr  http.Header
 	responseTrlr http.Header
+	requestHdr   http.Header
+	sendCalls    int
 }
 
 func newMockHandlerConn() *mockHandlerConn {
 	return &mockHandlerConn{
 		responseHdr:  make(http.Header),
 		responseTrlr: make(http.Header),
+		requestHdr:   make(http.Header),
 	}
 }
 
 func (m *mockHandlerConn) Spec() Spec                    { return Spec{} }
 func (m *mockHandlerConn) Peer() Peer                    { return Peer{} }
 func (m *mockHandlerConn) Receive(any) error             { return nil }
-func (m *mockHandlerConn) RequestHeader() http.Header    { return nil }
+func (m *mockHandlerConn) RequestHeader() http.Header    { return m.requestHdr }
 func (m *mockHandlerConn) ExportableHeader() http.Header { return nil }
-func (m *mockHandlerConn) Send(any) error                { return nil }
+func (m *mockHandlerConn) Send(any) error                { m.sendCalls++; return nil }
 func (m *mockHandlerConn) ResponseHeader() http.Header   { return m.responseHdr }
 func (m *mockHandlerConn) ResponseTrailer() http.Header  { return m.responseTrlr }
 
@@ -208,6 +211,33 @@ func TestSetTrailer(t *testing.T) {
 	err := SetTrailer(ctx, http.Header{"X-Trailer": []string{"end"}})
 	assert.Nil(t, err)
 	assert.Equal(t, conn.responseTrlr.Get("X-Trailer"), "end")
+}
+
+// TestSendHeader verifies that SendHeader merges headers into the response
+// header buffer (not the request header) and triggers a flush via Send.
+func TestSendHeader(t *testing.T) {
+	t.Parallel()
+	conn := newMockHandlerConn()
+	ctx := context.WithValue(context.Background(), handlerOutgoingKey{}, conn)
+	err := SendHeader(ctx, http.Header{"X-Custom": []string{"value"}})
+	assert.Nil(t, err)
+	// Headers must land in the response header buffer.
+	assert.Equal(t, conn.responseHdr.Get("X-Custom"), "value")
+	// The request header must not be polluted.
+	assert.Equal(t, len(conn.requestHdr), 0)
+	// Send must be called exactly once to flush the headers.
+	assert.Equal(t, conn.sendCalls, 1)
+}
+
+// TestSendHeaderOutsideHandler verifies that SendHeader returns a CodeInternal
+// error when called outside a Triple handler context.
+func TestSendHeaderOutsideHandler(t *testing.T) {
+	t.Parallel()
+	err := SendHeader(context.Background(), http.Header{"X-Custom": []string{"value"}})
+	assert.NotNil(t, err)
+	tripleErr, ok := asError(err)
+	assert.True(t, ok)
+	assert.Equal(t, tripleErr.Code(), CodeInternal)
 }
 
 // TestSetHeaderOutsideHandler verifies that SetHeader returns a CodeInternal

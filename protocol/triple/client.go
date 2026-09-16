@@ -181,6 +181,19 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	}
 	cliOpts = append(cliOpts, clientKeepAliveOpts...)
 
+	// The unary fast path is on by default. It routes unary calls through
+	// unaryFastPathCall on both the gRPC and the Triple (connect) wire
+	// formats; streaming calls always use duplexHTTPCall.
+	// A nil UnaryFastPath means the field was not explicitly set, so the
+	// default (enabled) applies.
+	if tripleConf != nil {
+		if tripleConf.UnaryFastPath == nil || *tripleConf.UnaryFastPath {
+			cliOpts = append(cliOpts, tri.WithUnaryFastPath())
+		} else {
+			cliOpts = append(cliOpts, tri.WithoutUnaryFastPath())
+		}
+	}
+
 	// Build the HTTP transport used by the Triple client.
 	var transport http.RoundTripper
 
@@ -195,7 +208,9 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 	switch callProtocol {
 	case constant.CallHTTP:
 		// Backward compatibility path for callers that still request HTTP/1.1.
-		// Triple itself requires HTTP/2 or HTTP/3 trailer support.
+		// Triple itself requires HTTP/2 or HTTP/3 trailer support, so HTTP/1.1
+		// callers use the Triple (connect) protocol, which does not rely on
+		// trailers.
 		transport = &http.Transport{
 			TLSClientConfig: cfg,
 		}

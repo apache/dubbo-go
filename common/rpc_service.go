@@ -19,6 +19,7 @@ package common
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"strings"
 	"sync"
@@ -28,8 +29,6 @@ import (
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -224,17 +223,17 @@ func (sm *serviceMap) Register(interfaceName, protocol, group, version string, s
 	if sname == "" {
 		s := "no service name for type " + s.svcType.String()
 		logger.Errorf("[RPCService] %s", s)
-		return "", perrors.New(s)
+		return "", errors.New(s)
 	}
 	if !isExported(sname) {
 		s := "type " + sname + " is not exported"
 		logger.Errorf("[RPCService] %s", s)
-		return "", perrors.New(s)
+		return "", errors.New(s)
 	}
 
 	sname = ServiceKey(interfaceName, group, version)
 	if server := sm.GetService(protocol, interfaceName, group, version); server != nil {
-		return "", perrors.New("service already defined: " + sname)
+		return "", errors.New("service already defined: " + sname)
 	}
 	s.name = sname
 	s.methods = make(map[string]*MethodType)
@@ -246,7 +245,7 @@ func (sm *serviceMap) Register(interfaceName, protocol, group, version string, s
 	if len(s.methods) == 0 {
 		s := "type " + sname + " has no exported methods of suitable type"
 		logger.Errorf("[RPCService] %s", s)
-		return "", perrors.New(s)
+		return "", errors.New(s)
 	}
 	sm.mutex.Lock()
 	sm.serviceMap[protocol][s.name] = s
@@ -259,7 +258,7 @@ func (sm *serviceMap) Register(interfaceName, protocol, group, version string, s
 // UnRegister cancels a service by @interfaceName, @protocol and @serviceId
 func (sm *serviceMap) UnRegister(interfaceName, protocol, serviceKey string) error {
 	if protocol == "" || serviceKey == "" {
-		return perrors.New("protocol or ServiceKey is nil")
+		return errors.New("protocol or ServiceKey is nil")
 	}
 
 	var (
@@ -275,15 +274,15 @@ func (sm *serviceMap) UnRegister(interfaceName, protocol, serviceKey string) err
 		defer sm.mutex.RUnlock()
 		svcs, ok = sm.serviceMap[protocol]
 		if !ok {
-			return perrors.New("no services for " + protocol)
+			return errors.New("no services for " + protocol)
 		}
 		s, ok := svcs[serviceKey]
 		if !ok {
-			return perrors.New("no service for " + serviceKey)
+			return errors.New("no service for " + serviceKey)
 		}
 		svrs, ok = sm.interfaceMap[interfaceName]
 		if !ok {
-			return perrors.New("no service for " + interfaceName)
+			return errors.New("no service for " + interfaceName)
 		}
 		for i, svr := range svrs {
 			if svr == s {

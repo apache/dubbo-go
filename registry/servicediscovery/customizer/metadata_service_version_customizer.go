@@ -35,7 +35,8 @@ func init() {
 	extension.AddCustomizers(&MetadtaServiceVersionCustomizer{})
 }
 
-// MetadtaServiceVersionCustomizer will try to add meta-v key to instance metadata
+// MetadtaServiceVersionCustomizer writes the metadata service version into the
+// instance metadata according to the protocol of the metadata service URL.
 type MetadtaServiceVersionCustomizer struct {
 }
 
@@ -44,7 +45,12 @@ func (p *MetadtaServiceVersionCustomizer) GetPriority() int {
 	return 0
 }
 
-// Customize put the the string like [{"protocol": "dubbo", "port": 123}] into instance's metadata
+// Customize writes the metadata service version into the instance metadata
+// under MetadataVersion ("meta-v"). It only runs when the metadata storage
+// type is local. The protocol is read from the params JSON stored at
+// MetadataServiceURLParamsPropertyName: tri writes v2, any other protocol
+// (including empty) writes v1. An unparsable params JSON leaves the metadata
+// unchanged, otherwise the version overwrites the previous value.
 func (p *MetadtaServiceVersionCustomizer) Customize(instance registry.ServiceInstance) {
 	if instance.GetMetadata()[constant.MetadataStorageTypePropertyName] != constant.DefaultMetadataStorageType {
 		return
