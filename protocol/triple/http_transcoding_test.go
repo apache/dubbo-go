@@ -104,11 +104,15 @@ func TestHTTPTranscodingHandlerSupportsBodyPathQueryAndAdditionalBinding(t *test
 	assert.Equal(t, "alice", lastRequest.ProtoReflect().Get(requestFields.ByName("name")).String())
 
 	get := routes[1]
-	getRequest := httptest.NewRequest(http.MethodGet, "/v1/books/alice?count=9", nil)
+	getRequest := httptest.NewRequest(http.MethodGet, "/v1/books/alice?count=9&tags=one&tags=two&state=READY", nil)
 	getResponse := httptest.NewRecorder()
 	get.Handler(getResponse, getRequest, map[string]string{"name": "alice"})
 	assert.Equal(t, http.StatusOK, getResponse.Code)
 	assert.Contains(t, getResponse.Body.String(), `"message":"alice::9"`)
+	request := lastRequest.ProtoReflect()
+	tags := request.Get(requestFields.ByName("tags")).List()
+	assert.Equal(t, 2, tags.Len())
+	assert.Equal(t, protoreflect.EnumNumber(1), request.Get(requestFields.ByName("state")).Enum())
 }
 
 func TestHTTPTranscodingHandlerRejectsUnsupportedBodyAndMapsRPCError(t *testing.T) {
@@ -218,6 +222,8 @@ func registerHTTPTranscodingTestDescriptor(t *testing.T) (protoreflect.MethodDes
 					httpTestField("name", 1, descriptorpb.FieldDescriptorProto_TYPE_STRING, "", false),
 					httpTestField("book", 2, descriptorpb.FieldDescriptorProto_TYPE_MESSAGE, ".triple.http.test.Book", false),
 					httpTestField("count", 3, descriptorpb.FieldDescriptorProto_TYPE_INT32, "", false),
+					httpTestField("tags", 4, descriptorpb.FieldDescriptorProto_TYPE_STRING, "", true),
+					httpTestField("state", 5, descriptorpb.FieldDescriptorProto_TYPE_ENUM, ".triple.http.test.State", false),
 				},
 			},
 			{
@@ -228,6 +234,13 @@ func registerHTTPTranscodingTestDescriptor(t *testing.T) (protoreflect.MethodDes
 				},
 			},
 		},
+		EnumType: []*descriptorpb.EnumDescriptorProto{{
+			Name: proto.String("State"),
+			Value: []*descriptorpb.EnumValueDescriptorProto{
+				{Name: proto.String("UNKNOWN"), Number: proto.Int32(0)},
+				{Name: proto.String("READY"), Number: proto.Int32(1)},
+			},
+		}},
 		Service: []*descriptorpb.ServiceDescriptorProto{{
 			Name: proto.String("Library"),
 			Method: []*descriptorpb.MethodDescriptorProto{{
@@ -240,6 +253,7 @@ func registerHTTPTranscodingTestDescriptor(t *testing.T) (protoreflect.MethodDes
 	}, protoregistry.GlobalFiles)
 	require.NoError(t, err)
 	require.NoError(t, protoregistry.GlobalFiles.RegisterFile(file))
+	require.NoError(t, protoregistry.GlobalTypes.RegisterEnum(dynamicpb.NewEnumType(file.Enums().Get(0))))
 	service := file.Services().Get(0)
 	return service.Methods().Get(0), file.Messages().ByName("Request"), file.Messages().ByName("Response")
 }

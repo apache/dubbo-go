@@ -351,7 +351,13 @@ func extractHTTPJSONField(raw []byte, descriptor protoreflect.MessageDescriptor,
 }
 
 func defaultHTTPJSONField(field protoreflect.FieldDescriptor) []byte {
-	if field.IsList() || field.IsMap() || field.Message() != nil {
+	if field.IsMap() {
+		return []byte("{}")
+	}
+	if field.IsList() {
+		return []byte("[]")
+	}
+	if field.Message() != nil {
 		return []byte("null")
 	}
 	switch field.Kind() {
