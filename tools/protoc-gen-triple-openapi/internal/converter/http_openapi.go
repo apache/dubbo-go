@@ -155,7 +155,7 @@ func staticHTTPFieldSchema(message protoreflect.MessageDescriptor, path string) 
 }
 
 func staticHTTPResponseSchema(message protoreflect.MessageDescriptor, path string) (*base.SchemaProxy, error) {
-	if path == "" {
+	if path == "" || path == "*" {
 		return base.CreateSchemaProxyRef("#/components/schemas/" + string(message.FullName())), nil
 	}
 	return staticHTTPFieldSchema(message, path)
@@ -256,6 +256,12 @@ func staticWellKnownMessage(message protoreflect.MessageDescriptor) bool {
 	}
 	switch message.FullName() {
 	case "google.protobuf.Timestamp", "google.protobuf.Duration", "google.protobuf.Any", "google.protobuf.Struct", "google.protobuf.Value", "google.protobuf.ListValue", "google.protobuf.Empty":
+		return true
+	case "google.protobuf.DoubleValue", "google.protobuf.FloatValue",
+		"google.protobuf.Int64Value", "google.protobuf.Int32Value",
+		"google.protobuf.UInt64Value", "google.protobuf.UInt32Value",
+		"google.protobuf.BoolValue", "google.protobuf.StringValue",
+		"google.protobuf.BytesValue", "google.protobuf.FieldMask":
 		return true
 	default:
 		return false

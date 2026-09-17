@@ -32,6 +32,9 @@ import (
 )
 
 func messageToSchema(tt protoreflect.MessageDescriptor) (string, *base.Schema) {
+	if schema := wellKnownMessageSchema(tt); schema != nil {
+		return string(tt.FullName()), schema
+	}
 	s := &base.Schema{
 		Title:       string(tt.Name()),
 		Description: ProtoDescription(tt),
@@ -102,7 +105,13 @@ func fieldToSchema(parent *base.SchemaProxy, tt protoreflect.FieldDescriptor) *b
 		root.Type = []string{"object"}
 		value := tt.MapValue()
 		switch value.Kind() {
-		case protoreflect.MessageKind, protoreflect.EnumKind:
+		case protoreflect.MessageKind:
+			if messageSchema := wellKnownMessageSchema(value.Message()); messageSchema != nil {
+				root.AdditionalProperties = &base.DynamicValue[*base.SchemaProxy, bool]{A: base.CreateSchemaProxy(messageSchema)}
+			} else {
+				root.AdditionalProperties = &base.DynamicValue[*base.SchemaProxy, bool]{A: ReferenceFieldToSchema(parent, value)}
+			}
+		case protoreflect.EnumKind:
 			root.AdditionalProperties = &base.DynamicValue[*base.SchemaProxy, bool]{A: ReferenceFieldToSchema(parent, value)}
 		default:
 			root.AdditionalProperties = &base.DynamicValue[*base.SchemaProxy, bool]{A: base.CreateSchemaProxy(ScalarFieldToSchema(parent, value, true))}
@@ -113,7 +122,11 @@ func fieldToSchema(parent *base.SchemaProxy, tt protoreflect.FieldDescriptor) *b
 		var itemSchema *base.SchemaProxy
 		switch tt.Kind() {
 		case protoreflect.MessageKind:
-			itemSchema = ReferenceFieldToSchema(parent, tt)
+			if messageSchema := wellKnownMessageSchema(tt.Message()); messageSchema != nil {
+				itemSchema = base.CreateSchemaProxy(messageSchema)
+			} else {
+				itemSchema = ReferenceFieldToSchema(parent, tt)
+			}
 		case protoreflect.EnumKind:
 			itemSchema = ReferenceFieldToSchema(parent, tt)
 		default:
@@ -129,7 +142,21 @@ func fieldToSchema(parent *base.SchemaProxy, tt protoreflect.FieldDescriptor) *b
 		return base.CreateSchemaProxy(s)
 	} else {
 		switch tt.Kind() {
-		case protoreflect.MessageKind, protoreflect.EnumKind:
+		case protoreflect.MessageKind:
+			if messageSchema := wellKnownMessageSchema(tt.Message()); messageSchema != nil {
+				messageSchema.ParentProxy = parent
+				if messageSchema.Title == "" {
+					messageSchema.Title = string(tt.Name())
+				}
+				return base.CreateSchemaProxy(messageSchema)
+			}
+			msg := ScalarFieldToSchema(parent, tt, false)
+			ref := ReferenceFieldToSchema(parent, tt)
+			extensions := orderedmap.New[string, *yaml.Node]()
+			extensions.Set("$ref", CreateStringNode(ref.GetReference()))
+			msg.Extensions = extensions
+			return base.CreateSchemaProxy(msg)
+		case protoreflect.EnumKind:
 			msg := ScalarFieldToSchema(parent, tt, false)
 			ref := ReferenceFieldToSchema(parent, tt)
 			extensions := orderedmap.New[string, *yaml.Node]()
@@ -141,6 +168,58 @@ func fieldToSchema(parent *base.SchemaProxy, tt protoreflect.FieldDescriptor) *b
 		s := ScalarFieldToSchema(parent, tt, false)
 		return base.CreateSchemaProxy(s)
 	}
+}
+
+func wellKnownMessageSchema(tt protoreflect.MessageDescriptor) *base.Schema {
+	if tt == nil {
+		return nil
+	}
+	schema := &base.Schema{Title: string(tt.Name())}
+	switch tt.FullName() {
+	case "google.protobuf.Timestamp":
+		schema.Type = []string{"string"}
+		schema.Format = "date-time"
+	case "google.protobuf.Duration":
+		schema.Type = []string{"string"}
+		schema.Format = "duration"
+	case "google.protobuf.DoubleValue":
+		schema.Type = []string{"number"}
+		schema.Format = "double"
+	case "google.protobuf.FloatValue":
+		schema.Type = []string{"number"}
+		schema.Format = "float"
+	case "google.protobuf.Int64Value":
+		schema.Type = []string{"integer", "string"}
+		schema.Format = "int64"
+	case "google.protobuf.Int32Value":
+		schema.Type = []string{"integer"}
+		schema.Format = "int32"
+	case "google.protobuf.UInt64Value":
+		schema.Type = []string{"integer", "string"}
+		schema.Format = "int64"
+	case "google.protobuf.UInt32Value":
+		schema.Type = []string{"integer"}
+	case "google.protobuf.BoolValue":
+		schema.Type = []string{"boolean"}
+	case "google.protobuf.StringValue":
+		schema.Type = []string{"string"}
+	case "google.protobuf.BytesValue":
+		schema.Type = []string{"string"}
+		schema.Format = "byte"
+	case "google.protobuf.FieldMask":
+		schema.Type = []string{"string"}
+	case "google.protobuf.ListValue":
+		schema.Type = []string{"array"}
+		schema.Items = &base.DynamicValue[*base.SchemaProxy, bool]{A: base.CreateSchemaProxy(&base.Schema{})}
+	case "google.protobuf.Struct":
+		schema.Type = []string{"object"}
+		schema.AdditionalProperties = &base.DynamicValue[*base.SchemaProxy, bool]{A: base.CreateSchemaProxy(&base.Schema{})}
+	case "google.protobuf.Value", "google.protobuf.Any", "google.protobuf.Empty":
+		schema.Type = []string{"object"}
+	default:
+		return nil
+	}
+	return schema
 }
 
 func ScalarFieldToSchema(parent *base.SchemaProxy, tt protoreflect.FieldDescriptor, inContainer bool) *base.Schema {

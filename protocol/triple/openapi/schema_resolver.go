@@ -92,6 +92,9 @@ func (r *SchemaResolver) resolveType(t reflect.Type) *model.Schema {
 	for t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
+	if schema := wellKnownTypeSchema(t); schema != nil {
+		return schema
+	}
 
 	switch t.Kind() {
 	case reflect.String:
@@ -136,6 +139,48 @@ func (r *SchemaResolver) resolveType(t reflect.Type) *model.Schema {
 		return model.NewSchema().SetType(model.SchemaTypeObject)
 	default:
 		return model.NewSchema().SetType(model.SchemaTypeObject)
+	}
+}
+
+func wellKnownTypeSchema(t reflect.Type) *model.Schema {
+	if t == nil {
+		return nil
+	}
+	switch t.PkgPath() + "." + t.Name() {
+	case "google.golang.org/protobuf/types/known/timestamppb.Timestamp":
+		return model.NewSchema().SetType(model.SchemaTypeString).SetFormat("date-time")
+	case "google.golang.org/protobuf/types/known/durationpb.Duration":
+		return model.NewSchema().SetType(model.SchemaTypeString).SetFormat("duration")
+	case "google.golang.org/protobuf/types/known/wrapperspb.BoolValue":
+		return model.NewSchema().SetType(model.SchemaTypeBoolean)
+	case "google.golang.org/protobuf/types/known/wrapperspb.BytesValue":
+		return model.NewSchema().SetType(model.SchemaTypeString).SetFormat("byte")
+	case "google.golang.org/protobuf/types/known/wrapperspb.DoubleValue":
+		return model.NewSchema().SetType(model.SchemaTypeNumber).SetFormat("double")
+	case "google.golang.org/protobuf/types/known/wrapperspb.FloatValue":
+		return model.NewSchema().SetType(model.SchemaTypeNumber).SetFormat("float")
+	case "google.golang.org/protobuf/types/known/wrapperspb.Int32Value":
+		return model.NewSchema().SetType(model.SchemaTypeInteger).SetFormat("int32")
+	case "google.golang.org/protobuf/types/known/wrapperspb.Int64Value":
+		return model.NewSchema().SetType(model.SchemaTypeInteger).SetFormat("int64")
+	case "google.golang.org/protobuf/types/known/wrapperspb.StringValue":
+		return model.NewSchema().SetType(model.SchemaTypeString)
+	case "google.golang.org/protobuf/types/known/wrapperspb.UInt32Value":
+		return model.NewSchema().SetType(model.SchemaTypeInteger).SetFormat("int32")
+	case "google.golang.org/protobuf/types/known/wrapperspb.UInt64Value":
+		return model.NewSchema().SetType(model.SchemaTypeInteger).SetFormat("int64")
+	case "google.golang.org/protobuf/types/known/fieldmaskpb.FieldMask":
+		return model.NewSchema().SetType(model.SchemaTypeString)
+	case "google.golang.org/protobuf/types/known/structpb.ListValue":
+		return model.NewSchema().SetType(model.SchemaTypeArray).SetItems(model.NewSchema())
+	case "google.golang.org/protobuf/types/known/structpb.Struct":
+		return model.NewSchema().SetType(model.SchemaTypeObject).SetAdditionalProperties(model.NewSchema())
+	case "google.golang.org/protobuf/types/known/structpb.Value", "google.golang.org/protobuf/types/known/anypb.Any":
+		return model.NewSchema().SetType(model.SchemaTypeObject)
+	case "google.golang.org/protobuf/types/known/emptypb.Empty":
+		return model.NewSchema().SetType(model.SchemaTypeObject)
+	default:
+		return nil
 	}
 }
 

@@ -26,6 +26,9 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/openapi/model"
+
+	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // --- test types for schema resolution ---
@@ -52,6 +55,26 @@ type StructWithEmbedded struct {
 
 type StructWithSlice struct {
 	Items []string `json:"items"`
+}
+
+func TestSchemaResolver_ProtobufWellKnownTypesUseJSONSchemas(t *testing.T) {
+	r := NewSchemaResolver(global.DefaultOpenAPIConfig())
+	for _, test := range []struct {
+		name       string
+		typeOf     reflect.Type
+		schemaType model.SchemaType
+		format     string
+	}{
+		{name: "timestamp", typeOf: reflect.TypeOf(timestamppb.Timestamp{}), schemaType: model.SchemaTypeString, format: "date-time"},
+		{name: "duration", typeOf: reflect.TypeOf(durationpb.Duration{}), schemaType: model.SchemaTypeString, format: "duration"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			schema := r.Resolve(test.typeOf)
+			if schema.Type != test.schemaType || schema.Format != test.format {
+				t.Fatalf("schema = %#v", schema)
+			}
+		})
+	}
 }
 
 type StructWithMap struct {
