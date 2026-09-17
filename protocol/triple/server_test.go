@@ -1057,7 +1057,7 @@ func TestWrapTripleResponse(t *testing.T) {
 
 func TestAppendTripleOutgoingAttachments(t *testing.T) {
 	ctx := tri.NewOutgoingContext(context.Background(), make(http.Header))
-	appendTripleOutgoingAttachments(ctx, map[string]any{
+	ctx = appendTripleOutgoingAttachments(ctx, map[string]any{
 		"one":   "1",
 		"multi": []string{"a", "b"},
 		"omit":  100,

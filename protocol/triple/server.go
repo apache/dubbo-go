@@ -561,7 +561,10 @@ func (s *Server) registerUnaryMethodHandler(procedure string, m common.MethodInf
 		m.ReqInitFunc,
 		func(ctx context.Context, req *tri.Request) (*tri.Response, error) {
 			triResp, attachments, err := invokeUnaryRequest(ctx, m, invoker, req.Msg, req.Header())
-			appendTripleOutgoingAttachments(ctx, attachments)
+			// The handler adapter extracts outgoing context values as response
+			// trailers. Keep this propagation on the canonical Triple path while
+			// the HTTP transcoding path exposes the same attachments as headers.
+			ctx = appendTripleOutgoingAttachments(ctx, attachments)
 			return triResp, err
 		},
 		opts...,
@@ -652,17 +655,38 @@ func wrapTripleResponse(result any) *tri.Response {
 	return tri.NewResponse([]any{result})
 }
 
-func appendTripleOutgoingAttachments(ctx context.Context, attachments map[string]any) {
+func appendTripleOutgoingAttachments(ctx context.Context, attachments map[string]any) context.Context {
+	trailer := make(http.Header)
 	for k, v := range attachments {
 		switch val := v.(type) {
 		case string:
-			tri.AppendToOutgoingContext(ctx, k, val)
+			trailer.Add(k, val)
 		case []string:
 			for _, item := range val {
-				tri.AppendToOutgoingContext(ctx, k, item)
+				trailer.Add(k, item)
 			}
 		}
 	}
+	if len(trailer) == 0 {
+		return ctx
+	}
+	// A canonical Triple handler has a live connection in its context. Write
+	// directly to the response trailer so attachments are preserved even when
+	// the invocation also returns an error (the handler adapter skips response
+	// metadata merging on errors).
+	if err := tri.SetTrailer(ctx, trailer); err == nil {
+		return ctx
+	}
+
+	// Keep the helper useful for contexts outside a live handler and preserve
+	// the historical outgoing-context behavior used by callers and tests.
+	values := make([]string, 0, len(trailer)*2)
+	for key, items := range trailer {
+		for _, item := range items {
+			values = append(values, key, item)
+		}
+	}
+	return tri.AppendToOutgoingContext(ctx, values...)
 }
 
 func (s *Server) saveServiceInfo(interfaceName string, info *common.ServiceInfo, openapiGroup string, dubboGroup string, dubboVersion string) {
