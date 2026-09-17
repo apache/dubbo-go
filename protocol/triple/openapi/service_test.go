@@ -297,6 +297,44 @@ func TestDefaultService_mergeOpenAPI_Paths(t *testing.T) {
 	}
 }
 
+func TestDefaultService_mergeOpenAPI_PreservesOperationsOnSharedPath(t *testing.T) {
+	svc := NewDefaultService(nil)
+	target := model.NewOpenAPI().AddPath("/books/{id}", model.NewPathItem().SetOperation("GET", model.NewOperation().SetOperationId("books.Get")))
+	source := model.NewOpenAPI().AddPath("/books/{id}", model.NewPathItem().SetOperation("PATCH", model.NewOperation().SetOperationId("books.Update")))
+
+	svc.mergeOpenAPI(target, source)
+	item := target.Paths["/books/{id}"]
+	if item.Get == nil || item.Patch == nil {
+		t.Fatalf("shared path operations were not preserved: %#v", item.GetOperations())
+	}
+}
+
+func TestDefaultService_mergeOpenAPIWithErrorRejectsConflictingOperation(t *testing.T) {
+	svc := NewDefaultService(nil)
+	target := model.NewOpenAPI().AddPath("/books/{id}", model.NewPathItem().SetOperation("GET", model.NewOperation().SetOperationId("books.Get")))
+	source := model.NewOpenAPI().AddPath("/books/{id}", model.NewPathItem().SetOperation("GET", model.NewOperation().SetOperationId("books.Find")))
+
+	err := svc.mergeOpenAPIWithError(target, source)
+	if err == nil {
+		t.Fatal("expected conflicting operation error")
+	}
+}
+
+func TestDefaultService_mergeOpenAPIWithErrorRejectsEquivalentTemplateConflict(t *testing.T) {
+	svc := NewDefaultService(nil)
+	targetItem := model.NewPathItem().SetOperation("GET", model.NewOperation().SetOperationId("books.Get"))
+	targetItem.SetExtension("x-google-path-template", "/books/{name}")
+	target := model.NewOpenAPI().AddPath("/books/{name}", targetItem)
+	sourceItem := model.NewPathItem().SetOperation("GET", model.NewOperation().SetOperationId("books.Find"))
+	sourceItem.SetExtension("x-google-path-template", "/books/{id}")
+	source := model.NewOpenAPI().AddPath("/books/{id}", sourceItem)
+
+	err := svc.mergeOpenAPIWithError(target, source)
+	if err == nil {
+		t.Fatal("expected equivalent HTTP template conflict")
+	}
+}
+
 func TestDefaultService_mergeOpenAPI_Components(t *testing.T) {
 	svc := NewDefaultService(nil)
 

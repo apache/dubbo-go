@@ -18,6 +18,7 @@
 package openapi
 
 import (
+	"encoding/json"
 	"net/http"
 )
 
@@ -72,6 +73,15 @@ func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
 		_, _ = w.Write([]byte(`{"message":"OpenAPI is not available","status":"404"}`))
+		return
+	}
+	if err := h.integration.service.GetResolveError(); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"message": "OpenAPI generation failed",
+			"status":  http.StatusInternalServerError,
+		})
 		return
 	}
 

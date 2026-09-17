@@ -74,6 +74,17 @@ func TestDefinitionResolver_Resolve_BasicService(t *testing.T) {
 	}
 }
 
+func TestNewDefinitionResolver_NilConfigUsesDefaults(t *testing.T) {
+	r := NewDefinitionResolver(nil)
+	openAPI := r.Resolve("EmptyService", &serviceInfo{})
+	if openAPI == nil {
+		t.Fatal("resolver with nil config should use defaults")
+	}
+	if openAPI.Info.Title == "" || openAPI.Info.Version == "" {
+		t.Fatalf("default OpenAPI info was not populated: %#v", openAPI.Info)
+	}
+}
+
 func TestDefinitionResolver_Resolve_PathGeneration(t *testing.T) {
 	cfg := global.DefaultOpenAPIConfig()
 	r := NewDefinitionResolver(cfg)

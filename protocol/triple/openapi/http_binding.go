@@ -18,6 +18,7 @@
 package openapi
 
 import (
+	"errors"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -40,12 +41,15 @@ const runtimeErrorSchemaName = "Triple-ErrorResponse"
 var openAPIPathVariablePattern = regexp.MustCompile(`\{([^}=]+)(?:=[^}]*)?\}`)
 var openAPIPathConstraintPattern = regexp.MustCompile(`\{([^}=]+)=([^}]*)\}`)
 
-func (r *DefinitionResolver) resolveHTTPBindings(interfaceName, methodName string) []httpbinding.HTTPBinding {
+func (r *DefinitionResolver) resolveHTTPBindings(interfaceName, methodName string) ([]httpbinding.HTTPBinding, error) {
 	bindings, err := httpbinding.Resolve(protoreflect.FullName(interfaceName + "." + methodName))
-	if err != nil {
-		return nil
+	if errors.Is(err, protoregistry.NotFound) {
+		// Reflection/non-IDL services have no global protobuf descriptor. They
+		// retain the canonical Triple OpenAPI operation just as they do at
+		// runtime, but malformed registered descriptors remain fatal.
+		return nil, nil
 	}
-	return bindings
+	return bindings, err
 }
 
 func normalizeHTTPPath(template string) string {
@@ -71,7 +75,7 @@ func (r *DefinitionResolver) resolveBindingOperation(method serviceMethodInfo, b
 
 	for _, pathField := range binding.PathFields {
 		pathSchema := r.resolveBindingFieldSchema(method, pathField, schemaResolver)
-		if pathPattern := openAPIPathPattern(binding.PathTemplate, pathField); pathPattern != "" {
+		if pathPattern := openAPIPathPattern(binding.PathTemplate, pathField); pathPattern != "" && pathSchema != nil {
 			pathSchema.Pattern = pathPattern
 		}
 		parameter := model.NewParameter(pathField, "path").
@@ -152,7 +156,7 @@ func (r *DefinitionResolver) addResponses(op *model.Operation, method serviceMet
 		for _, mediaType := range r.responseMediaTypes() {
 			content := response.GetOrAddContent(mediaType)
 			if code == "200" {
-				if responseBody == "" {
+				if responseBody == "" || responseBody == "*" {
 					responseSchema := r.resolveResponseSchema(method, schemaResolver)
 					if responseSchema == nil {
 						responseSchema = schemaResolver.Resolve(responseReflectType(method, rpc))
@@ -370,7 +374,35 @@ func hasExportedFields(t reflect.Type) bool {
 }
 
 func isWellKnownStruct(t reflect.Type) bool {
-	return t.PkgPath() == "time" && t.Name() == "Time"
+	t = indirectType(t)
+	if t == nil {
+		return false
+	}
+	if t.PkgPath() == "time" && t.Name() == "Time" {
+		return true
+	}
+	switch t.PkgPath() + "." + t.Name() {
+	case "google.golang.org/protobuf/types/known/anypb.Any",
+		"google.golang.org/protobuf/types/known/durationpb.Duration",
+		"google.golang.org/protobuf/types/known/emptypb.Empty",
+		"google.golang.org/protobuf/types/known/fieldmaskpb.FieldMask",
+		"google.golang.org/protobuf/types/known/structpb.ListValue",
+		"google.golang.org/protobuf/types/known/structpb.Struct",
+		"google.golang.org/protobuf/types/known/structpb.Value",
+		"google.golang.org/protobuf/types/known/timestamppb.Timestamp",
+		"google.golang.org/protobuf/types/known/wrapperspb.BoolValue",
+		"google.golang.org/protobuf/types/known/wrapperspb.BytesValue",
+		"google.golang.org/protobuf/types/known/wrapperspb.DoubleValue",
+		"google.golang.org/protobuf/types/known/wrapperspb.FloatValue",
+		"google.golang.org/protobuf/types/known/wrapperspb.Int32Value",
+		"google.golang.org/protobuf/types/known/wrapperspb.Int64Value",
+		"google.golang.org/protobuf/types/known/wrapperspb.StringValue",
+		"google.golang.org/protobuf/types/known/wrapperspb.UInt32Value",
+		"google.golang.org/protobuf/types/known/wrapperspb.UInt64Value":
+		return true
+	default:
+		return false
+	}
 }
 
 func isBodyField(fieldPath, body string) bool {

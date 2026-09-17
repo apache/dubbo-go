@@ -18,6 +18,7 @@
 package openapi
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 )
@@ -25,6 +26,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/internal/httpbinding"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/openapi/model"
 )
 
@@ -34,6 +36,9 @@ type DefinitionResolver struct {
 }
 
 func NewDefinitionResolver(cfg *global.OpenAPIConfig, useHTTPRules ...bool) *DefinitionResolver {
+	if cfg == nil {
+		cfg = global.DefaultOpenAPIConfig()
+	}
 	resolver := &DefinitionResolver{config: cfg}
 	if len(useHTTPRules) > 0 {
 		resolver.useHTTPRules = useHTTPRules[0]
@@ -42,6 +47,16 @@ func NewDefinitionResolver(cfg *global.OpenAPIConfig, useHTTPRules ...bool) *Def
 }
 
 func (r *DefinitionResolver) Resolve(interfaceName string, info *serviceInfo) *model.OpenAPI {
+	openAPI, _ := r.ResolveWithError(interfaceName, info)
+	return openAPI
+}
+
+// ResolveWithError resolves a service definition and reports invalid HTTP
+// annotations instead of silently falling back to the canonical Triple route.
+func (r *DefinitionResolver) ResolveWithError(interfaceName string, info *serviceInfo) (*model.OpenAPI, error) {
+	if info == nil {
+		return nil, fmt.Errorf("service info is nil")
+	}
 	openAPI := model.NewOpenAPI()
 	schemaResolver := NewSchemaResolver(r.config)
 
@@ -50,6 +65,7 @@ func (r *DefinitionResolver) Resolve(interfaceName string, info *serviceInfo) *m
 	openAPI.Info.Description = r.config.InfoDescription
 
 	seenMethods := make(map[string]bool)
+	seenHTTPRoutes := make(map[string]string)
 	for _, method := range info.Methods {
 		methodName := method.Name
 		if seenMethods[strings.ToLower(methodName)] {
@@ -58,13 +74,26 @@ func (r *DefinitionResolver) Resolve(interfaceName string, info *serviceInfo) *m
 		seenMethods[strings.ToLower(methodName)] = true
 
 		if r.useHTTPRules {
-			if bindings := r.resolveHTTPBindings(interfaceName, methodName); len(bindings) > 0 {
+			bindings, err := r.resolveHTTPBindings(interfaceName, methodName)
+			if err != nil {
+				return nil, fmt.Errorf("resolve HTTP bindings for %s.%s: %w", interfaceName, methodName, err)
+			}
+			if len(bindings) > 0 {
 				for _, binding := range bindings {
+					routeKey := httpbinding.CanonicalRouteKey(binding.Method, binding.PathTemplate)
+					if previousRPC, exists := seenHTTPRoutes[routeKey]; exists {
+						return nil, fmt.Errorf("duplicate HTTP route %q for RPCs %q and %q", routeKey, previousRPC, binding.RPC)
+					}
+					seenHTTPRoutes[routeKey] = binding.RPC
 					op := r.resolveBindingOperation(method, binding, interfaceName, schemaResolver)
 					path := normalizeHTTPPath(binding.PathTemplate)
 					pathItem := openAPI.GetOrAddPath(path)
 					pathItem.SetExtension("x-google-path-template", binding.PathTemplate)
-					pathItem.SetOperation(strings.ToUpper(binding.Method), op)
+					httpMethod := strings.ToUpper(binding.Method)
+					if pathItem.GetOperation(httpMethod) != nil {
+						return nil, fmt.Errorf("duplicate HTTP operation %s %s", httpMethod, path)
+					}
+					pathItem.SetOperation(httpMethod, op)
 				}
 				continue
 			}
@@ -90,7 +119,7 @@ func (r *DefinitionResolver) Resolve(interfaceName string, info *serviceInfo) *m
 		addRuntimeErrorSchema(openAPI)
 	}
 
-	return openAPI
+	return openAPI, nil
 }
 
 func (r *DefinitionResolver) resolveOperation(method serviceMethodInfo, httpMethod string, tagName string, schemaResolver *SchemaResolver) *model.Operation {

@@ -18,6 +18,8 @@
 package openapi
 
 import (
+	"errors"
+	"fmt"
 	"maps"
 	"sync"
 )
@@ -30,6 +32,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/internal/httpbinding"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/openapi/model"
 )
 
@@ -70,9 +73,10 @@ type DefaultService struct {
 	encoder      *Encoder
 	useHTTPRules bool
 
-	mu       sync.RWMutex
-	openAPIs map[string]*model.OpenAPI
-	services map[serviceKey]*serviceInfo
+	mu         sync.RWMutex
+	openAPIs   map[string]*model.OpenAPI
+	services   map[serviceKey]*serviceInfo
+	resolveErr error
 }
 
 func NewDefaultService(cfg *global.OpenAPIConfig, useHTTPRules ...bool) *DefaultService {
@@ -104,6 +108,7 @@ func (s *DefaultService) RegisterService(interfaceName string, info *common.Serv
 		dubboVersion:  dubboVersion,
 	}] = snapshotServiceInfo(info)
 	s.openAPIs = nil
+	s.resolveErr = nil
 }
 
 func (s *DefaultService) GetOpenAPI(req *OpenAPIRequest) *model.OpenAPI {
@@ -149,6 +154,7 @@ func (s *DefaultService) Refresh() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.openAPIs = nil
+	s.resolveErr = nil
 	logger.Debug("[Triple][OpenAPI] OpenAPI documents refreshed")
 }
 
@@ -173,9 +179,14 @@ func (s *DefaultService) getOpenAPIs() map[string]*model.OpenAPI {
 
 func (s *DefaultService) resolveOpenAPIs() map[string]*model.OpenAPI {
 	result := make(map[string]*model.OpenAPI)
+	s.resolveErr = nil
 
 	for key, info := range s.services {
-		openAPI := s.defResolver.Resolve(key.interfaceName, info)
+		openAPI, err := s.defResolver.ResolveWithError(key.interfaceName, info)
+		if err != nil {
+			s.resolveErr = errors.Join(s.resolveErr, fmt.Errorf("resolve OpenAPI for %s: %w", key.interfaceName, err))
+			continue
+		}
 		if openAPI != nil {
 			group := key.group
 			if group == "" {
@@ -184,7 +195,9 @@ func (s *DefaultService) resolveOpenAPIs() map[string]*model.OpenAPI {
 			openAPI.Group = group
 			s.completeModel(openAPI, group)
 			if existing, ok := result[group]; ok {
-				s.mergeOpenAPI(existing, openAPI)
+				if err := s.mergeOpenAPIWithError(existing, openAPI); err != nil {
+					s.resolveErr = errors.Join(s.resolveErr, fmt.Errorf("merge OpenAPI group %q: %w", group, err))
+				}
 			} else {
 				result[group] = openAPI
 			}
@@ -192,6 +205,16 @@ func (s *DefaultService) resolveOpenAPIs() map[string]*model.OpenAPI {
 	}
 
 	return result
+}
+
+// GetResolveError returns the most recent HTTP/OpenAPI resolution error. It
+// forces lazy OpenAPI resolution so callers can distinguish an empty document
+// from a document that could not be generated.
+func (s *DefaultService) GetResolveError() error {
+	_ = s.getOpenAPIs()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.resolveErr
 }
 
 func (s *DefaultService) mergeOpenAPIs(openAPIs map[string]*model.OpenAPI) *model.OpenAPI {
@@ -203,7 +226,7 @@ func (s *DefaultService) mergeOpenAPIs(openAPIs map[string]*model.OpenAPI) *mode
 	}
 
 	for _, openAPI := range openAPIs {
-		s.mergeOpenAPI(merged, openAPI)
+		_ = s.mergeOpenAPIWithError(merged, openAPI)
 	}
 
 	return merged
@@ -231,11 +254,99 @@ func (s *DefaultService) completeModel(openAPI *model.OpenAPI, group string) {
 }
 
 func (s *DefaultService) mergeOpenAPI(target, source *model.OpenAPI) {
+	_ = s.mergeOpenAPIWithError(target, source)
+}
+
+// mergeOpenAPIWithError merges paths operation-by-operation. A path item can
+// legitimately contain different methods from different services; replacing
+// the whole item would silently drop one of those operations. A conflicting
+// operation ID is rejected so the generated document never advertises an
+// arbitrary winner.
+func (s *DefaultService) mergeOpenAPIWithError(target, source *model.OpenAPI) error {
+	if target == nil || source == nil {
+		return nil
+	}
+
 	if source.Paths != nil {
 		if target.Paths == nil {
 			target.Paths = make(map[string]*model.PathItem)
 		}
-		maps.Copy(target.Paths, source.Paths)
+		// Compare the original Google path templates as well as the normalized
+		// OpenAPI path keys. Variable names are intentionally retained in
+		// OpenAPI parameters, but they must not hide an HTTP route collision
+		// across services (/{name} and /{id} match the same URL shape).
+		routeOperations := make(map[string]string)
+		for path, targetItem := range target.Paths {
+			if targetItem == nil {
+				continue
+			}
+			for method, operation := range targetItem.GetOperations() {
+				if operation == nil {
+					continue
+				}
+				routeKey := httpbinding.CanonicalRouteKey(method, pathItemTemplate(targetItem, path))
+				if existingID, exists := routeOperations[routeKey]; exists && existingID != operation.OperationId {
+					return fmt.Errorf("HTTP route %q has conflicting operations %q and %q", routeKey, existingID, operation.OperationId)
+				}
+				routeOperations[routeKey] = operation.OperationId
+			}
+		}
+		for path, sourceItem := range source.Paths {
+			if sourceItem == nil {
+				continue
+			}
+			for method, operation := range sourceItem.GetOperations() {
+				if operation == nil {
+					continue
+				}
+				routeKey := httpbinding.CanonicalRouteKey(method, pathItemTemplate(sourceItem, path))
+				if existingID, exists := routeOperations[routeKey]; exists && existingID != operation.OperationId {
+					return fmt.Errorf("HTTP route %q has conflicting operations %q and %q", routeKey, existingID, operation.OperationId)
+				}
+				routeOperations[routeKey] = operation.OperationId
+			}
+		}
+		// Validate all operation conflicts before mutating target so a failed
+		// merge cannot leave a partially updated document behind.
+		for path, sourceItem := range source.Paths {
+			if sourceItem == nil {
+				continue
+			}
+			targetItem := target.Paths[path]
+			if targetItem == nil {
+				continue
+			}
+			for method, sourceOperation := range sourceItem.GetOperations() {
+				if sourceOperation == nil {
+					continue
+				}
+				if existingOperation := targetItem.GetOperation(method); existingOperation != nil && existingOperation.OperationId != sourceOperation.OperationId {
+					return fmt.Errorf("path %q has conflicting %s operations %q and %q", path, method, existingOperation.OperationId, sourceOperation.OperationId)
+				}
+			}
+		}
+		for path, sourceItem := range source.Paths {
+			if sourceItem == nil {
+				continue
+			}
+			targetItem := target.Paths[path]
+			if targetItem == nil {
+				target.Paths[path] = sourceItem
+				continue
+			}
+			for method, sourceOperation := range sourceItem.GetOperations() {
+				if sourceOperation == nil {
+					continue
+				}
+				if existingOperation := targetItem.GetOperation(method); existingOperation != nil {
+					continue
+				}
+				targetItem.SetOperation(method, sourceOperation)
+			}
+			if targetItem.Extensions == nil && sourceItem.Extensions != nil {
+				targetItem.Extensions = maps.Clone(sourceItem.Extensions)
+			}
+		}
 	}
 
 	if source.Components != nil {
@@ -246,6 +357,16 @@ func (s *DefaultService) mergeOpenAPI(target, source *model.OpenAPI) {
 			target.Components.AddSchema(name, schema)
 		}
 	}
+	return nil
+}
+
+func pathItemTemplate(item *model.PathItem, fallback string) string {
+	if item != nil && item.Extensions != nil {
+		if template, ok := item.Extensions["x-google-path-template"].(string); ok && template != "" {
+			return template
+		}
+	}
+	return fallback
 }
 
 func (s *DefaultService) GetEncoder() *Encoder {

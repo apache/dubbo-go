@@ -130,6 +130,27 @@ func TestDefinitionResolver_HTTPRulesDisabledKeepsCanonicalRoute(t *testing.T) {
 	}
 }
 
+func TestDefinitionResolver_HTTPRulesRejectDuplicateRoutesAcrossMethods(t *testing.T) {
+	registerOpenAPIHTTPDescriptor.Do(func() {
+		file, err := protodesc.NewFile(openAPIHTTPFileDescriptor(), protoregistry.GlobalFiles)
+		if err != nil {
+			t.Fatalf("build HTTP descriptor: %v", err)
+		}
+		if err := protoregistry.GlobalFiles.RegisterFile(file); err != nil {
+			t.Fatalf("register HTTP descriptor: %v", err)
+		}
+	})
+
+	resolver := NewDefinitionResolver(global.DefaultOpenAPIConfig(), true)
+	_, err := resolver.ResolveWithError("triple.openapi.test.Library", &serviceInfo{Methods: []serviceMethodInfo{
+		{Name: "UpdateBook", ReqInitFunc: func() any { return &openAPIHTTPRequest{} }},
+		{Name: "FindBook", ReqInitFunc: func() any { return &openAPIHTTPRequest{} }},
+	}})
+	if err == nil {
+		t.Fatal("expected duplicate HTTP route error")
+	}
+}
+
 func TestNormalizeHTTPPath(t *testing.T) {
 	template := "/v1/{name=publishers/*/books/*}:update"
 	if got, want := normalizeHTTPPath(template), "/v1/{name}:update"; got != want {
@@ -169,6 +190,9 @@ func openAPIHTTPFileDescriptor() *descriptorpb.FileDescriptorProto {
 		Package:     proto.String("triple.openapi.test"),
 		Syntax:      proto.String("proto3"),
 		MessageType: []*descriptorpb.DescriptorProto{book, request, response},
-		Service:     []*descriptorpb.ServiceDescriptorProto{{Name: proto.String("Library"), Method: []*descriptorpb.MethodDescriptorProto{{Name: proto.String("UpdateBook"), InputType: proto.String(".triple.openapi.test.UpdateBookRequest"), OutputType: proto.String(".triple.openapi.test.UpdateBookResponse"), Options: methodOptions}}}},
+		Service: []*descriptorpb.ServiceDescriptorProto{{Name: proto.String("Library"), Method: []*descriptorpb.MethodDescriptorProto{
+			{Name: proto.String("UpdateBook"), InputType: proto.String(".triple.openapi.test.UpdateBookRequest"), OutputType: proto.String(".triple.openapi.test.UpdateBookResponse"), Options: methodOptions},
+			{Name: proto.String("FindBook"), InputType: proto.String(".triple.openapi.test.UpdateBookRequest"), OutputType: proto.String(".triple.openapi.test.UpdateBookResponse"), Options: methodOptions},
+		}}},
 	}
 }
