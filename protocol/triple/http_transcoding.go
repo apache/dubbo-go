@@ -54,9 +54,12 @@ func (s *Server) buildHTTPTranscodingRoutes(interfaceName string, invoker base.I
 		return nil, nil
 	}
 
-	serviceName := strings.Trim(interfaceName, "/")
+	// The service registration name may be a discovery/routing alias. Descriptor
+	// lookup must always use the canonical protobuf service name carried by the
+	// ServiceInfo, while the alias remains the canonical Triple route name.
+	serviceName := strings.Trim(info.InterfaceName, "/")
 	if serviceName == "" {
-		serviceName = strings.Trim(info.InterfaceName, "/")
+		serviceName = strings.Trim(interfaceName, "/")
 	}
 	if serviceName == "" {
 		return nil, nil
@@ -70,9 +73,6 @@ func (s *Server) buildHTTPTranscodingRoutes(interfaceName string, invoker base.I
 	maxBodyBytes := httpTranscodingMaxBodyBytes(s.cfg)
 	routes := make([]tri.HTTPRoute, 0)
 	for _, method := range info.Methods {
-		if method.Type != constant.CallUnary {
-			continue
-		}
 		rpcName := protoreflect.FullName(serviceName + "." + method.Name)
 		bindings, err := httpbinding.Resolve(rpcName)
 		if err != nil {
@@ -84,14 +84,21 @@ func (s *Server) buildHTTPTranscodingRoutes(interfaceName string, invoker base.I
 			}
 			return nil, err
 		}
+		if method.Type != constant.CallUnary {
+			// ResolveMethod validates annotated streaming methods and returns a
+			// startup error. Unannotated streaming methods retain their normal
+			// Triple registration and do not contribute an HTTP route.
+			continue
+		}
 		for _, binding := range bindings {
 			routes = append(routes, tri.HTTPRoute{
-				Method:  binding.Method,
-				Path:    binding.PathTemplate,
-				RPC:     binding.RPC,
-				Group:   group,
-				Version: version,
-				Handler: newHTTPTranscodingHandler(binding, method, invoker, maxBodyBytes),
+				Method:     binding.Method,
+				Path:       binding.PathTemplate,
+				RPC:        binding.RPC,
+				Group:      group,
+				Version:    version,
+				PathFields: binding.PathFields,
+				Handler:    newHTTPTranscodingHandler(binding, method, invoker, maxBodyBytes),
 			})
 		}
 	}
@@ -109,7 +116,12 @@ func newHTTPTranscodingHandler(binding httpbinding.HTTPBinding, method common.Me
 			writeHTTPTranscodingErrorResponse(w, err)
 			return
 		}
-		if err := decodeHTTPTranscodingBody(request, binding.Body, r, maxBody); err != nil {
+		bodyPath, err := canonicalHTTPTranscodingFieldPath(request.ProtoReflect().Descriptor(), binding.Body)
+		if err != nil {
+			writeHTTPTranscodingErrorResponse(w, tri.NewError(tri.CodeInternal, err))
+			return
+		}
+		if err := decodeHTTPTranscodingBody(request, bodyPath, r, maxBody); err != nil {
 			writeHTTPTranscodingErrorResponse(w, err)
 			return
 		}
@@ -122,7 +134,10 @@ func newHTTPTranscodingHandler(binding httpbinding.HTTPBinding, method common.Me
 			return
 		}
 
-		response, attachments, err := invokeUnaryRequest(r.Context(), method, invoker, request, r.Header)
+		ctx, outgoing := tri.NewHTTPTranscodingContext(r.Context(), r.Header)
+		response, attachments, err := invokeUnaryRequest(ctx, method, invoker, request, r.Header)
+		copyHTTPHeaders(w.Header(), outgoing.Header())
+		copyHTTPHeaders(w.Header(), outgoing.Trailer())
 		if err != nil {
 			if response != nil {
 				copyHTTPHeaders(w.Header(), response.Header())
@@ -255,7 +270,11 @@ func populateHTTPTranscodingPath(message proto.Message, fields []string, pathPar
 		if !ok {
 			return fmt.Errorf("missing path parameter %q", field)
 		}
-		if err := runtime.PopulateFieldFromPath(message, field, value); err != nil {
+		canonicalField, err := canonicalHTTPTranscodingFieldPath(message.ProtoReflect().Descriptor(), field)
+		if err != nil {
+			return err
+		}
+		if err := runtime.PopulateFieldFromPath(message, canonicalField, value); err != nil {
 			return fmt.Errorf("populate path parameter %q: %w", field, err)
 		}
 	}
@@ -263,17 +282,61 @@ func populateHTTPTranscodingPath(message proto.Message, fields []string, pathPar
 }
 
 func populateHTTPTranscodingQuery(message proto.Message, binding httpbinding.HTTPBinding, request *http.Request) error {
+	// A wildcard body owns every request field. There are no remaining fields
+	// that may be populated from the query string.
+	if binding.Body == "*" {
+		return nil
+	}
 	filterFields := make([][]string, 0, len(binding.PathFields)+1)
 	for _, field := range binding.PathFields {
-		filterFields = append(filterFields, strings.Split(field, "."))
+		canonicalField, err := canonicalHTTPTranscodingFieldPath(message.ProtoReflect().Descriptor(), field)
+		if err != nil {
+			return err
+		}
+		filterFields = append(filterFields, strings.Split(canonicalField, "."))
 	}
-	if binding.Body != "" && binding.Body != "*" {
-		filterFields = append(filterFields, strings.Split(binding.Body, "."))
+	if binding.Body != "" {
+		canonicalBody, err := canonicalHTTPTranscodingFieldPath(message.ProtoReflect().Descriptor(), binding.Body)
+		if err != nil {
+			return err
+		}
+		filterFields = append(filterFields, strings.Split(canonicalBody, "."))
 	}
 	if err := runtime.PopulateQueryParameters(message, request.URL.Query(), utilities.NewDoubleArray(filterFields)); err != nil {
 		return fmt.Errorf("populate query parameters: %w", err)
 	}
 	return nil
+}
+
+func canonicalHTTPTranscodingFieldPath(message protoreflect.MessageDescriptor, path string) (string, error) {
+	if path == "" || path == "*" {
+		return path, nil
+	}
+	if message == nil {
+		return "", fmt.Errorf("cannot resolve field path %q without a message descriptor", path)
+	}
+	parts := strings.Split(path, ".")
+	canonical := make([]string, 0, len(parts))
+	for index, part := range parts {
+		if part == "" {
+			return "", fmt.Errorf("field path %q contains an empty component", path)
+		}
+		field := message.Fields().ByName(protoreflect.Name(part))
+		if field == nil {
+			field = message.Fields().ByJSONName(part)
+		}
+		if field == nil {
+			return "", fmt.Errorf("field %q not found in %q", part, message.FullName())
+		}
+		canonical = append(canonical, string(field.Name()))
+		if index < len(parts)-1 {
+			if field.IsList() || field.IsMap() || field.Message() == nil {
+				return "", fmt.Errorf("field %q is not a singular message", field.FullName())
+			}
+			message = field.Message()
+		}
+	}
+	return strings.Join(canonical, "."), nil
 }
 
 func invokeUnaryRequest(ctx context.Context, method common.MethodInfo, invoker base.Invoker, message any, header http.Header) (*tri.Response, map[string]any, error) {

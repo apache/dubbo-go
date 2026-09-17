@@ -18,6 +18,7 @@
 package triple_protocol
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -79,6 +80,43 @@ func TestRegisterHTTPHandlersDispatchesByGroupAndVersion(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, notFoundResp.Code)
 }
 
+func TestRegisterHTTPHandlersRemapsPathVariablesPerImplementation(t *testing.T) {
+	server := NewServer("", nil)
+	require.NoError(t, server.RegisterHTTPHandlers([]HTTPRoute{
+		{
+			Method:     http.MethodGet,
+			Path:       "/v1/books/{id}",
+			PathFields: []string{"id"},
+			RPC:        "/library.Library/GetBook",
+			Group:      "g1",
+			Version:    "v1",
+			Handler: func(w http.ResponseWriter, _ *http.Request, pathParams map[string]string) {
+				_, _ = w.Write([]byte(pathParams["id"]))
+			},
+		},
+		{
+			Method:     http.MethodGet,
+			Path:       "/v1/books/{name}",
+			PathFields: []string{"name"},
+			RPC:        "/library.Library/GetBook",
+			Group:      "g2",
+			Version:    "v1",
+			Handler: func(w http.ResponseWriter, _ *http.Request, pathParams map[string]string) {
+				_, _ = w.Write([]byte(pathParams["name"]))
+			},
+		},
+	}))
+
+	request := httptest.NewRequest(http.MethodGet, "/v1/books/alice", nil)
+	request.Header.Set(tripleServiceGroup, "g2")
+	request.Header.Set(tripleServiceVersion, "v1")
+	response := httptest.NewRecorder()
+	server.mux.ServeHTTP(response, request)
+
+	assert.Equal(t, http.StatusOK, response.Code)
+	assert.Equal(t, "alice", response.Body.String())
+}
+
 func TestRegisterHTTPHandlersRejectsConflictsAtomically(t *testing.T) {
 	server := NewServer("", nil)
 	handler := func(http.ResponseWriter, *http.Request, map[string]string) {}
@@ -109,6 +147,36 @@ func TestRegisterHTTPHandlersRejectsEquivalentPathConflicts(t *testing.T) {
 	resp := httptest.NewRecorder()
 	server.mux.ServeHTTP(resp, req)
 	assert.Equal(t, http.StatusNotFound, resp.Code)
+}
+
+func TestRegisterHTTPHandlersRejectsLiteralPatternConflicts(t *testing.T) {
+	for _, paths := range [][]string{
+		{"/v1/books/{id=published}", "/v1/books/published"},
+		{"/v1/books/{id=publishers/*/books/*}", "/v1/books/publishers/*/books/*"},
+		{"/v1/books/{id=**}", "/v1/books/**"},
+	} {
+		t.Run(paths[0], func(t *testing.T) {
+			server := NewServer("", nil)
+			handler := func(http.ResponseWriter, *http.Request, map[string]string) {}
+			err := server.RegisterHTTPHandlers([]HTTPRoute{
+				{Method: http.MethodGet, Path: paths[0], RPC: "/library.Library/GetBook", Handler: handler},
+				{Method: http.MethodGet, Path: paths[1], RPC: "/library.Library/FindBook", Handler: handler},
+			})
+			require.Error(t, err)
+		})
+	}
+}
+
+func TestNewHTTPTranscodingContextBridgesMetadata(t *testing.T) {
+	ctx, response := NewHTTPTranscodingContext(context.Background(), http.Header{"X-Request-ID": {"request-1"}})
+	incoming, ok := FromIncomingContext(ctx)
+	require.True(t, ok)
+	assert.Equal(t, "request-1", incoming.Get("X-Request-ID"))
+
+	require.NoError(t, SetHeader(ctx, http.Header{"X-Response-Id": {"header-1"}}))
+	require.NoError(t, SetTrailer(ctx, http.Header{"X-Trailer-Id": {"trailer-1"}}))
+	assert.Equal(t, "header-1", response.Header().Get("X-Response-Id"))
+	assert.Equal(t, "trailer-1", response.Trailer().Get("X-Trailer-Id"))
 }
 
 func TestRegisterHTTPHandlersRejectsUnsupportedMethod(t *testing.T) {

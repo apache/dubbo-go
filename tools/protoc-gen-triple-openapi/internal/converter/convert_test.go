@@ -190,6 +190,28 @@ func TestConvertUseHTTPRulesRejectsEquivalentRouteConflict(t *testing.T) {
 	}
 }
 
+func TestConvertHTTPRulesRejectsRuntimeInvalidPath(t *testing.T) {
+	for _, path := range []string{
+		"/v1/books-{id}",
+		"/v1/{name=foo//bar}",
+	} {
+		t.Run(path, func(t *testing.T) {
+			request := httpRuleRequest()
+			options := request.ProtoFile[0].Service[0].Method[0].Options
+			rule := proto.GetExtension(options, annotations.E_Http).(*annotations.HttpRule)
+			rule.Pattern = &annotations.HttpRule_Get{Get: path}
+			rule.Body = ""
+			rule.ResponseBody = ""
+			rule.AdditionalBindings = nil
+			request.Parameter = proto.String("format=json,use-http-rules=true")
+			_, err := convert(request)
+			if err == nil {
+				t.Fatalf("expected runtime-invalid HTTP path %q to be rejected", path)
+			}
+		})
+	}
+}
+
 func httpRuleRequest() *pluginpb.CodeGeneratorRequest {
 	methodOptions := &descriptorpb.MethodOptions{}
 	proto.SetExtension(methodOptions, annotations.E_Http, &annotations.HttpRule{

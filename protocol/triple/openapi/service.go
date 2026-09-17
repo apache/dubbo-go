@@ -56,7 +56,8 @@ type serviceKey struct {
 // time, we decouple from the original ServiceInfo and avoid side-effects if
 // the caller later mutates its Methods or Meta.
 type serviceInfo struct {
-	Methods []serviceMethodInfo
+	InterfaceName string
+	Methods       []serviceMethodInfo
 }
 
 // serviceMethodInfo holds a snapshot of the data needed from common.MethodInfo
@@ -384,6 +385,7 @@ func snapshotServiceInfo(info *common.ServiceInfo) *serviceInfo {
 		return nil
 	}
 	si := &serviceInfo{}
+	si.InterfaceName = info.InterfaceName
 	if len(info.Methods) > 0 {
 		si.Methods = make([]serviceMethodInfo, len(info.Methods))
 		for i, m := range info.Methods {

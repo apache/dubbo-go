@@ -72,7 +72,7 @@ func TestResolvePattern(t *testing.T) {
 
 func TestCanonicalRouteKeyNormalizesPathVariables(t *testing.T) {
 	require.Equal(t,
-		"GET /v1/books/{*}:publish",
+		"GET /v1/books/*:publish",
 		CanonicalRouteKey("get", "/v1/books/{book_id=*}:publish"),
 	)
 	require.Equal(t,
@@ -82,6 +82,18 @@ func TestCanonicalRouteKeyNormalizesPathVariables(t *testing.T) {
 	require.NotEqual(t,
 		CanonicalRouteKey("GET", "/v1/books/{name}"),
 		CanonicalRouteKey("GET", "/v1/books/{id=publishers/*/books/*}"),
+	)
+	require.Equal(t,
+		CanonicalRouteKey("GET", "/v1/books/{id=published}"),
+		CanonicalRouteKey("GET", "/v1/books/published"),
+	)
+	require.Equal(t,
+		CanonicalRouteKey("GET", "/v1/books/{id=publishers/*/books/*}"),
+		CanonicalRouteKey("GET", "/v1/books/publishers/*/books/*"),
+	)
+	require.Equal(t,
+		CanonicalRouteKey("GET", "/v1/books/{id=**}"),
+		CanonicalRouteKey("GET", "/v1/books/**"),
 	)
 }
 

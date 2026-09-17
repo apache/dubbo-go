@@ -37,9 +37,10 @@ func (b HTTPBinding) Key() string {
 	return CanonicalRouteKey(b.Method, b.PathTemplate)
 }
 
-// CanonicalRouteKey normalizes variable names and the implicit single-segment
-// wildcard so equivalent HTTP templates cannot be registered as distinct
-// routes. Literal path segments and custom verb suffixes are preserved.
+// CanonicalRouteKey normalizes HTTP path templates to their matching shape so
+// equivalent templates cannot be registered as distinct routes. A variable
+// with a literal or wildcard pattern has the same shape as that pattern written
+// directly (for example, /v1/{id=books} and /v1/books).
 func CanonicalRouteKey(method, path string) string {
 	method = strings.ToUpper(strings.TrimSpace(method))
 	path = pathVariablePattern.ReplaceAllStringFunc(path, func(variable string) string {
@@ -48,7 +49,7 @@ func CanonicalRouteKey(method, path string) string {
 		if len(matches) > 2 && matches[2] != "" {
 			pattern = matches[2]
 		}
-		return "{" + pattern + "}"
+		return pattern
 	})
 	return method + " " + path
 }

@@ -74,7 +74,11 @@ func (r *DefinitionResolver) ResolveWithError(interfaceName string, info *servic
 		seenMethods[strings.ToLower(methodName)] = true
 
 		if r.useHTTPRules {
-			bindings, err := r.resolveHTTPBindings(interfaceName, methodName)
+			descriptorName := interfaceName
+			if info.InterfaceName != "" {
+				descriptorName = info.InterfaceName
+			}
+			bindings, err := r.resolveHTTPBindings(descriptorName, methodName)
 			if err != nil {
 				return nil, fmt.Errorf("resolve HTTP bindings for %s.%s: %w", interfaceName, methodName, err)
 			}

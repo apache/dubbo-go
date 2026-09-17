@@ -25,6 +25,8 @@ import (
 )
 
 import (
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+
 	annotations "google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -118,7 +120,7 @@ func canonicalHTTPRouteKey(method, path string) string {
 		if len(matches) > 2 && matches[2] != "" {
 			pattern = matches[2]
 		}
-		return "{" + pattern + "}"
+		return pattern
 	})
 	return strings.ToUpper(strings.TrimSpace(method)) + " " + path
 }
@@ -157,8 +159,11 @@ func httpPattern(rule *annotations.HttpRule) (string, string, error) {
 }
 
 func validateHTTPPath(message protoreflect.MessageDescriptor, pathTemplate string) ([]string, error) {
-	if pathTemplate == "" || !strings.HasPrefix(pathTemplate, "/") {
-		return nil, fmt.Errorf("invalid HTTP path template %q", pathTemplate)
+	// Use the same grpc-gateway parser as the runtime registration path. The
+	// converter must reject a template that the live Triple mux cannot serve.
+	validator := runtime.NewServeMux()
+	if err := validator.HandlePath(http.MethodGet, pathTemplate, func(http.ResponseWriter, *http.Request, map[string]string) {}); err != nil {
+		return nil, fmt.Errorf("invalid HTTP path template %q: %w", pathTemplate, err)
 	}
 	matches := httpPathVariablePattern.FindAllStringSubmatch(pathTemplate, -1)
 	if strings.Count(pathTemplate, "{") != len(matches) || strings.Count(pathTemplate, "}") != len(matches) {

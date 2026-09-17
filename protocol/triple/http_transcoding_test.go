@@ -57,7 +57,9 @@ func TestHTTPTranscodingHandlerSupportsBodyPathQueryAndAdditionalBinding(t *test
 			common.WithParamsValue(constant.GroupKey, "g"),
 			common.WithParamsValue(constant.VersionKey, "v1"),
 		),
-		invokeFn: func(_ context.Context, inv base.Invocation) result.Result {
+		invokeFn: func(ctx context.Context, inv base.Invocation) result.Result {
+			require.NoError(t, tri.SetHeader(ctx, http.Header{"X-Handler-ID": {"header-1"}}))
+			require.NoError(t, tri.SetTrailer(ctx, http.Header{"X-Handler-Trailer": {"trailer-1"}}))
 			lastRequest = inv.Arguments()[0].(proto.Message)
 			request := lastRequest.ProtoReflect()
 			book := request.Get(requestFields.ByName("book")).Message()
@@ -82,7 +84,7 @@ func TestHTTPTranscodingHandlerSupportsBodyPathQueryAndAdditionalBinding(t *test
 		triServer: tri.NewServer("127.0.0.1:0", nil),
 		cfg:       &global.TripleConfig{HTTPTranscoding: &global.HTTPTranscodingConfig{Enabled: true}},
 	}
-	routes, err := server.buildHTTPTranscodingRoutes("triple.http.test.Library", invoker, &common.ServiceInfo{
+	routes, err := server.buildHTTPTranscodingRoutes("alias.Library", invoker, &common.ServiceInfo{
 		InterfaceName: "triple.http.test.Library",
 		Methods: []common.MethodInfo{{
 			Name:        "GetBook",
@@ -92,6 +94,7 @@ func TestHTTPTranscodingHandlerSupportsBodyPathQueryAndAdditionalBinding(t *test
 	})
 	require.NoError(t, err)
 	require.Len(t, routes, 2)
+	assert.Equal(t, "triple.http.test.Library.GetBook", routes[0].RPC)
 
 	patch := routes[0]
 	patchRequest := httptest.NewRequest(http.MethodPatch, "/v1/authors/alice?count=7", strings.NewReader(`{"title":"book"}`))
@@ -101,6 +104,8 @@ func TestHTTPTranscodingHandlerSupportsBodyPathQueryAndAdditionalBinding(t *test
 	assert.Equal(t, http.StatusOK, patchResponse.Code)
 	assert.Equal(t, `"alice:book:7"`, patchResponse.Body.String())
 	assert.Equal(t, []string{"resp-1"}, patchResponse.Header().Values("X-Response-ID"))
+	assert.Equal(t, []string{"header-1"}, patchResponse.Header().Values("X-Handler-ID"))
+	assert.Equal(t, []string{"trailer-1"}, patchResponse.Header().Values("X-Handler-Trailer"))
 	assert.Equal(t, "alice", lastRequest.ProtoReflect().Get(requestFields.ByName("name")).String())
 
 	get := routes[1]
@@ -182,6 +187,79 @@ func TestHTTPTranscodingHandlerRejectsUnsupportedBodyAndMapsRPCError(t *testing.
 	assert.Contains(t, internalResponse.Body.String(), `"code":13`)
 }
 
+func TestHTTPTranscodingWildcardBodyDoesNotReadQuery(t *testing.T) {
+	_, requestDescriptor, _ := registerHTTPTranscodingTestDescriptor(t)
+	request := httptest.NewRequest(http.MethodPost, "/v1/books", strings.NewReader("{\"name\":\"body-name\",\"count\":1}"))
+	request.Header.Set("Content-Type", "application/json")
+	message := dynamicpb.NewMessage(requestDescriptor)
+	require.NoError(t, decodeHTTPTranscodingBody(message, "*", request, 0))
+	binding := httpbinding.HTTPBinding{Method: http.MethodPost, Body: "*"}
+	queryRequest := httptest.NewRequest(http.MethodPost, "/v1/books?name=query-name&count=9", nil)
+	require.NoError(t, populateHTTPTranscodingQuery(message, binding, queryRequest))
+	assert.Equal(t, "body-name", message.Get(requestDescriptor.Fields().ByName("name")).String())
+	assert.Equal(t, int64(1), message.Get(requestDescriptor.Fields().ByName("count")).Int())
+}
+
+func TestHTTPTranscodingPathJSONNameIsExcludedFromQuery(t *testing.T) {
+	_, requestDescriptor, _ := registerHTTPTranscodingTestDescriptor(t)
+	message := dynamicpb.NewMessage(requestDescriptor)
+	binding := httpbinding.HTTPBinding{Method: http.MethodGet, PathFields: []string{"pageSize"}}
+	require.NoError(t, populateHTTPTranscodingPath(message, binding.PathFields, map[string]string{"pageSize": "7"}))
+	queryRequest := httptest.NewRequest(http.MethodGet, "/v1/books?page_size=9", nil)
+	require.NoError(t, populateHTTPTranscodingQuery(message, binding, queryRequest))
+	assert.Equal(t, int64(7), message.Get(requestDescriptor.Fields().ByName("page_size")).Int())
+}
+
+func TestBuildHTTPTranscodingRoutesRejectsStreamingRule(t *testing.T) {
+	const (
+		fileName     = "triple/http_test/streaming.proto"
+		serviceName  = "triple.http.streaming.Library"
+		requestName  = ".triple.http.streaming.Request"
+		responseName = ".triple.http.streaming.Response"
+	)
+	if _, err := protoregistry.GlobalFiles.FindDescriptorByName(serviceName + ".Watch"); err != nil {
+		file, buildErr := protodesc.NewFile(&descriptorpb.FileDescriptorProto{
+			Name:       proto.String(fileName),
+			Package:    proto.String("triple.http.streaming"),
+			Syntax:     proto.String("proto3"),
+			Dependency: []string{"google/api/annotations.proto"},
+			MessageType: []*descriptorpb.DescriptorProto{
+				{Name: proto.String("Request")},
+				{Name: proto.String("Response")},
+			},
+			Service: []*descriptorpb.ServiceDescriptorProto{{
+				Name: proto.String("Library"),
+				Method: []*descriptorpb.MethodDescriptorProto{{
+					Name:            proto.String("Watch"),
+					InputType:       proto.String(requestName),
+					OutputType:      proto.String(responseName),
+					ServerStreaming: proto.Bool(true),
+					Options: func() *descriptorpb.MethodOptions {
+						options := &descriptorpb.MethodOptions{}
+						proto.SetExtension(options, annotations.E_Http, &annotations.HttpRule{
+							Pattern: &annotations.HttpRule_Get{Get: "/v1/watch"},
+						})
+						return options
+					}(),
+				}},
+			}},
+		}, protoregistry.GlobalFiles)
+		require.NoError(t, buildErr)
+		require.NoError(t, protoregistry.GlobalFiles.RegisterFile(file))
+	}
+
+	server := &Server{
+		triServer: tri.NewServer("127.0.0.1:0", nil),
+		cfg:       &global.TripleConfig{HTTPTranscoding: &global.HTTPTranscodingConfig{Enabled: true}},
+	}
+	invoker := &tripleServerTestInvoker{url: common.NewURLWithOptions()}
+	_, err := server.buildHTTPTranscodingRoutes(serviceName, invoker, &common.ServiceInfo{
+		InterfaceName: serviceName,
+		Methods:       []common.MethodInfo{{Name: "Watch", Type: constant.CallServerStream}},
+	})
+	require.ErrorContains(t, err, "uses google.api.http but is streaming")
+}
+
 func registerHTTPTranscodingTestDescriptor(t *testing.T) (protoreflect.MethodDescriptor, protoreflect.MessageDescriptor, protoreflect.MessageDescriptor) {
 	t.Helper()
 	if descriptor, err := protoregistry.GlobalFiles.FindDescriptorByName("triple.http.test.Library.GetBook"); err == nil {
@@ -224,6 +302,7 @@ func registerHTTPTranscodingTestDescriptor(t *testing.T) (protoreflect.MethodDes
 					httpTestField("count", 3, descriptorpb.FieldDescriptorProto_TYPE_INT32, "", false),
 					httpTestField("tags", 4, descriptorpb.FieldDescriptorProto_TYPE_STRING, "", true),
 					httpTestField("state", 5, descriptorpb.FieldDescriptorProto_TYPE_ENUM, ".triple.http.test.State", false),
+					httpTestField("page_size", 6, descriptorpb.FieldDescriptorProto_TYPE_INT32, "", false),
 				},
 			},
 			{

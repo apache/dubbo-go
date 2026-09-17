@@ -21,6 +21,8 @@ import (
 	"reflect"
 	"sync"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 import (
@@ -104,6 +106,26 @@ func TestDefinitionResolver_ResolveHTTPBindings(t *testing.T) {
 	if _, ok := openAPI.Components.Schemas[runtimeErrorSchemaName]; !ok {
 		t.Errorf("missing %q error schema", runtimeErrorSchemaName)
 	}
+}
+
+func TestDefinitionResolver_UsesCanonicalServiceNameForAlias(t *testing.T) {
+	registerOpenAPIHTTPDescriptor.Do(func() {
+		file, err := protodesc.NewFile(openAPIHTTPFileDescriptor(), protoregistry.GlobalFiles)
+		require.NoError(t, err)
+		require.NoError(t, protoregistry.GlobalFiles.RegisterFile(file))
+	})
+
+	resolver := NewDefinitionResolver(global.DefaultOpenAPIConfig(), true)
+	openAPI, err := resolver.ResolveWithError("alias.Library", &serviceInfo{
+		InterfaceName: "triple.openapi.test.Library",
+		Methods: []serviceMethodInfo{{
+			Name:        "UpdateBook",
+			ReqInitFunc: func() any { return &openAPIHTTPRequest{} },
+			Meta:        map[string]any{"response.type": reflect.TypeFor[openAPIHTTPResponse]()},
+		}},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, openAPI.Paths["/v1/books/{book.id}"])
 }
 
 func TestDefinitionResolver_HTTPRulesDisabledKeepsCanonicalRoute(t *testing.T) {

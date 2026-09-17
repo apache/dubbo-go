@@ -34,25 +34,28 @@ import (
 // HTTPRoute is a single google.api.http route registered on the Triple
 // listener. The handler performs request decoding and RPC invocation.
 type HTTPRoute struct {
-	Method  string
-	Path    string
-	RPC     string
-	Group   string
-	Version string
-	Handler runtime.HandlerFunc
+	Method     string
+	Path       string
+	RPC        string
+	Group      string
+	Version    string
+	PathFields []string
+	Handler    runtime.HandlerFunc
 }
 
 type httpTranscodingRoute struct {
 	mu              sync.RWMutex
 	method          string
 	path            string
+	pathFields      []string
 	implementations map[string]httpTranscodingImplementation
 	cors            *CorsConfig
 }
 
 type httpTranscodingImplementation struct {
-	rpc     string
-	handler runtime.HandlerFunc
+	rpc        string
+	pathFields []string
+	handler    runtime.HandlerFunc
 }
 
 // RegisterHTTPHandlers registers validated HTTP routes. Routes with the same
@@ -130,11 +133,20 @@ func (m *methodRouteMux) registerHTTPHandlers(routes []HTTPRoute) error {
 				transcodingRoute = &httpTranscodingRoute{
 					method:          method,
 					path:            route.Path,
+					pathFields:      append([]string(nil), route.PathFields...),
 					implementations: make(map[string]httpTranscodingImplementation),
 					cors:            candidateCORS,
 				}
 			}
 			pending[key] = transcodingRoute
+		}
+		// Prefer a representative that exposes path parameters when two
+		// semantically equivalent templates differ only by a literal versus
+		// an exact variable pattern. This keeps parameter values available to
+		// every group/version implementation.
+		if len(transcodingRoute.pathFields) == 0 && len(route.PathFields) > 0 {
+			transcodingRoute.path = route.Path
+			transcodingRoute.pathFields = append([]string(nil), route.PathFields...)
 		}
 
 		identifier := getIdentifier(route.Group, route.Version)
@@ -142,8 +154,9 @@ func (m *methodRouteMux) registerHTTPHandlers(routes []HTTPRoute) error {
 			return fmt.Errorf("HTTP route %q selects conflicting RPCs %q and %q for group %q and version %q", key, implementation.rpc, route.RPC, route.Group, route.Version)
 		}
 		transcodingRoute.implementations[identifier] = httpTranscodingImplementation{
-			rpc:     route.RPC,
-			handler: route.Handler,
+			rpc:        route.RPC,
+			pathFields: append([]string(nil), route.PathFields...),
+			handler:    route.Handler,
 		}
 	}
 
@@ -232,7 +245,7 @@ func (r *httpTranscodingRoute) serveHTTP(w http.ResponseWriter, req *http.Reques
 			fmt.Sprintf("no implementation found for service group %s and service version %s", req.Header.Get(tripleServiceGroup), req.Header.Get(tripleServiceVersion)))
 		return
 	}
-	implementation.handler(w, req, pathParams)
+	implementation.handler(w, req, remapHTTPPathParams(r.pathFields, implementation.pathFields, pathParams))
 }
 
 func (r *httpTranscodingRoute) clone() *httpTranscodingRoute {
@@ -241,13 +254,31 @@ func (r *httpTranscodingRoute) clone() *httpTranscodingRoute {
 	clone := &httpTranscodingRoute{
 		method:          r.method,
 		path:            r.path,
+		pathFields:      append([]string(nil), r.pathFields...),
 		implementations: make(map[string]httpTranscodingImplementation, len(r.implementations)),
 		cors:            r.cors,
 	}
 	for identifier, implementation := range r.implementations {
+		implementation.pathFields = append([]string(nil), implementation.pathFields...)
 		clone.implementations[identifier] = implementation
 	}
 	return clone
+}
+
+func remapHTTPPathParams(routeFields, implementationFields []string, pathParams map[string]string) map[string]string {
+	if len(routeFields) == 0 || len(implementationFields) == 0 || len(routeFields) != len(implementationFields) {
+		return pathParams
+	}
+	remapped := make(map[string]string, len(pathParams)+len(implementationFields))
+	for key, value := range pathParams {
+		remapped[key] = value
+	}
+	for index, field := range implementationFields {
+		if value, ok := pathParams[routeFields[index]]; ok {
+			remapped[field] = value
+		}
+	}
+	return remapped
 }
 
 type httpTranscodingErrorBody struct {
