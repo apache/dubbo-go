@@ -271,7 +271,7 @@ func invokeUnaryRequest(ctx context.Context, method common.MethodInfo, invoker b
 	invo := invocation.NewRPCInvocation(method.Name, extractUnaryInvocationArgs(message), attachments)
 	res := invoker.Invoke(ctx, invo)
 	if res == nil {
-		return nil, attachments, tri.NewError(tri.CodeInternal, fmt.Errorf("RPC %s returned a nil result", method.Name))
+		return nil, nil, tri.NewError(tri.CodeInternal, fmt.Errorf("RPC %s returned a nil result", method.Name))
 	}
 	return wrapTripleResponse(res.Result()), res.Attachments(), res.Error()
 }
