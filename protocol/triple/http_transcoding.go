@@ -124,6 +124,11 @@ func newHTTPTranscodingHandler(binding httpbinding.HTTPBinding, method common.Me
 
 		response, attachments, err := invokeUnaryRequest(r.Context(), method, invoker, request, r.Header)
 		if err != nil {
+			if response != nil {
+				copyHTTPHeaders(w.Header(), response.Header())
+				copyHTTPHeaders(w.Header(), response.Trailer())
+			}
+			copyHTTPAttachments(w.Header(), attachments)
 			writeHTTPTranscodingErrorResponse(w, err)
 			return
 		}
@@ -391,6 +396,9 @@ func (e *httpTranscodingHTTPError) Unwrap() error {
 }
 
 func writeHTTPTranscodingErrorResponse(w http.ResponseWriter, err error) {
+	if err == nil {
+		err = tri.NewError(tri.CodeInternal, fmt.Errorf("HTTP transcoding failed"))
+	}
 	status := http.StatusInternalServerError
 	if statusErr := new(httpTranscodingHTTPError); errors.As(err, &statusErr) {
 		status = statusErr.status
@@ -400,6 +408,7 @@ func writeHTTPTranscodingErrorResponse(w http.ResponseWriter, err error) {
 	code := tri.CodeOf(err)
 	message := err.Error()
 	var tripleErr *tri.Error
+	details := []any{}
 	if errors.As(err, &tripleErr) && tripleErr != nil {
 		code = tripleErr.Code()
 		message = tripleErr.Message()
@@ -410,6 +419,7 @@ func writeHTTPTranscodingErrorResponse(w http.ResponseWriter, err error) {
 			status = httpStatusFromTripleCode(code)
 		}
 		copyHTTPHeaders(w.Header(), tripleErr.Meta())
+		details = marshalHTTPTranscodingErrorDetails(tripleErr)
 	} else if status == http.StatusInternalServerError {
 		status = httpStatusFromTripleCode(code)
 	}
@@ -419,8 +429,46 @@ func writeHTTPTranscodingErrorResponse(w http.ResponseWriter, err error) {
 	_ = json.NewEncoder(w).Encode(httpTranscodingErrorBody{
 		Code:    uint32(code),
 		Message: message,
-		Details: []any{},
+		Details: details,
 	})
+}
+
+func marshalHTTPTranscodingErrorDetails(err *tri.Error) []any {
+	if err == nil || len(err.Details()) == 0 {
+		return []any{}
+	}
+	details := make([]any, 0, len(err.Details()))
+	for _, detail := range err.Details() {
+		if detail == nil {
+			continue
+		}
+		value, valueErr := detail.Value()
+		if valueErr != nil {
+			details = append(details, map[string]any{"@type": "type.googleapis.com/" + detail.Type()})
+			continue
+		}
+		var marshaler runtime.JSONPb
+		raw, marshalErr := marshaler.Marshal(value)
+		if marshalErr != nil {
+			details = append(details, map[string]any{"@type": "type.googleapis.com/" + detail.Type()})
+			continue
+		}
+		var object any
+		if unmarshalErr := json.Unmarshal(raw, &object); unmarshalErr != nil {
+			details = append(details, map[string]any{"@type": "type.googleapis.com/" + detail.Type()})
+			continue
+		}
+		if fields, ok := object.(map[string]any); ok {
+			fields["@type"] = "type.googleapis.com/" + detail.Type()
+			details = append(details, fields)
+			continue
+		}
+		details = append(details, map[string]any{
+			"@type": "type.googleapis.com/" + detail.Type(),
+			"value": object,
+		})
+	}
+	return details
 }
 
 func httpStatusFromTripleCode(code tri.Code) int {
