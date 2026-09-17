@@ -95,6 +95,64 @@ func TestRegisterHTTPHandlersRejectsConflictsAtomically(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, resp.Code)
 }
 
+func TestRegisterHTTPHandlersRejectsEquivalentPathConflicts(t *testing.T) {
+	server := NewServer("", nil)
+	handler := func(http.ResponseWriter, *http.Request, map[string]string) {}
+
+	err := server.RegisterHTTPHandlers([]HTTPRoute{
+		{Method: http.MethodGet, Path: "/v1/books/{name}", RPC: "/library.Library/GetBook", Handler: handler},
+		{Method: http.MethodGet, Path: "/v1/books/{id=*}", RPC: "/library.Library/FindBook", Handler: handler},
+	})
+	require.Error(t, err)
+
+	req := httptest.NewRequest(http.MethodGet, "/v1/books/alice", nil)
+	resp := httptest.NewRecorder()
+	server.mux.ServeHTTP(resp, req)
+	assert.Equal(t, http.StatusNotFound, resp.Code)
+}
+
+func TestRegisterHTTPHandlersRejectsUnsupportedMethod(t *testing.T) {
+	server := NewServer("", nil)
+	err := server.RegisterHTTPHandlers([]HTTPRoute{{
+		Method:  "REPORT",
+		Path:    "/v1/books/{name}",
+		RPC:     "/library.Library/GetBook",
+		Handler: func(http.ResponseWriter, *http.Request, map[string]string) {},
+	}})
+	require.Error(t, err)
+}
+
+func TestRegisterHTTPHandlersPrefersSpecificOverlappingTemplate(t *testing.T) {
+	server := NewServer("", nil)
+	called := ""
+	require.NoError(t, server.RegisterHTTPHandlers([]HTTPRoute{
+		{
+			Method: http.MethodGet,
+			Path:   "/v1/{name}",
+			RPC:    "/library.Library/GetByName",
+			Handler: func(w http.ResponseWriter, _ *http.Request, _ map[string]string) {
+				called = "wildcard"
+				_, _ = w.Write([]byte(called))
+			},
+		},
+		{
+			Method: http.MethodGet,
+			Path:   "/v1/books/{id}",
+			RPC:    "/library.Library/GetBook",
+			Handler: func(w http.ResponseWriter, _ *http.Request, _ map[string]string) {
+				called = "literal"
+				_, _ = w.Write([]byte(called))
+			},
+		},
+	}))
+
+	req := httptest.NewRequest(http.MethodGet, "/v1/books/42", nil)
+	resp := httptest.NewRecorder()
+	server.mux.ServeHTTP(resp, req)
+	assert.Equal(t, http.StatusOK, resp.Code)
+	assert.Equal(t, "literal", called)
+}
+
 func TestRegisterHTTPHandlersRejectsInvalidBatchBeforeRegistration(t *testing.T) {
 	server := NewServer("", nil)
 	handler := func(http.ResponseWriter, *http.Request, map[string]string) {}

@@ -21,10 +21,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"slices"
+	"sort"
 	"strings"
 	"sync"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+
+	"dubbo.apache.org/dubbo-go/v3/internal/httpbinding"
 )
 
 // HTTPRoute is a single google.api.http route registered on the Triple
@@ -70,10 +74,14 @@ func (m *methodRouteMux) registerHTTPHandlers(routes []HTTPRoute) error {
 	// validation and the same pattern is registered below only after all input
 	// has passed validation.
 	validator := runtime.NewServeMux()
+	validatedKeys := make(map[string]struct{}, len(routes))
 	for index, route := range routes {
 		method := strings.ToUpper(strings.TrimSpace(route.Method))
 		if method == "" {
 			return fmt.Errorf("HTTP route %d has an empty method", index)
+		}
+		if !httpbinding.IsSupportedMethod(method) {
+			return fmt.Errorf("HTTP route %d uses unsupported method %q", index, method)
 		}
 		if strings.TrimSpace(route.Path) == "" {
 			return fmt.Errorf("HTTP route %d has an empty path", index)
@@ -84,34 +92,49 @@ func (m *methodRouteMux) registerHTTPHandlers(routes []HTTPRoute) error {
 		if route.Handler == nil {
 			return fmt.Errorf("HTTP route %d has a nil handler", index)
 		}
+		key := httpbinding.CanonicalRouteKey(method, route.Path)
+		if _, alreadyValidated := validatedKeys[key]; alreadyValidated {
+			continue
+		}
 		if err := validator.HandlePath(method, route.Path, func(http.ResponseWriter, *http.Request, map[string]string) {}); err != nil {
 			return fmt.Errorf("validate HTTP route %d (%s %s): %w", index, method, route.Path, err)
 		}
+		validatedKeys[key] = struct{}{}
 	}
 
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
+	candidateCORS := cloneCorsConfig(m.transcodingCORS)
+	if candidateCORS != nil && m.transcodingCORSAutoMethods {
+		for _, route := range routes {
+			method := strings.ToUpper(strings.TrimSpace(route.Method))
+			if !slices.Contains(candidateCORS.AllowMethods, method) {
+				candidateCORS.AllowMethods = append(candidateCORS.AllowMethods, method)
+			}
+		}
+		slices.Sort(candidateCORS.AllowMethods)
+	}
+
 	pending := make(map[string]*httpTranscodingRoute)
-	order := make([]string, 0, len(routes))
 	for _, route := range routes {
 		method := strings.ToUpper(strings.TrimSpace(route.Method))
-		key := method + " " + route.Path
+		key := httpbinding.CanonicalRouteKey(method, route.Path)
 		transcodingRoute, exists := pending[key]
 		if !exists {
 			transcodingRoute = m.transcodingRoutes[key]
 			if transcodingRoute != nil {
 				transcodingRoute = transcodingRoute.clone()
+				transcodingRoute.cors = candidateCORS
 			} else {
 				transcodingRoute = &httpTranscodingRoute{
 					method:          method,
 					path:            route.Path,
 					implementations: make(map[string]httpTranscodingImplementation),
-					cors:            m.transcodingCORS,
+					cors:            candidateCORS,
 				}
 			}
 			pending[key] = transcodingRoute
-			order = append(order, key)
 		}
 
 		identifier := getIdentifier(route.Group, route.Version)
@@ -124,21 +147,76 @@ func (m *methodRouteMux) registerHTTPHandlers(routes []HTTPRoute) error {
 		}
 	}
 
-	for _, key := range order {
-		m.addTranscodingMethod(pending[key].method)
-		if existing, exists := m.transcodingRoutes[key]; exists {
-			existing.mu.Lock()
-			existing.implementations = pending[key].implementations
-			existing.mu.Unlock()
-			continue
+	candidateRoutes := make(map[string]*httpTranscodingRoute, len(m.transcodingRoutes)+len(pending))
+	for key, route := range m.transcodingRoutes {
+		clone := route.clone()
+		clone.cors = candidateCORS
+		candidateRoutes[key] = clone
+	}
+	for key, route := range pending {
+		candidateRoutes[key] = route
+	}
+
+	candidateMux := m.newTranscodingMux()
+	if err := m.registerTranscodingCORS(candidateMux, candidateCORS); err != nil {
+		return fmt.Errorf("register transcoding CORS route: %w", err)
+	}
+	routeKeys := make([]string, 0, len(candidateRoutes))
+	for key := range candidateRoutes {
+		routeKeys = append(routeKeys, key)
+	}
+	// ServeMux prepends every newly registered pattern. Register broader
+	// patterns first so a literal/more constrained route wins deterministically
+	// when two valid templates overlap.
+	sort.Slice(routeKeys, func(i, j int) bool {
+		left := candidateRoutes[routeKeys[i]]
+		right := candidateRoutes[routeKeys[j]]
+		leftWildcards, leftLiterals := transcodingRouteSpecificity(left.path)
+		rightWildcards, rightLiterals := transcodingRouteSpecificity(right.path)
+		if leftWildcards != rightWildcards {
+			return leftWildcards > rightWildcards
 		}
-		transcodingRoute := pending[key]
-		if err := m.transcoding.HandlePath(transcodingRoute.method, transcodingRoute.path, transcodingRoute.serveHTTP); err != nil {
+		if leftLiterals != rightLiterals {
+			return leftLiterals < rightLiterals
+		}
+		return routeKeys[i] < routeKeys[j]
+	})
+	for _, key := range routeKeys {
+		route := candidateRoutes[key]
+		if err := candidateMux.HandlePath(route.method, route.path, route.serveHTTP); err != nil {
 			return fmt.Errorf("register HTTP route %q: %w", key, err)
 		}
-		m.transcodingRoutes[key] = transcodingRoute
 	}
+
+	m.transcodingCORS = candidateCORS
+	m.transcoding = candidateMux
+	m.transcodingRoutes = candidateRoutes
 	return nil
+}
+
+func transcodingRouteSpecificity(path string) (wildcards, literals int) {
+	wildcards = strings.Count(path, "*")
+	for index := 0; index < len(path); index++ {
+		if path[index] == '{' || path[index] == '}' || path[index] == '*' {
+			continue
+		}
+		literals++
+	}
+	return wildcards, literals
+}
+
+func cloneCorsConfig(config *CorsConfig) *CorsConfig {
+	if config == nil {
+		return nil
+	}
+	return &CorsConfig{
+		AllowOrigins:     append([]string(nil), config.AllowOrigins...),
+		AllowMethods:     append([]string(nil), config.AllowMethods...),
+		AllowHeaders:     append([]string(nil), config.AllowHeaders...),
+		ExposeHeaders:    append([]string(nil), config.ExposeHeaders...),
+		AllowCredentials: config.AllowCredentials,
+		MaxAge:           config.MaxAge,
+	}
 }
 
 func (r *httpTranscodingRoute) serveHTTP(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {

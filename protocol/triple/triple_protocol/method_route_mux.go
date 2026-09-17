@@ -63,6 +63,10 @@ func newMethodRouteMux() *methodRouteMux {
 	return mux
 }
 
+func (m *methodRouteMux) newTranscodingMux() *runtime.ServeMux {
+	return runtime.NewServeMux(runtime.WithRoutingErrorHandler(m.handleTranscodingRoutingError))
+}
+
 // Handle registers the handler in the exact mux and the lowercase-first-method
 // fallback index. If two patterns collide after fallback normalization, the
 // first registration wins while exact matching keeps the original behavior.
@@ -145,19 +149,23 @@ func (m *methodRouteMux) setTranscodingCORS(config *CorsConfig) {
 	if m.transcodingCORS == nil {
 		return
 	}
-	if err := m.transcoding.HandlePath(http.MethodOptions, "/{path=**}", func(w http.ResponseWriter, r *http.Request, _ map[string]string) {
-		m.mu.RLock()
-		cors := m.transcodingCORS
-		m.mu.RUnlock()
+	if err := m.registerTranscodingCORS(m.transcoding, m.transcodingCORS); err != nil {
+		m.transcodingCORS = nil
+		m.transcodingCORSAutoMethods = false
+	}
+}
+
+func (m *methodRouteMux) registerTranscodingCORS(mux *runtime.ServeMux, cors *CorsConfig) error {
+	if cors == nil {
+		return nil
+	}
+	return mux.HandlePath(http.MethodOptions, "/{path=**}", func(w http.ResponseWriter, r *http.Request, _ map[string]string) {
 		if cors != nil {
 			cors.handlePreflight(w, r)
 			return
 		}
 		http.NotFound(w, r)
-	}); err != nil {
-		m.transcodingCORS = nil
-		m.transcodingCORSAutoMethods = false
-	}
+	})
 }
 
 func (m *methodRouteMux) addTranscodingMethod(method string) {
@@ -177,7 +185,7 @@ func (m *methodRouteMux) handleTranscodingRoutingError(ctx context.Context, mux 
 			fallback.ServeHTTP(w, r)
 			return
 		}
-		http.NotFound(w, r)
+		writeHTTPTranscodingError(w, http.StatusNotFound, CodeNotFound, http.StatusText(status))
 		return
 	}
 	if status == http.StatusMethodNotAllowed {
@@ -192,7 +200,18 @@ func (m *methodRouteMux) handleTranscodingRoutingError(ctx context.Context, mux 
 		writeHTTPTranscodingError(w, http.StatusMethodNotAllowed, CodeUnimplemented, http.StatusText(status))
 		return
 	}
-	runtime.DefaultRoutingErrorHandler(ctx, mux, marshaler, w, r, status)
+	code := CodeInternal
+	switch status {
+	case http.StatusBadRequest:
+		code = CodeInvalidArgument
+	case http.StatusMethodNotAllowed:
+		code = CodeUnimplemented
+	case http.StatusNotFound:
+		code = CodeNotFound
+	case http.StatusNotImplemented:
+		code = CodeUnimplemented
+	}
+	writeHTTPTranscodingError(w, status, code, http.StatusText(status))
 }
 
 func normalizeMethodRouteKey(path string) string {
