@@ -198,7 +198,7 @@ func collectQueryFields(t reflect.Type, prefix string, binding httpbinding.HTTPB
 	}
 	for index := 0; index < t.NumField(); index++ {
 		field := t.Field(index)
-		if field.PkgPath != "" || field.Anonymous {
+		if field.PkgPath != "" || field.Anonymous || field.Tag.Get("protobuf_oneof") != "" {
 			continue
 		}
 		name := reflectJSONName(field)
@@ -358,7 +358,7 @@ func lowerCamel(name string) string {
 }
 
 func indirectType(t reflect.Type) reflect.Type {
-	for t != nil && (t.Kind() == reflect.Pointer || t.Kind() == reflect.Interface) {
+	for t != nil && t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
 	return t

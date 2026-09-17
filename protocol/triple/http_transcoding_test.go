@@ -34,6 +34,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/dynamicpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
@@ -210,6 +211,23 @@ func TestHTTPTranscodingPathJSONNameIsExcludedFromQuery(t *testing.T) {
 	queryRequest := httptest.NewRequest(http.MethodGet, "/v1/books?page_size=9", nil)
 	require.NoError(t, populateHTTPTranscodingQuery(message, binding, queryRequest))
 	assert.Equal(t, int64(7), message.Get(requestDescriptor.Fields().ByName("page_size")).Int())
+}
+
+func TestHTTPTranscodingPathProtoNameIsExcludedFromJSONQuery(t *testing.T) {
+	_, requestDescriptor, _ := registerHTTPTranscodingTestDescriptor(t)
+	message := dynamicpb.NewMessage(requestDescriptor)
+	binding := httpbinding.HTTPBinding{Method: http.MethodGet, PathFields: []string{"page_size"}}
+	require.NoError(t, populateHTTPTranscodingPath(message, binding.PathFields, map[string]string{"page_size": "7"}))
+	queryRequest := httptest.NewRequest(http.MethodGet, "/v1/books?pageSize=9", nil)
+	require.NoError(t, populateHTTPTranscodingQuery(message, binding, queryRequest))
+	assert.Equal(t, int64(7), message.Get(requestDescriptor.Fields().ByName("page_size")).Int())
+}
+
+func TestHTTPTranscodingResponseBodySupportsScalarWrapper(t *testing.T) {
+	message := wrapperspb.String("ok")
+	body, err := marshalHTTPTranscodingResponse(message, "value")
+	require.NoError(t, err)
+	assert.Equal(t, `"ok"`, string(body))
 }
 
 func TestBuildHTTPTranscodingRoutesRejectsStreamingRule(t *testing.T) {

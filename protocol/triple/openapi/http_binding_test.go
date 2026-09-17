@@ -35,6 +35,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/internal/httpbinding"
 )
 
 type openAPIHTTPBook struct {
@@ -50,6 +51,14 @@ type openAPIHTTPRequest struct {
 
 type openAPIHTTPResponse struct {
 	Book *openAPIHTTPBook `json:"book"`
+}
+
+type openAPIOneofChoice interface {
+	isOpenAPIOneofChoice()
+}
+
+type openAPIOneofRequest struct {
+	Choice openAPIOneofChoice `protobuf_oneof:"choice"`
 }
 
 var registerOpenAPIHTTPDescriptor sync.Once
@@ -181,6 +190,17 @@ func TestNormalizeHTTPPath(t *testing.T) {
 	if got, want := openAPIPathPattern(template, "name"), "^publishers/[^/]+/books/[^/]+$"; got != want {
 		t.Fatalf("openAPIPathPattern() = %q, want %q", got, want)
 	}
+}
+
+func TestCollectQueryFieldsSkipsOneofWrapper(t *testing.T) {
+	resolver := NewSchemaResolver(global.DefaultOpenAPIConfig())
+	binding := httpbinding.HTTPBinding{}
+	fields := make([]openAPIQueryField, 0)
+
+	require.NotPanics(t, func() {
+		collectQueryFields(reflect.TypeFor[openAPIOneofRequest](), "", binding, resolver, &fields, 0)
+	})
+	require.Empty(t, fields)
 }
 
 func openAPIHTTPFileDescriptor() *descriptorpb.FileDescriptorProto {

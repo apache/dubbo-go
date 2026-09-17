@@ -289,24 +289,73 @@ func populateHTTPTranscodingQuery(message proto.Message, binding httpbinding.HTT
 		return nil
 	}
 	filterFields := make([][]string, 0, len(binding.PathFields)+1)
-	for _, field := range binding.PathFields {
-		canonicalField, err := canonicalHTTPTranscodingFieldPath(message.ProtoReflect().Descriptor(), field)
+	appendFilterFields := func(fieldPath string) error {
+		aliases, err := httpTranscodingFieldPathAliases(message.ProtoReflect().Descriptor(), fieldPath)
 		if err != nil {
 			return err
 		}
-		filterFields = append(filterFields, strings.Split(canonicalField, "."))
+		filterFields = append(filterFields, aliases...)
+		return nil
+	}
+	for _, field := range binding.PathFields {
+		if err := appendFilterFields(field); err != nil {
+			return err
+		}
 	}
 	if binding.Body != "" {
-		canonicalBody, err := canonicalHTTPTranscodingFieldPath(message.ProtoReflect().Descriptor(), binding.Body)
-		if err != nil {
+		if err := appendFilterFields(binding.Body); err != nil {
 			return err
 		}
-		filterFields = append(filterFields, strings.Split(canonicalBody, "."))
 	}
 	if err := runtime.PopulateQueryParameters(message, request.URL.Query(), utilities.NewDoubleArray(filterFields)); err != nil {
 		return fmt.Errorf("populate query parameters: %w", err)
 	}
 	return nil
+}
+
+func httpTranscodingFieldPathAliases(message protoreflect.MessageDescriptor, path string) ([][]string, error) {
+	if path == "" || path == "*" {
+		return nil, nil
+	}
+	if message == nil {
+		return nil, fmt.Errorf("cannot resolve field path %q without a message descriptor", path)
+	}
+
+	paths := [][]string{{}}
+	parts := strings.Split(path, ".")
+	for index, part := range parts {
+		if part == "" {
+			return nil, fmt.Errorf("field path %q contains an empty component", path)
+		}
+		field := message.Fields().ByName(protoreflect.Name(part))
+		if field == nil {
+			field = message.Fields().ByJSONName(part)
+		}
+		if field == nil {
+			return nil, fmt.Errorf("field %q not found in %q", part, message.FullName())
+		}
+
+		fieldNames := []string{string(field.Name())}
+		if jsonName := field.JSONName(); jsonName != fieldNames[0] {
+			fieldNames = append(fieldNames, jsonName)
+		}
+		aliases := make([][]string, 0, len(paths)*len(fieldNames))
+		for _, prefix := range paths {
+			for _, fieldName := range fieldNames {
+				alias := append(append([]string(nil), prefix...), fieldName)
+				aliases = append(aliases, alias)
+			}
+		}
+		paths = aliases
+
+		if index < len(parts)-1 {
+			if field.IsList() || field.IsMap() || field.Message() == nil {
+				return nil, fmt.Errorf("field %q is not a singular message", field.FullName())
+			}
+			message = field.Message()
+		}
+	}
+	return paths, nil
 }
 
 func canonicalHTTPTranscodingFieldPath(message protoreflect.MessageDescriptor, path string) (string, error) {
@@ -396,6 +445,9 @@ func extractHTTPJSONField(raw []byte, descriptor protoreflect.MessageDescriptor,
 		}
 		var object map[string]json.RawMessage
 		if err := json.Unmarshal(current, &object); err != nil {
+			if index == 0 && len(parts) == 1 && isScalarWrapperValue(descriptor, field) {
+				return current, nil
+			}
 			return nil, fmt.Errorf("decode response field %q: %w", fieldPath, err)
 		}
 		value, ok := object[field.JSONName()]
@@ -417,6 +469,22 @@ func extractHTTPJSONField(raw []byte, descriptor protoreflect.MessageDescriptor,
 		}
 	}
 	return current, nil
+}
+
+func isScalarWrapperValue(descriptor protoreflect.MessageDescriptor, field protoreflect.FieldDescriptor) bool {
+	if descriptor == nil || field == nil || field.Name() != "value" {
+		return false
+	}
+	switch descriptor.FullName() {
+	case "google.protobuf.BoolValue", "google.protobuf.BytesValue",
+		"google.protobuf.DoubleValue", "google.protobuf.FloatValue",
+		"google.protobuf.Int32Value", "google.protobuf.Int64Value",
+		"google.protobuf.StringValue", "google.protobuf.UInt32Value",
+		"google.protobuf.UInt64Value":
+		return true
+	default:
+		return false
+	}
 }
 
 func defaultHTTPJSONField(field protoreflect.FieldDescriptor) []byte {
