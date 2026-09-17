@@ -24,7 +24,7 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 )
 
-var pathVariablePattern = regexp.MustCompile(`\{([A-Za-z_][A-Za-z0-9_.]*)(?:=[^{}]+)?\}`)
+var pathVariablePattern = regexp.MustCompile(`\{([A-Za-z_][A-Za-z0-9_.]*)(?:=([^{}]+))?\}`)
 
 func resolvePathFields(method, pathTemplate string) ([]string, error) {
 	mux := runtime.NewServeMux()

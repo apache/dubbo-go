@@ -17,6 +17,11 @@
 
 package httpbinding
 
+import (
+	"net/http"
+	"strings"
+)
+
 // HTTPBinding is a validated google.api.http route for one protobuf method.
 type HTTPBinding struct {
 	RPC          string
@@ -29,5 +34,32 @@ type HTTPBinding struct {
 }
 
 func (b HTTPBinding) Key() string {
-	return b.Method + " " + b.PathTemplate
+	return CanonicalRouteKey(b.Method, b.PathTemplate)
+}
+
+// CanonicalRouteKey normalizes variable names and the implicit single-segment
+// wildcard so equivalent HTTP templates cannot be registered as distinct
+// routes. Literal path segments and custom verb suffixes are preserved.
+func CanonicalRouteKey(method, path string) string {
+	method = strings.ToUpper(strings.TrimSpace(method))
+	path = pathVariablePattern.ReplaceAllStringFunc(path, func(variable string) string {
+		matches := pathVariablePattern.FindStringSubmatch(variable)
+		pattern := "*"
+		if len(matches) > 2 && matches[2] != "" {
+			pattern = matches[2]
+		}
+		return "{" + pattern + "}"
+	})
+	return method + " " + path
+}
+
+// IsSupportedMethod reports whether the route can be represented by the
+// runtime and OpenAPI implementations in this package.
+func IsSupportedMethod(method string) bool {
+	switch strings.ToUpper(strings.TrimSpace(method)) {
+	case http.MethodGet, http.MethodPut, http.MethodPost, http.MethodDelete, http.MethodPatch:
+		return true
+	default:
+		return false
+	}
 }

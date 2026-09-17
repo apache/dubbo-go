@@ -41,6 +41,7 @@ type httpBinding struct {
 }
 
 var httpPathVariablePattern = regexp.MustCompile(`\{([A-Za-z_][A-Za-z0-9_.]*)(?:=[^{}]+)?\}`)
+var httpCanonicalVariablePattern = regexp.MustCompile(`\{([A-Za-z_][A-Za-z0-9_.]*)(?:=([^{}]+))?\}`)
 
 func resolveHTTPBindings(method protoreflect.MethodDescriptor) ([]httpBinding, error) {
 	options, ok := method.Options().(*descriptorpb.MethodOptions)
@@ -72,12 +73,22 @@ func resolveHTTPBindings(method protoreflect.MethodDescriptor) ([]httpBinding, e
 		if err != nil {
 			return nil, err
 		}
+		if body := current.GetBody(); body != "" {
+			if err := validateHTTPBodyMethod(httpMethod, body); err != nil {
+				return nil, err
+			}
+		}
 		if body := current.GetBody(); body != "" && body != "*" {
 			if _, err := validateHTTPFieldPath(method.Input(), body); err != nil {
 				return nil, fmt.Errorf("invalid body field %q: %w", body, err)
 			}
+			for _, pathField := range pathFields {
+				if httpFieldPathsOverlap(body, pathField) {
+					return nil, fmt.Errorf("body field %q overlaps path field %q", body, pathField)
+				}
+			}
 		}
-		if responseBody := current.GetResponseBody(); responseBody != "" {
+		if responseBody := current.GetResponseBody(); responseBody != "" && responseBody != "*" {
 			if _, err := validateHTTPFieldPath(method.Output(), responseBody); err != nil {
 				return nil, fmt.Errorf("invalid response_body field %q: %w", responseBody, err)
 			}
@@ -90,7 +101,7 @@ func resolveHTTPBindings(method protoreflect.MethodDescriptor) ([]httpBinding, e
 			PathFields:   pathFields,
 			Index:        index,
 		}
-		key := binding.Method + " " + binding.PathTemplate
+		key := canonicalHTTPRouteKey(binding.Method, binding.PathTemplate)
 		if _, exists := seen[key]; exists {
 			return nil, fmt.Errorf("method %q has duplicate HTTP binding %q", method.FullName(), key)
 		}
@@ -98,6 +109,32 @@ func resolveHTTPBindings(method protoreflect.MethodDescriptor) ([]httpBinding, e
 		bindings = append(bindings, binding)
 	}
 	return bindings, nil
+}
+
+func canonicalHTTPRouteKey(method, path string) string {
+	path = httpCanonicalVariablePattern.ReplaceAllStringFunc(path, func(variable string) string {
+		matches := httpCanonicalVariablePattern.FindStringSubmatch(variable)
+		pattern := "*"
+		if len(matches) > 2 && matches[2] != "" {
+			pattern = matches[2]
+		}
+		return "{" + pattern + "}"
+	})
+	return strings.ToUpper(strings.TrimSpace(method)) + " " + path
+}
+
+func validateHTTPBodyMethod(method, body string) error {
+	if body == "" {
+		return nil
+	}
+	switch method {
+	case http.MethodGet:
+		return fmt.Errorf("HTTP method GET must not specify a request body")
+	case http.MethodDelete:
+		return fmt.Errorf("HTTP method DELETE must not specify a request body")
+	default:
+		return nil
+	}
 }
 
 func httpPattern(rule *annotations.HttpRule) (string, string, error) {
@@ -135,8 +172,8 @@ func validateHTTPPath(message protoreflect.MessageDescriptor, pathTemplate strin
 		if err != nil {
 			return nil, fmt.Errorf("invalid path field %q: %w", fieldPath, err)
 		}
-		if field.IsList() || field.IsMap() {
-			return nil, fmt.Errorf("path field %q must not be repeated or mapped", fieldPath)
+		if field.IsList() || field.IsMap() || !isSupportedHTTPPathField(field) {
+			return nil, fmt.Errorf("path field %q must be a non-repeated primitive", fieldPath)
 		}
 		if _, exists := seen[fieldPath]; !exists {
 			seen[fieldPath] = struct{}{}
@@ -172,4 +209,42 @@ func validateHTTPFieldPath(message protoreflect.MessageDescriptor, path string) 
 		message = field.Message()
 	}
 	return field, nil
+}
+
+func httpFieldPathsOverlap(first, second string) bool {
+	firstParts := strings.Split(first, ".")
+	secondParts := strings.Split(second, ".")
+	if len(firstParts) != len(secondParts) {
+		return false
+	}
+	for index, part := range firstParts {
+		if strings.ToLower(strings.ReplaceAll(part, "_", "")) != strings.ToLower(strings.ReplaceAll(secondParts[index], "_", "")) {
+			return false
+		}
+	}
+	return true
+}
+
+func isSupportedHTTPPathField(field protoreflect.FieldDescriptor) bool {
+	if field == nil {
+		return false
+	}
+	if field.Kind() != protoreflect.MessageKind && field.Kind() != protoreflect.GroupKind {
+		return true
+	}
+	if field.Message() == nil {
+		return false
+	}
+	switch field.Message().FullName() {
+	case "google.protobuf.Timestamp", "google.protobuf.Duration",
+		"google.protobuf.DoubleValue", "google.protobuf.FloatValue",
+		"google.protobuf.Int64Value", "google.protobuf.Int32Value",
+		"google.protobuf.UInt64Value", "google.protobuf.UInt32Value",
+		"google.protobuf.BoolValue", "google.protobuf.StringValue",
+		"google.protobuf.BytesValue", "google.protobuf.FieldMask",
+		"google.protobuf.Value", "google.protobuf.Struct":
+		return true
+	default:
+		return false
+	}
 }

@@ -96,16 +96,28 @@ func resolveRule(method protoreflect.MethodDescriptor, rule *annotations.HttpRul
 		if fieldErr != nil {
 			return HTTPBinding{}, fmt.Errorf("invalid path field %q: %w", path, fieldErr)
 		}
-		if field.IsList() || field.IsMap() {
-			return HTTPBinding{}, fmt.Errorf("path field %q must not be repeated or mapped", path)
+		if field.IsList() || field.IsMap() || !isSupportedPathField(field) {
+			return HTTPBinding{}, fmt.Errorf("path field %q must be a non-repeated primitive", path)
 		}
 	}
 	if body := rule.GetBody(); body != "" && body != "*" {
+		if err := validateBodyMethod(httpMethod, body); err != nil {
+			return HTTPBinding{}, err
+		}
 		if _, err = validateFieldPath(method.Input(), body); err != nil {
 			return HTTPBinding{}, fmt.Errorf("invalid body field %q: %w", body, err)
 		}
+		for _, path := range pathFields {
+			if fieldPathsOverlap(body, path) {
+				return HTTPBinding{}, fmt.Errorf("body field %q overlaps path field %q", body, path)
+			}
+		}
+	} else if body := rule.GetBody(); body == "*" {
+		if err := validateBodyMethod(httpMethod, body); err != nil {
+			return HTTPBinding{}, err
+		}
 	}
-	if responseBody := rule.GetResponseBody(); responseBody != "" {
+	if responseBody := rule.GetResponseBody(); responseBody != "" && responseBody != "*" {
 		if _, err = validateFieldPath(method.Output(), responseBody); err != nil {
 			return HTTPBinding{}, fmt.Errorf("invalid response_body field %q: %w", responseBody, err)
 		}
@@ -120,6 +132,20 @@ func resolveRule(method protoreflect.MethodDescriptor, rule *annotations.HttpRul
 		PathFields:   pathFields,
 		Index:        index,
 	}, nil
+}
+
+func validateBodyMethod(method, body string) error {
+	if body == "" {
+		return nil
+	}
+	switch method {
+	case http.MethodGet:
+		return fmt.Errorf("HTTP method GET must not specify a request body")
+	case http.MethodDelete:
+		return fmt.Errorf("HTTP method DELETE must not specify a request body")
+	default:
+		return nil
+	}
 }
 
 func resolvePattern(rule *annotations.HttpRule) (string, string, error) {
@@ -164,4 +190,46 @@ func validateFieldPath(message protoreflect.MessageDescriptor, path string) (pro
 		message = field.Message()
 	}
 	return nil, fmt.Errorf("field path is empty")
+}
+
+func fieldPathsOverlap(first, second string) bool {
+	firstParts := strings.Split(first, ".")
+	secondParts := strings.Split(second, ".")
+	if len(firstParts) != len(secondParts) {
+		return false
+	}
+	for index, part := range firstParts {
+		if normalizeFieldName(part) != normalizeFieldName(secondParts[index]) {
+			return false
+		}
+	}
+	return true
+}
+
+func normalizeFieldName(name string) string {
+	return strings.ToLower(strings.ReplaceAll(name, "_", ""))
+}
+
+func isSupportedPathField(field protoreflect.FieldDescriptor) bool {
+	if field == nil {
+		return false
+	}
+	if field.Kind() != protoreflect.MessageKind && field.Kind() != protoreflect.GroupKind {
+		return true
+	}
+	if field.Message() == nil {
+		return false
+	}
+	switch field.Message().FullName() {
+	case "google.protobuf.Timestamp", "google.protobuf.Duration",
+		"google.protobuf.DoubleValue", "google.protobuf.FloatValue",
+		"google.protobuf.Int64Value", "google.protobuf.Int32Value",
+		"google.protobuf.UInt64Value", "google.protobuf.UInt32Value",
+		"google.protobuf.BoolValue", "google.protobuf.StringValue",
+		"google.protobuf.BytesValue", "google.protobuf.FieldMask",
+		"google.protobuf.Value", "google.protobuf.Struct":
+		return true
+	default:
+		return false
+	}
 }

@@ -70,6 +70,21 @@ func TestResolvePattern(t *testing.T) {
 	}
 }
 
+func TestCanonicalRouteKeyNormalizesPathVariables(t *testing.T) {
+	require.Equal(t,
+		"GET /v1/books/{*}:publish",
+		CanonicalRouteKey("get", "/v1/books/{book_id=*}:publish"),
+	)
+	require.Equal(t,
+		CanonicalRouteKey("GET", "/v1/books/{name}"),
+		CanonicalRouteKey("GET", "/v1/books/{id=*}"),
+	)
+	require.NotEqual(t,
+		CanonicalRouteKey("GET", "/v1/books/{name}"),
+		CanonicalRouteKey("GET", "/v1/books/{id=publishers/*/books/*}"),
+	)
+}
+
 func TestResolveMethodRejectsInvalidRules(t *testing.T) {
 	valid := func(path string) *annotations.HttpRule {
 		return &annotations.HttpRule{Pattern: &annotations.HttpRule_Get{Get: path}}
@@ -82,8 +97,12 @@ func TestResolveMethodRejectsInvalidRules(t *testing.T) {
 	}{
 		{"custom method", &annotations.HttpRule{Pattern: &annotations.HttpRule_Custom{Custom: &annotations.CustomHttpPattern{Kind: "REPORT", Path: "/v1"}}}, false, "custom HTTP method"},
 		{"missing path field", valid("/v1/{missing}"), false, "invalid path field"},
-		{"repeated path field", valid("/v1/{ids}"), false, "must not be repeated"},
+		{"repeated path field", valid("/v1/{ids}"), false, "must be a non-repeated primitive"},
+		{"message path field", valid("/v1/{book}"), false, "must be a non-repeated primitive"},
 		{"missing body field", &annotations.HttpRule{Pattern: &annotations.HttpRule_Post{Post: "/v1"}, Body: "missing"}, false, "invalid body field"},
+		{"body path overlap", &annotations.HttpRule{Pattern: &annotations.HttpRule_Post{Post: "/v1/{name}"}, Body: "name"}, false, "overlaps path field"},
+		{"GET body", &annotations.HttpRule{Pattern: &annotations.HttpRule_Get{Get: "/v1"}, Body: "book"}, false, "GET must not specify"},
+		{"DELETE body", &annotations.HttpRule{Pattern: &annotations.HttpRule_Delete{Delete: "/v1"}, Body: "book"}, false, "DELETE must not specify"},
 		{"missing response field", &annotations.HttpRule{Pattern: &annotations.HttpRule_Get{Get: "/v1"}, ResponseBody: "missing"}, false, "invalid response_body field"},
 		{"nested additional binding", &annotations.HttpRule{Pattern: &annotations.HttpRule_Get{Get: "/v1"}, AdditionalBindings: []*annotations.HttpRule{{Pattern: &annotations.HttpRule_Get{Get: "/v2"}, AdditionalBindings: []*annotations.HttpRule{valid("/v3")}}}}, false, "nested additional_bindings"},
 		{"duplicate binding", &annotations.HttpRule{Pattern: &annotations.HttpRule_Get{Get: "/v1"}, AdditionalBindings: []*annotations.HttpRule{valid("/v1")}}, false, "duplicate HTTP binding"},
@@ -95,6 +114,19 @@ func TestResolveMethodRejectsInvalidRules(t *testing.T) {
 			require.ErrorContains(t, err, test.want)
 		})
 	}
+}
+
+func TestResolveMethodAllowsNestedBodyAndResponseFields(t *testing.T) {
+	rule := &annotations.HttpRule{
+		Pattern:      &annotations.HttpRule_Post{Post: "/v1/{name}"},
+		Body:         "book.id",
+		ResponseBody: "book.id",
+	}
+	bindings, err := ResolveMethod(newTestMethod(t, rule, false))
+	require.NoError(t, err)
+	require.Len(t, bindings, 1)
+	require.Equal(t, "book.id", bindings[0].Body)
+	require.Equal(t, "book.id", bindings[0].ResponseBody)
 }
 
 func newTestMethod(t *testing.T, rule *annotations.HttpRule, streaming bool) protoreflect.MethodDescriptor {
