@@ -18,6 +18,7 @@
 package triple_protocol
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -25,6 +26,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -257,4 +259,43 @@ func TestMethodRouteMuxCaseFallbackWinsOverHTTPFallback(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, resp.Code)
 	assert.Equal(t, "triple-case-fallback", resp.Body.String())
+}
+
+func TestMethodRouteMuxTranscodingRouteWinsForMethodMismatch(t *testing.T) {
+	mux := newMethodRouteMux()
+	mux.Handle(methodRouteMuxGetUserPath, NewUnaryHandler(
+		methodRouteMuxGetUserPath,
+		func() any { return nil },
+		func(context.Context, *Request) (*Response, error) { return nil, nil },
+	))
+	require.NoError(t, mux.registerHTTPHandlers([]HTTPRoute{{
+		Method: http.MethodGet,
+		Path:   methodRouteMuxGetUserPath,
+		RPC:    "Service.GetUser",
+		Handler: func(w http.ResponseWriter, _ *http.Request, _ map[string]string) {
+			_, _ = w.Write([]byte("transcoding"))
+		},
+	}}))
+
+	req := httptest.NewRequest(http.MethodGet, methodRouteMuxGetUserPath, nil)
+	resp := httptest.NewRecorder()
+	mux.ServeHTTP(resp, req)
+
+	assert.Equal(t, http.StatusOK, resp.Code)
+	assert.Equal(t, "transcoding", resp.Body.String())
+}
+
+func TestMethodRouteMuxCanonicalMethodMismatchRemainsMethodNotAllowed(t *testing.T) {
+	mux := newMethodRouteMux()
+	mux.Handle(methodRouteMuxGetUserPath, NewUnaryHandler(
+		methodRouteMuxGetUserPath,
+		func() any { return nil },
+		func(context.Context, *Request) (*Response, error) { return nil, nil },
+	))
+
+	req := httptest.NewRequest(http.MethodGet, methodRouteMuxGetUserPath, nil)
+	resp := httptest.NewRecorder()
+	mux.ServeHTTP(resp, req)
+
+	assert.Equal(t, http.StatusMethodNotAllowed, resp.Code)
 }

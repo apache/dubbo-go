@@ -88,7 +88,7 @@ func (m *methodRouteMux) Handle(pattern string, handler http.Handler) {
 }
 
 func (m *methodRouteMux) Handler(r *http.Request) (http.Handler, string) {
-	if handler, pattern := m.exact.Handler(r); pattern != "" {
+	if handler, pattern := m.exact.Handler(r); pattern != "" && handlerSupportsMethod(handler, r.Method) {
 		return handler, pattern
 	}
 
@@ -96,11 +96,42 @@ func (m *methodRouteMux) Handler(r *http.Request) (http.Handler, string) {
 	m.mu.RLock()
 	entry, ok := m.lower[lowerKey]
 	m.mu.RUnlock()
-	if ok {
+	if ok && handlerSupportsMethod(entry.handler, r.Method) {
 		return entry.handler, entry.pattern
 	}
 
 	return http.NotFoundHandler(), ""
+}
+
+func handlerSupportsMethod(handler http.Handler, method string) bool {
+	if method == "" {
+		return true
+	}
+	tripleHandler, ok := handler.(*Handler)
+	if !ok {
+		return true
+	}
+	for _, protocolHandler := range tripleHandler.protocolHandlers {
+		if _, ok := protocolHandler.Methods()[method]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+func (m *methodRouteMux) methodMismatchHandler(r *http.Request) (http.Handler, string) {
+	if handler, pattern := m.exact.Handler(r); pattern != "" && !handlerSupportsMethod(handler, r.Method) {
+		return handler, pattern
+	}
+
+	lowerKey := normalizeMethodRouteKey(r.URL.Path)
+	m.mu.RLock()
+	entry, ok := m.lower[lowerKey]
+	m.mu.RUnlock()
+	if ok && !handlerSupportsMethod(entry.handler, r.Method) {
+		return entry.handler, entry.pattern
+	}
+	return nil, ""
 }
 
 func (m *methodRouteMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -116,6 +147,10 @@ func (m *methodRouteMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	m.mu.RUnlock()
 	if hasTranscodingRoutes {
 		transcoding.ServeHTTP(w, r)
+		return
+	}
+	if handler, pattern := m.methodMismatchHandler(r); pattern != "" {
+		handler.ServeHTTP(w, r)
 		return
 	}
 
@@ -178,6 +213,10 @@ func (m *methodRouteMux) addTranscodingMethod(method string) {
 
 func (m *methodRouteMux) handleTranscodingRoutingError(ctx context.Context, mux *runtime.ServeMux, marshaler runtime.Marshaler, w http.ResponseWriter, r *http.Request, status int) {
 	if status == http.StatusNotFound {
+		if handler, pattern := m.methodMismatchHandler(r); pattern != "" {
+			handler.ServeHTTP(w, r)
+			return
+		}
 		m.mu.RLock()
 		fallback := m.fallback
 		m.mu.RUnlock()

@@ -60,6 +60,7 @@ func TestHTTPTranscodingHandlerSupportsBodyPathQueryAndAdditionalBinding(t *test
 		invokeFn: func(ctx context.Context, inv base.Invocation) result.Result {
 			require.NoError(t, tri.SetHeader(ctx, http.Header{"X-Handler-ID": {"header-1"}}))
 			require.NoError(t, tri.SetTrailer(ctx, http.Header{"X-Handler-Trailer": {"trailer-1"}}))
+			ctx = tri.AppendToOutgoingContext(ctx, "X-Context-Metadata", "context-1")
 			lastRequest = inv.Arguments()[0].(proto.Message)
 			request := lastRequest.ProtoReflect()
 			book := request.Get(requestFields.ByName("book")).Message()
@@ -106,6 +107,7 @@ func TestHTTPTranscodingHandlerSupportsBodyPathQueryAndAdditionalBinding(t *test
 	assert.Equal(t, []string{"resp-1"}, patchResponse.Header().Values("X-Response-ID"))
 	assert.Equal(t, []string{"header-1"}, patchResponse.Header().Values("X-Handler-ID"))
 	assert.Equal(t, []string{"trailer-1"}, patchResponse.Header().Values("X-Handler-Trailer"))
+	assert.Equal(t, []string{"context-1"}, patchResponse.Header().Values("X-Context-Metadata"))
 	assert.Equal(t, "alice", lastRequest.ProtoReflect().Get(requestFields.ByName("name")).String())
 
 	get := routes[1]

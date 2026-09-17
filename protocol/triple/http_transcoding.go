@@ -138,6 +138,7 @@ func newHTTPTranscodingHandler(binding httpbinding.HTTPBinding, method common.Me
 		response, attachments, err := invokeUnaryRequest(ctx, method, invoker, request, r.Header)
 		copyHTTPHeaders(w.Header(), outgoing.Header())
 		copyHTTPHeaders(w.Header(), outgoing.Trailer())
+		copyHTTPHeaders(w.Header(), tri.ExtractFromOutgoingContext(ctx))
 		if err != nil {
 			if response != nil {
 				copyHTTPHeaders(w.Header(), response.Header())
