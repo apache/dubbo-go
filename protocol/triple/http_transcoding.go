@@ -131,10 +131,16 @@ func newHTTPTranscodingHandler(binding httpbinding.HTTPBinding, method common.Me
 			writeHTTPTranscodingErrorResponse(w, tri.NewError(tri.CodeInternal, fmt.Errorf("RPC %s returned a nil response", method.Name)))
 			return
 		}
+		payload := responsePayload(response)
+		if payload == nil {
+			writeHTTPTranscodingErrorResponse(w, tri.NewError(tri.CodeInternal, fmt.Errorf("RPC %s returned a nil response payload", method.Name)))
+			return
+		}
 
 		copyHTTPHeaders(w.Header(), response.Header())
+		copyHTTPHeaders(w.Header(), response.Trailer())
 		copyHTTPAttachments(w.Header(), attachments)
-		body, err := marshalHTTPTranscodingResponse(responsePayload(response), binding.ResponseBody)
+		body, err := marshalHTTPTranscodingResponse(payload, binding.ResponseBody)
 		if err != nil {
 			writeHTTPTranscodingErrorResponse(w, tri.NewError(tri.CodeInternal, err))
 			return
@@ -291,7 +297,7 @@ func responsePayload(response *tri.Response) any {
 
 func marshalHTTPTranscodingResponse(payload any, responseBody string) ([]byte, error) {
 	var marshaler runtime.JSONPb
-	if responseBody == "" {
+	if responseBody == "" || responseBody == "*" {
 		return marshaler.Marshal(payload)
 	}
 	message, ok := payload.(proto.Message)
