@@ -127,6 +127,7 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 		}
 
 		items := orderedmap.New[string, *openapimodel.PathItem]()
+		httpRouteKeys := make(map[string]string)
 		tags := []*base.Tag{}
 
 		services := fd.Services()
@@ -149,6 +150,11 @@ func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorRespons
 					}
 					if len(httpOperations) > 0 {
 						for _, httpOperation := range httpOperations {
+							routeKey := canonicalHTTPRouteKey(httpOperation.Method, httpOperation.Template)
+							if previousOperation, exists := httpRouteKeys[routeKey]; exists && previousOperation != httpOperation.Operation.OperationId {
+								return nil, fmt.Errorf("conflicting HTTP operations for route %q: %q and %q", routeKey, previousOperation, httpOperation.Operation.OperationId)
+							}
+							httpRouteKeys[routeKey] = httpOperation.Operation.OperationId
 							item := items.GetOrZero(httpOperation.Path)
 							if item == nil {
 								item = &openapimodel.PathItem{}

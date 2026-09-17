@@ -176,6 +176,20 @@ func TestConvertUseHTTPRules(t *testing.T) {
 	}
 }
 
+func TestConvertUseHTTPRulesRejectsEquivalentRouteConflict(t *testing.T) {
+	request := httpRuleRequest()
+	service := request.ProtoFile[0].Service[0]
+	duplicate := proto.Clone(service.Method[0]).(*descriptorpb.MethodDescriptorProto)
+	duplicate.Name = proto.String("FindBook")
+	service.Method = append(service.Method, duplicate)
+
+	request.Parameter = proto.String("format=json,use-http-rules=true")
+	_, err := convert(request)
+	if err == nil {
+		t.Fatal("expected equivalent HTTP route conflict")
+	}
+}
+
 func httpRuleRequest() *pluginpb.CodeGeneratorRequest {
 	methodOptions := &descriptorpb.MethodOptions{}
 	proto.SetExtension(methodOptions, annotations.E_Http, &annotations.HttpRule{
