@@ -426,14 +426,18 @@ func TestSetInvokersIncrementsAndPublishesGeneration(t *testing.T) {
 // asserts the invoker snapshot it received from the cache belongs to the same generation the
 // chain published, catching any snapshot/generation skew under concurrency.
 type genCheckRouter struct {
-	cache      router.Cache
+	cache      atomic.Pointer[router.Cache]
 	violations atomic.Int64
 	fastPaths  atomic.Int64
 }
 
-func (r *genCheckRouter) Name() string            { return "gen-check" }
-func (r *genCheckRouter) ShouldPool() bool        { return true }
-func (r *genCheckRouter) SetCache(c router.Cache) { r.cache = c }
+func (r *genCheckRouter) Name() string     { return "gen-check" }
+func (r *genCheckRouter) ShouldPool() bool { return true }
+func (r *genCheckRouter) SetCache(c router.Cache) {
+	if c != nil {
+		r.cache.Store(&c)
+	}
+}
 func (r *genCheckRouter) URL() *common.URL        { return nil }
 func (r *genCheckRouter) Priority() int64         { return 0 }
 func (r *genCheckRouter) Notify(_ []base.Invoker) {}
@@ -448,10 +452,12 @@ func (r *genCheckRouter) Pool(invokers []base.Invoker) (router.AddrPool, router.
 }
 
 func (r *genCheckRouter) Route(invokers []base.Invoker, _ *common.URL, inv base.Invocation) []base.Invoker {
-	if r.cache == nil {
+	cachePtr := r.cache.Load()
+	if cachePtr == nil || *cachePtr == nil {
 		return invokers
 	}
-	pool, full, cacheGen := r.cache.FindAddrPool(r)
+	cache := *cachePtr
+	pool, full, cacheGen := cache.FindAddrPool(r)
 	snapGen := inv.GetAttributeWithDefaultValue(constant.RouterChainCacheGeneration, uint64(0)).(uint64)
 	if pool == nil || cacheGen != snapGen {
 		return invokers // fall back, exactly like TagRouter
