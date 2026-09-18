@@ -15,11 +15,25 @@
 
 您可以访问 [官网](https://dubbo.apache.org/) 以获取更多信息。
 
+## 近期更新
+
+详细变更请参阅 [CHANGELOG.md](CHANGELOG.md)。
+
+- **[3.3.2](https://github.com/apache/dubbo-go/releases/tag/v3.3.2)**：
+
+  **升级提醒：** 需要 Go 1.25 或更高版本。旧版 `config` 包已被移除；直接导入该包的应用需要迁移到实例/选项 API 和 `global` 包下的配置类型。迁移说明和当前用法请参阅 [3.3.2 更新日志](CHANGELOG.md#332)及 [dubbo-go-samples](https://github.com/apache/dubbo-go-samples)。
+
+  Apache Dubbo-go 3.3.2 重点提升生产可用性，涵盖 API 整合、Triple 协议能力、应用级元数据、服务治理、并发安全和发布工具链。该版本扩展了泛化调用和面向 HTTP 的 Triple 能力，更新了项目生成流程，并修复了多项竞态、过期快照和资源泄漏问题。
+
+- **3.3.1**：优化配置热加载，通过基于内容的缓存避免重复通知；新增实验性 HTTP/3 支持、Apollo 集成和 Triple 协议 OpenAPI 生成；修复高并发服务发现中的关键竞态问题。
+
+- **3.3.0**：引入脚本路由、多目标条件路由、Triple 协议 keepalive 与连接池、Nacos 多类别订阅，并增强可观测性和互操作性。
+
 ## 快速开始
 
 ### 环境准备
 
-* Go 1.24 或更高版本（建议使用最新版本以获得最佳性能与兼容性）。
+* Go 1.25 或更高版本。
 
 ### 安装
 
@@ -110,6 +124,15 @@ func main() {
 | [imports-formatter](./tools/imports-formatter/README_CN.md) | 按 dubbo-go 分组规则整理 Go import 块。 |
 | [dubbo-go-schema](./tools/dubbo-go-schema/README_CN.md) | 为 dubbo-go YAML 配置提供 JSON Schema 补全与校验。 |
 | [benchmark](./tools/benchmark/README_CN.md) | 对比 Dubbo-Go、Dubbo-Java 和 gRPC 框架性能的基准测试套件。 |
+
+GitHub Releases 提供适用于 Darwin、Linux 和 Windows 的预编译压缩包：
+
+- [dubbogo-cli v1.0.1](https://github.com/apache/dubbo-go/releases/tag/tools/dubbogo-cli/v1.0.1)
+- [protoc-gen-go-triple v3.3.2](https://github.com/apache/dubbo-go/releases/tag/tools/protoc-gen-go-triple/v3.3.2)
+- [protoc-gen-triple-openapi v3.3.2](https://github.com/apache/dubbo-go/releases/tag/tools/protoc-gen-triple-openapi/v3.3.2)
+- [imports-formatter v1.0.11](https://github.com/apache/dubbo-go/releases/tag/tools/imports-formatter/v1.0.11)
+
+安装 `dubbogo-cli` 后，可运行 `dubbogo-cli install all` 安装配套的代码生成器和格式化工具。各工具 README 中提供了从源码安装的命令。
 
 ## 生态系统
 
