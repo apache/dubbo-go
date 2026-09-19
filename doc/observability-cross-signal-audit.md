@@ -57,7 +57,7 @@ Legacy OpenTracing filter `filter/tracing/filter.go` still names spans `ServiceK
 
 **Protocol:** not a label. Dubbo-protocol errors are unclassified (`TODO: Support dubbo protocol error classification`).
 
-**Tests:** `metrics/rpc/util_test.go` (`interface` = `url.Service()`); `metrics/rpc/error_classifier_test.go`; `metrics/rpc/collector_test.go`; `filter/metrics/filter_test.go`.
+**Tests:** `metrics/rpc/util_test.go` (`interface` = `url.Service()`); `metrics/rpc/error_classifier_test.go`; `metrics/rpc/event_test.go`; `filter/metrics/filter_test.go`.
 
 **Enablement:** metrics filter is **not** in `DefaultServiceFilters` / `DefaultReferenceFilters`. `server/action.go` / `client/action.go` append `metrics` only when `Metrics.Enable` is true.
 
@@ -107,7 +107,7 @@ When `trace.SpanContextFromContext` is valid:
 
 Invalid/missing span: those keys are omitted (not empty strings). No `service`, `method`, `group`, `version`, `error_type`.
 
-**Tests:** `logger/core/zap/ctx_logger_test.go`, `logger/core/logrus/ctx_logger_test.go`, `logger/trace_extractor_test.go`, `logger/core/zap/dynamic_level_test.go`, `logger/core/logrus/dynamic_level_test.go` (level + exact trace fields; [#3721](https://github.com/apache/dubbo-go/issues/3721)).
+**Tests on this revision:** `logger/core/zap/ctx_logger_test.go`, `logger/core/logrus/ctx_logger_test.go`, `logger/trace_extractor_test.go`. Dynamic log-level + exact-ID coverage is [#3721](https://github.com/apache/dubbo-go/issues/3721) / [#3744](https://github.com/apache/dubbo-go/pull/3744) and is **not** in `develop@9af40a2b`.
 
 **Access log filter:** `filter/accesslog/filter.go` `buildAccessLogData`. Keys from invocation attachments: `interface` (fallback `path`), `method`, `version`, `group`, `timestamp`, `local-addr`, `remote-addr`, plus `types` / `arguments`. Not JSON CtxLogger fields; not trace-correlated unless the caller put IDs in attachments.
 
@@ -153,7 +153,7 @@ Invalid/missing span: those keys are omitted (not empty strings). No `service`, 
 | `TagErrorCode` unused | `common/constant/metric.go` | `#3337` | — | `rg TagErrorCode` remains definition-only |
 | Generic invoke: span name uses `ActualMethodName`, `rpc.method` uses `MethodName` (`$invoke`) | `filter/otel/trace/filter.go`, `protocol/invocation/rpcinvocation.go` | `#3338` | — | Generic `$invoke` call; compare span name vs `rpc.method` |
 | `ServiceKey()` drops version `0.0.0`; metric/trace `version` keep the raw param | `common/url.go` `ServiceKey`, `metrics/rpc/util.go`, `filter/otel/trace/filter.go` | — | — | URL `version=0.0.0`; compare `ServiceKey()`, metric label, `dubbo.version` |
-| CtxLogger has no service/method fields | `logger/core/zap/ctx_logger.go`, `logger/core/logrus/ctx_logger.go` | `#3562` Workstream 2; `#3721` (level+trace fields only) | `#3721` AsperforMias | JSON log line contains trace fields only |
+| CtxLogger has no service/method fields | `logger/core/zap/ctx_logger.go`, `logger/core/logrus/ctx_logger.go` | `#3562` Workstream 2; `#3721` (level+trace fields, not merged on this pin) | `#3721` AsperforMias | JSON log line contains trace fields only (`ctx_logger_test.go` on this revision) |
 | Access log vs CtxLogger are different schemas | `filter/accesslog/filter.go` | `#3701` (shutdown), not a field-contract issue | — | Enable `accesslog` path; confirm no `trace_id` unless attached |
 | Metadata diagnostics vs RPC RED | `metrics/metadata/metric_set.go` | `#3356`, `#3463` / mapping PRs | `#3356` | Mapping listen/get/register counters; no `method` label |
 
