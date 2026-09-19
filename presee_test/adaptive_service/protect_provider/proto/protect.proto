@@ -15,40 +15,22 @@
  * limitations under the License.
  */
 
-package limiter
+syntax = "proto3";
 
-import (
-	"fmt"
-)
+package adaptive.protect;
 
-var ErrReachLimitation = fmt.Errorf("reach limitation")
+option go_package = "dubbo.apache.org/dubbo-go/v3/presee_test/adaptive_service/protect_provider/proto;protectpb";
 
-var (
-	Verbose = false
-)
-
-const (
-	HillClimbingLimiter = iota
-)
-
-type Limiter interface {
-	Inflight() uint64
-	Remaining() uint64
-	Snapshot() Snapshot
-	// Acquire inspects the current status of the system:
-	// - if reaches the limitation, reject the request immediately.
-	// - if not, grant this request and return an Updater defined below.
-	Acquire() (Updater, error)
+message WorkRequest {
+  string name = 1;
+  int32 payload_bytes = 2;
 }
 
-type Snapshot struct {
-	Inflight   uint64
-	Remaining  uint64
-	Limitation uint64
+message WorkResponse {
+  string message = 1;
+  int64 sequence = 2;
 }
 
-type Updater interface {
-	// DoUpdate is called once an invocation is finished, it tells Updater that the invocation is finished, and please
-	// update the Remaining, Inflight parameters of the Limiter.
-	DoUpdate() error
+service ProtectService {
+  rpc Work(WorkRequest) returns (WorkResponse) {}
 }
