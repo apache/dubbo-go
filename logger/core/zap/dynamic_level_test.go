@@ -195,7 +195,7 @@ func assertZapNoTraceFields(t *testing.T, raw, msg string) {
 
 func findZapLog(t *testing.T, raw, msg string) map[string]any {
 	t.Helper()
-	for _, line := range strings.Split(raw, "\n") {
+	for line := range strings.SplitSeq(raw, "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" {
 			continue
