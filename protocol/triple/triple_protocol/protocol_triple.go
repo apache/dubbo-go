@@ -265,22 +265,35 @@ func (c *tripleClient) NewConn(
 		}
 	}
 	var call unaryClientCall
+	var streamWriter io.Writer
+	var writeBuffer *streamBufferWriter
 	if spec.StreamType == StreamTypeUnary && c.UnaryFastPath {
 		// Unary fast path: no io.Pipe, no per-request goroutine. Streaming
 		// calls always keep using duplexHTTPCall.
 		call = newUnaryFastPathCall(ctx, c.HTTPClient, c.URL, spec, header, c.BufferPool)
+		streamWriter = call
 	} else {
 		call = newDuplexHTTPCall(ctx, c.HTTPClient, c.URL, spec, header)
+		streamWriter = call
+		if c.WriteBuffering {
+			// Aggregate small streamed messages to amortize the per-Send
+			// io.Pipe handshake. The gRPC wire client (protocol_grpc.go)
+			// buffers the same way; the unary fast path above is left
+			// unbuffered.
+			writeBuffer = newStreamBufferWriter(call)
+			streamWriter = writeBuffer
+		}
 	}
 	unaryConn := &tripleUnaryClientConn{
 		spec:             spec,
 		peer:             c.Peer(),
 		call:             call,
+		writeBuffer:      writeBuffer,
 		compressionPools: c.CompressionPools,
 		bufferPool:       c.BufferPool,
 		marshaler: tripleUnaryRequestMarshaler{
 			tripleUnaryMarshaler: tripleUnaryMarshaler{
-				writer:           call,
+				writer:           streamWriter,
 				codec:            c.Codec,
 				compressMinBytes: c.CompressMinBytes,
 				compressionName:  c.CompressionName,
@@ -307,6 +320,7 @@ type tripleUnaryClientConn struct {
 	spec             Spec
 	peer             Peer
 	call             unaryClientCall
+	writeBuffer      *streamBufferWriter
 	compressionPools readOnlyCompressionPools
 	bufferPool       *bufferPool
 	marshaler        tripleUnaryRequestMarshaler
@@ -335,7 +349,20 @@ func (cc *tripleUnaryClientConn) RequestHeader() http.Header {
 }
 
 func (cc *tripleUnaryClientConn) CloseRequest() error {
-	return cc.call.CloseWrite()
+	// Flush and seal the write buffer before the write side closes. Sealing
+	// means a concurrent Send is no longer accepted into the buffer and fails
+	// with io.EOF instead. No-op when write buffering is disabled.
+	var flushErr error
+	if cc.writeBuffer != nil {
+		flushErr = cc.writeBuffer.Close()
+	}
+	// CloseWrite runs even if the flush failed: the write side must always be
+	// closed so the peer does not wait on it.
+	closeErr := cc.call.CloseWrite()
+	if flushErr != nil {
+		return flushErr
+	}
+	return closeErr
 }
 
 func (cc *tripleUnaryClientConn) Receive(msg any) error {
