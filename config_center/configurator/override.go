@@ -64,6 +64,9 @@ func (c *overrideConfigurator) Configure(url *common.URL) {
 		var host string
 		currentSide := url.GetParam(constant.SideKey, "")
 		configuratorSide := c.configuratorUrl.GetParam(constant.SideKey, "")
+		if len(configuratorSide) != 0 && currentSide != configuratorSide {
+			return
+		}
 		if currentSide == configuratorSide && common.DubboRole[common.CONSUMER] == currentSide {
 			host = common.GetLocalIp()
 		} else if currentSide == configuratorSide && common.DubboRole[common.PROVIDER] == currentSide {

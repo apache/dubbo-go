@@ -143,6 +143,44 @@ func TestConditionMatchIsMatch(t *testing.T) {
 	}
 }
 
+func TestDefaultConfigurationParserParseApplicationMatch(t *testing.T) {
+	parser := &DefaultConfigurationParser{}
+	tests := []struct {
+		name  string
+		field string
+	}{
+		{name: "official application field", field: "application"},
+		{name: "legacy app field", field: "app"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			content := `configVersion: v3.0
+scope: service
+key: org.apache.dubbo.quickstart.GreeterDynamic
+enabled: true
+configs:
+- parameters:
+    loadbalance: roundrobin
+  side: provider
+  match:
+    ` + tt.field + `:
+      oneof:
+      - exact: app-a`
+
+			urls, err := parser.ParseToUrls(content)
+			require.NoError(t, err)
+			require.Len(t, urls, 1)
+			matcher, ok := urls[0].GetAttribute(constant.MatchCondition)
+			require.True(t, ok)
+
+			providerURL, err := common.NewURL("dubbo://127.0.0.1:20880/org.apache.dubbo.quickstart.GreeterDynamic?application=app-b&side=provider")
+			require.NoError(t, err)
+			assert.False(t, matcher.(*ConditionMatch).IsMatch(providerURL.Ip, providerURL))
+		})
+	}
+}
+
 func TestDefaultConfigurationParserServiceItemToUrls_ParserToUrls(t *testing.T) {
 	parser := &DefaultConfigurationParser{}
 	content := `configVersion: 2.7.1

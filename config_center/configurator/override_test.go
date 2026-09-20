@@ -149,3 +149,41 @@ func TestConfigureV3UsesLegacyConfigVersion(t *testing.T) {
 		})
 	}
 }
+
+func TestConfigureV3DoesNotConfigureDifferentSide(t *testing.T) {
+	url, err := common.NewURL("override://0.0.0.0:0/*?configVersion=v3.0&side=consumer&loadbalance=roundrobin")
+	require.NoError(t, err)
+	url.SetAttribute(constant.MatchCondition, &parser.ConditionMatch{})
+	configurator := extension.GetConfigurator(defaults, url)
+
+	providerURL, err := common.NewURL("dubbo://127.0.0.1:20880/org.apache.dubbo.quickstart.GreeterDynamic?side=provider&loadbalance=random")
+	require.NoError(t, err)
+	configurator.Configure(providerURL)
+
+	assert.Equal(t, "random", providerURL.GetParam(constant.LoadbalanceKey, ""))
+}
+
+func TestConfigureV3DoesNotConfigureApplicationMismatch(t *testing.T) {
+	configurationParser := &parser.DefaultConfigurationParser{}
+	urls, err := configurationParser.ParseToUrls(`configVersion: v3.0
+scope: service
+key: org.apache.dubbo.quickstart.GreeterDynamic
+enabled: true
+configs:
+- parameters:
+    loadbalance: roundrobin
+  side: provider
+  match:
+    application:
+      oneof:
+      - exact: app-a`)
+	require.NoError(t, err)
+	require.Len(t, urls, 1)
+	configurator := extension.GetConfigurator(defaults, urls[0])
+
+	providerURL, err := common.NewURL("dubbo://127.0.0.1:20880/org.apache.dubbo.quickstart.GreeterDynamic?application=app-b&side=provider&loadbalance=random")
+	require.NoError(t, err)
+	configurator.Configure(providerURL)
+
+	assert.Equal(t, "random", providerURL.GetParam(constant.LoadbalanceKey, ""))
+}

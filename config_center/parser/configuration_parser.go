@@ -78,8 +78,10 @@ type ConditionMatch struct {
 	Address         *common.AddressMatch    `yaml:"address"`
 	ProviderAddress *common.AddressMatch    `yaml:"providerAddress"`
 	Service         *common.ListStringMatch `yaml:"service"`
-	App             *common.ListStringMatch `yaml:"app"`
-	Param           []*common.ParamMatch    `yaml:"param"`
+	App             *common.ListStringMatch `yaml:"application"`
+	// LegacyApp supports the former non-standard app field when application is absent.
+	LegacyApp *common.ListStringMatch `yaml:"app"`
+	Param     []*common.ParamMatch    `yaml:"param"`
 }
 
 func (c *ConditionMatch) IsMatch(host string, url *common.URL) bool {
@@ -95,7 +97,11 @@ func (c *ConditionMatch) IsMatch(host string, url *common.URL) bool {
 	if c.Service != nil && !c.Service.IsMatch(url.ServiceKey()) {
 		return false
 	}
-	if c.App != nil && !c.App.IsMatch(url.GetParam(constant.ApplicationKey, "")) {
+	app := c.App
+	if app == nil {
+		app = c.LegacyApp
+	}
+	if app != nil && !app.IsMatch(url.GetParam(constant.ApplicationKey, "")) {
 		return false
 	}
 	if c.Param != nil {
