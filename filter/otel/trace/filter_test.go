@@ -753,6 +753,93 @@ func Test_rpcSpanAttributes_PreserveServiceKey(t *testing.T) {
 	}
 }
 
+func Test_rpcSpanAttributes_PathFallback(t *testing.T) {
+	t.Parallel()
+
+	serviceURL := pathFallbackOrderServiceURL()
+	if got := serviceURL.ServiceKey(); got != "gray/com.example.OrderService:1.0.0" {
+		t.Fatalf("ServiceKey() = %q, want %q", got, "gray/com.example.OrderService:1.0.0")
+	}
+	if got := serviceURL.Service(); got != "com.example.OrderService" {
+		t.Fatalf("Service() = %q, want %q", got, "com.example.OrderService")
+	}
+
+	values := make(map[attribute.Key]attribute.Value)
+	for _, attr := range rpcSpanAttributes(serviceURL, "GetOrder") {
+		values[attr.Key] = attr.Value
+	}
+	if got := values[semconv.RPCServiceKey].AsString(); got != "com.example.OrderService" {
+		t.Errorf("rpc.service = %q, want %q", got, "com.example.OrderService")
+	}
+	if got := values[semconv.RPCServiceKey].AsString(); got == serviceURL.ServiceKey() {
+		t.Errorf("rpc.service still uses ServiceKey(): %q", got)
+	}
+	if got := values[attribute.Key(constant.DubboGroupKey)].AsString(); got != "gray" {
+		t.Errorf("dubbo.group = %q, want %q", got, "gray")
+	}
+	if got := values[attribute.Key(constant.DubboVersionKey)].AsString(); got != "1.0.0" {
+		t.Errorf("dubbo.version = %q, want %q", got, "1.0.0")
+	}
+}
+
+func Test_otelServerFilter_Invoke_RPCAttributesPathFallback(t *testing.T) {
+	t.Parallel()
+	assertRPCSpanAttributes(t, invokeRPCAttributeFilter(t, trace.SpanKindServer, pathFallbackOrderServiceURL()), trace.SpanKindServer, "gray", "1.0.0")
+}
+
+func Test_otelClientFilter_Invoke_RPCAttributesPathFallback(t *testing.T) {
+	t.Parallel()
+	assertRPCSpanAttributes(t, invokeRPCAttributeFilter(t, trace.SpanKindClient, pathFallbackOrderServiceURL()), trace.SpanKindClient, "gray", "1.0.0")
+}
+
+func pathFallbackOrderServiceURL() *common.URL {
+	return common.NewURLWithOptions(
+		common.WithPath("com.example.OrderService"),
+		common.WithParamsValue(constant.GroupKey, "gray"),
+		common.WithParamsValue(constant.VersionKey, "1.0.0"),
+	)
+}
+
+func invokeRPCAttributeFilter(t *testing.T, kind trace.SpanKind, serviceURL *common.URL) []sdktrace.ReadOnlySpan {
+	t.Helper()
+
+	spanRecorder := tracetest.NewSpanRecorder()
+	tracerProvider := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder))
+	t.Cleanup(func() { _ = tracerProvider.Shutdown(context.Background()) })
+
+	ctrl := gomock.NewController(t)
+	res := NewMockResult(ctrl)
+	res.EXPECT().Error().Return(nil).AnyTimes()
+
+	invoker := NewMockInvoker(ctrl)
+	invoker.EXPECT().GetURL().Return(serviceURL).AnyTimes()
+	invoker.EXPECT().Invoke(gomock.Any(), gomock.Any()).Return(res)
+
+	invocation := NewMockInvocation(ctrl)
+	invocation.EXPECT().ActualMethodName().Return("GetOrder").AnyTimes()
+	invocation.EXPECT().MethodName().Return("GetOrder").AnyTimes()
+	invocation.EXPECT().Attachments().Return(map[string]any{}).AnyTimes()
+
+	var got result.Result
+	switch kind {
+	case trace.SpanKindServer:
+		got = (&otelServerFilter{
+			Propagators:    propagation.TraceContext{},
+			TracerProvider: tracerProvider,
+		}).Invoke(context.Background(), invoker, invocation)
+	default:
+		invocation.EXPECT().SetAttachment(gomock.Any(), gomock.Any()).AnyTimes()
+		got = (&otelClientFilter{
+			Propagators:    propagation.TraceContext{},
+			TracerProvider: tracerProvider,
+		}).Invoke(context.Background(), invoker, invocation)
+	}
+	if got != res {
+		t.Fatalf("Invoke() returned %v, want the mocked result", got)
+	}
+	return spanRecorder.Ended()
+}
+
 func assertRPCSpanAttributes(
 	t *testing.T,
 	spans []sdktrace.ReadOnlySpan,
