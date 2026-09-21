@@ -395,7 +395,25 @@ func (cc *grpcClientConn) CloseRequest() error {
 	return closeErr
 }
 
+// flushBeforeWait pushes buffered request bytes to the wire before the caller
+// blocks on the response side. Small Sends stay in the write buffer until the
+// watermark or CloseRequest, so without this a stream whose messages all fit in
+// the buffer would never issue its HTTP request and BlockUntilResponseReady
+// would wait forever. No-op when write buffering is off, and flushing an empty
+// buffer is a no-op too.
+func (cc *grpcClientConn) flushBeforeWait() {
+	if cc.writeBuffer == nil {
+		return
+	}
+	if err := cc.writeBuffer.Flush(); err != nil {
+		// Report through the call's error channel, so the reader observes the
+		// same error an unbuffered call would.
+		cc.call.SetError(err)
+	}
+}
+
 func (cc *grpcClientConn) Receive(msg any) error {
+	cc.flushBeforeWait()
 	cc.call.BlockUntilResponseReady()
 	err := cc.unmarshaler.Unmarshal(msg)
 	if err == nil {
@@ -435,16 +453,19 @@ func (cc *grpcClientConn) Receive(msg any) error {
 }
 
 func (cc *grpcClientConn) ResponseHeader() http.Header {
+	cc.flushBeforeWait()
 	cc.call.BlockUntilResponseReady()
 	return cc.responseHeader
 }
 
 func (cc *grpcClientConn) ResponseTrailer() http.Header {
+	cc.flushBeforeWait()
 	cc.call.BlockUntilResponseReady()
 	return cc.responseTrailer
 }
 
 func (cc *grpcClientConn) CloseResponse() error {
+	cc.flushBeforeWait()
 	err := cc.call.CloseRead()
 	if err != nil {
 		return err

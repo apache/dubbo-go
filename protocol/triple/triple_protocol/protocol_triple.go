@@ -365,7 +365,25 @@ func (cc *tripleUnaryClientConn) CloseRequest() error {
 	return closeErr
 }
 
+// flushBeforeWait pushes buffered request bytes to the wire before the caller
+// blocks on the response side. Small Sends stay in the write buffer until the
+// watermark or CloseRequest, so without this a stream whose messages all fit in
+// the buffer would never issue its HTTP request and BlockUntilResponseReady
+// would wait forever. No-op when write buffering is off, and flushing an empty
+// buffer is a no-op too.
+func (cc *tripleUnaryClientConn) flushBeforeWait() {
+	if cc.writeBuffer == nil {
+		return
+	}
+	if err := cc.writeBuffer.Flush(); err != nil {
+		// Report through the call's error channel, so the reader observes the
+		// same error an unbuffered call would.
+		cc.call.SetError(err)
+	}
+}
+
 func (cc *tripleUnaryClientConn) Receive(msg any) error {
+	cc.flushBeforeWait()
 	cc.call.BlockUntilResponseReady()
 	if err := cc.unmarshaler.Unmarshal(msg); err != nil {
 		return err
@@ -374,16 +392,19 @@ func (cc *tripleUnaryClientConn) Receive(msg any) error {
 }
 
 func (cc *tripleUnaryClientConn) ResponseHeader() http.Header {
+	cc.flushBeforeWait()
 	cc.call.BlockUntilResponseReady()
 	return cc.responseHeader
 }
 
 func (cc *tripleUnaryClientConn) ResponseTrailer() http.Header {
+	cc.flushBeforeWait()
 	cc.call.BlockUntilResponseReady()
 	return cc.responseTrailer
 }
 
 func (cc *tripleUnaryClientConn) CloseResponse() error {
+	cc.flushBeforeWait()
 	return cc.call.CloseRead()
 }
 
