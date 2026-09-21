@@ -38,9 +38,7 @@ import (
 	"io"
 	"net"
 	"net/http"
-	_ "net/http/pprof"
 	"os"
-	"runtime"
 	"time"
 )
 
@@ -64,31 +62,10 @@ var (
 	timeout     = flag.String("timeout", "90s", "Per-operation (one stream round-trip) timeout")
 	buffering   = flag.Bool("buffering", false, "Enable triple_protocol.WithWriteBuffering()")
 	probe       = flag.Bool("probe", false, "Run a single stream round-trip and print detailed per-step errors, then exit")
-	pprofAddr   = flag.String("pprof", "", "If set (e.g. 127.0.0.1:6060), serve net/http/pprof")
-	blockRate   = flag.Int("blockrate", 0, "Block profiler rate, >0 enables it (1 records every blocking event). Recording block events costs CPU, so keep 0 when the CPU profile is the target")
 )
 
 func main() {
 	flag.Parse()
-
-	// Profiling hook for bottleneck analysis. The CPU and block profiles are
-	// collected in separate runs: recording block events costs real CPU time
-	// (a stack unwind per blocking event), which crowds out the very frames the
-	// CPU profile is meant to show. So -blockrate keeps its zero default unless
-	// the block profile is the target. The block profile shows how long
-	// goroutines sit in off-CPU waits, which the CPU profile never captures (the
-	// io.Pipe handshake is a blocking hand-off).
-	if *pprofAddr != "" {
-		if *blockRate > 0 {
-			runtime.SetBlockProfileRate(*blockRate)
-		}
-		go func() {
-			fmt.Fprintf(os.Stderr, "pprof listening on %s\n", *pprofAddr)
-			if err := http.ListenAndServe(*pprofAddr, nil); err != nil { //nolint:gosec
-				fmt.Fprintf(os.Stderr, "pprof server: %v\n", err)
-			}
-		}()
-	}
 
 	payload := make([]byte, *payloadSize)
 	if _, err := rand.Read(payload); err != nil {
