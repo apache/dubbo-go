@@ -63,13 +63,13 @@ func TestWritePathAggregationProbe(t *testing.T) {
 	)
 	msg := make([]byte, msgSize)
 
-	// Baseline: one Write per message, the current streaming client behaviour.
+	// Baseline: one Write per message, the current streaming client behavior.
 	prA, pwA := io.Pipe()
 	doneA := make(chan int)
 	go func() {
 		doneA <- countSegments(prA, 1<<20)
 	}()
-	for i := 0; i < msgCount; i++ {
+	for range msgCount {
 		if _, err := pwA.Write(msg); err != nil {
 			t.Fatalf("baseline write: %v", err)
 		}
@@ -84,7 +84,7 @@ func TestWritePathAggregationProbe(t *testing.T) {
 		doneB <- countSegments(prB, 1<<20)
 	}()
 	agg := make([]byte, 0, msgCount*msgSize)
-	for i := 0; i < msgCount; i++ {
+	for range msgCount {
 		agg = append(agg, msg...)
 	}
 	if _, err := pwB.Write(agg); err != nil { //nolint:errcheck

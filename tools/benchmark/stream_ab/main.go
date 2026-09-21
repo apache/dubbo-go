@@ -42,9 +42,13 @@ import (
 	"os"
 	"runtime"
 	"time"
+)
 
+import (
 	"golang.org/x/net/http2"
+)
 
+import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"dubbo.apache.org/dubbo-go/v3/tools/benchmark/client/engine"
 	benchmark "dubbo.apache.org/dubbo-go/v3/tools/benchmark/proto"
@@ -185,7 +189,7 @@ func oneStreamCall(ctx context.Context, client *triple_protocol.Client, payload 
 	defer stream.CloseResponse()
 
 	req := &benchmark.BenchmarkRequest{Payload: payload}
-	for i := 0; i < msgs; i++ {
+	for i := range msgs {
 		if err := stream.Send(req); err != nil {
 			return 0, fmt.Errorf("send %d: %w", i, err)
 		}

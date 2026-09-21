@@ -56,7 +56,7 @@ func TestStreamBufferWriterCoalesces(t *testing.T) {
 	w := newStreamBufferWriter(under)
 	msg := make([]byte, 100)
 
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		if _, err := w.Write(msg); err != nil {
 			t.Fatalf("Write: %v", err)
 		}
@@ -83,7 +83,7 @@ func TestStreamBufferWriterFlushesAtLimit(t *testing.T) {
 	w := newStreamBufferWriter(under)
 	msg := make([]byte, 100)
 
-	for i := 0; i < (defaultStreamWriteBufSize/100)+1; i++ {
+	for i := range (defaultStreamWriteBufSize / 100) + 1 {
 		if _, err := w.Write(msg); err != nil {
 			t.Fatalf("Write %d: %v", i, err)
 		}
@@ -168,16 +168,16 @@ func TestStreamBufferWriterConcurrent(t *testing.T) {
 	msg := make([]byte, 128)
 
 	var wg sync.WaitGroup
-	for g := 0; g < 8; g++ {
+	for range 8 {
 		wg.Go(func() {
-			for i := 0; i < 100; i++ {
+			for range 100 {
 				_, _ = w.Write(msg)
 			}
 		})
 	}
 	// A flusher running concurrently with writers exercises the lock on Flush.
 	wg.Go(func() {
-		for i := 0; i < 50; i++ {
+		for range 50 {
 			_ = w.Flush()
 		}
 	})
@@ -227,7 +227,7 @@ func TestStreamBufferWriterWriteAfterClose(t *testing.T) {
 // underlying writer equal the bytes the caller was told were accepted.
 func TestStreamBufferWriterCloseNeverDropsRacingWrite(t *testing.T) {
 	msg := make([]byte, 128)
-	for attempt := 0; attempt < 200; attempt++ {
+	for attempt := range 200 {
 		under := &atomicWriteCountRecorder{}
 		w := newStreamBufferWriter(under)
 		accepted := &atomic.Int64{}
@@ -303,7 +303,7 @@ func TestWriteBufferingStreamingFlushOnClose(t *testing.T) {
 
 	call := newTestDuplexClientCall(t, server.Client(), serverURL)
 	bw := newStreamBufferWriter(call)
-	for i := 0; i < msgCount; i++ {
+	for i := range msgCount {
 		if _, err := bw.Write(msg); err != nil {
 			t.Fatalf("send %d: %v", i, err)
 		}
@@ -346,19 +346,19 @@ func connWriteBuffer(t *testing.T, conn StreamingClientConn) *streamBufferWriter
 	switch typed := translated.StreamingClientConn.(type) {
 	case *grpcClientConn:
 		if typed.writeBuffer != nil {
-			assert.True(t, typed.marshaler.envelopeWriter.writer == io.Writer(typed.writeBuffer),
+			assert.True(t, typed.marshaler.writer == io.Writer(typed.writeBuffer),
 				assert.Sprintf("gRPC conn envelope writer is not routed through its write buffer"))
 		} else {
-			assert.True(t, typed.marshaler.envelopeWriter.writer == io.Writer(typed.call),
+			assert.True(t, typed.marshaler.writer == io.Writer(typed.call),
 				assert.Sprintf("unbuffered gRPC conn envelope writer is not the call itself"))
 		}
 		return typed.writeBuffer
 	case *tripleUnaryClientConn:
 		if typed.writeBuffer != nil {
-			assert.True(t, typed.marshaler.tripleUnaryMarshaler.writer == io.Writer(typed.writeBuffer),
+			assert.True(t, typed.marshaler.writer == io.Writer(typed.writeBuffer),
 				assert.Sprintf("triple conn envelope writer is not routed through its write buffer"))
 		} else {
-			assert.True(t, typed.marshaler.tripleUnaryMarshaler.writer == io.Writer(typed.call),
+			assert.True(t, typed.marshaler.writer == io.Writer(typed.call),
 				assert.Sprintf("unbuffered triple conn envelope writer is not the call itself"))
 		}
 		return typed.writeBuffer
@@ -583,14 +583,14 @@ func TestStreamBufferWriterConcurrentCloseAndFlush(t *testing.T) {
 
 	var wg sync.WaitGroup
 	wg.Go(func() {
-		for i := 0; i < 200; i++ {
+		for range 200 {
 			if _, err := w.Write(msg); err == nil {
 				accepted.Add(1)
 			}
 		}
 	})
 	wg.Go(func() {
-		for i := 0; i < 200; i++ {
+		for range 200 {
 			_ = w.Flush()
 		}
 		_ = w.Close()
@@ -627,9 +627,9 @@ func TestStreamBufferWriterConcurrentBufferBound(t *testing.T) {
 	msg := make([]byte, msgSize)
 
 	var wg sync.WaitGroup
-	for i := 0; i < 8; i++ {
+	for range 8 {
 		wg.Go(func() {
-			for j := 0; j < 500; j++ {
+			for range 500 {
 				_, _ = w.Write(msg)
 			}
 		})

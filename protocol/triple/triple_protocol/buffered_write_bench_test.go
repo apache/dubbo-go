@@ -29,7 +29,7 @@ package triple_protocol
 //     BenchmarkStreamWriteBuffered/<size>) so benchstat can pair them size by
 //     size. Only the write strategy differs.
 //     * BenchmarkStreamWritePerMessage (BEFORE): one os.Pipe.Write per message,
-//       mirroring the duplexHTTPCall behaviour before write buffering.
+//       mirroring the duplexHTTPCall behavior before write buffering.
 //     * BenchmarkStreamWriteBuffered (AFTER): newStreamBufferWriter coalesces
 //       messages into the 32 KiB buffer and flushes the batch, mirroring the
 //       CloseRequest-time flush that finishes the tail.
