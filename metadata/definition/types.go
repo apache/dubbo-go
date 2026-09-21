@@ -407,21 +407,17 @@ func (c *typeCollector) collectStructProperties(
 		owner := path + field.Name
 		if tag.Squash {
 			fieldType := field.Type
+			if fieldType.Kind() == reflect.Pointer {
+				return unsupported(fieldType.String(),
+					"pointer m squash cannot round-trip through generic invocation")
+			}
 			fieldDepth := depth + 1
 			if fieldDepth > maxTypeDepth {
 				return unsupported(field.Type.String(),
 					fmt.Sprintf("type nesting exceeds %d levels", maxTypeDepth))
 			}
-			for fieldType.Kind() == reflect.Pointer {
-				fieldType = fieldType.Elem()
-				fieldDepth++
-				if fieldDepth > maxTypeDepth {
-					return unsupported(field.Type.String(),
-						fmt.Sprintf("type nesting exceeds %d levels", maxTypeDepth))
-				}
-			}
 			if fieldType.Kind() != reflect.Struct {
-				return unsupported(field.Type.String(), "m squash requires a struct or pointer to struct")
+				return unsupported(field.Type.String(), "m squash requires a struct")
 			}
 			if name := namedTypeKey(fieldType); name != "" {
 				if reason, blocked := blockedNamedTypes[name]; blocked {

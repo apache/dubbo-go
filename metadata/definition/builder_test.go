@@ -485,6 +485,16 @@ func (s *supportedFieldService) Save(ctx context.Context, value SupportedFieldSh
 	return nil
 }
 
+type PointerSquashedFieldShape struct {
+	Embedded *SquashedFields `m:",squash"`
+}
+
+type pointerSquashedFieldService struct{}
+
+func (s *pointerSquashedFieldService) Save(ctx context.Context, value PointerSquashedFieldShape) error {
+	return nil
+}
+
 type RemainingFields struct {
 	Extra map[string]string `m:",remain"`
 }
@@ -526,6 +536,7 @@ func TestBuildRejectsUnrepresentableGenericFieldNames(t *testing.T) {
 		svc     any
 		wantMsg string
 	}{
+		{"nil pointer squash", &pointerSquashedFieldService{}, "pointer"},
 		{"remain option", &remainingFieldService{}, "remain"},
 		{"canonical/legacy collision", &collidingFieldService{}, "both reachable as"},
 	}
