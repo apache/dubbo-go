@@ -1074,6 +1074,16 @@ func TestServiceDiscoveryRegistry_DoGarbageCollect_SkipsReferencedStaleRevision(
 }
 
 func TestServiceDiscoveryRegistry_DoRenewAppMetadata(t *testing.T) {
+	// doRenewAppMetadata refreshes application metadata only when it lives in
+	// the metadata center; the definition half of the pass runs regardless.
+	prevType := metadata.GetMetadataType()
+	opts := metadata.NewOptions(metadata.WithMetadataType(constant.RemoteMetadataStorageType))
+	_ = opts.Init()
+	defer func() {
+		restoreOpts := metadata.NewOptions(metadata.WithMetadataType(prevType))
+		_ = restoreOpts.Init()
+	}()
+
 	mockReport := &mockMetadataReportForGC{}
 
 	regID := fmt.Sprintf("renew-reg-%d", time.Now().UnixNano())
@@ -1098,6 +1108,44 @@ func TestServiceDiscoveryRegistry_DoRenewAppMetadata(t *testing.T) {
 
 	reg.doRenewAppMetadata()
 	assert.Equal(t, 1, mockReport.published)
+}
+
+// TestServiceDiscoveryRegistry_DoRenewSkipsAppMetadataWhenLocal pins the guard
+// that moved from startMetadataTimers into doRenewAppMetadata. The timer now
+// also starts for interface-level definitions, which publish regardless of
+// metadataType, so the pass can run while application metadata lives locally —
+// and must not push it to the metadata center then.
+func TestServiceDiscoveryRegistry_DoRenewSkipsAppMetadataWhenLocal(t *testing.T) {
+	prevType := metadata.GetMetadataType()
+	opts := metadata.NewOptions(metadata.WithMetadataType(constant.DefaultMetadataStorageType))
+	_ = opts.Init()
+	defer func() {
+		restoreOpts := metadata.NewOptions(metadata.WithMetadataType(prevType))
+		_ = restoreOpts.Init()
+	}()
+
+	mockReport := &mockMetadataReportForGC{}
+	regID := fmt.Sprintf("renew-local-reg-%d", time.Now().UnixNano())
+	reg := &serviceDiscoveryRegistry{
+		url: common.NewURLWithOptions(
+			common.WithParamsValue(constant.RegistryIdKey, regID),
+		),
+		metadataReport: mockReport,
+	}
+
+	serviceURL, _ := common.NewURL("dubbo://127.0.0.1:20880/org.test.RenewLocal",
+		common.WithParamsValue(constant.ApplicationKey, "test-app"),
+		common.WithParamsValue(constant.SideKey, constant.SideProvider),
+	)
+	metadata.AddService(regID, serviceURL)
+	metaInfo := metadata.GetMetadataInfo(regID)
+	require.NotNil(t, metaInfo)
+	metaInfo.Revision = "abc123"
+
+	assert.NotPanics(t, func() { reg.doRenewAppMetadata() })
+	assert.Equal(t, 0, mockReport.published,
+		"application metadata is not the metadata center's business in local mode")
+	assert.Empty(t, mockReport.deleted, "GC reasons about revisions, so it is skipped too")
 }
 
 // TestServiceDiscoveryRegistry_StartMetadataTimersSkipsEmptyRevision verifies that the

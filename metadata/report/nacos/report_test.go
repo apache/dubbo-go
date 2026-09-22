@@ -37,6 +37,9 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/metadata/definition"
 	"dubbo.apache.org/dubbo-go/v3/metadata/info"
 )
 
@@ -257,6 +260,58 @@ func Test_nacosMetadataReport_PublishAppMetadata(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_nacosMetadataReport_PublishServiceDefinitionUsesConfiguredGroup(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mnc := NewMockIConfigClient(ctrl)
+	nc := &nacosClient.NacosConfigClient{}
+	nc.SetClient(mnc)
+
+	const dataID = "org.example.Service:1.0.0:g1:provider:demo"
+	mnc.EXPECT().PublishConfig(vo.ConfigParam{
+		DataId:  dataID,
+		Group:   "foo",
+		Content: "{}",
+	}).Return(true, nil)
+	mnc.EXPECT().PublishConfig(vo.ConfigParam{
+		DataId:  dataID,
+		Group:   "bar",
+		Content: "{}",
+	}).Return(true, nil)
+
+	for _, group := range []string{"foo", "bar"} {
+		n := &nacosMetadataReport{client: nc, definitionGroup: group}
+		require.NoError(t, n.PublishServiceDefinition(
+			"org.example.Service", "1.0.0", "g1", "demo", "{}",
+		))
+	}
+}
+
+func Test_nacosMetadataReport_PublishServiceDefinitionNormalizesNacosKeyAndGroup(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mnc := NewMockIConfigClient(ctrl)
+	nc := &nacosClient.NacosConfigClient{}
+	nc.SetClient(mnc)
+
+	mnc.EXPECT().PublishConfig(vo.ConfigParam{
+		DataId:  "github.com-example-api.Outer___Service:1.0.0:g-1:provider:demo-app___blue",
+		Group:   "metadata-isolated___blue",
+		Content: "{}",
+	}).Return(true, nil)
+
+	n := &nacosMetadataReport{client: nc, definitionGroup: "metadata/isolated$blue"}
+	require.NoError(t, n.PublishServiceDefinition(
+		"github.com/example/api.Outer$Service", "1.0.0", "g/1", "demo/app$blue", "{}",
+	))
+}
+
+func TestServiceDefinitionGroupDefaultsAndFollowsConfiguration(t *testing.T) {
+	url := common.NewURLWithOptions()
+	assert.Equal(t, definition.DefaultMetadataGroup, serviceDefinitionGroup(url))
+
+	url.SetParam(constant.MetadataReportGroupKey, "isolated")
+	assert.Equal(t, "isolated", serviceDefinitionGroup(url))
 }
 
 func Test_nacosMetadataReport_RegisterServiceAppMapping(t *testing.T) {

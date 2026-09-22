@@ -228,6 +228,17 @@ func TestReportOptionsToUrl(t *testing.T) {
 	assert.Equal(t, "zookeeper", url.GetParam("metadata", ""))
 	assert.Equal(t, "value", url.GetParam("key", ""))
 
+	// The typed switch must survive URL construction so the publisher can
+	// distinguish an explicit false from the default-on absent value.
+	disabled := NewReportOptions(
+		WithNacos(),
+		WithAddress("127.0.0.1:8848"),
+		WithReportDefinition(false),
+	)
+	disabledURL, err := disabled.toUrl()
+	require.NoError(t, err)
+	assert.False(t, disabledURL.GetParamBool(constant.MetadataReportReportDefinitionKey, true))
+
 	// Invalid options - empty protocol
 	opts = NewReportOptions(WithAddress("127.0.0.1:2181"))
 	url, err = opts.toUrl()
