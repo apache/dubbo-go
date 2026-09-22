@@ -77,8 +77,7 @@ func TestWriteBufferingBidiPingPong(t *testing.T) {
 	t.Parallel()
 	client := newBufferedPingClient(t)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	stream, err := client.CumSum(ctx)
 	assert.Nil(t, err)
 	defer func() {
@@ -157,8 +156,7 @@ func TestWriteBufferingBidiWaitEntries(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			client := newBufferedPingClient(t)
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			ctx := t.Context()
 			stream, err := client.CumSum(ctx)
 			assert.Nil(t, err)
 			defer func() {
