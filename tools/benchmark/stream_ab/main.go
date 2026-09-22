@@ -150,7 +150,7 @@ func newStreamClient(addr string, buffering bool) *triple_protocol.Client {
 
 	return triple_protocol.NewClient(
 		httpClient,
-		"http://"+addr+"/benchmark.BenchmarkService",
+		"http://"+addr+"/benchmark.BenchmarkService", // nosonar
 		opts...,
 	)
 }

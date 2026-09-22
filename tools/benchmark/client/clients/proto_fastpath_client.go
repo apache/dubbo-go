@@ -57,7 +57,7 @@ func NewProtoFastPathClient(addr string, payload []byte) *ProtoFastPathClient {
 	transport := &http.Transport{DisableCompression: true}
 	return &ProtoFastPathClient{
 		httpClient: &http.Client{Transport: transport},
-		url:        "http://" + addr + "/benchmark.BenchmarkService/UnaryCall",
+		url:        "http://" + addr + "/benchmark.BenchmarkService/UnaryCall", // nosonar
 		payload:    payload,
 		pool: &sync.Pool{
 			New: func() any {
