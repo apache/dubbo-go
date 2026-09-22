@@ -281,6 +281,8 @@ func (g *grpcClient) NewConn(
 		}
 	}
 	var call unaryClientCall
+	var streamWriter io.Writer
+	var writeBuffer *streamBufferWriter
 	if spec.StreamType == StreamTypeUnary && g.UnaryFastPath {
 		// Unary fast path: no io.Pipe, no per-request goroutine. Streaming
 		// calls always keep using duplexHTTPCall.
@@ -292,19 +294,28 @@ func (g *grpcClient) NewConn(
 			header,
 			g.BufferPool,
 		)
+		streamWriter = call
 	} else {
 		call = newDuplexHTTPCall(ctx, g.HTTPClient, g.URL, spec, header)
+		streamWriter = call
+		if g.WriteBuffering {
+			// Aggregate small streamed messages so a burst of Sends pays the
+			// io.Pipe handshake once per batch instead of once per message.
+			writeBuffer = newStreamBufferWriter(call)
+			streamWriter = writeBuffer
+		}
 	}
 	conn := &grpcClientConn{
 		spec:             spec,
 		peer:             g.Peer(),
 		call:             call,
+		writeBuffer:      writeBuffer,
 		compressionPools: g.CompressionPools,
 		bufferPool:       g.BufferPool,
 		protobuf:         g.Protobuf,
 		marshaler: grpcMarshaler{
 			envelopeWriter: envelopeWriter{
-				writer:           call,
+				writer:           streamWriter,
 				compressionPool:  g.CompressionPools.Get(g.CompressionName),
 				codec:            g.Codec,
 				compressMinBytes: g.CompressMinBytes,
@@ -337,6 +348,7 @@ type grpcClientConn struct {
 	spec             Spec
 	peer             Peer
 	call             unaryClientCall
+	writeBuffer      *streamBufferWriter
 	compressionPools readOnlyCompressionPools
 	bufferPool       *bufferPool
 	protobuf         Codec // for errors
@@ -367,10 +379,41 @@ func (cc *grpcClientConn) RequestHeader() http.Header {
 }
 
 func (cc *grpcClientConn) CloseRequest() error {
-	return cc.call.CloseWrite()
+	// Flush and seal the write buffer before the write side closes. Sealing
+	// means a concurrent Send is no longer accepted into the buffer and fails
+	// with io.EOF instead. No-op when write buffering is disabled.
+	var flushErr error
+	if cc.writeBuffer != nil {
+		flushErr = cc.writeBuffer.Close()
+	}
+	// CloseWrite runs even if the flush failed: the write side must always be
+	// closed so the peer does not wait on it.
+	closeErr := cc.call.CloseWrite()
+	if flushErr != nil {
+		return flushErr
+	}
+	return closeErr
+}
+
+// flushBeforeWait pushes buffered request bytes to the wire before the caller
+// blocks on the response side. Small Sends stay in the write buffer until the
+// watermark or CloseRequest, so without this a stream whose messages all fit in
+// the buffer would never issue its HTTP request and BlockUntilResponseReady
+// would wait forever. No-op when write buffering is off, and flushing an empty
+// buffer is a no-op too.
+func (cc *grpcClientConn) flushBeforeWait() {
+	if cc.writeBuffer == nil {
+		return
+	}
+	if err := cc.writeBuffer.Flush(); err != nil {
+		// Report through the call's error channel, so the reader observes the
+		// same error an unbuffered call would.
+		cc.call.SetError(err)
+	}
 }
 
 func (cc *grpcClientConn) Receive(msg any) error {
+	cc.flushBeforeWait()
 	cc.call.BlockUntilResponseReady()
 	err := cc.unmarshaler.Unmarshal(msg)
 	if err == nil {
@@ -410,16 +453,19 @@ func (cc *grpcClientConn) Receive(msg any) error {
 }
 
 func (cc *grpcClientConn) ResponseHeader() http.Header {
+	cc.flushBeforeWait()
 	cc.call.BlockUntilResponseReady()
 	return cc.responseHeader
 }
 
 func (cc *grpcClientConn) ResponseTrailer() http.Header {
+	cc.flushBeforeWait()
 	cc.call.BlockUntilResponseReady()
 	return cc.responseTrailer
 }
 
 func (cc *grpcClientConn) CloseResponse() error {
+	cc.flushBeforeWait()
 	err := cc.call.CloseRead()
 	if err != nil {
 		return err

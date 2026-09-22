@@ -70,6 +70,7 @@ func NewClient(httpClient HTTPClient, url string, options ...ClientOption) *Clie
 			SendMaxBytes:     config.SendMaxBytes,
 			GetURLMaxBytes:   config.GetURLMaxBytes,
 			UnaryFastPath:    config.UnaryFastPath,
+			WriteBuffering:   config.WriteBuffering,
 		},
 	)
 	if protocolErr != nil {
@@ -232,6 +233,7 @@ type clientConfig struct {
 	Group                  string
 	Version                string
 	UnaryFastPath          bool
+	WriteBuffering         bool
 }
 
 func newClientConfig(rawURL string, options []ClientOption) (*clientConfig, *Error) {
