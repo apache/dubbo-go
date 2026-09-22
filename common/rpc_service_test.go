@@ -699,3 +699,55 @@ func TestSuiteMethodTooManyReturns(t *testing.T) {
 	mt := suiteMethod(method)
 	assert.Nil(t, mt) // Should be nil because too many return values
 }
+
+// possibleReplyPointerService covers the net/rpc reply-pointer shape and the two
+// shapes that must not be mistaken for it.
+type possibleReplyPointerService struct{}
+
+// Looks like net/rpc: the trailing pointer is where the author expects the
+// result, and dubbo-go discards it.
+func (s *possibleReplyPointerService) Fetch(ctx context.Context, id string, reply *string) error {
+	return nil
+}
+
+// A single-parameter void call — a delete, say. Nothing is expected back.
+func (s *possibleReplyPointerService) Remove(ctx context.Context, id *string) error { return nil }
+
+// Two pointers but genuinely void: both are inputs.
+func (s *possibleReplyPointerService) Transfer(ctx context.Context, from *string, to *string) error {
+	return nil
+}
+
+// Returns its result properly.
+func (s *possibleReplyPointerService) Get(ctx context.Context, id string) (*string, error) {
+	return nil, nil
+}
+
+func TestPossibleReplyPointerRPCMethodNames(t *testing.T) {
+	names := possibleReplyPointerRPCMethodNames(reflect.TypeFor[*possibleReplyPointerService]())
+
+	assert.Contains(t, names, "Fetch")
+	assert.NotContains(t, names, "Remove",
+		"a single-parameter void call is the common delete shape, not a reply pointer")
+	assert.NotContains(t, names, "Get", "a declared return value is returned properly")
+
+	// Transfer is a false positive by construction: it has the same signature
+	// as Fetch and reflection cannot tell them apart. The warning is advisory
+	// for exactly this reason — it never blocks registration.
+	assert.Contains(t, names, "Transfer")
+}
+
+func TestWarnRPCMethodsQualifiesPossibleReplyPointer(t *testing.T) {
+	prev := gostlogger.GetLogger()
+	capture := &captureCommonWarnLogger{Logger: prev}
+	gostlogger.SetLogger(capture)
+	t.Cleanup(func() {
+		gostlogger.SetLogger(prev)
+	})
+
+	WarnRPCMethods("com.example.PointerInputs", &possibleReplyPointerService{})
+
+	require.Len(t, capture.warns, 1)
+	assert.Contains(t, capture.warns[0], "If that pointer is intended")
+	assert.Contains(t, capture.warns[0], "no action is required")
+}

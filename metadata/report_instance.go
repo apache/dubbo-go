@@ -124,6 +124,8 @@ func GetMetadataReports() []report.MetadataReport {
 }
 
 func GetMetadataType() string {
+	metadataOptionsMu.RLock()
+	defer metadataOptionsMu.RUnlock()
 	if metadataOptions == nil || metadataOptions.metadataType == "" {
 		return constant.DefaultMetadataStorageType
 	}
@@ -198,4 +200,21 @@ func (d *DelegateMetadataReport) ListAppRevisions(application string) ([]report.
 			application, constant.RemoteMetadataStorageType, err)
 	}
 	return revisions, nil
+}
+
+// ServiceDefinitionPublisher reports whether the wrapped backend can store
+// interface-level service definitions, returning it if so.
+//
+// This exists because the instance table holds *DelegateMetadataReport values:
+// asserting report.ServiceDefinitionPublisher against one would always fail,
+// hiding a Nacos backend that does implement it. Making the wrapper itself
+// implement the interface unconditionally would be worse — every backend would
+// then pass the assertion and only report "unsupported" after a caller had
+// already tried to publish.
+//
+// Backends without the capability (zookeeper, etcd, third-party reports) simply
+// return false and are unaffected.
+func (d *DelegateMetadataReport) ServiceDefinitionPublisher() (report.ServiceDefinitionPublisher, bool) {
+	publisher, ok := d.instance.(report.ServiceDefinitionPublisher)
+	return publisher, ok
 }
