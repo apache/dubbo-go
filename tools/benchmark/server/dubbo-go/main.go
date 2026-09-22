@@ -19,6 +19,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"io"
 	"os"
@@ -59,7 +60,9 @@ func (s *BenchmarkServiceImpl) StreamCall(ctx context.Context, stream benchmark.
 	for {
 		req, err := stream.Recv()
 		if err != nil {
-			if err == io.EOF {
+			// The stream's terminal error wraps io.EOF rather than being the
+			// sentinel itself, so errors.Is is required here.
+			if errors.Is(err, io.EOF) {
 				return nil
 			}
 			return err
