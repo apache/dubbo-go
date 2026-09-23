@@ -70,29 +70,17 @@ func WithTriple() ClientOption {
 	return &tripleOption{}
 }
 
-// WithUnaryFastPath explicitly enables the unary fast path (unaryFastPathCall)
-// for unary calls. The fast path is on by default; this option is provided for
-// callers that want to state the intent explicitly.
-//
-// This optimization primarily targets small, CPU-dominated unary requests,
-// roughly in the 128 B to 32 KiB range: the complete request body is
-// buffered before it is submitted to the transport. For large or highly
-// concurrent requests, memory residency and buffer growth may increase, and
-// the performance benefit is not guaranteed. The implementation does not
-// automatically fall back based on payload size.
-func WithUnaryFastPath() ClientOption {
-	return &unaryFastPathOption{}
-}
-
-type unaryFastPathOption struct{}
-
-func (o *unaryFastPathOption) applyToClient(config *clientConfig) {
-	config.UnaryFastPath = true
-}
-
 // WithoutUnaryFastPath disables the unary fast path (unaryFastPathCall) for
 // unary calls, falling back to the duplex (io.Pipe) call path. Use it as a
 // rollback switch when the fast path misbehaves under a specific workload.
+//
+// The fast path is on by default. It primarily targets small, CPU-dominated
+// unary requests, roughly in the 128 B to 32 KiB range: the complete request
+// body is buffered before it is submitted to the transport. For large or
+// highly concurrent requests, memory residency and buffer growth may increase,
+// and the performance benefit is not guaranteed, so this switch is the
+// documented way to opt out. The implementation does not automatically fall
+// back based on payload size.
 func WithoutUnaryFastPath() ClientOption {
 	return &withoutUnaryFastPathOption{}
 }
