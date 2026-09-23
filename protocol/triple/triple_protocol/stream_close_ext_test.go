@@ -89,6 +89,12 @@ func TestBidiStreamCloseResponseDoesNotDrainResponse(t *testing.T) {
 	t.Cleanup(unblock)
 	received := make(chan struct{})
 	sent := make(chan struct{})
+	// This test drives the stream into a known in-flight state through a handler
+	// signal rather than through Receive, and a bidi client never closes its own
+	// request side. With write buffering on, the setup message would sit in the
+	// buffer and the server would never see it, so the test runs on the
+	// unbuffered write path. CloseResponse semantics are what it covers; the
+	// buffered path has its own coverage in write_buffering_bidi_ext_test.go.
 	client := newCloseLifecyclePingClient(t, &pluggablePingServer{
 		cumSum: func(ctx context.Context, stream *triple.BidiStream) error {
 			req := &pingv1.CumSumRequest{}
@@ -144,6 +150,9 @@ func TestBidiStreamCloseResponseDoesNotDrainResponse(t *testing.T) {
 func TestBidiStreamCloseResponseAfterServerStopsReading(t *testing.T) {
 	serverReceived := make(chan struct{})
 	serverReturn := make(chan struct{})
+	// Same reason as TestBidiStreamCloseResponseDoesNotDrainResponse: the setup
+	// request is sequenced by a handler signal, so it needs the unbuffered write
+	// path to reach the server before the close verification starts.
 	client := newCloseLifecyclePingClient(t, &pluggablePingServer{
 		cumSum: func(ctx context.Context, stream *triple.BidiStream) error {
 			req := &pingv1.CumSumRequest{}

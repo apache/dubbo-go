@@ -272,7 +272,7 @@ func (f countWriterFunc) Write(p []byte) (int, error) { return f(p) }
 // a streamBufferWriter wrapping a real duplexHTTPCall must deliver every Send to
 // the server, including the un-flushed tail that CloseRequest flushes before the
 // write side closes. It exercises the exact Send / CloseRequest sequence the
-// Triple streaming client performs with WithWriteBuffering enabled.
+// Triple streaming client performs with write buffering enabled.
 func TestWriteBufferingStreamingFlushOnClose(t *testing.T) {
 	t.Parallel()
 
@@ -368,7 +368,7 @@ func connWriteBuffer(t *testing.T, conn StreamingClientConn) *streamBufferWriter
 	}
 }
 
-// TestWriteBufferingIsWiredIntoStreamingConns verifies that WithWriteBuffering
+// TestWriteBufferingIsWiredIntoStreamingConns verifies that write buffering
 // reaches the streaming write path of both protocol clients: the conn must carry
 // a non-nil writeBuffer and its envelope writer must be routed through it. It
 // also verifies that unary fast-path calls stay unbuffered, keeping the option
@@ -379,7 +379,7 @@ func TestWriteBufferingIsWiredIntoStreamingConns(t *testing.T) {
 	unarySpec := Spec{StreamType: StreamTypeUnary, Procedure: "/connect.ping.v1.PingService/Ping"}
 	streamSpec := Spec{StreamType: StreamTypeBidi, Procedure: "/connect.ping.v1.PingService/Ping"}
 
-	// Default gRPC wire: streaming calls are buffered only when opted in.
+	// Default gRPC wire: the buffer is attached when the params carry the flag.
 	grpcBuffered := &grpcClient{protocolClientParams: newBufferingParams(true, true)}
 	assert.True(t, connWriteBuffer(t, grpcBuffered.NewConn(context.Background(), streamSpec, make(http.Header))) != nil,
 		assert.Sprintf("dropped the write buffer"))
@@ -400,7 +400,7 @@ func TestWriteBufferingIsWiredIntoStreamingConns(t *testing.T) {
 
 // TestWriteBufferingCoversUnaryNonFastPath verifies that unary calls which skip
 // the fast path are buffered too: they still run over duplexHTTPCall and
-// io.Pipe, so WithWriteBuffering must reach them; only the fast path stays
+// io.Pipe, so write buffering must reach them; only the fast path stays
 // unbuffered.
 func TestWriteBufferingCoversUnaryNonFastPath(t *testing.T) {
 	t.Parallel()
@@ -415,6 +415,10 @@ func TestWriteBufferingCoversUnaryNonFastPath(t *testing.T) {
 	assert.True(t, connWriteBuffer(t, tripleSlow.NewConn(context.Background(), unarySpec, make(http.Header))) != nil,
 		assert.Sprintf("dropped the write buffer"))
 }
+
+// TestWriteBufferingEnabledByDefault verifies that a client built without any
+// buffering option still routes streaming calls through the write buffer,
+// pinning the default that the benchmark arms and callers rely on.
 func TestWriteBufferingEnabledByDefault(t *testing.T) {
 	config, confErr := newClientConfig("http://example.com/connect.ping.v1.PingService/Ping", nil)
 	if confErr != nil {

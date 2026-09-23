@@ -41,9 +41,9 @@ import (
 const bidiReplyTimeout = 5 * time.Second
 
 // newBufferedPingClient starts an HTTP/2 server and returns a client with write
-// buffering enabled. Bidi streams need full-duplex HTTP/2: the handler rejects
-// HTTP/1.x outright rather than letting the client hang on a half-closed
-// connection.
+// buffering enabled. Buffering is on by default, so no option is needed here.
+// Bidi streams need full-duplex HTTP/2: the handler rejects HTTP/1.x outright
+// rather than letting the client hang on a half-closed connection.
 func newBufferedPingClient(t *testing.T, opts ...triple.ClientOption) pingv1connect.PingServiceClient {
 	t.Helper()
 	mux := http.NewServeMux()
