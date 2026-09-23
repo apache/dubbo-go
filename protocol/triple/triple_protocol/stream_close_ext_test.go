@@ -103,7 +103,7 @@ func TestBidiStreamCloseResponseDoesNotDrainResponse(t *testing.T) {
 			<-release
 			return nil
 		},
-	})
+	}, triple.WithoutWriteBuffering())
 
 	stream, err := client.CumSum(context.Background())
 	assert.Nil(t, err)
@@ -154,7 +154,7 @@ func TestBidiStreamCloseResponseAfterServerStopsReading(t *testing.T) {
 			<-serverReturn
 			return triple.NewError(triple.CodeUnavailable, errors.New("server stopped reading"))
 		},
-	})
+	}, triple.WithoutWriteBuffering())
 
 	stream, err := client.CumSum(context.Background())
 	assert.Nil(t, err)
@@ -207,7 +207,7 @@ func TestClientStreamCloseAndReceiveAfterServerReturnsError(t *testing.T) {
 	assert.Equal(t, triple.CodeOf(err), triple.CodeUnavailable)
 }
 
-func newCloseLifecyclePingClient(t *testing.T, pingServer pingv1connect.PingServiceHandler) pingv1connect.PingServiceClient {
+func newCloseLifecyclePingClient(t *testing.T, pingServer pingv1connect.PingServiceHandler, opts ...triple.ClientOption) pingv1connect.PingServiceClient {
 	t.Helper()
 	mux := http.NewServeMux()
 	mux.Handle(pingv1connect.NewPingServiceHandler(pingServer))
@@ -215,7 +215,7 @@ func newCloseLifecyclePingClient(t *testing.T, pingServer pingv1connect.PingServ
 	server.EnableHTTP2 = true
 	server.StartTLS()
 	t.Cleanup(server.Close)
-	return pingv1connect.NewPingServiceClient(server.Client(), server.URL)
+	return pingv1connect.NewPingServiceClient(server.Client(), server.URL, opts...)
 }
 
 // newCloseRelease returns a channel that lets tests keep the server handler

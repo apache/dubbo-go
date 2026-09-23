@@ -52,7 +52,6 @@ func newBufferedPingClient(t *testing.T, opts ...triple.ClientOption) pingv1conn
 	server.EnableHTTP2 = true
 	server.StartTLS()
 	t.Cleanup(server.Close)
-	opts = append([]triple.ClientOption{triple.WithWriteBuffering()}, opts...)
 	return pingv1connect.NewPingServiceClient(
 		server.Client(),
 		server.URL,

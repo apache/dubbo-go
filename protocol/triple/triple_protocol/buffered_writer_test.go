@@ -382,14 +382,14 @@ func TestWriteBufferingIsWiredIntoStreamingConns(t *testing.T) {
 	// Default gRPC wire: streaming calls are buffered only when opted in.
 	grpcBuffered := &grpcClient{protocolClientParams: newBufferingParams(true, true)}
 	assert.True(t, connWriteBuffer(t, grpcBuffered.NewConn(context.Background(), streamSpec, make(http.Header))) != nil,
-		assert.Sprintf("gRPC streaming conn dropped WithWriteBuffering"))
+		assert.Sprintf("dropped the write buffer"))
 	grpcPlain := &grpcClient{protocolClientParams: newBufferingParams(false, true)}
 	assert.Nil(t, connWriteBuffer(t, grpcPlain.NewConn(context.Background(), streamSpec, make(http.Header))))
 
 	// Triple wire keeps the same contract on its streaming path.
 	tripleBuffered := &tripleClient{protocolClientParams: newBufferingParams(true, true)}
 	assert.True(t, connWriteBuffer(t, tripleBuffered.NewConn(context.Background(), streamSpec, make(http.Header))) != nil,
-		assert.Sprintf("triple streaming conn dropped WithWriteBuffering"))
+		assert.Sprintf("dropped the write buffer"))
 	triplePlain := &tripleClient{protocolClientParams: newBufferingParams(false, true)}
 	assert.Nil(t, connWriteBuffer(t, triplePlain.NewConn(context.Background(), streamSpec, make(http.Header))))
 
@@ -409,11 +409,20 @@ func TestWriteBufferingCoversUnaryNonFastPath(t *testing.T) {
 
 	grpcSlow := &grpcClient{protocolClientParams: newBufferingParams(true, false)}
 	assert.True(t, connWriteBuffer(t, grpcSlow.NewConn(context.Background(), unarySpec, make(http.Header))) != nil,
-		assert.Sprintf("gRPC unary conn off the fast path dropped WithWriteBuffering"))
+		assert.Sprintf("dropped the write buffer"))
 
 	tripleSlow := &tripleClient{protocolClientParams: newBufferingParams(true, false)}
 	assert.True(t, connWriteBuffer(t, tripleSlow.NewConn(context.Background(), unarySpec, make(http.Header))) != nil,
-		assert.Sprintf("triple unary conn off the fast path dropped WithWriteBuffering"))
+		assert.Sprintf("dropped the write buffer"))
+}
+func TestWriteBufferingEnabledByDefault(t *testing.T) {
+	config, confErr := newClientConfig("http://example.com/connect.ping.v1.PingService/Ping", nil)
+	if confErr != nil {
+		t.Fatalf("newClientConfig returned an error: %v", confErr)
+	}
+	if !config.WriteBuffering {
+		t.Fatal("write buffering is off by default, want on")
+	}
 }
 
 // newRequestSpyServer starts a server that reports on reached the first time it
