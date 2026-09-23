@@ -191,6 +191,15 @@ func newClientManager(url *common.URL) (*clientManager, error) {
 		cliOpts = append(cliOpts, tri.WithoutUnaryFastPath())
 	}
 
+	// Write buffering is on by default. It covers every call routed through
+	// duplexHTTPCall: streaming calls on both the gRPC and the Triple (connect)
+	// wire formats, and unary calls that don't take the fast path.
+	// A nil WriteBuffering means the field was not explicitly set, so the
+	// default (enabled) applies.
+	if tripleConf != nil && tripleConf.WriteBuffering != nil && !*tripleConf.WriteBuffering {
+		cliOpts = append(cliOpts, tri.WithoutWriteBuffering())
+	}
+
 	// Build the HTTP transport used by the Triple client.
 	var transport http.RoundTripper
 

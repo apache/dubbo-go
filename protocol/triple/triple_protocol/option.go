@@ -91,42 +91,30 @@ func (o *withoutUnaryFastPathOption) applyToClient(config *clientConfig) {
 	config.UnaryFastPath = false
 }
 
-// WithWriteBuffering enables aggregation of small messages in the streaming
-// client write path. Without it, every Send lands as a single synchronous
-// io.Pipe handshake on the duplex connector; with it, small messages are
-// coalesced into a capacity-bounded buffer and flushed to the wire once the
-// buffer fills, the request is closed, or the call starts waiting for a
-// response, amortizing the per-message handshake cost on small, high-rate
-// streams.
+// WithoutWriteBuffering disables aggregation of small messages in the streaming
+// client write path, writing every message straight to the duplex connector.
+// Buffering is on by default; disable it to restore the baseline write path, or
+// as a rollback switch when buffering misbehaves under a specific workload.
 //
-// The flush on the wait-for-response path is what keeps the option safe for
-// streams that alternate Send and Receive. A buffered Send only stages bytes
-// locally, so a call that waits for a response before closing its request side
-// would otherwise wait on a request that was never issued.
+// Buffering trades a little first-byte latency for throughput: the first Send
+// no longer puts the request headers on the wire, they leave with the first
+// flush. The win comes from streams that queue several sends before reading, or
+// that only flush when the request side closes; a strictly alternating
+// Send-then-Receive pattern flushes one message per Receive, so the batch size
+// collapses to one and saves no syscalls.
 //
-// Being safe for alternating streams is not the same as benefiting them. A
-// strictly alternating Send-then-Receive pattern flushes one message per
-// Receive, so the batch size collapses to one and the option saves no syscalls.
-// The throughput win comes from streams that queue several sends before reading,
-// or that only flush when the request side closes.
-//
-// This is off by default: enabling it trades a little first-byte latency
-// (messages sit buffered until the threshold or a flush point) for higher
-// throughput on small-message streams. Note that the first Send no longer puts
-// the request headers on the wire: they leave with the first flush.
-//
-// It applies to every call routed through duplexHTTPCall, so it covers both the
-// gRPC and the Triple wire, and both streaming calls and unary calls that don't
-// take the unary fast path; the fast path does not go through io.Pipe and is
+// It applies to every call routed through duplexHTTPCall, covering both the
+// gRPC and the Triple wire, streaming calls, and unary calls that don't take
+// the unary fast path; the fast path does not go through io.Pipe and is
 // unaffected.
-func WithWriteBuffering() ClientOption {
-	return &writeBufferingOption{}
+func WithoutWriteBuffering() ClientOption {
+	return &withoutWriteBufferingOption{}
 }
 
-type writeBufferingOption struct{}
+type withoutWriteBufferingOption struct{}
 
-func (o *writeBufferingOption) applyToClient(config *clientConfig) {
-	config.WriteBuffering = true
+func (o *withoutWriteBufferingOption) applyToClient(config *clientConfig) {
+	config.WriteBuffering = false
 }
 
 // WithProtoJSON configures a client to send JSON-encoded data instead of
