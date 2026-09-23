@@ -60,7 +60,7 @@ var (
 	duration    = flag.String("duration", "60s", "Test duration after warmup")
 	warmup      = flag.String("warmup", "10s", "Warmup duration")
 	timeout     = flag.String("timeout", "90s", "Per-operation (one stream round-trip) timeout")
-	buffering   = flag.Bool("buffering", false, "Enable triple_protocol.WithWriteBuffering()")
+	buffering   = flag.Bool("buffering", true, "Enable write buffering (on by default); pass false for the unbuffered baseline")
 	probe       = flag.Bool("probe", false, "Run a single stream round-trip and print detailed per-step errors, then exit")
 )
 
@@ -144,8 +144,8 @@ func newStreamClient(addr string, buffering bool) *triple_protocol.Client {
 	}
 
 	opts := []triple_protocol.ClientOption{}
-	if buffering {
-		opts = append(opts, triple_protocol.WithWriteBuffering())
+	if !buffering {
+		opts = append(opts, triple_protocol.WithoutWriteBuffering())
 	}
 
 	return triple_protocol.NewClient(
