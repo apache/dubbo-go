@@ -498,6 +498,42 @@ func TestWriteBufferingEmptyStreamStillSendsRequest(t *testing.T) {
 	}
 }
 
+func TestStreamBufferWriterChecksContextBeforeBuffering(t *testing.T) {
+	t.Parallel()
+
+	server, reached, serverURL := newRequestSpyServer(t)
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	call := newDuplexHTTPCall(ctx, server.Client(), serverURL,
+		Spec{StreamType: StreamTypeClient, Procedure: "/triple.test.v1.RaceService/Sum"},
+		http.Header{})
+	call.SetValidateResponse(func(*http.Response) *Error { return nil })
+	w := newStreamBufferWriter(call)
+
+	if _, err := w.Write([]byte("first")); err != nil {
+		t.Fatalf("buffer a live write: %v", err)
+	}
+	select {
+	case <-reached:
+		t.Fatal("buffering a live write started the HTTP request")
+	case <-call.responseReady:
+		t.Fatal("buffering a live write started the HTTP request")
+	default:
+	}
+
+	cancel()
+	if _, err := w.Write([]byte("second")); err == nil {
+		t.Fatal("write after cancellation returned nil")
+	} else if tripleErr, ok := asError(err); !ok || tripleErr.Code() != CodeCanceled {
+		t.Fatalf("write after cancellation = %v, want CodeCanceled", err)
+	}
+	if _, err := call.Read(make([]byte, 1)); err == nil {
+		t.Fatal("read after cancellation returned nil")
+	} else if tripleErr, ok := asError(err); !ok || tripleErr.Code() != CodeCanceled {
+		t.Fatalf("read after cancellation = %v, want CodeCanceled", err)
+	}
+}
+
 // TestCloseRequestClosesWriteSideAfterFlushFailure verifies that CloseRequest
 // closes the write side even when the final flush fails: the flush error is
 // reported to the caller, but the peer must not be left waiting on a request
