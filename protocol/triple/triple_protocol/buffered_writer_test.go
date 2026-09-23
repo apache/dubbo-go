@@ -75,6 +75,29 @@ func TestStreamBufferWriterCoalesces(t *testing.T) {
 	}
 }
 
+func TestStreamBufferWriterForwardsZeroLengthWrite(t *testing.T) {
+	under := &writeCountRecorder{}
+	w := newStreamBufferWriter(under)
+	if n, err := w.Write(nil); err != nil || n != 0 {
+		t.Fatalf("Write(nil) = (%d, %v), want (0, nil)", n, err)
+	}
+	if under.writes != 1 {
+		t.Fatalf("zero-length write reached the writer %d times, want 1", under.writes)
+	}
+	if _, err := w.Write([]byte("message")); err != nil {
+		t.Fatalf("Write(message): %v", err)
+	}
+	if under.writes != 1 {
+		t.Fatalf("small message flushed before Flush: %d writes", under.writes)
+	}
+	if err := w.Flush(); err != nil {
+		t.Fatalf("Flush: %v", err)
+	}
+	if under.writes != 2 || under.total != len("message") {
+		t.Fatalf("after Flush, got %d writes and %d bytes", under.writes, under.total)
+	}
+}
+
 // TestStreamBufferWriterFlushesAtLimit verifies that the buffer auto-flushes
 // once accumulated bytes reach the capacity, keeping memory bounded without an
 // explicit Flush call.
