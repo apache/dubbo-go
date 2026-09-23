@@ -30,6 +30,12 @@ import (
 // before hitting the wire.
 const defaultStreamWriteBufSize = 32 << 10 // 32 KiB
 
+// preWriteChecker lets a buffered writer preserve checks normally performed
+// by its underlying writer before accepting a write into the buffer.
+type preWriteChecker interface {
+	checkBeforeWrite() error
+}
+
 // streamBufferWriter is an opt-in aggregation layer over a duplexHTTPCall for
 // streaming requests. Without it, every streamed message is flushed down the
 // io.Pipe alone, paying a synchronous cross-goroutine handshake per message.
@@ -41,9 +47,10 @@ const defaultStreamWriteBufSize = 32 << 10 // 32 KiB
 type streamBufferWriter struct {
 	mu sync.Mutex
 
-	next  io.Writer // wrapped duplexHTTPCall
-	limit int
-	buf   *bytes.Buffer
+	next    io.Writer // wrapped duplexHTTPCall
+	checker preWriteChecker
+	limit   int
+	buf     *bytes.Buffer
 
 	err    error
 	closed bool
@@ -52,10 +59,12 @@ type streamBufferWriter struct {
 // newStreamBufferWriter wraps next with an aggregation buffer of default
 // capacity.
 func newStreamBufferWriter(next io.Writer) *streamBufferWriter {
+	checker, _ := next.(preWriteChecker)
 	return &streamBufferWriter{
-		next:  next,
-		limit: defaultStreamWriteBufSize,
-		buf:   makeStreamWriteBuf(),
+		next:    next,
+		checker: checker,
+		limit:   defaultStreamWriteBufSize,
+		buf:     makeStreamWriteBuf(),
 	}
 }
 
@@ -80,6 +89,13 @@ func (w *streamBufferWriter) Write(p []byte) (int, error) {
 		// Mirror duplexHTTPCall.Write: a late Send after the write side closed
 		// reports io.EOF.
 		return 0, io.EOF
+	}
+	if w.checker != nil {
+		if err := w.checker.checkBeforeWrite(); err != nil {
+			w.err = err
+			w.closed = true
+			return 0, err
+		}
 	}
 	if len(p) == 0 {
 		// duplexHTTPCall uses this write to start the HTTP request.

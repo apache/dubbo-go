@@ -108,10 +108,8 @@ func newDuplexHTTPCall(
 func (d *duplexHTTPCall) Write(data []byte) (int, error) {
 	// ensure stream has been initialized
 	d.ensureRequestMade()
-	// Before we send any data, check if the context has been canceled.
-	if err := d.ctx.Err(); err != nil {
-		d.SetError(err)
-		return 0, wrapIfContextError(err)
+	if err := d.checkBeforeWrite(); err != nil {
+		return 0, err
 	}
 	// It's safe to write to this side of the pipe while net/http concurrently
 	// reads from the other side.
@@ -123,6 +121,17 @@ func (d *duplexHTTPCall) Write(data []byte) (int, error) {
 		return bytesWritten, io.EOF
 	}
 	return bytesWritten, err
+}
+
+// checkBeforeWrite checks cancellation without starting a live request, so
+// buffered writes can keep request headers mutable until their first flush.
+func (d *duplexHTTPCall) checkBeforeWrite() error {
+	if err := d.ctx.Err(); err != nil {
+		d.ensureRequestMade()
+		d.SetError(err)
+		return wrapIfContextError(err)
+	}
+	return nil
 }
 
 // CloseWrite closes the request body. Callers *must* call CloseWrite before Read when
