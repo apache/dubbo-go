@@ -86,7 +86,6 @@ func BenchmarkUnaryFastPathProduction(b *testing.B) {
 		httpClient,
 		server.URL,
 		triple_protocol.WithTriple(),
-		triple_protocol.WithUnaryFastPath(),
 	)
 	benchmarkUnaryPing(b, client)
 }
