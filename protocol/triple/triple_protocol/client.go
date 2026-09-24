@@ -247,7 +247,9 @@ func newClientConfig(rawURL string, options []ClientOption) (*clientConfig, *Err
 		// use gRPC by default
 		Protocol: &protocolGRPC{},
 		// the unary fast path is on by default
-		UnaryFastPath:    true,
+		UnaryFastPath: true,
+		// small streaming messages are aggregated by default
+		WriteBuffering:   true,
 		Procedure:        protoPath,
 		CompressionPools: make(map[string]*compressionPool),
 		BufferPool:       newBufferPool(),

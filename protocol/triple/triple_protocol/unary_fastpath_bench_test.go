@@ -78,15 +78,14 @@ func BenchmarkUnaryDuplex(b *testing.B) {
 }
 
 // BenchmarkUnaryFastPathProduction measures the production unary fast path via
-// the generated client. The fast path is on by default; the WithUnaryFastPath
-// option is repeated here to state the intent explicitly.
+// the generated client. The fast path is on by default, so no option is passed;
+// TestUnaryFastPathEnabledByDefault pins that default.
 func BenchmarkUnaryFastPathProduction(b *testing.B) {
 	server, httpClient := newPingBenchmarkServer(b)
 	client := pingv1connect.NewPingServiceClient(
 		httpClient,
 		server.URL,
 		triple_protocol.WithTriple(),
-		triple_protocol.WithUnaryFastPath(),
 	)
 	benchmarkUnaryPing(b, client)
 }
