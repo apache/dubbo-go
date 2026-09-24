@@ -405,9 +405,9 @@ func (cc *grpcClientConn) flushBeforeWait() {
 	if cc.writeBuffer == nil {
 		return
 	}
-	if err := cc.writeBuffer.Flush(); err != nil {
-		// Report through the call's error channel, so the reader observes the
-		// same error an unbuffered call would.
+	if err := cc.writeBuffer.Flush(); err != nil && !errors.Is(err, io.EOF) {
+		// A closed request pipe can accompany a server response. Preserve
+		// the response status instead of replacing it with the write-side EOF.
 		cc.call.SetError(err)
 	}
 }
