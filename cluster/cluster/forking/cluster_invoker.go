@@ -72,16 +72,25 @@ func (invoker *forkingClusterInvoker) Invoke(ctx context.Context, invocation pro
 	}
 
 	resultQ := queue.New(1)
+	forkCtx, cancel := context.WithCancel(ctx)
+	defer cancel() // cancel forkCtx when Invoke returns, signaling all forked goroutines to stop
+
 	for _, ivk := range selected {
 		go func(k protocolbase.Invoker) {
-			result := k.Invoke(ctx, invocation)
+			result := k.Invoke(forkCtx, invocation)
 			if err := resultQ.Put(result); err != nil {
-				logger.Errorf("[Cluster][Forking] resultQ put failed with exception err=%v", err)
+				// ErrDisposed is expected when another goroutine's result was already
+				// consumed and the queue disposed; log at debug level to avoid noise.
+				logger.Debugf("[Cluster][Forking] resultQ put failed, the queue is probably disposed: %v", err)
 			}
 		}(ivk)
 	}
 
 	rsps, err := resultQ.Poll(1, time.Millisecond*time.Duration(timeouts))
+	// Dispose the queue so that remaining goroutines' Put calls return ErrDisposed
+	// instead of succeeding into a discarded queue. Combined with the cancel() above,
+	// this ensures forked goroutines can exit promptly.
+	resultQ.Dispose()
 	if err != nil {
 		return &result.RPCResult{
 			Err: fmt.Errorf("failed to forking invoke provider %v, "+
