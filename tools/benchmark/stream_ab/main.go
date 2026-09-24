@@ -22,7 +22,8 @@
 //
 // Each worker operation opens one stream, sends msgs small messages, closes the
 // request side, then drains every response. The two arms differ only in whether
-// triple_protocol.WithWriteBuffering() is passed (buffered) or not (baseline).
+// triple_protocol.WithoutWriteBuffering() is passed (baseline) or not
+// (buffered, the default).
 // All wire parameters (triple protocol, default gRPC wire encoding, no request
 // compression, h2c cleartext) are identical so the comparison isolates the
 // variable under study.
@@ -60,7 +61,7 @@ var (
 	duration    = flag.String("duration", "60s", "Test duration after warmup")
 	warmup      = flag.String("warmup", "10s", "Warmup duration")
 	timeout     = flag.String("timeout", "90s", "Per-operation (one stream round-trip) timeout")
-	buffering   = flag.Bool("buffering", false, "Enable triple_protocol.WithWriteBuffering()")
+	buffering   = flag.Bool("buffering", true, "Enable write buffering (on by default); pass false for the unbuffered baseline")
 	probe       = flag.Bool("probe", false, "Run a single stream round-trip and print detailed per-step errors, then exit")
 )
 
@@ -123,9 +124,9 @@ func main() {
 
 // newStreamClient builds a Triple client over plaintext HTTP/2, mirroring the
 // official dubbo-go triple client wiring (protocol/triple/client.go):
-// http2.Transport with AllowHTTP + a plaintext DialTLSContext. No protocol
-// option is passed, so the client uses dubbo-go's defaults: triple protocol and
-// gRPC wire encoding. The default codec is
+// http2.Transport with AllowHTTP + a plaintext DialTLSContext. Besides the
+// buffering switch, no protocol option is passed, so the client uses dubbo-go's
+// defaults: triple protocol and gRPC wire encoding. The default codec is
 // protobuf-binary and requests are sent uncompressed, so the wire shape
 // matches the benchmark server's `--serialization protobuf --compression none`.
 func newStreamClient(addr string, buffering bool) *triple_protocol.Client {
@@ -144,8 +145,8 @@ func newStreamClient(addr string, buffering bool) *triple_protocol.Client {
 	}
 
 	opts := []triple_protocol.ClientOption{}
-	if buffering {
-		opts = append(opts, triple_protocol.WithWriteBuffering())
+	if !buffering {
+		opts = append(opts, triple_protocol.WithoutWriteBuffering())
 	}
 
 	return triple_protocol.NewClient(

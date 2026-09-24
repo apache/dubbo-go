@@ -30,6 +30,12 @@ import (
 // before hitting the wire.
 const defaultStreamWriteBufSize = 32 << 10 // 32 KiB
 
+// preWriteChecker lets a buffered writer preserve checks normally performed
+// by its underlying writer before accepting a write into the buffer.
+type preWriteChecker interface {
+	checkBeforeWrite() error
+}
+
 // streamBufferWriter is an opt-in aggregation layer over a duplexHTTPCall for
 // streaming requests. Without it, every streamed message is flushed down the
 // io.Pipe alone, paying a synchronous cross-goroutine handshake per message.
@@ -41,9 +47,10 @@ const defaultStreamWriteBufSize = 32 << 10 // 32 KiB
 type streamBufferWriter struct {
 	mu sync.Mutex
 
-	next  io.Writer // wrapped duplexHTTPCall
-	limit int
-	buf   *bytes.Buffer
+	next    io.Writer // wrapped duplexHTTPCall
+	checker preWriteChecker
+	limit   int
+	buf     *bytes.Buffer
 
 	err    error
 	closed bool
@@ -52,10 +59,12 @@ type streamBufferWriter struct {
 // newStreamBufferWriter wraps next with an aggregation buffer of default
 // capacity.
 func newStreamBufferWriter(next io.Writer) *streamBufferWriter {
+	checker, _ := next.(preWriteChecker)
 	return &streamBufferWriter{
-		next:  next,
-		limit: defaultStreamWriteBufSize,
-		buf:   makeStreamWriteBuf(),
+		next:    next,
+		checker: checker,
+		limit:   defaultStreamWriteBufSize,
+		buf:     makeStreamWriteBuf(),
 	}
 }
 
@@ -67,7 +76,8 @@ func makeStreamWriteBuf() *bytes.Buffer {
 // Write coalesces a small message into the buffer, flushing the batch once the
 // buffer reaches its limit. Payloads at or over the limit bypass the buffer
 // and go directly to the underlying writer so a single big message is not
-// held in memory twice.
+// held in memory twice. Empty writes also pass through to start the HTTP
+// request.
 func (w *streamBufferWriter) Write(p []byte) (int, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -80,26 +90,40 @@ func (w *streamBufferWriter) Write(p []byte) (int, error) {
 		// reports io.EOF.
 		return 0, io.EOF
 	}
+	if w.checker != nil {
+		if err := w.checker.checkBeforeWrite(); err != nil {
+			w.err = err
+			w.closed = true
+			return 0, err
+		}
+	}
+	if len(p) == 0 {
+		// duplexHTTPCall uses this write to start the HTTP request.
+		return w.writeDirectLocked(p)
+	}
 	if len(p) >= w.limit {
 		if err := w.flushLocked(); err != nil {
 			return 0, err
 		}
-		n, err := w.next.Write(p)
-		if err == nil && n < len(p) {
-			// Same short-write guard as flushLocked: freeze the buffer.
-			err = io.ErrShortWrite
-		}
-		if err != nil {
-			w.err = err
-			w.closed = true
-		}
-		return n, err
+		return w.writeDirectLocked(p)
 	}
 	w.buf.Write(p)
 	if w.buf.Len() >= w.limit && w.flushLocked() != nil {
 		return len(p), w.err
 	}
 	return len(p), nil
+}
+
+func (w *streamBufferWriter) writeDirectLocked(p []byte) (int, error) {
+	n, err := w.next.Write(p)
+	if err == nil && n < len(p) {
+		err = io.ErrShortWrite
+	}
+	if err != nil {
+		w.err = err
+		w.closed = true
+	}
+	return n, err
 }
 
 // Flush pushes any pending buffered messages to the underlying writer in a

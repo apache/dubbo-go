@@ -75,6 +75,29 @@ func TestStreamBufferWriterCoalesces(t *testing.T) {
 	}
 }
 
+func TestStreamBufferWriterForwardsZeroLengthWrite(t *testing.T) {
+	under := &writeCountRecorder{}
+	w := newStreamBufferWriter(under)
+	if n, err := w.Write(nil); err != nil || n != 0 {
+		t.Fatalf("Write(nil) = (%d, %v), want (0, nil)", n, err)
+	}
+	if under.writes != 1 {
+		t.Fatalf("zero-length write reached the writer %d times, want 1", under.writes)
+	}
+	if _, err := w.Write([]byte("message")); err != nil {
+		t.Fatalf("Write(message): %v", err)
+	}
+	if under.writes != 1 {
+		t.Fatalf("small message flushed before Flush: %d writes", under.writes)
+	}
+	if err := w.Flush(); err != nil {
+		t.Fatalf("Flush: %v", err)
+	}
+	if under.writes != 2 || under.total != len("message") {
+		t.Fatalf("after Flush, got %d writes and %d bytes", under.writes, under.total)
+	}
+}
+
 // TestStreamBufferWriterFlushesAtLimit verifies that the buffer auto-flushes
 // once accumulated bytes reach the capacity, keeping memory bounded without an
 // explicit Flush call.
@@ -272,7 +295,7 @@ func (f countWriterFunc) Write(p []byte) (int, error) { return f(p) }
 // a streamBufferWriter wrapping a real duplexHTTPCall must deliver every Send to
 // the server, including the un-flushed tail that CloseRequest flushes before the
 // write side closes. It exercises the exact Send / CloseRequest sequence the
-// Triple streaming client performs with WithWriteBuffering enabled.
+// Triple streaming client performs with write buffering enabled.
 func TestWriteBufferingStreamingFlushOnClose(t *testing.T) {
 	t.Parallel()
 
@@ -368,7 +391,7 @@ func connWriteBuffer(t *testing.T, conn StreamingClientConn) *streamBufferWriter
 	}
 }
 
-// TestWriteBufferingIsWiredIntoStreamingConns verifies that WithWriteBuffering
+// TestWriteBufferingIsWiredIntoStreamingConns verifies that write buffering
 // reaches the streaming write path of both protocol clients: the conn must carry
 // a non-nil writeBuffer and its envelope writer must be routed through it. It
 // also verifies that unary fast-path calls stay unbuffered, keeping the option
@@ -379,17 +402,17 @@ func TestWriteBufferingIsWiredIntoStreamingConns(t *testing.T) {
 	unarySpec := Spec{StreamType: StreamTypeUnary, Procedure: "/connect.ping.v1.PingService/Ping"}
 	streamSpec := Spec{StreamType: StreamTypeBidi, Procedure: "/connect.ping.v1.PingService/Ping"}
 
-	// Default gRPC wire: streaming calls are buffered only when opted in.
+	// Default gRPC wire: the buffer is attached when the params carry the flag.
 	grpcBuffered := &grpcClient{protocolClientParams: newBufferingParams(true, true)}
 	assert.True(t, connWriteBuffer(t, grpcBuffered.NewConn(context.Background(), streamSpec, make(http.Header))) != nil,
-		assert.Sprintf("gRPC streaming conn dropped WithWriteBuffering"))
+		assert.Sprintf("dropped the write buffer"))
 	grpcPlain := &grpcClient{protocolClientParams: newBufferingParams(false, true)}
 	assert.Nil(t, connWriteBuffer(t, grpcPlain.NewConn(context.Background(), streamSpec, make(http.Header))))
 
 	// Triple wire keeps the same contract on its streaming path.
 	tripleBuffered := &tripleClient{protocolClientParams: newBufferingParams(true, true)}
 	assert.True(t, connWriteBuffer(t, tripleBuffered.NewConn(context.Background(), streamSpec, make(http.Header))) != nil,
-		assert.Sprintf("triple streaming conn dropped WithWriteBuffering"))
+		assert.Sprintf("dropped the write buffer"))
 	triplePlain := &tripleClient{protocolClientParams: newBufferingParams(false, true)}
 	assert.Nil(t, connWriteBuffer(t, triplePlain.NewConn(context.Background(), streamSpec, make(http.Header))))
 
@@ -400,7 +423,7 @@ func TestWriteBufferingIsWiredIntoStreamingConns(t *testing.T) {
 
 // TestWriteBufferingCoversUnaryNonFastPath verifies that unary calls which skip
 // the fast path are buffered too: they still run over duplexHTTPCall and
-// io.Pipe, so WithWriteBuffering must reach them; only the fast path stays
+// io.Pipe, so write buffering must reach them; only the fast path stays
 // unbuffered.
 func TestWriteBufferingCoversUnaryNonFastPath(t *testing.T) {
 	t.Parallel()
@@ -409,11 +432,24 @@ func TestWriteBufferingCoversUnaryNonFastPath(t *testing.T) {
 
 	grpcSlow := &grpcClient{protocolClientParams: newBufferingParams(true, false)}
 	assert.True(t, connWriteBuffer(t, grpcSlow.NewConn(context.Background(), unarySpec, make(http.Header))) != nil,
-		assert.Sprintf("gRPC unary conn off the fast path dropped WithWriteBuffering"))
+		assert.Sprintf("dropped the write buffer"))
 
 	tripleSlow := &tripleClient{protocolClientParams: newBufferingParams(true, false)}
 	assert.True(t, connWriteBuffer(t, tripleSlow.NewConn(context.Background(), unarySpec, make(http.Header))) != nil,
-		assert.Sprintf("triple unary conn off the fast path dropped WithWriteBuffering"))
+		assert.Sprintf("dropped the write buffer"))
+}
+
+// TestWriteBufferingEnabledByDefault verifies that a client built without any
+// buffering option still routes streaming calls through the write buffer,
+// pinning the default that the benchmark arms and callers rely on.
+func TestWriteBufferingEnabledByDefault(t *testing.T) {
+	config, confErr := newClientConfig("http://example.com/connect.ping.v1.PingService/Ping", nil)
+	if confErr != nil {
+		t.Fatalf("newClientConfig returned an error: %v", confErr)
+	}
+	if !config.WriteBuffering {
+		t.Fatal("write buffering is off by default, want on")
+	}
 }
 
 // newRequestSpyServer starts a server that reports on reached the first time it
@@ -440,6 +476,40 @@ func newRequestSpyServer(t *testing.T) (*httptest.Server, <-chan struct{}, *url.
 	return server, reached, serverURL
 }
 
+func TestBufferedWriteEOFDoesNotMaskResponse(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name string
+		wait func(*duplexHTTPCall, *streamBufferWriter)
+	}{
+		{"grpc", func(call *duplexHTTPCall, buffer *streamBufferWriter) {
+			(&grpcClientConn{call: call, writeBuffer: buffer}).flushBeforeWait()
+		}},
+		{"triple", func(call *duplexHTTPCall, buffer *streamBufferWriter) {
+			(&tripleUnaryClientConn{call: call, writeBuffer: buffer}).flushBeforeWait()
+		}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			call := newDuplexHTTPCall(context.Background(), nil,
+				&url.URL{Scheme: "http", Host: "example.com"}, Spec{}, http.Header{})
+			buffer := newStreamBufferWriter(countWriterFunc(func([]byte) (int, error) {
+				return 0, io.EOF
+			}))
+			if _, err := buffer.Write([]byte("pending")); err != nil {
+				t.Fatalf("buffer write: %v", err)
+			}
+			if err := buffer.Close(); !errors.Is(err, io.EOF) {
+				t.Fatalf("flush error = %v, want EOF", err)
+			}
+
+			test.wait(call, buffer)
+			if err := call.getError(); err != nil {
+				t.Fatalf("response read error = %v, want nil", err)
+			}
+		})
+	}
+}
+
 // TestWriteBufferingEmptyStreamStillSendsRequest verifies that a stream which
 // never sent a message still issues the HTTP request when the request side
 // closes: sealing an empty buffer is a no-op, so CloseWrite's fallback to
@@ -459,6 +529,42 @@ func TestWriteBufferingEmptyStreamStillSendsRequest(t *testing.T) {
 	case <-reached:
 	case <-time.After(closeTestTimeout):
 		t.Fatal("an empty buffered stream must still send the request on CloseRequest")
+	}
+}
+
+func TestStreamBufferWriterChecksContextBeforeBuffering(t *testing.T) {
+	t.Parallel()
+
+	server, reached, serverURL := newRequestSpyServer(t)
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	call := newDuplexHTTPCall(ctx, server.Client(), serverURL,
+		Spec{StreamType: StreamTypeClient, Procedure: "/triple.test.v1.RaceService/Sum"},
+		http.Header{})
+	call.SetValidateResponse(func(*http.Response) *Error { return nil })
+	w := newStreamBufferWriter(call)
+
+	if _, err := w.Write([]byte("first")); err != nil {
+		t.Fatalf("buffer a live write: %v", err)
+	}
+	select {
+	case <-reached:
+		t.Fatal("buffering a live write started the HTTP request")
+	case <-call.responseReady:
+		t.Fatal("buffering a live write started the HTTP request")
+	default:
+	}
+
+	cancel()
+	if _, err := w.Write([]byte("second")); err == nil {
+		t.Fatal("write after cancellation returned nil")
+	} else if tripleErr, ok := asError(err); !ok || tripleErr.Code() != CodeCanceled {
+		t.Fatalf("write after cancellation = %v, want CodeCanceled", err)
+	}
+	if _, err := call.Read(make([]byte, 1)); err == nil {
+		t.Fatal("read after cancellation returned nil")
+	} else if tripleErr, ok := asError(err); !ok || tripleErr.Code() != CodeCanceled {
+		t.Fatalf("read after cancellation = %v, want CodeCanceled", err)
 	}
 }
 

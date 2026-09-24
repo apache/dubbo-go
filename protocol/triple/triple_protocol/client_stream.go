@@ -79,6 +79,17 @@ func (c *ClientStreamForClient) CloseAndReceive(response *Response) error {
 		return c.err
 	}
 	if err := c.conn.CloseRequest(); err != nil {
+		// The server may reject request headers and close its read side before
+		// a buffered request body is flushed. Read its status before returning
+		// the resulting EOF from the request pipe.
+		if errors.Is(err, io.EOF) {
+			responseErr := receiveUnaryResponse(c.conn, response)
+			_ = c.conn.CloseResponse()
+			if IsWireError(responseErr) {
+				return responseErr
+			}
+			return err
+		}
 		_ = c.conn.CloseResponse()
 		return err
 	}
