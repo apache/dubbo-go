@@ -18,6 +18,7 @@
 package triple_protocol
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -288,6 +289,71 @@ func TestClientStreamForClientCloseAndReceiveClosesResponseOnCloseRequestError(t
 
 	err := stream.CloseAndReceive(NewResponse(&pingv1.PingResponse{}))
 	assert.ErrorIs(t, err, closeReqErr)
+	assert.Equal(t, conn.closeRespCalls, 1)
+}
+
+func TestClientStreamForClientCloseAndReceiveReadsServerErrorAfterEOF(t *testing.T) {
+	t.Parallel()
+	closeReqErr := NewError(CodeUnknown, io.EOF)
+	serverErr := NewWireError(CodeInvalidArgument, errors.New("invalid header"))
+	conn := &stubStreamingClientConn{
+		closeReqErr: closeReqErr,
+		receiveErr:  serverErr,
+	}
+	stream := &ClientStreamForClient{conn: conn}
+
+	err := stream.CloseAndReceive(NewResponse(&pingv1.PingResponse{}))
+	assert.ErrorIs(t, err, serverErr)
+	assert.Equal(t, conn.receiveCalls, 1)
+	assert.Equal(t, conn.closeRespCalls, 1)
+}
+
+func TestClientStreamForClientReadsGRPCTrailerAfterBufferedEOF(t *testing.T) {
+	t.Parallel()
+	client := NewClient(&behaviorHTTPClient{do: func(req *http.Request) (*http.Response, error) {
+		_ = req.Body.Close()
+		trailer := make(http.Header)
+		trailer.Set(grpcHeaderStatus, "3")
+		trailer.Set(grpcHeaderMessage, "invalid header")
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     make(http.Header),
+			Trailer:    trailer,
+			Body:       http.NoBody,
+			ProtoMajor: 2,
+		}, nil
+	}}, "http://example.com")
+	stream, err := client.CallClientStream(context.Background(),
+		"/connect.ping.v1.PingService/Sum")
+	if err != nil {
+		t.Fatalf("create stream: %v", err)
+	}
+	err = stream.Send(&pingv1.SumRequest{Number: 1})
+	if err != nil {
+		t.Fatalf("buffer request: %v", err)
+	}
+
+	err = stream.CloseAndReceive(NewResponse(&pingv1.SumResponse{}))
+	if got := CodeOf(err); got != CodeInvalidArgument {
+		t.Fatalf("CloseAndReceive code = %v, want invalid_argument: %v", got, err)
+	}
+	if !IsWireError(err) {
+		t.Fatalf("CloseAndReceive error = %v, want server error", err)
+	}
+}
+
+func TestClientStreamForClientCloseAndReceiveKeepsEOFWithoutServerError(t *testing.T) {
+	t.Parallel()
+	closeReqErr := NewError(CodeUnknown, io.EOF)
+	conn := &stubStreamingClientConn{
+		closeReqErr: closeReqErr,
+		receiveErr:  errors.New("response read failure"),
+	}
+	stream := &ClientStreamForClient{conn: conn}
+
+	err := stream.CloseAndReceive(NewResponse(&pingv1.PingResponse{}))
+	assert.ErrorIs(t, err, closeReqErr)
+	assert.Equal(t, conn.receiveCalls, 1)
 	assert.Equal(t, conn.closeRespCalls, 1)
 }
 

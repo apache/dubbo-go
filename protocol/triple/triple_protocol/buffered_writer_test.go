@@ -476,6 +476,40 @@ func newRequestSpyServer(t *testing.T) (*httptest.Server, <-chan struct{}, *url.
 	return server, reached, serverURL
 }
 
+func TestBufferedWriteEOFDoesNotMaskResponse(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name string
+		wait func(*duplexHTTPCall, *streamBufferWriter)
+	}{
+		{"grpc", func(call *duplexHTTPCall, buffer *streamBufferWriter) {
+			(&grpcClientConn{call: call, writeBuffer: buffer}).flushBeforeWait()
+		}},
+		{"triple", func(call *duplexHTTPCall, buffer *streamBufferWriter) {
+			(&tripleUnaryClientConn{call: call, writeBuffer: buffer}).flushBeforeWait()
+		}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			call := newDuplexHTTPCall(context.Background(), nil,
+				&url.URL{Scheme: "http", Host: "example.com"}, Spec{}, http.Header{})
+			buffer := newStreamBufferWriter(countWriterFunc(func([]byte) (int, error) {
+				return 0, io.EOF
+			}))
+			if _, err := buffer.Write([]byte("pending")); err != nil {
+				t.Fatalf("buffer write: %v", err)
+			}
+			if err := buffer.Close(); !errors.Is(err, io.EOF) {
+				t.Fatalf("flush error = %v, want EOF", err)
+			}
+
+			test.wait(call, buffer)
+			if err := call.getError(); err != nil {
+				t.Fatalf("response read error = %v, want nil", err)
+			}
+		})
+	}
+}
+
 // TestWriteBufferingEmptyStreamStillSendsRequest verifies that a stream which
 // never sent a message still issues the HTTP request when the request side
 // closes: sealing an empty buffer is a no-op, so CloseWrite's fallback to
