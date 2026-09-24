@@ -70,3 +70,43 @@ func TestLimiterMapper_getMethodLimiter(t *testing.T) {
 	assert.Nil(t, l)
 	assert.Equal(t, ErrLimiterNotFoundOnMapper, err)
 }
+
+func TestGetMethodLimiterSnapshot(t *testing.T) {
+	mapper := newLimiterMapper()
+	oldMapper := limiterMapperSingleton
+	limiterMapperSingleton = mapper
+	t.Cleanup(func() {
+		limiterMapperSingleton = oldMapper
+	})
+
+	url := &common.URL{Path: "/testService"}
+	methodName := "testMethod"
+	_, err := mapper.newAndSetMethodLimiter(url, methodName, limiter.HillClimbingLimiter)
+	require.NoError(t, err)
+
+	snapshot, ok := GetMethodLimiterSnapshot(url.Path, methodName)
+	require.True(t, ok)
+	assert.Equal(t, uint64(50), snapshot.Limitation)
+
+	snapshot, ok = GetMethodLimiterSnapshot("/unknownService", methodName)
+	assert.False(t, ok)
+	assert.Equal(t, limiter.Snapshot{}, snapshot)
+}
+
+func TestGetMethodLimiterSnapshot_WithInterfaceNameWithoutLeadingSlash(t *testing.T) {
+	mapper := newLimiterMapper()
+	oldMapper := limiterMapperSingleton
+	limiterMapperSingleton = mapper
+	t.Cleanup(func() {
+		limiterMapperSingleton = oldMapper
+	})
+
+	url := &common.URL{Path: "/testService"}
+	methodName := "testMethod"
+	_, err := mapper.newAndSetMethodLimiter(url, methodName, limiter.HillClimbingLimiter)
+	require.NoError(t, err)
+
+	snapshot, ok := GetMethodLimiterSnapshot("testService", methodName)
+	require.True(t, ok)
+	assert.Equal(t, uint64(50), snapshot.Limitation)
+}
