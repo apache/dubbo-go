@@ -242,6 +242,7 @@ const (
 	MethodKey              = "method"
 	MethodKeys             = "methods"
 	RuleKey                = "rule"
+	RuleConfigVersionKey   = "configVersion"
 	RuntimeKey             = "runtime"
 	BackupKey              = "backup"
 	RoutersCategory        = "routers"

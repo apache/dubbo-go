@@ -78,21 +78,30 @@ type ConditionMatch struct {
 	Address         *common.AddressMatch    `yaml:"address"`
 	ProviderAddress *common.AddressMatch    `yaml:"providerAddress"`
 	Service         *common.ListStringMatch `yaml:"service"`
-	App             *common.ListStringMatch `yaml:"app"`
-	Param           []*common.ParamMatch    `yaml:"param"`
+	App             *common.ListStringMatch `yaml:"application"`
+	// LegacyApp supports the former non-standard app field when application is absent.
+	LegacyApp *common.ListStringMatch `yaml:"app"`
+	Param     []*common.ParamMatch    `yaml:"param"`
 }
 
 func (c *ConditionMatch) IsMatch(host string, url *common.URL) bool {
-	if !c.Address.IsMatch(host) {
+	if c == nil {
+		return true
+	}
+	if c.Address != nil && !c.Address.IsMatch(host) {
 		return false
 	}
-	if !c.ProviderAddress.IsMatch(url.Location) {
+	if c.ProviderAddress != nil && !c.ProviderAddress.IsMatch(url.Location) {
 		return false
 	}
-	if !c.Service.IsMatch(url.ServiceKey()) {
+	if c.Service != nil && !c.Service.IsMatch(url.ServiceKey()) {
 		return false
 	}
-	if !c.App.IsMatch(url.GetParam(constant.ApplicationKey, "")) {
+	app := c.App
+	if app == nil {
+		app = c.LegacyApp
+	}
+	if app != nil && !app.IsMatch(url.GetParam(constant.ApplicationKey, "")) {
 		return false
 	}
 	if c.Param != nil {
@@ -166,7 +175,7 @@ func serviceItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.UR
 		urlStr = urlStr + getEnabledString(item, config)
 		urlStr = urlStr + "&category="
 		urlStr = urlStr + constant.DynamicConfiguratorsCategory
-		urlStr = urlStr + "&configVersion="
+		urlStr = urlStr + "&" + constant.RuleConfigVersionKey + "="
 		urlStr = urlStr + config.ConfigVersion
 		apps := item.Applications
 		if len(apps) > 0 {
@@ -222,7 +231,7 @@ func appItemToUrls(item ConfigItem, config ConfiguratorConfig) ([]*common.URL, e
 			urlStr = urlStr + getEnabledString(item, config)
 			urlStr = urlStr + "&category="
 			urlStr = urlStr + constant.AppDynamicConfiguratorsCategory
-			urlStr = urlStr + "&configVersion="
+			urlStr = urlStr + "&" + constant.RuleConfigVersionKey + "="
 			urlStr = urlStr + config.ConfigVersion
 			url, err := common.NewURL(urlStr)
 			if err != nil {
