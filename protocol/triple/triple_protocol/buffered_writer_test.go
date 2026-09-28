@@ -476,6 +476,26 @@ func newRequestSpyServer(t *testing.T) (*httptest.Server, <-chan struct{}, *url.
 	return server, reached, serverURL
 }
 
+// newRequestDrainSpyServer reports after the server reads the request body to
+// EOF, so tests can verify that CloseRequest closed the client write side.
+func newRequestDrainSpyServer(t *testing.T) (*httptest.Server, <-chan struct{}, *url.URL) {
+	t.Helper()
+	drained := make(chan struct{}, 1)
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.Copy(io.Discard, r.Body)
+		_ = r.Body.Close()
+		drained <- struct{}{}
+		w.WriteHeader(http.StatusOK)
+	})
+	server := httptest.NewServer(handler)
+	t.Cleanup(server.Close)
+	serverURL, err := url.Parse(server.URL)
+	if err != nil {
+		t.Fatalf("parse server URL: %v", err)
+	}
+	return server, drained, serverURL
+}
+
 func TestBufferedWriteEOFDoesNotMaskResponse(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
@@ -505,6 +525,40 @@ func TestBufferedWriteEOFDoesNotMaskResponse(t *testing.T) {
 			test.wait(call, buffer)
 			if err := call.getError(); err != nil {
 				t.Fatalf("response read error = %v, want nil", err)
+			}
+		})
+	}
+}
+
+func TestCloseRequestIgnoresBufferedWriteEOF(t *testing.T) {
+	t.Parallel()
+
+	for _, test := range []struct {
+		name  string
+		close func(unaryClientCall, *streamBufferWriter) error
+	}{
+		{"grpc", func(call unaryClientCall, buffer *streamBufferWriter) error {
+			return (&grpcClientConn{call: call, writeBuffer: buffer}).CloseRequest()
+		}},
+		{"triple", func(call unaryClientCall, buffer *streamBufferWriter) error {
+			return (&tripleUnaryClientConn{call: call, writeBuffer: buffer}).CloseRequest()
+		}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			server, drained, serverURL := newRequestDrainSpyServer(t)
+			call := newTestDuplexClientCall(t, server.Client(), serverURL)
+			buffer := newStreamBufferWriter(errorWriter{err: io.EOF})
+			if _, err := buffer.Write([]byte("pending")); err != nil {
+				t.Fatalf("buffer write: %v", err)
+			}
+
+			if err := test.close(call, buffer); err != nil {
+				t.Fatalf("CloseRequest after buffered EOF: %v", err)
+			}
+			select {
+			case <-drained:
+			case <-time.After(closeTestTimeout):
+				t.Fatal("CloseRequest did not close the write side after buffered EOF")
 			}
 		})
 	}
