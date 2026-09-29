@@ -389,7 +389,7 @@ func (cc *grpcClientConn) CloseRequest() error {
 	// CloseWrite runs even if the flush failed: the write side must always be
 	// closed so the peer does not wait on it.
 	closeErr := cc.call.CloseWrite()
-	if flushErr != nil {
+	if flushErr != nil && !errors.Is(flushErr, io.EOF) {
 		return flushErr
 	}
 	return closeErr
