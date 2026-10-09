@@ -207,7 +207,7 @@ func (cli *Client) DialWithDefinition(interfaceName string, definition *ClientDe
 func (cli *Client) dial(interfaceName string, info *ClientInfo, srv any, opts ...ReferenceOption) (*Connection, error) {
 	newRefOpts := defaultReferenceOptions()
 	finalOpts := []ReferenceOption{
-		setReference(cli.cliOpts.overallReference),
+		setReference(cli.cliOpts.overallReference.Clone()),
 		setApplication(cli.cliOpts.Application),
 		setRegistries(cli.cliOpts.Registries),
 		setConsumer(cli.cliOpts.Consumer),
