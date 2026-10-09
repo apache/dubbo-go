@@ -44,12 +44,25 @@ import (
 )
 
 type testClosingEventHandler struct {
+	mu     sync.RWMutex
 	events []gracefulshutdown.ClosingEvent
 }
 
 func (h *testClosingEventHandler) HandleClosingEvent(event gracefulshutdown.ClosingEvent) bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
 	h.events = append(h.events, event)
 	return true
+}
+
+func (h *testClosingEventHandler) eventsSnapshot() []gracefulshutdown.ClosingEvent {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	events := make([]gracefulshutdown.ClosingEvent, len(h.events))
+	copy(events, h.events)
+	return events
 }
 
 func TestGrpcInvokerHandleHealthStatusNotServing(t *testing.T) {
@@ -63,10 +76,12 @@ func TestGrpcInvokerHandleHealthStatusNotServing(t *testing.T) {
 	handled := invoker.handleHealthStatus(grpc_health_v1.HealthCheckResponse_NOT_SERVING, handler)
 
 	assert.True(t, handled)
-	if assert.Len(t, handler.events, 1) {
-		assert.Equal(t, "grpc-health-watch", handler.events[0].Source)
-		assert.Equal(t, url.GetCacheInvokerMapKey(), handler.events[0].InstanceKey)
-		assert.Equal(t, url.ServiceKey(), handler.events[0].ServiceKey)
+	events := handler.eventsSnapshot()
+
+	if assert.Len(t, events, 1) {
+		assert.Equal(t, "grpc-health-watch", events[0].Source)
+		assert.Equal(t, url.GetCacheInvokerMapKey(), events[0].InstanceKey)
+		assert.Equal(t, url.ServiceKey(), events[0].ServiceKey)
 	}
 }
 
@@ -130,10 +145,13 @@ func TestGrpcHealthWatchEmitsClosingEvent(t *testing.T) {
 	healthServer.SetServingStatus(serviceKey, grpc_health_v1.HealthCheckResponse_NOT_SERVING)
 
 	require.Eventually(t, func() bool {
-		return len(handler.events) == 1
+		return len(handler.eventsSnapshot()) == 1
 	}, 3*time.Second, 20*time.Millisecond)
 
-	assert.Equal(t, "grpc-health-watch", handler.events[0].Source)
-	assert.Equal(t, url.GetCacheInvokerMapKey(), handler.events[0].InstanceKey)
-	assert.Equal(t, serviceKey, handler.events[0].ServiceKey)
+	events := handler.eventsSnapshot()
+	require.Len(t, events, 1)
+
+	assert.Equal(t, "grpc-health-watch", events[0].Source)
+	assert.Equal(t, url.GetCacheInvokerMapKey(), events[0].InstanceKey)
+	assert.Equal(t, serviceKey, events[0].ServiceKey)
 }

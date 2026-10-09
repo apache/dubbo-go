@@ -47,7 +47,6 @@ RACE_SKIP_TESTS := TestFailbackRetryFailed \
 TestFailbackOutOfLimit \
 TestListener \
 TestDubboProtocol_Refer \
-TestGrpcHealthWatchEmitsClosingEvent \
 TestServiceDiscoveryRegistryUnRegister_Concurrent \
 TestCfgAPI_Export \
 TestCfgAPI_Call \
