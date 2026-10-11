@@ -285,6 +285,28 @@ func TestBeanGeneralizer_Generalize_CircularReference(t *testing.T) {
 	assert.Nil(t, desc.Properties["next"])
 }
 
+func TestBeanGeneralizer_RoundTrip_SharedPointers(t *testing.T) {
+	address := &TestAddress{City: "Shanghai", ZipCode: "200000"}
+	g := GetBeanGeneralizer()
+	tests := []struct {
+		name  string
+		input any
+	}{
+		{"struct fields", struct{ Home, Work *TestAddress }{address, address}},
+		{"slice elements", []*TestAddress{address, address}},
+		{"map values", map[string]*TestAddress{"home": address, "work": address}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			generalized, err := g.Generalize(tt.input)
+			require.NoError(t, err)
+			realized, err := g.Realize(generalized, reflect.TypeOf(tt.input))
+			require.NoError(t, err)
+			assert.Equal(t, tt.input, realized)
+		})
+	}
+}
+
 func TestBeanGeneralizer_Generalize_MutualCircularReference(t *testing.T) {
 	g := GetBeanGeneralizer()
 

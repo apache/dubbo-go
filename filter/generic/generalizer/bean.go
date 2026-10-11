@@ -123,6 +123,9 @@ func (g *BeanGeneralizer) toDescriptor(obj any, visited map[uintptr]bool) *JavaB
 			return nil // circular reference detected, return nil to break the cycle
 		}
 		visited[ptr] = true
+		// Only ancestors on the current path form a cycle. Sibling values
+		// may refer to the same object and must each retain its contents.
+		defer delete(visited, ptr)
 	}
 
 	for v.Kind() == reflect.Pointer && !v.IsNil() {
