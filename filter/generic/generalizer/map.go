@@ -303,6 +303,9 @@ func objToMap(obj any) (any, error) {
 
 	t := reflect.TypeOf(obj)
 	v := reflect.ValueOf(obj)
+	if t.Kind() == reflect.Pointer && v.IsNil() {
+		return nil, nil
+	}
 
 	// if obj is a POJO, get the struct from the pointer (if it is a pointer)
 	pojo, isPojo := obj.(hessian.POJO)
