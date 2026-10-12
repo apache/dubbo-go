@@ -110,6 +110,36 @@ func TestObjToMap(t *testing.T) {
 	assert.Equal(t, 100, m["eeEe"].(int))
 }
 
+func TestMapGeneralizeNilPointers(t *testing.T) {
+	var plain *testPlainObj
+	var pojo *testMTagSquashedPOJO
+	var number *int
+	var indirect **testPlainObj
+	tests := []struct {
+		name  string
+		input any
+		want  any
+	}{
+		{"plain pointer", plain, nil},
+		{"POJO pointer", pojo, nil},
+		{"scalar pointer", number, nil},
+		{"indirect pointer", &indirect, nil},
+		{"slice element", []any{plain, pojo, number}, []any{nil, nil, nil}},
+		{"map value", map[string]any{"plain": plain, "pojo": pojo}, map[any]any{"plain": nil, "pojo": nil}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var got any
+			var err error
+			require.NotPanics(t, func() {
+				got, err = GetMapGeneralizer().Generalize(tt.input)
+			})
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestMTagRoundTrip(t *testing.T) {
 	original := testMTagObj{
 		UserID: "42",
