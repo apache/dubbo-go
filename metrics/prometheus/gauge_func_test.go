@@ -40,6 +40,46 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 )
 
+func TestGaugeFuncRejectsInvalidInputs(t *testing.T) {
+	tests := []struct {
+		name     string
+		tags     map[string]string
+		callback func() float64
+		message  string
+	}{
+		{
+			name:    "nil callback",
+			tags:    map[string]string{"method": "A"},
+			message: "metrics: nil gauge function",
+		},
+		{
+			name:     "label cardinality",
+			tags:     map[string]string{},
+			callback: func() float64 { return 1 },
+			message:  "metrics: inconsistent gauge label cardinality",
+		},
+		{
+			name:     "label names",
+			tags:     map[string]string{"application_name": "shop-user"},
+			callback: func() float64 { return 1 },
+			message:  "metrics: inconsistent gauge label names",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := NewPromMetricRegistry(prom.NewRegistry(), common.NewURLWithOptions())
+			r.GaugeFunc(&metrics.MetricId{Name: "window_value", Desc: "Window value", Tags: map[string]string{"method": "A"}},
+				func() float64 { return 7 })
+			require.PanicsWithValue(t, tt.message, func() {
+				r.GaugeFunc(&metrics.MetricId{Name: "window_value", Desc: "Window value", Tags: tt.tags}, tt.callback)
+			})
+			text, err := r.Scrape()
+			require.NoError(t, err)
+			require.Contains(t, text, "window_value{method=\"A\"} 7\n", "Rejected input must leave the existing series intact")
+		})
+	}
+}
+
 func TestGaugeFuncExportPaths(t *testing.T) {
 	r := NewPromMetricRegistry(prom.NewRegistry(), common.NewURLWithOptions())
 	var value atomic.Int64
