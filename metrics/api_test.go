@@ -19,11 +19,40 @@ package metrics
 
 import (
 	"testing"
+	"testing/synctest"
+	"time"
 )
 
 import (
 	"github.com/stretchr/testify/assert"
 )
+
+func TestLegacyWindowMetricRegistry(t *testing.T) {
+	// Third-party registries implementing only MetricRegistry remain usable.
+	// Without GaugeFuncRegistry they retain their previous record-time behavior.
+	synctest.Test(t, func(t *testing.T) {
+		registry := newMockMetricRegistry()
+		labels := map[string]string{"app": "dubbo"}
+		qps := NewQpsMetricVec(registry, NewMetricKey("qps", "QPS"))
+		count := NewAggregateCounterVec(registry, NewMetricKey("count", "Window count"))
+		quantiles := NewQuantileMetricVec(registry, []*MetricKey{NewMetricKey("p99", "P99")}, []float64{0.99})
+		for range 6 {
+			qps.Record(labels)
+			count.Inc(labels)
+			quantiles.Record(labels, 100)
+		}
+		assert.InDelta(t, 0.5, registry.gauges["qps"].value, 0)
+		assert.InDelta(t, 6.0, registry.gauges["count"].value, 0)
+		assert.InDelta(t, 100.0, registry.gauges["p99"].value, 0)
+		time.Sleep(121 * time.Second)
+		qps.Record(labels)
+		count.Inc(labels)
+		quantiles.Record(labels, 1000)
+		assert.InDelta(t, 1.0/12, registry.gauges["qps"].value, 0)
+		assert.InDelta(t, 1.0, registry.gauges["count"].value, 0)
+		assert.InDelta(t, 1000.0, registry.gauges["p99"].value, 0)
+	})
+}
 
 // mockMetricRegistry is a simple mock implementation of MetricRegistry for testing
 type mockMetricRegistry struct {
