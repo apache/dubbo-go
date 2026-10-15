@@ -1,0 +1,9 @@
+configVersion: v3.0
+enabled: false
+force: false
+key: tag-compat-provider
+runtime: false
+tags:
+- addresses:
+  - 127.0.0.1:20891
+  name: gray

@@ -1,0 +1,7 @@
+configVersion: v3.0
+enabled: true
+key: tag-compat-provider
+tags:
+- addresses:
+  - 127.0.0.1:20890
+  name: gray
