@@ -293,7 +293,8 @@ func generateConditionsRoute(rawConfig string) (stateRouters, bool, bool, error)
 		return nil, false, false, err
 	}
 
-	force, enable := *routerConfig.Force, *routerConfig.Enabled
+	force := routerConfig.Force != nil && *routerConfig.Force
+	enable := routerConfig.Enabled == nil || *routerConfig.Enabled
 	if !enable {
 		return nil, false, false, nil
 	}
@@ -305,7 +306,7 @@ func generateConditionsRoute(rawConfig string) (stateRouters, bool, bool, error)
 			return nil, false, false, err
 		}
 		url.SetParam(constant.RuleKey, conditionRule)
-		url.SetParam(constant.ForceKey, strconv.FormatBool(*routerConfig.Force))
+		url.SetParam(constant.ForceKey, strconv.FormatBool(force))
 		conditionRoute, err := NewConditionStateRouter(url)
 		if err != nil {
 			return nil, false, false, err
