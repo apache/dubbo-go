@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	meshproto "github.com/apache/dubbo-admin/api/mesh/v1alpha1"
+	adminmodel "github.com/apache/dubbo-admin/pkg/console/model"
 	meshresource "github.com/apache/dubbo-admin/pkg/core/resource/apis/mesh/v1alpha1"
 	"github.com/stretchr/testify/require"
 )
@@ -56,7 +57,9 @@ func TestExportGoConditionCompatibilityFixtures(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, os.WriteFile(filepath.Join(dir, name+".yaml"), append([]byte(conditionFixtureLicense), b...), 0644))
 	}
-	service := &meshproto.ConditionRoute{ConfigVersion: "v3.0", Scope: "service", Key: "org.apache.dubbo.condition.CompatService:1.0.0:compat", Force: true, Runtime: true, Enabled: true, Conditions: []string{"=>env=stable"}}
+	serviceRequest := adminmodel.BaseServiceReq{ServiceName: "org.apache.dubbo.condition.CompatService", Version: "1.0.0", Group: "compat"}
+	require.Equal(t, "org.apache.dubbo.condition.CompatService:1.0.0:compat", serviceRequest.ServiceKey())
+	service := &meshproto.ConditionRoute{ConfigVersion: "v3.0", Scope: "service", Key: serviceRequest.ServiceName, Force: true, Runtime: true, Enabled: true, Conditions: []string{"=>env=stable"}}
 	write("service-initial", service)
 	service.Conditions = []string{"=>host=127.0.0.2"}
 	write("service-updated", service)

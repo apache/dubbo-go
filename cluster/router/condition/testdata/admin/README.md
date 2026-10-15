@@ -1,6 +1,8 @@
 # Admin condition-route fixtures
 
 The service/application rules use Admin's existing `ConditionRoute` API. The
+service resource name is checked with `BaseServiceReq.ServiceKey()`; the YAML
+`key` contains only the interface name, as in Admin's form submission. The
 instance fixtures are produced by `CreateConditionRule` and
 `UpdateInstanceTrafficStatus`; restoring an instance keeps `=>env=stable`.
 

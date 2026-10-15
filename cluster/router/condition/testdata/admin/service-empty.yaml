@@ -20,6 +20,6 @@ conditions:
 configVersion: v3.0
 enabled: true
 force: true
-key: org.apache.dubbo.condition.CompatService:1.0.0:compat
+key: org.apache.dubbo.condition.CompatService
 runtime: true
 scope: service
