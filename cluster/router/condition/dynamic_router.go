@@ -386,7 +386,14 @@ func NewApplicationRouter(url *common.URL) *ApplicationRouter {
 
 	dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
 	if dynamicConfiguration != nil && applicationName != "" {
-		dynamicConfiguration.AddListener(strings.Join([]string{applicationName, constant.ConditionRouterRuleSuffix}, ""), a)
+		key := strings.Join([]string{applicationName, constant.ConditionRouterRuleSuffix}, "")
+		dynamicConfiguration.AddListener(key, a)
+		value, err := dynamicConfiguration.GetRule(key)
+		if err != nil {
+			logger.Errorf("[Router][Condition] failed to query condition rule: key=%s, err=%v", key, err)
+		} else if value != "" {
+			a.Process(&config_center.ConfigChangeEvent{Key: key, Value: value, ConfigType: remoting.EventTypeAdd})
+		}
 	}
 	return a
 }
