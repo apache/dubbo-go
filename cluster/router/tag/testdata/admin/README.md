@@ -5,7 +5,8 @@ The `enabled.yaml`, `updated.yaml`, `force.yaml`, and
 `RuleGovernor.CreateRule` / `UpdateRule` in dubbo-admin
 `b9ee1b779fd7e87d0097edb5645e9c9176a917a7` wrote them. `fixed-disabled.yaml`
 was captured through the same writer at
-`71c70cf9cff3302e687cf0e482017277e9ff8ed0`.
+`71c70cf9cff3302e687cf0e482017277e9ff8ed0` from
+[Admin #1595](https://github.com/apache/dubbo-admin/pull/1595).
 
 The old writer omits `enabled: false`. That payload still enables the Go rule,
 because an omitted `enabled` defaults to true. The fixed writer emits false
@@ -52,7 +53,13 @@ On the original Go baseline (`5d892b0a`), this external test exposes two
 config-center dependency failures: Nacos SDK v2.2.5 does not deliver deletion
 callbacks, and GOST v1.14.5 does not forward ZooKeeper `StateSyncConnected`
 node events. The full test passed under the race detector with Nacos SDK v2.3.5
-and the GOST event-dispatch fix, using Nacos 2.5.2 and ZooKeeper 3.9.4.
+and GOST `cb5a982116a3f92c069411808babce18e5833b15`, using Nacos 2.5.2 and
+ZooKeeper 3.9.4. The dependency fixes are
+[Go #3771](https://github.com/apache/dubbo-go/pull/3771) and
+[GOST #155](https://github.com/dubbogo/gost/pull/155).
+
+This test branch can be reviewed and merged independently. Complete Admin-to-Go
+behavior also needs those runtime fixes and the writer fix in Admin #1595.
 
 To verify the dependency fixes without changing this branch's `go.mod`, use a
 temporary modfile and a checkout containing the GOST fix:
@@ -61,9 +68,12 @@ temporary modfile and a checkout containing the GOST fix:
 testModDir=$(mktemp -d)
 cp go.mod "$testModDir/go.mod"
 cp go.sum "$testModDir/go.sum"
+git clone --no-checkout https://github.com/dubbogo/gost.git "$testModDir/gost"
+git -C "$testModDir/gost" fetch origin pull/155/head
+git -C "$testModDir/gost" checkout --detach cb5a982116a3f92c069411808babce18e5833b15
 go mod edit -modfile="$testModDir/go.mod" \
   -require=github.com/nacos-group/nacos-sdk-go/v2@v2.3.5 \
-  -replace=github.com/dubbogo/gost=/path/to/patched-gost
+  -replace=github.com/dubbogo/gost="$testModDir/gost"
 DUBBO_TAG_NACOS=127.0.0.1:8848 \
 DUBBO_TAG_ZOOKEEPER=127.0.0.1:2181 \
 go test -mod=mod -modfile="$testModDir/go.mod" -race -tags adminintegration \
