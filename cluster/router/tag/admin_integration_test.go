@@ -198,8 +198,8 @@ func invokeAdminTagProvider(t *testing.T, provider base.Invoker) string {
 
 func adminTagRealConfiguration(t *testing.T, backend, endpoint, key string) (config_center.DynamicConfiguration, func(string), func()) {
 	t.Helper()
-	u, err := common.NewURL(backend + "://" + endpoint)
-	require.NoError(t, err)
+	u, urlErr := common.NewURL(backend + "://" + endpoint)
+	require.NoError(t, urlErr)
 	u.SetParam(constant.ClientNameKey, key)
 	var publish func(string)
 	var remove func()
