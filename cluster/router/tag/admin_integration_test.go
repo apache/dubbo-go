@@ -50,8 +50,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
-	_ "dubbo.apache.org/dubbo-go/v3/config_center/nacos"
-	_ "dubbo.apache.org/dubbo-go/v3/config_center/zookeeper"
+	_ "dubbo.apache.org/dubbo-go/v3/config_center/nacos"     // Register the Nacos configuration factory.
+	_ "dubbo.apache.org/dubbo-go/v3/config_center/zookeeper" // Register the ZooKeeper configuration factory.
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
