@@ -1,0 +1,93 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package service
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+
+	meshproto "github.com/apache/dubbo-admin/api/mesh/v1alpha1"
+	adminmodel "github.com/apache/dubbo-admin/pkg/console/model"
+	meshresource "github.com/apache/dubbo-admin/pkg/core/resource/apis/mesh/v1alpha1"
+	"github.com/stretchr/testify/require"
+)
+
+const conditionFixtureLicense = `#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+`
+
+// Run inside the pinned Admin source tree; setupRollbackTestEnv is Admin's own fixture.
+func TestExportGoConditionCompatibilityFixtures(t *testing.T) {
+	dir := os.Getenv("DUBBO_GO_CONDITION_FIXTURES")
+	require.NotEmpty(t, dir)
+	require.NoError(t, os.MkdirAll(dir, 0755))
+	write := func(name string, spec *meshproto.ConditionRoute) {
+		b, err := meshresource.MarshalRuleSpec(spec)
+		require.NoError(t, err)
+		require.NoError(t, os.WriteFile(filepath.Join(dir, name+".yaml"), append([]byte(conditionFixtureLicense), b...), 0644))
+	}
+	serviceRequest := adminmodel.BaseServiceReq{ServiceName: "org.apache.dubbo.condition.CompatService", Version: "1.0.0", Group: "compat"}
+	require.Equal(t, "org.apache.dubbo.condition.CompatService:1.0.0:compat", serviceRequest.ServiceKey())
+	service := &meshproto.ConditionRoute{ConfigVersion: "v3.0", Scope: "service", Key: serviceRequest.ServiceName, Force: true, Runtime: true, Enabled: true, Conditions: []string{"=>env=stable"}}
+	write("service-initial", service)
+	service.Conditions = []string{"=>host=127.0.0.2"}
+	write("service-updated", service)
+	service.Enabled = false
+	write("service-disabled", service)
+	service.Enabled = true
+	service.Conditions = []string{"=>host=192.0.2.1"}
+	write("service-empty", service)
+	write("consumer-application-initial", &meshproto.ConditionRoute{ConfigVersion: "v3.0", Scope: "application", Key: "condition-compat-consumer", Force: true, Runtime: true, Enabled: true, Conditions: []string{"=>host=127.0.0.2"}})
+	ctx := setupRollbackTestEnv(t)
+	name := "condition-compat-provider.condition-router"
+	res := meshresource.NewConditionRouteResourceWithAttributes(name, "")
+	res.Spec = &meshproto.ConditionRoute{ConfigVersion: "v3.0", Scope: "application", Key: "condition-compat-provider", Force: true, Runtime: true, Enabled: true, Conditions: []string{"=>env=stable"}}
+	require.NoError(t, CreateConditionRule(ctx, res))
+	write("application-initial", res.Spec)
+	require.NoError(t, UpdateInstanceTrafficStatus(ctx, "", "condition-compat-provider", "127.0.0.1", true))
+	res, err := GetConditionRule(ctx, name, "")
+	require.NoError(t, err)
+	write("application-disable-a", res.Spec)
+	require.NoError(t, UpdateInstanceTrafficStatus(ctx, "", "condition-compat-provider", "127.0.0.2", true))
+	res, err = GetConditionRule(ctx, name, "")
+	require.NoError(t, err)
+	write("application-empty", res.Spec)
+	require.NoError(t, UpdateInstanceTrafficStatus(ctx, "", "condition-compat-provider", "127.0.0.1", false))
+	require.NoError(t, UpdateInstanceTrafficStatus(ctx, "", "condition-compat-provider", "127.0.0.2", false))
+	res, err = GetConditionRule(ctx, name, "")
+	require.NoError(t, err)
+	write("application-restored", res.Spec)
+	res.Spec.Enabled = false
+	write("application-disabled", res.Spec)
+}

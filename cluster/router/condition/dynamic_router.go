@@ -293,7 +293,8 @@ func generateConditionsRoute(rawConfig string) (stateRouters, bool, bool, error)
 		return nil, false, false, err
 	}
 
-	force, enable := *routerConfig.Force, *routerConfig.Enabled
+	force := routerConfig.Force != nil && *routerConfig.Force
+	enable := routerConfig.Enabled == nil || *routerConfig.Enabled
 	if !enable {
 		return nil, false, false, nil
 	}
@@ -305,7 +306,7 @@ func generateConditionsRoute(rawConfig string) (stateRouters, bool, bool, error)
 			return nil, false, false, err
 		}
 		url.SetParam(constant.RuleKey, conditionRule)
-		url.SetParam(constant.ForceKey, strconv.FormatBool(*routerConfig.Force))
+		url.SetParam(constant.ForceKey, strconv.FormatBool(force))
 		conditionRoute, err := NewConditionStateRouter(url)
 		if err != nil {
 			return nil, false, false, err
@@ -385,7 +386,14 @@ func NewApplicationRouter(url *common.URL) *ApplicationRouter {
 
 	dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
 	if dynamicConfiguration != nil && applicationName != "" {
-		dynamicConfiguration.AddListener(strings.Join([]string{applicationName, constant.ConditionRouterRuleSuffix}, ""), a)
+		key := strings.Join([]string{applicationName, constant.ConditionRouterRuleSuffix}, "")
+		dynamicConfiguration.AddListener(key, a)
+		value, err := dynamicConfiguration.GetRule(key)
+		if err != nil {
+			logger.Errorf("[Router][Condition] failed to query condition rule: key=%s, err=%v", key, err)
+		} else if value != "" {
+			a.Process(&config_center.ConfigChangeEvent{Key: key, Value: value, ConfigType: remoting.EventTypeAdd})
+		}
 	}
 	return a
 }
