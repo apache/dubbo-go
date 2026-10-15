@@ -174,3 +174,14 @@ func TestAdminConditionOmittedFlags(t *testing.T) {
 	router.Process(&config_center.ConfigChangeEvent{Value: "configVersion: v3.0\nconditions: ['=>host=192.0.2.1']\n", ConfigType: remoting.EventTypeUpdate})
 	require.Equal(t, []string{"127.0.0.1", "127.0.0.2", "127.0.0.3"}, adminConditionSelected(router, consumer, providers))
 }
+
+func TestAdminConsumerApplicationConditionPresentBeforeSubscribe(t *testing.T) {
+	key := adminConditionConsumerApp + constant.ConditionRouterRuleSuffix
+	c := &adminConditionConfig{rules: map[string]string{key: adminConditionFixture(t, "consumer-application-initial")}, listeners: map[string]config_center.ConfigurationListener{}}
+	adminConditionEnvironment(t, c)
+	consumer, providers := adminConditionURLs(t)
+	router := NewApplicationRouter(consumer)
+	router.Notify(providers)
+	require.Equal(t, []string{"127.0.0.2"}, adminConditionSelected(router, consumer, providers))
+	require.Contains(t, c.calls, "get "+key)
+}

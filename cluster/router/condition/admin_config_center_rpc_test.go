@@ -118,25 +118,38 @@ func TestAdminConditionConfigCenterRPC(t *testing.T) {
 				}
 			}, 20*time.Second, 100*time.Millisecond, "config-center listener did not receive native writes")
 			consumer, providers := adminConditionRPCProviders(t)
-			for _, scope := range []string{"service", "application"} {
+			for _, scope := range []string{"service", "application", "consumer-application"} {
 				t.Run(scope, func(t *testing.T) {
 					key := adminConditionServiceKey
 					var conditionRouter interface {
 						router.PriorityRouter
 						config_center.ConfigurationListener
 					}
-					if scope == "service" {
-						conditionRouter = NewServiceRouter()
-					} else {
+					if scope == "application" {
 						key = adminConditionApplicationKey
-						conditionRouter = NewApplicationRouter(consumer)
+					} else if scope == "consumer-application" {
+						key = adminConditionConsumerApp + constant.ConditionRouterRuleSuffix
 					}
 					// Retarget the fixed fixture IP to a second, genuinely reachable local IP.
 					fixture := func(name string) string {
 						return strings.ReplaceAll(adminConditionFixture(t, name), "127.0.0.2", providers[1].GetURL().Ip)
 					}
 					require.NoError(t, write(key, fixture(scope+"-initial")))
-					t.Cleanup(func() { _ = remove(key); dc.RemoveListener(key, conditionRouter) })
+					// Consumer-app rules must exist before the constructor subscribes.
+					if scope == "service" {
+						conditionRouter = NewServiceRouter()
+					} else {
+						conditionRouter = NewApplicationRouter(consumer)
+					}
+					t.Cleanup(func() {
+						_ = remove(key)
+						if scope == "service" {
+							dc.RemoveListener(key, conditionRouter)
+						} else {
+							dc.RemoveListener(adminConditionConsumerApp+constant.ConditionRouterRuleSuffix, conditionRouter)
+							dc.RemoveListener(adminConditionApplicationKey, conditionRouter)
+						}
+					})
 					routeChain := &chain.RouterChain{}
 					routeChain.AddRouters([]router.PriorityRouter{conditionRouter})
 					routeChain.SetInvokers(providers)
@@ -166,6 +179,12 @@ func TestAdminConditionConfigCenterRPC(t *testing.T) {
 							require.Equal(t, want[i], response.Value, label)
 						}
 						t.Logf("%s %s key=%s: RPC providers=%v", backend.name, label, key, want)
+					}
+					if scope == "consumer-application" {
+						check("consumer rule present before constructor, provider has no rule", []string{"B"})
+						require.NoError(t, remove(key))
+						check("delete consumer rule", []string{"A", "B", "C"})
+						return
 					}
 					check("present before subscription", []string{"A", "B"})
 					if scope == "service" {

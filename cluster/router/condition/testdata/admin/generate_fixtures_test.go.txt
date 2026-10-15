@@ -65,6 +65,7 @@ func TestExportGoConditionCompatibilityFixtures(t *testing.T) {
 	service.Enabled = true
 	service.Conditions = []string{"=>host=192.0.2.1"}
 	write("service-empty", service)
+	write("consumer-application-initial", &meshproto.ConditionRoute{ConfigVersion: "v3.0", Scope: "application", Key: "condition-compat-consumer", Force: true, Runtime: true, Enabled: true, Conditions: []string{"=>host=127.0.0.2"}})
 	ctx := setupRollbackTestEnv(t)
 	name := "condition-compat-provider.condition-router"
 	res := meshresource.NewConditionRouteResourceWithAttributes(name, "")

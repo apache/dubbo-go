@@ -58,7 +58,8 @@ those versions. The tests keep these failures visible rather than calling
 
 The test checks a rule present before subscription, updates, rule disable/enable,
 forced empty results and deletion. The application case also checks disabling A
-and restoring it. Each selected invoker makes a real RPC and must return its
+and restoring it. A separate consumer-application check loads a rule before
+construction while the provider application has no rule. Each selected invoker makes a real RPC and must return its
 provider identity. An empty forced result has no invoker to call.
 
 The fixture IP `127.0.0.2` is replaced with B's reachable IP for the RPC run.
