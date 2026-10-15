@@ -125,9 +125,10 @@ func TestAdminConditionConfigCenterRPC(t *testing.T) {
 						router.PriorityRouter
 						config_center.ConfigurationListener
 					}
-					if scope == "application" {
+					switch scope {
+					case "application":
 						key = adminConditionApplicationKey
-					} else if scope == "consumer-application" {
+					case "consumer-application":
 						key = adminConditionConsumerApp + constant.ConditionRouterRuleSuffix
 					}
 					// Retarget the fixed fixture IP to a second, genuinely reachable local IP.
