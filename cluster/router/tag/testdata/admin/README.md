@@ -48,6 +48,28 @@ DUBBO_TAG_ZOOKEEPER=127.0.0.1:2181 \
 go test -tags adminintegration -run TestAdminTagConfigCenterRPC -count=1 -v ./cluster/router/tag
 ```
 
+On the original Go baseline (`5d892b0a`), this external test exposes two
+config-center dependency failures: Nacos SDK v2.2.5 does not deliver deletion
+callbacks, and GOST v1.14.5 does not forward ZooKeeper `StateSyncConnected`
+node events. The full test passed under the race detector with Nacos SDK v2.3.5
+and the GOST event-dispatch fix, using Nacos 2.5.2 and ZooKeeper 3.9.4.
+
+To verify the dependency fixes without changing this branch's `go.mod`, use a
+temporary modfile and a checkout containing the GOST fix:
+
+```sh
+testModDir=$(mktemp -d)
+cp go.mod "$testModDir/go.mod"
+cp go.sum "$testModDir/go.sum"
+go mod edit -modfile="$testModDir/go.mod" \
+  -require=github.com/nacos-group/nacos-sdk-go/v2@v2.3.5 \
+  -replace=github.com/dubbogo/gost=/path/to/patched-gost
+DUBBO_TAG_NACOS=127.0.0.1:8848 \
+DUBBO_TAG_ZOOKEEPER=127.0.0.1:2181 \
+go test -mod=mod -modfile="$testModDir/go.mod" -race -tags adminintegration \
+  -run TestAdminTagConfigCenterRPC -count=1 -v ./cluster/router/tag
+```
+
 An unset endpoint skips that backend. Each run uses a unique application key
 and removes it afterwards. Use disposable services; the Nacos endpoint must
 accept unauthenticated configuration requests.
