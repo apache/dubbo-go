@@ -10,7 +10,8 @@ was captured through the same writer at
 The old writer omits `enabled: false`. That payload still enables the Go rule,
 because an omitted `enabled` defaults to true. The fixed writer emits false
 explicitly; the tests check both payloads without changing the SDK default.
-Nacos uses the same serialized spec as ZooKeeper.
+Nacos uses the same serialized spec as ZooKeeper. Each fixture adds an Apache
+license comment above the captured payload.
 
 To capture the fixtures again, run this from a checkout of the specified Admin
 revision with a disposable ZooKeeper server. Use absolute paths for the generator

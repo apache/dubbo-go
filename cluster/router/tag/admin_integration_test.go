@@ -78,10 +78,14 @@ func TestAdminTagConfigCenterRPC(t *testing.T) {
 				payload = strings.ReplaceAll(payload, "127.0.0.1:20890", invokers[0].GetURL().Location)
 				return strings.ReplaceAll(payload, "127.0.0.1:20891", invokers[1].GetURL().Location)
 			}
-			dc, publish, remove := adminTagRealConfiguration(t, backend, endpoint, key)
+			dc, write, remove := adminTagRealConfiguration(t, backend, endpoint, key)
+			publish := func(content string) {
+				t.Helper()
+				write(content)
+				require.Eventually(t, func() bool { got, e := dc.GetRule(key); return e == nil && got == content }, 15*time.Second, 50*time.Millisecond)
+			}
 			publish(fixture("enabled"))
 			t.Cleanup(remove)
-			require.Eventually(t, func() bool { got, e := dc.GetRule(key); return e == nil && got == fixture("enabled") }, 15*time.Second, 50*time.Millisecond)
 			env := conf.GetEnvInstance()
 			previous := env.GetDynamicConfiguration()
 			env.SetDynamicConfiguration(dc)
