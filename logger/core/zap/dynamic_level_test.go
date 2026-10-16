@@ -54,52 +54,66 @@ const (
 func TestZapCtxLogger_DynamicLevelAndTraceCorrelation(t *testing.T) {
 	ctxLogger, buf, flush := newZapCtxLoggerWithBuffer(t, zapcore.InfoLevel)
 	traceCtx, wantTraceID, wantSpanID, wantFlags := mustZapTraceContext(t)
-	plainCtx := context.Background()
+	plainCtx := t.Context()
 
-	emitZapSample(ctxLogger, traceCtx, plainCtx, "info")
-	flush()
-	infoOut := buf.String()
-	assert.NotContains(t, infoOut, "debug-plain-info")
-	assert.NotContains(t, infoOut, "debug-fmt-info")
-	assert.NotContains(t, infoOut, "debug-ctx-info")
-	assert.NotContains(t, infoOut, "debug-ctx-fmt-info")
-	assert.Contains(t, infoOut, "info-plain-info")
-	assert.Contains(t, infoOut, "info-fmt-info")
-	assert.Contains(t, infoOut, "info-ctx-info")
-	assert.Contains(t, infoOut, "info-ctx-fmt-info")
-	assert.Contains(t, infoOut, "info-no-trace-info")
-	assertZapTraceFields(t, infoOut, "info-ctx-info", wantTraceID, wantSpanID, wantFlags)
-	assertZapNoTraceFields(t, infoOut, "info-no-trace-info")
+	samples := []struct {
+		name   string
+		level  zapcore.Level
+		traced bool
+		emit   func(string)
+	}{
+		{"debug-plain", zapcore.DebugLevel, false, func(msg string) { ctxLogger.Debug(msg) }},
+		{"debug-fmt", zapcore.DebugLevel, false, func(msg string) { ctxLogger.Debugf("%s", msg) }},
+		{"debug-ctx", zapcore.DebugLevel, true, func(msg string) { ctxLogger.CtxDebug(traceCtx, msg) }},
+		{"debug-ctx-fmt", zapcore.DebugLevel, true, func(msg string) { ctxLogger.CtxDebugf(traceCtx, "%s", msg) }},
+		{"debug-no-trace", zapcore.DebugLevel, false, func(msg string) { ctxLogger.CtxDebug(plainCtx, msg) }},
+		{"debug-no-trace-fmt", zapcore.DebugLevel, false, func(msg string) { ctxLogger.CtxDebugf(plainCtx, "%s", msg) }},
+		{"info-plain", zapcore.InfoLevel, false, func(msg string) { ctxLogger.Info(msg) }},
+		{"info-fmt", zapcore.InfoLevel, false, func(msg string) { ctxLogger.Infof("%s", msg) }},
+		{"info-ctx", zapcore.InfoLevel, true, func(msg string) { ctxLogger.CtxInfo(traceCtx, msg) }},
+		{"info-ctx-fmt", zapcore.InfoLevel, true, func(msg string) { ctxLogger.CtxInfof(traceCtx, "%s", msg) }},
+		{"info-no-trace", zapcore.InfoLevel, false, func(msg string) { ctxLogger.CtxInfo(plainCtx, msg) }},
+		{"info-no-trace-fmt", zapcore.InfoLevel, false, func(msg string) { ctxLogger.CtxInfof(plainCtx, "%s", msg) }},
+		{"warn-plain", zapcore.WarnLevel, false, func(msg string) { ctxLogger.Warn(msg) }},
+		{"warn-fmt", zapcore.WarnLevel, false, func(msg string) { ctxLogger.Warnf("%s", msg) }},
+		{"warn-ctx", zapcore.WarnLevel, true, func(msg string) { ctxLogger.CtxWarn(traceCtx, msg) }},
+		{"warn-ctx-fmt", zapcore.WarnLevel, true, func(msg string) { ctxLogger.CtxWarnf(traceCtx, "%s", msg) }},
+		{"warn-no-trace", zapcore.WarnLevel, false, func(msg string) { ctxLogger.CtxWarn(plainCtx, msg) }},
+		{"warn-no-trace-fmt", zapcore.WarnLevel, false, func(msg string) { ctxLogger.CtxWarnf(plainCtx, "%s", msg) }},
+	}
 
-	require.True(t, ctxLogger.SetLoggerLevel("debug"))
-	buf.Reset()
-	emitZapSample(ctxLogger, traceCtx, plainCtx, "debug")
-	flush()
-	debugOut := buf.String()
-	assert.Contains(t, debugOut, "debug-plain-debug")
-	assert.Contains(t, debugOut, "debug-fmt-debug")
-	assert.Contains(t, debugOut, "debug-ctx-debug")
-	assert.Contains(t, debugOut, "debug-ctx-fmt-debug")
-	assert.Contains(t, debugOut, "info-plain-debug")
-	assertZapTraceFields(t, debugOut, "debug-ctx-debug", wantTraceID, wantSpanID, wantFlags)
-
-	require.True(t, ctxLogger.SetLoggerLevel("warn"))
-	buf.Reset()
-	emitZapSample(ctxLogger, traceCtx, plainCtx, "warn")
-	ctxLogger.Warn("warn-plain-warn")
-	ctxLogger.Warnf("warn-fmt-%s", "warn")
-	ctxLogger.CtxWarn(traceCtx, "warn-ctx-warn")
-	ctxLogger.CtxWarnf(traceCtx, "warn-ctx-fmt-%s", "warn")
-	flush()
-	warnOut := buf.String()
-	assert.NotContains(t, warnOut, "debug-plain-warn")
-	assert.NotContains(t, warnOut, "info-plain-warn")
-	assert.NotContains(t, warnOut, "info-ctx-warn")
-	assert.Contains(t, warnOut, "warn-plain-warn")
-	assert.Contains(t, warnOut, "warn-fmt-warn")
-	assert.Contains(t, warnOut, "warn-ctx-warn")
-	assert.Contains(t, warnOut, "warn-ctx-fmt-warn")
-	assertZapTraceFields(t, warnOut, "warn-ctx-warn", wantTraceID, wantSpanID, wantFlags)
+	// Keep the transitions ordered on one logger instance.
+	for _, step := range []struct {
+		name  string
+		level zapcore.Level
+	}{
+		{"info", zapcore.InfoLevel},
+		{"debug", zapcore.DebugLevel},
+		{"warn", zapcore.WarnLevel},
+	} {
+		t.Run(step.name, func(t *testing.T) {
+			require.True(t, ctxLogger.SetLoggerLevel(step.name))
+			assert.Equal(t, step.level, ctxLogger.DynamicLevel.Level())
+			for _, sample := range samples {
+				t.Run(sample.name, func(t *testing.T) {
+					buf.Reset()
+					msg := sample.name + "-" + step.name
+					sample.emit(msg)
+					flush()
+					out := buf.String()
+					if sample.level < step.level {
+						assert.Empty(t, out, "suppressed log %q", msg)
+						return
+					}
+					if sample.traced {
+						assertZapTraceFields(t, out, msg, wantTraceID, wantSpanID, wantFlags)
+					} else {
+						assertZapNoTraceFields(t, out, msg)
+					}
+				})
+			}
+		})
+	}
 
 	require.False(t, ctxLogger.SetLoggerLevel("not-a-level"))
 	buf.Reset()
@@ -132,18 +146,6 @@ func TestInstantiateZap_TraceIntegration_SetLoggerLevel(t *testing.T) {
 	assert.Equal(t, zapcore.DebugLevel, ctxLogger.DynamicLevel.Level())
 }
 
-func emitZapSample(l *ZapCtxLogger, traceCtx, plainCtx context.Context, suffix string) {
-	l.Debug("debug-plain-" + suffix)
-	l.Debugf("debug-fmt-%s", suffix)
-	l.CtxDebug(traceCtx, "debug-ctx-"+suffix)
-	l.CtxDebugf(traceCtx, "debug-ctx-fmt-%s", suffix)
-	l.Info("info-plain-" + suffix)
-	l.Infof("info-fmt-%s", suffix)
-	l.CtxInfo(traceCtx, "info-ctx-"+suffix)
-	l.CtxInfof(traceCtx, "info-ctx-fmt-%s", suffix)
-	l.CtxInfo(plainCtx, "info-no-trace-"+suffix)
-}
-
 func newZapCtxLoggerWithBuffer(t *testing.T, level zapcore.Level) (*ZapCtxLogger, *bytes.Buffer, func()) {
 	t.Helper()
 	var buf bytes.Buffer
@@ -172,7 +174,7 @@ func mustZapTraceContext(t *testing.T) (context.Context, string, string, string)
 		Remote:     true,
 	})
 	require.True(t, sc.IsValid())
-	return oteltrace.ContextWithSpanContext(context.Background(), sc), traceID.String(), spanID.String(), sc.TraceFlags().String()
+	return oteltrace.ContextWithSpanContext(t.Context(), sc), traceID.String(), spanID.String(), sc.TraceFlags().String()
 }
 
 func assertZapTraceFields(t *testing.T, raw, msg, traceID, spanID, flags string) {

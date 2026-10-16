@@ -53,51 +53,65 @@ const (
 func TestLogrusCtxLogger_DynamicLevelAndTraceCorrelation(t *testing.T) {
 	ctxLogger, buf, inner := newLogrusCtxLoggerWithBuffer(logrus.InfoLevel)
 	traceCtx, wantTraceID, wantSpanID, wantFlags := mustLogrusTraceContext(t)
-	plainCtx := context.Background()
+	plainCtx := t.Context()
 
-	emitLogrusSample(ctxLogger, traceCtx, plainCtx, "info")
-	infoOut := buf.String()
-	assert.NotContains(t, infoOut, "debug-plain-info")
-	assert.NotContains(t, infoOut, "debug-fmt-info")
-	assert.NotContains(t, infoOut, "debug-ctx-info")
-	assert.NotContains(t, infoOut, "debug-ctx-fmt-info")
-	assert.Contains(t, infoOut, "info-plain-info")
-	assert.Contains(t, infoOut, "info-fmt-info")
-	assert.Contains(t, infoOut, "info-ctx-info")
-	assert.Contains(t, infoOut, "info-ctx-fmt-info")
-	assert.Contains(t, infoOut, "info-no-trace-info")
-	assertLogrusTraceFields(t, infoOut, "info-ctx-info", wantTraceID, wantSpanID, wantFlags)
-	assertLogrusNoTraceFields(t, infoOut, "info-no-trace-info")
+	samples := []struct {
+		name   string
+		level  logrus.Level
+		traced bool
+		emit   func(string)
+	}{
+		{"debug-plain", logrus.DebugLevel, false, func(msg string) { ctxLogger.Debug(msg) }},
+		{"debug-fmt", logrus.DebugLevel, false, func(msg string) { ctxLogger.Debugf("%s", msg) }},
+		{"debug-ctx", logrus.DebugLevel, true, func(msg string) { ctxLogger.CtxDebug(traceCtx, msg) }},
+		{"debug-ctx-fmt", logrus.DebugLevel, true, func(msg string) { ctxLogger.CtxDebugf(traceCtx, "%s", msg) }},
+		{"debug-no-trace", logrus.DebugLevel, false, func(msg string) { ctxLogger.CtxDebug(plainCtx, msg) }},
+		{"debug-no-trace-fmt", logrus.DebugLevel, false, func(msg string) { ctxLogger.CtxDebugf(plainCtx, "%s", msg) }},
+		{"info-plain", logrus.InfoLevel, false, func(msg string) { ctxLogger.Info(msg) }},
+		{"info-fmt", logrus.InfoLevel, false, func(msg string) { ctxLogger.Infof("%s", msg) }},
+		{"info-ctx", logrus.InfoLevel, true, func(msg string) { ctxLogger.CtxInfo(traceCtx, msg) }},
+		{"info-ctx-fmt", logrus.InfoLevel, true, func(msg string) { ctxLogger.CtxInfof(traceCtx, "%s", msg) }},
+		{"info-no-trace", logrus.InfoLevel, false, func(msg string) { ctxLogger.CtxInfo(plainCtx, msg) }},
+		{"info-no-trace-fmt", logrus.InfoLevel, false, func(msg string) { ctxLogger.CtxInfof(plainCtx, "%s", msg) }},
+		{"warn-plain", logrus.WarnLevel, false, func(msg string) { ctxLogger.Warn(msg) }},
+		{"warn-fmt", logrus.WarnLevel, false, func(msg string) { ctxLogger.Warnf("%s", msg) }},
+		{"warn-ctx", logrus.WarnLevel, true, func(msg string) { ctxLogger.CtxWarn(traceCtx, msg) }},
+		{"warn-ctx-fmt", logrus.WarnLevel, true, func(msg string) { ctxLogger.CtxWarnf(traceCtx, "%s", msg) }},
+		{"warn-no-trace", logrus.WarnLevel, false, func(msg string) { ctxLogger.CtxWarn(plainCtx, msg) }},
+		{"warn-no-trace-fmt", logrus.WarnLevel, false, func(msg string) { ctxLogger.CtxWarnf(plainCtx, "%s", msg) }},
+	}
 
-	require.True(t, ctxLogger.SetLoggerLevel("debug"))
-	assert.Equal(t, logrus.DebugLevel, inner.GetLevel())
-	buf.Reset()
-	emitLogrusSample(ctxLogger, traceCtx, plainCtx, "debug")
-	debugOut := buf.String()
-	assert.Contains(t, debugOut, "debug-plain-debug")
-	assert.Contains(t, debugOut, "debug-fmt-debug")
-	assert.Contains(t, debugOut, "debug-ctx-debug")
-	assert.Contains(t, debugOut, "debug-ctx-fmt-debug")
-	assert.Contains(t, debugOut, "info-plain-debug")
-	assertLogrusTraceFields(t, debugOut, "debug-ctx-debug", wantTraceID, wantSpanID, wantFlags)
-
-	require.True(t, ctxLogger.SetLoggerLevel("warn"))
-	assert.Equal(t, logrus.WarnLevel, inner.GetLevel())
-	buf.Reset()
-	emitLogrusSample(ctxLogger, traceCtx, plainCtx, "warn")
-	ctxLogger.Warn("warn-plain-warn")
-	ctxLogger.Warnf("warn-fmt-%s", "warn")
-	ctxLogger.CtxWarn(traceCtx, "warn-ctx-warn")
-	ctxLogger.CtxWarnf(traceCtx, "warn-ctx-fmt-%s", "warn")
-	warnOut := buf.String()
-	assert.NotContains(t, warnOut, "debug-plain-warn")
-	assert.NotContains(t, warnOut, "info-plain-warn")
-	assert.NotContains(t, warnOut, "info-ctx-warn")
-	assert.Contains(t, warnOut, "warn-plain-warn")
-	assert.Contains(t, warnOut, "warn-fmt-warn")
-	assert.Contains(t, warnOut, "warn-ctx-warn")
-	assert.Contains(t, warnOut, "warn-ctx-fmt-warn")
-	assertLogrusTraceFields(t, warnOut, "warn-ctx-warn", wantTraceID, wantSpanID, wantFlags)
+	// Keep the transitions ordered on one logger instance.
+	for _, step := range []struct {
+		name  string
+		level logrus.Level
+	}{
+		{"info", logrus.InfoLevel},
+		{"debug", logrus.DebugLevel},
+		{"warn", logrus.WarnLevel},
+	} {
+		t.Run(step.name, func(t *testing.T) {
+			require.True(t, ctxLogger.SetLoggerLevel(step.name))
+			assert.Equal(t, step.level, inner.GetLevel())
+			for _, sample := range samples {
+				t.Run(sample.name, func(t *testing.T) {
+					buf.Reset()
+					msg := sample.name + "-" + step.name
+					sample.emit(msg)
+					out := buf.String()
+					if sample.level > step.level {
+						assert.Empty(t, out, "suppressed log %q", msg)
+						return
+					}
+					if sample.traced {
+						assertLogrusTraceFields(t, out, msg, wantTraceID, wantSpanID, wantFlags)
+					} else {
+						assertLogrusNoTraceFields(t, out, msg)
+					}
+				})
+			}
+		})
+	}
 
 	require.False(t, ctxLogger.SetLoggerLevel("not-a-level"))
 	assert.Equal(t, logrus.WarnLevel, inner.GetLevel())
@@ -133,18 +147,6 @@ func TestInstantiateLogrus_TraceIntegration_SetLoggerLevel(t *testing.T) {
 	assert.Equal(t, logrus.DebugLevel, inner.GetLevel())
 }
 
-func emitLogrusSample(l *LogrusCtxLogger, traceCtx, plainCtx context.Context, suffix string) {
-	l.Debug("debug-plain-" + suffix)
-	l.Debugf("debug-fmt-%s", suffix)
-	l.CtxDebug(traceCtx, "debug-ctx-"+suffix)
-	l.CtxDebugf(traceCtx, "debug-ctx-fmt-%s", suffix)
-	l.Info("info-plain-" + suffix)
-	l.Infof("info-fmt-%s", suffix)
-	l.CtxInfo(traceCtx, "info-ctx-"+suffix)
-	l.CtxInfof(traceCtx, "info-ctx-fmt-%s", suffix)
-	l.CtxInfo(plainCtx, "info-no-trace-"+suffix)
-}
-
 func newLogrusCtxLoggerWithBuffer(level logrus.Level) (*LogrusCtxLogger, *bytes.Buffer, *logrus.Logger) {
 	var buf bytes.Buffer
 	lg := logrus.New()
@@ -168,7 +170,7 @@ func mustLogrusTraceContext(t *testing.T) (context.Context, string, string, stri
 		Remote:     true,
 	})
 	require.True(t, sc.IsValid())
-	return oteltrace.ContextWithSpanContext(context.Background(), sc), traceID.String(), spanID.String(), sc.TraceFlags().String()
+	return oteltrace.ContextWithSpanContext(t.Context(), sc), traceID.String(), spanID.String(), sc.TraceFlags().String()
 }
 
 func assertLogrusTraceFields(t *testing.T, raw, msg, traceID, spanID, flags string) {
