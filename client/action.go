@@ -126,6 +126,13 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 		ref.Loadbalance = constant.LoadBalanceKeyP2C
 	}
 
+	// The reference-level timeout (already in getURLMap) takes precedence over the consumer-level one.
+	// TODO: remove consumer timeout fallback after old config removed
+	timeout := ref.RequestTimeout
+	if len(timeout) == 0 {
+		timeout = refOpts.Consumer.RequestTimeout
+	}
+
 	// cfgURL is an interface-level invoker url, in the other words, it represents an interface.
 	cfgURL := common.NewURLWithOptions(
 		common.WithPath(ref.InterfaceName),
@@ -134,8 +141,7 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 		common.WithParams(refOpts.getURLMap()),
 		common.WithParamsValue(constant.BeanNameKey, refOpts.id),
 		common.WithParamsValue(constant.MetadataTypeKey, refOpts.metaDataType),
-		// TODO: remove TimeoutKey after old confid removed
-		common.WithParamsValue(constant.TimeoutKey, refOpts.Consumer.RequestTimeout),
+		common.WithParamsValue(constant.TimeoutKey, timeout),
 
 		// Compatibility: propagate legacy reference-level keepalive settings.
 		// TODO: remove KeepAliveInterval and KeepAliveTimeout in version 4.0.0.
