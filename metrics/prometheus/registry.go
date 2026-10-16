@@ -90,6 +90,15 @@ func (p *promMetricRegistry) Gauge(m *metrics.MetricId) metrics.GaugeMetric {
 	return vec.With(m.Tags)
 }
 
+// GaugeFunc registers a lazy value for a metric's label set. All export paths
+// use the same gatherer, so both pulls and Pushgateway pushes evaluate it.
+func (p *promMetricRegistry) GaugeFunc(m *metrics.MetricId, value func() float64) {
+	vec := p.getOrComputeVec(m.Name, func() prom.Collector {
+		return newGaugeFuncVec(m)
+	}).(*gaugeFuncVec)
+	vec.add(m.Tags, value)
+}
+
 func (p *promMetricRegistry) Histogram(m *metrics.MetricId) metrics.ObservableMetric {
 	vec := p.getOrComputeVec(m.Name, func() prom.Collector {
 		return prom.NewHistogramVec(prom.HistogramOpts{
