@@ -70,6 +70,7 @@ func NewClient(httpClient HTTPClient, url string, options ...ClientOption) *Clie
 			SendMaxBytes:     config.SendMaxBytes,
 			GetURLMaxBytes:   config.GetURLMaxBytes,
 			UnaryFastPath:    config.UnaryFastPath,
+			WriteBuffering:   config.WriteBuffering,
 		},
 	)
 	if protocolErr != nil {
@@ -232,6 +233,7 @@ type clientConfig struct {
 	Group                  string
 	Version                string
 	UnaryFastPath          bool
+	WriteBuffering         bool
 }
 
 func newClientConfig(rawURL string, options []ClientOption) (*clientConfig, *Error) {
@@ -245,7 +247,9 @@ func newClientConfig(rawURL string, options []ClientOption) (*clientConfig, *Err
 		// use gRPC by default
 		Protocol: &protocolGRPC{},
 		// the unary fast path is on by default
-		UnaryFastPath:    true,
+		UnaryFastPath: true,
+		// small streaming messages are aggregated by default
+		WriteBuffering:   true,
 		Procedure:        protoPath,
 		CompressionPools: make(map[string]*compressionPool),
 		BufferPool:       newBufferPool(),

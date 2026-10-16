@@ -604,3 +604,16 @@ func TestUnaryFastPathGRPCRoutesUnary(t *testing.T) {
 	streamSpec := Spec{StreamType: StreamTypeBidi, Procedure: "/connect.ping.v1.PingService/Ping"}
 	assertCallType(t, newClient(true).NewConn(context.Background(), streamSpec, make(http.Header)), "duplex")
 }
+
+// TestUnaryFastPathEnabledByDefault verifies that a client built without any
+// unary option still routes unary calls through the fast path, pinning the
+// default that the unary benchmarks and callers rely on.
+func TestUnaryFastPathEnabledByDefault(t *testing.T) {
+	config, confErr := newClientConfig("http://example.com/connect.ping.v1.PingService/Ping", nil)
+	if confErr != nil {
+		t.Fatalf("newClientConfig returned an error: %v", confErr)
+	}
+	if !config.UnaryFastPath {
+		t.Fatal("unary fast path is off by default, want on")
+	}
+}

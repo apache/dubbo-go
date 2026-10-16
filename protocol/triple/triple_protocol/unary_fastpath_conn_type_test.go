@@ -68,7 +68,7 @@ func TestUnaryFastPathNewConnType(t *testing.T) {
 	}
 
 	unarySpec := Spec{StreamType: StreamTypeUnary, Procedure: "/connect.ping.v1.PingService/Ping"}
-	// WithUnaryFastPath enabled -> unary calls take the fast path.
+	// Fast path enabled -> unary calls take the fast path.
 	assertCallType(t, newClient(true).NewConn(context.Background(), unarySpec, make(http.Header)), "fastpath")
 	// Default (option disabled) -> unary calls keep using duplexHTTPCall.
 	assertCallType(t, newClient(false).NewConn(context.Background(), unarySpec, make(http.Header)), "duplex")

@@ -87,15 +87,9 @@ func goSafely(wg *sync.WaitGroup, handler func()) {
 
 func Load(opts ...LoaderConfOption) error {
 	conf := NewLoaderConf(opts...)
-	newOpts := conf.opts
-	if conf.opts == nil {
-		newOpts = defaultInstanceOptions()
-		koan := GetConfigResolver(conf)
-		koan = conf.MergeConfig(koan)
-		if err := koan.UnmarshalWithConf(newOpts.Prefix(),
-			newOpts, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
-			return err
-		}
+	newOpts, err := loadInstanceOptions(conf)
+	if err != nil {
+		return err
 	}
 
 	if err := newOpts.init(); err != nil {
@@ -117,6 +111,23 @@ func Load(opts ...LoaderConfOption) error {
 		})
 	})
 	return instance.start()
+}
+
+func loadInstanceOptions(conf *loaderConf) (*InstanceOptions, error) {
+	newOpts := conf.opts
+	if conf.opts != nil {
+		return newOpts, nil
+	}
+
+	newOpts = defaultInstanceOptions()
+	koan := GetConfigResolver(conf)
+	koan = conf.MergeConfig(koan)
+	newOpts.extensionConfigs = extensionConfigsFromKoanf(koan)
+	if err := koan.UnmarshalWithConf(newOpts.Prefix(),
+		newOpts, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
+		return nil, err
+	}
+	return newOpts, nil
 }
 
 func watch(conf *loaderConf, stopCh <-chan struct{}) {
@@ -163,6 +174,11 @@ func hotUpdateConfig(conf *loaderConf) error {
 	oldKoan := buildKoanfFromBytes(conf, oldBytes)
 	newKoan := buildKoanfFromBytes(conf, newBytes)
 
+	if extensionConfigsChanged(oldKoan, newKoan) {
+		logger.Warn("[Loader] hot reload denied, extension configuration changes require restart")
+		return errors.New("hot reload denied: extension configuration changes require restart")
+	}
+
 	if !safeChanged(oldKoan, newKoan) {
 		logger.Warn("[Loader] hot reload denied, changes outside allowed hot-reload keys detected")
 		return errors.New("hot reload denied: disallowed configuration changes detected")
@@ -171,6 +187,7 @@ func hotUpdateConfig(conf *loaderConf) error {
 	conf.bytes = newBytes
 
 	koan := newKoan
+	newOpts.extensionConfigs = extensionConfigsFromKoanf(koan)
 	if err := koan.UnmarshalWithConf(newOpts.Prefix(), newOpts, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
 		return err
 	}
@@ -421,6 +438,22 @@ func GetConfigResolver(conf *loaderConf) *koanf.Koanf {
 	return resolvePlaceholder(k)
 }
 
+func extensionConfigsFromKoanf(koan *koanf.Koanf) map[string]any {
+	if koan == nil {
+		return nil
+	}
+	root := koan.Raw()
+	dubboConfig, ok := root[constant.Dubbo].(map[string]any)
+	if !ok {
+		return nil
+	}
+	extensions, ok := dubboConfig["extensions"].(map[string]any)
+	if !ok {
+		return nil
+	}
+	return cloneExtensionConfigs(extensions)
+}
+
 // resolvePlaceholder replace ${xx} with real value
 func resolvePlaceholder(resolver *koanf.Koanf) *koanf.Koanf {
 	m := make(map[string]any)
@@ -533,4 +566,8 @@ func safeChanged(oldK, newK *koanf.Koanf) bool {
 		}
 	}
 	return true
+}
+
+func extensionConfigsChanged(oldK, newK *koanf.Koanf) bool {
+	return !reflect.DeepEqual(extensionConfigsFromKoanf(oldK), extensionConfigsFromKoanf(newK))
 }

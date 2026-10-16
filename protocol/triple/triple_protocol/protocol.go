@@ -132,6 +132,10 @@ type protocolClientParams struct {
 	// UnaryFastPath enables the unary fast path (unaryFastPathCall) for unary
 	// calls. It is on by default; disable it to fall back to the duplex path.
 	UnaryFastPath bool
+	// WriteBuffering enables aggregation of small messages in the streaming
+	// write path (applied to both the gRPC wire and Triple wire streaming
+	// clients).
+	WriteBuffering bool
 	// The gRPC family of protocols always needs access to a Protobuf codec to
 	// marshal and unmarshal errors.
 	Protobuf Codec

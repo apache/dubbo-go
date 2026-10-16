@@ -27,6 +27,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/internal/genericfield"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/hessian2"
 )
 
@@ -160,7 +161,7 @@ func (g *BeanGeneralizer) toDescriptor(obj any, visited map[uintptr]bool) *JavaB
 		desc.Type = TypeBean
 		for i := 0; i < t.NumField(); i++ {
 			if fv := v.Field(i); fv.CanInterface() {
-				desc.Properties[toUnexport(t.Field(i).Name)] = g.toDescriptor(fv.Interface(), visited)
+				desc.Properties[genericfield.DefaultName(t.Field(i).Name)] = g.toDescriptor(fv.Interface(), visited)
 			}
 		}
 

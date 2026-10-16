@@ -31,6 +31,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/graceful_shutdown"
 	"dubbo.apache.org/dubbo-go/v3/internal"
@@ -680,6 +681,8 @@ type ClientOptions struct {
 	Routers     []*global.RouterConfig
 
 	overallReference *global.ReferenceConfig
+	extensionOptions []extension.Option
+	extensionConfigs map[string]any
 }
 
 func defaultClientOptions() *ClientOptions {
@@ -753,12 +756,28 @@ func (cliOpts *ClientOptions) init(opts ...ClientOption) error {
 			cliOpts.overallReference.Check = &consumerConf.Check
 		}
 	}
+
+	filterNames, err := extension.Initialize(cliOpts.extensionConfigs, cliOpts.extensionOptions, extension.ClientScope)
+	if err != nil {
+		return err
+	}
+	cliOpts.overallReference.Filter = extension.MergeFilterNames(cliOpts.overallReference.Filter, filterNames)
+
 	// init graceful_shutdown
 	graceful_shutdown.Init(graceful_shutdown.SetShutdownConfig(cliOpts.Shutdown))
 	return nil
 }
 
 type ClientOption func(*ClientOptions)
+
+// WithExtension declares typed extension options for this Client lifecycle.
+// The core supplies ClientScope; extensions contribute their registered filter
+// names after their configuration has been initialized.
+func WithExtension(options ...extension.Option) ClientOption {
+	return func(opts *ClientOptions) {
+		opts.extensionOptions = append(opts.extensionOptions, options...)
+	}
+}
 
 // WithClientNoCheck allows client references to initialize even when no provider is currently
 // available, so applications can start before their dependencies. Calls still fail until a
@@ -1190,6 +1209,14 @@ func WithClientForceTag() ClientOption {
 func WithClientMeshProviderPort(port int) ClientOption {
 	return func(opts *ClientOptions) {
 		opts.overallReference.MeshProviderPort = port
+	}
+}
+
+// SetClientExtensionConfigs installs extension YAML configuration inherited
+// from dubbo.Instance or dubbo.Load.
+func SetClientExtensionConfigs(configs map[string]any) ClientOption {
+	return func(opts *ClientOptions) {
+		opts.extensionConfigs = configs
 	}
 }
 

@@ -18,6 +18,7 @@
 package client
 
 import (
+	"errors"
 	"testing"
 	"time"
 )
@@ -29,6 +30,8 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
@@ -46,6 +49,124 @@ func processNewClientCases(t *testing.T, cases []newClientCase) {
 			c.verify(t, cli, err)
 		})
 	}
+}
+
+type clientEntryConfig struct {
+	prefix        string
+	Value         int                       `yaml:"value"`
+	Commands      map[string]map[string]int `yaml:",remain"`
+	requiredScope extension.Scope
+	initialized   extension.Scope
+	onInit        func(*clientEntryConfig)
+}
+
+func (c *clientEntryConfig) Prefix() string {
+	return c.prefix
+}
+
+func (c *clientEntryConfig) New() extension.Config {
+	return &clientEntryConfig{
+		prefix:        c.prefix,
+		Value:         1,
+		Commands:      map[string]map[string]int{"default:::Run": {"timeout": 1}},
+		requiredScope: c.requiredScope,
+		onInit:        c.onInit,
+	}
+}
+
+func (c *clientEntryConfig) Init(scope extension.Scope) error {
+	if c.requiredScope != 0 && scope != c.requiredScope {
+		return errors.New("client scope is required")
+	}
+	c.initialized = scope
+	if c.onInit != nil {
+		c.onInit(c)
+	}
+	return nil
+}
+
+func (c *clientEntryConfig) FilterNames(extension.Scope) []string {
+	return []string{"client-entry-filter"}
+}
+
+type clientEntryOption struct {
+	prefix string
+	value  int
+}
+
+func (o clientEntryOption) Prefix() string {
+	return o.prefix
+}
+
+func (o clientEntryOption) Apply(config extension.Config) error {
+	config.(*clientEntryConfig).Value = o.value
+	return nil
+}
+
+func TestWithExtensionBuildsClientConfigAndMergesFilter(t *testing.T) {
+	const prefix = "client-entry"
+	const filterName = "client-entry-filter"
+
+	extension.UnregisterConfig(prefix)
+	extension.UnregisterFilter(filterName)
+	t.Cleanup(func() {
+		extension.UnregisterConfig(prefix)
+		extension.UnregisterFilter(filterName)
+	})
+
+	var initialized *clientEntryConfig
+	require.NoError(t, extension.RegisterConfig(&clientEntryConfig{
+		prefix:        prefix,
+		requiredScope: extension.ClientScope,
+		onInit: func(config *clientEntryConfig) {
+			initialized = config
+		},
+	}))
+	extension.SetFilter(filterName, func() filter.Filter { return nil })
+
+	cli, err := NewClient(
+		SetClientExtensionConfigs(map[string]any{
+			prefix: map[string]any{
+				"consumer": map[string]any{
+					"value":                      7,
+					"greet.GreetService:::Greet": map[string]any{"timeout": 3},
+				},
+			},
+		}),
+		WithClientFilter("explicit"),
+		WithExtension(clientEntryOption{prefix: prefix, value: 9}),
+	)
+	require.NoError(t, err)
+	require.NotNil(t, cli)
+	require.NotNil(t, initialized)
+	assert.Equal(t, 9, initialized.Value)
+	assert.Equal(t, 3, initialized.Commands["greet.GreetService:::Greet"]["timeout"])
+	assert.Equal(t, extension.ClientScope, initialized.initialized)
+	assert.Equal(t, "explicit,"+filterName, cli.cliOpts.overallReference.Filter)
+	refOpts := &ReferenceOptions{
+		Reference:   cli.cliOpts.overallReference,
+		Application: cli.cliOpts.Application,
+		Metrics:     cli.cliOpts.Metrics,
+		Otel:        cli.cliOpts.Otel,
+	}
+	assert.Equal(t, constant.DefaultReferenceFilters+",explicit,"+filterName,
+		refOpts.getURLMap().Get(constant.ReferenceFilterKey))
+}
+
+func TestWithExtensionRejectsUnsupportedClientScope(t *testing.T) {
+	const prefix = "client-entry-unsupported"
+	extension.UnregisterConfig(prefix)
+	t.Cleanup(func() { extension.UnregisterConfig(prefix) })
+
+	require.NoError(t, extension.RegisterConfig(&clientEntryConfig{
+		prefix:        prefix,
+		requiredScope: extension.InstanceScope,
+	}))
+	extension.SetFilter("client-entry-filter", func() filter.Filter { return nil })
+	t.Cleanup(func() { extension.UnregisterFilter("client-entry-filter") })
+	_, err := NewClient(WithExtension(clientEntryOption{prefix: prefix, value: 1}))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "client scope is required")
 }
 
 // ---------- ClientOption Testing ----------

@@ -736,16 +736,26 @@ func TestContextError(t *testing.T) {
 		server.Client(),
 		server.URL,
 	)
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-	stream, err := client.CumSum(ctx)
-	assert.Nil(t, err)
-	err = stream.Send(nil)
-	var tripleErr *triple.Error
-	assert.NotNil(t, err)
-	assert.True(t, errors.As(err, &tripleErr))
-	assert.Equal(t, tripleErr.Code(), triple.CodeCanceled)
-	assert.False(t, triple.IsWireError(err))
+	for _, test := range []struct {
+		name    string
+		message *pingv1.CumSumRequest
+	}{
+		{name: "nil message"},
+		{name: "small message", message: &pingv1.CumSumRequest{Number: 8}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			ctx, cancel := context.WithCancel(context.Background())
+			cancel()
+			stream, err := client.CumSum(ctx)
+			assert.Nil(t, err)
+			err = stream.Send(test.message)
+			var tripleErr *triple.Error
+			assert.NotNil(t, err)
+			assert.True(t, errors.As(err, &tripleErr))
+			assert.Equal(t, tripleErr.Code(), triple.CodeCanceled)
+			assert.False(t, triple.IsWireError(err))
+		})
+	}
 }
 
 func TestBizErrorCodePreservedAcrossProtocols(t *testing.T) {

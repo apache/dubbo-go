@@ -215,6 +215,38 @@ func initMockApollo(t *testing.T) *apolloConfiguration {
 	return configuration
 }
 
+func TestMakeNestedMap(t *testing.T) {
+	t.Run("ordinary dotted keys", func(t *testing.T) {
+		got := makeNestedMap(map[string]string{
+			"dubbo.application.name": "demo",
+			"dubbo.application.port": "20000",
+		})
+		application := got["dubbo"].(map[string]any)["application"].(map[string]any)
+		assert.Equal(t, "demo", application["name"])
+		assert.Equal(t, "20000", application["port"])
+	})
+
+	t.Run("leaf and parent do not panic and keep the nested value", func(t *testing.T) {
+		props := map[string]string{
+			"a.b":   "1",
+			"a.b.c": "2",
+			"a.d":   "3",
+		}
+		for range 32 {
+			var got map[string]any
+			require.NotPanics(t, func() {
+				got = makeNestedMap(props)
+			})
+			a, ok := got["a"].(map[string]any)
+			require.True(t, ok)
+			b, ok := a["b"].(map[string]any)
+			require.True(t, ok)
+			assert.Equal(t, "2", b["c"])
+			assert.Equal(t, "3", a["d"])
+		}
+	})
+}
+
 func TestGetAddressWithProtocolPrefix(t *testing.T) {
 	tests := []struct {
 		name   string

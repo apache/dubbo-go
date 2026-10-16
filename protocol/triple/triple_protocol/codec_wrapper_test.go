@@ -1091,3 +1091,69 @@ func TestNonIDLUnary_PublicEntry_EndToEnd(t *testing.T) {
 		})
 	}
 }
+
+// TestNonIDLUnary_PublicEntry_MarshalAppendEffective verifies that the client
+// wrapper reaches the MarshalAppend fast path through the production client
+// entry (NewClient -> CallUnary) for non-IDL unary calls, on both the default
+// gRPC envelope wire and the Triple wire. A probe codec whose Marshal always
+// fails and whose MarshalAppend counts calls proves the optimized branch
+// produced the request bytes; appendCalls == 1 proves it did so exactly once.
+func TestNonIDLUnary_PublicEntry_MarshalAppendEffective(t *testing.T) {
+	t.Parallel()
+
+	const (
+		service = "/test.NonIDLGreeter"
+		method  = "SayHello"
+	)
+	// A nil handlerOpt lets the server resolve the codec itself: the Triple wire
+	// decodes it from the wrapper's SerializeType, where hessian2 is always
+	// allowed. The gRPC wire instead resolves it from Content-Type (proto), so it
+	// needs an explicit fallback to reach the wrapper decoder.
+	for _, tc := range []struct {
+		name       string
+		inner      Codec
+		handlerOpt HandlerOption
+		clientOpts []ClientOption
+	}{
+		{"triple-hessian2", &hessian2Codec{}, nil, []ClientOption{WithTriple()}},
+		{"triple-msgpack", &msgpackCodec{}, WithExpectedCodecName(codecNameMsgPack), []ClientOption{WithTriple()}},
+		{"grpc-hessian2", &hessian2Codec{}, WithExpectedCodecName(codecNameHessian2), nil},
+		{"grpc-msgpack", &msgpackCodec{}, WithExpectedCodecName(codecNameMsgPack), nil},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			handlerOpts := []HandlerOption{}
+			if tc.handlerOpt != nil {
+				handlerOpts = append(handlerOpts, tc.handlerOpt)
+			}
+			mux := http.NewServeMux()
+			mux.Handle(service+"/"+method, NewUnaryHandler(
+				service+"/"+method,
+				func() any { return []any{new(string)} },
+				func(_ context.Context, req *Request) (*Response, error) {
+					arg := req.Msg.([]any)[0].(*string)
+					return NewResponse([]any{"hello:" + *arg}), nil
+				},
+				handlerOpts...,
+			))
+			server := httptest.NewServer(mux)
+			t.Cleanup(server.Close)
+
+			probe := newWrapperFastPathProbe(tc.inner)
+			client := NewClient(server.Client(), server.URL+service,
+				append(tc.clientOpts, WithCodec(probe))...)
+
+			resp := &Response{Msg: new(string)}
+			if err := client.CallUnary(context.Background(), NewRequest([]any{"world"}), method, resp); err != nil {
+				t.Fatalf("non-IDL unary call: %v (the client wrapper fell back to codec.Marshal)", err)
+			}
+			if got, want := *(resp.Msg.(*string)), "hello:world"; got != want {
+				t.Fatalf("response = %q, want %q", got, want)
+			}
+			if probe.appendCalls != 1 {
+				t.Fatalf("MarshalAppend called %d times, want 1 (the optimization is not in effect)", probe.appendCalls)
+			}
+		})
+	}
+}

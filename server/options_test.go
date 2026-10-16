@@ -18,6 +18,7 @@
 package server
 
 import (
+	"errors"
 	"testing"
 	"time"
 )
@@ -29,10 +30,216 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/registry"
 )
+
+type serverEntryConfig struct {
+	prefix        string
+	Value         int `yaml:"value"`
+	requiredScope extension.Scope
+	initialized   extension.Scope
+	onInit        func(*serverEntryConfig)
+}
+
+func (c *serverEntryConfig) Prefix() string {
+	return c.prefix
+}
+
+func (c *serverEntryConfig) New() extension.Config {
+	return &serverEntryConfig{
+		prefix:        c.prefix,
+		Value:         1,
+		requiredScope: c.requiredScope,
+		onInit:        c.onInit,
+	}
+}
+
+func (c *serverEntryConfig) Init(scope extension.Scope) error {
+	if c.requiredScope != 0 && scope != c.requiredScope {
+		return errors.New("server scope is required")
+	}
+	c.initialized = scope
+	if c.onInit != nil {
+		c.onInit(c)
+	}
+	return nil
+}
+
+func (c *serverEntryConfig) FilterNames(extension.Scope) []string {
+	return []string{"server-entry-filter"}
+}
+
+type serverEntryOption struct {
+	prefix string
+	value  int
+}
+
+func (o serverEntryOption) Prefix() string {
+	return o.prefix
+}
+
+func (o serverEntryOption) Apply(config extension.Config) error {
+	config.(*serverEntryConfig).Value = o.value
+	return nil
+}
+
+func TestWithExtensionBuildsServerConfigAndMergesFilter(t *testing.T) {
+	const prefix = "server-entry"
+	const filterName = "server-entry-filter"
+
+	extension.UnregisterConfig(prefix)
+	extension.UnregisterFilter(filterName)
+	t.Cleanup(func() {
+		extension.UnregisterConfig(prefix)
+		extension.UnregisterFilter(filterName)
+	})
+
+	var initialized *serverEntryConfig
+	require.NoError(t, extension.RegisterConfig(&serverEntryConfig{
+		prefix:        prefix,
+		requiredScope: extension.ServerScope,
+		onInit: func(config *serverEntryConfig) {
+			initialized = config
+		},
+	}))
+	extension.SetFilter(filterName, func() filter.Filter { return nil })
+
+	srv, err := NewServer(
+		SetServerExtensionConfigs(map[string]any{
+			prefix: map[string]any{
+				"provider": map[string]any{"value": 7},
+			},
+		}),
+		WithServerFilter("explicit"),
+		WithExtension(serverEntryOption{prefix: prefix, value: 9}),
+	)
+	require.NoError(t, err)
+	require.NotNil(t, srv)
+	require.NotNil(t, initialized)
+	assert.Equal(t, 9, initialized.Value)
+	assert.Equal(t, extension.ServerScope, initialized.initialized)
+	assert.Equal(t, "explicit", srv.cfg.Provider.Filter)
+
+	svcOpts := defaultServiceOptions()
+	svcOpts.Provider = srv.cfg.Provider
+	svcOpts.Application = srv.cfg.Application
+	svcOpts.Registries = srv.cfg.Registries
+	svcOpts.Protocols = srv.cfg.Protocols
+	require.NoError(t, svcOpts.init(srv, WithInterface("com.example.ServerEntry")))
+	assert.Equal(t, "explicit,"+filterName, svcOpts.getUrlMap().Get(constant.ServiceFilterKey))
+}
+
+func TestWithExtensionPreservesDefaultServerFilters(t *testing.T) {
+	const prefix = "server-default-filter"
+	const filterName = "server-entry-filter"
+	extension.UnregisterConfig(prefix)
+	extension.UnregisterFilter(filterName)
+	t.Cleanup(func() {
+		extension.UnregisterConfig(prefix)
+		extension.UnregisterFilter(filterName)
+	})
+
+	require.NoError(t, extension.RegisterConfig(&serverEntryConfig{
+		prefix:        prefix,
+		requiredScope: extension.ServerScope,
+	}))
+	extension.SetFilter(filterName, func() filter.Filter { return nil })
+
+	srv, err := NewServer(WithExtension(serverEntryOption{prefix: prefix, value: 1}))
+	require.NoError(t, err)
+
+	svcOpts := defaultServiceOptions()
+	svcOpts.Provider = srv.cfg.Provider
+	svcOpts.Application = srv.cfg.Application
+	svcOpts.Registries = srv.cfg.Registries
+	svcOpts.Protocols = srv.cfg.Protocols
+	require.NoError(t, svcOpts.init(srv, WithInterface("com.example.ServerDefaultFilter")))
+	assert.Equal(t, constant.DefaultServiceFilters+","+filterName,
+		svcOpts.getUrlMap().Get(constant.ServiceFilterKey))
+}
+
+func TestWithExtensionRejectsUnsupportedServerScope(t *testing.T) {
+	const prefix = "server-entry-unsupported"
+	extension.UnregisterConfig(prefix)
+	t.Cleanup(func() { extension.UnregisterConfig(prefix) })
+
+	require.NoError(t, extension.RegisterConfig(&serverEntryConfig{
+		prefix:        prefix,
+		requiredScope: extension.InstanceScope,
+	}))
+	extension.SetFilter("server-entry-filter", func() filter.Filter { return nil })
+	t.Cleanup(func() { extension.UnregisterFilter("server-entry-filter") })
+	_, err := NewServer(WithExtension(serverEntryOption{prefix: prefix, value: 1}))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "server scope is required")
+}
+
+func TestWithExtensionHonorsExplicitFilterSuppression(t *testing.T) {
+	const prefix = "server-entry-suppressed"
+	const filterName = "server-entry-filter"
+	extension.UnregisterConfig(prefix)
+	extension.UnregisterFilter(filterName)
+	t.Cleanup(func() {
+		extension.UnregisterConfig(prefix)
+		extension.UnregisterFilter(filterName)
+	})
+
+	require.NoError(t, extension.RegisterConfig(&serverEntryConfig{
+		prefix:        prefix,
+		requiredScope: extension.ServerScope,
+	}))
+	extension.SetFilter(filterName, func() filter.Filter { return nil })
+
+	srv, err := NewServer(
+		WithServerFilter("-"+filterName),
+		WithExtension(serverEntryOption{prefix: prefix, value: 1}),
+	)
+	require.NoError(t, err)
+	assert.Equal(t, "-"+filterName, srv.cfg.Provider.Filter)
+
+	svcOpts := defaultServiceOptions()
+	svcOpts.Provider = srv.cfg.Provider
+	svcOpts.Application = srv.cfg.Application
+	svcOpts.Registries = srv.cfg.Registries
+	svcOpts.Protocols = srv.cfg.Protocols
+	require.NoError(t, svcOpts.init(srv, WithInterface("com.example.ServerEntrySuppressed")))
+	assert.Empty(t, svcOpts.getUrlMap().Get(constant.ServiceFilterKey))
+}
+
+func TestServerFilterDropsUnmatchedSuppressionMarker(t *testing.T) {
+	const prefix = "server-unmatched-suppression"
+	const filterName = "server-entry-filter"
+	extension.UnregisterConfig(prefix)
+	extension.UnregisterFilter(filterName)
+	t.Cleanup(func() {
+		extension.UnregisterConfig(prefix)
+		extension.UnregisterFilter(filterName)
+	})
+
+	require.NoError(t, extension.RegisterConfig(&serverEntryConfig{
+		prefix:        prefix,
+		requiredScope: extension.ServerScope,
+	}))
+	extension.SetFilter(filterName, func() filter.Filter { return nil })
+
+	srv, err := NewServer(
+		WithServerFilter("-server-entry-unmatched-filter"),
+		WithExtension(serverEntryOption{prefix: prefix, value: 1}),
+	)
+	require.NoError(t, err)
+
+	svcOpts := defaultServiceOptions()
+	svcOpts.Provider = srv.cfg.Provider
+	svcOpts.Application = srv.cfg.Application
+	svcOpts.Registries = srv.cfg.Registries
+	svcOpts.Protocols = srv.cfg.Protocols
+	require.NoError(t, svcOpts.init(srv, WithInterface("com.example.ServerUnmatchedSuppression")))
+	assert.Equal(t, filterName, svcOpts.getUrlMap().Get(constant.ServiceFilterKey))
+}
 
 // Test defaultServerOptions
 func TestDefaultServerOptions(t *testing.T) {

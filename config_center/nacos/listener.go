@@ -81,9 +81,18 @@ func (s *keyListenerSet) snapshot() []config_center.ConfigurationListener {
 }
 
 func callback(set *keyListenerSet, _, group, dataId, data string) {
+	eventType := remoting.EventTypeUpdate
+	// Nacos SDK callbacks do not include a change type. In nacos-sdk-go v2.2.5,
+	// a deleted config reaches this callback with empty content. Match the
+	// ZooKeeper cache listener by treating empty content as a deletion. This
+	// intentionally makes deleting a config and updating it to an empty string
+	// equivalent.
+	if data == "" {
+		eventType = remoting.EventTypeDel
+	}
 	for _, l := range set.snapshot() {
-		l.Process(&config_center.ConfigChangeEvent{Key: dataId, Value: data, ConfigType: remoting.EventTypeUpdate})
-		metrics.Publish(metricsConfigCenter.NewIncMetricEvent(dataId, group, remoting.EventTypeUpdate, metricsConfigCenter.Nacos))
+		l.Process(&config_center.ConfigChangeEvent{Key: dataId, Value: data, ConfigType: eventType})
+		metrics.Publish(metricsConfigCenter.NewIncMetricEvent(dataId, group, eventType, metricsConfigCenter.Nacos))
 	}
 }
 

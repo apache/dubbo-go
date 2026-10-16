@@ -55,16 +55,27 @@ type TripleConfig struct {
 	// A nil value means the field is not explicitly set, and the default
 	// (enabled) applies.
 	UnaryFastPath *bool `default:"true" yaml:"unary-fast-path" json:"unary-fast-path,omitempty" property:"unary-fast-path"`
+
+	// WriteBuffering enables aggregation of small messages in the streaming
+	// client write path, on by default. It applies to every call routed
+	// through duplexHTTPCall, on both the gRPC and the Triple (connect) wire
+	// formats; the unary fast path does not go through io.Pipe and is
+	// unaffected.
+	// A nil value means the field is not explicitly set, and the default
+	// (enabled) applies.
+	WriteBuffering *bool `default:"true" yaml:"write-buffering" json:"write-buffering,omitempty" property:"write-buffering"`
 }
 
 // DefaultTripleConfig returns a default TripleConfig instance.
 func DefaultTripleConfig() *TripleConfig {
 	unaryFastPath := true
+	writeBuffering := true
 	return &TripleConfig{
-		Http3:         DefaultHttp3Config(),
-		Cors:          DefaultCorsConfig(),
-		OpenAPI:       DefaultOpenAPIConfig(),
-		UnaryFastPath: &unaryFastPath,
+		Http3:          DefaultHttp3Config(),
+		Cors:           DefaultCorsConfig(),
+		OpenAPI:        DefaultOpenAPIConfig(),
+		UnaryFastPath:  &unaryFastPath,
+		WriteBuffering: &writeBuffering,
 	}
 }
 
@@ -80,6 +91,12 @@ func (t *TripleConfig) Clone() *TripleConfig {
 		*newUnaryFastPath = *t.UnaryFastPath
 	}
 
+	var newWriteBuffering *bool
+	if t.WriteBuffering != nil {
+		newWriteBuffering = new(bool)
+		*newWriteBuffering = *t.WriteBuffering
+	}
+
 	return &TripleConfig{
 		MaxServerSendMsgSize: t.MaxServerSendMsgSize,
 		MaxServerRecvMsgSize: t.MaxServerRecvMsgSize,
@@ -90,5 +107,6 @@ func (t *TripleConfig) Clone() *TripleConfig {
 		KeepAliveInterval: t.KeepAliveInterval,
 		KeepAliveTimeout:  t.KeepAliveTimeout,
 		UnaryFastPath:     newUnaryFastPath,
+		WriteBuffering:    newWriteBuffering,
 	}
 }

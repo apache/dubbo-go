@@ -261,8 +261,15 @@ func (s *Server) registerServiceHandlers(invoker base.Invoker, info *common.Serv
 	}
 
 	if info != nil {
-		// New triple IDL mode
+		// New triple IDL mode. A ServiceInfo describes only the methods the
+		// service declares, so the generic entry point is registered explicitly:
+		// a caller without generated stubs reaches a service through $invoke,
+		// exactly as it does for a non-IDL export. A service that declares
+		// $invoke itself keeps its own handler.
 		s.handleServiceWithInfo(intfName, invoker, info, handlerOpts...)
+		if !declaresGenericMethod(info.Methods) {
+			s.registerMethodHandler(joinProcedure(intfName, constant.Generic), buildGenericMethodInfo(), invoker, handlerOpts...)
+		}
 		s.saveServiceInfo(intfName, info, openapiGroup, url.Group(), url.Version())
 	} else if IDLMode == constant.NONIDL {
 		// New triple non-IDL mode
@@ -524,6 +531,18 @@ func (s *Server) handleServiceWithInfo(interfaceName string, invoker base.Invoke
 		procedure := joinProcedure(interfaceName, method.Name)
 		s.registerMethodHandler(procedure, m, invoker, opts...)
 	}
+}
+
+// declaresGenericMethod reports whether a ServiceInfo already declares the
+// generic entry point. Such a service owns that handler and must not have it
+// replaced by the synthesized one.
+func declaresGenericMethod(methods []common.MethodInfo) bool {
+	for _, method := range methods {
+		if method.Name == constant.Generic {
+			return true
+		}
+	}
+	return false
 }
 
 // registerMethodHandler registers a single method handler for the given procedure path.

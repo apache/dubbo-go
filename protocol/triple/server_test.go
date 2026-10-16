@@ -1000,6 +1000,79 @@ func TestServerHandleServiceWithInfoFallbackHitsStreamingHandlers(t *testing.T) 
 	assert.Equal(t, []string{"CountUp", "CumSum"}, calledMethods)
 }
 
+func TestRegisterServiceHandlersRegistersGenericEntryForIDLService(t *testing.T) {
+	server := NewServer(nil)
+	server.triServer = tri.NewServer("127.0.0.1:0", nil)
+	invoker := &tripleServerTestInvoker{
+		url: common.NewURLWithOptions(
+			common.WithProtocol("tri"),
+			common.WithInterface("com.example.Greeter"),
+		),
+	}
+	info := &common.ServiceInfo{
+		InterfaceName: "com.example.Greeter",
+		Methods: []common.MethodInfo{
+			{
+				Name: "SayHello",
+				Type: constant.CallUnary,
+				ReqInitFunc: func() any {
+					return &struct{ Name string }{}
+				},
+			},
+		},
+	}
+
+	server.registerServiceHandlers(invoker, info, nil)
+
+	_, ok := getServerHandler(server.triServer, "/com.example.Greeter/SayHello")
+	require.True(t, ok, "a declared method must keep its own handler")
+
+	genericHandler, ok := getServerHandler(server.triServer, "/com.example.Greeter/$invoke")
+	require.True(t, ok, "an IDL export must expose the generic entry point")
+	require.NotNil(t, genericHandler)
+
+	// The ServiceInfo handed to the registry, reflection and OpenAPI layer keeps
+	// only the methods the service declares.
+	svcInfo, ok := server.GetServiceInfo()["com.example.Greeter"]
+	require.True(t, ok)
+	names := make([]string, 0, len(svcInfo.Methods))
+	for _, method := range svcInfo.Methods {
+		names = append(names, method.Name)
+	}
+	assert.Contains(t, names, "SayHello")
+	assert.NotContains(t, names, constant.Generic)
+}
+
+func TestDeclaresGenericMethod(t *testing.T) {
+	tests := []struct {
+		desc    string
+		methods []common.MethodInfo
+		want    bool
+	}{
+		{
+			desc:    "no methods",
+			methods: nil,
+			want:    false,
+		},
+		{
+			desc:    "declared methods only",
+			methods: []common.MethodInfo{{Name: "SayHello", Type: constant.CallUnary}},
+			want:    false,
+		},
+		{
+			desc:    "generic method declared",
+			methods: []common.MethodInfo{{Name: constant.Generic, Type: constant.CallUnary}},
+			want:    true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.desc, func(t *testing.T) {
+			assert.Equal(t, test.want, declaresGenericMethod(test.methods))
+		})
+	}
+}
+
 func newServerForMethodHandlerTest() *Server {
 	return &Server{triServer: tri.NewServer("127.0.0.1:0", nil)}
 }

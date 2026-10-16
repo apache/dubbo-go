@@ -194,7 +194,10 @@ func getFileTypeFromNS(ns string) string {
 	return "properties"
 }
 
-// makeNestedMap convert flat key-value pairs to nested structure
+// makeNestedMap converts flat key-value pairs to a nested structure.
+// A property that is both a leaf and a parent ("a.b" and "a.b.c") must not
+// panic. The nested value is kept, and the conflicting scalar is dropped,
+// whichever key is visited first.
 func makeNestedMap(props map[string]string) map[string]any {
 	result := make(map[string]any)
 
@@ -204,15 +207,19 @@ func makeNestedMap(props map[string]string) map[string]any {
 
 		for i, part := range parts {
 			if i == len(parts)-1 {
-				// The last part as value
-				current[part] = v
-			} else {
-				// Create or get nested map
-				if _, exists := current[part]; !exists {
-					current[part] = make(map[string]any)
+				// A later scalar must not erase longer keys already stored here.
+				if _, isMap := current[part].(map[string]any); isMap {
+					continue
 				}
-				current = current[part].(map[string]any)
+				current[part] = v
+				continue
 			}
+			next, ok := current[part].(map[string]any)
+			if !ok {
+				next = make(map[string]any)
+				current[part] = next
+			}
+			current = next
 		}
 	}
 	return result

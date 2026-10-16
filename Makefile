@@ -45,10 +45,8 @@ endif
 # each test should be fixed and removed from this list over time.
 RACE_SKIP_TESTS := TestFailbackRetryFailed \
 TestFailbackOutOfLimit \
-TestRouteCacheGenerationRace \
 TestListener \
 TestDubboProtocol_Refer \
-TestGrpcHealthWatchEmitsClosingEvent \
 TestServiceDiscoveryRegistryUnRegister_Concurrent \
 TestCfgAPI_Export \
 TestCfgAPI_Call \
