@@ -136,6 +136,56 @@ func TestWindowMetricsExpireOnCollection(t *testing.T) {
 	}
 }
 
+func TestWindowMetricsRecreatedVectorsReplaceCallbacks(t *testing.T) {
+	for _, side := range []string{"provider", "consumer"} {
+		t.Run(side, func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				r := NewPromMetricRegistry(prom.NewRegistry(), common.NewURLWithOptions())
+				labels := map[string]string{"application_name": "shop-user", "interface": "DemoService", "method": "A"}
+				old := newWindowFixture(r, side)
+				for range 6 {
+					old.record(labels, 100)
+				}
+				time.Sleep(60 * time.Second)
+				current := newWindowFixture(r, side)
+				for range 3 {
+					current.record(labels, 300)
+				}
+				check := func(count, qps float64) {
+					t.Helper()
+					values := windowValues(t, r)
+					require.InDelta(t, count, values[current.prefix+"_requests_total_aggregate/A"], 0)
+					require.InDelta(t, qps, values[current.prefix+"_qps_total/A"], 0)
+					for _, suffix := range []string{"p50", "p90", "p95", "p99"} {
+						require.InDelta(t, 300.0, values[current.prefix+"_rt_milliseconds_"+suffix+"/A"], 0)
+					}
+				}
+				check(3, 3.0/12)
+				time.Sleep(61 * time.Second)
+				check(3, 3.0/12) // The old window is empty, but the replacement is still live.
+				// Recording through the old vector must not reclaim the callbacks.
+				old.record(labels, 100)
+				for range 2 {
+					current.record(labels, 300)
+				}
+				for range 2 {
+					check(5, 5.0/24) // Two live buckets, each spanning 12 seconds.
+				}
+				values := windowValues(t, r)
+				require.InDelta(t, 12.0, values[current.prefix+"_requests_total/A"], 0,
+					"Cumulative counters remain shared and are not reset by vector recreation")
+				time.Sleep(121 * time.Second)
+				values = windowValues(t, r)
+				require.InDelta(t, 0.0, values[current.prefix+"_requests_total_aggregate/A"], 0)
+				require.InDelta(t, 0.0, values[current.prefix+"_qps_total/A"], 0)
+				for _, suffix := range []string{"p50", "p90", "p95", "p99"} {
+					require.True(t, math.IsNaN(values[current.prefix+"_rt_milliseconds_"+suffix+"/A"]))
+				}
+			})
+		})
+	}
+}
+
 func TestWindowMetricsConcurrentRecordAndCollect(t *testing.T) {
 	r := NewPromMetricRegistry(prom.NewRegistry(), common.NewURLWithOptions())
 	f := newWindowFixture(r, "provider")

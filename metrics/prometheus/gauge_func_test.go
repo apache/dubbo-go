@@ -21,6 +21,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"sync/atomic"
 	"testing"
 )
@@ -78,6 +79,51 @@ func TestGaugeFuncRejectsInvalidInputs(t *testing.T) {
 			require.Contains(t, text, "window_value{method=\"A\"} 7\n", "Rejected input must leave the existing series intact")
 		})
 	}
+}
+
+func TestGaugeFuncConcurrentReplacementAndCollection(t *testing.T) {
+	r := NewPromMetricRegistry(prom.NewRegistry(), common.NewURLWithOptions())
+	id := &metrics.MetricId{Name: "window_value", Desc: "Window value", Tags: map[string]string{"method": "A"}}
+	r.GaugeFunc(id, func() float64 { return 1 })
+	r.GaugeFunc(&metrics.MetricId{Name: id.Name, Desc: id.Desc, Tags: map[string]string{"method": "B"}},
+		func() float64 { return 7 })
+	var wg sync.WaitGroup
+	const workers = 4
+	const iterations = 100
+	errs := make(chan error, workers)
+	start := make(chan struct{})
+	for range workers {
+		wg.Go(func() {
+			<-start
+			for i := range iterations {
+				r.GaugeFunc(id, func() float64 { return float64(i) })
+			}
+		})
+		wg.Go(func() {
+			<-start
+			for range iterations {
+				if _, err := r.gather.Gather(); err != nil {
+					errs <- err
+					return
+				}
+			}
+		})
+	}
+	close(start)
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		require.NoError(t, err)
+	}
+	r.GaugeFunc(id, func() float64 { return 42 })
+	families, err := r.gather.Gather()
+	require.NoError(t, err)
+	require.Len(t, families, 1)
+	require.Len(t, families[0].Metric, 2, "Replacement must not create duplicate series")
+	text, err := r.Scrape()
+	require.NoError(t, err)
+	require.Contains(t, text, "window_value{method=\"A\"} 42\n")
+	require.Contains(t, text, "window_value{method=\"B\"} 7\n", "Other label sets must remain unchanged")
 }
 
 func TestGaugeFuncExportPaths(t *testing.T) {

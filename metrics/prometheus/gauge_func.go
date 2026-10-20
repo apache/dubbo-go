@@ -73,9 +73,9 @@ func (v *gaugeFuncVec) add(tags map[string]string, value func() float64) {
 	key, _ := json.Marshal(labels)
 	v.mu.Lock()
 	defer v.mu.Unlock()
-	if _, exists := v.values[string(key)]; !exists {
-		v.values[string(key)] = gaugeFuncValue{labels: labels, value: value}
-	}
+	// A recreated window vector owns a new window for the same series.
+	// Replace the callback instead of continuing to collect the old window.
+	v.values[string(key)] = gaugeFuncValue{labels: labels, value: value}
 }
 
 func (v *gaugeFuncVec) Describe(ch chan<- *prom.Desc) {
@@ -90,6 +90,7 @@ func (v *gaugeFuncVec) Collect(ch chan<- prom.Metric) {
 	}
 	v.mu.RUnlock()
 	// Do not hold the series lock while evaluating or sending metrics.
+	// A collection already using this snapshot may finish with an old callback.
 	for _, value := range values {
 		ch <- prom.MustNewConstMetric(v.desc, prom.GaugeValue, value.value(), value.labels...)
 	}

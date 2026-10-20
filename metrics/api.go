@@ -89,6 +89,8 @@ type MetricRegistry interface {
 // GaugeFuncRegistry is an optional MetricRegistry extension for gauges whose
 // values must be evaluated at collection time. The function must be safe for
 // concurrent calls. Registries without this extension retain record-time gauges.
+// Registering the same metric name and label set again replaces its callback.
+// An in-flight collection may still finish evaluating the previous callback.
 type GaugeFuncRegistry interface {
 	GaugeFunc(*MetricId, func() float64)
 }

@@ -92,6 +92,7 @@ func (p *promMetricRegistry) Gauge(m *metrics.MetricId) metrics.GaugeMetric {
 
 // GaugeFunc registers a lazy value for a metric's label set. All export paths
 // use the same gatherer, so both pulls and Pushgateway pushes evaluate it.
+// Re-registering the same series replaces its callback; windows are not merged.
 func (p *promMetricRegistry) GaugeFunc(m *metrics.MetricId, value func() float64) {
 	vec := p.getOrComputeVec(m.Name, func() prom.Collector {
 		return newGaugeFuncVec(m)
