@@ -35,6 +35,48 @@ import (
 
 var updateGolden = flag.Bool("update", false, "update OpenAPI golden files")
 
+func TestConvertInvalidParameters(t *testing.T) {
+	tests := []struct {
+		parameter string
+		wantError string
+	}{
+		{
+			parameter: "format=xml",
+			wantError: "format 'xml' is not supported",
+		},
+		{
+			parameter: "unknown=1",
+			wantError: "invalid parameter: unknown=1",
+		},
+		{
+			parameter: "format=json,unknown=1",
+			wantError: "invalid parameter: unknown=1",
+		},
+		{
+			parameter: "unknown=1,format=json",
+			wantError: "invalid parameter: unknown=1",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.parameter, func(t *testing.T) {
+			request := greetRequest("yaml")
+			request.Parameter = proto.String(tt.parameter)
+
+			response, err := convert(request)
+			if err == nil {
+				t.Fatal("convert() succeeded for invalid parameters, want an error")
+			}
+			if !strings.Contains(err.Error(), tt.wantError) {
+				t.Errorf("convert() error = %q, want it to contain %q", err, tt.wantError)
+			}
+			if response != nil {
+				t.Errorf("convert() response = %v, want nil", response)
+			}
+		})
+	}
+}
+
 func TestConvertGolden(t *testing.T) {
 	tests := []struct {
 		name       string
