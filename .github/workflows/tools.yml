@@ -77,6 +77,24 @@ jobs:
       - name: Run lint
         run: make lint
 
+  openapi-tests:
+    name: OpenAPI Generator Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: tools/protoc-gen-triple-openapi/go.mod
+          cache-dependency-path: tools/protoc-gen-triple-openapi/go.sum
+
+      - name: Test OpenAPI generator
+        working-directory: tools/protoc-gen-triple-openapi
+        run: go test ./... -count=1
+
   generated-projects:
     name: Generated CLI Projects
     runs-on: ubuntu-latest
