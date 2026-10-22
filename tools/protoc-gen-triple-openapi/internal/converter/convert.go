@@ -62,6 +62,9 @@ func ConvertFrom(r io.Reader) (*pluginpb.CodeGeneratorResponse, error) {
 
 func convert(req *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorResponse, error) {
 	opts, err := options.Generate(req.GetParameter())
+	if err != nil {
+		return nil, err
+	}
 
 	genFiles := make(map[string]struct{}, len(req.FileToGenerate))
 	for _, file := range req.FileToGenerate {
