@@ -125,15 +125,6 @@ func main() {
 | [dubbo-go-schema](./tools/dubbo-go-schema/README_CN.md) | 为 dubbo-go YAML 配置提供 JSON Schema 补全与校验。 |
 | [benchmark](./tools/benchmark/README_CN.md) | 对比 Dubbo-Go、Dubbo-Java 和 gRPC 框架性能的基准测试套件。 |
 
-GitHub Releases 提供适用于 Darwin、Linux 和 Windows 的预编译压缩包：
-
-- [dubbogo-cli v1.0.1](https://github.com/apache/dubbo-go/releases/tag/tools/dubbogo-cli/v1.0.1)
-- [protoc-gen-go-triple v3.3.2](https://github.com/apache/dubbo-go/releases/tag/tools/protoc-gen-go-triple/v3.3.2)
-- [protoc-gen-triple-openapi v3.3.2](https://github.com/apache/dubbo-go/releases/tag/tools/protoc-gen-triple-openapi/v3.3.2)
-- [imports-formatter v1.0.11](https://github.com/apache/dubbo-go/releases/tag/tools/imports-formatter/v1.0.11)
-
-安装 `dubbogo-cli` 后，可运行 `dubbogo-cli install all` 安装配套的代码生成器和格式化工具。各工具 README 中提供了从源码安装的命令。
-
 ## 生态系统
 
 - [dubbo-go-samples](https://github.com/apache/dubbo-go-samples)

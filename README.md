@@ -125,15 +125,6 @@ Common development tools live in `tools/`.
 | [dubbo-go-schema](./tools/dubbo-go-schema/README.md) | Provide JSON Schema completion and validation for dubbo-go YAML config. |
 | [benchmark](./tools/benchmark/README.md) | Performance benchmark suite for comparing Dubbo-Go, Dubbo-Java, and gRPC frameworks. |
 
-Prebuilt archives for Darwin, Linux, and Windows are available from GitHub Releases:
-
-- [dubbogo-cli v1.0.1](https://github.com/apache/dubbo-go/releases/tag/tools/dubbogo-cli/v1.0.1)
-- [protoc-gen-go-triple v3.3.2](https://github.com/apache/dubbo-go/releases/tag/tools/protoc-gen-go-triple/v3.3.2)
-- [protoc-gen-triple-openapi v3.3.2](https://github.com/apache/dubbo-go/releases/tag/tools/protoc-gen-triple-openapi/v3.3.2)
-- [imports-formatter v1.0.11](https://github.com/apache/dubbo-go/releases/tag/tools/imports-formatter/v1.0.11)
-
-After installing `dubbogo-cli`, run `dubbogo-cli install all` to install the companion generators and formatter. Source installation commands are documented in each tool's README.
-
 ## Ecosystem
 - [dubbo-go-samples](https://github.com/apache/dubbo-go-samples)
 - [dubbo-go-pixiu which acting as a proxy to solve Dubbo multi-language interoperability](https://github.com/apache/dubbo-go-pixiu)
