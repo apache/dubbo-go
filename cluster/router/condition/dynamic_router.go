@@ -103,6 +103,11 @@ type DynamicRouter struct {
 	force           bool
 	enable          bool
 	conditionRouter condRouter
+	// ruleEpoch counts config-center writes applied to this router.
+	// It is captured before AddListener. A GetRule snapshot is applied only
+	// when the epoch is unchanged, and SetStaticConfig does not replace a
+	// router whose epoch has already moved.
+	ruleEpoch uint64
 }
 
 func (d *DynamicRouter) Route(invokers []base.Invoker, url *common.URL, invocation base.Invocation) []base.Invoker {
@@ -135,9 +140,11 @@ func (d *DynamicRouter) URL() *common.URL {
 }
 
 // SetStaticConfig applies a RouterConfig with string conditions directly, bypassing YAML parsing.
-// This is the correct entry point for static (code-configured) rules;
-// Process is designed for dynamic config-center updates that arrive as YAML text.
-// Static and dynamic rules are not merged: later Process updates replace the current state built here.
+// This bootstraps static (code-configured) rules. Process applies config-center YAML.
+// Static and dynamic rules are not merged. NewRouterChain builds the application
+// router, which subscribes and loads the consumer dynamic rule, before
+// injectStaticRouters. A dynamic write that has already landed stays in place;
+// later Process calls still replace the current state.
 func (d *DynamicRouter) SetStaticConfig(cfg *global.RouterConfig) {
 	if cfg == nil || len(cfg.Conditions) == 0 {
 		return
@@ -145,6 +152,10 @@ func (d *DynamicRouter) SetStaticConfig(cfg *global.RouterConfig) {
 
 	d.mu.Lock()
 	defer d.mu.Unlock()
+	if d.ruleEpoch != 0 {
+		logger.Infof("[Router][Condition] keep subscribed condition rule over static config: conditions=%d", len(cfg.Conditions))
+		return
+	}
 
 	force := cfg.Force != nil && *cfg.Force
 	enable := cfg.Enabled == nil || *cfg.Enabled
@@ -175,22 +186,63 @@ func (d *DynamicRouter) SetStaticConfig(cfg *global.RouterConfig) {
 
 // Process applies config-center updates as the authoritative rule source at runtime.
 // It does not merge with static rules bootstrapped via SetStaticConfig; any later
-// dynamic update replaces the current static-derived state.
+// dynamic update replaces the current state, including a rule loaded from the
+// initial GetRule snapshot.
 func (d *DynamicRouter) Process(event *config_center.ConfigChangeEvent) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
+	d.ruleEpoch++
+	d.applyEventLocked(event)
+}
 
+func (d *DynamicRouter) captureEpoch() uint64 {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	return d.ruleEpoch
+}
+
+// subscribeInitialRule registers listener and applies the current config-center
+// value. The epoch is captured before AddListener, so an update or delete
+// delivered before the snapshot is applied discards that stale GetRule result.
+func (d *DynamicRouter) subscribeInitialRule(
+	dc config_center.DynamicConfiguration,
+	listener config_center.ConfigurationListener,
+	key string,
+	eventType remoting.EventType,
+) (string, error) {
+	captured := d.captureEpoch()
+	dc.AddListener(key, listener)
+	value, err := dc.GetRule(key)
+	if err != nil || value == "" {
+		return value, err
+	}
+	d.applyInitialSnapshot(&config_center.ConfigChangeEvent{Key: key, Value: value, ConfigType: eventType}, captured)
+	return value, nil
+}
+
+func (d *DynamicRouter) applyInitialSnapshot(event *config_center.ConfigChangeEvent, captured uint64) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.ruleEpoch != captured {
+		logger.Infof("[Router][Condition] discard stale condition snapshot: key=%s", event.Key)
+		return
+	}
+	d.ruleEpoch++
+	d.applyEventLocked(event)
+}
+
+func (d *DynamicRouter) applyEventLocked(event *config_center.ConfigChangeEvent) {
 	if event.ConfigType == remoting.EventTypeDel {
 		d.conditionRouter = nil
-	} else {
-		rc, force, enable, err := generateCondition(event.Value.(string))
-		if err != nil {
-			logger.Errorf("[Router][Condition] failed to generate condition: err=%v", err)
-			d.conditionRouter = nil
-		} else {
-			d.force, d.enable, d.conditionRouter = force, enable, rc
-		}
+		return
 	}
+	rc, force, enable, err := generateCondition(event.Value.(string))
+	if err != nil {
+		logger.Errorf("[Router][Condition] failed to generate condition: err=%v", err)
+		d.conditionRouter = nil
+		return
+	}
+	d.force, d.enable, d.conditionRouter = force, enable, rc
 }
 
 /*
@@ -293,7 +345,8 @@ func generateConditionsRoute(rawConfig string) (stateRouters, bool, bool, error)
 		return nil, false, false, err
 	}
 
-	force, enable := *routerConfig.Force, *routerConfig.Enabled
+	force := routerConfig.Force != nil && *routerConfig.Force
+	enable := routerConfig.Enabled == nil || *routerConfig.Enabled
 	if !enable {
 		return nil, false, false, nil
 	}
@@ -305,7 +358,7 @@ func generateConditionsRoute(rawConfig string) (stateRouters, bool, bool, error)
 			return nil, false, false, err
 		}
 		url.SetParam(constant.RuleKey, conditionRule)
-		url.SetParam(constant.ForceKey, strconv.FormatBool(*routerConfig.Force))
+		url.SetParam(constant.ForceKey, strconv.FormatBool(force))
 		conditionRoute, err := NewConditionStateRouter(url)
 		if err != nil {
 			return nil, false, false, err
@@ -352,8 +405,7 @@ func (s *ServiceRouter) Notify(invokers []base.Invoker) {
 		return
 	}
 	key := strings.Join([]string{url.ColonSeparatedKey(), constant.ConditionRouterRuleSuffix}, "")
-	dynamicConfiguration.AddListener(key, s)
-	value, err := dynamicConfiguration.GetRule(key)
+	value, err := s.subscribeInitialRule(dynamicConfiguration, s, key, remoting.EventTypeAdd)
 	if err != nil {
 		logger.Errorf("[Router][Condition] Failed to query condition rule, key=%s, err=%v", key, err)
 		return
@@ -362,7 +414,6 @@ func (s *ServiceRouter) Notify(invokers []base.Invoker) {
 		logger.Infof("[Router][Condition] Condition rule is empty, key=%s", key)
 		return
 	}
-	s.Process(&config_center.ConfigChangeEvent{Key: key, Value: value, ConfigType: remoting.EventTypeAdd})
 }
 
 // ApplicationRouter is Application level router
@@ -385,7 +436,10 @@ func NewApplicationRouter(url *common.URL) *ApplicationRouter {
 
 	dynamicConfiguration := conf.GetEnvInstance().GetDynamicConfiguration()
 	if dynamicConfiguration != nil && applicationName != "" {
-		dynamicConfiguration.AddListener(strings.Join([]string{applicationName, constant.ConditionRouterRuleSuffix}, ""), a)
+		key := strings.Join([]string{applicationName, constant.ConditionRouterRuleSuffix}, "")
+		if _, err := a.subscribeInitialRule(dynamicConfiguration, a, key, remoting.EventTypeAdd); err != nil {
+			logger.Errorf("[Router][Condition] failed to query condition rule: key=%s, err=%v", key, err)
+		}
 	}
 	return a
 }
@@ -430,9 +484,8 @@ func (a *ApplicationRouter) Notify(invokers []base.Invoker) {
 		}
 
 		key := strings.Join([]string{providerApplication, constant.ConditionRouterRuleSuffix}, "")
-		dynamicConfiguration.AddListener(key, a)
 		a.application = providerApplication
-		value, err := dynamicConfiguration.GetRule(key)
+		value, err := a.subscribeInitialRule(dynamicConfiguration, a, key, remoting.EventTypeUpdate)
 		if err != nil {
 			logger.Errorf("[Router][Condition] failed to query condition rule: key=%s, err=%v", key, err)
 			return
@@ -441,7 +494,6 @@ func (a *ApplicationRouter) Notify(invokers []base.Invoker) {
 			logger.Infof("[Router][Condition] Condition rule is empty, key=%s", key)
 			return
 		}
-		a.Process(&config_center.ConfigChangeEvent{Key: key, Value: value, ConfigType: remoting.EventTypeUpdate})
 	}
 }
 
