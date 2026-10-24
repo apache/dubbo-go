@@ -55,6 +55,22 @@ func NewOptions(opts ...Option) *Options {
 
 type Option func(*Options)
 
+// ServerCompressMinBytesParam overrides the server response compression
+// threshold for one exported service. It takes precedence over protocol-level
+// configuration and the default value.
+const ServerCompressMinBytesParam = "triple.server-compress-min-bytes"
+
+// WithServerCompressMinBytes sets the server response compression threshold in
+// serialized bytes. Responses smaller than min skip compression; zero compresses
+// every response. A threshold above the server send limit is capped to that
+// limit plus one so oversized responses can still be compressed.
+// Negative values are rejected during service export.
+func WithServerCompressMinBytes(min int) Option {
+	return func(opts *Options) {
+		opts.Triple.ServerCompressMinBytes = &min
+	}
+}
+
 // WithKeepAlive sets the keep-alive interval and timeout for the Triple protocol.
 // interval: The duration between keep-alive pings.
 // timeout: The duration to wait for a keep-alive response before considering the connection dead.

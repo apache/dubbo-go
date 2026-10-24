@@ -396,13 +396,13 @@ func Test_buildServerHandlerOptions(t *testing.T) {
 				MaxServerRecvMsgSize: "20MB",
 				MaxServerSendMsgSize: "20MB",
 			},
-			expectLen: 6, // base 4 + 2 from tripleConf
+			expectLen: 5, // base 4 + read override; send limit is resolved once
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			opts := buildServerHandlerOptions(test.url, test.tripleConf)
+			opts := buildServerHandlerOptions(test.url, test.tripleConf, resolveServerSendMaxBytes(test.url, test.tripleConf))
 			assert.Len(t, opts, test.expectLen)
 		})
 	}
