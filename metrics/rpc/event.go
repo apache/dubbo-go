@@ -30,11 +30,12 @@ import (
 
 // metricsEvent is the event defined for rpc metrics
 type metricsEvent struct {
-	name       metricsName
-	invoker    base.Invoker
-	invocation base.Invocation
-	costTime   time.Duration
-	result     result.Result
+	name      metricsName
+	costTime  time.Duration
+	role      string
+	labels    map[string]string
+	err       error
+	hasResult bool
 }
 
 // Type returns the type of the event, it is used for metrics bus to dispatch the event to rpc collector
@@ -51,18 +52,23 @@ const (
 
 func NewBeforeInvokeEvent(invoker base.Invoker, invocation base.Invocation) metrics.MetricsEvent {
 	return &metricsEvent{
-		name:       BeforeInvoke,
-		invoker:    invoker,
-		invocation: invocation,
+		name:   BeforeInvoke,
+		role:   getRole(invoker.GetURL()),
+		labels: buildLabels(invoker.GetURL(), invocation),
 	}
 }
 
 func NewAfterInvokeEvent(invoker base.Invoker, invocation base.Invocation, costTime time.Duration, result result.Result) metrics.MetricsEvent {
+	var err error
+	if result != nil {
+		err = result.Error()
+	}
 	return &metricsEvent{
-		name:       AfterInvoke,
-		invoker:    invoker,
-		invocation: invocation,
-		costTime:   costTime,
-		result:     result,
+		name:      AfterInvoke,
+		costTime:  costTime,
+		role:      getRole(invoker.GetURL()),
+		labels:    buildLabels(invoker.GetURL(), invocation),
+		err:       err,
+		hasResult: result != nil,
 	}
 }

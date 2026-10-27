@@ -18,6 +18,7 @@
 package rpc
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 )
 
@@ -27,14 +28,14 @@ import (
 // module can aggregate them independently (e.g. count business failures vs.
 // network failures separately). Each category maps to a failure layer —
 // network, codec, or protocol — except business failures, which are
-// application-level. The categories are derived from the Triple / gRPC status
-// codes returned by the protocol layer (see [classifyError]).
+// application-level. Classification combines compatible Triple/gRPC statuses
+// with confirmed local failure origins (see [classifyError]).
 type ErrorType uint8
 
 const (
 	// ErrorTypeUnknown is for unknown or unclassified errors
 	// Fallback for failures that cannot be attributed to a specific layer: nil
-	// errors, plain Go errors that do not carry a Triple status code, and any
+	// errors, unmarked plain Go errors, and any
 	// network / codec / protocol code the classifier does not handle explicitly
 	// (see the default branch of [classifyError]).
 	ErrorTypeUnknown ErrorType = 0
@@ -64,58 +65,23 @@ const (
 	// failures lets metrics separate "the call reached the server" from "the
 	// call failed to reach the server".
 	ErrorTypeBusinessFailed ErrorType = 4
-	// ErrorTypeNetworkFailure is for network failure exceptions (CodeInternal)
-	// Network layer: covers transport faults such as refused connections,
-	// broken pipes, DNS resolution failures, and socket read/write timeouts.
-	//
-	// Some transport-layer faults are surfaced by the Triple protocol as
-	// CodeInternal — for example HTTP/2 stream errors such as PROTOCOL_ERROR,
-	// INTERNAL_ERROR, FLOW_CONTROL_ERROR, FRAME_SIZE_ERROR, and CONNECT_ERROR
-	// are mapped to CodeInternal. Because CodeInternal is also used for codec
-	// and server-side invariant errors (see [ErrorTypeCodec]), these transport
-	// faults cannot be told apart from them at the status-code level, so they
-	// fall through to [ErrorTypeUnknown] today.
-	// TODO: At present, this error type has not been produced. If available, please map the appropriate internal/network error code to this type.
+	// ErrorTypeNetworkFailure requires a confirmed local transport origin.
+	// A generic CodeInternal or CodeUnavailable is not sufficient evidence.
 	ErrorTypeNetworkFailure ErrorType = 5
-	// ErrorTypeCodec is for codec errors (CodeInternal)
-	// Codec layer: covers serialization failures — malformed payloads,
-	// unsupported serialization types, and errors while (de)serializing
-	// request or response bodies.
-	//
-	// Codec errors are not surfaced through a single status code: marshal and
-	// compression failures map to CodeInternal, while unmarshal and decompress
-	// failures map to CodeInvalidArgument. Because they are spread across
-	// multiple codes (neither of which is codec-specific), they cannot be
-	// distinguished from network and other errors by status code alone, and
-	// fall through to [ErrorTypeUnknown] today.
-	// TODO: At present, this error type has not been produced. If available, please map the appropriate internal/codec error code to this type.
+	// ErrorTypeCodec requires a confirmed local serialization origin, rather
+	// than guessing from Internal/InvalidArgument or scanning error messages.
 	ErrorTypeCodec ErrorType = 6
 )
 
-// classifyError classifies an error based on triple protocol error codes.
-// This function supports triple and gRPC protocol errors.
-//
-// It extracts the status code with [triple_protocol.CodeOf] and maps it to an
-// [ErrorType] by failure layer. Protocol-layer codes map as follows:
-// CodeDeadlineExceeded -> [ErrorTypeTimeout], CodeResourceExhausted ->
-// [ErrorTypeLimit], CodeUnavailable and CodePermissionDenied ->
-// [ErrorTypeServiceUnavailable]. The application-layer CodeBizError maps to
-// [ErrorTypeBusinessFailed]. Plain Go errors (those that do not carry a Triple
-// status code) and every unhandled code fall back to [ErrorTypeUnknown].
-// A typed nil [*triple_protocol.Error] (or one hidden behind wrapping) also
-// falls back to [ErrorTypeUnknown], which is handled by [triple_protocol.CodeOf].
-//
-// [ErrorTypeNetworkFailure] (network layer) and [ErrorTypeCodec] (codec layer)
-// are reserved but not yet produced: some transport-layer faults and codec
-// failures are surfaced as CodeInternal (and codec failures also as
-// CodeInvalidArgument), which cannot be split reliably between the two, so it
-// is left to the default branch.
+// classifyError preserves Timeout/Limit/PermissionDenied/Business priority.
+// Unmarked Unavailable remains ServiceUnavailable. Other errors can use a
+// confirmed local Network/Codec origin, including Dubbo errors without a Triple
+// status. Unmarked or conflicting evidence falls back to Unknown.
 func classifyError(err error) ErrorType {
 	if err == nil {
 		return ErrorTypeUnknown
 	}
-	// TODO: Support dubbo protocol error classification
-	// Get the error code from triple protocol error
+	// Dubbo wire status classification remains separate from local origins.
 	code := triple_protocol.CodeOf(err)
 
 	switch code {
@@ -124,9 +90,17 @@ func classifyError(err error) ErrorType {
 	case triple_protocol.CodeResourceExhausted:
 		return ErrorTypeLimit
 	case triple_protocol.CodeUnavailable, triple_protocol.CodePermissionDenied:
-		return ErrorTypeServiceUnavailable
+		if code == triple_protocol.CodePermissionDenied || rpcerror.Of(err) == rpcerror.Unknown {
+			return ErrorTypeServiceUnavailable
+		}
 	case triple_protocol.CodeBizError:
 		return ErrorTypeBusinessFailed
+	}
+	switch rpcerror.Of(err) {
+	case rpcerror.Network:
+		return ErrorTypeNetworkFailure
+	case rpcerror.Codec:
+		return ErrorTypeCodec
 	default:
 		return ErrorTypeUnknown
 	}

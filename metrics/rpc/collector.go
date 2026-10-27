@@ -71,35 +71,33 @@ func (c *rpcCollector) start() {
 }
 
 func (c *rpcCollector) beforeInvokeHandler(event *metricsEvent) {
-	url := event.invoker.GetURL()
-	role := getRole(url)
+	role := event.role
 
 	if role == "" {
 		return
 	}
-	labels := buildLabels(url, event.invocation)
+	labels := event.labels
 	c.recordQps(role, labels)
 	c.incRequestsProcessingTotal(role, labels)
 }
 
 func (c *rpcCollector) afterInvokeHandler(event *metricsEvent) {
-	url := event.invoker.GetURL()
-	role := getRole(url)
+	role := event.role
 
 	if role == "" {
 		return
 	}
-	labels := buildLabels(url, event.invocation)
+	labels := event.labels
 	c.incRequestsTotal(role, labels)
 	c.decRequestsProcessingTotal(role, labels)
-	if event.result != nil {
-		if event.result.Error() == nil {
+	if event.hasResult {
+		if event.err == nil {
 			c.incRequestsSucceedTotal(role, labels)
 		} else {
 			// Increment total failed count
 			c.incRequestsFailedTotal(role, labels)
 			// Classify and increment granular error metrics
-			errType := classifyError(event.result.Error())
+			errType := classifyError(event.err)
 			c.incRequestsFailedByType(role, labels, errType)
 		}
 	}
@@ -179,6 +177,12 @@ func (c *rpcCollector) incRequestsFailedByType(role string, labels map[string]st
 	}
 
 	switch errType {
+	case ErrorTypeNetworkFailure:
+		ms.requestsNetworkFailedTotal.Inc(labels)
+		ms.requestsNetworkFailedTotalAggregate.Inc(labels)
+	case ErrorTypeCodec:
+		ms.requestsCodecFailedTotal.Inc(labels)
+		ms.requestsCodecFailedTotalAggregate.Inc(labels)
 	case ErrorTypeTimeout:
 		ms.requestsTimeoutTotal.Inc(labels)
 		ms.requestsTimeoutTotalAggregate.Inc(labels)

@@ -60,6 +60,10 @@ type rpcCommonMetrics struct {
 	requestsBusinessFailedTotalAggregate     metrics.AggregateCounterVec
 	requestsUnknownFailedTotal               metrics.CounterVec
 	requestsUnknownFailedTotalAggregate      metrics.AggregateCounterVec
+	requestsNetworkFailedTotal               metrics.CounterVec
+	requestsNetworkFailedTotalAggregate      metrics.AggregateCounterVec
+	requestsCodecFailedTotal                 metrics.CounterVec
+	requestsCodecFailedTotalAggregate        metrics.AggregateCounterVec
 }
 
 // buildMetricSet will call init functions to initialize the metricSet
@@ -74,6 +78,7 @@ func buildMetricSet(registry metrics.MetricRegistry) *metricSet {
 }
 
 func (pm *providerMetrics) init(registry metrics.MetricRegistry) {
+	pm.rpcCommonMetrics.initFailureOrigins(registry, "provider")
 	pm.qpsTotal = metrics.NewQpsMetricVec(registry, metrics.NewMetricKey("dubbo_provider_qps_total", "The number of requests received by the provider per second"))
 	pm.requestsTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey("dubbo_provider_requests_total", "The total number of received requests by the provider"))
 	pm.requestsTotalAggregate = metrics.NewAggregateCounterVec(registry, metrics.NewMetricKey("dubbo_provider_requests_total_aggregate", "The total number of received requests by the provider under the sliding window"))
@@ -111,6 +116,7 @@ func (pm *providerMetrics) init(registry metrics.MetricRegistry) {
 }
 
 func (cm *consumerMetrics) init(registry metrics.MetricRegistry) {
+	cm.rpcCommonMetrics.initFailureOrigins(registry, "consumer")
 	cm.qpsTotal = metrics.NewQpsMetricVec(registry, metrics.NewMetricKey("dubbo_consumer_qps_total", "The number of requests sent by consumers per second"))
 	cm.requestsTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey("dubbo_consumer_requests_total", "The total number of requests sent by consumers"))
 	cm.requestsTotalAggregate = metrics.NewAggregateCounterVec(registry, metrics.NewMetricKey("dubbo_consumer_requests_total_aggregate", "The total number of requests sent by consumers under the sliding window"))
@@ -145,4 +151,12 @@ func (cm *consumerMetrics) init(registry metrics.MetricRegistry) {
 	cm.requestsBusinessFailedTotalAggregate = metrics.NewAggregateCounterVec(registry, metrics.NewMetricKey("dubbo_consumer_requests_business_failed_total_aggregate", "Total Failed Business Requests under the sliding window"))
 	cm.requestsUnknownFailedTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey("dubbo_consumer_requests_unknown_failed_total", "Total Unknown Failed Requests"))
 	cm.requestsUnknownFailedTotalAggregate = metrics.NewAggregateCounterVec(registry, metrics.NewMetricKey("dubbo_consumer_requests_unknown_failed_total_aggregate", "Total Unknown Failed Requests under the sliding window"))
+}
+
+func (m *rpcCommonMetrics) initFailureOrigins(registry metrics.MetricRegistry, side string) {
+	prefix := "dubbo_" + side + "_requests_failed_"
+	m.requestsNetworkFailedTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey(prefix+"network_total", "Total confirmed network failed requests"))
+	m.requestsNetworkFailedTotalAggregate = metrics.NewAggregateCounterVec(registry, metrics.NewMetricKey(prefix+"network_total_aggregate", "Network failed requests under the sliding window"))
+	m.requestsCodecFailedTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey(prefix+"codec_total", "Total confirmed codec failed requests"))
+	m.requestsCodecFailedTotalAggregate = metrics.NewAggregateCounterVec(registry, metrics.NewMetricKey(prefix+"codec_total_aggregate", "Codec failed requests under the sliding window"))
 }

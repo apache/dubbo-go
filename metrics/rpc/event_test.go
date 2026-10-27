@@ -38,11 +38,7 @@ func TestMetricsEventType(t *testing.T) {
 	url := base.NewBaseInvoker(&common.URL{})
 	invoc := invocation.NewRPCInvocation("TestMethod", []any{}, nil)
 
-	event := &metricsEvent{
-		name:       BeforeInvoke,
-		invoker:    url,
-		invocation: invoc,
-	}
+	event := NewBeforeInvokeEvent(url, invoc)
 
 	assert.Equal(t, constant.MetricsRpc, event.Type())
 }
@@ -55,8 +51,7 @@ func TestNewBeforeInvokeEvent(t *testing.T) {
 
 	assert.NotNil(t, event)
 	assert.Equal(t, BeforeInvoke, event.name)
-	assert.Equal(t, url, event.invoker)
-	assert.Equal(t, invoc, event.invocation)
+	assert.Equal(t, "TestMethod", event.labels[constant.TagMethod])
 }
 
 func TestNewAfterInvokeEvent(t *testing.T) {
@@ -69,8 +64,8 @@ func TestNewAfterInvokeEvent(t *testing.T) {
 
 	assert.NotNil(t, event)
 	assert.Equal(t, AfterInvoke, event.name)
-	assert.Equal(t, url, event.invoker)
-	assert.Equal(t, invoc, event.invocation)
+	assert.Equal(t, "TestMethod", event.labels[constant.TagMethod])
 	assert.Equal(t, costTime, event.costTime)
-	assert.Equal(t, res, event.result)
+	assert.True(t, event.hasResult)
+	assert.Nil(t, event.err)
 }
