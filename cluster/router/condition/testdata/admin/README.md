@@ -55,23 +55,10 @@ client is configured with `dubbo.config-center.root-path=/dubbo` and
 
 Full lifecycle checks also need [the Nacos SDK deletion fix](https://github.com/apache/dubbo-go/pull/3771)
 (`v2.3.5`) and [GOST's watch-event dispatch fix](https://github.com/dubbogo/gost/pull/155)
-(`cb5a982116a3f92c069411808babce18e5833b15`). The base Go revision uses SDK
-`v2.2.5` and GOST `v1.14.5`: native Nacos deletion and ZooKeeper updates fail with
-those versions. The tests keep these failures visible rather than calling
-`Process` directly in the RPC run. To check the fixes before they merge, use a
-temporary modfile and a local GOST checkout containing PR #155:
-
-```sh
-condition_validation_dir=$(mktemp -d)
-cp go.mod go.sum "$condition_validation_dir/"
-go mod edit -modfile="$condition_validation_dir/go.mod" \
-  -require=github.com/nacos-group/nacos-sdk-go/v2@v2.3.5 \
-  -replace=github.com/dubbogo/gost=/absolute/path/to/gost-with-pr-155
-DUBBO_GO_CONDITION_NACOS=127.0.0.1:18848 \
-DUBBO_GO_CONDITION_ZK=127.0.0.1:21811 \
-go test -mod=mod -modfile="$condition_validation_dir/go.mod" \
-  ./cluster/router/condition -run '^TestAdminConditionConfigCenterRPC$' -v -count=1
-```
+(included in `github.com/dubbogo/gost` ≥ `v1.15.0`). This tree already requires those
+versions in `go.mod`. Older combinations (`nacos-sdk-go/v2` `v2.2.5`, GOST `v1.14.5`)
+fail native Nacos deletion and ZooKeeper updates; the tests keep those failures
+visible rather than calling `Process` directly in the RPC run.
 
 The test checks a rule present before subscription, updates, rule disable/enable,
 forced empty results and deletion. The application case also checks disabling A
