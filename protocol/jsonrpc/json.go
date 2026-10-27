@@ -215,10 +215,13 @@ func (r *serverRequest) reset() {
 func (r *serverRequest) UnmarshalJSON(raw []byte) error {
 	r.reset()
 
-	type req *serverRequest
-	// Attention: if do not define a new struct named @req, the json.Unmarshal will invoke
-	// (*serverRequest)UnmarshalJSON recursively.
-	if err := json.Unmarshal(raw, req(r)); err != nil {
+	// req has serverRequest's fields and none of its methods. Unmarshal into
+	// (*req)(r) so this method is not called again. A named pointer type
+	// (type req *serverRequest) still exposes (*serverRequest).UnmarshalJSON
+	// to encoding/json v2 (Go 1.27+, or GOEXPERIMENT=jsonv2) and the call
+	// recurses until the process dies with a stack overflow (golang/go#75361).
+	type req serverRequest
+	if err := json.Unmarshal(raw, (*req)(r)); err != nil {
 		return errors.New("bad request")
 	}
 
