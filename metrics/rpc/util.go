@@ -29,14 +29,16 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 // buildLabels will build the labels for the rpc metrics
 func buildLabels(url *common.URL, invocation base.Invocation) map[string]string {
+	applicationName, applicationVersion := metricApplication(url)
 	return map[string]string{
-		constant.TagApplicationName:    url.GetParam(constant.ApplicationKey, ""),
-		constant.TagApplicationVersion: url.GetParam(constant.AppVersionKey, ""),
+		constant.TagApplicationName:    applicationName,
+		constant.TagApplicationVersion: applicationVersion,
 		constant.TagHostname:           common.GetLocalHostName(),
 		constant.TagIp:                 common.GetLocalIp(),
 		constant.TagInterface:          url.Service(),
@@ -44,6 +46,26 @@ func buildLabels(url *common.URL, invocation base.Invocation) map[string]string 
 		constant.TagGroup:              url.Group(),
 		constant.TagVersion:            url.GetParam(constant.VersionKey, ""),
 	}
+}
+
+// metricApplication keeps consumer metrics on the local application. A
+// discovered provider URL retains the remote application in its params, while
+// the reference URL carries the local application config in its attributes.
+func metricApplication(url *common.URL) (string, string) {
+	if isConsumer(url) {
+		raw, _ := url.GetAttribute(constant.ApplicationKey)
+		switch application := raw.(type) {
+		case *global.ApplicationConfig:
+			if application != nil && application.Name != "" {
+				return application.Name, application.Version
+			}
+		case global.ApplicationConfig:
+			if application.Name != "" {
+				return application.Name, application.Version
+			}
+		}
+	}
+	return url.GetParam(constant.ApplicationKey, ""), url.GetParam(constant.AppVersionKey, "")
 }
 
 // getRole will get the application role from the url
