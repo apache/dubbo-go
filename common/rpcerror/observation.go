@@ -21,15 +21,23 @@ import (
 	"context"
 	"reflect"
 	"sync"
+	"time"
 )
 
 // Observation belongs to one local RPC attempt. It never completes a business
 // request, closes a response channel, or invokes a user's callback.
 type Observation struct {
-	mu      sync.Mutex
-	session any
-	origin  Origin
-	frozen  bool
+	mu          sync.Mutex
+	invocation  any
+	session     any
+	origin      Origin
+	frozen      bool
+	async       bool
+	returned    bool
+	pending     *Completion
+	notify      func(Completion)
+	timer       *time.Timer
+	stopContext func() bool
 }
 
 type observationKey struct{}
@@ -38,12 +46,46 @@ func WithObservation(ctx context.Context) (context.Context, *Observation) {
 	o := &Observation{}
 	return context.WithValue(ctx, observationKey{}, o), o
 }
+
+// WithInvocationObservation binds a consumer observation to its invocation.
+// Inherited contexts alone do not authorize another RPC to use the observation.
+// Invocation identity must be a non-nil pointer, not an equal value copy.
+func WithInvocationObservation(ctx context.Context, invocation any) (context.Context, *Observation) {
+	ctx, o := WithObservation(ctx)
+	if validInvocationIdentity(invocation) {
+		o.invocation = invocation
+	}
+	return ctx, o
+}
+
 func ObservationFromContext(ctx context.Context) *Observation {
 	if ctx == nil {
 		return nil
 	}
 	o, _ := ctx.Value(observationKey{}).(*Observation)
 	return o
+}
+
+// ClaimObservation transfers monitoring to the matching remoting request once.
+// The invocation reference is released on claim, so callback observations do not
+// retain the mutable invocation. Unbound/provider observations cannot be claimed.
+func ClaimObservation(ctx context.Context, invocation any) *Observation {
+	o := ObservationFromContext(ctx)
+	if o == nil || !validInvocationIdentity(invocation) {
+		return nil
+	}
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	if o.frozen || o.invocation == nil || o.invocation != invocation {
+		return nil
+	}
+	o.invocation = nil
+	return o
+}
+
+func validInvocationIdentity(invocation any) bool {
+	v := reflect.ValueOf(invocation)
+	return v.IsValid() && v.Kind() == reflect.Pointer && !v.IsNil()
 }
 
 // BindSession runs before sending, including before a very fast response.
@@ -69,7 +111,7 @@ func (o *Observation) Record(session any, err error) bool {
 	}
 	o.mu.Lock()
 	defer o.mu.Unlock()
-	if o.frozen || o.session == nil || o.session != session {
+	if o.frozen || o.pending != nil || o.session == nil || o.session != session {
 		return false
 	}
 	if o.origin == Unknown {
@@ -88,8 +130,7 @@ func (o *Observation) Freeze() Origin {
 	}
 	o.mu.Lock()
 	defer o.mu.Unlock()
-	o.frozen = true
-	o.session = nil
+	o.finishLocked()
 	if o.origin == Codec || o.origin == Network {
 		return o.origin
 	}

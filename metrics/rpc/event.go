@@ -50,6 +50,7 @@ type metricsName uint8
 const (
 	BeforeInvoke metricsName = iota
 	AfterInvoke
+	ObservationExpired
 )
 
 func NewBeforeInvokeEvent(invoker base.Invoker, invocation base.Invocation) metrics.MetricsEvent {
@@ -58,6 +59,17 @@ func NewBeforeInvokeEvent(invoker base.Invoker, invocation base.Invocation) metr
 		role:   getRole(invoker.GetURL()),
 		labels: buildLabels(invoker.GetURL(), invocation),
 	}
+}
+
+// NewCompletionEvent uses the identity captured before sending, so callbacks do
+// not retain or read a mutable invocation, result, URL, or session.
+func NewCompletionEvent(before metrics.MetricsEvent, duration time.Duration, c rpcerror.Completion) metrics.MetricsEvent {
+	start := before.(*metricsEvent)
+	name := AfterInvoke
+	if !c.Known {
+		name = ObservationExpired
+	}
+	return &metricsEvent{name: name, costTime: duration, role: start.role, labels: start.labels, err: c.Err, hasResult: c.Known, origin: c.Origin}
 }
 
 func NewAfterInvokeEvent(invoker base.Invoker, invocation base.Invocation, costTime time.Duration, result result.Result) metrics.MetricsEvent {

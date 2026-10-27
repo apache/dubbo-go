@@ -131,3 +131,32 @@ func TestObservedOriginDoesNotChangeBusinessResult(t *testing.T) {
 		t.Fatal("stale evidence must not turn success into failure")
 	}
 }
+
+func TestCallbackExpiryDoesNotInventMetrics(t *testing.T) {
+	reg := prom.NewRegistry()
+	url, _ := common.NewURL("dubbo://127.0.0.1/Fixture?registry.role=" + strconv.Itoa(common.CONSUMER))
+	registry := metricsProm.NewPromMetricRegistry(reg, url)
+	c := &rpcCollector{registry: registry, metricSet: buildMetricSet(registry)}
+	before := NewBeforeInvokeEvent(base.NewBaseInvoker(url), invocation.NewRPCInvocation("Call", nil, nil))
+	c.beforeInvokeHandler(before.(*metricsEvent))
+	expired := NewCompletionEvent(before, time.Second, rpcerror.Completion{}).(*metricsEvent)
+	if expired.name != ObservationExpired {
+		t.Fatal("expiry treated as a confirmed result")
+	}
+	c.observationExpiredHandler(expired)
+	families, err := reg.Gather()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range families {
+		switch f.GetName() {
+		case "dubbo_consumer_qps_total":
+		case "dubbo_consumer_requests_processing_total":
+			if f.Metric[0].GetGauge().GetValue() != 0 {
+				t.Fatal("expired observation retained processing")
+			}
+		default:
+			t.Fatalf("unconfirmed expiry produced %s", f.GetName())
+		}
+	}
+}

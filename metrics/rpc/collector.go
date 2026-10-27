@@ -63,11 +63,20 @@ func (c *rpcCollector) start() {
 				c.beforeInvokeHandler(rpcEvent)
 			case AfterInvoke:
 				c.afterInvokeHandler(rpcEvent)
+			case ObservationExpired:
+				c.observationExpiredHandler(rpcEvent)
 			default:
 			}
 		} else {
 			logger.Error("[Metrics][RPC] bad metrics event found in RPC collector")
 		}
+	}
+}
+
+// Expiry closes monitoring only; it does not prove an RPC result or latency.
+func (c *rpcCollector) observationExpiredHandler(event *metricsEvent) {
+	if event.role != "" {
+		c.decRequestsProcessingTotal(event.role, event.labels)
 	}
 }
 
