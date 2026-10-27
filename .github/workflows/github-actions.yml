@@ -100,6 +100,15 @@ jobs:
       - name: Setup Go
         uses: ./.github/actions/setup-go
 
+      # ubuntu-latest (26.04) ships JDK 25. Dubbo 3.3.6 JsonUtils throws
+      # NoClassDefFoundError there (apache/dubbo#15754, not yet released).
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
       - name: Run integration tests
         env:
           INTEGRATION_REPO: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
