@@ -51,8 +51,8 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/config_center"
-	_ "dubbo.apache.org/dubbo-go/v3/config_center/nacos"
-	_ "dubbo.apache.org/dubbo-go/v3/config_center/zookeeper"
+	_ "dubbo.apache.org/dubbo-go/v3/config_center/nacos"     // Blank import: init registers the nacos config-center factory so tests can create DynamicConfiguration via extension.
+	_ "dubbo.apache.org/dubbo-go/v3/config_center/zookeeper" // Blank import: init registers the zookeeper config-center factory so tests can create DynamicConfiguration via extension.
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple"
