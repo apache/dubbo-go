@@ -41,6 +41,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	commonCfg "dubbo.apache.org/dubbo-go/v3/common/config"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
@@ -331,7 +332,7 @@ func (c *Client) getOrCreateGettyClient(addr string, newClientConn func(*Client,
 
 func (c *Client) transfer(session getty.Session, request *remoting.Request, timeout time.Duration) (int, int, error) {
 	totalLen, sendLen, err := session.WritePkg(request, timeout)
-	return totalLen, sendLen, perrors.WithStack(err)
+	return totalLen, sendLen, perrors.WithStack(rpcerror.FromNetworkOperation(err))
 }
 
 func (c *Client) resetRpcConn(expected *gettyRPCClient) {

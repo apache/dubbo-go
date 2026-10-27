@@ -34,6 +34,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
 	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
@@ -173,7 +174,7 @@ func (c *ProtocolCodec) Decode(p *DubboPackage) error {
 		p.Body = &ResponsePayload{}
 		exception, err := decoder.Decode()
 		if err != nil {
-			return perrors.WithStack(err)
+			return perrors.WithStack(rpcerror.Mark(err, rpcerror.Codec))
 		}
 		p.Body.(*ResponsePayload).Exception = fmt.Errorf("java exception:%s", exception.(string))
 		return nil
@@ -189,7 +190,7 @@ func (c *ProtocolCodec) Decode(p *DubboPackage) error {
 			RspObj: remoting.GetPendingResponse(remoting.SequenceType(p.Header.ID)).Reply,
 		}
 	}
-	return c.serializer.Unmarshal(body, p)
+	return rpcerror.Mark(c.serializer.Unmarshal(body, p), rpcerror.Codec)
 }
 
 func (c *ProtocolCodec) SetSerializer(serializer Serializer) {
@@ -232,7 +233,7 @@ func packRequest(p DubboPackage, serializer Serializer) ([]byte, error) {
 	} else {
 		body, err := serializer.Marshal(p)
 		if err != nil {
-			return nil, err
+			return nil, rpcerror.Mark(err, rpcerror.Codec)
 		}
 		pkgLen = len(body)
 		if pkgLen > int(DEFAULT_LEN) { // recommand 8M
@@ -269,7 +270,7 @@ func packResponse(p DubboPackage, serializer Serializer) ([]byte, error) {
 	// body
 	body, err := serializer.Marshal(p)
 	if err != nil {
-		return nil, err
+		return nil, rpcerror.Mark(err, rpcerror.Codec)
 	}
 
 	pkgLen := len(body)

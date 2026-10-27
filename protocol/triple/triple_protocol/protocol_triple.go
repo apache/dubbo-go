@@ -37,6 +37,10 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
+)
+
 const (
 	tripleUnaryHeaderCompression       = "Content-Encoding"
 	tripleUnaryHeaderAcceptCompression = "Accept-Encoding"
@@ -560,7 +564,7 @@ func (m *tripleUnaryMarshaler) Marshal(message any) *Error {
 	}
 	data, err := m.codec.Marshal(message)
 	if err != nil {
-		return errorf(CodeInternal, "marshal message: %w", err)
+		return errorf(CodeInternal, "marshal message: %w", rpcerror.Mark(err, rpcerror.Codec))
 	}
 	// Can't avoid allocating the slice, but we can reuse it.
 	uncompressed := bytes.NewBuffer(data)
@@ -675,7 +679,7 @@ func (u *tripleUnaryUnmarshaler) UnmarshalFunc(message any, unmarshal func([]byt
 		data = decompressed
 	}
 	if err := unmarshal(data.Bytes(), message); err != nil {
-		return errorf(CodeInvalidArgument, "unmarshal into %T: %w", message, err)
+		return errorf(CodeInvalidArgument, "unmarshal into %T: %w", message, rpcerror.Mark(err, rpcerror.Codec))
 	}
 	return nil
 }

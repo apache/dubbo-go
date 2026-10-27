@@ -22,6 +22,10 @@ import (
 	"sync"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
+)
+
 const (
 	initialBufferSize    = 512
 	maxRecycleBufferSize = 8 * 1024 * 1024 // Don't recycle buffers larger than this.
@@ -66,7 +70,7 @@ func marshalToPool(pool *bufferPool, appender marshalAppender, message any) (*by
 	raw, err := appender.MarshalAppend(buffer.Bytes(), message)
 	if err != nil {
 		pool.Put(buffer)
-		return nil, errorf(CodeInternal, "marshal message: %w", err)
+		return nil, errorf(CodeInternal, "marshal message: %w", rpcerror.Mark(err, rpcerror.Codec))
 	}
 	if cap(raw) > buffer.Cap() {
 		// MarshalAppend grew the slice: swap the larger array in so it can be
