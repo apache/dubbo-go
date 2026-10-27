@@ -176,8 +176,7 @@ func RemovePendingResponse(seq SequenceType) *PendingResponse {
 	if pendingResponses == nil {
 		return nil
 	}
-	if presp, ok := pendingResponses.Load(seq); ok {
-		pendingResponses.Delete(seq)
+	if presp, ok := pendingResponses.LoadAndDelete(seq); ok {
 		return presp.(*PendingResponse)
 	}
 	return nil

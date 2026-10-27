@@ -18,12 +18,15 @@
 package impl
 
 import (
+	"bytes"
+	"encoding/binary"
 	"errors"
 	"testing"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
 )
 
 type failingSerializer struct{ err error }
@@ -39,5 +42,21 @@ func TestSerializationFailureOrigin(t *testing.T) {
 		if !errors.Is(err, cause) || rpcerror.Of(err) != rpcerror.Codec || err.Error() != cause.Error() {
 			t.Fatalf("lost serialization cause: %v", err)
 		}
+	}
+}
+
+func TestLateResponseWithoutPending(t *testing.T) {
+	id := remoting.SequenceID()
+	data := append([]byte(nil), DubboResponseHeaderBytes[:]...)
+	data[2] |= 2 // Hessian2 serialization ID.
+	binary.BigEndian.PutUint64(data[4:], uint64(id))
+	binary.BigEndian.PutUint32(data[12:], 1)
+	data = append(data, 0xff) // Do not decode a retired caller's body/Reply.
+	pkg := NewDubboPackage(bytes.NewBuffer(data))
+	if err := pkg.Unmarshal(); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := pkg.Body.(*ResponsePayload); !ok {
+		t.Fatal("late frame must have a safe empty response")
 	}
 }
