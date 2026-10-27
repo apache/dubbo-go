@@ -279,6 +279,9 @@ func (c *DubboCodec) decodeResponse(data []byte) (*remoting.Response, int, error
 		}
 
 		logger.Warnf("[Dubbo][Codec] pkg.Unmarshal failed, dataLen=%d, err=%v", buf.Len(), err)
+		if pkg.Codec.HasResponseHeader() {
+			err = &remoting.ResponseDecodeError{RequestID: pkg.Header.ID, Cause: err}
+		}
 		return nil, 0, perrors.WithStack(err)
 	}
 	response := &remoting.Response{

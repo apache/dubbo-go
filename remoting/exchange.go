@@ -30,6 +30,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
 )
 
 var (
@@ -130,14 +131,15 @@ type AsyncCallbackResponse struct {
 // PendingResponse is the client sends request to server, there is one
 // pendingResponse at client side to wait the response from server.
 type PendingResponse struct {
-	seq       int64
-	Err       error
-	start     time.Time
-	ReadStart time.Time
-	Callback  common.AsyncCallback
-	response  *Response
-	Reply     any
-	Done      chan struct{}
+	seq         int64
+	Err         error
+	start       time.Time
+	ReadStart   time.Time
+	Callback    common.AsyncCallback
+	response    *Response
+	Reply       any
+	Done        chan struct{}
+	Observation *rpcerror.Observation
 }
 
 // NewPendingResponse aims to create PendingResponse.

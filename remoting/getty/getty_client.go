@@ -237,6 +237,9 @@ func (c *Client) RequestContext(ctx context.Context, request *remoting.Request, 
 	if session == nil {
 		return errSessionNotExist
 	}
+	if response != nil {
+		response.Observation.BindSession(session)
+	}
 	var (
 		totalLen int
 		sendLen  int

@@ -39,11 +39,12 @@ import (
 )
 
 type ProtocolCodec struct {
-	reader     *bufio.Reader
-	pkgType    PackageType
-	bodyLen    int
-	serializer Serializer
-	headerRead bool
+	reader         *bufio.Reader
+	pkgType        PackageType
+	bodyLen        int
+	serializer     Serializer
+	headerRead     bool
+	responseHeader bool
 }
 
 func (c *ProtocolCodec) ReadHeader(header *DubboHeader) error {
@@ -105,8 +106,14 @@ func (c *ProtocolCodec) ReadHeader(header *DubboHeader) error {
 		return hessian.ErrBodyNotEnough
 	}
 	c.headerRead = true
+	c.responseHeader = buf[0] == MAGIC_HIGH && buf[1] == MAGIC_LOW &&
+		header.Type&PackageResponse != 0 && header.Type&PackageHeartbeat == 0
 	return perrors.WithStack(err)
 }
+
+// HasResponseHeader is true only after validating a complete non-event response
+// frame. Partial/malformed headers must never be used to attribute failures.
+func (c *ProtocolCodec) HasResponseHeader() bool { return c.responseHeader }
 
 func (c *ProtocolCodec) EncodeHeader(p DubboPackage) []byte {
 	header := p.Header

@@ -115,3 +115,19 @@ func TestFailureCountersAndSnapshot(t *testing.T) {
 		})
 	}
 }
+
+func TestObservedOriginDoesNotChangeBusinessResult(t *testing.T) {
+	url, _ := common.NewURL("dubbo://127.0.0.1/Fixture?registry.role=" + strconv.Itoa(common.CONSUMER))
+	invoker := base.NewBaseInvoker(url)
+	inv := invocation.NewRPCInvocation("Call", nil, nil)
+	cause := errors.New("existing wait error")
+	res := &result.RPCResult{Err: cause}
+	event := NewAfterInvokeEventWithOrigin(invoker, inv, time.Second, res, rpcerror.Codec).(*metricsEvent)
+	if res.Err != cause || event.err != cause || classifyError(rpcerror.Mark(event.err, event.origin)) != ErrorTypeCodec {
+		t.Fatal("sidecar evidence must not replace the business error")
+	}
+	success := NewAfterInvokeEventWithOrigin(invoker, inv, time.Second, &result.RPCResult{}, rpcerror.Codec).(*metricsEvent)
+	if success.err != nil {
+		t.Fatal("stale evidence must not turn success into failure")
+	}
+}

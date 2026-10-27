@@ -24,6 +24,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 )
 
@@ -97,7 +98,7 @@ func (c *rpcCollector) afterInvokeHandler(event *metricsEvent) {
 			// Increment total failed count
 			c.incRequestsFailedTotal(role, labels)
 			// Classify and increment granular error metrics
-			errType := classifyError(event.err)
+			errType := classifyError(rpcerror.Mark(event.err, event.origin))
 			c.incRequestsFailedByType(role, labels, errType)
 		}
 	}

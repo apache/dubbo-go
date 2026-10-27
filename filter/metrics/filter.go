@@ -25,6 +25,7 @@ import (
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
+	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
 	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	"dubbo.apache.org/dubbo-go/v3/metrics/rpc"
@@ -44,12 +45,13 @@ type metricsFilter struct{}
 
 // Invoke publish the BeforeInvokeEvent and AfterInvokeEvent to metrics bus
 func (mf *metricsFilter) Invoke(ctx context.Context, invoker base.Invoker, invocation base.Invocation) result.Result {
+	ctx, observation := rpcerror.WithObservation(ctx)
 	metrics.Publish(rpc.NewBeforeInvokeEvent(invoker, invocation))
 	start := time.Now()
 	res := invoker.Invoke(ctx, invocation)
 	end := time.Now()
 	duration := end.Sub(start)
-	metrics.Publish(rpc.NewAfterInvokeEvent(invoker, invocation, duration, res))
+	metrics.Publish(rpc.NewAfterInvokeEventWithOrigin(invoker, invocation, duration, res, observation.Freeze()))
 	return res
 }
 

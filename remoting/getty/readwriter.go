@@ -51,6 +51,10 @@ func NewRpcClientPackageHandler(client *Client) *RpcClientPackageHandler {
 func (p *RpcClientPackageHandler) Read(ss getty.Session, data []byte) (any, int, error) {
 	rsp, length, err := (p.client.codec).Decode(data)
 	if err != nil {
+		var failure *remoting.ResponseDecodeError
+		if errors.As(err, &failure) && failure != nil {
+			remoting.ObserveResponseDecodeFailure(failure.RequestID, ss, err)
+		}
 		err = perrors.WithStack(err)
 	}
 	if rsp == ((*remoting.DecodeResult)(nil)) {

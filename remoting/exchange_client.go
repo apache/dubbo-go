@@ -30,6 +30,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
+	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
 )
@@ -142,6 +143,7 @@ func (client *ExchangeClient) RequestContext(ctx context.Context, invocation *ba
 	request.TwoWay = true
 
 	rsp := NewPendingResponse(request.ID)
+	rsp.Observation = rpcerror.ObservationFromContext(ctx)
 	rsp.response = NewResponse(request.ID, "2.0.2")
 	rsp.Reply = (*invocation).Reply()
 	AddPendingResponse(rsp)
@@ -196,6 +198,7 @@ func (client *ExchangeClient) AsyncRequestContext(ctx context.Context, invocatio
 	request.TwoWay = true
 
 	rsp := NewPendingResponse(request.ID)
+	rsp.Observation = rpcerror.ObservationFromContext(ctx)
 	rsp.response = NewResponse(request.ID, "2.0.2")
 	rsp.Callback = callback
 	rsp.Reply = (*invocation).Reply()

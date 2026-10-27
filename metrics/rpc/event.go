@@ -23,6 +23,7 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
@@ -36,6 +37,7 @@ type metricsEvent struct {
 	labels    map[string]string
 	err       error
 	hasResult bool
+	origin    rpcerror.Origin
 }
 
 // Type returns the type of the event, it is used for metrics bus to dispatch the event to rpc collector
@@ -59,6 +61,12 @@ func NewBeforeInvokeEvent(invoker base.Invoker, invocation base.Invocation) metr
 }
 
 func NewAfterInvokeEvent(invoker base.Invoker, invocation base.Invocation, costTime time.Duration, result result.Result) metrics.MetricsEvent {
+	return NewAfterInvokeEventWithOrigin(invoker, invocation, costTime, result, rpcerror.Unknown)
+}
+
+// NewAfterInvokeEventWithOrigin snapshots local request evidence independently
+// of the error returned to the user. Success always remains success.
+func NewAfterInvokeEventWithOrigin(invoker base.Invoker, invocation base.Invocation, costTime time.Duration, result result.Result, origin rpcerror.Origin) metrics.MetricsEvent {
 	var err error
 	if result != nil {
 		err = result.Error()
@@ -70,5 +78,6 @@ func NewAfterInvokeEvent(invoker base.Invoker, invocation base.Invocation, costT
 		labels:    buildLabels(invoker.GetURL(), invocation),
 		err:       err,
 		hasResult: result != nil,
+		origin:    origin,
 	}
 }
