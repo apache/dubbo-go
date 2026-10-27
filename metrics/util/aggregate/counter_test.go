@@ -19,8 +19,42 @@ package aggregate
 
 import (
 	"testing"
+	"testing/synctest"
 	"time"
 )
+
+func TestTimeWindowCounterQPS(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		counter := NewTimeWindowCounter(10, 120)
+		if got := counter.QPS(); got != 0 {
+			t.Fatalf("empty QPS = %v, want 0", got)
+		}
+		counter.Add(6)
+		if got := counter.QPS(); got != 0.5 {
+			t.Fatalf("QPS = %v, want 0.5", got)
+		}
+		time.Sleep(12 * time.Second)
+		counter.Add(6)
+		if got := counter.QPS(); got != 0.5 {
+			t.Fatalf("two-pane QPS = %v, want 0.5", got)
+		}
+		time.Sleep(109 * time.Second)
+		if got := counter.Count(); got != 6 {
+			t.Fatalf("partially expired count = %v, want 6", got)
+		}
+		if got := counter.QPS(); got != 0.5 {
+			t.Fatalf("partially expired QPS = %v, want 0.5", got)
+		}
+		time.Sleep(12 * time.Second)
+		if got := counter.QPS(); got != 0 {
+			t.Fatalf("expired QPS = %v, want 0", got)
+		}
+		counter.Inc()
+		if got := counter.QPS(); got != 1.0/12 {
+			t.Fatalf("resumed QPS = %v, want 1/12", got)
+		}
+	})
+}
 
 func TestTimeWindowCounterCount(t1 *testing.T) {
 	tests := []struct {
