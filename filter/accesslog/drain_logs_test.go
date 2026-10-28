@@ -28,6 +28,7 @@ import (
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestDrainLogsReturnsAfterChannelClosed verifies that drainLogs does not hang
@@ -105,7 +106,7 @@ func TestDrainLogsDrainsBufferedData(t *testing.T) {
 	f.drainLogs()
 
 	content, err := os.ReadFile(tmp)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 3, strings.Count(string(content), "\n"),
 		"all buffered log entries should be written")
 }
