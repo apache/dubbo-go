@@ -223,9 +223,11 @@ func (c *Code) UnmarshalText(data []byte) error {
 }
 
 // CodeOf returns the error's status code if it is or wraps an [*Error] and
-// [CodeUnknown] otherwise.
+// [CodeUnknown] otherwise. A typed nil [*Error] (e.g. one assigned to an
+// [error] interface and returned as nil) is not caught by err == nil and
+// also yields [CodeUnknown] instead of panicking.
 func CodeOf(err error) Code {
-	if tripleErr, ok := asError(err); ok {
+	if tripleErr, ok := asError(err); ok && tripleErr != nil {
 		return tripleErr.Code()
 	}
 	return CodeUnknown

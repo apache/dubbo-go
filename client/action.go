@@ -18,20 +18,19 @@
 package client
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
+	"regexp"
 	"strconv"
 	"time"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-	gxstrings "github.com/dubbogo/gost/strings"
 
 	constant2 "github.com/dubbogo/triple/pkg/common/constant"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -127,6 +126,13 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 		ref.Loadbalance = constant.LoadBalanceKeyP2C
 	}
 
+	// The reference-level timeout (already in getURLMap) takes precedence over the consumer-level one.
+	// TODO: remove consumer timeout fallback after old config removed
+	timeout := ref.RequestTimeout
+	if len(timeout) == 0 {
+		timeout = refOpts.Consumer.RequestTimeout
+	}
+
 	// cfgURL is an interface-level invoker url, in the other words, it represents an interface.
 	cfgURL := common.NewURLWithOptions(
 		common.WithPath(ref.InterfaceName),
@@ -135,8 +141,7 @@ func (refOpts *ReferenceOptions) refer(srv common.RPCService, info *ClientInfo) 
 		common.WithParams(refOpts.getURLMap()),
 		common.WithParamsValue(constant.BeanNameKey, refOpts.id),
 		common.WithParamsValue(constant.MetadataTypeKey, refOpts.metaDataType),
-		// TODO: remove TimeoutKey after old confid removed
-		common.WithParamsValue(constant.TimeoutKey, refOpts.Consumer.RequestTimeout),
+		common.WithParamsValue(constant.TimeoutKey, timeout),
 
 		// Compatibility: propagate legacy reference-level keepalive settings.
 		// TODO: remove KeepAliveInterval and KeepAliveTimeout in version 4.0.0.
@@ -232,7 +237,7 @@ func processUserSpecifiedURLs(ref *global.ReferenceConfig, cfgURL *common.URL) (
 		 The result of urlStrings is a string array: []string{"tri://localhost:10000", "registry://localhost:2181"}.
 	*/
 	var urls []*common.URL
-	urlStrings := gxstrings.RegSplit(ref.URL, "\\s*[;]+\\s*")
+	urlStrings := regexp.MustCompile(`\s*[;]+\s*`).Split(ref.URL, -1)
 
 	for _, urlStr := range urlStrings {
 		serviceURL, err := common.NewURL(urlStr, common.WithProtocol(ref.Protocol))
@@ -293,7 +298,7 @@ func buildInvoker(urls []*common.URL, ref *global.ReferenceConfig) (base.Invoker
 	)
 
 	if len(urls) == 0 {
-		return nil, perrors.New("invoker list is empty")
+		return nil, errors.New("invoker list is empty")
 	}
 
 	invokers := make([]base.Invoker, len(urls))

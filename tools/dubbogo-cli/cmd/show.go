@@ -71,7 +71,7 @@ func show(cmd *cobra.Command, _ []string) {
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Interface", "Method"})
+	table.Header("Interface", "Method")
 
 	if registry != "" {
 		registryFactory, ok := metadata.GetFactory(registry)

@@ -34,11 +34,11 @@ import (
 
 	"github.com/opentracing/opentracing-go"
 
+	"go.yaml.in/yaml/v4"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
-
-	"gopkg.in/yaml.v3"
 )
 
 import (

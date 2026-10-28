@@ -94,14 +94,16 @@ func TestRevisionChangesOnParamsChange(t *testing.T) {
 	assert.NotEqual(t, r1, r2, "revision should change when params (timeout/loadbalance) change")
 }
 
-// 4. method-level differences → revision changes (Java-aligned).
-//
-// Under Java dubbo alignment (ServiceInfo.toDescString() = getMatchKey() + port +
-// path + TreeMap(params).toString()), the bare method LIST is excluded from the
-// revision serialization. Therefore a purely list-level method change with no
-// method-level params must NOT alter the revision. Method-level params (e.g.
-// methods.sayHello.timeout) ARE part of the serialized TreeMap, so a method change
-// that carries method-level params DOES change the revision.
+func TestRevisionIgnoresProviderTimestamp(t *testing.T) {
+	u1 := newTestURL("tri", "50051", "com.example.Greeter", "test-app", "", "", []string{"Greet"},
+		map[string]string{constant.TimestampKey: "1000", "methods.Greet.timestamp": "1001"})
+	u2 := newTestURL("tri", "50051", "com.example.Greeter", "test-app", "", "", []string{"Greet"},
+		map[string]string{constant.TimestampKey: "2000", "methods.Greet.timestamp": "2001"})
+	assert.Equal(t, resolveRevision([]*common.URL{u1}), resolveRevision([]*common.URL{u2}),
+		"Java excludes timestamps from service metadata, so provider restarts must not change revision")
+}
+
+// 4. The method list and method-level parameters both participate in revision.
 func TestRevisionChangesOnMethodChange(t *testing.T) {
 	u1 := newTestURL("dubbo", "20880", "com.example.TestService", "test-app", "groupA", "1.0.0", []string{"sayHello"}, nil)
 	u2 := newTestURL("dubbo", "20880", "com.example.TestService", "test-app", "groupA", "1.0.0", []string{"sayHello", "sayGoodbye"}, nil)
@@ -111,7 +113,7 @@ func TestRevisionChangesOnMethodChange(t *testing.T) {
 
 	assert.NotEmpty(t, r1)
 	assert.NotEmpty(t, r2)
-	assert.Equal(t, r1, r2, "method list alone (no method-level params) must not change revision under Java alignment")
+	assert.NotEqual(t, r1, r2, "method list changes must change revision, matching Java params serialization")
 
 	u3 := newTestURL("dubbo", "20880", "com.example.TestService", "test-app", "groupA", "1.0.0", []string{"sayHello"},
 		map[string]string{constant.MethodsKey + ".sayHello.timeout": "1000"})

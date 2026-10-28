@@ -94,3 +94,17 @@ func TestServerCodecRead(t *testing.T) {
 	assert.Equal(t, "args", req[0])
 	assert.InEpsilon(t, 2.0, req[1], 1e-9)
 }
+
+// TestServerRequestUnmarshalJSON decodes a request through serverRequest.UnmarshalJSON.
+// The alias passed to encoding/json must not be a named pointer type; see golang/go#75361.
+func TestServerRequestUnmarshalJSON(t *testing.T) {
+	var req serverRequest
+	err := json.Unmarshal([]byte(`{"jsonrpc":"2.0","method":"GetUser","params":["args",2],"id":1}`), &req)
+	require.NoError(t, err)
+	assert.Equal(t, "2.0", req.Version)
+	assert.Equal(t, "GetUser", req.Method)
+	require.NotNil(t, req.Params)
+	assert.Equal(t, `["args",2]`, string(*req.Params))
+	require.NotNil(t, req.ID)
+	assert.Equal(t, "1", string(*req.ID))
+}

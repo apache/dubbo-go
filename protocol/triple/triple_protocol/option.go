@@ -70,6 +70,53 @@ func WithTriple() ClientOption {
 	return &tripleOption{}
 }
 
+// WithoutUnaryFastPath disables the unary fast path (unaryFastPathCall) for
+// unary calls, falling back to the duplex (io.Pipe) call path. Use it as a
+// rollback switch when the fast path misbehaves under a specific workload.
+//
+// The fast path is on by default. It primarily targets small, CPU-dominated
+// unary requests, roughly in the 128 B to 32 KiB range: the complete request
+// body is buffered before it is submitted to the transport. For large or
+// highly concurrent requests, memory residency and buffer growth may increase,
+// and the performance benefit is not guaranteed, so this switch is the
+// documented way to opt out. The implementation does not automatically fall
+// back based on payload size.
+func WithoutUnaryFastPath() ClientOption {
+	return &withoutUnaryFastPathOption{}
+}
+
+type withoutUnaryFastPathOption struct{}
+
+func (o *withoutUnaryFastPathOption) applyToClient(config *clientConfig) {
+	config.UnaryFastPath = false
+}
+
+// WithoutWriteBuffering disables aggregation of small messages in the streaming
+// client write path, writing every message straight to the duplex connector.
+// Buffering is on by default; disable it to restore the baseline write path, or
+// as a rollback switch when buffering misbehaves under a specific workload.
+//
+// Buffering trades a little first-byte latency for throughput: the first Send
+// no longer puts the request headers on the wire, they leave with the first
+// flush. The win comes from streams that queue several sends before reading, or
+// that only flush when the request side closes; a strictly alternating
+// Send-then-Receive pattern flushes one message per Receive, so the batch size
+// collapses to one and saves no syscalls.
+//
+// It applies to every call routed through duplexHTTPCall, covering both the
+// gRPC and the Triple wire, streaming calls, and unary calls that don't take
+// the unary fast path; the fast path does not go through io.Pipe and is
+// unaffected.
+func WithoutWriteBuffering() ClientOption {
+	return &withoutWriteBufferingOption{}
+}
+
+type withoutWriteBufferingOption struct{}
+
+func (o *withoutWriteBufferingOption) applyToClient(config *clientConfig) {
+	config.WriteBuffering = false
+}
+
 // WithProtoJSON configures a client to send JSON-encoded data instead of
 // binary Protobuf. It uses the standard Protobuf JSON mapping as implemented
 // by [google.golang.org/protobuf/encoding/protojson]: fields are named using

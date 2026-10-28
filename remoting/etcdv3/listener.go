@@ -18,14 +18,13 @@
 package etcdv3
 
 import (
+	"fmt"
 	"sync"
 )
 
 import (
 	gxetcd "github.com/dubbogo/gost/database/kv/etcd/v3"
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
 
 	"go.etcd.io/etcd/api/v3/mvccpb"
 
@@ -190,7 +189,7 @@ func (l *EventListener) ListenServiceEvent(key string, listener remoting.DataLis
 
 	keyList, valueList, err := l.client.GetChildren(key)
 	if err != nil {
-		logger.Warnf("[Remoting][Etcdv3] get new node path={%v} 's content error,message is  {%v}", key, perrors.WithMessage(err, "get children"))
+		logger.Warnf("[Remoting][Etcdv3] get new node path={%v} 's content error,message is  {%v}", key, fmt.Errorf("get children: %w", err))
 	}
 
 	logger.Debugf("[Remoting][Etcdv3] get key children list, key=%s keys=%v values=%v", key, keyList, valueList)

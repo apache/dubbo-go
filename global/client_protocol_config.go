@@ -21,11 +21,12 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
 
-// ClientProtocolConfig represents the config of client's protocol
+// ClientProtocolConfig represents the config of client's protocol.
 type ClientProtocolConfig struct {
 	// TODO: maybe we could use this field
 	Name string `yaml:"name" json:"name,omitempty" property:"name"`
 
+	// TripleConfig holds the Triple protocol configuration.
 	TripleConfig *TripleConfig `yaml:"triple" json:"triple,omitempty" property:"triple"`
 }
 

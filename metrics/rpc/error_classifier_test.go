@@ -18,7 +18,9 @@
 package rpc
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"testing"
 )
 
@@ -195,6 +197,137 @@ func TestClassifyError_AllErrorTypesClassification(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			errType := classifyError(tt.err)
 			assert.Equal(t, tt.expected, errType)
+		})
+	}
+}
+
+// noUnwrapError is an error type that hides the wrapped error behind its
+// Error() method and does not implement Unwrap, so errors.As cannot see
+// through it.
+type noUnwrapError struct {
+	cause error
+}
+
+func (e *noUnwrapError) Error() string {
+	return fmt.Sprintf("no unwrap: %v", e.cause)
+}
+
+func TestClassifyError_Nil(t *testing.T) {
+	var typedNil *triple_protocol.Error
+	tests := []struct {
+		name string
+		err  error
+	}{
+		{
+			name: "untyped nil",
+			err:  nil,
+		},
+		{
+			name: "typed nil triple error",
+			err:  typedNil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, ErrorTypeUnknown, classifyError(tt.err))
+		})
+	}
+}
+
+func TestClassifyError_Boundary(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want ErrorType
+	}{
+		{
+			name: "empty standard error",
+			err:  errors.New(""),
+			want: ErrorTypeUnknown,
+		},
+		{
+			name: "context deadline exceeded",
+			err:  context.DeadlineExceeded,
+			want: ErrorTypeUnknown,
+		},
+		{
+			name: "context canceled",
+			err:  context.Canceled,
+			want: ErrorTypeUnknown,
+		},
+		{
+			name: "plain error wrapping a triple error without Unwrap",
+			err:  &noUnwrapError{cause: triple_protocol.NewError(triple_protocol.CodeDeadlineExceeded, errors.New("timeout"))},
+			want: ErrorTypeUnknown,
+		},
+		{
+			name: "CodeInternal not mapped to a dedicated type yet",
+			err:  triple_protocol.NewError(triple_protocol.CodeInternal, errors.New("internal")),
+			want: ErrorTypeUnknown,
+		},
+		{
+			name: "CodeDataLoss",
+			err:  triple_protocol.NewError(triple_protocol.CodeDataLoss, errors.New("data loss")),
+			want: ErrorTypeUnknown,
+		},
+		{
+			name: "CodeUnauthenticated",
+			err:  triple_protocol.NewError(triple_protocol.CodeUnauthenticated, errors.New("unauthenticated")),
+			want: ErrorTypeUnknown,
+		},
+		{
+			name: "empty message triple error is classified by its code",
+			err:  triple_protocol.NewError(triple_protocol.CodeUnavailable, nil),
+			want: ErrorTypeServiceUnavailable,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, classifyError(tt.err))
+		})
+	}
+}
+
+func TestClassifyError_Wrapped(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want ErrorType
+	}{
+		{
+			name: "single level wrap of timeout",
+			err:  fmt.Errorf("rpc failed: %w", triple_protocol.NewError(triple_protocol.CodeDeadlineExceeded, errors.New("timeout"))),
+			want: ErrorTypeTimeout,
+		},
+		{
+			name: "single level wrap of limit",
+			err:  fmt.Errorf("rpc failed: %w", triple_protocol.NewError(triple_protocol.CodeResourceExhausted, errors.New("limit"))),
+			want: ErrorTypeLimit,
+		},
+		{
+			name: "single level wrap of service unavailable",
+			err:  fmt.Errorf("rpc failed: %w", triple_protocol.NewError(triple_protocol.CodeUnavailable, errors.New("unavailable"))),
+			want: ErrorTypeServiceUnavailable,
+		},
+		{
+			name: "single level wrap of business failed",
+			err:  fmt.Errorf("rpc failed: %w", triple_protocol.NewError(triple_protocol.CodeBizError, errors.New("biz error"))),
+			want: ErrorTypeBusinessFailed,
+		},
+		{
+			name: "multi level wrap",
+			err:  fmt.Errorf("outer: %w", fmt.Errorf("inner: %w", triple_protocol.NewError(triple_protocol.CodeDeadlineExceeded, errors.New("timeout")))),
+			want: ErrorTypeTimeout,
+		},
+		{
+			name: "wrap of plain error stays unknown",
+			err:  fmt.Errorf("rpc failed: %w", errors.New("plain error")),
+			want: ErrorTypeUnknown,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, classifyError(tt.err))
 		})
 	}
 }

@@ -19,7 +19,6 @@ package generic
 
 import (
 	"context"
-	"reflect"
 )
 
 import (
@@ -27,6 +26,7 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/filter/generic/generalizer"
 )
 
@@ -34,11 +34,12 @@ import (
 type GenericService struct {
 	Invoke       func(ctx context.Context, methodName string, types []string, args []hessian.Object) (any, error) `dubbo:"$invoke"`
 	referenceStr string
+	generic      string
 }
 
 // NewGenericService returns a GenericService instance
 func NewGenericService(referenceStr string) *GenericService {
-	return &GenericService{referenceStr: referenceStr}
+	return &GenericService{referenceStr: referenceStr, generic: constant.GenericSerializationDefault}
 }
 
 // Reference gets referenceStr from GenericService
@@ -46,13 +47,30 @@ func (s *GenericService) Reference() string {
 	return s.referenceStr
 }
 
+// SetGenericType sets the generic mode used by InvokeWithType to realize typed results.
+func (s *GenericService) SetGenericType(generic string) error {
+	if isGenericDisabled(generic) {
+		s.generic = generic
+		return nil
+	}
+	if _, err := getGeneralizer(generic); err != nil {
+		return err
+	}
+	s.generic = generic
+	return nil
+}
+
+// GenericType returns the generic mode used by InvokeWithType.
+func (s *GenericService) GenericType() string {
+	return s.generic
+}
+
 // InvokeWithType invokes the remote method and deserializes the result into the reply struct.
 // The reply parameter must be a non-nil pointer to the target type.
 //
-// Note: This method uses MapGeneralizer for deserialization, which means it only supports
-// the default map-based generic serialization (generic=true). If you are using other
-// serialization types like Gson or Protobuf-JSON, use the Invoke method directly and
-// handle deserialization manually.
+// InvokeWithType uses the service generic mode to realize the result. Supported modes are
+// true, gson, bean, protobuf-json, and the legacy protobuf mode (Map/Hessian semantics).
+// generic=false disables generic result realization and returns an explicit error.
 //
 // Example usage:
 //
@@ -69,6 +87,11 @@ func (s *GenericService) InvokeWithType(ctx context.Context, methodName string, 
 		return err
 	}
 
+	g, err := s.getGeneralizer()
+	if err != nil {
+		return err
+	}
+
 	// Call the underlying Invoke method
 	result, err := s.Invoke(ctx, methodName, types, args)
 	if err != nil {
@@ -79,19 +102,19 @@ func (s *GenericService) InvokeWithType(ctx context.Context, methodName string, 
 		return nil
 	}
 
-	// Get the element type that the pointer points to
 	replyType := replyValue.Elem().Type()
-
-	// Use MapGeneralizer to realize the map result to the target struct
-	g := generalizer.GetMapGeneralizer()
 	realized, err := realizeResult(result, replyType, g)
 	if err != nil {
 		return err
 	}
 
-	// Set the realized value to reply
-	if realized != nil {
-		replyValue.Elem().Set(reflect.ValueOf(realized))
+	return setRealizedReply(replyValue, realized)
+}
+
+func (s *GenericService) getGeneralizer() (generalizer.Generalizer, error) {
+	generic := s.GenericType()
+	if isGenericDisabled(generic) {
+		return nil, unsupportedTypedResultModeError(generic)
 	}
-	return nil
+	return getGeneralizer(generic)
 }

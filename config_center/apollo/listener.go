@@ -22,7 +22,7 @@ import (
 
 	"github.com/dubbogo/gost/log/logger"
 
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v4"
 )
 
 import (

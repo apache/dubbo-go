@@ -24,7 +24,7 @@ import (
 
 const (
 	initialBufferSize    = 512
-	maxRecycleBufferSize = 8 * 1024 * 1024 // if >8MiB, don't hold onto a buffer
+	maxRecycleBufferSize = 8 * 1024 * 1024 // Don't recycle buffers larger than this.
 )
 
 type bufferPool struct {
@@ -54,4 +54,28 @@ func (b *bufferPool) Put(buffer *bytes.Buffer) {
 	}
 	buffer.Reset()
 	b.Pool.Put(buffer)
+}
+
+// marshalToPool serializes message with appender into a *bytes.Buffer drawn
+// from pool and returns it. If the pooled array is too small and the appender
+// grows the slice, the larger array is swapped in so it can be recycled once
+// the caller returns the buffer. On failure the buffer is put back and a
+// CodeInternal error is returned.
+func marshalToPool(pool *bufferPool, appender marshalAppender, message any) (*bytes.Buffer, *Error) {
+	buffer := pool.Get()
+	raw, err := appender.MarshalAppend(buffer.Bytes(), message)
+	if err != nil {
+		pool.Put(buffer)
+		return nil, errorf(CodeInternal, "marshal message: %w", err)
+	}
+	if cap(raw) > buffer.Cap() {
+		// MarshalAppend grew the slice: swap the larger array in so it can be
+		// recycled next time.
+		*buffer = *bytes.NewBuffer(raw)
+	} else {
+		// No reallocation occurred; adopt the bytes the appender already wrote
+		// into the pooled array.
+		buffer.Write(raw)
+	}
+	return buffer, nil
 }

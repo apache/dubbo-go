@@ -103,6 +103,7 @@ func (ins *Instance) NewClient(opts ...client.ClientOption) (*client.Client, err
 	}
 
 	var cliOpts []client.ClientOption
+	cliOpts = append(cliOpts, client.SetClientExtensionConfigs(ins.insOpts.cloneExtensionConfigs()))
 	conCfg := ins.insOpts.CloneConsumer()
 	appCfg := ins.insOpts.CloneApplication()
 	regsCfg := ins.insOpts.CloneRegistries()
@@ -169,6 +170,7 @@ func (ins *Instance) NewServer(opts ...server.ServerOption) (*server.Server, err
 	}
 
 	var srvOpts []server.ServerOption
+	srvOpts = append(srvOpts, server.SetServerExtensionConfigs(ins.insOpts.cloneExtensionConfigs()))
 	appCfg := ins.insOpts.CloneApplication()
 	regsCfg := ins.insOpts.CloneRegistries()
 	prosCfg := ins.insOpts.CloneProtocols()

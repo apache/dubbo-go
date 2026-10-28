@@ -26,6 +26,8 @@ import (
 )
 
 import (
+	"github.com/quic-go/quic-go/http3"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -86,7 +88,8 @@ func TestDualTransport(t *testing.T) {
 	keepAliveTimeout := 5 * time.Second
 
 	// Test newDualTransport function
-	transport := newDualTransport(nil, keepAliveInterval, keepAliveTimeout)
+	transport, err := newDualTransport(nil, nil, keepAliveInterval, keepAliveTimeout)
+	require.NoError(t, err)
 	assert.NotNil(t, transport)
 
 	// Verify that transport implements http.RoundTripper interface
@@ -195,7 +198,7 @@ func TestClientManagerCallUnaryCopiesErrorResponseMetadata(t *testing.T) {
 // TestClientManager_CallMethods_MissingClient removed - no longer applicable
 // in the service-level client architecture where all methods share a single triClient.
 
-func Test_genKeepAliveOptions(t *testing.T) {
+func Test_resolveClientKeepAliveOptions(t *testing.T) {
 	defaultInterval, _ := time.ParseDuration(constant.DefaultKeepAliveInterval)
 	defaultTimeout, _ := time.ParseDuration(constant.DefaultKeepAliveTimeout)
 
@@ -282,7 +285,7 @@ func Test_genKeepAliveOptions(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			opts, interval, timeout, err := genKeepAliveOptions(test.url, test.tripleConf)
+			opts, interval, timeout, err := resolveClientKeepAliveOptions(test.url, test.tripleConf)
 			if test.expectErr {
 				require.Error(t, err)
 			} else {
@@ -479,7 +482,8 @@ func TestDualTransport_Structure(t *testing.T) {
 	keepAliveInterval := 30 * time.Second
 	keepAliveTimeout := 5 * time.Second
 
-	transport := newDualTransport(nil, keepAliveInterval, keepAliveTimeout)
+	transport, err := newDualTransport(nil, nil, keepAliveInterval, keepAliveTimeout)
+	require.NoError(t, err)
 	assert.NotNil(t, transport)
 
 	dt, ok := transport.(*dualTransport)
@@ -487,6 +491,27 @@ func TestDualTransport_Structure(t *testing.T) {
 	assert.NotNil(t, dt.http2Transport)
 	assert.NotNil(t, dt.http3Transport)
 	assert.NotNil(t, dt.altSvcCache)
+}
+
+func TestDualTransport_HTTP3ConfigOverridesKeepAliveDefaults(t *testing.T) {
+	transport, err := newDualTransport(nil, &global.Http3Config{
+		KeepAlivePeriod:       "45s",
+		MaxIdleTimeout:        "6s",
+		MaxIncomingStreams:    11,
+		MaxIncomingUniStreams: 12,
+	}, 30*time.Second, 5*time.Second)
+	require.NoError(t, err)
+
+	dt, ok := transport.(*dualTransport)
+	require.True(t, ok)
+
+	http3Transport, ok := dt.http3Transport.(*http3.Transport)
+	require.True(t, ok)
+	require.NotNil(t, http3Transport.QUICConfig)
+	assert.Equal(t, 45*time.Second, http3Transport.QUICConfig.KeepAlivePeriod)
+	assert.Equal(t, 6*time.Second, http3Transport.QUICConfig.MaxIdleTimeout)
+	assert.Equal(t, int64(11), http3Transport.QUICConfig.MaxIncomingStreams)
+	assert.Equal(t, int64(12), http3Transport.QUICConfig.MaxIncomingUniStreams)
 }
 
 func Test_newClientManager_HTTP2WithTLS(t *testing.T) {
