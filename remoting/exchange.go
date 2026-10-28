@@ -20,13 +20,12 @@ package remoting
 import (
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-
-	"go.uber.org/atomic"
 )
 
 import (

@@ -21,6 +21,8 @@ package getty
 // it is used to unit test.
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"strconv"
 	"time"
 )
@@ -54,7 +56,7 @@ func (c *DubboTestCodec) EncodeRequest(request *remoting.Request) (*bytes.Buffer
 
 	invoc, ok := request.Data.(*invocation.RPCInvocation)
 	if !ok {
-		return nil, perrors.Errorf("encode request failed for parameter type :%+v", request)
+		return nil, fmt.Errorf("encode request failed for parameter type :%+v", request)
 	}
 	tmpInvocation := invoc
 
@@ -183,10 +185,9 @@ func (c *DubboTestCodec) decodeRequest(data []byte) (*remoting.Request, int, err
 	pkg.SetBody(make([]any, 7))
 	err := pkg.Unmarshal()
 	if err != nil {
-		originErr := perrors.Cause(err)
-		if originErr == hessian.ErrHeaderNotEnough || originErr == hessian.ErrBodyNotEnough {
+		if errors.Is(err, hessian.ErrHeaderNotEnough) || errors.Is(err, hessian.ErrBodyNotEnough) {
 			// FIXME
-			return nil, 0, originErr
+			return nil, 0, err
 		}
 		return request, 0, perrors.WithStack(err)
 	}
@@ -230,10 +231,9 @@ func (c *DubboTestCodec) decodeResponse(data []byte) (*remoting.Response, int, e
 	pkg := impl.NewDubboPackage(buf)
 	err := pkg.Unmarshal()
 	if err != nil {
-		originErr := perrors.Cause(err)
 		// if the data is very big, so the receive need much times.
-		if originErr == hessian.ErrHeaderNotEnough || originErr == hessian.ErrBodyNotEnough {
-			return nil, 0, originErr
+		if errors.Is(err, hessian.ErrHeaderNotEnough) || errors.Is(err, hessian.ErrBodyNotEnough) {
+			return nil, 0, err
 		}
 		return nil, 0, perrors.WithStack(err)
 	}

@@ -26,6 +26,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/protocol/result"
+	"dubbo.apache.org/dubbo-go/v3/remoting"
+)
+
 // TestIsRequest tests isRequest with various bit patterns
 func TestIsRequest(t *testing.T) {
 	codec := &DubboCodec{}
@@ -99,6 +105,28 @@ func TestCodecType(t *testing.T) {
 	assert.NotNil(t, codec.EncodeResponse)
 	assert.NotNil(t, codec.Decode)
 	assert.NotNil(t, codec.encodeHeartbeatRequest)
+}
+
+func TestEncodeResponseAcceptsRPCResultPointer(t *testing.T) {
+	response := remoting.NewResponse(1, "2.0.2")
+	response.SerialID = constant.SHessian2
+	response.Result = &result.RPCResult{}
+
+	require.NotPanics(t, func() {
+		_, err := (&DubboCodec{}).EncodeResponse(response)
+		require.NoError(t, err)
+	})
+}
+
+func TestEncodeResponseRejectsUnexpectedResultType(t *testing.T) {
+	response := remoting.NewResponse(1, "2.0.2")
+	response.SerialID = constant.SHessian2
+	response.Result = "not-an-rpc-result"
+
+	require.NotPanics(t, func() {
+		_, err := (&DubboCodec{}).EncodeResponse(response)
+		require.Error(t, err)
+	})
 }
 
 // TestIsRequestEdgeCases tests isRequest with edge case bit patterns

@@ -18,12 +18,104 @@
 package metrics
 
 import (
+	"math"
 	"testing"
+	"testing/synctest"
+	"time"
 )
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+type mockGaugeFuncRegistry struct {
+	*mockMetricRegistry
+	callbacks     map[string]func() float64
+	registrations map[string]int
+}
+
+func (r *mockGaugeFuncRegistry) GaugeFunc(id *MetricId, value func() float64) {
+	r.callbacks[id.Name] = value
+	r.registrations[id.Name]++
+}
+
+func TestWindowMetricGaugeFuncRegistry(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		registry := &mockGaugeFuncRegistry{
+			mockMetricRegistry: newMockMetricRegistry(),
+			callbacks:          make(map[string]func() float64),
+			registrations:      make(map[string]int),
+		}
+		labels := map[string]string{"app": "dubbo"}
+		qps := NewQpsMetricVec(registry, NewMetricKey("qps", "QPS"))
+		count := NewAggregateCounterVec(registry, NewMetricKey("count", "Window count"))
+		quantiles := NewQuantileMetricVec(registry,
+			[]*MetricKey{NewMetricKey("p50", "P50"), NewMetricKey("p99", "P99")},
+			[]float64{0.5, 0.99})
+		record := func(duration float64) {
+			qps.Record(labels)
+			count.Inc(labels)
+			quantiles.Record(labels, duration)
+		}
+		require.Empty(t, registry.callbacks, "No callbacks before the first record")
+		for i := 1; i <= 100; i++ {
+			record(float64(i))
+		}
+		for _, name := range []string{"qps", "count", "p50", "p99"} {
+			require.NotNil(t, registry.callbacks[name])
+			require.Equal(t, 1, registry.registrations[name], "Register each callback only once")
+		}
+		require.Empty(t, registry.gauges, "Dynamic registries must not receive static Gauge snapshots")
+		for range 2 {
+			require.InDelta(t, 100.0/12, registry.callbacks["qps"](), 0)
+			require.InDelta(t, 100.0, registry.callbacks["count"](), 0)
+			require.InDelta(t, 50.5, registry.callbacks["p50"](), 0.01)
+			require.InDelta(t, 99.5, registry.callbacks["p99"](), 0.01)
+		}
+		time.Sleep(121 * time.Second)
+		require.InDelta(t, 0.0, registry.callbacks["qps"](), 0)
+		require.InDelta(t, 0.0, registry.callbacks["count"](), 0)
+		require.True(t, math.IsNaN(registry.callbacks["p50"]()))
+		require.True(t, math.IsNaN(registry.callbacks["p99"]()))
+		record(1000)
+		require.InDelta(t, 1.0/12, registry.callbacks["qps"](), 0)
+		require.InDelta(t, 1.0, registry.callbacks["count"](), 0)
+		require.InDelta(t, 1000.0, registry.callbacks["p50"](), 0)
+		require.InDelta(t, 1000.0, registry.callbacks["p99"](), 0)
+		for _, name := range []string{"qps", "count", "p50", "p99"} {
+			require.Equal(t, 1, registry.registrations[name], "Reuse callbacks when recording resumes")
+		}
+		require.Empty(t, registry.gauges)
+	})
+}
+
+func TestLegacyWindowMetricRegistry(t *testing.T) {
+	// Third-party registries implementing only MetricRegistry remain usable.
+	// Without GaugeFuncRegistry they retain their previous record-time behavior.
+	synctest.Test(t, func(t *testing.T) {
+		registry := newMockMetricRegistry()
+		labels := map[string]string{"app": "dubbo"}
+		qps := NewQpsMetricVec(registry, NewMetricKey("qps", "QPS"))
+		count := NewAggregateCounterVec(registry, NewMetricKey("count", "Window count"))
+		quantiles := NewQuantileMetricVec(registry, []*MetricKey{NewMetricKey("p99", "P99")}, []float64{0.99})
+		for range 6 {
+			qps.Record(labels)
+			count.Inc(labels)
+			quantiles.Record(labels, 100)
+		}
+		assert.InDelta(t, 0.5, registry.gauges["qps"].value, 0)
+		assert.InDelta(t, 6.0, registry.gauges["count"].value, 0)
+		assert.InDelta(t, 100.0, registry.gauges["p99"].value, 0)
+		time.Sleep(121 * time.Second)
+		qps.Record(labels)
+		count.Inc(labels)
+		quantiles.Record(labels, 1000)
+		assert.InDelta(t, 1.0/12, registry.gauges["qps"].value, 0)
+		assert.InDelta(t, 1.0, registry.gauges["count"].value, 0)
+		assert.InDelta(t, 1000.0, registry.gauges["p99"].value, 0)
+	})
+}
 
 // mockMetricRegistry is a simple mock implementation of MetricRegistry for testing
 type mockMetricRegistry struct {

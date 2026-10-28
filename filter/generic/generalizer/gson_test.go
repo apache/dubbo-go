@@ -87,9 +87,9 @@ func TestGsonPointer(t *testing.T) {
 		Name:   "childName",
 	}
 
-	m, err := mockMapGeneralizer.Generalize(c)
+	m, err := mockGsonGeneralizer.Generalize(c)
 	require.NoError(t, err)
-	newC, err := mockMapGeneralizer.Realize(m, reflect.TypeFor[*mockGsonChild]())
+	newC, err := mockGsonGeneralizer.Realize(m, reflect.TypeFor[*mockGsonChild]())
 	require.NoError(t, err)
 	rMockChild, ok := newC.(*mockGsonChild)
 	assert.True(t, ok)

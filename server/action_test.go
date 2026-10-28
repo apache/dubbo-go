@@ -18,14 +18,13 @@
 package server
 
 import (
+	"sync/atomic"
 	"testing"
 )
 
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"go.uber.org/atomic"
 )
 
 import (
@@ -34,6 +33,12 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/global"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
+
+func newAtomicBool(v bool) *atomic.Bool {
+	b := &atomic.Bool{}
+	b.Store(v)
+	return b
+}
 
 // Test Prefix method
 func TestPrefix(t *testing.T) {
@@ -48,7 +53,7 @@ func TestPrefix(t *testing.T) {
 // Test InitExported
 func TestInitExported(t *testing.T) {
 	svcOpts := &ServiceOptions{
-		exported: atomic.NewBool(true),
+		exported: newAtomicBool(true),
 	}
 
 	svcOpts.InitExported()
@@ -58,7 +63,7 @@ func TestInitExported(t *testing.T) {
 // Test IsExport returns false initially
 func TestIsExportFalse(t *testing.T) {
 	svcOpts := &ServiceOptions{
-		exported: atomic.NewBool(false),
+		exported: newAtomicBool(false),
 	}
 
 	assert.False(t, svcOpts.IsExport())
@@ -67,7 +72,7 @@ func TestIsExportFalse(t *testing.T) {
 // Test IsExport returns true when exported
 func TestIsExportTrue(t *testing.T) {
 	svcOpts := &ServiceOptions{
-		exported: atomic.NewBool(true),
+		exported: newAtomicBool(true),
 	}
 
 	assert.True(t, svcOpts.IsExport())
@@ -177,8 +182,8 @@ func TestImplement(t *testing.T) {
 // Test Unexport when not exported
 func TestUnexportNotExported(t *testing.T) {
 	svcOpts := &ServiceOptions{
-		unexported: atomic.NewBool(false),
-		exported:   atomic.NewBool(false),
+		unexported: newAtomicBool(false),
+		exported:   newAtomicBool(false),
 		exporters:  []base.Exporter{},
 	}
 
@@ -190,8 +195,8 @@ func TestUnexportNotExported(t *testing.T) {
 // Test Unexport when already unexported
 func TestUnexportAlreadyUnexported(t *testing.T) {
 	svcOpts := &ServiceOptions{
-		unexported: atomic.NewBool(true),
-		exported:   atomic.NewBool(false),
+		unexported: newAtomicBool(true),
+		exported:   newAtomicBool(false),
 		exporters:  []base.Exporter{},
 	}
 
@@ -265,7 +270,7 @@ func TestGetRegistryIdsEmpty(t *testing.T) {
 // Test GetExportedUrls when not exported
 func TestGetExportedUrlsNotExported(t *testing.T) {
 	svcOpts := &ServiceOptions{
-		exported:  atomic.NewBool(false),
+		exported:  newAtomicBool(false),
 		exporters: []base.Exporter{},
 	}
 
@@ -276,7 +281,7 @@ func TestGetExportedUrlsNotExported(t *testing.T) {
 // Test GetExportedUrls when exported with no exporters
 func TestGetExportedUrlsExportedEmpty(t *testing.T) {
 	svcOpts := &ServiceOptions{
-		exported:  atomic.NewBool(true),
+		exported:  newAtomicBool(true),
 		exporters: []base.Exporter{},
 	}
 
@@ -523,8 +528,8 @@ func TestExportReturnsRegistryLoadError(t *testing.T) {
 // Test Unexport when exported
 func TestUnexportWhenExported(t *testing.T) {
 	svcOpts := &ServiceOptions{
-		unexported: atomic.NewBool(false),
-		exported:   atomic.NewBool(true),
+		unexported: newAtomicBool(false),
+		exported:   newAtomicBool(true),
 		exporters:  []base.Exporter{},
 	}
 

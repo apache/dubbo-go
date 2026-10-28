@@ -111,9 +111,16 @@ func NewDubbo3Invoker(url *common.URL) (*DubboInvoker, error) {
 	tripleConfRaw, ok := url.GetAttribute(constant.TripleConfigKey)
 	if ok {
 		tripleConf := tripleConfRaw.(*global.TripleConfig)
-		// TODO: handle ParseDuration error
-		keepAliveInterval, _ = time.ParseDuration(tripleConf.KeepAliveInterval)
-		keepAliveTimeout, _ = time.ParseDuration(tripleConf.KeepAliveTimeout)
+		if parsedInterval, err := time.ParseDuration(tripleConf.KeepAliveInterval); err == nil {
+			keepAliveInterval = parsedInterval
+		} else if tripleConf.KeepAliveInterval != "" {
+			logger.Warnf("[Triple][Invoker] invalid keepAliveInterval %q, using default %v", tripleConf.KeepAliveInterval, keepAliveInterval)
+		}
+		if parsedTimeout, err := time.ParseDuration(tripleConf.KeepAliveTimeout); err == nil {
+			keepAliveTimeout = parsedTimeout
+		} else if tripleConf.KeepAliveTimeout != "" {
+			logger.Warnf("[Triple][Invoker] invalid keepAliveTimeout %q, using default %v", tripleConf.KeepAliveTimeout, keepAliveTimeout)
+		}
 	}
 
 	opts = append(opts, triConfig.WithGRPCKeepAliveTimeInterval(keepAliveInterval))

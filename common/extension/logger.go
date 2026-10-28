@@ -18,7 +18,7 @@
 package extension
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
 )
 
 import (
@@ -36,7 +36,7 @@ func GetLogger(driver string, config *common.URL) (logger.Logger, error) {
 	if logCreator, ok := logs.Get(driver); ok {
 		return logCreator(config)
 	} else {
-		return nil, errors.Errorf("logger for %s does not exist. "+
+		return nil, fmt.Errorf("logger for %s does not exist. "+
 			"please make sure that you have imported the package "+
 			"dubbo.apache.org/dubbo-go/v3/logger/%s", driver, driver)
 	}

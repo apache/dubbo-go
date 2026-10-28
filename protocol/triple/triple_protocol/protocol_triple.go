@@ -34,8 +34,6 @@ import (
 )
 
 import (
-	"github.com/dubbogo/gost/log/logger"
-
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
@@ -162,7 +160,6 @@ func (h *tripleHandler) NewConn(
 		contentType,
 	)
 	codec := h.Codecs.Get(codecName)
-	backupCodec := h.Codecs.Get(h.FallbackCodecName)
 	// todo:// need to figure it out
 	// The codec can be nil in the GET request case; that's okay: when failed
 	// is non-nil, codec is never used.
@@ -187,15 +184,21 @@ func (h *tripleHandler) NewConn(
 		Addr:     request.RemoteAddr,
 		Protocol: ProtocolTriple,
 	}
-	conn = &tripleUnaryHandlerConn{
+	var codecSession = codec
+	if codec != nil && getWireCodecName(codec) == codecNameProto {
+		codecSession = &tripleServerCodecSession{
+			delegate:             codec,
+			allowedSerializeType: h.FallbackCodecName,
+		}
+	}
+	hc := &tripleUnaryHandlerConn{
 		spec:           h.Spec,
 		peer:           peer,
 		request:        request,
 		responseWriter: responseWriter,
 		marshaler: tripleUnaryMarshaler{
 			writer:           responseWriter,
-			codec:            codec,
-			backupCodec:      backupCodec,
+			codec:            codecSession,
 			compressMinBytes: h.CompressMinBytes,
 			compressionName:  responseCompression,
 			compressionPool:  h.CompressionPools.Get(responseCompression),
@@ -205,15 +208,14 @@ func (h *tripleHandler) NewConn(
 		},
 		unmarshaler: tripleUnaryUnmarshaler{
 			reader:          requestBody,
-			codec:           codec,
-			backupCodec:     backupCodec,
+			codec:           codecSession,
 			compressionPool: h.CompressionPools.Get(requestCompression),
 			bufferPool:      h.BufferPool,
 			readMaxBytes:    h.ReadMaxBytes,
 		},
 		responseTrailer: make(http.Header),
 	}
-	conn = wrapHandlerConnWithCodedErrors(conn)
+	conn = wrapHandlerConnWithCodedErrors(hc)
 
 	if failed != nil {
 		// Negotiation failed, so we can't establish a stream.
@@ -262,27 +264,47 @@ func (c *tripleClient) NewConn(
 			} // else effectively unbounded
 		}
 	}
-	duplexCall := newDuplexHTTPCall(ctx, c.HTTPClient, c.URL, spec, header)
+	var call unaryClientCall
+	var streamWriter io.Writer
+	var writeBuffer *streamBufferWriter
+	if spec.StreamType == StreamTypeUnary && c.UnaryFastPath {
+		// Unary fast path: no io.Pipe, no per-request goroutine. Streaming
+		// calls always keep using duplexHTTPCall.
+		call = newUnaryFastPathCall(ctx, c.HTTPClient, c.URL, spec, header, c.BufferPool)
+		streamWriter = call
+	} else {
+		call = newDuplexHTTPCall(ctx, c.HTTPClient, c.URL, spec, header)
+		streamWriter = call
+		if c.WriteBuffering {
+			// Aggregate small streamed messages to amortize the per-Send
+			// io.Pipe handshake. The gRPC wire client (protocol_grpc.go)
+			// buffers the same way; the unary fast path above is left
+			// unbuffered.
+			writeBuffer = newStreamBufferWriter(call)
+			streamWriter = writeBuffer
+		}
+	}
 	unaryConn := &tripleUnaryClientConn{
 		spec:             spec,
 		peer:             c.Peer(),
-		duplexCall:       duplexCall,
+		call:             call,
+		writeBuffer:      writeBuffer,
 		compressionPools: c.CompressionPools,
 		bufferPool:       c.BufferPool,
 		marshaler: tripleUnaryRequestMarshaler{
 			tripleUnaryMarshaler: tripleUnaryMarshaler{
-				writer:           duplexCall,
+				writer:           streamWriter,
 				codec:            c.Codec,
 				compressMinBytes: c.CompressMinBytes,
 				compressionName:  c.CompressionName,
 				compressionPool:  c.CompressionPools.Get(c.CompressionName),
 				bufferPool:       c.BufferPool,
-				header:           duplexCall.Header(),
+				header:           call.Header(),
 				sendMaxBytes:     c.SendMaxBytes,
 			},
 		},
 		unmarshaler: tripleUnaryUnmarshaler{
-			reader:       duplexCall,
+			reader:       call,
 			codec:        c.Codec,
 			bufferPool:   c.BufferPool,
 			readMaxBytes: c.ReadMaxBytes,
@@ -290,14 +312,15 @@ func (c *tripleClient) NewConn(
 		responseHeader:  make(http.Header),
 		responseTrailer: make(http.Header),
 	}
-	duplexCall.SetValidateResponse(unaryConn.validateResponse)
+	call.SetValidateResponse(unaryConn.validateResponse)
 	return wrapClientConnWithCodedErrors(unaryConn)
 }
 
 type tripleUnaryClientConn struct {
 	spec             Spec
 	peer             Peer
-	duplexCall       *duplexHTTPCall
+	call             unaryClientCall
+	writeBuffer      *streamBufferWriter
 	compressionPools readOnlyCompressionPools
 	bufferPool       *bufferPool
 	marshaler        tripleUnaryRequestMarshaler
@@ -322,15 +345,46 @@ func (cc *tripleUnaryClientConn) Send(msg any) error {
 }
 
 func (cc *tripleUnaryClientConn) RequestHeader() http.Header {
-	return cc.duplexCall.Header()
+	return cc.call.Header()
 }
 
 func (cc *tripleUnaryClientConn) CloseRequest() error {
-	return cc.duplexCall.CloseWrite()
+	// Flush and seal the write buffer before the write side closes. Sealing
+	// means a concurrent Send is no longer accepted into the buffer and fails
+	// with io.EOF instead. No-op when write buffering is disabled.
+	var flushErr error
+	if cc.writeBuffer != nil {
+		flushErr = cc.writeBuffer.Close()
+	}
+	// CloseWrite runs even if the flush failed: the write side must always be
+	// closed so the peer does not wait on it.
+	closeErr := cc.call.CloseWrite()
+	if flushErr != nil && !errors.Is(flushErr, io.EOF) {
+		return flushErr
+	}
+	return closeErr
+}
+
+// flushBeforeWait pushes buffered request bytes to the wire before the caller
+// blocks on the response side. Small Sends stay in the write buffer until the
+// watermark or CloseRequest, so without this a stream whose messages all fit in
+// the buffer would never issue its HTTP request and BlockUntilResponseReady
+// would wait forever. No-op when write buffering is off, and flushing an empty
+// buffer is a no-op too.
+func (cc *tripleUnaryClientConn) flushBeforeWait() {
+	if cc.writeBuffer == nil {
+		return
+	}
+	if err := cc.writeBuffer.Flush(); err != nil && !errors.Is(err, io.EOF) {
+		// A closed request pipe can accompany a server response. Preserve
+		// the response status instead of replacing it with the write-side EOF.
+		cc.call.SetError(err)
+	}
 }
 
 func (cc *tripleUnaryClientConn) Receive(msg any) error {
-	cc.duplexCall.BlockUntilResponseReady()
+	cc.flushBeforeWait()
+	cc.call.BlockUntilResponseReady()
 	if err := cc.unmarshaler.Unmarshal(msg); err != nil {
 		return err
 	}
@@ -338,17 +392,20 @@ func (cc *tripleUnaryClientConn) Receive(msg any) error {
 }
 
 func (cc *tripleUnaryClientConn) ResponseHeader() http.Header {
-	cc.duplexCall.BlockUntilResponseReady()
+	cc.flushBeforeWait()
+	cc.call.BlockUntilResponseReady()
 	return cc.responseHeader
 }
 
 func (cc *tripleUnaryClientConn) ResponseTrailer() http.Header {
-	cc.duplexCall.BlockUntilResponseReady()
+	cc.flushBeforeWait()
+	cc.call.BlockUntilResponseReady()
 	return cc.responseTrailer
 }
 
 func (cc *tripleUnaryClientConn) CloseResponse() error {
-	return cc.duplexCall.CloseRead()
+	cc.flushBeforeWait()
+	return cc.call.CloseRead()
 }
 
 func (cc *tripleUnaryClientConn) validateResponse(response *http.Response) *Error {
@@ -484,7 +541,6 @@ func (hc *tripleUnaryHandlerConn) writeResponseHeader(err error) {
 type tripleUnaryMarshaler struct {
 	writer           io.Writer
 	codec            Codec
-	backupCodec      Codec // backupCodec is the fallback codec when primary codec fails
 	compressMinBytes int
 	compressionName  string
 	compressionPool  *compressionPool
@@ -497,28 +553,48 @@ func (m *tripleUnaryMarshaler) Marshal(message any) *Error {
 	if message == nil {
 		return m.write(nil)
 	}
+	// Fast path: if the codec can append to a caller-provided buffer, marshal
+	// directly into a pooled buffer to avoid the per-request allocation.
+	if appender, ok := m.codec.(marshalAppender); ok {
+		return m.marshalAndWrite(message, appender)
+	}
 	data, err := m.codec.Marshal(message)
 	if err != nil {
-		if m.backupCodec != nil && m.codec.Name() != m.backupCodec.Name() {
-			logger.Warnf("[Triple] failed to marshal message with primary codec %s, trying fallback codec %s", m.codec.Name(), m.backupCodec.Name())
-			data, err = m.backupCodec.Marshal(message)
-		}
-		if err != nil {
-			return errorf(CodeInternal, "marshal message: %w", err)
-		}
+		return errorf(CodeInternal, "marshal message: %w", err)
 	}
 	// Can't avoid allocating the slice, but we can reuse it.
 	uncompressed := bytes.NewBuffer(data)
 	defer m.bufferPool.Put(uncompressed)
-	if len(data) < m.compressMinBytes || m.compressionPool == nil {
-		if m.sendMaxBytes > 0 && len(data) > m.sendMaxBytes {
-			return NewError(CodeResourceExhausted, fmt.Errorf("message size %d exceeds sendMaxBytes %d", len(data), m.sendMaxBytes))
+	return m.compressAndWrite(uncompressed)
+}
+
+// marshalAndWrite serializes message into a pooled *bytes.Buffer, compressing if
+// necessary, and writes it.
+func (m *tripleUnaryMarshaler) marshalAndWrite(message any, appender marshalAppender) *Error {
+	buffer, err := marshalToPool(m.bufferPool, appender, message)
+	if err != nil {
+		return err
+	}
+	defer m.bufferPool.Put(buffer)
+	return m.compressAndWrite(buffer)
+}
+
+// compressAndWrite enforces the compression threshold and the sendMaxBytes
+// limit on the marshaled bytes in buffer, sets the compression header when the
+// payload is compressed, and writes the result. It is the shared tail of both
+// Marshal (slow path, bytes produced by codec.Marshal) and marshalAndWrite
+// (fast path, bytes produced by marshalAppender.MarshalAppend), so the
+// compression policy can never drift between the two paths.
+func (m *tripleUnaryMarshaler) compressAndWrite(buffer *bytes.Buffer) *Error {
+	if buffer.Len() < m.compressMinBytes || m.compressionPool == nil {
+		if m.sendMaxBytes > 0 && buffer.Len() > m.sendMaxBytes {
+			return NewError(CodeResourceExhausted, fmt.Errorf("message size %d exceeds sendMaxBytes %d", buffer.Len(), m.sendMaxBytes))
 		}
-		return m.write(data)
+		return m.write(buffer.Bytes())
 	}
 	compressed := m.bufferPool.Get()
 	defer m.bufferPool.Put(compressed)
-	if err := m.compressionPool.Compress(compressed, uncompressed); err != nil {
+	if err := m.compressionPool.Compress(compressed, buffer); err != nil {
 		return err
 	}
 	if m.sendMaxBytes > 0 && compressed.Len() > m.sendMaxBytes {
@@ -549,7 +625,6 @@ func (m *tripleUnaryRequestMarshaler) Marshal(message any) *Error {
 type tripleUnaryUnmarshaler struct {
 	reader          io.Reader
 	codec           Codec
-	backupCodec     Codec // backupCodec is the fallback codec when primary codec fails
 	compressionPool *compressionPool
 	bufferPool      *bufferPool
 	alreadyRead     bool
@@ -557,14 +632,7 @@ type tripleUnaryUnmarshaler struct {
 }
 
 func (u *tripleUnaryUnmarshaler) Unmarshal(message any) *Error {
-	err := u.UnmarshalFunc(message, u.codec.Unmarshal)
-	if err != nil {
-		if u.backupCodec != nil && u.codec.Name() != u.backupCodec.Name() {
-			logger.Warnf("[Triple] failed to unmarshal message with primary codec %s, trying fallback codec %s", u.codec.Name(), u.backupCodec.Name())
-			err = u.UnmarshalFunc(message, u.backupCodec.Unmarshal)
-		}
-	}
-	return err
+	return u.UnmarshalFunc(message, u.codec.Unmarshal)
 }
 
 func (u *tripleUnaryUnmarshaler) UnmarshalFunc(message any, unmarshal func([]byte, any) error) *Error {
@@ -691,7 +759,7 @@ func (e *tripleWireError) asError() *Error {
 	if e == nil {
 		return nil
 	}
-	if e.Code < minCode || e.Code > maxCode {
+	if (e.Code < minCode || e.Code > maxCode) && e.Code != CodeBizError {
 		e.Code = CodeUnknown
 	}
 	err := NewWireError(e.Code, errors.New(e.Message))

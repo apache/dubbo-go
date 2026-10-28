@@ -47,7 +47,7 @@ dubbo-go 是一个**面向网络的 Go RPC 框架**，被上游业务作为基�
 - 本地执行（不要等 CI 报错）：
   ```bash
   make check-fmt && make test && make lint
-  go test -race ./...          # ⚠️ 当前 CI 未开启 -race，框架级改动务必本地加
+  make test-race              # 与上游现有 race 门禁保持一致
   ```
 - 对照 §4 清单做一遍自我审查，尤其是并发安全与安全性维度。
 - 一个 PR **只解决一件事**（一个 issue）；重构与功能修复分开提。
@@ -67,7 +67,7 @@ dubbo-go 是一个**面向网络的 Go RPC 框架**，被上游业务作为基�
 - `make lint`（golangci-lint）零告警。
 - CodeQL 扫描无新增 high/critical。
 
-> 现状提示：CI 当前**未跑 `-race`、未启用 `gosec`、未接 `govulncheck`**。这些由人工审查在 §4.2 / §6 中补足。
+> 现状提示：CI 已运行 `make test-race`，存量测试的排除项见 `Makefile`。`gosec` 与 `govulncheck` 尚未接入，相关风险由人工审查在 §4.2 / §6 中补足。
 
 ### 2.4 人工审查
 - **最少批准数**：普通 PR ≥ 1 名 Reviewer；涉及 `protocol/`、`cluster/`、`registry/`、`config_center/`、`common/`、`global/` 等核心模块的改动需 ≥ 2 名（其中至少 1 名为对应模块 Maintainer）。
@@ -202,19 +202,16 @@ dubbo-go 是一个**面向网络的 Go RPC 框架**，被上游业务作为基�
 - `golangci-lint`：govet / ineffassign / misspell / staticcheck / unused / testifylint；`gocyclo=10`、`lll=140`、`depguard`(禁直接 logrus)。
 - CodeQL（Go）安全扫描。
 
-### 6.2 工具链落地状态（已补齐）
+### 6.2 工具链落地状态
 | 工具 | 作用 | 状态 | 落地方式 |
 |------|------|------|----------|
-| `go test -race` | 检测数据竞争 | ✅ 已接入 | CI 新增 `make test-race` 步骤；`Makefile` 新增 `test-race` target |
-| `gosec` | 安全 lint（注入/明文/弱加密/子进程/路径穿越） | ✅ 已启用 | `.golangci.yml` 加入 `gosec`；排除高噪音 G104 与有意的弱加密(G401)，首轮聚焦真实安全问题 |
-| `govulncheck` | 依赖已知漏洞 | ✅ 已接入 | CI 新增 `make vulncheck` 步骤；`Makefile` 新增 `vulncheck` target |
+| `go test -race` | 检测数据竞争 | ✅ 已接入 | 沿用上游 CI 的 `make test-race`；存量排除项由 `Makefile` 维护 |
+| `gosec` | 安全 lint（注入/明文/弱加密/子进程/路径穿越） | 待接入 | 先核对存量告警并单独推进，避免脚本超时修复同时改变全仓 lint 门禁 |
+| `govulncheck` | 依赖已知漏洞 | 待接入 | 依赖漏洞基线与扫描工具版本需要单独评估，本次不新增全仓扫描步骤 |
 | `CODEOWNERS` | reviewer 路由 | ✅ 已建立 | 仓库根 `CODEOWNERS`（按模块分配，**owner 占位符需替换为真实 handle**） |
 | `staticcheck` SA/ST 告警 | 已部分排除 `SA1019/ST1001` | 保留 | 仅对 legacy 路径排除，新代码不豁免 |
 
-> ⚠️ **滚动启用提示**：`gosec` 与 `-race` 在存量代码上可能立即暴露历史问题，导致 CI 首轮变红。这是预期内的「技术债显影」，建议：
-> 1. 先本地跑 `make lint` 与 `make test-race` 拿到清单；
-> 2. 历史问题单独开 issue 分批清理，新代码严格零新增；
-> 3. 若不想一次性阻塞全部 PR，可把 CI 中「Unit Test (race detector)」步骤临时加 `continue-on-error: true`，待清理完再移除。
+> **接入前提**：新增全仓安全门禁前，先核对存量告警、工具版本和误报，再通过独立 PR 处理基线与启用策略。现有格式、单测、lint、race 和 CodeQL 门禁继续执行，不使用 `continue-on-error` 绕过失败。
 
 ### 6.3 CODEOWNERS 模板（请按实际 owner 填充）
 ```

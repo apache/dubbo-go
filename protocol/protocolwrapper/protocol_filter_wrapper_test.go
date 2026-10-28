@@ -64,6 +64,29 @@ func TestProtocolFilterWrapperRefer(t *testing.T) {
 	assert.True(t, ok)
 }
 
+func TestBuildInvokerChainSkipsInvalidFilters(t *testing.T) {
+	for _, filterName := range []string{"missing-filter", "-missing-filter"} {
+		extension.UnregisterFilter(filterName)
+		invoker := base.NewBaseInvoker(common.NewURLWithOptions(
+			common.WithParamsValue(constant.ServiceFilterKey, filterName),
+		))
+
+		assert.Same(t, invoker, BuildInvokerChain(invoker, constant.ServiceFilterKey))
+	}
+}
+
+func TestBuildInvokerChainSkipsNilFilter(t *testing.T) {
+	const filterName = "nil-filter"
+	extension.SetFilter(filterName, func() filter.Filter { return nil })
+	t.Cleanup(func() { extension.UnregisterFilter(filterName) })
+
+	invoker := base.NewBaseInvoker(common.NewURLWithOptions(
+		common.WithParamsValue(constant.ServiceFilterKey, filterName),
+	))
+
+	assert.Same(t, invoker, BuildInvokerChain(invoker, constant.ServiceFilterKey))
+}
+
 // The initialization of mockEchoFilter, for test
 func init() {
 	extension.SetFilter(mockFilterKey, newFilter)

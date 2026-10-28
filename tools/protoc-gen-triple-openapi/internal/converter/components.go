@@ -29,12 +29,17 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/tools/protoc-gen-triple-openapi/internal/converter/schema"
 )
 
-func generateComponents(fd protoreflect.FileDescriptor) (*openapimodel.Components, error) {
+func generateComponents(fd protoreflect.FileDescriptor) (*openapimodel.Components, string, error) {
 	components := &openapimodel.Components{
 		Schemas: schema.GenerateFileSchemas(fd),
 	}
 
 	// triple error component
+	errorResponseSchemaID := "ErrorResponse"
+	if components.Schemas.GetOrZero(errorResponseSchemaID) != nil {
+		// A hyphen cannot occur in a protobuf full name, so this ID cannot collide.
+		errorResponseSchemaID = "Triple-ErrorResponse"
+	}
 	errorResponseProps := orderedmap.New[string, *base.SchemaProxy]()
 	errorResponseProps.Set("status", base.CreateSchemaProxy(&base.Schema{
 		Description: "The status code.",
@@ -44,12 +49,12 @@ func generateComponents(fd protoreflect.FileDescriptor) (*openapimodel.Component
 		Description: "A developer-facing error message.",
 		Type:        []string{"string"},
 	}))
-	components.Schemas.Set("ErrorResponse", base.CreateSchemaProxy(&base.Schema{
+	components.Schemas.Set(errorResponseSchemaID, base.CreateSchemaProxy(&base.Schema{
 		Title:       "ErrorResponse",
 		Description: `Error type returned by triple: https://cn.dubbo.apache.org/zh-cn/overview/reference/protocols/triple-spec/`,
 		Properties:  errorResponseProps,
 		Type:        []string{"object"},
 	}))
 
-	return components, nil
+	return components, errorResponseSchemaID, nil
 }

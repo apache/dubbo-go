@@ -20,6 +20,7 @@ package reflection
 
 import (
 	"context"
+	"errors"
 	"io"
 	"slices"
 	"sort"
@@ -166,7 +167,7 @@ func (s *ReflectionServer) ServerReflectionInfo(ctx context.Context, stream rpb.
 	sentFileDescriptors := make(map[string]bool)
 	for {
 		in, err := stream.Recv()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return nil
 		}
 		if err != nil {

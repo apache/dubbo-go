@@ -22,10 +22,6 @@ import (
 )
 
 import (
-	"github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/cluster"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 )
@@ -42,7 +38,7 @@ func SetCluster(name string, fcn func() cluster.Cluster) {
 func GetCluster(name string) (cluster.Cluster, error) {
 	fcn, ok := clusters.Get(name)
 	if !ok {
-		return nil, errors.New(fmt.Sprintf(constant.NonImportErrorMsgFormat, constant.ClusterKeyFailover))
+		return nil, fmt.Errorf(constant.NonImportErrorMsgFormat, constant.ClusterKeyFailover)
 	}
 	return fcn(), nil
 }

@@ -27,6 +27,7 @@ func init() {
 	extension.AddCustomizers(&tagCustomizer{})
 }
 
+// tagCustomizer writes the tag of the instance into its metadata.
 type tagCustomizer struct{}
 
 // GetPriority will return 2 so that it will be invoked in front of user defining Customizer

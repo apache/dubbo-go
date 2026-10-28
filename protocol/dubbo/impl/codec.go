@@ -20,6 +20,8 @@ package impl
 import (
 	"bufio"
 	"encoding/binary"
+	"errors"
+	"fmt"
 )
 
 import (
@@ -64,7 +66,7 @@ func (c *ProtocolCodec) ReadHeader(header *DubboHeader) error {
 
 	// Header{serialization id(5 bit), event, two way, req/response}
 	if header.SerialID = buf[2] & SERIAL_MASK; header.SerialID == Zero {
-		return perrors.Errorf("serialization ID:%v", header.SerialID)
+		return fmt.Errorf("serialization ID:%v", header.SerialID)
 	}
 
 	flag := buf[2] & FLAG_EVENT
@@ -131,7 +133,7 @@ func (c *ProtocolCodec) EncodeHeader(p DubboPackage) []byte {
 func (c *ProtocolCodec) Encode(p DubboPackage) ([]byte, error) {
 	// header
 	if c.serializer == nil {
-		return nil, perrors.New("serializer should not be nil")
+		return nil, errors.New("serializer should not be nil")
 	}
 	header := p.Header
 	switch header.Type {
@@ -148,7 +150,7 @@ func (c *ProtocolCodec) Encode(p DubboPackage) ([]byte, error) {
 		return packResponse(p, c.serializer)
 
 	default:
-		return nil, perrors.Errorf("Unrecognized message type: %v", header.Type)
+		return nil, fmt.Errorf("unrecognized message type: %v", header.Type)
 	}
 }
 
@@ -173,14 +175,14 @@ func (c *ProtocolCodec) Decode(p *DubboPackage) error {
 		if err != nil {
 			return perrors.WithStack(err)
 		}
-		p.Body.(*ResponsePayload).Exception = perrors.Errorf("java exception:%s", exception.(string))
+		p.Body.(*ResponsePayload).Exception = fmt.Errorf("java exception:%s", exception.(string))
 		return nil
 	} else if p.IsHeartBeat() {
 		// heartbeat no need to unmarshal contents
 		return nil
 	}
 	if c.serializer == nil {
-		return perrors.New("Codec serializer is nil")
+		return errors.New("codec serializer is nil")
 	}
 	if p.IsResponse() {
 		p.Body = &ResponsePayload{
