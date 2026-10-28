@@ -20,13 +20,12 @@ package registry
 import (
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-
-	"go.uber.org/atomic"
 )
 
 import (
@@ -43,7 +42,7 @@ type MockRegistry struct {
 // NewMockRegistry creates a mock registry
 func NewMockRegistry(url *common.URL) (Registry, error) {
 	registry := &MockRegistry{
-		destroyed:  atomic.NewBool(false),
+		destroyed:  new(atomic.Bool),
 		allAddress: make(chan []*ServiceEvent),
 	}
 	listener := &listener{count: 0, registry: registry, listenChan: make(chan *ServiceEvent)}

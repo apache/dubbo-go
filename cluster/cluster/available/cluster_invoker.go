@@ -23,10 +23,6 @@ import (
 )
 
 import (
-	"github.com/pkg/errors"
-)
-
-import (
 	"dubbo.apache.org/dubbo-go/v3/cluster/cluster/base"
 	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	protocolbase "dubbo.apache.org/dubbo-go/v3/protocol/base"
@@ -61,5 +57,5 @@ func (invoker *availableClusterInvoker) Invoke(ctx context.Context, invocation p
 			return ivk.Invoke(ctx, invocation)
 		}
 	}
-	return &result.RPCResult{Err: errors.New(fmt.Sprintf("no provider available in %v", invokers))}
+	return &result.RPCResult{Err: fmt.Errorf("no provider available in %v", invokers)}
 }

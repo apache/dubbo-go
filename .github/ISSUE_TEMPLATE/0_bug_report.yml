@@ -1,158 +1,31 @@
-name: "🐞 Bug Report"
-description: "Report a bug to help us improve"
-title: "[BUG] "
-labels: ["bug"]
+name: Bug report
+description: Report a problem in dubbo-go
+title: "[Bug]: "
+labels: ["☢️ Bug"]
 body:
-  - type: markdown
-    attributes:
-      value: |
-        ## 👋 Thank you for your feedback!
-        
-        Please fill out the following information to help us understand and resolve the issue.
-
-  - type: checkboxes
-    id: duplicate-check
-    attributes:
-      label: "✅ Verification Checklist"
-      description: "Please verify that you've completed the following:"
-      options:
-        - label: "🔍 I have searched the [existing issues](https://github.com/apache/dubbo-go/issues) and confirmed this is not a duplicate"
-          required: true
-
-  - type: markdown
-    attributes:
-      value: |
-        ---
-        ## 🔧 Environment Information
-
-  - type: input
-    id: go-version
-    attributes:
-      label: "🚀 Go Version"
-      description: "The version of Go you're using"
-      placeholder: "e.g., 1.23.0"
-    validations:
-      required: true
-
-  - type: input
-    id: dubbo-go-version
-    attributes:
-      label: "📦 Dubbo-go Version"
-      description: "The version of dubbo-go you're using"
-      placeholder: "e.g., v3.3.0"
-    validations:
-      required: true
-
-  - type: input
-    id: server-config
-    attributes:
-      label: "🖥️ Server Configuration"
-      description: "Server framework and version information"
-      placeholder: "e.g., Dubbo-go, v3.0.5"
-    validations:
-      required: false
-
-  - type: input
-    id: client-config
-    attributes:
-      label: "💻 Client Configuration"
-      description: "Client framework and version information"
-      placeholder: "e.g., Dubbo-go, v3.0.5"
-    validations:
-      required: false
-
-  - type: input
-    id: protocol-config
-    attributes:
-      label: "🌐 Protocol Configuration"
-      description: "Communication protocol used"
-      placeholder: "e.g., Triple, Dubbo, gRPC"
-    validations:
-      required: false
-
-  - type: input
-    id: registry-config
-    attributes:
-      label: "📋 Registry Configuration"
-      description: "Registry type and version information"
-      placeholder: "e.g., Nacos v2.0.0, Zookeeper v3.8.0"
-    validations:
-      required: false
-
-  - type: dropdown
-    id: platform
-    attributes:
-      label: "💾 Operating System"
-      description: "What platform are you using?"
-      options:
-        - "🪟 Windows"
-        - "🍎 macOS"
-        - "🐧 Linux"
-    validations:
-      required: true
-
-  - type: markdown
-    attributes:
-      value: |
-        ---
-        ## 🐛 Issue Details
-
   - type: textarea
-    id: bug-description
+    id: problem
     attributes:
-      label: "📝 Bug Description"
-      description: "A clear and concise description of what the bug is"
+      label: What happened?
+      description: Include the expected result, actual result, and any error message.
       placeholder: |
-        Please describe the bug in detail, including:
-        • Specific problem symptoms
-        • Error messages (if any)
-        • Impact scope
-    validations:
-      required: true
+        Expected: ...
+        Actual: ...
+        Error: ...
 
   - type: textarea
-    id: reproduction-steps
+    id: reproduction
     attributes:
-      label: "🔄 Steps to Reproduce"
-      description: "Please provide detailed steps to reproduce this issue"
+      label: How can we reproduce it? (optional)
+      description: A minimal code sample or repository link is especially helpful.
       placeholder: |
-        Please list the steps to reproduce:
-        1. First step...
-        2. Second step...
-        3. Third step...
-        4. See error
-
-        💡 If possible, please provide a GitHub repository link or minimal reproduction code
-    validations:
-      required: true
+        1. ...
+        2. ...
 
   - type: textarea
-    id: expected-behavior
+    id: environment
     attributes:
-      label: "✅ Expected Behavior"
-      description: "What did you expect to happen?"
-      placeholder: "Describe in detail what the correct behavior should be..."
-    validations:
-      required: true
-
-  - type: textarea
-    id: actual-behavior
-    attributes:
-      label: "❌ Actual Behavior"
-      description: "What actually happened?"
-      placeholder: |
-        Describe what actually happened, including:
-        • Error messages
-        • Exception stack traces
-        • Log output
-    validations:
-      required: true
-
-  - type: textarea
-    id: possible-solution
-    attributes:
-      label: "💡 Possible Solution"
-      description: "If you have ideas on how to fix this issue, please share them here"
-      placeholder: "Share your thoughts, suggestions, or attempted solutions..."
+      label: Environment
+      description: Include the dubbo-go version, Go version, operating system, and relevant configuration.
     validations:
       required: false

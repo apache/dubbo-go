@@ -74,3 +74,27 @@ type MetadataReport interface {
 	// URL returns the URL used to create this metadata report instance.
 	URL() *common.URL
 }
+
+// ServiceDefinitionPublisher is an optional capability for metadata reports
+// that can store interface-level service definitions.
+//
+// It is deliberately separate from MetadataReport rather than a new method on
+// it. MetadataReport is a fixed interface implemented outside this repository
+// too, and adding a method would break every third-party report at compile
+// time for a feature only some backends can serve. Java has no equivalent
+// problem: storeProviderMetadata is a required MetadataReport method there, so
+// every backend must implement it.
+//
+// Callers must not type-assert the values returned by GetMetadataReports
+// against this interface — those are *DelegateMetadataReport wrappers, which
+// would hide a capable backend. Use DelegateMetadataReport.ServiceDefinitionPublisher
+// instead.
+type ServiceDefinitionPublisher interface {
+	// PublishServiceDefinition idempotently stores one interface-level service
+	// definition. definitionJSON is the serialized definition; the backend
+	// chooses its own key layout from the identifying arguments.
+	//
+	// Republishing the same service must overwrite in place rather than
+	// accumulate, since providers republish on every start.
+	PublishServiceDefinition(serviceInterface, version, group, application, definitionJSON string) error
+}

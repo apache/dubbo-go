@@ -18,6 +18,7 @@
 package global
 
 import (
+	"encoding/json"
 	"reflect"
 	"testing"
 )
@@ -1165,13 +1166,30 @@ func TestDefaultTripleConfig(t *testing.T) {
 func TestHttp3ConfigClone(t *testing.T) {
 	t.Run("clone_http3_config", func(t *testing.T) {
 		http3 := &Http3Config{
-			Enable:      true,
-			Negotiation: false,
+			Enable:                         true,
+			Negotiation:                    false,
+			KeepAlivePeriod:                "15s",
+			MaxIdleTimeout:                 "30s",
+			MaxIncomingStreams:             128,
+			MaxIncomingUniStreams:          64,
+			InitialStreamReceiveWindow:     "524288",
+			MaxStreamReceiveWindow:         "6291456",
+			InitialConnectionReceiveWindow: "1048576",
+			MaxConnectionReceiveWindow:     "16777216",
 		}
 		cloned := http3.Clone()
 		assert.NotNil(t, cloned)
+		assert.NotSame(t, http3, cloned)
 		assert.Equal(t, http3.Enable, cloned.Enable)
 		assert.Equal(t, http3.Negotiation, cloned.Negotiation)
+		assert.Equal(t, http3.KeepAlivePeriod, cloned.KeepAlivePeriod)
+		assert.Equal(t, http3.MaxIdleTimeout, cloned.MaxIdleTimeout)
+		assert.Equal(t, http3.MaxIncomingStreams, cloned.MaxIncomingStreams)
+		assert.Equal(t, http3.MaxIncomingUniStreams, cloned.MaxIncomingUniStreams)
+		assert.Equal(t, http3.InitialStreamReceiveWindow, cloned.InitialStreamReceiveWindow)
+		assert.Equal(t, http3.MaxStreamReceiveWindow, cloned.MaxStreamReceiveWindow)
+		assert.Equal(t, http3.InitialConnectionReceiveWindow, cloned.InitialConnectionReceiveWindow)
+		assert.Equal(t, http3.MaxConnectionReceiveWindow, cloned.MaxConnectionReceiveWindow)
 	})
 
 	t.Run("clone_nil_http3_config", func(t *testing.T) {
@@ -1184,8 +1202,17 @@ func TestHttp3ConfigClone(t *testing.T) {
 		http3 := DefaultHttp3Config()
 		cloned := http3.Clone()
 		assert.NotNil(t, cloned)
+		assert.NotSame(t, http3, cloned)
 		assert.Equal(t, http3.Enable, cloned.Enable)
 		assert.Equal(t, http3.Negotiation, cloned.Negotiation)
+		assert.Equal(t, http3.KeepAlivePeriod, cloned.KeepAlivePeriod)
+		assert.Equal(t, http3.MaxIdleTimeout, cloned.MaxIdleTimeout)
+		assert.Equal(t, http3.MaxIncomingStreams, cloned.MaxIncomingStreams)
+		assert.Equal(t, http3.MaxIncomingUniStreams, cloned.MaxIncomingUniStreams)
+		assert.Equal(t, http3.InitialStreamReceiveWindow, cloned.InitialStreamReceiveWindow)
+		assert.Equal(t, http3.MaxStreamReceiveWindow, cloned.MaxStreamReceiveWindow)
+		assert.Equal(t, http3.InitialConnectionReceiveWindow, cloned.InitialConnectionReceiveWindow)
+		assert.Equal(t, http3.MaxConnectionReceiveWindow, cloned.MaxConnectionReceiveWindow)
 	})
 }
 
@@ -1194,8 +1221,62 @@ func TestDefaultHttp3Config(t *testing.T) {
 	t.Run("default_http3_config", func(t *testing.T) {
 		http3 := DefaultHttp3Config()
 		assert.NotNil(t, http3)
+		assert.False(t, http3.Enable)
+		assert.True(t, http3.Negotiation)
+		assert.Empty(t, http3.KeepAlivePeriod)
+		assert.Empty(t, http3.MaxIdleTimeout)
+		assert.Zero(t, http3.MaxIncomingStreams)
+		assert.Zero(t, http3.MaxIncomingUniStreams)
+		assert.Empty(t, http3.InitialStreamReceiveWindow)
+		assert.Empty(t, http3.MaxStreamReceiveWindow)
+		assert.Empty(t, http3.InitialConnectionReceiveWindow)
+		assert.Empty(t, http3.MaxConnectionReceiveWindow)
 	})
 }
+
+func TestHttp3ConfigJSONTags(t *testing.T) {
+	http3 := &Http3Config{
+		Enable:                         true,
+		Negotiation:                    true,
+		KeepAlivePeriod:                "15s",
+		MaxIdleTimeout:                 "30s",
+		MaxIncomingStreams:             128,
+		MaxIncomingUniStreams:          64,
+		InitialStreamReceiveWindow:     "524288",
+		MaxStreamReceiveWindow:         "6291456",
+		InitialConnectionReceiveWindow: "1048576",
+		MaxConnectionReceiveWindow:     "16777216",
+	}
+
+	data, err := json.Marshal(http3)
+	require.NoError(t, err)
+	assert.Contains(t, string(data), "\"keep-alive-period\":\"15s\"")
+	assert.Contains(t, string(data), "\"max-idle-timeout\":\"30s\"")
+	assert.Contains(t, string(data), "\"max-incoming-streams\":128")
+	assert.Contains(t, string(data), "\"max-incoming-uni-streams\":64")
+	assert.Contains(t, string(data), "\"initial-stream-receive-window\":\"524288\"")
+	assert.Contains(t, string(data), "\"max-stream-receive-window\":\"6291456\"")
+	assert.Contains(t, string(data), "\"initial-connection-receive-window\":\"1048576\"")
+	assert.Contains(t, string(data), "\"max-connection-receive-window\":\"16777216\"")
+
+	var decoded Http3Config
+	err = json.Unmarshal([]byte(`{
+		"enable": true,
+		"negotiation": true,
+		"keep-alive-period": "15s",
+		"max-idle-timeout": "30s",
+		"max-incoming-streams": 128,
+		"max-incoming-uni-streams": 64,
+		"initial-stream-receive-window": "524288",
+		"max-stream-receive-window": "6291456",
+		"initial-connection-receive-window": "1048576",
+		"max-connection-receive-window": "16777216"
+	}`), &decoded)
+	require.NoError(t, err)
+	assert.Equal(t, http3, &decoded)
+
+}
+
 func TestConsumerConfigClone(t *testing.T) {
 	t.Run("clone_full_consumer_config", func(t *testing.T) {
 		consumer := &ConsumerConfig{

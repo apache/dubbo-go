@@ -18,6 +18,8 @@
 package nacos
 
 import (
+	"errors"
+	"fmt"
 	"strings"
 	"sync"
 )
@@ -57,7 +59,8 @@ type nacosDynamicConfiguration struct {
 	cltLock      sync.Mutex
 	done         chan struct{}
 	client       *nacosClient.NacosConfigClient
-	keyListeners sync.Map // sync.Map[listenKey]*sync.Map[config_center.ConfigurationListener]context.CancelFunc
+	keyListeners sync.Map // sync.Map[listenKey]*keyListenerSet
+	listenerLock sync.Mutex
 	parser       parser.ConfigurationParser
 }
 
@@ -117,7 +120,7 @@ func (n *nacosDynamicConfiguration) PublishConfig(key string, group string, valu
 		return perrors.WithStack(err)
 	}
 	if !ok {
-		return perrors.New("publish config to Nocos failed")
+		return errors.New("publish config to Nocos failed")
 	}
 	return nil
 }
@@ -133,7 +136,7 @@ func (n *nacosDynamicConfiguration) RemoveConfig(key string, group string) error
 		return perrors.WithStack(err)
 	}
 	if !ok {
-		return perrors.New("remove config from Nacos failed")
+		return errors.New("remove config from Nacos failed")
 	}
 	return nil
 }
@@ -151,7 +154,7 @@ func (n *nacosDynamicConfiguration) GetConfigKeysByGroup(group string) (*gxset.H
 
 	result := gxset.NewSet()
 	if err != nil {
-		return result, perrors.WithMessage(err, "can not find the configClient config")
+		return result, fmt.Errorf("can not find the configClient config: %w", err)
 	}
 	for _, itm := range page.PageItems {
 		result.Add(itm.DataId)

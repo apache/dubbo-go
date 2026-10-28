@@ -38,21 +38,25 @@ const (
 	jsScriptPrefix     = "\n" + jsScriptResultName + ` = `
 )
 
+// jsInstances is the JavaScript engine.
 type jsInstances struct {
 	insPool *sync.Pool // store *goja.runtime
 	pgLock  sync.RWMutex
 	program map[string]*program // rawScript to compiledProgram
 }
 
+// jsInstance is one goja runtime.
 type jsInstance struct {
 	rt *goja.Runtime
 }
 
+// program is the compiled JavaScript script with its reference count.
 type program struct {
 	pg    *goja.Program
 	count int32
 }
 
+// newProgram creates a new program.
 func newProgram(pg *goja.Program) *program {
 	return &program{
 		pg:    pg,
@@ -64,6 +68,7 @@ func (p *program) addCount(i int) int {
 	return int(atomic.AddInt32(&p.count, int32(i)))
 }
 
+// newJsInstances creates a new jsInstances.
 func newJsInstances() *jsInstances {
 	return &jsInstances{
 		program: map[string]*program{},
@@ -73,6 +78,9 @@ func newJsInstances() *jsInstances {
 	}
 }
 
+// Run runs the JavaScript script. When the script is not compiled
+// or invokers is empty, it returns the original invokers directly.
+// When an error occurs, it returns the original invokers and the error.
 func (i *jsInstances) Run(rawScript string, invokers []base.Invoker, invocation base.Invocation) ([]base.Invoker, error) {
 	i.pgLock.RLock()
 	pg, ok := i.program[rawScript]
@@ -114,6 +122,10 @@ func (i *jsInstances) Run(rawScript string, invokers []base.Invoker, invocation 
 	return result, nil
 }
 
+// Compile compiles the JavaScript script. When the script is not
+// compiled, it compiles the script and increments the reference count.
+// When the script is already compiled, it only increments the reference
+// count, reusing the compiled script.
 func (i *jsInstances) Compile(rawScript string) error {
 	var (
 		ok bool
@@ -145,6 +157,9 @@ func (i *jsInstances) Compile(rawScript string) error {
 	}
 }
 
+// Destroy destroys the JavaScript script. When the script reference
+// count is greater than 0, it only decrements the reference count.
+// When the script reference count reaches 0, it deletes the script.
 func (i *jsInstances) Destroy(rawScript string) {
 	i.pgLock.Lock()
 	if pg, ok := i.program[rawScript]; ok {
@@ -179,6 +194,7 @@ func (j jsInstance) initReplyVar() {
 	}
 }
 
+// newJsInstance creates a new jsInstance.
 func newJsInstance() *jsInstance {
 	return &jsInstance{
 		rt: goja.New(),

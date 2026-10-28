@@ -30,6 +30,8 @@ import (
 // In such situation, implement this interface and register it by invoking extension.SetRejectedExecutionHandler.
 //
 // RejectedExecution method will be called if the invocation was rejected by some component.
+//
+//go:generate go run go.uber.org/mock/mockgen@v0.6.0 -copyright_file ../.github/mockgen-copyright.txt -source rejected_execution_handler.go -destination handler/rejected_execution_handler_mock.go -package handler
 type RejectedExecutionHandler interface {
 	RejectedExecution(url *common.URL, invocation base.Invocation) result.Result
 }

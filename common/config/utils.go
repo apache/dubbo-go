@@ -18,6 +18,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -25,8 +26,6 @@ import (
 
 import (
 	"github.com/go-playground/validator/v10"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -71,7 +70,7 @@ func Verify(s any) error {
 		for _, msg := range errs {
 			slice = append(slice, msg.Error())
 		}
-		return perrors.New(strings.Join(slice, ","))
+		return errors.New(strings.Join(slice, ","))
 	}
 	return nil
 }

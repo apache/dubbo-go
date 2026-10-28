@@ -30,8 +30,6 @@ import (
 	"github.com/dubbogo/gost/log/logger"
 
 	restful "github.com/emicklei/go-restful/v3"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -75,7 +73,7 @@ func (grs *GoRestfulServer) Start(url *common.URL) {
 	container.Add(grs.ws)
 	ln, err := net.Listen("tcp", url.Location)
 	if err != nil {
-		panic(perrors.New(fmt.Sprintf("Restful Server start error:%v", err)))
+		panic(fmt.Errorf("restful server start error:%v", err))
 	}
 
 	go func() {

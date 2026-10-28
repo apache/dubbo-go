@@ -24,7 +24,9 @@ import (
 	"strings"
 	"testing"
 	"time"
+)
 
+import (
 	"github.com/stretchr/testify/assert"
 )
 
@@ -86,8 +88,13 @@ func TestDrainLogsDrainsBufferedData(t *testing.T) {
 		ctx:       context.Background(),
 		fileCache: make(map[string]*os.File),
 	}
+	t.Cleanup(func() {
+		for _, file := range f.fileCache {
+			assert.NoError(t, file.Close())
+		}
+	})
 
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		f.logChan <- Data{
 			accessLog: tmp,
 			data:      map[string]string{"k": "v"},

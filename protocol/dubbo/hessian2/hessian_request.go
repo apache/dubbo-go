@@ -19,6 +19,8 @@ package hessian2
 
 import (
 	"encoding/binary"
+	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -45,7 +47,7 @@ func getArgsTypeList(args []any) (string, error) {
 	for i := range args {
 		typ = getArgType(args[i])
 		if typ == "" {
-			return types, perrors.Errorf("cat not get arg %#v type", args[i])
+			return types, fmt.Errorf("cat not get arg %#v type", args[i])
 		}
 		if !strings.Contains(typ, ".") {
 			types += typ
@@ -85,8 +87,6 @@ func EnsureRequest(body any) *DubboRequest {
 
 func packRequest(service Service, header DubboHeader, req any) ([]byte, error) {
 	var (
-		err       error
-		types     string
 		byteArray []byte
 		pkgLen    int
 	)
@@ -95,7 +95,7 @@ func packRequest(service Service, header DubboHeader, req any) ([]byte, error) {
 
 	args, ok := request.Params.([]any)
 	if !ok {
-		return nil, perrors.Errorf("@params is not of type: []any")
+		return nil, fmt.Errorf("@params is not of type: []any")
 	}
 
 	hb := header.Type == PackageHeartbeat
@@ -126,31 +126,53 @@ func packRequest(service Service, header DubboHeader, req any) ([]byte, error) {
 	// body
 	//////////////////////////////////////////
 	if hb {
-		_ = encoder.Encode(nil)
-		goto END
+		if err := encoder.Encode(nil); err != nil {
+			return nil, fmt.Errorf("failed to encode heartbeat request: %w", err)
+		}
+	} else {
+		if err := encodeRequestBody(encoder, service, request, args); err != nil {
+			return nil, err
+		}
 	}
 
+	byteArray = encoder.Buffer()
+	pkgLen = len(byteArray)
+	if pkgLen > int(DEFAULT_LEN) { // recommand 8M
+		logger.Warnf("[Dubbo][Hessian2] data length %d too large, recommand max payload %d. "+
+			"Dubbo java can't handle the package whose size is greater than %d!!!", pkgLen, DEFAULT_LEN, DEFAULT_LEN)
+	}
+	// byteArray{body length}
+	binary.BigEndian.PutUint32(byteArray[12:], uint32(pkgLen-HEADER_LENGTH))
+	return byteArray, nil
+}
+
+func encodeRequestBody(encoder *hessian.Encoder, service Service, request *DubboRequest, args []any) error {
 	// dubbo version + path + version + method
-	if err = encoder.Encode(DEFAULT_DUBBO_PROTOCOL_VERSION); err != nil {
-		logger.Warnf("[Dubbo][Hessian2] encode default dubbo protocol version failed, err=%v", err)
+	if err := encoder.Encode(DEFAULT_DUBBO_PROTOCOL_VERSION); err != nil {
+		return fmt.Errorf("failed to encode default dubbo protocol version: %w", err)
 	}
-	if err = encoder.Encode(service.Path); err != nil {
-		logger.Warnf("[Dubbo][Hessian2] encode service path failed, err=%v", err)
+	if err := encoder.Encode(service.Path); err != nil {
+		return fmt.Errorf("failed to encode service path: %w", err)
 	}
-	if err = encoder.Encode(service.Version); err != nil {
-		logger.Warnf("[Dubbo][Hessian2] encode service version failed, err=%v", err)
+	if err := encoder.Encode(service.Version); err != nil {
+		return fmt.Errorf("failed to encode service version: %w", err)
 	}
-	if err = encoder.Encode(service.Method); err != nil {
-		logger.Warnf("[Dubbo][Hessian2] encode service method failed, err=%v", err)
+	if err := encoder.Encode(service.Method); err != nil {
+		return fmt.Errorf("failed to encode service method: %w", err)
 	}
 
 	// args = args type list + args value list
-	if types, err = getArgsTypeList(args); err != nil {
-		return nil, perrors.Wrapf(err, " PackRequest(args:%+v)", args)
+	types, err := getArgsTypeList(args)
+	if err != nil {
+		return fmt.Errorf(" PackRequest(args:%+v): %w", args, err)
 	}
-	_ = encoder.Encode(types)
+	if err := encoder.Encode(types); err != nil {
+		return fmt.Errorf("failed to encode argument types: %w", err)
+	}
 	for _, v := range args {
-		_ = encoder.Encode(v)
+		if err := encoder.Encode(v); err != nil {
+			return fmt.Errorf("failed to encode argument of type %T: %w", v, err)
+		}
 	}
 
 	request.Attachments[PATH_KEY] = service.Path
@@ -165,32 +187,24 @@ func packRequest(service Service, header DubboHeader, req any) ([]byte, error) {
 		request.Attachments[TIMEOUT_KEY] = strconv.Itoa(int(service.Timeout / time.Millisecond))
 	}
 
-	_ = encoder.Encode(request.Attachments)
-
-END:
-	byteArray = encoder.Buffer()
-	pkgLen = len(byteArray)
-	if pkgLen > int(DEFAULT_LEN) { // recommand 8M
-		logger.Warnf("[Dubbo][Hessian2] data length %d too large, recommand max payload %d. "+
-			"Dubbo java can't handle the package whose size is greater than %d!!!", pkgLen, DEFAULT_LEN, DEFAULT_LEN)
+	if err := encoder.Encode(request.Attachments); err != nil {
+		return fmt.Errorf("failed to encode request attachments: %w", err)
 	}
-	// byteArray{body length}
-	binary.BigEndian.PutUint32(byteArray[12:], uint32(pkgLen-HEADER_LENGTH))
-	return byteArray, nil
+	return nil
 }
 
 // hessian decode request body
 func unpackRequestBody(decoder *hessian.Decoder, reqObj any) error {
 	if decoder == nil {
-		return perrors.Errorf("@decoder is nil")
+		return fmt.Errorf("@decoder is nil")
 	}
 
 	req, ok := reqObj.([]any)
 	if !ok {
-		return perrors.Errorf("@reqObj is not of type: []any")
+		return fmt.Errorf("@reqObj is not of type: []any")
 	}
 	if len(req) < 7 {
-		return perrors.New("length of @reqObj should  be 7")
+		return errors.New("length of @reqObj should  be 7")
 	}
 
 	var (
@@ -250,7 +264,7 @@ func unpackRequestBody(decoder *hessian.Decoder, reqObj any) error {
 		return nil
 	}
 
-	return perrors.Errorf("get wrong attachments: %+v", attachments)
+	return fmt.Errorf("get wrong attachments: %+v", attachments)
 }
 
 func ToMapStringInterface(origin map[any]any) map[string]any {

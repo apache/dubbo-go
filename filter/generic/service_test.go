@@ -27,6 +27,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"google.golang.org/protobuf/types/known/structpb"
+)
+
+import (
+	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/filter/generic/generalizer"
 )
 
 type testUser struct {
@@ -34,6 +41,10 @@ type testUser struct {
 	Age     int
 	Email   string
 	Address *testAddress
+}
+
+func (testUser) JavaClassName() string {
+	return "org.apache.dubbo.test.User"
 }
 
 type testAddress struct {
@@ -182,4 +193,114 @@ func TestGenericService_InvokeWithType(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to deserialize result")
 	})
+}
+
+func TestGenericService_InvokeWithTypeUsesGenericMode(t *testing.T) {
+	tests := []struct {
+		name   string
+		mode   string
+		result any
+	}{
+		{
+			name: constant.GenericSerializationDefault,
+			mode: constant.GenericSerializationDefault,
+			result: map[string]any{
+				"name": "mapUser",
+				"age":  31,
+			},
+		},
+		{
+			name:   constant.GenericSerializationGson,
+			mode:   constant.GenericSerializationGson,
+			result: `{"name":"gsonUser","age":32}`,
+		},
+		{
+			name: constant.GenericSerializationBean,
+			mode: constant.GenericSerializationBean,
+			result: mustGeneralize(t, generalizer.GetBeanGeneralizer(), testUser{
+				Name: "beanUser",
+				Age:  33,
+			}),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			service := NewGenericService("TestService")
+			require.NoError(t, service.SetGenericType(tt.mode))
+			service.Invoke = func(ctx context.Context, methodName string, types []string, args []hessian.Object) (any, error) {
+				return tt.result, nil
+			}
+
+			var user testUser
+			err := service.InvokeWithType(context.Background(), "getUser", nil, nil, &user)
+
+			require.NoError(t, err)
+			assert.NotEmpty(t, user.Name)
+			assert.NotZero(t, user.Age)
+		})
+	}
+}
+
+func TestGenericService_InvokeWithTypeUsesProtobufJsonMode(t *testing.T) {
+	service := NewGenericService("TestService")
+	require.NoError(t, service.SetGenericType(constant.GenericSerializationProtobufJson))
+	service.Invoke = func(ctx context.Context, methodName string, types []string, args []hessian.Object) (any, error) {
+		return `{"name":"protoUser"}`, nil
+	}
+
+	var reply structpb.Struct
+	err := service.InvokeWithType(context.Background(), "getUser", nil, nil, &reply)
+
+	require.NoError(t, err)
+	assert.Equal(t, "protoUser", reply.Fields["name"].GetStringValue())
+}
+
+func TestGenericService_InvokeWithTypeUsesGsonPointerReply(t *testing.T) {
+	service := NewGenericService("TestService")
+	require.NoError(t, service.SetGenericType(constant.GenericSerializationGson))
+	service.Invoke = func(ctx context.Context, methodName string, types []string, args []hessian.Object) (any, error) {
+		return `{"name":"gsonUser","age":32}`, nil
+	}
+
+	var reply *testUser
+	err := service.InvokeWithType(context.Background(), "getUser", nil, nil, &reply)
+
+	require.NoError(t, err)
+	require.NotNil(t, reply)
+	assert.Equal(t, "gsonUser", reply.Name)
+	assert.Equal(t, 32, reply.Age)
+}
+
+func TestGenericService_InvokeWithTypeRejectsDisabledGenericMode(t *testing.T) {
+	tests := []struct {
+		name string
+		mode string
+	}{
+		{name: "empty", mode: ""},
+		{name: "false", mode: "false"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			service := NewGenericService("TestService")
+			require.NoError(t, service.SetGenericType(tt.mode))
+			service.Invoke = func(ctx context.Context, methodName string, types []string, args []hessian.Object) (any, error) {
+				t.Fatal("InvokeWithType should reject disabled generic mode before invoking")
+				return nil, nil
+			}
+
+			var user testUser
+			err := service.InvokeWithType(context.Background(), "getUser", nil, nil, &user)
+
+			require.EqualError(t, err, `generic mode "`+tt.mode+`" does not support typed result`)
+		})
+	}
+}
+
+func mustGeneralize(t *testing.T, g generalizer.Generalizer, obj any) any {
+	t.Helper()
+	result, err := g.Generalize(obj)
+	require.NoError(t, err)
+	return result
 }

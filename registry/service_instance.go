@@ -25,7 +25,6 @@ import (
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-	gxsort "github.com/dubbogo/gost/sort"
 )
 
 import (
@@ -236,11 +235,18 @@ func (d *DefaultServiceInstance) GetMetadata() map[string]string {
 	return d.Metadata
 }
 
+// Prioritizer is a Dubbo domain interface for objects that can be ordered by
+// an integer priority. It replaces the former
+// [gost/sort.Prioritizer](https://github.com/dubbogo/gost/blob/v1.14.5/sort/prioritized.go).
+type Prioritizer interface {
+	GetPriority() int
+}
+
 // ServiceInstanceCustomizer is an extension point which allow user using custom
 // logic to modify instance. Be careful of priority. Usually you should use number
 // between [100, 9000] other number will be thought as system reserve number
 type ServiceInstanceCustomizer interface {
-	gxsort.Prioritizer
+	Prioritizer
 
 	Customize(instance ServiceInstance)
 }
