@@ -147,6 +147,23 @@ func TestNewMetadataInfo(t *testing.T) {
 	info := NewMetadataInfo("dubbo", "tag")
 	assert.Equal(t, "dubbo", info.App)
 	assert.Equal(t, "tag", info.Tag)
+	assert.NotNil(t, info.Services)
+	assert.Empty(t, info.Services)
+	assert.NotNil(t, info.exportedServiceURLs)
+	assert.NotNil(t, info.subscribedServiceURLs)
+}
+
+func TestNewAppMetadataInfo(t *testing.T) {
+	info := NewAppMetadataInfo("dubbo")
+	assert.Equal(t, "dubbo", info.App)
+	assert.Empty(t, info.Tag)
+	assert.Empty(t, info.Revision)
+	assert.NotNil(t, info.Services)
+	assert.Empty(t, info.Services)
+	assert.NotNil(t, info.exportedServiceURLs)
+	assert.Empty(t, info.GetExportedServiceURLs())
+	assert.NotNil(t, info.subscribedServiceURLs)
+	assert.Empty(t, info.GetSubscribedURLs())
 }
 
 func TestNewMetadataInfoWithParams(t *testing.T) {
@@ -169,14 +186,48 @@ func TestNewServiceInfoWithURL(t *testing.T) {
 	assert.Equal(t, "1000", info.Params["Greet.timeout"])
 }
 
+func TestNewServiceInfo(t *testing.T) {
+	params := map[string]string{"timeout": "3000"}
+	si := NewServiceInfo("test", "test", "1.0.0", "dubbo", "/org.apache.dubbo.samples.proto.GreetService", params)
+	assert.Equal(t, "test", si.Name)
+	assert.Equal(t, "test", si.Group)
+	assert.Equal(t, "1.0.0", si.Version)
+	assert.Equal(t, "dubbo", si.Protocol)
+	assert.Equal(t, "org.apache.dubbo.samples.proto.GreetService", si.Path)
+	assert.Equal(t, params, si.Params)
+	assert.Equal(t, "test/test:1.0.0", si.ServiceKey)
+	assert.Equal(t, "test/test:1.0.0:dubbo", si.MatchKey)
+}
+
+func TestNewServiceInfoWithEmptyPath(t *testing.T) {
+	si := NewServiceInfo("test", "", "", "dubbo", "", nil)
+	assert.Empty(t, si.Path)
+	assert.Equal(t, "test", si.ServiceKey)
+	assert.Equal(t, "test:dubbo", si.MatchKey)
+}
+
 func TestServiceInfoGetMethods(t *testing.T) {
 	service := NewServiceInfoWithURL(serviceUrl)
 	assert.Equal(t, []string{"Greet", "SayHello"}, service.GetMethods())
 }
 
+func TestServiceInfoGetMethodsWithEmptyMap(t *testing.T) {
+	si := NewServiceInfo("", "", "", "", "", nil)
+	assert.Equal(t, []string{""}, si.GetMethods())
+	si.Params = map[string]string{constant.MethodsKey: ""}
+	assert.Equal(t, []string{""}, si.GetMethods())
+}
+
 func TestServiceInfoGetParams(t *testing.T) {
 	service := NewServiceInfoWithURL(serviceUrl)
 	assert.Equal(t, []string{"random"}, service.GetParams()["loadbalance"])
+}
+
+func TestServiceInfoGetParamWithEmptyMap(t *testing.T) {
+	si := NewServiceInfo("", "", "", "", "", nil)
+	assert.Empty(t, si.GetParams())
+	si.Params = map[string]string{}
+	assert.Empty(t, si.GetParams())
 }
 
 func TestServiceInfoExcludesInstanceLevelParams(t *testing.T) {
@@ -203,6 +254,11 @@ func TestServiceInfoGetMatchKey(t *testing.T) {
 	si.MatchKey = ""
 	si.ServiceKey = ""
 	assert.NotEmpty(t, si.GetMatchKey())
+}
+
+func TestCalRevisionWithEmptyServices(t *testing.T) {
+	assert.Equal(t, "0", CalRevision("dubbo", nil))
+	assert.Equal(t, "0", CalRevision("dubbo", map[string]*ServiceInfo{}))
 }
 
 func TestMetadataInfoGetServices(t *testing.T) {

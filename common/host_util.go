@@ -19,6 +19,7 @@ package common
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -26,9 +27,6 @@ import (
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-	gxnet "github.com/dubbogo/gost/net"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -44,8 +42,74 @@ func GetLocalIp() string {
 	if len(localIp) != 0 {
 		return localIp
 	}
-	localIp, _ = gxnet.GetLocalIP()
+	localIp, _ = getLocalIP()
 	return localIp
+}
+
+func getLocalIP() (string, error) {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return "", err
+	}
+	var fallback net.IP
+	for _, iface := range interfaces {
+		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 || strings.Contains(strings.ToLower(iface.Name), "docker") {
+			continue
+		}
+		addrs, err := iface.Addrs()
+		if err != nil {
+			// an abnormal interface should not fail the whole lookup
+			continue
+		}
+		for _, addr := range addrs {
+			ip := ipFromAddr(addr)
+			if ip == nil || ip.IsLoopback() || ip.IsUnspecified() || ip.IsLinkLocalUnicast() {
+				continue
+			}
+			ipv4 := ip.To4()
+			if ipv4 == nil {
+				continue
+			}
+			if ipv4.IsPrivate() {
+				return ipv4.String(), nil
+			}
+			if fallback == nil {
+				fallback = ipv4
+			}
+		}
+	}
+	if fallback == nil {
+		return "", fmt.Errorf("can not get local IP")
+	}
+	return fallback.String(), nil
+}
+
+// ipFromAddr extracts the IP from a network address, supporting both *net.IPNet
+// and *net.IPAddr.
+func ipFromAddr(addr net.Addr) net.IP {
+	switch v := addr.(type) {
+	case *net.IPNet:
+		return v.IP
+	case *net.IPAddr:
+		return v.IP
+	default:
+		return nil
+	}
+}
+
+func ListenOnTCPRandomPort(ip string) (*net.TCPListener, error) {
+	addr := &net.TCPAddr{
+		IP:   net.IPv4zero,
+		Port: 0,
+	}
+	if ip != "" {
+		parsed := net.ParseIP(ip)
+		if parsed == nil || parsed.To4() == nil {
+			return nil, fmt.Errorf("invalid IPv4 address %q", ip)
+		}
+		addr.IP = parsed.To4()
+	}
+	return net.ListenTCP("tcp4", addr)
 }
 
 func GetLocalHostName() string {
@@ -111,13 +175,13 @@ func IsMatchGlobPattern(pattern, value string) bool {
 }
 
 func GetRandomPort(ip string) string {
-	tcp, err := gxnet.ListenOnTCPRandomPort(ip)
+	tcp, err := ListenOnTCPRandomPort(ip)
 	if err != nil {
-		panic(perrors.New(fmt.Sprintf("Get tcp port error, err is {%v}", err)))
+		panic(fmt.Errorf("get tcp port error, err is {%v}", err))
 	}
 	err = tcp.Close()
 	if err != nil {
-		panic(perrors.New(fmt.Sprintf("Close tcp port error, err is {%v}", err)))
+		panic(fmt.Errorf("close tcp port error, err is {%v}", err))
 	}
 	return strings.Split(tcp.Addr().String(), ":")[1]
 }

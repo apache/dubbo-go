@@ -18,18 +18,21 @@
 package dubbo
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"runtime/debug"
 	"slices"
 	"strings"
 	"sync"
+	"time"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-	gr "github.com/dubbogo/gost/runtime"
 
 	"github.com/fsnotify/fsnotify"
 
@@ -38,8 +41,6 @@ import (
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/providers/rawbytes"
-
-	"github.com/pkg/errors"
 )
 
 import (
@@ -67,17 +68,28 @@ var watcher = &fileWatcher{
 	stopCh: make(chan struct{}),
 }
 
+// goSafely runs handler in a new goroutine, recovers panics raised while
+// handler executes on that goroutine, and tracks completion in wg.
+// wg must not be nil.
+// See github.com/dubbogo/gost/runtime/goroutine.go.
+func goSafely(wg *sync.WaitGroup, handler func()) {
+	wg.Go(func() {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Fprintf(os.Stderr,
+					"%s goroutine panic: %v\n%s\n",
+					time.Now(), r, debug.Stack())
+			}
+		}()
+		handler()
+	})
+}
+
 func Load(opts ...LoaderConfOption) error {
 	conf := NewLoaderConf(opts...)
-	newOpts := conf.opts
-	if conf.opts == nil {
-		newOpts = defaultInstanceOptions()
-		koan := GetConfigResolver(conf)
-		koan = conf.MergeConfig(koan)
-		if err := koan.UnmarshalWithConf(newOpts.Prefix(),
-			newOpts, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
-			return err
-		}
+	newOpts, err := loadInstanceOptions(conf)
+	if err != nil {
+		return err
 	}
 
 	if err := newOpts.init(); err != nil {
@@ -91,15 +103,31 @@ func Load(opts ...LoaderConfOption) error {
 	instance := &Instance{insOpts: newOpts}
 	// start the file watcher
 	once.Do(func() {
-		watcher.watcherWg.Add(1)
-		gr.GoSafely(&watcher.watcherWg, false, func() {
+		goSafely(&watcher.watcherWg, func() {
 			watch(conf, watcher.stopCh)
-		}, nil)
+		})
 		extension.AddCustomShutdownCallback(func() {
 			StopFileWatcher()
 		})
 	})
 	return instance.start()
+}
+
+func loadInstanceOptions(conf *loaderConf) (*InstanceOptions, error) {
+	newOpts := conf.opts
+	if conf.opts != nil {
+		return newOpts, nil
+	}
+
+	newOpts = defaultInstanceOptions()
+	koan := GetConfigResolver(conf)
+	koan = conf.MergeConfig(koan)
+	newOpts.extensionConfigs = extensionConfigsFromKoanf(koan)
+	if err := koan.UnmarshalWithConf(newOpts.Prefix(),
+		newOpts, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
+		return nil, err
+	}
+	return newOpts, nil
 }
 
 func watch(conf *loaderConf, stopCh <-chan struct{}) {
@@ -146,6 +174,11 @@ func hotUpdateConfig(conf *loaderConf) error {
 	oldKoan := buildKoanfFromBytes(conf, oldBytes)
 	newKoan := buildKoanfFromBytes(conf, newBytes)
 
+	if extensionConfigsChanged(oldKoan, newKoan) {
+		logger.Warn("[Loader] hot reload denied, extension configuration changes require restart")
+		return errors.New("hot reload denied: extension configuration changes require restart")
+	}
+
 	if !safeChanged(oldKoan, newKoan) {
 		logger.Warn("[Loader] hot reload denied, changes outside allowed hot-reload keys detected")
 		return errors.New("hot reload denied: disallowed configuration changes detected")
@@ -154,6 +187,7 @@ func hotUpdateConfig(conf *loaderConf) error {
 	conf.bytes = newBytes
 
 	koan := newKoan
+	newOpts.extensionConfigs = extensionConfigsFromKoanf(koan)
 	if err := koan.UnmarshalWithConf(newOpts.Prefix(), newOpts, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
 		return err
 	}
@@ -312,7 +346,7 @@ func checkFileSuffix(suffix string) error {
 	if slices.Contains([]string{"json", "yaml", "yml"}, suffix) {
 		return nil
 	}
-	return errors.Errorf("no support file suffix: %s", suffix)
+	return fmt.Errorf("no support file suffix: %s", suffix)
 }
 
 // resolverFilePath resolver file path
@@ -395,13 +429,29 @@ func GetConfigResolver(conf *loaderConf) *koanf.Koanf {
 	case "json":
 		err = k.Load(rawbytes.Provider(bytes), json.Parser())
 	default:
-		err = errors.Errorf("no support %s file suffix", conf.suffix)
+		err = fmt.Errorf("no support %s file suffix", conf.suffix)
 	}
 
 	if err != nil {
 		panic(err)
 	}
 	return resolvePlaceholder(k)
+}
+
+func extensionConfigsFromKoanf(koan *koanf.Koanf) map[string]any {
+	if koan == nil {
+		return nil
+	}
+	root := koan.Raw()
+	dubboConfig, ok := root[constant.Dubbo].(map[string]any)
+	if !ok {
+		return nil
+	}
+	extensions, ok := dubboConfig["extensions"].(map[string]any)
+	if !ok {
+		return nil
+	}
+	return cloneExtensionConfigs(extensions)
 }
 
 // resolvePlaceholder replace ${xx} with real value
@@ -516,4 +566,8 @@ func safeChanged(oldK, newK *koanf.Koanf) bool {
 		}
 	}
 	return true
+}
+
+func extensionConfigsChanged(oldK, newK *koanf.Koanf) bool {
+	return !reflect.DeepEqual(extensionConfigsFromKoanf(oldK), extensionConfigsFromKoanf(newK))
 }

@@ -52,7 +52,8 @@ func (c *ClientStream) RequestHeader() http.Header {
 // available through the Msg method. It returns false when the stream stops,
 // either by reaching the end or by encountering an unexpected error. After
 // Receive returns false, the Err method will return any unexpected error
-// encountered.
+// encountered. Once Receive returns false, subsequent calls return false
+// without advancing the stream.
 func (c *ClientStream) Receive(msg any) bool {
 	if c.err != nil {
 		return false
@@ -62,7 +63,9 @@ func (c *ClientStream) Receive(msg any) bool {
 	return c.err == nil
 }
 
-// Msg returns the most recent message unmarshaled by a call to Receive.
+// Msg returns the most recent message passed to Receive. It returns nil
+// if Receive has not been called. If Receive returned false, the returned
+// message may not have been unmarshaled.
 func (c *ClientStream) Msg() any {
 	// todo:// process nil pointer
 	//if c.msg == nil {
@@ -112,7 +115,8 @@ func (s *ServerStream) ResponseTrailer() http.Header {
 }
 
 // Send a message to the client. The first call to Send also sends the response
-// headers.
+// headers. A nil msg commits the response headers without writing a message
+// frame.
 func (s *ServerStream) Send(msg any) error {
 	if msg == nil {
 		return s.conn.Send(nil)
@@ -149,7 +153,10 @@ func (b *BidiStream) RequestHeader() http.Header {
 	return b.conn.RequestHeader()
 }
 
-// ExportableHeader returns the headers could be exported to users.
+// ExportableHeader returns the request headers that can be exported to
+// users. The underlying protocol implementation decides which headers are
+// exported: under the gRPC protocol, reserved headers are filtered out
+// (except the whitelisted ones) and header keys are lowercased.
 func (b *BidiStream) ExportableHeader() http.Header {
 	return b.conn.ExportableHeader()
 }
@@ -182,7 +189,8 @@ func (b *BidiStream) ResponseTrailer() http.Header {
 }
 
 // Send a message to the client. The first call to Send also sends the response
-// headers.
+// headers. A nil msg commits the response headers without writing a message
+// frame.
 func (b *BidiStream) Send(msg any) error {
 	if msg == nil {
 		return b.conn.Send(nil)

@@ -19,12 +19,11 @@ package cluster
 
 import (
 	"context"
+	"errors"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -94,7 +93,7 @@ func (bi *MockInvoker) Invoke(c context.Context, invocation base.Invocation) res
 	if Count >= bi.successCount {
 		success = true
 	} else {
-		err = perrors.New("error")
+		err = errors.New("error")
 	}
 	result := &result.RPCResult{Err: err, Rest: Rest{Tried: Count, Success: success}}
 

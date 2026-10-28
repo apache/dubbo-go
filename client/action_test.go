@@ -21,6 +21,7 @@ import (
 	"os"
 	"strconv"
 	"testing"
+	"time"
 )
 
 import (
@@ -28,9 +29,13 @@ import (
 )
 
 import (
+	"dubbo.apache.org/dubbo-go/v3/cluster/cluster"
+	"dubbo.apache.org/dubbo-go/v3/cluster/directory"
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
+	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/global"
+	"dubbo.apache.org/dubbo-go/v3/protocol/base"
 )
 
 func TestGetEnv(t *testing.T) {
@@ -225,4 +230,74 @@ func TestBuildInvokerRejectsEmptyURLs(t *testing.T) {
 	require.Nil(t, invoker)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "no urls available")
+}
+
+type timeoutCaptureProtocol struct{ captured *common.URL }
+
+func (p *timeoutCaptureProtocol) Export(base.Invoker) base.Exporter { return nil }
+func (p *timeoutCaptureProtocol) Destroy()                          {}
+func (p *timeoutCaptureProtocol) Refer(u *common.URL) base.Invoker {
+	p.captured = u
+	return base.NewBaseInvoker(u)
+}
+
+type timeoutCaptureCluster struct{}
+
+func (timeoutCaptureCluster) Join(d directory.Directory) base.Invoker {
+	return base.NewBaseInvoker(d.GetURL())
+}
+
+func TestReferenceTimeoutPrecedence(t *testing.T) {
+	tests := []struct {
+		name string
+		opts []ReferenceOption
+		want string
+	}{
+		{"reference timeout wins over consumer", []ReferenceOption{WithRequestTimeout(500 * time.Millisecond)}, "500ms"},
+		{"consumer timeout is the fallback", nil, "3s"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &timeoutCaptureProtocol{}
+			extension.SetProtocol("timeout-precedence", func() base.Protocol { return p })
+			extension.SetCluster("timeout-precedence", func() cluster.Cluster { return timeoutCaptureCluster{} })
+			t.Cleanup(func() { extension.UnregisterProtocol("timeout-precedence") })
+
+			opts := defaultReferenceOptions()
+			opts.Consumer = global.DefaultConsumerConfig()
+			opts.Consumer.RequestTimeout = "3s"
+			for _, o := range tt.opts {
+				o(opts)
+			}
+			opts.Reference.InterfaceName = "example.TimeoutService"
+			opts.Reference.Protocol = "timeout-precedence"
+			opts.Reference.Cluster = "timeout-precedence"
+			opts.Reference.URL = "timeout-precedence://127.0.0.1:20000"
+			opts.Reference.Filter = "-default"
+			opts.Refer()
+
+			require.NotNil(t, p.captured)
+			require.Equal(t, tt.want, p.captured.GetParam(constant.TimeoutKey, ""))
+		})
+	}
+}
+
+func TestDialRequestTimeoutDoesNotLeakAcrossDials(t *testing.T) {
+	p := &timeoutCaptureProtocol{}
+	extension.SetProtocol("timeout-leak", func() base.Protocol { return p })
+	extension.SetCluster("timeout-leak", func() cluster.Cluster { return timeoutCaptureCluster{} })
+	t.Cleanup(func() { extension.UnregisterProtocol("timeout-leak") })
+
+	cli, err := NewClient()
+	require.NoError(t, err)
+	cli.cliOpts.Consumer.RequestTimeout = "3s"
+
+	dial := func(opts ...ReferenceOption) string {
+		opts = append(opts, WithProtocol("timeout-leak"), WithURL("timeout-leak://127.0.0.1:20000"), WithFilter("-default"), WithCluster("timeout-leak"))
+		_, err := cli.Dial("example.TimeoutService", opts...)
+		require.NoError(t, err)
+		return p.captured.GetParam(constant.TimeoutKey, "")
+	}
+	require.Equal(t, "500ms", dial(WithRequestTimeout(500*time.Millisecond)))
+	require.Equal(t, "3s", dial())
 }

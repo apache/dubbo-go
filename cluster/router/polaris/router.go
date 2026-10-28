@@ -178,6 +178,7 @@ func (p *polarisRouter) Route(invokers []base.Invoker, url *common.URL,
 
 	resp, err := p.routerAPI.ProcessRouters(&req)
 	if err != nil {
+		logger.Warnf("[Router][Polaris] route miss, fallback: %+v", err)
 		return invokers
 	}
 
@@ -186,6 +187,11 @@ func (p *polarisRouter) Route(invokers []base.Invoker, url *common.URL,
 		if val, ok := invokersMap[resp.GetInstances()[i].GetId()]; ok {
 			ret = append(ret, val)
 		}
+	}
+
+	if len(ret) == 0 {
+		logger.Warn("[Router][Polaris] route rule yielded no invokers, fallback")
+		return invokers
 	}
 
 	return ret

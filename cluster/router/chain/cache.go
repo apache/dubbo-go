@@ -50,6 +50,7 @@ func newRouterCache() *routerCache {
 	}
 }
 
+// GetInvokers returns a copy of the invoker snapshot used to build the cache.
 func (c *routerCache) GetInvokers() []base.Invoker {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -62,6 +63,8 @@ func (c *routerCache) GetInvokers() []base.Invoker {
 // snapshot for the given Poolable. The returned invokers slice is shared and must not be
 // modified by the caller. The generation is always returned (even on a miss) so callers can
 // detect a snapshot rebuilt by a concurrent SetInvokers.
+// The lookup key is Poolable.Name. A hit returns the pool with its invoker snapshot and
+// generation; a miss returns a nil pool, nil invokers, and the current generation.
 func (c *routerCache) FindAddrPool(p router.Poolable) (router.AddrPool, []base.Invoker, uint64) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()

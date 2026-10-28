@@ -106,6 +106,8 @@ func genTriple(plugin *protogen.Plugin) error {
 		}
 		// Ensure the generated file uses the exact Go package name computed by protoc-gen-go.
 		tripleGo.Package = string(file.GoPackageName)
+		tripleGo.GeneratorVersion = version.Version
+		tripleGo.ProtocVersion = protocVersion(plugin)
 
 		err = generator.GenTripleFile(g, tripleGo)
 		if err != nil {
@@ -129,4 +131,16 @@ func genOldTriple(plugin *protogen.Plugin) error {
 		}
 	}
 	return nil
+}
+
+func protocVersion(plugin *protogen.Plugin) string {
+	v := plugin.Request.GetCompilerVersion()
+	if v == nil {
+		return "(unknown)"
+	}
+	var suffix string
+	if s := v.GetSuffix(); s != "" {
+		suffix = "-" + s
+	}
+	return fmt.Sprintf("v%d.%d.%d%s", v.GetMajor(), v.GetMinor(), v.GetPatch(), suffix)
 }

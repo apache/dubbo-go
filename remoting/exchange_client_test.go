@@ -18,6 +18,7 @@
 package remoting
 
 import (
+	"context"
 	"errors"
 	"sync"
 	"testing"
@@ -37,11 +38,13 @@ import (
 )
 
 type mockClient struct {
-	mu         sync.Mutex
-	available  bool
-	connectErr error
-	connCount  int
-	requestErr error
+	mu                    sync.Mutex
+	available             bool
+	connectErr            error
+	connCount             int
+	requestErr            error
+	contextRequestStarted chan struct{}
+	blockContextRequest   bool
 }
 
 func (m *mockClient) SetExchangeClient(client *ExchangeClient) {}
@@ -52,6 +55,18 @@ func (m *mockClient) Request(request *Request, timeout time.Duration, response *
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	return m.requestErr
+}
+
+func (m *mockClient) RequestContext(ctx context.Context, request *Request, timeout time.Duration, response *PendingResponse) error {
+	if m.contextRequestStarted != nil {
+		close(m.contextRequestStarted)
+		m.contextRequestStarted = nil
+	}
+	if m.blockContextRequest {
+		<-ctx.Done()
+		return ctx.Err()
+	}
+	return m.Request(request, timeout, response)
 }
 
 func (m *mockClient) Connect(url *common.URL) error {
@@ -148,6 +163,41 @@ func TestExchangeClientAsyncRequestErrorCleanup(t *testing.T) {
 	require.Error(t, err)
 	assert.Equal(t, err, res.Err)
 	assert.Equal(t, before, countPendingResponses(), "pendingResponses leaked on AsyncRequest error path")
+}
+
+func TestExchangeClientRequestContextCancellationCleanup(t *testing.T) {
+	requestStarted := make(chan struct{})
+	m := &mockClient{
+		available:             true,
+		contextRequestStarted: requestStarted,
+		blockContextRequest:   true,
+	}
+	ec := NewExchangeClient(testURL(), m, 5*time.Second, true)
+
+	before := countPendingResponses()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	res := &result.RPCResult{}
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- ec.RequestContext(ctx, newTestInvocation(), testURL(), time.Minute, res)
+	}()
+
+	select {
+	case <-requestStarted:
+	case <-time.After(time.Second):
+		t.Fatal("request was not sent to the transport")
+	}
+	cancel()
+
+	select {
+	case err := <-errCh:
+		require.ErrorIs(t, err, context.Canceled)
+		require.ErrorIs(t, res.Err, context.Canceled)
+	case <-time.After(time.Second):
+		t.Fatal("request did not stop after context cancellation")
+	}
+	assert.Equal(t, before, countPendingResponses(), "pendingResponses leaked after context cancellation")
 }
 
 // countPendingResponses returns the number of entries currently held in the global

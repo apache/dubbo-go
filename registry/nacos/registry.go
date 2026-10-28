@@ -20,6 +20,7 @@ package nacos
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -155,7 +156,7 @@ func (nr *nacosRegistry) Register(url *common.URL) error {
 		return err
 	}
 	if !isRegistry {
-		return perrors.New("registry [" + serviceName + "] to  nacos failed")
+		return errors.New("registry [" + serviceName + "] to  nacos failed")
 	}
 	nr.registryUrls = append(nr.registryUrls, url)
 	return nil
@@ -183,7 +184,7 @@ func (nr *nacosRegistry) UnRegister(url *common.URL) error {
 		return err
 	}
 	if !isDeRegistry {
-		return perrors.New("DeRegistry [" + serviceName + "] to nacos failed")
+		return errors.New("DeRegistry [" + serviceName + "] to nacos failed")
 	}
 	return nil
 }
@@ -220,7 +221,7 @@ func (nr *nacosRegistry) subscribeUntilSuccess(url *common.URL, notifyListener r
 
 	operation := func() error {
 		if !nr.IsAvailable() {
-			return backoff.Permanent(perrors.New("registry unavailable"))
+			return backoff.Permanent(errors.New("registry unavailable"))
 		}
 		return nr.subscribe(getSubscribeName(url), notifyListener)
 	}
@@ -280,7 +281,7 @@ func (nr *nacosRegistry) subscribe(serviceName string, notifyListener registry.N
 	}
 	if !nr.IsAvailable() {
 		logger.Warn("[Registry][Nacos] event listener game over")
-		return perrors.New("nacosRegistry is not available.")
+		return errors.New("nacosRegistry is not available")
 	}
 	listener := NewNacosListenerWithServiceName(serviceName, nr.URL, nr.namingClient)
 	groupName := nr.GetParam(constant.RegistryGroupKey, defaultGroup)
@@ -361,7 +362,7 @@ func (nr *nacosRegistry) UnSubscribe(url *common.URL, _ registry.NotifyListener)
 	}
 	err := nr.namingClient.Client().Unsubscribe(param)
 	if err != nil {
-		return perrors.New("UnSubscribe [" + param.ServiceName + "] to nacos failed")
+		return errors.New("UnSubscribe [" + param.ServiceName + "] to nacos failed")
 	}
 	nr.initialSubscribeInstances.Delete(subscribeCacheKey(serviceName, groupName))
 	return nil
@@ -376,8 +377,8 @@ func (nr *nacosRegistry) LoadSubscribeInstances(url *common.URL, notify registry
 		GroupName:   groupName,
 	})
 	if err != nil {
-		return perrors.New(fmt.Sprintf("could not query the instances for serviceName=%s,groupName=%s,error=%v",
-			serviceName, groupName, err))
+		return fmt.Errorf("could not query the instances for serviceName=%s,groupName=%s,error=%v",
+			serviceName, groupName, err)
 	}
 	if len(instances) > 0 {
 		copied := make([]model.Instance, len(instances))

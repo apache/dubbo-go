@@ -18,13 +18,12 @@
 package generalizer
 
 import (
+	"fmt"
 	"reflect"
 	"sync"
 )
 
 import (
-	perrors "github.com/pkg/errors"
-
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"google.golang.org/protobuf/proto"
@@ -49,7 +48,7 @@ type ProtobufJsonGeneralizer struct{}
 func (g *ProtobufJsonGeneralizer) Generalize(obj any) (any, error) {
 	message, ok := obj.(proto.Message)
 	if !ok {
-		return nil, perrors.Errorf("unexpected type of obj(=%T), wanted is proto.Message", obj)
+		return nil, fmt.Errorf("unexpected type of obj(=%T), wanted is proto.Message", obj)
 	}
 
 	jsonbytes, err := protojson.Marshal(message)
@@ -63,7 +62,7 @@ func (g *ProtobufJsonGeneralizer) Generalize(obj any) (any, error) {
 func (g *ProtobufJsonGeneralizer) Realize(obj any, typ reflect.Type) (any, error) {
 	jsonbytes, ok := obj.(string)
 	if !ok {
-		return nil, perrors.Errorf("unexpected type of obj(=%T), wanted is string", obj)
+		return nil, fmt.Errorf("unexpected type of obj(=%T), wanted is string", obj)
 	}
 
 	// typ represents a struct instead of a pointer
@@ -74,7 +73,7 @@ func (g *ProtobufJsonGeneralizer) Realize(obj any, typ reflect.Type) (any, error
 	// create the target object
 	ret, ok := reflect.New(typ).Interface().(proto.Message)
 	if !ok {
-		return nil, perrors.Errorf("the type of obj(=%s) should be proto.Message", typ)
+		return nil, fmt.Errorf("the type of obj(=%s) should be proto.Message", typ)
 	}
 
 	// get the values from json

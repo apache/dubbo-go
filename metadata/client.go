@@ -20,13 +20,13 @@ package metadata
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"reflect"
 )
 
 import (
 	"github.com/dubbogo/gost/log/logger"
-
-	perrors "github.com/pkg/errors"
 )
 
 import (
@@ -45,25 +45,45 @@ const defaultTimeout = "5s" // s
 func GetMetadataFromMetadataReport(revision string, instance registry.ServiceInstance, registryId string) (*info.MetadataInfo, error) {
 	report := GetMetadataReportByRegistry(registryId)
 	if report == nil {
-		return nil, perrors.Errorf("no metadata report instance found for registryId=%s, please check metadata-report configuration", registryId)
+		return nil, fmt.Errorf("metadata_report failed: operation=get app=%s revision=%s registry_id=%s storage_type=%s: no metadata report instance found, please check metadata-report configuration",
+			instance.GetServiceName(), revision, registryId, constant.RemoteMetadataStorageType)
 	}
 	meta, err := report.GetAppMetadata(instance.GetServiceName(), revision)
 	if err != nil {
-		return nil, perrors.Wrapf(err, "failed to get app metadata app=%s revision=%s", instance.GetServiceName(), revision)
+		return nil, fmt.Errorf("%w; registry_id=%s", err, registryId)
 	}
 	return meta, nil
 }
 
 func GetMetadataFromRpc(revision string, instance registry.ServiceInstance) (*info.MetadataInfo, error) {
+	return GetMetadataFromRpcWithContext(context.Background(), revision, instance)
+}
+
+// GetMetadataFromRpcWithContext fetches metadata through the metadata service
+// while preserving the caller's context for the underlying RPC invocation.
+func GetMetadataFromRpcWithContext(ctx context.Context, revision string, instance registry.ServiceInstance) (*info.MetadataInfo, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	storageType := constant.DefaultMetadataStorageType
+	if instanceMetadata := instance.GetMetadata(); instanceMetadata != nil && instanceMetadata[constant.MetadataStorageTypePropertyName] != "" {
+		storageType = instanceMetadata[constant.MetadataStorageTypePropertyName]
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, fmt.Errorf("rpc_metadata failed: app=%s revision=%s instance_id=%s host=%s storage_type=%s: %w",
+			instance.GetServiceName(), revision, instance.GetID(), instance.GetHost(), storageType, err)
+	}
 	url, err := buildStandardMetadataServiceURL(instance)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("url_construction failed: app=%s revision=%s instance_id=%s host=%s storage_type=%s: %w",
+			instance.GetServiceName(), revision, instance.GetID(), instance.GetHost(), storageType, err)
 	}
 	url.SetParam(constant.TimeoutKey, defaultTimeout)
 	p := extension.GetProtocol(url.Protocol)
 	invoker := p.Refer(url)
 	if invoker == nil { // can't connect instance
-		return nil, perrors.New("can not connect to remote metadata service host: " + url.Ip)
+		return nil, fmt.Errorf("rpc_metadata failed: app=%s revision=%s instance_id=%s host=%s storage_type=%s: can not connect to remote metadata service",
+			instance.GetServiceName(), revision, instance.GetID(), instance.GetHost(), storageType)
 	}
 	var remoteService remoteMetadataService
 	if url.Protocol == constant.TriProtocol && instance.GetMetadata()[constant.MetadataVersion] == constant.MetadataServiceV2Version {
@@ -74,13 +94,17 @@ func GetMetadataFromRpc(revision string, instance registry.ServiceInstance) (*in
 	defer func() {
 		invoker.Destroy()
 	}()
-	return remoteService.getMetadataInfo(context.Background(), revision)
+	metadataInfo, err := remoteService.getMetadataInfo(ctx, revision)
+	if err != nil {
+		return metadataInfo, fmt.Errorf("rpc_metadata failed: app=%s revision=%s instance_id=%s host=%s storage_type=%s: %w",
+			instance.GetServiceName(), revision, instance.GetID(), instance.GetHost(), storageType, err)
+	}
+	return metadataInfo, nil
 }
 
 // remoteMetadataService is the internal interface for fetching MetadataInfo via RPC.
-// The context parameter is accepted for future cancellation support but is not yet propagated.
 type remoteMetadataService interface {
-	getMetadataInfo(_ context.Context, revision string) (*info.MetadataInfo, error)
+	getMetadataInfo(ctx context.Context, revision string) (*info.MetadataInfo, error)
 }
 
 type triMetadataServiceV2 struct {
@@ -88,16 +112,18 @@ type triMetadataServiceV2 struct {
 }
 
 // getMetadataInfo fetches metadata via RPC using the Triple protocol (Protobuf).
-// TODO(context-propagation): ctx is not yet forwarded to the invoker; cancellation is not respected.
-func (m *triMetadataServiceV2) getMetadataInfo(_ context.Context, revision string) (*info.MetadataInfo, error) {
+func (m *triMetadataServiceV2) getMetadataInfo(ctx context.Context, revision string) (*info.MetadataInfo, error) {
 	const methodName = "GetMetadataInfo"
 	req := &tripleapi.MetadataRequest{Revision: revision}
 	metadataInfo := &tripleapi.MetadataInfoV2{}
 	inv, _ := generateInvocation(m.invoker.GetURL(), methodName, req, metadataInfo, constant.CallUnary)
-	res := m.invoker.Invoke(context.Background(), inv)
+	if rpcInv, ok := inv.(*invocation.RPCInvocation); ok {
+		rpcInv.SetContext(ctx)
+	}
+	res := m.invoker.Invoke(ctx, inv)
 	if res.Error() != nil {
 		logger.Errorf("[Metadata][RPC] could not get the metadata info from remote provider, err=%v", res.Error())
-		return nil, perrors.Wrapf(res.Error(), "remote metadata call failed")
+		return nil, fmt.Errorf("remote metadata call failed: %w", res.Error())
 	}
 	return convertMetadataInfoV2(metadataInfo), nil
 }
@@ -160,18 +186,20 @@ type remoteMetadataServiceV1 struct {
 }
 
 // getMetadataInfo fetches metadata via RPC using the dubbo:// protocol (Hessian2 serialization).
-// TODO(context-propagation): ctx is not yet forwarded to the invoker; cancellation is not respected.
-func (m *remoteMetadataServiceV1) getMetadataInfo(_ context.Context, revision string) (*info.MetadataInfo, error) {
+func (m *remoteMetadataServiceV1) getMetadataInfo(ctx context.Context, revision string) (*info.MetadataInfo, error) {
 	const methodName = "getMetadataInfo"
 	// Use interface{} as reply parameter to accept any type (MetadataInfo or string)
 	// This avoids panic when Java returns String instead of MetadataInfo
 	var rawResult any
 	inv, _ := generateInvocation(m.invoker.GetURL(), methodName, revision, &rawResult, constant.CallUnary)
+	if rpcInv, ok := inv.(*invocation.RPCInvocation); ok {
+		rpcInv.SetContext(ctx)
+	}
 
-	res := m.invoker.Invoke(context.Background(), inv)
+	res := m.invoker.Invoke(ctx, inv)
 	if res.Error() != nil {
 		logger.Errorf("[Metadata][RPC] RPC call failed to %s, err=%v", m.invoker.GetURL().Location, res.Error())
-		return nil, perrors.Wrapf(res.Error(), "RPC call failed to %s", m.invoker.GetURL().Location)
+		return nil, fmt.Errorf("RPC call failed to %s: %w", m.invoker.GetURL().Location, res.Error())
 	}
 
 	// rawResult now contains the deserialized value - could be *MetadataInfo, string, or nil
@@ -180,7 +208,7 @@ func (m *remoteMetadataServiceV1) getMetadataInfo(_ context.Context, revision st
 	if rawResult == nil {
 		logger.Warnf("[Metadata][RPC] Provider %s returned nil metadata (service may not be ready), revision=%s",
 			m.invoker.GetURL().Location, revision)
-		return nil, perrors.Errorf("metadata is nil from %s, revision: %s", m.invoker.GetURL().Location, revision)
+		return nil, fmt.Errorf("metadata is nil from %s, revision: %s", m.invoker.GetURL().Location, revision)
 	}
 
 	var metadataInfo *info.MetadataInfo
@@ -197,14 +225,14 @@ func (m *remoteMetadataServiceV1) getMetadataInfo(_ context.Context, revision st
 		if err := json.Unmarshal([]byte(strValue), metadataInfo); err != nil {
 			logger.Errorf("[Metadata][RPC] failed to parse JSON string from provider %s, err=%v", m.invoker.GetURL().Location, err)
 			logger.Errorf("[Metadata][RPC] - String content: %s", truncateString(strValue, 1000))
-			return nil, perrors.Errorf("failed to parse metadata JSON from %s: %v", m.invoker.GetURL().Location, err)
+			return nil, fmt.Errorf("failed to parse metadata JSON from %s: %v", m.invoker.GetURL().Location, err)
 		}
 
 	} else {
 		// Neither MetadataInfo nor String - this is unexpected
 		logger.Errorf("[Metadata][RPC] unexpected metadata type from %s: got %T, expected *info.MetadataInfo or string",
 			m.invoker.GetURL().Location, rawResult)
-		return nil, perrors.Errorf("unexpected metadata type from %s: got %T, expected *info.MetadataInfo or string",
+		return nil, fmt.Errorf("unexpected metadata type from %s: got %T, expected *info.MetadataInfo or string",
 			m.invoker.GetURL().Location, rawResult)
 	}
 
@@ -224,10 +252,10 @@ func truncateString(s string, maxLen int) string {
 func buildStandardMetadataServiceURL(ins registry.ServiceInstance) (*common.URL, error) {
 	ps := getMetadataServiceUrlParams(ins)
 	if ps[constant.ProtocolKey] == "" {
-		return nil, perrors.New("metadata service URL params missing: protocol is empty")
+		return nil, errors.New("metadata service URL params missing: protocol is empty")
 	}
 	if ps[constant.PortKey] == "" {
-		return nil, perrors.New("metadata service URL params missing: port is empty")
+		return nil, errors.New("metadata service URL params missing: port is empty")
 	}
 
 	sn := ins.GetServiceName()
@@ -272,7 +300,8 @@ func getMetadataServiceUrlParams(ins registry.ServiceInstance) map[string]string
 	if str, ok := ps[constant.MetadataServiceURLParamsPropertyName]; ok && len(str) > 0 {
 		err := json.Unmarshal([]byte(str), &res)
 		if err != nil {
-			logger.Errorf("[Metadata][URL] could not parse the metadata service url parameters to map, err=%v", err)
+			logger.Errorf("[Metadata][URL] url_construction failed: app=%s instance_id=%s host=%s: could not parse metadata service URL parameters: %v",
+				ins.GetServiceName(), ins.GetID(), ins.GetHost(), err)
 		}
 	}
 

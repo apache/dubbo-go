@@ -23,6 +23,7 @@ package main
 
 import (
 	"context"
+	"log"
 )
 
 import (
@@ -31,7 +32,6 @@ import (
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/client"
-	"dubbo.apache.org/dubbo-go/v3/common/logger"
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
 )
 
@@ -43,20 +43,20 @@ func main() {
 		panic(err)
 	}
 
-	greeterClient, err := api.NewGreeterClient(cli)
+	greeterClient, err := api.NewGreeter(cli)
 	if err != nil {
 		panic(err)
 	}
 
-	logger.Info("start to test dubbo")
+	log.Println("start to test dubbo")
 	req := &api.HelloRequest{
 		Name: "laurence",
 	}
 	reply, err := greeterClient.SayHello(context.Background(), req)
 	if err != nil {
-		logger.Error(err)
+		log.Println(err)
 	}
-	logger.Infof("client response result: %v\n", reply)
+	log.Printf("client response result: %v\n", reply)
 }
 `
 )
