@@ -55,3 +55,35 @@ func TestObservationRace(t *testing.T) {
 		}
 	}
 }
+
+func TestObservationRejectsUnconfirmedEvidence(t *testing.T) {
+	_, o := WithObservation(context.Background())
+	defer o.Freeze()
+	session := new(int)
+	cause := Mark(errors.New("codec"), Codec)
+	var absent *Observation
+	absent.BindSession(session)
+	if absent.Record(session, cause) || absent.Freeze() != Unknown {
+		t.Fatal("nil observation accepted evidence")
+	}
+	for _, invalid := range []any{nil, []int{1}, map[string]int{"id": 1}} {
+		o.BindSession(invalid)
+		if o.session != nil || o.Record(invalid, cause) {
+			t.Fatal("invalid session accepted")
+		}
+	}
+	o.BindSession(session)
+	if o.Record(session, errors.New("unmarked")) {
+		t.Fatal("unconfirmed origin accepted")
+	}
+	if !o.Record(session, cause) || !o.Record(session, Mark(errors.New("network"), Network)) {
+		t.Fatal("confirmed evidence not recorded")
+	}
+	if o.Freeze() != Unknown {
+		t.Fatal("conflicting evidence must not choose an origin")
+	}
+	o.BindSession(session)
+	if o.session != nil || o.Record(session, cause) {
+		t.Fatal("frozen observation accepted a session or evidence")
+	}
+}

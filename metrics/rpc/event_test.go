@@ -67,5 +67,5 @@ func TestNewAfterInvokeEvent(t *testing.T) {
 	assert.Equal(t, "TestMethod", event.labels[constant.TagMethod])
 	assert.Equal(t, costTime, event.costTime)
 	assert.True(t, event.hasResult)
-	assert.Nil(t, event.err)
+	assert.NoError(t, event.err)
 }

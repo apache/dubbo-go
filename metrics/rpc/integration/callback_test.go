@@ -25,9 +25,14 @@ import (
 )
 
 import (
+	prom "github.com/prometheus/client_golang/prometheus"
+)
+
+import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/rpcerror"
+	"dubbo.apache.org/dubbo-go/v3/filter"
 	"dubbo.apache.org/dubbo-go/v3/protocol/dubbo"
 	"dubbo.apache.org/dubbo-go/v3/protocol/invocation"
 	"dubbo.apache.org/dubbo-go/v3/protocol/result"
@@ -69,15 +74,7 @@ func TestCallbackMetricsThroughExchange(t *testing.T) {
 			}
 			(&remoting.Response{ID: id, Error: cause}).Handle()
 		}
-		select {
-		case callback := <-called:
-			// Existing callback contract has Cause=nil on this path.
-			if callback.(remoting.AsyncCallbackResponse).Cause != nil {
-				t.Fatal("changed user-visible callback Cause")
-			}
-		case <-time.After(time.Second):
-			t.Fatal("callback was not delivered")
-		}
+		assertCallbackCauseUnchanged(t, called)
 		checkMetrics(t, reg, method, 1, 1, 1, 0)
 		// A duplicate terminal has no waiter and must not count again.
 		(&remoting.Response{ID: id, Error: cause}).Handle()
@@ -87,6 +84,24 @@ func TestCallbackMetricsThroughExchange(t *testing.T) {
 		}
 	}
 
+	checkCanceledCallbackObservation(t, reg, mf, invoker, transport)
+}
+
+func assertCallbackCauseUnchanged(t *testing.T, called <-chan common.CallbackResponse) {
+	t.Helper()
+	select {
+	case callback := <-called:
+		// Existing callback contract has Cause=nil on this path.
+		if callback.(remoting.AsyncCallbackResponse).Cause != nil {
+			t.Fatal("changed user-visible callback Cause")
+		}
+	case <-time.After(time.Second):
+		t.Fatal("callback was not delivered")
+	}
+}
+
+func checkCanceledCallbackObservation(t *testing.T, reg *prom.Registry, mf filter.Filter, invoker *dubbo.DubboInvoker, transport *controlledTransport) {
+	t.Helper()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	transport.earlyError = nil

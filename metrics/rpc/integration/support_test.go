@@ -38,7 +38,7 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/common/extension"
 	"dubbo.apache.org/dubbo-go/v3/filter"
-	_ "dubbo.apache.org/dubbo-go/v3/filter/metrics"
+	_ "dubbo.apache.org/dubbo-go/v3/filter/metrics" // Register the production Metrics Filter used by extension.GetFilter.
 	"dubbo.apache.org/dubbo-go/v3/metrics"
 	metricsProm "dubbo.apache.org/dubbo-go/v3/metrics/prometheus"
 	"dubbo.apache.org/dubbo-go/v3/protocol/base"
@@ -121,42 +121,48 @@ func metricValue(t *testing.T, reg *prom.Registry, suffix, method string) float6
 			continue
 		}
 		for _, m := range family.Metric {
-			matched := false
-			applicationMatched := false
-			labels := make(map[string]string)
-			for _, l := range m.Label {
-				labels[l.GetName()] = l.GetValue()
-				if l.GetName() == "method" && l.GetValue() == method {
-					matched = true
-				}
-				if l.GetName() == "application_name" && l.GetValue() == integrationApplication {
-					applicationMatched = true
-				}
-			}
-			if matched && applicationMatched {
-				if labels["interface"] != "fixture.Service" || labels["group"] != "fixture" || labels["version"] != "1" || labels["ip"] == "" {
-					t.Fatalf("incorrect exported labels: %v", labels)
-				}
-				if len(labels) != 8 {
-					t.Fatalf("unexpected new label dimensions: %v", labels)
-				}
-				wantType := dto.MetricType_COUNTER
-				if strings.HasSuffix(suffix, "_aggregate") || suffix == "requests_processing_total" || suffix == "qps_total" {
-					wantType = dto.MetricType_GAUGE
-				}
-				if family.GetType() != wantType {
-					t.Fatalf("incorrect metric type for %s: %v", suffix, family.GetType())
-				}
-				if family.GetType() == dto.MetricType_COUNTER {
-					value += m.GetCounter().GetValue()
-				} else {
-					value += m.GetGauge().GetValue()
-				}
+			if matchesFixtureLabels(t, m, method) {
+				value += checkedMetricValue(t, family, m, suffix)
 			}
 		}
 	}
 	return value
 }
+
+// Match this run before validating its complete exported label contract.
+func matchesFixtureLabels(t *testing.T, m *dto.Metric, method string) bool {
+	t.Helper()
+	labels := make(map[string]string)
+	for _, label := range m.Label {
+		labels[label.GetName()] = label.GetValue()
+	}
+	if labels["method"] != method || labels["application_name"] != integrationApplication {
+		return false
+	}
+	if labels["interface"] != "fixture.Service" || labels["group"] != "fixture" || labels["version"] != "1" || labels["ip"] == "" {
+		t.Fatalf("incorrect exported labels: %v", labels)
+	}
+	if len(labels) != 8 {
+		t.Fatalf("unexpected new label dimensions: %v", labels)
+	}
+	return true
+}
+
+func checkedMetricValue(t *testing.T, family *dto.MetricFamily, m *dto.Metric, suffix string) float64 {
+	t.Helper()
+	wantType := dto.MetricType_COUNTER
+	if strings.HasSuffix(suffix, "_aggregate") || suffix == "requests_processing_total" || suffix == "qps_total" {
+		wantType = dto.MetricType_GAUGE
+	}
+	if family.GetType() != wantType {
+		t.Fatalf("incorrect metric type for %s: %v", suffix, family.GetType())
+	}
+	if wantType == dto.MetricType_COUNTER {
+		return m.GetCounter().GetValue()
+	}
+	return m.GetGauge().GetValue()
+}
+
 func checkMetrics(t *testing.T, reg *prom.Registry, method string, total, failed, codec, network float64) {
 	t.Helper()
 	want := map[string]float64{

@@ -78,7 +78,7 @@ func buildMetricSet(registry metrics.MetricRegistry) *metricSet {
 }
 
 func (pm *providerMetrics) init(registry metrics.MetricRegistry) {
-	pm.rpcCommonMetrics.initFailureOrigins(registry, "provider")
+	pm.initFailureOrigins(registry, "provider")
 	pm.qpsTotal = metrics.NewQpsMetricVec(registry, metrics.NewMetricKey("dubbo_provider_qps_total", "The number of requests received by the provider per second"))
 	pm.requestsTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey("dubbo_provider_requests_total", "The total number of received requests by the provider"))
 	pm.requestsTotalAggregate = metrics.NewAggregateCounterVec(registry, metrics.NewMetricKey("dubbo_provider_requests_total_aggregate", "The total number of received requests by the provider under the sliding window"))
@@ -116,7 +116,7 @@ func (pm *providerMetrics) init(registry metrics.MetricRegistry) {
 }
 
 func (cm *consumerMetrics) init(registry metrics.MetricRegistry) {
-	cm.rpcCommonMetrics.initFailureOrigins(registry, "consumer")
+	cm.initFailureOrigins(registry, "consumer")
 	cm.qpsTotal = metrics.NewQpsMetricVec(registry, metrics.NewMetricKey("dubbo_consumer_qps_total", "The number of requests sent by consumers per second"))
 	cm.requestsTotal = metrics.NewCounterVec(registry, metrics.NewMetricKey("dubbo_consumer_requests_total", "The total number of requests sent by consumers"))
 	cm.requestsTotalAggregate = metrics.NewAggregateCounterVec(registry, metrics.NewMetricKey("dubbo_consumer_requests_total_aggregate", "The total number of requests sent by consumers under the sliding window"))

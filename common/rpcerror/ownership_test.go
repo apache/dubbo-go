@@ -33,7 +33,11 @@ func TestClaimObservationRequiresInvocationIdentity(t *testing.T) {
 			t.Fatalf("unrelated invocation claimed observation: %T", invalid)
 		}
 	}
-	if ClaimObservation(nil, owner) != nil || ClaimObservation(context.Background(), owner) != nil {
+	//nolint:staticcheck // Exercise the intentional nil-context boundary, not normal context usage.
+	if ClaimObservation(nil, owner) != nil {
+		t.Fatal("nil context claimed an observation")
+	}
+	if ClaimObservation(context.Background(), owner) != nil {
 		t.Fatal("missing observation was claimed")
 	}
 	if ClaimObservation(ctx, owner) != o || o.invocation != nil {

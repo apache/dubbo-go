@@ -126,3 +126,30 @@ func TestCallbackCompletionRace(t *testing.T) {
 		}
 	}
 }
+
+func TestBeginAsyncDefaultsAndRepeatedHandoff(t *testing.T) {
+	var absent *Observation
+	absent.BeginAsync(context.Background(), time.Minute)
+	absent.Complete(nil)
+	_, o := WithObservation(context.Background())
+	defer o.Freeze()
+	//nolint:staticcheck // Verify the explicitly supported nil-context fallback.
+	o.BeginAsync(nil, 0)
+	timer := o.timer
+	if timer == nil || o.stopContext == nil || !o.async {
+		t.Fatal("default async lifetime was not installed")
+	}
+	o.BeginAsync(context.Background(), time.Minute)
+	if o.timer != timer {
+		t.Fatal("repeated handoff replaced the observation lifetime")
+	}
+	o.Complete(nil)
+	o.FinishInvoke(nil, true) // No observer is also a supported terminal path.
+	if !o.frozen || o.timer != nil || o.stopContext != nil {
+		t.Fatal("completion retained observation resources")
+	}
+	o.BeginAsync(context.Background(), time.Minute)
+	if o.timer != nil {
+		t.Fatal("finished observation was restarted")
+	}
+}

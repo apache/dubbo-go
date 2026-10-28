@@ -52,3 +52,27 @@ func TestOrigins(t *testing.T) {
 		t.Fatal("conflicting origins must remain unknown")
 	}
 }
+
+func TestJoinedOriginsRemainUnambiguous(t *testing.T) {
+	codec := Mark(errors.New("codec"), Codec)
+	network := Mark(errors.New("network"), Network)
+	var typedNil *net.OpError
+	for _, tc := range []struct {
+		name string
+		err  error
+		want Origin
+	}{
+		{"matching siblings", errors.Join(codec, codec), Codec},
+		{"plain sibling", errors.Join(errors.New("plain"), network), Network},
+		{"typed nil sibling", errors.Join(typedNil, codec), Codec},
+		{"conflict followed by codec", errors.Join(codec, network, codec), Unknown},
+		{"conflict followed by network", errors.Join(network, codec, network), Unknown},
+		{"nested conflict", fmt.Errorf("outer: %w", errors.Join(codec, errors.Join(network, codec))), Unknown},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := Of(tc.err); got != tc.want {
+				t.Fatalf("got %v, want %v", got, tc.want)
+			}
+		})
+	}
+}

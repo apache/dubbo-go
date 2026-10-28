@@ -46,87 +46,103 @@ func TestNestedCallbackObservationOwnership(t *testing.T) {
 		for _, childMetrics := range []bool{false, true} {
 			for _, early := range []bool{false, true} {
 				t.Run(fmt.Sprintf("role=%d/childMetrics=%v/early=%v", role, childMetrics, early), func(t *testing.T) {
-					ctx, cancel := context.WithCancel(context.Background())
-					defer cancel()
-					ch := make(chan metric.MetricsEvent, 8)
-					metric.Subscribe(constant.MetricsRpc, ch)
-					defer metric.Unsubscribe(constant.MetricsRpc)
-
-					parentURL, err := common.NewURL("dubbo://127.0.0.1:20880/Parent?registry.role=" + strconv.Itoa(role))
-					if err != nil {
-						t.Fatal(err)
-					}
-					filterName := "-metrics"
-					if childMetrics {
-						filterName = constant.MetricsFilterKey
-					}
-					childURL, err := common.NewURL("dubbo://127.0.0.1:20881/Child?registry.role=0&reference.filter=" + filterName)
-					if err != nil {
-						t.Fatal(err)
-					}
-					cause := rpcerror.Mark(errors.New("downstream response codec failure"), rpcerror.Codec)
-					transport := &nestedCallbackTransport{early: early, err: cause}
-					exchange := remoting.NewExchangeClient(childURL, transport, time.Second, false)
-					defer exchange.Close()
-					child := protocolwrapper.BuildInvokerChain(dubbo.NewDubboInvoker(childURL, exchange), constant.ReferenceFilterKey)
-					callbacks := make(chan struct{}, 2)
-					var parentObservation *rpcerror.Observation
-					parent := &nestedCallbackInvoker{
-						BaseInvoker: base.NewBaseInvoker(parentURL),
-						call: func(ctx context.Context, _ base.Invocation) result.Result {
-							parentObservation = rpcerror.ObservationFromContext(ctx)
-							inv := invocation.NewRPCInvocationWithOptions(
-								invocation.WithMethodName("Child"), invocation.WithReply(new(string)),
-								invocation.WithAttachment(constant.AsyncKey, "true"),
-								invocation.WithCallBack(func(common.CallbackResponse) { callbacks <- struct{}{} }))
-							if res := child.Invoke(ctx, inv); res.Error() != nil {
-								t.Fatal(res.Error())
-							}
-							// The provider handles its own outcome, independently of the child.
-							return &result.RPCResult{}
-						},
-					}
-					res := (&metricsFilter{}).Invoke(ctx, parent, invocation.NewRPCInvocation("Parent", nil, nil))
-					defer remoting.RemovePendingResponse(remoting.SequenceType(transport.id))
-					if res.Error() != nil {
-						t.Fatal("changed parent result", res.Error())
-					}
-					if childMetrics {
-						if transport.pending.Observation == nil || transport.pending.Observation == parentObservation {
-							t.Fatal("child did not get an independent observation")
-						}
-					} else if transport.pending.Observation != nil {
-						t.Fatal("unmonitored child claimed the parent observation")
-					}
-					want := 2 // Parent BeforeInvoke and completed success, even if child is pending.
-					if childMetrics {
-						want++
-						if early {
-							want++
-						}
-					}
-					if len(ch) != want {
-						t.Fatalf("parent completion was deferred: got %d events, want %d", len(ch), want)
-					}
-					if !early {
-						if !childMetrics {
-							cancel() // Ending the parent ctx must not suppress the original child callback.
-						}
-						(&remoting.Response{ID: transport.id, Error: cause}).Handle()
-					}
-					if len(callbacks) != 1 {
-						t.Fatalf("expected one user callback, got %d", len(callbacks))
-					}
-					want = 2
-					if childMetrics {
-						want = 4
-					}
-					if len(ch) != want {
-						t.Fatalf("child changed parent accounting: got %d events, want %d", len(ch), want)
-					}
+					checkNestedCallbackOwnership(t, role, childMetrics, early)
 				})
 			}
 		}
+	}
+}
+
+// Each scenario owns its context, subscription and pending request lifecycle.
+func checkNestedCallbackOwnership(t *testing.T, role int, childMetrics, early bool) {
+	t.Helper()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	ch := make(chan metric.MetricsEvent, 8)
+	metric.Subscribe(constant.MetricsRpc, ch)
+	defer metric.Unsubscribe(constant.MetricsRpc)
+
+	parentURL, err := common.NewURL("dubbo://127.0.0.1:20880/Parent?registry.role=" + strconv.Itoa(role))
+	if err != nil {
+		t.Fatal(err)
+	}
+	filterName := "-metrics"
+	if childMetrics {
+		filterName = constant.MetricsFilterKey
+	}
+	childURL, err := common.NewURL("dubbo://127.0.0.1:20881/Child?registry.role=0&reference.filter=" + filterName)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cause := rpcerror.Mark(errors.New("downstream response codec failure"), rpcerror.Codec)
+	transport := &nestedCallbackTransport{early: early, err: cause}
+	exchange := remoting.NewExchangeClient(childURL, transport, time.Second, false)
+	defer exchange.Close()
+	child := protocolwrapper.BuildInvokerChain(dubbo.NewDubboInvoker(childURL, exchange), constant.ReferenceFilterKey)
+	callbacks := make(chan struct{}, 2)
+	var parentObservation *rpcerror.Observation
+	parent := &nestedCallbackInvoker{
+		BaseInvoker: base.NewBaseInvoker(parentURL),
+		call: func(ctx context.Context, _ base.Invocation) result.Result {
+			parentObservation = rpcerror.ObservationFromContext(ctx)
+			inv := invocation.NewRPCInvocationWithOptions(
+				invocation.WithMethodName("Child"), invocation.WithReply(new(string)),
+				invocation.WithAttachment(constant.AsyncKey, "true"),
+				invocation.WithCallBack(func(common.CallbackResponse) { callbacks <- struct{}{} }))
+			if res := child.Invoke(ctx, inv); res.Error() != nil {
+				t.Fatal(res.Error())
+			}
+			// The provider handles its own outcome, independently of the child.
+			return &result.RPCResult{}
+		},
+	}
+	res := (&metricsFilter{}).Invoke(ctx, parent, invocation.NewRPCInvocation("Parent", nil, nil))
+	defer remoting.RemovePendingResponse(remoting.SequenceType(transport.id))
+	if res.Error() != nil {
+		t.Fatal("changed parent result", res.Error())
+	}
+	assertChildObservation(t, transport.pending.Observation, parentObservation, childMetrics)
+	assertParentCompleted(t, len(ch), childMetrics, early)
+	if !early {
+		if !childMetrics {
+			cancel() // Ending the parent ctx must not suppress the original child callback.
+		}
+		(&remoting.Response{ID: transport.id, Error: cause}).Handle()
+	}
+	if len(callbacks) != 1 {
+		t.Fatalf("expected one user callback, got %d", len(callbacks))
+	}
+	want := 2
+	if childMetrics {
+		want = 4
+	}
+	if len(ch) != want {
+		t.Fatalf("child changed parent accounting: got %d events, want %d", len(ch), want)
+	}
+}
+
+func assertChildObservation(t *testing.T, child, parent *rpcerror.Observation, enabled bool) {
+	t.Helper()
+	if enabled {
+		if child == nil || child == parent {
+			t.Fatal("child did not get an independent observation")
+		}
+	} else if child != nil {
+		t.Fatal("unmonitored child claimed the parent observation")
+	}
+}
+
+func assertParentCompleted(t *testing.T, count int, childMetrics, early bool) {
+	t.Helper()
+	want := 2 // Parent BeforeInvoke and completed success, even if child is pending.
+	if childMetrics {
+		want++
+		if early {
+			want++
+		}
+	}
+	if count != want {
+		t.Fatalf("parent completion was deferred: got %d events, want %d", count, want)
 	}
 }
 

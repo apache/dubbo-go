@@ -81,39 +81,44 @@ func TestFailureCountersAndSnapshot(t *testing.T) {
 				c.beforeInvokeHandler(before)
 				c.afterInvokeHandler(event)
 			}
-			families, err := reg.Gather()
-			if err != nil {
-				t.Fatal(err)
-			}
-			values := map[string]float64{}
-			for _, f := range families {
-				for _, m := range f.Metric {
-					if m.Counter != nil {
-						values[f.GetName()] += m.Counter.GetValue()
-					}
-					if m.Gauge != nil {
-						values[f.GetName()] += m.Gauge.GetValue()
-					}
-				}
-			}
-			side := constant.SideConsumer
-			if role == common.PROVIDER {
-				side = constant.SideProvider
-			}
-			prefix := "dubbo_" + side + "_requests_"
-			for suffix, want := range map[string]float64{
-				"failed_total": 2, "failed_codec_total": 1, "failed_network_total": 1,
-				"failed_codec_total_aggregate": 1, "failed_network_total_aggregate": 1, "processing_total": 0,
-			} {
-				if values[prefix+suffix] != want {
-					t.Errorf("%s: got %v want %v", prefix+suffix, values[prefix+suffix], want)
-				}
-			}
-			if values[prefix+"unknown_failed_total"] != 0 {
-				t.Fatal("double classification")
-			}
+			assertFailureCounterValues(t, gatheredCounterAndGaugeValues(t, reg), role)
 		})
 	}
+}
+
+func assertFailureCounterValues(t *testing.T, values map[string]float64, role int) {
+	t.Helper()
+	side := constant.SideConsumer
+	if role == common.PROVIDER {
+		side = constant.SideProvider
+	}
+	prefix := "dubbo_" + side + "_requests_"
+	for suffix, want := range map[string]float64{
+		"failed_total": 2, "failed_codec_total": 1, "failed_network_total": 1,
+		"failed_codec_total_aggregate": 1, "failed_network_total_aggregate": 1, "processing_total": 0,
+	} {
+		if values[prefix+suffix] != want {
+			t.Errorf("%s: got %v want %v", prefix+suffix, values[prefix+suffix], want)
+		}
+	}
+	if values[prefix+"unknown_failed_total"] != 0 {
+		t.Fatal("double classification")
+	}
+}
+
+func gatheredCounterAndGaugeValues(t *testing.T, reg *prom.Registry) map[string]float64 {
+	t.Helper()
+	families, err := reg.Gather()
+	if err != nil {
+		t.Fatal(err)
+	}
+	values := map[string]float64{}
+	for _, family := range families {
+		for _, m := range family.Metric {
+			values[family.GetName()] += m.GetCounter().GetValue() + m.GetGauge().GetValue()
+		}
+	}
+	return values
 }
 
 func TestObservedOriginDoesNotChangeBusinessResult(t *testing.T) {

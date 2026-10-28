@@ -57,32 +57,33 @@ func Mark(err error, origin Origin) error {
 // Of follows wrapping and rejects conflicting markers (including errors.Join).
 func Of(err error) Origin {
 	var found Origin
-	var visit func(error)
-	visit = func(err error) {
-		if isNil(err) {
-			return
-		}
-		if e, ok := err.(*sourceError); ok && e != nil {
-			if found != Unknown && found != e.origin {
-				found = Origin(255)
-			} else {
-				found = e.origin
-			}
-		}
-		switch e := err.(type) {
-		case interface{ Unwrap() []error }:
-			for _, cause := range e.Unwrap() {
-				visit(cause)
-			}
-		case interface{ Unwrap() error }:
-			visit(e.Unwrap())
-		}
-	}
-	visit(err)
+	collectOrigins(err, &found)
 	if found == Network || found == Codec {
 		return found
 	}
 	return Unknown
+}
+
+// Keep conflicts sticky across the whole error tree, including later siblings.
+func collectOrigins(err error, found *Origin) {
+	if isNil(err) {
+		return
+	}
+	if e, ok := err.(*sourceError); ok && e != nil {
+		if *found != Unknown && *found != e.origin {
+			*found = Origin(255)
+		} else {
+			*found = e.origin
+		}
+	}
+	switch e := err.(type) {
+	case interface{ Unwrap() []error }:
+		for _, cause := range e.Unwrap() {
+			collectOrigins(cause, found)
+		}
+	case interface{ Unwrap() error }:
+		collectOrigins(e.Unwrap(), found)
+	}
 }
 
 // FromNetworkOperation is for trusted transport call sites only. Context
