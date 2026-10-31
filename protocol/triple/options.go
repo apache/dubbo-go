@@ -63,7 +63,7 @@ const ServerCompressMinBytesParam = "triple.server-compress-min-bytes"
 // WithServerCompressMinBytes sets the server response compression threshold in
 // serialized bytes. Responses smaller than min skip compression; zero compresses
 // every response. A threshold above the server send limit is capped to that
-// limit plus one so oversized responses can still be compressed.
+// limit plus one so the send limit is checked against the compressed size.
 // Negative values are rejected during service export.
 func WithServerCompressMinBytes(min int) Option {
 	return func(opts *Options) {

@@ -415,9 +415,10 @@ func resolveHandlerOptions(url *common.URL) ([]tri.HandlerOption, error) {
 	return handlerOpts, nil
 }
 
-// serverCompressMinBytes caps the threshold at sendMaxBytes+1. A threshold above
-// the send limit would skip compression for responses that only fit once
-// compressed, and those responses would then be rejected.
+// serverCompressMinBytes caps the threshold at sendMaxBytes+1 so the send limit
+// is checked against the compressed size instead of the raw size. Without the
+// cap a threshold above the send limit would skip compression, and the raw size
+// would then be rejected.
 func serverCompressMinBytes(minBytes, sendMaxBytes int) int {
 	if sendMaxBytes > 0 && minBytes > sendMaxBytes {
 		return sendMaxBytes + 1

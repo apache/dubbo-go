@@ -27,9 +27,9 @@ type TripleConfig struct {
 	// ServerCompressMinBytes skips compression of responses whose serialized size
 	// is below this value. Responses at or above it are compressed when
 	// compression was negotiated. Zero compresses every response; nil uses the
-	// default of 512 bytes. A value above the server send limit is capped so that
-	// responses can still be compressed to fit. Service-level parameters take
-	// precedence over this setting.
+	// default of 512 bytes. A value above the server send limit is capped to that
+	// limit plus one so the send limit is checked against the compressed size.
+	// Service-level parameters take precedence over this setting.
 	ServerCompressMinBytes *int `yaml:"server-compress-min-bytes" json:"server-compress-min-bytes,omitempty"`
 	// MaxServerSendMsgSize defines the maximum size of messages sent by server.
 	// Supported units include 1mb=1000kb=1000000b and 1mib=1024kb=1048576b.
