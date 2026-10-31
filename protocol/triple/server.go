@@ -24,6 +24,7 @@ import (
 	"maps"
 	"net/http"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -51,6 +52,10 @@ import (
 	tri "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	dubbotls "dubbo.apache.org/dubbo-go/v3/tls"
 )
+
+// defaultServerCompressMinBytes is the serialized response size below which a
+// server skips compression.
+const defaultServerCompressMinBytes = 512
 
 // Server is TRIPLE adaptation layer representation. It makes use of tri.Server to
 // provide functionality.
@@ -381,12 +386,66 @@ func resolveHandlerOptions(url *common.URL) ([]tri.HandlerOption, error) {
 		return nil, err
 	}
 
-	handlerOpts := buildServerHandlerOptions(url, tripleConf)
+	sendMaxBytes := resolveServerSendMaxBytes(url, tripleConf)
+	handlerOpts := buildServerHandlerOptions(url, tripleConf, sendMaxBytes)
+
+	minBytes := defaultServerCompressMinBytes
+	source := "default"
+	if tripleConf != nil && tripleConf.ServerCompressMinBytes != nil {
+		minBytes = *tripleConf.ServerCompressMinBytes
+		source = "server-compress-min-bytes"
+	}
+	if raw := url.GetParam(ServerCompressMinBytesParam, ""); raw != "" {
+		parsed, parseErr := strconv.Atoi(raw)
+		if parseErr != nil {
+			return nil, fmt.Errorf("invalid service parameter %s %q: expected a non-negative integer", ServerCompressMinBytesParam, raw)
+		}
+		minBytes = parsed
+		source = "service parameter " + ServerCompressMinBytesParam
+	}
+	if minBytes < 0 {
+		return nil, fmt.Errorf("invalid %s %d: expected a non-negative integer", source, minBytes)
+	}
+	effectiveMinBytes := serverCompressMinBytes(minBytes, sendMaxBytes)
+	if effectiveMinBytes != minBytes {
+		logger.Debugf("[Triple][Server] gzip compression minimum reduced from %d to %d for sendMaxBytes=%d", minBytes, effectiveMinBytes, sendMaxBytes)
+	}
+	handlerOpts = append(handlerOpts, tri.WithCompressMinBytes(effectiveMinBytes))
 	handlerOpts = append(handlerOpts, tri.WithExpectedCodecName(serialization))
 	return handlerOpts, nil
 }
 
-func buildServerHandlerOptions(url *common.URL, tripleConf *global.TripleConfig) (handlerOpts []tri.HandlerOption) {
+// serverCompressMinBytes caps the threshold at sendMaxBytes+1 so the send limit
+// is checked against the compressed size instead of the raw size. Without the
+// cap a threshold above the send limit would skip compression, and the raw size
+// would then be rejected.
+func serverCompressMinBytes(minBytes, sendMaxBytes int) int {
+	if sendMaxBytes > 0 && minBytes > sendMaxBytes {
+		return sendMaxBytes + 1
+	}
+	return minBytes
+}
+
+// resolveServerSendMaxBytes returns the outgoing message limit. The URL
+// parameter provides the base value and a TripleConfig value overrides it when
+// it parses to a non-zero size; unparsable or zero values are ignored.
+//
+// Compatibility: reads the legacy URL send-size parameter.
+// TODO: remove MaxServerSendMsgSize in version 4.0.0.
+func resolveServerSendMaxBytes(url *common.URL, tripleConf *global.TripleConfig) int {
+	maxBytes := constant.DefaultMaxServerSendMsgSize
+	if size, err := humanize.ParseBytes(url.GetParam(constant.MaxServerSendMsgSize, "")); err == nil && size != 0 {
+		maxBytes = int(size)
+	}
+	if tripleConf != nil && tripleConf.MaxServerSendMsgSize != "" {
+		if size, err := humanize.ParseBytes(tripleConf.MaxServerSendMsgSize); err == nil && size != 0 {
+			maxBytes = int(size)
+		}
+	}
+	return maxBytes
+}
+
+func buildServerHandlerOptions(url *common.URL, tripleConf *global.TripleConfig, sendMaxBytes int) (handlerOpts []tri.HandlerOption) {
 	group := url.GetParam(constant.GroupKey, "")
 	version := url.GetParam(constant.VersionKey, "")
 	handlerOpts = append(handlerOpts, tri.WithGroup(group), tri.WithVersion(version))
@@ -399,13 +458,7 @@ func buildServerHandlerOptions(url *common.URL, tripleConf *global.TripleConfig)
 	}
 	handlerOpts = append(handlerOpts, tri.WithReadMaxBytes(maxServerRecvMsgSize))
 
-	// Compatibility: read the legacy URL send-size parameter.
-	// TODO: remove MaxServerSendMsgSize in version 4.0.0.
-	maxServerSendMsgSize := constant.DefaultMaxServerSendMsgSize
-	if sendMsgSize, convertErr := humanize.ParseBytes(url.GetParam(constant.MaxServerSendMsgSize, "")); convertErr == nil && sendMsgSize != 0 {
-		maxServerSendMsgSize = int(sendMsgSize)
-	}
-	handlerOpts = append(handlerOpts, tri.WithSendMaxBytes(maxServerSendMsgSize))
+	handlerOpts = append(handlerOpts, tri.WithSendMaxBytes(sendMaxBytes))
 
 	if tripleConf == nil {
 		return handlerOpts
@@ -417,14 +470,6 @@ func buildServerHandlerOptions(url *common.URL, tripleConf *global.TripleConfig)
 			maxServerRecvMsgSize = int(recvMsgSize)
 		}
 		handlerOpts = append(handlerOpts, tri.WithReadMaxBytes(maxServerRecvMsgSize))
-	}
-
-	if tripleConf.MaxServerSendMsgSize != "" {
-		logger.Debugf("[Triple][Server] MaxServerSendMsgSize=%v", tripleConf.MaxServerSendMsgSize)
-		if sendMsgSize, convertErr := humanize.ParseBytes(tripleConf.MaxServerSendMsgSize); convertErr == nil && sendMsgSize != 0 {
-			maxServerSendMsgSize = int(sendMsgSize)
-		}
-		handlerOpts = append(handlerOpts, tri.WithSendMaxBytes(maxServerSendMsgSize))
 	}
 
 	// TODO: support OpenTracing

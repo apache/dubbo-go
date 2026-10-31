@@ -24,6 +24,13 @@ type TripleConfig struct {
 	//
 	// for server
 	//
+	// ServerCompressMinBytes skips compression of responses whose serialized size
+	// is below this value. Responses at or above it are compressed when
+	// compression was negotiated. Zero compresses every response; nil uses the
+	// default of 512 bytes. A value above the server send limit is capped to that
+	// limit plus one so the send limit is checked against the compressed size.
+	// Service-level parameters take precedence over this setting.
+	ServerCompressMinBytes *int `yaml:"server-compress-min-bytes" json:"server-compress-min-bytes,omitempty"`
 	// MaxServerSendMsgSize defines the maximum size of messages sent by server.
 	// Supported units include 1mb=1000kb=1000000b and 1mib=1024kb=1048576b.
 	// For more details, see https://pkg.go.dev/github.com/dustin/go-humanize#pkg-constants.
@@ -96,13 +103,19 @@ func (t *TripleConfig) Clone() *TripleConfig {
 		newWriteBuffering = new(bool)
 		*newWriteBuffering = *t.WriteBuffering
 	}
+	var newServerCompressMinBytes *int
+	if t.ServerCompressMinBytes != nil {
+		newServerCompressMinBytes = new(int)
+		*newServerCompressMinBytes = *t.ServerCompressMinBytes
+	}
 
 	return &TripleConfig{
-		MaxServerSendMsgSize: t.MaxServerSendMsgSize,
-		MaxServerRecvMsgSize: t.MaxServerRecvMsgSize,
-		Http3:                t.Http3.Clone(),
-		Cors:                 t.Cors.Clone(),
-		OpenAPI:              t.OpenAPI.Clone(),
+		ServerCompressMinBytes: newServerCompressMinBytes,
+		MaxServerSendMsgSize:   t.MaxServerSendMsgSize,
+		MaxServerRecvMsgSize:   t.MaxServerRecvMsgSize,
+		Http3:                  t.Http3.Clone(),
+		Cors:                   t.Cors.Clone(),
+		OpenAPI:                t.OpenAPI.Clone(),
 
 		KeepAliveInterval: t.KeepAliveInterval,
 		KeepAliveTimeout:  t.KeepAliveTimeout,
