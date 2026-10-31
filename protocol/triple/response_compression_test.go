@@ -309,19 +309,31 @@ func TestResolveServerSendMaxBytes(t *testing.T) {
 	require.Equal(t, constant.DefaultMaxServerSendMsgSize, resolveServerSendMaxBytes(common.NewURLWithOptions(), nil))
 }
 
+// safetySendLimit keeps the compressed size of the send-limit cases far below
+// the limit, so those cases do not depend on how gzip treats small inputs.
+const (
+	safetySendLimit      = "256B"
+	safetySendLimitBytes = 256
+)
+
 func TestServerCompressionSendLimitSafetyWire(t *testing.T) {
 	const path = "/test.CompressionSafety/Echo"
 	for _, threshold := range safetyThresholds(0, 256, 2048) {
 		t.Run(threshold.name, func(t *testing.T) {
-			config := NewOptions(append(threshold.options, WithMaxServerSendMsgSize("64B"))...).Triple
+			config := NewOptions(append(threshold.options, WithMaxServerSendMsgSize(safetySendLimit))...).Triple
 			server := safetyServer(t, safetyHandler(t, path, config, ""))
+			cappedMin := safetyCappedMin(threshold.minimum)
+			sizes := []int{1024, 2048}
+			if cappedMin > safetySendLimitBytes {
+				sizes = append([]int{255, 256}, sizes...)
+			}
 			for _, wire := range []string{"grpc", "triple"} {
 				for _, requestGzip := range []bool{false, true} {
-					for _, size := range []int{63, 64, 65, 128} {
+					for _, size := range sizes {
 						t.Run(fmt.Sprintf("%s/gzip%t/%d", wire, requestGzip, size), func(t *testing.T) {
 							payload := safetyPayload(t, size)
 							response, body := safetyWireCall(t, server, path, wire, payload, requestGzip, true)
-							safetyAssertEcho(t, response, body, wire, payload, threshold.minimum == 0 || size > 64)
+							safetyAssertEcho(t, response, body, wire, payload, size >= cappedMin)
 						})
 					}
 				}
@@ -330,15 +342,24 @@ func TestServerCompressionSendLimitSafetyWire(t *testing.T) {
 	}
 }
 
+// safetyCappedMin mirrors the cap serverCompressMinBytes applies to the
+// threshold so expectations follow the decision the handler makes.
+func safetyCappedMin(minimum int) int {
+	if minimum > safetySendLimitBytes {
+		return safetySendLimitBytes + 1
+	}
+	return minimum
+}
+
 func TestServerCompressionSendLimitStillEnforced(t *testing.T) {
 	const path = "/test.CompressionSafety/Echo"
 	for _, wire := range []string{"grpc", "triple"} {
 		for _, mode := range []string{"random", "no-accept"} {
 			for _, threshold := range safetyThresholds(0, 256, 2048) {
 				t.Run(fmt.Sprintf("%s/%s/%s", wire, mode, threshold.name), func(t *testing.T) {
-					config := NewOptions(append(threshold.options, WithMaxServerSendMsgSize("64B"))...).Triple
+					config := NewOptions(append(threshold.options, WithMaxServerSendMsgSize(safetySendLimit))...).Triple
 					server := safetyServer(t, safetyHandler(t, path, config, ""))
-					payload := safetyPayload(t, 128)
+					payload := safetyPayload(t, 1024)
 					if mode == "random" {
 						_, err := rand.New(rand.NewSource(20261015)).Read(payload)
 						require.NoError(t, err)
@@ -391,19 +412,19 @@ func TestServerCompressionThresholdServiceIsolation(t *testing.T) {
 func TestServerCompressionSendLimitSafetyStream(t *testing.T) {
 	for _, threshold := range safetyThresholds(2048) {
 		t.Run(threshold.name, func(t *testing.T) {
-			testServerCompressionSendLimitSafetyStream(t, threshold.options)
+			testServerCompressionSendLimitSafetyStream(t, threshold.options, safetyCappedMin(threshold.minimum))
 		})
 	}
 }
 
-func testServerCompressionSendLimitSafetyStream(t *testing.T, thresholdOptions []Option) {
+func testServerCompressionSendLimitSafetyStream(t *testing.T, thresholdOptions []Option, cappedMin int) {
 	const path = "/test.CompressionSafety/Stream"
-	sizes := []int{63, 64, 65, 128}
+	sizes := []int{1024, 2048}
 	payloads := make(map[int][]byte, len(sizes))
 	for _, size := range sizes {
 		payloads[size] = safetyPayload(t, size)
 	}
-	config := NewOptions(append(thresholdOptions, WithMaxServerSendMsgSize("64B"))...).Triple
+	config := NewOptions(append(thresholdOptions, WithMaxServerSendMsgSize(safetySendLimit))...).Triple
 	url := common.NewURLWithOptions(common.WithAttribute(constant.TripleConfigKey, config))
 	options, err := resolveHandlerOptions(url)
 	require.NoError(t, err)
@@ -424,7 +445,7 @@ func testServerCompressionSendLimitSafetyStream(t *testing.T, thresholdOptions [
 			require.GreaterOrEqual(t, len(body), 5)
 			length := int(binary.BigEndian.Uint32(body[1:5])) + 5
 			require.GreaterOrEqual(t, len(body), length)
-			safetyAssertEcho(t, response, body[:length], "grpc", payloads[size], size > 64)
+			safetyAssertEcho(t, response, body[:length], "grpc", payloads[size], size >= cappedMin)
 			body = body[length:]
 		}
 		require.Empty(t, body)
