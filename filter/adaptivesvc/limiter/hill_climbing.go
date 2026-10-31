@@ -107,6 +107,20 @@ func (l *HillClimbing) Remaining() uint64 {
 	return limitation - inflight
 }
 
+func (l *HillClimbing) Snapshot() Snapshot {
+	limitation := l.limitation.Load()
+	inflight := l.inflight.Load()
+	remaining := uint64(0)
+	if limitation >= inflight {
+		remaining = limitation - inflight
+	}
+	return Snapshot{
+		Inflight:   inflight,
+		Remaining:  remaining,
+		Limitation: limitation,
+	}
+}
+
 func (l *HillClimbing) Acquire() (Updater, error) {
 	if l.Remaining() == 0 {
 		return nil, ErrReachLimitation
