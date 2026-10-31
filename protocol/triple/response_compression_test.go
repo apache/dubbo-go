@@ -29,7 +29,6 @@ import (
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
 	"testing"
 )
 
@@ -75,7 +74,7 @@ func TestResolveHandlerCompressMinBytesValidation(t *testing.T) {
 				require.NoError(t, err)
 			}
 			clone := config.Clone()
-			require.Equal(t, strconv.Itoa(tc.configured), strconv.Itoa(*clone.ServerCompressMinBytes))
+			require.Equal(t, tc.configured, *clone.ServerCompressMinBytes)
 			*clone.ServerCompressMinBytes = 256
 			require.Equal(t, tc.configured, *config.ServerCompressMinBytes, "clone must not alias threshold pointer")
 		})
