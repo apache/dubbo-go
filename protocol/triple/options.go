@@ -58,7 +58,7 @@ type Option func(*Options)
 // ServerCompressMinBytesParam overrides the server response compression
 // threshold for one exported service. It takes precedence over protocol-level
 // configuration and the default value.
-const ServerCompressMinBytesParam = "triple.server-compress-min-bytes"
+const ServerCompressMinBytesParam = "server-compress-min-bytes"
 
 // WithServerCompressMinBytes sets the server response compression threshold in
 // serialized bytes. Responses smaller than min skip compression; zero compresses
